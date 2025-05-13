@@ -78,6 +78,8 @@ func (ah *AuthorizeHandler) HandleAuthorizeRequest(w http.ResponseWriter, r *htt
 		ah.handleAuthenticationResponse(oAuthMessage, w, r)
 	case constants.TYPE_CONSENT_RESPONSE_FROM_USER:
 	// TODO: Handle the consent response from the user.
+	//  Verify whether we need separate session data key for consent flow.
+	//  Alternatively could add consent info also to the same session object.
 	default:
 		// Handle the case where the request is not recognized.
 		utils.WriteJSONError(w, constants.ERROR_INVALID_REQUEST,
@@ -88,13 +90,6 @@ func (ah *AuthorizeHandler) HandleAuthorizeRequest(w http.ResponseWriter, r *htt
 // handleInitialAuthorizationRequest handles the initial authorization request from the client.
 func (ah *AuthorizeHandler) handleInitialAuthorizationRequest(msg *authzmodel.OAuthMessage,
 	w http.ResponseWriter, r *http.Request) {
-	// Validate the authorization request.
-	errorCode, errorMessage := ah.authValidator.validateInitialAuthorizationRequest(msg)
-	if errorCode != "" {
-		oauthutils.RedirectToErrorPage(w, r, errorCode, errorMessage)
-		return
-	}
-
 	// Extract required parameters.
 	clientId := msg.RequestQueryParams[constants.CLIENT_ID]
 	redirectUri := msg.RequestQueryParams[constants.REDIRECT_URI]
@@ -102,21 +97,46 @@ func (ah *AuthorizeHandler) handleInitialAuthorizationRequest(msg *authzmodel.OA
 	state := msg.RequestQueryParams[constants.STATE]
 	responseType := msg.RequestQueryParams[constants.RESPONSE_TYPE]
 
+	if clientId == "" {
+		oauthutils.RedirectToErrorPage(w, r, constants.ERROR_INVALID_REQUEST,
+			"Missing client_id parameter")
+		return
+	}
+
 	// Retrieve the OAuth application based on the client Id.
 	appProvider := appprovider.NewApplicationProvider()
 	appService := appProvider.GetApplicationService()
 
-	oauthApp, err := appService.GetOAuthApplication(clientId)
-	if err != nil || oauthApp == nil {
+	app, err := appService.GetOAuthApplication(clientId)
+	if err != nil || app == nil {
 		oauthutils.RedirectToErrorPage(w, r, constants.ERROR_INVALID_CLIENT, "Invalid client_id")
 		return
 	}
 
-	// Validate the redirect URI against the registered application.
-	if !oauthApp.IsValidRedirectURI(redirectUri) {
-		oauthutils.RedirectToErrorPage(w, r, constants.ERROR_INVALID_REQUEST,
-			"Your application's redirect URL does not match with the registered redirect URLs.")
-		return
+	// Validate the authorization request.
+	sendErrorToApp, errorCode, errorMessage := ah.authValidator.validateInitialAuthorizationRequest(msg, app)
+	if errorCode != "" {
+		if sendErrorToApp && redirectUri != "" {
+			// Redirect to the redirect URI with an error.
+			redirectUri, err := oauthutils.GetUriWithQueryParams(redirectUri, map[string]string{
+				constants.ERROR:             errorCode,
+				constants.ERROR_DESCRIPTION: errorMessage,
+			})
+			if err != nil {
+				oauthutils.RedirectToErrorPage(w, r, constants.ERROR_SERVER_ERROR,
+					"Failed to redirect to login page")
+				return
+			}
+
+			if state != "" {
+				redirectUri += "&" + constants.STATE + "=" + state
+			}
+			http.Redirect(w, r, redirectUri, http.StatusFound)
+			return
+		} else {
+			oauthutils.RedirectToErrorPage(w, r, errorCode, errorMessage)
+			return
+		}
 	}
 
 	// Get query params sent in the request.
@@ -131,6 +151,13 @@ func (ah *AuthorizeHandler) handleInitialAuthorizationRequest(msg *authzmodel.OA
 		ResponseType:   responseType,
 		Scopes:         scope,
 	}
+
+	// Set the redirect URI if not provided in the request. Invalid cases are already handled at this point.
+	// TODO: This should be removed when supporting other means of authorization.
+	if redirectUri == "" {
+		oauthParams.RedirectUri = app.RedirectURIs[0]
+	}
+
 	sessionData := sessionmodel.SessionData{
 		OAuthParameters: oauthParams,
 		AuthTime:        time.Now(),
@@ -170,6 +197,13 @@ func (ah *AuthorizeHandler) handleAuthenticationResponse(msg *authzmodel.OAuthMe
 	authResult := sessionData.LoggedInUser
 	if !authResult.IsAuthenticated {
 		redirectUri := sessionData.OAuthParameters.RedirectUri
+		if redirectUri == "" {
+			logger.Error("Redirect URI is empty")
+			oauthutils.RedirectToErrorPage(w, r, constants.ERROR_INVALID_REQUEST,
+				"Invalid redirect URI")
+			return
+		}
+
 		queryParams := map[string]string{
 			constants.ERROR:             constants.ERROR_ACCESS_DENIED,
 			constants.ERROR_DESCRIPTION: "User authentication failed",

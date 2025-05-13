@@ -23,6 +23,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
+	"regexp"
 	"strings"
 
 	authzmodel "github.com/asgardeo/thunder/internal/oauth/oauth2/authz/model"
@@ -35,7 +36,6 @@ import (
 )
 
 func GetOAuthMessage(r *http.Request, w http.ResponseWriter) (*authzmodel.OAuthMessage, error) {
-
 	if r == nil || w == nil {
 		return nil, errors.New("request or response writer is nil")
 	}
@@ -61,7 +61,6 @@ func GetOAuthMessage(r *http.Request, w http.ResponseWriter) (*authzmodel.OAuthM
 	}
 
 	// Determine the request type.
-	// TODO: Add other required request types.
 	var requestType string
 	if sessionDataKey != "" && r.FormValue(constants.SESSION_DATA_KEY_CONSENT) == "" {
 		requestType = constants.TYPE_AUTHORIZATION_RESPONSE_FROM_FRAMEWORK
@@ -107,7 +106,6 @@ func GetOAuthMessage(r *http.Request, w http.ResponseWriter) (*authzmodel.OAuthM
 
 // GetUriWithQueryParams constructs a URI with the given query parameters.
 func GetUriWithQueryParams(uri string, queryParams map[string]string) (string, error) {
-
 	// Parse the URI.
 	parsedUrl, err := url.Parse(uri)
 	if err != nil {
@@ -117,6 +115,11 @@ func GetUriWithQueryParams(uri string, queryParams map[string]string) (string, e
 	// Return the URI if there are no query parameters.
 	if len(queryParams) == 0 {
 		return parsedUrl.String(), nil
+	}
+
+	// Validate the error params if present.
+	if err := validateErrorParams(queryParams[constants.ERROR], queryParams[constants.ERROR_DESCRIPTION]); err != nil {
+		return "", err
 	}
 
 	// Add the query parameters to the URI.
@@ -132,7 +135,6 @@ func GetUriWithQueryParams(uri string, queryParams map[string]string) (string, e
 
 // GetLoginPageRedirectUri returns the login page URL with the given query parameters.
 func GetLoginPageRedirectUri(queryParams map[string]string) (string, error) {
-
 	serverConfig := config.GetThunderRuntime().Config.Server
 	loginPageUrl := (&url.URL{
 		Scheme: "https",
@@ -145,7 +147,6 @@ func GetLoginPageRedirectUri(queryParams map[string]string) (string, error) {
 
 // GetErrorPageURL returns the server error page URL.
 func GetErrorPageURL(queryParams map[string]string) (string, error) {
-
 	serverConfig := config.GetThunderRuntime().Config.Server
 	errorPageUrl := (&url.URL{
 		Scheme: "https",
@@ -158,7 +159,6 @@ func GetErrorPageURL(queryParams map[string]string) (string, error) {
 
 // RedirectToErrorPage redirects the user to the error page with the given error details.
 func RedirectToErrorPage(w http.ResponseWriter, r *http.Request, code, msg string) {
-
 	if w == nil || r == nil {
 		log.GetLogger().Error("Response writer or request is nil. Cannot redirect to error page.")
 		return
@@ -181,12 +181,10 @@ func RedirectToErrorPage(w http.ResponseWriter, r *http.Request, code, msg strin
 
 // GenerateNewSessionDataKey generates and returns a session data key.
 func GenerateNewSessionDataKey() string {
-
 	return uuid.New().String()
 }
 
 func GetAllowedOrigin(allowedOrigins []string, redirectUri string) string {
-
 	if len(allowedOrigins) == 0 {
 		return ""
 	}
@@ -198,4 +196,23 @@ func GetAllowedOrigin(allowedOrigins []string, redirectUri string) string {
 	}
 
 	return ""
+}
+
+// validateErrorParams validates the error code and error description parameters.
+func validateErrorParams(err, desc string) error {
+	// Define a regex pattern for the allowed character set: %x20-21 / %x23-5B / %x5D-7E
+	allowedCharPattern := `^[\x20-\x21\x23-\x5B\x5D-\x7E]*$`
+	allowedCharRegex := regexp.MustCompile(allowedCharPattern)
+
+	// Validate the error code.
+	if err != "" && !allowedCharRegex.MatchString(err) {
+		return fmt.Errorf("invalid error code: %s", err)
+	}
+
+	// Validate the error description.
+	if desc != "" && !allowedCharRegex.MatchString(desc) {
+		return fmt.Errorf("invalid error description: %s", desc)
+	}
+
+	return nil
 }

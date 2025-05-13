@@ -174,6 +174,7 @@ func (th *TokenHandler) HandleTokenRequest(w http.ResponseWriter, r *http.Reques
 
 	// Set the response headers.
 	w.Header().Set("Content-Type", "application/json")
+	// Must include the following headers when sensitive data is returned.
 	w.Header().Set("Cache-Control", "no-store")
 	w.Header().Set("Pragma", "no-cache")
 
