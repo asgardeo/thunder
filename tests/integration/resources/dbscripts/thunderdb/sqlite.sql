@@ -1,3 +1,14 @@
+-- Table to store Users
+CREATE TABLE USER (
+                      ID         INTEGER PRIMARY KEY AUTOINCREMENT,
+                      USER_ID    VARCHAR(36) UNIQUE NOT NULL,
+                      ORG_ID     VARCHAR(36)        NOT NULL,
+                      TYPE       TEXT               NOT NULL,
+                      ATTRIBUTES TEXT,
+                      CREATED_AT TEXT DEFAULT (datetime('now')),
+                      UPDATED_AT TEXT DEFAULT (datetime('now'))
+);
+
 -- Table to store basic service provider (app) details.
 CREATE TABLE SP_APP (
     ID INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -102,3 +113,10 @@ VALUES
 ('550e8400-e29b-41d4-a716-446655440000', '550e8400-e29b-41d4-a716-446655440001', '550e8400-e29b-41d4-a716-446655440003'),
 ('550e8400-e29b-41d4-a716-446655440000', '550e8400-e29b-41d4-a716-446655440001', '550e8400-e29b-41d4-a716-446655440004'),
 ('550e8400-e29b-41d4-a716-446655440000', '550e8400-e29b-41d4-a716-446655440002', '550e8400-e29b-41d4-a716-446655440005');
+
+INSERT INTO USER (USER_ID, ORG_ID, TYPE, ATTRIBUTES, CREATED_AT, UPDATED_AT)
+VALUES (
+           '550e8400-e29b-41d4-a716-446655440000', '456e8400-e29b-41d4-a716-446655440001', 'person',
+           '{"age": 30, "roles": ["admin", "user"], "address": {"city": "Colombo", "zip": "00100"}}',
+           datetime('now'), datetime('now')
+       );
