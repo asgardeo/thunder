@@ -16,7 +16,36 @@
  * under the License.
  */
 
+// Package model defines the data structures and models used in the flow execution
 package model
+
+// FlowContext holds the context for flow execution
+type FlowContext struct {
+	FlowID        string
+	AppID         string
+	CallBackURL   string
+	UserInputData map[string]string
+
+	CurrentNode     *Node
+	CurrentActionID string
+
+	Graph *Graph
+}
+
+// FlowStep represents the result of a flow execution
+type FlowStep struct {
+	ID       string
+	Type     string
+	Status   string
+	StepData StepData
+}
+
+// StepData holds the data for a step in the flow
+type StepData struct {
+	Components     []Component
+	RequiredParams []string
+	AdditionalData map[string]string
+}
 
 // Flow represents a execution flow
 type Flow struct {
@@ -57,5 +86,47 @@ type Component struct {
 	Type       string                 `json:"type"`
 	Variant    string                 `json:"variant"`
 	Config     map[string]interface{} `json:"config"`
+	Action     *Action                `json:"action,omitempty"`
 	Components []Component            `json:"components"`
+}
+
+// Action represents an action configuration for a component
+type Action struct {
+	Type     string    `json:"type"`
+	Next     string    `json:"next,omitempty"`
+	Executor *Executor `json:"executor,omitempty"`
+}
+
+// Executor represents an executor configuration within an action
+type Executor struct {
+	Name string `json:"name"`
+}
+
+// FlowServiceError represents an error response from the flow service
+type FlowServiceError struct {
+	Type             string `json:"type,omitempty"`
+	Error            string `json:"error"`
+	ErrorDescription string `json:"error_description"`
+}
+
+// FlowRequest represents the flow execution API request body
+type FlowRequest struct {
+	ApplicationID string            `json:"applicationId"`
+	CallbackURL   string            `json:"callbackUrl"`
+	FlowID        string            `json:"flowId"`
+	ActionID      string            `json:"actionId"`
+	Inputs        map[string]string `json:"inputs"`
+}
+
+// FlowResponse represents the flow execution API response body
+type FlowResponse struct {
+	Type       string           `json:"type"`
+	FlowID     string           `json:"flowId"`
+	FlowStatus string           `json:"flowStatus"`
+	Data       FlowResponseData `json:"data"`
+}
+
+// FlowResponseData represents the data in the flow execution API response
+type FlowResponseData struct {
+	Components []Component `json:"components"`
 }

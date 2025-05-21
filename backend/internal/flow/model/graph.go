@@ -16,13 +16,11 @@
  * under the License.
  */
 
-// Package graph defines the graph structure and its operations
-package graph
+package model
 
 import (
 	"encoding/json"
-
-	"github.com/asgardeo/thunder/internal/flow/model"
+	"errors"
 
 	"github.com/google/uuid"
 )
@@ -68,9 +66,9 @@ func (g *Graph) AddEdge(fromNodeID, toNodeID string) {
 // ToJSON converts the graph to a JSON string representation
 func (g *Graph) ToJSON() (string, error) {
 	type JSONNode struct {
-		ID   string     `json:"id"`
-		Page model.Step `json:"page,omitempty"`
-		Type string     `json:"type"`
+		ID   string `json:"id"`
+		Page Step   `json:"page,omitempty"`
+		Type string `json:"type"`
 	}
 
 	type JSONGraph struct {
@@ -101,4 +99,48 @@ func (g *Graph) ToJSON() (string, error) {
 	}
 
 	return string(jsonBytes), nil
+}
+
+// NodeInterface defines the interface for nodes in the graph
+type NodeInterface interface {
+	Execute(ctx *FlowContext) (*ExecutorResponse, error)
+}
+
+// Node implements the NodeInterface
+type Node struct {
+	ID             string
+	Type           string
+	IsStartNode    bool
+	IsFinalNode    bool
+	NextNodeID     string
+	PreviousNodeID string
+	Executor       ExecutorInterface
+	Page           Step
+}
+
+// NewNode creates a new node with the given details
+func NewNode(id string, nodeType string, isStartNode bool) NodeInterface {
+	return &Node{
+		ID:          id,
+		Type:        nodeType,
+		IsStartNode: isStartNode,
+	}
+}
+
+// Execute executes the node's executor
+func (n *Node) Execute(ctx *FlowContext) (*ExecutorResponse, error) {
+	if n.Executor == nil {
+		return nil, errors.New("executor is not set")
+	}
+	return n.Executor.Execute(ctx)
+}
+
+// PromptNode represents a node that only takes user input
+type PromptNode struct {
+	*Node
+}
+
+// TaskExecutionNode represents a node that executes a task
+type TaskExecutionNode struct {
+	*Node
 }
