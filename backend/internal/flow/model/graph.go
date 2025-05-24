@@ -114,8 +114,9 @@ type Node struct {
 	IsFinalNode    bool
 	NextNodeID     string
 	PreviousNodeID string
-	Executor       ExecutorInterface
-	Page           Step
+	// TODO: Set the executor
+	Executor ExecutorInterface
+	Page     Step
 }
 
 // NewNode creates a new node with the given details

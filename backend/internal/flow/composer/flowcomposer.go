@@ -134,6 +134,15 @@ func (c *FlowComposer) Init() error {
 		syslog.Println("----- Graph Model -----")
 		syslog.Printf("%+v", graphModel)
 		syslog.Println("====================================================")
+		syslog.Println("----- Graph Model JSON -----")
+		jsonGraph, err := graphModel.ToJSON()
+		if err != nil {
+			logger.Warn("Failed to convert graph model to JSON for file %s: %v",
+				log.String("filePath", filePath), log.Error(err))
+		} else {
+			syslog.Printf("%s", jsonGraph)
+		}
+		syslog.Println("====================================================")
 
 		// Register the graph with the flow composer
 		logger.Debug("Registering graph with ID %s", log.String("graphID", graphModel.ID))

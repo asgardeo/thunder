@@ -92,13 +92,13 @@ type Component struct {
 
 // Action represents an action configuration for a component
 type Action struct {
-	Type     string    `json:"type"`
-	Next     string    `json:"next,omitempty"`
-	Executor *Executor `json:"executor,omitempty"`
+	Type     string         `json:"type"`
+	Next     string         `json:"next,omitempty"`
+	Executor *ExecutorModel `json:"executor,omitempty"`
 }
 
-// Executor represents an executor configuration within an action
-type Executor struct {
+// ExecutorModel represents an executor configuration within an action
+type ExecutorModel struct {
 	Name string `json:"name"`
 }
 

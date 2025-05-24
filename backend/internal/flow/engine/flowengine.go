@@ -20,9 +20,11 @@
 package engine
 
 import (
+	"errors"
 	"sync"
 
 	"github.com/asgardeo/thunder/internal/flow/model"
+	"github.com/asgardeo/thunder/internal/system/log"
 )
 
 var (
@@ -48,6 +50,38 @@ func GetFlowEngine() FlowEngineInterface {
 
 // Execute executes a step in the flow
 func (e *FlowEngine) Execute(ctx *model.FlowContext) (model.FlowStep, error) {
+	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, "FlowEngine"))
+
+	graph := ctx.Graph
+	if graph == nil {
+		return model.FlowStep{}, errors.New("flow graph is nil")
+	}
+
+	if graph.StartNodeID == "" {
+		return model.FlowStep{}, errors.New("graph start node ID not found")
+	}
+
+	currentNode := ctx.CurrentNode
+	if currentNode == nil {
+		logger.Debug("Current node is nil. Setting the start node as the current node.")
+		node := graph.Nodes[graph.StartNodeID]
+		currentNode = &node
+		ctx.CurrentNode = currentNode
+	}
+
 	// TODO: Implement the execution logic for the flow engine
 	return model.FlowStep{}, nil
+}
+
+func (e *FlowEngine) triggerNode(ctx *model.FlowContext, node *model.Node) (model.ExecutorResponse, error) {
+	// logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, "FlowEngine"))
+
+	// switch node.Type {
+	// case model.NodeTypeDecision:
+	// 	// TODO
+	// case model.NodeTypeTaskExecution:
+
+	// }
+
+	return model.ExecutorResponse{}, nil
 }
