@@ -23,6 +23,7 @@ VERSION_FILE=version.txt
 BINARY_NAME=thunder
 VERSION=$(cat "$VERSION_FILE")
 PRODUCT_FOLDER=${BINARY_NAME}-${VERSION}
+
 # Server ports
 FRONTEND_PORT=9090
 BACKEND_PORT=8090
@@ -37,7 +38,10 @@ SERVER_SCRIPTS_DIR=$BACKEND_BASE_DIR/scripts
 SERVER_DB_SCRIPTS_DIR=$BACKEND_BASE_DIR/dbscripts
 SECURITY_DIR=repository/resources/security
 FRONTEND_BASE_DIR=frontend
-FRONTEND_GATE_APP_DIR=$FRONTEND_BASE_DIR/apps/gate
+GATE_APP_DIR=apps/gate
+PACKAGES_DIR=packages
+FRONTEND_GATE_APP_DIR=$FRONTEND_BASE_DIR/$GATE_APP_DIR
+FRONTEND_PACKAGES=$FRONTEND_BASE_DIR/$PACKAGES_DIR
 SAMPLE_BASE_DIR=samples
 SAMPLE_OAUTH_APP_DIR=$SAMPLE_BASE_DIR/apps/oauth
 
@@ -59,9 +63,15 @@ function build_backend() {
     -o "../$BUILD_DIR/$BINARY_NAME" ./cmd/server
 }
 
-function package() {
-    echo "Packaging artifacts..."
-    mkdir -p "$OUTPUT_DIR/$PRODUCT_FOLDER"
+function build_frontend() {
+    echo "Building Next frontend apps..."
+    pnpm i
+    pnpm --filter gate build
+}
+
+function prepare_backend_for_packaging() {
+    echo "Copying backend artifacts..."
+
     cp "$BUILD_DIR/$BINARY_NAME" "$OUTPUT_DIR/$PRODUCT_FOLDER/"
     cp -r "$REPOSITORY_DIR" "$OUTPUT_DIR/$PRODUCT_FOLDER/"
     cp "$VERSION_FILE" "$OUTPUT_DIR/$PRODUCT_FOLDER/"
@@ -71,6 +81,24 @@ function package() {
 
     echo "=== Ensuring server certificates exist in the distribution ==="
     ensure_certificates "$OUTPUT_DIR/$PRODUCT_FOLDER/$SECURITY_DIR"
+}
+
+function prepare_frontend_for_packaging() {
+    echo "Copying frontend artifacts..."
+
+    mkdir -p "$OUTPUT_DIR/$PRODUCT_FOLDER/$GATE_APP_DIR"
+    cp -r "$FRONTEND_GATE_APP_DIR/dist/"* "$OUTPUT_DIR/$PRODUCT_FOLDER/$GATE_APP_DIR"
+}
+
+function package() {
+    echo "Packaging artifacts..."
+
+    mkdir -p "$OUTPUT_DIR/$PRODUCT_FOLDER"
+
+    prepare_backend_for_packaging
+    prepare_frontend_for_packaging
+
+    cp -r "start.sh" "$OUTPUT_DIR/$PRODUCT_FOLDER"
 
     echo "Creating zip file..."
     (cd "$OUTPUT_DIR" && zip -r "$PRODUCT_FOLDER.zip" "$PRODUCT_FOLDER")
@@ -115,8 +143,8 @@ function run() {
     echo "=== Building backend ==="
     build_backend
 
-    echo "=== Packaging artifacts ==="
-    package
+    echo "=== Building frontend ==="
+    build_frontend
 
     echo "=== Ensuring server certificates exist ==="
     ensure_certificates "$BACKEND_DIR/$SECURITY_DIR"
@@ -135,8 +163,6 @@ function run() {
 
     kill_port $FRONTEND_PORT
     kill_port $BACKEND_PORT
-
-    pnpm --filter gate build
 
     echo "=== Starting frontend on https://localhost:$FRONTEND_PORT ==="
     FRONTEND_PORT=$FRONTEND_PORT pnpm --filter gate start &
@@ -164,6 +190,7 @@ case "$1" in
         ;;
     build)
         build_backend
+        build_frontend
         package
         ;;
     test)

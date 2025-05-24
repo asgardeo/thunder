@@ -1,5 +1,3 @@
-'use client';
-
 /*
  * Copyright (c) 2025, WSO2 LLC. (http://www.wso2.com).
  *
@@ -18,4 +16,4 @@
  * under the License.
  */
 
-export { useColorScheme } from '@mui/material/styles';
+export { default as InitColorSchemeScript } from '@mui/material/InitColorSchemeScript';

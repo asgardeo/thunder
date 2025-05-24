@@ -17,20 +17,26 @@
  */
 
 import fs from 'fs';
+import path from 'path';
 import https from 'https';
-import { parse } from 'url';
+import { fileURLToPath, parse } from 'url';
 import next from 'next';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 const PORT = 9090;
 const HOST = 'localhost';
+const keyPath = path.resolve(__dirname, 'server.key');
+const certPath = path.resolve(__dirname, 'server.cert');
 
-const dev = process.env.NODE_ENV !== 'production';
-const app = next({ dev });
+const dev = process.env.NODE_ENV === 'development';
+const app = next({ dev, dir: __dirname });
 const handle = app.getRequestHandler();
 
 const httpsOptions = {
-  key: fs.readFileSync('./server.key'),
-  cert: fs.readFileSync('./server.cert'),
+  key: fs.readFileSync(keyPath),
+  cert: fs.readFileSync(certPath),
 };
 
 function getTimestampWithOffset() {

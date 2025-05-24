@@ -18,21 +18,15 @@
  * under the License.
  */
 
-import { CssVarsProvider } from '@mui/material-next';
+import { ThemeProvider as MUIThemeProvider } from '@mui/material/styles';
 import CssBaseline from '@mui/material/CssBaseline';
 import theme from '../theme';
 
 export default function ThemeProvider({ children }: { children: React.ReactNode }) {
   return (
-    <CssVarsProvider
-        theme={theme}
-        defaultMode="system"
-        modeStorageKey="mui-mode"
-        attribute="data-color-scheme"
-        disableTransitionOnChange
-    >
+    <MUIThemeProvider theme={theme}>
       <CssBaseline />
       {children}
-    </CssVarsProvider>
+    </MUIThemeProvider>
   );
 }

@@ -18,7 +18,7 @@
  * under the License.
  */
 
-import { useColorScheme } from '@mui/material-next';
+import { useColorScheme } from '@mui/material/styles';
 import Button from '@mui/material/Button';
 import CircularProgress from '@mui/material/CircularProgress';
 import { DarkModeRounded, LightModeRounded, Monitor } from '@mui/icons-material';
@@ -26,22 +26,25 @@ import { useMounted } from '../../hooks/useMounted';
 
 type Mode = 'light' | 'dark' | 'system';
 
-const nextMode = (mode: Mode): Mode => {
-  return mode === 'light' ? 'dark' : mode === 'dark' ? 'system' : 'light';
-};
-
 export default function ThemeToggle() {
   const mounted = useMounted();
   const { mode, setMode } = useColorScheme();
 
   if (!mounted) {
-    // Show spinner while loading
     return (
-        <Button variant='outlined'>
-            <CircularProgress size={24} />
-        </Button>
+      <Button variant="outlined">
+        <CircularProgress size={24} />
+      </Button>
     );
   }
+
+  if (!mode) {
+    return null;
+  }
+
+  const nextMode = (mode: Mode): Mode => {
+    return mode === 'light' ? 'dark' : mode === 'dark' ? 'system' : 'light';
+  };
 
   const currentMode: Mode = mode ?? 'system';
 
@@ -57,8 +60,8 @@ export default function ThemeToggle() {
   };
 
   return (
-    <Button variant='outlined' onClick={() => setMode(nextMode(currentMode))}>
+    <Button variant="outlined" onClick={() => setMode(nextMode(currentMode))}>
       <ColorModeIcon />
     </Button>
   );
-}
+};

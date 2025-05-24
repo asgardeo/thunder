@@ -14,7 +14,8 @@
     "jsx": "react-jsx",
     "types": ["react", "react-dom"],
     "strict": true,
-    "skipLibCheck": true
+    "skipLibCheck": true,
+    "typeRoots": ["node_modules/@types"]
   },
   "include": ["src/**/*"],
   "exclude": ["modules", "node_modules"]

@@ -94,6 +94,7 @@ tmp
 out
 out-tsc
 backend/bin
+frontend/packages/*/modules
 
 # IDE settings
 settings.json

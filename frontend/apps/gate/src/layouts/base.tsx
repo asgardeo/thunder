@@ -17,11 +17,12 @@
  */
 
 import ThemeProvider from '@oxygen-ui/react/src/contexts/ThemeProvider';
+import { InitColorSchemeScript } from '@oxygen-ui/react/src/components/InitColorSchemeScript/InitColorSchemeScript';
 import { Geist, Geist_Mono } from 'next/font/google';
 import { Metadata } from 'next';
-import '../globals.css';
 import { NextFontWithVariable } from 'next/dist/compiled/@next/font';
 import { ReactElement } from 'react';
+import '../globals.css';
 
 export const metadata: Metadata = {
   icons: {
@@ -48,19 +49,10 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <body className={`${geistSans.variable} ${geistMono.variable}`}>
-        <script
-          dangerouslySetInnerHTML={{
-            __html: `
-              (function () {
-                try {
-                  var mode = localStorage.getItem('mui-mode');
-                  var systemDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-                  var resolved = mode === 'light' || mode === 'dark' ? mode : (systemDark ? 'dark' : 'light');
-                  document.documentElement.setAttribute('data-color-scheme', resolved);
-                } catch (e) {}
-              })();
-                  `.trim(),
-          }}
+        <InitColorSchemeScript
+          defaultMode="system"
+          modeStorageKey="mui-mode"
+          attribute="data-color-scheme"
         />
         <div className="body-background-design-overlay"></div>
         <ThemeProvider>{children}</ThemeProvider>

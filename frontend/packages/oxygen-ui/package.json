@@ -12,14 +12,13 @@
     "@emotion/styled": "^11.11.0",
     "@mui/icons-material": "^7.1.0",
     "@mui/material": "^7.0.2",
-    "@mui/material-next": "6.0.0-alpha.126",
     "@mui/system": "^7.1.0",
     "react": "^19.1.0",
     "react-dom": "^19.1.0"
   },
   "devDependencies": {
-    "@types/react": "^19.1.2",
-    "@types/react-dom": "^19",
+    "@types/react": "^19.1.5",
+    "@types/react-dom": "^19.1.5",
     "typescript": "^5.0.0"
   }
 }

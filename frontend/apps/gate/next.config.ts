@@ -22,4 +22,4 @@ const nextConfig: NextConfig = {
   transpilePackages: ['@oxygen-ui/react']
 };
 
-export default nextConfig;
+module.exports = nextConfig;

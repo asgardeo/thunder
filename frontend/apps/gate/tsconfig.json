@@ -1,9 +1,10 @@
 {
-  "extends": "../../../tsconfig.base.json",
   "compilerOptions": {
     "jsx": "preserve",
     "noEmit": true,
     "incremental": true,
+    "resolveJsonModule": true,
+    "esModuleInterop": true,
     "lib": [
       "dom",
       "dom.iterable",
@@ -18,14 +19,24 @@
     ],
     "baseUrl": ".",
     "paths": {
-      "@/*": ["./src/*"]
-    }
+      "@/*": [
+        "./src/*"
+      ]
+    },
+    "target": "ES2017",
+    "skipLibCheck": true,
+    "strict": false,
+    "module": "esnext",
+    "moduleResolution": "node"
   },
   "include": [
     "**/*.ts",
     "**/*.tsx",
+    ".next/types/**/*.ts",
     "next-env.d.ts",
-    ".next/types/**/*.ts"
-, "../../packages/oxygen-ui/src/components/ThemeToggle.tsx"  ],
-  "exclude": ["dist", "node_modules"]
+  ],
+  "exclude": [
+    "dist",
+    "node_modules"
+  ]
 }
