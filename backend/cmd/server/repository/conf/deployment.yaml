@@ -37,3 +37,4 @@ authenticator:
       type: "local"
       display_name: "Username & Password"
       description: "Login with username and password"
+  graph_directory: "repository/resources/graphs/"

@@ -104,6 +104,7 @@ type Authenticator struct {
 type AuthenticatorConfig struct {
 	DefaultAuthenticator string          `yaml:"default"`
 	Authenticators       []Authenticator `yaml:"authenticators"`
+	GraphDirectory       string          `yaml:"graph_directory"`
 }
 
 // Config holds the complete configuration details of the server.

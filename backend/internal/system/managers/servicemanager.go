@@ -58,5 +58,8 @@ func (sm *ServiceManager) RegisterServices() error {
 	// Register the authentication service.
 	services.NewAuthenticationService(sm.mux)
 
+	// Register the flow execution service.
+	services.NewFlowExecutionService(sm.mux)
+
 	return nil
 }

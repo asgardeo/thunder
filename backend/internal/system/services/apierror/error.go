@@ -16,21 +16,19 @@
  * under the License.
  */
 
-package utils
+// Package apierror defines the error structures for the API.
+package apierror
 
-import "strings"
+const (
+	// ClientErrorType denotes the client error type.
+	ClientErrorType = "client_error"
+	// ServerErrorType denotes the server error type.
+	ServerErrorType = "server_error"
+)
 
-// ParseStringArray parses a comma-separated string into a slice of strings.
-func ParseStringArray(value interface{}) []string {
-	if value == nil {
-		return []string{}
-	}
-	return strings.Split(value.(string), ",")
-}
-
-// MergeStringMaps merges two maps of strings.
-func MergeStringMaps(dst, src map[string]string) {
-	for k, v := range src {
-		dst[k] = v
-	}
+// ErrorResponse represents the API error response.
+type ErrorResponse struct {
+	Code        string `json:"code"`
+	Message     string `json:"message"`
+	Description string `json:"description"`
 }

@@ -1,0 +1,96 @@
+{
+    "id": "auth_flow_config",
+    "steps": [
+        {
+            "id": "login_form",
+            "type": "VIEW",
+            "size": {
+                "width": 350,
+                "height": 480
+            },
+            "position": {
+                "x": 300,
+                "y": 200
+            },
+            "data": {
+                "components": [
+                    {
+                        "category": "DISPLAY",
+                        "type": "TYPOGRAPHY",
+                        "id": "typography_heading",
+                        "variant": "H3",
+                        "config": {
+                            "text": "Sign In"
+                        }
+                    },
+                    {
+                        "category": "BLOCK",
+                        "type": "FORM",
+                        "config": {},
+                        "id": "login_form",
+                        "components": [
+                            {
+                                "category": "FIELD",
+                                "type": "INPUT",
+                                "variant": "TEXT",
+                                "config": {
+                                    "type": "text",
+                                    "hint": "",
+                                    "label": "Username",
+                                    "required": true,
+                                    "placeholder": "Enter your username",
+                                    "identifier": "username"
+                                },
+                                "id": "input_username"
+                            },
+                            {
+                                "category": "FIELD",
+                                "type": "INPUT",
+                                "variant": "PASSWORD",
+                                "config": {
+                                    "identifier": "password",
+                                    "type": "password",
+                                    "hint": "",
+                                    "label": "Password",
+                                    "required": true,
+                                    "placeholder": "Enter your password"
+                                },
+                                "id": "input_password"
+                            },
+                            {
+                                "category": "ACTION",
+                                "type": "BUTTON",
+                                "id": "button_signin",
+                                "variant": "PRIMARY",
+                                "action": {
+                                    "type": "EXECUTOR",
+                                    "executor": {
+                                        "name": "BasicAuthenticator"
+                                    },
+                                    "next": "authenticated"
+                                },
+                                "config": {
+                                    "type": "submit",
+                                    "text": "Sign In"
+                                }
+                            }
+                        ]
+                    }
+                ]
+            }
+        },
+        {
+            "id": "authenticated",
+            "type": "AUTHENTICATION_SUCCESS",
+            "size": {
+                "width": 56,
+                "height": 56
+            },
+            "position": {
+                "x": 1100,
+                "y": 200
+            },
+            "data": {}
+        }
+    ]
+}

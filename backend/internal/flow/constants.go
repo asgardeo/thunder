@@ -16,21 +16,13 @@
  * under the License.
  */
 
-package utils
+package flow
 
-import "strings"
-
-// ParseStringArray parses a comma-separated string into a slice of strings.
-func ParseStringArray(value interface{}) []string {
-	if value == nil {
-		return []string{}
-	}
-	return strings.Split(value.(string), ",")
-}
-
-// MergeStringMaps merges two maps of strings.
-func MergeStringMaps(dst, src map[string]string) {
-	for k, v := range src {
-		dst[k] = v
-	}
-}
+const (
+	// FlowStatusComplete indicates that the flow execution is complete.
+	FlowStatusComplete = "COMPLETE"
+	// FlowStatusIncomplete indicates that the flow execution is incomplete.
+	FlowStatusIncomplete = "INCOMPLETE"
+	// FlowStatusPromptOnly indicates that the flow execution is in a prompt-only state.
+	FlowStatusPromptOnly = "PROMPT_ONLY"
+)
