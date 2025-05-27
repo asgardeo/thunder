@@ -103,7 +103,7 @@ func initThunderConfigurations(logger *log.Logger, thunderHome string) *config.C
 }
 
 // initMultiplexer initializes the HTTP multiplexer and registers the services.
-func initMultiplexer(logger *log.Logger) *http.ServeMux {
+func initMultiplexer(logger *log.Logger) http.Handler {
 	mux := http.NewServeMux()
 	serviceManager := managers.NewServiceManager(mux)
 
@@ -113,11 +113,42 @@ func initMultiplexer(logger *log.Logger) *http.ServeMux {
 		logger.Fatal("Failed to register the services", log.Error(err))
 	}
 
-	return mux
+	loggedMux := MuxWrapper(logger, mux)
+	return loggedMux
+}
+
+func MuxWrapper(logger *log.Logger, mux *http.ServeMux) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		start := time.Now()
+
+		// Wrap the ResponseWriter to capture status code
+		rw := &responseWriter{ResponseWriter: w, statusCode: http.StatusOK}
+		mux.ServeHTTP(rw, r) // Use the provided mux to handle the request
+
+		duration := time.Since(start)
+
+		logger.Info("HTTP request logged",
+			log.String("method", r.Method),
+			log.String("path", r.URL.Path),
+			log.Int("statusCode", rw.statusCode),
+			log.String("duration", duration.String()),
+		)
+	})
+}
+
+// responseWriter is a wrapper around http.ResponseWriter to capture status code.
+type responseWriter struct {
+	http.ResponseWriter
+	statusCode int
+}
+
+func (rw *responseWriter) WriteHeader(code int) {
+	rw.statusCode = code
+	rw.ResponseWriter.WriteHeader(code)
 }
 
 // startServer starts the HTTP server with the given configurations and multiplexer.
-func startServer(logger *log.Logger, cfg *config.Config, mux *http.ServeMux, thunderHome string) {
+func startServer(logger *log.Logger, cfg *config.Config, mux http.Handler, thunderHome string) {
 	// Get TLS configuration from the certificate and key files.
 	tlsConfig, err := cert.GetTLSConfig(cfg, thunderHome)
 	if err != nil {
