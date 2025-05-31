@@ -82,11 +82,24 @@ jobs:
         id: version
         run: echo "version=$(cat version.txt)" >> $GITHUB_OUTPUT
 
-      - name: 📦 Upload Artifact to Workflow
+      - name: 🔍 Find Sample App File
+        id: find_sample
+        run: |
+          SAMPLE_APP_PATH=$(find target -name "sample-app-*.zip" -type f)
+          echo "sample_app_file=$SAMPLE_APP_PATH" >> $GITHUB_OUTPUT
+          echo "sample_app_name=$(basename $SAMPLE_APP_PATH)" >> $GITHUB_OUTPUT
+
+      - name: 📦 Upload Thunder Artifact to Workflow
         uses: actions/upload-artifact@v4
         with:
           name: thunder-${{ steps.version.outputs.version }}
           path: target/thunder-${{ steps.version.outputs.version }}.zip
+
+      - name: 📦 Upload Sample App Artifact to Workflow
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ steps.find_sample.outputs.sample_app_name }}
+          path: ${{ steps.find_sample.outputs.sample_app_file }}
 
       - name: 🏷️ Create Git Tag
         run: |
@@ -135,6 +148,8 @@ jobs:
           name: Thunder ${{ env.VERSION }}
           draft: false
           prerelease: ${{ contains(env.VERSION, '-') }}
-          files: target/thunder-${{ env.VERSION }}.zip
+          files: |
+            target/thunder-${{ env.VERSION }}.zip
+            ${{ steps.find_sample.outputs.sample_app_file }}
           body: ${{ env.RELEASE_BODY }}
           generate_release_notes: false

@@ -24,6 +24,9 @@ BINARY_NAME=thunder
 VERSION=$(cat "$VERSION_FILE")
 PRODUCT_FOLDER=${BINARY_NAME}-${VERSION}
 
+SAMPLE_APP_VERSION=$(grep -o '"version": *"[^"]*"' samples/apps/oauth/package.json | sed 's/"version": *"\(.*\)"/\1/')
+SAMPLE_APP_FOLDER="sample-app-${SAMPLE_APP_VERSION}"
+
 # Server ports
 BACKEND_PORT=8090
 
@@ -38,7 +41,7 @@ SERVER_SCRIPTS_DIR=$BACKEND_BASE_DIR/scripts
 SERVER_DB_SCRIPTS_DIR=$BACKEND_BASE_DIR/dbscripts
 SECURITY_DIR=repository/resources/security
 SAMPLE_BASE_DIR=samples
-SAMPLE_OAUTH_APP_DIR=$SAMPLE_BASE_DIR/apps/oauth
+SAMPLE_APP_DIR=$SAMPLE_BASE_DIR/apps/oauth
 
 GOOS=${2:-darwin}
 GOARCH=${3:-arm64}
@@ -105,8 +108,77 @@ function prepare_backend_for_packaging() {
     ensure_certificates "$OUTPUT_DIR/$PRODUCT_FOLDER/$SECURITY_DIR"
 }
 
-function package() {
-    echo "Packaging artifacts..."
+function build_sample_app() {
+    echo "Building sample app..."
+    
+    # Ensure certificate exists for the sample app
+    ensure_certificates "$SAMPLE_APP_DIR"
+    
+    # Build the application
+    cd "$SAMPLE_APP_DIR" || exit 1
+    echo "Installing dependencies..."
+    npm install || pnpm install
+    
+    echo "Building the app..."
+    npm run build || pnpm run build
+    
+    cd - || exit 1
+    
+    echo "Sample app built successfully."
+}
+
+function create_sample_package_json() {
+    local dir=$1
+
+    # Add a package.json for the server
+    local package_path="$dir/package.json"
+    
+    cat > "$package_path" << EOL
+{
+  "name": "sample-app",
+  "version": "${SAMPLE_APP_VERSION}",
+  "description": "Sample App for Thunder",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "express": "^4.18.2"
+  }
+}
+EOL
+}
+
+function package_sample_app() {
+    echo "Packaging sample app..."
+    
+    mkdir -p "$OUTPUT_DIR/$SAMPLE_APP_FOLDER"
+    
+    # Copy the built app files
+    cp -r "$SAMPLE_APP_DIR/dist" "$OUTPUT_DIR/$SAMPLE_APP_FOLDER/"
+    
+    # Copy the certificates
+    cp "$SAMPLE_APP_DIR/server.key" "$OUTPUT_DIR/$SAMPLE_APP_FOLDER/"
+    cp "$SAMPLE_APP_DIR/server.cert" "$OUTPUT_DIR/$SAMPLE_APP_FOLDER/"
+    
+    # Copy .env.example as .env for reference
+    cp "$SAMPLE_APP_DIR/.env.example" "$OUTPUT_DIR/$SAMPLE_APP_FOLDER/.env"
+
+    # Copy the server script
+    cp "$SAMPLE_APP_DIR/server.js" "$OUTPUT_DIR/$SAMPLE_APP_FOLDER/"
+    
+    # Create the package.json for the sample app
+    create_sample_package_json "$OUTPUT_DIR/$SAMPLE_APP_FOLDER"
+
+    echo "Creating zip file..."
+    (cd "$OUTPUT_DIR" && zip -r "$SAMPLE_APP_FOLDER.zip" "$SAMPLE_APP_FOLDER")
+    rm -rf "${OUTPUT_DIR:?}/$SAMPLE_APP_FOLDER"
+    
+    echo "Sample app packaged successfully as $OUTPUT_DIR/$SAMPLE_APP_FOLDER.zip"
+}
+
+function package_backend() {
+    echo "Packaging backend artifacts..."
 
     mkdir -p "$OUTPUT_DIR/$PRODUCT_FOLDER"
 
@@ -151,17 +223,11 @@ function ensure_certificates() {
 }
 
 function run() {
-    echo "=== Cleaning build output ==="
-    clean
-
-    echo "=== Building backend ==="
-    build_backend
-
     echo "=== Ensuring server certificates exist ==="
     ensure_certificates "$BACKEND_DIR/$SECURITY_DIR"
 
     echo "=== Ensuring sample app certificates exist ==="
-    ensure_certificates "$SAMPLE_OAUTH_APP_DIR"
+    ensure_certificates "$SAMPLE_APP_DIR"
 
     # Kill known ports
     function kill_port() {
@@ -190,7 +256,9 @@ case "$1" in
         ;;
     build)
         build_backend
-        package
+        package_backend
+        build_sample_app
+        package_sample_app
         ;;
     test)
         test_integration
@@ -200,6 +268,11 @@ case "$1" in
         ;;
     *)
         echo "Usage: ./build.sh {clean|build|test|run} [OS] [ARCH]"
+        echo ""
+        echo "  clean         - Clean build artifacts"
+        echo "  build         - Build the Thunder server only"
+        echo "  test          - Run integration tests"
+        echo "  run           - Run the Thunder server for development"
         exit 1
         ;;
 esac
