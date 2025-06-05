@@ -1,12 +1,236 @@
 openapi: 3.0.3
+info:
+  title: User Management API
+  version: 0.1.0
+  description: This API is used to manage users.
+  license:
+    name: Apache 2.0
+    url: http://www.apache.org/licenses/LICENSE-2.0.html
+
+servers:
+  - url: https://{host}:{port}
+    variables:
+      host:
+        default: "localhost"
+      port:
+        default: "8090"
+
+tags:
+  - name: users
+    description: Operations related to user management
+paths:
+  /users:
+    get:
+      tags:
+        - users
+      summary: List users
+      responses:
+        '200':
+          description: List of users
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/User'
+              example:
+                - id: "9a475e1e-b0cb-4b29-8df5-2e5b24fb0ed3"
+                  organization-unit: "456e8400-e29b-41d4-a716-446655440001"
+                  type: "customer"
+                  attributes:
+                    age: 24
+                    email: "jane.doe@example.com"
+                    mobile: "+1-650-555-1234"
+                    address:
+                      city: "Mountain View"
+                      zip: "94040"
+                    contact-preferences:
+                      - email
+                      - sms
+                - id: "039bda67-a80d-4b7b-ac0f-36db85332089"
+                  organization-unit: "456e8400-e29b-41d4-a716-446655440001"
+                  type: "customer"
+                  attributes:
+                    age: 31
+                    email: "john.smith@example.com"
+                    mobile: "+1-650-903-0002"
+                    address:
+                      city: "Palo Alto"
+                      zip: "94301"
+                    contact-preferences:
+                      - sms
+                - id: "e1b6ba6c-deb2-4d24-87b0-bbf79fa4487c"
+                  organization-unit: "26eec421-f1bb-4deb-a5d3-9ab6554c2ae6"
+                  type: "employee"
+                  attributes:
+                    username: "alice.wu"
+                    firstname: "Alice"
+                    lastname: "Wu"
+                    department: "Engineering"
+                    email: "alice.wu@company.inc"
+        '400':
+          description: Bad request
+        '500':
+          description: Internal server error
+    post:
+      tags:
+        - users
+      summary: Create a new user
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/User'
+            example:
+              organization-unit: "456e8400-e29b-41d4-a716-446655440001"
+              type: "customer"
+              attributes:
+                age: 24
+                email: "jane.doe@example.com"
+                mobile: "+1-650-555-1234"
+                address:
+                  city: "Mountain View"
+                  zip: "94040"
+                contact-preferences:
+                  - email
+                  - sms
+      responses:
+        '201':
+          description: User created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+              example:
+                id: "9a475e1e-b0cb-4b29-8df5-2e5b24fb0ed3"
+                organization-unit: "456e8400-e29b-41d4-a716-446655440001"
+                type: "customer"
+                attributes:
+                  age: 24
+                  email: "jane.doe@example.com"
+                  mobile: "+1-650-555-1234"
+                  address:
+                    city: "Mountain View"
+                    zip: "94040"
+                  contact-preferences:
+                    - email
+                    - sms
+        '400':
+          description: Bad request
+        '409':
+          description: Conflict
+        '500':
+          description: Internal server error
+
+  /users/{id}:
+    get:
+      tags:
+        - users
+      summary: Get a user by id
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+            format: uuid
+          example: "9a475e1e-b0cb-4b29-8df5-2e5b24fb0ed3"
+      responses:
+        '200':
+          description: User details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+              example:
+                id: "9a475e1e-b0cb-4b29-8df5-2e5b24fb0ed3"
+                organization-unit: "456e8400-e29b-41d4-a716-446655440001"
+                type: "customer"
+                attributes:
+                  age: 24
+                  email: "jane.doe@example.com"
+                  mobile: "+1-650-555-1234"
+                  address:
+                    city: "Mountain View"
+                    zip: "94040"
+                  contact-preferences:
+                    - email
+                    - sms
+        '404':
+          description: User not found
+        '500':
+          description: Internal server error
+    put:
+      tags:
+        - users
+      summary: Update a user by id
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+            format: uuid
+          example: "9a475e1e-b0cb-4b29-8df5-2e5b24fb0ed3"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/User'
+      responses:
+        '200':
+          description: User updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+              example:
+                id: "9a475e1e-b0cb-4b29-8df5-2e5b24fb0ed3"
+                organization-unit: "456e8400-e29b-41d4-a716-446655440001"
+                type: "customer"
+                attributes:
+                  age: 25
+                  email: "jane.doe@example.com"
+                  mobile: "+1-650-555-5678"
+                  address:
+                    city: "Mountain View"
+                    zip: "94040"
+                  contact-preferences:
+                    - email
+        '400':
+          description: Bad request
+        '404':
+          description: User not found
+        '500':
+          description: Internal server error
+    delete:
+      tags:
+        - users
+      summary: Delete a user by id
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+            format: uuid
+          example: "9a475e1e-b0cb-4b29-8df5-2e5b24fb0ed3"
+      responses:
+        '204':
+          description: User deleted
+        '500':
+          description: Internal server error
+
 components:
   schemas:
-    model.User:
+    User:
       type: object
       properties:
         id:
           type: string
-        org_id:
+        organization-unit:
           type: string
         type:
           type: string
@@ -14,183 +238,3 @@ components:
           type: array
           items:
             type: object
-info:
-  contact: {}
-  description: This API is used to manage users.
-  license:
-    name: Apache 2.0
-    url: http://www.apache.org/licenses/LICENSE-2.0.html
-  title: User Management API
-  version: "1.0"
-paths:
-  /users:
-    get:
-      description: Retrieve a list of all users.
-      responses:
-        "200":
-          description: OK
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  $ref: '#/components/schemas/model.User'
-        "400":
-          description: 'Bad Request: The request body is malformed or contains invalid data.'
-          content:
-            application/json:
-              schema:
-                type: string
-        "500":
-          description: 'Internal Server Error: An unexpected error occurred while processing the request.'
-          content:
-            application/json:
-              schema:
-                type: string
-      summary: List users
-      tags:
-      - users
-    post:
-      description: Creates a new user with the provided details.
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/model.User'
-      responses:
-        "201":
-          description: Created
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/model.User'
-        "400":
-          description: 'Bad Request: The request body is malformed or contains invalid data.'
-          content:
-            application/json:
-              schema:
-                type: string
-        "500":
-          description: 'Internal Server Error: An unexpected error occurred while processing the request.'
-          content:
-            application/json:
-              schema:
-                type: string
-      summary: Create an user
-      tags:
-      - users
-  /users/{id}:
-    delete:
-      description: Delete an user using its ID.
-      parameters:
-      - name: id
-        in: path
-        description: User ID
-        required: true
-        schema:
-          type: string
-      responses:
-        "204":
-          description: No Content
-        "400":
-          description: 'Bad Request: The request body is malformed or contains invalid data.'
-          content:
-            application/json:
-              schema:
-                type: string
-        "404":
-          description: 'Not Found: The user with the specified ID does not exist.'
-          content:
-            application/json:
-              schema:
-                type: string
-        "500":
-          description: 'Internal Server Error: An unexpected error occurred while processing the request.'
-          content:
-            application/json:
-              schema:
-                type: string
-      summary: Delete an user
-      tags:
-      - users
-    get:
-      description: Retrieve a specific user using its ID.
-      parameters:
-      - name: id
-        in: path
-        description: User ID
-        required: true
-        schema:
-          type: string
-      responses:
-        "200":
-          description: OK
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/model.User'
-        "400":
-          description: 'Bad Request: The request body is malformed or contains invalid data.'
-          content:
-            application/json:
-              schema:
-                type: string
-        "404":
-          description: 'Not Found: The user with the specified ID does not exist.'
-          content:
-            application/json:
-              schema:
-                type: string
-        "500":
-          description: 'Internal Server Error: An unexpected error occurred while processing the request.'
-          content:
-            application/json:
-              schema:
-                type: string
-      summary: Get an user by ID
-      tags:
-      - users
-    put:
-      description: Update the details of an existing user.
-      parameters:
-      - name: id
-        in: path
-        description: User ID
-        required: true
-        schema:
-          type: string
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/model.User'
-      responses:
-        "200":
-          description: OK
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/model.User'
-        "400":
-          description: 'Bad Request: The request body is malformed or contains invalid data.'
-          content:
-            application/json:
-              schema:
-                type: string
-        "404":
-          description: 'Not Found: The user with the specified ID does not exist.'
-          content:
-            application/json:
-              schema:
-                type: string
-        "500":
-          description: 'Internal Server Error: An unexpected error occurred while processing the request.'
-          content:
-            application/json:
-              schema:
-                type: string
-      summary: Update an user
-      tags:
-      - users
