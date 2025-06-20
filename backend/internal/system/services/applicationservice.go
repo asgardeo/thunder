@@ -16,6 +16,9 @@
  * under the License.
  */
 
+// Package services provides HTTP service implementations for various domain operations.
+//
+//nolint:dupl // ApplicationService has similar structure to GroupService but they serve different domains
 package services
 
 import (
@@ -43,8 +46,6 @@ func NewApplicationService(mux *http.ServeMux) ServiceInterface {
 }
 
 // RegisterRoutes registers the routes for the ApplicationService.
-//
-//nolint:dupl // Ignoring false positive duplicate code
 func (s *ApplicationService) RegisterRoutes(mux *http.ServeMux) {
 	opts1 := server.RequestWrapOptions{
 		Cors: &server.Cors{

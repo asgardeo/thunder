@@ -25,15 +25,6 @@ paths:
       tags:
         - groups
       summary: List groups
-      parameters:
-        - in: query
-          name: parent
-          description: Filter to get immediate children of the specified group
-          required: false
-          schema:
-            type: string
-            format: uuid
-            example: "3fa85f64-5717-4562-b3fc-2c963f66afa6"
       responses:
         "200":
           description: List of groups
@@ -43,46 +34,19 @@ paths:
                 type: array
                 items:
                   $ref: '#/components/schemas/GroupBasic'
-              examples:
-                root-groups:
-                  summary: List root groups (without parent param)
-                  value:
-                    - id: "3fa85f64-5717-4562-b3fc-2c963f66afa6"
-                      name: "Sports"
-                      description: "Sports group"
-                      parent:
-                        type: "organizationUnit"
-                        id: "a839f4bd-39dc-4eaa-b5cc-210d8ecaee87"
-                      users:
-                        - "7a4b1f8e-5c69-4b60-9232-2b0aaf65ef3c"
-                        - "9f1e47d3-0347-4464-9f02-e0bfae02e896"
-                      groups:
-                        - "6b1e7b8d-7e19-41eb-8fa2-c0ee5bb67a94"
-                    - id: "257e528f-eb24-48b6-884d-20460e190957"
-                      name: "Managers"
-                      description: "Manager group"
-                      parent:
-                        type: "organizationUnit"
-                        id: "a839f4bd-39dc-4eaa-b5cc-210d8ecaee87"
-                      users:
-                        - "28c2e8f9-878d-423b-9e03-bad8c6d3fe8f"
-                        - "c685f5a2-9ec7-44e1-a0b8-814b65d6857b"
-                        - "f3678f40-e074-451c-acc2-31de500cd939"
-                      groups:
-                        - "e4888068-7eea-4a00-8142-07b88a725139"
-                        - "3057ff4e-23e9-4afe-9faa-d7e9b7c85699"
-                nested-groups:
-                  summary: List groups for a specific parent (with parent param)
-                  value:
-                    - id: "6b1e7b8d-7e19-41eb-8fa2-c0ee5bb67a94"
-                      name: "Hockey"
-                      description: "Hockey group"
-                      parent:
-                        type: "organizationUnit"
-                        id: "a839f4bd-39dc-4eaa-b5cc-210d8ecaee87"
-                      users:
-                        - "2cbb94c7-81f1-44e3-8e9e-75e0c3dd36da"
-                      groups: []
+              example:
+                - id: "3fa85f64-5717-4562-b3fc-2c963f66afa6"
+                  name: "Sports"
+                  description: "Sports group"
+                  parent:
+                    type: "organizationUnit"
+                    id: "a839f4bd-39dc-4eaa-b5cc-210d8ecaee87"
+                - id: "257e528f-eb24-48b6-884d-20460e190957"
+                  name: "Managers"
+                  description: "Manager group"
+                  parent:
+                    type: "organizationUnit"
+                    id: "a839f4bd-39dc-4eaa-b5cc-210d8ecaee87"
         "400":
           description: Bad request
         "404":
@@ -288,7 +252,7 @@ components:
           format: uuid
     GroupBasic:
       type: object
-      required: [id, name, parent, groups]
+      required: [id, name, parent]
       properties:
         id:
           type: string
@@ -300,11 +264,6 @@ components:
           nullable: true
         parent:
           $ref: '#/components/schemas/Parent'
-        groups:
-          type: array
-          items:
-            type: string
-            format: uuid
     Group:
       allOf:
         - $ref: '#/components/schemas/GroupBasic'
@@ -314,7 +273,11 @@ components:
           items:
             type: string
             format: uuid
-
+        groups:
+          type: array
+          items:
+            type: string
+            format: uuid
     CreateGroupRequest:
       type: object
       required: [name, parent]
@@ -334,3 +297,9 @@ components:
     UpdateGroupRequest:
       allOf:
         - $ref: '#/components/schemas/CreateGroupRequest'
+      properties:
+        groups:
+          type: array
+          items:
+            type: string
+            format: uuid

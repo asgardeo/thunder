@@ -172,7 +172,7 @@ func (ah *UserHandler) HandleUserPutRequest(w http.ResponseWriter, r *http.Reque
 	logger.Debug("User PUT response sent", log.String("user id", id))
 }
 
-// HandleUserDeleteRequest handles the user request.
+// HandleUserDeleteRequest handles the delete user request.
 func (ah *UserHandler) HandleUserDeleteRequest(w http.ResponseWriter, r *http.Request) {
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, "UserHandler"))
 
