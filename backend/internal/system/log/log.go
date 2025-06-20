@@ -21,10 +21,14 @@ package log
 
 import (
 	"errors"
+	"fmt"
 	"log/slog"
+	"net"
+	"net/http"
 	"os"
 	"strings"
 	"sync"
+	"time"
 
 	"github.com/asgardeo/thunder/internal/system/constants"
 )
@@ -77,6 +81,51 @@ func initLogger() error {
 	}
 
 	return nil
+}
+
+// AccessLogHandler logs HTTP requests in Apache CLF.
+func AccessLogHandler(logger *Logger, next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		start := time.Now()
+
+		// Capture the status and size.
+		lrw := &loggingResponseWriter{ResponseWriter: w, statusCode: 200}
+		next.ServeHTTP(lrw, r)
+
+		host, _, _ := net.SplitHostPort(r.RemoteAddr)
+		if host == "" {
+			host = r.RemoteAddr
+		}
+
+		logger.Info(fmt.Sprintf(
+			`%s - - [%s] "%s %s %s" %d %d`,
+			host,
+			start.Format("02/Jan/2006:15:04:05 -0700"),
+			r.Method,
+			r.RequestURI,
+			r.Proto,
+			lrw.statusCode,
+			lrw.size,
+		))
+	})
+}
+
+// loggingResponseWriter wraps http.ResponseWriter to capture status and size.
+type loggingResponseWriter struct {
+	http.ResponseWriter
+	statusCode int
+	size       int
+}
+
+func (lrw *loggingResponseWriter) WriteHeader(code int) {
+	lrw.statusCode = code
+	lrw.ResponseWriter.WriteHeader(code)
+}
+
+func (lrw *loggingResponseWriter) Write(b []byte) (int, error) {
+	size, err := lrw.ResponseWriter.Write(b)
+	lrw.size += size
+	return size, err
 }
 
 // With creates a new logger instance with additional fields.

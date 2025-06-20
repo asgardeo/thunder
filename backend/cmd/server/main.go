@@ -125,6 +125,9 @@ func initFlowService(logger *log.Logger) {
 
 // startServer starts the HTTP server with the given configurations and multiplexer.
 func startServer(logger *log.Logger, cfg *config.Config, mux *http.ServeMux, thunderHome string) {
+	// Wrap the multiplexer with AccessLogHandler.
+	wrappedMux := log.AccessLogHandler(logger, mux)
+
 	// Get TLS configuration from the certificate and key files.
 	tlsConfig, err := cert.GetTLSConfig(cfg, thunderHome)
 	if err != nil {
@@ -142,7 +145,7 @@ func startServer(logger *log.Logger, cfg *config.Config, mux *http.ServeMux, thu
 	logger.Info("WSO2 Thunder server started...", log.String("address", serverAddr))
 
 	server := &http.Server{
-		Handler:           mux,
+		Handler:           wrappedMux,
 		ReadHeaderTimeout: 10 * time.Second, // Mitigate Slowloris attacks
 	}
 
