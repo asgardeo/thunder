@@ -110,6 +110,11 @@ type FlowConfig struct {
 	Authn          FlowAuthnConfig `yaml:"authn"`
 }
 
+// CryptoConfig holds the cryptographic configuration details.
+type CryptoConfig struct {
+	Key string `yaml:"key"`
+}
+
 // Config holds the complete configuration details of the server.
 type Config struct {
 	Server        ServerConfig        `yaml:"server"`
@@ -119,6 +124,7 @@ type Config struct {
 	OAuth         OAuthConfig         `yaml:"oauth"`
 	Authenticator AuthenticatorConfig `yaml:"authenticator"`
 	Flow          FlowConfig          `yaml:"flow"`
+	Crypto        CryptoConfig        `yaml:"crypto"`
 }
 
 // LoadConfig loads the configurations from the specified YAML file.
