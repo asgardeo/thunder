@@ -223,7 +223,7 @@ func (ts *BasicAuthFlowTestSuite) TestBasicAuthFlowInvalidAppID() {
 	}
 
 	// Verify the error response
-	ts.Require().Equal("FES-60003", errorResp.Code, "Expected error code for invalid app ID")
+	ts.Require().Equal("FES-1003", errorResp.Code, "Expected error code for invalid app ID")
 	ts.Require().Equal("Invalid request", errorResp.Message, "Expected error message for invalid request")
 	ts.Require().Equal("Invalid app ID provided in the request", errorResp.Description,
 		"Expected error description for invalid app ID")
@@ -254,7 +254,7 @@ func (ts *BasicAuthFlowTestSuite) TestBasicAuthFlowInvalidFlowID() {
 	}
 
 	// Verify the error response
-	ts.Require().Equal("FES-60004", errorResp.Code, "Expected error code for invalid flow ID")
+	ts.Require().Equal("FES-1004", errorResp.Code, "Expected error code for invalid flow ID")
 	ts.Require().Equal("Invalid request", errorResp.Message, "Expected error message for invalid request")
 	ts.Require().Equal("Invalid flow ID provided in the request", errorResp.Description,
 		"Expected error description for invalid flow ID")

@@ -25,42 +25,42 @@ var (
 	// ErrorSenderNotFound is the error returned when a notification sender is not found.
 	ErrorSenderNotFound = serviceerror.ServiceError{
 		Type:             serviceerror.ClientErrorType,
-		Code:             "MNS-60001",
+		Code:             "MNS-1001",
 		Error:            "Sender not found",
 		ErrorDescription: "The requested message notification sender could not be found",
 	}
 	// ErrorInvalidSenderID is the error returned when an invalid sender ID is provided.
 	ErrorInvalidSenderID = serviceerror.ServiceError{
 		Type:             serviceerror.ClientErrorType,
-		Code:             "MNS-60002",
+		Code:             "MNS-1002",
 		Error:            "Invalid sender ID",
 		ErrorDescription: "The provided sender ID is invalid",
 	}
 	// ErrorInvalidSenderName is the error returned when an invalid sender name is provided.
 	ErrorInvalidSenderName = serviceerror.ServiceError{
 		Type:             serviceerror.ClientErrorType,
-		Code:             "MNS-60003",
+		Code:             "MNS-1003",
 		Error:            "Invalid sender Name",
 		ErrorDescription: "The provided sender name is invalid",
 	}
 	// ErrorInvalidProvider is the error returned when an unsupported provider is specified.
 	ErrorInvalidProvider = serviceerror.ServiceError{
 		Type:             serviceerror.ClientErrorType,
-		Code:             "MNS-60004",
+		Code:             "MNS-1004",
 		Error:            "Invalid provider",
 		ErrorDescription: "The specified provider is not supported",
 	}
 	// ErrorDuplicateSenderName is the error returned when a sender with the same name already exists.
 	ErrorDuplicateSenderName = serviceerror.ServiceError{
 		Type:             serviceerror.ClientErrorType,
-		Code:             "MNS-60005",
+		Code:             "MNS-1005",
 		Error:            "Duplicate sender name",
 		ErrorDescription: "A sender with the same name already exists",
 	}
 	// ErrorInvalidRequestFormat is the error returned when the request format is invalid.
 	ErrorInvalidRequestFormat = serviceerror.ServiceError{
 		Type:             serviceerror.ClientErrorType,
-		Code:             "MNS-60006",
+		Code:             "MNS-1006",
 		Error:            "Invalid request format",
 		ErrorDescription: "The request body is malformed or contains invalid data",
 	}
@@ -71,7 +71,7 @@ var (
 	// ErrorInternalServerError is the error returned when an internal server error occurs.
 	ErrorInternalServerError = serviceerror.ServiceError{
 		Type:             serviceerror.ServerErrorType,
-		Code:             "MNS-65001",
+		Code:             "MNS-5001",
 		Error:            "Internal server error",
 		ErrorDescription: "An unexpected error occurred while processing the request",
 	}
