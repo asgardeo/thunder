@@ -177,7 +177,7 @@ components:
         code:
           type: string
           description: Error code
-          example: "FES-60003"
+          example: "FES-1003"
         message:
           type: string
           description: Error message
@@ -193,7 +193,7 @@ components:
         code:
           type: string
           description: Error code
-          example: "FES-65001"
+          example: "FES-5001"
         message:
           type: string
           description: Error message

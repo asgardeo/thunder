@@ -281,7 +281,7 @@ components:
         code:
           type: string
           description: Error code
-          example: "MNS-60003"
+          example: "MNS-1003"
         message:
           type: string
           description: Error message
@@ -297,7 +297,7 @@ components:
         code:
           type: string
           description: Error code
-          example: "MNS-65001"
+          example: "MNS-5001"
         message:
           type: string
           description: Error message
