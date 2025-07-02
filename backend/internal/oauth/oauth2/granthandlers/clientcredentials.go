@@ -26,6 +26,7 @@ import (
 	"github.com/asgardeo/thunder/internal/oauth/jwt"
 	"github.com/asgardeo/thunder/internal/oauth/oauth2/constants"
 	"github.com/asgardeo/thunder/internal/oauth/oauth2/model"
+	"github.com/asgardeo/thunder/internal/system/config"
 )
 
 // ClientCredentialsGrantHandler handles the client credentials grant type.
@@ -67,7 +68,10 @@ func (h *ClientCredentialsGrantHandler) ValidateGrant(tokenRequest *model.TokenR
 func (h *ClientCredentialsGrantHandler) HandleGrant(tokenRequest *model.TokenRequest,
 	oauthApp *appmodel.OAuthApplication, ctx *model.TokenContext) (*model.TokenResponseDTO, *model.ErrorResponse) {
 	// Generate a JWT token for the client.
-	token, err := jwt.GenerateJWT(tokenRequest.ClientID, tokenRequest.ClientID, nil)
+	config := config.GetThunderRuntime().Config
+	validityPeriod := config.OAuth.JWT.ValidityPeriod
+
+	token, _, err := jwt.GenerateJWT(tokenRequest.ClientID, tokenRequest.ClientID, validityPeriod, nil)
 	if err != nil {
 		return nil, &model.ErrorResponse{
 			Error:            constants.ErrorServerError,

@@ -29,6 +29,7 @@ oauth:
     validity_period: 3600
   refresh_token:
     renew_on_grant: false
+    validity_period: 86400
 
 authenticator:
   default: "BasicAuthenticator"

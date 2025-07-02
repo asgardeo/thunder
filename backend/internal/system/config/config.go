@@ -77,7 +77,8 @@ type JWTConfig struct {
 
 // RefreshTokenConfig holds the refresh token configuration details.
 type RefreshTokenConfig struct {
-	RenewOnGrant bool `yaml:"renew_on_grant"`
+	RenewOnGrant   bool  `yaml:"renew_on_grant"`
+	ValidityPeriod int64 `yaml:"validity_period"`
 }
 
 // OAuthConfig holds the OAuth configuration details.

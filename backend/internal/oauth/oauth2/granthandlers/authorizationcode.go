@@ -29,6 +29,7 @@ import (
 	authzmodel "github.com/asgardeo/thunder/internal/oauth/oauth2/authz/model"
 	"github.com/asgardeo/thunder/internal/oauth/oauth2/constants"
 	"github.com/asgardeo/thunder/internal/oauth/oauth2/model"
+	"github.com/asgardeo/thunder/internal/system/config"
 )
 
 // AuthorizationCodeGrantHandler handles the authorization code grant type.
@@ -120,7 +121,10 @@ func (h *AuthorizationCodeGrantHandler) HandleGrant(tokenRequest *model.TokenReq
 	}
 
 	// Generate a JWT token for the client.
-	token, err := jwt.GenerateJWT(authCode.AuthorizedUserID, authCode.ClientID, nil)
+	config := config.GetThunderRuntime().Config
+	validityPeriod := config.OAuth.JWT.ValidityPeriod
+
+	token, _, err := jwt.GenerateJWT(authCode.AuthorizedUserID, authCode.ClientID, validityPeriod, nil)
 	if err != nil {
 		return nil, &model.ErrorResponse{
 			Error:            constants.ErrorServerError,

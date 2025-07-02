@@ -109,8 +109,12 @@ func (h *RefreshTokenGrantHandler) HandleGrant(tokenRequest *model.TokenRequest,
 		}
 	}
 
+	// Get validity period
+	config := config.GetThunderRuntime().Config
+	validityPeriod := config.OAuth.JWT.ValidityPeriod
+
 	// Issue new access token
-	accessToken, err := jwt.GenerateJWT(sub, aud, nil)
+	accessToken, iat, err := jwt.GenerateJWT(sub, aud, validityPeriod, nil)
 	if err != nil {
 		return nil, &model.ErrorResponse{
 			Error:            constants.ErrorServerError,
@@ -123,15 +127,14 @@ func (h *RefreshTokenGrantHandler) HandleGrant(tokenRequest *model.TokenRequest,
 		AccessToken: model.TokenDTO{
 			Token:     accessToken,
 			TokenType: constants.TokenTypeBearer,
-			IssuedAt:  time.Now().Unix(),
-			ExpiresIn: 3600,
+			IssuedAt:  iat,
+			ExpiresIn: validityPeriod,
 			Scopes:    newTokenScopes,
 			ClientID:  tokenRequest.ClientID,
 		},
 	}
 
 	// Issue a new refresh token if renew_on_grant is enabled.
-	config := config.GetThunderRuntime().Config
 	if config.OAuth.RefreshToken.RenewOnGrant {
 		refreshTokenCtx := &model.TokenContext{
 			TokenAttributes: make(map[string]interface{}),
@@ -186,6 +189,13 @@ func (h *RefreshTokenGrantHandler) IssueRefreshToken(tokenResponse *model.TokenR
 		}
 	}
 
+	// Get validity period
+	config := config.GetThunderRuntime().Config
+	validityPeriod := config.OAuth.RefreshToken.ValidityPeriod
+	if validityPeriod == 0 {
+		validityPeriod = 3600 // Default to 1 hour if not set
+	}
+
 	// Generate a JWT token for the refresh token.
 	claims := map[string]string{
 		"client_id":  clientID,
@@ -199,7 +209,7 @@ func (h *RefreshTokenGrantHandler) IssueRefreshToken(tokenResponse *model.TokenR
 		claims["access_token_aud"] = aud
 	}
 
-	token, err := jwt.GenerateJWT(clientID, clientID, claims)
+	token, iat, err := jwt.GenerateJWT(clientID, clientID, validityPeriod, claims)
 	if err != nil {
 		return &model.ErrorResponse{
 			Error:            constants.ErrorServerError,
@@ -213,8 +223,8 @@ func (h *RefreshTokenGrantHandler) IssueRefreshToken(tokenResponse *model.TokenR
 	tokenResponse.RefreshToken = model.TokenDTO{
 		Token:     token,
 		TokenType: constants.TokenTypeBearer,
-		IssuedAt:  time.Now().Unix(),
-		ExpiresIn: 3600,
+		IssuedAt:  iat,
+		ExpiresIn: validityPeriod,
 		Scopes:    scopes,
 		ClientID:  clientID,
 	}
