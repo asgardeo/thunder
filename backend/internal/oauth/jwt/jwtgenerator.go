@@ -37,6 +37,8 @@ import (
 	"github.com/asgardeo/thunder/internal/system/utils"
 )
 
+const defaultTokenValidity = 3600 // default validity period of 1 hour
+
 var privateKey *rsa.PrivateKey
 
 // LoadPrivateKey loads the private key from the specified file path in the configuration.
@@ -112,7 +114,7 @@ func GenerateJWT(sub, aud string, validityPeriod int64, claims map[string]string
 
 	// Calculate the expiration time based on the validity period.
 	if validityPeriod == 0 {
-		validityPeriod = 3600 // Default to 1 hour if not set.
+		validityPeriod = defaultTokenValidity
 	}
 	iat := time.Now()
 	expirationTime := iat.Add(time.Duration(validityPeriod) * time.Second).Unix()

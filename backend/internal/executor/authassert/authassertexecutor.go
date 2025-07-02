@@ -25,7 +25,6 @@ import (
 	flowconst "github.com/asgardeo/thunder/internal/flow/constants"
 	flowmodel "github.com/asgardeo/thunder/internal/flow/model"
 	"github.com/asgardeo/thunder/internal/oauth/jwt"
-	"github.com/asgardeo/thunder/internal/system/config"
 	"github.com/asgardeo/thunder/internal/system/log"
 )
 
@@ -78,10 +77,8 @@ func (a *AuthAssertExecutor) Execute(ctx *flowmodel.NodeContext) (*flowmodel.Exe
 			tokenSub = ctx.AuthenticatedUser.UserID
 		}
 
-		config := config.GetThunderRuntime().Config
-		validityPeriod := config.OAuth.JWT.ValidityPeriod
-
-		token, _, err := jwt.GenerateJWT(tokenSub, ctx.AppID, validityPeriod, ctx.AuthenticatedUser.Attributes)
+		token, _, err := jwt.GenerateJWT(tokenSub, ctx.AppID, jwt.GetJWTTokenValidityPeriod(),
+			ctx.AuthenticatedUser.Attributes)
 		if err != nil {
 			logger.Error("Failed to generate JWT token", log.Error(err))
 			return nil, errors.New("failed to generate JWT token: " + err.Error())

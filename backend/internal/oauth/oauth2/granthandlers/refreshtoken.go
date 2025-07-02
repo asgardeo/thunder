@@ -32,6 +32,8 @@ import (
 	"github.com/asgardeo/thunder/internal/system/log"
 )
 
+const defaultRefreshTokenValidity = 86400 // default validity period of 1 day
+
 // RefreshTokenGrantHandler handles the refresh token grant type.
 type RefreshTokenGrantHandler struct{}
 
@@ -110,8 +112,7 @@ func (h *RefreshTokenGrantHandler) HandleGrant(tokenRequest *model.TokenRequest,
 	}
 
 	// Get validity period
-	config := config.GetThunderRuntime().Config
-	validityPeriod := config.OAuth.JWT.ValidityPeriod
+	validityPeriod := jwt.GetJWTTokenValidityPeriod()
 
 	// Issue new access token
 	accessToken, iat, err := jwt.GenerateJWT(sub, aud, validityPeriod, nil)
@@ -135,7 +136,8 @@ func (h *RefreshTokenGrantHandler) HandleGrant(tokenRequest *model.TokenRequest,
 	}
 
 	// Issue a new refresh token if renew_on_grant is enabled.
-	if config.OAuth.RefreshToken.RenewOnGrant {
+	conf := config.GetThunderRuntime().Config
+	if conf.OAuth.RefreshToken.RenewOnGrant {
 		refreshTokenCtx := &model.TokenContext{
 			TokenAttributes: make(map[string]interface{}),
 		}
@@ -190,10 +192,10 @@ func (h *RefreshTokenGrantHandler) IssueRefreshToken(tokenResponse *model.TokenR
 	}
 
 	// Get validity period
-	config := config.GetThunderRuntime().Config
-	validityPeriod := config.OAuth.RefreshToken.ValidityPeriod
+	conf := config.GetThunderRuntime().Config
+	validityPeriod := conf.OAuth.RefreshToken.ValidityPeriod
 	if validityPeriod == 0 {
-		validityPeriod = 3600 // Default to 1 hour if not set
+		validityPeriod = defaultRefreshTokenValidity
 	}
 
 	// Generate a JWT token for the refresh token.
