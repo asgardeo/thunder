@@ -145,11 +145,29 @@ func (s *SMSOTPAuthExecutor) InitiateOTP(ctx *flowmodel.NodeContext,
 		return err
 	}
 
-	filter := map[string]interface{}{userAttributeMobileNumber: mobileNumber}
-	userID, err := s.IdentifyUser(filter, execResp)
-	if err != nil {
-		logger.Error("Failed to identify user", log.Error(err))
-		return fmt.Errorf("failed to identify user: %w", err)
+	var userID *string
+	if ctx.AuthenticatedUser.IsAuthenticated {
+		userIDVal, err := s.GetUserIDFromContext(ctx)
+		if err != nil {
+			logger.Error("Failed to retrieve user ID from context", log.Error(err))
+			return fmt.Errorf("failed to retrieve user ID from context: %w", err)
+		}
+		if userIDVal == "" {
+			return errors.New("user ID is empty in the context")
+		}
+		userID = &userIDVal
+	} else {
+		// Identify user by mobile number if not authenticated
+		if mobileNumber == "" {
+			logger.Error("Mobile number is empty in the context")
+		}
+
+		filter := map[string]interface{}{userAttributeMobileNumber: mobileNumber}
+		userID, err = s.IdentifyUser(filter, execResp)
+		if err != nil {
+			logger.Error("Failed to identify user", log.Error(err))
+			return fmt.Errorf("failed to identify user: %w", err)
+		}
 	}
 
 	// Handle registration flows.
