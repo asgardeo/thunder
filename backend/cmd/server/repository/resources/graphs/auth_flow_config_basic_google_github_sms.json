@@ -127,6 +127,11 @@
                     "name": "lastName",
                     "type": "string",
                     "required": false
+                },
+                {
+                    "name": "mobileNumber",
+                    "type": "string",
+                    "required": false
                 }
             ],
             "executor": {

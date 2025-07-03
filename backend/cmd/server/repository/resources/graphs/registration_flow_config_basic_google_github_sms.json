@@ -119,12 +119,22 @@
                     "required": false
                 },
                 {
+                    "name": "password",
+                    "type": "string",
+                    "required": false
+                },
+                {
                     "name": "firstName",
                     "type": "string",
                     "required": false
                 },
                 {
                     "name": "lastName",
+                    "type": "string",
+                    "required": false
+                },
+                {
+                    "name": "mobileNumber",
                     "type": "string",
                     "required": false
                 }
