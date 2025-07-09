@@ -37,6 +37,7 @@ const (
 var (
 	preCreatedApp = Application{
 		ID:                  "550e8400-e29b-41d4-a716-446655440000",
+		OrgID:               "f5b738ee-8ee4-4kd0-b174-6f8d1eaf32ad",
 		Name:                "Test SPA",
 		Description:         "Initial testing App",
 		ClientID:            "client123",
@@ -199,6 +200,7 @@ func (ts *ApplicationAPITestSuite) TestApplicationUpdate() {
 	// Validate the update by retrieving the application
 	retrieveAndValidateApplicationDetails(ts, Application{
 		ID:                  createdAppID,
+		OrgID:               "f5b738ee-8ee4-4kd0-b174-6f8d1eaf32ad",
 		Name:                appToUpdate.Name,
 		Description:         appToUpdate.Description,
 		ClientID:            appToUpdate.ClientID,
@@ -323,6 +325,7 @@ func buildCreatedApp() Application {
 
 	return Application{
 		ID:                  createdAppID,
+		OrgID:               "f5b738ee-8ee4-4kd0-b174-6f8d1eaf32ad",
 		Name:                appToCreate.Name,
 		Description:         appToCreate.Description,
 		ClientID:            appToCreate.ClientID,

@@ -36,7 +36,7 @@ import (
 func CreateApplication(app model.Application) error {
 	queries := []func(tx dbmodel.TxInterface) error{
 		func(tx dbmodel.TxInterface) error {
-			_, err := tx.Exec(QueryCreateApplication.Query, app.ID, app.Name, app.Description, app.AuthFlowGraphID,
+			_, err := tx.Exec(QueryCreateApplication.Query, app.ID, app.OrgID, app.Name, app.Description, app.AuthFlowGraphID,
 				app.RegistrationFlowGraphID)
 			return err
 		},
@@ -132,7 +132,7 @@ func GetApplication(id string) (model.Application, error) {
 func UpdateApplication(app *model.Application) error {
 	queries := []func(tx dbmodel.TxInterface) error{
 		func(tx dbmodel.TxInterface) error {
-			_, err := tx.Exec(QueryUpdateApplicationByAppID.Query, app.ID, app.Name, app.Description,
+			_, err := tx.Exec(QueryUpdateApplicationByAppID.Query, app.ID, app.OrgID, app.Name, app.Description,
 				app.AuthFlowGraphID, app.RegistrationFlowGraphID)
 			return err
 		},
@@ -179,6 +179,12 @@ func buildApplicationFromResultRow(row map[string]interface{}) (model.Applicatio
 	if !ok {
 		logger.Error("failed to parse app_id as string")
 		return model.Application{}, fmt.Errorf("failed to parse app_id as string")
+	}
+
+	orgID, ok := row["org_id"].(string)
+	if !ok {
+		logger.Error("failed to parse org_id as string")
+		return model.Application{}, fmt.Errorf("failed to parse org_id as string")
 	}
 
 	appName, ok := row["app_name"].(string)
@@ -233,6 +239,7 @@ func buildApplicationFromResultRow(row map[string]interface{}) (model.Applicatio
 
 	application := model.Application{
 		ID:                      appID,
+		OrgID:                   orgID,
 		Name:                    appName,
 		Description:             description,
 		AuthFlowGraphID:         authFlowGraphID,

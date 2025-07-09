@@ -31,8 +31,8 @@ var (
 	// QueryCreateApplication is the query to create a new application with basic details.
 	QueryCreateApplication = dbmodel.DBQuery{
 		ID: "ASQ-APP_MGT-01",
-		Query: "INSERT INTO SP_APP (APP_ID, APP_NAME, DESCRIPTION, AUTH_FLOW_GRAPH_ID, REGISTRATION_FLOW_GRAPH_ID) " +
-			"VALUES ($1, $2, $3, $4, $5)",
+		Query: "INSERT INTO SP_APP (APP_ID, ORG_ID, APP_NAME, DESCRIPTION, AUTH_FLOW_GRAPH_ID, REGISTRATION_FLOW_GRAPH_ID) " +
+			"VALUES ($1, $2, $3, $4, $5, $6)",
 	}
 	// QueryCreateOAuthApplication is the query to create a new OAuth application.
 	QueryCreateOAuthApplication = dbmodel.DBQuery{
@@ -43,7 +43,7 @@ var (
 	// QueryGetApplicationByAppID is the query to retrieve application details by app ID.
 	QueryGetApplicationByAppID = dbmodel.DBQuery{
 		ID: "ASQ-APP_MGT-03",
-		Query: "SELECT sp.APP_ID, sp.APP_NAME, sp.DESCRIPTION, sp.AUTH_FLOW_GRAPH_ID, " +
+		Query: "SELECT sp.APP_ID, sp.ORG_ID, sp.APP_NAME, sp.DESCRIPTION, sp.AUTH_FLOW_GRAPH_ID, " +
 			"sp.REGISTRATION_FLOW_GRAPH_ID, oauth.CONSUMER_KEY, oauth.CALLBACK_URIS, oauth.GRANT_TYPES " +
 			"FROM SP_APP sp JOIN IDN_OAUTH_CONSUMER_APPS oauth ON sp.APP_ID = oauth.APP_ID " +
 			"WHERE sp.APP_ID = $1",
@@ -51,15 +51,15 @@ var (
 	// QueryGetApplicationList is the query to list all the applications.
 	QueryGetApplicationList = dbmodel.DBQuery{
 		ID: "ASQ-APP_MGT-04",
-		Query: "SELECT sp.APP_ID, sp.APP_NAME, sp.DESCRIPTION, sp.AUTH_FLOW_GRAPH_ID, " +
+		Query: "SELECT sp.APP_ID, sp.ORG_ID, sp.APP_NAME, sp.DESCRIPTION, sp.AUTH_FLOW_GRAPH_ID, " +
 			"sp.REGISTRATION_FLOW_GRAPH_ID, oauth.CONSUMER_KEY, oauth.CALLBACK_URIS, oauth.GRANT_TYPES " +
 			"FROM SP_APP sp JOIN IDN_OAUTH_CONSUMER_APPS oauth ON sp.APP_ID = oauth.APP_ID",
 	}
 	// QueryUpdateApplicationByAppID is the query to update application details by app ID.
 	QueryUpdateApplicationByAppID = dbmodel.DBQuery{
 		ID: "ASQ-APP_MGT-05",
-		Query: "UPDATE SP_APP SET APP_NAME=$2, DESCRIPTION=$3, AUTH_FLOW_GRAPH_ID=$4, " +
-			"REGISTRATION_FLOW_GRAPH_ID=$5 WHERE APP_ID = $1;",
+		Query: "UPDATE SP_APP SET ORG_ID=$2, APP_NAME=$3, DESCRIPTION=$4, AUTH_FLOW_GRAPH_ID=$5, " +
+			"REGISTRATION_FLOW_GRAPH_ID=$6 WHERE APP_ID = $1;",
 	}
 	// QueryUpdateOAuthApplicationByAppID is the query to update OAuth application details by app ID.
 	QueryUpdateOAuthApplicationByAppID = dbmodel.DBQuery{

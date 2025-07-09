@@ -75,6 +75,9 @@ func (ah *ApplicationHandler) HandleApplicationPostRequest(w http.ResponseWriter
 		return
 	}
 
+	// TODO: Remove hardcoded org ID when multi-tenancy is implemented.
+	appInCreationRequest.OrgID = "f5b738ee-8ee4-4kd0-b174-6f8d1eaf32ad"
+
 	// Create the app using the application service.
 	appProvider := appprovider.NewApplicationProvider()
 	appService := appProvider.GetApplicationService()
@@ -94,7 +97,11 @@ func (ah *ApplicationHandler) HandleApplicationPostRequest(w http.ResponseWriter
 	}
 
 	// Log the application creation response.
-	logger.Debug("Application POST response sent", log.String("app id", createdApplication.ID))
+	logger.Debug(
+		"Application POST response sent",
+		log.String("app id", createdApplication.ID),
+		log.String("org_id", createdApplication.OrgID),
+	)
 }
 
 // HandleApplicationListRequest handles the application request.
@@ -170,7 +177,11 @@ func (ah *ApplicationHandler) HandleApplicationGetRequest(w http.ResponseWriter,
 	}
 
 	// Log the application response.
-	logger.Debug("Application GET response sent", log.String("app id", id))
+	logger.Debug(
+		"Application GET response sent",
+		log.String("app id", id),
+		log.String("org_id", application.OrgID),
+	)
 }
 
 // HandleApplicationPutRequest handles the application request.
@@ -202,6 +213,7 @@ func (ah *ApplicationHandler) HandleApplicationPutRequest(w http.ResponseWriter,
 		return
 	}
 	updatedApp.ID = id
+	updatedApp.OrgID = "f5b738ee-8ee4-4kd0-b174-6f8d1eaf32ad"
 
 	// Update the application using the application service.
 	appProvider := appprovider.NewApplicationProvider()
@@ -220,7 +232,11 @@ func (ah *ApplicationHandler) HandleApplicationPutRequest(w http.ResponseWriter,
 	}
 
 	// Log the application response.
-	logger.Debug("Application PUT response sent", log.String("app id", id))
+	logger.Debug(
+		"Application PUT response sent",
+		log.String("app id", id),
+		log.String("org_id", application.OrgID),
+	)
 }
 
 // HandleApplicationDeleteRequest handles the application request.
@@ -248,6 +264,13 @@ func (ah *ApplicationHandler) HandleApplicationDeleteRequest(w http.ResponseWrit
 	// Delete the application using the application service.
 	appProvider := appprovider.NewApplicationProvider()
 	appService := appProvider.GetApplicationService()
+
+	// Retrieve the application to log the org ID before deletion.
+	application, getErr := appService.GetApplication(id)
+	if getErr != nil {
+		logger.Warn("Failed to retrieve application before deletion", log.Error(getErr))
+	}
+
 	err := appService.DeleteApplication(id)
 	if err != nil {
 		http.Error(w, "Failed delete application", http.StatusInternalServerError)
@@ -257,5 +280,13 @@ func (ah *ApplicationHandler) HandleApplicationDeleteRequest(w http.ResponseWrit
 	w.WriteHeader(http.StatusNoContent)
 
 	// Log the application response.
-	logger.Debug("Application DELETE response sent", log.String("app id", id))
+	if getErr == nil {
+		logger.Debug(
+			"Application DELETE response sent",
+			log.String("app id", id),
+			log.String("org_id", application.OrgID),
+		)
+	} else {
+		logger.Debug("Application DELETE response sent", log.String("app id", id))
+	}
 }

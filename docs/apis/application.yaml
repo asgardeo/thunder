@@ -211,6 +211,8 @@ components:
           type: string
         id:
           type: string
+        org_id:
+          type: string
         name:
           type: string
         supported_grant_types:
