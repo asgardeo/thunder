@@ -20,6 +20,7 @@ package application
 
 type Application struct {
 	ID                  string   `json:"id"`
+	OrgID               string   `json:"org_id"`
 	Name                string   `json:"name"`
 	Description         string   `json:"description"`
 	ClientID            string   `json:"client_id"`
@@ -43,7 +44,9 @@ func compareStringSlices(a, b []string) bool {
 
 func (app *Application) equals(expectedApp Application) bool {
 
-	return app.ID == expectedApp.ID && app.Name == expectedApp.Name && app.Description == expectedApp.Description &&
-		app.ClientID == expectedApp.ClientID && compareStringSlices(app.CallbackURL, expectedApp.CallbackURL) &&
+	return app.ID == expectedApp.ID && app.OrgID == expectedApp.OrgID &&
+		app.Name == expectedApp.Name && app.Description == expectedApp.Description &&
+		app.ClientID == expectedApp.ClientID &&
+		compareStringSlices(app.CallbackURL, expectedApp.CallbackURL) &&
 		compareStringSlices(app.SupportedGrantTypes, expectedApp.SupportedGrantTypes)
 }
