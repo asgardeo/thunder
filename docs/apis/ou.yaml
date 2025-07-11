@@ -18,34 +18,60 @@ servers:
 tags:
   - name: organization-units
     description: Operations related to organization unit management
+  - name: organization-units-by-path
+    description: Operations related to organization units using hierarchical handle paths
 
 paths:
   /organization-units:
     get:
       tags:
         - organization-units
-      summary: List organization units
+      summary: List root organization units
+      parameters:
+        - $ref: '#/components/parameters/limitQueryParam'
+        - $ref: '#/components/parameters/offsetQueryParam'
       responses:
         "200":
-          description: List of organization units
+          description: List of root organization units
           content:
             application/json:
               schema:
-                type: array
-                items:
-                  $ref: '#/components/schemas/OrganizationUnitBasic'
+                $ref: '#/components/schemas/OrganizationUnitListResponse'
               example:
-                - id: "afc77cfd-620b-4cf0-a31c-7377b0ea8902"
-                  name: "Engineering"
-                  description: "Engineering Unit"
-                  parent: null
-                  organizationUnits:
-                    - "6b59f277-fd79-40b1-afca-dce75d3709f7"
-                - id: "b7c40de6-95cd-4c45-8725-9c7cb5b9cafd"
-                  name: "Sales"
-                  description: "Sales Unit"
-                  parent: null
-                  organizationUnits: []
+                totalResults: 5
+                startIndex: 1
+                count: 2
+                organizationUnits:
+                  - id: "afc77cfd-620b-4cf0-a31c-7377b0ea8902"
+                    name: "Engineering"
+                    handle: "engineering"
+                    description: "Engineering Unit"
+                  - id: "b7c40de6-95cd-4c45-8725-9c7cb5b9cafd"
+                    name: "Sales"
+                    handle: "sales"
+                    description: "Sales Unit"
+                links:
+                  - href: "organization-units?offset=2&limit=2"
+                    rel: "next"
+        "400":
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                invalid-limit:
+                  summary: Invalid limit parameter
+                  value:
+                    code: "OU-1011"
+                    message: "Invalid pagination parameter"
+                    description: "The limit parameter must be a positive integer"
+                invalid-offset:
+                  summary: Invalid offset parameter
+                  value:
+                    code: "OU-1012"
+                    message: "Invalid pagination parameter"
+                    description: "The offset parameter must be a non-negative integer"
         "500":
           description: Internal server error
 
@@ -64,12 +90,14 @@ paths:
                 summary: Root organization unit
                 value:
                   name: "Engineering"
+                  handle: "engineering"
                   description: "Engineering Unit"
                   parent: null
               nested-ou:
                 summary: Nested organization unit
                 value:
                   name: "Frontend Team"
+                  handle: "frontend"
                   description: "Handles UI/UX work"
                   parent: "afc77cfd-620b-4cf0-a31c-7377b0ea8902"
       responses:
@@ -85,6 +113,7 @@ paths:
                   value:
                     id: "afc77cfd-620b-4cf0-a31c-7377b0ea8902"
                     name: "Engineering"
+                    handle: "engineering"
                     description: "Engineering Unit"
                     parent: null
                 nested-ou:
@@ -92,6 +121,7 @@ paths:
                   value:
                     id: "4d4cb83a-9bb8-4fd7-970e-36b65f9c8ea4"
                     name: "Frontend Team"
+                    handle: "frontend"
                     description: "Handles UI/UX work"
                     parent: "afc77cfd-620b-4cf0-a31c-7377b0ea8902"
         "400":
@@ -154,17 +184,9 @@ paths:
               example:
                 id: "afc77cfd-620b-4cf0-a31c-7377b0ea8902"
                 name: "Engineering Team"
+                handle: "engineering"
                 description: "Engineering unit that handles all engineering tasks"
                 parent: null
-                users:
-                  - "3f9d5c8e-3c56-4f09-a1db-bb3d5e3f4b5d"
-                  - "9f4bc2ee-8d1e-4e21-a3b4-17d9b612e320"
-                  - "20eb225a-e8c3-4ccf-9d47-b659e26014d7"
-                groups:
-                  - "c2a4f62d-7c79-46f2-b2de-8e8cb4f1c456"
-                  - "8a8e4fa2-2e55-478d-bf0f-4a2ddaf9ee7d"
-                organizationUnits:
-                  - "6b59f277-fd79-40b1-afca-dce75d3709f7"
         "404":
           description: Organization unit not found
           content:
@@ -197,6 +219,7 @@ paths:
               $ref: '#/components/schemas/UpdateOrganizationUnitRequest'
             example:
               name: "Engineering Team"
+              handle: "engineering"
               description: "Engineering unit that handles all engineering tasks"
               parent: null
       responses:
@@ -209,17 +232,9 @@ paths:
               example:
                 id: "afc77cfd-620b-4cf0-a31c-7377b0ea8902"
                 name: "Engineering Team"
+                handle: "engineering"
                 description: "Engineering unit that handles all engineering tasks"
                 parent: null
-                users:
-                  - "3f9d5c8e-3c56-4f09-a1db-bb3d5e3f4b5d"
-                  - "9f4bc2ee-8d1e-4e21-a3b4-17d9b612e320"
-                  - "20eb225a-e8c3-4ccf-9d47-b659e26014d7"
-                groups:
-                  - "c2a4f62d-7c79-46f2-b2de-8e8cb4f1c456"
-                  - "8a8e4fa2-2e55-478d-bf0f-4a2ddaf9ee7d"
-                organizationUnits:
-                  - "6b59f277-fd79-40b1-afca-dce75d3709f7"
         "400":
           description: Bad request
           content:
@@ -293,8 +308,67 @@ paths:
                   summary: Organization unit has children
                   value:
                     code: "OU-1006"
-                    message: "Organization unit has children"
-                    description: "Cannot delete organization unit with children or users/groups"
+                    message: "Organization unit has sub resources"
+                    description: "Cannot delete organization unit with children or users or groups"
+        "500":
+          description: Internal server error
+
+  /organization-units/{id}/ous:
+    get:
+      tags:
+        - organization-units
+      summary: List child organization units
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - $ref: '#/components/parameters/limitQueryParam'
+        - $ref: '#/components/parameters/offsetQueryParam'
+      responses:
+        "200":
+          description: List of child organization units
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OrganizationUnitListResponse'
+              example:
+                totalResults: 5
+                startIndex: 1
+                count: 2
+                organizationUnits:
+                  - id: "6b59f277-fd79-40b1-afca-dce75d3709f7"
+                    name: "Frontend Team"
+                    handle: "frontend"
+                    description: "Handles UI/UX work"
+                  - id: "2a8f9e1c-4d7b-4c8a-9f3e-1b2c3d4e5f6g"
+                    name: "Backend Team"
+                    handle: "backend"
+                    description: "Handles server-side development"
+                links:
+                  - href: "organization-units/afc77cfd-620b-4cf0-a31c-7377b0ea8902/ous?offset=2&limit=2"
+                    rel: "next"
+        "400":
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                invalid-limit:
+                  summary: Invalid limit parameter
+                  value:
+                    code: "OU-1011"
+                    message: "Invalid pagination parameter"
+                    description: "The limit parameter must be a positive integer"
+                invalid-offset:
+                  summary: Invalid offset parameter
+                  value:
+                    code: "OU-1012"
+                    message: "Invalid pagination parameter"
+                    description: "The offset parameter must be a non-negative integer"
         "404":
           description: Organization unit not found
           content:
@@ -308,52 +382,826 @@ paths:
         "500":
           description: Internal server error
 
+  /organization-units/{id}/users:
+    get:
+      tags:
+        - organization-units
+      summary: List users in organization unit
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - $ref: '#/components/parameters/limitQueryParam'
+        - $ref: '#/components/parameters/offsetQueryParam'
+      responses:
+        "200":
+          description: List of users in the organization unit
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserListResponse'
+              example:
+                totalResults: 5
+                startIndex: 1
+                count: 2
+                users:
+                  - id: "3f9d5c8e-3c56-4f09-a1db-bb3d5e3f4b5d"
+                  - id: "9f4bc2ee-8d1e-4e21-a3b4-17d9b612e320"
+                links:
+                  - href: "organization-units/afc77cfd-620b-4cf0-a31c-7377b0ea8902/users?offset=2&limit=2"
+                    rel: "next"
+        "400":
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                invalid-limit:
+                  summary: Invalid limit parameter
+                  value:
+                    code: "OU-1011"
+                    message: "Invalid pagination parameter"
+                    description: "The limit parameter must be a positive integer"
+                invalid-offset:
+                  summary: Invalid offset parameter
+                  value:
+                    code: "OU-1012"
+                    message: "Invalid pagination parameter"
+                    description: "The offset parameter must be a non-negative integer"
+        "404":
+          description: Organization unit not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: "OU-1003"
+                message: "Organization unit not found"
+                description: "The organization unit with the specified id does not exist"
+        "500":
+          description: Internal server error
+
+  /organization-units/{id}/groups:
+    get:
+      tags:
+        - organization-units
+      summary: List groups in organization unit
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - $ref: '#/components/parameters/limitQueryParam'
+        - $ref: '#/components/parameters/offsetQueryParam'
+      responses:
+        "200":
+          description: List of groups in the organization unit
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GroupListResponse'
+              example:
+                totalResults: 5
+                startIndex: 1
+                count: 2
+                groups:
+                  - id: "c2a4f62d-7c79-46f2-b2de-8e8cb4f1c456"
+                    name: "Developers"
+                  - id: "8a8e4fa2-2e55-478d-bf0f-4a2ddaf9ee7d"
+                    name: "Architects"
+                links:
+                  - href: "organization-units/afc77cfd-620b-4cf0-a31c-7377b0ea8902/groups?offset=2&limit=2"
+                    rel: "next"
+        "400":
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                invalid-limit:
+                  summary: Invalid limit parameter
+                  value:
+                    code: "OU-1011"
+                    message: "Invalid pagination parameter"
+                    description: "The limit parameter must be a positive integer"
+                invalid-offset:
+                  summary: Invalid offset parameter
+                  value:
+                    code: "OU-1012"
+                    message: "Invalid pagination parameter"
+                    description: "The offset parameter must be a non-negative integer"
+        "404":
+          description: Organization unit not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: "OU-1003"
+                message: "Organization unit not found"
+                description: "The organization unit with the specified id does not exist"
+        "500":
+          description: Internal server error
+
+  /organization-units/tree/{path}:
+    get:
+      tags:
+        - organization-units-by-path
+      summary: Get an organization unit by hierarchical handle path
+      parameters:
+        - in: path
+          name: path
+          required: true
+          schema:
+            type: string
+          style: simple
+          explode: false
+          description: |
+            Hierarchical path of organization unit handles separated by forward slashes.
+            Examples:
+            - `engineering` - Gets the root OU with handle "engineering"
+            - `engineering/frontend` - Gets the "frontend" OU under "engineering"
+            - `engineering/frontend/ui` - Gets the "ui" OU under "engineering/frontend"
+          example: "engineering/frontend"
+      responses:
+        "200":
+          description: Organization unit details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OrganizationUnit'
+              examples:
+                single-level:
+                  summary: Single level handle
+                  value:
+                    id: "afc77cfd-620b-4cf0-a31c-7377b0ea8902"
+                    name: "Engineering"
+                    handle: "engineering"
+                    description: "Engineering unit"
+                    parent: null
+                multi-level:
+                  summary: Multi-level handle path
+                  value:
+                    id: "6b59f277-fd79-40b1-afca-dce75d3709f7"
+                    name: "Frontend Team"
+                    handle: "frontend"
+                    description: "Handles UI/UX work"
+                    parent: "afc77cfd-620b-4cf0-a31c-7377b0ea8902"
+        "404":
+          description: Organization unit not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                path-not-found:
+                  summary: Handle path not found
+                  value:
+                    code: "OU-1003"
+                    message: "Organization unit not found"
+                    description: "The organization unit with the specified handle path does not exist"
+                invalid-path:
+                  summary: Invalid path structure
+                  value:
+                    code: "OU-1008"
+                    message: "Invalid handle path"
+                    description: "The handle path does not represent a valid organizational hierarchy"
+        "500":
+          description: Internal server error
+
+    put:
+      tags:
+        - organization-units-by-path
+      summary: Update an organization unit by hierarchical handle path
+      parameters:
+        - in: path
+          name: path
+          required: true
+          schema:
+            type: string
+          style: simple
+          explode: false
+          description: |
+            Hierarchical path of organization unit handles separated by forward slashes.
+            Examples:
+            - `engineering` - Updates the root OU with handle "engineering"
+            - `engineering/frontend` - Updates the "frontend" OU under "engineering"
+            - `engineering/frontend/ui` - Updates the "ui" OU under "engineering/frontend"
+          example: "engineering/frontend"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateOrganizationUnitByHandleRequest'
+            examples:
+              single-level:
+                summary: Update single level OU
+                value:
+                  name: "Engineering Division"
+                  handle: "engineering"
+                  description: "Main engineering division"
+              multi-level:
+                summary: Update nested OU
+                value:
+                  name: "Frontend Development"
+                  handle: "frontend"
+                  description: "Frontend development team with expanded scope"
+      responses:
+        "200":
+          description: Organization unit updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OrganizationUnit'
+              examples:
+                single-level:
+                  summary: Updated single level OU
+                  value:
+                    id: "afc77cfd-620b-4cf0-a31c-7377b0ea8902"
+                    name: "Engineering Division"
+                    handle: "engineering"
+                    description: "Main engineering division"
+                    parent: null
+                multi-level:
+                  summary: Updated nested OU
+                  value:
+                    id: "6b59f277-fd79-40b1-afca-dce75d3709f7"
+                    name: "Frontend Development"
+                    handle: "frontend"
+                    description: "Frontend development team with expanded scope"
+                    parent: "afc77cfd-620b-4cf0-a31c-7377b0ea8902"
+        "400":
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                invalid-request:
+                  summary: Invalid request format
+                  value:
+                    code: "OU-1001"
+                    message: "Invalid request format"
+                    description: "The request body is malformed, contains invalid data, or required fields are missing/empty"
+                handle-conflict:
+                  summary: Handle already exists under parent
+                  value:
+                    code: "OU-1010"
+                    message: "Handle conflict"
+                    description: "An organization unit with the same handle already exists under the same parent"
+        "404":
+          description: Organization unit not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                path-not-found:
+                  summary: Handle path not found
+                  value:
+                    code: "OU-1003"
+                    message: "Organization unit not found"
+                    description: "The organization unit with the specified handle path does not exist"
+                invalid-path:
+                  summary: Invalid path structure
+                  value:
+                    code: "OU-1008"
+                    message: "Invalid handle path"
+                    description: "The handle path does not represent a valid organizational hierarchy"
+        "409":
+          description: Organization unit name conflict
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: "OU-1004"
+                message: "Organization unit name conflict"
+                description: "An organization unit with the same name exists under the same parent"
+        "500":
+          description: Internal server error
+
+    delete:
+      tags:
+        - organization-units-by-path
+      summary: Delete an organization unit by hierarchical handle path
+      parameters:
+        - in: path
+          name: path
+          required: true
+          schema:
+            type: string
+          style: simple
+          explode: false
+          description: |
+            Hierarchical path of organization unit handles separated by forward slashes.
+            Examples:
+            - `engineering` - Deletes the root OU with handle "engineering"
+            - `engineering/frontend` - Deletes the "frontend" OU under "engineering"
+            - `engineering/frontend/ui` - Deletes the "ui" OU under "engineering/frontend"
+          example: "engineering/frontend"
+      responses:
+        "204":
+          description: Organization unit deleted
+        "400":
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                has-children:
+                  summary: Organization unit has children
+                  value:
+                    code: "OU-1006"
+                    message: "Organization unit has sub resources"
+                    description: "Cannot delete organization unit with children or users or groups"
+        "404":
+          description: Organization unit not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                path-not-found:
+                  summary: Handle path not found
+                  value:
+                    code: "OU-1003"
+                    message: "Organization unit not found"
+                    description: "The organization unit with the specified handle path does not exist"
+                invalid-path:
+                  summary: Invalid path structure
+                  value:
+                    code: "OU-1008"
+                    message: "Invalid handle path"
+                    description: "The handle path does not represent a valid organizational hierarchy"
+        "500":
+          description: Internal server error
+
+  /organization-units/tree/{path}/ous:
+    post:
+      tags:
+        - organization-units-by-path
+      summary: Create a new organization unit under the specified handle path
+      parameters:
+        - in: path
+          name: path
+          required: true
+          schema:
+            type: string
+          style: simple
+          explode: false
+          description: |
+            Hierarchical path of the parent organization unit handles separated by forward slashes.
+            The new OU will be created as a child of the OU specified by this path.
+            Examples:
+            - `engineering` - Creates a new OU under the "engineering" OU
+            - `engineering/frontend` - Creates a new OU under "engineering/frontend"
+          example: "engineering/frontend"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateOrganizationUnitByHandleRequest'
+            examples:
+              simple-ou:
+                summary: Create OU under single-level path
+                value:
+                  name: "SRE Team"
+                  handle: "sre"
+                  description: "Maintains site reliability"
+              nested-ou:
+                summary: Create OU under multi-level path
+                value:
+                  name: "UI Team"
+                  handle: "ui"
+                  description: "Handles user interface development"
+      responses:
+        "201":
+          description: Organization unit created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OrganizationUnit'
+              examples:
+                simple-ou:
+                  summary: OU created under single-level path
+                  value:
+                    name: "SRE Team"
+                    handle: "sre"
+                    description: "Maintains site reliability"
+                    parent: "6b59f277-fd79-40b1-afca-dce75d3709f7"
+                nested-ou:
+                  summary: OU created under multi-level path
+                  value:
+                    id: "8c3d2e1f-9a8b-4c5d-7e6f-1a2b3c4d5e6f"
+                    name: "UI Team"
+                    handle: "ui"
+                    description: "Handles user interface development"
+        "400":
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                invalid-request:
+                  summary: Invalid request format
+                  value:
+                    code: "OU-1001"
+                    message: "Invalid request format"
+                    description: "The request body is malformed, contains invalid data, or required fields are missing/empty"
+                invalid-parent-path:
+                  summary: Parent path not found
+                  value:
+                    code: "OU-1009"
+                    message: "Parent handle path not found"
+                    description: "The specified parent handle path does not exist"
+                handle-conflict:
+                  summary: Handle already exists under parent
+                  value:
+                    code: "OU-1010"
+                    message: "Handle conflict"
+                    description: "An organization unit with the same handle already exists under the specified parent path"
+        "404":
+          description: Parent organization unit not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: "OU-1009"
+                message: "Parent handle path not found"
+                description: "The specified parent handle path does not exist"
+        "500":
+          description: Internal server error
+
+    get:
+      tags:
+        - organization-units-by-path
+      summary: List child organization units by handle path
+      parameters:
+        - in: path
+          name: path
+          required: true
+          schema:
+            type: string
+          style: simple
+          explode: false
+          description: |
+            Hierarchical path of organization unit handles separated by forward slashes.
+            Examples:
+            - `engineering` - Lists children of the "engineering" OU
+            - `engineering/frontend` - Lists children of "engineering/frontend"
+          example: "engineering/frontend"
+        - $ref: '#/components/parameters/limitQueryParam'
+        - $ref: '#/components/parameters/offsetQueryParam'
+      responses:
+        "200":
+          description: List of child organization units
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OrganizationUnitListResponse'
+              example:
+                totalResults: 5
+                startIndex: 1
+                count: 2
+                organizationUnits:
+                  - id: "6b59f277-fd79-40b1-afca-dce75d3709f7"
+                    name: "Frontend Team"
+                    handle: "frontend"
+                    description: "Handles UI/UX work"
+                  - id: "2a8f9e1c-4d7b-4c8a-9f3e-1b2c3d4e5f6g"
+                    name: "Backend Team"
+                    handle: "backend"
+                    description: "Handles server-side development"
+                links:
+                  - href: "organization-units/tree/engineering/ous?offset=2&limit=2"
+                    rel: "next"
+        "400":
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                invalid-limit:
+                  summary: Invalid limit parameter
+                  value:
+                    code: "OU-1011"
+                    message: "Invalid pagination parameter"
+                    description: "The limit parameter must be a positive integer"
+                invalid-offset:
+                  summary: Invalid offset parameter
+                  value:
+                    code: "OU-1012"
+                    message: "Invalid pagination parameter"
+                    description: "The offset parameter must be a non-negative integer"
+        "404":
+          description: Organization unit not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                path-not-found:
+                  summary: Handle path not found
+                  value:
+                    code: "OU-1003"
+                    message: "Organization unit not found"
+                    description: "The organization unit with the specified handle path does not exist"
+                invalid-path:
+                  summary: Invalid path structure
+                  value:
+                    code: "OU-1008"
+                    message: "Invalid handle path"
+                    description: "The handle path does not represent a valid organizational hierarchy"
+        "500":
+          description: Internal server error
+
+  /organization-units/tree/{path}/users:
+    get:
+      tags:
+        - organization-units-by-path
+      summary: List users in organization unit by handle path
+      parameters:
+        - in: path
+          name: path
+          required: true
+          schema:
+            type: string
+          style: simple
+          explode: false
+          description: |
+            Hierarchical path of organization unit handles separated by forward slashes.
+            Examples:
+            - `engineering` - Lists users in the "engineering" OU
+            - `engineering/frontend` - Lists users in "engineering/frontend"
+          example: "engineering/frontend"
+        - $ref: '#/components/parameters/limitQueryParam'
+        - $ref: '#/components/parameters/offsetQueryParam'
+      responses:
+        "200":
+          description: List of users in the organization unit
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserListResponse'
+              example:
+                totalResults: 5
+                startIndex: 1
+                count: 2
+                users:
+                  - id: "3f9d5c8e-3c56-4f09-a1db-bb3d5e3f4b5d"
+                  - id: "9f4bc2ee-8d1e-4e21-a3b4-17d9b612e320"
+                links:
+                  - href: "organization-units/tree/engineering/frontend/users?offset=2&limit=2"
+                    rel: "next"
+        "400":
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                invalid-limit:
+                  summary: Invalid limit parameter
+                  value:
+                    code: "OU-1011"
+                    message: "Invalid pagination parameter"
+                    description: "The limit parameter must be a positive integer"
+                invalid-offset:
+                  summary: Invalid offset parameter
+                  value:
+                    code: "OU-1012"
+                    message: "Invalid pagination parameter"
+                    description: "The offset parameter must be a non-negative integer"
+        "404":
+          description: Organization unit not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                path-not-found:
+                  summary: Handle path not found
+                  value:
+                    code: "OU-1003"
+                    message: "Organization unit not found"
+                    description: "The organization unit with the specified handle path does not exist"
+                invalid-path:
+                  summary: Invalid path structure
+                  value:
+                    code: "OU-1008"
+                    message: "Invalid handle path"
+                    description: "The handle path does not represent a valid organizational hierarchy"
+        "500":
+          description: Internal server error
+
+  /organization-units/tree/{path}/groups:
+    get:
+      tags:
+        - organization-units-by-path
+      summary: List groups in organization unit by handle path
+      parameters:
+        - in: path
+          name: path
+          required: true
+          schema:
+            type: string
+          style: simple
+          explode: false
+          description: |
+            Hierarchical path of organization unit handles separated by forward slashes.
+            Examples:
+            - `engineering` - Lists groups in the "engineering" OU
+            - `engineering/frontend` - Lists groups in "engineering/frontend"
+          example: "engineering/frontend"
+        - $ref: '#/components/parameters/limitQueryParam'
+        - $ref: '#/components/parameters/offsetQueryParam'
+      responses:
+        "200":
+          description: List of groups in the organization unit
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GroupListResponse'
+              example:
+                totalResults: 5
+                startIndex: 1
+                count: 2
+                groups:
+                  - id: "c2a4f62d-7c79-46f2-b2de-8e8cb4f1c456"
+                    name: "Developers"
+                  - id: "8a8e4fa2-2e55-478d-bf0f-4a2ddaf9ee7d"
+                    name: "Architects"
+                links:
+                  - href: "organization-units/tree/engineering/frontend/groups?offset=2&limit=2"
+                    rel: "next"
+        "400":
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                invalid-limit:
+                  summary: Invalid limit parameter
+                  value:
+                    code: "OU-1011"
+                    message: "Invalid pagination parameter"
+                    description: "The limit parameter must be a positive integer"
+                invalid-offset:
+                  summary: Invalid offset parameter
+                  value:
+                    code: "OU-1012"
+                    message: "Invalid pagination parameter"
+                    description: "The offset parameter must be a non-negative integer"
+        "404":
+          description: Organization unit not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                path-not-found:
+                  summary: Handle path not found
+                  value:
+                    code: "OU-1003"
+                    message: "Organization unit not found"
+                    description: "The organization unit with the specified handle path does not exist"
+                invalid-path:
+                  summary: Invalid path structure
+                  value:
+                    code: "OU-1008"
+                    message: "Invalid handle path"
+                    description: "The handle path does not represent a valid organizational hierarchy"
+        "500":
+          description: Internal server error
+
 components:
+  parameters:
+    limitQueryParam:
+      in: query
+      name: limit
+      required: false
+      description: |
+        Maximum number of records to return.
+      schema:
+        type: integer
+        minimum: 1
+        default: 30
+    offsetQueryParam:
+      in: query
+      name: offset
+      required: false
+      description: |
+        Number of records to skip for pagination.
+      schema:
+        type: integer
+        default: 0
+
   schemas:
     OrganizationUnitBasic:
       type: object
-      required: [id, name, parent, organizationUnits]
+      required: [id, name, handle]
       properties:
         id:
           type: string
           format: uuid
         name:
           type: string
+        handle:
+          type: string
         description:
           type: string
-        parent:
-          type: string
-          format: uuid
-          nullable: true
-        organizationUnits:
-          type: array
-          items:
-            type: string
-            format: uuid
 
     OrganizationUnit:
       allOf:
         - $ref: '#/components/schemas/OrganizationUnitBasic'
       properties:
-        users:
-          type: array
-          items:
-            type: string
-            format: uuid
-        groups:
-          type: array
-          items:
-            type: string
-            format: uuid
+        parent:
+          type: string
+          format: uuid
+          nullable: true
 
-    CreateOrganizationUnitRequest:
+    User:
       type: object
-      required: [name, parent]
+      required: [id]
+      properties:
+        id:
+          type: string
+          format: uuid
+
+    Group:
+      type: object
+      required: [id, name]
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+
+    Link:
+      type: object
+      properties:
+        href:
+          type: string
+          example: "organization-units?offset=20&limit=10"
+        rel:
+          type: string
+          example: "next"
+
+    CreateOrganizationUnitByHandleRequest:
+      type: object
+      required: [name, handle]
       properties:
         name:
           type: string
+          description: "The display name of the organization unit"
+          example: "Frontend Development Team"
+        handle:
+          type: string
+          description: "The unique handle for the organization unit within its parent"
+          example: "frontend-dev"
         description:
           type: string
+          description: "Optional description of the organization unit"
+          example: "Team responsible for frontend development and UI/UX"
+
+    UpdateOrganizationUnitByHandleRequest:
+      type: object
+      required: [name, handle]
+      properties:
+        name:
+          type: string
+          description: "The display name of the organization unit"
+          example: "Frontend Development Team"
+        handle:
+          type: string
+          description: "The unique handle for the organization unit within its parent"
+          example: "frontend-dev"
+        description:
+          type: string
+          description: "Optional description of the organization unit"
+          example: "Team responsible for frontend development and UI/UX"
+
+    CreateOrganizationUnitRequest:
+      allOf:
+        - $ref: '#/components/schemas/CreateOrganizationUnitByHandleRequest'
+      required: [name, handle, parent]
+      properties:
         parent:
           type: string
           format: uuid
@@ -362,6 +1210,78 @@ components:
     UpdateOrganizationUnitRequest:
       allOf:
         - $ref: '#/components/schemas/CreateOrganizationUnitRequest'
+
+    OrganizationUnitListResponse:
+      type: object
+      properties:
+        totalResults:
+          type: integer
+          description: "Number of results that match the listing operation."
+          example: 15
+        startIndex:
+          type: integer
+          description: "Index of the first element of the page, which will be equal to offset + 1."
+          example: 1
+        count:
+          type: integer
+          description: "Number of elements in the returned page."
+          example: 10
+        organizationUnits:
+          type: array
+          items:
+            $ref: '#/components/schemas/OrganizationUnitBasic'
+        links:
+          type: array
+          items:
+            $ref: '#/components/schemas/Link'
+
+    UserListResponse:
+      type: object
+      properties:
+        totalResults:
+          type: integer
+          description: "Number of results that match the listing operation."
+          example: 25
+        startIndex:
+          type: integer
+          description: "Index of the first element of the page, which will be equal to offset + 1."
+          example: 1
+        count:
+          type: integer
+          description: "Number of elements in the returned page."
+          example: 10
+        users:
+          type: array
+          items:
+            $ref: '#/components/schemas/User'
+        links:
+          type: array
+          items:
+            $ref: '#/components/schemas/Link'
+
+    GroupListResponse:
+      type: object
+      properties:
+        totalResults:
+          type: integer
+          description: "Number of results that match the listing operation."
+          example: 8
+        startIndex:
+          type: integer
+          description: "Index of the first element of the page, which will be equal to offset + 1."
+          example: 1
+        count:
+          type: integer
+          description: "Number of elements in the returned page."
+          example: 5
+        groups:
+          type: array
+          items:
+            $ref: '#/components/schemas/Group'
+        links:
+          type: array
+          items:
+            $ref: '#/components/schemas/Link'
 
     Error:
       type: object
