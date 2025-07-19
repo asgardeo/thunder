@@ -331,17 +331,6 @@ func CheckOrganizationUnitNameConflict(name string, parentID *string) (bool, err
 	)
 }
 
-// CheckOrganizationUnitNameConflictForUpdate checks if an organization unit name conflicts during update.
-func CheckOrganizationUnitNameConflictForUpdate(name string, parentID *string, ouID string) (bool, error) {
-	return checkConflict(
-		QueryCheckOrganizationUnitNameConflictForUpdate,
-		QueryCheckOrganizationUnitNameConflictRootForUpdate,
-		name,
-		parentID,
-		ouID,
-	)
-}
-
 // CheckOrganizationUnitHandleConflict checks if an organization unit handle conflicts under the same parent.
 func CheckOrganizationUnitHandleConflict(handle string, parentID *string) (bool, error) {
 	return checkConflict(
@@ -349,17 +338,6 @@ func CheckOrganizationUnitHandleConflict(handle string, parentID *string) (bool,
 		QueryCheckOrganizationUnitHandleConflictRoot,
 		handle,
 		parentID,
-	)
-}
-
-// CheckOrganizationUnitHandleConflictForUpdate checks if an organization unit handle conflicts during update.
-func CheckOrganizationUnitHandleConflictForUpdate(handle string, parentID *string, ouID string) (bool, error) {
-	return checkConflict(
-		QueryCheckOrganizationUnitHandleConflictForUpdate,
-		QueryCheckOrganizationUnitHandleConflictRootForUpdate,
-		handle,
-		parentID,
-		ouID,
 	)
 }
 

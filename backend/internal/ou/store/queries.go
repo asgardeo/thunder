@@ -81,33 +81,32 @@ var (
 		Query: `SELECT GROUP_ID FROM "GROUP" WHERE OU_ID = $1`,
 	}
 
+	// QueryCheckOrganizationUnitHandleConflict is the query to check if an organization
+	// unit handle conflicts under the same parent.
+	QueryCheckOrganizationUnitHandleConflict = dbmodel.DBQuery{
+		ID:    "OUQ-OU_MGT-10",
+		Query: `SELECT COUNT(*) as count FROM ORGANIZATION_UNIT WHERE HANDLE = $1 AND PARENT_ID = $2`,
+	}
+
+	// QueryCheckOrganizationUnitHandleConflictRoot is the query to check if an organization
+	// unit handle conflicts at root level.
+	QueryCheckOrganizationUnitHandleConflictRoot = dbmodel.DBQuery{
+		ID:    "OUQ-OU_MGT-11",
+		Query: `SELECT COUNT(*) as count FROM ORGANIZATION_UNIT WHERE HANDLE = $1 AND PARENT_ID IS NULL`,
+	}
+
 	// QueryCheckOrganizationUnitNameConflict is the query to check if an organization
 	// unit name conflicts under the same parent.
 	QueryCheckOrganizationUnitNameConflict = dbmodel.DBQuery{
-		ID:    "OUQ-OU_MGT-10",
+		ID:    "OUQ-OU_MGT-12",
 		Query: `SELECT COUNT(*) as count FROM ORGANIZATION_UNIT WHERE NAME = $1 AND PARENT_ID = $2`,
-	}
-
-	// QueryCheckOrganizationUnitNameConflictForUpdate is the query to check name conflict during update.
-	QueryCheckOrganizationUnitNameConflictForUpdate = dbmodel.DBQuery{
-		ID: "OUQ-OU_MGT-11",
-		Query: `SELECT COUNT(*) as count FROM ORGANIZATION_UNIT WHERE NAME = $1 AND PARENT_ID = $2 ` +
-			`AND OU_ID != $3`,
 	}
 
 	// QueryCheckOrganizationUnitNameConflictRoot is the query to check if an organization
 	// unit name conflicts at root level.
 	QueryCheckOrganizationUnitNameConflictRoot = dbmodel.DBQuery{
-		ID:    "OUQ-OU_MGT-12",
+		ID:    "OUQ-OU_MGT-13",
 		Query: `SELECT COUNT(*) as count FROM ORGANIZATION_UNIT WHERE NAME = $1 AND PARENT_ID IS NULL`,
-	}
-
-	// QueryCheckOrganizationUnitNameConflictRootForUpdate is the query to check name
-	// conflict at root level during update.
-	QueryCheckOrganizationUnitNameConflictRootForUpdate = dbmodel.DBQuery{
-		ID: "OUQ-OU_MGT-13",
-		Query: `SELECT COUNT(*) as count FROM ORGANIZATION_UNIT WHERE NAME = $1 AND PARENT_ID IS NULL ` +
-			`AND OU_ID != $2`,
 	}
 
 	// QueryCheckOrganizationUnitHasUsersOrGroups is the query to check if an organization unit has users or groups.
@@ -117,35 +116,6 @@ var (
 					(SELECT COUNT(*) FROM ORGANIZATION_UNIT WHERE PARENT_ID = $1) +
 					(SELECT COUNT(*) FROM "USER" WHERE OU_ID = $1) + 
 					(SELECT COUNT(*) FROM "GROUP" WHERE OU_ID = $1) as count`,
-	}
-
-	// QueryCheckOrganizationUnitHandleConflict is the query to check if an organization
-	// unit handle conflicts under the same parent.
-	QueryCheckOrganizationUnitHandleConflict = dbmodel.DBQuery{
-		ID:    "OUQ-OU_MGT-15",
-		Query: `SELECT COUNT(*) as count FROM ORGANIZATION_UNIT WHERE HANDLE = $1 AND PARENT_ID = $2`,
-	}
-
-	// QueryCheckOrganizationUnitHandleConflictForUpdate is the query to check handle conflict during update.
-	QueryCheckOrganizationUnitHandleConflictForUpdate = dbmodel.DBQuery{
-		ID: "OUQ-OU_MGT-16",
-		Query: `SELECT COUNT(*) as count FROM ORGANIZATION_UNIT WHERE HANDLE = $1 AND PARENT_ID = $2 ` +
-			`AND OU_ID != $3`,
-	}
-
-	// QueryCheckOrganizationUnitHandleConflictRoot is the query to check if an organization
-	// unit handle conflicts at root level.
-	QueryCheckOrganizationUnitHandleConflictRoot = dbmodel.DBQuery{
-		ID:    "OUQ-OU_MGT-17",
-		Query: `SELECT COUNT(*) as count FROM ORGANIZATION_UNIT WHERE HANDLE = $1 AND PARENT_ID IS NULL`,
-	}
-
-	// QueryCheckOrganizationUnitHandleConflictRootForUpdate is the query to check handle
-	// conflict at root level during update.
-	QueryCheckOrganizationUnitHandleConflictRootForUpdate = dbmodel.DBQuery{
-		ID: "OUQ-OU_MGT-18",
-		Query: `SELECT COUNT(*) as count FROM ORGANIZATION_UNIT WHERE HANDLE = $1 AND PARENT_ID IS NULL ` +
-			`AND OU_ID != $2`,
 	}
 )
 

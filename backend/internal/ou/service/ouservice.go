@@ -231,18 +231,10 @@ func (ous *OrganizationUnitService) UpdateOrganizationUnit(
 
 	var nameConflict bool
 	if existingOU.Parent != request.Parent || existingOU.Name != request.Name {
-		if request.Parent == nil {
-			nameConflict, err = store.CheckOrganizationUnitNameConflict(request.Name, request.Parent)
-			if err != nil {
-				logger.Error("Failed to check organization unit name conflict", log.Error(err))
-				return model.OrganizationUnit{}, &constants.ErrorInternalServerError
-			}
-		} else {
-			nameConflict, err = store.CheckOrganizationUnitNameConflictForUpdate(request.Name, request.Parent, id)
-			if err != nil {
-				logger.Error("Failed to check organization unit name conflict", log.Error(err))
-				return model.OrganizationUnit{}, &constants.ErrorInternalServerError
-			}
+		nameConflict, err = store.CheckOrganizationUnitNameConflict(request.Name, request.Parent)
+		if err != nil {
+			logger.Error("Failed to check organization unit name conflict", log.Error(err))
+			return model.OrganizationUnit{}, &constants.ErrorInternalServerError
 		}
 	}
 
@@ -252,18 +244,10 @@ func (ous *OrganizationUnitService) UpdateOrganizationUnit(
 
 	var handleConflict bool
 	if existingOU.Parent != request.Parent || existingOU.Handle != request.Handle {
-		if request.Parent == nil {
-			handleConflict, err = store.CheckOrganizationUnitHandleConflict(request.Handle, request.Parent)
-			if err != nil {
-				logger.Error("Failed to check organization unit handle conflict", log.Error(err))
-				return model.OrganizationUnit{}, &constants.ErrorInternalServerError
-			}
-		} else {
-			handleConflict, err = store.CheckOrganizationUnitHandleConflictForUpdate(request.Handle, request.Parent, id)
-			if err != nil {
-				logger.Error("Failed to check organization unit handle conflict", log.Error(err))
-				return model.OrganizationUnit{}, &constants.ErrorInternalServerError
-			}
+		handleConflict, err = store.CheckOrganizationUnitHandleConflict(request.Handle, request.Parent)
+		if err != nil {
+			logger.Error("Failed to check organization unit handle conflict", log.Error(err))
+			return model.OrganizationUnit{}, &constants.ErrorInternalServerError
 		}
 	}
 
