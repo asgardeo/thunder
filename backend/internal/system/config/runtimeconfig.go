@@ -29,11 +29,14 @@ type ThunderRuntime struct {
 var (
 	runtimeConfig *ThunderRuntime
 	once          sync.Once
+	mu            sync.RWMutex
 )
 
 // InitializeThunderRuntime initializes the ThunderRuntime configuration.
 func InitializeThunderRuntime(thunderHome string, config *Config) error {
 	once.Do(func() {
+		mu.Lock()
+		defer mu.Unlock()
 		runtimeConfig = &ThunderRuntime{
 			ThunderHome: thunderHome,
 			Config:      *config,
@@ -45,8 +48,19 @@ func InitializeThunderRuntime(thunderHome string, config *Config) error {
 
 // GetThunderRuntime returns the ThunderRuntime configuration.
 func GetThunderRuntime() *ThunderRuntime {
+	mu.RLock()
+	defer mu.RUnlock()
 	if runtimeConfig == nil {
 		panic("ThunderRuntime is not initialized")
 	}
 	return runtimeConfig
+}
+
+// ResetThunderRuntimeForTest resets the runtime config for testing purposes.
+// This function should only be used in tests.
+func ResetThunderRuntimeForTest() {
+	mu.Lock()
+	defer mu.Unlock()
+	runtimeConfig = nil
+	once = sync.Once{}
 }

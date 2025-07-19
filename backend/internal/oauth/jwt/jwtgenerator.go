@@ -34,6 +34,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/asgardeo/thunder/internal/system/cert"
 	"github.com/asgardeo/thunder/internal/system/config"
 	"github.com/asgardeo/thunder/internal/system/utils"
 )
@@ -101,13 +102,26 @@ func GenerateJWT(sub, aud string, validityPeriod int64, claims map[string]string
 		return "", 0, errors.New("private key not loaded")
 	}
 
-	config := config.GetThunderRuntime().Config
+	thunderRuntime := config.GetThunderRuntime()
+
+	// Get the certificate kid (Key ID) for the JWT header.
+	kid, err := cert.GetCertificateKid(&thunderRuntime.Config, thunderRuntime.ThunderHome)
+	if err != nil {
+		// Log the error but continue without kid to maintain backward compatibility
+		// In production, you might want to make this a hard failure
+		kid = ""
+	}
 
 	// Create the JWT header.
 	header := map[string]string{
 		"alg": "RS256",
 		"typ": "JWT",
 	}
+	// Add kid only if we successfully retrieved it
+	if kid != "" {
+		header["kid"] = kid
+	}
+
 	headerJSON, err := json.Marshal(header)
 	if err != nil {
 		return "", 0, err
@@ -123,7 +137,7 @@ func GenerateJWT(sub, aud string, validityPeriod int64, claims map[string]string
 	// Create the JWT payload.
 	payload := map[string]interface{}{
 		"sub": sub,
-		"iss": config.OAuth.JWT.Issuer,
+		"iss": thunderRuntime.Config.OAuth.JWT.Issuer,
 		"aud": aud,
 		"exp": expirationTime,
 		"iat": iat.Unix(),

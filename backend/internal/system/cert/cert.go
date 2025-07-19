@@ -20,7 +20,10 @@
 package cert
 
 import (
+	"crypto/sha256"
 	"crypto/tls"
+	"crypto/x509"
+	"encoding/base64"
 	"errors"
 	"os"
 	"path"
@@ -52,4 +55,29 @@ func GetTLSConfig(cfg *config.Config, currentDirectory string) (*tls.Config, err
 		Certificates: []tls.Certificate{cert},
 		MinVersion:   tls.VersionTLS12, // Enforce minimum TLS version 1.2
 	}, nil
+}
+
+// GetCertificateKid extracts the Key ID (kid) from the TLS certificate using SHA-256 thumbprint.
+func GetCertificateKid(cfg *config.Config, currentDirectory string) (string, error) {
+	tlsConfig, err := GetTLSConfig(cfg, currentDirectory)
+	if err != nil {
+		return "", err
+	}
+
+	if len(tlsConfig.Certificates) == 0 || len(tlsConfig.Certificates[0].Certificate) == 0 {
+		return "", errors.New("no certificate found in TLS config")
+	}
+
+	certData := tlsConfig.Certificates[0].Certificate[0]
+	parsedCert, err := x509.ParseCertificate(certData)
+	if err != nil {
+		return "", err
+	}
+
+	// Calculate SHA-256 thumbprint and use it as kid
+	h := sha256.New()
+	h.Write(parsedCert.Raw)
+	x5tS256 := base64.StdEncoding.EncodeToString(h.Sum(nil))
+
+	return x5tS256, nil
 }

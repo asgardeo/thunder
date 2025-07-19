@@ -55,6 +55,15 @@ func NewJWKSService() JWKSServiceInterface {
 // GetJWKS retrieves the JSON Web Key Set (JWKS) from the server's TLS certificate.
 func (s *JWKSService) GetJWKS() (*model.JWKSResponse, *serviceerror.ServiceError) {
 	thunderRuntime := config.GetThunderRuntime()
+
+	// Get the certificate kid using the common utility function
+	kid, err := cert.GetCertificateKid(&thunderRuntime.Config, thunderRuntime.ThunderHome)
+	if err != nil {
+		svcErr := constants.ErrorWhileRetrievingTLSConfig
+		svcErr.ErrorDescription = err.Error()
+		return nil, svcErr
+	}
+
 	tlsConfig, err := cert.GetTLSConfig(&thunderRuntime.Config, thunderRuntime.ThunderHome)
 	if err != nil {
 		svcErr := constants.ErrorWhileRetrievingTLSConfig
@@ -83,9 +92,6 @@ func (s *JWKSService) GetJWKS() (*model.JWKSResponse, *serviceerror.ServiceError
 	h := sha256.New()
 	h.Write(parsedCert.Raw)
 	x5tS256 := base64.StdEncoding.EncodeToString(h.Sum(nil))
-
-	// kid: use SHA-256 thumbprint as kid
-	kid := x5tS256
 
 	var jwks model.JWKS
 	switch pub := parsedCert.PublicKey.(type) {
