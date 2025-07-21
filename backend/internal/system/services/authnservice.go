@@ -21,21 +21,21 @@ package services
 import (
 	"net/http"
 
-	"github.com/asgardeo/thunder/internal/authn"
+	"github.com/asgardeo/thunder/internal/authn/handler"
 	"github.com/asgardeo/thunder/internal/system/server"
 )
 
 // AuthenticationService defines the service for handling authentication requests.
 type AuthenticationService struct {
 	ServerOpsService server.ServerOperationServiceInterface
-	authHandler      authn.AuthenticationHandlerInterface
+	authHandler      handler.AuthenticationHandlerInterface
 }
 
 // NewAuthenticationService creates a new instance of AuthenticationService.
 func NewAuthenticationService(mux *http.ServeMux) ServiceInterface {
 	instance := &AuthenticationService{
 		ServerOpsService: server.NewServerOperationService(),
-		authHandler:      authn.NewAuthenticationHandler(),
+		authHandler:      handler.NewAuthenticationHandler(),
 	}
 	instance.RegisterRoutes(mux)
 	return instance

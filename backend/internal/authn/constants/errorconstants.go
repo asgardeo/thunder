@@ -21,6 +21,7 @@ package constants
 
 import (
 	"github.com/asgardeo/thunder/internal/system/error/apierror"
+	"github.com/asgardeo/thunder/internal/system/error/serviceerror"
 )
 
 // Client error structs
@@ -32,60 +33,60 @@ var APIErrorJSONDecodeError = apierror.ErrorResponse{
 	Description: "Failed to decode request payload",
 }
 
-// APIErrorInvalidRequest defines the error response for invalid requests.
-var APIErrorInvalidRequest = apierror.ErrorResponse{
-	Code:        "ANE-1002",
-	Message:     "Invalid request",
-	Description: "The request is invalid or malformed",
+// ErrorInvalidAuthFlow defines the service error for invalid authentication flow.
+var ErrorInvalidAuthFlow = serviceerror.ServiceError{
+	Code:             "ANE-1002",
+	Type:             serviceerror.ClientErrorType,
+	Error:            "Invalid authentication flow",
+	ErrorDescription: "The authentication flow is invalid or malformed",
 }
 
-// APIErrorSessionNotFound defines the error response for session not found errors.
-var APIErrorSessionNotFound = apierror.ErrorResponse{
-	Code:        "ANE-1003",
-	Message:     "Session not found",
-	Description: "The session data could not be found for the provided data",
+// ErrorSessionNotFound defines the service error for session not found errors.
+var ErrorSessionNotFound = serviceerror.ServiceError{
+	Code:             "ANE-1003",
+	Type:             serviceerror.ClientErrorType,
+	Error:            "Session not found",
+	ErrorDescription: "The session data could not be found for the provided key",
 }
 
-// APIErrorAppIDNotFound defines the error response for application ID not found errors.
-var APIErrorAppIDNotFound = apierror.ErrorResponse{
-	Code:        "ANE-1004",
-	Message:     "Application ID not found",
-	Description: "The application ID could not be found in the session data",
+// ErrorAppIDNotFound defines the service error for application ID not found errors.
+var ErrorAppIDNotFound = serviceerror.ServiceError{
+	Code:             "ANE-1004",
+	Type:             serviceerror.ClientErrorType,
+	Error:            "Application ID not found",
+	ErrorDescription: "The application ID could not be found in the session data",
 }
 
-// APIErrorFlowExecutionError defines the error response for client-side flow execution errors.
-var APIErrorFlowExecutionError = apierror.ErrorResponse{
-	Code:        "ANE-1005",
-	Message:     "Flow execution error",
-	Description: "An error occurred while executing the authentication flow",
+// ErrorFlowExecutionClientError defines the service error for client-side flow execution errors.
+var ErrorFlowExecutionClientError = serviceerror.ServiceError{
+	Code:             "ANE-1005",
+	Type:             serviceerror.ClientErrorType,
+	Error:            "Flow execution error",
+	ErrorDescription: "An error occurred while executing the authentication flow",
 }
 
 // Server error structs
 
-// ServerErrorFlowExecutionError defines the error response for server-side flow execution errors.
-var ServerErrorFlowExecutionError = apierror.ErrorResponse{
-	Code:        "ANE-5001",
-	Message:     "Flow execution error",
-	Description: "An error occurred while executing the authentication flow",
+// ErrorFlowExecutionServerError defines the service error for server-side flow execution errors.
+var ErrorFlowExecutionServerError = serviceerror.ServiceError{
+	Code:             "ANE-5001",
+	Type:             serviceerror.ServerErrorType,
+	Error:            "Flow execution error",
+	ErrorDescription: "An error occurred while executing the authentication flow",
 }
 
-// ServerErrorFlowAssertionNotFound defines the error response for flow assertion not found errors.
-var ServerErrorFlowAssertionNotFound = apierror.ErrorResponse{
-	Code:        "ANE-5002",
-	Message:     "Flow assertion not found",
-	Description: "The assertion could not be found in the flow response",
+// ErrorWhileDecodingFlowAssertion defines the service error for errors while decoding the flow assertion.
+var ErrorWhileDecodingFlowAssertion = serviceerror.ServiceError{
+	Code:             "ANE-5002",
+	Type:             serviceerror.ServerErrorType,
+	Error:            "Something went wrong while decoding the flow assertion",
+	ErrorDescription: "The flow assertion could not be decoded",
 }
 
-// ServerErrorJWTDecodeError defines the error response for JWT decode errors.
-var ServerErrorJWTDecodeError = apierror.ErrorResponse{
-	Code:        "ANE-5003",
-	Message:     "JWT decode error",
-	Description: "Failed to decode the JWT token",
-}
-
-// ServerErrorRedirectURIConstructionError defines the error response for redirect URI construction errors.
-var ServerErrorRedirectURIConstructionError = apierror.ErrorResponse{
-	Code:        "ANE-5004",
-	Message:     "Redirect URI construction error",
-	Description: "Failed to construct the redirect URI for the authentication flow",
+// ErrorConstructingRedirectURI defines the service error for errors while constructing the redirect URI.
+var ErrorConstructingRedirectURI = serviceerror.ServiceError{
+	Code:             "ANE-5004",
+	Type:             serviceerror.ServerErrorType,
+	Error:            "Something went wrong while constructing the redirect URI",
+	ErrorDescription: "Failed to construct the redirect URI for the authentication flow",
 }
