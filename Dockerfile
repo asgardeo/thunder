@@ -83,9 +83,5 @@ USER thunder
 # Set environment variables
 ENV BACKEND_PORT=8090
 
-# Health check
-HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
-    CMD curl -k -f https://localhost:8090/health || exit 1
-
 # Start the application
 CMD ["./start.sh"]
