@@ -88,30 +88,30 @@ lint: golangci-lint
 
 help:
 	@echo "Makefile targets:"
-	@echo "  all    		  - Clean, build, and test the project."
-	@echo "  clean  		  - Remove build artifacts."
-	@echo "  clean_all 		  - Remove all build artifacts including distribution files."
-	@echo "  build  		  - Build the Go project and frontend, then package."
-	@echo "  build_backend 	  - Build the backend Go application."
-	@echo "  package_samples  - Package sample applications."
-	@echo "  build_samples 	  - Build sample applications."
-	@echo "  test_unit 	      - Run unit tests."
-	@echo "  test_integration - Run integration tests."
-	@echo "  test   		  - Run all tests (unit and integration)."
-	@echo "  run    		  - Build and run the application locally."
-	@echo "  docker-build     - Build single-arch Docker image with version tag."
-	@echo "  docker-build-latest - Build single-arch Docker image with latest tag."
-	@echo "  docker-build-multiarch - Build multi-arch Docker image with version tag."
+	@echo "  all                           - Clean, build, and test the project."
+	@echo "  clean                         - Remove build artifacts."
+	@echo "  clean_all                     - Remove all build artifacts including distribution files."
+	@echo "  build                         - Build the Go project and frontend, then package."
+	@echo "  build_backend                 - Build the backend Go application."
+	@echo "  package_samples               - Package sample applications."
+	@echo "  build_samples                 - Build sample applications."
+	@echo "  test_unit                     - Run unit tests."
+	@echo "  test_integration              - Run integration tests."
+	@echo "  test                          - Run all tests (unit and integration)."
+	@echo "  run                           - Build and run the application locally."
+	@echo "  docker-build                  - Build single-arch Docker image with version tag."
+	@echo "  docker-build-latest           - Build single-arch Docker image with latest tag."
+	@echo "  docker-build-multiarch        - Build multi-arch Docker image with version tag."
 	@echo "  docker-build-multiarch-latest - Build multi-arch Docker image with latest tag."
-	@echo "  docker-build-multiarch-push - Build and push multi-arch images to registry."
-	@echo "  lint   		  - Run golangci-lint on the project."
-	@echo "  help   		  - Show this help message."
+	@echo "  docker-build-multiarch-push   - Build and push multi-arch images to registry."
+	@echo "  lint                          - Run golangci-lint on the project."
+	@echo "  help                          - Show this help message."
 
-.PHONY: all prepare clean clean_all build build_samples package_samples run docker-build docker-build-latest docker-build-multiarch docker-build-multiarch-latest docker-build-multiarch-push lint help
-
+.PHONY: all prepare clean clean_all build build_samples package_samples run
+.PHONY: docker-build docker-build-latest docker-build-multiarch 
+.PHONY: docker-build-multiarch-latest docker-build-multiarch-push
 .PHONY: test_unit test_integration test
-
-.PHONY: go_install_tool golangci-lint
+.PHONY: lint help go_install_tool golangci-lint
 
 define go_install_tool
 	cd /tmp && \
