@@ -22,6 +22,7 @@ package model
 // Application represents an application with its details.
 type Application struct {
 	ID                      string   `json:"id,omitempty"`
+	OrgID                   string   `json:"org_id"`
 	Name                    string   `json:"name"`
 	Description             string   `json:"description"`
 	ClientID                string   `json:"client_id"`
