@@ -30,6 +30,7 @@ import (
 	"github.com/asgardeo/thunder/internal/flow/constants"
 	"github.com/asgardeo/thunder/internal/flow/jsonmodel"
 	"github.com/asgardeo/thunder/internal/flow/model"
+	"github.com/asgardeo/thunder/internal/flow/store"
 	"github.com/asgardeo/thunder/internal/flow/utils"
 	"github.com/asgardeo/thunder/internal/system/config"
 	"github.com/asgardeo/thunder/internal/system/log"
@@ -49,23 +50,24 @@ type FlowDAOInterface interface {
 	IsValidGraphID(graphID string) bool
 	GetContextFromStore(flowID string) (model.EngineContext, bool)
 	StoreContextInStore(flowID string, context model.EngineContext) error
+	UpdateContextInStore(flowID string, context model.EngineContext) error
 	RemoveContextFromStore(flowID string) error
 }
 
 // FlowDAO is the implementation of FlowDAOInterface.
 type FlowDAO struct {
-	graphs   map[string]model.GraphInterface
-	ctxStore map[string]model.EngineContext
-	mu       sync.Mutex
+	graphs    map[string]model.GraphInterface
+	mu        sync.Mutex
+	flowStore store.FlowStoreInterface
 }
 
 // GetFlowDAO returns a singleton instance of FlowDAOInterface.
 func GetFlowDAO() FlowDAOInterface {
 	once.Do(func() {
 		instance = &FlowDAO{
-			graphs:   make(map[string]model.GraphInterface),
-			ctxStore: make(map[string]model.EngineContext),
-			mu:       sync.Mutex{},
+			graphs:    make(map[string]model.GraphInterface),
+			mu:        sync.Mutex{},
+			flowStore: store.NewFlowStore(),
 		}
 	})
 	return instance
@@ -197,44 +199,90 @@ func (c *FlowDAO) IsValidGraphID(graphID string) bool {
 	return exists
 }
 
-// GetContextFromStore retrieves the flow context from the store based on the flow ID.
+// GetContextFromStore retrieves the flow context from the database based on the flow ID.
 func (c *FlowDAO) GetContextFromStore(flowID string) (model.EngineContext, bool) {
-	c.mu.Lock()
-	defer c.mu.Unlock()
+	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, "FlowDAO"))
 
-	ctx, exists := c.ctxStore[flowID]
-	if !exists {
+	// Get flow context from database
+	dbModel, err := c.flowStore.GetFlowContext(flowID)
+	if err != nil {
+		logger.Error("Failed to get flow context from database", log.Error(err))
 		return model.EngineContext{}, false
 	}
-	return ctx, true
+
+	if dbModel == nil {
+		logger.Debug("Flow context not found in database", log.String("flowID", flowID))
+		return model.EngineContext{}, false
+	}
+
+	// Get the graph from in-memory storage
+	graph, exists := c.GetGraph(dbModel.GraphID)
+	if !exists {
+		logger.Error("Graph not found for flow context", log.String("graphID", dbModel.GraphID))
+		return model.EngineContext{}, false
+	}
+
+	// Convert database model to engine context
+	engineContext, err := dbModel.ToEngineContext(graph)
+	if err != nil {
+		logger.Error("Failed to convert database model to engine context", log.Error(err))
+		return model.EngineContext{}, false
+	}
+
+	return engineContext, true
 }
 
-// StoreContextInStore stores the flow context in the store based on the flow ID.
+// StoreContextInStore stores the flow context in the database based on the flow ID.
 func (c *FlowDAO) StoreContextInStore(flowID string, context model.EngineContext) error {
-	c.mu.Lock()
-	defer c.mu.Unlock()
+	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, "FlowDAO"))
 
 	if flowID == "" {
 		return fmt.Errorf("flow ID cannot be empty")
 	}
 
-	c.ctxStore[flowID] = context
+	// Store flow context in database
+	err := c.flowStore.StoreFlowContext(context)
+	if err != nil {
+		return fmt.Errorf("failed to store flow context in database: %w", err)
+	}
+
+	logger.Debug("Flow context stored successfully in database", log.String("flowID", flowID))
 	return nil
 }
 
-// RemoveContextFromStore removes the flow context from the store based on the flow ID.
-func (c *FlowDAO) RemoveContextFromStore(flowID string) error {
-	c.mu.Lock()
-	defer c.mu.Unlock()
+// UpdateContextInStore updates the flow context in the database based on the flow ID.
+func (c *FlowDAO) UpdateContextInStore(flowID string, context model.EngineContext) error {
+	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, "FlowDAO"))
 
 	if flowID == "" {
 		return fmt.Errorf("flow ID cannot be empty")
 	}
 
-	if _, exists := c.ctxStore[flowID]; !exists {
-		return nil
+	// Update flow context in database
+	err := c.flowStore.UpdateFlowContext(context)
+	if err != nil {
+		return fmt.Errorf("failed to update flow context in database: %w", err)
 	}
-	delete(c.ctxStore, flowID)
+
+	logger.Debug("Flow context updated successfully in database", log.String("flowID", flowID))
+	return nil
+}
+
+// RemoveContextFromStore removes the flow context from the database based on the flow ID.
+func (c *FlowDAO) RemoveContextFromStore(flowID string) error {
+	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, "FlowDAO"))
+
+	if flowID == "" {
+		return fmt.Errorf("flow ID cannot be empty")
+	}
+
+	// Remove flow context from database
+	err := c.flowStore.DeleteFlowContext(flowID)
+	if err != nil {
+		return fmt.Errorf("failed to remove flow context from database: %w", err)
+	}
+
+	logger.Debug("Flow context removed successfully from database", log.String("flowID", flowID))
 	return nil
 }
 
