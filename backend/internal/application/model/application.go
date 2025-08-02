@@ -22,6 +22,7 @@ package model
 import (
 	"github.com/asgardeo/thunder/internal/application/constants"
 	certconst "github.com/asgardeo/thunder/internal/cert/constants"
+	oauth2const "github.com/asgardeo/thunder/internal/oauth/oauth2/constants"
 )
 
 // ApplicationDTO represents the data transfer object for application service operations.
@@ -88,51 +89,57 @@ type ApplicationCertificate struct {
 
 // ApplicationRequest represents the request structure for creating or updating an application.
 type ApplicationRequest struct {
-	Name                      string                  `json:"name"`
-	Description               string                  `json:"description"`
-	ClientID                  string                  `json:"client_id"`
-	ClientSecret              string                  `json:"client_secret"`
-	RedirectURIs              []string                `json:"redirect_uris"`
-	GrantTypes                []string                `json:"grant_types"`
-	AuthFlowGraphID           string                  `json:"auth_flow_graph_id,omitempty"`
-	RegistrationFlowGraphID   string                  `json:"registration_flow_graph_id,omitempty"`
-	IsRegistrationFlowEnabled bool                    `json:"is_registration_flow_enabled,omitempty"`
-	URL                       string                  `json:"url,omitempty"`
-	LogoURL                   string                  `json:"logo_url,omitempty"`
-	Certificate               *ApplicationCertificate `json:"certificate,omitempty"`
+	Name                      string                                `json:"name"`
+	Description               string                                `json:"description"`
+	ClientID                  string                                `json:"client_id"`
+	ClientSecret              string                                `json:"client_secret"`
+	RedirectURIs              []string                              `json:"redirect_uris"`
+	GrantTypes                []oauth2const.GrantType               `json:"grant_types"`
+	ResponseTypes             []oauth2const.ResponseType            `json:"response_types"`
+	TokenEndpointAuthMethod   []oauth2const.TokenEndpointAuthMethod `json:"token_endpoint_auth_method"`
+	AuthFlowGraphID           string                                `json:"auth_flow_graph_id,omitempty"`
+	RegistrationFlowGraphID   string                                `json:"registration_flow_graph_id,omitempty"`
+	IsRegistrationFlowEnabled bool                                  `json:"is_registration_flow_enabled,omitempty"`
+	URL                       string                                `json:"url,omitempty"`
+	LogoURL                   string                                `json:"logo_url,omitempty"`
+	Certificate               *ApplicationCertificate               `json:"certificate,omitempty"`
 }
 
 // ApplicationCompleteResponse represents the complete response structure for an application.
 type ApplicationCompleteResponse struct {
-	ID                        string                  `json:"id,omitempty"`
-	Name                      string                  `json:"name"`
-	Description               string                  `json:"description,omitempty"`
-	ClientID                  string                  `json:"client_id"`
-	ClientSecret              string                  `json:"client_secret"`
-	RedirectURIs              []string                `json:"redirect_uris"`
-	GrantTypes                []string                `json:"grant_types"`
-	AuthFlowGraphID           string                  `json:"auth_flow_graph_id,omitempty"`
-	RegistrationFlowGraphID   string                  `json:"registration_flow_graph_id,omitempty"`
-	IsRegistrationFlowEnabled bool                    `json:"is_registration_flow_enabled,omitempty"`
-	URL                       string                  `json:"url,omitempty"`
-	LogoURL                   string                  `json:"logo_url,omitempty"`
-	Certificate               *ApplicationCertificate `json:"certificate,omitempty"`
+	ID                        string                                `json:"id,omitempty"`
+	Name                      string                                `json:"name"`
+	Description               string                                `json:"description,omitempty"`
+	ClientID                  string                                `json:"client_id"`
+	ClientSecret              string                                `json:"client_secret"`
+	RedirectURIs              []string                              `json:"redirect_uris"`
+	GrantTypes                []oauth2const.GrantType               `json:"grant_types"`
+	ResponseTypes             []oauth2const.ResponseType            `json:"response_types"`
+	TokenEndpointAuthMethod   []oauth2const.TokenEndpointAuthMethod `json:"token_endpoint_auth_method"`
+	AuthFlowGraphID           string                                `json:"auth_flow_graph_id,omitempty"`
+	RegistrationFlowGraphID   string                                `json:"registration_flow_graph_id,omitempty"`
+	IsRegistrationFlowEnabled bool                                  `json:"is_registration_flow_enabled,omitempty"`
+	URL                       string                                `json:"url,omitempty"`
+	LogoURL                   string                                `json:"logo_url,omitempty"`
+	Certificate               *ApplicationCertificate               `json:"certificate,omitempty"`
 }
 
 // ApplicationGetResponse represents the response structure for getting an application.
 type ApplicationGetResponse struct {
-	ID                        string                  `json:"id,omitempty"`
-	Name                      string                  `json:"name"`
-	Description               string                  `json:"description,omitempty"`
-	ClientID                  string                  `json:"client_id"`
-	RedirectURIs              []string                `json:"redirect_uris"`
-	GrantTypes                []string                `json:"grant_types"`
-	AuthFlowGraphID           string                  `json:"auth_flow_graph_id,omitempty"`
-	RegistrationFlowGraphID   string                  `json:"registration_flow_graph_id,omitempty"`
-	IsRegistrationFlowEnabled bool                    `json:"is_registration_flow_enabled,omitempty"`
-	URL                       string                  `json:"url,omitempty"`
-	LogoURL                   string                  `json:"logo_url,omitempty"`
-	Certificate               *ApplicationCertificate `json:"certificate,omitempty"`
+	ID                        string                                `json:"id,omitempty"`
+	Name                      string                                `json:"name"`
+	Description               string                                `json:"description,omitempty"`
+	ClientID                  string                                `json:"client_id"`
+	RedirectURIs              []string                              `json:"redirect_uris"`
+	GrantTypes                []oauth2const.GrantType               `json:"grant_types"`
+	ResponseTypes             []oauth2const.ResponseType            `json:"response_types"`
+	TokenEndpointAuthMethod   []oauth2const.TokenEndpointAuthMethod `json:"token_endpoint_auth_method"`
+	AuthFlowGraphID           string                                `json:"auth_flow_graph_id,omitempty"`
+	RegistrationFlowGraphID   string                                `json:"registration_flow_graph_id,omitempty"`
+	IsRegistrationFlowEnabled bool                                  `json:"is_registration_flow_enabled,omitempty"`
+	URL                       string                                `json:"url,omitempty"`
+	LogoURL                   string                                `json:"logo_url,omitempty"`
+	Certificate               *ApplicationCertificate               `json:"certificate,omitempty"`
 }
 
 // BasicApplicationResponse represents a simplified response structure for an application.

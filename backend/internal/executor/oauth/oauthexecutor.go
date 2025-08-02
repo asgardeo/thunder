@@ -303,11 +303,11 @@ func (o *OAuthExecutor) ExchangeCodeForToken(ctx *flowmodel.NodeContext, execRes
 
 	// Prepare the token request
 	data := url.Values{}
-	data.Set(oauth2const.ClientID, o.oAuthProperties.ClientID)
-	data.Set(oauth2const.ClientSecret, o.oAuthProperties.ClientSecret)
-	data.Set(oauth2const.RedirectURI, o.oAuthProperties.RedirectURI)
-	data.Set(oauth2const.Code, code)
-	data.Set(oauth2const.GrantType, oauth2const.GrantTypeAuthorizationCode)
+	data.Set(oauth2const.RequestParamClientID, o.oAuthProperties.ClientID)
+	data.Set(oauth2const.RequestParamClientSecret, o.oAuthProperties.ClientSecret)
+	data.Set(oauth2const.RequestParamRedirectURI, o.oAuthProperties.RedirectURI)
+	data.Set(oauth2const.RequestParamCode, code)
+	data.Set(oauth2const.RequestParamGrantType, string(oauth2const.GrantTypeAuthorizationCode))
 
 	// Create HTTP request
 	req, err := http.NewRequest("POST", o.GetTokenEndpoint(), strings.NewReader(data.Encode()))
@@ -414,10 +414,10 @@ func (o *OAuthExecutor) GetUserInfo(ctx *flowmodel.NodeContext, execResp *flowmo
 // getQueryParams constructs the query parameters for the OAuth authorization request.
 func (o *OAuthExecutor) getQueryParams(ctx *flowmodel.NodeContext) (map[string]string, error) {
 	var queryParams = make(map[string]string)
-	queryParams[oauth2const.ClientID] = o.oAuthProperties.ClientID
-	queryParams[oauth2const.RedirectURI] = o.oAuthProperties.RedirectURI
-	queryParams[oauth2const.ResponseType] = oauth2const.Code
-	queryParams[oauth2const.Scope] = systemutils.StringifyStringArray(o.oAuthProperties.Scopes, " ")
+	queryParams[oauth2const.RequestParamClientID] = o.oAuthProperties.ClientID
+	queryParams[oauth2const.RequestParamRedirectURI] = o.oAuthProperties.RedirectURI
+	queryParams[oauth2const.RequestParamResponseType] = oauth2const.RequestParamCode
+	queryParams[oauth2const.RequestParamScope] = systemutils.StringifyStringArray(o.oAuthProperties.Scopes, " ")
 
 	// append any configured additional parameters.
 	additionalParams := o.oAuthProperties.AdditionalParams

@@ -27,17 +27,23 @@ import (
 
 // ParseStringArray parses a string into a slice of strings using the specified separator.
 func ParseStringArray(value string, separator string) []string {
+	return ParseTypedStringArray[string](value, separator)
+}
+
+// ParseTypedStringArray parses a string into a slice of strings of type T using the specified separator.
+func ParseTypedStringArray[T ~string](value string, separator string) []T {
 	if value == "" {
-		return []string{}
+		return []T{}
 	}
 	if separator == "" {
 		separator = ","
 	}
-	split := strings.Split(value, separator)
-	for i := range split {
-		split[i] = strings.TrimSpace(split[i])
+	parts := strings.Split(value, separator)
+	result := make([]T, len(parts))
+	for i, p := range parts {
+		result[i] = T(strings.TrimSpace(p))
 	}
-	return split
+	return result
 }
 
 // StringifyStringArray converts a slice of strings into a single string,

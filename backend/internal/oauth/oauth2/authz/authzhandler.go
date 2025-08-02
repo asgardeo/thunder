@@ -99,11 +99,11 @@ func (ah *AuthorizeHandler) HandleAuthorizePostRequest(w http.ResponseWriter, r 
 func (ah *AuthorizeHandler) handleInitialAuthorizationRequest(msg *model.OAuthMessage,
 	w http.ResponseWriter, r *http.Request) {
 	// Extract required parameters.
-	clientID := msg.RequestQueryParams[oauth2const.ClientID]
-	redirectURI := msg.RequestQueryParams[oauth2const.RedirectURI]
-	scope := msg.RequestQueryParams[oauth2const.Scope]
-	state := msg.RequestQueryParams[oauth2const.State]
-	responseType := msg.RequestQueryParams[oauth2const.ResponseType]
+	clientID := msg.RequestQueryParams[oauth2const.RequestParamClientID]
+	redirectURI := msg.RequestQueryParams[oauth2const.RequestParamRedirectURI]
+	scope := msg.RequestQueryParams[oauth2const.RequestParamScope]
+	state := msg.RequestQueryParams[oauth2const.RequestParamState]
+	responseType := msg.RequestQueryParams[oauth2const.RequestParamResponseType]
 
 	if clientID == "" {
 		ah.redirectToErrorPage(w, r, oauth2const.ErrorInvalidRequest, "Missing client_id parameter")
@@ -124,8 +124,8 @@ func (ah *AuthorizeHandler) handleInitialAuthorizationRequest(msg *model.OAuthMe
 		if sendErrorToApp && redirectURI != "" {
 			// Redirect to the redirect URI with an error.
 			redirectURI, err := oauth2utils.GetURIWithQueryParams(redirectURI, map[string]string{
-				oauth2const.Error:            errorCode,
-				oauth2const.ErrorDescription: errorMessage,
+				oauth2const.RequestParamError:            errorCode,
+				oauth2const.RequestParamErrorDescription: errorMessage,
 			})
 			if err != nil {
 				ah.redirectToErrorPage(w, r, oauth2const.ErrorServerError, "Failed to redirect to login page")
@@ -133,7 +133,7 @@ func (ah *AuthorizeHandler) handleInitialAuthorizationRequest(msg *model.OAuthMe
 			}
 
 			if state != "" {
-				redirectURI += "&" + oauth2const.State + "=" + state
+				redirectURI += "&" + oauth2const.RequestParamState + "=" + state
 			}
 			http.Redirect(w, r, redirectURI, http.StatusFound)
 			return

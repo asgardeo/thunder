@@ -31,7 +31,8 @@ import (
 // It validates the error code and error description according to the spec.
 func GetURIWithQueryParams(uri string, queryParams map[string]string) (string, error) {
 	// Validate the error params if present.
-	if err := validateErrorParams(queryParams[constants.Error], queryParams[constants.ErrorDescription]); err != nil {
+	if err := validateErrorParams(queryParams[constants.RequestParamError],
+		queryParams[constants.RequestParamErrorDescription]); err != nil {
 		return "", err
 	}
 

@@ -23,7 +23,7 @@ import (
 	"net/url"
 	"slices"
 
-	"github.com/asgardeo/thunder/internal/application/constants"
+	oauth2const "github.com/asgardeo/thunder/internal/oauth/oauth2/constants"
 	"github.com/asgardeo/thunder/internal/system/log"
 	"github.com/asgardeo/thunder/internal/system/utils"
 )
@@ -34,14 +34,24 @@ type OAuthAppConfig struct {
 	ClientID                string
 	ClientSecret            string
 	RedirectURIs            []string
-	GrantTypes              []string
-	ResponseTypes           []string
-	TokenEndpointAuthMethod []constants.TokenEndpointAuthMethod
+	GrantTypes              []oauth2const.GrantType
+	ResponseTypes           []oauth2const.ResponseType
+	TokenEndpointAuthMethod []oauth2const.TokenEndpointAuthMethod
 }
 
 // IsAllowedGrantType checks if the provided grant type is allowed.
-func (o *OAuthAppConfig) IsAllowedGrantType(grantType string) bool {
+func (o *OAuthAppConfig) IsAllowedGrantType(grantType oauth2const.GrantType) bool {
 	return isAllowedGrantType(o.GrantTypes, grantType)
+}
+
+// IsAllowedResponseType checks if the provided response type is allowed.
+func (o *OAuthAppConfig) IsAllowedResponseType(responseType string) bool {
+	return isAllowedResponseType(o.ResponseTypes, responseType)
+}
+
+// IsAllowedTokenEndpointAuthMethod checks if the provided token endpoint authentication method is allowed.
+func (o *OAuthAppConfig) IsAllowedTokenEndpointAuthMethod(method oauth2const.TokenEndpointAuthMethod) bool {
+	return isAllowedTokenEndpointAuthMethod(o.TokenEndpointAuthMethod, method)
 }
 
 // ValidateRedirectURI validates the provided redirect URI against the registered redirect URIs.
@@ -51,16 +61,28 @@ func (o *OAuthAppConfig) ValidateRedirectURI(redirectURI string) error {
 
 // OAuthAppConfigProcessed represents the processed configuration of an OAuth application.
 type OAuthAppConfigProcessed struct {
-	AppID              string
-	ClientID           string
-	HashedClientSecret string
-	RedirectURIs       []string
-	GrantTypes         []string
+	AppID                   string
+	ClientID                string
+	HashedClientSecret      string
+	RedirectURIs            []string
+	GrantTypes              []oauth2const.GrantType
+	ResponseTypes           []oauth2const.ResponseType
+	TokenEndpointAuthMethod []oauth2const.TokenEndpointAuthMethod
 }
 
 // IsAllowedGrantType checks if the provided grant type is allowed.
-func (o *OAuthAppConfigProcessed) IsAllowedGrantType(grantType string) bool {
+func (o *OAuthAppConfigProcessed) IsAllowedGrantType(grantType oauth2const.GrantType) bool {
 	return isAllowedGrantType(o.GrantTypes, grantType)
+}
+
+// IsAllowedResponseType checks if the provided response type is allowed.
+func (o *OAuthAppConfigProcessed) IsAllowedResponseType(responseType string) bool {
+	return isAllowedResponseType(o.ResponseTypes, responseType)
+}
+
+// IsAllowedTokenEndpointAuthMethod checks if the provided token endpoint authentication method is allowed.
+func (o *OAuthAppConfigProcessed) IsAllowedTokenEndpointAuthMethod(method oauth2const.TokenEndpointAuthMethod) bool {
+	return isAllowedTokenEndpointAuthMethod(o.TokenEndpointAuthMethod, method)
 }
 
 // ValidateRedirectURI validates the provided redirect URI against the registered redirect URIs.
@@ -68,10 +90,32 @@ func (o *OAuthAppConfigProcessed) ValidateRedirectURI(redirectURI string) error 
 	return validateRedirectURI(o.RedirectURIs, redirectURI)
 }
 
-func isAllowedGrantType(grantTypes []string, grantType string) bool {
+// isAllowedGrantType checks if the provided grant type is in the allowed list.
+func isAllowedGrantType(grantTypes []oauth2const.GrantType, grantType oauth2const.GrantType) bool {
+	if grantType == "" {
+		return false
+	}
 	return slices.Contains(grantTypes, grantType)
 }
 
+// isAllowedResponseType checks if the provided response type is in the allowed list.
+func isAllowedResponseType(responseTypes []oauth2const.ResponseType, responseType string) bool {
+	if responseType == "" {
+		return false
+	}
+	return slices.Contains(responseTypes, oauth2const.ResponseType(responseType))
+}
+
+// isAllowedTokenEndpointAuthMethod checks if the provided token authentication method is in the allowed list.
+func isAllowedTokenEndpointAuthMethod(methods []oauth2const.TokenEndpointAuthMethod,
+	method oauth2const.TokenEndpointAuthMethod) bool {
+	if method == "" {
+		return false
+	}
+	return slices.Contains(methods, method)
+}
+
+// validateRedirectURI checks if the provided redirect URI is valid against the registered redirect URIs.
 func validateRedirectURI(redirectURIs []string, redirectURI string) error {
 	logger := log.GetLogger()
 

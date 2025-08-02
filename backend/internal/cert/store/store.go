@@ -223,12 +223,9 @@ func (s *CertificateStore) deleteCertificate(query dbmodel.DBQuery, args ...inte
 		}
 	}()
 
-	rows, err := dbClient.Execute(query, args...)
+	_, err = dbClient.Execute(query, args...)
 	if err != nil {
 		return fmt.Errorf("failed to execute delete query: %w", err)
-	}
-	if rows == 0 {
-		return errors.New("no rows affected, certificate deletion failed")
 	}
 
 	return nil

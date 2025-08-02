@@ -183,9 +183,6 @@ func (s *CertificateService) DeleteCertificateByID(id string) *serviceerror.Serv
 
 	err := s.Store.DeleteCertificateByID(id)
 	if err != nil {
-		if errors.Is(err, constants.ErrCertificateNotFound) {
-			return &constants.ErrorCertificateNotFound
-		}
 		logger.Error("Failed to delete certificate by ID", log.String("id", id), log.Error(err))
 		return &constants.ErrorInternalServerError
 	}
@@ -207,9 +204,6 @@ func (s *CertificateService) DeleteCertificateByReference(refType constants.Cert
 
 	err := s.Store.DeleteCertificateByReference(refType, refID)
 	if err != nil {
-		if errors.Is(err, constants.ErrCertificateNotFound) {
-			return &constants.ErrorCertificateNotFound
-		}
 		logger.Error("Failed to delete certificate by reference", log.String("refType", string(refType)),
 			log.String("refID", refID), log.Error(err))
 		return &constants.ErrorInternalServerError

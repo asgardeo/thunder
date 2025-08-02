@@ -28,7 +28,6 @@ import (
 	"github.com/asgardeo/thunder/internal/oauth/oauth2/constants"
 	"github.com/asgardeo/thunder/internal/oauth/oauth2/model"
 	"github.com/asgardeo/thunder/internal/system/config"
-	"github.com/asgardeo/thunder/internal/system/crypto/hash"
 	jwtutils "github.com/asgardeo/thunder/internal/system/crypto/jwt/utils"
 	"github.com/asgardeo/thunder/internal/system/log"
 )
@@ -43,7 +42,7 @@ var _ GrantHandler = (*RefreshTokenGrantHandler)(nil)
 // ValidateGrant validates the refresh token grant request.
 func (h *RefreshTokenGrantHandler) ValidateGrant(tokenRequest *model.TokenRequest,
 	oauthApp *appmodel.OAuthAppConfigProcessed) *model.ErrorResponse {
-	if tokenRequest.GrantType != constants.GrantTypeRefreshToken {
+	if constants.GrantType(tokenRequest.GrantType) != constants.GrantTypeRefreshToken {
 		return &model.ErrorResponse{
 			Error:            constants.ErrorUnsupportedGrantType,
 			ErrorDescription: "Unsupported grant type",
@@ -59,17 +58,6 @@ func (h *RefreshTokenGrantHandler) ValidateGrant(tokenRequest *model.TokenReques
 		return &model.ErrorResponse{
 			Error:            constants.ErrorInvalidRequest,
 			ErrorDescription: "Client ID is required",
-		}
-	}
-
-	// Validate the client credentials.
-	// TODO: Authentication may not be required for public clients if not specified in the request.
-	//  Check the exact expectation from the OAuth 2.0 specification.
-	hashedClientSecret := hash.HashString(tokenRequest.ClientSecret)
-	if tokenRequest.ClientID != oauthApp.ClientID || hashedClientSecret != oauthApp.HashedClientSecret {
-		return &model.ErrorResponse{
-			Error:            constants.ErrorInvalidClient,
-			ErrorDescription: "Invalid client credentials",
 		}
 	}
 

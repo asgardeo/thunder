@@ -27,6 +27,7 @@ import (
 	"github.com/asgardeo/thunder/internal/application/constants"
 	"github.com/asgardeo/thunder/internal/application/model"
 	appprovider "github.com/asgardeo/thunder/internal/application/provider"
+	oauth2const "github.com/asgardeo/thunder/internal/oauth/oauth2/constants"
 	"github.com/asgardeo/thunder/internal/system/log"
 )
 
@@ -77,10 +78,12 @@ func (ah *ApplicationHandler) HandleApplicationPostRequest(w http.ResponseWriter
 	inboundAuthConfig := model.InboundAuthConfig{
 		Type: constants.OAuthInboundAuthType,
 		OAuthAppConfig: &model.OAuthAppConfig{
-			ClientID:     appRequest.ClientID,
-			ClientSecret: appRequest.ClientSecret,
-			RedirectURIs: appRequest.RedirectURIs,
-			GrantTypes:   appRequest.GrantTypes,
+			ClientID:                appRequest.ClientID,
+			ClientSecret:            appRequest.ClientSecret,
+			RedirectURIs:            appRequest.RedirectURIs,
+			GrantTypes:              appRequest.GrantTypes,
+			ResponseTypes:           appRequest.ResponseTypes,
+			TokenEndpointAuthMethod: appRequest.TokenEndpointAuthMethod,
 		},
 	}
 	appDTO := model.ApplicationDTO{
@@ -124,7 +127,15 @@ func (ah *ApplicationHandler) HandleApplicationPostRequest(w http.ResponseWriter
 	}
 	grantTypes := returnInboundAuthConfig.OAuthAppConfig.GrantTypes
 	if len(grantTypes) == 0 {
-		grantTypes = []string{}
+		grantTypes = []oauth2const.GrantType{}
+	}
+	responseTypes := returnInboundAuthConfig.OAuthAppConfig.ResponseTypes
+	if len(responseTypes) == 0 {
+		responseTypes = []oauth2const.ResponseType{}
+	}
+	tokenAuthMethods := returnInboundAuthConfig.OAuthAppConfig.TokenEndpointAuthMethod
+	if len(tokenAuthMethods) == 0 {
+		tokenAuthMethods = []oauth2const.TokenEndpointAuthMethod{}
 	}
 
 	returnApp := model.ApplicationCompleteResponse{
@@ -135,6 +146,8 @@ func (ah *ApplicationHandler) HandleApplicationPostRequest(w http.ResponseWriter
 		ClientSecret:              returnInboundAuthConfig.OAuthAppConfig.ClientSecret,
 		RedirectURIs:              redirectURIs,
 		GrantTypes:                grantTypes,
+		ResponseTypes:             responseTypes,
+		TokenEndpointAuthMethod:   tokenAuthMethods,
 		AuthFlowGraphID:           createdAppDTO.AuthFlowGraphID,
 		RegistrationFlowGraphID:   createdAppDTO.RegistrationFlowGraphID,
 		IsRegistrationFlowEnabled: createdAppDTO.IsRegistrationFlowEnabled,
@@ -248,7 +261,15 @@ func (ah *ApplicationHandler) HandleApplicationGetRequest(w http.ResponseWriter,
 	}
 	grantTypes := returnInboundAuthConfig.OAuthAppConfig.GrantTypes
 	if len(grantTypes) == 0 {
-		grantTypes = []string{}
+		grantTypes = []oauth2const.GrantType{}
+	}
+	responseTypes := returnInboundAuthConfig.OAuthAppConfig.ResponseTypes
+	if len(responseTypes) == 0 {
+		responseTypes = []oauth2const.ResponseType{}
+	}
+	tokenAuthMethods := returnInboundAuthConfig.OAuthAppConfig.TokenEndpointAuthMethod
+	if len(tokenAuthMethods) == 0 {
+		tokenAuthMethods = []oauth2const.TokenEndpointAuthMethod{}
 	}
 
 	returnApp := model.ApplicationGetResponse{
@@ -258,6 +279,8 @@ func (ah *ApplicationHandler) HandleApplicationGetRequest(w http.ResponseWriter,
 		ClientID:                  returnInboundAuthConfig.OAuthAppConfig.ClientID,
 		RedirectURIs:              redirectURIs,
 		GrantTypes:                grantTypes,
+		ResponseTypes:             responseTypes,
+		TokenEndpointAuthMethod:   tokenAuthMethods,
 		AuthFlowGraphID:           appDTO.AuthFlowGraphID,
 		RegistrationFlowGraphID:   appDTO.RegistrationFlowGraphID,
 		IsRegistrationFlowEnabled: appDTO.IsRegistrationFlowEnabled,
@@ -309,10 +332,12 @@ func (ah *ApplicationHandler) HandleApplicationPutRequest(w http.ResponseWriter,
 	inboundAuthConfig := model.InboundAuthConfig{
 		Type: constants.OAuthInboundAuthType,
 		OAuthAppConfig: &model.OAuthAppConfig{
-			ClientID:     appRequest.ClientID,
-			ClientSecret: appRequest.ClientSecret,
-			RedirectURIs: appRequest.RedirectURIs,
-			GrantTypes:   appRequest.GrantTypes,
+			ClientID:                appRequest.ClientID,
+			ClientSecret:            appRequest.ClientSecret,
+			RedirectURIs:            appRequest.RedirectURIs,
+			GrantTypes:              appRequest.GrantTypes,
+			ResponseTypes:           appRequest.ResponseTypes,
+			TokenEndpointAuthMethod: appRequest.TokenEndpointAuthMethod,
 		},
 	}
 	updateReqAppDTO := model.ApplicationDTO{
@@ -358,7 +383,15 @@ func (ah *ApplicationHandler) HandleApplicationPutRequest(w http.ResponseWriter,
 	}
 	grantTypes := returnInboundAuthConfig.OAuthAppConfig.GrantTypes
 	if len(grantTypes) == 0 {
-		grantTypes = []string{}
+		grantTypes = []oauth2const.GrantType{}
+	}
+	responseTypes := returnInboundAuthConfig.OAuthAppConfig.ResponseTypes
+	if len(responseTypes) == 0 {
+		responseTypes = []oauth2const.ResponseType{}
+	}
+	tokenAuthMethods := returnInboundAuthConfig.OAuthAppConfig.TokenEndpointAuthMethod
+	if len(tokenAuthMethods) == 0 {
+		tokenAuthMethods = []oauth2const.TokenEndpointAuthMethod{}
 	}
 
 	returnApp := model.ApplicationCompleteResponse{
@@ -369,6 +402,8 @@ func (ah *ApplicationHandler) HandleApplicationPutRequest(w http.ResponseWriter,
 		ClientSecret:              returnInboundAuthConfig.OAuthAppConfig.ClientSecret,
 		RedirectURIs:              redirectURIs,
 		GrantTypes:                grantTypes,
+		ResponseTypes:             responseTypes,
+		TokenEndpointAuthMethod:   tokenAuthMethods,
 		AuthFlowGraphID:           updatedAppDTO.AuthFlowGraphID,
 		RegistrationFlowGraphID:   updatedAppDTO.RegistrationFlowGraphID,
 		IsRegistrationFlowEnabled: updatedAppDTO.IsRegistrationFlowEnabled,

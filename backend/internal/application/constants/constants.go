@@ -33,15 +33,3 @@ const (
 	// OAuthInboundAuthType represents the OAuth 2.0 inbound authentication type.
 	OAuthInboundAuthType InboundAuthType = "oauth2"
 )
-
-// TokenEndpointAuthMethod represents the method used for token endpoint authentication.
-type TokenEndpointAuthMethod string
-
-const (
-	// TokenEndpointAuthMethodClientSecretBasic represents the client secret basic authentication method.
-	TokenEndpointAuthMethodClientSecretBasic TokenEndpointAuthMethod = "client_secret_basic"
-	// TokenEndpointAuthMethodClientSecretPost represents the client secret post authentication method.
-	TokenEndpointAuthMethodClientSecretPost TokenEndpointAuthMethod = "client_secret_post"
-	// TokenEndpointAuthMethodNone represents no authentication method.
-	TokenEndpointAuthMethodNone TokenEndpointAuthMethod = "none"
-)

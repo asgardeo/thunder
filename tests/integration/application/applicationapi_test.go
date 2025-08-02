@@ -43,21 +43,25 @@ var (
 	}
 
 	appToCreate = Application{
-		Name:         "My App",
-		Description:  "A demo application",
-		ClientID:     "abc1237",
-		ClientSecret: "s3cret",
-		RedirectURIs: []string{"http://localhost/callback"},
-		GrantTypes:   []string{"authorization_code", "client_credentials"},
+		Name:                    "My App",
+		Description:             "A demo application",
+		ClientID:                "abc1237",
+		ClientSecret:            "s3cret",
+		RedirectURIs:            []string{"http://localhost/callback"},
+		GrantTypes:              []string{"authorization_code", "client_credentials"},
+		ResponseTypes:           []string{"code"},
+		TokenEndpointAuthMethod: []string{"client_secret_basic", "client_secret_post"},
 	}
 
 	appToUpdate = Application{
-		Name:         "Updated App",
-		Description:  "Updated Description",
-		ClientID:     "Updated abc1237",
-		ClientSecret: "Updated s3cret",
-		RedirectURIs: []string{"http://localhost/callback2"},
-		GrantTypes:   []string{"authorization_code2", "client_credentials2"},
+		Name:                    "Updated App",
+		Description:             "Updated Description",
+		ClientID:                "Updated abc1237",
+		ClientSecret:            "Updated s3cret",
+		RedirectURIs:            []string{"http://localhost/callback2"},
+		GrantTypes:              []string{"authorization_code"},
+		ResponseTypes:           []string{"code"},
+		TokenEndpointAuthMethod: []string{"client_secret_basic"},
 	}
 )
 
@@ -196,13 +200,15 @@ func (ts *ApplicationAPITestSuite) TestApplicationUpdate() {
 
 	// Validate the update by retrieving the application
 	retrieveAndValidateApplicationDetails(ts, Application{
-		ID:           createdAppID,
-		Name:         appToUpdate.Name,
-		Description:  appToUpdate.Description,
-		ClientID:     appToUpdate.ClientID,
-		ClientSecret: appToUpdate.ClientSecret,
-		RedirectURIs: appToUpdate.RedirectURIs,
-		GrantTypes:   appToUpdate.GrantTypes,
+		ID:                      createdAppID,
+		Name:                    appToUpdate.Name,
+		Description:             appToUpdate.Description,
+		ClientID:                appToUpdate.ClientID,
+		ClientSecret:            appToUpdate.ClientSecret,
+		RedirectURIs:            appToUpdate.RedirectURIs,
+		GrantTypes:              appToUpdate.GrantTypes,
+		ResponseTypes:           appToUpdate.ResponseTypes,
+		TokenEndpointAuthMethod: appToUpdate.TokenEndpointAuthMethod,
 	})
 }
 
@@ -320,13 +326,15 @@ func deleteApplication(appID string) error {
 func buildCreatedApp() Application {
 
 	return Application{
-		ID:           createdAppID,
-		Name:         appToCreate.Name,
-		Description:  appToCreate.Description,
-		ClientID:     appToCreate.ClientID,
-		ClientSecret: appToCreate.ClientSecret,
-		RedirectURIs: appToCreate.RedirectURIs,
-		GrantTypes:   appToCreate.GrantTypes,
+		ID:                      createdAppID,
+		Name:                    appToCreate.Name,
+		Description:             appToCreate.Description,
+		ClientID:                appToCreate.ClientID,
+		ClientSecret:            appToCreate.ClientSecret,
+		RedirectURIs:            appToCreate.RedirectURIs,
+		GrantTypes:              appToCreate.GrantTypes,
+		ResponseTypes:           appToCreate.ResponseTypes,
+		TokenEndpointAuthMethod: appToCreate.TokenEndpointAuthMethod,
 	}
 }
 

@@ -29,7 +29,6 @@ import (
 	authzmodel "github.com/asgardeo/thunder/internal/oauth/oauth2/authz/model"
 	"github.com/asgardeo/thunder/internal/oauth/oauth2/constants"
 	"github.com/asgardeo/thunder/internal/oauth/oauth2/model"
-	"github.com/asgardeo/thunder/internal/system/crypto/hash"
 )
 
 // AuthorizationCodeGrantHandler handles the authorization code grant type.
@@ -46,7 +45,7 @@ func (h *AuthorizationCodeGrantHandler) ValidateGrant(tokenRequest *model.TokenR
 			ErrorDescription: "Missing grant type",
 		}
 	}
-	if tokenRequest.GrantType != constants.GrantTypeAuthorizationCode {
+	if constants.GrantType(tokenRequest.GrantType) != constants.GrantTypeAuthorizationCode {
 		return &model.ErrorResponse{
 			Error:            constants.ErrorUnsupportedGrantType,
 			ErrorDescription: "Unsupported grant type",
@@ -71,16 +70,6 @@ func (h *AuthorizationCodeGrantHandler) ValidateGrant(tokenRequest *model.TokenR
 		return &model.ErrorResponse{
 			Error:            constants.ErrorInvalidRequest,
 			ErrorDescription: "Redirect URI is required",
-		}
-	}
-
-	// Validate the client credentials.
-	// TODO: Authentication may not be required for public clients if not specified in the request.
-	hashedClientSecret := hash.HashString(tokenRequest.ClientSecret)
-	if tokenRequest.ClientID != oauthApp.ClientID || hashedClientSecret != oauthApp.HashedClientSecret {
-		return &model.ErrorResponse{
-			Error:            constants.ErrorInvalidClient,
-			ErrorDescription: "Invalid client credentials",
 		}
 	}
 

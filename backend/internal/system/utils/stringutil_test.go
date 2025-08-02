@@ -69,6 +69,60 @@ func (suite *StringUtilTestSuite) TestParseStringArray() {
 	}
 }
 
+func (suite *StringUtilTestSuite) TestParseTypedStringArray() {
+	type MyString string
+	testCases := []struct {
+		name     string
+		input    string
+		sep      string
+		expected []MyString
+	}{
+		{
+			name:     "EmptyString",
+			input:    "",
+			sep:      ",",
+			expected: []MyString{},
+		},
+		{
+			name:     "SingleValue",
+			input:    "value1",
+			sep:      ",",
+			expected: []MyString{"value1"},
+		},
+		{
+			name:     "MultipleValues",
+			input:    "value1,value2,value3",
+			sep:      ",",
+			expected: []MyString{"value1", "value2", "value3"},
+		},
+		{
+			name:     "ValuesWithSpaces",
+			input:    "value1, value2, value3",
+			sep:      ",",
+			expected: []MyString{"value1", "value2", "value3"},
+		},
+		{
+			name:     "CustomSeparator",
+			input:    "a|b|c",
+			sep:      "|",
+			expected: []MyString{"a", "b", "c"},
+		},
+		{
+			name:     "EmptySeparatorDefaultsToComma",
+			input:    "a,b,c",
+			sep:      "",
+			expected: []MyString{"a", "b", "c"},
+		},
+	}
+
+	for _, tc := range testCases {
+		suite.T().Run(tc.name, func(t *testing.T) {
+			result := ParseTypedStringArray[MyString](tc.input, tc.sep)
+			assert.Equal(t, tc.expected, result)
+		})
+	}
+}
+
 func (suite *StringUtilTestSuite) TestConvertInterfaceMapToStringMap() {
 	testCases := []struct {
 		name     string
