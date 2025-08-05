@@ -16,16 +16,12 @@
 # under the License.
 # ------------------------------------------------------------------------------
 
-template: testify
-template-data:
-  unroll-variadic: true
 packages:
   github.com/asgardeo/thunder/internal/system/database/client:
     config:
       all: true
       dir: tests/mocks/database/clientmock
       structname: '{{.InterfaceName}}Mock'
-      pkgname: clientmock
       filename: "{{.InterfaceName}}_mock.go"
 
   github.com/asgardeo/thunder/internal/system/database/provider:
@@ -33,7 +29,6 @@ packages:
       all: true
       dir: tests/mocks/database/providermock
       structname: '{{.InterfaceName}}Mock'
-      pkgname: providermock
       filename: "{{.InterfaceName}}_mock.go"
 
   github.com/asgardeo/thunder/internal/system/healthcheck/service:
@@ -41,7 +36,6 @@ packages:
       all: true
       dir: tests/mocks/healthcheck/servicemock
       structname: '{{.InterfaceName}}Mock'
-      pkgname: servicemock
       filename: "{{.InterfaceName}}_mock.go"
   
   github.com/asgardeo/thunder/internal/system/healthcheck/provider:
@@ -49,7 +43,6 @@ packages:
       all: true
       dir: tests/mocks/healthcheck/providermock
       structname: '{{.InterfaceName}}Mock'
-      pkgname: providermock
       filename: "{{.InterfaceName}}_mock.go"
 
   github.com/asgardeo/thunder/internal/cert:
@@ -57,5 +50,67 @@ packages:
       all: true
       dir: tests/mocks/certmock
       structname: '{{.InterfaceName}}Mock'
-      pkgname: certmock
+      filename: "{{.InterfaceName}}_mock.go"
+
+  github.com/asgardeo/thunder/internal/oauth/jwks:
+    config:
+      all: true
+      dir: tests/mocks/oauth/jwksmock
+      structname: '{{.InterfaceName}}Mock'
+      filename: "{{.InterfaceName}}_mock.go"
+
+  github.com/asgardeo/thunder/internal/oauth/jwt:
+    config:
+      all: true
+      dir: tests/mocks/oauth/jwtmock
+      structname: '{{.InterfaceName}}Mock'
+      filename: "{{.InterfaceName}}_mock.go"
+
+  github.com/asgardeo/thunder/internal/oauth/scope/provider:
+    config:
+      all: true
+      dir: tests/mocks/oauth/scope/providermock
+      structname: '{{.InterfaceName}}Mock'
+      filename: "{{.InterfaceName}}_mock.go"
+
+  github.com/asgardeo/thunder/internal/oauth/scope/validator:
+    config:
+      all: true
+      dir: tests/mocks/oauth/scope/validatormock
+      structname: '{{.InterfaceName}}Mock'
+      filename: "{{.InterfaceName}}_mock.go"
+
+  github.com/asgardeo/thunder/internal/oauth/session/store:
+    config:
+      all: true
+      dir: tests/mocks/oauth/session/storemock
+      structname: '{{.InterfaceName}}Mock'
+      filename: "{{.InterfaceName}}_mock.go"
+
+  github.com/asgardeo/thunder/internal/oauth/oauth2/authz:
+    config:
+      all: true
+      dir: tests/mocks/oauth/oauth2/authzmock
+      structname: '{{.InterfaceName}}Mock'
+      filename: "{{.InterfaceName}}_mock.go"
+
+  github.com/asgardeo/thunder/internal/oauth/oauth2/authz/store:
+    config:
+      all: true
+      dir: tests/mocks/oauth/oauth2/authz/storemock
+      structname: '{{.InterfaceName}}Mock'
+      filename: "{{.InterfaceName}}_mock.go"
+
+  github.com/asgardeo/thunder/internal/oauth/oauth2/granthandlers:
+    config:
+      all: true
+      dir: tests/mocks/oauth/oauth2/granthandlersmock
+      structname: '{{.InterfaceName}}Mock'
+      filename: "{{.InterfaceName}}_mock.go"
+
+  github.com/asgardeo/thunder/internal/oauth/oauth2/token:
+    config:
+      all: true
+      dir: tests/mocks/oauth/oauth2/tokenmock
+      structname: '{{.InterfaceName}}Mock'
       filename: "{{.InterfaceName}}_mock.go"
