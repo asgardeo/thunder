@@ -65,3 +65,9 @@ type AggregatedCacheStat struct {
 	L1Stats CacheStat
 	L2Stats CacheStat
 }
+
+// PromotionTask represents a cache promotion task.
+type PromotionTask struct {
+	Key   CacheKey
+	Value interface{}
+}

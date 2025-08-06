@@ -20,6 +20,7 @@
 package manager
 
 import (
+	"context"
 	"sync"
 	"time"
 
@@ -40,15 +41,19 @@ type CacheManagerInterface interface {
 	Delete(key model.CacheKey) error
 	Clear() error
 	IsEnabled() bool
-	StartCleanupRoutine()
+	Shutdown()
 }
 
 // CacheManager implements the CacheManagerInterface for managing caches.
 type CacheManager struct {
-	enabled bool
-	l1Cache model.CacheInterface
-	l2Cache model.CacheInterface
-	mu      sync.RWMutex
+	enabled          bool
+	l1Cache          model.CacheInterface
+	l2Cache          model.CacheInterface
+	mu               sync.RWMutex
+	promotionChannel chan model.PromotionTask
+	promotionWg      sync.WaitGroup
+	promotionCtx     context.Context
+	promotionCancel  context.CancelFunc
 }
 
 // NewCacheManager creates a new cache manager instance.
@@ -86,11 +91,26 @@ func NewCacheManager() CacheManagerInterface {
 	)
 	l2Cache := l2cache.NewL2Cache(false)
 
-	return &CacheManager{
-		enabled: true,
-		l1Cache: l1Cache,
-		l2Cache: l2Cache,
+	// Initialize worker pool for cache promotion
+	promotionCtx, promotionCancel := context.WithCancel(context.Background())
+	promotionChannel := make(chan model.PromotionTask, constants.DefaultPromotionChannelBuffer)
+
+	cm := &CacheManager{
+		enabled:          true,
+		l1Cache:          l1Cache,
+		l2Cache:          l2Cache,
+		promotionChannel: promotionChannel,
+		promotionCtx:     promotionCtx,
+		promotionCancel:  promotionCancel,
 	}
+
+	// Start cleanup routine
+	cm.startCleanupRoutine()
+
+	// Start worker pool for cache promotion
+	cm.startPromotionWorkers()
+
+	return cm
 }
 
 // Set stores a value in the cache with default TTL.
@@ -144,12 +164,12 @@ func (cm *CacheManager) Get(key model.CacheKey) (interface{}, bool) {
 		if value, found := cm.l2Cache.Get(key); found {
 			// Populate L1 cache with the value from L2 (cache promotion)
 			if cm.l1Cache.IsEnabled() && config.GetThunderRuntime().Config.Cache.L1.EnablePromotion {
-				go func() {
-					if err := cm.l1Cache.Set(key, value); err != nil {
-						logger.Debug("Failed to promote value from L2 to L1", log.String("key", key.ToString()),
-							log.Error(err))
-					}
-				}()
+				select {
+				case cm.promotionChannel <- model.PromotionTask{Key: key, Value: value}:
+				default:
+					logger.Debug("Promotion channel full, skipping cache promotion",
+						log.String("key", key.ToString()))
+				}
 			}
 			return value, true
 		}
@@ -220,8 +240,8 @@ func (cm *CacheManager) IsEnabled() bool {
 	return cm.enabled
 }
 
-// StartCleanupRoutine starts a background routine to clean up expired entries.
-func (cm *CacheManager) StartCleanupRoutine() {
+// startCleanupRoutine starts a background routine to clean up expired entries.
+func (cm *CacheManager) startCleanupRoutine() {
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, loggerComponentName))
 
 	if !cm.enabled {
@@ -249,4 +269,77 @@ func (cm *CacheManager) StartCleanupRoutine() {
 	}()
 
 	logger.Debug("Cache cleanup routine started", log.Any("interval", cleanupInterval))
+}
+
+// startPromotionWorkers starts the worker pool for cache promotion tasks.
+func (cm *CacheManager) startPromotionWorkers() {
+	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, loggerComponentName))
+
+	if !cm.enabled || !config.GetThunderRuntime().Config.Cache.L1.EnablePromotion {
+		logger.Debug("Cache promotion is disabled or cache manager is not enabled, skipping worker pool startup")
+		return
+	}
+
+	workerCount := constants.DefaultPromotionWorkerPoolSize
+	logger.Debug("Starting cache promotion worker pool", log.Any("workers", workerCount))
+
+	for i := 0; i < workerCount; i++ {
+		cm.promotionWg.Add(1)
+		go cm.promotionWorker(i)
+	}
+}
+
+// promotionWorker processes cache promotion tasks from the channel.
+func (cm *CacheManager) promotionWorker(workerID int) {
+	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, loggerComponentName),
+		log.Int("workerId", workerID))
+
+	defer cm.promotionWg.Done()
+
+	for {
+		select {
+		case <-cm.promotionCtx.Done():
+			logger.Debug("Promotion worker stopping due to context cancellation")
+			return
+		case task, ok := <-cm.promotionChannel:
+			if !ok {
+				logger.Debug("Promotion channel closed, worker stopping")
+				return
+			}
+
+			if cm.l1Cache.IsEnabled() {
+				if err := cm.l1Cache.Set(task.Key, task.Value); err != nil {
+					logger.Debug("Failed to promote value from L2 to L1",
+						log.String("key", task.Key.ToString()), log.Error(err))
+				}
+			}
+		}
+	}
+}
+
+// Shutdown gracefully shuts down the cache manager and its worker pool.
+func (cm *CacheManager) Shutdown() {
+	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, loggerComponentName))
+
+	if !cm.enabled {
+		logger.Debug("Cache manager is disabled, nothing to shutdown")
+		return
+	}
+
+	logger.Debug("Shutting down cache manager")
+
+	// Cancel context to signal workers to stop
+	if cm.promotionCancel != nil {
+		cm.promotionCancel()
+	}
+
+	// Close the promotion channel to signal no more tasks
+	if cm.promotionChannel != nil {
+		close(cm.promotionChannel)
+	}
+
+	// Wait for all workers to finish
+	cm.promotionWg.Wait()
+
+	logger.Debug("Cache manager shutdown complete")
 }

@@ -80,14 +80,6 @@ func (cp *CacheProvider) GetCacheManager(cacheType constants.CacheType) manager.
 	cp.cacheManagers[cacheType] = manager.NewCacheManager()
 	logger.Info("Cache manager created for type", log.String("cacheType", string(cacheType)))
 
-	// Start cleanup routine if cache is enabled
-	if cp.cacheManagers[cacheType].IsEnabled() {
-		if manager, ok := cp.cacheManagers[cacheType].(*manager.CacheManager); ok {
-			manager.StartCleanupRoutine()
-			logger.Info("Started cleanup routine for cache manager", log.String("cacheType", string(cacheType)))
-		}
-	}
-
 	return cp.cacheManagers[cacheType]
 }
 

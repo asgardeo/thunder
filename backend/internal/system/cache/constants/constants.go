@@ -45,4 +45,8 @@ const (
 	L1DefaultTTL = 3600
 	// L1DefaultMaxSize represents the default maximum size for L1 cache.
 	L1DefaultMaxSize = 1000
+	// DefaultPromotionWorkerPoolSize represents the default number of workers for cache promotion.
+	DefaultPromotionWorkerPoolSize = 5
+	// DefaultPromotionChannelBuffer represents the default buffer size for promotion channel.
+	DefaultPromotionChannelBuffer = 100
 )
