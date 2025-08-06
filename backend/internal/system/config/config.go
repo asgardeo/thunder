@@ -69,6 +69,28 @@ type DatabaseConfig struct {
 	Runtime  DataSource `yaml:"runtime"`
 }
 
+// L1CacheConfig holds the configuration details for the L1 cache.
+type L1CacheConfig struct {
+	Enabled         bool   `yaml:"enabled"`
+	MaxSize         int    `yaml:"max_size"`
+	DefaultTTL      int    `yaml:"default_ttl"`
+	EvictionPolicy  string `yaml:"eviction_policy"`
+	EnablePromotion bool   `yaml:"enable_promotion"`
+}
+
+// TODO: Uncomment when L2 cache is implemented
+// // L2CacheConfig holds the configuration details for the L2 cache.
+// type L2CacheConfig struct {
+// 	Enabled bool `yaml:"enabled"`
+// }
+
+// CacheConfig holds the cache configuration details.
+type CacheConfig struct {
+	L1 L1CacheConfig `yaml:"l1"`
+	// L2              L2CacheConfig `yaml:"l2"`
+	CleanupInterval int `yaml:"cleanup_interval"`
+}
+
 // JWTConfig holds the JWT configuration details.
 type JWTConfig struct {
 	Issuer         string `yaml:"issuer"`
@@ -104,6 +126,7 @@ type Config struct {
 	GateClient GateClientConfig `yaml:"gate_client"`
 	Security   SecurityConfig   `yaml:"security"`
 	Database   DatabaseConfig   `yaml:"database"`
+	Cache      CacheConfig      `yaml:"cache"`
 	OAuth      OAuthConfig      `yaml:"oauth"`
 	Flow       FlowConfig       `yaml:"flow"`
 }
