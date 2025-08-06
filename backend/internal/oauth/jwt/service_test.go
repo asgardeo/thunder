@@ -43,7 +43,7 @@ import (
 
 type JWTServiceTestSuite struct {
 	suite.Suite
-	mockCertService *certmock.MockSystemCertificateServiceInterface
+	mockCertService *certmock.SystemCertificateServiceInterfaceMock
 	jwtService      *JWTService
 	testKeyFile     string
 	testCertFile    string
@@ -69,8 +69,8 @@ func (suite *JWTServiceTestSuite) SetupTest() {
 		},
 		OAuth: config.OAuthConfig{
 			JWT: config.JWTConfig{
-				Issuer:          "https://test-issuer.com",
-				ValidityPeriod:  7200,
+				Issuer:         "https://test-issuer.com",
+				ValidityPeriod: 7200,
 			},
 		},
 	}
@@ -78,8 +78,8 @@ func (suite *JWTServiceTestSuite) SetupTest() {
 	assert.NoError(suite.T(), err)
 
 	// Setup mocks
-	suite.mockCertService = &certmock.MockSystemCertificateServiceInterface{}
-	
+	suite.mockCertService = &certmock.SystemCertificateServiceInterfaceMock{}
+
 	suite.jwtService = &JWTService{
 		SystemCertificateService: suite.mockCertService,
 	}
@@ -145,7 +145,7 @@ func (suite *JWTServiceTestSuite) createTestKeyFiles() {
 func (suite *JWTServiceTestSuite) TestGetJWTService() {
 	service1 := GetJWTService()
 	service2 := GetJWTService()
-	
+
 	assert.NotNil(suite.T(), service1)
 	assert.Same(suite.T(), service1, service2) // Should be singleton
 	assert.Implements(suite.T(), (*JWTServiceInterface)(nil), service1)
@@ -154,7 +154,7 @@ func (suite *JWTServiceTestSuite) TestGetJWTService() {
 func (suite *JWTServiceTestSuite) TestInit_Success() {
 	service := GetJWTService()
 	err := service.Init()
-	
+
 	assert.NoError(suite.T(), err)
 	assert.NotNil(suite.T(), service.GetPublicKey())
 }
@@ -171,7 +171,7 @@ func (suite *JWTServiceTestSuite) TestInit_KeyFileNotFound() {
 
 	service := GetJWTService()
 	err = service.Init()
-	
+
 	assert.Error(suite.T(), err)
 	assert.Contains(suite.T(), err.Error(), "key file not found")
 }
@@ -197,7 +197,7 @@ func (suite *JWTServiceTestSuite) TestInit_InvalidKeyFile() {
 
 	service := GetJWTService()
 	err = service.Init()
-	
+
 	assert.Error(suite.T(), err)
 	assert.Contains(suite.T(), err.Error(), "failed to decode PEM block")
 }
@@ -206,7 +206,7 @@ func (suite *JWTServiceTestSuite) TestGetPublicKey() {
 	service := GetJWTService()
 	err := service.Init()
 	assert.NoError(suite.T(), err)
-	
+
 	pubKey := service.GetPublicKey()
 	assert.NotNil(suite.T(), pubKey)
 	assert.IsType(suite.T(), &rsa.PublicKey{}, pubKey)
@@ -221,7 +221,7 @@ func (suite *JWTServiceTestSuite) TestGetPublicKey_NotInitialized() {
 func (suite *JWTServiceTestSuite) TestGenerateJWT_Success() {
 	// Setup mocks
 	suite.mockCertService.On("GetCertificateKid").Return("test-kid", nil)
-	
+
 	service := &JWTService{
 		SystemCertificateService: suite.mockCertService,
 	}
@@ -234,7 +234,7 @@ func (suite *JWTServiceTestSuite) TestGenerateJWT_Success() {
 	}
 
 	token, iat, err := service.GenerateJWT("test-subject", "test-audience", 3600, claims)
-	
+
 	assert.NoError(suite.T(), err)
 	assert.NotEmpty(suite.T(), token)
 	assert.Greater(suite.T(), iat, int64(0))
@@ -246,7 +246,7 @@ func (suite *JWTServiceTestSuite) TestGenerateJWT_Success() {
 	// Verify header
 	headerBytes, err := base64.RawURLEncoding.DecodeString(parts[0])
 	assert.NoError(suite.T(), err)
-	
+
 	var header map[string]interface{}
 	err = json.Unmarshal(headerBytes, &header)
 	assert.NoError(suite.T(), err)
@@ -257,7 +257,7 @@ func (suite *JWTServiceTestSuite) TestGenerateJWT_Success() {
 	// Verify payload
 	payloadBytes, err := base64.RawURLEncoding.DecodeString(parts[1])
 	assert.NoError(suite.T(), err)
-	
+
 	var payload map[string]interface{}
 	err = json.Unmarshal(payloadBytes, &payload)
 	assert.NoError(suite.T(), err)
@@ -277,7 +277,7 @@ func (suite *JWTServiceTestSuite) TestGenerateJWT_Success() {
 func (suite *JWTServiceTestSuite) TestGenerateJWT_DefaultValidityPeriod() {
 	// Setup mocks
 	suite.mockCertService.On("GetCertificateKid").Return("test-kid", nil)
-	
+
 	service := &JWTService{
 		SystemCertificateService: suite.mockCertService,
 	}
@@ -285,7 +285,7 @@ func (suite *JWTServiceTestSuite) TestGenerateJWT_DefaultValidityPeriod() {
 	assert.NoError(suite.T(), err)
 
 	token, iat, err := service.GenerateJWT("test-subject", "test-audience", 0, nil)
-	
+
 	assert.NoError(suite.T(), err)
 	assert.NotEmpty(suite.T(), token)
 	assert.Greater(suite.T(), iat, int64(0))
@@ -299,7 +299,7 @@ func (suite *JWTServiceTestSuite) TestGenerateJWT_PrivateKeyNotLoaded() {
 	}
 
 	token, iat, err := service.GenerateJWT("test-subject", "test-audience", 3600, nil)
-	
+
 	assert.Error(suite.T(), err)
 	assert.Equal(suite.T(), "private key not loaded", err.Error())
 	assert.Empty(suite.T(), token)
@@ -309,7 +309,7 @@ func (suite *JWTServiceTestSuite) TestGenerateJWT_PrivateKeyNotLoaded() {
 func (suite *JWTServiceTestSuite) TestGenerateJWT_ErrorGettingKid() {
 	// Setup mocks
 	suite.mockCertService.On("GetCertificateKid").Return("", errors.New("kid error"))
-	
+
 	service := &JWTService{
 		SystemCertificateService: suite.mockCertService,
 	}
@@ -317,7 +317,7 @@ func (suite *JWTServiceTestSuite) TestGenerateJWT_ErrorGettingKid() {
 	assert.NoError(suite.T(), err)
 
 	token, iat, err := service.GenerateJWT("test-subject", "test-audience", 3600, nil)
-	
+
 	assert.Error(suite.T(), err)
 	assert.Equal(suite.T(), "kid error", err.Error())
 	assert.Empty(suite.T(), token)
@@ -369,7 +369,7 @@ func (suite *JWTServiceTestSuite) TestDecodeJWT_Success() {
 	token := headerB64 + "." + payloadB64 + "." + signature
 
 	decodedHeader, decodedPayload, err := DecodeJWT(token)
-	
+
 	assert.NoError(suite.T(), err)
 	assert.Equal(suite.T(), "RS256", decodedHeader["alg"])
 	assert.Equal(suite.T(), "JWT", decodedHeader["typ"])
@@ -412,7 +412,7 @@ func (suite *JWTServiceTestSuite) TestDecodeJWT_InvalidFormat() {
 func (suite *JWTServiceTestSuite) TestDecodeJWT_InvalidBase64Header() {
 	token := "invalid-base64.payload.signature"
 	_, _, err := DecodeJWT(token)
-	
+
 	assert.Error(suite.T(), err)
 	assert.Contains(suite.T(), err.Error(), "failed to decode JWT header")
 }
@@ -420,10 +420,10 @@ func (suite *JWTServiceTestSuite) TestDecodeJWT_InvalidBase64Header() {
 func (suite *JWTServiceTestSuite) TestDecodeJWT_InvalidBase64Payload() {
 	headerBytes, _ := json.Marshal(map[string]interface{}{"alg": "RS256"})
 	headerB64 := base64.RawURLEncoding.EncodeToString(headerBytes)
-	
+
 	token := headerB64 + ".invalid-base64.signature"
 	_, _, err := DecodeJWT(token)
-	
+
 	assert.Error(suite.T(), err)
 	assert.Contains(suite.T(), err.Error(), "failed to decode JWT payload")
 }
@@ -432,10 +432,10 @@ func (suite *JWTServiceTestSuite) TestDecodeJWT_InvalidJSONHeader() {
 	headerB64 := base64.RawURLEncoding.EncodeToString([]byte("invalid json"))
 	payloadBytes, _ := json.Marshal(map[string]interface{}{"sub": "test"})
 	payloadB64 := base64.RawURLEncoding.EncodeToString(payloadBytes)
-	
+
 	token := headerB64 + "." + payloadB64 + ".signature"
 	_, _, err := DecodeJWT(token)
-	
+
 	assert.Error(suite.T(), err)
 	assert.Contains(suite.T(), err.Error(), "failed to unmarshal JWT header")
 }
@@ -444,10 +444,10 @@ func (suite *JWTServiceTestSuite) TestDecodeJWT_InvalidJSONPayload() {
 	headerBytes, _ := json.Marshal(map[string]interface{}{"alg": "RS256"})
 	headerB64 := base64.RawURLEncoding.EncodeToString(headerBytes)
 	payloadB64 := base64.RawURLEncoding.EncodeToString([]byte("invalid json"))
-	
+
 	token := headerB64 + "." + payloadB64 + ".signature"
 	_, _, err := DecodeJWT(token)
-	
+
 	assert.Error(suite.T(), err)
 	assert.Contains(suite.T(), err.Error(), "failed to unmarshal JWT payload")
 }

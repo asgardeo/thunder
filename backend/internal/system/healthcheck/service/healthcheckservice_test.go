@@ -25,7 +25,7 @@ import (
 
 	"github.com/asgardeo/thunder/internal/system/healthcheck/model"
 	"github.com/asgardeo/thunder/tests/mocks/database/clientmock"
-	"github.com/asgardeo/thunder/tests/mocks/database/providermock"
+	dbprovidermock "github.com/asgardeo/thunder/tests/mocks/database/providermock"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
@@ -34,9 +34,9 @@ import (
 type HealthCheckServiceTestSuite struct {
 	suite.Suite
 	service        HealthCheckServiceInterface
-	mockDBProvider *providermock.MockDBProviderInterface
-	mockIdentityDB *clientmock.MockDBClientInterface
-	mockRuntimeDB  *clientmock.MockDBClientInterface
+	mockDBProvider *dbprovidermock.DBProviderInterfaceMock
+	mockIdentityDB *clientmock.DBClientInterfaceMock
+	mockRuntimeDB  *clientmock.DBClientInterfaceMock
 }
 
 func TestHealthCheckServiceSuite(t *testing.T) {
@@ -50,13 +50,13 @@ func (suite *HealthCheckServiceTestSuite) SetupTest() {
 }
 
 func (suite *HealthCheckServiceTestSuite) BeforeTest(suiteName, testName string) {
-	dbClientIdentity := &clientmock.MockDBClientInterface{}
+	dbClientIdentity := &clientmock.DBClientInterfaceMock{}
 	suite.mockIdentityDB = dbClientIdentity
 
-	dbClientRuntime := &clientmock.MockDBClientInterface{}
+	dbClientRuntime := &clientmock.DBClientInterfaceMock{}
 	suite.mockRuntimeDB = dbClientRuntime
 
-	dbProvider := &providermock.MockDBProviderInterface{}
+	dbProvider := &dbprovidermock.DBProviderInterfaceMock{}
 	dbProvider.On("GetDBClient", "identity").Return(dbClientIdentity, nil)
 	dbProvider.On("GetDBClient", "runtime").Return(dbClientRuntime, nil)
 	suite.mockDBProvider = dbProvider

@@ -36,8 +36,8 @@ import (
 type HealthCheckHandlerTestSuite struct {
 	suite.Suite
 	handler      *HealthCheckHandler
-	mockService  *servicemock.MockHealthCheckServiceInterface
-	mockProvider *providermock.MockHealthCheckProviderInterface
+	mockService  *servicemock.HealthCheckServiceInterfaceMock
+	mockProvider *providermock.HealthCheckProviderInterfaceMock
 }
 
 func TestHealthCheckHandlerSuite(t *testing.T) {
@@ -49,8 +49,8 @@ func (suite *HealthCheckHandlerTestSuite) SetupTest() {
 }
 
 func (suite *HealthCheckHandlerTestSuite) BeforeTest(suiteName, testName string) {
-	suite.mockService = &servicemock.MockHealthCheckServiceInterface{}
-	suite.mockProvider = &providermock.MockHealthCheckProviderInterface{}
+	suite.mockService = &servicemock.HealthCheckServiceInterfaceMock{}
+	suite.mockProvider = &providermock.HealthCheckProviderInterfaceMock{}
 	suite.mockProvider.On("GetHealthCheckService").Return(suite.mockService)
 	suite.handler.Provider = suite.mockProvider
 }

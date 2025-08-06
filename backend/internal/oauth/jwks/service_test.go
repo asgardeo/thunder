@@ -42,7 +42,7 @@ import (
 
 type JWKSServiceTestSuite struct {
 	suite.Suite
-	mockCertService *certmock.MockSystemCertificateServiceInterface
+	mockCertService *certmock.SystemCertificateServiceInterfaceMock
 	jwksService     *JWKSService
 }
 
@@ -51,7 +51,7 @@ func TestJWKSServiceSuite(t *testing.T) {
 }
 
 func (suite *JWKSServiceTestSuite) SetupTest() {
-	suite.mockCertService = &certmock.MockSystemCertificateServiceInterface{}
+	suite.mockCertService = &certmock.SystemCertificateServiceInterfaceMock{}
 	suite.jwksService = &JWKSService{
 		SystemCertService: suite.mockCertService,
 	}
@@ -83,11 +83,11 @@ func (suite *JWKSServiceTestSuite) TestGetJWKS_RSAKey_Success() {
 		Subject: pkix.Name{
 			Organization: []string{"Test Org"},
 		},
-		NotBefore:    time.Now(),
-		NotAfter:     time.Now().Add(365 * 24 * time.Hour),
-		KeyUsage:     x509.KeyUsageKeyEncipherment | x509.KeyUsageDigitalSignature,
-		ExtKeyUsage:  []x509.ExtKeyUsage{x509.ExtKeyUsageServerAuth},
-		IPAddresses:  nil,
+		NotBefore:   time.Now(),
+		NotAfter:    time.Now().Add(365 * 24 * time.Hour),
+		KeyUsage:    x509.KeyUsageKeyEncipherment | x509.KeyUsageDigitalSignature,
+		ExtKeyUsage: []x509.ExtKeyUsage{x509.ExtKeyUsageServerAuth},
+		IPAddresses: nil,
 	}
 
 	certDER, err := x509.CreateCertificate(rand.Reader, &template, &template, &privateKey.PublicKey, privateKey)
@@ -138,11 +138,11 @@ func (suite *JWKSServiceTestSuite) TestGetJWKS_ECDSAKey_Success() {
 		Subject: pkix.Name{
 			Organization: []string{"Test Org"},
 		},
-		NotBefore:    time.Now(),
-		NotAfter:     time.Now().Add(365 * 24 * time.Hour),
-		KeyUsage:     x509.KeyUsageKeyEncipherment | x509.KeyUsageDigitalSignature,
-		ExtKeyUsage:  []x509.ExtKeyUsage{x509.ExtKeyUsageServerAuth},
-		IPAddresses:  nil,
+		NotBefore:   time.Now(),
+		NotAfter:    time.Now().Add(365 * 24 * time.Hour),
+		KeyUsage:    x509.KeyUsageKeyEncipherment | x509.KeyUsageDigitalSignature,
+		ExtKeyUsage: []x509.ExtKeyUsage{x509.ExtKeyUsageServerAuth},
+		IPAddresses: nil,
 	}
 
 	certDER, err := x509.CreateCertificate(rand.Reader, &template, &template, &privateKey.PublicKey, privateKey)
