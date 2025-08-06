@@ -22,109 +22,109 @@ packages:
       all: true
       dir: tests/mocks/database/clientmock
       structname: '{{.InterfaceName}}Mock'
-      filename: "{{.InterfaceName}}_mock.go"
       outpkg: clientmock
+      filename: "{{.InterfaceName}}_mock.go"
 
   github.com/asgardeo/thunder/internal/system/database/provider:
     config:
       all: true
       dir: tests/mocks/database/providermock
       structname: '{{.InterfaceName}}Mock'
-      filename: "{{.InterfaceName}}_mock.go"
       outpkg: providermock
+      filename: "{{.InterfaceName}}_mock.go"
 
   github.com/asgardeo/thunder/internal/system/healthcheck/service:
     config:
       all: true
       dir: tests/mocks/healthcheck/servicemock
       structname: '{{.InterfaceName}}Mock'
-      filename: "{{.InterfaceName}}_mock.go"
       outpkg: servicemock
+      filename: "{{.InterfaceName}}_mock.go"
   
   github.com/asgardeo/thunder/internal/system/healthcheck/provider:
     config:
       all: true
       dir: tests/mocks/healthcheck/providermock
       structname: '{{.InterfaceName}}Mock'
-      filename: "{{.InterfaceName}}_mock.go"
       outpkg: providermock
+      filename: "{{.InterfaceName}}_mock.go"
 
   github.com/asgardeo/thunder/internal/cert:
     config:
       all: true
       dir: tests/mocks/certmock
       structname: '{{.InterfaceName}}Mock'
-      filename: "{{.InterfaceName}}_mock.go"
       outpkg: certmock
+      filename: "{{.InterfaceName}}_mock.go"
 
   github.com/asgardeo/thunder/internal/oauth/jwks:
     config:
       all: true
       dir: tests/mocks/oauth/jwksmock
       structname: '{{.InterfaceName}}Mock'
-      filename: "{{.InterfaceName}}_mock.go"
       outpkg: jwksmock
+      filename: "{{.InterfaceName}}_mock.go"
 
   github.com/asgardeo/thunder/internal/oauth/jwt:
     config:
       all: true
       dir: tests/mocks/oauth/jwtmock
       structname: '{{.InterfaceName}}Mock'
-      filename: "{{.InterfaceName}}_mock.go"
       outpkg: jwtmock
+      filename: "{{.InterfaceName}}_mock.go"
 
   github.com/asgardeo/thunder/internal/oauth/scope/provider:
     config:
       all: true
       dir: tests/mocks/oauth/scope/providermock
       structname: '{{.InterfaceName}}Mock'
-      filename: "{{.InterfaceName}}_mock.go"
       outpkg: providermock
+      filename: "{{.InterfaceName}}_mock.go"
 
   github.com/asgardeo/thunder/internal/oauth/scope/validator:
     config:
       all: true
       dir: tests/mocks/oauth/scope/validatormock
       structname: '{{.InterfaceName}}Mock'
-      filename: "{{.InterfaceName}}_mock.go"
       outpkg: validatormock
+      filename: "{{.InterfaceName}}_mock.go"
 
   github.com/asgardeo/thunder/internal/oauth/session/store:
     config:
       all: true
       dir: tests/mocks/oauth/session/storemock
       structname: '{{.InterfaceName}}Mock'
-      filename: "{{.InterfaceName}}_mock.go"
       outpkg: storemock
+      filename: "{{.InterfaceName}}_mock.go"
 
   github.com/asgardeo/thunder/internal/oauth/oauth2/authz:
     config:
       all: true
       dir: tests/mocks/oauth/oauth2/authzmock
       structname: '{{.InterfaceName}}Mock'
-      filename: "{{.InterfaceName}}_mock.go"
       outpkg: authzmock
+      filename: "{{.InterfaceName}}_mock.go"
 
   github.com/asgardeo/thunder/internal/oauth/oauth2/authz/store:
     config:
       all: true
       dir: tests/mocks/oauth/oauth2/authz/storemock
       structname: '{{.InterfaceName}}Mock'
-      filename: "{{.InterfaceName}}_mock.go"
       outpkg: storemock
+      filename: "{{.InterfaceName}}_mock.go"
 
   github.com/asgardeo/thunder/internal/oauth/oauth2/granthandlers:
     config:
       all: true
       dir: tests/mocks/oauth/oauth2/granthandlersmock
       structname: '{{.InterfaceName}}Mock'
-      filename: "{{.InterfaceName}}_mock.go"
       outpkg: granthandlersmock
+      filename: "{{.InterfaceName}}_mock.go"
 
   github.com/asgardeo/thunder/internal/oauth/oauth2/token:
     config:
       all: true
       dir: tests/mocks/oauth/oauth2/tokenmock
       structname: '{{.InterfaceName}}Mock'
-      filename: "{{.InterfaceName}}_mock.go"
       outpkg: tokenmock
+      filename: "{{.InterfaceName}}_mock.go"
