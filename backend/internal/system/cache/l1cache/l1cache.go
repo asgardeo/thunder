@@ -32,16 +32,16 @@ import (
 const loggerComponentName = "L1Cache"
 
 // L1CacheEntry represents an entry in the L1 cache with access tracking.
-type L1CacheEntry struct {
-	*model.CacheEntry
+type L1CacheEntry[T any] struct {
+	*model.CacheEntry[T]
 	listElement *list.Element
 	lastAccess  time.Time
 }
 
 // L1Cache implements the L1CacheInterface with in-memory caching and LRU eviction.
-type L1Cache struct {
+type L1Cache[T any] struct {
 	enabled        bool
-	cache          map[model.CacheKey]*L1CacheEntry
+	cache          map[model.CacheKey]*L1CacheEntry[T]
 	accessOrder    *list.List
 	mu             sync.RWMutex
 	maxSize        int
@@ -53,12 +53,12 @@ type L1Cache struct {
 }
 
 // NewL1Cache creates a new instance of L1Cache.
-func NewL1Cache(enabled bool, maxSize int, ttl time.Duration, evictionPolicy string) model.CacheInterface {
+func NewL1Cache[T any](enabled bool, maxSize int, ttl time.Duration, evictionPolicy string) model.CacheInterface[T] {
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, loggerComponentName))
 
 	if !enabled {
 		logger.Warn("L1 cache is disabled")
-		return &L1Cache{enabled: false}
+		return &L1Cache[T]{enabled: false}
 	}
 
 	cacheMaxSize := maxSize
@@ -74,9 +74,9 @@ func NewL1Cache(enabled bool, maxSize int, ttl time.Duration, evictionPolicy str
 	logger.Debug("Initializing L1 cache", log.String("evictionPolicy", evictionPolicy),
 		log.Int("maxSize", cacheMaxSize), log.Any("ttl", cacheTTL))
 
-	return &L1Cache{
+	return &L1Cache[T]{
 		enabled:        true,
-		cache:          make(map[model.CacheKey]*L1CacheEntry),
+		cache:          make(map[model.CacheKey]*L1CacheEntry[T]),
 		accessOrder:    list.New(),
 		maxSize:        cacheMaxSize,
 		ttl:            cacheTTL,
@@ -85,7 +85,7 @@ func NewL1Cache(enabled bool, maxSize int, ttl time.Duration, evictionPolicy str
 }
 
 // Set adds or updates an entry in the cache.
-func (l1 *L1Cache) Set(key model.CacheKey, value interface{}) error {
+func (l1 *L1Cache[T]) Set(key model.CacheKey, value T) error {
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, loggerComponentName))
 
 	if !l1.enabled {
@@ -109,13 +109,13 @@ func (l1 *L1Cache) Set(key model.CacheKey, value interface{}) error {
 	}
 
 	// Create new entry
-	cacheEntry := &model.CacheEntry{
+	cacheEntry := &model.CacheEntry[T]{
 		Value:      value,
 		ExpiryTime: expiryTime,
 	}
 
 	listElement := l1.accessOrder.PushFront(key)
-	l1CacheEntry := &L1CacheEntry{
+	l1CacheEntry := &L1CacheEntry[T]{
 		CacheEntry:  cacheEntry,
 		listElement: listElement,
 		lastAccess:  now,
@@ -134,11 +134,12 @@ func (l1 *L1Cache) Set(key model.CacheKey, value interface{}) error {
 }
 
 // Get retrieves a value from the cache.
-func (l1 *L1Cache) Get(key model.CacheKey) (interface{}, bool) {
+func (l1 *L1Cache[T]) Get(key model.CacheKey) (T, bool) {
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, loggerComponentName))
 
 	if !l1.enabled {
-		return nil, false
+		var zero T
+		return zero, false
 	}
 
 	l1.mu.Lock()
@@ -147,14 +148,16 @@ func (l1 *L1Cache) Get(key model.CacheKey) (interface{}, bool) {
 	entry, exists := l1.cache[key]
 	if !exists {
 		l1.missCount++
-		return nil, false
+		var zero T
+		return zero, false
 	}
 
 	// Check if entry has expired
 	if time.Now().After(entry.ExpiryTime) {
 		l1.deleteEntry(key, entry)
 		l1.missCount++
-		return nil, false
+		var zero T
+		return zero, false
 	}
 
 	// Update access order for LRU
@@ -168,7 +171,7 @@ func (l1 *L1Cache) Get(key model.CacheKey) (interface{}, bool) {
 }
 
 // Delete removes an entry from the cache.
-func (l1 *L1Cache) Delete(key model.CacheKey) error {
+func (l1 *L1Cache[T]) Delete(key model.CacheKey) error {
 	if !l1.enabled {
 		return nil
 	}
@@ -184,7 +187,7 @@ func (l1 *L1Cache) Delete(key model.CacheKey) error {
 }
 
 // Clear removes all entries from the cache.
-func (l1 *L1Cache) Clear() error {
+func (l1 *L1Cache[T]) Clear() error {
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, loggerComponentName))
 
 	if !l1.enabled {
@@ -194,7 +197,7 @@ func (l1 *L1Cache) Clear() error {
 	l1.mu.Lock()
 	defer l1.mu.Unlock()
 
-	l1.cache = make(map[model.CacheKey]*L1CacheEntry)
+	l1.cache = make(map[model.CacheKey]*L1CacheEntry[T])
 	l1.accessOrder.Init()
 	l1.hitCount = 0
 	l1.missCount = 0
@@ -205,12 +208,12 @@ func (l1 *L1Cache) Clear() error {
 }
 
 // IsEnabled returns whether the cache is enabled.
-func (l1 *L1Cache) IsEnabled() bool {
+func (l1 *L1Cache[T]) IsEnabled() bool {
 	return l1.enabled
 }
 
 // GetStats returns cache statistics.
-func (l1 *L1Cache) GetStats() model.CacheStat {
+func (l1 *L1Cache[T]) GetStats() model.CacheStat {
 	if !l1.enabled {
 		return model.CacheStat{Enabled: false}
 	}
@@ -237,7 +240,7 @@ func (l1 *L1Cache) GetStats() model.CacheStat {
 }
 
 // evictOldest removes the oldest entry from the cache (LRU eviction).
-func (l1 *L1Cache) evictOldest() {
+func (l1 *L1Cache[T]) evictOldest() {
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, loggerComponentName))
 
 	if l1.accessOrder.Len() == 0 {
@@ -257,13 +260,13 @@ func (l1 *L1Cache) evictOldest() {
 }
 
 // deleteEntry removes an entry from both the map and the access order list.
-func (l1 *L1Cache) deleteEntry(key model.CacheKey, entry *L1CacheEntry) {
+func (l1 *L1Cache[T]) deleteEntry(key model.CacheKey, entry *L1CacheEntry[T]) {
 	delete(l1.cache, key)
 	l1.accessOrder.Remove(entry.listElement)
 }
 
 // CleanupExpired removes all expired entries from the cache.
-func (l1 *L1Cache) CleanupExpired() {
+func (l1 *L1Cache[T]) CleanupExpired() {
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, loggerComponentName))
 	logger.Debug("Cleaning up expired entries from L1 cache")
 

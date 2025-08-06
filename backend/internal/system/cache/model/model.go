@@ -34,15 +34,15 @@ func (key CacheKey) ToString() string {
 }
 
 // CacheEntry represents a cache entry.
-type CacheEntry struct {
-	Value      interface{}
+type CacheEntry[T any] struct {
+	Value      T
 	ExpiryTime time.Time
 }
 
 // CacheInterface defines the common interface for all cache implementations.
-type CacheInterface interface {
-	Set(key CacheKey, value interface{}) error
-	Get(key CacheKey) (interface{}, bool)
+type CacheInterface[T any] interface {
+	Set(key CacheKey, value T) error
+	Get(key CacheKey) (T, bool)
 	Delete(key CacheKey) error
 	Clear() error
 	IsEnabled() bool
@@ -67,7 +67,7 @@ type AggregatedCacheStat struct {
 }
 
 // PromotionTask represents a cache promotion task.
-type PromotionTask struct {
+type PromotionTask[T any] struct {
 	Key   CacheKey
-	Value interface{}
+	Value T
 }

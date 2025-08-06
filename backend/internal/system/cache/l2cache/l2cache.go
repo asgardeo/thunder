@@ -27,26 +27,26 @@ import (
 const loggerComponentName = "L2Cache"
 
 // L2Cache implements the L2CacheInterface for distributed caching.
-type L2Cache struct {
+type L2Cache[T any] struct {
 	enabled bool
 }
 
 // NewL2Cache creates a new instance of L2Cache.
-func NewL2Cache(enabled bool) model.CacheInterface {
+func NewL2Cache[T any](enabled bool) model.CacheInterface[T] {
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, loggerComponentName))
 
 	if !enabled {
 		logger.Debug("L2 cache is disabled")
-		return &L2Cache{enabled: false}
+		return &L2Cache[T]{enabled: false}
 	}
 
 	logger.Warn("L2 cache is enabled but not yet implemented")
 	// TODO: Initialize external cache connection
-	return &L2Cache{enabled: false}
+	return &L2Cache[T]{enabled: false}
 }
 
 // Set adds or updates an entry in the L2 cache.
-func (l2 *L2Cache) Set(key model.CacheKey, value interface{}) error {
+func (l2 *L2Cache[T]) Set(key model.CacheKey, value T) error {
 	if !l2.enabled {
 		return nil
 	}
@@ -54,15 +54,17 @@ func (l2 *L2Cache) Set(key model.CacheKey, value interface{}) error {
 }
 
 // Get retrieves a value from the L2 cache.
-func (l2 *L2Cache) Get(key model.CacheKey) (interface{}, bool) {
+func (l2 *L2Cache[T]) Get(key model.CacheKey) (T, bool) {
 	if !l2.enabled {
-		return nil, false
+		var zero T
+		return zero, false
 	}
-	return nil, false
+	var zero T
+	return zero, false
 }
 
 // Delete removes an entry from the L2 cache.
-func (l2 *L2Cache) Delete(key model.CacheKey) error {
+func (l2 *L2Cache[T]) Delete(key model.CacheKey) error {
 	if !l2.enabled {
 		return nil
 	}
@@ -70,7 +72,7 @@ func (l2 *L2Cache) Delete(key model.CacheKey) error {
 }
 
 // Clear removes all entries from the L2 cache.
-func (l2 *L2Cache) Clear() error {
+func (l2 *L2Cache[T]) Clear() error {
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, loggerComponentName))
 
 	if !l2.enabled {
@@ -81,12 +83,12 @@ func (l2 *L2Cache) Clear() error {
 }
 
 // IsEnabled returns whether the L2 cache is enabled.
-func (l2 *L2Cache) IsEnabled() bool {
+func (l2 *L2Cache[T]) IsEnabled() bool {
 	return l2.enabled
 }
 
 // GetStats returns L2 cache statistics.
-func (l2 *L2Cache) GetStats() model.CacheStat {
+func (l2 *L2Cache[T]) GetStats() model.CacheStat {
 	if !l2.enabled {
 		return model.CacheStat{Enabled: false}
 	}

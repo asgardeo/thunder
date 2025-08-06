@@ -16,8 +16,8 @@
  * under the License.
  */
 
-// Package manager provides the cache manager that orchestrates multiple cache levels.
-package manager
+// Package cache provides a cache manager implementation for managing caches.
+package cache
 
 import (
 	"context"
@@ -35,9 +35,9 @@ import (
 const loggerComponentName = "CacheManager"
 
 // CacheManagerInterface defines the interface for cache manager.
-type CacheManagerInterface interface {
-	Set(key model.CacheKey, value interface{}) error
-	Get(key model.CacheKey) (interface{}, bool)
+type CacheManagerInterface[T any] interface {
+	Set(key model.CacheKey, value T) error
+	Get(key model.CacheKey) (T, bool)
 	Delete(key model.CacheKey) error
 	Clear() error
 	IsEnabled() bool
@@ -45,29 +45,29 @@ type CacheManagerInterface interface {
 }
 
 // CacheManager implements the CacheManagerInterface for managing caches.
-type CacheManager struct {
+type CacheManager[T any] struct {
 	enabled          bool
-	l1Cache          model.CacheInterface
-	l2Cache          model.CacheInterface
+	l1Cache          model.CacheInterface[T]
+	l2Cache          model.CacheInterface[T]
 	mu               sync.RWMutex
-	promotionChannel chan model.PromotionTask
+	promotionChannel chan model.PromotionTask[T]
 	promotionWg      sync.WaitGroup
 	promotionCtx     context.Context
 	promotionCancel  context.CancelFunc
 }
 
 // NewCacheManager creates a new cache manager instance.
-func NewCacheManager() CacheManagerInterface {
+func NewCacheManager[T any]() CacheManagerInterface[T] {
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, loggerComponentName))
 
 	// TODO: Add check for validating L2 cache configuration when implemented
 	cacheConfig := config.GetThunderRuntime().Config.Cache
 	if !cacheConfig.L1.Enabled {
 		logger.Debug("Cache system is disabled")
-		return &CacheManager{
+		return &CacheManager[T]{
 			enabled: false,
-			l1Cache: l1cache.NewL1Cache(false, 0, 0, ""),
-			l2Cache: l2cache.NewL2Cache(false),
+			l1Cache: l1cache.NewL1Cache[T](false, 0, 0, ""),
+			l2Cache: l2cache.NewL2Cache[T](false),
 		}
 	}
 
@@ -83,19 +83,19 @@ func NewCacheManager() CacheManagerInterface {
 		defaultTTL = constants.L1DefaultTTL
 	}
 
-	l1Cache := l1cache.NewL1Cache(
+	l1Cache := l1cache.NewL1Cache[T](
 		cacheConfig.L1.Enabled,
 		maxSize,
 		time.Duration(defaultTTL)*time.Second,
 		cacheConfig.L1.EvictionPolicy,
 	)
-	l2Cache := l2cache.NewL2Cache(false)
+	l2Cache := l2cache.NewL2Cache[T](false)
 
 	// Initialize worker pool for cache promotion
 	promotionCtx, promotionCancel := context.WithCancel(context.Background())
-	promotionChannel := make(chan model.PromotionTask, constants.DefaultPromotionChannelBuffer)
+	promotionChannel := make(chan model.PromotionTask[T], constants.DefaultPromotionChannelBuffer)
 
-	cm := &CacheManager{
+	cm := &CacheManager[T]{
 		enabled:          true,
 		l1Cache:          l1Cache,
 		l2Cache:          l2Cache,
@@ -114,7 +114,7 @@ func NewCacheManager() CacheManagerInterface {
 }
 
 // Set stores a value in the cache with default TTL.
-func (cm *CacheManager) Set(key model.CacheKey, value interface{}) error {
+func (cm *CacheManager[T]) Set(key model.CacheKey, value T) error {
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, loggerComponentName))
 
 	if !cm.enabled {
@@ -142,11 +142,12 @@ func (cm *CacheManager) Set(key model.CacheKey, value interface{}) error {
 }
 
 // Get retrieves a value from the cache.
-func (cm *CacheManager) Get(key model.CacheKey) (interface{}, bool) {
+func (cm *CacheManager[T]) Get(key model.CacheKey) (T, bool) {
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, loggerComponentName))
 
 	if !cm.enabled {
-		return nil, false
+		var zero T
+		return zero, false
 	}
 
 	cm.mu.RLock()
@@ -165,7 +166,7 @@ func (cm *CacheManager) Get(key model.CacheKey) (interface{}, bool) {
 			// Populate L1 cache with the value from L2 (cache promotion)
 			if cm.l1Cache.IsEnabled() && config.GetThunderRuntime().Config.Cache.L1.EnablePromotion {
 				select {
-				case cm.promotionChannel <- model.PromotionTask{Key: key, Value: value}:
+				case cm.promotionChannel <- model.PromotionTask[T]{Key: key, Value: value}:
 				default:
 					logger.Debug("Promotion channel full, skipping cache promotion",
 						log.String("key", key.ToString()))
@@ -175,11 +176,12 @@ func (cm *CacheManager) Get(key model.CacheKey) (interface{}, bool) {
 		}
 	}
 
-	return nil, false
+	var zero T
+	return zero, false
 }
 
 // Delete removes a value from the cache.
-func (cm *CacheManager) Delete(key model.CacheKey) error {
+func (cm *CacheManager[T]) Delete(key model.CacheKey) error {
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, loggerComponentName))
 
 	if !cm.enabled {
@@ -207,7 +209,7 @@ func (cm *CacheManager) Delete(key model.CacheKey) error {
 }
 
 // Clear removes all entries in the cache.
-func (cm *CacheManager) Clear() error {
+func (cm *CacheManager[T]) Clear() error {
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, loggerComponentName))
 
 	if !cm.enabled {
@@ -236,12 +238,12 @@ func (cm *CacheManager) Clear() error {
 }
 
 // IsEnabled returns whether the cache manager is enabled.
-func (cm *CacheManager) IsEnabled() bool {
+func (cm *CacheManager[T]) IsEnabled() bool {
 	return cm.enabled
 }
 
 // startCleanupRoutine starts a background routine to clean up expired entries.
-func (cm *CacheManager) startCleanupRoutine() {
+func (cm *CacheManager[T]) startCleanupRoutine() {
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, loggerComponentName))
 
 	if !cm.enabled {
@@ -262,7 +264,7 @@ func (cm *CacheManager) startCleanupRoutine() {
 
 		for range ticker.C {
 			// Clean up L1 cache expired entries
-			if l1Cache, ok := cm.l1Cache.(*l1cache.L1Cache); ok && l1Cache.IsEnabled() {
+			if l1Cache, ok := cm.l1Cache.(*l1cache.L1Cache[T]); ok && l1Cache.IsEnabled() {
 				l1Cache.CleanupExpired()
 			}
 		}
@@ -272,7 +274,7 @@ func (cm *CacheManager) startCleanupRoutine() {
 }
 
 // startPromotionWorkers starts the worker pool for cache promotion tasks.
-func (cm *CacheManager) startPromotionWorkers() {
+func (cm *CacheManager[T]) startPromotionWorkers() {
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, loggerComponentName))
 
 	if !cm.enabled || !config.GetThunderRuntime().Config.Cache.L1.EnablePromotion {
@@ -290,7 +292,7 @@ func (cm *CacheManager) startPromotionWorkers() {
 }
 
 // promotionWorker processes cache promotion tasks from the channel.
-func (cm *CacheManager) promotionWorker(workerID int) {
+func (cm *CacheManager[T]) promotionWorker(workerID int) {
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, loggerComponentName),
 		log.Int("workerId", workerID))
 
@@ -318,7 +320,7 @@ func (cm *CacheManager) promotionWorker(workerID int) {
 }
 
 // Shutdown gracefully shuts down the cache manager and its worker pool.
-func (cm *CacheManager) Shutdown() {
+func (cm *CacheManager[T]) Shutdown() {
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, loggerComponentName))
 
 	if !cm.enabled {
