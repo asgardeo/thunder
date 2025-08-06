@@ -92,13 +92,13 @@ func (suite *ServerOperationServiceTestSuite) TestWrapHandleFunction() {
 			suite.handlerExecuted = false
 
 			// Set up mocks
-			dbClient := &clientmock.DBClientInterfaceMock{}
+			dbClient := &clientmock.MockDBClientInterface{}
 			dbClient.On("Close").Return(nil)
 			dbClient.On("Query", mock.AnythingOfType("model.DBQuery")).Return([]map[string]interface{}{
 				{"allowed_origins": tc.allowedOrigins},
 			}, nil)
 
-			dbProvider := &providermock.DBProviderInterfaceMock{}
+			dbProvider := &providermock.MockDBProviderInterface{}
 			dbProvider.On("GetDBClient", "identity").Return(dbClient, nil)
 			suite.service.(*ServerOperationService).DBProvider = dbProvider
 
@@ -141,7 +141,7 @@ func (suite *ServerOperationServiceTestSuite) TestWrapHandleFunction() {
 }
 
 func (suite *ServerOperationServiceTestSuite) TestWrapHandleFunctionWithError() {
-	dbProvider := &providermock.DBProviderInterfaceMock{}
+	dbProvider := &providermock.MockDBProviderInterface{}
 	dbProvider.On("GetDBClient", "identity").Return(nil, errors.New("database connection error"))
 	suite.service.(*ServerOperationService).DBProvider = dbProvider
 
@@ -173,7 +173,7 @@ func (suite *ServerOperationServiceTestSuite) TestWrapHandleFunctionWithError() 
 }
 
 func (suite *ServerOperationServiceTestSuite) TestGetAllowedOriginsDBClientError() {
-	dbProvider := &providermock.DBProviderInterfaceMock{}
+	dbProvider := &providermock.MockDBProviderInterface{}
 	dbProvider.On("GetDBClient", "identity").Return(nil, errors.New("database connection error"))
 	suite.service.(*ServerOperationService).DBProvider = dbProvider
 
@@ -187,11 +187,11 @@ func (suite *ServerOperationServiceTestSuite) TestGetAllowedOriginsDBClientError
 }
 
 func (suite *ServerOperationServiceTestSuite) TestGetAllowedOriginsQueryError() {
-	dbClient := &clientmock.DBClientInterfaceMock{}
+	dbClient := &clientmock.MockDBClientInterface{}
 	dbClient.On("Close").Return(nil)
 	dbClient.On("Query", mock.AnythingOfType("model.DBQuery")).Return(nil, errors.New("query execution error"))
 
-	dbProvider := &providermock.DBProviderInterfaceMock{}
+	dbProvider := &providermock.MockDBProviderInterface{}
 	dbProvider.On("GetDBClient", "identity").Return(dbClient, nil)
 	suite.service.(*ServerOperationService).DBProvider = dbProvider
 
@@ -205,11 +205,11 @@ func (suite *ServerOperationServiceTestSuite) TestGetAllowedOriginsQueryError() 
 }
 
 func (suite *ServerOperationServiceTestSuite) TestGetAllowedOriginsEmptyResults() {
-	dbClient := &clientmock.DBClientInterfaceMock{}
+	dbClient := &clientmock.MockDBClientInterface{}
 	dbClient.On("Close").Return(nil)
 	dbClient.On("Query", mock.AnythingOfType("model.DBQuery")).Return([]map[string]interface{}{}, nil)
 
-	dbProvider := &providermock.DBProviderInterfaceMock{}
+	dbProvider := &providermock.MockDBProviderInterface{}
 	dbProvider.On("GetDBClient", "identity").Return(dbClient, nil)
 	suite.service.(*ServerOperationService).DBProvider = dbProvider
 
@@ -290,10 +290,10 @@ func (suite *ServerOperationServiceTestSuite) TestAddAllowedOriginHeaders() {
 	for _, tc := range testCases {
 		suite.T().Run(tc.name, func(t *testing.T) {
 			// Set up mocks
-			dbClient := &clientmock.DBClientInterfaceMock{}
+			dbClient := &clientmock.MockDBClientInterface{}
 			dbClient.On("Close").Return(nil)
 
-			dbProvider := &providermock.DBProviderInterfaceMock{}
+			dbProvider := &providermock.MockDBProviderInterface{}
 
 			service := suite.service.(*ServerOperationService)
 			service.DBProvider = dbProvider

@@ -34,9 +34,9 @@ import (
 type HealthCheckServiceTestSuite struct {
 	suite.Suite
 	service        HealthCheckServiceInterface
-	mockDBProvider *dbprovidermock.DBProviderInterfaceMock
-	mockIdentityDB *clientmock.DBClientInterfaceMock
-	mockRuntimeDB  *clientmock.DBClientInterfaceMock
+	mockDBProvider *dbprovidermock.MockDBProviderInterface
+	mockIdentityDB *clientmock.MockDBClientInterface
+	mockRuntimeDB  *clientmock.MockDBClientInterface
 }
 
 func TestHealthCheckServiceSuite(t *testing.T) {
@@ -50,13 +50,13 @@ func (suite *HealthCheckServiceTestSuite) SetupTest() {
 }
 
 func (suite *HealthCheckServiceTestSuite) BeforeTest(suiteName, testName string) {
-	dbClientIdentity := &clientmock.DBClientInterfaceMock{}
+	dbClientIdentity := &clientmock.MockDBClientInterface{}
 	suite.mockIdentityDB = dbClientIdentity
 
-	dbClientRuntime := &clientmock.DBClientInterfaceMock{}
+	dbClientRuntime := &clientmock.MockDBClientInterface{}
 	suite.mockRuntimeDB = dbClientRuntime
 
-	dbProvider := &dbprovidermock.DBProviderInterfaceMock{}
+	dbProvider := &dbprovidermock.MockDBProviderInterface{}
 	dbProvider.On("GetDBClient", "identity").Return(dbClientIdentity, nil)
 	dbProvider.On("GetDBClient", "runtime").Return(dbClientRuntime, nil)
 	suite.mockDBProvider = dbProvider

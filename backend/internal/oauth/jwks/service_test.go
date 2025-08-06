@@ -37,12 +37,12 @@ import (
 
 	"github.com/asgardeo/thunder/internal/oauth/jwks/constants"
 	"github.com/asgardeo/thunder/internal/system/config"
-	"	certmock "github.com/asgardeo/thunder/tests/mocks/certmock""
+	"github.com/asgardeo/thunder/tests/mocks/certmock"
 )
 
 type JWKSServiceTestSuite struct {
 	suite.Suite
-	mockCertService *certmock.SystemCertificateServiceInterfaceMock
+	mockCertService *certmock.MockSystemCertificateServiceInterface
 	jwksService     *JWKSService
 }
 
@@ -51,7 +51,7 @@ func TestJWKSServiceSuite(t *testing.T) {
 }
 
 func (suite *JWKSServiceTestSuite) SetupTest() {
-	suite.mockCertService = &certmock.SystemCertificateServiceInterfaceMock{}
+	suite.mockCertService = &certmock.MockSystemCertificateServiceInterface{}
 	suite.jwksService = &JWKSService{
 		SystemCertService: suite.mockCertService,
 	}
