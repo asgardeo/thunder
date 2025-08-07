@@ -30,6 +30,7 @@ import (
 	certconst "github.com/asgardeo/thunder/internal/cert/constants"
 	certmodel "github.com/asgardeo/thunder/internal/cert/model"
 	"github.com/asgardeo/thunder/internal/flow/flowmgt"
+	"github.com/asgardeo/thunder/internal/system/cache"
 	"github.com/asgardeo/thunder/internal/system/config"
 	"github.com/asgardeo/thunder/internal/system/crypto/hash"
 	"github.com/asgardeo/thunder/internal/system/error/serviceerror"
@@ -50,15 +51,21 @@ type ApplicationServiceInterface interface {
 
 // ApplicationService is the default implementation of the ApplicationServiceInterface.
 type ApplicationService struct {
-	AppStore    store.ApplicationStoreInterface
-	CertService cert.CertificateServiceInterface
+	AppByIDCacheManager   cache.CacheManagerInterface[*model.ApplicationProcessedDTO]
+	AppByNameCacheManager cache.CacheManagerInterface[*model.ApplicationProcessedDTO]
+	OAuthAppCacheManager  cache.CacheManagerInterface[*model.OAuthAppConfigProcessed]
+	AppStore              store.ApplicationStoreInterface
+	CertService           cert.CertificateServiceInterface
 }
 
 // GetApplicationService creates a new instance of ApplicationService.
 func GetApplicationService() ApplicationServiceInterface {
 	return &ApplicationService{
-		AppStore:    store.NewApplicationStore(),
-		CertService: cert.NewCertificateService(),
+		AppByIDCacheManager:   cache.GetCacheManager[*model.ApplicationProcessedDTO]("ApplicationByIDCache"),
+		AppByNameCacheManager: cache.GetCacheManager[*model.ApplicationProcessedDTO]("ApplicationByNameCache"),
+		OAuthAppCacheManager:  cache.GetCacheManager[*model.OAuthAppConfigProcessed]("OAuthAppCache"),
+		AppStore:              store.NewApplicationStore(),
+		CertService:           cert.NewCertificateService(),
 	}
 }
 
@@ -69,6 +76,16 @@ func (as *ApplicationService) GetOAuthApplication(clientID string) (*model.OAuth
 		return nil, &constants.ErrorInvalidClientID
 	}
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, "ApplicationService"))
+
+	// Check if the OAuth application is cached.
+	cacheKey := cache.CacheKey{
+		Key: clientID,
+	}
+	cachedApp, ok := as.OAuthAppCacheManager.Get(cacheKey)
+	if ok {
+		return cachedApp, nil
+	}
+
 	oauthApp, err := as.AppStore.GetOAuthApplication(clientID)
 	if err != nil {
 		if errors.Is(err, constants.ApplicationNotFoundError) {
@@ -79,6 +96,10 @@ func (as *ApplicationService) GetOAuthApplication(clientID string) (*model.OAuth
 			log.String("clientID", log.MaskString(clientID)))
 		return nil, &constants.ErrorInternalServerError
 	}
+	if oauthApp == nil {
+		return nil, &constants.ErrorApplicationNotFound
+	}
+	as.cacheOAuthApplication(oauthApp)
 
 	return oauthApp, nil
 }
@@ -95,7 +116,7 @@ func (as *ApplicationService) CreateApplication(app *model.ApplicationDTO) (*mod
 		return nil, &constants.ErrorInvalidApplicationName
 	}
 
-	// Check if a application with the same name already exists.
+	// Check if a application with the same name already exists
 	existingApp, appCheckErr := as.AppStore.GetApplicationByName(app.Name)
 	if appCheckErr != nil && !errors.Is(appCheckErr, constants.ApplicationNotFoundError) {
 		logger.Error("Failed to check existing application by name", log.Error(appCheckErr),
@@ -111,7 +132,7 @@ func (as *ApplicationService) CreateApplication(app *model.ApplicationDTO) (*mod
 		return nil, err
 	}
 
-	// Check if a application with the same client ID already exists.
+	// Check if a application with the same client ID already exists
 	clientID := inboundAuthConfig.OAuthAppConfig.ClientID
 	if clientID != "" {
 		existingAppWithClientID, clientCheckErr := as.AppStore.GetOAuthApplication(clientID)
@@ -206,6 +227,8 @@ func (as *ApplicationService) CreateApplication(app *model.ApplicationDTO) (*mod
 		InboundAuthConfig:         []model.InboundAuthConfig{*inboundAuthConfig},
 	}
 
+	as.cacheApplication(processedDTO)
+
 	return returnApp, nil
 }
 
@@ -259,10 +282,20 @@ func (as *ApplicationService) GetApplicationByID(appID string) (*model.Applicati
 		return nil, &constants.ErrorInvalidApplicationID
 	}
 
+	// Check if the application is cached.
+	cacheKey := cache.CacheKey{
+		Key: appID,
+	}
+	cachedApp, ok := as.AppByIDCacheManager.Get(cacheKey)
+	if ok {
+		return as.enrichApplicationWithCertificate(cachedApp)
+	}
+
 	application, err := as.AppStore.GetApplicationByID(appID)
 	if err != nil {
 		return nil, as.handleApplicationRetrievalError(err)
 	}
+	as.cacheApplication(application)
 
 	return as.enrichApplicationWithCertificate(application)
 }
@@ -274,10 +307,20 @@ func (as *ApplicationService) GetApplicationByName(appName string) (*model.Appli
 		return nil, &constants.ErrorInvalidApplicationName
 	}
 
+	// Check if the application is cached by name.
+	cacheKey := cache.CacheKey{
+		Key: appName,
+	}
+	cachedApp, ok := as.AppByNameCacheManager.Get(cacheKey)
+	if ok {
+		return as.enrichApplicationWithCertificate(cachedApp)
+	}
+
 	application, err := as.AppStore.GetApplicationByName(appName)
 	if err != nil {
 		return nil, as.handleApplicationRetrievalError(err)
 	}
+	as.cacheApplication(application)
 
 	return as.enrichApplicationWithCertificate(application)
 }
@@ -318,12 +361,27 @@ func (as *ApplicationService) UpdateApplication(appID string, app *model.Applica
 	}
 
 	// Check if the application exists.
-	existingApp, appCheckErr := as.AppStore.GetApplicationByID(appID)
-	if appCheckErr != nil {
-		if errors.Is(appCheckErr, constants.ApplicationNotFoundError) {
+	// Check if the application is cached by ID.
+	cacheKey := cache.CacheKey{
+		Key: appID,
+	}
+	existingApp, ok := as.AppByIDCacheManager.Get(cacheKey)
+
+	// If the application is not cached, retrieve it from the store.
+	if !ok {
+		var appCheckErr error
+		existingApp, appCheckErr = as.AppStore.GetApplicationByID(appID)
+		if appCheckErr != nil {
+			if errors.Is(appCheckErr, constants.ApplicationNotFoundError) {
+				return nil, &constants.ErrorApplicationNotFound
+			}
+			logger.Error("Failed to get existing application", log.Error(appCheckErr), log.String("appID", appID))
+			return nil, &constants.ErrorInternalServerError
+		}
+		if existingApp == nil {
+			logger.Debug("Application not found for update", log.String("appID", appID))
 			return nil, &constants.ErrorApplicationNotFound
 		}
-		return nil, &constants.ErrorInternalServerError
 	}
 
 	// If the application name is changed, check if a application with the new name already exists.
@@ -339,9 +397,9 @@ func (as *ApplicationService) UpdateApplication(appID string, app *model.Applica
 		}
 	}
 
-	inboundAuthConfig, err := validateOAuthParamsForCreateAndUpdate(app)
-	if err != nil {
-		return nil, err
+	inboundAuthConfig, svcErr := validateOAuthParamsForCreateAndUpdate(app)
+	if svcErr != nil {
+		return nil, svcErr
 	}
 
 	// If the client ID is changed, check if a application with the new client ID already exists.
@@ -359,11 +417,11 @@ func (as *ApplicationService) UpdateApplication(appID string, app *model.Applica
 		}
 	}
 
-	if err := validateAuthFlowGraphID(app); err != nil {
-		return nil, err
+	if svcErr := validateAuthFlowGraphID(app); svcErr != nil {
+		return nil, svcErr
 	}
-	if err := validateRegistrationFlowGraphID(app); err != nil {
-		return nil, err
+	if svcErr := validateRegistrationFlowGraphID(app); svcErr != nil {
+		return nil, svcErr
 	}
 
 	if app.URL != "" && !sysutils.IsValidURI(app.URL) {
@@ -373,9 +431,9 @@ func (as *ApplicationService) UpdateApplication(appID string, app *model.Applica
 		return nil, &constants.ErrorInvalidLogoURL
 	}
 
-	existingCert, updatedCert, returnCert, err := as.updateApplicationCertificate(app)
-	if err != nil {
-		return nil, err
+	existingCert, updatedCert, returnCert, svcErr := as.updateApplicationCertificate(app)
+	if svcErr != nil {
+		return nil, svcErr
 	}
 
 	processedInboundAuthConfig := model.InboundAuthConfigProcessed{
@@ -414,6 +472,17 @@ func (as *ApplicationService) UpdateApplication(appID string, app *model.Applica
 		return nil, &constants.ErrorInternalServerError
 	}
 
+	// Invalidate the application caches.
+	existingAppClientID := ""
+	if len(existingApp.InboundAuthConfig) > 0 && existingApp.InboundAuthConfig[0].OAuthAppConfig != nil {
+		existingAppClientID = existingApp.InboundAuthConfig[0].OAuthAppConfig.ClientID
+	}
+	as.invalidateApplicationCache(appID, existingApp.Name, existingAppClientID)
+
+	// Cache the updated application.
+	as.cacheApplication(processedDTO)
+	as.cacheOAuthApplication(processedInboundAuthConfig.OAuthAppConfig)
+
 	returnApp := &model.ApplicationDTO{
 		ID:                        appID,
 		Name:                      app.Name,
@@ -435,16 +504,48 @@ func (as *ApplicationService) DeleteApplication(appID string) *serviceerror.Serv
 	if appID == "" {
 		return &constants.ErrorInvalidApplicationID
 	}
+	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, "ApplicationService"))
 
+	// Get the application to find app details for cache invalidation.
+	cacheKey := cache.CacheKey{
+		Key: appID,
+	}
+	existingApp, ok := as.AppByIDCacheManager.Get(cacheKey)
+	if !ok {
+		var appErr error
+		existingApp, appErr = as.AppStore.GetApplicationByID(appID)
+		if appErr != nil {
+			if errors.Is(appErr, constants.ApplicationNotFoundError) {
+				logger.Debug("Application not found before deletion", log.String("appID", appID))
+				return nil
+			}
+			logger.Error("Failed to get application before deletion", log.Error(appErr), log.String("appID", appID))
+			return &constants.ErrorInternalServerError
+		}
+	}
+	if existingApp == nil {
+		logger.Debug("Application not found before deletion", log.String("appID", appID))
+		return nil
+	}
+
+	// Delete the application from the store
 	err := as.AppStore.DeleteApplication(appID)
 	if err != nil {
 		return &constants.ErrorInternalServerError
 	}
 
+	// Delete the application certificate
 	svcErr := as.deleteApplicationCertificate(appID)
 	if svcErr != nil {
 		return svcErr
 	}
+
+	// Invalidate the application caches.
+	clientID := ""
+	if len(existingApp.InboundAuthConfig) > 0 && existingApp.InboundAuthConfig[0].OAuthAppConfig != nil {
+		clientID = existingApp.InboundAuthConfig[0].OAuthAppConfig.ClientID
+	}
+	as.invalidateApplicationCache(appID, existingApp.Name, clientID)
 
 	return nil
 }
@@ -865,7 +966,6 @@ func (as *ApplicationService) rollbackApplicationCertificateUpdate(appID string,
 					}
 					return &retErr
 				}
-
 				logger.Error("Failed to delete application certificate after update failure",
 					log.Any("serviceError", deleteErr), log.String("appID", appID))
 				return &constants.ErrorCertificateServerError
@@ -894,4 +994,84 @@ func (as *ApplicationService) rollbackApplicationCertificateUpdate(appID string,
 	}
 
 	return nil
+}
+
+// cacheApplication caches the application and OAuth application configuration if it exists.
+func (as *ApplicationService) cacheApplication(app *model.ApplicationProcessedDTO) {
+	if app == nil {
+		return
+	}
+	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, "ApplicationService"))
+
+	if app.ID != "" {
+		appByIDCacheKey := cache.CacheKey{
+			Key: app.ID,
+		}
+		if err := as.AppByIDCacheManager.Set(appByIDCacheKey, app); err != nil {
+			logger.Error("Failed to cache application by ID", log.String("appID", app.ID), log.Error(err))
+		}
+	}
+	if app.Name != "" {
+		appByNameCacheKey := cache.CacheKey{
+			Key: app.Name,
+		}
+		if err := as.AppByNameCacheManager.Set(appByNameCacheKey, app); err != nil {
+			logger.Error("Failed to cache application by name", log.String("appName", app.Name),
+				log.Error(err))
+		}
+	}
+
+	// Cache the OAuth application configuration if it exists.
+	if len(app.InboundAuthConfig) > 0 && app.InboundAuthConfig[0].OAuthAppConfig != nil {
+		as.cacheOAuthApplication(app.InboundAuthConfig[0].OAuthAppConfig)
+	}
+}
+
+// cacheOAuthApplication caches the OAuth application configuration if it exists.
+func (as *ApplicationService) cacheOAuthApplication(oAuthAppConfig *model.OAuthAppConfigProcessed) {
+	if oAuthAppConfig == nil || oAuthAppConfig.ClientID == "" {
+		return
+	}
+	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, "ApplicationService"))
+
+	oauthCacheKey := cache.CacheKey{
+		Key: oAuthAppConfig.ClientID,
+	}
+	if err := as.OAuthAppCacheManager.Set(oauthCacheKey, oAuthAppConfig); err != nil {
+		logger.Error("Failed to cache OAuth application", log.String("clientID", oAuthAppConfig.ClientID),
+			log.Error(err))
+	}
+}
+
+// InvalidateApplicationCache invalidates all application caches.
+func (as *ApplicationService) invalidateApplicationCache(appID, appName, clientID string) {
+	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, "ApplicationService"))
+
+	if appID != "" {
+		cacheKey := cache.CacheKey{
+			Key: appID,
+		}
+		err := as.AppByIDCacheManager.Delete(cacheKey)
+		if err != nil {
+			logger.Error("Failed to delete application cache by ID", log.String("appID", appID), log.Error(err))
+		}
+	}
+	if appName != "" {
+		cacheKey := cache.CacheKey{
+			Key: appName,
+		}
+		err := as.AppByNameCacheManager.Delete(cacheKey)
+		if err != nil {
+			logger.Error("Failed to delete application cache by name", log.String("appName", appName), log.Error(err))
+		}
+	}
+	if clientID != "" {
+		oauthCacheKey := cache.CacheKey{
+			Key: clientID,
+		}
+		err := as.OAuthAppCacheManager.Delete(oauthCacheKey)
+		if err != nil {
+			logger.Error("Failed to delete OAuth application cache", log.String("clientID", clientID), log.Error(err))
+		}
+	}
 }
