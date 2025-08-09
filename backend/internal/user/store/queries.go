@@ -30,32 +30,32 @@ import (
 var (
 	// QueryGetUserCount is the query to get total count of users.
 	QueryGetUserCount = model.DBQuery{
-		ID:    "ASQ-USER_MGT-00",
+		ID:    "ASQ-USER_MGT-01",
 		Query: "SELECT COUNT(*) as total FROM \"USER\"",
+	}
+	// QueryGetUserList is the query to get a list of users.
+	QueryGetUserList = model.DBQuery{
+		ID:    "ASQ-USER_MGT-02",
+		Query: "SELECT USER_ID, OU_ID, TYPE, ATTRIBUTES FROM \"USER\" ORDER BY USER_ID LIMIT $1 OFFSET $2",
 	}
 	// QueryCreateUser is the query to create a new user.
 	QueryCreateUser = model.DBQuery{
-		ID:    "ASQ-USER_MGT-01",
+		ID:    "ASQ-USER_MGT-03",
 		Query: "INSERT INTO \"USER\" (USER_ID, OU_ID, TYPE, ATTRIBUTES, CREDENTIALS) VALUES ($1, $2, $3, $4, $5)",
 	}
 	// QueryGetUserByUserID is the query to get a user by user ID.
 	QueryGetUserByUserID = model.DBQuery{
-		ID:    "ASQ-USER_MGT-02",
+		ID:    "ASQ-USER_MGT-04",
 		Query: "SELECT USER_ID, OU_ID, TYPE, ATTRIBUTES FROM \"USER\" WHERE USER_ID = $1",
-	}
-	// QueryGetUserList is the query to get a list of users.
-	QueryGetUserList = model.DBQuery{
-		ID:    "ASQ-USER_MGT-03",
-		Query: "SELECT USER_ID, OU_ID, TYPE, ATTRIBUTES FROM \"USER\" ORDER BY USER_ID LIMIT $1 OFFSET $2",
 	}
 	// QueryUpdateUserByUserID is the query to update a user by user ID.
 	QueryUpdateUserByUserID = model.DBQuery{
-		ID:    "ASQ-USER_MGT-04",
+		ID:    "ASQ-USER_MGT-05",
 		Query: "UPDATE \"USER\" SET OU_ID = $2, TYPE = $3, ATTRIBUTES = $4 WHERE USER_ID = $1;",
 	}
 	// QueryDeleteUserByUserID is the query to delete a user by user ID.
 	QueryDeleteUserByUserID = model.DBQuery{
-		ID:    "ASQ-USER_MGT-05",
+		ID:    "ASQ-USER_MGT-06",
 		Query: "DELETE FROM \"USER\" WHERE USER_ID = $1",
 	}
 	// QueryValidateUserWithCredentials is the query to validate the user with the give credentials.
@@ -68,7 +68,7 @@ var (
 // buildIdentifyQuery constructs a query to identify a user based on the provided filters.
 func buildIdentifyQuery(filters map[string]interface{}) (model.DBQuery, []interface{}, error) {
 	baseQuery := "SELECT USER_ID FROM \"USER\" WHERE 1=1"
-	queryID := "ASQ-USER_MGT-06"
+	queryID := "ASQ-USER_MGT-08"
 	columnName := "ATTRIBUTES"
 	return utils.BuildFilterQuery(queryID, baseQuery, columnName, filters)
 }
@@ -95,7 +95,7 @@ func buildBulkUserExistsQuery(userIDs []string) (model.DBQuery, []interface{}, e
 	sqliteQuery := fmt.Sprintf(baseQuery, strings.Join(sqlitePlaceholders, ","))
 
 	query := model.DBQuery{
-		ID:            "ASQ-USER_MGT-08",
+		ID:            "ASQ-USER_MGT-09",
 		Query:         postgresQuery,
 		PostgresQuery: postgresQuery,
 		SQLiteQuery:   sqliteQuery,

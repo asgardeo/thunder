@@ -41,38 +41,6 @@ const loggerComponentName = "UserHandler"
 type UserHandler struct {
 }
 
-// HandleUserPostRequest handles the user request.
-func (ah *UserHandler) HandleUserPostRequest(w http.ResponseWriter, r *http.Request) {
-	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, "UserHandler"))
-
-	var userInCreationRequest model.User
-	if err := json.NewDecoder(r.Body).Decode(&userInCreationRequest); err != nil {
-		http.Error(w, "Bad Request: The request body is malformed or contains invalid data.", http.StatusBadRequest)
-		return
-	}
-
-	// Create the user using the user service.
-	userProvider := userprovider.NewUserProvider()
-	userService := userProvider.GetUserService()
-	createdUser, svcErr := userService.CreateUser(&userInCreationRequest)
-	if svcErr != nil {
-		handleError(w, logger, svcErr)
-		return
-	}
-
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusCreated)
-
-	if err := json.NewEncoder(w).Encode(createdUser); err != nil {
-		logger.Error("Error encoding response", log.Error(err))
-		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
-		return
-	}
-
-	// Log the user creation response.
-	logger.Debug("User POST response sent", log.String("user id", createdUser.ID))
-}
-
 // HandleUserListRequest handles the user list request.
 func (ah *UserHandler) HandleUserListRequest(w http.ResponseWriter, r *http.Request) {
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, loggerComponentName))
@@ -109,6 +77,38 @@ func (ah *UserHandler) HandleUserListRequest(w http.ResponseWriter, r *http.Requ
 		log.Int("limit", limit), log.Int("offset", offset),
 		log.Int("totalResults", userListResponse.TotalResults),
 		log.Int("count", userListResponse.Count))
+}
+
+// HandleUserPostRequest handles the user request.
+func (ah *UserHandler) HandleUserPostRequest(w http.ResponseWriter, r *http.Request) {
+	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, "UserHandler"))
+
+	var userInCreationRequest model.User
+	if err := json.NewDecoder(r.Body).Decode(&userInCreationRequest); err != nil {
+		http.Error(w, "Bad Request: The request body is malformed or contains invalid data.", http.StatusBadRequest)
+		return
+	}
+
+	// Create the user using the user service.
+	userProvider := userprovider.NewUserProvider()
+	userService := userProvider.GetUserService()
+	createdUser, svcErr := userService.CreateUser(&userInCreationRequest)
+	if svcErr != nil {
+		handleError(w, logger, svcErr)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusCreated)
+
+	if err := json.NewEncoder(w).Encode(createdUser); err != nil {
+		logger.Error("Error encoding response", log.Error(err))
+		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		return
+	}
+
+	// Log the user creation response.
+	logger.Debug("User POST response sent", log.String("user id", createdUser.ID))
 }
 
 // HandleUserGetRequest handles the user request.

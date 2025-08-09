@@ -38,8 +38,8 @@ const loggerComponentName = "UserService"
 
 // UserServiceInterface defines the interface for the user service.
 type UserServiceInterface interface {
-	CreateUser(user *model.User) (*model.User, *serviceerror.ServiceError)
 	GetUserList(limit, offset int) (*model.UserListResponse, *serviceerror.ServiceError)
+	CreateUser(user *model.User) (*model.User, *serviceerror.ServiceError)
 	GetUser(userID string) (*model.User, *serviceerror.ServiceError)
 	UpdateUser(userID string, user *model.User) (*model.User, *serviceerror.ServiceError)
 	DeleteUser(userID string) *serviceerror.ServiceError
@@ -54,6 +54,43 @@ type UserService struct{}
 // GetUserService creates a new instance of UserService.
 func GetUserService() UserServiceInterface {
 	return &UserService{}
+}
+
+// GetUserList lists the users.
+func (as *UserService) GetUserList(limit, offset int) (*model.UserListResponse, *serviceerror.ServiceError) {
+	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, loggerComponentName))
+
+	if err := validatePaginationParams(limit, offset); err != nil {
+		return nil, err
+	}
+
+	totalCount, err := store.GetUserListCount()
+	if err != nil {
+		return nil, logErrorAndReturnServerError(logger, "Failed to get user list count", err)
+	}
+
+	users, err := store.GetUserList(limit, offset)
+	if err != nil {
+		return nil, logErrorAndReturnServerError(logger, "Failed to get user list", err)
+	}
+
+	var links []model.Link
+	if offset+limit < totalCount {
+		links = append(links, model.Link{
+			Href: fmt.Sprintf("users?offset=%d&limit=%d", offset+limit, limit),
+			Rel:  "next",
+		})
+	}
+
+	response := &model.UserListResponse{
+		TotalResults: totalCount,
+		StartIndex:   offset + 1,
+		Count:        len(users),
+		Users:        users,
+		Links:        links,
+	}
+
+	return response, nil
 }
 
 // CreateUser creates the user.
@@ -120,43 +157,6 @@ func extractCredentials(user *model.User) (*model.Credentials, error) {
 	}
 
 	return &model.Credentials{}, nil
-}
-
-// GetUserList lists the users.
-func (as *UserService) GetUserList(limit, offset int) (*model.UserListResponse, *serviceerror.ServiceError) {
-	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, loggerComponentName))
-
-	if err := validatePaginationParams(limit, offset); err != nil {
-		return nil, err
-	}
-
-	totalCount, err := store.GetUserListCount()
-	if err != nil {
-		return nil, logErrorAndReturnServerError(logger, "Failed to get user list count", err)
-	}
-
-	users, err := store.GetUserList(limit, offset)
-	if err != nil {
-		return nil, logErrorAndReturnServerError(logger, "Failed to get user list", err)
-	}
-
-	var links []model.Link
-	if offset+limit < totalCount {
-		links = append(links, model.Link{
-			Href: fmt.Sprintf("users?offset=%d&limit=%d", offset+limit, limit),
-			Rel:  "next",
-		})
-	}
-
-	response := &model.UserListResponse{
-		TotalResults: totalCount,
-		StartIndex:   offset + 1,
-		Count:        len(users),
-		Users:        users,
-		Links:        links,
-	}
-
-	return response, nil
 }
 
 // GetUser get the user for given user id.

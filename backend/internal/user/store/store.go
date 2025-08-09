@@ -28,54 +28,6 @@ import (
 	"github.com/asgardeo/thunder/internal/user/model"
 )
 
-// CreateUser handles the user creation in the database.
-func CreateUser(user model.User, credentials model.Credentials) error {
-	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, "UserPersistence"))
-
-	dbClient, err := provider.NewDBProvider().GetDBClient("identity")
-	if err != nil {
-		return fmt.Errorf("failed to get database client: %w", err)
-	}
-	defer func() {
-		if closeErr := dbClient.Close(); closeErr != nil {
-			logger.Error("Failed to close database client", log.Error(closeErr))
-			err = fmt.Errorf("failed to close database client: %w", closeErr)
-		}
-	}()
-
-	// Convert attributes to JSON string
-	attributes, err := json.Marshal(user.Attributes)
-	if err != nil {
-		return model.ErrBadAttributesInRequest
-	}
-
-	// Correct the handling of credentialsJSON to convert []byte to string.
-	var credentialsJSON string
-	if (model.Credentials{}) == credentials {
-		credentialsJSON = "{}"
-	} else {
-		credentialsBytes, err := json.Marshal(credentials)
-		if err != nil {
-			return model.ErrBadAttributesInRequest
-		}
-		credentialsJSON = string(credentialsBytes)
-	}
-
-	_, err = dbClient.Execute(
-		QueryCreateUser,
-		user.ID,
-		user.OrganizationUnit,
-		user.Type,
-		string(attributes),
-		credentialsJSON,
-	)
-	if err != nil {
-		return fmt.Errorf("failed to execute query: %w", err)
-	}
-
-	return nil
-}
-
 // GetUserListCount retrieves the total count of users.
 func GetUserListCount() (int, error) {
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, "UserPersistence"))
@@ -138,6 +90,54 @@ func GetUserList(limit, offset int) ([]model.User, error) {
 	}
 
 	return users, nil
+}
+
+// CreateUser handles the user creation in the database.
+func CreateUser(user model.User, credentials model.Credentials) error {
+	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, "UserPersistence"))
+
+	dbClient, err := provider.NewDBProvider().GetDBClient("identity")
+	if err != nil {
+		return fmt.Errorf("failed to get database client: %w", err)
+	}
+	defer func() {
+		if closeErr := dbClient.Close(); closeErr != nil {
+			logger.Error("Failed to close database client", log.Error(closeErr))
+			err = fmt.Errorf("failed to close database client: %w", closeErr)
+		}
+	}()
+
+	// Convert attributes to JSON string
+	attributes, err := json.Marshal(user.Attributes)
+	if err != nil {
+		return model.ErrBadAttributesInRequest
+	}
+
+	// Correct the handling of credentialsJSON to convert []byte to string.
+	var credentialsJSON string
+	if (model.Credentials{}) == credentials {
+		credentialsJSON = "{}"
+	} else {
+		credentialsBytes, err := json.Marshal(credentials)
+		if err != nil {
+			return model.ErrBadAttributesInRequest
+		}
+		credentialsJSON = string(credentialsBytes)
+	}
+
+	_, err = dbClient.Execute(
+		QueryCreateUser,
+		user.ID,
+		user.OrganizationUnit,
+		user.Type,
+		string(attributes),
+		credentialsJSON,
+	)
+	if err != nil {
+		return fmt.Errorf("failed to execute query: %w", err)
+	}
+
+	return nil
 }
 
 // GetUser retrieves a specific user by its ID from the database.
