@@ -74,7 +74,8 @@ const baseConfigs = [
       '@typescript-eslint/typedef': 'off',
       // TODO: Temporarily disable this rule until the plugin 
       // false positives are resolved
-      'headers/header-format': 'off'
+      'headers/header-format': 'off',
+      'no-unused-vars': ['error', { 'argsIgnorePattern': '^_' }]
     }
   },
 ];

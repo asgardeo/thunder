@@ -36,7 +36,7 @@ interface LoginInput {
 
 const LoginPageContent = function (): ReactElement {
   const [sessionDataKey, setSessionDataKey] = useState<string>('');
-  const [appId, setAppId] = useState<string>('');
+  const [_appId, setAppId] = useState<string>('');
   const [insecureWarning, setInsecureWarning] = useState<boolean>(false);
   const [flowId, setFlowId] = useState<string>('');
   const [inputs, setInputs] = useState<LoginInput[]>([]);
@@ -55,14 +55,18 @@ const LoginPageContent = function (): ReactElement {
     setInsecureWarning(params.get('showInsecureWarning') === 'true');
 
     if (key) {
-      axios.post(AppConfig.flowExecutionEndpoint, { applicationId: appId, flowType: "AUTHENTICATION" }, {
-        headers: {
-          Accept: 'application/json',
-          'Content-Type': 'application/json',
-        },
-        withCredentials: true,
-      })
-        .then((res) => {
+      axios.post(
+          AppConfig.flowExecutionEndpoint,
+          { applicationId: appId, flowType: 'AUTHENTICATION' },
+          {
+            headers: {
+              Accept: 'application/json',
+              'Content-Type': 'application/json',
+            },
+            withCredentials: true,
+          },
+        )
+        .then(res => {
           setFlowId(res.data.flowId);
           setInputs(res.data.data?.inputs || []);
           setLoading(false);
@@ -76,30 +80,34 @@ const LoginPageContent = function (): ReactElement {
     }
   }, []);
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>): void => {
     setFormValues({ ...formValues, [e.target.name]: e.target.value });
   };
 
-  const handleTogglePasswordVisibility = () => {
-    setShowPassword((prev) => !prev);
+  const handleTogglePasswordVisibility = (): void => {
+    setShowPassword(prev => !prev);
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent): Promise<any> => {
     e.preventDefault();
     setError('');
-    let currentFlowId = flowId;
-    let currentInputs = formValues;
+    const currentFlowId = flowId;
+    const currentInputs = formValues;
     let continueFlow = true;
     while (continueFlow) {
       try {
-        const res = await axios.post(AppConfig.flowExecutionEndpoint, {
-          flowId: currentFlowId,
-          inputs: currentInputs,
-        }, {
-          headers: { 'Content-Type': 'application/json' },
-          withCredentials: true,
-          validateStatus: () => true,
-        });
+        const res = await axios.post(
+          AppConfig.flowExecutionEndpoint,
+          {
+            flowId: currentFlowId,
+            inputs: currentInputs,
+          },
+          {
+            headers: { 'Content-Type': 'application/json' },
+            withCredentials: true,
+            validateStatus: () => true,
+          },
+        );
         if (res.status !== 200) {
           setError(res.data?.message || `Error response status: ${res.status}`);
           continueFlow = false;
@@ -111,14 +119,18 @@ const LoginPageContent = function (): ReactElement {
         } else if (res.data.flowStatus === 'COMPLETE') {
           const assertion = res?.data?.assertion;
 
-          const authZRes = await axios.post(AppConfig.authorizationEndpoint, {
-            sessionDataKey,
-            assertion,
-          }, {
-            headers: { 'Content-Type': 'application/json' },
-            withCredentials: true,
-            validateStatus: () => true,
-          });
+          const authZRes = await axios.post(
+            AppConfig.authorizationEndpoint,
+            {
+              sessionDataKey,
+              assertion,
+            },
+            {
+              headers: { 'Content-Type': 'application/json' },
+              withCredentials: true,
+              validateStatus: () => true,
+            },
+          );
 
           if (authZRes.status !== 200) {
             setError(authZRes.data?.message || `Authorization failed with status: ${authZRes.status}`);
@@ -141,7 +153,7 @@ const LoginPageContent = function (): ReactElement {
           continueFlow = false; // Stop loop, wait for user to submit again
           setError(''); // Clear any previous error
         }
-      } catch (err) {
+      } catch {
         setError('Failed to authenticate.');
         continueFlow = false;
       }
@@ -161,20 +173,22 @@ const LoginPageContent = function (): ReactElement {
         </Alert>
       )}
       {error && (
-        <Alert severity="error" sx={{ my: 2 }}>{error}</Alert>
+        <Alert severity="error" sx={{ my: 2 }}>
+          {error}
+        </Alert>
       )}
       {loading ? (
         <Typography>Loading...</Typography>
       ) : (
         <Box display="flex" flexDirection="column" gap={2}>
-          {inputs.map((input) => {
+          {inputs.map(input => {
             const words = input.name.replace(/([A-Z])/g, ' $1').split(' ');
             let formattedLabel = words.map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
             let formattedPlaceholder = words.join(' ').toLowerCase();
 
             if (input.name === 'otp') {
-              formattedLabel = "OTP";
-              formattedPlaceholder = "one time password";
+              formattedLabel = 'OTP';
+              formattedPlaceholder = 'one time password';
             }
 
             return (
@@ -189,21 +203,23 @@ const LoginPageContent = function (): ReactElement {
                   required={input.required}
                   value={formValues[input.name] || ''}
                   onChange={handleInputChange}
-                  endAdornment={input.name === 'password' && (
-                    <Button
-                      variant="text"
-                      onClick={handleTogglePasswordVisibility}
-                      style={{
-                        background: 'none',
-                        border: 'none',
-                        cursor: 'pointer',
-                        fontSize: '0.875rem',
-                        color: '#1976d2',
-                      }}
-                    >
-                      {showPassword ? 'Hide' : 'Show'}
-                    </Button>
-                  )}
+                  endAdornment={
+                    input.name === 'password' && (
+                      <Button
+                        variant="text"
+                        onClick={handleTogglePasswordVisibility}
+                        style={{
+                          background: 'none',
+                          border: 'none',
+                          cursor: 'pointer',
+                          fontSize: '0.875rem',
+                          color: '#1976d2',
+                        }}
+                      >
+                        {showPassword ? 'Hide' : 'Show'}
+                      </Button>
+                    )
+                  }
                 />
               </Box>
             );
