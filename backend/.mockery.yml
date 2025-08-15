@@ -76,3 +76,75 @@ packages:
       structname: '{{.InterfaceName}}Mock'
       pkgname: certmock
       filename: "{{.InterfaceName}}_mock.go"
+
+  github.com/asgardeo/thunder/internal/oauth/jwks:
+    config:
+      all: true
+      dir: tests/mocks/oauth/jwksmock
+      structname: '{{.InterfaceName}}Mock'
+      pkgname: jwksmock
+      filename: "{{.InterfaceName}}_mock.go"
+
+  github.com/asgardeo/thunder/internal/oauth/jwt:
+    config:
+      all: true
+      dir: tests/mocks/oauth/jwtmock
+      structname: '{{.InterfaceName}}Mock'
+      pkgname: jwtmock
+      filename: "{{.InterfaceName}}_mock.go"
+
+  github.com/asgardeo/thunder/internal/oauth/scope/provider:
+    config:
+      all: true
+      dir: tests/mocks/oauth/scope/providermock
+      structname: '{{.InterfaceName}}Mock'
+      pkgname: providermock
+      filename: "{{.InterfaceName}}_mock.go"
+
+  github.com/asgardeo/thunder/internal/oauth/scope/validator:
+    config:
+      all: true
+      dir: tests/mocks/oauth/scope/validatormock
+      structname: '{{.InterfaceName}}Mock'
+      pkgname: validatormock
+      filename: "{{.InterfaceName}}_mock.go"
+
+  github.com/asgardeo/thunder/internal/oauth/session/store:
+    config:
+      all: true
+      dir: tests/mocks/oauth/session/storemock
+      structname: '{{.InterfaceName}}Mock'
+      pkgname: storemock
+      filename: "{{.InterfaceName}}_mock.go"
+
+  github.com/asgardeo/thunder/internal/oauth/oauth2/authz:
+    config:
+      all: true
+      dir: tests/mocks/oauth/oauth2/authzmock
+      structname: '{{.InterfaceName}}Mock'
+      pkgname: authzmock
+      filename: "{{.InterfaceName}}_mock.go"
+
+  github.com/asgardeo/thunder/internal/oauth/oauth2/authz/store:
+    config:
+      all: true
+      dir: tests/mocks/oauth/oauth2/authz/storemock
+      structname: '{{.InterfaceName}}Mock'
+      pkgname: storemock
+      filename: "{{.InterfaceName}}_mock.go"
+
+  github.com/asgardeo/thunder/internal/oauth/oauth2/granthandlers:
+    config:
+      all: true
+      dir: tests/mocks/oauth/oauth2/granthandlersmock
+      structname: '{{.InterfaceName}}Mock'
+      pkgname: granthandlersmock
+      filename: "{{.InterfaceName}}_mock.go"
+
+  github.com/asgardeo/thunder/internal/oauth/oauth2/token:
+    config:
+      all: true
+      dir: tests/mocks/oauth/oauth2/tokenmock
+      structname: '{{.InterfaceName}}Mock'
+      pkgname: tokenmock
+      filename: "{{.InterfaceName}}_mock.go"
