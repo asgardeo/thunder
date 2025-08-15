@@ -33,7 +33,7 @@ type MockThunderRuntime struct {
 
 func TestCryptoService(t *testing.T) {
 	// Generate a random key
-	key, err := GenerateRandomKey()
+	key, err := GenerateRandomKey(DefaultKeySize)
 	if err != nil {
 		t.Fatalf("Failed to generate key: %v", err)
 	}
@@ -73,7 +73,7 @@ func TestCryptoService(t *testing.T) {
 
 func TestTampering(t *testing.T) {
 	// Generate a random key
-	key, _ := GenerateRandomKey()
+	key, _ := GenerateRandomKey(DefaultKeySize)
 	service, _ := NewCryptoService(key)
 
 	// Encrypt some data
@@ -96,7 +96,7 @@ func TestTampering(t *testing.T) {
 
 func TestEncryptDecryptCycle(t *testing.T) {
 	// Generate a key
-	key, _ := GenerateRandomKey()
+	key, _ := GenerateRandomKey(DefaultKeySize)
 	service, _ := NewCryptoService(key)
 
 	// Test various data types
@@ -130,8 +130,8 @@ func TestEncryptDecryptCycle(t *testing.T) {
 
 func TestDifferentKeysEncryption(t *testing.T) {
 	// Generate two different keys
-	key1, _ := GenerateRandomKey()
-	key2, _ := GenerateRandomKey()
+	key1, _ := GenerateRandomKey(DefaultKeySize)
+	key2, _ := GenerateRandomKey(DefaultKeySize)
 
 	service1, _ := NewCryptoService(key1)
 	service2, _ := NewCryptoService(key2)

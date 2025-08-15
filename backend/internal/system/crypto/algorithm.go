@@ -26,7 +26,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"io"
 )
 
 // CryptoAlgorithm defines the interface that all encryption algorithms must implement
@@ -34,7 +33,6 @@ type CryptoAlgorithm interface {
 	Encrypt(key []byte, plaintext []byte) (string, error)
 	Decrypt(key []byte, encodedData string) ([]byte, error)
 	Name() Algorithm
-	KeySize() int
 }
 
 // AESGCMAlgorithm implements the CryptoAlgorithm interface for AES-256-GCM
@@ -56,7 +54,7 @@ func (a *AESGCMAlgorithm) Encrypt(key []byte, plaintext []byte) (string, error) 
 
 	// Create a nonce
 	nonce := make([]byte, aesgcm.NonceSize())
-	if _, err = io.ReadFull(rand.Reader, nonce); err != nil {
+	if _, err = rand.Read(nonce); err != nil {
 		return "", err
 	}
 
@@ -134,9 +132,4 @@ func (a *AESGCMAlgorithm) Decrypt(key []byte, encodedData string) ([]byte, error
 // Name returns the algorithm name
 func (a *AESGCMAlgorithm) Name() Algorithm {
 	return AESGCM
-}
-
-// KeySize returns the required key size in bytes
-func (a *AESGCMAlgorithm) KeySize() int {
-	return 32 // 256 bits
 }
