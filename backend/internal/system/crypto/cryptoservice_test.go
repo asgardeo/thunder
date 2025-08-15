@@ -149,3 +149,41 @@ func TestDifferentKeysEncryption(t *testing.T) {
 		t.Error("Expected decryption with different key to fail, but it succeeded")
 	}
 }
+
+func TestNonDefaultKeySize(t *testing.T) {
+	// Test various key sizes
+	testCases := []int{16, 24} // 128, 192 bits
+	// Test data
+	original := "This is a secret message that needs encryption!"
+	for _, size := range testCases {
+		key, _ := GenerateRandomKey(size)
+		service, _ := NewCryptoService(key)
+
+		encrypted, err := service.EncryptString(original)
+		if err != nil {
+			t.Errorf("Failed to encrypt %q: %v", original, err)
+			continue
+		}
+
+		decrypted, err := service.DecryptString(encrypted)
+		if err != nil {
+			t.Errorf("Failed to decrypt %q: %v", original, err)
+			continue
+		}
+
+		if decrypted != original {
+			t.Errorf("Decryption result doesn't match original. Got %q, want %q", decrypted, original)
+		}
+		t.Logf("Decryption successful. Decrypted data: %q", decrypted)
+	}
+}
+
+func TestWrongKeySize(t *testing.T) {
+	// Generate a key of incorrect size
+	key, _ := GenerateRandomKey(30)
+	service, _ := NewCryptoService(key)
+	_, err := service.EncryptString("Test data")
+	if err == nil {
+		t.Error("Expected error when creating CryptoService with short key, but got none")
+	}
+}

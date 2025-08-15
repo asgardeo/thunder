@@ -35,7 +35,7 @@ type Algorithm string
 const (
 	// AESGCM represents AES-GCM algorithm
 	AESGCM Algorithm = "AES-GCM"
-	// Default key size for AES-256
+	// DefaultKeySize defines the default key size for AES-GCM
 	DefaultKeySize = 32
 )
 
