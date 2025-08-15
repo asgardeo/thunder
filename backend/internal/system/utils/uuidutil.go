@@ -21,14 +21,13 @@ package utils
 import (
 	"crypto/rand"
 	"fmt"
-	"io"
 )
 
 // GenerateUUID returns a UUID string in lowercase hexadecimal, following the canonical textual representation
 // as specified in RFC 9562.
 func GenerateUUID() string {
 	var uuid [16]byte
-	_, err := io.ReadFull(rand.Reader, uuid[:])
+	_, err := rand.Read(uuid[:])
 	if err != nil {
 		panic(fmt.Errorf("failed to generate random bytes: %w", err))
 	}
