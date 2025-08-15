@@ -31,6 +31,10 @@ import (
 	sessionmodel "github.com/asgardeo/thunder/internal/oauth/session/model"
 )
 
+const (
+	testSessionKey = "test-session-key"
+)
+
 type SessionDataStoreTestSuite struct {
 	suite.Suite
 	store SessionDataStoreInterface
@@ -44,7 +48,7 @@ func (suite *SessionDataStoreTestSuite) SetupTest() {
 	// Reset singleton for each test
 	instance = nil
 	once = sync.Once{}
-	
+
 	suite.store = GetSessionDataStore()
 	suite.store.ClearSessionStore()
 }
@@ -64,16 +68,15 @@ func (suite *SessionDataStoreTestSuite) TestGetSessionDataStore() {
 func (suite *SessionDataStoreTestSuite) TestGetSessionDataStoreSingleton() {
 	store1 := GetSessionDataStore()
 	store2 := GetSessionDataStore()
-	
+
 	// Should return the same instance
 	assert.Same(suite.T(), store1, store2)
 }
 
 func (suite *SessionDataStoreTestSuite) TestAddSession() {
-	key := "test-session-key"
 	sessionData := sessionmodel.SessionData{
 		OAuthParameters: model.OAuthParameters{
-			SessionDataKey: key,
+			SessionDataKey: testSessionKey,
 			ClientID:       "test-client",
 			RedirectURI:    "https://example.com/callback",
 			ResponseType:   "code",
@@ -91,10 +94,10 @@ func (suite *SessionDataStoreTestSuite) TestAddSession() {
 		},
 	}
 
-	suite.store.AddSession(key, sessionData)
+	suite.store.AddSession(testSessionKey, sessionData)
 
 	// Verify session was added
-	found, retrievedData := suite.store.GetSession(key)
+	found, retrievedData := suite.store.GetSession(testSessionKey)
 	assert.True(suite.T(), found)
 	assert.Equal(suite.T(), sessionData.OAuthParameters.ClientID, retrievedData.OAuthParameters.ClientID)
 	assert.Equal(suite.T(), sessionData.AuthenticatedUser.UserID, retrievedData.AuthenticatedUser.UserID)
@@ -115,7 +118,6 @@ func (suite *SessionDataStoreTestSuite) TestAddSessionWithEmptyKey() {
 }
 
 func (suite *SessionDataStoreTestSuite) TestGetSession() {
-	key := "test-session-key"
 	sessionData := sessionmodel.SessionData{
 		OAuthParameters: model.OAuthParameters{
 			ClientID: "test-client",
@@ -124,10 +126,10 @@ func (suite *SessionDataStoreTestSuite) TestGetSession() {
 		AuthTime: time.Now(),
 	}
 
-	suite.store.AddSession(key, sessionData)
+	suite.store.AddSession(testSessionKey, sessionData)
 
 	// Test successful retrieval
-	found, retrievedData := suite.store.GetSession(key)
+	found, retrievedData := suite.store.GetSession(testSessionKey)
 	assert.True(suite.T(), found)
 	assert.Equal(suite.T(), sessionData.OAuthParameters.ClientID, retrievedData.OAuthParameters.ClientID)
 	assert.Equal(suite.T(), sessionData.OAuthParameters.State, retrievedData.OAuthParameters.State)
@@ -146,24 +148,23 @@ func (suite *SessionDataStoreTestSuite) TestGetSessionWithEmptyKey() {
 }
 
 func (suite *SessionDataStoreTestSuite) TestClearSession() {
-	key := "test-session-key"
 	sessionData := sessionmodel.SessionData{
 		OAuthParameters: model.OAuthParameters{
 			ClientID: "test-client",
 		},
 	}
 
-	suite.store.AddSession(key, sessionData)
+	suite.store.AddSession(testSessionKey, sessionData)
 
 	// Verify session exists
-	found, _ := suite.store.GetSession(key)
+	found, _ := suite.store.GetSession(testSessionKey)
 	assert.True(suite.T(), found)
 
 	// Clear the session
-	suite.store.ClearSession(key)
+	suite.store.ClearSession(testSessionKey)
 
 	// Verify session is removed
-	found, _ = suite.store.GetSession(key)
+	found, _ = suite.store.GetSession(testSessionKey)
 	assert.False(suite.T(), found)
 }
 

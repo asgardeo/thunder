@@ -48,7 +48,7 @@ func (suite *ScopeValidatorProviderTestSuite) TestNewScopeValidatorProvider() {
 
 func (suite *ScopeValidatorProviderTestSuite) TestGetScopeValidator() {
 	scopeValidator := suite.provider.GetScopeValidator()
-	
+
 	assert.NotNil(suite.T(), scopeValidator)
 	assert.Implements(suite.T(), (*validator.ScopeValidatorInterface)(nil), scopeValidator)
 }
@@ -57,7 +57,7 @@ func (suite *ScopeValidatorProviderTestSuite) TestGetScopeValidatorReturnsConsis
 	// Test that multiple calls return the same type of validator
 	validator1 := suite.provider.GetScopeValidator()
 	validator2 := suite.provider.GetScopeValidator()
-	
+
 	assert.NotNil(suite.T(), validator1)
 	assert.NotNil(suite.T(), validator2)
 	assert.IsType(suite.T(), validator1, validator2)
@@ -66,11 +66,11 @@ func (suite *ScopeValidatorProviderTestSuite) TestGetScopeValidatorReturnsConsis
 func (suite *ScopeValidatorProviderTestSuite) TestScopeValidatorProviderInterface() {
 	// Test that ScopeValidatorProvider implements ScopeValidatorProviderInterface
 	var _ ScopeValidatorProviderInterface = &ScopeValidatorProvider{}
-	
+
 	// Verify the provider can be used through the interface
 	var provider ScopeValidatorProviderInterface = NewScopeValidatorProvider()
 	scopeValidator := provider.GetScopeValidator()
-	
+
 	assert.NotNil(suite.T(), scopeValidator)
 	assert.Implements(suite.T(), (*validator.ScopeValidatorInterface)(nil), scopeValidator)
 }
@@ -78,9 +78,9 @@ func (suite *ScopeValidatorProviderTestSuite) TestScopeValidatorProviderInterfac
 func (suite *ScopeValidatorProviderTestSuite) TestGetScopeValidatorFunctionality() {
 	// Test that the returned validator actually works
 	scopeValidator := suite.provider.GetScopeValidator()
-	
+
 	result, err := scopeValidator.ValidateScopes("read write", "test-client")
-	
+
 	assert.Equal(suite.T(), "read write", result)
 	assert.Nil(suite.T(), err)
 }

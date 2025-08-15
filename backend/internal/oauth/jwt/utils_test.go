@@ -97,7 +97,7 @@ func (suite *JWTUtilsTestSuite) TestDecodeJWT_Success() {
 	token := headerB64 + "." + payloadB64 + "." + signature
 
 	decodedHeader, decodedPayload, err := DecodeJWT(token)
-	
+
 	assert.NoError(suite.T(), err)
 	assert.Equal(suite.T(), "RS256", decodedHeader["alg"])
 	assert.Equal(suite.T(), "JWT", decodedHeader["typ"])
@@ -148,10 +148,10 @@ func (suite *JWTUtilsTestSuite) TestDecodeJWT_InvalidBase64Header() {
 	// Create invalid base64 header but valid payload
 	payloadBytes, _ := json.Marshal(map[string]interface{}{"sub": "test"})
 	payloadB64 := base64.RawURLEncoding.EncodeToString(payloadBytes)
-	
+
 	token := "invalid-base64." + payloadB64 + ".signature"
 	_, _, err := DecodeJWT(token)
-	
+
 	assert.Error(suite.T(), err)
 	assert.Contains(suite.T(), err.Error(), "failed to decode JWT header")
 }
@@ -159,10 +159,10 @@ func (suite *JWTUtilsTestSuite) TestDecodeJWT_InvalidBase64Header() {
 func (suite *JWTUtilsTestSuite) TestDecodeJWT_InvalidBase64Payload() {
 	headerBytes, _ := json.Marshal(map[string]interface{}{"alg": "RS256"})
 	headerB64 := base64.RawURLEncoding.EncodeToString(headerBytes)
-	
+
 	token := headerB64 + ".invalid-base64.signature"
 	_, _, err := DecodeJWT(token)
-	
+
 	assert.Error(suite.T(), err)
 	assert.Contains(suite.T(), err.Error(), "failed to decode JWT payload")
 }
@@ -172,10 +172,10 @@ func (suite *JWTUtilsTestSuite) TestDecodeJWT_InvalidJSONHeader() {
 	headerB64 := base64.RawURLEncoding.EncodeToString([]byte("invalid json"))
 	payloadBytes, _ := json.Marshal(map[string]interface{}{"sub": "test"})
 	payloadB64 := base64.RawURLEncoding.EncodeToString(payloadBytes)
-	
+
 	token := headerB64 + "." + payloadB64 + ".signature"
 	_, _, err := DecodeJWT(token)
-	
+
 	assert.Error(suite.T(), err)
 	assert.Contains(suite.T(), err.Error(), "failed to unmarshal JWT header")
 }
@@ -185,10 +185,10 @@ func (suite *JWTUtilsTestSuite) TestDecodeJWT_InvalidJSONPayload() {
 	headerB64 := base64.RawURLEncoding.EncodeToString(headerBytes)
 	// Create base64 encoded invalid JSON for payload
 	payloadB64 := base64.RawURLEncoding.EncodeToString([]byte("invalid json"))
-	
+
 	token := headerB64 + "." + payloadB64 + ".signature"
 	_, _, err := DecodeJWT(token)
-	
+
 	assert.Error(suite.T(), err)
 	assert.Contains(suite.T(), err.Error(), "failed to unmarshal JWT payload")
 }
@@ -203,7 +203,7 @@ func (suite *JWTUtilsTestSuite) TestDecodeJWT_EmptyJSONObjects() {
 
 	token := headerB64 + "." + payloadB64 + ".signature"
 	decodedHeader, decodedPayload, err := DecodeJWT(token)
-	
+
 	assert.NoError(suite.T(), err)
 	assert.NotNil(suite.T(), decodedHeader)
 	assert.NotNil(suite.T(), decodedPayload)
@@ -234,13 +234,13 @@ func (suite *JWTUtilsTestSuite) TestDecodeJWT_WithSpecialCharacters() {
 
 	token := headerB64 + "." + payloadB64 + ".signature"
 	decodedHeader, decodedPayload, err := DecodeJWT(token)
-	
+
 	assert.NoError(suite.T(), err)
 	assert.Equal(suite.T(), "RS256", decodedHeader["alg"])
 	assert.Equal(suite.T(), "user@example.com", decodedPayload["sub"])
 	assert.Equal(suite.T(), true, decodedPayload["isAdmin"])
 	assert.Equal(suite.T(), "hello world!@#$%^&*()", decodedPayload["special"])
-	
+
 	// Check array handling
 	roles, ok := decodedPayload["roles"].([]interface{})
 	assert.True(suite.T(), ok)
@@ -280,14 +280,14 @@ func (suite *JWTUtilsTestSuite) TestDecodeJWT_RealWorldExample() {
 
 	token := headerB64 + "." + payloadB64 + ".signature"
 	decodedHeader, decodedPayload, err := DecodeJWT(token)
-	
+
 	assert.NoError(suite.T(), err)
-	
+
 	// Verify header
 	assert.Equal(suite.T(), "RS256", decodedHeader["alg"])
 	assert.Equal(suite.T(), "JWT", decodedHeader["typ"])
 	assert.Equal(suite.T(), "2011-04-29", decodedHeader["kid"])
-	
+
 	// Verify payload
 	assert.Equal(suite.T(), "https://server.example.com", decodedPayload["iss"])
 	assert.Equal(suite.T(), "248289761001", decodedPayload["sub"])
@@ -295,7 +295,7 @@ func (suite *JWTUtilsTestSuite) TestDecodeJWT_RealWorldExample() {
 	assert.Equal(suite.T(), "Jane Doe", decodedPayload["name"])
 	assert.Equal(suite.T(), "jane.doe@example.com", decodedPayload["email"])
 	assert.Equal(suite.T(), "openid profile email", decodedPayload["scope"])
-	
+
 	// Verify nested custom claims
 	customClaims, ok := decodedPayload["custom_claims"].(map[string]interface{})
 	assert.True(suite.T(), ok)

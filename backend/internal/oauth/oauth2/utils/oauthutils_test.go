@@ -53,8 +53,8 @@ func (suite *OAuth2UtilsTestSuite) TestGetURIWithQueryParams_Success() {
 			expectedURI: "https://example.com/callback?code=test-code&state=test-state",
 		},
 		{
-			name: "EmptyParams",
-			uri:  "https://example.com/callback",
+			name:        "EmptyParams",
+			uri:         "https://example.com/callback",
 			queryParams: map[string]string{},
 			expectedURI: "https://example.com/callback",
 		},
@@ -71,7 +71,8 @@ func (suite *OAuth2UtilsTestSuite) TestGetURIWithQueryParams_Success() {
 				constants.RequestParamError:            "invalid_request",
 				constants.RequestParamErrorDescription: "Missing client_id parameter",
 			},
-			expectedURI: "https://example.com/callback?error=invalid_request&error_description=Missing+client_id+parameter",
+			expectedURI: "https://example.com/callback?error=invalid_request&error_description=" +
+				"Missing+client_id+parameter",
 		},
 		{
 			name: "SpecialCharactersInParams",
@@ -80,7 +81,8 @@ func (suite *OAuth2UtilsTestSuite) TestGetURIWithQueryParams_Success() {
 				"redirect_uri": "https://client.example.com/cb?param=value",
 				"scope":        "read write admin",
 			},
-			expectedURI: "https://example.com/callback?redirect_uri=https%3A%2F%2Fclient.example.com%2Fcb%3Fparam%3Dvalue&scope=read+write+admin",
+			expectedURI: "https://example.com/callback?redirect_uri=https%3A%2F%2Fclient.example.com" +
+				"%2Fcb%3Fparam%3Dvalue&scope=read+write+admin",
 		},
 	}
 
@@ -88,17 +90,17 @@ func (suite *OAuth2UtilsTestSuite) TestGetURIWithQueryParams_Success() {
 		suite.T().Run(tc.name, func(t *testing.T) {
 			result, err := GetURIWithQueryParams(tc.uri, tc.queryParams)
 			assert.NoError(t, err)
-			
+
 			// Parse both URIs to compare them properly (query params can be in different order)
 			expectedParsed, err := url.Parse(tc.expectedURI)
 			assert.NoError(t, err)
 			resultParsed, err := url.Parse(result)
 			assert.NoError(t, err)
-			
+
 			assert.Equal(t, expectedParsed.Scheme, resultParsed.Scheme)
 			assert.Equal(t, expectedParsed.Host, resultParsed.Host)
 			assert.Equal(t, expectedParsed.Path, resultParsed.Path)
-			
+
 			// Compare query parameters
 			expectedQuery := expectedParsed.Query()
 			resultQuery := resultParsed.Query()
@@ -141,7 +143,7 @@ func (suite *OAuth2UtilsTestSuite) TestGetURIWithQueryParams_InvalidErrorCode() 
 			}
 
 			result, err := GetURIWithQueryParams("https://example.com/callback", queryParams)
-			
+
 			assert.Error(t, err)
 			assert.Empty(t, result)
 			assert.Contains(t, err.Error(), "invalid error code")
@@ -176,7 +178,7 @@ func (suite *OAuth2UtilsTestSuite) TestGetURIWithQueryParams_InvalidErrorDescrip
 			}
 
 			result, err := GetURIWithQueryParams("https://example.com/callback", queryParams)
-			
+
 			assert.Error(t, err)
 			assert.Empty(t, result)
 			assert.Contains(t, err.Error(), "invalid error description")
@@ -187,14 +189,14 @@ func (suite *OAuth2UtilsTestSuite) TestGetURIWithQueryParams_InvalidErrorDescrip
 func (suite *OAuth2UtilsTestSuite) TestGetURIWithQueryParams_ValidCharacterRange() {
 	// Test with characters from the allowed range: %x20-21 / %x23-5B / %x5D-7E
 	validChars := " !#$%&'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[]^_`abcdefghijklmnopqrstuvwxyz{|}~"
-	
+
 	queryParams := map[string]string{
 		constants.RequestParamError:            "invalid_request",
 		constants.RequestParamErrorDescription: validChars,
 	}
 
 	result, err := GetURIWithQueryParams("https://example.com/callback", queryParams)
-	
+
 	assert.NoError(suite.T(), err)
 	assert.NotEmpty(suite.T(), result)
 }
@@ -208,7 +210,7 @@ func (suite *OAuth2UtilsTestSuite) TestGetURIWithQueryParams_EmptyErrorParams() 
 	}
 
 	result, err := GetURIWithQueryParams("https://example.com/callback", queryParams)
-	
+
 	assert.NoError(suite.T(), err)
 	assert.Contains(suite.T(), result, "other_param=value")
 }
@@ -220,7 +222,7 @@ func (suite *OAuth2UtilsTestSuite) TestGetURIWithQueryParams_OnlyErrorCode() {
 	}
 
 	result, err := GetURIWithQueryParams("https://example.com/callback", queryParams)
-	
+
 	assert.NoError(suite.T(), err)
 	assert.Contains(suite.T(), result, "error=invalid_client")
 	assert.NotContains(suite.T(), result, "error_description")
@@ -233,7 +235,7 @@ func (suite *OAuth2UtilsTestSuite) TestGetURIWithQueryParams_OnlyErrorDescriptio
 	}
 
 	result, err := GetURIWithQueryParams("https://example.com/callback", queryParams)
-	
+
 	assert.NoError(suite.T(), err)
 	assert.Contains(suite.T(), result, "error_description=Something+went+wrong")
 	assert.NotContains(suite.T(), result, "error=")
@@ -242,7 +244,7 @@ func (suite *OAuth2UtilsTestSuite) TestGetURIWithQueryParams_OnlyErrorDescriptio
 func (suite *OAuth2UtilsTestSuite) TestValidateErrorParams_DirectCall() {
 	// Test the validateErrorParams function directly (even though it's not exported)
 	// We test it through the public function
-	
+
 	testCases := []struct {
 		name        string
 		errorCode   string
@@ -289,7 +291,7 @@ func (suite *OAuth2UtilsTestSuite) TestValidateErrorParams_DirectCall() {
 			}
 
 			_, err := GetURIWithQueryParams("https://example.com/callback", queryParams)
-			
+
 			if tc.expectError {
 				assert.Error(t, err)
 			} else {
@@ -306,7 +308,7 @@ func (suite *OAuth2UtilsTestSuite) TestGetURIWithQueryParams_MalformedBaseURI() 
 	}
 
 	result, err := GetURIWithQueryParams("not-a-valid-uri", queryParams)
-	
+
 	// Should fail on error validation before URI processing
 	assert.Error(suite.T(), err)
 	assert.Empty(suite.T(), result)
@@ -336,7 +338,7 @@ func (suite *OAuth2UtilsTestSuite) TestGetURIWithQueryParams_SpecialErrorCodes()
 			}
 
 			result, err := GetURIWithQueryParams("https://example.com/callback", queryParams)
-			
+
 			assert.NoError(t, err)
 			assert.Contains(t, result, "error="+errorCode)
 		})
@@ -346,19 +348,19 @@ func (suite *OAuth2UtilsTestSuite) TestGetURIWithQueryParams_SpecialErrorCodes()
 func (suite *OAuth2UtilsTestSuite) TestGetURIWithQueryParams_BoundaryCharacters() {
 	// Test characters at the boundaries of allowed ranges
 	testCases := []struct {
-		name      string
-		char      string
+		name       string
+		char       string
 		shouldPass bool
 	}{
-		{"Space_0x20", "\x20", true},      // First allowed character
-		{"Exclamation_0x21", "\x21", true}, // Last of first range
-		{"Quote_0x22", "\x22", false},     // Not allowed (between ranges)
-		{"Hash_0x23", "\x23", true},       // First of second range
-		{"LeftBracket_0x5B", "\x5B", true}, // Last of second range
-		{"Backslash_0x5C", "\x5C", false}, // Not allowed (between ranges)
+		{"Space_0x20", "\x20", true},        // First allowed character
+		{"Exclamation_0x21", "\x21", true},  // Last of first range
+		{"Quote_0x22", "\x22", false},       // Not allowed (between ranges)
+		{"Hash_0x23", "\x23", true},         // First of second range
+		{"LeftBracket_0x5B", "\x5B", true},  // Last of second range
+		{"Backslash_0x5C", "\x5C", false},   // Not allowed (between ranges)
 		{"RightBracket_0x5D", "\x5D", true}, // First of third range
-		{"Tilde_0x7E", "\x7E", true},      // Last allowed character
-		{"DEL_0x7F", "\x7F", false},       // Not allowed (after range)
+		{"Tilde_0x7E", "\x7E", true},        // Last allowed character
+		{"DEL_0x7F", "\x7F", false},         // Not allowed (after range)
 	}
 
 	for _, tc := range testCases {
@@ -368,7 +370,7 @@ func (suite *OAuth2UtilsTestSuite) TestGetURIWithQueryParams_BoundaryCharacters(
 			}
 
 			_, err := GetURIWithQueryParams("https://example.com/callback", queryParams)
-			
+
 			if tc.shouldPass {
 				assert.NoError(t, err, "Character %s should be allowed", tc.char)
 			} else {

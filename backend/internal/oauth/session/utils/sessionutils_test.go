@@ -36,10 +36,10 @@ func TestSessionUtilsSuite(t *testing.T) {
 func (suite *SessionUtilsTestSuite) TestGenerateNewSessionDataKey() {
 	// Generate a session data key
 	sessionKey := GenerateNewSessionDataKey()
-	
+
 	// Should not be empty
 	assert.NotEmpty(suite.T(), sessionKey)
-	
+
 	// Should be a valid UUID format (36 characters with hyphens)
 	assert.Len(suite.T(), sessionKey, 36)
 	assert.Contains(suite.T(), sessionKey, "-")
@@ -49,29 +49,29 @@ func (suite *SessionUtilsTestSuite) TestGenerateNewSessionDataKeyUniqueness() {
 	// Generate multiple session keys
 	keys := make(map[string]bool)
 	numKeys := 100
-	
+
 	for i := 0; i < numKeys; i++ {
 		key := GenerateNewSessionDataKey()
-		
+
 		// Check that each key is unique
 		assert.False(suite.T(), keys[key], "Duplicate session key generated: %s", key)
 		keys[key] = true
-		
+
 		// Verify it's not empty
 		assert.NotEmpty(suite.T(), key)
 	}
-	
+
 	// Should have generated all unique keys
 	assert.Len(suite.T(), keys, numKeys)
 }
 
 func (suite *SessionUtilsTestSuite) TestGenerateNewSessionDataKeyFormat() {
 	sessionKey := GenerateNewSessionDataKey()
-	
+
 	// Verify UUID format: xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx
 	// Total length should be 36 characters
 	assert.Len(suite.T(), sessionKey, 36)
-	
+
 	// Check hyphen positions (8, 13, 18, 23)
 	assert.Equal(suite.T(), "-", string(sessionKey[8]))
 	assert.Equal(suite.T(), "-", string(sessionKey[13]))

@@ -100,6 +100,7 @@ func (suite *JWKSServiceTestSuite) TestGetJWKS_RSAKey_Success() {
 
 	tlsConfig := &tls.Config{
 		Certificates: []tls.Certificate{cert},
+		MinVersion:   tls.VersionTLS12,
 	}
 
 	// Set up mock expectations
@@ -155,6 +156,7 @@ func (suite *JWKSServiceTestSuite) TestGetJWKS_ECDSAKey_Success() {
 
 	tlsConfig := &tls.Config{
 		Certificates: []tls.Certificate{cert},
+		MinVersion:   tls.VersionTLS12,
 	}
 
 	// Set up mock expectations
@@ -220,6 +222,7 @@ func (suite *JWKSServiceTestSuite) TestGetJWKS_ErrorRetrievingTLSConfig() {
 func (suite *JWKSServiceTestSuite) TestGetJWKS_NoCertificatesInTLSConfig() {
 	tlsConfig := &tls.Config{
 		Certificates: []tls.Certificate{},
+		MinVersion:   tls.VersionTLS12,
 	}
 
 	// Set up mock expectations
@@ -244,6 +247,7 @@ func (suite *JWKSServiceTestSuite) TestGetJWKS_EmptyCertificateInTLSConfig() {
 
 	tlsConfig := &tls.Config{
 		Certificates: []tls.Certificate{cert},
+		MinVersion:   tls.VersionTLS12,
 	}
 
 	// Set up mock expectations
@@ -268,6 +272,7 @@ func (suite *JWKSServiceTestSuite) TestGetJWKS_InvalidCertificateData() {
 
 	tlsConfig := &tls.Config{
 		Certificates: []tls.Certificate{cert},
+		MinVersion:   tls.VersionTLS12,
 	}
 
 	// Set up mock expectations

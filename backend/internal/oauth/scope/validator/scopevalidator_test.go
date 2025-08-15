@@ -46,53 +46,53 @@ func (suite *ScopeValidatorTestSuite) TestNewAPIScopeValidator() {
 
 func (suite *ScopeValidatorTestSuite) TestValidateScopes() {
 	testCases := []struct {
-		name             string
-		requestedScopes  string
-		clientID         string
-		expectedScopes   string
-		expectedError    *ScopeError
+		name            string
+		requestedScopes string
+		clientID        string
+		expectedScopes  string
+		expectedError   *ScopeError
 	}{
 		{
-			name:             "EmptyScopes",
-			requestedScopes:  "",
-			clientID:         "test-client",
-			expectedScopes:   "",
-			expectedError:    nil,
+			name:            "EmptyScopes",
+			requestedScopes: "",
+			clientID:        "test-client",
+			expectedScopes:  "",
+			expectedError:   nil,
 		},
 		{
-			name:             "SingleScope",
-			requestedScopes:  "read",
-			clientID:         "test-client",
-			expectedScopes:   "read",
-			expectedError:    nil,
+			name:            "SingleScope",
+			requestedScopes: "read",
+			clientID:        "test-client",
+			expectedScopes:  "read",
+			expectedError:   nil,
 		},
 		{
-			name:             "MultipleScopes",
-			requestedScopes:  "read write delete",
-			clientID:         "test-client",
-			expectedScopes:   "read write delete",
-			expectedError:    nil,
+			name:            "MultipleScopes",
+			requestedScopes: "read write delete",
+			clientID:        "test-client",
+			expectedScopes:  "read write delete",
+			expectedError:   nil,
 		},
 		{
-			name:             "ScopesWithSpecialCharacters",
-			requestedScopes:  "api:read profile:write",
-			clientID:         "test-client",
-			expectedScopes:   "api:read profile:write",
-			expectedError:    nil,
+			name:            "ScopesWithSpecialCharacters",
+			requestedScopes: "api:read profile:write",
+			clientID:        "test-client",
+			expectedScopes:  "api:read profile:write",
+			expectedError:   nil,
 		},
 		{
-			name:             "EmptyClientID",
-			requestedScopes:  "read",
-			clientID:         "",
-			expectedScopes:   "read",
-			expectedError:    nil,
+			name:            "EmptyClientID",
+			requestedScopes: "read",
+			clientID:        "",
+			expectedScopes:  "read",
+			expectedError:   nil,
 		},
 	}
 
 	for _, tc := range testCases {
 		suite.T().Run(tc.name, func(t *testing.T) {
 			scopes, err := suite.validator.ValidateScopes(tc.requestedScopes, tc.clientID)
-			
+
 			assert.Equal(t, tc.expectedScopes, scopes)
 			assert.Equal(t, tc.expectedError, err)
 		})
@@ -102,11 +102,11 @@ func (suite *ScopeValidatorTestSuite) TestValidateScopes() {
 func (suite *ScopeValidatorTestSuite) TestValidateScopesInterface() {
 	// Test that APIScopeValidator implements ScopeValidatorInterface
 	var _ ScopeValidatorInterface = &APIScopeValidator{}
-	
+
 	// Test method signature compatibility
 	validator := NewAPIScopeValidator()
 	scopes, err := validator.ValidateScopes("test", "client")
-	
+
 	assert.Equal(suite.T(), "test", scopes)
 	assert.Nil(suite.T(), err)
 }

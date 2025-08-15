@@ -88,10 +88,16 @@ func (suite *JWTServiceTestSuite) SetupTest() {
 func (suite *JWTServiceTestSuite) TearDownTest() {
 	// Clean up test files
 	if suite.testKeyFile != "" {
-		os.Remove(suite.testKeyFile)
+		err := os.Remove(suite.testKeyFile)
+		if err != nil {
+			suite.T().Logf("Error removing test key file: %v", err)
+		}
 	}
 	if suite.testCertFile != "" {
-		os.Remove(suite.testCertFile)
+		err := os.Remove(suite.testCertFile)
+		if err != nil {
+			suite.T().Logf("Error removing test cert file: %v", err)
+		}
 	}
 }
 
@@ -126,7 +132,8 @@ func (suite *JWTServiceTestSuite) createTestKeyFiles() {
 	}
 	err = pem.Encode(keyFile, keyPEM)
 	assert.NoError(suite.T(), err)
-	keyFile.Close()
+	err = keyFile.Close()
+	suite.T().Logf("Error closing key file: %v", err)
 
 	// Save certificate to file
 	certFile, err := os.CreateTemp("", "test-cert-*.pem")
@@ -139,7 +146,8 @@ func (suite *JWTServiceTestSuite) createTestKeyFiles() {
 	}
 	err = pem.Encode(certFile, certPEM)
 	assert.NoError(suite.T(), err)
-	certFile.Close()
+	err = certFile.Close()
+	suite.T().Logf("Error closing cert file: %v", err)
 }
 
 func (suite *JWTServiceTestSuite) TestGetJWTService() {
@@ -180,11 +188,17 @@ func (suite *JWTServiceTestSuite) TestInit_InvalidKeyFile() {
 	// Create invalid key file
 	invalidKeyFile, err := os.CreateTemp("", "invalid-key-*.pem")
 	assert.NoError(suite.T(), err)
-	defer os.Remove(invalidKeyFile.Name())
+	defer func() {
+		err := os.Remove(invalidKeyFile.Name())
+		if err != nil {
+			suite.T().Logf("Error removing invalid key file: %v", err)
+		}
+	}()
 
 	_, err = invalidKeyFile.WriteString("invalid key data")
 	assert.NoError(suite.T(), err)
-	invalidKeyFile.Close()
+	err = invalidKeyFile.Close()
+	suite.T().Logf("Error closing invalid key file: %v", err)
 
 	// Update config
 	testConfig := &config.Config{
