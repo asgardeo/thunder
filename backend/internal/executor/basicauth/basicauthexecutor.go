@@ -37,6 +37,7 @@ const (
 	userAttributeUsername  = "username"
 	userAttributePassword  = "password"
 	userAttributeEmail     = "email"
+	userAttributeMail      = "mail"
 	userAttributeFirstName = "firstName"
 	userAttributeLastName  = "lastName"
 )
@@ -242,6 +243,12 @@ func (b *BasicAuthExecutor) getAuthenticatedUser(ctx *flowmodel.NodeContext,
 			email = emailAttr.(string)
 		}
 
+		mail := ""
+		mailAttr := attrs[userAttributeMail]
+		if mailAttr != nil {
+			mail = mailAttr.(string)
+		}
+
 		firstName := ""
 		firstNameAttr := attrs[userAttributeFirstName]
 		if firstNameAttr != nil {
@@ -267,6 +274,9 @@ func (b *BasicAuthExecutor) getAuthenticatedUser(ctx *flowmodel.NodeContext,
 		}
 		if email != "" {
 			authenticatedUser.Attributes[userAttributeEmail] = email
+		}
+		if mail != "" {
+			authenticatedUser.Attributes[userAttributeMail] = mail
 		}
 	}
 	return &authenticatedUser, nil
