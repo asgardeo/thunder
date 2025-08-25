@@ -299,3 +299,73 @@ jobs:
           release-name: ${{ steps.release_info.outputs.release_name }}
           release-tag: ${{ steps.release_info.outputs.release_tag }}
           release-url: ${{ steps.release_info.outputs.release_url }}
+
+      - name: 📝 Calculate Next Version
+        id: next_version
+        run: |
+          # Get the current release version and remove 'v' prefix
+          RELEASE_VERSION="${{ github.event.inputs.version }}"
+          if [[ $RELEASE_VERSION == v* ]]; then
+            RELEASE_VERSION="${RELEASE_VERSION#v}"
+          fi
+          
+          # Parse version components (handle both X.Y and X.Y.Z formats)
+          if [[ $RELEASE_VERSION =~ ^([0-9]+)\.([0-9]+)\.([0-9]+) ]]; then
+            # X.Y.Z format
+            MAJOR="${BASH_REMATCH[1]}"
+            MINOR="${BASH_REMATCH[2]}"
+            PATCH="${BASH_REMATCH[3]}"
+          elif [[ $RELEASE_VERSION =~ ^([0-9]+)\.([0-9]+) ]]; then
+            # X.Y format
+            MAJOR="${BASH_REMATCH[1]}"
+            MINOR="${BASH_REMATCH[2]}"
+            PATCH="0"
+          else
+            echo "❌ Error: Unable to parse version format: $RELEASE_VERSION"
+            exit 1
+          fi
+          
+          # Bump minor version
+          NEXT_MINOR=$((MINOR + 1))
+          NEXT_VERSION="${MAJOR}.${NEXT_MINOR}.0"
+          
+          echo "✅ Next development version: $NEXT_VERSION"
+          echo "next_version=$NEXT_VERSION" >> $GITHUB_OUTPUT
+
+      - name: 🏷️ Update Product Version
+        run: |
+          NEXT_VERSION="v${{ steps.next_version.outputs.next_version }}"
+          echo "$NEXT_VERSION" > version.txt
+          echo "✅ Updated version.txt to $NEXT_VERSION"
+
+      - name: 🏷️ Update Sample Apps Version
+        run: |
+          NEXT_VERSION="${{ steps.next_version.outputs.next_version }}"
+          echo "📝 Setting sample apps version to $NEXT_VERSION"
+          
+          # Update the main sample app package.json
+          cd samples/apps/oauth
+          npm version $NEXT_VERSION --no-git-tag-version --allow-same-version
+          
+          # Update the server package.json
+          cd server
+          npm version $NEXT_VERSION --no-git-tag-version --allow-same-version
+          
+          cd ../../../..
+          echo "✅ Updated sample apps version to $NEXT_VERSION"
+
+      - name: 📝 Commit and Push Version Update
+        run: |
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+          
+          NEXT_VERSION="${{ steps.next_version.outputs.next_version }}"
+          
+          # Add and commit the version changes
+          git add version.txt samples/apps/oauth/package.json samples/apps/oauth/server/package.json
+          git commit -m "[Release] Update version to ${NEXT_VERSION} for the next development iteration"
+          
+          # Push the commit to the main branch
+          git push origin HEAD:main
+          
+          echo "✅ Pushed version update to main branch"
