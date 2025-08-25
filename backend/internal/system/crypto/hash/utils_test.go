@@ -16,10 +16,10 @@
  * under the License.
  */
 
+// Package hash provides generic hashing utilities for sensitive data.
 package hash
 
 import (
-	"encoding/base64"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -54,7 +54,7 @@ func (suite *HashTestSuite) TestHash() {
 
 	for _, tc := range testCases {
 		suite.T().Run(tc.name, func(t *testing.T) {
-			hash := Hash(tc.input)
+			hash := GenerateThumbprint(tc.input)
 			suite.Equal(tc.expected, hash, "Hash should match expected value")
 		})
 	}
@@ -80,79 +80,10 @@ func (suite *HashTestSuite) TestHashString() {
 
 	for _, tc := range testCases {
 		suite.T().Run(tc.name, func(t *testing.T) {
-			hash := HashString(tc.input)
+			hash := GenerateThumbprintFromString(tc.input)
 			suite.Equal(tc.expected, hash, "Hash should match expected value")
 		})
 	}
-}
-
-func (suite *HashTestSuite) TestHashStringWithSalt() {
-	testCases := []struct {
-		name     string
-		input    string
-		salt     string
-		expected string
-	}{
-		{
-			name:     "EmptyStringAndSalt",
-			input:    "",
-			salt:     "",
-			expected: "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-		},
-		{
-			name:     "NormalStringWithSalt",
-			input:    "password",
-			salt:     "somesalt",
-			expected: "6bceb6d53d51a11c3bde77e8cafe1f152782c5e52a13e514da12a9e35b0c2bcb",
-		},
-	}
-
-	for _, tc := range testCases {
-		suite.T().Run(tc.name, func(t *testing.T) {
-			hash, err := HashStringWithSalt(tc.input, tc.salt)
-
-			assert.NoError(t, err)
-			assert.Equal(t, tc.expected, hash)
-		})
-	}
-}
-
-func (suite *HashTestSuite) TestHashStringWithSaltDeterministic() {
-	input := "test-input"
-	salt := "test-salt"
-
-	hash1, err1 := HashStringWithSalt(input, salt)
-	hash2, err2 := HashStringWithSalt(input, salt)
-
-	assert.NoError(suite.T(), err1)
-	assert.NoError(suite.T(), err2)
-	assert.Equal(suite.T(), hash1, hash2, "Hash should be deterministic for the same input and salt")
-}
-
-func (suite *HashTestSuite) TestHashStringWithDifferentInputs() {
-	salt := "common-salt"
-	input1 := "input-one"
-	input2 := "input-two"
-
-	hash1, err1 := HashStringWithSalt(input1, salt)
-	hash2, err2 := HashStringWithSalt(input2, salt)
-
-	assert.NoError(suite.T(), err1)
-	assert.NoError(suite.T(), err2)
-	assert.NotEqual(suite.T(), hash1, hash2, "Different inputs should produce different hashes")
-}
-
-func (suite *HashTestSuite) TestHashStringWithDifferentSalts() {
-	input := "common-input"
-	salt1 := "salt-one"
-	salt2 := "salt-two"
-
-	hash1, err1 := HashStringWithSalt(input, salt1)
-	hash2, err2 := HashStringWithSalt(input, salt2)
-
-	assert.NoError(suite.T(), err1)
-	assert.NoError(suite.T(), err2)
-	assert.NotEqual(suite.T(), hash1, hash2, "Different salts should produce different hashes")
 }
 
 func (suite *HashTestSuite) TestGenerateSalt() {
@@ -170,19 +101,9 @@ func (suite *HashTestSuite) TestGenerateSaltUniqueness() {
 	assert.NotEqual(suite.T(), salt1, salt2, "Generated salts should be different")
 }
 
-func (suite *HashTestSuite) TestGenerateSaltIsValidBase64() {
-	salt, err := GenerateSalt()
-
-	assert.NoError(suite.T(), err)
-	_, err = base64.StdEncoding.DecodeString(salt)
-	assert.NoError(suite.T(), err, "Salt should be valid base64")
-}
-
 func (suite *HashTestSuite) TestGenerateSaltLength() {
 	salt, err := GenerateSalt()
 
 	assert.NoError(suite.T(), err)
-	decoded, err := base64.StdEncoding.DecodeString(salt)
-	assert.NoError(suite.T(), err)
-	assert.Equal(suite.T(), 16, len(decoded), "Decoded salt should be 16 bytes")
+	assert.Equal(suite.T(), 16, len(salt), "Generated salt should be 16 bytes")
 }
