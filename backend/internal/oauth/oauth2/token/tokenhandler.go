@@ -119,7 +119,7 @@ func (th *TokenHandler) HandleTokenRequest(w http.ResponseWriter, r *http.Reques
 	}
 
 	// Validate the client credentials.
-	hashedClientSecret := hash.HashString(clientSecret)
+	hashedClientSecret := hash.GenerateThumbprintFromString(clientSecret)
 	if tokenAuthMethod != constants.TokenEndpointAuthMethodNone {
 		if clientID != oauthApp.ClientID || hashedClientSecret != oauthApp.HashedClientSecret {
 			utils.WriteJSONError(w, constants.ErrorInvalidClient,
