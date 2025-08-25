@@ -1,0 +1,70 @@
+{
+  "server": {
+    "hostname": "localhost",
+    "port": 8090,
+    "http_only": false
+  },
+  "gate_client": {
+    "hostname": "localhost",
+    "port": 9090,
+    "scheme": "https",
+    "login_path": "/login",
+    "error_path": "/error"
+  },
+  "security": {
+    "cert_file": "repository/resources/security/server.cert",
+    "key_file": "repository/resources/security/server.key"
+  },
+  "database": {
+    "identity": {
+      "type": "sqlite",
+      "hostname": "",
+      "port": 0,
+      "name": "",
+      "username": "",
+      "password": "",
+      "sslmode": "",
+      "path": "repository/database/thunderdb.db",
+      "options": "_journal_mode=WAL&_busy_timeout=5000"
+    },
+    "runtime": {
+      "type": "sqlite",
+      "hostname": "",
+      "port": 0,
+      "name": "",
+      "username": "",
+      "password": "",
+      "sslmode": "",
+      "path": "repository/database/runtimedb.db",
+      "options": "_journal_mode=WAL&_busy_timeout=5000"
+    }
+  },
+  "cache": {
+    "disabled": false,
+    "type": "inmemory",
+    "size": 1000,
+    "ttl": 3600,
+    "eviction_policy": "LRU",
+    "cleanup_interval": 300,
+    "properties": []
+  },
+  "oauth": {
+    "jwt": {
+      "issuer": "thunder",
+      "validity_period": 3600
+    },
+    "refresh_token": {
+      "renew_on_grant": false,
+      "validity_period": 86400
+    }
+  },
+  "flow": {
+    "graph_directory": "repository/resources/graphs/",
+    "authn": {
+      "default_flow": "auth_flow_config_basic"
+    }
+  },
+  "crypto": {
+    "key": ""
+  }
+}

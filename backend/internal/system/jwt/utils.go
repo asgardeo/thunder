@@ -26,33 +26,7 @@ import (
 	"fmt"
 	"math/big"
 	"strings"
-
-	"github.com/asgardeo/thunder/internal/system/config"
 )
-
-// GetJWTTokenValidityPeriod retrieves the JWT token validity period from the configuration.
-func GetJWTTokenValidityPeriod() int64 {
-	conf := config.GetThunderRuntime().Config
-	validityPeriod := conf.OAuth.JWT.ValidityPeriod
-
-	if validityPeriod == 0 {
-		validityPeriod = defaultTokenValidity
-	}
-
-	return validityPeriod
-}
-
-// GetJWTTokenIssuer retrieves the JWT token issuer from the configuration.
-func GetJWTTokenIssuer() string {
-	conf := config.GetThunderRuntime().Config
-	issuer := conf.OAuth.JWT.Issuer
-
-	if issuer == "" {
-		issuer = defaultIssuer
-	}
-
-	return issuer
-}
 
 // DecodeJWT decodes a JWT string and returns its header and payload as maps.
 func DecodeJWT(token string) (map[string]interface{}, map[string]interface{}, error) {

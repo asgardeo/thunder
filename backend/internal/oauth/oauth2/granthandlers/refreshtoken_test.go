@@ -50,6 +50,9 @@ func TestRefreshTokenGrantHandlerSuite(t *testing.T) {
 }
 
 func (suite *RefreshTokenGrantHandlerTestSuite) SetupTest() {
+	// Reset ThunderRuntime before initializing with test config
+	config.ResetThunderRuntime()
+
 	// Initialize Thunder Runtime config with basic test config
 	testConfig := &config.Config{
 		OAuth: config.OAuthConfig{
@@ -96,6 +99,10 @@ func (suite *RefreshTokenGrantHandlerTestSuite) SetupTest() {
 		RefreshToken: suite.validRefreshToken,
 		Scope:        "read",
 	}
+}
+
+func (suite *RefreshTokenGrantHandlerTestSuite) TearDownTest() {
+	config.ResetThunderRuntime()
 }
 
 func (suite *RefreshTokenGrantHandlerTestSuite) TestNewRefreshTokenGrantHandler() {
@@ -205,33 +212,6 @@ func (suite *RefreshTokenGrantHandlerTestSuite) TestIssueRefreshToken_JWTGenerat
 	assert.NotNil(suite.T(), err)
 	assert.Equal(suite.T(), constants.ErrorServerError, err.Error)
 	assert.Equal(suite.T(), "Failed to generate refresh token", err.ErrorDescription)
-}
-
-func (suite *RefreshTokenGrantHandlerTestSuite) TestIssueRefreshToken_WithDefaultValidity() {
-	// Create config without refresh token validity to test default
-	testConfig := &config.Config{
-		OAuth: config.OAuthConfig{
-			RefreshToken: config.RefreshTokenConfig{
-				ValidityPeriod: 0, // Should use default
-				RenewOnGrant:   false,
-			},
-		},
-	}
-	_ = config.InitializeThunderRuntime("test", testConfig)
-
-	// Mock JWT service with default validity
-	suite.mockJWTService.On("GenerateJWT", "test-client-id", "test-client-id",
-		int64(86400), mock.AnythingOfType("map[string]string")).Return("new.refresh.token",
-		int64(1234567890), nil)
-
-	tokenResponse := &model.TokenResponseDTO{}
-	ctx := &model.TokenContext{TokenAttributes: make(map[string]interface{})}
-
-	err := suite.handler.IssueRefreshToken(tokenResponse, ctx, "test-client-id", "authorization_code",
-		[]string{"read"})
-
-	assert.Nil(suite.T(), err)
-	assert.Equal(suite.T(), int64(86400), tokenResponse.RefreshToken.ExpiresIn)
 }
 
 func (suite *RefreshTokenGrantHandlerTestSuite) TestExtractScopes_NoScopesInRefreshToken() {

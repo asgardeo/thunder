@@ -100,6 +100,9 @@ func (suite *JWTServiceTestSuite) AfterTest(_, _ string) {
 }
 
 func (suite *JWTServiceTestSuite) SetupTest() {
+	// Reset ThunderRuntime before each test
+	config.ResetThunderRuntime()
+
 	suite.mockCertService = certmock.NewSystemCertificateServiceInterfaceMock(suite.T())
 
 	suite.jwtService = &JWTService{
@@ -113,7 +116,8 @@ func (suite *JWTServiceTestSuite) SetupTest() {
 		},
 		OAuth: config.OAuthConfig{
 			JWT: config.JWTConfig{
-				Issuer: "https://test.thunder.io",
+				Issuer:         "https://test.thunder.io",
+				ValidityPeriod: 3600, // Default validity period
 			},
 		},
 	}

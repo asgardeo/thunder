@@ -28,6 +28,7 @@ import (
 	"github.com/asgardeo/thunder/internal/oauth/oauth2/authz/store"
 	"github.com/asgardeo/thunder/internal/oauth/oauth2/constants"
 	"github.com/asgardeo/thunder/internal/oauth/oauth2/model"
+	"github.com/asgardeo/thunder/internal/system/config"
 	"github.com/asgardeo/thunder/internal/system/jwt"
 )
 
@@ -132,8 +133,10 @@ func (h *authorizationCodeGrantHandler) HandleGrant(tokenRequest *model.TokenReq
 	if authorizedScopesStr != "" {
 		jwtClaims["scope"] = authorizedScopesStr
 	}
+	jwtConfig := config.GetThunderRuntime().Config.OAuth.JWT
+
 	token, _, err := h.JWTService.GenerateJWT(authCode.AuthorizedUserID, authCode.ClientID,
-		jwt.GetJWTTokenValidityPeriod(), jwtClaims)
+		jwtConfig.ValidityPeriod, jwtClaims)
 	if err != nil {
 		return nil, &model.ErrorResponse{
 			Error:            constants.ErrorServerError,

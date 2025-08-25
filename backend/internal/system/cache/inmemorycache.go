@@ -111,18 +111,8 @@ func newInMemoryCache[T any](name string, enabled bool, size int, ttl time.Durat
 		}
 	}
 
-	cacheSize := size
-	if cacheSize <= 0 {
-		cacheSize = defaultCacheSize
-	}
-
-	cacheTTL := ttl
-	if cacheTTL <= 0 {
-		cacheTTL = defaultCacheTTL * time.Second
-	}
-
 	logger.Debug("Initializing In-memory cache", log.String("evictionPolicy", string(evictionPolicy)),
-		log.Int("size", cacheSize), log.Any("ttl", cacheTTL))
+		log.Int("size", size), log.Any("ttl", ttl))
 
 	lfuHeapInstance := &lfuHeap{}
 	heap.Init(lfuHeapInstance)
@@ -133,8 +123,8 @@ func newInMemoryCache[T any](name string, enabled bool, size int, ttl time.Durat
 		cache:          make(map[CacheKey]*inMemoryCacheEntry[T]),
 		accessOrder:    list.New(),
 		lfuHeap:        lfuHeapInstance,
-		size:           cacheSize,
-		ttl:            cacheTTL,
+		size:           size,
+		ttl:            ttl,
 		evictionPolicy: evictionPolicy,
 	}
 }

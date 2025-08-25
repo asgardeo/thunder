@@ -45,9 +45,6 @@ import (
 	"github.com/asgardeo/thunder/internal/system/utils"
 )
 
-const defaultTokenValidity = 3600 // default validity period of 1 hour
-const defaultIssuer = "thunder"
-
 var (
 	instance *JWTService
 	once     sync.Once
@@ -161,7 +158,7 @@ func (js *JWTService) GenerateJWT(sub, aud string, validityPeriod int64, claims 
 
 	// Calculate the expiration time based on the validity period.
 	if validityPeriod == 0 {
-		validityPeriod = defaultTokenValidity
+		validityPeriod = thunderRuntime.Config.OAuth.JWT.ValidityPeriod
 	}
 	iat := time.Now()
 	expirationTime := iat.Add(time.Duration(validityPeriod) * time.Second).Unix()

@@ -88,7 +88,8 @@ func getThunderHome(logger *log.Logger) string {
 func initThunderConfigurations(logger *log.Logger, thunderHome string) *config.Config {
 	// Load the configurations.
 	configFilePath := path.Join(thunderHome, "repository/conf/deployment.yaml")
-	cfg, err := config.LoadConfig(configFilePath)
+	defaultConfigPath := path.Join(thunderHome, "repository/resources/conf/default.json")
+	cfg, err := config.LoadConfig(configFilePath, defaultConfigPath)
 	if err != nil {
 		logger.Fatal("Failed to load configurations", log.Error(err))
 	}

@@ -90,6 +90,9 @@ func (suite *CacheManagerTestSuite) TestCacheManagerInit() {
 	enabledConfig := &config.Config{
 		Cache: config.CacheConfig{
 			Disabled:        false,
+			Size:            1000,
+			TTL:             3600,
+			EvictionPolicy:  "LRU",
 			CleanupInterval: 60,
 		},
 	}
@@ -406,27 +409,11 @@ func (suite *CacheManagerTestSuite) TestNewCache() {
 
 func (suite *CacheManagerTestSuite) TestGetCleanupInterval() {
 	t := suite.T()
-
-	// Test with default value
-	config1 := config.CacheConfig{
-		CleanupInterval: 0, // Should use default
-	}
-	interval1 := getCleanupInterval(config1)
-	assert.Equal(t, time.Duration(defaultCleanupInterval)*time.Second, interval1, "Should use default cleanup interval")
-
-	// Test with custom value
-	config2 := config.CacheConfig{
+	config := config.CacheConfig{
 		CleanupInterval: 120,
 	}
-	interval2 := getCleanupInterval(config2)
-	assert.Equal(t, time.Duration(120)*time.Second, interval2, "Should use configured cleanup interval")
-
-	// Test with negative value (should use default)
-	config3 := config.CacheConfig{
-		CleanupInterval: -10,
-	}
-	interval3 := getCleanupInterval(config3)
-	assert.Equal(t, time.Duration(defaultCleanupInterval)*time.Second, interval3, "Should use default for negative values")
+	interval := getCleanupInterval(config)
+	assert.Equal(t, time.Duration(120)*time.Second, interval, "Should use configured cleanup interval")
 }
 
 func (suite *CacheManagerTestSuite) TestStartCleanupRoutine() {

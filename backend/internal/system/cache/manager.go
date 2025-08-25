@@ -203,9 +203,5 @@ func GetCache[T any](cacheName string) CacheInterface[T] {
 // getCleanupInterval retrieves the cleanup interval from the cache configuration.
 func getCleanupInterval(cacheConfig config.CacheConfig) time.Duration {
 	cleanupIntervalInt := cacheConfig.CleanupInterval
-	if cleanupIntervalInt <= 0 {
-		cleanupIntervalInt = defaultCleanupInterval
-	}
-
 	return time.Duration(cleanupIntervalInt) * time.Second
 }

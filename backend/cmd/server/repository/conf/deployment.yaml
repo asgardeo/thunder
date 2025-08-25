@@ -27,6 +27,8 @@ database:
 cache:
   disabled: false
   type: "inmemory"
+  size: 1000
+  ttl: 3600
   eviction_policy: "LRU"
   cleanup_interval: 300
   # properties:
