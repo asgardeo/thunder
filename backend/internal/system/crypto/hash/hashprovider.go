@@ -30,17 +30,21 @@ import (
 
 // HashProviderInterface defines the interface for hashing and verifying data.
 type HashProviderInterface interface {
+	GetAlgorithm() string
 	Hash(data []byte, salt []byte) string
 	Verify(data []byte, salt []byte, expectedHash string) bool
 }
 
+// SHA256HashProvider implements the HashProviderInterface for SHA256 hashing.
 type SHA256HashProvider struct{}
 
+// PBKDF2HashProvider implements the HashProviderInterface for PBKDF2 hashing.
 type PBKDF2HashProvider struct {
 	Iterations int
 	KeyLen     int
 }
 
+// NewHashProvider initializes and returns a HashProviderInterface based on configuration.
 func NewHashProvider() HashProviderInterface {
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, "HashProvider"))
 	// Try to get hash configs from the application configuration
@@ -50,12 +54,9 @@ func NewHashProvider() HashProviderInterface {
 	case "SHA256":
 		logger.Debug("Using SHA256 hash provider as per configuration.")
 		return newSHA256HashProvider()
-	case "PBKDF2":
-		logger.Debug("Using PBKDF2 hash provider as per configuration.")
-		return newPBKDF2HashProvider()
 	default:
-		logger.Debug("Unsupported hash algorithm in configuration. Defaulting to PBKDF2.")
-		return newPBKDF2HashProvider()
+		logger.Debug("Using PBKDF2 hash provider as per configuration.")
+		return newPBKDF2HashProvider(600000, 32)
 	}
 }
 
@@ -63,24 +64,37 @@ func newSHA256HashProvider() HashProviderInterface {
 	return &SHA256HashProvider{}
 }
 
+// GetAlgorithm returns the name of the hashing algorithm.
+func (hp *SHA256HashProvider) GetAlgorithm() string {
+	return "SHA256"
+}
+
+// Hash generates a SHA256 hash of the input data combined with the salt.
 func (hp *SHA256HashProvider) Hash(data []byte, salt []byte) string {
-	combined := append(data, salt...)
-	hash := sha256.Sum256(combined)
+	data = append(data, salt...)
+	hash := sha256.Sum256(data)
 	return hex.EncodeToString(hash[:])
 }
 
+// Verify checks if the SHA256 hash of the input data and salt matches the expected hash.
 func (hp *SHA256HashProvider) Verify(data []byte, salt []byte, expectedHash string) bool {
 	hashedData := hp.Hash(data, salt)
 	return hashedData == expectedHash
 }
 
-func newPBKDF2HashProvider() HashProviderInterface {
+func newPBKDF2HashProvider(iterations int, keyLen int) HashProviderInterface {
 	return &PBKDF2HashProvider{
-		Iterations: 10000,
-		KeyLen:     32,
+		Iterations: iterations,
+		KeyLen:     keyLen,
 	}
 }
 
+// GetAlgorithm returns the name of the hashing algorithm.
+func (hp *PBKDF2HashProvider) GetAlgorithm() string {
+	return "PBKDF2"
+}
+
+// Hash generates a PBKDF2 hash of the input data using the provided salt.
 func (hp *PBKDF2HashProvider) Hash(data []byte, salt []byte) string {
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, "PBKDF2HashProvider"))
 	hash, err := pbkdf2.Key(sha256.New, string(data), salt, hp.Iterations, hp.KeyLen)
@@ -91,6 +105,7 @@ func (hp *PBKDF2HashProvider) Hash(data []byte, salt []byte) string {
 	return hex.EncodeToString(hash)
 }
 
+// Verify checks if the PBKDF2 hash of the input data and salt matches the expected hash.
 func (hp *PBKDF2HashProvider) Verify(data []byte, salt []byte, expectedHash string) bool {
 	hashedData := hp.Hash(data, salt)
 	return hashedData == expectedHash

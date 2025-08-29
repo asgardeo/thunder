@@ -121,6 +121,7 @@ type CryptoConfig struct {
 	Key string `yaml:"key"`
 }
 
+// HashConfig holds the hashing configuration details.
 type HashConfig struct {
 	Algorithm string `yaml:"algorithm"`
 }

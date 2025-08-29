@@ -237,7 +237,7 @@ func extractCredentials(user *model.User) ([]model.Credential, error) {
 			credential := model.Credential{
 				CredentialType: credField,
 				StorageType:    "hash",
-				StorageAlgo:    "SHA-256",
+				StorageAlgo:    hash.NewHashProvider().GetAlgorithm(),
 				Value:          credHash,
 				Salt:           base64.StdEncoding.EncodeToString(credSalt),
 			}
@@ -409,7 +409,8 @@ func (as *UserService) VerifyUser(
 			return nil, &constants.ErrorAuthenticationFailed
 		}
 
-		hashVerified := hash.NewHashProvider().Verify([]byte(credValue), []byte(matchingCredential.Salt), matchingCredential.Value)
+		hashVerified := hash.NewHashProvider().Verify(
+			[]byte(credValue), []byte(matchingCredential.Salt), matchingCredential.Value)
 
 		if hashVerified {
 			logger.Debug("Credential verified successfully", log.String("userID", userID), log.String("credType", credType))

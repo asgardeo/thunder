@@ -95,3 +95,63 @@ func (suite *HashProviderTestSuite) TestSha256HashWithDifferentSalts() {
 
 	assert.NotEqual(suite.T(), hash1, hash2, "Different salts should produce different hashes")
 }
+
+func (suite *HashProviderTestSuite) TestPBKDF2HashWithSalt() {
+	testCases := []struct {
+		name       string
+		input      string
+		keyLen     int
+		iterations int
+		salt       string
+		expected   string
+	}{
+		{
+			name:     "EmptyStringAndSalt",
+			input:    "",
+			salt:     "",
+			expected: "",
+		},
+		{
+			name:       "NormalStringWithSalt",
+			input:      "password",
+			keyLen:     20,
+			iterations: 2,
+			salt:       "salf",
+			expected:   "d17c77144da749004b9ebc1a9e1713f35d873363",
+		},
+	}
+
+	for _, tc := range testCases {
+		suite.T().Run(tc.name, func(t *testing.T) {
+			hash := newPBKDF2HashProvider(tc.iterations, tc.keyLen).Hash([]byte(tc.input), []byte(tc.salt))
+
+			assert.Equal(t, tc.expected, hash)
+		})
+	}
+}
+
+func (suite *HashProviderTestSuite) TestPBKDF2HashWithSaltDeterministic() {
+	input := "test-input"
+	salt := "test-salt"
+	hash1 := newPBKDF2HashProvider(10000, 32).Hash([]byte(input), []byte(salt))
+	hash2 := newPBKDF2HashProvider(10000, 32).Hash([]byte(input), []byte(salt))
+	assert.Equal(suite.T(), hash1, hash2, "Hash should be deterministic for the same input and salt")
+}
+
+func (suite *HashProviderTestSuite) TestPBKDF2HashWithDifferentInputs() {
+	salt := "common-salt"
+	input1 := "input-one"
+	input2 := "input-two"
+	hash1 := newPBKDF2HashProvider(10000, 32).Hash([]byte(input1), []byte(salt))
+	hash2 := newPBKDF2HashProvider(10000, 32).Hash([]byte(input2), []byte(salt))
+	assert.NotEqual(suite.T(), hash1, hash2, "Different inputs should produce different hashes")
+}
+
+func (suite *HashProviderTestSuite) TestPBKDF2HashWithDifferentSalts() {
+	input := "common-input"
+	salt1 := "salt-one"
+	salt2 := "salt-two"
+	hash1 := newPBKDF2HashProvider(10000, 32).Hash([]byte(input), []byte(salt1))
+	hash2 := newPBKDF2HashProvider(10000, 32).Hash([]byte(input), []byte(salt2))
+	assert.NotEqual(suite.T(), hash1, hash2, "Different salts should produce different hashes")
+}
