@@ -409,8 +409,13 @@ func (as *UserService) VerifyUser(
 			return nil, &constants.ErrorAuthenticationFailed
 		}
 
+		decodedSalt, err := base64.StdEncoding.DecodeString(matchingCredential.Salt)
+		if err != nil {
+			logger.Debug("Failed to decode base64 salt")
+			return nil, &constants.ErrorAuthenticationFailed
+		}
 		hashVerified := hash.NewHashProvider().Verify(
-			[]byte(credValue), []byte(matchingCredential.Salt), matchingCredential.Value)
+			[]byte(credValue), decodedSalt, matchingCredential.Value)
 
 		if hashVerified {
 			logger.Debug("Credential verified successfully", log.String("userID", userID), log.String("credType", credType))
