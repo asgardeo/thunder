@@ -22,7 +22,7 @@ package hash
 import (
 	"crypto/rand"
 	"crypto/sha256"
-	"encoding/hex"
+	"encoding/base64"
 )
 
 // GenerateSalt generates a random salt string.
@@ -38,7 +38,7 @@ func GenerateSalt() ([]byte, error) {
 // GenerateThumbprint generates a SHA-256 thumbprint for the given data.
 func GenerateThumbprint(data []byte) string {
 	hash := sha256.Sum256(data)
-	return hex.EncodeToString(hash[:])
+	return base64.StdEncoding.EncodeToString(hash[:])
 }
 
 // GenerateThumbprintFromString generates a SHA-256 thumbprint for the given string data.

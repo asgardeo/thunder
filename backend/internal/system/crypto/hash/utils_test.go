@@ -43,12 +43,12 @@ func (suite *HashTestSuite) TestHash() {
 		{
 			name:     "EmptyInput",
 			input:    []byte(""),
-			expected: "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+			expected: "47DEQpj8HBSa+/TImW+5JCeuQeRkm5NMpJWZG3hSuFU=",
 		},
 		{
 			name:     "NormalInput",
 			input:    []byte("hello world"),
-			expected: "b94d27b9934d3e08a52e52d7da7dabfac484efe37a5380ee9088f7ace2efcde9",
+			expected: "uU0nuZNNPgilLlLX2n2r+sSE7+N6U4DukIj3rOLvzek=",
 		},
 	}
 
@@ -69,12 +69,12 @@ func (suite *HashTestSuite) TestHashString() {
 		{
 			name:     "EmptyString",
 			input:    "",
-			expected: "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+			expected: "47DEQpj8HBSa+/TImW+5JCeuQeRkm5NMpJWZG3hSuFU=",
 		},
 		{
 			name:     "NormalString",
 			input:    "hello world",
-			expected: "b94d27b9934d3e08a52e52d7da7dabfac484efe37a5380ee9088f7ace2efcde9",
+			expected: "uU0nuZNNPgilLlLX2n2r+sSE7+N6U4DukIj3rOLvzek=",
 		},
 	}
 
