@@ -19,15 +19,14 @@
 package cert
 
 import (
-	"crypto/sha256"
 	"crypto/tls"
 	"crypto/x509"
-	"encoding/base64"
 	"errors"
 	"os"
 	"path"
 
 	"github.com/asgardeo/thunder/internal/system/config"
+	"github.com/asgardeo/thunder/internal/system/crypto/hash"
 )
 
 // SystemCertificateServiceInterface defines the interface for system certificate operations.
@@ -88,10 +87,6 @@ func (c *SystemCertificateService) GetCertificateKid() (string, error) {
 		return "", err
 	}
 
-	// Calculate SHA-256 thumbprint and use it as kid
-	h := sha256.New()
-	h.Write(parsedCert.Raw)
-	x5tS256 := base64.StdEncoding.EncodeToString(h.Sum(nil))
-
+	x5tS256 := hash.GenerateThumbprint(parsedCert.Raw)
 	return x5tS256, nil
 }

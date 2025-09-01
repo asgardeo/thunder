@@ -157,5 +157,5 @@ func (cs *CryptoService) DecryptString(ciphertext string) (string, error) {
 
 // getKeyID generates a unique identifier for the key.
 func getKeyID(key []byte) string {
-	return hash.Hash(key)
+	return hash.GenerateThumbprint(key)
 }

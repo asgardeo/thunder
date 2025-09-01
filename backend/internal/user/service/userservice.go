@@ -20,6 +20,7 @@
 package service
 
 import (
+	"encoding/base64"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -229,19 +230,16 @@ func extractCredentials(user *model.User) ([]model.Credential, error) {
 				return nil, err
 			}
 
-			credHash, err := hash.HashStringWithSalt(credValue, credSalt)
-			if err != nil {
-				return nil, err
-			}
+			credHash := hash.NewHashProvider().Hash([]byte(credValue), credSalt)
 
 			delete(attrsMap, credField)
 
 			credential := model.Credential{
 				CredentialType: credField,
 				StorageType:    "hash",
-				StorageAlgo:    "SHA-256",
+				StorageAlgo:    hash.NewHashProvider().GetAlgorithm(),
 				Value:          credHash,
-				Salt:           credSalt,
+				Salt:           base64.StdEncoding.EncodeToString(credSalt),
 			}
 
 			credentials = append(credentials, credential)
@@ -411,12 +409,15 @@ func (as *UserService) VerifyUser(
 			return nil, &constants.ErrorAuthenticationFailed
 		}
 
-		hashToCompare, err := hash.HashStringWithSalt(credValue, matchingCredential.Salt)
+		decodedSalt, err := base64.StdEncoding.DecodeString(matchingCredential.Salt)
 		if err != nil {
-			return nil, logErrorAndReturnServerError(logger, "Failed to hash credential value", err)
+			logger.Debug("Failed to decode base64 salt")
+			return nil, &constants.ErrorAuthenticationFailed
 		}
+		hashVerified := hash.NewHashProvider().Verify(
+			[]byte(credValue), decodedSalt, matchingCredential.Value)
 
-		if matchingCredential.Value == hashToCompare {
+		if hashVerified {
 			logger.Debug("Credential verified successfully", log.String("userID", userID), log.String("credType", credType))
 		} else {
 			logger.Debug("Credential verification failed", log.String("userID", userID), log.String("credType", credType))

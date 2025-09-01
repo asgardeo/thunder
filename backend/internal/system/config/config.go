@@ -121,6 +121,11 @@ type CryptoConfig struct {
 	Key string `yaml:"key"`
 }
 
+// HashConfig holds the hashing configuration details.
+type HashConfig struct {
+	Algorithm string `yaml:"algorithm"`
+}
+
 // Config holds the complete configuration details of the server.
 type Config struct {
 	Server     ServerConfig     `yaml:"server"`
@@ -131,6 +136,7 @@ type Config struct {
 	OAuth      OAuthConfig      `yaml:"oauth"`
 	Flow       FlowConfig       `yaml:"flow"`
 	Crypto     CryptoConfig     `yaml:"crypto"`
+	Hash       HashConfig       `yaml:"hash"`
 }
 
 // LoadConfig loads the configurations from the specified YAML file.

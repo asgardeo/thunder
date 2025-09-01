@@ -22,11 +22,9 @@ package jwks
 import (
 	"crypto/ecdsa"
 	"crypto/rsa"
-	"crypto/sha256"
+	"crypto/x509"
 	"encoding/base64"
 	"strings"
-
-	"crypto/x509"
 
 	// Use crypto/sha1 only for JWKS x5t as required by spec for thumbprint.
 	"crypto/sha1" //nolint:gosec
@@ -35,6 +33,7 @@ import (
 	"github.com/asgardeo/thunder/internal/oauth/jwks/constants"
 	"github.com/asgardeo/thunder/internal/oauth/jwks/model"
 	"github.com/asgardeo/thunder/internal/system/config"
+	"github.com/asgardeo/thunder/internal/system/crypto/hash"
 	"github.com/asgardeo/thunder/internal/system/error/serviceerror"
 )
 
@@ -92,9 +91,7 @@ func (s *JWKSService) GetJWKS() (*model.JWKSResponse, *serviceerror.ServiceError
 	// x5t: SHA-1 thumbprint, x5t#S256: SHA-256 thumbprint
 	sha1Sum := sha1.Sum(parsedCert.Raw) //nolint:gosec // x5t (SHA-1 thumbprint) is required by spec
 	x5t := base64.StdEncoding.EncodeToString(sha1Sum[:])
-	h := sha256.New()
-	h.Write(parsedCert.Raw)
-	x5tS256 := base64.StdEncoding.EncodeToString(h.Sum(nil))
+	x5tS256 := hash.GenerateThumbprint(parsedCert.Raw)
 
 	var jwks model.JWKS
 	switch pub := parsedCert.PublicKey.(type) {
