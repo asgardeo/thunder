@@ -379,14 +379,13 @@ func (ts *UpdateUserSchemaTestSuite) createTestSchema(schema CreateUserSchemaReq
 	}
 	defer resp.Body.Close()
 
-	if resp.StatusCode != http.StatusCreated {
-		body, _ := io.ReadAll(resp.Body)
-		ts.T().Fatalf("Expected status 201, got %d. Response: %s", resp.StatusCode, string(body))
-	}
-
 	bodyBytes, err := io.ReadAll(resp.Body)
 	if err != nil {
 		ts.T().Fatalf("Failed to read response body: %v", err)
+	}
+
+	if resp.StatusCode != http.StatusCreated {
+		ts.T().Fatalf("Expected status 201, got %d. Response: %s", resp.StatusCode, string(bodyBytes))
 	}
 
 	var createdSchema UserSchema
