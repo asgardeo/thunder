@@ -44,4 +44,4 @@ oauth:
 flow:
   graph_directory: "repository/resources/graphs/"
   authn:
-    default_flow: ""
+    default_flow: "no no"
