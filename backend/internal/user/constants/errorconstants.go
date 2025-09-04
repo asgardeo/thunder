@@ -90,12 +90,12 @@ var (
 		Error:            "Invalid pagination parameter",
 		ErrorDescription: "The offset parameter must be a non-negative integer",
 	}
-	// ErrorUsernameConflict is the error returned when username already exists.
-	ErrorUsernameConflict = serviceerror.ServiceError{
+	// ErrorAttributeConflict is the error returned when a unique attribute already exists.
+	ErrorAttributeConflict = serviceerror.ServiceError{
 		Type:             serviceerror.ClientErrorType,
 		Code:             "USR-1014",
-		Error:            "Username conflict",
-		ErrorDescription: "A user with the same username already exists",
+		Error:            "Attribute conflict",
+		ErrorDescription: "A user with the same unique attribute value already exists",
 	}
 	// ErrorEmailConflict is the error returned when email already exists.
 	ErrorEmailConflict = serviceerror.ServiceError{

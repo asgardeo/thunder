@@ -35,6 +35,7 @@ import (
 	"github.com/asgardeo/thunder/internal/user/constants"
 	"github.com/asgardeo/thunder/internal/user/model"
 	"github.com/asgardeo/thunder/internal/user/store"
+	userschemaservice "github.com/asgardeo/thunder/internal/userschema/service"
 )
 
 const loggerComponentName = "UserService"
@@ -63,13 +64,15 @@ type UserServiceInterface interface {
 
 // UserService is the default implementation of the UserServiceInterface.
 type UserService struct {
-	ouService ouservice.OrganizationUnitServiceInterface
+	ouService         ouservice.OrganizationUnitServiceInterface
+	userSchemaService userschemaservice.UserSchemaServiceInterface
 }
 
 // GetUserService creates a new instance of UserService.
 func GetUserService() UserServiceInterface {
 	return &UserService{
-		ouService: ouservice.GetOrganizationUnitService(),
+		ouService:         ouservice.GetOrganizationUnitService(),
+		userSchemaService: userschemaservice.GetUserSchemaService(),
 	}
 }
 
@@ -167,6 +170,30 @@ func (as *UserService) CreateUser(user *model.User) (*model.User, *serviceerror.
 		return nil, &constants.ErrorInvalidRequestFormat
 	}
 
+	if svcErr := as.userSchemaService.ValidateUser(user.Type, user.Attributes); svcErr != nil {
+		return nil, svcErr
+	}
+
+	isValid, svcErr := as.userSchemaService.ValidateUserUniqueness(user.Type, user.Attributes,
+		func(filters map[string]interface{}) (*string, error) {
+			userID, svcErr := as.IdentifyUser(filters)
+			if svcErr != nil {
+				if svcErr.Code == constants.ErrorUserNotFound.Code {
+					return nil, nil
+				} else {
+					return nil, errors.New(svcErr.Error)
+				}
+			}
+			return userID, nil
+		})
+	if svcErr != nil {
+		return nil, svcErr
+	}
+
+	if !isValid {
+		return nil, &constants.ErrorAttributeConflict
+	}
+
 	user.ID = utils.GenerateUUID()
 
 	credentials, err := extractCredentials(user)
@@ -215,6 +242,10 @@ func (as *UserService) CreateUserByPath(
 
 // extractCredentials extracts the credentials from the user attributes and returns a Credentials array.
 func extractCredentials(user *model.User) ([]model.Credential, error) {
+	if user.Attributes == nil {
+		return []model.Credential{}, nil
+	}
+
 	var attrsMap map[string]interface{}
 	if err := json.Unmarshal(user.Attributes, &attrsMap); err != nil {
 		return nil, err
@@ -292,6 +323,30 @@ func (as *UserService) UpdateUser(userID string, user *model.User) (*model.User,
 
 	if user == nil {
 		return nil, &constants.ErrorInvalidRequestFormat
+	}
+
+	if svcErr := as.userSchemaService.ValidateUser(user.Type, user.Attributes); svcErr != nil {
+		return nil, svcErr
+	}
+
+	isValid, svcErr := as.userSchemaService.ValidateUserUniqueness(user.Type, user.Attributes,
+		func(filters map[string]interface{}) (*string, error) {
+			userID, svcErr := as.IdentifyUser(filters)
+			if svcErr != nil {
+				if svcErr.Code == constants.ErrorUserNotFound.Code {
+					return nil, nil
+				} else {
+					return nil, errors.New(svcErr.Error)
+				}
+			}
+			return userID, nil
+		})
+	if svcErr != nil {
+		return nil, svcErr
+	}
+
+	if !isValid {
+		return nil, &constants.ErrorAttributeConflict
 	}
 
 	err := store.UpdateUser(user)

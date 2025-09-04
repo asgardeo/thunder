@@ -366,7 +366,7 @@ func handleError(w http.ResponseWriter, logger *log.Logger, svcErr *serviceerror
 			constants.ErrorUserNotFound.Code,
 			constants.ErrorOrganizationUnitNotFound.Code:
 			statusCode = http.StatusNotFound
-		case constants.ErrorUsernameConflict.Code:
+		case constants.ErrorAttributeConflict.Code:
 			statusCode = http.StatusConflict
 		case constants.ErrorHandlePathRequired.Code,
 			constants.ErrorInvalidHandlePath.Code,

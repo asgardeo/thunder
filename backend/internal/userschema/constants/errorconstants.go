@@ -69,6 +69,13 @@ var (
 		Error:            "Invalid pagination parameter",
 		ErrorDescription: "The offset parameter must be a non-negative integer",
 	}
+	// ErrorUserValidationFailed is the error returned when user attributes do not conform to the schema.
+	ErrorUserValidationFailed = serviceerror.ServiceError{
+		Type:             serviceerror.ClientErrorType,
+		Code:             "USRS-1007",
+		Error:            "User validation failed",
+		ErrorDescription: "User attributes do not conform to the required schema",
+	}
 )
 
 // Server errors for user schema management operations.

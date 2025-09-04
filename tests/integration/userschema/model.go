@@ -71,3 +71,48 @@ type ErrorResponse struct {
 	Description string `json:"description,omitempty"`
 	TraceID     string `json:"traceId,omitempty"`
 }
+
+// User represents a user for validation tests
+type User struct {
+	ID               string          `json:"id,omitempty"`
+	OrganizationUnit string          `json:"organizationUnit"`
+	Type             string          `json:"type"`
+	Attributes       json.RawMessage `json:"attributes,omitempty"`
+}
+
+// OrganizationUnit represents an organization unit
+type OrganizationUnit struct {
+	ID          string  `json:"id"`
+	Handle      string  `json:"handle"`
+	Name        string  `json:"name"`
+	Description string  `json:"description,omitempty"`
+	Parent      *string `json:"parent,omitempty"`
+}
+
+// CreateUserRequest represents the request to create a user
+type CreateUserRequest struct {
+	OrganizationUnit string          `json:"organizationUnit"`
+	Type             string          `json:"type"`
+	Attributes       json.RawMessage `json:"attributes,omitempty"`
+}
+
+// UpdateUserRequest represents the request to update a user
+type UpdateUserRequest struct {
+	OrganizationUnit string          `json:"organizationUnit,omitempty"`
+	Type             string          `json:"type,omitempty"`
+	Attributes       json.RawMessage `json:"attributes,omitempty"`
+}
+
+// CreateUserByPathRequest represents the request to create a user under a handle path
+type CreateUserByPathRequest struct {
+	Type       string          `json:"type"`
+	Attributes json.RawMessage `json:"attributes,omitempty"`
+}
+
+// CreateOURequest represents the request to create an organization unit
+type CreateOURequest struct {
+	Handle      string  `json:"handle"`
+	Name        string  `json:"name"`
+	Description string  `json:"description,omitempty"`
+	Parent      *string `json:"parent,omitempty"`
+}
