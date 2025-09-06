@@ -35,27 +35,28 @@ const (
 )
 
 var (
-	preCreatedUser User = User{
-		Id:               "550e8400-e29b-41d4-a716-446655440000",
-		OrganizationUnit: "456e8400-e29b-41d4-a716-446655440001",
-		Type:             "person",
-		Attributes:       json.RawMessage(`{"age": 30, "roles": ["admin", "user"], "address": {"city": "Colombo", "zip": "00100"}}`),
+	testUser = User{
+		Type:       "person",
+		Attributes: json.RawMessage(`{"age": 25, "roles": ["viewer"], "address": {"city": "Seattle", "zip": "98101"}}`),
 	}
 
-	userToCreate = User{
-		OrganizationUnit: "456e8400-e29b-41d4-a716-446655440001",
-		Type:             "person",
-		Attributes:       json.RawMessage(`{"age": 25, "roles": ["viewer"], "address": {"city": "Seattle", "zip": "98101"}}`),
+	userUpdate = User{
+		Type:       "person",
+		Attributes: json.RawMessage(`{"age": 35, "roles": ["admin"], "address": {"city": "Colombo", "zip": "10300"}}`),
 	}
 
-	userToUpdate = User{
-		OrganizationUnit: "456e8400-e29b-41d4-a716-446655440001",
-		Type:             "person",
-		Attributes:       json.RawMessage(`{"age": 35, "roles": ["admin"], "address": {"city": "Colombo", "zip": "10300"}}`),
+	testOU = OUCreateRequest{
+		Handle:      "test-ou-users",
+		Name:        "Test Organization Unit for Users",
+		Description: "Organization unit created for user API testing",
+		Parent:      nil,
 	}
 )
 
-var createdUserID string
+var (
+	createdUserID string
+	testOUID      string
+)
 
 type UserAPITestSuite struct {
 	suite.Suite
@@ -66,24 +67,42 @@ func TestUserAPITestSuite(t *testing.T) {
 	suite.Run(t, new(UserAPITestSuite))
 }
 
-// SetupSuite test user creation
+// SetupSuite creates test organization unit and user via API
 func (ts *UserAPITestSuite) SetupSuite() {
+	// First create the organization unit
+	ouID, err := createOrganizationUnit(testOU)
+	if err != nil {
+		ts.T().Fatalf("Failed to create organization unit during setup: %v", err)
+	}
+	testOUID = ouID
 
-	id, err := createUser(ts)
+	// Update user template with the created OU ID
+	testUser := testUser
+	testUser.OrganizationUnit = testOUID
+
+	// Create the test user
+	userID, err := createUser(ts, testUser)
 	if err != nil {
 		ts.T().Fatalf("Failed to create user during setup: %v", err)
-	} else {
-		createdUserID = id
 	}
+	createdUserID = userID
 }
 
-// TearDownSuite test user deletion
+// TearDownSuite cleans up test user and organization unit
 func (ts *UserAPITestSuite) TearDownSuite() {
-
+	// Delete the test user first
 	if createdUserID != "" {
 		err := deleteUser(createdUserID)
 		if err != nil {
-			ts.T().Fatalf("Failed to delete user during teardown: %v", err)
+			ts.T().Logf("Failed to delete user during teardown: %v", err)
+		}
+	}
+
+	// Delete the test organization unit
+	if testOUID != "" {
+		err := deleteOrganizationUnit(testOUID)
+		if err != nil {
+			ts.T().Logf("Failed to delete organization unit during teardown: %v", err)
 		}
 	}
 }
@@ -146,16 +165,21 @@ func (ts *UserAPITestSuite) TestUserListing() {
 	}
 
 	var foundCreatedUser bool
-	createdUser := buildCreatedUser()
+	expectedUser := User{
+		Id:               createdUserID,
+		OrganizationUnit: testOUID,
+		Type:             testUser.Type,
+		Attributes:       testUser.Attributes,
+	}
 	for _, user := range users {
-		if user.equals(createdUser) {
+		if user.equals(expectedUser) {
 			foundCreatedUser = true
 			break
 		}
 	}
 
 	if !foundCreatedUser {
-		ts.T().Fatalf("Created user not found in user list. Expected %+v", createdUser)
+		ts.T().Fatalf("Created user not found in user list. Expected %+v", expectedUser)
 	}
 }
 
@@ -247,8 +271,13 @@ func (ts *UserAPITestSuite) TestUserGetByID() {
 	if createdUserID == "" {
 		ts.T().Fatal("user ID is not available for retrieval")
 	}
-	user := buildCreatedUser()
-	retrieveAndValidateUserDetails(ts, user)
+	expectedUser := User{
+		Id:               createdUserID,
+		OrganizationUnit: testOUID,
+		Type:             testUser.Type,
+		Attributes:       testUser.Attributes,
+	}
+	retrieveAndValidateUserDetails(ts, expectedUser)
 }
 
 // Test user update
@@ -257,6 +286,10 @@ func (ts *UserAPITestSuite) TestUserUpdate() {
 	if createdUserID == "" {
 		ts.T().Fatal("User ID is not available for update")
 	}
+
+	// Update user template with the created OU ID
+	userToUpdate := userUpdate
+	userToUpdate.OrganizationUnit = testOUID
 
 	userJSON, err := json.Marshal(userToUpdate)
 	if err != nil {
@@ -336,11 +369,11 @@ func retrieveAndValidateUserDetails(ts *UserAPITestSuite, expectedUser User) {
 	}
 }
 
-func createUser(ts *UserAPITestSuite) (string, error) {
+func createUser(ts *UserAPITestSuite, user User) (string, error) {
 
-	userJSON, err := json.Marshal(userToCreate)
+	userJSON, err := json.Marshal(user)
 	if err != nil {
-		ts.T().Fatalf("Failed to marshal userToCreate: %v", err)
+		ts.T().Fatalf("Failed to marshal user template: %v", err)
 	}
 
 	reqBody := bytes.NewReader(userJSON)
@@ -406,12 +439,65 @@ func deleteUser(userId string) error {
 	return nil
 }
 
-func buildCreatedUser() User {
-
-	return User{
-		Id:               createdUserID,
-		OrganizationUnit: userToCreate.OrganizationUnit,
-		Type:             userToCreate.Type,
-		Attributes:       userToCreate.Attributes,
+func createOrganizationUnit(ouRequest OUCreateRequest) (string, error) {
+	ouJSON, err := json.Marshal(ouRequest)
+	if err != nil {
+		return "", fmt.Errorf("failed to marshal OU request: %w", err)
 	}
+
+	reqBody := bytes.NewReader(ouJSON)
+	req, err := http.NewRequest("POST", testServerURL+"/organization-units", reqBody)
+	if err != nil {
+		return "", fmt.Errorf("failed to create request: %w", err)
+	}
+	req.Header.Set("Content-Type", "application/json")
+
+	client := &http.Client{
+		Transport: &http.Transport{
+			TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
+		},
+	}
+
+	resp, err := client.Do(req)
+	if err != nil {
+		return "", fmt.Errorf("failed to send request: %w", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusCreated {
+		responseBody, _ := io.ReadAll(resp.Body)
+		return "", fmt.Errorf("expected status 201, got %d. Response: %s", resp.StatusCode, string(responseBody))
+	}
+
+	var createdOU OUResponse
+	err = json.NewDecoder(resp.Body).Decode(&createdOU)
+	if err != nil {
+		return "", fmt.Errorf("failed to parse response body: %w", err)
+	}
+
+	return createdOU.ID, nil
+}
+
+func deleteOrganizationUnit(ouID string) error {
+	req, err := http.NewRequest("DELETE", testServerURL+"/organization-units/"+ouID, nil)
+	if err != nil {
+		return err
+	}
+
+	client := &http.Client{
+		Transport: &http.Transport{
+			TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
+		},
+	}
+
+	resp, err := client.Do(req)
+	if err != nil {
+		return err
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK && resp.StatusCode != http.StatusNoContent {
+		return fmt.Errorf("expected status 200 or 204, got %d", resp.StatusCode)
+	}
+	return nil
 }

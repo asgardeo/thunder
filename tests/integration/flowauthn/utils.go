@@ -630,3 +630,247 @@ func WaitAndValidateNotification(mockServer interface{}, expectedCount int, time
 	// For now, we'll return a placeholder
 	return fmt.Errorf("notification validation not implemented - should be customized per mock server type")
 }
+
+// Helper function to create an organization unit
+func createOrganizationUnit(ouRequest TestOrganizationUnit) (string, error) {
+	ouJSON, err := json.Marshal(ouRequest)
+	if err != nil {
+		return "", fmt.Errorf("failed to marshal OU request: %w", err)
+	}
+
+	reqBody := bytes.NewReader(ouJSON)
+	req, err := http.NewRequest("POST", testServerURL+"/organization-units", reqBody)
+	if err != nil {
+		return "", fmt.Errorf("failed to create request: %w", err)
+	}
+	req.Header.Set("Content-Type", "application/json")
+
+	client := &http.Client{
+		Transport: &http.Transport{
+			TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
+		},
+	}
+
+	resp, err := client.Do(req)
+	if err != nil {
+		return "", fmt.Errorf("failed to send request: %w", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusCreated {
+		responseBody, _ := io.ReadAll(resp.Body)
+		return "", fmt.Errorf("expected status 201, got %d. Response: %s", resp.StatusCode, string(responseBody))
+	}
+
+	var createdOU map[string]interface{}
+	err = json.NewDecoder(resp.Body).Decode(&createdOU)
+	if err != nil {
+		return "", fmt.Errorf("failed to parse response body: %w", err)
+	}
+
+	id, ok := createdOU["id"].(string)
+	if !ok {
+		return "", fmt.Errorf("response does not contain id")
+	}
+	return id, nil
+}
+
+// Helper function to delete an organization unit
+func deleteOrganizationUnit(ouID string) error {
+	req, err := http.NewRequest("DELETE", testServerURL+"/organization-units/"+ouID, nil)
+	if err != nil {
+		return err
+	}
+
+	client := &http.Client{
+		Transport: &http.Transport{
+			TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
+		},
+	}
+
+	resp, err := client.Do(req)
+	if err != nil {
+		return err
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK && resp.StatusCode != http.StatusNoContent {
+		return fmt.Errorf("expected status 200 or 204, got %d", resp.StatusCode)
+	}
+	return nil
+}
+
+// Helper function to create an application
+func createApplication(appRequest TestApplication) (string, error) {
+	// Convert TestApplication to the format expected by the application API
+	appData := map[string]interface{}{
+		"name":                         appRequest.Name,
+		"description":                  appRequest.Description,
+		"is_registration_flow_enabled": appRequest.IsRegistrationFlowEnabled,
+		"auth_flow_graph_id":           appRequest.AuthFlowGraphID,
+		"registration_flow_graph_id":   appRequest.RegistrationFlowGraphID,
+		"certificate": map[string]interface{}{
+			"type":  "NONE",
+			"value": "",
+		},
+		"inbound_auth_config": []map[string]interface{}{
+			{
+				"type": "oauth2",
+				"oauth_app_config": map[string]interface{}{
+					"client_id":     appRequest.ClientID,
+					"client_secret": appRequest.ClientSecret,
+					"redirect_uris": appRequest.RedirectURIs,
+				},
+			},
+		},
+	}
+
+	appJSON, err := json.Marshal(appData)
+	if err != nil {
+		return "", fmt.Errorf("failed to marshal application: %w", err)
+	}
+
+	reqBody := bytes.NewReader(appJSON)
+	req, err := http.NewRequest("POST", testServerURL+"/applications", reqBody)
+	if err != nil {
+		return "", fmt.Errorf("failed to create request: %w", err)
+	}
+	req.Header.Set("Content-Type", "application/json")
+
+	client := &http.Client{
+		Transport: &http.Transport{
+			TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
+		},
+	}
+
+	resp, err := client.Do(req)
+	if err != nil {
+		return "", fmt.Errorf("failed to send request: %w", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusCreated {
+		responseBody, _ := io.ReadAll(resp.Body)
+		return "", fmt.Errorf("expected status 201, got %d. Response: %s", resp.StatusCode, string(responseBody))
+	}
+
+	var createdApp map[string]interface{}
+	err = json.NewDecoder(resp.Body).Decode(&createdApp)
+	if err != nil {
+		return "", fmt.Errorf("failed to parse response body: %w", err)
+	}
+
+	id, ok := createdApp["id"].(string)
+	if !ok {
+		return "", fmt.Errorf("response does not contain id")
+	}
+	return id, nil
+}
+
+// Helper function to delete an application
+func deleteApplication(appID string) error {
+	req, err := http.NewRequest("DELETE", testServerURL+"/applications/"+appID, nil)
+	if err != nil {
+		return err
+	}
+
+	client := &http.Client{
+		Transport: &http.Transport{
+			TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
+		},
+	}
+
+	resp, err := client.Do(req)
+	if err != nil {
+		return err
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusNoContent {
+		responseBody, _ := io.ReadAll(resp.Body)
+		return fmt.Errorf("expected status 204, got %d. Response: %s", resp.StatusCode, string(responseBody))
+	}
+	return nil
+}
+
+// createIdp creates an identity provider via API
+func createIdp(idp IDP) (string, error) {
+	idpJSON, err := json.Marshal(idp)
+	if err != nil {
+		return "", fmt.Errorf("failed to marshal IDP: %w", err)
+	}
+
+	reqBody := bytes.NewReader(idpJSON)
+	req, err := http.NewRequest("POST", testServerURL+"/identity-providers", reqBody)
+	if err != nil {
+		return "", fmt.Errorf("failed to create request: %w", err)
+	}
+	req.Header.Set("Content-Type", "application/json")
+
+	client := &http.Client{
+		Transport: &http.Transport{
+			TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
+		},
+	}
+
+	resp, err := client.Do(req)
+	if err != nil {
+		return "", fmt.Errorf("failed to send request: %w", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusCreated {
+		responseBody, _ := io.ReadAll(resp.Body)
+		return "", fmt.Errorf("expected status 201, got %d. Response: %s", resp.StatusCode, string(responseBody))
+	}
+
+	var respBody map[string]interface{}
+	err = json.NewDecoder(resp.Body).Decode(&respBody)
+	if err != nil {
+		return "", fmt.Errorf("failed to parse response body: %w", err)
+	}
+
+	id, ok := respBody["id"].(string)
+	if !ok {
+		return "", fmt.Errorf("response does not contain id")
+	}
+	return id, nil
+}
+
+// deleteIdp deletes an identity provider via API
+func deleteIdp(idpId string) error {
+	req, err := http.NewRequest("DELETE", testServerURL+"/identity-providers/"+idpId, nil)
+	if err != nil {
+		return err
+	}
+
+	client := &http.Client{
+		Transport: &http.Transport{
+			TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
+		},
+	}
+
+	resp, err := client.Do(req)
+	if err != nil {
+		return err
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK && resp.StatusCode != http.StatusNoContent {
+		responseBody, _ := io.ReadAll(resp.Body)
+		return fmt.Errorf("expected status 200 or 204, got %d. Response: %s", resp.StatusCode, string(responseBody))
+	}
+	return nil
+}
+
+// createLocalIdp creates a Local identity provider for testing
+func createLocalIdp() (string, error) {
+	localIdp := IDP{
+		Name:        "Local",
+		Description: "Local Identity Provider for testing",
+		Properties: []IDPProperty{
+			{Name: "type", Value: "local", IsSecret: false},
+		},
+	}
+	return createIdp(localIdp)
+}

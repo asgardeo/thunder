@@ -26,6 +26,32 @@ import (
 	"github.com/stretchr/testify/suite"
 )
 
+var (
+	googleAuthTestApp = TestApplication{
+		Name:                      "Google Auth Flow Test Application",
+		Description:               "Application for testing Google authentication flows",
+		IsRegistrationFlowEnabled: false,
+		AuthFlowGraphID:           "auth_flow_config_google",
+		RegistrationFlowGraphID:   "registration_flow_config_basic",
+		ClientID:                  "google_auth_flow_test_client",
+		ClientSecret:              "google_auth_flow_test_secret",
+		RedirectURIs:              []string{"http://localhost:3000/callback"},
+	}
+
+	googleAuthTestOU = TestOrganizationUnit{
+		Handle:      "google-auth-flow-test-ou",
+		Name:        "Google Auth Flow Test Organization Unit",
+		Description: "Organization unit for Google authentication flow testing",
+		Parent:      nil,
+	}
+)
+
+var (
+	googleAuthTestAppID string
+	googleAuthTestOUID  string
+	googleAuthTestIDPID string
+)
+
 type GoogleAuthFlowTestSuite struct {
 	suite.Suite
 }
@@ -35,22 +61,81 @@ func TestGoogleAuthFlowTestSuite(t *testing.T) {
 }
 
 func (ts *GoogleAuthFlowTestSuite) SetupSuite() {
-	err := updateAppConfig(appID, "auth_flow_config_google")
+	// Create test organization unit for Google auth tests
+	ouID, err := createOrganizationUnit(googleAuthTestOU)
 	if err != nil {
-		ts.T().Fatalf("Failed to update system app for Google auth: %v", err)
+		ts.T().Fatalf("Failed to create test organization unit during setup: %v", err)
 	}
+	googleAuthTestOUID = ouID
+
+	// Create Google IDP for Google auth tests
+	googleIDP := IDP{
+		Name:        "Google",
+		Description: "Google Identity Provider for authentication flow testing",
+		Properties: []IDPProperty{
+			{
+				Name:     "client_id",
+				Value:    "test_google_client",
+				IsSecret: false,
+			},
+			{
+				Name:     "client_secret",
+				Value:    "test_google_secret",
+				IsSecret: true,
+			},
+			{
+				Name:     "redirect_uri",
+				Value:    "https://localhost:3000/google/callback",
+				IsSecret: false,
+			},
+			{
+				Name:     "scopes",
+				Value:    "openid,email,profile",
+				IsSecret: false,
+			},
+		},
+	}
+
+	idpID, err := createIdp(googleIDP)
+	if err != nil {
+		ts.T().Fatalf("Failed to create Google IDP during setup: %v", err)
+	}
+	googleAuthTestIDPID = idpID
+
+	// Create test application for Google auth tests
+	appID, err := createApplication(googleAuthTestApp)
+	if err != nil {
+		ts.T().Fatalf("Failed to create test application during setup: %v", err)
+	}
+	googleAuthTestAppID = appID
 }
 
 func (ts *GoogleAuthFlowTestSuite) TearDownSuite() {
-	err := updateAppConfig(appID, "auth_flow_config_basic")
-	if err != nil {
-		ts.T().Fatalf("Failed to reset system app to basic auth: %v", err)
+	// Delete test application
+	if googleAuthTestAppID != "" {
+		if err := deleteApplication(googleAuthTestAppID); err != nil {
+			ts.T().Logf("Failed to delete test application during teardown: %v", err)
+		}
+	}
+
+	// Delete Google IDP
+	if googleAuthTestIDPID != "" {
+		if err := deleteIdp(googleAuthTestIDPID); err != nil {
+			ts.T().Logf("Failed to delete Google IDP during teardown: %v", err)
+		}
+	}
+
+	// Delete test organization unit
+	if googleAuthTestOUID != "" {
+		if err := deleteOrganizationUnit(googleAuthTestOUID); err != nil {
+			ts.T().Logf("Failed to delete test organization unit during teardown: %v", err)
+		}
 	}
 }
 
 func (ts *GoogleAuthFlowTestSuite) TestGoogleAuthFlowInitiation() {
 	// Initialize the flow by calling the flow execution API
-	flowStep, err := initiateAuthFlow(appID, nil)
+	flowStep, err := initiateAuthFlow(googleAuthTestAppID, nil)
 	if err != nil {
 		ts.T().Fatalf("Failed to initiate Google authentication flow: %v", err)
 	}

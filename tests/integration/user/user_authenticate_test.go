@@ -31,11 +31,21 @@ import (
 )
 
 var (
-	testUserForAuth = User{
-		OrganizationUnit: "456e8400-e29b-41d4-a716-446655440001",
-		Type:             "person",
-		Attributes:       json.RawMessage(`{"username": "testuser", "password": "testpass123", "email": "testuser@example.com", "firstName": "Test", "lastName": "User"}`),
+	authTestOU = OUCreateRequest{
+		Handle:      "auth-test-ou",
+		Name:        "Authentication Test Organization Unit",
+		Description: "Organization unit for user authentication testing",
+		Parent:      nil,
 	}
+
+	testUserForAuth = User{
+		Type:       "person",
+		Attributes: json.RawMessage(`{"username": "testuser", "password": "testpass123", "email": "testuser@example.com", "firstName": "Test", "lastName": "User"}`),
+	}
+)
+
+var (
+	authTestOUID string
 )
 
 type UserAuthenticateAPITestSuite struct {
@@ -47,21 +57,40 @@ func TestUserAuthenticateAPITestSuite(t *testing.T) {
 	suite.Run(t, new(UserAuthenticateAPITestSuite))
 }
 
-// SetupSuite creates a test user for authentication tests
+// SetupSuite creates a test organization unit and user for authentication tests
 func (ts *UserAuthenticateAPITestSuite) SetupSuite() {
-	id, err := ts.createTestUser()
+	// Create test organization unit
+	ouID, err := ts.createAuthTestOrganizationUnit(authTestOU)
+	if err != nil {
+		ts.T().Fatalf("Failed to create test organization unit during setup: %v", err)
+	}
+	authTestOUID = ouID
+
+	// Create test user with the created OU
+	testUserForAuth := testUserForAuth
+	testUserForAuth.OrganizationUnit = authTestOUID
+	userID, err := ts.createTestUserWithOU(testUserForAuth)
 	if err != nil {
 		ts.T().Fatalf("Failed to create test user during setup: %v", err)
 	}
-	ts.createdUserID = id
+	ts.createdUserID = userID
 }
 
-// TearDownSuite deletes the test user
+// TearDownSuite deletes the test user and organization unit
 func (ts *UserAuthenticateAPITestSuite) TearDownSuite() {
+	// Delete test user
 	if ts.createdUserID != "" {
 		err := ts.deleteTestUser(ts.createdUserID)
 		if err != nil {
 			ts.T().Logf("Failed to delete test user during teardown: %v", err)
+		}
+	}
+
+	// Delete test organization unit
+	if authTestOUID != "" {
+		err := ts.deleteAuthTestOrganizationUnit(authTestOUID)
+		if err != nil {
+			ts.T().Logf("Failed to delete test organization unit during teardown: %v", err)
 		}
 	}
 }
@@ -80,7 +109,7 @@ func (ts *UserAuthenticateAPITestSuite) TestAuthenticateUserWithUsernamePassword
 	// Validate response structure
 	ts.Require().NotEmpty(response.ID, "Response should contain user ID")
 	ts.Require().Equal("person", response.Type, "Response should contain correct user type")
-	ts.Require().Equal("456e8400-e29b-41d4-a716-446655440001", response.OrganizationUnit, "Response should contain correct organization unit")
+	ts.Require().Equal(authTestOUID, response.OrganizationUnit, "Response should contain correct organization unit")
 	ts.Require().Equal(ts.createdUserID, response.ID, "Response should contain the correct user ID")
 }
 
@@ -98,7 +127,7 @@ func (ts *UserAuthenticateAPITestSuite) TestAuthenticateUserWithEmailPassword() 
 	// Validate response structure
 	ts.Require().NotEmpty(response.ID, "Response should contain user ID")
 	ts.Require().Equal("person", response.Type, "Response should contain correct user type")
-	ts.Require().Equal("456e8400-e29b-41d4-a716-446655440001", response.OrganizationUnit, "Response should contain correct organization unit")
+	ts.Require().Equal(authTestOUID, response.OrganizationUnit, "Response should contain correct organization unit")
 	ts.Require().Equal(ts.createdUserID, response.ID, "Response should contain the correct user ID")
 }
 
@@ -185,9 +214,75 @@ func (ts *UserAuthenticateAPITestSuite) TestAuthenticateUserWithMalformedJSON() 
 	ts.Require().Equal("USR-1001", errorResp.Code, "Expected error code USR-1001 for invalid request format")
 }
 
-// Helper method to create a test user
-func (ts *UserAuthenticateAPITestSuite) createTestUser() (string, error) {
-	userJSON, err := json.Marshal(testUserForAuth)
+// Helper method to create a test organization unit
+func (ts *UserAuthenticateAPITestSuite) createAuthTestOrganizationUnit(ouRequest OUCreateRequest) (string, error) {
+	ouJSON, err := json.Marshal(ouRequest)
+	if err != nil {
+		return "", fmt.Errorf("failed to marshal OU request: %w", err)
+	}
+
+	reqBody := bytes.NewReader(ouJSON)
+	req, err := http.NewRequest("POST", testServerURL+"/organization-units", reqBody)
+	if err != nil {
+		return "", fmt.Errorf("failed to create OU request: %w", err)
+	}
+	req.Header.Set("Content-Type", "application/json")
+
+	client := &http.Client{
+		Transport: &http.Transport{
+			TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
+		},
+	}
+
+	resp, err := client.Do(req)
+	if err != nil {
+		return "", fmt.Errorf("failed to send OU request: %w", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusCreated {
+		bodyBytes, _ := io.ReadAll(resp.Body)
+		return "", fmt.Errorf("expected status 201, got %d: %s", resp.StatusCode, string(bodyBytes))
+	}
+
+	var ouResponse OUResponse
+	if err := json.NewDecoder(resp.Body).Decode(&ouResponse); err != nil {
+		return "", fmt.Errorf("failed to decode OU response: %w", err)
+	}
+
+	return ouResponse.ID, nil
+}
+
+// Helper method to delete a test organization unit
+func (ts *UserAuthenticateAPITestSuite) deleteAuthTestOrganizationUnit(ouID string) error {
+	client := &http.Client{
+		Transport: &http.Transport{
+			TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
+		},
+	}
+
+	req, err := http.NewRequest("DELETE", testServerURL+"/organization-units/"+ouID, nil)
+	if err != nil {
+		return fmt.Errorf("failed to create delete request: %w", err)
+	}
+
+	resp, err := client.Do(req)
+	if err != nil {
+		return fmt.Errorf("failed to send delete request: %w", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusNoContent {
+		bodyBytes, _ := io.ReadAll(resp.Body)
+		return fmt.Errorf("expected status 204, got %d: %s", resp.StatusCode, string(bodyBytes))
+	}
+
+	return nil
+}
+
+// Helper method to create a test user with organization unit
+func (ts *UserAuthenticateAPITestSuite) createTestUserWithOU(user User) (string, error) {
+	userJSON, err := json.Marshal(user)
 	if err != nil {
 		return "", fmt.Errorf("failed to marshal test user: %w", err)
 	}

@@ -40,12 +40,7 @@ var (
 	pathTestGroup = CreateGroupByPathRequest{
 		Name:        "Frontend Team",
 		Description: "Frontend development team",
-		Members: []Member{
-			{
-				Id:   "550e8400-e29b-41d4-a716-446655440000",
-				Type: MemberTypeUser,
-			},
-		},
+		Members:     []Member{},
 	}
 )
 
@@ -359,7 +354,7 @@ func (suite *GroupTreeAPITestSuite) TestCreateGroupByPathWithInvalidMemberType()
 		"description": "Group with invalid member type",
 		"members": []map[string]interface{}{
 			{
-				"id":   "550e8400-e29b-41d4-a716-446655440000",
+				"id":   "00000000-0000-0000-0000-000000000000",
 				"type": "invalid_type",
 			},
 		},

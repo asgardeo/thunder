@@ -32,6 +32,26 @@ const (
 	customSenderName           = "Custom SMS Sender"
 )
 
+var (
+	smsRegTestApp = TestApplication{
+		Name:                      "SMS Registration Flow Test Application",
+		Description:               "Application for testing SMS registration flows",
+		IsRegistrationFlowEnabled: true,
+		AuthFlowGraphID:           "auth_flow_config_basic",
+		RegistrationFlowGraphID:   "registration_flow_config_sms",
+		ClientID:                  "sms_reg_flow_test_client",
+		ClientSecret:              "sms_reg_flow_test_secret",
+		RedirectURIs:              []string{"http://localhost:3000/callback"},
+	}
+
+	smsRegTestOU = TestOrganizationUnit{
+		Handle:      "sms-reg-flow-test-ou",
+		Name:        "SMS Registration Flow Test Organization Unit",
+		Description: "Organization unit for SMS registration flow testing",
+		Parent:      nil,
+	}
+)
+
 type SMSRegistrationFlowTestSuite struct {
 	suite.Suite
 	config     *TestSuiteConfig
@@ -46,9 +66,30 @@ func (ts *SMSRegistrationFlowTestSuite) SetupSuite() {
 	// Initialize config
 	ts.config = &TestSuiteConfig{}
 
+	// Create test organization unit for SMS tests
+	ouID, err := createOrganizationUnit(smsRegTestOU)
+	if err != nil {
+		ts.T().Fatalf("Failed to create test organization unit during setup: %v", err)
+	}
+	testOUID = ouID
+
+	// Create Local IDP for SMS registration tests
+	idpID, err := createLocalIdp()
+	if err != nil {
+		ts.T().Fatalf("Failed to create Local IDP during setup: %v", err)
+	}
+	testIDPID = idpID
+
+	// Create test application for SMS tests
+	appID, err := createApplication(smsRegTestApp)
+	if err != nil {
+		ts.T().Fatalf("Failed to create test application during setup: %v", err)
+	}
+	testAppID = appID
+
 	// Start mock notification server
 	ts.mockServer = testutils.NewMockNotificationServer(mockNotificationServerPort)
-	err := ts.mockServer.Start()
+	err = ts.mockServer.Start()
 	if err != nil {
 		ts.T().Fatalf("Failed to start mock notification server: %v", err)
 	}
@@ -63,22 +104,14 @@ func (ts *SMSRegistrationFlowTestSuite) SetupSuite() {
 	ts.config.CreatedSenderID = senderID
 	ts.T().Logf("Notification sender created with ID: %s", ts.config.CreatedSenderID)
 
-	// Store original app config
-	ts.config.OriginalAppConfig, err = getAppConfig(appID)
+	// Store original app config (this will be the created app config)
+	ts.config.OriginalAppConfig, err = getAppConfig(testAppID)
 	if err != nil {
 		ts.T().Fatalf("Failed to get original app config during setup: %v", err)
 	}
 }
 
 func (ts *SMSRegistrationFlowTestSuite) TearDownSuite() {
-	// Restore original app config
-	if ts.config.OriginalAppConfig != nil {
-		err := RestoreAppConfig(appID, ts.config.OriginalAppConfig)
-		if err != nil {
-			ts.T().Logf("Failed to restore original app config during teardown: %v", err)
-		}
-	}
-
 	// Delete notification sender
 	if ts.config.CreatedSenderID != "" {
 		err := DeleteNotificationSender(ts.config.CreatedSenderID)
@@ -87,7 +120,7 @@ func (ts *SMSRegistrationFlowTestSuite) TearDownSuite() {
 		}
 	}
 
-	// Delete test users
+	// Delete test users created during SMS registration tests
 	if err := CleanupUsers(ts.config.CreatedUserIDs); err != nil {
 		ts.T().Logf("Failed to cleanup users during teardown: %v", err)
 	}
@@ -99,11 +132,32 @@ func (ts *SMSRegistrationFlowTestSuite) TearDownSuite() {
 			ts.T().Logf("Failed to stop mock notification server during teardown: %v", err)
 		}
 	}
+
+	// Delete test application
+	if testAppID != "" {
+		if err := deleteApplication(testAppID); err != nil {
+			ts.T().Logf("Failed to delete test application during teardown: %v", err)
+		}
+	}
+
+	// Delete test organization unit
+	if testOUID != "" {
+		if err := deleteOrganizationUnit(testOUID); err != nil {
+			ts.T().Logf("Failed to delete test organization unit during teardown: %v", err)
+		}
+	}
+
+	// Delete Local IDP
+	if testIDPID != "" {
+		if err := deleteIdp(testIDPID); err != nil {
+			ts.T().Logf("Failed to delete Local IDP during teardown: %v", err)
+		}
+	}
 }
 
 func (ts *SMSRegistrationFlowTestSuite) TestSMSRegistrationFlowWithMobileNumber() {
 	// Update app to use SMS flow
-	err := updateAppConfig(appID, "auth_flow_config_sms", "registration_flow_config_sms")
+	err := updateAppConfig(testAppID, "auth_flow_config_sms", "registration_flow_config_sms")
 	if err != nil {
 		ts.T().Fatalf("Failed to update app config for SMS flow: %v", err)
 	}
@@ -112,7 +166,7 @@ func (ts *SMSRegistrationFlowTestSuite) TestSMSRegistrationFlowWithMobileNumber(
 	mobileNumber := generateUniqueMobileNumber()
 
 	// Step 1: Initialize the registration flow by calling the flow execution API
-	flowStep, err := initiateRegistrationFlow(appID, nil)
+	flowStep, err := initiateRegistrationFlow(testAppID, nil)
 	if err != nil {
 		ts.T().Fatalf("Failed to initiate registration flow: %v", err)
 	}
@@ -215,7 +269,7 @@ func (ts *SMSRegistrationFlowTestSuite) TestSMSRegistrationFlowWithMobileNumber(
 
 func (ts *SMSRegistrationFlowTestSuite) TestSMSRegistrationFlowWithUsername() {
 	// Update app to use SMS flow with username
-	err := updateAppConfig(appID, "auth_flow_config_sms_with_username", "registration_flow_config_sms_with_username")
+	err := updateAppConfig(testAppID, "auth_flow_config_sms_with_username", "registration_flow_config_sms_with_username")
 	if err != nil {
 		ts.T().Fatalf("Failed to update app config for SMS flow with username: %v", err)
 	}
@@ -224,7 +278,7 @@ func (ts *SMSRegistrationFlowTestSuite) TestSMSRegistrationFlowWithUsername() {
 	username := generateUniqueUsername("smsreguser")
 
 	// Step 1: Initialize the registration flow
-	flowStep, err := initiateRegistrationFlow(appID, nil)
+	flowStep, err := initiateRegistrationFlow(testAppID, nil)
 	if err != nil {
 		ts.T().Fatalf("Failed to initiate registration flow: %v", err)
 	}
@@ -315,7 +369,7 @@ func (ts *SMSRegistrationFlowTestSuite) TestSMSRegistrationFlowWithUsername() {
 
 func (ts *SMSRegistrationFlowTestSuite) TestSMSRegistrationFlowInvalidOTP() {
 	// Update app to use SMS flow
-	err := updateAppConfig(appID, "auth_flow_config_sms", "registration_flow_config_sms")
+	err := updateAppConfig(testAppID, "auth_flow_config_sms", "registration_flow_config_sms")
 	if err != nil {
 		ts.T().Fatalf("Failed to update app config for SMS flow: %v", err)
 	}
@@ -328,7 +382,7 @@ func (ts *SMSRegistrationFlowTestSuite) TestSMSRegistrationFlowInvalidOTP() {
 		"mobileNumber": mobileNumber,
 	}
 
-	flowStep, err := initiateRegistrationFlow(appID, inputs)
+	flowStep, err := initiateRegistrationFlow(testAppID, inputs)
 	if err != nil {
 		ts.T().Fatalf("Failed to initiate registration flow: %v", err)
 	}
@@ -367,7 +421,7 @@ func (ts *SMSRegistrationFlowTestSuite) TestSMSRegistrationFlowInvalidOTP() {
 
 func (ts *SMSRegistrationFlowTestSuite) TestSMSRegistrationFlowSingleRequestWithMobileNumber() {
 	// Update app to use SMS flow
-	err := updateAppConfig(appID, "auth_flow_config_sms", "registration_flow_config_sms")
+	err := updateAppConfig(testAppID, "auth_flow_config_sms", "registration_flow_config_sms")
 	if err != nil {
 		ts.T().Fatalf("Failed to update app config for SMS flow: %v", err)
 	}
@@ -386,7 +440,7 @@ func (ts *SMSRegistrationFlowTestSuite) TestSMSRegistrationFlowSingleRequestWith
 		"email":        fmt.Sprintf("%s@example.com", mobileNumber),
 	}
 
-	flowStep, err := initiateRegistrationFlow(appID, inputs)
+	flowStep, err := initiateRegistrationFlow(testAppID, inputs)
 	if err != nil {
 		ts.T().Fatalf("Failed to initiate registration flow: %v", err)
 	}

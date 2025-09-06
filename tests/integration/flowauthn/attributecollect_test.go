@@ -29,22 +29,36 @@ const (
 	authFlowConfigBasicAttrCollectTest1 = "auth_flow_config_basic_attr_collect_test_1"
 )
 
-// Test users with different attribute configurations
 var (
-	// User with no attributes stored in profile (all attributes missing)
+	attrCollectTestApp = TestApplication{
+		Name:                      "Attribute Collect Flow Test Application",
+		Description:               "Application for testing attribute collection flows",
+		IsRegistrationFlowEnabled: false,
+		AuthFlowGraphID:           authFlowConfigBasicAttrCollectTest1,
+		RegistrationFlowGraphID:   "registration_flow_config_basic",
+		ClientID:                  "attr_collect_flow_test_client",
+		ClientSecret:              "attr_collect_flow_test_secret",
+		RedirectURIs:              []string{"http://localhost:3000/callback"},
+	}
+
+	attrCollectTestOU = TestOrganizationUnit{
+		Handle:      "attr-collect-flow-test-ou",
+		Name:        "Attribute Collect Flow Test Organization Unit",
+		Description: "Organization unit for attribute collection flow testing",
+		Parent:      nil,
+	}
+
+	// User templates with different attribute configurations
 	testUserNoAttributes = User{
-		OrganizationUnit: "456e8400-e29b-41d4-a716-446655440001",
-		Type:             "person",
+		Type: "person",
 		Attributes: json.RawMessage(`{
 			"username": "noattrsuser",
 			"password": "testpassword"
 		}`),
 	}
 
-	// User with partial attributes (email and mobileNumber missing)
 	testUserPartialAttributes = User{
-		OrganizationUnit: "456e8400-e29b-41d4-a716-446655440001",
-		Type:             "person",
+		Type: "person",
 		Attributes: json.RawMessage(`{
 			"username": "partialuser",
 			"password": "testpassword",
@@ -53,10 +67,8 @@ var (
 		}`),
 	}
 
-	// User with all required attributes present
 	testUserFullAttributes = User{
-		OrganizationUnit: "456e8400-e29b-41d4-a716-446655440001",
-		Type:             "person",
+		Type: "person",
 		Attributes: json.RawMessage(`{
 			"username": "fulluser",
 			"password": "testpassword",
@@ -67,15 +79,19 @@ var (
 		}`),
 	}
 
-	// Another user with no attributes stored in profile (all attributes missing)
 	testUserNoAttributes2 = User{
-		OrganizationUnit: "456e8400-e29b-41d4-a716-446655440001",
-		Type:             "person",
+		Type: "person",
 		Attributes: json.RawMessage(`{
 			"username": "noattrsuser2",
 			"password": "testpassword"
 		}`),
 	}
+)
+
+var (
+	attrCollectTestAppID string
+	attrCollectTestOUID  string
+	attrCollectTestIDPID string
 )
 
 type AttributeCollectTestData struct {
@@ -100,18 +116,48 @@ func (ts *AttributeCollectFlowTestSuite) SetupSuite() {
 	// Initialize config
 	ts.config = &TestSuiteConfig{}
 
-	// Store original app config
-	originalConfig, err := getAppConfig(appID)
+	// Create test organization unit for attribute collect tests
+	ouID, err := createOrganizationUnit(attrCollectTestOU)
+	if err != nil {
+		ts.T().Fatalf("Failed to create test organization unit during setup: %v", err)
+	}
+	attrCollectTestOUID = ouID
+
+	// Create Local IDP for attribute collect tests
+	idpID, err := createLocalIdp()
+	if err != nil {
+		ts.T().Fatalf("Failed to create Local IDP during setup: %v", err)
+	}
+	attrCollectTestIDPID = idpID
+
+	// Create test application for attribute collect tests
+	appID, err := createApplication(attrCollectTestApp)
+	if err != nil {
+		ts.T().Fatalf("Failed to create test application during setup: %v", err)
+	}
+	attrCollectTestAppID = appID
+
+	// Store original app config (this will be the created app config)
+	ts.config.OriginalAppConfig, err = getAppConfig(attrCollectTestAppID)
 	if err != nil {
 		ts.T().Fatalf("Failed to get original app config: %v", err)
 	}
-	ts.config.OriginalAppConfig = originalConfig
 
 	// Update app to use attribute collection flow
-	err = updateAppConfig(appID, authFlowConfigBasicAttrCollectTest1)
+	err = updateAppConfig(attrCollectTestAppID, authFlowConfigBasicAttrCollectTest1)
 	if err != nil {
 		ts.T().Fatalf("Failed to update app config: %v", err)
 	}
+
+	// Create users with the created OU ID
+	testUserNoAttributes := testUserNoAttributes
+	testUserNoAttributes.OrganizationUnit = attrCollectTestOUID
+	testUserPartialAttributes := testUserPartialAttributes
+	testUserPartialAttributes.OrganizationUnit = attrCollectTestOUID
+	testUserFullAttributes := testUserFullAttributes
+	testUserFullAttributes.OrganizationUnit = attrCollectTestOUID
+	testUserNoAttributes2 := testUserNoAttributes2
+	testUserNoAttributes2.OrganizationUnit = attrCollectTestOUID
 
 	// Setup test data
 	ts.testData = []AttributeCollectTestData{
@@ -175,11 +221,24 @@ func (ts *AttributeCollectFlowTestSuite) TearDownSuite() {
 		ts.T().Logf("Failed to cleanup users during teardown: %v", err)
 	}
 
-	// Restore original app config
-	if ts.config.OriginalAppConfig != nil {
-		err := RestoreAppConfig(appID, ts.config.OriginalAppConfig)
-		if err != nil {
-			ts.T().Logf("Failed to restore original app config during teardown: %v", err)
+	// Delete test application
+	if attrCollectTestAppID != "" {
+		if err := deleteApplication(attrCollectTestAppID); err != nil {
+			ts.T().Logf("Failed to delete test application during teardown: %v", err)
+		}
+	}
+
+	// Delete test organization unit
+	if attrCollectTestOUID != "" {
+		if err := deleteOrganizationUnit(attrCollectTestOUID); err != nil {
+			ts.T().Logf("Failed to delete test organization unit during teardown: %v", err)
+		}
+	}
+
+	// Delete Local IDP
+	if attrCollectTestIDPID != "" {
+		if err := deleteIdp(attrCollectTestIDPID); err != nil {
+			ts.T().Logf("Failed to delete Local IDP during teardown: %v", err)
 		}
 	}
 }
@@ -191,7 +250,7 @@ func (ts *AttributeCollectFlowTestSuite) TestAttributeCollectionFlow() {
 			// Test First Login - should prompt for missing attributes
 			ts.Run("FirstLogin", func() {
 				// Step 1: Initialize the flow - should prompt for username/password
-				flowStep, err := initiateAuthFlow(appID, nil)
+				flowStep, err := initiateAuthFlow(attrCollectTestAppID, nil)
 				ts.Require().NoError(err, "Failed to initiate authentication flow")
 				ts.Require().Equal("INCOMPLETE", flowStep.FlowStatus, "Expected flow status to be INCOMPLETE")
 				ts.Require().Equal("VIEW", flowStep.Type, "Expected flow type to be VIEW")
@@ -231,7 +290,7 @@ func (ts *AttributeCollectFlowTestSuite) TestAttributeCollectionFlow() {
 			if len(testCase.expectedMissingAttrs) > 0 {
 				ts.Run("SecondLogin", func() {
 					// Now perform second login - should not prompt for attributes
-					flowStep, err := initiateAuthFlow(appID, nil)
+					flowStep, err := initiateAuthFlow(attrCollectTestAppID, nil)
 					ts.Require().NoError(err, "Failed to initiate second authentication flow")
 					ts.Require().Equal("INCOMPLETE", flowStep.FlowStatus, "Expected flow status to be INCOMPLETE")
 					ts.Require().Equal("VIEW", flowStep.Type, "Expected flow type to be VIEW")
@@ -249,7 +308,7 @@ func (ts *AttributeCollectFlowTestSuite) TestAttributeCollectionFlow() {
 }
 
 func (ts *AttributeCollectFlowTestSuite) TestSingleRequestLogin_WithAllInputs() {
-	flowStep, err := initiateAuthFlow(appID, nil)
+	flowStep, err := initiateAuthFlow(attrCollectTestAppID, nil)
 	ts.Require().NoError(err, "Failed to initiate authentication flow")
 	ts.Require().Equal("INCOMPLETE", flowStep.FlowStatus, "Expected flow status to be INCOMPLETE")
 	ts.Require().Equal("VIEW", flowStep.Type, "Expected flow type to be VIEW")
@@ -276,7 +335,7 @@ func (ts *AttributeCollectFlowTestSuite) TestInvalidCredentials() {
 		"password": "wrongpassword",
 	}
 
-	flowStep, err := initiateAuthFlow(appID, nil)
+	flowStep, err := initiateAuthFlow(attrCollectTestAppID, nil)
 	ts.Require().NoError(err, "Failed to initiate authentication flow")
 
 	errorResp, err := completeAuthFlow(flowStep.FlowID, "", invalidCredentials)

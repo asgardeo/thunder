@@ -67,6 +67,23 @@ type UserGroupListResponse struct {
 	Links        []Link      `json:"links"`
 }
 
+// OUCreateRequest represents the request body for creating an organization unit.
+type OUCreateRequest struct {
+	Handle      string  `json:"handle"`
+	Name        string  `json:"name"`
+	Description string  `json:"description,omitempty"`
+	Parent      *string `json:"parent,omitempty"`
+}
+
+// OUResponse represents an organization unit response.
+type OUResponse struct {
+	ID          string  `json:"id"`
+	Handle      string  `json:"handle"`
+	Name        string  `json:"name"`
+	Description string  `json:"description,omitempty"`
+	Parent      *string `json:"parent"`
+}
+
 func compareStringSlices(a, b []string) bool {
 
 	if len(a) != len(b) {

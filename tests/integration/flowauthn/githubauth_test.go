@@ -26,6 +26,32 @@ import (
 	"github.com/stretchr/testify/suite"
 )
 
+var (
+	githubAuthTestApp = TestApplication{
+		Name:                      "GitHub Auth Flow Test Application",
+		Description:               "Application for testing GitHub authentication flows",
+		IsRegistrationFlowEnabled: false,
+		AuthFlowGraphID:           "auth_flow_config_github",
+		RegistrationFlowGraphID:   "registration_flow_config_basic",
+		ClientID:                  "github_auth_flow_test_client",
+		ClientSecret:              "github_auth_flow_test_secret",
+		RedirectURIs:              []string{"http://localhost:3000/callback"},
+	}
+
+	githubAuthTestOU = TestOrganizationUnit{
+		Handle:      "github-auth-flow-test-ou",
+		Name:        "GitHub Auth Flow Test Organization Unit",
+		Description: "Organization unit for GitHub authentication flow testing",
+		Parent:      nil,
+	}
+)
+
+var (
+	githubAuthTestAppID string
+	githubAuthTestOUID  string
+	githubAuthTestIDPID string
+)
+
 type GithubAuthFlowTestSuite struct {
 	suite.Suite
 }
@@ -35,22 +61,81 @@ func TestGithubAuthFlowTestSuite(t *testing.T) {
 }
 
 func (ts *GithubAuthFlowTestSuite) SetupSuite() {
-	err := updateAppConfig(appID, "auth_flow_config_github")
+	// Create test organization unit for GitHub auth tests
+	ouID, err := createOrganizationUnit(githubAuthTestOU)
 	if err != nil {
-		ts.T().Fatalf("Failed to update system app for Google auth: %v", err)
+		ts.T().Fatalf("Failed to create test organization unit during setup: %v", err)
 	}
+	githubAuthTestOUID = ouID
+
+	// Create GitHub IDP for GitHub auth tests
+	githubIDP := IDP{
+		Name:        "Github",
+		Description: "GitHub Identity Provider for authentication flow testing",
+		Properties: []IDPProperty{
+			{
+				Name:     "client_id",
+				Value:    "test_github_client",
+				IsSecret: false,
+			},
+			{
+				Name:     "client_secret",
+				Value:    "test_github_secret",
+				IsSecret: true,
+			},
+			{
+				Name:     "redirect_uri",
+				Value:    "https://localhost:3000/github/callback",
+				IsSecret: false,
+			},
+			{
+				Name:     "scopes",
+				Value:    "user:email,read:user",
+				IsSecret: false,
+			},
+		},
+	}
+
+	idpID, err := createIdp(githubIDP)
+	if err != nil {
+		ts.T().Fatalf("Failed to create GitHub IDP during setup: %v", err)
+	}
+	githubAuthTestIDPID = idpID
+
+	// Create test application for GitHub auth tests
+	appID, err := createApplication(githubAuthTestApp)
+	if err != nil {
+		ts.T().Fatalf("Failed to create test application during setup: %v", err)
+	}
+	githubAuthTestAppID = appID
 }
 
 func (ts *GithubAuthFlowTestSuite) TearDownSuite() {
-	err := updateAppConfig(appID, "auth_flow_config_basic")
-	if err != nil {
-		ts.T().Fatalf("Failed to reset system app to basic auth: %v", err)
+	// Delete test application
+	if githubAuthTestAppID != "" {
+		if err := deleteApplication(githubAuthTestAppID); err != nil {
+			ts.T().Logf("Failed to delete test application during teardown: %v", err)
+		}
+	}
+
+	// Delete GitHub IDP
+	if githubAuthTestIDPID != "" {
+		if err := deleteIdp(githubAuthTestIDPID); err != nil {
+			ts.T().Logf("Failed to delete GitHub IDP during teardown: %v", err)
+		}
+	}
+
+	// Delete test organization unit
+	if githubAuthTestOUID != "" {
+		if err := deleteOrganizationUnit(githubAuthTestOUID); err != nil {
+			ts.T().Logf("Failed to delete test organization unit during teardown: %v", err)
+		}
 	}
 }
 
 func (ts *GithubAuthFlowTestSuite) TestGithubAuthFlowInitiation() {
 	// Initialize the flow by calling the flow execution API
-	flowStep, err := initiateAuthFlow(appID, nil)
+	flowStep, err := initiateAuthFlow(githubAuthTestAppID, nil)
 	if err != nil {
 		ts.T().Fatalf("Failed to initiate GitHub authentication flow: %v", err)
 	}

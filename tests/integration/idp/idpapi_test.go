@@ -35,86 +35,83 @@ const (
 )
 
 var (
-	preCreatedIdpToList = []IDP{
-		{
-			ID:          "550e8400-e29b-41d4-a716-446655440000",
-			Name:        "Local",
-			Description: "Local Identity Provider",
-			Properties:  []IDPProperty{},
-		},
-		{
-			ID:          "550e8400-e29b-41d4-a716-446655440001",
-			Name:        "Github",
-			Description: "Login with Github",
-			Properties: []IDPProperty{
-				{
-					Name:     "client_id",
-					Value:    "client1",
-					IsSecret: false,
-				},
-				{
-					Name:     "client_secret",
-					Value:    "secret1",
-					IsSecret: true,
-				},
-				{
-					Name:     "redirect_uri",
-					Value:    "https://localhost:3000",
-					IsSecret: false,
-				},
-				{
-					Name:     "scopes",
-					Value:    "user:email,read:user",
-					IsSecret: false,
-				},
+	testLocalIdp = IDP{
+		Name:        "Test Local IDP",
+		Description: "Local Identity Provider for testing",
+		Properties:  []IDPProperty{},
+	}
+
+	testGithubIdp = IDP{
+		Name:        "Test Github IDP",
+		Description: "Github Identity Provider for testing",
+		Properties: []IDPProperty{
+			{
+				Name:     "client_id",
+				Value:    "test_github_client",
+				IsSecret: false,
+			},
+			{
+				Name:     "client_secret",
+				Value:    "test_github_secret",
+				IsSecret: true,
+			},
+			{
+				Name:     "redirect_uri",
+				Value:    "https://localhost:3000/github/callback",
+				IsSecret: false,
+			},
+			{
+				Name:     "scopes",
+				Value:    "user:email,read:user",
+				IsSecret: false,
 			},
 		},
-		{
-			ID:          "550e8400-e29b-41d4-a716-446655440002",
-			Name:        "Google",
-			Description: "Login with Google",
-			Properties: []IDPProperty{
-				{
-					Name:     "client_id",
-					Value:    "client2",
-					IsSecret: false,
-				},
-				{
-					Name:     "client_secret",
-					Value:    "secret2",
-					IsSecret: true,
-				},
-				{
-					Name:     "redirect_uri",
-					Value:    "https://localhost:3000",
-					IsSecret: false,
-				},
-				{
-					Name:     "scopes",
-					Value:    "openid,email,profile",
-					IsSecret: false,
-				},
+	}
+
+	testGoogleIdp = IDP{
+		Name:        "Test Google IDP",
+		Description: "Google Identity Provider for testing",
+		Properties: []IDPProperty{
+			{
+				Name:     "client_id",
+				Value:    "test_google_client",
+				IsSecret: false,
+			},
+			{
+				Name:     "client_secret",
+				Value:    "test_google_secret",
+				IsSecret: true,
+			},
+			{
+				Name:     "redirect_uri",
+				Value:    "https://localhost:3000/google/callback",
+				IsSecret: false,
+			},
+			{
+				Name:     "scopes",
+				Value:    "openid,email,profile",
+				IsSecret: false,
 			},
 		},
 	}
 
 	idpToCreate = IDP{
-		Name:        "Google 2",
-		Description: "Google User Login",
+		Name:        "Test OIDC IDP",
+		Description: "OIDC test identity provider for CRUD operations",
 		Properties: []IDPProperty{
 			{
 				Name:     "client_id",
-				Value:    "client2",
+				Value:    "test_oidc_client",
 				IsSecret: false,
 			},
 			{
 				Name:     "client_secret",
-				Value:    "secret2",
+				Value:    "test_oidc_secret",
 				IsSecret: true,
 			},
 			{
 				Name:     "redirect_uri",
-				Value:    "https://localhost:3000",
+				Value:    "https://localhost:3000/oidc/callback",
 				IsSecret: false,
 			},
 			{
@@ -126,22 +123,22 @@ var (
 	}
 
 	idpToUpdate = IDP{
-		Name:        "Github 2",
-		Description: "Github User Login",
+		Name:        "Test Updated IDP",
+		Description: "Updated test identity provider",
 		Properties: []IDPProperty{
 			{
 				Name:     "client_id",
-				Value:    "client3",
+				Value:    "test_updated_client",
 				IsSecret: false,
 			},
 			{
 				Name:     "client_secret",
-				Value:    "secret3",
+				Value:    "test_updated_secret",
 				IsSecret: true,
 			},
 			{
 				Name:     "redirect_uri",
-				Value:    "https://localhost:3000",
+				Value:    "https://localhost:3000/updated/callback",
 				IsSecret: false,
 			},
 			{
@@ -153,7 +150,13 @@ var (
 	}
 )
 
-var createdIdpID string
+var (
+	testLocalIdpID  string
+	testGithubIdpID string
+	testGoogleIdpID string
+	createdIdpID   string
+	testIdps        []IDP // Track all created IDPs for validation
+)
 
 type IdpAPITestSuite struct {
 	suite.Suite
@@ -164,24 +167,70 @@ func TestIdpAPITestSuite(t *testing.T) {
 	suite.Run(t, new(IdpAPITestSuite))
 }
 
-// SetupSuite test IdP creation
+// SetupSuite creates test IDPs via API
 func (ts *IdpAPITestSuite) SetupSuite() {
-
-	id, err := createIdp(ts)
+	// Create all test IDPs
+	localId, err := createIdp(ts, testLocalIdp)
 	if err != nil {
-		ts.T().Fatalf("Failed to create IdP during setup: %v", err)
-	} else {
-		createdIdpID = id
+		ts.T().Fatalf("Failed to create test Local IDP during setup: %v", err)
+	}
+	testLocalIdpID = localId
+
+	githubId, err := createIdp(ts, testGithubIdp)
+	if err != nil {
+		ts.T().Fatalf("Failed to create test Github IDP during setup: %v", err)
+	}
+	testGithubIdpID = githubId
+
+	googleId, err := createIdp(ts, testGoogleIdp)
+	if err != nil {
+		ts.T().Fatalf("Failed to create test Google IDP during setup: %v", err)
+	}
+	testGoogleIdpID = googleId
+
+	createId, err := createIdp(ts, idpToCreate)
+	if err != nil {
+		ts.T().Fatalf("Failed to create test OIDC IDP during setup: %v", err)
+	}
+	createdIdpID = createId
+
+	// Build the list of created IDPs for test validations
+	testIdps = []IDP{
+		{ID: testLocalIdpID, Name: testLocalIdp.Name, Description: testLocalIdp.Description, Properties: testLocalIdp.Properties},
+		{ID: testGithubIdpID, Name: testGithubIdp.Name, Description: testGithubIdp.Description, Properties: testGithubIdp.Properties},
+		{ID: testGoogleIdpID, Name: testGoogleIdp.Name, Description: testGoogleIdp.Description, Properties: testGoogleIdp.Properties},
+		{ID: createdIdpID, Name: idpToCreate.Name, Description: idpToCreate.Description, Properties: idpToCreate.Properties},
 	}
 }
 
-// TearDownSuite test IdP deletion
+// TearDownSuite cleans up all test IDPs
 func (ts *IdpAPITestSuite) TearDownSuite() {
+	// Delete all test IDPs
+	if testLocalIdpID != "" {
+		err := deleteIdp(testLocalIdpID)
+		if err != nil {
+			ts.T().Logf("Failed to delete test Local IDP during teardown: %v", err)
+		}
+	}
+
+	if testGithubIdpID != "" {
+		err := deleteIdp(testGithubIdpID)
+		if err != nil {
+			ts.T().Logf("Failed to delete test Github IDP during teardown: %v", err)
+		}
+	}
+
+	if testGoogleIdpID != "" {
+		err := deleteIdp(testGoogleIdpID)
+		if err != nil {
+			ts.T().Logf("Failed to delete test Google IDP during teardown: %v", err)
+		}
+	}
 
 	if createdIdpID != "" {
 		err := deleteIdp(createdIdpID)
 		if err != nil {
-			ts.T().Fatalf("Failed to delete IdP during tear down: %v", err)
+			ts.T().Logf("Failed to delete test OIDC IDP during teardown: %v", err)
 		}
 	}
 }
@@ -225,28 +274,17 @@ func (ts *IdpAPITestSuite) TestIdpListing() {
 		ts.T().Fatalf("Response does not contain any identity providers")
 	}
 
-	if idpListLength != 4 {
-		ts.T().Fatalf("Expected 4 identity providers, got %d", idpListLength)
-	}
-
-	createdIdp := buildCreatedIdpToList()
-	for _, idp := range idps {
-		if createdIdp.Name == idp.Name {
-			if !idp.equals(createdIdp) {
-				ts.T().Fatalf("IdP mismatch, expected %+v, got %+v", createdIdp, idp)
+	// Verify that all test IDPs we created are present in the list
+	for _, expectedIdp := range testIdps {
+		found := false
+		for _, idp := range idps {
+			if idp.equals(expectedIdp) {
+				found = true
+				break
 			}
-		} else {
-			// Check if the idP is one of the pre-created IdPs
-			found := false
-			for _, preCreatedIdp := range preCreatedIdpToList {
-				if idp.equals(preCreatedIdp) {
-					found = true
-					break
-				}
-			}
-			if !found {
-				ts.T().Fatalf("Unexpected IdP found: %+v", idp)
-			}
+		}
+		if !found {
+			ts.T().Fatalf("Test IDP not found in list: %+v", expectedIdp)
 		}
 	}
 }
@@ -257,7 +295,7 @@ func (ts *IdpAPITestSuite) TestIdpGetByID() {
 	if createdIdpID == "" {
 		ts.T().Fatal("IdP ID is not available for retrieval")
 	}
-	idp := buildCreatedIdp()
+	idp := testIdps[3]
 	retrieveAndValidateIdpDetails(ts, idp)
 }
 
@@ -346,11 +384,11 @@ func retrieveAndValidateIdpDetails(ts *IdpAPITestSuite, expectedIdp IDP) {
 	}
 }
 
-func createIdp(ts *IdpAPITestSuite) (string, error) {
+func createIdp(ts *IdpAPITestSuite, idp IDP) (string, error) {
 
-	idpJSON, err := json.Marshal(idpToCreate)
+	idpJSON, err := json.Marshal(idp)
 	if err != nil {
-		ts.T().Fatalf("Failed to marshal idPToCreate: %v", err)
+		ts.T().Fatalf("Failed to marshal IDP template: %v", err)
 	}
 
 	reqBody := bytes.NewReader(idpJSON)
@@ -387,7 +425,6 @@ func createIdp(ts *IdpAPITestSuite) (string, error) {
 	if !ok {
 		return "", fmt.Errorf("response does not contain id")
 	}
-	createdIdpID = id
 	return id, nil
 }
 
@@ -414,24 +451,4 @@ func deleteIdp(idpId string) error {
 		return err
 	}
 	return nil
-}
-
-func buildCreatedIdp() IDP {
-
-	return IDP{
-		ID:          createdIdpID,
-		Name:        idpToCreate.Name,
-		Description: idpToCreate.Description,
-		Properties:  idpToCreate.Properties,
-	}
-}
-
-func buildCreatedIdpToList() IDP {
-
-	return IDP{
-		ID:          createdIdpID,
-		Name:        idpToCreate.Name,
-		Description: idpToCreate.Description,
-		Properties:  idpToCreate.Properties,
-	}
 }

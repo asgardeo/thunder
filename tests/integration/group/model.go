@@ -99,3 +99,20 @@ type ErrorResponse struct {
 	Message     string `json:"message"`
 	Description string `json:"description,omitempty"`
 }
+
+// TestOrganizationUnit represents an organization unit for testing.
+type TestOrganizationUnit struct {
+	ID          string  `json:"id,omitempty"`
+	Handle      string  `json:"handle"`
+	Name        string  `json:"name"`
+	Description string  `json:"description,omitempty"`
+	Parent      *string `json:"parent,omitempty"`
+}
+
+// TestUser represents a user for testing.
+type TestUser struct {
+	ID               string                 `json:"id,omitempty"`
+	OrganizationUnit string                 `json:"organizationUnit,omitempty"`
+	Type             string                 `json:"type"`
+	Attributes       map[string]interface{} `json:"attributes"`
+}
