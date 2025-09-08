@@ -1,0 +1,128 @@
+# Copyright (c) 2025, WSO2 LLC. (https://www.wso2.com).
+#
+# WSO2 LLC. licenses this file to you under the Apache License,
+# Version 2.0 (the "License"); you may not use this file except
+# in compliance with the License.
+# You may obtain a copy of the License at
+#
+# http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing,
+# software distributed under the License is distributed on an
+# "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+# KIND, either express or implied. See the License for the
+# specific language governing permissions and limitations
+# under the License.
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "thunder.fullname" . }}-deployment
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "thunder.labels" . | nindent 4 }}
+spec:
+  replicas: {{ .Values.deployment.replicaCount }}
+  strategy:
+    rollingUpdate:
+      maxSurge: {{ .Values.deployment.strategy.rollingUpdate.maxSurge }}
+      maxUnavailable: {{ .Values.deployment.strategy.rollingUpdate.maxUnavailable }}
+    type: RollingUpdate
+  selector:
+    matchLabels:
+      {{- include "thunder.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "thunder.selectorLabels" . | nindent 8 }}
+      annotations:
+        checksum.deployment.yaml: {{ include (print $.Template.BasePath "/config-map.yaml") . | sha256sum }}
+    spec:
+      serviceAccountName: {{ include "thunder.serviceAccountName" . }}
+      securityContext:
+        {{- if .Values.deployment.securityContext.enableRunAsUser }}
+        runAsUser: {{ .Values.deployment.securityContext.runAsUser }}
+        {{- end }}
+        {{- if .Values.deployment.securityContext.seccompProfile.enabled }}
+        seccompProfile:
+          type: {{ .Values.deployment.securityContext.seccompProfile.type }}
+        {{- end }}
+      affinity:
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+            - weight: 100
+              podAffinityTerm:
+                labelSelector:
+                  matchExpressions:
+                    - key: app.kubernetes.io/name
+                      operator: In
+                      values:
+                        - {{ include "thunder.name" . }}
+                    - key: app.kubernetes.io/instance
+                      operator: In
+                      values:
+                        - {{ .Release.Name }}
+                topologyKey: topology.kubernetes.io/zone
+      {{- if .Values.deployment.image.imagePullSecret }}
+      imagePullSecrets:
+        - name: {{ .Values.deployment.image.imagePullSecret }}
+      {{- end }}
+      terminationGracePeriodSeconds: {{ .Values.deployment.terminationGracePeriodSeconds }}
+      containers:
+        - name: thunder
+          {{- if .Values.deployment.image.digest }}
+          image: {{ .Values.deployment.image.registry }}/{{ .Values.deployment.image.repository }}@{{ .Values.deployment.image.digest }}
+          {{- else }}
+          image: {{ .Values.deployment.image.registry }}/{{ .Values.deployment.image.repository }}:{{ default "latest" .Values.deployment.image.tag }}
+          {{- end }}
+          imagePullPolicy: {{ .Values.deployment.image.pullPolicy }}
+          startupProbe:
+            exec:
+              command:
+                - /bin/sh
+                - -c
+                - nc -z localhost 8090
+            initialDelaySeconds: {{ .Values.deployment.startupProbe.initialDelaySeconds }}
+            periodSeconds: {{ .Values.deployment.startupProbe.periodSeconds }}
+            failureThreshold: {{ .Values.deployment.startupProbe.failureThreshold }}
+          livenessProbe:
+            httpGet:
+              path: /health/liveness
+              port: {{ .Values.deployment.container.port }}
+              scheme: HTTPS
+            periodSeconds: {{ .Values.deployment.livenessProbe.periodSeconds }}
+          readinessProbe:
+            httpGet:
+              path: /health/readiness
+              port: {{ .Values.deployment.container.port }}
+              scheme: HTTPS
+            initialDelaySeconds: {{ .Values.deployment.readinessProbe.initialDelaySeconds }}
+            periodSeconds: {{ .Values.deployment.readinessProbe.periodSeconds }}
+          resources:
+            requests:
+              memory: {{ .Values.deployment.resources.requests.memory }}
+              cpu: {{ .Values.deployment.resources.requests.cpu }}
+            limits:
+              memory: {{ .Values.deployment.resources.limits.memory }}
+              cpu: {{ .Values.deployment.resources.limits.cpu }}
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: false
+            runAsNonRoot: true
+            {{- if .Values.deployment.securityContext.enableRunAsUser }}
+            runAsUser: {{ .Values.deployment.securityContext.runAsUser }}
+            {{- end }}
+            capabilities:
+              drop:
+                - all
+          ports:
+            - containerPort: {{ .Values.deployment.container.port }}
+              protocol: TCP
+          volumeMounts:
+            - name: deployment-yaml-volume
+              mountPath: /opt/thunder/repository/conf/deployment.yaml
+              subPath: deployment.yaml
+      volumes:
+        - name: deployment-yaml-volume
+          configMap:
+            name: {{ include "thunder.fullname" . }}-cm-deployment

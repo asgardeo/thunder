@@ -1,0 +1,85 @@
+# Copyright (c) 2025, WSO2 LLC. (https://www.wso2.com).
+#
+# WSO2 LLC. licenses this file to you under the Apache License,
+# Version 2.0 (the "License"); you may not use this file except
+# in compliance with the License.
+# You may obtain a copy of the License at
+#
+# http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing,
+# software distributed under the License is distributed on an
+# "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+# KIND, either express or implied. See the License for the
+# specific language governing permissions and limitations
+# under the License.
+
+server:
+  hostname: {{ .Values.configuration.server.hostname | quote }}
+  port: {{ .Values.configuration.server.port }}
+
+gate_client:
+  hostname: {{ .Values.configuration.gateClient.hostname | quote }}
+  port: {{ .Values.configuration.gateClient.port }}
+  scheme: {{ .Values.configuration.gateClient.scheme | quote }}
+  login_path: {{ .Values.configuration.gateClient.loginPath | quote }}
+  error_path: {{ .Values.configuration.gateClient.errorPath | quote }}
+
+security:
+  cert_file: {{ .Values.configuration.security.certFile | quote }}
+  key_file: {{ .Values.configuration.security.keyFile | quote }}
+
+database:
+  identity:
+    type: {{ .Values.configuration.database.identity.type | quote }}
+    {{- if eq .Values.configuration.database.identity.type "sqlite" }}
+    path: {{ .Values.configuration.database.identity.sqlitePath | quote }}
+    options: {{ .Values.configuration.database.identity.sqliteOptions | quote }}
+    {{- else }}
+    hostname: {{ .Values.configuration.database.identity.host | quote }}
+    port: {{ .Values.configuration.database.identity.port }}
+    name: {{ .Values.configuration.database.identity.name | quote }}
+    username: {{ .Values.configuration.database.identity.username | quote }}
+    password: {{ .Values.configuration.database.identity.password | quote }}
+    sslmode: {{ .Values.configuration.database.identity.sslmode | quote }}
+    {{- end }}
+  runtime:
+    type: {{ .Values.configuration.database.runtime.type | quote }}
+    {{- if eq .Values.configuration.database.runtime.type "sqlite" }}
+    path: {{ .Values.configuration.database.runtime.sqlitePath | quote }}
+    options: {{ .Values.configuration.database.runtime.sqliteOptions | quote }}
+    {{- else }}
+    hostname: {{ .Values.configuration.database.runtime.host | quote }}
+    port: {{ .Values.configuration.database.runtime.port }}
+    name: {{ .Values.configuration.database.runtime.name | quote }}
+    username: {{ .Values.configuration.database.runtime.username | quote }}
+    password: {{ .Values.configuration.database.runtime.password | quote }}
+    sslmode: {{ .Values.configuration.database.runtime.sslmode | quote }}
+    {{- end }}
+
+cache:
+  disabled: {{ .Values.configuration.cache.disabled }}
+  type: {{ .Values.configuration.cache.type | quote }}
+  size: {{ .Values.configuration.cache.size }}
+  ttl: {{ .Values.configuration.cache.ttl }}
+  eviction_policy: {{ .Values.configuration.cache.evictionPolicy | quote }}
+  cleanup_interval: {{ .Values.configuration.cache.cleanupInterval }}
+
+oauth:
+  jwt:
+    issuer: {{ .Values.configuration.oauth.jwt.issuer | quote }}
+    validity_period: {{ .Values.configuration.oauth.jwt.validityPeriod }}
+  refresh_token:
+    renew_on_grant: {{ .Values.configuration.oauth.refreshToken.renewOnGrant }}
+    validity_period: {{ .Values.configuration.oauth.refreshToken.validityPeriod }}
+
+flow:
+  graph_directory: {{ .Values.configuration.flow.graphDirectory | quote }}
+  authn:
+    default_flow: {{ .Values.configuration.flow.authn.defaultFlow | quote }}
+
+cors:
+  allowed_origins:
+  {{- range .Values.configuration.cors.allowedOrigins }}
+    - {{ . | quote }}
+  {{- end }}
