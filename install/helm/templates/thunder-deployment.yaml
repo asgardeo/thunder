@@ -81,7 +81,7 @@ spec:
               command:
                 - /bin/sh
                 - -c
-                - nc -z localhost 8090
+                - nc -z localhost {{ .Values.deployment.container.port }}
             initialDelaySeconds: {{ .Values.deployment.startupProbe.initialDelaySeconds }}
             periodSeconds: {{ .Values.deployment.startupProbe.periodSeconds }}
             failureThreshold: {{ .Values.deployment.startupProbe.failureThreshold }}
