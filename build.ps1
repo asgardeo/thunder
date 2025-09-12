@@ -451,6 +451,19 @@ function Package-Sample-App {
     try {
         New-Item -Path "executables" -ItemType Directory -Force | Out-Null
 
+        # Ensure production dependencies are installed so pkg can bundle modules like 'express'.
+        Write-Host " - Installing server production dependencies for packaging..."
+        # Use npm ci when package-lock.json exists for reproducible installs, otherwise fallback to npm install --production
+        if (Test-Path (Join-Path $SAMPLE_APP_SERVER_DIR "package-lock.json")) {
+            & npm ci --omit=dev
+        }
+        else {
+            & npm install --production
+        }
+        if ($LASTEXITCODE -ne 0) {
+            throw "npm install (server production) failed with exit code $LASTEXITCODE"
+        }
+
         & npx pkg . -t $SAMPLE_DIST_NODE_VERSION-$SAMPLE_DIST_OS-$SAMPLE_DIST_ARCH -o executables/$SAMPLE_APP_SERVER_BINARY_NAME-$SAMPLE_DIST_OS-$SAMPLE_DIST_ARCH
         if ($LASTEXITCODE -ne 0) {
             throw "npx pkg failed with exit code $LASTEXITCODE"
