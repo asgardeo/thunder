@@ -30,6 +30,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/asgardeo/thunder/tests/integration/testutils"
 	"github.com/stretchr/testify/suite"
 )
 
@@ -124,7 +125,7 @@ func (ts *AuthzTestSuite) SetupSuite() {
 	ts.T().Logf("Created test application with ID: %s", ts.applicationID)
 
 	// Create Local IDP for OAuth2 tests
-	idpID, err := createLocalIdp()
+	idpID, err := testutils.CreateLocalIDP()
 	if err != nil {
 		ts.T().Fatalf("Failed to create Local IDP during setup: %v", err)
 	}
@@ -220,7 +221,7 @@ func (ts *AuthzTestSuite) TearDownSuite() {
 
 	// Delete Local IDP
 	if testIDPID != "" {
-		if err := deleteIdp(testIDPID); err != nil {
+		if err := testutils.DeleteIDP(testIDPID); err != nil {
 			ts.T().Errorf("Failed to delete Local IDP during teardown: %v", err)
 		} else {
 			ts.T().Logf("Successfully deleted Local IDP with ID: %s", testIDPID)
@@ -333,10 +334,21 @@ func (ts *AuthzTestSuite) TestTokenRequestValidation() {
 	username := "token_test_user"
 	password := "testpass123"
 
-	userID, err := createTestUser(username, password, testOUID)
+	user := testutils.User{
+		OrganizationUnit: testOUID,
+		Type:             "person",
+		Attributes: json.RawMessage(fmt.Sprintf(`{
+			"username": "%s",
+			"password": "%s",
+			"email": "%s@example.com",
+			"firstName": "Test",
+			"lastName": "User"
+		}`, username, password, username)),
+	}
+	userID, err := testutils.CreateUser(user)
 	ts.NoError(err, "Failed to create test user")
 	defer func() {
-		if err := deleteTestUser(userID); err != nil {
+		if err := testutils.DeleteUser(userID); err != nil {
 			ts.T().Logf("Warning: Failed to delete test user: %v", err)
 		}
 	}()
@@ -659,7 +671,18 @@ func (ts *AuthzTestSuite) TestCompleteAuthorizationCodeFlow() {
 	for _, tc := range testCases {
 		ts.Run(tc.Name, func() {
 			// Create test user with credentials
-			userID, err := createTestUser(tc.Username, tc.Password, testOUID)
+			user := testutils.User{
+				OrganizationUnit: testOUID,
+				Type:             "person",
+				Attributes: json.RawMessage(fmt.Sprintf(`{
+					"username": "%s",
+					"password": "%s",
+					"email": "%s@example.com",
+					"firstName": "Test",
+					"lastName": "User"
+				}`, tc.Username, tc.Password, tc.Username)),
+			}
+			userID, err := testutils.CreateUser(user)
 			if err != nil {
 				ts.T().Fatalf("Failed to create test user: %v", err)
 			}
@@ -668,7 +691,7 @@ func (ts *AuthzTestSuite) TestCompleteAuthorizationCodeFlow() {
 			}
 
 			defer func() {
-				if err := deleteTestUser(userID); err != nil {
+				if err := testutils.DeleteUser(userID); err != nil {
 					ts.T().Logf("Warning: Failed to delete test user: %v", err)
 				}
 			}()
@@ -770,10 +793,21 @@ func (ts *AuthzTestSuite) TestAuthorizationCodeErrorScenarios() {
 	for _, tc := range testCases {
 		ts.Run(tc.Name, func() {
 			// Create test user
-			userID, err := createTestUser(tc.Username, tc.Password, testOUID)
+			user := testutils.User{
+				OrganizationUnit: testOUID,
+				Type:             "person",
+				Attributes: json.RawMessage(fmt.Sprintf(`{
+					"username": "%s",
+					"password": "%s",
+					"email": "%s@example.com",
+					"firstName": "Test",
+					"lastName": "User"
+				}`, tc.Username, tc.Password, tc.Username)),
+			}
+			userID, err := testutils.CreateUser(user)
 			ts.NoError(err, "Failed to create test user")
 			defer func() {
-				if err := deleteTestUser(userID); err != nil {
+				if err := testutils.DeleteUser(userID); err != nil {
 					ts.T().Logf("Warning: Failed to delete test user: %v", err)
 				}
 			}()

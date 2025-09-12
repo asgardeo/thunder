@@ -22,6 +22,7 @@ import (
 	"encoding/json"
 	"testing"
 
+	"github.com/asgardeo/thunder/tests/integration/testutils"
 	"github.com/stretchr/testify/suite"
 )
 
@@ -30,7 +31,7 @@ const (
 )
 
 var (
-	attrCollectTestApp = TestApplication{
+	attrCollectTestApp = testutils.Application{
 		Name:                      "Attribute Collect Flow Test Application",
 		Description:               "Application for testing attribute collection flows",
 		IsRegistrationFlowEnabled: false,
@@ -41,7 +42,7 @@ var (
 		RedirectURIs:              []string{"http://localhost:3000/callback"},
 	}
 
-	attrCollectTestOU = TestOrganizationUnit{
+	attrCollectTestOU = testutils.OrganizationUnit{
 		Handle:      "attr-collect-flow-test-ou",
 		Name:        "Attribute Collect Flow Test Organization Unit",
 		Description: "Organization unit for attribute collection flow testing",
@@ -49,7 +50,7 @@ var (
 	}
 
 	// User templates with different attribute configurations
-	testUserNoAttributes = User{
+	testUserNoAttributes = testutils.User{
 		Type: "person",
 		Attributes: json.RawMessage(`{
 			"username": "noattrsuser",
@@ -57,7 +58,7 @@ var (
 		}`),
 	}
 
-	testUserPartialAttributes = User{
+	testUserPartialAttributes = testutils.User{
 		Type: "person",
 		Attributes: json.RawMessage(`{
 			"username": "partialuser",
@@ -67,7 +68,7 @@ var (
 		}`),
 	}
 
-	testUserFullAttributes = User{
+	testUserFullAttributes = testutils.User{
 		Type: "person",
 		Attributes: json.RawMessage(`{
 			"username": "fulluser",
@@ -79,7 +80,7 @@ var (
 		}`),
 	}
 
-	testUserNoAttributes2 = User{
+	testUserNoAttributes2 = testutils.User{
 		Type: "person",
 		Attributes: json.RawMessage(`{
 			"username": "noattrsuser2",
@@ -96,7 +97,7 @@ var (
 
 type AttributeCollectTestData struct {
 	name                 string
-	user                 User
+	user                 testutils.User
 	expectedMissingAttrs []string
 	credentials          map[string]string
 	providedAttrs        map[string]string
@@ -117,21 +118,21 @@ func (ts *AttributeCollectFlowTestSuite) SetupSuite() {
 	ts.config = &TestSuiteConfig{}
 
 	// Create test organization unit for attribute collect tests
-	ouID, err := createOrganizationUnit(attrCollectTestOU)
+	ouID, err := testutils.CreateOrganizationUnit(attrCollectTestOU)
 	if err != nil {
 		ts.T().Fatalf("Failed to create test organization unit during setup: %v", err)
 	}
 	attrCollectTestOUID = ouID
 
 	// Create Local IDP for attribute collect tests
-	idpID, err := createLocalIdp()
+	idpID, err := testutils.CreateLocalIDP()
 	if err != nil {
 		ts.T().Fatalf("Failed to create Local IDP during setup: %v", err)
 	}
 	attrCollectTestIDPID = idpID
 
 	// Create test application for attribute collect tests
-	appID, err := createApplication(attrCollectTestApp)
+	appID, err := testutils.CreateApplication(attrCollectTestApp)
 	if err != nil {
 		ts.T().Fatalf("Failed to create test application during setup: %v", err)
 	}
@@ -202,13 +203,13 @@ func (ts *AttributeCollectFlowTestSuite) SetupSuite() {
 	}
 
 	// Create all test users
-	var users []User
+	var users []testutils.User
 	for _, testCase := range ts.testData {
 		users = append(users, testCase.user)
 	}
 	users = append(users, testUserNoAttributes2) // Additional user for second login tests
 
-	userIDs, err := CreateMultipleUsers(users...)
+	userIDs, err := testutils.CreateMultipleUsers(users...)
 	if err != nil {
 		ts.T().Fatalf("Failed to create test users during setup: %v", err)
 	}
@@ -217,27 +218,27 @@ func (ts *AttributeCollectFlowTestSuite) SetupSuite() {
 
 func (ts *AttributeCollectFlowTestSuite) TearDownSuite() {
 	// Delete all created users
-	if err := CleanupUsers(ts.config.CreatedUserIDs); err != nil {
+	if err := testutils.CleanupUsers(ts.config.CreatedUserIDs); err != nil {
 		ts.T().Logf("Failed to cleanup users during teardown: %v", err)
 	}
 
 	// Delete test application
 	if attrCollectTestAppID != "" {
-		if err := deleteApplication(attrCollectTestAppID); err != nil {
+		if err := testutils.DeleteApplication(attrCollectTestAppID); err != nil {
 			ts.T().Logf("Failed to delete test application during teardown: %v", err)
 		}
 	}
 
 	// Delete test organization unit
 	if attrCollectTestOUID != "" {
-		if err := deleteOrganizationUnit(attrCollectTestOUID); err != nil {
+		if err := testutils.DeleteOrganizationUnit(attrCollectTestOUID); err != nil {
 			ts.T().Logf("Failed to delete test organization unit during teardown: %v", err)
 		}
 	}
 
 	// Delete Local IDP
 	if attrCollectTestIDPID != "" {
-		if err := deleteIdp(attrCollectTestIDPID); err != nil {
+		if err := testutils.DeleteIDP(attrCollectTestIDPID); err != nil {
 			ts.T().Logf("Failed to delete Local IDP during teardown: %v", err)
 		}
 	}

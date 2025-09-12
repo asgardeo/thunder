@@ -27,6 +27,7 @@ import (
 	"net/http"
 	"testing"
 
+	"github.com/asgardeo/thunder/tests/integration/testutils"
 	"github.com/stretchr/testify/suite"
 )
 
@@ -35,21 +36,21 @@ const (
 )
 
 var (
-	testOU = TestOrganizationUnit{
+	testOU = testutils.OrganizationUnit{
 		Handle:      "test-group-ou",
 		Name:        "Test Organization Unit for Groups",
 		Description: "Organization unit created for group API testing",
 		Parent:      nil,
 	}
 
-	testUser = TestUser{
+	testUser = testutils.User{
 		Type: "person",
-		Attributes: map[string]interface{}{
-			"email":     "testuser@example.com",
+		Attributes: json.RawMessage(`{
+			"email": "testuser@example.com",
 			"firstName": "Test",
-			"lastName":  "User",
-			"password":  "TestPassword123!",
-		},
+			"lastName": "User",
+			"password": "TestPassword123!"
+		}`),
 	}
 
 	testGroup = CreateGroupRequest{
@@ -71,7 +72,7 @@ type GroupAPITestSuite struct {
 
 func (suite *GroupAPITestSuite) SetupSuite() {
 	// Create test organization unit
-	ouID, err := createOrganizationUnit(testOU)
+	ouID, err := testutils.CreateOrganizationUnit(testOU)
 	if err != nil {
 		suite.T().Fatalf("Failed to create test organization unit during setup: %v", err)
 	}
@@ -80,7 +81,7 @@ func (suite *GroupAPITestSuite) SetupSuite() {
 	// Create test user with the created OU
 	testUser := testUser
 	testUser.OrganizationUnit = testOUID
-	userID, err := createUser(testUser)
+	userID, err := testutils.CreateUser(testUser)
 	if err != nil {
 		suite.T().Fatalf("Failed to create test user during setup: %v", err)
 	}
@@ -114,7 +115,7 @@ func (suite *GroupAPITestSuite) TearDownSuite() {
 
 	// Delete test user
 	if testUserID != "" {
-		err := deleteUser(testUserID)
+		err := testutils.DeleteUser(testUserID)
 		if err != nil {
 			suite.T().Logf("Failed to delete test user during teardown: %v", err)
 		}
@@ -122,7 +123,7 @@ func (suite *GroupAPITestSuite) TearDownSuite() {
 
 	// Delete test organization unit
 	if testOUID != "" {
-		err := deleteOrganizationUnit(testOUID)
+		err := testutils.DeleteOrganizationUnit(testOUID)
 		if err != nil {
 			suite.T().Logf("Failed to delete test organization unit during teardown: %v", err)
 		}
@@ -796,12 +797,22 @@ func (suite *GroupAPITestSuite) TestUpdateGroupWithMultipleInvalidUserIDs() {
 
 func (suite *GroupAPITestSuite) TestCreateGroupWithMultipleMembers() {
 	// Create a temporary user for testing
-	tempUserID, err := createTestUser()
+	tempUser := testutils.User{
+		OrganizationUnit: testOUID,
+		Type:             "person",
+		Attributes: json.RawMessage(`{
+			"email": "testuser2@example.com",
+			"firstName": "Test",
+			"lastName": "User2",
+			"password": "TestPassword123!"
+		}`),
+	}
+	tempUserID, err := testutils.CreateUser(tempUser)
 	if err != nil {
 		suite.T().Fatalf("Failed to create test user: %v", err)
 	}
 	defer func() {
-		if deleteErr := deleteTestUser(tempUserID); deleteErr != nil {
+		if deleteErr := testutils.DeleteUser(tempUserID); deleteErr != nil {
 			suite.T().Logf("Failed to clean up test user: %v", deleteErr)
 		}
 	}()
@@ -868,12 +879,22 @@ func (suite *GroupAPITestSuite) TestUpdateGroupMembers() {
 	}
 
 	// Create a temporary user for testing
-	testUserID, err := createTestUser()
+	tempUser := testutils.User{
+		OrganizationUnit: testOUID,
+		Type:             "person",
+		Attributes: json.RawMessage(`{
+			"email": "testuser2@example.com",
+			"firstName": "Test",
+			"lastName": "User2",
+			"password": "TestPassword123!"
+		}`),
+	}
+	testUserID, err := testutils.CreateUser(tempUser)
 	if err != nil {
 		suite.T().Fatalf("Failed to create test user: %v", err)
 	}
 	defer func() {
-		if deleteErr := deleteTestUser(testUserID); deleteErr != nil {
+		if deleteErr := testutils.DeleteUser(testUserID); deleteErr != nil {
 			suite.T().Logf("Failed to clean up test user: %v", deleteErr)
 		}
 	}()
@@ -1106,86 +1127,6 @@ func deleteGroup(groupID string) error {
 	return nil
 }
 
-// createTestUser creates a test user and returns the user ID
-func createTestUser() (string, error) {
-	testUser := map[string]interface{}{
-		"organizationUnit": testOUID,
-		"type":             "person",
-		"attributes": map[string]interface{}{
-			"email":     "testuser2@example.com",
-			"firstName": "Test",
-			"lastName":  "User2",
-			"password":  "TestPassword123!",
-		},
-	}
-
-	jsonData, err := json.Marshal(testUser)
-	if err != nil {
-		return "", fmt.Errorf("failed to marshal test user: %w", err)
-	}
-
-	client := &http.Client{
-		Transport: &http.Transport{
-			TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
-		},
-	}
-
-	req, err := http.NewRequest("POST", testServerURL+"/users", bytes.NewBuffer(jsonData))
-	if err != nil {
-		return "", fmt.Errorf("failed to create request: %w", err)
-	}
-	req.Header.Set("Content-Type", "application/json")
-
-	resp, err := client.Do(req)
-	if err != nil {
-		return "", fmt.Errorf("failed to send request: %w", err)
-	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode != http.StatusCreated {
-		bodyBytes, _ := io.ReadAll(resp.Body)
-		return "", fmt.Errorf("expected status 201, got %d: %s", resp.StatusCode, string(bodyBytes))
-	}
-
-	var createdUser map[string]interface{}
-	err = json.NewDecoder(resp.Body).Decode(&createdUser)
-	if err != nil {
-		return "", fmt.Errorf("failed to parse response body: %w", err)
-	}
-
-	userID, ok := createdUser["id"].(string)
-	if !ok {
-		return "", fmt.Errorf("failed to extract user ID from response")
-	}
-
-	return userID, nil
-}
-
-// deleteTestUser deletes a test user
-func deleteTestUser(userID string) error {
-	client := &http.Client{
-		Transport: &http.Transport{
-			TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
-		},
-	}
-
-	req, err := http.NewRequest("DELETE", testServerURL+"/users/"+userID, nil)
-	if err != nil {
-		return err
-	}
-
-	resp, err := client.Do(req)
-	if err != nil {
-		return err
-	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode != http.StatusNoContent {
-		return fmt.Errorf("expected status 204, got %d", resp.StatusCode)
-	}
-	return nil
-}
-
 func buildCreatedGroup() Group {
 	return Group{
 		GroupBasic: GroupBasic{
@@ -1204,144 +1145,6 @@ func buildCreatedGroup() Group {
 
 func TestGroupAPITestSuite(t *testing.T) {
 	suite.Run(t, new(GroupAPITestSuite))
-}
-
-// Helper function to create an organization unit
-func createOrganizationUnit(ouRequest TestOrganizationUnit) (string, error) {
-	ouJSON, err := json.Marshal(ouRequest)
-	if err != nil {
-		return "", fmt.Errorf("failed to marshal OU request: %w", err)
-	}
-
-	reqBody := bytes.NewReader(ouJSON)
-	req, err := http.NewRequest("POST", testServerURL+"/organization-units", reqBody)
-	if err != nil {
-		return "", fmt.Errorf("failed to create request: %w", err)
-	}
-	req.Header.Set("Content-Type", "application/json")
-
-	client := &http.Client{
-		Transport: &http.Transport{
-			TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
-		},
-	}
-
-	resp, err := client.Do(req)
-	if err != nil {
-		return "", fmt.Errorf("failed to send request: %w", err)
-	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode != http.StatusCreated {
-		responseBody, _ := io.ReadAll(resp.Body)
-		return "", fmt.Errorf("expected status 201, got %d. Response: %s", resp.StatusCode, string(responseBody))
-	}
-
-	var createdOU map[string]interface{}
-	err = json.NewDecoder(resp.Body).Decode(&createdOU)
-	if err != nil {
-		return "", fmt.Errorf("failed to parse response body: %w", err)
-	}
-
-	id, ok := createdOU["id"].(string)
-	if !ok {
-		return "", fmt.Errorf("response does not contain id")
-	}
-	return id, nil
-}
-
-// Helper function to delete an organization unit
-func deleteOrganizationUnit(ouID string) error {
-	req, err := http.NewRequest("DELETE", testServerURL+"/organization-units/"+ouID, nil)
-	if err != nil {
-		return err
-	}
-
-	client := &http.Client{
-		Transport: &http.Transport{
-			TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
-		},
-	}
-
-	resp, err := client.Do(req)
-	if err != nil {
-		return err
-	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode != http.StatusOK && resp.StatusCode != http.StatusNoContent {
-		return fmt.Errorf("expected status 200 or 204, got %d", resp.StatusCode)
-	}
-	return nil
-}
-
-// Helper function to create a user from template
-func createUser(user TestUser) (string, error) {
-	userJSON, err := json.Marshal(user)
-	if err != nil {
-		return "", fmt.Errorf("failed to marshal user: %w", err)
-	}
-
-	reqBody := bytes.NewReader(userJSON)
-	req, err := http.NewRequest("POST", testServerURL+"/users", reqBody)
-	if err != nil {
-		return "", fmt.Errorf("failed to create request: %w", err)
-	}
-	req.Header.Set("Content-Type", "application/json")
-
-	client := &http.Client{
-		Transport: &http.Transport{
-			TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
-		},
-	}
-
-	resp, err := client.Do(req)
-	if err != nil {
-		return "", fmt.Errorf("failed to send request: %w", err)
-	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode != http.StatusCreated {
-		responseBody, _ := io.ReadAll(resp.Body)
-		return "", fmt.Errorf("expected status 201, got %d. Response: %s", resp.StatusCode, string(responseBody))
-	}
-
-	var respBody map[string]interface{}
-	err = json.NewDecoder(resp.Body).Decode(&respBody)
-	if err != nil {
-		return "", fmt.Errorf("failed to parse response body: %w", err)
-	}
-
-	id, ok := respBody["id"].(string)
-	if !ok {
-		return "", fmt.Errorf("response does not contain id")
-	}
-	return id, nil
-}
-
-// Helper function to delete a user
-func deleteUser(userID string) error {
-	req, err := http.NewRequest("DELETE", testServerURL+"/users/"+userID, nil)
-	if err != nil {
-		return err
-	}
-
-	client := &http.Client{
-		Transport: &http.Transport{
-			TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
-		},
-	}
-
-	resp, err := client.Do(req)
-	if err != nil {
-		return err
-	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode != http.StatusNoContent {
-		return fmt.Errorf("failed to delete user, status code: %d", resp.StatusCode)
-	}
-	return nil
 }
 
 func (suite *GroupAPITestSuite) TestGetGroupMembers() {

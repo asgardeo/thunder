@@ -18,7 +18,9 @@
 
 package flowregistration
 
-import "encoding/json"
+import (
+	"github.com/asgardeo/thunder/tests/integration/testutils"
+)
 
 type FlowStep struct {
 	FlowID        string   `json:"flowId"`
@@ -47,13 +49,6 @@ type FlowAction struct {
 	ID   string `json:"id"`
 }
 
-type User struct {
-	Id               string          `json:"id,omitempty"`
-	OrganizationUnit string          `json:"organizationUnit"`
-	Type             string          `json:"type"`
-	Attributes       json.RawMessage `json:"attributes"`
-}
-
 // Link represents a pagination link
 type Link struct {
 	Rel  string `json:"rel"`
@@ -62,11 +57,11 @@ type Link struct {
 
 // UserListResponse represents the paginated response for user listing
 type UserListResponse struct {
-	TotalResults int    `json:"totalResults"`
-	StartIndex   int    `json:"startIndex"`
-	Count        int    `json:"count"`
-	Users        []User `json:"users"`
-	Links        []Link `json:"links"`
+	TotalResults int              `json:"totalResults"`
+	StartIndex   int              `json:"startIndex"`
+	Count        int              `json:"count"`
+	Users        []testutils.User `json:"users"`
+	Links        []Link           `json:"links"`
 }
 
 type ErrorResponse struct {
@@ -79,38 +74,4 @@ type TestSuiteConfig struct {
 	CreatedUserIDs    []string
 	CreatedSenderID   string
 	OriginalAppConfig map[string]interface{}
-}
-
-type TestApplication struct {
-	ID                        string   `json:"id,omitempty"`
-	Name                      string   `json:"name"`
-	Description               string   `json:"description"`
-	IsRegistrationFlowEnabled bool     `json:"is_registration_flow_enabled"`
-	AuthFlowGraphID           string   `json:"auth_flow_graph_id"`
-	RegistrationFlowGraphID   string   `json:"registration_flow_graph_id"`
-	ClientID                  string   `json:"client_id"`
-	ClientSecret              string   `json:"client_secret"`
-	RedirectURIs              []string `json:"redirect_uris"`
-}
-
-type TestOrganizationUnit struct {
-	ID          string  `json:"id,omitempty"`
-	Handle      string  `json:"handle"`
-	Name        string  `json:"name"`
-	Description string  `json:"description,omitempty"`
-	Parent      *string `json:"parent,omitempty"`
-}
-
-// IDP structures for flow registration tests
-type IDPProperty struct {
-	Name     string `json:"name"`
-	Value    string `json:"value"`
-	IsSecret bool   `json:"is_secret"`
-}
-
-type IDP struct {
-	ID          string        `json:"id,omitempty"`
-	Name        string        `json:"name"`
-	Description string        `json:"description"`
-	Properties  []IDPProperty `json:"properties"`
 }

@@ -23,11 +23,12 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/asgardeo/thunder/tests/integration/testutils"
 	"github.com/stretchr/testify/suite"
 )
 
 var (
-	githubAuthTestApp = TestApplication{
+	githubAuthTestApp = testutils.Application{
 		Name:                      "GitHub Auth Flow Test Application",
 		Description:               "Application for testing GitHub authentication flows",
 		IsRegistrationFlowEnabled: false,
@@ -38,7 +39,7 @@ var (
 		RedirectURIs:              []string{"http://localhost:3000/callback"},
 	}
 
-	githubAuthTestOU = TestOrganizationUnit{
+	githubAuthTestOU = testutils.OrganizationUnit{
 		Handle:      "github-auth-flow-test-ou",
 		Name:        "GitHub Auth Flow Test Organization Unit",
 		Description: "Organization unit for GitHub authentication flow testing",
@@ -62,17 +63,17 @@ func TestGithubAuthFlowTestSuite(t *testing.T) {
 
 func (ts *GithubAuthFlowTestSuite) SetupSuite() {
 	// Create test organization unit for GitHub auth tests
-	ouID, err := createOrganizationUnit(githubAuthTestOU)
+	ouID, err := testutils.CreateOrganizationUnit(githubAuthTestOU)
 	if err != nil {
 		ts.T().Fatalf("Failed to create test organization unit during setup: %v", err)
 	}
 	githubAuthTestOUID = ouID
 
 	// Create GitHub IDP for GitHub auth tests
-	githubIDP := IDP{
+	githubIDP := testutils.IDP{
 		Name:        "Github",
 		Description: "GitHub Identity Provider for authentication flow testing",
-		Properties: []IDPProperty{
+		Properties: []testutils.IDPProperty{
 			{
 				Name:     "client_id",
 				Value:    "test_github_client",
@@ -96,14 +97,14 @@ func (ts *GithubAuthFlowTestSuite) SetupSuite() {
 		},
 	}
 
-	idpID, err := createIdp(githubIDP)
+	idpID, err := testutils.CreateIDP(githubIDP)
 	if err != nil {
 		ts.T().Fatalf("Failed to create GitHub IDP during setup: %v", err)
 	}
 	githubAuthTestIDPID = idpID
 
 	// Create test application for GitHub auth tests
-	appID, err := createApplication(githubAuthTestApp)
+	appID, err := testutils.CreateApplication(githubAuthTestApp)
 	if err != nil {
 		ts.T().Fatalf("Failed to create test application during setup: %v", err)
 	}
@@ -113,21 +114,21 @@ func (ts *GithubAuthFlowTestSuite) SetupSuite() {
 func (ts *GithubAuthFlowTestSuite) TearDownSuite() {
 	// Delete test application
 	if githubAuthTestAppID != "" {
-		if err := deleteApplication(githubAuthTestAppID); err != nil {
+		if err := testutils.DeleteApplication(githubAuthTestAppID); err != nil {
 			ts.T().Logf("Failed to delete test application during teardown: %v", err)
 		}
 	}
 
 	// Delete GitHub IDP
 	if githubAuthTestIDPID != "" {
-		if err := deleteIdp(githubAuthTestIDPID); err != nil {
+		if err := testutils.DeleteIDP(githubAuthTestIDPID); err != nil {
 			ts.T().Logf("Failed to delete GitHub IDP during teardown: %v", err)
 		}
 	}
 
 	// Delete test organization unit
 	if githubAuthTestOUID != "" {
-		if err := deleteOrganizationUnit(githubAuthTestOUID); err != nil {
+		if err := testutils.DeleteOrganizationUnit(githubAuthTestOUID); err != nil {
 			ts.T().Logf("Failed to delete test organization unit during teardown: %v", err)
 		}
 	}

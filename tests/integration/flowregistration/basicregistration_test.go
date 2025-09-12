@@ -22,11 +22,12 @@ import (
 	"encoding/json"
 	"testing"
 
+	"github.com/asgardeo/thunder/tests/integration/testutils"
 	"github.com/stretchr/testify/suite"
 )
 
 var (
-	testApp = TestApplication{
+	testApp = testutils.Application{
 		Name:                      "Registration Flow Test Application",
 		Description:               "Application for testing registration flows",
 		IsRegistrationFlowEnabled: true,
@@ -37,7 +38,7 @@ var (
 		RedirectURIs:              []string{"http://localhost:3000/callback"},
 	}
 
-	testOU = TestOrganizationUnit{
+	testOU = testutils.OrganizationUnit{
 		Handle:      "reg-flow-test-ou",
 		Name:        "Registration Flow Test Organization Unit",
 		Description: "Organization unit for registration flow testing",
@@ -65,21 +66,21 @@ func (ts *BasicRegistrationFlowTestSuite) SetupSuite() {
 	ts.config = &TestSuiteConfig{}
 
 	// Create test organization unit
-	ouID, err := createOrganizationUnit(testOU)
+	ouID, err := testutils.CreateOrganizationUnit(testOU)
 	if err != nil {
 		ts.T().Fatalf("Failed to create test organization unit during setup: %v", err)
 	}
 	testOUID = ouID
 
 	// Create Local IDP for basic registration tests
-	idpID, err := createLocalIdp()
+	idpID, err := testutils.CreateLocalIDP()
 	if err != nil {
 		ts.T().Fatalf("Failed to create Local IDP during setup: %v", err)
 	}
 	testIDPID = idpID
 
 	// Create test application
-	appID, err := createApplication(testApp)
+	appID, err := testutils.CreateApplication(testApp)
 	if err != nil {
 		ts.T().Fatalf("Failed to create test application during setup: %v", err)
 	}
@@ -100,27 +101,27 @@ func (ts *BasicRegistrationFlowTestSuite) SetupSuite() {
 
 func (ts *BasicRegistrationFlowTestSuite) TearDownSuite() {
 	// Clean up users created during registration tests
-	if err := CleanupUsers(ts.config.CreatedUserIDs); err != nil {
+	if err := testutils.CleanupUsers(ts.config.CreatedUserIDs); err != nil {
 		ts.T().Logf("Failed to cleanup users during teardown: %v", err)
 	}
 
 	// Delete test application
 	if testAppID != "" {
-		if err := deleteApplication(testAppID); err != nil {
+		if err := testutils.DeleteApplication(testAppID); err != nil {
 			ts.T().Logf("Failed to delete test application during teardown: %v", err)
 		}
 	}
 
 	// Delete test organization unit
 	if testOUID != "" {
-		if err := deleteOrganizationUnit(testOUID); err != nil {
+		if err := testutils.DeleteOrganizationUnit(testOUID); err != nil {
 			ts.T().Logf("Failed to delete test organization unit during teardown: %v", err)
 		}
 	}
 
 	// Delete Local IDP
 	if testIDPID != "" {
-		if err := deleteIdp(testIDPID); err != nil {
+		if err := testutils.DeleteIDP(testIDPID); err != nil {
 			ts.T().Logf("Failed to delete Local IDP during teardown: %v", err)
 		}
 	}
@@ -193,13 +194,13 @@ func (ts *BasicRegistrationFlowTestSuite) TestBasicRegistrationFlowSuccess() {
 
 	// Store the created user for cleanup
 	if user != nil {
-		ts.config.CreatedUserIDs = append(ts.config.CreatedUserIDs, user.Id)
+		ts.config.CreatedUserIDs = append(ts.config.CreatedUserIDs, user.ID)
 	}
 }
 
 func (ts *BasicRegistrationFlowTestSuite) TestBasicRegistrationFlowDuplicateUser() {
 	// Create a test user first
-	testUser := User{
+	testUser := testutils.User{
 		OrganizationUnit: testOUID,
 		Type:             "person",
 		Attributes: json.RawMessage(`{
@@ -211,7 +212,7 @@ func (ts *BasicRegistrationFlowTestSuite) TestBasicRegistrationFlowDuplicateUser
 		}`),
 	}
 
-	userIDs, err := CreateMultipleUsers(testUser)
+	userIDs, err := testutils.CreateMultipleUsers(testUser)
 	if err != nil {
 		ts.T().Fatalf("Failed to create test user for duplicate test: %v", err)
 	}
@@ -309,7 +310,7 @@ func (ts *BasicRegistrationFlowTestSuite) TestBasicRegistrationFlowInitialInvali
 
 	// Store the created user for cleanup
 	if user != nil {
-		ts.config.CreatedUserIDs = append(ts.config.CreatedUserIDs, user.Id)
+		ts.config.CreatedUserIDs = append(ts.config.CreatedUserIDs, user.ID)
 	}
 }
 
@@ -346,6 +347,6 @@ func (ts *BasicRegistrationFlowTestSuite) TestBasicRegistrationFlowSingleRequest
 
 	// Store the created user for cleanup
 	if user != nil {
-		ts.config.CreatedUserIDs = append(ts.config.CreatedUserIDs, user.Id)
+		ts.config.CreatedUserIDs = append(ts.config.CreatedUserIDs, user.ID)
 	}
 }

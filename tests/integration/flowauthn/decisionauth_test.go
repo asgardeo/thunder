@@ -33,7 +33,7 @@ const (
 )
 
 var (
-	decisionTestApp = TestApplication{
+	decisionTestApp = testutils.Application{
 		Name:                      "Decision Flow Test Application",
 		Description:               "Application for testing decision flows",
 		IsRegistrationFlowEnabled: false,
@@ -44,14 +44,14 @@ var (
 		RedirectURIs:              []string{"http://localhost:3000/callback"},
 	}
 
-	decisionTestOU = TestOrganizationUnit{
+	decisionTestOU = testutils.OrganizationUnit{
 		Handle:      "decision-flow-test-ou",
 		Name:        "Decision Flow Test Organization Unit",
 		Description: "Organization unit for decision flow testing",
 		Parent:      nil,
 	}
 
-	testUserWithMobileDecision = User{
+	testUserWithMobileDecision = testutils.User{
 		Type: "person",
 		Attributes: json.RawMessage(`{
 			"username": "decisionuser1",
@@ -63,7 +63,7 @@ var (
 		}`),
 	}
 
-	testUserWithoutMobileDecision = User{
+	testUserWithoutMobileDecision = testutils.User{
 		Type: "person",
 		Attributes: json.RawMessage(`{
 			"username": "decisionuser2",
@@ -96,21 +96,21 @@ func (ts *DecisionAndMFAFlowTestSuite) SetupSuite() {
 	ts.config = &TestSuiteConfig{}
 
 	// Create test organization unit for decision tests
-	ouID, err := createOrganizationUnit(decisionTestOU)
+	ouID, err := testutils.CreateOrganizationUnit(decisionTestOU)
 	if err != nil {
 		ts.T().Fatalf("Failed to create test organization unit during setup: %v", err)
 	}
 	decisionTestOUID = ouID
 
 	// Create Local IDP for decision tests
-	idpID, err := createLocalIdp()
+	idpID, err := testutils.CreateLocalIDP()
 	if err != nil {
 		ts.T().Fatalf("Failed to create Local IDP during setup: %v", err)
 	}
 	decisionTestIDPID = idpID
 
 	// Create test application for decision tests
-	appID, err := createApplication(decisionTestApp)
+	appID, err := testutils.CreateApplication(decisionTestApp)
 	if err != nil {
 		ts.T().Fatalf("Failed to create test application during setup: %v", err)
 	}
@@ -131,7 +131,7 @@ func (ts *DecisionAndMFAFlowTestSuite) SetupSuite() {
 	userWithoutMobile := testUserWithoutMobileDecision
 	userWithoutMobile.OrganizationUnit = decisionTestOUID
 
-	userIDs, err := CreateMultipleUsers(userWithMobile, userWithoutMobile)
+	userIDs, err := testutils.CreateMultipleUsers(userWithMobile, userWithoutMobile)
 	if err != nil {
 		ts.T().Fatalf("Failed to create test users during setup: %v", err)
 	}
@@ -169,7 +169,7 @@ func (ts *DecisionAndMFAFlowTestSuite) TearDownSuite() {
 	}
 
 	// Delete test users
-	if err := CleanupUsers(ts.config.CreatedUserIDs); err != nil {
+	if err := testutils.CleanupUsers(ts.config.CreatedUserIDs); err != nil {
 		ts.T().Logf("Failed to cleanup users during teardown: %v", err)
 	}
 
@@ -183,21 +183,21 @@ func (ts *DecisionAndMFAFlowTestSuite) TearDownSuite() {
 
 	// Delete test application
 	if decisionTestAppID != "" {
-		if err := deleteApplication(decisionTestAppID); err != nil {
+		if err := testutils.DeleteApplication(decisionTestAppID); err != nil {
 			ts.T().Logf("Failed to delete test application during teardown: %v", err)
 		}
 	}
 
 	// Delete test organization unit
 	if decisionTestOUID != "" {
-		if err := deleteOrganizationUnit(decisionTestOUID); err != nil {
+		if err := testutils.DeleteOrganizationUnit(decisionTestOUID); err != nil {
 			ts.T().Logf("Failed to delete test organization unit during teardown: %v", err)
 		}
 	}
 
 	// Delete Local IDP
 	if decisionTestIDPID != "" {
-		if err := deleteIdp(decisionTestIDPID); err != nil {
+		if err := testutils.DeleteIDP(decisionTestIDPID); err != nil {
 			ts.T().Logf("Failed to delete Local IDP during teardown: %v", err)
 		}
 	}
@@ -239,7 +239,7 @@ func (ts *DecisionAndMFAFlowTestSuite) TestBasicAuthWithMobileUserSMSOTP() {
 		"Username and password inputs should be required")
 
 	// Step 3: Provide username and password
-	userAttrs, err := GetUserAttributes(testUserWithMobileDecision)
+	userAttrs, err := testutils.GetUserAttributes(testUserWithMobileDecision)
 	ts.Require().NoError(err, "Failed to get user attributes")
 
 	basicInputs := map[string]string{

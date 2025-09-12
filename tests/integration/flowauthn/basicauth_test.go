@@ -22,11 +22,12 @@ import (
 	"encoding/json"
 	"testing"
 
+	"github.com/asgardeo/thunder/tests/integration/testutils"
 	"github.com/stretchr/testify/suite"
 )
 
 var (
-	testApp = TestApplication{
+	testApp = testutils.Application{
 		Name:                      "Flow Test Application",
 		Description:               "Application for testing authentication flows",
 		IsRegistrationFlowEnabled: false,
@@ -37,14 +38,14 @@ var (
 		RedirectURIs:              []string{"http://localhost:3000/callback"},
 	}
 
-	testOU = TestOrganizationUnit{
+	testOU = testutils.OrganizationUnit{
 		Handle:      "flow-test-ou",
 		Name:        "Flow Test Organization Unit",
 		Description: "Organization unit for flow testing",
 		Parent:      nil,
 	}
 
-	testUser = User{
+	testUser = testutils.User{
 		Type: "person",
 		Attributes: json.RawMessage(`{
 			"username": "testuser",
@@ -76,21 +77,21 @@ func (ts *BasicAuthFlowTestSuite) SetupSuite() {
 	ts.config = &TestSuiteConfig{}
 
 	// Create test organization unit
-	ouID, err := createOrganizationUnit(testOU)
+	ouID, err := testutils.CreateOrganizationUnit(testOU)
 	if err != nil {
 		ts.T().Fatalf("Failed to create test organization unit during setup: %v", err)
 	}
 	testOUID = ouID
 
 	// Create Local IDP for basic auth tests
-	idpID, err := createLocalIdp()
+	idpID, err := testutils.CreateLocalIDP()
 	if err != nil {
 		ts.T().Fatalf("Failed to create Local IDP during setup: %v", err)
 	}
 	testIDPID = idpID
 
 	// Create test application
-	appID, err := createApplication(testApp)
+	appID, err := testutils.CreateApplication(testApp)
 	if err != nil {
 		ts.T().Fatalf("Failed to create test application during setup: %v", err)
 	}
@@ -99,7 +100,7 @@ func (ts *BasicAuthFlowTestSuite) SetupSuite() {
 	// Create test user with the created OU
 	testUser := testUser
 	testUser.OrganizationUnit = testOUID
-	userIDs, err := CreateMultipleUsers(testUser)
+	userIDs, err := testutils.CreateMultipleUsers(testUser)
 	if err != nil {
 		ts.T().Fatalf("Failed to create test user during setup: %v", err)
 	}
@@ -108,27 +109,27 @@ func (ts *BasicAuthFlowTestSuite) SetupSuite() {
 
 func (ts *BasicAuthFlowTestSuite) TearDownSuite() {
 	// Delete all created users
-	if err := CleanupUsers(ts.config.CreatedUserIDs); err != nil {
+	if err := testutils.CleanupUsers(ts.config.CreatedUserIDs); err != nil {
 		ts.T().Logf("Failed to cleanup users during teardown: %v", err)
 	}
 
 	// Delete test application
 	if testAppID != "" {
-		if err := deleteApplication(testAppID); err != nil {
+		if err := testutils.DeleteApplication(testAppID); err != nil {
 			ts.T().Logf("Failed to delete test application during teardown: %v", err)
 		}
 	}
 
 	// Delete test organization unit
 	if testOUID != "" {
-		if err := deleteOrganizationUnit(testOUID); err != nil {
+		if err := testutils.DeleteOrganizationUnit(testOUID); err != nil {
 			ts.T().Logf("Failed to delete test organization unit during teardown: %v", err)
 		}
 	}
 
 	// Delete Local IDP
 	if testIDPID != "" {
-		if err := deleteIdp(testIDPID); err != nil {
+		if err := testutils.DeleteIDP(testIDPID); err != nil {
 			ts.T().Logf("Failed to delete Local IDP during teardown: %v", err)
 		}
 	}

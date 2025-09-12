@@ -33,7 +33,7 @@ const (
 )
 
 var (
-	smsAuthTestApp = TestApplication{
+	smsAuthTestApp = testutils.Application{
 		Name:                      "SMS Auth Flow Test Application",
 		Description:               "Application for testing SMS authentication flows",
 		IsRegistrationFlowEnabled: false,
@@ -44,14 +44,14 @@ var (
 		RedirectURIs:              []string{"http://localhost:3000/callback"},
 	}
 
-	smsAuthTestOU = TestOrganizationUnit{
+	smsAuthTestOU = testutils.OrganizationUnit{
 		Handle:      "sms-auth-flow-test-ou",
 		Name:        "SMS Auth Flow Test Organization Unit",
 		Description: "Organization unit for SMS authentication flow testing",
 		Parent:      nil,
 	}
 
-	testUserWithMobile = User{
+	testUserWithMobile = testutils.User{
 		Type: "person",
 		Attributes: json.RawMessage(`{
 			"username": "smsuser",
@@ -109,21 +109,21 @@ func (ts *SMSAuthFlowTestSuite) SetupSuite() {
 	ts.config = &TestSuiteConfig{}
 
 	// Create test organization unit for SMS auth tests
-	ouID, err := createOrganizationUnit(smsAuthTestOU)
+	ouID, err := testutils.CreateOrganizationUnit(smsAuthTestOU)
 	if err != nil {
 		ts.T().Fatalf("Failed to create test organization unit during setup: %v", err)
 	}
 	smsAuthTestOUID = ouID
 
 	// Create Local IDP for SMS auth tests
-	idpID, err := createLocalIdp()
+	idpID, err := testutils.CreateLocalIDP()
 	if err != nil {
 		ts.T().Fatalf("Failed to create Local IDP during setup: %v", err)
 	}
 	smsAuthTestIDPID = idpID
 
 	// Create test application for SMS auth tests
-	appID, err := createApplication(smsAuthTestApp)
+	appID, err := testutils.CreateApplication(smsAuthTestApp)
 	if err != nil {
 		ts.T().Fatalf("Failed to create test application during setup: %v", err)
 	}
@@ -141,7 +141,7 @@ func (ts *SMSAuthFlowTestSuite) SetupSuite() {
 	// Create test user with mobile number using the created OU
 	testUserWithMobile := testUserWithMobile
 	testUserWithMobile.OrganizationUnit = smsAuthTestOUID
-	userIDs, err := CreateMultipleUsers(testUserWithMobile)
+	userIDs, err := testutils.CreateMultipleUsers(testUserWithMobile)
 	if err != nil {
 		ts.T().Fatalf("Failed to create test user during setup: %v", err)
 	}
@@ -173,7 +173,7 @@ func (ts *SMSAuthFlowTestSuite) TearDownSuite() {
 	}
 
 	// Delete test users
-	if err := CleanupUsers(ts.config.CreatedUserIDs); err != nil {
+	if err := testutils.CleanupUsers(ts.config.CreatedUserIDs); err != nil {
 		ts.T().Logf("Failed to cleanup users during teardown: %v", err)
 	}
 
@@ -187,21 +187,21 @@ func (ts *SMSAuthFlowTestSuite) TearDownSuite() {
 
 	// Delete test application
 	if smsAuthTestAppID != "" {
-		if err := deleteApplication(smsAuthTestAppID); err != nil {
+		if err := testutils.DeleteApplication(smsAuthTestAppID); err != nil {
 			ts.T().Logf("Failed to delete test application during teardown: %v", err)
 		}
 	}
 
 	// Delete test organization unit
 	if smsAuthTestOUID != "" {
-		if err := deleteOrganizationUnit(smsAuthTestOUID); err != nil {
+		if err := testutils.DeleteOrganizationUnit(smsAuthTestOUID); err != nil {
 			ts.T().Logf("Failed to delete test organization unit during teardown: %v", err)
 		}
 	}
 
 	// Delete Local IDP
 	if smsAuthTestIDPID != "" {
-		if err := deleteIdp(smsAuthTestIDPID); err != nil {
+		if err := testutils.DeleteIDP(smsAuthTestIDPID); err != nil {
 			ts.T().Logf("Failed to delete Local IDP during teardown: %v", err)
 		}
 	}
@@ -235,7 +235,7 @@ func (ts *SMSAuthFlowTestSuite) TestSMSAuthFlowWithMobileNumber() {
 	ts.mockServer.ClearMessages()
 
 	// Step 2: Continue the flow with mobile number
-	userAttrs, err := GetUserAttributes(testUserWithMobile)
+	userAttrs, err := testutils.GetUserAttributes(testUserWithMobile)
 	ts.Require().NoError(err, "Failed to get user attributes")
 
 	inputs := map[string]string{

@@ -18,8 +18,6 @@
 
 package flowauthn
 
-import "encoding/json"
-
 type FlowStep struct {
 	FlowID        string   `json:"flowId"`
 	FlowStatus    string   `json:"flowStatus"`
@@ -47,49 +45,8 @@ type FlowAction struct {
 	ID   string `json:"id"`
 }
 
-type User struct {
-	Id               string          `json:"id,omitempty"`
-	OrganizationUnit string          `json:"organizationUnit"`
-	Type             string          `json:"type"`
-	Attributes       json.RawMessage `json:"attributes"`
-}
-
 type ErrorResponse struct {
 	Code        string `json:"code"`
 	Message     string `json:"message"`
 	Description string `json:"description"`
-}
-
-type TestApplication struct {
-	ID                        string   `json:"id,omitempty"`
-	Name                      string   `json:"name"`
-	Description               string   `json:"description"`
-	IsRegistrationFlowEnabled bool     `json:"is_registration_flow_enabled"`
-	AuthFlowGraphID           string   `json:"auth_flow_graph_id"`
-	RegistrationFlowGraphID   string   `json:"registration_flow_graph_id"`
-	ClientID                  string   `json:"client_id"`
-	ClientSecret              string   `json:"client_secret"`
-	RedirectURIs              []string `json:"redirect_uris"`
-}
-
-type TestOrganizationUnit struct {
-	ID          string  `json:"id,omitempty"`
-	Handle      string  `json:"handle"`
-	Name        string  `json:"name"`
-	Description string  `json:"description,omitempty"`
-	Parent      *string `json:"parent,omitempty"`
-}
-
-// IDP structures for flow authentication tests
-type IDPProperty struct {
-	Name     string `json:"name"`
-	Value    string `json:"value"`
-	IsSecret bool   `json:"is_secret"`
-}
-
-type IDP struct {
-	ID          string        `json:"id,omitempty"`
-	Name        string        `json:"name"`
-	Description string        `json:"description"`
-	Properties  []IDPProperty `json:"properties"`
 }

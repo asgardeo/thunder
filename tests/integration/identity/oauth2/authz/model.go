@@ -32,13 +32,6 @@ type TestCase struct {
 	ExpectedError  string
 }
 
-// User represents a test user for authorization code tests
-type User struct {
-	OrganizationUnit string                 `json:"organizationUnit"`
-	Type             string                 `json:"type"`
-	Attributes       map[string]interface{} `json:"attributes"`
-}
-
 // FlowResponse represents the response from flow execution
 type FlowResponse struct {
 	FlowID        string    `json:"flowId"`
@@ -90,18 +83,4 @@ type FlowStep struct {
 	Data          *FlowData `json:"data,omitempty"`
 	Assertion     string    `json:"assertion,omitempty"`
 	FailureReason string    `json:"failureReason,omitempty"`
-}
-
-// IDP structures for OAuth2 tests
-type IDPProperty struct {
-	Name     string `json:"name"`
-	Value    string `json:"value"`
-	IsSecret bool   `json:"is_secret"`
-}
-
-type IDP struct {
-	ID          string        `json:"id,omitempty"`
-	Name        string        `json:"name"`
-	Description string        `json:"description"`
-	Properties  []IDPProperty `json:"properties"`
 }
