@@ -24,7 +24,7 @@ deployment:
     enableRunAsUser: true
     runAsUser: 802
     seccompProfile:
-      enabled: true
+      enabled: false
       type: "RuntimeDefault"
   # Pod termination grace period. K8s API server waits this period after pre stop hook and sending TERM signal
   terminationGracePeriodSeconds: 10
@@ -132,10 +132,10 @@ configuration:
       sqliteOptions: "_journal_mode=WAL&_busy_timeout=5000" # Only required for sqlite
       # Below parameters are only required for Postgres
       name: "thunderdb" 
-      host: "<DB_HOSTNAME>" 
-      port: "<DB_PORT>" 
-      username: "<DB_USERNAME>" 
-      password: "<DB_PASSWORD>" 
+      host: "localhost" 
+      port: "5432" 
+      username: "asgthunder>" 
+      password: "asgthunder" 
       sslmode: "require" 
     # Runtime database configuration
     runtime:
@@ -145,10 +145,10 @@ configuration:
       sqliteOptions: "_journal_mode=WAL&_busy_timeout=5000" # Only required for sqlite
       # Below parameters are only required for Postgres
       name: "runtimedb" 
-      host: "<DB_HOSTNAME>" 
-      port: "<DB_PORT>" 
-      username: "<DB_USERNAME>" 
-      password: "<DB_PASSWORD>" 
+      host: "localhost" 
+      port: "5432" 
+      username: "asgthunder>" 
+      password: "asgthunder" 
       sslmode: "require" 
 
   # Cache configuration

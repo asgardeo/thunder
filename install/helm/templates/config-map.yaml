@@ -17,7 +17,7 @@
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: {{ include "thunder.fullname" . }}-cm-deployment
+  name: {{ include "thunder.fullname" . }}-config-map
   namespace: {{ .Release.Namespace }}
   labels:
     {{- include "thunder.labels" . | nindent 4 }}

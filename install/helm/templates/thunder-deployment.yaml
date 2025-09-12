@@ -81,7 +81,7 @@ spec:
               command:
                 - /bin/sh
                 - -c
-                - nc -z localhost 8090
+                - nc -z localhost {{ .Values.deployment.container.port }}
             initialDelaySeconds: {{ .Values.deployment.startupProbe.initialDelaySeconds }}
             periodSeconds: {{ .Values.deployment.startupProbe.periodSeconds }}
             failureThreshold: {{ .Values.deployment.startupProbe.failureThreshold }}
@@ -107,7 +107,7 @@ spec:
               cpu: {{ .Values.deployment.resources.limits.cpu }}
           securityContext:
             allowPrivilegeEscalation: false
-            readOnlyRootFilesystem: false
+            readOnlyRootFilesystem: true
             runAsNonRoot: true
             {{- if .Values.deployment.securityContext.enableRunAsUser }}
             runAsUser: {{ .Values.deployment.securityContext.runAsUser }}
@@ -125,4 +125,4 @@ spec:
       volumes:
         - name: deployment-yaml-volume
           configMap:
-            name: {{ include "thunder.fullname" . }}-cm-deployment
+            name: {{ include "thunder.fullname" . }}-config-map
