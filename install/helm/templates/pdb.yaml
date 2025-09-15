@@ -16,7 +16,7 @@
 
 {{ $replicas:= int .Values.deployment.replicaCount }}
 {{- if gt $replicas 1 }}
-apiVersion: "policy/v1"
+apiVersion: policy/v1
 kind: PodDisruptionBudget
 metadata:
   name: {{ include "thunder.fullname" . }}-pdb
