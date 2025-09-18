@@ -145,7 +145,7 @@ type Config struct {
 	OAuth      OAuthConfig      `yaml:"oauth" json:"oauth"`
 	Flow       FlowConfig       `yaml:"flow" json:"flow"`
 	Crypto     CryptoConfig     `yaml:"crypto" json:"crypto"`
-  Hash       HashConfig       `yaml:"hash"`
+	Hash       HashConfig       `yaml:"hash"`
 	CORS       CORSConfig       `yaml:"cors" json:"cors"`
 }
 
