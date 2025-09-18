@@ -21,8 +21,10 @@ package handler
 
 import (
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"net/url"
+	"regexp"
 	"strconv"
 	"strings"
 
@@ -64,8 +66,14 @@ func (ah *UserHandler) HandleUserListRequest(w http.ResponseWriter, r *http.Requ
 		limit = serverconst.DefaultPageSize
 	}
 
+	filters, svcErr := parseFilterParams(r.URL.Query())
+	if svcErr != nil {
+		handleError(w, logger, svcErr)
+		return
+	}
+
 	// Get the user list using the user service.
-	userListResponse, svcErr := ah.userService.GetUserList(limit, offset)
+	userListResponse, svcErr := ah.userService.GetUserList(limit, offset, filters)
 	if svcErr != nil {
 		handleError(w, logger, svcErr)
 		return
@@ -83,7 +91,8 @@ func (ah *UserHandler) HandleUserListRequest(w http.ResponseWriter, r *http.Requ
 	logger.Debug("Successfully listed users with pagination",
 		log.Int("limit", limit), log.Int("offset", offset),
 		log.Int("totalResults", userListResponse.TotalResults),
-		log.Int("count", userListResponse.Count))
+		log.Int("count", userListResponse.Count),
+		log.Any("filters", filters))
 }
 
 // HandleUserPostRequest handles the user request.
@@ -221,7 +230,13 @@ func (ah *UserHandler) HandleUserListByPathRequest(w http.ResponseWriter, r *htt
 		limit = serverconst.DefaultPageSize
 	}
 
-	userListResponse, svcErr := ah.userService.GetUsersByPath(path, limit, offset)
+	filters, svcErr := parseFilterParams(r.URL.Query())
+	if svcErr != nil {
+		handleError(w, logger, svcErr)
+		return
+	}
+
+	userListResponse, svcErr := ah.userService.GetUsersByPath(path, limit, offset, filters)
 	if svcErr != nil {
 		handleError(w, logger, svcErr)
 		return
@@ -239,7 +254,8 @@ func (ah *UserHandler) HandleUserListByPathRequest(w http.ResponseWriter, r *htt
 	logger.Debug("Successfully listed users by path", log.String("path", path),
 		log.Int("limit", limit), log.Int("offset", offset),
 		log.Int("totalResults", userListResponse.TotalResults),
-		log.Int("count", userListResponse.Count))
+		log.Int("count", userListResponse.Count),
+		log.Any("filters", filters))
 }
 
 // HandleUserPostByPathRequest handles the create user by OU path request.
@@ -366,7 +382,7 @@ func handleError(w http.ResponseWriter, logger *log.Logger, svcErr *serviceerror
 			constants.ErrorUserNotFound.Code,
 			constants.ErrorOrganizationUnitNotFound.Code:
 			statusCode = http.StatusNotFound
-		case constants.ErrorUsernameConflict.Code:
+		case constants.ErrorAttributeConflict.Code:
 			statusCode = http.StatusConflict
 		case constants.ErrorHandlePathRequired.Code,
 			constants.ErrorInvalidHandlePath.Code,
@@ -414,4 +430,84 @@ func extractAndValidatePath(w http.ResponseWriter, r *http.Request, logger *log.
 		return "", true
 	}
 	return path, false
+}
+
+// parseFilterParams parses and sanitizes filter query parameters from the request.
+func parseFilterParams(query url.Values) (map[string]interface{}, *serviceerror.ServiceError) {
+	if !query.Has("filter") {
+		return make(map[string]interface{}), nil
+	}
+
+	filterStr := query.Get("filter")
+	filterStr = strings.TrimSpace(filterStr)
+	if filterStr == "" {
+		return nil, &constants.ErrorInvalidFilter
+	}
+
+	parsedFilter, err := parseFilterExpression(filterStr)
+	if err != nil {
+		return nil, &constants.ErrorInvalidFilter
+	}
+
+	sanitized := sanitizeFilter(parsedFilter)
+
+	return sanitized, nil
+}
+
+// parseFilterExpression parses filter expressions in the format: attribute eq "value"
+func parseFilterExpression(filterStr string) (map[string]interface{}, error) {
+	// Regex to match: attribute_name eq "value" or attribute_name eq value
+	pattern := `^(\w+(?:\.\w+)*)\s+(eq)\s+(?:"([^"]*)"|(\w+|\d+))$`
+	regex := regexp.MustCompile(pattern)
+
+	matches := regex.FindStringSubmatch(filterStr)
+	if len(matches) == 0 {
+		return nil, fmt.Errorf("invalid filter format")
+	}
+
+	attribute := matches[1]
+	operator := matches[2]
+
+	if operator != "eq" {
+		return nil, fmt.Errorf("unsupported operator: %s", operator)
+	}
+
+	// Get the value (either quoted string or unquoted value)
+	if matches[3] != "" {
+		return map[string]interface{}{attribute: matches[3]}, nil
+	} else {
+		value := matches[4] // Unquoted value
+		// Try to convert numeric values
+		if intVal, err := strconv.ParseInt(value, 10, 64); err == nil {
+			return map[string]interface{}{attribute: intVal}, nil
+		}
+		// If not an integer, try to parse as float
+		if floatVal, err := strconv.ParseFloat(value, 64); err == nil {
+			return map[string]interface{}{attribute: floatVal}, nil
+		}
+
+		// Check for boolean values
+		if bool, err := strconv.ParseBool(value); err == nil {
+			return map[string]interface{}{attribute: bool}, nil
+		}
+
+		return nil, fmt.Errorf("invalid filter value")
+	}
+}
+
+// sanitizeFilter performs additional sanitization on parsed filters
+func sanitizeFilter(filters map[string]interface{}) map[string]interface{} {
+	sanitized := make(map[string]interface{})
+
+	for key, value := range filters {
+		sanitizedKey := sysutils.SanitizeString(key)
+
+		if strValue, ok := value.(string); ok {
+			sanitized[sanitizedKey] = sysutils.SanitizeString(strValue)
+		} else {
+			sanitized[sanitizedKey] = value
+		}
+	}
+
+	return sanitized
 }

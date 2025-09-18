@@ -88,16 +88,8 @@ func newCache[T any](cacheName string) CacheInterface[T] {
 
 	cacheType := getCacheType(cacheConfig)
 	evictionPolicy := getEvictionPolicy(cacheConfig, cacheProperty)
-
-	size := cacheProperty.Size
-	if size <= 0 {
-		size = defaultCacheSize
-	}
-
-	ttl := cacheProperty.TTL
-	if ttl <= 0 {
-		ttl = defaultCacheTTL
-	}
+	size := getCacheSize(cacheConfig, cacheProperty)
+	ttl := getCacheTTL(cacheConfig, cacheProperty)
 
 	var internalCache internalCacheInterface[T]
 	switch cacheType {
@@ -114,8 +106,8 @@ func newCache[T any](cacheName string) CacheInterface[T] {
 		internalCache = newInMemoryCache[T](
 			cacheName,
 			!cacheProperty.Disabled,
-			defaultCacheSize,
-			defaultCacheTTL*time.Second,
+			size,
+			time.Duration(ttl)*time.Second,
 			evictionPolicyLRU,
 		)
 	}
@@ -261,4 +253,22 @@ func getEvictionPolicy(cacheConfig config.CacheConfig, cacheProperty config.Cach
 		log.GetLogger().Warn("Unknown eviction policy, defaulting to LRU")
 		return evictionPolicyLRU
 	}
+}
+
+// getCacheSize retrieves the cache size from the cache configuration.
+func getCacheSize(cacheConfig config.CacheConfig, cacheProperty config.CacheProperty) int {
+	size := cacheProperty.Size
+	if size <= 0 {
+		size = cacheConfig.Size
+	}
+	return size
+}
+
+// getCacheTTL retrieves the cache TTL from the cache configuration.
+func getCacheTTL(cacheConfig config.CacheConfig, cacheProperty config.CacheProperty) int {
+	ttl := cacheProperty.TTL
+	if ttl <= 0 {
+		ttl = cacheConfig.TTL
+	}
+	return ttl
 }

@@ -26,6 +26,7 @@ import (
 	"net/http"
 	"testing"
 
+	"github.com/asgardeo/thunder/tests/integration/testutils"
 	"github.com/stretchr/testify/suite"
 )
 
@@ -166,7 +167,7 @@ func (suite *UserTreeAPITestSuite) TestGetUsersByPath() {
 	body, err := io.ReadAll(resp.Body)
 	suite.Require().NoError(err, "Failed to read response body: %v", err)
 
-	var userListResponse UserListResponse
+	var userListResponse testutils.UserListResponse
 	err = json.Unmarshal(body, &userListResponse)
 	suite.Require().NoError(err)
 
@@ -213,18 +214,18 @@ func (suite *UserTreeAPITestSuite) TestCreateUserByPath() {
 	body, err := io.ReadAll(resp.Body)
 	suite.Require().NoError(err)
 
-	var createdUser User
+	var createdUser testutils.User
 	err = json.Unmarshal(body, &createdUser)
 	suite.Require().NoError(err)
 
 	// Verify the created user
-	suite.NotEmpty(createdUser.Id)
+	suite.NotEmpty(createdUser.ID)
 	suite.Equal(pathTestOUID, createdUser.OrganizationUnit)
 	suite.Equal("employee", createdUser.Type)
 	suite.NotEmpty(createdUser.Attributes)
 
 	// Clean up: delete the created user
-	deleteReq, err := http.NewRequest("DELETE", testServerURL+"/users/"+createdUser.Id, nil)
+	deleteReq, err := http.NewRequest("DELETE", testServerURL+"/users/"+createdUser.ID, nil)
 	if err != nil {
 		suite.T().Logf("Failed to create delete request for user: %v", err)
 		return
@@ -302,7 +303,7 @@ func (suite *UserTreeAPITestSuite) TestGetUsersByPathWithPagination() {
 	body, err := io.ReadAll(resp.Body)
 	suite.Require().NoError(err)
 
-	var userListResponse UserListResponse
+	var userListResponse testutils.UserListResponse
 	err = json.Unmarshal(body, &userListResponse)
 	suite.Require().NoError(err)
 

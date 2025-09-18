@@ -22,17 +22,31 @@ import (
 	"encoding/json"
 	"testing"
 
+	"github.com/asgardeo/thunder/tests/integration/testutils"
 	"github.com/stretchr/testify/suite"
 )
 
-const (
-	appID = "550e8400-e29b-41d4-a716-446655440000" // Default test app ID
-)
-
 var (
-	testUser = User{
-		OrganizationUnit: "456e8400-e29b-41d4-a716-446655440001",
-		Type:             "person",
+	testApp = testutils.Application{
+		Name:                      "Flow Test Application",
+		Description:               "Application for testing authentication flows",
+		IsRegistrationFlowEnabled: false,
+		AuthFlowGraphID:           "auth_flow_config_basic",
+		RegistrationFlowGraphID:   "registration_flow_config_basic",
+		ClientID:                  "flow_test_client",
+		ClientSecret:              "flow_test_secret",
+		RedirectURIs:              []string{"http://localhost:3000/callback"},
+	}
+
+	testOU = testutils.OrganizationUnit{
+		Handle:      "flow-test-ou",
+		Name:        "Flow Test Organization Unit",
+		Description: "Organization unit for flow testing",
+		Parent:      nil,
+	}
+
+	testUser = testutils.User{
+		Type: "person",
 		Attributes: json.RawMessage(`{
 			"username": "testuser",
 			"password": "testpassword",
@@ -41,6 +55,11 @@ var (
 			"lastName": "User"
 		}`),
 	}
+)
+
+var (
+	testAppID string
+	testOUID  string
 )
 
 type BasicAuthFlowTestSuite struct {
@@ -56,8 +75,24 @@ func (ts *BasicAuthFlowTestSuite) SetupSuite() {
 	// Initialize config
 	ts.config = &TestSuiteConfig{}
 
-	// Create test user
-	userIDs, err := CreateMultipleUsers(testUser)
+	// Create test organization unit
+	ouID, err := testutils.CreateOrganizationUnit(testOU)
+	if err != nil {
+		ts.T().Fatalf("Failed to create test organization unit during setup: %v", err)
+	}
+	testOUID = ouID
+
+	// Create test application
+	appID, err := testutils.CreateApplication(testApp)
+	if err != nil {
+		ts.T().Fatalf("Failed to create test application during setup: %v", err)
+	}
+	testAppID = appID
+
+	// Create test user with the created OU
+	testUser := testUser
+	testUser.OrganizationUnit = testOUID
+	userIDs, err := testutils.CreateMultipleUsers(testUser)
 	if err != nil {
 		ts.T().Fatalf("Failed to create test user during setup: %v", err)
 	}
@@ -66,14 +101,29 @@ func (ts *BasicAuthFlowTestSuite) SetupSuite() {
 
 func (ts *BasicAuthFlowTestSuite) TearDownSuite() {
 	// Delete all created users
-	if err := CleanupUsers(ts.config.CreatedUserIDs); err != nil {
+	if err := testutils.CleanupUsers(ts.config.CreatedUserIDs); err != nil {
 		ts.T().Logf("Failed to cleanup users during teardown: %v", err)
 	}
+
+	// Delete test application
+	if testAppID != "" {
+		if err := testutils.DeleteApplication(testAppID); err != nil {
+			ts.T().Logf("Failed to delete test application during teardown: %v", err)
+		}
+	}
+
+	// Delete test organization unit
+	if testOUID != "" {
+		if err := testutils.DeleteOrganizationUnit(testOUID); err != nil {
+			ts.T().Logf("Failed to delete test organization unit during teardown: %v", err)
+		}
+	}
+
 }
 
 func (ts *BasicAuthFlowTestSuite) TestBasicAuthFlowSuccess() {
 	// Step 1: Initialize the flow by calling the flow execution API
-	flowStep, err := initiateAuthFlow(appID, nil)
+	flowStep, err := initiateAuthFlow(testAppID, nil)
 	if err != nil {
 		ts.T().Fatalf("Failed to initiate authentication flow: %v", err)
 	}
@@ -125,7 +175,7 @@ func (ts *BasicAuthFlowTestSuite) TestBasicAuthFlowSuccessWithSingleRequest() {
 		"password": userAttrs["password"].(string),
 	}
 
-	flowStep, err := initiateAuthFlow(appID, inputs)
+	flowStep, err := initiateAuthFlow(testAppID, inputs)
 	if err != nil {
 		ts.T().Fatalf("Failed to initiate authentication flow: %v", err)
 	}
@@ -140,7 +190,7 @@ func (ts *BasicAuthFlowTestSuite) TestBasicAuthFlowSuccessWithSingleRequest() {
 
 func (ts *BasicAuthFlowTestSuite) TestBasicAuthFlowWithTwoStepInput() {
 	// Step 1: Initialize the flow
-	flowStep, err := initiateAuthFlow(appID, nil)
+	flowStep, err := initiateAuthFlow(testAppID, nil)
 	if err != nil {
 		ts.T().Fatalf("Failed to initiate authentication flow: %v", err)
 	}
@@ -191,7 +241,7 @@ func (ts *BasicAuthFlowTestSuite) TestBasicAuthFlowWithTwoStepInput() {
 
 func (ts *BasicAuthFlowTestSuite) TestBasicAuthFlowInvalidCredentials() {
 	// Step 1: Initialize the flow
-	flowStep, err := initiateAuthFlow(appID, nil)
+	flowStep, err := initiateAuthFlow(testAppID, nil)
 	if err != nil {
 		ts.T().Fatalf("Failed to initiate authentication flow: %v", err)
 	}
@@ -231,7 +281,7 @@ func (ts *BasicAuthFlowTestSuite) TestBasicAuthFlowInvalidAppID() {
 
 func (ts *BasicAuthFlowTestSuite) TestBasicAuthFlowInvalidFlowID() {
 	// Step 1: Initialize the flow by calling the flow execution API
-	flowStep, err := initiateAuthFlow(appID, nil)
+	flowStep, err := initiateAuthFlow(testAppID, nil)
 	if err != nil {
 		ts.T().Fatalf("Failed to initiate authentication flow: %v", err)
 	}

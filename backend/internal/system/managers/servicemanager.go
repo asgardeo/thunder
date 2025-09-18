@@ -65,6 +65,9 @@ func (sm *ServiceManager) RegisterServices() error {
 	// Register the User service.
 	services.NewUserService(sm.mux)
 
+	// Register the User Schema service.
+	services.NewUserSchemaService(sm.mux)
+
 	// Register the Group service.
 	services.NewGroupService(sm.mux)
 

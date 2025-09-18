@@ -36,7 +36,7 @@
 				"header": [],
 				"body": {
 					"mode": "raw",
-					"raw": "{\n    \"org_id\": \"456e8400-e29b-41d4-a716-446655440001\",\n    \"type\": \"person\",\n    \"attributes\": {\n        \"age\": 34,\n        \"roles\": [\n            \"admin\",\n            \"user\"\n        ],\n        \"address\": {\n            \"city\": \"Colombo\",\n            \"zip\": \"00100\"\n        }\n    }\n}",
+					"raw": "{\n    \"organizationUnit\": \"{{organization-unit-id}}\",\n    \"type\": \"person\",\n    \"attributes\": {\n        \"age\": 34,\n        \"roles\": [\n            \"admin\",\n            \"user\"\n        ],\n        \"address\": {\n            \"city\": \"Colombo\",\n            \"zip\": \"00100\"\n        }\n    }\n}",
 					"options": {
 						"raw": {
 							"language": "json"
@@ -66,7 +66,7 @@
 				"method": "GET",
 				"header": [],
 				"url": {
-					"raw": "https://localhost:8090/users/550e8400-e29b-41d4-a716-446655440000",
+					"raw": "https://localhost:8090/users/{{user-id}}",
 					"protocol": "https",
 					"host": [
 						"localhost"
@@ -74,7 +74,7 @@
 					"port": "8090",
 					"path": [
 						"users",
-						"550e8400-e29b-41d4-a716-446655440000"
+						"{{user-id}}"
 					]
 				}
 			},
@@ -90,7 +90,7 @@
 				"header": [],
 				"body": {
 					"mode": "raw",
-					"raw": "{\n    \"org_id\": \"456e8400-e29b-41d4-a716-446655440001\",\n    \"type\": \"employee\",\n    \"attributes\": {\n        \"age\": 37,\n        \"roles\": [\n            \"admin\",\n            \"user\"\n        ],\n        \"address\": {\n            \"city\": \"Colombo\",\n            \"zip\": \"00100\"\n        }\n    }\n}",
+					"raw": "{\n    \"organizationUnit\": \"{{organization-unit-id}}\",\n    \"type\": \"employee\",\n    \"attributes\": {\n        \"age\": 37,\n        \"roles\": [\n            \"admin\",\n            \"user\"\n        ],\n        \"address\": {\n            \"city\": \"Colombo\",\n            \"zip\": \"00100\"\n        }\n    }\n}",
 					"options": {
 						"raw": {
 							"language": "json"
@@ -98,7 +98,7 @@
 					}
 				},
 				"url": {
-					"raw": "https://localhost:8090/users/185d95c2-ad85-4588-81f0-6111c652de1c",
+					"raw": "https://localhost:8090/users/{{user-id}}",
 					"protocol": "https",
 					"host": [
 						"localhost"
@@ -106,7 +106,7 @@
 					"port": "8090",
 					"path": [
 						"users",
-						"185d95c2-ad85-4588-81f0-6111c652de1c"
+						"{{user-id}}"
 					]
 				}
 			},
@@ -121,7 +121,7 @@
 				"method": "DELETE",
 				"header": [],
 				"url": {
-					"raw": "https://localhost:8090/users/185d95c2-ad85-4588-81f0-6111c652de1c",
+					"raw": "https://localhost:8090/users/{{user-id}}",
 					"protocol": "https",
 					"host": [
 						"localhost"
@@ -129,7 +129,7 @@
 					"port": "8090",
 					"path": [
 						"users",
-						"185d95c2-ad85-4588-81f0-6111c652de1c"
+						"{{user-id}}"
 					]
 				}
 			},

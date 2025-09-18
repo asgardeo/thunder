@@ -83,6 +83,7 @@ func (fe *FlowEngine) Execute(ctx *model.EngineContext) (model.FlowStep, *servic
 			NodeInputData:     ctx.CurrentNode.GetInputData(),
 			UserInputData:     ctx.UserInputData,
 			RuntimeData:       ctx.RuntimeData,
+			Application:       ctx.Application,
 			AuthenticatedUser: ctx.AuthenticatedUser,
 		}
 		if nodeCtx.NodeInputData == nil {
@@ -188,7 +189,7 @@ func updateContextWithNodeResponse(engineCtx *model.EngineContext, nodeResp *mod
 			if engineCtx.AuthenticatedUser.Attributes == nil {
 				engineCtx.AuthenticatedUser.Attributes = prevAuthnUserAttrs
 			} else {
-				engineCtx.AuthenticatedUser.Attributes = sysutils.MergeStringMaps(
+				engineCtx.AuthenticatedUser.Attributes = sysutils.MergeInterfaceMaps(
 					prevAuthnUserAttrs, engineCtx.AuthenticatedUser.Attributes)
 			}
 		}

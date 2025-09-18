@@ -20,20 +20,26 @@
 package authassert
 
 import (
+	"encoding/json"
 	"errors"
 
 	flowconst "github.com/asgardeo/thunder/internal/flow/constants"
 	flowmodel "github.com/asgardeo/thunder/internal/flow/model"
+	"github.com/asgardeo/thunder/internal/system/config"
+	"github.com/asgardeo/thunder/internal/system/error/serviceerror"
 	"github.com/asgardeo/thunder/internal/system/jwt"
 	"github.com/asgardeo/thunder/internal/system/log"
+	usermodel "github.com/asgardeo/thunder/internal/user/model"
+	userservice "github.com/asgardeo/thunder/internal/user/service"
 )
 
 const loggerComponentName = "AuthAssertExecutor"
 
 // AuthAssertExecutor is an executor that handles authentication assertions in the flow.
 type AuthAssertExecutor struct {
-	internal   flowmodel.Executor
-	JWTService jwt.JWTServiceInterface
+	internal    flowmodel.Executor
+	JWTService  jwt.JWTServiceInterface
+	UserService userservice.UserServiceInterface
 }
 
 var _ flowmodel.ExecutorInterface = (*AuthAssertExecutor)(nil)
@@ -41,8 +47,9 @@ var _ flowmodel.ExecutorInterface = (*AuthAssertExecutor)(nil)
 // NewAuthAssertExecutor creates a new instance of AuthAssertExecutor.
 func NewAuthAssertExecutor(id, name string, properties map[string]string) *AuthAssertExecutor {
 	return &AuthAssertExecutor{
-		internal:   *flowmodel.NewExecutor(id, name, []flowmodel.InputData{}, []flowmodel.InputData{}, properties),
-		JWTService: jwt.GetJWTService(),
+		internal:    *flowmodel.NewExecutor(id, name, []flowmodel.InputData{}, []flowmodel.InputData{}, properties),
+		JWTService:  jwt.GetJWTService(),
+		UserService: userservice.GetUserService(),
 	}
 }
 
@@ -74,16 +81,9 @@ func (a *AuthAssertExecutor) Execute(ctx *flowmodel.NodeContext) (*flowmodel.Exe
 	}
 
 	if ctx.AuthenticatedUser.IsAuthenticated {
-		tokenSub := ""
-		if ctx.AuthenticatedUser.UserID != "" {
-			tokenSub = ctx.AuthenticatedUser.UserID
-		}
-
-		token, _, err := a.JWTService.GenerateJWT(tokenSub, ctx.AppID, jwt.GetJWTTokenValidityPeriod(),
-			ctx.AuthenticatedUser.Attributes)
+		token, err := a.generateAuthAssertion(ctx, logger)
 		if err != nil {
-			logger.Error("Failed to generate JWT token", log.Error(err))
-			return nil, errors.New("failed to generate JWT token: " + err.Error())
+			return nil, err
 		}
 
 		logger.Debug("Generated JWT token for authentication assertion")
@@ -95,7 +95,8 @@ func (a *AuthAssertExecutor) Execute(ctx *flowmodel.NodeContext) (*flowmodel.Exe
 		execResp.FailureReason = "User is not authenticated"
 	}
 
-	logger.Debug("Authentication assertion executor execution completed", log.String("status", string(execResp.Status)))
+	logger.Debug("Authentication assertion executor execution completed",
+		log.String("status", string(execResp.Status)))
 
 	return execResp, nil
 }
@@ -129,4 +130,86 @@ func (a *AuthAssertExecutor) GetUserIDFromContext(ctx *flowmodel.NodeContext) (s
 // GetRequiredData returns the required input data for the AuthAssertExecutor.
 func (a *AuthAssertExecutor) GetRequiredData(ctx *flowmodel.NodeContext) []flowmodel.InputData {
 	return a.internal.GetRequiredData(ctx)
+}
+
+// generateAuthAssertion generates the authentication assertion token.
+func (a *AuthAssertExecutor) generateAuthAssertion(ctx *flowmodel.NodeContext, logger *log.Logger) (string, error) {
+	tokenSub := ""
+	if ctx.AuthenticatedUser.UserID != "" {
+		tokenSub = ctx.AuthenticatedUser.UserID
+	}
+
+	jwtClaims := make(map[string]interface{})
+	jwtConfig := config.GetThunderRuntime().Config.OAuth.JWT
+	iss := ""
+	validityPeriod := int64(0)
+
+	if ctx.Application.Token != nil {
+		iss = ctx.Application.Token.Issuer
+		validityPeriod = ctx.Application.Token.ValidityPeriod
+	}
+	if iss == "" {
+		iss = jwtConfig.Issuer
+	}
+	if validityPeriod == 0 {
+		validityPeriod = jwtConfig.ValidityPeriod
+	}
+
+	if ctx.Application.Token != nil && len(ctx.Application.Token.UserAttributes) > 0 &&
+		ctx.AuthenticatedUser.UserID != "" {
+		var user *usermodel.User
+		var attrs map[string]interface{}
+
+		for _, attr := range ctx.Application.Token.UserAttributes {
+			// check for the attribute in authenticated user attributes
+			if val, ok := ctx.AuthenticatedUser.Attributes[attr]; ok {
+				jwtClaims[attr] = val
+				continue
+			}
+
+			// fetch user details only once
+			if user == nil {
+				var err error
+				user, attrs, err = a.getUserAttributes(ctx.AuthenticatedUser.UserID, logger)
+				if err != nil {
+					return "", err
+				}
+			}
+
+			// check for the attribute in user store attributes
+			if val, ok := attrs[attr]; ok {
+				jwtClaims[attr] = val
+			}
+		}
+	}
+
+	token, _, err := a.JWTService.GenerateJWT(tokenSub, ctx.AppID, iss, validityPeriod, jwtClaims)
+	if err != nil {
+		logger.Error("Failed to generate JWT token", log.Error(err))
+		return "", errors.New("failed to generate JWT token: " + err.Error())
+	}
+
+	return token, nil
+}
+
+// getUserAttributes retrieves user details and unmarshal the attributes.
+func (a *AuthAssertExecutor) getUserAttributes(userID string, logger *log.Logger) (
+	*usermodel.User, map[string]interface{}, error) {
+	var svcErr *serviceerror.ServiceError
+	user, svcErr := a.UserService.GetUser(userID)
+	if svcErr != nil {
+		logger.Error("Failed to fetch user attributes",
+			log.String("userID", userID), log.Any("error", svcErr))
+		return nil, nil, errors.New("something went wrong while fetching user attributes: " +
+			svcErr.ErrorDescription)
+	}
+
+	var attrs map[string]interface{}
+	if err := json.Unmarshal(user.Attributes, &attrs); err != nil {
+		logger.Error("Failed to unmarshal user attributes", log.String("userID", userID),
+			log.Error(err))
+		return nil, nil, errors.New("something went wrong while unmarshalling user attributes: " + err.Error())
+	}
+
+	return user, attrs, nil
 }

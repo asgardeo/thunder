@@ -32,13 +32,9 @@ import (
 )
 
 const (
-	loggerComponentName    = "BasicAuthExecutor"
-	userAttributeUserID    = "userID"
-	userAttributeUsername  = "username"
-	userAttributePassword  = "password"
-	userAttributeEmail     = "email"
-	userAttributeFirstName = "firstName"
-	userAttributeLastName  = "lastName"
+	loggerComponentName   = "BasicAuthExecutor"
+	userAttributeUsername = "username"
+	userAttributePassword = "password"
 )
 
 // BasicAuthExecutor implements the ExecutorInterface for basic authentication.
@@ -193,7 +189,7 @@ func (b *BasicAuthExecutor) getAuthenticatedUser(ctx *flowmodel.NodeContext,
 
 				return &authndto.AuthenticatedUser{
 					IsAuthenticated: false,
-					Attributes: map[string]string{
+					Attributes: map[string]interface{}{
 						userAttributeUsername: username,
 					},
 				}, nil
@@ -236,37 +232,10 @@ func (b *BasicAuthExecutor) getAuthenticatedUser(ctx *flowmodel.NodeContext,
 			return nil, err
 		}
 
-		email := ""
-		emailAttr := attrs[userAttributeEmail]
-		if emailAttr != nil {
-			email = emailAttr.(string)
-		}
-
-		firstName := ""
-		firstNameAttr := attrs[userAttributeFirstName]
-		if firstNameAttr != nil {
-			firstName = firstNameAttr.(string)
-		}
-
-		lastName := ""
-		lastNameAttr := attrs[userAttributeLastName]
-		if lastNameAttr != nil {
-			lastName = lastNameAttr.(string)
-		}
-
 		authenticatedUser = authndto.AuthenticatedUser{
 			IsAuthenticated: true,
 			UserID:          user.ID,
-			Attributes:      map[string]string{},
-		}
-		if firstName != "" {
-			authenticatedUser.Attributes[userAttributeFirstName] = firstName
-		}
-		if lastName != "" {
-			authenticatedUser.Attributes[userAttributeLastName] = lastName
-		}
-		if email != "" {
-			authenticatedUser.Attributes[userAttributeEmail] = email
+			Attributes:      attrs,
 		}
 	}
 	return &authenticatedUser, nil

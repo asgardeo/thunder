@@ -75,11 +75,11 @@ func (suite *HealthCheckServiceTestSuite) TestCheckReadiness() {
 			name: "AllDatabasesUp",
 			setupIdentityDB: func() {
 				suite.mockIdentityDB.On("Query", queryConfigDBTable).Return([]map[string]interface{}{
-					{"allowed_origins": "http://example.com"}}, nil)
+					{"1": 1}}, nil)
 			},
 			setupRuntimeDB: func() {
 				suite.mockRuntimeDB.On("Query", queryRuntimeDBTable).Return([]map[string]interface{}{
-					{"code_id": "test"}}, nil)
+					{"1": 1}}, nil)
 			},
 			expectedStatus:       model.StatusUp,
 			expectedServiceCount: 2,
@@ -91,7 +91,7 @@ func (suite *HealthCheckServiceTestSuite) TestCheckReadiness() {
 			},
 			setupRuntimeDB: func() {
 				suite.mockRuntimeDB.On("Query", queryRuntimeDBTable).Return([]map[string]interface{}{
-					{"code_id": "test"}}, nil)
+					{"1": 1}}, nil)
 			},
 			expectedStatus:       model.StatusDown,
 			expectedServiceCount: 2,
@@ -100,7 +100,7 @@ func (suite *HealthCheckServiceTestSuite) TestCheckReadiness() {
 			name: "RuntimeDBDown",
 			setupIdentityDB: func() {
 				suite.mockIdentityDB.On("Query", queryConfigDBTable).Return([]map[string]interface{}{
-					{"allowed_origins": "http://example.com"}}, nil)
+					{"1": 1}}, nil)
 			},
 			setupRuntimeDB: func() {
 				suite.mockRuntimeDB.On("Query", queryRuntimeDBTable).Return(nil, errors.New("database error"))

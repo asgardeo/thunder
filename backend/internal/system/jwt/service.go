@@ -45,9 +45,6 @@ import (
 	"github.com/asgardeo/thunder/internal/system/utils"
 )
 
-const defaultTokenValidity = 3600 // default validity period of 1 hour
-const defaultIssuer = "thunder"
-
 var (
 	instance *JWTService
 	once     sync.Once
@@ -57,7 +54,7 @@ var (
 type JWTServiceInterface interface {
 	Init() error
 	GetPublicKey() *rsa.PublicKey
-	GenerateJWT(sub, aud string, validityPeriod int64, claims map[string]string) (string, int64, error)
+	GenerateJWT(sub, aud, iss string, validityPeriod int64, claims map[string]interface{}) (string, int64, error)
 	VerifyJWTSignature(jwtToken string, jwtPublicKey *rsa.PublicKey) error
 	VerifyJWTSignatureWithJWKS(jwtToken string, jwksURL string) error
 }
@@ -133,7 +130,7 @@ func (js *JWTService) GetPublicKey() *rsa.PublicKey {
 }
 
 // GenerateJWT generates a standard JWT signed with the server's private key.
-func (js *JWTService) GenerateJWT(sub, aud string, validityPeriod int64, claims map[string]string) (
+func (js *JWTService) GenerateJWT(sub, aud, iss string, validityPeriod int64, claims map[string]interface{}) (
 	string, int64, error) {
 	if js.privateKey == nil {
 		return "", 0, errors.New("private key not loaded")
@@ -159,9 +156,14 @@ func (js *JWTService) GenerateJWT(sub, aud string, validityPeriod int64, claims 
 		return "", 0, err
 	}
 
+	tokenIssuer := iss
+	if tokenIssuer == "" {
+		tokenIssuer = thunderRuntime.Config.OAuth.JWT.Issuer
+	}
+
 	// Calculate the expiration time based on the validity period.
 	if validityPeriod == 0 {
-		validityPeriod = defaultTokenValidity
+		validityPeriod = thunderRuntime.Config.OAuth.JWT.ValidityPeriod
 	}
 	iat := time.Now()
 	expirationTime := iat.Add(time.Duration(validityPeriod) * time.Second).Unix()
@@ -169,7 +171,7 @@ func (js *JWTService) GenerateJWT(sub, aud string, validityPeriod int64, claims 
 	// Create the JWT payload.
 	payload := map[string]interface{}{
 		"sub": sub,
-		"iss": thunderRuntime.Config.OAuth.JWT.Issuer,
+		"iss": tokenIssuer,
 		"aud": aud,
 		"exp": expirationTime,
 		"iat": iat.Unix(),

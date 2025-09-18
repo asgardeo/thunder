@@ -21,108 +21,223 @@ package service
 
 import (
 	"errors"
+	"strings"
 
+	"github.com/asgardeo/thunder/internal/idp/constants"
 	"github.com/asgardeo/thunder/internal/idp/model"
 	"github.com/asgardeo/thunder/internal/idp/store"
+	"github.com/asgardeo/thunder/internal/system/error/serviceerror"
 	"github.com/asgardeo/thunder/internal/system/log"
 	"github.com/asgardeo/thunder/internal/system/utils"
 )
 
 // IDPServiceInterface defines the interface for the IdP service.
 type IDPServiceInterface interface {
-	CreateIdentityProvider(idp *model.IDP) (*model.IDP, error)
-	GetIdentityProviderList() ([]model.IDP, error)
-	GetIdentityProvider(idpID string) (*model.IDP, error)
-	GetIdentityProviderByName(idpName string) (*model.IDP, error)
-	UpdateIdentityProvider(idpID string, idp *model.IDP) (*model.IDP, error)
-	DeleteIdentityProvider(idpID string) error
+	CreateIdentityProvider(idp *model.IdpDTO) (*model.IdpDTO, *serviceerror.ServiceError)
+	GetIdentityProviderList() ([]model.BasicIdpDTO, *serviceerror.ServiceError)
+	GetIdentityProvider(idpID string) (*model.IdpDTO, *serviceerror.ServiceError)
+	GetIdentityProviderByName(idpName string) (*model.IdpDTO, *serviceerror.ServiceError)
+	UpdateIdentityProvider(idpID string, idp *model.IdpDTO) (*model.IdpDTO, *serviceerror.ServiceError)
+	DeleteIdentityProvider(idpID string) *serviceerror.ServiceError
 }
 
 // IDPService is the default implementation of the IdPServiceInterface.
-type IDPService struct{}
-
-// GetIDPService creates a new instance of IdPService.
-func GetIDPService() IDPServiceInterface {
-	return &IDPService{}
+type IDPService struct {
+	IDPStore store.IDPStoreInterface
 }
 
-// CreateIdentityProvider creates the IdP.
-func (is *IDPService) CreateIdentityProvider(idp *model.IDP) (*model.IDP, error) {
+// NewIDPService creates a new instance of IdPService.
+func NewIDPService() IDPServiceInterface {
+	return &IDPService{
+		IDPStore: store.NewIDPStore(),
+	}
+}
+
+// CreateIdentityProvider creates a new Identity Provider.
+func (is *IDPService) CreateIdentityProvider(idp *model.IdpDTO) (*model.IdpDTO, *serviceerror.ServiceError) {
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, "IdPService"))
+
+	if idp == nil {
+		return nil, &constants.ErrorIDPNil
+	}
+
+	if strings.TrimSpace(idp.Name) == "" {
+		return nil, &constants.ErrorInvalidIDPName
+	}
+
+	// Check if an identity provider with the same name already exists
+	existingIDP, err := is.IDPStore.GetIdentityProviderByName(idp.Name)
+	if err != nil && !errors.Is(err, constants.ErrIDPNotFound) {
+		logger.Error("Failed to check existing identity provider by name", log.Error(err),
+			log.String("idpName", idp.Name))
+		return nil, &constants.ErrorInternalServerError
+	}
+	if existingIDP != nil {
+		return nil, &constants.ErrorIDPAlreadyExists
+	}
+
+	// Validate properties
+	if svcErr := validateIDPProperties(idp.Properties); svcErr != nil {
+		return nil, svcErr
+	}
 
 	idp.ID = utils.GenerateUUID()
 
 	// Create the IdP in the database.
-	err := store.CreateIdentityProvider(*idp)
+	err = is.IDPStore.CreateIdentityProvider(*idp)
 	if err != nil {
 		logger.Error("Failed to create IdP", log.Error(err))
-		return nil, err
+		return nil, &constants.ErrorInternalServerError
 	}
+
 	return idp, nil
 }
 
-// GetIdentityProviderList list the IdPs.
-func (is *IDPService) GetIdentityProviderList() ([]model.IDP, error) {
-	idps, err := store.GetIdentityProviderList()
+// GetIdentityProviderList retrieves the list of all Identity Providers.
+func (is *IDPService) GetIdentityProviderList() ([]model.BasicIdpDTO, *serviceerror.ServiceError) {
+	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, "IdPService"))
+
+	idps, err := is.IDPStore.GetIdentityProviderList()
 	if err != nil {
-		return nil, err
+		logger.Error("Failed to get identity provider list", log.Error(err))
+		return nil, &constants.ErrorInternalServerError
 	}
 
 	return idps, nil
 }
 
-// GetIdentityProvider get the IdP for given IdP id.
-func (is *IDPService) GetIdentityProvider(idpID string) (*model.IDP, error) {
-	if idpID == "" {
-		return nil, errors.New("IdP ID is empty")
+// GetIdentityProvider retrieves an identity provider by its ID.
+func (is *IDPService) GetIdentityProvider(idpID string) (*model.IdpDTO, *serviceerror.ServiceError) {
+	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, "IdPService"))
+
+	if strings.TrimSpace(idpID) == "" {
+		return nil, &constants.ErrorInvalidIDPID
 	}
 
-	idp, err := store.GetIdentityProvider(idpID)
+	idp, err := is.IDPStore.GetIdentityProvider(idpID)
 	if err != nil {
-		return nil, err
-	}
-
-	return &idp, nil
-}
-
-// GetIdentityProviderByName get the IdP for given IdP name.
-func (is *IDPService) GetIdentityProviderByName(idpName string) (*model.IDP, error) {
-	if idpName == "" {
-		return nil, errors.New("IdP name is empty")
-	}
-
-	idp, err := store.GetIdentityProviderByName(idpName)
-	if err != nil {
-		return nil, err
-	}
-
-	return &idp, nil
-}
-
-// UpdateIdentityProvider update the IdP for given IdP id.
-func (is *IDPService) UpdateIdentityProvider(idpID string, idp *model.IDP) (*model.IDP, error) {
-	if idpID == "" {
-		return nil, errors.New("IdP ID is empty")
-	}
-
-	err := store.UpdateIdentityProvider(idp)
-	if err != nil {
-		return nil, err
+		if errors.Is(err, constants.ErrIDPNotFound) {
+			return nil, &constants.ErrorIDPNotFound
+		}
+		logger.Error("Failed to get identity provider", log.String("idpID", idpID), log.Error(err))
+		return nil, &constants.ErrorInternalServerError
 	}
 
 	return idp, nil
 }
 
-// DeleteIdentityProvider delete the IdP for given IdP id.
-func (is *IDPService) DeleteIdentityProvider(idpID string) error {
-	if idpID == "" {
-		return errors.New("IdP ID is empty")
+// GetIdentityProviderByName retrieves an identity provider by its name.
+func (is *IDPService) GetIdentityProviderByName(idpName string) (*model.IdpDTO, *serviceerror.ServiceError) {
+	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, "IdPService"))
+
+	if strings.TrimSpace(idpName) == "" {
+		return nil, &constants.ErrorInvalidIDPName
 	}
 
-	err := store.DeleteIdentityProvider(idpID)
+	idp, err := is.IDPStore.GetIdentityProviderByName(idpName)
 	if err != nil {
-		return err
+		if errors.Is(err, constants.ErrIDPNotFound) {
+			return nil, &constants.ErrorIDPNotFound
+		}
+		logger.Error("Failed to get identity provider by name", log.String("idpName", idpName), log.Error(err))
+		return nil, &constants.ErrorInternalServerError
 	}
 
+	return idp, nil
+}
+
+// UpdateIdentityProvider updates an existing Identity Provider.
+func (is *IDPService) UpdateIdentityProvider(idpID string, idp *model.IdpDTO) (*model.IdpDTO,
+	*serviceerror.ServiceError) {
+	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, "IdPService"))
+
+	if strings.TrimSpace(idpID) == "" {
+		return nil, &constants.ErrorInvalidIDPID
+	}
+
+	if idp == nil {
+		return nil, &constants.ErrorIDPNil
+	}
+
+	if strings.TrimSpace(idp.Name) == "" {
+		return nil, &constants.ErrorInvalidIDPName
+	}
+
+	// Check if the identity provider exists
+	existingIDP, err := is.IDPStore.GetIdentityProvider(idpID)
+	if err != nil {
+		if errors.Is(err, constants.ErrIDPNotFound) {
+			return nil, &constants.ErrorIDPNotFound
+		}
+		logger.Error("Failed to get identity provider for update", log.String("idpID", idpID), log.Error(err))
+		return nil, &constants.ErrorInternalServerError
+	}
+	if existingIDP == nil {
+		return nil, &constants.ErrorIDPNotFound
+	}
+
+	// If the name is being updated, check whether another IdP with the same name exists
+	if existingIDP.Name != idp.Name {
+		existingIDPByName, err := is.IDPStore.GetIdentityProviderByName(idp.Name)
+		if err != nil && !errors.Is(err, constants.ErrIDPNotFound) {
+			logger.Error("Failed to check existing identity provider by name", log.Error(err),
+				log.String("idpName", idp.Name))
+			return nil, &constants.ErrorInternalServerError
+		}
+		if existingIDPByName != nil {
+			return nil, &constants.ErrorIDPAlreadyExists
+		}
+	}
+
+	// Validate properties
+	if svcErr := validateIDPProperties(idp.Properties); svcErr != nil {
+		return nil, svcErr
+	}
+
+	idp.ID = idpID
+
+	err = is.IDPStore.UpdateIdentityProvider(idp)
+	if err != nil {
+		logger.Error("Failed to update identity provider", log.Error(err), log.String("idpID", idpID))
+		return nil, &constants.ErrorInternalServerError
+	}
+
+	return idp, nil
+}
+
+// DeleteIdentityProvider deletes an Identity Provider by its ID.
+func (is *IDPService) DeleteIdentityProvider(idpID string) *serviceerror.ServiceError {
+	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, "IdPService"))
+
+	if strings.TrimSpace(idpID) == "" {
+		return &constants.ErrorInvalidIDPID
+	}
+
+	// Check if the identity provider exists
+	_, err := is.IDPStore.GetIdentityProvider(idpID)
+	if err != nil {
+		if errors.Is(err, constants.ErrIDPNotFound) {
+			return nil
+		}
+		logger.Error("Failed to get identity provider for deletion", log.Error(err), log.String("idpID", idpID))
+		return &constants.ErrorInternalServerError
+	}
+
+	err = is.IDPStore.DeleteIdentityProvider(idpID)
+	if err != nil {
+		logger.Error("Failed to delete identity provider", log.Error(err), log.String("idpID", idpID))
+		return &constants.ErrorInternalServerError
+	}
+
+	return nil
+}
+
+// validateIDPProperties validates the identity provider properties.
+func validateIDPProperties(properties []model.IdpProperty) *serviceerror.ServiceError {
+	for _, property := range properties {
+		if strings.TrimSpace(property.Name) == "" {
+			return &constants.ErrorInvalidIDPProperties
+		}
+	}
 	return nil
 }

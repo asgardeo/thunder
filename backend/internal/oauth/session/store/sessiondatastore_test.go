@@ -84,7 +84,7 @@ func (suite *SessionDataStoreTestSuite) TestAddSession() {
 		AuthenticatedUser: authndto.AuthenticatedUser{
 			IsAuthenticated: true,
 			UserID:          "user123",
-			Attributes: map[string]string{
+			Attributes: map[string]interface{}{
 				"username": "testuser",
 				"email":    "test@example.com",
 			},

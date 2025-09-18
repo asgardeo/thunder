@@ -27,6 +27,11 @@ import (
 	"github.com/asgardeo/thunder/internal/system/database/utils"
 )
 
+const (
+	// AttributesColumn represents the ATTRIBUTES column name in the database.
+	AttributesColumn = "ATTRIBUTES"
+)
+
 var (
 	// QueryGetUserCount is the query to get total count of users.
 	QueryGetUserCount = model.DBQuery{
@@ -69,7 +74,7 @@ var (
 func buildIdentifyQuery(filters map[string]interface{}) (model.DBQuery, []interface{}, error) {
 	baseQuery := "SELECT USER_ID FROM \"USER\" WHERE 1=1"
 	queryID := "ASQ-USER_MGT-08"
-	columnName := "ATTRIBUTES"
+	columnName := AttributesColumn
 	return utils.BuildFilterQuery(queryID, baseQuery, columnName, filters)
 }
 
@@ -102,4 +107,70 @@ func buildBulkUserExistsQuery(userIDs []string) (model.DBQuery, []interface{}, e
 	}
 
 	return query, args, nil
+}
+
+// buildUserListQuery constructs a query to get users with optional filtering.
+func buildUserListQuery(filters map[string]interface{}, limit, offset int) (model.DBQuery, []interface{}, error) {
+	baseQuery := "SELECT USER_ID, OU_ID, TYPE, ATTRIBUTES FROM \"USER\""
+	queryID := "ASQ-USER_MGT-10"
+	columnName := AttributesColumn
+
+	// Build the filter condition if filters are provided
+	if len(filters) > 0 {
+		filterQuery, filterArgs, err := utils.BuildFilterQuery(queryID, baseQuery+" WHERE 1=1", columnName, filters)
+		if err != nil {
+			return model.DBQuery{}, nil, err
+		}
+
+		// Build PostgreSQL query
+		postgresQuery, err := buildPaginatedQuery(filterQuery.PostgresQuery, len(filterArgs), "$")
+		if err != nil {
+			return model.DBQuery{}, nil, err
+		}
+
+		// Build SQLite query
+		sqliteQuery, err := buildPaginatedQuery(filterQuery.SQLiteQuery, len(filterArgs), "?")
+		if err != nil {
+			return model.DBQuery{}, nil, err
+		}
+
+		filterArgs = append(filterArgs, limit, offset)
+		return model.DBQuery{
+			ID:            queryID,
+			Query:         postgresQuery,
+			PostgresQuery: postgresQuery,
+			SQLiteQuery:   sqliteQuery,
+		}, filterArgs, nil
+	}
+
+	// No filters, use the original query
+	return QueryGetUserList, []interface{}{limit, offset}, nil
+}
+
+// buildPaginatedQuery constructs a paginated query string with ORDER BY, LIMIT, and OFFSET clauses.
+func buildPaginatedQuery(baseQuery string, paramCount int, placeholder string) (string, error) {
+	switch placeholder {
+	case "?":
+		return fmt.Sprintf("%s ORDER BY USER_ID LIMIT %s OFFSET %s",
+			baseQuery, placeholder, placeholder), nil
+	case "$":
+		limitPlaceholder := fmt.Sprintf("%s%d", placeholder, paramCount+1)
+		offsetPlaceholder := fmt.Sprintf("%s%d", placeholder, paramCount+2)
+		return fmt.Sprintf("%s ORDER BY USER_ID LIMIT %s OFFSET %s",
+			baseQuery, limitPlaceholder, offsetPlaceholder), nil
+	}
+	return "", fmt.Errorf("unsupported placeholder: %s", placeholder)
+}
+
+// buildUserCountQuery constructs a query to count users with optional filtering.
+func buildUserCountQuery(filters map[string]interface{}) (model.DBQuery, []interface{}, error) {
+	baseQuery := "SELECT COUNT(*) as total FROM \"USER\""
+	queryID := "ASQ-USER_MGT-11"
+	columnName := AttributesColumn
+
+	if len(filters) > 0 {
+		return utils.BuildFilterQuery(queryID, baseQuery+" WHERE 1=1", columnName, filters)
+	}
+
+	return QueryGetUserCount, []interface{}{}, nil
 }

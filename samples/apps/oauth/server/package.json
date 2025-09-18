@@ -1,12 +1,11 @@
 {
     "name": "server",
-    "version": "0.2.0",
+    "version": "0.8.0",
     "description": "Sample App Server for Thunder",
     "bin": "server.js",
     "main": "server.js",
     "pkg": {
         "assets": [
-            "app/**/*",
             "server.key",
             "server.cert"
         ],

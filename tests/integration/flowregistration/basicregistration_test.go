@@ -22,11 +22,33 @@ import (
 	"encoding/json"
 	"testing"
 
+	"github.com/asgardeo/thunder/tests/integration/testutils"
 	"github.com/stretchr/testify/suite"
 )
 
-const (
-	appID = "550e8400-e29b-41d4-a716-446655440000" // Default test app ID
+var (
+	testApp = testutils.Application{
+		Name:                      "Registration Flow Test Application",
+		Description:               "Application for testing registration flows",
+		IsRegistrationFlowEnabled: true,
+		AuthFlowGraphID:           "auth_flow_config_basic",
+		RegistrationFlowGraphID:   "registration_flow_config_basic",
+		ClientID:                  "reg_flow_test_client",
+		ClientSecret:              "reg_flow_test_secret",
+		RedirectURIs:              []string{"http://localhost:3000/callback"},
+	}
+
+	testOU = testutils.OrganizationUnit{
+		Handle:      "reg-flow-test-ou",
+		Name:        "Registration Flow Test Organization Unit",
+		Description: "Organization unit for registration flow testing",
+		Parent:      nil,
+	}
+)
+
+var (
+	testAppID string
+	testOUID  string
 )
 
 type BasicRegistrationFlowTestSuite struct {
@@ -42,30 +64,53 @@ func (ts *BasicRegistrationFlowTestSuite) SetupSuite() {
 	// Initialize config
 	ts.config = &TestSuiteConfig{}
 
-	// Store original app config
-	var err error
-	ts.config.OriginalAppConfig, err = getAppConfig(appID)
+	// Create test organization unit
+	ouID, err := testutils.CreateOrganizationUnit(testOU)
+	if err != nil {
+		ts.T().Fatalf("Failed to create test organization unit during setup: %v", err)
+	}
+	testOUID = ouID
+
+	// Create test application
+	appID, err := testutils.CreateApplication(testApp)
+	if err != nil {
+		ts.T().Fatalf("Failed to create test application during setup: %v", err)
+	}
+	testAppID = appID
+
+	// Store original app config (this will be overridden, but keeping for compatibility)
+	ts.config.OriginalAppConfig, err = getAppConfig(testAppID)
 	if err != nil {
 		ts.T().Fatalf("Failed to get original app config during setup: %v", err)
 	}
 
-	err = updateAppConfig(appID, "auth_flow_config_basic", "registration_flow_config_basic")
+	// Update app config for registration flow
+	err = updateAppConfig(testAppID, "auth_flow_config_basic", "registration_flow_config_basic")
 	if err != nil {
 		ts.T().Fatalf("Failed to update app config for basic flow: %v", err)
 	}
 }
 
 func (ts *BasicRegistrationFlowTestSuite) TearDownSuite() {
-	if ts.config.OriginalAppConfig != nil {
-		err := RestoreAppConfig(appID, ts.config.OriginalAppConfig)
-		if err != nil {
-			ts.T().Logf("Failed to restore original app config during teardown: %v", err)
+	// Clean up users created during registration tests
+	if err := testutils.CleanupUsers(ts.config.CreatedUserIDs); err != nil {
+		ts.T().Logf("Failed to cleanup users during teardown: %v", err)
+	}
+
+	// Delete test application
+	if testAppID != "" {
+		if err := testutils.DeleteApplication(testAppID); err != nil {
+			ts.T().Logf("Failed to delete test application during teardown: %v", err)
 		}
 	}
 
-	if err := CleanupUsers(ts.config.CreatedUserIDs); err != nil {
-		ts.T().Logf("Failed to cleanup users during teardown: %v", err)
+	// Delete test organization unit
+	if testOUID != "" {
+		if err := testutils.DeleteOrganizationUnit(testOUID); err != nil {
+			ts.T().Logf("Failed to delete test organization unit during teardown: %v", err)
+		}
 	}
+
 }
 
 func (ts *BasicRegistrationFlowTestSuite) TestBasicRegistrationFlowSuccess() {
@@ -73,7 +118,7 @@ func (ts *BasicRegistrationFlowTestSuite) TestBasicRegistrationFlowSuccess() {
 	username := generateUniqueUsername("reguser")
 
 	// Step 1: Initialize the registration flow
-	flowStep, err := initiateRegistrationFlow(appID, nil)
+	flowStep, err := initiateRegistrationFlow(testAppID, nil)
 	if err != nil {
 		ts.T().Fatalf("Failed to initiate registration flow: %v", err)
 	}
@@ -127,7 +172,7 @@ func (ts *BasicRegistrationFlowTestSuite) TestBasicRegistrationFlowSuccess() {
 	ts.Require().Empty(completeFlowStep.FailureReason, "Failure reason should be empty for successful registration")
 
 	// Step 5: Verify the user was created by searching via the user API
-	user, err := FindUserByAttribute("username", username)
+	user, err := testutils.FindUserByAttribute("username", username)
 	if err != nil {
 		ts.T().Fatalf("Failed to retrieve user by username: %v", err)
 	}
@@ -135,14 +180,14 @@ func (ts *BasicRegistrationFlowTestSuite) TestBasicRegistrationFlowSuccess() {
 
 	// Store the created user for cleanup
 	if user != nil {
-		ts.config.CreatedUserIDs = append(ts.config.CreatedUserIDs, user.Id)
+		ts.config.CreatedUserIDs = append(ts.config.CreatedUserIDs, user.ID)
 	}
 }
 
 func (ts *BasicRegistrationFlowTestSuite) TestBasicRegistrationFlowDuplicateUser() {
 	// Create a test user first
-	testUser := User{
-		OrganizationUnit: "456e8400-e29b-41d4-a716-446655440001",
+	testUser := testutils.User{
+		OrganizationUnit: testOUID,
 		Type:             "person",
 		Attributes: json.RawMessage(`{
 			"username": "duplicateuser",
@@ -153,14 +198,14 @@ func (ts *BasicRegistrationFlowTestSuite) TestBasicRegistrationFlowDuplicateUser
 		}`),
 	}
 
-	userIDs, err := CreateMultipleUsers(testUser)
+	userIDs, err := testutils.CreateMultipleUsers(testUser)
 	if err != nil {
 		ts.T().Fatalf("Failed to create test user for duplicate test: %v", err)
 	}
 	ts.config.CreatedUserIDs = append(ts.config.CreatedUserIDs, userIDs...)
 
 	// Step 1: Initialize the registration flow
-	flowStep, err := initiateRegistrationFlow(appID, nil)
+	flowStep, err := initiateRegistrationFlow(testAppID, nil)
 	if err != nil {
 		ts.T().Fatalf("Failed to initiate registration flow: %v", err)
 	}
@@ -186,7 +231,7 @@ func (ts *BasicRegistrationFlowTestSuite) TestBasicRegistrationFlowDuplicateUser
 
 func (ts *BasicRegistrationFlowTestSuite) TestBasicRegistrationFlowInitialInvalidInput() {
 	// Step 1: Initialize the registration flow
-	flowStep, err := initiateRegistrationFlow(appID, nil)
+	flowStep, err := initiateRegistrationFlow(testAppID, nil)
 	if err != nil {
 		ts.T().Fatalf("Failed to initiate registration flow: %v", err)
 	}
@@ -243,7 +288,7 @@ func (ts *BasicRegistrationFlowTestSuite) TestBasicRegistrationFlowInitialInvali
 	ts.Require().Empty(completeFlowStep.FailureReason, "Failure reason should be empty for successful registration")
 
 	// Step 7: Verify the user was created by searching via the user API
-	user, err := FindUserByAttribute("username", username)
+	user, err := testutils.FindUserByAttribute("username", username)
 	if err != nil {
 		ts.T().Fatalf("Failed to retrieve user by username: %v", err)
 	}
@@ -251,7 +296,7 @@ func (ts *BasicRegistrationFlowTestSuite) TestBasicRegistrationFlowInitialInvali
 
 	// Store the created user for cleanup
 	if user != nil {
-		ts.config.CreatedUserIDs = append(ts.config.CreatedUserIDs, user.Id)
+		ts.config.CreatedUserIDs = append(ts.config.CreatedUserIDs, user.ID)
 	}
 }
 
@@ -268,7 +313,7 @@ func (ts *BasicRegistrationFlowTestSuite) TestBasicRegistrationFlowSingleRequest
 		"lastName":  "Request",
 	}
 
-	flowStep, err := initiateRegistrationFlow(appID, inputs)
+	flowStep, err := initiateRegistrationFlow(testAppID, inputs)
 	if err != nil {
 		ts.T().Fatalf("Failed to initiate registration flow with inputs: %v", err)
 	}
@@ -280,7 +325,7 @@ func (ts *BasicRegistrationFlowTestSuite) TestBasicRegistrationFlowSingleRequest
 	ts.Require().Empty(flowStep.FailureReason, "Failure reason should be empty for successful registration")
 
 	// Step 3: Verify the user was created by searching via the user API
-	user, err := FindUserByAttribute("username", username)
+	user, err := testutils.FindUserByAttribute("username", username)
 	if err != nil {
 		ts.T().Fatalf("Failed to retrieve user by username: %v", err)
 	}
@@ -288,6 +333,6 @@ func (ts *BasicRegistrationFlowTestSuite) TestBasicRegistrationFlowSingleRequest
 
 	// Store the created user for cleanup
 	if user != nil {
-		ts.config.CreatedUserIDs = append(ts.config.CreatedUserIDs, user.Id)
+		ts.config.CreatedUserIDs = append(ts.config.CreatedUserIDs, user.ID)
 	}
 }

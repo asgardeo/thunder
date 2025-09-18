@@ -19,6 +19,7 @@
 package granthandlers
 
 import (
+	"encoding/json"
 	"errors"
 	"testing"
 	"time"
@@ -33,18 +34,21 @@ import (
 	"github.com/asgardeo/thunder/internal/oauth/oauth2/constants"
 	"github.com/asgardeo/thunder/internal/oauth/oauth2/model"
 	"github.com/asgardeo/thunder/internal/system/config"
+	usermodel "github.com/asgardeo/thunder/internal/user/model"
 	"github.com/asgardeo/thunder/tests/mocks/jwtmock"
 	"github.com/asgardeo/thunder/tests/mocks/oauth/oauth2/authz/storemock"
+	usersvcmock "github.com/asgardeo/thunder/tests/mocks/user/servicemock"
 )
 
 type AuthorizationCodeGrantHandlerTestSuite struct {
 	suite.Suite
-	handler        *authorizationCodeGrantHandler
-	mockJWTService *jwtmock.JWTServiceInterfaceMock
-	mockAuthZStore *storemock.AuthorizationCodeStoreInterfaceMock
-	oauthApp       *appmodel.OAuthAppConfigProcessedDTO
-	testAuthzCode  authzmodel.AuthorizationCode
-	testTokenReq   *model.TokenRequest
+	handler         *authorizationCodeGrantHandler
+	mockJWTService  *jwtmock.JWTServiceInterfaceMock
+	mockAuthZStore  *storemock.AuthorizationCodeStoreInterfaceMock
+	mockUserService *usersvcmock.UserServiceInterfaceMock
+	oauthApp        *appmodel.OAuthAppConfigProcessedDTO
+	testAuthzCode   authzmodel.AuthorizationCode
+	testTokenReq    *model.TokenRequest
 }
 
 func TestAuthorizationCodeGrantHandlerSuite(t *testing.T) {
@@ -64,10 +68,12 @@ func (suite *AuthorizationCodeGrantHandlerTestSuite) SetupTest() {
 
 	suite.mockJWTService = &jwtmock.JWTServiceInterfaceMock{}
 	suite.mockAuthZStore = &storemock.AuthorizationCodeStoreInterfaceMock{}
+	suite.mockUserService = usersvcmock.NewUserServiceInterfaceMock(suite.T())
 
 	suite.handler = &authorizationCodeGrantHandler{
-		JWTService: suite.mockJWTService,
-		AuthZStore: suite.mockAuthZStore,
+		JWTService:  suite.mockJWTService,
+		AuthZStore:  suite.mockAuthZStore,
+		UserService: suite.mockUserService,
 	}
 
 	suite.oauthApp = &appmodel.OAuthAppConfigProcessedDTO{
@@ -78,6 +84,11 @@ func (suite *AuthorizationCodeGrantHandlerTestSuite) SetupTest() {
 		ResponseTypes:      []constants.ResponseType{constants.ResponseTypeCode},
 		TokenEndpointAuthMethod: []constants.TokenEndpointAuthMethod{
 			constants.TokenEndpointAuthMethodClientSecretPost},
+		Token: &appmodel.OAuthTokenConfig{
+			AccessToken: &appmodel.TokenConfig{
+				UserAttributes: []string{"email", "username"},
+			},
+		},
 	}
 
 	suite.testTokenReq = &model.TokenRequest{
@@ -183,9 +194,16 @@ func (suite *AuthorizationCodeGrantHandlerTestSuite) TestHandleGrant_Success() {
 		Return(suite.testAuthzCode, nil)
 	suite.mockAuthZStore.On("DeactivateAuthorizationCode", suite.testAuthzCode).Return(nil)
 
+	// Mock user service to return user for attributes
+	mockUser := &usermodel.User{
+		ID:         "test-user-id",
+		Attributes: json.RawMessage(`{"email":"test@example.com","username":"testuser"}`),
+	}
+	suite.mockUserService.On("GetUser", "test-user-id").Return(mockUser, nil)
+
 	// Mock JWT service to generate token
 	suite.mockJWTService.On("GenerateJWT", "test-user-id", "test-client-id",
-		mock.AnythingOfType("int64"), mock.AnythingOfType("map[string]string")).
+		mock.AnythingOfType("string"), mock.AnythingOfType("int64"), mock.AnythingOfType("map[string]interface {}")).
 		Return("test-jwt-token", int64(3600), nil)
 
 	ctx := &model.TokenContext{
@@ -276,9 +294,16 @@ func (suite *AuthorizationCodeGrantHandlerTestSuite) TestHandleGrant_JWTGenerati
 		Return(suite.testAuthzCode, nil)
 	suite.mockAuthZStore.On("DeactivateAuthorizationCode", suite.testAuthzCode).Return(nil)
 
+	// Mock user service to return user for attributes
+	mockUser := &usermodel.User{
+		ID:         "test-user-id",
+		Attributes: json.RawMessage(`{"email":"test@example.com","username":"testuser"}`),
+	}
+	suite.mockUserService.On("GetUser", "test-user-id").Return(mockUser, nil)
+
 	// Mock JWT service to fail token generation
 	suite.mockJWTService.On("GenerateJWT", "test-user-id", "test-client-id",
-		mock.AnythingOfType("int64"), mock.AnythingOfType("map[string]string")).
+		mock.AnythingOfType("string"), mock.AnythingOfType("int64"), mock.AnythingOfType("map[string]interface {}")).
 		Return("", int64(0), errors.New("jwt generation failed"))
 
 	ctx := &model.TokenContext{
@@ -305,8 +330,15 @@ func (suite *AuthorizationCodeGrantHandlerTestSuite) TestHandleGrant_EmptyScopes
 		Return(authzCodeWithEmptyScopes, nil)
 	suite.mockAuthZStore.On("DeactivateAuthorizationCode", authzCodeWithEmptyScopes).Return(nil)
 
+	// Mock user service to return user for attributes
+	mockUser := &usermodel.User{
+		ID:         "test-user-id",
+		Attributes: json.RawMessage(`{"email":"test@example.com","username":"testuser"}`),
+	}
+	suite.mockUserService.On("GetUser", "test-user-id").Return(mockUser, nil)
+
 	suite.mockJWTService.On("GenerateJWT", "test-user-id", "test-client-id",
-		mock.AnythingOfType("int64"), mock.AnythingOfType("map[string]string")).
+		mock.AnythingOfType("string"), mock.AnythingOfType("int64"), mock.AnythingOfType("map[string]interface {}")).
 		Return("test-jwt-token", int64(3600), nil)
 
 	ctx := &model.TokenContext{
@@ -329,8 +361,15 @@ func (suite *AuthorizationCodeGrantHandlerTestSuite) TestHandleGrant_NilTokenAtt
 		Return(suite.testAuthzCode, nil)
 	suite.mockAuthZStore.On("DeactivateAuthorizationCode", suite.testAuthzCode).Return(nil)
 
+	// Mock user service to return user for attributes
+	mockUser := &usermodel.User{
+		ID:         "test-user-id",
+		Attributes: json.RawMessage(`{"email":"test@example.com","username":"testuser"}`),
+	}
+	suite.mockUserService.On("GetUser", "test-user-id").Return(mockUser, nil)
+
 	suite.mockJWTService.On("GenerateJWT", "test-user-id", "test-client-id",
-		mock.AnythingOfType("int64"), mock.AnythingOfType("map[string]string")).
+		mock.AnythingOfType("string"), mock.AnythingOfType("int64"), mock.AnythingOfType("map[string]interface {}")).
 		Return("test-jwt-token", int64(3600), nil)
 
 	ctx := &model.TokenContext{

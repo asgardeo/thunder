@@ -68,3 +68,14 @@ func DeepCopyMapOfClonables[T ClonableInterface](src map[string]T) (map[string]T
 	}
 	return dst, nil
 }
+
+// MergeInterfaceMaps merges two maps of interface{} and returns the result.
+func MergeInterfaceMaps(dst, src map[string]interface{}) map[string]interface{} {
+	if dst == nil {
+		dst = make(map[string]interface{})
+	}
+	for k, v := range src {
+		dst[k] = v
+	}
+	return dst
+}

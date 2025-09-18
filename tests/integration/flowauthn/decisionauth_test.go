@@ -33,9 +33,26 @@ const (
 )
 
 var (
-	testUserWithMobileDecision = User{
-		OrganizationUnit: "456e8400-e29b-41d4-a716-446655440001",
-		Type:             "person",
+	decisionTestApp = testutils.Application{
+		Name:                      "Decision Flow Test Application",
+		Description:               "Application for testing decision flows",
+		IsRegistrationFlowEnabled: false,
+		AuthFlowGraphID:           "auth_flow_config_decision_and_mfa_test_1",
+		RegistrationFlowGraphID:   "registration_flow_config_basic",
+		ClientID:                  "decision_flow_test_client",
+		ClientSecret:              "decision_flow_test_secret",
+		RedirectURIs:              []string{"http://localhost:3000/callback"},
+	}
+
+	decisionTestOU = testutils.OrganizationUnit{
+		Handle:      "decision-flow-test-ou",
+		Name:        "Decision Flow Test Organization Unit",
+		Description: "Organization unit for decision flow testing",
+		Parent:      nil,
+	}
+
+	testUserWithMobileDecision = testutils.User{
+		Type: "person",
 		Attributes: json.RawMessage(`{
 			"username": "decisionuser1",
 			"password": "testpassword",
@@ -46,9 +63,8 @@ var (
 		}`),
 	}
 
-	testUserWithoutMobileDecision = User{
-		OrganizationUnit: "456e8400-e29b-41d4-a716-446655440001",
-		Type:             "person",
+	testUserWithoutMobileDecision = testutils.User{
+		Type: "person",
 		Attributes: json.RawMessage(`{
 			"username": "decisionuser2",
 			"password": "testpassword",
@@ -57,6 +73,11 @@ var (
 			"lastName": "User2"
 		}`),
 	}
+)
+
+var (
+	decisionTestAppID string
+	decisionTestOUID  string
 )
 
 type DecisionAndMFAFlowTestSuite struct {
@@ -73,17 +94,36 @@ func (ts *DecisionAndMFAFlowTestSuite) SetupSuite() {
 	// Initialize config
 	ts.config = &TestSuiteConfig{}
 
+	// Create test organization unit for decision tests
+	ouID, err := testutils.CreateOrganizationUnit(decisionTestOU)
+	if err != nil {
+		ts.T().Fatalf("Failed to create test organization unit during setup: %v", err)
+	}
+	decisionTestOUID = ouID
+
+	// Create test application for decision tests
+	appID, err := testutils.CreateApplication(decisionTestApp)
+	if err != nil {
+		ts.T().Fatalf("Failed to create test application during setup: %v", err)
+	}
+	decisionTestAppID = appID
+
 	// Start mock notification server
 	ts.mockServer = testutils.NewMockNotificationServer(mockDecisionNotificationServerPort)
-	err := ts.mockServer.Start()
+	err = ts.mockServer.Start()
 	if err != nil {
 		ts.T().Fatalf("Failed to start mock notification server: %v", err)
 	}
 	time.Sleep(100 * time.Millisecond)
 	ts.T().Log("Mock notification server started successfully")
 
-	// Create test users
-	userIDs, err := CreateMultipleUsers(testUserWithMobileDecision, testUserWithoutMobileDecision)
+	// Create test users with the created OU
+	userWithMobile := testUserWithMobileDecision
+	userWithMobile.OrganizationUnit = decisionTestOUID
+	userWithoutMobile := testUserWithoutMobileDecision
+	userWithoutMobile.OrganizationUnit = decisionTestOUID
+
+	userIDs, err := testutils.CreateMultipleUsers(userWithMobile, userWithoutMobile)
 	if err != nil {
 		ts.T().Fatalf("Failed to create test users during setup: %v", err)
 	}
@@ -98,28 +138,20 @@ func (ts *DecisionAndMFAFlowTestSuite) SetupSuite() {
 	ts.config.CreatedSenderID = senderID
 	ts.T().Logf("Notification sender created with ID: %s", ts.config.CreatedSenderID)
 
-	// Store original app config
-	ts.config.OriginalAppConfig, err = getAppConfig(appID)
+	// Store original app config (this will be the created app config)
+	ts.config.OriginalAppConfig, err = getAppConfig(decisionTestAppID)
 	if err != nil {
 		ts.T().Fatalf("Failed to get original app config during setup: %v", err)
 	}
 
 	// Update app to use decision flow template
-	err = updateAppConfig(appID, "auth_flow_config_decision_and_mfa_test_1")
+	err = updateAppConfig(decisionTestAppID, "auth_flow_config_decision_and_mfa_test_1")
 	if err != nil {
 		ts.T().Fatalf("Failed to update app config for decision flow: %v", err)
 	}
 }
 
 func (ts *DecisionAndMFAFlowTestSuite) TearDownSuite() {
-	// Restore original app config
-	if ts.config.OriginalAppConfig != nil {
-		err := RestoreAppConfig(appID, ts.config.OriginalAppConfig)
-		if err != nil {
-			ts.T().Logf("Failed to restore original app config during teardown: %v", err)
-		}
-	}
-
 	// Delete notification sender
 	if ts.config.CreatedSenderID != "" {
 		err := DeleteNotificationSender(ts.config.CreatedSenderID)
@@ -129,7 +161,7 @@ func (ts *DecisionAndMFAFlowTestSuite) TearDownSuite() {
 	}
 
 	// Delete test users
-	if err := CleanupUsers(ts.config.CreatedUserIDs); err != nil {
+	if err := testutils.CleanupUsers(ts.config.CreatedUserIDs); err != nil {
 		ts.T().Logf("Failed to cleanup users during teardown: %v", err)
 	}
 
@@ -140,11 +172,26 @@ func (ts *DecisionAndMFAFlowTestSuite) TearDownSuite() {
 			ts.T().Logf("Failed to stop mock notification server during teardown: %v", err)
 		}
 	}
+
+	// Delete test application
+	if decisionTestAppID != "" {
+		if err := testutils.DeleteApplication(decisionTestAppID); err != nil {
+			ts.T().Logf("Failed to delete test application during teardown: %v", err)
+		}
+	}
+
+	// Delete test organization unit
+	if decisionTestOUID != "" {
+		if err := testutils.DeleteOrganizationUnit(decisionTestOUID); err != nil {
+			ts.T().Logf("Failed to delete test organization unit during teardown: %v", err)
+		}
+	}
+
 }
 
 func (ts *DecisionAndMFAFlowTestSuite) TestBasicAuthWithMobileUserSMSOTP() {
 	// Step 1: Initialize the flow - should present decision choice
-	flowStep, err := initiateAuthFlow(appID, nil)
+	flowStep, err := initiateAuthFlow(decisionTestAppID, nil)
 	if err != nil {
 		ts.T().Fatalf("Failed to initiate authentication flow: %v", err)
 	}
@@ -178,7 +225,7 @@ func (ts *DecisionAndMFAFlowTestSuite) TestBasicAuthWithMobileUserSMSOTP() {
 		"Username and password inputs should be required")
 
 	// Step 3: Provide username and password
-	userAttrs, err := GetUserAttributes(testUserWithMobileDecision)
+	userAttrs, err := testutils.GetUserAttributes(testUserWithMobileDecision)
 	ts.Require().NoError(err, "Failed to get user attributes")
 
 	basicInputs := map[string]string{
@@ -236,7 +283,7 @@ func (ts *DecisionAndMFAFlowTestSuite) TestBasicAuthWithoutMobileUserSMSOTP() {
 	// Test case 1: Authentication with basic auth with user not having mobile, provide mobile, then SMS OTP
 	ts.Run("TestBasicAuthWithoutMobileUserSMSOTP_ProvideMobile", func() {
 		// Step 1: Initialize the flow - should present decision choice
-		flowStep, err := initiateAuthFlow(appID, nil)
+		flowStep, err := initiateAuthFlow(decisionTestAppID, nil)
 		if err != nil {
 			ts.T().Fatalf("Failed to initiate authentication flow: %v", err)
 		}
@@ -345,7 +392,7 @@ func (ts *DecisionAndMFAFlowTestSuite) TestBasicAuthWithoutMobileUserSMSOTP() {
 	// Test case 2: Retry auth flow for same user - should not prompt for mobile again
 	ts.Run("TestBasicAuthWithoutMobileUserSMSOTP_RetryAuth", func() {
 		// Step 1: Initialize the flow - should present decision choice
-		flowStep, err := initiateAuthFlow(appID, nil)
+		flowStep, err := initiateAuthFlow(decisionTestAppID, nil)
 		if err != nil {
 			ts.T().Fatalf("Failed to initiate authentication flow: %v", err)
 		}
@@ -443,7 +490,7 @@ func (ts *DecisionAndMFAFlowTestSuite) TestBasicAuthWithoutMobileUserSMSOTP() {
 
 func (ts *DecisionAndMFAFlowTestSuite) TestSMSOTPAuthWithValidMobile() {
 	// Step 1: Initialize the flow - should present decision choice
-	flowStep, err := initiateAuthFlow(appID, nil)
+	flowStep, err := initiateAuthFlow(decisionTestAppID, nil)
 	if err != nil {
 		ts.T().Fatalf("Failed to initiate authentication flow: %v", err)
 	}
@@ -540,7 +587,7 @@ func (ts *DecisionAndMFAFlowTestSuite) TestSMSOTPAuthWithInvalidMobile() {
 	ts.T().Log("Test Case 5: Authentication with SMS OTP decision - invalid mobile should fail")
 
 	// Step 1: Initialize the flow - should present decision choice
-	flowStep, err := initiateAuthFlow(appID, nil)
+	flowStep, err := initiateAuthFlow(decisionTestAppID, nil)
 	if err != nil {
 		ts.T().Fatalf("Failed to initiate authentication flow: %v", err)
 	}

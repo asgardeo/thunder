@@ -25,6 +25,7 @@ import (
 	appmodel "github.com/asgardeo/thunder/internal/application/model"
 	"github.com/asgardeo/thunder/internal/oauth/oauth2/constants"
 	"github.com/asgardeo/thunder/internal/oauth/oauth2/model"
+	"github.com/asgardeo/thunder/internal/system/config"
 	"github.com/asgardeo/thunder/internal/system/jwt"
 )
 
@@ -72,12 +73,27 @@ func (h *clientCredentialsGrantHandler) HandleGrant(tokenRequest *model.TokenReq
 	}
 
 	// Generate a JWT token for the client.
-	jwtClaims := make(map[string]string)
+	jwtClaims := make(map[string]interface{})
 	if scopeString != "" {
 		jwtClaims["scope"] = scopeString
 	}
-	token, _, err := h.JWTService.GenerateJWT(tokenRequest.ClientID, tokenRequest.ClientID,
-		jwt.GetJWTTokenValidityPeriod(), jwtClaims)
+
+	// Get token configuration from OAuth app
+	iss := ""
+	validityPeriod := int64(0)
+	if oauthApp.Token != nil && oauthApp.Token.AccessToken != nil {
+		iss = oauthApp.Token.AccessToken.Issuer
+		validityPeriod = oauthApp.Token.AccessToken.ValidityPeriod
+	}
+	if iss == "" {
+		iss = config.GetThunderRuntime().Config.OAuth.JWT.Issuer
+	}
+	if validityPeriod == 0 {
+		validityPeriod = config.GetThunderRuntime().Config.OAuth.JWT.ValidityPeriod
+	}
+
+	token, _, err := h.JWTService.GenerateJWT(tokenRequest.ClientID, tokenRequest.ClientID, iss,
+		validityPeriod, jwtClaims)
 	if err != nil {
 		return nil, &model.ErrorResponse{
 			Error:            constants.ErrorServerError,

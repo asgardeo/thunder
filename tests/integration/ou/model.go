@@ -18,6 +18,10 @@
 
 package ou
 
+import (
+	"github.com/asgardeo/thunder/tests/integration/testutils"
+)
+
 // OrganizationUnitBasic represents the basic information of an organization unit.
 type OrganizationUnitBasic struct {
 	ID          string `json:"id"`
@@ -51,19 +55,13 @@ type UpdateOURequest struct {
 	Parent      *string `json:"parent,omitempty"`
 }
 
-// Link represents a pagination link.
-type Link struct {
-	Href string `json:"href"`
-	Rel  string `json:"rel"`
-}
-
 // OrganizationUnitListResponse represents the response for listing organization units with pagination.
 type OrganizationUnitListResponse struct {
 	TotalResults      int                     `json:"totalResults"`
 	StartIndex        int                     `json:"startIndex"`
 	Count             int                     `json:"count"`
 	OrganizationUnits []OrganizationUnitBasic `json:"organizationUnits"`
-	Links             []Link                  `json:"links"`
+	Links             []testutils.Link        `json:"links"`
 }
 
 // User represents a user with basic information for OU endpoints.
@@ -77,22 +75,13 @@ type Group struct {
 	Name string `json:"name"`
 }
 
-// UserListResponse represents the response for listing users in an organization unit.
-type UserListResponse struct {
-	TotalResults int    `json:"totalResults"`
-	StartIndex   int    `json:"startIndex"`
-	Count        int    `json:"count"`
-	Users        []User `json:"users"`
-	Links        []Link `json:"links"`
-}
-
 // GroupListResponse represents the response for listing groups in an organization unit.
 type GroupListResponse struct {
-	TotalResults int     `json:"totalResults"`
-	StartIndex   int     `json:"startIndex"`
-	Count        int     `json:"count"`
-	Groups       []Group `json:"groups"`
-	Links        []Link  `json:"links"`
+	TotalResults int              `json:"totalResults"`
+	StartIndex   int              `json:"startIndex"`
+	Count        int              `json:"count"`
+	Groups       []Group          `json:"groups"`
+	Links        []testutils.Link `json:"links"`
 }
 
 // ErrorResponse represents an error response.

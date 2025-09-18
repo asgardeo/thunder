@@ -205,49 +205,6 @@ function initialize_databases() {
     echo "================================================================"
 }
 
-function seed_databases() {
-    echo "================================================================"
-    local override=$1
-    if [[ -z "$override" ]]; then
-        override=false
-    fi
-
-    echo "Seeding SQLite databases with initial data..."
-
-    db_files=("thunderdb.db")
-    seed_script_paths=("thunderdb/seed_data_sqlite.sql")
-
-    for ((i = 0; i < ${#db_files[@]}; i++)); do
-        db_file="${db_files[$i]}"
-        seed_script_rel_path="${seed_script_paths[$i]}"
-        db_path="$REPOSITORY_DB_DIR/$db_file"
-        seed_script_path="$SERVER_DB_SCRIPTS_DIR/$seed_script_rel_path"
-
-        if [[ -f "$seed_script_path" ]]; then
-            if [[ -f "$db_path" ]]; then
-                echo " - Seeding $db_file using $seed_script_path"
-                
-                if $override; then
-                    "$SERVER_SCRIPTS_DIR/seed_data.sh" -type sqlite -seed "$seed_script_path" -path "$db_path" -force
-                else
-                    "$SERVER_SCRIPTS_DIR/seed_data.sh" -type sqlite -seed "$seed_script_path" -path "$db_path"
-                fi
-                
-                if [[ $? -ne 0 ]]; then
-                    echo " ! Failed to seed $db_file"
-                    exit 1
-                fi
-            else
-                echo " ! Skipping $db_file seeding: Database file not found at $db_path"
-            fi
-        else
-            echo " ! Skipping $db_file seeding: Seed script not found at $seed_script_path"
-        fi
-    done
-
-    echo "SQLite database seeding complete."
-    echo "================================================================"
-}
 
 function prepare_backend_for_packaging() {
     echo "================================================================"
@@ -443,9 +400,6 @@ function run() {
 
     echo "Initializing databases..."
     initialize_databases
-    
-    echo "Seeding databases with initial data..."
-    seed_databases
 
     # Kill known ports
     function kill_port() {

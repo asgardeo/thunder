@@ -21,29 +21,9 @@ package user
 import (
 	"encoding/json"
 	"sort"
+
+	"github.com/asgardeo/thunder/tests/integration/testutils"
 )
-
-type User struct {
-	Id               string          `json:"id"`
-	OrganizationUnit string          `json:"organizationUnit"`
-	Type             string          `json:"type"`
-	Attributes       json.RawMessage `json:"attributes"`
-}
-
-// Link represents a pagination link.
-type Link struct {
-	Href string `json:"href"`
-	Rel  string `json:"rel"`
-}
-
-// UserListResponse represents the response for listing users with pagination.
-type UserListResponse struct {
-	TotalResults int    `json:"totalResults"`
-	StartIndex   int    `json:"startIndex"`
-	Count        int    `json:"count"`
-	Users        []User `json:"users"`
-	Links        []Link `json:"links"`
-}
 
 // UserGroup represents a group with basic information for user endpoints.
 type UserGroup struct {
@@ -60,29 +40,33 @@ type AuthenticateUserResponse struct {
 
 // UserGroupListResponse represents the response for listing groups that a user belongs to.
 type UserGroupListResponse struct {
-	TotalResults int         `json:"totalResults"`
-	StartIndex   int         `json:"startIndex"`
-	Count        int         `json:"count"`
-	Groups       []UserGroup `json:"groups"`
-	Links        []Link      `json:"links"`
+	TotalResults int              `json:"totalResults"`
+	StartIndex   int              `json:"startIndex"`
+	Count        int              `json:"count"`
+	Groups       []UserGroup      `json:"groups"`
+	Links        []testutils.Link `json:"links"`
 }
 
-func compareStringSlices(a, b []string) bool {
-
-	if len(a) != len(b) {
-		return false
-	}
-	for i := range a {
-		if a[i] != b[i] {
-			return false
-		}
-	}
-	return true
+// OUCreateRequest represents the request body for creating an organization unit.
+type OUCreateRequest struct {
+	Handle      string  `json:"handle"`
+	Name        string  `json:"name"`
+	Description string  `json:"description,omitempty"`
+	Parent      *string `json:"parent,omitempty"`
 }
 
-// compare and validate whether two users have equal content
-func (user *User) equals(expectedUser User) bool {
-	if user.Id != expectedUser.Id || user.OrganizationUnit != expectedUser.OrganizationUnit || user.Type != expectedUser.Type {
+// OUResponse represents an organization unit response.
+type OUResponse struct {
+	ID          string  `json:"id"`
+	Handle      string  `json:"handle"`
+	Name        string  `json:"name"`
+	Description string  `json:"description,omitempty"`
+	Parent      *string `json:"parent"`
+}
+
+// Equals compares two testutils.User for equality
+func Equals(user, expectedUser testutils.User) bool {
+	if user.ID != expectedUser.ID || user.OrganizationUnit != expectedUser.OrganizationUnit || user.Type != expectedUser.Type {
 		return false
 	}
 
@@ -95,15 +79,28 @@ func (user *User) equals(expectedUser User) bool {
 		return false
 	}
 
-	return compareStringSlices(user.getSortedKeys(attr1), user.getSortedKeys(attr2))
+	return compareStringSlices(getSortedKeys(attr1), getSortedKeys(attr2))
 }
 
-// getSortedKeys returns the sorted keys of a map for consistent comparison
-func (user *User) getSortedKeys(m map[string]interface{}) []string {
+// getSortedKeys returns sorted keys from a map
+func getSortedKeys(m map[string]interface{}) []string {
 	keys := make([]string, 0, len(m))
 	for k := range m {
 		keys = append(keys, k)
 	}
 	sort.Strings(keys)
 	return keys
+}
+
+// compareStringSlices compares two string slices
+func compareStringSlices(a, b []string) bool {
+	if len(a) != len(b) {
+		return false
+	}
+	for i := range a {
+		if a[i] != b[i] {
+			return false
+		}
+	}
+	return true
 }

@@ -18,7 +18,7 @@
 
 # WSO2 Thunder Docker Image
 # Build stage - compile the Go binary for the target architecture
-FROM golang:1.24-alpine AS builder
+FROM golang:1.25-alpine AS builder
 
 # Install build dependencies
 RUN apk add --no-cache git make bash sqlite openssl zip
@@ -29,8 +29,29 @@ WORKDIR /app
 # Copy the entire source code
 COPY . .
 
+# Accept build arguments for certificate files
+ARG CERT_FILE
+ARG KEY_FILE
+
 # Modify the hostname in the deployment configuration
 RUN sed -i 's/hostname: "localhost"/hostname: "0.0.0.0"/' backend/cmd/server/repository/conf/deployment.yaml
+
+# Handle shared certificates - use provided certificates or generate new ones
+RUN if [ -n "$CERT_FILE" ] && [ -n "$KEY_FILE" ] && [ -f "$CERT_FILE" ] && [ -f "$KEY_FILE" ]; then \
+        echo "🔐 Using shared certificates: $CERT_FILE and $KEY_FILE"; \
+        mkdir -p target/out/.cert; \
+        cp "$CERT_FILE" target/out/.cert/server.cert; \
+        cp "$KEY_FILE" target/out/.cert/server.key; \
+        echo "✅ Shared certificates copied successfully"; \
+    else \
+        echo "🔐 Generating new certificates (shared certificates not found)"; \
+        mkdir -p target/out/.cert; \
+        openssl req -x509 -nodes -days 365 -newkey rsa:2048 \
+            -keyout target/out/.cert/server.key \
+            -out target/out/.cert/server.cert \
+            -subj "/O=WSO2/OU=Thunder/CN=localhost"; \
+        echo "✅ New certificates generated"; \
+    fi
 
 # Build the binary for the target architecture
 ARG TARGETARCH
@@ -56,7 +77,7 @@ RUN apk add --no-cache \
     unzip
 
 # Create thunder user and group
-RUN addgroup -S thunder && adduser -S thunder -G thunder
+RUN addgroup -S thunder -g 802 && adduser -S thunder -u 802 -G thunder
 
 # Create application directory
 WORKDIR /opt/thunder

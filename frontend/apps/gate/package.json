@@ -20,14 +20,14 @@
     "@typescript-eslint/eslint-plugin": "^8.32.1",
     "@typescript-eslint/parser": "^8.32.1",
     "axios": "^1.10.0",
-    "next": "15.3.3",
+    "next": "15.5.2",
     "react": "^19.0.0",
     "react-dom": "^19.0.0"
   },
   "devDependencies": {
     "@eslint/compat": "^1.2.9",
     "@eslint/eslintrc": "^3.3.1",
-    "@next/eslint-plugin-next": "^15.1.8",
+    "@next/eslint-plugin-next": "^15.5.2",
     "@types/axios": "^0.14.4",
     "@types/node": "^20",
     "@types/react": "^19",
@@ -36,11 +36,11 @@
     "@wso2/prettier-config": "https://gitpkg.now.sh/brionmario/wso2-ui-configs/packages/prettier-config?4ee6f6be232d7631999d709a86b91612f1d34ce7",
     "@wso2/stylelint-config": "https://gitpkg.now.sh/brionmario/wso2-ui-configs/packages/stylelint-config?4ee6f6be232d7631999d709a86b91612f1d34ce7",
     "eslint": "^9.27.0",
-    "eslint-config-next": "^15.1.8",
+    "eslint-config-next": "^15.5.2",
     "eslint-config-prettier": "^10.1.5",
     "eslint-plugin-headers": "^1.3.1",
     "eslint-plugin-prettier": "^5.4.0",
-    "nx": "20.8.0",
+    "nx": "21.4.1",
     "prettier": "^3.5.3",
     "typescript": "^5"
   }

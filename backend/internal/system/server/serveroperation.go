@@ -20,11 +20,10 @@
 package server
 
 import (
-	"errors"
 	"net/http"
 
 	"github.com/asgardeo/thunder/internal/system/cache"
-	dbprovider "github.com/asgardeo/thunder/internal/system/database/provider"
+	"github.com/asgardeo/thunder/internal/system/config"
 	"github.com/asgardeo/thunder/internal/system/log"
 	"github.com/asgardeo/thunder/internal/system/utils"
 )
@@ -37,14 +36,12 @@ type ServerOperationServiceInterface interface {
 
 // ServerOperationService implements the ServerOperationServiceInterface.
 type ServerOperationService struct {
-	DBProvider  dbprovider.DBProviderInterface
 	OriginCache cache.CacheInterface[[]string]
 }
 
 // NewServerOperationService creates a new instance of ServerOperationService.
 func NewServerOperationService() ServerOperationServiceInterface {
 	return &ServerOperationService{
-		DBProvider:  dbprovider.NewDBProvider(),
 		OriginCache: cache.GetCache[[]string]("OriginCache"),
 	}
 }
@@ -53,18 +50,15 @@ func NewServerOperationService() ServerOperationServiceInterface {
 func (ops *ServerOperationService) WrapHandleFunction(mux *http.ServeMux, pattern string, options *RequestWrapOptions,
 	handlerFunc http.HandlerFunc) {
 	mux.HandleFunc(pattern, func(w http.ResponseWriter, r *http.Request) {
-		logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, "ServerOperationService"))
-		if err := ops.addAllowedOriginHeaders(w, r, options); err != nil {
-			logger.Error("Failed to add allowed origin to the response", log.Error(err))
-		}
+		ops.addAllowedOriginHeaders(w, r, options)
 
 		// Return the handler function
 		handlerFunc(w, r)
 	})
 }
 
-// getAllowedOrigins retrieves the list of allowed origins from the database.
-func (ops *ServerOperationService) getAllowedOrigins() ([]string, error) {
+// getAllowedOrigins retrieves the list of allowed origins from configuration.
+func (ops *ServerOperationService) getAllowedOrigins() []string {
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, "ServerOperationService"))
 
 	// TODO: Revisit this when adding support for the organization concept.
@@ -74,54 +68,33 @@ func (ops *ServerOperationService) getAllowedOrigins() ([]string, error) {
 	originList, ok := ops.OriginCache.Get(cacheKey)
 
 	if !ok {
-		dbClient, err := ops.DBProvider.GetDBClient("identity")
-		if err != nil {
-			logger.Error("Failed to get database client", log.Error(err))
-			return nil, err
-		}
-		defer func() {
-			if closeErr := dbClient.Close(); closeErr != nil {
-				logger.Error("Error closing database client", log.Error(closeErr))
-			}
-		}()
+		// Get origins from configuration
+		runtimeConfig := config.GetThunderRuntime()
+		originList = runtimeConfig.Config.CORS.AllowedOrigins
 
-		results, err := dbClient.Query(QueryAllowedOrigins)
-		if err != nil {
-			logger.Error("Failed to execute query", log.Error(err))
-			return nil, err
+		if len(originList) == 0 {
+			logger.Debug("No allowed origins configured in deployment.yaml")
+			originList = []string{} // Return empty list if no origins configured
+		} else {
+			logger.Debug("Using allowed origins from configuration", log.Int("count", len(originList)))
 		}
-		if len(results) == 0 {
-			logger.Debug("No allowed origins found")
-			return []string{}, nil
-		}
-
-		row := results[0]
-		allowedOrigins, ok := row["allowed_origins"].(string)
-		if !ok {
-			logger.Error("Failed to parse allowed_origins as string")
-			return nil, err
-		}
-		originList = utils.ParseStringArray(allowedOrigins, ",")
 
 		if err := ops.OriginCache.Set(cacheKey, originList); err != nil {
 			logger.Error("Failed to cache allowed origins", log.Error(err))
 		}
 	}
 
-	return originList, nil
+	return originList
 }
 
 // addAllowedOriginHeaders sets the CORS headers for the response based on the configured allowed origins.
 func (ops *ServerOperationService) addAllowedOriginHeaders(w http.ResponseWriter, r *http.Request,
-	options *RequestWrapOptions) error {
-	allowedOrigins, err := ops.getAllowedOrigins()
-	if err != nil {
-		return errors.New("failed to get allowed origins")
-	}
+	options *RequestWrapOptions) {
+	allowedOrigins := ops.getAllowedOrigins()
 
 	requestOrigin := r.Header.Get("Origin")
 	if requestOrigin == "" {
-		return nil
+		return
 	}
 
 	// Set the CORS headers if allowed origins are configured.
@@ -139,6 +112,4 @@ func (ops *ServerOperationService) addAllowedOriginHeaders(w http.ResponseWriter
 			w.Header().Set("Access-Control-Allow-Credentials", "true")
 		}
 	}
-
-	return nil
 }

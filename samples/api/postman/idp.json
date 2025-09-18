@@ -37,7 +37,7 @@
         "header": [],
         "body": {
           "mode": "raw",
-          "raw": "{\n  \"name\": \"Github\",\n  \"description\": \"Login with Github\",\n  \"client_id\": \"client1\",\n  \"client_secret\": \"secret1\",\n  \"redirect_uri\": \"https://localhost:8090/flow/authn\",\n  \"scopes\": [\n      \"user:email\",\n      \"read:user\"\n    ]\n}",
+          "raw": "{\n  \"name\": \"Github\",\n  \"description\": \"Login with Github\",\n  \"properties\": [\n    {\n      \"name\": \"client_id\",\n      \"value\": \"client1\",\n      \"is_secret\": false\n    },\n    {\n      \"name\": \"client_secret\",\n      \"value\": \"secret1\",\n      \"is_secret\": true\n    },\n    {\n      \"name\": \"redirect_uri\",\n      \"value\": \"https://localhost:8090/flow/authn\",\n      \"is_secret\": false\n    },\n    {\n      \"name\": \"scopes\",\n      \"value\": \"user:email,read:user\",\n      \"is_secret\": false\n    }\n  ]\n}",
           "options": {
             "raw": {
               "headerFamily": "json",
@@ -69,7 +69,7 @@
         "method": "GET",
         "header": [],
         "url": {
-          "raw": "https://localhost:8090/identity-providers/456e8400-e29b-41d4-a716-446655440001",
+          "raw": "https://localhost:8090/identity-providers/{{idp-id}}",
           "protocol": "https",
           "host": [
             "localhost"
@@ -77,7 +77,7 @@
           "port": "8090",
           "path": [
             "identity-providers",
-            "456e8400-e29b-41d4-a716-446655440001"
+            "{{idp-id}}"
           ]
         },
         "description": "Retrieve a specific identity provider using its ID."
@@ -94,7 +94,7 @@
         "header": [],
         "body": {
           "mode": "raw",
-          "raw": "{\n  \"name\": \"Github\",\n  \"description\": \"Login with Github\",\n  \"client_id\": \"client2\",\n  \"client_secret\": \"secret2\",\n  \"redirect_uri\": \"https://localhost:8090/flow/authn\",\n  \"scopes\": [\n      \"user:email\",\n      \"read:user\"\n    ]\n}",
+          "raw": "{\n  \"name\": \"Github\",\n  \"description\": \"Login with Github\",\n  \"properties\": [\n    {\n      \"name\": \"client_id\",\n      \"value\": \"client2\",\n      \"is_secret\": false\n    },\n    {\n      \"name\": \"client_secret\",\n      \"value\": \"secret2\",\n      \"is_secret\": true\n    },\n    {\n      \"name\": \"redirect_uri\",\n      \"value\": \"https://localhost:8090/flow/authn\",\n      \"is_secret\": false\n    },\n    {\n      \"name\": \"scopes\",\n      \"value\": \"user:email,read:user\",\n      \"is_secret\": false\n    }\n  ]\n}",
           "options": {
             "raw": {
               "headerFamily": "json",
@@ -103,7 +103,7 @@
           }
         },
         "url": {
-          "raw": "https://localhost:8090/identity-providers/456e8400-e29b-41d4-a716-446655440001",
+          "raw": "https://localhost:8090/identity-providers/{{idp-id}}",
           "protocol": "https",
           "host": [
             "localhost"
@@ -111,7 +111,7 @@
           "port": "8090",
           "path": [
             "identity-providers",
-            "456e8400-e29b-41d4-a716-446655440001"
+            "{{idp-id}}"
           ]
         },
         "description": "Update the details of an existing identity provider."
@@ -127,7 +127,7 @@
         "method": "DELETE",
         "header": [],
         "url": {
-          "raw": "https://localhost:8090/identity-providers/456e8400-e29b-41d4-a716-446655440001",
+          "raw": "https://localhost:8090/identity-providers/{{idp-id}}",
           "protocol": "https",
           "host": [
             "localhost"
@@ -135,7 +135,7 @@
           "port": "8090",
           "path": [
             "identity-providers",
-            "456e8400-e29b-41d4-a716-446655440001"
+            "{{idp-id}}"
           ]
         },
         "description": "Delete an identity provider using its ID."

@@ -20,6 +20,7 @@
 package model
 
 import (
+	appmodel "github.com/asgardeo/thunder/internal/application/model"
 	authndto "github.com/asgardeo/thunder/internal/authn/dto"
 	"github.com/asgardeo/thunder/internal/flow/constants"
 )
@@ -36,7 +37,8 @@ type EngineContext struct {
 	CurrentNodeResponse *NodeResponse
 	CurrentActionID     string
 
-	Graph GraphInterface
+	Graph       GraphInterface
+	Application appmodel.ApplicationProcessedDTO
 
 	AuthenticatedUser authndto.AuthenticatedUser
 }
@@ -52,6 +54,7 @@ type NodeContext struct {
 	UserInputData map[string]string
 	RuntimeData   map[string]string
 
+	Application       appmodel.ApplicationProcessedDTO
 	AuthenticatedUser authndto.AuthenticatedUser
 }
 

@@ -23,10 +23,10 @@ import "github.com/asgardeo/thunder/internal/system/database/model"
 
 var queryConfigDBTable = model.DBQuery{
 	ID:    "HLC-00001",
-	Query: "SELECT ALLOWED_ORIGINS FROM IDN_OAUTH_ALLOWED_ORIGINS",
+	Query: "SELECT 1",
 }
 
 var queryRuntimeDBTable = model.DBQuery{
 	ID:    "HLC-00002",
-	Query: "SELECT CODE_ID FROM IDN_OAUTH2_AUTHZ_CODE",
+	Query: "SELECT 1",
 }

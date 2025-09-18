@@ -35,12 +35,3 @@ const (
 	// cacheTypeInMemory represents an in-memory cache type.
 	cacheTypeInMemory cacheType = "inmemory"
 )
-
-const (
-	// defaultCleanupInterval represents the default interval for cleaning up caches.
-	defaultCleanupInterval = 300
-	// defaultCacheTTL represents the default TTL for cache entries in seconds.
-	defaultCacheTTL = 3600
-	// defaultCacheSize represents the default size for the caches.
-	defaultCacheSize = 1000
-)

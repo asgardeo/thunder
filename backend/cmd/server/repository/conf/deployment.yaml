@@ -27,6 +27,8 @@ database:
 cache:
   disabled: false
   type: "inmemory"
+  size: 1000
+  ttl: 3600
   eviction_policy: "LRU"
   cleanup_interval: 300
   # properties:
@@ -48,3 +50,9 @@ flow:
   graph_directory: "repository/resources/graphs/"
   authn:
     default_flow: "auth_flow_config_basic"
+
+cors:
+  allowed_origins:
+    - "https://localhost:3000"
+    - "https://localhost:9001"
+    - "https://localhost:9090"

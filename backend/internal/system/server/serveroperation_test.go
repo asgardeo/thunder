@@ -19,15 +19,12 @@
 package server
 
 import (
-	"errors"
 	"net/http"
 	"net/http/httptest"
 	"testing"
 
 	"github.com/asgardeo/thunder/internal/system/config"
 	"github.com/asgardeo/thunder/tests/mocks/cachemock"
-	"github.com/asgardeo/thunder/tests/mocks/database/clientmock"
-	"github.com/asgardeo/thunder/tests/mocks/database/providermock"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
@@ -52,6 +49,9 @@ func (suite *ServerOperationServiceTestSuite) SetupTest() {
 			EvictionPolicy:  "LRU",
 			CleanupInterval: 300,
 		},
+		CORS: config.CORSConfig{
+			AllowedOrigins: []string{"http://example.com", "https://wso2.com"},
+		},
 	}
 	config.ResetThunderRuntime()
 	err := config.InitializeThunderRuntime("/test/thunder/home/server/ops", mockConfig)
@@ -71,7 +71,6 @@ func (suite *ServerOperationServiceTestSuite) TestWrapHandleFunction() {
 	testCases := []struct {
 		name            string
 		requestOrigin   string
-		allowedOrigins  string
 		expectedOrigin  string
 		expectedHandled bool
 		expectedStatus  int
@@ -79,7 +78,6 @@ func (suite *ServerOperationServiceTestSuite) TestWrapHandleFunction() {
 		{
 			name:            "Valid origin",
 			requestOrigin:   "http://example.com",
-			allowedOrigins:  "http://example.com,https://wso2.com",
 			expectedOrigin:  "http://example.com",
 			expectedHandled: true,
 			expectedStatus:  http.StatusOK,
@@ -87,7 +85,6 @@ func (suite *ServerOperationServiceTestSuite) TestWrapHandleFunction() {
 		{
 			name:            "Invalid origin",
 			requestOrigin:   "http://test.com",
-			allowedOrigins:  "http://example.com,https://wso2.com",
 			expectedOrigin:  "",
 			expectedHandled: true,
 			expectedStatus:  http.StatusOK,
@@ -95,7 +92,6 @@ func (suite *ServerOperationServiceTestSuite) TestWrapHandleFunction() {
 		{
 			name:            "No origin header",
 			requestOrigin:   "",
-			allowedOrigins:  "http://example.com,https://wso2.com",
 			expectedOrigin:  "",
 			expectedHandled: true,
 			expectedStatus:  http.StatusOK,
@@ -104,20 +100,7 @@ func (suite *ServerOperationServiceTestSuite) TestWrapHandleFunction() {
 
 	for _, tc := range testCases {
 		suite.T().Run(tc.name, func(t *testing.T) {
-			// Reset the handler executed flag
-			suite.handlerExecuted = false
-
 			// Set up mocks
-			dbClient := &clientmock.DBClientInterfaceMock{}
-			dbClient.On("Close").Return(nil)
-			dbClient.On("Query", mock.AnythingOfType("model.DBQuery")).Return([]map[string]interface{}{
-				{"allowed_origins": tc.allowedOrigins},
-			}, nil)
-
-			dbProvider := &providermock.DBProviderInterfaceMock{}
-			dbProvider.On("GetDBClient", "identity").Return(dbClient, nil)
-			suite.service.(*ServerOperationService).DBProvider = dbProvider
-
 			originCache := &cachemock.CacheInterfaceMock[[]string]{}
 			originCache.On("Get", mock.Anything).Return([]string{}, false)
 			originCache.On("Set", mock.Anything, mock.Anything).Return(nil)
@@ -162,10 +145,6 @@ func (suite *ServerOperationServiceTestSuite) TestWrapHandleFunction() {
 }
 
 func (suite *ServerOperationServiceTestSuite) TestWrapHandleFunctionWithError() {
-	dbProvider := &providermock.DBProviderInterfaceMock{}
-	dbProvider.On("GetDBClient", "identity").Return(nil, errors.New("database connection error"))
-	suite.service.(*ServerOperationService).DBProvider = dbProvider
-
 	originCache := &cachemock.CacheInterfaceMock[[]string]{}
 	originCache.On("Get", mock.Anything).Return([]string{}, false)
 	originCache.On("Set", mock.Anything, mock.Anything).Return(nil)
@@ -198,57 +177,7 @@ func (suite *ServerOperationServiceTestSuite) TestWrapHandleFunctionWithError() 
 	assert.Equal(suite.T(), http.StatusOK, rec.Code, "HTTP status should be OK")
 }
 
-func (suite *ServerOperationServiceTestSuite) TestGetAllowedOriginsDBClientError() {
-	dbProvider := &providermock.DBProviderInterfaceMock{}
-	dbProvider.On("GetDBClient", "identity").Return(nil, errors.New("database connection error"))
-	suite.service.(*ServerOperationService).DBProvider = dbProvider
-
-	originCache := &cachemock.CacheInterfaceMock[[]string]{}
-	originCache.On("Get", mock.Anything).Return([]string{}, false)
-	originCache.On("Set", mock.Anything, mock.Anything).Return(nil)
-	suite.service.(*ServerOperationService).OriginCache = originCache
-
-	// Cast to access the private method
-	service := suite.service.(*ServerOperationService)
-	origins, err := service.getAllowedOrigins()
-
-	// Verify results
-	assert.Error(suite.T(), err)
-	assert.Nil(suite.T(), origins)
-}
-
-func (suite *ServerOperationServiceTestSuite) TestGetAllowedOriginsQueryError() {
-	dbClient := &clientmock.DBClientInterfaceMock{}
-	dbClient.On("Close").Return(nil)
-	dbClient.On("Query", mock.AnythingOfType("model.DBQuery")).Return(nil, errors.New("query execution error"))
-
-	dbProvider := &providermock.DBProviderInterfaceMock{}
-	dbProvider.On("GetDBClient", "identity").Return(dbClient, nil)
-	suite.service.(*ServerOperationService).DBProvider = dbProvider
-
-	originCache := &cachemock.CacheInterfaceMock[[]string]{}
-	originCache.On("Get", mock.Anything).Return([]string{}, false)
-	originCache.On("Set", mock.Anything, mock.Anything).Return(nil)
-	suite.service.(*ServerOperationService).OriginCache = originCache
-
-	// Cast to access the private method
-	service := suite.service.(*ServerOperationService)
-	origins, err := service.getAllowedOrigins()
-
-	// Verify results
-	assert.Error(suite.T(), err)
-	assert.Nil(suite.T(), origins)
-}
-
 func (suite *ServerOperationServiceTestSuite) TestGetAllowedOriginsEmptyResults() {
-	dbClient := &clientmock.DBClientInterfaceMock{}
-	dbClient.On("Close").Return(nil)
-	dbClient.On("Query", mock.AnythingOfType("model.DBQuery")).Return([]map[string]interface{}{}, nil)
-
-	dbProvider := &providermock.DBProviderInterfaceMock{}
-	dbProvider.On("GetDBClient", "identity").Return(dbClient, nil)
-	suite.service.(*ServerOperationService).DBProvider = dbProvider
-
 	originCache := &cachemock.CacheInterfaceMock[[]string]{}
 	originCache.On("Get", mock.Anything).Return([]string{}, false)
 	originCache.On("Set", mock.Anything, mock.Anything).Return(nil)
@@ -256,11 +185,10 @@ func (suite *ServerOperationServiceTestSuite) TestGetAllowedOriginsEmptyResults(
 
 	// Cast to access the private method
 	service := suite.service.(*ServerOperationService)
-	origins, err := service.getAllowedOrigins()
+	origins := service.getAllowedOrigins()
 
 	// Verify results
-	assert.NoError(suite.T(), err)
-	assert.Empty(suite.T(), origins)
+	assert.NotEmpty(suite.T(), origins) // Should get origins from config
 }
 
 func (suite *ServerOperationServiceTestSuite) TestNewServerOperationService() {
@@ -268,10 +196,10 @@ func (suite *ServerOperationServiceTestSuite) TestNewServerOperationService() {
 	assert.NotNil(suite.T(), svc)
 	assert.IsType(suite.T(), &ServerOperationService{}, svc)
 
-	// Verify that DBProvider is properly initialized
+	// Verify that OriginCache is properly initialized
 	serverOpSvc, ok := svc.(*ServerOperationService)
 	assert.True(suite.T(), ok)
-	assert.NotNil(suite.T(), serverOpSvc.DBProvider)
+	assert.NotNil(suite.T(), serverOpSvc.OriginCache)
 }
 
 func (suite *ServerOperationServiceTestSuite) TestAddAllowedOriginHeaders() {
@@ -280,9 +208,7 @@ func (suite *ServerOperationServiceTestSuite) TestAddAllowedOriginHeaders() {
 		requestOrigin  string
 		allowedOrigins []string
 		corsOptions    *Cors
-		dbError        bool
 		expectedOrigin string
-		expectedError  bool
 	}{
 		{
 			name:           "Valid origin with all CORS options",
@@ -293,9 +219,7 @@ func (suite *ServerOperationServiceTestSuite) TestAddAllowedOriginHeaders() {
 				AllowedHeaders:   "Content-Type, Authorization",
 				AllowCredentials: true,
 			},
-			dbError:        false,
 			expectedOrigin: "http://example.com",
-			expectedError:  false,
 		},
 		{
 			name:           "Valid origin with minimal CORS options",
@@ -304,54 +228,26 @@ func (suite *ServerOperationServiceTestSuite) TestAddAllowedOriginHeaders() {
 			corsOptions: &Cors{
 				AllowCredentials: false,
 			},
-			dbError:        false,
 			expectedOrigin: "http://example.com",
-			expectedError:  false,
 		},
 		{
 			name:           "No request origin",
 			requestOrigin:  "",
 			allowedOrigins: []string{"http://example.com"},
 			corsOptions:    &Cors{},
-			dbError:        false,
 			expectedOrigin: "",
-			expectedError:  false,
-		},
-		{
-			name:           "DB error",
-			requestOrigin:  "http://example.com",
-			allowedOrigins: nil,
-			corsOptions:    &Cors{},
-			dbError:        true,
-			expectedOrigin: "",
-			expectedError:  true,
 		},
 	}
 
 	for _, tc := range testCases {
 		suite.T().Run(tc.name, func(t *testing.T) {
 			// Set up mocks
-			dbClient := &clientmock.DBClientInterfaceMock{}
-			dbClient.On("Close").Return(nil)
-
-			dbProvider := &providermock.DBProviderInterfaceMock{}
-
 			originCache := &cachemock.CacheInterfaceMock[[]string]{}
-			originCache.On("Get", mock.Anything).Return([]string{}, false)
+			originCache.On("Get", mock.Anything).Return(tc.allowedOrigins, true) // Return from cache
 			originCache.On("Set", mock.Anything, mock.Anything).Return(nil)
 
 			service := suite.service.(*ServerOperationService)
-			service.DBProvider = dbProvider
 			service.OriginCache = originCache
-
-			if tc.dbError {
-				dbProvider.On("GetDBClient", "identity").Return(nil, errors.New("database connection error"))
-			} else {
-				dbClient.On("Query", mock.AnythingOfType("model.DBQuery")).Return([]map[string]interface{}{
-					{"allowed_origins": "http://example.com,https://wso2.com"},
-				}, nil)
-				dbProvider.On("GetDBClient", "identity").Return(dbClient, nil)
-			}
 
 			// Create request and response for testing
 			w := httptest.NewRecorder()
@@ -361,14 +257,7 @@ func (suite *ServerOperationServiceTestSuite) TestAddAllowedOriginHeaders() {
 			}
 
 			// Test addAllowedOriginHeaders
-			err := service.addAllowedOriginHeaders(w, r, &RequestWrapOptions{Cors: tc.corsOptions})
-
-			// Verify results
-			if tc.expectedError {
-				assert.Error(t, err)
-			} else {
-				assert.NoError(t, err)
-			}
+			service.addAllowedOriginHeaders(w, r, &RequestWrapOptions{Cors: tc.corsOptions})
 
 			// Check if headers were set correctly
 			assert.Equal(t, tc.expectedOrigin, w.Header().Get("Access-Control-Allow-Origin"))

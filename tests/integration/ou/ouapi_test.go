@@ -27,6 +27,7 @@ import (
 	"net/http"
 	"testing"
 
+	"github.com/asgardeo/thunder/tests/integration/testutils"
 	"github.com/stretchr/testify/suite"
 )
 
@@ -838,7 +839,7 @@ func (suite *OUAPITestSuite) TestGetOrganizationUnitUsers() {
 	body, err := io.ReadAll(resp.Body)
 	suite.Require().NoError(err, "Failed to read response body: %v", err)
 
-	var usersResponse UserListResponse
+	var usersResponse testutils.UserListResponse
 	err = json.Unmarshal(body, &usersResponse)
 	suite.Require().NoError(err)
 
@@ -1018,7 +1019,7 @@ func (suite *OUAPITestSuite) TestGetOrganizationUnitUsersWithPagination() {
 	body, err := io.ReadAll(resp.Body)
 	suite.Require().NoError(err)
 
-	var usersResponse UserListResponse
+	var usersResponse testutils.UserListResponse
 	err = json.Unmarshal(body, &usersResponse)
 	suite.Require().NoError(err)
 

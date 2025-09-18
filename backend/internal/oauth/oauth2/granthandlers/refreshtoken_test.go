@@ -33,12 +33,14 @@ import (
 	"github.com/asgardeo/thunder/internal/system/config"
 	"github.com/asgardeo/thunder/internal/system/log"
 	"github.com/asgardeo/thunder/tests/mocks/jwtmock"
+	usersvcmock "github.com/asgardeo/thunder/tests/mocks/user/servicemock"
 )
 
 type RefreshTokenGrantHandlerTestSuite struct {
 	suite.Suite
 	handler           *refreshTokenGrantHandler
 	mockJWTService    *jwtmock.JWTServiceInterfaceMock
+	mockUserService   *usersvcmock.UserServiceInterfaceMock
 	oauthApp          *appmodel.OAuthAppConfigProcessedDTO
 	validRefreshToken string
 	validClaims       map[string]interface{}
@@ -50,6 +52,9 @@ func TestRefreshTokenGrantHandlerSuite(t *testing.T) {
 }
 
 func (suite *RefreshTokenGrantHandlerTestSuite) SetupTest() {
+	// Reset ThunderRuntime before initializing with test config
+	config.ResetThunderRuntime()
+
 	// Initialize Thunder Runtime config with basic test config
 	testConfig := &config.Config{
 		OAuth: config.OAuthConfig{
@@ -65,9 +70,11 @@ func (suite *RefreshTokenGrantHandlerTestSuite) SetupTest() {
 	_ = config.InitializeThunderRuntime("test", testConfig)
 
 	suite.mockJWTService = &jwtmock.JWTServiceInterfaceMock{}
+	suite.mockUserService = usersvcmock.NewUserServiceInterfaceMock(suite.T())
 
 	suite.handler = &refreshTokenGrantHandler{
-		JWTService: suite.mockJWTService,
+		JWTService:  suite.mockJWTService,
+		UserService: suite.mockUserService,
 	}
 
 	suite.oauthApp = &appmodel.OAuthAppConfigProcessedDTO{
@@ -76,6 +83,11 @@ func (suite *RefreshTokenGrantHandlerTestSuite) SetupTest() {
 		GrantTypes:         []constants.GrantType{constants.GrantTypeRefreshToken},
 		TokenEndpointAuthMethod: []constants.TokenEndpointAuthMethod{
 			constants.TokenEndpointAuthMethodClientSecretPost},
+		Token: &appmodel.OAuthTokenConfig{
+			AccessToken: &appmodel.TokenConfig{
+				UserAttributes: []string{"email", "username"},
+			},
+		},
 	}
 
 	suite.validRefreshToken = "valid.refresh.token"
@@ -96,6 +108,10 @@ func (suite *RefreshTokenGrantHandlerTestSuite) SetupTest() {
 		RefreshToken: suite.validRefreshToken,
 		Scope:        "read",
 	}
+}
+
+func (suite *RefreshTokenGrantHandlerTestSuite) TearDownTest() {
+	config.ResetThunderRuntime()
 }
 
 func (suite *RefreshTokenGrantHandlerTestSuite) TestNewRefreshTokenGrantHandler() {
@@ -164,8 +180,8 @@ func (suite *RefreshTokenGrantHandlerTestSuite) TestHandleGrant_InvalidSignature
 
 func (suite *RefreshTokenGrantHandlerTestSuite) TestIssueRefreshToken_Success() {
 	// Mock JWT service for refresh token generation
-	suite.mockJWTService.On("GenerateJWT", "test-client-id", "test-client-id",
-		int64(86400), mock.AnythingOfType("map[string]string")).Return("new.refresh.token",
+	suite.mockJWTService.On("GenerateJWT", "test-client-id", "test-client-id", mock.Anything,
+		int64(3600), mock.Anything).Return("new.refresh.token",
 		int64(1234567890), nil)
 
 	tokenResponse := &model.TokenResponseDTO{}
@@ -176,7 +192,7 @@ func (suite *RefreshTokenGrantHandlerTestSuite) TestIssueRefreshToken_Success() 
 		},
 	}
 
-	err := suite.handler.IssueRefreshToken(tokenResponse, ctx, "test-client-id",
+	err := suite.handler.IssueRefreshToken(tokenResponse, suite.oauthApp, ctx,
 		"authorization_code", []string{"read", "write"})
 
 	assert.Nil(suite.T(), err)
@@ -184,7 +200,7 @@ func (suite *RefreshTokenGrantHandlerTestSuite) TestIssueRefreshToken_Success() 
 	assert.Equal(suite.T(), "new.refresh.token", tokenResponse.RefreshToken.Token)
 	assert.Equal(suite.T(), constants.TokenTypeBearer, tokenResponse.RefreshToken.TokenType)
 	assert.Equal(suite.T(), int64(1234567890), tokenResponse.RefreshToken.IssuedAt)
-	assert.Equal(suite.T(), int64(86400), tokenResponse.RefreshToken.ExpiresIn)
+	assert.Equal(suite.T(), int64(3600), tokenResponse.RefreshToken.ExpiresIn)
 	assert.Equal(suite.T(), []string{"read", "write"}, tokenResponse.RefreshToken.Scopes)
 	assert.Equal(suite.T(), "test-client-id", tokenResponse.RefreshToken.ClientID)
 }
@@ -192,46 +208,19 @@ func (suite *RefreshTokenGrantHandlerTestSuite) TestIssueRefreshToken_Success() 
 func (suite *RefreshTokenGrantHandlerTestSuite) TestIssueRefreshToken_JWTGenerationError() {
 	// Mock JWT service to return error
 	suite.mockJWTService.On("GenerateJWT", mock.Anything, mock.Anything, mock.Anything,
-		mock.Anything).Return("", int64(0), errors.New("JWT generation failed"))
+		mock.Anything, mock.Anything).Return("", int64(0), errors.New("JWT generation failed"))
 
 	tokenResponse := &model.TokenResponseDTO{}
 	ctx := &model.TokenContext{
 		TokenAttributes: make(map[string]interface{}),
 	}
 
-	err := suite.handler.IssueRefreshToken(tokenResponse, ctx, "test-client-id", "authorization_code",
+	err := suite.handler.IssueRefreshToken(tokenResponse, suite.oauthApp, ctx, "authorization_code",
 		[]string{"read"})
 
 	assert.NotNil(suite.T(), err)
 	assert.Equal(suite.T(), constants.ErrorServerError, err.Error)
 	assert.Equal(suite.T(), "Failed to generate refresh token", err.ErrorDescription)
-}
-
-func (suite *RefreshTokenGrantHandlerTestSuite) TestIssueRefreshToken_WithDefaultValidity() {
-	// Create config without refresh token validity to test default
-	testConfig := &config.Config{
-		OAuth: config.OAuthConfig{
-			RefreshToken: config.RefreshTokenConfig{
-				ValidityPeriod: 0, // Should use default
-				RenewOnGrant:   false,
-			},
-		},
-	}
-	_ = config.InitializeThunderRuntime("test", testConfig)
-
-	// Mock JWT service with default validity
-	suite.mockJWTService.On("GenerateJWT", "test-client-id", "test-client-id",
-		int64(86400), mock.AnythingOfType("map[string]string")).Return("new.refresh.token",
-		int64(1234567890), nil)
-
-	tokenResponse := &model.TokenResponseDTO{}
-	ctx := &model.TokenContext{TokenAttributes: make(map[string]interface{})}
-
-	err := suite.handler.IssueRefreshToken(tokenResponse, ctx, "test-client-id", "authorization_code",
-		[]string{"read"})
-
-	assert.Nil(suite.T(), err)
-	assert.Equal(suite.T(), int64(86400), tokenResponse.RefreshToken.ExpiresIn)
 }
 
 func (suite *RefreshTokenGrantHandlerTestSuite) TestExtractScopes_NoScopesInRefreshToken() {

@@ -221,74 +221,6 @@ func completeAuthFlowWithError(flowID string, inputs map[string]string) (*ErrorR
 	return &errorResponse, nil
 }
 
-// Helper function to create a user
-func createUser(user User) (string, error) {
-	userJSON, err := json.Marshal(user)
-	if err != nil {
-		return "", fmt.Errorf("failed to marshal user: %w", err)
-	}
-
-	reqBody := bytes.NewReader(userJSON)
-	req, err := http.NewRequest("POST", testServerURL+"/users", reqBody)
-	if err != nil {
-		return "", fmt.Errorf("failed to create request: %w", err)
-	}
-	req.Header.Set("Content-Type", "application/json")
-
-	client := &http.Client{
-		Transport: &http.Transport{
-			TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
-		},
-	}
-
-	resp, err := client.Do(req)
-	if err != nil {
-		return "", fmt.Errorf("failed to send request: %w", err)
-	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode != http.StatusCreated {
-		return "", fmt.Errorf("expected status 201, got %d", resp.StatusCode)
-	}
-
-	var respBody map[string]interface{}
-	err = json.NewDecoder(resp.Body).Decode(&respBody)
-	if err != nil {
-		return "", fmt.Errorf("failed to parse response body: %w", err)
-	}
-
-	id, ok := respBody["id"].(string)
-	if !ok {
-		return "", fmt.Errorf("response does not contain id")
-	}
-	return id, nil
-}
-
-// Helper function to delete a user
-func deleteUser(userID string) error {
-	req, err := http.NewRequest("DELETE", testServerURL+"/users/"+userID, nil)
-	if err != nil {
-		return err
-	}
-
-	client := &http.Client{
-		Transport: &http.Transport{
-			TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
-		},
-	}
-
-	resp, err := client.Do(req)
-	if err != nil {
-		return err
-	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode != http.StatusNoContent {
-		return fmt.Errorf("failed to delete user, status code: %d", resp.StatusCode)
-	}
-	return nil
-}
-
 // getAppConfig retrieves the current application configuration
 func getAppConfig(appID string) (map[string]interface{}, error) {
 	tr := &http.Transport{
@@ -478,44 +410,6 @@ func DeleteNotificationSender(senderID string) error {
 	return nil
 }
 
-// CreateMultipleUsers creates multiple test users and returns their IDs
-func CreateMultipleUsers(users ...User) ([]string, error) {
-	var userIDs []string
-
-	for i, user := range users {
-		id, err := createUser(user)
-		if err != nil {
-			// Cleanup already created users on failure
-			for _, createdID := range userIDs {
-				deleteUser(createdID)
-			}
-			return nil, fmt.Errorf("failed to create user %d: %w", i, err)
-		}
-		userIDs = append(userIDs, id)
-	}
-
-	return userIDs, nil
-}
-
-// CleanupUsers deletes multiple users
-func CleanupUsers(userIDs []string) error {
-	var errs []error
-
-	for _, userID := range userIDs {
-		if userID != "" {
-			if err := deleteUser(userID); err != nil {
-				errs = append(errs, fmt.Errorf("failed to delete user %s: %w", userID, err))
-			}
-		}
-	}
-
-	if len(errs) > 0 {
-		return fmt.Errorf("cleanup errors: %v", errs)
-	}
-
-	return nil
-}
-
 // RestoreAppConfig restores the original application configuration
 func RestoreAppConfig(appID string, originalConfig map[string]interface{}) error {
 	if originalConfig == nil {
@@ -611,16 +505,6 @@ func HasAction(actions []FlowAction, actionID string) bool {
 		}
 	}
 	return false
-}
-
-// GetUserAttributes extracts user attributes from JSON into a map
-func GetUserAttributes(user User) (map[string]interface{}, error) {
-	var userAttrs map[string]interface{}
-	err := json.Unmarshal(user.Attributes, &userAttrs)
-	if err != nil {
-		return nil, fmt.Errorf("failed to unmarshal user attributes: %w", err)
-	}
-	return userAttrs, nil
 }
 
 // WaitAndValidateNotification waits for a notification to be sent and validates it

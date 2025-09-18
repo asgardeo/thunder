@@ -90,12 +90,12 @@ var (
 		Error:            "Invalid pagination parameter",
 		ErrorDescription: "The offset parameter must be a non-negative integer",
 	}
-	// ErrorUsernameConflict is the error returned when username already exists.
-	ErrorUsernameConflict = serviceerror.ServiceError{
+	// ErrorAttributeConflict is the error returned when a unique attribute already exists.
+	ErrorAttributeConflict = serviceerror.ServiceError{
 		Type:             serviceerror.ClientErrorType,
 		Code:             "USR-1014",
-		Error:            "Username conflict",
-		ErrorDescription: "A user with the same username already exists",
+		Error:            "Attribute conflict",
+		ErrorDescription: "A user with the same unique attribute value already exists",
 	}
 	// ErrorEmailConflict is the error returned when email already exists.
 	ErrorEmailConflict = serviceerror.ServiceError{
@@ -124,6 +124,20 @@ var (
 		Code:             "USR-1018",
 		Error:            "Authentication failed",
 		ErrorDescription: "Invalid credentials provided",
+	}
+	// ErrorSchemaValidationFailed is the error returned when user attributes fail schema validation.
+	ErrorSchemaValidationFailed = serviceerror.ServiceError{
+		Type:             serviceerror.ClientErrorType,
+		Code:             "USR-1019",
+		Error:            "Schema validation failed",
+		ErrorDescription: "User attributes do not conform to the required schema",
+	}
+	// ErrorInvalidFilter is the error returned when the filter parameter is invalid.
+	ErrorInvalidFilter = serviceerror.ServiceError{
+		Type:             serviceerror.ClientErrorType,
+		Code:             "USR-1020",
+		Error:            "Invalid filter parameter",
+		ErrorDescription: "The filter format is invalid",
 	}
 )
 

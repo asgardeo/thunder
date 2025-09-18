@@ -149,88 +149,69 @@ func (suite *ClientCredentialsGrantHandlerTestSuite) TestValidateGrant_MissingBo
 }
 
 func (suite *ClientCredentialsGrantHandlerTestSuite) TestHandleGrant_Success() {
-	tokenRequest := &model.TokenRequest{
-		GrantType:    "client_credentials",
-		ClientID:     "client123",
-		ClientSecret: "secret123",
-		Scope:        "read write",
+	testCases := []struct {
+		name              string
+		scope             string
+		expectedJWTClaims map[string]interface{}
+		expectedScopes    []string
+	}{
+		{
+			name:              "WithValidScope",
+			scope:             "read write",
+			expectedJWTClaims: map[string]interface{}{"scope": "read write"},
+			expectedScopes:    []string{"read", "write"},
+		},
+		{
+			name:              "WithoutScope",
+			scope:             "",
+			expectedJWTClaims: map[string]interface{}{},
+			expectedScopes:    []string{},
+		},
+		{
+			name:              "WithWhitespaceScope",
+			scope:             "   ",
+			expectedJWTClaims: map[string]interface{}{},
+			expectedScopes:    []string{},
+		},
 	}
 
-	ctx := &model.TokenContext{
-		TokenAttributes: make(map[string]interface{}),
+	for _, tc := range testCases {
+		suite.T().Run(tc.name, func(t *testing.T) {
+			// Reset mock for each test case
+			suite.mockJWTService.Mock = mock.Mock{}
+
+			tokenRequest := &model.TokenRequest{
+				GrantType:    "client_credentials",
+				ClientID:     "client123",
+				ClientSecret: "secret123",
+				Scope:        tc.scope,
+			}
+
+			ctx := &model.TokenContext{
+				TokenAttributes: make(map[string]interface{}),
+			}
+
+			expectedToken := testJWTToken
+			suite.mockJWTService.On("GenerateJWT", "client123", "client123", mock.AnythingOfType("string"),
+				int64(3600), tc.expectedJWTClaims).Return(expectedToken, int64(1234567890), nil)
+
+			result, errResp := suite.handler.HandleGrant(tokenRequest, suite.oauthApp, ctx)
+
+			assert.Nil(t, errResp)
+			assert.NotNil(t, result)
+			assert.Equal(t, expectedToken, result.AccessToken.Token)
+			assert.Equal(t, constants.TokenTypeBearer, result.AccessToken.TokenType)
+			assert.Equal(t, int64(3600), result.AccessToken.ExpiresIn)
+			assert.Equal(t, tc.expectedScopes, result.AccessToken.Scopes)
+			assert.Equal(t, "client123", result.AccessToken.ClientID)
+
+			// Verify context attributes
+			assert.Equal(t, "client123", ctx.TokenAttributes["sub"])
+			assert.Equal(t, "client123", ctx.TokenAttributes["aud"])
+
+			suite.mockJWTService.AssertExpectations(t)
+		})
 	}
-
-	expectedToken := testJWTToken
-	suite.mockJWTService.On("GenerateJWT", "client123", "client123", int64(3600),
-		map[string]string{"scope": "read write"}).Return(expectedToken, int64(1234567890), nil)
-
-	result, errResp := suite.handler.HandleGrant(tokenRequest, suite.oauthApp, ctx)
-
-	assert.Nil(suite.T(), errResp)
-	assert.NotNil(suite.T(), result)
-	assert.Equal(suite.T(), expectedToken, result.AccessToken.Token)
-	assert.Equal(suite.T(), constants.TokenTypeBearer, result.AccessToken.TokenType)
-	assert.Equal(suite.T(), int64(3600), result.AccessToken.ExpiresIn)
-	assert.Equal(suite.T(), []string{"read", "write"}, result.AccessToken.Scopes)
-	assert.Equal(suite.T(), "client123", result.AccessToken.ClientID)
-
-	// Verify context attributes
-	assert.Equal(suite.T(), "client123", ctx.TokenAttributes["sub"])
-	assert.Equal(suite.T(), "client123", ctx.TokenAttributes["aud"])
-
-	suite.mockJWTService.AssertExpectations(suite.T())
-}
-
-func (suite *ClientCredentialsGrantHandlerTestSuite) TestHandleGrant_SuccessWithoutScope() {
-	tokenRequest := &model.TokenRequest{
-		GrantType:    "client_credentials",
-		ClientID:     "client123",
-		ClientSecret: "secret123",
-		Scope:        "",
-	}
-
-	ctx := &model.TokenContext{
-		TokenAttributes: make(map[string]interface{}),
-	}
-
-	expectedToken := testJWTToken
-	suite.mockJWTService.On("GenerateJWT", "client123", "client123", int64(3600), map[string]string{}).
-		Return(expectedToken, int64(1234567890), nil)
-
-	result, errResp := suite.handler.HandleGrant(tokenRequest, suite.oauthApp, ctx)
-
-	assert.Nil(suite.T(), errResp)
-	assert.NotNil(suite.T(), result)
-	assert.Equal(suite.T(), expectedToken, result.AccessToken.Token)
-	assert.Equal(suite.T(), []string{}, result.AccessToken.Scopes)
-
-	suite.mockJWTService.AssertExpectations(suite.T())
-}
-
-func (suite *ClientCredentialsGrantHandlerTestSuite) TestHandleGrant_SuccessWithWhitespaceScope() {
-	tokenRequest := &model.TokenRequest{
-		GrantType:    "client_credentials",
-		ClientID:     "client123",
-		ClientSecret: "secret123",
-		Scope:        "   ",
-	}
-
-	ctx := &model.TokenContext{
-		TokenAttributes: make(map[string]interface{}),
-	}
-
-	expectedToken := testJWTToken
-	suite.mockJWTService.On("GenerateJWT", "client123", "client123", int64(3600), map[string]string{}).
-		Return(expectedToken, int64(1234567890), nil)
-
-	result, errResp := suite.handler.HandleGrant(tokenRequest, suite.oauthApp, ctx)
-
-	assert.Nil(suite.T(), errResp)
-	assert.NotNil(suite.T(), result)
-	assert.Equal(suite.T(), expectedToken, result.AccessToken.Token)
-	assert.Equal(suite.T(), []string{}, result.AccessToken.Scopes)
-
-	suite.mockJWTService.AssertExpectations(suite.T())
 }
 
 func (suite *ClientCredentialsGrantHandlerTestSuite) TestHandleGrant_JWTGenerationError() {
@@ -245,7 +226,7 @@ func (suite *ClientCredentialsGrantHandlerTestSuite) TestHandleGrant_JWTGenerati
 		TokenAttributes: make(map[string]interface{}),
 	}
 
-	suite.mockJWTService.On("GenerateJWT", mock.Anything, mock.Anything, mock.Anything, mock.Anything).
+	suite.mockJWTService.On("GenerateJWT", mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).
 		Return("", int64(0), errors.New("JWT generation failed"))
 
 	result, errResp := suite.handler.HandleGrant(tokenRequest, suite.oauthApp, ctx)
@@ -271,8 +252,8 @@ func (suite *ClientCredentialsGrantHandlerTestSuite) TestHandleGrant_NilTokenAtt
 	}
 
 	expectedToken := testJWTToken
-	suite.mockJWTService.On("GenerateJWT", "client123", "client123", int64(3600), map[string]string{"scope": "read"}).
-		Return(expectedToken, int64(1234567890), nil)
+	suite.mockJWTService.On("GenerateJWT", "client123", "client123", mock.AnythingOfType("string"), int64(3600),
+		map[string]interface{}{"scope": "read"}).Return(expectedToken, int64(1234567890), nil)
 
 	result, errResp := suite.handler.HandleGrant(tokenRequest, suite.oauthApp, ctx)
 
@@ -301,7 +282,7 @@ func (suite *ClientCredentialsGrantHandlerTestSuite) TestHandleGrant_TokenTiming
 	}
 
 	expectedToken := testJWTToken
-	suite.mockJWTService.On("GenerateJWT", mock.Anything, mock.Anything, mock.Anything, mock.Anything).
+	suite.mockJWTService.On("GenerateJWT", mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).
 		Return(expectedToken, int64(1234567890), nil)
 
 	startTime := time.Now().Unix()

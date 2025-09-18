@@ -22,6 +22,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/asgardeo/thunder/internal/system/config"
+
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
 )
@@ -32,6 +34,23 @@ type InMemoryCacheTestSuite struct {
 
 func TestInMemoryCacheSuite(t *testing.T) {
 	suite.Run(t, new(InMemoryCacheTestSuite))
+}
+
+func (suite *InMemoryCacheTestSuite) SetupSuite() {
+	mockConfig := &config.Config{
+		Cache: config.CacheConfig{
+			Disabled:        false,
+			Size:            1000,
+			TTL:             3600,
+			EvictionPolicy:  "LRU",
+			CleanupInterval: 300,
+		},
+	}
+	config.ResetThunderRuntime()
+	err := config.InitializeThunderRuntime("/test/thunder/home", mockConfig)
+	if err != nil {
+		suite.T().Fatal("Failed to initialize ThunderRuntime:", err)
+	}
 }
 
 func (suite *InMemoryCacheTestSuite) TestNewInMemoryCache() {
@@ -93,13 +112,7 @@ func (suite *InMemoryCacheTestSuite) TestNewInMemoryCache() {
 
 			if tc.enabled {
 				assert.Equal(t, 0, stats.Size)
-
-				// Check if default values are set for zero inputs
-				expectedSize := tc.size
-				if expectedSize <= 0 {
-					expectedSize = defaultCacheSize
-				}
-				assert.Equal(t, expectedSize, stats.MaxSize)
+				assert.Equal(t, tc.size, stats.MaxSize)
 			}
 		})
 	}

@@ -66,13 +66,13 @@ func (f *FlowContextWithUserDataDB) ToEngineContext(graph model.GraphInterface) 
 	}
 
 	// Parse authenticated user attributes
-	var userAttributes map[string]string
+	var userAttributes map[string]interface{}
 	if f.UserAttributes != nil {
 		if err := json.Unmarshal([]byte(*f.UserAttributes), &userAttributes); err != nil {
 			return model.EngineContext{}, err
 		}
 	} else {
-		userAttributes = make(map[string]string)
+		userAttributes = make(map[string]interface{})
 	}
 
 	// Build authenticated user

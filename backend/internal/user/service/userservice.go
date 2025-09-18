@@ -36,6 +36,7 @@ import (
 	"github.com/asgardeo/thunder/internal/user/constants"
 	"github.com/asgardeo/thunder/internal/user/model"
 	"github.com/asgardeo/thunder/internal/user/store"
+	userschemaservice "github.com/asgardeo/thunder/internal/userschema/service"
 )
 
 const loggerComponentName = "UserService"
@@ -49,8 +50,9 @@ var supportedCredentialFields = map[string]struct{}{
 
 // UserServiceInterface defines the interface for the user service.
 type UserServiceInterface interface {
-	GetUserList(limit, offset int) (*model.UserListResponse, *serviceerror.ServiceError)
-	GetUsersByPath(handlePath string, limit, offset int) (*model.UserListResponse, *serviceerror.ServiceError)
+	GetUserList(limit, offset int, filters map[string]interface{}) (*model.UserListResponse, *serviceerror.ServiceError)
+	GetUsersByPath(handlePath string, limit, offset int,
+		filters map[string]interface{}) (*model.UserListResponse, *serviceerror.ServiceError)
 	CreateUser(user *model.User) (*model.User, *serviceerror.ServiceError)
 	CreateUserByPath(handlePath string, request model.CreateUserByPathRequest) (*model.User, *serviceerror.ServiceError)
 	GetUser(userID string) (*model.User, *serviceerror.ServiceError)
@@ -64,30 +66,33 @@ type UserServiceInterface interface {
 
 // UserService is the default implementation of the UserServiceInterface.
 type UserService struct {
-	ouService ouservice.OrganizationUnitServiceInterface
+	ouService         ouservice.OrganizationUnitServiceInterface
+	userSchemaService userschemaservice.UserSchemaServiceInterface
 }
 
 // GetUserService creates a new instance of UserService.
 func GetUserService() UserServiceInterface {
 	return &UserService{
-		ouService: ouservice.GetOrganizationUnitService(),
+		ouService:         ouservice.GetOrganizationUnitService(),
+		userSchemaService: userschemaservice.GetUserSchemaService(),
 	}
 }
 
 // GetUserList lists the users.
-func (as *UserService) GetUserList(limit, offset int) (*model.UserListResponse, *serviceerror.ServiceError) {
+func (as *UserService) GetUserList(limit, offset int,
+	filters map[string]interface{}) (*model.UserListResponse, *serviceerror.ServiceError) {
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, loggerComponentName))
 
 	if err := validatePaginationParams(limit, offset); err != nil {
 		return nil, err
 	}
 
-	totalCount, err := store.GetUserListCount()
+	totalCount, err := store.GetUserListCount(filters)
 	if err != nil {
 		return nil, logErrorAndReturnServerError(logger, "Failed to get user list count", err)
 	}
 
-	users, err := store.GetUserList(limit, offset)
+	users, err := store.GetUserList(limit, offset, filters)
 	if err != nil {
 		return nil, logErrorAndReturnServerError(logger, "Failed to get user list", err)
 	}
@@ -113,7 +118,7 @@ func (as *UserService) GetUserList(limit, offset int) (*model.UserListResponse, 
 
 // GetUsersByPath retrieves a list of users by hierarchical handle path.
 func (as *UserService) GetUsersByPath(
-	handlePath string, limit, offset int,
+	handlePath string, limit, offset int, filters map[string]interface{},
 ) (*model.UserListResponse, *serviceerror.ServiceError) {
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, loggerComponentName))
 	logger.Debug("Getting users by path", log.String("path", handlePath))
@@ -168,6 +173,10 @@ func (as *UserService) CreateUser(user *model.User) (*model.User, *serviceerror.
 		return nil, &constants.ErrorInvalidRequestFormat
 	}
 
+	if svcErr := as.validateUserAndUniqueness(user.Type, user.Attributes, logger); svcErr != nil {
+		return nil, svcErr
+	}
+
 	user.ID = utils.GenerateUUID()
 
 	credentials, err := extractCredentials(user)
@@ -216,6 +225,10 @@ func (as *UserService) CreateUserByPath(
 
 // extractCredentials extracts the credentials from the user attributes and returns a Credentials array.
 func extractCredentials(user *model.User) ([]model.Credential, error) {
+	if user.Attributes == nil {
+		return []model.Credential{}, nil
+	}
+
 	var attrsMap map[string]interface{}
 	if err := json.Unmarshal(user.Attributes, &attrsMap); err != nil {
 		return nil, err
@@ -290,6 +303,10 @@ func (as *UserService) UpdateUser(userID string, user *model.User) (*model.User,
 
 	if user == nil {
 		return nil, &constants.ErrorInvalidRequestFormat
+	}
+
+	if svcErr := as.validateUserAndUniqueness(user.Type, user.Attributes, logger); svcErr != nil {
+		return nil, svcErr
 	}
 
 	err := store.UpdateUser(user)
@@ -492,6 +509,41 @@ func (as *UserService) ValidateUserIDs(userIDs []string) ([]string, *serviceerro
 	}
 
 	return invalidUserIDs, nil
+}
+
+// validateUserAndUniqueness validates the user schema and checks for uniqueness.
+func (as *UserService) validateUserAndUniqueness(
+	userType string, attributes []byte, logger *log.Logger,
+) *serviceerror.ServiceError {
+	isValid, svcErr := as.userSchemaService.ValidateUser(userType, attributes)
+	if svcErr != nil {
+		return logErrorAndReturnServerError(logger, "Failed to validate user schema", nil)
+	}
+	if !isValid {
+		return &constants.ErrorSchemaValidationFailed
+	}
+
+	isValid, svcErr = as.userSchemaService.ValidateUserUniqueness(userType, attributes,
+		func(filters map[string]interface{}) (*string, error) {
+			userID, svcErr := as.IdentifyUser(filters)
+			if svcErr != nil {
+				if svcErr.Code == constants.ErrorUserNotFound.Code {
+					return nil, nil
+				} else {
+					return nil, errors.New(svcErr.Error)
+				}
+			}
+			return userID, nil
+		})
+	if svcErr != nil {
+		return logErrorAndReturnServerError(logger, "Failed to validate user schema", nil)
+	}
+
+	if !isValid {
+		return &constants.ErrorAttributeConflict
+	}
+
+	return nil
 }
 
 // validateAndProcessHandlePath validates and processes the handle path.

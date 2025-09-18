@@ -72,6 +72,14 @@ var ErrorRegistrationFlowDisabled = serviceerror.ServiceError{
 	ErrorDescription: "Registration flow is disabled for the application",
 }
 
+// ErrorApplicationRetrievalClientError defines the error response for application retrieval client errors.
+var ErrorApplicationRetrievalClientError = serviceerror.ServiceError{
+	Code:             "FES-1007",
+	Type:             serviceerror.ClientErrorType,
+	Error:            "Application retrieval error",
+	ErrorDescription: "Error while retrieving application details",
+}
+
 // Server error structs
 
 // ErrorFlowGraphNotInitialized defines the error response for uninitialized flow graph errors.
@@ -227,4 +235,12 @@ var ErrorFlowContextConversionFailed = serviceerror.ServiceError{
 	Type:             serviceerror.ServerErrorType,
 	Error:            "Something went wrong",
 	ErrorDescription: "Failed to convert flow context from database format",
+}
+
+// ErrorApplicationRetrievalServerError defines the error response for application retrieval server errors.
+var ErrorApplicationRetrievalServerError = serviceerror.ServiceError{
+	Code:             "FES-5020",
+	Type:             serviceerror.ServerErrorType,
+	Error:            "Application retrieval error",
+	ErrorDescription: "Server error while retrieving application details",
 }

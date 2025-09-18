@@ -33,7 +33,6 @@ import (
 	"github.com/asgardeo/thunder/internal/system/config"
 	"github.com/asgardeo/thunder/internal/system/crypto/hash"
 	"github.com/asgardeo/thunder/internal/system/error/serviceerror"
-	"github.com/asgardeo/thunder/internal/system/jwt"
 	"github.com/asgardeo/thunder/internal/system/log"
 	sysutils "github.com/asgardeo/thunder/internal/system/utils"
 )
@@ -1005,9 +1004,10 @@ func (as *ApplicationService) rollbackApplicationCertificateUpdate(appID string,
 
 // getDefaultTokenConfigFromDeployment creates a default token configuration from deployment settings.
 func getDefaultTokenConfigFromDeployment() *model.TokenConfig {
+	jwtConfig := config.GetThunderRuntime().Config.OAuth.JWT
 	tokenConfig := &model.TokenConfig{
-		Issuer:         jwt.GetJWTTokenIssuer(),
-		ValidityPeriod: jwt.GetJWTTokenValidityPeriod(),
+		Issuer:         jwtConfig.Issuer,
+		ValidityPeriod: jwtConfig.ValidityPeriod,
 	}
 
 	return tokenConfig

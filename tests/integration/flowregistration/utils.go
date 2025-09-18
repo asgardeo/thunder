@@ -127,99 +127,6 @@ func completeRegistrationFlow(flowID string, actionID string, inputs map[string]
 	return &flowStep, nil
 }
 
-// Helper function to create multiple users
-func CreateMultipleUsers(users ...User) ([]string, error) {
-	var userIDs []string
-
-	for _, user := range users {
-		userID, err := createUser(user)
-		if err != nil {
-			// If error occurs, cleanup already created users
-			CleanupUsers(userIDs)
-			return nil, err
-		}
-		userIDs = append(userIDs, userID)
-	}
-
-	return userIDs, nil
-}
-
-// Helper function to create a single user
-func createUser(user User) (string, error) {
-	reqBody, err := json.Marshal(user)
-	if err != nil {
-		return "", fmt.Errorf("failed to marshal user request body: %w", err)
-	}
-
-	req, err := http.NewRequest("POST", testServerURL+"/users", bytes.NewReader(reqBody))
-	if err != nil {
-		return "", fmt.Errorf("failed to create user request: %w", err)
-	}
-
-	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("Accept", "application/json")
-
-	client := &http.Client{
-		Transport: &http.Transport{
-			TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
-		},
-	}
-
-	resp, err := client.Do(req)
-	if err != nil {
-		return "", fmt.Errorf("failed to send user creation request: %w", err)
-	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode != http.StatusCreated {
-		bodyBytes, _ := io.ReadAll(resp.Body)
-		return "", fmt.Errorf("failed to create user, status: %d, response: %s", resp.StatusCode, string(bodyBytes))
-	}
-
-	var createdUser User
-	err = json.NewDecoder(resp.Body).Decode(&createdUser)
-	if err != nil {
-		return "", fmt.Errorf("failed to parse user response body: %w", err)
-	}
-
-	return createdUser.Id, nil
-}
-
-// Helper function to cleanup users
-func CleanupUsers(userIDs []string) error {
-	client := &http.Client{
-		Transport: &http.Transport{
-			TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
-		},
-	}
-
-	var lastErr error
-	for _, userID := range userIDs {
-		if userID == "" {
-			continue
-		}
-
-		req, err := http.NewRequest("DELETE", testServerURL+"/users/"+userID, nil)
-		if err != nil {
-			lastErr = err
-			continue
-		}
-
-		resp, err := client.Do(req)
-		if err != nil {
-			lastErr = err
-			continue
-		}
-		resp.Body.Close()
-
-		if resp.StatusCode != http.StatusNoContent {
-			lastErr = fmt.Errorf("failed to delete user %s, status: %d", userID, resp.StatusCode)
-		}
-	}
-
-	return lastErr
-}
-
 // getAppConfig retrieves the current application configuration
 func getAppConfig(appID string) (map[string]interface{}, error) {
 	tr := &http.Transport{
@@ -386,13 +293,6 @@ func generateUniqueUsername(prefix string) string {
 	return fmt.Sprintf("%s_%d", prefix, time.Now().UnixNano())
 }
 
-// Helper function to get user attributes
-func GetUserAttributes(user User) (map[string]interface{}, error) {
-	var attrs map[string]interface{}
-	err := json.Unmarshal(user.Attributes, &attrs)
-	return attrs, err
-}
-
 // NotificationSenderRequest represents the request to create a message notification sender.
 type NotificationSenderRequest struct {
 	Name        string           `json:"name"`
@@ -506,48 +406,4 @@ func DeleteNotificationSender(senderID string) error {
 	}
 
 	return nil
-}
-
-// FindUserByAttribute retrieves all users and returns the user with a matching attribute key and value
-func FindUserByAttribute(key, value string) (*User, error) {
-	client := &http.Client{
-		Transport: &http.Transport{
-			TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
-		},
-	}
-
-	req, err := http.NewRequest("GET", testServerURL+"/users", nil)
-	if err != nil {
-		return nil, fmt.Errorf("failed to create user list request: %w", err)
-	}
-
-	req.Header.Set("Accept", "application/json")
-
-	resp, err := client.Do(req)
-	if err != nil {
-		return nil, fmt.Errorf("failed to send user list request: %w", err)
-	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("failed to get user list, status: %d", resp.StatusCode)
-	}
-
-	var userListResponse UserListResponse
-	err = json.NewDecoder(resp.Body).Decode(&userListResponse)
-	if err != nil {
-		return nil, fmt.Errorf("failed to parse user list response: %w", err)
-	}
-
-	for _, user := range userListResponse.Users {
-		attrs, err := GetUserAttributes(user)
-
-		if err != nil {
-			continue
-		}
-		if v, ok := attrs[key]; ok && v == value {
-			return &user, nil
-		}
-	}
-	return nil, nil
 }

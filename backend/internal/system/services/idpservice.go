@@ -38,7 +38,7 @@ type IDPService struct {
 func NewIDPService(mux *http.ServeMux) ServiceInterface {
 	instance := &IDPService{
 		ServerOpsService: server.NewServerOperationService(),
-		idpHandler:       &handler.IDPHandler{},
+		idpHandler:       handler.NewIDPHandler(),
 	}
 	instance.RegisterRoutes(mux)
 
@@ -68,11 +68,13 @@ func (s *IDPService) RegisterRoutes(mux *http.ServeMux) {
 			AllowCredentials: true,
 		},
 	}
-	s.ServerOpsService.WrapHandleFunction(mux, "GET /identity-providers/", &opts2, s.idpHandler.HandleIDPGetRequest)
-	s.ServerOpsService.WrapHandleFunction(mux, "PUT /identity-providers/", &opts2, s.idpHandler.HandleIDPPutRequest)
-	s.ServerOpsService.WrapHandleFunction(mux, "DELETE /identity-providers/", &opts2,
+	s.ServerOpsService.WrapHandleFunction(mux, "GET /identity-providers/{id}", &opts2,
+		s.idpHandler.HandleIDPGetRequest)
+	s.ServerOpsService.WrapHandleFunction(mux, "PUT /identity-providers/{id}", &opts2,
+		s.idpHandler.HandleIDPPutRequest)
+	s.ServerOpsService.WrapHandleFunction(mux, "DELETE /identity-providers/{id}", &opts2,
 		s.idpHandler.HandleIDPDeleteRequest)
-	s.ServerOpsService.WrapHandleFunction(mux, "OPTIONS /identity-providers/", &opts2,
+	s.ServerOpsService.WrapHandleFunction(mux, "OPTIONS /identity-providers/{id}", &opts2,
 		func(w http.ResponseWriter, r *http.Request) {
 			w.WriteHeader(http.StatusNoContent)
 		})

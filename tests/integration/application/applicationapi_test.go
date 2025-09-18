@@ -35,27 +35,12 @@ const (
 )
 
 var (
-	preCreatedApp = Application{
-		ID:                        "550e8400-e29b-41d4-a716-446655440000",
-		Name:                      "Test SPA",
-		Description:               "Initial testing App",
-		ClientID:                  "client123",
+	testApp = Application{
+		Name:                      "Test App",
+		Description:               "Test application for API testing",
 		IsRegistrationFlowEnabled: false,
-		// Default API values
-		AuthFlowGraphID:         "auth_flow_config_basic",
-		RegistrationFlowGraphID: "registration_flow_config_basic",
-		Certificate: &ApplicationCert{
-			Type:  "NONE",
-			Value: "",
-		},
-	}
-
-	appToCreate = Application{
-		Name:                      "My App",
-		Description:               "A demo application",
-		IsRegistrationFlowEnabled: true,
-		URL:                       "https://myapp.example.com",
-		LogoURL:                   "https://myapp.example.com/logo.png",
+		URL:                       "https://testapp.example.com",
+		LogoURL:                   "https://testapp.example.com/logo.png",
 		AuthFlowGraphID:           "auth_flow_config_basic",
 		RegistrationFlowGraphID:   "registration_flow_config_basic",
 		Certificate: &ApplicationCert{
@@ -66,9 +51,36 @@ var (
 			{
 				Type: "oauth2",
 				OAuthAppConfig: &OAuthAppConfig{
-					ClientID:                "abc1237",
-					ClientSecret:            "s3cret",
-					RedirectURIs:            []string{"http://localhost/callback"},
+					ClientID:                "test_app_client",
+					ClientSecret:            "test_app_secret",
+					RedirectURIs:            []string{"http://localhost/testapp/callback"},
+					GrantTypes:              []string{"authorization_code", "client_credentials"},
+					ResponseTypes:           []string{"code"},
+					TokenEndpointAuthMethod: []string{"client_secret_basic", "client_secret_post"},
+				},
+			},
+		},
+	}
+
+	appToCreate = Application{
+		Name:                      "App To Create",
+		Description:               "Application to create for API testing",
+		IsRegistrationFlowEnabled: true,
+		URL:                       "https://apptocreate.example.com",
+		LogoURL:                   "https://apptocreate.example.com/logo.png",
+		AuthFlowGraphID:           "auth_flow_config_basic",
+		RegistrationFlowGraphID:   "registration_flow_config_basic",
+		Certificate: &ApplicationCert{
+			Type:  "NONE",
+			Value: "",
+		},
+		InboundAuthConfig: []InboundAuthConfig{
+			{
+				Type: "oauth2",
+				OAuthAppConfig: &OAuthAppConfig{
+					ClientID:                "app_to_create_client",
+					ClientSecret:            "app_to_create_secret",
+					RedirectURIs:            []string{"http://localhost/apptocreate/callback"},
 					GrantTypes:              []string{"authorization_code", "client_credentials"},
 					ResponseTypes:           []string{"code"},
 					TokenEndpointAuthMethod: []string{"client_secret_basic", "client_secret_post"},
@@ -81,8 +93,8 @@ var (
 		Name:                      "Updated App",
 		Description:               "Updated Description",
 		IsRegistrationFlowEnabled: false,
-		URL:                       "https://updatedapp.example.com",
-		LogoURL:                   "https://updatedapp.example.com/logo.png",
+		URL:                       "https://appToUpdate.example.com",
+		LogoURL:                   "https://appToUpdate.example.com/logo.png",
 		AuthFlowGraphID:           "auth_flow_config_basic",
 		RegistrationFlowGraphID:   "registration_flow_config_basic",
 		Certificate: &ApplicationCert{
@@ -105,7 +117,12 @@ var (
 	}
 )
 
-var createdAppID string
+var (
+	testAppID          string
+	createdAppID       string
+	testAppInstance    Application
+	createdAppInstance Application
+)
 
 type ApplicationAPITestSuite struct {
 	suite.Suite
@@ -116,24 +133,52 @@ func TestApplicationAPITestSuite(t *testing.T) {
 	suite.Run(t, new(ApplicationAPITestSuite))
 }
 
-// SetupSuite test application creation
+// SetupSuite creates test applications for the test suite
 func (ts *ApplicationAPITestSuite) SetupSuite() {
-
-	id, err := createApplication(ts)
+	// Create test application
+	app1ID, err := createApplication(testApp)
 	if err != nil {
-		ts.T().Fatalf("Failed to create application during setup: %v", err)
-	} else {
-		createdAppID = id
+		ts.T().Fatalf("Failed to create test application during setup: %v", err)
+	}
+	testAppID = app1ID
+
+	// Build the test app structure for validations
+	testAppInstance = testApp
+	testAppInstance.ID = testAppID
+	if len(testAppInstance.InboundAuthConfig) > 0 && testAppInstance.InboundAuthConfig[0].OAuthAppConfig != nil {
+		testAppInstance.ClientID = testAppInstance.InboundAuthConfig[0].OAuthAppConfig.ClientID
+	}
+
+	// Create appToCreate application
+	app2ID, err := createApplication(appToCreate)
+	if err != nil {
+		ts.T().Fatalf("Failed to create appToCreate application during setup: %v", err)
+	}
+	createdAppID = app2ID
+
+	// Build the test app structure for validations
+	createdAppInstance = appToCreate
+	createdAppInstance.ID = createdAppID
+	if len(createdAppInstance.InboundAuthConfig) > 0 && createdAppInstance.InboundAuthConfig[0].OAuthAppConfig != nil {
+		createdAppInstance.ClientID = createdAppInstance.InboundAuthConfig[0].OAuthAppConfig.ClientID
 	}
 }
 
-// TearDownSuite test application deletion
+// TearDownSuite cleans up test applications
 func (ts *ApplicationAPITestSuite) TearDownSuite() {
+	// Delete the test application
+	if testAppID != "" {
+		err := deleteApplication(testAppID)
+		if err != nil {
+			ts.T().Logf("Failed to delete test application during teardown: %v", err)
+		}
+	}
 
+	// Delete the appToCreate application
 	if createdAppID != "" {
 		err := deleteApplication(createdAppID)
 		if err != nil {
-			ts.T().Fatalf("Failed to delete application during teardown: %v", err)
+			ts.T().Logf("Failed to delete appToCreate application during teardown: %v", err)
 		}
 	}
 }
@@ -187,28 +232,22 @@ func (ts *ApplicationAPITestSuite) TestApplicationListing() {
 		ts.T().Fatalf("Response does not contain any applications")
 	}
 
-	if applicationListLength != 2 {
-		ts.T().Fatalf("Expected 2 applications, got %d", applicationListLength)
-	}
-
-	// When listing applications, we need to compare to the BasicApplicationResponse structure
-	// which might have different fields from what we expect in our test
-	// Instead of direct comparison, let's check the core fields that we care about
-	app1 := appList.Applications[0]
-	if app1.ID != preCreatedApp.ID ||
-		app1.Name != preCreatedApp.Name ||
-		app1.Description != preCreatedApp.Description ||
-		app1.ClientID != preCreatedApp.ClientID {
-		ts.T().Fatalf("Application core fields mismatch for preCreatedApp")
-	}
-
-	app2 := appList.Applications[1]
-	createdApp := buildCreatedAppBasic()
-	if app2.ID != createdApp.ID ||
-		app2.Name != createdApp.Name ||
-		app2.Description != createdApp.Description ||
-		app2.ClientID != createdApp.ClientID {
-		ts.T().Fatalf("Application core fields mismatch for createdApp")
+	// Verify that both test applications are present in the list
+	testApps := []Application{testAppInstance, createdAppInstance}
+	for _, expectedApp := range testApps {
+		found := false
+		for _, app := range appList.Applications {
+			if app.ID == expectedApp.ID &&
+				app.Name == expectedApp.Name &&
+				app.Description == expectedApp.Description &&
+				app.ClientID == expectedApp.ClientID {
+				found = true
+				break
+			}
+		}
+		if !found {
+			ts.T().Fatalf("Test application not found in list: %+v", expectedApp)
+		}
 	}
 }
 
@@ -218,8 +257,7 @@ func (ts *ApplicationAPITestSuite) TestApplicationGetByID() {
 	if createdAppID == "" {
 		ts.T().Fatal("Application ID is not available for retrieval")
 	}
-	application := buildCreatedApp()
-	retrieveAndValidateApplicationDetails(ts, application)
+	retrieveAndValidateApplicationDetails(ts, createdAppInstance)
 }
 
 // Test application update
@@ -348,17 +386,15 @@ func retrieveAndValidateApplicationDetails(ts *ApplicationAPITestSuite, expected
 	}
 }
 
-func createApplication(ts *ApplicationAPITestSuite) (string, error) {
-
-	appJSON, err := json.Marshal(appToCreate)
+func createApplication(app Application) (string, error) {
+	appJSON, err := json.Marshal(app)
 	if err != nil {
-		ts.T().Fatalf("Failed to marshal appToCreate: %v", err)
+		return "", fmt.Errorf("failed to marshal application: %w", err)
 	}
 
 	reqBody := bytes.NewReader(appJSON)
 	req, err := http.NewRequest("POST", testServerURL+"/applications", reqBody)
 	if err != nil {
-		// print error
 		return "", fmt.Errorf("failed to create request: %w", err)
 	}
 	req.Header.Set("Content-Type", "application/json")
@@ -425,44 +461,4 @@ func deleteApplication(appID string) error {
 		return fmt.Errorf("expected status 204, got %d. Response: %s", resp.StatusCode, string(responseBody))
 	}
 	return nil
-}
-
-func buildCreatedApp() Application {
-	createdApp := appToCreate
-	createdApp.ID = createdAppID
-
-	// Make sure ClientID is correctly set in the root level
-	// Extract it from OAuth config if needed
-	if len(createdApp.InboundAuthConfig) > 0 && createdApp.InboundAuthConfig[0].OAuthAppConfig != nil {
-		createdApp.ClientID = createdApp.InboundAuthConfig[0].OAuthAppConfig.ClientID
-		// For GET operations, client secret should not be expected in the response
-		createdApp.InboundAuthConfig[0].OAuthAppConfig.ClientSecret = ""
-	}
-
-	// Ensure certificate is set
-	if createdApp.Certificate == nil {
-		createdApp.Certificate = &ApplicationCert{
-			Type:  "NONE",
-			Value: "",
-		}
-	}
-
-	return createdApp
-}
-
-// For list operations, we use a basic application structure without client secret
-func buildCreatedAppBasic() Application {
-	return Application{
-		ID:                        createdAppID,
-		Name:                      appToCreate.Name,
-		Description:               appToCreate.Description,
-		ClientID:                  "abc1237", // Get client ID from the OAuth config
-		IsRegistrationFlowEnabled: appToCreate.IsRegistrationFlowEnabled,
-		AuthFlowGraphID:           appToCreate.AuthFlowGraphID,
-		RegistrationFlowGraphID:   appToCreate.RegistrationFlowGraphID,
-		Certificate: &ApplicationCert{
-			Type:  "NONE",
-			Value: "",
-		},
-	}
 }

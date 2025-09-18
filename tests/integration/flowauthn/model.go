@@ -18,8 +18,6 @@
 
 package flowauthn
 
-import "encoding/json"
-
 type FlowStep struct {
 	FlowID        string   `json:"flowId"`
 	FlowStatus    string   `json:"flowStatus"`
@@ -45,13 +43,6 @@ type InputData struct {
 type FlowAction struct {
 	Type string `json:"type"`
 	ID   string `json:"id"`
-}
-
-type User struct {
-	Id               string          `json:"id,omitempty"`
-	OrganizationUnit string          `json:"organizationUnit"`
-	Type             string          `json:"type"`
-	Attributes       json.RawMessage `json:"attributes"`
 }
 
 type ErrorResponse struct {

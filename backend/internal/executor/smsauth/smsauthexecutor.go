@@ -44,8 +44,6 @@ const (
 	userAttributeUsername     = "username"
 	userAttributeMobileNumber = "mobileNumber"
 	userAttributeEmail        = "email"
-	userAttributeFirstName    = "firstName"
-	userAttributeLastName     = "lastName"
 	userInputOTP              = "otp"
 	errorInvalidOTP           = "invalid OTP provided"
 )
@@ -721,7 +719,7 @@ func (s *SMSOTPAuthExecutor) getAuthenticatedUser(ctx *flowmodel.NodeContext,
 		execResp.FailureReason = ""
 		return &authndto.AuthenticatedUser{
 			IsAuthenticated: false,
-			Attributes: map[string]string{
+			Attributes: map[string]interface{}{
 				userAttributeMobileNumber: mobileNumber,
 			},
 		}, nil
@@ -743,40 +741,10 @@ func (s *SMSOTPAuthExecutor) getAuthenticatedUser(ctx *flowmodel.NodeContext,
 		return nil, fmt.Errorf("failed to unmarshal user attributes: %w", err)
 	}
 
-	// Create the authenticated user object
-	email := ""
-	emailAttr := attrs[userAttributeEmail]
-	if emailAttr != nil {
-		email = emailAttr.(string)
-	}
-
-	firstName := ""
-	firstNameAttr := attrs[userAttributeFirstName]
-	if firstNameAttr != nil {
-		firstName = firstNameAttr.(string)
-	}
-
-	lastName := ""
-	lastNameAttr := attrs[userAttributeLastName]
-	if lastNameAttr != nil {
-		lastName = lastNameAttr.(string)
-	}
-
 	authenticatedUser := &authndto.AuthenticatedUser{
 		IsAuthenticated: true,
 		UserID:          user.ID,
-		Attributes: map[string]string{
-			userAttributeMobileNumber: mobileNumber,
-		},
-	}
-	if email != "" {
-		authenticatedUser.Attributes[userAttributeEmail] = email
-	}
-	if firstName != "" {
-		authenticatedUser.Attributes[userAttributeFirstName] = firstName
-	}
-	if lastName != "" {
-		authenticatedUser.Attributes[userAttributeLastName] = lastName
+		Attributes:      attrs,
 	}
 
 	return authenticatedUser, nil

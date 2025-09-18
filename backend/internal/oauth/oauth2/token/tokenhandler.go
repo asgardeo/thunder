@@ -197,7 +197,7 @@ func (th *TokenHandler) HandleTokenRequest(w http.ResponseWriter, r *http.Reques
 			return
 		}
 
-		refreshTokenError := refreshGrantHandlerTyped.IssueRefreshToken(tokenRespDTO, ctx, oauthApp.ClientID,
+		refreshTokenError := refreshGrantHandlerTyped.IssueRefreshToken(tokenRespDTO, oauthApp, ctx,
 			grantTypeStr, tokenRespDTO.AccessToken.Scopes)
 		if refreshTokenError != nil && refreshTokenError.Error != "" {
 			utils.WriteJSONError(w, refreshTokenError.Error, refreshTokenError.ErrorDescription,

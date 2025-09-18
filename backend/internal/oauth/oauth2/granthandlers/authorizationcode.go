@@ -19,6 +19,7 @@
 package granthandlers
 
 import (
+	"encoding/json"
 	"strings"
 	"time"
 
@@ -28,20 +29,25 @@ import (
 	"github.com/asgardeo/thunder/internal/oauth/oauth2/authz/store"
 	"github.com/asgardeo/thunder/internal/oauth/oauth2/constants"
 	"github.com/asgardeo/thunder/internal/oauth/oauth2/model"
+	"github.com/asgardeo/thunder/internal/system/config"
 	"github.com/asgardeo/thunder/internal/system/jwt"
+	"github.com/asgardeo/thunder/internal/system/log"
+	userservice "github.com/asgardeo/thunder/internal/user/service"
 )
 
 // authorizationCodeGrantHandler handles the authorization code grant type.
 type authorizationCodeGrantHandler struct {
-	JWTService jwt.JWTServiceInterface
-	AuthZStore store.AuthorizationCodeStoreInterface
+	JWTService  jwt.JWTServiceInterface
+	AuthZStore  store.AuthorizationCodeStoreInterface
+	UserService userservice.UserServiceInterface
 }
 
 // newAuthorizationCodeGrantHandler creates a new instance of AuthorizationCodeGrantHandler.
 func newAuthorizationCodeGrantHandler() GrantHandlerInterface {
 	return &authorizationCodeGrantHandler{
-		JWTService: jwt.GetJWTService(),
-		AuthZStore: store.NewAuthorizationCodeStore(),
+		JWTService:  jwt.GetJWTService(),
+		AuthZStore:  store.NewAuthorizationCodeStore(),
+		UserService: userservice.GetUserService(),
 	}
 }
 
@@ -97,6 +103,8 @@ func (h *authorizationCodeGrantHandler) ValidateGrant(tokenRequest *model.TokenR
 func (h *authorizationCodeGrantHandler) HandleGrant(tokenRequest *model.TokenRequest,
 	oauthApp *appmodel.OAuthAppConfigProcessedDTO, ctx *model.TokenContext) (
 	*model.TokenResponseDTO, *model.ErrorResponse) {
+	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, "AuthorizationCodeGrantHandler"))
+
 	authCode, err := h.AuthZStore.GetAuthorizationCode(tokenRequest.ClientID, tokenRequest.Code)
 	if err != nil || authCode.Code == "" {
 		return nil, &model.ErrorResponse{
@@ -128,12 +136,57 @@ func (h *authorizationCodeGrantHandler) HandleGrant(tokenRequest *model.TokenReq
 	}
 
 	// Generate a JWT token for the client
-	jwtClaims := make(map[string]string)
+	jwtClaims := make(map[string]interface{})
 	if authorizedScopesStr != "" {
 		jwtClaims["scope"] = authorizedScopesStr
 	}
+
+	// Get token configuration from OAuth app
+	iss := ""
+	validityPeriod := int64(0)
+	if oauthApp.Token != nil && oauthApp.Token.AccessToken != nil {
+		iss = oauthApp.Token.AccessToken.Issuer
+		validityPeriod = oauthApp.Token.AccessToken.ValidityPeriod
+	}
+	if iss == "" {
+		iss = config.GetThunderRuntime().Config.OAuth.JWT.Issuer
+	}
+	if validityPeriod == 0 {
+		validityPeriod = config.GetThunderRuntime().Config.OAuth.JWT.ValidityPeriod
+	}
+
+	userAttributes := map[string]interface{}{}
+	if len(oauthApp.Token.AccessToken.UserAttributes) > 0 {
+		user, svcErr := h.UserService.GetUser(authCode.AuthorizedUserID)
+		if svcErr != nil {
+			logger.Error("Failed to fetch user attributes",
+				log.String("userID", authCode.AuthorizedUserID), log.Any("error", svcErr))
+			return nil, &model.ErrorResponse{
+				Error:            constants.ErrorServerError,
+				ErrorDescription: "Something went wrong",
+			}
+		}
+
+		var attrs map[string]interface{}
+		if err := json.Unmarshal(user.Attributes, &attrs); err != nil {
+			logger.Error("Failed to unmarshal user attributes", log.String("userID", authCode.AuthorizedUserID),
+				log.Error(err))
+			return nil, &model.ErrorResponse{
+				Error:            constants.ErrorServerError,
+				ErrorDescription: "Something went wrong",
+			}
+		}
+
+		for _, attr := range oauthApp.Token.AccessToken.UserAttributes {
+			if val, ok := attrs[attr]; ok {
+				jwtClaims[attr] = val
+				userAttributes[attr] = val
+			}
+		}
+	}
+
 	token, _, err := h.JWTService.GenerateJWT(authCode.AuthorizedUserID, authCode.ClientID,
-		jwt.GetJWTTokenValidityPeriod(), jwtClaims)
+		iss, validityPeriod, jwtClaims)
 	if err != nil {
 		return nil, &model.ErrorResponse{
 			Error:            constants.ErrorServerError,
@@ -150,12 +203,13 @@ func (h *authorizationCodeGrantHandler) HandleGrant(tokenRequest *model.TokenReq
 
 	// Prepare the token response.
 	accessToken := &model.TokenDTO{
-		Token:     token,
-		TokenType: constants.TokenTypeBearer,
-		IssuedAt:  time.Now().Unix(),
-		ExpiresIn: 3600,
-		Scopes:    authorizedScopes,
-		ClientID:  tokenRequest.ClientID,
+		Token:          token,
+		TokenType:      constants.TokenTypeBearer,
+		IssuedAt:       time.Now().Unix(),
+		ExpiresIn:      3600,
+		Scopes:         authorizedScopes,
+		ClientID:       tokenRequest.ClientID,
+		UserAttributes: userAttributes,
 	}
 
 	return &model.TokenResponseDTO{

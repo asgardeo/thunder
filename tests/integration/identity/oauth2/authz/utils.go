@@ -28,164 +28,12 @@ import (
 	"net/url"
 )
 
-// TestCase represents a test case for authorization code flow
-type TestCase struct {
-	Name           string
-	ClientID       string
-	RedirectURI    string
-	ResponseType   string
-	Scope          string
-	State          string
-	Username       string
-	Password       string
-	ExpectedStatus int
-	ExpectedError  string
-}
-
-// User represents a test user for authorization code tests
-type User struct {
-	OrganizationUnit string                 `json:"organizationUnit"`
-	Type             string                 `json:"type"`
-	Attributes       map[string]interface{} `json:"attributes"`
-}
-
-// FlowResponse represents the response from flow execution
-type FlowResponse struct {
-	FlowID        string    `json:"flowId"`
-	FlowStatus    string    `json:"flowStatus"`
-	Type          string    `json:"type"`
-	Data          *FlowData `json:"data,omitempty"`
-	Assertion     string    `json:"assertion,omitempty"`
-	FailureReason string    `json:"failureReason,omitempty"`
-}
-
-// FlowData represents the data returned by flow execution
-type FlowData struct {
-	Inputs []FlowInput `json:"inputs,omitempty"`
-}
-
-// FlowInput represents an input required by the flow
-type FlowInput struct {
-	Name     string `json:"name"`
-	Type     string `json:"type"`
-	Required bool   `json:"required"`
-}
-
-// AuthorizationResponse represents the response from authorization completion
-type AuthorizationResponse struct {
-	RedirectURI string `json:"redirect_uri"`
-}
-
-// TokenResponse represents the response from token exchange
-type TokenResponse struct {
-	AccessToken  string  `json:"access_token"`
-	TokenType    string  `json:"token_type"`
-	ExpiresIn    float64 `json:"expires_in"`
-	Scope        string  `json:"scope,omitempty"`
-	RefreshToken string  `json:"refresh_token,omitempty"`
-}
-
-// TokenHTTPResult captures raw HTTP response details from the token endpoint.
-type TokenHTTPResult struct {
-	StatusCode int
-	Body       []byte
-	Token      *TokenResponse
-}
-
-// FlowStep represents a single step in a flow execution
-type FlowStep struct {
-	FlowID        string    `json:"flowId"`
-	FlowStatus    string    `json:"flowStatus"`
-	Type          string    `json:"type"`
-	Data          *FlowData `json:"data,omitempty"`
-	Assertion     string    `json:"assertion,omitempty"`
-	FailureReason string    `json:"failureReason,omitempty"`
-}
-
-// createTestUser creates a test user with the given credentials
-func createTestUser(testServerURL string, username, password string) (string, error) {
-	userData := User{
-		OrganizationUnit: "456e8400-e29b-41d4-a716-446655440001",
-		Type:             "person",
-		Attributes: map[string]interface{}{
-			"username":  username,
-			"password":  password,
-			"email":     username + "@example.com",
-			"firstName": "Test",
-			"lastName":  "User",
-		},
-	}
-
-	userJSON, err := json.Marshal(userData)
-	if err != nil {
-		return "", fmt.Errorf("failed to marshal user data: %w", err)
-	}
-
-	req, err := http.NewRequest("POST", testServerURL+"/users", bytes.NewBuffer(userJSON))
-	if err != nil {
-		return "", fmt.Errorf("failed to create user request: %w", err)
-	}
-	req.Header.Set("Content-Type", "application/json")
-
-	client := &http.Client{
-		Transport: &http.Transport{
-			TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
-		},
-	}
-
-	resp, err := client.Do(req)
-	if err != nil {
-		return "", fmt.Errorf("failed to create user: %w", err)
-	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode != http.StatusCreated {
-		bodyBytes, _ := io.ReadAll(resp.Body)
-		return "", fmt.Errorf("user creation failed with status %d: %s", resp.StatusCode, string(bodyBytes))
-	}
-
-	var createdUser map[string]interface{}
-	err = json.NewDecoder(resp.Body).Decode(&createdUser)
-	if err != nil {
-		return "", fmt.Errorf("failed to decode user response: %w", err)
-	}
-
-	userID, ok := createdUser["id"].(string)
-	if !ok {
-		return "", fmt.Errorf("user ID not found in response")
-	}
-
-	return userID, nil
-}
-
-// deleteTestUser deletes a test user by ID
-func deleteTestUser(testServerURL string, userID string) error {
-	req, err := http.NewRequest("DELETE", testServerURL+"/users/"+userID, nil)
-	if err != nil {
-		return fmt.Errorf("failed to create delete request: %w", err)
-	}
-
-	client := &http.Client{
-		Transport: &http.Transport{
-			TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
-		},
-	}
-
-	resp, err := client.Do(req)
-	if err != nil {
-		return fmt.Errorf("failed to delete user: %w", err)
-	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode != http.StatusNoContent {
-		return fmt.Errorf("user deletion failed with status %d", resp.StatusCode)
-	}
-
-	return nil
-}
+const (
+	testServerURL = "https://localhost:8095"
+)
 
 // initiateAuthorizationFlow starts the OAuth2 authorization flow
-func initiateAuthorizationFlow(testServerURL string, clientID, redirectURI, responseType, scope, state string) (*http.Response, error) {
+func initiateAuthorizationFlow(clientID, redirectURI, responseType, scope, state string) (*http.Response, error) {
 	authURL := testServerURL + "/oauth2/authorize"
 	params := url.Values{}
 	params.Set("client_id", clientID)
@@ -217,7 +65,7 @@ func initiateAuthorizationFlow(testServerURL string, clientID, redirectURI, resp
 }
 
 // ExecuteAuthenticationFlow executes an authentication flow and returns the flow step
-func ExecuteAuthenticationFlow(testServerURL string, applicationId string, inputs map[string]string) (*FlowStep, error) {
+func ExecuteAuthenticationFlow(applicationId string, inputs map[string]string) (*FlowStep, error) {
 	flowData := map[string]interface{}{
 		"applicationId": applicationId,
 		"flowType":      "AUTHENTICATION",
@@ -264,7 +112,7 @@ func ExecuteAuthenticationFlow(testServerURL string, applicationId string, input
 }
 
 // completeAuthorization completes the authorization using the assertion
-func completeAuthorization(testServerURL string, sessionDataKey, assertion string) (*AuthorizationResponse, error) {
+func completeAuthorization(sessionDataKey, assertion string) (*AuthorizationResponse, error) {
 	authzData := map[string]interface{}{
 		"sessionDataKey": sessionDataKey,
 		"assertion":      assertion,
@@ -309,7 +157,7 @@ func completeAuthorization(testServerURL string, sessionDataKey, assertion strin
 
 // requestToken performs a token request and returns raw HTTP result for both success and failure scenarios.
 // grantType, code, and redirectURI are sent in the form body, while client credentials are sent via HTTP Basic Auth header.
-func requestToken(testServerURL string, clientID, clientSecret, code, redirectURI, grantType string) (*TokenHTTPResult, error) {
+func requestToken(clientID, clientSecret, code, redirectURI, grantType string) (*TokenHTTPResult, error) {
 	tokenURL := testServerURL + "/oauth2/token"
 	tokenData := url.Values{}
 

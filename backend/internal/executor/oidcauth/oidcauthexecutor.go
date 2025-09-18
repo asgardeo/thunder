@@ -33,7 +33,6 @@ import (
 	flowmodel "github.com/asgardeo/thunder/internal/flow/model"
 	"github.com/asgardeo/thunder/internal/system/jwt"
 	"github.com/asgardeo/thunder/internal/system/log"
-	systemutils "github.com/asgardeo/thunder/internal/system/utils"
 )
 
 const loggerComponentName = "OIDCAuthExecutor"
@@ -362,12 +361,12 @@ func (o *OIDCAuthExecutor) getAuthenticatedUserWithAttributes(ctx *flowmodel.Nod
 		log.String(log.LoggerKeyExecutorID, o.GetID()),
 		log.String(log.LoggerKeyFlowID, ctx.FlowID))
 
-	userClaims := make(map[string]string)
+	userClaims := make(map[string]interface{})
 	if len(idTokenClaims) != 0 {
 		// Filter non-user claims from the ID token claims.
 		for attr, val := range idTokenClaims {
 			if !slices.Contains(idTokenNonUserAttributes, attr) {
-				userClaims[attr] = systemutils.ConvertInterfaceValueToString(val)
+				userClaims[attr] = val
 			}
 		}
 		logger.Debug("Extracted ID token claims", log.Int("noOfClaims", len(idTokenClaims)))

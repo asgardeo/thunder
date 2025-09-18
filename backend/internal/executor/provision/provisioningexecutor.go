@@ -29,7 +29,6 @@ import (
 	flowconst "github.com/asgardeo/thunder/internal/flow/constants"
 	flowmodel "github.com/asgardeo/thunder/internal/flow/model"
 	"github.com/asgardeo/thunder/internal/system/log"
-	sysutils "github.com/asgardeo/thunder/internal/system/utils"
 	usermodel "github.com/asgardeo/thunder/internal/user/model"
 	"github.com/asgardeo/thunder/internal/user/service"
 )
@@ -156,7 +155,7 @@ func (p *ProvisioningExecutor) Execute(ctx *flowmodel.NodeContext) (*flowmodel.E
 	authenticatedUser := authndto.AuthenticatedUser{
 		IsAuthenticated: true,
 		UserID:          createdUser.ID,
-		Attributes:      sysutils.ConvertInterfaceMapToStringMap(retAttributes),
+		Attributes:      retAttributes,
 	}
 	execResp.AuthenticatedUser = authenticatedUser
 	execResp.Status = flowconst.ExecComplete
@@ -205,12 +204,12 @@ func (p *ProvisioningExecutor) CheckInputData(ctx *flowmodel.NodeContext, execRe
 		for _, inputData := range missingAttributes {
 			attribute, exists := authnUserAttrs[inputData.Name]
 			if exists {
-				logger.Debug("Attribute exists in authenticated user attributes, adding to runtime data",
-					log.String("attributeName", inputData.Name))
-
-				// TODO: This should be modified according to the storage mechanism of the
-				//  user store implementation.
-				execResp.RuntimeData[inputData.Name] = attribute
+				attributeStr, ok := attribute.(string)
+				if ok {
+					logger.Debug("Attribute exists in authenticated user attributes, adding to runtime data",
+						log.String("attributeName", inputData.Name))
+					execResp.RuntimeData[inputData.Name] = attributeStr
+				}
 			} else {
 				logger.Debug("Attribute does not exist in authenticated user attributes, adding to required data",
 					log.String("attributeName", inputData.Name))
@@ -302,7 +301,7 @@ func (p *ProvisioningExecutor) createUserInStore(flowID string,
 	// TODO: Use a hard coded ou for the moment. This needs to be resolved properly
 	//  when the support is implemented.
 	user := usermodel.User{
-		OrganizationUnit: "456e8400-e29b-41d4-a716-446655440001",
+		OrganizationUnit: "00000000-0000-0000-0000-000000000000", // This should be configurable
 	}
 
 	// Takes the user type from the context, if available.

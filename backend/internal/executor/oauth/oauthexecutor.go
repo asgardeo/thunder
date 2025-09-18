@@ -525,8 +525,8 @@ func (o *OAuthExecutor) getAuthenticatedUserWithAttributes(ctx *flowmodel.NodeCo
 }
 
 // getUserAttributes extracts user attributes from the user info map, excluding certain keys.
-func getUserAttributes(userInfo map[string]string, userID string) map[string]string {
-	attributes := make(map[string]string)
+func getUserAttributes(userInfo map[string]string, userID string) map[string]interface{} {
+	attributes := make(map[string]interface{})
 	for key, value := range userInfo {
 		if key != "username" && key != "sub" {
 			attributes[key] = value

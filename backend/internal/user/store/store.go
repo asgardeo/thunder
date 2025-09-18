@@ -29,7 +29,7 @@ import (
 )
 
 // GetUserListCount retrieves the total count of users.
-func GetUserListCount() (int, error) {
+func GetUserListCount(filters map[string]interface{}) (int, error) {
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, "UserPersistence"))
 
 	dbClient, err := provider.NewDBProvider().GetDBClient("identity")
@@ -42,7 +42,12 @@ func GetUserListCount() (int, error) {
 		}
 	}()
 
-	countResults, err := dbClient.Query(QueryGetUserCount)
+	countQuery, args, err := buildUserCountQuery(filters)
+	if err != nil {
+		return 0, fmt.Errorf("failed to build count query: %w", err)
+	}
+
+	countResults, err := dbClient.Query(countQuery, args...)
 	if err != nil {
 		return 0, fmt.Errorf("failed to execute count query: %w", err)
 	}
@@ -60,7 +65,7 @@ func GetUserListCount() (int, error) {
 }
 
 // GetUserList retrieves a list of users from the database.
-func GetUserList(limit, offset int) ([]model.User, error) {
+func GetUserList(limit, offset int, filters map[string]interface{}) ([]model.User, error) {
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, "UserPersistence"))
 
 	dbClient, err := provider.NewDBProvider().GetDBClient("identity")
@@ -74,7 +79,12 @@ func GetUserList(limit, offset int) ([]model.User, error) {
 		}
 	}()
 
-	results, err := dbClient.Query(QueryGetUserList, limit, offset)
+	listQuery, args, err := buildUserListQuery(filters, limit, offset)
+	if err != nil {
+		return nil, fmt.Errorf("failed to build list query: %w", err)
+	}
+
+	results, err := dbClient.Query(listQuery, args...)
 	if err != nil {
 		return nil, fmt.Errorf("failed to execute paginated query: %w", err)
 	}

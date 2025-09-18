@@ -26,6 +26,7 @@ import (
 	"net/http"
 	"testing"
 
+	"github.com/asgardeo/thunder/tests/integration/testutils"
 	"github.com/stretchr/testify/suite"
 )
 
@@ -427,7 +428,7 @@ func (suite *OUPathAPITestSuite) TestGetOrganizationUnitUsersByPath() {
 	body, err := io.ReadAll(resp.Body)
 	suite.Require().NoError(err, "Failed to read response body: %v", err)
 
-	var userListResponse UserListResponse
+	var userListResponse testutils.UserListResponse
 	err = json.Unmarshal(body, &userListResponse)
 	suite.Require().NoError(err)
 

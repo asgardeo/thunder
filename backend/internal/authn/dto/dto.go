@@ -28,7 +28,7 @@ import (
 type AuthenticatedUser struct {
 	IsAuthenticated bool
 	UserID          string
-	Attributes      map[string]string
+	Attributes      map[string]interface{}
 }
 
 // AuthenticationContext represents the context of an authentication session.

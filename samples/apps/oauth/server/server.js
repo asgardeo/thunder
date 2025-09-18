@@ -34,11 +34,12 @@ const keyPath = path.join(certDir, 'server.key');
 const certPath = path.join(certDir, 'server.cert');
 
 // Serve static files from the 'dist' directory
-app.use(express.static(path.join(__dirname, 'app')));
+const appDir = path.join(certDir, 'app');
+app.use(express.static(appDir));
 
 // Handle SPA routing
 app.get('*', (req, res) => {
-  res.sendFile(path.join(__dirname, 'app', 'index.html'));
+  res.sendFile(path.join(appDir, 'index.html'));
 });
 
 if (fs.existsSync(keyPath) && fs.existsSync(certPath)) {

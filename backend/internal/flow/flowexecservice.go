@@ -22,8 +22,8 @@ package flow
 import (
 	"errors"
 	"fmt"
-	"sync"
 
+	appconst "github.com/asgardeo/thunder/internal/application/constants"
 	appservice "github.com/asgardeo/thunder/internal/application/service"
 	"github.com/asgardeo/thunder/internal/flow/constants"
 	"github.com/asgardeo/thunder/internal/flow/engine"
@@ -36,11 +36,6 @@ import (
 	sysutils "github.com/asgardeo/thunder/internal/system/utils"
 )
 
-var (
-	instance *FlowExecService
-	once     sync.Once
-)
-
 // FlowExecServiceInterface defines the interface for flow orchestration and acts as the entry point for flow execution
 type FlowExecServiceInterface interface {
 	Init() error
@@ -50,17 +45,16 @@ type FlowExecServiceInterface interface {
 
 // FlowExecService is the implementation of FlowExecServiceInterface
 type FlowExecService struct {
-	flowStore store.FlowStoreInterface
+	flowStore  store.FlowStoreInterface
+	AppService appservice.ApplicationServiceInterface
 }
 
 // GetFlowExecService returns a singleton instance of FlowExecService
 func GetFlowExecService() FlowExecServiceInterface {
-	once.Do(func() {
-		instance = &FlowExecService{
-			flowStore: store.NewFlowStore(),
-		}
-	})
-	return instance
+	return &FlowExecService{
+		flowStore:  store.NewFlowStore(),
+		AppService: appservice.GetApplicationService(),
+	}
 }
 
 // Init initializes the FlowExecService by loading the necessary components.
@@ -162,7 +156,7 @@ func (s *FlowExecService) loadNewContext(appID, actionID, flowTypeStr string,
 // initContext initializes a new flow context with the given details.
 func (s *FlowExecService) initContext(appID string,
 	flowType constants.FlowType) (*model.EngineContext, *serviceerror.ServiceError) {
-	graphID, svcErr := getFlowGraph(appID, flowType)
+	graphID, svcErr := s.getFlowGraph(appID, flowType)
 	if svcErr != nil {
 		return nil, svcErr
 	}
@@ -179,6 +173,11 @@ func (s *FlowExecService) initContext(appID string,
 	ctx.FlowType = graph.GetType()
 	ctx.Graph = graph
 	ctx.AppID = appID
+
+	svcErr = s.setApplicationToContext(&ctx)
+	if svcErr != nil {
+		return nil, svcErr
+	}
 
 	return &ctx, nil
 }
@@ -222,7 +221,35 @@ func (s *FlowExecService) loadContextFromStore(flowID string) (*model.EngineCont
 		return nil, &constants.ErrorFlowContextConversionFailed
 	}
 
+	svcErr := s.setApplicationToContext(&engineContext)
+	if svcErr != nil {
+		return nil, svcErr
+	}
+
 	return &engineContext, nil
+}
+
+// setApplicationToContext retrieves the application and sets it to the flow context.
+func (s *FlowExecService) setApplicationToContext(ctx *model.EngineContext) *serviceerror.ServiceError {
+	app, err := s.AppService.GetApplication(ctx.AppID)
+	if err != nil {
+		if err.Code == appconst.ErrorApplicationNotFound.Code {
+			return &constants.ErrorInvalidAppID
+		}
+		if err.Type == serviceerror.ClientErrorType {
+			svcErr := &constants.ErrorApplicationRetrievalClientError
+			svcErr.ErrorDescription = fmt.Sprintf("Error while retrieving application: %s", err.ErrorDescription)
+			return svcErr
+		}
+		return &constants.ErrorApplicationRetrievalServerError
+	}
+	if app == nil {
+		svcErr := &constants.ErrorApplicationRetrievalServerError
+		svcErr.ErrorDescription = "Application not found"
+		return svcErr
+	}
+	ctx.Application = *app
+	return nil
 }
 
 // removeContext removes the flow context from the store.
@@ -275,6 +302,44 @@ func (s *FlowExecService) storeContext(ctx *model.EngineContext, logger *log.Log
 
 	logger.Debug("Flow context stored successfully in database", log.String("flowID", ctx.FlowID))
 	return nil
+}
+
+// getFlowGraph checks if the provided application ID is valid and returns the associated flow graph.
+func (s *FlowExecService) getFlowGraph(appID string, flowType constants.FlowType) (string,
+	*serviceerror.ServiceError) {
+	if appID == "" {
+		return "", &constants.ErrorInvalidAppID
+	}
+
+	app, err := s.AppService.GetApplication(appID)
+	if err != nil {
+		if err.Code == appconst.ErrorApplicationNotFound.Code {
+			return "", &constants.ErrorInvalidAppID
+		}
+		if err.Type == serviceerror.ClientErrorType {
+			return "", &constants.ErrorApplicationRetrievalClientError
+		}
+		return "", &constants.ErrorApplicationRetrievalServerError
+	}
+	if app == nil {
+		return "", &constants.ErrorInvalidAppID
+	}
+
+	if flowType == constants.FlowTypeRegistration {
+		if app.RegistrationFlowGraphID == "" {
+			return "", &constants.ErrorRegisFlowNotConfiguredForApplication
+		} else if !app.IsRegistrationFlowEnabled {
+			return "", &constants.ErrorRegistrationFlowDisabled
+		}
+		return app.RegistrationFlowGraphID, nil
+	}
+
+	// Default to authentication flow graph ID
+	if app.AuthFlowGraphID == "" {
+		return "", &constants.ErrorAuthFlowNotConfiguredForApplication
+	}
+
+	return app.AuthFlowGraphID, nil
 }
 
 // validateFlowType validates the provided flow type string and returns the corresponding FlowType.
@@ -330,36 +395,4 @@ func prepareContext(ctx *model.EngineContext, actionID string, inputData map[str
 	if actionID != "" {
 		ctx.CurrentActionID = actionID
 	}
-}
-
-// getFlowGraph checks if the provided application ID is valid and returns the associated flow graph.
-func getFlowGraph(appID string, flowType constants.FlowType) (string, *serviceerror.ServiceError) {
-	if appID == "" {
-		return "", &constants.ErrorInvalidAppID
-	}
-
-	appSvc := appservice.GetApplicationService()
-	app, err := appSvc.GetApplication(appID)
-	if err != nil {
-		return "", &constants.ErrorInvalidAppID
-	}
-	if app == nil {
-		return "", &constants.ErrorInvalidAppID
-	}
-
-	if flowType == constants.FlowTypeRegistration {
-		if app.RegistrationFlowGraphID == "" {
-			return "", &constants.ErrorRegisFlowNotConfiguredForApplication
-		} else if !app.IsRegistrationFlowEnabled {
-			return "", &constants.ErrorRegistrationFlowDisabled
-		}
-		return app.RegistrationFlowGraphID, nil
-	}
-
-	// Default to authentication flow graph ID
-	if app.AuthFlowGraphID == "" {
-		return "", &constants.ErrorAuthFlowNotConfiguredForApplication
-	}
-
-	return app.AuthFlowGraphID, nil
 }

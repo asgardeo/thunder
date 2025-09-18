@@ -18,8 +18,6 @@
 
 package flowregistration
 
-import "encoding/json"
-
 type FlowStep struct {
 	FlowID        string   `json:"flowId"`
 	FlowStatus    string   `json:"flowStatus"`
@@ -45,28 +43,6 @@ type InputData struct {
 type FlowAction struct {
 	Type string `json:"type"`
 	ID   string `json:"id"`
-}
-
-type User struct {
-	Id               string          `json:"id,omitempty"`
-	OrganizationUnit string          `json:"organizationUnit"`
-	Type             string          `json:"type"`
-	Attributes       json.RawMessage `json:"attributes"`
-}
-
-// Link represents a pagination link
-type Link struct {
-	Rel  string `json:"rel"`
-	Href string `json:"href"`
-}
-
-// UserListResponse represents the paginated response for user listing
-type UserListResponse struct {
-	TotalResults int    `json:"totalResults"`
-	StartIndex   int    `json:"startIndex"`
-	Count        int    `json:"count"`
-	Users        []User `json:"users"`
-	Links        []Link `json:"links"`
 }
 
 type ErrorResponse struct {

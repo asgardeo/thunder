@@ -33,9 +33,26 @@ const (
 )
 
 var (
-	testUserWithMobile = User{
-		OrganizationUnit: "456e8400-e29b-41d4-a716-446655440001",
-		Type:             "person",
+	smsAuthTestApp = testutils.Application{
+		Name:                      "SMS Auth Flow Test Application",
+		Description:               "Application for testing SMS authentication flows",
+		IsRegistrationFlowEnabled: false,
+		AuthFlowGraphID:           "auth_flow_config_basic", // Will be updated dynamically
+		RegistrationFlowGraphID:   "registration_flow_config_basic",
+		ClientID:                  "sms_auth_flow_test_client",
+		ClientSecret:              "sms_auth_flow_test_secret",
+		RedirectURIs:              []string{"http://localhost:3000/callback"},
+	}
+
+	smsAuthTestOU = testutils.OrganizationUnit{
+		Handle:      "sms-auth-flow-test-ou",
+		Name:        "SMS Auth Flow Test Organization Unit",
+		Description: "Organization unit for SMS authentication flow testing",
+		Parent:      nil,
+	}
+
+	testUserWithMobile = testutils.User{
+		Type: "person",
 		Attributes: json.RawMessage(`{
 			"username": "smsuser",
 			"password": "testpassword",
@@ -45,6 +62,11 @@ var (
 			"mobileNumber": "+1234567890"
 		}`),
 	}
+)
+
+var (
+	smsAuthTestAppID string
+	smsAuthTestOUID  string
 )
 
 // NotificationSenderRequest represents the request to create a message notification sender.
@@ -85,17 +107,33 @@ func (ts *SMSAuthFlowTestSuite) SetupSuite() {
 	// Initialize config
 	ts.config = &TestSuiteConfig{}
 
+	// Create test organization unit for SMS auth tests
+	ouID, err := testutils.CreateOrganizationUnit(smsAuthTestOU)
+	if err != nil {
+		ts.T().Fatalf("Failed to create test organization unit during setup: %v", err)
+	}
+	smsAuthTestOUID = ouID
+
+	// Create test application for SMS auth tests
+	appID, err := testutils.CreateApplication(smsAuthTestApp)
+	if err != nil {
+		ts.T().Fatalf("Failed to create test application during setup: %v", err)
+	}
+	smsAuthTestAppID = appID
+
 	// Start mock notification server
 	ts.mockServer = testutils.NewMockNotificationServer(mockNotificationServerPort)
-	err := ts.mockServer.Start()
+	err = ts.mockServer.Start()
 	if err != nil {
 		ts.T().Fatalf("Failed to start mock notification server: %v", err)
 	}
 	time.Sleep(100 * time.Millisecond)
 	ts.T().Log("Mock notification server started successfully")
 
-	// Create test user with mobile number
-	userIDs, err := CreateMultipleUsers(testUserWithMobile)
+	// Create test user with mobile number using the created OU
+	testUserWithMobile := testUserWithMobile
+	testUserWithMobile.OrganizationUnit = smsAuthTestOUID
+	userIDs, err := testutils.CreateMultipleUsers(testUserWithMobile)
 	if err != nil {
 		ts.T().Fatalf("Failed to create test user during setup: %v", err)
 	}
@@ -110,22 +148,14 @@ func (ts *SMSAuthFlowTestSuite) SetupSuite() {
 	ts.config.CreatedSenderID = senderID
 	ts.T().Logf("Notification sender created with ID: %s", ts.config.CreatedSenderID)
 
-	// Store original app config
-	ts.config.OriginalAppConfig, err = getAppConfig(appID)
+	// Store original app config (this will be the created app config)
+	ts.config.OriginalAppConfig, err = getAppConfig(smsAuthTestAppID)
 	if err != nil {
 		ts.T().Fatalf("Failed to get original app config during setup: %v", err)
 	}
 }
 
 func (ts *SMSAuthFlowTestSuite) TearDownSuite() {
-	// Restore original app config
-	if ts.config.OriginalAppConfig != nil {
-		err := RestoreAppConfig(appID, ts.config.OriginalAppConfig)
-		if err != nil {
-			ts.T().Logf("Failed to restore original app config during teardown: %v", err)
-		}
-	}
-
 	// Delete notification sender
 	if ts.config.CreatedSenderID != "" {
 		err := DeleteNotificationSender(ts.config.CreatedSenderID)
@@ -135,7 +165,7 @@ func (ts *SMSAuthFlowTestSuite) TearDownSuite() {
 	}
 
 	// Delete test users
-	if err := CleanupUsers(ts.config.CreatedUserIDs); err != nil {
+	if err := testutils.CleanupUsers(ts.config.CreatedUserIDs); err != nil {
 		ts.T().Logf("Failed to cleanup users during teardown: %v", err)
 	}
 
@@ -146,17 +176,32 @@ func (ts *SMSAuthFlowTestSuite) TearDownSuite() {
 			ts.T().Logf("Failed to stop mock notification server during teardown: %v", err)
 		}
 	}
+
+	// Delete test application
+	if smsAuthTestAppID != "" {
+		if err := testutils.DeleteApplication(smsAuthTestAppID); err != nil {
+			ts.T().Logf("Failed to delete test application during teardown: %v", err)
+		}
+	}
+
+	// Delete test organization unit
+	if smsAuthTestOUID != "" {
+		if err := testutils.DeleteOrganizationUnit(smsAuthTestOUID); err != nil {
+			ts.T().Logf("Failed to delete test organization unit during teardown: %v", err)
+		}
+	}
+
 }
 
 func (ts *SMSAuthFlowTestSuite) TestSMSAuthFlowWithMobileNumber() {
 	// Update app to use SMS flow
-	err := updateAppConfig(appID, "auth_flow_config_sms")
+	err := updateAppConfig(smsAuthTestAppID, "auth_flow_config_sms")
 	if err != nil {
 		ts.T().Fatalf("Failed to update app config for SMS flow: %v", err)
 	}
 
 	// Step 1: Initialize the flow by calling the flow execution API
-	flowStep, err := initiateAuthFlow(appID, nil)
+	flowStep, err := initiateAuthFlow(smsAuthTestAppID, nil)
 	if err != nil {
 		ts.T().Fatalf("Failed to initiate authentication flow: %v", err)
 	}
@@ -176,7 +221,7 @@ func (ts *SMSAuthFlowTestSuite) TestSMSAuthFlowWithMobileNumber() {
 	ts.mockServer.ClearMessages()
 
 	// Step 2: Continue the flow with mobile number
-	userAttrs, err := GetUserAttributes(testUserWithMobile)
+	userAttrs, err := testutils.GetUserAttributes(testUserWithMobile)
 	ts.Require().NoError(err, "Failed to get user attributes")
 
 	inputs := map[string]string{
@@ -224,13 +269,13 @@ func (ts *SMSAuthFlowTestSuite) TestSMSAuthFlowWithMobileNumber() {
 
 func (ts *SMSAuthFlowTestSuite) TestSMSAuthFlowWithUsername() {
 	// Update app to use SMS flow with username
-	err := updateAppConfig(appID, "auth_flow_config_sms_with_username")
+	err := updateAppConfig(smsAuthTestAppID, "auth_flow_config_sms_with_username")
 	if err != nil {
 		ts.T().Fatalf("Failed to update app config for SMS flow with username: %v", err)
 	}
 
 	// Step 1: Initialize the flow
-	flowStep, err := initiateAuthFlow(appID, nil)
+	flowStep, err := initiateAuthFlow(smsAuthTestAppID, nil)
 	if err != nil {
 		ts.T().Fatalf("Failed to initiate authentication flow: %v", err)
 	}
@@ -309,7 +354,7 @@ func (ts *SMSAuthFlowTestSuite) TestSMSAuthFlowWithUsername() {
 
 func (ts *SMSAuthFlowTestSuite) TestSMSAuthFlowInvalidOTP() {
 	// Update app to use SMS flow
-	err := updateAppConfig(appID, "auth_flow_config_sms")
+	err := updateAppConfig(smsAuthTestAppID, "auth_flow_config_sms")
 	if err != nil {
 		ts.T().Fatalf("Failed to update app config for SMS flow: %v", err)
 	}
@@ -323,7 +368,7 @@ func (ts *SMSAuthFlowTestSuite) TestSMSAuthFlowInvalidOTP() {
 		"mobileNumber": userAttrs["mobileNumber"].(string),
 	}
 
-	flowStep, err := initiateAuthFlow(appID, inputs)
+	flowStep, err := initiateAuthFlow(smsAuthTestAppID, inputs)
 	if err != nil {
 		ts.T().Fatalf("Failed to initiate authentication flow: %v", err)
 	}
@@ -360,7 +405,7 @@ func (ts *SMSAuthFlowTestSuite) TestSMSAuthFlowInvalidOTP() {
 
 func (ts *SMSAuthFlowTestSuite) TestSMSAuthFlowSingleRequestWithMobileNumber() {
 	// Update app to use SMS flow
-	err := updateAppConfig(appID, "auth_flow_config_sms")
+	err := updateAppConfig(smsAuthTestAppID, "auth_flow_config_sms")
 	if err != nil {
 		ts.T().Fatalf("Failed to update app config for SMS flow: %v", err)
 	}
@@ -378,7 +423,7 @@ func (ts *SMSAuthFlowTestSuite) TestSMSAuthFlowSingleRequestWithMobileNumber() {
 		"mobileNumber": userAttrs["mobileNumber"].(string),
 	}
 
-	flowStep, err := initiateAuthFlow(appID, inputs)
+	flowStep, err := initiateAuthFlow(smsAuthTestAppID, inputs)
 	if err != nil {
 		ts.T().Fatalf("Failed to initiate authentication flow: %v", err)
 	}

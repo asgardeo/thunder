@@ -164,3 +164,11 @@ packages:
       structname: '{{.InterfaceName}}Mock'
       pkgname: introspectmock
       filename: "{{.InterfaceName}}_mock.go"
+
+  github.com/asgardeo/thunder/internal/user/service:
+    config:
+      all: true
+      dir: tests/mocks/user/servicemock
+      structname: '{{.InterfaceName}}Mock'
+      pkgname: servicemock
+      filename: "{{.InterfaceName}}_mock.go"

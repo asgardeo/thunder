@@ -20,6 +20,8 @@ tags:
     description: Operations related to user management
   - name: users-by-path
     description: Operations related to user management using hierarchical handle paths
+  - name: user-schemas
+    description: Operations related to user type schema management
 
 paths:
   /users:
@@ -30,6 +32,7 @@ paths:
       parameters:
         - $ref: '#/components/parameters/limitQueryParam'
         - $ref: '#/components/parameters/offsetQueryParam'
+        - $ref: '#/components/parameters/filterParam'
       responses:
         "200":
           description: List of users
@@ -98,6 +101,12 @@ paths:
                     code: "USR-1012"
                     message: "Invalid pagination parameter"
                     description: "The offset parameter must be a non-negative integer"
+                invalid-filter:
+                  summary: Invalid filter parameter
+                  value:
+                    code: "USR-1020"
+                    message: "Invalid filter parameter"
+                    description: "The filter format is invalid"
         "500":
           description: Internal server error
     post:
@@ -416,6 +425,7 @@ paths:
           example: "engineering/frontend"
         - $ref: '#/components/parameters/limitQueryParam'
         - $ref: '#/components/parameters/offsetQueryParam'
+        - $ref: '#/components/parameters/filterParam'
       responses:
         "200":
           description: List of users in the organization unit
@@ -452,6 +462,12 @@ paths:
                     code: "USR-1012"
                     message: "Invalid pagination parameter"
                     description: "The offset parameter must be a non-negative integer"
+                invalid-filter:
+                  summary: Invalid filter parameter
+                  value:
+                    code: "USR-1020"
+                    message: "Invalid filter parameter"
+                    description: "The filter format is invalid"
         "404":
           description: Organization unit not found
           content:
@@ -610,6 +626,384 @@ paths:
                 type: string
               example: "Internal server error"
 
+  /user-schemas:
+    get:
+      tags:
+        - user-schemas
+      summary: List user type schemas
+      description: |
+        Retrieves a list of all user type schemas that define the structure 
+        and attributes for different user types.
+      parameters:
+        - $ref: '#/components/parameters/limitQueryParam'
+        - $ref: '#/components/parameters/offsetQueryParam'
+      responses:
+        "200":
+          description: List of user type schemas
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserSchemaListResponse'
+              example:
+                totalResults: 3
+                startIndex: 1
+                count: 3
+                schemas:
+                  - id: "660e8400-e29b-41d4-a716-446655440001"
+                    name: "employee"
+                  - id: "550e8400-e29b-41d4-a716-446655440000"
+                    name: "customer"
+                  - id: "770e8400-e29b-41d4-a716-446655440002"
+                    name: "partner"
+        "400":
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                invalid-limit:
+                  summary: Invalid limit parameter
+                  value:
+                    code: "USRS-1005"
+                    message: "Invalid pagination parameter"
+                    description: "The limit parameter must be a positive integer"
+                invalid-offset:
+                  summary: Invalid offset parameter
+                  value:
+                    code: "USRS-1006"
+                    message: "Invalid pagination parameter"
+                    description: "The offset parameter must be a non-negative integer"
+        "500":
+          description: Internal server error
+
+    post:
+      tags:
+        - user-schemas
+      summary: Create a new user type schema
+      description: |
+        Creates a new user type schema that defines the structure and attributes
+        for a specific user type.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateUserSchemaRequest'
+            example:
+              name: "partner"
+              schema:
+                firstname:
+                  type: "string"
+                lastname:
+                  type: "string"
+                  required: true
+                email:
+                  type: "string"
+                  required: true
+                  unique: true
+                company:
+                  type: "string"
+                role:
+                  type: "string"
+                partnershipType:
+                  type: "string"
+                  enum: ["technology", "business", "strategic"]
+                phoneNumber:
+                  type: "string"
+      responses:
+        "201":
+          description: User schema created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserSchema'
+              example:
+                id: "880e8400-e29b-41d4-a716-446655440003"
+                name: "partner"
+                schema:
+                  firstname:
+                    type: "string"
+                  lastname:
+                    type: "string"
+                    required: true
+                  email:
+                    type: "string"
+                    required: true
+                    unique: true
+                  company:
+                    type: "string"
+                  role:
+                    type: "string"
+                  partnershipType:
+                    type: "string"
+                    enum: ["technology", "business", "strategic"]
+                  phoneNumber:
+                    type: "string"
+        "400":
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                invalid-request-format:
+                  summary: Invalid request format
+                  value:
+                    code: "USRS-1001"
+                    message: "Invalid request format"
+                    description: "The request body is malformed or contains invalid data"
+                invalid-attribute-definition:
+                  summary: Invalid attribute definition
+                  value:
+                    code: "USRS-1004"
+                    message: "Invalid user schema request"
+                    description: "One or more attribute definitions are invalid"
+        "409":
+          description: Conflict
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: "USRS-1003"
+                message: "User schema name conflict"
+                description: "A user schema with the same name already exists"
+        "500":
+          description: Internal server error
+
+  /user-schemas/{id}:
+    get:
+      tags:
+        - user-schemas
+      summary: Get a user type schema by ID
+      description: |
+        Retrieves the details of a specific user type schema by its ID.
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+            format: uuid
+          example: "550e8400-e29b-41d4-a716-446655440000"
+      responses:
+        "200":
+          description: User schema details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserSchema'
+              examples:
+                simple:
+                  summary: Employee schema with simple attributes
+                  value:
+                    id: "660e8400-e29b-41d4-a716-446655440001"
+                    name: "employee"
+                    schema:
+                      firstname:
+                        type: "string"
+                      lastname:
+                        type: "string"
+                        required: true
+                      username:
+                        type: "string"
+                        required: true
+                        unique: true
+                      password:
+                        type: "string"
+                        required: true
+                        regex: "^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d)(?=.*[!@#$%^&*()_+\\-=\\[\\]{};':\"\\\\|,.<>\\/?]).{8,}$"
+                      employeeId:
+                        type: "number"
+                        unique: true
+                      department:
+                        type: "string"
+                        enum: ["Engineering", "Marketing", "Sales", "HR", "Finance", "Operations"]
+                      isActive:
+                        type: "boolean"
+                complex:
+                  summary: Customer schema with complex attributes
+                  value:
+                    id: "550e8400-e29b-41d4-a716-446655440000"
+                    name: "customer"
+                    schema:
+                      email:
+                        type: "string"
+                        required: true
+                        unique: true
+                        regex: "^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$"
+                      mobile:
+                        type: "string"
+                        regex: "^\\+?[1-9]\\d{1,14}$"
+                      address:
+                        type: "object"
+                        required: true
+                        properties:
+                          street:
+                            type: "string"
+                          city:
+                            type: "string"
+                            required: true
+                          zipCode:
+                            type: "string"
+                            regex: "^\\d{5}(-\\d{4})?$"
+                          country:
+                            type: "string"
+                      contactPreferences:
+                        type: "array"
+                        items:
+                          type: "string"
+                          enum: ["email", "sms", "phone", "mail"]
+        "404":
+          description: User schema not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: "USRS-1002"
+                message: "User schema not found"
+                description: "The user schema with the specified id does not exist"
+        "500":
+          description: Internal server error
+
+    put:
+      tags:
+        - user-schemas
+      summary: Update a user type schema by ID
+      description: |
+        Updates an existing user type schema with new attribute definitions.
+        This operation replaces the entire schema definition.
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+            format: uuid
+          example: "550e8400-e29b-41d4-a716-446655440000"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateUserSchemaRequest'
+            example:
+              name: "customer"
+              schema:
+                email:
+                  type: "string"
+                  required: true
+                  unique: true
+                age:
+                  type: "number"
+                mobile:
+                  type: "string"
+                preferredLanguage:
+                  type: "string"
+                  enum: ["en", "es", "fr", "de", "it"]
+                loyaltyTier:
+                  type: "string"
+                  enum: ["bronze", "silver", "gold", "platinum"]
+      responses:
+        "200":
+          description: User schema updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserSchema'
+              example:
+                id: "550e8400-e29b-41d4-a716-446655440000"
+                name: "customer"
+                schema:
+                  email:
+                    type: "string"
+                    required: true
+                    unique: true
+                  age:
+                    type: "number"
+                  mobile:
+                    type: "string"
+                  preferredLanguage:
+                    type: "string"
+                    enum: ["en", "es", "fr", "de", "it"]
+                  loyaltyTier:
+                    type: "string"
+                    enum: ["bronze", "silver", "gold", "platinum"]
+        "400":
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                invalid-request-format:
+                  summary: Invalid request format
+                  value:
+                    code: "USRS-1001"
+                    message: "Invalid request format"
+                    description: "The request body is malformed or contains invalid data"
+                invalid-attribute-definition:
+                  summary: Invalid attribute definition
+                  value:
+                    code: "USRS-1004"
+                    message: "Invalid user schema request"
+                    description: "One or more attribute definitions are invalid"
+        "404":
+          description: User schema not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: "USRS-1002"
+                message: "User schema not found"
+                description: "The user schema with the specified id does not exist"
+        "409":
+          description: User schema name already exists
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: "USRS-1003"
+                message: "User schema name conflict"
+                description: "A user schema with the same name already exists"
+        "500":
+          description: Internal server error
+
+    delete:
+      tags:
+        - user-schemas
+      summary: Delete a user type schema by ID
+      description: |
+        Deletes a user type schema. This operation will fail if there are 
+        existing users of this type.
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+            format: uuid
+          example: "550e8400-e29b-41d4-a716-446655440000"
+      responses:
+        "204":
+          description: User schema deleted
+        "400":
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: "USRS-1004"
+                message: "Invalid user schema request"
+                description: "Cannot delete schema because users of this type exist"
+        "500":
+          description: Internal server error
+
   /users/authenticate:
     post:
       tags:
@@ -670,7 +1064,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
               example:
-                code: "USR-1019"
+                code: "USR-1018"
                 message: "Authentication failed"
                 description: "Invalid credentials provided"
         "404":
@@ -715,6 +1109,30 @@ components:
       schema:
         type: integer
         default: 0
+    filterParam:
+      in: query
+      name: filter
+      required: false
+      description: |
+        Filter users by attribute values.
+        Supported operators: eq (ie. equals).
+        Format: `attribute operator "value"`.
+        Examples:
+        - `username eq "john.doe"` - Users with username = "john.doe"'
+        - `age eq 25` - Users with age = 25
+        - `address.city eq "Mountain View"` - Users with address.city = "Mountain View"
+      schema:
+        type: string
+      examples:
+        simple-string:
+          summary: Simple string filter
+          value: 'username eq "john.doe"'
+        simple-number:
+          summary: Simple number filter
+          value: 'age eq 25'
+        complex:
+          summary: Complex filtering
+          value: 'address.city eq "Mountain View"'
   schemas:
     User:
       type: object
@@ -897,6 +1315,201 @@ components:
           type: string
           format: uuid
           description: "The organization unit ID of the authenticated user"
+
+    UserSchema:
+      type: object
+      required: [id, name, schema]
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: "The unique identifier of the user schema"
+        name:
+          type: string
+          description: "The user type this schema defines"
+        schema:
+          type: object
+          description: "JSON Schema definition for the user type"
+          additionalProperties:
+            oneOf:
+              - type: object
+                description: "Leaf property definition (string, number, or boolean type)"
+                required: [type]
+                properties:
+                  type:
+                    type: string
+                    enum: ["string", "number", "boolean"]
+                    description: "Data type of the property"
+                  required:
+                    type: boolean
+                    default: false
+                    description: "Whether this attribute must be provided for the user type"
+                  unique:
+                    type: boolean
+                    default: false
+                    description: "Whether this property must be unique across all users"
+                  enum:
+                    type: array
+                    items:
+                      type: string
+                    description: "List of allowed values for this property"
+                  regex:
+                    type: string
+                    description: "Regular expression pattern for validating the property value"
+                additionalProperties: false
+              - type: object
+                description: "Object property definition"
+                required: [type, properties]
+                properties:
+                  type:
+                    type: string
+                    enum: ["object"]
+                    description: "Data type (object)"
+                  required:
+                    type: boolean
+                    default: false
+                    description: "Whether this attribute must be provided for the user type"
+                  properties:
+                    type: object
+                    description: "Nested properties of the object"
+                    additionalProperties:
+                      $ref: "#/components/schemas/UserSchema/properties/schema/additionalProperties"
+                additionalProperties: false
+              - type: object
+                description: "Array property definition"
+                required: [type, items]
+                properties:
+                  type:
+                    type: string
+                    enum: ["array"]
+                    description: "Data type (array)"
+                  required:
+                    type: boolean
+                    default: false
+                    description: "Whether this attribute must be provided for the user type"
+                  items:
+                    oneOf:
+                      - type: object
+                        description: "Array of strings, numbers, or booleans"
+                        required: [type]
+                        properties:
+                          type:
+                            type: string
+                            enum: ["string", "number", "boolean"]
+                          enum:
+                            type: array
+                            items:
+                              type: string
+                        additionalProperties: false
+                      - type: object
+                        description: "Array of objects"
+                        required: [type, properties]
+                        properties:
+                          type:
+                            type: string
+                            enum: ["object"]
+                          properties:
+                            type: object
+                            additionalProperties:
+                              $ref: "#/components/schemas/UserSchema/properties/schema/additionalProperties"
+                        additionalProperties: false
+                additionalProperties: false
+          example:
+            email:
+              type: "string"
+              required: true
+              unique: true
+              regex: "^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$"
+            password:
+              type: "string"
+              required: true
+              regex: "^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d)(?=.*[!@#$%^&*()_+\\-=\\[\\]{};':\"\\\\|,.<>\\/?]).{8,}$"
+            age:
+              type: "number"
+            isActive:
+              type: "boolean"
+            phoneNumber:
+              type: "string"
+              regex: "^\\+?[1-9]\\d{1,14}$"
+            role:
+              type: "string"
+              enum: ["admin", "user", "guest"]
+            address:
+              type: "object"
+              required: true
+              properties:
+                street:
+                  type: "string"
+                city:
+                  type: "string"
+                  required: true
+                zipCode:
+                  type: "string"
+                  regex: "^\\d{5}(-\\d{4})?$"
+            tags:
+              type: "array"
+              items:
+                type: "string"
+                enum: ["vip", "premium", "standard"]
+
+    UserSchemaListResponse:
+      type: object
+      properties:
+        totalResults:
+          type: integer
+          description: "Number of results that match the listing operation."
+          example: 5
+        startIndex:
+          type: integer
+          description: "Index of the first element of the page, which will be equal to offset + 1."
+          example: 1
+        count:
+          type: integer
+          description: "Number of elements in the returned page."
+          example: 3
+        schemas:
+          type: array
+          items:
+            type: object
+            required: [id, name]
+            properties:
+              id:
+                type: string
+                format: uuid
+                description: "The unique identifier of the user schema"
+              name:
+                type: string
+                description: "The user type this schema defines"
+        links:
+          type: array
+          items:
+            $ref: '#/components/schemas/Link'
+
+    CreateUserSchemaRequest:
+      type: object
+      required: [name, schema]
+      properties:
+        name:
+          type: string
+          description: "The user type this schema will define"
+        schema:
+          type: object
+          description: "JSON Schema definition for the user type"
+          additionalProperties:
+            $ref: "#/components/schemas/UserSchema/properties/schema/additionalProperties"
+
+    UpdateUserSchemaRequest:
+      type: object
+      required: [name, schema]
+      properties:
+        name:
+          type: string
+          description: "The user type this schema defines"
+        schema:
+          type: object
+          description: "JSON Schema definition for the user type"
+          additionalProperties:
+            $ref: "#/components/schemas/UserSchema/properties/schema/additionalProperties"
 
     Error:
       type: object

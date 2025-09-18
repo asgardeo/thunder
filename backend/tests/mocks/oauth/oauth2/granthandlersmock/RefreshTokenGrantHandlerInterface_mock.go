@@ -114,16 +114,16 @@ func (_c *RefreshTokenGrantHandlerInterfaceMock_HandleGrant_Call) RunAndReturn(r
 }
 
 // IssueRefreshToken provides a mock function for the type RefreshTokenGrantHandlerInterfaceMock
-func (_mock *RefreshTokenGrantHandlerInterfaceMock) IssueRefreshToken(tokenResponse *model.TokenResponseDTO, ctx *model.TokenContext, clientID string, grantType string, scopes []string) *model.ErrorResponse {
-	ret := _mock.Called(tokenResponse, ctx, clientID, grantType, scopes)
+func (_mock *RefreshTokenGrantHandlerInterfaceMock) IssueRefreshToken(tokenResponse *model.TokenResponseDTO, oauthApp *model0.OAuthAppConfigProcessedDTO, ctx *model.TokenContext, grantType string, scopes []string) *model.ErrorResponse {
+	ret := _mock.Called(tokenResponse, oauthApp, ctx, grantType, scopes)
 
 	if len(ret) == 0 {
 		panic("no return value specified for IssueRefreshToken")
 	}
 
 	var r0 *model.ErrorResponse
-	if returnFunc, ok := ret.Get(0).(func(*model.TokenResponseDTO, *model.TokenContext, string, string, []string) *model.ErrorResponse); ok {
-		r0 = returnFunc(tokenResponse, ctx, clientID, grantType, scopes)
+	if returnFunc, ok := ret.Get(0).(func(*model.TokenResponseDTO, *model0.OAuthAppConfigProcessedDTO, *model.TokenContext, string, []string) *model.ErrorResponse); ok {
+		r0 = returnFunc(tokenResponse, oauthApp, ctx, grantType, scopes)
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).(*model.ErrorResponse)
@@ -139,27 +139,27 @@ type RefreshTokenGrantHandlerInterfaceMock_IssueRefreshToken_Call struct {
 
 // IssueRefreshToken is a helper method to define mock.On call
 //   - tokenResponse *model.TokenResponseDTO
+//   - oauthApp *model0.OAuthAppConfigProcessedDTO
 //   - ctx *model.TokenContext
-//   - clientID string
 //   - grantType string
 //   - scopes []string
-func (_e *RefreshTokenGrantHandlerInterfaceMock_Expecter) IssueRefreshToken(tokenResponse interface{}, ctx interface{}, clientID interface{}, grantType interface{}, scopes interface{}) *RefreshTokenGrantHandlerInterfaceMock_IssueRefreshToken_Call {
-	return &RefreshTokenGrantHandlerInterfaceMock_IssueRefreshToken_Call{Call: _e.mock.On("IssueRefreshToken", tokenResponse, ctx, clientID, grantType, scopes)}
+func (_e *RefreshTokenGrantHandlerInterfaceMock_Expecter) IssueRefreshToken(tokenResponse interface{}, oauthApp interface{}, ctx interface{}, grantType interface{}, scopes interface{}) *RefreshTokenGrantHandlerInterfaceMock_IssueRefreshToken_Call {
+	return &RefreshTokenGrantHandlerInterfaceMock_IssueRefreshToken_Call{Call: _e.mock.On("IssueRefreshToken", tokenResponse, oauthApp, ctx, grantType, scopes)}
 }
 
-func (_c *RefreshTokenGrantHandlerInterfaceMock_IssueRefreshToken_Call) Run(run func(tokenResponse *model.TokenResponseDTO, ctx *model.TokenContext, clientID string, grantType string, scopes []string)) *RefreshTokenGrantHandlerInterfaceMock_IssueRefreshToken_Call {
+func (_c *RefreshTokenGrantHandlerInterfaceMock_IssueRefreshToken_Call) Run(run func(tokenResponse *model.TokenResponseDTO, oauthApp *model0.OAuthAppConfigProcessedDTO, ctx *model.TokenContext, grantType string, scopes []string)) *RefreshTokenGrantHandlerInterfaceMock_IssueRefreshToken_Call {
 	_c.Call.Run(func(args mock.Arguments) {
 		var arg0 *model.TokenResponseDTO
 		if args[0] != nil {
 			arg0 = args[0].(*model.TokenResponseDTO)
 		}
-		var arg1 *model.TokenContext
+		var arg1 *model0.OAuthAppConfigProcessedDTO
 		if args[1] != nil {
-			arg1 = args[1].(*model.TokenContext)
+			arg1 = args[1].(*model0.OAuthAppConfigProcessedDTO)
 		}
-		var arg2 string
+		var arg2 *model.TokenContext
 		if args[2] != nil {
-			arg2 = args[2].(string)
+			arg2 = args[2].(*model.TokenContext)
 		}
 		var arg3 string
 		if args[3] != nil {
@@ -185,7 +185,7 @@ func (_c *RefreshTokenGrantHandlerInterfaceMock_IssueRefreshToken_Call) Return(e
 	return _c
 }
 
-func (_c *RefreshTokenGrantHandlerInterfaceMock_IssueRefreshToken_Call) RunAndReturn(run func(tokenResponse *model.TokenResponseDTO, ctx *model.TokenContext, clientID string, grantType string, scopes []string) *model.ErrorResponse) *RefreshTokenGrantHandlerInterfaceMock_IssueRefreshToken_Call {
+func (_c *RefreshTokenGrantHandlerInterfaceMock_IssueRefreshToken_Call) RunAndReturn(run func(tokenResponse *model.TokenResponseDTO, oauthApp *model0.OAuthAppConfigProcessedDTO, ctx *model.TokenContext, grantType string, scopes []string) *model.ErrorResponse) *RefreshTokenGrantHandlerInterfaceMock_IssueRefreshToken_Call {
 	_c.Call.Return(run)
 	return _c
 }

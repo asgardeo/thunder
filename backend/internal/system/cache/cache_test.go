@@ -40,6 +40,23 @@ func TestCacheTestSuite(t *testing.T) {
 	suite.Run(t, new(CacheTestSuite))
 }
 
+func (suite *CacheTestSuite) SetupSuite() {
+	mockConfig := &config.Config{
+		Cache: config.CacheConfig{
+			Disabled:        false,
+			Size:            1000,
+			TTL:             3600,
+			EvictionPolicy:  "LRU",
+			CleanupInterval: 300,
+		},
+	}
+	config.ResetThunderRuntime()
+	err := config.InitializeThunderRuntime("/test/thunder/home", mockConfig)
+	if err != nil {
+		suite.T().Fatal("Failed to initialize ThunderRuntime:", err)
+	}
+}
+
 func (suite *CacheTestSuite) TestIsEnabled() {
 	t := suite.T()
 
@@ -391,6 +408,134 @@ func (suite *CacheTestSuite) TestGetCacheType() {
 		suite.T().Run(tc.name, func(t *testing.T) {
 			cacheType := getCacheType(tc.cacheConfig)
 			assert.Equal(t, tc.expectedCacheType, cacheType)
+		})
+	}
+}
+
+//nolint:dupl // Testing different functions with similar test patterns
+func (suite *CacheTestSuite) TestGetCacheSize() {
+	testCases := []struct {
+		name              string
+		cacheConfig       config.CacheConfig
+		cacheProperty     config.CacheProperty
+		expectedCacheSize int
+	}{
+		{
+			name: "PropertySize",
+			cacheConfig: config.CacheConfig{
+				Size: 500,
+			},
+			cacheProperty: config.CacheProperty{
+				Size: 200,
+			},
+			expectedCacheSize: 200,
+		},
+		{
+			name: "ConfigSize",
+			cacheConfig: config.CacheConfig{
+				Size: 500,
+			},
+			cacheProperty:     config.CacheProperty{},
+			expectedCacheSize: 500,
+		},
+		{
+			name: "ZeroPropertySize",
+			cacheConfig: config.CacheConfig{
+				Size: 500,
+			},
+			cacheProperty: config.CacheProperty{
+				Size: 0,
+			},
+			expectedCacheSize: 500,
+		},
+		{
+			name: "NegativePropertySize",
+			cacheConfig: config.CacheConfig{
+				Size: 500,
+			},
+			cacheProperty: config.CacheProperty{
+				Size: -1,
+			},
+			expectedCacheSize: 500,
+		},
+		{
+			name: "ZeroConfigSize",
+			cacheConfig: config.CacheConfig{
+				Size: 0,
+			},
+			cacheProperty:     config.CacheProperty{},
+			expectedCacheSize: 0,
+		},
+	}
+
+	for _, tc := range testCases {
+		suite.T().Run(tc.name, func(t *testing.T) {
+			size := getCacheSize(tc.cacheConfig, tc.cacheProperty)
+			assert.Equal(t, tc.expectedCacheSize, size)
+		})
+	}
+}
+
+//nolint:dupl // Testing different functions with similar test patterns
+func (suite *CacheTestSuite) TestGetCacheTTL() {
+	testCases := []struct {
+		name             string
+		cacheConfig      config.CacheConfig
+		cacheProperty    config.CacheProperty
+		expectedCacheTTL int
+	}{
+		{
+			name: "PropertyTTL",
+			cacheConfig: config.CacheConfig{
+				TTL: 1800,
+			},
+			cacheProperty: config.CacheProperty{
+				TTL: 900,
+			},
+			expectedCacheTTL: 900,
+		},
+		{
+			name: "ConfigTTL",
+			cacheConfig: config.CacheConfig{
+				TTL: 1800,
+			},
+			cacheProperty:    config.CacheProperty{},
+			expectedCacheTTL: 1800,
+		},
+		{
+			name: "ZeroPropertyTTL",
+			cacheConfig: config.CacheConfig{
+				TTL: 1800,
+			},
+			cacheProperty: config.CacheProperty{
+				TTL: 0,
+			},
+			expectedCacheTTL: 1800,
+		},
+		{
+			name: "NegativePropertyTTL",
+			cacheConfig: config.CacheConfig{
+				TTL: 1800,
+			},
+			cacheProperty: config.CacheProperty{
+				TTL: -1,
+			},
+			expectedCacheTTL: 1800,
+		},
+		{
+			name: "ZeroConfigTTL",
+			cacheConfig: config.CacheConfig{
+				TTL: 0,
+			},
+			cacheProperty:    config.CacheProperty{},
+			expectedCacheTTL: 0,
+		},
+	}
+
+	for _, tc := range testCases {
+		suite.T().Run(tc.name, func(t *testing.T) {
+			ttl := getCacheTTL(tc.cacheConfig, tc.cacheProperty)
+			assert.Equal(t, tc.expectedCacheTTL, ttl)
 		})
 	}
 }
