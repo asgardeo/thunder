@@ -21,6 +21,7 @@ deployment:
       maxSurge: 1
       maxUnavailable: 0
   securityContext:
+    readOnlyRootFilesystem: true # This must be false if sqlite is used as the database
     enableRunAsUser: true
     runAsUser: 802
     seccompProfile:
@@ -126,7 +127,8 @@ configuration:
   # Database configuration
   database:
     identity:
-      type: "sqlite" # postgres or sqlite
+      # WARNING: Use sqlite only if you are running a single pod.
+      type: "postgres" # postgres or sqlite
       # Below two parameters are only required for sqlite
       sqlitePath: "repository/database/thunderdb.db" # Only required for sqlite
       sqliteOptions: "_journal_mode=WAL&_busy_timeout=5000" # Only required for sqlite
@@ -139,7 +141,8 @@ configuration:
       sslmode: "require" 
     # Runtime database configuration
     runtime:
-      type: "sqlite" # postgres or sqlite
+      # WARNING: Use sqlite only if you are running a single pod.
+      type: "postgres" # postgres or sqlite
       # Below two parameters are only required for sqlite
       sqlitePath: "repository/database/runtimedb.db" # Only required for sqlite
       sqliteOptions: "_journal_mode=WAL&_busy_timeout=5000" # Only required for sqlite

@@ -169,19 +169,19 @@ The following table lists the configurable parameters of the Thunder chart and t
 | `configuration.database.identity.sqlitePath` | SQLite database path (for sqlite only)                    | `repository/database/thunderdb.db` |
 | `configuration.database.identity.sqliteOptions` | SQLite options (for sqlite only)                       | `_journal_mode=WAL&_busy_timeout=5000` |
 | `configuration.database.identity.name` | Postgres database name (for postgres only)                      | `thunderdb`                  |
-| `configuration.database.identity.host` | Postgres host (for postgres only)                               | `wso2-thunder.postgres.database.azure.com` |
+| `configuration.database.identity.host` | Postgres host (for postgres only)                               | `localhost` |
 | `configuration.database.identity.port` | Postgres port (for postgres only)                               | `5432`                       |
-| `configuration.database.identity.username` | Postgres username (for postgres only)                       | `sqladmin`                   |
-| `configuration.database.identity.password` | Postgres password (for postgres only)                       | `sdfds#4J2knc`              |
+| `configuration.database.identity.username` | Postgres username (for postgres only)                       | `asgthunder`                   |
+| `configuration.database.identity.password` | Postgres password (for postgres only)                       | `asgthunder`              |
 | `configuration.database.identity.sslmode` | Postgres SSL mode (for postgres only)                        | `require`                    |
 | `configuration.database.runtime.type`  | Runtime database type (postgres or sqlite)                      | `postgres`                   |
 | `configuration.database.runtime.sqlitePath` | SQLite database path (for sqlite only)                     | `repository/database/runtimedb.db` |
 | `configuration.database.runtime.sqliteOptions` | SQLite options (for sqlite only)                        | `_journal_mode=WAL&_busy_timeout=5000` |
 | `configuration.database.runtime.name`  | Postgres database name (for postgres only)                      | `runtimedb`                  |
-| `configuration.database.runtime.host`  | Postgres host (for postgres only)                               | `wso2-thunder.postgres.database.azure.com` |
+| `configuration.database.runtime.host`  | Postgres host (for postgres only)                               | `localhost` |
 | `configuration.database.runtime.port`  | Postgres port (for postgres only)                               | `5432`                       |
-| `configuration.database.runtime.username` | Postgres username (for postgres only)                        | `sqladmin`                   |
-| `configuration.database.runtime.password` | Postgres password (for postgres only)                        | `sdfds#4J2knc`              |
+| `configuration.database.runtime.username` | Postgres username (for postgres only)                        | `asgthunder`                   |
+| `configuration.database.runtime.password` | Postgres password (for postgres only)                        | `asgthunder`              |
 | `configuration.database.runtime.sslmode` | Postgres SSL mode (for postgres only)                         | `require`                    |
 | `configuration.cache.disabled`         | Disable cache                                                   | `false`                      |
 | `configuration.cache.type`             | Cache type                                                      | `inmemory`                   |
@@ -204,4 +204,8 @@ Alternatively, you can directly update the values in conf/deployment.yaml before
 
 ### Database Configuration
 
-Thunder supports both sqlite and postgres databases. By default, sqlite is configured. You can configure the database connection by overriding the database configuration in the values.yaml file.
+Thunder supports both sqlite and postgres databases. By default, postgres is configured.
+
+Make sure to create the necessary databases and users in your Postgres instance before deploying Thunder. The values.yaml should be overridden with the required database configurations for the DB created.
+
+Note: Use sqlite only if you are running a single pod.
