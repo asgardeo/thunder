@@ -139,7 +139,7 @@ func (as *ApplicationService) CreateApplication(app *model.ApplicationDTO) (*mod
 			OAuthAppConfig: &model.OAuthAppConfigProcessedDTO{
 				AppID:                   appID,
 				ClientID:                inboundAuthConfig.OAuthAppConfig.ClientID,
-				HashedClientSecret:      hash.HashString(inboundAuthConfig.OAuthAppConfig.ClientSecret),
+				HashedClientSecret:      hash.GenerateThumbprintFromString(inboundAuthConfig.OAuthAppConfig.ClientSecret),
 				RedirectURIs:            inboundAuthConfig.OAuthAppConfig.RedirectURIs,
 				GrantTypes:              inboundAuthConfig.OAuthAppConfig.GrantTypes,
 				ResponseTypes:           inboundAuthConfig.OAuthAppConfig.ResponseTypes,
@@ -408,7 +408,7 @@ func (as *ApplicationService) UpdateApplication(appID string, app *model.Applica
 			OAuthAppConfig: &model.OAuthAppConfigProcessedDTO{
 				AppID:                   appID,
 				ClientID:                inboundAuthConfig.OAuthAppConfig.ClientID,
-				HashedClientSecret:      hash.HashString(inboundAuthConfig.OAuthAppConfig.ClientSecret),
+				HashedClientSecret:      hash.GenerateThumbprintFromString(inboundAuthConfig.OAuthAppConfig.ClientSecret),
 				RedirectURIs:            inboundAuthConfig.OAuthAppConfig.RedirectURIs,
 				GrantTypes:              inboundAuthConfig.OAuthAppConfig.GrantTypes,
 				ResponseTypes:           inboundAuthConfig.OAuthAppConfig.ResponseTypes,

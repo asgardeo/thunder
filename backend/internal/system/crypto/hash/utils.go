@@ -23,37 +23,25 @@ import (
 	"crypto/rand"
 	"crypto/sha256"
 	"encoding/base64"
-	"encoding/hex"
 )
 
-// Hash returns a SHA-256 hash of the input byte array.
-func Hash(input []byte) string {
-	h := sha256.New()
-	h.Write(input)
-	return hex.EncodeToString(h.Sum(nil))
-}
-
-// HashString returns a SHA-256 hash of the input string.
-func HashString(input string) string {
-	return Hash([]byte(input))
-}
-
-// HashStringWithSalt hashes the input string with the given salt and returns the hex-encoded hash.
-func HashStringWithSalt(input, salt string) (string, error) {
-	hasher := sha256.New()
-	_, err := hasher.Write([]byte(input + salt))
-	if err != nil {
-		return "", err
-	}
-	return hex.EncodeToString(hasher.Sum(nil)), nil
-}
-
 // GenerateSalt generates a random salt string.
-func GenerateSalt() (string, error) {
+func GenerateSalt() ([]byte, error) {
 	salt := make([]byte, 16)
 	_, err := rand.Read(salt)
 	if err != nil {
-		return "", err
+		return nil, err
 	}
-	return base64.StdEncoding.EncodeToString(salt), nil
+	return salt, nil
+}
+
+// GenerateThumbprint generates a SHA-256 thumbprint for the given data.
+func GenerateThumbprint(data []byte) string {
+	hash := sha256.Sum256(data)
+	return base64.StdEncoding.EncodeToString(hash[:])
+}
+
+// GenerateThumbprintFromString generates a SHA-256 thumbprint for the given string data.
+func GenerateThumbprintFromString(data string) string {
+	return GenerateThumbprint([]byte(data))
 }
