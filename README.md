@@ -34,6 +34,8 @@ Designed for extensibility, scalability, and seamless containerized deployment, 
 
 ## ⚡ Quickstart
 
+<!-- For maintainers: When creating a new release, update the version numbers and download links throughout this section -->
+
 This Quickstart guide will help you get started with WSO2 Thunder quickly. It walks you through downloading and running the product, trying out the sample app, and exploring registering a user, logging in, and using the Client Credentials flow.
 
 ### Download and Run WSO2 Thunder
@@ -44,24 +46,30 @@ You can run WSO2 Thunder either by downloading the release artifact or using the
 
 Follow these steps to download the latest release of WSO2 Thunder and run it locally.
 
-1. **Download the distribution from the latest release**
+1. **Download the distribution from the 0.8.0 release**
 
-    Download `thunder-<version>-<os>-<arch>.zip` from the [latest release](https://github.com/asgardeo/thunder/releases/latest) for your operating system and architecture.
-
-    For example, if you are using a MacOS machine with a Apple Silicon (ARM64) processor, you would download `thunder-<version>-macos-arm64.zip`.
+    Download the appropriate distribution for your operating system and architecture:
+    
+    - **Linux x64**: [thunder-0.8.0-linux-x64.zip](https://github.com/asgardeo/thunder/releases/download/v0.8.0/thunder-0.8.0-linux-x64.zip)
+    - **Linux ARM64**: [thunder-0.8.0-linux-arm64.zip](https://github.com/asgardeo/thunder/releases/download/v0.8.0/thunder-0.8.0-linux-arm64.zip)
+    - **macOS x64**: [thunder-0.8.0-macos-x64.zip](https://github.com/asgardeo/thunder/releases/download/v0.8.0/thunder-0.8.0-macos-x64.zip)
+    - **macOS ARM64**: [thunder-0.8.0-macos-arm64.zip](https://github.com/asgardeo/thunder/releases/download/v0.8.0/thunder-0.8.0-macos-arm64.zip)
+    - **Windows x64**: [thunder-0.8.0-win-x64.zip](https://github.com/asgardeo/thunder/releases/download/v0.8.0/thunder-0.8.0-win-x64.zip)
+    
+    For other architectures, visit the [latest release page](https://github.com/asgardeo/thunder/releases/latest).
 
 2. **Unzip the product**
 
     Unzip the downloaded file using the following command:
 
     ```bash
-    unzip thunder-<version>-<os>-<arch>.zip
+    unzip thunder-0.8.0-<os>-<arch>.zip
     ```
 
     Navigate to the unzipped directory:
 
     ```bash
-    cd thunder-<version>-<os>-<arch>/
+    cd thunder-0.8.0-<os>-<arch>/
     ```
 
 3. **Start the product**
@@ -87,7 +95,7 @@ Follow these steps to run WSO2 Thunder using Docker.
 1. **Pull the Docker image**
 
     ```bash
-    docker pull ghcr.io/asgardeo/thunder:latest
+    docker pull ghcr.io/asgardeo/thunder:0.8.0
     ```
 
 2. **Run the container**
@@ -95,7 +103,7 @@ Follow these steps to run WSO2 Thunder using Docker.
     ```bash
     docker run --rm \
       -p 8090:8090 \
-      ghcr.io/asgardeo/thunder:latest
+      ghcr.io/asgardeo/thunder:0.8.0
     ```
 
     Optionally if you want to modify the server configurations, you can mount a custom `deployment.yaml` file. Create a `deployment.yaml` file in your working directory similar to the [deployment.yaml](https://github.com/asgardeo/thunder/blob/main/backend/cmd/server/repository/conf/deployment.yaml), and mount it as below:
@@ -104,7 +112,7 @@ Follow these steps to run WSO2 Thunder using Docker.
     docker run --rm \
       -p 8090:8090 \
       -v $(pwd)/deployment.yaml:/opt/thunder/repository/conf/deployment.yaml \
-      ghcr.io/asgardeo/thunder:latest
+      ghcr.io/asgardeo/thunder:0.8.0
     ```
 
     Optionally if you want to use custom configurations or certificates, you can mount them as follows:
@@ -115,7 +123,7 @@ Follow these steps to run WSO2 Thunder using Docker.
       -v $(pwd)/deployment.yaml:/opt/thunder/repository/conf/deployment.yaml \
       -v $(pwd)/certs/server.cert:/opt/thunder/repository/resources/security/server.cert \
       -v $(pwd)/certs/server.key:/opt/thunder/repository/resources/security/server.key \
-      ghcr.io/asgardeo/thunder:latest
+      ghcr.io/asgardeo/thunder:0.8.0
     ```
 
 ### Try Out the Product
@@ -126,15 +134,23 @@ To quickly get started with Thunder, you can use the sample app provided with th
 
 ##### Download and Run the Sample App
 
-1. Download the sample app from the latest release
+1. Download the sample app from the 0.8.0 release
 
-    Download `sample-app-<version>-<os>-<arch>.zip` from the [latest release](https://github.com/asgardeo/thunder/releases/latest) for your operating system and architecture.
+    Download the appropriate sample app for your operating system and architecture:
+    
+    - **Linux x64**: [sample-app-0.8.0-linux-x64.zip](https://github.com/asgardeo/thunder/releases/download/v0.8.0/sample-app-0.8.0-linux-x64.zip)
+    - **Linux ARM64**: [sample-app-0.8.0-linux-arm64.zip](https://github.com/asgardeo/thunder/releases/download/v0.8.0/sample-app-0.8.0-linux-arm64.zip)
+    - **macOS x64**: [sample-app-0.8.0-macos-x64.zip](https://github.com/asgardeo/thunder/releases/download/v0.8.0/sample-app-0.8.0-macos-x64.zip)
+    - **macOS ARM64**: [sample-app-0.8.0-macos-arm64.zip](https://github.com/asgardeo/thunder/releases/download/v0.8.0/sample-app-0.8.0-macos-arm64.zip)
+    - **Windows x64**: [sample-app-0.8.0-win-x64.zip](https://github.com/asgardeo/thunder/releases/download/v0.8.0/sample-app-0.8.0-win-x64.zip)
+    
+    For other architectures, visit the [latest release page](https://github.com/asgardeo/thunder/releases/latest).
 
 2. Unzip and navigate to the sample app directory
 
     ```bash
-    unzip sample-app-<version>-<os>-<arch>.zip
-    cd sample-app-<version>-<os>-<arch>/
+    unzip sample-app-0.8.0-<os>-<arch>.zip
+    cd sample-app-0.8.0-<os>-<arch>/
     ```
 
 3. **Create required application for sample app in Thunder**
@@ -169,14 +185,20 @@ To quickly get started with Thunder, you can use the sample app provided with th
 
 4. **Configure the sample app**
 
-    Open the `runtime.json` file in the thunder-sample-app-<version>-<os>-<arch>/app directory and update the configurations:
+    Open the `runtime.json` file in the `sample-app-0.8.0-<os>-<arch>/app` directory and update the configurations:
     - `applicationID`: Use the application ID from step 3
     - `flowEndpoint`: The root endpoint for the flow execution API (default: `https://localhost:8090/flow`)
 
 5. **Start the sample app**
 
+    If you are using Linux or macOS:
     ```bash
     sh start.sh
+    ```
+
+    If you are using Windows:
+    ```powershell
+    .\server.exe
     ```
 
 Open your browser and navigate to [https://localhost:3000](https://localhost:3000) to see the sample app in action.
