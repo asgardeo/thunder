@@ -34,6 +34,19 @@ const (
 	OAuth2ClientSecretLength = 32
 )
 
+// generateOAuth2Credential generates a base64url-encoded OAuth 2.0 credential with specified entropy.
+// This private method contains the common logic for generating both client IDs and secrets.
+func generateOAuth2Credential(length int, credentialType string) (string, error) {
+	bytes := make([]byte, length)
+	_, err := rand.Read(bytes)
+	if err != nil {
+		return "", fmt.Errorf("failed to generate random bytes for OAuth %s: %w", credentialType, err)
+	}
+
+	// Use base64 URL encoding without padding for web-friendly credentials
+	return base64.RawURLEncoding.EncodeToString(bytes), nil
+}
+
 // GenerateOAuth2ClientID generates a URL-safe OAuth 2.0 client identifier.
 // Returns a base64url-encoded string (no padding) that is web-friendly and compliant
 // with OAuth 2.1 specifications for client identifier format.
@@ -44,14 +57,7 @@ const (
 // - Has sufficient entropy (128 bits) for uniqueness
 // - Results in a ~22 character string (more compact than UUID)
 func GenerateOAuth2ClientID() (string, error) {
-	bytes := make([]byte, OAuth2ClientIDLength)
-	_, err := rand.Read(bytes)
-	if err != nil {
-		return "", fmt.Errorf("failed to generate random bytes for OAuth client ID: %w", err)
-	}
-
-	// Use base64 URL encoding without padding for web-friendly client IDs
-	return base64.RawURLEncoding.EncodeToString(bytes), nil
+	return generateOAuth2Credential(OAuth2ClientIDLength, "client ID")
 }
 
 // GenerateOAuth2ClientSecret generates a cryptographically secure OAuth 2.0 client secret.
@@ -63,12 +69,5 @@ func GenerateOAuth2ClientID() (string, error) {
 // - Is base64url-encoded for safe transport/storage
 // - Meets OAuth Security BCP (RFC 6819) recommendations
 func GenerateOAuth2ClientSecret() (string, error) {
-	bytes := make([]byte, OAuth2ClientSecretLength)
-	_, err := rand.Read(bytes)
-	if err != nil {
-		return "", fmt.Errorf("failed to generate random bytes for OAuth client secret: %w", err)
-	}
-
-	// Use base64 URL encoding without padding for consistency
-	return base64.RawURLEncoding.EncodeToString(bytes), nil
+	return generateOAuth2Credential(OAuth2ClientSecretLength, "client secret")
 }
