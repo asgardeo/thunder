@@ -89,7 +89,7 @@ func generateOAuth2Credential(length int, credentialType string) (string, error)
 //
 // The generated client ID:
 // - Uses cryptographically secure random bytes
-// - Is URL-safe (base64url encoding without padding)  
+// - Is URL-safe (base64url encoding without padding)
 // - Has sufficient entropy (128 bits) for uniqueness
 // - Results in a ~22 character string (more compact than UUID)
 func GenerateOAuth2ClientID() (string, error) {
@@ -100,7 +100,7 @@ func GenerateOAuth2ClientID() (string, error) {
 // Returns a base64url-encoded string with high entropy suitable for client authentication.
 //
 // The generated client secret:
-// - Uses cryptographically secure random bytes  
+// - Uses cryptographically secure random bytes
 // - Has high entropy (256 bits) for security
 // - Is base64url-encoded for safe transport/storage
 // - Meets OAuth Security BCP (RFC 6819) recommendations
