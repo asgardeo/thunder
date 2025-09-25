@@ -20,6 +20,8 @@
 package utils
 
 import (
+	"crypto/rand"
+	"encoding/base64"
 	"fmt"
 	"regexp"
 
@@ -56,4 +58,52 @@ func validateErrorParams(err, desc string) error {
 	}
 
 	return nil
+}
+
+const (
+	// OAuth2ClientIDLength specifies the byte length for OAuth client IDs (16 bytes = 128 bits)
+	// This provides sufficient entropy while keeping the resulting base64 string reasonably short
+	OAuth2ClientIDLength = 16
+
+	// OAuth2ClientSecretLength specifies the byte length for OAuth client secrets (32 bytes = 256 bits)
+	// This provides high entropy for cryptographic security as recommended by OAuth security best practices
+	OAuth2ClientSecretLength = 32
+)
+
+// generateOAuth2Credential generates a base64url-encoded OAuth 2.0 credential with specified entropy.
+// This private method contains the common logic for generating both client IDs and secrets.
+func generateOAuth2Credential(length int, credentialType string) (string, error) {
+	bytes := make([]byte, length)
+	_, err := rand.Read(bytes)
+	if err != nil {
+		return "", fmt.Errorf("failed to generate random bytes for OAuth %s: %w", credentialType, err)
+	}
+
+	// Use base64 URL encoding without padding for web-friendly credentials
+	return base64.RawURLEncoding.EncodeToString(bytes), nil
+}
+
+// GenerateOAuth2ClientID generates a URL-safe OAuth 2.0 client identifier.
+// Returns a base64url-encoded string (no padding) that is web-friendly and compliant
+// with OAuth 2.1 specifications for client identifier format.
+//
+// The generated client ID:
+// - Uses cryptographically secure random bytes
+// - Is URL-safe (base64url encoding without padding)  
+// - Has sufficient entropy (128 bits) for uniqueness
+// - Results in a ~22 character string (more compact than UUID)
+func GenerateOAuth2ClientID() (string, error) {
+	return generateOAuth2Credential(OAuth2ClientIDLength, "client ID")
+}
+
+// GenerateOAuth2ClientSecret generates a cryptographically secure OAuth 2.0 client secret.
+// Returns a base64url-encoded string with high entropy suitable for client authentication.
+//
+// The generated client secret:
+// - Uses cryptographically secure random bytes  
+// - Has high entropy (256 bits) for security
+// - Is base64url-encoded for safe transport/storage
+// - Meets OAuth Security BCP (RFC 6819) recommendations
+func GenerateOAuth2ClientSecret() (string, error) {
+	return generateOAuth2Credential(OAuth2ClientSecretLength, "client secret")
 }

@@ -30,6 +30,7 @@ import (
 	certconst "github.com/asgardeo/thunder/internal/cert/constants"
 	certmodel "github.com/asgardeo/thunder/internal/cert/model"
 	"github.com/asgardeo/thunder/internal/flow/flowmgt"
+	oauthutils "github.com/asgardeo/thunder/internal/oauth/oauth2/utils"
 	"github.com/asgardeo/thunder/internal/system/config"
 	"github.com/asgardeo/thunder/internal/system/crypto/hash"
 	"github.com/asgardeo/thunder/internal/system/error/serviceerror"
@@ -608,7 +609,7 @@ func validateAndProcessInboundAuthConfig(appStore store.ApplicationStoreInterfac
 
 		if clientID == "" {
 			// Generate OAuth 2.0 compliant client ID with proper entropy and URL-safe format
-			generatedClientID, err := sysutils.GenerateOAuth2ClientID()
+			generatedClientID, err := oauthutils.GenerateOAuth2ClientID()
 			if err != nil {
 				logger.Error("Failed to generate OAuth client ID", log.Error(err))
 				return nil, &constants.ErrorInternalServerError
@@ -628,7 +629,7 @@ func validateAndProcessInboundAuthConfig(appStore store.ApplicationStoreInterfac
 	} else { // For create operation
 		if clientID == "" {
 			// Generate OAuth 2.0 compliant client ID with proper entropy and URL-safe format
-			generatedClientID, err := sysutils.GenerateOAuth2ClientID()
+			generatedClientID, err := oauthutils.GenerateOAuth2ClientID()
 			if err != nil {
 				logger.Error("Failed to generate OAuth client ID", log.Error(err))
 				return nil, &constants.ErrorInternalServerError
@@ -649,7 +650,7 @@ func validateAndProcessInboundAuthConfig(appStore store.ApplicationStoreInterfac
 
 	// Generate OAuth 2.0 compliant client secret with high entropy for security
 	if inboundAuthConfig.OAuthAppConfig.ClientSecret == "" {
-		generatedClientSecret, err := sysutils.GenerateOAuth2ClientSecret()
+		generatedClientSecret, err := oauthutils.GenerateOAuth2ClientSecret()
 		if err != nil {
 			logger.Error("Failed to generate OAuth client secret", log.Error(err))
 			return nil, &constants.ErrorInternalServerError
