@@ -133,6 +133,11 @@ type CORSConfig struct {
 	AllowedOrigins []string `yaml:"allowed_origins" json:"allowed_origins"`
 }
 
+// HashConfig holds the hashing configuration details.
+type HashConfig struct {
+	Algorithm string `yaml:"algorithm"`
+}
+
 // Config holds the complete configuration details of the server.
 type Config struct {
 	Server     ServerConfig     `yaml:"server" json:"server"`
@@ -143,6 +148,7 @@ type Config struct {
 	OAuth      OAuthConfig      `yaml:"oauth" json:"oauth"`
 	Flow       FlowConfig       `yaml:"flow" json:"flow"`
 	Crypto     CryptoConfig     `yaml:"crypto" json:"crypto"`
+	Hash       HashConfig       `yaml:"hash"`
 	CORS       CORSConfig       `yaml:"cors" json:"cors"`
 }
 

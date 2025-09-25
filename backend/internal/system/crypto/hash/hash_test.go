@@ -16,25 +16,162 @@
  * under the License.
  */
 
+// Package hash provides generic hashing utilities for sensitive data.
 package hash
 
 import (
-	"encoding/base64"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
 )
 
-type HashTestSuite struct {
+type HashUtilTestSuite struct {
 	suite.Suite
 }
 
 func TestHashSuite(t *testing.T) {
-	suite.Run(t, new(HashTestSuite))
+	suite.Run(t, new(HashUtilTestSuite))
 }
 
-func (suite *HashTestSuite) TestHash() {
+func (suite *HashUtilTestSuite) TestVerifySha256() {
+	testCases := []struct {
+		name     string
+		input    string
+		expected Credential
+	}{
+		{
+			name:  "EmptyStringAndSalt",
+			input: "",
+			expected: Credential{
+				Algorithm: "SHA256",
+				Hash:      "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+				Salt:      "",
+			},
+		},
+		{
+			name:  "NormalStringWithoutSalt",
+			input: "password",
+			expected: Credential{
+				Algorithm: "SHA256",
+				Hash:      "5e884898da28047151d0e56f8dc6292773603d0d6aabbdd62a11ef721d1542d8",
+				Salt:      "",
+			},
+		},
+		{
+			name:  "NormalStringWithSalt",
+			input: "password",
+			expected: Credential{
+				Algorithm: "SHA256",
+				Hash:      "4b2dcea502b405a479a69fd2478ea891fa9f02966db9ee5cbcbee53137c8ae4d",
+				Salt:      "12f4576d7432bd8020db7202b6492a37",
+			},
+		},
+	}
+
+	for _, tc := range testCases {
+		suite.T().Run(tc.name, func(t *testing.T) {
+			hash := verifySHA256Credential([]byte(tc.input), tc.expected)
+
+			assert.True(t, hash)
+		})
+	}
+}
+
+func (suite *HashUtilTestSuite) TestSha256HashAndVerify() {
+	input := "test-input"
+	cred := newSHA256Credential([]byte(input))
+
+	assert.True(suite.T(), Verify([]byte(input), cred),
+		"Hash verification should succeed for the same input")
+}
+
+func (suite *HashUtilTestSuite) TestSha256HashWithDifferentInputs() {
+	input1 := "input-one"
+	input2 := "input-two"
+	cred1 := newSHA256Credential([]byte(input1))
+	cred2 := newSHA256Credential([]byte(input2))
+
+	assert.NotEqual(suite.T(), cred1.Hash, cred2.Hash, "Different inputs should produce different hashes")
+}
+
+func (suite *HashUtilTestSuite) TestSha256HashWithDifferentSalts() {
+	input := "common-input"
+	cred1 := newSHA256Credential([]byte(input))
+	cred2 := newSHA256Credential([]byte(input))
+
+	assert.NotEqual(suite.T(), cred1.Hash, cred2.Hash, "Different salts should produce different hashes")
+}
+
+func (suite *HashUtilTestSuite) TestVerifyBKDF2() {
+	testCases := []struct {
+		name     string
+		input    string
+		expected Credential
+	}{
+		{
+			name:  "EmptyStringAndSalt",
+			input: "",
+			expected: Credential{
+				Algorithm: "PBKDF2",
+				Hash:      "3106cb5743a54114a36bb7d3b2afa0242360b58243264728a9ca208548082281",
+				Salt:      "",
+			},
+		},
+		{
+			name:  "NormalStringWithoutSalt",
+			input: "password",
+			expected: Credential{
+				Algorithm: "PBKDF2",
+				Hash:      "fdc25be00b18ba5c79d8bf7a452d98c248b11f2c7e9c871d24f1f880381e95cf",
+				Salt:      "",
+			},
+		},
+		{
+			name:  "NormalStringWithSalt",
+			input: "password",
+			expected: Credential{
+				Algorithm: "PBKDF2",
+				Hash:      "b500f5369698b4bcdde08267c406c12ff95e8de1d431e4472bf6ea95b620da5c",
+				Salt:      "36d2dde7dfbafe8e04ea49450f659b1c",
+			},
+		},
+	}
+
+	for _, tc := range testCases {
+		suite.T().Run(tc.name, func(t *testing.T) {
+			hash := verifyPBKDF2Credential([]byte(tc.input), tc.expected)
+
+			assert.True(t, hash)
+		})
+	}
+}
+
+func (suite *HashUtilTestSuite) TestPBKDF2HashWithAndVerify() {
+	input := "test-input"
+	cred := newPBKDF2Credential([]byte(input))
+
+	assert.True(suite.T(), Verify([]byte(input), cred),
+		"Hash verification should succeed for the same input")
+}
+
+func (suite *HashUtilTestSuite) TestPBKDF2HashWithDifferentInputs() {
+	input1 := "input-one"
+	input2 := "input-two"
+	hash1 := newPBKDF2Credential([]byte(input1))
+	hash2 := newPBKDF2Credential([]byte(input2))
+
+	assert.NotEqual(suite.T(), hash1, hash2, "Different inputs should produce different hashes")
+}
+
+func (suite *HashUtilTestSuite) TestPBKDF2HashWithDifferentSalts() {
+	input := "common-input"
+	hash1 := newPBKDF2Credential([]byte(input))
+	hash2 := newPBKDF2Credential([]byte(input))
+	assert.NotEqual(suite.T(), hash1, hash2, "Different salts should produce different hashes")
+}
+
+func (suite *HashUtilTestSuite) TestThumbprint() {
 	testCases := []struct {
 		name     string
 		input    []byte
@@ -43,24 +180,24 @@ func (suite *HashTestSuite) TestHash() {
 		{
 			name:     "EmptyInput",
 			input:    []byte(""),
-			expected: "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+			expected: "47DEQpj8HBSa+/TImW+5JCeuQeRkm5NMpJWZG3hSuFU=",
 		},
 		{
 			name:     "NormalInput",
 			input:    []byte("hello world"),
-			expected: "b94d27b9934d3e08a52e52d7da7dabfac484efe37a5380ee9088f7ace2efcde9",
+			expected: "uU0nuZNNPgilLlLX2n2r+sSE7+N6U4DukIj3rOLvzek=",
 		},
 	}
 
 	for _, tc := range testCases {
 		suite.T().Run(tc.name, func(t *testing.T) {
-			hash := Hash(tc.input)
+			hash := GenerateThumbprint(tc.input)
 			suite.Equal(tc.expected, hash, "Hash should match expected value")
 		})
 	}
 }
 
-func (suite *HashTestSuite) TestHashString() {
+func (suite *HashUtilTestSuite) TestThumbprintString() {
 	testCases := []struct {
 		name     string
 		input    string
@@ -69,120 +206,41 @@ func (suite *HashTestSuite) TestHashString() {
 		{
 			name:     "EmptyString",
 			input:    "",
-			expected: "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+			expected: "47DEQpj8HBSa+/TImW+5JCeuQeRkm5NMpJWZG3hSuFU=",
 		},
 		{
 			name:     "NormalString",
 			input:    "hello world",
-			expected: "b94d27b9934d3e08a52e52d7da7dabfac484efe37a5380ee9088f7ace2efcde9",
+			expected: "uU0nuZNNPgilLlLX2n2r+sSE7+N6U4DukIj3rOLvzek=",
 		},
 	}
 
 	for _, tc := range testCases {
 		suite.T().Run(tc.name, func(t *testing.T) {
-			hash := HashString(tc.input)
+			hash := GenerateThumbprintFromString(tc.input)
 			suite.Equal(tc.expected, hash, "Hash should match expected value")
 		})
 	}
 }
 
-func (suite *HashTestSuite) TestHashStringWithSalt() {
-	testCases := []struct {
-		name     string
-		input    string
-		salt     string
-		expected string
-	}{
-		{
-			name:     "EmptyStringAndSalt",
-			input:    "",
-			salt:     "",
-			expected: "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-		},
-		{
-			name:     "NormalStringWithSalt",
-			input:    "password",
-			salt:     "somesalt",
-			expected: "6bceb6d53d51a11c3bde77e8cafe1f152782c5e52a13e514da12a9e35b0c2bcb",
-		},
-	}
-
-	for _, tc := range testCases {
-		suite.T().Run(tc.name, func(t *testing.T) {
-			hash, err := HashStringWithSalt(tc.input, tc.salt)
-
-			assert.NoError(t, err)
-			assert.Equal(t, tc.expected, hash)
-		})
-	}
-}
-
-func (suite *HashTestSuite) TestHashStringWithSaltDeterministic() {
-	input := "test-input"
-	salt := "test-salt"
-
-	hash1, err1 := HashStringWithSalt(input, salt)
-	hash2, err2 := HashStringWithSalt(input, salt)
-
-	assert.NoError(suite.T(), err1)
-	assert.NoError(suite.T(), err2)
-	assert.Equal(suite.T(), hash1, hash2, "Hash should be deterministic for the same input and salt")
-}
-
-func (suite *HashTestSuite) TestHashStringWithDifferentInputs() {
-	salt := "common-salt"
-	input1 := "input-one"
-	input2 := "input-two"
-
-	hash1, err1 := HashStringWithSalt(input1, salt)
-	hash2, err2 := HashStringWithSalt(input2, salt)
-
-	assert.NoError(suite.T(), err1)
-	assert.NoError(suite.T(), err2)
-	assert.NotEqual(suite.T(), hash1, hash2, "Different inputs should produce different hashes")
-}
-
-func (suite *HashTestSuite) TestHashStringWithDifferentSalts() {
-	input := "common-input"
-	salt1 := "salt-one"
-	salt2 := "salt-two"
-
-	hash1, err1 := HashStringWithSalt(input, salt1)
-	hash2, err2 := HashStringWithSalt(input, salt2)
-
-	assert.NoError(suite.T(), err1)
-	assert.NoError(suite.T(), err2)
-	assert.NotEqual(suite.T(), hash1, hash2, "Different salts should produce different hashes")
-}
-
-func (suite *HashTestSuite) TestGenerateSalt() {
-	salt, err := GenerateSalt()
+func (suite *HashUtilTestSuite) TestGenerateSalt() {
+	salt, err := generateSalt()
 	assert.NoError(suite.T(), err)
 	assert.NotEmpty(suite.T(), salt)
 }
 
-func (suite *HashTestSuite) TestGenerateSaltUniqueness() {
-	salt1, err1 := GenerateSalt()
-	salt2, err2 := GenerateSalt()
+func (suite *HashUtilTestSuite) TestGenerateSaltUniqueness() {
+	salt1, err1 := generateSalt()
+	salt2, err2 := generateSalt()
 
 	assert.NoError(suite.T(), err1)
 	assert.NoError(suite.T(), err2)
 	assert.NotEqual(suite.T(), salt1, salt2, "Generated salts should be different")
 }
 
-func (suite *HashTestSuite) TestGenerateSaltIsValidBase64() {
-	salt, err := GenerateSalt()
+func (suite *HashUtilTestSuite) TestGenerateSaltLength() {
+	salt, err := generateSalt()
 
 	assert.NoError(suite.T(), err)
-	_, err = base64.StdEncoding.DecodeString(salt)
-	assert.NoError(suite.T(), err, "Salt should be valid base64")
-}
-
-func (suite *HashTestSuite) TestGenerateSaltLength() {
-	salt, err := GenerateSalt()
-
-	assert.NoError(suite.T(), err)
-	decoded, err := base64.StdEncoding.DecodeString(salt)
-	assert.NoError(suite.T(), err)
-	assert.Equal(suite.T(), 16, len(decoded), "Decoded salt should be 16 bytes")
+	assert.Equal(suite.T(), 16, len(salt), "Generated salt should be 16 bytes")
 }

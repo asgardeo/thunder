@@ -237,24 +237,16 @@ func extractCredentials(user *model.User) ([]model.Credential, error) {
 
 	for credField := range supportedCredentialFields {
 		if credValue, ok := attrsMap[credField].(string); ok {
-			credSalt, err := hash.GenerateSalt()
-			if err != nil {
-				return nil, err
-			}
-
-			credHash, err := hash.HashStringWithSalt(credValue, credSalt)
-			if err != nil {
-				return nil, err
-			}
+			credHash := hash.NewCredential([]byte(credValue))
 
 			delete(attrsMap, credField)
 
 			credential := model.Credential{
 				CredentialType: credField,
 				StorageType:    "hash",
-				StorageAlgo:    "SHA-256",
-				Value:          credHash,
-				Salt:           credSalt,
+				StorageAlgo:    credHash.Algorithm,
+				Value:          credHash.Hash,
+				Salt:           credHash.Salt,
 			}
 
 			credentials = append(credentials, credential)
@@ -428,12 +420,14 @@ func (as *UserService) VerifyUser(
 			return nil, &constants.ErrorAuthenticationFailed
 		}
 
-		hashToCompare, err := hash.HashStringWithSalt(credValue, matchingCredential.Salt)
-		if err != nil {
-			return nil, logErrorAndReturnServerError(logger, "Failed to hash credential value", err)
+		verifyingCredential := hash.Credential{
+			Algorithm: matchingCredential.StorageAlgo,
+			Hash:      matchingCredential.Value,
+			Salt:      matchingCredential.Salt,
 		}
+		hashVerified := hash.Verify([]byte(credValue), verifyingCredential)
 
-		if matchingCredential.Value == hashToCompare {
+		if hashVerified {
 			logger.Debug("Credential verified successfully", log.String("userID", userID), log.String("credType", credType))
 		} else {
 			logger.Debug("Credential verification failed", log.String("userID", userID), log.String("credType", credType))
