@@ -529,8 +529,6 @@ func (ts *OTPAPITestSuite) TestOTPVerifyMissingFields() {
 	}
 }
 
-
-
 // extractOTPFromMockServer extracts the OTP from the mock server's latest message
 func (ts *OTPAPITestSuite) extractOTPFromMockServer() string {
 	// Get messages from mock server
