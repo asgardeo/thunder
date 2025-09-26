@@ -70,9 +70,32 @@ const (
 	OAuth2ClientSecretLength = 32
 )
 
-// generateOAuth2Credential generates a base64url-encoded OAuth 2.0 credential with specified entropy.
+// OAuth2CredentialType represents the type of OAuth 2.0 credential to generate
+type OAuth2CredentialType string
+
+const (
+	// ClientIDCredential represents an OAuth 2.0 client identifier
+	ClientIDCredential OAuth2CredentialType = "client ID"
+
+	// ClientSecretCredential represents an OAuth 2.0 client secret
+	ClientSecretCredential OAuth2CredentialType = "client secret"
+)
+
+// generateOAuth2Credential generates a base64url-encoded OAuth 2.0 credential.
 // This private method contains the common logic for generating both client IDs and secrets.
-func generateOAuth2Credential(length int, credentialType string) (string, error) {
+// The length is automatically determined based on the credential type to ensure OAuth compliance.
+func generateOAuth2Credential(credentialType OAuth2CredentialType) (string, error) {
+	var length int
+
+	switch credentialType {
+	case ClientIDCredential:
+		length = OAuth2ClientIDLength
+	case ClientSecretCredential:
+		length = OAuth2ClientSecretLength
+	default:
+		return "", fmt.Errorf("unsupported credential type: %s", credentialType)
+	}
+
 	bytes := make([]byte, length)
 	_, err := rand.Read(bytes)
 	if err != nil {
@@ -93,7 +116,7 @@ func generateOAuth2Credential(length int, credentialType string) (string, error)
 // - Has sufficient entropy (128 bits) for uniqueness
 // - Results in a ~22 character string (more compact than UUID)
 func GenerateOAuth2ClientID() (string, error) {
-	return generateOAuth2Credential(OAuth2ClientIDLength, "client ID")
+	return generateOAuth2Credential(ClientIDCredential)
 }
 
 // GenerateOAuth2ClientSecret generates a cryptographically secure OAuth 2.0 client secret.
@@ -105,5 +128,5 @@ func GenerateOAuth2ClientID() (string, error) {
 // - Is base64url-encoded for safe transport/storage
 // - Meets OAuth Security BCP (RFC 6819) recommendations
 func GenerateOAuth2ClientSecret() (string, error) {
-	return generateOAuth2Credential(OAuth2ClientSecretLength, "client secret")
+	return generateOAuth2Credential(ClientSecretCredential)
 }

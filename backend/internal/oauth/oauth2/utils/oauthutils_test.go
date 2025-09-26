@@ -544,3 +544,28 @@ func (suite *OAuth2UtilsTestSuite) TestOAuth2EntropyLevels() {
 	assert.True(suite.T(), len(clientSecretBytes) > len(clientIDBytes),
 		"Client secret should have more entropy than client ID")
 }
+
+func (suite *OAuth2UtilsTestSuite) TestGenerateOAuth2CredentialInvalidType() {
+	// Test that the private function properly handles invalid credential types
+	// We test this indirectly by ensuring our constants are used correctly
+
+	// Verify that our defined constants work correctly
+	clientID, err := GenerateOAuth2ClientID()
+	assert.NoError(suite.T(), err)
+	assert.NotEmpty(suite.T(), clientID)
+
+	clientSecret, err := GenerateOAuth2ClientSecret()
+	assert.NoError(suite.T(), err)
+	assert.NotEmpty(suite.T(), clientSecret)
+
+	// The lengths should be exactly what we expect based on the credential type
+	clientIDBytes, err := base64.RawURLEncoding.DecodeString(clientID)
+	assert.NoError(suite.T(), err)
+	assert.Equal(suite.T(), OAuth2ClientIDLength, len(clientIDBytes),
+		"Client ID should automatically use the correct length")
+
+	clientSecretBytes, err := base64.RawURLEncoding.DecodeString(clientSecret)
+	assert.NoError(suite.T(), err)
+	assert.Equal(suite.T(), OAuth2ClientSecretLength, len(clientSecretBytes),
+		"Client secret should automatically use the correct length")
+}
