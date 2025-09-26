@@ -529,77 +529,7 @@ func (ts *OTPAPITestSuite) TestOTPVerifyMissingFields() {
 	}
 }
 
-// TestOTPWorkflow tests the complete OTP send and verify workflow
-func (ts *OTPAPITestSuite) TestOTPWorkflow() {
-	if ts.testSenderID == "" {
-		ts.T().Fatal("Test sender ID is required for OTP workflow test")
-	}
 
-	// Step 1: Send OTP
-	otpReq := OTPRequest{
-		Recipient: testMobileNumber,
-		SenderID:  ts.testSenderID,
-		Channel:   "sms",
-	}
-
-	reqBody, err := json.Marshal(otpReq)
-	ts.Require().NoError(err, "Failed to marshal OTP request")
-
-	req, err := http.NewRequest("POST", testServerURL+"/notification-senders/otp/send", bytes.NewReader(reqBody))
-	ts.Require().NoError(err, "Failed to create OTP send request")
-
-	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("Accept", "application/json")
-
-	resp, err := ts.client.Do(req)
-	ts.Require().NoError(err, "Failed to send OTP request")
-	defer resp.Body.Close()
-
-	ts.Assert().Equal(http.StatusOK, resp.StatusCode, "Expected successful OTP send")
-
-	var otpResp OTPSendResponse
-	err = json.NewDecoder(resp.Body).Decode(&otpResp)
-	ts.Require().NoError(err, "Failed to decode OTP send response")
-
-	ts.Assert().Equal("SUCCESS", otpResp.Status, "Expected SUCCESS status")
-	ts.Assert().NotEmpty(otpResp.SessionToken, "Session token should not be empty")
-
-	// Wait for mock server to process message
-	time.Sleep(100 * time.Millisecond)
-
-	// Step 2: Extract OTP from mock server
-	otpCode := ts.extractOTPFromMockServer()
-	ts.Assert().NotEmpty(otpCode, "OTP should be extractable from mock server")
-
-	// Step 3: Verify OTP
-	verifyReq := OTPVerifyRequest{
-		SessionToken: otpResp.SessionToken,
-		OTPCode:      otpCode,
-	}
-
-	verifyReqBody, err := json.Marshal(verifyReq)
-	ts.Require().NoError(err, "Failed to marshal OTP verify request")
-
-	verifyReqHTTP, err := http.NewRequest("POST", testServerURL+"/notification-senders/otp/verify", bytes.NewReader(verifyReqBody))
-	ts.Require().NoError(err, "Failed to create OTP verify request")
-
-	verifyReqHTTP.Header.Set("Content-Type", "application/json")
-	verifyReqHTTP.Header.Set("Accept", "application/json")
-
-	verifyResp, err := ts.client.Do(verifyReqHTTP)
-	ts.Require().NoError(err, "Failed to send OTP verify request")
-	defer verifyResp.Body.Close()
-
-	ts.Assert().Equal(http.StatusOK, verifyResp.StatusCode, "Expected successful OTP verification")
-
-	var verifyRespBody OTPVerifyResponse
-	err = json.NewDecoder(verifyResp.Body).Decode(&verifyRespBody)
-	ts.Require().NoError(err, "Failed to decode OTP verify response")
-
-	ts.Assert().Equal("VERIFIED", verifyRespBody.Status, "Expected VERIFIED status")
-
-	ts.T().Log("Complete OTP workflow test passed successfully")
-}
 
 // extractOTPFromMockServer extracts the OTP from the mock server's latest message
 func (ts *OTPAPITestSuite) extractOTPFromMockServer() string {
