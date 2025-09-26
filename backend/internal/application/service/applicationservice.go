@@ -30,6 +30,7 @@ import (
 	certconst "github.com/asgardeo/thunder/internal/cert/constants"
 	certmodel "github.com/asgardeo/thunder/internal/cert/model"
 	"github.com/asgardeo/thunder/internal/flow/flowmgt"
+	oauthutils "github.com/asgardeo/thunder/internal/oauth/oauth2/utils"
 	"github.com/asgardeo/thunder/internal/system/config"
 	"github.com/asgardeo/thunder/internal/system/crypto/hash"
 	"github.com/asgardeo/thunder/internal/system/error/serviceerror"
@@ -607,8 +608,13 @@ func validateAndProcessInboundAuthConfig(appStore store.ApplicationStoreInterfac
 		existingClientID := existingApp.InboundAuthConfig[0].OAuthAppConfig.ClientID
 
 		if clientID == "" {
-			// TODO: Improve the client id generation logic.
-			inboundAuthConfig.OAuthAppConfig.ClientID = sysutils.GenerateUUID()
+			// Generate OAuth 2.0 compliant client ID with proper entropy and URL-safe format
+			generatedClientID, err := oauthutils.GenerateOAuth2ClientID()
+			if err != nil {
+				logger.Error("Failed to generate OAuth client ID", log.Error(err))
+				return nil, &constants.ErrorInternalServerError
+			}
+			inboundAuthConfig.OAuthAppConfig.ClientID = generatedClientID
 		} else if clientID != existingClientID {
 			existingAppWithClientID, clientCheckErr := appStore.GetOAuthApplication(clientID)
 			if clientCheckErr != nil && !errors.Is(clientCheckErr, constants.ApplicationNotFoundError) {
@@ -622,8 +628,13 @@ func validateAndProcessInboundAuthConfig(appStore store.ApplicationStoreInterfac
 		}
 	} else { // For create operation
 		if clientID == "" {
-			// TODO: Improve the client id generation logic.
-			inboundAuthConfig.OAuthAppConfig.ClientID = sysutils.GenerateUUID()
+			// Generate OAuth 2.0 compliant client ID with proper entropy and URL-safe format
+			generatedClientID, err := oauthutils.GenerateOAuth2ClientID()
+			if err != nil {
+				logger.Error("Failed to generate OAuth client ID", log.Error(err))
+				return nil, &constants.ErrorInternalServerError
+			}
+			inboundAuthConfig.OAuthAppConfig.ClientID = generatedClientID
 		} else {
 			existingAppWithClientID, clientCheckErr := appStore.GetOAuthApplication(clientID)
 			if clientCheckErr != nil && !errors.Is(clientCheckErr, constants.ApplicationNotFoundError) {
@@ -637,9 +648,14 @@ func validateAndProcessInboundAuthConfig(appStore store.ApplicationStoreInterfac
 		}
 	}
 
-	// TODO: Improve the client secret generation logic.
+	// Generate OAuth 2.0 compliant client secret with high entropy for security
 	if inboundAuthConfig.OAuthAppConfig.ClientSecret == "" {
-		inboundAuthConfig.OAuthAppConfig.ClientSecret = sysutils.GenerateUUID()
+		generatedClientSecret, err := oauthutils.GenerateOAuth2ClientSecret()
+		if err != nil {
+			logger.Error("Failed to generate OAuth client secret", log.Error(err))
+			return nil, &constants.ErrorInternalServerError
+		}
+		inboundAuthConfig.OAuthAppConfig.ClientSecret = generatedClientSecret
 	}
 
 	return inboundAuthConfig, nil
