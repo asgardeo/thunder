@@ -28,6 +28,7 @@ import (
 
 	"github.com/asgardeo/thunder/internal/notification/common"
 	"github.com/asgardeo/thunder/internal/notification/message"
+	"github.com/asgardeo/thunder/internal/system/cmodels"
 	"github.com/asgardeo/thunder/internal/system/error/serviceerror"
 )
 
@@ -84,7 +85,7 @@ func validateMessageNotificationSenderProperties(sender common.NotificationSende
 }
 
 // validateTwilioProperties validates the message notification sender properties for a Twilio client.
-func validateTwilioProperties(properties []common.SenderProperty) error {
+func validateTwilioProperties(properties []cmodels.Property) error {
 	requiredProps := map[string]bool{
 		"account_sid": false,
 		"auth_token":  false,
@@ -116,7 +117,7 @@ func validateTwilioProperties(properties []common.SenderProperty) error {
 }
 
 // validateVonageProperties validates the message notification sender properties for a Vonage client.
-func validateVonageProperties(properties []common.SenderProperty) error {
+func validateVonageProperties(properties []cmodels.Property) error {
 	requiredProps := map[string]bool{
 		"api_key":    false,
 		"api_secret": false,
@@ -126,7 +127,7 @@ func validateVonageProperties(properties []common.SenderProperty) error {
 }
 
 // validateCustomProperties validates the message notification sender properties for a custom client.
-func validateCustomProperties(properties []common.SenderProperty) error {
+func validateCustomProperties(properties []cmodels.Property) error {
 	validHTTPMethods := []string{http.MethodGet, http.MethodPost}
 	validContentTypes := []string{"JSON", "FORM"}
 
@@ -160,7 +161,7 @@ func validateCustomProperties(properties []common.SenderProperty) error {
 }
 
 // validateSenderProperties validates the properties for a notification sender.
-func validateSenderProperties(properties []common.SenderProperty, requiredProperties map[string]bool) error {
+func validateSenderProperties(properties []cmodels.Property, requiredProperties map[string]bool) error {
 	for _, prop := range properties {
 		if prop.Name == "" {
 			return errors.New("properties must have non-empty name")

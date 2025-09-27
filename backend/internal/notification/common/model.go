@@ -19,6 +19,8 @@
 // Package common contains the common models and constants for notification package.
 package common
 
+import "github.com/asgardeo/thunder/internal/system/cmodels"
+
 // SMSData represents the data structure for a SMS message.
 type SMSData struct {
 	To   string `json:"to"`
@@ -34,13 +36,6 @@ type OTP struct {
 	AttemptCount           int    `json:"attempt_count"`
 }
 
-// SenderProperty represents a key-value property for a notification sender.
-type SenderProperty struct {
-	Name     string `json:"name"`
-	Value    string `json:"value"`
-	IsSecret bool   `json:"is_secret"`
-}
-
 // NotificationSenderDTO represents the data transfer object for a notification sender.
 type NotificationSenderDTO struct {
 	ID          string
@@ -48,15 +43,15 @@ type NotificationSenderDTO struct {
 	Description string
 	Type        NotificationSenderType
 	Provider    MessageProviderType
-	Properties  []SenderProperty
+	Properties  []cmodels.Property
 }
 
 // NotificationSenderRequest represents the request structure for creating or updating a notification sender.
 type NotificationSenderRequest struct {
-	Name        string           `json:"name"`
-	Description string           `json:"description"`
-	Provider    string           `json:"provider"`
-	Properties  []SenderProperty `json:"properties"`
+	Name        string             `json:"name"`
+	Description string             `json:"description"`
+	Provider    string             `json:"provider"`
+	Properties  []cmodels.Property `json:"properties"`
 }
 
 // NotificationSenderResponse represents the response structure for a notification sender.
@@ -65,7 +60,7 @@ type NotificationSenderResponse struct {
 	Name        string              `json:"name"`
 	Description string              `json:"description"`
 	Provider    MessageProviderType `json:"provider"`
-	Properties  []SenderProperty    `json:"properties"`
+	Properties  []cmodels.Property  `json:"properties"`
 }
 
 // SendOTPRequest represents the request structure for sending an OTP.

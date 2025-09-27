@@ -53,13 +53,18 @@ func NewVonageClient(sender common.NotificationSenderDTO) (MessageClientInterfac
 	client.url = vonageURL
 
 	for _, prop := range sender.Properties {
+		value, err := prop.GetValue()
+		if err != nil {
+			return nil, fmt.Errorf("failed to get property value for %s: %w", prop.Name, err)
+		}
+
 		switch prop.Name {
 		case common.VonagePropKeyAPIKey:
-			client.apiKey = prop.Value
+			client.apiKey = value
 		case common.VonagePropKeyAPISecret:
-			client.apiSecret = prop.Value
+			client.apiSecret = value
 		case common.VonagePropKeySenderID:
-			client.senderID = prop.Value
+			client.senderID = value
 		default:
 			logger.Warn("Unknown property for Vonage client", log.String("property", prop.Name))
 		}

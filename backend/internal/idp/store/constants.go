@@ -54,12 +54,12 @@ var (
 	// QueryInsertIDPProperties is the query to insert properties for a specific IdP.
 	QueryInsertIDPProperties = model.DBQuery{
 		ID:    "IPQ-IDP_MGT-07",
-		Query: "INSERT INTO IDP_PROPERTY (IDP_ID, PROPERTY_NAME, PROPERTY_VALUE, IS_SECRET) VALUES %s",
+		Query: "INSERT INTO IDP_PROPERTY (IDP_ID, PROPERTY_NAME, PROPERTY_VALUE, IS_SECRET, IS_ENCRYPTED) VALUES %s",
 	}
 	// QueryGetIDPProperties is the query to get properties for a specific IdP.
 	QueryGetIDPProperties = model.DBQuery{
 		ID:    "IPQ-IDP_MGT-08",
-		Query: "SELECT PROPERTY_NAME, PROPERTY_VALUE, IS_SECRET FROM IDP_PROPERTY WHERE IDP_ID = $1",
+		Query: "SELECT PROPERTY_NAME, PROPERTY_VALUE, IS_SECRET, IS_ENCRYPTED FROM IDP_PROPERTY WHERE IDP_ID = $1",
 	}
 	// QueryDeleteIDPProperties is the query to delete all properties for a specific IdP.
 	QueryDeleteIDPProperties = model.DBQuery{

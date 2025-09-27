@@ -23,6 +23,7 @@ import (
 	"fmt"
 
 	"github.com/asgardeo/thunder/internal/notification/common"
+	"github.com/asgardeo/thunder/internal/system/cmodels"
 	dbmodel "github.com/asgardeo/thunder/internal/system/database/model"
 	"github.com/asgardeo/thunder/internal/system/database/provider"
 	"github.com/asgardeo/thunder/internal/system/log"
@@ -49,6 +50,12 @@ func getNotificationStore() notificationStoreInterface {
 
 // createSender creates a new notification sender.
 func (s *notificationStore) createSender(sender common.NotificationSenderDTO) error {
+	for i := range sender.Properties {
+		if err := sender.Properties[i].Encrypt(); err != nil {
+			return fmt.Errorf("failed to encrypt secret properties: %w", err)
+		}
+	}
+
 	queries := []func(tx dbmodel.TxInterface) error{
 		func(tx dbmodel.TxInterface) error {
 			_, err := tx.Exec(queryCreateNotificationSender.Query, sender.Name, sender.ID,
@@ -59,7 +66,7 @@ func (s *notificationStore) createSender(sender common.NotificationSenderDTO) er
 	for _, prop := range sender.Properties {
 		queries = append(queries, func(tx dbmodel.TxInterface) error {
 			_, err := tx.Exec(queryCreateNotificationSenderProperty.Query, sender.ID,
-				prop.Name, prop.Value, sysutils.BoolToNumString(prop.IsSecret))
+				prop.Name, prop.Value, sysutils.BoolToNumString(prop.IsSecret), sysutils.BoolToNumString(prop.IsEncrypted()))
 			return err
 		})
 	}
@@ -104,7 +111,7 @@ func (s *notificationStore) listSenders() ([]common.NotificationSenderDTO, error
 }
 
 // GetSenderProperties retrieves all properties of a notification sender by ID.
-func (s *notificationStore) GetSenderProperties(id string) ([]common.SenderProperty, error) {
+func (s *notificationStore) GetSenderProperties(id string) ([]cmodels.Property, error) {
 	dbClient, err := provider.GetDBProvider().GetDBClient("identity")
 	if err != nil {
 		return nil, fmt.Errorf("failed to get database client: %w", err)
@@ -171,6 +178,12 @@ func (s *notificationStore) getSender(query dbmodel.DBQuery,
 
 // updateSender updates an existing notification sender.
 func (s *notificationStore) updateSender(id string, sender common.NotificationSenderDTO) error {
+	for i := range sender.Properties {
+		if err := sender.Properties[i].Encrypt(); err != nil {
+			return fmt.Errorf("failed to encrypt secret properties: %w", err)
+		}
+	}
+
 	queries := []func(tx dbmodel.TxInterface) error{
 		func(tx dbmodel.TxInterface) error {
 			_, err := tx.Exec(queryUpdateNotificationSender.Query, sender.Name, sender.Description,
@@ -185,7 +198,7 @@ func (s *notificationStore) updateSender(id string, sender common.NotificationSe
 	for _, prop := range sender.Properties {
 		queries = append(queries, func(tx dbmodel.TxInterface) error {
 			_, err := tx.Exec(queryCreateNotificationSenderProperty.Query, id, prop.Name,
-				prop.Value, sysutils.BoolToNumString(prop.IsSecret))
+				prop.Value, sysutils.BoolToNumString(prop.IsSecret), sysutils.BoolToNumString(prop.IsEncrypted()))
 			return err
 		})
 	}
@@ -279,15 +292,15 @@ func (s *notificationStore) buildSenderFromResultRow(
 		Description: description,
 		Type:        common.NotificationSenderType(_type),
 		Provider:    common.MessageProviderType(provider),
-		Properties:  []common.SenderProperty{},
+		Properties:  []cmodels.Property{},
 	}
 
 	return sender, nil
 }
 
 // buildSenderPropertiesFromResultSet builds a list of SenderProperty from the result set.
-func buildSenderPropertiesFromResultSet(results []map[string]interface{}, id string) ([]common.SenderProperty, error) {
-	properties := make([]common.SenderProperty, 0, len(results))
+func buildSenderPropertiesFromResultSet(results []map[string]interface{}, id string) ([]cmodels.Property, error) {
+	properties := make([]cmodels.Property, 0, len(results))
 
 	for _, row := range results {
 		propName, ok := row["property_name"].(string)
@@ -306,11 +319,19 @@ func buildSenderPropertiesFromResultSet(results []map[string]interface{}, id str
 		}
 		isSecret := sysutils.NumStringToBool(isSecretStr)
 
-		properties = append(properties, common.SenderProperty{
+		isEncryptedStr, ok := row["is_encrypted"].(string)
+		if !ok {
+			return nil, fmt.Errorf("failed to parse is_encrypted as string for sender ID: %s", id)
+		}
+		isEncrypted := sysutils.NumStringToBool(isEncryptedStr)
+
+		property := cmodels.Property{
 			Name:     propName,
 			Value:    propValue,
 			IsSecret: isSecret,
-		})
+		}
+		property.SetEncrypted(isEncrypted)
+		properties = append(properties, property)
 	}
 
 	return properties, nil

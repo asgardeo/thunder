@@ -53,19 +53,24 @@ func NewCustomClient(sender common.NotificationSenderDTO) (MessageClientInterfac
 	client.name = sender.Name
 
 	for _, prop := range sender.Properties {
+		value, err := prop.GetValue()
+		if err != nil {
+			return nil, fmt.Errorf("failed to get property value for %s: %w", prop.Name, err)
+		}
+
 		switch prop.Name {
 		case common.CustomPropKeyURL:
-			client.url = prop.Value
+			client.url = value
 		case common.CustomPropKeyHTTPMethod:
-			client.httpMethod = strings.ToUpper(prop.Value)
+			client.httpMethod = strings.ToUpper(value)
 		case common.CustomPropKeyHTTPHeaders:
-			headers, err := client.getHeadersFromString(prop.Value)
+			headers, err := client.getHeadersFromString(value)
 			if err != nil {
 				return nil, fmt.Errorf("failed to parse HTTP headers: %w", err)
 			}
 			client.httpHeaders = headers
 		case common.CustomPropKeyContentType:
-			client.contentType = strings.ToUpper(prop.Value)
+			client.contentType = strings.ToUpper(value)
 		default:
 			logger.Warn("Unknown property for Custom client", log.String("property", prop.Name))
 		}

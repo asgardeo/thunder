@@ -26,6 +26,7 @@ import (
 
 	"github.com/asgardeo/thunder/internal/idp/constants"
 	"github.com/asgardeo/thunder/internal/idp/model"
+	"github.com/asgardeo/thunder/internal/system/cmodels"
 	dbmodel "github.com/asgardeo/thunder/internal/system/database/model"
 	"github.com/asgardeo/thunder/internal/system/database/provider"
 	"github.com/asgardeo/thunder/internal/system/log"
@@ -57,6 +58,12 @@ func (s *IDPStore) CreateIdentityProvider(idp model.IdpDTO) error {
 		return fmt.Errorf("failed to get database client: %w", err)
 	}
 
+	for i := range idp.Properties {
+		if err := idp.Properties[i].Encrypt(); err != nil {
+			return fmt.Errorf("failed to encrypt secret properties: %w", err)
+		}
+	}
+
 	tx, err := dbClient.BeginTx()
 	if err != nil {
 		return fmt.Errorf("failed to begin transaction: %w", err)
@@ -75,8 +82,10 @@ func (s *IDPStore) CreateIdentityProvider(idp model.IdpDTO) error {
 		queryValues := make([]string, 0, len(idp.Properties))
 		for _, property := range idp.Properties {
 			if property.Name != "" {
-				queryValues = append(queryValues, fmt.Sprintf("('%s', '%s', '%s', '%s')",
-					idp.ID, property.Name, property.Value, sysutils.BoolToNumString(property.IsSecret)))
+				queryValues = append(queryValues, fmt.Sprintf("('%s', '%s', '%s', '%s', '%s')",
+					idp.ID, property.Name, property.Value,
+					sysutils.BoolToNumString(property.IsSecret),
+					sysutils.BoolToNumString(property.IsEncrypted())))
 			} else {
 				return fmt.Errorf("property name cannot be empty")
 			}
@@ -131,7 +140,7 @@ func (s *IDPStore) GetIdentityProviderList() ([]model.BasicIdpDTO, error) {
 }
 
 // getIDPProperties retrieves the properties of a specific IdP by its ID.
-func (s *IDPStore) getIDPProperties(idpID string) ([]model.IdpProperty, error) {
+func (s *IDPStore) getIDPProperties(idpID string) ([]cmodels.Property, error) {
 	dbClient, err := provider.GetDBProvider().GetDBClient("identity")
 	if err != nil {
 		return nil, fmt.Errorf("failed to get database client: %w", err)
@@ -203,6 +212,12 @@ func (s *IDPStore) UpdateIdentityProvider(idp *model.IdpDTO) error {
 		return fmt.Errorf("failed to get database client: %w", err)
 	}
 
+	for i := range idp.Properties {
+		if err := idp.Properties[i].Encrypt(); err != nil {
+			return fmt.Errorf("failed to encrypt secret properties: %w", err)
+		}
+	}
+
 	tx, err := dbClient.BeginTx()
 	if err != nil {
 		return fmt.Errorf("failed to begin transaction: %w", err)
@@ -231,8 +246,10 @@ func (s *IDPStore) UpdateIdentityProvider(idp *model.IdpDTO) error {
 		queryValues := make([]string, 0, len(idp.Properties))
 		for _, property := range idp.Properties {
 			if property.Name != "" {
-				queryValues = append(queryValues, fmt.Sprintf("('%s', '%s', '%s', '%s')",
-					idp.ID, property.Name, property.Value, sysutils.BoolToNumString(property.IsSecret)))
+				queryValues = append(queryValues, fmt.Sprintf("('%s', '%s', '%s', '%s', '%s')",
+					idp.ID, property.Name, property.Value,
+					sysutils.BoolToNumString(property.IsSecret),
+					sysutils.BoolToNumString(property.IsEncrypted())))
 			} else {
 				return fmt.Errorf("property name cannot be empty")
 			}
@@ -308,8 +325,8 @@ func buildIDPFromResultRow(row map[string]interface{}) (*model.BasicIdpDTO, erro
 }
 
 // buildIDPPropertiesFromResultSet builds a slice of IDPProperty from the result set.
-func buildIDPPropertiesFromResultSet(results []map[string]interface{}) ([]model.IdpProperty, error) {
-	properties := make([]model.IdpProperty, 0, len(results))
+func buildIDPPropertiesFromResultSet(results []map[string]interface{}) ([]cmodels.Property, error) {
+	properties := make([]cmodels.Property, 0, len(results))
 
 	for _, row := range results {
 		propertyName, ok := row["property_name"].(string)
@@ -328,11 +345,18 @@ func buildIDPPropertiesFromResultSet(results []map[string]interface{}) ([]model.
 		}
 		isSecret := sysutils.NumStringToBool(isSecretStr)
 
-		property := model.IdpProperty{
+		isEncryptedStr, ok := row["is_encrypted"].(string)
+		if !ok {
+			return nil, fmt.Errorf("failed to parse is_encrypted as string")
+		}
+		isEncrypted := sysutils.NumStringToBool(isEncryptedStr)
+
+		property := cmodels.Property{
 			Name:     propertyName,
 			Value:    propertyValue,
 			IsSecret: isSecret,
 		}
+		property.SetEncrypted(isEncrypted)
 		properties = append(properties, property)
 	}
 

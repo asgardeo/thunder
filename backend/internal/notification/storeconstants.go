@@ -31,8 +31,9 @@ var (
 	// queryCreateNotificationSenderProperty is the query to create a notification sender property.
 	queryCreateNotificationSenderProperty = dbmodel.DBQuery{
 		ID: "NMQ-SM-02",
-		Query: "INSERT INTO NOTIFICATION_SENDER_PROPERTY (SENDER_ID, PROPERTY_NAME, PROPERTY_VALUE, IS_SECRET) " +
-			"VALUES ($1, $2, $3, $4)",
+		Query: "INSERT INTO NOTIFICATION_SENDER_PROPERTY " +
+			"(SENDER_ID, PROPERTY_NAME, PROPERTY_VALUE, IS_SECRET, IS_ENCRYPTED) " +
+			"VALUES ($1, $2, $3, $4, $5)",
 	}
 
 	// queryGetNotificationSenderByID is the query to get a notification sender by its ID.
@@ -44,7 +45,7 @@ var (
 	// queryGetNotificationSenderProperties is the query to get properties of a notification sender.
 	queryGetNotificationSenderProperties = dbmodel.DBQuery{
 		ID: "NMQ-SM-04",
-		Query: "SELECT PROPERTY_NAME, PROPERTY_VALUE, IS_SECRET " +
+		Query: "SELECT PROPERTY_NAME, PROPERTY_VALUE, IS_SECRET, IS_ENCRYPTED " +
 			"FROM NOTIFICATION_SENDER_PROPERTY WHERE SENDER_ID = $1",
 	}
 

@@ -35,6 +35,7 @@ import (
 	idpconst "github.com/asgardeo/thunder/internal/idp/constants"
 	idpmodel "github.com/asgardeo/thunder/internal/idp/model"
 	idpservice "github.com/asgardeo/thunder/internal/idp/service"
+	"github.com/asgardeo/thunder/internal/system/cmodels"
 	sysutils "github.com/asgardeo/thunder/internal/system/utils"
 )
 
@@ -300,7 +301,7 @@ func getIDP(idpName string) (*idpmodel.IdpDTO, error) {
 }
 
 // getIDPConfigs retrieves the IDP configurations for a given executor configuration.
-func getIDPConfigs(idpProperties []idpmodel.IdpProperty, execConfig *model.ExecutorConfig) (string,
+func getIDPConfigs(idpProperties []cmodels.Property, execConfig *model.ExecutorConfig) (string,
 	string, string, []string, map[string]string, error) {
 	if len(idpProperties) == 0 {
 		return "", "", "", nil, nil, fmt.Errorf("IDP properties not found for executor with IDP name %s",
@@ -309,17 +310,22 @@ func getIDPConfigs(idpProperties []idpmodel.IdpProperty, execConfig *model.Execu
 	var clientID, clientSecret, redirectURI, scopesStr string
 	additionalParams := map[string]string{}
 	for _, prop := range idpProperties {
+		value, err := prop.GetValue()
+		if err != nil {
+			return "", "", "", nil, nil, err
+		}
+
 		switch prop.Name {
 		case "client_id":
-			clientID = prop.Value
+			clientID = value
 		case "client_secret":
-			clientSecret = prop.Value
+			clientSecret = value
 		case "redirect_uri":
-			redirectURI = prop.Value
+			redirectURI = value
 		case "scopes":
-			scopesStr = prop.Value
+			scopesStr = value
 		default:
-			additionalParams[prop.Name] = prop.Value
+			additionalParams[prop.Name] = value
 		}
 	}
 	if clientID == "" || clientSecret == "" || redirectURI == "" || scopesStr == "" {

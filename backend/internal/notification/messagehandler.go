@@ -24,6 +24,7 @@ import (
 	"strings"
 
 	"github.com/asgardeo/thunder/internal/notification/common"
+	"github.com/asgardeo/thunder/internal/system/cmodels"
 	serverconst "github.com/asgardeo/thunder/internal/system/constants"
 	"github.com/asgardeo/thunder/internal/system/error/apierror"
 	"github.com/asgardeo/thunder/internal/system/error/serviceerror"
@@ -323,9 +324,9 @@ func getDTOFromSenderRequest(sender *common.NotificationSenderRequest) *common.N
 	providerStr := sysutils.SanitizeString(sender.Provider)
 
 	// Sanitize properties
-	properties := make([]common.SenderProperty, 0, len(sender.Properties))
+	properties := make([]cmodels.Property, 0, len(sender.Properties))
 	for _, prop := range sender.Properties {
-		properties = append(properties, common.SenderProperty{
+		properties = append(properties, cmodels.Property{
 			Name:     sysutils.SanitizeString(prop.Name),
 			Value:    sysutils.SanitizeString(prop.Value),
 			IsSecret: prop.IsSecret,
@@ -352,10 +353,10 @@ func getSenderResponseFromDTO(sender *common.NotificationSenderDTO) common.Notif
 	}
 
 	// Mask secret properties in the response.
-	senderProperties := make([]common.SenderProperty, 0, len(sender.Properties))
+	senderProperties := make([]cmodels.Property, 0, len(sender.Properties))
 	for _, property := range sender.Properties {
 		if property.IsSecret {
-			senderProperties = append(senderProperties, common.SenderProperty{
+			senderProperties = append(senderProperties, cmodels.Property{
 				Name:     property.Name,
 				Value:    "******",
 				IsSecret: property.IsSecret,

@@ -27,6 +27,7 @@ import (
 	"github.com/asgardeo/thunder/internal/idp/constants"
 	"github.com/asgardeo/thunder/internal/idp/model"
 	"github.com/asgardeo/thunder/internal/idp/service"
+	"github.com/asgardeo/thunder/internal/system/cmodels"
 	serverconst "github.com/asgardeo/thunder/internal/system/constants"
 	"github.com/asgardeo/thunder/internal/system/error/apierror"
 	"github.com/asgardeo/thunder/internal/system/error/serviceerror"
@@ -284,10 +285,10 @@ func getClientErrorStatusCode(errorCode string) int {
 }
 
 // getSanitizedProperties sanitizes the properties of an identity provider.
-func getSanitizedProperties(properties []model.IdpProperty) []model.IdpProperty {
-	sanitizedProperties := make([]model.IdpProperty, 0, len(properties))
+func getSanitizedProperties(properties []cmodels.Property) []cmodels.Property {
+	sanitizedProperties := make([]cmodels.Property, 0, len(properties))
 	for _, property := range properties {
-		sanitizedProperties = append(sanitizedProperties, model.IdpProperty{
+		sanitizedProperties = append(sanitizedProperties, cmodels.Property{
 			Name:     sysutils.SanitizeString(property.Name),
 			Value:    sysutils.SanitizeString(property.Value),
 			IsSecret: property.IsSecret,
@@ -305,10 +306,10 @@ func getIDPResponse(idp model.IdpDTO) model.IdpResponse {
 	}
 
 	// Mask secret properties in the response.
-	idpProperties := make([]model.IdpProperty, 0, len(idp.Properties))
+	idpProperties := make([]cmodels.Property, 0, len(idp.Properties))
 	for _, property := range idp.Properties {
 		if property.IsSecret {
-			idpProperties = append(idpProperties, model.IdpProperty{
+			idpProperties = append(idpProperties, cmodels.Property{
 				Name:     property.Name,
 				Value:    "******",
 				IsSecret: property.IsSecret,

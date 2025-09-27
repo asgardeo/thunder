@@ -26,6 +26,7 @@ import (
 	"github.com/asgardeo/thunder/internal/idp/constants"
 	"github.com/asgardeo/thunder/internal/idp/model"
 	"github.com/asgardeo/thunder/internal/idp/store"
+	"github.com/asgardeo/thunder/internal/system/cmodels"
 	"github.com/asgardeo/thunder/internal/system/error/serviceerror"
 	"github.com/asgardeo/thunder/internal/system/log"
 	"github.com/asgardeo/thunder/internal/system/utils"
@@ -233,7 +234,7 @@ func (is *IDPService) DeleteIdentityProvider(idpID string) *serviceerror.Service
 }
 
 // validateIDPProperties validates the identity provider properties.
-func validateIDPProperties(properties []model.IdpProperty) *serviceerror.ServiceError {
+func validateIDPProperties(properties []cmodels.Property) *serviceerror.ServiceError {
 	for _, property := range properties {
 		if strings.TrimSpace(property.Name) == "" {
 			return &constants.ErrorInvalidIDPProperties
