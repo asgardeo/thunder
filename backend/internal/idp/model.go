@@ -25,6 +25,8 @@ type IDPDTO struct {
 	ID          string
 	Name        string
 	Description string
+	Type        IDPType
+	IsEnabled   bool
 	Properties  []cmodels.Property
 }
 
@@ -33,12 +35,16 @@ type BasicIDPDTO struct {
 	ID          string
 	Name        string
 	Description string
+	Type        IDPType
+	IsEnabled   bool
 }
 
 // idpRequest represents the request payload for creating or updating an identity provider.
 type idpRequest struct {
 	Name        string             `json:"name"`
 	Description string             `json:"description,omitempty"`
+	Type        IDPType            `json:"type"`
+	IsEnabled   bool               `json:"is_enabled"`
 	Properties  []cmodels.Property `json:"properties,omitempty"`
 }
 
@@ -47,12 +53,16 @@ type idpResponse struct {
 	ID          string             `json:"id"`
 	Name        string             `json:"name"`
 	Description string             `json:"description,omitempty"`
+	Type        IDPType            `json:"type"`
+	IsEnabled   bool               `json:"is_enabled"`
 	Properties  []cmodels.Property `json:"properties,omitempty"`
 }
 
 // basicIDPResponse represents a basic response payload for an identity provider.
 type basicIDPResponse struct {
-	ID          string `json:"id"`
-	Name        string `json:"name"`
-	Description string `json:"description,omitempty"`
+	ID          string  `json:"id"`
+	Name        string  `json:"name"`
+	Description string  `json:"description,omitempty"`
+	Type        IDPType `json:"type"`
+	IsEnabled   bool    `json:"is_enabled"`
 }

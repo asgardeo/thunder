@@ -22,7 +22,6 @@ package googleauth
 import (
 	"errors"
 
-	authngoogle "github.com/asgardeo/thunder/internal/authn/google"
 	authnoauth "github.com/asgardeo/thunder/internal/authn/oauth"
 	authnoidc "github.com/asgardeo/thunder/internal/authn/oidc"
 	"github.com/asgardeo/thunder/internal/executor/oauth/model"
@@ -30,6 +29,7 @@ import (
 	flowconst "github.com/asgardeo/thunder/internal/flow/constants"
 	flowmodel "github.com/asgardeo/thunder/internal/flow/model"
 	"github.com/asgardeo/thunder/internal/idp"
+	idpgoogle "github.com/asgardeo/thunder/internal/idp/google"
 	"github.com/asgardeo/thunder/internal/system/error/serviceerror"
 	httpservice "github.com/asgardeo/thunder/internal/system/http"
 	"github.com/asgardeo/thunder/internal/system/log"
@@ -40,7 +40,7 @@ const loggerComponentName = "GoogleOIDCAuthExecutor"
 // GoogleOIDCAuthExecutor implements the OIDC authentication executor for Google.
 type GoogleOIDCAuthExecutor struct {
 	*oidcauth.OIDCAuthExecutor
-	googleAuthService authngoogle.GoogleOIDCAuthnServiceInterface
+	googleAuthService idpgoogle.GoogleOIDCAuthnServiceInterface
 }
 
 var _ flowmodel.ExecutorInterface = (*GoogleOIDCAuthExecutor)(nil)
@@ -50,10 +50,10 @@ func NewGoogleOIDCAuthExecutorFromProps(execProps flowmodel.ExecutorProperties,
 	oAuthProps *model.BasicOAuthExecProperties) oidcauth.OIDCAuthExecutorInterface {
 	// Prepare the complete OAuth properties for Google
 	compOAuthProps := &model.OAuthExecProperties{
-		AuthorizationEndpoint: authngoogle.AuthorizeEndpoint,
-		TokenEndpoint:         authngoogle.TokenEndpoint,
-		UserInfoEndpoint:      authngoogle.UserInfoEndpoint,
-		JwksEndpoint:          authngoogle.JwksEndpoint,
+		AuthorizationEndpoint: idpgoogle.AuthorizeEndpoint,
+		TokenEndpoint:         idpgoogle.TokenEndpoint,
+		UserInfoEndpoint:      idpgoogle.UserInfoEndpoint,
+		JwksEndpoint:          idpgoogle.JwksEndpoint,
 		ClientID:              oAuthProps.ClientID,
 		ClientSecret:          oAuthProps.ClientSecret,
 		RedirectURI:           oAuthProps.RedirectURI,
@@ -85,7 +85,7 @@ func NewGoogleOIDCAuthExecutorFromProps(execProps flowmodel.ExecutorProperties,
 		endpoints,
 	)
 	oidcAuthSvc := authnoidc.NewOIDCAuthnService(oAuthSvc, nil)
-	authSvc := authngoogle.NewGoogleOIDCAuthnService(oidcAuthSvc)
+	authSvc := idpgoogle.NewGoogleOIDCAuthnService(oidcAuthSvc)
 
 	base := oidcauth.NewOIDCAuthExecutor("google_oidc_auth_executor", execProps.Name,
 		defaultInputs, execProps.Properties, compOAuthProps)
@@ -105,10 +105,10 @@ func NewGoogleOIDCAuthExecutor(id, name string, properties map[string]string,
 	additionalParams map[string]string) oidcauth.OIDCAuthExecutorInterface {
 	// Prepare the OAuth properties for Google
 	oAuthProps := &model.OAuthExecProperties{
-		AuthorizationEndpoint: authngoogle.AuthorizeEndpoint,
-		TokenEndpoint:         authngoogle.TokenEndpoint,
-		UserInfoEndpoint:      authngoogle.UserInfoEndpoint,
-		JwksEndpoint:          authngoogle.JwksEndpoint,
+		AuthorizationEndpoint: idpgoogle.AuthorizeEndpoint,
+		TokenEndpoint:         idpgoogle.TokenEndpoint,
+		UserInfoEndpoint:      idpgoogle.UserInfoEndpoint,
+		JwksEndpoint:          idpgoogle.JwksEndpoint,
 		ClientID:              clientID,
 		ClientSecret:          clientSecret,
 		RedirectURI:           redirectURI,
@@ -140,7 +140,7 @@ func NewGoogleOIDCAuthExecutor(id, name string, properties map[string]string,
 		endpoints,
 	)
 	oidcAuthSvc := authnoidc.NewOIDCAuthnService(oAuthSvc, nil)
-	authSvc := authngoogle.NewGoogleOIDCAuthnService(oidcAuthSvc)
+	authSvc := idpgoogle.NewGoogleOIDCAuthnService(oidcAuthSvc)
 
 	base := oidcauth.NewOIDCAuthExecutor(id, name, defaultInputs, properties, oAuthProps)
 	exec, ok := base.(*oidcauth.OIDCAuthExecutor)

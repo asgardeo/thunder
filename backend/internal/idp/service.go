@@ -23,7 +23,7 @@ import (
 	"errors"
 	"strings"
 
-	"github.com/asgardeo/thunder/internal/system/cmodels"
+	
 	"github.com/asgardeo/thunder/internal/system/error/serviceerror"
 	"github.com/asgardeo/thunder/internal/system/log"
 	"github.com/asgardeo/thunder/internal/system/utils"
@@ -75,8 +75,8 @@ func (is *idpService) CreateIdentityProvider(idp *IDPDTO) (*IDPDTO, *serviceerro
 	}
 
 	// Validate properties
-	if svcErr := validateIDPProperties(idp.Properties); svcErr != nil {
-		return nil, svcErr
+	if err := validateIDPProperties(idp.Type, idp.Properties); err != nil {
+		return nil, &ErrorInvalidIDPProperties
 	}
 
 	idp.ID = utils.GenerateUUID()
@@ -188,8 +188,8 @@ func (is *idpService) UpdateIdentityProvider(idpID string, idp *IDPDTO) (*IDPDTO
 	}
 
 	// Validate properties
-	if svcErr := validateIDPProperties(idp.Properties); svcErr != nil {
-		return nil, svcErr
+	if err := validateIDPProperties(idp.Type, idp.Properties); err != nil {
+		return nil, &ErrorInvalidIDPProperties
 	}
 
 	idp.ID = idpID
@@ -227,15 +227,5 @@ func (is *idpService) DeleteIdentityProvider(idpID string) *serviceerror.Service
 		return &ErrorInternalServerError
 	}
 
-	return nil
-}
-
-// validateIDPProperties validates the identity provider properties.
-func validateIDPProperties(properties []cmodels.Property) *serviceerror.ServiceError {
-	for _, property := range properties {
-		if strings.TrimSpace(property.Name) == "" {
-			return &ErrorInvalidIDPProperties
-		}
-	}
 	return nil
 }
