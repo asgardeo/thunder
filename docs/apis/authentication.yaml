@@ -50,16 +50,6 @@ paths:
                 code: "AUTHN-1001"
                 message: "Invalid identity provider ID"
                 description: "The provided identity provider ID is invalid or empty"
-        "404":
-          description: 'Not Found: The identity provider with the specified ID does not exist.'
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ClientErrorResponse'
-              example:
-                code: "AUTHN-1002"
-                message: "Identity provider not found"
-                description: "The requested identity provider could not be found"
         "500":
           description: 'Internal Server Error: An unexpected error occurred while processing the request.'
           content:
@@ -84,10 +74,6 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/IDPAuthFinishRequest'
-            example:
-              session_token: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
-              code: "authorization-code"
-              nonce: "random-nonce-value"
       responses:
         "200":
           description: OK
@@ -105,16 +91,6 @@ paths:
                 code: "AUTHN-1003"
                 message: "Authorization code is required"
                 description: "The authorization code must be provided to complete authentication"
-        "401":
-          description: 'Unauthorized'
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ClientErrorResponse'
-              example:
-                code: "AUTHN-1004"
-                message: "Invalid authorization code"
-                description: "The provided authorization code is invalid or has expired"
         "500":
           description: 'Internal Server Error: An unexpected error occurred while processing the request.'
           content:
@@ -159,16 +135,6 @@ paths:
                 code: "AUTHN-1001"
                 message: "Invalid identity provider ID"
                 description: "The provided identity provider ID is invalid or empty"
-        "404":
-          description: 'Not Found: The identity provider with the specified ID does not exist.'
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ClientErrorResponse'
-              example:
-                code: "AUTHN-1002"
-                message: "Identity provider not found"
-                description: "The requested identity provider could not be found"
         "500":
           description: 'Internal Server Error: An unexpected error occurred while processing the request.'
           content:
@@ -213,16 +179,6 @@ paths:
                 code: "AUTHN-1003"
                 message: "Authorization code is required"
                 description: "The authorization code must be provided to complete authentication"
-        "401":
-          description: 'Unauthorized'
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ClientErrorResponse'
-              example:
-                code: "AUTHN-1004"
-                message: "Invalid authorization code"
-                description: "The provided authorization code is invalid or has expired"
         "500":
           description: 'Internal Server Error: An unexpected error occurred while processing the request.'
           content:
@@ -267,16 +223,6 @@ paths:
                 code: "AUTHN-1001"
                 message: "Invalid identity provider ID"
                 description: "The provided identity provider ID is invalid or empty"
-        "404":
-          description: 'Not Found: The identity provider with the specified ID does not exist.'
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ClientErrorResponse'
-              example:
-                code: "AUTHN-1002"
-                message: "Identity provider not found"
-                description: "The requested identity provider could not be found"
         "500":
           description: 'Internal Server Error: An unexpected error occurred while processing the request.'
           content:
@@ -301,10 +247,6 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/IDPAuthFinishRequest'
-            example:
-              session_token: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
-              code: "authorization-code"
-              nonce: "random-nonce-value"
       responses:
         "200":
           description: OK
@@ -322,16 +264,6 @@ paths:
                 code: "AUTHN-1003"
                 message: "Authorization code is required"
                 description: "The authorization code must be provided to complete authentication"
-        "401":
-          description: 'Unauthorized'
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ClientErrorResponse'
-              example:
-                code: "AUTHN-1004"
-                message: "Invalid authorization code"
-                description: "The provided authorization code is invalid or has expired"
         "500":
           description: 'Internal Server Error: An unexpected error occurred while processing the request.'
           content:
@@ -380,9 +312,6 @@ components:
         code:
           type: string
           description: Authorization code received from the identity provider
-      additionalProperties:
-        type: string
-        description: Additional parameters based on the identity provider configurations
 
     IDPAuthFinishResponse:
       type: object
@@ -394,7 +323,7 @@ components:
         type:
           type: string
           description: "The type of the authenticated user"
-        organizationUnit:
+        organization_unit:
           type: string
           format: uuid
           description: "The organization unit ID of the authenticated user"
