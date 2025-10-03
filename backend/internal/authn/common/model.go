@@ -46,10 +46,3 @@ type AuthenticationResponse struct {
 	Type             string
 	OrganizationUnit string
 }
-
-// AuthenticationResponseDTO represents the data transfer object for the authentication response.
-type AuthenticationResponseDTO struct {
-	ID               string `json:"id"`
-	Type             string `json:"type,omitempty"`
-	OrganizationUnit string `json:"organization_unit,omitempty"`
-}

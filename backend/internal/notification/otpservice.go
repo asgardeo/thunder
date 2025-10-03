@@ -134,7 +134,8 @@ func (s *otpService) VerifyOTP(otpDTO common.VerifyOTPDTO) (*common.VerifyOTPRes
 	if currentTime > sessionData.ExpiryTime {
 		logger.Debug("OTP has expired")
 		return &common.VerifyOTPResultDTO{
-			Status: common.OTPVerifyStatusInvalid,
+			Status:    common.OTPVerifyStatusInvalid,
+			Recipient: sessionData.Recipient,
 		}, nil
 	}
 
@@ -143,12 +144,14 @@ func (s *otpService) VerifyOTP(otpDTO common.VerifyOTPDTO) (*common.VerifyOTPRes
 	if providedOTPHash != sessionData.OTPValue {
 		logger.Debug("Invalid OTP provided")
 		return &common.VerifyOTPResultDTO{
-			Status: common.OTPVerifyStatusInvalid,
+			Status:    common.OTPVerifyStatusInvalid,
+			Recipient: sessionData.Recipient,
 		}, nil
 	}
 
 	return &common.VerifyOTPResultDTO{
-		Status: common.OTPVerifyStatusVerified,
+		Status:    common.OTPVerifyStatusVerified,
+		Recipient: sessionData.Recipient,
 	}, nil
 }
 

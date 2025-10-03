@@ -107,7 +107,8 @@ type VerifyOTPDTO struct {
 
 // VerifyOTPResultDTO represents the service layer result for OTP verify operation.
 type VerifyOTPResultDTO struct {
-	Status OTPVerifyStatus
+	Status    OTPVerifyStatus
+	Recipient string
 }
 
 // OTPSessionData represents the data stored in the OTP session token.

@@ -32,6 +32,13 @@ type AuthSessionData struct {
 	IDPType idp.IDPType `json:"idp_type"`
 }
 
+// AuthenticationResponseDTO represents the data transfer object for the authentication response.
+type AuthenticationResponseDTO struct {
+	ID               string `json:"id"`
+	Type             string `json:"type,omitempty"`
+	OrganizationUnit string `json:"organization_unit,omitempty"`
+}
+
 // IDPAuthInitRequestDTO is the request to initiate IDP authentication.
 type IDPAuthInitRequestDTO struct {
 	IDPID string `json:"idp_id"`
@@ -47,4 +54,22 @@ type IDPAuthInitResponseDTO struct {
 type IDPAuthFinishRequestDTO struct {
 	SessionToken string `json:"session_token"`
 	Code         string `json:"code"`
+}
+
+// SendOTPAuthRequestDTO is the request to send an OTP for authentication.
+type SendOTPAuthRequestDTO struct {
+	SenderID  string `json:"sender_id"`
+	Recipient string `json:"recipient"`
+}
+
+// SendOTPAuthResponseDTO is the response after sending an OTP for authentication.
+type SendOTPAuthResponseDTO struct {
+	Status       string `json:"status"`
+	SessionToken string `json:"session_token"`
+}
+
+// VerifyOTPAuthRequestDTO is the request to verify an OTP for authentication.
+type VerifyOTPAuthRequestDTO struct {
+	SessionToken string `json:"session_token"`
+	OTP          string `json:"otp"`
 }

@@ -52,6 +52,16 @@ func (s *AuthenticationService) RegisterRoutes(mux *http.ServeMux) {
 		},
 	}
 
+	// SMS OTP routes
+	s.ServerOpsService.WrapHandleFunction(mux, "POST /auth/otp/sms/send", &opts,
+		s.authHandler.HandleSendSMSOTPRequest)
+	s.ServerOpsService.WrapHandleFunction(mux, "POST /auth/otp/sms/verify", &opts,
+		s.authHandler.HandleVerifySMSOTPRequest)
+	s.ServerOpsService.WrapHandleFunction(mux, "OPTIONS /auth/otp/sms/send", &opts,
+		optionsNoContentHandler)
+	s.ServerOpsService.WrapHandleFunction(mux, "OPTIONS /auth/otp/sms/verify", &opts,
+		optionsNoContentHandler)
+
 	// Google OAuth routes
 	s.ServerOpsService.WrapHandleFunction(mux, "POST /auth/oauth/google/start", &opts,
 		s.authHandler.HandleGoogleAuthStartRequest)

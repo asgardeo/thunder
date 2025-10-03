@@ -22,8 +22,8 @@ import (
 	"encoding/json"
 	"net/http"
 
-	"github.com/asgardeo/thunder/internal/authn/common"
 	"github.com/asgardeo/thunder/internal/idp"
+	notifcommon "github.com/asgardeo/thunder/internal/notification/common"
 	serverconst "github.com/asgardeo/thunder/internal/system/constants"
 	"github.com/asgardeo/thunder/internal/system/error/apierror"
 	"github.com/asgardeo/thunder/internal/system/error/serviceerror"
@@ -43,6 +43,46 @@ func NewAuthenticationHandler() *AuthenticationHandler {
 	}
 }
 
+// HandleSendSMSOTPRequest handles the send SMS OTP authentication request.
+func (ah *AuthenticationHandler) HandleSendSMSOTPRequest(w http.ResponseWriter, r *http.Request) {
+	otpRequest, err := sysutils.DecodeJSONBody[SendOTPAuthRequestDTO](r)
+	if err != nil {
+		ah.writeErrorResponse(w, http.StatusBadRequest, APIErrorInvalidRequestFormat)
+		return
+	}
+
+	sessionToken, svcErr := ah.authService.SendOTP(otpRequest.SenderID, notifcommon.ChannelTypeSMS,
+		otpRequest.Recipient)
+	if svcErr != nil {
+		ah.handleServiceError(w, svcErr)
+		return
+	}
+
+	response := SendOTPAuthResponseDTO{
+		Status:       "SUCCESS",
+		SessionToken: sessionToken,
+	}
+	ah.writeSuccessResponse(w, response)
+}
+
+// HandleVerifySMSOTPRequest handles the verify SMS OTP authentication request.
+func (ah *AuthenticationHandler) HandleVerifySMSOTPRequest(w http.ResponseWriter, r *http.Request) {
+	otpRequest, err := sysutils.DecodeJSONBody[VerifyOTPAuthRequestDTO](r)
+	if err != nil {
+		ah.writeErrorResponse(w, http.StatusBadRequest, APIErrorInvalidRequestFormat)
+		return
+	}
+
+	authResponse, svcErr := ah.authService.VerifyOTP(otpRequest.SessionToken, otpRequest.OTP)
+	if svcErr != nil {
+		ah.handleServiceError(w, svcErr)
+		return
+	}
+
+	responseDTO := AuthenticationResponseDTO(*authResponse)
+	ah.writeSuccessResponse(w, responseDTO)
+}
+
 // HandleGoogleAuthStartRequest handles the Google OAuth start authentication request.
 func (ah *AuthenticationHandler) HandleGoogleAuthStartRequest(w http.ResponseWriter, r *http.Request) {
 	authRequest, err := sysutils.DecodeJSONBody[IDPAuthInitRequestDTO](r)
@@ -51,7 +91,7 @@ func (ah *AuthenticationHandler) HandleGoogleAuthStartRequest(w http.ResponseWri
 		return
 	}
 
-	authResponse, svcErr := ah.authService.StartAuthentication(idp.IDPTypeGoogle, authRequest.IDPID)
+	authResponse, svcErr := ah.authService.StartIDPAuthentication(idp.IDPTypeGoogle, authRequest.IDPID)
 	if svcErr != nil {
 		ah.handleServiceError(w, svcErr)
 		return
@@ -69,14 +109,14 @@ func (ah *AuthenticationHandler) HandleGoogleAuthFinishRequest(w http.ResponseWr
 		return
 	}
 
-	authResponse, svcErr := ah.authService.FinishAuthentication(idp.IDPTypeGoogle,
+	authResponse, svcErr := ah.authService.FinishIDPAuthentication(idp.IDPTypeGoogle,
 		authRequest.SessionToken, authRequest.Code)
 	if svcErr != nil {
 		ah.handleServiceError(w, svcErr)
 		return
 	}
 
-	responseDTO := common.AuthenticationResponseDTO(*authResponse)
+	responseDTO := AuthenticationResponseDTO(*authResponse)
 	ah.writeSuccessResponse(w, responseDTO)
 }
 
@@ -88,7 +128,7 @@ func (ah *AuthenticationHandler) HandleGithubAuthStartRequest(w http.ResponseWri
 		return
 	}
 
-	authResponse, svcErr := ah.authService.StartAuthentication(idp.IDPTypeGitHub, authRequest.IDPID)
+	authResponse, svcErr := ah.authService.StartIDPAuthentication(idp.IDPTypeGitHub, authRequest.IDPID)
 	if svcErr != nil {
 		ah.handleServiceError(w, svcErr)
 		return
@@ -106,14 +146,14 @@ func (ah *AuthenticationHandler) HandleGithubAuthFinishRequest(w http.ResponseWr
 		return
 	}
 
-	authResponse, svcErr := ah.authService.FinishAuthentication(idp.IDPTypeGitHub,
+	authResponse, svcErr := ah.authService.FinishIDPAuthentication(idp.IDPTypeGitHub,
 		authRequest.SessionToken, authRequest.Code)
 	if svcErr != nil {
 		ah.handleServiceError(w, svcErr)
 		return
 	}
 
-	responseDTO := common.AuthenticationResponseDTO(*authResponse)
+	responseDTO := AuthenticationResponseDTO(*authResponse)
 	ah.writeSuccessResponse(w, responseDTO)
 }
 
@@ -125,7 +165,7 @@ func (ah *AuthenticationHandler) HandleStandardOAuthStartRequest(w http.Response
 		return
 	}
 
-	authResponse, svcErr := ah.authService.StartAuthentication(idp.IDPTypeOAuth, authRequest.IDPID)
+	authResponse, svcErr := ah.authService.StartIDPAuthentication(idp.IDPTypeOAuth, authRequest.IDPID)
 	if svcErr != nil {
 		ah.handleServiceError(w, svcErr)
 		return
@@ -143,14 +183,14 @@ func (ah *AuthenticationHandler) HandleStandardOAuthFinishRequest(w http.Respons
 		return
 	}
 
-	authResponse, svcErr := ah.authService.FinishAuthentication(idp.IDPTypeOAuth,
+	authResponse, svcErr := ah.authService.FinishIDPAuthentication(idp.IDPTypeOAuth,
 		authRequest.SessionToken, authRequest.Code)
 	if svcErr != nil {
 		ah.handleServiceError(w, svcErr)
 		return
 	}
 
-	responseDTO := common.AuthenticationResponseDTO(*authResponse)
+	responseDTO := AuthenticationResponseDTO(*authResponse)
 	ah.writeSuccessResponse(w, responseDTO)
 }
 

@@ -30,7 +30,9 @@ import (
 	"github.com/asgardeo/thunder/internal/authn/google"
 	"github.com/asgardeo/thunder/internal/authn/oauth"
 	"github.com/asgardeo/thunder/internal/authn/oidc"
+	"github.com/asgardeo/thunder/internal/authn/otp"
 	"github.com/asgardeo/thunder/internal/idp"
+	notifcommon "github.com/asgardeo/thunder/internal/notification/common"
 	"github.com/asgardeo/thunder/internal/system/config"
 	"github.com/asgardeo/thunder/internal/system/error/serviceerror"
 	"github.com/asgardeo/thunder/internal/system/jwt"
@@ -41,14 +43,16 @@ import (
 
 const svcLoggerComponentName = "AuthenticationService"
 
-// crossAllowedTypes is the list of IDP types that allow cross-type authentication.
-var crossAllowedTypes = []idp.IDPType{idp.IDPTypeOAuth, idp.IDPTypeOIDC}
+// crossAllowedIDPTypes is the list of IDP types that allow cross-type authentication.
+var crossAllowedIDPTypes = []idp.IDPType{idp.IDPTypeOAuth, idp.IDPTypeOIDC}
 
 // AuthenticationServiceInterface defines the interface for the authentication service.
 type AuthenticationServiceInterface interface {
-	StartAuthentication(requestedType idp.IDPType, idpID string) (
+	SendOTP(senderID string, channel notifcommon.ChannelType, recipient string) (string, *serviceerror.ServiceError)
+	VerifyOTP(sessionToken, otp string) (*common.AuthenticationResponse, *serviceerror.ServiceError)
+	StartIDPAuthentication(requestedType idp.IDPType, idpID string) (
 		*IDPAuthInitData, *serviceerror.ServiceError)
-	FinishAuthentication(requestedType idp.IDPType, sessionToken, code string) (
+	FinishIDPAuthentication(requestedType idp.IDPType, sessionToken, code string) (
 		*common.AuthenticationResponse, *serviceerror.ServiceError)
 }
 
@@ -56,6 +60,7 @@ type AuthenticationServiceInterface interface {
 type authenticationService struct {
 	idpService    idp.IDPServiceInterface
 	jwtService    jwt.JWTServiceInterface
+	otpService    otp.OTPAuthnServiceInterface
 	oauthService  oauth.OAuthAuthnServiceInterface
 	oidcService   oidc.OIDCAuthnServiceInterface
 	googleService google.GoogleOIDCAuthnServiceInterface
@@ -67,6 +72,7 @@ func NewAuthenticationService() AuthenticationServiceInterface {
 	return &authenticationService{
 		idpService:    idp.NewIDPService(),
 		jwtService:    jwt.GetJWTService(),
+		otpService:    otp.NewOTPAuthnService(nil, nil),
 		oauthService:  oauth.NewOAuthAuthnService(nil, nil, oauth.OAuthEndpoints{}),
 		oidcService:   oidc.NewOIDCAuthnService(nil, nil),
 		googleService: google.NewGoogleOIDCAuthnService(nil),
@@ -74,8 +80,29 @@ func NewAuthenticationService() AuthenticationServiceInterface {
 	}
 }
 
-// StartAuthentication initiates authentication against an IDP.
-func (as *authenticationService) StartAuthentication(requestedType idp.IDPType, idpID string) (
+// SendOTP sends an OTP to the specified recipient for authentication.
+func (as *authenticationService) SendOTP(senderID string, channel notifcommon.ChannelType,
+	recipient string) (string, *serviceerror.ServiceError) {
+	return as.otpService.SendOTP(senderID, channel, recipient)
+}
+
+// VerifyOTP verifies an OTP and returns the authenticated user.
+func (as *authenticationService) VerifyOTP(sessionToken, otpCode string) (
+	*common.AuthenticationResponse, *serviceerror.ServiceError) {
+	user, svcErr := as.otpService.VerifyOTP(sessionToken, otpCode)
+	if svcErr != nil {
+		return nil, svcErr
+	}
+
+	return &common.AuthenticationResponse{
+		ID:               user.ID,
+		Type:             user.Type,
+		OrganizationUnit: user.OrganizationUnit,
+	}, nil
+}
+
+// StartIDPAuthentication initiates authentication against an IDP.
+func (as *authenticationService) StartIDPAuthentication(requestedType idp.IDPType, idpID string) (
 	*IDPAuthInitData, *serviceerror.ServiceError) {
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, svcLoggerComponentName))
 	logger.Debug("Starting IDP authentication", log.String("idpId", idpID))
@@ -127,8 +154,8 @@ func (as *authenticationService) StartAuthentication(requestedType idp.IDPType, 
 	}, nil
 }
 
-// FinishAuthentication completes authentication against an IDP.
-func (as *authenticationService) FinishAuthentication(requestedType idp.IDPType, sessionToken, code string) (
+// FinishIDPAuthentication completes authentication against an IDP.
+func (as *authenticationService) FinishIDPAuthentication(requestedType idp.IDPType, sessionToken, code string) (
 	*common.AuthenticationResponse, *serviceerror.ServiceError) {
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, svcLoggerComponentName))
 	logger.Debug("Finishing IDP authentication")
@@ -306,8 +333,8 @@ func (as *authenticationService) validateIDPType(requestedType, actualType idp.I
 	logger *log.Logger) *serviceerror.ServiceError {
 	if requestedType != "" && requestedType != actualType {
 		// Allow cross-type authentication for certain types
-		if slices.Contains(crossAllowedTypes, requestedType) &&
-			slices.Contains(crossAllowedTypes, actualType) {
+		if slices.Contains(crossAllowedIDPTypes, requestedType) &&
+			slices.Contains(crossAllowedIDPTypes, actualType) {
 			return nil
 		}
 
