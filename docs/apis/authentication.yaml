@@ -17,7 +17,7 @@ servers:
         default: "8090"
 
 paths:
-  /oauth/google/authenticate/start:
+  /auth/oauth/google/start:
     post:
       summary: Start Google authentication
       description: Start OAuth authentication flow with a Google identity provider.
@@ -61,7 +61,7 @@ paths:
                 message: "Internal server error"
                 description: "An unexpected error occurred while processing the request"
 
-  /oauth/google/authenticate/finish:
+  /auth/oauth/google/finish:
     post:
       summary: Finish Google authentication
       description: Complete oauth authentication flow with a Google identity provider.
@@ -102,7 +102,7 @@ paths:
                 message: "Internal server error"
                 description: "An unexpected error occurred while processing the request"
 
-  /oauth/github/authenticate/start:
+  /auth/oauth/github/start:
     post:
       summary: Start Github authentication
       description: Start OAuth authentication flow with a Github identity provider.
@@ -146,7 +146,7 @@ paths:
                 message: "Internal server error"
                 description: "An unexpected error occurred while processing the request"
 
-  /oauth/github/authenticate/finish:
+  /auth/oauth/github/finish:
     post:
       summary: Finish Github authentication
       description: Complete oauth authentication flow with a Github identity provider.
@@ -190,7 +190,7 @@ paths:
                 message: "Internal server error"
                 description: "An unexpected error occurred while processing the request"
 
-  /oauth/standard/authenticate/start:
+  /auth/oauth/standard/start:
     post:
       summary: Start standard OAuth authentication
       description: Start OAuth authentication flow with a standard identity provider.
@@ -234,7 +234,7 @@ paths:
                 message: "Internal server error"
                 description: "An unexpected error occurred while processing the request"
 
-  /oauth/standard/authenticate/finish:
+  /auth/oauth/standard/finish:
     post:
       summary: Finish standard OAuth authentication
       description: Complete oauth authentication flow with a standard identity provider.

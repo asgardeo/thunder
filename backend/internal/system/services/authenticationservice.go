@@ -53,39 +53,39 @@ func (s *AuthenticationService) RegisterRoutes(mux *http.ServeMux) {
 	}
 
 	// Google OAuth routes
-	s.ServerOpsService.WrapHandleFunction(mux, "POST /oauth/google/authenticate/start", &opts,
+	s.ServerOpsService.WrapHandleFunction(mux, "POST /auth/oauth/google/start", &opts,
 		s.authHandler.HandleGoogleAuthStartRequest)
-	s.ServerOpsService.WrapHandleFunction(mux, "POST /oauth/google/authenticate/finish", &opts,
+	s.ServerOpsService.WrapHandleFunction(mux, "POST /auth/oauth/google/finish", &opts,
 		s.authHandler.HandleGoogleAuthFinishRequest)
-	s.ServerOpsService.WrapHandleFunction(mux, "OPTIONS /oauth/google/authenticate/start", &opts,
+	s.ServerOpsService.WrapHandleFunction(mux, "OPTIONS /auth/oauth/google/start", &opts,
 		func(w http.ResponseWriter, r *http.Request) {
 			w.WriteHeader(http.StatusNoContent)
 		})
-	s.ServerOpsService.WrapHandleFunction(mux, "OPTIONS /oauth/google/authenticate/finish", &opts,
+	s.ServerOpsService.WrapHandleFunction(mux, "OPTIONS /auth/oauth/google/finish", &opts,
 		optionsNoContentHandler)
 
 	// GitHub OAuth routes
-	s.ServerOpsService.WrapHandleFunction(mux, "POST /oauth/github/authenticate/start", &opts,
+	s.ServerOpsService.WrapHandleFunction(mux, "POST /auth/oauth/github/start", &opts,
 		s.authHandler.HandleGithubAuthStartRequest)
-	s.ServerOpsService.WrapHandleFunction(mux, "POST /oauth/github/authenticate/finish", &opts,
+	s.ServerOpsService.WrapHandleFunction(mux, "POST /auth/oauth/github/finish", &opts,
 		s.authHandler.HandleGithubAuthFinishRequest)
-	s.ServerOpsService.WrapHandleFunction(mux, "OPTIONS /oauth/github/authenticate/start", &opts,
+	s.ServerOpsService.WrapHandleFunction(mux, "OPTIONS /auth/oauth/github/start", &opts,
 		func(w http.ResponseWriter, r *http.Request) {
 			w.WriteHeader(http.StatusNoContent)
 		})
-	s.ServerOpsService.WrapHandleFunction(mux, "OPTIONS /oauth/github/authenticate/finish", &opts,
+	s.ServerOpsService.WrapHandleFunction(mux, "OPTIONS /auth/oauth/github/finish", &opts,
 		optionsNoContentHandler)
 
 	// Standard OAuth routes
-	s.ServerOpsService.WrapHandleFunction(mux, "POST /oauth/standard/authenticate/start", &opts,
+	s.ServerOpsService.WrapHandleFunction(mux, "POST /auth/oauth/standard/start", &opts,
 		s.authHandler.HandleStandardOAuthStartRequest)
-	s.ServerOpsService.WrapHandleFunction(mux, "POST /oauth/standard/authenticate/finish", &opts,
+	s.ServerOpsService.WrapHandleFunction(mux, "POST /auth/oauth/standard/finish", &opts,
 		s.authHandler.HandleStandardOAuthFinishRequest)
-	s.ServerOpsService.WrapHandleFunction(mux, "OPTIONS /oauth/standard/authenticate/start", &opts,
+	s.ServerOpsService.WrapHandleFunction(mux, "OPTIONS /auth/oauth/standard/start", &opts,
 		func(w http.ResponseWriter, r *http.Request) {
 			w.WriteHeader(http.StatusNoContent)
 		})
-	s.ServerOpsService.WrapHandleFunction(mux, "OPTIONS /oauth/standard/authenticate/finish", &opts,
+	s.ServerOpsService.WrapHandleFunction(mux, "OPTIONS /auth/oauth/standard/finish", &opts,
 		optionsNoContentHandler)
 }
 
