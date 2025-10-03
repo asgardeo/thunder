@@ -286,16 +286,11 @@ func (s *otpService) createSessionToken(sessionData common.OTPSessionData) (stri
 // verifyAndDecodeSessionToken verifies the JWT signature and decodes the session data.
 func (s *otpService) verifyAndDecodeSessionToken(token string, logger *log.Logger) (
 	*common.OTPSessionData, *serviceerror.ServiceError) {
-	publicKey := s.jwtSvc.GetPublicKey()
-	if publicKey == nil {
-		logger.Error("Error verifying session token: JWT public key is not available")
-		return nil, &ErrorInternalServerError
-	}
-
 	// Verify JWT signature
 	jwtConfig := config.GetThunderRuntime().Config.OAuth.JWT
-	err := s.jwtSvc.VerifyJWT(token, publicKey, "otp-svc", jwtConfig.Issuer)
+	err := s.jwtSvc.VerifyJWT(token, "otp-svc", jwtConfig.Issuer)
 	if err != nil {
+		logger.Debug("Invalid session token", log.Error(err))
 		return nil, &ErrorInvalidSessionToken
 	}
 

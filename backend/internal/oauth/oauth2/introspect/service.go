@@ -21,7 +21,6 @@ package introspect
 
 import (
 	"errors"
-	"fmt"
 
 	"github.com/asgardeo/thunder/internal/oauth/oauth2/constants"
 	"github.com/asgardeo/thunder/internal/system/jwt"
@@ -54,9 +53,7 @@ func (s *TokenIntrospectionService) IntrospectToken(token, tokenTypeHint string)
 		return nil, errors.New("token is required")
 	}
 
-	if valid, err := s.validateToken(logger, token); err != nil {
-		return nil, fmt.Errorf("failed to verify token signature: %w", err)
-	} else if !valid {
+	if !s.validateToken(logger, token) {
 		return &IntrospectResponse{
 			Active: false,
 		}, nil
@@ -77,17 +74,12 @@ func (s *TokenIntrospectionService) IntrospectToken(token, tokenTypeHint string)
 }
 
 // validateToken verifies the signature and validity of the token.
-func (s *TokenIntrospectionService) validateToken(logger *log.Logger, token string) (bool, error) {
-	pubKey := s.jwtService.GetPublicKey()
-	if pubKey == nil {
-		logger.Error("Server public key is not available for JWT verification")
-		return false, errors.New("public key is not available")
-	}
-	if err := s.jwtService.VerifyJWT(token, pubKey, "", ""); err != nil {
+func (s *TokenIntrospectionService) validateToken(logger *log.Logger, token string) bool {
+	if err := s.jwtService.VerifyJWT(token, "", ""); err != nil {
 		logger.Debug("Failed to verify refresh token", log.Error(err))
-		return false, nil
+		return false
 	}
-	return true, nil
+	return true
 }
 
 // prepareValidResponse prepares the response for a valid token introspection.

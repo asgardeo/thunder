@@ -34,6 +34,7 @@ import (
 	"github.com/asgardeo/thunder/tests/mocks/jwtmock"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/suite"
 )
 
@@ -78,18 +79,19 @@ func (s *TokenIntrospectionServiceTestSuite) TestIntrospectToken_EmptyToken() {
 }
 
 func (s *TokenIntrospectionServiceTestSuite) TestIntrospectToken_PublicKeyNotAvailable() {
-	s.jwtServiceMock.On("GetPublicKey").Return(nil)
+	s.jwtServiceMock.On("GetPublicKey").Return(nil).Maybe()
+	s.jwtServiceMock.On("VerifyJWT", mock.Anything, "", "").Return(
+		errors.New("public key not available"))
 
 	response, err := s.introspectService.IntrospectToken(s.validToken, "")
-	assert.Error(s.T(), err)
-	assert.Contains(s.T(), err.Error(), "failed to verify token signature")
-	assert.Contains(s.T(), err.Error(), "public key is not available")
-	assert.Nil(s.T(), response)
+	assert.NoError(s.T(), err)
+	assert.NotNil(s.T(), response)
+	assert.False(s.T(), response.Active)
 	s.jwtServiceMock.AssertExpectations(s.T())
 }
 
 func (s *TokenIntrospectionServiceTestSuite) TestIntrospectToken_InvalidSignature() {
-	s.jwtServiceMock.On("GetPublicKey").Return(&s.privateKey.PublicKey)
+	s.jwtServiceMock.On("GetPublicKey").Return(&s.privateKey.PublicKey).Maybe()
 
 	// Use a different private key to create an invalid signature
 	differentKey, _ := rsa.GenerateKey(rand.Reader, 2048)
@@ -111,7 +113,7 @@ func (s *TokenIntrospectionServiceTestSuite) TestIntrospectToken_InvalidSignatur
 
 	invalidToken := signingInput + "." + signatureEncoded
 
-	s.jwtServiceMock.On("VerifyJWT", invalidToken, &s.privateKey.PublicKey, "", "").Return(
+	s.jwtServiceMock.On("VerifyJWT", invalidToken, "", "").Return(
 		errors.New("invalid signature"))
 
 	// Test with a token having invalid signature
@@ -210,7 +212,7 @@ func (s *TokenIntrospectionServiceTestSuite) TestIntrospectToken() {
 
 	for _, tc := range testCases {
 		s.Run(tc.name, func() {
-			s.jwtServiceMock.On("GetPublicKey").Return(&s.privateKey.PublicKey)
+			s.jwtServiceMock.On("GetPublicKey").Return(&s.privateKey.PublicKey).Maybe()
 
 			var token string
 			if tc.token != "" {
@@ -222,24 +224,24 @@ func (s *TokenIntrospectionServiceTestSuite) TestIntrospectToken() {
 			// Mock VerifyJWT based on test case
 			switch tc.name {
 			case "InvalidTokenFormat":
-				s.jwtServiceMock.On("VerifyJWT", token, &s.privateKey.PublicKey, "", "").Return(
+				s.jwtServiceMock.On("VerifyJWT", token, "", "").Return(
 					errors.New("invalid token format"))
 			case "ExpiredToken":
-				s.jwtServiceMock.On("VerifyJWT", token, &s.privateKey.PublicKey, "", "").Return(
+				s.jwtServiceMock.On("VerifyJWT", token, "", "").Return(
 					errors.New("token has expired"))
 			case "FutureToken":
-				s.jwtServiceMock.On("VerifyJWT", token, &s.privateKey.PublicKey, "", "").Return(
+				s.jwtServiceMock.On("VerifyJWT", token, "", "").Return(
 					errors.New("token not valid yet (nbf)"))
 			case "TokenWithMissingExpClaim":
-				s.jwtServiceMock.On("VerifyJWT", token, &s.privateKey.PublicKey, "", "").Return(
+				s.jwtServiceMock.On("VerifyJWT", token, "", "").Return(
 					errors.New("missing or invalid 'exp' claim"))
 			case "TokenWithMissingNbfClaim":
-				s.jwtServiceMock.On("VerifyJWT", token, &s.privateKey.PublicKey, "", "").Return(
+				s.jwtServiceMock.On("VerifyJWT", token, "", "").Return(
 					errors.New("missing or invalid 'nbf' claim"))
 			case "ValidToken", "TokenWithMissingOptionalClaims":
-				s.jwtServiceMock.On("VerifyJWT", token, &s.privateKey.PublicKey, "", "").Return(nil)
+				s.jwtServiceMock.On("VerifyJWT", token, "", "").Return(nil)
 			default:
-				s.jwtServiceMock.On("VerifyJWT", token, &s.privateKey.PublicKey, "", "").Return(nil)
+				s.jwtServiceMock.On("VerifyJWT", token, "", "").Return(nil)
 			}
 
 			response, err := s.introspectService.IntrospectToken(token, "")

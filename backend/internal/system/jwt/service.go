@@ -55,9 +55,11 @@ type JWTServiceInterface interface {
 	Init() error
 	GetPublicKey() *rsa.PublicKey
 	GenerateJWT(sub, aud, iss string, validityPeriod int64, claims map[string]interface{}) (string, int64, error)
-	VerifyJWT(jwtToken string, jwtPublicKey *rsa.PublicKey, expectedAud, expectedIss string) error
+	VerifyJWT(jwtToken string, expectedAud, expectedIss string) error
+	VerifyJWTWithPublicKey(jwtToken string, jwtPublicKey *rsa.PublicKey, expectedAud, expectedIss string) error
 	VerifyJWTWithJWKS(jwtToken, jwksURL, expectedAud, expectedIss string) error
-	VerifyJWTSignature(jwtToken string, jwtPublicKey *rsa.PublicKey) error
+	VerifyJWTSignature(jwtToken string) error
+	VerifyJWTSignatureWithPublicKey(jwtToken string, jwtPublicKey *rsa.PublicKey) error
 	VerifyJWTSignatureWithJWKS(jwtToken string, jwksURL string) error
 }
 
@@ -213,15 +215,24 @@ func (js *JWTService) GenerateJWT(sub, aud, iss string, validityPeriod int64, cl
 	return signingInput + "." + signatureBase64, iat.Unix(), nil
 }
 
-// VerifyJWT verifies the JWT token using the provided public key.
-func (js *JWTService) VerifyJWT(jwtToken string, jwtPublicKey *rsa.PublicKey,
+// VerifyJWT verifies the JWT token using the server's public key.
+func (js *JWTService) VerifyJWT(jwtToken string, expectedAud, expectedIss string) error {
+	publicKey := js.GetPublicKey()
+	if publicKey == nil {
+		return errors.New("public key not available")
+	}
+	return js.VerifyJWTWithPublicKey(jwtToken, publicKey, expectedAud, expectedIss)
+}
+
+// VerifyJWTWithPublicKey verifies the JWT token using the provided public key.
+func (js *JWTService) VerifyJWTWithPublicKey(jwtToken string, jwtPublicKey *rsa.PublicKey,
 	expectedAud, expectedIss string) error {
 	parts := strings.Split(jwtToken, ".")
 	if len(parts) != 3 {
 		return errors.New("invalid JWT token format")
 	}
 
-	if err := js.VerifyJWTSignature(jwtToken, jwtPublicKey); err != nil {
+	if err := js.VerifyJWTSignatureWithPublicKey(jwtToken, jwtPublicKey); err != nil {
 		return fmt.Errorf("invalid token signature: %w", err)
 	}
 
@@ -242,8 +253,17 @@ func (js *JWTService) VerifyJWTWithJWKS(jwtToken, jwksURL, expectedAud, expected
 	return js.verifyJWTClaims(jwtToken, expectedAud, expectedIss)
 }
 
-// VerifyJWTSignature verifies the signature of a JWT token using the provided public key.
-func (js *JWTService) VerifyJWTSignature(jwtToken string, jwtPublicKey *rsa.PublicKey) error {
+// VerifyJWTSignature verifies the signature of a JWT token using the server's public key.
+func (js *JWTService) VerifyJWTSignature(jwtToken string) error {
+	publicKey := js.GetPublicKey()
+	if publicKey == nil {
+		return errors.New("public key not available")
+	}
+	return js.VerifyJWTSignatureWithPublicKey(jwtToken, publicKey)
+}
+
+// VerifyJWTSignatureWithPublicKey verifies the signature of a JWT token using the provided public key.
+func (js *JWTService) VerifyJWTSignatureWithPublicKey(jwtToken string, jwtPublicKey *rsa.PublicKey) error {
 	parts := strings.Split(jwtToken, ".")
 	if len(parts) != 3 {
 		return errors.New("invalid JWT token format")
@@ -327,7 +347,7 @@ func (js *JWTService) VerifyJWTSignatureWithJWKS(jwtToken string, jwksURL string
 	}
 
 	// Verify JWT signature
-	if err := js.VerifyJWTSignature(jwtToken, pubKey); err != nil {
+	if err := js.VerifyJWTSignatureWithPublicKey(jwtToken, pubKey); err != nil {
 		return fmt.Errorf("invalid token signature: %w", err)
 	}
 

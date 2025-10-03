@@ -45,10 +45,14 @@ import (
 )
 
 const (
-	testAudience = "test-audience"
-	testIssuer   = "test-issuer"
-	testAud      = "test-aud"
-	testIss      = "test-iss"
+	testAudience     = "test-audience"
+	testIssuer       = "test-issuer"
+	testAud          = "test-aud"
+	testIss          = "test-iss"
+	wrongAudience    = "wrong-audience"
+	wrongIssuer      = "wrong-issuer"
+	expectedAudience = "expected-audience"
+	expectedIssuer   = "expected-issuer"
 )
 
 type JWTServiceTestSuite struct {
@@ -616,6 +620,153 @@ func (suite *JWTServiceTestSuite) TestGenerateJWTScenarios() {
 func (suite *JWTServiceTestSuite) TestVerifyJWT() {
 	testCases := []struct {
 		name          string
+		setupFunc     func() (string, string, string)
+		expectError   bool
+		errorContains string
+	}{
+		{
+			name: "ValidJWT",
+			setupFunc: func() (string, string, string) {
+				aud := testAudience
+				iss := testIssuer
+				token := suite.createBasicJWT(aud, iss,
+					time.Now().Add(time.Hour).Unix(), time.Now().Unix())
+				return token, aud, iss
+			},
+			expectError: false,
+		},
+		{
+			name: "ValidJWTWithEmptyExpectedAudience",
+			setupFunc: func() (string, string, string) {
+				iss := testIssuer
+				token := suite.createBasicJWT("any-audience", iss,
+					time.Now().Add(time.Hour).Unix(), time.Now().Unix())
+				return token, "", iss
+			},
+			expectError: false,
+		},
+		{
+			name: "ValidJWTWithEmptyExpectedIssuer",
+			setupFunc: func() (string, string, string) {
+				aud := testAudience
+				token := suite.createBasicJWT(aud, "any-issuer",
+					time.Now().Add(time.Hour).Unix(), time.Now().Unix())
+				return token, aud, ""
+			},
+			expectError: false,
+		},
+		{
+			name: "InvalidJWTFormat",
+			setupFunc: func() (string, string, string) {
+				return suite.createMalformedJWT(), testAud, testIss
+			},
+			expectError:   true,
+			errorContains: "invalid JWT token format",
+		},
+		{
+			name: "InvalidSignature",
+			setupFunc: func() (string, string, string) {
+				token := suite.createBasicJWT(testAud, testIss, time.Now().Add(time.Hour).Unix(), time.Now().Unix())
+				parts := strings.Split(token, ".")
+				if len(parts) == 3 {
+					token = parts[0] + "." + parts[1] + ".invalidSignature123"
+				}
+				return token, testAud, testIss
+			},
+			expectError:   true,
+			errorContains: "invalid token signature",
+		},
+		{
+			name: "ExpiredToken",
+			setupFunc: func() (string, string, string) {
+				aud := testAudience
+				iss := testIssuer
+				expiredTime := time.Now().Add(-time.Hour).Unix()
+				token := suite.createBasicJWT(aud, iss,
+					expiredTime, time.Now().Add(-2*time.Hour).Unix())
+				return token, aud, iss
+			},
+			expectError:   true,
+			errorContains: "token has expired",
+		},
+		{
+			name: "TokenNotValidYet",
+			setupFunc: func() (string, string, string) {
+				aud := testAudience
+				iss := testIssuer
+				futureTime := time.Now().Add(time.Hour).Unix()
+				token := suite.createBasicJWT(aud, iss,
+					time.Now().Add(2*time.Hour).Unix(), futureTime)
+				return token, aud, iss
+			},
+			expectError:   true,
+			errorContains: "token not valid yet (nbf)",
+		},
+		{
+			name: "InvalidAudience",
+			setupFunc: func() (string, string, string) {
+				aud := wrongAudience
+				iss := testIssuer
+				token := suite.createBasicJWT(aud, iss,
+					time.Now().Add(time.Hour).Unix(), time.Now().Unix())
+				return token, expectedAudience, iss
+			},
+			expectError:   true,
+			errorContains: "invalid audience",
+		},
+		{
+			name: "InvalidIssuer",
+			setupFunc: func() (string, string, string) {
+				aud := testAudience
+				iss := wrongIssuer
+				token := suite.createBasicJWT(aud, iss,
+					time.Now().Add(time.Hour).Unix(), time.Now().Unix())
+				return token, aud, expectedIssuer
+			},
+			expectError:   true,
+			errorContains: "invalid issuer",
+		},
+		{
+			name: "PublicKeyNotAvailable",
+			setupFunc: func() (string, string, string) {
+				token := suite.createBasicJWT(testAudience, testIssuer,
+					time.Now().Add(time.Hour).Unix(), time.Now().Unix())
+				return token, testAudience, testIssuer
+			},
+			expectError:   true,
+			errorContains: "public key not available",
+		},
+	}
+
+	for _, tc := range testCases {
+		suite.T().Run(tc.name, func(t *testing.T) {
+			token, expectedAud, expectedIss := tc.setupFunc()
+
+			jwtService := suite.jwtService
+			if tc.name == "PublicKeyNotAvailable" {
+				jwtService = &JWTService{
+					privateKey:               nil,
+					SystemCertificateService: suite.mockCertService,
+				}
+			}
+
+			err := jwtService.VerifyJWT(token, expectedAud, expectedIss)
+
+			if tc.expectError {
+				assert.Error(t, err)
+				if tc.errorContains != "" {
+					assert.Contains(t, err.Error(), tc.errorContains)
+				}
+			} else {
+				assert.NoError(t, err)
+			}
+		})
+	}
+}
+
+func (suite *JWTServiceTestSuite) TestVerifyJWTWithPublicKey() {
+	testCases := []struct {
+		name          string
 		setupFunc     func() (string, *rsa.PublicKey, string, string)
 		expectError   bool
 		errorContains string
@@ -637,7 +788,7 @@ func (suite *JWTServiceTestSuite) TestVerifyJWT() {
 				iss := testIssuer
 				token := suite.createBasicJWT("any-audience", iss,
 					time.Now().Add(time.Hour).Unix(), time.Now().Unix())
-				return token, &suite.testPrivateKey.PublicKey, "", iss // Empty expected audience
+				return token, &suite.testPrivateKey.PublicKey, "", iss
 			},
 			expectError: false,
 		},
@@ -647,7 +798,7 @@ func (suite *JWTServiceTestSuite) TestVerifyJWT() {
 				aud := testAudience
 				token := suite.createBasicJWT(aud, "any-issuer",
 					time.Now().Add(time.Hour).Unix(), time.Now().Unix())
-				return token, &suite.testPrivateKey.PublicKey, aud, "" // Empty expected issuer
+				return token, &suite.testPrivateKey.PublicKey, aud, ""
 			},
 			expectError: false,
 		},
@@ -662,10 +813,7 @@ func (suite *JWTServiceTestSuite) TestVerifyJWT() {
 		{
 			name: "InvalidSignature",
 			setupFunc: func() (string, *rsa.PublicKey, string, string) {
-				// Create a valid token first, then invalidate the signature
 				token := suite.createBasicJWT(testAud, testIss, time.Now().Add(time.Hour).Unix(), time.Now().Unix())
-
-				// Replace signature to make it invalid
 				parts := strings.Split(token, ".")
 				if len(parts) == 3 {
 					token = parts[0] + "." + parts[1] + ".invalidSignature123"
@@ -680,7 +828,7 @@ func (suite *JWTServiceTestSuite) TestVerifyJWT() {
 			setupFunc: func() (string, *rsa.PublicKey, string, string) {
 				aud := testAudience
 				iss := testIssuer
-				expiredTime := time.Now().Add(-time.Hour).Unix() // Expired 1 hour ago
+				expiredTime := time.Now().Add(-time.Hour).Unix()
 				token := suite.createBasicJWT(aud, iss,
 					expiredTime, time.Now().Add(-2*time.Hour).Unix())
 				return token, &suite.testPrivateKey.PublicKey, aud, iss
@@ -693,7 +841,7 @@ func (suite *JWTServiceTestSuite) TestVerifyJWT() {
 			setupFunc: func() (string, *rsa.PublicKey, string, string) {
 				aud := testAudience
 				iss := testIssuer
-				futureTime := time.Now().Add(time.Hour).Unix() // Valid 1 hour from now
+				futureTime := time.Now().Add(time.Hour).Unix()
 				token := suite.createBasicJWT(aud, iss,
 					time.Now().Add(2*time.Hour).Unix(), futureTime)
 				return token, &suite.testPrivateKey.PublicKey, aud, iss
@@ -731,7 +879,7 @@ func (suite *JWTServiceTestSuite) TestVerifyJWT() {
 		suite.T().Run(tc.name, func(t *testing.T) {
 			token, pubKey, expectedAud, expectedIss := tc.setupFunc()
 
-			err := suite.jwtService.VerifyJWT(token, pubKey, expectedAud, expectedIss)
+			err := suite.jwtService.VerifyJWTWithPublicKey(token, pubKey, expectedAud, expectedIss)
 
 			if tc.expectError {
 				assert.Error(t, err)
@@ -1157,7 +1305,7 @@ func (suite *JWTServiceTestSuite) TestVerifyJWTClaimsEdgeCases() {
 			token := tc.setupFunc()
 			publicKey := &suite.testPrivateKey.PublicKey
 
-			err := suite.jwtService.VerifyJWT(token, publicKey, tc.expectedAud, tc.expectedIss)
+			err := suite.jwtService.VerifyJWTWithPublicKey(token, publicKey, tc.expectedAud, tc.expectedIss)
 
 			if tc.expectError {
 				assert.Error(t, err)
@@ -1172,12 +1320,78 @@ func (suite *JWTServiceTestSuite) TestVerifyJWTClaimsEdgeCases() {
 }
 
 func (suite *JWTServiceTestSuite) TestVerifyJWTSignature() {
+	testCases := []struct {
+		name        string
+		setupFunc   func() string
+		expectError bool
+	}{
+		{
+			name: "ValidToken",
+			setupFunc: func() string {
+				token, _, err := suite.jwtService.GenerateJWT("test-subject", testAudience, testIssuer, 3600, nil)
+				assert.NoError(suite.T(), err)
+				return token
+			},
+			expectError: false,
+		},
+		{
+			name: "InvalidToken",
+			setupFunc: func() string {
+				return "invalid.token"
+			},
+			expectError: true,
+		},
+		{
+			name: "TamperedToken",
+			setupFunc: func() string {
+				parts := []string{}
+				for _, part := range []string{"header", "payload", "signature"} {
+					jsonData, _ := json.Marshal(map[string]string{"tampered": part})
+					parts = append(parts, base64.RawURLEncoding.EncodeToString(jsonData))
+				}
+				return parts[0] + "." + parts[1] + "." + parts[2]
+			},
+			expectError: true,
+		},
+		{
+			name: "PublicKeyNotAvailable",
+			setupFunc: func() string {
+				token, _, err := suite.jwtService.GenerateJWT("test-subject", testAudience, testIssuer, 3600, nil)
+				assert.NoError(suite.T(), err)
+				return token
+			},
+			expectError: true,
+		},
+	}
+
+	for _, tc := range testCases {
+		suite.T().Run(tc.name, func(t *testing.T) {
+			token := tc.setupFunc()
+
+			jwtService := suite.jwtService
+			if tc.name == "PublicKeyNotAvailable" {
+				jwtService = &JWTService{
+					privateKey:               nil,
+					SystemCertificateService: suite.mockCertService,
+				}
+			}
+
+			err := jwtService.VerifyJWTSignature(token)
+			if tc.expectError {
+				assert.Error(t, err)
+			} else {
+				assert.NoError(t, err)
+			}
+		})
+	}
+}
+
+func (suite *JWTServiceTestSuite) TestVerifyJWTSignatureWithPublicKey() {
 	validToken, _, err := suite.jwtService.GenerateJWT("test-subject", testAudience, testIssuer, 3600, nil)
 	assert.NoError(suite.T(), err)
 
 	wrongKey, _ := rsa.GenerateKey(rand.Reader, 2048)
 
-	// Create tampered token
 	parts := []string{}
 	for _, part := range []string{"header", "payload", "signature"} {
 		jsonData, _ := json.Marshal(map[string]string{"tampered": part})
@@ -1199,7 +1413,7 @@ func (suite *JWTServiceTestSuite) TestVerifyJWTSignature() {
 
 	for _, tc := range testCases {
 		suite.T().Run(tc.name, func(t *testing.T) {
-			err := suite.jwtService.VerifyJWTSignature(tc.token, tc.publicKey)
+			err := suite.jwtService.VerifyJWTSignatureWithPublicKey(tc.token, tc.publicKey)
 			if tc.expectError {
 				assert.Error(t, err)
 			} else {

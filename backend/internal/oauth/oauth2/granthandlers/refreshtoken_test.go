@@ -164,7 +164,7 @@ func (suite *RefreshTokenGrantHandlerTestSuite) TestValidateGrant_MissingClientI
 
 func (suite *RefreshTokenGrantHandlerTestSuite) TestHandleGrant_InvalidSignature() {
 	// Mock JWT service to return nil public key (simulating signature verification failure)
-	suite.mockJWTService.On("GetPublicKey").Return(nil)
+	suite.mockJWTService.On("VerifyJWT", "valid.refresh.token", "", "").Return(errors.New("public key not available"))
 
 	ctx := &model.TokenContext{
 		TokenAttributes: make(map[string]interface{}),
@@ -174,8 +174,8 @@ func (suite *RefreshTokenGrantHandlerTestSuite) TestHandleGrant_InvalidSignature
 
 	assert.Nil(suite.T(), response)
 	assert.NotNil(suite.T(), err)
-	assert.Equal(suite.T(), constants.ErrorServerError, err.Error)
-	assert.Equal(suite.T(), "Server public key not available", err.ErrorDescription)
+	assert.Equal(suite.T(), constants.ErrorInvalidRequest, err.Error)
+	assert.Equal(suite.T(), "Invalid refresh token", err.ErrorDescription)
 }
 
 func (suite *RefreshTokenGrantHandlerTestSuite) TestIssueRefreshToken_Success() {

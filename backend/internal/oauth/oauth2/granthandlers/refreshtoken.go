@@ -272,15 +272,7 @@ func (h *refreshTokenGrantHandler) IssueRefreshToken(tokenResponse *model.TokenR
 
 // verifyRefreshToken verifies the refresh token using the server's public key.
 func (h *refreshTokenGrantHandler) verifyRefreshToken(refreshToken string, logger *log.Logger) *model.ErrorResponse {
-	pubKey := h.JWTService.GetPublicKey()
-	if pubKey == nil {
-		logger.Error("Server public key is not available for JWT verification")
-		return &model.ErrorResponse{
-			Error:            constants.ErrorServerError,
-			ErrorDescription: "Server public key not available",
-		}
-	}
-	if err := h.JWTService.VerifyJWT(refreshToken, pubKey, "", ""); err != nil {
+	if err := h.JWTService.VerifyJWT(refreshToken, "", ""); err != nil {
 		logger.Error("Failed to verify refresh token signature", log.Error(err))
 		return &model.ErrorResponse{
 			Error:            constants.ErrorInvalidRequest,
