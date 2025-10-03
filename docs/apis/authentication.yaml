@@ -17,6 +17,80 @@ servers:
         default: "8090"
 
 paths:
+  /auth/otp/sms/send:
+    post:
+      summary: Send a SMS OTP
+      description: Send a One Time Password (OTP) to a user's mobile number via SMS for authentication.
+      tags:
+        - SMS OTP
+      requestBody:
+        description: OTP send request data
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SendOtpAuthRequest'
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SendOtpAuthResponse'
+        "400":
+          description: 'Bad Request: The request body is malformed or contains invalid data'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ClientErrorResponse'
+              example:
+                code: "AUTHN-OTP-1002"
+                message: "Invalid recipient"
+                description: "The provided recipient is invalid or empty"
+        "500":
+          description: 'Internal Server Error: An unexpected error occurred while processing the request'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ServerErrorResponse'
+
+  /auth/otp/sms/verify:
+    post:
+      summary: Verify a SMS OTP
+      description: Verify a One Time Password (OTP) sent to a user's mobile number via SMS for authentication.
+      tags:
+        - SMS OTP
+      requestBody:
+        description: OTP verify request data
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/VerifyOtpAuthRequest'
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthenticationResponse'
+        "400":
+          description: 'Bad Request: The request body is malformed or contains invalid data'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ClientErrorResponse'
+              example:
+                code: "AUTHN-OTP-1005"
+                message: "Invalid OTP"
+                description: "The provided OTP is invalid or empty"
+        "500":
+          description: 'Internal Server Error: An unexpected error occurred while processing the request'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ServerErrorResponse'
+
   /auth/oauth/google/start:
     post:
       summary: Start Google authentication
@@ -253,6 +327,48 @@ paths:
 
 components:
   schemas:
+    SendOtpAuthRequest:
+      type: object
+      properties:
+        sender_id:
+          type: string
+          description: ID of the message notification sender to use
+          example: "550e8400-e29b-41d4-a716-446655440000"
+        recipient:
+          type: string
+          description: Recipient's mobile number
+          example: "+1234567890"
+      required:
+        - sender_id
+        - recipient
+
+    SendOtpAuthResponse:
+      type: object
+      properties:
+        status:
+          type: string
+          description: Status of the OTP send request
+          example: "SUCCESS"
+        session_token:
+          type: string
+          description: JWT token for the authentication session
+          example: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+
+    VerifyOtpAuthRequest:
+      type: object
+      properties:
+        session_token:
+          type: string
+          description: JWT token for the OTP session
+          example: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+        otp:
+          type: string
+          description: The OTP code received by the user
+          example: "123456"
+      required:
+        - session_token
+        - otp
+    
     AuthenticationResponse:
       type: object
       properties:
