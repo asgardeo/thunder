@@ -20,6 +20,7 @@
 package google
 
 import (
+	"strings"
 	"time"
 
 	authnoauth "github.com/asgardeo/thunder/internal/authn/oauth"
@@ -41,11 +42,13 @@ type GoogleOIDCAuthnServiceInterface interface {
 
 // googleOIDCAuthnService is the default implementation of GoogleOIDCAuthnServiceInterface.
 type googleOIDCAuthnService struct {
-	internal authnoidc.OIDCAuthnServiceInterface
+	internal   authnoidc.OIDCAuthnServiceInterface
+	jwtService jwt.JWTServiceInterface
 }
 
 // NewGoogleOIDCAuthnService creates a new instance of Google OIDC authenticator service.
 func NewGoogleOIDCAuthnService(oidcSvc authnoidc.OIDCAuthnServiceInterface) GoogleOIDCAuthnServiceInterface {
+	jwtSvc := jwt.GetJWTService()
 	if oidcSvc == nil {
 		oAuthSvc := authnoauth.NewOAuthAuthnService(nil, nil, authnoauth.OAuthEndpoints{
 			AuthorizationEndpoint: AuthorizeEndpoint,
@@ -53,11 +56,12 @@ func NewGoogleOIDCAuthnService(oidcSvc authnoidc.OIDCAuthnServiceInterface) Goog
 			UserInfoEndpoint:      UserInfoEndpoint,
 			JwksEndpoint:          JwksEndpoint,
 		})
-		oidcSvc = authnoidc.NewOIDCAuthnService(oAuthSvc, nil)
+		oidcSvc = authnoidc.NewOIDCAuthnService(oAuthSvc, jwtSvc)
 	}
 
 	return &googleOIDCAuthnService{
-		internal: oidcSvc,
+		internal:   oidcSvc,
+		jwtService: jwtSvc,
 	}
 }
 
@@ -107,16 +111,26 @@ func (g *googleOIDCAuthnService) ValidateIDToken(idpID, idToken string) *service
 		log.String("idpId", idpID))
 	logger.Debug("Validating ID token")
 
-	// First perform basic OIDC ID token validation
-	svcErr := g.internal.ValidateIDToken(idpID, idToken)
+	if strings.TrimSpace(idToken) == "" {
+		logger.Debug("ID token is empty")
+		return &authnoidc.ErrorInvalidIDToken
+	}
+
+	// Get the OAuth client config for token validations
+	oAuthClientConfig, svcErr := g.internal.GetOAuthClientConfig(idpID)
 	if svcErr != nil {
 		return svcErr
 	}
 
-	// Get the OAuth client config for additional validations
-	oAuthClientConfig, svcErr := g.internal.GetOAuthClientConfig(idpID)
-	if svcErr != nil {
-		return svcErr
+	// Validate ID token signature using JWKS endpoint if available
+	if oAuthClientConfig.OAuthEndpoints.JwksEndpoint != "" {
+		err := g.jwtService.VerifyJWTSignatureWithJWKS(idToken, oAuthClientConfig.OAuthEndpoints.JwksEndpoint)
+		if err != nil {
+			logger.Debug("ID token signature validation failed", log.Error(err))
+			return &authnoidc.ErrorInvalidIDTokenSignature
+		}
+	} else {
+		logger.Debug("Skipping ID token signature validation as JWKS endpoint is not configured")
 	}
 
 	logger.Debug("Validating Google specific ID token claims")
