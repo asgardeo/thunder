@@ -56,10 +56,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ServerErrorResponse'
-              example:
-                code: "AUTHN-5000"
-                message: "Internal server error"
-                description: "An unexpected error occurred while processing the request"
 
   /auth/oauth/google/finish:
     post:
@@ -80,7 +76,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/IDPAuthFinishResponse'
+                $ref: '#/components/schemas/AuthenticationResponse'
         "400":
           description: 'Bad Request: The request body is malformed or contains invalid data.'
           content:
@@ -97,10 +93,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ServerErrorResponse'
-              example:
-                code: "AUTHN-5000"
-                message: "Internal server error"
-                description: "An unexpected error occurred while processing the request"
 
   /auth/oauth/github/start:
     post:
@@ -141,10 +133,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ServerErrorResponse'
-              example:
-                code: "AUTHN-5000"
-                message: "Internal server error"
-                description: "An unexpected error occurred while processing the request"
 
   /auth/oauth/github/finish:
     post:
@@ -168,7 +156,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/IDPAuthFinishResponse'
+                $ref: '#/components/schemas/AuthenticationResponse'
         "400":
           description: 'Bad Request: The request body is malformed or contains invalid data.'
           content:
@@ -185,10 +173,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ServerErrorResponse'
-              example:
-                code: "AUTHN-5000"
-                message: "Internal server error"
-                description: "An unexpected error occurred while processing the request"
 
   /auth/oauth/standard/start:
     post:
@@ -229,10 +213,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ServerErrorResponse'
-              example:
-                code: "AUTHN-5000"
-                message: "Internal server error"
-                description: "An unexpected error occurred while processing the request"
 
   /auth/oauth/standard/finish:
     post:
@@ -253,7 +233,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/IDPAuthFinishResponse'
+                $ref: '#/components/schemas/AuthenticationResponse'
         "400":
           description: 'Bad Request: The request body is malformed or contains invalid data.'
           content:
@@ -270,13 +250,24 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ServerErrorResponse'
-              example:
-                code: "AUTHN-5000"
-                message: "Internal server error"
-                description: "An unexpected error occurred while processing the request"
 
 components:
   schemas:
+    AuthenticationResponse:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: "The unique identifier of the authenticated user"
+        type:
+          type: string
+          description: "The type of the authenticated user"
+        organization_unit:
+          type: string
+          format: uuid
+          description: "The organization unit ID of the authenticated user"
+
     IDPAuthInitRequest:
       type: object
       required:
@@ -313,21 +304,6 @@ components:
           type: string
           description: Authorization code received from the identity provider
 
-    IDPAuthFinishResponse:
-      type: object
-      properties:
-        id:
-          type: string
-          format: uuid
-          description: "The unique identifier of the authenticated user"
-        type:
-          type: string
-          description: "The type of the authenticated user"
-        organization_unit:
-          type: string
-          format: uuid
-          description: "The organization unit ID of the authenticated user"
-
     ErrorResponse:
       type: object
       properties:
@@ -350,3 +326,7 @@ components:
       allOf:
         - $ref: '#/components/schemas/ErrorResponse'
         - type: object
+      example:
+        code: "AUTHN-5000"
+        message: "Internal server error"
+        description: "An unexpected error occurred while processing the request"

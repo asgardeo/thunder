@@ -22,6 +22,7 @@ import (
 	"encoding/json"
 	"net/http"
 
+	"github.com/asgardeo/thunder/internal/authn/common"
 	"github.com/asgardeo/thunder/internal/idp"
 	serverconst "github.com/asgardeo/thunder/internal/system/constants"
 	"github.com/asgardeo/thunder/internal/system/error/apierror"
@@ -44,113 +45,113 @@ func NewAuthenticationHandler() *AuthenticationHandler {
 
 // HandleGoogleAuthStartRequest handles the Google OAuth start authentication request.
 func (ah *AuthenticationHandler) HandleGoogleAuthStartRequest(w http.ResponseWriter, r *http.Request) {
-	authRequest, err := sysutils.DecodeJSONBody[IDPAuthInitRequest](r)
+	authRequest, err := sysutils.DecodeJSONBody[IDPAuthInitRequestDTO](r)
 	if err != nil {
 		ah.writeErrorResponse(w, http.StatusBadRequest, APIErrorInvalidRequestFormat)
 		return
 	}
 
-	responseDTO, svcErr := ah.authService.StartAuthentication(idp.IDPTypeGoogle, authRequest.IDPID)
+	authResponse, svcErr := ah.authService.StartAuthentication(idp.IDPTypeGoogle, authRequest.IDPID)
 	if svcErr != nil {
 		ah.handleServiceError(w, svcErr)
 		return
 	}
 
-	response := IDPAuthInitResponse(*responseDTO)
+	response := IDPAuthInitResponseDTO(*authResponse)
 	ah.writeSuccessResponse(w, response)
 }
 
 // HandleGoogleAuthFinishRequest handles the Google OAuth finish authentication request.
 func (ah *AuthenticationHandler) HandleGoogleAuthFinishRequest(w http.ResponseWriter, r *http.Request) {
-	authRequest, err := sysutils.DecodeJSONBody[IDPAuthFinishRequest](r)
+	authRequest, err := sysutils.DecodeJSONBody[IDPAuthFinishRequestDTO](r)
 	if err != nil {
 		ah.writeErrorResponse(w, http.StatusBadRequest, APIErrorInvalidRequestFormat)
 		return
 	}
 
-	responseDTO, svcErr := ah.authService.FinishAuthentication(idp.IDPTypeGoogle,
+	authResponse, svcErr := ah.authService.FinishAuthentication(idp.IDPTypeGoogle,
 		authRequest.SessionToken, authRequest.Code)
 	if svcErr != nil {
 		ah.handleServiceError(w, svcErr)
 		return
 	}
 
-	response := IDPAuthFinishResponse(*responseDTO)
-	ah.writeSuccessResponse(w, response)
+	responseDTO := common.AuthenticationResponseDTO(*authResponse)
+	ah.writeSuccessResponse(w, responseDTO)
 }
 
 // HandleGithubAuthStartRequest handles the GitHub OAuth start authentication request.
 func (ah *AuthenticationHandler) HandleGithubAuthStartRequest(w http.ResponseWriter, r *http.Request) {
-	authRequest, err := sysutils.DecodeJSONBody[IDPAuthInitRequest](r)
+	authRequest, err := sysutils.DecodeJSONBody[IDPAuthInitRequestDTO](r)
 	if err != nil {
 		ah.writeErrorResponse(w, http.StatusBadRequest, APIErrorInvalidRequestFormat)
 		return
 	}
 
-	responseDTO, svcErr := ah.authService.StartAuthentication(idp.IDPTypeGitHub, authRequest.IDPID)
+	authResponse, svcErr := ah.authService.StartAuthentication(idp.IDPTypeGitHub, authRequest.IDPID)
 	if svcErr != nil {
 		ah.handleServiceError(w, svcErr)
 		return
 	}
 
-	response := IDPAuthInitResponse(*responseDTO)
-	ah.writeSuccessResponse(w, response)
+	responseDTO := IDPAuthInitResponseDTO(*authResponse)
+	ah.writeSuccessResponse(w, responseDTO)
 }
 
 // HandleGithubAuthFinishRequest handles the GitHub OAuth finish authentication request.
 func (ah *AuthenticationHandler) HandleGithubAuthFinishRequest(w http.ResponseWriter, r *http.Request) {
-	authRequest, err := sysutils.DecodeJSONBody[IDPAuthFinishRequest](r)
+	authRequest, err := sysutils.DecodeJSONBody[IDPAuthFinishRequestDTO](r)
 	if err != nil {
 		ah.writeErrorResponse(w, http.StatusBadRequest, APIErrorInvalidRequestFormat)
 		return
 	}
 
-	responseDTO, svcErr := ah.authService.FinishAuthentication(idp.IDPTypeGitHub,
+	authResponse, svcErr := ah.authService.FinishAuthentication(idp.IDPTypeGitHub,
 		authRequest.SessionToken, authRequest.Code)
 	if svcErr != nil {
 		ah.handleServiceError(w, svcErr)
 		return
 	}
 
-	response := IDPAuthFinishResponse(*responseDTO)
-	ah.writeSuccessResponse(w, response)
+	responseDTO := common.AuthenticationResponseDTO(*authResponse)
+	ah.writeSuccessResponse(w, responseDTO)
 }
 
 // HandleStandardOAuthStartRequest handles the standard OAuth start authentication request.
 func (ah *AuthenticationHandler) HandleStandardOAuthStartRequest(w http.ResponseWriter, r *http.Request) {
-	authRequest, err := sysutils.DecodeJSONBody[IDPAuthInitRequest](r)
+	authRequest, err := sysutils.DecodeJSONBody[IDPAuthInitRequestDTO](r)
 	if err != nil {
 		ah.writeErrorResponse(w, http.StatusBadRequest, APIErrorInvalidRequestFormat)
 		return
 	}
 
-	responseDTO, svcErr := ah.authService.StartAuthentication(idp.IDPTypeOAuth, authRequest.IDPID)
+	authResponse, svcErr := ah.authService.StartAuthentication(idp.IDPTypeOAuth, authRequest.IDPID)
 	if svcErr != nil {
 		ah.handleServiceError(w, svcErr)
 		return
 	}
 
-	response := IDPAuthInitResponse(*responseDTO)
-	ah.writeSuccessResponse(w, response)
+	responseDTO := IDPAuthInitResponseDTO(*authResponse)
+	ah.writeSuccessResponse(w, responseDTO)
 }
 
 // HandleStandardOAuthFinishRequest handles the standard OAuth finish authentication request.
 func (ah *AuthenticationHandler) HandleStandardOAuthFinishRequest(w http.ResponseWriter, r *http.Request) {
-	authRequest, err := sysutils.DecodeJSONBody[IDPAuthFinishRequest](r)
+	authRequest, err := sysutils.DecodeJSONBody[IDPAuthFinishRequestDTO](r)
 	if err != nil {
 		ah.writeErrorResponse(w, http.StatusBadRequest, APIErrorInvalidRequestFormat)
 		return
 	}
 
-	responseDTO, svcErr := ah.authService.FinishAuthentication(idp.IDPTypeOAuth,
+	authResponse, svcErr := ah.authService.FinishAuthentication(idp.IDPTypeOAuth,
 		authRequest.SessionToken, authRequest.Code)
 	if svcErr != nil {
 		ah.handleServiceError(w, svcErr)
 		return
 	}
 
-	response := IDPAuthFinishResponse(*responseDTO)
-	ah.writeSuccessResponse(w, response)
+	responseDTO := common.AuthenticationResponseDTO(*authResponse)
+	ah.writeSuccessResponse(w, responseDTO)
 }
 
 // handleServiceError converts service errors to appropriate HTTP responses.

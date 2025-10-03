@@ -20,17 +20,10 @@ package authn
 
 import "github.com/asgardeo/thunder/internal/idp"
 
-// IDPAuthInitDTO represents the data transfer object for initiating IDP authentication.
-type IDPAuthInitDTO struct {
+// IDPAuthInitData represents the data returned when initiating IDP authentication.
+type IDPAuthInitData struct {
 	RedirectURL  string
 	SessionToken string
-}
-
-// IDPAuthFinishDTO represents the data transfer object for completing IDP authentication.
-type IDPAuthFinishDTO struct {
-	ID               string
-	Type             string
-	OrganizationUnit string
 }
 
 // AuthSessionData represents the data stored in the authentication session token.
@@ -39,26 +32,19 @@ type AuthSessionData struct {
 	IDPType idp.IDPType `json:"idp_type"`
 }
 
-// IDPAuthInitRequest is the request to initiate IDP authentication.
-type IDPAuthInitRequest struct {
+// IDPAuthInitRequestDTO is the request to initiate IDP authentication.
+type IDPAuthInitRequestDTO struct {
 	IDPID string `json:"idp_id"`
 }
 
-// IDPAuthInitResponse is the response for IDP authentication initiation.
-type IDPAuthInitResponse struct {
+// IDPAuthInitResponseDTO is the response after initiating IDP authentication.
+type IDPAuthInitResponseDTO struct {
 	RedirectURL  string `json:"redirect_url,omitempty"`
 	SessionToken string `json:"session_token"`
 }
 
-// IDPAuthFinishRequest is the request to complete IDP authentication.
-type IDPAuthFinishRequest struct {
+// IDPAuthFinishRequestDTO is the request to complete IDP authentication.
+type IDPAuthFinishRequestDTO struct {
 	SessionToken string `json:"session_token"`
 	Code         string `json:"code"`
-}
-
-// IDPAuthFinishResponse is the response for completed IDP authentication.
-type IDPAuthFinishResponse struct {
-	ID               string `json:"id"`
-	Type             string `json:"type,omitempty"`
-	OrganizationUnit string `json:"organization_unit,omitempty"`
 }

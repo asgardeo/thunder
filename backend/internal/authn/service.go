@@ -25,6 +25,7 @@ import (
 	"slices"
 	"strings"
 
+	"github.com/asgardeo/thunder/internal/authn/common"
 	"github.com/asgardeo/thunder/internal/authn/github"
 	"github.com/asgardeo/thunder/internal/authn/google"
 	"github.com/asgardeo/thunder/internal/authn/oauth"
@@ -46,9 +47,9 @@ var crossAllowedTypes = []idp.IDPType{idp.IDPTypeOAuth, idp.IDPTypeOIDC}
 // AuthenticationServiceInterface defines the interface for the authentication service.
 type AuthenticationServiceInterface interface {
 	StartAuthentication(requestedType idp.IDPType, idpID string) (
-		*IDPAuthInitDTO, *serviceerror.ServiceError)
+		*IDPAuthInitData, *serviceerror.ServiceError)
 	FinishAuthentication(requestedType idp.IDPType, sessionToken, code string) (
-		*IDPAuthFinishDTO, *serviceerror.ServiceError)
+		*common.AuthenticationResponse, *serviceerror.ServiceError)
 }
 
 // authenticationService is the default implementation of the AuthenticationServiceInterface.
@@ -75,7 +76,7 @@ func NewAuthenticationService() AuthenticationServiceInterface {
 
 // StartAuthentication initiates authentication against an IDP.
 func (as *authenticationService) StartAuthentication(requestedType idp.IDPType, idpID string) (
-	*IDPAuthInitDTO, *serviceerror.ServiceError) {
+	*IDPAuthInitData, *serviceerror.ServiceError) {
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, svcLoggerComponentName))
 	logger.Debug("Starting IDP authentication", log.String("idpId", idpID))
 
@@ -120,7 +121,7 @@ func (as *authenticationService) StartAuthentication(requestedType idp.IDPType, 
 		return nil, &ErrorInternalServerError
 	}
 
-	return &IDPAuthInitDTO{
+	return &IDPAuthInitData{
 		RedirectURL:  redirectURL,
 		SessionToken: sessionToken,
 	}, nil
@@ -128,7 +129,7 @@ func (as *authenticationService) StartAuthentication(requestedType idp.IDPType, 
 
 // FinishAuthentication completes authentication against an IDP.
 func (as *authenticationService) FinishAuthentication(requestedType idp.IDPType, sessionToken, code string) (
-	*IDPAuthFinishDTO, *serviceerror.ServiceError) {
+	*common.AuthenticationResponse, *serviceerror.ServiceError) {
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, svcLoggerComponentName))
 	logger.Debug("Finishing IDP authentication")
 
@@ -170,7 +171,7 @@ func (as *authenticationService) FinishAuthentication(requestedType idp.IDPType,
 		return nil, svcErr
 	}
 
-	return &IDPAuthFinishDTO{
+	return &common.AuthenticationResponse{
 		ID:               user.ID,
 		Type:             user.Type,
 		OrganizationUnit: user.OrganizationUnit,
