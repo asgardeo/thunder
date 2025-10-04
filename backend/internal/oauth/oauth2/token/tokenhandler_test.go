@@ -170,7 +170,7 @@ func (suite *TokenHandlerTestSuite) TestHandleTokenRequest_MissingClientSecret()
 	err := json.Unmarshal(rr.Body.Bytes(), &response)
 	assert.NoError(suite.T(), err)
 	assert.Equal(suite.T(), "invalid_client", response["error"])
-	assert.Equal(suite.T(), "Missing client_secret parameter", response["error_description"])
+	assert.Equal(suite.T(), "Invalid client credentials", response["error_description"])
 }
 
 func (suite *TokenHandlerTestSuite) TestHandleTokenRequest_InvalidClient() {

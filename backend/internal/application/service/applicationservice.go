@@ -144,6 +144,7 @@ func (as *ApplicationService) CreateApplication(app *model.ApplicationDTO) (*mod
 				GrantTypes:              inboundAuthConfig.OAuthAppConfig.GrantTypes,
 				ResponseTypes:           inboundAuthConfig.OAuthAppConfig.ResponseTypes,
 				TokenEndpointAuthMethod: inboundAuthConfig.OAuthAppConfig.TokenEndpointAuthMethod,
+				PKCERequired:            inboundAuthConfig.OAuthAppConfig.PKCERequired,
 				Token:                   oAuthTokenConfig,
 			},
 		}
@@ -203,6 +204,7 @@ func (as *ApplicationService) CreateApplication(app *model.ApplicationDTO) (*mod
 				GrantTypes:              inboundAuthConfig.OAuthAppConfig.GrantTypes,
 				ResponseTypes:           inboundAuthConfig.OAuthAppConfig.ResponseTypes,
 				TokenEndpointAuthMethod: inboundAuthConfig.OAuthAppConfig.TokenEndpointAuthMethod,
+				PKCERequired:            inboundAuthConfig.OAuthAppConfig.PKCERequired,
 				Token:                   returnTokenConfig,
 			},
 		}
@@ -413,6 +415,7 @@ func (as *ApplicationService) UpdateApplication(appID string, app *model.Applica
 				GrantTypes:              inboundAuthConfig.OAuthAppConfig.GrantTypes,
 				ResponseTypes:           inboundAuthConfig.OAuthAppConfig.ResponseTypes,
 				TokenEndpointAuthMethod: inboundAuthConfig.OAuthAppConfig.TokenEndpointAuthMethod,
+				PKCERequired:            inboundAuthConfig.OAuthAppConfig.PKCERequired,
 				Token:                   oAuthTokenConfig,
 			},
 		}
@@ -462,6 +465,7 @@ func (as *ApplicationService) UpdateApplication(appID string, app *model.Applica
 				GrantTypes:              inboundAuthConfig.OAuthAppConfig.GrantTypes,
 				ResponseTypes:           inboundAuthConfig.OAuthAppConfig.ResponseTypes,
 				TokenEndpointAuthMethod: inboundAuthConfig.OAuthAppConfig.TokenEndpointAuthMethod,
+				PKCERequired:            inboundAuthConfig.OAuthAppConfig.PKCERequired,
 				Token:                   returnTokenConfig,
 			},
 		}

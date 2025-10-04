@@ -159,7 +159,8 @@ To quickly get started with Thunder, you can use the sample app provided with th
                 "redirect_uris": ["https://localhost:3000"],
                 "grant_types": ["authorization_code", "client_credentials"],
                 "response_types": ["code"],
-                "token_endpoint_auth_methods": ["client_secret_basic", "client_secret_post"]
+                "token_endpoint_auth_methods": ["client_secret_basic", "client_secret_post"],
+                "pkce_required": true
             }
         }]
     }'
@@ -240,7 +241,8 @@ To try out the Client Credentials flow, follow these steps:
                     "token_endpoint_auth_methods": [
                         "client_secret_basic",
                         "client_secret_post"
-                    ]
+                    ],
+                    "pkce_required": true
                 }
             }
         ]
@@ -301,7 +303,8 @@ To try out the Client Credentials flow, follow these steps:
                     "token_endpoint_auth_methods": [
                         "client_secret_basic",
                         "client_secret_post"
-                    ]
+                    ],
+                    "pkce_required": true
                 }
             }
         ]
@@ -374,7 +377,8 @@ To try out the Client Credentials flow, follow these steps:
                     "token_endpoint_auth_methods": [
                         "client_secret_basic",
                         "client_secret_post"
-                    ]
+                    ],
+                    "pkce_required": true
                 }
             }
         ]
@@ -493,7 +497,8 @@ To try out the Client Credentials flow, follow these steps:
                     "token_endpoint_auth_methods": [
                         "client_secret_basic",
                         "client_secret_post"
-                    ]
+                    ],
+                    "pkce_required": true
                 }
             }
         ]

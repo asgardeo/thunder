@@ -112,6 +112,12 @@ func (th *TokenHandler) HandleTokenRequest(w http.ResponseWriter, r *http.Reques
 
 	// Validate the token endpoint authentication method.
 	if !oauthApp.IsAllowedTokenEndpointAuthMethod(tokenAuthMethod) {
+		if tokenAuthMethod == constants.TokenEndpointAuthMethodNone {
+			utils.WriteJSONError(w, constants.ErrorInvalidClient,
+				"Missing client_secret parameter",
+				http.StatusUnauthorized, nil)
+			return
+		}
 		utils.WriteJSONError(w, constants.ErrorUnauthorizedClient,
 			"Client is not allowed to use the specified token endpoint authentication method",
 			http.StatusUnauthorized, nil)
@@ -238,9 +244,10 @@ func (th *TokenHandler) HandleTokenRequest(w http.ResponseWriter, r *http.Reques
 // It returns the client ID, client secret, token authentication method, and a boolean indicating success.
 func extractClientIDAndSecret(r *http.Request, w http.ResponseWriter) (
 	string, string, constants.TokenEndpointAuthMethod, bool) {
-	tokenAuthMethod := constants.TokenEndpointAuthMethodNone
-	clientID := ""
-	clientSecret := ""
+	var clientID string
+	var clientSecret string
+	var tokenAuthMethod constants.TokenEndpointAuthMethod
+
 	if r.Header.Get("Authorization") != "" {
 		var err error
 		clientID, clientSecret, err = utils.ExtractBasicAuthCredentials(r)
@@ -278,6 +285,8 @@ func extractClientIDAndSecret(r *http.Request, w http.ResponseWriter) (
 		if clientSecretFromBody != "" {
 			clientSecret = clientSecretFromBody
 			tokenAuthMethod = constants.TokenEndpointAuthMethodClientSecretPost
+		} else {
+			tokenAuthMethod = constants.TokenEndpointAuthMethodNone
 		}
 	}
 
@@ -287,7 +296,7 @@ func extractClientIDAndSecret(r *http.Request, w http.ResponseWriter) (
 		return "", "", "", false
 	}
 
-	if clientSecret == "" {
+	if clientSecret == "" && tokenAuthMethod != constants.TokenEndpointAuthMethodNone {
 		utils.WriteJSONError(w, constants.ErrorInvalidClient, "Missing client_secret parameter",
 			http.StatusUnauthorized, nil)
 		return "", "", "", false

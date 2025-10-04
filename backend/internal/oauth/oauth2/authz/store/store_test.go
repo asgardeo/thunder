@@ -69,15 +69,17 @@ func (suite *AuthorizationCodeStoreTestSuite) SetupTest() {
 	}
 
 	suite.testAuthzCode = model.AuthorizationCode{
-		CodeID:           "test-code-id",
-		Code:             "test-code",
-		ClientID:         "test-client-id",
-		RedirectURI:      "https://client.example.com/callback",
-		AuthorizedUserID: "test-user-id",
-		TimeCreated:      time.Now(),
-		ExpiryTime:       time.Now().Add(10 * time.Minute),
-		Scopes:           "read write",
-		State:            constants.AuthCodeStateActive,
+		CodeID:              "test-code-id",
+		Code:                "test-code",
+		ClientID:            "test-client-id",
+		RedirectURI:         "https://client.example.com/callback",
+		AuthorizedUserID:    "test-user-id",
+		TimeCreated:         time.Now(),
+		ExpiryTime:          time.Now().Add(10 * time.Minute),
+		Scopes:              "read write",
+		State:               constants.AuthCodeStateActive,
+		CodeChallenge:       "",
+		CodeChallengeMethod: "",
 	}
 }
 
@@ -96,7 +98,8 @@ func (suite *AuthorizationCodeStoreTestSuite) TestInsertAuthorizationCode_Succes
 	mockTx.On("Exec", constants.QueryInsertAuthorizationCode.Query,
 		suite.testAuthzCode.CodeID, suite.testAuthzCode.Code, suite.testAuthzCode.ClientID,
 		suite.testAuthzCode.RedirectURI, suite.testAuthzCode.AuthorizedUserID,
-		suite.testAuthzCode.TimeCreated, suite.testAuthzCode.ExpiryTime, suite.testAuthzCode.State).
+		suite.testAuthzCode.TimeCreated, suite.testAuthzCode.ExpiryTime, suite.testAuthzCode.State,
+		suite.testAuthzCode.CodeChallenge, suite.testAuthzCode.CodeChallengeMethod).
 		Return(nil, nil)
 
 	mockTx.On("Exec", constants.QueryInsertAuthorizationCodeScopes.Query,
@@ -144,7 +147,8 @@ func (suite *AuthorizationCodeStoreTestSuite) TestInsertAuthorizationCode_ExecEr
 	mockTx.On("Exec", constants.QueryInsertAuthorizationCode.Query,
 		suite.testAuthzCode.CodeID, suite.testAuthzCode.Code, suite.testAuthzCode.ClientID,
 		suite.testAuthzCode.RedirectURI, suite.testAuthzCode.AuthorizedUserID,
-		suite.testAuthzCode.TimeCreated, suite.testAuthzCode.ExpiryTime, suite.testAuthzCode.State).
+		suite.testAuthzCode.TimeCreated, suite.testAuthzCode.ExpiryTime, suite.testAuthzCode.State,
+		suite.testAuthzCode.CodeChallenge, suite.testAuthzCode.CodeChallengeMethod).
 		Return(nil, errors.New("exec error"))
 
 	mockTx.On("Rollback").Return(nil)
@@ -167,7 +171,8 @@ func (suite *AuthorizationCodeStoreTestSuite) TestInsertAuthorizationCode_ScopeE
 	mockTx.On("Exec", constants.QueryInsertAuthorizationCode.Query,
 		suite.testAuthzCode.CodeID, suite.testAuthzCode.Code, suite.testAuthzCode.ClientID,
 		suite.testAuthzCode.RedirectURI, suite.testAuthzCode.AuthorizedUserID,
-		suite.testAuthzCode.TimeCreated, suite.testAuthzCode.ExpiryTime, suite.testAuthzCode.State).
+		suite.testAuthzCode.TimeCreated, suite.testAuthzCode.ExpiryTime, suite.testAuthzCode.State,
+		suite.testAuthzCode.CodeChallenge, suite.testAuthzCode.CodeChallengeMethod).
 		Return(nil, nil)
 
 	mockTx.On("Exec", constants.QueryInsertAuthorizationCodeScopes.Query,
@@ -194,7 +199,8 @@ func (suite *AuthorizationCodeStoreTestSuite) TestInsertAuthorizationCode_Commit
 	mockTx.On("Exec", constants.QueryInsertAuthorizationCode.Query,
 		suite.testAuthzCode.CodeID, suite.testAuthzCode.Code, suite.testAuthzCode.ClientID,
 		suite.testAuthzCode.RedirectURI, suite.testAuthzCode.AuthorizedUserID,
-		suite.testAuthzCode.TimeCreated, suite.testAuthzCode.ExpiryTime, suite.testAuthzCode.State).
+		suite.testAuthzCode.TimeCreated, suite.testAuthzCode.ExpiryTime, suite.testAuthzCode.State,
+		suite.testAuthzCode.CodeChallenge, suite.testAuthzCode.CodeChallengeMethod).
 		Return(nil, nil)
 
 	mockTx.On("Exec", constants.QueryInsertAuthorizationCodeScopes.Query,

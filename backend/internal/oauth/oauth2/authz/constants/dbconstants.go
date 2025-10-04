@@ -24,8 +24,8 @@ import dbmodel "github.com/asgardeo/thunder/internal/system/database/model"
 var QueryInsertAuthorizationCode = dbmodel.DBQuery{
 	ID: "AZQ-00001",
 	Query: "INSERT INTO IDN_OAUTH2_AUTHZ_CODE (CODE_ID, AUTHORIZATION_CODE, CONSUMER_KEY, " +
-		"CALLBACK_URL, AUTHZ_USER, TIME_CREATED, EXPIRY_TIME, STATE)" +
-		"VALUES ($1, $2, $3, $4, $5, $6, $7, $8)",
+		"CALLBACK_URL, AUTHZ_USER, TIME_CREATED, EXPIRY_TIME, STATE, CODE_CHALLENGE, CODE_CHALLENGE_METHOD)" +
+		"VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)",
 }
 
 // QueryInsertAuthorizationCodeScopes is the query to insert scopes for an authorization code.
@@ -38,7 +38,7 @@ var QueryInsertAuthorizationCodeScopes = dbmodel.DBQuery{
 var QueryGetAuthorizationCode = dbmodel.DBQuery{
 	ID: "AZQ-00003",
 	Query: "SELECT CODE_ID, AUTHORIZATION_CODE, CALLBACK_URL, AUTHZ_USER, TIME_CREATED, " +
-		"EXPIRY_TIME, STATE FROM IDN_OAUTH2_AUTHZ_CODE WHERE " +
+		"EXPIRY_TIME, STATE, CODE_CHALLENGE, CODE_CHALLENGE_METHOD FROM IDN_OAUTH2_AUTHZ_CODE WHERE " +
 		"CONSUMER_KEY = $1 AND AUTHORIZATION_CODE = $2",
 }
 

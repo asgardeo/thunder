@@ -35,15 +35,17 @@ type OAuthMessage struct {
 
 // AuthorizationCode represents the authorization code.
 type AuthorizationCode struct {
-	CodeID           string
-	Code             string
-	ClientID         string
-	RedirectURI      string
-	AuthorizedUserID string
-	TimeCreated      time.Time
-	ExpiryTime       time.Time
-	Scopes           string
-	State            string
+	CodeID              string
+	Code                string
+	ClientID            string
+	RedirectURI         string
+	AuthorizedUserID    string
+	TimeCreated         time.Time
+	ExpiryTime          time.Time
+	Scopes              string
+	State               string
+	CodeChallenge       string
+	CodeChallengeMethod string
 }
 
 // AuthZPostRequest represents the request body for the authorization POST request.

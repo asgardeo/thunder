@@ -113,6 +113,10 @@ func (ah *AuthorizeHandler) handleInitialAuthorizationRequest(msg *model.OAuthMe
 	state := msg.RequestQueryParams[oauth2const.RequestParamState]
 	responseType := msg.RequestQueryParams[oauth2const.RequestParamResponseType]
 
+	// Extract PKCE parameters
+	codeChallenge := msg.RequestQueryParams[oauth2const.RequestParamCodeChallenge]
+	codeChallengeMethod := msg.RequestQueryParams[oauth2const.RequestParamCodeChallengeMethod]
+
 	if clientID == "" {
 		ah.redirectToErrorPage(w, r, oauth2const.ErrorInvalidRequest, "Missing client_id parameter")
 		return
@@ -153,12 +157,14 @@ func (ah *AuthorizeHandler) handleInitialAuthorizationRequest(msg *model.OAuthMe
 
 	// Construct session data.
 	oauthParams := oauth2model.OAuthParameters{
-		SessionDataKey: sessionutils.GenerateNewSessionDataKey(),
-		State:          state,
-		ClientID:       clientID,
-		RedirectURI:    redirectURI,
-		ResponseType:   responseType,
-		Scopes:         scope,
+		SessionDataKey:      sessionutils.GenerateNewSessionDataKey(),
+		State:               state,
+		ClientID:            clientID,
+		RedirectURI:         redirectURI,
+		ResponseType:        responseType,
+		Scopes:              scope,
+		CodeChallenge:       codeChallenge,
+		CodeChallengeMethod: codeChallengeMethod,
 	}
 
 	// Set the redirect URI if not provided in the request. Invalid cases are already handled at this point.
@@ -491,15 +497,17 @@ func getAuthorizationCode(oAuthMessage *model.OAuthMessage, authUserID string) (
 	expiryTime := authTime.Add(10 * time.Minute)
 
 	return model.AuthorizationCode{
-		CodeID:           utils.GenerateUUID(),
-		Code:             utils.GenerateUUID(),
-		ClientID:         clientID,
-		RedirectURI:      redirectURI,
-		AuthorizedUserID: authUserID,
-		TimeCreated:      authTime,
-		ExpiryTime:       expiryTime,
-		Scopes:           scope,
-		State:            constants.AuthCodeStateActive,
+		CodeID:              utils.GenerateUUID(),
+		Code:                utils.GenerateUUID(),
+		ClientID:            clientID,
+		RedirectURI:         redirectURI,
+		AuthorizedUserID:    authUserID,
+		TimeCreated:         authTime,
+		ExpiryTime:          expiryTime,
+		Scopes:              scope,
+		State:               constants.AuthCodeStateActive,
+		CodeChallenge:       sessionData.OAuthParameters.CodeChallenge,
+		CodeChallengeMethod: sessionData.OAuthParameters.CodeChallengeMethod,
 	}, nil
 }
 

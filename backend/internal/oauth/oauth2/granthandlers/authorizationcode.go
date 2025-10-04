@@ -30,6 +30,7 @@ import (
 	"github.com/asgardeo/thunder/internal/oauth/oauth2/constants"
 	"github.com/asgardeo/thunder/internal/oauth/oauth2/model"
 	"github.com/asgardeo/thunder/internal/system/config"
+	"github.com/asgardeo/thunder/internal/system/crypto/pkce"
 	"github.com/asgardeo/thunder/internal/system/jwt"
 	"github.com/asgardeo/thunder/internal/system/log"
 	userservice "github.com/asgardeo/thunder/internal/user/service"
@@ -117,6 +118,26 @@ func (h *authorizationCodeGrantHandler) HandleGrant(tokenRequest *model.TokenReq
 	errResponse := validateAuthorizationCode(tokenRequest, authCode)
 	if errResponse != nil && errResponse.Error != "" {
 		return nil, errResponse
+	}
+
+	// Validate PKCE if required or if code challenge was provided during authorization
+	if oauthApp.RequiresPKCE() || authCode.CodeChallenge != "" {
+		if tokenRequest.CodeVerifier == "" {
+			return nil, &model.ErrorResponse{
+				Error:            constants.ErrorInvalidRequest,
+				ErrorDescription: "code_verifier is required",
+			}
+		}
+
+		// Validate PKCE
+		if err := pkce.ValidatePKCE(authCode.CodeChallenge, authCode.CodeChallengeMethod,
+			tokenRequest.CodeVerifier); err != nil {
+			logger.Error("PKCE validation failed", log.Error(err))
+			return nil, &model.ErrorResponse{
+				Error:            constants.ErrorInvalidGrant,
+				ErrorDescription: "Invalid code verifier",
+			}
+		}
 	}
 
 	// Invalidate the authorization code after use.

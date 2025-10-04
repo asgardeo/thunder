@@ -73,7 +73,7 @@ func (acs *AuthorizationCodeStore) InsertAuthorizationCode(authzCode model.Autho
 	// Insert authorization code.
 	_, err = tx.Exec(constants.QueryInsertAuthorizationCode.Query, authzCode.CodeID, authzCode.Code,
 		authzCode.ClientID, authzCode.RedirectURI, authzCode.AuthorizedUserID, authzCode.TimeCreated,
-		authzCode.ExpiryTime, authzCode.State)
+		authzCode.ExpiryTime, authzCode.State, authzCode.CodeChallenge, authzCode.CodeChallengeMethod)
 	if err != nil {
 		logger.Error("Failed to insert authorization code", log.Error(err))
 		if rollbackErr := tx.Rollback(); rollbackErr != nil {
@@ -140,6 +140,16 @@ func (acs *AuthorizationCodeStore) GetAuthorizationCode(clientID, authCode strin
 		return model.AuthorizationCode{}, err
 	}
 
+	// Extract PKCE fields
+	codeChallenge := ""
+	if val, ok := row["code_challenge"]; ok && val != nil {
+		codeChallenge = val.(string)
+	}
+	codeChallengeMethod := ""
+	if val, ok := row["code_challenge_method"]; ok && val != nil {
+		codeChallengeMethod = val.(string)
+	}
+
 	// Retrieve authorized scopes for the authorization code.
 	scopeResults, err := dbClient.Query(constants.QueryGetAuthorizationCodeScopes, codeID)
 	if err != nil {
@@ -151,15 +161,17 @@ func (acs *AuthorizationCodeStore) GetAuthorizationCode(clientID, authCode strin
 	}
 
 	return model.AuthorizationCode{
-		CodeID:           codeID,
-		Code:             row["authorization_code"].(string),
-		ClientID:         clientID,
-		RedirectURI:      row["callback_url"].(string),
-		AuthorizedUserID: row["authz_user"].(string),
-		TimeCreated:      timeCreated,
-		ExpiryTime:       expiryTime,
-		Scopes:           scopes,
-		State:            row["state"].(string),
+		CodeID:              codeID,
+		Code:                row["authorization_code"].(string),
+		ClientID:            clientID,
+		RedirectURI:         row["callback_url"].(string),
+		AuthorizedUserID:    row["authz_user"].(string),
+		TimeCreated:         timeCreated,
+		ExpiryTime:          expiryTime,
+		Scopes:              scopes,
+		State:               row["state"].(string),
+		CodeChallenge:       codeChallenge,
+		CodeChallengeMethod: codeChallengeMethod,
 	}, nil
 }
 

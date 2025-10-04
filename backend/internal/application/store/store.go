@@ -40,6 +40,7 @@ type oAuthConfig struct {
 	GrantTypes              []string          `json:"grant_types"`
 	ResponseTypes           []string          `json:"response_types"`
 	TokenEndpointAuthMethod []string          `json:"token_endpoint_auth_methods"`
+	PKCERequired            bool              `json:"pkce_required"`
 	Token                   *oAuthTokenConfig `json:"token,omitempty"`
 }
 
@@ -235,6 +236,7 @@ func (st *ApplicationStore) GetOAuthApplication(clientID string) (*model.OAuthAp
 		GrantTypes:              grantTypes,
 		ResponseTypes:           responseTypes,
 		TokenEndpointAuthMethod: tokenEndpointAuthMethods,
+		PKCERequired:            oAuthConfig.PKCERequired,
 		Token:                   oauthTokenConfig,
 	}, nil
 }
@@ -374,6 +376,7 @@ func getOAuthConfigJSONBytes(inboundAuthConfig model.InboundAuthConfigProcessedD
 		ResponseTypes: sysutils.ConvertToStringSlice(inboundAuthConfig.OAuthAppConfig.ResponseTypes),
 		TokenEndpointAuthMethod: sysutils.ConvertToStringSlice(
 			inboundAuthConfig.OAuthAppConfig.TokenEndpointAuthMethod),
+		PKCERequired: inboundAuthConfig.OAuthAppConfig.PKCERequired,
 	}
 
 	// Include token config if present
@@ -629,6 +632,7 @@ func buildApplicationFromResultRow(row map[string]interface{}) (model.Applicatio
 				GrantTypes:              grantTypes,
 				ResponseTypes:           responseTypes,
 				TokenEndpointAuthMethod: tokenEndpointAuthMethods,
+				PKCERequired:            oauthConfig.PKCERequired,
 				Token:                   oauthTokenConfig,
 			},
 		}

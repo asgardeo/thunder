@@ -22,6 +22,7 @@ import (
 	appmodel "github.com/asgardeo/thunder/internal/application/model"
 	"github.com/asgardeo/thunder/internal/oauth/oauth2/authz/model"
 	"github.com/asgardeo/thunder/internal/oauth/oauth2/constants"
+	"github.com/asgardeo/thunder/internal/system/crypto/pkce"
 	"github.com/asgardeo/thunder/internal/system/log"
 )
 
@@ -71,6 +72,21 @@ func (av *AuthorizationValidator) validateInitialAuthorizationRequest(msg *model
 	}
 	if !oauthApp.IsAllowedResponseType(responseType) {
 		return true, constants.ErrorUnsupportedResponseType, "Unsupported response type"
+	}
+
+	// Validate PKCE parameters if required
+	if oauthApp.RequiresPKCE() && responseType == string(constants.ResponseTypeCode) {
+		codeChallenge := msg.RequestQueryParams[constants.RequestParamCodeChallenge]
+		codeChallengeMethod := msg.RequestQueryParams[constants.RequestParamCodeChallengeMethod]
+
+		if codeChallenge == "" {
+			return true, constants.ErrorInvalidRequest, "code_challenge is required for this application"
+		}
+
+		// Validate code challenge format and method
+		if err := pkce.ValidateCodeChallenge(codeChallenge, codeChallengeMethod); err != nil {
+			return true, constants.ErrorInvalidRequest, "Invalid PKCE parameters"
+		}
 	}
 
 	return false, "", ""

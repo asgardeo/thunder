@@ -35,6 +35,7 @@ type OAuthAppConfig struct {
 	GrantTypes              []oauth2const.GrantType               `json:"grant_types"`
 	ResponseTypes           []oauth2const.ResponseType            `json:"response_types"`
 	TokenEndpointAuthMethod []oauth2const.TokenEndpointAuthMethod `json:"token_endpoint_auth_methods"`
+	PKCERequired            bool                                  `json:"pkce_required"`
 	Token                   *OAuthTokenConfig                     `json:"token,omitempty"`
 }
 
@@ -46,6 +47,7 @@ type OAuthAppConfigComplete struct {
 	GrantTypes              []oauth2const.GrantType               `json:"grant_types"`
 	ResponseTypes           []oauth2const.ResponseType            `json:"response_types"`
 	TokenEndpointAuthMethod []oauth2const.TokenEndpointAuthMethod `json:"token_endpoint_auth_methods"`
+	PKCERequired            bool                                  `json:"pkce_required"`
 	Token                   *OAuthTokenConfig                     `json:"token,omitempty"`
 }
 
@@ -58,6 +60,7 @@ type OAuthAppConfigDTO struct {
 	GrantTypes              []oauth2const.GrantType
 	ResponseTypes           []oauth2const.ResponseType
 	TokenEndpointAuthMethod []oauth2const.TokenEndpointAuthMethod
+	PKCERequired            bool
 	Token                   *OAuthTokenConfig
 }
 
@@ -90,6 +93,7 @@ type OAuthAppConfigProcessedDTO struct {
 	GrantTypes              []oauth2const.GrantType
 	ResponseTypes           []oauth2const.ResponseType
 	TokenEndpointAuthMethod []oauth2const.TokenEndpointAuthMethod
+	PKCERequired            bool
 	Token                   *OAuthTokenConfig
 }
 
@@ -111,6 +115,17 @@ func (o *OAuthAppConfigProcessedDTO) IsAllowedTokenEndpointAuthMethod(method oau
 // ValidateRedirectURI validates the provided redirect URI against the registered redirect URIs.
 func (o *OAuthAppConfigProcessedDTO) ValidateRedirectURI(redirectURI string) error {
 	return validateRedirectURI(o.RedirectURIs, redirectURI)
+}
+
+// RequiresPKCE checks if PKCE is required for this application.
+func (o *OAuthAppConfigProcessedDTO) RequiresPKCE() bool {
+	return o.PKCERequired || o.IsPublicClient()
+}
+
+// IsPublicClient checks if this is a public client.
+func (o *OAuthAppConfigProcessedDTO) IsPublicClient() bool {
+	return len(o.TokenEndpointAuthMethod) == 1 &&
+		slices.Contains(o.TokenEndpointAuthMethod, oauth2const.TokenEndpointAuthMethodNone)
 }
 
 // isAllowedGrantType checks if the provided grant type is in the allowed list.

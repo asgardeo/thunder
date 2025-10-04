@@ -785,6 +785,10 @@ components:
             enum: ["client_secret_basic", "client_secret_post", "none"]
           description: A list of token endpoint authentication methods supported by the OAuth application.
           example: ["client_secret_basic"]
+        pkce_required:
+          type: boolean
+          description: Whether PKCE (Proof Key for Code Exchange) is required for this application.
+          example: true
         token:
           type: object
           properties:
@@ -830,6 +834,10 @@ components:
             enum: ["client_secret_basic", "client_secret_post", "none"]
           description: A list of token endpoint authentication methods supported by the OAuth application.
           example: ["client_secret_basic"]
+        pkce_required:
+          type: boolean
+          description: Whether PKCE (Proof Key for Code Exchange) is required for this application.
+          example: true
         token:
           type: object
           properties:
