@@ -39,3 +39,10 @@ type AuthenticationContext struct {
 	AuthenticatedUser  AuthenticatedUser
 	AuthTime           time.Time
 }
+
+// AuthenticationResponse represents the response after successful authentication.
+type AuthenticationResponse struct {
+	ID               string
+	Type             string
+	OrganizationUnit string
+}
