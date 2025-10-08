@@ -39,3 +39,31 @@ subjects:
   - kind: ServiceAccount
     name: {{ include "thunder.serviceAccountName" . }}
     namespace: {{ .Release.Namespace }}
+
+---
+
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: {{ include "thunder.fullname" . }}-config-map-editor-role
+  namespace: {{ .Release.Namespace }}
+rules:
+  - apiGroups: [""]
+    verbs: ["get", "patch"]
+    resources: ["configmaps"]
+
+---
+
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: {{ include "thunder.fullname" . }}-config-map-editor-role-binding
+  namespace: {{ .Release.Namespace }}
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: {{ include "thunder.fullname" . }}-config-map-editor-role
+subjects:
+  - kind: ServiceAccount
+    name: {{ include "thunder.serviceAccountName" . }}
+    namespace: {{ .Release.Namespace }}

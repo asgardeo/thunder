@@ -68,6 +68,24 @@ spec:
         - name: {{ .Values.deployment.image.imagePullSecret }}
       {{- end }}
       terminationGracePeriodSeconds: {{ .Values.deployment.terminationGracePeriodSeconds }}
+      {{- if not .Values.configuration.crypto.key }}
+      initContainers:
+        - name: crypto-key-generator
+          image: bitnami/kubectl:latest
+          command:
+            - /bin/sh
+            - -c
+            - |
+              CONFIG_MAP_NAME={{ include "thunder.fullname" . }}-config-map
+              CRYPTO_KEY_EXISTS=$(kubectl get configmap $CONFIG_MAP_NAME -n {{ .Release.Namespace }} -o jsonpath='{.data.deployment\.yaml}' | grep 'key: ""')
+              if [ -n "$CRYPTO_KEY_EXISTS" ]; then
+                echo "Crypto key is empty. Generating a new one..."
+                NEW_KEY=$(openssl rand -base64 32)
+                kubectl patch configmap $CONFIG_MAP_NAME -n {{ .Release.Namespace }} --type merge -p "{\"data\":{\"deployment.yaml\":\"$(kubectl get configmap $CONFIG_MAP_NAME -n {{ .Release.Namespace }} -o jsonpath='{.data.deployment\.yaml}' | sed "s/key: \"\"/key: \"$NEW_KEY\"/g")\"}}"
+              else
+                echo "Crypto key already exists. Skipping key generation."
+              fi
+      {{- end }}
       containers:
         - name: thunder
           {{- if .Values.deployment.image.digest }}
