@@ -58,6 +58,11 @@ func validateMessageNotificationSender(sender common.NotificationSenderDTO) *ser
 	}
 
 	if err := validateMessageNotificationSenderProperties(sender); err != nil {
+		if strings.HasPrefix(err.Error(), "unsupported property") {
+			errUnsupported := ErrorUnsupportedProperty
+			errUnsupported.ErrorDescription = err.Error()
+			return &errUnsupported
+		}
 		svcErr := ErrorInvalidRequestFormat
 		svcErr.ErrorDescription = err.Error()
 		return &svcErr
@@ -91,7 +96,7 @@ func validateTwilioProperties(properties []cmodels.Property) error {
 		"auth_token":  false,
 		"sender_id":   false,
 	}
-	err := validateSenderProperties(properties, requiredProps)
+	err := validateSenderProperties(properties, requiredProps, common.SupportedTwilioProperties)
 	if err != nil {
 		return err
 	}
@@ -126,7 +131,7 @@ func validateVonageProperties(properties []cmodels.Property) error {
 		"api_secret": false,
 		"sender_id":  false,
 	}
-	return validateSenderProperties(properties, requiredProps)
+	return validateSenderProperties(properties, requiredProps, common.SupportedVonageProperties)
 }
 
 // validateCustomProperties validates the message notification sender properties for a custom client.
@@ -138,9 +143,14 @@ func validateCustomProperties(properties []cmodels.Property) error {
 	httpMethod := ""
 	contentType := ""
 	for _, prop := range properties {
-		if prop.GetName() == "" {
+		propName := prop.GetName()
+		if propName == "" {
 			return errors.New("properties must have non-empty name")
 		}
+		if !slices.Contains(common.SupportedCustomProperties, propName) {
+			return fmt.Errorf("unsupported property found for the provider: %s", propName)
+		}
+
 		propValue, err := prop.GetValue()
 		if err != nil {
 			continue
@@ -168,13 +178,18 @@ func validateCustomProperties(properties []cmodels.Property) error {
 }
 
 // validateSenderProperties validates the properties for a notification sender.
-func validateSenderProperties(properties []cmodels.Property, requiredProperties map[string]bool) error {
+func validateSenderProperties(properties []cmodels.Property, requiredProperties map[string]bool,
+	supportedProperties []string) error {
 	for _, prop := range properties {
-		if prop.GetName() == "" {
+		propName := prop.GetName()
+		if propName == "" {
 			return errors.New("properties must have non-empty name")
 		}
-		if _, exists := requiredProperties[prop.GetName()]; exists {
-			requiredProperties[prop.GetName()] = true
+		if !slices.Contains(supportedProperties, propName) {
+			return fmt.Errorf("unsupported property found for the provider: %s", propName)
+		}
+		if _, exists := requiredProperties[propName]; exists {
+			requiredProperties[propName] = true
 		}
 	}
 

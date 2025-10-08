@@ -20,11 +20,15 @@ package store
 
 import (
 	"errors"
+	"os"
+	"path/filepath"
 	"testing"
 	"time"
 
+	_ "github.com/lib/pq"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
+	_ "modernc.org/sqlite"
 
 	"github.com/asgardeo/thunder/internal/oauth/oauth2/authz/constants"
 	"github.com/asgardeo/thunder/internal/oauth/oauth2/authz/model"
@@ -40,6 +44,7 @@ type AuthorizationCodeStoreTestSuite struct {
 	mockDBClient   *clientmock.DBClientInterfaceMock
 	store          *AuthorizationCodeStore
 	testAuthzCode  model.AuthorizationCode
+	tempDir        string
 }
 
 func TestAuthorizationCodeStoreTestSuite(t *testing.T) {
@@ -47,15 +52,22 @@ func TestAuthorizationCodeStoreTestSuite(t *testing.T) {
 }
 
 func (suite *AuthorizationCodeStoreTestSuite) SetupTest() {
+	// Create a temporary directory for the test database.
+	tempDir, err := os.MkdirTemp("", "authzstore-test-")
+	if err != nil {
+		suite.T().Fatalf("Failed to create temp dir: %v", err)
+	}
+	suite.tempDir = tempDir
+
 	testConfig := &config.Config{
 		Database: config.DatabaseConfig{
 			Identity: config.DataSource{
 				Type: "sqlite",
-				Path: ":memory:",
+				Path: filepath.Join(suite.tempDir, "identity.db"),
 			},
 			Runtime: config.DataSource{
 				Type: "sqlite",
-				Path: ":memory:",
+				Path: filepath.Join(suite.tempDir, "runtime.db"),
 			},
 		},
 	}
@@ -80,6 +92,14 @@ func (suite *AuthorizationCodeStoreTestSuite) SetupTest() {
 		State:               constants.AuthCodeStateActive,
 		CodeChallenge:       "",
 		CodeChallengeMethod: "",
+	}
+}
+
+func (suite *AuthorizationCodeStoreTestSuite) TearDownTest() {
+	config.ResetThunderRuntime()
+	// Clean up the temporary directory.
+	if err := os.RemoveAll(suite.tempDir); err != nil {
+		suite.T().Logf("Failed to clean up temp dir: %v", err)
 	}
 }
 

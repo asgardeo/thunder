@@ -23,11 +23,15 @@ import (
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
+	"os"
+	"path/filepath"
 	"testing"
 	"time"
 
+	_ "github.com/lib/pq"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
+	_ "modernc.org/sqlite"
 
 	"github.com/asgardeo/thunder/internal/oauth/oauth2/authz/constants"
 	"github.com/asgardeo/thunder/internal/oauth/oauth2/authz/model"
@@ -40,6 +44,7 @@ import (
 type AuthorizeHandlerTestSuite struct {
 	suite.Suite
 	handler *AuthorizeHandler
+	tempDir string
 }
 
 func TestAuthorizeHandlerTestSuite(t *testing.T) {
@@ -47,8 +52,25 @@ func TestAuthorizeHandlerTestSuite(t *testing.T) {
 }
 
 func (suite *AuthorizeHandlerTestSuite) SetupTest() {
-	// Initialize Thunder Runtime config with basic test config
+	// Create a temporary directory for the test database.
+	tempDir, err := os.MkdirTemp("", "authzhandler-test-")
+	if err != nil {
+		suite.T().Fatalf("Failed to create temp dir: %v", err)
+	}
+	suite.tempDir = tempDir
+
+	// Initialize Thunder Runtime config with a file-based database.
 	testConfig := &config.Config{
+		Database: config.DatabaseConfig{
+			Identity: config.DataSource{
+				Type: "sqlite",
+				Path: filepath.Join(suite.tempDir, "identity.db"),
+			},
+			Runtime: config.DataSource{
+				Type: "sqlite",
+				Path: filepath.Join(suite.tempDir, "runtime.db"),
+			},
+		},
 		GateClient: config.GateClientConfig{
 			Scheme:    "https",
 			Hostname:  "localhost",
@@ -60,6 +82,14 @@ func (suite *AuthorizeHandlerTestSuite) SetupTest() {
 	_ = config.InitializeThunderRuntime("test", testConfig)
 
 	suite.handler = NewAuthorizeHandler().(*AuthorizeHandler)
+}
+
+func (suite *AuthorizeHandlerTestSuite) TearDownTest() {
+	config.ResetThunderRuntime()
+	// Clean up the temporary directory.
+	if err := os.RemoveAll(suite.tempDir); err != nil {
+		suite.T().Logf("Failed to clean up temp dir: %v", err)
+	}
 }
 
 func (suite *AuthorizeHandlerTestSuite) TestNewAuthorizeHandler() {

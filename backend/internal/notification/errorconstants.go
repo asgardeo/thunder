@@ -128,6 +128,13 @@ var (
 		Error:            "Error while retrieving message client",
 		ErrorDescription: "An error occurred while retrieving the message client",
 	}
+	// ErrorUnsupportedProperty is the error returned when an unsupported property is provided for a sender.
+	ErrorUnsupportedProperty = serviceerror.ServiceError{
+		Type:             serviceerror.ClientErrorType,
+		Code:             "MNS-1016",
+		Error:            "Unsupported property",
+		ErrorDescription: "An unsupported property was provided for the sender",
+	}
 )
 
 // Server errors for notification sender operations.
