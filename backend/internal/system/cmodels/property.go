@@ -27,17 +27,27 @@ import (
 
 // Property represents a generic property with Name, Value, IsSecret, and isEncrypted fields.
 type Property struct {
+// GetValues returns the multi-valued property values.
+func (p *Property) GetValues() []string {
+	return p.values
+}
 	name        string
 	value       string
+	values      []string
 	isSecret    bool
 	isEncrypted bool
 }
 
 // PropertyDTO represents a property for API communication.
 type PropertyDTO struct {
-	Name     string `json:"name"`
-	Value    string `json:"value"`
-	IsSecret bool   `json:"is_secret"`
+// GetValues returns the multi-valued property values.
+func (p *PropertyDTO) GetValues() []string {
+	return p.Values
+}
+	Name     string   `json:"name"`
+	Value    string   `json:"value,omitempty"`
+	Values   []string `json:"values,omitempty"`
+	IsSecret bool     `json:"is_secret"`
 }
 
 // NewRawProperty creates a new Property instance with the given parameters.

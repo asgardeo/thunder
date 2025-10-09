@@ -56,9 +56,10 @@ type OrganizationUnit struct {
 
 // IDPProperty represents a property of an identity provider
 type IDPProperty struct {
-	Name     string `json:"name"`
-	Value    string `json:"value"`
-	IsSecret bool   `json:"is_secret"`
+	Name     string   `json:"name"`
+	Value    string   `json:"value"`
+	Values   []string `json:"values,omitempty"` // New field for multi-valued properties
+	IsSecret bool     `json:"is_secret"`
 }
 
 // IDP represents an identity provider in the system

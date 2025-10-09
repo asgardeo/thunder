@@ -320,17 +320,23 @@ func getIDPConfigs(idpProperties []cmodels.Property, execConfig *model.ExecutorC
 			clientSecret = value
 		case "redirect_uri":
 			redirectURI = value
-		case "scopes":
-			scopesStr = value
+		   case "scopes":
+			   // Prefer multi-valued property if available
+			   if len(prop.GetValues()) > 0 {
+				   scopes = prop.GetValues()
+			   } else {
+				   scopesStr = value
+			   }
 		default:
 			additionalParams[prop.GetName()] = value
 		}
 	}
-	if clientID == "" || clientSecret == "" || redirectURI == "" || scopesStr == "" {
-		return "", "", "", nil, nil, fmt.Errorf("missing required properties for executor with IDP name %s",
-			execConfig.IdpName)
-	}
-	scopes := sysutils.ParseStringArray(scopesStr, ",")
-
-	return clientID, clientSecret, redirectURI, scopes, additionalParams, nil
+	   if clientID == "" || clientSecret == "" || redirectURI == "" || (len(scopes) == 0 && scopesStr == "") {
+		   return "", "", "", nil, nil, fmt.Errorf("missing required properties for executor with IDP name %s",
+				   execConfig.IdpName)
+	   }
+	   if len(scopes) == 0 {
+		   scopes = sysutils.ParseStringArray(scopesStr, ",")
+	   }
+	   return clientID, clientSecret, redirectURI, scopes, additionalParams, nil
 }

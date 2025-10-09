@@ -60,6 +60,7 @@ var (
 			{
 				Name:     "scopes",
 				Value:    "user:email,read:user",
+				Values:   []string{"user:email", "read:user"}, // Updated to use Values
 				IsSecret: false,
 			},
 		},
@@ -256,8 +257,8 @@ var (
 				IsSecret: false,
 			},
 			{
-				Name:     "scopes",
-				Value:    "openid,profile,email",
+				   Name:     "scopes",
+				   Values:   []string{"openid", "profile", "email"},
 				IsSecret: false,
 			},
 			{
