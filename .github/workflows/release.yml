@@ -17,6 +17,11 @@ on:
         required: false
         type: boolean
         default: false
+      run_performance_test:
+        description: 'Run performance tests after release'
+        required: false
+        type: boolean
+        default: false
 
 # Add permissions to allow pushing tags and packages
 permissions:
@@ -444,6 +449,8 @@ jobs:
     name: 🚀 Release
     runs-on: ubuntu-latest
     needs: [build-thunder, package-samples-linux, package-samples-macos]
+    outputs:
+      release_tag: ${{ steps.release_info.outputs.release_tag }}
     steps:
       - name: 📥 Checkout Code
         uses: actions/checkout@v4
@@ -628,3 +635,47 @@ jobs:
           release-name: ${{ steps.release_info.outputs.release_name }}
           release-tag: ${{ steps.release_info.outputs.release_tag }}
           release-url: ${{ steps.release_info.outputs.release_url }}
+
+  trigger-performance-test:
+    name: 🧪 Trigger Performance Test
+    runs-on: ubuntu-latest
+    needs: release
+    if: ${{ github.event.inputs.run_performance_test == 'true' }}
+    steps:
+      - name: 📥 Checkout Code
+        uses: actions/checkout@v4
+
+      - name: ⚡ Trigger Performance Test Workflow
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.THUNDER_GITHUB_BOT_TOKEN }}
+          script: |
+            try {
+              // Construct the Thunder pack URL using the release version
+              const releaseTag = '${{ needs.release.outputs.release_tag }}';
+              const thunderPackUrl = `https://github.com/${{ github.repository }}/releases/download/${releaseTag}/thunder-${releaseTag.replace('v', '')}-linux-x64.zip`;
+              
+              const result = await github.rest.actions.createWorkflowDispatch({
+                owner: 'asgardeo',
+                repo: 'thunder-performance',
+                workflow_id: 'vm-perf-workflow.yml',
+                ref: 'main',
+                inputs: {
+                  THUNDER_PACK_URL: thunderPackUrl,
+                  DEPLOYMENT: 'single-node',
+                  CPU_CORES: '4',
+                  ADDITIONAL_PARAMS_TO_RUN_PERFORMANCE_SCRIPT: '-d 15 -w 5 -x false -y JWT',
+                  PERFORMANCE_REPO: 'https://github.com/asgardeo/thunder-performance',
+                  BRANCH: 'main',
+                  MODE: 'FULL',
+                  USE_DELAYS: 'true',
+                  CONCURRENCY: '50-500',
+                  DB_TYPE: 'postgres'
+                }
+              });
+              console.log('✅ Performance test workflow triggered successfully');
+              return result;
+            } catch (error) {
+              console.error('❌ Failed to trigger performance test workflow:', error);
+              core.setFailed('Failed to trigger performance test workflow: ' + error.message);
+            }
