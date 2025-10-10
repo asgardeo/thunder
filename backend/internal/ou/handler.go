@@ -16,8 +16,8 @@
  * under the License.
  */
 
-// Package handler provides the implementation for organization unit management operations.
-package handler
+// Package ou provides the implementation for organization unit management operations.
+package ou
 
 import (
 	"encoding/json"
@@ -25,9 +25,6 @@ import (
 	"net/url"
 	"strconv"
 
-	"github.com/asgardeo/thunder/internal/ou/constants"
-	"github.com/asgardeo/thunder/internal/ou/model"
-	"github.com/asgardeo/thunder/internal/ou/service"
 	serverconst "github.com/asgardeo/thunder/internal/system/constants"
 	"github.com/asgardeo/thunder/internal/system/error/apierror"
 	"github.com/asgardeo/thunder/internal/system/error/serviceerror"
@@ -35,22 +32,22 @@ import (
 	sysutils "github.com/asgardeo/thunder/internal/system/utils"
 )
 
-const loggerComponentName = "OrganizationUnitHandler"
+const loggerComponentName = "organizationUnitHandler"
 
-// OrganizationUnitHandler is the handler for organization unit management operations.
-type OrganizationUnitHandler struct {
-	service service.OrganizationUnitServiceInterface
+// organizationUnitHandler is the handler for organization unit management operations.
+type organizationUnitHandler struct {
+	service OrganizationUnitServiceInterface
 }
 
-// NewOrganizationUnitHandler creates a new instance of OrganizationUnitHandler
-func NewOrganizationUnitHandler() *OrganizationUnitHandler {
-	return &OrganizationUnitHandler{
-		service: service.GetOrganizationUnitService(),
+// newOrganizationUnitHandler creates a new instance of organizationUnitHandler
+func newOrganizationUnitHandler(service OrganizationUnitServiceInterface) *organizationUnitHandler {
+	return &organizationUnitHandler{
+		service: service,
 	}
 }
 
 // HandleOUListRequest handles the list organization units request.
-func (ouh *OrganizationUnitHandler) HandleOUListRequest(w http.ResponseWriter, r *http.Request) {
+func (ouh *organizationUnitHandler) HandleOUListRequest(w http.ResponseWriter, r *http.Request) {
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, loggerComponentName))
 
 	limit, offset, svcErr := parsePaginationParams(r.URL.Query())
@@ -85,17 +82,17 @@ func (ouh *OrganizationUnitHandler) HandleOUListRequest(w http.ResponseWriter, r
 }
 
 // HandleOUPostRequest handles the create organization unit request.
-func (ouh *OrganizationUnitHandler) HandleOUPostRequest(w http.ResponseWriter, r *http.Request) {
+func (ouh *organizationUnitHandler) HandleOUPostRequest(w http.ResponseWriter, r *http.Request) {
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, loggerComponentName))
 
-	createRequest, err := sysutils.DecodeJSONBody[model.OrganizationUnitRequest](r)
+	createRequest, err := sysutils.DecodeJSONBody[OrganizationUnitRequest](r)
 	if err != nil {
 		w.Header().Set(serverconst.ContentTypeHeaderName, serverconst.ContentTypeJSON)
 		w.WriteHeader(http.StatusBadRequest)
 
 		errResp := apierror.ErrorResponse{
-			Code:        constants.ErrorInvalidRequestFormat.Code,
-			Message:     constants.ErrorInvalidRequestFormat.Error,
+			Code:        ErrorInvalidRequestFormat.Code,
+			Message:     ErrorInvalidRequestFormat.Error,
 			Description: "Failed to parse request body: " + err.Error(),
 		}
 
@@ -127,7 +124,7 @@ func (ouh *OrganizationUnitHandler) HandleOUPostRequest(w http.ResponseWriter, r
 }
 
 // HandleOUGetRequest handles the get organization unit by id request.
-func (ouh *OrganizationUnitHandler) HandleOUGetRequest(w http.ResponseWriter, r *http.Request) {
+func (ouh *organizationUnitHandler) HandleOUGetRequest(w http.ResponseWriter, r *http.Request) {
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, loggerComponentName))
 
 	id, idValidateFailed := extractAndValidateID(w, r, logger)
@@ -149,7 +146,7 @@ func (ouh *OrganizationUnitHandler) HandleOUGetRequest(w http.ResponseWriter, r 
 }
 
 // HandleOUPutRequest handles the update organization unit request.
-func (ouh *OrganizationUnitHandler) HandleOUPutRequest(w http.ResponseWriter, r *http.Request) {
+func (ouh *organizationUnitHandler) HandleOUPutRequest(w http.ResponseWriter, r *http.Request) {
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, loggerComponentName))
 
 	id, idValidateFailed := extractAndValidateID(w, r, logger)
@@ -176,7 +173,7 @@ func (ouh *OrganizationUnitHandler) HandleOUPutRequest(w http.ResponseWriter, r 
 }
 
 // HandleOUDeleteRequest handles the delete organization unit request.
-func (ouh *OrganizationUnitHandler) HandleOUDeleteRequest(w http.ResponseWriter, r *http.Request) {
+func (ouh *organizationUnitHandler) HandleOUDeleteRequest(w http.ResponseWriter, r *http.Request) {
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, loggerComponentName))
 
 	id, idValidateFailed := extractAndValidateID(w, r, logger)
@@ -195,7 +192,7 @@ func (ouh *OrganizationUnitHandler) HandleOUDeleteRequest(w http.ResponseWriter,
 }
 
 // HandleOUChildrenListRequest handles the list child organization units request.
-func (ouh *OrganizationUnitHandler) HandleOUChildrenListRequest(w http.ResponseWriter, r *http.Request) {
+func (ouh *organizationUnitHandler) HandleOUChildrenListRequest(w http.ResponseWriter, r *http.Request) {
 	ouh.handleResourceListRequest(w, r, "child organization units",
 		func(id string, limit, offset int) (interface{}, *serviceerror.ServiceError) {
 			return ouh.service.GetOrganizationUnitChildren(id, limit, offset)
@@ -203,7 +200,7 @@ func (ouh *OrganizationUnitHandler) HandleOUChildrenListRequest(w http.ResponseW
 }
 
 // HandleOUUsersListRequest handles the list users in organization unit request.
-func (ouh *OrganizationUnitHandler) HandleOUUsersListRequest(w http.ResponseWriter, r *http.Request) {
+func (ouh *organizationUnitHandler) HandleOUUsersListRequest(w http.ResponseWriter, r *http.Request) {
 	ouh.handleResourceListRequest(w, r, "users",
 		func(id string, limit, offset int) (interface{}, *serviceerror.ServiceError) {
 			return ouh.service.GetOrganizationUnitUsers(id, limit, offset)
@@ -211,7 +208,7 @@ func (ouh *OrganizationUnitHandler) HandleOUUsersListRequest(w http.ResponseWrit
 }
 
 // HandleOUGroupsListRequest handles the list groups in organization unit request.
-func (ouh *OrganizationUnitHandler) HandleOUGroupsListRequest(w http.ResponseWriter, r *http.Request) {
+func (ouh *organizationUnitHandler) HandleOUGroupsListRequest(w http.ResponseWriter, r *http.Request) {
 	ouh.handleResourceListRequest(w, r, "groups",
 		func(id string, limit, offset int) (interface{}, *serviceerror.ServiceError) {
 			return ouh.service.GetOrganizationUnitGroups(id, limit, offset)
@@ -219,7 +216,7 @@ func (ouh *OrganizationUnitHandler) HandleOUGroupsListRequest(w http.ResponseWri
 }
 
 // handleError handles service errors and returns appropriate HTTP responses.
-func (ouh *OrganizationUnitHandler) handleError(w http.ResponseWriter, logger *log.Logger,
+func (ouh *organizationUnitHandler) handleError(w http.ResponseWriter, logger *log.Logger,
 	svcErr *serviceerror.ServiceError) {
 	w.Header().Set(serverconst.ContentTypeHeaderName, serverconst.ContentTypeJSON)
 
@@ -227,14 +224,14 @@ func (ouh *OrganizationUnitHandler) handleError(w http.ResponseWriter, logger *l
 	switch svcErr.Type {
 	case serviceerror.ClientErrorType:
 		statusCode = http.StatusBadRequest
-		if svcErr.Code == constants.ErrorOrganizationUnitNotFound.Code {
+		if svcErr.Code == ErrorOrganizationUnitNotFound.Code {
 			statusCode = http.StatusNotFound
-		} else if svcErr.Code == constants.ErrorOrganizationUnitNameConflict.Code ||
-			svcErr.Code == constants.ErrorOrganizationUnitHandleConflict.Code {
+		} else if svcErr.Code == ErrorOrganizationUnitNameConflict.Code ||
+			svcErr.Code == ErrorOrganizationUnitHandleConflict.Code {
 			statusCode = http.StatusConflict
-		} else if svcErr.Code == constants.ErrorInvalidLimit.Code ||
-			svcErr.Code == constants.ErrorInvalidOffset.Code ||
-			svcErr.Code == constants.ErrorInvalidHandlePath.Code {
+		} else if svcErr.Code == ErrorInvalidLimit.Code ||
+			svcErr.Code == ErrorInvalidOffset.Code ||
+			svcErr.Code == ErrorInvalidHandlePath.Code {
 			statusCode = http.StatusBadRequest
 		}
 	default:
@@ -256,10 +253,10 @@ func (ouh *OrganizationUnitHandler) handleError(w http.ResponseWriter, logger *l
 }
 
 // sanitizeOrganizationUnitRequest sanitizes the create organization unit request input.
-func (ouh *OrganizationUnitHandler) sanitizeOrganizationUnitRequest(
-	request model.OrganizationUnitRequest,
-) model.OrganizationUnitRequest {
-	return model.OrganizationUnitRequest{
+func (ouh *organizationUnitHandler) sanitizeOrganizationUnitRequest(
+	request OrganizationUnitRequest,
+) OrganizationUnitRequest {
+	return OrganizationUnitRequest{
 		Handle:      sysutils.SanitizeString(request.Handle),
 		Name:        sysutils.SanitizeString(request.Name),
 		Description: sysutils.SanitizeString(request.Description),
@@ -273,9 +270,9 @@ func extractAndValidateID(w http.ResponseWriter, r *http.Request, logger *log.Lo
 		w.Header().Set(serverconst.ContentTypeHeaderName, serverconst.ContentTypeJSON)
 		w.WriteHeader(http.StatusBadRequest)
 		errResp := apierror.ErrorResponse{
-			Code:        constants.ErrorMissingOrganizationUnitID.Code,
-			Message:     constants.ErrorMissingOrganizationUnitID.Error,
-			Description: constants.ErrorMissingOrganizationUnitID.ErrorDescription,
+			Code:        ErrorMissingOrganizationUnitID.Code,
+			Message:     ErrorMissingOrganizationUnitID.Error,
+			Description: ErrorMissingOrganizationUnitID.ErrorDescription,
 		}
 		if err := json.NewEncoder(w).Encode(errResp); err != nil {
 			logger.Error("Error encoding error response", log.Error(err))
@@ -287,16 +284,16 @@ func extractAndValidateID(w http.ResponseWriter, r *http.Request, logger *log.Lo
 }
 
 func validateUpdateRequest(
-	w http.ResponseWriter, r *http.Request, logger *log.Logger, ouh *OrganizationUnitHandler,
-) (model.OrganizationUnitRequest, bool) {
-	updateRequest, err := sysutils.DecodeJSONBody[model.OrganizationUnitRequest](r)
+	w http.ResponseWriter, r *http.Request, logger *log.Logger, ouh *organizationUnitHandler,
+) (OrganizationUnitRequest, bool) {
+	updateRequest, err := sysutils.DecodeJSONBody[OrganizationUnitRequest](r)
 	if err != nil {
 		w.Header().Set(serverconst.ContentTypeHeaderName, serverconst.ContentTypeJSON)
 		w.WriteHeader(http.StatusBadRequest)
 
 		errResp := apierror.ErrorResponse{
-			Code:        constants.ErrorInvalidRequestFormat.Code,
-			Message:     constants.ErrorInvalidRequestFormat.Error,
+			Code:        ErrorInvalidRequestFormat.Code,
+			Message:     ErrorInvalidRequestFormat.Error,
 			Description: "Failed to parse request body: " + err.Error(),
 		}
 
@@ -304,14 +301,14 @@ func validateUpdateRequest(
 			logger.Error("Error encoding error response", log.Error(err))
 			http.Error(w, "Failed to encode error response", http.StatusInternalServerError)
 		}
-		return model.OrganizationUnitRequest{}, true
+		return OrganizationUnitRequest{}, true
 	}
 
 	sanitizedRequest := ouh.sanitizeOrganizationUnitRequest(*updateRequest)
 	return sanitizedRequest, false
 }
 
-func buildOUResponse(w http.ResponseWriter, ou model.OrganizationUnit, logger *log.Logger) bool {
+func buildOUResponse(w http.ResponseWriter, ou OrganizationUnit, logger *log.Logger) bool {
 	w.Header().Set(serverconst.ContentTypeHeaderName, serverconst.ContentTypeJSON)
 	w.WriteHeader(http.StatusOK)
 
@@ -330,7 +327,7 @@ func parsePaginationParams(query url.Values) (int, int, *serviceerror.ServiceErr
 
 	if limitStr := query.Get("limit"); limitStr != "" {
 		if parsedLimit, err := strconv.Atoi(limitStr); err != nil {
-			return 0, 0, &constants.ErrorInvalidLimit
+			return 0, 0, &ErrorInvalidLimit
 		} else {
 			limit = parsedLimit
 		}
@@ -338,7 +335,7 @@ func parsePaginationParams(query url.Values) (int, int, *serviceerror.ServiceErr
 
 	if offsetStr := query.Get("offset"); offsetStr != "" {
 		if parsedOffset, err := strconv.Atoi(offsetStr); err != nil {
-			return 0, 0, &constants.ErrorInvalidOffset
+			return 0, 0, &ErrorInvalidOffset
 		} else {
 			offset = parsedOffset
 		}
@@ -348,7 +345,7 @@ func parsePaginationParams(query url.Values) (int, int, *serviceerror.ServiceErr
 }
 
 // handleResourceListRequest is a generic handler for listing resources under an organization unit.
-func (ouh *OrganizationUnitHandler) handleResourceListRequest(
+func (ouh *organizationUnitHandler) handleResourceListRequest(
 	w http.ResponseWriter, r *http.Request, resourceType string,
 	serviceFunc func(string, int, int) (interface{}, *serviceerror.ServiceError),
 ) {
@@ -387,13 +384,13 @@ func (ouh *OrganizationUnitHandler) handleResourceListRequest(
 	// Extract pagination info for logging based on response type
 	var totalResults, count int
 	switch resp := response.(type) {
-	case *model.OrganizationUnitListResponse:
+	case *OrganizationUnitListResponse:
 		totalResults = resp.TotalResults
 		count = resp.Count
-	case *model.UserListResponse:
+	case *UserListResponse:
 		totalResults = resp.TotalResults
 		count = resp.Count
-	case *model.GroupListResponse:
+	case *GroupListResponse:
 		totalResults = resp.TotalResults
 		count = resp.Count
 	}
@@ -405,7 +402,7 @@ func (ouh *OrganizationUnitHandler) handleResourceListRequest(
 }
 
 // HandleOUGetByPathRequest handles the get organization unit by hierarchical handle path request.
-func (ouh *OrganizationUnitHandler) HandleOUGetByPathRequest(w http.ResponseWriter, r *http.Request) {
+func (ouh *organizationUnitHandler) HandleOUGetByPathRequest(w http.ResponseWriter, r *http.Request) {
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, loggerComponentName))
 
 	path, pathValidationFailed := extractAndValidatePath(w, r, logger)
@@ -427,7 +424,7 @@ func (ouh *OrganizationUnitHandler) HandleOUGetByPathRequest(w http.ResponseWrit
 }
 
 // HandleOUPutByPathRequest handles the update organization unit by hierarchical handle path request.
-func (ouh *OrganizationUnitHandler) HandleOUPutByPathRequest(w http.ResponseWriter, r *http.Request) {
+func (ouh *organizationUnitHandler) HandleOUPutByPathRequest(w http.ResponseWriter, r *http.Request) {
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, loggerComponentName))
 
 	path, pathValidationFailed := extractAndValidatePath(w, r, logger)
@@ -454,7 +451,7 @@ func (ouh *OrganizationUnitHandler) HandleOUPutByPathRequest(w http.ResponseWrit
 }
 
 // HandleOUDeleteByPathRequest handles the delete organization unit by hierarchical handle path request.
-func (ouh *OrganizationUnitHandler) HandleOUDeleteByPathRequest(w http.ResponseWriter, r *http.Request) {
+func (ouh *organizationUnitHandler) HandleOUDeleteByPathRequest(w http.ResponseWriter, r *http.Request) {
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, loggerComponentName))
 
 	path, pathValidationFailed := extractAndValidatePath(w, r, logger)
@@ -473,7 +470,7 @@ func (ouh *OrganizationUnitHandler) HandleOUDeleteByPathRequest(w http.ResponseW
 }
 
 // handleResourceListByPathRequest is a generic handler for listing resources under an organization unit by path.
-func (ouh *OrganizationUnitHandler) handleResourceListByPathRequest(
+func (ouh *organizationUnitHandler) handleResourceListByPathRequest(
 	w http.ResponseWriter, r *http.Request, resourceType string,
 	serviceFunc func(string, int, int) (interface{}, *serviceerror.ServiceError),
 ) {
@@ -512,13 +509,13 @@ func (ouh *OrganizationUnitHandler) handleResourceListByPathRequest(
 	if logger.IsDebugEnabled() {
 		var totalResults, count int
 		switch resp := response.(type) {
-		case *model.OrganizationUnitListResponse:
+		case *OrganizationUnitListResponse:
 			totalResults = resp.TotalResults
 			count = resp.Count
-		case *model.UserListResponse:
+		case *UserListResponse:
 			totalResults = resp.TotalResults
 			count = resp.Count
-		case *model.GroupListResponse:
+		case *GroupListResponse:
 			totalResults = resp.TotalResults
 			count = resp.Count
 		}
@@ -530,7 +527,7 @@ func (ouh *OrganizationUnitHandler) handleResourceListByPathRequest(
 }
 
 // HandleOUChildrenListByPathRequest handles the list child organization units by path request.
-func (ouh *OrganizationUnitHandler) HandleOUChildrenListByPathRequest(w http.ResponseWriter, r *http.Request) {
+func (ouh *organizationUnitHandler) HandleOUChildrenListByPathRequest(w http.ResponseWriter, r *http.Request) {
 	ouh.handleResourceListByPathRequest(w, r, "child organization units",
 		func(path string, limit, offset int) (interface{}, *serviceerror.ServiceError) {
 			return ouh.service.GetOrganizationUnitChildrenByPath(path, limit, offset)
@@ -538,7 +535,7 @@ func (ouh *OrganizationUnitHandler) HandleOUChildrenListByPathRequest(w http.Res
 }
 
 // HandleOUUsersListByPathRequest handles the list users in organization unit by path request.
-func (ouh *OrganizationUnitHandler) HandleOUUsersListByPathRequest(w http.ResponseWriter, r *http.Request) {
+func (ouh *organizationUnitHandler) HandleOUUsersListByPathRequest(w http.ResponseWriter, r *http.Request) {
 	ouh.handleResourceListByPathRequest(w, r, "users",
 		func(path string, limit, offset int) (interface{}, *serviceerror.ServiceError) {
 			return ouh.service.GetOrganizationUnitUsersByPath(path, limit, offset)
@@ -546,7 +543,7 @@ func (ouh *OrganizationUnitHandler) HandleOUUsersListByPathRequest(w http.Respon
 }
 
 // HandleOUGroupsListByPathRequest handles the list groups in organization unit by path request.
-func (ouh *OrganizationUnitHandler) HandleOUGroupsListByPathRequest(w http.ResponseWriter, r *http.Request) {
+func (ouh *organizationUnitHandler) HandleOUGroupsListByPathRequest(w http.ResponseWriter, r *http.Request) {
 	ouh.handleResourceListByPathRequest(w, r, "groups",
 		func(path string, limit, offset int) (interface{}, *serviceerror.ServiceError) {
 			return ouh.service.GetOrganizationUnitGroupsByPath(path, limit, offset)
@@ -559,9 +556,9 @@ func extractAndValidatePath(w http.ResponseWriter, r *http.Request, logger *log.
 		w.Header().Set(serverconst.ContentTypeHeaderName, serverconst.ContentTypeJSON)
 		w.WriteHeader(http.StatusBadRequest)
 		errResp := apierror.ErrorResponse{
-			Code:        constants.ErrorInvalidHandlePath.Code,
-			Message:     constants.ErrorInvalidHandlePath.Error,
-			Description: constants.ErrorInvalidHandlePath.ErrorDescription,
+			Code:        ErrorInvalidHandlePath.Code,
+			Message:     ErrorInvalidHandlePath.Error,
+			Description: ErrorInvalidHandlePath.ErrorDescription,
 		}
 		if err := json.NewEncoder(w).Encode(errResp); err != nil {
 			logger.Error("Error encoding error response", log.Error(err))

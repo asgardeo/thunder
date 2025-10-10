@@ -25,8 +25,7 @@ import (
 	"fmt"
 	"strings"
 
-	ouconstants "github.com/asgardeo/thunder/internal/ou/constants"
-	ouservice "github.com/asgardeo/thunder/internal/ou/service"
+	ouPkg "github.com/asgardeo/thunder/internal/ou"
 	serverconst "github.com/asgardeo/thunder/internal/system/constants"
 	"github.com/asgardeo/thunder/internal/system/crypto/hash"
 	"github.com/asgardeo/thunder/internal/system/error/serviceerror"
@@ -65,14 +64,14 @@ type UserServiceInterface interface {
 
 // UserService is the default implementation of the UserServiceInterface.
 type UserService struct {
-	ouService         ouservice.OrganizationUnitServiceInterface
+	ouService         ouPkg.OrganizationUnitServiceInterface
 	userSchemaService userschemaservice.UserSchemaServiceInterface
 }
 
 // GetUserService creates a new instance of UserService.
 func GetUserService() UserServiceInterface {
 	return &UserService{
-		ouService:         ouservice.GetOrganizationUnitService(),
+		ouService:         ouPkg.GetOrganizationUnitService(),
 		userSchemaService: userschemaservice.GetUserSchemaService(),
 	}
 }
@@ -129,7 +128,7 @@ func (as *UserService) GetUsersByPath(
 
 	ou, svcErr := as.ouService.GetOrganizationUnitByPath(handlePath)
 	if svcErr != nil {
-		if svcErr.Code == ouconstants.ErrorOrganizationUnitNotFound.Code {
+		if svcErr.Code == ouPkg.ErrorOrganizationUnitNotFound.Code {
 			return nil, &constants.ErrorOrganizationUnitNotFound
 		}
 		return nil, logErrorAndReturnServerError(logger,
@@ -206,7 +205,7 @@ func (as *UserService) CreateUserByPath(
 
 	ou, svcErr := as.ouService.GetOrganizationUnitByPath(handlePath)
 	if svcErr != nil {
-		if svcErr.Code == ouconstants.ErrorOrganizationUnitNotFound.Code {
+		if svcErr.Code == ouPkg.ErrorOrganizationUnitNotFound.Code {
 			return nil, &constants.ErrorOrganizationUnitNotFound
 		}
 		return nil, logErrorAndReturnServerError(logger,
