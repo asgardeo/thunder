@@ -1834,37 +1834,37 @@ This will build the server with coverage instrumentation, run tests, and generat
 <details>
 <summary><h3>Running with PostgreSQL Database</h3></summary>
 
-#### Step 1: Start PostgreSQL
+#### Start and Initialize PostgreSQL
 
-- Create a Docker container for PostgreSQL with `thunderdb` database.
+- Navigate to local-development directory
 
-  ```bash
-  docker run -d -p 5432:5432 --name postgres \
-    -e POSTGRES_USER=asgthunder \
-    -e POSTGRES_PASSWORD=asgthunder \
-    -e POSTGRES_DB=thunderdb \
-    postgres
-  ```
+```bash
+cd backend/local-development
+```
 
-- Create the `runtimedb` in the same PostgreSQL container.
+- Start PostgreSQL Database in background
 
-  ```bash
-  docker exec -it postgres psql -U asgthunder -d thunderdb -c "CREATE DATABASE runtimedb;"
-  ```
+```bash
+docker compose up -d 
+```
 
-#### Step 2: Initialize the Database
+- View PostgreSQL Database logs
 
-- Populate the `thunderdb` database with the required tables and data.
+```bash
+docker compose logs -f
+```
 
-  ```bash
-  docker exec -i postgres psql -U asgthunder -d thunderdb < backend/dbscripts/thunderdb/postgres.sql
-  ```
+- Stop PostgreSQL Database
 
-- Populate the `runtimedb` database with the required tables and data.
+```bash
+docker compose down
+```
 
-  ```bash
-  docker exec -i postgres psql -U asgthunder -d thunderdb < backend/dbscripts/runtimedb/postgres.sql
-  ```
+- Stop PostgreSQL Database and delete all data 
+
+```bash
+docker compose down -v
+```
 
 #### Step 3: Configure Thunder to Use PostgreSQL
 
