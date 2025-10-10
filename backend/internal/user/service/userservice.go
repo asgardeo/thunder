@@ -35,7 +35,7 @@ import (
 	"github.com/asgardeo/thunder/internal/user/constants"
 	"github.com/asgardeo/thunder/internal/user/model"
 	"github.com/asgardeo/thunder/internal/user/store"
-	userschemaservice "github.com/asgardeo/thunder/internal/userschema/service"
+	"github.com/asgardeo/thunder/internal/userschema"
 )
 
 const loggerComponentName = "UserService"
@@ -66,14 +66,14 @@ type UserServiceInterface interface {
 // UserService is the default implementation of the UserServiceInterface.
 type UserService struct {
 	ouService         ouservice.OrganizationUnitServiceInterface
-	userSchemaService userschemaservice.UserSchemaServiceInterface
+	userSchemaService userschema.UserSchemaServiceInterface
 }
 
 // GetUserService creates a new instance of UserService.
 func GetUserService() UserServiceInterface {
 	return &UserService{
 		ouService:         ouservice.GetOrganizationUnitService(),
-		userSchemaService: userschemaservice.GetUserSchemaService(),
+		userSchemaService: userschema.GetUserSchemaService(),
 	}
 }
 

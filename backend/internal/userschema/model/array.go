@@ -16,6 +16,7 @@
  * under the License.
  */
 
+// Package model provides data structures for user schema attribute types and validation.
 package model
 
 import (

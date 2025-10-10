@@ -16,8 +16,7 @@
  * under the License.
  */
 
-// Package constants defines error constants for user schema management operations.
-package constants
+package userschema
 
 import (
 	"errors"

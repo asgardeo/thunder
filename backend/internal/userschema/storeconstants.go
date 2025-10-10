@@ -16,50 +16,49 @@
  * under the License.
  */
 
-// Package store defines the database queries for user schema management operations.
-package store
+package userschema
 
-import "github.com/asgardeo/thunder/internal/system/database/model"
+import dbmodel "github.com/asgardeo/thunder/internal/system/database/model"
 
 var (
-	// QueryGetUserSchemaCount retrieves the total count of user schemas.
-	QueryGetUserSchemaCount = model.DBQuery{
+	// queryGetUserSchemaCount retrieves the total count of user schemas.
+	queryGetUserSchemaCount = dbmodel.DBQuery{
 		ID:    "ASQ-USER_SCHEMA-001",
 		Query: `SELECT COUNT(*) AS total FROM USER_SCHEMAS`,
 	}
 
-	// QueryGetUserSchemaList retrieves a paginated list of user schemas.
-	QueryGetUserSchemaList = model.DBQuery{
+	// queryGetUserSchemaList retrieves a paginated list of user schemas.
+	queryGetUserSchemaList = dbmodel.DBQuery{
 		ID:    "ASQ-USER_SCHEMA-002",
 		Query: `SELECT SCHEMA_ID, NAME FROM USER_SCHEMAS ORDER BY NAME LIMIT $1 OFFSET $2`,
 	}
 
-	// QueryCreateUserSchema creates a new user schema.
-	QueryCreateUserSchema = model.DBQuery{
+	// queryCreateUserSchema creates a new user schema.
+	queryCreateUserSchema = dbmodel.DBQuery{
 		ID:    "ASQ-USER_SCHEMA-003",
 		Query: `INSERT INTO USER_SCHEMAS (SCHEMA_ID, NAME, SCHEMA_DEF) VALUES ($1, $2, $3)`,
 	}
 
-	// QueryGetUserSchemaByID retrieves a user schema by its ID.
-	QueryGetUserSchemaByID = model.DBQuery{
+	// queryGetUserSchemaByID retrieves a user schema by its ID.
+	queryGetUserSchemaByID = dbmodel.DBQuery{
 		ID:    "ASQ-USER_SCHEMA-004",
 		Query: `SELECT SCHEMA_ID, NAME, SCHEMA_DEF FROM USER_SCHEMAS WHERE SCHEMA_ID = $1`,
 	}
 
-	// QueryGetUserSchemaByName retrieves a user schema by its name.
-	QueryGetUserSchemaByName = model.DBQuery{
+	// queryGetUserSchemaByName retrieves a user schema by its name.
+	queryGetUserSchemaByName = dbmodel.DBQuery{
 		ID:    "ASQ-USER_SCHEMA-005",
 		Query: `SELECT SCHEMA_ID, NAME, SCHEMA_DEF FROM USER_SCHEMAS WHERE NAME = $1`,
 	}
 
-	// QueryUpdateUserSchemaByID updates a user schema by its ID.
-	QueryUpdateUserSchemaByID = model.DBQuery{
+	// queryUpdateUserSchemaByID updates a user schema by its ID.
+	queryUpdateUserSchemaByID = dbmodel.DBQuery{
 		ID:    "ASQ-USER_SCHEMA-006",
 		Query: `UPDATE USER_SCHEMAS SET NAME = $1, SCHEMA_DEF = $2 WHERE SCHEMA_ID = $3`,
 	}
 
-	// QueryDeleteUserSchemaByID deletes a user schema by its ID.
-	QueryDeleteUserSchemaByID = model.DBQuery{
+	// queryDeleteUserSchemaByID deletes a user schema by its ID.
+	queryDeleteUserSchemaByID = dbmodel.DBQuery{
 		ID:    "ASQ-USER_SCHEMA-007",
 		Query: `DELETE FROM USER_SCHEMAS WHERE SCHEMA_ID = $1`,
 	}

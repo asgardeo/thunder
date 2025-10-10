@@ -25,6 +25,20 @@ import (
 	"github.com/asgardeo/thunder/internal/system/log"
 )
 
+// JSON Schema type constants.
+const (
+	// TypeString represents the string type in JSON Schema.
+	TypeString = "string"
+	// TypeNumber represents the number type in JSON Schema.
+	TypeNumber = "number"
+	// TypeBoolean represents the boolean type in JSON Schema.
+	TypeBoolean = "boolean"
+	// TypeObject represents the object type in JSON Schema.
+	TypeObject = "object"
+	// TypeArray represents the array type in JSON Schema.
+	TypeArray = "array"
+)
+
 type property interface {
 	isRequired() bool
 	validateValue(value interface{}, path string, logger *log.Logger) (bool, error)
