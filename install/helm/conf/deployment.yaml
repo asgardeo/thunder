@@ -65,10 +65,12 @@ cache:
   eviction_policy: {{ .Values.configuration.cache.evictionPolicy | quote }}
   cleanup_interval: {{ .Values.configuration.cache.cleanupInterval }}
 
-oauth:
+token:
   jwt:
-    issuer: {{ .Values.configuration.oauth.jwt.issuer | quote }}
-    validity_period: {{ .Values.configuration.oauth.jwt.validityPeriod }}
+    issuer: {{ .Values.configuration.token.jwt.issuer | quote }}
+    validity_period: {{ .Values.configuration.token.jwt.validityPeriod }}
+
+oauth:
   refresh_token:
     renew_on_grant: {{ .Values.configuration.oauth.refreshToken.renewOnGrant }}
     validity_period: {{ .Values.configuration.oauth.refreshToken.validityPeriod }}
