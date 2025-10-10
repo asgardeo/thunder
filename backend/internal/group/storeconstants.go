@@ -16,8 +16,8 @@
  * under the License.
  */
 
-// Package store provides the implementation for group persistence operations.
-package store
+// Package group provides group management functionality.
+package group
 
 import (
 	"fmt"

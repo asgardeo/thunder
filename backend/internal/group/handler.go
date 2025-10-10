@@ -16,8 +16,8 @@
  * under the License.
  */
 
-// Package handler provides the implementation for group management operations.
-package handler
+// Package group provides group management functionality.
+package group
 
 import (
 	"encoding/json"
@@ -25,9 +25,6 @@ import (
 	"net/url"
 	"strconv"
 
-	"github.com/asgardeo/thunder/internal/group/constants"
-	"github.com/asgardeo/thunder/internal/group/model"
-	"github.com/asgardeo/thunder/internal/group/service"
 	serverconst "github.com/asgardeo/thunder/internal/system/constants"
 	"github.com/asgardeo/thunder/internal/system/error/apierror"
 	"github.com/asgardeo/thunder/internal/system/error/serviceerror"
@@ -35,23 +32,23 @@ import (
 	sysutils "github.com/asgardeo/thunder/internal/system/utils"
 )
 
-const loggerComponentName = "GroupHandler"
+const handlerLoggerComponentName = "GroupHandler"
 
-// GroupHandler is the handler for group management operations.
-type GroupHandler struct {
-	groupService service.GroupServiceInterface
+// groupHandler is the handler for group management operations.
+type groupHandler struct {
+	groupService GroupServiceInterface
 }
 
-// NewGroupHandler creates a new instance of GroupHandler
-func NewGroupHandler() *GroupHandler {
-	return &GroupHandler{
-		groupService: service.GetGroupService(),
+// newGroupHandler creates a new instance of groupHandler
+func newGroupHandler(groupService GroupServiceInterface) *groupHandler {
+	return &groupHandler{
+		groupService: groupService,
 	}
 }
 
 // HandleGroupListRequest handles the list groups request.
-func (gh *GroupHandler) HandleGroupListRequest(w http.ResponseWriter, r *http.Request) {
-	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, loggerComponentName))
+func (gh *groupHandler) HandleGroupListRequest(w http.ResponseWriter, r *http.Request) {
+	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, handlerLoggerComponentName))
 
 	limit, offset, svcErr := parsePaginationParams(r.URL.Query())
 	if svcErr != nil {
@@ -81,8 +78,8 @@ func (gh *GroupHandler) HandleGroupListRequest(w http.ResponseWriter, r *http.Re
 }
 
 // HandleGroupListByPathRequest handles the list groups by OU path request.
-func (gh *GroupHandler) HandleGroupListByPathRequest(w http.ResponseWriter, r *http.Request) {
-	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, loggerComponentName))
+func (gh *groupHandler) HandleGroupListByPathRequest(w http.ResponseWriter, r *http.Request) {
+	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, handlerLoggerComponentName))
 
 	path, pathValidationFailed := extractAndValidatePath(w, r, logger)
 	if pathValidationFailed {
@@ -117,17 +114,17 @@ func (gh *GroupHandler) HandleGroupListByPathRequest(w http.ResponseWriter, r *h
 }
 
 // HandleGroupPostRequest handles the create group request.
-func (gh *GroupHandler) HandleGroupPostRequest(w http.ResponseWriter, r *http.Request) {
-	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, loggerComponentName))
+func (gh *groupHandler) HandleGroupPostRequest(w http.ResponseWriter, r *http.Request) {
+	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, handlerLoggerComponentName))
 
-	createRequest, err := sysutils.DecodeJSONBody[model.CreateGroupRequest](r)
+	createRequest, err := sysutils.DecodeJSONBody[CreateGroupRequest](r)
 	if err != nil {
 		w.Header().Set(serverconst.ContentTypeHeaderName, serverconst.ContentTypeJSON)
 		w.WriteHeader(http.StatusBadRequest)
 
 		errResp := apierror.ErrorResponse{
-			Code:        constants.ErrorInvalidRequestFormat.Code,
-			Message:     constants.ErrorInvalidRequestFormat.Error,
+			Code:        ErrorInvalidRequestFormat.Code,
+			Message:     ErrorInvalidRequestFormat.Error,
 			Description: "Failed to parse request body: " + err.Error(),
 		}
 
@@ -158,22 +155,22 @@ func (gh *GroupHandler) HandleGroupPostRequest(w http.ResponseWriter, r *http.Re
 }
 
 // HandleGroupPostByPathRequest handles the create group by OU path request.
-func (gh *GroupHandler) HandleGroupPostByPathRequest(w http.ResponseWriter, r *http.Request) {
-	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, loggerComponentName))
+func (gh *groupHandler) HandleGroupPostByPathRequest(w http.ResponseWriter, r *http.Request) {
+	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, handlerLoggerComponentName))
 
 	path, pathValidationFailed := extractAndValidatePath(w, r, logger)
 	if pathValidationFailed {
 		return
 	}
 
-	createRequest, err := sysutils.DecodeJSONBody[model.CreateGroupByPathRequest](r)
+	createRequest, err := sysutils.DecodeJSONBody[CreateGroupByPathRequest](r)
 	if err != nil {
 		w.Header().Set(serverconst.ContentTypeHeaderName, serverconst.ContentTypeJSON)
 		w.WriteHeader(http.StatusBadRequest)
 
 		errResp := apierror.ErrorResponse{
-			Code:        constants.ErrorInvalidRequestFormat.Code,
-			Message:     constants.ErrorInvalidRequestFormat.Error,
+			Code:        ErrorInvalidRequestFormat.Code,
+			Message:     ErrorInvalidRequestFormat.Error,
 			Description: "Failed to parse request body: " + err.Error(),
 		}
 
@@ -203,17 +200,17 @@ func (gh *GroupHandler) HandleGroupPostByPathRequest(w http.ResponseWriter, r *h
 }
 
 // HandleGroupGetRequest handles the get group by id request.
-func (gh *GroupHandler) HandleGroupGetRequest(w http.ResponseWriter, r *http.Request) {
-	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, loggerComponentName))
+func (gh *groupHandler) HandleGroupGetRequest(w http.ResponseWriter, r *http.Request) {
+	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, handlerLoggerComponentName))
 
 	id := r.PathValue("id")
 	if id == "" {
 		w.Header().Set(serverconst.ContentTypeHeaderName, serverconst.ContentTypeJSON)
 		w.WriteHeader(http.StatusBadRequest)
 		errResp := apierror.ErrorResponse{
-			Code:        constants.ErrorMissingGroupID.Code,
-			Message:     constants.ErrorMissingGroupID.Error,
-			Description: constants.ErrorMissingGroupID.ErrorDescription,
+			Code:        ErrorMissingGroupID.Code,
+			Message:     ErrorMissingGroupID.Error,
+			Description: ErrorMissingGroupID.ErrorDescription,
 		}
 		if err := json.NewEncoder(w).Encode(errResp); err != nil {
 			logger.Error("Error encoding error response", log.Error(err))
@@ -241,17 +238,17 @@ func (gh *GroupHandler) HandleGroupGetRequest(w http.ResponseWriter, r *http.Req
 }
 
 // HandleGroupPutRequest handles the update group request.
-func (gh *GroupHandler) HandleGroupPutRequest(w http.ResponseWriter, r *http.Request) {
-	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, loggerComponentName))
+func (gh *groupHandler) HandleGroupPutRequest(w http.ResponseWriter, r *http.Request) {
+	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, handlerLoggerComponentName))
 
 	id := r.PathValue("id")
 	if id == "" {
 		w.Header().Set(serverconst.ContentTypeHeaderName, serverconst.ContentTypeJSON)
 		w.WriteHeader(http.StatusBadRequest)
 		errResp := apierror.ErrorResponse{
-			Code:        constants.ErrorMissingGroupID.Code,
-			Message:     constants.ErrorMissingGroupID.Error,
-			Description: constants.ErrorMissingGroupID.ErrorDescription,
+			Code:        ErrorMissingGroupID.Code,
+			Message:     ErrorMissingGroupID.Error,
+			Description: ErrorMissingGroupID.ErrorDescription,
 		}
 		if err := json.NewEncoder(w).Encode(errResp); err != nil {
 			logger.Error("Error encoding error response", log.Error(err))
@@ -260,14 +257,14 @@ func (gh *GroupHandler) HandleGroupPutRequest(w http.ResponseWriter, r *http.Req
 		return
 	}
 
-	updateRequest, err := sysutils.DecodeJSONBody[model.UpdateGroupRequest](r)
+	updateRequest, err := sysutils.DecodeJSONBody[UpdateGroupRequest](r)
 	if err != nil {
 		w.Header().Set(serverconst.ContentTypeHeaderName, serverconst.ContentTypeJSON)
 		w.WriteHeader(http.StatusBadRequest)
 
 		errResp := apierror.ErrorResponse{
-			Code:        constants.ErrorInvalidRequestFormat.Code,
-			Message:     constants.ErrorInvalidRequestFormat.Error,
+			Code:        ErrorInvalidRequestFormat.Code,
+			Message:     ErrorInvalidRequestFormat.Error,
 			Description: "Failed to parse request body: " + err.Error(),
 		}
 
@@ -298,17 +295,17 @@ func (gh *GroupHandler) HandleGroupPutRequest(w http.ResponseWriter, r *http.Req
 }
 
 // HandleGroupDeleteRequest handles the delete group request.
-func (gh *GroupHandler) HandleGroupDeleteRequest(w http.ResponseWriter, r *http.Request) {
-	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, loggerComponentName))
+func (gh *groupHandler) HandleGroupDeleteRequest(w http.ResponseWriter, r *http.Request) {
+	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, handlerLoggerComponentName))
 
 	id := r.PathValue("id")
 	if id == "" {
 		w.Header().Set(serverconst.ContentTypeHeaderName, serverconst.ContentTypeJSON)
 		w.WriteHeader(http.StatusBadRequest)
 		errResp := apierror.ErrorResponse{
-			Code:        constants.ErrorMissingGroupID.Code,
-			Message:     constants.ErrorMissingGroupID.Error,
-			Description: constants.ErrorMissingGroupID.ErrorDescription,
+			Code:        ErrorMissingGroupID.Code,
+			Message:     ErrorMissingGroupID.Error,
+			Description: ErrorMissingGroupID.ErrorDescription,
 		}
 		if err := json.NewEncoder(w).Encode(errResp); err != nil {
 			logger.Error("Error encoding error response", log.Error(err))
@@ -328,17 +325,17 @@ func (gh *GroupHandler) HandleGroupDeleteRequest(w http.ResponseWriter, r *http.
 }
 
 // HandleGroupMembersGetRequest handles the get group members request.
-func (gh *GroupHandler) HandleGroupMembersGetRequest(w http.ResponseWriter, r *http.Request) {
-	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, loggerComponentName))
+func (gh *groupHandler) HandleGroupMembersGetRequest(w http.ResponseWriter, r *http.Request) {
+	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, handlerLoggerComponentName))
 
 	id := r.PathValue("id")
 	if id == "" {
 		w.Header().Set(serverconst.ContentTypeHeaderName, serverconst.ContentTypeJSON)
 		w.WriteHeader(http.StatusBadRequest)
 		errResp := apierror.ErrorResponse{
-			Code:        constants.ErrorMissingGroupID.Code,
-			Message:     constants.ErrorMissingGroupID.Error,
-			Description: constants.ErrorMissingGroupID.ErrorDescription,
+			Code:        ErrorMissingGroupID.Code,
+			Message:     ErrorMissingGroupID.Error,
+			Description: ErrorMissingGroupID.ErrorDescription,
 		}
 		if err := json.NewEncoder(w).Encode(errResp); err != nil {
 			logger.Error("Error encoding error response", log.Error(err))
@@ -375,18 +372,18 @@ func (gh *GroupHandler) HandleGroupMembersGetRequest(w http.ResponseWriter, r *h
 }
 
 // handleError handles service errors and returns appropriate HTTP responses.
-func (gh *GroupHandler) handleError(w http.ResponseWriter, logger *log.Logger,
+func (gh *groupHandler) handleError(w http.ResponseWriter, logger *log.Logger,
 	svcErr *serviceerror.ServiceError) {
 	statusCode := http.StatusInternalServerError
 	if svcErr.Type == serviceerror.ClientErrorType {
 		switch svcErr.Code {
-		case constants.ErrorGroupNotFound.Code:
+		case ErrorGroupNotFound.Code:
 			statusCode = http.StatusNotFound
-		case constants.ErrorGroupNameConflict.Code:
+		case ErrorGroupNameConflict.Code:
 			statusCode = http.StatusConflict
-		case constants.ErrorInvalidOUID.Code, constants.ErrorCannotDeleteGroup.Code,
-			constants.ErrorInvalidRequestFormat.Code, constants.ErrorMissingGroupID.Code,
-			constants.ErrorInvalidLimit.Code, constants.ErrorInvalidOffset.Code:
+		case ErrorInvalidOUID.Code, ErrorCannotDeleteGroup.Code,
+			ErrorInvalidRequestFormat.Code, ErrorMissingGroupID.Code,
+			ErrorInvalidLimit.Code, ErrorInvalidOffset.Code:
 			statusCode = http.StatusBadRequest
 		default:
 			statusCode = http.StatusBadRequest
@@ -415,17 +412,17 @@ func (gh *GroupHandler) handleError(w http.ResponseWriter, logger *log.Logger,
 }
 
 // sanitizeCreateGroupRequest sanitizes the create group request input.
-func (gh *GroupHandler) sanitizeCreateGroupRequest(request *model.CreateGroupRequest) model.CreateGroupRequest {
-	sanitized := model.CreateGroupRequest{
+func (gh *groupHandler) sanitizeCreateGroupRequest(request *CreateGroupRequest) CreateGroupRequest {
+	sanitized := CreateGroupRequest{
 		Name:               sysutils.SanitizeString(request.Name),
 		Description:        sysutils.SanitizeString(request.Description),
 		OrganizationUnitID: sysutils.SanitizeString(request.OrganizationUnitID),
 	}
 
 	if request.Members != nil {
-		sanitized.Members = make([]model.Member, len(request.Members))
+		sanitized.Members = make([]Member, len(request.Members))
 		for i, member := range request.Members {
-			sanitized.Members[i] = model.Member{
+			sanitized.Members[i] = Member{
 				ID:   sysutils.SanitizeString(member.ID),
 				Type: member.Type,
 			}
@@ -436,17 +433,17 @@ func (gh *GroupHandler) sanitizeCreateGroupRequest(request *model.CreateGroupReq
 }
 
 // sanitizeUpdateGroupRequest sanitizes the update group request input.
-func (gh *GroupHandler) sanitizeUpdateGroupRequest(request *model.UpdateGroupRequest) model.UpdateGroupRequest {
-	sanitized := model.UpdateGroupRequest{
+func (gh *groupHandler) sanitizeUpdateGroupRequest(request *UpdateGroupRequest) UpdateGroupRequest {
+	sanitized := UpdateGroupRequest{
 		Name:               sysutils.SanitizeString(request.Name),
 		Description:        sysutils.SanitizeString(request.Description),
 		OrganizationUnitID: sysutils.SanitizeString(request.OrganizationUnitID),
 	}
 
 	if request.Members != nil {
-		sanitized.Members = make([]model.Member, len(request.Members))
+		sanitized.Members = make([]Member, len(request.Members))
 		for i, member := range request.Members {
-			sanitized.Members[i] = model.Member{
+			sanitized.Members[i] = Member{
 				ID:   sysutils.SanitizeString(member.ID),
 				Type: member.Type,
 			}
@@ -463,7 +460,7 @@ func parsePaginationParams(query url.Values) (int, int, *serviceerror.ServiceErr
 
 	if limitStr := query.Get("limit"); limitStr != "" {
 		if parsedLimit, err := strconv.Atoi(limitStr); err != nil {
-			return 0, 0, &constants.ErrorInvalidLimit
+			return 0, 0, &ErrorInvalidLimit
 		} else {
 			limit = parsedLimit
 		}
@@ -471,7 +468,7 @@ func parsePaginationParams(query url.Values) (int, int, *serviceerror.ServiceErr
 
 	if offsetStr := query.Get("offset"); offsetStr != "" {
 		if parsedOffset, err := strconv.Atoi(offsetStr); err != nil {
-			return 0, 0, &constants.ErrorInvalidOffset
+			return 0, 0, &ErrorInvalidOffset
 		} else {
 			offset = parsedOffset
 		}
@@ -491,8 +488,8 @@ func extractAndValidatePath(w http.ResponseWriter, r *http.Request, logger *log.
 		w.Header().Set(serverconst.ContentTypeHeaderName, serverconst.ContentTypeJSON)
 		w.WriteHeader(http.StatusBadRequest)
 		errResp := apierror.ErrorResponse{
-			Code:        constants.ErrorInvalidRequestFormat.Code,
-			Message:     constants.ErrorInvalidRequestFormat.Error,
+			Code:        ErrorInvalidRequestFormat.Code,
+			Message:     ErrorInvalidRequestFormat.Error,
 			Description: "Handle path is required",
 		}
 		if err := json.NewEncoder(w).Encode(errResp); err != nil {

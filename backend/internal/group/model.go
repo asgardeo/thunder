@@ -16,8 +16,8 @@
  * under the License.
  */
 
-// Package model defines the data structures and interfaces for group management.
-package model
+// Package group provides group management functionality.
+package group
 
 // MemberType represents the type of member entity.
 type MemberType string
