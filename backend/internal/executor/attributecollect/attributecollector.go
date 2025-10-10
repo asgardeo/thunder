@@ -27,8 +27,7 @@ import (
 	flowconst "github.com/asgardeo/thunder/internal/flow/constants"
 	flowmodel "github.com/asgardeo/thunder/internal/flow/model"
 	"github.com/asgardeo/thunder/internal/system/log"
-	usermodel "github.com/asgardeo/thunder/internal/user/model"
-	"github.com/asgardeo/thunder/internal/user/service"
+	"github.com/asgardeo/thunder/internal/user"
 )
 
 const (
@@ -43,7 +42,7 @@ const (
 // AttributeCollector is an executor that collects user attributes and updates the user profile.
 type AttributeCollector struct {
 	internal    flowmodel.Executor
-	userService service.UserServiceInterface
+	userService user.UserServiceInterface
 }
 
 var _ flowmodel.ExecutorInterface = (*AttributeCollector)(nil)
@@ -60,7 +59,7 @@ func NewAttributeCollector(id, name string, properties map[string]string) *Attri
 
 	return &AttributeCollector{
 		internal:    *flowmodel.NewExecutor(id, name, []flowmodel.InputData{}, prerequisites, properties),
-		userService: service.GetUserService(),
+		userService: user.GetUserService(),
 	}
 }
 
@@ -338,7 +337,7 @@ func (a *AttributeCollector) updateUserInStore(ctx *flowmodel.NodeContext) error
 }
 
 // getUserFromStore retrieves the user profile from the user store.
-func (a *AttributeCollector) getUserFromStore(ctx *flowmodel.NodeContext) (*usermodel.User, error) {
+func (a *AttributeCollector) getUserFromStore(ctx *flowmodel.NodeContext) (*user.User, error) {
 	userID, err := a.GetUserIDFromContext(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("failed to retrieve user ID: %w", err)
@@ -357,21 +356,21 @@ func (a *AttributeCollector) getUserFromStore(ctx *flowmodel.NodeContext) (*user
 
 // getUpdatedUserObject creates a new user object with the updated attributes.
 func (a *AttributeCollector) getUpdatedUserObject(ctx *flowmodel.NodeContext,
-	user *usermodel.User) (bool, *usermodel.User, error) {
+	userData *user.User) (bool, *user.User, error) {
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, loggerComponentName),
 		log.String(log.LoggerKeyExecutorID, a.GetID()),
 		log.String(log.LoggerKeyFlowID, ctx.FlowID))
 
-	updatedUser := &usermodel.User{
-		ID:               user.ID,
-		OrganizationUnit: user.OrganizationUnit,
-		Type:             user.Type,
+	updatedUser := &user.User{
+		ID:               userData.ID,
+		OrganizationUnit: userData.OrganizationUnit,
+		Type:             userData.Type,
 	}
 
 	// Get the existing attributes
 	var existingAttrs map[string]interface{}
-	if user.Attributes != nil {
-		if err := json.Unmarshal(user.Attributes, &existingAttrs); err != nil {
+	if userData.Attributes != nil {
+		if err := json.Unmarshal(userData.Attributes, &existingAttrs); err != nil {
 			return false, nil, fmt.Errorf("failed to unmarshal existing user attributes: %w", err)
 		}
 	} else {
@@ -382,7 +381,7 @@ func (a *AttributeCollector) getUpdatedUserObject(ctx *flowmodel.NodeContext,
 	newAttrs := a.getInputAttributes(ctx)
 	if len(newAttrs) == 0 {
 		logger.Debug("No new attributes provided, returning existing user")
-		return false, user, nil
+		return false, userData, nil
 	}
 
 	// Merge attributes

@@ -28,6 +28,7 @@ import (
 	"github.com/asgardeo/thunder/internal/system/jwt"
 	"github.com/asgardeo/thunder/internal/system/log"
 	"github.com/asgardeo/thunder/internal/system/services"
+	"github.com/asgardeo/thunder/internal/user"
 )
 
 // registerServices registers all the services with the provided HTTP multiplexer.
@@ -42,6 +43,7 @@ func registerServices(mux *http.ServeMux) {
 
 	_ = idp.Initialize(mux)
 	_ = notification.Initialize(mux, jwtService)
+	_ = user.Initialize(mux)
 
 	// TODO: Legacy way of initializing services. These need to be refactored in the future aligning to the
 	// dependency injection pattern used above.
@@ -63,9 +65,6 @@ func registerServices(mux *http.ServeMux) {
 
 	// Register the Organization Unit service.
 	services.NewOrganizationUnitService(mux)
-
-	// Register the User service.
-	services.NewUserService(mux)
 
 	// Register the User Schema service.
 	services.NewUserSchemaService(mux)

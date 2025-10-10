@@ -39,7 +39,7 @@ import (
 	"github.com/asgardeo/thunder/internal/system/jwt"
 	"github.com/asgardeo/thunder/internal/system/log"
 	sysutils "github.com/asgardeo/thunder/internal/system/utils"
-	usermodel "github.com/asgardeo/thunder/internal/user/model"
+	"github.com/asgardeo/thunder/internal/user"
 )
 
 const svcLoggerComponentName = "AuthenticationService"
@@ -198,7 +198,7 @@ func (as *authenticationService) FinishIDPAuthentication(requestedType idp.IDPTy
 	}
 
 	// Route to appropriate service based on IDP type from session
-	var user *usermodel.User
+	var user *user.User
 	switch sessionData.IDPType {
 	case idp.IDPTypeOAuth:
 		_, user, svcErr = as.finishOAuthAuthentication(sessionData.IDPID, code, logger)
@@ -227,7 +227,7 @@ func (as *authenticationService) FinishIDPAuthentication(requestedType idp.IDPTy
 
 // finishOAuthAuthentication handles OAuth authentication completion.
 func (as *authenticationService) finishOAuthAuthentication(idpID, code string, logger *log.Logger) (
-	string, *usermodel.User, *serviceerror.ServiceError) {
+	string, *user.User, *serviceerror.ServiceError) {
 	tokenResp, svcErr := as.oauthService.ExchangeCodeForToken(idpID, code, true)
 	if svcErr != nil {
 		return "", nil, svcErr
@@ -253,7 +253,7 @@ func (as *authenticationService) finishOAuthAuthentication(idpID, code string, l
 
 // finishOIDCAuthentication handles OIDC authentication completion.
 func (as *authenticationService) finishOIDCAuthentication(idpID, code string, logger *log.Logger) (
-	string, *usermodel.User, *serviceerror.ServiceError) {
+	string, *user.User, *serviceerror.ServiceError) {
 	tokenResp, svcErr := as.oidcService.ExchangeCodeForToken(idpID, code, true)
 	if svcErr != nil {
 		return "", nil, svcErr
@@ -282,7 +282,7 @@ func (as *authenticationService) finishOIDCAuthentication(idpID, code string, lo
 
 // finishGoogleAuthentication handles Google authentication completion.
 func (as *authenticationService) finishGoogleAuthentication(idpID, code string, logger *log.Logger) (
-	string, *usermodel.User, *serviceerror.ServiceError) {
+	string, *user.User, *serviceerror.ServiceError) {
 	tokenResp, svcErr := as.googleService.ExchangeCodeForToken(idpID, code, true)
 	if svcErr != nil {
 		return "", nil, svcErr
@@ -311,7 +311,7 @@ func (as *authenticationService) finishGoogleAuthentication(idpID, code string, 
 
 // finishGithubAuthentication handles GitHub authentication completion.
 func (as *authenticationService) finishGithubAuthentication(idpID, code string, logger *log.Logger) (
-	string, *usermodel.User, *serviceerror.ServiceError) {
+	string, *user.User, *serviceerror.ServiceError) {
 	tokenResp, svcErr := as.githubService.ExchangeCodeForToken(idpID, code, true)
 	if svcErr != nil {
 		return "", nil, svcErr
