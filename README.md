@@ -1834,27 +1834,27 @@ This will build the server with coverage instrumentation, run tests, and generat
 <details>
 <summary><h3>Running with PostgreSQL Database</h3></summary>
 
-#### Start and Initialize PostgreSQL
+#### Step 1: Start and Initialize PostgreSQL
 
-- Navigate to local-development directory
+1. Navigate to local-development directory
 
 ```bash
 cd backend/local-development
 ```
 
-- Start PostgreSQL Database in background
+2. Start PostgreSQL Database in background
 
 ```bash
 docker compose up -d 
 ```
 
-- View PostgreSQL Database logs
+3. View PostgreSQL Database logs
 
 ```bash
 docker compose logs -f
 ```
 
-- Stop PostgreSQL Database
+4. Stop PostgreSQL Database
 
 ```bash
 docker compose down
@@ -1866,7 +1866,7 @@ docker compose down
 docker compose down -v
 ```
 
-#### Step 3: Configure Thunder to Use PostgreSQL
+#### Step 2: Configure Thunder to Use PostgreSQL
 
 1. Open the `backend/cmd/server/repository/conf/deployment.yaml` file.
 2. Update the `database` section to point to the PostgreSQL database:
@@ -1891,7 +1891,7 @@ docker compose down -v
             sslmode: "disable"
     ```
 
-#### Step 4: Run the Product
+#### Step 3: Run the Product
 
    ```bash
    make run
