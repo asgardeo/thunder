@@ -23,6 +23,9 @@ import (
 	"sync"
 	"testing"
 
+	_ "github.com/lib/pq"
+	_ "modernc.org/sqlite"
+
 	"github.com/asgardeo/thunder/internal/system/config"
 	"github.com/asgardeo/thunder/internal/system/healthcheck/model"
 	"github.com/asgardeo/thunder/tests/mocks/database/clientmock"

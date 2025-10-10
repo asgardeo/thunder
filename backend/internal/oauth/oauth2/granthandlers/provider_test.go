@@ -19,17 +19,23 @@
 package granthandlers
 
 import (
+	"os"
+	"path/filepath"
 	"testing"
 
+	_ "github.com/lib/pq"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
+	_ "modernc.org/sqlite"
 
 	"github.com/asgardeo/thunder/internal/oauth/oauth2/constants"
+	"github.com/asgardeo/thunder/internal/system/config"
 )
 
 type GrantHandlerProviderTestSuite struct {
 	suite.Suite
 	provider GrantHandlerProviderInterface
+	tempDir  string
 }
 
 func TestGrantHandlerProviderSuite(t *testing.T) {
@@ -37,7 +43,35 @@ func TestGrantHandlerProviderSuite(t *testing.T) {
 }
 
 func (suite *GrantHandlerProviderTestSuite) SetupTest() {
+	// Create a temporary directory for the test database.
+	tempDir, err := os.MkdirTemp("", "provider-test-")
+	if err != nil {
+		suite.T().Fatalf("Failed to create temp dir: %v", err)
+	}
+	suite.tempDir = tempDir
+
+	testConfig := &config.Config{
+		Database: config.DatabaseConfig{
+			Identity: config.DataSource{
+				Type: "sqlite",
+				Path: filepath.Join(suite.tempDir, "identity.db"),
+			},
+			Runtime: config.DataSource{
+				Type: "sqlite",
+				Path: filepath.Join(suite.tempDir, "runtime.db"),
+			},
+		},
+	}
+	_ = config.InitializeThunderRuntime("test", testConfig)
 	suite.provider = NewGrantHandlerProvider()
+}
+
+func (suite *GrantHandlerProviderTestSuite) TearDownTest() {
+	config.ResetThunderRuntime()
+	// Clean up the temporary directory.
+	if err := os.RemoveAll(suite.tempDir); err != nil {
+		suite.T().Logf("Failed to clean up temp dir: %v", err)
+	}
 }
 
 func (suite *GrantHandlerProviderTestSuite) TestNewGrantHandlerProvider() {

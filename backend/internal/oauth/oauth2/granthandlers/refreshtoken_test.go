@@ -20,6 +20,8 @@ package granthandlers
 
 import (
 	"errors"
+	"os"
+	"path/filepath"
 	"testing"
 	"time"
 
@@ -45,6 +47,7 @@ type RefreshTokenGrantHandlerTestSuite struct {
 	validRefreshToken string
 	validClaims       map[string]interface{}
 	testTokenReq      *model.TokenRequest
+	tempDir           string
 }
 
 func TestRefreshTokenGrantHandlerSuite(t *testing.T) {
@@ -52,11 +55,28 @@ func TestRefreshTokenGrantHandlerSuite(t *testing.T) {
 }
 
 func (suite *RefreshTokenGrantHandlerTestSuite) SetupTest() {
+	// Create a temporary directory for the test database.
+	tempDir, err := os.MkdirTemp("", "refreshtoken-test-")
+	if err != nil {
+		suite.T().Fatalf("Failed to create temp dir: %v", err)
+	}
+	suite.tempDir = tempDir
+
 	// Reset ThunderRuntime before initializing with test config
 	config.ResetThunderRuntime()
 
-	// Initialize Thunder Runtime config with basic test config
+	// Initialize Thunder Runtime config with a file-based database.
 	testConfig := &config.Config{
+		Database: config.DatabaseConfig{
+			Identity: config.DataSource{
+				Type: "sqlite",
+				Path: filepath.Join(suite.tempDir, "identity.db"),
+			},
+			Runtime: config.DataSource{
+				Type: "sqlite",
+				Path: filepath.Join(suite.tempDir, "runtime.db"),
+			},
+		},
 		OAuth: config.OAuthConfig{
 			JWT: config.JWTConfig{
 				ValidityPeriod: 3600,
@@ -112,6 +132,10 @@ func (suite *RefreshTokenGrantHandlerTestSuite) SetupTest() {
 
 func (suite *RefreshTokenGrantHandlerTestSuite) TearDownTest() {
 	config.ResetThunderRuntime()
+	// Clean up the temporary directory.
+	if err := os.RemoveAll(suite.tempDir); err != nil {
+		suite.T().Logf("Failed to clean up temp dir: %v", err)
+	}
 }
 
 func (suite *RefreshTokenGrantHandlerTestSuite) TestNewRefreshTokenGrantHandler() {

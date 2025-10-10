@@ -23,11 +23,15 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"net/url"
+	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 
+	_ "github.com/lib/pq"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
+	_ "modernc.org/sqlite"
 
 	"github.com/asgardeo/thunder/internal/system/config"
 )
@@ -41,8 +45,24 @@ func TestTokenHandlerSuite(t *testing.T) {
 }
 
 func (suite *TokenHandlerTestSuite) SetupTest() {
-	// Initialize Thunder Runtime config with basic test config
+	// Create a temporary directory for the test database
+	tempDir, err := os.MkdirTemp("", "tokenhandler-test-")
+	if err != nil {
+		suite.T().Fatalf("Failed to create temp dir: %v", err)
+	}
+
+	// Initialize Thunder Runtime config with a file-based database
 	testConfig := &config.Config{
+		Database: config.DatabaseConfig{
+			Identity: config.DataSource{
+				Type: "sqlite",
+				Path: filepath.Join(tempDir, "identity.db"),
+			},
+			Runtime: config.DataSource{
+				Type: "sqlite",
+				Path: filepath.Join(tempDir, "runtime.db"),
+			},
+		},
 		OAuth: config.OAuthConfig{
 			JWT: config.JWTConfig{
 				ValidityPeriod: 3600,
@@ -50,6 +70,13 @@ func (suite *TokenHandlerTestSuite) SetupTest() {
 		},
 	}
 	_ = config.InitializeThunderRuntime("test", testConfig)
+}
+
+func (suite *TokenHandlerTestSuite) TearDownTest() {
+	// Clean up the temporary directory
+	if err := os.RemoveAll(filepath.Dir(config.GetThunderRuntime().Config.Database.Identity.Path)); err != nil {
+		suite.T().Logf("Failed to clean up temp dir: %v", err)
+	}
 }
 
 func (suite *TokenHandlerTestSuite) TestNewTokenHandler() {

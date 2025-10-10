@@ -21,12 +21,16 @@ package granthandlers
 import (
 	"encoding/json"
 	"errors"
+	"os"
+	"path/filepath"
 	"testing"
 	"time"
 
+	_ "github.com/lib/pq"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/suite"
+	_ "modernc.org/sqlite"
 
 	appmodel "github.com/asgardeo/thunder/internal/application/model"
 	authzconstants "github.com/asgardeo/thunder/internal/oauth/oauth2/authz/constants"
@@ -49,6 +53,7 @@ type AuthorizationCodeGrantHandlerTestSuite struct {
 	oauthApp        *appmodel.OAuthAppConfigProcessedDTO
 	testAuthzCode   authzmodel.AuthorizationCode
 	testTokenReq    *model.TokenRequest
+	tempDir         string
 }
 
 func TestAuthorizationCodeGrantHandlerSuite(t *testing.T) {
@@ -56,8 +61,25 @@ func TestAuthorizationCodeGrantHandlerSuite(t *testing.T) {
 }
 
 func (suite *AuthorizationCodeGrantHandlerTestSuite) SetupTest() {
-	// Initialize Thunder Runtime config with basic test config
+	// Create a temporary directory for the test database.
+	tempDir, err := os.MkdirTemp("", "authzcodegrant-test-")
+	if err != nil {
+		suite.T().Fatalf("Failed to create temp dir: %v", err)
+	}
+	suite.tempDir = tempDir
+
+	// Initialize Thunder Runtime config with a file-based database.
 	testConfig := &config.Config{
+		Database: config.DatabaseConfig{
+			Identity: config.DataSource{
+				Type: "sqlite",
+				Path: filepath.Join(suite.tempDir, "identity.db"),
+			},
+			Runtime: config.DataSource{
+				Type: "sqlite",
+				Path: filepath.Join(suite.tempDir, "runtime.db"),
+			},
+		},
 		OAuth: config.OAuthConfig{
 			JWT: config.JWTConfig{
 				ValidityPeriod: 3600,
@@ -108,6 +130,14 @@ func (suite *AuthorizationCodeGrantHandlerTestSuite) SetupTest() {
 		ExpiryTime:       time.Now().Add(5 * time.Minute),
 		Scopes:           "read write",
 		State:            authzconstants.AuthCodeStateActive,
+	}
+}
+
+func (suite *AuthorizationCodeGrantHandlerTestSuite) TearDownTest() {
+	config.ResetThunderRuntime()
+	// Clean up the temporary directory.
+	if err := os.RemoveAll(suite.tempDir); err != nil {
+		suite.T().Logf("Failed to clean up temp dir: %v", err)
 	}
 }
 

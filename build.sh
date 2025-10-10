@@ -335,10 +335,10 @@ function test_unit() {
     # Use gotestsum if available, otherwise fall back to go test
     if command -v gotestsum &> /dev/null; then
         echo "Running unit tests using gotestsum..."
-        gotestsum -- -v -cover ./... || { echo "There are unit test failures."; exit 1; }
+        gotestsum -- -p 1 -v ./... || { echo "There are unit test failures."; exit 1; }
     else
         echo "Running unit tests using go test..."
-        go test -v -cover ./... || { echo "There are unit test failures."; exit 1; }
+        go test -p 1 -v ./... || { echo "There are unit test failures."; exit 1; }
     fi
     
     echo "================================================================"
