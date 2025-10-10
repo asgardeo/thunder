@@ -33,7 +33,7 @@ import (
 	"github.com/asgardeo/thunder/internal/system/error/serviceerror"
 	"github.com/asgardeo/thunder/internal/system/log"
 	"github.com/asgardeo/thunder/internal/system/utils"
-	userservice "github.com/asgardeo/thunder/internal/user/service"
+	"github.com/asgardeo/thunder/internal/user"
 )
 
 const loggerComponentName = "GroupMgtService"
@@ -494,7 +494,7 @@ func (gs *GroupService) validateOU(ouID string) *serviceerror.ServiceError {
 func (gs *GroupService) validateUserIDs(userIDs []string) *serviceerror.ServiceError {
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, loggerComponentName))
 
-	userService := userservice.GetUserService()
+	userService := user.GetUserService()
 	invalidUserIDs, svcErr := userService.ValidateUserIDs(userIDs)
 	if svcErr != nil {
 		logger.Error("Failed to validate user IDs", log.String("error", svcErr.Error), log.String("code", svcErr.Code))

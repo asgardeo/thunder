@@ -157,16 +157,16 @@ func NewGoogleOIDCAuthExecutor(id, name string, properties map[string]string,
 func (g *GoogleOIDCAuthExecutor) Execute(ctx *flowmodel.NodeContext) (*flowmodel.ExecutorResponse, error) {
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, loggerComponentName))
 	logger.Debug("Executing Google OIDC auth executor",
-		log.String("executorID", g.GetID()), log.String("flowID", ctx.FlowID))
+		log.String("executorID", g.OIDCAuthExecutor.GetID()), log.String("flowID", ctx.FlowID))
 
 	execResp := &flowmodel.ExecutorResponse{
 		AdditionalData: make(map[string]string),
 		RuntimeData:    make(map[string]string),
 	}
 
-	if g.CheckInputData(ctx, execResp) {
+	if g.OIDCAuthExecutor.CheckInputData(ctx, execResp) {
 		logger.Debug("Required input data for Google OIDC auth executor is not provided")
-		err := g.BuildAuthorizeFlow(ctx, execResp)
+		err := g.OIDCAuthExecutor.BuildAuthorizeFlow(ctx, execResp)
 		if err != nil {
 			return nil, err
 		}
@@ -174,7 +174,7 @@ func (g *GoogleOIDCAuthExecutor) Execute(ctx *flowmodel.NodeContext) (*flowmodel
 		logger.Debug("Google OIDC auth executor execution completed",
 			log.String("status", string(execResp.Status)))
 	} else {
-		err := g.ProcessAuthFlowResponse(ctx, execResp)
+		err := g.OIDCAuthExecutor.ProcessAuthFlowResponse(ctx, execResp)
 		if err != nil {
 			return nil, err
 		}
@@ -192,7 +192,7 @@ func (g *GoogleOIDCAuthExecutor) ValidateIDToken(execResp *flowmodel.ExecutorRes
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, loggerComponentName))
 	logger.Debug("Validating ID token")
 
-	svcErr := g.googleAuthService.ValidateIDToken(g.GetID(), idToken)
+	svcErr := g.googleAuthService.ValidateIDToken(g.OIDCAuthExecutor.GetID(), idToken)
 	if svcErr != nil {
 		if svcErr.Type == serviceerror.ClientErrorType {
 			execResp.Status = flowconst.ExecFailure

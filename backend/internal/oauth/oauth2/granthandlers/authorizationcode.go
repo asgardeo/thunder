@@ -33,14 +33,14 @@ import (
 	"github.com/asgardeo/thunder/internal/system/config"
 	"github.com/asgardeo/thunder/internal/system/jwt"
 	"github.com/asgardeo/thunder/internal/system/log"
-	userservice "github.com/asgardeo/thunder/internal/user/service"
+	"github.com/asgardeo/thunder/internal/user"
 )
 
 // authorizationCodeGrantHandler handles the authorization code grant type.
 type authorizationCodeGrantHandler struct {
 	JWTService  jwt.JWTServiceInterface
 	AuthZStore  store.AuthorizationCodeStoreInterface
-	UserService userservice.UserServiceInterface
+	UserService user.UserServiceInterface
 }
 
 // newAuthorizationCodeGrantHandler creates a new instance of AuthorizationCodeGrantHandler.
@@ -48,7 +48,7 @@ func newAuthorizationCodeGrantHandler() GrantHandlerInterface {
 	return &authorizationCodeGrantHandler{
 		JWTService:  jwt.GetJWTService(),
 		AuthZStore:  store.NewAuthorizationCodeStore(),
-		UserService: userservice.GetUserService(),
+		UserService: user.GetUserService(),
 	}
 }
 

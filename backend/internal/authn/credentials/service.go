@@ -23,9 +23,7 @@ import (
 	"github.com/asgardeo/thunder/internal/authn/common"
 	"github.com/asgardeo/thunder/internal/system/error/serviceerror"
 	"github.com/asgardeo/thunder/internal/system/log"
-	userconst "github.com/asgardeo/thunder/internal/user/constants"
-	usermodel "github.com/asgardeo/thunder/internal/user/model"
-	userservice "github.com/asgardeo/thunder/internal/user/service"
+	"github.com/asgardeo/thunder/internal/user"
 )
 
 const (
@@ -34,18 +32,18 @@ const (
 
 // CredentialsAuthnServiceInterface defines the contract for credentials-based authenticator services.
 type CredentialsAuthnServiceInterface interface {
-	Authenticate(attributes map[string]interface{}) (*usermodel.User, *serviceerror.ServiceError)
+	Authenticate(attributes map[string]interface{}) (*user.User, *serviceerror.ServiceError)
 }
 
 // credentialsAuthnService is the default implementation of CredentialsAuthnServiceInterface.
 type credentialsAuthnService struct {
-	userService userservice.UserServiceInterface
+	userService user.UserServiceInterface
 }
 
 // NewCredentialsAuthnService creates a new instance of credentials authenticator service.
-func NewCredentialsAuthnService(userSvc userservice.UserServiceInterface) CredentialsAuthnServiceInterface {
+func NewCredentialsAuthnService(userSvc user.UserServiceInterface) CredentialsAuthnServiceInterface {
 	if userSvc == nil {
-		userSvc = userservice.GetUserService()
+		userSvc = user.GetUserService()
 	}
 
 	return &credentialsAuthnService{
@@ -55,7 +53,7 @@ func NewCredentialsAuthnService(userSvc userservice.UserServiceInterface) Creden
 
 // Authenticate authenticates a user using credentials.
 func (c *credentialsAuthnService) Authenticate(attributes map[string]interface{}) (
-	*usermodel.User, *serviceerror.ServiceError) {
+	*user.User, *serviceerror.ServiceError) {
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, loggerComponentName))
 	logger.Debug("Authenticating user with credentials")
 
@@ -63,14 +61,14 @@ func (c *credentialsAuthnService) Authenticate(attributes map[string]interface{}
 		return nil, &ErrorEmptyAttributesOrCredentials
 	}
 
-	authRequest := usermodel.AuthenticateUserRequest(attributes)
+	authRequest := user.AuthenticateUserRequest(attributes)
 	authResponse, svcErr := c.userService.AuthenticateUser(authRequest)
 	if svcErr != nil {
 		if svcErr.Type == serviceerror.ClientErrorType {
 			switch svcErr.Code {
-			case userconst.ErrorUserNotFound.Code:
+			case user.ErrorUserNotFound.Code:
 				return nil, &common.ErrorUserNotFound
-			case userconst.ErrorAuthenticationFailed.Code:
+			case user.ErrorAuthenticationFailed.Code:
 				return nil, &ErrorInvalidCredentials
 			default:
 				return nil, serviceerror.CustomServiceError(

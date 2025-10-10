@@ -28,7 +28,7 @@ import (
 	flowconst "github.com/asgardeo/thunder/internal/flow/constants"
 	flowmodel "github.com/asgardeo/thunder/internal/flow/model"
 	"github.com/asgardeo/thunder/internal/system/log"
-	"github.com/asgardeo/thunder/internal/user/service"
+	"github.com/asgardeo/thunder/internal/user"
 )
 
 const (
@@ -41,7 +41,7 @@ const (
 type BasicAuthExecutor struct {
 	*identify.IdentifyingExecutor
 	internal    flowmodel.Executor
-	userService service.UserServiceInterface
+	userService user.UserServiceInterface
 }
 
 var _ flowmodel.ExecutorInterface = (*BasicAuthExecutor)(nil)
@@ -63,7 +63,7 @@ func NewBasicAuthExecutor(id, name string, properties map[string]string) *BasicA
 	return &BasicAuthExecutor{
 		IdentifyingExecutor: identify.NewIdentifyingExecutor(id, name, properties),
 		internal:            *flowmodel.NewExecutor(id, name, defaultInputs, []flowmodel.InputData{}, properties),
-		userService:         service.GetUserService(),
+		userService:         user.GetUserService(),
 	}
 }
 
@@ -175,7 +175,7 @@ func (b *BasicAuthExecutor) getAuthenticatedUser(ctx *flowmodel.NodeContext,
 
 	username := ctx.UserInputData[userAttributeUsername]
 	filters := map[string]interface{}{userAttributeUsername: username}
-	userID, err := b.IdentifyUser(filters, execResp)
+	userID, err := b.IdentifyingExecutor.IdentifyUser(filters, execResp)
 	if err != nil {
 		return nil, err
 	}

@@ -94,7 +94,7 @@ func NewGithubOAuthExecutor(id, name string, properties map[string]string,
 func (g *GithubOAuthExecutor) Execute(ctx *flowmodel.NodeContext) (*flowmodel.ExecutorResponse, error) {
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, loggerComponentName))
 	logger.Debug("Executing GitHub OAuth executor",
-		log.String("executorID", g.GetID()), log.String("flowID", ctx.FlowID))
+		log.String("executorID", g.OAuthExecutor.GetID()), log.String("flowID", ctx.FlowID))
 
 	execResp := &flowmodel.ExecutorResponse{
 		AdditionalData: make(map[string]string),
@@ -102,11 +102,11 @@ func (g *GithubOAuthExecutor) Execute(ctx *flowmodel.NodeContext) (*flowmodel.Ex
 	}
 
 	// Check if the required input data is provided
-	if g.CheckInputData(ctx, execResp) {
+	if g.OAuthExecutor.CheckInputData(ctx, execResp) {
 		// If required input data is not provided, return incomplete status with redirection to github.
 		logger.Debug("Required input data for GitHub OAuth executor is not provided")
 
-		err := g.BuildAuthorizeFlow(ctx, execResp)
+		err := g.OAuthExecutor.BuildAuthorizeFlow(ctx, execResp)
 		if err != nil {
 			return nil, err
 		}
@@ -131,12 +131,12 @@ func (g *GithubOAuthExecutor) Execute(ctx *flowmodel.NodeContext) (*flowmodel.Ex
 func (o *GithubOAuthExecutor) ProcessAuthFlowResponse(ctx *flowmodel.NodeContext,
 	execResp *flowmodel.ExecutorResponse) error {
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, loggerComponentName),
-		log.String("executorID", o.GetID()), log.String("flowID", ctx.FlowID))
+		log.String("executorID", o.OAuthExecutor.GetID()), log.String("flowID", ctx.FlowID))
 	logger.Debug("Processing GitHub OAuth flow response")
 
 	code, ok := ctx.UserInputData["code"]
 	if ok && code != "" {
-		tokenResp, err := o.ExchangeCodeForToken(ctx, execResp, code)
+		tokenResp, err := o.OAuthExecutor.ExchangeCodeForToken(ctx, execResp, code)
 		if err != nil {
 			return err
 		}
@@ -179,12 +179,12 @@ func (o *GithubOAuthExecutor) ProcessAuthFlowResponse(ctx *flowmodel.NodeContext
 func (o *GithubOAuthExecutor) GetUserInfo(ctx *flowmodel.NodeContext, execResp *flowmodel.ExecutorResponse,
 	accessToken string) (map[string]string, error) {
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, loggerComponentName),
-		log.String(log.LoggerKeyExecutorID, o.GetID()),
+		log.String(log.LoggerKeyExecutorID, o.OAuthExecutor.GetID()),
 		log.String(log.LoggerKeyFlowID, ctx.FlowID))
 	logger.Debug("Fetching user info from GitHub OAuth provider",
-		log.String("userInfoEndpoint", o.GetUserInfoEndpoint()))
+		log.String("userInfoEndpoint", o.OAuthExecutor.GetUserInfoEndpoint()))
 
-	userInfo, svcErr := o.githubAuthService.FetchUserInfo(o.GetID(), accessToken)
+	userInfo, svcErr := o.githubAuthService.FetchUserInfo(o.OAuthExecutor.GetID(), accessToken)
 	if svcErr != nil {
 		if svcErr.Type == serviceerror.ClientErrorType {
 			execResp.Status = flowconst.ExecFailure
@@ -204,7 +204,7 @@ func (o *GithubOAuthExecutor) GetUserInfo(ctx *flowmodel.NodeContext, execResp *
 func (o *GithubOAuthExecutor) getAuthenticatedUserWithAttributes(ctx *flowmodel.NodeContext,
 	execResp *flowmodel.ExecutorResponse, accessToken string) (*authncm.AuthenticatedUser, error) {
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, loggerComponentName),
-		log.String(log.LoggerKeyExecutorID, o.GetID()),
+		log.String(log.LoggerKeyExecutorID, o.OAuthExecutor.GetID()),
 		log.String(log.LoggerKeyFlowID, ctx.FlowID))
 
 	userInfo, err := o.GetUserInfo(ctx, execResp, accessToken)

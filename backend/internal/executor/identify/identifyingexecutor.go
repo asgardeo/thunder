@@ -25,8 +25,8 @@ import (
 	flowconst "github.com/asgardeo/thunder/internal/flow/constants"
 	flowmodel "github.com/asgardeo/thunder/internal/flow/model"
 	"github.com/asgardeo/thunder/internal/system/log"
-	userconst "github.com/asgardeo/thunder/internal/user/constants"
-	"github.com/asgardeo/thunder/internal/user/service"
+
+	"github.com/asgardeo/thunder/internal/user"
 )
 
 const loggerComponentName = "IdentifyingExecutor"
@@ -36,14 +36,14 @@ var nonSearchableAttributes = []string{"password", "code", "nonce", "otp"}
 // IdentifyingExecutor implements the ExecutorInterface for identifying users based on provided attributes.
 type IdentifyingExecutor struct {
 	internal    flowmodel.Executor
-	userService service.UserServiceInterface
+	userService user.UserServiceInterface
 }
 
 // NewIdentifyingExecutor creates a new instance of IdentifyingExecutor.
 func NewIdentifyingExecutor(id, name string, properties map[string]string) *IdentifyingExecutor {
 	return &IdentifyingExecutor{
 		internal:    *flowmodel.NewExecutor(id, name, []flowmodel.InputData{}, []flowmodel.InputData{}, properties),
-		userService: service.GetUserService(),
+		userService: user.GetUserService(),
 	}
 }
 
@@ -63,7 +63,7 @@ func (i *IdentifyingExecutor) IdentifyUser(filters map[string]interface{},
 
 	userID, svcErr := i.userService.IdentifyUser(searchableFilter)
 	if svcErr != nil {
-		if svcErr.Code == userconst.ErrorUserNotFound.Code {
+		if svcErr.Code == user.ErrorUserNotFound.Code {
 			logger.Debug("User not found for the provided filters")
 			execResp.Status = flowconst.ExecFailure
 			execResp.FailureReason = "User not found"
