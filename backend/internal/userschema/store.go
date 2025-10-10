@@ -16,8 +16,7 @@
  * under the License.
  */
 
-// Package store provides the implementation for user schema persistence operations.
-package store
+package userschema
 
 import (
 	"encoding/json"
@@ -25,8 +24,6 @@ import (
 
 	"github.com/asgardeo/thunder/internal/system/database/provider"
 	"github.com/asgardeo/thunder/internal/system/log"
-	"github.com/asgardeo/thunder/internal/userschema/constants"
-	"github.com/asgardeo/thunder/internal/userschema/model"
 )
 
 // GetUserSchemaListCount retrieves the total count of user schemas.
@@ -54,7 +51,7 @@ func GetUserSchemaListCount() (int, error) {
 }
 
 // GetUserSchemaList retrieves a list of user schemas with pagination.
-func GetUserSchemaList(limit, offset int) ([]model.UserSchemaListItem, error) {
+func GetUserSchemaList(limit, offset int) ([]UserSchemaListItem, error) {
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, "UserSchemaPersistence"))
 
 	dbClient, err := provider.GetDBProvider().GetDBClient("identity")
@@ -67,7 +64,7 @@ func GetUserSchemaList(limit, offset int) ([]model.UserSchemaListItem, error) {
 		return nil, fmt.Errorf("failed to execute query: %w", err)
 	}
 
-	userSchemas := make([]model.UserSchemaListItem, 0, len(results))
+	userSchemas := make([]UserSchemaListItem, 0, len(results))
 	for _, row := range results {
 		userSchema, err := parseUserSchemaListItemFromRow(row)
 		if err != nil {
@@ -81,7 +78,7 @@ func GetUserSchemaList(limit, offset int) ([]model.UserSchemaListItem, error) {
 }
 
 // CreateUserSchema creates a new user schema.
-func CreateUserSchema(userSchema model.UserSchema) error {
+func CreateUserSchema(userSchema UserSchema) error {
 	dbClient, err := provider.GetDBProvider().GetDBClient("identity")
 	if err != nil {
 		return fmt.Errorf("failed to get database client: %w", err)
@@ -96,45 +93,45 @@ func CreateUserSchema(userSchema model.UserSchema) error {
 }
 
 // GetUserSchemaByID retrieves a user schema by its ID.
-func GetUserSchemaByID(schemaID string) (model.UserSchema, error) {
+func GetUserSchemaByID(schemaID string) (UserSchema, error) {
 	dbClient, err := provider.GetDBProvider().GetDBClient("identity")
 	if err != nil {
-		return model.UserSchema{}, fmt.Errorf("failed to get database client: %w", err)
+		return UserSchema{}, fmt.Errorf("failed to get database client: %w", err)
 	}
 
 	results, err := dbClient.Query(QueryGetUserSchemaByID, schemaID)
 	if err != nil {
-		return model.UserSchema{}, fmt.Errorf("failed to execute query: %w", err)
+		return UserSchema{}, fmt.Errorf("failed to execute query: %w", err)
 	}
 
 	if len(results) == 0 {
-		return model.UserSchema{}, constants.ErrUserSchemaNotFound
+		return UserSchema{}, ErrUserSchemaNotFound
 	}
 
 	return parseUserSchemaFromRow(results[0])
 }
 
 // GetUserSchemaByName retrieves a user schema by its name.
-func GetUserSchemaByName(name string) (model.UserSchema, error) {
+func GetUserSchemaByName(name string) (UserSchema, error) {
 	dbClient, err := provider.GetDBProvider().GetDBClient("identity")
 	if err != nil {
-		return model.UserSchema{}, fmt.Errorf("failed to get database client: %w", err)
+		return UserSchema{}, fmt.Errorf("failed to get database client: %w", err)
 	}
 
 	results, err := dbClient.Query(QueryGetUserSchemaByName, name)
 	if err != nil {
-		return model.UserSchema{}, fmt.Errorf("failed to execute query: %w", err)
+		return UserSchema{}, fmt.Errorf("failed to execute query: %w", err)
 	}
 
 	if len(results) == 0 {
-		return model.UserSchema{}, constants.ErrUserSchemaNotFound
+		return UserSchema{}, ErrUserSchemaNotFound
 	}
 
 	return parseUserSchemaFromRow(results[0])
 }
 
 // UpdateUserSchemaByID updates a user schema by its ID.
-func UpdateUserSchemaByID(schemaID string, userSchema model.UserSchema) error {
+func UpdateUserSchemaByID(schemaID string, userSchema UserSchema) error {
 	dbClient, err := provider.GetDBProvider().GetDBClient("identity")
 	if err != nil {
 		return fmt.Errorf("failed to get database client: %w", err)
@@ -170,15 +167,15 @@ func DeleteUserSchemaByID(schemaID string) error {
 }
 
 // parseUserSchemaFromRow parses a user schema from a database row.
-func parseUserSchemaFromRow(row map[string]interface{}) (model.UserSchema, error) {
+func parseUserSchemaFromRow(row map[string]interface{}) (UserSchema, error) {
 	schemaID, ok := row["schema_id"].(string)
 	if !ok {
-		return model.UserSchema{}, fmt.Errorf("failed to parse schema_id as string")
+		return UserSchema{}, fmt.Errorf("failed to parse schema_id as string")
 	}
 
 	name, ok := row["name"].(string)
 	if !ok {
-		return model.UserSchema{}, fmt.Errorf("failed to parse name as string")
+		return UserSchema{}, fmt.Errorf("failed to parse name as string")
 	}
 
 	var schemaDef string
@@ -188,10 +185,10 @@ func parseUserSchemaFromRow(row map[string]interface{}) (model.UserSchema, error
 	case []byte:
 		schemaDef = string(v) // Convert byte slice to string
 	default:
-		return model.UserSchema{}, fmt.Errorf("failed to parse schema_def as string")
+		return UserSchema{}, fmt.Errorf("failed to parse schema_def as string")
 	}
 
-	userSchema := model.UserSchema{
+	userSchema := UserSchema{
 		ID:     schemaID,
 		Name:   name,
 		Schema: json.RawMessage(schemaDef),
@@ -201,18 +198,18 @@ func parseUserSchemaFromRow(row map[string]interface{}) (model.UserSchema, error
 }
 
 // parseUserSchemaListItemFromRow parses a simplified user schema list item from a database row.
-func parseUserSchemaListItemFromRow(row map[string]interface{}) (model.UserSchemaListItem, error) {
+func parseUserSchemaListItemFromRow(row map[string]interface{}) (UserSchemaListItem, error) {
 	schemaID, ok := row["schema_id"].(string)
 	if !ok {
-		return model.UserSchemaListItem{}, fmt.Errorf("failed to parse schema_id as string")
+		return UserSchemaListItem{}, fmt.Errorf("failed to parse schema_id as string")
 	}
 
 	name, ok := row["name"].(string)
 	if !ok {
-		return model.UserSchemaListItem{}, fmt.Errorf("failed to parse name as string")
+		return UserSchemaListItem{}, fmt.Errorf("failed to parse name as string")
 	}
 
-	userSchemaListItem := model.UserSchemaListItem{
+	userSchemaListItem := UserSchemaListItem{
 		ID:   schemaID,
 		Name: name,
 	}

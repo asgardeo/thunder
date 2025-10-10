@@ -16,8 +16,7 @@
  * under the License.
  */
 
-// Package store defines the database queries for user schema management operations.
-package store
+package userschema
 
 import "github.com/asgardeo/thunder/internal/system/database/model"
 

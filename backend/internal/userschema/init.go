@@ -16,44 +16,35 @@
  * under the License.
  */
 
-// Package services handles the registration of routes and services for the system.
-//
-//nolint:dupl // Ignoring false positive duplicate code
-package services
+// Package userschema handles the user schema management operations.
+package userschema
 
 import (
 	"net/http"
 
 	"github.com/asgardeo/thunder/internal/system/middleware"
-	"github.com/asgardeo/thunder/internal/userschema/handler"
 )
 
-// UserSchemaService is the service for user schema management operations.
-type UserSchemaService struct {
-	userSchemaHandler *handler.UserSchemaHandler
+// Initialize initializes the user schema service and registers its routes.
+func Initialize(mux *http.ServeMux) UserSchemaServiceInterface {
+	userSchemaService := newUserSchemaService()
+	setUserSchemaService(userSchemaService) // Set the provider for backward compatibility
+	userSchemaHandler := newUserSchemaHandler(userSchemaService)
+	registerRoutes(mux, userSchemaHandler)
+	return userSchemaService
 }
 
-// NewUserSchemaService creates a new instance of UserSchemaService.
-func NewUserSchemaService(mux *http.ServeMux) ServiceInterface {
-	instance := &UserSchemaService{
-		userSchemaHandler: handler.NewUserSchemaHandler(),
-	}
-	instance.RegisterRoutes(mux)
-
-	return instance
-}
-
-// RegisterRoutes registers the routes for user schema management operations.
-func (s *UserSchemaService) RegisterRoutes(mux *http.ServeMux) {
+// registerRoutes registers the routes for user schema management operations.
+func registerRoutes(mux *http.ServeMux, userSchemaHandler *UserSchemaHandler) {
 	opts1 := middleware.CORSOptions{
 		AllowedMethods:   "GET, POST",
 		AllowedHeaders:   "Content-Type, Authorization",
 		AllowCredentials: true,
 	}
 	mux.HandleFunc(middleware.WithCORS("POST /user-schemas",
-		s.userSchemaHandler.HandleUserSchemaPostRequest, opts1))
+		userSchemaHandler.HandleUserSchemaPostRequest, opts1))
 	mux.HandleFunc(middleware.WithCORS("GET /user-schemas",
-		s.userSchemaHandler.HandleUserSchemaListRequest, opts1))
+		userSchemaHandler.HandleUserSchemaListRequest, opts1))
 	mux.HandleFunc(middleware.WithCORS("OPTIONS /user-schemas",
 		func(w http.ResponseWriter, r *http.Request) {
 			w.WriteHeader(http.StatusNoContent)
@@ -65,11 +56,11 @@ func (s *UserSchemaService) RegisterRoutes(mux *http.ServeMux) {
 		AllowCredentials: true,
 	}
 	mux.HandleFunc(middleware.WithCORS("GET /user-schemas/{id}",
-		s.userSchemaHandler.HandleUserSchemaGetRequest, opts2))
+		userSchemaHandler.HandleUserSchemaGetRequest, opts2))
 	mux.HandleFunc(middleware.WithCORS("PUT /user-schemas/{id}",
-		s.userSchemaHandler.HandleUserSchemaPutRequest, opts2))
+		userSchemaHandler.HandleUserSchemaPutRequest, opts2))
 	mux.HandleFunc(middleware.WithCORS("DELETE /user-schemas/{id}",
-		s.userSchemaHandler.HandleUserSchemaDeleteRequest, opts2))
+		userSchemaHandler.HandleUserSchemaDeleteRequest, opts2))
 	mux.HandleFunc(middleware.WithCORS("OPTIONS /user-schemas/{id}",
 		func(w http.ResponseWriter, r *http.Request) {
 			w.WriteHeader(http.StatusNoContent)

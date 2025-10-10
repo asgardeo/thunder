@@ -16,8 +16,7 @@
  * under the License.
  */
 
-// Package service provides the implementation for user schema management operations.
-package service
+package userschema
 
 import (
 	"encoding/json"
@@ -27,20 +26,18 @@ import (
 	"github.com/asgardeo/thunder/internal/system/error/serviceerror"
 	"github.com/asgardeo/thunder/internal/system/log"
 	"github.com/asgardeo/thunder/internal/system/utils"
-	"github.com/asgardeo/thunder/internal/userschema/constants"
 	"github.com/asgardeo/thunder/internal/userschema/model"
-	"github.com/asgardeo/thunder/internal/userschema/store"
 )
 
 const userSchemaLoggerComponentName = "UserSchemaService"
 
 // UserSchemaServiceInterface defines the interface for the user schema service.
 type UserSchemaServiceInterface interface {
-	GetUserSchemaList(limit, offset int) (*model.UserSchemaListResponse, *serviceerror.ServiceError)
-	CreateUserSchema(request model.CreateUserSchemaRequest) (*model.UserSchema, *serviceerror.ServiceError)
-	GetUserSchema(schemaID string) (*model.UserSchema, *serviceerror.ServiceError)
-	UpdateUserSchema(schemaID string, request model.UpdateUserSchemaRequest) (
-		*model.UserSchema, *serviceerror.ServiceError)
+	GetUserSchemaList(limit, offset int) (*UserSchemaListResponse, *serviceerror.ServiceError)
+	CreateUserSchema(request CreateUserSchemaRequest) (*UserSchema, *serviceerror.ServiceError)
+	GetUserSchema(schemaID string) (*UserSchema, *serviceerror.ServiceError)
+	UpdateUserSchema(schemaID string, request UpdateUserSchemaRequest) (
+		*UserSchema, *serviceerror.ServiceError)
 	DeleteUserSchema(schemaID string) *serviceerror.ServiceError
 	ValidateUser(userType string, userAttributes json.RawMessage) (bool, *serviceerror.ServiceError)
 	ValidateUserUniqueness(userType string, userAttributes json.RawMessage,
@@ -50,31 +47,31 @@ type UserSchemaServiceInterface interface {
 // UserSchemaService is the default implementation of the UserSchemaServiceInterface.
 type UserSchemaService struct{}
 
-// GetUserSchemaService creates a new instance of UserSchemaService.
-func GetUserSchemaService() UserSchemaServiceInterface {
+// newUserSchemaService creates a new instance of UserSchemaService.
+func newUserSchemaService() UserSchemaServiceInterface {
 	return &UserSchemaService{}
 }
 
 // GetUserSchemaList lists the user schemas with pagination.
 func (us *UserSchemaService) GetUserSchemaList(limit, offset int) (
-	*model.UserSchemaListResponse, *serviceerror.ServiceError) {
+	*UserSchemaListResponse, *serviceerror.ServiceError) {
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, userSchemaLoggerComponentName))
 
 	if err := validatePaginationParams(limit, offset); err != nil {
 		return nil, err
 	}
 
-	totalCount, err := store.GetUserSchemaListCount()
+	totalCount, err := GetUserSchemaListCount()
 	if err != nil {
 		return nil, logAndReturnServerError(logger, "Failed to get user schema list count", err)
 	}
 
-	userSchemas, err := store.GetUserSchemaList(limit, offset)
+	userSchemas, err := GetUserSchemaList(limit, offset)
 	if err != nil {
 		return nil, logAndReturnServerError(logger, "Failed to get user schema list", err)
 	}
 
-	response := &model.UserSchemaListResponse{
+	response := &UserSchemaListResponse{
 		TotalResults: totalCount,
 		StartIndex:   offset + 1,
 		Count:        len(userSchemas),
@@ -86,8 +83,8 @@ func (us *UserSchemaService) GetUserSchemaList(limit, offset int) (
 }
 
 // CreateUserSchema creates a new user schema.
-func (us *UserSchemaService) CreateUserSchema(request model.CreateUserSchemaRequest) (
-	*model.UserSchema, *serviceerror.ServiceError) {
+func (us *UserSchemaService) CreateUserSchema(request CreateUserSchemaRequest) (
+	*UserSchema, *serviceerror.ServiceError) {
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, userSchemaLoggerComponentName))
 
 	if request.Name == "" {
@@ -104,22 +101,22 @@ func (us *UserSchemaService) CreateUserSchema(request model.CreateUserSchemaRequ
 		return nil, invalidSchemaRequestError(err.Error())
 	}
 
-	_, err = store.GetUserSchemaByName(request.Name)
+	_, err = GetUserSchemaByName(request.Name)
 	if err == nil {
-		return nil, &constants.ErrorUserSchemaNameConflict
-	} else if !errors.Is(err, constants.ErrUserSchemaNotFound) {
+		return nil, &ErrorUserSchemaNameConflict
+	} else if !errors.Is(err, ErrUserSchemaNotFound) {
 		return nil, logAndReturnServerError(logger, "Failed to check existing user schema", err)
 	}
 
 	schemaID := utils.GenerateUUID()
 
-	userSchema := model.UserSchema{
+	userSchema := UserSchema{
 		ID:     schemaID,
 		Name:   request.Name,
 		Schema: request.Schema,
 	}
 
-	if err := store.CreateUserSchema(userSchema); err != nil {
+	if err := CreateUserSchema(userSchema); err != nil {
 		return nil, logAndReturnServerError(logger, "Failed to create user schema", err)
 	}
 
@@ -127,17 +124,17 @@ func (us *UserSchemaService) CreateUserSchema(request model.CreateUserSchemaRequ
 }
 
 // GetUserSchema retrieves a user schema by its ID.
-func (us *UserSchemaService) GetUserSchema(schemaID string) (*model.UserSchema, *serviceerror.ServiceError) {
+func (us *UserSchemaService) GetUserSchema(schemaID string) (*UserSchema, *serviceerror.ServiceError) {
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, userSchemaLoggerComponentName))
 
 	if schemaID == "" {
 		return nil, invalidSchemaRequestError("schema id must not be empty")
 	}
 
-	userSchema, err := store.GetUserSchemaByID(schemaID)
+	userSchema, err := GetUserSchemaByID(schemaID)
 	if err != nil {
-		if errors.Is(err, constants.ErrUserSchemaNotFound) {
-			return nil, &constants.ErrorUserSchemaNotFound
+		if errors.Is(err, ErrUserSchemaNotFound) {
+			return nil, &ErrorUserSchemaNotFound
 		}
 		return nil, logAndReturnServerError(logger, "Failed to get user schema", err)
 	}
@@ -146,8 +143,8 @@ func (us *UserSchemaService) GetUserSchema(schemaID string) (*model.UserSchema, 
 }
 
 // UpdateUserSchema updates a user schema by its ID.
-func (us *UserSchemaService) UpdateUserSchema(schemaID string, request model.UpdateUserSchemaRequest) (
-	*model.UserSchema, *serviceerror.ServiceError) {
+func (us *UserSchemaService) UpdateUserSchema(schemaID string, request UpdateUserSchemaRequest) (
+	*UserSchema, *serviceerror.ServiceError) {
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, userSchemaLoggerComponentName))
 
 	if schemaID == "" {
@@ -168,30 +165,30 @@ func (us *UserSchemaService) UpdateUserSchema(schemaID string, request model.Upd
 		return nil, invalidSchemaRequestError(err.Error())
 	}
 
-	existingSchema, err := store.GetUserSchemaByID(schemaID)
+	existingSchema, err := GetUserSchemaByID(schemaID)
 	if err != nil {
-		if errors.Is(err, constants.ErrUserSchemaNotFound) {
-			return nil, &constants.ErrorUserSchemaNotFound
+		if errors.Is(err, ErrUserSchemaNotFound) {
+			return nil, &ErrorUserSchemaNotFound
 		}
 		return nil, logAndReturnServerError(logger, "Failed to get existing user schema", err)
 	}
 
 	if request.Name != existingSchema.Name {
-		_, err := store.GetUserSchemaByName(request.Name)
+		_, err := GetUserSchemaByName(request.Name)
 		if err == nil {
-			return nil, &constants.ErrorUserSchemaNameConflict
-		} else if !errors.Is(err, constants.ErrUserSchemaNotFound) {
+			return nil, &ErrorUserSchemaNameConflict
+		} else if !errors.Is(err, ErrUserSchemaNotFound) {
 			return nil, logAndReturnServerError(logger, "Failed to check existing user schema", err)
 		}
 	}
 
-	userSchema := model.UserSchema{
+	userSchema := UserSchema{
 		ID:     schemaID,
 		Name:   request.Name,
 		Schema: request.Schema,
 	}
 
-	if err := store.UpdateUserSchemaByID(schemaID, userSchema); err != nil {
+	if err := UpdateUserSchemaByID(schemaID, userSchema); err != nil {
 		return nil, logAndReturnServerError(logger, "Failed to update user schema", err)
 	}
 
@@ -206,30 +203,29 @@ func (us *UserSchemaService) DeleteUserSchema(schemaID string) *serviceerror.Ser
 		return invalidSchemaRequestError("schema id must not be empty")
 	}
 
-	if err := store.DeleteUserSchemaByID(schemaID); err != nil {
+	if err := DeleteUserSchemaByID(schemaID); err != nil {
 		return logAndReturnServerError(logger, "Failed to delete user schema", err)
 	}
 
 	return nil
 }
 
-// validatePaginationParams validates the limit and offset parameters.
 func validatePaginationParams(limit, offset int) *serviceerror.ServiceError {
 	if limit < 0 {
-		return &constants.ErrorInvalidLimit
+		return &ErrorInvalidLimit
 	}
 	if offset < 0 {
-		return &constants.ErrorInvalidOffset
+		return &ErrorInvalidOffset
 	}
 	return nil
 }
 
 // buildPaginationLinks builds pagination links for the response.
-func buildPaginationLinks(limit, offset, totalCount int) []model.Link {
-	links := make([]model.Link, 0)
+func buildPaginationLinks(limit, offset, totalCount int) []Link {
+	links := make([]Link, 0)
 
 	if offset > 0 {
-		links = append(links, model.Link{
+		links = append(links, Link{
 			Href: fmt.Sprintf("/user-schemas?offset=0&limit=%d", limit),
 			Rel:  "first",
 		})
@@ -238,7 +234,7 @@ func buildPaginationLinks(limit, offset, totalCount int) []model.Link {
 		if prevOffset < 0 {
 			prevOffset = 0
 		}
-		links = append(links, model.Link{
+		links = append(links, Link{
 			Href: fmt.Sprintf("/user-schemas?offset=%d&limit=%d", prevOffset, limit),
 			Rel:  "prev",
 		})
@@ -246,7 +242,7 @@ func buildPaginationLinks(limit, offset, totalCount int) []model.Link {
 
 	if offset+limit < totalCount {
 		nextOffset := offset + limit
-		links = append(links, model.Link{
+		links = append(links, Link{
 			Href: fmt.Sprintf("/user-schemas?offset=%d&limit=%d", nextOffset, limit),
 			Rel:  "next",
 		})
@@ -254,7 +250,7 @@ func buildPaginationLinks(limit, offset, totalCount int) []model.Link {
 
 	lastPageOffset := ((totalCount - 1) / limit) * limit
 	if offset < lastPageOffset {
-		links = append(links, model.Link{
+		links = append(links, Link{
 			Href: fmt.Sprintf("/user-schemas?offset=%d&limit=%d", lastPageOffset, limit),
 			Rel:  "last",
 		})
@@ -270,11 +266,11 @@ func logAndReturnServerError(
 	err error,
 ) *serviceerror.ServiceError {
 	logger.Error(message, log.Error(err))
-	return &constants.ErrorInternalServerError
+	return &ErrorInternalServerError
 }
 
 func invalidSchemaRequestError(detail string) *serviceerror.ServiceError {
-	err := constants.ErrorInvalidUserSchemaRequest
+	err := ErrorInvalidUserSchemaRequest
 	errorDescription := err.ErrorDescription
 	if detail != "" {
 		errorDescription = fmt.Sprintf("%s: %s", err.ErrorDescription, detail)
@@ -292,10 +288,10 @@ func (us *UserSchemaService) getCompiledSchemaForUserType(
 	logger *log.Logger,
 ) (*model.Schema, error) {
 	if userType == "" {
-		return nil, constants.ErrUserSchemaNotFound
+		return nil, ErrUserSchemaNotFound
 	}
 
-	userSchema, err := store.GetUserSchemaByName(userType)
+	userSchema, err := GetUserSchemaByName(userType)
 	if err != nil {
 		return nil, err
 	}
@@ -322,7 +318,7 @@ func (us *UserSchemaService) ValidateUser(
 
 	compiledSchema, err := us.getCompiledSchemaForUserType(userType, logger)
 	if err != nil {
-		if errors.Is(err, constants.ErrUserSchemaNotFound) {
+		if errors.Is(err, ErrUserSchemaNotFound) {
 			logger.Debug("No schema found for user type, skipping validation", log.String("userType", userType))
 			return true, nil
 		}
@@ -356,7 +352,7 @@ func (us *UserSchemaService) ValidateUserUniqueness(
 
 	compiledSchema, err := us.getCompiledSchemaForUserType(userType, logger)
 	if err != nil {
-		if errors.Is(err, constants.ErrUserSchemaNotFound) {
+		if errors.Is(err, ErrUserSchemaNotFound) {
 			return true, nil
 		}
 		return false, logAndReturnServerError(logger, "Failed to load user schema", err)

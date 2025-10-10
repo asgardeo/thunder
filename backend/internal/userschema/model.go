@@ -16,12 +16,15 @@
  * under the License.
  */
 
-// Package model defines the data structures for user schema management.
-package model
+package userschema
 
 import (
 	"encoding/json"
 )
+
+// Note: Complex JSON schema type definitions (array, boolean, number, object, schema, string)
+// are kept in the model/ subdirectory to maintain clean separation and better organization.
+// This file contains only the simple DTOs and API request/response structures.
 
 // UserSchema represents a user type schema definition.
 type UserSchema struct {
@@ -62,17 +65,3 @@ type UpdateUserSchemaRequest struct {
 	Name   string          `json:"name"`
 	Schema json.RawMessage `json:"schema"`
 }
-
-// JSON Schema type constants.
-const (
-	// TypeString represents the string type in JSON Schema.
-	TypeString = "string"
-	// TypeNumber represents the number type in JSON Schema.
-	TypeNumber = "number"
-	// TypeBoolean represents the boolean type in JSON Schema.
-	TypeBoolean = "boolean"
-	// TypeObject represents the object type in JSON Schema.
-	TypeObject = "object"
-	// TypeArray represents the array type in JSON Schema.
-	TypeArray = "array"
-)
