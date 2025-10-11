@@ -83,3 +83,6 @@ cors:
   {{- range .Values.configuration.cors.allowedOrigins }}
     - {{ . | quote }}
   {{- end }}
+
+crypto:
+  key: {{ .Values.configuration.crypto.key | quote }}
