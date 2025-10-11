@@ -16,29 +16,60 @@
  * under the License.
  */
 
-// Package store provides the implementation for organization unit persistence operations.
-package store
+// Package ou provides the implementation for organization unit persistence operations.
+package ou
 
 import (
 	"fmt"
 
-	"github.com/asgardeo/thunder/internal/ou/constants"
-	"github.com/asgardeo/thunder/internal/ou/model"
 	dbmodel "github.com/asgardeo/thunder/internal/system/database/model"
 	"github.com/asgardeo/thunder/internal/system/database/provider"
 	"github.com/asgardeo/thunder/internal/system/log"
 )
 
-const loggerComponentName = "OrganizationUnitStore"
+const storeLoggerComponentName = "OrganizationUnitStore"
+
+// organizationUnitStoreInterface defines the interface for organization unit store operations.
+type organizationUnitStoreInterface interface {
+	GetOrganizationUnitListCount() (int, error)
+	GetOrganizationUnitList(limit, offset int) ([]OrganizationUnitBasic, error)
+	CreateOrganizationUnit(ou OrganizationUnit) error
+	GetOrganizationUnit(id string) (OrganizationUnit, error)
+	GetOrganizationUnitByPath(handles []string) (OrganizationUnit, error)
+	IsOrganizationUnitExists(id string) (bool, error)
+	CheckOrganizationUnitNameConflict(name string, parent *string) (bool, error)
+	CheckOrganizationUnitHandleConflict(handle string, parent *string) (bool, error)
+	UpdateOrganizationUnit(ou OrganizationUnit) error
+	DeleteOrganizationUnit(id string) error
+	CheckOrganizationUnitHasChildResources(id string) (bool, error)
+	GetOrganizationUnitChildrenCount(id string) (int, error)
+	GetOrganizationUnitChildrenList(id string, limit, offset int) ([]OrganizationUnitBasic, error)
+	GetOrganizationUnitUsersCount(id string) (int, error)
+	GetOrganizationUnitUsersList(id string, limit, offset int) ([]User, error)
+	GetOrganizationUnitGroupsCount(id string) (int, error)
+	GetOrganizationUnitGroupsList(id string, limit, offset int) ([]Group, error)
+}
+
+// organizationUnitStore is the default implementation of organizationUnitStoreInterface.
+type organizationUnitStore struct {
+	dbProvider provider.DBProviderInterface
+}
+
+// newOrganizationUnitStore creates a new instance of organizationUnitStore.
+func newOrganizationUnitStore() organizationUnitStoreInterface {
+	return &organizationUnitStore{
+		dbProvider: provider.GetDBProvider(),
+	}
+}
 
 // GetOrganizationUnitListCount retrieves the total count of organization units.
-func GetOrganizationUnitListCount() (int, error) {
-	dbClient, err := provider.GetDBProvider().GetDBClient("identity")
+func (s *organizationUnitStore) GetOrganizationUnitListCount() (int, error) {
+	dbClient, err := s.dbProvider.GetDBClient("identity")
 	if err != nil {
 		return 0, fmt.Errorf("failed to get database client: %w", err)
 	}
 
-	results, err := dbClient.Query(QueryGetRootOrganizationUnitListCount)
+	results, err := dbClient.Query(queryGetRootOrganizationUnitListCount)
 	if err != nil {
 		return 0, fmt.Errorf("failed to execute count query: %w", err)
 	}
@@ -56,18 +87,18 @@ func GetOrganizationUnitListCount() (int, error) {
 }
 
 // GetOrganizationUnitList retrieves organization units with pagination.
-func GetOrganizationUnitList(limit, offset int) ([]model.OrganizationUnitBasic, error) {
+func (s *organizationUnitStore) GetOrganizationUnitList(limit, offset int) ([]OrganizationUnitBasic, error) {
 	dbClient, err := provider.GetDBProvider().GetDBClient("identity")
 	if err != nil {
 		return nil, fmt.Errorf("failed to get database client: %w", err)
 	}
 
-	results, err := dbClient.Query(QueryGetRootOrganizationUnitList, limit, offset)
+	results, err := dbClient.Query(queryGetRootOrganizationUnitList, limit, offset)
 	if err != nil {
 		return nil, fmt.Errorf("failed to execute query: %w", err)
 	}
 
-	ous := make([]model.OrganizationUnitBasic, 0, len(results))
+	ous := make([]OrganizationUnitBasic, 0, len(results))
 	for _, row := range results {
 		ou, err := buildOrganizationUnitBasicFromResultRow(row)
 		if err != nil {
@@ -80,14 +111,14 @@ func GetOrganizationUnitList(limit, offset int) ([]model.OrganizationUnitBasic, 
 }
 
 // CreateOrganizationUnit creates a new organization unit in the database.
-func CreateOrganizationUnit(ou model.OrganizationUnit) error {
+func (s *organizationUnitStore) CreateOrganizationUnit(ou OrganizationUnit) error {
 	dbClient, err := provider.GetDBProvider().GetDBClient("identity")
 	if err != nil {
 		return fmt.Errorf("failed to get database client: %w", err)
 	}
 
 	_, err = dbClient.Execute(
-		QueryCreateOrganizationUnit,
+		queryCreateOrganizationUnit,
 		ou.ID,
 		ou.Parent,
 		ou.Handle,
@@ -102,43 +133,43 @@ func CreateOrganizationUnit(ou model.OrganizationUnit) error {
 }
 
 // GetOrganizationUnit retrieves an organization unit by its id.
-func GetOrganizationUnit(id string) (model.OrganizationUnit, error) {
+func (s *organizationUnitStore) GetOrganizationUnit(id string) (OrganizationUnit, error) {
 	dbClient, err := provider.GetDBProvider().GetDBClient("identity")
 	if err != nil {
-		return model.OrganizationUnit{}, fmt.Errorf("failed to get database client: %w", err)
+		return OrganizationUnit{}, fmt.Errorf("failed to get database client: %w", err)
 	}
 
-	results, err := dbClient.Query(QueryGetOrganizationUnitByID, id)
+	results, err := dbClient.Query(queryGetOrganizationUnitByID, id)
 	if err != nil {
-		return model.OrganizationUnit{}, fmt.Errorf("failed to execute query: %w", err)
+		return OrganizationUnit{}, fmt.Errorf("failed to execute query: %w", err)
 	}
 
 	if len(results) == 0 {
-		return model.OrganizationUnit{}, constants.ErrOrganizationUnitNotFound
+		return OrganizationUnit{}, ErrOrganizationUnitNotFound
 	}
 
 	ou, err := buildOrganizationUnitFromResultRow(results[0])
 	if err != nil {
-		return model.OrganizationUnit{}, fmt.Errorf("failed to build organization unit: %w", err)
+		return OrganizationUnit{}, fmt.Errorf("failed to build organization unit: %w", err)
 	}
 
 	return ou, nil
 }
 
 // GetOrganizationUnitByPath retrieves an organization unit by its hierarchical handle path.
-func GetOrganizationUnitByPath(handlePath []string) (model.OrganizationUnit, error) {
-	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, loggerComponentName))
+func (s *organizationUnitStore) GetOrganizationUnitByPath(handlePath []string) (OrganizationUnit, error) {
+	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, storeLoggerComponentName))
 
 	if len(handlePath) == 0 {
-		return model.OrganizationUnit{}, constants.ErrOrganizationUnitNotFound
+		return OrganizationUnit{}, ErrOrganizationUnitNotFound
 	}
 
 	dbClient, err := provider.GetDBProvider().GetDBClient("identity")
 	if err != nil {
-		return model.OrganizationUnit{}, fmt.Errorf("failed to get database client: %w", err)
+		return OrganizationUnit{}, fmt.Errorf("failed to get database client: %w", err)
 	}
 
-	var currentOU model.OrganizationUnit
+	var currentOU OrganizationUnit
 	var parentID *string
 	var fullPath string
 
@@ -147,13 +178,13 @@ func GetOrganizationUnitByPath(handlePath []string) (model.OrganizationUnit, err
 		var results []map[string]interface{}
 
 		if parentID == nil {
-			results, err = dbClient.Query(QueryGetRootOrganizationUnitByHandle, handle)
+			results, err = dbClient.Query(queryGetRootOrganizationUnitByHandle, handle)
 		} else {
-			results, err = dbClient.Query(QueryGetOrganizationUnitByHandle, handle, *parentID)
+			results, err = dbClient.Query(queryGetOrganizationUnitByHandle, handle, *parentID)
 		}
 
 		if err != nil {
-			return model.OrganizationUnit{}, fmt.Errorf("failed to execute query for handle %s: %w", handle, err)
+			return OrganizationUnit{}, fmt.Errorf("failed to execute query for handle %s: %w", handle, err)
 		}
 
 		if len(results) == 0 {
@@ -161,12 +192,12 @@ func GetOrganizationUnitByPath(handlePath []string) (model.OrganizationUnit, err
 				log.String("handle", handle),
 				log.Int("pathIndex", i),
 				log.String("fullPath", fullPath))
-			return model.OrganizationUnit{}, constants.ErrOrganizationUnitNotFound
+			return OrganizationUnit{}, ErrOrganizationUnitNotFound
 		}
 
 		currentOU, err = buildOrganizationUnitFromResultRow(results[0])
 		if err != nil {
-			return model.OrganizationUnit{}, fmt.Errorf("failed to build organization unit for handle %s: %w", handle, err)
+			return OrganizationUnit{}, fmt.Errorf("failed to build organization unit for handle %s: %w", handle, err)
 		}
 
 		parentID = &currentOU.ID
@@ -176,13 +207,13 @@ func GetOrganizationUnitByPath(handlePath []string) (model.OrganizationUnit, err
 }
 
 // IsOrganizationUnitExists checks if an organization unit exists by ID.
-func IsOrganizationUnitExists(id string) (bool, error) {
+func (s *organizationUnitStore) IsOrganizationUnitExists(id string) (bool, error) {
 	dbClient, err := provider.GetDBProvider().GetDBClient("identity")
 	if err != nil {
 		return false, fmt.Errorf("failed to get database client: %w", err)
 	}
 
-	results, err := dbClient.Query(QueryCheckOrganizationUnitExists, id)
+	results, err := dbClient.Query(queryCheckOrganizationUnitExists, id)
 	if err != nil {
 		return false, fmt.Errorf("failed to execute existence check query: %w", err)
 	}
@@ -201,14 +232,14 @@ func IsOrganizationUnitExists(id string) (bool, error) {
 }
 
 // UpdateOrganizationUnit updates an existing organization unit.
-func UpdateOrganizationUnit(ou model.OrganizationUnit) error {
+func (s *organizationUnitStore) UpdateOrganizationUnit(ou OrganizationUnit) error {
 	dbClient, err := provider.GetDBProvider().GetDBClient("identity")
 	if err != nil {
 		return fmt.Errorf("failed to get database client: %w", err)
 	}
 
 	_, err = dbClient.Execute(
-		QueryUpdateOrganizationUnit,
+		queryUpdateOrganizationUnit,
 		ou.ID,
 		ou.Parent,
 		ou.Handle,
@@ -223,13 +254,13 @@ func UpdateOrganizationUnit(ou model.OrganizationUnit) error {
 }
 
 // DeleteOrganizationUnit deletes an organization unit.
-func DeleteOrganizationUnit(id string) error {
+func (s *organizationUnitStore) DeleteOrganizationUnit(id string) error {
 	dbClient, err := provider.GetDBProvider().GetDBClient("identity")
 	if err != nil {
 		return fmt.Errorf("failed to get database client: %w", err)
 	}
 
-	_, err = dbClient.Execute(QueryDeleteOrganizationUnit, id)
+	_, err = dbClient.Execute(queryDeleteOrganizationUnit, id)
 	if err != nil {
 		return fmt.Errorf("failed to execute query: %w", err)
 	}
@@ -238,13 +269,13 @@ func DeleteOrganizationUnit(id string) error {
 }
 
 // GetOrganizationUnitChildrenCount retrieves the total count of child organization units for a given parent ID.
-func GetOrganizationUnitChildrenCount(parentID string) (int, error) {
+func (s *organizationUnitStore) GetOrganizationUnitChildrenCount(parentID string) (int, error) {
 	dbClient, err := provider.GetDBProvider().GetDBClient("identity")
 	if err != nil {
 		return 0, fmt.Errorf("failed to get database client: %w", err)
 	}
 
-	results, err := dbClient.Query(QueryGetOrganizationUnitChildrenCount, parentID)
+	results, err := dbClient.Query(queryGetOrganizationUnitChildrenCount, parentID)
 	if err != nil {
 		return 0, fmt.Errorf("failed to execute count query: %w", err)
 	}
@@ -263,18 +294,20 @@ func GetOrganizationUnitChildrenCount(parentID string) (int, error) {
 }
 
 // GetOrganizationUnitChildrenList retrieves a paginated list of child organization units for a given parent ID.
-func GetOrganizationUnitChildrenList(parentID string, limit, offset int) ([]model.OrganizationUnitBasic, error) {
+func (s *organizationUnitStore) GetOrganizationUnitChildrenList(
+	parentID string, limit, offset int,
+) ([]OrganizationUnitBasic, error) {
 	dbClient, err := provider.GetDBProvider().GetDBClient("identity")
 	if err != nil {
 		return nil, fmt.Errorf("failed to get database client: %w", err)
 	}
 
-	results, err := dbClient.Query(QueryGetOrganizationUnitChildrenList, parentID, limit, offset)
+	results, err := dbClient.Query(queryGetOrganizationUnitChildrenList, parentID, limit, offset)
 	if err != nil {
 		return nil, fmt.Errorf("failed to execute query: %w", err)
 	}
 
-	childOUs := make([]model.OrganizationUnitBasic, 0, len(results))
+	childOUs := make([]OrganizationUnitBasic, 0, len(results))
 	for _, row := range results {
 		childOU, err := buildOrganizationUnitBasicFromResultRow(row)
 		if err != nil {
@@ -287,13 +320,13 @@ func GetOrganizationUnitChildrenList(parentID string, limit, offset int) ([]mode
 }
 
 // GetOrganizationUnitUsersCount retrieves the total count of users in a given organization unit.
-func GetOrganizationUnitUsersCount(ouID string) (int, error) {
+func (s *organizationUnitStore) GetOrganizationUnitUsersCount(ouID string) (int, error) {
 	dbClient, err := provider.GetDBProvider().GetDBClient("identity")
 	if err != nil {
 		return 0, fmt.Errorf("failed to get database client: %w", err)
 	}
 
-	results, err := dbClient.Query(QueryGetOrganizationUnitUsersCount, ouID)
+	results, err := dbClient.Query(queryGetOrganizationUnitUsersCount, ouID)
 	if err != nil {
 		return 0, fmt.Errorf("failed to execute count query: %w", err)
 	}
@@ -312,22 +345,22 @@ func GetOrganizationUnitUsersCount(ouID string) (int, error) {
 }
 
 // GetOrganizationUnitUsersList retrieves a paginated list of users in a given organization unit.
-func GetOrganizationUnitUsersList(ouID string, limit, offset int) ([]model.User, error) {
+func (s *organizationUnitStore) GetOrganizationUnitUsersList(ouID string, limit, offset int) ([]User, error) {
 	dbClient, err := provider.GetDBProvider().GetDBClient("identity")
 	if err != nil {
 		return nil, fmt.Errorf("failed to get database client: %w", err)
 	}
 
-	results, err := dbClient.Query(QueryGetOrganizationUnitUsersList, ouID, limit, offset)
+	results, err := dbClient.Query(queryGetOrganizationUnitUsersList, ouID, limit, offset)
 	if err != nil {
 		return nil, fmt.Errorf("failed to execute query: %w", err)
 	}
 
-	users := make([]model.User, 0, len(results))
+	users := make([]User, 0, len(results))
 	for _, row := range results {
 		if userIDInterface, exists := row["user_id"]; exists {
 			if userID, ok := userIDInterface.(string); ok {
-				users = append(users, model.User{ID: userID})
+				users = append(users, User{ID: userID})
 			} else {
 				return nil, fmt.Errorf("expected user_id to be a string")
 			}
@@ -338,13 +371,13 @@ func GetOrganizationUnitUsersList(ouID string, limit, offset int) ([]model.User,
 }
 
 // GetOrganizationUnitGroupsCount retrieves the total count of groups in a given organization unit.
-func GetOrganizationUnitGroupsCount(ouID string) (int, error) {
+func (s *organizationUnitStore) GetOrganizationUnitGroupsCount(ouID string) (int, error) {
 	dbClient, err := provider.GetDBProvider().GetDBClient("identity")
 	if err != nil {
 		return 0, fmt.Errorf("failed to get database client: %w", err)
 	}
 
-	results, err := dbClient.Query(QueryGetOrganizationUnitGroupsCount, ouID)
+	results, err := dbClient.Query(queryGetOrganizationUnitGroupsCount, ouID)
 	if err != nil {
 		return 0, fmt.Errorf("failed to execute count query: %w", err)
 	}
@@ -363,20 +396,20 @@ func GetOrganizationUnitGroupsCount(ouID string) (int, error) {
 }
 
 // GetOrganizationUnitGroupsList retrieves a paginated list of groups in a given organization unit.
-func GetOrganizationUnitGroupsList(ouID string, limit, offset int) ([]model.Group, error) {
+func (s *organizationUnitStore) GetOrganizationUnitGroupsList(ouID string, limit, offset int) ([]Group, error) {
 	dbClient, err := provider.GetDBProvider().GetDBClient("identity")
 	if err != nil {
 		return nil, fmt.Errorf("failed to get database client: %w", err)
 	}
 
-	results, err := dbClient.Query(QueryGetOrganizationUnitGroupsList, ouID, limit, offset)
+	results, err := dbClient.Query(queryGetOrganizationUnitGroupsList, ouID, limit, offset)
 	if err != nil {
 		return nil, fmt.Errorf("failed to execute query: %w", err)
 	}
 
-	groups := make([]model.Group, 0, len(results))
+	groups := make([]Group, 0, len(results))
 	for _, row := range results {
-		var group model.Group
+		var group Group
 
 		if groupIDInterface, exists := row["group_id"]; exists {
 			if groupID, ok := groupIDInterface.(string); ok {
@@ -401,33 +434,33 @@ func GetOrganizationUnitGroupsList(ouID string, limit, offset int) ([]model.Grou
 }
 
 // CheckOrganizationUnitNameConflict checks if an organization unit name conflicts under the same parent.
-func CheckOrganizationUnitNameConflict(name string, parentID *string) (bool, error) {
+func (s *organizationUnitStore) CheckOrganizationUnitNameConflict(name string, parentID *string) (bool, error) {
 	return checkConflict(
-		QueryCheckOrganizationUnitNameConflict,
-		QueryCheckOrganizationUnitNameConflictRoot,
+		queryCheckOrganizationUnitNameConflict,
+		queryCheckOrganizationUnitNameConflictRoot,
 		name,
 		parentID,
 	)
 }
 
 // CheckOrganizationUnitHandleConflict checks if an organization unit handle conflicts under the same parent.
-func CheckOrganizationUnitHandleConflict(handle string, parentID *string) (bool, error) {
+func (s *organizationUnitStore) CheckOrganizationUnitHandleConflict(handle string, parentID *string) (bool, error) {
 	return checkConflict(
-		QueryCheckOrganizationUnitHandleConflict,
-		QueryCheckOrganizationUnitHandleConflictRoot,
+		queryCheckOrganizationUnitHandleConflict,
+		queryCheckOrganizationUnitHandleConflictRoot,
 		handle,
 		parentID,
 	)
 }
 
 // CheckOrganizationUnitHasChildResources checks if an organization unit has users groups or sub-ous.
-func CheckOrganizationUnitHasChildResources(ouID string) (bool, error) {
+func (s *organizationUnitStore) CheckOrganizationUnitHasChildResources(ouID string) (bool, error) {
 	dbClient, err := provider.GetDBProvider().GetDBClient("identity")
 	if err != nil {
 		return false, fmt.Errorf("failed to get database client: %w", err)
 	}
 
-	results, err := dbClient.Query(QueryCheckOrganizationUnitHasUsersOrGroups, ouID)
+	results, err := dbClient.Query(queryCheckOrganizationUnitHasUsersOrGroups, ouID)
 	if err != nil {
 		return false, fmt.Errorf("failed to execute query: %w", err)
 	}
@@ -441,23 +474,23 @@ func CheckOrganizationUnitHasChildResources(ouID string) (bool, error) {
 	return false, nil
 }
 
-// buildOrganizationUnitBasicFromResultRow constructs a model.OrganizationUnitBasic from a database result row.
+// buildOrganizationUnitBasicFromResultRow constructs a OrganizationUnitBasic from a database result row.
 func buildOrganizationUnitBasicFromResultRow(
 	row map[string]interface{},
-) (model.OrganizationUnitBasic, error) {
+) (OrganizationUnitBasic, error) {
 	ouID, ok := row["ou_id"].(string)
 	if !ok {
-		return model.OrganizationUnitBasic{}, fmt.Errorf("ou_id is not a string")
+		return OrganizationUnitBasic{}, fmt.Errorf("ou_id is not a string")
 	}
 
 	name, ok := row["name"].(string)
 	if !ok {
-		return model.OrganizationUnitBasic{}, fmt.Errorf("name is not a string")
+		return OrganizationUnitBasic{}, fmt.Errorf("name is not a string")
 	}
 
 	handle, ok := row["handle"].(string)
 	if !ok {
-		return model.OrganizationUnitBasic{}, fmt.Errorf("handle is not a string")
+		return OrganizationUnitBasic{}, fmt.Errorf("handle is not a string")
 	}
 
 	description := ""
@@ -467,7 +500,7 @@ func buildOrganizationUnitBasicFromResultRow(
 		}
 	}
 
-	return model.OrganizationUnitBasic{
+	return OrganizationUnitBasic{
 		ID:          ouID,
 		Handle:      handle,
 		Name:        name,
@@ -475,13 +508,13 @@ func buildOrganizationUnitBasicFromResultRow(
 	}, nil
 }
 
-// buildOrganizationUnitFromResultRow constructs a model.OrganizationUnit from a database result row.
+// buildOrganizationUnitFromResultRow constructs a OrganizationUnit from a database result row.
 func buildOrganizationUnitFromResultRow(
 	row map[string]interface{},
-) (model.OrganizationUnit, error) {
+) (OrganizationUnit, error) {
 	ou, err := buildOrganizationUnitBasicFromResultRow(row)
 	if err != nil {
-		return model.OrganizationUnit{}, fmt.Errorf("failed to build organization unit: %w", err)
+		return OrganizationUnit{}, fmt.Errorf("failed to build organization unit: %w", err)
 	}
 
 	var parentID *string
@@ -491,7 +524,7 @@ func buildOrganizationUnitFromResultRow(
 		}
 	}
 
-	return model.OrganizationUnit{
+	return OrganizationUnit{
 		ID:          ou.ID,
 		Handle:      ou.Handle,
 		Name:        ou.Name,

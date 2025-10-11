@@ -16,8 +16,7 @@
  * under the License.
  */
 
-// Package constants defines error constants for organization unit management operations.
-package constants
+package ou
 
 import (
 	"errors"

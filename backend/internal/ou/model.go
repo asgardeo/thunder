@@ -16,8 +16,7 @@
  * under the License.
  */
 
-// Package model defines the data structures and interfaces for organization unit management.
-package model
+package ou
 
 // OrganizationUnitBasic represents the basic information of an organization unit.
 type OrganizationUnitBasic struct {

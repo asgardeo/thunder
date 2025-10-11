@@ -16,136 +16,136 @@
  * under the License.
  */
 
-// Package store provides the implementation for organization unit persistence operations.
-package store
+// Package ou provides the implementation for organization unit persistence operations.
+package ou
 
 import dbmodel "github.com/asgardeo/thunder/internal/system/database/model"
 
 var (
-	// QueryGetRootOrganizationUnitListCount is the query to get total count of organization units.
-	QueryGetRootOrganizationUnitListCount = dbmodel.DBQuery{
+	// queryGetRootOrganizationUnitListCount is the query to get total count of organization units.
+	queryGetRootOrganizationUnitListCount = dbmodel.DBQuery{
 		ID:    "OUQ-OU_MGT-01",
 		Query: `SELECT COUNT(*) as total FROM ORGANIZATION_UNIT WHERE PARENT_ID IS NULL`,
 	}
 
-	// QueryGetRootOrganizationUnitList is the query to get organization units with pagination.
-	QueryGetRootOrganizationUnitList = dbmodel.DBQuery{
+	// queryGetRootOrganizationUnitList is the query to get organization units with pagination.
+	queryGetRootOrganizationUnitList = dbmodel.DBQuery{
 		ID: "OUQ-OU_MGT-02",
 		Query: `SELECT OU_ID, HANDLE, NAME, DESCRIPTION, PARENT_ID FROM ORGANIZATION_UNIT WHERE PARENT_ID IS NULL ` +
 			`ORDER BY NAME LIMIT $1 OFFSET $2`,
 	}
 
-	// QueryCreateOrganizationUnit is the query to create a new organization unit.
-	QueryCreateOrganizationUnit = dbmodel.DBQuery{
+	// queryCreateOrganizationUnit is the query to create a new organization unit.
+	queryCreateOrganizationUnit = dbmodel.DBQuery{
 		ID:    "OUQ-OU_MGT-03",
 		Query: `INSERT INTO ORGANIZATION_UNIT (OU_ID, PARENT_ID, HANDLE, NAME, DESCRIPTION) VALUES ($1, $2, $3, $4, $5)`,
 	}
 
-	// QueryGetOrganizationUnitByID is the query to get an organization unit by id.
-	QueryGetOrganizationUnitByID = dbmodel.DBQuery{
+	// queryGetOrganizationUnitByID is the query to get an organization unit by id.
+	queryGetOrganizationUnitByID = dbmodel.DBQuery{
 		ID:    "OUQ-OU_MGT-04",
 		Query: `SELECT OU_ID, PARENT_ID, HANDLE, NAME, DESCRIPTION FROM ORGANIZATION_UNIT WHERE OU_ID = $1`,
 	}
 
-	// QueryGetRootOrganizationUnitByHandle is the query to get a root organization unit by handle.
-	QueryGetRootOrganizationUnitByHandle = dbmodel.DBQuery{
+	// queryGetRootOrganizationUnitByHandle is the query to get a root organization unit by handle.
+	queryGetRootOrganizationUnitByHandle = dbmodel.DBQuery{
 		ID: "OUQ-OU_MGT-05",
 		Query: `SELECT OU_ID, PARENT_ID, HANDLE, NAME, DESCRIPTION FROM ORGANIZATION_UNIT ` +
 			`WHERE HANDLE = $1 AND PARENT_ID IS NULL`,
 	}
 
-	// QueryGetOrganizationUnitByHandle is the query to get an organization unit by handle and parent.
-	QueryGetOrganizationUnitByHandle = dbmodel.DBQuery{
+	// queryGetOrganizationUnitByHandle is the query to get an organization unit by handle and parent.
+	queryGetOrganizationUnitByHandle = dbmodel.DBQuery{
 		ID: "OUQ-OU_MGT-06",
 		Query: `SELECT OU_ID, PARENT_ID, HANDLE, NAME, DESCRIPTION FROM ORGANIZATION_UNIT ` +
 			`WHERE HANDLE = $1 AND PARENT_ID = $2`,
 	}
 
-	// QueryCheckOrganizationUnitExists is the query to check if an organization unit exists.
-	QueryCheckOrganizationUnitExists = dbmodel.DBQuery{
+	// queryCheckOrganizationUnitExists is the query to check if an organization unit exists.
+	queryCheckOrganizationUnitExists = dbmodel.DBQuery{
 		ID:    "OUQ-OU_MGT-07",
 		Query: `SELECT COUNT(*) as count FROM ORGANIZATION_UNIT WHERE OU_ID = $1`,
 	}
 
-	// QueryUpdateOrganizationUnit is the query to update an organization unit.
-	QueryUpdateOrganizationUnit = dbmodel.DBQuery{
+	// queryUpdateOrganizationUnit is the query to update an organization unit.
+	queryUpdateOrganizationUnit = dbmodel.DBQuery{
 		ID:    "OUQ-OU_MGT-08",
 		Query: `UPDATE ORGANIZATION_UNIT SET PARENT_ID = $2, HANDLE = $3, NAME = $4, DESCRIPTION = $5 WHERE OU_ID = $1`,
 	}
 
-	// QueryDeleteOrganizationUnit is the query to delete an organization unit.
-	QueryDeleteOrganizationUnit = dbmodel.DBQuery{
+	// queryDeleteOrganizationUnit is the query to delete an organization unit.
+	queryDeleteOrganizationUnit = dbmodel.DBQuery{
 		ID:    "OUQ-OU_MGT-09",
 		Query: `DELETE FROM ORGANIZATION_UNIT WHERE OU_ID = $1`,
 	}
 
-	// QueryGetOrganizationUnitChildrenCount is the query to get total count of child organization units.
-	QueryGetOrganizationUnitChildrenCount = dbmodel.DBQuery{
+	// queryGetOrganizationUnitChildrenCount is the query to get total count of child organization units.
+	queryGetOrganizationUnitChildrenCount = dbmodel.DBQuery{
 		ID:    "OUQ-OU_MGT-10",
 		Query: `SELECT COUNT(*) as total FROM ORGANIZATION_UNIT WHERE PARENT_ID = $1`,
 	}
 
-	// QueryGetOrganizationUnitChildrenList is the query to get child organization units with pagination.
-	QueryGetOrganizationUnitChildrenList = dbmodel.DBQuery{
+	// queryGetOrganizationUnitChildrenList is the query to get child organization units with pagination.
+	queryGetOrganizationUnitChildrenList = dbmodel.DBQuery{
 		ID: "OUQ-OU_MGT-11",
 		Query: `SELECT OU_ID, HANDLE, NAME, DESCRIPTION FROM ORGANIZATION_UNIT WHERE PARENT_ID = $1 ` +
 			`ORDER BY NAME LIMIT $2 OFFSET $3`,
 	}
 
-	// QueryGetOrganizationUnitUsersCount is the query to get total count of users in an organization unit.
-	QueryGetOrganizationUnitUsersCount = dbmodel.DBQuery{
+	// queryGetOrganizationUnitUsersCount is the query to get total count of users in an organization unit.
+	queryGetOrganizationUnitUsersCount = dbmodel.DBQuery{
 		ID:    "OUQ-OU_MGT-12",
 		Query: `SELECT COUNT(*) as total FROM "USER" WHERE OU_ID = $1`,
 	}
 
-	// QueryGetOrganizationUnitUsersList is the query to get users in an organization unit with pagination.
-	QueryGetOrganizationUnitUsersList = dbmodel.DBQuery{
+	// queryGetOrganizationUnitUsersList is the query to get users in an organization unit with pagination.
+	queryGetOrganizationUnitUsersList = dbmodel.DBQuery{
 		ID:    "OUQ-OU_MGT-13",
 		Query: `SELECT USER_ID FROM "USER" WHERE OU_ID = $1 ORDER BY USER_ID LIMIT $2 OFFSET $3`,
 	}
 
-	// QueryGetOrganizationUnitGroupsCount is the query to get total count of groups in an organization unit.
-	QueryGetOrganizationUnitGroupsCount = dbmodel.DBQuery{
+	// queryGetOrganizationUnitGroupsCount is the query to get total count of groups in an organization unit.
+	queryGetOrganizationUnitGroupsCount = dbmodel.DBQuery{
 		ID:    "OUQ-OU_MGT-14",
 		Query: `SELECT COUNT(*) as total FROM "GROUP" WHERE OU_ID = $1`,
 	}
 
-	// QueryGetOrganizationUnitGroupsList is the query to get groups in an organization unit with pagination.
-	QueryGetOrganizationUnitGroupsList = dbmodel.DBQuery{
+	// queryGetOrganizationUnitGroupsList is the query to get groups in an organization unit with pagination.
+	queryGetOrganizationUnitGroupsList = dbmodel.DBQuery{
 		ID:    "OUQ-OU_MGT-15",
 		Query: `SELECT GROUP_ID, NAME FROM "GROUP" WHERE OU_ID = $1 ORDER BY NAME LIMIT $2 OFFSET $3`,
 	}
 
-	// QueryCheckOrganizationUnitNameConflict is the query to check if an organization
+	// queryCheckOrganizationUnitNameConflict is the query to check if an organization
 	// unit name conflicts under the same parent.
-	QueryCheckOrganizationUnitNameConflict = dbmodel.DBQuery{
+	queryCheckOrganizationUnitNameConflict = dbmodel.DBQuery{
 		ID:    "OUQ-OU_MGT-16",
 		Query: `SELECT COUNT(*) as count FROM ORGANIZATION_UNIT WHERE NAME = $1 AND PARENT_ID = $2`,
 	}
 
-	// QueryCheckOrganizationUnitNameConflictRoot is the query to check if an organization
+	// queryCheckOrganizationUnitNameConflictRoot is the query to check if an organization
 	// unit name conflicts at root level.
-	QueryCheckOrganizationUnitNameConflictRoot = dbmodel.DBQuery{
+	queryCheckOrganizationUnitNameConflictRoot = dbmodel.DBQuery{
 		ID:    "OUQ-OU_MGT-17",
 		Query: `SELECT COUNT(*) as count FROM ORGANIZATION_UNIT WHERE NAME = $1 AND PARENT_ID IS NULL`,
 	}
 
-	// QueryCheckOrganizationUnitHandleConflict is the query to check if an organization
+	// queryCheckOrganizationUnitHandleConflict is the query to check if an organization
 	// unit handle conflicts under the same parent.
-	QueryCheckOrganizationUnitHandleConflict = dbmodel.DBQuery{
+	queryCheckOrganizationUnitHandleConflict = dbmodel.DBQuery{
 		ID:    "OUQ-OU_MGT-18",
 		Query: `SELECT COUNT(*) as count FROM ORGANIZATION_UNIT WHERE HANDLE = $1 AND PARENT_ID = $2`,
 	}
 
-	// QueryCheckOrganizationUnitHandleConflictRoot is the query to check if an organization
+	// queryCheckOrganizationUnitHandleConflictRoot is the query to check if an organization
 	// unit handle conflicts at root level.
-	QueryCheckOrganizationUnitHandleConflictRoot = dbmodel.DBQuery{
+	queryCheckOrganizationUnitHandleConflictRoot = dbmodel.DBQuery{
 		ID:    "OUQ-OU_MGT-19",
 		Query: `SELECT COUNT(*) as count FROM ORGANIZATION_UNIT WHERE HANDLE = $1 AND PARENT_ID IS NULL`,
 	}
 
-	// QueryCheckOrganizationUnitHasUsersOrGroups is the query to check if an organization unit has users or groups.
-	QueryCheckOrganizationUnitHasUsersOrGroups = dbmodel.DBQuery{
+	// queryCheckOrganizationUnitHasUsersOrGroups is the query to check if an organization unit has users or groups.
+	queryCheckOrganizationUnitHasUsersOrGroups = dbmodel.DBQuery{
 		ID: "OUQ-OU_MGT-20",
 		Query: `SELECT 
 					(SELECT COUNT(*) FROM ORGANIZATION_UNIT WHERE PARENT_ID = $1) +

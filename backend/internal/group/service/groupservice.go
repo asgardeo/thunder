@@ -27,8 +27,7 @@ import (
 	"github.com/asgardeo/thunder/internal/group/constants"
 	"github.com/asgardeo/thunder/internal/group/model"
 	"github.com/asgardeo/thunder/internal/group/store"
-	ouconstants "github.com/asgardeo/thunder/internal/ou/constants"
-	ouservice "github.com/asgardeo/thunder/internal/ou/service"
+	ouPkg "github.com/asgardeo/thunder/internal/ou"
 	serverconst "github.com/asgardeo/thunder/internal/system/constants"
 	"github.com/asgardeo/thunder/internal/system/error/serviceerror"
 	"github.com/asgardeo/thunder/internal/system/log"
@@ -107,10 +106,10 @@ func (gs *GroupService) GetGroupsByPath(
 		return nil, serviceError
 	}
 
-	ouService := ouservice.GetOrganizationUnitService()
+	ouService := ouPkg.GetOrganizationUnitService()
 	ou, svcErr := ouService.GetOrganizationUnitByPath(handlePath)
 	if svcErr != nil {
-		if svcErr.Code == ouconstants.ErrorOrganizationUnitNotFound.Code {
+		if svcErr.Code == ouPkg.ErrorOrganizationUnitNotFound.Code {
 			return nil, &constants.ErrorGroupNotFound
 		}
 		return nil, svcErr
@@ -220,10 +219,10 @@ func (gs *GroupService) CreateGroupByPath(
 		return nil, serviceError
 	}
 
-	ouService := ouservice.GetOrganizationUnitService()
+	ouService := ouPkg.GetOrganizationUnitService()
 	ou, svcErr := ouService.GetOrganizationUnitByPath(handlePath)
 	if svcErr != nil {
-		if svcErr.Code == ouconstants.ErrorOrganizationUnitNotFound.Code {
+		if svcErr.Code == ouPkg.ErrorOrganizationUnitNotFound.Code {
 			return nil, &constants.ErrorGroupNotFound
 		}
 		return nil, svcErr
@@ -476,10 +475,10 @@ func (gs *GroupService) isOrganizationUnitChanged(existingGroup model.Group, req
 func (gs *GroupService) validateOU(ouID string) *serviceerror.ServiceError {
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, loggerComponentName))
 
-	ouService := ouservice.GetOrganizationUnitService()
+	ouService := ouPkg.GetOrganizationUnitService()
 	_, err := ouService.GetOrganizationUnit(ouID)
 	if err != nil {
-		if err.Code == ouconstants.ErrorOrganizationUnitNotFound.Code {
+		if err.Code == ouPkg.ErrorOrganizationUnitNotFound.Code {
 			return &constants.ErrorInvalidOUID
 		} else {
 			logger.Error("Failed to get organization unit", log.Any("error: ", err))

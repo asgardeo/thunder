@@ -16,45 +16,36 @@
  * under the License.
  */
 
-// Package services handles the registration of routes and services for the system.
-//
-//nolint:dupl // Ignoring false positive duplicate code
-package services
+// Package ou handles the organization unit management operations.
+package ou
 
 import (
 	"net/http"
 	"strings"
 
-	"github.com/asgardeo/thunder/internal/ou/handler"
 	"github.com/asgardeo/thunder/internal/system/middleware"
 )
 
-// OrganizationUnitService is the service for organization unit management operations.
-type OrganizationUnitService struct {
-	ouHandler *handler.OrganizationUnitHandler
+// Initialize initializes the organization unit service and registers its routes.
+func Initialize(mux *http.ServeMux) OrganizationUnitServiceInterface {
+	ouService := newOrganizationUnitService()
+	setOrganizationUnitService(ouService) // Set the provider for backward compatibility
+	ouHandler := newOrganizationUnitHandler(ouService)
+	registerRoutes(mux, ouHandler)
+	return ouService
 }
 
-// NewOrganizationUnitService creates a new instance of OrganizationUnitService.
-func NewOrganizationUnitService(mux *http.ServeMux) ServiceInterface {
-	instance := &OrganizationUnitService{
-		ouHandler: handler.NewOrganizationUnitHandler(),
-	}
-	instance.RegisterRoutes(mux)
-
-	return instance
-}
-
-// RegisterRoutes registers the routes for organization unit management operations.
-func (s *OrganizationUnitService) RegisterRoutes(mux *http.ServeMux) {
+// registerRoutes registers the routes for organization unit management operations.
+func registerRoutes(mux *http.ServeMux, ouHandler *organizationUnitHandler) {
 	opts1 := middleware.CORSOptions{
 		AllowedMethods:   "GET, POST",
 		AllowedHeaders:   "Content-Type, Authorization",
 		AllowCredentials: true,
 	}
 	mux.HandleFunc(middleware.WithCORS("POST /organization-units",
-		s.ouHandler.HandleOUPostRequest, opts1))
+		ouHandler.HandleOUPostRequest, opts1))
 	mux.HandleFunc(middleware.WithCORS("GET /organization-units",
-		s.ouHandler.HandleOUListRequest, opts1))
+		ouHandler.HandleOUListRequest, opts1))
 	mux.HandleFunc(middleware.WithCORS("OPTIONS /organization-units",
 		func(w http.ResponseWriter, r *http.Request) {
 			w.WriteHeader(http.StatusNoContent)
@@ -72,15 +63,15 @@ func (s *OrganizationUnitService) RegisterRoutes(mux *http.ServeMux) {
 			r.SetPathValue("id", segments[0])
 
 			if len(segments) == 1 {
-				s.ouHandler.HandleOUGetRequest(w, r)
+				ouHandler.HandleOUGetRequest(w, r)
 			} else if len(segments) == 2 {
 				switch segments[1] {
 				case "ous":
-					s.ouHandler.HandleOUChildrenListRequest(w, r)
+					ouHandler.HandleOUChildrenListRequest(w, r)
 				case "users":
-					s.ouHandler.HandleOUUsersListRequest(w, r)
+					ouHandler.HandleOUUsersListRequest(w, r)
 				case "groups":
-					s.ouHandler.HandleOUGroupsListRequest(w, r)
+					ouHandler.HandleOUGroupsListRequest(w, r)
 				default:
 					http.NotFound(w, r)
 				}
@@ -89,9 +80,9 @@ func (s *OrganizationUnitService) RegisterRoutes(mux *http.ServeMux) {
 			}
 		}, opts2))
 	mux.HandleFunc(middleware.WithCORS("PUT /organization-units/{id}",
-		s.ouHandler.HandleOUPutRequest, opts2))
+		ouHandler.HandleOUPutRequest, opts2))
 	mux.HandleFunc(middleware.WithCORS("DELETE /organization-units/{id}",
-		s.ouHandler.HandleOUDeleteRequest, opts2))
+		ouHandler.HandleOUDeleteRequest, opts2))
 	mux.HandleFunc(middleware.WithCORS("OPTIONS /organization-units/{id}",
 		func(w http.ResponseWriter, r *http.Request) {
 			w.WriteHeader(http.StatusNoContent)
@@ -101,9 +92,9 @@ func (s *OrganizationUnitService) RegisterRoutes(mux *http.ServeMux) {
 		func(w http.ResponseWriter, r *http.Request) {
 			pathValue := r.PathValue("path")
 			handlers := map[string]func(http.ResponseWriter, *http.Request){
-				"/ous":    s.ouHandler.HandleOUChildrenListByPathRequest,
-				"/users":  s.ouHandler.HandleOUUsersListByPathRequest,
-				"/groups": s.ouHandler.HandleOUGroupsListByPathRequest,
+				"/ous":    ouHandler.HandleOUChildrenListByPathRequest,
+				"/users":  ouHandler.HandleOUUsersListByPathRequest,
+				"/groups": ouHandler.HandleOUGroupsListByPathRequest,
 			}
 
 			for suffix, handlerFunc := range handlers {
@@ -117,12 +108,12 @@ func (s *OrganizationUnitService) RegisterRoutes(mux *http.ServeMux) {
 
 			newPath := "/organization-units/tree/" + pathValue
 			r.URL.Path = newPath
-			s.ouHandler.HandleOUGetByPathRequest(w, r)
+			ouHandler.HandleOUGetByPathRequest(w, r)
 		}, opts2))
 	mux.HandleFunc(middleware.WithCORS("PUT /organization-units/tree/{path...}",
-		s.ouHandler.HandleOUPutByPathRequest, opts2))
+		ouHandler.HandleOUPutByPathRequest, opts2))
 	mux.HandleFunc(middleware.WithCORS("DELETE /organization-units/tree/{path...}",
-		s.ouHandler.HandleOUDeleteByPathRequest, opts2))
+		ouHandler.HandleOUDeleteByPathRequest, opts2))
 	mux.HandleFunc(middleware.WithCORS("OPTIONS /organization-units/tree/{path...}",
 		func(w http.ResponseWriter, r *http.Request) {
 			w.WriteHeader(http.StatusNoContent)
