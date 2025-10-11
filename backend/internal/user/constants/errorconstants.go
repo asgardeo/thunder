@@ -156,4 +156,7 @@ var (
 var (
 	// ErrUserNotFound is returned when the user is not found in the system.
 	ErrUserNotFound = errors.New("user not found")
+
+	// ErrBadAttributesInRequest is returned when the attributes in the request are invalid.
+	ErrBadAttributesInRequest = errors.New("failed to marshal attributes")
 )

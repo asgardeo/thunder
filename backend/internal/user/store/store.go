@@ -25,6 +25,7 @@ import (
 
 	"github.com/asgardeo/thunder/internal/system/database/provider"
 	"github.com/asgardeo/thunder/internal/system/log"
+	"github.com/asgardeo/thunder/internal/user/constants"
 	"github.com/asgardeo/thunder/internal/user/model"
 )
 
@@ -97,7 +98,7 @@ func CreateUser(user model.User, credentials []model.Credential) error {
 	// Convert attributes to JSON string
 	attributes, err := json.Marshal(user.Attributes)
 	if err != nil {
-		return model.ErrBadAttributesInRequest
+		return constants.ErrBadAttributesInRequest
 	}
 
 	// Convert credentials array to JSON string
@@ -107,7 +108,7 @@ func CreateUser(user model.User, credentials []model.Credential) error {
 	} else {
 		credentialsBytes, err := json.Marshal(credentials)
 		if err != nil {
-			return model.ErrBadAttributesInRequest
+			return constants.ErrBadAttributesInRequest
 		}
 		credentialsJSON = string(credentialsBytes)
 	}
@@ -140,7 +141,7 @@ func GetUser(id string) (model.User, error) {
 	}
 
 	if len(results) == 0 {
-		return model.User{}, model.ErrUserNotFound
+		return model.User{}, constants.ErrUserNotFound
 	}
 
 	if len(results) != 1 {
@@ -166,7 +167,7 @@ func UpdateUser(user *model.User) error {
 	// Convert attributes to JSON string
 	attributes, err := json.Marshal(user.Attributes)
 	if err != nil {
-		return model.ErrBadAttributesInRequest
+		return constants.ErrBadAttributesInRequest
 	}
 
 	rowsAffected, err := dbClient.Execute(
@@ -176,7 +177,7 @@ func UpdateUser(user *model.User) error {
 	}
 
 	if rowsAffected == 0 {
-		return model.ErrUserNotFound
+		return constants.ErrUserNotFound
 	}
 
 	return nil
@@ -227,7 +228,7 @@ func IdentifyUser(filters map[string]interface{}) (*string, error) {
 			maskedFilters := maskMapValues(filters)
 			logger.Debug("User not found with the provided filters", log.Any("filters", maskedFilters))
 		}
-		return nil, model.ErrUserNotFound
+		return nil, constants.ErrUserNotFound
 	}
 
 	if len(results) != 1 {
@@ -264,7 +265,7 @@ func VerifyUser(id string) (model.User, []model.Credential, error) {
 	}
 
 	if len(results) == 0 {
-		return model.User{}, []model.Credential{}, model.ErrUserNotFound
+		return model.User{}, []model.Credential{}, constants.ErrUserNotFound
 	}
 
 	if len(results) != 1 {

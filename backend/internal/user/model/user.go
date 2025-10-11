@@ -21,7 +21,6 @@ package model
 
 import (
 	"encoding/json"
-	"errors"
 )
 
 // User represents a user in the system.
@@ -103,9 +102,3 @@ type AuthenticateUserResponse struct {
 	Type             string `json:"type"`
 	OrganizationUnit string `json:"organizationUnit"`
 }
-
-// ErrUserNotFound is returned when the user is not found in the system.
-var ErrUserNotFound = errors.New("user not found")
-
-// ErrBadAttributesInRequest is returned when the attributes in the request are invalid.
-var ErrBadAttributesInRequest = errors.New("failed to marshal attributes")

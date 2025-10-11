@@ -23,6 +23,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"path"
 	"strings"
 
 	ouconstants "github.com/asgardeo/thunder/internal/ou/constants"
@@ -96,20 +97,12 @@ func (as *UserService) GetUserList(limit, offset int,
 		return nil, logErrorAndReturnServerError(logger, "Failed to get user list", err)
 	}
 
-	var links []model.Link
-	if offset+limit < totalCount {
-		links = append(links, model.Link{
-			Href: fmt.Sprintf("users?offset=%d&limit=%d", offset+limit, limit),
-			Rel:  "next",
-		})
-	}
-
 	response := &model.UserListResponse{
 		TotalResults: totalCount,
 		StartIndex:   offset + 1,
 		Count:        len(users),
 		Users:        users,
-		Links:        links,
+		Links:        buildPaginationLinks("/users", limit, offset, totalCount),
 	}
 
 	return response, nil
@@ -158,7 +151,7 @@ func (as *UserService) GetUsersByPath(
 		StartIndex:   ouResponse.StartIndex,
 		Count:        ouResponse.Count,
 		Users:        users,
-		Links:        buildPaginationLinks(handlePath, limit, offset, ouResponse.TotalResults),
+		Links:        buildTreePaginationLinks(handlePath, limit, offset, ouResponse.TotalResults),
 	}
 
 	return response, nil
@@ -348,7 +341,7 @@ func (as *UserService) IdentifyUser(filters map[string]interface{}) (*string, *s
 
 	userID, err := store.IdentifyUser(filters)
 	if err != nil {
-		if errors.Is(err, model.ErrUserNotFound) {
+		if errors.Is(err, constants.ErrUserNotFound) {
 			logger.Debug("User not found with provided filters")
 			return nil, &constants.ErrorUserNotFound
 		}
@@ -584,13 +577,13 @@ func logErrorAndReturnServerError(
 	return &constants.ErrorInternalServerError
 }
 
-// buildPaginationLinks builds pagination links for user responses.
-func buildPaginationLinks(handlePath string, limit, offset, totalResults int) []model.Link {
+// buildPaginationLinks builds pagination links for the response.
+func buildPaginationLinks(path string, limit, offset, totalResults int) []model.Link {
 	links := make([]model.Link, 0)
 
 	if offset > 0 {
 		links = append(links, model.Link{
-			Href: fmt.Sprintf("users/tree/%s?offset=0&limit=%d", handlePath, limit),
+			Href: fmt.Sprintf("%s?offset=0&limit=%d", path, limit),
 			Rel:  "first",
 		})
 
@@ -599,7 +592,7 @@ func buildPaginationLinks(handlePath string, limit, offset, totalResults int) []
 			prevOffset = 0
 		}
 		links = append(links, model.Link{
-			Href: fmt.Sprintf("users/tree/%s?offset=%d&limit=%d", handlePath, prevOffset, limit),
+			Href: fmt.Sprintf("%s?offset=%d&limit=%d", path, prevOffset, limit),
 			Rel:  "prev",
 		})
 	}
@@ -607,7 +600,7 @@ func buildPaginationLinks(handlePath string, limit, offset, totalResults int) []
 	if offset+limit < totalResults {
 		nextOffset := offset + limit
 		links = append(links, model.Link{
-			Href: fmt.Sprintf("users/tree/%s?offset=%d&limit=%d", handlePath, nextOffset, limit),
+			Href: fmt.Sprintf("%s?offset=%d&limit=%d", path, nextOffset, limit),
 			Rel:  "next",
 		})
 	}
@@ -615,10 +608,16 @@ func buildPaginationLinks(handlePath string, limit, offset, totalResults int) []
 	lastPageOffset := ((totalResults - 1) / limit) * limit
 	if offset < lastPageOffset {
 		links = append(links, model.Link{
-			Href: fmt.Sprintf("users/tree/%s?offset=%d&limit=%d", handlePath, lastPageOffset, limit),
+			Href: fmt.Sprintf("%s?offset=%d&limit=%d", path, lastPageOffset, limit),
 			Rel:  "last",
 		})
 	}
 
 	return links
+}
+
+// buildTreePaginationLinks builds pagination links for user responses.
+func buildTreePaginationLinks(handlePath string, limit, offset, totalResults int) []model.Link {
+	path := fmt.Sprintf("/users/tree/%s", path.Clean(handlePath))
+	return buildPaginationLinks(path, limit, offset, totalResults)
 }
