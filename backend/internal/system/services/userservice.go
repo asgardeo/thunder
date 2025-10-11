@@ -23,6 +23,7 @@ package services
 
 import (
 	"net/http"
+	"strings"
 
 	"github.com/asgardeo/thunder/internal/system/middleware"
 	"github.com/asgardeo/thunder/internal/user/handler"
@@ -61,7 +62,20 @@ func (s *UserService) RegisterRoutes(mux *http.ServeMux) {
 		AllowedHeaders:   "Content-Type, Authorization",
 		AllowCredentials: true,
 	}
-	mux.HandleFunc(middleware.WithCORS("GET /users/", s.userHandler.HandleUserGetRequest, opts2))
+	mux.HandleFunc(middleware.WithCORS("GET /users/",
+		func(w http.ResponseWriter, r *http.Request) {
+			path := strings.TrimPrefix(r.URL.Path, "/users/")
+			segments := strings.Split(path, "/")
+			r.SetPathValue("id", segments[0])
+
+			if len(segments) == 1 {
+				s.userHandler.HandleUserGetRequest(w, r)
+			} else if len(segments) == 2 && segments[1] == "groups" {
+				s.userHandler.HandleUserGroupsGetRequest(w, r)
+			} else {
+				http.NotFound(w, r)
+			}
+		}, opts2))
 	mux.HandleFunc(middleware.WithCORS("PUT /users/", s.userHandler.HandleUserPutRequest, opts2))
 	mux.HandleFunc(middleware.WithCORS("DELETE /users/", s.userHandler.HandleUserDeleteRequest, opts2))
 	mux.HandleFunc(middleware.WithCORS("OPTIONS /users/", func(w http.ResponseWriter, r *http.Request) {

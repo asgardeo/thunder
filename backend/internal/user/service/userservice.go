@@ -56,6 +56,7 @@ type UserServiceInterface interface {
 	CreateUser(user *model.User) (*model.User, *serviceerror.ServiceError)
 	CreateUserByPath(handlePath string, request model.CreateUserByPathRequest) (*model.User, *serviceerror.ServiceError)
 	GetUser(userID string) (*model.User, *serviceerror.ServiceError)
+	GetUserGroups(userID string, limit, offset int) (*model.UserGroupListResponse, *serviceerror.ServiceError)
 	UpdateUser(userID string, user *model.User) (*model.User, *serviceerror.ServiceError)
 	DeleteUser(userID string) *serviceerror.ServiceError
 	IdentifyUser(filters map[string]interface{}) (*string, *serviceerror.ServiceError)
@@ -277,6 +278,56 @@ func (as *UserService) GetUser(userID string) (*model.User, *serviceerror.Servic
 
 	logger.Debug("Successfully retrieved user", log.String("id", userID))
 	return &user, nil
+}
+
+// GetUserGroups retrieves groups of a user with pagination.
+func (as *UserService) GetUserGroups(userID string, limit, offset int) (
+	*model.UserGroupListResponse, *serviceerror.ServiceError) {
+	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, loggerComponentName))
+
+	if userID == "" {
+		return nil, &constants.ErrorMissingUserID
+	}
+
+	if err := validatePaginationParams(limit, offset); err != nil {
+		return nil, err
+	}
+
+	invalidUserIDs, err := store.ValidateUserIDs([]string{userID})
+	if err != nil {
+		logger.Error("Failed to validate user IDs", log.String("error", err.Error()))
+		return nil, &constants.ErrorInternalServerError
+	}
+
+	if len(invalidUserIDs) > 0 {
+		logger.Debug("User not found", log.String("id", userID))
+		return nil, &constants.ErrorUserNotFound
+	}
+
+	totalCount, err := store.GetGroupCountForUser(userID)
+	if err != nil {
+		logger.Error("Failed to get group count for user", log.String("userID", userID), log.Error(err))
+		return nil, &constants.ErrorInternalServerError
+	}
+
+	groups, err := store.GetUserGroups(userID, limit, offset)
+	if err != nil {
+		logger.Error("Failed to get user groups", log.String("id", userID), log.Error(err))
+		return nil, &constants.ErrorInternalServerError
+	}
+
+	path := fmt.Sprintf("/users/%s/groups", userID)
+	links := buildPaginationLinks(path, limit, offset, totalCount)
+
+	response := &model.UserGroupListResponse{
+		TotalResults: totalCount,
+		Groups:       groups,
+		StartIndex:   offset + 1,
+		Count:        len(groups),
+		Links:        links,
+	}
+
+	return response, nil
 }
 
 // UpdateUser update the user for given user id.

@@ -367,8 +367,10 @@ paths:
                 groups:
                   - id: "550e8400-e29b-41d4-a716-446655440000"
                     name: "Premium Customers"
+                    ouId: "456e8400-e29b-41d4-a716-446655440001"
                   - id: "660e8400-e29b-41d4-a716-446655440001"
                     name: "Mobile App Users"
+                    ouId: "456e8400-e29b-41d4-a716-446655440001"
                 links:
                   - href: "users/9a475e1e-b0cb-4b29-8df5-2e5b24fb0ed3/groups?offset=2&limit=2"
                     rel: "next"
@@ -379,6 +381,12 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
               examples:
+                missing-user-id:
+                  summary: Missing user ID
+                  value:
+                    code: "USR-1002"
+                    message: "Invalid request format"
+                    description: "User ID is required"
                 invalid-limit:
                   summary: Invalid limit parameter
                   value:
@@ -403,6 +411,14 @@ paths:
                 description: "The user with the specified id does not exist"
         "500":
           description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: "USR-5001"
+                message: "Internal server error"
+                description: "An unexpected error occurred while processing the request"
 
   /users/tree/{path}:
     get:
@@ -1162,7 +1178,7 @@ components:
 
     UserGroup:
       type: object
-      required: [id, name]
+      required: [id, name, ouId]
       properties:
         id:
           type: string
@@ -1171,6 +1187,10 @@ components:
         name:
           type: string
           description: "The name of the group"
+        ouId:
+          type: string
+          format: uuid
+          description: "The organization unit ID that the group belongs to"
 
     UserListResponse:
       type: object

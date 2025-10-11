@@ -336,6 +336,53 @@ func ValidateUserIDs(userIDs []string) ([]string, error) {
 	return invalidUserIDs, nil
 }
 
+// GetGroupCountForUser retrieves the total count of groups a user belongs to.
+func GetGroupCountForUser(userID string) (int, error) {
+	dbClient, err := provider.GetDBProvider().GetDBClient("identity")
+	if err != nil {
+		return 0, fmt.Errorf("failed to get database client: %w", err)
+	}
+
+	countResults, err := dbClient.Query(QueryGetGroupCountForUser, userID)
+	if err != nil {
+		return 0, fmt.Errorf("failed to get group count for user: %w", err)
+	}
+
+	if len(countResults) == 0 {
+		return 0, nil
+	}
+
+	if count, ok := countResults[0]["total"].(int64); ok {
+		return int(count), nil
+	}
+	return 0, fmt.Errorf("unexpected type for total: %T", countResults[0]["total"])
+}
+
+// GetUserGroups retrieves groups that a user belongs to with pagination.
+func GetUserGroups(userID string, limit, offset int) ([]model.UserGroup, error) {
+	dbClient, err := provider.GetDBProvider().GetDBClient("identity")
+	if err != nil {
+		return nil, fmt.Errorf("failed to get database client: %w", err)
+	}
+
+	results, err := dbClient.Query(QueryGetGroupsForUser, userID, limit, offset)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get groups for user: %w", err)
+	}
+
+	groups := make([]model.UserGroup, 0, len(results))
+	for _, row := range results {
+		group, err := buildGroupFromResultRow(row)
+		if err != nil {
+			return nil, fmt.Errorf("failed to build group from result row: %w", err)
+		}
+
+		groups = append(groups, group)
+	}
+
+	return groups, nil
+}
+
 func buildUserFromResultRow(row map[string]interface{}) (model.User, error) {
 	userID, ok := row["user_id"].(string)
 	if !ok {
@@ -374,6 +421,32 @@ func buildUserFromResultRow(row map[string]interface{}) (model.User, error) {
 	}
 
 	return user, nil
+}
+
+// buildGroupFromResultRow constructs a model.UserGroup from a database result row.
+func buildGroupFromResultRow(row map[string]interface{}) (model.UserGroup, error) {
+	groupID, ok := row["group_id"].(string)
+	if !ok {
+		return model.UserGroup{}, fmt.Errorf("failed to parse group_id as string")
+	}
+
+	name, ok := row["name"].(string)
+	if !ok {
+		return model.UserGroup{}, fmt.Errorf("failed to parse name as string")
+	}
+
+	ouID, ok := row["ou_id"].(string)
+	if !ok {
+		return model.UserGroup{}, fmt.Errorf("failed to parse ou_id as string")
+	}
+
+	group := model.UserGroup{
+		ID:                 groupID,
+		Name:               name,
+		OrganizationUnitID: ouID,
+	}
+
+	return group, nil
 }
 
 // maskMapValues masks the values in a map to prevent sensitive data from being logged.

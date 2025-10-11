@@ -68,6 +68,19 @@ var (
 		ID:    "ASQ-USER_MGT-07",
 		Query: "SELECT USER_ID, OU_ID, TYPE, ATTRIBUTES, CREDENTIALS FROM \"USER\" WHERE USER_ID = $1",
 	}
+	// QueryGetGroupCountForUser is the query to get the count of groups for a given user.
+	QueryGetGroupCountForUser = model.DBQuery{
+		ID:    "ASQ-USER_MGT-12",
+		Query: `SELECT COUNT(*) AS total FROM GROUP_MEMBER_REFERENCE WHERE MEMBER_ID = $1 AND MEMBER_TYPE = 'USER'`,
+	}
+	// QueryGetGroupsForUser is the query to get groups for a given user with pagination.
+	QueryGetGroupsForUser = model.DBQuery{
+		ID: "ASQ-USER_MGT-13",
+		Query: `SELECT G.GROUP_ID, G.OU_ID, G.NAME FROM GROUP_MEMBER_REFERENCE GMR ` +
+			`INNER JOIN "GROUP" G ON GMR.GROUP_ID = G.GROUP_ID ` +
+			`WHERE GMR.MEMBER_ID = $1 AND GMR.MEMBER_TYPE = 'USER' ` +
+			`ORDER BY G.NAME LIMIT $2 OFFSET $3`,
+	}
 )
 
 // buildIdentifyQuery constructs a query to identify a user based on the provided filters.

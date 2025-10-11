@@ -352,6 +352,82 @@ func (_c *UserServiceInterfaceMock_GetUser_Call) RunAndReturn(run func(userID st
 	return _c
 }
 
+// GetUserGroups provides a mock function for the type UserServiceInterfaceMock
+func (_mock *UserServiceInterfaceMock) GetUserGroups(userID string, limit int, offset int) (*model.UserGroupListResponse, *serviceerror.ServiceError) {
+	ret := _mock.Called(userID, limit, offset)
+
+	if len(ret) == 0 {
+		panic("no return value specified for GetUserGroups")
+	}
+
+	var r0 *model.UserGroupListResponse
+	var r1 *serviceerror.ServiceError
+	if returnFunc, ok := ret.Get(0).(func(string, int, int) (*model.UserGroupListResponse, *serviceerror.ServiceError)); ok {
+		return returnFunc(userID, limit, offset)
+	}
+	if returnFunc, ok := ret.Get(0).(func(string, int, int) *model.UserGroupListResponse); ok {
+		r0 = returnFunc(userID, limit, offset)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(*model.UserGroupListResponse)
+		}
+	}
+	if returnFunc, ok := ret.Get(1).(func(string, int, int) *serviceerror.ServiceError); ok {
+		r1 = returnFunc(userID, limit, offset)
+	} else {
+		if ret.Get(1) != nil {
+			r1 = ret.Get(1).(*serviceerror.ServiceError)
+		}
+	}
+	return r0, r1
+}
+
+// UserServiceInterfaceMock_GetUserGroups_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'GetUserGroups'
+type UserServiceInterfaceMock_GetUserGroups_Call struct {
+	*mock.Call
+}
+
+// GetUserGroups is a helper method to define mock.On call
+//   - userID string
+//   - limit int
+//   - offset int
+func (_e *UserServiceInterfaceMock_Expecter) GetUserGroups(userID interface{}, limit interface{}, offset interface{}) *UserServiceInterfaceMock_GetUserGroups_Call {
+	return &UserServiceInterfaceMock_GetUserGroups_Call{Call: _e.mock.On("GetUserGroups", userID, limit, offset)}
+}
+
+func (_c *UserServiceInterfaceMock_GetUserGroups_Call) Run(run func(userID string, limit int, offset int)) *UserServiceInterfaceMock_GetUserGroups_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 string
+		if args[0] != nil {
+			arg0 = args[0].(string)
+		}
+		var arg1 int
+		if args[1] != nil {
+			arg1 = args[1].(int)
+		}
+		var arg2 int
+		if args[2] != nil {
+			arg2 = args[2].(int)
+		}
+		run(
+			arg0,
+			arg1,
+			arg2,
+		)
+	})
+	return _c
+}
+
+func (_c *UserServiceInterfaceMock_GetUserGroups_Call) Return(userGroupListResponse *model.UserGroupListResponse, serviceError *serviceerror.ServiceError) *UserServiceInterfaceMock_GetUserGroups_Call {
+	_c.Call.Return(userGroupListResponse, serviceError)
+	return _c
+}
+
+func (_c *UserServiceInterfaceMock_GetUserGroups_Call) RunAndReturn(run func(userID string, limit int, offset int) (*model.UserGroupListResponse, *serviceerror.ServiceError)) *UserServiceInterfaceMock_GetUserGroups_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
 // GetUserList provides a mock function for the type UserServiceInterfaceMock
 func (_mock *UserServiceInterfaceMock) GetUserList(limit int, offset int, filters map[string]interface{}) (*model.UserListResponse, *serviceerror.ServiceError) {
 	ret := _mock.Called(limit, offset, filters)
