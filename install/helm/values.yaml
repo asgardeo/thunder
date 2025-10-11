@@ -169,11 +169,13 @@ configuration:
     evictionPolicy: "LRU"
     cleanupInterval: 300
 
+  # Token Configuration
+  jwt:
+    issuer: "thunder"
+    validityPeriod: 3600
+
   # OAuth configuration
   oauth:
-    jwt:
-      issuer: "thunder"
-      validityPeriod: 3600
     refreshToken:
       renewOnGrant: false
       validityPeriod: 86400
