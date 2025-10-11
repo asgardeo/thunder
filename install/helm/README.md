@@ -189,8 +189,8 @@ The following table lists the configurable parameters of the Thunder chart and t
 | `configuration.cache.ttl`              | Cache TTL in seconds                                            | `3600`                       |
 | `configuration.cache.evictionPolicy`   | Cache eviction policy                                           | `LRU`                        |
 | `configuration.cache.cleanupInterval`  | Cache cleanup interval in seconds                               | `300`                        |
-| `configuration.oauth.jwt.issuer`       | JWT issuer                                                      | `thunder`                    |
-| `configuration.oauth.jwt.validityPeriod` | JWT validity period in seconds                                | `3600`                       |
+| `configuration.jwt.issuer`             | JWT issuer                                                      | `thunder`                    |
+| `configuration.jwt.validityPeriod`     | JWT validity period in seconds                                  | `3600`                       |
 | `configuration.oauth.refreshToken.renewOnGrant` | Renew refresh token on grant                           | `false`                      |
 | `configuration.oauth.refreshToken.validityPeriod` | Refresh token validity period in seconds             | `86400`                      |
 | `configuration.flow.graphDirectory`    | Flow graph directory                                            | `repository/resources/graphs/` |
