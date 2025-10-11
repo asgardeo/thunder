@@ -16,8 +16,7 @@
  * under the License.
  */
 
-// Package handler provides the implementation for user schema management operations.
-package handler
+package userschema
 
 import (
 	"encoding/json"
@@ -29,28 +28,25 @@ import (
 	"github.com/asgardeo/thunder/internal/system/error/serviceerror"
 	"github.com/asgardeo/thunder/internal/system/log"
 	sysutils "github.com/asgardeo/thunder/internal/system/utils"
-	"github.com/asgardeo/thunder/internal/userschema/constants"
-	"github.com/asgardeo/thunder/internal/userschema/model"
-	"github.com/asgardeo/thunder/internal/userschema/service"
 )
 
-const userSchemaLoggerComponentName = "UserSchemaHandler"
+const userSchemaHandlerLoggerComponentName = "UserSchemaHandler"
 
-// UserSchemaHandler is the handler for user schema management operations.
-type UserSchemaHandler struct {
-	userSchemaService service.UserSchemaServiceInterface
+// userSchemaHandler is the handler for user schema management operations.
+type userSchemaHandler struct {
+	userSchemaService UserSchemaServiceInterface
 }
 
-// NewUserSchemaHandler creates a new instance of UserSchemaHandler with dependency injection.
-func NewUserSchemaHandler() *UserSchemaHandler {
-	return &UserSchemaHandler{
-		userSchemaService: service.GetUserSchemaService(),
+// newUserSchemaHandler creates a new instance of userSchemaHandler.
+func newUserSchemaHandler(userSchemaService UserSchemaServiceInterface) *userSchemaHandler {
+	return &userSchemaHandler{
+		userSchemaService: userSchemaService,
 	}
 }
 
 // HandleUserSchemaListRequest handles the user schema list request.
-func (ash *UserSchemaHandler) HandleUserSchemaListRequest(w http.ResponseWriter, r *http.Request) {
-	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, userSchemaLoggerComponentName))
+func (h *userSchemaHandler) HandleUserSchemaListRequest(w http.ResponseWriter, r *http.Request) {
+	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, userSchemaHandlerLoggerComponentName))
 
 	limit, offset, svcErr := parsePaginationParams(r.URL.Query())
 	if svcErr != nil {
@@ -62,7 +58,7 @@ func (ash *UserSchemaHandler) HandleUserSchemaListRequest(w http.ResponseWriter,
 		limit = serverconst.DefaultPageSize
 	}
 
-	userSchemaListResponse, svcErr := ash.userSchemaService.GetUserSchemaList(limit, offset)
+	userSchemaListResponse, svcErr := h.userSchemaService.GetUserSchemaList(limit, offset)
 	if svcErr != nil {
 		handleError(w, logger, svcErr)
 		return
@@ -84,17 +80,17 @@ func (ash *UserSchemaHandler) HandleUserSchemaListRequest(w http.ResponseWriter,
 }
 
 // HandleUserSchemaPostRequest handles the user schema creation request.
-func (ash *UserSchemaHandler) HandleUserSchemaPostRequest(w http.ResponseWriter, r *http.Request) {
-	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, userSchemaLoggerComponentName))
+func (h *userSchemaHandler) HandleUserSchemaPostRequest(w http.ResponseWriter, r *http.Request) {
+	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, userSchemaHandlerLoggerComponentName))
 
-	createRequest, err := sysutils.DecodeJSONBody[model.CreateUserSchemaRequest](r)
+	createRequest, err := sysutils.DecodeJSONBody[CreateUserSchemaRequest](r)
 	if err != nil {
 		w.Header().Set(serverconst.ContentTypeHeaderName, serverconst.ContentTypeJSON)
 		w.WriteHeader(http.StatusBadRequest)
 
 		errResp := apierror.ErrorResponse{
-			Code:        constants.ErrorInvalidRequestFormat.Code,
-			Message:     constants.ErrorInvalidRequestFormat.Error,
+			Code:        ErrorInvalidRequestFormat.Code,
+			Message:     ErrorInvalidRequestFormat.Error,
 			Description: "Failed to parse request body",
 		}
 
@@ -105,9 +101,9 @@ func (ash *UserSchemaHandler) HandleUserSchemaPostRequest(w http.ResponseWriter,
 		return
 	}
 
-	sanitizedRequest := ash.sanitizeCreateUserSchemaRequest(*createRequest)
+	sanitizedRequest := h.sanitizeCreateUserSchemaRequest(*createRequest)
 
-	createdUserSchema, svcErr := ash.userSchemaService.CreateUserSchema(sanitizedRequest)
+	createdUserSchema, svcErr := h.userSchemaService.CreateUserSchema(sanitizedRequest)
 	if svcErr != nil {
 		handleError(w, logger, svcErr)
 		return
@@ -122,15 +118,15 @@ func (ash *UserSchemaHandler) HandleUserSchemaPostRequest(w http.ResponseWriter,
 }
 
 // HandleUserSchemaGetRequest handles the user schema get request.
-func (ash *UserSchemaHandler) HandleUserSchemaGetRequest(w http.ResponseWriter, r *http.Request) {
-	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, userSchemaLoggerComponentName))
+func (h *userSchemaHandler) HandleUserSchemaGetRequest(w http.ResponseWriter, r *http.Request) {
+	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, userSchemaHandlerLoggerComponentName))
 
 	schemaID, idValidationFailed := extractAndValidateSchemaID(w, r, logger)
 	if idValidationFailed {
 		return
 	}
 
-	userSchema, svcErr := ash.userSchemaService.GetUserSchema(schemaID)
+	userSchema, svcErr := h.userSchemaService.GetUserSchema(schemaID)
 	if svcErr != nil {
 		handleError(w, logger, svcErr)
 		return
@@ -144,20 +140,20 @@ func (ash *UserSchemaHandler) HandleUserSchemaGetRequest(w http.ResponseWriter, 
 }
 
 // HandleUserSchemaPutRequest handles the user schema update request.
-func (ash *UserSchemaHandler) HandleUserSchemaPutRequest(w http.ResponseWriter, r *http.Request) {
-	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, userSchemaLoggerComponentName))
+func (h *userSchemaHandler) HandleUserSchemaPutRequest(w http.ResponseWriter, r *http.Request) {
+	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, userSchemaHandlerLoggerComponentName))
 
 	schemaID, idValidationFailed := extractAndValidateSchemaID(w, r, logger)
 	if idValidationFailed {
 		return
 	}
 
-	sanitizedRequest, requestValidationFailed := validateUpdateUserSchemaRequest(w, r, logger, ash)
+	sanitizedRequest, requestValidationFailed := validateUpdateUserSchemaRequest(w, r, logger, h)
 	if requestValidationFailed {
 		return
 	}
 
-	updatedUserSchema, svcErr := ash.userSchemaService.UpdateUserSchema(schemaID, sanitizedRequest)
+	updatedUserSchema, svcErr := h.userSchemaService.UpdateUserSchema(schemaID, sanitizedRequest)
 	if svcErr != nil {
 		handleError(w, logger, svcErr)
 		return
@@ -172,15 +168,15 @@ func (ash *UserSchemaHandler) HandleUserSchemaPutRequest(w http.ResponseWriter, 
 }
 
 // HandleUserSchemaDeleteRequest handles the user schema delete request.
-func (ash *UserSchemaHandler) HandleUserSchemaDeleteRequest(w http.ResponseWriter, r *http.Request) {
-	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, userSchemaLoggerComponentName))
+func (h *userSchemaHandler) HandleUserSchemaDeleteRequest(w http.ResponseWriter, r *http.Request) {
+	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, userSchemaHandlerLoggerComponentName))
 
 	schemaID, idValidationFailed := extractAndValidateSchemaID(w, r, logger)
 	if idValidationFailed {
 		return
 	}
 
-	svcErr := ash.userSchemaService.DeleteUserSchema(schemaID)
+	svcErr := h.userSchemaService.DeleteUserSchema(schemaID)
 	if svcErr != nil {
 		handleError(w, logger, svcErr)
 		return
@@ -199,7 +195,7 @@ func parsePaginationParams(query map[string][]string) (int, int, *serviceerror.S
 		sanitizedLimit := sysutils.SanitizeString(limitStr[0])
 		limit, err = strconv.Atoi(sanitizedLimit)
 		if err != nil || limit <= 0 {
-			return 0, 0, &constants.ErrorInvalidLimit
+			return 0, 0, &ErrorInvalidLimit
 		}
 	}
 
@@ -207,7 +203,7 @@ func parsePaginationParams(query map[string][]string) (int, int, *serviceerror.S
 		sanitizedOffset := sysutils.SanitizeString(offsetStr[0])
 		offset, err = strconv.Atoi(sanitizedOffset)
 		if err != nil || offset < 0 {
-			return 0, 0, &constants.ErrorInvalidOffset
+			return 0, 0, &ErrorInvalidOffset
 		}
 	}
 
@@ -219,9 +215,9 @@ func handleError(w http.ResponseWriter, logger *log.Logger, svcErr *serviceerror
 	var statusCode int
 	if svcErr.Type == serviceerror.ClientErrorType {
 		statusCode = http.StatusBadRequest
-		if svcErr.Code == constants.ErrorUserSchemaNotFound.Code {
+		if svcErr.Code == ErrorUserSchemaNotFound.Code {
 			statusCode = http.StatusNotFound
-		} else if svcErr.Code == constants.ErrorUserSchemaNameConflict.Code {
+		} else if svcErr.Code == ErrorUserSchemaNameConflict.Code {
 			statusCode = http.StatusConflict
 		}
 	} else {
@@ -250,9 +246,9 @@ func extractAndValidateSchemaID(w http.ResponseWriter, r *http.Request, logger *
 		w.Header().Set(serverconst.ContentTypeHeaderName, serverconst.ContentTypeJSON)
 		w.WriteHeader(http.StatusBadRequest)
 		errResp := apierror.ErrorResponse{
-			Code:        constants.ErrorInvalidUserSchemaRequest.Code,
-			Message:     constants.ErrorInvalidUserSchemaRequest.Error,
-			Description: constants.ErrorInvalidUserSchemaRequest.ErrorDescription,
+			Code:        ErrorInvalidUserSchemaRequest.Code,
+			Message:     ErrorInvalidUserSchemaRequest.Error,
+			Description: ErrorInvalidUserSchemaRequest.ErrorDescription,
 		}
 		if err := json.NewEncoder(w).Encode(errResp); err != nil {
 			logger.Error("Error encoding error response", log.Error(err))
@@ -265,16 +261,16 @@ func extractAndValidateSchemaID(w http.ResponseWriter, r *http.Request, logger *
 }
 
 func validateUpdateUserSchemaRequest(
-	w http.ResponseWriter, r *http.Request, logger *log.Logger, ash *UserSchemaHandler,
-) (model.UpdateUserSchemaRequest, bool) {
-	updateRequest, err := sysutils.DecodeJSONBody[model.UpdateUserSchemaRequest](r)
+	w http.ResponseWriter, r *http.Request, logger *log.Logger, h *userSchemaHandler,
+) (UpdateUserSchemaRequest, bool) {
+	updateRequest, err := sysutils.DecodeJSONBody[UpdateUserSchemaRequest](r)
 	if err != nil {
 		w.Header().Set(serverconst.ContentTypeHeaderName, serverconst.ContentTypeJSON)
 		w.WriteHeader(http.StatusBadRequest)
 
 		errResp := apierror.ErrorResponse{
-			Code:        constants.ErrorInvalidRequestFormat.Code,
-			Message:     constants.ErrorInvalidRequestFormat.Error,
+			Code:        ErrorInvalidRequestFormat.Code,
+			Message:     ErrorInvalidRequestFormat.Error,
 			Description: "Failed to parse request body",
 		}
 
@@ -282,15 +278,15 @@ func validateUpdateUserSchemaRequest(
 			logger.Error("Error encoding error response", log.Error(err))
 			http.Error(w, "Failed to encode error response", http.StatusInternalServerError)
 		}
-		return model.UpdateUserSchemaRequest{}, true
+		return UpdateUserSchemaRequest{}, true
 	}
 
-	sanitizedRequest := ash.sanitizeUpdateUserSchemaRequest(*updateRequest)
+	sanitizedRequest := h.sanitizeUpdateUserSchemaRequest(*updateRequest)
 	return sanitizedRequest, false
 }
 
 func buildUserSchemaResponse(
-	w http.ResponseWriter, userSchema *model.UserSchema, logger *log.Logger, statusCode int) bool {
+	w http.ResponseWriter, userSchema *UserSchema, logger *log.Logger, statusCode int) bool {
 	w.Header().Set(serverconst.ContentTypeHeaderName, serverconst.ContentTypeJSON)
 	w.WriteHeader(statusCode)
 
@@ -303,22 +299,22 @@ func buildUserSchemaResponse(
 }
 
 // sanitizeCreateUserSchemaRequest sanitizes the create user schema request input.
-func (ash *UserSchemaHandler) sanitizeCreateUserSchemaRequest(
-	request model.CreateUserSchemaRequest,
-) model.CreateUserSchemaRequest {
+func (h *userSchemaHandler) sanitizeCreateUserSchemaRequest(
+	request CreateUserSchemaRequest,
+) CreateUserSchemaRequest {
 	sanitizedName := sysutils.SanitizeString(request.Name)
 
-	return model.CreateUserSchemaRequest{
+	return CreateUserSchemaRequest{
 		Name:   sanitizedName,
 		Schema: request.Schema,
 	}
 }
 
 // sanitizeUpdateUserSchemaRequest sanitizes the update user schema request input.
-func (ash *UserSchemaHandler) sanitizeUpdateUserSchemaRequest(
-	request model.UpdateUserSchemaRequest,
-) model.UpdateUserSchemaRequest {
-	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, userSchemaLoggerComponentName))
+func (h *userSchemaHandler) sanitizeUpdateUserSchemaRequest(
+	request UpdateUserSchemaRequest,
+) UpdateUserSchemaRequest {
+	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, userSchemaHandlerLoggerComponentName))
 
 	originalName := request.Name
 	sanitizedName := sysutils.SanitizeString(request.Name)
@@ -329,8 +325,8 @@ func (ash *UserSchemaHandler) sanitizeUpdateUserSchemaRequest(
 			log.String("sanitized", log.MaskString(sanitizedName)))
 	}
 
-	return model.UpdateUserSchemaRequest{
+	return UpdateUserSchemaRequest{
 		Name:   sanitizedName,
-		Schema: request.Schema, // Schema is validated separately, no need to sanitize JSON
+		Schema: request.Schema,
 	}
 }
