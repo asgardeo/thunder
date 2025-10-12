@@ -1,18 +1,43 @@
 {
-  "name": "@frontend/source",
-  "version": "0.0.0",
-  "license": "MIT",
-  "scripts": {},
   "private": true,
-  "dependencies": {},
+  "name": "@thunder/frontend-workspace",
+  "version": "0.0.0",
+  "description": "Frontend workspace for ⚡️ Thunder",
+  "author": "WSO2",
+  "license": "Apache-2.0",
+  "homepage": "https://github.com/asgardeo/thunder/tree/main/frontend#readme",
+  "bugs": {
+    "url": "https://github.com/asgardeo/thunder/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/asgardeo/thunder"
+  },
+  "keywords": [
+    "asgardeo",
+    "thunder",
+    "frontend",
+    "workspace",
+    "wso2"
+  ],
+  "scripts": {
+    "build": "nx run-many --target=build --all",
+    "fix:lint": "nx run-many --target=fix:lint --all --parallel",
+    "lint": "nx run-many --target=lint --all --parallel",
+    "test": "nx run-many --target=test --all --parallel",
+    "typecheck": "nx run-many --target=typecheck --all --parallel"
+  },
   "devDependencies": {
     "@nx/js": "21.6.4",
     "@swc-node/register": "~1.9.1",
     "@swc/core": "~1.5.7",
     "@swc/helpers": "~0.5.11",
+    "@thunder/eslint-plugin-thunder": "workspace:^",
+    "@thunder/prettier-config": "workspace:^",
+    "eslint": "catalog:",
     "nx": "21.6.4",
-    "prettier": "^2.6.2",
-    "tslib": "^2.3.0",
-    "typescript": "~5.9.2"
+    "prettier": "catalog:",
+    "tslib": "catalog:",
+    "typescript": "catalog:"
   }
 }
