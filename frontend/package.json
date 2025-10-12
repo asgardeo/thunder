@@ -1,19 +1,18 @@
 {
-  "name": "thunder-source",
-  "version": "0.1.0",
-  "license": "Apache-2.0",
-  "scripts": {
-    "start": "pnpm run",
-    "build": "pnpm install && nx run-many --target=build --all",
-    "lint": "nx run-many --target=lint --all",
-    "test": "nx run-many --target=test --all",
-    "graph": "nx graph",
-    "gate:build": "pnpm install && pnpm --filter gate build",
-    "gate:dev": "pnpm --filter gate dev"
-  },
+  "name": "@frontend/source",
+  "version": "0.0.0",
+  "license": "MIT",
+  "scripts": {},
   "private": true,
+  "dependencies": {},
   "devDependencies": {
-    "@nx/workspace": "21.4.1",
-    "nx": "21.4.1"
+    "@nx/js": "21.6.4",
+    "@swc-node/register": "~1.9.1",
+    "@swc/core": "~1.5.7",
+    "@swc/helpers": "~0.5.11",
+    "nx": "21.6.4",
+    "prettier": "^2.6.2",
+    "tslib": "^2.3.0",
+    "typescript": "~5.9.2"
   }
 }
