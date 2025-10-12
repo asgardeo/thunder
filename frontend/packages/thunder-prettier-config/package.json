@@ -1,0 +1,61 @@
+{
+  "name": "@thunder/prettier-config",
+  "version": "0.0.0",
+  "description": "Sharable Prettier configuration for ⚡️ Thunder projects.",
+  "keywords": [
+    "thunder",
+    "prettier",
+    "configuration",
+    "shareable",
+    "wso2"
+  ],
+  "homepage": "https://github.com/asgardeo/thunder/tree/main/packages/thunder-prettier-config#readme",
+  "bugs": {
+    "url": "https://github.com/asgardeo/thunder/issues"
+  },
+  "author": "WSO2",
+  "license": "Apache-2.0",
+  "type": "module",
+  "main": "dist/index.js",
+  "module": "dist/index.js",
+  "commonjs": "dist/cjs/index.js",
+  "exports": {
+    "import": "./dist/index.js",
+    "require": "./dist/cjs/index.js"
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
+  "types": "dist/index.d.ts",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/asgardeo/thunder",
+    "directory": "packages/thunder-prettier-config"
+  },
+  "scripts": {
+    "build": "pnpm clean && node esbuild.config.mjs && tsc -p tsconfig.lib.json --emitDeclarationOnly --outDir dist",
+    "clean": "rimraf dist",
+    "fix:lint": "eslint . --fix",
+    "lint": "eslint .",
+    "test": "vitest",
+    "typecheck": "tsc -p tsconfig.lib.json"
+  },
+  "devDependencies": {
+    "@thunder/eslint-plugin-thunder": "workspace:^",
+    "@types/node": "catalog:",
+    "esbuild": "catalog:",
+    "eslint": "catalog:",
+    "prettier": "catalog:",
+    "rimraf": "catalog:",
+    "typescript": "catalog:",
+    "vitest": "catalog:"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "dependencies": {
+    "tslib": "catalog:"
+  }
+}
