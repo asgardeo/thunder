@@ -1,0 +1,48 @@
+/**
+ * Copyright (c) 2025, WSO2 LLC. (https://www.wso2.com).
+ *
+ * WSO2 LLC. licenses this file to you under the Apache License,
+ * Version 2.0 (the "License"); you may not use this file except
+ * in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing,
+ * software distributed under the License is distributed on an
+ * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+ * KIND, either express or implied. See the License for the
+ * specific language governing permissions and limitations
+ * under the License.
+ */
+
+import {readFileSync} from 'fs';
+import * as esbuild from 'esbuild';
+
+const pkg = JSON.parse(readFileSync('./package.json', 'utf8'));
+
+const commonOptions = {
+  bundle: false, // Don't bundle - just transpile
+  entryPoints: ['src/**/*.ts'], // Process all TS files
+  outdir: 'dist',
+  platform: 'node',
+  target: ['es2020'],
+  packages: 'external', // Treat all imports as external
+};
+
+// ESM build
+await esbuild.build({
+  ...commonOptions,
+  format: 'esm',
+  outExtension: { '.js': '.js' },
+  sourcemap: true,
+});
+
+// CJS build  
+await esbuild.build({
+  ...commonOptions,
+  format: 'cjs',
+  outdir: 'dist/cjs',
+  outExtension: { '.js': '.js' },
+  sourcemap: true,
+});

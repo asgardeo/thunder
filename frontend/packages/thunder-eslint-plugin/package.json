@@ -1,0 +1,82 @@
+{
+  "name": "@thunder/eslint-plugin-thunder",
+  "version": "0.0.0",
+  "description": "ESLint plugin for ⚡️ Thunder projects with custom rules and configurations.",
+  "keywords": [
+    "thunder",
+    "eslint",
+    "eslintplugin",
+    "eslint-plugin",
+    "plugin",
+    "shareable",
+    "wso2"
+  ],
+  "homepage": "https://github.com/asgardeo/thunder/tree/main/packages/thunder-eslint-config#readme",
+  "bugs": {
+    "url": "https://github.com/asgardeo/thunder/issues"
+  },
+  "author": "WSO2",
+  "license": "Apache-2.0",
+  "type": "module",
+  "main": "dist/index.js",
+  "module": "dist/index.js",
+  "commonjs": "dist/cjs/index.js",
+  "exports": {
+    "import": "./dist/index.js",
+    "require": "./dist/cjs/index.js"
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
+  "types": "dist/index.d.ts",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/asgardeo/thunder",
+    "directory": "packages/thunder-eslint-config"
+  },
+  "scripts": {
+    "build": "pnpm clean && node esbuild.config.mjs && tsc -p tsconfig.lib.json --emitDeclarationOnly --outDir dist",
+    "clean": "rimraf dist",
+    "fix:lint": "eslint . --ext .js,.jsx,.ts,.tsx,.cjs,.mjs",
+    "lint": "eslint . --ext .js,.jsx,.ts,.tsx,.cjs,.mjs",
+    "test": "vitest",
+    "typecheck": "tsc -p tsconfig.lib.json"
+  },
+  "devDependencies": {
+    "@eslint/eslintrc": "^3.3.1",
+    "@thunder/prettier-config": "workspace:^",
+    "@types/node": "catalog:",
+    "esbuild": "catalog:",
+    "eslint": "catalog:",
+    "prettier": "catalog:",
+    "rimraf": "catalog:",
+    "typescript": "catalog:",
+    "typescript-eslint": "^8.46.0",
+    "vitest": "catalog:"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "dependencies": {
+    "@eslint/js": "^9.37.0",
+    "@kesills/eslint-config-airbnb-typescript": "^20.0.0",
+    "@stylistic/eslint-plugin": "^5.4.0",
+    "@typescript-eslint/eslint-plugin": "^8.46.0",
+    "@typescript-eslint/parser": "^8.46.0",
+    "eslint-config-airbnb": "^19.0.4",
+    "eslint-config-airbnb-base": "^15.0.0",
+    "eslint-config-airbnb-typescript": "^18.0.0",
+    "eslint-config-prettier": "^10.1.8",
+    "eslint-plugin-import": "^2.32.0",
+    "eslint-plugin-jsx-a11y": "^6.10.2",
+    "eslint-plugin-react": "^7.37.5",
+    "eslint-plugin-react-hooks": "^7.0.0",
+    "tslib": "catalog:",
+    "typescript-eslint": "^8.46.0"
+  },
+  "peerDependencies": {
+    "eslint": ">=8.0.0"
+  }
+}
