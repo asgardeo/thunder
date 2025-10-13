@@ -16,7 +16,7 @@
  * under the License.
  */
 
-import type { Rule } from 'eslint';
+import type {Rule} from 'eslint';
 
 const REQUIRED_COPYRIGHT_HEADER = `/**
  * Copyright (c) 2025, WSO2 LLC. (https://www.wso2.com).
@@ -36,7 +36,7 @@ const REQUIRED_COPYRIGHT_HEADER = `/**
  * under the License.
  */`;
 
-export const copyrightHeaderRule: Rule.RuleModule = {
+const copyrightHeaderRule: Rule.RuleModule = {
   meta: {
     type: 'layout',
     docs: {
@@ -50,7 +50,7 @@ export const copyrightHeaderRule: Rule.RuleModule = {
         properties: {
           excludePatterns: {
             type: 'array',
-            items: { type: 'string' },
+            items: {type: 'string'},
           },
           template: {
             type: 'string',
@@ -84,10 +84,10 @@ export const copyrightHeaderRule: Rule.RuleModule = {
       Program(node) {
         const sourceCode = context.getSourceCode();
         const comments = sourceCode.getAllComments();
-        
+
         // Check if first comment is the copyright header
         const firstComment = comments[0];
-        
+
         if (!firstComment || firstComment.type !== 'Block') {
           context.report({
             node,
@@ -106,10 +106,10 @@ export const copyrightHeaderRule: Rule.RuleModule = {
 
         if (!normalizedComment.includes('WSO2 LLC') || !normalizedComment.includes('Apache License')) {
           context.report({
-            node: firstComment as any,
+            node: firstComment,
             messageId: 'incorrectHeader',
             fix(fixer) {
-              return fixer.replaceText(firstComment as any, template);
+              return fixer.replaceText(firstComment, template);
             },
           });
         }
@@ -117,3 +117,5 @@ export const copyrightHeaderRule: Rule.RuleModule = {
     };
   },
 };
+
+export default copyrightHeaderRule;

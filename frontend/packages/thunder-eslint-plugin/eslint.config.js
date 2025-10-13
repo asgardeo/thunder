@@ -16,16 +16,11 @@
  * under the License.
  */
 
-import thunderPlugin from './dist/index';
+import thunderPlugin from './dist/index.js';
 
 export default [
   {
-    ignores: [
-      'dist/**',
-      'build/**', 
-      'node_modules/**',
-      'coverage/**',
-    ],
+    ignores: ['dist/**', 'build/**', 'node_modules/**', 'coverage/**'],
   },
   ...thunderPlugin.configs.base,
 ];

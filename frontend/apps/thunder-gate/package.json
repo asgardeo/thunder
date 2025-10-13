@@ -22,11 +22,14 @@
     "directory": "apps/thunder-gate"
   },
   "scripts": {
-    "dev": "vite",
     "build": "tsc -b && vite build",
+    "clean": "rimraf dist",
+    "dev": "vite",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "test": "vitest",
+    "typecheck": "tsc -p tsconfig.lib.json"
   },
   "dependencies": {
     "@emotion/react": "^11.14.0",

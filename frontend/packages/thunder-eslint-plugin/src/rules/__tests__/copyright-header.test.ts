@@ -17,7 +17,7 @@
  */
 
 import { RuleTester } from 'eslint';
-import { copyrightHeaderRule } from '../rules/copyright-header.js';
+import { copyrightHeaderRule } from '../copyright-header';
 
 const ruleTester = new RuleTester({
   parserOptions: {

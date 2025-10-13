@@ -64,17 +64,10 @@ function resolveTsconfig() {
 
 const tsconfigPath = resolveTsconfig();
 
-export const reactConfig = [
+const reactConfig = [
   // React-specific configs for all files
   ...compat.extends('airbnb'),
   ...compat.extends('airbnb/hooks'),
-
-  // TypeScript React rules only for TypeScript files
-  ...compat.extends('@kesills/airbnb-typescript').map(config => ({
-    ...config,
-    files: ['**/*.{ts,tsx}'],
-  })),
-
   // React JSX runtime configuration
   {
     files: ['**/*.{js,jsx,ts,tsx}'],
@@ -119,3 +112,5 @@ export const reactConfig = [
     ...tseslint.configs.disableTypeChecked,
   },
 ];
+
+export default reactConfig;

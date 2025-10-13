@@ -12,6 +12,7 @@
     "skipLibCheck": true,
     "skipDefaultLibCheck": true,
     "sourceMap": true,
+    "strictNullChecks": true,
     "target": "ESNext",
     "forceConsistentCasingInFileNames": true,
     "strict": false,

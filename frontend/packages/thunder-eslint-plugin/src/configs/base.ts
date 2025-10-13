@@ -16,15 +16,15 @@
  * under the License.
  */
 
-import {javascriptConfig} from './javascript';
-import {prettierConfig} from './prettier';
-import {typescriptConfig} from './typescript';
+import javascriptConfig from './javascript.js';
+import prettierConfig from './prettier.js';
+import typescriptConfig from './typescript.js';
 
 /**
  * @fileoverview Base ESLint config that includes header, JavaScript, Prettier, and TypeScript configurations.
  */
 
-export const baseConfig = [
+const baseConfig = [
   // Thunder copyright header rule will be added by the main plugin
   {
     name: 'thunder/copyright-header',
@@ -52,3 +52,5 @@ export const baseConfig = [
     },
   },
 ];
+
+export default baseConfig;

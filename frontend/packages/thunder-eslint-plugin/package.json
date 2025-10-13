@@ -39,8 +39,8 @@
   "scripts": {
     "build": "pnpm clean && node esbuild.config.mjs && tsc -p tsconfig.lib.json --emitDeclarationOnly --outDir dist",
     "clean": "rimraf dist",
-    "fix:lint": "eslint . --ext .js,.jsx,.ts,.tsx,.cjs,.mjs",
-    "lint": "eslint . --ext .js,.jsx,.ts,.tsx,.cjs,.mjs",
+    "lint": "eslint .",
+    "lint:fix": "eslint . --fix",
     "test": "vitest",
     "typecheck": "tsc -p tsconfig.lib.json"
   },

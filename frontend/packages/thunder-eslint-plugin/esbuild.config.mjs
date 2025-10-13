@@ -19,8 +19,6 @@
 import {readFileSync} from 'fs';
 import * as esbuild from 'esbuild';
 
-const pkg = JSON.parse(readFileSync('./package.json', 'utf8'));
-
 const commonOptions = {
   bundle: false, // Don't bundle - just transpile
   entryPoints: ['src/**/*.ts'], // Process all TS files
@@ -34,15 +32,15 @@ const commonOptions = {
 await esbuild.build({
   ...commonOptions,
   format: 'esm',
-  outExtension: { '.js': '.js' },
+  outExtension: {'.js': '.js'},
   sourcemap: true,
 });
 
-// CJS build  
+// CJS build
 await esbuild.build({
   ...commonOptions,
   format: 'cjs',
   outdir: 'dist/cjs',
-  outExtension: { '.js': '.js' },
+  outExtension: {'.js': '.js'},
   sourcemap: true,
 });

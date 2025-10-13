@@ -20,9 +20,9 @@ import type {ESLint} from 'eslint';
 import {readFileSync} from 'fs';
 import {fileURLToPath} from 'url';
 import {dirname, join} from 'path';
-import {copyrightHeaderRule} from './rules/copyright-header.js';
-import {baseConfig} from './configs/base.js';
-import {reactConfig} from './configs/react.js';
+import copyrightHeaderRule from './rules/copyright-header.js';
+import baseConfig from './configs/base.js';
+import reactConfig from './configs/react.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);

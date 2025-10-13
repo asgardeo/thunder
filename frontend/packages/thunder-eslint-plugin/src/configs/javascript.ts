@@ -31,10 +31,12 @@ const compat = new FlatCompat({
   baseDirectory: __dirname,
 });
 
-export const javascriptConfig = [
+const javascriptConfig = [
   ...compat.extends('airbnb-base'),
   {
     name: 'thunder/javascript-overrides',
     rules: {},
   },
 ];
+
+export default javascriptConfig;
