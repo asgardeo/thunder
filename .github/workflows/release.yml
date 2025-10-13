@@ -653,6 +653,8 @@ jobs:
             // Construct the Thunder pack URL using the release version
             const releaseTag = '${{ needs.release.outputs.release_tag }}';
             const thunderPackUrl = `https://github.com/${{ github.repository }}/releases/download/${releaseTag}/thunder-${releaseTag.replace('v', '')}-linux-x64.zip`;
+            const pushBenchmarkToGitHub = ${{ github.repository == 'asgardeo/thunder' }};
+            
             
             // Define CPU core configurations to test
             const cpuCoreConfigs = ['4', '8'];
@@ -677,7 +679,7 @@ jobs:
                     MODE: 'FULL',
                     USE_DELAYS: 'true',
                     CONCURRENCY: '50-3000',
-                    DB_TYPE: 'postgres'
+                    PUSH_BENCHMARKS_TO_GITHUB: pushBenchmarkToGitHub
                   }
                 });
                 console.log(`✅ Performance test workflow with ${cpuCores} CPU cores triggered successfully`);
