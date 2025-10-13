@@ -16,43 +16,33 @@
  * under the License.
  */
 
-// Package services handles the registration of routes and services for the system.
-//
-//nolint:dupl // Ignoring false positive duplicate code
-package services
+package group
 
 import (
 	"net/http"
 	"strings"
 
-	"github.com/asgardeo/thunder/internal/group/handler"
+	oupkg "github.com/asgardeo/thunder/internal/ou"
 	"github.com/asgardeo/thunder/internal/system/middleware"
 )
 
-// GroupService is the service for group management operations.
-type GroupService struct {
-	groupHandler *handler.GroupHandler
+// Initialize initializes the group service and registers its routes.
+func Initialize(mux *http.ServeMux, ouService oupkg.OrganizationUnitServiceInterface) GroupServiceInterface {
+	groupService := newGroupService(ouService)
+	groupHandler := newGroupHandler(groupService)
+	registerRoutes(mux, groupHandler)
+	return groupService
 }
 
-// NewGroupService creates a new instance of GroupService.
-func NewGroupService(mux *http.ServeMux) ServiceInterface {
-	instance := &GroupService{
-		groupHandler: handler.NewGroupHandler(),
-	}
-	instance.RegisterRoutes(mux)
-
-	return instance
-}
-
-// RegisterRoutes registers the routes for group management operations.
-func (s *GroupService) RegisterRoutes(mux *http.ServeMux) {
+// registerRoutes registers the routes for group management operations.
+func registerRoutes(mux *http.ServeMux, groupHandler *groupHandler) {
 	opts1 := middleware.CORSOptions{
 		AllowedMethods:   "GET, POST",
 		AllowedHeaders:   "Content-Type, Authorization",
 		AllowCredentials: true,
 	}
-	mux.HandleFunc(middleware.WithCORS("POST /groups", s.groupHandler.HandleGroupPostRequest, opts1))
-	mux.HandleFunc(middleware.WithCORS("GET /groups", s.groupHandler.HandleGroupListRequest, opts1))
+	mux.HandleFunc(middleware.WithCORS("POST /groups", groupHandler.HandleGroupPostRequest, opts1))
+	mux.HandleFunc(middleware.WithCORS("GET /groups", groupHandler.HandleGroupListRequest, opts1))
 	mux.HandleFunc(middleware.WithCORS("OPTIONS /groups", func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusNoContent)
 	}, opts1))
@@ -62,6 +52,7 @@ func (s *GroupService) RegisterRoutes(mux *http.ServeMux) {
 		AllowedHeaders:   "Content-Type, Authorization",
 		AllowCredentials: true,
 	}
+	// Special handling for /groups/{id} and /groups/{id}/members
 	mux.HandleFunc(middleware.WithCORS("GET /groups/",
 		func(w http.ResponseWriter, r *http.Request) {
 			path := strings.TrimPrefix(r.URL.Path, "/groups/")
@@ -69,19 +60,18 @@ func (s *GroupService) RegisterRoutes(mux *http.ServeMux) {
 			r.SetPathValue("id", segments[0])
 
 			if len(segments) == 1 {
-				s.groupHandler.HandleGroupGetRequest(w, r)
+				groupHandler.HandleGroupGetRequest(w, r)
 			} else if len(segments) == 2 && segments[1] == "members" {
-				s.groupHandler.HandleGroupMembersGetRequest(w, r)
+				groupHandler.HandleGroupMembersGetRequest(w, r)
 			} else {
 				http.NotFound(w, r)
 			}
 		}, opts2))
-	mux.HandleFunc(middleware.WithCORS("PUT /groups/{id}", s.groupHandler.HandleGroupPutRequest, opts2))
-	mux.HandleFunc(middleware.WithCORS("DELETE /groups/{id}", s.groupHandler.HandleGroupDeleteRequest, opts2))
-	mux.HandleFunc(middleware.WithCORS("OPTIONS /groups/{id}",
-		func(w http.ResponseWriter, r *http.Request) {
-			w.WriteHeader(http.StatusNoContent)
-		}, opts2))
+	mux.HandleFunc(middleware.WithCORS("PUT /groups/{id}", groupHandler.HandleGroupPutRequest, opts2))
+	mux.HandleFunc(middleware.WithCORS("DELETE /groups/{id}", groupHandler.HandleGroupDeleteRequest, opts2))
+	mux.HandleFunc(middleware.WithCORS("OPTIONS /groups/{id}", func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusNoContent)
+	}, opts2))
 
 	opts3 := middleware.CORSOptions{
 		AllowedMethods:   "GET, POST",
@@ -89,11 +79,10 @@ func (s *GroupService) RegisterRoutes(mux *http.ServeMux) {
 		AllowCredentials: true,
 	}
 	mux.HandleFunc(middleware.WithCORS("GET /groups/tree/{path...}",
-		s.groupHandler.HandleGroupListByPathRequest, opts3))
+		groupHandler.HandleGroupListByPathRequest, opts3))
 	mux.HandleFunc(middleware.WithCORS("POST /groups/tree/{path...}",
-		s.groupHandler.HandleGroupPostByPathRequest, opts3))
-	mux.HandleFunc(middleware.WithCORS("OPTIONS /groups/tree/{path...}",
-		func(w http.ResponseWriter, r *http.Request) {
-			w.WriteHeader(http.StatusNoContent)
-		}, opts3))
+		groupHandler.HandleGroupPostByPathRequest, opts3))
+	mux.HandleFunc(middleware.WithCORS("OPTIONS /groups/tree/{path...}", func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusNoContent)
+	}, opts3))
 }

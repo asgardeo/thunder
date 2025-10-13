@@ -16,8 +16,7 @@
  * under the License.
  */
 
-// Package constants defines error constants for group management operations.
-package constants
+package group
 
 import (
 	"errors"
