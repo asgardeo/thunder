@@ -38,11 +38,17 @@ const compat = new FlatCompat({
 function resolveTsconfig() {
   const cwd = process.cwd();
   const eslintTsconfig = path.resolve(cwd, "tsconfig.eslint.json");
+  const appTsconfig = path.resolve(cwd, "tsconfig.app.json");
   const defaultTsconfig = path.resolve(cwd, "tsconfig.json");
 
   if (fs.existsSync(eslintTsconfig)) {
     console.log("[eslint-config] Using tsconfig.eslint.json");
     return eslintTsconfig;
+  }
+
+  if (fs.existsSync(appTsconfig)) {
+    console.log("[eslint-config] Using tsconfig.app.json");
+    return appTsconfig;
   }
 
   if (fs.existsSync(defaultTsconfig)) {
@@ -60,11 +66,23 @@ function resolveTsconfig() {
 const tsconfigPath = resolveTsconfig();
 
 export const typescriptConfig = [
+  // Base JavaScript rules for all files
   eslint.configs.recommended,
   ...compat.extends("airbnb-base"),
-  ...compat.extends("@kesills/airbnb-typescript/base"),
-  ...tseslint.configs.recommendedTypeChecked,
+  
+  // TypeScript-specific rules only for TypeScript files
+  ...compat.extends("@kesills/airbnb-typescript/base").map(config => ({
+    ...config,
+    files: ["**/*.{ts,tsx}"],
+  })),
+  ...tseslint.configs.recommendedTypeChecked.map(config => ({
+    ...config,
+    files: ["**/*.{ts,tsx}"],
+  })),
+  
+  // TypeScript parser configuration
   {
+    files: ["**/*.{ts,tsx}"],
     languageOptions: {
       parserOptions: {
         project: tsconfigPath ? [tsconfigPath] : undefined,
@@ -72,9 +90,11 @@ export const typescriptConfig = [
       }
     },
     rules: {
-      // your overrides here
+      // TypeScript-specific rule overrides here
     }
   },
+  
+  // Explicitly disable type-checking for JavaScript files
   {
     files: ["**/*.{js,jsx,cjs,mjs}"],
     ...tseslint.configs.disableTypeChecked

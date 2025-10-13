@@ -37,4 +37,11 @@ export const javascriptConfig = [
     name: 'thunder/javascript-overrides',
     rules: {},
   },
+  // Allow devDependencies in config files
+  {
+    files: ['*.config.js', '*.config.mjs', '*.config.ts', 'eslint.config.js', 'vite.config.ts', 'vitest.config.ts'],
+    rules: {
+      'import/no-extraneous-dependencies': ['error', { devDependencies: true }],
+    },
+  },
 ];

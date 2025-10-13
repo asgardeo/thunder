@@ -16,23 +16,16 @@
  * under the License.
  */
 
-const path = require('path');
+import thunderPlugin from './dist/index';
 
-module.exports = {
-  env: {
-    es6: true,
-    node: true,
+export default [
+  {
+    ignores: [
+      'dist/**',
+      'build/**', 
+      'node_modules/**',
+      'coverage/**',
+    ],
   },
-  extends: [
-    'plugin:@thunder/typescript',
-    'plugin:@thunder/strict',
-    'plugin:@thunder/internal',
-    'plugin:@thunder/jest',
-    'plugin:@thunder/prettier',
-  ],
-  parserOptions: {
-    ecmaVersion: 2018,
-    project: [path.resolve(__dirname, 'tsconfig.eslint.json')],
-  },
-  plugins: ['@thunder'],
-};
+  ...thunderPlugin.configs.base,
+];
