@@ -28,7 +28,6 @@ import (
 // Initialize initializes the organization unit service and registers its routes.
 func Initialize(mux *http.ServeMux) OrganizationUnitServiceInterface {
 	ouService := newOrganizationUnitService()
-	setOrganizationUnitService(ouService) // Set the provider for backward compatibility
 	ouHandler := newOrganizationUnitHandler(ouService)
 	registerRoutes(mux, ouHandler)
 	return ouService

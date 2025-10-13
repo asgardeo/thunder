@@ -16,8 +16,8 @@
  * under the License.
  */
 
-// Package service provides the implementation for user management operations.
-package service
+// Package user provides user management functionality.
+package user
 
 import (
 	"encoding/json"
@@ -32,9 +32,6 @@ import (
 	"github.com/asgardeo/thunder/internal/system/error/serviceerror"
 	"github.com/asgardeo/thunder/internal/system/log"
 	"github.com/asgardeo/thunder/internal/system/utils"
-	"github.com/asgardeo/thunder/internal/user/constants"
-	"github.com/asgardeo/thunder/internal/user/model"
-	"github.com/asgardeo/thunder/internal/user/store"
 	"github.com/asgardeo/thunder/internal/userschema"
 )
 
@@ -49,54 +46,59 @@ var supportedCredentialFields = map[string]struct{}{
 
 // UserServiceInterface defines the interface for the user service.
 type UserServiceInterface interface {
-	GetUserList(limit, offset int, filters map[string]interface{}) (*model.UserListResponse, *serviceerror.ServiceError)
+	GetUserList(limit, offset int, filters map[string]interface{}) (*UserListResponse, *serviceerror.ServiceError)
 	GetUsersByPath(handlePath string, limit, offset int,
-		filters map[string]interface{}) (*model.UserListResponse, *serviceerror.ServiceError)
-	CreateUser(user *model.User) (*model.User, *serviceerror.ServiceError)
-	CreateUserByPath(handlePath string, request model.CreateUserByPathRequest) (*model.User, *serviceerror.ServiceError)
-	GetUser(userID string) (*model.User, *serviceerror.ServiceError)
-	UpdateUser(userID string, user *model.User) (*model.User, *serviceerror.ServiceError)
+		filters map[string]interface{}) (*UserListResponse, *serviceerror.ServiceError)
+	CreateUser(user *User) (*User, *serviceerror.ServiceError)
+	CreateUserByPath(handlePath string, request CreateUserByPathRequest) (*User, *serviceerror.ServiceError)
+	GetUser(userID string) (*User, *serviceerror.ServiceError)
+	UpdateUser(userID string, user *User) (*User, *serviceerror.ServiceError)
 	DeleteUser(userID string) *serviceerror.ServiceError
 	IdentifyUser(filters map[string]interface{}) (*string, *serviceerror.ServiceError)
-	VerifyUser(userID string, credentials map[string]interface{}) (*model.User, *serviceerror.ServiceError)
-	AuthenticateUser(request model.AuthenticateUserRequest) (*model.AuthenticateUserResponse, *serviceerror.ServiceError)
+	VerifyUser(userID string, credentials map[string]interface{}) (*User, *serviceerror.ServiceError)
+	AuthenticateUser(request AuthenticateUserRequest) (*AuthenticateUserResponse, *serviceerror.ServiceError)
 	ValidateUserIDs(userIDs []string) ([]string, *serviceerror.ServiceError)
 }
 
-// UserService is the default implementation of the UserServiceInterface.
-type UserService struct {
+// userService is the default implementation of the UserServiceInterface.
+type userService struct {
+	userStore         userStoreInterface
 	ouService         oupkg.OrganizationUnitServiceInterface
 	userSchemaService userschema.UserSchemaServiceInterface
 }
 
-// GetUserService creates a new instance of UserService.
-func GetUserService() UserServiceInterface {
-	return &UserService{
-		ouService:         oupkg.GetOrganizationUnitService(),
-		userSchemaService: userschema.GetUserSchemaService(),
+// newUserService creates a new instance of userService with injected dependencies.
+func newUserService(
+	ouService oupkg.OrganizationUnitServiceInterface,
+	userSchemaService userschema.UserSchemaServiceInterface,
+) UserServiceInterface {
+	return &userService{
+		userStore:         newUserStore(),
+		ouService:         ouService,
+		userSchemaService: userSchemaService,
 	}
 }
 
 // GetUserList lists the users.
-func (as *UserService) GetUserList(limit, offset int,
-	filters map[string]interface{}) (*model.UserListResponse, *serviceerror.ServiceError) {
+func (us *userService) GetUserList(limit, offset int,
+	filters map[string]interface{}) (*UserListResponse, *serviceerror.ServiceError) {
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, loggerComponentName))
 
 	if err := validatePaginationParams(limit, offset); err != nil {
 		return nil, err
 	}
 
-	totalCount, err := store.GetUserListCount(filters)
+	totalCount, err := us.userStore.GetUserListCount(filters)
 	if err != nil {
 		return nil, logErrorAndReturnServerError(logger, "Failed to get user list count", err)
 	}
 
-	users, err := store.GetUserList(limit, offset, filters)
+	users, err := us.userStore.GetUserList(limit, offset, filters)
 	if err != nil {
 		return nil, logErrorAndReturnServerError(logger, "Failed to get user list", err)
 	}
 
-	response := &model.UserListResponse{
+	response := &UserListResponse{
 		TotalResults: totalCount,
 		StartIndex:   offset + 1,
 		Count:        len(users),
@@ -108,9 +110,9 @@ func (as *UserService) GetUserList(limit, offset int,
 }
 
 // GetUsersByPath retrieves a list of users by hierarchical handle path.
-func (as *UserService) GetUsersByPath(
+func (us *userService) GetUsersByPath(
 	handlePath string, limit, offset int, filters map[string]interface{},
-) (*model.UserListResponse, *serviceerror.ServiceError) {
+) (*UserListResponse, *serviceerror.ServiceError) {
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, loggerComponentName))
 	logger.Debug("Getting users by path", log.String("path", handlePath))
 
@@ -119,10 +121,10 @@ func (as *UserService) GetUsersByPath(
 		return nil, serviceError
 	}
 
-	ou, svcErr := as.ouService.GetOrganizationUnitByPath(handlePath)
+	ou, svcErr := us.ouService.GetOrganizationUnitByPath(handlePath)
 	if svcErr != nil {
 		if svcErr.Code == oupkg.ErrorOrganizationUnitNotFound.Code {
-			return nil, &constants.ErrorOrganizationUnitNotFound
+			return nil, &ErrorOrganizationUnitNotFound
 		}
 		return nil, logErrorAndReturnServerError(logger,
 			"Failed to get organization unit using the handle path from organization service", nil)
@@ -133,19 +135,19 @@ func (as *UserService) GetUsersByPath(
 		return nil, err
 	}
 
-	ouResponse, svcErr := as.ouService.GetOrganizationUnitUsers(organizationUnitID, limit, offset)
+	ouResponse, svcErr := us.ouService.GetOrganizationUnitUsers(organizationUnitID, limit, offset)
 	if svcErr != nil {
 		return nil, svcErr
 	}
 
-	users := make([]model.User, len(ouResponse.Users))
+	users := make([]User, len(ouResponse.Users))
 	for i, ouUser := range ouResponse.Users {
-		users[i] = model.User{
+		users[i] = User{
 			ID: ouUser.ID,
 		}
 	}
 
-	response := &model.UserListResponse{
+	response := &UserListResponse{
 		TotalResults: ouResponse.TotalResults,
 		StartIndex:   ouResponse.StartIndex,
 		Count:        ouResponse.Count,
@@ -157,14 +159,14 @@ func (as *UserService) GetUsersByPath(
 }
 
 // CreateUser creates the user.
-func (as *UserService) CreateUser(user *model.User) (*model.User, *serviceerror.ServiceError) {
+func (us *userService) CreateUser(user *User) (*User, *serviceerror.ServiceError) {
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, loggerComponentName))
 
 	if user == nil {
-		return nil, &constants.ErrorInvalidRequestFormat
+		return nil, &ErrorInvalidRequestFormat
 	}
 
-	if svcErr := as.validateUserAndUniqueness(user.Type, user.Attributes, logger); svcErr != nil {
+	if svcErr := us.validateUserAndUniqueness(user.Type, user.Attributes, logger); svcErr != nil {
 		return nil, svcErr
 	}
 
@@ -175,7 +177,7 @@ func (as *UserService) CreateUser(user *model.User) (*model.User, *serviceerror.
 		return nil, logErrorAndReturnServerError(logger, "Failed to create user DTO", err)
 	}
 
-	err = store.CreateUser(*user, credentials)
+	err = us.userStore.CreateUser(*user, credentials)
 	if err != nil {
 		return nil, logErrorAndReturnServerError(logger, "Failed to create user", err)
 	}
@@ -185,9 +187,9 @@ func (as *UserService) CreateUser(user *model.User) (*model.User, *serviceerror.
 }
 
 // CreateUserByPath creates a new user under the organization unit specified by the handle path.
-func (as *UserService) CreateUserByPath(
-	handlePath string, request model.CreateUserByPathRequest,
-) (*model.User, *serviceerror.ServiceError) {
+func (us *userService) CreateUserByPath(
+	handlePath string, request CreateUserByPathRequest,
+) (*User, *serviceerror.ServiceError) {
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, loggerComponentName))
 	logger.Debug("Creating user by path", log.String("path", handlePath), log.String("type", request.Type))
 
@@ -196,28 +198,28 @@ func (as *UserService) CreateUserByPath(
 		return nil, serviceError
 	}
 
-	ou, svcErr := as.ouService.GetOrganizationUnitByPath(handlePath)
+	ou, svcErr := us.ouService.GetOrganizationUnitByPath(handlePath)
 	if svcErr != nil {
 		if svcErr.Code == oupkg.ErrorOrganizationUnitNotFound.Code {
-			return nil, &constants.ErrorOrganizationUnitNotFound
+			return nil, &ErrorOrganizationUnitNotFound
 		}
 		return nil, logErrorAndReturnServerError(logger,
 			"Failed to get organization unit using the handle path from organization service", nil)
 	}
 
-	user := &model.User{
+	user := &User{
 		OrganizationUnit: ou.ID,
 		Type:             request.Type,
 		Attributes:       request.Attributes,
 	}
 
-	return as.CreateUser(user)
+	return us.CreateUser(user)
 }
 
 // extractCredentials extracts the credentials from the user attributes and returns a Credentials array.
-func extractCredentials(user *model.User) ([]model.Credential, error) {
+func extractCredentials(user *User) ([]Credential, error) {
 	if user.Attributes == nil {
-		return []model.Credential{}, nil
+		return []Credential{}, nil
 	}
 
 	var attrsMap map[string]interface{}
@@ -225,7 +227,7 @@ func extractCredentials(user *model.User) ([]model.Credential, error) {
 		return nil, err
 	}
 
-	var credentials []model.Credential
+	var credentials []Credential
 
 	for credField := range supportedCredentialFields {
 		if credValue, ok := attrsMap[credField].(string); ok {
@@ -233,7 +235,7 @@ func extractCredentials(user *model.User) ([]model.Credential, error) {
 
 			delete(attrsMap, credField)
 
-			credential := model.Credential{
+			credential := Credential{
 				CredentialType: credField,
 				StorageType:    "hash",
 				StorageAlgo:    credHash.Algorithm,
@@ -257,19 +259,19 @@ func extractCredentials(user *model.User) ([]model.Credential, error) {
 }
 
 // GetUser get the user for given user id.
-func (as *UserService) GetUser(userID string) (*model.User, *serviceerror.ServiceError) {
+func (us *userService) GetUser(userID string) (*User, *serviceerror.ServiceError) {
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, loggerComponentName))
 	logger.Debug("Retrieving user", log.String("id", userID))
 
 	if userID == "" {
-		return nil, &constants.ErrorMissingUserID
+		return nil, &ErrorMissingUserID
 	}
 
-	user, err := store.GetUser(userID)
+	user, err := us.userStore.GetUser(userID)
 	if err != nil {
-		if errors.Is(err, constants.ErrUserNotFound) {
+		if errors.Is(err, ErrUserNotFound) {
 			logger.Debug("User not found", log.String("id", userID))
-			return nil, &constants.ErrorUserNotFound
+			return nil, &ErrorUserNotFound
 		}
 		return nil, logErrorAndReturnServerError(logger, "Failed to retrieve user", err, log.String("id", userID))
 	}
@@ -279,27 +281,27 @@ func (as *UserService) GetUser(userID string) (*model.User, *serviceerror.Servic
 }
 
 // UpdateUser update the user for given user id.
-func (as *UserService) UpdateUser(userID string, user *model.User) (*model.User, *serviceerror.ServiceError) {
+func (us *userService) UpdateUser(userID string, user *User) (*User, *serviceerror.ServiceError) {
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, loggerComponentName))
 	logger.Debug("Updating user", log.String("id", userID))
 
 	if userID == "" {
-		return nil, &constants.ErrorMissingUserID
+		return nil, &ErrorMissingUserID
 	}
 
 	if user == nil {
-		return nil, &constants.ErrorInvalidRequestFormat
+		return nil, &ErrorInvalidRequestFormat
 	}
 
-	if svcErr := as.validateUserAndUniqueness(user.Type, user.Attributes, logger); svcErr != nil {
+	if svcErr := us.validateUserAndUniqueness(user.Type, user.Attributes, logger); svcErr != nil {
 		return nil, svcErr
 	}
 
-	err := store.UpdateUser(user)
+	err := us.userStore.UpdateUser(user)
 	if err != nil {
-		if errors.Is(err, constants.ErrUserNotFound) {
+		if errors.Is(err, ErrUserNotFound) {
 			logger.Debug("User not found", log.String("id", userID))
-			return nil, &constants.ErrorUserNotFound
+			return nil, &ErrorUserNotFound
 		}
 		return nil, logErrorAndReturnServerError(logger, "Failed to update user", err, log.String("id", userID))
 	}
@@ -309,19 +311,19 @@ func (as *UserService) UpdateUser(userID string, user *model.User) (*model.User,
 }
 
 // DeleteUser delete the user for given user id.
-func (as *UserService) DeleteUser(userID string) *serviceerror.ServiceError {
+func (us *userService) DeleteUser(userID string) *serviceerror.ServiceError {
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, loggerComponentName))
 	logger.Debug("Deleting user", log.String("id", userID))
 
 	if userID == "" {
-		return &constants.ErrorMissingUserID
+		return &ErrorMissingUserID
 	}
 
-	err := store.DeleteUser(userID)
+	err := us.userStore.DeleteUser(userID)
 	if err != nil {
-		if errors.Is(err, constants.ErrUserNotFound) {
+		if errors.Is(err, ErrUserNotFound) {
 			logger.Debug("User not found", log.String("id", userID))
-			return &constants.ErrorUserNotFound
+			return &ErrorUserNotFound
 		}
 		return logErrorAndReturnServerError(logger, "Failed to delete user", err, log.String("id", userID))
 	}
@@ -331,18 +333,18 @@ func (as *UserService) DeleteUser(userID string) *serviceerror.ServiceError {
 }
 
 // IdentifyUser identifies a user with the given filters.
-func (as *UserService) IdentifyUser(filters map[string]interface{}) (*string, *serviceerror.ServiceError) {
+func (us *userService) IdentifyUser(filters map[string]interface{}) (*string, *serviceerror.ServiceError) {
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, loggerComponentName))
 
 	if len(filters) == 0 {
-		return nil, &constants.ErrorInvalidRequestFormat
+		return nil, &ErrorInvalidRequestFormat
 	}
 
-	userID, err := store.IdentifyUser(filters)
+	userID, err := us.userStore.IdentifyUser(filters)
 	if err != nil {
-		if errors.Is(err, constants.ErrUserNotFound) {
+		if errors.Is(err, ErrUserNotFound) {
 			logger.Debug("User not found with provided filters")
-			return nil, &constants.ErrorUserNotFound
+			return nil, &ErrorUserNotFound
 		}
 		return nil, logErrorAndReturnServerError(logger, "Failed to identify user", err)
 	}
@@ -351,17 +353,17 @@ func (as *UserService) IdentifyUser(filters map[string]interface{}) (*string, *s
 }
 
 // VerifyUser validate the specified user with the given credentials.
-func (as *UserService) VerifyUser(
+func (us *userService) VerifyUser(
 	userID string, credentials map[string]interface{},
-) (*model.User, *serviceerror.ServiceError) {
+) (*User, *serviceerror.ServiceError) {
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, loggerComponentName))
 
 	if userID == "" {
-		return nil, &constants.ErrorMissingUserID
+		return nil, &ErrorMissingUserID
 	}
 
 	if len(credentials) == 0 {
-		return nil, &constants.ErrorInvalidRequestFormat
+		return nil, &ErrorInvalidRequestFormat
 	}
 
 	credentialsToVerify := make(map[string]string)
@@ -381,25 +383,25 @@ func (as *UserService) VerifyUser(
 
 	if len(credentialsToVerify) == 0 {
 		logger.Debug("No valid credentials provided for verification", log.String("userID", userID))
-		return nil, &constants.ErrorAuthenticationFailed
+		return nil, &ErrorAuthenticationFailed
 	}
 
-	user, storedCredentials, err := store.VerifyUser(userID)
+	user, storedCredentials, err := us.userStore.VerifyUser(userID)
 	if err != nil {
-		if errors.Is(err, constants.ErrUserNotFound) {
+		if errors.Is(err, ErrUserNotFound) {
 			logger.Debug("User not found", log.String("id", userID))
-			return nil, &constants.ErrorUserNotFound
+			return nil, &ErrorUserNotFound
 		}
 		return nil, logErrorAndReturnServerError(logger, "Failed to verify user", err, log.String("id", userID))
 	}
 
 	if len(storedCredentials) == 0 {
 		logger.Debug("No credentials found for user", log.String("userID", userID))
-		return nil, &constants.ErrorAuthenticationFailed
+		return nil, &ErrorAuthenticationFailed
 	}
 
 	for credType, credValue := range credentialsToVerify {
-		var matchingCredential *model.Credential
+		var matchingCredential *Credential
 		for _, storedCred := range storedCredentials {
 			if storedCred.CredentialType == credType {
 				matchingCredential = &storedCred
@@ -409,7 +411,7 @@ func (as *UserService) VerifyUser(
 
 		if matchingCredential == nil {
 			logger.Debug("No stored credential found for type", log.String("userID", userID), log.String("credType", credType))
-			return nil, &constants.ErrorAuthenticationFailed
+			return nil, &ErrorAuthenticationFailed
 		}
 
 		verifyingCredential := hash.Credential{
@@ -423,7 +425,7 @@ func (as *UserService) VerifyUser(
 			logger.Debug("Credential verified successfully", log.String("userID", userID), log.String("credType", credType))
 		} else {
 			logger.Debug("Credential verification failed", log.String("userID", userID), log.String("credType", credType))
-			return nil, &constants.ErrorAuthenticationFailed
+			return nil, &ErrorAuthenticationFailed
 		}
 	}
 
@@ -432,13 +434,13 @@ func (as *UserService) VerifyUser(
 }
 
 // AuthenticateUser authenticates a user by combining identify and verify operations.
-func (as *UserService) AuthenticateUser(
-	request model.AuthenticateUserRequest,
-) (*model.AuthenticateUserResponse, *serviceerror.ServiceError) {
+func (us *userService) AuthenticateUser(
+	request AuthenticateUserRequest,
+) (*AuthenticateUserResponse, *serviceerror.ServiceError) {
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, loggerComponentName))
 
 	if len(request) == 0 {
-		return nil, &constants.ErrorInvalidRequestFormat
+		return nil, &ErrorInvalidRequestFormat
 	}
 
 	identifyFilters := make(map[string]interface{})
@@ -453,27 +455,27 @@ func (as *UserService) AuthenticateUser(
 	}
 
 	if len(identifyFilters) == 0 {
-		return nil, &constants.ErrorMissingRequiredFields
+		return nil, &ErrorMissingRequiredFields
 	}
 	if len(credentials) == 0 {
-		return nil, &constants.ErrorMissingCredentials
+		return nil, &ErrorMissingCredentials
 	}
 
-	userID, svcErr := as.IdentifyUser(identifyFilters)
+	userID, svcErr := us.IdentifyUser(identifyFilters)
 	if svcErr != nil {
-		if svcErr.Code == constants.ErrorUserNotFound.Code {
-			return nil, &constants.ErrorUserNotFound
+		if svcErr.Code == ErrorUserNotFound.Code {
+			return nil, &ErrorUserNotFound
 		}
 		return nil, svcErr
 	}
 
-	user, svcErr := as.VerifyUser(*userID, credentials)
+	user, svcErr := us.VerifyUser(*userID, credentials)
 	if svcErr != nil {
 		return nil, svcErr
 	}
 
 	logger.Debug("User authenticated successfully", log.String("userID", *userID))
-	return &model.AuthenticateUserResponse{
+	return &AuthenticateUserResponse{
 		ID:               user.ID,
 		Type:             user.Type,
 		OrganizationUnit: user.OrganizationUnit,
@@ -481,14 +483,14 @@ func (as *UserService) AuthenticateUser(
 }
 
 // ValidateUserIDs validates that all provided user IDs exist.
-func (as *UserService) ValidateUserIDs(userIDs []string) ([]string, *serviceerror.ServiceError) {
+func (us *userService) ValidateUserIDs(userIDs []string) ([]string, *serviceerror.ServiceError) {
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, loggerComponentName))
 
 	if len(userIDs) == 0 {
 		return []string{}, nil
 	}
 
-	invalidUserIDs, err := store.ValidateUserIDs(userIDs)
+	invalidUserIDs, err := us.userStore.ValidateUserIDs(userIDs)
 	if err != nil {
 		return nil, logErrorAndReturnServerError(logger, "Failed to validate user IDs", err)
 	}
@@ -497,22 +499,22 @@ func (as *UserService) ValidateUserIDs(userIDs []string) ([]string, *serviceerro
 }
 
 // validateUserAndUniqueness validates the user schema and checks for uniqueness.
-func (as *UserService) validateUserAndUniqueness(
+func (us *userService) validateUserAndUniqueness(
 	userType string, attributes []byte, logger *log.Logger,
 ) *serviceerror.ServiceError {
-	isValid, svcErr := as.userSchemaService.ValidateUser(userType, attributes)
+	isValid, svcErr := us.userSchemaService.ValidateUser(userType, attributes)
 	if svcErr != nil {
 		return logErrorAndReturnServerError(logger, "Failed to validate user schema", nil)
 	}
 	if !isValid {
-		return &constants.ErrorSchemaValidationFailed
+		return &ErrorSchemaValidationFailed
 	}
 
-	isValid, svcErr = as.userSchemaService.ValidateUserUniqueness(userType, attributes,
+	isValid, svcErr = us.userSchemaService.ValidateUserUniqueness(userType, attributes,
 		func(filters map[string]interface{}) (*string, error) {
-			userID, svcErr := as.IdentifyUser(filters)
+			userID, svcErr := us.IdentifyUser(filters)
 			if svcErr != nil {
-				if svcErr.Code == constants.ErrorUserNotFound.Code {
+				if svcErr.Code == ErrorUserNotFound.Code {
 					return nil, nil
 				} else {
 					return nil, errors.New(svcErr.Error)
@@ -525,7 +527,7 @@ func (as *UserService) validateUserAndUniqueness(
 	}
 
 	if !isValid {
-		return &constants.ErrorAttributeConflict
+		return &ErrorAttributeConflict
 	}
 
 	return nil
@@ -534,17 +536,17 @@ func (as *UserService) validateUserAndUniqueness(
 // validateAndProcessHandlePath validates and processes the handle path.
 func validateAndProcessHandlePath(handlePath string) *serviceerror.ServiceError {
 	if strings.TrimSpace(handlePath) == "" {
-		return &constants.ErrorInvalidHandlePath
+		return &ErrorInvalidHandlePath
 	}
 
 	handles := strings.Split(strings.Trim(handlePath, "/"), "/")
 	if len(handles) == 0 {
-		return &constants.ErrorInvalidHandlePath
+		return &ErrorInvalidHandlePath
 	}
 
 	for _, handle := range handles {
 		if strings.TrimSpace(handle) == "" {
-			return &constants.ErrorInvalidHandlePath
+			return &ErrorInvalidHandlePath
 		}
 	}
 	return nil
@@ -553,10 +555,10 @@ func validateAndProcessHandlePath(handlePath string) *serviceerror.ServiceError 
 // validatePaginationParams validates pagination parameters.
 func validatePaginationParams(limit, offset int) *serviceerror.ServiceError {
 	if limit < 1 || limit > serverconst.MaxPageSize {
-		return &constants.ErrorInvalidLimit
+		return &ErrorInvalidLimit
 	}
 	if offset < 0 {
-		return &constants.ErrorInvalidOffset
+		return &ErrorInvalidOffset
 	}
 	return nil
 }
@@ -573,15 +575,15 @@ func logErrorAndReturnServerError(
 		fields = append(fields, log.Error(err))
 	}
 	logger.Error(message, fields...)
-	return &constants.ErrorInternalServerError
+	return &ErrorInternalServerError
 }
 
 // buildPaginationLinks builds pagination links for the response.
-func buildPaginationLinks(path string, limit, offset, totalResults int) []model.Link {
-	links := make([]model.Link, 0)
+func buildPaginationLinks(path string, limit, offset, totalResults int) []Link {
+	links := make([]Link, 0)
 
 	if offset > 0 {
-		links = append(links, model.Link{
+		links = append(links, Link{
 			Href: fmt.Sprintf("%s?offset=0&limit=%d", path, limit),
 			Rel:  "first",
 		})
@@ -590,7 +592,7 @@ func buildPaginationLinks(path string, limit, offset, totalResults int) []model.
 		if prevOffset < 0 {
 			prevOffset = 0
 		}
-		links = append(links, model.Link{
+		links = append(links, Link{
 			Href: fmt.Sprintf("%s?offset=%d&limit=%d", path, prevOffset, limit),
 			Rel:  "prev",
 		})
@@ -598,7 +600,7 @@ func buildPaginationLinks(path string, limit, offset, totalResults int) []model.
 
 	if offset+limit < totalResults {
 		nextOffset := offset + limit
-		links = append(links, model.Link{
+		links = append(links, Link{
 			Href: fmt.Sprintf("%s?offset=%d&limit=%d", path, nextOffset, limit),
 			Rel:  "next",
 		})
@@ -606,7 +608,7 @@ func buildPaginationLinks(path string, limit, offset, totalResults int) []model.
 
 	lastPageOffset := ((totalResults - 1) / limit) * limit
 	if offset < lastPageOffset {
-		links = append(links, model.Link{
+		links = append(links, Link{
 			Href: fmt.Sprintf("%s?offset=%d&limit=%d", path, lastPageOffset, limit),
 			Rel:  "last",
 		})
@@ -616,7 +618,7 @@ func buildPaginationLinks(path string, limit, offset, totalResults int) []model.
 }
 
 // buildTreePaginationLinks builds pagination links for user responses.
-func buildTreePaginationLinks(handlePath string, limit, offset, totalResults int) []model.Link {
+func buildTreePaginationLinks(handlePath string, limit, offset, totalResults int) []Link {
 	path := fmt.Sprintf("/users/tree/%s", path.Clean(handlePath))
 	return buildPaginationLinks(path, limit, offset, totalResults)
 }

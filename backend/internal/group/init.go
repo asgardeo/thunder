@@ -24,11 +24,16 @@ import (
 
 	oupkg "github.com/asgardeo/thunder/internal/ou"
 	"github.com/asgardeo/thunder/internal/system/middleware"
+	"github.com/asgardeo/thunder/internal/user"
 )
 
 // Initialize initializes the group service and registers its routes.
-func Initialize(mux *http.ServeMux, ouService oupkg.OrganizationUnitServiceInterface) GroupServiceInterface {
-	groupService := newGroupService(ouService)
+func Initialize(
+	mux *http.ServeMux,
+	ouService oupkg.OrganizationUnitServiceInterface,
+	userService user.UserServiceInterface,
+) GroupServiceInterface {
+	groupService := newGroupService(ouService, userService)
 	groupHandler := newGroupHandler(groupService)
 	registerRoutes(mux, groupHandler)
 	return groupService

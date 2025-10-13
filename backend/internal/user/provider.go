@@ -16,23 +16,20 @@
  * under the License.
  */
 
-package ou
+package user
 
 // TODO: This provider need to be removed once all usages are migrated to dependency injection.
 
-var organizationUnitServiceProvider OrganizationUnitServiceInterface
+var userServiceProvider UserServiceInterface
 
-// GetOrganizationUnitService returns the organization unit service instance.
+// GetUserService returns the user service instance.
 // This is a provider function to support dependency injection for backward compatibility.
-func GetOrganizationUnitService() OrganizationUnitServiceInterface {
-	if organizationUnitServiceProvider == nil {
-		organizationUnitServiceProvider = newOrganizationUnitService()
-	}
-	return organizationUnitServiceProvider
+func GetUserService() UserServiceInterface {
+	return userServiceProvider
 }
 
-// setOrganizationUnitService sets the organization unit service instance.
+// setUserService sets the user service instance.
 // This is used during initialization to inject the service.
-func setOrganizationUnitService(service OrganizationUnitServiceInterface) {
-	organizationUnitServiceProvider = service
+func setUserService(service UserServiceInterface) {
+	userServiceProvider = service
 }

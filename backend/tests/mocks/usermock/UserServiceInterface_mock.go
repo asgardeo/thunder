@@ -2,11 +2,11 @@
 // github.com/vektra/mockery
 // template: testify
 
-package servicemock
+package usermock
 
 import (
 	"github.com/asgardeo/thunder/internal/system/error/serviceerror"
-	"github.com/asgardeo/thunder/internal/user/model"
+	"github.com/asgardeo/thunder/internal/user"
 	mock "github.com/stretchr/testify/mock"
 )
 
@@ -38,26 +38,26 @@ func (_m *UserServiceInterfaceMock) EXPECT() *UserServiceInterfaceMock_Expecter 
 }
 
 // AuthenticateUser provides a mock function for the type UserServiceInterfaceMock
-func (_mock *UserServiceInterfaceMock) AuthenticateUser(request model.AuthenticateUserRequest) (*model.AuthenticateUserResponse, *serviceerror.ServiceError) {
+func (_mock *UserServiceInterfaceMock) AuthenticateUser(request user.AuthenticateUserRequest) (*user.AuthenticateUserResponse, *serviceerror.ServiceError) {
 	ret := _mock.Called(request)
 
 	if len(ret) == 0 {
 		panic("no return value specified for AuthenticateUser")
 	}
 
-	var r0 *model.AuthenticateUserResponse
+	var r0 *user.AuthenticateUserResponse
 	var r1 *serviceerror.ServiceError
-	if returnFunc, ok := ret.Get(0).(func(model.AuthenticateUserRequest) (*model.AuthenticateUserResponse, *serviceerror.ServiceError)); ok {
+	if returnFunc, ok := ret.Get(0).(func(user.AuthenticateUserRequest) (*user.AuthenticateUserResponse, *serviceerror.ServiceError)); ok {
 		return returnFunc(request)
 	}
-	if returnFunc, ok := ret.Get(0).(func(model.AuthenticateUserRequest) *model.AuthenticateUserResponse); ok {
+	if returnFunc, ok := ret.Get(0).(func(user.AuthenticateUserRequest) *user.AuthenticateUserResponse); ok {
 		r0 = returnFunc(request)
 	} else {
 		if ret.Get(0) != nil {
-			r0 = ret.Get(0).(*model.AuthenticateUserResponse)
+			r0 = ret.Get(0).(*user.AuthenticateUserResponse)
 		}
 	}
-	if returnFunc, ok := ret.Get(1).(func(model.AuthenticateUserRequest) *serviceerror.ServiceError); ok {
+	if returnFunc, ok := ret.Get(1).(func(user.AuthenticateUserRequest) *serviceerror.ServiceError); ok {
 		r1 = returnFunc(request)
 	} else {
 		if ret.Get(1) != nil {
@@ -73,16 +73,16 @@ type UserServiceInterfaceMock_AuthenticateUser_Call struct {
 }
 
 // AuthenticateUser is a helper method to define mock.On call
-//   - request model.AuthenticateUserRequest
+//   - request user.AuthenticateUserRequest
 func (_e *UserServiceInterfaceMock_Expecter) AuthenticateUser(request interface{}) *UserServiceInterfaceMock_AuthenticateUser_Call {
 	return &UserServiceInterfaceMock_AuthenticateUser_Call{Call: _e.mock.On("AuthenticateUser", request)}
 }
 
-func (_c *UserServiceInterfaceMock_AuthenticateUser_Call) Run(run func(request model.AuthenticateUserRequest)) *UserServiceInterfaceMock_AuthenticateUser_Call {
+func (_c *UserServiceInterfaceMock_AuthenticateUser_Call) Run(run func(request user.AuthenticateUserRequest)) *UserServiceInterfaceMock_AuthenticateUser_Call {
 	_c.Call.Run(func(args mock.Arguments) {
-		var arg0 model.AuthenticateUserRequest
+		var arg0 user.AuthenticateUserRequest
 		if args[0] != nil {
-			arg0 = args[0].(model.AuthenticateUserRequest)
+			arg0 = args[0].(user.AuthenticateUserRequest)
 		}
 		run(
 			arg0,
@@ -91,38 +91,38 @@ func (_c *UserServiceInterfaceMock_AuthenticateUser_Call) Run(run func(request m
 	return _c
 }
 
-func (_c *UserServiceInterfaceMock_AuthenticateUser_Call) Return(authenticateUserResponse *model.AuthenticateUserResponse, serviceError *serviceerror.ServiceError) *UserServiceInterfaceMock_AuthenticateUser_Call {
+func (_c *UserServiceInterfaceMock_AuthenticateUser_Call) Return(authenticateUserResponse *user.AuthenticateUserResponse, serviceError *serviceerror.ServiceError) *UserServiceInterfaceMock_AuthenticateUser_Call {
 	_c.Call.Return(authenticateUserResponse, serviceError)
 	return _c
 }
 
-func (_c *UserServiceInterfaceMock_AuthenticateUser_Call) RunAndReturn(run func(request model.AuthenticateUserRequest) (*model.AuthenticateUserResponse, *serviceerror.ServiceError)) *UserServiceInterfaceMock_AuthenticateUser_Call {
+func (_c *UserServiceInterfaceMock_AuthenticateUser_Call) RunAndReturn(run func(request user.AuthenticateUserRequest) (*user.AuthenticateUserResponse, *serviceerror.ServiceError)) *UserServiceInterfaceMock_AuthenticateUser_Call {
 	_c.Call.Return(run)
 	return _c
 }
 
 // CreateUser provides a mock function for the type UserServiceInterfaceMock
-func (_mock *UserServiceInterfaceMock) CreateUser(user *model.User) (*model.User, *serviceerror.ServiceError) {
-	ret := _mock.Called(user)
+func (_mock *UserServiceInterfaceMock) CreateUser(user1 *user.User) (*user.User, *serviceerror.ServiceError) {
+	ret := _mock.Called(user1)
 
 	if len(ret) == 0 {
 		panic("no return value specified for CreateUser")
 	}
 
-	var r0 *model.User
+	var r0 *user.User
 	var r1 *serviceerror.ServiceError
-	if returnFunc, ok := ret.Get(0).(func(*model.User) (*model.User, *serviceerror.ServiceError)); ok {
-		return returnFunc(user)
+	if returnFunc, ok := ret.Get(0).(func(*user.User) (*user.User, *serviceerror.ServiceError)); ok {
+		return returnFunc(user1)
 	}
-	if returnFunc, ok := ret.Get(0).(func(*model.User) *model.User); ok {
-		r0 = returnFunc(user)
+	if returnFunc, ok := ret.Get(0).(func(*user.User) *user.User); ok {
+		r0 = returnFunc(user1)
 	} else {
 		if ret.Get(0) != nil {
-			r0 = ret.Get(0).(*model.User)
+			r0 = ret.Get(0).(*user.User)
 		}
 	}
-	if returnFunc, ok := ret.Get(1).(func(*model.User) *serviceerror.ServiceError); ok {
-		r1 = returnFunc(user)
+	if returnFunc, ok := ret.Get(1).(func(*user.User) *serviceerror.ServiceError); ok {
+		r1 = returnFunc(user1)
 	} else {
 		if ret.Get(1) != nil {
 			r1 = ret.Get(1).(*serviceerror.ServiceError)
@@ -137,16 +137,16 @@ type UserServiceInterfaceMock_CreateUser_Call struct {
 }
 
 // CreateUser is a helper method to define mock.On call
-//   - user *model.User
-func (_e *UserServiceInterfaceMock_Expecter) CreateUser(user interface{}) *UserServiceInterfaceMock_CreateUser_Call {
-	return &UserServiceInterfaceMock_CreateUser_Call{Call: _e.mock.On("CreateUser", user)}
+//   - user1 *user.User
+func (_e *UserServiceInterfaceMock_Expecter) CreateUser(user1 interface{}) *UserServiceInterfaceMock_CreateUser_Call {
+	return &UserServiceInterfaceMock_CreateUser_Call{Call: _e.mock.On("CreateUser", user1)}
 }
 
-func (_c *UserServiceInterfaceMock_CreateUser_Call) Run(run func(user *model.User)) *UserServiceInterfaceMock_CreateUser_Call {
+func (_c *UserServiceInterfaceMock_CreateUser_Call) Run(run func(user1 *user.User)) *UserServiceInterfaceMock_CreateUser_Call {
 	_c.Call.Run(func(args mock.Arguments) {
-		var arg0 *model.User
+		var arg0 *user.User
 		if args[0] != nil {
-			arg0 = args[0].(*model.User)
+			arg0 = args[0].(*user.User)
 		}
 		run(
 			arg0,
@@ -155,37 +155,37 @@ func (_c *UserServiceInterfaceMock_CreateUser_Call) Run(run func(user *model.Use
 	return _c
 }
 
-func (_c *UserServiceInterfaceMock_CreateUser_Call) Return(user1 *model.User, serviceError *serviceerror.ServiceError) *UserServiceInterfaceMock_CreateUser_Call {
-	_c.Call.Return(user1, serviceError)
+func (_c *UserServiceInterfaceMock_CreateUser_Call) Return(user11 *user.User, serviceError *serviceerror.ServiceError) *UserServiceInterfaceMock_CreateUser_Call {
+	_c.Call.Return(user11, serviceError)
 	return _c
 }
 
-func (_c *UserServiceInterfaceMock_CreateUser_Call) RunAndReturn(run func(user *model.User) (*model.User, *serviceerror.ServiceError)) *UserServiceInterfaceMock_CreateUser_Call {
+func (_c *UserServiceInterfaceMock_CreateUser_Call) RunAndReturn(run func(user1 *user.User) (*user.User, *serviceerror.ServiceError)) *UserServiceInterfaceMock_CreateUser_Call {
 	_c.Call.Return(run)
 	return _c
 }
 
 // CreateUserByPath provides a mock function for the type UserServiceInterfaceMock
-func (_mock *UserServiceInterfaceMock) CreateUserByPath(handlePath string, request model.CreateUserByPathRequest) (*model.User, *serviceerror.ServiceError) {
+func (_mock *UserServiceInterfaceMock) CreateUserByPath(handlePath string, request user.CreateUserByPathRequest) (*user.User, *serviceerror.ServiceError) {
 	ret := _mock.Called(handlePath, request)
 
 	if len(ret) == 0 {
 		panic("no return value specified for CreateUserByPath")
 	}
 
-	var r0 *model.User
+	var r0 *user.User
 	var r1 *serviceerror.ServiceError
-	if returnFunc, ok := ret.Get(0).(func(string, model.CreateUserByPathRequest) (*model.User, *serviceerror.ServiceError)); ok {
+	if returnFunc, ok := ret.Get(0).(func(string, user.CreateUserByPathRequest) (*user.User, *serviceerror.ServiceError)); ok {
 		return returnFunc(handlePath, request)
 	}
-	if returnFunc, ok := ret.Get(0).(func(string, model.CreateUserByPathRequest) *model.User); ok {
+	if returnFunc, ok := ret.Get(0).(func(string, user.CreateUserByPathRequest) *user.User); ok {
 		r0 = returnFunc(handlePath, request)
 	} else {
 		if ret.Get(0) != nil {
-			r0 = ret.Get(0).(*model.User)
+			r0 = ret.Get(0).(*user.User)
 		}
 	}
-	if returnFunc, ok := ret.Get(1).(func(string, model.CreateUserByPathRequest) *serviceerror.ServiceError); ok {
+	if returnFunc, ok := ret.Get(1).(func(string, user.CreateUserByPathRequest) *serviceerror.ServiceError); ok {
 		r1 = returnFunc(handlePath, request)
 	} else {
 		if ret.Get(1) != nil {
@@ -202,20 +202,20 @@ type UserServiceInterfaceMock_CreateUserByPath_Call struct {
 
 // CreateUserByPath is a helper method to define mock.On call
 //   - handlePath string
-//   - request model.CreateUserByPathRequest
+//   - request user.CreateUserByPathRequest
 func (_e *UserServiceInterfaceMock_Expecter) CreateUserByPath(handlePath interface{}, request interface{}) *UserServiceInterfaceMock_CreateUserByPath_Call {
 	return &UserServiceInterfaceMock_CreateUserByPath_Call{Call: _e.mock.On("CreateUserByPath", handlePath, request)}
 }
 
-func (_c *UserServiceInterfaceMock_CreateUserByPath_Call) Run(run func(handlePath string, request model.CreateUserByPathRequest)) *UserServiceInterfaceMock_CreateUserByPath_Call {
+func (_c *UserServiceInterfaceMock_CreateUserByPath_Call) Run(run func(handlePath string, request user.CreateUserByPathRequest)) *UserServiceInterfaceMock_CreateUserByPath_Call {
 	_c.Call.Run(func(args mock.Arguments) {
 		var arg0 string
 		if args[0] != nil {
 			arg0 = args[0].(string)
 		}
-		var arg1 model.CreateUserByPathRequest
+		var arg1 user.CreateUserByPathRequest
 		if args[1] != nil {
-			arg1 = args[1].(model.CreateUserByPathRequest)
+			arg1 = args[1].(user.CreateUserByPathRequest)
 		}
 		run(
 			arg0,
@@ -225,12 +225,12 @@ func (_c *UserServiceInterfaceMock_CreateUserByPath_Call) Run(run func(handlePat
 	return _c
 }
 
-func (_c *UserServiceInterfaceMock_CreateUserByPath_Call) Return(user *model.User, serviceError *serviceerror.ServiceError) *UserServiceInterfaceMock_CreateUserByPath_Call {
-	_c.Call.Return(user, serviceError)
+func (_c *UserServiceInterfaceMock_CreateUserByPath_Call) Return(user1 *user.User, serviceError *serviceerror.ServiceError) *UserServiceInterfaceMock_CreateUserByPath_Call {
+	_c.Call.Return(user1, serviceError)
 	return _c
 }
 
-func (_c *UserServiceInterfaceMock_CreateUserByPath_Call) RunAndReturn(run func(handlePath string, request model.CreateUserByPathRequest) (*model.User, *serviceerror.ServiceError)) *UserServiceInterfaceMock_CreateUserByPath_Call {
+func (_c *UserServiceInterfaceMock_CreateUserByPath_Call) RunAndReturn(run func(handlePath string, request user.CreateUserByPathRequest) (*user.User, *serviceerror.ServiceError)) *UserServiceInterfaceMock_CreateUserByPath_Call {
 	_c.Call.Return(run)
 	return _c
 }
@@ -289,23 +289,23 @@ func (_c *UserServiceInterfaceMock_DeleteUser_Call) RunAndReturn(run func(userID
 }
 
 // GetUser provides a mock function for the type UserServiceInterfaceMock
-func (_mock *UserServiceInterfaceMock) GetUser(userID string) (*model.User, *serviceerror.ServiceError) {
+func (_mock *UserServiceInterfaceMock) GetUser(userID string) (*user.User, *serviceerror.ServiceError) {
 	ret := _mock.Called(userID)
 
 	if len(ret) == 0 {
 		panic("no return value specified for GetUser")
 	}
 
-	var r0 *model.User
+	var r0 *user.User
 	var r1 *serviceerror.ServiceError
-	if returnFunc, ok := ret.Get(0).(func(string) (*model.User, *serviceerror.ServiceError)); ok {
+	if returnFunc, ok := ret.Get(0).(func(string) (*user.User, *serviceerror.ServiceError)); ok {
 		return returnFunc(userID)
 	}
-	if returnFunc, ok := ret.Get(0).(func(string) *model.User); ok {
+	if returnFunc, ok := ret.Get(0).(func(string) *user.User); ok {
 		r0 = returnFunc(userID)
 	} else {
 		if ret.Get(0) != nil {
-			r0 = ret.Get(0).(*model.User)
+			r0 = ret.Get(0).(*user.User)
 		}
 	}
 	if returnFunc, ok := ret.Get(1).(func(string) *serviceerror.ServiceError); ok {
@@ -342,34 +342,34 @@ func (_c *UserServiceInterfaceMock_GetUser_Call) Run(run func(userID string)) *U
 	return _c
 }
 
-func (_c *UserServiceInterfaceMock_GetUser_Call) Return(user *model.User, serviceError *serviceerror.ServiceError) *UserServiceInterfaceMock_GetUser_Call {
-	_c.Call.Return(user, serviceError)
+func (_c *UserServiceInterfaceMock_GetUser_Call) Return(user1 *user.User, serviceError *serviceerror.ServiceError) *UserServiceInterfaceMock_GetUser_Call {
+	_c.Call.Return(user1, serviceError)
 	return _c
 }
 
-func (_c *UserServiceInterfaceMock_GetUser_Call) RunAndReturn(run func(userID string) (*model.User, *serviceerror.ServiceError)) *UserServiceInterfaceMock_GetUser_Call {
+func (_c *UserServiceInterfaceMock_GetUser_Call) RunAndReturn(run func(userID string) (*user.User, *serviceerror.ServiceError)) *UserServiceInterfaceMock_GetUser_Call {
 	_c.Call.Return(run)
 	return _c
 }
 
 // GetUserList provides a mock function for the type UserServiceInterfaceMock
-func (_mock *UserServiceInterfaceMock) GetUserList(limit int, offset int, filters map[string]interface{}) (*model.UserListResponse, *serviceerror.ServiceError) {
+func (_mock *UserServiceInterfaceMock) GetUserList(limit int, offset int, filters map[string]interface{}) (*user.UserListResponse, *serviceerror.ServiceError) {
 	ret := _mock.Called(limit, offset, filters)
 
 	if len(ret) == 0 {
 		panic("no return value specified for GetUserList")
 	}
 
-	var r0 *model.UserListResponse
+	var r0 *user.UserListResponse
 	var r1 *serviceerror.ServiceError
-	if returnFunc, ok := ret.Get(0).(func(int, int, map[string]interface{}) (*model.UserListResponse, *serviceerror.ServiceError)); ok {
+	if returnFunc, ok := ret.Get(0).(func(int, int, map[string]interface{}) (*user.UserListResponse, *serviceerror.ServiceError)); ok {
 		return returnFunc(limit, offset, filters)
 	}
-	if returnFunc, ok := ret.Get(0).(func(int, int, map[string]interface{}) *model.UserListResponse); ok {
+	if returnFunc, ok := ret.Get(0).(func(int, int, map[string]interface{}) *user.UserListResponse); ok {
 		r0 = returnFunc(limit, offset, filters)
 	} else {
 		if ret.Get(0) != nil {
-			r0 = ret.Get(0).(*model.UserListResponse)
+			r0 = ret.Get(0).(*user.UserListResponse)
 		}
 	}
 	if returnFunc, ok := ret.Get(1).(func(int, int, map[string]interface{}) *serviceerror.ServiceError); ok {
@@ -418,34 +418,34 @@ func (_c *UserServiceInterfaceMock_GetUserList_Call) Run(run func(limit int, off
 	return _c
 }
 
-func (_c *UserServiceInterfaceMock_GetUserList_Call) Return(userListResponse *model.UserListResponse, serviceError *serviceerror.ServiceError) *UserServiceInterfaceMock_GetUserList_Call {
+func (_c *UserServiceInterfaceMock_GetUserList_Call) Return(userListResponse *user.UserListResponse, serviceError *serviceerror.ServiceError) *UserServiceInterfaceMock_GetUserList_Call {
 	_c.Call.Return(userListResponse, serviceError)
 	return _c
 }
 
-func (_c *UserServiceInterfaceMock_GetUserList_Call) RunAndReturn(run func(limit int, offset int, filters map[string]interface{}) (*model.UserListResponse, *serviceerror.ServiceError)) *UserServiceInterfaceMock_GetUserList_Call {
+func (_c *UserServiceInterfaceMock_GetUserList_Call) RunAndReturn(run func(limit int, offset int, filters map[string]interface{}) (*user.UserListResponse, *serviceerror.ServiceError)) *UserServiceInterfaceMock_GetUserList_Call {
 	_c.Call.Return(run)
 	return _c
 }
 
 // GetUsersByPath provides a mock function for the type UserServiceInterfaceMock
-func (_mock *UserServiceInterfaceMock) GetUsersByPath(handlePath string, limit int, offset int, filters map[string]interface{}) (*model.UserListResponse, *serviceerror.ServiceError) {
+func (_mock *UserServiceInterfaceMock) GetUsersByPath(handlePath string, limit int, offset int, filters map[string]interface{}) (*user.UserListResponse, *serviceerror.ServiceError) {
 	ret := _mock.Called(handlePath, limit, offset, filters)
 
 	if len(ret) == 0 {
 		panic("no return value specified for GetUsersByPath")
 	}
 
-	var r0 *model.UserListResponse
+	var r0 *user.UserListResponse
 	var r1 *serviceerror.ServiceError
-	if returnFunc, ok := ret.Get(0).(func(string, int, int, map[string]interface{}) (*model.UserListResponse, *serviceerror.ServiceError)); ok {
+	if returnFunc, ok := ret.Get(0).(func(string, int, int, map[string]interface{}) (*user.UserListResponse, *serviceerror.ServiceError)); ok {
 		return returnFunc(handlePath, limit, offset, filters)
 	}
-	if returnFunc, ok := ret.Get(0).(func(string, int, int, map[string]interface{}) *model.UserListResponse); ok {
+	if returnFunc, ok := ret.Get(0).(func(string, int, int, map[string]interface{}) *user.UserListResponse); ok {
 		r0 = returnFunc(handlePath, limit, offset, filters)
 	} else {
 		if ret.Get(0) != nil {
-			r0 = ret.Get(0).(*model.UserListResponse)
+			r0 = ret.Get(0).(*user.UserListResponse)
 		}
 	}
 	if returnFunc, ok := ret.Get(1).(func(string, int, int, map[string]interface{}) *serviceerror.ServiceError); ok {
@@ -500,12 +500,12 @@ func (_c *UserServiceInterfaceMock_GetUsersByPath_Call) Run(run func(handlePath 
 	return _c
 }
 
-func (_c *UserServiceInterfaceMock_GetUsersByPath_Call) Return(userListResponse *model.UserListResponse, serviceError *serviceerror.ServiceError) *UserServiceInterfaceMock_GetUsersByPath_Call {
+func (_c *UserServiceInterfaceMock_GetUsersByPath_Call) Return(userListResponse *user.UserListResponse, serviceError *serviceerror.ServiceError) *UserServiceInterfaceMock_GetUsersByPath_Call {
 	_c.Call.Return(userListResponse, serviceError)
 	return _c
 }
 
-func (_c *UserServiceInterfaceMock_GetUsersByPath_Call) RunAndReturn(run func(handlePath string, limit int, offset int, filters map[string]interface{}) (*model.UserListResponse, *serviceerror.ServiceError)) *UserServiceInterfaceMock_GetUsersByPath_Call {
+func (_c *UserServiceInterfaceMock_GetUsersByPath_Call) RunAndReturn(run func(handlePath string, limit int, offset int, filters map[string]interface{}) (*user.UserListResponse, *serviceerror.ServiceError)) *UserServiceInterfaceMock_GetUsersByPath_Call {
 	_c.Call.Return(run)
 	return _c
 }
@@ -575,27 +575,27 @@ func (_c *UserServiceInterfaceMock_IdentifyUser_Call) RunAndReturn(run func(filt
 }
 
 // UpdateUser provides a mock function for the type UserServiceInterfaceMock
-func (_mock *UserServiceInterfaceMock) UpdateUser(userID string, user *model.User) (*model.User, *serviceerror.ServiceError) {
-	ret := _mock.Called(userID, user)
+func (_mock *UserServiceInterfaceMock) UpdateUser(userID string, user1 *user.User) (*user.User, *serviceerror.ServiceError) {
+	ret := _mock.Called(userID, user1)
 
 	if len(ret) == 0 {
 		panic("no return value specified for UpdateUser")
 	}
 
-	var r0 *model.User
+	var r0 *user.User
 	var r1 *serviceerror.ServiceError
-	if returnFunc, ok := ret.Get(0).(func(string, *model.User) (*model.User, *serviceerror.ServiceError)); ok {
-		return returnFunc(userID, user)
+	if returnFunc, ok := ret.Get(0).(func(string, *user.User) (*user.User, *serviceerror.ServiceError)); ok {
+		return returnFunc(userID, user1)
 	}
-	if returnFunc, ok := ret.Get(0).(func(string, *model.User) *model.User); ok {
-		r0 = returnFunc(userID, user)
+	if returnFunc, ok := ret.Get(0).(func(string, *user.User) *user.User); ok {
+		r0 = returnFunc(userID, user1)
 	} else {
 		if ret.Get(0) != nil {
-			r0 = ret.Get(0).(*model.User)
+			r0 = ret.Get(0).(*user.User)
 		}
 	}
-	if returnFunc, ok := ret.Get(1).(func(string, *model.User) *serviceerror.ServiceError); ok {
-		r1 = returnFunc(userID, user)
+	if returnFunc, ok := ret.Get(1).(func(string, *user.User) *serviceerror.ServiceError); ok {
+		r1 = returnFunc(userID, user1)
 	} else {
 		if ret.Get(1) != nil {
 			r1 = ret.Get(1).(*serviceerror.ServiceError)
@@ -611,20 +611,20 @@ type UserServiceInterfaceMock_UpdateUser_Call struct {
 
 // UpdateUser is a helper method to define mock.On call
 //   - userID string
-//   - user *model.User
-func (_e *UserServiceInterfaceMock_Expecter) UpdateUser(userID interface{}, user interface{}) *UserServiceInterfaceMock_UpdateUser_Call {
-	return &UserServiceInterfaceMock_UpdateUser_Call{Call: _e.mock.On("UpdateUser", userID, user)}
+//   - user1 *user.User
+func (_e *UserServiceInterfaceMock_Expecter) UpdateUser(userID interface{}, user1 interface{}) *UserServiceInterfaceMock_UpdateUser_Call {
+	return &UserServiceInterfaceMock_UpdateUser_Call{Call: _e.mock.On("UpdateUser", userID, user1)}
 }
 
-func (_c *UserServiceInterfaceMock_UpdateUser_Call) Run(run func(userID string, user *model.User)) *UserServiceInterfaceMock_UpdateUser_Call {
+func (_c *UserServiceInterfaceMock_UpdateUser_Call) Run(run func(userID string, user1 *user.User)) *UserServiceInterfaceMock_UpdateUser_Call {
 	_c.Call.Run(func(args mock.Arguments) {
 		var arg0 string
 		if args[0] != nil {
 			arg0 = args[0].(string)
 		}
-		var arg1 *model.User
+		var arg1 *user.User
 		if args[1] != nil {
-			arg1 = args[1].(*model.User)
+			arg1 = args[1].(*user.User)
 		}
 		run(
 			arg0,
@@ -634,12 +634,12 @@ func (_c *UserServiceInterfaceMock_UpdateUser_Call) Run(run func(userID string, 
 	return _c
 }
 
-func (_c *UserServiceInterfaceMock_UpdateUser_Call) Return(user1 *model.User, serviceError *serviceerror.ServiceError) *UserServiceInterfaceMock_UpdateUser_Call {
-	_c.Call.Return(user1, serviceError)
+func (_c *UserServiceInterfaceMock_UpdateUser_Call) Return(user11 *user.User, serviceError *serviceerror.ServiceError) *UserServiceInterfaceMock_UpdateUser_Call {
+	_c.Call.Return(user11, serviceError)
 	return _c
 }
 
-func (_c *UserServiceInterfaceMock_UpdateUser_Call) RunAndReturn(run func(userID string, user *model.User) (*model.User, *serviceerror.ServiceError)) *UserServiceInterfaceMock_UpdateUser_Call {
+func (_c *UserServiceInterfaceMock_UpdateUser_Call) RunAndReturn(run func(userID string, user1 *user.User) (*user.User, *serviceerror.ServiceError)) *UserServiceInterfaceMock_UpdateUser_Call {
 	_c.Call.Return(run)
 	return _c
 }
@@ -709,23 +709,23 @@ func (_c *UserServiceInterfaceMock_ValidateUserIDs_Call) RunAndReturn(run func(u
 }
 
 // VerifyUser provides a mock function for the type UserServiceInterfaceMock
-func (_mock *UserServiceInterfaceMock) VerifyUser(userID string, credentials map[string]interface{}) (*model.User, *serviceerror.ServiceError) {
+func (_mock *UserServiceInterfaceMock) VerifyUser(userID string, credentials map[string]interface{}) (*user.User, *serviceerror.ServiceError) {
 	ret := _mock.Called(userID, credentials)
 
 	if len(ret) == 0 {
 		panic("no return value specified for VerifyUser")
 	}
 
-	var r0 *model.User
+	var r0 *user.User
 	var r1 *serviceerror.ServiceError
-	if returnFunc, ok := ret.Get(0).(func(string, map[string]interface{}) (*model.User, *serviceerror.ServiceError)); ok {
+	if returnFunc, ok := ret.Get(0).(func(string, map[string]interface{}) (*user.User, *serviceerror.ServiceError)); ok {
 		return returnFunc(userID, credentials)
 	}
-	if returnFunc, ok := ret.Get(0).(func(string, map[string]interface{}) *model.User); ok {
+	if returnFunc, ok := ret.Get(0).(func(string, map[string]interface{}) *user.User); ok {
 		r0 = returnFunc(userID, credentials)
 	} else {
 		if ret.Get(0) != nil {
-			r0 = ret.Get(0).(*model.User)
+			r0 = ret.Get(0).(*user.User)
 		}
 	}
 	if returnFunc, ok := ret.Get(1).(func(string, map[string]interface{}) *serviceerror.ServiceError); ok {
@@ -768,12 +768,12 @@ func (_c *UserServiceInterfaceMock_VerifyUser_Call) Run(run func(userID string, 
 	return _c
 }
 
-func (_c *UserServiceInterfaceMock_VerifyUser_Call) Return(user *model.User, serviceError *serviceerror.ServiceError) *UserServiceInterfaceMock_VerifyUser_Call {
-	_c.Call.Return(user, serviceError)
+func (_c *UserServiceInterfaceMock_VerifyUser_Call) Return(user1 *user.User, serviceError *serviceerror.ServiceError) *UserServiceInterfaceMock_VerifyUser_Call {
+	_c.Call.Return(user1, serviceError)
 	return _c
 }
 
-func (_c *UserServiceInterfaceMock_VerifyUser_Call) RunAndReturn(run func(userID string, credentials map[string]interface{}) (*model.User, *serviceerror.ServiceError)) *UserServiceInterfaceMock_VerifyUser_Call {
+func (_c *UserServiceInterfaceMock_VerifyUser_Call) RunAndReturn(run func(userID string, credentials map[string]interface{}) (*user.User, *serviceerror.ServiceError)) *UserServiceInterfaceMock_VerifyUser_Call {
 	_c.Call.Return(run)
 	return _c
 }

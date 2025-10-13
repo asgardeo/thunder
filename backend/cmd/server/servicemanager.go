@@ -30,6 +30,7 @@ import (
 	"github.com/asgardeo/thunder/internal/system/jwt"
 	"github.com/asgardeo/thunder/internal/system/log"
 	"github.com/asgardeo/thunder/internal/system/services"
+	"github.com/asgardeo/thunder/internal/user"
 	"github.com/asgardeo/thunder/internal/userschema"
 )
 
@@ -43,9 +44,10 @@ func registerServices(mux *http.ServeMux) {
 		logger.Fatal("Failed to load private key", log.Error(err))
 	}
 
-	_ = userschema.Initialize(mux)
 	ouService := ou.Initialize(mux)
-	_ = group.Initialize(mux, ouService)
+	userSchemaService := userschema.Initialize(mux)
+	userService := user.Initialize(mux, ouService, userSchemaService)
+	_ = group.Initialize(mux, ouService, userService)
 
 	_ = idp.Initialize(mux)
 	_ = notification.Initialize(mux, jwtService)
@@ -67,9 +69,6 @@ func registerServices(mux *http.ServeMux) {
 
 	// Register the introspection service.
 	services.NewIntrospectionAPIService(mux)
-
-	// Register the User service.
-	services.NewUserService(mux)
 
 	// Register the Application service.
 	services.NewApplicationService(mux)

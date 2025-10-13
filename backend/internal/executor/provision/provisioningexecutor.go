@@ -29,8 +29,7 @@ import (
 	flowconst "github.com/asgardeo/thunder/internal/flow/constants"
 	flowmodel "github.com/asgardeo/thunder/internal/flow/model"
 	"github.com/asgardeo/thunder/internal/system/log"
-	usermodel "github.com/asgardeo/thunder/internal/user/model"
-	"github.com/asgardeo/thunder/internal/user/service"
+	"github.com/asgardeo/thunder/internal/user"
 )
 
 const (
@@ -45,7 +44,7 @@ var nonUserAttributes = []string{"userID", "code", "nonce", "state", "flowID",
 type ProvisioningExecutor struct {
 	*identify.IdentifyingExecutor
 	internal    flowmodel.Executor
-	userService service.UserServiceInterface
+	userService user.UserServiceInterface
 }
 
 var _ flowmodel.ExecutorInterface = (*ProvisioningExecutor)(nil)
@@ -56,7 +55,7 @@ func NewProvisioningExecutor(id, name string, properties map[string]string) *Pro
 		IdentifyingExecutor: identify.NewIdentifyingExecutor(id, name, properties),
 		internal: *flowmodel.NewExecutor(id, name, []flowmodel.InputData{}, []flowmodel.InputData{},
 			properties),
-		userService: service.GetUserService(),
+		userService: user.GetUserService(),
 	}
 }
 
@@ -292,7 +291,7 @@ func (p *ProvisioningExecutor) appendNonIdentifyingAttributes(ctx *flowmodel.Nod
 
 // createUserInStore creates a new user in the user store with the provided attributes.
 func (p *ProvisioningExecutor) createUserInStore(flowID string,
-	userAttributes map[string]interface{}) (*usermodel.User, error) {
+	userAttributes map[string]interface{}) (*user.User, error) {
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, loggerComponentName),
 		log.String(log.LoggerKeyExecutorID, p.GetID()),
 		log.String(log.LoggerKeyFlowID, flowID))
@@ -300,16 +299,16 @@ func (p *ProvisioningExecutor) createUserInStore(flowID string,
 
 	// TODO: Use a hard coded ou for the moment. This needs to be resolved properly
 	//  when the support is implemented.
-	user := usermodel.User{
+	newUser := user.User{
 		OrganizationUnit: "00000000-0000-0000-0000-000000000000", // This should be configurable
 	}
 
 	// Takes the user type from the context, if available.
 	if userType, exists := userAttributes["type"]; exists {
-		user.Type = userType.(string)
+		newUser.Type = userType.(string)
 	} else {
 		// TODO: Use a hard coded type for the moment. This needs to be resolved accordingly.
-		user.Type = "human"
+		newUser.Type = "human"
 	}
 
 	// Convert the user attributes to JSON.
@@ -317,9 +316,9 @@ func (p *ProvisioningExecutor) createUserInStore(flowID string,
 	if err != nil {
 		return nil, fmt.Errorf("failed to marshal user attributes: %w", err)
 	}
-	user.Attributes = attributesJSON
+	newUser.Attributes = attributesJSON
 
-	retUser, svcErr := p.userService.CreateUser(&user)
+	retUser, svcErr := p.userService.CreateUser(&newUser)
 	if svcErr != nil {
 		return nil, fmt.Errorf("failed to create user in the store: %s", svcErr.Error)
 	}

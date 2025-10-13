@@ -33,7 +33,7 @@ import (
 	"github.com/asgardeo/thunder/internal/system/config"
 	"github.com/asgardeo/thunder/internal/system/log"
 	"github.com/asgardeo/thunder/tests/mocks/jwtmock"
-	usersvcmock "github.com/asgardeo/thunder/tests/mocks/user/servicemock"
+	usersvcmock "github.com/asgardeo/thunder/tests/mocks/usermock"
 )
 
 type RefreshTokenGrantHandlerTestSuite struct {

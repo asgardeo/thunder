@@ -16,8 +16,7 @@
  * under the License.
  */
 
-// Package constants defines error constants for user management operations.
-package constants
+package user
 
 import (
 	"errors"

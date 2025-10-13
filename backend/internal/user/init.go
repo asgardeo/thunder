@@ -16,42 +16,38 @@
  * under the License.
  */
 
-// Package services handles the registration of routes and services for the system.
-//
-//nolint:dupl // Ignoring false positive duplicate code
-package services
+package user
 
 import (
 	"net/http"
 
+	oupkg "github.com/asgardeo/thunder/internal/ou"
 	"github.com/asgardeo/thunder/internal/system/middleware"
-	"github.com/asgardeo/thunder/internal/user/handler"
+	"github.com/asgardeo/thunder/internal/userschema"
 )
 
-// UserService is the service for user management operations.
-type UserService struct {
-	userHandler *handler.UserHandler
+// Initialize initializes the user service and registers its routes.
+func Initialize(
+	mux *http.ServeMux,
+	ouService oupkg.OrganizationUnitServiceInterface,
+	userSchemaService userschema.UserSchemaServiceInterface,
+) UserServiceInterface {
+	userService := newUserService(ouService, userSchemaService)
+	setUserService(userService) // Set the provider for backward compatibility
+	userHandler := newUserHandler(userService)
+	registerRoutes(mux, userHandler)
+	return userService
 }
 
-// NewUserService creates a new instance of UserService.
-func NewUserService(mux *http.ServeMux) ServiceInterface {
-	instance := &UserService{
-		userHandler: handler.NewUserHandler(),
-	}
-	instance.RegisterRoutes(mux)
-
-	return instance
-}
-
-// RegisterRoutes registers the routes for user management operations.
-func (s *UserService) RegisterRoutes(mux *http.ServeMux) {
+// registerRoutes registers the routes for user management operations.
+func registerRoutes(mux *http.ServeMux, userHandler *userHandler) {
 	opts1 := middleware.CORSOptions{
 		AllowedMethods:   "GET, POST",
 		AllowedHeaders:   "Content-Type, Authorization",
 		AllowCredentials: true,
 	}
-	mux.HandleFunc(middleware.WithCORS("POST /users", s.userHandler.HandleUserPostRequest, opts1))
-	mux.HandleFunc(middleware.WithCORS("GET /users", s.userHandler.HandleUserListRequest, opts1))
+	mux.HandleFunc(middleware.WithCORS("POST /users", userHandler.HandleUserPostRequest, opts1))
+	mux.HandleFunc(middleware.WithCORS("GET /users", userHandler.HandleUserListRequest, opts1))
 	mux.HandleFunc(middleware.WithCORS("OPTIONS /users", func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusNoContent)
 	}, opts1))
@@ -61,9 +57,9 @@ func (s *UserService) RegisterRoutes(mux *http.ServeMux) {
 		AllowedHeaders:   "Content-Type, Authorization",
 		AllowCredentials: true,
 	}
-	mux.HandleFunc(middleware.WithCORS("GET /users/", s.userHandler.HandleUserGetRequest, opts2))
-	mux.HandleFunc(middleware.WithCORS("PUT /users/", s.userHandler.HandleUserPutRequest, opts2))
-	mux.HandleFunc(middleware.WithCORS("DELETE /users/", s.userHandler.HandleUserDeleteRequest, opts2))
+	mux.HandleFunc(middleware.WithCORS("GET /users/", userHandler.HandleUserGetRequest, opts2))
+	mux.HandleFunc(middleware.WithCORS("PUT /users/", userHandler.HandleUserPutRequest, opts2))
+	mux.HandleFunc(middleware.WithCORS("DELETE /users/", userHandler.HandleUserDeleteRequest, opts2))
 	mux.HandleFunc(middleware.WithCORS("OPTIONS /users/", func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusNoContent)
 	}, opts2))
@@ -74,9 +70,9 @@ func (s *UserService) RegisterRoutes(mux *http.ServeMux) {
 		AllowCredentials: true,
 	}
 	mux.HandleFunc(middleware.WithCORS("GET /users/tree/{path...}",
-		s.userHandler.HandleUserListByPathRequest, opts3))
+		userHandler.HandleUserListByPathRequest, opts3))
 	mux.HandleFunc(middleware.WithCORS("POST /users/tree/{path...}",
-		s.userHandler.HandleUserPostByPathRequest, opts3))
+		userHandler.HandleUserPostByPathRequest, opts3))
 	mux.HandleFunc(middleware.WithCORS("OPTIONS /users/tree/{path...}",
 		func(w http.ResponseWriter, r *http.Request) {
 			w.WriteHeader(http.StatusNoContent)
@@ -88,7 +84,7 @@ func (s *UserService) RegisterRoutes(mux *http.ServeMux) {
 		AllowCredentials: true,
 	}
 	mux.HandleFunc(middleware.WithCORS("POST /users/authenticate",
-		s.userHandler.HandleUserAuthenticateRequest, opts4))
+		userHandler.HandleUserAuthenticateRequest, opts4))
 	mux.HandleFunc(middleware.WithCORS("OPTIONS /users/authenticate",
 		func(w http.ResponseWriter, r *http.Request) {
 			w.WriteHeader(http.StatusNoContent)

@@ -29,20 +29,20 @@ import (
 	"github.com/asgardeo/thunder/internal/system/config"
 	"github.com/asgardeo/thunder/internal/system/jwt"
 	"github.com/asgardeo/thunder/internal/system/log"
-	userservice "github.com/asgardeo/thunder/internal/user/service"
+	"github.com/asgardeo/thunder/internal/user"
 )
 
 // refreshTokenGrantHandler handles the refresh token grant type.
 type refreshTokenGrantHandler struct {
 	JWTService  jwt.JWTServiceInterface
-	UserService userservice.UserServiceInterface
+	UserService user.UserServiceInterface
 }
 
 // newRefreshTokenGrantHandler creates a new instance of RefreshTokenGrantHandler.
 func newRefreshTokenGrantHandler() RefreshTokenGrantHandlerInterface {
 	return &refreshTokenGrantHandler{
 		JWTService:  jwt.GetJWTService(),
-		UserService: userservice.GetUserService(),
+		UserService: user.GetUserService(),
 	}
 }
 

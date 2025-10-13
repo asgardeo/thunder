@@ -16,8 +16,7 @@
  * under the License.
  */
 
-// Package handler provides the implementation for user management operations.
-package handler
+package user
 
 import (
 	"encoding/json"
@@ -33,28 +32,25 @@ import (
 	"github.com/asgardeo/thunder/internal/system/error/serviceerror"
 	"github.com/asgardeo/thunder/internal/system/log"
 	sysutils "github.com/asgardeo/thunder/internal/system/utils"
-	"github.com/asgardeo/thunder/internal/user/constants"
-	"github.com/asgardeo/thunder/internal/user/model"
-	"github.com/asgardeo/thunder/internal/user/service"
 )
 
-const loggerComponentName = "UserHandler"
+const handlerLoggerComponentName = "UserHandler"
 
-// UserHandler is the handler for user management operations.
-type UserHandler struct {
-	userService service.UserServiceInterface
+// userHandler is the handler for user management operations.
+type userHandler struct {
+	userService UserServiceInterface
 }
 
-// NewUserHandler creates a new instance of UserHandler with dependency injection.
-func NewUserHandler() *UserHandler {
-	return &UserHandler{
-		userService: service.GetUserService(),
+// newUserHandler creates a new instance of userHandler with dependency injection.
+func newUserHandler(userService UserServiceInterface) *userHandler {
+	return &userHandler{
+		userService: userService,
 	}
 }
 
 // HandleUserListRequest handles the user list request.
-func (ah *UserHandler) HandleUserListRequest(w http.ResponseWriter, r *http.Request) {
-	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, loggerComponentName))
+func (uh *userHandler) HandleUserListRequest(w http.ResponseWriter, r *http.Request) {
+	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, handlerLoggerComponentName))
 
 	limit, offset, svcErr := parsePaginationParams(r.URL.Query())
 	if svcErr != nil {
@@ -73,7 +69,7 @@ func (ah *UserHandler) HandleUserListRequest(w http.ResponseWriter, r *http.Requ
 	}
 
 	// Get the user list using the user service.
-	userListResponse, svcErr := ah.userService.GetUserList(limit, offset, filters)
+	userListResponse, svcErr := uh.userService.GetUserList(limit, offset, filters)
 	if svcErr != nil {
 		handleError(w, logger, svcErr)
 		return
@@ -96,17 +92,17 @@ func (ah *UserHandler) HandleUserListRequest(w http.ResponseWriter, r *http.Requ
 }
 
 // HandleUserPostRequest handles the user request.
-func (ah *UserHandler) HandleUserPostRequest(w http.ResponseWriter, r *http.Request) {
-	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, "UserHandler"))
+func (uh *userHandler) HandleUserPostRequest(w http.ResponseWriter, r *http.Request) {
+	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, handlerLoggerComponentName))
 
-	createRequest, err := sysutils.DecodeJSONBody[model.User](r)
+	createRequest, err := sysutils.DecodeJSONBody[User](r)
 	if err != nil {
 		http.Error(w, "Bad Request: The request body is malformed or contains invalid data.", http.StatusBadRequest)
 		return
 	}
 
 	// Create the user using the user service.
-	createdUser, svcErr := ah.userService.CreateUser(createRequest)
+	createdUser, svcErr := uh.userService.CreateUser(createRequest)
 	if svcErr != nil {
 		handleError(w, logger, svcErr)
 		return
@@ -126,8 +122,8 @@ func (ah *UserHandler) HandleUserPostRequest(w http.ResponseWriter, r *http.Requ
 }
 
 // HandleUserGetRequest handles the user request.
-func (ah *UserHandler) HandleUserGetRequest(w http.ResponseWriter, r *http.Request) {
-	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, "UserHandler"))
+func (uh *userHandler) HandleUserGetRequest(w http.ResponseWriter, r *http.Request) {
+	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, handlerLoggerComponentName))
 
 	id := strings.TrimPrefix(r.URL.Path, "/users/")
 	if id == "" {
@@ -136,7 +132,7 @@ func (ah *UserHandler) HandleUserGetRequest(w http.ResponseWriter, r *http.Reque
 	}
 
 	// Get the user using the user service.
-	user, svcErr := ah.userService.GetUser(id)
+	user, svcErr := uh.userService.GetUser(id)
 	if svcErr != nil {
 		handleError(w, logger, svcErr)
 		return
@@ -154,8 +150,8 @@ func (ah *UserHandler) HandleUserGetRequest(w http.ResponseWriter, r *http.Reque
 }
 
 // HandleUserPutRequest handles the user request.
-func (ah *UserHandler) HandleUserPutRequest(w http.ResponseWriter, r *http.Request) {
-	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, "UserHandler"))
+func (uh *userHandler) HandleUserPutRequest(w http.ResponseWriter, r *http.Request) {
+	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, handlerLoggerComponentName))
 
 	id := strings.TrimPrefix(r.URL.Path, "/users/")
 	if id == "" {
@@ -163,7 +159,7 @@ func (ah *UserHandler) HandleUserPutRequest(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
-	updateRequest, err := sysutils.DecodeJSONBody[model.User](r)
+	updateRequest, err := sysutils.DecodeJSONBody[User](r)
 	if err != nil {
 		http.Error(w, "Bad Request: The request body is malformed or contains invalid data.", http.StatusBadRequest)
 		return
@@ -171,7 +167,7 @@ func (ah *UserHandler) HandleUserPutRequest(w http.ResponseWriter, r *http.Reque
 	updateRequest.ID = id
 
 	// Update the user using the user service.
-	user, svcErr := ah.userService.UpdateUser(id, updateRequest)
+	user, svcErr := uh.userService.UpdateUser(id, updateRequest)
 	if svcErr != nil {
 		handleError(w, logger, svcErr)
 		return
@@ -189,8 +185,8 @@ func (ah *UserHandler) HandleUserPutRequest(w http.ResponseWriter, r *http.Reque
 }
 
 // HandleUserDeleteRequest handles the delete user request.
-func (ah *UserHandler) HandleUserDeleteRequest(w http.ResponseWriter, r *http.Request) {
-	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, "UserHandler"))
+func (uh *userHandler) HandleUserDeleteRequest(w http.ResponseWriter, r *http.Request) {
+	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, handlerLoggerComponentName))
 
 	id := strings.TrimPrefix(r.URL.Path, "/users/")
 	if id == "" {
@@ -199,7 +195,7 @@ func (ah *UserHandler) HandleUserDeleteRequest(w http.ResponseWriter, r *http.Re
 	}
 
 	// Delete the user using the user service.
-	svcErr := ah.userService.DeleteUser(id)
+	svcErr := uh.userService.DeleteUser(id)
 	if svcErr != nil {
 		handleError(w, logger, svcErr)
 		return
@@ -212,8 +208,8 @@ func (ah *UserHandler) HandleUserDeleteRequest(w http.ResponseWriter, r *http.Re
 }
 
 // HandleUserListByPathRequest handles the list users by OU path request.
-func (ah *UserHandler) HandleUserListByPathRequest(w http.ResponseWriter, r *http.Request) {
-	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, loggerComponentName))
+func (uh *userHandler) HandleUserListByPathRequest(w http.ResponseWriter, r *http.Request) {
+	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, handlerLoggerComponentName))
 
 	path, pathValidationFailed := extractAndValidatePath(w, r, logger)
 	if pathValidationFailed {
@@ -236,7 +232,7 @@ func (ah *UserHandler) HandleUserListByPathRequest(w http.ResponseWriter, r *htt
 		return
 	}
 
-	userListResponse, svcErr := ah.userService.GetUsersByPath(path, limit, offset, filters)
+	userListResponse, svcErr := uh.userService.GetUsersByPath(path, limit, offset, filters)
 	if svcErr != nil {
 		handleError(w, logger, svcErr)
 		return
@@ -259,22 +255,22 @@ func (ah *UserHandler) HandleUserListByPathRequest(w http.ResponseWriter, r *htt
 }
 
 // HandleUserPostByPathRequest handles the create user by OU path request.
-func (ah *UserHandler) HandleUserPostByPathRequest(w http.ResponseWriter, r *http.Request) {
-	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, loggerComponentName))
+func (uh *userHandler) HandleUserPostByPathRequest(w http.ResponseWriter, r *http.Request) {
+	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, handlerLoggerComponentName))
 
 	path, pathValidationFailed := extractAndValidatePath(w, r, logger)
 	if pathValidationFailed {
 		return
 	}
 
-	createRequest, err := sysutils.DecodeJSONBody[model.CreateUserByPathRequest](r)
+	createRequest, err := sysutils.DecodeJSONBody[CreateUserByPathRequest](r)
 	if err != nil {
 		w.Header().Set(serverconst.ContentTypeHeaderName, serverconst.ContentTypeJSON)
 		w.WriteHeader(http.StatusBadRequest)
 
 		errResp := apierror.ErrorResponse{
-			Code:        constants.ErrorInvalidRequestFormat.Code,
-			Message:     constants.ErrorInvalidRequestFormat.Error,
+			Code:        ErrorInvalidRequestFormat.Code,
+			Message:     ErrorInvalidRequestFormat.Error,
 			Description: "Failed to parse request body: " + err.Error(),
 		}
 
@@ -285,7 +281,7 @@ func (ah *UserHandler) HandleUserPostByPathRequest(w http.ResponseWriter, r *htt
 		return
 	}
 
-	user, svcErr := ah.userService.CreateUserByPath(path, *createRequest)
+	user, svcErr := uh.userService.CreateUserByPath(path, *createRequest)
 	if svcErr != nil {
 		handleError(w, logger, svcErr)
 		return
@@ -304,17 +300,17 @@ func (ah *UserHandler) HandleUserPostByPathRequest(w http.ResponseWriter, r *htt
 }
 
 // HandleUserAuthenticateRequest handles the user authentication request.
-func (ah *UserHandler) HandleUserAuthenticateRequest(w http.ResponseWriter, r *http.Request) {
-	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, loggerComponentName))
+func (uh *userHandler) HandleUserAuthenticateRequest(w http.ResponseWriter, r *http.Request) {
+	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, handlerLoggerComponentName))
 
-	authenticateRequest, err := sysutils.DecodeJSONBody[model.AuthenticateUserRequest](r)
+	authenticateRequest, err := sysutils.DecodeJSONBody[AuthenticateUserRequest](r)
 	if err != nil {
 		w.Header().Set(serverconst.ContentTypeHeaderName, serverconst.ContentTypeJSON)
 		w.WriteHeader(http.StatusBadRequest)
 
 		errResp := apierror.ErrorResponse{
-			Code:        constants.ErrorInvalidRequestFormat.Code,
-			Message:     constants.ErrorInvalidRequestFormat.Error,
+			Code:        ErrorInvalidRequestFormat.Code,
+			Message:     ErrorInvalidRequestFormat.Error,
 			Description: "The request body is malformed or contains invalid data",
 		}
 
@@ -325,7 +321,7 @@ func (ah *UserHandler) HandleUserAuthenticateRequest(w http.ResponseWriter, r *h
 		return
 	}
 
-	authResponse, svcErr := ah.userService.AuthenticateUser(*authenticateRequest)
+	authResponse, svcErr := uh.userService.AuthenticateUser(*authenticateRequest)
 	if svcErr != nil {
 		handleError(w, logger, svcErr)
 		return
@@ -350,9 +346,9 @@ func parsePaginationParams(query url.Values) (int, int, *serviceerror.ServiceErr
 
 	if limitStr := query.Get("limit"); limitStr != "" {
 		if parsedLimit, err := strconv.Atoi(limitStr); err != nil {
-			return 0, 0, &constants.ErrorInvalidLimit
+			return 0, 0, &ErrorInvalidLimit
 		} else if parsedLimit <= 0 {
-			return 0, 0, &constants.ErrorInvalidLimit
+			return 0, 0, &ErrorInvalidLimit
 		} else {
 			limit = parsedLimit
 		}
@@ -360,9 +356,9 @@ func parsePaginationParams(query url.Values) (int, int, *serviceerror.ServiceErr
 
 	if offsetStr := query.Get("offset"); offsetStr != "" {
 		if parsedOffset, err := strconv.Atoi(offsetStr); err != nil {
-			return 0, 0, &constants.ErrorInvalidOffset
+			return 0, 0, &ErrorInvalidOffset
 		} else if parsedOffset < 0 {
-			return 0, 0, &constants.ErrorInvalidOffset
+			return 0, 0, &ErrorInvalidOffset
 		} else {
 			offset = parsedOffset
 		}
@@ -378,18 +374,18 @@ func handleError(w http.ResponseWriter, logger *log.Logger, svcErr *serviceerror
 	var statusCode int
 	if svcErr.Type == serviceerror.ClientErrorType {
 		switch svcErr.Code {
-		case constants.ErrorMissingUserID.Code,
-			constants.ErrorUserNotFound.Code,
-			constants.ErrorOrganizationUnitNotFound.Code:
+		case ErrorMissingUserID.Code,
+			ErrorUserNotFound.Code,
+			ErrorOrganizationUnitNotFound.Code:
 			statusCode = http.StatusNotFound
-		case constants.ErrorAttributeConflict.Code:
+		case ErrorAttributeConflict.Code:
 			statusCode = http.StatusConflict
-		case constants.ErrorHandlePathRequired.Code,
-			constants.ErrorInvalidHandlePath.Code,
-			constants.ErrorMissingRequiredFields.Code,
-			constants.ErrorMissingCredentials.Code:
+		case ErrorHandlePathRequired.Code,
+			ErrorInvalidHandlePath.Code,
+			ErrorMissingRequiredFields.Code,
+			ErrorMissingCredentials.Code:
 			statusCode = http.StatusBadRequest
-		case constants.ErrorAuthenticationFailed.Code:
+		case ErrorAuthenticationFailed.Code:
 			statusCode = http.StatusUnauthorized
 		default:
 			statusCode = http.StatusBadRequest
@@ -419,9 +415,9 @@ func extractAndValidatePath(w http.ResponseWriter, r *http.Request, logger *log.
 		w.Header().Set(serverconst.ContentTypeHeaderName, serverconst.ContentTypeJSON)
 		w.WriteHeader(http.StatusBadRequest)
 		errResp := apierror.ErrorResponse{
-			Code:        constants.ErrorHandlePathRequired.Code,
-			Message:     constants.ErrorHandlePathRequired.Error,
-			Description: constants.ErrorHandlePathRequired.ErrorDescription,
+			Code:        ErrorHandlePathRequired.Code,
+			Message:     ErrorHandlePathRequired.Error,
+			Description: ErrorHandlePathRequired.ErrorDescription,
 		}
 		if err := json.NewEncoder(w).Encode(errResp); err != nil {
 			logger.Error("Error encoding error response", log.Error(err))
@@ -441,12 +437,12 @@ func parseFilterParams(query url.Values) (map[string]interface{}, *serviceerror.
 	filterStr := query.Get("filter")
 	filterStr = strings.TrimSpace(filterStr)
 	if filterStr == "" {
-		return nil, &constants.ErrorInvalidFilter
+		return nil, &ErrorInvalidFilter
 	}
 
 	parsedFilter, err := parseFilterExpression(filterStr)
 	if err != nil {
-		return nil, &constants.ErrorInvalidFilter
+		return nil, &ErrorInvalidFilter
 	}
 
 	sanitized := sanitizeFilter(parsedFilter)

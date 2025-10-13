@@ -29,7 +29,7 @@ import (
 	"github.com/asgardeo/thunder/internal/system/error/serviceerror"
 	"github.com/asgardeo/thunder/internal/system/log"
 	"github.com/asgardeo/thunder/internal/system/utils"
-	userservice "github.com/asgardeo/thunder/internal/user/service"
+	"github.com/asgardeo/thunder/internal/user"
 )
 
 const loggerComponentName = "GroupMgtService"
@@ -48,15 +48,20 @@ type GroupServiceInterface interface {
 
 // groupService is the default implementation of the GroupServiceInterface.
 type groupService struct {
-	groupStore groupStoreInterface
-	ouService  oupkg.OrganizationUnitServiceInterface
+	groupStore  groupStoreInterface
+	ouService   oupkg.OrganizationUnitServiceInterface
+	userService user.UserServiceInterface
 }
 
 // newGroupService creates a new instance of GroupService with injected dependencies.
-func newGroupService(ouService oupkg.OrganizationUnitServiceInterface) GroupServiceInterface {
+func newGroupService(
+	ouService oupkg.OrganizationUnitServiceInterface,
+	userService user.UserServiceInterface,
+) GroupServiceInterface {
 	return &groupService{
-		groupStore: newGroupStore(),
-		ouService:  ouService,
+		groupStore:  newGroupStore(),
+		ouService:   ouService,
+		userService: userService,
 	}
 }
 
@@ -495,8 +500,7 @@ func (gs *groupService) validateOU(ouID string) *serviceerror.ServiceError {
 func (gs *groupService) validateUserIDs(userIDs []string) *serviceerror.ServiceError {
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, loggerComponentName))
 
-	userService := userservice.GetUserService()
-	invalidUserIDs, svcErr := userService.ValidateUserIDs(userIDs)
+	invalidUserIDs, svcErr := gs.userService.ValidateUserIDs(userIDs)
 	if svcErr != nil {
 		logger.Error("Failed to validate user IDs", log.String("error", svcErr.Error), log.String("code", svcErr.Code))
 		return &ErrorInternalServerError

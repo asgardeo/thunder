@@ -97,4 +97,5 @@ type AuthenticationResponse struct {
 	ID               string `json:"id"`
 	Type             string `json:"type"`
 	OrganizationUnit string `json:"organization_unit"`
+	Assertion        string `json:"assertion,omitempty"`
 }

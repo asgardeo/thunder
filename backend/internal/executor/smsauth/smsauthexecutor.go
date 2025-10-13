@@ -32,7 +32,7 @@ import (
 	"github.com/asgardeo/thunder/internal/notification"
 	notifcommon "github.com/asgardeo/thunder/internal/notification/common"
 	"github.com/asgardeo/thunder/internal/system/log"
-	"github.com/asgardeo/thunder/internal/user/service"
+	"github.com/asgardeo/thunder/internal/user"
 )
 
 const (
@@ -49,7 +49,7 @@ const (
 type SMSOTPAuthExecutor struct {
 	*identify.IdentifyingExecutor
 	internal                flowmodel.Executor
-	userService             service.UserServiceInterface
+	userService             user.UserServiceInterface
 	notificationSvcProvider notification.NotificationServiceProviderInterface
 }
 
@@ -75,7 +75,7 @@ func NewSMSOTPAuthExecutor(id, name string, properties map[string]string) *SMSOT
 	return &SMSOTPAuthExecutor{
 		IdentifyingExecutor:     identify.NewIdentifyingExecutor(id, name, properties),
 		internal:                *flowmodel.NewExecutor(id, name, defaultInputs, prerequisites, properties),
-		userService:             service.GetUserService(),
+		userService:             user.GetUserService(),
 		notificationSvcProvider: notification.NewNotificationSenderServiceProvider(),
 	}
 }

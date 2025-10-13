@@ -208,6 +208,7 @@ func (suite *CredentialsAuthTestSuite) TestAuthenticateWithMultipleAttributes() 
 			suite.Equal("person", response.Type, "Response should contain correct user type")
 			suite.Equal(testOrgUnitID, response.OrganizationUnit, "Response should contain correct organization unit")
 			suite.Equal(suite.users["multiple_attributes"], response.ID, "Response should contain the correct user ID")
+			suite.NotEmpty(response.Assertion, "Response should contain assertion token by default")
 		})
 	}
 }
@@ -475,6 +476,44 @@ func (suite *CredentialsAuthTestSuite) TestAuthenticateWithDifferentAttributeCom
 			}
 		})
 	}
+}
+
+// TestAuthenticateWithSkipAssertionFalse tests authentication with skip_assertion explicitly set to false
+func (suite *CredentialsAuthTestSuite) TestAuthenticateWithSkipAssertionFalse() {
+	authRequest := map[string]interface{}{
+		"username":       "credtest_user1",
+		"password":       "TestPassword123!",
+		"skip_assertion": false,
+	}
+
+	response, statusCode, err := suite.sendAuthRequest(authRequest)
+	suite.Require().NoError(err, "Failed to send authenticate request")
+	suite.Equal(http.StatusOK, statusCode, "Expected status 200 for successful authentication")
+
+	suite.NotEmpty(response.ID, "Response should contain user ID")
+	suite.Equal("person", response.Type, "Response should contain correct user type")
+	suite.Equal(testOrgUnitID, response.OrganizationUnit, "Response should contain correct organization unit")
+	suite.Equal(suite.users["username_password"], response.ID, "Response should contain the correct user ID")
+	suite.NotEmpty(response.Assertion, "Response should contain assertion token when skip_assertion is false")
+}
+
+// TestAuthenticateWithSkipAssertionTrue tests authentication with skip_assertion set to true
+func (suite *CredentialsAuthTestSuite) TestAuthenticateWithSkipAssertionTrue() {
+	authRequest := map[string]interface{}{
+		"username":       "credtest_user1",
+		"password":       "TestPassword123!",
+		"skip_assertion": true,
+	}
+
+	response, statusCode, err := suite.sendAuthRequest(authRequest)
+	suite.Require().NoError(err, "Failed to send authenticate request")
+	suite.Equal(http.StatusOK, statusCode, "Expected status 200 for successful authentication")
+
+	suite.NotEmpty(response.ID, "Response should contain user ID")
+	suite.Equal("person", response.Type, "Response should contain correct user type")
+	suite.Equal(testOrgUnitID, response.OrganizationUnit, "Response should contain correct organization unit")
+	suite.Equal(suite.users["username_password"], response.ID, "Response should contain the correct user ID")
+	suite.Empty(response.Assertion, "Response should not contain assertion token when skip_assertion is true")
 }
 
 func (suite *CredentialsAuthTestSuite) sendAuthRequest(authRequest map[string]interface{}) (

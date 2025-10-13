@@ -45,4 +45,5 @@ type AuthenticationResponse struct {
 	ID               string
 	Type             string
 	OrganizationUnit string
+	Assertion        string
 }

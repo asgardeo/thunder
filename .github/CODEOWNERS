@@ -1,0 +1,60 @@
+## Please refer to https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-features/customizing-your-repository/about-code-owners 
+## for the CODEOWNERS documentation.
+## 
+## Order is important; the last matching pattern takes the most precedence.
+
+
+## backend files
+
+/backend/cmd/server/ @ThaminduDilshan @darshanasbg @senthalan
+
+/backend/internal/application/ @ThaminduDilshan
+/backend/internal/authn/ @ThaminduDilshan
+/backend/internal/cert/ @ThaminduDilshan
+/backend/internal/executor/ @ThaminduDilshan
+/backend/internal/flow/ @ThaminduDilshan
+/backend/internal/group/ @darshanasbg
+/backend/internal/idp/ @ThaminduDilshan
+/backend/internal/notification/ @ThaminduDilshan
+/backend/internal/ou/ @darshanasbg
+/backend/internal/user/ @darshanasbg
+/backend/internal/userschema/ @darshanasbg
+
+/backend/internal/oauth/ @ThaminduDilshan
+/backend/internal/oauth/oauth2/pkce/ @thiva-k
+
+/backend/internal/system/ @ThaminduDilshan @darshanasbg
+/backend/internal/system/cache/ @ThaminduDilshan
+/backend/internal/system/cmodels/ @thiva-k
+/backend/internal/system/config/ @ThaminduDilshan
+/backend/internal/system/constants/ @ThaminduDilshan
+/backend/internal/system/crypto/ @hwupathum
+/backend/internal/system/database/ @ThaminduDilshan @darshanasbg
+/backend/internal/system/error/ @ThaminduDilshan
+/backend/internal/system/healthcheck/ @darshanasbg
+/backend/internal/system/http/ @ThaminduDilshan
+/backend/internal/system/jwt/ @ThaminduDilshan
+/backend/internal/system/log/ @ThaminduDilshan
+/backend/internal/system/middleware/ @senthalan
+/backend/internal/system/utils/ @ThaminduDilshan @darshanasbg
+
+
+## scripts
+
+/backend/dbscripts/ @ThaminduDilshan @darshanasbg
+/backend/scripts/ @ThaminduDilshan @darshanasbg
+
+
+## frontend files
+
+/frontend/ @jeradrutnam @DonOmalVindula
+
+
+## deployment files
+
+/install/helm/ @Lakshan-Banneheke
+
+
+## sample apps
+
+/samples/apps/oauth/ @jeradrutnam @DonOmalVindula

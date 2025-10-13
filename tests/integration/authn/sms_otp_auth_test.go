@@ -263,6 +263,7 @@ func (suite *SMSOTPAuthTestSuite) TestVerifyOTPSuccess() {
 	suite.Equal(suite.userID, authResponse.ID, "Response should contain the correct user ID")
 	suite.NotEmpty(authResponse.Type, "Response should contain user type")
 	suite.NotEmpty(authResponse.OrganizationUnit, "Response should contain organization unit")
+	suite.NotEmpty(authResponse.Assertion, "Response should contain assertion token by default")
 }
 
 func (suite *SMSOTPAuthTestSuite) TestVerifyOTPInvalidCode() {
@@ -414,6 +415,72 @@ func (suite *SMSOTPAuthTestSuite) TestCompleteOTPAuthFlow() {
 	suite.Contains(authResponse, "type")
 	suite.Contains(authResponse, "organization_unit")
 	suite.Equal(suite.userID, authResponse["id"])
+}
+
+// TestVerifyOTPWithSkipAssertionFalse tests OTP verification with skip_assertion explicitly set to false
+func (suite *SMSOTPAuthTestSuite) TestVerifyOTPWithSkipAssertionFalse() {
+	sessionToken, otp := suite.sendOTPAndExtract()
+
+	verifyRequest := map[string]interface{}{
+		"session_token":  sessionToken,
+		"otp":            otp,
+		"skip_assertion": false,
+	}
+	verifyRequestJSON, err := json.Marshal(verifyRequest)
+	suite.Require().NoError(err)
+
+	req, err := http.NewRequest("POST", testServerURL+smsOTPAuthVerifyEndpoint, bytes.NewReader(verifyRequestJSON))
+	suite.Require().NoError(err)
+	req.Header.Set("Content-Type", "application/json")
+
+	resp, err := suite.client.Do(req)
+	suite.Require().NoError(err)
+	defer resp.Body.Close()
+
+	suite.Equal(http.StatusOK, resp.StatusCode)
+
+	var authResponse testutils.AuthenticationResponse
+	err = json.NewDecoder(resp.Body).Decode(&authResponse)
+	suite.Require().NoError(err)
+
+	suite.NotEmpty(authResponse.ID, "Response should contain user ID")
+	suite.Equal(suite.userID, authResponse.ID, "Response should contain the correct user ID")
+	suite.NotEmpty(authResponse.Type, "Response should contain user type")
+	suite.NotEmpty(authResponse.OrganizationUnit, "Response should contain organization unit")
+	suite.NotEmpty(authResponse.Assertion, "Response should contain assertion token when skip_assertion is false")
+}
+
+// TestVerifyOTPWithSkipAssertionTrue tests OTP verification with skip_assertion set to true
+func (suite *SMSOTPAuthTestSuite) TestVerifyOTPWithSkipAssertionTrue() {
+	sessionToken, otp := suite.sendOTPAndExtract()
+
+	verifyRequest := map[string]interface{}{
+		"session_token":  sessionToken,
+		"otp":            otp,
+		"skip_assertion": true,
+	}
+	verifyRequestJSON, err := json.Marshal(verifyRequest)
+	suite.Require().NoError(err)
+
+	req, err := http.NewRequest("POST", testServerURL+smsOTPAuthVerifyEndpoint, bytes.NewReader(verifyRequestJSON))
+	suite.Require().NoError(err)
+	req.Header.Set("Content-Type", "application/json")
+
+	resp, err := suite.client.Do(req)
+	suite.Require().NoError(err)
+	defer resp.Body.Close()
+
+	suite.Equal(http.StatusOK, resp.StatusCode)
+
+	var authResponse testutils.AuthenticationResponse
+	err = json.NewDecoder(resp.Body).Decode(&authResponse)
+	suite.Require().NoError(err)
+
+	suite.NotEmpty(authResponse.ID, "Response should contain user ID")
+	suite.Equal(suite.userID, authResponse.ID, "Response should contain the correct user ID")
+	suite.NotEmpty(authResponse.Type, "Response should contain user type")
+	suite.NotEmpty(authResponse.OrganizationUnit, "Response should contain organization unit")
+	suite.Empty(authResponse.Assertion, "Response should not contain assertion token when skip_assertion is true")
 }
 
 func (suite *SMSOTPAuthTestSuite) sendOTPAndExtract() (string, string) {

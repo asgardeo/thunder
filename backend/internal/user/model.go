@@ -16,8 +16,7 @@
  * under the License.
  */
 
-// Package model defines the data structures and interfaces for user management.
-package model
+package user
 
 import (
 	"encoding/json"

@@ -43,7 +43,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ClientErrorResponse'
-              examples:
+              example:
                 code: "AUTH-CRED-1001"
                 message: "Empty attributes or credentials"
                 description: "The user attributes or credentials cannot be empty"
@@ -137,7 +137,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ClientErrorResponse'
-              examples:
+              example:
                 code: "AUTHN-OTP-1005"
                 message: "Invalid OTP"
                 description: "The provided OTP is invalid or empty"
@@ -298,9 +298,6 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/IDPAuthFinishRequest'
-            example:
-              session_token: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
-              code: "authorization-code"
       responses:
         "200":
           description: OK
@@ -406,10 +403,17 @@ components:
   schemas:
     CredentialAuthRequest:
       type: object
+      properties:
+        skip_assertion:
+          type: boolean
+          description: Skip generating assertion token in the response
+          default: false
+          example: false
       additionalProperties: true
       example:
         email: "jane.doe@example.com"
         password: "SecurePassword123!"
+        skip_assertion: false
     
     SendOtpAuthRequest:
       type: object
@@ -449,6 +453,11 @@ components:
           type: string
           description: The OTP code received by the user
           example: "123456"
+        skip_assertion:
+          type: boolean
+          description: Skip generating assertion token in the response
+          default: false
+          example: false
       required:
         - session_token
         - otp
@@ -467,6 +476,10 @@ components:
           type: string
           format: uuid
           description: "The organization unit ID of the authenticated user"
+        assertion:
+          type: string
+          description: "JWT assertion token for the authenticated user"
+          example: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
 
     IDPAuthInitRequest:
       type: object
@@ -503,6 +516,11 @@ components:
         code:
           type: string
           description: Authorization code received from the identity provider
+        skip_assertion:
+          type: boolean
+          description: Skip generating assertion token in the response
+          default: false
+          example: false
 
     ErrorResponse:
       type: object

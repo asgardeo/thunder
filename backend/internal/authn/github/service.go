@@ -27,7 +27,7 @@ import (
 	"github.com/asgardeo/thunder/internal/system/error/serviceerror"
 	syshttp "github.com/asgardeo/thunder/internal/system/http"
 	"github.com/asgardeo/thunder/internal/system/log"
-	usermodel "github.com/asgardeo/thunder/internal/user/model"
+	"github.com/asgardeo/thunder/internal/user"
 )
 
 const (
@@ -145,6 +145,6 @@ func (g *githubOAuthAuthnService) fetchPrimaryEmail(accessToken string) (string,
 }
 
 // GetInternalUser retrieves the internal user based on the external subject identifier.
-func (g *githubOAuthAuthnService) GetInternalUser(sub string) (*usermodel.User, *serviceerror.ServiceError) {
+func (g *githubOAuthAuthnService) GetInternalUser(sub string) (*user.User, *serviceerror.ServiceError) {
 	return g.internal.GetInternalUser(sub)
 }

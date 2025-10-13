@@ -29,9 +29,7 @@ import (
 	notifcommon "github.com/asgardeo/thunder/internal/notification/common"
 	"github.com/asgardeo/thunder/internal/system/error/serviceerror"
 	"github.com/asgardeo/thunder/internal/system/log"
-	userconst "github.com/asgardeo/thunder/internal/user/constants"
-	usermodel "github.com/asgardeo/thunder/internal/user/model"
-	userservice "github.com/asgardeo/thunder/internal/user/service"
+	"github.com/asgardeo/thunder/internal/user"
 )
 
 const (
@@ -45,23 +43,23 @@ var supportedChannels = []notifcommon.ChannelType{notifcommon.ChannelTypeSMS}
 // This is a wrapper over the notification.OTPServiceInterface to perform user authentication.
 type OTPAuthnServiceInterface interface {
 	SendOTP(senderID string, channel notifcommon.ChannelType, recipient string) (string, *serviceerror.ServiceError)
-	VerifyOTP(sessionToken, otp string) (*usermodel.User, *serviceerror.ServiceError)
+	VerifyOTP(sessionToken, otp string) (*user.User, *serviceerror.ServiceError)
 }
 
 // otpAuthnService is the default implementation of OTPAuthnServiceInterface.
 type otpAuthnService struct {
 	otpService  notification.OTPServiceInterface
-	userService userservice.UserServiceInterface
+	userService user.UserServiceInterface
 }
 
 // NewOTPAuthnService creates a new instance of OTPAuthnService.
 func NewOTPAuthnService(otpSvc notification.OTPServiceInterface,
-	userSvc userservice.UserServiceInterface) OTPAuthnServiceInterface {
+	userSvc user.UserServiceInterface) OTPAuthnServiceInterface {
 	if otpSvc == nil {
 		otpSvc = notification.NewNotificationSenderServiceProvider().GetOTPService()
 	}
 	if userSvc == nil {
-		userSvc = userservice.GetUserService()
+		userSvc = user.GetUserService()
 	}
 	return &otpAuthnService{
 		otpService:  otpSvc,
@@ -95,7 +93,7 @@ func (s *otpAuthnService) SendOTP(senderID string, channel notifcommon.ChannelTy
 }
 
 // VerifyOTP verifies the provided OTP against the session token and returns the authenticated user.
-func (s *otpAuthnService) VerifyOTP(sessionToken, otp string) (*usermodel.User, *serviceerror.ServiceError) {
+func (s *otpAuthnService) VerifyOTP(sessionToken, otp string) (*user.User, *serviceerror.ServiceError) {
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, loggerComponentName))
 	logger.Debug("Verifying OTP for authentication")
 
@@ -164,7 +162,7 @@ func (s *otpAuthnService) validateOTPVerifyRequest(sessionToken, otp string) *se
 
 // handleVerifyOTPResponse processes the OTP verification result and resolves the user.
 func (s *otpAuthnService) handleVerifyOTPResponse(result *notifcommon.VerifyOTPResultDTO,
-	logger *log.Logger) (*usermodel.User, *serviceerror.ServiceError) {
+	logger *log.Logger) (*user.User, *serviceerror.ServiceError) {
 	if result.Status != notifcommon.OTPVerifyStatusVerified {
 		return nil, &ErrorIncorrectOTP
 	}
@@ -184,7 +182,7 @@ func (s *otpAuthnService) handleVerifyOTPResponse(result *notifcommon.VerifyOTPR
 
 // resolveUser retrieves a user by their recipient identifier (e.g., mobile number).
 func (s *otpAuthnService) resolveUser(recipient string, channel notifcommon.ChannelType,
-	logger *log.Logger) (*usermodel.User, *serviceerror.ServiceError) {
+	logger *log.Logger) (*user.User, *serviceerror.ServiceError) {
 	logger.Debug("Resolving user from recipient", log.String("recipient", log.MaskString(recipient)),
 		log.String("channel", string(channel)))
 
@@ -219,7 +217,7 @@ func (s *otpAuthnService) resolveUser(recipient string, channel notifcommon.Chan
 func (s *otpAuthnService) handleUserServiceError(svcErr *serviceerror.ServiceError,
 	logger *log.Logger) *serviceerror.ServiceError {
 	if svcErr.Type == serviceerror.ClientErrorType {
-		if svcErr.Code == userconst.ErrorUserNotFound.Code {
+		if svcErr.Code == user.ErrorUserNotFound.Code {
 			return &common.ErrorUserNotFound
 		}
 		return serviceerror.CustomServiceError(ErrorClientErrorWhileResolvingUser,

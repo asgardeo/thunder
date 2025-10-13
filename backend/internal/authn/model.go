@@ -37,6 +37,7 @@ type AuthenticationResponseDTO struct {
 	ID               string `json:"id"`
 	Type             string `json:"type,omitempty"`
 	OrganizationUnit string `json:"organization_unit,omitempty"`
+	Assertion        string `json:"assertion,omitempty"`
 }
 
 // IDPAuthInitRequestDTO is the request to initiate IDP authentication.
@@ -52,8 +53,9 @@ type IDPAuthInitResponseDTO struct {
 
 // IDPAuthFinishRequestDTO is the request to complete IDP authentication.
 type IDPAuthFinishRequestDTO struct {
-	SessionToken string `json:"session_token"`
-	Code         string `json:"code"`
+	SessionToken  string `json:"session_token"`
+	SkipAssertion bool   `json:"skip_assertion"`
+	Code          string `json:"code"`
 }
 
 // SendOTPAuthRequestDTO is the request to send an OTP for authentication.
@@ -70,6 +72,7 @@ type SendOTPAuthResponseDTO struct {
 
 // VerifyOTPAuthRequestDTO is the request to verify an OTP for authentication.
 type VerifyOTPAuthRequestDTO struct {
-	SessionToken string `json:"session_token"`
-	OTP          string `json:"otp"`
+	SessionToken  string `json:"session_token"`
+	SkipAssertion bool   `json:"skip_assertion"`
+	OTP           string `json:"otp"`
 }

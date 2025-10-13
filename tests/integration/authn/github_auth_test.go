@@ -289,6 +289,7 @@ func (suite *GithubAuthTestSuite) TestGithubAuthCompleteFlowSuccess() {
 	suite.NotEmpty(authResponse.Type, "Response should contain user type")
 	suite.NotEmpty(authResponse.OrganizationUnit, "Response should contain organization unit")
 	suite.Equal(suite.userID, authResponse.ID, "Response should contain the correct user ID")
+	suite.NotEmpty(authResponse.Assertion, "Response should contain assertion token by default")
 }
 
 func (suite *GithubAuthTestSuite) TestGithubAuthFinishInvalidSessionToken() {
@@ -328,6 +329,128 @@ func (suite *GithubAuthTestSuite) TestGithubAuthFinishMissingCode() {
 	defer resp.Body.Close()
 
 	suite.Equal(http.StatusBadRequest, resp.StatusCode)
+}
+
+// TestGithubAuthCompleteFlowWithSkipAssertionFalse tests complete GitHub auth flow with skip_assertion=false
+func (suite *GithubAuthTestSuite) TestGithubAuthCompleteFlowWithSkipAssertionFalse() {
+	// Step 1: Start authentication
+	startRequest := map[string]interface{}{
+		"idp_id": suite.idpID,
+	}
+	startRequestJSON, err := json.Marshal(startRequest)
+	suite.Require().NoError(err)
+
+	req, err := http.NewRequest("POST", testServerURL+githubAuthStart, bytes.NewReader(startRequestJSON))
+	suite.Require().NoError(err)
+	req.Header.Set("Content-Type", "application/json")
+
+	client := getHTTPClient()
+	resp, err := client.Do(req)
+	suite.Require().NoError(err)
+	defer resp.Body.Close()
+
+	suite.Equal(http.StatusOK, resp.StatusCode)
+
+	var startResponse map[string]interface{}
+	err = json.NewDecoder(resp.Body).Decode(&startResponse)
+	suite.Require().NoError(err)
+
+	sessionToken := startResponse["session_token"].(string)
+	redirectURL := startResponse["redirect_url"].(string)
+
+	// Step 2: Simulate user authorization at GitHub
+	authCode := suite.simulateGithubAuthorization(redirectURL)
+	suite.Require().NotEmpty(authCode)
+
+	// Step 3: Finish authentication with skip_assertion=false
+	finishRequest := map[string]interface{}{
+		"session_token":  sessionToken,
+		"code":           authCode,
+		"skip_assertion": false,
+	}
+	finishRequestJSON, err := json.Marshal(finishRequest)
+	suite.Require().NoError(err)
+
+	req, err = http.NewRequest("POST", testServerURL+githubAuthFinish, bytes.NewReader(finishRequestJSON))
+	suite.Require().NoError(err)
+	req.Header.Set("Content-Type", "application/json")
+
+	resp, err = client.Do(req)
+	suite.Require().NoError(err)
+	defer resp.Body.Close()
+
+	suite.Equal(http.StatusOK, resp.StatusCode)
+
+	var authResponse testutils.AuthenticationResponse
+	err = json.NewDecoder(resp.Body).Decode(&authResponse)
+	suite.Require().NoError(err)
+
+	suite.NotEmpty(authResponse.ID, "Response should contain user ID")
+	suite.NotEmpty(authResponse.Type, "Response should contain user type")
+	suite.NotEmpty(authResponse.OrganizationUnit, "Response should contain organization unit")
+	suite.Equal(suite.userID, authResponse.ID, "Response should contain the correct user ID")
+	suite.NotEmpty(authResponse.Assertion, "Response should contain assertion token when skip_assertion is false")
+}
+
+// TestGithubAuthCompleteFlowWithSkipAssertionTrue tests complete GitHub auth flow with skip_assertion=true
+func (suite *GithubAuthTestSuite) TestGithubAuthCompleteFlowWithSkipAssertionTrue() {
+	// Step 1: Start authentication
+	startRequest := map[string]interface{}{
+		"idp_id": suite.idpID,
+	}
+	startRequestJSON, err := json.Marshal(startRequest)
+	suite.Require().NoError(err)
+
+	req, err := http.NewRequest("POST", testServerURL+githubAuthStart, bytes.NewReader(startRequestJSON))
+	suite.Require().NoError(err)
+	req.Header.Set("Content-Type", "application/json")
+
+	client := getHTTPClient()
+	resp, err := client.Do(req)
+	suite.Require().NoError(err)
+	defer resp.Body.Close()
+
+	suite.Equal(http.StatusOK, resp.StatusCode)
+
+	var startResponse map[string]interface{}
+	err = json.NewDecoder(resp.Body).Decode(&startResponse)
+	suite.Require().NoError(err)
+
+	sessionToken := startResponse["session_token"].(string)
+	redirectURL := startResponse["redirect_url"].(string)
+
+	// Step 2: Simulate user authorization at GitHub
+	authCode := suite.simulateGithubAuthorization(redirectURL)
+	suite.Require().NotEmpty(authCode)
+
+	// Step 3: Finish authentication with skip_assertion=true
+	finishRequest := map[string]interface{}{
+		"session_token":  sessionToken,
+		"code":           authCode,
+		"skip_assertion": true,
+	}
+	finishRequestJSON, err := json.Marshal(finishRequest)
+	suite.Require().NoError(err)
+
+	req, err = http.NewRequest("POST", testServerURL+githubAuthFinish, bytes.NewReader(finishRequestJSON))
+	suite.Require().NoError(err)
+	req.Header.Set("Content-Type", "application/json")
+
+	resp, err = client.Do(req)
+	suite.Require().NoError(err)
+	defer resp.Body.Close()
+
+	suite.Equal(http.StatusOK, resp.StatusCode)
+
+	var authResponse testutils.AuthenticationResponse
+	err = json.NewDecoder(resp.Body).Decode(&authResponse)
+	suite.Require().NoError(err)
+
+	suite.NotEmpty(authResponse.ID, "Response should contain user ID")
+	suite.NotEmpty(authResponse.Type, "Response should contain user type")
+	suite.NotEmpty(authResponse.OrganizationUnit, "Response should contain organization unit")
+	suite.Equal(suite.userID, authResponse.ID, "Response should contain the correct user ID")
+	suite.Empty(authResponse.Assertion, "Response should not contain assertion token when skip_assertion is true")
 }
 
 // simulateGithubAuthorization simulates user authorization and returns authorization code

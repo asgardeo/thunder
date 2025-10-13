@@ -95,6 +95,7 @@ func (ah *ApplicationHandler) HandleApplicationPostRequest(w http.ResponseWriter
 					ResponseTypes:           config.OAuthAppConfig.ResponseTypes,
 					TokenEndpointAuthMethod: config.OAuthAppConfig.TokenEndpointAuthMethod,
 					PKCERequired:            config.OAuthAppConfig.PKCERequired,
+					PublicClient:            config.OAuthAppConfig.PublicClient,
 					Token:                   config.OAuthAppConfig.Token,
 				},
 			}
@@ -282,6 +283,7 @@ func (ah *ApplicationHandler) HandleApplicationGetRequest(w http.ResponseWriter,
 				ResponseTypes:           responseTypes,
 				TokenEndpointAuthMethod: tokenAuthMethods,
 				PKCERequired:            config.OAuthAppConfig.PKCERequired,
+				PublicClient:            config.OAuthAppConfig.PublicClient,
 				Token:                   config.OAuthAppConfig.Token,
 			}
 			returnInboundAuthConfigs = append(returnInboundAuthConfigs, model.InboundAuthConfig{
@@ -370,6 +372,7 @@ func (ah *ApplicationHandler) HandleApplicationPutRequest(w http.ResponseWriter,
 					ResponseTypes:           config.OAuthAppConfig.ResponseTypes,
 					TokenEndpointAuthMethod: config.OAuthAppConfig.TokenEndpointAuthMethod,
 					PKCERequired:            config.OAuthAppConfig.PKCERequired,
+					PublicClient:            config.OAuthAppConfig.PublicClient,
 					Token:                   config.OAuthAppConfig.Token,
 				},
 			}
@@ -504,6 +507,7 @@ func (ah *ApplicationHandler) processInboundAuthConfig(logger *log.Logger, appDT
 				ResponseTypes:           responseTypes,
 				TokenEndpointAuthMethod: tokenAuthMethods,
 				PKCERequired:            config.OAuthAppConfig.PKCERequired,
+				PublicClient:            config.OAuthAppConfig.PublicClient,
 				Token:                   config.OAuthAppConfig.Token,
 			}
 			returnInboundAuthConfigs = append(returnInboundAuthConfigs, model.InboundAuthConfigComplete{

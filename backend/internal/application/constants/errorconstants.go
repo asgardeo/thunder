@@ -187,6 +187,13 @@ var (
 		Error:            "Application with client ID already exists",
 		ErrorDescription: "An application with the same client ID already exists",
 	}
+	// ErrorPublicClientInvalidConfiguration is the error returned when a public client has invalid configuration.
+	ErrorPublicClientInvalidConfiguration = serviceerror.ServiceError{
+		Type:             serviceerror.ClientErrorType,
+		Code:             "APP-1024",
+		Error:            "Invalid configurations for public client",
+		ErrorDescription: "One or more configurations specified are not valid for the public clients",
+	}
 )
 
 // Server errors for application operations.

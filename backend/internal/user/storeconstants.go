@@ -16,8 +16,7 @@
  * under the License.
  */
 
-// Package store provides the implementation for user persistence operations.
-package store
+package user
 
 import (
 	"fmt"

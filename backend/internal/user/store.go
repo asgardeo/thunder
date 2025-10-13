@@ -16,8 +16,7 @@
  * under the License.
  */
 
-// Package store provides the implementation for user persistence operations.
-package store
+package user
 
 import (
 	"encoding/json"
@@ -25,12 +24,31 @@ import (
 
 	"github.com/asgardeo/thunder/internal/system/database/provider"
 	"github.com/asgardeo/thunder/internal/system/log"
-	"github.com/asgardeo/thunder/internal/user/constants"
-	"github.com/asgardeo/thunder/internal/user/model"
 )
 
+// userStoreInterface defines the interface for user store operations.
+type userStoreInterface interface {
+	GetUserListCount(filters map[string]interface{}) (int, error)
+	GetUserList(limit, offset int, filters map[string]interface{}) ([]User, error)
+	CreateUser(user User, credentials []Credential) error
+	GetUser(id string) (User, error)
+	UpdateUser(user *User) error
+	DeleteUser(id string) error
+	IdentifyUser(filters map[string]interface{}) (*string, error)
+	VerifyUser(id string) (User, []Credential, error)
+	ValidateUserIDs(userIDs []string) ([]string, error)
+}
+
+// userStore is the default implementation of userStoreInterface.
+type userStore struct{}
+
+// newUserStore creates a new instance of userStore.
+func newUserStore() userStoreInterface {
+	return &userStore{}
+}
+
 // GetUserListCount retrieves the total count of users.
-func GetUserListCount(filters map[string]interface{}) (int, error) {
+func (us *userStore) GetUserListCount(filters map[string]interface{}) (int, error) {
 	dbClient, err := provider.GetDBProvider().GetDBClient("identity")
 	if err != nil {
 		return 0, fmt.Errorf("failed to get database client: %w", err)
@@ -59,7 +77,7 @@ func GetUserListCount(filters map[string]interface{}) (int, error) {
 }
 
 // GetUserList retrieves a list of users from the database.
-func GetUserList(limit, offset int, filters map[string]interface{}) ([]model.User, error) {
+func (us *userStore) GetUserList(limit, offset int, filters map[string]interface{}) ([]User, error) {
 	dbClient, err := provider.GetDBProvider().GetDBClient("identity")
 	if err != nil {
 		return nil, fmt.Errorf("failed to get database client: %w", err)
@@ -75,7 +93,7 @@ func GetUserList(limit, offset int, filters map[string]interface{}) ([]model.Use
 		return nil, fmt.Errorf("failed to execute paginated query: %w", err)
 	}
 
-	users := make([]model.User, 0)
+	users := make([]User, 0)
 
 	for _, row := range results {
 		user, err := buildUserFromResultRow(row)
@@ -89,7 +107,7 @@ func GetUserList(limit, offset int, filters map[string]interface{}) ([]model.Use
 }
 
 // CreateUser handles the user creation in the database.
-func CreateUser(user model.User, credentials []model.Credential) error {
+func (us *userStore) CreateUser(user User, credentials []Credential) error {
 	dbClient, err := provider.GetDBProvider().GetDBClient("identity")
 	if err != nil {
 		return fmt.Errorf("failed to get database client: %w", err)
@@ -98,7 +116,7 @@ func CreateUser(user model.User, credentials []model.Credential) error {
 	// Convert attributes to JSON string
 	attributes, err := json.Marshal(user.Attributes)
 	if err != nil {
-		return constants.ErrBadAttributesInRequest
+		return ErrBadAttributesInRequest
 	}
 
 	// Convert credentials array to JSON string
@@ -108,7 +126,7 @@ func CreateUser(user model.User, credentials []model.Credential) error {
 	} else {
 		credentialsBytes, err := json.Marshal(credentials)
 		if err != nil {
-			return constants.ErrBadAttributesInRequest
+			return ErrBadAttributesInRequest
 		}
 		credentialsJSON = string(credentialsBytes)
 	}
@@ -129,36 +147,36 @@ func CreateUser(user model.User, credentials []model.Credential) error {
 }
 
 // GetUser retrieves a specific user by its ID from the database.
-func GetUser(id string) (model.User, error) {
+func (us *userStore) GetUser(id string) (User, error) {
 	dbClient, err := provider.GetDBProvider().GetDBClient("identity")
 	if err != nil {
-		return model.User{}, fmt.Errorf("failed to get database client: %w", err)
+		return User{}, fmt.Errorf("failed to get database client: %w", err)
 	}
 
 	results, err := dbClient.Query(QueryGetUserByUserID, id)
 	if err != nil {
-		return model.User{}, fmt.Errorf("failed to execute query: %w", err)
+		return User{}, fmt.Errorf("failed to execute query: %w", err)
 	}
 
 	if len(results) == 0 {
-		return model.User{}, constants.ErrUserNotFound
+		return User{}, ErrUserNotFound
 	}
 
 	if len(results) != 1 {
-		return model.User{}, fmt.Errorf("unexpected number of results: %d", len(results))
+		return User{}, fmt.Errorf("unexpected number of results: %d", len(results))
 	}
 
 	row := results[0]
 
 	user, err := buildUserFromResultRow(row)
 	if err != nil {
-		return model.User{}, fmt.Errorf("failed to build user from result row: %w", err)
+		return User{}, fmt.Errorf("failed to build user from result row: %w", err)
 	}
 	return user, nil
 }
 
 // UpdateUser updates the user in the database.
-func UpdateUser(user *model.User) error {
+func (us *userStore) UpdateUser(user *User) error {
 	dbClient, err := provider.GetDBProvider().GetDBClient("identity")
 	if err != nil {
 		return fmt.Errorf("failed to get database client: %w", err)
@@ -167,7 +185,7 @@ func UpdateUser(user *model.User) error {
 	// Convert attributes to JSON string
 	attributes, err := json.Marshal(user.Attributes)
 	if err != nil {
-		return constants.ErrBadAttributesInRequest
+		return ErrBadAttributesInRequest
 	}
 
 	rowsAffected, err := dbClient.Execute(
@@ -177,14 +195,14 @@ func UpdateUser(user *model.User) error {
 	}
 
 	if rowsAffected == 0 {
-		return constants.ErrUserNotFound
+		return ErrUserNotFound
 	}
 
 	return nil
 }
 
 // DeleteUser deletes the user from the database.
-func DeleteUser(id string) error {
+func (us *userStore) DeleteUser(id string) error {
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, "UserStore"))
 
 	dbClient, err := provider.GetDBProvider().GetDBClient("identity")
@@ -205,7 +223,7 @@ func DeleteUser(id string) error {
 }
 
 // IdentifyUser identifies a user with the given filters.
-func IdentifyUser(filters map[string]interface{}) (*string, error) {
+func (us *userStore) IdentifyUser(filters map[string]interface{}) (*string, error) {
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, "UserStore"))
 
 	dbClient, err := provider.GetDBProvider().GetDBClient("identity")
@@ -228,7 +246,7 @@ func IdentifyUser(filters map[string]interface{}) (*string, error) {
 			maskedFilters := maskMapValues(filters)
 			logger.Debug("User not found with the provided filters", log.Any("filters", maskedFilters))
 		}
-		return nil, constants.ErrUserNotFound
+		return nil, ErrUserNotFound
 	}
 
 	if len(results) != 1 {
@@ -253,30 +271,30 @@ func IdentifyUser(filters map[string]interface{}) (*string, error) {
 }
 
 // VerifyUser validate the user specified user using the given credentials from the database.
-func VerifyUser(id string) (model.User, []model.Credential, error) {
+func (us *userStore) VerifyUser(id string) (User, []Credential, error) {
 	dbClient, err := provider.GetDBProvider().GetDBClient("identity")
 	if err != nil {
-		return model.User{}, []model.Credential{}, fmt.Errorf("failed to get database client: %w", err)
+		return User{}, []Credential{}, fmt.Errorf("failed to get database client: %w", err)
 	}
 
 	results, err := dbClient.Query(QueryValidateUserWithCredentials, id)
 	if err != nil {
-		return model.User{}, []model.Credential{}, fmt.Errorf("failed to execute query: %w", err)
+		return User{}, []Credential{}, fmt.Errorf("failed to execute query: %w", err)
 	}
 
 	if len(results) == 0 {
-		return model.User{}, []model.Credential{}, constants.ErrUserNotFound
+		return User{}, []Credential{}, ErrUserNotFound
 	}
 
 	if len(results) != 1 {
-		return model.User{}, []model.Credential{}, fmt.Errorf("unexpected number of results: %d", len(results))
+		return User{}, []Credential{}, fmt.Errorf("unexpected number of results: %d", len(results))
 	}
 
 	row := results[0]
 
 	user, err := buildUserFromResultRow(row)
 	if err != nil {
-		return model.User{}, []model.Credential{}, fmt.Errorf("failed to build user from result row: %w", err)
+		return User{}, []Credential{}, fmt.Errorf("failed to build user from result row: %w", err)
 	}
 
 	// build the UserDTO with credentials.
@@ -287,19 +305,19 @@ func VerifyUser(id string) (model.User, []model.Credential, error) {
 	case []byte:
 		credentialsJSON = string(v)
 	default:
-		return model.User{}, []model.Credential{}, fmt.Errorf("failed to parse credentials as string")
+		return User{}, []Credential{}, fmt.Errorf("failed to parse credentials as string")
 	}
 
-	var credentials []model.Credential
+	var credentials []Credential
 	if err := json.Unmarshal([]byte(credentialsJSON), &credentials); err != nil {
-		return model.User{}, []model.Credential{}, fmt.Errorf("failed to unmarshal credentials: %w", err)
+		return User{}, []Credential{}, fmt.Errorf("failed to unmarshal credentials: %w", err)
 	}
 
 	return user, credentials, nil
 }
 
 // ValidateUserIDs checks if all provided user IDs exist.
-func ValidateUserIDs(userIDs []string) ([]string, error) {
+func (us *userStore) ValidateUserIDs(userIDs []string) ([]string, error) {
 	if len(userIDs) == 0 {
 		return []string{}, nil
 	}
@@ -336,20 +354,20 @@ func ValidateUserIDs(userIDs []string) ([]string, error) {
 	return invalidUserIDs, nil
 }
 
-func buildUserFromResultRow(row map[string]interface{}) (model.User, error) {
+func buildUserFromResultRow(row map[string]interface{}) (User, error) {
 	userID, ok := row["user_id"].(string)
 	if !ok {
-		return model.User{}, fmt.Errorf("failed to parse user_id as string")
+		return User{}, fmt.Errorf("failed to parse user_id as string")
 	}
 
 	orgID, ok := row["ou_id"].(string)
 	if !ok {
-		return model.User{}, fmt.Errorf("failed to parse org_id as string")
+		return User{}, fmt.Errorf("failed to parse org_id as string")
 	}
 
 	userType, ok := row["type"].(string)
 	if !ok {
-		return model.User{}, fmt.Errorf("failed to parse type as string")
+		return User{}, fmt.Errorf("failed to parse type as string")
 	}
 
 	var attributes string
@@ -359,10 +377,10 @@ func buildUserFromResultRow(row map[string]interface{}) (model.User, error) {
 	case []byte:
 		attributes = string(v) // Convert byte slice to string
 	default:
-		return model.User{}, fmt.Errorf("failed to parse attributes as string")
+		return User{}, fmt.Errorf("failed to parse attributes as string")
 	}
 
-	user := model.User{
+	user := User{
 		ID:               userID,
 		OrganizationUnit: orgID,
 		Type:             userType,
@@ -370,7 +388,7 @@ func buildUserFromResultRow(row map[string]interface{}) (model.User, error) {
 
 	// Unmarshal JSON attributes
 	if err := json.Unmarshal([]byte(attributes), &user.Attributes); err != nil {
-		return model.User{}, fmt.Errorf("failed to unmarshal attributes")
+		return User{}, fmt.Errorf("failed to unmarshal attributes")
 	}
 
 	return user, nil

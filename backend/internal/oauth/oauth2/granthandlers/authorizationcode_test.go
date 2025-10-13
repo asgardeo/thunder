@@ -34,10 +34,10 @@ import (
 	"github.com/asgardeo/thunder/internal/oauth/oauth2/constants"
 	"github.com/asgardeo/thunder/internal/oauth/oauth2/model"
 	"github.com/asgardeo/thunder/internal/system/config"
-	usermodel "github.com/asgardeo/thunder/internal/user/model"
+	"github.com/asgardeo/thunder/internal/user"
 	"github.com/asgardeo/thunder/tests/mocks/jwtmock"
 	"github.com/asgardeo/thunder/tests/mocks/oauth/oauth2/authz/storemock"
-	usersvcmock "github.com/asgardeo/thunder/tests/mocks/user/servicemock"
+	usersvcmock "github.com/asgardeo/thunder/tests/mocks/usermock"
 )
 
 type AuthorizationCodeGrantHandlerTestSuite struct {
@@ -195,7 +195,7 @@ func (suite *AuthorizationCodeGrantHandlerTestSuite) TestHandleGrant_Success() {
 	suite.mockAuthZStore.On("DeactivateAuthorizationCode", suite.testAuthzCode).Return(nil)
 
 	// Mock user service to return user for attributes
-	mockUser := &usermodel.User{
+	mockUser := &user.User{
 		ID:         "test-user-id",
 		Attributes: json.RawMessage(`{"email":"test@example.com","username":"testuser"}`),
 	}
@@ -295,7 +295,7 @@ func (suite *AuthorizationCodeGrantHandlerTestSuite) TestHandleGrant_JWTGenerati
 	suite.mockAuthZStore.On("DeactivateAuthorizationCode", suite.testAuthzCode).Return(nil)
 
 	// Mock user service to return user for attributes
-	mockUser := &usermodel.User{
+	mockUser := &user.User{
 		ID:         "test-user-id",
 		Attributes: json.RawMessage(`{"email":"test@example.com","username":"testuser"}`),
 	}
@@ -331,7 +331,7 @@ func (suite *AuthorizationCodeGrantHandlerTestSuite) TestHandleGrant_EmptyScopes
 	suite.mockAuthZStore.On("DeactivateAuthorizationCode", authzCodeWithEmptyScopes).Return(nil)
 
 	// Mock user service to return user for attributes
-	mockUser := &usermodel.User{
+	mockUser := &user.User{
 		ID:         "test-user-id",
 		Attributes: json.RawMessage(`{"email":"test@example.com","username":"testuser"}`),
 	}
@@ -362,7 +362,7 @@ func (suite *AuthorizationCodeGrantHandlerTestSuite) TestHandleGrant_NilTokenAtt
 	suite.mockAuthZStore.On("DeactivateAuthorizationCode", suite.testAuthzCode).Return(nil)
 
 	// Mock user service to return user for attributes
-	mockUser := &usermodel.User{
+	mockUser := &user.User{
 		ID:         "test-user-id",
 		Attributes: json.RawMessage(`{"email":"test@example.com","username":"testuser"}`),
 	}

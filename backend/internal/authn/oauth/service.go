@@ -30,9 +30,7 @@ import (
 	httpservice "github.com/asgardeo/thunder/internal/system/http"
 	"github.com/asgardeo/thunder/internal/system/log"
 	sysutils "github.com/asgardeo/thunder/internal/system/utils"
-	userconst "github.com/asgardeo/thunder/internal/user/constants"
-	usermodel "github.com/asgardeo/thunder/internal/user/model"
-	userservice "github.com/asgardeo/thunder/internal/user/service"
+	"github.com/asgardeo/thunder/internal/user"
 )
 
 const (
@@ -44,7 +42,7 @@ type OAuthAuthnCoreServiceInterface interface {
 	BuildAuthorizeURL(idpID string) (string, *serviceerror.ServiceError)
 	ExchangeCodeForToken(idpID, code string, validateResponse bool) (*TokenResponse, *serviceerror.ServiceError)
 	FetchUserInfo(idpID, accessToken string) (map[string]interface{}, *serviceerror.ServiceError)
-	GetInternalUser(sub string) (*usermodel.User, *serviceerror.ServiceError)
+	GetInternalUser(sub string) (*user.User, *serviceerror.ServiceError)
 }
 
 // OAuthAuthnClientServiceInterface defines the contract for OAuth client operations.
@@ -65,7 +63,7 @@ type OAuthAuthnServiceInterface interface {
 type oAuthAuthnService struct {
 	httpClient  httpservice.HTTPClientInterface
 	idpService  idp.IDPServiceInterface
-	userService userservice.UserServiceInterface
+	userService user.UserServiceInterface
 	endpoints   OAuthEndpoints
 }
 
@@ -82,7 +80,7 @@ func NewOAuthAuthnService(httpClient httpservice.HTTPClientInterface,
 	return &oAuthAuthnService{
 		httpClient:  httpClient,
 		idpService:  idpSvc,
-		userService: userservice.GetUserService(),
+		userService: user.GetUserService(),
 		endpoints:   endpoints,
 	}
 }
@@ -257,7 +255,7 @@ func (s *oAuthAuthnService) FetchUserInfoWithClientConfig(oAuthClientConfig *OAu
 }
 
 // GetInternalUser retrieves the internal user based on the external subject identifier.
-func (s *oAuthAuthnService) GetInternalUser(sub string) (*usermodel.User, *serviceerror.ServiceError) {
+func (s *oAuthAuthnService) GetInternalUser(sub string) (*user.User, *serviceerror.ServiceError) {
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, loggerComponentName),
 		log.String("sub", log.MaskString(sub)))
 	logger.Debug("Retrieving internal user for the given sub claim")
@@ -271,7 +269,7 @@ func (s *oAuthAuthnService) GetInternalUser(sub string) (*usermodel.User, *servi
 	}
 	userID, svcErr := s.userService.IdentifyUser(filters)
 	if svcErr != nil {
-		if svcErr.Code == userconst.ErrorUserNotFound.Code {
+		if svcErr.Code == user.ErrorUserNotFound.Code {
 			logger.Debug("No user found for the provided sub claim")
 			return nil, &common.ErrorUserNotFound
 		}
