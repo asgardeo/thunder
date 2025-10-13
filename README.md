@@ -1839,7 +1839,7 @@ This will build the server with coverage instrumentation, run tests, and generat
 1. Navigate to local-development directory
 
 ```bash
-cd backend/local-development
+cd install/local-development
 ```
 
 2. Start PostgreSQL Database in background

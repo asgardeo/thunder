@@ -13,8 +13,8 @@ services:
     volumes:
       - postgres_data:/var/lib/postgresql/data
       - ./postgres-init/init.sql:/docker-entrypoint-initdb.d/init.sql
-      - ../dbscripts/runtimedb/postgres.sql:/docker-entrypoint-initdb.d/runtime-postgres.sql
-      - ../dbscripts/thunderdb/postgres.sql:/docker-entrypoint-initdb.d/thunder-postgres.sql
+      - ../../backend/dbscripts/runtimedb/postgres.sql:/docker-entrypoint-initdb.d/runtime-postgres.sql
+      - ../../backend/dbscripts/thunderdb/postgres.sql:/docker-entrypoint-initdb.d/thunder-postgres.sql
 
 volumes:
   postgres_data:
