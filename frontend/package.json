@@ -1,10 +1,11 @@
 {
   "private": true,
-  "name": "@thunder/frontend-workspace",
+  "name": "@thunder/frontend",
   "version": "0.0.0",
   "description": "Frontend workspace for ⚡️ Thunder",
   "author": "WSO2",
   "license": "Apache-2.0",
+  "type": "module",
   "homepage": "https://github.com/asgardeo/thunder/tree/main/frontend#readme",
   "bugs": {
     "url": "https://github.com/asgardeo/thunder/issues"

@@ -16,6 +16,10 @@
  * under the License.
  */
 
+import {javascriptConfig} from './javascript';
+import {prettierConfig} from './prettier';
+import {typescriptConfig} from './typescript';
+
 /**
  * @fileoverview Base ESLint config that includes header, JavaScript, Prettier, and TypeScript configurations.
  */
@@ -24,7 +28,27 @@ export const baseConfig = [
   // Thunder copyright header rule will be added by the main plugin
   {
     name: 'thunder/copyright-header',
-    rules: {'@thunder/copyright-header': 'error',
+    rules: {'@thunder/copyright-header': 'error'},
+  },
+  ...javascriptConfig,
+  ...typescriptConfig,
+  ...prettierConfig,
+  {
+    files: [
+      '*.config.js',
+      '*.config.mjs',
+      '*.config.ts',
+      '**/eslint.config.js',
+      '**/eslint.config.mjs',
+      '**/eslint.config.ts',
+      'vite.config.ts',
+      'vitest.config.ts',
+      '**/prettier.config.js',
+      '**/prettier.config.mjs',
+      '**/prettier.config.ts',
+    ],
+    rules: {
+      'import/no-extraneous-dependencies': ['error', {devDependencies: true}],
     },
   },
 ];

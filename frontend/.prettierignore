@@ -1,5 +1,4 @@
-# Add files here to ignore them from prettier formatting
 /dist
+/build
+/node_modules
 /coverage
-/.nx/cache
-/.nx/workspace-data

@@ -16,25 +16,6 @@
  * under the License.
  */
 
-/**
- * @fileoverview ESLint config to be used in JavaScript based projects.
- */
+import config from "@thunder/prettier-config";
 
-import {FlatCompat} from '@eslint/eslintrc';
-import path from 'path';
-import {fileURLToPath} from 'url';
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-
-const compat = new FlatCompat({
-  baseDirectory: __dirname,
-});
-
-export const javascriptConfig = [
-  ...compat.extends('airbnb-base'),
-  {
-    name: 'thunder/javascript-overrides',
-    rules: {},
-  },
-];
+export default config;
