@@ -54,6 +54,8 @@ type OAuthAppConfig struct {
 	GrantTypes              []string `json:"grant_types"`
 	ResponseTypes           []string `json:"response_types"`
 	TokenEndpointAuthMethod []string `json:"token_endpoint_auth_methods"`
+	PKCERequired            bool     `json:"pkce_required"`
+	PublicClient            bool     `json:"public_client"`
 }
 
 // ApplicationList represents the response structure for listing applications.
@@ -159,6 +161,14 @@ func (app *Application) equals(expectedApp Application) bool {
 				}
 
 				if !compareStringSlices(oauth.TokenEndpointAuthMethod, expectedOAuth.TokenEndpointAuthMethod) {
+					return false
+				}
+
+				if oauth.PKCERequired != expectedOAuth.PKCERequired {
+					return false
+				}
+
+				if oauth.PublicClient != expectedOAuth.PublicClient {
 					return false
 				}
 			} else if (cfg.OAuthAppConfig == nil && expectedCfg.OAuthAppConfig != nil) ||

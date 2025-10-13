@@ -32,20 +32,20 @@ import (
 	sysutils "github.com/asgardeo/thunder/internal/system/utils"
 )
 
-// IDPHandler is the handler for identity provider management operations.
-type IDPHandler struct {
+// idpHandler is the handler for identity provider management operations.
+type idpHandler struct {
 	idpService IDPServiceInterface
 }
 
 // newIDPHandler creates a new instance of IDPHandler.
-func newIDPHandler(idpService IDPServiceInterface) *IDPHandler {
-	return &IDPHandler{
+func newIDPHandler(idpService IDPServiceInterface) *idpHandler {
+	return &idpHandler{
 		idpService: idpService,
 	}
 }
 
 // HandleIDPPostRequest handles the create identity provider request.
-func (ih *IDPHandler) HandleIDPPostRequest(w http.ResponseWriter, r *http.Request) {
+func (ih *idpHandler) HandleIDPPostRequest(w http.ResponseWriter, r *http.Request) {
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, "IDPHandler"))
 
 	createRequest, err := sysutils.DecodeJSONBody[idpRequest](r)
@@ -102,7 +102,7 @@ func (ih *IDPHandler) HandleIDPPostRequest(w http.ResponseWriter, r *http.Reques
 }
 
 // HandleIDPListRequest handles the list identity providers request.
-func (ih *IDPHandler) HandleIDPListRequest(w http.ResponseWriter, r *http.Request) {
+func (ih *idpHandler) HandleIDPListRequest(w http.ResponseWriter, r *http.Request) {
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, "IDPHandler"))
 
 	idpList, svcErr := ih.idpService.GetIdentityProviderList()
@@ -132,7 +132,7 @@ func (ih *IDPHandler) HandleIDPListRequest(w http.ResponseWriter, r *http.Reques
 }
 
 // HandleIDPGetRequest handles the get identity provider request.
-func (ih *IDPHandler) HandleIDPGetRequest(w http.ResponseWriter, r *http.Request) {
+func (ih *idpHandler) HandleIDPGetRequest(w http.ResponseWriter, r *http.Request) {
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, "IDPHandler"))
 
 	id := r.PathValue("id")
@@ -176,7 +176,7 @@ func (ih *IDPHandler) HandleIDPGetRequest(w http.ResponseWriter, r *http.Request
 }
 
 // HandleIDPPutRequest handles the update identity provider request.
-func (ih *IDPHandler) HandleIDPPutRequest(w http.ResponseWriter, r *http.Request) {
+func (ih *idpHandler) HandleIDPPutRequest(w http.ResponseWriter, r *http.Request) {
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, "IDPHandler"))
 
 	id := r.PathValue("id")
@@ -252,7 +252,7 @@ func (ih *IDPHandler) HandleIDPPutRequest(w http.ResponseWriter, r *http.Request
 }
 
 // HandleIDPDeleteRequest handles the delete identity provider request.
-func (ih *IDPHandler) HandleIDPDeleteRequest(w http.ResponseWriter, r *http.Request) {
+func (ih *idpHandler) HandleIDPDeleteRequest(w http.ResponseWriter, r *http.Request) {
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, "IDPHandler"))
 
 	id := r.PathValue("id")

@@ -116,6 +116,8 @@ paths:
                       - "code"
                     token_endpoint_auth_methods:
                       - "client_secret_basic"
+                    pkce_required: false
+                    public_client: false
                     token:
                       access_token:
                         issuer: "thunder"
@@ -160,6 +162,8 @@ paths:
                         - "code"
                       token_endpoint_auth_methods:
                         - "client_secret_basic"
+                      pkce_required: false
+                      public_client: false
                       token:
                         access_token:
                           issuer: "thunder"
@@ -254,6 +258,8 @@ paths:
                         - "code"
                       token_endpoint_auth_methods:
                         - "client_secret_basic"
+                      pkce_required: false
+                      public_client: false
                       token:
                         access_token:
                           issuer: "thunder"
@@ -342,6 +348,8 @@ paths:
                       - "code"
                     token_endpoint_auth_methods:
                       - "client_secret_basic"
+                    pkce_required: false
+                    public_client: false
                     token:
                       access_token:
                         issuer: "thunder"
@@ -388,6 +396,8 @@ paths:
                         - "code"
                       token_endpoint_auth_methods:
                         - "client_secret_basic"
+                      pkce_required: false
+                      public_client: false
                       token:
                         access_token:
                           issuer: "thunder"
@@ -788,7 +798,13 @@ components:
         pkce_required:
           type: boolean
           description: Whether PKCE (Proof Key for Code Exchange) is required for this application.
-          example: true
+          example: false
+          default: false
+        public_client:
+          type: boolean
+          description: Whether the application is a public client (Mobile apps, SPAs, etc.), which cannot store secrets securely.
+          example: false
+          default: false
         token:
           type: object
           properties:
@@ -804,7 +820,7 @@ components:
           example: "myapp_client_id"
         client_secret:
           type: string
-          description: The client secret for the OAuth application.
+          description: The client secret for the OAuth application. Omitted for public clients.
           example: "myapp_client_secret"
         redirect_uris:
           type: array
@@ -837,7 +853,13 @@ components:
         pkce_required:
           type: boolean
           description: Whether PKCE (Proof Key for Code Exchange) is required for this application.
-          example: true
+          example: false
+          default: false
+        public_client:
+          type: boolean
+          description: Whether the application is a public client (Mobile apps, SPAs, etc.), which cannot store secrets securely.
+          example: false
+          default: false
         token:
           type: object
           properties:

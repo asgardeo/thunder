@@ -36,7 +36,7 @@ func Initialize(mux *http.ServeMux, jwtService jwt.JWTServiceInterface) Notifica
 }
 
 // registerRoutes registers the HTTP routes for notification services.
-func registerRoutes(mux *http.ServeMux, handler *MessageNotificationSenderHandler) {
+func registerRoutes(mux *http.ServeMux, handler *messageNotificationSenderHandler) {
 	opts1 := middleware.CORSOptions{
 		AllowedMethods:   "GET, POST",
 		AllowedHeaders:   "Content-Type, Authorization",

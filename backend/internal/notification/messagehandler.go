@@ -33,8 +33,8 @@ import (
 	sysutils "github.com/asgardeo/thunder/internal/system/utils"
 )
 
-// MessageNotificationSenderHandler handles HTTP requests for message notification sender management
-type MessageNotificationSenderHandler struct {
+// messageNotificationSenderHandler handles HTTP requests for message notification sender management
+type messageNotificationSenderHandler struct {
 	mgtService NotificationSenderMgtSvcInterface
 	otpService OTPServiceInterface
 }
@@ -42,15 +42,15 @@ type MessageNotificationSenderHandler struct {
 // newMessageNotificationSenderHandler creates a new instance of MessageNotificationSenderHandler
 func newMessageNotificationSenderHandler(
 	mgtService NotificationSenderMgtSvcInterface,
-	otpService OTPServiceInterface) *MessageNotificationSenderHandler {
-	return &MessageNotificationSenderHandler{
+	otpService OTPServiceInterface) *messageNotificationSenderHandler {
+	return &messageNotificationSenderHandler{
 		mgtService: mgtService,
 		otpService: otpService,
 	}
 }
 
 // HandleSenderListRequest handles the request to list all message notification senders
-func (h *MessageNotificationSenderHandler) HandleSenderListRequest(w http.ResponseWriter, r *http.Request) {
+func (h *messageNotificationSenderHandler) HandleSenderListRequest(w http.ResponseWriter, r *http.Request) {
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, "NotificationHandler"))
 
 	senders, svcErr := h.mgtService.ListSenders()
@@ -81,7 +81,7 @@ func (h *MessageNotificationSenderHandler) HandleSenderListRequest(w http.Respon
 }
 
 // HandleSenderCreateRequest handles the request to create a new message notification sender
-func (h *MessageNotificationSenderHandler) HandleSenderCreateRequest(w http.ResponseWriter, r *http.Request) {
+func (h *messageNotificationSenderHandler) HandleSenderCreateRequest(w http.ResponseWriter, r *http.Request) {
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, "NotificationHandler"))
 
 	sender, err := sysutils.DecodeJSONBody[common.NotificationSenderRequest](r)
@@ -138,7 +138,7 @@ func (h *MessageNotificationSenderHandler) HandleSenderCreateRequest(w http.Resp
 }
 
 // HandleSenderGetRequest handles the request to get a message notification sender by ID
-func (h *MessageNotificationSenderHandler) HandleSenderGetRequest(w http.ResponseWriter, r *http.Request) {
+func (h *messageNotificationSenderHandler) HandleSenderGetRequest(w http.ResponseWriter, r *http.Request) {
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, "NotificationHandler"))
 
 	id := r.PathValue("id")
@@ -185,7 +185,7 @@ func (h *MessageNotificationSenderHandler) HandleSenderGetRequest(w http.Respons
 }
 
 // HandleSenderUpdateRequest handles the request to update a message notification sender
-func (h *MessageNotificationSenderHandler) HandleSenderUpdateRequest(w http.ResponseWriter, r *http.Request) {
+func (h *messageNotificationSenderHandler) HandleSenderUpdateRequest(w http.ResponseWriter, r *http.Request) {
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, "NotificationHandler"))
 
 	id := r.PathValue("id")
@@ -230,7 +230,7 @@ func (h *MessageNotificationSenderHandler) HandleSenderUpdateRequest(w http.Resp
 }
 
 // HandleSenderDeleteRequest handles the request to delete a message notification sender
-func (h *MessageNotificationSenderHandler) HandleSenderDeleteRequest(w http.ResponseWriter, r *http.Request) {
+func (h *messageNotificationSenderHandler) HandleSenderDeleteRequest(w http.ResponseWriter, r *http.Request) {
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, "NotificationHandler"))
 
 	id := r.PathValue("id")
@@ -248,7 +248,7 @@ func (h *MessageNotificationSenderHandler) HandleSenderDeleteRequest(w http.Resp
 }
 
 // HandleOTPSendRequest handles the request to send an OTP.
-func (h *MessageNotificationSenderHandler) HandleOTPSendRequest(w http.ResponseWriter, r *http.Request) {
+func (h *messageNotificationSenderHandler) HandleOTPSendRequest(w http.ResponseWriter, r *http.Request) {
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, "NotificationHandler"))
 
 	request, err := sysutils.DecodeJSONBody[common.SendOTPRequest](r)
@@ -279,7 +279,7 @@ func (h *MessageNotificationSenderHandler) HandleOTPSendRequest(w http.ResponseW
 }
 
 // HandleOTPVerifyRequest handles the request to verify an OTP.
-func (h *MessageNotificationSenderHandler) HandleOTPVerifyRequest(w http.ResponseWriter, r *http.Request) {
+func (h *messageNotificationSenderHandler) HandleOTPVerifyRequest(w http.ResponseWriter, r *http.Request) {
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, "NotificationHandler"))
 
 	request, err := sysutils.DecodeJSONBody[common.VerifyOTPRequest](r)
@@ -309,7 +309,7 @@ func (h *MessageNotificationSenderHandler) HandleOTPVerifyRequest(w http.Respons
 }
 
 // handleError handles service errors and returns appropriate HTTP responses.
-func (h *MessageNotificationSenderHandler) handleError(w http.ResponseWriter, logger *log.Logger,
+func (h *messageNotificationSenderHandler) handleError(w http.ResponseWriter, logger *log.Logger,
 	svcErr *serviceerror.ServiceError, customErrDesc string) {
 	w.Header().Set(serverconst.ContentTypeHeaderName, serverconst.ContentTypeJSON)
 
@@ -343,7 +343,7 @@ func (h *MessageNotificationSenderHandler) handleError(w http.ResponseWriter, lo
 }
 
 // validateSenderID validates the sender ID and returns true if valid
-func (h *MessageNotificationSenderHandler) validateSenderID(w http.ResponseWriter, id string) bool {
+func (h *messageNotificationSenderHandler) validateSenderID(w http.ResponseWriter, id string) bool {
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, "NotificationHandler"))
 
 	if strings.TrimSpace(id) == "" {

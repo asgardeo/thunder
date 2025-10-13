@@ -34,7 +34,7 @@ func Initialize(mux *http.ServeMux) IDPServiceInterface {
 }
 
 // RegisterRoutes registers the routes for identity provider operations.
-func registerRoutes(mux *http.ServeMux, idpHandler *IDPHandler) {
+func registerRoutes(mux *http.ServeMux, idpHandler *idpHandler) {
 	opts1 := middleware.CORSOptions{
 		AllowedMethods:   "GET, POST",
 		AllowedHeaders:   "Content-Type, Authorization",

@@ -36,18 +36,20 @@ type OAuthAppConfig struct {
 	ResponseTypes           []oauth2const.ResponseType            `json:"response_types"`
 	TokenEndpointAuthMethod []oauth2const.TokenEndpointAuthMethod `json:"token_endpoint_auth_methods"`
 	PKCERequired            bool                                  `json:"pkce_required"`
+	PublicClient            bool                                  `json:"public_client"`
 	Token                   *OAuthTokenConfig                     `json:"token,omitempty"`
 }
 
 // OAuthAppConfigComplete represents the complete structure for OAuth application configuration.
 type OAuthAppConfigComplete struct {
 	ClientID                string                                `json:"client_id"`
-	ClientSecret            string                                `json:"client_secret"`
+	ClientSecret            string                                `json:"client_secret,omitempty"`
 	RedirectURIs            []string                              `json:"redirect_uris"`
 	GrantTypes              []oauth2const.GrantType               `json:"grant_types"`
 	ResponseTypes           []oauth2const.ResponseType            `json:"response_types"`
 	TokenEndpointAuthMethod []oauth2const.TokenEndpointAuthMethod `json:"token_endpoint_auth_methods"`
 	PKCERequired            bool                                  `json:"pkce_required"`
+	PublicClient            bool                                  `json:"public_client"`
 	Token                   *OAuthTokenConfig                     `json:"token,omitempty"`
 }
 
@@ -61,6 +63,7 @@ type OAuthAppConfigDTO struct {
 	ResponseTypes           []oauth2const.ResponseType
 	TokenEndpointAuthMethod []oauth2const.TokenEndpointAuthMethod
 	PKCERequired            bool
+	PublicClient            bool
 	Token                   *OAuthTokenConfig
 }
 
@@ -94,6 +97,7 @@ type OAuthAppConfigProcessedDTO struct {
 	ResponseTypes           []oauth2const.ResponseType
 	TokenEndpointAuthMethod []oauth2const.TokenEndpointAuthMethod
 	PKCERequired            bool
+	PublicClient            bool
 	Token                   *OAuthTokenConfig
 }
 
@@ -119,13 +123,7 @@ func (o *OAuthAppConfigProcessedDTO) ValidateRedirectURI(redirectURI string) err
 
 // RequiresPKCE checks if PKCE is required for this application.
 func (o *OAuthAppConfigProcessedDTO) RequiresPKCE() bool {
-	return o.PKCERequired || o.IsPublicClient()
-}
-
-// IsPublicClient checks if this is a public client.
-func (o *OAuthAppConfigProcessedDTO) IsPublicClient() bool {
-	return len(o.TokenEndpointAuthMethod) == 1 &&
-		slices.Contains(o.TokenEndpointAuthMethod, oauth2const.TokenEndpointAuthMethodNone)
+	return o.PKCERequired || o.PublicClient
 }
 
 // isAllowedGrantType checks if the provided grant type is in the allowed list.
