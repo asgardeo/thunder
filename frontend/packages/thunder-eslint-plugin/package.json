@@ -37,7 +37,7 @@
     "directory": "packages/thunder-eslint-config"
   },
   "scripts": {
-    "build": "pnpm clean && node esbuild.config.mjs && tsc -p tsconfig.lib.json --emitDeclarationOnly --outDir dist",
+    "build": "pnpm clean && rolldown -c rolldown.config.js && tsc -p tsconfig.lib.json --emitDeclarationOnly --outDir dist",
     "clean": "rimraf dist",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
@@ -48,10 +48,11 @@
     "@thunder/eslint-plugin-thunder": "workspace:^",
     "@thunder/prettier-config": "workspace:^",
     "@types/node": "catalog:",
-    "esbuild": "catalog:",
     "eslint": "catalog:",
+    "glob": "catalog:",
     "prettier": "catalog:",
     "rimraf": "catalog:",
+    "rolldown": "catalog:",
     "typescript": "catalog:",
     "typescript-eslint": "^8.46.0",
     "vitest": "catalog:"
