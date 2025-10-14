@@ -18,7 +18,7 @@
 
 const config = {
   embeddedLanguageFormatting: 'off',
-  arrowParens: 'avoid',
+  arrowParens: 'always',
   bracketSpacing: false,
   endOfLine: 'lf',
   htmlWhitespaceSensitivity: 'css',

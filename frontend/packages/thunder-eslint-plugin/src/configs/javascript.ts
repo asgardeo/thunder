@@ -35,7 +35,9 @@ const javascriptConfig = [
   ...compat.extends('airbnb-base'),
   {
     name: 'thunder/javascript-overrides',
-    rules: {},
+    rules: {
+      'object-curly-spacing': ['error', 'never'],
+    },
   },
 ];
 

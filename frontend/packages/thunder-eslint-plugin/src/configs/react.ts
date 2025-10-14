@@ -20,12 +20,12 @@
  * @fileoverview ESLint config to be used in TypeScript based projects.
  */
 
-import eslint from '@eslint/js';
 import tseslint from 'typescript-eslint';
 import {FlatCompat} from '@eslint/eslintrc';
 import path from 'path';
 import {fileURLToPath} from 'url';
 import fs from 'fs';
+import reactRefresh from 'eslint-plugin-react-refresh';
 import globals from 'globals';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -68,48 +68,14 @@ const reactConfig = [
   // React-specific configs for all files
   ...compat.extends('airbnb'),
   ...compat.extends('airbnb/hooks'),
-  // React JSX runtime configuration
+  ...compat.extends('@kesills/airbnb-typescript'),
   {
-    files: ['**/*.{js,jsx,ts,tsx}'],
-    settings: {
-      react: {
-        version: 'detect',
-      },
-    },
-    languageOptions: {
-      globals: globals.browser,
-      parserOptions: {
-        ecmaFeatures: {
-          jsx: true,
-        },
-        jsx: true,
-      },
-    },
-    rules: {
-      // Use new JSX transform (React 17+)
-      'react/jsx-uses-react': 'off',
-      'react/react-in-jsx-scope': 'off',
-    },
-  },
-
-  // TypeScript parser configuration for React (exclude config files)
-  {
-    files: ['**/*.{ts,tsx}'],
     languageOptions: {
       parserOptions: {
-        project: tsconfigPath ? [tsconfigPath] : undefined,
-        tsconfigRootDir: process.cwd(),
+        projectService: true,
+        tsconfigRootDir: import.meta.dirname,
       },
     },
-    rules: {
-      // TypeScript-specific rule overrides here
-    },
-  },
-
-  // Explicitly disable type-checking for JavaScript files
-  {
-    files: ['**/*.{js,jsx,cjs,mjs}'],
-    ...tseslint.configs.disableTypeChecked,
   },
 ];
 

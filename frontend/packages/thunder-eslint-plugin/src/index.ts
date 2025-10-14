@@ -23,6 +23,9 @@ import {dirname, join} from 'path';
 import copyrightHeaderRule from './rules/copyright-header.js';
 import baseConfig from './configs/base.js';
 import reactConfig from './configs/react.js';
+import javascriptConfig from './configs/javascript.js';
+import prettierConfig from './configs/prettier.js';
+import typescriptConfig from './configs/typescript.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -53,6 +56,27 @@ Object.assign(plugin.configs, {
       },
     },
     ...baseConfig,
+    ...javascriptConfig,
+    ...typescriptConfig,
+    ...prettierConfig,
+    {
+      files: [
+        '*.config.js',
+        '*.config.mjs',
+        '*.config.ts',
+        '**/eslint.config.js',
+        '**/eslint.config.mjs',
+        '**/eslint.config.ts',
+        'vite.config.ts',
+        'vitest.config.ts',
+        '**/prettier.config.js',
+        '**/prettier.config.mjs',
+        '**/prettier.config.ts',
+      ],
+      rules: {
+        'import/no-extraneous-dependencies': ['error', {devDependencies: true}],
+      },
+    },
   ],
   react: [
     {
@@ -62,7 +86,28 @@ Object.assign(plugin.configs, {
       },
     },
     ...baseConfig,
+    ...javascriptConfig,
+    ...typescriptConfig,
     ...reactConfig,
+    ...prettierConfig,
+    {
+      files: [
+        '*.config.js',
+        '*.config.mjs',
+        '*.config.ts',
+        '**/eslint.config.js',
+        '**/eslint.config.mjs',
+        '**/eslint.config.ts',
+        'vite.config.ts',
+        'vitest.config.ts',
+        '**/prettier.config.js',
+        '**/prettier.config.mjs',
+        '**/prettier.config.ts',
+      ],
+      rules: {
+        'import/no-extraneous-dependencies': ['error', {devDependencies: true}],
+      },
+    },
   ],
 });
 

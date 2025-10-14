@@ -16,7 +16,7 @@
  * under the License.
  */
 
-import thunderPlugin from './dist/index.js';
+import thunderPlugin from '@thunder/eslint-plugin-thunder';
 
 export default [
   {

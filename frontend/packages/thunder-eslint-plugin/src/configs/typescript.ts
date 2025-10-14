@@ -71,22 +71,23 @@ const typescriptConfig = [
   ...tseslint.configs.stylisticTypeChecked,
   // TypeScript parser configuration
   {
-    files: ['**/*.{ts,tsx}'],
     languageOptions: {
       parserOptions: {
-        project: tsconfigPath ? [tsconfigPath] : undefined,
-        tsconfigRootDir: process.cwd(),
+        projectService: true,
+        tsconfigRootDir: import.meta.dirname,
       },
     },
-    rules: {
-      // TypeScript-specific rule overrides here
-    },
   },
-
   // Explicitly disable type-checking for JavaScript files
   {
     files: ['**/*.{js,jsx,cjs,mjs}'],
     ...tseslint.configs.disableTypeChecked,
+  },
+  {
+    name: 'thunder/typescript-overrides',
+    rules: {
+      'object-curly-spacing': ['error', 'never'],
+    },
   },
 ];
 
