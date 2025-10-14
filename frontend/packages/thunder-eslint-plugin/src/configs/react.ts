@@ -55,7 +55,19 @@ const reactConfig: Linter.Config[] = [
   {
     name: 'thunder/react-overrides',
     rules: {
+      // Override the default `airbnb` rule to allow prop spreading in JSX.
+      // https://github.com/jsx-eslint/eslint-plugin-react/blob/958954de7422c5c78e8758fa02fc8b6aa2db67ec/docs/rules/jsx-props-no-spreading.md
       'react/jsx-props-no-spreading': 'off',
+      // Override the default `airbnb` rule to avoid the deprecated `defaultProps` usage.
+      // https://github.com/jsx-eslint/eslint-plugin-react/blob/958954de7422c5c78e8758fa02fc8b6aa2db67ec/docs/rules/require-default-props.md
+      'react/require-default-props': [
+        'error',
+        {
+          forbidDefaultForRequired: true,
+          classes: 'ignore',
+          functions: 'defaultArguments',
+        },
+      ],
     },
   },
 ];
