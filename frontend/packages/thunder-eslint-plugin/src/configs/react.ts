@@ -16,15 +16,13 @@
  * under the License.
  */
 
-/**
- * @fileoverview ESLint config to be used in TypeScript based projects.
- */
+/* eslint-disable @typescript-eslint/naming-convention */
+/* eslint-disable no-underscore-dangle */
 
-import tseslint from 'typescript-eslint';
-import {FlatCompat} from '@eslint/eslintrc';
 import path from 'path';
 import {fileURLToPath} from 'url';
-import fs from 'fs';
+import {FlatCompat} from '@eslint/eslintrc';
+import type {Linter} from 'eslint';
 import reactRefresh from 'eslint-plugin-react-refresh';
 import globals from 'globals';
 
@@ -35,46 +33,29 @@ const compat = new FlatCompat({
   baseDirectory: __dirname,
 });
 
-// Utility to resolve tsconfig
-function resolveTsconfig() {
-  const cwd = process.cwd();
-  const eslintTsconfig = path.resolve(cwd, 'tsconfig.eslint.json');
-  const appTsconfig = path.resolve(cwd, 'tsconfig.app.json');
-  const defaultTsconfig = path.resolve(cwd, 'tsconfig.json');
-
-  if (fs.existsSync(eslintTsconfig)) {
-    console.log('[eslint-config] Using tsconfig.eslint.json');
-    return eslintTsconfig;
-  }
-
-  if (fs.existsSync(appTsconfig)) {
-    console.log('[eslint-config] Using tsconfig.app.json');
-    return appTsconfig;
-  }
-
-  if (fs.existsSync(defaultTsconfig)) {
-    console.log('[eslint-config] Using tsconfig.json');
-    return defaultTsconfig;
-  }
-
-  console.warn('[eslint-config] No tsconfig found. Type checking will be limited.');
-
-  return undefined;
-}
-
-const tsconfigPath = resolveTsconfig();
-
-const reactConfig = [
+const reactConfig: Linter.Config[] = [
   // React-specific configs for all files
+  // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
   ...compat.extends('airbnb'),
+  // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
   ...compat.extends('airbnb/hooks'),
+  // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
   ...compat.extends('@kesills/airbnb-typescript'),
+  reactRefresh.configs.recommended,
   {
     languageOptions: {
+      ecmaVersion: 2020,
+      globals: globals.browser,
       parserOptions: {
         projectService: true,
         tsconfigRootDir: import.meta.dirname,
       },
+    },
+  },
+  {
+    name: 'thunder/react-overrides',
+    rules: {
+      'react/jsx-props-no-spreading': 'off',
     },
   },
 ];

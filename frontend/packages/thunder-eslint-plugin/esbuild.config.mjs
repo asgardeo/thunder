@@ -16,7 +16,6 @@
  * under the License.
  */
 
-import {readFileSync} from 'fs';
 import * as esbuild from 'esbuild';
 
 const commonOptions = {

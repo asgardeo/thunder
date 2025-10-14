@@ -45,7 +45,6 @@
     "typecheck": "tsc -p tsconfig.lib.json"
   },
   "devDependencies": {
-    "@eslint/eslintrc": "^3.3.1",
     "@thunder/eslint-plugin-thunder": "workspace:^",
     "@thunder/prettier-config": "workspace:^",
     "@types/node": "catalog:",
@@ -61,6 +60,7 @@
     "access": "public"
   },
   "dependencies": {
+    "@eslint/eslintrc": "^3.3.1",
     "@eslint/js": "^9.37.0",
     "@kesills/eslint-config-airbnb-typescript": "^20.0.0",
     "@stylistic/eslint-plugin": "^5.4.0",

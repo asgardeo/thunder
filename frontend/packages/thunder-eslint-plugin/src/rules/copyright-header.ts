@@ -18,6 +18,32 @@
 
 import type {Rule} from 'eslint';
 
+interface CopyrightHeaderOptions {
+  excludePatterns?: string[];
+  template?: string;
+}
+
+interface ESLintComment {
+  type: string;
+  value: string;
+}
+
+interface ESLintSourceCode {
+  getAllComments(): ESLintComment[];
+}
+
+interface ESLintFixer {
+  insertTextBefore(node: unknown, text: string): unknown;
+  replaceText(target: unknown, text: string): unknown;
+}
+
+interface ESLintContext {
+  options: unknown[];
+  getFilename(): string;
+  getSourceCode(): ESLintSourceCode;
+  report(descriptor: {node: unknown; messageId: string; fix?: (fixer: ESLintFixer) => unknown}): void;
+}
+
 const REQUIRED_COPYRIGHT_HEADER = `/**
  * Copyright (c) 2025, WSO2 LLC. (https://www.wso2.com).
  *
@@ -64,10 +90,10 @@ const copyrightHeaderRule: Rule.RuleModule = {
       incorrectHeader: 'Incorrect copyright header format',
     },
   },
-  create(context) {
-    const options = context.options[0] || {};
-    const excludePatterns = options.excludePatterns || [];
-    const template = options.template || REQUIRED_COPYRIGHT_HEADER;
+  create(context: ESLintContext) {
+    const options = (context.options?.[0] as CopyrightHeaderOptions) ?? {};
+    const excludePatterns = options.excludePatterns ?? [];
+    const template = options.template ?? REQUIRED_COPYRIGHT_HEADER;
     const filename = context.getFilename();
 
     // Check if file should be excluded
@@ -76,12 +102,12 @@ const copyrightHeaderRule: Rule.RuleModule = {
     }
 
     // Skip certain file types
-    if (filename.match(/\.(json|md|yml|yaml|xml|txt)$/)) {
+    if (/\.(json|md|yml|yaml|xml|txt)$/.exec(filename)) {
       return {};
     }
 
     return {
-      Program(node) {
+      Program(node: unknown) {
         const sourceCode = context.getSourceCode();
         const comments = sourceCode.getAllComments();
 
@@ -92,7 +118,7 @@ const copyrightHeaderRule: Rule.RuleModule = {
           context.report({
             node,
             messageId: 'missingHeader',
-            fix(fixer) {
+            fix(fixer: ESLintFixer) {
               return fixer.insertTextBefore(node, `${template}\n\n`);
             },
           });
@@ -102,13 +128,12 @@ const copyrightHeaderRule: Rule.RuleModule = {
         // Normalize the comment text for comparison
         const commentText = `/*${firstComment.value}*/`;
         const normalizedComment = commentText.replace(/\s+/g, ' ').trim();
-        const normalizedTemplate = template.replace(/\s+/g, ' ').trim();
 
         if (!normalizedComment.includes('WSO2 LLC') || !normalizedComment.includes('Apache License')) {
           context.report({
             node: firstComment,
             messageId: 'incorrectHeader',
-            fix(fixer) {
+            fix(fixer: ESLintFixer) {
               return fixer.replaceText(firstComment, template);
             },
           });

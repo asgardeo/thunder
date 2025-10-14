@@ -24,7 +24,7 @@ const baseConfig = [
   {
     name: 'thunder/copyright-header',
     rules: {'@thunder/copyright-header': 'error'},
-  }
+  },
 ];
 
 export default baseConfig;

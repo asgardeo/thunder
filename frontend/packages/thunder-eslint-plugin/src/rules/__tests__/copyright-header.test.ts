@@ -16,9 +16,10 @@
  * under the License.
  */
 
-import { RuleTester } from 'eslint';
-import { copyrightHeaderRule } from '../copyright-header';
+import {RuleTester} from 'eslint';
+import copyrightHeaderRule from '../copyright-header.js';
 
+// eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call
 const ruleTester = new RuleTester({
   parserOptions: {
     ecmaVersion: 2020,
@@ -44,6 +45,7 @@ const VALID_COPYRIGHT = `/**
  * under the License.
  */`;
 
+// eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access
 ruleTester.run('copyright-header', copyrightHeaderRule, {
   valid: [
     {

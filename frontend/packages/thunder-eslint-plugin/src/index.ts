@@ -16,6 +16,9 @@
  * under the License.
  */
 
+/* eslint-disable @typescript-eslint/naming-convention */
+/* eslint-disable no-underscore-dangle */
+
 import type {ESLint} from 'eslint';
 import {readFileSync} from 'fs';
 import {fileURLToPath} from 'url';
@@ -27,10 +30,16 @@ import javascriptConfig from './configs/javascript.js';
 import prettierConfig from './configs/prettier.js';
 import typescriptConfig from './configs/typescript.js';
 
+interface PackageJson {
+  name: string;
+  version: string;
+}
+
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 const pkgPath = join(__dirname, '../package.json');
-const pkg = JSON.parse(readFileSync(pkgPath, 'utf8'));
+
+const pkg = JSON.parse(readFileSync(pkgPath, 'utf8')) as PackageJson;
 const namespace = 'thunder';
 
 const plugin: ESLint.Plugin = {
@@ -41,22 +50,27 @@ const plugin: ESLint.Plugin = {
   },
   configs: {},
   rules: {
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
     'copyright-header': copyrightHeaderRule,
   },
   processors: {},
 };
 
 // Assign configs here so we can reference `plugin`
+// eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
 Object.assign(plugin.configs, {
   base: [
     {
       name: 'thunder/plugin-setup',
       plugins: {
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
         '@thunder': plugin,
       },
     },
     ...baseConfig,
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
     ...javascriptConfig,
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
     ...typescriptConfig,
     ...prettierConfig,
     {
@@ -82,12 +96,16 @@ Object.assign(plugin.configs, {
     {
       name: 'thunder/plugin-setup',
       plugins: {
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
         '@thunder': plugin,
       },
     },
     ...baseConfig,
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
     ...javascriptConfig,
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
     ...typescriptConfig,
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
     ...reactConfig,
     ...prettierConfig,
     {

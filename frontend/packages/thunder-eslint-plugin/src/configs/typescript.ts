@@ -16,16 +16,14 @@
  * under the License.
  */
 
-/**
- * @fileoverview ESLint config to be used in TypeScript based projects.
- */
+/* eslint-disable @typescript-eslint/naming-convention */
+/* eslint-disable no-underscore-dangle */
 
-import eslint from '@eslint/js';
-import tseslint from 'typescript-eslint';
-import {FlatCompat} from '@eslint/eslintrc';
 import path from 'path';
 import {fileURLToPath} from 'url';
-import fs from 'fs';
+import {FlatCompat} from '@eslint/eslintrc';
+import type {Linter} from 'eslint';
+import tseslint from 'typescript-eslint';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -34,51 +32,24 @@ const compat = new FlatCompat({
   baseDirectory: __dirname,
 });
 
-// Utility to resolve tsconfig
-function resolveTsconfig() {
-  const cwd = process.cwd();
-  const eslintTsconfig = path.resolve(cwd, 'tsconfig.eslint.json');
-  const appTsconfig = path.resolve(cwd, 'tsconfig.app.json');
-  const defaultTsconfig = path.resolve(cwd, 'tsconfig.json');
-
-  if (fs.existsSync(eslintTsconfig)) {
-    console.log('[eslint-config] Using tsconfig.eslint.json');
-    return eslintTsconfig;
-  }
-
-  if (fs.existsSync(appTsconfig)) {
-    console.log('[eslint-config] Using tsconfig.app.json');
-    return appTsconfig;
-  }
-
-  if (fs.existsSync(defaultTsconfig)) {
-    console.log('[eslint-config] Using tsconfig.json');
-    return defaultTsconfig;
-  }
-
-  console.warn('[eslint-config] No tsconfig found. Type checking will be limited.');
-
-  return undefined;
-}
-
-const tsconfigPath = resolveTsconfig();
-
-const typescriptConfig = [
+const typescriptConfig: Linter.Config[] = [
+  // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
   ...compat.extends('airbnb-base'),
+  // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
   ...compat.extends('airbnb/hooks'),
+  // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
   ...compat.extends('@kesills/airbnb-typescript/base'),
   ...tseslint.configs.recommendedTypeChecked,
   ...tseslint.configs.stylisticTypeChecked,
-  // TypeScript parser configuration
   {
     languageOptions: {
+      ecmaVersion: 2020,
       parserOptions: {
         projectService: true,
         tsconfigRootDir: import.meta.dirname,
       },
     },
   },
-  // Explicitly disable type-checking for JavaScript files
   {
     files: ['**/*.{js,jsx,cjs,mjs}'],
     ...tseslint.configs.disableTypeChecked,
