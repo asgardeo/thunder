@@ -1,14 +1,33 @@
+/**
+ * Copyright (c) 2025, WSO2 LLC. (https://www.wso2.com)
+ *
+ * WSO2 LLC. licenses this file to you under the Apache License,
+ * Version 2.0 (the "License"); you may not use this file except
+ * in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing,
+ * software distributed under the License is distributed on an
+ * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+ * KIND, either express or implied. See the License for the
+ * specific language governing permissions and limitations
+ * under the License.
+ */
+
 import * as React from 'react';
 import DarkModeIcon from '@mui/icons-material/DarkModeRounded';
 import LightModeIcon from '@mui/icons-material/LightModeRounded';
 import Box from '@mui/material/Box';
-import IconButton, { IconButtonOwnProps } from '@mui/material/IconButton';
+import IconButton from '@mui/material/IconButton';
+import type {IconButtonOwnProps} from '@mui/material/IconButton';
 import Menu from '@mui/material/Menu';
 import MenuItem from '@mui/material/MenuItem';
-import { useColorScheme } from '@mui/material/styles';
+import {useColorScheme} from '@mui/material/styles';
 
 export default function ColorModeIconDropdown(props: IconButtonOwnProps) {
-  const { mode, systemMode, setMode } = useColorScheme();
+  const {mode, systemMode, setMode} = useColorScheme();
   const [anchorEl, setAnchorEl] = React.useState<null | HTMLElement>(null);
   const open = Boolean(anchorEl);
   const handleClick = (event: React.MouseEvent<HTMLElement>) => {
@@ -30,20 +49,20 @@ export default function ColorModeIconDropdown(props: IconButtonOwnProps) {
           display: 'inline-flex',
           width: '2.25rem',
           height: '2.25rem',
-          borderRadius: (theme.vars || theme).shape.borderRadius,
+          borderRadius: (theme.vars ?? theme).shape.borderRadius,
           border: '1px solid',
-          borderColor: (theme.vars || theme).palette.divider,
+          borderColor: (theme.vars ?? theme).palette.divider,
         })}
       />
     );
   }
-  const resolvedMode = (systemMode || mode) as 'light' | 'dark';
+  const resolvedMode = (systemMode ?? mode) as 'light' | 'dark';
   const icon = {
     light: <LightModeIcon />,
     dark: <DarkModeIcon />,
   }[resolvedMode];
   return (
-    <React.Fragment>
+    <>
       <IconButton
         data-screenshot="toggle-mode"
         onClick={handleClick}
@@ -71,8 +90,8 @@ export default function ColorModeIconDropdown(props: IconButtonOwnProps) {
             },
           },
         }}
-        transformOrigin={{ horizontal: 'right', vertical: 'top' }}
-        anchorOrigin={{ horizontal: 'right', vertical: 'bottom' }}
+        transformOrigin={{horizontal: 'right', vertical: 'top'}}
+        anchorOrigin={{horizontal: 'right', vertical: 'bottom'}}
       >
         <MenuItem selected={mode === 'system'} onClick={handleMode('system')}>
           System
@@ -84,6 +103,6 @@ export default function ColorModeIconDropdown(props: IconButtonOwnProps) {
           Dark
         </MenuItem>
       </Menu>
-    </React.Fragment>
+    </>
   );
 }

@@ -1,14 +1,31 @@
-import { alpha } from '@mui/material/styles';
-import type { Theme, Components } from '@mui/material/styles';
-import { svgIconClasses } from '@mui/material/SvgIcon';
-import { typographyClasses } from '@mui/material/Typography';
-import { buttonBaseClasses } from '@mui/material/ButtonBase';
-import { chipClasses } from '@mui/material/Chip';
-import { iconButtonClasses } from '@mui/material/IconButton';
-import { gray, red, green } from '../themePrimitives';
+/**
+ * Copyright (c) 2025, WSO2 LLC. (https://www.wso2.com).
+ *
+ * WSO2 LLC. licenses this file to you under the Apache License,
+ * Version 2.0 (the "License"); you may not use this file except
+ * in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing,
+ * software distributed under the License is distributed on an
+ * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+ * KIND, either express or implied. See the License for the
+ * specific language governing permissions and limitations
+ * under the License.
+ */
 
-/* eslint-disable import/prefer-default-export */
-export const dataDisplayCustomizations: Components<Theme> = {
+import {alpha} from '@mui/material/styles';
+import type {Theme, Components} from '@mui/material/styles';
+import {svgIconClasses} from '@mui/material/SvgIcon';
+import {typographyClasses} from '@mui/material/Typography';
+import {buttonBaseClasses} from '@mui/material/ButtonBase';
+import {chipClasses} from '@mui/material/Chip';
+import {iconButtonClasses} from '@mui/material/IconButton';
+import {gray, red, green} from '../themePrimitives';
+
+const dataDisplayCustomizations: Components<Theme> = {
   MuiList: {
     styleOverrides: {
       root: {
@@ -21,11 +38,11 @@ export const dataDisplayCustomizations: Components<Theme> = {
   },
   MuiListItem: {
     styleOverrides: {
-      root: ({ theme }) => ({
+      root: ({theme}) => ({
         [`& .${svgIconClasses.root}`]: {
           width: '1rem',
           height: '1rem',
-          color: (theme.vars || theme).palette.text.secondary,
+          color: (theme.vars ?? theme).palette.text.secondary,
         },
         [`& .${typographyClasses.root}`]: {
           fontWeight: 500,
@@ -34,13 +51,13 @@ export const dataDisplayCustomizations: Components<Theme> = {
           display: 'flex',
           gap: 8,
           padding: '2px 8px',
-          borderRadius: (theme.vars || theme).shape.borderRadius,
+          borderRadius: (theme.vars ?? theme).shape.borderRadius,
           opacity: 0.7,
           '&.Mui-selected': {
             opacity: 1,
             backgroundColor: alpha(theme.palette.action.selected, 0.3),
             [`& .${svgIconClasses.root}`]: {
-              color: (theme.vars || theme).palette.text.primary,
+              color: (theme.vars ?? theme).palette.text.primary,
             },
             '&:focus-visible': {
               backgroundColor: alpha(theme.palette.action.selected, 0.3),
@@ -58,12 +75,12 @@ export const dataDisplayCustomizations: Components<Theme> = {
   },
   MuiListItemText: {
     styleOverrides: {
-      primary: ({ theme }) => ({
+      primary: ({theme}) => ({
         fontSize: theme.typography.body2.fontSize,
         fontWeight: 500,
         lineHeight: theme.typography.body2.lineHeight,
       }),
-      secondary: ({ theme }) => ({
+      secondary: ({theme}) => ({
         fontSize: theme.typography.caption.fontSize,
         lineHeight: theme.typography.caption.lineHeight,
       }),
@@ -71,7 +88,7 @@ export const dataDisplayCustomizations: Components<Theme> = {
   },
   MuiListSubheader: {
     styleOverrides: {
-      root: ({ theme }) => ({
+      root: ({theme}) => ({
         backgroundColor: 'transparent',
         padding: '4px 8px',
         fontSize: theme.typography.caption.fontSize,
@@ -92,7 +109,7 @@ export const dataDisplayCustomizations: Components<Theme> = {
       size: 'small',
     },
     styleOverrides: {
-      root: ({ theme }) => ({
+      root: ({theme}) => ({
         border: '1px solid',
         borderRadius: '999px',
         [`& .${chipClasses.label}`]: {
@@ -175,7 +192,7 @@ export const dataDisplayCustomizations: Components<Theme> = {
             },
           },
           {
-            props: { size: 'small' },
+            props: {size: 'small'},
             style: {
               maxHeight: 20,
               [`& .${chipClasses.label}`]: {
@@ -187,7 +204,7 @@ export const dataDisplayCustomizations: Components<Theme> = {
             },
           },
           {
-            props: { size: 'medium' },
+            props: {size: 'medium'},
             style: {
               [`& .${chipClasses.label}`]: {
                 fontSize: theme.typography.caption.fontSize,
@@ -232,3 +249,5 @@ export const dataDisplayCustomizations: Components<Theme> = {
     },
   },
 };
+
+export default dataDisplayCustomizations;

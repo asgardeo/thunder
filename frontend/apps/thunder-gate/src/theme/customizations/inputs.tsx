@@ -1,24 +1,40 @@
-import * as React from 'react';
-import { alpha } from '@mui/material/styles';
-import type { Theme, Components } from '@mui/material/styles';
-import { outlinedInputClasses } from '@mui/material/OutlinedInput';
-import { svgIconClasses } from '@mui/material/SvgIcon';
-import { toggleButtonGroupClasses } from '@mui/material/ToggleButtonGroup';
-import { toggleButtonClasses } from '@mui/material/ToggleButton';
+/**
+ * Copyright (c) 2025, WSO2 LLC. (https://www.wso2.com).
+ *
+ * WSO2 LLC. licenses this file to you under the Apache License,
+ * Version 2.0 (the "License"); you may not use this file except
+ * in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing,
+ * software distributed under the License is distributed on an
+ * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+ * KIND, either express or implied. See the License for the
+ * specific language governing permissions and limitations
+ * under the License.
+ */
+
+import {alpha} from '@mui/material/styles';
+import type {Theme, Components} from '@mui/material/styles';
+import {outlinedInputClasses} from '@mui/material/OutlinedInput';
+import {svgIconClasses} from '@mui/material/SvgIcon';
+import {toggleButtonGroupClasses} from '@mui/material/ToggleButtonGroup';
+import {toggleButtonClasses} from '@mui/material/ToggleButton';
 import CheckBoxOutlineBlankRoundedIcon from '@mui/icons-material/CheckBoxOutlineBlankRounded';
 import CheckRoundedIcon from '@mui/icons-material/CheckRounded';
 import RemoveRoundedIcon from '@mui/icons-material/RemoveRounded';
-import { gray, brand } from '../themePrimitives';
+import {gray, brand} from '../themePrimitives';
 
-/* eslint-disable import/prefer-default-export */
-export const inputsCustomizations: Components<Theme> = {
+const inputsCustomizations: Components<Theme> = {
   MuiButtonBase: {
     defaultProps: {
       disableTouchRipple: true,
       disableRipple: true,
     },
     styleOverrides: {
-      root: ({ theme }) => ({
+      root: ({theme}) => ({
         boxSizing: 'border-box',
         transition: 'all 100ms ease-in',
         '&:focus-visible': {
@@ -30,9 +46,9 @@ export const inputsCustomizations: Components<Theme> = {
   },
   MuiButton: {
     styleOverrides: {
-      root: ({ theme }) => ({
+      root: ({theme}) => ({
         boxShadow: 'none',
-        borderRadius: (theme.vars || theme).shape.borderRadius,
+        borderRadius: (theme.vars ?? theme).shape.borderRadius,
         textTransform: 'none',
         variants: [
           {
@@ -114,7 +130,7 @@ export const inputsCustomizations: Components<Theme> = {
               variant: 'outlined',
             },
             style: {
-              color: (theme.vars || theme).palette.text.primary,
+              color: (theme.vars ?? theme).palette.text.primary,
               border: '1px solid',
               borderColor: gray[200],
               backgroundColor: alpha(gray[50], 0.3),
@@ -224,13 +240,13 @@ export const inputsCustomizations: Components<Theme> = {
   },
   MuiIconButton: {
     styleOverrides: {
-      root: ({ theme }) => ({
+      root: ({theme}) => ({
         boxShadow: 'none',
-        borderRadius: (theme.vars || theme).shape.borderRadius,
+        borderRadius: (theme.vars ?? theme).shape.borderRadius,
         textTransform: 'none',
         fontWeight: theme.typography.fontWeightMedium,
         letterSpacing: 0,
-        color: (theme.vars || theme).palette.text.primary,
+        color: (theme.vars ?? theme).palette.text.primary,
         border: '1px solid ',
         borderColor: gray[200],
         backgroundColor: alpha(gray[50], 0.3),
@@ -261,7 +277,7 @@ export const inputsCustomizations: Components<Theme> = {
               width: '2.25rem',
               height: '2.25rem',
               padding: '0.25rem',
-              [`& .${svgIconClasses.root}`]: { fontSize: '1rem' },
+              [`& .${svgIconClasses.root}`]: {fontSize: '1rem'},
             },
           },
           {
@@ -279,7 +295,7 @@ export const inputsCustomizations: Components<Theme> = {
   },
   MuiToggleButtonGroup: {
     styleOverrides: {
-      root: ({ theme }) => ({
+      root: ({theme}) => ({
         borderRadius: '10px',
         boxShadow: `0 4px 16px ${alpha(gray[400], 0.2)}`,
         [`& .${toggleButtonGroupClasses.selected}`]: {
@@ -296,7 +312,7 @@ export const inputsCustomizations: Components<Theme> = {
   },
   MuiToggleButton: {
     styleOverrides: {
-      root: ({ theme }) => ({
+      root: ({theme}) => ({
         padding: '12px 16px',
         textTransform: 'none',
         borderRadius: '10px',
@@ -314,14 +330,12 @@ export const inputsCustomizations: Components<Theme> = {
   MuiCheckbox: {
     defaultProps: {
       disableRipple: true,
-      icon: (
-        <CheckBoxOutlineBlankRoundedIcon sx={{ color: 'hsla(210, 0%, 0%, 0.0)' }} />
-      ),
-      checkedIcon: <CheckRoundedIcon sx={{ height: 14, width: 14 }} />,
-      indeterminateIcon: <RemoveRoundedIcon sx={{ height: 14, width: 14 }} />,
+      icon: <CheckBoxOutlineBlankRoundedIcon sx={{color: 'hsla(210, 0%, 0%, 0.0)'}} />,
+      checkedIcon: <CheckRoundedIcon sx={{height: 14, width: 14}} />,
+      indeterminateIcon: <RemoveRoundedIcon sx={{height: 14, width: 14}} />,
     },
     styleOverrides: {
-      root: ({ theme }) => ({
+      root: ({theme}) => ({
         margin: 10,
         height: 16,
         width: 16,
@@ -382,12 +396,12 @@ export const inputsCustomizations: Components<Theme> = {
       input: {
         padding: 0,
       },
-      root: ({ theme }) => ({
+      root: ({theme}) => ({
         padding: '8px 12px',
-        color: (theme.vars || theme).palette.text.primary,
-        borderRadius: (theme.vars || theme).shape.borderRadius,
-        border: `1px solid ${(theme.vars || theme).palette.divider}`,
-        backgroundColor: (theme.vars || theme).palette.background.default,
+        color: (theme.vars ?? theme).palette.text.primary,
+        borderRadius: (theme.vars ?? theme).shape.borderRadius,
+        border: `1px solid ${(theme.vars ?? theme).palette.divider}`,
+        backgroundColor: (theme.vars ?? theme).palette.background.default,
         transition: 'border 120ms ease-in',
         '&:hover': {
           borderColor: gray[400],
@@ -427,20 +441,22 @@ export const inputsCustomizations: Components<Theme> = {
   },
   MuiInputAdornment: {
     styleOverrides: {
-      root: ({ theme }) => ({
-        color: (theme.vars || theme).palette.grey[500],
+      root: ({theme}) => ({
+        color: (theme.vars ?? theme).palette.grey[500],
         ...theme.applyStyles('dark', {
-          color: (theme.vars || theme).palette.grey[400],
+          color: (theme.vars ?? theme).palette.grey[400],
         }),
       }),
     },
   },
   MuiFormLabel: {
     styleOverrides: {
-      root: ({ theme }) => ({
+      root: ({theme}) => ({
         typography: theme.typography.caption,
         marginBottom: 8,
       }),
     },
   },
 };
+
+export default inputsCustomizations;
