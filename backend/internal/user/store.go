@@ -30,7 +30,7 @@ import (
 type userStoreInterface interface {
 	GetUserListCount(filters map[string]interface{}) (int, error)
 	GetUserList(limit, offset int, filters map[string]interface{}) ([]User, error)
-	CreateUser(user User, credentials []Credential) error
+	CreateUser(user User, credentials []Credential, indexedColumnToValueMap map[string]string) error
 	GetUser(id string) (User, error)
 	UpdateUser(user *User) error
 	DeleteUser(id string) error
@@ -107,7 +107,7 @@ func (us *userStore) GetUserList(limit, offset int, filters map[string]interface
 }
 
 // CreateUser handles the user creation in the database.
-func (us *userStore) CreateUser(user User, credentials []Credential) error {
+func (us *userStore) CreateUser(user User, credentials []Credential, indexedColumnToValueMap map[string]string) error {
 	dbClient, err := provider.GetDBProvider().GetDBClient("identity")
 	if err != nil {
 		return fmt.Errorf("failed to get database client: %w", err)
@@ -138,6 +138,11 @@ func (us *userStore) CreateUser(user User, credentials []Credential) error {
 		user.Type,
 		string(attributes),
 		credentialsJSON,
+		indexedColumnToValueMap["indexed_prop_1_value"],
+		indexedColumnToValueMap["indexed_prop_2_value"],
+		indexedColumnToValueMap["indexed_prop_3_value"],
+		indexedColumnToValueMap["indexed_prop_4_value"],
+		indexedColumnToValueMap["indexed_prop_5_value"],
 	)
 	if err != nil {
 		return fmt.Errorf("failed to execute query: %w", err)

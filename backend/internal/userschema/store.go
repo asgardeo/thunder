@@ -35,6 +35,7 @@ type userSchemaStoreInterface interface {
 	GetUserSchemaByName(name string) (UserSchema, error)
 	UpdateUserSchemaByID(schemaID string, userSchema UserSchema) error
 	DeleteUserSchemaByID(schemaID string) error
+	GetIndexedPropertyToColumnNumberMap(name string) (map[string]int, error)
 }
 
 // userSchemaStore is the default implementation of userSchemaStoreInterface.
@@ -187,6 +188,38 @@ func (s *userSchemaStore) DeleteUserSchemaByID(schemaID string) error {
 	}
 
 	return nil
+}
+
+
+// GetIndexedPropertyToColumnMap retrieves a map of indexed properties to their corresponding database columns for a given schema name.
+func (s *userSchemaStore) GetIndexedPropertyToColumnNumberMap(name string) (map[string]int, error) {
+	dbClient, err := s.dbProvider.GetDBClient("identity")
+	if err != nil {
+		return nil, fmt.Errorf("failed to get database client: %w", err)
+	}
+
+	results, err := dbClient.Query(queryGetIndexedPropertiesByName, name)
+	if err != nil {
+		return nil, fmt.Errorf("failed to execute query: %w", err)
+	}
+
+	if len(results) == 0 {
+		return nil, ErrUserSchemaNotFound
+	}
+
+	indexedPropertyToColumnNumberMap := make(map[string]int)
+	for _, row := range results {
+		for i := 1; i <= 5; i++ {
+			columnName := fmt.Sprintf("indexed_prop_%d_name", i)
+			propertyName, ok := row[columnName].(string)
+			if !ok || propertyName == "" {
+				continue
+			}
+			indexedPropertyToColumnNumberMap[propertyName] = i
+		}
+	}
+
+	return indexedPropertyToColumnNumberMap, nil
 }
 
 // parseUserSchemaFromRow parses a user schema from a database row.

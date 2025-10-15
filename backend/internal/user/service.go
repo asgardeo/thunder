@@ -177,7 +177,40 @@ func (us *userService) CreateUser(user *User) (*User, *serviceerror.ServiceError
 		return nil, logErrorAndReturnServerError(logger, "Failed to create user DTO", err)
 	}
 
-	err = us.userStore.CreateUser(*user, credentials)
+	indexedPropertyToColumnNumberMap, svcErr := us.userSchemaService.GetIndexedPropertyToColumnNumberMap(user.Type)
+	if svcErr != nil {
+		return nil, svcErr
+	}
+
+	var parsedAttributes map[string]interface{}
+	if err := json.Unmarshal(user.Attributes, &parsedAttributes); err != nil {
+		return nil, logErrorAndReturnServerError(logger, "Failed to parse user attributes", err)
+	}
+
+	indexedColumnNameToValueMap := make(map[string]string)
+
+	for attributeName, columnNumber := range indexedPropertyToColumnNumberMap {
+		columnName := fmt.Sprintf("indexed_prop_%d_value", columnNumber)
+		if value, exists := parsedAttributes[attributeName]; exists {
+			if strValue, ok := value.(string); ok {
+				indexedColumnNameToValueMap[columnName] = strValue
+			} else {
+				return nil, logErrorAndReturnServerError(logger, fmt.Sprintf("Indexed property %s is not a string", attributeName), err)
+			}
+		} else {
+			// If the indexed property is not present, set it to an empty string
+			indexedColumnNameToValueMap[columnName] = ""
+		}
+	}
+
+	for i := 1; i <= 5; i++ {
+		columnName := fmt.Sprintf("indexed_prop_%d_value", i)
+		if _, exists := indexedColumnNameToValueMap[columnName]; !exists {
+			indexedColumnNameToValueMap[columnName] = ""
+		}
+	}
+
+	err = us.userStore.CreateUser(*user, credentials, indexedColumnNameToValueMap)
 	if err != nil {
 		return nil, logErrorAndReturnServerError(logger, "Failed to create user", err)
 	}

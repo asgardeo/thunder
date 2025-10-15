@@ -45,7 +45,7 @@ var (
 	// QueryCreateUser is the query to create a new user.
 	QueryCreateUser = model.DBQuery{
 		ID:    "ASQ-USER_MGT-03",
-		Query: "INSERT INTO \"USER\" (USER_ID, OU_ID, TYPE, ATTRIBUTES, CREDENTIALS) VALUES ($1, $2, $3, $4, $5)",
+		Query: "INSERT INTO \"USER\" (USER_ID, OU_ID, TYPE, ATTRIBUTES, CREDENTIALS, INDEXED_PROP_1_VALUE, INDEXED_PROP_2_VALUE, INDEXED_PROP_3_VALUE, INDEXED_PROP_4_VALUE, INDEXED_PROP_5_VALUE) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)",
 	}
 	// QueryGetUserByUserID is the query to get a user by user ID.
 	QueryGetUserByUserID = model.DBQuery{

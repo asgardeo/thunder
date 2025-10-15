@@ -43,6 +43,7 @@ type UserSchemaServiceInterface interface {
 	ValidateUser(userType string, userAttributes json.RawMessage) (bool, *serviceerror.ServiceError)
 	ValidateUserUniqueness(userType string, userAttributes json.RawMessage,
 		identifyUser func(map[string]interface{}) (*string, error)) (bool, *serviceerror.ServiceError)
+	GetIndexedPropertyToColumnNumberMap(userType string) (map[string]int, *serviceerror.ServiceError)
 }
 
 // userSchemaService is the default implementation of the UserSchemaServiceInterface.
@@ -292,6 +293,18 @@ func (us *userSchemaService) ValidateUserUniqueness(
 	}
 
 	return true, nil
+}
+
+// GetIndexedPropertyToColumnNumberMap returns a map of indexed property names to their corresponding column number.
+func (us *userSchemaService) GetIndexedPropertyToColumnNumberMap(userType string) (map[string]int, *serviceerror.ServiceError) {
+	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, userSchemaLoggerComponentName))
+
+	indexedPropertyToColumnNumberMap, err := us.userSchemaStore.GetIndexedPropertyToColumnNumberMap(userType)
+	if err != nil {
+		return nil, logAndReturnServerError(logger, "Failed to read user schema", err)
+	}
+
+	return indexedPropertyToColumnNumberMap, nil
 }
 
 func (us *userSchemaService) getCompiledSchemaForUserType(
