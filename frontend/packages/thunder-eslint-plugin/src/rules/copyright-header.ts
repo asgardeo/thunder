@@ -23,27 +23,6 @@ interface CopyrightHeaderOptions {
   template?: string;
 }
 
-interface ESLintComment {
-  type: string;
-  value: string;
-}
-
-interface ESLintSourceCode {
-  getAllComments(): ESLintComment[];
-}
-
-interface ESLintFixer {
-  insertTextBefore(node: unknown, text: string): unknown;
-  replaceText(target: unknown, text: string): unknown;
-}
-
-interface ESLintContext {
-  options: unknown[];
-  getFilename(): string;
-  getSourceCode(): ESLintSourceCode;
-  report(descriptor: {node: unknown; messageId: string; fix?: (fixer: ESLintFixer) => unknown}): void;
-}
-
 const REQUIRED_COPYRIGHT_HEADER = `/**
  * Copyright (c) 2025, WSO2 LLC. (https://www.wso2.com).
  *
@@ -90,7 +69,7 @@ const copyrightHeaderRule: Rule.RuleModule = {
       incorrectHeader: 'Incorrect copyright header format',
     },
   },
-  create(context: ESLintContext) {
+  create(context: Rule.RuleContext) {
     const options = (context.options?.[0] as CopyrightHeaderOptions) ?? {};
     const excludePatterns = options.excludePatterns ?? [];
     const template = options.template ?? REQUIRED_COPYRIGHT_HEADER;
@@ -116,9 +95,11 @@ const copyrightHeaderRule: Rule.RuleModule = {
 
         if (!firstComment || firstComment.type !== 'Block') {
           context.report({
+            // @ts-expect-error TODO: Update to the latest ESLint and remove `@types/eslint`.
             node,
             messageId: 'missingHeader',
-            fix(fixer: ESLintFixer) {
+            fix(fixer: Rule.RuleFixer) {
+              // @ts-expect-error TODO: Update to the latest ESLint and remove `@types/eslint`.
               return fixer.insertTextBefore(node, `${template}\n\n`);
             },
           });
@@ -131,9 +112,11 @@ const copyrightHeaderRule: Rule.RuleModule = {
 
         if (!normalizedComment.includes('WSO2 LLC') || !normalizedComment.includes('Apache License')) {
           context.report({
+            // @ts-expect-error TODO: Update to the latest ESLint and remove `@types/eslint`.
             node: firstComment,
             messageId: 'incorrectHeader',
-            fix(fixer: ESLintFixer) {
+            fix(fixer: Rule.RuleFixer) {
+              // @ts-expect-error TODO: Update to the latest ESLint and remove `@types/eslint`.
               return fixer.replaceText(firstComment, template);
             },
           });

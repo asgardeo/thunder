@@ -46,6 +46,7 @@ const plugin: ESLint.Plugin = {
   meta: {
     name: pkg.name,
     version: pkg.version,
+    // @ts-expect-error TODO: Update to the latest ESLint and remove `@types/eslint`.
     namespace,
   },
   configs: {},
@@ -57,6 +58,7 @@ const plugin: ESLint.Plugin = {
 };
 
 // Assign configs here so we can reference `plugin`
+// @ts-expect-error TODO: Update to the latest ESLint and remove `@types/eslint`.
 // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
 Object.assign(plugin.configs, {
   base: [

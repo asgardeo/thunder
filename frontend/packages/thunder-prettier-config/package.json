@@ -9,7 +9,7 @@
     "shareable",
     "wso2"
   ],
-  "homepage": "https://github.com/asgardeo/thunder/tree/main/packages/thunder-prettier-config#readme",
+  "homepage": "https://github.com/asgardeo/thunder/tree/main/frontend/packages/thunder-prettier-config#readme",
   "bugs": {
     "url": "https://github.com/asgardeo/thunder/issues"
   },
@@ -35,7 +35,7 @@
     "directory": "packages/thunder-prettier-config"
   },
   "scripts": {
-    "build": "pnpm clean && rolldown -c rolldown.config.mjs && tsc -p tsconfig.lib.json --emitDeclarationOnly --outDir dist",
+    "build": "pnpm clean && rolldown -c rolldown.config.js && tsc -p tsconfig.lib.json --emitDeclarationOnly --outDir dist",
     "clean": "rimraf dist",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",

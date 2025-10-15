@@ -1,7 +1,7 @@
 {
   "name": "@thunder/eslint-plugin-thunder",
   "version": "0.0.0",
-  "description": "ESLint plugin for ⚡️ Thunder projects with custom rules and configurations.",
+  "description": "ESLint plugin for ⚡️ Thunder UIs with custom rules and configurations",
   "keywords": [
     "thunder",
     "eslint",
@@ -11,7 +11,7 @@
     "shareable",
     "wso2"
   ],
-  "homepage": "https://github.com/asgardeo/thunder/tree/main/packages/thunder-eslint-config#readme",
+  "homepage": "https://github.com/asgardeo/thunder/tree/main/frontend/packages/thunder-eslint-config#readme",
   "bugs": {
     "url": "https://github.com/asgardeo/thunder/issues"
   },
@@ -34,7 +34,7 @@
   "repository": {
     "type": "git",
     "url": "https://github.com/asgardeo/thunder",
-    "directory": "packages/thunder-eslint-config"
+    "directory": "packages/thunder-eslint-plugin"
   },
   "scripts": {
     "build": "pnpm clean && rolldown -c rolldown.config.js && tsc -p tsconfig.lib.json --emitDeclarationOnly --outDir dist",
@@ -47,6 +47,7 @@
   "devDependencies": {
     "@thunder/eslint-plugin-thunder": "workspace:^",
     "@thunder/prettier-config": "workspace:^",
+    "@types/eslint": "^9.6.1",
     "@types/node": "catalog:",
     "eslint": "catalog:",
     "glob": "catalog:",

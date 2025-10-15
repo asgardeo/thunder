@@ -25,7 +25,9 @@ const external = [...Object.keys(pkg.dependencies || {}), ...Object.keys(pkg.pee
 
 const commonOptions = {
   input: 'src/index.ts',
-  outdir: 'dist',
+  output: {
+    dir: 'dist',
+  },
   preserveModules: true,
   external,
   platform: 'node',
