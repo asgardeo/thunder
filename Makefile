@@ -31,9 +31,9 @@ GOLANGCI_LINT_VERSION ?= v1.64.8
 $(TOOL_BIN):
 	mkdir -p $(TOOL_BIN)
 
-all: prepare clean build_with_coverage build
+all: lint prepare clean build_with_coverage build
 
-backend: prepare clean build_with_coverage build_backend
+backend: lint prepare clean build_with_coverage build_backend
 
 prepare:
 	chmod +x build.sh

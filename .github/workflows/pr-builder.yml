@@ -14,23 +14,6 @@ env:
   GOFLAGS: "-mod=readonly"
 
 jobs:
-  lint:
-    name: 🧹 Lint Code
-    if: ${{ github.event_name == 'pull_request' }}
-    runs-on: ubuntu-latest
-    steps:
-      - name: 📥 Checkout Code
-        uses: actions/checkout@v4
-
-      - name: ⚙️ Set up Go Environment
-        uses: ./.github/actions/setup-go
-
-      - name: 📦 Prepare golangci-lint Locally
-        run: make golangci-lint
-
-      - name: 🔍 Run Linter
-        run: make lint
-
   build:
     name: 🛠️ Build and Test
     if: ${{ github.event.label.name == 'trigger-pr-builder' || github.event_name == 'workflow_dispatch' || github.event_name == 'pull_request' }}
