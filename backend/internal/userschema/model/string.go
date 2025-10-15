@@ -29,6 +29,7 @@ import (
 type str struct {
 	required bool
 	unique   bool
+	indexed  bool
 	enum     map[string]struct{}
 	pattern  *regexp.Regexp
 }
@@ -79,11 +80,12 @@ func (p *str) validateUniqueness(
 	return existingUserID == nil, nil
 }
 
-func compileStringProperty(propMap map[string]json.RawMessage) (property, error) {
+func compileStringProperty(propMap map[string]json.RawMessage, isTopLevel bool) (property, error) {
 	allowedFields := map[string]struct{}{
 		"type":     {},
 		"required": {},
 		"unique":   {},
+		"indexed":  {},
 		"enum":     {},
 		"regex":    {},
 		"pattern":  {},
@@ -106,6 +108,15 @@ func compileStringProperty(propMap map[string]json.RawMessage) (property, error)
 	if raw, exists := propMap["unique"]; exists {
 		if err := json.Unmarshal(raw, &prop.unique); err != nil {
 			return nil, fmt.Errorf("'unique' field must be a boolean")
+		}
+	}
+
+	if raw, exists := propMap["indexed"]; exists {
+		if !isTopLevel {
+			return nil, fmt.Errorf("'indexed' field cannot be set for nested properties")
+		}
+		if err := json.Unmarshal(raw, &prop.indexed); err != nil {
+			return nil, fmt.Errorf("'indexed' field must be a boolean")
 		}
 	}
 

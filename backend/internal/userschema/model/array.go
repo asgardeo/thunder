@@ -102,7 +102,7 @@ func compileArrayProperty(propName string, propMap map[string]json.RawMessage) (
 		return nil, fmt.Errorf("missing required 'items' field for array type")
 	}
 
-	compiledItems, err := compileProperty(propName, itemsRaw)
+	compiledItems, err := compileProperty(propName, itemsRaw, false)
 	if err != nil {
 		return nil, fmt.Errorf("invalid 'items' definition: %w", err)
 	}
