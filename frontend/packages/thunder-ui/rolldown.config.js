@@ -18,6 +18,7 @@
 
 import {defineConfig} from 'rolldown';
 import {readFileSync} from 'fs';
+import {esmExternalRequirePlugin} from 'rolldown/experimental';
 
 const pkg = JSON.parse(readFileSync('./package.json', 'utf8'));
 
@@ -25,11 +26,18 @@ const external = [...Object.keys(pkg.dependencies || {}), ...Object.keys(pkg.pee
 
 const commonOptions = {
   input: 'src/index.ts',
-  outdir: 'dist',
+  output: {
+    dir: 'dist',
+  },
+  jsx: 'react-jsx',
   preserveModules: true,
-  external,
   platform: 'browser',
   target: 'es2020',
+  plugins: [
+    esmExternalRequirePlugin({
+      external,
+    }),
+  ],
 };
 
 export default defineConfig([
