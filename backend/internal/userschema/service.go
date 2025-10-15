@@ -100,12 +100,11 @@ func (us *userSchemaService) CreateUserSchema(request CreateUserSchemaRequest) (
 		return nil, invalidSchemaRequestError("schema definition must not be empty")
 	}
 
-	_, err := model.CompileUserSchema(request.Schema)
+	compiledSchema, err := model.CompileUserSchema(request.Schema)
 	if err != nil {
 		logger.Debug("Provided user schema failed compilation", log.String("name", request.Name), log.Error(err))
 		return nil, invalidSchemaRequestError(err.Error())
 	}
-
 	_, err = us.userSchemaStore.GetUserSchemaByName(request.Name)
 	if err == nil {
 		return nil, &ErrorUserSchemaNameConflict
@@ -121,7 +120,13 @@ func (us *userSchemaService) CreateUserSchema(request CreateUserSchemaRequest) (
 		Schema: request.Schema,
 	}
 
-	if err := us.userSchemaStore.CreateUserSchema(userSchema); err != nil {
+	indexedAttributes := compiledSchema.GetIndexedPropertyNames()
+
+	for i := len(indexedAttributes); i < 5; i++ {
+		indexedAttributes = append(indexedAttributes, "")
+	}
+
+	if err := us.userSchemaStore.CreateUserSchema(userSchema, indexedAttributes); err != nil {
 		return nil, logAndReturnServerError(logger, "Failed to create user schema", err)
 	}
 

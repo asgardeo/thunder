@@ -35,6 +35,11 @@ func (p *array) isRequired() bool {
 	return p.required
 }
 
+func (p *array) isIndexed() bool {
+	// Arrays are never indexed
+	return false
+}
+
 func (p *array) validateValue(value interface{}, path string, logger *log.Logger) (bool, error) {
 	arrayValue, ok := value.([]interface{})
 	if !ok {

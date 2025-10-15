@@ -41,6 +41,7 @@ const (
 
 type property interface {
 	isRequired() bool
+	isIndexed() bool
 	validateValue(value interface{}, path string, logger *log.Logger) (bool, error)
 	validateUniqueness(value interface{}, path string,
 		identifyUser func(map[string]interface{}) (*string, error), logger *log.Logger) (bool, error)
@@ -114,6 +115,16 @@ func (cs *Schema) ValidateUniqueness(
 	}
 
 	return true, nil
+}
+
+func (cs *Schema) GetIndexedPropertyNames() []string {
+	var indexedPropertyNames []string
+	for propName, prop := range cs.properties {
+		if prop.isIndexed() {
+			indexedPropertyNames = append(indexedPropertyNames, propName)
+		}
+	}
+	return indexedPropertyNames
 }
 
 func convertToFloat64(value interface{}) (float64, bool) {

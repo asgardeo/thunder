@@ -30,7 +30,7 @@ import (
 type userSchemaStoreInterface interface {
 	GetUserSchemaListCount() (int, error)
 	GetUserSchemaList(limit, offset int) ([]UserSchemaListItem, error)
-	CreateUserSchema(userSchema UserSchema) error
+	CreateUserSchema(userSchema UserSchema, indexedAttributes []string) error
 	GetUserSchemaByID(schemaID string) (UserSchema, error)
 	GetUserSchemaByName(name string) (UserSchema, error)
 	UpdateUserSchemaByID(schemaID string, userSchema UserSchema) error
@@ -101,13 +101,13 @@ func (s *userSchemaStore) GetUserSchemaList(limit, offset int) ([]UserSchemaList
 }
 
 // CreateUserSchema creates a new user schema.
-func (s *userSchemaStore) CreateUserSchema(userSchema UserSchema) error {
+func (s *userSchemaStore) CreateUserSchema(userSchema UserSchema, indexedAttributes []string) error {
 	dbClient, err := s.dbProvider.GetDBClient("identity")
 	if err != nil {
 		return fmt.Errorf("failed to get database client: %w", err)
 	}
 
-	_, err = dbClient.Query(queryCreateUserSchema, userSchema.ID, userSchema.Name, string(userSchema.Schema))
+	_, err = dbClient.Query(queryCreateUserSchema, userSchema.ID, userSchema.Name, string(userSchema.Schema), indexedAttributes[0], indexedAttributes[1], indexedAttributes[2], indexedAttributes[3], indexedAttributes[4])
 	if err != nil {
 		return fmt.Errorf("failed to create user schema: %w", err)
 	}
