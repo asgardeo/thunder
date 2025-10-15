@@ -1,0 +1,62 @@
+{
+  "name": "@thunder/ui",
+  "version": "0.0.0",
+  "description": "Reusable UI Kit for ⚡️ Thunder projects",
+  "keywords": [
+    "thunder",
+    "ui",
+    "mui",
+    "shareable",
+    "wso2"
+  ],
+  "homepage": "https://github.com/asgardeo/thunder/tree/main/frontend/packages/thunder-ui#readme",
+  "bugs": {
+    "url": "https://github.com/asgardeo/thunder/issues"
+  },
+  "author": "WSO2",
+  "license": "Apache-2.0",
+  "type": "module",
+  "main": "dist/index.js",
+  "module": "dist/index.js",
+  "commonjs": "dist/cjs/index.js",
+  "exports": {
+    "import": "./dist/index.js",
+    "require": "./dist/cjs/index.js"
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
+  "types": "dist/index.d.ts",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/asgardeo/thunder",
+    "directory": "packages/thunder-prettier-config"
+  },
+  "scripts": {
+    "build": "pnpm clean && rolldown -c rolldown.config.js && tsc -p tsconfig.lib.json --emitDeclarationOnly --outDir dist",
+    "clean": "rimraf dist",
+    "lint": "eslint .",
+    "lint:fix": "eslint . --fix",
+    "test": "vitest",
+    "typecheck": "tsc -p tsconfig.lib.json"
+  },
+  "devDependencies": {
+    "@thunder/eslint-plugin-thunder": "workspace:^",
+    "@thunder/prettier-config": "workspace:^",
+    "@types/node": "catalog:",
+    "eslint": "catalog:",
+    "prettier": "catalog:",
+    "rimraf": "catalog:",
+    "rolldown": "catalog:",
+    "typescript": "catalog:",
+    "vitest": "catalog:"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "dependencies": {
+    "tslib": "catalog:"
+  }
+}
