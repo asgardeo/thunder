@@ -16,19 +16,12 @@
  * under the License.
  */
 
-import * as React from 'react';
 import SvgIcon from '@mui/material/SvgIcon';
 
 export function FacebookIcon() {
   return (
     <SvgIcon>
-      <svg
-        width="16"
-        height="16"
-        viewBox="0 0 16 16"
-        fill="none"
-        xmlns="http://www.w3.org/2000/svg"
-      >
+      <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
         <path
           d="M6.68 15.92C2.88 15.24 0 11.96 0 8C0 3.6 3.6 0 8 0C12.4 0 16 3.6 16 8C16 11.96 13.12 15.24 9.32 15.92L8.88 15.56H7.12L6.68 15.92Z"
           fill="url(#paint0_linear_795_116)"
@@ -38,14 +31,7 @@ export function FacebookIcon() {
           fill="white"
         />
         <defs>
-          <linearGradient
-            id="paint0_linear_795_116"
-            x1="8"
-            y1="0"
-            x2="8"
-            y2="15.9991"
-            gradientUnits="userSpaceOnUse"
-          >
+          <linearGradient id="paint0_linear_795_116" x1="8" y1="0" x2="8" y2="15.9991" gradientUnits="userSpaceOnUse">
             <stop stopColor="#1AAFFF" />
             <stop offset="1" stopColor="#0163E0" />
           </linearGradient>
@@ -58,13 +44,7 @@ export function FacebookIcon() {
 export function GoogleIcon() {
   return (
     <SvgIcon>
-      <svg
-        width="16"
-        height="16"
-        viewBox="0 0 16 16"
-        fill="none"
-        xmlns="http://www.w3.org/2000/svg"
-      >
+      <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
         <path
           d="M15.68 8.18182C15.68 7.61455 15.6291 7.06909 15.5345 6.54545H8V9.64364H12.3055C12.1164 10.64 11.5491 11.4836 10.6982 12.0509V14.0655H13.2945C14.8073 12.6691 15.68 10.6182 15.68 8.18182Z"
           fill="#4285F4"

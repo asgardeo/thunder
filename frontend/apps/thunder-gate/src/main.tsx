@@ -16,16 +16,22 @@
  * under the License.
  */
 
-import * as React from 'react';
-import * as ReactDOM from 'react-dom/client';
-import {StyledEngineProvider} from '@mui/material/styles';
+import React from 'react';
+import {createRoot} from 'react-dom/client';
+import {StyledEngineProvider, ThemeProvider} from '@mui/material/styles';
+import CssBaseline from '@mui/material/CssBaseline';
+import {theme, ColorModeSelect} from '@thunder/ui';
 import App from './SignInSide';
 import './index.css';
 
-ReactDOM.createRoot(document.getElementById('root')!).render(
+createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
     <StyledEngineProvider injectFirst>
-      <App />
+      <ThemeProvider theme={theme} defaultMode="light">
+        <CssBaseline enableColorScheme />
+        <ColorModeSelect sx={{position: 'fixed', top: '1rem', right: '1rem'}} />
+        <App />
+      </ThemeProvider>
     </StyledEngineProvider>
   </React.StrictMode>,
 );

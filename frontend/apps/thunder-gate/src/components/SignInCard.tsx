@@ -16,7 +16,6 @@
  * under the License.
  */
 
-import * as React from 'react';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
 import MuiCard from '@mui/material/Card';
@@ -28,34 +27,34 @@ import FormControlLabel from '@mui/material/FormControlLabel';
 import Link from '@mui/material/Link';
 import TextField from '@mui/material/TextField';
 import Typography from '@mui/material/Typography';
-import { styled } from '@mui/material/styles';
+import {styled} from '@mui/material/styles';
+import {useState} from 'react';
+import type {FormEvent} from 'react';
 import ForgotPassword from './ForgotPassword';
-import { GoogleIcon, FacebookIcon } from './CustomIcons';
+import {GoogleIcon, FacebookIcon} from './CustomIcons';
 
-const Card = styled(MuiCard)(({ theme }) => ({
+const Card = styled(MuiCard)(({theme}) => ({
   display: 'flex',
   flexDirection: 'column',
   alignSelf: 'center',
   width: '100%',
   padding: theme.spacing(4),
   gap: theme.spacing(2),
-  boxShadow:
-    'hsla(220, 30%, 5%, 0.05) 0px 5px 15px 0px, hsla(220, 25%, 10%, 0.05) 0px 15px 35px -5px',
+  boxShadow: 'hsla(220, 30%, 5%, 0.05) 0px 5px 15px 0px, hsla(220, 25%, 10%, 0.05) 0px 15px 35px -5px',
   [theme.breakpoints.up('sm')]: {
     width: '450px',
   },
   ...theme.applyStyles('dark', {
-    boxShadow:
-      'hsla(220, 30%, 5%, 0.5) 0px 5px 15px 0px, hsla(220, 25%, 10%, 0.08) 0px 15px 35px -5px',
+    boxShadow: 'hsla(220, 30%, 5%, 0.5) 0px 5px 15px 0px, hsla(220, 25%, 10%, 0.08) 0px 15px 35px -5px',
   }),
 }));
 
 export default function SignInCard() {
-  const [emailError, setEmailError] = React.useState(false);
-  const [emailErrorMessage, setEmailErrorMessage] = React.useState('');
-  const [passwordError, setPasswordError] = React.useState(false);
-  const [passwordErrorMessage, setPasswordErrorMessage] = React.useState('');
-  const [open, setOpen] = React.useState(false);
+  const [emailError, setEmailError] = useState(false);
+  const [emailErrorMessage, setEmailErrorMessage] = useState('');
+  const [passwordError, setPasswordError] = useState(false);
+  const [passwordErrorMessage, setPasswordErrorMessage] = useState('');
+  const [open, setOpen] = useState(false);
 
   const handleClickOpen = () => {
     setOpen(true);
@@ -65,7 +64,7 @@ export default function SignInCard() {
     setOpen(false);
   };
 
-  const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
+  const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
     if (emailError || passwordError) {
       event.preventDefault();
       return;
@@ -106,24 +105,17 @@ export default function SignInCard() {
 
   return (
     <Card variant="outlined">
-      <Box sx={{ display: { xs: 'flex', md: 'none' } }}>
-        <Typography
-          variant="h2">
-            ⚡️ Thunder
-          </Typography>
+      <Box sx={{display: {xs: 'flex', md: 'none'}}}>
+        <Typography variant="h2">⚡️ Thunder</Typography>
       </Box>
-      <Typography
-        component="h1"
-        variant="h4"
-        sx={{ width: '100%', fontSize: 'clamp(2rem, 10vw, 2.15rem)' }}
-      >
+      <Typography component="h1" variant="h4" sx={{width: '100%', fontSize: 'clamp(2rem, 10vw, 2.15rem)'}}>
         Sign in
       </Typography>
       <Box
         component="form"
         onSubmit={handleSubmit}
         noValidate
-        sx={{ display: 'flex', flexDirection: 'column', width: '100%', gap: 2 }}
+        sx={{display: 'flex', flexDirection: 'column', width: '100%', gap: 2}}
       >
         <FormControl>
           <FormLabel htmlFor="email">Email</FormLabel>
@@ -143,14 +135,14 @@ export default function SignInCard() {
           />
         </FormControl>
         <FormControl>
-          <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
+          <Box sx={{display: 'flex', justifyContent: 'space-between'}}>
             <FormLabel htmlFor="password">Password</FormLabel>
             <Link
               component="button"
               type="button"
               onClick={handleClickOpen}
               variant="body2"
-              sx={{ alignSelf: 'baseline' }}
+              sx={{alignSelf: 'baseline'}}
             >
               Forgot your password?
             </Link>
@@ -170,43 +162,26 @@ export default function SignInCard() {
             color={passwordError ? 'error' : 'primary'}
           />
         </FormControl>
-        <FormControlLabel
-          control={<Checkbox value="remember" color="primary" />}
-          label="Remember me"
-        />
+        <FormControlLabel control={<Checkbox value="remember" color="primary" />} label="Remember me" />
         <ForgotPassword open={open} handleClose={handleClose} />
         <Button type="submit" fullWidth variant="contained" onClick={validateInputs}>
           Sign in
         </Button>
-        <Typography sx={{ textAlign: 'center' }}>
+        <Typography sx={{textAlign: 'center'}}>
           Don&apos;t have an account?{' '}
           <span>
-            <Link
-              href="/material-ui/getting-started/templates/sign-in/"
-              variant="body2"
-              sx={{ alignSelf: 'center' }}
-            >
+            <Link href="/material-ui/getting-started/templates/sign-in/" variant="body2" sx={{alignSelf: 'center'}}>
               Sign up
             </Link>
           </span>
         </Typography>
       </Box>
       <Divider>or</Divider>
-      <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-        <Button
-          fullWidth
-          variant="outlined"
-          onClick={() => null}
-          startIcon={<GoogleIcon />}
-        >
+      <Box sx={{display: 'flex', flexDirection: 'column', gap: 2}}>
+        <Button fullWidth variant="outlined" onClick={() => null} startIcon={<GoogleIcon />}>
           Sign in with Google
         </Button>
-        <Button
-          fullWidth
-          variant="outlined"
-          onClick={() => null}
-          startIcon={<FacebookIcon />}
-        >
+        <Button fullWidth variant="outlined" onClick={() => null} startIcon={<FacebookIcon />}>
           Sign in with Facebook
         </Button>
       </Box>

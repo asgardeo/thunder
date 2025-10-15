@@ -122,6 +122,9 @@ importers:
       '@mui/material':
         specifier: 'catalog:'
         version: 7.3.4(@emotion/react@11.14.0(@types/react@19.2.2)(react@19.2.0))(@emotion/styled@11.14.1(@emotion/react@11.14.0(@types/react@19.2.2)(react@19.2.0))(@types/react@19.2.2)(react@19.2.0))(@types/react@19.2.2)(react-dom@19.2.0(react@19.2.0))(react@19.2.0)
+      '@thunder/ui':
+        specifier: workspace:^
+        version: link:../../packages/thunder-ui
       lucide-react:
         specifier: 'catalog:'
         version: 0.545.0(react@19.2.0)
@@ -226,6 +229,9 @@ importers:
       '@thunder/prettier-config':
         specifier: workspace:^
         version: link:../thunder-prettier-config
+      '@types/eslint':
+        specifier: ^9.6.1
+        version: 9.6.1
       '@types/node':
         specifier: 'catalog:'
         version: 24.7.2
@@ -235,6 +241,40 @@ importers:
       glob:
         specifier: 'catalog:'
         version: 11.0.3
+      prettier:
+        specifier: 'catalog:'
+        version: 3.6.2
+      rimraf:
+        specifier: 'catalog:'
+        version: 6.0.1
+      rolldown:
+        specifier: 'catalog:'
+        version: 1.0.0-beta.43
+      typescript:
+        specifier: 'catalog:'
+        version: 5.9.3
+      vitest:
+        specifier: 'catalog:'
+        version: 3.2.4(@types/node@24.7.2)(lightningcss@1.30.2)(yaml@2.8.1)
+
+  packages/thunder-logger:
+    dependencies:
+      tslib:
+        specifier: 'catalog:'
+        version: 2.8.1
+    devDependencies:
+      '@thunder/eslint-plugin-thunder':
+        specifier: workspace:^
+        version: link:../thunder-eslint-plugin
+      '@thunder/prettier-config':
+        specifier: workspace:^
+        version: link:../thunder-prettier-config
+      '@types/node':
+        specifier: 'catalog:'
+        version: 24.7.2
+      eslint:
+        specifier: 'catalog:'
+        version: 8.57.1
       prettier:
         specifier: 'catalog:'
         version: 3.6.2
@@ -272,6 +312,64 @@ importers:
       prettier:
         specifier: 'catalog:'
         version: 3.6.2
+      rimraf:
+        specifier: 'catalog:'
+        version: 6.0.1
+      rolldown:
+        specifier: 'catalog:'
+        version: 1.0.0-beta.43
+      typescript:
+        specifier: 'catalog:'
+        version: 5.9.3
+      vitest:
+        specifier: 'catalog:'
+        version: 3.2.4(@types/node@24.7.2)(lightningcss@1.30.2)(yaml@2.8.1)
+
+  packages/thunder-ui:
+    dependencies:
+      '@emotion/react':
+        specifier: 'catalog:'
+        version: 11.14.0(@types/react@19.2.2)(react@19.2.0)
+      '@emotion/styled':
+        specifier: 'catalog:'
+        version: 11.14.1(@emotion/react@11.14.0(@types/react@19.2.2)(react@19.2.0))(@types/react@19.2.2)(react@19.2.0)
+      '@mui/icons-material':
+        specifier: 'catalog:'
+        version: 7.3.4(@mui/material@7.3.4(@emotion/react@11.14.0(@types/react@19.2.2)(react@19.2.0))(@emotion/styled@11.14.1(@emotion/react@11.14.0(@types/react@19.2.2)(react@19.2.0))(@types/react@19.2.2)(react@19.2.0))(@types/react@19.2.2)(react-dom@19.2.0(react@19.2.0))(react@19.2.0))(@types/react@19.2.2)(react@19.2.0)
+      '@mui/material':
+        specifier: 'catalog:'
+        version: 7.3.4(@emotion/react@11.14.0(@types/react@19.2.2)(react@19.2.0))(@emotion/styled@11.14.1(@emotion/react@11.14.0(@types/react@19.2.2)(react@19.2.0))(@types/react@19.2.2)(react@19.2.0))(@types/react@19.2.2)(react-dom@19.2.0(react@19.2.0))(react@19.2.0)
+      lucide-react:
+        specifier: 'catalog:'
+        version: 0.545.0(react@19.2.0)
+      tslib:
+        specifier: 'catalog:'
+        version: 2.8.1
+    devDependencies:
+      '@thunder/eslint-plugin-thunder':
+        specifier: workspace:^
+        version: link:../thunder-eslint-plugin
+      '@thunder/prettier-config':
+        specifier: workspace:^
+        version: link:../thunder-prettier-config
+      '@types/node':
+        specifier: 'catalog:'
+        version: 24.7.2
+      '@types/react':
+        specifier: 'catalog:'
+        version: 19.2.2
+      eslint:
+        specifier: 'catalog:'
+        version: 8.57.1
+      prettier:
+        specifier: 'catalog:'
+        version: 3.6.2
+      react:
+        specifier: 'catalog:'
+        version: 19.2.0
+      react-dom:
+        specifier: 'catalog:'
+        version: 19.2.0(react@19.2.0)
       rimraf:
         specifier: 'catalog:'
         version: 6.0.1
@@ -1753,8 +1851,14 @@ packages:
   '@types/deep-eql@4.0.2':
     resolution: {integrity: sha512-c9h9dVVMigMPc4bwTvC5dxqtqJZwQPePsWjPlpSOnojbor6pGqdk541lfA7AqFQr5pB1BRdq0juY9db81BwyFw==}
 
+  '@types/eslint@9.6.1':
+    resolution: {integrity: sha512-FXx2pKgId/WyYo2jXw63kk7/+TY7u7AziEJxJAnSFzHlqTAS3Ync6SvgYAN/k4/PQpnnVuzoMuVnByKK2qp0ag==}
+
   '@types/estree@1.0.8':
     resolution: {integrity: sha512-dWHzHa2WqEXI/O1E9OjrocMTKJl2mSrEolh1Iomrv6U+JuNwaHXsXx9bLu5gG7BUWFIN0skIQJQ/L1rIex4X6w==}
+
+  '@types/json-schema@7.0.15':
+    resolution: {integrity: sha512-5+fP8P8MFNC+AyZCDxrB2pkZFPGzqQWUzpSeuuVLvm8VMcorNYavBqoFcxK8bQz4Qsbn4oUEEem4wDLfcysGHA==}
 
   '@types/json5@0.0.29':
     resolution: {integrity: sha512-dRLjCWHYg4oaA77cxO64oO+7JwCwnIzkZPdrrC71jQmQtlhM556pwKo5bUzqvZndkVbeFLIIi+9TC40JNF5hNQ==}
@@ -5423,7 +5527,14 @@ snapshots:
 
   '@types/deep-eql@4.0.2': {}
 
+  '@types/eslint@9.6.1':
+    dependencies:
+      '@types/estree': 1.0.8
+      '@types/json-schema': 7.0.15
+
   '@types/estree@1.0.8': {}
+
+  '@types/json-schema@7.0.15': {}
 
   '@types/json5@0.0.29': {}
 
