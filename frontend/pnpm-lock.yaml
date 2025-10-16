@@ -60,15 +60,9 @@ catalogs:
     eslint:
       specifier: ^8.57.1
       version: 8.57.1
-    eslint-plugin-react-refresh:
-      specifier: ^0.4.23
-      version: 0.4.23
     glob:
       specifier: ^11.0.3
       version: 11.0.3
-    globals:
-      specifier: ^16.4.0
-      version: 16.4.0
     lucide-react:
       specifier: ^0.545.0
       version: 0.545.0
@@ -93,9 +87,6 @@ catalogs:
     typescript:
       specifier: 5.9.3
       version: 5.9.3
-    typescript-eslint:
-      specifier: ^8.45.0
-      version: 8.46.0
     vite:
       specifier: npm:rolldown-vite@7.1.14
       version: 7.1.14
@@ -213,18 +204,9 @@ importers:
       eslint:
         specifier: 'catalog:'
         version: 8.57.1
-      eslint-plugin-react-refresh:
-        specifier: 'catalog:'
-        version: 0.4.23(eslint@8.57.1)
-      globals:
-        specifier: 'catalog:'
-        version: 16.4.0
       typescript:
         specifier: 'catalog:'
         version: 5.9.3
-      typescript-eslint:
-        specifier: 'catalog:'
-        version: 8.46.0(eslint@8.57.1)(typescript@5.9.3)
       vite:
         specifier: 'catalog:'
         version: rolldown-vite@7.1.14(@types/node@24.7.2)(esbuild@0.25.10)(yaml@2.8.1)

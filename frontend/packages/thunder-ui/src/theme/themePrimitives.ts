@@ -16,8 +16,8 @@
  * under the License.
  */
 
-import { createTheme, alpha } from '@mui/material/styles';
-import type { PaletteMode, Shadows } from '@mui/material/styles';
+import {createTheme, alpha} from '@mui/material/styles';
+import type {PaletteMode, Shadows} from '@mui/material/styles';
 
 declare module '@mui/material/Paper' {
   interface PaperPropsVariantOverrides {
@@ -50,7 +50,20 @@ const defaultTheme = createTheme();
 
 const customShadows: Shadows = [...defaultTheme.shadows];
 
-export const brand = {
+export const wso2 = {
+  50: 'hsl(27, 100%, 97%)',
+  100: 'hsl(27, 100%, 90%)',
+  200: 'hsl(27, 100%, 80%)',
+  300: 'hsl(27, 100%, 70%)',
+  400: 'hsl(27, 100%, 60%)',
+  500: 'hsl(27, 100%, 50%)',
+  600: 'hsl(27, 100%, 45%)',
+  700: 'hsl(27, 100%, 35%)',
+  800: 'hsl(27, 100%, 25%)',
+  900: 'hsl(0, 3%, 13%)',
+};
+
+export const blue = {
   50: 'hsl(210, 100%, 95%)',
   100: 'hsl(210, 100%, 92%)',
   200: 'hsl(210, 100%, 80%)',
@@ -114,6 +127,8 @@ export const red = {
   800: 'hsl(0, 95%, 12%)',
   900: 'hsl(0, 93%, 6%)',
 };
+
+export const brand = wso2;
 
 export const getDesignTokens = (mode: PaletteMode) => {
   customShadows[1] =
@@ -185,13 +200,13 @@ export const getDesignTokens = (mode: PaletteMode) => {
       background: {
         default: 'hsl(0, 0%, 99%)',
         paper: 'hsl(220, 35%, 97%)',
-        ...(mode === 'dark' && { default: gray[900], paper: 'hsl(220, 30%, 7%)' }),
+        ...(mode === 'dark' && {default: gray[900], paper: 'hsl(220, 30%, 7%)'}),
       },
       text: {
         primary: gray[800],
         secondary: gray[600],
         warning: orange[400],
-        ...(mode === 'dark' && { primary: 'hsl(0, 0%, 100%)', secondary: gray[400] }),
+        ...(mode === 'dark' && {primary: 'hsl(0, 0%, 100%)', secondary: gray[400]}),
       },
       action: {
         hover: alpha(gray[200], 0.2),
@@ -305,8 +320,7 @@ export const colorSchemes = {
         hover: alpha(gray[200], 0.2),
         selected: `${alpha(gray[200], 0.3)}`,
       },
-      baseShadow:
-        'hsla(220, 30%, 5%, 0.07) 0px 4px 16px 0px, hsla(220, 25%, 10%, 0.07) 0px 8px 16px -5px',
+      baseShadow: 'hsla(220, 30%, 5%, 0.07) 0px 4px 16px 0px, hsla(220, 25%, 10%, 0.07) 0px 8px 16px -5px',
     },
   },
   dark: {
@@ -354,8 +368,7 @@ export const colorSchemes = {
         hover: alpha(gray[600], 0.2),
         selected: alpha(gray[600], 0.3),
       },
-      baseShadow:
-        'hsla(220, 30%, 5%, 0.7) 0px 4px 16px 0px, hsla(220, 25%, 10%, 0.8) 0px 8px 16px -5px',
+      baseShadow: 'hsla(220, 30%, 5%, 0.7) 0px 4px 16px 0px, hsla(220, 25%, 10%, 0.8) 0px 8px 16px -5px',
     },
   },
 };
@@ -415,9 +428,5 @@ export const shape = {
 };
 
 // @ts-expect-error ts-migrate(2322) FIXME: Type 'string[]' is not assignable to type 'Shadows'.
-const defaultShadows: Shadows = [
-  'none',
-  'var(--template-palette-baseShadow)',
-  ...defaultTheme.shadows.slice(2),
-];
+const defaultShadows: Shadows = ['none', 'var(--template-palette-baseShadow)', ...defaultTheme.shadows.slice(2)];
 export const shadows = defaultShadows;

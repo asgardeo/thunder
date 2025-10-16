@@ -17,6 +17,7 @@
  */
 
 import Stack from '@mui/material/Stack';
+import {alpha} from '@mui/material/styles';
 import SignInCard from './components/SignInCard';
 import Content from './components/Content';
 
@@ -41,10 +42,10 @@ export default function SignInSide() {
             position: 'absolute',
             zIndex: -1,
             inset: 0,
-            backgroundImage: 'radial-gradient(ellipse at 50% 50%, hsl(210, 100%, 97%), hsl(0, 0%, 100%))',
+            backgroundImage: `radial-gradient(ellipse at 50% 50%, ${alpha(theme.palette.primary.light, 0.1)}, hsl(0, 0%, 100%))`,
             backgroundRepeat: 'no-repeat',
             ...theme.applyStyles('dark', {
-              backgroundImage: 'radial-gradient(at 50% 50%, hsla(210, 100%, 16%, 0.5), hsl(220, 30%, 5%))',
+              backgroundImage: `radial-gradient(at 50% 50%, ${alpha(theme.palette.primary.dark, 0.15)}, hsl(220, 30%, 5%))`,
             }),
           },
         }),
