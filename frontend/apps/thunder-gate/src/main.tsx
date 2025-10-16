@@ -27,7 +27,7 @@ import './index.css';
 createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
     <StyledEngineProvider injectFirst>
-      <ThemeProvider theme={theme} defaultMode="light">
+      <ThemeProvider theme={theme}>
         <CssBaseline enableColorScheme />
         <ColorModeSelect sx={{position: 'fixed', top: '1rem', right: '1rem'}} />
         <App />
