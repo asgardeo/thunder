@@ -16,39 +16,38 @@
  * under the License.
  */
 
-import {defineConfig} from 'rolldown';
 import {readFileSync} from 'fs';
+import {build} from 'esbuild';
+import {preserveDirectivesPlugin} from 'esbuild-plugin-preserve-directives';
 
 const pkg = JSON.parse(readFileSync('./package.json', 'utf8'));
 
-const external = [...Object.keys(pkg.dependencies || {}), ...Object.keys(pkg.peerDependencies || {})];
-
 const commonOptions = {
-  input: 'src/index.ts',
-  output: {
-    dir: 'dist',
-  },
-  preserveModules: true,
-  external,
-  platform: 'node',
-  target: 'es2020',
+  bundle: true,
+  entryPoints: ['src/index.ts'],
+  external: [...Object.keys(pkg.dependencies || {}), ...Object.keys(pkg.peerDependencies || {})],
+  metafile: true,
+  platform: 'browser',
+  plugins: [
+    preserveDirectivesPlugin({
+      directives: ['use client', 'use strict'],
+      include: /\.(js|ts|jsx|tsx)$/,
+      exclude: /node_modules/,
+    }),
+  ],
+  target: ['es2020'],
 };
 
-export default defineConfig([
-  {
-    ...commonOptions,
-    output: {
-      file: 'dist/index.js',
-      format: 'esm',
-      sourcemap: true,
-    },
-  },
-  {
-    ...commonOptions,
-    output: {
-      file: 'dist/cjs/index.js',
-      format: 'cjs',
-      sourcemap: true,
-    },
-  },
-]);
+await build({
+  ...commonOptions,
+  format: 'esm',
+  outfile: 'dist/index.js',
+  sourcemap: true,
+});
+
+await build({
+  ...commonOptions,
+  format: 'cjs',
+  outfile: 'dist/cjs/index.js',
+  sourcemap: true,
+});

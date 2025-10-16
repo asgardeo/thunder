@@ -35,7 +35,7 @@
     "directory": "packages/thunder-prettier-config"
   },
   "scripts": {
-    "build": "pnpm clean && rolldown -c rolldown.config.js && tsc -p tsconfig.lib.json --emitDeclarationOnly --outDir dist",
+    "build": "pnpm clean && node esbuild.config.js && tsc -p tsconfig.lib.json --emitDeclarationOnly --outDir dist",
     "clean": "rimraf dist",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
@@ -47,12 +47,13 @@
     "@thunder/prettier-config": "workspace:^",
     "@types/node": "catalog:",
     "@types/react": "catalog:",
+    "esbuild": "catalog:",
+    "esbuild-plugin-preserve-directives": "catalog:",
     "eslint": "catalog:",
     "prettier": "catalog:",
     "react": "catalog:",
     "react-dom": "catalog:",
     "rimraf": "catalog:",
-    "rolldown": "catalog:",
     "typescript": "catalog:",
     "vitest": "catalog:"
   },
@@ -60,14 +61,14 @@
     "access": "public"
   },
   "dependencies": {
-    "@emotion/react": "catalog:",
-    "@emotion/styled": "catalog:",
-    "@mui/icons-material": "catalog:",
-    "@mui/material": "catalog:",
     "lucide-react": "catalog:",
     "tslib": "catalog:"
   },
   "peerDependencies": {
+    "@emotion/react": "catalog:",
+    "@emotion/styled": "catalog:",
+    "@mui/icons-material": "catalog:",
+    "@mui/material": "catalog:",
     "react": ">=16.8.0",
     "react-dom": ">=16.8.0"
   }
