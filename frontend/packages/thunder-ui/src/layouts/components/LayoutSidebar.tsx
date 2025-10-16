@@ -16,8 +16,22 @@
  * under the License.
  */
 
-export {default as ColorModeIconDropdown} from './theme/ColorModeIconDropdown';
-export {default as ColorModeSelect} from './theme/ColorModeSelect';
-export {default as theme} from './theme/theme';
-export {default as Layout} from './layouts/components';
-export {default as useLayout} from './layouts/contexts/useLayout';
+import Box, {BoxProps} from '@mui/material/Box';
+import type {PropsWithChildren, ReactNode} from 'react';
+
+function LayoutSidebar({children = null, sx, ...rest}: PropsWithChildren<BoxProps>): ReactNode {
+  return (
+    <Box
+      sx={{
+        display: 'flex',
+        flexDirection: 'column',
+        ...sx,
+      }}
+      {...rest}
+    >
+      {children}
+    </Box>
+  );
+}
+
+export default LayoutSidebar;

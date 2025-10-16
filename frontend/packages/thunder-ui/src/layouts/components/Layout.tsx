@@ -16,8 +16,21 @@
  * under the License.
  */
 
-export {default as ColorModeIconDropdown} from './theme/ColorModeIconDropdown';
-export {default as ColorModeSelect} from './theme/ColorModeSelect';
-export {default as theme} from './theme/theme';
-export {default as Layout} from './layouts/components';
-export {default as useLayout} from './layouts/contexts/useLayout';
+import Box, {BoxProps} from '@mui/material/Box';
+import type {PropsWithChildren} from 'react';
+
+function LayoutRoot({children = null, sx, ...rest}: PropsWithChildren<BoxProps>) {
+  return (
+    <Box
+      sx={{
+        display: 'flex',
+        ...sx,
+      }}
+      {...rest}
+    >
+      {children}
+    </Box>
+  );
+}
+
+export default LayoutRoot;

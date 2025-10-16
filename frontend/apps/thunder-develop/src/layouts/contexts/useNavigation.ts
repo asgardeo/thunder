@@ -16,8 +16,13 @@
  * under the License.
  */
 
-export {default as ColorModeIconDropdown} from './theme/ColorModeIconDropdown';
-export {default as ColorModeSelect} from './theme/ColorModeSelect';
-export {default as theme} from './theme/theme';
-export {default as Layout} from './layouts/components';
-export {default as useLayout} from './layouts/contexts/useLayout';
+import {useContext} from 'react';
+import NavigationContext from './NavigationContext';
+
+export default function useNavigation() {
+  const context = useContext(NavigationContext);
+  if (context === undefined) {
+    throw new Error('useNavigation must be used within a NavigationProvider');
+  }
+  return context;
+}

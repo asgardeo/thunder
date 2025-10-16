@@ -16,8 +16,20 @@
  * under the License.
  */
 
-export {default as ColorModeIconDropdown} from './theme/ColorModeIconDropdown';
-export {default as ColorModeSelect} from './theme/ColorModeSelect';
-export {default as theme} from './theme/theme';
-export {default as Layout} from './layouts/components';
-export {default as useLayout} from './layouts/contexts/useLayout';
+import LayoutRoot from './Layout';
+import LayoutSidebar from './LayoutSidebar';
+import LayoutNavbar from './LayoutNavbar';
+import LayoutContent from './LayoutContent';
+import LayoutHeader from './LayoutHeader';
+import LayoutProvider from '../providers/LayoutProvider';
+
+const Layout = Object.assign(LayoutRoot, {
+  Root: LayoutRoot,
+  Provider: LayoutProvider,
+  Sidebar: LayoutSidebar,
+  Navbar: LayoutNavbar,
+  Content: LayoutContent,
+  Header: LayoutHeader,
+});
+
+export default Layout;

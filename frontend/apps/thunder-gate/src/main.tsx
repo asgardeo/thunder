@@ -17,10 +17,10 @@
  */
 
 import React from 'react';
-import {createRoot} from 'react-dom/client';
-import {StyledEngineProvider, ThemeProvider} from '@mui/material/styles';
+import { createRoot } from 'react-dom/client';
+import { StyledEngineProvider, ThemeProvider } from '@mui/material/styles';
 import CssBaseline from '@mui/material/CssBaseline';
-import {theme, ColorModeSelect} from '@thunder/ui';
+import { theme, ColorModeSelect } from '@thunder/ui';
 import App from './SignInSide';
 import './index.css';
 
@@ -29,7 +29,7 @@ createRoot(document.getElementById('root')!).render(
     <StyledEngineProvider injectFirst>
       <ThemeProvider theme={theme}>
         <CssBaseline enableColorScheme />
-        <ColorModeSelect sx={{position: 'fixed', top: '1rem', right: '1rem'}} />
+        <ColorModeSelect sx={{ position: 'fixed', top: '1rem', right: '1rem' }} />
         <App />
       </ThemeProvider>
     </StyledEngineProvider>

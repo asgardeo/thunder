@@ -15,9 +15,10 @@
  * specific language governing permissions and limitations
  * under the License.
  */
+import type {PropsWithChildren, ReactNode} from 'react';
 
-export {default as ColorModeIconDropdown} from './theme/ColorModeIconDropdown';
-export {default as ColorModeSelect} from './theme/ColorModeSelect';
-export {default as theme} from './theme/theme';
-export {default as Layout} from './layouts/components';
-export {default as useLayout} from './layouts/contexts/useLayout';
+function LayoutNavbar({children = null}: PropsWithChildren): ReactNode {
+  return children;
+}
+
+export default LayoutNavbar;

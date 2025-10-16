@@ -16,8 +16,9 @@
  * under the License.
  */
 
-export {default as ColorModeIconDropdown} from './theme/ColorModeIconDropdown';
-export {default as ColorModeSelect} from './theme/ColorModeSelect';
-export {default as theme} from './theme/theme';
-export {default as Layout} from './layouts/components';
-export {default as useLayout} from './layouts/contexts/useLayout';
+import {createContext} from 'react';
+import {LayoutContextType} from '../models/layouts';
+
+const LayoutContext = createContext<LayoutContextType | undefined>(undefined);
+
+export default LayoutContext;

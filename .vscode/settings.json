@@ -3,5 +3,9 @@
     "editor.formatOnSave": true,
     "editor.defaultFormatter": "esbenp.prettier-vscode",
     "editor.codeActionsOnSave": ["source.fixAll.eslint", "source.fixAll.format"]
+  },
+  "prettier.prettierPath": "./frontend/node_modules/prettier",
+  "[typescriptreact]": {
+    "editor.defaultFormatter": "esbenp.prettier-vscode"
   }
 }

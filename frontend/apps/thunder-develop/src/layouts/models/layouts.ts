@@ -16,8 +16,16 @@
  * under the License.
  */
 
-export {default as ColorModeIconDropdown} from './theme/ColorModeIconDropdown';
-export {default as ColorModeSelect} from './theme/ColorModeSelect';
-export {default as theme} from './theme/theme';
-export {default as Layout} from './layouts/components';
-export {default as useLayout} from './layouts/contexts/useLayout';
+export interface NavigationItem {
+  id: string;
+  text: string;
+  category?: string;
+}
+
+export interface NavigationContextType {
+  currentPage: NavigationItem;
+  setCurrentPage: (page: NavigationItem) => void;
+  sidebarOpen: boolean;
+  setSidebarOpen: (open: boolean) => void;
+  toggleSidebar: () => void;
+}

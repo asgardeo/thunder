@@ -16,8 +16,16 @@
  * under the License.
  */
 
-export {default as ColorModeIconDropdown} from './theme/ColorModeIconDropdown';
-export {default as ColorModeSelect} from './theme/ColorModeSelect';
-export {default as theme} from './theme/theme';
-export {default as Layout} from './layouts/components';
-export {default as useLayout} from './layouts/contexts/useLayout';
+import thunderPlugin from '@thunder/eslint-plugin-thunder';
+
+export default [
+  {
+    ignores: [
+      'dist/**',
+      'build/**', 
+      'node_modules/**',
+      'coverage/**',
+    ],
+  },
+  ...thunderPlugin.configs.react,
+];

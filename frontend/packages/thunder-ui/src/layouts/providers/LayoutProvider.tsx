@@ -16,8 +16,11 @@
  * under the License.
  */
 
-export {default as ColorModeIconDropdown} from './theme/ColorModeIconDropdown';
-export {default as ColorModeSelect} from './theme/ColorModeSelect';
-export {default as theme} from './theme/theme';
-export {default as Layout} from './layouts/components';
-export {default as useLayout} from './layouts/contexts/useLayout';
+import {useMemo, type ReactNode} from 'react';
+import LayoutContext from '../contexts/LayoutContext';
+
+export default function LayoutProvider({children}: {children: ReactNode}) {
+  const value = useMemo(() => ({}), []);
+
+  return <LayoutContext.Provider value={value}>{children}</LayoutContext.Provider>;
+}
