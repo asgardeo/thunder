@@ -195,7 +195,7 @@ func (s *otpAuthnService) resolveUser(recipient string, channel notifcommon.Chan
 		return nil, &ErrorUnsupportedChannel
 	}
 
-	userID, svcErr := s.userService.IdentifyUser(filters)
+	userID, svcErr := s.userService.IdentifyUser(filters, "")
 	if svcErr != nil {
 		return nil, s.handleUserServiceError(svcErr, logger)
 	}

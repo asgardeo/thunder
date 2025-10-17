@@ -32,7 +32,7 @@ const (
 
 // CredentialsAuthnServiceInterface defines the contract for credentials-based authenticator services.
 type CredentialsAuthnServiceInterface interface {
-	Authenticate(attributes map[string]interface{}) (*user.User, *serviceerror.ServiceError)
+	Authenticate(attributes map[string]interface{}, userType string) (*user.User, *serviceerror.ServiceError)
 }
 
 // credentialsAuthnService is the default implementation of CredentialsAuthnServiceInterface.
@@ -52,7 +52,7 @@ func NewCredentialsAuthnService(userSvc user.UserServiceInterface) CredentialsAu
 }
 
 // Authenticate authenticates a user using credentials.
-func (c *credentialsAuthnService) Authenticate(attributes map[string]interface{}) (
+func (c *credentialsAuthnService) Authenticate(attributes map[string]interface{}, userType string) (
 	*user.User, *serviceerror.ServiceError) {
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, loggerComponentName))
 	logger.Debug("Authenticating user with credentials")
@@ -61,7 +61,12 @@ func (c *credentialsAuthnService) Authenticate(attributes map[string]interface{}
 		return nil, &ErrorEmptyAttributesOrCredentials
 	}
 
-	authRequest := user.AuthenticateUserRequest(attributes)
+	// Prepare the authentication request
+	authRequest := user.AuthenticateUserRequest{
+		Attributes: attributes,
+		UserType:  userType,
+	}
+
 	authResponse, svcErr := c.userService.AuthenticateUser(authRequest)
 	if svcErr != nil {
 		if svcErr.Type == serviceerror.ClientErrorType {

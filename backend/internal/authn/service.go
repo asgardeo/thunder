@@ -49,7 +49,7 @@ var crossAllowedIDPTypes = []idp.IDPType{idp.IDPTypeOAuth, idp.IDPTypeOIDC}
 
 // AuthenticationServiceInterface defines the interface for the authentication service.
 type AuthenticationServiceInterface interface {
-	AuthenticateWithCredentials(attributes map[string]interface{}, skipAssertion bool) (
+	AuthenticateWithCredentials(attributes map[string]interface{}, userType string, skipAssertion bool) (
 		*common.AuthenticationResponse, *serviceerror.ServiceError)
 	SendOTP(senderID string, channel notifcommon.ChannelType, recipient string) (
 		string, *serviceerror.ServiceError)
@@ -88,9 +88,9 @@ func NewAuthenticationService() AuthenticationServiceInterface {
 }
 
 // AuthenticateWithCredentials authenticates a user using credentials.
-func (as *authenticationService) AuthenticateWithCredentials(attributes map[string]interface{}, skipAssertion bool) (
+func (as *authenticationService) AuthenticateWithCredentials(attributes map[string]interface{}, userType string, skipAssertion bool) (
 	*common.AuthenticationResponse, *serviceerror.ServiceError) {
-	user, svcErr := as.credentialsService.Authenticate(attributes)
+	user, svcErr := as.credentialsService.Authenticate(attributes, userType)
 	if svcErr != nil {
 		return nil, svcErr
 	}

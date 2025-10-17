@@ -13,30 +13,39 @@ func BuildFilterQuery(
 	queryID string,
 	baseQuery string,
 	columnName string,
-	filters map[string]interface{},
+	unindexedFilters map[string]interface{},
+	indexedFilters map[string]interface{},
 ) (model.DBQuery, []interface{}, error) {
 	// Validate the column name.
 	if err := validateKey(columnName); err != nil {
 		return model.DBQuery{}, nil, fmt.Errorf("invalid column name: %w", err)
 	}
 
-	args := make([]interface{}, 0, len(filters))
+	query := baseQuery
 
-	keys := make([]string, 0, len(filters))
-	for key := range filters {
+	args := make([]interface{}, 0, len(unindexedFilters) + len(indexedFilters))
+
+	for columnName, value := range indexedFilters {
+		query += fmt.Sprintf(" AND '%s' = $%d", columnName, len(args) + 1)
+		args = append(args, value)
+	}
+
+	postgresQuery := query
+	sqliteQuery := query
+
+	unindexedKeys := make([]string, 0, len(unindexedFilters))
+	for key := range unindexedFilters {
 		if err := validateKey(key); err != nil {
 			return model.DBQuery{}, nil, fmt.Errorf("invalid filter key: %w", err)
 		}
-		keys = append(keys, key)
+		unindexedKeys = append(unindexedKeys, key)
 	}
-	sort.Strings(keys)
+	sort.Strings(unindexedKeys)
 
-	postgresQuery := baseQuery
-	sqliteQuery := baseQuery
-	for i, key := range keys {
-		postgresQuery += fmt.Sprintf(" AND %s->>'%s' = $%d", columnName, key, i+1)
+	for _, key := range unindexedKeys {
+		postgresQuery += fmt.Sprintf(" AND %s->>'%s' = $%d", columnName, key, len(args)+1)
 		sqliteQuery += fmt.Sprintf(" AND json_extract(%s, '$.%s') = ?", columnName, key)
-		args = append(args, filters[key])
+		args = append(args, unindexedFilters[key])
 	}
 
 	resultQuery := model.DBQuery{

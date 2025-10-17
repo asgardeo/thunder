@@ -61,7 +61,7 @@ func (i *IdentifyingExecutor) IdentifyUser(filters map[string]interface{},
 		}
 	}
 
-	userID, svcErr := i.userService.IdentifyUser(searchableFilter)
+	userID, svcErr := i.userService.IdentifyUser(searchableFilter, "")
 	if svcErr != nil {
 		if svcErr.Code == user.ErrorUserNotFound.Code {
 			logger.Debug("User not found for the provided filters")

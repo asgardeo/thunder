@@ -70,11 +70,11 @@ var (
 )
 
 // buildIdentifyQuery constructs a query to identify a user based on the provided filters.
-func buildIdentifyQuery(filters map[string]interface{}) (model.DBQuery, []interface{}, error) {
+func buildIdentifyQuery(unindexedFilters map[string]interface{}, indexedFilters map[string]interface{}) (model.DBQuery, []interface{}, error) {
 	baseQuery := "SELECT USER_ID FROM \"USER\" WHERE 1=1"
 	queryID := "ASQ-USER_MGT-08"
 	columnName := AttributesColumn
-	return utils.BuildFilterQuery(queryID, baseQuery, columnName, filters)
+	return utils.BuildFilterQuery(queryID, baseQuery, columnName, unindexedFilters, indexedFilters)
 }
 
 // buildBulkUserExistsQuery constructs a query to check which user IDs exist from a list.
@@ -116,7 +116,7 @@ func buildUserListQuery(filters map[string]interface{}, limit, offset int) (mode
 
 	// Build the filter condition if filters are provided
 	if len(filters) > 0 {
-		filterQuery, filterArgs, err := utils.BuildFilterQuery(queryID, baseQuery+" WHERE 1=1", columnName, filters)
+		filterQuery, filterArgs, err := utils.BuildFilterQuery(queryID, baseQuery+" WHERE 1=1", columnName, filters, nil)
 		if err != nil {
 			return model.DBQuery{}, nil, err
 		}
@@ -168,7 +168,7 @@ func buildUserCountQuery(filters map[string]interface{}) (model.DBQuery, []inter
 	columnName := AttributesColumn
 
 	if len(filters) > 0 {
-		return utils.BuildFilterQuery(queryID, baseQuery+" WHERE 1=1", columnName, filters)
+		return utils.BuildFilterQuery(queryID, baseQuery+" WHERE 1=1", columnName, filters, nil)
 	}
 
 	return QueryGetUserCount, []interface{}{}, nil

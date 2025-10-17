@@ -93,7 +93,10 @@ type CreateUserByPathRequest struct {
 }
 
 // AuthenticateUserRequest represents the request body for authenticating a user.
-type AuthenticateUserRequest map[string]interface{}
+type AuthenticateUserRequest struct {
+	Attributes map[string]interface{}
+	UserType   string
+}
 
 // AuthenticateUserResponse represents the response body for authenticating a user.
 type AuthenticateUserResponse struct {

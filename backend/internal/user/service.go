@@ -54,7 +54,7 @@ type UserServiceInterface interface {
 	GetUser(userID string) (*User, *serviceerror.ServiceError)
 	UpdateUser(userID string, user *User) (*User, *serviceerror.ServiceError)
 	DeleteUser(userID string) *serviceerror.ServiceError
-	IdentifyUser(filters map[string]interface{}) (*string, *serviceerror.ServiceError)
+	IdentifyUser(filters map[string]interface{}, userType string) (*string, *serviceerror.ServiceError)
 	VerifyUser(userID string, credentials map[string]interface{}) (*User, *serviceerror.ServiceError)
 	AuthenticateUser(request AuthenticateUserRequest) (*AuthenticateUserResponse, *serviceerror.ServiceError)
 	ValidateUserIDs(userIDs []string) ([]string, *serviceerror.ServiceError)
@@ -366,14 +366,31 @@ func (us *userService) DeleteUser(userID string) *serviceerror.ServiceError {
 }
 
 // IdentifyUser identifies a user with the given filters.
-func (us *userService) IdentifyUser(filters map[string]interface{}) (*string, *serviceerror.ServiceError) {
+func (us *userService) IdentifyUser(filters map[string]interface{}, userType string) (*string, *serviceerror.ServiceError) {
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, loggerComponentName))
 
 	if len(filters) == 0 {
 		return nil, &ErrorInvalidRequestFormat
 	}
 
-	userID, err := us.userStore.IdentifyUser(filters)
+	indexedPropToColumnNumberMap, schemaSvcError := us.userSchemaService.GetIndexedPropertyToColumnNumberMap(userType)
+	if schemaSvcError != nil {
+		return nil, schemaSvcError
+	}
+
+	unindexedFilters := make(map[string]interface{})
+	indexedFilters := make(map[string]interface{})
+
+	for attributeName, attributeValue := range filters {
+		if columnNumber, isIndexed := indexedPropToColumnNumberMap[attributeName]; isIndexed {
+			columnName := fmt.Sprintf("indexed_prop_%d_value", columnNumber)
+			indexedFilters[columnName] = attributeValue
+		} else {
+			unindexedFilters[attributeName] = attributeValue
+		}
+	}
+
+	userID, err := us.userStore.IdentifyUser(unindexedFilters, indexedFilters)
 	if err != nil {
 		if errors.Is(err, ErrUserNotFound) {
 			logger.Debug("User not found with provided filters")
@@ -472,14 +489,14 @@ func (us *userService) AuthenticateUser(
 ) (*AuthenticateUserResponse, *serviceerror.ServiceError) {
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, loggerComponentName))
 
-	if len(request) == 0 {
+	if len(request.Attributes) == 0 {
 		return nil, &ErrorInvalidRequestFormat
 	}
 
 	identifyFilters := make(map[string]interface{})
 	credentials := make(map[string]interface{})
 
-	for key, value := range request {
+	for key, value := range request.Attributes {
 		if _, isCredential := supportedCredentialFields[key]; isCredential {
 			credentials[key] = value
 		} else {
@@ -494,7 +511,7 @@ func (us *userService) AuthenticateUser(
 		return nil, &ErrorMissingCredentials
 	}
 
-	userID, svcErr := us.IdentifyUser(identifyFilters)
+	userID, svcErr := us.IdentifyUser(identifyFilters, request.UserType)
 	if svcErr != nil {
 		if svcErr.Code == ErrorUserNotFound.Code {
 			return nil, &ErrorUserNotFound
@@ -545,7 +562,7 @@ func (us *userService) validateUserAndUniqueness(
 
 	isValid, svcErr = us.userSchemaService.ValidateUserUniqueness(userType, attributes,
 		func(filters map[string]interface{}) (*string, error) {
-			userID, svcErr := us.IdentifyUser(filters)
+			userID, svcErr := us.IdentifyUser(filters, userType)
 			if svcErr != nil {
 				if svcErr.Code == ErrorUserNotFound.Code {
 					return nil, nil

@@ -55,6 +55,13 @@ func (ah *AuthenticationHandler) HandleCredentialsAuthRequest(w http.ResponseWri
 	}
 	authRequest := *authRequestPtr
 
+	// Check for user_type field
+	userType, ok := authRequest["user_type"].(string)
+	if !ok {
+		userType = ""
+	}
+	delete(authRequest, "user_type")
+
 	// Check for skip_assertion field
 	skipAssertion, ok := authRequest["skip_assertion"].(bool)
 	if !ok {
@@ -62,7 +69,7 @@ func (ah *AuthenticationHandler) HandleCredentialsAuthRequest(w http.ResponseWri
 	}
 	delete(authRequest, "skip_assertion")
 
-	authResponse, svcErr := ah.authService.AuthenticateWithCredentials(authRequest, skipAssertion)
+	authResponse, svcErr := ah.authService.AuthenticateWithCredentials(authRequest, userType, skipAssertion)
 	if svcErr != nil {
 		ah.handleServiceError(w, svcErr)
 		return

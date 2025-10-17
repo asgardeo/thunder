@@ -192,13 +192,32 @@ func (s *userSchemaStore) DeleteUserSchemaByID(schemaID string) error {
 
 
 // GetIndexedPropertyToColumnMap retrieves a map of indexed properties to their corresponding database columns for a given schema name.
+// If the schema name is empty and there is only one user schema, it retrieves the map for that schema.
+// If multiple schemas exist and no name is provided, it returns an empty map.
 func (s *userSchemaStore) GetIndexedPropertyToColumnNumberMap(name string) (map[string]int, error) {
+	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, "UserSchemaPersistence"))
+
 	dbClient, err := s.dbProvider.GetDBClient("identity")
 	if err != nil {
 		return nil, fmt.Errorf("failed to get database client: %w", err)
 	}
 
-	results, err := dbClient.Query(queryGetIndexedPropertiesByName, name)
+	userSchemaName := name
+
+	if name == "" {
+		userSchemas, err := s.GetUserSchemaList(2, 0);
+		if err != nil {
+			return nil, err
+		}
+		if len(userSchemas) != 1 {
+			// Cannot determine the schema to use
+			logger.Warn("multiple user schemas found, returning empty map")
+			return map[string]int{}, nil
+		}
+		userSchemaName = userSchemas[0].Name
+	}
+
+	results, err := dbClient.Query(queryGetIndexedPropertiesByName, userSchemaName)
 	if err != nil {
 		return nil, fmt.Errorf("failed to execute query: %w", err)
 	}

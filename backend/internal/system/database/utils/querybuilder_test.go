@@ -49,7 +49,7 @@ func (suite *QueryBuilderTestSuite) TestBuildFilterQuery() {
 		"age":  30,
 	}
 
-	query, args, err := BuildFilterQuery(queryID, baseQuery, columnName, filters)
+	query, args, err := BuildFilterQuery(queryID, baseQuery, columnName, filters, nil)
 
 	assert.NoError(suite.T(), err)
 	assert.Equal(suite.T(), queryID, query.ID)
@@ -82,7 +82,7 @@ func (suite *QueryBuilderTestSuite) TestBuildFilterQueryWithEmptyFilters() {
 	columnName := testColumnName
 	filters := map[string]interface{}{}
 
-	query, args, err := BuildFilterQuery(queryID, baseQuery, columnName, filters)
+	query, args, err := BuildFilterQuery(queryID, baseQuery, columnName, filters, nil)
 
 	assert.NoError(suite.T(), err)
 	assert.Equal(suite.T(), queryID, query.ID)
@@ -104,7 +104,7 @@ func (suite *QueryBuilderTestSuite) TestBuildFilterQueryWithInvalidColumnName() 
 		"role": "admin",
 	}
 
-	query, args, err := BuildFilterQuery(queryID, baseQuery, columnName, filters)
+	query, args, err := BuildFilterQuery(queryID, baseQuery, columnName, filters, nil)
 
 	assert.Error(suite.T(), err)
 	assert.Contains(suite.T(), err.Error(), "invalid column name")
@@ -121,7 +121,7 @@ func (suite *QueryBuilderTestSuite) TestBuildFilterQueryWithInvalidFilterKey() {
 		"invalid-filter-key": "value", // Contains invalid character '-'
 	}
 
-	query, args, err := BuildFilterQuery(queryID, baseQuery, columnName, filters)
+	query, args, err := BuildFilterQuery(queryID, baseQuery, columnName, filters, nil)
 
 	assert.Error(suite.T(), err)
 	assert.Contains(suite.T(), err.Error(), "invalid filter key")
@@ -173,7 +173,7 @@ func (suite *QueryBuilderTestSuite) TestBuildFilterQueryDatabaseSpecificQueries(
 		"name":  "John Doe",
 	}
 
-	query, args, err := BuildFilterQuery(queryID, baseQuery, columnName, filters)
+	query, args, err := BuildFilterQuery(queryID, baseQuery, columnName, filters, nil)
 
 	assert.NoError(suite.T(), err)
 	assert.Equal(suite.T(), queryID, query.ID)
@@ -211,7 +211,7 @@ func (suite *QueryBuilderTestSuite) TestBuildFilterQuerySingleFilter() {
 		"department": "engineering",
 	}
 
-	query, args, err := BuildFilterQuery(queryID, baseQuery, columnName, filters)
+	query, args, err := BuildFilterQuery(queryID, baseQuery, columnName, filters, nil)
 
 	assert.NoError(suite.T(), err)
 	assert.Len(suite.T(), args, 1)
