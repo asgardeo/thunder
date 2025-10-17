@@ -519,7 +519,7 @@ func (suite *OAuthAuthnServiceTestSuite) TestGetInternalUserSuccess() {
 	}
 
 	suite.mockUserService.On("IdentifyUser", mock.MatchedBy(
-		func(filters map[string]interface{}) bool {
+		func(filters map[string]interface{}, userType string) bool {
 			return filters["sub"] == testSub
 		}),
 	).Return(&userID, nil)
