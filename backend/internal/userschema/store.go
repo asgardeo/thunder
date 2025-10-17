@@ -211,7 +211,7 @@ func (s *userSchemaStore) GetIndexedPropertyToColumnNumberMap(name string) (map[
 		}
 		if len(userSchemas) != 1 {
 			// Cannot determine the schema to use
-			logger.Warn("multiple user schemas found, returning empty map")
+			logger.Debug("multiple user schemas found, returning empty map")
 			return map[string]int{}, nil
 		}
 		userSchemaName = userSchemas[0].Name
@@ -223,7 +223,8 @@ func (s *userSchemaStore) GetIndexedPropertyToColumnNumberMap(name string) (map[
 	}
 
 	if len(results) == 0 {
-		return nil, ErrUserSchemaNotFound
+		logger.Debug("no schema found for user type, sreturning empty map", log.String("userType", name))
+		return map[string]int{}, nil
 	}
 
 	indexedPropertyToColumnNumberMap := make(map[string]int)
