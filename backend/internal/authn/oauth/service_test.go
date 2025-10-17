@@ -539,7 +539,7 @@ func (suite *OAuthAuthnServiceTestSuite) TestGetInternalUserWithError_EmptySub()
 }
 
 func (suite *OAuthAuthnServiceTestSuite) TestGetInternalUserWithError_UserNotFound() {
-	suite.mockUserService.On("IdentifyUser", mock.Anything).Return(nil, &user.ErrorUserNotFound)
+	suite.mockUserService.On("IdentifyUser", mock.Anything, mock.Anything).Return(nil, &user.ErrorUserNotFound)
 
 	result, err := suite.service.GetInternalUser(testSub)
 	suite.Nil(result)
