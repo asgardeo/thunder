@@ -69,7 +69,7 @@ func (suite *CredentialsAuthnServiceTestSuite) TestAuthenticateSuccess() {
 	suite.mockUserService.On("AuthenticateUser", mock.Anything).Return(authResp, nil)
 	suite.mockUserService.On("GetUser", userID).Return(user, nil)
 
-	result, err := suite.service.Authenticate(attributes)
+	result, err := suite.service.Authenticate(attributes, "")
 	suite.Nil(err)
 	suite.NotNil(result)
 	suite.Equal(userID, result.ID)
@@ -121,7 +121,7 @@ func (suite *CredentialsAuthnServiceTestSuite) TestAuthenticateFailures() {
 			}
 			svc := NewCredentialsAuthnService(m)
 
-			result, err := svc.Authenticate(tc.attributes)
+			result, err := svc.Authenticate(tc.attributes, "")
 			suite.Nil(result)
 			suite.NotNil(err)
 			suite.Equal(tc.expectedErrorCode, err.Code)
@@ -220,7 +220,7 @@ func (suite *CredentialsAuthnServiceTestSuite) TestAuthenticateWithServiceErrors
 			}
 			svc := NewCredentialsAuthnService(m)
 
-			result, err := svc.Authenticate(tc.attributes)
+			result, err := svc.Authenticate(tc.attributes, "")
 			suite.Nil(result)
 			suite.NotNil(err)
 			suite.Equal(tc.expectedErrorCode, err.Code)
