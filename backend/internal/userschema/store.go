@@ -190,7 +190,6 @@ func (s *userSchemaStore) DeleteUserSchemaByID(schemaID string) error {
 	return nil
 }
 
-
 // GetIndexedPropertyToColumnMap retrieves a map of indexed properties to their corresponding database columns for a given schema name.
 // If the schema name is empty and there is only one user schema, it retrieves the map for that schema.
 // If multiple schemas exist and no name is provided, it returns an empty map.
@@ -205,7 +204,7 @@ func (s *userSchemaStore) GetIndexedPropertyToColumnNumberMap(name string) (map[
 	userSchemaName := name
 
 	if name == "" {
-		userSchemas, err := s.GetUserSchemaList(2, 0);
+		userSchemas, err := s.GetUserSchemaList(2, 0)
 		if err != nil {
 			return nil, err
 		}

@@ -78,9 +78,9 @@ func (ts *UpdateUserSchemaTestSuite) TearDownSuite() {
 
 // TestUpdateUserSchema tests PUT /user-schemas/{id} with valid data
 func (ts *UpdateUserSchemaTestSuite) TestUpdateUserSchema() {
-    updateRequest := UpdateUserSchemaRequest{
-        Name: "updated-schema-name",
-        Schema: json.RawMessage(`{
+	updateRequest := UpdateUserSchemaRequest{
+		Name: "updated-schema-name",
+		Schema: json.RawMessage(`{
             "updatedField": {"type": "string", "required": true},
             "newField": {"type": "number"},
             "complexField": {
@@ -90,7 +90,7 @@ func (ts *UpdateUserSchemaTestSuite) TestUpdateUserSchema() {
                 }
             }
         }`),
-    }
+	}
 
 	jsonData, err := json.Marshal(updateRequest)
 	if err != nil {
@@ -215,10 +215,10 @@ func (ts *UpdateUserSchemaTestSuite) TestUpdateUserSchemaWithNameConflict() {
 
 // TestUpdateUserSchemaWithInvalidData tests PUT /user-schemas/{id} with invalid request data
 func (ts *UpdateUserSchemaTestSuite) TestUpdateUserSchemaWithInvalidData() {
-    testCases := []struct {
-        name        string
-        requestBody string
-    }{
+	testCases := []struct {
+		name        string
+		requestBody string
+	}{
 		{
 			name:        "empty name",
 			requestBody: `{"name": "", "schema": {"field": {"type": "string"}}}`,
@@ -239,15 +239,15 @@ func (ts *UpdateUserSchemaTestSuite) TestUpdateUserSchemaWithInvalidData() {
 			name:        "invalid JSON",
 			requestBody: `{"name": "updated-name", "schema": invalid}`,
 		},
-        {
-            name:        "malformed JSON",
-            requestBody: `{"name": "updated-name"`,
-        },
-        {
-            name:        "non-boolean required flag",
-            requestBody: `{"name": "updated-name", "schema": {"field": {"type": "string", "required": "yes"}}}`,
-        },
-    }
+		{
+			name:        "malformed JSON",
+			requestBody: `{"name": "updated-name"`,
+		},
+		{
+			name:        "non-boolean required flag",
+			requestBody: `{"name": "updated-name", "schema": {"field": {"type": "string", "required": "yes"}}}`,
+		},
+	}
 
 	for _, tc := range testCases {
 		ts.T().Run(tc.name, func(t *testing.T) {

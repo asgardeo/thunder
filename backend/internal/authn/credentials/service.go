@@ -64,7 +64,7 @@ func (c *credentialsAuthnService) Authenticate(attributes map[string]interface{}
 	// Prepare the authentication request
 	authRequest := user.AuthenticateUserRequest{
 		Attributes: attributes,
-		UserType:  userType,
+		UserType:   userType,
 	}
 
 	authResponse, svcErr := c.userService.AuthenticateUser(authRequest)

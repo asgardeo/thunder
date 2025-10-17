@@ -23,10 +23,10 @@ func BuildFilterQuery(
 
 	query := baseQuery
 
-	args := make([]interface{}, 0, len(unindexedFilters) + len(indexedFilters))
+	args := make([]interface{}, 0, len(unindexedFilters)+len(indexedFilters))
 
 	for columnName, value := range indexedFilters {
-		query += fmt.Sprintf(" AND \"%s\" = $%d", columnName, len(args) + 1)
+		query += fmt.Sprintf(" AND \"%s\" = $%d", columnName, len(args)+1)
 		args = append(args, value)
 	}
 

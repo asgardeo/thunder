@@ -151,7 +151,7 @@ func (ts *UserFilterTestSuite) TestFilterByNumberAttribute() {
 
 	for i, user := range users {
 		ts.Require().NotNil(user.Attributes, "User attributes should not be nil for user %d", i)
-		
+
 		var userAttrs map[string]interface{}
 		err := json.Unmarshal(user.Attributes, &userAttrs)
 		ts.NoError(err, "Failed to unmarshal user attributes for user %d", i)
@@ -169,7 +169,7 @@ func (ts *UserFilterTestSuite) TestFilterByBooleanAttribute() {
 
 	for i, user := range users {
 		ts.Require().NotNil(user.Attributes, "User attributes should not be nil for user %d", i)
-		
+
 		var userAttrs map[string]interface{}
 		err := json.Unmarshal(user.Attributes, &userAttrs)
 		ts.NoError(err, "Failed to unmarshal user attributes for user %d", i)
@@ -199,7 +199,7 @@ func (ts *UserFilterTestSuite) TestFilterByNestedObjectAttribute() {
 
 	for i, user := range users {
 		ts.Require().NotNil(user.Attributes, "User attributes should not be nil for user %d", i)
-		
+
 		var userAttrs map[string]interface{}
 		err := json.Unmarshal(user.Attributes, &userAttrs)
 		ts.NoError(err, "Failed to unmarshal user attributes for user %d", i)
@@ -236,7 +236,7 @@ func (ts *UserFilterTestSuite) TestFilterByDepartment() {
 
 	for i, user := range users {
 		ts.Require().NotNil(user.Attributes, "User attributes should not be nil for user %d", i)
-		
+
 		var userAttrs map[string]interface{}
 		err := json.Unmarshal(user.Attributes, &userAttrs)
 		ts.NoError(err, "Failed to unmarshal user attributes for user %d", i)
@@ -290,7 +290,7 @@ func (ts *UserFilterTestSuite) TestFilterWithPagination() {
 	// Verify all returned users match the filter
 	for i, user := range userListResponse.Users {
 		ts.Require().NotNil(user.Attributes, "User attributes should not be nil for user %d", i)
-		
+
 		var userAttrs map[string]interface{}
 		err := json.Unmarshal(user.Attributes, &userAttrs)
 		ts.NoError(err, "Failed to unmarshal user attributes for user %d", i)
@@ -367,7 +367,7 @@ func (ts *UserFilterTestSuite) TestMultipleMatchingUsers() {
 
 	for i, user := range users {
 		ts.Require().NotNil(user.Attributes, "User attributes should not be nil for user %d", i)
-		
+
 		var userAttrs map[string]interface{}
 		err := json.Unmarshal(user.Attributes, &userAttrs)
 		ts.NoError(err, "Failed to unmarshal user attributes for user %d", i)

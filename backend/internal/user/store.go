@@ -251,8 +251,8 @@ func (us *userStore) IdentifyUser(unindexedFilters map[string]interface{}, index
 			maskedUnindexedFilters := maskMapValues(unindexedFilters)
 			maskedIndexedFilters := maskMapValues(indexedFilters)
 			logger.Debug(
-				"User not found with the provided filters", 
-				log.Any("filters", maskedUnindexedFilters), 
+				"User not found with the provided filters",
+				log.Any("filters", maskedUnindexedFilters),
 				log.Any("indexed_filters", maskedIndexedFilters),
 			)
 		}
