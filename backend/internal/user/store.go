@@ -248,18 +248,25 @@ func (us *userStore) IdentifyUser(unindexedFilters map[string]interface{}, index
 
 	if len(results) == 0 {
 		if logger.IsDebugEnabled() {
-			maskedFilters := maskMapValues(unindexedFilters)
-			logger.Debug("User not found with the provided filters", log.Any("filters", maskedFilters))
+			maskedUnindexedFilters := maskMapValues(unindexedFilters)
+			maskedIndexedFilters := maskMapValues(indexedFilters)
+			logger.Debug(
+				"User not found with the provided filters", 
+				log.Any("filters", maskedUnindexedFilters), 
+				log.Any("indexed_filters", maskedIndexedFilters),
+			)
 		}
 		return nil, ErrUserNotFound
 	}
 
 	if len(results) != 1 {
 		if logger.IsDebugEnabled() {
-			maskedFilters := maskMapValues(unindexedFilters)
+			maskedUnindexedFilters := maskMapValues(unindexedFilters)
+			maskedIndexedFilters := maskMapValues(indexedFilters)
 			logger.Debug(
 				"Unexpected number of results for the provided filters",
-				log.Any("filters", maskedFilters),
+				log.Any("filters", maskedUnindexedFilters),
+				log.Any("indexed_filters", maskedIndexedFilters),
 				log.Int("result_count", len(results)),
 			)
 		}
