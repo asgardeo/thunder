@@ -35,8 +35,10 @@ var (
 
 	// queryCreateUserSchema creates a new user schema.
 	queryCreateUserSchema = dbmodel.DBQuery{
-		ID:    "ASQ-USER_SCHEMA-003",
-		Query: `INSERT INTO USER_SCHEMAS (SCHEMA_ID, NAME, SCHEMA_DEF, INDEXED_PROP_1_NAME, INDEXED_PROP_2_NAME, INDEXED_PROP_3_NAME, INDEXED_PROP_4_NAME, INDEXED_PROP_5_NAME) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
+		ID: "ASQ-USER_SCHEMA-003",
+		Query: `INSERT INTO USER_SCHEMAS (SCHEMA_ID, NAME, SCHEMA_DEF, INDEXED_PROP_1_NAME, ` +
+			`INDEXED_PROP_2_NAME, INDEXED_PROP_3_NAME, INDEXED_PROP_4_NAME, INDEXED_PROP_5_NAME) VALUES ` +
+			` ($1, $2, $3, $4, $5, $6, $7, $8)`,
 	}
 
 	// queryGetUserSchemaByID retrieves a user schema by its ID.
@@ -65,7 +67,8 @@ var (
 
 	// queryGetIndexedPropertiesByName retrieves the indexed property names of a user schema by its name.
 	queryGetIndexedPropertiesByName = dbmodel.DBQuery{
-		ID:    "ASQ-USER_SCHEMA-008",
-		Query: `SELECT INDEXED_PROP_1_NAME, INDEXED_PROP_2_NAME, INDEXED_PROP_3_NAME, INDEXED_PROP_4_NAME, INDEXED_PROP_5_NAME FROM USER_SCHEMAS WHERE NAME = $1`,
+		ID: "ASQ-USER_SCHEMA-008",
+		Query: `SELECT INDEXED_PROP_1_NAME, INDEXED_PROP_2_NAME, INDEXED_PROP_3_NAME, INDEXED_PROP_4_NAME, ` +
+			`INDEXED_PROP_5_NAME FROM USER_SCHEMAS WHERE NAME = $1`,
 	}
 )

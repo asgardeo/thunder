@@ -117,6 +117,7 @@ func (cs *Schema) ValidateUniqueness(
 	return true, nil
 }
 
+// GetIndexedPropertyNames returns the names of indexed properties of the schema.
 func (cs *Schema) GetIndexedPropertyNames() []string {
 	var indexedPropertyNames []string
 	for propName, prop := range cs.properties {

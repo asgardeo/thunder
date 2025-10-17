@@ -320,7 +320,8 @@ func (us *userSchemaService) ValidateUserUniqueness(
 }
 
 // GetIndexedPropertyToColumnNumberMap returns a map of indexed property names to their corresponding column number.
-func (us *userSchemaService) GetIndexedPropertyToColumnNumberMap(userType string) (map[string]int, *serviceerror.ServiceError) {
+func (us *userSchemaService) GetIndexedPropertyToColumnNumberMap(userType string) (
+	map[string]int, *serviceerror.ServiceError) {
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, userSchemaLoggerComponentName))
 
 	indexedPropertyToColumnNumberMap, err := us.userSchemaStore.GetIndexedPropertyToColumnNumberMap(userType)

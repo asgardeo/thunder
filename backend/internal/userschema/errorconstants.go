@@ -75,7 +75,8 @@ var (
 		Error:            "User validation failed",
 		ErrorDescription: "User attributes do not conform to the required schema",
 	}
-	// ErrorUserSchemaIndexedPropertyUpdateNotAllowed is the error returned when user schema indexed properties are tried to be updated.
+	// ErrorUserSchemaIndexedPropertyUpdateNotAllowed is the error returned when user schema indexed properties are
+	// tried to be updated.
 	ErrorUserSchemaIndexedPropertyUpdateNotAllowed = serviceerror.ServiceError{
 		Type:             serviceerror.ClientErrorType,
 		Code:             "USRS-1008",

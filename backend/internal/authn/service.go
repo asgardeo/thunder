@@ -88,8 +88,8 @@ func NewAuthenticationService() AuthenticationServiceInterface {
 }
 
 // AuthenticateWithCredentials authenticates a user using credentials.
-func (as *authenticationService) AuthenticateWithCredentials(attributes map[string]interface{}, userType string, skipAssertion bool) (
-	*common.AuthenticationResponse, *serviceerror.ServiceError) {
+func (as *authenticationService) AuthenticateWithCredentials(attributes map[string]interface{}, userType string,
+	skipAssertion bool) (*common.AuthenticationResponse, *serviceerror.ServiceError) {
 	user, svcErr := as.credentialsService.Authenticate(attributes, userType)
 	if svcErr != nil {
 		return nil, svcErr

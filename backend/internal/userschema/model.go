@@ -33,14 +33,6 @@ type UserSchema struct {
 	Schema json.RawMessage `json:"schema,omitempty"`
 }
 
-type IndexedAttributes struct {
-	Attr1 string
-	Attr2 string
-	Attr3 string
-	Attr4 string
-	Attr5 string
-}
-
 // UserSchemaListItem represents a simplified user schema for listing operations.
 type UserSchemaListItem struct {
 	ID   string `json:"id,omitempty"`

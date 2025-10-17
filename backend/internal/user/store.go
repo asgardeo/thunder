@@ -228,7 +228,8 @@ func (us *userStore) DeleteUser(id string) error {
 }
 
 // IdentifyUser identifies a user with the given filters.
-func (us *userStore) IdentifyUser(unindexedFilters map[string]interface{}, indexedFilters map[string]interface{}) (*string, error) {
+func (us *userStore) IdentifyUser(unindexedFilters map[string]interface{}, indexedFilters map[string]interface{}) (
+	*string, error) {
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, "UserStore"))
 
 	dbClient, err := provider.GetDBProvider().GetDBClient("identity")

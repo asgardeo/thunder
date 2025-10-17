@@ -44,8 +44,10 @@ var (
 	}
 	// QueryCreateUser is the query to create a new user.
 	QueryCreateUser = model.DBQuery{
-		ID:    "ASQ-USER_MGT-03",
-		Query: "INSERT INTO \"USER\" (USER_ID, OU_ID, TYPE, ATTRIBUTES, CREDENTIALS, INDEXED_PROP_1_VALUE, INDEXED_PROP_2_VALUE, INDEXED_PROP_3_VALUE, INDEXED_PROP_4_VALUE, INDEXED_PROP_5_VALUE) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)",
+		ID: "ASQ-USER_MGT-03",
+		Query: "INSERT INTO \"USER\" (USER_ID, OU_ID, TYPE, ATTRIBUTES, CREDENTIALS, INDEXED_PROP_1_VALUE," +
+			" INDEXED_PROP_2_VALUE, INDEXED_PROP_3_VALUE, INDEXED_PROP_4_VALUE, INDEXED_PROP_5_VALUE) VALUES" +
+			" ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)",
 	}
 	// QueryGetUserByUserID is the query to get a user by user ID.
 	QueryGetUserByUserID = model.DBQuery{
@@ -70,7 +72,8 @@ var (
 )
 
 // buildIdentifyQuery constructs a query to identify a user based on the provided filters.
-func buildIdentifyQuery(unindexedFilters map[string]interface{}, indexedFilters map[string]interface{}) (model.DBQuery, []interface{}, error) {
+func buildIdentifyQuery(unindexedFilters map[string]interface{}, indexedFilters map[string]interface{}) (model.DBQuery,
+	[]interface{}, error) {
 	baseQuery := "SELECT USER_ID FROM \"USER\" WHERE 1=1"
 	queryID := "ASQ-USER_MGT-08"
 	columnName := AttributesColumn

@@ -108,7 +108,8 @@ func (s *userSchemaStore) CreateUserSchema(userSchema UserSchema, indexedAttribu
 		return fmt.Errorf("failed to get database client: %w", err)
 	}
 
-	_, err = dbClient.Query(queryCreateUserSchema, userSchema.ID, userSchema.Name, string(userSchema.Schema), indexedAttributes[0], indexedAttributes[1], indexedAttributes[2], indexedAttributes[3], indexedAttributes[4])
+	_, err = dbClient.Query(queryCreateUserSchema, userSchema.ID, userSchema.Name, string(userSchema.Schema),
+		indexedAttributes[0], indexedAttributes[1], indexedAttributes[2], indexedAttributes[3], indexedAttributes[4])
 	if err != nil {
 		return fmt.Errorf("failed to create user schema: %w", err)
 	}
@@ -190,7 +191,8 @@ func (s *userSchemaStore) DeleteUserSchemaByID(schemaID string) error {
 	return nil
 }
 
-// GetIndexedPropertyToColumnMap retrieves a map of indexed properties to their corresponding database columns for a given schema name.
+// GetIndexedPropertyToColumnMap retrieves a map of indexed properties to their corresponding database columns for a
+// given schema name.
 // If the schema name is empty and there is only one user schema, it retrieves the map for that schema.
 // If multiple schemas exist and no name is provided, it returns an empty map.
 func (s *userSchemaStore) GetIndexedPropertyToColumnNumberMap(name string) (map[string]int, error) {

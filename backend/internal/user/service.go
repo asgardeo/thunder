@@ -195,7 +195,8 @@ func (us *userService) CreateUser(user *User) (*User, *serviceerror.ServiceError
 			if strValue, ok := value.(string); ok {
 				indexedColumnNameToValueMap[columnName] = strValue
 			} else {
-				return nil, logErrorAndReturnServerError(logger, fmt.Sprintf("Indexed property %s is not a string", attributeName), err)
+				return nil, logErrorAndReturnServerError(logger,
+					fmt.Sprintf("Indexed property %s is not a string", attributeName), err)
 			}
 		} else {
 			// If the indexed property is not present, set it to an empty string
@@ -366,7 +367,8 @@ func (us *userService) DeleteUser(userID string) *serviceerror.ServiceError {
 }
 
 // IdentifyUser identifies a user with the given filters.
-func (us *userService) IdentifyUser(filters map[string]interface{}, userType string) (*string, *serviceerror.ServiceError) {
+func (us *userService) IdentifyUser(filters map[string]interface{}, userType string) (*string,
+	*serviceerror.ServiceError) {
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, loggerComponentName))
 
 	if len(filters) == 0 {
