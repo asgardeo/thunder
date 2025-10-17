@@ -177,9 +177,9 @@ func (suite *OTPAuthnServiceTestSuite) TestVerifyOTPSuccess() {
 	suite.mockOTPService.On("VerifyOTP", mock.MatchedBy(func(dto notifcommon.VerifyOTPDTO) bool {
 		return dto.SessionToken == testSessionToken && dto.OTPCode == otp
 	})).Return(verifyResult, nil)
-	suite.mockUserService.On("IdentifyUser", mock.MatchedBy(func(filters map[string]interface{}, userType string) bool {
+	suite.mockUserService.On("IdentifyUser", mock.MatchedBy(func(filters map[string]interface{}) bool {
 		return filters["mobileNumber"] == recipient
-	})).Return(&userID, nil)
+	}), "").Return(&userID, nil)
 	suite.mockUserService.On("GetUser", userID).Return(user, nil)
 
 	result, err := suite.service.VerifyOTP(testSessionToken, otp)
