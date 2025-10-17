@@ -37,16 +37,16 @@ func (_m *userStoreInterfaceMock) EXPECT() *userStoreInterfaceMock_Expecter {
 }
 
 // CreateUser provides a mock function for the type userStoreInterfaceMock
-func (_mock *userStoreInterfaceMock) CreateUser(user1 user.User, credentials []user.Credential) error {
-	ret := _mock.Called(user1, credentials)
+func (_mock *userStoreInterfaceMock) CreateUser(user1 user.User, credentials []user.Credential, indexedColumnToValueMap map[string]string) error {
+	ret := _mock.Called(user1, credentials, indexedColumnToValueMap)
 
 	if len(ret) == 0 {
 		panic("no return value specified for CreateUser")
 	}
 
 	var r0 error
-	if returnFunc, ok := ret.Get(0).(func(user.User, []user.Credential) error); ok {
-		r0 = returnFunc(user1, credentials)
+	if returnFunc, ok := ret.Get(0).(func(user.User, []user.Credential, map[string]string) error); ok {
+		r0 = returnFunc(user1, credentials, indexedColumnToValueMap)
 	} else {
 		r0 = ret.Error(0)
 	}
@@ -61,11 +61,12 @@ type userStoreInterfaceMock_CreateUser_Call struct {
 // CreateUser is a helper method to define mock.On call
 //   - user1 user.User
 //   - credentials []user.Credential
-func (_e *userStoreInterfaceMock_Expecter) CreateUser(user1 interface{}, credentials interface{}) *userStoreInterfaceMock_CreateUser_Call {
-	return &userStoreInterfaceMock_CreateUser_Call{Call: _e.mock.On("CreateUser", user1, credentials)}
+//   - indexedColumnToValueMap map[string]string
+func (_e *userStoreInterfaceMock_Expecter) CreateUser(user1 interface{}, credentials interface{}, indexedColumnToValueMap interface{}) *userStoreInterfaceMock_CreateUser_Call {
+	return &userStoreInterfaceMock_CreateUser_Call{Call: _e.mock.On("CreateUser", user1, credentials, indexedColumnToValueMap)}
 }
 
-func (_c *userStoreInterfaceMock_CreateUser_Call) Run(run func(user1 user.User, credentials []user.Credential)) *userStoreInterfaceMock_CreateUser_Call {
+func (_c *userStoreInterfaceMock_CreateUser_Call) Run(run func(user1 user.User, credentials []user.Credential, indexedColumnToValueMap map[string]string)) *userStoreInterfaceMock_CreateUser_Call {
 	_c.Call.Run(func(args mock.Arguments) {
 		var arg0 user.User
 		if args[0] != nil {
@@ -75,9 +76,14 @@ func (_c *userStoreInterfaceMock_CreateUser_Call) Run(run func(user1 user.User, 
 		if args[1] != nil {
 			arg1 = args[1].([]user.Credential)
 		}
+		var arg2 map[string]string
+		if args[2] != nil {
+			arg2 = args[2].(map[string]string)
+		}
 		run(
 			arg0,
 			arg1,
+			arg2,
 		)
 	})
 	return _c
@@ -88,7 +94,7 @@ func (_c *userStoreInterfaceMock_CreateUser_Call) Return(err error) *userStoreIn
 	return _c
 }
 
-func (_c *userStoreInterfaceMock_CreateUser_Call) RunAndReturn(run func(user1 user.User, credentials []user.Credential) error) *userStoreInterfaceMock_CreateUser_Call {
+func (_c *userStoreInterfaceMock_CreateUser_Call) RunAndReturn(run func(user1 user.User, credentials []user.Credential, indexedColumnToValueMap map[string]string) error) *userStoreInterfaceMock_CreateUser_Call {
 	_c.Call.Return(run)
 	return _c
 }
@@ -339,8 +345,8 @@ func (_c *userStoreInterfaceMock_GetUserListCount_Call) RunAndReturn(run func(fi
 }
 
 // IdentifyUser provides a mock function for the type userStoreInterfaceMock
-func (_mock *userStoreInterfaceMock) IdentifyUser(filters map[string]interface{}) (*string, error) {
-	ret := _mock.Called(filters)
+func (_mock *userStoreInterfaceMock) IdentifyUser(unindexedFilters map[string]interface{}, indexedFilters map[string]interface{}) (*string, error) {
+	ret := _mock.Called(unindexedFilters, indexedFilters)
 
 	if len(ret) == 0 {
 		panic("no return value specified for IdentifyUser")
@@ -348,18 +354,18 @@ func (_mock *userStoreInterfaceMock) IdentifyUser(filters map[string]interface{}
 
 	var r0 *string
 	var r1 error
-	if returnFunc, ok := ret.Get(0).(func(map[string]interface{}) (*string, error)); ok {
-		return returnFunc(filters)
+	if returnFunc, ok := ret.Get(0).(func(map[string]interface{}, map[string]interface{}) (*string, error)); ok {
+		return returnFunc(unindexedFilters, indexedFilters)
 	}
-	if returnFunc, ok := ret.Get(0).(func(map[string]interface{}) *string); ok {
-		r0 = returnFunc(filters)
+	if returnFunc, ok := ret.Get(0).(func(map[string]interface{}, map[string]interface{}) *string); ok {
+		r0 = returnFunc(unindexedFilters, indexedFilters)
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).(*string)
 		}
 	}
-	if returnFunc, ok := ret.Get(1).(func(map[string]interface{}) error); ok {
-		r1 = returnFunc(filters)
+	if returnFunc, ok := ret.Get(1).(func(map[string]interface{}, map[string]interface{}) error); ok {
+		r1 = returnFunc(unindexedFilters, indexedFilters)
 	} else {
 		r1 = ret.Error(1)
 	}
@@ -372,19 +378,25 @@ type userStoreInterfaceMock_IdentifyUser_Call struct {
 }
 
 // IdentifyUser is a helper method to define mock.On call
-//   - filters map[string]interface{}
-func (_e *userStoreInterfaceMock_Expecter) IdentifyUser(filters interface{}) *userStoreInterfaceMock_IdentifyUser_Call {
-	return &userStoreInterfaceMock_IdentifyUser_Call{Call: _e.mock.On("IdentifyUser", filters)}
+//   - unindexedFilters map[string]interface{}
+//   - indexedFilters map[string]interface{}
+func (_e *userStoreInterfaceMock_Expecter) IdentifyUser(unindexedFilters interface{}, indexedFilters interface{}) *userStoreInterfaceMock_IdentifyUser_Call {
+	return &userStoreInterfaceMock_IdentifyUser_Call{Call: _e.mock.On("IdentifyUser", unindexedFilters, indexedFilters)}
 }
 
-func (_c *userStoreInterfaceMock_IdentifyUser_Call) Run(run func(filters map[string]interface{})) *userStoreInterfaceMock_IdentifyUser_Call {
+func (_c *userStoreInterfaceMock_IdentifyUser_Call) Run(run func(unindexedFilters map[string]interface{}, indexedFilters map[string]interface{})) *userStoreInterfaceMock_IdentifyUser_Call {
 	_c.Call.Run(func(args mock.Arguments) {
 		var arg0 map[string]interface{}
 		if args[0] != nil {
 			arg0 = args[0].(map[string]interface{})
 		}
+		var arg1 map[string]interface{}
+		if args[1] != nil {
+			arg1 = args[1].(map[string]interface{})
+		}
 		run(
 			arg0,
+			arg1,
 		)
 	})
 	return _c
@@ -395,7 +407,7 @@ func (_c *userStoreInterfaceMock_IdentifyUser_Call) Return(s *string, err error)
 	return _c
 }
 
-func (_c *userStoreInterfaceMock_IdentifyUser_Call) RunAndReturn(run func(filters map[string]interface{}) (*string, error)) *userStoreInterfaceMock_IdentifyUser_Call {
+func (_c *userStoreInterfaceMock_IdentifyUser_Call) RunAndReturn(run func(unindexedFilters map[string]interface{}, indexedFilters map[string]interface{}) (*string, error)) *userStoreInterfaceMock_IdentifyUser_Call {
 	_c.Call.Return(run)
 	return _c
 }

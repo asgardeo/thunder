@@ -511,8 +511,8 @@ func (_c *UserServiceInterfaceMock_GetUsersByPath_Call) RunAndReturn(run func(ha
 }
 
 // IdentifyUser provides a mock function for the type UserServiceInterfaceMock
-func (_mock *UserServiceInterfaceMock) IdentifyUser(filters map[string]interface{}) (*string, *serviceerror.ServiceError) {
-	ret := _mock.Called(filters)
+func (_mock *UserServiceInterfaceMock) IdentifyUser(filters map[string]interface{}, userType string) (*string, *serviceerror.ServiceError) {
+	ret := _mock.Called(filters, userType)
 
 	if len(ret) == 0 {
 		panic("no return value specified for IdentifyUser")
@@ -520,18 +520,18 @@ func (_mock *UserServiceInterfaceMock) IdentifyUser(filters map[string]interface
 
 	var r0 *string
 	var r1 *serviceerror.ServiceError
-	if returnFunc, ok := ret.Get(0).(func(map[string]interface{}) (*string, *serviceerror.ServiceError)); ok {
-		return returnFunc(filters)
+	if returnFunc, ok := ret.Get(0).(func(map[string]interface{}, string) (*string, *serviceerror.ServiceError)); ok {
+		return returnFunc(filters, userType)
 	}
-	if returnFunc, ok := ret.Get(0).(func(map[string]interface{}) *string); ok {
-		r0 = returnFunc(filters)
+	if returnFunc, ok := ret.Get(0).(func(map[string]interface{}, string) *string); ok {
+		r0 = returnFunc(filters, userType)
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).(*string)
 		}
 	}
-	if returnFunc, ok := ret.Get(1).(func(map[string]interface{}) *serviceerror.ServiceError); ok {
-		r1 = returnFunc(filters)
+	if returnFunc, ok := ret.Get(1).(func(map[string]interface{}, string) *serviceerror.ServiceError); ok {
+		r1 = returnFunc(filters, userType)
 	} else {
 		if ret.Get(1) != nil {
 			r1 = ret.Get(1).(*serviceerror.ServiceError)
@@ -547,18 +547,24 @@ type UserServiceInterfaceMock_IdentifyUser_Call struct {
 
 // IdentifyUser is a helper method to define mock.On call
 //   - filters map[string]interface{}
-func (_e *UserServiceInterfaceMock_Expecter) IdentifyUser(filters interface{}) *UserServiceInterfaceMock_IdentifyUser_Call {
-	return &UserServiceInterfaceMock_IdentifyUser_Call{Call: _e.mock.On("IdentifyUser", filters)}
+//   - userType string
+func (_e *UserServiceInterfaceMock_Expecter) IdentifyUser(filters interface{}, userType interface{}) *UserServiceInterfaceMock_IdentifyUser_Call {
+	return &UserServiceInterfaceMock_IdentifyUser_Call{Call: _e.mock.On("IdentifyUser", filters, userType)}
 }
 
-func (_c *UserServiceInterfaceMock_IdentifyUser_Call) Run(run func(filters map[string]interface{})) *UserServiceInterfaceMock_IdentifyUser_Call {
+func (_c *UserServiceInterfaceMock_IdentifyUser_Call) Run(run func(filters map[string]interface{}, userType string)) *UserServiceInterfaceMock_IdentifyUser_Call {
 	_c.Call.Run(func(args mock.Arguments) {
 		var arg0 map[string]interface{}
 		if args[0] != nil {
 			arg0 = args[0].(map[string]interface{})
 		}
+		var arg1 string
+		if args[1] != nil {
+			arg1 = args[1].(string)
+		}
 		run(
 			arg0,
+			arg1,
 		)
 	})
 	return _c
@@ -569,7 +575,7 @@ func (_c *UserServiceInterfaceMock_IdentifyUser_Call) Return(s *string, serviceE
 	return _c
 }
 
-func (_c *UserServiceInterfaceMock_IdentifyUser_Call) RunAndReturn(run func(filters map[string]interface{}) (*string, *serviceerror.ServiceError)) *UserServiceInterfaceMock_IdentifyUser_Call {
+func (_c *UserServiceInterfaceMock_IdentifyUser_Call) RunAndReturn(run func(filters map[string]interface{}, userType string) (*string, *serviceerror.ServiceError)) *UserServiceInterfaceMock_IdentifyUser_Call {
 	_c.Call.Return(run)
 	return _c
 }
