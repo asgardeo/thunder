@@ -267,7 +267,7 @@ func (s *oAuthAuthnService) GetInternalUser(sub string) (*user.User, *serviceerr
 	filters := map[string]interface{}{
 		"sub": sub,
 	}
-	userID, svcErr := s.userService.IdentifyUser(filters)
+	userID, svcErr := s.userService.IdentifyUser(filters, "")
 	if svcErr != nil {
 		if svcErr.Code == user.ErrorUserNotFound.Code {
 			logger.Debug("No user found for the provided sub claim")

@@ -43,6 +43,7 @@ type UserSchemaServiceInterface interface {
 	ValidateUser(userType string, userAttributes json.RawMessage) (bool, *serviceerror.ServiceError)
 	ValidateUserUniqueness(userType string, userAttributes json.RawMessage,
 		identifyUser func(map[string]interface{}) (*string, error)) (bool, *serviceerror.ServiceError)
+	GetIndexedPropertyToColumnNumberMap(userType string) (map[string]int, *serviceerror.ServiceError)
 }
 
 // userSchemaService is the default implementation of the UserSchemaServiceInterface.
@@ -100,12 +101,11 @@ func (us *userSchemaService) CreateUserSchema(request CreateUserSchemaRequest) (
 		return nil, invalidSchemaRequestError("schema definition must not be empty")
 	}
 
-	_, err := model.CompileUserSchema(request.Schema)
+	compiledSchema, err := model.CompileUserSchema(request.Schema)
 	if err != nil {
 		logger.Debug("Provided user schema failed compilation", log.String("name", request.Name), log.Error(err))
 		return nil, invalidSchemaRequestError(err.Error())
 	}
-
 	_, err = us.userSchemaStore.GetUserSchemaByName(request.Name)
 	if err == nil {
 		return nil, &ErrorUserSchemaNameConflict
@@ -121,7 +121,13 @@ func (us *userSchemaService) CreateUserSchema(request CreateUserSchemaRequest) (
 		Schema: request.Schema,
 	}
 
-	if err := us.userSchemaStore.CreateUserSchema(userSchema); err != nil {
+	indexedAttributes := compiledSchema.GetIndexedPropertyNames()
+
+	for i := len(indexedAttributes); i < 5; i++ {
+		indexedAttributes = append(indexedAttributes, "")
+	}
+
+	if err := us.userSchemaStore.CreateUserSchema(userSchema, indexedAttributes); err != nil {
 		return nil, logAndReturnServerError(logger, "Failed to create user schema", err)
 	}
 
@@ -164,7 +170,7 @@ func (us *userSchemaService) UpdateUserSchema(schemaID string, request UpdateUse
 		return nil, invalidSchemaRequestError("schema definition must not be empty")
 	}
 
-	_, err := model.CompileUserSchema(request.Schema)
+	compiledNewSchema, err := model.CompileUserSchema(request.Schema)
 	if err != nil {
 		logger.Debug("Provided user schema failed compilation", log.String("id", schemaID), log.Error(err))
 		return nil, invalidSchemaRequestError(err.Error())
@@ -184,6 +190,30 @@ func (us *userSchemaService) UpdateUserSchema(schemaID string, request UpdateUse
 			return nil, &ErrorUserSchemaNameConflict
 		} else if !errors.Is(err, ErrUserSchemaNotFound) {
 			return nil, logAndReturnServerError(logger, "Failed to check existing user schema", err)
+		}
+	}
+
+	compiledExistingSchema, err := model.CompileUserSchema(existingSchema.Schema)
+	if err != nil {
+		return nil, logAndReturnServerError(logger, "Failed to compile existing user schema", err)
+	}
+
+	existingIndexedProperties := compiledExistingSchema.GetIndexedPropertyNames()
+	newIndexedProperties := compiledNewSchema.GetIndexedPropertyNames()
+
+	if len(existingIndexedProperties) != len(newIndexedProperties) {
+		return nil, &ErrorUserSchemaIndexedPropertyUpdateNotAllowed
+	}
+	for _, existingPropertyName := range existingIndexedProperties {
+		found := false
+		for _, newPropertyName := range newIndexedProperties {
+			if existingPropertyName == newPropertyName {
+				found = true
+				break
+			}
+		}
+		if !found {
+			return nil, &ErrorUserSchemaIndexedPropertyUpdateNotAllowed
 		}
 	}
 
@@ -287,6 +317,19 @@ func (us *userSchemaService) ValidateUserUniqueness(
 	}
 
 	return true, nil
+}
+
+// GetIndexedPropertyToColumnNumberMap returns a map of indexed property names to their corresponding column number.
+func (us *userSchemaService) GetIndexedPropertyToColumnNumberMap(userType string) (
+	map[string]int, *serviceerror.ServiceError) {
+	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, userSchemaLoggerComponentName))
+
+	indexedPropertyToColumnNumberMap, err := us.userSchemaStore.GetIndexedPropertyToColumnNumberMap(userType)
+	if err != nil {
+		return nil, logAndReturnServerError(logger, "Failed to read user schema", err)
+	}
+
+	return indexedPropertyToColumnNumberMap, nil
 }
 
 func (us *userSchemaService) getCompiledSchemaForUserType(

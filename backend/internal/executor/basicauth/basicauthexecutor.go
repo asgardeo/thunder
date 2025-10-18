@@ -214,7 +214,7 @@ func (b *BasicAuthExecutor) getAuthenticatedUser(ctx *flowmodel.NodeContext,
 		userAttributePassword: ctx.UserInputData[userAttributePassword],
 	}
 
-	user, svcErr := b.credsAuthSvc.Authenticate(authAttributes)
+	user, svcErr := b.credsAuthSvc.Authenticate(authAttributes, "")
 	if svcErr != nil {
 		if svcErr.Type == serviceerror.ClientErrorType {
 			execResp.Status = flowconst.ExecFailure

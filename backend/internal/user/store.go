@@ -30,13 +30,13 @@ import (
 type userStoreInterface interface {
 	GetUserListCount(filters map[string]interface{}) (int, error)
 	GetUserList(limit, offset int, filters map[string]interface{}) ([]User, error)
-	CreateUser(user User, credentials []Credential) error
+	CreateUser(user User, credentials []Credential, indexedColumnToValueMap map[string]string) error
 	GetUser(id string) (User, error)
 	GetGroupCountForUser(userID string) (int, error)
 	GetUserGroups(userID string, limit, offset int) ([]UserGroup, error)
 	UpdateUser(user *User) error
 	DeleteUser(id string) error
-	IdentifyUser(filters map[string]interface{}) (*string, error)
+	IdentifyUser(unindexedFilters map[string]interface{}, indexedFilters map[string]interface{}) (*string, error)
 	VerifyUser(id string) (User, []Credential, error)
 	ValidateUserIDs(userIDs []string) ([]string, error)
 }
@@ -109,7 +109,7 @@ func (us *userStore) GetUserList(limit, offset int, filters map[string]interface
 }
 
 // CreateUser handles the user creation in the database.
-func (us *userStore) CreateUser(user User, credentials []Credential) error {
+func (us *userStore) CreateUser(user User, credentials []Credential, indexedColumnToValueMap map[string]string) error {
 	dbClient, err := provider.GetDBProvider().GetDBClient("identity")
 	if err != nil {
 		return fmt.Errorf("failed to get database client: %w", err)
@@ -140,6 +140,11 @@ func (us *userStore) CreateUser(user User, credentials []Credential) error {
 		user.Type,
 		string(attributes),
 		credentialsJSON,
+		indexedColumnToValueMap["indexed_prop_1_value"],
+		indexedColumnToValueMap["indexed_prop_2_value"],
+		indexedColumnToValueMap["indexed_prop_3_value"],
+		indexedColumnToValueMap["indexed_prop_4_value"],
+		indexedColumnToValueMap["indexed_prop_5_value"],
 	)
 	if err != nil {
 		return fmt.Errorf("failed to execute query: %w", err)
@@ -225,7 +230,8 @@ func (us *userStore) DeleteUser(id string) error {
 }
 
 // IdentifyUser identifies a user with the given filters.
-func (us *userStore) IdentifyUser(filters map[string]interface{}) (*string, error) {
+func (us *userStore) IdentifyUser(unindexedFilters map[string]interface{}, indexedFilters map[string]interface{}) (
+	*string, error) {
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, "UserStore"))
 
 	dbClient, err := provider.GetDBProvider().GetDBClient("identity")
@@ -233,7 +239,7 @@ func (us *userStore) IdentifyUser(filters map[string]interface{}) (*string, erro
 		return nil, fmt.Errorf("failed to get database client: %w", err)
 	}
 
-	identifyUserQuery, args, err := buildIdentifyQuery(filters)
+	identifyUserQuery, args, err := buildIdentifyQuery(unindexedFilters, indexedFilters)
 	if err != nil {
 		return nil, fmt.Errorf("failed to build identify query: %w", err)
 	}
@@ -245,18 +251,25 @@ func (us *userStore) IdentifyUser(filters map[string]interface{}) (*string, erro
 
 	if len(results) == 0 {
 		if logger.IsDebugEnabled() {
-			maskedFilters := maskMapValues(filters)
-			logger.Debug("User not found with the provided filters", log.Any("filters", maskedFilters))
+			maskedUnindexedFilters := maskMapValues(unindexedFilters)
+			maskedIndexedFilters := maskMapValues(indexedFilters)
+			logger.Debug(
+				"User not found with the provided filters",
+				log.Any("filters", maskedUnindexedFilters),
+				log.Any("indexed_filters", maskedIndexedFilters),
+			)
 		}
 		return nil, ErrUserNotFound
 	}
 
 	if len(results) != 1 {
 		if logger.IsDebugEnabled() {
-			maskedFilters := maskMapValues(filters)
+			maskedUnindexedFilters := maskMapValues(unindexedFilters)
+			maskedIndexedFilters := maskMapValues(indexedFilters)
 			logger.Debug(
 				"Unexpected number of results for the provided filters",
-				log.Any("filters", maskedFilters),
+				log.Any("filters", maskedUnindexedFilters),
+				log.Any("indexed_filters", maskedIndexedFilters),
 				log.Int("result_count", len(results)),
 			)
 		}

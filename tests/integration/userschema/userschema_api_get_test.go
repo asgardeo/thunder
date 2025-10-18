@@ -50,9 +50,9 @@ func (ts *GetUserSchemaTestSuite) SetupSuite() {
 		},
 	}
 
-    // Create a test schema for retrieval tests
-    ts.testSchemaName = "retrieval-test-schema"
-    ts.testSchemaData = json.RawMessage(`{
+	// Create a test schema for retrieval tests
+	ts.testSchemaName = "retrieval-test-schema"
+	ts.testSchemaData = json.RawMessage(`{
         "username": {"type": "string", "required": true},
         "email": {"type": "string", "regex": "^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$"},
         "profile": {

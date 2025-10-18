@@ -179,7 +179,7 @@ func (suite *OTPAuthnServiceTestSuite) TestVerifyOTPSuccess() {
 	})).Return(verifyResult, nil)
 	suite.mockUserService.On("IdentifyUser", mock.MatchedBy(func(filters map[string]interface{}) bool {
 		return filters["mobileNumber"] == recipient
-	})).Return(&userID, nil)
+	}), "").Return(&userID, nil)
 	suite.mockUserService.On("GetUser", userID).Return(user, nil)
 
 	result, err := suite.service.VerifyOTP(testSessionToken, otp)
@@ -343,7 +343,7 @@ func (suite *OTPAuthnServiceTestSuite) TestVerifyOTPWithUserServiceError() {
 			suite.service = NewOTPAuthnService(freshOTP, freshUser)
 
 			freshOTP.On("VerifyOTP", mock.Anything).Return(verifyResult, nil)
-			freshUser.On("IdentifyUser", mock.Anything).Return(tc.identifyRet, tc.identifyErr)
+			freshUser.On("IdentifyUser", mock.Anything, mock.Anything).Return(tc.identifyRet, tc.identifyErr)
 
 			// only set GetUser expectation when identify returns a user id
 			if tc.getUserRet != nil || tc.getUserErr != nil {

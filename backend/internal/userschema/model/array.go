@@ -35,6 +35,11 @@ func (p *array) isRequired() bool {
 	return p.required
 }
 
+func (p *array) isIndexed() bool {
+	// Arrays are never indexed
+	return false
+}
+
 func (p *array) validateValue(value interface{}, path string, logger *log.Logger) (bool, error) {
 	arrayValue, ok := value.([]interface{})
 	if !ok {
@@ -102,7 +107,7 @@ func compileArrayProperty(propName string, propMap map[string]json.RawMessage) (
 		return nil, fmt.Errorf("missing required 'items' field for array type")
 	}
 
-	compiledItems, err := compileProperty(propName, itemsRaw)
+	compiledItems, err := compileProperty(propName, itemsRaw, false)
 	if err != nil {
 		return nil, fmt.Errorf("invalid 'items' definition: %w", err)
 	}

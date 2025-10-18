@@ -49,14 +49,14 @@ func (ts *DeleteUserSchemaTestSuite) SetupSuite() {
 
 // TestDeleteUserSchema tests DELETE /user-schemas/{id} with valid ID
 func (ts *DeleteUserSchemaTestSuite) TestDeleteUserSchema() {
-    // Create a schema to delete
-    schema := CreateUserSchemaRequest{
-        Name: "schema-to-delete",
-        Schema: json.RawMessage(`{
+	// Create a schema to delete
+	schema := CreateUserSchemaRequest{
+		Name: "schema-to-delete",
+		Schema: json.RawMessage(`{
             "tempField": {"type": "string", "required": true},
             "description": {"type": "string"}
         }`),
-    }
+	}
 
 	schemaID := ts.createTestSchema(schema)
 
@@ -153,7 +153,7 @@ func (ts *DeleteUserSchemaTestSuite) TestDeleteUserSchemaWithInvalidID() {
 			defer resp.Body.Close()
 
 			// DELETE should be idempotent and return 204 even for invalid IDs
-			ts.Assert().Equal(http.StatusNoContent, resp.StatusCode, 
+			ts.Assert().Equal(http.StatusNoContent, resp.StatusCode,
 				"Should return 204 No Content for invalid ID (idempotent behavior) for case: %s", tc.name)
 
 			// Verify response has no content body for 204

@@ -34,6 +34,11 @@ func (p *object) isRequired() bool {
 	return p.required
 }
 
+func (p *object) isIndexed() bool {
+	// Objects are never indexed
+	return false
+}
+
 func (p *object) validateValue(value interface{}, path string, logger *log.Logger) (bool, error) {
 	valueMap, ok := value.(map[string]interface{})
 	if !ok {
@@ -135,7 +140,7 @@ func compileObjectProperty(propMap map[string]json.RawMessage) (property, error)
 	}
 
 	for nestedName, nestedRaw := range nestedProps {
-		compiledNested, err := compileProperty(nestedName, nestedRaw)
+		compiledNested, err := compileProperty(nestedName, nestedRaw, false)
 		if err != nil {
 			return nil, fmt.Errorf("invalid nested property '%s': %w", nestedName, err)
 		}

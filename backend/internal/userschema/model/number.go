@@ -35,6 +35,11 @@ func (p *number) isRequired() bool {
 	return p.required
 }
 
+func (p *number) isIndexed() bool {
+	// Booleans are never indexed
+	return false
+}
+
 func (p *number) validateValue(value interface{}, path string, logger *log.Logger) (bool, error) {
 	numberValue, ok := convertToFloat64(value)
 	if !ok {

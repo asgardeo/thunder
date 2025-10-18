@@ -41,6 +41,7 @@ const (
 
 type property interface {
 	isRequired() bool
+	isIndexed() bool
 	validateValue(value interface{}, path string, logger *log.Logger) (bool, error)
 	validateUniqueness(value interface{}, path string,
 		identifyUser func(map[string]interface{}) (*string, error), logger *log.Logger) (bool, error)
@@ -116,6 +117,17 @@ func (cs *Schema) ValidateUniqueness(
 	return true, nil
 }
 
+// GetIndexedPropertyNames returns the names of indexed properties of the schema.
+func (cs *Schema) GetIndexedPropertyNames() []string {
+	var indexedPropertyNames []string
+	for propName, prop := range cs.properties {
+		if prop.isIndexed() {
+			indexedPropertyNames = append(indexedPropertyNames, propName)
+		}
+	}
+	return indexedPropertyNames
+}
+
 func convertToFloat64(value interface{}) (float64, bool) {
 	switch v := value.(type) {
 	case float64:
@@ -149,7 +161,7 @@ func CompileUserSchema(schema json.RawMessage) (*Schema, error) {
 	}
 
 	for propName, propRaw := range schemaMap {
-		compiledProp, err := compileProperty(propName, propRaw)
+		compiledProp, err := compileProperty(propName, propRaw, true)
 		if err != nil {
 			return nil, fmt.Errorf("invalid property '%s': %w", propName, err)
 		}
@@ -159,7 +171,7 @@ func CompileUserSchema(schema json.RawMessage) (*Schema, error) {
 	return compiled, nil
 }
 
-func compileProperty(propName string, propRaw json.RawMessage) (property, error) {
+func compileProperty(propName string, propRaw json.RawMessage, isTopLevel bool) (property, error) {
 	var propMap map[string]json.RawMessage
 	if err := json.Unmarshal(propRaw, &propMap); err != nil {
 		return nil, fmt.Errorf("property definition must be an object")
@@ -177,7 +189,7 @@ func compileProperty(propName string, propRaw json.RawMessage) (property, error)
 
 	switch typeStr {
 	case TypeString:
-		return compileStringProperty(propMap)
+		return compileStringProperty(propMap, isTopLevel)
 	case TypeNumber:
 		return compileNumberProperty(propMap)
 	case TypeBoolean:

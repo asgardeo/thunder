@@ -55,7 +55,7 @@ type UserServiceInterface interface {
 	GetUserGroups(userID string, limit, offset int) (*UserGroupListResponse, *serviceerror.ServiceError)
 	UpdateUser(userID string, user *User) (*User, *serviceerror.ServiceError)
 	DeleteUser(userID string) *serviceerror.ServiceError
-	IdentifyUser(filters map[string]interface{}) (*string, *serviceerror.ServiceError)
+	IdentifyUser(filters map[string]interface{}, userType string) (*string, *serviceerror.ServiceError)
 	VerifyUser(userID string, credentials map[string]interface{}) (*User, *serviceerror.ServiceError)
 	AuthenticateUser(request AuthenticateUserRequest) (*AuthenticateUserResponse, *serviceerror.ServiceError)
 	ValidateUserIDs(userIDs []string) ([]string, *serviceerror.ServiceError)
@@ -178,7 +178,41 @@ func (us *userService) CreateUser(user *User) (*User, *serviceerror.ServiceError
 		return nil, logErrorAndReturnServerError(logger, "Failed to create user DTO", err)
 	}
 
-	err = us.userStore.CreateUser(*user, credentials)
+	indexedPropertyToColumnNumberMap, svcErr := us.userSchemaService.GetIndexedPropertyToColumnNumberMap(user.Type)
+	if svcErr != nil {
+		return nil, svcErr
+	}
+
+	var parsedAttributes map[string]interface{}
+	if err := json.Unmarshal(user.Attributes, &parsedAttributes); err != nil {
+		return nil, logErrorAndReturnServerError(logger, "Failed to parse user attributes", err)
+	}
+
+	indexedColumnNameToValueMap := make(map[string]string)
+
+	for attributeName, columnNumber := range indexedPropertyToColumnNumberMap {
+		columnName := fmt.Sprintf("indexed_prop_%d_value", columnNumber)
+		if value, exists := parsedAttributes[attributeName]; exists {
+			if strValue, ok := value.(string); ok {
+				indexedColumnNameToValueMap[columnName] = strValue
+			} else {
+				return nil, logErrorAndReturnServerError(logger,
+					fmt.Sprintf("Indexed property %s is not a string", attributeName), err)
+			}
+		} else {
+			// If the indexed property is not present, set it to an empty string
+			indexedColumnNameToValueMap[columnName] = ""
+		}
+	}
+
+	for i := 1; i <= 5; i++ {
+		columnName := fmt.Sprintf("indexed_prop_%d_value", i)
+		if _, exists := indexedColumnNameToValueMap[columnName]; !exists {
+			indexedColumnNameToValueMap[columnName] = ""
+		}
+	}
+
+	err = us.userStore.CreateUser(*user, credentials, indexedColumnNameToValueMap)
 	if err != nil {
 		return nil, logErrorAndReturnServerError(logger, "Failed to create user", err)
 	}
@@ -384,14 +418,32 @@ func (us *userService) DeleteUser(userID string) *serviceerror.ServiceError {
 }
 
 // IdentifyUser identifies a user with the given filters.
-func (us *userService) IdentifyUser(filters map[string]interface{}) (*string, *serviceerror.ServiceError) {
+func (us *userService) IdentifyUser(filters map[string]interface{}, userType string) (*string,
+	*serviceerror.ServiceError) {
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, loggerComponentName))
 
 	if len(filters) == 0 {
 		return nil, &ErrorInvalidRequestFormat
 	}
 
-	userID, err := us.userStore.IdentifyUser(filters)
+	indexedPropToColumnNumberMap, schemaSvcError := us.userSchemaService.GetIndexedPropertyToColumnNumberMap(userType)
+	if schemaSvcError != nil {
+		return nil, schemaSvcError
+	}
+
+	unindexedFilters := make(map[string]interface{})
+	indexedFilters := make(map[string]interface{})
+
+	for attributeName, attributeValue := range filters {
+		if columnNumber, isIndexed := indexedPropToColumnNumberMap[attributeName]; isIndexed {
+			columnName := fmt.Sprintf("indexed_prop_%d_value", columnNumber)
+			indexedFilters[columnName] = attributeValue
+		} else {
+			unindexedFilters[attributeName] = attributeValue
+		}
+	}
+
+	userID, err := us.userStore.IdentifyUser(unindexedFilters, indexedFilters)
 	if err != nil {
 		if errors.Is(err, ErrUserNotFound) {
 			logger.Debug("User not found with provided filters")
@@ -490,14 +542,14 @@ func (us *userService) AuthenticateUser(
 ) (*AuthenticateUserResponse, *serviceerror.ServiceError) {
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, loggerComponentName))
 
-	if len(request) == 0 {
+	if len(request.Attributes) == 0 {
 		return nil, &ErrorInvalidRequestFormat
 	}
 
 	identifyFilters := make(map[string]interface{})
 	credentials := make(map[string]interface{})
 
-	for key, value := range request {
+	for key, value := range request.Attributes {
 		if _, isCredential := supportedCredentialFields[key]; isCredential {
 			credentials[key] = value
 		} else {
@@ -512,7 +564,7 @@ func (us *userService) AuthenticateUser(
 		return nil, &ErrorMissingCredentials
 	}
 
-	userID, svcErr := us.IdentifyUser(identifyFilters)
+	userID, svcErr := us.IdentifyUser(identifyFilters, request.UserType)
 	if svcErr != nil {
 		if svcErr.Code == ErrorUserNotFound.Code {
 			return nil, &ErrorUserNotFound
@@ -563,7 +615,7 @@ func (us *userService) validateUserAndUniqueness(
 
 	isValid, svcErr = us.userSchemaService.ValidateUserUniqueness(userType, attributes,
 		func(filters map[string]interface{}) (*string, error) {
-			userID, svcErr := us.IdentifyUser(filters)
+			userID, svcErr := us.IdentifyUser(filters, userType)
 			if svcErr != nil {
 				if svcErr.Code == ErrorUserNotFound.Code {
 					return nil, nil

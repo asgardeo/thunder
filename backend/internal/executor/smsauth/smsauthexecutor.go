@@ -416,7 +416,7 @@ func (s *SMSOTPAuthExecutor) resolveUserIDFromAttribute(ctx *flowmodel.NodeConte
 	}
 	if attributeValue != "" {
 		filters := map[string]interface{}{attributeName: attributeValue}
-		userID, svcErr := s.userService.IdentifyUser(filters)
+		userID, svcErr := s.userService.IdentifyUser(filters, "")
 		if svcErr != nil {
 			return false, fmt.Errorf("failed to identify user by %s: %s", attributeName, svcErr.Error)
 		}

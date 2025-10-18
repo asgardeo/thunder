@@ -57,16 +57,16 @@ func (ts *CreateUserSchemaTestSuite) TearDownSuite() {
 
 // TestCreateUserSchema tests POST /user-schemas with valid data
 func (ts *CreateUserSchemaTestSuite) TestCreateUserSchema() {
-    schema := CreateUserSchemaRequest{
-        Name: "employee-schema-test",
-        Schema: json.RawMessage(`{
+	schema := CreateUserSchemaRequest{
+		Name: "employee-schema-test",
+		Schema: json.RawMessage(`{
             "firstName": {"type": "string"},
             "lastName": {"type": "string", "required": true},
             "email": {"type": "string", "required": true, "regex": "^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$"},
             "department": {"type": "string"},
             "isManager": {"type": "boolean"}
         }`),
-    }
+	}
 
 	jsonData, err := json.Marshal(schema)
 	if err != nil {
@@ -109,9 +109,9 @@ func (ts *CreateUserSchemaTestSuite) TestCreateUserSchema() {
 
 // TestCreateUserSchemaWithComplexSchema tests POST /user-schemas with complex JSON schema
 func (ts *CreateUserSchemaTestSuite) TestCreateUserSchemaWithComplexSchema() {
-    schema := CreateUserSchemaRequest{
-        Name: "complex-customer-schema",
-        Schema: json.RawMessage(`{
+	schema := CreateUserSchemaRequest{
+		Name: "complex-customer-schema",
+		Schema: json.RawMessage(`{
             "personalInfo": {
                 "type": "object",
                 "properties": {
@@ -153,7 +153,7 @@ func (ts *CreateUserSchemaTestSuite) TestCreateUserSchemaWithComplexSchema() {
                 }
             }
         }`),
-    }
+	}
 
 	jsonData, err := json.Marshal(schema)
 	if err != nil {
@@ -247,10 +247,10 @@ func (ts *CreateUserSchemaTestSuite) TestCreateUserSchemaWithDuplicateName() {
 
 // TestCreateUserSchemaWithInvalidData tests POST /user-schemas with invalid request data
 func (ts *CreateUserSchemaTestSuite) TestCreateUserSchemaWithInvalidData() {
-    testCases := []struct {
-        name        string
-        requestBody string
-    }{
+	testCases := []struct {
+		name        string
+		requestBody string
+	}{
 		{
 			name:        "empty name",
 			requestBody: `{"name": "", "schema": {"field": {"type": "string"}}}`,
@@ -271,15 +271,15 @@ func (ts *CreateUserSchemaTestSuite) TestCreateUserSchemaWithInvalidData() {
 			name:        "invalid JSON",
 			requestBody: `{"name": "test-schema", "schema": invalid}`,
 		},
-        {
-            name:        "malformed JSON",
-            requestBody: `{"name": "test-schema"`,
-        },
-        {
-            name:        "non-boolean required flag",
-            requestBody: `{"name": "bad-required", "schema": {"email": {"type": "string", "required": "true"}}}`,
-        },
-    }
+		{
+			name:        "malformed JSON",
+			requestBody: `{"name": "test-schema"`,
+		},
+		{
+			name:        "non-boolean required flag",
+			requestBody: `{"name": "bad-required", "schema": {"email": {"type": "string", "required": "true"}}}`,
+		},
+	}
 
 	for _, tc := range testCases {
 		ts.T().Run(tc.name, func(t *testing.T) {

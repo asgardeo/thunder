@@ -30,11 +30,12 @@ import (
 type userSchemaStoreInterface interface {
 	GetUserSchemaListCount() (int, error)
 	GetUserSchemaList(limit, offset int) ([]UserSchemaListItem, error)
-	CreateUserSchema(userSchema UserSchema) error
+	CreateUserSchema(userSchema UserSchema, indexedAttributes []string) error
 	GetUserSchemaByID(schemaID string) (UserSchema, error)
 	GetUserSchemaByName(name string) (UserSchema, error)
 	UpdateUserSchemaByID(schemaID string, userSchema UserSchema) error
 	DeleteUserSchemaByID(schemaID string) error
+	GetIndexedPropertyToColumnNumberMap(name string) (map[string]int, error)
 }
 
 // userSchemaStore is the default implementation of userSchemaStoreInterface.
@@ -101,13 +102,14 @@ func (s *userSchemaStore) GetUserSchemaList(limit, offset int) ([]UserSchemaList
 }
 
 // CreateUserSchema creates a new user schema.
-func (s *userSchemaStore) CreateUserSchema(userSchema UserSchema) error {
+func (s *userSchemaStore) CreateUserSchema(userSchema UserSchema, indexedAttributes []string) error {
 	dbClient, err := s.dbProvider.GetDBClient("identity")
 	if err != nil {
 		return fmt.Errorf("failed to get database client: %w", err)
 	}
 
-	_, err = dbClient.Query(queryCreateUserSchema, userSchema.ID, userSchema.Name, string(userSchema.Schema))
+	_, err = dbClient.Query(queryCreateUserSchema, userSchema.ID, userSchema.Name, string(userSchema.Schema),
+		indexedAttributes[0], indexedAttributes[1], indexedAttributes[2], indexedAttributes[3], indexedAttributes[4])
 	if err != nil {
 		return fmt.Errorf("failed to create user schema: %w", err)
 	}
@@ -187,6 +189,58 @@ func (s *userSchemaStore) DeleteUserSchemaByID(schemaID string) error {
 	}
 
 	return nil
+}
+
+// GetIndexedPropertyToColumnMap retrieves a map of indexed properties to their corresponding database columns for a
+// given schema name.
+// If the schema name is empty and there is only one user schema, it retrieves the map for that schema.
+// If multiple schemas exist and no name is provided, it returns an empty map.
+func (s *userSchemaStore) GetIndexedPropertyToColumnNumberMap(name string) (map[string]int, error) {
+	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, "UserSchemaPersistence"))
+
+	dbClient, err := s.dbProvider.GetDBClient("identity")
+	if err != nil {
+		return nil, fmt.Errorf("failed to get database client: %w", err)
+	}
+
+	userSchemaName := name
+
+	if name == "" {
+		userSchemas, err := s.GetUserSchemaList(2, 0)
+		if err != nil {
+			return nil, err
+		}
+		if len(userSchemas) != 1 {
+			// Cannot determine the schema to use
+			logger.Debug("multiple user schemas found, returning empty map")
+			return map[string]int{}, nil
+		}
+		userSchemaName = userSchemas[0].Name
+	}
+
+	results, err := dbClient.Query(queryGetIndexedPropertiesByName, userSchemaName)
+	if err != nil {
+		return nil, fmt.Errorf("failed to execute query: %w", err)
+	}
+
+	if len(results) == 0 {
+		logger.Debug("no schema found for user type, sreturning empty map", log.String("userType", name))
+		return map[string]int{}, nil
+	}
+
+	indexedPropertyToColumnNumberMap := make(map[string]int)
+	for _, row := range results {
+		for i := 1; i <= 5; i++ {
+			columnName := fmt.Sprintf("indexed_prop_%d_name", i)
+			propertyName, ok := row[columnName].(string)
+			if !ok || propertyName == "" {
+				continue
+			}
+			indexedPropertyToColumnNumberMap[propertyName] = i
+		}
+	}
+
+	return indexedPropertyToColumnNumberMap, nil
 }
 
 // parseUserSchemaFromRow parses a user schema from a database row.

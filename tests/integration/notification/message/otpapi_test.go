@@ -26,8 +26,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/stretchr/testify/suite"
 	"github.com/asgardeo/thunder/tests/integration/testutils"
+	"github.com/stretchr/testify/suite"
 )
 
 const (
@@ -94,7 +94,7 @@ func (ts *OTPAPITestSuite) SetupSuite() {
 	if err != nil {
 		ts.T().Fatalf("Failed to start mock notification server: %v", err)
 	}
-	
+
 	// Wait for mock server to start
 	time.Sleep(100 * time.Millisecond)
 	ts.T().Log("Mock notification server started successfully")
