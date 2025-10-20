@@ -19,15 +19,31 @@
 const response = await fetch('/runtime.json');
 const runtimeConfig = await response.json();
 
+// Helper function to get config value, preferring env vars in development mode
+// and filtering out placeholder values
+const getConfigValue = (runtimeValue: string | undefined, envValue: string | undefined): string | undefined => {
+    const isPlaceholder = (value: string | undefined): boolean => {
+        return !value || value.startsWith('{') && value.endsWith('}');
+    };
+
+    // In development mode, prefer env variables
+    if (import.meta.env.DEV) {
+        return envValue || (isPlaceholder(runtimeValue) ? undefined : runtimeValue);
+    }
+
+    // In production mode, prefer runtime config but filter out placeholders
+    return (isPlaceholder(runtimeValue) ? undefined : runtimeValue) || envValue;
+};
+
 const config = {
-    applicationID: runtimeConfig.applicationID || import.meta.env.VITE_REACT_APP_AUTH_APP_ID,
-    applicationsEndpoint: runtimeConfig.applicationsEndpoint || import.meta.env.VITE_REACT_APPLICATIONS_ENDPOINT,
-    flowEndpoint: runtimeConfig.flowEndpoint || import.meta.env.VITE_REACT_APP_SERVER_FLOW_ENDPOINT,
-    authorizationEndpoint: runtimeConfig.authorizationEndpoint || import.meta.env.VITE_REACT_APP_SERVER_AUTHORIZATION_ENDPOINT,
-    tokenEndpoint: runtimeConfig.tokenEndpoint || import.meta.env.VITE_REACT_APP_SERVER_TOKEN_ENDPOINT,
+    applicationID: getConfigValue(runtimeConfig.applicationID, import.meta.env.VITE_REACT_APP_AUTH_APP_ID),
+    applicationsEndpoint: getConfigValue(runtimeConfig.applicationsEndpoint, import.meta.env.VITE_REACT_APPLICATIONS_ENDPOINT),
+    flowEndpoint: getConfigValue(runtimeConfig.flowEndpoint, import.meta.env.VITE_REACT_APP_SERVER_FLOW_ENDPOINT),
+    authorizationEndpoint: getConfigValue(runtimeConfig.authorizationEndpoint, import.meta.env.VITE_REACT_APP_SERVER_AUTHORIZATION_ENDPOINT),
+    tokenEndpoint: getConfigValue(runtimeConfig.tokenEndpoint, import.meta.env.VITE_REACT_APP_SERVER_TOKEN_ENDPOINT),
     clientId: import.meta.env.VITE_REACT_APP_CLIENT_ID,
     clientSecret: import.meta.env.VITE_REACT_APP_CLIENT_SECRET,
-    redirectUri: runtimeConfig.redirectUri || import.meta.env.VITE_REACT_APP_REDIRECT_URI,
+    redirectUri: getConfigValue(runtimeConfig.redirectUri, import.meta.env.VITE_REACT_APP_REDIRECT_URI),
     scope: import.meta.env.VITE_REACT_APP_SCOPE
 };
 
