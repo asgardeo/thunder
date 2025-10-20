@@ -68,7 +68,32 @@ The project is structured as a monorepo to manage the backend, frontend, and sam
 
 ### General
 - Reuse common utilities from the `internal/system` packages.
-- Define interfaces for services where applicable to allow dependency injection.
+- Define interfaces for services to enable dependency injection and testability.
+
+### Package Structure and Organization
+- Follow a modular package structure where each domain/feature lives in its own package under `internal/`.
+- Follow a flat directory structure within a package. Avoid nested packages unless absolutely necessary for complex domains.
+- Each domain package typically contains related components organized by responsibility (not all files are required):
+  - `service.go`: Service interface and implementation (business logic layer)
+  - `handler.go`: HTTP handlers (presentation layer) - only if the package exposes HTTP endpoints
+  - `store.go`: Data access layer (persistence) - only if the package needs database operations
+  - `model.go`: Domain models and DTOs - only if the package has domain-specific models
+  - `constants.go`: Package-specific constants (e.g., default values, configuration constants, business logic constants)
+  - `errorconstants.go`: Define service and API error messages, error codes, and error-related constants
+  - `storeconstants.go`: Define database queries, table names, column names, and database-related constants
+  - `utils.go`: Define package-specific utility functions in this file
+  - `init.go`: Package initialization and route registration - only for packages with HTTP endpoints
+- Adjust the file structure based on actual requirements. For example:
+  - No HTTP layer? Skip `handler.go` and `init.go`
+  - File-based or cache-backed storage? Add additional storage implementation files
+  - Complex domain? Use subdirectories for further organize related functionality (e.g., `internal/oauth/oauth2/`, `internal/oauth/jwks/`).
+
+### Package Exports
+- Only export the service interface (e.g., `XServiceInterface`) and models that are used in the service interface from a package.
+- Keep all internal implementations (service structs, store interfaces, store implementations, handlers) unexported (lowercase).
+- Keep internal constants such as database queries, error codes, and other implementation details unexported (private).
+- This ensures proper encapsulation and prevents external packages from depending on internal implementation details.
+- Example: Export `UserServiceInterface` and `User` model, but keep `userService`, `userStore`, `userHandler`, and internal query constants unexported.
 
 ### Logging
 - Use the `log` package in `internal/system` for logging.
@@ -79,7 +104,16 @@ The project is structured as a monorepo to manage the backend, frontend, and sam
 
 ### Database
 - Use `DBClient` in `internal/system/database` for database operations.
-- Use `DBQuery` in `internal/system/database` to define queries with a unique ID. This allows for DB-specific queries where needed.
+- Use `DBQuery` from `internal/system/database/model` to define queries with a unique ID. This allows for DB-specific queries where needed.
+  - Define each query with a unique identifier for traceability
+  - Support database-specific query variations when necessary (e.g., SQLite vs PostgreSQL)
+
+### Store Layer (Data Access)
+- Define store interfaces (e.g., `xStoreInterface`) and implementations (e.g., `xStore` struct) in `store.go`.
+- Store layer handles all database interactions and should be used by the service layer.
+- Use private constructors (e.g., `newXStore()`) to create store instances.
+- Store initialization should use `DBProvider` to obtain database client. Individual store methods should use the created client.
+- Keep store methods focused on data access operations without business logic.
 
 ### HTTP
 - Use `HTTPClient` in `internal/system/http` for sending external requests.
@@ -102,12 +136,50 @@ The project is structured as a monorepo to manage the backend, frontend, and sam
 ### Defining APIs
 - Return JSON responses from APIs where applicable.
 - Return JSON errors as per the server `ErrorResponse` definition. For 500 internal server errors, a generic message may be returned.
-- Define each API service in a new file in `internal/system/services`, extending `ServiceInterface`. Define CORS policies where applicable.
-- Register the API service in `internal/system/managers/servicemanager.go`.
+- Define API handlers in a `handler.go` file within the domain package.
+- For packages with HTTP endpoints, use an `init.go` file to register routes with the mux and initialize dependencies.
+- Define CORS policies using `middleware.WithCORS` from `internal/system/middleware` where applicable.
 
-### Service Provider
-- Use a provider to return service objects/structs for other services. Define the provider when creating a new instance for other services and use that provider variable to obtain the service instance.
-- This allows injecting services during unit tests. Keep provider logic minimal, as it won't be tested.
+### Service Layer and Dependency Injection
+- Define service interfaces (e.g., `XServiceInterface`) and implementations (e.g., `xService` struct) in `service.go`.
+- Use private constructor functions (e.g., `newXService()`) to create service instances.
+- If the service needs to interact with the database, accept the store interface as a parameter in the constructor.
+- Constructor functions should accept all dependencies as parameters when the service needs external dependencies.
+  - Example without dependencies: `func newIDPService() IDPServiceInterface`
+  - Example with dependencies: `func newGroupService(ouService OrganizationUnitServiceInterface) GroupServiceInterface`
+- Services should depend on interfaces, not concrete implementations, to enable testing with mocks.
+- Keep constructors private (unexported) - external packages should only interact through the `Initialize()` function.
+
+### Service Initialization and Dependency Management
+- Service initialization should happen **once** during application startup in the `init.go` file of each package.
+- The `Initialize(mux, deps)` function in `init.go` should:
+  1. Create the store instances using the constructor functions (Only if the package requires database operations)
+  2. Create the service instances using the constructor functions, passing created store and required dependencies which are passed in as parameters(`deps`). If there are multiple services in the package, initialize all services according to their dependency requirements.
+  3. Create handlers and inject the service instance into them
+  4. Register routes with the mux
+  5. Return the created service interfaces to be used as dependencies by other packages
+- Keep all initialized service instances and pass them to dependent services during their initialization.
+- Example initialization flow:
+  ```go
+  // In internal/user/init.go
+  func Initialize(mux *http.ServeMux, ouService ou.OrganizationUnitServiceInterface) UserServiceInterface {
+      userStore := newUserStore() // No dependencies
+      userService := newUserService(ouService, userStore) // Inject dependency via private constructor
+      userHandler := newUserHandler(userService)
+      registerRoutes(mux, userHandler)
+      return userService // Return the created service interfaces for dependency injection
+  }
+  ```
+- The main service manager in `cmd/server/servicemanager.go` should orchestrate all initializations in the correct order, passing dependencies as needed.
+  ```go
+  // In cmd/server/servicemanager.go
+  func registerServices(mux *http.ServeMux) {
+      ouService := ou.Initialize(mux) // No dependencies
+      userService := user.Initialize(mux, ouService) // Pass dependencies
+      groupService := group.Initialize(mux, ouService, groupService) // Pass dependency
+      ...
+  }
+  ```
 
 ### Testing
 
