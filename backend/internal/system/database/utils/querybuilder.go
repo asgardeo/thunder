@@ -34,7 +34,9 @@ func BuildFilterQuery(
 	postgresQuery := baseQuery
 	sqliteQuery := baseQuery
 	for i, key := range keys {
-		postgresQuery += fmt.Sprintf(" AND %s->>'%s' = $%d", columnName, key, i+1)
+		// Handle nested JSON paths for PostgreSQL
+		postgresJSONPath := buildPostgresJSONPath(columnName, key)
+		postgresQuery += fmt.Sprintf(" AND %s = $%d", postgresJSONPath, i+1)
 		sqliteQuery += fmt.Sprintf(" AND json_extract(%s, '$.%s') = ?", columnName, key)
 		args = append(args, filters[key])
 	}
@@ -47,6 +49,64 @@ func BuildFilterQuery(
 	}
 
 	return resultQuery, args, nil
+}
+
+// buildPostgresJSONPath constructs the appropriate PostgreSQL JSON path expression.
+// For nested paths (e.g., "address.city"), it uses the #>> operator with an array path.
+// For single-level paths (e.g., "username"), it uses the ->> operator.
+func buildPostgresJSONPath(columnName, key string) string {
+	if !containsDot(key) {
+		// Single-level path: use ->> operator
+		return fmt.Sprintf("%s->>'%s'", columnName, key)
+	}
+
+	// Nested path: use #>> operator with array notation
+	// Convert "address.city" to {address,city}
+	pathParts := splitPath(key)
+	pathArray := "{" + pathParts + "}"
+	return fmt.Sprintf("%s#>>'%s'", columnName, pathArray)
+}
+
+// containsDot checks if a string contains a dot character.
+func containsDot(s string) bool {
+	for _, char := range s {
+		if char == '.' {
+			return true
+		}
+	}
+	return false
+}
+
+// splitPath splits a dot-separated path into comma-separated parts.
+// Example: "address.city" -> "address,city"
+func splitPath(path string) string {
+	parts := make([]string, 0)
+	currentPart := ""
+
+	for _, char := range path {
+		if char == '.' {
+			if currentPart != "" {
+				parts = append(parts, currentPart)
+				currentPart = ""
+			}
+		} else {
+			currentPart += string(char)
+		}
+	}
+
+	if currentPart != "" {
+		parts = append(parts, currentPart)
+	}
+
+	result := ""
+	for i, part := range parts {
+		if i > 0 {
+			result += ","
+		}
+		result += part
+	}
+
+	return result
 }
 
 // validateKey ensures that the provided key contains only safe characters (alphanumeric and underscores).

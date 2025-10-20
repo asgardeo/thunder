@@ -261,28 +261,28 @@ func executeTransaction(queries []func(tx dbmodel.TxInterface) error) error {
 // buildSenderFromResultRow constructs a NotificationSenderDTO from a database result row.
 func (s *notificationStore) buildSenderFromResultRow(
 	row map[string]interface{}) (*common.NotificationSenderDTO, error) {
-	senderID, ok := row["sender_id"].(string)
-	if !ok {
+	senderID := sysutils.ConvertInterfaceValueToString(row["sender_id"])
+	if senderID == "" {
 		return nil, fmt.Errorf("failed to parse sender_id as string")
 	}
 
-	name, ok := row["name"].(string)
-	if !ok {
+	name := sysutils.ConvertInterfaceValueToString(row["name"])
+	if name == "" {
 		return nil, fmt.Errorf("failed to parse name as string")
 	}
 
-	description, ok := row["description"].(string)
-	if !ok {
+	description := sysutils.ConvertInterfaceValueToString(row["description"])
+	if description == "" {
 		return nil, fmt.Errorf("failed to parse description as string")
 	}
 
-	_type, ok := row["type"].(string)
-	if !ok {
+	_type := sysutils.ConvertInterfaceValueToString(row["type"])
+	if _type == "" {
 		return nil, fmt.Errorf("failed to parse type as string")
 	}
 
-	provider, ok := row["provider"].(string)
-	if !ok {
+	provider := sysutils.ConvertInterfaceValueToString(row["provider"])
+	if provider == "" {
 		return nil, fmt.Errorf("failed to parse provider as string")
 	}
 
@@ -303,24 +303,24 @@ func buildSenderPropertiesFromResultSet(results []map[string]interface{}, id str
 	properties := make([]cmodels.Property, 0, len(results))
 
 	for _, row := range results {
-		propName, ok := row["property_name"].(string)
-		if !ok {
+		propName := sysutils.ConvertInterfaceValueToString(row["property_name"])
+		if propName == "" {
 			return nil, fmt.Errorf("failed to parse property_name as string for sender ID: %s", id)
 		}
 
-		propValue, ok := row["property_value"].(string)
-		if !ok {
+		propValue := sysutils.ConvertInterfaceValueToString(row["property_value"])
+		if propValue == "" {
 			return nil, fmt.Errorf("failed to parse property_value as string for sender ID: %s", id)
 		}
 
-		isSecretStr, ok := row["is_secret"].(string)
-		if !ok {
+		isSecretStr := sysutils.ConvertInterfaceValueToString(row["is_secret"])
+		if isSecretStr == "" {
 			return nil, fmt.Errorf("failed to parse is_secret as string for sender ID: %s", id)
 		}
 		isSecret := sysutils.NumStringToBool(isSecretStr)
 
-		isEncryptedStr, ok := row["is_encrypted"].(string)
-		if !ok {
+		isEncryptedStr := sysutils.ConvertInterfaceValueToString(row["is_encrypted"])
+		if isEncryptedStr == "" {
 			return nil, fmt.Errorf("failed to parse is_encrypted as string for sender ID: %s", id)
 		}
 		isEncrypted := sysutils.NumStringToBool(isEncryptedStr)

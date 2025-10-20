@@ -139,6 +139,9 @@ func (suite *QueryBuilderTestSuite) TestValidateKey() {
 		"with_underscore",
 		"_leading_underscore",
 		"trailing_underscore_",
+		"address.city",
+		"user.profile.email",
+		"nested.path.with.many.levels",
 	}
 
 	for _, key := range validKeys {
@@ -227,5 +230,75 @@ func (suite *QueryBuilderTestSuite) TestBuildFilterQuerySingleFilter() {
 	sqliteQuery := query.GetQuery("sqlite")
 	expectedSQLite := "SELECT * FROM users WHERE active = true" +
 		" AND json_extract(metadata, '$.department') = ?"
+	assert.Equal(suite.T(), expectedSQLite, sqliteQuery)
+}
+
+func (suite *QueryBuilderTestSuite) TestBuildFilterQueryWithNestedJSONPath() {
+	queryID := "nested_filter"
+	baseQuery := "SELECT * FROM users WHERE 1=1"
+	columnName := "attributes"
+	filters := map[string]interface{}{
+		"address.city": "Mountain View",
+		"address.zip":  "94040",
+	}
+
+	query, args, err := BuildFilterQuery(queryID, baseQuery, columnName, filters)
+
+	assert.NoError(suite.T(), err)
+	assert.Len(suite.T(), args, 2)
+
+	// Verify arguments are in sorted order (address.city, address.zip)
+	assert.Equal(suite.T(), "Mountain View", args[0])
+	assert.Equal(suite.T(), "94040", args[1])
+
+	// PostgreSQL query should use #>> operator for nested paths
+	postgresQuery := query.GetQuery("postgres")
+	expectedPostgres := "SELECT * FROM users WHERE 1=1" +
+		" AND attributes#>>'{address,city}' = $1" +
+		" AND attributes#>>'{address,zip}' = $2"
+	assert.Equal(suite.T(), expectedPostgres, postgresQuery)
+
+	// SQLite query should use json_extract with dot notation
+	sqliteQuery := query.GetQuery("sqlite")
+	expectedSQLite := "SELECT * FROM users WHERE 1=1" +
+		" AND json_extract(attributes, '$.address.city') = ?" +
+		" AND json_extract(attributes, '$.address.zip') = ?"
+	assert.Equal(suite.T(), expectedSQLite, sqliteQuery)
+}
+
+func (suite *QueryBuilderTestSuite) TestBuildFilterQueryWithMixedNestedAndSimplePaths() {
+	queryID := "mixed_filter"
+	baseQuery := "SELECT * FROM users WHERE 1=1"
+	columnName := "attributes"
+	filters := map[string]interface{}{
+		"username":     "john.doe",
+		"address.city": "San Francisco",
+		"age":          30,
+	}
+
+	query, args, err := BuildFilterQuery(queryID, baseQuery, columnName, filters)
+
+	assert.NoError(suite.T(), err)
+	assert.Len(suite.T(), args, 3)
+
+	// Verify arguments are in sorted order (address.city, age, username)
+	assert.Equal(suite.T(), "San Francisco", args[0])
+	assert.Equal(suite.T(), 30, args[1])
+	assert.Equal(suite.T(), "john.doe", args[2])
+
+	// PostgreSQL query should use #>> for nested and ->> for simple paths
+	postgresQuery := query.GetQuery("postgres")
+	expectedPostgres := "SELECT * FROM users WHERE 1=1" +
+		" AND attributes#>>'{address,city}' = $1" +
+		" AND attributes->>'age' = $2" +
+		" AND attributes->>'username' = $3"
+	assert.Equal(suite.T(), expectedPostgres, postgresQuery)
+
+	// SQLite query should use json_extract for all paths
+	sqliteQuery := query.GetQuery("sqlite")
+	expectedSQLite := "SELECT * FROM users WHERE 1=1" +
+		" AND json_extract(attributes, '$.address.city') = ?" +
+		" AND json_extract(attributes, '$.age') = ?" +
+		" AND json_extract(attributes, '$.username') = ?"
 	assert.Equal(suite.T(), expectedSQLite, sqliteQuery)
 }

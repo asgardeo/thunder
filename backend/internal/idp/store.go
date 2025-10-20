@@ -301,20 +301,18 @@ func (s *idpStore) DeleteIdentityProvider(id string) error {
 }
 
 func buildIDPFromResultRow(row map[string]interface{}) (*BasicIDPDTO, error) {
-	idpID, ok := row["idp_id"].(string)
-	if !ok {
+	idpID := sysutils.ConvertInterfaceValueToString(row["idp_id"])
+	if idpID == "" {
 		return nil, fmt.Errorf("failed to parse idp_id as string")
 	}
 
-	idpName, ok := row["name"].(string)
-	if !ok {
+	idpName := sysutils.ConvertInterfaceValueToString(row["name"])
+	if idpName == "" {
 		return nil, fmt.Errorf("failed to parse name as string")
 	}
 
-	idpDescription, ok := row["description"].(string)
-	if !ok {
-		return nil, fmt.Errorf("failed to parse description as string")
-	}
+	idpDescription := sysutils.ConvertInterfaceValueToString(row["description"])
+	// Description can be empty, so we don't check for empty string
 
 	idp := BasicIDPDTO{
 		ID:          idpID,
@@ -330,24 +328,24 @@ func buildIDPPropertiesFromResultSet(results []map[string]interface{}) ([]cmodel
 	properties := make([]cmodels.Property, 0, len(results))
 
 	for _, row := range results {
-		propertyName, ok := row["property_name"].(string)
-		if !ok {
+		propertyName := sysutils.ConvertInterfaceValueToString(row["property_name"])
+		if propertyName == "" {
 			return nil, fmt.Errorf("failed to parse property_name as string")
 		}
 
-		propertyValue, ok := row["property_value"].(string)
-		if !ok {
+		propertyValue := sysutils.ConvertInterfaceValueToString(row["property_value"])
+		if propertyValue == "" {
 			return nil, fmt.Errorf("failed to parse property_value as string")
 		}
 
-		isSecretStr, ok := row["is_secret"].(string)
-		if !ok {
+		isSecretStr := sysutils.ConvertInterfaceValueToString(row["is_secret"])
+		if isSecretStr == "" {
 			return nil, fmt.Errorf("failed to parse is_secret as string")
 		}
 		isSecret := sysutils.NumStringToBool(isSecretStr)
 
-		isEncryptedStr, ok := row["is_encrypted"].(string)
-		if !ok {
+		isEncryptedStr := sysutils.ConvertInterfaceValueToString(row["is_encrypted"])
+		if isEncryptedStr == "" {
 			return nil, fmt.Errorf("failed to parse is_encrypted as string")
 		}
 		isEncrypted := sysutils.NumStringToBool(isEncryptedStr)
