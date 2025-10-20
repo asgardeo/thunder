@@ -16,23 +16,38 @@
  * under the License.
  */
 
-const response = await fetch('/runtime.json');
-const runtimeConfig = await response.json();
+interface RuntimeConfig {
+    applicationID?: string;
+    applicationsEndpoint?: string;
+    flowEndpoint?: string;
+    authorizationEndpoint?: string;
+    tokenEndpoint?: string;
+    redirectUri?: string;
+}
+
+let runtimeConfig: RuntimeConfig = {};
+if (!import.meta.env.DEV) {
+    const response = await fetch('/runtime.json');
+    runtimeConfig = await response.json();
+}
 
 // Helper function to get config value, preferring env vars in development mode
-// and filtering out placeholder values
+// and filtering out placeholder values from both runtime and env sources
 const getConfigValue = (runtimeValue: string | undefined, envValue: string | undefined): string | undefined => {
     const isPlaceholder = (value: string | undefined): boolean => {
-        return !value || value.startsWith('{') && value.endsWith('}');
+        return !value || (value.startsWith('{') && value.endsWith('}'));
     };
 
-    // In development mode, prefer env variables
+    // In development mode, prefer env variables, filtering out placeholders from both
+    const filteredEnvValue = isPlaceholder(envValue) ? undefined : envValue;
+    const filteredRuntimeValue = isPlaceholder(runtimeValue) ? undefined : runtimeValue;
+
     if (import.meta.env.DEV) {
-        return envValue || (isPlaceholder(runtimeValue) ? undefined : runtimeValue);
+        return filteredEnvValue || filteredRuntimeValue;
     }
 
-    // In production mode, prefer runtime config but filter out placeholders
-    return (isPlaceholder(runtimeValue) ? undefined : runtimeValue) || envValue;
+    // In production mode, prefer runtime config but filter out placeholders from both
+    return filteredRuntimeValue || filteredEnvValue;
 };
 
 const config = {
