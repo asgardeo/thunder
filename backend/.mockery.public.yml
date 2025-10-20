@@ -244,3 +244,19 @@ packages:
       structname: '{{.InterfaceName}}Mock'
       pkgname: httpmock
       filename: "{{.InterfaceName}}_mock.go"
+
+  github.com/asgardeo/thunder/internal/group:
+    config:
+      all: true
+      dir: tests/mocks/groupmock
+      structname: '{{.InterfaceName}}Mock'
+      pkgname: groupmock
+      filename: "{{.InterfaceName}}_mock.go"
+
+  github.com/asgardeo/thunder/internal/ou:
+    config:
+      all: true
+      dir: tests/mocks/oumock
+      structname: '{{.InterfaceName}}Mock'
+      pkgname: oumock
+      filename: "{{.InterfaceName}}_mock.go"

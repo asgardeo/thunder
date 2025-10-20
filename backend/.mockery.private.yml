@@ -28,3 +28,10 @@ packages:
       structname: '{{.InterfaceName}}Mock'
       pkgname: cache
       filename: "{{.InterfaceName}}_mock_test.go"
+  github.com/asgardeo/thunder/internal/role:
+    config:
+      all: true
+      dir: internal/role
+      structname: '{{.InterfaceName}}Mock'
+      pkgname: role
+      filename: "{{.InterfaceName}}_mock_test.go"
