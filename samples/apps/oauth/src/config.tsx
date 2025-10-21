@@ -25,12 +25,6 @@ interface RuntimeConfig {
     redirectUri?: string;
 }
 
-let runtimeConfig: RuntimeConfig = {};
-if (!import.meta.env.DEV) {
-    const response = await fetch('/runtime.json');
-    runtimeConfig = await response.json();
-}
-
 // Helper function to get config value, preferring env vars in development mode
 // and filtering out placeholder values from both runtime and env sources
 const getConfigValue = (runtimeValue: string | undefined, envValue: string | undefined): string | undefined => {
@@ -50,16 +44,98 @@ const getConfigValue = (runtimeValue: string | undefined, envValue: string | und
     return filteredRuntimeValue || filteredEnvValue;
 };
 
+// Load runtime configuration asynchronously
+const loadRuntimeConfig = async (): Promise<RuntimeConfig> => {
+    if (import.meta.env.DEV) {
+        // In development mode, skip fetching runtime.json
+        return {};
+    }
+
+    try {
+        const response = await fetch('/runtime.json');
+        if (!response.ok) {
+            console.warn(`Failed to fetch runtime.json: ${response.status} ${response.statusText}`);
+            return {};
+        }
+        return await response.json();
+    } catch (error) {
+        console.error('Error loading runtime configuration:', error);
+        // Return empty config to fallback to environment variables
+        return {};
+    }
+};
+
+// Initialize runtime config with promise-based guard to prevent race conditions
+let runtimeConfig: RuntimeConfig = {};
+let configInitializationPromise: Promise<void> | null = null;
+
+const initializeConfig = async (): Promise<void> => {
+    // If already initializing or initialized, return the existing promise
+    if (configInitializationPromise) {
+        return configInitializationPromise;
+    }
+
+    // Create and store the initialization promise
+    // Wrap in try-catch to ensure the promise never rejects
+    configInitializationPromise = (async () => {
+        try {
+            runtimeConfig = await loadRuntimeConfig();
+        } catch (error) {
+            // This should never happen since loadRuntimeConfig has its own error handling,
+            // but we catch it here as a safety measure to ensure the promise always resolves
+            console.error('Unexpected error during config initialization:', error);
+            runtimeConfig = {};
+        }
+    })();
+
+    return configInitializationPromise;
+};
+
+// Start initialization immediately
+const configReady = initializeConfig();
+
+/**
+ * Ensures the configuration is fully loaded before proceeding.
+ *
+ * IMPORTANT: You must call this function and await it before accessing config values
+ * in production mode to ensure runtime.json has been loaded.
+ *
+ * @example
+ * ```tsx
+ * await ensureConfigReady();
+ * const endpoint = config.applicationID; // Now safe to access
+ * ```
+ */
+export const ensureConfigReady = (): Promise<void> => configReady;
+
 const config = {
-    applicationID: getConfigValue(runtimeConfig.applicationID, import.meta.env.VITE_REACT_APP_AUTH_APP_ID) || '',
-    applicationsEndpoint: getConfigValue(runtimeConfig.applicationsEndpoint, import.meta.env.VITE_REACT_APPLICATIONS_ENDPOINT) || '',
-    flowEndpoint: getConfigValue(runtimeConfig.flowEndpoint, import.meta.env.VITE_REACT_APP_SERVER_FLOW_ENDPOINT) || '',
-    authorizationEndpoint: getConfigValue(runtimeConfig.authorizationEndpoint, import.meta.env.VITE_REACT_APP_SERVER_AUTHORIZATION_ENDPOINT) || '',
-    tokenEndpoint: getConfigValue(runtimeConfig.tokenEndpoint, import.meta.env.VITE_REACT_APP_SERVER_TOKEN_ENDPOINT) || '',
-    clientId: import.meta.env.VITE_REACT_APP_CLIENT_ID || '',
-    clientSecret: import.meta.env.VITE_REACT_APP_CLIENT_SECRET || '',
-    redirectUri: getConfigValue(runtimeConfig.redirectUri, import.meta.env.VITE_REACT_APP_REDIRECT_URI) || '',
-    scope: import.meta.env.VITE_REACT_APP_SCOPE || ''
+    get applicationID() {
+        return getConfigValue(runtimeConfig.applicationID, import.meta.env.VITE_REACT_APP_AUTH_APP_ID) || '';
+    },
+    get applicationsEndpoint() {
+        return getConfigValue(runtimeConfig.applicationsEndpoint, import.meta.env.VITE_REACT_APPLICATIONS_ENDPOINT) || '';
+    },
+    get flowEndpoint() {
+        return getConfigValue(runtimeConfig.flowEndpoint, import.meta.env.VITE_REACT_APP_SERVER_FLOW_ENDPOINT) || '';
+    },
+    get authorizationEndpoint() {
+        return getConfigValue(runtimeConfig.authorizationEndpoint, import.meta.env.VITE_REACT_APP_SERVER_AUTHORIZATION_ENDPOINT) || '';
+    },
+    get tokenEndpoint() {
+        return getConfigValue(runtimeConfig.tokenEndpoint, import.meta.env.VITE_REACT_APP_SERVER_TOKEN_ENDPOINT) || '';
+    },
+    get clientId() {
+        return import.meta.env.VITE_REACT_APP_CLIENT_ID || '';
+    },
+    get clientSecret() {
+        return import.meta.env.VITE_REACT_APP_CLIENT_SECRET || '';
+    },
+    get redirectUri() {
+        return getConfigValue(runtimeConfig.redirectUri, import.meta.env.VITE_REACT_APP_REDIRECT_URI) || '';
+    },
+    get scope() {
+        return import.meta.env.VITE_REACT_APP_SCOPE || '';
+    }
 };
 
 export default config;
