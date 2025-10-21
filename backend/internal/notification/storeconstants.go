@@ -44,6 +44,10 @@ var (
 	// queryUpdateNotificationSender is the query to update a notification sender.
 	queryUpdateNotificationSender = dbmodel.DBQuery{
 		ID: "NMQ-SM-06",
+		PostgresQuery: "UPDATE NOTIFICATION_SENDER SET NAME = $1, DESCRIPTION = $2, PROVIDER = $3, PROPERTIES = $4, " +
+			"UPDATED_AT = NOW() WHERE SENDER_ID = $5 AND TYPE = $6",
+		SQLiteQuery: "UPDATE NOTIFICATION_SENDER SET NAME = $1, DESCRIPTION = $2, PROVIDER = $3, PROPERTIES = $4, " +
+			"UPDATED_AT = datetime('now') WHERE SENDER_ID = $5 AND TYPE = $6",
 		Query: "UPDATE NOTIFICATION_SENDER SET NAME = $1, DESCRIPTION = $2, PROVIDER = $3, PROPERTIES = $4, " +
 			"UPDATED_AT = datetime('now') WHERE SENDER_ID = $5 AND TYPE = $6",
 	}

@@ -90,8 +90,16 @@ func (s *notificationStore) listSenders() ([]common.NotificationSenderDTO, error
 			return nil, fmt.Errorf("failed to build sender from result row: %w", err)
 		}
 
-		propertiesJSON, ok := row["properties"].(string)
-		if ok && propertiesJSON != "" {
+		var propertiesJSON string
+		// Handle both string and []byte types for properties
+		switch v := row["properties"].(type) {
+		case string:
+			propertiesJSON = v
+		case []byte:
+			propertiesJSON = string(v)
+		}
+
+		if propertiesJSON != "" {
 			properties, err := cmodels.DeserializePropertiesFromJSON(propertiesJSON)
 			if err != nil {
 				return nil, fmt.Errorf("failed to deserialize properties from JSON: %w", err)
@@ -142,8 +150,16 @@ func (s *notificationStore) getSender(query dbmodel.DBQuery,
 		return nil, fmt.Errorf("failed to build sender from result row: %w", err)
 	}
 
-	propertiesJSON, ok := results[0]["properties"].(string)
-	if ok && propertiesJSON != "" {
+	var propertiesJSON string
+	// Handle both string and []byte types for properties
+	switch v := results[0]["properties"].(type) {
+	case string:
+		propertiesJSON = v
+	case []byte:
+		propertiesJSON = string(v)
+	}
+
+	if propertiesJSON != "" {
 		properties, err := cmodels.DeserializePropertiesFromJSON(propertiesJSON)
 		if err != nil {
 			return nil, fmt.Errorf("failed to deserialize properties from JSON: %w", err)

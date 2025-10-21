@@ -121,3 +121,8 @@ CREATE TABLE CERTIFICATE (
     UPDATED_AT TIMESTAMPTZ DEFAULT NOW(),
     UNIQUE (REF_TYPE, REF_ID)
 );
+
+-- Insert a pre-configured notification sender for SMS OTP tests
+INSERT INTO NOTIFICATION_SENDER (NAME, SENDER_ID, DESCRIPTION, TYPE, PROVIDER, PROPERTIES) VALUES
+('Custom SMS Sender', 'test-sms-sender-id', 'Custom SMS sender for integration tests', 'MESSAGE', 'custom', 
+'[{"name":"url","value":"http://localhost:8098/send-sms","is_secret":false},{"name":"http_method","value":"POST","is_secret":false},{"name":"content_type","value":"JSON","is_secret":false}]'::jsonb);

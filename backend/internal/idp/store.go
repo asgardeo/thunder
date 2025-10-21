@@ -132,8 +132,18 @@ func (s *idpStore) getIDP(query dbmodel.DBQuery, identifier string) (*IDPDTO, er
 	}
 
 	var properties []cmodels.Property
-	propertiesJSON, ok := row["properties"].(string)
-	if ok && propertiesJSON != "" {
+	var propertiesJSON string
+
+	// Handle both string and []byte types for properties
+	switch v := row["properties"].(type) {
+	case string:
+		propertiesJSON = v
+	case []byte:
+		propertiesJSON = string(v)
+	}
+
+	if propertiesJSON != "" {
+		var err error
 		properties, err = cmodels.DeserializePropertiesFromJSON(propertiesJSON)
 		if err != nil {
 			return nil, fmt.Errorf("failed to deserialize properties from JSON: %w", err)

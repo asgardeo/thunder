@@ -214,6 +214,11 @@ func parseOptionalString(value interface{}) *string {
 	if str, ok := value.(string); ok {
 		return &str
 	}
+	// Handle []byte type (PostgreSQL may return TEXT/JSON as []byte)
+	if bytes, ok := value.([]byte); ok {
+		str := string(bytes)
+		return &str
+	}
 	return nil
 }
 

@@ -4,6 +4,7 @@ package utils
 import (
 	"fmt"
 	"sort"
+	"strings"
 
 	"github.com/asgardeo/thunder/internal/system/database/model"
 )
@@ -34,8 +35,8 @@ func BuildFilterQuery(
 	postgresQuery := baseQuery
 	sqliteQuery := baseQuery
 	for i, key := range keys {
-		postgresQuery += fmt.Sprintf(" AND %s->>'%s' = $%d", columnName, key, i+1)
-		sqliteQuery += fmt.Sprintf(" AND json_extract(%s, '$.%s') = ?", columnName, key)
+		postgresQuery += buildPostgresJSONCondition(columnName, key, i+1)
+		sqliteQuery += buildSQLiteJSONCondition(columnName, key)
 		args = append(args, filters[key])
 	}
 
@@ -47,6 +48,26 @@ func BuildFilterQuery(
 	}
 
 	return resultQuery, args, nil
+}
+
+// buildPostgresJSONCondition builds a PostgreSQL JSON filter condition.
+// For nested paths (e.g., "address.city"), it uses the #>> operator with an array path.
+// For simple paths (e.g., "email"), it uses the ->> operator.
+func buildPostgresJSONCondition(columnName, key string, paramIndex int) string {
+	if strings.Contains(key, ".") {
+		// Handle nested JSON path
+		keys := strings.Split(key, ".")
+		pathArray := "{" + strings.Join(keys, ",") + "}"
+		return fmt.Sprintf(" AND %s#>>'%s' = $%d", columnName, pathArray, paramIndex)
+	}
+	// Handle simple JSON path
+	return fmt.Sprintf(" AND %s->>'%s' = $%d", columnName, key, paramIndex)
+}
+
+// buildSQLiteJSONCondition builds a SQLite JSON filter condition.
+// For both nested and simple paths, it uses json_extract with dot notation.
+func buildSQLiteJSONCondition(columnName, key string) string {
+	return fmt.Sprintf(" AND json_extract(%s, '$.%s') = ?", columnName, key)
 }
 
 // validateKey ensures that the provided key contains only safe characters (alphanumeric and underscores).

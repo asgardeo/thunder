@@ -153,8 +153,8 @@ jobs:
 
       - name: 📝 Configure Test Database
         run: |
-          chmod +x backend/tests/scripts/setup-test-config.sh
-          ./backend/tests/scripts/setup-test-config.sh
+          chmod +x tests/integration/resources/scripts/setup-test-config.sh
+          ./tests/integration/resources/scripts/setup-test-config.sh
         env:
           DB_TYPE: ${{ matrix.database }}
 
