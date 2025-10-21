@@ -479,6 +479,64 @@ func (suite *OAuthAuthTestSuite) TestOAuthAuthCompleteFlowWithSkipAssertionTrue(
 	suite.Empty(authResponse.Assertion, "Response should not contain assertion token when skip_assertion is true")
 }
 
+// TestOAuthAuthWithAssuranceLevelAAL1 tests that OAuth authentication generates AAL1 assurance level
+func (suite *OAuthAuthTestSuite) TestOAuthAuthWithAssuranceLevelAAL1() {
+	// Step 1: Start authentication
+	startRequest := map[string]interface{}{
+		"idp_id": suite.idpID,
+	}
+	startRequestJSON, err := json.Marshal(startRequest)
+	suite.Require().NoError(err)
+
+	req, err := http.NewRequest("POST", testServerURL+oauthAuthStart, bytes.NewReader(startRequestJSON))
+	suite.Require().NoError(err)
+	req.Header.Set("Content-Type", "application/json")
+
+	client := getHTTPClient()
+	resp, err := client.Do(req)
+	suite.Require().NoError(err)
+	defer resp.Body.Close()
+
+	var startResponse map[string]interface{}
+	err = json.NewDecoder(resp.Body).Decode(&startResponse)
+	suite.Require().NoError(err)
+
+	sessionToken := startResponse["session_token"].(string)
+	authCode := suite.simulateOAuthAuthorization(startResponse["redirect_url"].(string))
+
+	// Step 2: Finish authentication
+	finishRequest := map[string]interface{}{
+		"session_token": sessionToken,
+		"code":          authCode,
+	}
+	finishRequestJSON, err := json.Marshal(finishRequest)
+	suite.Require().NoError(err)
+
+	req, err = http.NewRequest("POST", testServerURL+oauthAuthFinish, bytes.NewReader(finishRequestJSON))
+	suite.Require().NoError(err)
+	req.Header.Set("Content-Type", "application/json")
+
+	resp, err = client.Do(req)
+	suite.Require().NoError(err)
+	defer resp.Body.Close()
+
+	var authResponse testutils.AuthenticationResponse
+	err = json.NewDecoder(resp.Body).Decode(&authResponse)
+	suite.Require().NoError(err)
+
+	suite.NotEmpty(authResponse.Assertion, "Response should contain assertion token by default")
+
+	// Verify assertion contains AAL1 for single-factor OAuth authentication
+	aal := extractAssuranceLevelFromAssertion(authResponse.Assertion, "aal")
+	suite.NotEmpty(aal, "Assertion should contain AAL information")
+	suite.Equal("AAL1", aal, "Single-factor OAuth authentication should result in AAL1")
+
+	// Verify IAL is present
+	ial := extractAssuranceLevelFromAssertion(authResponse.Assertion, "ial")
+	suite.NotEmpty(ial, "Assertion should contain IAL information")
+	suite.Equal("IAL1", ial, "Self-asserted identity should result in IAL1")
+}
+
 // simulateOAuthAuthorization simulates user authorization and returns authorization code
 func (suite *OAuthAuthTestSuite) simulateOAuthAuthorization(redirectURL string) string {
 	parsedURL, err := url.Parse(redirectURL)
