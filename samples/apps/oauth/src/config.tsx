@@ -51,15 +51,15 @@ const getConfigValue = (runtimeValue: string | undefined, envValue: string | und
 };
 
 const config = {
-    applicationID: getConfigValue(runtimeConfig.applicationID, import.meta.env.VITE_REACT_APP_AUTH_APP_ID),
-    applicationsEndpoint: getConfigValue(runtimeConfig.applicationsEndpoint, import.meta.env.VITE_REACT_APPLICATIONS_ENDPOINT),
-    flowEndpoint: getConfigValue(runtimeConfig.flowEndpoint, import.meta.env.VITE_REACT_APP_SERVER_FLOW_ENDPOINT),
-    authorizationEndpoint: getConfigValue(runtimeConfig.authorizationEndpoint, import.meta.env.VITE_REACT_APP_SERVER_AUTHORIZATION_ENDPOINT),
-    tokenEndpoint: getConfigValue(runtimeConfig.tokenEndpoint, import.meta.env.VITE_REACT_APP_SERVER_TOKEN_ENDPOINT),
-    clientId: import.meta.env.VITE_REACT_APP_CLIENT_ID,
-    clientSecret: import.meta.env.VITE_REACT_APP_CLIENT_SECRET,
-    redirectUri: getConfigValue(runtimeConfig.redirectUri, import.meta.env.VITE_REACT_APP_REDIRECT_URI),
-    scope: import.meta.env.VITE_REACT_APP_SCOPE
+    applicationID: getConfigValue(runtimeConfig.applicationID, import.meta.env.VITE_REACT_APP_AUTH_APP_ID) || '',
+    applicationsEndpoint: getConfigValue(runtimeConfig.applicationsEndpoint, import.meta.env.VITE_REACT_APPLICATIONS_ENDPOINT) || '',
+    flowEndpoint: getConfigValue(runtimeConfig.flowEndpoint, import.meta.env.VITE_REACT_APP_SERVER_FLOW_ENDPOINT) || '',
+    authorizationEndpoint: getConfigValue(runtimeConfig.authorizationEndpoint, import.meta.env.VITE_REACT_APP_SERVER_AUTHORIZATION_ENDPOINT) || '',
+    tokenEndpoint: getConfigValue(runtimeConfig.tokenEndpoint, import.meta.env.VITE_REACT_APP_SERVER_TOKEN_ENDPOINT) || '',
+    clientId: import.meta.env.VITE_REACT_APP_CLIENT_ID || '',
+    clientSecret: import.meta.env.VITE_REACT_APP_CLIENT_SECRET || '',
+    redirectUri: getConfigValue(runtimeConfig.redirectUri, import.meta.env.VITE_REACT_APP_REDIRECT_URI) || '',
+    scope: import.meta.env.VITE_REACT_APP_SCOPE || ''
 };
 
 export default config;
