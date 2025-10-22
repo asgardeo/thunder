@@ -38,15 +38,33 @@ Generate a self-signed SSL certificate by running the following command:
 openssl req -nodes -new -x509 -keyout server.key -out server.cert
 ```
 
-**Configure environment variables:**
+**Configure the application:**
 
-Add the following environment variables to your web server configuration or `.env` file. Replace `<your-app-id>` with your actual application ID.
+There are two ways to configure the application depending on your use case:
+
+**For Development (using `npm run dev`):**
+
+Create or update the `.env` file in the root directory with your configuration. Replace `<your-app-id>` with your actual application ID:
 
 ```env
 VITE_REACT_APPLICATIONS_ENDPOINT=https://localhost:8090/applications
 VITE_REACT_APP_SERVER_FLOW_ENDPOINT=https://localhost:8090/flow
 VITE_REACT_APP_AUTH_APP_ID=<your-app-id>
 ```
+
+**For Production (using built app with `npm start` or custom web server):**
+
+Update the `public/runtime.json` file with your configuration:
+
+```json
+{
+    "applicationID": "<your-app-id>",
+    "flowEndpoint": "https://localhost:8090/flow",
+    "applicationsEndpoint": "https://localhost:8090/applications"
+}
+```
+
+**Note:** In development mode, `.env` values take precedence. In production mode, `runtime.json` values take precedence. Placeholder values (e.g., `{your-application-id}`) in `runtime.json` are automatically ignored.
 
 ## License
 
