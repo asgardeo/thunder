@@ -21,6 +21,7 @@ package oauth
 
 import (
 	"errors"
+	"time"
 
 	authncm "github.com/asgardeo/thunder/internal/authn/common"
 	authnoauth "github.com/asgardeo/thunder/internal/authn/oauth"
@@ -100,7 +101,8 @@ func NewOAuthExecutorWithAuthService(id, name string, defaultInputs []flowmodel.
 	}
 
 	return &OAuthExecutor{
-		internal:        *flowmodel.NewExecutor(id, name, defaultInputs, []flowmodel.InputData{}, properties),
+		internal: *flowmodel.NewExecutor(id, name, flowconst.ExecutorTypeAuthentication,
+			defaultInputs, []flowmodel.InputData{}, properties),
 		oAuthProperties: *oAuthProps,
 		authService:     authService,
 	}
@@ -261,6 +263,14 @@ func (o *OAuthExecutor) ProcessAuthFlowResponse(ctx *flowmodel.NodeContext,
 
 	if execResp.AuthenticatedUser.IsAuthenticated {
 		execResp.Status = flowconst.ExecComplete
+
+		// Add execution record for successful OAuth authentication
+		execResp.ExecutionRecord = &flowmodel.NodeExecutionRecord{
+			ExecutorName: authncm.AuthenticatorOAuth,
+			ExecutorType: flowconst.ExecutorTypeAuthentication,
+			Timestamp:    time.Now(),
+			Status:       flowconst.ExecutionStatusCompleted,
+		}
 	} else if ctx.FlowType != flowconst.FlowTypeRegistration {
 		execResp.Status = flowconst.ExecFailure
 		execResp.FailureReason = "Authentication failed. Authorization code not provided or invalid."

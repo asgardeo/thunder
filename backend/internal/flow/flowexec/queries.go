@@ -27,14 +27,14 @@ var (
 	QueryCreateFlowContext = model.DBQuery{
 		ID: "FLQ-FLOW_CTX-01",
 		Query: "INSERT INTO FLOW_CONTEXT (FLOW_ID, APP_ID, CURRENT_NODE_ID, " +
-			"CURRENT_ACTION_ID, GRAPH_ID, RUNTIME_DATA) VALUES ($1, $2, $3, $4, $5, $6)",
+			"CURRENT_ACTION_ID, GRAPH_ID, RUNTIME_DATA, EXECUTION_HISTORY) VALUES ($1, $2, $3, $4, $5, $6, $7)",
 	}
 
 	// QueryUpdateFlowContext is the query to update a flow context.
 	QueryUpdateFlowContext = model.DBQuery{
 		ID: "FLQ-FLOW_CTX-03",
 		Query: "UPDATE FLOW_CONTEXT SET CURRENT_NODE_ID = $2, CURRENT_ACTION_ID = $3, " +
-			"RUNTIME_DATA = $4, UPDATED_AT = CURRENT_TIMESTAMP WHERE FLOW_ID = $1",
+			"RUNTIME_DATA = $4, EXECUTION_HISTORY = $5, UPDATED_AT = CURRENT_TIMESTAMP WHERE FLOW_ID = $1",
 	}
 
 	// QueryDeleteFlowContext is the query to delete a flow context.
@@ -69,7 +69,7 @@ var (
 		ID: "FLQ-FLOW_CTX-05",
 		Query: `SELECT 
 			fc.FLOW_ID, fc.APP_ID, fc.CURRENT_NODE_ID, fc.CURRENT_ACTION_ID, 
-			fc.GRAPH_ID, fc.RUNTIME_DATA, fc.CREATED_AT, fc.UPDATED_AT,
+			fc.GRAPH_ID, fc.RUNTIME_DATA, fc.EXECUTION_HISTORY, fc.CREATED_AT, fc.UPDATED_AT,
 			fud.IS_AUTHENTICATED, fud.USER_ID, fud.USER_INPUTS, 
 			fud.USER_ATTRIBUTES
 		FROM FLOW_CONTEXT fc

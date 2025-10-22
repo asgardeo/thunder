@@ -58,7 +58,8 @@ func NewAttributeCollector(id, name string, properties map[string]string) *Attri
 	}
 
 	return &AttributeCollector{
-		internal:    *flowmodel.NewExecutor(id, name, []flowmodel.InputData{}, prerequisites, properties),
+		internal: *flowmodel.NewExecutor(id, name, flowconst.ExecutorTypeUtility,
+			[]flowmodel.InputData{}, prerequisites, properties),
 		userService: user.GetUserService(),
 	}
 }

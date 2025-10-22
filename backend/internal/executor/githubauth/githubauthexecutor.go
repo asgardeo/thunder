@@ -21,6 +21,7 @@ package githubauth
 
 import (
 	"errors"
+	"time"
 
 	authncm "github.com/asgardeo/thunder/internal/authn/common"
 	authngithub "github.com/asgardeo/thunder/internal/authn/github"
@@ -167,6 +168,14 @@ func (o *GithubOAuthExecutor) ProcessAuthFlowResponse(ctx *flowmodel.NodeContext
 
 	if execResp.AuthenticatedUser.IsAuthenticated {
 		execResp.Status = flowconst.ExecComplete
+
+		// Add execution record for successful GitHub OAuth authentication
+		execResp.ExecutionRecord = &flowmodel.NodeExecutionRecord{
+			ExecutorName: authncm.AuthenticatorGithub,
+			ExecutorType: flowconst.ExecutorTypeAuthentication,
+			Timestamp:    time.Now(),
+			Status:       flowconst.ExecutionStatusCompleted,
+		}
 	} else if ctx.FlowType != flowconst.FlowTypeRegistration {
 		execResp.Status = flowconst.ExecFailure
 		execResp.FailureReason = "Authentication failed. Authorization code not provided or invalid."

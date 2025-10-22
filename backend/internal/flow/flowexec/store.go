@@ -58,7 +58,7 @@ func (s *FlowStore) StoreFlowContext(ctx model.EngineContext) error {
 	queries := []func(tx dbmodel.TxInterface) error{
 		func(tx dbmodel.TxInterface) error {
 			_, err := tx.Exec(QueryCreateFlowContext.Query, dbModel.FlowID, dbModel.AppID,
-				dbModel.CurrentNodeID, dbModel.CurrentActionID, dbModel.GraphID, dbModel.RuntimeData)
+				dbModel.CurrentNodeID, dbModel.CurrentActionID, dbModel.GraphID, dbModel.RuntimeData, dbModel.ExecutionHistory)
 			return err
 		},
 		func(tx dbmodel.TxInterface) error {
@@ -106,7 +106,7 @@ func (s *FlowStore) UpdateFlowContext(ctx model.EngineContext) error {
 	queries := []func(tx dbmodel.TxInterface) error{
 		func(tx dbmodel.TxInterface) error {
 			_, err := tx.Exec(QueryUpdateFlowContext.Query, dbModel.FlowID,
-				dbModel.CurrentNodeID, dbModel.CurrentActionID, dbModel.RuntimeData)
+				dbModel.CurrentNodeID, dbModel.CurrentActionID, dbModel.RuntimeData, dbModel.ExecutionHistory)
 			return err
 		},
 		func(tx dbmodel.TxInterface) error {
@@ -188,21 +188,23 @@ func buildFlowContextFromResultRow(row map[string]interface{}) (*FlowContextWith
 	userInputs := parseOptionalString(row["user_inputs"])
 	runtimeData := parseOptionalString(row["runtime_data"])
 	userAttributes := parseOptionalString(row["user_attributes"])
+	executionHistory := parseOptionalString(row["execution_history"])
 
 	// Parse boolean field with type conversion support
 	isAuthenticated := parseBoolean(row["is_authenticated"])
 
 	return &FlowContextWithUserDataDB{
-		FlowID:          flowID,
-		AppID:           appID,
-		CurrentNodeID:   currentNodeID,
-		CurrentActionID: currentActionID,
-		GraphID:         graphID,
-		RuntimeData:     runtimeData,
-		IsAuthenticated: isAuthenticated,
-		UserID:          userID,
-		UserInputs:      userInputs,
-		UserAttributes:  userAttributes,
+		FlowID:           flowID,
+		AppID:            appID,
+		CurrentNodeID:    currentNodeID,
+		CurrentActionID:  currentActionID,
+		GraphID:          graphID,
+		RuntimeData:      runtimeData,
+		IsAuthenticated:  isAuthenticated,
+		UserID:           userID,
+		UserInputs:       userInputs,
+		UserAttributes:   userAttributes,
+		ExecutionHistory: executionHistory,
 	}, nil
 }
 

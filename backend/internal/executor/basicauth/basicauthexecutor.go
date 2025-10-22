@@ -22,6 +22,7 @@ package basicauth
 import (
 	"encoding/json"
 	"errors"
+	"time"
 
 	authncm "github.com/asgardeo/thunder/internal/authn/common"
 	authncreds "github.com/asgardeo/thunder/internal/authn/credentials"
@@ -63,8 +64,9 @@ func NewBasicAuthExecutor(id, name string, properties map[string]string) *BasicA
 	}
 	return &BasicAuthExecutor{
 		IdentifyingExecutor: identify.NewIdentifyingExecutor(id, name, properties),
-		internal:            *flowmodel.NewExecutor(id, name, defaultInputs, []flowmodel.InputData{}, properties),
-		credsAuthSvc:        authncreds.NewCredentialsAuthnService(nil),
+		internal: *flowmodel.NewExecutor(id, name, flowconst.ExecutorTypeAuthentication,
+			defaultInputs, []flowmodel.InputData{}, properties),
+		credsAuthSvc: authncreds.NewCredentialsAuthnService(nil),
 	}
 }
 
@@ -128,6 +130,16 @@ func (b *BasicAuthExecutor) Execute(ctx *flowmodel.NodeContext) (*flowmodel.Exec
 
 	execResp.AuthenticatedUser = *authenticatedUser
 	execResp.Status = flowconst.ExecComplete
+
+	// Add execution record for successful authentication
+	if authenticatedUser.IsAuthenticated {
+		execResp.ExecutionRecord = &flowmodel.NodeExecutionRecord{
+			ExecutorName: authncm.AuthenticatorCredentials,
+			ExecutorType: flowconst.ExecutorTypeAuthentication,
+			Timestamp:    time.Now(),
+			Status:       flowconst.ExecutionStatusCompleted,
+		}
+	}
 
 	logger.Debug("Basic authentication executor execution completed",
 		log.String("status", string(execResp.Status)),
