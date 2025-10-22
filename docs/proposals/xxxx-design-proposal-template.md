@@ -4,19 +4,30 @@
 _@your-github-handle_
 
 **Reviewers**:  
-_@github-handle (assigned reviewers)_
+_@github-handle (assigned reviewers, include security reviewer if applicable)_
+
+**Feature Issue**:  
+_#123 (REQUIRED - Link to the approved Feature issue)_
+
+**Design Discussion**:  
+_#discussions/456 (Link to the Design Proposals discussion)_
+
+**Created Date**:  
+_YYYY-MM-DD_
 
 **Status**:  
 _Accepted / Rejected / Implemented_
 
-**Related Issues/PRs**:  
-_Linked GitHub issues, discussions, or pull requests_
+**Related Proposals**:  
+_Links to related or superseded proposals (e.g., Supersedes: TAP-0010)_
 
 ---
 
 ## Summary
 
-_A high-level overview of the proposal (2-3 sentences). Focus on the what and why. Example: "This proposal introduces OAuth 2.0 Device Authorization Grant flow to enable authentication on input-constrained devices like smart TVs and IoT devices."_
+_A high-level overview of the proposal (2-3 sentences). Focus on the what and why. 
+
+Example: "This proposal introduces OAuth 2.0 Device Authorization Grant flow to enable authentication on input-constrained devices like smart TVs and IoT devices."_
 
 ---
 
