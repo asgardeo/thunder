@@ -16,8 +16,16 @@
  * under the License.
  */
 
+// Theme
 export {default as ColorModeIconDropdown} from './theme/ColorModeIconDropdown';
 export {default as ColorModeSelect} from './theme/ColorModeSelect';
 export {default as theme} from './theme/theme';
+
+// Layouts
 export {default as Layout} from './layouts/components';
 export {default as useLayout} from './layouts/contexts/useLayout';
+
+// Icons
+export {default as Facebook} from './icons/Facebook';
+export {default as GitHub} from './icons/GitHub';
+export {default as Google} from './icons/Google';
