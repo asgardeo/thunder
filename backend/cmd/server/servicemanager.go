@@ -30,7 +30,6 @@ import (
 	"github.com/asgardeo/thunder/internal/idp"
 	"github.com/asgardeo/thunder/internal/notification"
 	"github.com/asgardeo/thunder/internal/oauth"
-	"github.com/asgardeo/thunder/internal/oauth/oauth2/dcr"
 	"github.com/asgardeo/thunder/internal/ou"
 	"github.com/asgardeo/thunder/internal/system/jwt"
 	"github.com/asgardeo/thunder/internal/system/log"
@@ -62,8 +61,6 @@ func registerServices(mux *http.ServeMux) {
 	}
 	certservice, _ := cert.Initialize()
 	applicationService := application.Initialize(mux, certservice)
-
-	_ = dcr.Initialize(mux, applicationService)
 
 	_ = flowexec.Initialize(mux, flowMgtService, applicationService)
 

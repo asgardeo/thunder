@@ -150,6 +150,9 @@ To quickly get started with Thunder, you can use the sample app provided with th
         "description": "Sample application for testing",
         "url": "https://localhost:3000",
         "logo_url": "https://localhost:3000/logo.png",
+        "tos_uri": "https://localhost:3000/terms",
+        "policy_uri": "https://localhost:3000/privacy",
+        "contacts": ["admin@example.com", "support@example.com"],
         "auth_flow_graph_id": "auth_flow_config_basic",
         "registration_flow_graph_id": "registration_flow_config_basic",
         "is_registration_flow_enabled": true,
@@ -165,6 +168,8 @@ To quickly get started with Thunder, you can use the sample app provided with th
                 "token_endpoint_auth_method": "client_secret_basic",
                 "pkce_required": false,
                 "public_client": false,
+                "jwks_uri": "https://localhost:3000/.well-known/jwks",
+                "scope": "openid profile email",
                 "token": {
                     "issuer": "thunder",
                     "access_token": {
@@ -261,7 +266,9 @@ To try out the Client Credentials flow, follow these steps:
                     ],
                     "token_endpoint_auth_method": "client_secret_basic",
                     "pkce_required": false,
-                    "public_client": false
+                    "public_client": false,
+                    "jwks_uri": "https://localhost:3000/.well-known/jwks",
+                    "scope": "api:read api:write"
                 }
             }
         ]
@@ -321,7 +328,9 @@ To try out the Client Credentials flow, follow these steps:
                     ],
                     "token_endpoint_auth_method": "client_secret_basic",
                     "pkce_required": false,
-                    "public_client": false
+                    "public_client": false,
+                    "jwks_uri": "https://localhost:3000/.well-known/jwks",
+                    "scope": "api:read api:write"
                 }
             }
         ]
@@ -399,6 +408,8 @@ To try out the Client Credentials flow, follow these steps:
                     "token_endpoint_auth_method": "client_secret_basic",
                     "pkce_required": false,
                     "public_client": false,
+                    "jwks_uri": "https://localhost:3000/.well-known/jwks",
+                    "scope": "openid profile email",
                     "token": {
                         "issuer": "thunder",
                         "access_token": {
@@ -559,7 +570,9 @@ To try out the Client Credentials flow, follow these steps:
                     ],
                     "token_endpoint_auth_method": "client_secret_basic",
                     "pkce_required": false,
-                    "public_client": false
+                    "public_client": false,
+                    "jwks_uri": "https://localhost:3000/.well-known/jwks",
+                    "scope": "openid profile email"
                 }
             }
         ]

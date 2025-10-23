@@ -610,8 +610,7 @@ func validateOAuthParamsForCreateAndUpdate(app *model.ApplicationDTO) (*model.In
 		oauthAppConfig.GrantTypes = []oauth2const.GrantType{oauth2const.GrantTypeAuthorizationCode}
 	}
 	if len(oauthAppConfig.ResponseTypes) == 0 {
-		hasAuthorizationCodeGrant := slices.Contains(oauthAppConfig.GrantTypes, oauth2const.GrantTypeAuthorizationCode)
-		if hasAuthorizationCodeGrant {
+		if slices.Contains(oauthAppConfig.GrantTypes, oauth2const.GrantTypeAuthorizationCode) {
 			oauthAppConfig.ResponseTypes = []oauth2const.ResponseType{oauth2const.ResponseTypeCode}
 		}
 	}
@@ -1150,19 +1149,15 @@ func processTokenConfiguration(app *model.ApplicationDTO) (
 
 // validateGrantTypeResponseType validates that grant types and response types are compatible.
 func validateGrantTypeResponseType(oauthConfig *model.OAuthAppConfigDTO) *serviceerror.ServiceError {
-	if len(oauthConfig.GrantTypes) == 0 {
-		return nil
-	}
-
-	hasClientCredentials := slices.Contains(oauthConfig.GrantTypes, oauth2const.GrantTypeClientCredentials)
-	hasAuthorizationCode := slices.Contains(oauthConfig.GrantTypes, oauth2const.GrantTypeAuthorizationCode)
-
-	if hasClientCredentials && !hasAuthorizationCode && len(oauthConfig.ResponseTypes) > 0 {
+	if len(oauthConfig.GrantTypes) == 1 &&
+		slices.Contains(oauthConfig.GrantTypes, oauth2const.GrantTypeClientCredentials) &&
+		len(oauthConfig.ResponseTypes) > 0 {
 		return &ErrorClientCredentialsWithResponseTypes
 	}
 
-	if hasAuthorizationCode && len(oauthConfig.ResponseTypes) > 0 {
-		if !slices.Contains(oauthConfig.ResponseTypes, oauth2const.ResponseTypeCode) {
+	if slices.Contains(oauthConfig.GrantTypes, oauth2const.GrantTypeAuthorizationCode) {
+		if len(oauthConfig.ResponseTypes) == 0 ||
+			!slices.Contains(oauthConfig.ResponseTypes, oauth2const.ResponseTypeCode) {
 			return &ErrorAuthorizationCodeMissingCodeResponseType
 		}
 	}
@@ -1172,13 +1167,8 @@ func validateGrantTypeResponseType(oauthConfig *model.OAuthAppConfigDTO) *servic
 
 // validateGrantTypeTokenEndpointAuthMethod validates that grant types and token endpoint auth methods are compatible.
 func validateGrantTypeTokenEndpointAuthMethod(oauthConfig *model.OAuthAppConfigDTO) *serviceerror.ServiceError {
-	if len(oauthConfig.GrantTypes) == 0 {
-		return nil
-	}
-
-	hasClientCredentials := slices.Contains(oauthConfig.GrantTypes, oauth2const.GrantTypeClientCredentials)
-
-	if hasClientCredentials && oauthConfig.TokenEndpointAuthMethod == oauth2const.TokenEndpointAuthMethodNone {
+	if slices.Contains(oauthConfig.GrantTypes, oauth2const.GrantTypeClientCredentials) &&
+		oauthConfig.TokenEndpointAuthMethod == oauth2const.TokenEndpointAuthMethodNone {
 		return &ErrorClientCredentialsWithNoneAuth
 	}
 
@@ -1187,13 +1177,8 @@ func validateGrantTypeTokenEndpointAuthMethod(oauthConfig *model.OAuthAppConfigD
 
 // validateRedirectURI validates that redirect URIs are provided when required by grant types.
 func validateRedirectURI(oauthConfig *model.OAuthAppConfigDTO) *serviceerror.ServiceError {
-	if len(oauthConfig.GrantTypes) == 0 {
-		return nil
-	}
-
-	hasAuthorizationCode := slices.Contains(oauthConfig.GrantTypes, oauth2const.GrantTypeAuthorizationCode)
-
-	if hasAuthorizationCode && len(oauthConfig.RedirectURIs) == 0 {
+	if slices.Contains(oauthConfig.GrantTypes, oauth2const.GrantTypeAuthorizationCode) &&
+		len(oauthConfig.RedirectURIs) == 0 {
 		return &ErrorAuthorizationCodeMissingRedirectURI
 	}
 
@@ -1202,14 +1187,11 @@ func validateRedirectURI(oauthConfig *model.OAuthAppConfigDTO) *serviceerror.Ser
 
 // validateJWKSConfiguration validates JWKS-related fields according to RFC 7591.
 func validateJWKSConfiguration(oauthConfig *model.OAuthAppConfigDTO) *serviceerror.ServiceError {
-	hasJWKS := len(oauthConfig.JWKS) > 0
-	hasJWKSUri := oauthConfig.JWKSUri != ""
-
-	if hasJWKS && hasJWKSUri {
+	if len(oauthConfig.JWKS) > 0 && oauthConfig.JWKSUri != "" {
 		return &ErrorJWKSConfigurationConflict
 	}
 
-	if hasJWKSUri {
+	if oauthConfig.JWKSUri != "" {
 		if !strings.HasPrefix(oauthConfig.JWKSUri, "https://") {
 			return &ErrorJWKSUriNotHTTPS
 		}

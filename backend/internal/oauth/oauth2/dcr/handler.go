@@ -46,7 +46,8 @@ func (dh *dcrHandler) HandleDCRRegistration(w http.ResponseWriter, r *http.Reque
 
 	dcrRequest, err := sysutils.DecodeJSONBody[DCRRegistrationRequest](r)
 	if err != nil {
-		sysutils.WriteJSONError(w, "invalid_client_metadata", "Invalid request format", http.StatusBadRequest, nil)
+		sysutils.WriteJSONError(w, ErrorInvalidRequestFormat.Code,
+			ErrorInvalidRequestFormat.ErrorDescription, http.StatusBadRequest, nil)
 		return
 	}
 
