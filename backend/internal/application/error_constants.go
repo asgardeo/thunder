@@ -129,6 +129,13 @@ var (
 		Error:            "Invalid redirect URI",
 		ErrorDescription: "One or more provided redirect URIs are not valid URIs",
 	}
+	// ErrorRedirectURIWithFragment is the error returned when a redirect URI contains a fragment component.
+	ErrorRedirectURIWithFragment = serviceerror.ServiceError{
+		Type:             serviceerror.ClientErrorType,
+		Code:             "APP-1014",
+		Error:            "Redirect URI contains fragment",
+		ErrorDescription: "Redirect URIs must not contain a fragment component as per RFC 6749 Section 3.1.2",
+	}
 	// ErrorInvalidCertificateType is the error returned when an invalid certificate type is provided.
 	ErrorInvalidCertificateType = serviceerror.ServiceError{
 		Type:             serviceerror.ClientErrorType,
@@ -149,6 +156,73 @@ var (
 		Code:             "APP-1018",
 		Error:            "Invalid JWKS URI",
 		ErrorDescription: "The provided JWKS URI is not a valid URI",
+	}
+	// ErrorJWKSConfigurationConflict is the error returned when both jwks and jwks_uri are provided.
+	ErrorJWKSConfigurationConflict = serviceerror.ServiceError{
+		Type:             serviceerror.ClientErrorType,
+		Code:             "APP-1025",
+		Error:            "Invalid JWKS configuration",
+		ErrorDescription: "Cannot specify both 'jwks' and 'jwks_uri' parameters",
+	}
+	// ErrorJWKSUriNotHTTPS is the error returned when jwks_uri does not use HTTPS.
+	ErrorJWKSUriNotHTTPS = serviceerror.ServiceError{
+		Type:             serviceerror.ClientErrorType,
+		Code:             "APP-1026",
+		Error:            "Invalid JWKS URI scheme",
+		ErrorDescription: "'jwks_uri' must use HTTPS scheme",
+	}
+	// ErrorPublicClientInvalidAuthMethod is the error returned when public client uses invalid auth method.
+	ErrorPublicClientInvalidAuthMethod = serviceerror.ServiceError{
+		Type:             serviceerror.ClientErrorType,
+		Code:             "APP-1027",
+		Error:            "Invalid public client configuration",
+		ErrorDescription: "Public clients must use only 'none' as token endpoint authentication method",
+	}
+	// ErrorPublicClientInvalidGrantType is the error returned when public client uses invalid grant type.
+	ErrorPublicClientInvalidGrantType = serviceerror.ServiceError{
+		Type:             serviceerror.ClientErrorType,
+		Code:             "APP-1028",
+		Error:            "Invalid public client configuration",
+		ErrorDescription: "Public clients cannot use the client_credentials grant type",
+	}
+	// ErrorPublicClientHasSecret is the error returned when public client has client secret.
+	ErrorPublicClientHasSecret = serviceerror.ServiceError{
+		Type:             serviceerror.ClientErrorType,
+		Code:             "APP-1029",
+		Error:            "Invalid public client configuration",
+		ErrorDescription: "Public clients cannot have client secrets",
+	}
+	// ErrorClientCredentialsWithResponseTypes is the error returned when
+	// client_credentials grant is used with response types.
+	ErrorClientCredentialsWithResponseTypes = serviceerror.ServiceError{
+		Type:             serviceerror.ClientErrorType,
+		Code:             "APP-1030",
+		Error:            "Invalid grant type configuration",
+		ErrorDescription: "client_credentials grant type cannot be used with response types",
+	}
+	// ErrorAuthorizationCodeMissingCodeResponseType is the error returned when
+	// authorization_code grant is used without code response type.
+	ErrorAuthorizationCodeMissingCodeResponseType = serviceerror.ServiceError{
+		Type:             serviceerror.ClientErrorType,
+		Code:             "APP-1031",
+		Error:            "Invalid response type configuration",
+		ErrorDescription: "authorization_code grant type requires 'code' response type",
+	}
+	// ErrorClientCredentialsWithNoneAuth is the error returned when
+	// client_credentials grant is used with none auth method.
+	ErrorClientCredentialsWithNoneAuth = serviceerror.ServiceError{
+		Type:             serviceerror.ClientErrorType,
+		Code:             "APP-1032",
+		Error:            "Invalid authentication method configuration",
+		ErrorDescription: "client_credentials grant type cannot use 'none' authentication method",
+	}
+	// ErrorAuthorizationCodeMissingRedirectURI is the error returned when
+	// authorization_code grant is used without redirect URIs.
+	ErrorAuthorizationCodeMissingRedirectURI = serviceerror.ServiceError{
+		Type:             serviceerror.ClientErrorType,
+		Code:             "APP-1033",
+		Error:            "Missing required redirect URI",
+		ErrorDescription: "authorization_code grant type requires redirect URIs",
 	}
 	// ErrorApplicationNil is the error returned when the application object is nil.
 	ErrorApplicationNil = serviceerror.ServiceError{
@@ -186,13 +260,6 @@ var (
 		Code:             "APP-1023",
 		Error:            "Application with client ID already exists",
 		ErrorDescription: "An application with the same client ID already exists",
-	}
-	// ErrorPublicClientInvalidConfiguration is the error returned when a public client has invalid configuration.
-	ErrorPublicClientInvalidConfiguration = serviceerror.ServiceError{
-		Type:             serviceerror.ClientErrorType,
-		Code:             "APP-1024",
-		Error:            "Invalid configurations for public client",
-		ErrorDescription: "One or more configurations specified are not valid for the public clients",
 	}
 )
 

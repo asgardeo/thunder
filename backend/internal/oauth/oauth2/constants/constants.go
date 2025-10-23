@@ -82,10 +82,6 @@ const (
 	GrantTypeAuthorizationCode GrantType = "authorization_code"
 	// GrantTypeClientCredentials represents the client credentials grant type.
 	GrantTypeClientCredentials GrantType = "client_credentials"
-	// GrantTypePassword represents the resource owner password credentials grant type.
-	GrantTypePassword GrantType = "password"
-	// GrantTypeImplicit represents the implicit grant type.
-	GrantTypeImplicit GrantType = "implicit"
 	// GrantTypeRefreshToken represents the refresh token grant type.
 	GrantTypeRefreshToken GrantType = "refresh_token"
 )
@@ -95,8 +91,6 @@ func (gt GrantType) IsValid() bool {
 	switch gt {
 	case GrantTypeAuthorizationCode,
 		GrantTypeClientCredentials,
-		GrantTypePassword,
-		GrantTypeImplicit,
 		GrantTypeRefreshToken:
 		return true
 	default:
@@ -110,8 +104,6 @@ type ResponseType string
 const (
 	// ResponseTypeCode represents the authorization code response type.
 	ResponseTypeCode ResponseType = "code"
-	// ResponseTypeToken represents the implicit token response type.
-	ResponseTypeToken ResponseType = "token"
 )
 
 // IsValid checks if the ResponseType is valid.
