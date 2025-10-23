@@ -90,6 +90,21 @@ var (
 		Error:            "User not found",
 		ErrorDescription: "No user found with the provided attributes",
 	}
+	// ErrorInvalidAssertion is the error returned when the provided assertion token is invalid.
+	ErrorInvalidAssertion = serviceerror.ServiceError{
+		Type:             serviceerror.ClientErrorType,
+		Code:             "AUTHN-1009",
+		Error:            "Invalid assertion",
+		ErrorDescription: "The provided assertion token is invalid",
+	}
+	// ErrorAssertionSubjectMismatch is the error returned when the assertion subject doesn't match
+	// the authenticated user.
+	ErrorAssertionSubjectMismatch = serviceerror.ServiceError{
+		Type:             serviceerror.ClientErrorType,
+		Code:             "AUTHN-1010",
+		Error:            "Assertion subject mismatch",
+		ErrorDescription: "The subject in the assertion does not match the authenticated user",
+	}
 )
 
 // Server errors for the service
