@@ -77,7 +77,10 @@ func (dto *IDPDTO) GetPropertyValue(name string) (string, error) {
 	}
 	return "", nil
 }
-
+// GetPropertyAsArray returns the property value with the given name as a string slice.
+// It splits the value by commas (preferred format), or by spaces for legacy values.
+// Returns an empty slice if the property is not set.
+// Returns an error if retrieving the property value fails.
 func (dto *IDPDTO) GetPropertyAsArray(name string) ([]string, error) {
 	value, err := dto.GetPropertyValue(name)
 	if err != nil {

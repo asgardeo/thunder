@@ -74,13 +74,13 @@ func parseIDPConfig(idp *idp.IDPDTO) (*OAuthClientConfig, error) {
 		}
 	}
 
-	scopes, err := idp.GetScopes()
+	    scopes, err := idp.GetScopes()
         if err != nil {
-        return nil, fmt.Errorf("failed to get scopes: %w", err)
+        	return nil, fmt.Errorf("failed to get scopes: %w", err)
         } 
-    oAuthClientConfig.Scopes = scopes
+        oAuthClientConfig.Scopes = scopes
 
-      return &oAuthClientConfig, nil
+        return &oAuthClientConfig, nil
 }
 
 // buildTokenRequest constructs the HTTP request to exchange the authorization code for tokens.
