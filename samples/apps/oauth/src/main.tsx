@@ -21,11 +21,19 @@ import { createRoot } from 'react-dom/client'
 import './index.css'
 import App from './App.tsx'
 import ThemeProvider from './theme/ThemeProvider.tsx'
+import { ensureConfigReady } from './config.tsx'
 
-createRoot(document.getElementById('root')!).render(
-  <StrictMode>
-    <ThemeProvider>
-      <App />
-    </ThemeProvider>
-  </StrictMode>,
-)
+// Ensure configuration is loaded before rendering the app
+ensureConfigReady().then(() => {
+  createRoot(document.getElementById('root')!).render(
+    <StrictMode>
+      <ThemeProvider>
+        <App />
+      </ThemeProvider>
+    </StrictMode>,
+  )
+}).catch((error) => {
+  console.error('Failed to initialize application configuration:', error);
+  // Render error state or fallback UI
+  document.getElementById('root')!.innerHTML = '<div style="padding: 20px; text-align: center;"><h1>Configuration Error</h1><p>Failed to load application configuration. Please refresh the page.</p></div>';
+});
