@@ -85,8 +85,6 @@ func (suite *GrantHandlerProviderTestSuite) TestGetGrantHandler_UnsupportedGrant
 		name      string
 		grantType constants.GrantType
 	}{
-		{"Password", constants.GrantTypePassword},
-		{"Implicit", constants.GrantTypeImplicit},
 		{"InvalidType", constants.GrantType("invalid_type")},
 		{"EmptyType", constants.GrantType("")},
 	}

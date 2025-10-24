@@ -53,8 +53,11 @@ type ApplicationDTO struct {
 	RegistrationFlowGraphID   string
 	IsRegistrationFlowEnabled bool
 
-	URL     string
-	LogoURL string
+	URL       string
+	LogoURL   string
+	TosURI    string
+	PolicyURI string
+	Contacts  []string
 
 	Token             *TokenConfig
 	Certificate       *ApplicationCertificate
@@ -81,8 +84,11 @@ type ApplicationProcessedDTO struct {
 	RegistrationFlowGraphID   string
 	IsRegistrationFlowEnabled bool
 
-	URL     string
-	LogoURL string
+	URL       string
+	LogoURL   string
+	TosURI    string
+	PolicyURI string
+	Contacts  []string
 
 	Token             *TokenConfig
 	Certificate       *ApplicationCertificate
@@ -120,6 +126,9 @@ type ApplicationRequest struct {
 	LogoURL                   string                      `json:"logo_url,omitempty"`
 	Token                     *TokenConfig                `json:"token,omitempty"`
 	Certificate               *ApplicationCertificate     `json:"certificate,omitempty"`
+	TosURI                    string                      `json:"tos_uri,omitempty"`
+	PolicyURI                 string                      `json:"policy_uri,omitempty"`
+	Contacts                  []string                    `json:"contacts,omitempty"`
 	InboundAuthConfig         []InboundAuthConfigComplete `json:"inbound_auth_config,omitempty"`
 }
 
@@ -136,6 +145,9 @@ type ApplicationCompleteResponse struct {
 	LogoURL                   string                      `json:"logo_url,omitempty"`
 	Token                     *TokenConfig                `json:"token,omitempty"`
 	Certificate               *ApplicationCertificate     `json:"certificate,omitempty"`
+	TosURI                    string                      `json:"tos_uri,omitempty"`
+	PolicyURI                 string                      `json:"policy_uri,omitempty"`
+	Contacts                  []string                    `json:"contacts,omitempty"`
 	InboundAuthConfig         []InboundAuthConfigComplete `json:"inbound_auth_config,omitempty"`
 }
 
@@ -152,6 +164,9 @@ type ApplicationGetResponse struct {
 	LogoURL                   string                  `json:"logo_url,omitempty"`
 	Token                     *TokenConfig            `json:"token,omitempty"`
 	Certificate               *ApplicationCertificate `json:"certificate,omitempty"`
+	TosURI                    string                  `json:"tos_uri,omitempty"`
+	PolicyURI                 string                  `json:"policy_uri,omitempty"`
+	Contacts                  []string                `json:"contacts,omitempty"`
 	InboundAuthConfig         []InboundAuthConfig     `json:"inbound_auth_config,omitempty"`
 }
 

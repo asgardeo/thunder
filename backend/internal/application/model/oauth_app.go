@@ -38,6 +38,9 @@ type OAuthAppConfig struct {
 	PKCERequired            bool                                `json:"pkce_required"`
 	PublicClient            bool                                `json:"public_client"`
 	Token                   *OAuthTokenConfig                   `json:"token,omitempty"`
+	JWKSUri                 string                              `json:"jwks_uri,omitempty"`
+	JWKS                    map[string]interface{}              `json:"jwks,omitempty"`
+	Scope                   string                              `json:"scope,omitempty"`
 }
 
 // OAuthAppConfigComplete represents the complete structure for OAuth application configuration.
@@ -51,6 +54,9 @@ type OAuthAppConfigComplete struct {
 	PKCERequired            bool                                `json:"pkce_required"`
 	PublicClient            bool                                `json:"public_client"`
 	Token                   *OAuthTokenConfig                   `json:"token,omitempty"`
+	JWKSUri                 string                              `json:"jwks_uri,omitempty"`
+	JWKS                    map[string]interface{}              `json:"jwks,omitempty"`
+	Scope                   string                              `json:"scope,omitempty"`
 }
 
 // OAuthAppConfigDTO represents the data transfer object for OAuth application configuration.
@@ -65,6 +71,9 @@ type OAuthAppConfigDTO struct {
 	PKCERequired            bool
 	PublicClient            bool
 	Token                   *OAuthTokenConfig
+	JWKSUri                 string
+	JWKS                    map[string]interface{}
+	Scope                   string
 }
 
 // IsAllowedGrantType checks if the provided grant type is allowed.
@@ -99,6 +108,9 @@ type OAuthAppConfigProcessedDTO struct {
 	PKCERequired            bool
 	PublicClient            bool
 	Token                   *OAuthTokenConfig
+	JWKSUri                 string
+	JWKS                    map[string]interface{}
+	Scope                   string
 }
 
 // IsAllowedGrantType checks if the provided grant type is allowed.
