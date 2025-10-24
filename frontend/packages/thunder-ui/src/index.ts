@@ -29,3 +29,6 @@ export {default as useLayout} from './layouts/contexts/useLayout';
 export {default as Facebook} from './icons/Facebook';
 export {default as GitHub} from './icons/GitHub';
 export {default as Google} from './icons/Google';
+
+// Components
+export {default as ThemedIcon} from './components/ThemedIcon';
