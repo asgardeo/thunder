@@ -56,10 +56,5 @@
     "eslint": "catalog:",
     "typescript": "catalog:",
     "vite": "catalog:"
-  },
-  "pnpm": {
-    "overrides": {
-      "vite": "catalog:"
-    }
   }
 }
