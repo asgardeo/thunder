@@ -22,7 +22,7 @@ import (
 	"strings"
 
 	"github.com/asgardeo/thunder/internal/system/cmodels"
-		)
+)
 
 // IDPDTO represents the data transfer object for an identity provider.
 type IDPDTO struct {
@@ -66,7 +66,9 @@ type basicIDPResponse struct {
 	Type        string `json:"type"`
 }
 
-// GetPropertyValue returns a property value by name
+// GetPropertyValue returns the property value with the given name.
+// Returns an empty string if the property is not found.
+// Returns an error if retrieving the property value fails.
 func (dto *IDPDTO) GetPropertyValue(name string) (string, error) {
 	for _, prop := range dto.Properties {
 		if prop.GetName() == name {
