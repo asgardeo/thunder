@@ -32,7 +32,6 @@ import (
 	"github.com/asgardeo/thunder/internal/system/error/serviceerror"
 	httpservice "github.com/asgardeo/thunder/internal/system/http"
 	"github.com/asgardeo/thunder/internal/system/log"
-	sysutils "github.com/asgardeo/thunder/internal/system/utils"
 )
 
 // parseIDPConfig extracts the OAuth client configuration from the identity provider details.
@@ -40,8 +39,6 @@ func parseIDPConfig(idp *idp.IDPDTO) (*OAuthClientConfig, error) {
 	oAuthClientConfig := OAuthClientConfig{
 		AdditionalParams: make(map[string]string),
 	}
-
-	var scopesRaw string
 	for _, prop := range idp.Properties {
 		name := strings.TrimSpace(prop.GetName())
 		value, err := prop.GetValue()
@@ -57,8 +54,6 @@ func parseIDPConfig(idp *idp.IDPDTO) (*OAuthClientConfig, error) {
 			oAuthClientConfig.ClientSecret = value
 		case "redirect_uri":
 			oAuthClientConfig.RedirectURI = value
-		case "scopes":
-			scopesRaw = value
 		case "authorization_endpoint":
 			oAuthClientConfig.OAuthEndpoints.AuthorizationEndpoint = value
 		case "token_endpoint":
@@ -76,13 +71,11 @@ func parseIDPConfig(idp *idp.IDPDTO) (*OAuthClientConfig, error) {
 		}
 	}
 
-	if scopesRaw != "" {
-		oAuthClientConfig.Scopes = sysutils.ParseStringArray(scopesRaw, ",")
-		if len(oAuthClientConfig.Scopes) == 1 && strings.Contains(scopesRaw, " ") &&
-			!strings.Contains(scopesRaw, ",") {
-			oAuthClientConfig.Scopes = sysutils.ParseStringArray(scopesRaw, " ")
-		}
+	scopes, err := idp.GetScopes()
+	if err != nil {
+		return nil, fmt.Errorf("failed to get scopes: %w", err)
 	}
+	oAuthClientConfig.Scopes = scopes
 
 	return &oAuthClientConfig, nil
 }
