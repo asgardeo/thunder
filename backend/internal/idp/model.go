@@ -76,6 +76,7 @@ func (dto *IDPDTO) GetPropertyValue(name string) (string, error) {
 		}
 	}
 	return "", nil
+
 }
 
 // GetPropertyAsArray returns the property value with the given name as a string slice.
@@ -87,11 +88,11 @@ func (dto *IDPDTO) GetPropertyAsArray(name string) ([]string, error) {
 	if err != nil {
 		return nil, err
 	}
-	
+
 	if value == "" {
 		return []string{}, nil
 	}
-	
+
 	// Split comma-separated values first (preferred format)
 	parts := strings.Split(value, ",")
 	result := make([]string, 0, len(parts))
@@ -101,7 +102,7 @@ func (dto *IDPDTO) GetPropertyAsArray(name string) ([]string, error) {
 			result = append(result, trimmed)
 		}
 	}
-	
+
 	// Backward compatibility: If only one item and it contains spaces but no commas,
 	// treat it as space-separated (for legacy OAuth scopes like "openid profile email")
 	if len(result) == 1 && strings.Contains(value, " ") && !strings.Contains(value, ",") {
@@ -114,7 +115,7 @@ func (dto *IDPDTO) GetPropertyAsArray(name string) ([]string, error) {
 			}
 		}
 	}
-	
+
 	return result, nil
 }
 

@@ -166,6 +166,7 @@ func (p *Property) ToPropertyDTO() (*PropertyDTO, error) {
 		IsSecret: p.IsSecret(),
 	}, nil
 }
+
 // PropertyValueDTO represents a property value that can be either a string or array of strings
 type PropertyValueDTO struct {
 	single   string

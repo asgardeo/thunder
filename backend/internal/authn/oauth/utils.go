@@ -32,7 +32,6 @@ import (
 	"github.com/asgardeo/thunder/internal/system/error/serviceerror"
 	httpservice "github.com/asgardeo/thunder/internal/system/http"
 	"github.com/asgardeo/thunder/internal/system/log"
-	
 )
 
 // parseIDPConfig extracts the OAuth client configuration from the identity provider details.
@@ -40,7 +39,6 @@ func parseIDPConfig(idp *idp.IDPDTO) (*OAuthClientConfig, error) {
 	oAuthClientConfig := OAuthClientConfig{
 		AdditionalParams: make(map[string]string),
 	}
-
 	for _, prop := range idp.Properties {
 		name := strings.TrimSpace(prop.GetName())
 		value, err := prop.GetValue()
@@ -73,13 +71,13 @@ func parseIDPConfig(idp *idp.IDPDTO) (*OAuthClientConfig, error) {
 		}
 	}
 
-	    scopes, err := idp.GetScopes()
-        if err != nil {
-        	return nil, fmt.Errorf("failed to get scopes: %w", err)
-        } 
-        oAuthClientConfig.Scopes = scopes
+	scopes, err := idp.GetScopes()
+	if err != nil {
+		return nil, fmt.Errorf("failed to get scopes: %w", err)
+	}
+	oAuthClientConfig.Scopes = scopes
 
-        return &oAuthClientConfig, nil
+	return &oAuthClientConfig, nil
 }
 
 // buildTokenRequest constructs the HTTP request to exchange the authorization code for tokens.
