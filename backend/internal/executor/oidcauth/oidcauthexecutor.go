@@ -23,6 +23,7 @@ import (
 	"errors"
 	"fmt"
 	"slices"
+	"time"
 
 	authncm "github.com/asgardeo/thunder/internal/authn/common"
 	authnoauth "github.com/asgardeo/thunder/internal/authn/oauth"
@@ -258,6 +259,14 @@ func (o *OIDCAuthExecutor) ProcessAuthFlowResponse(ctx *flowmodel.NodeContext,
 
 	if execResp.AuthenticatedUser.IsAuthenticated {
 		execResp.Status = flowconst.ExecComplete
+
+		// Add execution record for successful OIDC authentication
+		execResp.ExecutionRecord = &flowmodel.NodeExecutionRecord{
+			ExecutorName: authncm.AuthenticatorOIDC,
+			ExecutorType: flowconst.ExecutorTypeAuthentication,
+			Timestamp:    time.Now(),
+			Status:       flowconst.ExecutionStatusCompleted,
+		}
 	} else if ctx.FlowType != flowconst.FlowTypeRegistration {
 		execResp.Status = flowconst.ExecFailure
 		execResp.FailureReason = "Authentication failed. Authorization code not provided or invalid."

@@ -22,6 +22,7 @@ package googleauth
 import (
 	"errors"
 
+	authncm "github.com/asgardeo/thunder/internal/authn/common"
 	authngoogle "github.com/asgardeo/thunder/internal/authn/google"
 	authnoauth "github.com/asgardeo/thunder/internal/authn/oauth"
 	authnoidc "github.com/asgardeo/thunder/internal/authn/oidc"
@@ -177,6 +178,11 @@ func (g *GoogleOIDCAuthExecutor) Execute(ctx *flowmodel.NodeContext) (*flowmodel
 		err := g.ProcessAuthFlowResponse(ctx, execResp)
 		if err != nil {
 			return nil, err
+		}
+
+		// Override the ExecutorName from parent class to use the specific Google authenticator name
+		if execResp.ExecutionRecord != nil {
+			execResp.ExecutionRecord.ExecutorName = authncm.AuthenticatorGoogle
 		}
 
 		logger.Debug("Google OIDC auth executor execution completed",

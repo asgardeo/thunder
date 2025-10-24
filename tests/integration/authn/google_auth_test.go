@@ -484,6 +484,120 @@ func (suite *GoogleAuthTestSuite) simulateGoogleAuthorization(redirectURL string
 	return code
 }
 
+// TestGoogleAuthWithAssuranceLevelAAL1 tests that Google authentication generates AAL1 assurance level
+func (suite *GoogleAuthTestSuite) TestGoogleAuthWithAssuranceLevelAAL1() {
+	// Step 1: Start Google authentication
+	startReq := map[string]interface{}{
+		"idp_id": suite.idpID,
+	}
+	startReqJSON, err := json.Marshal(startReq)
+	suite.Require().NoError(err)
+
+	req, err := http.NewRequest("POST", testServerURL+googleAuthStart, bytes.NewReader(startReqJSON))
+	suite.Require().NoError(err)
+	req.Header.Set("Content-Type", "application/json")
+
+	client := getHTTPClient()
+	resp, err := client.Do(req)
+	suite.Require().NoError(err)
+	defer resp.Body.Close()
+
+	var startResp map[string]interface{}
+	err = json.NewDecoder(resp.Body).Decode(&startResp)
+	suite.Require().NoError(err)
+	suite.Equal(http.StatusOK, resp.StatusCode)
+
+	sessionToken := startResp["session_token"].(string)
+	suite.NotEmpty(sessionToken)
+
+	// Step 2: Get authorization code from mock server
+	code := suite.simulateGoogleAuthorization(startResp["redirect_url"].(string))
+	suite.NotEmpty(code)
+
+	// Step 3: Finish Google authentication
+	finishReq := map[string]interface{}{
+		"session_token": sessionToken,
+		"code":          code,
+	}
+	finishReqJSON, err := json.Marshal(finishReq)
+	suite.Require().NoError(err)
+
+	req, err = http.NewRequest("POST", testServerURL+googleAuthFinish, bytes.NewReader(finishReqJSON))
+	suite.Require().NoError(err)
+	req.Header.Set("Content-Type", "application/json")
+
+	resp, err = client.Do(req)
+	suite.Require().NoError(err)
+	defer resp.Body.Close()
+
+	var authResp testutils.AuthenticationResponse
+	err = json.NewDecoder(resp.Body).Decode(&authResp)
+	suite.Require().NoError(err)
+	suite.Equal(http.StatusOK, resp.StatusCode)
+
+	suite.NotEmpty(authResp.Assertion, "Response should contain assertion token by default")
+
+	// Verify assertion contains AAL1 for single-factor Google authentication
+	aal := extractAssuranceLevelFromAssertion(authResp.Assertion, "aal")
+	suite.NotEmpty(aal, "Assertion should contain AAL information")
+	suite.Equal("AAL1", aal, "Single-factor Google authentication should result in AAL1")
+
+	// Verify IAL is present
+	ial := extractAssuranceLevelFromAssertion(authResp.Assertion, "ial")
+	suite.NotEmpty(ial, "Assertion should contain IAL information")
+	suite.Equal("IAL1", ial, "Self-asserted identity should result in IAL1")
+}
+
+// TestGoogleAuthWithSkipAssertion tests Google authentication with skip_assertion=true
+func (suite *GoogleAuthTestSuite) TestGoogleAuthWithSkipAssertion() {
+	// Start authentication
+	startReq := map[string]interface{}{
+		"idp_id": suite.idpID,
+	}
+	startReqJSON, err := json.Marshal(startReq)
+	suite.Require().NoError(err)
+
+	req, err := http.NewRequest("POST", testServerURL+googleAuthStart, bytes.NewReader(startReqJSON))
+	suite.Require().NoError(err)
+	req.Header.Set("Content-Type", "application/json")
+
+	client := getHTTPClient()
+	resp, err := client.Do(req)
+	suite.Require().NoError(err)
+	defer resp.Body.Close()
+
+	var startResp map[string]interface{}
+	err = json.NewDecoder(resp.Body).Decode(&startResp)
+	suite.Require().NoError(err)
+
+	sessionToken := startResp["session_token"].(string)
+	code := suite.simulateGoogleAuthorization(startResp["redirect_url"].(string))
+
+	// Finish with skip_assertion=true
+	finishReq := map[string]interface{}{
+		"session_token":  sessionToken,
+		"code":           code,
+		"skip_assertion": true,
+	}
+	finishReqJSON, err := json.Marshal(finishReq)
+	suite.Require().NoError(err)
+
+	req, err = http.NewRequest("POST", testServerURL+googleAuthFinish, bytes.NewReader(finishReqJSON))
+	suite.Require().NoError(err)
+	req.Header.Set("Content-Type", "application/json")
+
+	resp, err = client.Do(req)
+	suite.Require().NoError(err)
+	defer resp.Body.Close()
+
+	var authResp testutils.AuthenticationResponse
+	err = json.NewDecoder(resp.Body).Decode(&authResp)
+	suite.Require().NoError(err)
+	suite.Equal(http.StatusOK, resp.StatusCode)
+
+	suite.Empty(authResp.Assertion, "Response should not contain assertion when skip_assertion is true")
+}
+
 // getHTTPClient returns a configured HTTP client
 func getHTTPClient() *http.Client {
 	return &http.Client{

@@ -516,6 +516,85 @@ func (suite *CredentialsAuthTestSuite) TestAuthenticateWithSkipAssertionTrue() {
 	suite.Empty(response.Assertion, "Response should not contain assertion token when skip_assertion is true")
 }
 
+// TestAuthenticateWithAssuranceLevelAAL1 tests that credentials authentication generates AAL1 assurance level
+func (suite *CredentialsAuthTestSuite) TestAuthenticateWithAssuranceLevelAAL1() {
+	authRequest := map[string]interface{}{
+		"username": "credtest_user1",
+		"password": "TestPassword123!",
+	}
+
+	response, statusCode, err := suite.sendAuthRequest(authRequest)
+	suite.Require().NoError(err, "Failed to send authenticate request")
+	suite.Equal(http.StatusOK, statusCode, "Expected status 200 for successful authentication")
+
+	suite.NotEmpty(response.Assertion, "Response should contain assertion token by default")
+
+	// Verify assertion contains AAL1 for single-factor authentication
+	aal := extractAssuranceLevelFromAssertion(response.Assertion, "aal")
+	suite.NotEmpty(aal, "Assertion should contain AAL information")
+	suite.Equal("AAL1", aal, "Single-factor credentials authentication should result in AAL1")
+
+	// Verify IAL is present (default IAL1 for self-asserted identities)
+	ial := extractAssuranceLevelFromAssertion(response.Assertion, "ial")
+	suite.NotEmpty(ial, "Assertion should contain IAL information")
+	suite.Equal("IAL1", ial, "Self-asserted identity should result in IAL1")
+}
+
+// TestAuthenticateWithAssuranceLevelNoAssertion tests that AAL/IAL are not present when assertion is skipped
+func (suite *CredentialsAuthTestSuite) TestAuthenticateWithAssuranceLevelNoAssertion() {
+	authRequest := map[string]interface{}{
+		"username":       "credtest_user1",
+		"password":       "TestPassword123!",
+		"skip_assertion": true,
+	}
+
+	response, statusCode, err := suite.sendAuthRequest(authRequest)
+	suite.Require().NoError(err, "Failed to send authenticate request")
+	suite.Equal(http.StatusOK, statusCode, "Expected status 200 for successful authentication")
+
+	suite.Empty(response.Assertion, "Response should not contain assertion when skip_assertion is true")
+}
+
+// TestCredentialsAuthenticationWithVariousAttributes tests AAL1 is generated for different identifying attributes
+func (suite *CredentialsAuthTestSuite) TestCredentialsAuthenticationWithVariousAttributes() {
+	testCases := []struct {
+		name        string
+		credentials map[string]interface{}
+	}{
+		{
+			name: "Email and password authentication",
+			credentials: map[string]interface{}{
+				"email":    "credtest2@example.com",
+				"password": "TestPassword456!",
+			},
+		},
+		{
+			name: "Mobile and password authentication",
+			credentials: map[string]interface{}{
+				"mobileNumber": "+1234567891",
+				"password":     "TestPassword789!",
+			},
+		},
+	}
+
+	for _, tc := range testCases {
+		suite.Run(tc.name, func() {
+			response, statusCode, err := suite.sendAuthRequest(tc.credentials)
+			suite.Require().NoError(err, "Failed to send authenticate request")
+			suite.Equal(http.StatusOK, statusCode, "Expected status 200 for successful authentication")
+
+			suite.NotEmpty(response.Assertion, "Response should contain assertion token")
+
+			// All single-factor credentials should result in AAL1
+			aal := extractAssuranceLevelFromAssertion(response.Assertion, "aal")
+			suite.Equal("AAL1", aal, "Credentials authentication should result in AAL1 regardless of attribute type")
+
+			ial := extractAssuranceLevelFromAssertion(response.Assertion, "ial")
+			suite.Equal("IAL1", ial, "Should have IAL1 for self-asserted identity")
+		})
+	}
+}
+
 func (suite *CredentialsAuthTestSuite) sendAuthRequest(authRequest map[string]interface{}) (
 	*testutils.AuthenticationResponse, int, error) {
 	requestJSON, err := json.Marshal(authRequest)
@@ -571,4 +650,105 @@ func (suite *CredentialsAuthTestSuite) sendAuthRequestExpectingError(authRequest
 	_ = json.Unmarshal(bodyBytes, &errorResp)
 
 	return &errorResp, resp.StatusCode, nil
+}
+
+// extractAssuranceLevelFromAssertion extracts AAL or IAL from the JWT assertion token
+// This is a helper function used across authentication tests
+func extractAssuranceLevelFromAssertion(assertion string, levelType string) string {
+	// Split JWT token into its three parts
+	parts := bytes.Split([]byte(assertion), []byte("."))
+	if len(parts) < 2 {
+		return ""
+	}
+
+	// Decode payload (second part)
+	payload := parts[1]
+	// Add padding if necessary for base64 decoding
+	paddingLength := (4 - len(payload)%4) % 4
+	payload = append(payload, bytes.Repeat([]byte("="), paddingLength)...)
+
+	// Decode base64
+	decoded := make([]byte, len(payload))
+	n, err := decodeBase64URL(payload, decoded)
+	if err != nil {
+		return ""
+	}
+	decoded = decoded[:n]
+
+	// Unmarshal JWT claims
+	var claims map[string]interface{}
+	err = json.Unmarshal(decoded, &claims)
+	if err != nil {
+		return ""
+	}
+
+	// Look for assurance object
+	if assurance, exists := claims["assurance"]; exists {
+		if assuranceMap, ok := assurance.(map[string]interface{}); ok {
+			if level, exists := assuranceMap[levelType]; exists {
+				if levelStr, ok := level.(string); ok {
+					return levelStr
+				}
+			}
+		}
+	}
+
+	return ""
+}
+
+// decodeBase64URL decodes a base64url string
+func decodeBase64URL(src []byte, dst []byte) (int, error) {
+	// Replace base64url characters with standard base64 characters
+	for i := 0; i < len(src); i++ {
+		switch src[i] {
+		case '-':
+			src[i] = '+'
+		case '_':
+			src[i] = '/'
+		}
+	}
+
+	n := base64StdDecoder(src, dst)
+	return n, nil
+}
+
+// base64StdDecoder decodes base64 string (simplified for testing)
+func base64StdDecoder(src []byte, dst []byte) int {
+	// Standard base64 decoding - for testing purposes
+	// In production, use encoding/base64.StdEncoding.DecodeString
+	const base64chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/="
+
+	charIndex := func(b byte) int {
+		for i, c := range []byte(base64chars) {
+			if b == c {
+				return i
+			}
+		}
+		return -1
+	}
+
+	j := 0
+	for i := 0; i < len(src); i += 4 {
+		if i+2 < len(src) {
+			a := charIndex(src[i])
+			b := charIndex(src[i+1])
+			c := charIndex(src[i+2])
+			d := charIndex(src[i+3])
+
+			if a >= 0 && b >= 0 {
+				dst[j] = byte((a << 2) | (b >> 4))
+				j++
+			}
+			if c < 64 && j < len(dst) {
+				dst[j] = byte((b << 4) | (c >> 2))
+				j++
+			}
+			if d < 64 && j < len(dst) {
+				dst[j] = byte((c << 6) | d)
+				j++
+			}
+		}
+	}
+
+	return j
 }

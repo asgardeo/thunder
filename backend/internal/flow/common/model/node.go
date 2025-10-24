@@ -41,6 +41,7 @@ type NodeResponse struct {
 	RuntimeData       map[string]string          `json:"runtime_data,omitempty"`
 	AuthenticatedUser authncm.AuthenticatedUser  `json:"authenticated_user,omitempty"`
 	Assertion         string                     `json:"assertion,omitempty"`
+	ExecutionRecord   *NodeExecutionRecord       `json:"execution_record,omitempty"`
 }
 
 // NodeInterface defines the interface for nodes in the graph

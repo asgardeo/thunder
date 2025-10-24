@@ -107,6 +107,30 @@ const (
 	ExecRetry ExecutorStatus = "RETRY"
 )
 
+// ExecutorType defines the type of an executor in the flow execution.
+type ExecutorType string
+
+const (
+	// ExecutorTypeAuthentication represents an executor that performs authentication.
+	ExecutorTypeAuthentication ExecutorType = "AUTHENTICATION"
+	// ExecutorTypeRegistration represents an executor that handles user registration/provisioning.
+	ExecutorTypeRegistration ExecutorType = "REGISTRATION"
+	// ExecutorTypeUtility represents a utility executor for common operations.
+	ExecutorTypeUtility ExecutorType = "UTILITY"
+)
+
+// ExecutionStatus defines the status of a node execution record.
+type ExecutionStatus string
+
+const (
+	// ExecutionStatusCompleted indicates that the execution has completed successfully.
+	ExecutionStatusCompleted ExecutionStatus = "COMPLETED"
+	// ExecutionStatusFailed indicates that the execution has failed.
+	ExecutionStatusFailed ExecutionStatus = "FAILED"
+	// ExecutionStatusSkipped indicates that the execution was skipped.
+	ExecutionStatusSkipped ExecutionStatus = "SKIPPED"
+)
+
 const (
 	// DataIDPName is the key used for the identity provider name in the flow response.
 	DataIDPName = "idpName"

@@ -23,6 +23,8 @@ import (
 	"encoding/json"
 	"errors"
 
+	"github.com/asgardeo/thunder/internal/authn/assert"
+	authncm "github.com/asgardeo/thunder/internal/authn/common"
 	flowconst "github.com/asgardeo/thunder/internal/flow/common/constants"
 	flowmodel "github.com/asgardeo/thunder/internal/flow/common/model"
 	"github.com/asgardeo/thunder/internal/system/config"
@@ -36,9 +38,10 @@ const loggerComponentName = "AuthAssertExecutor"
 
 // AuthAssertExecutor is an executor that handles authentication assertions in the flow.
 type AuthAssertExecutor struct {
-	internal    flowmodel.Executor
-	JWTService  jwt.JWTServiceInterface
-	UserService user.UserServiceInterface
+	internal                 flowmodel.Executor
+	JWTService               jwt.JWTServiceInterface
+	UserService              user.UserServiceInterface
+	AuthTokenClaimsGenerator assert.AuthAssertGeneratorInterface
 }
 
 var _ flowmodel.ExecutorInterface = (*AuthAssertExecutor)(nil)
@@ -46,9 +49,11 @@ var _ flowmodel.ExecutorInterface = (*AuthAssertExecutor)(nil)
 // NewAuthAssertExecutor creates a new instance of AuthAssertExecutor.
 func NewAuthAssertExecutor(id, name string, properties map[string]string) *AuthAssertExecutor {
 	return &AuthAssertExecutor{
-		internal:    *flowmodel.NewExecutor(id, name, []flowmodel.InputData{}, []flowmodel.InputData{}, properties),
-		JWTService:  jwt.GetJWTService(),
-		UserService: user.GetUserService(),
+		internal: *flowmodel.NewExecutor(id, name, flowconst.ExecutorTypeUtility,
+			[]flowmodel.InputData{}, []flowmodel.InputData{}, properties),
+		JWTService:               jwt.GetJWTService(),
+		UserService:              user.GetUserService(),
+		AuthTokenClaimsGenerator: assert.NewAuthAssertGenerator(),
 	}
 }
 
@@ -154,6 +159,23 @@ func (a *AuthAssertExecutor) generateAuthAssertion(ctx *flowmodel.NodeContext, l
 		validityPeriod = jwtConfig.ValidityPeriod
 	}
 
+	authenticatorRefs := extractAuthenticatorReferences(ctx.ExecutionHistory)
+
+	// Generate authentication token claims from engaged authenticators
+	if len(authenticatorRefs) > 0 {
+		tokenClaims, svcErr := a.AuthTokenClaimsGenerator.GenerateAssertion(authenticatorRefs)
+		if svcErr != nil {
+			if svcErr.Type == serviceerror.ServerErrorType {
+				logger.Error("Failed to generate authentication assertion claims",
+					log.String("error", svcErr.Error))
+				return "", errors.New("something went wrong while generating authentication assertion")
+			}
+			return "", errors.New("failed to generate authentication assertion: " + svcErr.Error)
+		}
+
+		jwtClaims["assurance"] = tokenClaims.Context
+	}
+
 	if ctx.Application.Token != nil && len(ctx.Application.Token.UserAttributes) > 0 &&
 		ctx.AuthenticatedUser.UserID != "" {
 		var user *user.User
@@ -189,6 +211,27 @@ func (a *AuthAssertExecutor) generateAuthAssertion(ctx *flowmodel.NodeContext, l
 	}
 
 	return token, nil
+}
+
+// extractAuthenticatorReferences extracts authenticator references from execution history.
+func extractAuthenticatorReferences(history []flowmodel.NodeExecutionRecord) []authncm.AuthenticatorReference {
+	refs := make([]authncm.AuthenticatorReference, 0)
+	for _, record := range history {
+		if record.ExecutorType != flowconst.ExecutorTypeAuthentication {
+			continue
+		}
+		if record.Status != flowconst.ExecutionStatusCompleted {
+			continue
+		}
+
+		refs = append(refs, authncm.AuthenticatorReference{
+			Authenticator: record.ExecutorName,
+			Step:          record.Step,
+			Timestamp:     record.Timestamp,
+		})
+	}
+
+	return refs
 }
 
 // getUserAttributes retrieves user details and unmarshal the attributes.

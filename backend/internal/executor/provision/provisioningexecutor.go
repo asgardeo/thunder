@@ -53,7 +53,8 @@ var _ flowmodel.ExecutorInterface = (*ProvisioningExecutor)(nil)
 func NewProvisioningExecutor(id, name string, properties map[string]string) *ProvisioningExecutor {
 	return &ProvisioningExecutor{
 		IdentifyingExecutor: identify.NewIdentifyingExecutor(id, name, properties),
-		internal: *flowmodel.NewExecutor(id, name, []flowmodel.InputData{}, []flowmodel.InputData{},
+		internal: *flowmodel.NewExecutor(id, name, flowconst.ExecutorTypeRegistration,
+			[]flowmodel.InputData{}, []flowmodel.InputData{},
 			properties),
 		userService: user.GetUserService(),
 	}

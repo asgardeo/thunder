@@ -75,6 +75,7 @@ func (fe *flowEngine) Execute(ctx *model.EngineContext) (model.FlowStep, *servic
 			RuntimeData:       ctx.RuntimeData,
 			Application:       ctx.Application,
 			AuthenticatedUser: ctx.AuthenticatedUser,
+			ExecutionHistory:  ctx.ExecutionHistory,
 		}
 		if nodeCtx.NodeInputData == nil {
 			nodeCtx.NodeInputData = make([]model.InputData, 0)
@@ -166,6 +167,18 @@ func updateContextWithNodeResponse(engineCtx *model.EngineContext, nodeResp *mod
 			engineCtx.RuntimeData = make(map[string]string)
 		}
 		engineCtx.RuntimeData = sysutils.MergeStringMaps(engineCtx.RuntimeData, nodeResp.RuntimeData)
+	}
+
+	// Handle execution record from node response
+	if nodeResp.ExecutionRecord != nil {
+		nodeResp.ExecutionRecord.NodeID = engineCtx.CurrentNode.GetID()
+		nodeResp.ExecutionRecord.NodeType = string(engineCtx.CurrentNode.GetType())
+		nodeResp.ExecutionRecord.Step = len(engineCtx.ExecutionHistory) + 1
+
+		if engineCtx.ExecutionHistory == nil {
+			engineCtx.ExecutionHistory = make([]model.NodeExecutionRecord, 0)
+		}
+		engineCtx.ExecutionHistory = append(engineCtx.ExecutionHistory, *nodeResp.ExecutionRecord)
 	}
 
 	// Handle authenticated user from the node response
