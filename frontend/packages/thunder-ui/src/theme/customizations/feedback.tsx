@@ -18,22 +18,57 @@
 
 import {alpha} from '@mui/material/styles';
 import type {Theme, Components} from '@mui/material/styles';
-import {gray, orange} from '../themePrimitives';
+import {gray, orange, red, green, blue} from '../themePrimitives';
 
 const feedbackCustomizations: Components<Theme> = {
   MuiAlert: {
     styleOverrides: {
-      root: ({theme}) => ({
+      root: ({theme, ownerState}) => ({
         borderRadius: 10,
-        backgroundColor: orange[100],
         color: (theme.vars ?? theme).palette.text.primary,
-        border: `1px solid ${alpha(orange[300], 0.5)}`,
-        '& .MuiAlert-icon': {
-          color: orange[500],
-        },
-        ...theme.applyStyles('dark', {
-          backgroundColor: `${alpha(orange[900], 0.5)}`,
-          border: `1px solid ${alpha(orange[800], 0.5)}`,
+        ...(ownerState.severity === 'error' && {
+          backgroundColor: red[100],
+          border: `1px solid ${alpha(red[300], 0.5)}`,
+          '& .MuiAlert-icon': {
+            color: red[500],
+          },
+          ...theme.applyStyles('dark', {
+            backgroundColor: alpha(red[900], 0.5),
+            border: `1px solid ${alpha(red[800], 0.5)}`,
+          }),
+        }),
+        ...(ownerState.severity === 'warning' && {
+          backgroundColor: orange[100],
+          border: `1px solid ${alpha(orange[300], 0.5)}`,
+          '& .MuiAlert-icon': {
+            color: orange[500],
+          },
+          ...theme.applyStyles('dark', {
+            backgroundColor: alpha(orange[900], 0.5),
+            border: `1px solid ${alpha(orange[800], 0.5)}`,
+          }),
+        }),
+        ...(ownerState.severity === 'info' && {
+          backgroundColor: blue[100],
+          border: `1px solid ${alpha(blue[300], 0.5)}`,
+          '& .MuiAlert-icon': {
+            color: blue[500],
+          },
+          ...theme.applyStyles('dark', {
+            backgroundColor: alpha(blue[900], 0.5),
+            border: `1px solid ${alpha(blue[800], 0.5)}`,
+          }),
+        }),
+        ...(ownerState.severity === 'success' && {
+          backgroundColor: green[100],
+          border: `1px solid ${alpha(green[300], 0.5)}`,
+          '& .MuiAlert-icon': {
+            color: green[500],
+          },
+          ...theme.applyStyles('dark', {
+            backgroundColor: alpha(green[900], 0.5),
+            border: `1px solid ${alpha(green[800], 0.5)}`,
+          }),
         }),
       }),
     },
