@@ -41,7 +41,6 @@ func parseIDPConfig(idp *idp.IDPDTO) (*OAuthClientConfig, error) {
 		AdditionalParams: make(map[string]string),
 	}
 
-	
 	for _, prop := range idp.Properties {
 		name := strings.TrimSpace(prop.GetName())
 		value, err := prop.GetValue()
