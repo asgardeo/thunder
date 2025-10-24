@@ -18,7 +18,11 @@
 
 package idp
 
-import "github.com/asgardeo/thunder/internal/system/cmodels"
+import (
+	"strings"
+
+	"github.com/asgardeo/thunder/internal/system/cmodels"
+		)
 
 // IDPDTO represents the data transfer object for an identity provider.
 type IDPDTO struct {
@@ -60,4 +64,55 @@ type basicIDPResponse struct {
 	Name        string `json:"name"`
 	Description string `json:"description,omitempty"`
 	Type        string `json:"type"`
+}
+
+// GetPropertyValue returns a property value by name
+func (dto *IDPDTO) GetPropertyValue(name string) (string, error) {
+	for _, prop := range dto.Properties {
+		if prop.GetName() == name {
+			return prop.GetValue()
+		}
+	}
+	return "", nil
+}
+
+func (dto *IDPDTO) GetPropertyAsArray(name string) ([]string, error) {
+	value, err := dto.GetPropertyValue(name)
+	if err != nil {
+		return nil, err
+	}
+	
+	if value == "" {
+		return []string{}, nil
+	}
+	
+	// Split comma-separated values first (preferred format)
+	parts := strings.Split(value, ",")
+	result := make([]string, 0, len(parts))
+	for _, part := range parts {
+		trimmed := strings.TrimSpace(part)
+		if trimmed != "" {
+			result = append(result, trimmed)
+		}
+	}
+	
+	// Backward compatibility: If only one item and it contains spaces but no commas,
+	// treat it as space-separated (for legacy OAuth scopes like "openid profile email")
+	if len(result) == 1 && strings.Contains(value, " ") && !strings.Contains(value, ",") {
+		parts = strings.Split(value, " ")
+		result = make([]string, 0, len(parts))
+		for _, part := range parts {
+			trimmed := strings.TrimSpace(part)
+			if trimmed != "" {
+				result = append(result, trimmed)
+			}
+		}
+	}
+	
+	return result, nil
+}
+
+// GetScopes is a convenience method for getting OAuth scopes
+func (dto *IDPDTO) GetScopes() ([]string, error) {
+	return dto.GetPropertyAsArray("scopes")
 }

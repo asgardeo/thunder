@@ -22,6 +22,7 @@ package cmodels
 import (
 	"encoding/json"
 	"fmt"
+	"strings"
 
 	"github.com/asgardeo/thunder/internal/system/crypto"
 )
@@ -164,4 +165,118 @@ func (p *Property) ToPropertyDTO() (*PropertyDTO, error) {
 		Value:    value,
 		IsSecret: p.IsSecret(),
 	}, nil
+}
+// PropertyValueDTO represents a property value that can be either a string or array of strings
+type PropertyValueDTO struct {
+	single   string
+	multiple []string
+	isArray  bool
+}
+
+// UnmarshalJSON implements json.Unmarshaler for PropertyValueDTO
+// This handles both string values and array values from JSON
+func (pv *PropertyValueDTO) UnmarshalJSON(data []byte) error {
+	// Try to unmarshal as array first
+	var arr []string
+	if err := json.Unmarshal(data, &arr); err == nil {
+		pv.multiple = arr
+		pv.isArray = true
+		return nil
+	}
+
+	// If not array, treat as string
+	var str string
+	if err := json.Unmarshal(data, &str); err != nil {
+		return err
+	}
+	pv.single = str
+	pv.isArray = false
+	return nil
+}
+
+// MarshalJSON implements json.Marshaler for PropertyValueDTO
+func (pv PropertyValueDTO) MarshalJSON() ([]byte, error) {
+	if pv.isArray {
+		return json.Marshal(pv.multiple)
+	}
+	return json.Marshal(pv.single)
+}
+
+// AsString returns the value as a string
+// For arrays, returns comma-separated values
+func (pv PropertyValueDTO) AsString() string {
+	if pv.isArray {
+		return strings.Join(pv.multiple, ",")
+	}
+	return pv.single
+}
+
+// AsArray returns the value as a string array
+// Handles backward compatibility with comma-separated strings
+func (pv PropertyValueDTO) AsArray() []string {
+	if pv.isArray {
+		return pv.multiple
+	}
+
+	// Backward compatibility: split comma-separated strings
+	if pv.single == "" {
+		return []string{}
+	}
+
+	parts := strings.Split(pv.single, ",")
+	result := make([]string, len(parts))
+	for i, part := range parts {
+		result[i] = strings.TrimSpace(part)
+	}
+	return result
+}
+
+// IsArray checks if the property is multi-valued
+func (pv PropertyValueDTO) IsArray() bool {
+	return pv.isArray
+}
+
+// NewStringPropertyValue creates a single-valued property
+func NewStringPropertyValue(value string) PropertyValueDTO {
+	return PropertyValueDTO{
+		single:  value,
+		isArray: false,
+	}
+}
+
+// NewArrayPropertyValue creates a multi-valued property
+func NewArrayPropertyValue(values []string) PropertyValueDTO {
+	return PropertyValueDTO{
+		multiple: values,
+		isArray:  true,
+	}
+}
+
+// PropertiesMap represents a map of property names to values
+type PropertiesMap map[string]PropertyValueDTO
+
+// GetString retrieves a single-valued property
+func (pm PropertiesMap) GetString(key string) string {
+	if val, ok := pm[key]; ok {
+		return val.AsString()
+	}
+	return ""
+}
+
+// GetArray retrieves a multi-valued property
+func (pm PropertiesMap) GetArray(key string) []string {
+	if val, ok := pm[key]; ok {
+		return val.AsArray()
+	}
+	return []string{}
+}
+
+// SetString sets a single-valued property
+func (pm PropertiesMap) SetString(key, value string) {
+	pm[key] = NewStringPropertyValue(value)
+}
+
+// SetArray sets a multi-valued property
+func (pm PropertiesMap) SetArray(key string, values []string) {
+	pm[key] = NewArrayPropertyValue(values)
 }
