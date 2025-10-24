@@ -16,14 +16,20 @@
  * under the License.
  */
 
-import fs from 'fs';
-import { defineConfig } from 'vite';
+import {defineConfig} from 'vite';
 import react from '@vitejs/plugin-react';
 import path from 'path';
+import basicSsl from '@vitejs/plugin-basic-ssl';
+
+const PORT = process.env.PORT ? Number(process.env.PORT) : 5191;
+const HOST = process.env.HOST ?? 'localhost';
+const BASE_URL = process.env.BASE_URL ?? '/develop';
 
 // https://vite.dev/config/
 export default defineConfig({
+  base: BASE_URL,
   plugins: [
+    basicSsl(),
     react({
       babel: {
         plugins: [['babel-plugin-react-compiler']],
@@ -31,12 +37,8 @@ export default defineConfig({
     }),
   ],
   server: {
-    https: {
-      key: fs.readFileSync('./server.key'),
-      cert: fs.readFileSync('./server.cert'),
-    },
-    port: 3000,
-    host: 'localhost',
+    port: PORT,
+    host: HOST,
   },
   resolve: {
     alias: {

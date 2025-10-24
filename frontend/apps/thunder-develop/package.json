@@ -29,6 +29,8 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@asgardeo/react": "catalog:",
+    "@asgardeo/react-router": "catalog:",
     "@emotion/react": "catalog:",
     "@emotion/styled": "catalog:",
     "@mui/icons-material": "catalog:",
@@ -51,6 +53,7 @@
     "@types/node": "catalog:",
     "@types/react": "catalog:",
     "@types/react-dom": "catalog:",
+    "@vitejs/plugin-basic-ssl": "catalog:",
     "@vitejs/plugin-react": "catalog:",
     "babel-plugin-react-compiler": "catalog:",
     "eslint": "catalog:",

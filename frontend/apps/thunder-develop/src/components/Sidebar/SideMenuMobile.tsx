@@ -24,6 +24,7 @@ import Stack from '@mui/material/Stack';
 import Typography from '@mui/material/Typography';
 import LogoutRoundedIcon from '@mui/icons-material/LogoutRounded';
 import NotificationsRoundedIcon from '@mui/icons-material/NotificationsRounded';
+import type {JSX} from 'react';
 import MenuButton from './MenuButton';
 import MenuContent from './MenuContent';
 
@@ -32,7 +33,7 @@ interface SideMenuMobileProps {
   toggleDrawer: (newOpen: boolean) => () => void;
 }
 
-export default function SideMenuMobile({open, toggleDrawer}: SideMenuMobileProps) {
+export default function SideMenuMobile({open, toggleDrawer}: SideMenuMobileProps): JSX.Element {
   return (
     <Drawer
       anchor="right"

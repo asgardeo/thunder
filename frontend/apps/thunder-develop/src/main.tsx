@@ -18,28 +18,25 @@
 
 import * as ReactDOM from 'react-dom/client';
 import {StyledEngineProvider, ThemeProvider} from '@mui/material/styles';
-import {BrowserRouter, Route, Routes} from 'react-router';
 import {theme} from '@thunder/ui';
 import CssBaseline from '@mui/material/CssBaseline';
 import {StrictMode} from 'react';
-import App from './Dashboard';
-import UsersListPage from './features/users/pages/UsersListPage';
-import HomePage from './features/home/pages/HomePage';
+import {AsgardeoProvider} from '@asgardeo/react';
+import App from './App';
 
 ReactDOM.createRoot(document.getElementById('root')).render(
   <StrictMode>
-    <StyledEngineProvider injectFirst>
-      <ThemeProvider theme={theme} defaultMode="light">
-        <CssBaseline enableColorScheme />
-        <BrowserRouter>
-          <Routes>
-            <Route path="/" element={<App />}>
-              <Route path="/" element={<HomePage />} />
-              <Route path="users" element={<UsersListPage />} />
-            </Route>
-          </Routes>
-        </BrowserRouter>
-      </ThemeProvider>
-    </StyledEngineProvider>
+    <AsgardeoProvider
+      baseUrl={import.meta.env.VITE_ASGARDEO_BASE_URL}
+      clientId={import.meta.env.VITE_ASGARDEO_CLIENT_ID}
+      platform="AsgardeoV2"
+    >
+      <StyledEngineProvider injectFirst>
+        <ThemeProvider theme={theme}>
+          <CssBaseline enableColorScheme />
+          <App />
+        </ThemeProvider>
+      </StyledEngineProvider>
+    </AsgardeoProvider>
   </StrictMode>,
 );

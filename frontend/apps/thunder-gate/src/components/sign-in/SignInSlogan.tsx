@@ -20,37 +20,51 @@ import Box from '@mui/material/Box';
 import Stack from '@mui/material/Stack';
 import Typography from '@mui/material/Typography';
 import {Cloud, ShieldCheck, Zap, TerminalSquare} from 'lucide-react';
+import type {JSX} from 'react';
+import {ThemedIcon} from '@thunder/ui';
 
-const items = [
+const items: {
+  icon: JSX.Element;
+  title: string;
+  description: string;
+}[] = [
   {
     icon: <Cloud className="text-muted-foreground" />,
-    title: 'Unified Identity Platform',
-    description:
-      'Thunder centralizes authentication, authorization, and user management into one secure, scalable identity layer.',
+    title: 'Flexible Identity Platform',
+    description: 'Centralizes identity management for both on-prem and cloud environments—no protocol lock-in.',
   },
   {
     icon: <ShieldCheck className="text-muted-foreground" />,
-    title: 'Zero-trust by design',
-    description: 'Leverage built-in OIDC, OAuth 2.0, and adaptive authentication to protect every login and session.',
+    title: 'Zero-trust Security',
+    description: 'Leverage adaptive authentication, OIDC, and OAuth 2.0 to protect every login and session.',
   },
   {
     icon: <TerminalSquare className="text-muted-foreground" />,
-    title: 'Lightning-fast developer experience',
-    description: 'Create apps, configure auth flows, and manage tenants in minutes with Thunder CLI, SDKs, and APIs.',
+    title: 'Developer-first Experience',
+    description: 'Create apps, configure auth flows, and manage tenants in minutes with powerful SDKs and APIs.',
   },
   {
     icon: <Zap className="text-muted-foreground" />,
-    title: 'Extensible and cloud-ready',
-    description:
-      'Built with Go and React, Thunder scales effortlessly and integrates with your existing stack and CI/CD pipelines.',
+    title: 'Extensible & Enterprise-ready',
+    description: 'Built for scale, integrates with your stack and CI/CD pipelines, and ready for any cloud.',
   },
 ];
 
-export default function Content() {
+export default function SignInSlogan(): JSX.Element {
   return (
     <Stack sx={{flexDirection: 'column', alignSelf: 'center', gap: 4, maxWidth: 450}}>
       <Box sx={{display: {xs: 'none', md: 'flex'}}}>
-        <Typography variant="h2">⚡️ Thunder</Typography>
+        <Typography variant="h2">
+          <ThemedIcon
+            src={{
+              light: `${import.meta.env.BASE_URL}/assets/images/logo.svg`,
+              dark: `${import.meta.env.BASE_URL}/assets/images/logo-inverted.svg`,
+            }}
+            alt={{light: 'Logo (Light)', dark: 'Logo (Dark)'}}
+            height={38}
+            width="auto"
+          />
+        </Typography>
       </Box>
       {items.map((item) => (
         <Stack key={item.title} direction="row" sx={{gap: 2}}>

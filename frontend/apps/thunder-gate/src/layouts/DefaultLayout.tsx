@@ -16,18 +16,14 @@
  * under the License.
  */
 
-import Badge, {badgeClasses} from '@mui/material/Badge';
-import IconButton, {type IconButtonProps} from '@mui/material/IconButton';
+import {Outlet} from 'react-router';
+import Box from '@mui/material/Box';
 import type {JSX} from 'react';
 
-export interface MenuButtonProps extends IconButtonProps {
-  showBadge?: boolean;
-}
-
-export default function MenuButton({showBadge = false, ...props}: MenuButtonProps): JSX.Element {
+export default function DefaultLayout(): JSX.Element {
   return (
-    <Badge color="error" variant="dot" invisible={!showBadge} sx={{[`& .${badgeClasses.badge}`]: {right: 2, top: 2}}}>
-      <IconButton size="small" {...props} />
-    </Badge>
+    <Box sx={{height: '100%'}}>
+      <Outlet />
+    </Box>
   );
 }

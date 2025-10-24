@@ -40,5 +40,10 @@
     "prettier": "catalog:",
     "tslib": "catalog:",
     "typescript": "catalog:"
+  },
+  "pnpm": {
+    "overrides": {
+      "vite": "catalog:"
+    }
   }
 }

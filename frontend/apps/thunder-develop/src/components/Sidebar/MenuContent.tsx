@@ -30,6 +30,7 @@ import AssignmentRoundedIcon from '@mui/icons-material/AssignmentRounded';
 import SettingsRoundedIcon from '@mui/icons-material/SettingsRounded';
 import InfoRoundedIcon from '@mui/icons-material/InfoRounded';
 import HelpRoundedIcon from '@mui/icons-material/HelpRounded';
+import type {JSX} from 'react';
 import useNavigation from '@/layouts/contexts/useNavigation';
 
 const mainListItems = [
@@ -87,7 +88,7 @@ const secondaryListItems = [
   },
 ];
 
-export default function MenuContent() {
+export default function MenuContent(): JSX.Element {
   const {currentPage, setCurrentPage} = useNavigation();
 
   const handleListItemClick = (item: {id: string; text: string; category: string}) => {

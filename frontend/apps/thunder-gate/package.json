@@ -32,6 +32,7 @@
     "typecheck": "tsc -p tsconfig.lib.json"
   },
   "dependencies": {
+    "@asgardeo/react": "catalog:",
     "@emotion/react": "catalog:",
     "@emotion/styled": "catalog:",
     "@mui/icons-material": "catalog:",
@@ -39,7 +40,8 @@
     "@thunder/ui": "workspace:^",
     "lucide-react": "catalog:",
     "react": "catalog:",
-    "react-dom": "catalog:"
+    "react-dom": "catalog:",
+    "react-router": "catalog:"
   },
   "devDependencies": {
     "@thunder/eslint-plugin-thunder": "workspace:^",
@@ -47,15 +49,11 @@
     "@types/node": "catalog:",
     "@types/react": "catalog:",
     "@types/react-dom": "catalog:",
+    "@vitejs/plugin-basic-ssl": "catalog:",
     "@vitejs/plugin-react": "catalog:",
     "babel-plugin-react-compiler": "catalog:",
     "eslint": "catalog:",
     "typescript": "catalog:",
     "vite": "catalog:"
-  },
-  "pnpm": {
-    "overrides": {
-      "vite": "catalog:"
-    }
   }
 }

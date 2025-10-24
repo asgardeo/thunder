@@ -16,18 +16,19 @@
  * under the License.
  */
 
-import Badge, {badgeClasses} from '@mui/material/Badge';
-import IconButton, {type IconButtonProps} from '@mui/material/IconButton';
+import {BrowserRouter, Route, Routes} from 'react-router';
 import type {JSX} from 'react';
+import DefaultLayout from './layouts/DefaultLayout';
+import SignInPage from './pages/SignInPage';
 
-export interface MenuButtonProps extends IconButtonProps {
-  showBadge?: boolean;
-}
-
-export default function MenuButton({showBadge = false, ...props}: MenuButtonProps): JSX.Element {
+export default function App(): JSX.Element {
   return (
-    <Badge color="error" variant="dot" invisible={!showBadge} sx={{[`& .${badgeClasses.badge}`]: {right: 2, top: 2}}}>
-      <IconButton size="small" {...props} />
-    </Badge>
+    <BrowserRouter basename={import.meta.env.BASE_URL}>
+      <Routes>
+        <Route path="/" element={<DefaultLayout />}>
+          <Route path="/" element={<SignInPage />} />
+        </Route>
+      </Routes>
+    </BrowserRouter>
   );
 }

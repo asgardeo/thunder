@@ -23,6 +23,9 @@ import Box from '@mui/material/Box';
 import Divider from '@mui/material/Divider';
 import Stack from '@mui/material/Stack';
 import Typography from '@mui/material/Typography';
+import {User} from '@asgardeo/react';
+import {ThemedIcon} from '@thunder/ui';
+import type {JSX} from 'react';
 import MenuContent from './MenuContent';
 import OptionsMenu from './OptionsMenu';
 
@@ -39,7 +42,7 @@ const Drawer = styled(MuiDrawer)({
   },
 });
 
-export default function SideMenu() {
+export default function SideMenu(): JSX.Element {
   return (
     <Drawer
       variant="permanent"
@@ -55,9 +58,23 @@ export default function SideMenu() {
           display: 'flex',
           mt: 'calc(var(--template-frame-height, 0px) + 4px)',
           p: 1.5,
+          justifyContent: 'center',
+          alignItems: 'center',
         }}
       >
-        <Typography variant="h4">⚡️ Thunder</Typography>
+        <ThemedIcon
+          src={{
+            light: `${import.meta.env.BASE_URL}/assets/images/logo.svg`,
+            dark: `${import.meta.env.BASE_URL}/assets/images/logo-inverted.svg`,
+          }}
+          alt={{light: 'Logo (Light)', dark: 'Logo (Dark)'}}
+          height={16}
+          width="auto"
+          alignItems="center"
+        />
+        <Typography variant="h6" sx={{ml: 1, alignSelf: 'center', fontWeight: 400}}>
+          Develop
+        </Typography>
       </Box>
       <Divider />
       <Box
@@ -80,16 +97,24 @@ export default function SideMenu() {
           borderColor: 'divider',
         }}
       >
-        <Avatar sizes="small" alt="Omal Vindula" src="/static/images/avatar/7.jpg" sx={{width: 36, height: 36}} />
-        <Box sx={{mr: 'auto'}}>
-          <Typography variant="body2" sx={{fontWeight: 500, lineHeight: '16px'}}>
-            Omal Vindula
-          </Typography>
-          <Typography variant="caption" sx={{color: 'text.secondary'}}>
-            omal@wso2.com
-          </Typography>
-        </Box>
-        <OptionsMenu />
+        <User>
+          {(user) => (
+            <>
+              <Avatar sizes="small" alt={user?.name as string} sx={{width: 36, height: 36}}>
+                {(user?.name as string)?.charAt(0).toUpperCase()}
+              </Avatar>
+              <Box sx={{mr: 'auto'}}>
+                <Typography variant="body2" sx={{fontWeight: 500, lineHeight: '16px'}}>
+                  {user?.name}
+                </Typography>
+                <Typography variant="caption" sx={{color: 'text.secondary'}}>
+                  {user?.email}
+                </Typography>
+              </Box>
+              <OptionsMenu />
+            </>
+          )}
+        </User>
       </Stack>
     </Drawer>
   );

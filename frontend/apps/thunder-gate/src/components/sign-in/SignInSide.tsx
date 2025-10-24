@@ -16,14 +16,15 @@
  * under the License.
  */
 
+import type {JSX} from 'react';
 import Stack from '@mui/material/Stack';
 import {alpha} from '@mui/material/styles';
-import SignInCard from './components/SignInCard';
-import Content from './components/Content';
+import SignInBox from './SignInBox';
+import SignInSlogan from './SignInSlogan';
 
 export type SignInSideProps = Record<string, unknown>;
 
-export default function SignInSide() {
+export default function SignInSide(): JSX.Element {
   return (
     <Stack
       direction="column"
@@ -32,7 +33,6 @@ export default function SignInSide() {
         {
           justifyContent: 'center',
           height: 'calc((1 - var(--template-frame-height, 0)) * 100%)',
-          marginTop: 'max(40px - var(--template-frame-height, 0px), 0px)',
           minHeight: '100%',
         },
         (theme) => ({
@@ -69,8 +69,8 @@ export default function SignInSide() {
             m: 'auto',
           }}
         >
-          <Content />
-          <SignInCard />
+          <SignInSlogan />
+          <SignInBox />
         </Stack>
       </Stack>
     </Stack>

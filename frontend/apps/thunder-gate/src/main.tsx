@@ -17,21 +17,24 @@
  */
 
 import React from 'react';
-import { createRoot } from 'react-dom/client';
-import { StyledEngineProvider, ThemeProvider } from '@mui/material/styles';
+import {createRoot} from 'react-dom/client';
+import {StyledEngineProvider, ThemeProvider} from '@mui/material/styles';
 import CssBaseline from '@mui/material/CssBaseline';
-import { theme, ColorModeSelect } from '@thunder/ui';
-import App from './SignInSide';
+import {theme, ColorModeSelect} from '@thunder/ui';
+import {AsgardeoProvider} from '@asgardeo/react';
+import App from './App';
 import './index.css';
 
 createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
-    <StyledEngineProvider injectFirst>
-      <ThemeProvider theme={theme}>
-        <CssBaseline enableColorScheme />
-        <ColorModeSelect sx={{ position: 'fixed', top: '1rem', right: '1rem' }} />
-        <App />
-      </ThemeProvider>
-    </StyledEngineProvider>
+    <AsgardeoProvider baseUrl={import.meta.env.VITE_ASGARDEO_BASE_URL} platform="AsgardeoV2">
+      <StyledEngineProvider injectFirst>
+        <ThemeProvider theme={theme}>
+          <CssBaseline enableColorScheme />
+          <ColorModeSelect sx={{position: 'fixed', top: '1rem', right: '1rem'}} />
+          <App />
+        </ThemeProvider>
+      </StyledEngineProvider>
+    </AsgardeoProvider>
   </React.StrictMode>,
 );

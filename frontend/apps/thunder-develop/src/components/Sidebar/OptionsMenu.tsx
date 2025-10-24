@@ -16,7 +16,6 @@
  * under the License.
  */
 
-import * as React from 'react';
 import {styled} from '@mui/material/styles';
 import Divider, {dividerClasses} from '@mui/material/Divider';
 import Menu from '@mui/material/Menu';
@@ -27,21 +26,27 @@ import ListItemText from '@mui/material/ListItemText';
 import ListItemIcon, {listItemIconClasses} from '@mui/material/ListItemIcon';
 import LogoutRoundedIcon from '@mui/icons-material/LogoutRounded';
 import MoreVertRoundedIcon from '@mui/icons-material/MoreVertRounded';
+import {SignOutButton, useAsgardeo} from '@asgardeo/react';
+import {useState, type JSX, type MouseEvent} from 'react';
 import MenuButton from './MenuButton';
 
 const MenuItem = styled(MuiMenuItem)({
   margin: '2px 0',
 });
 
-export default function OptionsMenu() {
-  const [anchorEl, setAnchorEl] = React.useState<null | HTMLElement>(null);
+export default function OptionsMenu(): JSX.Element {
+  const {signIn} = useAsgardeo();
+  const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const open = Boolean(anchorEl);
-  const handleClick = (event: React.MouseEvent<HTMLElement>) => {
+
+  const handleClick = (event: MouseEvent<HTMLElement>) => {
     setAnchorEl(event.currentTarget);
   };
+
   const handleClose = () => {
     setAnchorEl(null);
   };
+
   return (
     <>
       <MenuButton aria-label="Open menu" onClick={handleClick} sx={{borderColor: 'transparent'}}>
@@ -73,20 +78,30 @@ export default function OptionsMenu() {
         <MenuItem onClick={handleClose}>Add another account</MenuItem>
         <MenuItem onClick={handleClose}>Settings</MenuItem>
         <Divider />
-        <MenuItem
-          onClick={handleClose}
-          sx={{
-            [`& .${listItemIconClasses.root}`]: {
-              ml: 'auto',
-              minWidth: 0,
-            },
-          }}
-        >
-          <ListItemText>Logout</ListItemText>
-          <ListItemIcon>
-            <LogoutRoundedIcon fontSize="small" />
-          </ListItemIcon>
-        </MenuItem>
+        <SignOutButton>
+          {({signOut, isLoading}) => (
+            <MenuItem
+              // eslint-disable-next-line @typescript-eslint/no-misused-promises
+              onClick={async () => {
+                handleClose();
+                await signOut();
+                await signIn();
+              }}
+              disabled={isLoading}
+              sx={{
+                [`& .${listItemIconClasses.root}`]: {
+                  ml: 'auto',
+                  minWidth: 0,
+                },
+              }}
+            >
+              <ListItemText>Sign Out</ListItemText>
+              <ListItemIcon>
+                <LogoutRoundedIcon fontSize="small" />
+              </ListItemIcon>
+            </MenuItem>
+          )}
+        </SignOutButton>
       </Menu>
     </>
   );

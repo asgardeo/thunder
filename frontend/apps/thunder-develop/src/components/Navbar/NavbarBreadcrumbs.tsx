@@ -20,6 +20,7 @@ import {styled} from '@mui/material/styles';
 import Typography from '@mui/material/Typography';
 import Breadcrumbs, {breadcrumbsClasses} from '@mui/material/Breadcrumbs';
 import NavigateNextRoundedIcon from '@mui/icons-material/NavigateNextRounded';
+import type {JSX} from 'react';
 import useNavigation from '@/layouts/contexts/useNavigation';
 
 const StyledBreadcrumbs = styled(Breadcrumbs)(({theme}) => ({
@@ -33,7 +34,7 @@ const StyledBreadcrumbs = styled(Breadcrumbs)(({theme}) => ({
   },
 }));
 
-export default function NavbarBreadcrumbs() {
+export default function NavbarBreadcrumbs(): JSX.Element {
   const {currentPage} = useNavigation();
 
   return (
