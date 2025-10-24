@@ -24,7 +24,7 @@ import {JSX} from 'react';
 /**
  * Represents attributes for different color schemes (light and dark modes).
  */
-interface ColorSchemeAttr {
+export interface ColorSchemeAttr {
   /** The value for light mode */
   light: string;
 
@@ -36,7 +36,7 @@ interface ColorSchemeAttr {
  * Props for the ThemedIcon component.
  * Extends BoxProps to inherit all Box component properties.
  */
-interface ThemedIconProps extends BoxProps {
+export interface ThemedIconProps extends BoxProps {
   /** Source URLs for the icon in different color schemes */
   src: ColorSchemeAttr;
 

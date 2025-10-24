@@ -23,8 +23,9 @@
   ],
   "scripts": {
     "build": "nx run-many --target=build --all",
-    "fix:lint": "nx run-many --target=fix:lint --all --parallel",
+    "clean": "nx run-many --target=clean --all",
     "lint": "nx run-many --target=lint --all --parallel",
+    "lint:fix": "nx run-many --target=fix:lint --all --parallel",
     "test": "nx run-many --target=test --all --parallel",
     "typecheck": "nx run-many --target=typecheck --all --parallel"
   },
@@ -38,6 +39,7 @@
     "eslint": "catalog:",
     "nx": "21.6.4",
     "prettier": "catalog:",
+    "rimraf": "catalog:",
     "tslib": "catalog:",
     "typescript": "catalog:"
   },

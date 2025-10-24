@@ -23,7 +23,7 @@
   },
   "scripts": {
     "build": "tsc -b && vite build",
-    "clean": "rimraf dist",
+    "clean": "rimraf dist node_modules",
     "dev": "vite",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",

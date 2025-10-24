@@ -16,11 +16,11 @@
  * under the License.
  */
 
-import { useCallback, useEffect, useMemo, useState, type ReactNode } from 'react';
-import { NavigationItem } from '../models/layouts';
+import {useCallback, useEffect, useMemo, useState, type ReactNode} from 'react';
+import type { NavigationItem } from '../models/layouts';
 import LayoutContext from '../contexts/NavigationContext';
 
-export default function LayoutProvider({ children }: { children: ReactNode }) {
+export default function LayoutProvider({children}: {children: ReactNode}) {
   const [currentPage, setCurrentPage] = useState<NavigationItem>({
     id: 'home',
     text: 'Home',

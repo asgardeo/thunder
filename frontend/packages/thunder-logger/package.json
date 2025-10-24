@@ -21,7 +21,8 @@
   "commonjs": "dist/cjs/index.js",
   "exports": {
     "import": "./dist/index.js",
-    "require": "./dist/cjs/index.js"
+    "require": "./dist/cjs/index.js",
+    "types": "./dist/index.d.ts"
   },
   "files": [
     "dist",
@@ -35,8 +36,10 @@
     "directory": "packages/thunder-logger"
   },
   "scripts": {
-    "build": "pnpm clean && node esbuild.config.js && tsc -p tsconfig.lib.json --emitDeclarationOnly --outDir dist",
-    "clean": "rimraf dist",
+    "build": "pnpm clean:dist && node esbuild.config.js && tsc -p tsconfig.lib.json --emitDeclarationOnly --outDir dist",
+    "clean": "pnpm clean:node_modules && pnpm clean:dist",
+    "clean:dist": "rimraf dist",
+    "clean:node_modules": "rimraf node_modules",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
     "test": "vitest",

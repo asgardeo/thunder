@@ -31,4 +31,4 @@ export {default as GitHub} from './icons/GitHub';
 export {default as Google} from './icons/Google';
 
 // Components
-export {default as ThemedIcon} from './components/ThemedIcon';
+export {default as ThemedIcon, type ColorSchemeAttr, type ThemedIconProps} from './components/ThemedIcon';
