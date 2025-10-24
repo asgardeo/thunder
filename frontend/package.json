@@ -1,19 +1,51 @@
 {
-  "name": "thunder-source",
-  "version": "0.1.0",
-  "license": "Apache-2.0",
-  "scripts": {
-    "start": "pnpm run",
-    "build": "pnpm install && nx run-many --target=build --all",
-    "lint": "nx run-many --target=lint --all",
-    "test": "nx run-many --target=test --all",
-    "graph": "nx graph",
-    "gate:build": "pnpm install && pnpm --filter gate build",
-    "gate:dev": "pnpm --filter gate dev"
-  },
   "private": true,
+  "name": "@thunder/frontend",
+  "version": "0.0.0",
+  "description": "Frontend workspace for ⚡️ Thunder",
+  "author": "WSO2",
+  "license": "Apache-2.0",
+  "type": "module",
+  "homepage": "https://github.com/asgardeo/thunder/tree/main/frontend#readme",
+  "bugs": {
+    "url": "https://github.com/asgardeo/thunder/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/asgardeo/thunder"
+  },
+  "keywords": [
+    "asgardeo",
+    "thunder",
+    "frontend",
+    "workspace",
+    "wso2"
+  ],
+  "scripts": {
+    "build": "nx run-many --target=build --all",
+    "clean": "nx run-many --target=clean --all",
+    "lint": "nx run-many --target=lint --all --parallel",
+    "lint:fix": "nx run-many --target=fix:lint --all --parallel",
+    "test": "nx run-many --target=test --all --parallel",
+    "typecheck": "nx run-many --target=typecheck --all --parallel"
+  },
   "devDependencies": {
-    "@nx/workspace": "21.4.1",
-    "nx": "21.4.1"
+    "@nx/js": "21.6.4",
+    "@swc-node/register": "~1.9.1",
+    "@swc/core": "~1.5.7",
+    "@swc/helpers": "~0.5.11",
+    "@thunder/eslint-plugin-thunder": "workspace:^",
+    "@thunder/prettier-config": "workspace:^",
+    "eslint": "catalog:",
+    "nx": "21.6.4",
+    "prettier": "catalog:",
+    "rimraf": "catalog:",
+    "tslib": "catalog:",
+    "typescript": "catalog:"
+  },
+  "pnpm": {
+    "overrides": {
+      "vite": "catalog:"
+    }
   }
 }
