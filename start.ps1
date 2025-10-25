@@ -18,7 +18,6 @@
 # ----------------------------------------------------------------------------
 
 $BACKEND_PORT = if ($env:BACKEND_PORT) { [int]$env:BACKEND_PORT } else { 8090 }
-$FRONTEND_PORT = if ($env:FRONTEND_PORT) { [int]$env:FRONTEND_PORT } else { 9090 }
 $DEBUG_PORT = if ($env:DEBUG_PORT) { [int]$env:DEBUG_PORT } else { 2345 }
 $DEBUG_MODE = $false
 
@@ -118,7 +117,6 @@ function Stop-PortListener {
 }
 
 # Kill ports before binding
-Stop-PortListener -port $FRONTEND_PORT
 Stop-PortListener -port $BACKEND_PORT
 if ($DEBUG_MODE) { Stop-PortListener -port $DEBUG_PORT }
 Start-Sleep -Seconds 1
@@ -149,7 +147,6 @@ if (-not $thunderPath) {
 }
 
 $proc = $null
-$nodeProc = $null
 try {
     if ($DEBUG_MODE) {
         Write-Host "⚡ Starting Thunder Server in DEBUG mode..."
@@ -177,19 +174,10 @@ try {
         # Export BACKEND_PORT for the child process
         $env:BACKEND_PORT = $BACKEND_PORT
         $proc = Start-Process -FilePath $thunderPath -WorkingDirectory $scriptDir -NoNewWindow -PassThru
-        
-        Write-Host "🟢 Starting Gate App Server ..."
-        # Export FRONTEND_PORT for the child process
-        $env:FRONTEND_PORT = $FRONTEND_PORT
-        $nodeArgs = @(Join-Path $scriptDir 'apps' 'gate' 'server.js')
-        $nodeProc = Start-Process -FilePath 'node' -ArgumentList $nodeArgs -WorkingDirectory $scriptDir -NoNewWindow -PassThru
     }
 
     Write-Host ""
-    Write-Host "🚀 Server running. Thunder PID: $($proc.Id)"
-    if ($nodeProc) {
-        Write-Host "🚀 Gate App running. Node PID: $($nodeProc.Id)"
-    }
+    Write-Host "🚀 Server running. PID: $($proc.Id)"
     Write-Host "Press Ctrl+C to stop the server."
 
     # Wait for the background process. This will block until the process exits.
@@ -199,8 +187,5 @@ finally {
     Write-Host "`n🛑 Stopping server..."
     if ($proc -and -not $proc.HasExited) {
         try { Stop-Process -Id $proc.Id -Force -ErrorAction SilentlyContinue } catch { }
-    }
-    if ($nodeProc -and -not $nodeProc.HasExited) {
-        try { Stop-Process -Id $nodeProc.Id -Force -ErrorAction SilentlyContinue } catch { }
     }
 }

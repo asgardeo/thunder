@@ -19,7 +19,6 @@
 
 # Default settings
 BACKEND_PORT=${BACKEND_PORT:-8090}
-FRONTEND_PORT=${FRONTEND_PORT:-9090}
 DEBUG_PORT=${DEBUG_PORT:-2345}
 DEBUG_MODE=${DEBUG_MODE:-false}
 
@@ -67,7 +66,6 @@ function kill_port() {
 }
 
 # Kill ports before binding
-kill_port $FRONTEND_PORT
 kill_port $BACKEND_PORT
 if [ "$DEBUG_MODE" = "true" ]; then
     kill_port $DEBUG_PORT
@@ -107,10 +105,6 @@ else
     echo "⚡ Starting Thunder Server ..."
     BACKEND_PORT=$BACKEND_PORT ./thunder &
     THUNDER_PID=$!
-    
-    echo "🟢 Starting Gate App Server ..."
-    FRONTEND_PORT=$FRONTEND_PORT node apps/gate/server.js &
-    NODE_PID=$!
 fi
 
 # Cleanup function
@@ -118,9 +112,6 @@ cleanup() {
     echo -e "\n🛑 Stopping server..."
     if [ -n "$THUNDER_PID" ]; then
         kill $THUNDER_PID 2>/dev/null || true
-    fi
-    if [ -n "$NODE_PID" ]; then
-        kill $NODE_PID 2>/dev/null || true
     fi
 }
 
@@ -134,4 +125,3 @@ echo "Press Ctrl+C to stop the server."
 
 # Wait for background processes
 wait $THUNDER_PID
-wait $NODE_PID
