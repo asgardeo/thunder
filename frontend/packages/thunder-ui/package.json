@@ -20,9 +20,11 @@
   "module": "dist/index.js",
   "commonjs": "dist/cjs/index.js",
   "exports": {
-    "import": "./dist/index.js",
-    "require": "./dist/cjs/index.js",
-    "types": "./dist/index.d.ts"
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "require": "./dist/cjs/index.js"
+    }
   },
   "files": [
     "dist",
@@ -50,6 +52,7 @@
     "@thunder/prettier-config": "workspace:^",
     "@types/node": "catalog:",
     "@types/react": "catalog:",
+    "dts-bundle-generator": "^9.5.1",
     "esbuild": "catalog:",
     "esbuild-plugin-preserve-directives": "catalog:",
     "eslint": "catalog:",

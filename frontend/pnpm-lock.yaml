@@ -88,7 +88,7 @@ catalogs:
       specifier: ^7.9.4
       version: 7.9.4
     rimraf:
-      specifier: 6.0.1
+      specifier: ^6.0.1
       version: 6.0.1
     tslib:
       specifier: ^2.8.1
@@ -356,9 +356,6 @@ importers:
         specifier: ^8.46.0
         version: 8.46.0(eslint@8.57.1)(typescript@5.9.3)
     devDependencies:
-      '@thunder/eslint-plugin-thunder':
-        specifier: workspace:^
-        version: 'link:'
       '@thunder/prettier-config':
         specifier: workspace:^
         version: link:../thunder-prettier-config
@@ -433,9 +430,6 @@ importers:
       '@thunder/eslint-plugin-thunder':
         specifier: workspace:^
         version: link:../thunder-eslint-plugin
-      '@thunder/prettier-config':
-        specifier: workspace:^
-        version: 'link:'
       '@types/node':
         specifier: 'catalog:'
         version: 24.7.2
@@ -491,6 +485,9 @@ importers:
       '@types/react':
         specifier: 'catalog:'
         version: 19.2.2
+      dts-bundle-generator:
+        specifier: ^9.5.1
+        version: 9.5.1
       esbuild:
         specifier: 'catalog:'
         version: 0.25.10
@@ -2650,6 +2647,11 @@ packages:
   dotenv@16.4.7:
     resolution: {integrity: sha512-47qPchRCykZC03FhkYAhrvwU4xDBFIj1QPqaarj6mdM/hgUzfPHcpkHJOn3mJAufFeeAxAzeGsr5X0M4k6fLZQ==}
     engines: {node: '>=12'}
+
+  dts-bundle-generator@9.5.1:
+    resolution: {integrity: sha512-DxpJOb2FNnEyOzMkG11sxO2dmxPjthoVWxfKqWYJ/bI/rT1rvTMktF5EKjAYrRZu6Z6t3NhOUZ0sZ5ZXevOfbA==}
+    engines: {node: '>=14.0.0'}
+    hasBin: true
 
   dunder-proto@1.0.1:
     resolution: {integrity: sha512-KIN/nDJBQRcXw0MLVhZE9iQHmG68qAVIBg9CqmUYjmQIhgij9U5MFvrqkUL5FbtyyzZuOeOt0zdeRe4UY7ct+A==}
@@ -6828,6 +6830,11 @@ snapshots:
       dotenv: 16.4.7
 
   dotenv@16.4.7: {}
+
+  dts-bundle-generator@9.5.1:
+    dependencies:
+      typescript: 5.9.3
+      yargs: 17.7.2
 
   dunder-proto@1.0.1:
     dependencies:

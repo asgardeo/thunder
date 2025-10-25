@@ -46,7 +46,7 @@ const typescriptConfig: Linter.Config[] = [
       ecmaVersion: 2020,
       parserOptions: {
         projectService: {
-          allowDefaultProject: ['*.js'],
+          allowDefaultProject: ['.*.js', '.*.cjs', '*.js', '*.*.js', '*.cjs'],
         },
         tsconfigRootDir: import.meta.dirname,
       },

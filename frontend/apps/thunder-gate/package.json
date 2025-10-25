@@ -29,7 +29,7 @@
     "lint:fix": "eslint . --fix",
     "preview": "vite preview",
     "test": "vitest",
-    "typecheck": "tsc -p tsconfig.lib.json"
+    "typecheck": "tsc -p tsconfig.app.json"
   },
   "dependencies": {
     "@asgardeo/react": "catalog:",

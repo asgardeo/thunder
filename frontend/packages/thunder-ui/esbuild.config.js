@@ -19,6 +19,11 @@
 import {readFileSync} from 'fs';
 import {build} from 'esbuild';
 import {preserveDirectivesPlugin} from 'esbuild-plugin-preserve-directives';
+import {resolve, dirname} from 'path';
+import {fileURLToPath} from 'url';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
 
 const pkg = JSON.parse(readFileSync('./package.json', 'utf8'));
 
@@ -29,6 +34,10 @@ const commonOptions = {
   metafile: true,
   platform: 'browser',
   plugins: [
+    dtsPlugin({
+      entry: 'src/index.ts',
+      output: 'dist/index.d.ts',
+    }),
     preserveDirectivesPlugin({
       directives: ['use client', 'use strict'],
       include: /\.(js|ts|jsx|tsx)$/,
@@ -51,3 +60,27 @@ await build({
   outfile: 'dist/cjs/index.js',
   sourcemap: true,
 });
+
+import {generateDtsBundle} from 'dts-bundle-generator';
+import {writeFileSync} from 'fs';
+import path from 'path';
+
+export function dtsPlugin(options) {
+  return {
+    name: 'dts-plugin',
+    setup(build) {
+      build.onEnd(() => {
+        const output = generateDtsBundle([
+          {
+            filePath: options.entry,
+            output: {exportReferencedTypes: false},
+          },
+        ]);
+
+        const outPath = path.resolve(options.output);
+        writeFileSync(outPath, output[0]);
+        console.log(`✅ Types bundled into ${outPath}`);
+      });
+    },
+  };
+}

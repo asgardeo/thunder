@@ -27,7 +27,8 @@ import './index.css';
 
 createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
-    <AsgardeoProvider baseUrl={import.meta.env.VITE_ASGARDEO_BASE_URL} platform="AsgardeoV2">
+    {/* @ts-expect-error `clientId` should be made optional from the SDK side */}
+    <AsgardeoProvider baseUrl={import.meta.env.VITE_ASGARDEO_BASE_URL as string} platform="AsgardeoV2">
       <StyledEngineProvider injectFirst>
         <ThemeProvider theme={theme}>
           <CssBaseline enableColorScheme />

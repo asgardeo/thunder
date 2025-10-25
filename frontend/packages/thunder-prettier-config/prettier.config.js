@@ -16,6 +16,7 @@
  * under the License.
  */
 
-import config from "@thunder/prettier-config";
+// eslint-disable-next-line import/extensions
+import config from './dist/index.js';
 
 export default config;

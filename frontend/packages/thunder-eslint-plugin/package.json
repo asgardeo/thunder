@@ -22,9 +22,11 @@
   "module": "dist/index.js",
   "commonjs": "dist/cjs/index.js",
   "exports": {
-    "import": "./dist/index.js",
-    "require": "./dist/cjs/index.js",
-    "types": "./dist/index.d.ts"
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "require": "./dist/cjs/index.js"
+    }
   },
   "files": [
     "dist",
@@ -37,6 +39,13 @@
     "url": "https://github.com/asgardeo/thunder",
     "directory": "packages/thunder-eslint-plugin"
   },
+  "nx": {
+    "targets": {
+      "build": {
+        "dependsOn": []
+      }
+    }
+  },
   "scripts": {
     "build": "pnpm clean:dist && node esbuild.config.js && tsc -p tsconfig.lib.json --emitDeclarationOnly --outDir dist",
     "clean": "pnpm clean:node_modules && pnpm clean:dist",
@@ -48,7 +57,6 @@
     "typecheck": "tsc -p tsconfig.lib.json"
   },
   "devDependencies": {
-    "@thunder/eslint-plugin-thunder": "workspace:^",
     "@thunder/prettier-config": "workspace:^",
     "@types/eslint": "^9.6.1",
     "@types/node": "catalog:",

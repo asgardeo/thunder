@@ -27,8 +27,8 @@ import App from './App';
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <AsgardeoProvider
-      baseUrl={import.meta.env.VITE_ASGARDEO_BASE_URL}
-      clientId={import.meta.env.VITE_ASGARDEO_CLIENT_ID}
+      baseUrl={import.meta.env.VITE_ASGARDEO_BASE_URL as string}
+      clientId={import.meta.env.VITE_ASGARDEO_CLIENT_ID as string}
       platform="AsgardeoV2"
     >
       <StyledEngineProvider injectFirst>

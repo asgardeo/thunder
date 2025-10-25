@@ -48,7 +48,7 @@ const reactConfig: Linter.Config[] = [
       globals: globals.browser,
       parserOptions: {
         projectService: {
-          allowDefaultProject: ['*.js'],
+          allowDefaultProject: ['.*.js', '.*.cjs', '*.js', '*.*.js', '*.cjs'],
         },
         tsconfigRootDir: import.meta.dirname,
       },
