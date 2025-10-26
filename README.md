@@ -120,6 +120,59 @@ Follow these steps to run WSO2 Thunder using Docker.
       ghcr.io/asgardeo/thunder:latest
     ```
 
+#### Initial Data Setup
+
+To get started quickly, you can set up initial data including an admin user and the Develop application using the `--setup` flag when starting Thunder:
+
+**Linux/macOS:**
+
+```bash
+bash start.sh --setup
+```
+
+**Windows (PowerShell):**
+
+```powershell
+.\start.ps1 --setup
+```
+
+**Windows (Command Prompt):**
+
+```cmd
+start.bat --setup
+```
+
+This will:
+
+- Create an OIDC user schema
+- Create an admin user with credentials: `admin` / `admin`
+- Create the Develop application for accessing the admin console
+
+After setup is complete, you can access:
+
+- **Gate (Login/Register)**: `https://localhost:8090/signin`
+- **Develop (Admin Console)**: `https://localhost:8090/develop`
+
+You can also run the setup script manually at any time:
+
+**Linux/macOS:**
+
+```bash
+bash scripts/setup_initial_data.sh
+```
+
+**Windows (PowerShell):**
+
+```powershell
+.\scripts\setup_initial_data.ps1
+```
+
+**Windows (Command Prompt):**
+
+```cmd
+scripts\setup_initial_data.bat
+```
+
 ### Try Out the Product
 
 #### Try Out with the Sample App
@@ -1834,8 +1887,22 @@ export PATH=$PATH:$(go env GOPATH)/bin
 
 From the distribution directory:
 
+**Linux/macOS:**
+
 ```bash
 ./start.sh --debug
+```
+
+**Windows (PowerShell):**
+
+```powershell
+.\start.ps1 --debug
+```
+
+**Windows (Command Prompt):**
+
+```cmd
+start.bat --debug
 ```
 
 The debugger will listen on `localhost:2345` by default.

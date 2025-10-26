@@ -27,4 +27,3 @@ cors:
   allowed_origins:
     - "https://localhost:3000"
     - "https://localhost:9001"
-    - "https://localhost:9090"

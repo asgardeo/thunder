@@ -4,9 +4,9 @@ server:
 
 gate_client:
   hostname: localhost
-  port: 9090
+  port: 8090
   scheme: https
-  login_path: /login
+  login_path: /signin
   error_path: /error
 
 security:

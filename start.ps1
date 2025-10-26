@@ -20,6 +20,7 @@
 $BACKEND_PORT = if ($env:BACKEND_PORT) { [int]$env:BACKEND_PORT } else { 8090 }
 $DEBUG_PORT = if ($env:DEBUG_PORT) { [int]$env:DEBUG_PORT } else { 2345 }
 $DEBUG_MODE = $false
+$SETUP_MODE = $false
 
 # Parse command line arguments
 $i = 0
@@ -54,6 +55,11 @@ while ($i -lt $args.Count) {
             }
             break
         }
+        '--setup' {
+            $SETUP_MODE = $true
+            $i++
+            break
+        }
         '--help' {
             Write-Host "Thunder Server Startup Script"
             Write-Host ""
@@ -63,6 +69,7 @@ while ($i -lt $args.Count) {
             Write-Host "  --debug              Enable debug mode with remote debugging"
             Write-Host "  --port PORT          Set application port (default: 8090)"
             Write-Host "  --debug-port PORT    Set debug port (default: 2345)"
+            Write-Host "  --setup              Run initial data setup after server starts"
             Write-Host "  --help               Show this help message"
             exit 0
         }
@@ -178,6 +185,50 @@ try {
 
     Write-Host ""
     Write-Host "🚀 Server running. PID: $($proc.Id)"
+    Write-Host ""
+    Write-Host "📱 Frontend Apps:"
+    Write-Host "   🚪 Gate (Login/Register): $BACKEND_PORT/signin"
+    Write-Host "   🛠️  Develop (Admin Console): $BACKEND_PORT/develop"
+    Write-Host ""
+
+    # Run initial setup if requested
+    if ($SETUP_MODE) {
+        Write-Host "⚙️  Running initial data setup..."
+        Write-Host ""
+        
+        # Run the setup script - it will handle server readiness checking
+        $setupScript = Join-Path $scriptDir "scripts\setup_initial_data.ps1"
+        if (Test-Path $setupScript) {
+            try {
+                & $setupScript -Port $BACKEND_PORT
+                
+                if ($LASTEXITCODE -eq 0) {
+                    Write-Host ""
+                    Write-Host "✅ Initial data setup completed successfully!" -ForegroundColor Green
+                    Write-Host ""
+                    Write-Host "👤 Admin credentials:"
+                    Write-Host "   Username: admin"
+                    Write-Host "   Password: admin"
+                    Write-Host "   Email: admin@thunder.dev"
+                    Write-Host ""
+                }
+                else {
+                    Write-Host "❌ Initial data setup failed" -ForegroundColor Red
+                    Write-Host "💡 Check the logs above for more details" -ForegroundColor Yellow
+                    Write-Host "💡 You can run the setup manually using: .\scripts\setup_initial_data.ps1 -Port $BACKEND_PORT" -ForegroundColor Yellow
+                }
+            }
+            catch {
+                Write-Host "❌ Failed to run setup script: $_" -ForegroundColor Red
+                Write-Host "💡 You can run the setup manually using: .\scripts\setup_initial_data.ps1 -Port $BACKEND_PORT" -ForegroundColor Yellow
+            }
+        }
+        else {
+            Write-Host "❌ Setup script not found at: $setupScript" -ForegroundColor Red
+            Write-Host "💡 Make sure you're running this script from the correct directory" -ForegroundColor Yellow
+        }
+    }
+
     Write-Host "Press Ctrl+C to stop the server."
 
     # Wait for the background process. This will block until the process exits.

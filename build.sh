@@ -97,7 +97,6 @@ SAMPLE_APP_VERSION=$(grep -o '"version": *"[^"]*"' samples/apps/oauth/package.js
 SAMPLE_APP_FOLDER="sample-app-${SAMPLE_APP_VERSION}-${SAMPLE_PACKAGE_OS}-${SAMPLE_PACKAGE_ARCH}"
 
 # Server ports
-FRONTEND_PORT=9090
 BACKEND_PORT=8090
 
 # Directories
@@ -115,10 +114,9 @@ SERVER_DB_SCRIPTS_DIR=$BACKEND_BASE_DIR/dbscripts
 SECURITY_DIR=repository/resources/security
 FRONTEND_BASE_DIR=frontend
 GATE_APP_DIST_DIR=apps/gate
-DEVELOP_APP_DIST_DIR=apps/thunder-develop
 DEVELOP_APP_DIST_DIR=apps/develop
 FRONTEND_GATE_APP_SOURCE_DIR=$FRONTEND_BASE_DIR/apps/thunder-gate
-FRONTEND_DEVELOP_APP_SOURCE_DIR=$FRONTEND_BASE_DIR/apps/thunder-gate
+FRONTEND_DEVELOP_APP_SOURCE_DIR=$FRONTEND_BASE_DIR/apps/thunder-develop
 SAMPLE_BASE_DIR=samples
 SAMPLE_APP_DIR=$SAMPLE_BASE_DIR/apps/oauth
 SAMPLE_APP_SERVER_DIR=$SAMPLE_APP_DIR/server
@@ -649,14 +647,7 @@ function run() {
         lsof -ti tcp:$port | xargs kill -9 2>/dev/null || true
     }
 
-    kill_port $FRONTEND_PORT
     kill_port $BACKEND_PORT
-
-    echo "=== Starting frontend on https://localhost:$FRONTEND_PORT ==="
-    cd "$FRONTEND_BASE_DIR" || exit 1
-    FRONTEND_PORT=$FRONTEND_PORT pnpm --filter gate start &
-    FRONTEND_PID=$!
-    cd "$SCRIPT_DIR" || exit 1
 
     echo "=== Starting backend on https://localhost:$BACKEND_PORT ==="
     BACKEND_PORT=$BACKEND_PORT go run -C "$BACKEND_DIR" . &
@@ -664,13 +655,14 @@ function run() {
 
     echo ""
     echo "🚀 Servers running:"
-    echo "👉 Frontend: https://localhost:$FRONTEND_PORT"
     echo "👉 Backend : https://localhost:$BACKEND_PORT"
+    echo "📱 Frontend Apps:"
+    echo "   🚪 Gate (Login/Register): https://localhost:$BACKEND_PORT/signin"
+    echo "   🛠️  Develop (Admin Console): https://localhost:$BACKEND_PORT/develop"
     echo "Press Ctrl+C to stop."
 
-    trap 'echo -e "\nStopping servers..."; kill $FRONTEND_PID $BACKEND_PID; exit' SIGINT
+    trap 'echo -e "\nStopping servers..."; kill $BACKEND_PID; exit' SIGINT
 
-    wait $FRONTEND_PID
     wait $BACKEND_PID
 }
 

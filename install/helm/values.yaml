@@ -114,9 +114,9 @@ configuration:
   # Gate client configuration
   gateClient:
     hostname: "0.0.0.0"
-    port: 9090
+    port: 8090
     scheme: "https"
-    loginPath: "/login"
+    loginPath: "/signin"
     errorPath: "/error"
 
   # Security configuration
@@ -191,4 +191,3 @@ configuration:
     allowedOrigins:
       - "https://localhost:3000"
       - "https://localhost:9001"
-      - "https://localhost:9090"

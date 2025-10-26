@@ -21,6 +21,7 @@
 BACKEND_PORT=${BACKEND_PORT:-8090}
 DEBUG_PORT=${DEBUG_PORT:-2345}
 DEBUG_MODE=${DEBUG_MODE:-false}
+SETUP_MODE=${SETUP_MODE:-false}
 
 # Parse command line arguments
 while [[ $# -gt 0 ]]; do
@@ -37,6 +38,10 @@ while [[ $# -gt 0 ]]; do
             BACKEND_PORT="$2"
             shift 2
             ;;
+        --setup)
+            SETUP_MODE=true
+            shift
+            ;;
         --help)
             echo "Thunder Server Startup Script"
             echo ""
@@ -46,6 +51,7 @@ while [[ $# -gt 0 ]]; do
             echo "  --debug              Enable debug mode with remote debugging"
             echo "  --port PORT          Set application port (default: 8090)"
             echo "  --debug-port PORT    Set debug port (default: 2345)"
+            echo "  --setup              Run initial data setup after server starts"
             echo "  --help               Show this help message"
             exit 0
             ;;
@@ -121,6 +127,36 @@ trap cleanup SIGINT
 # Status
 echo ""
 echo "🚀 Server running"
+echo ""
+echo "📱 Frontend Apps:"
+echo "   🚪 Gate (Login/Register): $BACKEND_PORT/signin"
+echo "   🛠️  Develop (Admin Console): $BACKEND_PORT/develop"
+echo ""
+
+# Run initial setup if requested
+if [ "$SETUP_MODE" = "true" ]; then
+    echo "⚙️  Running initial data setup..."
+    echo ""
+    
+    # Run the setup script - it will handle server readiness checking
+    ./scripts/setup_initial_data.sh -port "$BACKEND_PORT"
+    
+    if [ $? -eq 0 ]; then
+        echo ""
+        echo "✅ Initial data setup completed successfully!"
+        echo ""
+        echo "👤 Admin credentials:"
+        echo "   Username: admin"
+        echo "   Password: admin"
+        echo "   Email: admin@thunder.dev"
+        echo ""
+    else
+        echo "❌ Initial data setup failed"
+        echo "💡 Check the logs above for more details"
+        echo "💡 You can run the setup manually using: ./scripts/setup_initial_data.sh -port $BACKEND_PORT"
+    fi
+fi
+
 echo "Press Ctrl+C to stop the server."
 
 # Wait for background processes

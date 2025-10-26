@@ -63,6 +63,9 @@ func main() {
 	// Register the services.
 	registerServices(mux)
 
+	// Register static file handlers for frontend applications.
+	registerStaticFileHandlers(logger, mux, thunderHome)
+
 	// Setup signal handling for graceful shutdown
 	sigChan := make(chan os.Signal, 1)
 	signal.Notify(sigChan, os.Interrupt, syscall.SIGTERM)
@@ -236,4 +239,63 @@ func gracefulShutdown(logger *log.Logger, server *http.Server) {
 	}
 
 	logger.Info("Server shutdown completed")
+}
+
+// registerStaticFileHandlers registers static file handlers for frontend applications.
+func registerStaticFileHandlers(logger *log.Logger, mux *http.ServeMux, thunderHome string) {
+	// Serve gate application from /signin
+	gateDir := path.Join(thunderHome, "apps", "gate")
+	if directoryExists(gateDir) {
+		logger.Info("Registering static file handler for Gate application", log.String("path", "/signin/"), log.String("directory", gateDir))
+		mux.Handle("/signin/", createStaticFileHandler("/signin/", gateDir, logger))
+	} else {
+		logger.Warn("Gate application directory not found", log.String("directory", gateDir))
+	}
+
+	// Serve develop application from /develop
+	developDir := path.Join(thunderHome, "apps", "develop")
+	if directoryExists(developDir) {
+		logger.Info("Registering static file handler for Develop application", log.String("path", "/develop/"), log.String("directory", developDir))
+		mux.Handle("/develop/", createStaticFileHandler("/develop/", developDir, logger))
+	} else {
+		logger.Warn("Develop application directory not found", log.String("directory", developDir))
+	}
+}
+
+// createStaticFileHandler creates a handler for serving static files with SPA fallback.
+func createStaticFileHandler(routePrefix, directory string, logger *log.Logger) http.Handler {
+	fileServer := http.FileServer(http.Dir(directory))
+
+	return http.StripPrefix(routePrefix, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		// Get the file path
+		filePath := path.Join(directory, r.URL.Path)
+
+		// Check if file exists
+		if _, err := os.Stat(filePath); os.IsNotExist(err) {
+			// For SPA routing, serve index.html for non-existent files
+			indexPath := path.Join(directory, "index.html")
+			if fileExists(indexPath) {
+				logger.Debug("Serving index.html for SPA routing",
+					log.String("requested_path", r.URL.Path),
+					log.String("route_prefix", routePrefix))
+				http.ServeFile(w, r, indexPath)
+				return
+			}
+		}
+
+		// Serve the requested file or directory listing
+		fileServer.ServeHTTP(w, r)
+	}))
+}
+
+// directoryExists checks if a directory exists.
+func directoryExists(path string) bool {
+	info, err := os.Stat(path)
+	return err == nil && info.IsDir()
+}
+
+// fileExists checks if a file exists.
+func fileExists(path string) bool {
+	info, err := os.Stat(path)
+	return err == nil && !info.IsDir()
 }
