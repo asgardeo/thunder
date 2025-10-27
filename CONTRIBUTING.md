@@ -34,19 +34,38 @@ git clone https://github.com/<your-username>/thunder.git
 cd thunder
 ```
 
-3.**Build the Project**: Navigate to the project root directory and run the build command.
-
-```bash
-make build
-```
-
-4.**Run the Project**: Start the Thunder server.
+3.**Run the Project**: Start the Thunder server.
 
 ```bash
 make run
 ```
 
-## Contributing to Frontend
+This will run the backend server on `http://localhost:8090`.
+If you want to run the frontend applications as well, follow the instructions in the [Development Setup (Frontend)](#development-setup-frontend) section below.
+
+## Development Setup (Frontend)
+
+### Installing Dependencies
+
+1.Navigate to the Thunder frontend directory.
+
+```bash
+cd frontend
+```
+
+2.Install the dependencies using `pnpm`.
+
+```bash
+pnpm install
+```
+
+### Building the Project
+
+Execute the build command to compile the project. This will build all the necessary packages and applications.
+
+```bash
+pnpm build
+```
 
 ### Setting up the Thunder Gate Application
 
@@ -59,31 +78,7 @@ gate_client:
   login_path: "/signin"
 ```
 
-2.Navigate to the Thunder frontend directory.
-
-```bash
-cd frontend
-```
-
-3.Run the Thunder Gate application.
-
-> [!IMPORTANT]
-> Make sure to have all the dependencies installed & built before running the application.
-
-- If you have run `make build` in the project root, you can skip the dependency installation step.
-
-```bash
-pnpm --filter @thunder/gate dev
-```
-
-- If you haven't run `make build`, install the dependencies and then run the application.
-
-```bash
-pnpm install
-pnpm build
-```
-
-And then run:
+2.Run the Thunder Gate application.
 
 ```bash
 pnpm --filter @thunder/gate dev
@@ -97,25 +92,7 @@ pnpm --filter @thunder/gate dev
 cd frontend
 ```
 
-3.Run the Thunder Gate application.
-
-> [!IMPORTANT]
-> Make sure to have all the dependencies installed & built before running the application.
-
-- If you have run `make build` in the project root, you can skip the dependency installation step.
-
-```bash
-pnpm --filter @thunder/develop dev
-```
-
-- If you haven't run `make build`, install the dependencies and then run the application.
-
-```bash
-pnpm install
-pnpm build
-```
-
-And then run:
+2.Run the Thunder Gate application.
 
 ```bash
 pnpm --filter @thunder/develop dev
