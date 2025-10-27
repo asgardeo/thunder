@@ -27,14 +27,6 @@ const BASE_URL = process.env.BASE_URL ?? '/signin';
 // https://vite.dev/config/
 export default defineConfig({
   base: BASE_URL,
-  experimental: {
-    renderBuiltUrl(filename: string, {hostType}: {hostType: 'js' | 'css' | 'html'}) {
-      if (['js', 'css'].includes(hostType)) {
-        return {runtime: `window.__getFile(${JSON.stringify(filename)})`};
-      }
-      return {relative: true};
-    },
-  },
   server: {
     port: PORT,
     host: HOST,
