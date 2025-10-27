@@ -135,12 +135,6 @@ bash start.sh --setup
 .\start.ps1 --setup
 ```
 
-**Windows (Command Prompt):**
-
-```cmd
-start.bat --setup
-```
-
 This will:
 
 - Create an OIDC user schema
@@ -164,12 +158,6 @@ bash scripts/setup_initial_data.sh
 
 ```powershell
 .\scripts\setup_initial_data.ps1
-```
-
-**Windows (Command Prompt):**
-
-```cmd
-scripts\setup_initial_data.bat
 ```
 
 ### Try Out the Product
