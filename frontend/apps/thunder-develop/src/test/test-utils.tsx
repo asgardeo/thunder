@@ -18,7 +18,7 @@
 
 /* eslint-disable react-refresh/only-export-components */
 import type {ReactElement, ReactNode} from 'react';
-import {render, RenderOptions} from '@testing-library/react';
+import {render, type RenderOptions} from '@testing-library/react';
 import {MemoryRouter} from 'react-router';
 import {createTheme, ThemeProvider} from '@mui/material/styles';
 

@@ -17,10 +17,13 @@
  */
 
 import {useCallback, useEffect, useMemo, useState, type ReactNode} from 'react';
-import type { NavigationItem } from '../models/layouts';
+import {useLocation} from 'react-router';
+import type {NavigationItem} from '../models/layouts';
 import LayoutContext from '../contexts/NavigationContext';
 
 export default function LayoutProvider({children}: {children: ReactNode}) {
+  const location = useLocation();
+
   const [currentPage, setCurrentPage] = useState<NavigationItem>({
     id: 'home',
     text: 'Home',
@@ -29,57 +32,29 @@ export default function LayoutProvider({children}: {children: ReactNode}) {
   const [sidebarOpen, setSidebarOpen] = useState(true);
 
   useEffect(() => {
-    const handleLocationChange = () => {
-      const path = window.location.pathname;
+    const path = location.pathname;
 
-      // Parse the pathname to determine the current page
-      // This is a basic implementation - you may want to customize this logic
-      const pathSegments = path.split('/').filter(Boolean);
+    // Parse the pathname to determine the current page
+    // This is a basic implementation - you may want to customize this logic
+    const pathSegments = path.split('/').filter(Boolean);
 
-      if (pathSegments.length === 0 || path === '/') {
-        setCurrentPage({
-          id: 'home',
-          text: 'Home',
-          category: 'Dashboard',
-        });
-      } else {
-        const pageId = pathSegments[0];
-        const pageText = pageId.charAt(0).toUpperCase() + pageId.slice(1);
+    if (pathSegments.length === 0 || path === '/') {
+      setCurrentPage({
+        id: 'home',
+        text: 'Home',
+        category: 'Dashboard',
+      });
+    } else {
+      const pageId = pathSegments[0];
+      const pageText = pageId.charAt(0).toUpperCase() + pageId.slice(1);
 
-        setCurrentPage({
-          id: pageId,
-          text: pageText,
-          category: 'Dashboard',
-        });
-      }
-    };
-
-    // Handle initial load
-    handleLocationChange();
-
-    // Listen to popstate events (browser back/forward)
-    window.addEventListener('popstate', handleLocationChange);
-
-    // Listen to custom navigation events from react-router
-    const originalPushState = window.history.pushState.bind(window.history);
-    const originalReplaceState = window.history.replaceState.bind(window.history);
-
-    window.history.pushState = function pushStateWrapper(...args) {
-      originalPushState(...args);
-      handleLocationChange();
-    };
-
-    window.history.replaceState = function replaceStateWrapper(...args) {
-      originalReplaceState(...args);
-      handleLocationChange();
-    };
-
-    return () => {
-      window.removeEventListener('popstate', handleLocationChange);
-      window.history.pushState = originalPushState;
-      window.history.replaceState = originalReplaceState;
-    };
-  }, []);
+      setCurrentPage({
+        id: pageId,
+        text: pageText,
+        category: 'Dashboard',
+      });
+    }
+  }, [location]);
 
   const toggleSidebar = useCallback(() => {
     setSidebarOpen((prev) => !prev);

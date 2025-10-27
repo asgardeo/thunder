@@ -39,7 +39,7 @@ vi.mock('@/layouts/contexts/useNavigation', () => ({
 }));
 
 describe('SideMenuMobile', () => {
-  const mockToggleDrawer = vi.fn((newOpen: boolean) => vi.fn());
+  const mockToggleDrawer = vi.fn(() => vi.fn());
 
   beforeEach(() => {
     vi.clearAllMocks();
