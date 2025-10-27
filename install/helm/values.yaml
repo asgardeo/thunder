@@ -190,4 +190,3 @@ configuration:
   cors:
     allowedOrigins:
       - "https://localhost:3000"
-      - "https://localhost:9001"

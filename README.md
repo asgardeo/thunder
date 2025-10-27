@@ -96,7 +96,6 @@ Follow these steps to run WSO2 Thunder using Docker.
     ```bash
     docker run --rm \
       -p 8090:8090 \
-      -p 9090:9090 \
       ghcr.io/asgardeo/thunder:latest
     ```
 

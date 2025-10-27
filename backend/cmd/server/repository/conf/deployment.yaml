@@ -26,4 +26,3 @@ database:
 cors:
   allowed_origins:
     - "https://localhost:3000"
-    - "https://localhost:9001"
