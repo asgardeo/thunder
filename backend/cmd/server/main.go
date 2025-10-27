@@ -246,7 +246,8 @@ func registerStaticFileHandlers(logger *log.Logger, mux *http.ServeMux, thunderH
 	// Serve gate application from /signin
 	gateDir := path.Join(thunderHome, "apps", "gate")
 	if directoryExists(gateDir) {
-		logger.Info("Registering static file handler for Gate application", log.String("path", "/signin/"), log.String("directory", gateDir))
+		logger.Info("Registering static file handler for Gate application",
+			log.String("path", "/signin/"), log.String("directory", gateDir))
 		mux.Handle("/signin/", createStaticFileHandler("/signin/", gateDir, logger))
 	} else {
 		logger.Warn("Gate application directory not found", log.String("directory", gateDir))
@@ -255,7 +256,8 @@ func registerStaticFileHandlers(logger *log.Logger, mux *http.ServeMux, thunderH
 	// Serve develop application from /develop
 	developDir := path.Join(thunderHome, "apps", "develop")
 	if directoryExists(developDir) {
-		logger.Info("Registering static file handler for Develop application", log.String("path", "/develop/"), log.String("directory", developDir))
+		logger.Info("Registering static file handler for Develop application",
+			log.String("path", "/develop/"), log.String("directory", developDir))
 		mux.Handle("/develop/", createStaticFileHandler("/develop/", developDir, logger))
 	} else {
 		logger.Warn("Develop application directory not found", log.String("directory", developDir))
