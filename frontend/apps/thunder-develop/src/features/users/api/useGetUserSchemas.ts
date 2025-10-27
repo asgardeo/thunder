@@ -39,7 +39,7 @@ export default function useGetUserSchemas(params?: SchemaListParams) {
 
         // Build query string
         const searchParams = new URLSearchParams();
-        const finalParams = queryParams || params;
+        const finalParams = queryParams ?? params;
 
         if (finalParams?.limit !== undefined) {
           searchParams.append('limit', String(finalParams.limit));
@@ -115,7 +115,7 @@ export default function useGetUserSchemas(params?: SchemaListParams) {
         });
       });
     },
-    [fetchUserSchemas, startFetchTransition],
+    [fetchUserSchemas],
   );
 
   return {

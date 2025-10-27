@@ -39,7 +39,7 @@ export default function useGetUsers(params?: UserListParams) {
 
         // Build query string
         const searchParams = new URLSearchParams();
-        const finalParams = queryParams || params;
+        const finalParams = queryParams ?? params;
 
         if (finalParams?.limit !== undefined) {
           searchParams.append('limit', String(finalParams.limit));
@@ -118,7 +118,7 @@ export default function useGetUsers(params?: UserListParams) {
         });
       });
     },
-    [fetchUsers, startFetchTransition],
+    [fetchUsers],
   );
 
   return {

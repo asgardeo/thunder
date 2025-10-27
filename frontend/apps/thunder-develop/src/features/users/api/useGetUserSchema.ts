@@ -114,7 +114,7 @@ export default function useGetUserSchema(id?: string) {
         });
       });
     },
-    [id, fetchUserSchema, startFetchTransition],
+    [id, fetchUserSchema],
   );
 
   return {
