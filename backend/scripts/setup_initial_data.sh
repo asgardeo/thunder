@@ -199,14 +199,14 @@ wait_for_server() {
 }
 
 create_user_schema() {
-  log_info "Creating OIDC user schema..."
+  log_info "Creating Default user schema..."
   
   local response
   response=$(curl -k -s -w "%{http_code}" -X POST \
     "${BASE_URL}/user-schemas" \
     -H "Content-Type: application/json" \
     -d '{
-      "name": "oidc-user-schema",
+      "name": "default-user-schema",
       "schema": {
         "sub": {
           "type": "string",
@@ -275,7 +275,7 @@ create_admin_user() {
     "${BASE_URL}/users" \
     -H "Content-Type: application/json" \
     -d "{
-      \"type\": \"oidc-user-schema\",
+      \"type\": \"default-user-schema\",
       \"attributes\": {
         \"username\": \"admin\",
         \"password\": \"admin\",

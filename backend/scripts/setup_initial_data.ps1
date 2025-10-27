@@ -233,10 +233,10 @@ function Wait-ForServer {
 function New-UserSchema {
     param([string]$BaseUrl)
     
-    Write-Info "Creating OIDC user schema..."
+    Write-Info "Creating Default user schema..."
     
     $body = @{
-        name = "oidc-user-schema"
+        name = "default-user-schema"
         schema = @{
             sub = @{
                 type = "string"
@@ -309,7 +309,7 @@ function New-AdminUser {
     Write-Info "Creating admin user..."
     
     $body = @{
-        type = "oidc-user-schema"
+        type = "default-user-schema"
         attributes = @{
             username = "admin"
             password = "admin"
