@@ -7,7 +7,7 @@ Thank you for your interest in contributing to WSO2 Thunder! This guide will hel
 - [Prerequisites](#prerequisites)
 - [Development Setup](#development-setup)
 
-## 📦 Prerequisites
+## Prerequisites
 
 Before you begin, ensure you have the following installed on your system:
 
@@ -23,7 +23,7 @@ Before you begin, ensure you have the following installed on your system:
 - **[ESLint VSCode Extension](https://marketplace.visualstudio.com/items?itemName=dbaeumer.vscode-eslint)** - For linting support in VSCode
 - **[Prettier VSCode Extension](https://marketplace.visualstudio.com/items?itemName=esbenp.prettier-vscode)** - For code formatting in VSCode
 
-## 🛠️ Development Setup
+## Development Setup
 
 1.**Fork the Repository**: Start by forking the WSO2 Thunder repository to your GitHub account.
 
@@ -44,4 +44,79 @@ make build
 
 ```bash
 make run
+```
+
+## Contributing to Frontend
+
+### Setting up the Thunder Gate Application
+
+1.Point the `gate_client` in `thunder-home/config/deployment.yaml` to the local Thunder Gate application.
+
+```yaml
+gate_client:
+  port: 5190
+  scheme: "https"
+  login_path: "/signin"
+```
+
+2.Navigate to the Thunder frontend directory.
+
+```bash
+cd frontend
+```
+
+3.Run the Thunder Gate application.
+
+> [!IMPORTANT]
+> Make sure to have all the dependencies installed & built before running the application.
+
+- If you have run `make build` in the project root, you can skip the dependency installation step.
+
+```bash
+pnpm --filter @thunder/gate dev
+```
+
+- If you haven't run `make build`, install the dependencies and then run the application.
+
+```bash
+pnpm install
+pnpm build
+```
+
+And then run:
+
+```bash
+pnpm --filter @thunder/gate dev
+```
+
+### Setting up the Thunder Develop Application
+
+1.Navigate to the Thunder frontend directory.
+
+```bash
+cd frontend
+```
+
+3.Run the Thunder Gate application.
+
+> [!IMPORTANT]
+> Make sure to have all the dependencies installed & built before running the application.
+
+- If you have run `make build` in the project root, you can skip the dependency installation step.
+
+```bash
+pnpm --filter @thunder/develop dev
+```
+
+- If you haven't run `make build`, install the dependencies and then run the application.
+
+```bash
+pnpm install
+pnpm build
+```
+
+And then run:
+
+```bash
+pnpm --filter @thunder/develop dev
 ```
