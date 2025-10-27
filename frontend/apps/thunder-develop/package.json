@@ -40,6 +40,7 @@
     "@mui/x-data-grid": "catalog:",
     "@mui/x-date-pickers": "catalog:",
     "@mui/x-tree-view": "catalog:",
+    "@thunder/commons-contexts": "workspace:^",
     "@thunder/ui": "workspace:^",
     "clsx": "catalog:",
     "dayjs": "catalog:",

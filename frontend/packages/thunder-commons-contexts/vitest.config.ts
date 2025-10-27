@@ -16,15 +16,15 @@
  * under the License.
  */
 
-import * as ReactDOM from 'react-dom/client';
-import {StrictMode} from 'react';
-import {ConfigProvider} from '@thunder/commons-contexts';
-import AppWithConfig from './AppWithConfig';
+import {defineConfig} from 'vitest/config';
 
-ReactDOM.createRoot(document.getElementById('root')!).render(
-  <StrictMode>
-    <ConfigProvider>
-      <AppWithConfig />
-    </ConfigProvider>
-  </StrictMode>,
-);
+export default defineConfig({
+  test: {
+    browser: {
+      enabled: true,
+      headless: true,
+      instances: [{browser: 'chromium'}],
+      provider: 'playwright',
+    },
+  },
+});

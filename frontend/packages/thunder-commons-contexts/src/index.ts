@@ -16,15 +16,10 @@
  * under the License.
  */
 
-import * as ReactDOM from 'react-dom/client';
-import {StrictMode} from 'react';
-import {ConfigProvider} from '@thunder/commons-contexts';
-import AppWithConfig from './AppWithConfig';
+// Export types
+export type {ThunderConfig, ServerConfig} from './Config/types';
 
-ReactDOM.createRoot(document.getElementById('root')!).render(
-  <StrictMode>
-    <ConfigProvider>
-      <AppWithConfig />
-    </ConfigProvider>
-  </StrictMode>,
-);
+// Export React components and hooks
+export {default as ConfigContext, ConfigContextType} from './Config/ConfigContext';
+export {default as ConfigProvider, ConfigProviderProps} from './Config/ConfigProvider';
+export {default as useConfig} from './Config/useConfig';

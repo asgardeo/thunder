@@ -1,15 +1,15 @@
 {
-  "name": "@thunder/ui",
+  "name": "@thunder/commons-contexts",
   "version": "0.0.0",
-  "description": "Reusable UI Kit for ⚡️ Thunder projects",
+  "description": "Shared React contexts for ⚡️ Thunder applications",
   "keywords": [
     "thunder",
-    "ui",
-    "mui",
+    "contexts",
+    "react",
     "shareable",
     "wso2"
   ],
-  "homepage": "https://github.com/asgardeo/thunder/tree/main/frontend/packages/thunder-ui#readme",
+  "homepage": "https://github.com/asgardeo/thunder/tree/main/frontend/packages/thunder-commons-contexts#readme",
   "bugs": {
     "url": "https://github.com/asgardeo/thunder/issues"
   },
@@ -31,12 +31,6 @@
     "README.md",
     "LICENSE"
   ],
-  "types": "dist/index.d.ts",
-  "repository": {
-    "type": "git",
-    "url": "https://github.com/asgardeo/thunder",
-    "directory": "packages/thunder-prettier-config"
-  },
   "scripts": {
     "build": "pnpm clean:dist && node esbuild.config.js && tsc -p tsconfig.lib.json --emitDeclarationOnly --outDir dist",
     "clean": "pnpm clean:node_modules && pnpm clean:dist",

@@ -16,15 +16,6 @@
  * under the License.
  */
 
-import * as ReactDOM from 'react-dom/client';
-import {StrictMode} from 'react';
-import {ConfigProvider} from '@thunder/commons-contexts';
-import AppWithConfig from './AppWithConfig';
+import config from "@thunder/prettier-config";
 
-ReactDOM.createRoot(document.getElementById('root')!).render(
-  <StrictMode>
-    <ConfigProvider>
-      <AppWithConfig />
-    </ConfigProvider>
-  </StrictMode>,
-);
+export default config;

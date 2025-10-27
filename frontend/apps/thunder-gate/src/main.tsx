@@ -16,26 +16,16 @@
  * under the License.
  */
 
-import React from 'react';
-import {createRoot} from 'react-dom/client';
-import {StyledEngineProvider, ThemeProvider} from '@mui/material/styles';
-import CssBaseline from '@mui/material/CssBaseline';
-import {theme, ColorModeSelect} from '@thunder/ui';
-import {AsgardeoProvider} from '@asgardeo/react';
-import App from './App';
+import * as ReactDOM from 'react-dom/client';
+import {StrictMode} from 'react';
+import {ConfigProvider} from '@thunder/commons-contexts';
+import AppWithConfig from './AppWithConfig';
 import './index.css';
 
-createRoot(document.getElementById('root')!).render(
-  <React.StrictMode>
-    {/* @ts-expect-error `clientId` should be made optional from the SDK side */}
-    <AsgardeoProvider baseUrl={import.meta.env.VITE_ASGARDEO_BASE_URL as string} platform="AsgardeoV2">
-      <StyledEngineProvider injectFirst>
-        <ThemeProvider theme={theme}>
-          <CssBaseline enableColorScheme />
-          <ColorModeSelect sx={{position: 'fixed', top: '1rem', right: '1rem'}} />
-          <App />
-        </ThemeProvider>
-      </StyledEngineProvider>
-    </AsgardeoProvider>
-  </React.StrictMode>,
+ReactDOM.createRoot(document.getElementById('root')!).render(
+  <StrictMode>
+    <ConfigProvider>
+      <AppWithConfig />
+    </ConfigProvider>
+  </StrictMode>,
 );
