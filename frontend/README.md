@@ -1,109 +1,169 @@
-# Frontend
+# Thunder Frontend ⚡
 
-<a alt="Nx logo" href="https://nx.dev" target="_blank" rel="noreferrer"><img src="https://raw.githubusercontent.com/nrwl/nx/master/images/nx-logo.png" width="45"></a>
+Frontend workspace for **WSO2 Thunder** - a modern identity management suite. This workspace is built with [Nx](https://nx.dev) and contains React applications and shared packages for the Thunder platform.
 
-✨ Your new, shiny [Nx workspace](https://nx.dev) is ready ✨.
+## Prerequisites
 
-[Learn more about this workspace setup and its capabilities](https://nx.dev/nx-api/js?utm_source=nx_project&amp;utm_medium=readme&amp;utm_campaign=nx_projects) or run `npx nx graph` to visually explore what was created. Now, let's get you up to speed!
+- [Git](https://git-scm.com/downloads) - Open source distributed version control system. For install instructions, refer [this](https://www.atlassian.com/git/tutorials/install-git).
+- [Node.js](https://nodejs.org/en/download/) - JavaScript runtime. `LTS` is recommended ✅ (`v22 or higher`)
+- [pnpm](https://pnpm.io/) - Fast, disk space efficient package manager. `LTS` is recommended ✅ (`v9 or higher`)
+- Thunder server running (see [main README](../README.md))
 
-## Generate a library
+### Installation
 
-```sh
-npx nx g @nx/js:lib packages/pkg1 --publishable --importPath=@my-org/pkg1
-```
-
-## Run tasks
-
-To build the library use:
+To set up the frontend workspace, run the following command:
 
 ```sh
-npx nx build pkg1
+cd frontend
+pnpm install
 ```
 
-To run any task with Nx use:
+### Applications
+
+#### Thunder Gate
+
+Authentication gateway application providing login, registration, and recovery UIs.
+
+##### Run Thunder Gate
+
+```bash
+# From anywhere inside the frontend directory
+pnpm --filter @thunder/gate dev
+```
+
+or
+
+```bash
+cd apps/thunder-gate
+pnpm dev
+```
+
+> [!Note]
+> The application will run on port `5190` by default.
+> [https://localhost:5190/signin](https://localhost:5190/signin)
+
+#### Thunder Develop
+
+Development application for managing Thunder platform configurations.
+
+##### Run Thunder Develop
+
+```bash
+# From anywhere inside the frontend directory
+pnpm --filter @thunder/develop dev
+```
+
+or
+
+```bash
+cd apps/thunder-develop
+pnpm dev
+```
+
+> [!Note]
+> The application will run on port `5191` by default.
+> [https://localhost:5191/signin](https://localhost:5191/signin)
+
+### Packages
+
+- **`thunder-ui`** - Shared UI components library
+- **`thunder-logger`** - Logging utilities
+- **`thunder-eslint-plugin`** - Custom ESLint plugin for Thunder projects  
+- **`thunder-prettier-config`** - Shared Prettier configuration
+
+### Development
+
+Start all applications in development mode:
 
 ```sh
-npx nx <target> <project-name>
+# Start all apps
+pnpm dev
+
+# Or start specific apps
+npx nx dev thunder-gate
+npx nx dev thunder-develop
 ```
 
-These targets are either [inferred automatically](https://nx.dev/concepts/inferred-tasks?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects) or defined in the `project.json` or `package.json` files.
+### Building
 
-[More about running tasks in the docs &raquo;](https://nx.dev/features/run-tasks?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects)
-
-## Versioning and releasing
-
-To version and release the library use
-
-```
-npx nx release
-```
-
-Pass `--dry-run` to see what would happen without actually releasing the library.
-
-[Learn more about Nx release &raquo;](https://nx.dev/features/manage-releases?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects)
-
-## Keep TypeScript project references up to date
-
-Nx automatically updates TypeScript [project references](https://www.typescriptlang.org/docs/handbook/project-references.html) in `tsconfig.json` files to ensure they remain accurate based on your project dependencies (`import` or `require` statements). This sync is automatically done when running tasks such as `build` or `typecheck`, which require updated references to function correctly.
-
-To manually trigger the process to sync the project graph dependencies information to the TypeScript project references, run the following command:
+Build all applications:
 
 ```sh
-npx nx sync
+# Build everything
+pnpm build
+
+# Build specific app
+npx nx build thunder-gate
 ```
 
-You can enforce that the TypeScript project references are always in the correct state when running in CI by adding a step to your CI job configuration that runs the following command:
+## 🛠️ Available Scripts
+
+### Workspace Level
 
 ```sh
-npx nx sync:check
+pnpm build          # Build all applications and packages
+pnpm clean          # Clean all build artifacts
+pnpm lint           # Lint all projects
+pnpm lint:fix       # Fix linting issues
+pnpm test           # Run all tests
+pnpm typecheck      # Run TypeScript checks
 ```
 
-[Learn more about nx sync](https://nx.dev/reference/nx-commands#sync)
+## 📊 Project Graph
 
-## Set up CI!
-
-### Step 1
-
-To connect to Nx Cloud, run the following command:
+Visualize the project dependencies:
 
 ```sh
-npx nx connect
+npx nx graph
 ```
 
-Connecting to Nx Cloud ensures a [fast and scalable CI](https://nx.dev/ci/intro/why-nx-cloud?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects) pipeline. It includes features such as:
+This will open an interactive visualization showing how your applications and packages depend on each other.
 
-- [Remote caching](https://nx.dev/ci/features/remote-cache?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects)
-- [Task distribution across multiple machines](https://nx.dev/ci/features/distribute-task-execution?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects)
-- [Automated e2e test splitting](https://nx.dev/ci/features/split-e2e-tasks?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects)
-- [Task flakiness detection and rerunning](https://nx.dev/ci/features/flaky-tasks?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects)
-
-### Step 2
-
-Use the following command to configure a CI workflow for your workspace:
+## 🧪 Testing
 
 ```sh
-npx nx g ci-workflow
+# Run all tests
+pnpm test
+
+# Run tests for specific project
+pnpm --filter <project-name> test
 ```
 
-[Learn more about Nx on CI](https://nx.dev/ci/intro/ci-with-nx#ready-get-started-with-your-provider?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects)
+### Code Quality
 
-## Install Nx Console
+- **ESLint**: Configured with Thunder-specific rules
+- **Prettier**: Consistent code formatting
+- **TypeScript**: Strict type checking
 
-Nx Console is an editor extension that enriches your developer experience. It lets you run tasks, generate code, and improves code autocompletion in your IDE. It is available for VSCode and IntelliJ.
+### Nx Console
 
-[Install Nx Console &raquo;](https://nx.dev/getting-started/editor-setup?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects)
+Install the Nx Console extension for VSCode or IntelliJ to enhance your development experience with:
 
-## Useful links
+- Task running from the UI
+- Project graph visualization
+- Code generation assistance
 
-Learn more:
+[Install Nx Console](https://nx.dev/getting-started/editor-setup)
 
-- [Learn more about this workspace setup](https://nx.dev/nx-api/js?utm_source=nx_project&amp;utm_medium=readme&amp;utm_campaign=nx_projects)
-- [Learn about Nx on CI](https://nx.dev/ci/intro/ci-with-nx?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects)
-- [Releasing Packages with Nx release](https://nx.dev/features/manage-releases?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects)
-- [What are Nx plugins?](https://nx.dev/concepts/nx-plugins?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects)
+## 🚀 Deployment
 
-And join the Nx community:
-- [Discord](https://go.nx.dev/community)
-- [Follow us on X](https://twitter.com/nxdevtools) or [LinkedIn](https://www.linkedin.com/company/nrwl)
-- [Our Youtube channel](https://www.youtube.com/@nxdevtools)
-- [Our blog](https://nx.dev/blog?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects)
+### Production Build
+
+```sh
+# Build for production
+pnpm build
+
+# Preview production build
+npx nx preview thunder-gate
+```
+
+## 🤝 Contributing
+
+1. Follow the coding standards defined in the ESLint and Prettier configurations
+2. Ensure all tests pass before submitting changes
+3. Update documentation when adding new features
+4. Use conventional commit messages
+
+## 📄 License
+
+This project is licensed under the Apache License 2.0 - see the [LICENSE](../LICENSE) file for details.
