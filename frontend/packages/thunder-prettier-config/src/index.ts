@@ -17,7 +17,7 @@
  */
 
 const config = {
-  embeddedLanguageFormatting: 'off',
+  embeddedLanguageFormatting: 'auto',
   arrowParens: 'always',
   bracketSpacing: false,
   endOfLine: 'lf',
