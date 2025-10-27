@@ -26,7 +26,6 @@ import FormLabel from '@mui/material/FormLabel';
 import FormControl from '@mui/material/FormControl';
 import Alert from '@mui/material/Alert';
 import FormControlLabel from '@mui/material/FormControlLabel';
-import Link from '@mui/material/Link';
 import TextField from '@mui/material/TextField';
 import Typography from '@mui/material/Typography';
 import {styled} from '@mui/material/styles';
@@ -53,18 +52,17 @@ const Card = styled(MuiCard)(({theme}) => ({
 }));
 
 export default function SignInBox(): JSX.Element {
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
   const [emailError, setEmailError] = useState(false);
   const [emailErrorMessage, setEmailErrorMessage] = useState('');
   const [passwordError, setPasswordError] = useState(false);
   const [passwordErrorMessage, setPasswordErrorMessage] = useState('');
 
   const validateInputs = () => {
-    const email = document.getElementById('email') as HTMLInputElement;
-    const password = document.getElementById('password') as HTMLInputElement;
-
     let isValid = true;
 
-    if (!email.value || !/\S+@\S+\.\S+/.test(email.value)) {
+    if (!email || !/\S+@\S+\.\S+/.test(email)) {
       setEmailError(true);
       setEmailErrorMessage('Please enter a valid email address.');
       isValid = false;
@@ -73,7 +71,7 @@ export default function SignInBox(): JSX.Element {
       setEmailErrorMessage('');
     }
 
-    if (!password.value || password.value.length < 6) {
+    if (!password || password.length < 6) {
       setPasswordError(true);
       setPasswordErrorMessage('Password must be at least 6 characters long.');
       isValid = false;
@@ -125,13 +123,13 @@ export default function SignInBox(): JSX.Element {
                             onSubmit={(event) => {
                               event.preventDefault();
                               if (validateInputs()) {
-                                const data = new FormData(event.currentTarget);
+                                // Tracker: https://github.com/asgardeo/javascript/issues/222
                                 // eslint-disable-next-line @typescript-eslint/no-unsafe-argument, @typescript-eslint/no-explicit-any
                                 onSubmit({
                                   actionId: 'basic_auth',
                                   inputs: {
-                                    username: data.get('email') as string,
-                                    password: data.get('password') as string,
+                                    username: email,
+                                    password,
                                   },
                                   // eslint-disable-next-line @typescript-eslint/no-explicit-any
                                 } as any).catch(() => {
@@ -158,21 +156,12 @@ export default function SignInBox(): JSX.Element {
                                 variant="outlined"
                                 color={emailError ? 'error' : 'primary'}
                                 disabled={isLoading}
+                                value={email}
+                                onChange={(e) => setEmail(e.target.value)}
                               />
                             </FormControl>
                             <FormControl>
-                              <Box sx={{display: 'flex', justifyContent: 'space-between'}}>
-                                <FormLabel htmlFor="password">Password</FormLabel>
-                                {/* eslint-disable jsx-a11y/anchor-is-valid */}
-                                <Link
-                                  component="button"
-                                  onClick={() => null}
-                                  sx={{p: 0, minWidth: 'auto', fontSize: '0.875rem', alignSelf: 'baseline'}}
-                                >
-                                  Forgot your password?
-                                </Link>
-                                {/* eslint-enable jsx-a11y/anchor-is-valid */}
-                              </Box>
+                              <FormLabel htmlFor="password">Password</FormLabel>
                               <TextField
                                 error={passwordError}
                                 helperText={passwordErrorMessage}
@@ -186,6 +175,8 @@ export default function SignInBox(): JSX.Element {
                                 variant="outlined"
                                 color={passwordError ? 'error' : 'primary'}
                                 disabled={isLoading}
+                                value={password}
+                                onChange={(e) => setPassword(e.target.value)}
                               />
                             </FormControl>
                             <FormControlLabel
@@ -236,6 +227,7 @@ export default function SignInBox(): JSX.Element {
                                   fullWidth
                                   variant="outlined"
                                   onClick={() => {
+                                    // Tracker: https://github.com/asgardeo/javascript/issues/222
                                     // eslint-disable-next-line @typescript-eslint/no-unsafe-argument, @typescript-eslint/no-explicit-any
                                     onSubmit({actionId} as any).catch(() => {
                                       // Error handled by onError callback
@@ -277,6 +269,7 @@ export default function SignInBox(): JSX.Element {
                                     }
                                   });
 
+                                // Tracker: https://github.com/asgardeo/javascript/issues/222
                                 // eslint-disable-next-line @typescript-eslint/no-unsafe-argument, @typescript-eslint/no-explicit-any
                                 onSubmit({inputs} as any).catch(() => {
                                   // Error handled by onError callback
@@ -334,21 +327,6 @@ export default function SignInBox(): JSX.Element {
 
                   return null;
                 })()}
-
-                <Box sx={{textAlign: 'center'}}>
-                  <Typography sx={{textAlign: 'center'}}>
-                    Don&apos;t have an account?{' '}
-                    <span>
-                      <Link
-                        href="/material-ui/getting-started/templates/sign-in/"
-                        variant="body2"
-                        sx={{alignSelf: 'center'}}
-                      >
-                        Sign up
-                      </Link>
-                    </span>
-                  </Typography>
-                </Box>
               </>
             )}
           </>
