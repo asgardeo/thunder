@@ -49,11 +49,35 @@ export interface ServerConfig {
  */
 export interface ClientConfig {
   /**
+   * Base path for the client application.
+   * @example "/develop", "/admin", "/my-app"
+   */
+  base: string;
+
+  /**
    * Unique identifier for the client application, used for authentication
    * and authorization with identity providers like Asgardeo.
    * @example "DEVELOP", "thunder-admin", "my-app-client-id"
    */
   client_id: string;
+
+  /**
+   * Server hostname or IP address
+   * @example "localhost", "api.example.com", "192.168.1.100"
+   */
+  hostname?: string;
+
+  /**
+   * Server port number
+   * @example 8090, 3000, 8080
+   */
+  port?: number;
+
+  /**
+   * Whether to use HTTP only (no HTTPS). When true, connections will use HTTP protocol.
+   * When false, HTTPS will be used for secure connections.
+   */
+  http_only?: boolean;
 }
 
 /**

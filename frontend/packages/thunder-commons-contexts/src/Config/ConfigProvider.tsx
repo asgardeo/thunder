@@ -88,13 +88,27 @@ export default function ConfigProvider({children}: ConfigProviderProps) {
       config,
       getServerUrl: () => {
         const {hostname, port, http_only: httpOnly} = config.server;
-        const protocol = httpOnly ? 'http' : 'https';
+        const protocol: string = httpOnly ? 'http' : 'https';
         return `${protocol}://${hostname}:${port}`;
       },
       getServerHostname: () => config.server.hostname,
       getServerPort: () => config.server.port,
       isHttpOnly: () => config.server.http_only,
       getClientId: () => config.client.client_id,
+      getClientUrl: () => {
+        const {hostname, port, http_only: httpOnly, base} = config.client;
+
+        // If client has its own hostname/port/protocol config, use that
+        if (hostname && port !== undefined && httpOnly !== undefined) {
+          const protocol: string = httpOnly ? 'http' : 'https';
+          const baseUrl = `${protocol}://${hostname}:${port}`;
+          return base ? `${baseUrl}${base}` : baseUrl;
+        }
+
+        // Otherwise, use window.location.origin and add base if it exists
+        const origin: string = typeof window !== 'undefined' ? window.location.origin : '';
+        return base ? `${origin}${base}` : origin;
+      },
     }),
     [config],
   );

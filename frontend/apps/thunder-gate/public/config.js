@@ -17,7 +17,9 @@
  */
 
 window.__THUNDER_RUNTIME_CONFIG__ = {
-  client: {},
+  client: {
+    base: '/signin',
+  },
   server: {
     hostname: 'localhost',
     port: 8090,

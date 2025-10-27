@@ -18,6 +18,7 @@
 
 window.__THUNDER_RUNTIME_CONFIG__ = {
   client: {
+    base: '/develop',
     client_id: 'DEVELOP',
   },
   server: {

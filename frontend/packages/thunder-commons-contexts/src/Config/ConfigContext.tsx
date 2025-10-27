@@ -61,6 +61,12 @@ export interface ConfigContextType {
    * @returns The client ID string (e.g., "DEVELOP", "thunder-admin")
    */
   getClientId: () => string;
+
+  /**
+   * Gets the complete client URL including protocol, hostname, port, and base path
+   * @returns The full client URL (e.g., "https://localhost:8090/develop")
+   */
+  getClientUrl: () => string;
 }
 
 /**

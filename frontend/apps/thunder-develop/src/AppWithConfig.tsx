@@ -25,12 +25,13 @@ import {useConfig} from '@thunder/commons-contexts';
 import App from './App';
 
 export default function AppWithConfig(): JSX.Element {
-  const {getClientId, getServerUrl} = useConfig();
+  const {getClientId, getServerUrl, getClientUrl} = useConfig();
 
   return (
     <AsgardeoProvider
       baseUrl={getServerUrl() ?? (import.meta.env.VITE_ASGARDEO_BASE_URL as string)}
       clientId={getClientId() ?? (import.meta.env.VITE_ASGARDEO_CLIENT_ID as string)}
+      afterSignInUrl={getClientUrl() ?? (import.meta.env.VITE_ASGARDEO_AFTER_SIGN_IN_URL as string)}
       platform="AsgardeoV2"
     >
       <StyledEngineProvider injectFirst>

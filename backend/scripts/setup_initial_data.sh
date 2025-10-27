@@ -329,7 +329,7 @@ create_develop_app() {
         \"type\": \"oauth2\",
         \"config\": {
           \"client_id\": \"DEVELOP\",
-          \"redirect_uris\": [\"https://localhost:5191\"],
+          \"redirect_uris\": [\"${BASE_URL}/develop\"],
           \"grant_types\": [\"authorization_code\"],
           \"response_types\": [\"code\"],
           \"pkce_required\": false,
