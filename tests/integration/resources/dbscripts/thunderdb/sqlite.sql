@@ -45,6 +45,50 @@ CREATE TABLE GROUP_MEMBER_REFERENCE (
     FOREIGN KEY (GROUP_ID) REFERENCES "GROUP" (GROUP_ID) ON DELETE CASCADE
 );
 
+-- Table to store Roles
+CREATE TABLE "ROLE" (
+    ID                  INTEGER PRIMARY KEY AUTOINCREMENT,
+    ROLE_ID             VARCHAR(36) UNIQUE NOT NULL,
+    OU_ID               VARCHAR(36) NOT NULL,
+    NAME                VARCHAR(50) NOT NULL,
+    DESCRIPTION         VARCHAR(255),
+    CREATED_AT          TEXT DEFAULT (datetime('now')),
+    UPDATED_AT          TEXT DEFAULT (datetime('now')),
+    CONSTRAINT unique_role_ou_name UNIQUE (OU_ID, NAME)
+);
+
+-- Table to store Role permissions
+CREATE TABLE ROLE_PERMISSION (
+    ID              INTEGER PRIMARY KEY AUTOINCREMENT,
+    ROLE_ID         VARCHAR(36) NOT NULL,
+    PERMISSION      VARCHAR(100) NOT NULL,
+    CREATED_AT      TEXT DEFAULT (datetime('now')),
+    FOREIGN KEY (ROLE_ID) REFERENCES "ROLE" (ROLE_ID) ON DELETE CASCADE,
+    CONSTRAINT unique_role_permission UNIQUE (ROLE_ID, PERMISSION)
+);
+
+-- Table to store Role assignments (to users and groups)
+CREATE TABLE ROLE_ASSIGNMENT (
+    ID              INTEGER PRIMARY KEY AUTOINCREMENT,
+    ROLE_ID         VARCHAR(36) NOT NULL,
+    ASSIGNEE_TYPE   VARCHAR(5)  NOT NULL CHECK (ASSIGNEE_TYPE IN ('user', 'group')),
+    ASSIGNEE_ID     VARCHAR(36) NOT NULL,
+    CREATED_AT      TEXT DEFAULT (datetime('now')),
+    UPDATED_AT      TEXT DEFAULT (datetime('now')),
+    FOREIGN KEY (ROLE_ID) REFERENCES "ROLE" (ROLE_ID) ON DELETE CASCADE,
+    CONSTRAINT unique_role_assignment UNIQUE (ROLE_ID, ASSIGNEE_TYPE, ASSIGNEE_ID)
+);
+
+-- Indexes for authorization queries
+
+-- Index for finding all roles assigned to a specific assignee
+CREATE INDEX idx_role_assignment_assignee 
+ON ROLE_ASSIGNMENT (ASSIGNEE_ID, ASSIGNEE_TYPE);
+
+-- Index for finding all permissions for a specific role
+CREATE INDEX idx_role_permission_role 
+ON ROLE_PERMISSION (ROLE_ID);
+
 -- Table to store basic service provider (app) details.
 CREATE TABLE SP_APP (
     ID INTEGER PRIMARY KEY AUTOINCREMENT,

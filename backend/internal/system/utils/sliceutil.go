@@ -79,3 +79,23 @@ func MergeInterfaceMaps(dst, src map[string]interface{}) map[string]interface{} 
 	}
 	return dst
 }
+
+// UniqueStrings returns a slice containing only unique values from the input slice.
+// The order of elements is not guaranteed.
+func UniqueStrings(input []string) []string {
+	if input == nil {
+		return nil
+	}
+
+	seen := make(map[string]bool, len(input))
+	result := make([]string, 0, len(input))
+
+	for _, item := range input {
+		if !seen[item] {
+			seen[item] = true
+			result = append(result, item)
+		}
+	}
+
+	return result
+}
