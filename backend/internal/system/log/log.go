@@ -28,6 +28,7 @@ import (
 	"sync"
 
 	"github.com/asgardeo/thunder/internal/system/constants"
+	sysContext "github.com/asgardeo/thunder/internal/system/context"
 )
 
 var (
@@ -85,6 +86,21 @@ func (l *Logger) With(fields ...Field) *Logger {
 	return &Logger{
 		internal: l.internal.With(convertFields(fields)...),
 	}
+}
+
+// WithTraceID creates a new logger instance with the trace ID (correlation ID) field.
+// This is a convenience method to add the trace ID to all log entries.
+func (l *Logger) WithTraceID(traceID string) *Logger {
+	return l.With(String(LoggerKeyTraceID, traceID))
+}
+
+// WithContext creates a new logger instance with fields extracted from the context.
+// Currently extracts the trace ID (correlation ID) if present in the context.
+// This is the recommended way to create a logger in HTTP handlers and other
+// request-scoped code where a context is available.
+func (l *Logger) WithContext(ctx context.Context) *Logger {
+	traceID := sysContext.GetTraceID(ctx)
+	return l.WithTraceID(traceID)
 }
 
 // IsDebugEnabled checks if the logger is set to debug level.

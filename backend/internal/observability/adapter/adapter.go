@@ -16,17 +16,20 @@
  * under the License.
  */
 
-package log
+// Package adapter provides output adapter interfaces and implementations.
+package adapter
 
-const (
-	// LoggerKeyComponentName is the key used to identify the component name in the logger.
-	LoggerKeyComponentName = "component"
-	// LoggerKeyExecutorID is the key used to identify the executor ID in the logger.
-	LoggerKeyExecutorID = "executorId"
-	// LoggerKeyFlowID is the key used to identify the flow ID in the logger.
-	LoggerKeyFlowID = "flowId"
-	// LoggerKeyNodeID is the key used to identify the node ID in the logger.
-	LoggerKeyNodeID = "nodeId"
-	// LoggerKeyTraceID is the key used to identify the trace ID (correlation ID) in the logger.
-	LoggerKeyTraceID = "trace_id"
-)
+// OutputAdapter is the interface for writing formatted events to various destinations.
+type OutputAdapter interface {
+	// Write writes formatted event data to the output destination.
+	Write(data []byte) error
+
+	// Flush ensures all buffered data is written.
+	Flush() error
+
+	// Close closes the adapter and releases resources.
+	Close() error
+
+	// GetName returns the name of this adapter.
+	GetName() string
+}

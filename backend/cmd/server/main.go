@@ -32,10 +32,12 @@ import (
 	"time"
 
 	"github.com/asgardeo/thunder/internal/cert"
+	"github.com/asgardeo/thunder/internal/observability"
 	"github.com/asgardeo/thunder/internal/system/cache"
 	"github.com/asgardeo/thunder/internal/system/config"
 	"github.com/asgardeo/thunder/internal/system/database/provider"
 	"github.com/asgardeo/thunder/internal/system/log"
+	"github.com/asgardeo/thunder/internal/system/middleware"
 )
 
 // shutdownTimeout defines the timeout duration for graceful shutdown.
@@ -53,6 +55,9 @@ func main() {
 
 	// Initialize the cache manager.
 	initCacheManager(logger)
+
+	// Initialize analytics with console adapter and JSON format
+	initAnalytics(logger)
 
 	// Create a new HTTP multiplexer.
 	mux := http.NewServeMux()
@@ -136,6 +141,34 @@ func initCacheManager(logger *log.Logger) {
 	cm.Init()
 }
 
+// initAnalytics initializes the analytics service with console adapter and JSON format.
+func initAnalytics(logger *log.Logger) {
+	// Configure analytics to use console adapter with JSON format
+	analyticsCfg := &observability.Config{
+		Enabled: true,
+		Output: observability.OutputConfig{
+			Type:   "console", // Output to stdout for easy viewing
+			Format: "json",    // JSON format as requested
+		},
+		Metrics: observability.MetricsConfig{
+			Enabled: true,
+		},
+		FailureMode: "graceful", // Don't fail if analytics has issues
+	}
+
+	svc, err := observability.InitializeWithConfig(analyticsCfg)
+	if err != nil {
+		logger.Error("Failed to initialize analytics service", log.Error(err))
+		return
+	}
+
+	if svc.IsEnabled() {
+		logger.Info("Analytics service initialized successfully with console adapter and JSON format")
+	} else {
+		logger.Warn("Analytics service is disabled")
+	}
+}
+
 // loadCertConfig loads the certificate configuration and extracts the Key ID (kid).
 func loadCertConfig(logger *log.Logger, cfg *config.Config, thunderHome string) *tls.Config {
 	sysCertSvc := cert.NewSystemCertificateService()
@@ -198,15 +231,18 @@ func startHTTPServer(logger *log.Logger, cfg *config.Config, mux *http.ServeMux)
 
 // createHTTPServer creates and configures an HTTP server with common settings.
 func createHTTPServer(logger *log.Logger, cfg *config.Config, mux *http.ServeMux) (*http.Server, string) {
-	// Wrap the multiplexer with AccessLogHandler.
-	wrappedMux := log.AccessLogHandler(logger, mux)
+	// Apply middleware chain:
+	// 1. CorrelationIDMiddleware - Extract/generate correlation ID and add to context
+	// 2. AccessLogHandler - Log requests with correlation ID
+	handler := middleware.CorrelationIDMiddleware(mux)
+	handler = log.AccessLogHandler(logger, handler)
 
 	// Build the server address using hostname and port from the configurations.
 	serverAddr := fmt.Sprintf("%s:%d", cfg.Server.Hostname, cfg.Server.Port)
 
 	server := &http.Server{
 		Addr:              serverAddr,
-		Handler:           wrappedMux,
+		Handler:           handler,
 		ReadHeaderTimeout: 10 * time.Second, // Mitigate Slowloris attacks
 		WriteTimeout:      10 * time.Second,
 		IdleTimeout:       120 * time.Second,
@@ -225,6 +261,13 @@ func gracefulShutdown(logger *log.Logger, server *http.Server) {
 		logger.Error("Error during server shutdown", log.Error(err))
 	} else {
 		logger.Debug("HTTP server shutdown completed")
+	}
+
+	// Shutdown analytics service
+	analyticsSvc := observability.GetService()
+	if analyticsSvc != nil {
+		analyticsSvc.Shutdown()
+		logger.Debug("Analytics service shutdown completed")
 	}
 
 	// Close database connections
