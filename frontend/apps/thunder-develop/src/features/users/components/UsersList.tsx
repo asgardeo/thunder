@@ -118,6 +118,9 @@ export default function UsersList(props: UsersListProps) {
     } catch (err) {
       // Error is already handled in the hook
       setDeleteDialogOpen(false);
+      // TODO: Log the errors
+      // Tracker: https://github.com/asgardeo/thunder/issues/618
+      // eslint-disable-next-line no-console
       console.error('Failed to delete user:', err);
     }
   };
@@ -366,7 +369,13 @@ export default function UsersList(props: UsersListProps) {
           getRowId={(row) => row.id}
           onRowClick={(params) => {
             const userId = (params.row as UserWithDetails).id;
-            navigate(`/users/${userId}`);
+
+            (async () => {
+              await navigate(`/users/${userId}`);
+            })().catch(() => {
+              // TODO: Log the errors
+              // Tracker: https://github.com/asgardeo/thunder/issues/618
+            });
           }}
           initialState={{
             pagination: {

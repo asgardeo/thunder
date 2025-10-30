@@ -29,7 +29,7 @@ export interface UpdateUserRequest {
   organizationUnit: string;
   type: string;
   groups?: string[];
-  attributes: Record<string, any>;
+  attributes: Record<string, unknown>;
 }
 
 /**

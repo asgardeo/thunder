@@ -16,6 +16,6 @@
  * under the License.
  */
 
-export default function func() {
-  console.log('Hello, Thunder!');
+export default function func(): string {
+  return 'thunder-logger';
 }

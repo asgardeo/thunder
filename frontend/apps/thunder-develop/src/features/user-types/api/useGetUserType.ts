@@ -75,14 +75,20 @@ export default function useGetUserType(id?: string) {
   }, []);
 
   const refetch = useCallback(
-    (newId?: string) => {
+    async (newId?: string) => {
       const idToFetch = newId ?? id;
       if (!idToFetch) return;
 
       // Reset the hasFetched flag when explicitly refetching
       hasFetchedRef.current = false;
       lastIdRef.current = idToFetch;
-      fetchUserType(idToFetch);
+
+      (async () => {
+        await fetchUserType(idToFetch);
+      })().catch(() => {
+        // TODO: Log the errors
+        // Tracker: https://github.com/asgardeo/thunder/issues/618
+      });
     },
     [id, fetchUserType],
   );
@@ -103,7 +109,12 @@ export default function useGetUserType(id?: string) {
     hasFetchedRef.current = true;
     lastIdRef.current = id;
 
-    fetchUserType(id);
+    (async () => {
+      await fetchUserType(id);
+    })().catch(() => {
+      // TODO: Log the errors
+      // Tracker: https://github.com/asgardeo/thunder/issues/618
+    });
   }, [id, fetchUserType]);
 
   return {

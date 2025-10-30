@@ -63,7 +63,18 @@ export default function UsersListPage() {
           <Button variant="outlined" startIcon={<RefreshCw size={16} />} onClick={() => window.location.reload()}>
             Refresh
           </Button>
-          <Button variant="contained" startIcon={<Plus size={18} />} onClick={() => navigate('/users/create')}>
+          <Button
+            variant="contained"
+            startIcon={<Plus size={18} />}
+            onClick={() => {
+              (async () => {
+                await navigate('/users/create');
+              })().catch(() => {
+                // TODO: Log the errors
+                // Tracker: https://github.com/asgardeo/thunder/issues/618
+              });
+            }}
+          >
             Add User
           </Button>
         </Stack>

@@ -109,8 +109,13 @@ docker-build-multiarch-latest:
 docker-build-multiarch-push:
 	docker buildx build --platform linux/amd64,linux/arm64 -t thunder:$(VERSION) -t thunder:latest --push .
 
-lint: golangci-lint
+lint: lint_backend lint_frontend
+
+lint_backend: golangci-lint
 	cd backend && $(GOLANGCI_LINT) run ./...
+
+lint_frontend:
+	cd frontend && pnpm install && pnpm build && pnpm lint
 
 mockery: install-mockery
 	cd backend && $(MOCKERY) --config .mockery.public.yml
@@ -138,7 +143,9 @@ help:
 	@echo "  docker-build-multiarch        - Build multi-arch Docker image with version tag."
 	@echo "  docker-build-multiarch-latest - Build multi-arch Docker image with latest tag."
 	@echo "  docker-build-multiarch-push   - Build and push multi-arch images to registry."
-	@echo "  lint                          - Run golangci-lint on the project."
+	@echo "  lint                          - Run linting on both backend and frontend code."
+	@echo "  lint_backend                  - Run golangci-lint on the backend code."
+	@echo "  lint_frontend                 - Run ESLint on the frontend code."
 	@echo "  mockery                       - Generate mocks for unit tests using mockery."
 	@echo "  help                          - Show this help message."
 
@@ -147,7 +154,7 @@ help:
 .PHONY: docker-build-multiarch-latest docker-build-multiarch-push
 .PHONY: test_unit test_integration build_with_coverage build_with_coverage_only test
 .PHONY: help go_install_tool
-.PHONY: lint golangci-lint mockery install-mockery
+.PHONY: lint lint_backend lint_frontend golangci-lint mockery install-mockery
 
 define go_install_tool
 	cd /tmp && \

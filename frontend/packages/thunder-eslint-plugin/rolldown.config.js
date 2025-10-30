@@ -16,29 +16,41 @@
  * under the License.
  */
 
+import {defineConfig} from 'rolldown';
 import {readFileSync} from 'fs';
-import * as esbuild from 'esbuild';
+import {join} from 'path';
 
 const pkg = JSON.parse(readFileSync('./package.json', 'utf8'));
 
+const external = [...Object.keys(pkg.dependencies || {}), ...Object.keys(pkg.peerDependencies || {})];
+
 const commonOptions = {
-  bundle: true,
-  entryPoints: ['src/index.ts'],
-  external: [...Object.keys(pkg.dependencies || {}), ...Object.keys(pkg.peerDependencies || {})],
+  input: join('src', 'index.ts'),
+  preserveModules: true,
+  external,
   platform: 'node',
-  target: ['es2020'],
+  target: 'es2020',
+  sourcemap: true,
 };
 
-await esbuild.build({
-  ...commonOptions,
-  format: 'esm',
-  outfile: 'dist/index.js',
-  sourcemap: true,
-});
-
-await esbuild.build({
-  ...commonOptions,
-  format: 'cjs',
-  outfile: 'dist/cjs/index.js',
-  sourcemap: true,
-});
+export default defineConfig([
+  // ✅ ESM build
+  {
+    ...commonOptions,
+    output: {
+      dir: 'dist',
+      format: 'esm',
+      preserveModulesRoot: 'src',
+    },
+  },
+  // ✅ CommonJS build
+  {
+    ...commonOptions,
+    output: {
+      dir: join('dist', 'cjs'),
+      entryFileNames: '[name].cjs',
+      format: 'cjs',
+      preserveModulesRoot: 'src',
+    },
+  },
+]);

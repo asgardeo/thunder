@@ -20,8 +20,8 @@ import {describe, it, expect, vi} from 'vitest';
 import userEvent from '@testing-library/user-event';
 import {Bell} from 'lucide-react';
 import {screen} from '@testing-library/react';
-import MenuButton from './MenuButton';
 import render from '@/test/test-utils';
+import MenuButton from './MenuButton';
 
 describe('MenuButton', () => {
   it('renders an icon button', () => {

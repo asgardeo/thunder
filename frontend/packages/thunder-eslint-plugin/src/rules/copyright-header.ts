@@ -16,7 +16,8 @@
  * under the License.
  */
 
-import type {Rule} from 'eslint';
+import type {SourceCode, Rule} from 'eslint';
+import {Comment} from 'estree';
 
 interface CopyrightHeaderOptions {
   excludePatterns?: string[];
@@ -70,10 +71,10 @@ const copyrightHeaderRule: Rule.RuleModule = {
     },
   },
   create(context: Rule.RuleContext) {
-    const options = (context.options?.[0] as CopyrightHeaderOptions) ?? {};
-    const excludePatterns = options.excludePatterns ?? [];
-    const template = options.template ?? REQUIRED_COPYRIGHT_HEADER;
-    const filename = context.getFilename();
+    const options: CopyrightHeaderOptions = (context.options?.[0] as CopyrightHeaderOptions) ?? {};
+    const excludePatterns: string[] = options.excludePatterns ?? [];
+    const template: string = options.template ?? REQUIRED_COPYRIGHT_HEADER;
+    const filename: string = context.getFilename();
 
     // Check if file should be excluded
     if (excludePatterns.some((pattern: string) => new RegExp(pattern).test(filename))) {
@@ -87,11 +88,11 @@ const copyrightHeaderRule: Rule.RuleModule = {
 
     return {
       Program(node: unknown) {
-        const sourceCode = context.getSourceCode();
-        const comments = sourceCode.getAllComments();
+        const sourceCode: SourceCode = context.getSourceCode();
+        const comments: Comment[] = sourceCode.getAllComments();
 
         // Check if first comment is the copyright header
-        const firstComment = comments[0];
+        const firstComment: Comment | undefined = comments[0];
 
         if (!firstComment || firstComment.type !== 'Block') {
           context.report({
@@ -108,7 +109,7 @@ const copyrightHeaderRule: Rule.RuleModule = {
 
         // Normalize the comment text for comparison
         const commentText = `/*${firstComment.value}*/`;
-        const normalizedComment = commentText.replace(/\s+/g, ' ').trim();
+        const normalizedComment: string = commentText.replace(/\s+/g, ' ').trim();
 
         if (!normalizedComment.includes('WSO2 LLC') || !normalizedComment.includes('Apache License')) {
           context.report({

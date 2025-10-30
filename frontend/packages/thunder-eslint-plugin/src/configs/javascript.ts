@@ -24,10 +24,10 @@ import type {Linter} from 'eslint';
 import path from 'path';
 import {fileURLToPath} from 'url';
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
+const __filename: string = fileURLToPath(import.meta.url);
+const __dirname: string = path.dirname(__filename);
 
-const compat = new FlatCompat({
+const compat: FlatCompat = new FlatCompat({
   baseDirectory: __dirname,
 });
 
@@ -49,6 +49,16 @@ const javascriptConfig: Linter.Config[] = [
             order: 'asc',
           },
           groups: ['builtin', 'external', 'index', 'sibling', 'parent', 'internal'],
+        },
+      ],
+      // Allow imports without file extensions for JavaScript files
+      // This is especially useful for path aliases and modern module resolution
+      'import/extensions': [
+        'error',
+        'ignorePackages',
+        {
+          js: 'never',
+          jsx: 'never',
         },
       ],
     },

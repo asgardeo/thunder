@@ -66,13 +66,6 @@ export default function ViewUserTypePage() {
   const [properties, setProperties] = useState<SchemaPropertyInput[]>([]);
   const [enumInput, setEnumInput] = useState<Record<string, string>>({});
 
-  useEffect(() => {
-    if (userType) {
-      setName(userType.name);
-      convertSchemaToProperties(userType.schema);
-    }
-  }, [userType]);
-
   const convertSchemaToProperties = (schema: UserSchemaDefinition) => {
     const props: SchemaPropertyInput[] = Object.entries(schema).map(([key, value], index) => ({
       id: `${index}`,
@@ -85,6 +78,13 @@ export default function ViewUserTypePage() {
     }));
     setProperties(props);
   };
+
+  useEffect(() => {
+    if (userType) {
+      setName(userType.name);
+      convertSchemaToProperties(userType.schema);
+    }
+  }, [userType]);
 
   const handleEdit = () => {
     setIsEditMode(true);
@@ -191,7 +191,7 @@ export default function ViewUserTypePage() {
       });
 
       // Refetch user type data to show updated values
-      refetch(id);
+      await refetch(id);
 
       // Exit edit mode
       setIsEditMode(false);
@@ -221,10 +221,11 @@ export default function ViewUserTypePage() {
       setDeleteDialogOpen(false);
       // Navigate back to user types list after successful deletion
       await navigate('/user-types');
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
     } catch (error) {
-      // Error is already handled in the hook
-      // eslint-disable-next-line no-console
-      console.error('Failed to delete user type:', error);
+      // TODO: Log the errors
+      // Tracker: https://github.com/asgardeo/thunder/issues/618
+
       setDeleteDialogOpen(false);
     }
   };

@@ -35,12 +35,29 @@ interface PackageJson {
   version: string;
 }
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
-const pkgPath = join(__dirname, '../package.json');
+const __filename: string = fileURLToPath(import.meta.url);
+const __dirname: string = dirname(__filename);
+const pkgPath: string = join(__dirname, '../package.json');
 
-const pkg = JSON.parse(readFileSync(pkgPath, 'utf8')) as PackageJson;
+const pkg: PackageJson = JSON.parse(readFileSync(pkgPath, 'utf8')) as PackageJson;
 const namespace = 'thunder';
+
+const DEV_DEPENDENCIES_ALLOWED_FILES: string[] = [
+  '*.config.js',
+  '*.config.mjs',
+  '*.config.ts',
+  '**/eslint.config.js',
+  '**/eslint.config.mjs',
+  '**/eslint.config.ts',
+  '**/rolldown.config.js',
+  '**/rolldown.config.ts',
+  'vite.config.ts',
+  'vitest.config.ts',
+  '**/prettier.config.js',
+  '**/prettier.config.mjs',
+  '**/prettier.config.ts',
+  '**/test/**',
+];
 
 const plugin: ESLint.Plugin = {
   meta: {
@@ -76,19 +93,7 @@ Object.assign(plugin.configs, {
     ...typescriptConfig,
     ...prettierConfig,
     {
-      files: [
-        '*.config.js',
-        '*.config.mjs',
-        '*.config.ts',
-        '**/eslint.config.js',
-        '**/eslint.config.mjs',
-        '**/eslint.config.ts',
-        'vite.config.ts',
-        'vitest.config.ts',
-        '**/prettier.config.js',
-        '**/prettier.config.mjs',
-        '**/prettier.config.ts',
-      ],
+      files: DEV_DEPENDENCIES_ALLOWED_FILES,
       rules: {
         'import/no-extraneous-dependencies': ['error', {devDependencies: true}],
       },
@@ -111,19 +116,7 @@ Object.assign(plugin.configs, {
     ...reactConfig,
     ...prettierConfig,
     {
-      files: [
-        '*.config.js',
-        '*.config.mjs',
-        '*.config.ts',
-        '**/eslint.config.js',
-        '**/eslint.config.mjs',
-        '**/eslint.config.ts',
-        'vite.config.ts',
-        'vitest.config.ts',
-        '**/prettier.config.js',
-        '**/prettier.config.mjs',
-        '**/prettier.config.ts',
-      ],
+      files: DEV_DEPENDENCIES_ALLOWED_FILES,
       rules: {
         'import/no-extraneous-dependencies': ['error', {devDependencies: true}],
       },

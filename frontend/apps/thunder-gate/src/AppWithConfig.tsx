@@ -28,20 +28,17 @@ export default function AppWithConfig(): JSX.Element {
   const {getServerUrl} = useConfig();
 
   return (
-    <>
-      {/* @ts-expect-error `clientId` should be made optional from the SDK side */}
-      <AsgardeoProvider
-        baseUrl={getServerUrl() ?? (import.meta.env.VITE_ASGARDEO_BASE_URL as string)}
-        platform="AsgardeoV2"
-      >
-        <StyledEngineProvider injectFirst>
-          <ThemeProvider theme={theme}>
-            <CssBaseline enableColorScheme />
-            <ColorModeSelect sx={{position: 'fixed', top: '1rem', right: '1rem'}} />
-            <App />
-          </ThemeProvider>
-        </StyledEngineProvider>
-      </AsgardeoProvider>
-    </>
+    <AsgardeoProvider
+      baseUrl={getServerUrl() ?? (import.meta.env.VITE_ASGARDEO_BASE_URL as string)}
+      platform="AsgardeoV2"
+    >
+      <StyledEngineProvider injectFirst>
+        <ThemeProvider theme={theme}>
+          <CssBaseline enableColorScheme />
+          <ColorModeSelect sx={{position: 'fixed', top: '1rem', right: '1rem'}} />
+          <App />
+        </ThemeProvider>
+      </StyledEngineProvider>
+    </AsgardeoProvider>
   );
 }

@@ -16,12 +16,9 @@
  * under the License.
  */
 
-/**
- * @fileoverview Prettier compatibility config to disable conflicting ESLint rules.
- */
-
+import {Linter} from 'eslint';
 import eslintConfigPrettier from 'eslint-config-prettier/flat';
 
-const prettierConfig = [eslintConfigPrettier];
+const prettierConfig: Linter.Config[] = [eslintConfigPrettier];
 
 export default prettierConfig;

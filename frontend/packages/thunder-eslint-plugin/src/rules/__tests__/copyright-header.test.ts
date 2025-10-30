@@ -16,7 +16,7 @@
  * under the License.
  */
 
-import {RuleTester} from 'eslint';
+import {Linter, RuleTester} from 'eslint';
 import copyrightHeaderRule from '../copyright-header.js';
 
 // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call
@@ -25,7 +25,7 @@ const ruleTester = new RuleTester({
     ecmaVersion: 2020,
     sourceType: 'module',
   },
-});
+} as unknown as Linter.Config);
 
 const VALID_COPYRIGHT = `/**
  * Copyright (c) 2025, WSO2 LLC. (https://www.wso2.com).

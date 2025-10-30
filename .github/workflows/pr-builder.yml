@@ -21,6 +21,28 @@ jobs:
     steps:
       - name: 📥 Checkout Code
         uses: actions/checkout@v4
+        with:
+          # We need to fetch all branches and commits so that Nx affected has a base to compare against.
+          fetch-depth: 0
+
+      - name: ⚙️ Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 'lts/*'
+
+      - name: 🐳 Set SHAs for Nx
+        id: set-shas
+        uses: nrwl/nx-set-shas@v3
+        with:
+          main-branch-name: "main"
+
+      - name: 📦 Install pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 'latest'
+          run_install: false
+          cache: true
+          cache-dependency-path: frontend/pnpm-lock.yaml
 
       - name: ⚙️ Set up Go Environment
         uses: ./.github/actions/setup-go
@@ -28,8 +50,19 @@ jobs:
       - name: 📦 Prepare golangci-lint Locally
         run: make golangci-lint
 
-      - name: 🔍 Run Linter
-        run: make lint
+      - name: 🔍 Run Backend Linter
+        run: make lint_backend
+
+      - name: 🧩 Install Dependencies & Build Frontend
+        run: |
+          cd frontend
+          pnpm install
+          pnpm build
+
+      - name: 🔍 Run Frontend Linter
+        run: |
+          cd frontend
+          pnpm nx affected --target=lint --parallel=3 --base=${{ env.NX_BASE }} --head=${{ env.NX_HEAD }}
 
   build:
     name: 🛠️ Build Product

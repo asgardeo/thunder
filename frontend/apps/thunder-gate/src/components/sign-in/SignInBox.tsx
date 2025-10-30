@@ -200,7 +200,7 @@ export default function SignInBox(): JSX.Element {
                             .filter((c) => c.type === 'BUTTON')
                             .filter((c) => c.config?.actionId !== 'basic_auth')
                             .map((button) => {
-                              const actionId = String(button.config?.actionId ?? '');
+                              const actionId = button.config?.actionId as string ?? '';
 
                               const getIcon = () => {
                                 if (actionId.includes('google')) return <Google />;
@@ -265,7 +265,9 @@ export default function SignInBox(): JSX.Element {
                                   ?.filter((c) => c.type === 'INPUT')
                                   .forEach((input) => {
                                     if (input.config?.identifier) {
-                                      inputs[input.config.identifier] = data.get(input.config.identifier) as string;
+                                      inputs[input.config.identifier as string] = data.get(
+                                        input.config.identifier as string,
+                                      ) as string;
                                     }
                                   });
 
@@ -282,22 +284,26 @@ export default function SignInBox(): JSX.Element {
                                 if (component.type === 'INPUT') {
                                   return (
                                     <FormControl key={component.id}>
-                                      <FormLabel htmlFor={component.config?.identifier}>
-                                        {component.config?.label}
+                                      <FormLabel htmlFor={component.config?.identifier as string}>
+                                        {component.config?.label as string}
                                       </FormLabel>
                                       <TextField
-                                        id={component.config?.identifier}
-                                        name={component.config?.identifier}
-                                        type={component.config?.type === 'text' ? 'text' : component.config?.type}
-                                        placeholder={component.config?.placeholder}
-                                        required={component.config?.required}
+                                        id={component.config?.identifier as string}
+                                        name={component.config?.identifier as string}
+                                        type={
+                                          (component.config?.type as string) === 'text'
+                                            ? 'text'
+                                            : (component.config?.type as string)
+                                        }
+                                        placeholder={component.config?.placeholder as string}
+                                        required={component.config?.required as boolean}
                                         fullWidth
                                         variant="outlined"
                                         disabled={isLoading}
                                       />
-                                      {component.config?.hint && (
+                                      {(component.config?.hint as string) && (
                                         <Typography variant="caption" color="text.secondary">
-                                          {component.config.hint}
+                                          {component.config.hint as string}
                                         </Typography>
                                       )}
                                     </FormControl>
@@ -313,7 +319,7 @@ export default function SignInBox(): JSX.Element {
                                       variant={component.variant === 'PRIMARY' ? 'contained' : 'outlined'}
                                       disabled={isLoading}
                                     >
-                                      {isLoading ? 'Submitting...' : component.config?.text}
+                                      {isLoading ? 'Submitting...' : (component.config?.text as string)}
                                     </Button>
                                   );
                                 }

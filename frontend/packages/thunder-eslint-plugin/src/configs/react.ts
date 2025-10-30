@@ -25,11 +25,12 @@ import {FlatCompat} from '@eslint/eslintrc';
 import type {Linter} from 'eslint';
 import reactRefresh from 'eslint-plugin-react-refresh';
 import globals from 'globals';
+import createParserOptions from '../utils/tsconfig-resolver.js';
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
+const __filename: string = fileURLToPath(import.meta.url);
+const __dirname: string = path.dirname(__filename);
 
-const compat = new FlatCompat({
+const compat: FlatCompat = new FlatCompat({
   baseDirectory: __dirname,
 });
 
@@ -46,11 +47,30 @@ const reactConfig: Linter.Config[] = [
     languageOptions: {
       ecmaVersion: 2020,
       globals: globals.browser,
-      parserOptions: {
-        projectService: {
-          allowDefaultProject: ['.*.js', '.*.cjs', '*.js', '*.*.js', '*.cjs'],
+      parserOptions: createParserOptions(),
+    },
+  },
+  {
+    name: 'thunder/react-settings',
+    settings: {
+      'import/resolver': {
+        typescript: {
+          alwaysTryTypes: true,
         },
-        tsconfigRootDir: import.meta.dirname,
+        alias: {
+          map: [
+            ['@', './src'],
+            ['@/components', './src/components'],
+            ['@/layouts', './src/layouts'],
+            ['@/theme', './src/theme'],
+            ['@/contexts', './src/contexts'],
+            ['@/lib', './src/lib'],
+            ['@/hooks', './src/hooks'],
+            ['@/types', './src/types'],
+            ['@/test', './src/test'],
+          ],
+          extensions: ['.js', '.jsx', '.ts', '.tsx', '.json'],
+        },
       },
     },
   },
@@ -74,6 +94,18 @@ const reactConfig: Linter.Config[] = [
           forbidDefaultForRequired: true,
           classes: 'ignore',
           functions: 'defaultArguments',
+        },
+      ],
+      // Allow imports without file extensions for TypeScript/JavaScript files
+      // This is especially useful for path aliases like @/ that resolve to TypeScript files
+      'import/extensions': [
+        'error',
+        'ignorePackages',
+        {
+          js: 'never',
+          jsx: 'never',
+          ts: 'never',
+          tsx: 'never',
         },
       ],
     },

@@ -16,14 +16,13 @@
  * under the License.
  */
 
-import DarkModeIcon from '@mui/icons-material/DarkModeRounded';
-import LightModeIcon from '@mui/icons-material/LightModeRounded';
 import Box from '@mui/material/Box';
 import IconButton from '@mui/material/IconButton';
 import type {IconButtonOwnProps} from '@mui/material/IconButton';
 import Menu from '@mui/material/Menu';
 import MenuItem from '@mui/material/MenuItem';
 import {useColorScheme} from '@mui/material/styles';
+import {MoonStar, Sun} from 'lucide-react';
 import {useState, MouseEvent} from 'react';
 
 export default function ColorModeIconDropdown(props: IconButtonOwnProps) {
@@ -58,8 +57,8 @@ export default function ColorModeIconDropdown(props: IconButtonOwnProps) {
   }
   const resolvedMode = (systemMode ?? mode) as 'light' | 'dark';
   const icon = {
-    light: <LightModeIcon />,
-    dark: <DarkModeIcon />,
+    light: <Sun size={16} />,
+    dark: <MoonStar size={16} />,
   }[resolvedMode];
   return (
     <>

@@ -119,7 +119,9 @@ Follow these steps to run WSO2 Thunder using Docker.
       ghcr.io/asgardeo/thunder:latest
     ```
 
-#### Initial Data Setup
+### Try Out the Product
+
+#### Try out the Developer Console
 
 To get started quickly, you can set up initial data including an admin user and the Develop application using the `--setup` flag when starting Thunder:
 
@@ -137,14 +139,9 @@ bash start.sh --setup
 
 This will:
 
-- Create an OIDC user schema
+- Create a user schema
 - Create an admin user with credentials: `admin` / `admin`
 - Create the Develop application for accessing the admin console
-
-After setup is complete, you can access:
-
-- **Gate (Login/Register)**: `https://localhost:8090/signin`
-- **Develop (Admin Console)**: `https://localhost:8090/develop`
 
 You can also run the setup script manually at any time:
 
@@ -160,7 +157,11 @@ bash scripts/setup_initial_data.sh
 .\scripts\setup_initial_data.ps1
 ```
 
-### Try Out the Product
+After the setup is complete, follow these steps to access the Developer Console:
+
+1. Open your browser and navigate to [https://localhost:8090/develop](https://localhost:8090/develop).
+
+2. Log in using the admin credentials created during the initial data setup (`admin` / `admin`).
 
 #### Try Out with the Sample App
 

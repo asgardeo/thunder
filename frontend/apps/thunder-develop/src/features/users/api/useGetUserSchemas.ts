@@ -82,7 +82,7 @@ export default function useGetUserSchemas(params?: SchemaListParams) {
       } catch (err) {
         // Don't set error if request was aborted
         if (err instanceof Error && err.name === 'AbortError') {
-          return;
+          return null;
         }
 
         if (err instanceof Error) {

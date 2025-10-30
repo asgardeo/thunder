@@ -5,7 +5,14 @@ Thank you for your interest in contributing to WSO2 Thunder! This guide will hel
 ## 📋 Table of Contents
 
 - [Prerequisites](#prerequisites)
+  - [Required Tools (Core Development)](#required-tools-core-development)
+  - [Required Tools (Frontend Development)](#required-tools-frontend-development)
 - [Development Setup](#development-setup)
+- [Development Setup (Frontend)](#development-setup-frontend)
+  - [Installing Dependencies](#installing-dependencies)
+  - [Building the Project](#building-the-project)
+  - [Setting up the Thunder Gate Application](#setting-up-the-thunder-gate-application)
+  - [Setting up the Thunder Develop Application](#setting-up-the-thunder-develop-application)
 
 ## Prerequisites
 

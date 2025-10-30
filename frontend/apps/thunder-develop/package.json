@@ -35,6 +35,7 @@
     "@asgardeo/react-router": "catalog:",
     "@emotion/react": "catalog:",
     "@emotion/styled": "catalog:",
+    "@mui/icons-material": "catalog:",
     "@mui/material": "catalog:",
     "@mui/x-charts": "catalog:",
     "@mui/x-data-grid": "catalog:",

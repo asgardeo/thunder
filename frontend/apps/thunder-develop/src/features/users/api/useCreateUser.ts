@@ -28,7 +28,7 @@ export interface CreateUserRequest {
   organizationUnit: string;
   type: string;
   groups?: string[];
-  attributes: Record<string, any>;
+  attributes: Record<string, unknown>;
 }
 
 /**
@@ -38,7 +38,7 @@ export interface CreateUserResponse {
   id: string;
   organizationUnit: string;
   type: string;
-  attributes: Record<string, any>;
+  attributes: Record<string, unknown>;
 }
 
 /**

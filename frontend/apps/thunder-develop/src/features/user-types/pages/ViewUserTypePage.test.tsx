@@ -392,7 +392,7 @@ describe('ViewUserTypePage', () => {
       await waitFor(() => {
         expect(mockUpdateUserType).toHaveBeenCalledWith('schema-123', {
           name: 'Updated Schema',
-          schema: expect.any(Object),
+          schema: expect.any(Object) as Record<string, unknown>,
         });
         expect(mockRefetch).toHaveBeenCalledWith('schema-123');
       });

@@ -18,26 +18,26 @@
   "author": "WSO2",
   "license": "Apache-2.0",
   "type": "module",
-  "main": "dist/index.js",
-  "module": "dist/index.js",
-  "commonjs": "dist/cjs/index.js",
+  "main": "./dist/cjs/index.cjs",
+  "module": "./dist/index.js",
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
       "import": "./dist/index.js",
-      "require": "./dist/cjs/index.js"
+      "require": "./dist/cjs/index.cjs"
     }
   },
+  "types": "./dist/index.d.ts",
+  "sideEffects": false,
   "files": [
     "dist",
     "README.md",
     "LICENSE"
   ],
-  "types": "dist/index.d.ts",
   "repository": {
     "type": "git",
     "url": "https://github.com/asgardeo/thunder",
-    "directory": "packages/thunder-eslint-plugin"
+    "directory": "frontend/packages/thunder-eslint-plugin"
   },
   "nx": {
     "targets": {
@@ -47,7 +47,7 @@
     }
   },
   "scripts": {
-    "build": "pnpm clean:dist && node esbuild.config.js && tsc -p tsconfig.lib.json --emitDeclarationOnly --outDir dist",
+    "build": "pnpm clean:dist && rolldown -c rolldown.config.js && tsc -p tsconfig.lib.json --emitDeclarationOnly --outDir dist",
     "clean": "pnpm clean:node_modules && pnpm clean:dist",
     "clean:dist": "rimraf dist",
     "clean:node_modules": "rimraf node_modules",
@@ -59,12 +59,15 @@
   "devDependencies": {
     "@thunder/prettier-config": "workspace:^",
     "@types/eslint": "^9.6.1",
+    "@types/estree": "^1.0.8",
     "@types/node": "catalog:",
-    "esbuild": "catalog:",
     "eslint": "catalog:",
+    "eslint-import-resolver-alias": "^1.1.2",
+    "eslint-import-resolver-typescript": "^4.4.4",
     "glob": "catalog:",
     "prettier": "catalog:",
     "rimraf": "catalog:",
+    "rolldown": "catalog:",
     "typescript": "catalog:",
     "typescript-eslint": "^8.46.0",
     "vitest": "catalog:"

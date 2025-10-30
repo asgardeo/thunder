@@ -194,9 +194,8 @@ export default function CreateUserTypePage() {
       // Navigate back to list on success
       await navigate('/user-types');
     } catch {
-      // Error is already handled by the hook and displayed in the UI
-      // No need to do anything here
-      console.error('Failed to create user type');
+      // TODO: Log the errors
+      // Tracker: https://github.com/asgardeo/thunder/issues/618
     }
   };
 

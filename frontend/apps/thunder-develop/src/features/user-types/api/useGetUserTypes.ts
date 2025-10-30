@@ -98,7 +98,12 @@ export default function useGetUserTypes(params?: UserSchemaListParams) {
   }, [params]);
 
   useEffect(() => {
-    fetchUserTypes();
+    (async () => {
+      await fetchUserTypes();
+    })().catch(() => {
+      // TODO: Log the errors
+      // Tracker: https://github.com/asgardeo/thunder/issues/618
+    });
 
     // Cleanup: abort request on unmount
     return () => {

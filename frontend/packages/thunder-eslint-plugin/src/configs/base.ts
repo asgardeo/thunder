@@ -16,11 +16,9 @@
  * under the License.
  */
 
-/**
- * @fileoverview Base ESLint config that includes core rules.
- */
+import {Linter} from 'eslint';
 
-const baseConfig = [
+const baseConfig: Linter.Config[] = [
   {
     name: 'thunder/copyright-header',
     rules: {'@thunder/copyright-header': 'error'},

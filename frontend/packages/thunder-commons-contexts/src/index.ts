@@ -20,6 +20,6 @@
 export type {ThunderConfig, ServerConfig} from './Config/types';
 
 // Export React components and hooks
-export {default as ConfigContext, ConfigContextType} from './Config/ConfigContext';
-export {default as ConfigProvider, ConfigProviderProps} from './Config/ConfigProvider';
+export {default as ConfigContext, type ConfigContextType} from './Config/ConfigContext';
+export {default as ConfigProvider, type ConfigProviderProps} from './Config/ConfigProvider';
 export {default as useConfig} from './Config/useConfig';

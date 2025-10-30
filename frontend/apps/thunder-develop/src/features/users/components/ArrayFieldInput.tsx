@@ -76,7 +76,7 @@ function ArrayFieldInput({
         {currentValue.length > 0 &&
           currentValue.map((item, itemIndex) => (
             <Chip
-              key={`chip-${item}-${itemIndex}`}
+              key={`chip-${item}`}
               label={String(item)}
               onDelete={() => handleDelete(itemIndex)}
               variant="outlined"

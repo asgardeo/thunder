@@ -24,11 +24,12 @@ import {fileURLToPath} from 'url';
 import {FlatCompat} from '@eslint/eslintrc';
 import type {Linter} from 'eslint';
 import tseslint from 'typescript-eslint';
+import createParserOptions from '../utils/tsconfig-resolver.js';
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
+const __filename: string = fileURLToPath(import.meta.url);
+const __dirname: string = path.dirname(__filename);
 
-const compat = new FlatCompat({
+const compat: FlatCompat = new FlatCompat({
   baseDirectory: __dirname,
 });
 
@@ -44,12 +45,7 @@ const typescriptConfig: Linter.Config[] = [
   {
     languageOptions: {
       ecmaVersion: 2020,
-      parserOptions: {
-        projectService: {
-          allowDefaultProject: ['.*.js', '.*.cjs', '*.js', '*.*.js', '*.cjs'],
-        },
-        tsconfigRootDir: import.meta.dirname,
-      },
+      parserOptions: createParserOptions(),
     },
   },
   {
@@ -60,6 +56,18 @@ const typescriptConfig: Linter.Config[] = [
     name: 'thunder/typescript-overrides',
     rules: {
       'object-curly-spacing': ['error', 'never'],
+      // Allow imports without file extensions for TypeScript files
+      // This is especially useful for path aliases and modern module resolution
+      'import/extensions': [
+        'error',
+        'ignorePackages',
+        {
+          js: 'never',
+          jsx: 'never',
+          ts: 'never',
+          tsx: 'never',
+        },
+      ],
     },
   },
 ];
