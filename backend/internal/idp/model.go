@@ -19,7 +19,7 @@
 package idp
 
 import (
-	"strings"
+	"fmt"
 
 	"github.com/asgardeo/thunder/internal/system/cmodels"
 )
@@ -68,58 +68,45 @@ type basicIDPResponse struct {
 
 // GetPropertyValue returns the property value with the given name.
 // Returns an empty string if the property is not found.
-// Returns an error if retrieving the property value fails.
+// Returns an error if retrieving the property value fails or if the property is multi-valued.
 func (dto *IDPDTO) GetPropertyValue(name string) (string, error) {
 	for _, prop := range dto.Properties {
 		if prop.GetName() == name {
+			if prop.IsMultiValued() {
+				return "", fmt.Errorf("property %s is multi-valued, use GetPropertyValues() instead", name)
+			}
 			return prop.GetValue()
 		}
 	}
 	return "", nil
-
 }
 
-// GetPropertyAsArray returns the property value with the given name as a string slice.
-// It splits the value by commas (preferred format), or by spaces for legacy values.
-// Returns an empty slice if the property is not set.
-// Returns an error if retrieving the property value fails.
-func (dto *IDPDTO) GetPropertyAsArray(name string) ([]string, error) {
-	value, err := dto.GetPropertyValue(name)
-	if err != nil {
-		return nil, err
-	}
-
-	if value == "" {
-		return []string{}, nil
-	}
-
-	// Split comma-separated values first (preferred format)
-	parts := strings.Split(value, ",")
-	result := make([]string, 0, len(parts))
-	for _, part := range parts {
-		trimmed := strings.TrimSpace(part)
-		if trimmed != "" {
-			result = append(result, trimmed)
-		}
-	}
-
-	// Backward compatibility: If only one item and it contains spaces but no commas,
-	// treat it as space-separated (for legacy OAuth scopes like "openid profile email")
-	if len(result) == 1 && strings.Contains(value, " ") && !strings.Contains(value, ",") {
-		parts = strings.Split(value, " ")
-		result = make([]string, 0, len(parts))
-		for _, part := range parts {
-			trimmed := strings.TrimSpace(part)
-			if trimmed != "" {
-				result = append(result, trimmed)
+// GetPropertyValues returns the property values with the given name for multi-valued properties.
+// Returns an empty slice if the property is not found.
+// Returns an error if retrieving the property values fails.
+// For backward compatibility, single-valued properties are returned as a single-element array.
+func (dto *IDPDTO) GetPropertyValues(name string) ([]string, error) {
+	for _, prop := range dto.Properties {
+		if prop.GetName() == name {
+			if !prop.IsMultiValued() {
+				// Backward compatibility: return single value as array
+				value, err := prop.GetValue()
+				if err != nil {
+					return nil, err
+				}
+				if value == "" {
+					return []string{}, nil
+				}
+				return []string{value}, nil
 			}
+			return prop.GetValues()
 		}
 	}
-
-	return result, nil
+	return []string{}, nil
 }
 
-// GetScopes is a convenience method for getting OAuth scopes
+// GetScopes is a convenience method for getting OAuth scopes.
+// Returns the scopes as an array, whether stored as single or multi-valued property.
 func (dto *IDPDTO) GetScopes() ([]string, error) {
-	return dto.GetPropertyAsArray("scopes")
+	return dto.GetPropertyValues("scopes")
 }

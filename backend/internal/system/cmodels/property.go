@@ -22,35 +22,58 @@ package cmodels
 import (
 	"encoding/json"
 	"fmt"
-	"strings"
 
 	"github.com/asgardeo/thunder/internal/system/crypto"
 )
 
-// Property represents a generic property with name, value, and isSecret fields.
+// Property represents a generic property with name, value/values, and isSecret fields.
 type Property struct {
-	name     string
-	value    string
-	isSecret bool
+	name          string
+	value         string
+	values        []string
+	isSecret      bool
+	isMultiValued bool
 }
 
 // PropertyDTO represents a property for API communication.
 type PropertyDTO struct {
-	Name     string `json:"name"`
-	Value    string `json:"value"`
-	IsSecret bool   `json:"is_secret"`
+	Name          string   `json:"name"`
+	Value         string   `json:"value,omitempty"`
+	Values        []string `json:"values,omitempty"`
+	IsSecret      bool     `json:"is_secret"`
+	IsMultiValued bool     `json:"is_multi_valued"`
 }
 
 // NewProperty creates a new Property instance with the given parameters.
 // If isSecret is true, the value will be automatically encrypted.
 func NewProperty(name, value string, isSecret bool) (*Property, error) {
 	property := &Property{
-		name:     name,
-		value:    value,
-		isSecret: isSecret,
+		name:          name,
+		value:         value,
+		isSecret:      isSecret,
+		isMultiValued: false,
 	}
 
 	if isSecret && value != "" {
+		if err := property.Encrypt(); err != nil {
+			return nil, fmt.Errorf("failed to encrypt property %s: %w", name, err)
+		}
+	}
+
+	return property, nil
+}
+
+// NewMultiValuedProperty creates a new multi-valued Property instance.
+// If isSecret is true, all values will be automatically encrypted.
+func NewMultiValuedProperty(name string, values []string, isSecret bool) (*Property, error) {
+	property := &Property{
+		name:          name,
+		values:        values,
+		isSecret:      isSecret,
+		isMultiValued: true,
+	}
+
+	if isSecret && len(values) > 0 {
 		if err := property.Encrypt(); err != nil {
 			return nil, fmt.Errorf("failed to encrypt property %s: %w", name, err)
 		}
@@ -69,8 +92,18 @@ func (p *Property) IsSecret() bool {
 	return p.isSecret
 }
 
-// GetValue returns the decrypted value if it's a secret, otherwise returns the plain value
+// IsMultiValued returns whether the property is multi-valued
+func (p *Property) IsMultiValued() bool {
+	return p.isMultiValued
+}
+
+// GetValue returns the decrypted value if it's a secret, otherwise returns the plain value.
+// For multi-valued properties, use GetValues() instead.
 func (p *Property) GetValue() (string, error) {
+	if p.IsMultiValued() {
+		return "", fmt.Errorf("property %s is multi-valued, use GetValues() instead", p.GetName())
+	}
+
 	if !p.IsSecret() {
 		return p.value, nil
 	}
@@ -84,19 +117,62 @@ func (p *Property) GetValue() (string, error) {
 	return decryptedValue, nil
 }
 
-// Encrypt encrypts the value if it's a secret property
+// GetValues returns the decrypted values if it's a multi-valued secret, otherwise returns the plain values.
+// Returns an error if called on a single-valued property.
+func (p *Property) GetValues() ([]string, error) {
+	if !p.IsMultiValued() {
+		return nil, fmt.Errorf("property %s is not multi-valued", p.GetName())
+	}
+
+	if !p.IsSecret() {
+		return p.values, nil
+	}
+
+	cryptoService := crypto.GetCryptoService()
+	decryptedValues := make([]string, len(p.values))
+	for i, encryptedValue := range p.values {
+		decryptedValue, err := cryptoService.DecryptString(encryptedValue)
+		if err != nil {
+			return nil, fmt.Errorf("failed to decrypt secret property %s: %w", p.GetName(), err)
+		}
+		decryptedValues[i] = decryptedValue
+	}
+
+	return decryptedValues, nil
+}
+
+// Encrypt encrypts the value or values if it's a secret property
 func (p *Property) Encrypt() error {
-	if !p.IsSecret() || p.value == "" {
+	if !p.IsSecret() {
 		return nil
 	}
 
 	cryptoService := crypto.GetCryptoService()
-	encryptedValue, err := cryptoService.EncryptString(p.value)
-	if err != nil {
-		return fmt.Errorf("failed to encrypt secret property %s: %w", p.GetName(), err)
+
+	if p.IsMultiValued() {
+		if len(p.values) == 0 {
+			return nil
+		}
+		encryptedValues := make([]string, len(p.values))
+		for i, val := range p.values {
+			encryptedValue, err := cryptoService.EncryptString(val)
+			if err != nil {
+				return fmt.Errorf("failed to encrypt secret property %s: %w", p.GetName(), err)
+			}
+			encryptedValues[i] = encryptedValue
+		}
+		p.values = encryptedValues
+	} else {
+		if p.value == "" {
+			return nil
+		}
+		encryptedValue, err := cryptoService.EncryptString(p.value)
+		if err != nil {
+			return fmt.Errorf("failed to encrypt secret property %s: %w", p.GetName(), err)
+		}
+		p.value = encryptedValue
 	}
 
-	p.value = encryptedValue
 	return nil
 }
 
@@ -109,10 +185,17 @@ func SerializePropertiesToJSONArray(properties []Property) (string, error) {
 	propertyDTOs := make([]PropertyDTO, 0, len(properties))
 	for _, property := range properties {
 		propertyDTO := PropertyDTO{
-			Name:     property.GetName(),
-			Value:    property.value,
-			IsSecret: property.IsSecret(),
+			Name:          property.GetName(),
+			IsSecret:      property.IsSecret(),
+			IsMultiValued: property.IsMultiValued(),
 		}
+
+		if property.IsMultiValued() {
+			propertyDTO.Values = property.values
+		} else {
+			propertyDTO.Value = property.value
+		}
+
 		propertyDTOs = append(propertyDTOs, propertyDTO)
 	}
 
@@ -138,10 +221,17 @@ func DeserializePropertiesFromJSON(propertiesJSON string) ([]Property, error) {
 	properties := make([]Property, 0, len(propertyDTOs))
 	for _, propertyDTO := range propertyDTOs {
 		property := Property{
-			name:     propertyDTO.Name,
-			value:    propertyDTO.Value,
-			isSecret: propertyDTO.IsSecret,
+			name:          propertyDTO.Name,
+			isSecret:      propertyDTO.IsSecret,
+			isMultiValued: propertyDTO.IsMultiValued,
 		}
+
+		if propertyDTO.IsMultiValued {
+			property.values = propertyDTO.Values
+		} else {
+			property.value = propertyDTO.Value
+		}
+
 		properties = append(properties, property)
 	}
 
@@ -150,134 +240,33 @@ func DeserializePropertiesFromJSON(propertiesJSON string) ([]Property, error) {
 
 // ToProperty converts PropertyDTO to Property.
 func (dto *PropertyDTO) ToProperty() (*Property, error) {
+	if dto.IsMultiValued {
+		return NewMultiValuedProperty(dto.Name, dto.Values, dto.IsSecret)
+	}
 	return NewProperty(dto.Name, dto.Value, dto.IsSecret)
 }
 
 // ToPropertyDTO converts Property to PropertyDTO.
 func (p *Property) ToPropertyDTO() (*PropertyDTO, error) {
-	value, err := p.GetValue()
-	if err != nil {
-		return nil, fmt.Errorf("failed to get value for property %s: %w", p.GetName(), err)
+	dto := &PropertyDTO{
+		Name:          p.GetName(),
+		IsSecret:      p.IsSecret(),
+		IsMultiValued: p.IsMultiValued(),
 	}
 
-	return &PropertyDTO{
-		Name:     p.GetName(),
-		Value:    value,
-		IsSecret: p.IsSecret(),
-	}, nil
-}
-
-// PropertyValueDTO represents a property value that can be either a string or array of strings
-type PropertyValueDTO struct {
-	single   string
-	multiple []string
-	isArray  bool
-}
-
-// UnmarshalJSON implements json.Unmarshaler for PropertyValueDTO
-// This handles both string values and array values from JSON
-func (pv *PropertyValueDTO) UnmarshalJSON(data []byte) error {
-	// Try to unmarshal as array first
-	var arr []string
-	if err := json.Unmarshal(data, &arr); err == nil {
-		pv.multiple = arr
-		pv.isArray = true
-		return nil
+	if p.IsMultiValued() {
+		values, err := p.GetValues()
+		if err != nil {
+			return nil, fmt.Errorf("failed to get values for property %s: %w", p.GetName(), err)
+		}
+		dto.Values = values
+	} else {
+		value, err := p.GetValue()
+		if err != nil {
+			return nil, fmt.Errorf("failed to get value for property %s: %w", p.GetName(), err)
+		}
+		dto.Value = value
 	}
 
-	// If not array, treat as string
-	var str string
-	if err := json.Unmarshal(data, &str); err != nil {
-		return err
-	}
-	pv.single = str
-	pv.isArray = false
-	return nil
-}
-
-// MarshalJSON implements json.Marshaler for PropertyValueDTO
-func (pv PropertyValueDTO) MarshalJSON() ([]byte, error) {
-	if pv.isArray {
-		return json.Marshal(pv.multiple)
-	}
-	return json.Marshal(pv.single)
-}
-
-// AsString returns the value as a string
-// For arrays, returns comma-separated values
-func (pv PropertyValueDTO) AsString() string {
-	if pv.isArray {
-		return strings.Join(pv.multiple, ",")
-	}
-	return pv.single
-}
-
-// AsArray returns the value as a string array
-// Handles backward compatibility with comma-separated strings
-func (pv PropertyValueDTO) AsArray() []string {
-	if pv.isArray {
-		return pv.multiple
-	}
-
-	// Backward compatibility: split comma-separated strings
-	if pv.single == "" {
-		return []string{}
-	}
-
-	parts := strings.Split(pv.single, ",")
-	result := make([]string, len(parts))
-	for i, part := range parts {
-		result[i] = strings.TrimSpace(part)
-	}
-	return result
-}
-
-// IsArray checks if the property is multi-valued
-func (pv PropertyValueDTO) IsArray() bool {
-	return pv.isArray
-}
-
-// NewStringPropertyValue creates a single-valued property
-func NewStringPropertyValue(value string) PropertyValueDTO {
-	return PropertyValueDTO{
-		single:  value,
-		isArray: false,
-	}
-}
-
-// NewArrayPropertyValue creates a multi-valued property
-func NewArrayPropertyValue(values []string) PropertyValueDTO {
-	return PropertyValueDTO{
-		multiple: values,
-		isArray:  true,
-	}
-}
-
-// PropertiesMap represents a map of property names to values
-type PropertiesMap map[string]PropertyValueDTO
-
-// GetString retrieves a single-valued property
-func (pm PropertiesMap) GetString(key string) string {
-	if val, ok := pm[key]; ok {
-		return val.AsString()
-	}
-	return ""
-}
-
-// GetArray retrieves a multi-valued property
-func (pm PropertiesMap) GetArray(key string) []string {
-	if val, ok := pm[key]; ok {
-		return val.AsArray()
-	}
-	return []string{}
-}
-
-// SetString sets a single-valued property
-func (pm PropertiesMap) SetString(key, value string) {
-	pm[key] = NewStringPropertyValue(value)
-}
-
-// SetArray sets a multi-valued property
-func (pm PropertiesMap) SetArray(key string, values []string) {
-	pm[key] = NewArrayPropertyValue(values)
+	return dto, nil
 }

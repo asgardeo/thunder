@@ -24,146 +24,242 @@ import (
 	"testing"
 )
 
-func TestPropertyValueDTO_UnmarshalArray(t *testing.T) {
-	jsonData := `["openid", "profile", "email"]`
-
-	var pv PropertyValueDTO
-	err := json.Unmarshal([]byte(jsonData), &pv)
+func TestNewProperty(t *testing.T) {
+	prop, err := NewProperty("test", "value", false)
 	if err != nil {
-		t.Fatalf("Unmarshal failed: %v", err)
+		t.Fatalf("NewProperty failed: %v", err)
 	}
 
-	if !pv.IsArray() {
-		t.Error("Expected IsArray() to be true")
+	if prop.GetName() != "test" {
+		t.Errorf("Expected name 'test', got '%s'", prop.GetName())
 	}
 
+	if prop.IsMultiValued() {
+		t.Error("Expected IsMultiValued() to be false")
+	}
+
+	value, err := prop.GetValue()
+	if err != nil {
+		t.Fatalf("GetValue failed: %v", err)
+	}
+
+	if value != "value" {
+		t.Errorf("Expected value 'value', got '%s'", value)
+	}
+}
+
+func TestNewMultiValuedProperty(t *testing.T) {
+	values := []string{"openid", "profile", "email"}
+	prop, err := NewMultiValuedProperty("scopes", values, false)
+	if err != nil {
+		t.Fatalf("NewMultiValuedProperty failed: %v", err)
+	}
+
+	if prop.GetName() != "scopes" {
+		t.Errorf("Expected name 'scopes', got '%s'", prop.GetName())
+	}
+
+	if !prop.IsMultiValued() {
+		t.Error("Expected IsMultiValued() to be true")
+	}
+
+	result, err := prop.GetValues()
+	if err != nil {
+		t.Fatalf("GetValues failed: %v", err)
+	}
+
+	if !reflect.DeepEqual(result, values) {
+		t.Errorf("Expected %v, got %v", values, result)
+	}
+}
+
+func TestProperty_GetValue_OnMultiValued_ShouldError(t *testing.T) {
+	prop, _ := NewMultiValuedProperty("scopes", []string{"openid", "profile"}, false)
+
+	_, err := prop.GetValue()
+	if err == nil {
+		t.Error("Expected error when calling GetValue() on multi-valued property")
+	}
+}
+
+func TestProperty_GetValues_OnSingleValued_ShouldError(t *testing.T) {
+	prop, _ := NewProperty("test", "value", false)
+
+	_, err := prop.GetValues()
+	if err == nil {
+		t.Error("Expected error when calling GetValues() on single-valued property")
+	}
+}
+
+func TestSerializeProperties_SingleAndMultiValued(t *testing.T) {
+	singleProp, _ := NewProperty("client_id", "abc123", false)
+	multiProp, _ := NewMultiValuedProperty("scopes", []string{"openid", "profile"}, false)
+
+	properties := []Property{*singleProp, *multiProp}
+
+	jsonStr, err := SerializePropertiesToJSONArray(properties)
+	if err != nil {
+		t.Fatalf("SerializePropertiesToJSONArray failed: %v", err)
+	}
+
+	// Verify it's valid JSON
+	var result []PropertyDTO
+	if err := json.Unmarshal([]byte(jsonStr), &result); err != nil {
+		t.Fatalf("Failed to unmarshal result: %v", err)
+	}
+
+	if len(result) != 2 {
+		t.Fatalf("Expected 2 properties, got %d", len(result))
+	}
+
+	// Check single-valued property
+	if result[0].Name != "client_id" {
+		t.Errorf("Expected name 'client_id', got '%s'", result[0].Name)
+	}
+	if result[0].IsMultiValued {
+		t.Error("Expected IsMultiValued to be false for client_id")
+	}
+	if result[0].Value != "abc123" {
+		t.Errorf("Expected value 'abc123', got '%s'", result[0].Value)
+	}
+
+	// Check multi-valued property
+	if result[1].Name != "scopes" {
+		t.Errorf("Expected name 'scopes', got '%s'", result[1].Name)
+	}
+	if !result[1].IsMultiValued {
+		t.Error("Expected IsMultiValued to be true for scopes")
+	}
+	if !reflect.DeepEqual(result[1].Values, []string{"openid", "profile"}) {
+		t.Errorf("Expected ['openid', 'profile'], got %v", result[1].Values)
+	}
+}
+
+func TestDeserializeProperties_SingleAndMultiValued(t *testing.T) {
+	jsonStr := `[
+		{"name":"client_id","value":"abc123","is_secret":false,"is_multi_valued":false},
+		{"name":"scopes","values":["openid","profile","email"],"is_secret":false,"is_multi_valued":true}
+	]`
+
+	properties, err := DeserializePropertiesFromJSON(jsonStr)
+	if err != nil {
+		t.Fatalf("DeserializePropertiesFromJSON failed: %v", err)
+	}
+
+	if len(properties) != 2 {
+		t.Fatalf("Expected 2 properties, got %d", len(properties))
+	}
+
+	// Check single-valued property
+	if properties[0].GetName() != "client_id" {
+		t.Errorf("Expected name 'client_id', got '%s'", properties[0].GetName())
+	}
+	if properties[0].IsMultiValued() {
+		t.Error("Expected IsMultiValued() to be false")
+	}
+	value, _ := properties[0].GetValue()
+	if value != "abc123" {
+		t.Errorf("Expected value 'abc123', got '%s'", value)
+	}
+
+	// Check multi-valued property
+	if properties[1].GetName() != "scopes" {
+		t.Errorf("Expected name 'scopes', got '%s'", properties[1].GetName())
+	}
+	if !properties[1].IsMultiValued() {
+		t.Error("Expected IsMultiValued() to be true")
+	}
+	values, _ := properties[1].GetValues()
 	expected := []string{"openid", "profile", "email"}
-	if !reflect.DeepEqual(pv.multiple, expected) {
-		t.Errorf("Expected %v, got %v", expected, pv.multiple)
+	if !reflect.DeepEqual(values, expected) {
+		t.Errorf("Expected %v, got %v", expected, values)
 	}
 }
 
-func TestPropertyValueDTO_UnmarshalString(t *testing.T) {
-	jsonData := `"client_abc123"`
+func TestPropertyDTO_ToProperty_SingleValued(t *testing.T) {
+	dto := &PropertyDTO{
+		Name:          "test",
+		Value:         "value",
+		IsSecret:      false,
+		IsMultiValued: false,
+	}
 
-	var pv PropertyValueDTO
-	err := json.Unmarshal([]byte(jsonData), &pv)
+	prop, err := dto.ToProperty()
 	if err != nil {
-		t.Fatalf("Unmarshal failed: %v", err)
+		t.Fatalf("ToProperty failed: %v", err)
 	}
 
-	if pv.IsArray() {
-		t.Error("Expected IsArray() to be false")
+	if prop.IsMultiValued() {
+		t.Error("Expected IsMultiValued() to be false")
 	}
 
-	if pv.single != "client_abc123" {
-		t.Errorf("Expected 'client_abc123', got '%s'", pv.single)
+	value, _ := prop.GetValue()
+	if value != "value" {
+		t.Errorf("Expected 'value', got '%s'", value)
 	}
 }
 
-func TestPropertyValueDTO_AsArray_BackwardCompatibility(t *testing.T) {
-	// Test old comma-separated format
-	jsonData := `"openid,profile,email"`
+func TestPropertyDTO_ToProperty_MultiValued(t *testing.T) {
+	dto := &PropertyDTO{
+		Name:          "scopes",
+		Values:        []string{"openid", "profile"},
+		IsSecret:      false,
+		IsMultiValued: true,
+	}
 
-	var pv PropertyValueDTO
-	err := json.Unmarshal([]byte(jsonData), &pv)
+	prop, err := dto.ToProperty()
 	if err != nil {
-		t.Fatalf("Unmarshal failed: %v", err)
+		t.Fatalf("ToProperty failed: %v", err)
 	}
 
-	result := pv.AsArray()
-	expected := []string{"openid", "profile", "email"}
+	if !prop.IsMultiValued() {
+		t.Error("Expected IsMultiValued() to be true")
+	}
 
-	if !reflect.DeepEqual(result, expected) {
-		t.Errorf("Expected %v, got %v", expected, result)
+	values, _ := prop.GetValues()
+	if !reflect.DeepEqual(values, []string{"openid", "profile"}) {
+		t.Errorf("Expected ['openid', 'profile'], got %v", values)
 	}
 }
 
-func TestPropertyValueDTO_MarshalArray(t *testing.T) {
-	pv := NewArrayPropertyValue([]string{"openid", "profile"})
+func TestProperty_ToPropertyDTO_SingleValued(t *testing.T) {
+	prop, _ := NewProperty("test", "value", false)
 
-	jsonData, err := json.Marshal(pv)
+	dto, err := prop.ToPropertyDTO()
 	if err != nil {
-		t.Fatalf("Marshal failed: %v", err)
+		t.Fatalf("ToPropertyDTO failed: %v", err)
 	}
 
-	expected := `["openid","profile"]`
-	if string(jsonData) != expected {
-		t.Errorf("Expected %s, got %s", expected, string(jsonData))
+	if dto.Name != "test" {
+		t.Errorf("Expected name 'test', got '%s'", dto.Name)
+	}
+
+	if dto.IsMultiValued {
+		t.Error("Expected IsMultiValued to be false")
+	}
+
+	if dto.Value != "value" {
+		t.Errorf("Expected value 'value', got '%s'", dto.Value)
 	}
 }
 
-func TestPropertyValueDTO_MarshalString(t *testing.T) {
-	pv := NewStringPropertyValue("test_value")
+func TestProperty_ToPropertyDTO_MultiValued(t *testing.T) {
+	prop, _ := NewMultiValuedProperty("scopes", []string{"openid", "profile"}, false)
 
-	jsonData, err := json.Marshal(pv)
+	dto, err := prop.ToPropertyDTO()
 	if err != nil {
-		t.Fatalf("Marshal failed: %v", err)
+		t.Fatalf("ToPropertyDTO failed: %v", err)
 	}
 
-	expected := `"test_value"`
-	if string(jsonData) != expected {
-		t.Errorf("Expected %s, got %s", expected, string(jsonData))
-	}
-}
-
-func TestPropertiesMap_GetSetArray(t *testing.T) {
-	props := make(PropertiesMap)
-
-	scopes := []string{"openid", "profile"}
-	props.SetArray("scope", scopes)
-
-	result := props.GetArray("scope")
-	if !reflect.DeepEqual(result, scopes) {
-		t.Errorf("Expected %v, got %v", scopes, result)
-	}
-}
-
-func TestPropertiesMap_GetSetString(t *testing.T) {
-	props := make(PropertiesMap)
-
-	props.SetString("client_id", "abc123")
-
-	result := props.GetString("client_id")
-	if result != "abc123" {
-		t.Errorf("Expected 'abc123', got '%s'", result)
-	}
-}
-
-func TestPropertyValueDTO_AsString_Array(t *testing.T) {
-	pv := NewArrayPropertyValue([]string{"openid", "profile", "email"})
-
-	result := pv.AsString()
-	expected := "openid,profile,email"
-
-	if result != expected {
-		t.Errorf("Expected '%s', got '%s'", expected, result)
-	}
-}
-
-func TestPropertyValueDTO_AsString_String(t *testing.T) {
-	pv := NewStringPropertyValue("test_value")
-
-	result := pv.AsString()
-	expected := "test_value"
-
-	if result != expected {
-		t.Errorf("Expected '%s', got '%s'", expected, result)
-	}
-}
-
-func TestPropertiesMap_MissingKey(t *testing.T) {
-	props := make(PropertiesMap)
-
-	// Test getting non-existent string
-	result := props.GetString("nonexistent")
-	if result != "" {
-		t.Errorf("Expected empty string, got '%s'", result)
+	if dto.Name != "scopes" {
+		t.Errorf("Expected name 'scopes', got '%s'", dto.Name)
 	}
 
-	// Test getting non-existent array
-	arrResult := props.GetArray("nonexistent")
-	if len(arrResult) != 0 {
-		t.Errorf("Expected empty array, got %v", arrResult)
+	if !dto.IsMultiValued {
+		t.Error("Expected IsMultiValued to be true")
+	}
+
+	if !reflect.DeepEqual(dto.Values, []string{"openid", "profile"}) {
+		t.Errorf("Expected ['openid', 'profile'], got %v", dto.Values)
 	}
 }
