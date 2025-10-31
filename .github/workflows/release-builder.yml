@@ -34,7 +34,7 @@ env:
 jobs:
   build-thunder:  
     name: ⚡ Build Thunder  
-    runs-on: ubuntu-latest  
+    runs-on: ubuntu-latest
     steps:  
       - name: 📥 Checkout Code  
         uses: actions/checkout@v4  
@@ -360,7 +360,7 @@ jobs:
       - name: ⚙️ Set up Node.js for Version Update
         uses: ./.github/actions/setup-node
         with:
-          node-version: '20'
+          node-version: 'lts/*'
           package-manager: 'npm'
           dependency-path: 'samples/apps/oauth'
 
@@ -414,7 +414,7 @@ jobs:
       - name: ⚙️ Set up Node.js Environment
         uses: ./.github/actions/setup-node
         with:
-          node-version: '20'
+          node-version: 'lts/*'
           package-manager: 'npm'
           dependency-path: 'samples/apps/oauth'
 
@@ -493,7 +493,7 @@ jobs:
       - name: ⚙️ Set up Node.js Environment
         uses: ./.github/actions/setup-node
         with:
-          node-version: '20'
+          node-version: 'lts/*'
           package-manager: 'npm'
           dependency-path: 'samples/apps/oauth'
 
