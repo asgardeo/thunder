@@ -78,6 +78,20 @@ var (
 		Error:            "Update not allowed",
 		ErrorDescription: "Updating the sender type is not allowed",
 	}
+	// ErrorInvalidSenderProperty is the error returned when an invalid sender property is provided.
+	ErrorInvalidSenderProperty = serviceerror.ServiceError{
+		Type:             serviceerror.ClientErrorType,
+		Code:             "MNS-1016",
+		Error:            "Invalid sender property",
+		ErrorDescription: "One or more sender properties are invalid or empty",
+	}
+	// ErrorUnsupportedSenderProperty is the error returned when an unsupported sender property is provided.
+	ErrorUnsupportedSenderProperty = serviceerror.ServiceError{
+		Type:             serviceerror.ClientErrorType,
+		Code:             "MNS-1017",
+		Error:            "Unsupported sender property",
+		ErrorDescription: "One or more sender properties are not supported for the specified provider",
+	}
 	// ErrorRequestedSenderIsNotOfExpectedType is the error when the requested sender is not of the expected type.
 	ErrorRequestedSenderIsNotOfExpectedType = serviceerror.ServiceError{
 		Type:             serviceerror.ClientErrorType,

@@ -91,6 +91,9 @@ func validateTwilioProperties(properties []cmodels.Property) error {
 		"auth_token":  false,
 		"sender_id":   false,
 	}
+	if err := validatePropertyNames(properties, common.SupportedTwilioProperties); err != nil {
+		return err
+	}
 	err := validateSenderProperties(properties, requiredProps)
 	if err != nil {
 		return err
@@ -126,6 +129,10 @@ func validateVonageProperties(properties []cmodels.Property) error {
 		"api_secret": false,
 		"sender_id":  false,
 	}
+	// Validate that all properties are supported for Vonage
+	if err := validatePropertyNames(properties, common.SupportedVonageProperties); err != nil {
+		return err
+	}
 	return validateSenderProperties(properties, requiredProps)
 }
 
@@ -133,6 +140,10 @@ func validateVonageProperties(properties []cmodels.Property) error {
 func validateCustomProperties(properties []cmodels.Property) error {
 	validHTTPMethods := []string{http.MethodGet, http.MethodPost}
 	validContentTypes := []string{"JSON", "FORM"}
+	// Validate that all properties are supported for Custom provider
+	if err := validatePropertyNames(properties, common.SupportedCustomProperties); err != nil {
+		return err
+	}
 
 	url := ""
 	httpMethod := ""
@@ -208,4 +219,26 @@ func getMessageClient(sender common.NotificationSenderDTO) (message.MessageClien
 	}
 
 	return _client, nil
+}
+func validatePropertyNames(properties []cmodels.Property, supportedProperties []string) error {
+	for _, prop := range properties {
+		propName := prop.GetName()
+		
+		// Check if property name is empty
+		if strings.TrimSpace(propName) == "" {
+			return errors.New("property names cannot be empty")
+		}
+		
+		// Check if property value is empty
+		propValue, err := prop.GetValue()
+		if err != nil || strings.TrimSpace(propValue) == "" {
+			return fmt.Errorf("property value cannot be empty for property '%s'", propName)
+		}
+		
+		// Check if property is in the supported list
+		if !slices.Contains(supportedProperties, propName) {
+			return fmt.Errorf("property '%s' is not supported for this provider", propName)
+		}
+	}
+	return nil
 }
