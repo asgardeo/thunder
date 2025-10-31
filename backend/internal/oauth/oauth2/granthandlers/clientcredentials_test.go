@@ -36,6 +36,7 @@ import (
 
 // nolint:gosec // Test token, not a real credential
 const testJWTToken = "test-jwt-token-123"
+const testResourceURL = "https://mcp.example.com/mcp"
 
 type ClientCredentialsGrantHandlerTestSuite struct {
 	suite.Suite
@@ -294,4 +295,74 @@ func (suite *ClientCredentialsGrantHandlerTestSuite) TestHandleGrant_TokenTiming
 	assert.LessOrEqual(suite.T(), result.AccessToken.IssuedAt, endTime)
 
 	suite.mockJWTService.AssertExpectations(suite.T())
+}
+
+// Resource Parameter Tests (RFC 8707) for Client Credentials Grant
+
+func (suite *ClientCredentialsGrantHandlerTestSuite) TestHandleGrant_WithResourceParameter() {
+	tokenRequest := &model.TokenRequest{
+		GrantType:    "client_credentials",
+		ClientID:     "client123",
+		ClientSecret: "secret123",
+		Scope:        "read",
+		Resource:     "https://mcp.example.com/mcp",
+	}
+
+	ctx := &model.TokenContext{
+		TokenAttributes: make(map[string]interface{}),
+	}
+
+	capturedClaims := map[string]interface{}{}
+	suite.mockJWTService.On("GenerateJWT", mock.Anything, mock.Anything, mock.Anything,
+		mock.Anything, mock.MatchedBy(func(claims map[string]interface{}) bool {
+			for k, v := range claims {
+				capturedClaims[k] = v
+			}
+			return true
+		})).Return(testJWTToken, int64(1234567890), nil)
+
+	result, errResp := suite.handler.HandleGrant(tokenRequest, suite.oauthApp, ctx)
+
+	assert.Nil(suite.T(), errResp)
+	assert.NotNil(suite.T(), result)
+
+	// Verify resource was included in audience claim
+	assert.NotNil(suite.T(), capturedClaims["aud"])
+	assert.Equal(suite.T(), "https://mcp.example.com/mcp", capturedClaims["aud"])
+
+	// Verify context attributes use resource as audience
+	assert.Equal(suite.T(), "https://mcp.example.com/mcp", ctx.TokenAttributes["aud"])
+}
+
+func (suite *ClientCredentialsGrantHandlerTestSuite) TestHandleGrant_WithoutResourceParameter() {
+	tokenRequest := &model.TokenRequest{
+		GrantType:    "client_credentials",
+		ClientID:     "client123",
+		ClientSecret: "secret123",
+		Scope:        "read",
+	}
+
+	ctx := &model.TokenContext{
+		TokenAttributes: make(map[string]interface{}),
+	}
+
+	capturedClaims := map[string]interface{}{}
+	suite.mockJWTService.On("GenerateJWT", mock.Anything, mock.Anything, mock.Anything,
+		mock.Anything, mock.MatchedBy(func(claims map[string]interface{}) bool {
+			for k, v := range claims {
+				capturedClaims[k] = v
+			}
+			return true
+		})).Return(testJWTToken, int64(1234567890), nil)
+
+	result, errResp := suite.handler.HandleGrant(tokenRequest, suite.oauthApp, ctx)
+
+	assert.Nil(suite.T(), errResp)
+	assert.NotNil(suite.T(), result)
+
+	// Verify no audience claim in JWT
+	assert.Nil(suite.T(), capturedClaims["aud"])
+
+	// Verify context attributes use client ID as audience when no resource
+	assert.Equal(suite.T(), "client123", ctx.TokenAttributes["aud"])
 }

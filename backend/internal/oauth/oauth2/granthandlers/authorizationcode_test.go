@@ -205,7 +205,11 @@ func (suite *AuthorizationCodeGrantHandlerTestSuite) TestHandleGrant_Success() {
 		TokenAttributes: make(map[string]interface{}),
 	}
 
-	result, err := suite.handler.HandleGrant(suite.testTokenReq, suite.oauthApp, ctx)
+	// Create token request with matching resource
+	tokenReqWithResource := *suite.testTokenReq
+	tokenReqWithResource.Resource = testResourceURL
+
+	result, err := suite.handler.HandleGrant(&tokenReqWithResource, suite.oauthApp, ctx)
 
 	assert.Nil(suite.T(), err)
 	assert.NotNil(suite.T(), result)
@@ -232,7 +236,11 @@ func (suite *AuthorizationCodeGrantHandlerTestSuite) TestHandleGrant_InvalidAuth
 		TokenAttributes: make(map[string]interface{}),
 	}
 
-	result, err := suite.handler.HandleGrant(suite.testTokenReq, suite.oauthApp, ctx)
+	// Create token request with matching resource
+	tokenReqWithResource := *suite.testTokenReq
+	tokenReqWithResource.Resource = testResourceURL
+
+	result, err := suite.handler.HandleGrant(&tokenReqWithResource, suite.oauthApp, ctx)
 
 	assert.Nil(suite.T(), result)
 	assert.NotNil(suite.T(), err)
@@ -263,7 +271,11 @@ func (suite *AuthorizationCodeGrantHandlerTestSuite) TestHandleGrant_JWTGenerati
 		TokenAttributes: make(map[string]interface{}),
 	}
 
-	result, err := suite.handler.HandleGrant(suite.testTokenReq, suite.oauthApp, ctx)
+	// Create token request with matching resource
+	tokenReqWithResource := *suite.testTokenReq
+	tokenReqWithResource.Resource = testResourceURL
+
+	result, err := suite.handler.HandleGrant(&tokenReqWithResource, suite.oauthApp, ctx)
 
 	assert.Nil(suite.T(), result)
 	assert.NotNil(suite.T(), err)
@@ -297,7 +309,11 @@ func (suite *AuthorizationCodeGrantHandlerTestSuite) TestHandleGrant_EmptyScopes
 		TokenAttributes: make(map[string]interface{}),
 	}
 
-	result, err := suite.handler.HandleGrant(suite.testTokenReq, suite.oauthApp, ctx)
+	// Create token request with matching resource
+	tokenReqWithResource := *suite.testTokenReq
+	tokenReqWithResource.Resource = testResourceURL
+
+	result, err := suite.handler.HandleGrant(&tokenReqWithResource, suite.oauthApp, ctx)
 
 	assert.Nil(suite.T(), err)
 	assert.NotNil(suite.T(), result)
@@ -327,7 +343,11 @@ func (suite *AuthorizationCodeGrantHandlerTestSuite) TestHandleGrant_NilTokenAtt
 		TokenAttributes: nil, // Nil attributes
 	}
 
-	result, err := suite.handler.HandleGrant(suite.testTokenReq, suite.oauthApp, ctx)
+	// Create token request with matching resource
+	tokenReqWithResource := *suite.testTokenReq
+	tokenReqWithResource.Resource = testResourceURL
+
+	result, err := suite.handler.HandleGrant(&tokenReqWithResource, suite.oauthApp, ctx)
 
 	assert.Nil(suite.T(), err)
 	assert.NotNil(suite.T(), result)
@@ -736,4 +756,149 @@ func (suite *AuthorizationCodeGrantHandlerTestSuite) TestHandleGrant_WithEmptyGr
 			suite.mockJWTService.AssertExpectations(suite.T())
 		})
 	}
+}
+
+// Resource Parameter Tests (RFC 8707)
+
+func (suite *AuthorizationCodeGrantHandlerTestSuite) TestHandleGrant_WithResourceParameterInAuthCode() {
+	// Set up auth code with resource parameter
+	authCodeWithResource := suite.testAuthzCode
+	authCodeWithResource.Resource = testResourceURL
+
+	suite.mockAuthzService.On("GetAuthorizationCodeDetails", "test-client-id", "test-auth-code").
+		Return(&authCodeWithResource, nil)
+
+	// Mock user service to return user
+	mockUser := &user.User{
+		ID:         "test-user-id",
+		Attributes: json.RawMessage(`{"email":"test@example.com","username":"testuser"}`),
+	}
+	suite.mockUserService.On("GetUser", "test-user-id").Return(mockUser, nil)
+
+	capturedClaims := map[string]interface{}{}
+	suite.mockJWTService.On("GenerateJWT", mock.Anything, mock.Anything, mock.Anything,
+		mock.Anything, mock.MatchedBy(func(claims map[string]interface{}) bool {
+			for k, v := range claims {
+				capturedClaims[k] = v
+			}
+			return true
+		})).Return("mock-jwt-token", int64(12345), nil)
+
+	ctx := &model.TokenContext{
+		TokenAttributes: make(map[string]interface{}),
+	}
+
+	// Create token request with matching resource
+	tokenReqWithResource := *suite.testTokenReq
+	tokenReqWithResource.Resource = testResourceURL
+
+	result, err := suite.handler.HandleGrant(&tokenReqWithResource, suite.oauthApp, ctx)
+
+	assert.Nil(suite.T(), err)
+	assert.NotNil(suite.T(), result)
+
+	// Verify resource was included in audience claim
+	assert.NotNil(suite.T(), capturedClaims["aud"])
+	assert.Equal(suite.T(), testResourceURL, capturedClaims["aud"])
+}
+
+func (suite *AuthorizationCodeGrantHandlerTestSuite) TestHandleGrant_ResourceParameterMismatch() {
+	// Set up auth code with different resource than token request
+	authCodeWithResource := suite.testAuthzCode
+	authCodeWithResource.Resource = "https://api.example.com/resource"
+
+	suite.mockAuthzService.On("GetAuthorizationCodeDetails", "test-client-id", "test-auth-code").
+		Return(&authCodeWithResource, nil)
+
+	// Create token request with different resource
+	tokenReqWithResource := *suite.testTokenReq
+	tokenReqWithResource.Resource = testResourceURL
+
+	ctx := &model.TokenContext{
+		TokenAttributes: make(map[string]interface{}),
+	}
+
+	result, err := suite.handler.HandleGrant(&tokenReqWithResource, suite.oauthApp, ctx)
+
+	assert.NotNil(suite.T(), err)
+	assert.Nil(suite.T(), result)
+	assert.Equal(suite.T(), constants.ErrorInvalidTarget, err.Error)
+	assert.Equal(suite.T(), "Resource parameter mismatch", err.ErrorDescription)
+}
+
+func (suite *AuthorizationCodeGrantHandlerTestSuite) TestHandleGrant_ResourceParameterMatch() {
+	// Set up auth code with resource parameter
+	authCodeWithResource := suite.testAuthzCode
+	authCodeWithResource.Resource = testResourceURL
+
+	suite.mockAuthzService.On("GetAuthorizationCodeDetails", "test-client-id", "test-auth-code").
+		Return(&authCodeWithResource, nil)
+
+	// Mock user service to return user
+	mockUser := &user.User{
+		ID:         "test-user-id",
+		Attributes: json.RawMessage(`{"email":"test@example.com","username":"testuser"}`),
+	}
+	suite.mockUserService.On("GetUser", "test-user-id").Return(mockUser, nil)
+
+	capturedClaims := map[string]interface{}{}
+	suite.mockJWTService.On("GenerateJWT", mock.Anything, mock.Anything, mock.Anything,
+		mock.Anything, mock.MatchedBy(func(claims map[string]interface{}) bool {
+			for k, v := range claims {
+				capturedClaims[k] = v
+			}
+			return true
+		})).Return("mock-jwt-token", int64(12345), nil)
+
+	// Create token request with matching resource
+	tokenReqWithResource := *suite.testTokenReq
+	tokenReqWithResource.Resource = testResourceURL
+
+	ctx := &model.TokenContext{
+		TokenAttributes: make(map[string]interface{}),
+	}
+
+	result, err := suite.handler.HandleGrant(&tokenReqWithResource, suite.oauthApp, ctx)
+
+	assert.Nil(suite.T(), err)
+	assert.NotNil(suite.T(), result)
+	assert.Equal(suite.T(), testResourceURL, capturedClaims["aud"])
+}
+
+func (suite *AuthorizationCodeGrantHandlerTestSuite) TestHandleGrant_NoResourceParameter() {
+	// Auth code without resource parameter
+	suite.mockAuthzService.On("GetAuthorizationCodeDetails", "test-client-id", "test-auth-code").
+		Return(&suite.testAuthzCode, nil)
+
+	// Mock user service to return user
+	mockUser := &user.User{
+		ID:         "test-user-id",
+		Attributes: json.RawMessage(`{"email":"test@example.com","username":"testuser"}`),
+	}
+	suite.mockUserService.On("GetUser", "test-user-id").Return(mockUser, nil)
+
+	capturedClaims := map[string]interface{}{}
+	suite.mockJWTService.On("GenerateJWT", mock.Anything, mock.Anything, mock.Anything,
+		mock.Anything, mock.MatchedBy(func(claims map[string]interface{}) bool {
+			for k, v := range claims {
+				capturedClaims[k] = v
+			}
+			return true
+		})).Return("mock-jwt-token", int64(12345), nil)
+
+	ctx := &model.TokenContext{
+		TokenAttributes: make(map[string]interface{}),
+	}
+
+	// Create token request with matching resource
+	tokenReqWithResource := *suite.testTokenReq
+	tokenReqWithResource.Resource = testResourceURL
+
+	result, err := suite.handler.HandleGrant(&tokenReqWithResource, suite.oauthApp, ctx)
+
+	assert.Nil(suite.T(), err)
+	assert.NotNil(suite.T(), result)
+
+	// Verify no audience claim
+	assert.Nil(suite.T(), capturedClaims["aud"])
 }

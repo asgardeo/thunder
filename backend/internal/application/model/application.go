@@ -53,8 +53,11 @@ type ApplicationDTO struct {
 	RegistrationFlowGraphID   string
 	IsRegistrationFlowEnabled bool
 
-	URL     string
-	LogoURL string
+	URL       string
+	LogoURL   string
+	TosURI    string
+	PolicyURI string
+	Contacts  []string
 
 	Token             *TokenConfig
 	Certificate       *ApplicationCertificate
@@ -81,8 +84,11 @@ type ApplicationProcessedDTO struct {
 	RegistrationFlowGraphID   string
 	IsRegistrationFlowEnabled bool
 
-	URL     string
-	LogoURL string
+	URL       string
+	LogoURL   string
+	TosURI    string
+	PolicyURI string
+	Contacts  []string
 
 	Token             *TokenConfig
 	Certificate       *ApplicationCertificate
@@ -110,17 +116,22 @@ type ApplicationCertificate struct {
 }
 
 // ApplicationRequest represents the request structure for creating or updating an application.
+//
+//nolint:lll
 type ApplicationRequest struct {
-	Name                      string                      `json:"name"`
-	Description               string                      `json:"description"`
-	AuthFlowGraphID           string                      `json:"auth_flow_graph_id,omitempty"`
-	RegistrationFlowGraphID   string                      `json:"registration_flow_graph_id,omitempty"`
-	IsRegistrationFlowEnabled bool                        `json:"is_registration_flow_enabled"`
-	URL                       string                      `json:"url,omitempty"`
-	LogoURL                   string                      `json:"logo_url,omitempty"`
-	Token                     *TokenConfig                `json:"token,omitempty"`
-	Certificate               *ApplicationCertificate     `json:"certificate,omitempty"`
-	InboundAuthConfig         []InboundAuthConfigComplete `json:"inbound_auth_config,omitempty"`
+	Name                      string                      `json:"name" yaml:"name"`
+	Description               string                      `json:"description" yaml:"description"`
+	AuthFlowGraphID           string                      `json:"auth_flow_graph_id,omitempty" yaml:"auth_flow_graph_id,omitempty"`
+	RegistrationFlowGraphID   string                      `json:"registration_flow_graph_id,omitempty" yaml:"registration_flow_graph_id,omitempty"`
+	IsRegistrationFlowEnabled bool                        `json:"is_registration_flow_enabled" yaml:"is_registration_flow_enabled"`
+	URL                       string                      `json:"url,omitempty" yaml:"url,omitempty"`
+	LogoURL                   string                      `json:"logo_url,omitempty" yaml:"logo_url,omitempty"`
+	Token                     *TokenConfig                `json:"token,omitempty" yaml:"token,omitempty"`
+	Certificate               *ApplicationCertificate     `json:"certificate,omitempty" yaml:"certificate,omitempty"`
+	TosURI                    string                      `json:"tos_uri,omitempty" yaml:"tos_uri,omitempty"`
+	PolicyURI                 string                      `json:"policy_uri,omitempty" yaml:"policy_uri,omitempty"`
+	Contacts                  []string                    `json:"contacts,omitempty" yaml:"contacts,omitempty"`
+	InboundAuthConfig         []InboundAuthConfigComplete `json:"inbound_auth_config,omitempty" yaml:"inbound_auth_config,omitempty"`
 }
 
 // ApplicationCompleteResponse represents the complete response structure for an application.
@@ -136,6 +147,9 @@ type ApplicationCompleteResponse struct {
 	LogoURL                   string                      `json:"logo_url,omitempty"`
 	Token                     *TokenConfig                `json:"token,omitempty"`
 	Certificate               *ApplicationCertificate     `json:"certificate,omitempty"`
+	TosURI                    string                      `json:"tos_uri,omitempty"`
+	PolicyURI                 string                      `json:"policy_uri,omitempty"`
+	Contacts                  []string                    `json:"contacts,omitempty"`
 	InboundAuthConfig         []InboundAuthConfigComplete `json:"inbound_auth_config,omitempty"`
 }
 
@@ -152,6 +166,9 @@ type ApplicationGetResponse struct {
 	LogoURL                   string                  `json:"logo_url,omitempty"`
 	Token                     *TokenConfig            `json:"token,omitempty"`
 	Certificate               *ApplicationCertificate `json:"certificate,omitempty"`
+	TosURI                    string                  `json:"tos_uri,omitempty"`
+	PolicyURI                 string                  `json:"policy_uri,omitempty"`
+	Contacts                  []string                `json:"contacts,omitempty"`
 	InboundAuthConfig         []InboundAuthConfig     `json:"inbound_auth_config,omitempty"`
 }
 
@@ -182,5 +199,5 @@ type InboundAuthConfig struct {
 // InboundAuthConfigComplete represents the complete structure for inbound authentication configuration.
 type InboundAuthConfigComplete struct {
 	Type           InboundAuthType         `json:"type"`
-	OAuthAppConfig *OAuthAppConfigComplete `json:"config,omitempty"`
+	OAuthAppConfig *OAuthAppConfigComplete `json:"config,omitempty" yaml:"config,omitempty"`
 }

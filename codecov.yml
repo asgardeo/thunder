@@ -21,6 +21,10 @@ codecov:
   notify:
     wait_for_ci: true
 
+flags:
+  frontend-apps-develop-unit:
+    carryforward: false
+
 coverage:
   status:
     project:
@@ -29,10 +33,16 @@ coverage:
         target: auto
         threshold: 1%
         informational: false
+      frontend-apps-develop-unit:
+        flags:
+          - frontend-apps-develop-unit
+        target: auto
+        threshold: 1%
+        informational: false
     patch:
       default:
         target: 80%
-        threshold: 60%
+        threshold: 1%
         informational: false
 
 ignore:
@@ -40,5 +50,5 @@ ignore:
   - "**/*_test.go"
   - "tests/**"
   - "samples/**"
-  - "frontend/**"
   - "docs/**"
+  - "api/**"

@@ -55,6 +55,7 @@ type IDPAuthInitResponseDTO struct {
 type IDPAuthFinishRequestDTO struct {
 	SessionToken  string `json:"session_token"`
 	SkipAssertion bool   `json:"skip_assertion"`
+	Assertion     string `json:"assertion,omitempty"`
 	Code          string `json:"code"`
 }
 
@@ -74,5 +75,6 @@ type SendOTPAuthResponseDTO struct {
 type VerifyOTPAuthRequestDTO struct {
 	SessionToken  string `json:"session_token"`
 	SkipAssertion bool   `json:"skip_assertion"`
+	Assertion     string `json:"assertion,omitempty"`
 	OTP           string `json:"otp"`
 }

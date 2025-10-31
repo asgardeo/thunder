@@ -27,4 +27,5 @@ type OAuthParameters struct {
 	Scopes              string
 	CodeChallenge       string
 	CodeChallengeMethod string
+	Resource            string
 }

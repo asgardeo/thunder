@@ -28,18 +28,19 @@ import (
 
 // FlowContextWithUserDataDB represents the combined flow context and user data.
 type FlowContextWithUserDataDB struct {
-	FlowID          string
-	AppID           string
-	CurrentNodeID   *string
-	CurrentActionID *string
-	GraphID         string
-	RuntimeData     *string
-	IsAuthenticated bool
-	UserID          *string
-	UserInputs      *string
-	UserAttributes  *string
-	CreatedAt       time.Time
-	UpdatedAt       time.Time
+	FlowID           string
+	AppID            string
+	CurrentNodeID    *string
+	CurrentActionID  *string
+	GraphID          string
+	RuntimeData      *string
+	IsAuthenticated  bool
+	UserID           *string
+	UserInputs       *string
+	UserAttributes   *string
+	ExecutionHistory *string
+	CreatedAt        time.Time
+	UpdatedAt        time.Time
 }
 
 // ToEngineContext converts the database model to the flow engine context.
@@ -84,6 +85,16 @@ func (f *FlowContextWithUserDataDB) ToEngineContext(graph model.GraphInterface) 
 		authenticatedUser.UserID = *f.UserID
 	}
 
+	// Parse execution history
+	var executionHistory []model.NodeExecutionRecord
+	if f.ExecutionHistory != nil {
+		if err := json.Unmarshal([]byte(*f.ExecutionHistory), &executionHistory); err != nil {
+			return model.EngineContext{}, err
+		}
+	} else {
+		executionHistory = make([]model.NodeExecutionRecord, 0)
+	}
+
 	// Get current node from graph if available
 	var currentNode model.NodeInterface
 	if f.CurrentNodeID != nil && graph != nil {
@@ -108,6 +119,7 @@ func (f *FlowContextWithUserDataDB) ToEngineContext(graph model.GraphInterface) 
 		CurrentActionID:   currentActionID,
 		Graph:             graph,
 		AuthenticatedUser: authenticatedUser,
+		ExecutionHistory:  executionHistory,
 	}, nil
 }
 
@@ -133,6 +145,13 @@ func FromEngineContext(ctx model.EngineContext) (*FlowContextWithUserDataDB, err
 		return nil, err
 	}
 	userAttributes := string(userAttributesJSON)
+
+	// Serialize execution history
+	executionHistoryJSON, err := json.Marshal(ctx.ExecutionHistory)
+	if err != nil {
+		return nil, err
+	}
+	executionHistory := string(executionHistoryJSON)
 
 	// Get current node ID
 	var currentNodeID *string
@@ -160,15 +179,16 @@ func FromEngineContext(ctx model.EngineContext) (*FlowContextWithUserDataDB, err
 	}
 
 	return &FlowContextWithUserDataDB{
-		FlowID:          ctx.FlowID,
-		AppID:           ctx.AppID,
-		CurrentNodeID:   currentNodeID,
-		CurrentActionID: currentActionID,
-		GraphID:         graphID,
-		RuntimeData:     &runtimeData,
-		IsAuthenticated: ctx.AuthenticatedUser.IsAuthenticated,
-		UserID:          authenticatedUserID,
-		UserInputs:      &userInputData,
-		UserAttributes:  &userAttributes,
+		FlowID:           ctx.FlowID,
+		AppID:            ctx.AppID,
+		CurrentNodeID:    currentNodeID,
+		CurrentActionID:  currentActionID,
+		GraphID:          graphID,
+		RuntimeData:      &runtimeData,
+		IsAuthenticated:  ctx.AuthenticatedUser.IsAuthenticated,
+		UserID:           authenticatedUserID,
+		UserInputs:       &userInputData,
+		UserAttributes:   &userAttributes,
+		ExecutionHistory: &executionHistory,
 	}, nil
 }

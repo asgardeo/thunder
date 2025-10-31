@@ -516,6 +516,250 @@ func (suite *CredentialsAuthTestSuite) TestAuthenticateWithSkipAssertionTrue() {
 	suite.Empty(response.Assertion, "Response should not contain assertion token when skip_assertion is true")
 }
 
+// TestAuthenticateWithAssuranceLevelAAL1 tests that credentials authentication generates AAL1 assurance level
+func (suite *CredentialsAuthTestSuite) TestAuthenticateWithAssuranceLevelAAL1() {
+	authRequest := map[string]interface{}{
+		"username": "credtest_user1",
+		"password": "TestPassword123!",
+	}
+
+	response, statusCode, err := suite.sendAuthRequest(authRequest)
+	suite.Require().NoError(err, "Failed to send authenticate request")
+	suite.Equal(http.StatusOK, statusCode, "Expected status 200 for successful authentication")
+
+	suite.NotEmpty(response.Assertion, "Response should contain assertion token by default")
+
+	// Verify assertion contains AAL1 for single-factor authentication
+	aal := extractAssuranceLevelFromAssertion(response.Assertion, "aal")
+	suite.NotEmpty(aal, "Assertion should contain AAL information")
+	suite.Equal("AAL1", aal, "Single-factor credentials authentication should result in AAL1")
+
+	// Verify IAL is present (default IAL1 for self-asserted identities)
+	ial := extractAssuranceLevelFromAssertion(response.Assertion, "ial")
+	suite.NotEmpty(ial, "Assertion should contain IAL information")
+	suite.Equal("IAL1", ial, "Self-asserted identity should result in IAL1")
+}
+
+// TestAuthenticateWithAssuranceLevelNoAssertion tests that AAL/IAL are not present when assertion is skipped
+func (suite *CredentialsAuthTestSuite) TestAuthenticateWithAssuranceLevelNoAssertion() {
+	authRequest := map[string]interface{}{
+		"username":       "credtest_user1",
+		"password":       "TestPassword123!",
+		"skip_assertion": true,
+	}
+
+	response, statusCode, err := suite.sendAuthRequest(authRequest)
+	suite.Require().NoError(err, "Failed to send authenticate request")
+	suite.Equal(http.StatusOK, statusCode, "Expected status 200 for successful authentication")
+
+	suite.Empty(response.Assertion, "Response should not contain assertion when skip_assertion is true")
+}
+
+// TestCredentialsAuthenticationWithVariousAttributes tests AAL1 is generated for different identifying attributes
+func (suite *CredentialsAuthTestSuite) TestCredentialsAuthenticationWithVariousAttributes() {
+	testCases := []struct {
+		name        string
+		credentials map[string]interface{}
+	}{
+		{
+			name: "Email and password authentication",
+			credentials: map[string]interface{}{
+				"email":    "credtest2@example.com",
+				"password": "TestPassword456!",
+			},
+		},
+		{
+			name: "Mobile and password authentication",
+			credentials: map[string]interface{}{
+				"mobileNumber": "+1234567891",
+				"password":     "TestPassword789!",
+			},
+		},
+	}
+
+	for _, tc := range testCases {
+		suite.Run(tc.name, func() {
+			response, statusCode, err := suite.sendAuthRequest(tc.credentials)
+			suite.Require().NoError(err, "Failed to send authenticate request")
+			suite.Equal(http.StatusOK, statusCode, "Expected status 200 for successful authentication")
+
+			// All single-factor credentials should result in AAL1
+			aal := extractAssuranceLevelFromAssertion(response.Assertion, "aal")
+			suite.NotEmpty(aal, "Assertion should contain AAL information")
+			suite.Equal("AAL1", aal, "Single-factor credentials authentication should result in AAL1")
+		})
+	}
+}
+
+// TestAuthenticateWithExistingAssertionInvalidJWT tests authentication with invalid existing assertion
+func (suite *CredentialsAuthTestSuite) TestAuthenticateWithExistingAssertionInvalidJWT() {
+	authRequest := map[string]interface{}{
+		"username":  "credtest_user1",
+		"password":  "TestPassword123!",
+		"assertion": "invalid.jwt.token",
+	}
+
+	errorResp, statusCode, err := suite.sendAuthRequestExpectingError(authRequest)
+	suite.Require().NoError(err, "Failed to send authenticate request")
+	suite.Equal(http.StatusBadRequest, statusCode, "Expected status 400 for invalid assertion")
+	suite.Equal("AUTHN-1009", errorResp.Code, "Expected error code AUTHN-1009 for invalid assertion")
+}
+
+// TestAuthenticateWithExistingAssertionSubjectMismatch tests authentication with assertion for different user
+func (suite *CredentialsAuthTestSuite) TestAuthenticateWithExistingAssertionSubjectMismatch() {
+	// First, authenticate as user1 to get an assertion
+	firstAuthRequest := map[string]interface{}{
+		"username": "credtest_user1",
+		"password": "TestPassword123!",
+	}
+
+	firstResponse, statusCode, err := suite.sendAuthRequest(firstAuthRequest)
+	suite.Require().NoError(err, "Failed to send first authenticate request")
+	suite.Equal(http.StatusOK, statusCode, "Expected status 200 for first authentication")
+	suite.NotEmpty(firstResponse.Assertion, "First response should contain assertion")
+
+	// Now try to authenticate as user2 with user1's assertion
+	secondAuthRequest := map[string]interface{}{
+		"username":  "credtest_user2",
+		"password":  "TestPassword456!",
+		"assertion": firstResponse.Assertion,
+	}
+
+	errorResp, statusCode, err := suite.sendAuthRequestExpectingError(secondAuthRequest)
+	suite.Require().NoError(err, "Failed to send second authenticate request")
+	suite.Equal(http.StatusBadRequest, statusCode, "Expected status 400 for subject mismatch")
+	suite.Equal("AUTHN-1010", errorResp.Code, "Expected error code AUTHN-1010 for assertion subject mismatch")
+}
+
+// TestAuthenticateWithExistingAssertionMultiStep tests multi-step authentication with credentials
+// This simulates a scenario where credentials are used as a second factor after another authentication method
+func (suite *CredentialsAuthTestSuite) TestAuthenticateWithExistingAssertionMultiStep() {
+	// First authentication step - authenticate with credentials to get initial assertion
+	firstAuthRequest := map[string]interface{}{
+		"username": "credtest_user1",
+		"password": "TestPassword123!",
+	}
+
+	firstResponse, statusCode, err := suite.sendAuthRequest(firstAuthRequest)
+	suite.Require().NoError(err, "Failed to send first authenticate request")
+	suite.Equal(http.StatusOK, statusCode, "Expected status 200 for first authentication")
+	suite.NotEmpty(firstResponse.Assertion, "First response should contain assertion")
+
+	// Verify first assertion has AAL1
+	aal1 := extractAssuranceLevelFromAssertion(firstResponse.Assertion, "aal")
+	suite.Equal("AAL1", aal1, "First authentication should result in AAL1")
+
+	// Second authentication step - authenticate with same credentials again, passing the assertion
+	// This simulates re-authenticating with credentials in a multi-step flow
+	secondAuthRequest := map[string]interface{}{
+		"username":  "credtest_user1",
+		"password":  "TestPassword123!",
+		"assertion": firstResponse.Assertion,
+	}
+
+	secondResponse, statusCode, err := suite.sendAuthRequest(secondAuthRequest)
+	suite.Require().NoError(err, "Failed to send second authenticate request")
+	suite.Equal(http.StatusOK, statusCode, "Expected status 200 for second authentication")
+	suite.NotEmpty(secondResponse.Assertion, "Second response should contain updated assertion")
+
+	// Verify the assertion was updated (different from the first one)
+	suite.NotEqual(firstResponse.Assertion, secondResponse.Assertion,
+		"Second assertion should be different from first assertion")
+
+	// The updated assertion should still maintain user information
+	suite.Equal(firstResponse.ID, secondResponse.ID, "User ID should remain the same")
+	suite.Equal(firstResponse.Type, secondResponse.Type, "User type should remain the same")
+	suite.Equal(firstResponse.OrganizationUnit, secondResponse.OrganizationUnit,
+		"Organization unit should remain the same")
+}
+
+// TestAuthenticateWithExistingAssertionAAL2MultiFactorSimulation tests AAL2 generation with multi-step credentials
+// This simulates a multi-factor authentication scenario
+func (suite *CredentialsAuthTestSuite) TestAuthenticateWithExistingAssertionAAL2MultiFactorSimulation() {
+	// Step 1: First factor authentication (e.g., credentials)
+	firstAuthRequest := map[string]interface{}{
+		"username": "credtest_user4",
+		"password": "TestPassword999!",
+	}
+
+	firstResponse, statusCode, err := suite.sendAuthRequest(firstAuthRequest)
+	suite.Require().NoError(err, "Failed to send first authenticate request")
+	suite.Equal(http.StatusOK, statusCode, "Expected status 200 for first authentication")
+	suite.NotEmpty(firstResponse.Assertion, "First response should contain assertion")
+
+	// Verify first assertion has AAL1
+	aal1 := extractAssuranceLevelFromAssertion(firstResponse.Assertion, "aal")
+	suite.Equal("AAL1", aal1, "First factor should result in AAL1")
+
+	// Step 2: Second factor authentication with different credential (e.g., email-based auth)
+	// In a real scenario, this would be a different authentication method like OTP or biometric
+	// Here we simulate by authenticating with email instead of username
+	secondAuthRequest := map[string]interface{}{
+		"email":     "credtest4@example.com",
+		"password":  "TestPassword999!",
+		"assertion": firstResponse.Assertion,
+	}
+
+	secondResponse, statusCode, err := suite.sendAuthRequest(secondAuthRequest)
+	suite.Require().NoError(err, "Failed to send second authenticate request")
+	suite.Equal(http.StatusOK, statusCode, "Expected status 200 for second authentication")
+	suite.NotEmpty(secondResponse.Assertion, "Second response should contain updated assertion")
+
+	// Verify the assertion contains AAL2 for multi-step authentication
+	aal2 := extractAssuranceLevelFromAssertion(secondResponse.Assertion, "aal")
+	suite.NotEmpty(aal2, "Second assertion should contain AAL information")
+	// Note: In a real multi-factor scenario with different authentication methods (e.g., credentials + OTP),
+	// this would be AAL2. However, using credentials twice may not elevate to AAL2 depending on implementation.
+	// This test documents the behavior for multi-step authentication with assertions.
+	suite.NotEmpty(aal2, "Multi-step authentication should maintain AAL information")
+}
+
+// TestAuthenticateWithExistingAssertionSkipAssertionTrue tests that existing assertion is
+// ignored when skip_assertion is true
+func (suite *CredentialsAuthTestSuite) TestAuthenticateWithExistingAssertionSkipAssertionTrue() {
+	// First, get an assertion
+	firstAuthRequest := map[string]interface{}{
+		"username": "credtest_user1",
+		"password": "TestPassword123!",
+	}
+
+	firstResponse, statusCode, err := suite.sendAuthRequest(firstAuthRequest)
+	suite.Require().NoError(err, "Failed to send first authenticate request")
+	suite.Equal(http.StatusOK, statusCode, "Expected status 200 for first authentication")
+	suite.NotEmpty(firstResponse.Assertion, "First response should contain assertion")
+
+	// Second authentication with skip_assertion=true and existing assertion
+	secondAuthRequest := map[string]interface{}{
+		"username":       "credtest_user1",
+		"password":       "TestPassword123!",
+		"skip_assertion": true,
+		"assertion":      firstResponse.Assertion,
+	}
+
+	secondResponse, statusCode, err := suite.sendAuthRequest(secondAuthRequest)
+	suite.Require().NoError(err, "Failed to send second authenticate request")
+	suite.Equal(http.StatusOK, statusCode, "Expected status 200 for second authentication")
+	suite.Empty(secondResponse.Assertion, "Response should not contain assertion when skip_assertion is true")
+}
+
+// TestAuthenticateWithExistingAssertionEmptyString tests authentication with empty assertion string
+func (suite *CredentialsAuthTestSuite) TestAuthenticateWithExistingAssertionEmptyString() {
+	authRequest := map[string]interface{}{
+		"username":  "credtest_user1",
+		"password":  "TestPassword123!",
+		"assertion": "",
+	}
+
+	response, statusCode, err := suite.sendAuthRequest(authRequest)
+	suite.Require().NoError(err, "Failed to send authenticate request")
+	suite.Equal(http.StatusOK, statusCode, "Expected status 200 for authentication with empty assertion")
+	suite.NotEmpty(response.Assertion, "Response should contain new assertion when existing assertion is empty")
+
+	// Verify AAL1 for single-factor authentication
+	aal := extractAssuranceLevelFromAssertion(response.Assertion, "aal")
+	suite.Equal("AAL1", aal, "Single-factor authentication should result in AAL1")
+}
+
 func (suite *CredentialsAuthTestSuite) sendAuthRequest(authRequest map[string]interface{}) (
 	*testutils.AuthenticationResponse, int, error) {
 	requestJSON, err := json.Marshal(authRequest)

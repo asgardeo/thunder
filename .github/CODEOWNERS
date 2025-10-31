@@ -8,7 +8,7 @@
 
 /backend/cmd/server/ @ThaminduDilshan @darshanasbg @senthalan
 
-/backend/internal/application/ @ThaminduDilshan
+/backend/internal/application/ @ThaminduDilshan @thiva-k
 /backend/internal/authn/ @ThaminduDilshan
 /backend/internal/cert/ @ThaminduDilshan
 /backend/internal/executor/ @ThaminduDilshan
@@ -20,8 +20,7 @@
 /backend/internal/user/ @darshanasbg
 /backend/internal/userschema/ @darshanasbg
 
-/backend/internal/oauth/ @ThaminduDilshan
-/backend/internal/oauth/oauth2/pkce/ @thiva-k
+/backend/internal/oauth/ @ThaminduDilshan @thiva-k
 
 /backend/internal/system/ @ThaminduDilshan @darshanasbg
 /backend/internal/system/cache/ @ThaminduDilshan

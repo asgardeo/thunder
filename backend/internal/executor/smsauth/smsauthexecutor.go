@@ -24,6 +24,7 @@ import (
 	"errors"
 	"fmt"
 	"strconv"
+	"time"
 
 	authncm "github.com/asgardeo/thunder/internal/authn/common"
 	"github.com/asgardeo/thunder/internal/executor/identify"
@@ -73,8 +74,9 @@ func NewSMSOTPAuthExecutor(id, name string, properties map[string]string) *SMSOT
 	}
 
 	return &SMSOTPAuthExecutor{
-		IdentifyingExecutor:     identify.NewIdentifyingExecutor(id, name, properties),
-		internal:                *flowmodel.NewExecutor(id, name, defaultInputs, prerequisites, properties),
+		IdentifyingExecutor: identify.NewIdentifyingExecutor(id, name, properties),
+		internal: *flowmodel.NewExecutor(id, name, flowconst.ExecutorTypeAuthentication,
+			defaultInputs, prerequisites, properties),
 		userService:             user.GetUserService(),
 		notificationSvcProvider: notification.NewNotificationSenderServiceProvider(),
 	}
@@ -229,6 +231,15 @@ func (s *SMSOTPAuthExecutor) ProcessAuthFlowResponse(ctx *flowmodel.NodeContext,
 
 	execResp.AuthenticatedUser = *authenticatedUser
 	execResp.Status = flowconst.ExecComplete
+
+	// Add execution record for successful OTP verification
+	execResp.ExecutionRecord = &flowmodel.NodeExecutionRecord{
+		ExecutorName: authncm.AuthenticatorSMSOTP,
+		ExecutorType: flowconst.ExecutorTypeAuthentication,
+		Timestamp:    time.Now().Unix(),
+		Status:       flowconst.FlowStatusComplete,
+	}
+
 	return nil
 }
 
@@ -652,9 +663,11 @@ func (s *SMSOTPAuthExecutor) getAuthenticatedUser(ctx *flowmodel.NodeContext,
 	}
 
 	authenticatedUser := &authncm.AuthenticatedUser{
-		IsAuthenticated: true,
-		UserID:          user.ID,
-		Attributes:      attrs,
+		IsAuthenticated:    true,
+		UserID:             user.ID,
+		OrganizationUnitID: user.OrganizationUnit,
+		UserType:           user.Type,
+		Attributes:         attrs,
 	}
 
 	return authenticatedUser, nil

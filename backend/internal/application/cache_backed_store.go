@@ -35,12 +35,12 @@ type cachedBackedApplicationStore struct {
 }
 
 // newCachedBackedApplicationStore creates a new instance of CachedBackedApplicationStore.
-func newCachedBackedApplicationStore() applicationStoreInterface {
+func newCachedBackedApplicationStore(store applicationStoreInterface) applicationStoreInterface {
 	return &cachedBackedApplicationStore{
 		AppByIDCache:   cache.GetCache[*model.ApplicationProcessedDTO]("ApplicationByIDCache"),
 		AppByNameCache: cache.GetCache[*model.ApplicationProcessedDTO]("ApplicationByNameCache"),
 		OAuthAppCache:  cache.GetCache[*model.OAuthAppConfigProcessedDTO]("OAuthAppCache"),
-		Store:          newApplicationStore(),
+		Store:          store,
 	}
 }
 

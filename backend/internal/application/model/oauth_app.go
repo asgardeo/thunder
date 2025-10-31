@@ -38,19 +38,23 @@ type OAuthAppConfig struct {
 	PKCERequired            bool                                `json:"pkce_required"`
 	PublicClient            bool                                `json:"public_client"`
 	Token                   *OAuthTokenConfig                   `json:"token,omitempty"`
+	Scopes                  []string                            `json:"scopes,omitempty"`
 }
 
 // OAuthAppConfigComplete represents the complete structure for OAuth application configuration.
+//
+//nolint:lll
 type OAuthAppConfigComplete struct {
-	ClientID                string                              `json:"client_id"`
-	ClientSecret            string                              `json:"client_secret,omitempty"`
-	RedirectURIs            []string                            `json:"redirect_uris"`
-	GrantTypes              []oauth2const.GrantType             `json:"grant_types"`
-	ResponseTypes           []oauth2const.ResponseType          `json:"response_types"`
-	TokenEndpointAuthMethod oauth2const.TokenEndpointAuthMethod `json:"token_endpoint_auth_method"`
-	PKCERequired            bool                                `json:"pkce_required"`
-	PublicClient            bool                                `json:"public_client"`
-	Token                   *OAuthTokenConfig                   `json:"token,omitempty"`
+	ClientID                string                              `json:"client_id" yaml:"client_id"`
+	ClientSecret            string                              `json:"client_secret,omitempty" yaml:"client_secret,omitempty"`
+	RedirectURIs            []string                            `json:"redirect_uris" yaml:"redirect_uris"`
+	GrantTypes              []oauth2const.GrantType             `json:"grant_types" yaml:"grant_types"`
+	ResponseTypes           []oauth2const.ResponseType          `json:"response_types" yaml:"response_types"`
+	TokenEndpointAuthMethod oauth2const.TokenEndpointAuthMethod `json:"token_endpoint_auth_method" yaml:"token_endpoint_auth_method"`
+	PKCERequired            bool                                `json:"pkce_required" yaml:"pkce_required"`
+	PublicClient            bool                                `json:"public_client" yaml:"public_client"`
+	Token                   *OAuthTokenConfig                   `json:"token,omitempty" yaml:"token,omitempty"`
+	Scopes                  []string                            `json:"scopes,omitempty" yaml:"scopes,omitempty"`
 }
 
 // OAuthAppConfigDTO represents the data transfer object for OAuth application configuration.
@@ -65,6 +69,7 @@ type OAuthAppConfigDTO struct {
 	PKCERequired            bool
 	PublicClient            bool
 	Token                   *OAuthTokenConfig
+	Scopes                  []string
 }
 
 // IsAllowedGrantType checks if the provided grant type is allowed.
@@ -99,6 +104,7 @@ type OAuthAppConfigProcessedDTO struct {
 	PKCERequired            bool
 	PublicClient            bool
 	Token                   *OAuthTokenConfig
+	Scopes                  []string
 }
 
 // IsAllowedGrantType checks if the provided grant type is allowed.

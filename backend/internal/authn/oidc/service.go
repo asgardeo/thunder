@@ -23,7 +23,9 @@ import (
 	"slices"
 	"strings"
 
+	authncm "github.com/asgardeo/thunder/internal/authn/common"
 	authnoauth "github.com/asgardeo/thunder/internal/authn/oauth"
+	"github.com/asgardeo/thunder/internal/idp"
 	"github.com/asgardeo/thunder/internal/system/error/serviceerror"
 	"github.com/asgardeo/thunder/internal/system/jwt"
 	"github.com/asgardeo/thunder/internal/system/log"
@@ -65,10 +67,13 @@ func NewOIDCAuthnService(oauthSvc authnoauth.OAuthAuthnServiceInterface,
 		jwtSvc = jwt.GetJWTService()
 	}
 
-	return &oidcAuthnService{
+	service := &oidcAuthnService{
 		internal:   oauthSvc,
 		jwtService: jwtSvc,
 	}
+	authncm.RegisterAuthenticator(service.getMetadata())
+
+	return service
 }
 
 // GetOAuthClientConfig retrieves and validates the OAuth client configuration for the given identity provider ID.
@@ -211,4 +216,13 @@ func (s *oidcAuthnService) FetchUserInfo(idpID, accessToken string) (
 // GetInternalUser retrieves the internal user based on the external subject identifier.
 func (s *oidcAuthnService) GetInternalUser(sub string) (*user.User, *serviceerror.ServiceError) {
 	return s.internal.GetInternalUser(sub)
+}
+
+// getMetadata returns the authenticator metadata for OIDC authenticator.
+func (s *oidcAuthnService) getMetadata() authncm.AuthenticatorMeta {
+	return authncm.AuthenticatorMeta{
+		Name:          authncm.AuthenticatorOIDC,
+		Factors:       []authncm.AuthenticationFactor{authncm.FactorKnowledge},
+		AssociatedIDP: idp.IDPTypeOIDC,
+	}
 }

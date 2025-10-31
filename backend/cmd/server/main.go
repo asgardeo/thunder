@@ -31,8 +31,8 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/asgardeo/thunder/internal/cert"
 	"github.com/asgardeo/thunder/internal/system/cache"
+	"github.com/asgardeo/thunder/internal/system/cert"
 	"github.com/asgardeo/thunder/internal/system/config"
 	"github.com/asgardeo/thunder/internal/system/database/provider"
 	"github.com/asgardeo/thunder/internal/system/log"
@@ -63,16 +63,22 @@ func main() {
 	// Register the services.
 	registerServices(mux)
 
+	// Register static file handlers for frontend applications.
+	registerStaticFileHandlers(logger, mux, thunderHome)
+
 	// Setup signal handling for graceful shutdown
 	sigChan := make(chan os.Signal, 1)
 	signal.Notify(sigChan, os.Interrupt, syscall.SIGTERM)
+
+	// Load the certificate configuration.
+	tlsConfig := loadCertConfig(logger, cfg, thunderHome)
 
 	var server *http.Server
 	if cfg.Server.HTTPOnly {
 		logger.Info("TLS is not enabled, starting server without TLS")
 		server = startHTTPServer(logger, cfg, mux)
 	} else {
-		server = startTLSServer(logger, cfg, mux, thunderHome)
+		server = startTLSServer(logger, cfg, mux, tlsConfig)
 	}
 
 	// Wait for shutdown signal
@@ -130,11 +136,8 @@ func initCacheManager(logger *log.Logger) {
 	cm.Init()
 }
 
-// startTLSServer starts the HTTPS server with TLS configuration.
-func startTLSServer(logger *log.Logger, cfg *config.Config, mux *http.ServeMux, thunderHome string) *http.Server {
-	server, serverAddr := createHTTPServer(logger, cfg, mux)
-
-	// Get TLS configuration from the certificate and key files.
+// loadCertConfig loads the certificate configuration and extracts the Key ID (kid).
+func loadCertConfig(logger *log.Logger, cfg *config.Config, thunderHome string) *tls.Config {
 	sysCertSvc := cert.NewSystemCertificateService()
 	tlsConfig, err := sysCertSvc.GetTLSConfig(cfg, thunderHome)
 	if err != nil {
@@ -152,6 +155,13 @@ func startTLSServer(logger *log.Logger, cfg *config.Config, mux *http.ServeMux, 
 		CertKid:   kid,
 	}
 	config.GetThunderRuntime().SetCertConfig(certConfig)
+
+	return tlsConfig
+}
+
+// startTLSServer starts the HTTPS server with TLS configuration.
+func startTLSServer(logger *log.Logger, cfg *config.Config, mux *http.ServeMux, tlsConfig *tls.Config) *http.Server {
+	server, serverAddr := createHTTPServer(logger, cfg, mux)
 
 	ln, err := tls.Listen("tcp", serverAddr, tlsConfig)
 	if err != nil {
@@ -226,4 +236,65 @@ func gracefulShutdown(logger *log.Logger, server *http.Server) {
 	}
 
 	logger.Info("Server shutdown completed")
+}
+
+// registerStaticFileHandlers registers static file handlers for frontend applications.
+func registerStaticFileHandlers(logger *log.Logger, mux *http.ServeMux, thunderHome string) {
+	// Serve gate application from /signin
+	gateDir := path.Join(thunderHome, "apps", "gate")
+	if directoryExists(gateDir) {
+		logger.Debug("Registering static file handler for Gate application",
+			log.String("path", "/signin/"), log.String("directory", gateDir))
+		mux.Handle("/signin/", createStaticFileHandler("/signin/", gateDir, logger))
+	} else {
+		logger.Warn("Gate application directory not found", log.String("directory", gateDir))
+	}
+
+	// Serve develop application from /develop
+	developDir := path.Join(thunderHome, "apps", "develop")
+	if directoryExists(developDir) {
+		logger.Debug("Registering static file handler for Develop application",
+			log.String("path", "/develop/"), log.String("directory", developDir))
+		mux.Handle("/develop/", createStaticFileHandler("/develop/", developDir, logger))
+	} else {
+		logger.Warn("Develop application directory not found", log.String("directory", developDir))
+	}
+}
+
+// createStaticFileHandler creates a handler for serving static files with SPA fallback.
+func createStaticFileHandler(routePrefix, directory string, logger *log.Logger) http.Handler {
+	fileServer := http.FileServer(http.Dir(directory))
+
+	return http.StripPrefix(routePrefix, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		// Get the file path
+		filePath := path.Join(directory, r.URL.Path)
+
+		// Check if file exists
+		if _, err := os.Stat(filePath); os.IsNotExist(err) {
+			// For SPA routing, serve index.html for non-existent files
+			indexPath := path.Join(directory, "index.html")
+			if fileExists(indexPath) {
+				logger.Debug("Serving index.html for SPA routing",
+					log.String("requested_path", r.URL.Path),
+					log.String("route_prefix", routePrefix))
+				http.ServeFile(w, r, indexPath)
+				return
+			}
+		}
+
+		// Serve the requested file or directory listing
+		fileServer.ServeHTTP(w, r)
+	}))
+}
+
+// directoryExists checks if a directory exists.
+func directoryExists(path string) bool {
+	info, err := os.Stat(path)
+	return err == nil && info.IsDir()
+}
+
+// fileExists checks if a file exists.
+func fileExists(path string) bool {
+	info, err := os.Stat(path)
+	return err == nil && !info.IsDir()
 }

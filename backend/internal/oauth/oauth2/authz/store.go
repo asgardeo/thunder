@@ -70,7 +70,7 @@ func (acs *authorizationCodeStore) InsertAuthorizationCode(authzCode Authorizati
 	// Insert authorization code.
 	_, err = tx.Exec(queryInsertAuthorizationCode.Query, authzCode.CodeID, authzCode.Code,
 		authzCode.ClientID, authzCode.RedirectURI, authzCode.AuthorizedUserID, authzCode.TimeCreated,
-		authzCode.ExpiryTime, authzCode.State, authzCode.CodeChallenge, authzCode.CodeChallengeMethod)
+		authzCode.ExpiryTime, authzCode.State, authzCode.CodeChallenge, authzCode.CodeChallengeMethod, authzCode.Resource)
 	if err != nil {
 		logger.Error("Failed to insert authorization code", log.Error(err))
 		if rollbackErr := tx.Rollback(); rollbackErr != nil {
@@ -147,6 +147,12 @@ func (acs *authorizationCodeStore) GetAuthorizationCode(clientID, authCode strin
 		codeChallengeMethod = val.(string)
 	}
 
+	// Extract resource field
+	resource := ""
+	if val, ok := row["resource"]; ok && val != nil {
+		resource = val.(string)
+	}
+
 	// Retrieve authorized scopes for the authorization code.
 	scopeResults, err := dbClient.Query(queryGetAuthorizationCodeScopes, codeID)
 	if err != nil {
@@ -169,6 +175,7 @@ func (acs *authorizationCodeStore) GetAuthorizationCode(clientID, authCode strin
 		State:               row["state"].(string),
 		CodeChallenge:       codeChallenge,
 		CodeChallengeMethod: codeChallengeMethod,
+		Resource:            resource,
 	}, nil
 }
 

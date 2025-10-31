@@ -83,6 +83,7 @@ func buildNodeResponse(execResp *ExecutorResponse) *NodeResponse {
 		RuntimeData:       execResp.RuntimeData,
 		AuthenticatedUser: execResp.AuthenticatedUser,
 		Assertion:         execResp.Assertion,
+		ExecutionRecord:   execResp.ExecutionRecord,
 	}
 	if nodeResp.AdditionalData == nil {
 		nodeResp.AdditionalData = make(map[string]string)

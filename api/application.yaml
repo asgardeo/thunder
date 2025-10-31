@@ -1,0 +1,1042 @@
+openapi: 3.0.3
+info:
+  title: Application Management API
+  version: "1.0"
+  description: This API is used to manage applications.
+  license:
+    name: Apache 2.0
+    url: https://www.apache.org/licenses/LICENSE-2.0.html
+
+servers:
+  - url: https://{host}:{port}
+    variables:
+      host:
+        default: "localhost"
+      port:
+        default: "8090"
+
+tags:
+  - name: applications
+    description: Operations related to application management
+
+paths:
+  /applications:
+    get:
+      tags:
+        - applications
+      summary: List applications
+      description: Retrieve a list of all applications.
+      responses:
+        "200":
+          description: List of applications
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApplicationListResponse'
+              example:
+                totalResults: 3
+                count: 3
+                applications:
+                  - id: "550e8400-e29b-41d4-a716-446655440000"
+                    name: "My Web Application"
+                    description: "Customer portal application"
+                    client_id: "myapp_client_id"
+                    auth_flow_graph_id: "auth_flow_config_basic"
+                    registration_flow_graph_id: "registration_flow_config_basic"
+                    is_registration_flow_enabled: true
+                  - id: "660e8400-e29b-41d4-a716-446655440001"
+                    name: "Mobile App"
+                    description: "Mobile application for customers"
+                    client_id: "mobile_client_id"
+                    auth_flow_graph_id: "auth_flow_config_basic"
+                    registration_flow_graph_id: "registration_flow_config_basic"
+                    is_registration_flow_enabled: false
+        "400":
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                invalid-limit:
+                  summary: Invalid limit parameter
+                  value:
+                    code: "APP-1001"
+                    message: "Invalid pagination parameter"
+                    description: "The limit parameter must be a positive integer"
+        "500":
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: "APP-5001"
+                message: "Internal server error"
+                description: "An unexpected error occurred while processing the request"
+
+    post:
+      tags:
+        - applications
+      summary: Create an application
+      description: Creates a new application with the provided details.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ApplicationRequest'
+            example:
+              name: "My Web Application"
+              description: "Customer portal application"
+              auth_flow_graph_id: "auth_flow_config_basic"
+              registration_flow_graph_id: "registration_flow_config_basic"
+              is_registration_flow_enabled: true
+              url: "https://myapp.example.com"
+              logo_url: "https://myapp.example.com/logo.png"
+              tos_uri: "https://myapp.example.com/terms"
+              policy_uri: "https://myapp.example.com/privacy"
+              contacts: ["admin@myapp.example.com", "support@myapp.example.com"]
+              token:
+                issuer: "thunder"
+                validity_period: 3600
+                user_attributes: ["email", "username"]
+              certificate:
+                type: "JWKS_URI"
+                value: "https://myapp.example.com/.well-known/jwks"
+              inbound_auth_config:
+                - type: "oauth2"
+                  config:
+                    client_id: "myapp_client_id"
+                    client_secret: "myapp_client_secret"
+                    redirect_uris:
+                      - "https://myapp.example.com/callback"
+                      - "https://myapp.example.com/oauth/callback"
+                    grant_types:
+                      - "authorization_code"
+                      - "refresh_token"
+                    response_types:
+                      - "code"
+                    token_endpoint_auth_method: "client_secret_basic"
+                    pkce_required: false
+                    public_client: false
+                    scopes:
+                      - "openid"
+                      - "profile"
+                      - "email"
+                    token:
+                      issuer: "thunder-oauth"
+                      access_token:
+                        validity_period: 3600
+                        user_attributes: ["email", "username"]
+                      id_token:
+                        validity_period: 3600
+                        user_attributes: ["email", "name", "given_name", "family_name"]
+                        scope_claims:
+                          profile: ["name", "family_name", "given_name", "picture"]
+                          employee: ["emp_id", "department"]
+      responses:
+        "201":
+          description: Application created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApplicationCompleteResponse'
+              example:
+                id: "550e8400-e29b-41d4-a716-446655440000"
+                name: "My Web Application"
+                description: "Customer portal application"
+                client_id: "myapp_client_id"
+                auth_flow_graph_id: "auth_flow_config_basic"
+                registration_flow_graph_id: "registration_flow_config_basic"
+                is_registration_flow_enabled: true
+                url: "https://myapp.example.com"
+                logo_url: "https://myapp.example.com/logo.png"
+                tos_uri: "https://myapp.example.com/terms"
+                policy_uri: "https://myapp.example.com/privacy"
+                contacts: ["admin@myapp.example.com", "support@myapp.example.com"]
+                token:
+                  issuer: "thunder"
+                  validity_period: 3600
+                  user_attributes: ["email", "username"]
+                certificate:
+                  type: "JWKS_URI"
+                  value: "https://myapp.example.com/.well-known/jwks"
+                inbound_auth_config:
+                  - type: "oauth2"
+                    config:
+                      client_id: "myapp_client_id"
+                      client_secret: "myapp_client_secret"
+                      redirect_uris:
+                        - "https://myapp.example.com/callback"
+                        - "https://myapp.example.com/oauth/callback"
+                      grant_types:
+                        - "authorization_code"
+                        - "refresh_token"
+                      response_types:
+                        - "code"
+                      token_endpoint_auth_method: "client_secret_basic"
+                      pkce_required: false
+                      public_client: false
+                      scopes:
+                        - "openid"
+                        - "profile"
+                        - "email"
+                      token:
+                        issuer: "thunder-oauth"
+                        access_token:
+                          validity_period: 3600
+                          user_attributes: ["email", "username"]
+                        id_token:
+                          validity_period: 1800
+                          user_attributes: ["email", "email_verified", "name", "given_name", "family_name"]
+                          scope_claims:
+                            profile: ["name", "given_name", "family_name"]
+                            email: ["email", "email_verified"]
+        "400":
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                invalid-request-format:
+                  summary: Invalid request format
+                  value:
+                    code: "APP-1001"
+                    message: "Invalid request format"
+                    description: "The request body is malformed or contains invalid data"
+                invalid-redirect-uri:
+                  summary: Invalid redirect URI
+                  value:
+                    code: "APP-1002"
+                    message: "Invalid redirect URI"
+                    description: "One or more redirect URIs are not valid"
+                invalid-grant-type:
+                  summary: Invalid grant type
+                  value:
+                    code: "APP-1003"
+                    message: "Invalid grant type"
+                    description: "One or more grant types are not supported"
+        "500":
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: "APP-5001"
+                message: "Internal server error"
+                description: "An unexpected error occurred while processing the request"
+
+  /applications/{id}:
+    get:
+      tags:
+        - applications
+      summary: Get an application by ID
+      description: Retrieve a specific application using its ID.
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: Application ID
+          example: "550e8400-e29b-41d4-a716-446655440000"
+      responses:
+        "200":
+          description: Application details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApplicationGetResponse'
+              example:
+                id: "550e8400-e29b-41d4-a716-446655440000"
+                name: "My Web Application"
+                description: "Customer portal application"
+                client_id: "myapp_client_id"
+                auth_flow_graph_id: "auth_flow_config_basic"
+                registration_flow_graph_id: "registration_flow_config_basic"
+                is_registration_flow_enabled: true
+                url: "https://myapp.example.com"
+                logo_url: "https://myapp.example.com/logo.png"
+                tos_uri: "https://myapp.example.com/terms"
+                policy_uri: "https://myapp.example.com/privacy"
+                contacts: ["admin@myapp.example.com", "support@myapp.example.com"]
+                token:
+                  issuer: "thunder"
+                  validity_period: 3600
+                  user_attributes: ["email", "username"]
+                certificate:
+                  type: "JWKS_URI"
+                  value: "https://myapp.example.com/.well-known/jwks"
+                inbound_auth_config:
+                  - type: "oauth2"
+                    config:
+                      client_id: "myapp_client_id"
+                      redirect_uris:
+                        - "https://myapp.example.com/callback"
+                        - "https://myapp.example.com/oauth/callback"
+                      grant_types:
+                        - "authorization_code"
+                        - "refresh_token"
+                      response_types:
+                        - "code"
+                      token_endpoint_auth_method: "client_secret_basic"
+                      pkce_required: false
+                      public_client: false
+                      scopes:
+                        - "openid"
+                        - "profile"
+                        - "email"
+                      token:
+                        issuer: "thunder-oauth"
+                        access_token:
+                          validity_period: 3600
+                          user_attributes: ["email", "username"]
+                        id_token:
+                          validity_period: 1800
+                          user_attributes: ["email", "email_verified", "name", "given_name", "family_name"]
+                          scope_claims:
+                            profile: ["name", "given_name", "family_name"]
+                            email: ["email", "email_verified"]
+        "400":
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: "APP-1001"
+                message: "Invalid request format"
+                description: "The request contains invalid data"
+        "404":
+          description: Application not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: "APP-1004"
+                message: "Application not found"
+                description: "The application with the specified ID does not exist"
+        "500":
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: "APP-5001"
+                message: "Internal server error"
+                description: "An unexpected error occurred while processing the request"
+
+    put:
+      tags:
+        - applications
+      summary: Update an application
+      description: Update the details of an existing application.
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: Application ID
+          example: "550e8400-e29b-41d4-a716-446655440000"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ApplicationRequest'
+            example:
+              name: "Updated Web Application"
+              description: "Updated customer portal application"
+              auth_flow_graph_id: "auth_flow_config_advanced"
+              registration_flow_graph_id: "registration_flow_config_advanced"
+              is_registration_flow_enabled: true
+              url: "https://myapp.example.com"
+              logo_url: "https://myapp.example.com/updated-logo.png"
+              tos_uri: "https://myapp.example.com/terms"
+              policy_uri: "https://myapp.example.com/privacy"
+              contacts: ["admin@myapp.example.com", "support@myapp.example.com"]
+              token:
+                issuer: "thunder"
+                validity_period: 3600
+                user_attributes: ["email", "username"]
+              certificate:
+                type: "JWKS_URI"
+                value: "https://myapp.example.com/.well-known/jwks"
+              inbound_auth_config:
+                - type: "oauth2"
+                  config:
+                    client_id: "myapp_client_id"
+                    client_secret: "myapp_updated_secret"
+                    redirect_uris:
+                      - "https://myapp.example.com/callback"
+                      - "https://myapp.example.com/oauth/callback"
+                      - "https://staging.myapp.example.com/callback"
+                    grant_types:
+                      - "authorization_code"
+                      - "refresh_token"
+                      - "client_credentials"
+                    response_types:
+                      - "code"
+                    token_endpoint_auth_method: "client_secret_basic"
+                    pkce_required: false
+                    public_client: false
+                    scopes:
+                      - "openid"
+                      - "profile"
+                      - "email"
+                    token:
+                      access_token:
+                        issuer: "thunder"
+                        validity_period: 3600
+                        user_attributes: ["email", "username"]
+                      id_token:
+                        issuer: "thunder-oidc"
+                        validity_period: 1800
+                        user_attributes: ["email", "email_verified", "name", "given_name", "family_name"]
+                        scope_claims:
+                          profile: ["name", "given_name", "family_name"]
+                          email: ["email", "email_verified"]
+      responses:
+        "200":
+          description: Application updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApplicationCompleteResponse'
+              example:
+                id: "550e8400-e29b-41d4-a716-446655440000"
+                name: "Updated Web Application"
+                description: "Updated customer portal application"
+                client_id: "myapp_client_id"
+                auth_flow_graph_id: "auth_flow_config_advanced"
+                registration_flow_graph_id: "registration_flow_config_advanced"
+                is_registration_flow_enabled: true
+                url: "https://myapp.example.com"
+                logo_url: "https://myapp.example.com/updated-logo.png"
+                tos_uri: "https://myapp.example.com/terms"
+                policy_uri: "https://myapp.example.com/privacy"
+                contacts: ["admin@myapp.example.com", "support@myapp.example.com"]
+                token:
+                  issuer: "thunder"
+                  validity_period: 3600
+                  user_attributes: ["email", "username"]
+                certificate:
+                  type: "JWKS_URI"
+                  value: "https://myapp.example.com/.well-known/jwks"
+                inbound_auth_config:
+                  - type: "oauth2"
+                    config:
+                      client_id: "myapp_client_id"
+                      client_secret: "myapp_updated_secret"
+                      redirect_uris:
+                        - "https://myapp.example.com/callback"
+                        - "https://myapp.example.com/oauth/callback"
+                        - "https://staging.myapp.example.com/callback"
+                      grant_types:
+                        - "authorization_code"
+                        - "refresh_token"
+                        - "client_credentials"
+                      response_types:
+                        - "code"
+                      token_endpoint_auth_method: "client_secret_basic"
+                      pkce_required: false
+                      public_client: false
+                      scopes:
+                        - "openid"
+                        - "profile"
+                        - "email"
+                      token:
+                        issuer: "thunder-oauth"
+                        access_token:
+                          validity_period: 3600
+                          user_attributes: ["email", "username"]
+                        id_token:
+                          validity_period: 1800
+                          user_attributes: ["email", "email_verified", "name", "given_name", "family_name"]
+                          scope_claims:
+                            profile: ["name", "given_name", "family_name"]
+                            email: ["email", "email_verified"]
+        "400":
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                invalid-request-format:
+                  summary: Invalid request format
+                  value:
+                    code: "APP-1001"
+                    message: "Invalid request format"
+                    description: "The request body is malformed or contains invalid data"
+                invalid-redirect-uri:
+                  summary: Invalid redirect URI
+                  value:
+                    code: "APP-1002"
+                    message: "Invalid redirect URI"
+                    description: "One or more redirect URIs are not valid"
+        "404":
+          description: Application not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: "APP-1004"
+                message: "Application not found"
+                description: "The application with the specified ID does not exist"
+        "500":
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: "APP-5001"
+                message: "Internal server error"
+                description: "An unexpected error occurred while processing the request"
+
+    delete:
+      tags:
+        - applications
+      summary: Delete an application
+      description: Delete an application using its ID.
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: Application ID
+          example: "550e8400-e29b-41d4-a716-446655440000"
+      responses:
+        "204":
+          description: Application deleted successfully
+        "400":
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: "APP-1001"
+                message: "Invalid request format"
+                description: "The request contains invalid data"
+        "500":
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: "APP-5001"
+                message: "Internal server error"
+                description: "An unexpected error occurred while processing the request"
+
+components:
+  parameters:
+    limitQueryParam:
+      in: query
+      name: limit
+      required: false
+      description: |
+        Maximum number of records to return.
+      schema:
+        type: integer
+        minimum: 1
+        default: 30
+    offsetQueryParam:
+      in: query
+      name: offset
+      required: false
+      description: |
+        Number of records to skip for pagination.
+      schema:
+        type: integer
+        default: 0
+
+  schemas:
+    ApplicationRequest:
+      type: object
+      required: [name]
+      properties:
+        name:
+          type: string
+          description: The name of the application.
+          example: "My Web Application"
+        description:
+          type: string
+          description: A brief description of the application.
+          example: "Customer portal application"
+        auth_flow_graph_id:
+          type: string
+          description: The ID of the authentication flow graph.
+          example: "auth_flow_config_basic"
+        registration_flow_graph_id:
+          type: string
+          description: The ID of the registration flow graph.
+          example: "registration_flow_config_basic"
+        is_registration_flow_enabled:
+          type: boolean
+          description: Indicates if the registration flow is enabled for the application.
+          example: true
+          default: false
+        url:
+          type: string
+          format: uri
+          description: The URL of the application.
+          example: "https://myapp.example.com"
+        logo_url:
+          type: string
+          format: uri
+          description: The URL of the application's logo.
+          example: "https://myapp.example.com/logo.png"
+        token:
+          $ref: '#/components/schemas/TokenConfig'
+        certificate:
+          $ref: '#/components/schemas/Certificate'
+        inbound_auth_config:
+          type: array
+          items:
+            $ref: '#/components/schemas/InboundAuthConfigComplete'
+          description: Inbound authentication configuration for the application.
+        tos_uri:
+          type: string
+          format: uri
+          description: URL pointing to the Terms of Service for the application.
+          example: "https://myapp.example.com/terms"
+        policy_uri:
+          type: string
+          format: uri
+          description: URL pointing to the Privacy Policy for the application.
+          example: "https://myapp.example.com/privacy"
+        contacts:
+          type: array
+          items:
+            type: string
+            format: email
+          description: Array of email addresses of people responsible for the application.
+          example: ["admin@myapp.example.com", "support@myapp.example.com"]
+
+    ApplicationCompleteResponse:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: The unique identifier of the application.
+          example: "550e8400-e29b-41d4-a716-446655440000"
+        name:
+          type: string
+          description: The name of the application.
+          example: "My Web Application"
+        description:
+          type: string
+          description: A brief description of the application.
+          example: "Customer portal application"
+        client_id:
+          type: string
+          description: The client ID for the application.
+          example: "myapp_client_id"
+        auth_flow_graph_id:
+          type: string
+          description: The ID of the authentication flow graph.
+          example: "auth_flow_config_basic"
+        registration_flow_graph_id:
+          type: string
+          description: The ID of the registration flow graph.
+          example: "registration_flow_config_basic"
+        is_registration_flow_enabled:
+          type: boolean
+          description: Indicates if the registration flow is enabled for the application.
+          example: true
+        url:
+          type: string
+          format: uri
+          description: The URL of the application.
+          example: "https://myapp.example.com"
+        logo_url:
+          type: string
+          format: uri
+          description: The URL of the application's logo.
+          example: "https://myapp.example.com/logo.png"
+        token:
+          $ref: '#/components/schemas/TokenConfig'
+        certificate:
+          $ref: '#/components/schemas/Certificate'
+        inbound_auth_config:
+          type: array
+          items:
+            $ref: '#/components/schemas/InboundAuthConfigComplete'
+          description: Inbound authentication configuration for the application.
+        tos_uri:
+          type: string
+          format: uri
+          description: URL pointing to the Terms of Service for the application.
+          example: "https://myapp.example.com/terms"
+        policy_uri:
+          type: string
+          format: uri
+          description: URL pointing to the Privacy Policy for the application.
+          example: "https://myapp.example.com/privacy"
+        contacts:
+          type: array
+          items:
+            type: string
+            format: email
+          description: Array of email addresses of people responsible for the application.
+          example: ["admin@myapp.example.com", "support@myapp.example.com"]
+
+    ApplicationGetResponse:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: The unique identifier of the application.
+          example: "550e8400-e29b-41d4-a716-446655440000"
+        name:
+          type: string
+          description: The name of the application.
+          example: "My Web Application"
+        description:
+          type: string
+          description: A brief description of the application.
+          example: "Customer portal application"
+        client_id:
+          type: string
+          description: The client ID for the application.
+          example: "myapp_client_id"
+        auth_flow_graph_id:
+          type: string
+          description: The ID of the authentication flow graph.
+          example: "auth_flow_config_basic"
+        registration_flow_graph_id:
+          type: string
+          description: The ID of the registration flow graph.
+          example: "registration_flow_config_basic"
+        is_registration_flow_enabled:
+          type: boolean
+          description: Indicates if the registration flow is enabled for the application.
+          example: true
+        url:
+          type: string
+          format: uri
+          description: The URL of the application.
+          example: "https://myapp.example.com"
+        logo_url:
+          type: string
+          format: uri
+          description: The URL of the application's logo.
+          example: "https://myapp.example.com/logo.png"
+        token:
+          $ref: '#/components/schemas/TokenConfig'
+        certificate:
+          $ref: '#/components/schemas/Certificate'
+        inbound_auth_config:
+          type: array
+          items:
+            $ref: '#/components/schemas/InboundAuthConfig'
+          description: Inbound authentication configuration for the application.
+        tos_uri:
+          type: string
+          format: uri
+          description: URL pointing to the Terms of Service for the application.
+          example: "https://myapp.example.com/terms"
+        policy_uri:
+          type: string
+          format: uri
+          description: URL pointing to the Privacy Policy for the application.
+          example: "https://myapp.example.com/privacy"
+        contacts:
+          type: array
+          items:
+            type: string
+            format: email
+          description: Array of email addresses of people responsible for the application.
+          example: ["admin@myapp.example.com", "support@myapp.example.com"]
+
+    BasicApplicationResponse:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: The unique identifier of the application.
+          example: "550e8400-e29b-41d4-a716-446655440000"
+        name:
+          type: string
+          description: The name of the application.
+          example: "My Web Application"
+        description:
+          type: string
+          description: A brief description of the application.
+          example: "Customer portal application"
+        client_id:
+          type: string
+          description: The client ID for the application.
+          example: "myapp_client_id"
+        auth_flow_graph_id:
+          type: string
+          description: The ID of the authentication flow graph.
+          example: "auth_flow_config_basic"
+        registration_flow_graph_id:
+          type: string
+          description: The ID of the registration flow graph.
+          example: "registration_flow_config_basic"
+        is_registration_flow_enabled:
+          type: boolean
+          description: Indicates if the registration flow is enabled for the application.
+          example: true
+
+    ApplicationListResponse:
+      type: object
+      properties:
+        totalResults:
+          type: integer
+          description: "Number of results that match the listing operation."
+          example: 25
+        count:
+          type: integer
+          description: "Number of elements in the returned page."
+          example: 10
+        applications:
+          type: array
+          items:
+            $ref: '#/components/schemas/BasicApplicationResponse'
+
+    TokenConfig:
+      type: object
+      properties:
+        issuer:
+          type: string
+          description: The issuer of the token.
+          example: "thunder"
+        validity_period:
+          type: integer
+          description: The validity period of the token in seconds.
+          example: 3600
+        user_attributes:
+          type: array
+          items:
+            type: string
+          description: The user attributes to include in the token.
+          example: ["email", "username"]
+
+    IDTokenConfig:
+      type: object
+      properties:
+        validity_period:
+          type: integer
+          description: The validity period of the ID token in seconds. If not specified, uses the same validity as access token.
+          example: 3600
+        user_attributes:
+          type: array
+          items:
+            type: string
+          description: The user attributes to include in the ID token. Only claims requested by scopes AND listed here will be included.
+          example: ["email", "name", "given_name", "family_name"]
+        scope_claims:
+          type: object
+          additionalProperties:
+            type: array
+            items:
+              type: string
+          description: Custom scope-to-claims mapping. Overrides default OIDC scope claims or defines custom scopes.
+          example:
+            profile: ["name", "family_name", "given_name", "picture"]
+            employee: ["emp_id", "department"]
+
+    Certificate:
+      type: object
+      properties:
+        type:
+          type: string
+          description: The type of the certificate.
+          enum:
+            - "NONE"
+            - "JWKS"
+            - "JWKS_URI"
+          example: "JWKS_URI"
+        value:
+          type: string
+          description: The value of the certificate.
+          example: "https://myapp.example.com/.well-known/jwks"
+
+    InboundAuthConfig:
+      type: object
+      properties:
+        type:
+          type: string
+          description: The type of inbound authentication.
+          enum:
+            - "oauth2"
+          example: "oauth2"
+        config:
+          $ref: '#/components/schemas/OAuthAppConfig'
+
+    InboundAuthConfigComplete:
+      type: object
+      properties:
+        type:
+          type: string
+          description: The type of inbound authentication.
+          enum:
+            - "oauth2"
+          example: "oauth2"
+        config:
+          $ref: '#/components/schemas/OAuthAppConfigComplete'
+
+    OAuthAppConfig:
+      type: object
+      properties:
+        client_id:
+          type: string
+          description: The client ID for the OAuth application.
+          example: "myapp_client_id"
+        redirect_uris:
+          type: array
+          items:
+            type: string
+            format: uri
+          description: A list of redirect URIs for the OAuth application.
+          example: ["https://myapp.example.com/callback", "https://myapp.example.com/oauth/callback"]
+        grant_types:
+          type: array
+          items:
+            type: string
+            enum: ["authorization_code", "client_credentials", "refresh_token", "implicit", "password"]
+          description: A list of grant types supported by the OAuth application. Defaults to ["authorization_code"] if not specified.
+          example: ["authorization_code", "refresh_token"]
+        response_types:
+          type: array
+          items:
+            type: string
+            enum: ["code", "token"]
+          description: A list of response types supported by the OAuth application. Defaults to ["code"] if not specified.
+          example: ["code"]
+        token_endpoint_auth_method:
+          type: string
+          enum: ["client_secret_basic", "client_secret_post", "none"]
+          description: The token endpoint authentication method for the OAuth application. Defaults to "client_secret_basic" if not specified.
+          example: "client_secret_basic"
+        pkce_required:
+          type: boolean
+          description: Whether PKCE (Proof Key for Code Exchange) is required for this application.
+          example: false
+          default: false
+        public_client:
+          type: boolean
+          description: Whether the application is a public client (Mobile apps, SPAs, etc.), which cannot store secrets securely.
+          example: false
+          default: false
+        scopes:
+          type: array
+          items:
+            type: string
+          description: List of scopes that the client can request.
+          example: ["openid", "profile", "email"]
+        token:
+          type: object
+          properties:
+            issuer:
+              type: string
+              description: |
+                The issuer for both access token and ID token.
+              example: "thunder-oauth"
+            access_token:
+              $ref: '#/components/schemas/TokenConfig'
+            id_token:
+              $ref: '#/components/schemas/IDTokenConfig'
+
+    OAuthAppConfigComplete:
+      type: object
+      properties:
+        client_id:
+          type: string
+          description: The client ID for the OAuth application.
+          example: "myapp_client_id"
+        client_secret:
+          type: string
+          description: The client secret for the OAuth application. Omitted for public clients.
+          example: "myapp_client_secret"
+        redirect_uris:
+          type: array
+          items:
+            type: string
+            format: uri
+          description: A list of redirect URIs for the OAuth application.
+          example: ["https://myapp.example.com/callback", "https://myapp.example.com/oauth/callback"]
+        grant_types:
+          type: array
+          items:
+            type: string
+            enum: ["authorization_code", "client_credentials", "refresh_token", "implicit", "password"]
+          description: A list of grant types supported by the OAuth application. Defaults to ["authorization_code"] if not specified.
+          example: ["authorization_code", "refresh_token"]
+        response_types:
+          type: array
+          items:
+            type: string
+            enum: ["code", "token"]
+          description: A list of response types supported by the OAuth application. Defaults to ["code"] if not specified.
+          example: ["code"]
+        token_endpoint_auth_method:
+          type: string
+          enum: ["client_secret_basic", "client_secret_post", "none"]
+          description: The token endpoint authentication method for the OAuth application. Defaults to "client_secret_basic" if not specified.
+          example: "client_secret_basic"
+        pkce_required:
+          type: boolean
+          description: Whether PKCE (Proof Key for Code Exchange) is required for this application.
+          example: false
+          default: false
+        public_client:
+          type: boolean
+          description: Whether the application is a public client (Mobile apps, SPAs, etc.), which cannot store secrets securely.
+          example: false
+          default: false
+        scopes:
+          type: array
+          items:
+            type: string
+          description: List of scopes that the client can request.
+          example: ["openid", "profile", "email"]
+        token:
+          type: object
+          properties:
+            issuer:
+              type: string
+              description: |
+                The issuer for both access token and ID token.
+              example: "thunder-oauth"
+            access_token:
+              $ref: '#/components/schemas/TokenConfig'
+            id_token:
+              $ref: '#/components/schemas/IDTokenConfig'
+
+    Error:
+      type: object
+      required: [code, message]
+      properties:
+        code:
+          type: string
+          description: The error code.
+          example: "APP-1001"
+        message:
+          type: string
+          description: The error message.
+          example: "Invalid request format"
+        description:
+          type: string
+          description: A detailed description of the error.
+          example: "The request body is malformed or contains invalid data"

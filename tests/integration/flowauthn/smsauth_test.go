@@ -248,6 +248,17 @@ func (ts *SMSAuthFlowTestSuite) TestSMSAuthFlowWithMobileNumber() {
 	ts.Require().NotEmpty(completeFlowStep.Assertion,
 		"JWT assertion should be returned after successful authentication")
 	ts.Require().Empty(completeFlowStep.FailureReason, "Failure reason should be empty for successful authentication")
+
+	// Decode and validate JWT claims
+	jwtClaims, err := testutils.DecodeJWT(completeFlowStep.Assertion)
+	ts.Require().NoError(err, "Failed to decode JWT assertion")
+	ts.Require().NotNil(jwtClaims, "JWT claims should not be nil")
+
+	// Validate JWT contains expected user type and OU ID
+	ts.Require().Equal("person", jwtClaims.UserType, "Expected userType to be 'person'")
+	ts.Require().Equal(smsAuthTestOUID, jwtClaims.OuID, "Expected ouId to match the created organization unit")
+	ts.Require().Equal(smsAuthTestAppID, jwtClaims.Aud, "Expected aud to match the application ID")
+	ts.Require().NotEmpty(jwtClaims.Sub, "JWT subject should not be empty")
 }
 
 func (ts *SMSAuthFlowTestSuite) TestSMSAuthFlowWithUsername() {
@@ -333,6 +344,17 @@ func (ts *SMSAuthFlowTestSuite) TestSMSAuthFlowWithUsername() {
 	ts.Require().NotEmpty(completeFlowStep.Assertion,
 		"JWT assertion should be returned after successful authentication")
 	ts.Require().Empty(completeFlowStep.FailureReason, "Failure reason should be empty for successful authentication")
+
+	// Decode and validate JWT claims
+	jwtClaims, err := testutils.DecodeJWT(completeFlowStep.Assertion)
+	ts.Require().NoError(err, "Failed to decode JWT assertion")
+	ts.Require().NotNil(jwtClaims, "JWT claims should not be nil")
+
+	// Validate JWT contains expected user type and OU ID
+	ts.Require().Equal("person", jwtClaims.UserType, "Expected userType to be 'person'")
+	ts.Require().Equal(smsAuthTestOUID, jwtClaims.OuID, "Expected ouId to match the created organization unit")
+	ts.Require().Equal(smsAuthTestAppID, jwtClaims.Aud, "Expected aud to match the application ID")
+	ts.Require().NotEmpty(jwtClaims.Sub, "JWT subject should not be empty")
 }
 
 func (ts *SMSAuthFlowTestSuite) TestSMSAuthFlowInvalidOTP() {
@@ -438,4 +460,15 @@ func (ts *SMSAuthFlowTestSuite) TestSMSAuthFlowSingleRequestWithMobileNumber() {
 	ts.Require().NotEmpty(completeFlowStep.Assertion,
 		"JWT assertion should be returned after successful authentication")
 	ts.Require().Empty(completeFlowStep.FailureReason, "Failure reason should be empty for successful authentication")
+
+	// Decode and validate JWT claims
+	jwtClaims, err := testutils.DecodeJWT(completeFlowStep.Assertion)
+	ts.Require().NoError(err, "Failed to decode JWT assertion")
+	ts.Require().NotNil(jwtClaims, "JWT claims should not be nil")
+
+	// Validate JWT contains expected user type and OU ID
+	ts.Require().Equal("person", jwtClaims.UserType, "Expected userType to be 'person'")
+	ts.Require().Equal(smsAuthTestOUID, jwtClaims.OuID, "Expected ouId to match the created organization unit")
+	ts.Require().Equal(smsAuthTestAppID, jwtClaims.Aud, "Expected aud to match the application ID")
+	ts.Require().NotEmpty(jwtClaims.Sub, "JWT subject should not be empty")
 }

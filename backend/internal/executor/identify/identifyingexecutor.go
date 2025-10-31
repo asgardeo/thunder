@@ -42,7 +42,8 @@ type IdentifyingExecutor struct {
 // NewIdentifyingExecutor creates a new instance of IdentifyingExecutor.
 func NewIdentifyingExecutor(id, name string, properties map[string]string) *IdentifyingExecutor {
 	return &IdentifyingExecutor{
-		internal:    *flowmodel.NewExecutor(id, name, []flowmodel.InputData{}, []flowmodel.InputData{}, properties),
+		internal: *flowmodel.NewExecutor(id, name, flowconst.ExecutorTypeUtility,
+			[]flowmodel.InputData{}, []flowmodel.InputData{}, properties),
 		userService: user.GetUserService(),
 	}
 }

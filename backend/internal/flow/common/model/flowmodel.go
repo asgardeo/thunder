@@ -25,6 +25,17 @@ import (
 	"github.com/asgardeo/thunder/internal/flow/common/constants"
 )
 
+// NodeExecutionRecord represents a record of a node execution in the flow.
+type NodeExecutionRecord struct {
+	NodeID       string                 `json:"node_id"`
+	NodeType     string                 `json:"node_type"`
+	ExecutorName string                 `json:"executor_name,omitempty"`
+	ExecutorType constants.ExecutorType `json:"executor_type,omitempty"`
+	Step         int                    `json:"step"`
+	Timestamp    int64                  `json:"timestamp"`
+	Status       constants.FlowStatus   `json:"status"`
+}
+
 // EngineContext holds the overall context used by the flow engine during execution.
 type EngineContext struct {
 	FlowID        string
@@ -41,6 +52,7 @@ type EngineContext struct {
 	Application model.ApplicationProcessedDTO
 
 	AuthenticatedUser authncm.AuthenticatedUser
+	ExecutionHistory  []NodeExecutionRecord
 }
 
 // NodeContext holds the context for a specific node in the flow execution.
@@ -56,6 +68,7 @@ type NodeContext struct {
 
 	Application       model.ApplicationProcessedDTO
 	AuthenticatedUser authncm.AuthenticatedUser
+	ExecutionHistory  []NodeExecutionRecord
 }
 
 // FlowStep represents the outcome of a individual flow step

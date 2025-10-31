@@ -134,7 +134,7 @@ func (h *authorizationCodeGrantHandler) HandleGrant(tokenRequest *model.TokenReq
 
 	// Build access token claims and attributes
 	jwtClaims, accessTokenAttributes := buildAccessTokenClaimsAndAttributes(
-		authorizedScopesStr, attrs, userGroups, oauthApp)
+		authorizedScopesStr, attrs, userGroups, oauthApp, authCode.Resource)
 
 	// Generate access token
 	iss, validityPeriod := resolveTokenConfig(oauthApp)
@@ -278,6 +278,7 @@ func buildAccessTokenClaimsAndAttributes(
 	attrs map[string]interface{},
 	userGroups []string,
 	oauthApp *appmodel.OAuthAppConfigProcessedDTO,
+	resource string,
 ) (map[string]interface{}, map[string]interface{}) {
 	jwtClaims := make(map[string]interface{})
 	accessTokenAttributes := make(map[string]interface{})
@@ -285,6 +286,11 @@ func buildAccessTokenClaimsAndAttributes(
 	// Add scope to JWT claims
 	if authorizedScopesStr != "" {
 		jwtClaims["scope"] = authorizedScopesStr
+	}
+
+	// Add audience claim based on resource parameter (RFC 8707)
+	if resource != "" {
+		jwtClaims["aud"] = resource
 	}
 
 	// Add user attributes to claims and access token attributes
@@ -339,8 +345,12 @@ func updateContextAttributes(ctx *model.TokenContext, authCode *authz.Authorizat
 	if ctx.TokenAttributes == nil {
 		ctx.TokenAttributes = make(map[string]interface{})
 	}
-	ctx.TokenAttributes["sub"] = authCode.AuthorizedUserID
-	ctx.TokenAttributes["aud"] = authCode.ClientID
+	ctx.TokenAttributes[constants.ClaimSub] = authCode.AuthorizedUserID
+	if authCode.Resource != "" {
+		ctx.TokenAttributes[constants.ClaimAud] = authCode.Resource
+	} else {
+		ctx.TokenAttributes[constants.ClaimAud] = authCode.ClientID
+	}
 }
 
 // buildTokenResponse builds the token response with access token details.
@@ -383,6 +393,14 @@ func validateAuthorizationCode(tokenRequest *model.TokenRequest,
 		}
 	}
 
+	// Validate resource parameter consistency with authorization code
+	if code.Resource != "" && code.Resource != tokenRequest.Resource {
+		return &model.ErrorResponse{
+			Error:            constants.ErrorInvalidTarget,
+			ErrorDescription: "Resource parameter mismatch",
+		}
+	}
+
 	if code.State == authz.AuthCodeStateInactive {
 		// TODO: Revoke all the tokens issued for this authorization code.
 
@@ -412,7 +430,7 @@ func getIDTokenClaims(scopes []string, userAttributes map[string]interface{},
 	oauthApp *appmodel.OAuthAppConfigProcessedDTO) map[string]interface{} {
 	claims := make(map[string]interface{})
 	now := time.Now().Unix()
-	claims["auth_time"] = now
+	claims[constants.ClaimAuthTime] = now
 
 	var idTokenUserAttributes []string
 	if oauthApp.Token != nil && oauthApp.Token.IDToken != nil {

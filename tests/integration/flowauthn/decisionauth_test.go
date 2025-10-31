@@ -260,6 +260,17 @@ func (ts *DecisionAndMFAFlowTestSuite) TestBasicAuthWithMobileUserSMSOTP() {
 	ts.Require().NotEmpty(completeFlowStep.Assertion,
 		"JWT assertion should be returned after successful authentication")
 	ts.Require().Empty(completeFlowStep.FailureReason, "Failure reason should be empty for successful authentication")
+
+	// Decode and validate JWT claims
+	jwtClaims, err := testutils.DecodeJWT(completeFlowStep.Assertion)
+	ts.Require().NoError(err, "Failed to decode JWT assertion")
+	ts.Require().NotNil(jwtClaims, "JWT claims should not be nil")
+
+	// Validate JWT contains expected user type and OU ID
+	ts.Require().Equal("person", jwtClaims.UserType, "Expected userType to be 'person'")
+	ts.Require().Equal(decisionTestOUID, jwtClaims.OuID, "Expected ouId to match the created organization unit")
+	ts.Require().Equal(decisionTestAppID, jwtClaims.Aud, "Expected aud to match the application ID")
+	ts.Require().NotEmpty(jwtClaims.Sub, "JWT subject should not be empty")
 }
 
 func (ts *DecisionAndMFAFlowTestSuite) TestBasicAuthWithoutMobileUserSMSOTP() {
@@ -370,6 +381,17 @@ func (ts *DecisionAndMFAFlowTestSuite) TestBasicAuthWithoutMobileUserSMSOTP() {
 			"JWT assertion should be returned after successful authentication")
 		ts.Require().Empty(completeFlowStep.FailureReason,
 			"Failure reason should be empty for successful authentication")
+
+		// Decode and validate JWT claims
+		jwtClaims, err := testutils.DecodeJWT(completeFlowStep.Assertion)
+		ts.Require().NoError(err, "Failed to decode JWT assertion")
+		ts.Require().NotNil(jwtClaims, "JWT claims should not be nil")
+
+		// Validate JWT contains expected user type and OU ID
+		ts.Require().Equal("person", jwtClaims.UserType, "Expected userType to be 'person'")
+		ts.Require().Equal(decisionTestOUID, jwtClaims.OuID, "Expected ouId to match the created organization unit")
+		ts.Require().Equal(decisionTestAppID, jwtClaims.Aud, "Expected aud to match the application ID")
+		ts.Require().NotEmpty(jwtClaims.Sub, "JWT subject should not be empty")
 	})
 
 	// Test case 2: Retry auth flow for same user - should not prompt for mobile again
@@ -468,6 +490,17 @@ func (ts *DecisionAndMFAFlowTestSuite) TestBasicAuthWithoutMobileUserSMSOTP() {
 			"JWT assertion should be returned after successful authentication")
 		ts.Require().Empty(completeFlowStep.FailureReason,
 			"Failure reason should be empty for successful authentication")
+
+		// Decode and validate JWT claims
+		jwtClaims, err := testutils.DecodeJWT(completeFlowStep.Assertion)
+		ts.Require().NoError(err, "Failed to decode JWT assertion")
+		ts.Require().NotNil(jwtClaims, "JWT claims should not be nil")
+
+		// Validate JWT contains expected user type and OU ID
+		ts.Require().Equal("person", jwtClaims.UserType, "Expected userType to be 'person'")
+		ts.Require().Equal(decisionTestOUID, jwtClaims.OuID, "Expected ouId to match the created organization unit")
+		ts.Require().Equal(decisionTestAppID, jwtClaims.Aud, "Expected aud to match the application ID")
+		ts.Require().NotEmpty(jwtClaims.Sub, "JWT subject should not be empty")
 	})
 }
 
@@ -564,6 +597,17 @@ func (ts *DecisionAndMFAFlowTestSuite) TestSMSOTPAuthWithValidMobile() {
 	ts.Require().NotEmpty(completeFlowStep.Assertion,
 		"JWT assertion should be returned after successful authentication")
 	ts.Require().Empty(completeFlowStep.FailureReason, "Failure reason should be empty for successful authentication")
+
+	// Decode and validate JWT claims
+	jwtClaims, err := testutils.DecodeJWT(completeFlowStep.Assertion)
+	ts.Require().NoError(err, "Failed to decode JWT assertion")
+	ts.Require().NotNil(jwtClaims, "JWT claims should not be nil")
+
+	// Validate JWT contains expected user type and OU ID
+	ts.Require().Equal("person", jwtClaims.UserType, "Expected userType to be 'person'")
+	ts.Require().Equal(decisionTestOUID, jwtClaims.OuID, "Expected ouId to match the created organization unit")
+	ts.Require().Equal(decisionTestAppID, jwtClaims.Aud, "Expected aud to match the application ID")
+	ts.Require().NotEmpty(jwtClaims.Sub, "JWT subject should not be empty")
 }
 
 func (ts *DecisionAndMFAFlowTestSuite) TestSMSOTPAuthWithInvalidMobile() {

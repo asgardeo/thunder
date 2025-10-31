@@ -29,6 +29,7 @@ import (
 
 const (
 	mockNotificationServerPort = 8098
+	registrationOUID           = "00000000-0000-0000-0000-000000000000"
 )
 
 var (
@@ -224,6 +225,17 @@ func (ts *SMSRegistrationFlowTestSuite) TestSMSRegistrationFlowWithMobileNumber(
 	ts.Require().Empty(completeFlowStep.FailureReason,
 		"Failure reason should be empty for successful registration")
 
+	// Decode and validate JWT claims
+	jwtClaims, err := testutils.DecodeJWT(completeFlowStep.Assertion)
+	ts.Require().NoError(err, "Failed to decode JWT assertion")
+	ts.Require().NotNil(jwtClaims, "JWT claims should not be nil")
+
+	// Validate JWT contains expected user type and OU ID
+	ts.Require().Equal("person", jwtClaims.UserType, "Expected userType to be 'person'")
+	ts.Require().Equal(registrationOUID, jwtClaims.OuID, "Expected ouId to match the created organization unit")
+	ts.Require().Equal(testAppID, jwtClaims.Aud, "Expected aud to match the application ID")
+	ts.Require().NotEmpty(jwtClaims.Sub, "JWT subject should not be empty")
+
 	// Step 5: Verify the user was created by searching via the user API
 	user, err := testutils.FindUserByAttribute("mobileNumber", mobileNumber)
 	if err != nil {
@@ -323,6 +335,17 @@ func (ts *SMSRegistrationFlowTestSuite) TestSMSRegistrationFlowWithUsername() {
 		"JWT assertion should be returned after successful registration")
 	ts.Require().Empty(completeFlowStep.FailureReason,
 		"Failure reason should be empty for successful registration")
+
+	// Decode and validate JWT claims
+	jwtClaims, err := testutils.DecodeJWT(completeFlowStep.Assertion)
+	ts.Require().NoError(err, "Failed to decode JWT assertion")
+	ts.Require().NotNil(jwtClaims, "JWT claims should not be nil")
+
+	// Validate JWT contains expected user type and OU ID
+	ts.Require().Equal("person", jwtClaims.UserType, "Expected userType to be 'person'")
+	ts.Require().Equal(registrationOUID, jwtClaims.OuID, "Expected ouId to match the created organization unit")
+	ts.Require().Equal(testAppID, jwtClaims.Aud, "Expected aud to match the application ID")
+	ts.Require().NotEmpty(jwtClaims.Sub, "JWT subject should not be empty")
 
 	// Step 5: Verify the user was created by searching via the user API
 	user, err := testutils.FindUserByAttribute("username", username)
@@ -443,6 +466,17 @@ func (ts *SMSRegistrationFlowTestSuite) TestSMSRegistrationFlowSingleRequestWith
 		"JWT assertion should be returned after successful registration")
 	ts.Require().Empty(completeFlowStep.FailureReason,
 		"Failure reason should be empty for successful registration")
+
+	// Decode and validate JWT claims
+	jwtClaims, err := testutils.DecodeJWT(completeFlowStep.Assertion)
+	ts.Require().NoError(err, "Failed to decode JWT assertion")
+	ts.Require().NotNil(jwtClaims, "JWT claims should not be nil")
+
+	// Validate JWT contains expected user type and OU ID
+	ts.Require().Equal("person", jwtClaims.UserType, "Expected userType to be 'person'")
+	ts.Require().Equal(registrationOUID, jwtClaims.OuID, "Expected ouId to match the created organization unit")
+	ts.Require().Equal(testAppID, jwtClaims.Aud, "Expected aud to match the application ID")
+	ts.Require().NotEmpty(jwtClaims.Sub, "JWT subject should not be empty")
 
 	// Step 3: Verify the user was created by searching via the user API
 	user, err := testutils.FindUserByAttribute("mobileNumber", mobileNumber)

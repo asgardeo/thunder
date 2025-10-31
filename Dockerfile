@@ -76,7 +76,6 @@ RUN apk add --no-cache \
     lsof \
     sqlite \
     bash \
-    nodejs \
     curl \
     unzip
 
@@ -108,15 +107,11 @@ RUN chown -R thunder:thunder /opt/thunder && \
 # Expose the default port
 EXPOSE 8090
 
-# Expose the Gate port
-EXPOSE 9090
-
 # Switch to thunder user
 USER thunder
 
 # Set environment variables
 ENV BACKEND_PORT=8090
-ENV FRONTEND_PORT=9090
 
 # Start the application
 CMD ["./start.sh"]

@@ -1,0 +1,79 @@
+{
+  "name": "@thunder/ui",
+  "version": "0.0.0",
+  "description": "Reusable UI Kit for ⚡️ Thunder projects",
+  "keywords": [
+    "thunder",
+    "ui",
+    "mui",
+    "shareable",
+    "wso2"
+  ],
+  "homepage": "https://github.com/asgardeo/thunder/tree/main/frontend/packages/thunder-ui#readme",
+  "bugs": {
+    "url": "https://github.com/asgardeo/thunder/issues"
+  },
+  "author": "WSO2",
+  "license": "Apache-2.0",
+  "type": "module",
+  "main": "./dist/cjs/index.cjs",
+  "module": "./dist/index.js",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "require": "./dist/cjs/index.cjs"
+    }
+  },
+  "types": "./dist/index.d.ts",
+  "sideEffects": false,
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/asgardeo/thunder",
+    "directory": "frontend/packages/thunder-ui"
+  },
+  "scripts": {
+    "build": "pnpm clean:dist && rolldown -c rolldown.config.js && tsc -p tsconfig.lib.json --emitDeclarationOnly --outDir dist",
+    "clean": "pnpm clean:node_modules && pnpm clean:dist",
+    "clean:dist": "rimraf dist",
+    "clean:node_modules": "rimraf node_modules",
+    "lint": "eslint .",
+    "lint:fix": "eslint . --fix",
+    "test": "vitest",
+    "typecheck": "tsc -p tsconfig.lib.json"
+  },
+  "devDependencies": {
+    "@thunder/eslint-plugin-thunder": "workspace:^",
+    "@thunder/prettier-config": "workspace:^",
+    "@types/node": "catalog:",
+    "@types/react": "catalog:",
+    "eslint": "catalog:",
+    "prettier": "catalog:",
+    "react": "catalog:",
+    "react-dom": "catalog:",
+    "rimraf": "catalog:",
+    "rolldown": "catalog:",
+    "typescript": "catalog:",
+    "vitest": "catalog:"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "dependencies": {
+    "lucide-react": "catalog:",
+    "tslib": "catalog:"
+  },
+  "peerDependencies": {
+    "@emotion/react": "catalog:",
+    "@emotion/styled": "catalog:",
+    "@mui/icons-material": "catalog:",
+    "@mui/material": "catalog:",
+    "react": ">=16.8.0",
+    "react-dom": ">=16.8.0"
+  }
+}

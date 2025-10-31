@@ -23,8 +23,10 @@ import (
 	"strings"
 	"time"
 
+	"github.com/asgardeo/thunder/internal/authn/common"
 	authnoauth "github.com/asgardeo/thunder/internal/authn/oauth"
 	authnoidc "github.com/asgardeo/thunder/internal/authn/oidc"
+	"github.com/asgardeo/thunder/internal/idp"
 	"github.com/asgardeo/thunder/internal/system/error/serviceerror"
 	"github.com/asgardeo/thunder/internal/system/jwt"
 	"github.com/asgardeo/thunder/internal/system/log"
@@ -59,10 +61,13 @@ func NewGoogleOIDCAuthnService(oidcSvc authnoidc.OIDCAuthnServiceInterface) Goog
 		oidcSvc = authnoidc.NewOIDCAuthnService(oAuthSvc, jwtSvc)
 	}
 
-	return &googleOIDCAuthnService{
+	service := &googleOIDCAuthnService{
 		internal:   oidcSvc,
 		jwtService: jwtSvc,
 	}
+	common.RegisterAuthenticator(service.getMetadata())
+
+	return service
 }
 
 // BuildAuthorizeURL constructs the authorization request URL for Google OIDC authentication.
@@ -215,4 +220,13 @@ func (g *googleOIDCAuthnService) FetchUserInfo(idpID, accessToken string) (
 // GetInternalUser retrieves the internal user based on the external subject identifier.
 func (g *googleOIDCAuthnService) GetInternalUser(sub string) (*user.User, *serviceerror.ServiceError) {
 	return g.internal.GetInternalUser(sub)
+}
+
+// getMetadata returns the authenticator metadata for Google OIDC authenticator.
+func (g *googleOIDCAuthnService) getMetadata() common.AuthenticatorMeta {
+	return common.AuthenticatorMeta{
+		Name:          common.AuthenticatorGoogle,
+		Factors:       []common.AuthenticationFactor{common.FactorKnowledge},
+		AssociatedIDP: idp.IDPTypeGoogle,
+	}
 }

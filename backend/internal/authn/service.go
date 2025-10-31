@@ -24,7 +24,9 @@ import (
 	"fmt"
 	"slices"
 	"strings"
+	"time"
 
+	"github.com/asgardeo/thunder/internal/authn/assert"
 	"github.com/asgardeo/thunder/internal/authn/common"
 	"github.com/asgardeo/thunder/internal/authn/credentials"
 	"github.com/asgardeo/thunder/internal/authn/github"
@@ -49,47 +51,53 @@ var crossAllowedIDPTypes = []idp.IDPType{idp.IDPTypeOAuth, idp.IDPTypeOIDC}
 
 // AuthenticationServiceInterface defines the interface for the authentication service.
 type AuthenticationServiceInterface interface {
-	AuthenticateWithCredentials(attributes map[string]interface{}, skipAssertion bool) (
+	AuthenticateWithCredentials(attributes map[string]interface{}, skipAssertion bool, existingAssertion string) (
 		*common.AuthenticationResponse, *serviceerror.ServiceError)
 	SendOTP(senderID string, channel notifcommon.ChannelType, recipient string) (
 		string, *serviceerror.ServiceError)
-	VerifyOTP(sessionToken string, skipAssertion bool, otp string) (
+	VerifyOTP(sessionToken string, skipAssertion bool, existingAssertion, otp string) (
 		*common.AuthenticationResponse, *serviceerror.ServiceError)
 	StartIDPAuthentication(requestedType idp.IDPType, idpID string) (
 		*IDPAuthInitData, *serviceerror.ServiceError)
-	FinishIDPAuthentication(requestedType idp.IDPType, sessionToken string, skipAssertion bool, code string) (
-		*common.AuthenticationResponse, *serviceerror.ServiceError)
+	FinishIDPAuthentication(requestedType idp.IDPType, sessionToken string, skipAssertion bool,
+		existingAssertion, code string) (*common.AuthenticationResponse, *serviceerror.ServiceError)
 }
 
 // authenticationService is the default implementation of the AuthenticationServiceInterface.
 type authenticationService struct {
-	idpService         idp.IDPServiceInterface
-	jwtService         jwt.JWTServiceInterface
-	credentialsService credentials.CredentialsAuthnServiceInterface
-	otpService         otp.OTPAuthnServiceInterface
-	oauthService       oauth.OAuthAuthnServiceInterface
-	oidcService        oidc.OIDCAuthnServiceInterface
-	googleService      google.GoogleOIDCAuthnServiceInterface
-	githubService      github.GithubOAuthAuthnServiceInterface
+	idpService             idp.IDPServiceInterface
+	jwtService             jwt.JWTServiceInterface
+	authAssertionGenerator assert.AuthAssertGeneratorInterface
+	credentialsService     credentials.CredentialsAuthnServiceInterface
+	otpService             otp.OTPAuthnServiceInterface
+	oauthService           oauth.OAuthAuthnServiceInterface
+	oidcService            oidc.OIDCAuthnServiceInterface
+	googleService          google.GoogleOIDCAuthnServiceInterface
+	githubService          github.GithubOAuthAuthnServiceInterface
 }
 
 // NewAuthenticationService creates a new instance of AuthenticationService.
 func NewAuthenticationService() AuthenticationServiceInterface {
 	return &authenticationService{
-		idpService:         idp.NewIDPService(),
-		jwtService:         jwt.GetJWTService(),
-		credentialsService: credentials.NewCredentialsAuthnService(nil),
-		otpService:         otp.NewOTPAuthnService(nil, nil),
-		oauthService:       oauth.NewOAuthAuthnService(nil, nil, oauth.OAuthEndpoints{}),
-		oidcService:        oidc.NewOIDCAuthnService(nil, nil),
-		googleService:      google.NewGoogleOIDCAuthnService(nil),
-		githubService:      github.NewGithubOAuthAuthnService(nil, nil),
+		idpService:             idp.NewIDPService(),
+		jwtService:             jwt.GetJWTService(),
+		authAssertionGenerator: assert.NewAuthAssertGenerator(),
+		credentialsService:     credentials.NewCredentialsAuthnService(nil),
+		otpService:             otp.NewOTPAuthnService(nil, nil),
+		oauthService:           oauth.NewOAuthAuthnService(nil, nil, oauth.OAuthEndpoints{}),
+		oidcService:            oidc.NewOIDCAuthnService(nil, nil),
+		googleService:          google.NewGoogleOIDCAuthnService(nil),
+		githubService:          github.NewGithubOAuthAuthnService(nil, nil),
 	}
 }
 
 // AuthenticateWithCredentials authenticates a user using credentials.
-func (as *authenticationService) AuthenticateWithCredentials(attributes map[string]interface{}, skipAssertion bool) (
+func (as *authenticationService) AuthenticateWithCredentials(attributes map[string]interface{},
+	skipAssertion bool, existingAssertion string) (
 	*common.AuthenticationResponse, *serviceerror.ServiceError) {
+	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, svcLoggerComponentName))
+	logger.Debug("Authenticating with credentials")
+
 	user, svcErr := as.credentialsService.Authenticate(attributes)
 	if svcErr != nil {
 		return nil, svcErr
@@ -103,7 +111,8 @@ func (as *authenticationService) AuthenticateWithCredentials(attributes map[stri
 
 	// Generate assertion if not skipped
 	if !skipAssertion {
-		svcErr = as.appendAuthAssertion(user, authResponse)
+		svcErr = as.validateAndAppendAuthAssertion(authResponse, user, common.AuthenticatorCredentials,
+			existingAssertion, logger)
 		if svcErr != nil {
 			return nil, svcErr
 		}
@@ -119,8 +128,11 @@ func (as *authenticationService) SendOTP(senderID string, channel notifcommon.Ch
 }
 
 // VerifyOTP verifies an OTP and returns the authenticated user.
-func (as *authenticationService) VerifyOTP(sessionToken string, skipAssertion bool, otpCode string) (
-	*common.AuthenticationResponse, *serviceerror.ServiceError) {
+func (as *authenticationService) VerifyOTP(sessionToken string, skipAssertion bool,
+	existingAssertion, otpCode string) (*common.AuthenticationResponse, *serviceerror.ServiceError) {
+	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, svcLoggerComponentName))
+	logger.Debug("Verifying OTP for authentication")
+
 	user, svcErr := as.otpService.VerifyOTP(sessionToken, otpCode)
 	if svcErr != nil {
 		return nil, svcErr
@@ -134,7 +146,8 @@ func (as *authenticationService) VerifyOTP(sessionToken string, skipAssertion bo
 
 	// Generate assertion if not skipped
 	if !skipAssertion {
-		svcErr = as.appendAuthAssertion(user, authResponse)
+		svcErr = as.validateAndAppendAuthAssertion(authResponse, user, common.AuthenticatorSMSOTP,
+			existingAssertion, logger)
 		if svcErr != nil {
 			return nil, svcErr
 		}
@@ -198,7 +211,7 @@ func (as *authenticationService) StartIDPAuthentication(requestedType idp.IDPTyp
 
 // FinishIDPAuthentication completes authentication against an IDP.
 func (as *authenticationService) FinishIDPAuthentication(requestedType idp.IDPType, sessionToken string,
-	skipAssertion bool, code string) (*common.AuthenticationResponse, *serviceerror.ServiceError) {
+	skipAssertion bool, existingAssertion, code string) (*common.AuthenticationResponse, *serviceerror.ServiceError) {
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, svcLoggerComponentName))
 	logger.Debug("Finishing IDP authentication")
 
@@ -248,7 +261,15 @@ func (as *authenticationService) FinishIDPAuthentication(requestedType idp.IDPTy
 
 	// Generate assertion if not skipped
 	if !skipAssertion {
-		svcErr = as.appendAuthAssertion(user, authResponse)
+		authenticatorName, err := common.GetAuthenticatorNameForIDPType(sessionData.IDPType)
+		if err != nil {
+			logger.Error("Failed to get authenticator name for IDP type",
+				log.String("idpType", string(sessionData.IDPType)), log.Error(err))
+			return nil, &common.ErrorInternalServerError
+		}
+
+		svcErr = as.validateAndAppendAuthAssertion(authResponse, user, authenticatorName,
+			existingAssertion, logger)
 		if svcErr != nil {
 			return nil, svcErr
 		}
@@ -257,12 +278,44 @@ func (as *authenticationService) FinishIDPAuthentication(requestedType idp.IDPTy
 	return authResponse, nil
 }
 
-// appendAuthAssertion generates and appends an auth assertion (JWT) to the authentication response.
-func (as *authenticationService) appendAuthAssertion(user *user.User,
-	authResponse *common.AuthenticationResponse) *serviceerror.ServiceError {
-	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, svcLoggerComponentName))
+// validateAndAppendAuthAssertion validates and appends a generated auth assertion to the authentication response.
+func (as *authenticationService) validateAndAppendAuthAssertion(authResponse *common.AuthenticationResponse,
+	user *user.User, authenticator string, existingAssertion string,
+	logger *log.Logger) *serviceerror.ServiceError {
 	logger.Debug("Generating auth assertion", log.String("userId", user.ID))
 
+	authenticatorRef := &common.AuthenticatorReference{
+		Authenticator: authenticator,
+		Timestamp:     time.Now().Unix(),
+	}
+
+	// Extract existing assurance if provided and set appropriate step number
+	var existingAssurance *assert.AssuranceContext
+	if strings.TrimSpace(existingAssertion) != "" {
+		var assertionSub string
+		var svcErr *serviceerror.ServiceError
+		existingAssurance, assertionSub, svcErr = as.extractClaimsFromAssertion(existingAssertion, logger)
+		if svcErr != nil {
+			return svcErr
+		}
+
+		// Validate that the assertion subject matches the current user
+		if assertionSub != user.ID {
+			logger.Debug("Assertion subject mismatch", log.String("assertionSub", assertionSub),
+				log.String("userId", user.ID))
+			return &common.ErrorAssertionSubjectMismatch
+		}
+
+		if existingAssurance != nil {
+			authenticatorRef.Step = len(existingAssurance.Authenticators) + 1
+		} else {
+			authenticatorRef.Step = 1
+		}
+	} else {
+		authenticatorRef.Step = 1
+	}
+
+	// Prepare JWT claims
 	jwtClaims := make(map[string]interface{})
 	if user.Type != "" {
 		jwtClaims["userType"] = user.Type
@@ -271,8 +324,18 @@ func (as *authenticationService) appendAuthAssertion(user *user.User,
 		jwtClaims["organizationUnit"] = user.OrganizationUnit
 	}
 
-	jwtConfig := config.GetThunderRuntime().Config.JWT
+	// Get authentication assertion result
+	assertionResult, svcErr := as.getAssertionResult(existingAssurance, authenticatorRef)
+	if svcErr != nil {
+		return svcErr
+	}
 
+	if assertionResult != nil {
+		jwtClaims["assurance"] = assertionResult.Context
+	}
+
+	// Generate auth assertion JWT
+	jwtConfig := config.GetThunderRuntime().Config.JWT
 	token, _, err := as.jwtService.GenerateJWT(user.ID, "application", jwtConfig.Issuer,
 		jwtConfig.ValidityPeriod, jwtClaims)
 	if err != nil {
@@ -282,6 +345,76 @@ func (as *authenticationService) appendAuthAssertion(user *user.User,
 
 	authResponse.Assertion = token
 	return nil
+}
+
+// getAssertionResult generates or updates an assertion result based on existing context.
+func (as *authenticationService) getAssertionResult(existingContext *assert.AssuranceContext,
+	newAuthenticator *common.AuthenticatorReference) (
+	*assert.AssertionResult, *serviceerror.ServiceError) {
+	var assertionResult *assert.AssertionResult
+	var svcErr *serviceerror.ServiceError
+	if existingContext != nil && newAuthenticator != nil {
+		// Update existing assurance with new authenticator
+		assertionResult, svcErr = as.authAssertionGenerator.UpdateAssertion(
+			existingContext, *newAuthenticator)
+	} else if newAuthenticator != nil {
+		// Generate new assurance from authenticator
+		assertionResult, svcErr = as.authAssertionGenerator.GenerateAssertion(
+			[]common.AuthenticatorReference{*newAuthenticator})
+	}
+
+	return assertionResult, svcErr
+}
+
+// extractClaimsFromAssertion extracts assurance context and subject from an existing JWT assertion.
+func (as *authenticationService) extractClaimsFromAssertion(assertion string,
+	logger *log.Logger) (*assert.AssuranceContext, string, *serviceerror.ServiceError) {
+	jwtConfig := config.GetThunderRuntime().Config.JWT
+
+	if err := as.jwtService.VerifyJWT(assertion, "", jwtConfig.Issuer); err != nil {
+		logger.Debug("Failed to verify JWT signature of the assertion", log.Error(err))
+		return nil, "", &common.ErrorInvalidAssertion
+	}
+
+	payload, err := jwt.DecodeJWTPayload(assertion)
+	if err != nil {
+		logger.Debug("Failed to decode JWT assertion", log.Error(err))
+		return nil, "", &common.ErrorInvalidAssertion
+	}
+
+	// Extract subject claim
+	subClaim, ok := payload["sub"]
+	if !ok {
+		logger.Debug("No 'sub' claim found in JWT assertion")
+		return nil, "", &common.ErrorInvalidAssertion
+	}
+	sub, ok := subClaim.(string)
+	if !ok || strings.TrimSpace(sub) == "" {
+		logger.Debug("Invalid 'sub' claim in JWT assertion")
+		return nil, "", &common.ErrorInvalidAssertion
+	}
+
+	// Extract assurance claim
+	assuranceClaim, ok := payload["assurance"]
+	if !ok {
+		logger.Debug("No assurance claim found in JWT assertion")
+		return nil, "", &common.ErrorInvalidAssertion
+	}
+
+	// Convert assurance claim to AssuranceContext
+	assuranceBytes, err := json.Marshal(assuranceClaim)
+	if err != nil {
+		logger.Debug("Failed to marshal assurance claim", log.Error(err))
+		return nil, "", &common.ErrorInvalidAssertion
+	}
+
+	var assuranceCtx assert.AssuranceContext
+	if err := json.Unmarshal(assuranceBytes, &assuranceCtx); err != nil {
+		logger.Debug("Failed to unmarshal assurance claim to AssuranceContext", log.Error(err))
+		return nil, "", &common.ErrorInvalidAssertion
+	}
+
+	return &assuranceCtx, sub, nil
 }
 
 // finishOAuthAuthentication handles OAuth authentication completion.

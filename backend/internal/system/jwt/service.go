@@ -38,7 +38,6 @@ import (
 	"sync"
 	"time"
 
-	"github.com/asgardeo/thunder/internal/cert"
 	"github.com/asgardeo/thunder/internal/system/config"
 	httpservice "github.com/asgardeo/thunder/internal/system/http"
 	"github.com/asgardeo/thunder/internal/system/log"
@@ -65,16 +64,13 @@ type JWTServiceInterface interface {
 
 // JWTService implements the JWTServiceInterface for generating and managing JWT tokens.
 type JWTService struct {
-	privateKey               *rsa.PrivateKey
-	SystemCertificateService cert.SystemCertificateServiceInterface
+	privateKey *rsa.PrivateKey
 }
 
 // GetJWTService returns a singleton instance of JWTService.
 func GetJWTService() JWTServiceInterface {
 	once.Do(func() {
-		instance = &JWTService{
-			SystemCertificateService: cert.NewSystemCertificateService(),
-		}
+		instance = &JWTService{}
 	})
 	return instance
 }

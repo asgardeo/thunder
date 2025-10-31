@@ -24,6 +24,7 @@ import (
 
 	authncm "github.com/asgardeo/thunder/internal/authn/common"
 	authnoauth "github.com/asgardeo/thunder/internal/authn/oauth"
+	"github.com/asgardeo/thunder/internal/idp"
 	"github.com/asgardeo/thunder/internal/system/error/serviceerror"
 	syshttp "github.com/asgardeo/thunder/internal/system/http"
 	"github.com/asgardeo/thunder/internal/system/log"
@@ -59,10 +60,13 @@ func NewGithubOAuthAuthnService(oAuthSvc authnoauth.OAuthAuthnServiceInterface,
 		httpClient = syshttp.NewHTTPClientWithTimeout(authncm.DefaultHTTPTimeout)
 	}
 
-	return &githubOAuthAuthnService{
+	service := &githubOAuthAuthnService{
 		internal:   oAuthSvc,
 		httpClient: httpClient,
 	}
+	authncm.RegisterAuthenticator(service.getMetadata())
+
+	return service
 }
 
 // BuildAuthorizeURL constructs the authorization request URL for GitHub OAuth authentication.
@@ -147,4 +151,13 @@ func (g *githubOAuthAuthnService) fetchPrimaryEmail(accessToken string) (string,
 // GetInternalUser retrieves the internal user based on the external subject identifier.
 func (g *githubOAuthAuthnService) GetInternalUser(sub string) (*user.User, *serviceerror.ServiceError) {
 	return g.internal.GetInternalUser(sub)
+}
+
+// getMetadata returns the authenticator metadata for GitHub OAuth authenticator.
+func (g *githubOAuthAuthnService) getMetadata() authncm.AuthenticatorMeta {
+	return authncm.AuthenticatorMeta{
+		Name:          authncm.AuthenticatorGithub,
+		Factors:       []authncm.AuthenticationFactor{authncm.FactorKnowledge},
+		AssociatedIDP: idp.IDPTypeGitHub,
+	}
 }

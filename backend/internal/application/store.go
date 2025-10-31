@@ -40,6 +40,7 @@ type oAuthConfig struct {
 	PKCERequired            bool              `json:"pkce_required"`
 	PublicClient            bool              `json:"public_client"`
 	Token                   *oAuthTokenConfig `json:"token,omitempty"`
+	Scopes                  []string          `json:"scopes,omitempty"`
 }
 
 // oAuthTokenConfig represents the OAuth token configuration structure for JSON marshaling/unmarshaling.
@@ -253,6 +254,7 @@ func (st *applicationStore) GetOAuthApplication(clientID string) (*model.OAuthAp
 		PKCERequired:            oAuthConfig.PKCERequired,
 		PublicClient:            oAuthConfig.PublicClient,
 		Token:                   oauthTokenConfig,
+		Scopes:                  oAuthConfig.Scopes,
 	}, nil
 }
 
@@ -355,8 +357,11 @@ func (st *applicationStore) DeleteApplication(id string) error {
 // getAppJSONDataBytes constructs the JSON data bytes for the application.
 func getAppJSONDataBytes(app *model.ApplicationProcessedDTO) ([]byte, error) {
 	jsonData := map[string]interface{}{
-		"url":      app.URL,
-		"logo_url": app.LogoURL,
+		"url":        app.URL,
+		"logo_url":   app.LogoURL,
+		"tos_uri":    app.TosURI,
+		"policy_uri": app.PolicyURI,
+		"contacts":   app.Contacts,
 	}
 
 	// Include token config if present
@@ -392,6 +397,7 @@ func getOAuthConfigJSONBytes(inboundAuthConfig model.InboundAuthConfigProcessedD
 		TokenEndpointAuthMethod: string(inboundAuthConfig.OAuthAppConfig.TokenEndpointAuthMethod),
 		PKCERequired:            inboundAuthConfig.OAuthAppConfig.PKCERequired,
 		PublicClient:            inboundAuthConfig.OAuthAppConfig.PublicClient,
+		Scopes:                  inboundAuthConfig.OAuthAppConfig.Scopes,
 	}
 
 	// Include token config if present
@@ -561,6 +567,37 @@ func buildApplicationFromResultRow(row map[string]interface{}) (model.Applicatio
 		return model.ApplicationProcessedDTO{}, fmt.Errorf("failed to parse logo_url from app JSON")
 	}
 
+	var tosURI string
+	if appJSONData["tos_uri"] == nil {
+		tosURI = ""
+	} else if tos, ok := appJSONData["tos_uri"].(string); ok {
+		tosURI = tos
+	} else {
+		return model.ApplicationProcessedDTO{}, fmt.Errorf("failed to parse tos_uri from app JSON")
+	}
+
+	var policyURI string
+	if appJSONData["policy_uri"] == nil {
+		policyURI = ""
+	} else if policy, ok := appJSONData["policy_uri"].(string); ok {
+		policyURI = policy
+	} else {
+		return model.ApplicationProcessedDTO{}, fmt.Errorf("failed to parse policy_uri from app JSON")
+	}
+
+	var contacts []string
+	if appJSONData["contacts"] == nil {
+		contacts = []string{}
+	} else if contactsData, ok := appJSONData["contacts"].([]interface{}); ok {
+		for _, contact := range contactsData {
+			if contactStr, ok := contact.(string); ok {
+				contacts = append(contacts, contactStr)
+			}
+		}
+	} else {
+		return model.ApplicationProcessedDTO{}, fmt.Errorf("failed to parse contacts from app JSON")
+	}
+
 	// Extract token config from app JSON if present
 	var rootTokenConfig *model.TokenConfig
 	if tokenData, exists := appJSONData["token"]; exists && tokenData != nil {
@@ -593,86 +630,100 @@ func buildApplicationFromResultRow(row map[string]interface{}) (model.Applicatio
 		URL:                       url,
 		LogoURL:                   logoURL,
 		Token:                     rootTokenConfig,
+		TosURI:                    tosURI,
+		PolicyURI:                 policyURI,
+		Contacts:                  contacts,
 	}
 
 	if basicApp.ClientID != "" {
-		hashedClientSecret, ok := row["consumer_secret"].(string)
-		if !ok {
-			return model.ApplicationProcessedDTO{}, fmt.Errorf("failed to parse consumer_secret as string")
-		}
-
-		// Extract OAuth JSON data from the row.
-		var oauthConfigJSON string
-		if row["oauth_config_json"] == nil {
-			oauthConfigJSON = "{}"
-		} else if v, ok := row["oauth_config_json"].(string); ok {
-			oauthConfigJSON = v
-		} else if v, ok := row["oauth_config_json"].([]byte); ok {
-			oauthConfigJSON = string(v)
-		} else {
-			return model.ApplicationProcessedDTO{}, fmt.Errorf("failed to parse oauth_config_json as string or []byte")
-		}
-
-		var oauthConfig oAuthConfig
-		if err := json.Unmarshal([]byte(oauthConfigJSON), &oauthConfig); err != nil {
-			return model.ApplicationProcessedDTO{}, fmt.Errorf("failed to unmarshal oauth config JSON: %w", err)
-		}
-
-		// Convert the typed arrays to the required types
-		var grantTypes []oauth2const.GrantType
-		for _, gt := range oauthConfig.GrantTypes {
-			grantTypes = append(grantTypes, oauth2const.GrantType(gt))
-		}
-
-		var responseTypes []oauth2const.ResponseType
-		for _, rt := range oauthConfig.ResponseTypes {
-			responseTypes = append(responseTypes, oauth2const.ResponseType(rt))
-		}
-
-		tokenEndpointAuthMethod := oauth2const.TokenEndpointAuthMethod(oauthConfig.TokenEndpointAuthMethod)
-
-		// Extract token config from OAuth config if present
-		var oauthTokenConfig *model.OAuthTokenConfig
-		if oauthConfig.Token != nil {
-			oauthTokenConfig = &model.OAuthTokenConfig{
-				Issuer: oauthConfig.Token.Issuer,
-			}
-			if oauthConfig.Token.AccessToken != nil {
-				oauthTokenConfig.AccessToken = &model.TokenConfig{
-					Issuer:         oauthConfig.Token.AccessToken.Issuer,
-					ValidityPeriod: oauthConfig.Token.AccessToken.ValidityPeriod,
-					UserAttributes: oauthConfig.Token.AccessToken.UserAttributes,
-				}
-			}
-			if oauthConfig.Token.IDToken != nil {
-				oauthTokenConfig.IDToken = &model.IDTokenConfig{
-					ValidityPeriod: oauthConfig.Token.IDToken.ValidityPeriod,
-					UserAttributes: oauthConfig.Token.IDToken.UserAttributes,
-					ScopeClaims:    oauthConfig.Token.IDToken.ScopeClaims,
-				}
-			}
-		}
-
-		// TODO: Need to refactor when supporting other/multiple inbound auth types.
-		inboundAuthConfig := model.InboundAuthConfigProcessedDTO{
-			Type: model.OAuthInboundAuthType,
-			OAuthAppConfig: &model.OAuthAppConfigProcessedDTO{
-				AppID:                   basicApp.ID,
-				ClientID:                basicApp.ClientID,
-				HashedClientSecret:      hashedClientSecret,
-				RedirectURIs:            oauthConfig.RedirectURIs,
-				GrantTypes:              grantTypes,
-				ResponseTypes:           responseTypes,
-				TokenEndpointAuthMethod: tokenEndpointAuthMethod,
-				PKCERequired:            oauthConfig.PKCERequired,
-				PublicClient:            oauthConfig.PublicClient,
-				Token:                   oauthTokenConfig,
-			},
+		inboundAuthConfig, err := buildOAuthInboundAuthConfig(row, basicApp)
+		if err != nil {
+			return model.ApplicationProcessedDTO{}, err
 		}
 		application.InboundAuthConfig = []model.InboundAuthConfigProcessedDTO{inboundAuthConfig}
 	}
 
 	return application, nil
+}
+
+// buildOAuthInboundAuthConfig builds OAuth inbound auth configuration from database row and basic app data.
+func buildOAuthInboundAuthConfig(row map[string]interface{}, basicApp model.BasicApplicationDTO) (
+	model.InboundAuthConfigProcessedDTO, error) {
+	hashedClientSecret, ok := row["consumer_secret"].(string)
+	if !ok {
+		return model.InboundAuthConfigProcessedDTO{}, fmt.Errorf("failed to parse consumer_secret as string")
+	}
+
+	// Extract OAuth JSON data from the row.
+	var oauthConfigJSON string
+	if row["oauth_config_json"] == nil {
+		oauthConfigJSON = "{}"
+	} else if v, ok := row["oauth_config_json"].(string); ok {
+		oauthConfigJSON = v
+	} else if v, ok := row["oauth_config_json"].([]byte); ok {
+		oauthConfigJSON = string(v)
+	} else {
+		return model.InboundAuthConfigProcessedDTO{}, fmt.Errorf("failed to parse oauth_config_json as string or []byte")
+	}
+
+	var oauthConfig oAuthConfig
+	if err := json.Unmarshal([]byte(oauthConfigJSON), &oauthConfig); err != nil {
+		return model.InboundAuthConfigProcessedDTO{}, fmt.Errorf("failed to unmarshal oauth config JSON: %w", err)
+	}
+
+	// Convert the typed arrays to the required types
+	grantTypes := make([]oauth2const.GrantType, 0, len(oauthConfig.GrantTypes))
+	for _, gt := range oauthConfig.GrantTypes {
+		grantTypes = append(grantTypes, oauth2const.GrantType(gt))
+	}
+
+	responseTypes := make([]oauth2const.ResponseType, 0, len(oauthConfig.ResponseTypes))
+	for _, rt := range oauthConfig.ResponseTypes {
+		responseTypes = append(responseTypes, oauth2const.ResponseType(rt))
+	}
+
+	tokenEndpointAuthMethod := oauth2const.TokenEndpointAuthMethod(oauthConfig.TokenEndpointAuthMethod)
+
+	// Extract token config from OAuth config if present
+	var oauthTokenConfig *model.OAuthTokenConfig
+	if oauthConfig.Token != nil {
+		oauthTokenConfig = &model.OAuthTokenConfig{
+			Issuer: oauthConfig.Token.Issuer,
+		}
+		if oauthConfig.Token.AccessToken != nil {
+			oauthTokenConfig.AccessToken = &model.TokenConfig{
+				Issuer:         oauthConfig.Token.AccessToken.Issuer,
+				ValidityPeriod: oauthConfig.Token.AccessToken.ValidityPeriod,
+				UserAttributes: oauthConfig.Token.AccessToken.UserAttributes,
+			}
+		}
+		if oauthConfig.Token.IDToken != nil {
+			oauthTokenConfig.IDToken = &model.IDTokenConfig{
+				ValidityPeriod: oauthConfig.Token.IDToken.ValidityPeriod,
+				UserAttributes: oauthConfig.Token.IDToken.UserAttributes,
+				ScopeClaims:    oauthConfig.Token.IDToken.ScopeClaims,
+			}
+		}
+	}
+
+	// TODO: Need to refactor when supporting other/multiple inbound auth types.
+	inboundAuthConfig := model.InboundAuthConfigProcessedDTO{
+		Type: model.OAuthInboundAuthType,
+		OAuthAppConfig: &model.OAuthAppConfigProcessedDTO{
+			AppID:                   basicApp.ID,
+			ClientID:                basicApp.ClientID,
+			HashedClientSecret:      hashedClientSecret,
+			RedirectURIs:            oauthConfig.RedirectURIs,
+			GrantTypes:              grantTypes,
+			ResponseTypes:           responseTypes,
+			TokenEndpointAuthMethod: tokenEndpointAuthMethod,
+			PKCERequired:            oauthConfig.PKCERequired,
+			PublicClient:            oauthConfig.PublicClient,
+			Token:                   oauthTokenConfig,
+			Scopes:                  oauthConfig.Scopes,
+		},
+	}
+	return inboundAuthConfig, nil
 }
 
 // executeTransaction is a helper function to handle database transactions.

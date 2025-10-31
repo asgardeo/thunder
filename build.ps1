@@ -105,8 +105,12 @@ if ($GO_ARCH -eq "amd64") {
 $VERSION_FILE = "version.txt"
 $VERSION = Get-Content $VERSION_FILE -Raw
 $VERSION = $VERSION.Trim()
+$THUNDER_VERSION = $VERSION
+if ($THUNDER_VERSION.StartsWith("v")) {
+    $THUNDER_VERSION = $THUNDER_VERSION.Substring(1)
+}
 $BINARY_NAME = "thunder"
-$PRODUCT_FOLDER = "${BINARY_NAME}-${VERSION}-${GO_PACKAGE_OS}-${GO_PACKAGE_ARCH}"
+$PRODUCT_FOLDER = "${BINARY_NAME}-${THUNDER_VERSION}-${GO_PACKAGE_OS}-${GO_PACKAGE_ARCH}"
 
 # --- Sample App Distribution details ---
 $SAMPLE_PACKAGE_OS = $SAMPLE_DIST_OS
@@ -115,10 +119,9 @@ $SAMPLE_PACKAGE_ARCH = $SAMPLE_DIST_ARCH
 $SAMPLE_APP_SERVER_BINARY_NAME = "server"
 $packageJson = Get-Content "samples/apps/oauth/package.json" -Raw | ConvertFrom-Json
 $SAMPLE_APP_VERSION = $packageJson.version
-$SAMPLE_APP_FOLDER = "${BINARY_NAME}-sample-app-${SAMPLE_APP_VERSION}-${SAMPLE_PACKAGE_OS}-${SAMPLE_PACKAGE_ARCH}"
+$SAMPLE_APP_FOLDER = "sample-app-${SAMPLE_APP_VERSION}-${SAMPLE_PACKAGE_OS}-${SAMPLE_PACKAGE_ARCH}"
 
 # Server ports
-$FRONTEND_PORT = 9090
 $BACKEND_PORT = 8090
 
 # Directories
@@ -135,8 +138,10 @@ $SERVER_SCRIPTS_DIR = Join-Path $BACKEND_BASE_DIR "scripts"
 $SERVER_DB_SCRIPTS_DIR = Join-Path $BACKEND_BASE_DIR "dbscripts"
 $SECURITY_DIR = "repository/resources/security"
 $FRONTEND_BASE_DIR = "frontend"
-$GATE_APP_DIR = "apps/gate"
-$FRONTEND_GATE_APP_DIR = Join-Path $FRONTEND_BASE_DIR $GATE_APP_DIR
+$GATE_APP_DIST_DIR = "apps/gate"
+$DEVELOP_APP_DIST_DIR = "apps/develop"
+$FRONTEND_GATE_APP_SOURCE_DIR = Join-Path $FRONTEND_BASE_DIR "apps/thunder-gate"
+$FRONTEND_DEVELOP_APP_SOURCE_DIR = Join-Path $FRONTEND_BASE_DIR "apps/thunder-develop"
 $SAMPLE_BASE_DIR = "samples"
 $SAMPLE_APP_DIR = Join-Path $SAMPLE_BASE_DIR "apps/oauth"
 $SAMPLE_APP_SERVER_DIR = Join-Path $SAMPLE_APP_DIR "server"
@@ -280,7 +285,7 @@ function Build-Backend {
 
 function Build-Frontend {
     Write-Host "================================================================"
-    Write-Host "Building Next.js frontend apps..."
+    Write-Host "Building frontend apps..."
     
     # Check if pnpm is installed, if not install it
     if (-not (Get-Command pnpm -ErrorAction SilentlyContinue)) {
@@ -294,8 +299,8 @@ function Build-Frontend {
         Write-Host "Installing frontend dependencies..."
         & pnpm install
         
-        Write-Host "Building gate app..."
-        & pnpm --filter gate build
+        Write-Host "Building frontend applications & packages..."
+        & pnpm build
     }
     finally {
         Pop-Location
@@ -397,21 +402,31 @@ function Prepare-Frontend-For-Packaging {
     Write-Host "Copying frontend artifacts..."
 
     $package_folder = Join-Path $DIST_DIR $PRODUCT_FOLDER
-    $gate_app_folder = Join-Path $package_folder $GATE_APP_DIR
-    New-Item -Path $gate_app_folder -ItemType Directory -Force | Out-Null
-    
-    # Copy Next.js standalone output with all files including hidden ones
-    $standalone_path = Join-Path $FRONTEND_GATE_APP_DIR "dist\.next\standalone"
-    if (Test-Path $standalone_path) {
-        Write-Host "Copying gate app build output..."
-        # Copy all files including hidden ones from standalone directory
-        Get-ChildItem -Path $standalone_path -Force | ForEach-Object {
-            Copy-Item -Path $_.FullName -Destination $gate_app_folder -Recurse -Force
+    New-Item -Path (Join-Path $package_folder $GATE_APP_DIST_DIR) -ItemType Directory -Force | Out-Null
+    New-Item -Path (Join-Path $package_folder $DEVELOP_APP_DIST_DIR) -ItemType Directory -Force | Out-Null
+
+    # Copy gate app build output
+    if (Test-Path (Join-Path $FRONTEND_GATE_APP_SOURCE_DIR "dist")) {
+        Write-Host "Copying Gate app build output..."
+        Get-ChildItem -Path (Join-Path $FRONTEND_GATE_APP_SOURCE_DIR "dist") -Force | ForEach-Object {
+            Copy-Item -Path $_.FullName -Destination (Join-Path $package_folder $GATE_APP_DIST_DIR) -Recurse -Force
         }
     }
     else {
-        Write-Host "Warning: Frontend build output not found at $standalone_path"
+        Write-Host "Warning: Gate app build output not found at $((Join-Path $FRONTEND_GATE_APP_SOURCE_DIR "dist"))"
     }
+    
+    # Copy develop app build output
+    if (Test-Path (Join-Path $FRONTEND_DEVELOP_APP_SOURCE_DIR "dist")) {
+        Write-Host "Copying Develop app build output..."
+        Get-ChildItem -Path (Join-Path $FRONTEND_DEVELOP_APP_SOURCE_DIR "dist") -Force | ForEach-Object {
+            Copy-Item -Path $_.FullName -Destination (Join-Path $package_folder $DEVELOP_APP_DIST_DIR) -Recurse -Force
+        }
+    }
+    else {
+        Write-Host "Warning: Develop app build output not found at $((Join-Path $FRONTEND_DEVELOP_APP_SOURCE_DIR "dist"))"
+    }
+
     Write-Host "================================================================"
 }
 
@@ -1007,9 +1022,6 @@ function Run-Server {
     Write-Host "=== Ensuring server certificates exist ==="
     Ensure-Certificates -cert_dir (Join-Path $BACKEND_DIR $SECURITY_DIR)
 
-    Write-Host "=== Ensuring portal certificates exist ==="
-    Ensure-Certificates -cert_dir $FRONTEND_GATE_APP_DIR
-
     Write-Host "=== Ensuring sample app certificates exist ==="
     Ensure-Certificates -cert_dir $SAMPLE_APP_DIR
 
@@ -1026,19 +1038,7 @@ function Run-Server {
         }
     }
 
-    Kill-Port $FRONTEND_PORT
     Kill-Port $BACKEND_PORT
-
-    Write-Host "=== Starting frontend on https://localhost:$FRONTEND_PORT ==="
-    $env:FRONTEND_PORT = $FRONTEND_PORT
-    
-    Push-Location $FRONTEND_BASE_DIR
-    try {
-        $frontendProcess = Start-Process -FilePath "pnpm" -ArgumentList "--filter", "gate", "start" -PassThru -NoNewWindow
-    }
-    finally {
-        Pop-Location
-    }
 
     Write-Host "=== Starting backend on https://localhost:$BACKEND_PORT ==="
     $env:BACKEND_PORT = $BACKEND_PORT
@@ -1053,8 +1053,10 @@ function Run-Server {
 
     Write-Host ""
     Write-Host "🚀 Servers running:"
-    Write-Host "👉 Frontend: https://localhost:$FRONTEND_PORT"
     Write-Host "👉 Backend : https://localhost:$BACKEND_PORT"
+    Write-Host "📱 Frontend Apps:"
+    Write-Host "   � Gate (Login/Register): https://localhost:$BACKEND_PORT/signin"
+    Write-Host "   �️  Develop (Admin Console): https://localhost:$BACKEND_PORT/develop"
     Write-Host "Press Ctrl+C to stop."
     
     # Wait for user to press Ctrl+C
@@ -1065,9 +1067,6 @@ function Run-Server {
     }
     catch [System.Management.Automation.PipelineStoppedException] {
         Write-Host "Stopping servers..."
-        if ($frontendProcess -and -not $frontendProcess.HasExited) {
-            Stop-Process -Id $frontendProcess.Id -Force -ErrorAction SilentlyContinue
-        }
         if ($backendProcess -and -not $backendProcess.HasExited) {
             Stop-Process -Id $backendProcess.Id -Force -ErrorAction SilentlyContinue
         }
@@ -1126,7 +1125,7 @@ switch ($Command) {
         Write-Host "  clean_all                - Clean all build artifacts including distributions"
         Write-Host "  build                    - Build the complete Thunder application (backend + frontend + samples)"
         Write-Host "  build_backend            - Build only the Thunder backend server"
-        Write-Host "  build_frontend           - Build only the Next.js frontend applications"
+        Write-Host "  build_frontend           - Build only the frontend applications"
         Write-Host "  build_samples            - Build the sample applications"
         Write-Host "  test_unit                - Run unit tests with coverage"
         Write-Host "  test_integration         - Run integration tests"

@@ -31,6 +31,10 @@ type Application struct {
 	URL                       string              `json:"url,omitempty"`
 	LogoURL                   string              `json:"logo_url,omitempty"`
 	Certificate               *ApplicationCert    `json:"certificate,omitempty"`
+	Token                     *TokenConfig        `json:"token,omitempty"`
+	TosURI                    string              `json:"tos_uri,omitempty"`
+	PolicyURI                 string              `json:"policy_uri,omitempty"`
+	Contacts                  []string            `json:"contacts,omitempty"`
 	InboundAuthConfig         []InboundAuthConfig `json:"inbound_auth_config,omitempty"`
 }
 
@@ -48,14 +52,37 @@ type InboundAuthConfig struct {
 
 // OAuthAppConfig represents the OAuth application configuration.
 type OAuthAppConfig struct {
-	ClientID                string   `json:"client_id"`
-	ClientSecret            string   `json:"client_secret,omitempty"`
-	RedirectURIs            []string `json:"redirect_uris"`
-	GrantTypes              []string `json:"grant_types"`
-	ResponseTypes           []string `json:"response_types"`
-	TokenEndpointAuthMethod string   `json:"token_endpoint_auth_method"`
-	PKCERequired            bool     `json:"pkce_required"`
-	PublicClient            bool     `json:"public_client"`
+	ClientID                string            `json:"client_id"`
+	ClientSecret            string            `json:"client_secret,omitempty"`
+	RedirectURIs            []string          `json:"redirect_uris"`
+	GrantTypes              []string          `json:"grant_types"`
+	ResponseTypes           []string          `json:"response_types"`
+	TokenEndpointAuthMethod string            `json:"token_endpoint_auth_method"`
+	PKCERequired            bool              `json:"pkce_required"`
+	PublicClient            bool              `json:"public_client"`
+	Scopes                  []string          `json:"scopes,omitempty"`
+	Token                   *OAuthTokenConfig `json:"token,omitempty"`
+}
+
+// OAuthTokenConfig represents the OAuth token configuration.
+type OAuthTokenConfig struct {
+	Issuer      string         `json:"issuer,omitempty"`
+	AccessToken *TokenConfig   `json:"access_token,omitempty"`
+	IDToken     *IDTokenConfig `json:"id_token,omitempty"`
+}
+
+// TokenConfig represents the token configuration.
+type TokenConfig struct {
+	Issuer         string   `json:"issuer,omitempty"`
+	ValidityPeriod int64    `json:"validity_period,omitempty"`
+	UserAttributes []string `json:"user_attributes,omitempty"`
+}
+
+// IDTokenConfig represents the ID token configuration.
+type IDTokenConfig struct {
+	ValidityPeriod int64               `json:"validity_period,omitempty"`
+	UserAttributes []string            `json:"user_attributes,omitempty"`
+	ScopeClaims    map[string][]string `json:"scope_claims,omitempty"`
 }
 
 // ApplicationList represents the response structure for listing applications.
@@ -100,6 +127,31 @@ func (app *Application) equals(expectedApp Application) bool {
 	// URL fields
 	if app.URL != expectedApp.URL ||
 		app.LogoURL != expectedApp.LogoURL {
+		return false
+	}
+
+	// Metadata fields
+	if app.TosURI != expectedApp.TosURI ||
+		app.PolicyURI != expectedApp.PolicyURI {
+		return false
+	}
+
+	// Contacts
+	if !compareStringSlices(app.Contacts, expectedApp.Contacts) {
+		return false
+	}
+
+	// Token config
+	if (app.Token != nil) && (expectedApp.Token != nil) {
+		if app.Token.Issuer != expectedApp.Token.Issuer ||
+			app.Token.ValidityPeriod != expectedApp.Token.ValidityPeriod {
+			return false
+		}
+		if !compareStringSlices(app.Token.UserAttributes, expectedApp.Token.UserAttributes) {
+			return false
+		}
+	} else if (app.Token == nil && expectedApp.Token != nil) ||
+		(app.Token != nil && expectedApp.Token == nil) {
 		return false
 	}
 

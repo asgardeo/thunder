@@ -31,6 +31,7 @@ type TokenRequest struct {
 	CodeVerifier string `json:"code_verifier,omitempty"`
 	Code         string `json:"code,omitempty"`
 	RedirectURI  string `json:"redirect_uri,omitempty"`
+	Resource     string `json:"resource,omitempty"`
 }
 
 // TokenResponse represents the OAuth2 token response.

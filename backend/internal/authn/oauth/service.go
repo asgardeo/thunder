@@ -77,12 +77,15 @@ func NewOAuthAuthnService(httpClient httpservice.HTTPClientInterface,
 		idpSvc = idp.NewIDPService()
 	}
 
-	return &oAuthAuthnService{
+	service := &oAuthAuthnService{
 		httpClient:  httpClient,
 		idpService:  idpSvc,
 		userService: user.GetUserService(),
 		endpoints:   endpoints,
 	}
+	authncm.RegisterAuthenticator(service.getMetadata())
+
+	return service
 }
 
 // GetOAuthClientConfig retrieves and validates the OAuth client configuration for the given identity provider ID.
@@ -332,4 +335,13 @@ func (s *oAuthAuthnService) validateClientConfig(idpConfig *OAuthClientConfig) *
 	}
 
 	return nil
+}
+
+// getMetadata returns the authenticator metadata for OAuth authenticator.
+func (s *oAuthAuthnService) getMetadata() authncm.AuthenticatorMeta {
+	return authncm.AuthenticatorMeta{
+		Name:          authncm.AuthenticatorOAuth,
+		Factors:       []authncm.AuthenticationFactor{authncm.FactorKnowledge},
+		AssociatedIDP: idp.IDPTypeOAuth,
+	}
 }

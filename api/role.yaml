@@ -1,0 +1,896 @@
+openapi: 3.0.3
+info:
+  title: Role Management API
+  version: "1.0"
+  description: This API is used to manage roles with permission-based access control.
+  license:
+    name: Apache 2.0
+    url: https://www.apache.org/licenses/LICENSE-2.0.html
+
+servers:
+  - url: https://{host}:{port}
+    variables:
+      host:
+        default: "localhost"
+      port:
+        default: "8090"
+
+tags:
+  - name: roles
+    description: Operations related to role management
+
+paths:
+  /roles:
+    get:
+      tags:
+        - roles
+      summary: List roles
+      parameters:
+        - $ref: '#/components/parameters/limitQueryParam'
+        - $ref: '#/components/parameters/offsetQueryParam'
+      responses:
+        "200":
+          description: List of roles
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RoleListResponse'
+              example:
+                totalResults: 5
+                startIndex: 1
+                count: 2
+                roles:
+                  - id: "3fa85f64-5717-4562-b3fc-2c963f66afa6"
+                    name: "front-desk-agent"
+                    description: "Front desk agent role with booking and customer management permissions"
+                    ouId: "a839f4bd-39dc-4eaa-b5cc-210d8ecaee87"
+                  - id: "257e528f-eb24-48b6-884d-20460e190957"
+                    name: "hotel-manager"
+                    description: "Hotel manager with full property access"
+                    ouId: "a839f4bd-39dc-4eaa-b5cc-210d8ecaee87"
+                links:
+                  - href: "roles?offset=2&limit=2"
+                    rel: "next"
+        "400":
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                invalid-request-format:
+                  summary: Invalid request format
+                  value:
+                    code: "ROL-1001"
+                    message: "Invalid request format"
+                    description: "The request body is malformed or contains invalid data"
+                invalid-limit:
+                  summary: Invalid limit parameter
+                  value:
+                    code: "ROL-1011"
+                    message: "Invalid limit parameter"
+                    description: "The limit parameter must be a positive integer"
+                invalid-offset:
+                  summary: Invalid offset parameter
+                  value:
+                    code: "ROL-1012"
+                    message: "Invalid offset parameter"
+                    description: "The offset parameter must be a non-negative integer"
+        "500":
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: "ROL-5000"
+                message: "Internal server error"
+                description: "An unexpected error occurred while processing the request"
+    
+    post:
+      tags:
+        - roles
+      summary: Create a new role
+      description: Creates a new role with optional initial permissions and assignments
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateRoleRequest'
+            example:
+              name: "front-desk-agent"
+              description: "Front desk agent role with booking and customer management permissions"
+              ouId: "a839f4bd-39dc-4eaa-b5cc-210d8ecaee87"
+              permissions:
+                - "create_reservation"
+                - "view_reservation"
+                - "update_reservation"
+                - "check_in_guest"
+                - "check_out_guest"
+                - "process_payment"
+                - "view_payment"
+                - "view_customer_profile"
+                - "update_customer_profile"
+              assignments:
+                - type: "user"
+                  id: "7a4b1f8e-5c69-4b60-9232-2b0aaf65ef3c"
+                - type: "group"
+                  id: "6b1e7b8d-7e19-41eb-8fa2-c0ee5bb67a94"
+      responses:
+        "201":
+          description: Role created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RoleWithAssignments'
+              example:
+                id: "3fa85f64-5717-4562-b3fc-2c963f66afa6"
+                name: "front-desk-agent"
+                description: "Front desk agent role with booking and customer management permissions"
+                ouId: "a839f4bd-39dc-4eaa-b5cc-210d8ecaee87"
+                permissions:
+                  - "create_reservation"
+                  - "view_reservation"
+                  - "update_reservation"
+                  - "check_in_guest"
+                  - "check_out_guest"
+                  - "process_payment"
+                  - "view_payment"
+                  - "view_customer_profile"
+                  - "update_customer_profile"
+                assignments:
+                  - type: "user"
+                    id: "7a4b1f8e-5c69-4b60-9232-2b0aaf65ef3c"
+                    display: "John Doe"
+                  - type: "group"
+                    id: "6b1e7b8d-7e19-41eb-8fa2-c0ee5bb67a94"
+                    display: "Front Desk Team"
+        "400":
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                invalid-request-format:
+                  summary: Invalid request format
+                  value:
+                    code: "ROL-1001"
+                    message: "Invalid request format"
+                    description: "The request body is malformed or contains invalid data"
+                invalid-assignment-id:
+                  summary: Invalid assignment ID
+                  value:
+                    code: "ROL-1007"
+                    message: "Invalid assignment ID"
+                    description: "One or more assignment IDs in the request do not exist"
+                ou-not-found:
+                  summary: Organization unit not found
+                  value:
+                    code: "ROL-1005"
+                    message: "Organization unit not found"
+                    description: "Organization unit not found"
+        "409":
+          description: Conflict
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: "ROL-1004"
+                message: "Role name conflict"
+                description: "A role with the same name exists under the same organization unit"
+        "500":
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: "ROL-5000"
+                message: "Internal server error"
+                description: "An unexpected error occurred while processing the request"
+  
+  /roles/{id}:
+    get:
+      tags:
+        - roles
+      summary: Get role details
+      description: Returns role metadata with permissions list
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: Role details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Role'
+              example:
+                id: "3fa85f64-5717-4562-b3fc-2c963f66afa6"
+                name: "front-desk-agent"
+                description: "Front desk agent role with booking and customer management permissions"
+                ouId: "a839f4bd-39dc-4eaa-b5cc-210d8ecaee87"
+                permissions:
+                  - "create_reservation"
+                  - "view_reservation"
+                  - "process_payment"
+                  - "view_customer_profile"
+        "400":
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: "ROL-1002"
+                message: "Invalid request format"
+                description: "Role ID is required"
+        "404":
+          description: Role not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: "ROL-1003"
+                message: "Role not found"
+                description: "The role with the specified id does not exist"
+        "500":
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: "ROL-5000"
+                message: "Internal server error"
+                description: "An unexpected error occurred while processing the request"
+
+    put:
+      tags:
+        - roles
+      summary: Update role
+      description: Updates role name, description, organization unit, and permissions
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateRoleRequest'
+            example:
+              name: "senior-front-desk-agent"
+              description: "Senior front desk agent with additional permissions"
+              ouId: "a839f4bd-39dc-4eaa-b5cc-210d8ecaee87"
+              permissions:
+                - "create_reservation"
+                - "view_reservation"
+                - "update_reservation"
+                - "cancel_reservation"
+                - "process_payment"
+                - "view_payment"
+                - "refund_payment"
+                - "view_customer_profile"
+                - "update_customer_profile"
+      responses:
+        "200":
+          description: Role updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Role'
+              example:
+                id: "3fa85f64-5717-4562-b3fc-2c963f66afa6"
+                name: "senior-front-desk-agent"
+                description: "Senior front desk agent with additional permissions"
+                ouId: "a839f4bd-39dc-4eaa-b5cc-210d8ecaee87"
+                permissions:
+                  - "create_reservation"
+                  - "view_reservation"
+                  - "update_reservation"
+                  - "cancel_reservation"
+                  - "process_payment"
+                  - "view_payment"
+                  - "refund_payment"
+                  - "view_customer_profile"
+                  - "update_customer_profile"
+        "400":
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                missing-role-id:
+                  summary: Missing role ID
+                  value:
+                    code: "ROL-1002"
+                    message: "Invalid request format"
+                    description: "Role ID is required"
+                invalid-request-format:
+                  summary: Invalid request format
+                  value:
+                    code: "ROL-1001"
+                    message: "Invalid request format"
+                    description: "The request body is malformed or contains invalid data"
+                ou-not-found:
+                  summary: Organization unit not found
+                  value:
+                    code: "ROL-1005"
+                    message: "Organization unit not found"
+                    description: "Organization unit not found"
+        "404":
+          description: Role not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: "ROL-1003"
+                message: "Role not found"
+                description: "The role with the specified id does not exist"
+        "409":
+          description: Conflict
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: "ROL-1004"
+                message: "Role name conflict"
+                description: "A role with the same name exists under the same organization unit"
+        "500":
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: "ROL-5000"
+                message: "Internal server error"
+                description: "An unexpected error occurred while processing the request"
+
+    delete:
+      tags:
+        - roles
+      summary: Delete a role by id
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "204":
+          description: Role deleted
+        "400":
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                missing-role-id:
+                  summary: Missing role ID
+                  value:
+                    code: "ROL-1002"
+                    message: "Invalid request format"
+                    description: "Role ID is required"
+                cannot-delete-role:
+                  summary: Cannot delete role
+                  value:
+                    code: "ROL-1006"
+                    message: "Cannot delete role"
+                    description: "Cannot delete role that is currently assigned to users or groups"
+        "500":
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: "ROL-5000"
+                message: "Internal server error"
+                description: "An unexpected error occurred while processing the request"
+
+  /roles/{id}/assignments:
+    get:
+      tags:
+        - roles
+      summary: Get role assignments
+      description: Returns all user and group assignments for the role. Use include=display to get display names.
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - in: query
+          name: include
+          required: false
+          schema:
+            type: string
+            enum:
+              - display
+          description: |
+            Optional parameter to include additional information.
+            - `display` - Include display names for users and groups
+        - $ref: '#/components/parameters/limitQueryParam'
+        - $ref: '#/components/parameters/offsetQueryParam'
+      responses:
+        "200":
+          description: List of assignments
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AssignmentListResponse'
+              examples:
+                without-display:
+                  summary: Without include parameter (IDs and types only)
+                  value:
+                    totalResults: 5
+                    startIndex: 1
+                    count: 2
+                    assignments:
+                      - type: "user"
+                        id: "7a4b1f8e-5c69-4b60-9232-2b0aaf65ef3c"
+                      - type: "group"
+                        id: "8c2f8e9e-8f2a-4f5b-9c3d-4e5f6a7b8c9d"
+                    links:
+                      - href: "roles/3fa85f64-5717-4562-b3fc-2c963f66afa6/assignments?offset=2&limit=2"
+                        rel: "next"
+                with-display:
+                  summary: With include=display parameter
+                  value:
+                    totalResults: 5
+                    startIndex: 1
+                    count: 2
+                    assignments:
+                      - type: "user"
+                        id: "7a4b1f8e-5c69-4b60-9232-2b0aaf65ef3c"
+                        display: "John Doe"
+                      - type: "group"
+                        id: "8c2f8e9e-8f2a-4f5b-9c3d-4e5f6a7b8c9d"
+                        display: "Front Desk Team"
+                    links:
+                      - href: "roles/3fa85f64-5717-4562-b3fc-2c963f66afa6/assignments?offset=2&limit=2"
+                        rel: "next"
+        "400":
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                invalid-limit:
+                  summary: Invalid limit parameter
+                  value:
+                    code: "ROL-1011"
+                    message: "Invalid limit parameter"
+                    description: "The limit parameter must be a positive integer"
+                invalid-offset:
+                  summary: Invalid offset parameter
+                  value:
+                    code: "ROL-1012"
+                    message: "Invalid offset parameter"
+                    description: "The offset parameter must be a non-negative integer"
+        "404":
+          description: Role not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: "ROL-1003"
+                message: "Role not found"
+                description: "The role with the specified id does not exist"
+        "500":
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: "ROL-5000"
+                message: "Internal server error"
+                description: "An unexpected error occurred while processing the request"
+
+  /roles/{id}/assignments/add:
+    post:
+      tags:
+        - roles
+      summary: Add assignments to a role
+      description: Adds one or more user or group assignments to the specified role
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AssignmentsRequest'
+            example:
+              assignments:
+                - type: "user"
+                  id: "7a4b1f8e-5c69-4b60-9232-2b0aaf65ef3c"
+                - type: "group"
+                  id: "6b1e7b8d-7e19-41eb-8fa2-c0ee5bb67a94"
+      responses:
+        "204":
+          description: Assignments added successfully
+        "400":
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                invalid-request-format:
+                  summary: Invalid request format
+                  value:
+                    code: "ROL-1001"
+                    message: "Invalid request format"
+                    description: "The request body is malformed or contains invalid data"
+                invalid-assignment-id:
+                  summary: Invalid assignment ID
+                  value:
+                    code: "ROL-1007"
+                    message: "Invalid assignment ID"
+                    description: "One or more assignment IDs in the request do not exist"
+                empty-assignments:
+                  summary: Empty assignments
+                  value:
+                    code: "ROL-1014"
+                    message: "Empty assignments list"
+                    description: "At least one assignment must be provided"
+        "404":
+          description: Role not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: "ROL-1003"
+                message: "Role not found"
+                description: "The role with the specified id does not exist"
+        "500":
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: "ROL-5000"
+                message: "Internal server error"
+                description: "An unexpected error occurred while processing the request"
+
+  /roles/{id}/assignments/remove:
+    post:
+      tags:
+        - roles
+      summary: Remove assignments from a role
+      description: Removes one or more user or group assignments from the specified role
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AssignmentsRequest'
+            example:
+              assignments:
+                - type: "user"
+                  id: "7a4b1f8e-5c69-4b60-9232-2b0aaf65ef3c"
+                - type: "group"
+                  id: "6b1e7b8d-7e19-41eb-8fa2-c0ee5bb67a94"
+      responses:
+        "204":
+          description: Assignments removed successfully
+        "400":
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                invalid-request-format:
+                  summary: Invalid request format
+                  value:
+                    code: "ROL-1001"
+                    message: "Invalid request format"
+                    description: "The request body is malformed or contains invalid data"
+                empty-assignments:
+                  summary: Empty assignments
+                  value:
+                    code: "ROL-1014"
+                    message: "Empty assignments list"
+                    description: "At least one assignment must be provided"
+        "404":
+          description: Role not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: "ROL-1003"
+                message: "Role not found"
+                description: "The role with the specified id does not exist"
+        "500":
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: "ROL-5000"
+                message: "Internal server error"
+                description: "An unexpected error occurred while processing the request"
+
+components:
+  parameters:
+    limitQueryParam:
+      in: query
+      name: limit
+      required: false
+      description: |
+        Maximum number of records to return.
+      schema:
+        type: integer
+        minimum: 1
+        default: 30
+    offsetQueryParam:
+      in: query
+      name: offset
+      required: false
+      description: |
+        Number of records to skip for pagination.
+      schema:
+        type: integer
+        minimum: 0
+        default: 0
+
+  schemas:
+    Assignment:
+      type: object
+      required: [id, type]
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: "ID of the user or group being assigned"
+        type:
+          type: string
+          enum:
+            - user
+            - group
+          description: "Type of entity being assigned (user or group)"
+        display:
+          type: string
+          description: "Display name of the user or group (only included when include=display query parameter is used)"
+
+    AssignmentInput:
+      type: object
+      required: [id, type]
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: "ID of the user or group being assigned"
+        type:
+          type: string
+          enum:
+            - user
+            - group
+          description: "Type of entity being assigned (user or group)"
+
+    RoleSummary:
+      type: object
+      required: [id, name, ouId]
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: "Unique identifier for the role"
+        name:
+          type: string
+          description: "Name of the role"
+        description:
+          type: string
+          nullable: true
+          description: "Optional description of the role"
+        ouId:
+          type: string
+          format: uuid
+          description: "ID of the organization unit this role belongs to"
+
+    Role:
+      type: object
+      required: [id, name, ouId, permissions]
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: "Unique identifier for the role"
+        name:
+          type: string
+          description: "Name of the role"
+        description:
+          type: string
+          nullable: true
+          description: "Optional description of the role"
+        ouId:
+          type: string
+          format: uuid
+          description: "ID of the organization unit this role belongs to"
+        permissions:
+          type: array
+          items:
+            type: string
+          description: "List of permission strings"
+
+    RoleWithAssignments:
+      allOf:
+        - $ref: '#/components/schemas/Role'
+        - type: object
+          properties:
+            assignments:
+              type: array
+              items:
+                $ref: '#/components/schemas/Assignment'
+              description: "List of user and group assignments with display names"
+
+    CreateRoleRequest:
+      type: object
+      required: [name, ouId]
+      properties:
+        name:
+          type: string
+          description: "Name of the role"
+        description:
+          type: string
+          description: "Optional description of the role"
+        ouId:
+          type: string
+          format: uuid
+          description: "ID of the organization unit this role belongs to"
+        permissions:
+          type: array
+          items:
+            type: string
+          description: "Optional list of initial permissions (e.g., 'create_reservation', 'view_customer_profile')"
+        assignments:
+          type: array
+          items:
+            $ref: '#/components/schemas/AssignmentInput'
+          description: "Optional list of initial user and group assignments"
+
+    UpdateRoleRequest:
+      type: object
+      required: [name, ouId, permissions]
+      properties:
+        name:
+          type: string
+          description: "Name of the role"
+        description:
+          type: string
+          description: "Optional description of the role"
+        ouId:
+          type: string
+          format: uuid
+          description: "ID of the organization unit this role belongs to"
+        permissions:
+          type: array
+          items:
+            type: string
+          description: "List of permission strings (e.g., 'create_reservation', 'view_customer_profile')"
+
+    AssignmentsRequest:
+      type: object
+      required: [assignments]
+      properties:
+        assignments:
+          type: array
+          items:
+            $ref: '#/components/schemas/AssignmentInput'
+          description: "List of user and group assignments"
+
+    RoleListResponse:
+      type: object
+      properties:
+        totalResults:
+          type: integer
+          description: "Number of results that match the listing operation."
+          example: 8
+        startIndex:
+          type: integer
+          description: "Index of the first element of the page, which will be equal to offset + 1."
+          example: 1
+        count:
+          type: integer
+          description: "Number of elements in the returned page."
+          example: 5
+        roles:
+          type: array
+          items:
+            $ref: '#/components/schemas/RoleSummary'
+        links:
+          type: array
+          items:
+            $ref: '#/components/schemas/Link'
+
+    AssignmentListResponse:
+      type: object
+      properties:
+        totalResults:
+          type: integer
+          description: "Number of results that match the listing operation."
+          example: 20
+        startIndex:
+          type: integer
+          description: "Index of the first element of the page, which will be equal to offset + 1."
+          example: 1
+        count:
+          type: integer
+          description: "Number of elements in the returned page."
+          example: 10
+        assignments:
+          type: array
+          items:
+            $ref: '#/components/schemas/Assignment'
+        links:
+          type: array
+          items:
+            $ref: '#/components/schemas/Link'
+
+    Link:
+      type: object
+      properties:
+        href:
+          type: string
+          example: "roles?offset=20&limit=10"
+        rel:
+          type: string
+          example: "next"
+
+    Error:
+      type: object
+      required: [code, message]
+      properties:
+        code:
+          type: string
+          description: Error code
+          example: "ROL-1001"
+        message:
+          type: string
+          description: Error message
+          example: "Invalid request format"
+        description:
+          type: string
+          description: Detailed error description
+          example: "The request body is malformed or contains invalid data"

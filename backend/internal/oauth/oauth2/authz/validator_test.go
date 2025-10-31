@@ -194,3 +194,168 @@ func (suite *AuthorizationValidatorTestSuite) TestValidateInitialAuthorizationRe
 	assert.Empty(suite.T(), errorCode)
 	assert.Empty(suite.T(), errorMessage)
 }
+
+// Resource Parameter Validation Tests
+
+func (suite *AuthorizationValidatorTestSuite) TestValidateInitialAuthorizationRequest_ValidResource() {
+	msg := &OAuthMessage{
+		RequestQueryParams: map[string]string{
+			constants.RequestParamClientID:     "test-client-id",
+			constants.RequestParamRedirectURI:  "https://client.example.com/callback",
+			constants.RequestParamResponseType: string(constants.ResponseTypeCode),
+			constants.RequestParamResource:     "https://api.example.com/resource",
+		},
+	}
+
+	sendErrorToApp, errorCode, errorMessage := suite.validator.validateInitialAuthorizationRequest(
+		msg, suite.oauthApp)
+
+	assert.False(suite.T(), sendErrorToApp)
+	assert.Empty(suite.T(), errorCode)
+	assert.Empty(suite.T(), errorMessage)
+}
+
+func (suite *AuthorizationValidatorTestSuite) TestValidateInitialAuthorizationRequest_ValidMCPServerResource() {
+	msg := &OAuthMessage{
+		RequestQueryParams: map[string]string{
+			constants.RequestParamClientID:     "test-client-id",
+			constants.RequestParamRedirectURI:  "https://client.example.com/callback",
+			constants.RequestParamResponseType: string(constants.ResponseTypeCode),
+			constants.RequestParamResource:     "https://mcp.example.com/mcp",
+		},
+	}
+
+	sendErrorToApp, errorCode, errorMessage := suite.validator.validateInitialAuthorizationRequest(
+		msg, suite.oauthApp)
+
+	assert.False(suite.T(), sendErrorToApp)
+	assert.Empty(suite.T(), errorCode)
+	assert.Empty(suite.T(), errorMessage)
+}
+
+func (suite *AuthorizationValidatorTestSuite) TestValidateInitialAuthorizationRequest_ValidResourceWithPort() {
+	msg := &OAuthMessage{
+		RequestQueryParams: map[string]string{
+			constants.RequestParamClientID:     "test-client-id",
+			constants.RequestParamRedirectURI:  "https://client.example.com/callback",
+			constants.RequestParamResponseType: string(constants.ResponseTypeCode),
+			constants.RequestParamResource:     "https://mcp.example.com:8443",
+		},
+	}
+
+	sendErrorToApp, errorCode, errorMessage := suite.validator.validateInitialAuthorizationRequest(
+		msg, suite.oauthApp)
+
+	assert.False(suite.T(), sendErrorToApp)
+	assert.Empty(suite.T(), errorCode)
+	assert.Empty(suite.T(), errorMessage)
+}
+
+func (suite *AuthorizationValidatorTestSuite) TestValidateInitialAuthorizationRequest_EmptyResource() {
+	msg := &OAuthMessage{
+		RequestQueryParams: map[string]string{
+			constants.RequestParamClientID:     "test-client-id",
+			constants.RequestParamRedirectURI:  "https://client.example.com/callback",
+			constants.RequestParamResponseType: string(constants.ResponseTypeCode),
+			constants.RequestParamResource:     "",
+		},
+	}
+
+	sendErrorToApp, errorCode, errorMessage := suite.validator.validateInitialAuthorizationRequest(
+		msg, suite.oauthApp)
+
+	assert.False(suite.T(), sendErrorToApp)
+	assert.Empty(suite.T(), errorCode)
+	assert.Empty(suite.T(), errorMessage)
+}
+
+func (suite *AuthorizationValidatorTestSuite) TestValidateInitialAuthorizationRequest_ResourceMissingScheme() {
+	msg := &OAuthMessage{
+		RequestQueryParams: map[string]string{
+			constants.RequestParamClientID:     "test-client-id",
+			constants.RequestParamRedirectURI:  "https://client.example.com/callback",
+			constants.RequestParamResponseType: string(constants.ResponseTypeCode),
+			constants.RequestParamResource:     "api.example.com/resource",
+		},
+	}
+
+	sendErrorToApp, errorCode, errorMessage := suite.validator.validateInitialAuthorizationRequest(
+		msg, suite.oauthApp)
+
+	assert.True(suite.T(), sendErrorToApp)
+	assert.Equal(suite.T(), constants.ErrorInvalidTarget, errorCode)
+	assert.Contains(suite.T(), errorMessage, "absolute URI with a scheme")
+}
+
+func (suite *AuthorizationValidatorTestSuite) TestValidateInitialAuthorizationRequest_ResourceWithFragment() {
+	msg := &OAuthMessage{
+		RequestQueryParams: map[string]string{
+			constants.RequestParamClientID:     "test-client-id",
+			constants.RequestParamRedirectURI:  "https://client.example.com/callback",
+			constants.RequestParamResponseType: string(constants.ResponseTypeCode),
+			constants.RequestParamResource:     "https://api.example.com/resource#fragment",
+		},
+	}
+
+	sendErrorToApp, errorCode, errorMessage := suite.validator.validateInitialAuthorizationRequest(
+		msg, suite.oauthApp)
+
+	assert.True(suite.T(), sendErrorToApp)
+	assert.Equal(suite.T(), constants.ErrorInvalidTarget, errorCode)
+	assert.Contains(suite.T(), errorMessage, "fragment component")
+}
+
+func (suite *AuthorizationValidatorTestSuite) TestValidateInitialAuthorizationRequest_ResourceRelativeURI() {
+	msg := &OAuthMessage{
+		RequestQueryParams: map[string]string{
+			constants.RequestParamClientID:     "test-client-id",
+			constants.RequestParamRedirectURI:  "https://client.example.com/callback",
+			constants.RequestParamResponseType: string(constants.ResponseTypeCode),
+			constants.RequestParamResource:     "/api/resource",
+		},
+	}
+
+	sendErrorToApp, errorCode, errorMessage := suite.validator.validateInitialAuthorizationRequest(
+		msg, suite.oauthApp)
+
+	assert.True(suite.T(), sendErrorToApp)
+	assert.Equal(suite.T(), constants.ErrorInvalidTarget, errorCode)
+	assert.Contains(suite.T(), errorMessage, "absolute URI with a scheme")
+}
+
+func (suite *AuthorizationValidatorTestSuite) TestValidateInitialAuthorizationRequest_ResourceInvalidURI() {
+	msg := &OAuthMessage{
+		RequestQueryParams: map[string]string{
+			constants.RequestParamClientID:     "test-client-id",
+			constants.RequestParamRedirectURI:  "https://client.example.com/callback",
+			constants.RequestParamResponseType: string(constants.ResponseTypeCode),
+			constants.RequestParamResource:     "not a valid uri format",
+		},
+	}
+
+	sendErrorToApp, errorCode, errorMessage := suite.validator.validateInitialAuthorizationRequest(
+		msg, suite.oauthApp)
+
+	assert.True(suite.T(), sendErrorToApp)
+	assert.Equal(suite.T(), constants.ErrorInvalidTarget, errorCode)
+	assert.Contains(suite.T(), errorMessage, "absolute URI")
+}
+
+func (suite *AuthorizationValidatorTestSuite) TestValidateInitialAuthorizationRequest_ResourceParameterWithQuery() {
+	// Test resource parameter with query component (should be valid per RFC 8707)
+	msg := &OAuthMessage{
+		RequestQueryParams: map[string]string{
+			constants.RequestParamClientID:     "test-client-id",
+			constants.RequestParamRedirectURI:  "https://client.example.com/callback",
+			constants.RequestParamResponseType: string(constants.ResponseTypeCode),
+			constants.RequestParamResource:     "https://api.example.com/resource?param=value",
+		},
+	}
+
+	sendErrorToApp, errorCode, errorMessage := suite.validator.validateInitialAuthorizationRequest(
+		msg, suite.oauthApp)
+
+	assert.False(suite.T(), sendErrorToApp)
+	assert.Empty(suite.T(), errorCode)
+	assert.Empty(suite.T(), errorMessage)
+}

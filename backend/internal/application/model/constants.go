@@ -37,3 +37,6 @@ const (
 
 // ApplicationNotFoundError is the error returned when an application is not found.
 var ApplicationNotFoundError error = errors.New("application not found")
+
+// ApplicationDataCorruptedError is the error returned when application data is corrupted.
+var ApplicationDataCorruptedError error = errors.New("application data is corrupted")

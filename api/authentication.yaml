@@ -1,0 +1,562 @@
+openapi: 3.0.3
+
+info:
+  title: Authentication API
+  description: This API is used to authenticate users.
+  version: "1.0"
+  license:
+    name: Apache 2.0
+    url: http://www.apache.org/licenses/LICENSE-2.0.html
+
+servers:
+  - url: https://{host}:{port}
+    variables:
+      host:
+        default: "localhost"
+      port:
+        default: "8090"
+
+paths:
+  /auth/credentials/authenticate:
+    post:
+      summary: Authenticate with credentials
+      description: Authenticate a user by providing user attributes and credentials.
+      tags:
+        - Credentials
+      requestBody:
+        description: Credentials authentication request data
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CredentialAuthRequest'
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthenticationResponse'
+        "400":
+          description: 'Bad Request: The request body is malformed or contains invalid data'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ClientErrorResponse'
+              example:
+                code: "AUTH-CRED-1001"
+                message: "Empty attributes or credentials"
+                description: "The user attributes or credentials cannot be empty"
+        "401":
+          description: 'Unauthorized: Authentication failed'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ClientErrorResponse'
+              example:
+                code: "AUTH-CRED-1002"
+                message: "Invalid credentials"
+                description: "The provided credentials are invalid"
+        "404":
+          description: 'Not Found: The user could not be found'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ClientErrorResponse'
+              example:
+                code: "AUTHN-1008"
+                message: "User not found"
+                description: "No user found with the provided attributes"
+        "500":
+          description: 'Internal Server Error: An unexpected error occurred while processing the request'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ServerErrorResponse'
+
+  /auth/otp/sms/send:
+    post:
+      summary: Send a SMS OTP
+      description: Send a One Time Password (OTP) to a user's mobile number via SMS for authentication.
+      tags:
+        - SMS OTP
+      requestBody:
+        description: OTP send request data
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SendOtpAuthRequest'
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SendOtpAuthResponse'
+        "400":
+          description: 'Bad Request: The request body is malformed or contains invalid data'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ClientErrorResponse'
+              example:
+                code: "AUTHN-OTP-1002"
+                message: "Invalid recipient"
+                description: "The provided recipient is invalid or empty"
+        "500":
+          description: 'Internal Server Error: An unexpected error occurred while processing the request'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ServerErrorResponse'
+
+  /auth/otp/sms/verify:
+    post:
+      summary: Verify a SMS OTP
+      description: Verify a One Time Password (OTP) sent to a user's mobile number via SMS for authentication.
+      tags:
+        - SMS OTP
+      requestBody:
+        description: OTP verify request data
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/VerifyOtpAuthRequest'
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthenticationResponse'
+        "400":
+          description: 'Bad Request: The request body is malformed or contains invalid data'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ClientErrorResponse'
+              example:
+                code: "AUTHN-OTP-1005"
+                message: "Invalid OTP"
+                description: "The provided OTP is invalid or empty"
+        "401":
+          description: 'Unauthorized: OTP verification failed'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ClientErrorResponse'
+              example:
+                code: "AUTHN-OTP-1006"
+                message: "Incorrect OTP"
+                description: "The provided OTP is incorrect or has expired"
+        "404":
+          description: 'Not Found: The user could not be found'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ClientErrorResponse'
+              example:
+                code: "AUTHN-1008"
+                message: "User not found"
+                description: "No user found with the provided attributes"
+        "500":
+          description: 'Internal Server Error: An unexpected error occurred while processing the request'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ServerErrorResponse'
+
+  /auth/oauth/google/start:
+    post:
+      summary: Start Google authentication
+      description: Start OAuth authentication flow with a Google identity provider.
+      tags:
+      - Google
+      requestBody:
+        description: Google authentication initiation data
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/IDPAuthInitRequest'
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/IDPAuthInitResponse'
+              example:
+                redirect_url: "https://accounts.google.com/o/oauth2/auth?client_id=your-client-id&response_type=code&scope=openid%20email%20profile&redirect_uri=https://yourapp.com/callback"
+                session_token: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+        "400":
+          description: 'Bad Request: The request body is malformed or contains invalid data.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ClientErrorResponse'
+              example:
+                code: "AUTHN-1001"
+                message: "Invalid identity provider ID"
+                description: "The provided identity provider ID is invalid or empty"
+        "500":
+          description: 'Internal Server Error: An unexpected error occurred while processing the request.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ServerErrorResponse'
+
+  /auth/oauth/google/finish:
+    post:
+      summary: Finish Google authentication
+      description: Complete oauth authentication flow with a Google identity provider.
+      tags:
+      - Google
+      requestBody:
+        description: Google authentication completion data
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/IDPAuthFinishRequest'
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthenticationResponse'
+        "400":
+          description: 'Bad Request: The request body is malformed or contains invalid data.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ClientErrorResponse'
+              example:
+                code: "AUTHN-1003"
+                message: "Authorization code is required"
+                description: "The authorization code must be provided to complete authentication"
+        "500":
+          description: 'Internal Server Error: An unexpected error occurred while processing the request.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ServerErrorResponse'
+
+  /auth/oauth/github/start:
+    post:
+      summary: Start Github authentication
+      description: Start OAuth authentication flow with a Github identity provider.
+      tags:
+      - Github
+      requestBody:
+        description: Github authentication initiation data
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/IDPAuthInitRequest'
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/IDPAuthInitResponse'
+              example:
+                redirect_url: "https://github.com/login/oauth/authorize?client_id=your-client-id&redirect_uri=https://yourapp.com/callback&scope=user"
+                session_token: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+        "400":
+          description: 'Bad Request: The request body is malformed or contains invalid data.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ClientErrorResponse'
+              example:
+                code: "AUTHN-1001"
+                message: "Invalid identity provider ID"
+                description: "The provided identity provider ID is invalid or empty"
+        "500":
+          description: 'Internal Server Error: An unexpected error occurred while processing the request.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ServerErrorResponse'
+
+  /auth/oauth/github/finish:
+    post:
+      summary: Finish Github authentication
+      description: Complete oauth authentication flow with a Github identity provider.
+      tags:
+      - Github
+      requestBody:
+        description: Github authentication completion data
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/IDPAuthFinishRequest'
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthenticationResponse'
+        "400":
+          description: 'Bad Request: The request body is malformed or contains invalid data.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ClientErrorResponse'
+              example:
+                code: "AUTHN-1003"
+                message: "Authorization code is required"
+                description: "The authorization code must be provided to complete authentication"
+        "500":
+          description: 'Internal Server Error: An unexpected error occurred while processing the request.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ServerErrorResponse'
+
+  /auth/oauth/standard/start:
+    post:
+      summary: Start standard OAuth authentication
+      description: Start OAuth authentication flow with a standard identity provider.
+      tags:
+      - Standard
+      requestBody:
+        description: Standard OAuth IDP authentication initiation data
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/IDPAuthInitRequest'
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/IDPAuthInitResponse'
+              example:
+                redirect_url: "https://your-idp.com/oauth2/authorize?client_id=your-client-id&response_type=code&scope=openid%20email%20profile&redirect_uri=https://yourapp.com/callback"
+                session_token: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+        "400":
+          description: 'Bad Request: The request body is malformed or contains invalid data.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ClientErrorResponse'
+              example:
+                code: "AUTHN-1001"
+                message: "Invalid identity provider ID"
+                description: "The provided identity provider ID is invalid or empty"
+        "500":
+          description: 'Internal Server Error: An unexpected error occurred while processing the request.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ServerErrorResponse'
+
+  /auth/oauth/standard/finish:
+    post:
+      summary: Finish standard OAuth authentication
+      description: Complete oauth authentication flow with a standard identity provider.
+      tags:
+      - Standard
+      requestBody:
+        description: Standard OAuth IDP authentication completion data
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/IDPAuthFinishRequest'
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthenticationResponse'
+        "400":
+          description: 'Bad Request: The request body is malformed or contains invalid data.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ClientErrorResponse'
+              example:
+                code: "AUTHN-1003"
+                message: "Authorization code is required"
+                description: "The authorization code must be provided to complete authentication"
+        "500":
+          description: 'Internal Server Error: An unexpected error occurred while processing the request.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ServerErrorResponse'
+
+components:
+  schemas:
+    CredentialAuthRequest:
+      type: object
+      properties:
+        skip_assertion:
+          type: boolean
+          description: Skip generating assertion token in the response
+          default: false
+          example: false
+        assertion:
+          type: string
+          description: Optional existing JWT assertion token to enrich with new authentication
+          example: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+      additionalProperties: true
+      example:
+        email: "jane.doe@example.com"
+        password: "SecurePassword123!"
+        skip_assertion: false
+    
+    SendOtpAuthRequest:
+      type: object
+      properties:
+        sender_id:
+          type: string
+          description: ID of the message notification sender to use
+          example: "550e8400-e29b-41d4-a716-446655440000"
+        recipient:
+          type: string
+          description: Recipient's mobile number
+          example: "+1234567890"
+      required:
+        - sender_id
+        - recipient
+
+    SendOtpAuthResponse:
+      type: object
+      properties:
+        status:
+          type: string
+          description: Status of the OTP send request
+          example: "SUCCESS"
+        session_token:
+          type: string
+          description: JWT token for the authentication session
+          example: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+
+    VerifyOtpAuthRequest:
+      type: object
+      properties:
+        session_token:
+          type: string
+          description: JWT token for the OTP session
+          example: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+        otp:
+          type: string
+          description: The OTP code received by the user
+          example: "123456"
+        skip_assertion:
+          type: boolean
+          description: Skip generating assertion token in the response
+          default: false
+          example: false
+        assertion:
+          type: string
+          description: Optional existing JWT assertion token to enrich with new authentication
+          example: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+      required:
+        - session_token
+        - otp
+    
+    AuthenticationResponse:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: "The unique identifier of the authenticated user"
+        type:
+          type: string
+          description: "The type of the authenticated user"
+        organization_unit:
+          type: string
+          format: uuid
+          description: "The organization unit ID of the authenticated user"
+        assertion:
+          type: string
+          description: "JWT assertion token for the authenticated user"
+          example: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+
+    IDPAuthInitRequest:
+      type: object
+      required:
+        - idp_id
+      properties:
+        idp_id:
+          type: string
+          description: Identity provider ID
+          example: "550e8400-e29b-41d4-a716-446655440000"
+    
+    IDPAuthInitResponse:
+      type: object
+      properties:
+        redirect_url:
+          type: string
+          description: URL to redirect the user for authentication
+          example: "https://accounts.google.com/o/oauth2/auth?client_id=your-client-id&response_type=code&scope=openid%20email%20profile&redirect_uri=https://yourapp.com/callback"
+        session_token:
+          type: string
+          description: JWT token for the authentication session
+          example: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+    
+    IDPAuthFinishRequest:
+      type: object
+      required:
+        - session_token
+        - code
+      properties:
+        session_token:
+          type: string
+          description: JWT token for the authentication session
+          example: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+        code:
+          type: string
+          description: Authorization code received from the identity provider
+        skip_assertion:
+          type: boolean
+          description: Skip generating assertion token in the response
+          default: false
+          example: false
+        assertion:
+          type: string
+          description: Optional existing JWT assertion token to enrich with new authentication
+          example: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+
+    ErrorResponse:
+      type: object
+      properties:
+        code:
+          type: string
+          description: Error code
+        message:
+          type: string
+          description: Error message
+        description:
+          type: string
+          description: Detailed error description
+
+    ClientErrorResponse:
+      allOf:
+        - $ref: '#/components/schemas/ErrorResponse'
+        - type: object
+
+    ServerErrorResponse:
+      allOf:
+        - $ref: '#/components/schemas/ErrorResponse'
+        - type: object
+      example:
+        code: "AUTHN-5000"
+        message: "Internal server error"
+        description: "An unexpected error occurred while processing the request"

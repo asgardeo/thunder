@@ -61,10 +61,14 @@ func NewOTPAuthnService(otpSvc notification.OTPServiceInterface,
 	if userSvc == nil {
 		userSvc = user.GetUserService()
 	}
-	return &otpAuthnService{
+
+	service := &otpAuthnService{
 		otpService:  otpSvc,
 		userService: userSvc,
 	}
+	common.RegisterAuthenticator(service.getMetadata())
+
+	return service
 }
 
 // SendOTP sends an OTP to the specified recipient using the provided sender.
@@ -226,4 +230,12 @@ func (s *otpAuthnService) handleUserServiceError(svcErr *serviceerror.ServiceErr
 
 	logger.Error("Error occurred while retrieving user", log.Any("error", svcErr))
 	return &ErrorInternalServerError
+}
+
+// getMetadata returns the authenticator metadata for OTP authenticator.
+func (s *otpAuthnService) getMetadata() common.AuthenticatorMeta {
+	return common.AuthenticatorMeta{
+		Name:    common.AuthenticatorSMSOTP,
+		Factors: []common.AuthenticationFactor{common.FactorPossession},
+	}
 }

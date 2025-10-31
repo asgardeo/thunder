@@ -156,6 +156,7 @@ func (th *tokenHandler) HandleTokenRequest(w http.ResponseWriter, r *http.Reques
 		CodeVerifier: r.FormValue("code_verifier"),
 		Code:         r.FormValue("code"),
 		RedirectURI:  r.FormValue("redirect_uri"),
+		Resource:     r.FormValue(constants.RequestParamResource),
 	}
 
 	// Validate the token request.

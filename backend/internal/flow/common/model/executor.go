@@ -38,14 +38,16 @@ type ExecutorResponse struct {
 	AuthenticatedUser authncm.AuthenticatedUser `json:"authenticated_user,omitempty"`
 	Assertion         string                    `json:"assertion,omitempty"`
 	FailureReason     string                    `json:"failure_reason,omitempty"`
+	ExecutionRecord   *NodeExecutionRecord      `json:"execution_record,omitempty"`
 }
 
 // ExecutorProperties holds the properties of an executor.
 type ExecutorProperties struct {
-	ID          string            `json:"id"`
-	Name        string            `json:"name"`
-	DisplayName string            `json:"display_name"`
-	Properties  map[string]string `json:"properties,omitempty"`
+	ID          string                 `json:"id"`
+	Name        string                 `json:"name"`
+	Type        constants.ExecutorType `json:"type,omitempty"`
+	DisplayName string                 `json:"display_name"`
+	Properties  map[string]string      `json:"properties,omitempty"`
 }
 
 // ExecutorConfig holds the configuration for an executor.
@@ -80,12 +82,13 @@ type Executor struct {
 }
 
 // NewExecutor creates a new instance of Executor with the given properties.
-func NewExecutor(id, name string, defaultInputs []InputData, prerequisites []InputData,
-	properties map[string]string) *Executor {
+func NewExecutor(id, name string, executorType constants.ExecutorType, defaultInputs []InputData,
+	prerequisites []InputData, properties map[string]string) *Executor {
 	return &Executor{
 		Properties: ExecutorProperties{
 			ID:         id,
 			Name:       name,
+			Type:       executorType,
 			Properties: properties,
 		},
 		DefaultExecutorInputs: defaultInputs,

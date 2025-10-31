@@ -182,3 +182,11 @@ func ValidateCodeChallenge(codeChallenge, codeChallengeMethod string) error {
 
 	return ErrInvalidCodeChallenge
 }
+
+// GetSupportedCodeChallengeMethods returns all supported PKCE code challenge methods.
+func GetSupportedCodeChallengeMethods() []string {
+	return []string{
+		CodeChallengeMethodS256,
+		CodeChallengeMethodPlain,
+	}
+}

@@ -171,10 +171,10 @@ func (h *refreshTokenGrantHandler) HandleGrant(tokenRequest *model.TokenRequest,
 			TokenAttributes: make(map[string]interface{}),
 		}
 		if sub != "" {
-			refreshTokenCtx.TokenAttributes["sub"] = sub
+			refreshTokenCtx.TokenAttributes[constants.ClaimSub] = sub
 		}
 		if aud != "" {
-			refreshTokenCtx.TokenAttributes["aud"] = aud
+			refreshTokenCtx.TokenAttributes[constants.ClaimAud] = aud
 		}
 
 		logger.Debug("Renewing refresh token", log.String("client_id", tokenRequest.ClientID))
@@ -193,7 +193,7 @@ func (h *refreshTokenGrantHandler) HandleGrant(tokenRequest *model.TokenRequest,
 		}
 
 		// Resolve and add the issued at time for the refresh token
-		switch issuedAt := refreshTokenClaims["iat"].(type) {
+		switch issuedAt := refreshTokenClaims[constants.ClaimIat].(type) {
 		case float64:
 			tokenResponse.RefreshToken.IssuedAt = int64(issuedAt)
 		case int64:
@@ -212,10 +212,10 @@ func (h *refreshTokenGrantHandler) IssueRefreshToken(tokenResponse *model.TokenR
 	sub := ""
 	aud := ""
 	if len(ctx.TokenAttributes) > 0 {
-		if val, ok := ctx.TokenAttributes["sub"]; ok && val != "" {
+		if val, ok := ctx.TokenAttributes[constants.ClaimSub]; ok && val != "" {
 			sub = val.(string)
 		}
-		if val, ok := ctx.TokenAttributes["aud"]; ok && val != "" {
+		if val, ok := ctx.TokenAttributes[constants.ClaimAud]; ok && val != "" {
 			aud = val.(string)
 		}
 	}
@@ -344,7 +344,7 @@ func (h *refreshTokenGrantHandler) validateIssuedAt(claims map[string]interface{
 	logger *log.Logger) *model.ErrorResponse {
 	return h.validateTimeClaim(
 		claims,
-		"iat",
+		constants.ClaimIat,
 		func(now, claim int64) bool { return now < claim },
 		"Refresh token not valid yet",
 		"Refresh token not valid yet",
@@ -357,7 +357,7 @@ func (h *refreshTokenGrantHandler) validateExpiryTime(claims map[string]interfac
 	logger *log.Logger) *model.ErrorResponse {
 	return h.validateTimeClaim(
 		claims,
-		"exp",
+		constants.ClaimExp,
 		func(now, claim int64) bool { return now > claim },
 		"Refresh token has expired",
 		"Expired refresh token",

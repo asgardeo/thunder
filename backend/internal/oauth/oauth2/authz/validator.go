@@ -19,6 +19,9 @@
 package authz
 
 import (
+	"fmt"
+	"net/url"
+
 	appmodel "github.com/asgardeo/thunder/internal/application/model"
 	"github.com/asgardeo/thunder/internal/oauth/oauth2/constants"
 	"github.com/asgardeo/thunder/internal/oauth/oauth2/pkce"
@@ -88,5 +91,32 @@ func (av *authorizationValidator) validateInitialAuthorizationRequest(msg *OAuth
 		}
 	}
 
+	// Validate resource parameter if present
+	resource := msg.RequestQueryParams[constants.RequestParamResource]
+	if resource != "" {
+		if err := validateResourceParameter(resource); err != nil {
+			return true, constants.ErrorInvalidTarget, err.Error()
+		}
+	}
+
 	return false, "", ""
+}
+
+// validateResourceParameter validates the resource parameter.
+// TODO: Need to add other validations after introducing resources.
+func validateResourceParameter(resource string) error {
+	parsedURL, err := url.Parse(resource)
+	if err != nil {
+		return fmt.Errorf("resource parameter must be a valid absolute URI: %w", err)
+	}
+
+	if parsedURL.Scheme == "" {
+		return fmt.Errorf("resource parameter must be an absolute URI with a scheme")
+	}
+
+	if parsedURL.Fragment != "" {
+		return fmt.Errorf("resource parameter must not include a fragment component")
+	}
+
+	return nil
 }

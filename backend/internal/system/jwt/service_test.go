@@ -41,7 +41,6 @@ import (
 	"github.com/stretchr/testify/suite"
 
 	"github.com/asgardeo/thunder/internal/system/config"
-	"github.com/asgardeo/thunder/tests/mocks/certmock"
 )
 
 const (
@@ -57,11 +56,10 @@ const (
 
 type JWTServiceTestSuite struct {
 	suite.Suite
-	mockCertService *certmock.SystemCertificateServiceInterfaceMock
-	jwtService      *JWTService
-	testPrivateKey  *rsa.PrivateKey
-	testKeyPath     string
-	tempFiles       []string
+	jwtService     *JWTService
+	testPrivateKey *rsa.PrivateKey
+	testKeyPath    string
+	tempFiles      []string
 }
 
 func TestJWTServiceSuite(t *testing.T) {
@@ -113,11 +111,8 @@ func (suite *JWTServiceTestSuite) SetupTest() {
 	// Reset ThunderRuntime before each test
 	config.ResetThunderRuntime()
 
-	suite.mockCertService = certmock.NewSystemCertificateServiceInterfaceMock(suite.T())
-
 	suite.jwtService = &JWTService{
-		privateKey:               suite.testPrivateKey,
-		SystemCertificateService: suite.mockCertService,
+		privateKey: suite.testPrivateKey,
 	}
 
 	testConfig := &config.Config{
@@ -300,9 +295,7 @@ func (suite *JWTServiceTestSuite) TestInitScenarios() {
 
 	for _, tc := range testCases {
 		suite.T().Run(tc.name, func(t *testing.T) {
-			jwtService := &JWTService{
-				SystemCertificateService: suite.mockCertService,
-			}
+			jwtService := &JWTService{}
 
 			thunderRuntime := config.GetThunderRuntime()
 			originalKeyFile := thunderRuntime.Config.Security.KeyFile
@@ -348,8 +341,7 @@ func (suite *JWTServiceTestSuite) TestGetPublicKey() {
 			name: "WithNilKey",
 			setupFunc: func() *JWTService {
 				return &JWTService{
-					privateKey:               nil,
-					SystemCertificateService: suite.mockCertService,
+					privateKey: nil,
 				}
 			},
 			expectValue: false,
@@ -482,8 +474,7 @@ func (suite *JWTServiceTestSuite) TestGenerateJWTScenarios() {
 			setupMock: func() func() { return func() {} },
 			setupService: func() *JWTService {
 				return &JWTService{
-					privateKey:               nil,
-					SystemCertificateService: suite.mockCertService,
+					privateKey: nil,
 				}
 			},
 			expectError:   true,
@@ -561,8 +552,7 @@ func (suite *JWTServiceTestSuite) TestGenerateJWTScenarios() {
 			},
 			setupService: func() *JWTService {
 				return &JWTService{
-					privateKey:               &rsa.PrivateKey{}, // Invalid private key
-					SystemCertificateService: suite.mockCertService,
+					privateKey: &rsa.PrivateKey{}, // Invalid private key
 				}
 			},
 			expectError: true,
@@ -743,8 +733,7 @@ func (suite *JWTServiceTestSuite) TestVerifyJWT() {
 			jwtService := suite.jwtService
 			if tc.name == "PublicKeyNotAvailable" {
 				jwtService = &JWTService{
-					privateKey:               nil,
-					SystemCertificateService: suite.mockCertService,
+					privateKey: nil,
 				}
 			}
 
@@ -1369,8 +1358,7 @@ func (suite *JWTServiceTestSuite) TestVerifyJWTSignature() {
 			jwtService := suite.jwtService
 			if tc.name == "PublicKeyNotAvailable" {
 				jwtService = &JWTService{
-					privateKey:               nil,
-					SystemCertificateService: suite.mockCertService,
+					privateKey: nil,
 				}
 			}
 
@@ -1661,9 +1649,7 @@ func (suite *JWTServiceTestSuite) TestInitErrorConditions() {
 
 	for _, tc := range testCases {
 		suite.T().Run(tc.name, func(t *testing.T) {
-			jwtService := &JWTService{
-				SystemCertificateService: suite.mockCertService,
-			}
+			jwtService := &JWTService{}
 
 			thunderRuntime := config.GetThunderRuntime()
 			originalKeyFile := thunderRuntime.Config.Security.KeyFile

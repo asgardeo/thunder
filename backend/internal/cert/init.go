@@ -18,10 +18,9 @@
 
 package cert
 
-// Initialize initializes and returns the certificate service and system certificate service.
-func Initialize() (CertificateServiceInterface, SystemCertificateServiceInterface) {
+// Initialize initializes and returns the certificate service.
+func Initialize() CertificateServiceInterface {
 	certStore := newCachedBackedCertificateStore()
 	certService := newCertificateService(certStore)
-	systemCertService := newSystemCertificateService()
-	return certService, systemCertService
+	return certService
 }

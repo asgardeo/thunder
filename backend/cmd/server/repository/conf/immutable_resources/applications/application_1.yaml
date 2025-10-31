@@ -1,0 +1,57 @@
+name: "Sample App"
+description: "Sample application for testing"
+url: "https://localhost:3000"
+logo_url: "https://localhost:3000/logo.png"
+auth_flow_graph_id: "auth_flow_config_basic"
+registration_flow_graph_id: "registration_flow_config_basic"
+is_registration_flow_enabled: true
+user_attributes:
+  - "given_name"
+  - "family_name"
+  - "email"
+  - "groups"
+inbound_auth_config:
+  - type: "oauth2"
+    config:
+      client_id: "${{CLIENT_ID}}"
+      client_secret: "${{CLIENT_SECRET}}"
+      redirect_uris:
+        - "$REDIRECT_URI"
+      grant_types:
+        - "authorization_code"
+        - "client_credentials"
+      response_types:
+        - "code"
+      token_endpoint_auth_method: "client_secret_basic"
+      pkce_required: false
+      public_client: false
+      token:
+        issuer: "thunder"
+        access_token:
+          validity_period: 3600
+          user_attributes:
+            - "given_name"
+            - "family_name"
+            - "email"
+            - "groups"
+        id_token:
+          validity_period: 3600
+          user_attributes:
+            - "given_name"
+            - "family_name"
+            - "email"
+            - "groups"
+          scope_claims:
+            profile:
+              - "name"
+              - "given_name"
+              - "family_name"
+              - "picture"
+            email:
+              - "email"
+              - "email_verified"
+            phone:
+              - "phone_number"
+              - "phone_number_verified"
+            group:
+              - "groups"

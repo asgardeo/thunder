@@ -73,32 +73,11 @@ func (ah *applicationHandler) HandleApplicationPostRequest(w http.ResponseWriter
 		LogoURL:                   appRequest.LogoURL,
 		Token:                     appRequest.Token,
 		Certificate:               appRequest.Certificate,
+		TosURI:                    appRequest.TosURI,
+		PolicyURI:                 appRequest.PolicyURI,
+		Contacts:                  appRequest.Contacts,
 	}
-	if len(appRequest.InboundAuthConfig) > 0 {
-		inboundAuthConfigDTOs := make([]model.InboundAuthConfigDTO, 0)
-		for _, config := range appRequest.InboundAuthConfig {
-			if config.Type != model.OAuthInboundAuthType || config.OAuthAppConfig == nil {
-				continue
-			}
-
-			inboundAuthConfigDTO := model.InboundAuthConfigDTO{
-				Type: config.Type,
-				OAuthAppConfig: &model.OAuthAppConfigDTO{
-					ClientID:                config.OAuthAppConfig.ClientID,
-					ClientSecret:            config.OAuthAppConfig.ClientSecret,
-					RedirectURIs:            config.OAuthAppConfig.RedirectURIs,
-					GrantTypes:              config.OAuthAppConfig.GrantTypes,
-					ResponseTypes:           config.OAuthAppConfig.ResponseTypes,
-					TokenEndpointAuthMethod: config.OAuthAppConfig.TokenEndpointAuthMethod,
-					PKCERequired:            config.OAuthAppConfig.PKCERequired,
-					PublicClient:            config.OAuthAppConfig.PublicClient,
-					Token:                   config.OAuthAppConfig.Token,
-				},
-			}
-			inboundAuthConfigDTOs = append(inboundAuthConfigDTOs, inboundAuthConfigDTO)
-		}
-		appDTO.InboundAuthConfig = inboundAuthConfigDTOs
-	}
+	appDTO.InboundAuthConfig = ah.processInboundAuthConfigFromRequest(appRequest.InboundAuthConfig)
 
 	// Create the app using the application service.
 	createdAppDTO, svcErr := ah.service.CreateApplication(&appDTO)
@@ -118,6 +97,9 @@ func (ah *applicationHandler) HandleApplicationPostRequest(w http.ResponseWriter
 		LogoURL:                   createdAppDTO.LogoURL,
 		Token:                     createdAppDTO.Token,
 		Certificate:               createdAppDTO.Certificate,
+		TosURI:                    createdAppDTO.TosURI,
+		PolicyURI:                 createdAppDTO.PolicyURI,
+		Contacts:                  createdAppDTO.Contacts,
 	}
 
 	// TODO: Need to refactor when supporting other/multiple inbound auth types.
@@ -208,6 +190,9 @@ func (ah *applicationHandler) HandleApplicationGetRequest(w http.ResponseWriter,
 		LogoURL:                   appDTO.LogoURL,
 		Token:                     appDTO.Token,
 		Certificate:               appDTO.Certificate,
+		TosURI:                    appDTO.TosURI,
+		PolicyURI:                 appDTO.PolicyURI,
+		Contacts:                  appDTO.Contacts,
 	}
 
 	// TODO: Need to refactor when supporting other/multiple inbound auth types.
@@ -275,6 +260,7 @@ func (ah *applicationHandler) HandleApplicationGetRequest(w http.ResponseWriter,
 				PKCERequired:            config.OAuthAppConfig.PKCERequired,
 				PublicClient:            config.OAuthAppConfig.PublicClient,
 				Token:                   config.OAuthAppConfig.Token,
+				Scopes:                  config.OAuthAppConfig.Scopes,
 			}
 			returnInboundAuthConfigs = append(returnInboundAuthConfigs, model.InboundAuthConfig{
 				Type:           config.Type,
@@ -344,32 +330,11 @@ func (ah *applicationHandler) HandleApplicationPutRequest(w http.ResponseWriter,
 		LogoURL:                   appRequest.LogoURL,
 		Token:                     appRequest.Token,
 		Certificate:               appRequest.Certificate,
+		TosURI:                    appRequest.TosURI,
+		PolicyURI:                 appRequest.PolicyURI,
+		Contacts:                  appRequest.Contacts,
 	}
-	if len(appRequest.InboundAuthConfig) > 0 {
-		inboundAuthConfigDTOs := make([]model.InboundAuthConfigDTO, 0)
-		for _, config := range appRequest.InboundAuthConfig {
-			if config.Type != model.OAuthInboundAuthType || config.OAuthAppConfig == nil {
-				continue
-			}
-
-			inboundAuthConfigDTO := model.InboundAuthConfigDTO{
-				Type: config.Type,
-				OAuthAppConfig: &model.OAuthAppConfigDTO{
-					ClientID:                config.OAuthAppConfig.ClientID,
-					ClientSecret:            config.OAuthAppConfig.ClientSecret,
-					RedirectURIs:            config.OAuthAppConfig.RedirectURIs,
-					GrantTypes:              config.OAuthAppConfig.GrantTypes,
-					ResponseTypes:           config.OAuthAppConfig.ResponseTypes,
-					TokenEndpointAuthMethod: config.OAuthAppConfig.TokenEndpointAuthMethod,
-					PKCERequired:            config.OAuthAppConfig.PKCERequired,
-					PublicClient:            config.OAuthAppConfig.PublicClient,
-					Token:                   config.OAuthAppConfig.Token,
-				},
-			}
-			inboundAuthConfigDTOs = append(inboundAuthConfigDTOs, inboundAuthConfigDTO)
-		}
-		updateReqAppDTO.InboundAuthConfig = inboundAuthConfigDTOs
-	}
+	updateReqAppDTO.InboundAuthConfig = ah.processInboundAuthConfigFromRequest(appRequest.InboundAuthConfig)
 
 	// Update the application using the application service.
 	updatedAppDTO, svcErr := ah.service.UpdateApplication(id, &updateReqAppDTO)
@@ -389,6 +354,9 @@ func (ah *applicationHandler) HandleApplicationPutRequest(w http.ResponseWriter,
 		LogoURL:                   updatedAppDTO.LogoURL,
 		Token:                     updatedAppDTO.Token,
 		Certificate:               updatedAppDTO.Certificate,
+		TosURI:                    updatedAppDTO.TosURI,
+		PolicyURI:                 updatedAppDTO.PolicyURI,
+		Contacts:                  updatedAppDTO.Contacts,
 	}
 
 	// TODO: Need to refactor when supporting other/multiple inbound auth types.
@@ -494,6 +462,7 @@ func (ah *applicationHandler) processInboundAuthConfig(logger *log.Logger, appDT
 				PKCERequired:            config.OAuthAppConfig.PKCERequired,
 				PublicClient:            config.OAuthAppConfig.PublicClient,
 				Token:                   config.OAuthAppConfig.Token,
+				Scopes:                  config.OAuthAppConfig.Scopes,
 			}
 			returnInboundAuthConfigs = append(returnInboundAuthConfigs, model.InboundAuthConfigComplete{
 				Type:           config.Type,
@@ -532,4 +501,37 @@ func (ah *applicationHandler) handleError(w http.ResponseWriter, logger *log.Log
 		logger.Error("Error encoding error response", log.Error(err))
 		http.Error(w, "Failed to encode error response", http.StatusInternalServerError)
 	}
+}
+
+// processInboundAuthConfigFromRequest processes inbound auth config from request to DTO.
+func (ah *applicationHandler) processInboundAuthConfigFromRequest(
+	configs []model.InboundAuthConfigComplete) []model.InboundAuthConfigDTO {
+	if len(configs) == 0 {
+		return nil
+	}
+
+	inboundAuthConfigDTOs := make([]model.InboundAuthConfigDTO, 0)
+	for _, config := range configs {
+		if config.Type != model.OAuthInboundAuthType || config.OAuthAppConfig == nil {
+			continue
+		}
+
+		inboundAuthConfigDTO := model.InboundAuthConfigDTO{
+			Type: config.Type,
+			OAuthAppConfig: &model.OAuthAppConfigDTO{
+				ClientID:                config.OAuthAppConfig.ClientID,
+				ClientSecret:            config.OAuthAppConfig.ClientSecret,
+				RedirectURIs:            config.OAuthAppConfig.RedirectURIs,
+				GrantTypes:              config.OAuthAppConfig.GrantTypes,
+				ResponseTypes:           config.OAuthAppConfig.ResponseTypes,
+				TokenEndpointAuthMethod: config.OAuthAppConfig.TokenEndpointAuthMethod,
+				PKCERequired:            config.OAuthAppConfig.PKCERequired,
+				PublicClient:            config.OAuthAppConfig.PublicClient,
+				Token:                   config.OAuthAppConfig.Token,
+				Scopes:                  config.OAuthAppConfig.Scopes,
+			},
+		}
+		inboundAuthConfigDTOs = append(inboundAuthConfigDTOs, inboundAuthConfigDTO)
+	}
+	return inboundAuthConfigDTOs
 }

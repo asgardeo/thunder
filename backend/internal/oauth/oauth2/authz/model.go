@@ -43,6 +43,7 @@ type AuthorizationCode struct {
 	State               string
 	CodeChallenge       string
 	CodeChallengeMethod string
+	Resource            string
 }
 
 // AuthZPostRequest represents the request body for the authorization POST request.

@@ -21,6 +21,7 @@ package oauth
 
 import (
 	"errors"
+	"time"
 
 	authncm "github.com/asgardeo/thunder/internal/authn/common"
 	authnoauth "github.com/asgardeo/thunder/internal/authn/oauth"
@@ -100,7 +101,8 @@ func NewOAuthExecutorWithAuthService(id, name string, defaultInputs []flowmodel.
 	}
 
 	return &OAuthExecutor{
-		internal:        *flowmodel.NewExecutor(id, name, defaultInputs, []flowmodel.InputData{}, properties),
+		internal: *flowmodel.NewExecutor(id, name, flowconst.ExecutorTypeAuthentication,
+			defaultInputs, []flowmodel.InputData{}, properties),
 		oAuthProperties: *oAuthProps,
 		authService:     authService,
 	}
@@ -264,6 +266,15 @@ func (o *OAuthExecutor) ProcessAuthFlowResponse(ctx *flowmodel.NodeContext,
 	} else if ctx.FlowType != flowconst.FlowTypeRegistration {
 		execResp.Status = flowconst.ExecFailure
 		execResp.FailureReason = "Authentication failed. Authorization code not provided or invalid."
+		return nil
+	}
+
+	// Add execution record for successful OAuth authentication
+	execResp.ExecutionRecord = &flowmodel.NodeExecutionRecord{
+		ExecutorName: authncm.AuthenticatorOAuth,
+		ExecutorType: flowconst.ExecutorTypeAuthentication,
+		Timestamp:    time.Now().Unix(),
+		Status:       flowconst.FlowStatusComplete,
 	}
 
 	return nil
@@ -433,9 +444,11 @@ func (o *OAuthExecutor) getAuthenticatedUserWithAttributes(ctx *flowmodel.NodeCo
 	}
 
 	authenticatedUser := authncm.AuthenticatedUser{
-		IsAuthenticated: true,
-		UserID:          userID,
-		Attributes:      getUserAttributes(userInfo, userID),
+		IsAuthenticated:    true,
+		UserID:             userID,
+		OrganizationUnitID: user.OrganizationUnit,
+		UserType:           user.Type,
+		Attributes:         getUserAttributes(userInfo, userID),
 	}
 
 	return &authenticatedUser, nil

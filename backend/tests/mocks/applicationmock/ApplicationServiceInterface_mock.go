@@ -408,3 +408,75 @@ func (_c *ApplicationServiceInterfaceMock_UpdateApplication_Call) RunAndReturn(r
 	_c.Call.Return(run)
 	return _c
 }
+
+// ValidateApplication provides a mock function for the type ApplicationServiceInterfaceMock
+func (_mock *ApplicationServiceInterfaceMock) ValidateApplication(app *model.ApplicationDTO) (*model.ApplicationProcessedDTO, *model.InboundAuthConfigDTO, *serviceerror.ServiceError) {
+	ret := _mock.Called(app)
+
+	if len(ret) == 0 {
+		panic("no return value specified for ValidateApplication")
+	}
+
+	var r0 *model.ApplicationProcessedDTO
+	var r1 *model.InboundAuthConfigDTO
+	var r2 *serviceerror.ServiceError
+	if returnFunc, ok := ret.Get(0).(func(*model.ApplicationDTO) (*model.ApplicationProcessedDTO, *model.InboundAuthConfigDTO, *serviceerror.ServiceError)); ok {
+		return returnFunc(app)
+	}
+	if returnFunc, ok := ret.Get(0).(func(*model.ApplicationDTO) *model.ApplicationProcessedDTO); ok {
+		r0 = returnFunc(app)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(*model.ApplicationProcessedDTO)
+		}
+	}
+	if returnFunc, ok := ret.Get(1).(func(*model.ApplicationDTO) *model.InboundAuthConfigDTO); ok {
+		r1 = returnFunc(app)
+	} else {
+		if ret.Get(1) != nil {
+			r1 = ret.Get(1).(*model.InboundAuthConfigDTO)
+		}
+	}
+	if returnFunc, ok := ret.Get(2).(func(*model.ApplicationDTO) *serviceerror.ServiceError); ok {
+		r2 = returnFunc(app)
+	} else {
+		if ret.Get(2) != nil {
+			r2 = ret.Get(2).(*serviceerror.ServiceError)
+		}
+	}
+	return r0, r1, r2
+}
+
+// ApplicationServiceInterfaceMock_ValidateApplication_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'ValidateApplication'
+type ApplicationServiceInterfaceMock_ValidateApplication_Call struct {
+	*mock.Call
+}
+
+// ValidateApplication is a helper method to define mock.On call
+//   - app *model.ApplicationDTO
+func (_e *ApplicationServiceInterfaceMock_Expecter) ValidateApplication(app interface{}) *ApplicationServiceInterfaceMock_ValidateApplication_Call {
+	return &ApplicationServiceInterfaceMock_ValidateApplication_Call{Call: _e.mock.On("ValidateApplication", app)}
+}
+
+func (_c *ApplicationServiceInterfaceMock_ValidateApplication_Call) Run(run func(app *model.ApplicationDTO)) *ApplicationServiceInterfaceMock_ValidateApplication_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 *model.ApplicationDTO
+		if args[0] != nil {
+			arg0 = args[0].(*model.ApplicationDTO)
+		}
+		run(
+			arg0,
+		)
+	})
+	return _c
+}
+
+func (_c *ApplicationServiceInterfaceMock_ValidateApplication_Call) Return(applicationProcessedDTO *model.ApplicationProcessedDTO, inboundAuthConfigDTO *model.InboundAuthConfigDTO, serviceError *serviceerror.ServiceError) *ApplicationServiceInterfaceMock_ValidateApplication_Call {
+	_c.Call.Return(applicationProcessedDTO, inboundAuthConfigDTO, serviceError)
+	return _c
+}
+
+func (_c *ApplicationServiceInterfaceMock_ValidateApplication_Call) RunAndReturn(run func(app *model.ApplicationDTO) (*model.ApplicationProcessedDTO, *model.InboundAuthConfigDTO, *serviceerror.ServiceError)) *ApplicationServiceInterfaceMock_ValidateApplication_Call {
+	_c.Call.Return(run)
+	return _c
+}

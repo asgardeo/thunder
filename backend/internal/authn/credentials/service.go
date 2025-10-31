@@ -46,9 +46,12 @@ func NewCredentialsAuthnService(userSvc user.UserServiceInterface) CredentialsAu
 		userSvc = user.GetUserService()
 	}
 
-	return &credentialsAuthnService{
+	service := &credentialsAuthnService{
 		userService: userSvc,
 	}
+	common.RegisterAuthenticator(service.getMetadata())
+
+	return service
 }
 
 // Authenticate authenticates a user using credentials.
@@ -95,4 +98,12 @@ func (c *credentialsAuthnService) Authenticate(attributes map[string]interface{}
 	}
 
 	return user, nil
+}
+
+// getMetadata returns the authenticator metadata for credentials authenticator.
+func (c *credentialsAuthnService) getMetadata() common.AuthenticatorMeta {
+	return common.AuthenticatorMeta{
+		Name:    common.AuthenticatorCredentials,
+		Factors: []common.AuthenticationFactor{common.FactorKnowledge},
+	}
 }

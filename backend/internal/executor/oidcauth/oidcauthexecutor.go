@@ -23,6 +23,7 @@ import (
 	"errors"
 	"fmt"
 	"slices"
+	"time"
 
 	authncm "github.com/asgardeo/thunder/internal/authn/common"
 	authnoauth "github.com/asgardeo/thunder/internal/authn/oauth"
@@ -37,6 +38,7 @@ import (
 	"github.com/asgardeo/thunder/internal/system/error/serviceerror"
 	httpservice "github.com/asgardeo/thunder/internal/system/http"
 	"github.com/asgardeo/thunder/internal/system/log"
+	"github.com/asgardeo/thunder/internal/user"
 )
 
 const loggerComponentName = "OIDCAuthExecutor"
@@ -227,22 +229,29 @@ func (o *OIDCAuthExecutor) ProcessAuthFlowResponse(ctx *flowmodel.NodeContext,
 
 		// Resolve user with the sub claim.
 		// TODO: For now assume `sub` is the unique identifier for the user always.
-		userID := ""
+		parsedSub := ""
 		sub, ok := idTokenClaims["sub"]
 		if ok && sub != "" {
 			if subStr, ok := sub.(string); ok && subStr != "" {
-				userID, err = o.resolveUser(subStr, ctx, execResp)
-				if err != nil {
-					return err
-				}
-				if execResp.Status == flowconst.ExecFailure {
-					return nil
-				}
+				parsedSub = subStr
 			}
+		}
+		if parsedSub == "" {
+			execResp.Status = flowconst.ExecFailure
+			execResp.FailureReason = "sub claim not found in the ID token."
+			return nil
+		}
+
+		user, err := o.resolveUser(parsedSub, ctx, execResp)
+		if err != nil {
+			return err
+		}
+		if execResp.Status == flowconst.ExecFailure {
+			return nil
 		}
 
 		authenticatedUser, err := o.getAuthenticatedUserWithAttributes(ctx, execResp,
-			tokenResp.AccessToken, idTokenClaims, userID)
+			tokenResp.AccessToken, idTokenClaims, user)
 		if err != nil {
 			return err
 		}
@@ -261,6 +270,15 @@ func (o *OIDCAuthExecutor) ProcessAuthFlowResponse(ctx *flowmodel.NodeContext,
 	} else if ctx.FlowType != flowconst.FlowTypeRegistration {
 		execResp.Status = flowconst.ExecFailure
 		execResp.FailureReason = "Authentication failed. Authorization code not provided or invalid."
+		return nil
+	}
+
+	// Add execution record for successful OIDC authentication
+	execResp.ExecutionRecord = &flowmodel.NodeExecutionRecord{
+		ExecutorName: authncm.AuthenticatorOIDC,
+		ExecutorType: flowconst.ExecutorTypeAuthentication,
+		Timestamp:    time.Now().Unix(),
+		Status:       flowconst.FlowStatusComplete,
 	}
 
 	return nil
@@ -382,7 +400,7 @@ func (o *OIDCAuthExecutor) GetIDTokenClaims(execResp *flowmodel.ExecutorResponse
 // ID token and user info.
 func (o *OIDCAuthExecutor) getAuthenticatedUserWithAttributes(ctx *flowmodel.NodeContext,
 	execResp *flowmodel.ExecutorResponse, accessToken string, idTokenClaims map[string]interface{},
-	userID string) (*authncm.AuthenticatedUser, error) {
+	user *user.User) (*authncm.AuthenticatedUser, error) {
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, loggerComponentName),
 		log.String(log.LoggerKeyExecutorID, o.GetID()),
 		log.String(log.LoggerKeyFlowID, ctx.FlowID))
@@ -391,7 +409,7 @@ func (o *OIDCAuthExecutor) getAuthenticatedUserWithAttributes(ctx *flowmodel.Nod
 	if len(idTokenClaims) != 0 {
 		// Filter non-user claims from the ID token claims.
 		for attr, val := range idTokenClaims {
-			if !slices.Contains(idTokenNonUserAttributes, attr) {
+			if !slices.Contains(IDTokenNonUserAttributes, attr) {
 				userClaims[attr] = val
 			}
 		}
@@ -410,24 +428,6 @@ func (o *OIDCAuthExecutor) getAuthenticatedUserWithAttributes(ctx *flowmodel.Nod
 			return nil, nil
 		}
 
-		// If userID is still empty, try to resolve it using the sub claim from userInfo.
-		// TODO: For now assume `sub` is the unique identifier for the user always.
-		if userID == "" {
-			sub, ok := userInfo["sub"]
-			if !ok || sub == "" {
-				execResp.Status = flowconst.ExecFailure
-				execResp.FailureReason = "sub claim not found in the response."
-				return nil, nil
-			}
-			userID, err = o.resolveUser(sub, ctx, execResp)
-			if err != nil {
-				return nil, err
-			}
-			if execResp.Status == flowconst.ExecFailure {
-				return nil, nil
-			}
-		}
-
 		for key, value := range userInfo {
 			if key != "username" && key != "sub" && key != "id" {
 				userClaims[key] = value
@@ -439,14 +439,10 @@ func (o *OIDCAuthExecutor) getAuthenticatedUserWithAttributes(ctx *flowmodel.Nod
 	if ctx.FlowType == flowconst.FlowTypeRegistration {
 		authenticatedUser.IsAuthenticated = false
 	} else {
-		if userID == "" {
-			execResp.Status = flowconst.ExecFailure
-			execResp.FailureReason = "User not found"
-			return nil, nil
-		}
-		userClaims["user_id"] = userID
 		authenticatedUser.IsAuthenticated = true
-		authenticatedUser.UserID = userID
+		authenticatedUser.UserID = user.ID
+		authenticatedUser.OrganizationUnitID = user.OrganizationUnit
+		authenticatedUser.UserType = user.Type
 	}
 
 	// TODO: Need to convert attributes as per the IDP to local attribute mapping
@@ -456,9 +452,9 @@ func (o *OIDCAuthExecutor) getAuthenticatedUserWithAttributes(ctx *flowmodel.Nod
 	return &authenticatedUser, nil
 }
 
-// resolveUser resolves the user based on the sub claim from user info.
+// resolveUser resolves the internal user based on the sub claim.
 func (o *OIDCAuthExecutor) resolveUser(sub string, ctx *flowmodel.NodeContext,
-	execResp *flowmodel.ExecutorResponse) (string, error) {
+	execResp *flowmodel.ExecutorResponse) (*user.User, error) {
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, loggerComponentName),
 		log.String(log.LoggerKeyExecutorID, o.GetID()),
 		log.String(log.LoggerKeyFlowID, ctx.FlowID))
@@ -476,22 +472,22 @@ func (o *OIDCAuthExecutor) resolveUser(sub string, ctx *flowmodel.NodeContext,
 				}
 				execResp.RuntimeData["sub"] = sub
 
-				return "", nil
+				return nil, nil
 			} else {
 				execResp.Status = flowconst.ExecFailure
 				execResp.FailureReason = "User not found"
-				return "", nil
+				return nil, nil
 			}
 		} else {
 			if svcErr.Type == serviceerror.ClientErrorType {
 				execResp.Status = flowconst.ExecFailure
 				execResp.FailureReason = svcErr.ErrorDescription
-				return "", nil
+				return nil, nil
 			}
 
 			logger.Error("Error while retrieving internal user", log.String("errorCode", svcErr.Code),
 				log.String("description", svcErr.ErrorDescription))
-			return "", errors.New("error while retrieving internal user")
+			return nil, errors.New("error while retrieving internal user")
 		}
 	}
 
@@ -499,12 +495,12 @@ func (o *OIDCAuthExecutor) resolveUser(sub string, ctx *flowmodel.NodeContext,
 		// At this point, a unique user is found in the system. Hence fail the execution.
 		execResp.Status = flowconst.ExecFailure
 		execResp.FailureReason = "User already exists with the provided sub claim."
-		return "", nil
+		return nil, nil
 	}
 
 	if user == nil || user.ID == "" {
-		return "", errors.New("retrieved user is nil or has an empty ID")
+		return nil, errors.New("retrieved user is nil or has an empty ID")
 	}
 
-	return user.ID, nil
+	return user, nil
 }

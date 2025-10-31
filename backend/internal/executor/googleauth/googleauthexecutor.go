@@ -21,7 +21,11 @@ package googleauth
 
 import (
 	"errors"
+	"fmt"
+	"slices"
+	"time"
 
+	authncm "github.com/asgardeo/thunder/internal/authn/common"
 	authngoogle "github.com/asgardeo/thunder/internal/authn/google"
 	authnoauth "github.com/asgardeo/thunder/internal/authn/oauth"
 	authnoidc "github.com/asgardeo/thunder/internal/authn/oidc"
@@ -33,6 +37,7 @@ import (
 	"github.com/asgardeo/thunder/internal/system/error/serviceerror"
 	httpservice "github.com/asgardeo/thunder/internal/system/http"
 	"github.com/asgardeo/thunder/internal/system/log"
+	"github.com/asgardeo/thunder/internal/user"
 )
 
 const loggerComponentName = "GoogleOIDCAuthExecutor"
@@ -187,7 +192,134 @@ func (g *GoogleOIDCAuthExecutor) Execute(ctx *flowmodel.NodeContext) (*flowmodel
 	return execResp, nil
 }
 
+// ProcessAuthFlowResponse processes the response from the Google authentication flow and authenticates the user.
+// This method has been overridden to handle Google-specific logic in id token validation.
+func (g *GoogleOIDCAuthExecutor) ProcessAuthFlowResponse(ctx *flowmodel.NodeContext,
+	execResp *flowmodel.ExecutorResponse) error {
+	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, loggerComponentName),
+		log.String(log.LoggerKeyExecutorID, g.GetID()),
+		log.String(log.LoggerKeyFlowID, ctx.FlowID))
+	logger.Debug("Processing Google OIDC authentication response")
+
+	code, ok := ctx.UserInputData["code"]
+	if ok && code != "" {
+		tokenResp, err := g.ExchangeCodeForToken(ctx, execResp, code)
+		if err != nil {
+			logger.Error("Failed to exchange code for a token", log.Error(err))
+			return fmt.Errorf("failed to exchange code for token: %w", err)
+		}
+		if execResp.Status == flowconst.ExecFailure {
+			return nil
+		}
+
+		idTokenClaims, err := g.GetIDTokenClaims(execResp, tokenResp.IDToken)
+		if err != nil {
+			return errors.New("failed to extract ID token claims: " + err.Error())
+		}
+		if execResp.Status == flowconst.ExecFailure {
+			return nil
+		}
+
+		// Validate nonce if configured.
+		if nonce, ok := ctx.UserInputData["nonce"]; ok && nonce != "" {
+			if idTokenClaims["nonce"] != nonce {
+				execResp.Status = flowconst.ExecFailure
+				execResp.FailureReason = "Nonce mismatch in ID token claims."
+				return nil
+			}
+		}
+
+		// Resolve user with the sub claim.
+		// TODO: For now assume `sub` is the unique identifier for the user always.
+		parsedSub := ""
+		sub, ok := idTokenClaims["sub"]
+		if ok && sub != "" {
+			if subStr, ok := sub.(string); ok && subStr != "" {
+				parsedSub = subStr
+			}
+		}
+		if parsedSub == "" {
+			execResp.Status = flowconst.ExecFailure
+			execResp.FailureReason = "sub claim not found in the ID token."
+			return nil
+		}
+
+		user, err := g.resolveUser(parsedSub, ctx, execResp)
+		if err != nil {
+			return err
+		}
+		if execResp.Status == flowconst.ExecFailure {
+			return nil
+		}
+
+		authenticatedUser, err := g.getAuthenticatedUserWithAttributes(ctx, execResp,
+			tokenResp.AccessToken, idTokenClaims, user)
+		if err != nil {
+			return err
+		}
+		if execResp.Status == flowconst.ExecFailure || authenticatedUser == nil {
+			return nil
+		}
+		execResp.AuthenticatedUser = *authenticatedUser
+	} else {
+		execResp.AuthenticatedUser = authncm.AuthenticatedUser{
+			IsAuthenticated: false,
+		}
+	}
+
+	if execResp.AuthenticatedUser.IsAuthenticated {
+		execResp.Status = flowconst.ExecComplete
+	} else if ctx.FlowType != flowconst.FlowTypeRegistration {
+		execResp.Status = flowconst.ExecFailure
+		execResp.FailureReason = "Authentication failed. Authorization code not provided or invalid."
+		return nil
+	}
+
+	// Add execution record for successful Google authentication
+	execResp.ExecutionRecord = &flowmodel.NodeExecutionRecord{
+		ExecutorName: authncm.AuthenticatorGoogle,
+		ExecutorType: flowconst.ExecutorTypeAuthentication,
+		Timestamp:    time.Now().Unix(),
+		Status:       flowconst.FlowStatusComplete,
+	}
+
+	return nil
+}
+
+// ExchangeCodeForToken exchanges the authorization code for an access token.
+// This method has been overridden to handle Google-specific logic in id token validation.
+func (g *GoogleOIDCAuthExecutor) ExchangeCodeForToken(ctx *flowmodel.NodeContext,
+	execResp *flowmodel.ExecutorResponse, code string) (*model.TokenResponse, error) {
+	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, loggerComponentName),
+		log.String(log.LoggerKeyExecutorID, g.GetID()),
+		log.String(log.LoggerKeyFlowID, ctx.FlowID))
+	logger.Debug("Exchanging authorization code for a token", log.String("tokenEndpoint", g.GetTokenEndpoint()))
+
+	tokenResp, svcErr := g.googleAuthService.ExchangeCodeForToken(g.GetID(), code, true)
+	if svcErr != nil {
+		if svcErr.Type == serviceerror.ClientErrorType {
+			execResp.Status = flowconst.ExecFailure
+			execResp.FailureReason = svcErr.ErrorDescription
+			return nil, nil
+		}
+
+		logger.Error("Failed to exchange code for a token", log.String("errorCode", svcErr.Code),
+			log.String("errorDescription", svcErr.ErrorDescription))
+		return nil, errors.New("failed to exchange code for token")
+	}
+
+	return &model.TokenResponse{
+		AccessToken:  tokenResp.AccessToken,
+		TokenType:    tokenResp.TokenType,
+		Scope:        tokenResp.Scope,
+		RefreshToken: tokenResp.RefreshToken,
+		IDToken:      tokenResp.IDToken,
+		ExpiresIn:    tokenResp.ExpiresIn,
+	}, nil
+}
+
 // ValidateIDToken validates the ID token received from Google.
+// This method has been overridden to handle Google-specific logic in id token validation.
 func (g *GoogleOIDCAuthExecutor) ValidateIDToken(execResp *flowmodel.ExecutorResponse, idToken string) error {
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, loggerComponentName))
 	logger.Debug("Validating ID token")
@@ -206,4 +338,113 @@ func (g *GoogleOIDCAuthExecutor) ValidateIDToken(execResp *flowmodel.ExecutorRes
 	}
 
 	return nil
+}
+
+// getAuthenticatedUserWithAttributes constructs the authenticated user object with attributes from the
+// ID token and user info.
+func (g *GoogleOIDCAuthExecutor) getAuthenticatedUserWithAttributes(ctx *flowmodel.NodeContext,
+	execResp *flowmodel.ExecutorResponse, accessToken string, idTokenClaims map[string]interface{},
+	user *user.User) (*authncm.AuthenticatedUser, error) {
+	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, loggerComponentName),
+		log.String(log.LoggerKeyExecutorID, g.GetID()),
+		log.String(log.LoggerKeyFlowID, ctx.FlowID))
+
+	userClaims := make(map[string]interface{})
+	if len(idTokenClaims) != 0 {
+		// Filter non-user claims from the ID token claims.
+		for attr, val := range idTokenClaims {
+			if !slices.Contains(oidcauth.IDTokenNonUserAttributes, attr) {
+				userClaims[attr] = val
+			}
+		}
+		logger.Debug("Extracted ID token claims", log.Int("noOfClaims", len(idTokenClaims)))
+	}
+
+	if len(g.GetOAuthProperties().Scopes) == 1 && slices.Contains(g.GetOAuthProperties().Scopes, "openid") {
+		logger.Debug("No additional scopes configured.")
+	} else {
+		// Get user info using the access token
+		userInfo, err := g.GetUserInfo(ctx, execResp, accessToken)
+		if err != nil {
+			return nil, fmt.Errorf("failed to get user info: %w", err)
+		}
+		if execResp.Status == flowconst.ExecFailure {
+			return nil, nil
+		}
+
+		for key, value := range userInfo {
+			if key != "username" && key != "sub" && key != "id" {
+				userClaims[key] = value
+			}
+		}
+	}
+
+	authenticatedUser := authncm.AuthenticatedUser{}
+	if ctx.FlowType == flowconst.FlowTypeRegistration {
+		authenticatedUser.IsAuthenticated = false
+	} else {
+		authenticatedUser.IsAuthenticated = true
+		authenticatedUser.UserID = user.ID
+		authenticatedUser.OrganizationUnitID = user.OrganizationUnit
+		authenticatedUser.UserType = user.Type
+	}
+
+	// TODO: Need to convert attributes as per the IDP to local attribute mapping
+	//  when the support is implemented.
+	authenticatedUser.Attributes = userClaims
+
+	return &authenticatedUser, nil
+}
+
+// resolveUser resolves the internal user based on the sub claim.
+func (g *GoogleOIDCAuthExecutor) resolveUser(sub string, ctx *flowmodel.NodeContext,
+	execResp *flowmodel.ExecutorResponse) (*user.User, error) {
+	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, loggerComponentName),
+		log.String(log.LoggerKeyExecutorID, g.GetID()),
+		log.String(log.LoggerKeyFlowID, ctx.FlowID))
+
+	user, svcErr := g.googleAuthService.GetInternalUser(sub)
+	if svcErr != nil {
+		if svcErr.Code == authncm.ErrorUserNotFound.Code {
+			if ctx.FlowType == flowconst.FlowTypeRegistration {
+				logger.Debug("User not found for the provided sub claim. Proceeding with registration flow.")
+				execResp.Status = flowconst.ExecComplete
+				execResp.FailureReason = ""
+
+				if execResp.RuntimeData == nil {
+					execResp.RuntimeData = make(map[string]string)
+				}
+				execResp.RuntimeData["sub"] = sub
+
+				return nil, nil
+			} else {
+				execResp.Status = flowconst.ExecFailure
+				execResp.FailureReason = "User not found"
+				return nil, nil
+			}
+		} else {
+			if svcErr.Type == serviceerror.ClientErrorType {
+				execResp.Status = flowconst.ExecFailure
+				execResp.FailureReason = svcErr.ErrorDescription
+				return nil, nil
+			}
+
+			logger.Error("Error while retrieving internal user", log.String("errorCode", svcErr.Code),
+				log.String("description", svcErr.ErrorDescription))
+			return nil, errors.New("error while retrieving internal user")
+		}
+	}
+
+	if ctx.FlowType == flowconst.FlowTypeRegistration {
+		// At this point, a unique user is found in the system. Hence fail the execution.
+		execResp.Status = flowconst.ExecFailure
+		execResp.FailureReason = "User already exists with the provided sub claim."
+		return nil, nil
+	}
+
+	if user == nil || user.ID == "" {
+		return nil, errors.New("retrieved user is nil or has an empty ID")
+	}
+
+	return user, nil
 }

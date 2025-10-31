@@ -114,6 +114,9 @@ func (ah *authorizeHandler) handleInitialAuthorizationRequest(msg *OAuthMessage,
 	codeChallenge := msg.RequestQueryParams[oauth2const.RequestParamCodeChallenge]
 	codeChallengeMethod := msg.RequestQueryParams[oauth2const.RequestParamCodeChallengeMethod]
 
+	// Extract resource parameter
+	resource := msg.RequestQueryParams[oauth2const.RequestParamResource]
+
 	if clientID == "" {
 		ah.redirectToErrorPage(w, r, oauth2const.ErrorInvalidRequest, "Missing client_id parameter")
 		return
@@ -160,6 +163,7 @@ func (ah *authorizeHandler) handleInitialAuthorizationRequest(msg *OAuthMessage,
 		Scopes:              scope,
 		CodeChallenge:       codeChallenge,
 		CodeChallengeMethod: codeChallengeMethod,
+		Resource:            resource,
 	}
 
 	// Set the redirect URI if not provided in the request. Invalid cases are already handled at this point.
@@ -478,6 +482,7 @@ func createAuthorizationCode(sessionData *SessionData, authUserID string) (
 	}
 
 	scope := sessionData.OAuthParameters.Scopes
+	resource := sessionData.OAuthParameters.Resource
 
 	// TODO: Add expiry time logic.
 	expiryTime := authTime.Add(10 * time.Minute)
@@ -494,6 +499,7 @@ func createAuthorizationCode(sessionData *SessionData, authUserID string) (
 		State:               AuthCodeStateActive,
 		CodeChallenge:       sessionData.OAuthParameters.CodeChallenge,
 		CodeChallengeMethod: sessionData.OAuthParameters.CodeChallengeMethod,
+		Resource:            resource,
 	}, nil
 }
 
@@ -519,7 +525,7 @@ func decodeAttributesFromAssertion(assertion string) (string, map[string]string,
 	userID := ""
 	for key, value := range jwtPayload {
 		switch key {
-		case "sub":
+		case oauth2const.ClaimSub:
 			if strValue, ok := value.(string); ok {
 				userID = strValue
 			} else {

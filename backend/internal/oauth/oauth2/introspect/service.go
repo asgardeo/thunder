@@ -100,23 +100,23 @@ func (s *tokenIntrospectionService) prepareValidResponse(payload map[string]inte
 		response.Username = username
 	}
 
-	if exp, ok := payload["exp"].(float64); ok {
+	if exp, ok := payload[constants.ClaimExp].(float64); ok {
 		response.Exp = int64(exp)
 	}
-	if iat, ok := payload["iat"].(float64); ok {
+	if iat, ok := payload[constants.ClaimIat].(float64); ok {
 		response.Iat = int64(iat)
 	}
 	if nbf, ok := payload["nbf"].(float64); ok {
 		response.Nbf = int64(nbf)
 	}
 
-	if sub, ok := payload["sub"].(string); ok {
+	if sub, ok := payload[constants.ClaimSub].(string); ok {
 		response.Sub = sub
 	}
-	if aud, ok := payload["aud"].(string); ok {
+	if aud, ok := payload[constants.ClaimAud].(string); ok {
 		response.Aud = aud
 	}
-	if iss, ok := payload["iss"].(string); ok {
+	if iss, ok := payload[constants.ClaimIss].(string); ok {
 		response.Iss = iss
 	}
 	if jti, ok := payload["jti"].(string); ok {

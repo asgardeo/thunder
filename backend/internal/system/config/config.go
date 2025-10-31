@@ -32,9 +32,10 @@ import (
 
 // ServerConfig holds the server configuration details.
 type ServerConfig struct {
-	Hostname string `yaml:"hostname" json:"hostname"`
-	Port     int    `yaml:"port" json:"port"`
-	HTTPOnly bool   `yaml:"http_only" json:"http_only"`
+	Hostname       string `yaml:"hostname" json:"hostname"`
+	Port           int    `yaml:"port" json:"port"`
+	HTTPOnly       bool   `yaml:"http_only" json:"http_only"`
+	PublicHostname string `yaml:"public_hostname" json:"public_hostname"`
 }
 
 // GateClientConfig holds the client configuration details.
@@ -137,19 +138,25 @@ type HashConfig struct {
 	Algorithm string `yaml:"algorithm"`
 }
 
+// ImmutableResources holds the configuration details for the immutable resources.
+type ImmutableResources struct {
+	Enabled bool `yaml:"enabled" json:"enabled" default:"false"`
+}
+
 // Config holds the complete configuration details of the server.
 type Config struct {
-	Server     ServerConfig     `yaml:"server" json:"server"`
-	GateClient GateClientConfig `yaml:"gate_client" json:"gate_client"`
-	Security   SecurityConfig   `yaml:"security" json:"security"`
-	Database   DatabaseConfig   `yaml:"database" json:"database"`
-	Cache      CacheConfig      `yaml:"cache" json:"cache"`
-	JWT        JWTConfig        `yaml:"jwt" json:"jwt"`
-	OAuth      OAuthConfig      `yaml:"oauth" json:"oauth"`
-	Flow       FlowConfig       `yaml:"flow" json:"flow"`
-	Crypto     CryptoConfig     `yaml:"crypto" json:"crypto"`
-	Hash       HashConfig       `yaml:"hash"`
-	CORS       CORSConfig       `yaml:"cors" json:"cors"`
+	Server             ServerConfig       `yaml:"server" json:"server"`
+	GateClient         GateClientConfig   `yaml:"gate_client" json:"gate_client"`
+	Security           SecurityConfig     `yaml:"security" json:"security"`
+	Database           DatabaseConfig     `yaml:"database" json:"database"`
+	Cache              CacheConfig        `yaml:"cache" json:"cache"`
+	JWT                JWTConfig          `yaml:"jwt" json:"jwt"`
+	OAuth              OAuthConfig        `yaml:"oauth" json:"oauth"`
+	Flow               FlowConfig         `yaml:"flow" json:"flow"`
+	Crypto             CryptoConfig       `yaml:"crypto" json:"crypto"`
+	Hash               HashConfig         `yaml:"hash"`
+	CORS               CORSConfig         `yaml:"cors" json:"cors"`
+	ImmutableResources ImmutableResources `yaml:"immutable_resources" json:"immutable_resources"`
 }
 
 // LoadConfig loads the configurations from the specified YAML file and applies defaults.

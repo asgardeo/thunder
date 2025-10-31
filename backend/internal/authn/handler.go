@@ -62,7 +62,13 @@ func (ah *AuthenticationHandler) HandleCredentialsAuthRequest(w http.ResponseWri
 	}
 	delete(authRequest, "skip_assertion")
 
-	authResponse, svcErr := ah.authService.AuthenticateWithCredentials(authRequest, skipAssertion)
+	// Check for assertion field
+	assertion, ok := authRequest["assertion"].(string)
+	if ok {
+		delete(authRequest, "assertion")
+	}
+
+	authResponse, svcErr := ah.authService.AuthenticateWithCredentials(authRequest, skipAssertion, assertion)
 	if svcErr != nil {
 		ah.handleServiceError(w, svcErr)
 		return
@@ -103,7 +109,7 @@ func (ah *AuthenticationHandler) HandleVerifySMSOTPRequest(w http.ResponseWriter
 	}
 
 	authResponse, svcErr := ah.authService.VerifyOTP(otpRequest.SessionToken, otpRequest.SkipAssertion,
-		otpRequest.OTP)
+		otpRequest.Assertion, otpRequest.OTP)
 	if svcErr != nil {
 		ah.handleServiceError(w, svcErr)
 		return
@@ -140,7 +146,7 @@ func (ah *AuthenticationHandler) HandleGoogleAuthFinishRequest(w http.ResponseWr
 	}
 
 	authResponse, svcErr := ah.authService.FinishIDPAuthentication(idp.IDPTypeGoogle, authRequest.SessionToken,
-		authRequest.SkipAssertion, authRequest.Code)
+		authRequest.SkipAssertion, authRequest.Assertion, authRequest.Code)
 	if svcErr != nil {
 		ah.handleServiceError(w, svcErr)
 		return
@@ -177,7 +183,7 @@ func (ah *AuthenticationHandler) HandleGithubAuthFinishRequest(w http.ResponseWr
 	}
 
 	authResponse, svcErr := ah.authService.FinishIDPAuthentication(idp.IDPTypeGitHub, authRequest.SessionToken,
-		authRequest.SkipAssertion, authRequest.Code)
+		authRequest.SkipAssertion, authRequest.Assertion, authRequest.Code)
 	if svcErr != nil {
 		ah.handleServiceError(w, svcErr)
 		return
@@ -214,7 +220,7 @@ func (ah *AuthenticationHandler) HandleStandardOAuthFinishRequest(w http.Respons
 	}
 
 	authResponse, svcErr := ah.authService.FinishIDPAuthentication(idp.IDPTypeOAuth, authRequest.SessionToken,
-		authRequest.SkipAssertion, authRequest.Code)
+		authRequest.SkipAssertion, authRequest.Assertion, authRequest.Code)
 	if svcErr != nil {
 		ah.handleServiceError(w, svcErr)
 		return
