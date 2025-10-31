@@ -16,17 +16,18 @@
  * under the License.
  */
 
-package log
+// Package formatter provides formatter interfaces and implementations for events.
+package formatter
 
-const (
-	// LoggerKeyComponentName is the key used to identify the component name in the logger.
-	LoggerKeyComponentName = "component"
-	// LoggerKeyExecutorID is the key used to identify the executor ID in the logger.
-	LoggerKeyExecutorID = "executorId"
-	// LoggerKeyFlowID is the key used to identify the flow ID in the logger.
-	LoggerKeyFlowID = "flowId"
-	// LoggerKeyNodeID is the key used to identify the node ID in the logger.
-	LoggerKeyNodeID = "nodeId"
-	// LoggerKeyTraceID is the key used to identify the trace ID (correlation ID) in the logger.
-	LoggerKeyTraceID = "trace_id"
+import (
+	"github.com/asgardeo/thunder/internal/observability/event"
 )
+
+// Formatter is the interface for formatting events into different output formats.
+type Formatter interface {
+	// Format formats an event into bytes.
+	Format(evt *event.Event) ([]byte, error)
+
+	// GetName returns the name of this formatter.
+	GetName() string
+}

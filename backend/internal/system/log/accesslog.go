@@ -23,12 +23,18 @@ import (
 	"net"
 	"net/http"
 	"time"
+
+	sysContext "github.com/asgardeo/thunder/internal/system/context"
 )
 
-// AccessLogHandler logs HTTP requests in Apache CLF with response time.
+// AccessLogHandler logs HTTP requests in Apache CLF with response time and correlation ID.
+// The correlation ID should be set in the context by the CorrelationIDMiddleware.
 func AccessLogHandler(logger *Logger, next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		start := time.Now()
+
+		// Extract correlation ID from context
+		correlationID := sysContext.GetTraceID(r.Context())
 
 		// Capture the status and size.
 		lrw := &loggingResponseWriter{ResponseWriter: w, statusCode: 200}
@@ -42,9 +48,10 @@ func AccessLogHandler(logger *Logger, next http.Handler) http.Handler {
 			host = r.RemoteAddr
 		}
 
-		// Apache CLF-style format with additional fields. Last %d is the response time in milliseconds.
+		// Apache CLF-style format with correlation ID and response time
+		// Format: host - - [timestamp] method uri protocol status size elapsed_ms correlation_id
 		logger.Info(fmt.Sprintf(
-			"%s - - [%s] %s %s %s %d %d %d",
+			"%s - - [%s] %s %s %s %d %d %d %s",
 			host,
 			start.Format("02/Jan/2006:15:04:05 -0700"),
 			r.Method,
@@ -53,6 +60,7 @@ func AccessLogHandler(logger *Logger, next http.Handler) http.Handler {
 			lrw.statusCode,
 			lrw.size,
 			elapsedMs,
+			correlationID,
 		))
 	})
 }
