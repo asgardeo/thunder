@@ -46,6 +46,12 @@ const (
 	RequestParamErrorDescription    string = "error_description"
 	RequestParamToken               string = "token"
 	RequestParamTokenTypeHint       string = "token_type_hint"
+	RequestParamSubjectToken        string = "subject_token"
+	RequestParamSubjectTokenType    string = "subject_token_type"
+	RequestParamActorToken          string = "actor_token"
+	RequestParamActorTokenType      string = "actor_token_type"
+	RequestParamRequestedTokenType  string = "requested_token_type"
+	RequestParamAudience            string = "audience"
 )
 
 // Server OAuth constants.
@@ -86,6 +92,8 @@ const (
 	GrantTypeClientCredentials GrantType = "client_credentials"
 	// GrantTypeRefreshToken represents the refresh token grant type.
 	GrantTypeRefreshToken GrantType = "refresh_token"
+	// GrantTypeTokenExchange represents the token exchange grant type.
+	GrantTypeTokenExchange GrantType = "urn:ietf:params:oauth:grant-type:token-exchange" //nolint:gosec
 )
 
 // supportedGrantTypes is the single source of truth for all supported grant types.
@@ -93,6 +101,7 @@ var supportedGrantTypes = []GrantType{
 	GrantTypeAuthorizationCode,
 	GrantTypeClientCredentials,
 	GrantTypeRefreshToken,
+	GrantTypeTokenExchange,
 }
 
 // IsValid checks if the GrantType is valid.
@@ -163,6 +172,35 @@ const (
 	TokenTypeBearer = "Bearer"
 	TokenTypeJWT    = "JWT"
 )
+
+// TokenTypeIdentifier defines a type for RFC 8693 token type identifiers.
+type TokenTypeIdentifier string
+
+// RFC 8693 Token Type Identifiers
+const (
+	TokenTypeIdentifierAccessToken  TokenTypeIdentifier = "urn:ietf:params:oauth:token-type:access_token"  //nolint:gosec
+	TokenTypeIdentifierRefreshToken TokenTypeIdentifier = "urn:ietf:params:oauth:token-type:refresh_token" //nolint:gosec
+	TokenTypeIdentifierIDToken      TokenTypeIdentifier = "urn:ietf:params:oauth:token-type:id_token"      //nolint:gosec
+	TokenTypeIdentifierJWT          TokenTypeIdentifier = "urn:ietf:params:oauth:token-type:jwt"           //nolint:gosec
+)
+
+// supportedTokenTypeIdentifiers is the single source of truth for all supported token type identifiers.
+var supportedTokenTypeIdentifiers = []TokenTypeIdentifier{
+	TokenTypeIdentifierAccessToken,
+	TokenTypeIdentifierRefreshToken,
+	TokenTypeIdentifierIDToken,
+	TokenTypeIdentifierJWT,
+}
+
+// IsValid checks if the TokenTypeIdentifier is valid.
+func (tti TokenTypeIdentifier) IsValid() bool {
+	for _, valid := range supportedTokenTypeIdentifiers {
+		if tti == valid {
+			return true
+		}
+	}
+	return false
+}
 
 // OAuth2 error codes.
 const (

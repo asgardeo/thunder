@@ -146,17 +146,23 @@ func (th *tokenHandler) HandleTokenRequest(w http.ResponseWriter, r *http.Reques
 
 	// Construct the token request.
 	tokenRequest := &model.TokenRequest{
-		GrantType:    grantTypeStr,
-		ClientID:     clientID,
-		ClientSecret: clientSecret,
-		Scope:        r.FormValue("scope"),
-		Username:     r.FormValue("username"),
-		Password:     r.FormValue("password"),
-		RefreshToken: r.FormValue("refresh_token"),
-		CodeVerifier: r.FormValue("code_verifier"),
-		Code:         r.FormValue("code"),
-		RedirectURI:  r.FormValue("redirect_uri"),
-		Resource:     r.FormValue(constants.RequestParamResource),
+		GrantType:          grantTypeStr,
+		ClientID:           clientID,
+		ClientSecret:       clientSecret,
+		Scope:              r.FormValue("scope"),
+		Username:           r.FormValue("username"),
+		Password:           r.FormValue("password"),
+		RefreshToken:       r.FormValue("refresh_token"),
+		CodeVerifier:       r.FormValue("code_verifier"),
+		Code:               r.FormValue("code"),
+		RedirectURI:        r.FormValue("redirect_uri"),
+		Resource:           r.FormValue(constants.RequestParamResource),
+		SubjectToken:       r.FormValue(constants.RequestParamSubjectToken),
+		SubjectTokenType:   r.FormValue(constants.RequestParamSubjectTokenType),
+		ActorToken:         r.FormValue(constants.RequestParamActorToken),
+		ActorTokenType:     r.FormValue(constants.RequestParamActorTokenType),
+		RequestedTokenType: r.FormValue(constants.RequestParamRequestedTokenType),
+		Audience:           r.FormValue(constants.RequestParamAudience),
 	}
 
 	// Validate the token request.
@@ -223,6 +229,13 @@ func (th *tokenHandler) HandleTokenRequest(w http.ResponseWriter, r *http.Reques
 		RefreshToken: tokenRespDTO.RefreshToken.Token,
 		Scope:        scopes,
 		IDToken:      tokenRespDTO.IDToken.Token,
+	}
+
+	// For token exchange, set the issued_token_type from context
+	if grantType == constants.GrantTypeTokenExchange {
+		if val, ok := ctx.TokenAttributes["issued_token_type"].(string); ok {
+			tokenResponse.IssuedTokenType = val
+		}
 	}
 
 	logger.Debug("Token generated successfully", log.String("client_id", clientID),

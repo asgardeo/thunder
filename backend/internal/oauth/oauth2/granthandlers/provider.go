@@ -35,6 +35,7 @@ type GrantHandlerProvider struct {
 	clientCredentialsGrantHandler GrantHandlerInterface
 	authorizationCodeGrantHandler GrantHandlerInterface
 	refreshTokenGrantHandler      GrantHandlerInterface
+	tokenExchangeGrantHandler     GrantHandlerInterface
 }
 
 // newGrantHandlerProvider creates a new instance of GrantHandlerProvider.
@@ -47,6 +48,7 @@ func newGrantHandlerProvider(
 		clientCredentialsGrantHandler: newClientCredentialsGrantHandler(jwtService),
 		authorizationCodeGrantHandler: newAuthorizationCodeGrantHandler(jwtService, userService, authzService),
 		refreshTokenGrantHandler:      newRefreshTokenGrantHandler(jwtService, userService),
+		tokenExchangeGrantHandler:     newTokenExchangeGrantHandler(jwtService),
 	}
 }
 
@@ -59,6 +61,8 @@ func (p *GrantHandlerProvider) GetGrantHandler(grantType constants.GrantType) (G
 		return p.authorizationCodeGrantHandler, nil
 	case constants.GrantTypeRefreshToken:
 		return p.refreshTokenGrantHandler, nil
+	case constants.GrantTypeTokenExchange:
+		return p.tokenExchangeGrantHandler, nil
 	default:
 		return nil, constants.UnSupportedGrantTypeError
 	}
