@@ -32,16 +32,24 @@ type TokenRequest struct {
 	Code         string `json:"code,omitempty"`
 	RedirectURI  string `json:"redirect_uri,omitempty"`
 	Resource     string `json:"resource,omitempty"`
+	// RFC 8693 Token Exchange parameters
+	SubjectToken       string `json:"subject_token,omitempty"`
+	SubjectTokenType   string `json:"subject_token_type,omitempty"`
+	ActorToken         string `json:"actor_token,omitempty"`
+	ActorTokenType     string `json:"actor_token_type,omitempty"`
+	RequestedTokenType string `json:"requested_token_type,omitempty"`
+	Audience           string `json:"audience,omitempty"`
 }
 
 // TokenResponse represents the OAuth2 token response.
 type TokenResponse struct {
-	AccessToken  string `json:"access_token"`
-	TokenType    string `json:"token_type"`
-	ExpiresIn    int64  `json:"expires_in"`
-	RefreshToken string `json:"refresh_token,omitempty"`
-	Scope        string `json:"scope,omitempty"`
-	IDToken      string `json:"id_token,omitempty"`
+	AccessToken     string `json:"access_token"`
+	TokenType       string `json:"token_type"`
+	ExpiresIn       int64  `json:"expires_in"`
+	RefreshToken    string `json:"refresh_token,omitempty"`
+	Scope           string `json:"scope,omitempty"`
+	IDToken         string `json:"id_token,omitempty"`
+	IssuedTokenType string `json:"issued_token_type,omitempty"`
 }
 
 // TokenContext holds context data for the token issuance.
