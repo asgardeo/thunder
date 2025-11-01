@@ -260,3 +260,11 @@ packages:
       structname: '{{.InterfaceName}}Mock'
       pkgname: flowmgtmock
       filename: "{{.InterfaceName}}_mock.go"
+
+  github.com/asgardeo/thunder/internal/group:
+    config:
+      all: true
+      dir: tests/mocks/groupmock
+      structname: '{{.InterfaceName}}Mock'
+      pkgname: groupmock
+      filename: "{{.InterfaceName}}_mock.go"

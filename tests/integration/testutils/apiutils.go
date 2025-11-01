@@ -413,3 +413,61 @@ func FindUserByAttribute(key, value string) (*User, error) {
 	}
 	return nil, nil
 }
+
+// CreateGroup creates a group via API and returns the group ID
+func CreateGroup(group Group) (string, error) {
+	groupJSON, err := json.Marshal(group)
+	if err != nil {
+		return "", fmt.Errorf("failed to marshal group: %w", err)
+	}
+
+	req, err := http.NewRequest("POST", TestServerURL+"/groups", bytes.NewReader(groupJSON))
+	if err != nil {
+		return "", fmt.Errorf("failed to create request: %w", err)
+	}
+	req.Header.Set("Content-Type", "application/json")
+
+	client := getHTTPClient()
+	resp, err := client.Do(req)
+	if err != nil {
+		return "", fmt.Errorf("failed to send request: %w", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusCreated {
+		bodyBytes, _ := io.ReadAll(resp.Body)
+		return "", fmt.Errorf("expected status 201, got %d. Response: %s", resp.StatusCode, string(bodyBytes))
+	}
+
+	var createdGroup map[string]interface{}
+	err = json.NewDecoder(resp.Body).Decode(&createdGroup)
+	if err != nil {
+		return "", fmt.Errorf("failed to parse response body: %w", err)
+	}
+
+	groupID, ok := createdGroup["id"].(string)
+	if !ok {
+		return "", fmt.Errorf("response does not contain id")
+	}
+	return groupID, nil
+}
+
+// DeleteGroup deletes a group by ID
+func DeleteGroup(groupID string) error {
+	req, err := http.NewRequest("DELETE", TestServerURL+"/groups/"+groupID, nil)
+	if err != nil {
+		return fmt.Errorf("failed to create delete request: %w", err)
+	}
+
+	client := getHTTPClient()
+	resp, err := client.Do(req)
+	if err != nil {
+		return fmt.Errorf("failed to delete group: %w", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusNoContent && resp.StatusCode != http.StatusOK {
+		return fmt.Errorf("expected status 204 or 200, got %d", resp.StatusCode)
+	}
+	return nil
+}

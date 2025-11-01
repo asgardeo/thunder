@@ -44,6 +44,7 @@ type GroupServiceInterface interface {
 	UpdateGroup(groupID string, request UpdateGroupRequest) (*Group, *serviceerror.ServiceError)
 	DeleteGroup(groupID string) *serviceerror.ServiceError
 	GetGroupMembers(groupID string, limit, offset int) (*MemberListResponse, *serviceerror.ServiceError)
+	ValidateGroupIDs(groupIDs []string) *serviceerror.ServiceError
 }
 
 // groupService is the default implementation of the GroupServiceInterface.
@@ -183,7 +184,7 @@ func (gs *groupService) CreateGroup(request CreateGroupRequest) (*Group, *servic
 		return nil, err
 	}
 
-	if err := gs.validateGroupIDs(groupIDs); err != nil {
+	if err := gs.ValidateGroupIDs(groupIDs); err != nil {
 		return nil, err
 	}
 
@@ -318,7 +319,7 @@ func (gs *groupService) UpdateGroup(
 		return nil, err
 	}
 
-	if err := gs.validateGroupIDs(groupIDs); err != nil {
+	if err := gs.ValidateGroupIDs(groupIDs); err != nil {
 		return nil, err
 	}
 
@@ -514,8 +515,8 @@ func (gs *groupService) validateUserIDs(userIDs []string) *serviceerror.ServiceE
 	return nil
 }
 
-// validateGroupIDs validates that all provided group IDs exist.
-func (gs *groupService) validateGroupIDs(groupIDs []string) *serviceerror.ServiceError {
+// ValidateGroupIDs validates that all provided group IDs exist.
+func (gs *groupService) ValidateGroupIDs(groupIDs []string) *serviceerror.ServiceError {
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, loggerComponentName))
 
 	invalidGroupIDs, err := gs.groupStore.ValidateGroupIDs(groupIDs)

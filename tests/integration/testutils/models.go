@@ -99,3 +99,11 @@ type AuthenticationResponse struct {
 	OrganizationUnit string `json:"organization_unit"`
 	Assertion        string `json:"assertion,omitempty"`
 }
+
+// Group represents a group in the system
+type Group struct {
+	ID                 string `json:"id,omitempty"`
+	Name               string `json:"name"`
+	Description        string `json:"description,omitempty"`
+	OrganizationUnitId string `json:"organizationUnitId,omitempty"`
+}
