@@ -84,3 +84,27 @@ const (
 	// CustomPropKeyContentType is the property key for the content type.
 	CustomPropKeyContentType = "content_type"
 )
+// Supported property names for each message provider type.
+var (
+	// SupportedVonageProperties lists all supported Vonage provider properties.
+	SupportedVonageProperties = []string{
+		VonagePropKeyAPIKey,
+		VonagePropKeyAPISecret,
+		VonagePropKeySenderID,
+	}
+
+	// SupportedTwilioProperties lists all supported Twilio provider properties.
+	SupportedTwilioProperties = []string{
+		TwilioPropKeyAccountSID,
+		TwilioPropKeyAuthToken,
+		TwilioPropKeySenderID,
+	}
+
+	// SupportedCustomProperties lists all supported custom provider properties.
+	SupportedCustomProperties = []string{
+		CustomPropKeyURL,
+		CustomPropKeyHTTPMethod,
+		CustomPropKeyHTTPHeaders,
+		CustomPropKeyContentType,
+	}
+)
