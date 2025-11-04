@@ -62,7 +62,7 @@ func (suite *OAuthUtilsTestSuite) TestParseIDPConfig() {
 		},
 	}
 
-	config, err := parseIDPConfig(idpDTO)
+	config, err := ParseIDPConfig(idpDTO)
 	suite.Nil(err)
 	suite.NotNil(config)
 
@@ -87,7 +87,7 @@ func (suite *OAuthUtilsTestSuite) TestParseIDPConfigWithSpaceSeparatedScopes() {
 		},
 	}
 
-	config, err := parseIDPConfig(idpDTO)
+	config, err := ParseIDPConfig(idpDTO)
 	suite.Nil(err)
 	suite.NotNil(config)
 
@@ -108,7 +108,7 @@ func (suite *OAuthUtilsTestSuite) TestParseIDPConfigWithAdditionalParams() {
 		},
 	}
 
-	config, err := parseIDPConfig(idpDTO)
+	config, err := ParseIDPConfig(idpDTO)
 	suite.Nil(err)
 	suite.NotNil(config)
 	suite.Equal("custom_value", config.AdditionalParams["custom_param"])
@@ -125,7 +125,7 @@ func (suite *OAuthUtilsTestSuite) TestParseIDPConfigWithEmptyValues() {
 		},
 	}
 
-	config, err := parseIDPConfig(idpDTO)
+	config, err := ParseIDPConfig(idpDTO)
 	suite.Nil(err)
 	suite.NotNil(config)
 	suite.NotContains(config.AdditionalParams, "custom_param")

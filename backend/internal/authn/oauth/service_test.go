@@ -644,3 +644,40 @@ func (suite *OAuthAuthnServiceTestSuite) TestValidateTokenResponseWithError() {
 		})
 	}
 }
+
+func (suite *OAuthAuthnServiceTestSuite) TestGetOAuthClientConfigMissingUserInfoEndpoint() {
+	freshIDPMock := idpmock.NewIDPServiceInterfaceMock(suite.T())
+	serviceWithoutDefaults := &oAuthAuthnService{
+		httpClient:  suite.mockHTTPClient,
+		idpService:  freshIDPMock,
+		userService: suite.mockUserService,
+		endpoints:   OAuthEndpoints{},
+	}
+
+	clientIDProp, _ := cmodels.NewProperty("client_id", "test_client_id", false)
+	clientSecretProp, _ := cmodels.NewProperty("client_secret", "test_client_secret", false)
+	redirectURIProp, _ := cmodels.NewProperty("redirect_uri", "https://app.example.com/callback", false)
+	scopesProp, _ := cmodels.NewProperty("scopes", "openid profile email", false)
+	authzEndpointProp, _ := cmodels.NewProperty("authorization_endpoint", "https://localhost:8090/authorize", false)
+	tokenEndpointProp, _ := cmodels.NewProperty("token_endpoint", "https://localhost:8090/token", false)
+
+	idpDTO := &idp.IDPDTO{
+		ID:   testIDPID,
+		Name: "Test OAuth Provider",
+		Type: idp.IDPTypeOAuth,
+		Properties: []cmodels.Property{
+			*clientIDProp,
+			*clientSecretProp,
+			*redirectURIProp,
+			*scopesProp,
+			*authzEndpointProp,
+			*tokenEndpointProp,
+		},
+	}
+	freshIDPMock.On("GetIdentityProvider", testIDPID).Return(idpDTO, nil)
+
+	config, err := serviceWithoutDefaults.GetOAuthClientConfig(testIDPID)
+	suite.Nil(config)
+	suite.NotNil(err)
+	suite.Equal(ErrorUnexpectedServerError.Code, err.Code)
+}

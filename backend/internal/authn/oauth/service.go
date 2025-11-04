@@ -101,7 +101,7 @@ func (s *oAuthAuthnService) GetOAuthClientConfig(idpID string) (
 	idp, svcErr := s.idpService.GetIdentityProvider(idpID)
 	if svcErr != nil {
 		if svcErr.Type == serviceerror.ClientErrorType {
-			return nil, customServiceError(ErrorClientErrorWhileRetrievingIDP,
+			return nil, CustomServiceError(ErrorClientErrorWhileRetrievingIDP,
 				"Error while retrieving identity provider: "+svcErr.ErrorDescription)
 		}
 		logger.Error("Error while retrieving identity provider", log.String("errorCode", svcErr.Code),
@@ -112,7 +112,7 @@ func (s *oAuthAuthnService) GetOAuthClientConfig(idpID string) (
 		return nil, &ErrorInvalidIDP
 	}
 
-	oAuthClientConfig, err := parseIDPConfig(idp)
+	oAuthClientConfig, err := ParseIDPConfig(idp)
 	if err != nil {
 		logger.Error("Failed to parse identity provider configurations", log.Error(err))
 		return nil, &ErrorUnexpectedServerError
@@ -304,6 +304,13 @@ func (s *oAuthAuthnService) GetInternalUser(sub string) (*user.User, *serviceerr
 
 // validateClientConfig checks if the essential fields are present in the OAuth client configuration.
 func (s *oAuthAuthnService) validateClientConfig(idpConfig *OAuthClientConfig) *serviceerror.ServiceError {
+	return s.validateClientConfigWithOptions(idpConfig, true)
+}
+
+// validateClientConfigWithOptions checks if the essential fields are present in the OAuth client configuration.
+// requireUserInfoEndpoint parameter controls whether UserInfoEndpoint is mandatory.
+func (s *oAuthAuthnService) validateClientConfigWithOptions(idpConfig *OAuthClientConfig, 
+	requireUserInfoEndpoint bool) *serviceerror.ServiceError {
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, loggerComponentName))
 
 	if idpConfig.ClientID == "" || idpConfig.ClientSecret == "" || idpConfig.RedirectURI == "" ||
@@ -330,6 +337,11 @@ func (s *oAuthAuthnService) validateClientConfig(idpConfig *OAuthClientConfig) *
 	}
 
 	if idpConfig.OAuthEndpoints.AuthorizationEndpoint == "" || idpConfig.OAuthEndpoints.TokenEndpoint == "" {
+		logger.Error("Invalid identity provider configuration: Missing essential endpoints")
+		return &ErrorUnexpectedServerError
+	}
+
+	if requireUserInfoEndpoint && idpConfig.OAuthEndpoints.UserInfoEndpoint == "" {
 		logger.Error("Invalid identity provider configuration: Missing essential endpoints")
 		return &ErrorUnexpectedServerError
 	}

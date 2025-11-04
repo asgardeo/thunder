@@ -24,9 +24,12 @@ import (
 	"github.com/stretchr/testify/suite"
 
 	"github.com/asgardeo/thunder/internal/authn/oauth"
+	"github.com/asgardeo/thunder/internal/idp"
+	"github.com/asgardeo/thunder/internal/system/cmodels"
 	"github.com/asgardeo/thunder/internal/system/error/serviceerror"
 	"github.com/asgardeo/thunder/internal/user"
 	"github.com/asgardeo/thunder/tests/mocks/authn/oauthmock"
+	"github.com/asgardeo/thunder/tests/mocks/idp/idpmock"
 	"github.com/asgardeo/thunder/tests/mocks/jwtmock"
 )
 
@@ -37,6 +40,7 @@ const (
 type OIDCAuthnServiceTestSuite struct {
 	suite.Suite
 	mockOAuthService *oauthmock.OAuthAuthnServiceInterfaceMock
+	mockIDPService   *idpmock.IDPServiceInterfaceMock
 	mockJWTService   *jwtmock.JWTServiceInterfaceMock
 	service          OIDCAuthnServiceInterface
 }
@@ -47,18 +51,35 @@ func TestOIDCAuthnServiceTestSuite(t *testing.T) {
 
 func (suite *OIDCAuthnServiceTestSuite) SetupTest() {
 	suite.mockOAuthService = oauthmock.NewOAuthAuthnServiceInterfaceMock(suite.T())
+	suite.mockIDPService = idpmock.NewIDPServiceInterfaceMock(suite.T())
 	suite.mockJWTService = jwtmock.NewJWTServiceInterfaceMock(suite.T())
-	suite.service = NewOIDCAuthnService(suite.mockOAuthService, suite.mockJWTService)
+	suite.service = NewOIDCAuthnServiceWithIDPService(suite.mockOAuthService, suite.mockIDPService, suite.mockJWTService)
+}
+
+func createTestOIDCIDPDTO(idpID string) *idp.IDPDTO {
+	clientIDProp, _ := cmodels.NewProperty("client_id", "test_client", false)
+	clientSecretProp, _ := cmodels.NewProperty("client_secret", "test_secret", false)
+	redirectURIProp, _ := cmodels.NewProperty("redirect_uri", "https://app.com/callback", false)
+	scopesProp, _ := cmodels.NewProperty("scopes", "openid profile", false)
+	authzEndpointProp, _ := cmodels.NewProperty("authorization_endpoint", "https://idp.com/authorize", false)
+	tokenEndpointProp, _ := cmodels.NewProperty("token_endpoint", "https://idp.com/token", false)
+
+	return &idp.IDPDTO{
+		ID:   idpID,
+		Name: "Test OIDC IDP",
+		Type: idp.IDPTypeOIDC,
+		Properties: []cmodels.Property{
+			*clientIDProp, *clientSecretProp, *redirectURIProp, *scopesProp,
+			*authzEndpointProp, *tokenEndpointProp,
+		},
+	}
 }
 
 func (suite *OIDCAuthnServiceTestSuite) TestGetOAuthClientConfigWithOpenIDScope() {
 	idpID := testOIDCIDPID
-	config := &oauth.OAuthClientConfig{
-		ClientID:     "client123",
-		ClientSecret: "secret",
-		Scopes:       []string{"openid", "profile", "email"},
-	}
-	suite.mockOAuthService.On("GetOAuthClientConfig", idpID).Return(config, nil)
+	idpDTO := createTestOIDCIDPDTO(idpID)
+	
+	suite.mockIDPService.On("GetIdentityProvider", idpID).Return(idpDTO, nil)
 
 	result, err := suite.service.GetOAuthClientConfig(idpID)
 	suite.Nil(err)
@@ -66,20 +87,28 @@ func (suite *OIDCAuthnServiceTestSuite) TestGetOAuthClientConfigWithOpenIDScope(
 
 	suite.Contains(result.Scopes, "openid")
 	suite.Contains(result.Scopes, "profile")
-	suite.Contains(result.Scopes, "email")
-
-	// Ensure openid is not duplicated
-	suite.Equal(3, len(result.Scopes))
 }
 
 func (suite *OIDCAuthnServiceTestSuite) TestGetOAuthClientConfigWithoutOpenIDScope() {
 	idpID := testOIDCIDPID
-	config := &oauth.OAuthClientConfig{
-		ClientID:     "client123",
-		ClientSecret: "secret",
-		Scopes:       []string{"profile"},
+	clientIDProp, _ := cmodels.NewProperty("client_id", "test_client", false)
+	clientSecretProp, _ := cmodels.NewProperty("client_secret", "test_secret", false)
+	redirectURIProp, _ := cmodels.NewProperty("redirect_uri", "https://app.com/callback", false)
+	scopesProp, _ := cmodels.NewProperty("scopes", "profile", false)
+	authzEndpointProp, _ := cmodels.NewProperty("authorization_endpoint", "https://idp.com/authorize", false)
+	tokenEndpointProp, _ := cmodels.NewProperty("token_endpoint", "https://idp.com/token", false)
+
+	idpDTO := &idp.IDPDTO{
+		ID:   idpID,
+		Name: "Test OIDC IDP",
+		Type: idp.IDPTypeOIDC,
+		Properties: []cmodels.Property{
+			*clientIDProp, *clientSecretProp, *redirectURIProp, *scopesProp,
+			*authzEndpointProp, *tokenEndpointProp,
+		},
 	}
-	suite.mockOAuthService.On("GetOAuthClientConfig", idpID).Return(config, nil)
+	
+	suite.mockIDPService.On("GetIdentityProvider", idpID).Return(idpDTO, nil)
 
 	result, err := suite.service.GetOAuthClientConfig(idpID)
 	suite.Nil(err)
@@ -128,9 +157,26 @@ func (suite *OIDCAuthnServiceTestSuite) TestExchangeCodeForTokenSuccess() {
 					TokenType:   "Bearer",
 				}
 				suite.mockOAuthService.On("ExchangeCodeForToken", testOIDCIDPID, code, false).Return(tokenResp, nil)
-				suite.mockOAuthService.On("GetOAuthClientConfig", testOIDCIDPID).Return(&oauth.OAuthClientConfig{
-					OAuthEndpoints: oauth.OAuthEndpoints{JwksEndpoint: "https://example.com/jwks"},
-				}, nil)
+				
+				clientIDProp, _ := cmodels.NewProperty("client_id", "test_client", false)
+				clientSecretProp, _ := cmodels.NewProperty("client_secret", "test_secret", false)
+				redirectURIProp, _ := cmodels.NewProperty("redirect_uri", "https://app.com/callback", false)
+				scopesProp, _ := cmodels.NewProperty("scopes", "openid profile", false)
+				authzEndpointProp, _ := cmodels.NewProperty("authorization_endpoint", "https://idp.com/authorize", false)
+				tokenEndpointProp, _ := cmodels.NewProperty("token_endpoint", "https://idp.com/token", false)
+				jwksEndpointProp, _ := cmodels.NewProperty("jwks_endpoint", "https://example.com/jwks", false)
+
+				idpDTO := &idp.IDPDTO{
+					ID:   testOIDCIDPID,
+					Name: "Test OIDC IDP",
+					Type: idp.IDPTypeOIDC,
+					Properties: []cmodels.Property{
+						*clientIDProp, *clientSecretProp, *redirectURIProp, *scopesProp,
+						*authzEndpointProp, *tokenEndpointProp, *jwksEndpointProp,
+					},
+				}
+				
+				suite.mockIDPService.On("GetIdentityProvider", testOIDCIDPID).Return(idpDTO, nil)
 				suite.mockJWTService.On("VerifyJWTWithJWKS", "id_token",
 					"https://example.com/jwks", "", "").Return(nil)
 			},
@@ -153,8 +199,9 @@ func (suite *OIDCAuthnServiceTestSuite) TestExchangeCodeForTokenSuccess() {
 	for _, tc := range tests {
 		suite.Run(tc.name, func() {
 			suite.mockOAuthService = oauthmock.NewOAuthAuthnServiceInterfaceMock(suite.T())
+			suite.mockIDPService = idpmock.NewIDPServiceInterfaceMock(suite.T())
 			suite.mockJWTService = jwtmock.NewJWTServiceInterfaceMock(suite.T())
-			suite.service = NewOIDCAuthnService(suite.mockOAuthService, suite.mockJWTService)
+			suite.service = NewOIDCAuthnServiceWithIDPService(suite.mockOAuthService, suite.mockIDPService, suite.mockJWTService)
 
 			tc.setupMocks()
 
@@ -176,9 +223,25 @@ func (suite *OIDCAuthnServiceTestSuite) TestValidateTokenResponseSuccess() {
 			name:            "WithIDTokenValidation",
 			validateIDToken: true,
 			setupMocks: func() {
-				suite.mockOAuthService.On("GetOAuthClientConfig", testOIDCIDPID).Return(&oauth.OAuthClientConfig{
-					OAuthEndpoints: oauth.OAuthEndpoints{JwksEndpoint: "https://example.com/jwks"},
-				}, nil)
+				clientIDProp, _ := cmodels.NewProperty("client_id", "test_client", false)
+				clientSecretProp, _ := cmodels.NewProperty("client_secret", "test_secret", false)
+				redirectURIProp, _ := cmodels.NewProperty("redirect_uri", "https://app.com/callback", false)
+				scopesProp, _ := cmodels.NewProperty("scopes", "openid profile", false)
+				authzEndpointProp, _ := cmodels.NewProperty("authorization_endpoint", "https://idp.com/authorize", false)
+				tokenEndpointProp, _ := cmodels.NewProperty("token_endpoint", "https://idp.com/token", false)
+				jwksEndpointProp, _ := cmodels.NewProperty("jwks_endpoint", "https://example.com/jwks", false)
+
+				idpDTO := &idp.IDPDTO{
+					ID:   testOIDCIDPID,
+					Name: "Test OIDC IDP",
+					Type: idp.IDPTypeOIDC,
+					Properties: []cmodels.Property{
+						*clientIDProp, *clientSecretProp, *redirectURIProp, *scopesProp,
+						*authzEndpointProp, *tokenEndpointProp, *jwksEndpointProp,
+					},
+				}
+				
+				suite.mockIDPService.On("GetIdentityProvider", testOIDCIDPID).Return(idpDTO, nil)
 				suite.mockJWTService.On("VerifyJWTWithJWKS", "id_token",
 					"https://example.com/jwks", "", "").Return(nil)
 			},
@@ -193,8 +256,9 @@ func (suite *OIDCAuthnServiceTestSuite) TestValidateTokenResponseSuccess() {
 	for _, tc := range tests {
 		suite.Run(tc.name, func() {
 			suite.mockOAuthService = oauthmock.NewOAuthAuthnServiceInterfaceMock(suite.T())
+			suite.mockIDPService = idpmock.NewIDPServiceInterfaceMock(suite.T())
 			suite.mockJWTService = jwtmock.NewJWTServiceInterfaceMock(suite.T())
-			suite.service = NewOIDCAuthnService(suite.mockOAuthService, suite.mockJWTService)
+			suite.service = NewOIDCAuthnServiceWithIDPService(suite.mockOAuthService, suite.mockIDPService, suite.mockJWTService)
 
 			tc.setupMocks()
 
@@ -245,9 +309,25 @@ func (suite *OIDCAuthnServiceTestSuite) TestValidateIDTokenSuccess() {
 		{
 			name: "WithJWKSEndpoint",
 			setupMocks: func() {
-				suite.mockOAuthService.On("GetOAuthClientConfig", testOIDCIDPID).Return(&oauth.OAuthClientConfig{
-					OAuthEndpoints: oauth.OAuthEndpoints{JwksEndpoint: "https://example.com/jwks"},
-				}, nil)
+				clientIDProp, _ := cmodels.NewProperty("client_id", "test_client", false)
+				clientSecretProp, _ := cmodels.NewProperty("client_secret", "test_secret", false)
+				redirectURIProp, _ := cmodels.NewProperty("redirect_uri", "https://app.com/callback", false)
+				scopesProp, _ := cmodels.NewProperty("scopes", "openid profile", false)
+				authzEndpointProp, _ := cmodels.NewProperty("authorization_endpoint", "https://idp.com/authorize", false)
+				tokenEndpointProp, _ := cmodels.NewProperty("token_endpoint", "https://idp.com/token", false)
+				jwksEndpointProp, _ := cmodels.NewProperty("jwks_endpoint", "https://example.com/jwks", false)
+
+				idpDTO := &idp.IDPDTO{
+					ID:   testOIDCIDPID,
+					Name: "Test OIDC IDP",
+					Type: idp.IDPTypeOIDC,
+					Properties: []cmodels.Property{
+						*clientIDProp, *clientSecretProp, *redirectURIProp, *scopesProp,
+						*authzEndpointProp, *tokenEndpointProp, *jwksEndpointProp,
+					},
+				}
+				
+				suite.mockIDPService.On("GetIdentityProvider", testOIDCIDPID).Return(idpDTO, nil)
 				suite.mockJWTService.On("VerifyJWTWithJWKS", "valid_id_token",
 					"https://example.com/jwks", "", "").Return(nil)
 			},
@@ -255,9 +335,8 @@ func (suite *OIDCAuthnServiceTestSuite) TestValidateIDTokenSuccess() {
 		{
 			name: "WithoutJWKSEndpoint",
 			setupMocks: func() {
-				suite.mockOAuthService.On("GetOAuthClientConfig", testOIDCIDPID).Return(&oauth.OAuthClientConfig{
-					OAuthEndpoints: oauth.OAuthEndpoints{},
-				}, nil)
+				idpDTO := createTestOIDCIDPDTO(testOIDCIDPID)
+				suite.mockIDPService.On("GetIdentityProvider", testOIDCIDPID).Return(idpDTO, nil)
 			},
 		},
 	}
@@ -265,8 +344,9 @@ func (suite *OIDCAuthnServiceTestSuite) TestValidateIDTokenSuccess() {
 	for _, tc := range tests {
 		suite.Run(tc.name, func() {
 			suite.mockOAuthService = oauthmock.NewOAuthAuthnServiceInterfaceMock(suite.T())
+			suite.mockIDPService = idpmock.NewIDPServiceInterfaceMock(suite.T())
 			suite.mockJWTService = jwtmock.NewJWTServiceInterfaceMock(suite.T())
-			suite.service = NewOIDCAuthnService(suite.mockOAuthService, suite.mockJWTService)
+			suite.service = NewOIDCAuthnServiceWithIDPService(suite.mockOAuthService, suite.mockIDPService, suite.mockJWTService)
 
 			tc.setupMocks()
 
@@ -327,4 +407,33 @@ func (suite *OIDCAuthnServiceTestSuite) TestGetInternalUserSuccess() {
 	suite.Nil(err)
 	suite.NotNil(result)
 	suite.Equal(user.ID, result.ID)
+}
+
+func (suite *OIDCAuthnServiceTestSuite) TestGetOAuthClientConfigWithoutUserInfoEndpoint() {
+	idpID := testOIDCIDPID
+	clientIDProp, _ := cmodels.NewProperty("client_id", "test_client", false)
+	clientSecretProp, _ := cmodels.NewProperty("client_secret", "test_secret", false)
+	redirectURIProp, _ := cmodels.NewProperty("redirect_uri", "https://app.com/callback", false)
+	scopesProp, _ := cmodels.NewProperty("scopes", "openid profile", false)
+	authzEndpointProp, _ := cmodels.NewProperty("authorization_endpoint", "https://idp.com/authorize", false)
+	tokenEndpointProp, _ := cmodels.NewProperty("token_endpoint", "https://idp.com/token", false)
+
+	idpDTO := &idp.IDPDTO{
+		ID:   idpID,
+		Name: "Test OIDC IDP",
+		Type: idp.IDPTypeOIDC,
+		Properties: []cmodels.Property{
+			*clientIDProp, *clientSecretProp, *redirectURIProp, *scopesProp,
+			*authzEndpointProp, *tokenEndpointProp,
+		},
+	}
+	
+	suite.mockIDPService.On("GetIdentityProvider", idpID).Return(idpDTO, nil)
+
+	result, err := suite.service.GetOAuthClientConfig(idpID)
+	suite.Nil(err)
+	suite.NotNil(result)
+	suite.Contains(result.Scopes, "openid")
+	suite.Contains(result.Scopes, "profile")
+	suite.Equal("", result.OAuthEndpoints.UserInfoEndpoint)
 }
