@@ -309,8 +309,8 @@ func (s *oAuthAuthnService) validateClientConfig(idpConfig *OAuthClientConfig) *
 
 // validateClientConfigWithOptions checks if the essential fields are present in the OAuth client configuration.
 // requireUserInfoEndpoint parameter controls whether UserInfoEndpoint is mandatory.
-func (s *oAuthAuthnService) validateClientConfigWithOptions(idpConfig *OAuthClientConfig, 
-	requireUserInfoEndpoint bool) *serviceerror.ServiceError {
+func (s *oAuthAuthnService) validateClientConfigWithOptions(
+	idpConfig *OAuthClientConfig, requireUserInfoEndpoint bool) *serviceerror.ServiceError {
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, loggerComponentName))
 
 	if idpConfig.ClientID == "" || idpConfig.ClientSecret == "" || idpConfig.RedirectURI == "" ||
