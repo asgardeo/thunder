@@ -35,8 +35,8 @@ import (
 	sysutils "github.com/asgardeo/thunder/internal/system/utils"
 )
 
-// parseIDPConfig extracts the OAuth client configuration from the identity provider details.
-func parseIDPConfig(idp *idp.IDPDTO) (*OAuthClientConfig, error) {
+// ParseIDPConfig extracts the OAuth client configuration from the identity provider details.
+func ParseIDPConfig(idp *idp.IDPDTO) (*OAuthClientConfig, error) {
 	oAuthClientConfig := OAuthClientConfig{
 		AdditionalParams: make(map[string]string),
 	}

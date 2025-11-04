@@ -54,14 +54,26 @@ type OIDCAuthnServiceInterface interface {
 // oidcAuthnService is the default implementation of OIDCAuthnServiceInterface.
 type oidcAuthnService struct {
 	internal   authnoauth.OAuthAuthnServiceInterface
+	idpService idp.IDPServiceInterface
 	jwtService jwt.JWTServiceInterface
+	endpoints  authnoauth.OAuthEndpoints
 }
 
 // NewOIDCAuthnService creates a new instance of OIDC authenticator service.
 func NewOIDCAuthnService(oauthSvc authnoauth.OAuthAuthnServiceInterface,
 	jwtSvc jwt.JWTServiceInterface) OIDCAuthnServiceInterface {
+	return NewOIDCAuthnServiceWithIDPService(oauthSvc, nil, jwtSvc)
+}
+
+// NewOIDCAuthnServiceWithIDPService creates a new instance of OIDC authenticator service with an IDP service.
+// This constructor is primarily for testing purposes to allow injecting a mock IDP service.
+func NewOIDCAuthnServiceWithIDPService(oauthSvc authnoauth.OAuthAuthnServiceInterface,
+	idpSvc idp.IDPServiceInterface, jwtSvc jwt.JWTServiceInterface) OIDCAuthnServiceInterface {
 	if oauthSvc == nil {
 		oauthSvc = authnoauth.NewOAuthAuthnService(nil, nil, authnoauth.OAuthEndpoints{})
+	}
+	if idpSvc == nil {
+		idpSvc = idp.NewIDPService()
 	}
 	if jwtSvc == nil {
 		jwtSvc = jwt.GetJWTService()
@@ -69,7 +81,9 @@ func NewOIDCAuthnService(oauthSvc authnoauth.OAuthAuthnServiceInterface,
 
 	service := &oidcAuthnService{
 		internal:   oauthSvc,
+		idpService: idpSvc,
 		jwtService: jwtSvc,
+		endpoints:  authnoauth.OAuthEndpoints{},
 	}
 	authncm.RegisterAuthenticator(service.getMetadata())
 
@@ -77,22 +91,84 @@ func NewOIDCAuthnService(oauthSvc authnoauth.OAuthAuthnServiceInterface,
 }
 
 // GetOAuthClientConfig retrieves and validates the OAuth client configuration for the given identity provider ID.
+// For OIDC, UserInfoEndpoint is optional since user claims can be obtained from the ID token.
 func (s *oidcAuthnService) GetOAuthClientConfig(idpID string) (
 	*authnoauth.OAuthClientConfig, *serviceerror.ServiceError) {
-	oAuthClientConfig, svcErr := s.internal.GetOAuthClientConfig(idpID)
+	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, loggerComponentName),
+		log.String("idpId", idpID))
+
+	if strings.TrimSpace(idpID) == "" {
+		return nil, &authnoauth.ErrorEmptyIdpID
+	}
+
+	idp, svcErr := s.idpService.GetIdentityProvider(idpID)
+	if svcErr != nil {
+		if svcErr.Type == serviceerror.ClientErrorType {
+			return nil, authnoauth.CustomServiceError(authnoauth.ErrorClientErrorWhileRetrievingIDP,
+				"Error while retrieving identity provider: "+svcErr.ErrorDescription)
+		}
+		logger.Error("Error while retrieving identity provider", log.String("errorCode", svcErr.Code),
+			log.String("description", svcErr.ErrorDescription))
+		return nil, &authnoauth.ErrorUnexpectedServerError
+	}
+	if idp == nil {
+		return nil, &authnoauth.ErrorInvalidIDP
+	}
+
+	oAuthClientConfig, err := authnoauth.ParseIDPConfig(idp)
+	if err != nil {
+		logger.Error("Failed to parse identity provider configurations", log.Error(err))
+		return nil, &authnoauth.ErrorUnexpectedServerError
+	}
+
+	svcErr = s.validateClientConfig(oAuthClientConfig)
 	if svcErr != nil {
 		return nil, svcErr
 	}
 
 	// Validate OIDC scope is included in the configured scopes.
 	if !slices.Contains(oAuthClientConfig.Scopes, ScopeOpenID) {
-		logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, loggerComponentName),
-			log.String("idpId", idpID))
 		logger.Debug("The 'openid' scope is not configured for the OIDC identity provider. Adding it to the scopes.")
 		oAuthClientConfig.Scopes = append(oAuthClientConfig.Scopes, ScopeOpenID)
 	}
 
 	return oAuthClientConfig, nil
+}
+
+// validateClientConfig checks if the essential fields are present in the OAuth client configuration.
+// For OIDC, UserInfoEndpoint is optional.
+func (s *oidcAuthnService) validateClientConfig(idpConfig *authnoauth.OAuthClientConfig) *serviceerror.ServiceError {
+	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, loggerComponentName))
+
+	if idpConfig.ClientID == "" || idpConfig.ClientSecret == "" || idpConfig.RedirectURI == "" ||
+		len(idpConfig.Scopes) == 0 {
+		logger.Error("Invalid identity provider configuration")
+		return &authnoauth.ErrorUnexpectedServerError
+	}
+
+	// Set default endpoints if not provided in the IDP config
+	if idpConfig.OAuthEndpoints.AuthorizationEndpoint == "" {
+		idpConfig.OAuthEndpoints.AuthorizationEndpoint = s.endpoints.AuthorizationEndpoint
+	}
+	if idpConfig.OAuthEndpoints.TokenEndpoint == "" {
+		idpConfig.OAuthEndpoints.TokenEndpoint = s.endpoints.TokenEndpoint
+	}
+	if idpConfig.OAuthEndpoints.UserInfoEndpoint == "" {
+		idpConfig.OAuthEndpoints.UserInfoEndpoint = s.endpoints.UserInfoEndpoint
+	}
+	if idpConfig.OAuthEndpoints.LogoutEndpoint == "" {
+		idpConfig.OAuthEndpoints.LogoutEndpoint = s.endpoints.LogoutEndpoint
+	}
+	if idpConfig.OAuthEndpoints.JwksEndpoint == "" {
+		idpConfig.OAuthEndpoints.JwksEndpoint = s.endpoints.JwksEndpoint
+	}
+
+	if idpConfig.OAuthEndpoints.AuthorizationEndpoint == "" || idpConfig.OAuthEndpoints.TokenEndpoint == "" {
+		logger.Error("Invalid identity provider configuration: Missing essential endpoints")
+		return &authnoauth.ErrorUnexpectedServerError
+	}
+
+	return nil
 }
 
 // BuildAuthorizeURL constructs the authorization request URL for the external identity provider.

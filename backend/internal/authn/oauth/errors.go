@@ -91,8 +91,8 @@ var (
 	}
 )
 
-// customServiceError creates a new service error based on an existing error with custom description.
-func customServiceError(svcError serviceerror.ServiceError, errorDesc string) *serviceerror.ServiceError {
+// CustomServiceError creates a new service error based on an existing error with custom description.
+func CustomServiceError(svcError serviceerror.ServiceError, errorDesc string) *serviceerror.ServiceError {
 	err := &serviceerror.ServiceError{
 		Type:             svcError.Type,
 		Code:             svcError.Code,
