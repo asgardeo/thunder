@@ -62,7 +62,7 @@ func newGroupStore() groupStoreInterface {
 
 // GetGroupListCount retrieves the total count of root groups.
 func (s *groupStore) GetGroupListCount() (int, error) {
-	dbClient, err := s.dbProvider.GetDBClient("identity")
+	dbClient, err := s.dbProvider.GetUserDBClient()
 	if err != nil {
 		return 0, fmt.Errorf("failed to get database client: %w", err)
 	}
@@ -84,7 +84,7 @@ func (s *groupStore) GetGroupListCount() (int, error) {
 
 // GetGroupList retrieves root groups.
 func (s *groupStore) GetGroupList(limit, offset int) ([]GroupBasicDAO, error) {
-	dbClient, err := s.dbProvider.GetDBClient("identity")
+	dbClient, err := s.dbProvider.GetUserDBClient()
 	if err != nil {
 		return nil, fmt.Errorf("failed to get database client: %w", err)
 	}
@@ -116,7 +116,7 @@ func (s *groupStore) GetGroupList(limit, offset int) ([]GroupBasicDAO, error) {
 
 // CreateGroup creates a new group in the database.
 func (s *groupStore) CreateGroup(group GroupDAO) error {
-	dbClient, err := s.dbProvider.GetDBClient("identity")
+	dbClient, err := s.dbProvider.GetUserDBClient()
 	if err != nil {
 		return fmt.Errorf("failed to get database client: %w", err)
 	}
@@ -157,7 +157,7 @@ func (s *groupStore) CreateGroup(group GroupDAO) error {
 
 // GetGroup retrieves a group by its id.
 func (s *groupStore) GetGroup(id string) (GroupDAO, error) {
-	dbClient, err := s.dbProvider.GetDBClient("identity")
+	dbClient, err := s.dbProvider.GetUserDBClient()
 	if err != nil {
 		return GroupDAO{}, fmt.Errorf("failed to get database client: %w", err)
 	}
@@ -186,7 +186,7 @@ func (s *groupStore) GetGroup(id string) (GroupDAO, error) {
 
 // GetGroupMembers retrieves members of a group with pagination.
 func (s *groupStore) GetGroupMembers(groupID string, limit, offset int) ([]Member, error) {
-	dbClient, err := s.dbProvider.GetDBClient("identity")
+	dbClient, err := s.dbProvider.GetUserDBClient()
 	if err != nil {
 		return nil, fmt.Errorf("failed to get database client: %w", err)
 	}
@@ -213,7 +213,7 @@ func (s *groupStore) GetGroupMembers(groupID string, limit, offset int) ([]Membe
 
 // GetGroupMemberCount retrieves the total count of members in a group.
 func (s *groupStore) GetGroupMemberCount(groupID string) (int, error) {
-	dbClient, err := s.dbProvider.GetDBClient("identity")
+	dbClient, err := s.dbProvider.GetUserDBClient()
 	if err != nil {
 		return 0, fmt.Errorf("failed to get database client: %w", err)
 	}
@@ -236,7 +236,7 @@ func (s *groupStore) GetGroupMemberCount(groupID string) (int, error) {
 
 // UpdateGroup updates an existing group.
 func (s *groupStore) UpdateGroup(group GroupDAO) error {
-	dbClient, err := s.dbProvider.GetDBClient("identity")
+	dbClient, err := s.dbProvider.GetUserDBClient()
 	if err != nil {
 		return fmt.Errorf("failed to get database client: %w", err)
 	}
@@ -294,7 +294,7 @@ func (s *groupStore) UpdateGroup(group GroupDAO) error {
 func (s *groupStore) DeleteGroup(id string) error {
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, storeLoggerComponentName))
 
-	dbClient, err := s.dbProvider.GetDBClient("identity")
+	dbClient, err := s.dbProvider.GetUserDBClient()
 	if err != nil {
 		return fmt.Errorf("failed to get database client: %w", err)
 	}
@@ -340,7 +340,7 @@ func (s *groupStore) ValidateGroupIDs(groupIDs []string) ([]string, error) {
 		return []string{}, nil
 	}
 
-	dbClient, err := s.dbProvider.GetDBClient("identity")
+	dbClient, err := s.dbProvider.GetUserDBClient()
 	if err != nil {
 		return nil, fmt.Errorf("failed to get database client: %w", err)
 	}
@@ -375,7 +375,7 @@ func (s *groupStore) ValidateGroupIDs(groupIDs []string) ([]string, error) {
 // CheckGroupNameConflictForCreate checks if the new group name conflicts with existing groups
 // in the same organization unit.
 func (s *groupStore) CheckGroupNameConflictForCreate(name string, organizationUnitID string) error {
-	dbClient, err := s.dbProvider.GetDBClient("identity")
+	dbClient, err := s.dbProvider.GetUserDBClient()
 	if err != nil {
 		return fmt.Errorf("failed to get database client: %w", err)
 	}
@@ -386,7 +386,7 @@ func (s *groupStore) CheckGroupNameConflictForCreate(name string, organizationUn
 // CheckGroupNameConflictForUpdate checks if the new group name conflicts with other groups
 // in the same organization unit.
 func (s *groupStore) CheckGroupNameConflictForUpdate(name string, organizationUnitID string, groupID string) error {
-	dbClient, err := s.dbProvider.GetDBClient("identity")
+	dbClient, err := s.dbProvider.GetUserDBClient()
 	if err != nil {
 		return fmt.Errorf("failed to get database client: %w", err)
 	}
@@ -396,7 +396,7 @@ func (s *groupStore) CheckGroupNameConflictForUpdate(name string, organizationUn
 
 // GetGroupsByOrganizationUnitCount retrieves the total count of groups in a specific organization unit.
 func (s *groupStore) GetGroupsByOrganizationUnitCount(organizationUnitID string) (int, error) {
-	dbClient, err := s.dbProvider.GetDBClient("identity")
+	dbClient, err := s.dbProvider.GetUserDBClient()
 	if err != nil {
 		return 0, fmt.Errorf("failed to get database client: %w", err)
 	}
@@ -421,7 +421,7 @@ func (s *groupStore) GetGroupsByOrganizationUnitCount(organizationUnitID string)
 func (s *groupStore) GetGroupsByOrganizationUnit(
 	organizationUnitID string, limit, offset int,
 ) ([]GroupBasicDAO, error) {
-	dbClient, err := s.dbProvider.GetDBClient("identity")
+	dbClient, err := s.dbProvider.GetUserDBClient()
 	if err != nil {
 		return nil, fmt.Errorf("failed to get database client: %w", err)
 	}

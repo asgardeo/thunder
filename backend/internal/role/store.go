@@ -61,7 +61,7 @@ func newRoleStore() roleStoreInterface {
 
 // GetRoleListCount retrieves the total count of roles.
 func (s *roleStore) GetRoleListCount() (int, error) {
-	dbClient, err := s.getIdentityDBClient()
+	dbClient, err := s.getConfigDBClient()
 	if err != nil {
 		return 0, err
 	}
@@ -76,7 +76,7 @@ func (s *roleStore) GetRoleListCount() (int, error) {
 
 // GetRoleList retrieves roles with pagination.
 func (s *roleStore) GetRoleList(limit, offset int) ([]Role, error) {
-	dbClient, err := s.getIdentityDBClient()
+	dbClient, err := s.getConfigDBClient()
 	if err != nil {
 		return nil, err
 	}
@@ -100,7 +100,7 @@ func (s *roleStore) GetRoleList(limit, offset int) ([]Role, error) {
 
 // CreateRole creates a new role in the database.
 func (s *roleStore) CreateRole(id string, role RoleCreationDetail) error {
-	dbClient, err := s.getIdentityDBClient()
+	dbClient, err := s.getConfigDBClient()
 	if err != nil {
 		return err
 	}
@@ -131,7 +131,7 @@ func (s *roleStore) CreateRole(id string, role RoleCreationDetail) error {
 
 // GetRole retrieves a role by its id.
 func (s *roleStore) GetRole(id string) (RoleWithPermissions, error) {
-	dbClient, err := s.getIdentityDBClient()
+	dbClient, err := s.getConfigDBClient()
 	if err != nil {
 		return RoleWithPermissions{}, err
 	}
@@ -171,7 +171,7 @@ func (s *roleStore) GetRole(id string) (RoleWithPermissions, error) {
 
 // IsRoleExist checks if a role exists by its ID without fetching its details.
 func (s *roleStore) IsRoleExist(id string) (bool, error) {
-	dbClient, err := s.getIdentityDBClient()
+	dbClient, err := s.getConfigDBClient()
 	if err != nil {
 		return false, err
 	}
@@ -186,7 +186,7 @@ func (s *roleStore) IsRoleExist(id string) (bool, error) {
 
 // GetRoleAssignments retrieves assignments for a role with pagination.
 func (s *roleStore) GetRoleAssignments(id string, limit, offset int) ([]RoleAssignment, error) {
-	dbClient, err := s.getIdentityDBClient()
+	dbClient, err := s.getConfigDBClient()
 	if err != nil {
 		return nil, err
 	}
@@ -217,7 +217,7 @@ func (s *roleStore) GetRoleAssignments(id string, limit, offset int) ([]RoleAssi
 
 // GetRoleAssignmentsCount retrieves the total count of assignments for a role.
 func (s *roleStore) GetRoleAssignmentsCount(id string) (int, error) {
-	dbClient, err := s.getIdentityDBClient()
+	dbClient, err := s.getConfigDBClient()
 	if err != nil {
 		return 0, err
 	}
@@ -232,7 +232,7 @@ func (s *roleStore) GetRoleAssignmentsCount(id string) (int, error) {
 
 // UpdateRole updates an existing role.
 func (s *roleStore) UpdateRole(id string, role RoleUpdateDetail) error {
-	dbClient, err := s.getIdentityDBClient()
+	dbClient, err := s.getConfigDBClient()
 	if err != nil {
 		return err
 	}
@@ -270,7 +270,7 @@ func (s *roleStore) UpdateRole(id string, role RoleUpdateDetail) error {
 func (s *roleStore) DeleteRole(id string) error {
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, storeLoggerComponentName))
 
-	dbClient, err := s.getIdentityDBClient()
+	dbClient, err := s.getConfigDBClient()
 	if err != nil {
 		return err
 	}
@@ -289,7 +289,7 @@ func (s *roleStore) DeleteRole(id string) error {
 
 // AddAssignments adds assignments to a role.
 func (s *roleStore) AddAssignments(id string, assignments []RoleAssignment) error {
-	dbClient, err := s.getIdentityDBClient()
+	dbClient, err := s.getConfigDBClient()
 	if err != nil {
 		return err
 	}
@@ -301,7 +301,7 @@ func (s *roleStore) AddAssignments(id string, assignments []RoleAssignment) erro
 
 // RemoveAssignments removes assignments from a role.
 func (s *roleStore) RemoveAssignments(id string, assignments []RoleAssignment) error {
-	dbClient, err := s.getIdentityDBClient()
+	dbClient, err := s.getConfigDBClient()
 	if err != nil {
 		return err
 	}
@@ -402,7 +402,7 @@ func updateRolePermissions(
 
 // CheckRoleNameExists checks if a role with the given name exists in the specified organization unit.
 func (s *roleStore) CheckRoleNameExists(ouID, name string) (bool, error) {
-	dbClient, err := s.getIdentityDBClient()
+	dbClient, err := s.getConfigDBClient()
 	if err != nil {
 		return false, err
 	}
@@ -418,7 +418,7 @@ func (s *roleStore) CheckRoleNameExists(ouID, name string) (bool, error) {
 // CheckRoleNameExistsExcludingID checks if a role with the given name exists in the specified organization unit,
 // excluding the role with the given ID.
 func (s *roleStore) CheckRoleNameExistsExcludingID(ouID, name, excludeRoleID string) (bool, error) {
-	dbClient, err := s.getIdentityDBClient()
+	dbClient, err := s.getConfigDBClient()
 	if err != nil {
 		return false, err
 	}
@@ -438,7 +438,7 @@ func (s *roleStore) GetAuthorizedPermissions(
 	groupIDs []string,
 	requestedPermissions []string,
 ) ([]string, error) {
-	dbClient, err := s.getIdentityDBClient()
+	dbClient, err := s.getConfigDBClient()
 	if err != nil {
 		return nil, err
 	}
@@ -466,9 +466,9 @@ func (s *roleStore) GetAuthorizedPermissions(
 	return permissions, nil
 }
 
-// getIdentityDBClient is a helper method to get the database client for the identity database.
-func (s *roleStore) getIdentityDBClient() (provider.DBClientInterface, error) {
-	dbClient, err := s.dbProvider.GetDBClient("identity")
+// getConfigDBClient is a helper method to get the database client for the identity database.
+func (s *roleStore) getConfigDBClient() (provider.DBClientInterface, error) {
+	dbClient, err := s.dbProvider.GetConfigDBClient()
 	if err != nil {
 		return nil, fmt.Errorf("failed to get database client: %w", err)
 	}

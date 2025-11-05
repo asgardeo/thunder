@@ -22,6 +22,7 @@ package service
 import (
 	"sync"
 
+	"github.com/asgardeo/thunder/internal/system/database"
 	dbmodel "github.com/asgardeo/thunder/internal/system/database/model"
 	"github.com/asgardeo/thunder/internal/system/database/provider"
 	"github.com/asgardeo/thunder/internal/system/healthcheck/model"
@@ -56,17 +57,24 @@ func GetHealthCheckService() HealthCheckServiceInterface {
 // CheckReadiness checks the readiness of the server and its dependencies.
 func (hcs *HealthCheckService) CheckReadiness() model.ServerStatus {
 	configDBStatus := model.ServiceStatus{
-		ServiceName: "IdentityDB",
-		Status:      hcs.checkDatabaseStatus("identity", queryConfigDBTable),
+		ServiceName: "ConfigDB",
+		Status:      hcs.checkDatabaseStatus(database.ConfigDBClientName, queryConfigDBTable),
 	}
 
 	runtimeDBStatus := model.ServiceStatus{
 		ServiceName: "RuntimeDB",
-		Status:      hcs.checkDatabaseStatus("runtime", queryRuntimeDBTable),
+		Status:      hcs.checkDatabaseStatus(database.RuntimeDBClientName, queryRuntimeDBTable),
+	}
+
+	userDBStatus := model.ServiceStatus{
+		ServiceName: "UserDB",
+		Status:      hcs.checkDatabaseStatus(database.UserDBClientName, queryUserDBTable),
 	}
 
 	status := model.StatusUp
-	if configDBStatus.Status == model.StatusDown || runtimeDBStatus.Status == model.StatusDown {
+	if configDBStatus.Status == model.StatusDown ||
+		runtimeDBStatus.Status == model.StatusDown ||
+		userDBStatus.Status == model.StatusDown {
 		status = model.StatusDown
 	}
 	return model.ServerStatus{
@@ -74,6 +82,7 @@ func (hcs *HealthCheckService) CheckReadiness() model.ServerStatus {
 		ServiceStatus: []model.ServiceStatus{
 			configDBStatus,
 			runtimeDBStatus,
+			userDBStatus,
 		},
 	}
 }
@@ -81,10 +90,29 @@ func (hcs *HealthCheckService) CheckReadiness() model.ServerStatus {
 // checkDatabaseStatus checks the status of the specified database with the specified query.
 func (hcs *HealthCheckService) checkDatabaseStatus(dbname string, query dbmodel.DBQuery) model.Status {
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, "HealthCheckService"))
+	var dbClient provider.DBClientInterface
+	var err error
+	switch dbname {
+	case database.ConfigDBClientName:
+		dbClient, err = hcs.DBProvider.GetConfigDBClient()
+		if err != nil {
+			logger.Error("Failed to get database client", log.Error(err))
+			return model.StatusDown
+		}
 
-	dbClient, err := hcs.DBProvider.GetDBClient(dbname)
-	if err != nil {
-		logger.Error("Failed to get database client", log.Error(err))
+	case database.RuntimeDBClientName:
+		dbClient, err = hcs.DBProvider.GetRuntimeDBClient()
+		if err != nil {
+			logger.Error("Failed to get database client", log.Error(err))
+			return model.StatusDown
+		}
+	case database.UserDBClientName:
+		dbClient, err = hcs.DBProvider.GetUserDBClient()
+		if err != nil {
+			logger.Error("Failed to get database client", log.Error(err))
+			return model.StatusDown
+		}
+	default:
 		return model.StatusDown
 	}
 

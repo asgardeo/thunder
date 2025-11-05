@@ -57,7 +57,7 @@ func newNotificationStore() notificationStoreInterface {
 
 // createSender creates a new notification sender.
 func (s *notificationStore) createSender(sender common.NotificationSenderDTO) error {
-	dbClient, err := s.dbProvider.GetDBClient("identity")
+	dbClient, err := s.dbProvider.GetUserDBClient()
 	if err != nil {
 		return fmt.Errorf("failed to get database client: %w", err)
 	}
@@ -82,7 +82,7 @@ func (s *notificationStore) createSender(sender common.NotificationSenderDTO) er
 
 // listSenders retrieves all notification senders
 func (s *notificationStore) listSenders() ([]common.NotificationSenderDTO, error) {
-	dbClient, err := s.dbProvider.GetDBClient("identity")
+	dbClient, err := s.dbProvider.GetUserDBClient()
 	if err != nil {
 		return nil, fmt.Errorf("failed to get database client: %w", err)
 	}
@@ -137,7 +137,7 @@ func (s *notificationStore) getSender(query dbmodel.DBQuery,
 	identifier string) (*common.NotificationSenderDTO, error) {
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, "NotificationStore"))
 
-	dbClient, err := s.dbProvider.GetDBClient("identity")
+	dbClient, err := s.dbProvider.GetUserDBClient()
 	if err != nil {
 		return nil, fmt.Errorf("failed to get database client: %w", err)
 	}
@@ -181,7 +181,7 @@ func (s *notificationStore) getSender(query dbmodel.DBQuery,
 
 // updateSender updates an existing notification sender.
 func (s *notificationStore) updateSender(id string, sender common.NotificationSenderDTO) error {
-	dbClient, err := s.dbProvider.GetDBClient("identity")
+	dbClient, err := s.dbProvider.GetUserDBClient()
 	if err != nil {
 		return fmt.Errorf("failed to get database client: %w", err)
 	}
@@ -208,7 +208,7 @@ func (s *notificationStore) updateSender(id string, sender common.NotificationSe
 func (s *notificationStore) deleteSender(id string) error {
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, "NotificationStore"))
 
-	dbClient, err := s.dbProvider.GetDBClient("identity")
+	dbClient, err := s.dbProvider.GetUserDBClient()
 	if err != nil {
 		return fmt.Errorf("failed to get database client: %w", err)
 	}

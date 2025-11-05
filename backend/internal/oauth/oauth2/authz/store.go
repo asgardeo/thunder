@@ -55,7 +55,7 @@ func newAuthorizationCodeStore() AuthorizationCodeStoreInterface {
 func (acs *authorizationCodeStore) InsertAuthorizationCode(authzCode AuthorizationCode) error {
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, storeLoggerComponentName))
 
-	dbClient, err := acs.dbProvider.GetDBClient("runtime")
+	dbClient, err := acs.dbProvider.GetRuntimeDBClient()
 	if err != nil {
 		logger.Error("Failed to get database client", log.Error(err))
 		return err
@@ -105,7 +105,7 @@ func (acs *authorizationCodeStore) InsertAuthorizationCode(authzCode Authorizati
 func (acs *authorizationCodeStore) GetAuthorizationCode(clientID, authCode string) (AuthorizationCode, error) {
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, storeLoggerComponentName))
 
-	dbClient, err := acs.dbProvider.GetDBClient("runtime")
+	dbClient, err := acs.dbProvider.GetRuntimeDBClient()
 	if err != nil {
 		logger.Error("Failed to get database client", log.Error(err))
 		return AuthorizationCode{}, err
@@ -199,7 +199,7 @@ func (acs *authorizationCodeStore) updateAuthorizationCodeState(authzCode Author
 	newState string) error {
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, storeLoggerComponentName))
 
-	dbClient, err := acs.dbProvider.GetDBClient("runtime")
+	dbClient, err := acs.dbProvider.GetRuntimeDBClient()
 	if err != nil {
 		logger.Error("Failed to get database client", log.Error(err))
 		return err

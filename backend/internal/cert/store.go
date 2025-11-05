@@ -62,7 +62,7 @@ func (s *certificateStore) GetCertificateByReference(refType CertificateReferenc
 
 // getCertificate retrieves a certificate based on a query and its arguments.
 func (s *certificateStore) getCertificate(query dbmodel.DBQuery, args ...interface{}) (*Certificate, error) {
-	dbClient, err := s.DBProvider.GetDBClient("identity")
+	dbClient, err := s.DBProvider.GetConfigDBClient()
 	if err != nil {
 		return nil, fmt.Errorf("failed to get database client: %w", err)
 	}
@@ -125,7 +125,7 @@ func (s *certificateStore) buildCertificateFromResultRow(row map[string]interfac
 
 // CreateCertificate creates a new certificate in the database.
 func (s *certificateStore) CreateCertificate(cert *Certificate) error {
-	dbClient, err := s.DBProvider.GetDBClient("identity")
+	dbClient, err := s.DBProvider.GetConfigDBClient()
 	if err != nil {
 		return fmt.Errorf("failed to get database client: %w", err)
 	}
@@ -154,7 +154,7 @@ func (s *certificateStore) UpdateCertificateByReference(existingCert, updatedCer
 
 // updateCertificate updates a certificate based on a query and its arguments.
 func (s *certificateStore) updateCertificate(query dbmodel.DBQuery, args ...interface{}) error {
-	dbClient, err := s.DBProvider.GetDBClient("identity")
+	dbClient, err := s.DBProvider.GetConfigDBClient()
 	if err != nil {
 		return fmt.Errorf("failed to get database client: %w", err)
 	}
@@ -183,7 +183,7 @@ func (s *certificateStore) DeleteCertificateByReference(refType CertificateRefer
 
 // deleteCertificate deletes a certificate based on a query and its arguments.
 func (s *certificateStore) deleteCertificate(query dbmodel.DBQuery, args ...interface{}) error {
-	dbClient, err := s.DBProvider.GetDBClient("identity")
+	dbClient, err := s.DBProvider.GetConfigDBClient()
 	if err != nil {
 		return fmt.Errorf("failed to get database client: %w", err)
 	}

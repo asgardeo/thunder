@@ -189,7 +189,7 @@ func (suite *ConfigTestSuite) TestMergeStructs() {
 			},
 		},
 		Database: DatabaseConfig{
-			Identity: DataSource{
+			Config: DataSource{
 				Type:     "postgres",
 				Hostname: "base-identity-host",
 				Port:     5432,
@@ -228,7 +228,7 @@ func (suite *ConfigTestSuite) TestMergeStructs() {
 			}, // Override slice
 		},
 		Database: DatabaseConfig{
-			Identity: DataSource{
+			Config: DataSource{
 				Username: "user-identity-username", // Override
 				// Other fields are zero values, should not override
 			},
@@ -259,9 +259,9 @@ func (suite *ConfigTestSuite) TestMergeStructs() {
 	assert.Equal(suite.T(), 600, base.Cache.Properties[0].TTL)
 
 	// Test nested struct field override
-	assert.Equal(suite.T(), "user-identity-username", base.Database.Identity.Username)
-	assert.Equal(suite.T(), "postgres", base.Database.Identity.Type)               // Not overridden (zero value)
-	assert.Equal(suite.T(), "base-identity-host", base.Database.Identity.Hostname) // Not overridden (zero value)
+	assert.Equal(suite.T(), "user-identity-username", base.Database.Config.Username)
+	assert.Equal(suite.T(), "postgres", base.Database.Config.Type)               // Not overridden (zero value)
+	assert.Equal(suite.T(), "base-identity-host", base.Database.Config.Hostname) // Not overridden (zero value)
 }
 
 func (suite *ConfigTestSuite) TestMergeStructs_EdgeCases() {

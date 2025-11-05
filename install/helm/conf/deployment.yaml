@@ -30,18 +30,18 @@ security:
   key_file: {{ .Values.configuration.security.keyFile | quote }}
 
 database:
-  identity:
-    type: {{ .Values.configuration.database.identity.type | quote }}
-    {{- if eq .Values.configuration.database.identity.type "sqlite" }}
-    path: {{ .Values.configuration.database.identity.sqlitePath | quote }}
-    options: {{ .Values.configuration.database.identity.sqliteOptions | quote }}
+  config:
+    type: {{ .Values.configuration.database.config.type | quote }}
+    {{- if eq .Values.configuration.database.config.type "sqlite" }}
+    path: {{ .Values.configuration.database.config.sqlitePath | quote }}
+    options: {{ .Values.configuration.database.config.sqliteOptions | quote }}
     {{- else }}
-    hostname: {{ .Values.configuration.database.identity.host | quote }}
-    port: {{ .Values.configuration.database.identity.port }}
-    name: {{ .Values.configuration.database.identity.name | quote }}
-    username: {{ .Values.configuration.database.identity.username | quote }}
-    password: {{ .Values.configuration.database.identity.password | quote }}
-    sslmode: {{ .Values.configuration.database.identity.sslmode | quote }}
+    hostname: {{ .Values.configuration.database.config.host | quote }}
+    port: {{ .Values.configuration.database.config.port }}
+    name: {{ .Values.configuration.database.config.name | quote }}
+    username: {{ .Values.configuration.database.config.username | quote }}
+    password: {{ .Values.configuration.database.config.password | quote }}
+    sslmode: {{ .Values.configuration.database.config.sslmode | quote }}
     {{- end }}
   runtime:
     type: {{ .Values.configuration.database.runtime.type | quote }}
@@ -55,6 +55,19 @@ database:
     username: {{ .Values.configuration.database.runtime.username | quote }}
     password: {{ .Values.configuration.database.runtime.password | quote }}
     sslmode: {{ .Values.configuration.database.runtime.sslmode | quote }}
+    {{- end }}
+  user:
+    type: {{ .Values.configuration.database.user.type | quote }}
+    {{- if eq .Values.configuration.database.user.type "sqlite" }}
+    path: {{ .Values.configuration.database.user.sqlitePath | quote }}
+    options: {{ .Values.configuration.database.user.sqliteOptions | quote }}
+    {{- else }}
+    hostname: {{ .Values.configuration.database.user.host | quote }}
+    port: {{ .Values.configuration.database.user.port }}
+    name: {{ .Values.configuration.database.user.name | quote }}
+    username: {{ .Values.configuration.database.user.username | quote }}
+    password: {{ .Values.configuration.database.user.password | quote }}
+    sslmode: {{ .Values.configuration.database.user.sslmode | quote }}
     {{- end }}
 
 cache:
