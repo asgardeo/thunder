@@ -16,7 +16,7 @@
  * under the License.
  */
 
-// Package event provides event models and types for the analytics system.
+// Package event provides event models and types for the observability system.
 package event
 
 import (
@@ -26,7 +26,7 @@ import (
 	"github.com/asgardeo/thunder/internal/system/utils"
 )
 
-// Event represents a generic analytics or audit event in the system.
+// Event represents a generic observability or audit event in the system.
 // This is a minimal, generic structure that can represent any type of event.
 // Event-specific data should be stored in the Data map.
 type Event struct {

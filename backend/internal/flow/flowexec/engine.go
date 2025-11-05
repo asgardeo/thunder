@@ -24,6 +24,8 @@ import (
 	"github.com/asgardeo/thunder/internal/flow/common/constants"
 	"github.com/asgardeo/thunder/internal/flow/common/model"
 	"github.com/asgardeo/thunder/internal/flow/common/utils"
+	"github.com/asgardeo/thunder/internal/observability"
+	"github.com/asgardeo/thunder/internal/observability/event"
 	"github.com/asgardeo/thunder/internal/system/error/serviceerror"
 	"github.com/asgardeo/thunder/internal/system/log"
 	sysutils "github.com/asgardeo/thunder/internal/system/utils"
@@ -60,8 +62,32 @@ func (fe *flowEngine) Execute(ctx *model.EngineContext) (model.FlowStep, *servic
 		logger.Debug("Executing node", log.String("nodeID", currentNode.GetID()),
 			log.String("nodeType", string(currentNode.GetType())))
 
+		// Publish node execution started event
+		nodeStartEvt := event.NewEvent(ctx.FlowID, string(event.EventTypeFlowNodeExecutionStarted), event.ComponentFlowEngine)
+		nodeStartEvt.WithData(event.DataKey.FlowID, ctx.FlowID).
+			WithData(event.DataKey.NodeID, currentNode.GetID()).
+			WithData(event.DataKey.NodeType, string(currentNode.GetType())).
+			WithData(event.DataKey.AppID, ctx.AppID).
+			WithStatus(event.StatusInProgress)
+
+		// Add executor name for task execution nodes
+		if currentNode.GetType() == constants.NodeTypeTaskExecution {
+			nodeStartEvt.WithData(event.DataKey.AuthMethod, currentNode.GetExecutorConfig().Name)
+		}
+		observability.GetService().PublishEvent(nodeStartEvt)
+
 		svcErr := setNodeExecutor(currentNode, logger)
 		if svcErr != nil {
+			// Publish node execution failed event
+			nodeFailEvt := event.NewEvent(ctx.FlowID, string(event.EventTypeFlowNodeExecutionFailed), event.ComponentFlowEngine)
+			nodeFailEvt.WithData(event.DataKey.FlowID, ctx.FlowID).
+				WithData(event.DataKey.NodeID, currentNode.GetID()).
+				WithData(event.DataKey.NodeType, string(currentNode.GetType())).
+				WithData(event.DataKey.Error, "Failed to set node executor").
+				WithData(event.DataKey.ErrorCode, svcErr.Code).
+				WithStatus(event.StatusFailure)
+			observability.GetService().PublishEvent(nodeFailEvt)
+
 			return flowStep, svcErr
 		}
 
@@ -89,8 +115,40 @@ func (fe *flowEngine) Execute(ctx *model.EngineContext) (model.FlowStep, *servic
 
 		nodeResp, nodeErr := currentNode.Execute(nodeCtx)
 		if nodeErr != nil {
+			// Publish node execution failed event
+			nodeFailEvt := event.NewEvent(ctx.FlowID, string(event.EventTypeFlowNodeExecutionFailed), event.ComponentFlowEngine)
+			nodeFailEvt.WithData(event.DataKey.FlowID, ctx.FlowID).
+				WithData(event.DataKey.NodeID, currentNode.GetID()).
+				WithData(event.DataKey.NodeType, string(currentNode.GetType())).
+				WithData(event.DataKey.Error, nodeErr.ErrorDescription).
+				WithData(event.DataKey.ErrorCode, nodeErr.Code).
+				WithStatus(event.StatusFailure)
+			observability.GetService().PublishEvent(nodeFailEvt)
+
 			return flowStep, nodeErr
 		}
+
+		// Publish node execution completed event
+		nodeCompleteEvt := event.NewEvent(
+			ctx.FlowID,
+			string(event.EventTypeFlowNodeExecutionCompleted),
+			event.ComponentFlowEngine,
+		)
+		nodeCompleteEvt.WithData(event.DataKey.FlowID, ctx.FlowID).
+			WithData(event.DataKey.NodeID, currentNode.GetID()).
+			WithData(event.DataKey.NodeType, string(currentNode.GetType())).
+			WithStatus(event.StatusSuccess)
+
+		// Add authentication method for task execution nodes
+		if currentNode.GetType() == constants.NodeTypeTaskExecution {
+			nodeCompleteEvt.WithData(event.DataKey.AuthMethod, currentNode.GetExecutorConfig().Name)
+		}
+
+		// Add user ID if authenticated during this node
+		if nodeResp.AuthenticatedUser.IsAuthenticated && nodeResp.AuthenticatedUser.UserID != "" {
+			nodeCompleteEvt.WithData(event.DataKey.UserID, nodeResp.AuthenticatedUser.UserID)
+		}
+		observability.GetService().PublishEvent(nodeCompleteEvt)
 
 		updateContextWithNodeResponse(ctx, nodeResp)
 

@@ -26,6 +26,8 @@ import (
 	"github.com/asgardeo/thunder/internal/flow/common/constants"
 	"github.com/asgardeo/thunder/internal/flow/common/model"
 	"github.com/asgardeo/thunder/internal/flow/flowmgt"
+	"github.com/asgardeo/thunder/internal/observability"
+	"github.com/asgardeo/thunder/internal/observability/event"
 
 	"github.com/asgardeo/thunder/internal/system/error/serviceerror"
 	"github.com/asgardeo/thunder/internal/system/log"
@@ -75,6 +77,14 @@ func (s *flowExecService) Execute(appID, flowID, actionID, flowType string, inpu
 				log.String("error", loadErr.Error))
 			return nil, loadErr
 		}
+
+		// Publish flow started event for new flows
+		startEvt := event.NewEvent(context.FlowID, string(event.EventTypeFlowStarted), event.ComponentFlowExecutionService)
+		startEvt.WithData(event.DataKey.FlowID, context.FlowID).
+			WithData(event.DataKey.FlowType, string(context.FlowType)).
+			WithData(event.DataKey.AppID, appID).
+			WithStatus(event.StatusInProgress)
+		observability.GetService().PublishEvent(startEvt)
 	} else {
 		context, loadErr = s.loadPrevContext(flowID, actionID, inputData)
 		if loadErr != nil {
@@ -88,6 +98,16 @@ func (s *flowExecService) Execute(appID, flowID, actionID, flowType string, inpu
 	flowStep, flowErr := s.flowEngine.Execute(context)
 
 	if flowErr != nil {
+		// Publish flow failed event
+		failEvt := event.NewEvent(context.FlowID, string(event.EventTypeFlowFailed), event.ComponentFlowExecutionService)
+		failEvt.WithData(event.DataKey.FlowID, context.FlowID).
+			WithData(event.DataKey.FlowType, string(context.FlowType)).
+			WithData(event.DataKey.AppID, context.AppID).
+			WithData(event.DataKey.Error, flowErr.ErrorDescription).
+			WithData(event.DataKey.ErrorCode, flowErr.Code).
+			WithStatus(event.StatusFailure)
+		observability.GetService().PublishEvent(failEvt)
+
 		if !isNewFlow(flowID) {
 			if removeErr := s.removeContext(context.FlowID, logger); removeErr != nil {
 				logger.Error("Failed to remove flow context after engine failure",
@@ -99,6 +119,23 @@ func (s *flowExecService) Execute(appID, flowID, actionID, flowType string, inpu
 	}
 
 	if isComplete(flowStep) {
+		// Publish flow completed event
+		completedEvt := event.NewEvent(
+			context.FlowID,
+			string(event.EventTypeFlowCompleted),
+			event.ComponentFlowExecutionService,
+		)
+		completedEvt.WithData(event.DataKey.FlowID, context.FlowID).
+			WithData(event.DataKey.FlowType, string(context.FlowType)).
+			WithData(event.DataKey.AppID, context.AppID).
+			WithStatus(event.StatusSuccess)
+
+		// Add user ID if authenticated
+		if context.AuthenticatedUser.IsAuthenticated && context.AuthenticatedUser.UserID != "" {
+			completedEvt.WithData(event.DataKey.UserID, context.AuthenticatedUser.UserID)
+		}
+		observability.GetService().PublishEvent(completedEvt)
+
 		if !isNewFlow(flowID) {
 			if removeErr := s.removeContext(context.FlowID, logger); removeErr != nil {
 				logger.Error("Failed to remove flow context after completion",

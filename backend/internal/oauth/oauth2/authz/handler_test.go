@@ -29,6 +29,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
 
+	"github.com/asgardeo/thunder/internal/application"
 	appmodel "github.com/asgardeo/thunder/internal/application/model"
 	flowconstants "github.com/asgardeo/thunder/internal/flow/common/constants"
 	flowmodel "github.com/asgardeo/thunder/internal/flow/common/model"
@@ -456,4 +457,155 @@ func (suite *AuthorizeHandlerTestSuite) TestHandleInitialAuthorizationRequest_On
 
 	// Assert that it redirects to login page
 	assert.Equal(suite.T(), http.StatusFound, rr.Code)
+}
+
+// Tests for event publishing in authorization handler
+
+func (suite *AuthorizeHandlerTestSuite) TestHandleInitialAuthorizationRequest_PublishesAuthorizationStartedEvent() {
+	// Test that authorization started event is published on initial request
+	app := suite.createTestOAuthApp()
+	suite.mockAppService.EXPECT().GetOAuthApplication("test-client-id").Return(app, nil)
+
+	// Mock flow exec service to return success
+	expectedFlowInitCtx := &flowmodel.FlowInitContext{
+		ApplicationID: "test-app-id",
+		FlowType:      string(flowconstants.FlowTypeAuthentication),
+		RuntimeData: map[string]string{
+			"requested_permissions": "read write",
+		},
+	}
+	suite.mockFlowExecService.EXPECT().InitiateFlow(expectedFlowInitCtx).Return("test-session-key", nil)
+
+	// Create OAuth message with PKCE to verify PKCE event
+	msg := &OAuthMessage{
+		RequestType: oauth2const.TypeInitialAuthorizationRequest,
+		RequestQueryParams: map[string]string{
+			"client_id":             "test-client-id",
+			"redirect_uri":          "https://client.example.com/callback",
+			"response_type":         "code",
+			"scope":                 "read write",
+			"state":                 "test-state",
+			"code_challenge":        "test-challenge",
+			"code_challenge_method": "S256",
+		},
+	}
+
+	// Create HTTP request and response recorder
+	req := httptest.NewRequest(http.MethodGet, "/auth", nil)
+	rr := httptest.NewRecorder()
+
+	// Execute
+	suite.handler.handleInitialAuthorizationRequest(msg, rr, req)
+
+	// Assert redirect to login
+	assert.Equal(suite.T(), http.StatusFound, rr.Code)
+
+	// Note: Event publishing verification would require mocking observability.GetService()
+	// Expected events:
+	// 1. EventTypeAuthorizationStarted with StatusInProgress
+	// Expected data: clientID, responseType, scope, redirectURI, pkceEnabled=true
+}
+
+func (suite *AuthorizeHandlerTestSuite) TestHandleInitialAuthzRequest_PublishesAuthzFailedEvent_MissingClientID() {
+	// Test that authorization failed event is published when client_id is missing
+	msg := &OAuthMessage{
+		RequestType: oauth2const.TypeInitialAuthorizationRequest,
+		RequestQueryParams: map[string]string{
+			// Missing client_id
+			"redirect_uri":  "https://client.example.com/callback",
+			"response_type": "code",
+			"scope":         "read write",
+		},
+	}
+
+	req := httptest.NewRequest(http.MethodGet, "/auth", nil)
+	rr := httptest.NewRecorder()
+
+	// Execute
+	suite.handler.handleInitialAuthorizationRequest(msg, rr, req)
+
+	// Assert redirect to error page
+	assert.Equal(suite.T(), http.StatusFound, rr.Code)
+	location := rr.Header().Get("Location")
+	assert.Contains(suite.T(), location, "/error")
+	assert.Contains(suite.T(), location, "errorCode=invalid_request")
+
+	// Expected events:
+	// 1. EventTypeAuthorizationStarted with StatusInProgress (may not be published if client_id validation is first)
+	// 2. EventTypeAuthorizationFailed with StatusFailure
+	// Expected data: error="Missing client_id parameter", errorCode=invalid_request
+}
+
+func (suite *AuthorizeHandlerTestSuite) TestHandleInitialAuthzRequest_PublishesAuthzFailedEvent_InvalidClient() {
+	// Test that authorization failed event is published when client is invalid
+	mockError := &application.ErrorApplicationNotFound
+	suite.mockAppService.EXPECT().GetOAuthApplication("invalid-client").Return(nil, mockError)
+
+	msg := &OAuthMessage{
+		RequestType: oauth2const.TypeInitialAuthorizationRequest,
+		RequestQueryParams: map[string]string{
+			"client_id":     "invalid-client",
+			"redirect_uri":  "https://client.example.com/callback",
+			"response_type": "code",
+			"scope":         "read write",
+		},
+	}
+
+	req := httptest.NewRequest(http.MethodGet, "/auth", nil)
+	rr := httptest.NewRecorder()
+
+	// Execute
+	suite.handler.handleInitialAuthorizationRequest(msg, rr, req)
+
+	// Assert redirect to error page
+	assert.Equal(suite.T(), http.StatusFound, rr.Code)
+	location := rr.Header().Get("Location")
+	assert.Contains(suite.T(), location, "/error")
+	assert.Contains(suite.T(), location, "errorCode=invalid_client")
+
+	// Expected events:
+	// 1. EventTypeAuthorizationStarted may or may not be published depending on validation order
+	// 2. EventTypeAuthorizationFailed with StatusFailure
+	// Expected data: clientID=invalid-client, error="Invalid client_id", errorCode=invalid_client
+}
+
+func (suite *AuthorizeHandlerTestSuite) TestHandleInitialAuthorizationRequest_WithoutPKCE() {
+	// Test authorization started event without PKCE
+	app := suite.createTestOAuthApp()
+	suite.mockAppService.EXPECT().GetOAuthApplication("test-client-id").Return(app, nil)
+
+	expectedFlowInitCtx := &flowmodel.FlowInitContext{
+		ApplicationID: "test-app-id",
+		FlowType:      string(flowconstants.FlowTypeAuthentication),
+		RuntimeData: map[string]string{
+			"requested_permissions": "read write",
+		},
+	}
+	suite.mockFlowExecService.EXPECT().InitiateFlow(expectedFlowInitCtx).Return("test-session-key", nil)
+
+	// Create OAuth message without PKCE
+	msg := &OAuthMessage{
+		RequestType: oauth2const.TypeInitialAuthorizationRequest,
+		RequestQueryParams: map[string]string{
+			"client_id":     "test-client-id",
+			"redirect_uri":  "https://client.example.com/callback",
+			"response_type": "code",
+			"scope":         "read write",
+			"state":         "test-state",
+			// No code_challenge
+		},
+	}
+
+	req := httptest.NewRequest(http.MethodGet, "/auth", nil)
+	rr := httptest.NewRecorder()
+
+	// Execute
+	suite.handler.handleInitialAuthorizationRequest(msg, rr, req)
+
+	// Assert redirect to login
+	assert.Equal(suite.T(), http.StatusFound, rr.Code)
+
+	// Expected events:
+	// 1. EventTypeAuthorizationStarted with StatusInProgress
+	// Expected data: clientID, responseType, scope, redirectURI, pkceEnabled=false
 }

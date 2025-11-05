@@ -60,8 +60,17 @@ var DataKey = struct {
 
 	// Flow Execution Keys
 	FlowID     string
+	FlowType   string
 	NodeID     string
+	NodeType   string
 	RedirectTo string
+
+	// Authentication Method Keys
+	AuthMethod         string
+	AuthMethodTried    string
+	FailedStep         string
+	AttemptCount       string
+	AuthenticationPath string // "flow-based" or "api-based"
 
 	// Event Metadata Keys
 	Message    string
@@ -108,8 +117,17 @@ var DataKey = struct {
 
 	// Flow Execution Keys
 	FlowID:     "flow_id",
+	FlowType:   "flow_type",
 	NodeID:     "node_id",
+	NodeType:   "node_type",
 	RedirectTo: "redirect_to",
+
+	// Authentication Method Keys
+	AuthMethod:         "auth_method",
+	AuthMethodTried:    "auth_method_tried",
+	FailedStep:         "failed_step",
+	AttemptCount:       "attempt_count",
+	AuthenticationPath: "authentication_path",
 
 	// Event Metadata Keys
 	Message:    "message",

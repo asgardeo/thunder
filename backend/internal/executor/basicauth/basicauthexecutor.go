@@ -29,6 +29,8 @@ import (
 	"github.com/asgardeo/thunder/internal/executor/identify"
 	flowconst "github.com/asgardeo/thunder/internal/flow/common/constants"
 	flowmodel "github.com/asgardeo/thunder/internal/flow/common/model"
+	"github.com/asgardeo/thunder/internal/observability"
+	"github.com/asgardeo/thunder/internal/observability/event"
 	"github.com/asgardeo/thunder/internal/system/error/serviceerror"
 	"github.com/asgardeo/thunder/internal/system/log"
 )
@@ -105,28 +107,89 @@ func (b *BasicAuthExecutor) Execute(ctx *flowmodel.NodeContext) (*flowmodel.Exec
 		return execResp, nil
 	}
 
+	// Publish credentials auth started event
+	startEvt := event.NewEvent(ctx.FlowID, string(event.EventTypeCredentialsAuthStarted), event.ComponentBasicAuthExecutor)
+	startEvt.WithData(event.DataKey.FlowID, ctx.FlowID).
+		WithData(event.DataKey.AppID, ctx.AppID).
+		WithData(event.DataKey.AuthMethod, authncm.AuthenticatorCredentials).
+		WithStatus(event.StatusInProgress)
+	observability.GetService().PublishEvent(startEvt)
+
 	// TODO: Should handle client errors here. Service should return a ServiceError and
 	//  client errors should be appended as a failure.
 	//  For the moment handling returned error as a authentication failure.
 	authenticatedUser, err := b.getAuthenticatedUser(ctx, execResp)
 	if err != nil {
+		// Publish credentials auth failed event
+		failEvt := event.NewEvent(ctx.FlowID, string(event.EventTypeCredentialsAuthFailed), event.ComponentBasicAuthExecutor)
+		failEvt.WithData(event.DataKey.FlowID, ctx.FlowID).
+			WithData(event.DataKey.AppID, ctx.AppID).
+			WithData(event.DataKey.AuthMethod, authncm.AuthenticatorCredentials).
+			WithData(event.DataKey.Error, err.Error()).
+			WithData(event.DataKey.FailedStep, "user_authentication").
+			WithStatus(event.StatusFailure)
+		observability.GetService().PublishEvent(failEvt)
+
 		execResp.Status = flowconst.ExecFailure
 		execResp.FailureReason = "Failed to authenticate user: " + err.Error()
 		return execResp, nil
 	}
 	if execResp.Status == flowconst.ExecFailure {
+		// Publish credentials auth failed event
+		failEvt := event.NewEvent(ctx.FlowID, string(event.EventTypeCredentialsAuthFailed), event.ComponentBasicAuthExecutor)
+		failEvt.WithData(event.DataKey.FlowID, ctx.FlowID).
+			WithData(event.DataKey.AppID, ctx.AppID).
+			WithData(event.DataKey.AuthMethod, authncm.AuthenticatorCredentials).
+			WithData(event.DataKey.Error, execResp.FailureReason).
+			WithData(event.DataKey.FailedStep, "user_authentication").
+			WithStatus(event.StatusFailure)
+		observability.GetService().PublishEvent(failEvt)
+
 		return execResp, nil
 	}
 	if authenticatedUser == nil {
+		// Publish credentials auth failed event
+		failEvt := event.NewEvent(ctx.FlowID, string(event.EventTypeCredentialsAuthFailed), event.ComponentBasicAuthExecutor)
+		failEvt.WithData(event.DataKey.FlowID, ctx.FlowID).
+			WithData(event.DataKey.AppID, ctx.AppID).
+			WithData(event.DataKey.AuthMethod, authncm.AuthenticatorCredentials).
+			WithData(event.DataKey.Error, "Authenticated user not found").
+			WithData(event.DataKey.FailedStep, "user_authentication").
+			WithStatus(event.StatusFailure)
+		observability.GetService().PublishEvent(failEvt)
+
 		execResp.Status = flowconst.ExecFailure
 		execResp.FailureReason = "Authenticated user not found."
 		return execResp, nil
 	}
 	if !authenticatedUser.IsAuthenticated && ctx.FlowType != flowconst.FlowTypeRegistration {
+		// Publish credentials auth failed event
+		failEvt := event.NewEvent(ctx.FlowID, string(event.EventTypeCredentialsAuthFailed), event.ComponentBasicAuthExecutor)
+		failEvt.WithData(event.DataKey.FlowID, ctx.FlowID).
+			WithData(event.DataKey.AppID, ctx.AppID).
+			WithData(event.DataKey.AuthMethod, authncm.AuthenticatorCredentials).
+			WithData(event.DataKey.Error, "Invalid credentials").
+			WithData(event.DataKey.FailedStep, "credentials_validation").
+			WithStatus(event.StatusFailure)
+		observability.GetService().PublishEvent(failEvt)
+
 		execResp.Status = flowconst.ExecFailure
 		execResp.FailureReason = "User authentication failed."
 		return execResp, nil
 	}
+
+	// Publish credentials auth completed event
+	successEvt := event.NewEvent(
+		ctx.FlowID,
+		string(event.EventTypeCredentialsAuthCompleted),
+		event.ComponentBasicAuthExecutor,
+	)
+	successEvt.WithData(event.DataKey.FlowID, ctx.FlowID).
+		WithData(event.DataKey.AppID, ctx.AppID).
+		WithData(event.DataKey.AuthMethod, authncm.AuthenticatorCredentials).
+		WithData(event.DataKey.UserID, authenticatedUser.UserID).
+		WithStatus(event.StatusSuccess)
+	observability.GetService().PublishEvent(successEvt)
 
 	execResp.AuthenticatedUser = *authenticatedUser
 	execResp.Status = flowconst.ExecComplete

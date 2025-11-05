@@ -54,6 +54,7 @@ type TokenResponse struct {
 // TokenContext holds context data for the token issuance.
 type TokenContext struct {
 	TokenAttributes map[string]interface{} `json:"token_attributes,omitempty"`
+	TraceID         string                 `json:"trace_id,omitempty"` // For observability correlation
 }
 
 // TokenDTO represents the data transfer object for tokens.

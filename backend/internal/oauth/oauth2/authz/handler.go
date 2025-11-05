@@ -33,8 +33,11 @@ import (
 	oauth2const "github.com/asgardeo/thunder/internal/oauth/oauth2/constants"
 	oauth2model "github.com/asgardeo/thunder/internal/oauth/oauth2/model"
 	oauth2utils "github.com/asgardeo/thunder/internal/oauth/oauth2/utils"
+	"github.com/asgardeo/thunder/internal/observability"
+	"github.com/asgardeo/thunder/internal/observability/event"
 	"github.com/asgardeo/thunder/internal/system/config"
 	serverconst "github.com/asgardeo/thunder/internal/system/constants"
+	systemcontext "github.com/asgardeo/thunder/internal/system/context"
 	"github.com/asgardeo/thunder/internal/system/jwt"
 	"github.com/asgardeo/thunder/internal/system/log"
 	"github.com/asgardeo/thunder/internal/system/utils"
@@ -109,6 +112,10 @@ func (ah *authorizeHandler) HandleAuthorizePostRequest(w http.ResponseWriter, r 
 // handleInitialAuthorizationRequest handles the initial authorization request from the client.
 func (ah *authorizeHandler) handleInitialAuthorizationRequest(msg *OAuthMessage,
 	w http.ResponseWriter, r *http.Request) {
+	// Ensure trace ID exists in context for correlation
+	ctx := systemcontext.EnsureTraceID(r.Context())
+	traceID := systemcontext.GetTraceID(ctx)
+
 	// Extract required parameters.
 	clientID := msg.RequestQueryParams[oauth2const.RequestParamClientID]
 	redirectURI := msg.RequestQueryParams[oauth2const.RequestParamRedirectURI]
@@ -123,7 +130,24 @@ func (ah *authorizeHandler) handleInitialAuthorizationRequest(msg *OAuthMessage,
 	// Extract resource parameter
 	resource := msg.RequestQueryParams[oauth2const.RequestParamResource]
 
+	// Publish authorization started event
+	evt := event.NewEvent(traceID, string(event.EventTypeAuthorizationStarted), event.ComponentAuthorizationHandler)
+	evt.WithData(event.DataKey.ClientID, clientID).
+		WithData(event.DataKey.ResponseType, responseType).
+		WithData(event.DataKey.Scope, scope).
+		WithData(event.DataKey.RedirectURI, redirectURI).
+		WithData(event.DataKey.PKCEEnabled, codeChallenge != "").
+		WithStatus(event.StatusInProgress)
+	observability.GetService().PublishEvent(evt)
+
 	if clientID == "" {
+		// Publish authorization failed event
+		failEvt := event.NewEvent(traceID, string(event.EventTypeAuthorizationFailed), event.ComponentAuthorizationHandler)
+		failEvt.WithData(event.DataKey.Error, "Missing client_id parameter").
+			WithData(event.DataKey.ErrorCode, oauth2const.ErrorInvalidRequest).
+			WithStatus(event.StatusFailure)
+		observability.GetService().PublishEvent(failEvt)
+
 		ah.redirectToErrorPage(w, r, oauth2const.ErrorInvalidRequest, "Missing client_id parameter")
 		return
 	}
@@ -131,6 +155,14 @@ func (ah *authorizeHandler) handleInitialAuthorizationRequest(msg *OAuthMessage,
 	// Retrieve the OAuth application based on the client Id.
 	app, svcErr := ah.appService.GetOAuthApplication(clientID)
 	if svcErr != nil || app == nil {
+		// Publish authorization failed event
+		failEvt := event.NewEvent(traceID, string(event.EventTypeAuthorizationFailed), event.ComponentAuthorizationHandler)
+		failEvt.WithData(event.DataKey.ClientID, clientID).
+			WithData(event.DataKey.Error, "Invalid client_id").
+			WithData(event.DataKey.ErrorCode, oauth2const.ErrorInvalidClient).
+			WithStatus(event.StatusFailure)
+		observability.GetService().PublishEvent(failEvt)
+
 		ah.redirectToErrorPage(w, r, oauth2const.ErrorInvalidClient, "Invalid client_id")
 		return
 	}

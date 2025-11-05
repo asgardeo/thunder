@@ -29,6 +29,8 @@ import (
 	"github.com/asgardeo/thunder/internal/oauth/oauth2/constants"
 	"github.com/asgardeo/thunder/internal/oauth/oauth2/model"
 	"github.com/asgardeo/thunder/internal/oauth/oauth2/pkce"
+	"github.com/asgardeo/thunder/internal/observability"
+	"github.com/asgardeo/thunder/internal/observability/event"
 	"github.com/asgardeo/thunder/internal/system/config"
 	"github.com/asgardeo/thunder/internal/system/jwt"
 	"github.com/asgardeo/thunder/internal/system/log"
@@ -117,8 +119,11 @@ func (h *authorizationCodeGrantHandler) HandleGrant(tokenRequest *model.TokenReq
 	*model.TokenResponseDTO, *model.ErrorResponse) {
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, "AuthorizationCodeGrantHandler"))
 
+	// Get trace ID for observability
+	traceID := ctx.TraceID
+
 	// Retrieve and validate authorization code
-	authCode, errResponse := h.retrieveAndValidateAuthCode(tokenRequest, oauthApp, logger)
+	authCode, errResponse := h.retrieveAndValidateAuthCode(tokenRequest, oauthApp, traceID, logger)
 	if errResponse != nil {
 		return nil, errResponse
 	}
@@ -169,10 +174,20 @@ func (h *authorizationCodeGrantHandler) HandleGrant(tokenRequest *model.TokenReq
 func (h *authorizationCodeGrantHandler) retrieveAndValidateAuthCode(
 	tokenRequest *model.TokenRequest,
 	oauthApp *appmodel.OAuthAppConfigProcessedDTO,
+	traceID string,
 	logger *log.Logger,
 ) (*authz.AuthorizationCode, *model.ErrorResponse) {
 	authCode, codeErr := h.authzService.GetAuthorizationCodeDetails(tokenRequest.ClientID, tokenRequest.Code)
 	if codeErr != nil {
+		// Publish authorization code validation failed event
+		failEvt := event.NewEvent(traceID, string(event.EventTypeAuthorizationCodeValidated), event.ComponentGrantHandler)
+		failEvt.WithData(event.DataKey.ClientID, tokenRequest.ClientID).
+			WithData(event.DataKey.AppID, oauthApp.AppID).
+			WithData(event.DataKey.Error, "Invalid authorization code").
+			WithData(event.DataKey.ErrorCode, constants.ErrorInvalidGrant).
+			WithStatus(event.StatusFailure)
+		observability.GetService().PublishEvent(failEvt)
+
 		return nil, &model.ErrorResponse{
 			Error:            constants.ErrorInvalidGrant,
 			ErrorDescription: "Invalid authorization code",
@@ -182,12 +197,41 @@ func (h *authorizationCodeGrantHandler) retrieveAndValidateAuthCode(
 	// Validate the retrieved authorization code
 	errResponse := validateAuthorizationCode(tokenRequest, *authCode)
 	if errResponse != nil && errResponse.Error != "" {
+		// Publish authorization code validation failed event
+		failEvt := event.NewEvent(traceID, string(event.EventTypeAuthorizationCodeValidated), event.ComponentGrantHandler)
+		failEvt.WithData(event.DataKey.ClientID, tokenRequest.ClientID).
+			WithData(event.DataKey.AppID, oauthApp.AppID).
+			WithData(event.DataKey.Error, errResponse.ErrorDescription).
+			WithData(event.DataKey.ErrorCode, errResponse.Error).
+			WithStatus(event.StatusFailure)
+		observability.GetService().PublishEvent(failEvt)
+
 		return nil, errResponse
 	}
+
+	// Publish authorization code validated event
+	validatedEvt := event.NewEvent(traceID, string(event.EventTypeAuthorizationCodeValidated), event.ComponentGrantHandler)
+	validatedEvt.WithData(event.DataKey.ClientID, tokenRequest.ClientID).
+		WithData(event.DataKey.AppID, oauthApp.AppID).
+		WithData(event.DataKey.UserID, authCode.AuthorizedUserID).
+		WithData(event.DataKey.Scope, authCode.Scopes).
+		WithData(event.DataKey.AuthenticationPath, "flow-based"). // Authorization code flow uses flow-based authentication
+		WithStatus(event.StatusSuccess)
+	observability.GetService().PublishEvent(validatedEvt)
 
 	// Validate PKCE if required or if code challenge was provided during authorization
 	if oauthApp.RequiresPKCE() || authCode.CodeChallenge != "" {
 		if tokenRequest.CodeVerifier == "" {
+			// Publish PKCE validation failed event
+			pkceFailEvt := event.NewEvent(traceID, string(event.EventTypePKCEFailed), event.ComponentGrantHandler)
+			pkceFailEvt.WithData(event.DataKey.ClientID, tokenRequest.ClientID).
+				WithData(event.DataKey.AppID, oauthApp.AppID).
+				WithData(event.DataKey.UserID, authCode.AuthorizedUserID).
+				WithData(event.DataKey.Error, "code_verifier is required").
+				WithData(event.DataKey.ErrorCode, constants.ErrorInvalidRequest).
+				WithStatus(event.StatusFailure)
+			observability.GetService().PublishEvent(pkceFailEvt)
+
 			return nil, &model.ErrorResponse{
 				Error:            constants.ErrorInvalidRequest,
 				ErrorDescription: "code_verifier is required",
@@ -198,11 +242,31 @@ func (h *authorizationCodeGrantHandler) retrieveAndValidateAuthCode(
 		if err := pkce.ValidatePKCE(authCode.CodeChallenge, authCode.CodeChallengeMethod,
 			tokenRequest.CodeVerifier); err != nil {
 			logger.Debug("PKCE validation failed", log.Error(err))
+
+			// Publish PKCE validation failed event
+			pkceFailEvt := event.NewEvent(traceID, string(event.EventTypePKCEFailed), event.ComponentGrantHandler)
+			pkceFailEvt.WithData(event.DataKey.ClientID, tokenRequest.ClientID).
+				WithData(event.DataKey.AppID, oauthApp.AppID).
+				WithData(event.DataKey.UserID, authCode.AuthorizedUserID).
+				WithData(event.DataKey.Error, "Invalid code verifier").
+				WithData(event.DataKey.ErrorCode, constants.ErrorInvalidGrant).
+				WithStatus(event.StatusFailure)
+			observability.GetService().PublishEvent(pkceFailEvt)
+
 			return nil, &model.ErrorResponse{
 				Error:            constants.ErrorInvalidGrant,
 				ErrorDescription: "Invalid code verifier",
 			}
 		}
+
+		// Publish PKCE validation success event
+		pkceSuccessEvt := event.NewEvent(traceID, string(event.EventTypePKCEValidated), event.ComponentGrantHandler)
+		pkceSuccessEvt.WithData(event.DataKey.ClientID, tokenRequest.ClientID).
+			WithData(event.DataKey.AppID, oauthApp.AppID).
+			WithData(event.DataKey.UserID, authCode.AuthorizedUserID).
+			WithData(event.DataKey.CodeChallengeMethod, authCode.CodeChallengeMethod).
+			WithStatus(event.StatusSuccess)
+		observability.GetService().PublishEvent(pkceSuccessEvt)
 	}
 	return authCode, nil
 }
