@@ -2625,3 +2625,891 @@ func (ts *ApplicationAPITestSuite) TestApplicationWithMultipleRedirectURIsAndSco
 	ts.Assert().Contains(retrievedApp.InboundAuthConfig[0].OAuthAppConfig.Scopes, "address")
 	ts.Assert().Contains(retrievedApp.InboundAuthConfig[0].OAuthAppConfig.Scopes, "phone")
 }
+
+// TestApplicationUpdateNonExistent tests updating a non-existent application.
+func (ts *ApplicationAPITestSuite) TestApplicationUpdateNonExistent() {
+	nonExistentID := "00000000-0000-0000-0000-000000000000"
+
+	updateApp := Application{
+		Name:        "Non-Existent App Update",
+		Description: "Attempting to update non-existent app",
+		Certificate: &ApplicationCert{Type: "NONE", Value: ""},
+	}
+
+	appJSON, err := json.Marshal(updateApp)
+	ts.Require().NoError(err)
+
+	reqBody := bytes.NewReader(appJSON)
+	req, err := http.NewRequest("PUT", testServerURL+"/applications/"+nonExistentID, reqBody)
+	ts.Require().NoError(err)
+	req.Header.Set("Content-Type", "application/json")
+
+	client := &http.Client{
+		Transport: &http.Transport{
+			TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
+		},
+	}
+
+	resp, err := client.Do(req)
+	ts.Require().NoError(err)
+	defer resp.Body.Close()
+
+	// Should return 404 Not Found
+	ts.Assert().Equal(http.StatusNotFound, resp.StatusCode)
+}
+
+// TestApplicationDeleteNonExistent tests deleting a non-existent application.
+// Note: DELETE is idempotent - deleting a non-existent resource returns 204 (success).
+func (ts *ApplicationAPITestSuite) TestApplicationDeleteNonExistent() {
+	nonExistentID := "00000000-0000-0000-0000-000000000000"
+
+	req, err := http.NewRequest("DELETE", testServerURL+"/applications/"+nonExistentID, nil)
+	ts.Require().NoError(err)
+
+	client := &http.Client{
+		Transport: &http.Transport{
+			TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
+		},
+	}
+
+	resp, err := client.Do(req)
+	ts.Require().NoError(err)
+	defer resp.Body.Close()
+
+	// DELETE is idempotent - should return 204 No Content even for non-existent resources
+	ts.Assert().Equal(http.StatusNoContent, resp.StatusCode)
+}
+
+// TestApplicationWithInvalidAuthFlowGraphID tests creating app with invalid auth flow graph ID.
+func (ts *ApplicationAPITestSuite) TestApplicationWithInvalidAuthFlowGraphID() {
+	app := Application{
+		Name:            "Invalid Auth Flow App",
+		Description:     "App with invalid auth flow graph ID",
+		AuthFlowGraphID: "non_existent_auth_flow_config",
+		Certificate:     &ApplicationCert{Type: "NONE", Value: ""},
+	}
+
+	_, err := createApplication(app)
+	ts.Assert().Error(err, "Should fail with invalid auth flow graph ID")
+}
+
+// TestApplicationWithInvalidRegistrationFlowGraphID tests creating app with invalid registration flow graph ID.
+func (ts *ApplicationAPITestSuite) TestApplicationWithInvalidRegistrationFlowGraphID() {
+	app := Application{
+		Name:                      "Invalid Registration Flow App",
+		Description:               "App with invalid registration flow graph ID",
+		RegistrationFlowGraphID:   "non_existent_registration_flow_config",
+		IsRegistrationFlowEnabled: true,
+		Certificate:               &ApplicationCert{Type: "NONE", Value: ""},
+	}
+
+	_, err := createApplication(app)
+	ts.Assert().Error(err, "Should fail with invalid registration flow graph ID")
+}
+
+// TestApplicationWithDuplicateName tests creating app with duplicate name.
+func (ts *ApplicationAPITestSuite) TestApplicationWithDuplicateName() {
+	app := Application{
+		Name:        "Duplicate Name Test App",
+		Description: "First app with this name",
+		Certificate: &ApplicationCert{Type: "NONE", Value: ""},
+	}
+
+	appID1, err := createApplication(app)
+	ts.Require().NoError(err)
+	defer deleteApplication(appID1)
+
+	// Try to create another app with the same name
+	app2 := Application{
+		Name:        "Duplicate Name Test App", // Same name
+		Description: "Second app with duplicate name",
+		Certificate: &ApplicationCert{Type: "NONE", Value: ""},
+	}
+
+	_, err = createApplication(app2)
+	ts.Assert().Error(err, "Should fail with duplicate application name")
+}
+
+// TestApplicationWithEmptyName tests creating app with empty name.
+func (ts *ApplicationAPITestSuite) TestApplicationWithEmptyName() {
+	app := Application{
+		Name:        "", // Empty name
+		Description: "App with empty name",
+		Certificate: &ApplicationCert{Type: "NONE", Value: ""},
+	}
+
+	_, err := createApplication(app)
+	ts.Assert().Error(err, "Should fail with empty application name")
+}
+
+// TestApplicationWithVeryLongName tests creating app with very long name.
+func (ts *ApplicationAPITestSuite) TestApplicationWithVeryLongName() {
+	// Create a name longer than 256 characters
+	longName := ""
+	for i := 0; i < 300; i++ {
+		longName += "a"
+	}
+
+	app := Application{
+		Name:        longName,
+		Description: "App with very long name",
+		Certificate: &ApplicationCert{Type: "NONE", Value: ""},
+	}
+
+	appID, err := createApplication(app)
+	if err == nil {
+		defer deleteApplication(appID)
+		// If creation succeeds, verify the name was stored correctly
+		retrievedApp, getErr := getApplicationByID(appID)
+		ts.Require().NoError(getErr)
+		ts.Assert().Equal(longName, retrievedApp.Name)
+	}
+	// Long names might be accepted or rejected depending on validation
+}
+
+// TestApplicationWithSpecialCharactersInName tests creating app with special characters in name.
+func (ts *ApplicationAPITestSuite) TestApplicationWithSpecialCharactersInName() {
+	app := Application{
+		Name:        "Test App with 特殊文字 and émojis 🚀",
+		Description: "App with unicode and special characters",
+		Certificate: &ApplicationCert{Type: "NONE", Value: ""},
+	}
+
+	appID, err := createApplication(app)
+	ts.Require().NoError(err)
+	defer deleteApplication(appID)
+
+	retrievedApp, err := getApplicationByID(appID)
+	ts.Require().NoError(err)
+	ts.Assert().Equal("Test App with 特殊文字 and émojis 🚀", retrievedApp.Name)
+}
+
+// TestApplicationWithEmptyOAuthGrantTypes tests creating app with empty grant types.
+// Note: Empty grant types array gets default value (authorization_code) applied automatically.
+func (ts *ApplicationAPITestSuite) TestApplicationWithEmptyOAuthGrantTypes() {
+	app := Application{
+		Name:        "Empty Grant Types App",
+		Description: "App with empty OAuth grant types",
+		Certificate: &ApplicationCert{Type: "NONE", Value: ""},
+		InboundAuthConfig: []InboundAuthConfig{
+			{
+				Type: "oauth2",
+				OAuthAppConfig: &OAuthAppConfig{
+					RedirectURIs:            []string{"https://empty-grants.example.com/callback"},
+					GrantTypes:              []string{}, // Empty grant types - will get default
+					ResponseTypes:           []string{"code"},
+					TokenEndpointAuthMethod: "client_secret_basic",
+				},
+			},
+		},
+	}
+
+	appID, err := createApplication(app)
+	ts.Require().NoError(err, "Should succeed - empty grant types get default value")
+	defer deleteApplication(appID)
+
+	// Verify the default grant type was applied
+	retrievedApp, err := getApplicationByID(appID)
+	ts.Require().NoError(err)
+	ts.Require().NotNil(retrievedApp.InboundAuthConfig)
+	ts.Assert().Len(retrievedApp.InboundAuthConfig, 1)
+	ts.Assert().Contains(retrievedApp.InboundAuthConfig[0].OAuthAppConfig.GrantTypes, "authorization_code")
+}
+
+// TestApplicationUpdateInvalidAuthFlow tests updating app with invalid auth flow.
+func (ts *ApplicationAPITestSuite) TestApplicationUpdateInvalidAuthFlow() {
+	app := Application{
+		Name:        "Update Auth Flow Test App",
+		Description: "App to test auth flow update",
+		Certificate: &ApplicationCert{Type: "NONE", Value: ""},
+	}
+
+	appID, err := createApplication(app)
+	ts.Require().NoError(err)
+	defer deleteApplication(appID)
+
+	// Try to update with invalid auth flow graph ID
+	updateApp := Application{
+		Name:            "Updated with Invalid Auth Flow",
+		Description:     "Updated description",
+		AuthFlowGraphID: "non_existent_auth_flow_config",
+		Certificate:     &ApplicationCert{Type: "NONE", Value: ""},
+	}
+
+	appJSON, err := json.Marshal(updateApp)
+	ts.Require().NoError(err)
+
+	reqBody := bytes.NewReader(appJSON)
+	req, err := http.NewRequest("PUT", testServerURL+"/applications/"+appID, reqBody)
+	ts.Require().NoError(err)
+	req.Header.Set("Content-Type", "application/json")
+
+	client := &http.Client{
+		Transport: &http.Transport{
+			TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
+		},
+	}
+
+	resp, err := client.Do(req)
+	ts.Require().NoError(err)
+	defer resp.Body.Close()
+
+	// Should return error (likely 400 Bad Request)
+	ts.Assert().NotEqual(http.StatusOK, resp.StatusCode)
+}
+
+// TestApplicationListWhenEmpty tests listing applications when database might be empty.
+func (ts *ApplicationAPITestSuite) TestApplicationListWhenEmpty() {
+	// This test assumes the database might have applications, so we just verify the endpoint works
+	req, err := http.NewRequest("GET", testServerURL+"/applications", nil)
+	ts.Require().NoError(err)
+
+	client := &http.Client{
+		Transport: &http.Transport{
+			TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
+		},
+	}
+
+	resp, err := client.Do(req)
+	ts.Require().NoError(err)
+	defer resp.Body.Close()
+
+	ts.Assert().Equal(http.StatusOK, resp.StatusCode)
+
+	var appList ApplicationList
+	err = json.NewDecoder(resp.Body).Decode(&appList)
+	ts.Require().NoError(err)
+
+	// Verify the response structure is valid
+	ts.Assert().GreaterOrEqual(appList.TotalResults, 0)
+	ts.Assert().GreaterOrEqual(appList.Count, 0)
+}
+
+// TestApplicationWithNullOptionalFields tests creating app with null optional fields.
+func (ts *ApplicationAPITestSuite) TestApplicationWithNullOptionalFields() {
+	app := Application{
+		Name:        "Null Optional Fields App",
+		Description: "", // Empty description (optional)
+		URL:         "", // Empty URL (optional)
+		LogoURL:     "", // Empty logo URL (optional)
+		Certificate: &ApplicationCert{Type: "NONE", Value: ""},
+	}
+
+	appID, err := createApplication(app)
+	ts.Require().NoError(err)
+	defer deleteApplication(appID)
+
+	retrievedApp, err := getApplicationByID(appID)
+	ts.Require().NoError(err)
+	ts.Assert().Equal("Null Optional Fields App", retrievedApp.Name)
+	ts.Assert().Equal("", retrievedApp.Description)
+}
+
+// TestApplicationUpdateWithEmptyAppID tests updating application with empty app ID
+func (ts *ApplicationAPITestSuite) TestApplicationUpdateWithEmptyAppID() {
+	updateApp := Application{
+		Name:        "Update Test",
+		Description: "Test update with empty app ID",
+		Certificate: &ApplicationCert{Type: "NONE", Value: ""},
+	}
+
+	appJSON, err := json.Marshal(updateApp)
+	ts.Require().NoError(err)
+
+	reqBody := bytes.NewReader(appJSON)
+	req, err := http.NewRequest("PUT", testServerURL+"/applications/", reqBody)
+	ts.Require().NoError(err)
+	req.Header.Set("Content-Type", "application/json")
+
+	client := &http.Client{
+		Transport: &http.Transport{
+			TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
+		},
+	}
+
+	resp, err := client.Do(req)
+	ts.Require().NoError(err)
+	defer resp.Body.Close()
+
+	// Should return 400 Bad Request, 404 Not Found, or 405 Method Not Allowed
+	ts.Assert().True(resp.StatusCode == http.StatusBadRequest || resp.StatusCode == http.StatusNotFound || resp.StatusCode == http.StatusMethodNotAllowed)
+}
+
+// TestApplicationUpdateWithEmptyName tests updating application with empty name
+func (ts *ApplicationAPITestSuite) TestApplicationUpdateWithEmptyName() {
+	// Create an application first
+	appID, err := createApplication(appToCreate)
+	ts.Require().NoError(err)
+	defer deleteApplication(appID)
+
+	updateApp := Application{
+		Name:        "", // Empty name
+		Description: "Updated description",
+		Certificate: &ApplicationCert{Type: "NONE", Value: ""},
+	}
+
+	appJSON, err := json.Marshal(updateApp)
+	ts.Require().NoError(err)
+
+	reqBody := bytes.NewReader(appJSON)
+	req, err := http.NewRequest("PUT", testServerURL+"/applications/"+appID, reqBody)
+	ts.Require().NoError(err)
+	req.Header.Set("Content-Type", "application/json")
+
+	client := &http.Client{
+		Transport: &http.Transport{
+			TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
+		},
+	}
+
+	resp, err := client.Do(req)
+	ts.Require().NoError(err)
+	defer resp.Body.Close()
+
+	// Should return 400 Bad Request
+	ts.Assert().Equal(http.StatusBadRequest, resp.StatusCode)
+}
+
+// TestApplicationUpdateWithDuplicateName tests updating application with duplicate name
+func (ts *ApplicationAPITestSuite) TestApplicationUpdateWithDuplicateName() {
+	// Create first application
+	app1 := Application{
+		Name:        "Duplicate Name Update Test App 1",
+		Description: "First app",
+		Certificate: &ApplicationCert{Type: "NONE", Value: ""},
+	}
+	appID1, err := createApplication(app1)
+	ts.Require().NoError(err)
+	defer deleteApplication(appID1)
+
+	// Create second application
+	app2 := Application{
+		Name:        "Duplicate Name Update Test App 2",
+		Description: "Second app",
+		Certificate: &ApplicationCert{Type: "NONE", Value: ""},
+	}
+	appID2, err := createApplication(app2)
+	ts.Require().NoError(err)
+	defer deleteApplication(appID2)
+
+	// Try to update app2 with app1's name
+	updateApp := Application{
+		Name:        "Duplicate Name Update Test App 1", // Same as app1
+		Description: "Updated description",
+		Certificate: &ApplicationCert{Type: "NONE", Value: ""},
+	}
+
+	appJSON, err := json.Marshal(updateApp)
+	ts.Require().NoError(err)
+
+	reqBody := bytes.NewReader(appJSON)
+	req, err := http.NewRequest("PUT", testServerURL+"/applications/"+appID2, reqBody)
+	ts.Require().NoError(err)
+	req.Header.Set("Content-Type", "application/json")
+
+	client := &http.Client{
+		Transport: &http.Transport{
+			TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
+		},
+	}
+
+	resp, err := client.Do(req)
+	ts.Require().NoError(err)
+	defer resp.Body.Close()
+
+	// Should return 409 Conflict or 400 Bad Request
+	ts.Assert().True(resp.StatusCode == http.StatusConflict || resp.StatusCode == http.StatusBadRequest)
+}
+
+// TestApplicationUpdateWithInvalidURL tests updating application with invalid URL
+func (ts *ApplicationAPITestSuite) TestApplicationUpdateWithInvalidURL() {
+	// Create an application first
+	appID, err := createApplication(appToCreate)
+	ts.Require().NoError(err)
+	defer deleteApplication(appID)
+
+	updateApp := Application{
+		Name:        "Update Invalid URL",
+		Description: "Test update with invalid URL",
+		URL:         "://invalid-url", // Invalid URL
+		Certificate: &ApplicationCert{Type: "NONE", Value: ""},
+	}
+
+	appJSON, err := json.Marshal(updateApp)
+	ts.Require().NoError(err)
+
+	reqBody := bytes.NewReader(appJSON)
+	req, err := http.NewRequest("PUT", testServerURL+"/applications/"+appID, reqBody)
+	ts.Require().NoError(err)
+	req.Header.Set("Content-Type", "application/json")
+
+	client := &http.Client{
+		Transport: &http.Transport{
+			TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
+		},
+	}
+
+	resp, err := client.Do(req)
+	ts.Require().NoError(err)
+	defer resp.Body.Close()
+
+	// Should return 400 Bad Request
+	ts.Assert().Equal(http.StatusBadRequest, resp.StatusCode)
+}
+
+// TestApplicationUpdateWithInvalidLogoURL tests updating application with invalid LogoURL
+func (ts *ApplicationAPITestSuite) TestApplicationUpdateWithInvalidLogoURL() {
+	// Create an application first
+	appID, err := createApplication(appToCreate)
+	ts.Require().NoError(err)
+	defer deleteApplication(appID)
+
+	updateApp := Application{
+		Name:        "Update Invalid LogoURL",
+		Description: "Test update with invalid LogoURL",
+		LogoURL:     "://invalid-logo-url", // Invalid URL
+		Certificate: &ApplicationCert{Type: "NONE", Value: ""},
+	}
+
+	appJSON, err := json.Marshal(updateApp)
+	ts.Require().NoError(err)
+
+	reqBody := bytes.NewReader(appJSON)
+	req, err := http.NewRequest("PUT", testServerURL+"/applications/"+appID, reqBody)
+	ts.Require().NoError(err)
+	req.Header.Set("Content-Type", "application/json")
+
+	client := &http.Client{
+		Transport: &http.Transport{
+			TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
+		},
+	}
+
+	resp, err := client.Do(req)
+	ts.Require().NoError(err)
+	defer resp.Body.Close()
+
+	// Should return 400 Bad Request
+	ts.Assert().Equal(http.StatusBadRequest, resp.StatusCode)
+}
+
+// TestApplicationUpdateWithClientIDGeneration tests updating application with auto-generated client ID
+func (ts *ApplicationAPITestSuite) TestApplicationUpdateWithClientIDGeneration() {
+	// Create app without OAuth config
+	app := Application{
+		Name:              "Client ID Generation Test",
+		Description:       "Test client ID generation during update",
+		URL:               "https://clientidgen.example.com",
+		Certificate:       &ApplicationCert{Type: "NONE", Value: ""},
+		InboundAuthConfig: []InboundAuthConfig{}, // No OAuth initially
+	}
+
+	appID, err := createApplication(app)
+	ts.Require().NoError(err)
+	defer deleteApplication(appID)
+
+	// Update to add OAuth config without client ID (should be auto-generated)
+	app.InboundAuthConfig = []InboundAuthConfig{
+		{
+			Type: "oauth2",
+			OAuthAppConfig: &OAuthAppConfig{
+				ClientID:                "", // Empty - should be auto-generated
+				RedirectURIs:            []string{"https://clientidgen.example.com/callback"},
+				GrantTypes:              []string{"authorization_code"},
+				ResponseTypes:           []string{"code"},
+				TokenEndpointAuthMethod: "client_secret_basic",
+				Scopes:                  []string{"openid"},
+			},
+		},
+	}
+
+	appJSON, err := json.Marshal(app)
+	ts.Require().NoError(err)
+
+	reqBody := bytes.NewReader(appJSON)
+	req, err := http.NewRequest("PUT", testServerURL+"/applications/"+appID, reqBody)
+	ts.Require().NoError(err)
+	req.Header.Set("Content-Type", "application/json")
+
+	client := &http.Client{
+		Transport: &http.Transport{
+			TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
+		},
+	}
+
+	resp, err := client.Do(req)
+	ts.Require().NoError(err)
+	defer resp.Body.Close()
+
+	// Should succeed
+	ts.Assert().Equal(http.StatusOK, resp.StatusCode)
+
+	var updatedApp Application
+	err = json.NewDecoder(resp.Body).Decode(&updatedApp)
+	ts.Require().NoError(err)
+
+	// Verify client ID was generated
+	ts.Assert().NotEmpty(updatedApp.InboundAuthConfig[0].OAuthAppConfig.ClientID)
+}
+
+// TestApplicationUpdateWithClientIDChange tests updating application with changed client ID
+func (ts *ApplicationAPITestSuite) TestApplicationUpdateWithClientIDChange() {
+	// Create app with OAuth config
+	app := Application{
+		Name:        "Client ID Change Test",
+		Description: "Test client ID change during update",
+		URL:         "https://clientidchange.example.com",
+		Certificate: &ApplicationCert{Type: "NONE", Value: ""},
+		InboundAuthConfig: []InboundAuthConfig{
+			{
+				Type: "oauth2",
+				OAuthAppConfig: &OAuthAppConfig{
+					ClientID:                "original_client_id",
+					RedirectURIs:            []string{"https://clientidchange.example.com/callback"},
+					GrantTypes:              []string{"authorization_code"},
+					ResponseTypes:           []string{"code"},
+					TokenEndpointAuthMethod: "client_secret_basic",
+					Scopes:                  []string{"openid"},
+				},
+			},
+		},
+	}
+
+	appID, err := createApplication(app)
+	ts.Require().NoError(err)
+	defer deleteApplication(appID)
+
+	// Update with different client ID
+	app.InboundAuthConfig[0].OAuthAppConfig.ClientID = "new_client_id"
+
+	appJSON, err := json.Marshal(app)
+	ts.Require().NoError(err)
+
+	reqBody := bytes.NewReader(appJSON)
+	req, err := http.NewRequest("PUT", testServerURL+"/applications/"+appID, reqBody)
+	ts.Require().NoError(err)
+	req.Header.Set("Content-Type", "application/json")
+
+	client := &http.Client{
+		Transport: &http.Transport{
+			TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
+		},
+	}
+
+	resp, err := client.Do(req)
+	ts.Require().NoError(err)
+	defer resp.Body.Close()
+
+	// Should succeed
+	ts.Assert().Equal(http.StatusOK, resp.StatusCode)
+
+	var updatedApp Application
+	err = json.NewDecoder(resp.Body).Decode(&updatedApp)
+	ts.Require().NoError(err)
+
+	// Verify client ID was changed
+	ts.Assert().Equal("new_client_id", updatedApp.InboundAuthConfig[0].OAuthAppConfig.ClientID)
+}
+
+// TestApplicationUpdateWithDuplicateClientID tests updating application with duplicate client ID
+func (ts *ApplicationAPITestSuite) TestApplicationUpdateWithDuplicateClientID() {
+	// Create first app with OAuth config
+	app1 := Application{
+		Name:        "Duplicate Client ID Test App 1",
+		Description: "First app",
+		Certificate: &ApplicationCert{Type: "NONE", Value: ""},
+		InboundAuthConfig: []InboundAuthConfig{
+			{
+				Type: "oauth2",
+				OAuthAppConfig: &OAuthAppConfig{
+					ClientID:                "shared_client_id",
+					RedirectURIs:            []string{"https://app1.example.com/callback"},
+					GrantTypes:              []string{"authorization_code"},
+					ResponseTypes:           []string{"code"},
+					TokenEndpointAuthMethod: "client_secret_basic",
+				},
+			},
+		},
+	}
+	appID1, err := createApplication(app1)
+	ts.Require().NoError(err)
+	defer deleteApplication(appID1)
+
+	// Create second app with different client ID
+	app2 := Application{
+		Name:        "Duplicate Client ID Test App 2",
+		Description: "Second app",
+		Certificate: &ApplicationCert{Type: "NONE", Value: ""},
+		InboundAuthConfig: []InboundAuthConfig{
+			{
+				Type: "oauth2",
+				OAuthAppConfig: &OAuthAppConfig{
+					ClientID:                "unique_client_id",
+					RedirectURIs:            []string{"https://app2.example.com/callback"},
+					GrantTypes:              []string{"authorization_code"},
+					ResponseTypes:           []string{"code"},
+					TokenEndpointAuthMethod: "client_secret_basic",
+				},
+			},
+		},
+	}
+	appID2, err := createApplication(app2)
+	ts.Require().NoError(err)
+	defer deleteApplication(appID2)
+
+	// Try to update app2 with app1's client ID
+	app2.InboundAuthConfig[0].OAuthAppConfig.ClientID = "shared_client_id"
+
+	appJSON, err := json.Marshal(app2)
+	ts.Require().NoError(err)
+
+	reqBody := bytes.NewReader(appJSON)
+	req, err := http.NewRequest("PUT", testServerURL+"/applications/"+appID2, reqBody)
+	ts.Require().NoError(err)
+	req.Header.Set("Content-Type", "application/json")
+
+	client := &http.Client{
+		Transport: &http.Transport{
+			TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
+		},
+	}
+
+	resp, err := client.Do(req)
+	ts.Require().NoError(err)
+	defer resp.Body.Close()
+
+	// Should return 409 Conflict or 400 Bad Request
+	ts.Assert().True(resp.StatusCode == http.StatusConflict || resp.StatusCode == http.StatusBadRequest)
+}
+
+// TestApplicationCreateWithDefaultAuthFlowGraphID tests creating application without auth flow graph ID (should use default)
+func (ts *ApplicationAPITestSuite) TestApplicationCreateWithDefaultAuthFlowGraphID() {
+	app := Application{
+		Name:        "Default Auth Flow Test",
+		Description: "Test default auth flow graph ID",
+		Certificate: &ApplicationCert{Type: "NONE", Value: ""},
+		// AuthFlowGraphID not set - should use default
+	}
+
+	appID, err := createApplication(app)
+	ts.Require().NoError(err)
+	defer deleteApplication(appID)
+
+	retrievedApp, err := getApplicationByID(appID)
+	ts.Require().NoError(err)
+
+	// Verify default auth flow graph ID was set
+	ts.Assert().NotEmpty(retrievedApp.AuthFlowGraphID)
+}
+
+// TestApplicationCreateWithInferredRegistrationFlowGraphID tests creating application with registration flow inferred from auth flow
+func (ts *ApplicationAPITestSuite) TestApplicationCreateWithInferredRegistrationFlowGraphID() {
+	app := Application{
+		Name:                      "Inferred Registration Flow Test",
+		Description:               "Test registration flow inference",
+		IsRegistrationFlowEnabled: true,
+		AuthFlowGraphID:           "auth_flow_config_basic",
+		// RegistrationFlowGraphID not set - should be inferred from auth flow
+		Certificate: &ApplicationCert{Type: "NONE", Value: ""},
+	}
+
+	appID, err := createApplication(app)
+	ts.Require().NoError(err)
+	defer deleteApplication(appID)
+
+	retrievedApp, err := getApplicationByID(appID)
+	ts.Require().NoError(err)
+
+	// Verify registration flow graph ID was inferred
+	ts.Assert().NotEmpty(retrievedApp.RegistrationFlowGraphID)
+	ts.Assert().Equal("registration_flow_config_basic", retrievedApp.RegistrationFlowGraphID)
+}
+
+// TestApplicationUpdateRemoveCertificate tests updating application to remove certificate
+func (ts *ApplicationAPITestSuite) TestApplicationUpdateRemoveCertificate() {
+	// Create app with certificate
+	app := Application{
+		Name:        "Remove Certificate Test",
+		Description: "Test removing certificate during update",
+		URL:         "https://removecert.example.com",
+		Certificate: &ApplicationCert{
+			Type:  "JWKS_URI",
+			Value: "https://removecert.example.com/.well-known/jwks.json",
+		},
+	}
+
+	appID, err := createApplication(app)
+	ts.Require().NoError(err)
+	defer deleteApplication(appID)
+
+	// Update to remove certificate
+	updateApp := Application{
+		Name:        "Remove Certificate Test",
+		Description: "Updated description",
+		Certificate: &ApplicationCert{Type: "NONE", Value: ""}, // Remove certificate
+	}
+
+	appJSON, err := json.Marshal(updateApp)
+	ts.Require().NoError(err)
+
+	reqBody := bytes.NewReader(appJSON)
+	req, err := http.NewRequest("PUT", testServerURL+"/applications/"+appID, reqBody)
+	ts.Require().NoError(err)
+	req.Header.Set("Content-Type", "application/json")
+
+	client := &http.Client{
+		Transport: &http.Transport{
+			TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
+		},
+	}
+
+	resp, err := client.Do(req)
+	ts.Require().NoError(err)
+	defer resp.Body.Close()
+
+	// Should succeed
+	ts.Assert().Equal(http.StatusOK, resp.StatusCode)
+
+	var updatedApp Application
+	err = json.NewDecoder(resp.Body).Decode(&updatedApp)
+	ts.Require().NoError(err)
+
+	// Verify certificate was removed
+	ts.Assert().Equal("NONE", updatedApp.Certificate.Type)
+	ts.Assert().Equal("", updatedApp.Certificate.Value)
+}
+
+// TestApplicationCreateWithDuplicateClientID tests creating application with duplicate client ID
+func (ts *ApplicationAPITestSuite) TestApplicationCreateWithDuplicateClientID() {
+	// Create first app with OAuth config
+	app1 := Application{
+		Name:        "Duplicate Client ID Create Test App 1",
+		Description: "First app",
+		Certificate: &ApplicationCert{Type: "NONE", Value: ""},
+		InboundAuthConfig: []InboundAuthConfig{
+			{
+				Type: "oauth2",
+				OAuthAppConfig: &OAuthAppConfig{
+					ClientID:                "duplicate_create_client_id",
+					RedirectURIs:            []string{"https://app1.example.com/callback"},
+					GrantTypes:              []string{"authorization_code"},
+					ResponseTypes:           []string{"code"},
+					TokenEndpointAuthMethod: "client_secret_basic",
+				},
+			},
+		},
+	}
+	appID1, err := createApplication(app1)
+	ts.Require().NoError(err)
+	defer deleteApplication(appID1)
+
+	// Try to create second app with same client ID
+	app2 := Application{
+		Name:        "Duplicate Client ID Create Test App 2",
+		Description: "Second app with duplicate client ID",
+		Certificate: &ApplicationCert{Type: "NONE", Value: ""},
+		InboundAuthConfig: []InboundAuthConfig{
+			{
+				Type: "oauth2",
+				OAuthAppConfig: &OAuthAppConfig{
+					ClientID:                "duplicate_create_client_id", // Same as app1
+					RedirectURIs:            []string{"https://app2.example.com/callback"},
+					GrantTypes:              []string{"authorization_code"},
+					ResponseTypes:           []string{"code"},
+					TokenEndpointAuthMethod: "client_secret_basic",
+				},
+			},
+		},
+	}
+
+	_, err = createApplication(app2)
+	ts.Assert().Error(err, "Should fail with duplicate client ID")
+}
+
+// TestApplicationCreateWithInvalidURL tests creating application with invalid URL
+func (ts *ApplicationAPITestSuite) TestApplicationCreateWithInvalidURL() {
+	app := Application{
+		Name:        "Invalid URL Create Test",
+		Description: "Test create with invalid URL",
+		URL:         "://invalid-url", // Invalid URL
+		Certificate: &ApplicationCert{Type: "NONE", Value: ""},
+	}
+
+	appJSON, err := json.Marshal(app)
+	ts.Require().NoError(err)
+
+	reqBody := bytes.NewReader(appJSON)
+	req, err := http.NewRequest("POST", testServerURL+"/applications", reqBody)
+	ts.Require().NoError(err)
+	req.Header.Set("Content-Type", "application/json")
+
+	client := &http.Client{
+		Transport: &http.Transport{
+			TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
+		},
+	}
+
+	resp, err := client.Do(req)
+	ts.Require().NoError(err)
+	defer resp.Body.Close()
+
+	// Should return 400 Bad Request
+	ts.Assert().Equal(http.StatusBadRequest, resp.StatusCode)
+}
+
+// TestApplicationCreateWithInvalidLogoURL tests creating application with invalid LogoURL
+func (ts *ApplicationAPITestSuite) TestApplicationCreateWithInvalidLogoURL() {
+	app := Application{
+		Name:        "Invalid LogoURL Create Test",
+		Description: "Test create with invalid LogoURL",
+		LogoURL:     "://invalid-logo-url", // Invalid URL
+		Certificate: &ApplicationCert{Type: "NONE", Value: ""},
+	}
+
+	appJSON, err := json.Marshal(app)
+	ts.Require().NoError(err)
+
+	reqBody := bytes.NewReader(appJSON)
+	req, err := http.NewRequest("POST", testServerURL+"/applications", reqBody)
+	ts.Require().NoError(err)
+	req.Header.Set("Content-Type", "application/json")
+
+	client := &http.Client{
+		Transport: &http.Transport{
+			TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
+		},
+	}
+
+	resp, err := client.Do(req)
+	ts.Require().NoError(err)
+	defer resp.Body.Close()
+
+	// Should return 400 Bad Request
+	ts.Assert().Equal(http.StatusBadRequest, resp.StatusCode)
+}
+
+// TestApplicationUpdateWithNilApp tests updating application with nil app body
+func (ts *ApplicationAPITestSuite) TestApplicationUpdateWithNilApp() {
+	// Create an application first
+	appID, err := createApplication(appToCreate)
+	ts.Require().NoError(err)
+	defer deleteApplication(appID)
+
+	// Send update request with nil/empty body
+	req, err := http.NewRequest("PUT", testServerURL+"/applications/"+appID, nil)
+	ts.Require().NoError(err)
+	req.Header.Set("Content-Type", "application/json")
+
+	client := &http.Client{
+		Transport: &http.Transport{
+			TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
+		},
+	}
+
+	resp, err := client.Do(req)
+	ts.Require().NoError(err)
+	defer resp.Body.Close()
+
+	// Should return 400 Bad Request (nil app body)
+	ts.Assert().Equal(http.StatusBadRequest, resp.StatusCode)
+}
