@@ -1,0 +1,92 @@
+[
+    {
+        "resourceType": "STEP",
+        "category": "INTERFACE",
+        "type": "VIEW",
+        "version": "0.1.0",
+        "deprecated": false,
+        "display": {
+            "label": "Username + Password Login",
+            "image": "assets/images/icons/password.svg",
+            "showOnResourcePanel": true
+        },
+        "config": {},
+        "data": {
+            "components": [
+                {
+                    "category": "BLOCK",
+                    "type": "FORM",
+                    "config": {},
+                    "id": "{{ID}}",
+                    "components": [
+                        {
+                            "id": "{{ID}}",
+                            "category": "FIELD",
+                            "type": "INPUT",
+                            "variant": "TEXT",
+                            "config": {
+                                "type": "text",
+                                "hint": "",
+                                "label": "Username",
+                                "required": true,
+                                "placeholder": "Enter your username",
+                                "identifier": "http://wso2.org/claims/username"
+                            }
+                        },
+                        {
+                            "id": "{{ID}}",
+                            "category": "FIELD",
+                            "type": "INPUT",
+                            "variant": "PASSWORD",
+                            "config": {
+                                "identifier": "password",
+                                "type": "password",
+                                "hint": "",
+                                "label": "Password",
+                                "required": true,
+                                "placeholder": "Enter your password"
+                            }
+                        },
+                        {
+                            "id": "{{ID}}",
+                            "category": "ACTION",
+                            "type": "BUTTON",
+                            "variant": "PRIMARY",
+                            "config": {
+                                "type": "submit",
+                                "text": "Continue"
+                            },
+                            "action": {
+                                "type": "EXECUTOR",
+                                "executor": {
+                                    "name": "BasicAuthenticationExecutor"
+                                }
+                            }
+                        }
+                    ]
+                }
+            ]
+        }
+    },
+    {
+        "resourceType": "STEP",
+        "category": "WORKFLOW",
+        "type": "EXECUTION",
+        "version": "0.1.0",
+        "deprecated": false,
+        "display": {
+            "label": "Passkey Authentication",
+            "image": "assets/images/icons/fingerprint.svg",
+            "showOnResourcePanel": true
+        },
+        "data": {
+            "action": {
+                "type": "EXECUTOR",
+                "executor": {
+                    "name": "FIDO2Executor"
+                },
+                "next": ""
+            }
+        }
+    }
+]

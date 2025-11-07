@@ -67,6 +67,20 @@ const translations = {
     // Dictionary
     'dictionary.unknown': 'Unknown',
 
+    // Short action words (used as button labels, etc.)
+    show: 'Show',
+    publish: 'Publish',
+    saveDraft: 'Save Draft',
+    common: 'Common',
+    new: 'New',
+    edit: 'Edit',
+    delete: 'Delete',
+    close: 'Close',
+    back: 'Back',
+    create: 'Create',
+    update: 'Update',
+    save: 'Save',
+
     // Status messages
     status: {
       loading: 'Loading...',
@@ -635,6 +649,115 @@ const translations = {
     'view.fields.updatedAt': 'Updated At',
     'view.values.yes': 'Yes',
     'view.values.no': 'No',
+  },
+
+  // ============================================================================
+  // Flows namespace - Flow builder feature translations
+  // ============================================================================
+  flows: {
+    // Flow labels and navigation
+    label: 'Flows',
+    'core.breadcrumb': '{{flowType}}',
+    'core.autoSave.savingInProgress': 'Saving...',
+    'core.labels.enableFlow': 'Enable Flow',
+    'core.labels.disableFlow': 'Disable Flow',
+    'core.tooltips.enableFlow': 'Enable this {{flowType}}',
+    'core.tooltips.disableFlow': 'Disable this {{flowType}}',
+
+    // Notification panel
+    'core.notificationPanel.header': 'Notifications',
+    'core.notificationPanel.trigger.label': 'View notifications',
+    'core.notificationPanel.tabs.errors': 'Errors',
+    'core.notificationPanel.tabs.warnings': 'Warnings',
+    'core.notificationPanel.tabs.info': 'Info',
+    'core.notificationPanel.emptyMessages.errors': 'No errors found',
+    'core.notificationPanel.emptyMessages.warnings': 'No warnings found',
+    'core.notificationPanel.emptyMessages.info': 'No information messages',
+
+    // Execution steps - names
+    'core.executions.names.google': 'Google',
+    'core.executions.names.apple': 'Apple',
+    'core.executions.names.github': 'GitHub',
+    'core.executions.names.facebook': 'Facebook',
+    'core.executions.names.microsoft': 'Microsoft',
+    'core.executions.names.passkeyEnrollment': 'Passkey Enrollment',
+    'core.executions.names.confirmationCode': 'Confirmation Code',
+    'core.executions.names.magicLink': 'Magic Link',
+    'core.executions.names.sendEmailOTP': 'Send Email OTP',
+    'core.executions.names.verifyEmailOTP': 'Verify Email OTP',
+    'core.executions.names.sendSMS': 'Send SMS',
+    'core.executions.names.verifySMSOTP': 'Verify SMS OTP',
+    'core.executions.names.default': 'Execution',
+
+    // Execution steps - tooltips and messages
+    'core.executions.tooltip.configurationHint': 'Click to configure this step',
+    'core.executions.landing.message': 'This {{executor}} step will redirect users to a landing page.',
+
+    // Steps - end
+    'core.steps.end.flowCompletionProperties': 'Flow Completion Properties',
+
+    // Validation messages - input fields
+    'core.validation.fields.input.general':
+      'Required fields are not properly configured for the input field with ID <code>{{id}}</code>.',
+    'core.validation.fields.input.idpName': 'Identity provider name is required',
+    'core.validation.fields.input.label': 'Label is required',
+    'core.validation.fields.input.identifier': 'Identifier is required',
+
+    // Validation messages - button
+    'core.validation.fields.button.text': 'Button text is required',
+    'core.validation.fields.button.action': 'Button action is required',
+
+    // Validation messages - checkbox
+    'core.validation.fields.checkbox.label': 'Label is required',
+    'core.validation.fields.checkbox.identifier': 'Identifier is required',
+
+    // Validation messages - divider
+    'core.validation.fields.divider.variant': 'Divider variant is required',
+
+    // Validation messages - typography
+    'core.validation.fields.typography.text': 'Text content is required',
+    'core.validation.fields.typography.variant': 'Typography variant is required',
+
+    // Validation messages - image
+    'core.validation.fields.image.src': 'Image source is required',
+    'core.validation.fields.image.variant': 'Image variant is required',
+
+    // Validation messages - rich text
+    'core.validation.fields.richText.text': 'Rich text content is required',
+
+    // Validation messages - OTP input
+    'core.validation.fields.otpInput.label': 'OTP input label is required',
+
+    // Validation messages - phone number input
+    'core.validation.fields.phoneNumberInput.label': 'Phone number label is required',
+    'core.validation.fields.phoneNumberInput.identifier': 'Phone number identifier is required',
+
+    // Elements - rich text
+    'core.elements.richText.placeholder': 'Enter text here...',
+    'core.elements.richText.linkEditor.urlTypeLabel': 'URL Type',
+    'core.elements.richText.linkEditor.placeholder': 'Enter URL',
+
+    // Elements - text property field
+    'core.elements.textPropertyField.placeholder': 'Enter {{propertyName}}',
+    'core.elements.textPropertyField.tooltip.configureTranslation': 'Configure translation',
+
+    // Elements - i18n card
+    'core.elements.textPropertyField.i18nCard.title': 'Translation for {{field}}',
+    'core.elements.textPropertyField.i18nCard.createTitle': 'Create Translation',
+    'core.elements.textPropertyField.i18nCard.updateTitle': 'Update Translation',
+    'core.elements.textPropertyField.i18nCard.i18nKey': 'Translation Key',
+    'core.elements.textPropertyField.i18nCard.i18nKeyInputPlaceholder': 'Enter a unique translation key',
+    'core.elements.textPropertyField.i18nCard.i18nKeyInputHint': 'Use format: screen.{{key}}',
+    'core.elements.textPropertyField.i18nCard.selectI18nKey': 'Select an existing key',
+    'core.elements.textPropertyField.i18nCard.language': 'Language',
+    'core.elements.textPropertyField.i18nCard.languageText': 'Translation Text',
+    'core.elements.textPropertyField.i18nCard.languageTextPlaceholder': 'Enter translation text',
+    'core.elements.textPropertyField.i18nCard.commonKeyWarning':
+      'This is a common key shared across screens. Changes will affect all usages.',
+    'core.elements.textPropertyField.i18nCard.chip.commonScreen.label': 'Common',
+    'core.elements.textPropertyField.i18nCard.tooltip.commonKeyTooltip': 'This key is shared across multiple screens',
+    'core.elements.textPropertyField.i18nCard.tooltip.editExistingTranslation': 'Edit existing translation',
+    'core.elements.textPropertyField.i18nCard.tooltip.addNewTranslation': 'Add new translation',
   },
 } as const;
 

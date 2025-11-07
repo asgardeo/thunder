@@ -23,10 +23,14 @@ import SideMenu from '../components/Sidebar/SideMenu';
 import Header from '../components/Header/Header';
 import NavigationProvider from './contexts/NavigationProvider';
 
-export default function DashboardLayout(): ReactNode {
+interface DashboardLayoutProps {
+  dense?: boolean;
+}
+
+export default function DashboardLayout({dense = false}: DashboardLayoutProps): ReactNode {
   return (
     <NavigationProvider>
-      <Layout sx={{ minHeight: "100vh" }}>
+      <Layout sx={{minHeight: '100vh'}}>
         <Layout.Sidebar>
           <SideMenu />
         </Layout.Sidebar>
@@ -34,7 +38,7 @@ export default function DashboardLayout(): ReactNode {
           <Layout.Header>
             <Header />
           </Layout.Header>
-          <Box sx={{p: 3}}>
+          <Box sx={{p: dense ? 0 : 3}}>
             <Outlet />
           </Box>
         </Layout.Content>
