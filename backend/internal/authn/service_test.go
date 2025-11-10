@@ -83,6 +83,7 @@ func (suite *AuthenticationServiceTestSuite) SetupSuite() {
 		JWT: config.JWTConfig{
 			Issuer:         "test-issuer",
 			ValidityPeriod: 3600,
+			Audience:       "application",
 		},
 	}
 	err := config.InitializeThunderRuntime("", testConfig)

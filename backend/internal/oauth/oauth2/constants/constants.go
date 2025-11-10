@@ -179,10 +179,14 @@ type TokenTypeIdentifier string
 
 // RFC 8693 Token Type Identifiers
 const (
-	TokenTypeIdentifierAccessToken  TokenTypeIdentifier = "urn:ietf:params:oauth:token-type:access_token"  //nolint:gosec
-	TokenTypeIdentifierRefreshToken TokenTypeIdentifier = "urn:ietf:params:oauth:token-type:refresh_token" //nolint:gosec
-	TokenTypeIdentifierIDToken      TokenTypeIdentifier = "urn:ietf:params:oauth:token-type:id_token"      //nolint:gosec
-	TokenTypeIdentifierJWT          TokenTypeIdentifier = "urn:ietf:params:oauth:token-type:jwt"           //nolint:gosec
+	//nolint:gosec // Token type identifier, not a credential
+	TokenTypeIdentifierAccessToken TokenTypeIdentifier = "urn:ietf:params:oauth:token-type:access_token"
+	//nolint:gosec // Token type identifier, not a credential
+	TokenTypeIdentifierRefreshToken TokenTypeIdentifier = "urn:ietf:params:oauth:token-type:refresh_token"
+	//nolint:gosec // Token type identifier, not a credential
+	TokenTypeIdentifierIDToken TokenTypeIdentifier = "urn:ietf:params:oauth:token-type:id_token"
+	//nolint:gosec // Token type identifier, not a credential
+	TokenTypeIdentifierJWT TokenTypeIdentifier = "urn:ietf:params:oauth:token-type:jwt"
 )
 
 // supportedTokenTypeIdentifiers is the single source of truth for all supported token type identifiers.

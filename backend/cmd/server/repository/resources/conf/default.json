@@ -56,7 +56,8 @@
   },
   "jwt": {
     "issuer": "thunder",
-    "validity_period": 3600
+    "validity_period": 3600,
+    "audience": "application"
   },
   "oauth": {
     "refresh_token": {

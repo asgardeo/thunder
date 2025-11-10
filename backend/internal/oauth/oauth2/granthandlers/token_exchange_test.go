@@ -67,6 +67,7 @@ func (suite *TokenExchangeGrantHandlerTestSuite) SetupTest() {
 		JWT: config.JWTConfig{
 			Issuer:         "https://test.thunder.io",
 			ValidityPeriod: 3600,
+			Audience:       "application", // Default audience for tests
 		},
 	}
 	err := config.InitializeThunderRuntime("", testConfig)
@@ -94,6 +95,21 @@ func (suite *TokenExchangeGrantHandlerTestSuite) SetupTest() {
 			},
 		},
 	}
+}
+
+// getDefaultAudience is a helper function to get the configured default audience from runtime.
+func (suite *TokenExchangeGrantHandlerTestSuite) getDefaultAudience() string {
+	runtime := config.GetThunderRuntime()
+	if runtime == nil {
+		suite.T().Skip("ThunderRuntime not initialized")
+		return ""
+	}
+	defaultAudience := runtime.Config.JWT.Audience
+	if defaultAudience == "" {
+		suite.T().Skip("Default audience not configured in runtime")
+		return ""
+	}
+	return defaultAudience
 }
 
 // Helper function to create a test JWT token
@@ -182,10 +198,6 @@ func (suite *TokenExchangeGrantHandlerTestSuite) TestNewTokenExchangeGrantHandle
 	assert.NotNil(suite.T(), handler)
 	assert.Implements(suite.T(), (*GrantHandlerInterface)(nil), handler)
 }
-
-// ============================================================================
-// ValidateGrant Tests
-// ============================================================================
 
 func (suite *TokenExchangeGrantHandlerTestSuite) TestValidateGrant_Success() {
 	tokenRequest := &model.TokenRequest{
@@ -1623,4 +1635,225 @@ func (suite *TokenExchangeGrantHandlerTestSuite) TestDetermineAudience_Priority(
 	// Client ID is fallback when neither audience, resource, nor token.aud provided
 	aud = tokenservice.DetermineAudience("", "", "", testClientID)
 	assert.Equal(suite.T(), testClientID, aud)
+}
+
+func (suite *TokenExchangeGrantHandlerTestSuite) TestHandleGrant_ThunderAuthAssertion_Success() {
+	defaultAudience := suite.getDefaultAudience()
+	now := time.Now().Unix()
+	claims := map[string]interface{}{
+		"sub":                    testUserID,
+		"iss":                    testCustomIssuer,
+		"aud":                    defaultAudience, // Match default audience
+		"exp":                    float64(now + 3600),
+		"nbf":                    float64(now - 60),
+		"assurance":              map[string]interface{}{"aal": "AAL1", "ial": "IAL1"}, // Make it an auth assertion
+		"authorized_permissions": "read:documents write:documents",
+		"userType":               "person",
+	}
+	subjectToken := suite.createTestJWT(claims)
+
+	tokenRequest := &model.TokenRequest{
+		GrantType:        string(constants.GrantTypeTokenExchange),
+		ClientID:         testClientID,
+		SubjectToken:     subjectToken,
+		SubjectTokenType: string(constants.TokenTypeIdentifierJWT),
+	}
+
+	suite.mockTokenValidator.On("ValidateSubjectToken", subjectToken, suite.oauthApp).
+		Return(&tokenservice.SubjectTokenClaims{
+			Sub:            testUserID,
+			Iss:            testCustomIssuer,
+			Aud:            defaultAudience,
+			Scopes:         []string{"read:documents", "write:documents"}, // Mapped from authorized_permissions
+			UserAttributes: map[string]interface{}{"userType": "person"},
+			NestedAct:      nil,
+		}, nil)
+
+	suite.mockTokenBuilder.On("BuildAccessToken", mock.MatchedBy(func(ctx *tokenservice.AccessTokenBuildContext) bool {
+		return ctx.Subject == testUserID &&
+			len(ctx.Scopes) == 2 &&
+			ctx.Scopes[0] == "read:documents" &&
+			ctx.Scopes[1] == "write:documents"
+	})).Return(&model.TokenDTO{
+		Token:     testTokenExchangeJWT,
+		TokenType: constants.TokenTypeBearer,
+		IssuedAt:  now,
+		ExpiresIn: 7200,
+		Scopes:    []string{"read:documents", "write:documents"},
+		ClientID:  testClientID,
+	}, nil)
+
+	result, errResp := suite.handler.HandleGrant(tokenRequest, suite.oauthApp)
+
+	assert.Nil(suite.T(), errResp)
+	assert.NotNil(suite.T(), result)
+	assert.Equal(suite.T(), testTokenExchangeJWT, result.AccessToken.Token)
+	assert.Equal(suite.T(), []string{"read:documents", "write:documents"}, result.AccessToken.Scopes)
+	suite.mockTokenValidator.AssertExpectations(suite.T())
+	suite.mockTokenBuilder.AssertExpectations(suite.T())
+}
+
+func (suite *TokenExchangeGrantHandlerTestSuite) TestHandleGrant_ThunderAuthAssertion_AudienceMismatch() {
+	now := time.Now().Unix()
+	claims := map[string]interface{}{
+		"sub":       testUserID,
+		"iss":       testCustomIssuer,
+		"aud":       "different-audience", // Doesn't match default audience or client app_id
+		"exp":       float64(now + 3600),
+		"nbf":       float64(now - 60),
+		"assurance": map[string]interface{}{"aal": "AAL1", "ial": "IAL1"}, // Make it an auth assertion
+	}
+	subjectToken := suite.createTestJWT(claims)
+
+	tokenRequest := &model.TokenRequest{
+		GrantType:        string(constants.GrantTypeTokenExchange),
+		ClientID:         testClientID,
+		SubjectToken:     subjectToken,
+		SubjectTokenType: string(constants.TokenTypeIdentifierJWT),
+	}
+
+	suite.mockTokenValidator.On("ValidateSubjectToken", subjectToken, suite.oauthApp).
+		Return(nil, fmt.Errorf("auth assertion audience mismatch"))
+
+	result, errResp := suite.handler.HandleGrant(tokenRequest, suite.oauthApp)
+
+	assert.Nil(suite.T(), result)
+	assert.NotNil(suite.T(), errResp)
+	assert.Equal(suite.T(), constants.ErrorInvalidGrant, errResp.Error)
+	assert.Contains(suite.T(), errResp.ErrorDescription, "auth assertion audience mismatch")
+	suite.mockTokenValidator.AssertExpectations(suite.T())
+}
+
+func (suite *TokenExchangeGrantHandlerTestSuite) TestHandleGrant_ThunderAuthAssertion_MissingAudience() {
+	now := time.Now().Unix()
+	claims := map[string]interface{}{
+		"sub": testUserID,
+		"iss": testCustomIssuer,
+		// Missing aud claim
+		"exp":       float64(now + 3600),
+		"nbf":       float64(now - 60),
+		"assurance": map[string]interface{}{"aal": "AAL1", "ial": "IAL1"}, // Make it an auth assertion
+	}
+	subjectToken := suite.createTestJWT(claims)
+
+	tokenRequest := &model.TokenRequest{
+		GrantType:        string(constants.GrantTypeTokenExchange),
+		ClientID:         testClientID,
+		SubjectToken:     subjectToken,
+		SubjectTokenType: string(constants.TokenTypeIdentifierJWT),
+	}
+
+	suite.mockTokenValidator.On("ValidateSubjectToken", subjectToken, suite.oauthApp).
+		Return(nil, fmt.Errorf("thunder auth assertion is missing 'aud' claim"))
+
+	result, errResp := suite.handler.HandleGrant(tokenRequest, suite.oauthApp)
+
+	assert.Nil(suite.T(), result)
+	assert.NotNil(suite.T(), errResp)
+	assert.Equal(suite.T(), constants.ErrorInvalidGrant, errResp.Error)
+	assert.Contains(suite.T(), errResp.ErrorDescription, "missing 'aud' claim")
+	suite.mockTokenValidator.AssertExpectations(suite.T())
+}
+
+func (suite *TokenExchangeGrantHandlerTestSuite) TestHandleGrant_ThunderAuthAssertion_ClientIDMatch() {
+	defaultAudience := suite.getDefaultAudience()
+	now := time.Now().Unix()
+	claims := map[string]interface{}{
+		"sub":                    testUserID,
+		"iss":                    testCustomIssuer,
+		"aud":                    defaultAudience, // Match default audience
+		"exp":                    float64(now + 3600),
+		"nbf":                    float64(now - 60),
+		"assurance":              map[string]interface{}{"aal": "AAL1", "ial": "IAL1"}, // Make it an auth assertion
+		"authorized_permissions": "read write",
+	}
+	subjectToken := suite.createTestJWT(claims)
+
+	tokenRequest := &model.TokenRequest{
+		GrantType:        string(constants.GrantTypeTokenExchange),
+		ClientID:         testClientID,
+		SubjectToken:     subjectToken,
+		SubjectTokenType: string(constants.TokenTypeIdentifierJWT),
+	}
+
+	suite.mockTokenValidator.On("ValidateSubjectToken", subjectToken, suite.oauthApp).
+		Return(&tokenservice.SubjectTokenClaims{
+			Sub:            testUserID,
+			Iss:            testCustomIssuer,
+			Aud:            defaultAudience,
+			Scopes:         []string{"read", "write"},
+			UserAttributes: map[string]interface{}{},
+			NestedAct:      nil,
+		}, nil)
+
+	suite.mockTokenBuilder.On("BuildAccessToken", mock.Anything).Return(&model.TokenDTO{
+		Token:     testTokenExchangeJWT,
+		TokenType: constants.TokenTypeBearer,
+		IssuedAt:  now,
+		ExpiresIn: 7200,
+		Scopes:    []string{"read", "write"},
+		ClientID:  testClientID,
+	}, nil)
+
+	result, errResp := suite.handler.HandleGrant(tokenRequest, suite.oauthApp)
+
+	assert.Nil(suite.T(), errResp)
+	assert.NotNil(suite.T(), result)
+	suite.mockTokenValidator.AssertExpectations(suite.T())
+	suite.mockTokenBuilder.AssertExpectations(suite.T())
+}
+
+func (suite *TokenExchangeGrantHandlerTestSuite) TestHandleGrant_ThunderAuthAssertion_WithClientAppID() {
+	now := time.Now().Unix()
+	claims := map[string]interface{}{
+		"sub":                    testUserID,
+		"iss":                    testCustomIssuer,
+		"aud":                    suite.oauthApp.AppID, // Match client app_id
+		"exp":                    float64(now + 3600),
+		"nbf":                    float64(now - 60),
+		"assurance":              map[string]interface{}{"aal": "AAL1", "ial": "IAL1"}, // Make it an auth assertion
+		"authorized_permissions": "read:documents write:documents",
+		"userType":               "person",
+	}
+	subjectToken := suite.createTestJWT(claims)
+
+	tokenRequest := &model.TokenRequest{
+		GrantType:        string(constants.GrantTypeTokenExchange),
+		ClientID:         testClientID,
+		SubjectToken:     subjectToken,
+		SubjectTokenType: string(constants.TokenTypeIdentifierJWT),
+	}
+
+	suite.mockTokenValidator.On("ValidateSubjectToken", subjectToken, suite.oauthApp).
+		Return(&tokenservice.SubjectTokenClaims{
+			Sub:            testUserID,
+			Iss:            testCustomIssuer,
+			Aud:            suite.oauthApp.AppID,
+			Scopes:         []string{"read:documents", "write:documents"},
+			UserAttributes: map[string]interface{}{"userType": "person"},
+			NestedAct:      nil,
+		}, nil)
+
+	suite.mockTokenBuilder.On("BuildAccessToken", mock.MatchedBy(func(ctx *tokenservice.AccessTokenBuildContext) bool {
+		return ctx.Subject == testUserID &&
+			len(ctx.Scopes) == 2 &&
+			ctx.Scopes[0] == "read:documents" &&
+			ctx.Scopes[1] == "write:documents"
+	})).Return(&model.TokenDTO{
+		Token:     testTokenExchangeJWT,
+		TokenType: constants.TokenTypeBearer,
+		IssuedAt:  now,
+		ExpiresIn: 7200,
+		Scopes:    []string{"read:documents", "write:documents"},
+		ClientID:  testClientID,
+	}, nil)
+
+	result, errResp := suite.handler.HandleGrant(tokenRequest, suite.oauthApp)
+
+	assert.Nil(suite.T(), errResp)
+	assert.NotNil(suite.T(), result)
+	assert.Equal(suite.T(), testTokenExchangeJWT, result.AccessToken.Token)
+	assert.Equal(suite.T(), []string{"read:documents", "write:documents"}, result.AccessToken.Scopes)
+	suite.mockTokenValidator.AssertExpectations(suite.T())
+	suite.mockTokenBuilder.AssertExpectations(suite.T())
 }
