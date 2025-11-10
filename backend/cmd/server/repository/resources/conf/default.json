@@ -72,5 +72,15 @@
   },
   "crypto": {
     "key": ""
+  },
+  "observability": {
+    "enabled": false,
+    "output": {
+      "console": {
+        "enabled": false,
+        "format": "json",
+        "categories": ["observability.all"]
+      }
+    }
   }
 }

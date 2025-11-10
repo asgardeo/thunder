@@ -24,20 +24,23 @@ import (
 	"github.com/asgardeo/thunder/internal/application"
 	"github.com/asgardeo/thunder/internal/flow/executor"
 	"github.com/asgardeo/thunder/internal/flow/flowmgt"
+	"github.com/asgardeo/thunder/internal/observability"
 	dbprovider "github.com/asgardeo/thunder/internal/system/database/provider"
 	"github.com/asgardeo/thunder/internal/system/middleware"
 )
 
 // Initialize creates and configures the flow execution service components.
+// The observabilitySvc parameter is optional (can be nil) - if nil, observability events won't be published.
 func Initialize(
 	mux *http.ServeMux,
 	flowMgtService flowmgt.FlowMgtServiceInterface,
 	applicationService application.ApplicationServiceInterface,
 	executorRegistry executor.ExecutorRegistryInterface,
+	observabilitySvc observability.ObservabilityServiceInterface,
 ) FlowExecServiceInterface {
 	dbProvider := dbprovider.GetDBProvider()
 	flowStore := newFlowStore(dbProvider)
-	flowEngine := newFlowEngine(executorRegistry)
+	flowEngine := newFlowEngine(executorRegistry, observabilitySvc)
 	flowExecService := newFlowExecService(flowMgtService, flowStore, flowEngine, applicationService)
 
 	handler := newFlowExecutionHandler(flowExecService)

@@ -17,23 +17,15 @@
  */
 
 // Package observability provides observability capabilities for Thunder including
-// event logging, metrics collection, distributed tracing, and health monitoring.
+// event logging and distributed tracing.
 package observability
 
 import (
-	"errors"
-	"path/filepath"
-	"sync"
+	"fmt"
 
-	"github.com/asgardeo/thunder/internal/observability/adapter"
-	"github.com/asgardeo/thunder/internal/observability/adapter/console"
-	"github.com/asgardeo/thunder/internal/observability/adapter/file"
 	"github.com/asgardeo/thunder/internal/observability/event"
-	"github.com/asgardeo/thunder/internal/observability/formatter"
-	jsonformatter "github.com/asgardeo/thunder/internal/observability/formatter/json"
 	"github.com/asgardeo/thunder/internal/observability/publisher"
 	"github.com/asgardeo/thunder/internal/observability/subscriber"
-	"github.com/asgardeo/thunder/internal/observability/subscriber/defaultsubscriber"
 	"github.com/asgardeo/thunder/internal/system/config"
 	"github.com/asgardeo/thunder/internal/system/log"
 )
@@ -45,79 +37,36 @@ const loggerComponentName = "ObservabilityService"
 // It manages the lifecycle of the publisher, which in turn manages subscribers.
 //
 // Architecture:
-//   - Service (High-level): Manages lifecycle, configuration, initialization
+//   - Service (High-level): Manages lifecycle, configuration, subscriber registration
 //   - CategoryPublisher (Low-level): Implements event publishing logic
-//   - Subscribers (Low-level): Consume events
+//   - Subscribers (Low-level): Consume events, self-register, and self-configure
 //
-// The service layer owns the singleton pattern and initialization logic,
-// while the publisher layer provides the implementation.
+// The service implements ObservabilityServiceInterface and is created via Initialize().
+// Subscribers register themselves via the registry pattern during package initialization.
 type Service struct {
-	publisher         publisher.CategoryPublisher
-	logger            *log.Logger
-	config            *Config
-	enabled           bool
-	defaultSubscriber subscriber.Subscriber // Reference to default subscriber for lifecycle management
+	publisher publisher.CategoryPublisherInterface
+	logger    *log.Logger
+	config    config.ObservabilityConfig
 }
 
-var (
-	serviceInstance *Service
-	serviceOnce     sync.Once
-)
-
-// GetService returns the singleton instance of the observability service.
-// Uses default configuration. For custom configuration, use InitializeWithConfig first.
-func GetService() *Service {
-	serviceOnce.Do(func() {
-		serviceInstance = newService(nil)
-	})
-	return serviceInstance
-}
-
-// InitializeWithConfig initializes the observability service with custom configuration.
-// Must be called before GetService to take effect.
-// Returns error only if FailureMode is "strict", otherwise logs error and disables observability.
-func InitializeWithConfig(cfg *Config) (*Service, error) {
-	var svc *Service
-
-	serviceOnce.Do(func() {
-		svc = newServiceWithConfig(cfg)
-		serviceInstance = svc
-	})
-
-	if serviceInstance == nil {
-		return nil, errors.New("failed to initialize observability service")
-	}
-
-	return serviceInstance, nil
-}
-
-// NewService creates and initializes a new observability service with the given configuration.
-func newService(cfg *Config) *Service {
-	return newServiceWithConfig(cfg)
-}
+// Ensure Service implements ObservabilityServiceInterface
+var _ ObservabilityServiceInterface = (*Service)(nil)
 
 // newServiceWithConfig creates and initializes a new observability service.
-func newServiceWithConfig(cfg *Config) *Service {
+func newServiceWithConfig() *Service {
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, loggerComponentName))
 
-	// Use default config if none provided
-	if cfg == nil {
-		cfg = DefaultConfig()
-	}
-
 	// Check if observability is disabled
-	if !cfg.Enabled {
-		logger.Debug("Observability service is disabled by configuration")
+
+	logger.Info("Initializing observability service")
+	config := config.GetThunderRuntime().Config.Observability
+	if !config.Enabled {
+		logger.Info("Observability is disabled in configuration")
 		return &Service{
-			publisher: nil,
-			logger:    logger,
-			config:    cfg,
-			enabled:   false,
+			logger: logger,
+			config: config,
 		}
 	}
-
-	logger.Info("Initializing observability service",
-		log.String("outputType", cfg.Output.Type))
 
 	// Create event bus (no queue needed)
 	pub := publisher.NewCategoryPublisher()
@@ -125,101 +74,101 @@ func newServiceWithConfig(cfg *Config) *Service {
 	svc := &Service{
 		publisher: pub,
 		logger:    logger,
-		config:    cfg,
-		enabled:   true,
+		config:    config,
 	}
 
-	// Initialize default subscribers
-	svc.initializeSubscribers()
+	// Initialize and register all subscribers using the registry pattern
+	subscribers, err := subscriber.Initialize(config)
+	if err != nil {
+		// This only happens in strict mode
+		logger.Error("Failed to initialize subscribers in strict mode", log.Error(err))
+		// In strict mode, we could return an error service, but for now we continue
+		// with no subscribers (observability will be disabled)
+		return svc
+	}
 
-	logger.Debug("Observability service initialized successfully")
+	// Subscribe all initialized subscribers to the publisher
+	for _, sub := range subscribers {
+		pub.Subscribe(sub)
+		logger.Debug("Subscriber subscribed to publisher",
+			log.String("subscriberID", sub.GetID()))
+	}
+
+	logger.Info("Observability service initialized successfully",
+		log.Int("activeSubscribers", len(subscribers)))
 	return svc
 }
 
-// initializeSubscribers sets up the default subscribers for analytics events.
-func (s *Service) initializeSubscribers() {
-	// Create formatter based on config
-	var fmtr formatter.Formatter
-	switch s.config.Output.Format {
-	case FormatJSON:
-		fmtr = jsonformatter.NewJSONFormatter()
-	default:
-		fmtr = jsonformatter.NewJSONFormatter()
-		s.logger.Warn("Unknown output format, using JSON",
-			log.String("format", s.config.Output.Format))
+// RegisterSubscriber allows subscribers to self-register with the service.
+// This is called by subscribers in their init() functions.
+// The subscriber will only be activated if IsEnabled returns true and Initialize succeeds.
+func (s *Service) RegisterSubscriber(sub subscriber.SubscriberInterface) {
+	// Skip registration if service is not enabled or has no publisher
+	if !s.config.Enabled || s.publisher == nil {
+		s.logger.Debug("Subscriber registration skipped - service not enabled",
+			log.String("subscriberType", fmt.Sprintf("%T", sub)))
+		return
 	}
 
-	// Create adapter based on config
-	var adptr adapter.OutputAdapter
-	var err error
+	// Check if subscriber is enabled in config
+	if !sub.IsEnabled() {
+		s.logger.Debug("Subscriber registration skipped - disabled by config",
+			log.String("subscriberType", fmt.Sprintf("%T", sub)))
+		return
+	}
 
-	switch s.config.Output.Type {
-	case OutputTypeFile:
-		// Use file path from config or default
-		analyticsFile := s.config.Output.File.Path
-		if analyticsFile == "" {
-			analyticsDir := filepath.Join(config.GetThunderRuntime().ThunderHome, "logs", "analytics")
-			analyticsFile = filepath.Join(analyticsDir, "analytics.log")
-		}
-
-		adptr, err = file.NewFileAdapter(analyticsFile)
-		if err != nil {
-			s.logger.Warn("Failed to create file adapter, falling back to console",
-				log.String("filePath", analyticsFile),
+	// Initialize the subscriber
+	if err := sub.Initialize(); err != nil {
+		if s.config.FailureMode == "strict" {
+			s.logger.Error("Failed to initialize subscriber in strict mode",
+				log.String("subscriberType", fmt.Sprintf("%T", sub)),
 				log.Error(err))
-			// Fallback to console
-			adptr = console.NewConsoleAdapter()
+			// In strict mode, we could panic or store error for later retrieval
 		} else {
-			s.logger.Debug("Using file adapter",
-				log.String("filePath", analyticsFile))
+			s.logger.Warn("Failed to initialize subscriber, skipping",
+				log.String("subscriberType", fmt.Sprintf("%T", sub)),
+				log.Error(err))
 		}
-
-	case OutputTypeConsole:
-		adptr = console.NewConsoleAdapter()
-		s.logger.Debug("Using console adapter")
-
-	default:
-		s.logger.Warn("Unknown output type, using console",
-			log.String("outputType", s.config.Output.Type))
-		adptr = console.NewConsoleAdapter()
+		return
 	}
 
-	// Create and subscribe the default subscriber
-	// Store reference for lifecycle management (unsubscribe, reconfigure, etc.)
-	s.defaultSubscriber = defaultsubscriber.NewDefaultSubscriber(fmtr, adptr)
-	s.publisher.Subscribe(s.defaultSubscriber)
+	// Subscribe to publisher (publisher now owns the subscriber list)
+	s.publisher.Subscribe(sub)
 
-	s.logger.Debug("Default subscriber initialized successfully")
+	s.logger.Info("Subscriber registered and activated successfully",
+		log.String("subscriberType", fmt.Sprintf("%T", sub)),
+		log.String("subscriberID", sub.GetID()))
 }
 
 // PublishEvent publishes an event to the observability system.
 // This is a no-op if observability is disabled.
+// The publisher will validate the event, so no need to check here.
 func (s *Service) PublishEvent(evt *event.Event) {
 	// Quick exit if observability is disabled
-	if !s.enabled || s.publisher == nil {
+	if !s.config.Enabled || s.publisher == nil {
 		return
 	}
 
-	if evt == nil {
-		s.logger.Warn("Attempted to publish nil event")
-		return
-	}
-
+	// Publisher handles nil check and validation
 	s.publisher.Publish(evt)
-	s.logger.Debug("Event published",
-		log.String("eventType", evt.Type),
-		log.String("eventID", evt.EventID),
-		log.String("traceID", evt.TraceID))
+
+	// Only log if event is not nil (avoid panic on evt.Type access)
+	if evt != nil {
+		s.logger.Debug("Event published",
+			log.String("eventType", evt.Type),
+			log.String("eventID", evt.EventID),
+			log.String("traceID", evt.TraceID))
+	}
 }
 
 // IsEnabled returns true if observability is enabled and operational.
 func (s *Service) IsEnabled() bool {
-	return s.enabled && s.publisher != nil
+	return s.config.Enabled && s.publisher != nil
 }
 
 // GetConfig returns the current configuration.
-func (s *Service) GetConfig() *Config {
-	return s.config
+func (s *Service) GetConfig() *config.ObservabilityConfig {
+	return &s.config
 }
 
 // GetPublisher returns the underlying publisher for advanced use cases.
@@ -228,31 +177,32 @@ func (s *Service) GetConfig() *Config {
 // - Subscribe/Unsubscribe subscribers programmatically
 // - Query active categories
 // Returns nil if observability is disabled.
-func (s *Service) GetPublisher() publisher.CategoryPublisher {
+func (s *Service) GetPublisher() publisher.CategoryPublisherInterface {
 	return s.publisher
 }
 
-// GetDefaultSubscriber returns the default subscriber instance.
-// This is useful for testing, querying subscriber state, or replacing the default subscriber.
-// Returns nil if no default subscriber is configured or observability is disabled.
-func (s *Service) GetDefaultSubscriber() subscriber.Subscriber {
-	return s.defaultSubscriber
+// GetActiveSubscribers returns the list of active subscribers.
+// This is useful for testing or querying subscriber state.
+// Returns empty slice if no subscribers are active or observability is disabled.
+func (s *Service) GetActiveSubscribers() []subscriber.SubscriberInterface {
+	// Delegate to publisher (single source of truth)
+	if s.publisher == nil {
+		return []subscriber.SubscriberInterface{}
+	}
+	return s.publisher.GetSubscribers()
 }
 
 // Shutdown gracefully shuts down the observability service.
+// The publisher handles unsubscribing and closing all subscribers.
 func (s *Service) Shutdown() {
 	s.logger.Debug("Shutting down observability service")
 
 	if s.publisher != nil {
-		// Unsubscribe the default subscriber before shutting down the publisher
-		if s.defaultSubscriber != nil {
-			s.publisher.Unsubscribe(s.defaultSubscriber)
-			s.defaultSubscriber = nil
-		}
-
+		// Publisher handles all subscriber cleanup (unsubscribe, close)
+		// This avoids duplicate Close() calls
 		s.publisher.Shutdown()
+		// Set publisher to nil to mark service as disabled
+		s.publisher = nil
 	}
-
-	s.enabled = false
 	s.logger.Debug("Observability service shutdown complete")
 }

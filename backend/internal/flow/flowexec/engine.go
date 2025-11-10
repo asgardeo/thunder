@@ -26,6 +26,8 @@ import (
 	"github.com/asgardeo/thunder/internal/flow/common"
 	"github.com/asgardeo/thunder/internal/flow/core"
 	"github.com/asgardeo/thunder/internal/flow/executor"
+	"github.com/asgardeo/thunder/internal/observability"
+	"github.com/asgardeo/thunder/internal/observability/event"
 	"github.com/asgardeo/thunder/internal/system/error/serviceerror"
 	"github.com/asgardeo/thunder/internal/system/log"
 	sysutils "github.com/asgardeo/thunder/internal/system/utils"
@@ -39,12 +41,18 @@ type flowEngineInterface interface {
 // FlowEngine is the main engine implementation for orchestrating flow executions.
 type flowEngine struct {
 	executorRegistry executor.ExecutorRegistryInterface
+	observabilitySvc observability.ObservabilityServiceInterface
 }
 
-// GetFlowEngine returns a singleton instance of FlowEngine.
-func newFlowEngine(executorRegistry executor.ExecutorRegistryInterface) flowEngineInterface {
+// newFlowEngine creates a new flow engine with the given dependencies.
+// The observabilitySvc parameter is optional (can be nil) - if nil, observability events won't be published.
+func newFlowEngine(
+	executorRegistry executor.ExecutorRegistryInterface,
+	observabilitySvc observability.ObservabilityServiceInterface,
+) flowEngineInterface {
 	return &flowEngine{
 		executorRegistry: executorRegistry,
+		observabilitySvc: observabilitySvc,
 	}
 }
 
@@ -56,8 +64,18 @@ func (fe *flowEngine) Execute(ctx *EngineContext) (FlowStep, *serviceerror.Servi
 		FlowID: ctx.FlowID,
 	}
 
+	// Track flow execution start time
+	flowStartTime := time.Now().Unix()
+
+	// Publish flow started event (only if this is the first execution - check if ExecutionHistory is empty)
+	if len(ctx.ExecutionHistory) == 0 {
+		publishFlowStartedEvent(ctx, fe.observabilitySvc)
+	}
+
 	currentNode, err := fe.setCurrentExecutionNode(ctx, logger)
 	if err != nil {
+		// Publish flow failed event before returning error
+		publishFlowFailedEvent(ctx, err, flowStartTime, time.Now().Unix(), fe.observabilitySvc)
 		return flowStep, err
 	}
 
@@ -94,12 +112,24 @@ func (fe *flowEngine) Execute(ctx *EngineContext) (FlowStep, *serviceerror.Servi
 		}
 
 		executionStartTime := time.Now().Unix()
+
+		// Publish node execution started event
+		publishNodeExecutionStartedEvent(ctx, currentNode, fe.observabilitySvc)
+
 		nodeResp, nodeErr := currentNode.Execute(nodeCtx)
 		executionEndTime := time.Now().Unix()
 
 		recordNodeExecution(ctx, currentNode, nodeResp, nodeErr, executionStartTime, executionEndTime)
 
+		// Publish node execution completed or failed event
+		publishNodeExecutionCompletedEvent(
+			ctx, currentNode, nodeResp, nodeErr,
+			executionStartTime, executionEndTime, fe.observabilitySvc,
+		)
+
 		if nodeErr != nil {
+			// Publish flow failed event before returning error
+			publishFlowFailedEvent(ctx, nodeErr, flowStartTime, time.Now().Unix(), fe.observabilitySvc)
 			return flowStep, nodeErr
 		}
 
@@ -108,9 +138,16 @@ func (fe *flowEngine) Execute(ctx *EngineContext) (FlowStep, *serviceerror.Servi
 		nextNode, continueExecution, svcErr := fe.processNodeResponse(ctx, currentNode, nodeResp,
 			&flowStep, logger)
 		if svcErr != nil {
+			// Publish flow failed event before returning error
+			publishFlowFailedEvent(ctx, svcErr, flowStartTime, time.Now().Unix(), fe.observabilitySvc)
 			return flowStep, svcErr
 		}
 		if !continueExecution {
+			// Check if flow failed or just incomplete
+			if flowStep.Status == common.FlowStatusError {
+				publishFlowFailedEvent(ctx, nil, flowStartTime, time.Now().Unix(), fe.observabilitySvc)
+			}
+			// Don't publish completed event here - flow is incomplete (waiting for user input)
 			return flowStep, nil
 		}
 		currentNode = nextNode
@@ -121,6 +158,10 @@ func (fe *flowEngine) Execute(ctx *EngineContext) (FlowStep, *serviceerror.Servi
 	if ctx.CurrentNodeResponse != nil && ctx.CurrentNodeResponse.Assertion != "" {
 		flowStep.Assertion = ctx.CurrentNodeResponse.Assertion
 	}
+
+	// Publish flow completed event
+	flowEndTime := time.Now().Unix()
+	publishFlowCompletedEvent(ctx, flowStartTime, flowEndTime, fe.observabilitySvc)
 
 	return flowStep, nil
 }
@@ -525,4 +566,236 @@ func createExecutionAttempt(nodeRecord *common.NodeExecutionRecord, nodeResp *co
 	}
 
 	return attempt
+}
+
+// publishNodeExecutionStartedEvent publishes an observability event when node execution starts.
+func publishNodeExecutionStartedEvent(
+	ctx *EngineContext,
+	node core.NodeInterface,
+	obsSvc observability.ObservabilityServiceInterface,
+) {
+	if obsSvc == nil || !obsSvc.IsEnabled() {
+		return
+	}
+
+	// Get node execution record to determine step number and attempt
+	record := ctx.ExecutionHistory[node.GetID()]
+	stepNumber := len(ctx.ExecutionHistory) + 1
+	attemptNumber := 1
+	if record != nil {
+		stepNumber = record.Step
+		attemptNumber = len(record.Executions) + 1
+	}
+
+	evt := event.NewEvent(
+		ctx.FlowID, // Use FlowID as TraceID
+		string(event.EventTypeFlowNodeExecutionStarted),
+		event.ComponentFlowEngine,
+	).
+		WithStatus(event.StatusInProgress).
+		WithData(event.DataKey.FlowID, ctx.FlowID).
+		WithData(event.DataKey.FlowType, string(ctx.FlowType)).
+		WithData(event.DataKey.NodeID, node.GetID()).
+		WithData(event.DataKey.NodeType, string(node.GetType())).
+		WithData(event.DataKey.StepNumber, fmt.Sprintf("%d", stepNumber)).
+		WithData(event.DataKey.AttemptNumber, fmt.Sprintf("%d", attemptNumber)).
+		WithData(event.DataKey.AppID, ctx.AppID)
+
+	// Set executor details if applicable (only for executor-backed nodes)
+	if node.GetType() == common.NodeTypeTaskExecution {
+		if executableNode, ok := node.(core.ExecutorBackedNodeInterface); ok {
+			executor := executableNode.GetExecutor()
+			if executor != nil && record != nil {
+				record.ExecutorName = executor.GetName()
+				record.ExecutorType = executor.GetType()
+			}
+		}
+	}
+
+	obsSvc.PublishEvent(evt)
+}
+
+// publishNodeExecutionCompletedEvent publishes an observability event when node execution completes or fails.
+func publishNodeExecutionCompletedEvent(ctx *EngineContext, node core.NodeInterface,
+	nodeResp *common.NodeResponse, nodeErr *serviceerror.ServiceError,
+	executionStartTime int64, executionEndTime int64, obsSvc observability.ObservabilityServiceInterface) {
+	if obsSvc == nil || !obsSvc.IsEnabled() {
+		return
+	}
+
+	// Get node execution record to determine step number and attempt
+	record := ctx.ExecutionHistory[node.GetID()]
+	if record == nil {
+		return
+	}
+
+	stepNumber := record.Step
+	attemptNumber := len(record.Executions)
+
+	// Determine event type and status based on outcome
+	var eventType event.EventType
+	var status string
+	var nodeStatus string
+
+	if nodeErr != nil {
+		eventType = event.EventTypeFlowNodeExecutionFailed
+		status = event.StatusFailure
+		nodeStatus = string(common.FlowStatusError)
+	} else if nodeResp != nil {
+		switch nodeResp.Status {
+		case common.NodeStatusComplete:
+			eventType = event.EventTypeFlowNodeExecutionCompleted
+			status = event.StatusSuccess
+			nodeStatus = string(common.FlowStatusComplete)
+		case common.NodeStatusIncomplete:
+			eventType = event.EventTypeFlowNodeExecutionCompleted
+			status = event.StatusSuccess
+			nodeStatus = string(common.FlowStatusIncomplete)
+		case common.NodeStatusFailure:
+			eventType = event.EventTypeFlowNodeExecutionFailed
+			status = event.StatusFailure
+			nodeStatus = string(common.FlowStatusError)
+		default:
+			eventType = event.EventTypeFlowNodeExecutionCompleted
+			status = event.StatusSuccess
+			nodeStatus = string(nodeResp.Status)
+		}
+	} else {
+		// Should not happen, but handle gracefully
+		eventType = event.EventTypeFlowNodeExecutionCompleted
+		status = event.StatusSuccess
+		nodeStatus = string(common.FlowStatusComplete)
+	}
+
+	// Calculate duration in milliseconds
+	durationMs := (executionEndTime - executionStartTime) * 1000
+
+	evt := event.NewEvent(
+		ctx.FlowID, // Use FlowID as TraceID
+		string(eventType),
+		event.ComponentFlowEngine,
+	).
+		WithStatus(status).
+		WithData(event.DataKey.FlowID, ctx.FlowID).
+		WithData(event.DataKey.FlowType, string(ctx.FlowType)).
+		WithData(event.DataKey.NodeID, node.GetID()).
+		WithData(event.DataKey.NodeType, string(node.GetType())).
+		WithData(event.DataKey.NodeStatus, nodeStatus).
+		WithData(event.DataKey.StepNumber, fmt.Sprintf("%d", stepNumber)).
+		WithData(event.DataKey.AttemptNumber, fmt.Sprintf("%d", attemptNumber)).
+		WithData(event.DataKey.DurationMs, fmt.Sprintf("%d", durationMs)).
+		WithData(event.DataKey.AppID, ctx.AppID)
+
+	// Add error or failure details
+	if nodeErr != nil {
+		evt.WithData(event.DataKey.Error, nodeErr.Error).
+			WithData(event.DataKey.ErrorCode, nodeErr.Code)
+		if nodeErr.ErrorDescription != "" {
+			evt.WithData(event.DataKey.Message, nodeErr.ErrorDescription)
+		}
+	} else if nodeResp != nil && nodeResp.FailureReason != "" {
+		evt.WithData(event.DataKey.FailureReason, nodeResp.FailureReason)
+	}
+
+	// Add user ID if authenticated
+	if ctx.AuthenticatedUser.IsAuthenticated && ctx.AuthenticatedUser.UserID != "" {
+		evt.WithData(event.DataKey.UserID, ctx.AuthenticatedUser.UserID)
+	}
+
+	obsSvc.PublishEvent(evt)
+}
+
+// publishFlowStartedEvent publishes an observability event when flow execution starts.
+func publishFlowStartedEvent(ctx *EngineContext, obsSvc observability.ObservabilityServiceInterface) {
+	if obsSvc == nil || !obsSvc.IsEnabled() {
+		return
+	}
+
+	evt := event.NewEvent(
+		ctx.FlowID, // Use FlowID as TraceID
+		string(event.EventTypeFlowStarted),
+		event.ComponentFlowEngine,
+	).
+		WithStatus(event.StatusInProgress).
+		WithData(event.DataKey.FlowID, ctx.FlowID).
+		WithData(event.DataKey.FlowType, string(ctx.FlowType)).
+		WithData(event.DataKey.AppID, ctx.AppID)
+
+	// Add user ID if already authenticated
+	if ctx.AuthenticatedUser.IsAuthenticated && ctx.AuthenticatedUser.UserID != "" {
+		evt.WithData(event.DataKey.UserID, ctx.AuthenticatedUser.UserID)
+	}
+
+	obsSvc.PublishEvent(evt)
+}
+
+// publishFlowCompletedEvent publishes an observability event when flow execution completes successfully.
+func publishFlowCompletedEvent(
+	ctx *EngineContext,
+	flowStartTime int64,
+	flowEndTime int64,
+	obsSvc observability.ObservabilityServiceInterface,
+) {
+	if obsSvc == nil || !obsSvc.IsEnabled() {
+		return
+	}
+
+	// Calculate duration in milliseconds
+	durationMs := (flowEndTime - flowStartTime) * 1000
+
+	evt := event.NewEvent(
+		ctx.FlowID, // Use FlowID as TraceID
+		string(event.EventTypeFlowCompleted),
+		event.ComponentFlowEngine,
+	).
+		WithStatus(event.StatusSuccess).
+		WithData(event.DataKey.FlowID, ctx.FlowID).
+		WithData(event.DataKey.FlowType, string(ctx.FlowType)).
+		WithData(event.DataKey.AppID, ctx.AppID).
+		WithData(event.DataKey.DurationMs, fmt.Sprintf("%d", durationMs))
+
+	// Add user ID if authenticated
+	if ctx.AuthenticatedUser.IsAuthenticated && ctx.AuthenticatedUser.UserID != "" {
+		evt.WithData(event.DataKey.UserID, ctx.AuthenticatedUser.UserID)
+	}
+
+	obsSvc.PublishEvent(evt)
+}
+
+// publishFlowFailedEvent publishes an observability event when flow execution fails.
+func publishFlowFailedEvent(ctx *EngineContext, svcErr *serviceerror.ServiceError,
+	flowStartTime int64, flowEndTime int64, obsSvc observability.ObservabilityServiceInterface) {
+	if obsSvc == nil || !obsSvc.IsEnabled() {
+		return
+	}
+
+	// Calculate duration in milliseconds
+	durationMs := (flowEndTime - flowStartTime) * 1000
+
+	evt := event.NewEvent(
+		ctx.FlowID, // Use FlowID as TraceID
+		string(event.EventTypeFlowFailed),
+		event.ComponentFlowEngine,
+	).
+		WithStatus(event.StatusFailure).
+		WithData(event.DataKey.FlowID, ctx.FlowID).
+		WithData(event.DataKey.FlowType, string(ctx.FlowType)).
+		WithData(event.DataKey.AppID, ctx.AppID).
+		WithData(event.DataKey.DurationMs, fmt.Sprintf("%d", durationMs))
+
+	// Add error details if available
+	if svcErr != nil {
+		evt.WithData(event.DataKey.Error, svcErr.Error).
+			WithData(event.DataKey.ErrorCode, svcErr.Code)
+		if svcErr.ErrorDescription != "" {
+			evt.WithData(event.DataKey.Message, svcErr.ErrorDescription)
+		}
+	}
+
+	// Add user ID if authenticated
+	if ctx.AuthenticatedUser.IsAuthenticated && ctx.AuthenticatedUser.UserID != "" {
+		evt.WithData(event.DataKey.UserID, ctx.AuthenticatedUser.UserID)
+	}
+
+	obsSvc.PublishEvent(evt)
 }

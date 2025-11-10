@@ -23,8 +23,9 @@ import (
 	"github.com/asgardeo/thunder/internal/observability/event"
 )
 
-// Subscriber is the interface that all event subscribers must implement.
-type Subscriber interface {
+// SubscriberInterface is the interface that all event subscribers must implement.
+// Subscribers are now responsible for their own activation and configuration.
+type SubscriberInterface interface {
 	// GetID returns the unique identifier for this subscriber.
 	GetID() string
 
@@ -38,4 +39,14 @@ type Subscriber interface {
 
 	// Close is called during shutdown to allow cleanup.
 	Close() error
+
+	// IsEnabled checks if the subscriber should be activated based on configuration.
+	// The config parameter will be *observability.Config.
+	// Returns true if the subscriber should be initialized and activated.
+	IsEnabled() bool
+
+	// Initialize sets up the subscriber with the provided configuration.
+	// This is called after IsEnabled returns true.
+	// Returns error if initialization fails.
+	Initialize() error
 }
