@@ -1,0 +1,183 @@
+# Copyright (c) 2025, WSO2 LLC. (https://www.wso2.com).
+#
+# WSO2 LLC. licenses this file to you under the Apache License,
+# Version 2.0 (the "License"); you may not use this file except
+# in compliance with the License.
+# You may obtain a copy of the License at
+#
+# http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing,
+# software distributed under the License is distributed on an
+# "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+# KIND, either express or implied. See the License for the
+# specific language governing permissions and limitations
+# under the License.
+
+---
+apiVersion: openchoreo.dev/v1alpha1
+kind: Component
+metadata:
+  name: {{ .Values.componentName }}
+  annotations:
+    openchoreo.dev/description: "WSO2 Thunder Identity Management Service"
+    openchoreo.dev/display-name: "Thunder"
+spec:
+  owner:
+    projectName: {{ .Values.organization.name }}
+  type: Service
+
+---
+apiVersion: openchoreo.dev/v1alpha1
+kind: Workload
+metadata:
+  name: {{ .Values.componentName }}
+spec:
+  owner: 
+    componentName: {{ .Values.componentName }}
+    projectName: {{ .Values.organization.name }}
+  containers:
+    main:
+      image: {{ .Values.image.repository }}:{{ .Values.image.tag }}
+      command:
+        - /bin/sh
+        - -c
+        - |
+          # (The container startup script is preserved from the template, rendering DB host from env)
+          cat > /opt/thunder/repository/conf/deployment.yaml << EOF
+          server:
+            hostname: ${THUNDER_SERVER_HOSTNAME}
+            port: ${THUNDER_SERVER_PORT}
+
+          gate_client:
+            hostname: "${THUNDER_GATE_CLIENT_HOSTNAME}"
+            port: ${THUNDER_GATE_CLIENT_PORT}
+            scheme: "${THUNDER_GATE_CLIENT_SCHEME}"
+            login_path: "/login"
+            error_path: "/error"
+
+          security:
+            cert_file: "repository/resources/security/server.cert"
+            key_file: "repository/resources/security/server.key"
+
+          database:
+            identity:
+              type: "${THUNDER_DB_IDENTITY_TYPE}"
+              hostname: "${DATABASE_HOST}"
+              port: ${DATABASE_PORT}
+              name: "${THUNDER_DB_IDENTITY_DATABASE}"
+              username: "${THUNDER_DB_IDENTITY_USERNAME}"
+              password: "${THUNDER_DB_IDENTITY_PASSWORD}"
+              sslmode: "${THUNDER_DB_IDENTITY_SSL_MODE}"
+            runtime:
+              type: "${THUNDER_DB_RUNTIME_TYPE}"
+              hostname: "${DATABASE_HOST}"
+              port: ${DATABASE_PORT}
+              name: "${THUNDER_DB_RUNTIME_DATABASE}"
+              username: "${THUNDER_DB_RUNTIME_USERNAME}"
+              password: "${THUNDER_DB_RUNTIME_PASSWORD}"
+              sslmode: "${THUNDER_DB_RUNTIME_SSL_MODE}"
+
+          cache:
+            disabled: false
+            type: "${THUNDER_CACHE_TYPE}"
+            size: ${THUNDER_CACHE_SIZE}
+            ttl: ${THUNDER_CACHE_TTL}
+            eviction_policy: "lru"
+            cleanup_interval: 600
+
+          jwt:
+            issuer: "${THUNDER_JWT_ISSUER}"
+            validity_period: ${THUNDER_JWT_VALIDITY_PERIOD}
+
+          oauth:
+            refresh_token:
+              renew_on_grant: true
+              validity_period: ${THUNDER_OAUTH_REFRESH_TOKEN_VALIDITY}
+
+          flow:
+            graph_directory: "repository/resources/graphs"
+
+          cors:
+            allowed_origins:
+            {{- range .Values.cors.allowed_origins }}
+              - "{{ . }}"
+            {{- end }}
+          EOF
+          echo "Starting Thunder with PostgreSQL configuration..."
+          exec /opt/thunder/thunder
+      env:
+        - key: THUNDER_SERVER_HOSTNAME
+          value: "0.0.0.0"
+        - key: THUNDER_SERVER_PORT
+          value: "{{ .Values.thunder.server.port }}"
+        - key: THUNDER_GATE_CLIENT_HOSTNAME
+          value: "0.0.0.0"
+        - key: THUNDER_GATE_CLIENT_PORT
+          value: "9090"
+        - key: THUNDER_GATE_CLIENT_SCHEME
+          value: "https"
+        - key: DATABASE_HOST
+          value: "{{ .Values.database.host }}"
+        - key: DATABASE_PORT
+          value: "{{ .Values.database.port }}"
+        - key: THUNDER_DB_IDENTITY_TYPE
+          value: "{{ .Values.database.identity.type }}"
+        - key: THUNDER_DB_IDENTITY_DATABASE
+          value: "{{ .Values.database.identity.database }}"
+        - key: THUNDER_DB_IDENTITY_USERNAME
+          value: "{{ .Values.database.identity.username }}"
+        - key: THUNDER_DB_IDENTITY_PASSWORD
+          value: "{{ .Values.database.identity.password }}"
+        - key: THUNDER_DB_IDENTITY_SSL_MODE
+          value: "{{ .Values.database.identity.sslmode }}"
+        - key: THUNDER_DB_RUNTIME_TYPE
+          value: "{{ .Values.database.runtime.type }}"
+        - key: THUNDER_DB_RUNTIME_DATABASE
+          value: "{{ .Values.database.runtime.database }}"
+        - key: THUNDER_DB_RUNTIME_USERNAME
+          value: "{{ .Values.database.runtime.username }}"
+        - key: THUNDER_DB_RUNTIME_PASSWORD
+          value: "{{ .Values.database.runtime.password }}"
+        - key: THUNDER_DB_RUNTIME_SSL_MODE
+          value: "{{ .Values.database.runtime.sslmode }}"
+        - key: THUNDER_CACHE_TYPE
+          value: "{{ .Values.cache.type }}"
+        - key: THUNDER_CACHE_SIZE
+          value: "{{ .Values.cache.size }}"
+        - key: THUNDER_CACHE_TTL
+          value: "{{ .Values.cache.ttl }}"
+        - key: THUNDER_JWT_ISSUER
+          value: "{{ .Values.jwt.issuer }}"
+        - key: THUNDER_JWT_VALIDITY_PERIOD
+          value: "{{ .Values.jwt.validity }}"
+        - key: THUNDER_OAUTH_REFRESH_TOKEN_VALIDITY
+          value: "{{ .Values.oauth.refresh_token_validity }}"
+
+  endpoints:
+    identity-api:
+      type: REST
+      port: {{ .Values.thunder.server.port }}
+
+---
+# Expose via OpenChoreo Service resource
+apiVersion: openchoreo.dev/v1alpha1
+kind: Service
+metadata:
+  name: {{ .Values.componentName }}
+spec:
+  owner:
+    componentName: {{ .Values.componentName }}
+    projectName: {{ .Values.organization.name }}
+  workloadName: {{ .Values.componentName }}
+  className: {{ .Values.serviceClass.name }}
+  overrides: {}
+  apis:
+    identity-api:
+      type: REST
+      className: {{ .Values.apiClass.name }}
+      rest:
+        backend:
+          port: {{ .Values.thunder.server.port }}
+          basePath: /
+        exposeLevels: ["Organization", "Public"]

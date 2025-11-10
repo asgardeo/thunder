@@ -1,0 +1,90 @@
+# Copyright (c) 2025, WSO2 LLC. (https://www.wso2.com).
+#
+# WSO2 LLC. licenses this file to you under the Apache License,
+# Version 2.0 (the "License"); you may not use this file except
+# in compliance with the License.
+# You may obtain a copy of the License at
+#
+# http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing,
+# software distributed under the License is distributed on an
+# "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+# KIND, either express or implied. See the License for the
+# specific language governing permissions and limitations
+# under the License.
+
+apiVersion: openchoreo.dev/v1alpha1
+kind: Project
+metadata:
+  name: {{ .Values.organization.name }}
+  annotations:
+    openchoreo.dev/description: "Identity platform powered by WSO2 Thunder"
+    openchoreo.dev/display-name: "Identity Platform"
+spec:
+  deploymentPipelineRef: {{ .Values.pipelineName }}
+
+---
+
+apiVersion: openchoreo.dev/v1alpha1
+kind: DeploymentPipeline
+metadata:
+  name: {{ .Values.pipelineName }}
+  annotations:
+    openchoreo.dev/description: "Deployment pipeline for identity platform with dev, staging, and production environments"
+    openchoreo.dev/display-name: "Identity Platform Pipeline"
+spec:
+  promotionPaths:
+    - sourceEnvironmentRef: development
+      targetEnvironmentRefs:
+        - name: staging
+          requiresApproval: false
+    - sourceEnvironmentRef: staging
+      targetEnvironmentRefs:
+        - name: production
+          requiresApproval: true
+
+---
+
+apiVersion: openchoreo.dev/v1alpha1
+kind: Environment
+metadata:
+  name: development
+  annotations:
+    openchoreo.dev/description: "Development environment for identity platform"
+    openchoreo.dev/display-name: "Development"
+spec:
+  dataPlaneRef: {{ .Values.organization.name }}
+  isProduction: false
+  gateway:
+    dnsPrefix: "{{ .Values.gateway.dnsPrefixDev }}"
+
+---
+
+apiVersion: openchoreo.dev/v1alpha1
+kind: Environment
+metadata:
+  name: staging
+  annotations:
+    openchoreo.dev/description: "Staging environment for identity platform"
+    openchoreo.dev/display-name: "Staging"
+spec:
+  dataPlaneRef: {{ .Values.organization.name }}
+  isProduction: false
+  gateway:
+    dnsPrefix: "{{ .Values.gateway.dnsPrefixStaging }}"
+
+---
+
+apiVersion: openchoreo.dev/v1alpha1
+kind: Environment
+metadata:
+  name: production
+  annotations:
+    openchoreo.dev/description: "Production environment for identity platform"
+    openchoreo.dev/display-name: "Production"
+spec:
+  dataPlaneRef: {{ .Values.organization.name }}
+  isProduction: true
+  gateway:
+    dnsPrefix: "{{ .Values.gateway.dnsPrefixProd }}"

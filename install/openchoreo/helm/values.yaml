@@ -1,0 +1,101 @@
+# Copyright (c) 2025, WSO2 LLC. (https://www.wso2.com).
+#
+# WSO2 LLC. licenses this file to you under the Apache License,
+# Version 2.0 (the "License"); you may not use this file except
+# in compliance with the License.
+# You may obtain a copy of the License at
+#
+# http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing,
+# software distributed under the License is distributed on an
+# "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+# KIND, either express or implied. See the License for the
+# specific language governing permissions and limitations
+# under the License.
+
+## Default values for thunder chart
+## IMPORTANT: This chart has namespace-aware resource creation behavior.
+## Some resources (ServiceClass, APIClass) will only be created in non-default namespaces
+## to avoid conflicts with cluster-level resources. See individual resource comments below.
+
+# Core component configuration
+componentName: thunder    # Base name for Component/Workload/Service resources
+pipelineName: identity-platform-pipeline  # DeploymentPipeline name (used by platform templates)
+
+# Container image configuration
+image:
+  repository: ghcr.io/asgardeo/thunder  # Thunder container image repository
+  tag: "latest"                         # Image tag (use specific version tags in production)
+
+# Thunder server configuration
+thunder:
+  server:
+    port: 8090  # Port on which Thunder server will listen
+
+# NOTE: The following section contains placeholder values in angle brackets (e.g., <DB_HOST>, <DB_USERNAME>, <DB_PASSWORD>).
+# You MUST replace these placeholders with actual values before deploying to production.
+# For development, you can use the provided example values.
+# Example: database.host could be "postgres.default.svc.cluster.local" for in-cluster PostgreSQL
+database:
+  host: <DB_HOST>  # Required: Database hostname/FQDN (e.g., postgres.default.svc.cluster.local)
+  port: 5432       # Database port (default: 5432 for PostgreSQL)
+  identity:
+    database: thunderdb        # Identity database name
+    username: <DB_USERNAME>    # Required: Database username for identity DB
+    password: <DB_PASSWORD>    # Required: Database password for identity DB
+    type: postgres             # Database type (currently only postgres is supported)
+    sslmode: disable           # SSL mode: disable, require, verify-ca, verify-full
+  runtime:
+    database: runtimedb       # Runtime database name
+    username: <DB_USERNAME>   # Required: Database username for runtime DB (can be same as identity)
+    password: <DB_PASSWORD>   # Required: Database password for runtime DB (can be same as identity)
+    type: postgres            # Database type (currently only postgres is supported)
+    sslmode: disable          # SSL mode: disable, require, verify-ca, verify-full
+
+jwt:
+  issuer: thunder     # JWT token issuer identifier
+  validity: 3600      # JWT token validity in seconds (default: 1 hour)
+
+oauth:
+  refresh_token_validity: 86400  # Refresh token validity in seconds (default: 24 hours)
+
+cache:
+  type: "memory"      # Cache type: "memory" (in-memory cache)
+  size: 10000        # Maximum number of cache entries
+  ttl: 3600          # Time to live for cache entries in seconds (default: 1 hour)
+
+cors:
+  allowed_origins:   # List of allowed CORS origins for cross-origin requests
+    - "https://thunder-gate.your-domain.com"  # Replace with your actual domain
+    - "https://localhost:3000"                # Common development URL
+
+gateway:
+  dnsPrefixDev: dev        # DNS prefix for development environment
+  dnsPrefixStaging: staging # DNS prefix for staging environment
+  dnsPrefixProd: prod      # DNS prefix for production environment
+
+serviceClass:
+  name: default
+  # Whether to create the ServiceClass resource
+  # IMPORTANT: ServiceClass is only created when ALL of the following conditions are met:
+  # 1. create is true (or not specified, as it defaults to true)
+  # 2. Release namespace is NOT "default" (to avoid conflicts with system-level resources)
+  # This means ServiceClass will NOT be created when installing to the "default" namespace,
+  # regardless of the create setting. Set to false if the ServiceClass already exists.
+  create: true
+
+apiClass:
+  name: default
+  # Whether to create the APIClass resource
+  # IMPORTANT: APIClass is only created when ALL of the following conditions are met:
+  # 1. create is true (or not specified, as it defaults to true)
+  # 2. Release namespace is NOT "default" (to avoid conflicts with system-level resources)
+  # This means APIClass will NOT be created when installing to the "default" namespace,
+  # regardless of the create setting. Set to false if the APIClass already exists.
+  create: true
+
+organization:
+  name: identity-platform           # Organization name (must match project references)
+  displayName: Default Organization # Human-readable organization name
+  description: "Default organization created by Helm chart"  # Organization description
