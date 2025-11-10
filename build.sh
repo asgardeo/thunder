@@ -220,8 +220,8 @@ function initialize_databases() {
 
     mkdir -p "$REPOSITORY_DB_DIR"
 
-    db_files=("thunderdb.db" "runtimedb.db")
-    script_paths=("thunderdb/sqlite.sql" "runtimedb/sqlite.sql")
+    db_files=("thunderdb.db" "runtimedb.db" "userdb.db")
+    script_paths=("thunderdb/sqlite.sql" "runtimedb/sqlite.sql" "userdb/sqlite.sql")
 
     for ((i = 0; i < ${#db_files[@]}; i++)); do
         db_file="${db_files[$i]}"

@@ -51,7 +51,7 @@ func newUserSchemaStore() userSchemaStoreInterface {
 
 // GetUserSchemaListCount retrieves the total count of user schemas.
 func (s *userSchemaStore) GetUserSchemaListCount() (int, error) {
-	dbClient, err := s.dbProvider.GetDBClient("identity")
+	dbClient, err := s.dbProvider.GetConfigDBClient()
 	if err != nil {
 		return 0, fmt.Errorf("failed to get database client: %w", err)
 	}
@@ -77,7 +77,7 @@ func (s *userSchemaStore) GetUserSchemaListCount() (int, error) {
 func (s *userSchemaStore) GetUserSchemaList(limit, offset int) ([]UserSchemaListItem, error) {
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, "UserSchemaPersistence"))
 
-	dbClient, err := s.dbProvider.GetDBClient("identity")
+	dbClient, err := s.dbProvider.GetConfigDBClient()
 	if err != nil {
 		return nil, fmt.Errorf("failed to get database client: %w", err)
 	}
@@ -102,7 +102,7 @@ func (s *userSchemaStore) GetUserSchemaList(limit, offset int) ([]UserSchemaList
 
 // CreateUserSchema creates a new user schema.
 func (s *userSchemaStore) CreateUserSchema(userSchema UserSchema) error {
-	dbClient, err := s.dbProvider.GetDBClient("identity")
+	dbClient, err := s.dbProvider.GetConfigDBClient()
 	if err != nil {
 		return fmt.Errorf("failed to get database client: %w", err)
 	}
@@ -117,7 +117,7 @@ func (s *userSchemaStore) CreateUserSchema(userSchema UserSchema) error {
 
 // GetUserSchemaByID retrieves a user schema by its ID.
 func (s *userSchemaStore) GetUserSchemaByID(schemaID string) (UserSchema, error) {
-	dbClient, err := s.dbProvider.GetDBClient("identity")
+	dbClient, err := s.dbProvider.GetConfigDBClient()
 	if err != nil {
 		return UserSchema{}, fmt.Errorf("failed to get database client: %w", err)
 	}
@@ -136,7 +136,7 @@ func (s *userSchemaStore) GetUserSchemaByID(schemaID string) (UserSchema, error)
 
 // GetUserSchemaByName retrieves a user schema by its name.
 func (s *userSchemaStore) GetUserSchemaByName(name string) (UserSchema, error) {
-	dbClient, err := s.dbProvider.GetDBClient("identity")
+	dbClient, err := s.dbProvider.GetConfigDBClient()
 	if err != nil {
 		return UserSchema{}, fmt.Errorf("failed to get database client: %w", err)
 	}
@@ -155,7 +155,7 @@ func (s *userSchemaStore) GetUserSchemaByName(name string) (UserSchema, error) {
 
 // UpdateUserSchemaByID updates a user schema by its ID.
 func (s *userSchemaStore) UpdateUserSchemaByID(schemaID string, userSchema UserSchema) error {
-	dbClient, err := s.dbProvider.GetDBClient("identity")
+	dbClient, err := s.dbProvider.GetConfigDBClient()
 	if err != nil {
 		return fmt.Errorf("failed to get database client: %w", err)
 	}
@@ -172,7 +172,7 @@ func (s *userSchemaStore) UpdateUserSchemaByID(schemaID string, userSchema UserS
 func (s *userSchemaStore) DeleteUserSchemaByID(schemaID string) error {
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, "UserSchemaPersistence"))
 
-	dbClient, err := s.dbProvider.GetDBClient("identity")
+	dbClient, err := s.dbProvider.GetConfigDBClient()
 	if err != nil {
 		return fmt.Errorf("failed to get database client: %w", err)
 	}

@@ -50,7 +50,7 @@ func (suite *OrganizationUnitStoreTestSuite) SetupTest() {
 }
 
 func (suite *OrganizationUnitStoreTestSuite) expectDBClient() {
-	suite.providerMock.On("GetDBClient", "identity").Return(suite.dbClientMock, nil)
+	suite.providerMock.On("GetUserDBClient").Return(suite.dbClientMock, nil)
 }
 
 type conflictTestCase struct {
@@ -188,7 +188,7 @@ func (suite *OrganizationUnitStoreTestSuite) runConflictQueryScenario(
 				name: "db client error",
 				setup: func(_ *string) {
 					suite.providerMock.
-						On("GetDBClient", "identity").
+						On("GetUserDBClient").
 						Return(nil, errors.New("db err")).
 						Once()
 				},
@@ -254,7 +254,7 @@ func (suite *OrganizationUnitStoreTestSuite) runCountQueryScenario(
 				name: "db client error",
 				setup: func() {
 					suite.providerMock.
-						On("GetDBClient", "identity").
+						On("GetUserDBClient").
 						Return(nil, errors.New("db err")).
 						Once()
 				},
@@ -426,7 +426,7 @@ func (suite *OrganizationUnitStoreTestSuite) TestOUStore_CheckOrganizationUnitHa
 			name: "db client error",
 			setup: func() {
 				suite.providerMock.
-					On("GetDBClient", "identity").
+					On("GetUserDBClient").
 					Return(nil, errors.New("db err")).
 					Once()
 			},
@@ -535,7 +535,7 @@ func (suite *OrganizationUnitStoreTestSuite) TestOUStore_GetOrganizationUnitGrou
 			name: "db client error",
 			setup: func() {
 				suite.providerMock.
-					On("GetDBClient", "identity").
+					On("GetUserDBClient").
 					Return(nil, errors.New("db err")).
 					Once()
 			},
@@ -641,7 +641,7 @@ func (suite *OrganizationUnitStoreTestSuite) TestOUStore_GetOrganizationUnitGrou
 			offset: 0,
 			setup: func(limit, offset int) {
 				suite.providerMock.
-					On("GetDBClient", "identity").
+					On("GetUserDBClient").
 					Return(nil, errors.New("db err")).
 					Once()
 			},
@@ -744,7 +744,7 @@ func (suite *OrganizationUnitStoreTestSuite) TestOUStore_GetOrganizationUnitUser
 			offset: 0,
 			setup: func(limit, offset int) {
 				suite.providerMock.
-					On("GetDBClient", "identity").
+					On("GetUserDBClient").
 					Return(nil, errors.New("db err")).
 					Once()
 			},
@@ -850,7 +850,7 @@ func (suite *OrganizationUnitStoreTestSuite) TestOUStore_GetOrganizationUnitChil
 			offset: 0,
 			setup: func(parent string, limit, offset int) {
 				suite.providerMock.
-					On("GetDBClient", "identity").
+					On("GetUserDBClient").
 					Return(nil, errors.New("db err")).
 					Once()
 			},
@@ -940,7 +940,7 @@ func (suite *OrganizationUnitStoreTestSuite) TestOUStore_UpdateOrganizationUnit(
 			ou:   OrganizationUnit{ID: "ou1"},
 			setup: func(ou OrganizationUnit) {
 				suite.providerMock.
-					On("GetDBClient", "identity").
+					On("GetUserDBClient").
 					Return(nil, errors.New("db err")).
 					Once()
 			},
@@ -998,7 +998,7 @@ func (suite *OrganizationUnitStoreTestSuite) TestOUStore_DeleteOrganizationUnit(
 			name: "db client error",
 			setup: func() {
 				suite.providerMock.
-					On("GetDBClient", "identity").
+					On("GetUserDBClient").
 					Return(nil, errors.New("db err")).
 					Once()
 			},
@@ -1091,7 +1091,7 @@ func (suite *OrganizationUnitStoreTestSuite) TestOUStore_IsOrganizationUnitExist
 			name: "db client error",
 			setup: func() {
 				suite.providerMock.
-					On("GetDBClient", "identity").
+					On("GetUserDBClient").
 					Return(nil, errors.New("db fail")).
 					Once()
 			},
@@ -1168,7 +1168,7 @@ func (suite *OrganizationUnitStoreTestSuite) TestOUStore_GetOrganizationUnitByPa
 			path: []string{"root"},
 			setup: func(_ []string) {
 				suite.providerMock.
-					On("GetDBClient", "identity").
+					On("GetUserDBClient").
 					Return(nil, errors.New("db err")).
 					Once()
 			},
@@ -1327,7 +1327,7 @@ func (suite *OrganizationUnitStoreTestSuite) TestOUStore_GetOrganizationUnit() {
 			id:   "ou1",
 			setup: func(id string) {
 				suite.providerMock.
-					On("GetDBClient", "identity").
+					On("GetUserDBClient").
 					Return(nil, errors.New("db err")).
 					Once()
 			},
@@ -1420,7 +1420,7 @@ func (suite *OrganizationUnitStoreTestSuite) TestOUStore_CreateOrganizationUnit(
 			ou:   OrganizationUnit{ID: "ou1"},
 			setup: func(ou OrganizationUnit) {
 				suite.providerMock.
-					On("GetDBClient", "identity").
+					On("GetUserDBClient").
 					Return(nil, errors.New("db init failed")).
 					Once()
 			},
@@ -1511,7 +1511,7 @@ func (suite *OrganizationUnitStoreTestSuite) TestOUStore_GetOrganizationUnitList
 			offset: 0,
 			setup: func(limit, offset int) {
 				suite.providerMock.
-					On("GetDBClient", "identity").
+					On("GetUserDBClient").
 					Return(nil, errors.New("db err")).
 					Once()
 			},
@@ -1586,7 +1586,7 @@ func (suite *OrganizationUnitStoreTestSuite) TestOUStore_GetOrganizationUnitList
 			name: "db client error",
 			setup: func() {
 				suite.providerMock.
-					On("GetDBClient", "identity").
+					On("GetUserDBClient").
 					Return(nil, errors.New("no db")).
 					Once()
 			},

@@ -30,3 +30,8 @@ var queryRuntimeDBTable = model.DBQuery{
 	ID:    "HLC-00002",
 	Query: "SELECT 1",
 }
+
+var queryUserDBTable = model.DBQuery{
+	ID:    "HLC-00003",
+	Query: "SELECT 1",
+}

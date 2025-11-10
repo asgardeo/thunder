@@ -339,8 +339,8 @@ function Initialize-Databases {
 
     New-Item -Path $REPOSITORY_DB_DIR -ItemType Directory -Force | Out-Null
 
-    $db_files = @("thunderdb.db", "runtimedb.db")
-    $script_paths = @("thunderdb/sqlite.sql", "runtimedb/sqlite.sql")
+    $db_files = @("thunderdb.db", "runtimedb.db","userdb.db")
+    $script_paths = @("thunderdb/sqlite.sql", "runtimedb/sqlite.sql","userdb/sqlite.sql")
 
     for ($i = 0; $i -lt $db_files.Length; $i++) {
         $db_file = $db_files[$i]

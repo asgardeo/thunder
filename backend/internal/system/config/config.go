@@ -71,8 +71,9 @@ type DataSource struct {
 
 // DatabaseConfig holds the different database configuration details.
 type DatabaseConfig struct {
-	Identity DataSource `yaml:"identity" json:"identity"`
-	Runtime  DataSource `yaml:"runtime" json:"runtime"`
+	Config  DataSource `yaml:"config" json:"config"`
+	Runtime DataSource `yaml:"runtime" json:"runtime"`
+	User    DataSource `yaml:"user" json:"user"`
 }
 
 // CacheProperty defines the properties for individual caches.

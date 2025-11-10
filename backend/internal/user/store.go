@@ -51,7 +51,7 @@ func newUserStore() userStoreInterface {
 
 // GetUserListCount retrieves the total count of users.
 func (us *userStore) GetUserListCount(filters map[string]interface{}) (int, error) {
-	dbClient, err := provider.GetDBProvider().GetDBClient("identity")
+	dbClient, err := provider.GetDBProvider().GetUserDBClient()
 	if err != nil {
 		return 0, fmt.Errorf("failed to get database client: %w", err)
 	}
@@ -80,7 +80,7 @@ func (us *userStore) GetUserListCount(filters map[string]interface{}) (int, erro
 
 // GetUserList retrieves a list of users from the database.
 func (us *userStore) GetUserList(limit, offset int, filters map[string]interface{}) ([]User, error) {
-	dbClient, err := provider.GetDBProvider().GetDBClient("identity")
+	dbClient, err := provider.GetDBProvider().GetUserDBClient()
 	if err != nil {
 		return nil, fmt.Errorf("failed to get database client: %w", err)
 	}
@@ -110,7 +110,7 @@ func (us *userStore) GetUserList(limit, offset int, filters map[string]interface
 
 // CreateUser handles the user creation in the database.
 func (us *userStore) CreateUser(user User, credentials []Credential) error {
-	dbClient, err := provider.GetDBProvider().GetDBClient("identity")
+	dbClient, err := provider.GetDBProvider().GetUserDBClient()
 	if err != nil {
 		return fmt.Errorf("failed to get database client: %w", err)
 	}
@@ -150,7 +150,7 @@ func (us *userStore) CreateUser(user User, credentials []Credential) error {
 
 // GetUser retrieves a specific user by its ID from the database.
 func (us *userStore) GetUser(id string) (User, error) {
-	dbClient, err := provider.GetDBProvider().GetDBClient("identity")
+	dbClient, err := provider.GetDBProvider().GetUserDBClient()
 	if err != nil {
 		return User{}, fmt.Errorf("failed to get database client: %w", err)
 	}
@@ -179,7 +179,7 @@ func (us *userStore) GetUser(id string) (User, error) {
 
 // UpdateUser updates the user in the database.
 func (us *userStore) UpdateUser(user *User) error {
-	dbClient, err := provider.GetDBProvider().GetDBClient("identity")
+	dbClient, err := provider.GetDBProvider().GetUserDBClient()
 	if err != nil {
 		return fmt.Errorf("failed to get database client: %w", err)
 	}
@@ -207,7 +207,7 @@ func (us *userStore) UpdateUser(user *User) error {
 func (us *userStore) DeleteUser(id string) error {
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, "UserStore"))
 
-	dbClient, err := provider.GetDBProvider().GetDBClient("identity")
+	dbClient, err := provider.GetDBProvider().GetUserDBClient()
 	if err != nil {
 		return fmt.Errorf("failed to get database client: %w", err)
 	}
@@ -228,7 +228,7 @@ func (us *userStore) DeleteUser(id string) error {
 func (us *userStore) IdentifyUser(filters map[string]interface{}) (*string, error) {
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, "UserStore"))
 
-	dbClient, err := provider.GetDBProvider().GetDBClient("identity")
+	dbClient, err := provider.GetDBProvider().GetUserDBClient()
 	if err != nil {
 		return nil, fmt.Errorf("failed to get database client: %w", err)
 	}
@@ -274,7 +274,7 @@ func (us *userStore) IdentifyUser(filters map[string]interface{}) (*string, erro
 
 // VerifyUser validate the user specified user using the given credentials from the database.
 func (us *userStore) VerifyUser(id string) (User, []Credential, error) {
-	dbClient, err := provider.GetDBProvider().GetDBClient("identity")
+	dbClient, err := provider.GetDBProvider().GetUserDBClient()
 	if err != nil {
 		return User{}, []Credential{}, fmt.Errorf("failed to get database client: %w", err)
 	}
@@ -324,7 +324,7 @@ func (us *userStore) ValidateUserIDs(userIDs []string) ([]string, error) {
 		return []string{}, nil
 	}
 
-	dbClient, err := provider.GetDBProvider().GetDBClient("identity")
+	dbClient, err := provider.GetDBProvider().GetUserDBClient()
 	if err != nil {
 		return nil, fmt.Errorf("failed to get database client: %w", err)
 	}
@@ -358,7 +358,7 @@ func (us *userStore) ValidateUserIDs(userIDs []string) ([]string, error) {
 
 // GetGroupCountForUser retrieves the total count of groups a user belongs to.
 func (us *userStore) GetGroupCountForUser(userID string) (int, error) {
-	dbClient, err := provider.GetDBProvider().GetDBClient("identity")
+	dbClient, err := provider.GetDBProvider().GetUserDBClient()
 	if err != nil {
 		return 0, fmt.Errorf("failed to get database client: %w", err)
 	}
@@ -380,7 +380,7 @@ func (us *userStore) GetGroupCountForUser(userID string) (int, error) {
 
 // GetUserGroups retrieves groups that a user belongs to with pagination.
 func (us *userStore) GetUserGroups(userID string, limit, offset int) ([]UserGroup, error) {
-	dbClient, err := provider.GetDBProvider().GetDBClient("identity")
+	dbClient, err := provider.GetDBProvider().GetUserDBClient()
 	if err != nil {
 		return nil, fmt.Errorf("failed to get database client: %w", err)
 	}

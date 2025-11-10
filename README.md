@@ -527,7 +527,7 @@ docker compose down -v
 
     ```yaml
     database:
-        identity:
+        config:
             type: "postgres"
             hostname: "localhost"
             port: 5432
@@ -540,6 +540,14 @@ docker compose down -v
             hostname: "localhost"
             port: 5432
             name: "runtimedb"
+            username: "asgthunder"
+            password: "asgthunder"
+            sslmode: "disable"
+        user:
+            type: "postgres"
+            hostname: "localhost"
+            port: 5432
+            name: "userdb"
             username: "asgthunder"
             password: "asgthunder"
             sslmode: "disable"

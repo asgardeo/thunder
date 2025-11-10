@@ -51,7 +51,7 @@ func newIDPStore() idpStoreInterface {
 
 // CreateIdentityProvider handles the IdP creation in the database.
 func (s *idpStore) CreateIdentityProvider(idp IDPDTO) error {
-	dbClient, err := s.dbProvider.GetDBClient("identity")
+	dbClient, err := s.dbProvider.GetConfigDBClient()
 	if err != nil {
 		return fmt.Errorf("failed to get database client: %w", err)
 	}
@@ -74,7 +74,7 @@ func (s *idpStore) CreateIdentityProvider(idp IDPDTO) error {
 
 // GetIdentityProviderList retrieves a list of IdPs from the database.
 func (s *idpStore) GetIdentityProviderList() ([]BasicIDPDTO, error) {
-	dbClient, err := s.dbProvider.GetDBClient("identity")
+	dbClient, err := s.dbProvider.GetConfigDBClient()
 	if err != nil {
 		return nil, fmt.Errorf("failed to get database client: %w", err)
 	}
@@ -108,7 +108,7 @@ func (s *idpStore) GetIdentityProviderByName(name string) (*IDPDTO, error) {
 
 // getIDP retrieves an IDP based on the provided query and identifier.
 func (s *idpStore) getIDP(query dbmodel.DBQuery, identifier string) (*IDPDTO, error) {
-	dbClient, err := s.dbProvider.GetDBClient("identity")
+	dbClient, err := s.dbProvider.GetConfigDBClient()
 	if err != nil {
 		return nil, fmt.Errorf("failed to get database client: %w", err)
 	}
@@ -163,7 +163,7 @@ func (s *idpStore) getIDP(query dbmodel.DBQuery, identifier string) (*IDPDTO, er
 
 // UpdateIdentityProvider updates the idp in the database.
 func (s *idpStore) UpdateIdentityProvider(idp *IDPDTO) error {
-	dbClient, err := s.dbProvider.GetDBClient("identity")
+	dbClient, err := s.dbProvider.GetConfigDBClient()
 	if err != nil {
 		return fmt.Errorf("failed to get database client: %w", err)
 	}
@@ -190,7 +190,7 @@ func (s *idpStore) UpdateIdentityProvider(idp *IDPDTO) error {
 func (s *idpStore) DeleteIdentityProvider(id string) error {
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, "IdPStore"))
 
-	dbClient, err := s.dbProvider.GetDBClient("identity")
+	dbClient, err := s.dbProvider.GetConfigDBClient()
 	if err != nil {
 		return fmt.Errorf("failed to get database client: %w", err)
 	}
