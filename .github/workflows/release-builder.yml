@@ -324,6 +324,46 @@ jobs:
           echo "📦 Image available at: ${IMAGE_NAME}:${DOCKER_VERSION}"
           echo "📦 Image available at: ${IMAGE_NAME}:latest"
 
+      - name: ⚙️ Set up Helm
+        uses: azure/setup-helm@v3
+        with:
+          version: 'v3.12.3'
+
+      - name: 📦 Package and Push Helm Chart to GHCR
+        run: |
+          CHART_NAME="thunder"
+          OWNER_NAME=$(echo "${{ github.repository_owner }}" | tr '[:upper:]' '[:lower:]')
+          HELM_REGISTRY="ghcr.io/${OWNER_NAME}"
+          
+          # Get version without 'v' prefix for Helm chart version
+          CHART_VERSION="${{ github.event.inputs.version }}"
+          if [[ $CHART_VERSION == v* ]]; then
+            CHART_VERSION="${CHART_VERSION#v}"
+          fi
+          
+          echo "📦 Packaging Helm chart: ${CHART_NAME} version ${CHART_VERSION}"
+
+          # Ensure target directory exists
+          mkdir -p target/dist/
+          
+          # Package the Helm chart
+          helm package install/helm --version "${CHART_VERSION}" --app-version "${CHART_VERSION}" --destination target/dist/
+
+          # Validate package was created
+          if [ ! -f "target/dist/${CHART_NAME}-${CHART_VERSION}.tgz" ]; then
+            echo "❌ Error: Helm chart package not found"
+            exit 1
+          fi
+
+          # Authenticate Helm to GHCR
+          echo "${{ secrets.GITHUB_TOKEN }}" | helm registry login ghcr.io -u ${{ github.actor }} --password-stdin
+          
+          # Push the Helm chart to GHCR
+          helm push "target/dist/${CHART_NAME}-${CHART_VERSION}.tgz" "oci://${HELM_REGISTRY}/helm-charts"
+          
+          echo "✅ Helm chart pushed successfully!"
+          echo "📦 Helm chart available at: oci://${HELM_REGISTRY}/helm-charts"
+
       - name: 📝 Calculate Next Version
         id: next_version
         run: |

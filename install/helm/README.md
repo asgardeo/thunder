@@ -20,34 +20,33 @@ This repository contains the Helm chart for WSO2 Thunder, a lightweight user and
 
 Follow these steps to deploy Thunder in your Kubernetes cluster:
 
-### 1. Clone the Thunder repository
+### 1. Install the Thunder Helm chart
 
 ```bash
-git clone https://github.com/asgardeo/thunder.git
-cd thunder/install/helm
+# Pull and install from GitHub Container Registry
+helm install my-thunder oci://ghcr.io/asgardeo/helm-charts/thunder
 ```
 
-### 2. Install the Thunder Helm chart
-
-You can install the Thunder Helm chart with the release name `my-thunder` as follows:
+If you wish to install another version, use the command below to specify the desired version.
 
 ```bash
-helm install my-thunder .
+helm install my-thunder oci://ghcr.io/asgardeo/helm-charts/thunder --version <VERSION>
 ```
+
+> To see which chart versions are available, you can:
+> - Visit the [Thunder Helm Chart Registry](https://github.com/asgardeo/thunder/pkgs/container/helm-charts%2Fthunder) on GitHub Container Registry.
 
 If you want to customize the installation, create a `custom-values.yaml` file with your configurations and use:
 
 ```bash
-helm install my-thunder . -f custom-values.yaml
+helm install my-thunder oci://ghcr.io/asgardeo/helm-charts/thunder -f custom-values.yaml
 ```
 
 The command deploys Thunder on the Kubernetes cluster with the default configuration. The [Parameters](#parameters) section lists the available parameters that can be configured during installation.
 
-### 3. Access Thunder
+### 2. Obtain the External IP
 
-### 4. Obtain the External IP
-
-After deploying WSO2 Identity Server, you need to find its external IP address to access it outside the cluster. Run the following command to list the Ingress resources:
+After deploying Thunder, you need to find its external IP address to access it outside the cluster. Run the following command to list the Ingress resources:
 
 ```bash
 kubectl get ingress
