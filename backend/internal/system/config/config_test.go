@@ -19,6 +19,7 @@
 package config
 
 import (
+	"fmt"
 	"os"
 	"path/filepath"
 	"reflect"
@@ -37,8 +38,10 @@ func TestConfigTestSuite(t *testing.T) {
 }
 
 func (suite *ConfigTestSuite) TestLoadConfigWithDefaults() {
-	// Create a temporary JSON default configuration file.
-	defaultContent := `{
+	tempDir := suite.T().TempDir()
+	cryptoFilePath := filepath.Join(tempDir, "crypto.key")
+
+	defaultContent := fmt.Sprintf(`{
   "server": {
     "hostname": "default-host",
     "port": 8080,
@@ -51,6 +54,9 @@ func (suite *ConfigTestSuite) TestLoadConfigWithDefaults() {
     "login_path": "/default-login",
     "error_path": "/default-error"
   },
+  "security": {
+    "crypto_file": %q
+  },
   "jwt": {
     "issuer": "default-issuer",
     "validity_period": 7200
@@ -60,11 +66,8 @@ func (suite *ConfigTestSuite) TestLoadConfigWithDefaults() {
       "renew_on_grant": false,
       "validity_period": 86400
     }
-  },
-  "crypto": {
-    "key": "default-crypto-key"
   }
-}`
+}`, cryptoFilePath)
 
 	// Create a partial YAML user configuration file.
 	userContent := `
@@ -76,14 +79,18 @@ jwt:
   issuer: "user-issuer"
 `
 
-	tempDir := suite.T().TempDir()
 	defaultFile := filepath.Join(tempDir, "default.json")
 	userFile := filepath.Join(tempDir, "user.yaml")
+	cryptoFile := filepath.Join(tempDir, "crypto.key")
+	dummyCryptoKey := "0579f866ac7c9273580d0ff163fa01a7b2401a7ff3ddc3e3b14ae3136fa6025e"
 
 	err := os.WriteFile(defaultFile, []byte(defaultContent), 0600)
 	assert.NoError(suite.T(), err)
 
 	err = os.WriteFile(userFile, []byte(userContent), 0600)
+	assert.NoError(suite.T(), err)
+
+	err = os.WriteFile(cryptoFile, []byte(dummyCryptoKey), 0600)
 	assert.NoError(suite.T(), err)
 
 	// Test loading the configuration with defaults.
@@ -102,7 +109,7 @@ jwt:
 	assert.Equal(suite.T(), "/default-error", config.GateClient.ErrorPath)
 	assert.Equal(suite.T(), "user-issuer", config.JWT.Issuer)       // User override
 	assert.Equal(suite.T(), int64(7200), config.JWT.ValidityPeriod) // Default value
-	assert.Equal(suite.T(), "default-crypto-key", config.Crypto.Key)
+	assert.Equal(suite.T(), cryptoFile, config.Security.CryptoFile)
 }
 
 func (suite *ConfigTestSuite) TestLoadConfigWithDefaults_NoDefaults() {

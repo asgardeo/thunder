@@ -399,6 +399,10 @@ function Prepare-Backend-For-Packaging {
     Write-Host "=== Ensuring server certificates exist in the distribution ==="
     Ensure-Certificates -cert_dir $security_dir
     Write-Host "================================================================"
+
+    Write-Host "=== Ensuring crypto file exists in the distribution ==="
+    Ensure-Crypto-File -conf_dir (Join-Path $package_folder "repository/conf")
+    Write-Host "================================================================"
 }
 
 function Prepare-Frontend-For-Packaging {
@@ -1022,6 +1026,126 @@ function Ensure-Certificates {
     }
 }
 
+function Ensure-Crypto-File {
+    param(
+        [string]$conf_dir
+    )
+
+    $DEPLOYMENT_FILE = Join-Path $conf_dir "deployment.yaml"
+    # Resolve the .. path segment to get a clean key directory path
+    $KEY_DIR_Temp = Join-Path $conf_dir ".." "resources/security"
+    $KEY_DIR = (Resolve-Path -Path $KEY_DIR_Temp).Path
+    $KEY_FILE = Join-Path $KEY_DIR "crypto.key"
+    $KEY_PATH_IN_YAML = "repository/resources/security/crypto.key"
+
+    Write-Host "================================================================"
+    Write-Host "Ensuring crypto key file exists..."
+
+    # 1. Check if the key file exists
+    if (Test-Path $KEY_FILE) {
+        Write-Host "Default crypto key file already present in $KEY_FILE. Skipping generation."
+    }
+    else {
+        Write-Host "Default crypto key file not found. Generating new key at $KEY_FILE..."
+        $NEW_KEY = $null
+        
+        # --- START: OpenSSL-first logic ---
+        # Try OpenSSL first, just like Ensure-Certificates
+        $openssl = Get-Command openssl -ErrorAction SilentlyContinue
+        if ($openssl) {
+            try {
+                Write-Host " - Using OpenSSL to generate key..."
+                # openssl rand -hex 32 returns a 64-char string.
+                # Use Out-String | Trim to capture it cleanly.
+                $NEW_KEY = (openssl rand -hex 32 | Out-String).Trim()
+                
+                if ($LASTEXITCODE -ne 0 -or [string]::IsNullOrEmpty($NEW_KEY)) {
+                    throw "OpenSSL rand command failed or returned empty."
+                }
+            }
+            catch {
+                Write-Host " - OpenSSL failed: $_. Falling back to .NET cryptography."
+                $NEW_KEY = $null
+            }
+        }
+        else {
+            Write-Host " - OpenSSL not found. Falling back to .NET cryptography."
+        }
+        # --- END: OpenSSL-first logic ---
+
+        # Fallback to .NET if OpenSSL fails or isn't present
+        if ([string]::IsNullOrEmpty($NEW_KEY)) {
+            try {
+                Write-Host " - Using .NET cryptography to generate key..."
+                $bytes = New-Object byte[] 32
+                $rng = [System.Security.Cryptography.RandomNumberGenerator]::Create()
+                $rng.GetBytes($bytes)
+                $rng.Dispose()
+                # Convert bytes to lowercase hex string to match 'openssl rand -hex'
+                $NEW_KEY = ([System.BitConverter]::ToString($bytes) -replace '-', '').ToLower()
+            }
+            catch {
+                 throw "Failed to generate crypto key using .NET: $_"
+            }
+        }
+        
+        # Ensure the target directory exists
+        New-Item -Path $KEY_DIR -ItemType Directory -Force | Out-Null
+
+        # Write the key to the new file (NoNewline matches 'echo -n')
+        Set-Content -Path $KEY_FILE -Value $NEW_KEY -NoNewline -Encoding Ascii
+        
+        Write-Host "Successfully generated and added new crypto key to $KEY_FILE."
+    }
+
+    # 2. Check and update deployment.yaml
+    if (-not (Test-Path $DEPLOYMENT_FILE)) {
+        throw "ERROR: $DEPLOYMENT_FILE not found. Cannot configure crypto key."
+    }
+    
+    $configLines = Get-Content $DEPLOYMENT_FILE
+    $cryptoLine = $configLines | Select-String -Pattern "^\s*crypto_file\s*:" -ErrorAction SilentlyContinue
+
+   
+    $ANCHOR_LINE_PATTERN = '^\s*key_file\s*:\s*".*server\.key"'
+    $KEY_FILE_LINE_TO_INSERT = '  crypto_file: "{0}"' -f $KEY_PATH_IN_YAML
+    
+    if ($cryptoLine) {
+        # Config exists, check if it's correct
+        $expected_line_pattern = '^\s*crypto_file\s*:\s*"{0}"' -f $KEY_PATH_IN_YAML
+        if ($cryptoLine -match $expected_line_pattern) {
+            Write-Host "Crypto key file is already configured in $DEPLOYMENT_FILE."
+        }
+        else {
+            throw "ERROR: 'crypto_file' is defined in $DEPLOYMENT_FILE but does not match the default path '$KEY_PATH_IN_YAML'. Please fix or remove the line."
+        }
+    }
+    else {
+        # Config is missing, add it
+        Write-Host "Crypto key file is not configured in $DEPLOYMENT_FILE. Inserting entry..."
+        
+        $newConfigLines = @()
+        $lineInserted = $false
+
+        foreach ($line in $configLines) {
+            $newConfigLines += $line
+            if ($line -match $ANCHOR_LINE_PATTERN) {
+                $newConfigLines += $KEY_FILE_LINE_TO_INSERT
+                $lineInserted = $true
+            }
+        }
+
+        if (-not $lineInserted) {
+            throw "ERROR: Could not insert crypto_file line into $DEPLOYMENT_FILE. Anchor line (pattern '$ANCHOR_LINE_PATTERN') not found."
+        }
+
+        # Save the file (YAML should use UTF-8)
+        Set-Content -Path $DEPLOYMENT_FILE -Value $newConfigLines -Encoding UTF8
+        Write-Host "Successfully updated $DEPLOYMENT_FILE to use the default key file."
+    }
+    Write-Host "================================================================"
+}
+
 function Run {
     Write-Host "Running frontend apps..."
     Run-Frontend
@@ -1106,6 +1230,9 @@ function Run-Backend {
 
     Write-Host "=== Ensuring sample app certificates exist ==="
     Ensure-Certificates -cert_dir $SAMPLE_APP_DIR
+
+    Write-Host "=== Ensuring crypto file exists for run ==="
+    Ensure-Crypto-File -conf_dir (Join-Path $BACKEND_DIR "repository/conf")
 
     Write-Host "Initializing databases..."
     Initialize-Databases
