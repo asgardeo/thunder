@@ -495,3 +495,156 @@ func (suite *AuthAssertExecutorTestSuite) TestExecute_WithOUNameAndHandle() {
 	suite.mockOUService.AssertExpectations(suite.T())
 	suite.mockJWTService.AssertExpectations(suite.T())
 }
+
+func (suite *AuthAssertExecutorTestSuite) TestExecute_AppendUserDetailsToClaimsFails() {
+	attrs := map[string]interface{}{"email": "test@example.com"}
+	attrsJSON, _ := json.Marshal(attrs)
+
+	ctx := &flowcore.NodeContext{
+		FlowID:   "flow-123",
+		AppID:    "app-123",
+		FlowType: flowcm.FlowTypeAuthentication,
+		AuthenticatedUser: authncm.AuthenticatedUser{
+			IsAuthenticated: true,
+			UserID:          "user-123",
+		},
+		ExecutionHistory: map[string]*flowcm.NodeExecutionRecord{},
+		Application: appmodel.ApplicationProcessedDTO{
+			Token: &appmodel.TokenConfig{
+				UserAttributes: []string{"email"},
+			},
+		},
+	}
+
+	// Test case 1: GetUser returns service error
+	suite.mockUserService.On("GetUser", "user-123").
+		Return(nil, &serviceerror.ServiceError{
+			Error:            "user_not_found",
+			ErrorDescription: "user not found",
+		})
+
+	_, err := suite.executor.Execute(ctx)
+
+	assert.Error(suite.T(), err)
+	assert.Contains(suite.T(), err.Error(), "something went wrong while fetching user attributes")
+	suite.mockUserService.AssertExpectations(suite.T())
+
+	// Reset mock for test case 2
+	suite.mockUserService = usermock.NewUserServiceInterfaceMock(suite.T())
+	suite.executor.userService = suite.mockUserService
+
+	// Test case 2: Invalid JSON in user attributes
+	existingUser := &user.User{
+		ID:         "user-123",
+		Attributes: json.RawMessage(`{invalid json}`),
+	}
+
+	suite.mockUserService.On("GetUser", "user-123").Return(existingUser, nil)
+
+	_, err = suite.executor.Execute(ctx)
+
+	assert.Error(suite.T(), err)
+	assert.Contains(suite.T(), err.Error(), "something went wrong while unmarshalling user attributes")
+	suite.mockUserService.AssertExpectations(suite.T())
+
+	// Test success case for comparison
+	suite.mockUserService = usermock.NewUserServiceInterfaceMock(suite.T())
+	suite.executor.userService = suite.mockUserService
+
+	existingUser.Attributes = attrsJSON
+	suite.mockUserService.On("GetUser", "user-123").Return(existingUser, nil)
+	suite.mockJWTService.On("GenerateJWT", mock.Anything, mock.Anything, mock.Anything,
+		mock.Anything, mock.Anything).Return("jwt-token", int64(3600), nil)
+
+	resp, err := suite.executor.Execute(ctx)
+
+	assert.NoError(suite.T(), err)
+	assert.NotNil(suite.T(), resp)
+	assert.Equal(suite.T(), flowcm.ExecComplete, resp.Status)
+}
+
+func (suite *AuthAssertExecutorTestSuite) TestExecute_AppendOUDetailsToClaimsFails() {
+	ctx := &flowcore.NodeContext{
+		FlowID:   "flow-123",
+		AppID:    "app-123",
+		FlowType: flowcm.FlowTypeAuthentication,
+		AuthenticatedUser: authncm.AuthenticatedUser{
+			IsAuthenticated:    true,
+			UserID:             "user-123",
+			OrganizationUnitID: "ou-123",
+		},
+		ExecutionHistory: map[string]*flowcm.NodeExecutionRecord{},
+		Application:      appmodel.ApplicationProcessedDTO{},
+	}
+
+	suite.mockOUService.On("GetOrganizationUnit", "ou-123").
+		Return(ou.OrganizationUnit{}, &serviceerror.ServiceError{
+			Error:            "ou_not_found",
+			ErrorDescription: "organization unit not found",
+		})
+
+	_, err := suite.executor.Execute(ctx)
+
+	assert.Error(suite.T(), err)
+	assert.Contains(suite.T(), err.Error(), "something went wrong while fetching organization unit")
+	suite.mockOUService.AssertExpectations(suite.T())
+}
+
+func (suite *AuthAssertExecutorTestSuite) TestAppendUserDetailsToClaims_GetUserAttributesFails() {
+	ctx := &flowcore.NodeContext{
+		FlowID:   "flow-123",
+		AppID:    "app-123",
+		FlowType: flowcm.FlowTypeAuthentication,
+		AuthenticatedUser: authncm.AuthenticatedUser{
+			IsAuthenticated: true,
+			UserID:          "user-123",
+			Attributes:      map[string]interface{}{"email": "test@example.com"},
+		},
+		ExecutionHistory: map[string]*flowcm.NodeExecutionRecord{},
+		Application: appmodel.ApplicationProcessedDTO{
+			Token: &appmodel.TokenConfig{
+				UserAttributes: []string{"email", "phone"},
+			},
+		},
+	}
+
+	suite.mockUserService.On("GetUser", "user-123").
+		Return(nil, &serviceerror.ServiceError{
+			Error:            "database_error",
+			ErrorDescription: "failed to fetch user",
+		})
+
+	_, err := suite.executor.Execute(ctx)
+
+	assert.Error(suite.T(), err)
+	assert.Contains(suite.T(), err.Error(), "something went wrong while fetching user attributes")
+	suite.mockUserService.AssertExpectations(suite.T())
+}
+
+func (suite *AuthAssertExecutorTestSuite) TestAppendOUDetailsToClaims_GetOrganizationUnitFails() {
+	ctx := &flowcore.NodeContext{
+		FlowID:   "flow-123",
+		AppID:    "app-123",
+		FlowType: flowcm.FlowTypeAuthentication,
+		AuthenticatedUser: authncm.AuthenticatedUser{
+			IsAuthenticated:    true,
+			UserID:             "user-123",
+			OrganizationUnitID: "ou-invalid",
+		},
+		ExecutionHistory: map[string]*flowcm.NodeExecutionRecord{},
+		Application:      appmodel.ApplicationProcessedDTO{},
+	}
+
+	suite.mockOUService.On("GetOrganizationUnit", "ou-invalid").
+		Return(ou.OrganizationUnit{}, &serviceerror.ServiceError{
+			Error:            "ou_not_found",
+			ErrorDescription: "organization unit does not exist",
+		})
+
+	_, err := suite.executor.Execute(ctx)
+
+	assert.Error(suite.T(), err)
+	assert.Contains(suite.T(), err.Error(), "something went wrong while fetching organization unit")
+	assert.Contains(suite.T(), err.Error(), "organization unit does not exist")
+	suite.mockOUService.AssertExpectations(suite.T())
+}
