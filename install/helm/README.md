@@ -164,7 +164,7 @@ The following table lists the configurable parameters of the Thunder chart and t
 | `configuration.gateClient.errorPath`   | Gate client error path                                          | `/error`                     |
 | `configuration.security.certFile`      | Server certificate file path                                    | `repository/resources/security/server.cert` |
 | `configuration.security.keyFile`       | Server key file path                                            | `repository/resources/security/server.key`  |
-| `configuration.security.cryptoFile`       | crypto key file path                                            | `repository/resources/security/server.key`  |
+| `configuration.security.cryptoFile`       | crypto key file path                                            | `repository/resources/security/crypto.key`  |
 | `configuration.database.identity.type` | Identity database type (postgres or sqlite)                     | `postgres`                   |
 | `configuration.database.identity.sqlitePath` | SQLite database path (for sqlite only)                    | `repository/database/thunderdb.db` |
 | `configuration.database.identity.sqliteOptions` | SQLite options (for sqlite only)                       | `_journal_mode=WAL&_busy_timeout=5000` |

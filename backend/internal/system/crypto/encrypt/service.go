@@ -80,7 +80,6 @@ func initEncryptionService() (*EncryptionService, error) {
 		cryptoFilePath = filepath.Clean(cryptoFilePath)
 		fileData, fileErr := os.ReadFile(cryptoFilePath)
 		if fileErr == nil {
-			// File read successfully, so decode its content
 			logger.Debug("Attempting to load crypto key from file", log.String("path", cryptoFilePath))
 			keyBytes, err = hex.DecodeString(string(fileData))
 			if err == nil {
@@ -88,7 +87,7 @@ func initEncryptionService() (*EncryptionService, error) {
 				return NewEncryptionService(keyBytes)
 			} else {
 				err = fmt.Errorf(
-					"crypto key value read from file is invalid, file at path %s: %w",
+					"error while reading crypto key file at path %s: %w",
 					cryptoFilePath,
 					err)
 				return nil, err
@@ -98,7 +97,7 @@ func initEncryptionService() (*EncryptionService, error) {
 			return nil, fileErr
 		}
 	} else {
-		err := fmt.Errorf("file path for crypto key file was not available in cofigs")
+		err := fmt.Errorf("crypto key file path not found in configs")
 		return nil, err
 	}
 }
