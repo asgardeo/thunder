@@ -1,0 +1,2187 @@
+openapi: 3.0.3
+info:
+  title: Resource Server Management API
+  version: "1.0"
+  description: |
+    This API is used to manage resource servers, resources, and actions for permission-based access control.
+    Resources can be nested hierarchically, and permissions are derived from the name-based path structure.
+    Resource and Action names are immutable after creation and used directly for permission derivation.
+    Resource Server names are updatable.
+  license:
+    name: Apache 2.0
+    url: https://www.apache.org/licenses/LICENSE-2.0.html
+
+servers:
+  - url: https://{host}:{port}
+    variables:
+      host:
+        default: "localhost"
+      port:
+        default: "8090"
+
+tags:
+  - name: resource-servers
+    description: Operations related to resource server management
+  - name: resources
+    description: Operations related to resource management within resource servers
+  - name: actions
+    description: Operations related to action management at resource server and resource levels
+  - name: permissions
+    description: Operations to preview and retrieve derived permissions
+
+paths:
+  /resource-servers:
+    get:
+      tags:
+        - resource-servers
+      summary: List resource servers
+      parameters:
+        - $ref: '#/components/parameters/limitQueryParam'
+        - $ref: '#/components/parameters/offsetQueryParam'
+      responses:
+        "200":
+          description: List of resource servers
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ResourceServerListResponse'
+              example:
+                totalResults: 5
+                startIndex: 1
+                count: 2
+                resourceServers:
+                  - id: "3fa85f64-5717-4562-b3fc-2c963f66afa6"
+                    name: "booking"
+                    description: "Handles all booking operations"
+                    identifier: "booking-system"
+                    ouId: "a839f4bd-39dc-4eaa-b5cc-210d8ecaee87"
+                  - id: "257e528f-eb24-48b6-884d-20460e190957"
+                    name: "property"
+                    description: "Property and facility management"
+                    identifier: "property-mgmt"
+                    ouId: "a839f4bd-39dc-4eaa-b5cc-210d8ecaee87"
+                links:
+                  - href: "resource-servers?offset=2&limit=2"
+                    rel: "next"
+        "400":
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                invalid-limit:
+                  summary: Invalid limit parameter
+                  value:
+                    code: "RES-1011"
+                    message: "Invalid limit parameter"
+                    description: "The limit parameter must be a positive integer"
+                invalid-offset:
+                  summary: Invalid offset parameter
+                  value:
+                    code: "RES-1012"
+                    message: "Invalid offset parameter"
+                    description: "The offset parameter must be a non-negative integer"
+        "500":
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: "RES-5000"
+                message: "Internal server error"
+                description: "An unexpected error occurred while processing the request"
+
+    post:
+      tags:
+        - resource-servers
+      summary: Create a new resource server
+      description: Creates a new resource server with specified handler for permission derivation
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateResourceServerRequest'
+            example:
+              name: "booking"
+              description: "Handles all booking operations"
+              identifier: "booking-system"
+              ouId: "a839f4bd-39dc-4eaa-b5cc-210d8ecaee87"
+      responses:
+        "201":
+          description: Resource server created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ResourceServer'
+              example:
+                id: "3fa85f64-5717-4562-b3fc-2c963f66afa6"
+                name: "booking"
+                description: "Handles all booking operations"
+                identifier: "booking-system"
+                ouId: "a839f4bd-39dc-4eaa-b5cc-210d8ecaee87"
+        "400":
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                invalid-request-format:
+                  summary: Invalid request format
+                  value:
+                    code: "RES-1001"
+                    message: "Invalid request format"
+                    description: "The request body is malformed or contains invalid data"
+                ou-not-found:
+                  summary: Organization unit not found
+                  value:
+                    code: "RES-1010"
+                    message: "Organization unit not found"
+                    description: "The specified organization unit does not exist"
+        "409":
+          description: Conflict
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: "RES-1004"
+                message: "Name conflict"
+                description: "A resource server with the same name already exists"
+        "500":
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: "RES-5000"
+                message: "Internal server error"
+                description: "An unexpected error occurred while processing the request"
+
+  /resource-servers/{id}:
+    get:
+      tags:
+        - resource-servers
+      summary: Get resource server details
+      description: Returns resource server metadata
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: Resource server details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ResourceServer'
+              example:
+                id: "3fa85f64-5717-4562-b3fc-2c963f66afa6"
+                name: "booking"
+                description: "Handles all booking operations"
+                identifier: "booking-system"
+                ouId: "a839f4bd-39dc-4eaa-b5cc-210d8ecaee87"
+        "400":
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: "RES-1002"
+                message: "Invalid request format"
+                description: "Resource server ID is required"
+        "404":
+          description: Resource server not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: "RES-1003"
+                message: "Resource server not found"
+                description: "The resource server with the specified id does not exist"
+        "500":
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: "RES-5000"
+                message: "Internal server error"
+                description: "An unexpected error occurred while processing the request"
+
+    put:
+      tags:
+        - resource-servers
+      summary: Update resource server
+      description: Updates resource server name, description, identifier, and organization unit.
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateResourceServerRequest'
+            example:
+              name: "booking-updated"
+              description: "Updated description for booking operations"
+              identifier: "booking-system-v2"
+              ouId: "a839f4bd-39dc-4eaa-b5cc-210d8ecaee87"
+      responses:
+        "200":
+          description: Resource server updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ResourceServer'
+              example:
+                id: "3fa85f64-5717-4562-b3fc-2c963f66afa6"
+                name: "booking-updated"
+                description: "Updated description for booking operations"
+                identifier: "booking-system-v2"
+                ouId: "a839f4bd-39dc-4eaa-b5cc-210d8ecaee87"
+        "400":
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                missing-id:
+                  summary: Missing resource server ID
+                  value:
+                    code: "RES-1002"
+                    message: "Invalid request format"
+                    description: "Resource server ID is required"
+                invalid-request-format:
+                  summary: Invalid request format
+                  value:
+                    code: "RES-1001"
+                    message: "Invalid request format"
+                    description: "The request body is malformed or contains invalid data"
+                ou-not-found:
+                  summary: Organization unit not found
+                  value:
+                    code: "RES-1010"
+                    message: "Organization unit not found"
+                    description: "The specified organization unit does not exist"
+        "404":
+          description: Resource server not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: "RES-1003"
+                message: "Resource server not found"
+                description: "The resource server with the specified id does not exist"
+        "500":
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: "RES-5000"
+                message: "Internal server error"
+                description: "An unexpected error occurred while processing the request"
+
+    delete:
+      tags:
+        - resource-servers
+      summary: Delete a resource server by id
+      description: Deletes a resource server. Cannot delete if it has resources or actions.
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "204":
+          description: Resource server deleted
+        "400":
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                missing-id:
+                  summary: Missing resource server ID
+                  value:
+                    code: "RES-1002"
+                    message: "Invalid request format"
+                    description: "Resource server ID is required"
+                cannot-delete:
+                  summary: Cannot delete resource server
+                  value:
+                    code: "RES-1006"
+                    message: "Cannot delete resource server"
+                    description: "Cannot delete resource server that has resources or actions"
+        "404":
+          description: Resource server not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: "RES-1003"
+                message: "Resource server not found"
+                description: "The resource server with the specified id does not exist"
+        "500":
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: "RES-5000"
+                message: "Internal server error"
+                description: "An unexpected error occurred while processing the request"
+
+  /resource-servers/{rsId}/resources:
+    get:
+      tags:
+        - resources
+      summary: List resources in resource server
+      description: |
+        Returns a paginated list of resources. Use the parentId parameter to filter:
+        - No parentId: returns all resources (flat list)
+        - parentId=null or empty: returns only top-level resources
+        - parentId={uuid}: returns direct children of specified parent
+      parameters:
+        - in: path
+          name: rsId
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: Resource server ID
+        - in: query
+          name: parentId
+          required: false
+          schema:
+            type: string
+            format: uuid
+            nullable: true
+          description: |
+            Filter by parent resource ID:
+            - Omit parameter: return all resources
+            - null or empty string: return only top-level resources
+            - UUID: return direct children of that parent
+        - $ref: '#/components/parameters/limitQueryParam'
+        - $ref: '#/components/parameters/offsetQueryParam'
+      responses:
+        "200":
+          description: List of resources
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ResourceListResponse'
+              examples:
+                all-resources:
+                  summary: All resources (no parentId filter)
+                  value:
+                    totalResults: 10
+                    startIndex: 1
+                    count: 3
+                    resources:
+                      - id: "7a4b1f8e-5c69-4b60-9232-2b0aaf65ef3c"
+                        name: "Reservations"
+                        description: "Reservation management"
+                        handler: "reservations"
+                        parent: null
+                        resourceServerId: "3fa85f64-5717-4562-b3fc-2c963f66afa6"
+                      - id: "8b5c2f9f-6d7a-4c71-a343-3c1bbf76fg4d"
+                        name: "Online Booking"
+                        description: "Online booking subsystem"
+                        handler: "online-booking"
+                        parent: "7a4b1f8e-5c69-4b60-9232-2b0aaf65ef3c"
+                        resourceServerId: "3fa85f64-5717-4562-b3fc-2c963f66afa6"
+                      - id: "9c6d3g0g-7e8b-4d82-b454-4d2ccg87gh5e"
+                        name: "Web Reservations"
+                        description: "Web-based reservations"
+                        handler: "web-reservations"
+                        identifier: null
+                        parent: "8b5c2f9f-6d7a-4c71-a343-3c1bbf76fg4d"
+                        resourceServerId: "3fa85f64-5717-4562-b3fc-2c963f66afa6"
+                    links:
+                      - href: "resource-servers/3fa85f64-5717-4562-b3fc-2c963f66afa6/resources?offset=3&limit=3"
+                        rel: "next"
+                top-level-only:
+                  summary: Top-level resources only (parentId=null)
+                  value:
+                    totalResults: 3
+                    startIndex: 1
+                    count: 2
+                    resources:
+                      - id: "7a4b1f8e-5c69-4b60-9232-2b0aaf65ef3c"
+                        name: "Reservations"
+                        description: "Reservation management"
+                        handler: "reservations"
+                        parent: null
+                        resourceServerId: "3fa85f64-5717-4562-b3fc-2c963f66afa6"
+                      - id: "6b1e7b8d-7e19-41eb-8fa2-c0ee5bb67a94"
+                        name: "Payments"
+                        description: "Payment processing"
+                        handler: "payments"
+                        identifier: null
+                        parent: null
+                        resourceServerId: "3fa85f64-5717-4562-b3fc-2c963f66afa6"
+                    links:
+                      - href: "resource-servers/3fa85f64-5717-4562-b3fc-2c963f66afa6/resources?parentId=null&offset=2&limit=2"
+                        rel: "next"
+                children-of-parent:
+                  summary: Children of specific parent
+                  value:
+                    totalResults: 2
+                    startIndex: 1
+                    count: 2
+                    resources:
+                      - id: "8b5c2f9f-6d7a-4c71-a343-3c1bbf76fg4d"
+                        name: "Online Booking"
+                        description: "Online booking subsystem"
+                        handler: "online-booking"
+                        parent: "7a4b1f8e-5c69-4b60-9232-2b0aaf65ef3c"
+                        resourceServerId: "3fa85f64-5717-4562-b3fc-2c963f66afa6"
+                      - id: "7c4d5e6f-8f3a-4e93-c565-5e3ddf98hi6f"
+                        name: "Phone Booking"
+                        description: "Phone-based booking"
+                        handler: "phone-booking"
+                        identifier: null
+                        parent: "7a4b1f8e-5c69-4b60-9232-2b0aaf65ef3c"
+                        resourceServerId: "3fa85f64-5717-4562-b3fc-2c963f66afa6"
+                    links: []
+        "400":
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                invalid-limit:
+                  summary: Invalid limit parameter
+                  value:
+                    code: "RES-1011"
+                    message: "Invalid limit parameter"
+                    description: "The limit parameter must be a positive integer"
+                invalid-offset:
+                  summary: Invalid offset parameter
+                  value:
+                    code: "RES-1012"
+                    message: "Invalid offset parameter"
+                    description: "The offset parameter must be a non-negative integer"
+        "404":
+          description: Resource server not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: "RES-1003"
+                message: "Resource server not found"
+                description: "The resource server with the specified id does not exist"
+        "500":
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: "RES-5000"
+                message: "Internal server error"
+                description: "An unexpected error occurred while processing the request"
+
+    post:
+      tags:
+        - resources
+      summary: Create a new resource
+      description: |
+        Creates a new resource within the resource server. 
+        - Set parent to null for top-level resources
+        - Set parent to UUID for nested resources
+      parameters:
+        - in: path
+          name: rsId
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: Resource server ID
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateResourceRequest'
+            examples:
+              top-level-resource:
+                summary: Top-level resource
+                value:
+                  name: "Reservations"
+                  description: "Reservation management"
+                  handler: "reservations"
+                  parent: null
+              nested-resource:
+                summary: Nested resource
+                value:
+                  name: "Online Booking"
+                  description: "Online booking subsystem"
+                  handler: "online-booking"
+                  parent: "7a4b1f8e-5c69-4b60-9232-2b0aaf65ef3c"
+      responses:
+        "201":
+          description: Resource created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Resource'
+              examples:
+                top-level-resource:
+                  summary: Top-level resource created
+                  value:
+                    id: "7a4b1f8e-5c69-4b60-9232-2b0aaf65ef3c"
+                    name: "Reservations"
+                    description: "Reservation management"
+                    handler: "reservations"
+                    parent: null
+                    resourceServerId: "3fa85f64-5717-4562-b3fc-2c963f66afa6"
+                nested-resource:
+                  summary: Nested resource created
+                  value:
+                    id: "8b5c2f9f-6d7a-4c71-a343-3c1bbf76fg4d"
+                    name: "Online Booking"
+                    description: "Online booking subsystem"
+                    handler: "online-booking"
+                    parent: "7a4b1f8e-5c69-4b60-9232-2b0aaf65ef3c"
+                    resourceServerId: "3fa85f64-5717-4562-b3fc-2c963f66afa6"
+        "400":
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                invalid-request-format:
+                  summary: Invalid request format
+                  value:
+                    code: "RES-1001"
+                    message: "Invalid request format"
+                    description: "The request body is malformed or contains invalid data"
+                parent-not-found:
+                  summary: Parent resource not found
+                  value:
+                    code: "RES-1005"
+                    message: "Parent resource not found"
+                    description: "The specified parent resource does not exist"
+        "404":
+          description: Resource server not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: "RES-1003"
+                message: "Resource server not found"
+                description: "The resource server with the specified id does not exist"
+        "409":
+          description: Conflict
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: "RES-1004"
+                message: "Name conflict"
+                description: "A resource with the same name already exists under the same parent"
+        "500":
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: "RES-5000"
+                message: "Internal server error"
+                description: "An unexpected error occurred while processing the request"
+
+  /resource-servers/{rsId}/resources/{id}:
+    get:
+      tags:
+        - resources
+      summary: Get resource details
+      description: Returns resource metadata
+      parameters:
+        - in: path
+          name: rsId
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: Resource server ID
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: Resource ID
+      responses:
+        "200":
+          description: Resource details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Resource'
+              example:
+                id: "7a4b1f8e-5c69-4b60-9232-2b0aaf65ef3c"
+                name: "Reservations"
+                description: "Reservation management"
+                handler: "reservations"
+                parent: null
+                resourceServerId: "3fa85f64-5717-4562-b3fc-2c963f66afa6"
+        "400":
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: "RES-1002"
+                message: "Invalid request format"
+                description: "Resource ID is required"
+        "404":
+          description: Resource or resource server not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                resource-not-found:
+                  summary: Resource not found
+                  value:
+                    code: "RES-1008"
+                    message: "Resource not found"
+                    description: "The resource with the specified id does not exist"
+                resource-server-not-found:
+                  summary: Resource server not found
+                  value:
+                    code: "RES-1003"
+                    message: "Resource server not found"
+                    description: "The resource server with the specified id does not exist"
+        "500":
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: "RES-5000"
+                message: "Internal server error"
+                description: "An unexpected error occurred while processing the request"
+
+    put:
+      tags:
+        - resources
+      summary: Update resource
+      description: |
+        Updates resource description and parent. Name is immutable after creation.
+        When updating parent, system validates no circular dependency is created.
+      parameters:
+        - in: path
+          name: rsId
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: Resource server ID
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: Resource ID
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateResourceRequest'
+            example:
+              description: "Updated reservation management"
+              parent: null
+      responses:
+        "200":
+          description: Resource updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Resource'
+              example:
+                id: "7a4b1f8e-5c69-4b60-9232-2b0aaf65ef3c"
+                name: "reservations"
+                description: "Updated reservation management"
+                parent: null
+                resourceServerId: "3fa85f64-5717-4562-b3fc-2c963f66afa6"
+        "400":
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                missing-id:
+                  summary: Missing resource ID
+                  value:
+                    code: "RES-1002"
+                    message: "Invalid request format"
+                    description: "Resource ID is required"
+                invalid-request-format:
+                  summary: Invalid request format
+                  value:
+                    code: "RES-1001"
+                    message: "Invalid request format"
+                    description: "The request body is malformed or contains invalid data"
+                parent-not-found:
+                  summary: Parent resource not found
+                  value:
+                    code: "RES-1005"
+                    message: "Parent resource not found"
+                    description: "The specified parent resource does not exist"
+                circular-dependency:
+                  summary: Circular dependency detected
+                  value:
+                    code: "RES-1007"
+                    message: "Circular dependency detected"
+                    description: "Setting this parent would create a circular dependency"
+        "404":
+          description: Resource or resource server not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                resource-not-found:
+                  summary: Resource not found
+                  value:
+                    code: "RES-1008"
+                    message: "Resource not found"
+                    description: "The resource with the specified id does not exist"
+                resource-server-not-found:
+                  summary: Resource server not found
+                  value:
+                    code: "RES-1003"
+                    message: "Resource server not found"
+                    description: "The resource server with the specified id does not exist"
+        "409":
+          description: Conflict
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: "RES-1004"
+                message: "Name conflict"
+                description: "A resource with the same name already exists under the same parent"
+        "500":
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: "RES-5000"
+                message: "Internal server error"
+                description: "An unexpected error occurred while processing the request"
+
+    delete:
+      tags:
+        - resources
+      summary: Delete a resource by id
+      description: Deletes a resource. Cannot delete if it has sub-resources or actions.
+      parameters:
+        - in: path
+          name: rsId
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: Resource server ID
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: Resource ID
+      responses:
+        "204":
+          description: Resource deleted
+        "400":
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                missing-id:
+                  summary: Missing resource ID
+                  value:
+                    code: "RES-1002"
+                    message: "Invalid request format"
+                    description: "Resource ID is required"
+                cannot-delete:
+                  summary: Cannot delete resource
+                  value:
+                    code: "RES-1006"
+                    message: "Cannot delete resource"
+                    description: "Cannot delete resource that has sub-resources or actions"
+        "404":
+          description: Resource or resource server not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                resource-not-found:
+                  summary: Resource not found
+                  value:
+                    code: "RES-1008"
+                    message: "Resource not found"
+                    description: "The resource with the specified id does not exist"
+                resource-server-not-found:
+                  summary: Resource server not found
+                  value:
+                    code: "RES-1003"
+                    message: "Resource server not found"
+                    description: "The resource server with the specified id does not exist"
+        "500":
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: "RES-5000"
+                message: "Internal server error"
+                description: "An unexpected error occurred while processing the request"
+
+  /resource-servers/{rsId}/actions:
+    get:
+      tags:
+        - actions
+      summary: List actions at resource server level
+      description: Returns all actions defined at the resource server level
+      parameters:
+        - in: path
+          name: rsId
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: Resource server ID
+        - $ref: '#/components/parameters/limitQueryParam'
+        - $ref: '#/components/parameters/offsetQueryParam'
+      responses:
+        "200":
+          description: List of actions
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ActionListResponse'
+              example:
+                totalResults: 5
+                startIndex: 1
+                count: 2
+                actions:
+                  - id: "9c6d3g0g-7e8b-4d82-b454-4d2ccg87gh5e"
+                    name: "Create Booking"
+                    description: "Create a new booking"
+                    handler: "create"
+                    resourceServerId: "3fa85f64-5717-4562-b3fc-2c963f66afa6"
+                    resourceId: null
+                  - id: "ad7e4h1h-8f9c-4e93-c565-5e3ddf98hi6f"
+                    name: "List Bookings"
+                    description: "List all bookings"
+                    handler: "list"
+                    resourceServerId: "3fa85f64-5717-4562-b3fc-2c963f66afa6"
+                    resourceId: null
+                links:
+                  - href: "resource-servers/3fa85f64-5717-4562-b3fc-2c963f66afa6/actions?offset=2&limit=2"
+                    rel: "next"
+        "400":
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                invalid-limit:
+                  summary: Invalid limit parameter
+                  value:
+                    code: "RES-1011"
+                    message: "Invalid limit parameter"
+                    description: "The limit parameter must be a positive integer"
+                invalid-offset:
+                  summary: Invalid offset parameter
+                  value:
+                    code: "RES-1012"
+                    message: "Invalid offset parameter"
+                    description: "The offset parameter must be a non-negative integer"
+        "404":
+          description: Resource server not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: "RES-1003"
+                message: "Resource server not found"
+                description: "The resource server with the specified id does not exist"
+        "500":
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: "RES-5000"
+                message: "Internal server error"
+                description: "An unexpected error occurred while processing the request"
+
+    post:
+      tags:
+        - actions
+      summary: Create an action at resource server level
+      description: Creates a new action at the resource server level
+      parameters:
+        - in: path
+          name: rsId
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: Resource server ID
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateActionRequest'
+            example:
+              name: "Create Booking"
+              description: "Create a new booking"
+              handler: "create"
+      responses:
+        "201":
+          description: Action created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Action'
+              example:
+                id: "9c6d3g0g-7e8b-4d82-b454-4d2ccg87gh5e"
+                name: "Create Booking"
+                description: "Create a new booking"
+                handler: "create"
+                resourceServerId: "3fa85f64-5717-4562-b3fc-2c963f66afa6"
+                resourceId: null
+        "400":
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: "RES-1001"
+                message: "Invalid request format"
+                description: "The request body is malformed or contains invalid data"
+        "404":
+          description: Resource server not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: "RES-1003"
+                message: "Resource server not found"
+                description: "The resource server with the specified id does not exist"
+        "409":
+          description: Conflict
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: "RES-1004"
+                message: "Name conflict"
+                description: "An action with the same name already exists at this resource server level"
+        "500":
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: "RES-5000"
+                message: "Internal server error"
+                description: "An unexpected error occurred while processing the request"
+
+  /resource-servers/{rsId}/actions/{id}:
+    get:
+      tags:
+        - actions
+      summary: Get action details at resource server level
+      description: Returns action metadata
+      parameters:
+        - in: path
+          name: rsId
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: Resource server ID
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: Action ID
+      responses:
+        "200":
+          description: Action details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Action'
+              example:
+                id: "9c6d3g0g-7e8b-4d82-b454-4d2ccg87gh5e"
+                name: "Create Booking"
+                description: "Create a new booking"
+                handler: "create"
+                resourceServerId: "3fa85f64-5717-4562-b3fc-2c963f66afa6"
+                resourceId: null
+        "400":
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: "RES-1002"
+                message: "Invalid request format"
+                description: "Action ID is required"
+        "404":
+          description: Action or resource server not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                action-not-found:
+                  summary: Action not found
+                  value:
+                    code: "RES-1009"
+                    message: "Action not found"
+                    description: "The action with the specified id does not exist"
+                resource-server-not-found:
+                  summary: Resource server not found
+                  value:
+                    code: "RES-1003"
+                    message: "Resource server not found"
+                    description: "The resource server with the specified id does not exist"
+        "500":
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: "RES-5000"
+                message: "Internal server error"
+                description: "An unexpected error occurred while processing the request"
+
+    put:
+      tags:
+        - actions
+      summary: Update action at resource server level
+      description: Updates action description. Name is immutable after creation.
+      parameters:
+        - in: path
+          name: rsId
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: Resource server ID
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: Action ID
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateActionRequest'
+            example:
+              description: "Updated description for creating bookings"
+      responses:
+        "200":
+          description: Action updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Action'
+              example:
+                id: "9c6d3g0g-7e8b-4d82-b454-4d2ccg87gh5e"
+                name: "create"
+                description: "Updated description for creating bookings"
+                resourceServerId: "3fa85f64-5717-4562-b3fc-2c963f66afa6"
+                resourceId: null
+        "400":
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                missing-id:
+                  summary: Missing action ID
+                  value:
+                    code: "RES-1002"
+                    message: "Invalid request format"
+                    description: "Action ID is required"
+                invalid-request-format:
+                  summary: Invalid request format
+                  value:
+                    code: "RES-1001"
+                    message: "Invalid request format"
+                    description: "The request body is malformed or contains invalid data"
+        "404":
+          description: Action or resource server not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                action-not-found:
+                  summary: Action not found
+                  value:
+                    code: "RES-1009"
+                    message: "Action not found"
+                    description: "The action with the specified id does not exist"
+                resource-server-not-found:
+                  summary: Resource server not found
+                  value:
+                    code: "RES-1003"
+                    message: "Resource server not found"
+                    description: "The resource server with the specified id does not exist"
+        "500":
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: "RES-5000"
+                message: "Internal server error"
+                description: "An unexpected error occurred while processing the request"
+
+    delete:
+      tags:
+        - actions
+      summary: Delete an action at resource server level
+      description: Deletes an action at the resource server level
+      parameters:
+        - in: path
+          name: rsId
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: Resource server ID
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: Action ID
+      responses:
+        "204":
+          description: Action deleted
+        "400":
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: "RES-1002"
+                message: "Invalid request format"
+                description: "Action ID is required"
+        "404":
+          description: Action or resource server not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                action-not-found:
+                  summary: Action not found
+                  value:
+                    code: "RES-1009"
+                    message: "Action not found"
+                    description: "The action with the specified id does not exist"
+                resource-server-not-found:
+                  summary: Resource server not found
+                  value:
+                    code: "RES-1003"
+                    message: "Resource server not found"
+                    description: "The resource server with the specified id does not exist"
+        "500":
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: "RES-5000"
+                message: "Internal server error"
+                description: "An unexpected error occurred while processing the request"
+
+  /resource-servers/{rsId}/resources/{resourceId}/actions:
+    get:
+      tags:
+        - actions
+      summary: List actions at resource level
+      description: Returns all actions defined for a specific resource
+      parameters:
+        - in: path
+          name: rsId
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: Resource server ID
+        - in: path
+          name: resourceId
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: Resource ID
+        - $ref: '#/components/parameters/limitQueryParam'
+        - $ref: '#/components/parameters/offsetQueryParam'
+      responses:
+        "200":
+          description: List of actions
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ActionListResponse'
+              example:
+                totalResults: 6
+                startIndex: 1
+                count: 2
+                actions:
+                  - id: "be8f5i2i-9g0d-5fa4-d676-6f4eeg09ij7g"
+                    name: "Create Reservation"
+                    description: "Create a new reservation"
+                    handler: "create"
+                    resourceServerId: "3fa85f64-5717-4562-b3fc-2c963f66afa6"
+                    resourceId: "7a4b1f8e-5c69-4b60-9232-2b0aaf65ef3c"
+                  - id: "cf9g6j3j-0h1e-6gb5-e787-7g5ffh10jk8h"
+                    name: "Read Reservation"
+                    description: "Read reservation details"
+                    handler: "read"
+                    resourceServerId: "3fa85f64-5717-4562-b3fc-2c963f66afa6"
+                    resourceId: "7a4b1f8e-5c69-4b60-9232-2b0aaf65ef3c"
+                links:
+                  - href: "resource-servers/3fa85f64-5717-4562-b3fc-2c963f66afa6/resources/7a4b1f8e-5c69-4b60-9232-2b0aaf65ef3c/actions?offset=2&limit=2"
+                    rel: "next"
+        "400":
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                invalid-limit:
+                  summary: Invalid limit parameter
+                  value:
+                    code: "RES-1011"
+                    message: "Invalid limit parameter"
+                    description: "The limit parameter must be a positive integer"
+                invalid-offset:
+                  summary: Invalid offset parameter
+                  value:
+                    code: "RES-1012"
+                    message: "Invalid offset parameter"
+                    description: "The offset parameter must be a non-negative integer"
+        "404":
+          description: Resource or resource server not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                resource-not-found:
+                  summary: Resource not found
+                  value:
+                    code: "RES-1008"
+                    message: "Resource not found"
+                    description: "The resource with the specified id does not exist"
+                resource-server-not-found:
+                  summary: Resource server not found
+                  value:
+                    code: "RES-1003"
+                    message: "Resource server not found"
+                    description: "The resource server with the specified id does not exist"
+        "500":
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: "RES-5000"
+                message: "Internal server error"
+                description: "An unexpected error occurred while processing the request"
+
+    post:
+      tags:
+        - actions
+      summary: Create an action at resource level
+      description: Creates a new action for a specific resource
+      parameters:
+        - in: path
+          name: rsId
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: Resource server ID
+        - in: path
+          name: resourceId
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: Resource ID
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateActionRequest'
+            example:
+              name: "Create Reservation"
+              description: "Create a new reservation"
+              handler: "create"
+      responses:
+        "201":
+          description: Action created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Action'
+              example:
+                id: "be8f5i2i-9g0d-5fa4-d676-6f4eeg09ij7g"
+                name: "Create Reservation"
+                description: "Create a new reservation"
+                handler: "create"
+                resourceServerId: "3fa85f64-5717-4562-b3fc-2c963f66afa6"
+                resourceId: "7a4b1f8e-5c69-4b60-9232-2b0aaf65ef3c"
+        "400":
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: "RES-1001"
+                message: "Invalid request format"
+                description: "The request body is malformed or contains invalid data"
+        "404":
+          description: Resource or resource server not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                resource-not-found:
+                  summary: Resource not found
+                  value:
+                    code: "RES-1008"
+                    message: "Resource not found"
+                    description: "The resource with the specified id does not exist"
+                resource-server-not-found:
+                  summary: Resource server not found
+                  value:
+                    code: "RES-1003"
+                    message: "Resource server not found"
+                    description: "The resource server with the specified id does not exist"
+        "409":
+          description: Conflict
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: "RES-1004"
+                message: "Name conflict"
+                description: "An action with the same name already exists for this resource"
+        "500":
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: "RES-5000"
+                message: "Internal server error"
+                description: "An unexpected error occurred while processing the request"
+
+  /resource-servers/{rsId}/resources/{resourceId}/actions/{id}:
+    get:
+      tags:
+        - actions
+      summary: Get action details at resource level
+      description: Returns action metadata
+      parameters:
+        - in: path
+          name: rsId
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: Resource server ID
+        - in: path
+          name: resourceId
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: Resource ID
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: Action ID
+      responses:
+        "200":
+          description: Action details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Action'
+              example:
+                id: "be8f5i2i-9g0d-5fa4-d676-6f4eeg09ij7g"
+                name: "Create Reservation"
+                description: "Create a new reservation"
+                handler: "create"
+                resourceServerId: "3fa85f64-5717-4562-b3fc-2c963f66afa6"
+                resourceId: "7a4b1f8e-5c69-4b60-9232-2b0aaf65ef3c"
+        "400":
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: "RES-1002"
+                message: "Invalid request format"
+                description: "Action ID is required"
+        "404":
+          description: Action, resource, or resource server not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                action-not-found:
+                  summary: Action not found
+                  value:
+                    code: "RES-1009"
+                    message: "Action not found"
+                    description: "The action with the specified id does not exist"
+                resource-not-found:
+                  summary: Resource not found
+                  value:
+                    code: "RES-1008"
+                    message: "Resource not found"
+                    description: "The resource with the specified id does not exist"
+                resource-server-not-found:
+                  summary: Resource server not found
+                  value:
+                    code: "RES-1003"
+                    message: "Resource server not found"
+                    description: "The resource server with the specified id does not exist"
+        "500":
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: "RES-5000"
+                message: "Internal server error"
+                description: "An unexpected error occurred while processing the request"
+
+    put:
+      tags:
+        - actions
+      summary: Update action at resource level
+      description: Updates action description. Name is immutable after creation.
+      parameters:
+        - in: path
+          name: rsId
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: Resource server ID
+        - in: path
+          name: resourceId
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: Resource ID
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: Action ID
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateActionRequest'
+            example:
+              description: "Updated description for creating reservations"
+      responses:
+        "200":
+          description: Action updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Action'
+              example:
+                id: "be8f5i2i-9g0d-5fa4-d676-6f4eeg09ij7g"
+                name: "create"
+                description: "Updated description for creating reservations"
+                resourceServerId: "3fa85f64-5717-4562-b3fc-2c963f66afa6"
+                resourceId: "7a4b1f8e-5c69-4b60-9232-2b0aaf65ef3c"
+        "400":
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                missing-id:
+                  summary: Missing action ID
+                  value:
+                    code: "RES-1002"
+                    message: "Invalid request format"
+                    description: "Action ID is required"
+                invalid-request-format:
+                  summary: Invalid request format
+                  value:
+                    code: "RES-1001"
+                    message: "Invalid request format"
+                    description: "The request body is malformed or contains invalid data"
+        "404":
+          description: Action, resource, or resource server not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                action-not-found:
+                  summary: Action not found
+                  value:
+                    code: "RES-1009"
+                    message: "Action not found"
+                    description: "The action with the specified id does not exist"
+                resource-not-found:
+                  summary: Resource not found
+                  value:
+                    code: "RES-1008"
+                    message: "Resource not found"
+                    description: "The resource with the specified id does not exist"
+                resource-server-not-found:
+                  summary: Resource server not found
+                  value:
+                    code: "RES-1003"
+                    message: "Resource server not found"
+                    description: "The resource server with the specified id does not exist"
+        "500":
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: "RES-5000"
+                message: "Internal server error"
+                description: "An unexpected error occurred while processing the request"
+
+    delete:
+      tags:
+        - actions
+      summary: Delete an action at resource level
+      description: Deletes an action for a specific resource
+      parameters:
+        - in: path
+          name: rsId
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: Resource server ID
+        - in: path
+          name: resourceId
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: Resource ID
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: Action ID
+      responses:
+        "204":
+          description: Action deleted
+        "400":
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: "RES-1002"
+                message: "Invalid request format"
+                description: "Action ID is required"
+        "404":
+          description: Action, resource, or resource server not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                action-not-found:
+                  summary: Action not found
+                  value:
+                    code: "RES-1009"
+                    message: "Action not found"
+                    description: "The action with the specified id does not exist"
+                resource-not-found:
+                  summary: Resource not found
+                  value:
+                    code: "RES-1008"
+                    message: "Resource not found"
+                    description: "The resource with the specified id does not exist"
+                resource-server-not-found:
+                  summary: Resource server not found
+                  value:
+                    code: "RES-1003"
+                    message: "Resource server not found"
+                    description: "The resource server with the specified id does not exist"
+        "500":
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: "RES-5000"
+                message: "Internal server error"
+                description: "An unexpected error occurred while processing the request"
+
+  /resource-servers/{id}/permissions:
+    get:
+      tags:
+        - permissions
+      summary: Get all derived permissions for resource server
+      description: |
+        Returns all derived permissions for the resource server, including:
+        - The resource server itself
+        - All resources (nested hierarchy)
+        - All actions at resource server and resource levels
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: Resource server ID
+      responses:
+        "200":
+          description: List of derived permissions
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PermissionListResponse'
+              example:
+                resourceServerId: "3fa85f64-5717-4562-b3fc-2c963f66afa6"
+                resourceServerName: "booking"
+                permissions:
+                  - "booking"
+                  - "booking/create"
+                  - "booking/list"
+                  - "booking/reservations"
+                  - "booking/reservations/create"
+                  - "booking/reservations/read"
+                  - "booking/reservations/update"
+                  - "booking/reservations/cancel"
+                  - "booking/online-booking"
+                  - "booking/online-booking/web-reservations"
+                  - "booking/online-booking/web-reservations/create"
+                  - "booking/online-booking/web-reservations/search"
+                  - "booking/online-booking/web-reservations/view"
+                  - "booking/payments"
+                  - "booking/payments/process"
+                  - "booking/payments/refund"
+        "404":
+          description: Resource server not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: "RES-1003"
+                message: "Resource server not found"
+                description: "The resource server with the specified id does not exist"
+        "500":
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: "RES-5000"
+                message: "Internal server error"
+                description: "An unexpected error occurred while processing the request"
+
+  /resource-servers/{rsId}/resources/{resourceId}/permissions:
+    get:
+      tags:
+        - permissions
+      summary: Get derived permissions for specific resource
+      description: |
+        Returns all derived permissions for the specific resource, including:
+        - The resource itself
+        - All sub-resources (nested hierarchy)
+        - All actions at this resource and sub-resource levels
+      parameters:
+        - in: path
+          name: rsId
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: Resource server ID
+        - in: path
+          name: resourceId
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: Resource ID
+      responses:
+        "200":
+          description: List of derived permissions
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ResourcePermissionListResponse'
+              example:
+                resourceServerId: "3fa85f64-5717-4562-b3fc-2c963f66afa6"
+                resourceId: "7a4b1f8e-5c69-4b60-9232-2b0aaf65ef3c"
+                resourcePath: "booking/reservations"
+                permissions:
+                  - "booking/reservations"
+                  - "booking/reservations/create"
+                  - "booking/reservations/read"
+                  - "booking/reservations/update"
+                  - "booking/reservations/cancel"
+        "404":
+          description: Resource or resource server not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                resource-not-found:
+                  summary: Resource not found
+                  value:
+                    code: "RES-1008"
+                    message: "Resource not found"
+                    description: "The resource with the specified id does not exist"
+                resource-server-not-found:
+                  summary: Resource server not found
+                  value:
+                    code: "RES-1003"
+                    message: "Resource server not found"
+                    description: "The resource server with the specified id does not exist"
+        "500":
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: "RES-5000"
+                message: "Internal server error"
+                description: "An unexpected error occurred while processing the request"
+
+components:
+  parameters:
+    limitQueryParam:
+      in: query
+      name: limit
+      required: false
+      description: Maximum number of records to return
+      schema:
+        type: integer
+        minimum: 1
+        default: 30
+    offsetQueryParam:
+      in: query
+      name: offset
+      required: false
+      description: Number of records to skip for pagination
+      schema:
+        type: integer
+        minimum: 0
+        default: 0
+
+  schemas:
+    ResourceServer:
+      type: object
+      required: [id, name, ouId]
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: Unique identifier for the resource server
+        name:
+          type: string
+          description: Name of the resource server (used for permission derivation)
+        description:
+          type: string
+          nullable: true
+          description: Optional description of the resource server
+        identifier:
+          type: string
+          nullable: true
+          description: Optional identifier for authorization requests
+        ouId:
+          type: string
+          format: uuid
+          description: ID of the organization unit this resource server belongs to
+
+    CreateResourceServerRequest:
+      type: object
+      required: [name, ouId]
+      properties:
+        name:
+          type: string
+          description: Name of the resource server (used for permission derivation)
+        description:
+          type: string
+          description: Optional description of the resource server
+        identifier:
+          type: string
+          description: Optional identifier for authorization requests
+        ouId:
+          type: string
+          format: uuid
+          description: ID of the organization unit this resource server belongs to
+
+    UpdateResourceServerRequest:
+      type: object
+      required: [name, ouId]
+      properties:
+        name:
+          type: string
+          description: Name of the resource server (used for permission derivation)
+        description:
+          type: string
+          description: Optional description of the resource server
+        identifier:
+          type: string
+          description: Optional identifier for authorization requests
+        ouId:
+          type: string
+          format: uuid
+          description: ID of the organization unit this resource server belongs to
+
+    Resource:
+      type: object
+      required: [id, name, resourceServerId]
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: Unique identifier for the resource
+        name:
+          type: string
+          description: Name of the resource (immutable after creation, used for permission derivation)
+        description:
+          type: string
+          nullable: true
+          description: Optional description of the resource
+        parent:
+          type: string
+          format: uuid
+          nullable: true
+          description: Parent resource ID (null for top-level resources)
+        resourceServerId:
+          type: string
+          format: uuid
+          description: ID of the resource server this resource belongs to
+
+    CreateResourceRequest:
+      type: object
+      required: [name]
+      properties:
+        name:
+          type: string
+          description: Name of the resource (will be immutable after creation, used for permission derivation)
+        description:
+          type: string
+          description: Optional description of the resource
+        parent:
+          type: string
+          format: uuid
+          nullable: true
+          description: Parent resource ID (null for top-level resources)
+
+    UpdateResourceRequest:
+      type: object
+      properties:
+        description:
+          type: string
+          description: Optional description of the resource
+        parent:
+          type: string
+          format: uuid
+          nullable: true
+          description: Parent resource ID (null for top-level resources)
+
+    Action:
+      type: object
+      required: [id, name, resourceServerId]
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: Unique identifier for the action
+        name:
+          type: string
+          description: Name of the action (immutable after creation, used for permission derivation)
+        description:
+          type: string
+          nullable: true
+          description: Optional description of the action
+        resourceServerId:
+          type: string
+          format: uuid
+          description: ID of the resource server this action belongs to
+        resourceId:
+          type: string
+          format: uuid
+          nullable: true
+          description: ID of the resource this action belongs to (null for resource server level actions)
+
+    CreateActionRequest:
+      type: object
+      required: [name]
+      properties:
+        name:
+          type: string
+          description: Name of the action (will be immutable after creation, used for permission derivation)
+        description:
+          type: string
+          description: Optional description of the action
+
+    UpdateActionRequest:
+      type: object
+      properties:
+        description:
+          type: string
+          description: Optional description of the action
+
+    ResourceServerListResponse:
+      type: object
+      properties:
+        totalResults:
+          type: integer
+          description: Number of results that match the listing operation
+          example: 8
+        startIndex:
+          type: integer
+          description: Index of the first element of the page, which will be equal to offset + 1
+          example: 1
+        count:
+          type: integer
+          description: Number of elements in the returned page
+          example: 5
+        resourceServers:
+          type: array
+          items:
+            $ref: '#/components/schemas/ResourceServer'
+        links:
+          type: array
+          items:
+            $ref: '#/components/schemas/Link'
+
+    ResourceListResponse:
+      type: object
+      properties:
+        totalResults:
+          type: integer
+          description: Number of results that match the listing operation
+          example: 15
+        startIndex:
+          type: integer
+          description: Index of the first element of the page, which will be equal to offset + 1
+          example: 1
+        count:
+          type: integer
+          description: Number of elements in the returned page
+          example: 10
+        resources:
+          type: array
+          items:
+            $ref: '#/components/schemas/Resource'
+        links:
+          type: array
+          items:
+            $ref: '#/components/schemas/Link'
+
+    ActionListResponse:
+      type: object
+      properties:
+        totalResults:
+          type: integer
+          description: Number of results that match the listing operation
+          example: 12
+        startIndex:
+          type: integer
+          description: Index of the first element of the page, which will be equal to offset + 1
+          example: 1
+        count:
+          type: integer
+          description: Number of elements in the returned page
+          example: 10
+        actions:
+          type: array
+          items:
+            $ref: '#/components/schemas/Action'
+        links:
+          type: array
+          items:
+            $ref: '#/components/schemas/Link'
+
+    PermissionListResponse:
+      type: object
+      required: [resourceServerId, resourceServerName, permissions]
+      properties:
+        resourceServerId:
+          type: string
+          format: uuid
+          description: ID of the resource server
+        resourceServerName:
+          type: string
+          description: Name of the resource server
+        permissions:
+          type: array
+          items:
+            type: string
+          description: List of all derived permissions in the resource server hierarchy
+
+    ResourcePermissionListResponse:
+      type: object
+      required: [resourceServerId, resourceId, resourcePath, permissions]
+      properties:
+        resourceServerId:
+          type: string
+          format: uuid
+          description: ID of the resource server
+        resourceId:
+          type: string
+          format: uuid
+          description: ID of the resource
+        resourcePath:
+          type: string
+          description: Full permission path to the resource
+        permissions:
+          type: array
+          items:
+            type: string
+          description: List of all derived permissions for the resource and its sub-hierarchy
+
+    Link:
+      type: object
+      properties:
+        href:
+          type: string
+          example: "resource-servers?offset=20&limit=10"
+        rel:
+          type: string
+          example: "next"
+
+    Error:
+      type: object
+      required: [code, message]
+      properties:
+        code:
+          type: string
+          description: Error code
+          example: "RES-1001"
+        message:
+          type: string
+          description: Error message
+          example: "Invalid request format"
+        description:
+          type: string
+          description: Detailed error description
+          example: "The request body is malformed or contains invalid data"
