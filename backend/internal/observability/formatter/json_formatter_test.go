@@ -16,7 +16,7 @@
  * under the License.
  */
 
-package json
+package formatter
 
 import (
 	"encoding/json"
@@ -25,7 +25,6 @@ import (
 	"time"
 
 	"github.com/asgardeo/thunder/internal/observability/event"
-	"github.com/asgardeo/thunder/internal/observability/formatter"
 )
 
 func TestNewJSONFormatter(t *testing.T) {
@@ -35,7 +34,7 @@ func TestNewJSONFormatter(t *testing.T) {
 	}
 
 	// Verify it implements the Formatter interface
-	var _ formatter.Formatter = f
+	var _ FormatterInterface = f
 }
 
 func TestJSONFormatter_GetName(t *testing.T) {
@@ -79,7 +78,7 @@ func TestJSONFormatter_Format(t *testing.T) {
 			event: &event.Event{
 				TraceID:   "trace-123",
 				EventID:   "event-456",
-				Type:      string(event.EventTypeTokenIssued),
+				Type:      string(event.EventTypeFlowStarted),
 				Component: "TokenHandler",
 				Timestamp: timestamp,
 				Status:    event.StatusSuccess,
@@ -197,7 +196,7 @@ func TestJSONFormatter_FormatMultipleEvents(t *testing.T) {
 		{
 			TraceID:   "trace-1",
 			EventID:   "event-3",
-			Type:      string(event.EventTypeTokenIssued),
+			Type:      string(event.EventTypeFlowStarted),
 			Component: "TokenHandler",
 			Timestamp: timestamp.Add(2 * time.Second),
 			Status:    event.StatusSuccess,

@@ -333,6 +333,14 @@ packages:
       pkgname: rolemock
       filename: "{{.InterfaceName}}_mock.go"
 
+  github.com/asgardeo/thunder/internal/observability:
+    config:
+      all: true
+      dir: tests/mocks/observabilitymock
+      structname: '{{.InterfaceName}}Mock'
+      pkgname: observabilitymock
+      filename: "{{.InterfaceName}}_mock.go"
+
   github.com/asgardeo/thunder/internal/branding:
     config:
       all: true

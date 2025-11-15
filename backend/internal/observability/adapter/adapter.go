@@ -19,8 +19,8 @@
 // Package adapter provides output adapter interfaces and implementations.
 package adapter
 
-// OutputAdapter is the interface for writing formatted events to various destinations.
-type OutputAdapter interface {
+// OutputAdapterInterface is the interface for writing formatted events to various destinations.
+type OutputAdapterInterface interface {
 	// Write writes formatted event data to the output destination.
 	Write(data []byte) error
 

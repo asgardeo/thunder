@@ -23,8 +23,8 @@ import (
 	"github.com/asgardeo/thunder/internal/observability/event"
 )
 
-// Formatter is the interface for formatting events into different output formats.
-type Formatter interface {
+// FormatterInterface is the interface for formatting events into different output formats.
+type FormatterInterface interface {
 	// Format formats an event into bytes.
 	Format(evt *event.Event) ([]byte, error)
 
