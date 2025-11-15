@@ -68,6 +68,7 @@ cache:
 jwt:
   issuer: {{ .Values.configuration.jwt.issuer | quote }}
   validity_period: {{ .Values.configuration.jwt.validityPeriod }}
+  audience: {{ .Values.configuration.jwt.audience | quote }}
 
 oauth:
   refresh_token:

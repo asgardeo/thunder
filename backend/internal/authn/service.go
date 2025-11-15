@@ -346,7 +346,7 @@ func (as *authenticationService) validateAndAppendAuthAssertion(authResponse *co
 
 	// Generate auth assertion JWT
 	jwtConfig := config.GetThunderRuntime().Config.JWT
-	token, _, err := as.jwtService.GenerateJWT(user.ID, "application", jwtConfig.Issuer,
+	token, _, err := as.jwtService.GenerateJWT(user.ID, jwtConfig.Audience, jwtConfig.Issuer,
 		jwtConfig.ValidityPeriod, jwtClaims)
 	if err != nil {
 		logger.Error("Failed to generate auth assertion", log.Error(err))

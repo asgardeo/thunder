@@ -38,6 +38,7 @@ const (
 	testRefreshToken = "test-refresh-token" //nolint:gosec // Test token, not a real credential
 	testIDToken      = "test-id-token"      //nolint:gosec // Test token, not a real credential
 	testUserName     = "John Doe"
+	testAppID        = "app123"
 )
 
 type TokenBuilderTestSuite struct {
@@ -415,7 +416,7 @@ func (suite *TokenBuilderTestSuite) TestBuildRefreshToken_Success_Basic() {
 		mock.MatchedBy(func(claims map[string]interface{}) bool {
 			return claims["scope"] == "read write" &&
 				claims["access_token_sub"] == "user123" &&
-				claims["access_token_aud"] == "app123" &&
+				claims["access_token_aud"] == testAppID &&
 				claims["grant_type"] == string(constants.GrantTypeAuthorizationCode) &&
 				claims["access_token_user_attributes"].(map[string]interface{})["name"] == testUserName
 		}),

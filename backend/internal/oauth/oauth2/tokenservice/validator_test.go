@@ -35,7 +35,9 @@ import (
 )
 
 const (
-	testJWTTokenString = "test.jwt.token" //nolint:gosec // Test token, not a real credential
+	testJWTTokenString = "test.jwt.token"     //nolint:gosec // Test token, not a real credential
+	invalidJWTFormat   = "invalid.jwt.format" //nolint:gosec // Test token, not a real credential
+	testClientID       = "client123"
 )
 
 type TokenValidatorTestSuite struct {
@@ -55,6 +57,7 @@ func (suite *TokenValidatorTestSuite) SetupTest() {
 		JWT: config.JWTConfig{
 			Issuer:         "https://thunder.io",
 			ValidityPeriod: 3600,
+			Audience:       "application", // Default audience for tests
 		},
 	}
 	_ = config.InitializeThunderRuntime("test", testConfig)
@@ -88,16 +91,34 @@ func (suite *TokenValidatorTestSuite) createTestJWT(claims map[string]interface{
 	return fmt.Sprintf("%s.%s.signature", headerB64, claimsB64)
 }
 
+// getDefaultAudience is a helper function to get the configured default audience from runtime.
+// It skips the test if the runtime is not initialized or the audience is not configured.
+func (suite *TokenValidatorTestSuite) getDefaultAudience() string {
+	runtime := config.GetThunderRuntime()
+	if runtime == nil {
+		suite.T().Skip("ThunderRuntime not initialized")
+		return ""
+	}
+	defaultAudience := runtime.Config.JWT.Audience
+	if defaultAudience == "" {
+		suite.T().Skip("Default audience not configured in runtime")
+		return ""
+	}
+	return defaultAudience
+}
+
 // ============================================================================
 // ValidateSubjectToken Tests - Success Cases
 // ============================================================================
 
 func (suite *TokenValidatorTestSuite) TestValidateSubjectToken_Success_BasicToken() {
+	defaultAudience := suite.getDefaultAudience()
+
 	now := time.Now().Unix()
 	claims := map[string]interface{}{
 		"sub":   "user123",
 		"iss":   "https://thunder.io",
-		"aud":   "app123",
+		"aud":   defaultAudience, // Use default audience for Thunder issuer
 		"exp":   float64(now + 3600),
 		"nbf":   float64(now - 60),
 		"scope": "read write",
@@ -144,11 +165,14 @@ func (suite *TokenValidatorTestSuite) TestValidateSubjectToken_Success_WithCusto
 }
 
 func (suite *TokenValidatorTestSuite) TestValidateSubjectToken_Success_WithoutNbfClaim() {
+	defaultAudience := suite.getDefaultAudience()
+
 	// nbf is optional, should succeed without it
 	now := time.Now().Unix()
 	claims := map[string]interface{}{
 		"sub": "user123",
 		"iss": "https://thunder.io",
+		"aud": defaultAudience, // Use default audience for Thunder issuer
 		"exp": float64(now + 3600),
 	}
 	token := suite.createTestJWT(claims)
@@ -163,10 +187,13 @@ func (suite *TokenValidatorTestSuite) TestValidateSubjectToken_Success_WithoutNb
 }
 
 func (suite *TokenValidatorTestSuite) TestValidateSubjectToken_Success_WithEmptyScopes() {
+	defaultAudience := suite.getDefaultAudience()
+
 	now := time.Now().Unix()
 	claims := map[string]interface{}{
 		"sub": "user123",
 		"iss": "https://thunder.io",
+		"aud": defaultAudience, // Use default audience for Thunder issuer
 		"exp": float64(now + 3600),
 		// No scope claim
 	}
@@ -183,7 +210,7 @@ func (suite *TokenValidatorTestSuite) TestValidateSubjectToken_Success_WithEmpty
 }
 
 func (suite *TokenValidatorTestSuite) TestValidateSubjectToken_Error_InvalidJWTFormat() {
-	token := "invalid.jwt.format" //nolint:gosec // Test token, not a real credential
+	token := invalidJWTFormat
 
 	result, err := suite.validator.ValidateSubjectToken(token, suite.oauthApp)
 
@@ -406,12 +433,15 @@ func (suite *TokenValidatorTestSuite) TestVerifyTokenSignatureByIssuer_Error_Ext
 }
 
 func (suite *TokenValidatorTestSuite) TestFederationScenario_DecodeBeforeVerify() {
+	defaultAudience := suite.getDefaultAudience()
+
 	// This test verifies the decode-first approach for federation
 	// Token with valid issuer should pass issuer check before signature verification
 	now := time.Now().Unix()
 	claims := map[string]interface{}{
 		"sub": "user123",
 		"iss": "https://thunder.io",
+		"aud": defaultAudience, // Use default audience for Thunder issuer
 		"exp": float64(now + 3600),
 	}
 	token := suite.createTestJWT(claims)
@@ -467,7 +497,8 @@ func (suite *TokenValidatorTestSuite) TestFederationScenario_MultipleThunderIssu
 	tokenProd := suite.createTestJWT(claimsProd)
 	suite.mockJWTService.On("VerifyJWTSignature", tokenProd).Return(nil)
 
-	resultProd, errProd := suite.validator.ValidateSubjectToken(tokenProd, multiIssuerApp)
+	resultProd, errProd := suite.validator.ValidateSubjectToken(
+		tokenProd, multiIssuerApp)
 	assert.NoError(suite.T(), errProd)
 	assert.NotNil(suite.T(), resultProd)
 
@@ -479,10 +510,13 @@ func (suite *TokenValidatorTestSuite) TestFederationScenario_MultipleThunderIssu
 	}
 	tokenStaging := suite.createTestJWT(claimsStaging)
 
-	resultStaging, errStaging := suite.validator.ValidateSubjectToken(tokenStaging, multiIssuerApp)
+	resultStaging, errStaging := suite.validator.ValidateSubjectToken(
+		tokenStaging, multiIssuerApp)
 	assert.Error(suite.T(), errStaging)
 	assert.Nil(suite.T(), resultStaging)
 	assert.Contains(suite.T(), errStaging.Error(), "not supported")
+	// VerifyJWTSignature should NOT have been called for untrusted issuer
+	suite.mockJWTService.AssertNotCalled(suite.T(), "VerifyJWTSignature", tokenStaging)
 
 	suite.mockJWTService.AssertExpectations(suite.T())
 }
@@ -525,11 +559,24 @@ func (suite *TokenValidatorTestSuite) TestValidateSubjectToken_Security_RejectsT
 }
 
 func (suite *TokenValidatorTestSuite) TestValidateSubjectToken_EdgeCase_VeryLongToken() {
+	// Get the configured default audience from runtime
+	runtime := config.GetThunderRuntime()
+	if runtime == nil {
+		suite.T().Skip("ThunderRuntime not initialized")
+		return
+	}
+	defaultAudience := runtime.Config.JWT.Audience
+	if defaultAudience == "" {
+		suite.T().Skip("Default audience not configured in runtime")
+		return
+	}
+
 	// Test with token containing large claims
 	now := time.Now().Unix()
 	largeClaims := map[string]interface{}{
 		"sub":   "user123",
 		"iss":   "https://thunder.io",
+		"aud":   defaultAudience, // Use default audience for Thunder issuer
 		"exp":   float64(now + 3600),
 		"large": string(make([]byte, 10000)), // 10KB of data
 	}
@@ -554,7 +601,7 @@ func (suite *TokenValidatorTestSuite) TestValidateRefreshToken_Success_Basic() {
 		"iat":                          float64(now),
 		"scope":                        "read write",
 		"access_token_sub":             "user123",
-		"access_token_aud":             "app123",
+		"access_token_aud":             testAppID,
 		"grant_type":                   "authorization_code",
 		"access_token_user_attributes": map[string]interface{}{"name": "John Doe"},
 	}
@@ -567,7 +614,7 @@ func (suite *TokenValidatorTestSuite) TestValidateRefreshToken_Success_Basic() {
 	assert.NoError(suite.T(), err)
 	assert.NotNil(suite.T(), result)
 	assert.Equal(suite.T(), "user123", result.Sub)
-	assert.Equal(suite.T(), "app123", result.Aud)
+	assert.Equal(suite.T(), testAppID, result.Aud)
 	assert.Equal(suite.T(), "authorization_code", result.GrantType)
 	assert.Equal(suite.T(), []string{"read", "write"}, result.Scopes)
 	assert.Equal(suite.T(), map[string]interface{}{"name": "John Doe"}, result.UserAttributes)
@@ -584,7 +631,7 @@ func (suite *TokenValidatorTestSuite) TestValidateRefreshToken_Success_WithoutUs
 		"iat":              float64(now),
 		"scope":            "read write",
 		"access_token_sub": "user123",
-		"access_token_aud": "app123",
+		"access_token_aud": testAppID,
 		"grant_type":       "authorization_code",
 	}
 	token := suite.createTestJWT(claims)
@@ -608,7 +655,7 @@ func (suite *TokenValidatorTestSuite) TestValidateRefreshToken_Success_EmptyScop
 		"exp":              float64(now + 3600),
 		"iat":              float64(now),
 		"access_token_sub": "user123",
-		"access_token_aud": "app123",
+		"access_token_aud": testAppID,
 		"grant_type":       "authorization_code",
 	}
 	token := suite.createTestJWT(claims)
@@ -638,7 +685,7 @@ func (suite *TokenValidatorTestSuite) TestValidateRefreshToken_Error_InvalidSign
 }
 
 func (suite *TokenValidatorTestSuite) TestValidateRefreshToken_Error_InvalidJWTFormat() {
-	token := "invalid.jwt.format" //nolint:gosec // Test token, not a real credential
+	token := invalidJWTFormat
 
 	// VerifyJWT is called first and should fail for invalid format
 	suite.mockJWTService.On("VerifyJWT", token, "", "").
@@ -679,7 +726,7 @@ func (suite *TokenValidatorTestSuite) TestValidateRefreshToken_Success_MissingIa
 		"exp": float64(now + 3600),
 		// Missing iat - should be allowed
 		"access_token_sub": "user123",
-		"access_token_aud": "app123",
+		"access_token_aud": testAppID,
 		"grant_type":       "authorization_code",
 	}
 	token := suite.createTestJWT(claims)
@@ -706,7 +753,7 @@ func (suite *TokenValidatorTestSuite) TestValidateRefreshToken_Error_ExpiredToke
 		"nbf":              float64(now - 7200), // Required by VerifyJWT
 		"iat":              float64(now - 7200),
 		"access_token_sub": "user123",
-		"access_token_aud": "app123",
+		"access_token_aud": testAppID,
 		"grant_type":       "authorization_code",
 	}
 	token := suite.createTestJWT(claims)
@@ -734,7 +781,7 @@ func (suite *TokenValidatorTestSuite) TestValidateRefreshToken_Error_NotYetValid
 		"nbf":              float64(now + 1800), // Not yet valid
 		"iat":              float64(now),
 		"access_token_sub": "user123",
-		"access_token_aud": "app123",
+		"access_token_aud": testAppID,
 		"grant_type":       "authorization_code",
 	}
 	token := suite.createTestJWT(claims)
@@ -759,7 +806,7 @@ func (suite *TokenValidatorTestSuite) TestValidateRefreshToken_Error_MissingSub(
 		"exp":              float64(now + 3600),
 		"iat":              float64(now),
 		"access_token_sub": "user123",
-		"access_token_aud": "app123",
+		"access_token_aud": testAppID,
 		"grant_type":       "authorization_code",
 		// Missing sub
 	}
@@ -784,7 +831,7 @@ func (suite *TokenValidatorTestSuite) TestValidateRefreshToken_Error_WrongClient
 		"exp":              float64(now + 3600),
 		"iat":              float64(now),
 		"access_token_sub": "user123",
-		"access_token_aud": "app123",
+		"access_token_aud": testAppID,
 		"grant_type":       "authorization_code",
 	}
 	token := suite.createTestJWT(claims)
@@ -807,7 +854,7 @@ func (suite *TokenValidatorTestSuite) TestValidateRefreshToken_Error_MissingAcce
 		"aud":              "test-client",
 		"exp":              float64(now + 3600),
 		"iat":              float64(now),
-		"access_token_aud": "app123",
+		"access_token_aud": testAppID,
 		"grant_type":       "authorization_code",
 		// Missing access_token_sub
 	}
@@ -856,7 +903,7 @@ func (suite *TokenValidatorTestSuite) TestValidateRefreshToken_Error_MissingGran
 		"exp":              float64(now + 3600),
 		"iat":              float64(now),
 		"access_token_sub": "user123",
-		"access_token_aud": "app123",
+		"access_token_aud": testAppID,
 		// Missing grant_type
 	}
 	token := suite.createTestJWT(claims)
@@ -868,5 +915,418 @@ func (suite *TokenValidatorTestSuite) TestValidateRefreshToken_Error_MissingGran
 	assert.Error(suite.T(), err)
 	assert.Nil(suite.T(), result)
 	assert.Contains(suite.T(), err.Error(), "missing or invalid 'grant_type' claim")
+	suite.mockJWTService.AssertExpectations(suite.T())
+}
+
+// ============================================================================
+// ValidateAuthAssertion Tests - Success Cases
+// ============================================================================
+
+func (suite *TokenValidatorTestSuite) TestValidateAuthAssertion_Success_WithAppID() {
+	now := time.Now().Unix()
+	claims := map[string]interface{}{
+		"sub":                    "user123",
+		"iss":                    "https://thunder.io",
+		"aud":                    testAppID, // Matches client app_id
+		"exp":                    float64(now + 3600),
+		"nbf":                    float64(now - 60),
+		"assurance":              map[string]interface{}{"aal": "AAL1", "ial": "IAL1"}, // Make it an auth assertion
+		"authorized_permissions": "read:documents write:documents",
+		"userType":               "person",
+	}
+	token := suite.createTestJWT(claims)
+
+	suite.oauthApp.AppID = testAppID
+	suite.oauthApp.ClientID = testClientID
+
+	suite.mockJWTService.On("VerifyJWTSignature", token).Return(nil)
+
+	result, err := suite.validator.ValidateSubjectToken(token, suite.oauthApp)
+
+	assert.NoError(suite.T(), err)
+	assert.NotNil(suite.T(), result)
+	assert.Equal(suite.T(), "user123", result.Sub)
+	assert.Equal(suite.T(), "https://thunder.io", result.Iss)
+	assert.Equal(suite.T(), testAppID, result.Aud)
+	assert.Equal(suite.T(), []string{"read:documents", "write:documents"}, result.Scopes)
+	assert.Equal(suite.T(), "person", result.UserAttributes["userType"])
+	suite.mockJWTService.AssertExpectations(suite.T())
+}
+
+func (suite *TokenValidatorTestSuite) TestValidateAuthAssertion_Success_WithEmptyScopes() {
+	defaultAudience := suite.getDefaultAudience()
+
+	now := time.Now().Unix()
+	claims := map[string]interface{}{
+		"sub": "user123",
+		"iss": "https://thunder.io",
+		"aud": defaultAudience, // Use default audience
+		"exp": float64(now + 3600),
+		"nbf": float64(now - 60),
+		// No authorized_permissions or scope
+	}
+	token := suite.createTestJWT(claims)
+
+	suite.oauthApp.AppID = testAppID
+
+	suite.mockJWTService.On("VerifyJWTSignature", token).Return(nil)
+
+	result, err := suite.validator.ValidateSubjectToken(token, suite.oauthApp)
+
+	assert.NoError(suite.T(), err)
+	assert.NotNil(suite.T(), result)
+	assert.Equal(suite.T(), "user123", result.Sub)
+	assert.Equal(suite.T(), []string{}, result.Scopes)
+	suite.mockJWTService.AssertExpectations(suite.T())
+}
+
+func (suite *TokenValidatorTestSuite) TestValidateAuthAssertion_Success_WithScopeClaim() {
+	defaultAudience := suite.getDefaultAudience()
+
+	now := time.Now().Unix()
+	claims := map[string]interface{}{
+		"sub":                    "user123",
+		"iss":                    "https://thunder.io",
+		"aud":                    defaultAudience, // Use default audience
+		"exp":                    float64(now + 3600),
+		"nbf":                    float64(now - 60),
+		"scope":                  "openid profile", // Standard scope claim takes priority
+		"authorized_permissions": "read:documents write:documents",
+	}
+	token := suite.createTestJWT(claims)
+
+	suite.oauthApp.AppID = testAppID
+
+	suite.mockJWTService.On("VerifyJWTSignature", token).Return(nil)
+
+	result, err := suite.validator.ValidateSubjectToken(token, suite.oauthApp)
+
+	assert.NoError(suite.T(), err)
+	assert.NotNil(suite.T(), result)
+	assert.Equal(suite.T(), []string{"openid", "profile"}, result.Scopes) // scope claim takes priority
+	suite.mockJWTService.AssertExpectations(suite.T())
+}
+
+func (suite *TokenValidatorTestSuite) TestValidateAuthAssertion_Success_WithUserAttributes() {
+	defaultAudience := suite.getDefaultAudience()
+
+	now := time.Now().Unix()
+	claims := map[string]interface{}{
+		"sub":                    "user123",
+		"iss":                    "https://thunder.io",
+		"aud":                    defaultAudience, // Use default audience
+		"exp":                    float64(now + 3600),
+		"nbf":                    float64(now - 60),
+		"authorized_permissions": "read write",
+		"userType":               "person",
+		"email":                  "user@example.com",
+		"customAttr":             "customValue",
+	}
+	token := suite.createTestJWT(claims)
+
+	suite.oauthApp.AppID = testAppID
+
+	suite.mockJWTService.On("VerifyJWTSignature", token).Return(nil)
+
+	result, err := suite.validator.ValidateSubjectToken(token, suite.oauthApp)
+
+	assert.NoError(suite.T(), err)
+	assert.NotNil(suite.T(), result)
+	assert.Equal(suite.T(), "person", result.UserAttributes["userType"])
+	assert.Equal(suite.T(), "user@example.com", result.UserAttributes["email"])
+	assert.Equal(suite.T(), "customValue", result.UserAttributes["customAttr"])
+	suite.mockJWTService.AssertExpectations(suite.T())
+}
+
+// ============================================================================
+// ValidateAuthAssertion Tests - Error Cases
+// ============================================================================
+
+func (suite *TokenValidatorTestSuite) TestValidateAuthAssertion_Error_MissingAudience() {
+	now := time.Now().Unix()
+	claims := map[string]interface{}{
+		"sub": "user123",
+		"iss": "https://thunder.io",
+		// Missing aud claim
+		"exp":       float64(now + 3600),
+		"nbf":       float64(now - 60),
+		"assurance": map[string]interface{}{"aal": "AAL1", "ial": "IAL1"}, // Make it an auth assertion
+	}
+	token := suite.createTestJWT(claims)
+
+	suite.oauthApp.AppID = testAppID
+
+	suite.mockJWTService.On("VerifyJWTSignature", token).Return(nil)
+
+	result, err := suite.validator.ValidateSubjectToken(token, suite.oauthApp)
+
+	assert.Error(suite.T(), err)
+	assert.Nil(suite.T(), result)
+	assert.Contains(suite.T(), err.Error(), "missing 'aud' claim")
+	suite.mockJWTService.AssertExpectations(suite.T())
+}
+
+func (suite *TokenValidatorTestSuite) TestValidateAuthAssertion_Error_AudienceMismatch() {
+	now := time.Now().Unix()
+	claims := map[string]interface{}{
+		"sub":       "user123",
+		"iss":       "https://thunder.io",
+		"aud":       "different-app-id", // Doesn't match default audience or client app_id
+		"exp":       float64(now + 3600),
+		"nbf":       float64(now - 60),
+		"assurance": map[string]interface{}{"aal": "AAL1", "ial": "IAL1"}, // Make it an auth assertion
+	}
+	token := suite.createTestJWT(claims)
+
+	suite.oauthApp.AppID = testAppID
+	suite.oauthApp.ClientID = testClientID
+
+	suite.mockJWTService.On("VerifyJWTSignature", token).Return(nil)
+
+	result, err := suite.validator.ValidateSubjectToken(token, suite.oauthApp)
+
+	assert.Error(suite.T(), err)
+	assert.Nil(suite.T(), result)
+	assert.Equal(suite.T(), "auth assertion audience mismatch", err.Error())
+	suite.mockJWTService.AssertExpectations(suite.T())
+}
+
+func (suite *TokenValidatorTestSuite) TestValidateAuthAssertion_Success_WithDefaultAudience() {
+	defaultAudience := suite.getDefaultAudience()
+
+	now := time.Now().Unix()
+	claims := map[string]interface{}{
+		"sub": "user123",
+		"iss": "https://thunder.io",
+		"aud": defaultAudience, // Matches configured default audience
+		"exp": float64(now + 3600),
+		"nbf": float64(now - 60),
+	}
+	token := suite.createTestJWT(claims)
+
+	suite.oauthApp.AppID = testAppID // Different from audience
+	suite.oauthApp.ClientID = testClientID
+
+	suite.mockJWTService.On("VerifyJWTSignature", token).Return(nil)
+
+	result, err := suite.validator.ValidateSubjectToken(token, suite.oauthApp)
+
+	assert.NoError(suite.T(), err)
+	assert.NotNil(suite.T(), result)
+	assert.Equal(suite.T(), "user123", result.Sub)
+	assert.Equal(suite.T(), "https://thunder.io", result.Iss)
+	assert.Equal(suite.T(), defaultAudience, result.Aud)
+	suite.mockJWTService.AssertExpectations(suite.T())
+}
+
+func (suite *TokenValidatorTestSuite) TestValidateAuthAssertion_Error_InvalidJWTFormat() {
+	token := invalidJWTFormat
+
+	result, err := suite.validator.ValidateSubjectToken(token, suite.oauthApp)
+
+	assert.Error(suite.T(), err)
+	assert.Nil(suite.T(), result)
+	assert.Contains(suite.T(), err.Error(), "failed to decode token")
+}
+
+func (suite *TokenValidatorTestSuite) TestValidateAuthAssertion_Error_MissingIssuer() {
+	now := time.Now().Unix()
+	claims := map[string]interface{}{
+		"sub": "user123",
+		// Missing iss claim
+		"aud": "app123",
+		"exp": float64(now + 3600),
+	}
+	token := suite.createTestJWT(claims)
+
+	result, err := suite.validator.ValidateSubjectToken(token, suite.oauthApp)
+
+	assert.Error(suite.T(), err)
+	assert.Nil(suite.T(), result)
+	assert.Contains(suite.T(), err.Error(), "missing 'iss' claim")
+}
+
+func (suite *TokenValidatorTestSuite) TestValidateAuthAssertion_Error_ExpiredToken() {
+	now := time.Now().Unix()
+	claims := map[string]interface{}{
+		"sub": "user123",
+		"iss": "https://thunder.io",
+		"aud": "app123",
+		"exp": float64(now - 3600), // Expired
+		"nbf": float64(now - 7200),
+	}
+	token := suite.createTestJWT(claims)
+
+	suite.oauthApp.AppID = testAppID
+
+	suite.mockJWTService.On("VerifyJWTSignature", token).Return(nil)
+
+	result, err := suite.validator.ValidateSubjectToken(token, suite.oauthApp)
+
+	assert.Error(suite.T(), err)
+	assert.Nil(suite.T(), result)
+	assert.Contains(suite.T(), err.Error(), "token has expired")
+	suite.mockJWTService.AssertExpectations(suite.T())
+}
+
+func (suite *TokenValidatorTestSuite) TestValidateAuthAssertion_Error_InvalidIssuer() {
+	now := time.Now().Unix()
+	claims := map[string]interface{}{
+		"sub": "user123",
+		"iss": "https://invalid-issuer.com", // Not in valid issuers
+		"aud": "app123",
+		"exp": float64(now + 3600),
+		"nbf": float64(now - 60),
+	}
+	token := suite.createTestJWT(claims)
+
+	suite.oauthApp.AppID = testAppID
+
+	result, err := suite.validator.ValidateSubjectToken(token, suite.oauthApp)
+
+	assert.Error(suite.T(), err)
+	assert.Nil(suite.T(), result)
+	assert.Contains(suite.T(), err.Error(), "is not supported")
+}
+
+func (suite *TokenValidatorTestSuite) TestValidateAuthAssertion_Error_InvalidSignature() {
+	now := time.Now().Unix()
+	claims := map[string]interface{}{
+		"sub": "user123",
+		"iss": "https://thunder.io",
+		"aud": "app123",
+		"exp": float64(now + 3600),
+		"nbf": float64(now - 60),
+	}
+	token := suite.createTestJWT(claims)
+
+	suite.oauthApp.AppID = testAppID
+
+	suite.mockJWTService.On("VerifyJWTSignature", token).Return(errors.New("invalid signature"))
+
+	result, err := suite.validator.ValidateSubjectToken(token, suite.oauthApp)
+
+	assert.Error(suite.T(), err)
+	assert.Nil(suite.T(), result)
+	assert.Contains(suite.T(), err.Error(), "invalid subject token signature")
+	suite.mockJWTService.AssertExpectations(suite.T())
+}
+
+func (suite *TokenValidatorTestSuite) TestValidateAuthAssertion_Error_InvalidSubType() {
+	now := time.Now().Unix()
+	claims := map[string]interface{}{
+		"sub": 12345, // Invalid type - should be string
+		"iss": "https://thunder.io",
+		"aud": "app123",
+		"exp": float64(now + 3600),
+		"nbf": float64(now - 60),
+	}
+	token := suite.createTestJWT(claims)
+
+	suite.oauthApp.AppID = testAppID
+
+	suite.mockJWTService.On("VerifyJWTSignature", token).Return(nil)
+
+	result, err := suite.validator.ValidateSubjectToken(token, suite.oauthApp)
+
+	assert.Error(suite.T(), err)
+	assert.Nil(suite.T(), result)
+	assert.Contains(suite.T(), err.Error(), "missing or invalid 'sub' claim")
+	suite.mockJWTService.AssertExpectations(suite.T())
+}
+
+func (suite *TokenValidatorTestSuite) TestValidateAuthAssertion_Error_TokenNotYetValid() {
+	now := time.Now().Unix()
+	claims := map[string]interface{}{
+		"sub": "user123",
+		"iss": "https://thunder.io",
+		"aud": "app123",
+		"exp": float64(now + 3600),
+		"nbf": float64(now + 60), // Not yet valid - nbf is in the future
+	}
+	token := suite.createTestJWT(claims)
+
+	suite.oauthApp.AppID = testAppID
+
+	suite.mockJWTService.On("VerifyJWTSignature", token).Return(nil)
+
+	result, err := suite.validator.ValidateSubjectToken(token, suite.oauthApp)
+
+	assert.Error(suite.T(), err)
+	assert.Nil(suite.T(), result)
+	assert.Contains(suite.T(), err.Error(), "token not yet valid")
+	suite.mockJWTService.AssertExpectations(suite.T())
+}
+
+func (suite *TokenValidatorTestSuite) TestValidateAuthAssertion_Error_MissingExp() {
+	now := time.Now().Unix()
+	claims := map[string]interface{}{
+		"sub": "user123",
+		"iss": "https://thunder.io",
+		"aud": "app123",
+		// Missing exp claim
+		"nbf": float64(now - 60),
+	}
+	token := suite.createTestJWT(claims)
+
+	suite.oauthApp.AppID = testAppID
+
+	suite.mockJWTService.On("VerifyJWTSignature", token).Return(nil)
+
+	result, err := suite.validator.ValidateSubjectToken(token, suite.oauthApp)
+
+	assert.Error(suite.T(), err)
+	assert.Nil(suite.T(), result)
+	assert.Contains(suite.T(), err.Error(), "missing or invalid 'exp' claim")
+	suite.mockJWTService.AssertExpectations(suite.T())
+}
+
+func (suite *TokenValidatorTestSuite) TestValidateAuthAssertion_Error_InvalidAudType() {
+	now := time.Now().Unix()
+	claims := map[string]interface{}{
+		"sub":       "user123",
+		"iss":       "https://thunder.io",
+		"aud":       12345, // Invalid type - should be string
+		"exp":       float64(now + 3600),
+		"nbf":       float64(now - 60),
+		"assurance": map[string]interface{}{"aal": "AAL1", "ial": "IAL1"}, // Make it an auth assertion
+	}
+	token := suite.createTestJWT(claims)
+
+	suite.oauthApp.AppID = testAppID
+
+	suite.mockJWTService.On("VerifyJWTSignature", token).Return(nil)
+
+	result, err := suite.validator.ValidateSubjectToken(token, suite.oauthApp)
+
+	assert.Error(suite.T(), err)
+	assert.Nil(suite.T(), result)
+	assert.Contains(suite.T(), err.Error(), "claim aud is not a string")
+	suite.mockJWTService.AssertExpectations(suite.T())
+}
+
+func (suite *TokenValidatorTestSuite) TestValidateAuthAssertion_Success_WithEmptyAuthorizedPermissions() {
+	defaultAudience := suite.getDefaultAudience()
+
+	now := time.Now().Unix()
+	claims := map[string]interface{}{
+		"sub":                    "user123",
+		"iss":                    "https://thunder.io",
+		"aud":                    defaultAudience, // Use default audience
+		"exp":                    float64(now + 3600),
+		"nbf":                    float64(now - 60),
+		"authorized_permissions": "", // Empty string
+	}
+	token := suite.createTestJWT(claims)
+
+	suite.oauthApp.AppID = testAppID
+
+	suite.mockJWTService.On("VerifyJWTSignature", token).Return(nil)
+
+	result, err := suite.validator.ValidateSubjectToken(token, suite.oauthApp)
+
+	assert.NoError(suite.T(), err)
+	assert.NotNil(suite.T(), result)
+	assert.Equal(suite.T(), []string{}, result.Scopes)
 	suite.mockJWTService.AssertExpectations(suite.T())
 }

@@ -99,6 +99,7 @@ type CacheConfig struct {
 type JWTConfig struct {
 	Issuer         string `yaml:"issuer" json:"issuer"`
 	ValidityPeriod int64  `yaml:"validity_period" json:"validity_period"`
+	Audience       string `yaml:"audience" json:"audience"`
 }
 
 // RefreshTokenConfig holds the refresh token configuration details.

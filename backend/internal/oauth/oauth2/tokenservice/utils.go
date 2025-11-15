@@ -128,18 +128,27 @@ func extractInt64Claim(claims map[string]interface{}, key string) (int64, error)
 }
 
 // extractScopesFromClaims extracts and parses scopes from a claims map.
-func extractScopesFromClaims(claims map[string]interface{}) []string {
+func extractScopesFromClaims(claims map[string]interface{}, isAuthAssertion bool) []string {
 	scopeValue, ok := claims["scope"]
-	if !ok {
-		return []string{}
+	if ok {
+		scopeString, ok := scopeValue.(string)
+		if ok && scopeString != "" {
+			return ParseScopes(scopeString)
+		}
 	}
 
-	scopeString, ok := scopeValue.(string)
-	if !ok {
-		return []string{}
+	// This allows auth assertions with authorized_permissions to be used in token exchange
+	if isAuthAssertion {
+		authorizedPermsValue, ok := claims["authorized_permissions"]
+		if ok {
+			authorizedPermsString, ok := authorizedPermsValue.(string)
+			if ok && authorizedPermsString != "" {
+				return ParseScopes(authorizedPermsString)
+			}
+		}
 	}
 
-	return ParseScopes(scopeString)
+	return []string{}
 }
 
 // DetermineAudience determines the audience for a token based on priority.

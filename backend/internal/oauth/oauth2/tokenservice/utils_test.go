@@ -525,14 +525,107 @@ func (suite *UtilsTestSuite) TestParseScopes_WithSingleScope() {
 	assert.Equal(suite.T(), []string{"read"}, result)
 }
 
+func (suite *UtilsTestSuite) TestextractScopesFromClaims_WithValidScope() {
+	claims := map[string]interface{}{
+		"scope": "read write admin",
+	}
+
+	result := extractScopesFromClaims(claims, false)
+
+	assert.Equal(suite.T(), []string{"read", "write", "admin"}, result)
+}
+
+func (suite *UtilsTestSuite) TestextractScopesFromClaims_WithEmptyScopeString() {
+	claims := map[string]interface{}{
+		"scope": "", // Empty string
+	}
+
+	result := extractScopesFromClaims(claims, false)
+
+	assert.Empty(suite.T(), result)
+}
+
 func (suite *UtilsTestSuite) TestextractScopesFromClaims_WithInvalidScopeType() {
 	claims := map[string]interface{}{
 		"scope": 12345, // Invalid type (not string)
 	}
 
-	result := extractScopesFromClaims(claims)
+	result := extractScopesFromClaims(claims, false)
 
 	assert.Empty(suite.T(), result)
+}
+
+func (suite *UtilsTestSuite) TestextractScopesFromClaims_WithNoScopeButAuthorizedPermissions_IsAuthAssertion() {
+	claims := map[string]interface{}{
+		"authorized_permissions": "read:documents write:documents",
+	}
+
+	result := extractScopesFromClaims(claims, true)
+
+	assert.Equal(suite.T(), []string{"read:documents", "write:documents"}, result)
+}
+
+func (suite *UtilsTestSuite) TestextractScopesFromClaims_WithNoScopeButAuthorizedPermissions_NotAuthAssertion() {
+	claims := map[string]interface{}{
+		"authorized_permissions": "read:documents write:documents",
+	}
+
+	result := extractScopesFromClaims(claims, false)
+
+	assert.Empty(suite.T(), result) // Should not use authorized_permissions when not auth assertion
+}
+
+func (suite *UtilsTestSuite) TestextractScopesFromClaims_WithEmptyScopeButAuthorizedPermissions_IsAuthAssertion() {
+	claims := map[string]interface{}{
+		"scope":                  "", // Empty scope
+		"authorized_permissions": "read write",
+	}
+
+	result := extractScopesFromClaims(claims, true)
+
+	assert.Equal(suite.T(), []string{"read", "write"}, result)
+}
+
+func (suite *UtilsTestSuite) TestextractScopesFromClaims_WithEmptyAuthorizedPermissions_IsAuthAssertion() {
+	claims := map[string]interface{}{
+		"authorized_permissions": "", // Empty string
+	}
+
+	result := extractScopesFromClaims(claims, true)
+
+	assert.Empty(suite.T(), result)
+}
+
+func (suite *UtilsTestSuite) TestextractScopesFromClaims_WithInvalidAuthorizedPermissionsType_IsAuthAssertion() {
+	claims := map[string]interface{}{
+		"authorized_permissions": 12345, // Invalid type (not string)
+	}
+
+	result := extractScopesFromClaims(claims, true)
+
+	assert.Empty(suite.T(), result)
+}
+
+func (suite *UtilsTestSuite) TestextractScopesFromClaims_WithNoScopeAndNoAuthorizedPermissions() {
+	claims := map[string]interface{}{
+		// No scope or authorized_permissions
+	}
+
+	result := extractScopesFromClaims(claims, true)
+
+	assert.Empty(suite.T(), result)
+}
+
+func (suite *UtilsTestSuite) TestextractScopesFromClaims_ScopeTakesPriorityOverAuthorizedPermissions() {
+	claims := map[string]interface{}{
+		"scope":                  "openid profile",
+		"authorized_permissions": "read:documents write:documents",
+	}
+
+	result := extractScopesFromClaims(claims, true)
+
+	// Scope should take priority
+	assert.Equal(suite.T(), []string{"openid", "profile"}, result)
 }
 
 func (suite *UtilsTestSuite) TestFetchUserAttributesAndGroups_UnmarshalError() {

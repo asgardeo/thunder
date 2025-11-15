@@ -24,6 +24,7 @@ import (
 
 	appmodel "github.com/asgardeo/thunder/internal/application/model"
 	"github.com/asgardeo/thunder/internal/oauth/oauth2/constants"
+	"github.com/asgardeo/thunder/internal/system/config"
 	"github.com/asgardeo/thunder/internal/system/jwt"
 )
 
@@ -65,7 +66,7 @@ func (tv *tokenValidator) ValidateRefreshToken(token string, clientID string) (*
 	aud, _ := extractStringClaim(claims, "access_token_aud")
 	grantType, _ := extractStringClaim(claims, "grant_type")
 	iat, _ := extractInt64Claim(claims, "iat")
-	scopes := extractScopesFromClaims(claims)
+	scopes := extractScopesFromClaims(claims, false)
 
 	// Extract user attributes if present
 	var userAttributes map[string]interface{}
@@ -126,14 +127,33 @@ func (tv *tokenValidator) ValidateSubjectToken(
 		return nil, err
 	}
 
+	// Determine if this is a Thunder auth assertion
+	isAuthAssertion := tv.isAuthAssertion(claims)
+
+	// Extract and validate audience claim
+	var aud string
+	if isAuthAssertion {
+		// For auth assertions, audience is required and must match config default or requesting client's app_id
+		aud, err = extractStringClaim(claims, "aud")
+		if err != nil {
+			return nil, fmt.Errorf("auth assertion is missing 'aud' claim: %w", err)
+		}
+
+		defaultAudience := config.GetThunderRuntime().Config.JWT.Audience
+		clientAppID := oauthApp.AppID
+
+		if aud != defaultAudience && aud != clientAppID {
+			return nil, fmt.Errorf("auth assertion audience mismatch")
+		}
+	} else {
+		aud, _ = extractStringClaim(claims, "aud")
+	}
+
 	// Extract scopes
-	scopes := extractScopesFromClaims(claims)
+	scopes := extractScopesFromClaims(claims, isAuthAssertion)
 
 	// Extract user attributes
 	userAttributes := ExtractUserAttributes(claims)
-
-	// Extract audience claim if present
-	aud, _ := extractStringClaim(claims, "aud")
 
 	// Extract nested act claim if present
 	var nestedAct map[string]interface{}
@@ -213,4 +233,16 @@ func (tv *tokenValidator) validateOAuth2RefreshClaims(claims map[string]interfac
 	}
 
 	return nil
+}
+
+// isAuthAssertion determines if a JWT token is a Thunder auth assertion.
+func (tv *tokenValidator) isAuthAssertion(
+	claims map[string]interface{},
+) bool {
+	// TODO: Revisit this once we have a proper way to determine if a token is a Thunder auth assertion.
+	if _, hasAssurance := claims["assurance"]; hasAssurance {
+		return true
+	}
+
+	return false
 }
