@@ -455,7 +455,7 @@ func parseFilterParams(query url.Values) (map[string]interface{}, *serviceerror.
 // parseFilterExpression parses filter expressions in the format: attribute eq "value"
 func parseFilterExpression(filterStr string) (map[string]interface{}, error) {
 	// Regex to match: attribute_name eq "value" or attribute_name eq value
-	pattern := `^(\w+(?:\.\w+)*)\s+(eq)\s+(?:"([^"]*)"|(\w+|\d+))$`
+	pattern := `^(\w+(?:\.\w+)*)\s+([A-Za-z]+)\s+(?:"([^"]*)"|([A-Za-z0-9_.+-]+))$`
 	regex := regexp.MustCompile(pattern)
 
 	matches := regex.FindStringSubmatch(filterStr)
@@ -464,7 +464,7 @@ func parseFilterExpression(filterStr string) (map[string]interface{}, error) {
 	}
 
 	attribute := matches[1]
-	operator := matches[2]
+	operator := strings.ToLower(matches[2])
 
 	if operator != "eq" {
 		return nil, fmt.Errorf("unsupported operator: %s", operator)
