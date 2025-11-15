@@ -59,11 +59,17 @@ export default function ViewUserPage() {
   const {data: userSchemas} = useGetUserSchemas();
 
   // Find the schema ID based on the user's type (which is the schema name)
-  const schemaId = useMemo(() => {
-    if (!user?.type || !userSchemas?.schemas) return undefined;
-    const schema = userSchemas.schemas.find((s) => s.name === user.type);
-    return schema?.id;
+  const matchedSchema = useMemo(() => {
+    if (!user?.type || !userSchemas?.schemas) {
+      return undefined;
+    }
+
+    return userSchemas.schemas.find((s) => s.name === user.type);
   }, [user?.type, userSchemas?.schemas]);
+
+  const schemaId = matchedSchema?.id;
+  const trimmedOuId = matchedSchema?.ouId?.trim();
+  const schemaOuId = trimmedOuId === '' ? undefined : trimmedOuId;
 
   const {data: userSchema, loading: isSchemaLoading, error: schemaError} = useGetUserSchema(schemaId);
 
@@ -86,13 +92,15 @@ export default function ViewUserPage() {
   }, [user, userSchema, setValue]);
 
   const onSubmit = async (data: UpdateUserFormData) => {
-    if (!userId || !user?.organizationUnit || !user?.type) return;
+    const organizationUnitId = schemaOuId ?? user?.organizationUnit;
+
+    if (!userId || !organizationUnitId || !user?.type) return;
 
     try {
       setIsSubmitting(true);
 
       const requestBody = {
-        organizationUnit: user.organizationUnit,
+        organizationUnit: organizationUnitId,
         type: user.type,
         attributes: data,
       };

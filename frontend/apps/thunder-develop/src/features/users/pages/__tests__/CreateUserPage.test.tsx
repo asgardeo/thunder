@@ -88,8 +88,8 @@ describe('CreateUserPage', () => {
     startIndex: 1,
     count: 2,
     schemas: [
-      {id: 'schema1', name: 'Employee'},
-      {id: 'schema2', name: 'Contractor'},
+      {id: 'schema1', name: 'Employee', ouId: 'root-ou'},
+      {id: 'schema2', name: 'Contractor', ouId: 'child-ou'},
     ],
   };
 
@@ -307,7 +307,7 @@ describe('CreateUserPage', () => {
 
     await waitFor(() => {
       expect(mockCreateUser).toHaveBeenCalledWith({
-        organizationUnit: 'test-ou',
+        organizationUnit: 'root-ou',
         type: 'Employee',
         attributes: {
           username: 'john_doe',
@@ -340,6 +340,36 @@ describe('CreateUserPage', () => {
 
     expect(screen.getByText('Failed to create user')).toBeInTheDocument();
     expect(screen.getByText('User already exists')).toBeInTheDocument();
+  });
+
+  it('does not submit when selected schema is missing organization unit', async () => {
+    const user = userEvent.setup();
+    const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => undefined);
+
+    mockUseGetUserSchemas.mockReturnValue({
+      data: {
+        ...mockSchemasData,
+        schemas: [{...mockSchemasData.schemas[0], ouId: ''}],
+      },
+      loading: false,
+      error: null,
+      refetch: mockRefetchSchemas,
+    });
+
+    render(<CreateUserPage />);
+
+    const usernameInput = screen.getByPlaceholderText(/Enter username/i);
+    await user.type(usernameInput, 'john_doe');
+
+    const submitButton = screen.getByRole('button', {name: /create user/i});
+    await user.click(submitButton);
+
+    await waitFor(() => {
+      expect(mockCreateUser).not.toHaveBeenCalled();
+      expect(consoleSpy).toHaveBeenCalledWith('Failed to create user:', expect.any(Error));
+    });
+
+    consoleSpy.mockRestore();
   });
 
   it('shows loading state during submission', async () => {
@@ -535,7 +565,7 @@ describe('CreateUserPage', () => {
 
     await waitFor(() => {
       expect(mockCreateUser).toHaveBeenCalledWith({
-        organizationUnit: 'test-ou',
+        organizationUnit: 'root-ou',
         type: 'Employee',
         attributes: {
           email: 'john@example.com',

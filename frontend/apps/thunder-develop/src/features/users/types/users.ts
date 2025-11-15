@@ -221,4 +221,5 @@ export interface UserSchemaListResponse {
 export interface SchemaInterface {
   id: string;
   name: string;
+  ouId: string;
 }

@@ -83,9 +83,15 @@ export default function CreateUserPage() {
       // Extract schema from form data (schema already contains the schema name)
       const {schema, ...attributes} = data;
 
+      const organizationUnitId = selectedSchema?.ouId;
+
+      if (!organizationUnitId) {
+        throw new Error('Organization unit ID is missing for the selected user type');
+      }
+
       // Prepare the request body according to the API spec
       const requestBody = {
-        organizationUnit: 'test-ou', // TODO: Add organization unit field or get from context
+        organizationUnit: organizationUnitId,
         type: schema,
         attributes,
       };

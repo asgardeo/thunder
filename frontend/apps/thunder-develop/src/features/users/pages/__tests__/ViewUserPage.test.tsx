@@ -124,7 +124,7 @@ describe('ViewUserPage', () => {
     totalResults: 1,
     startIndex: 1,
     count: 1,
-    schemas: [{id: 'employee', name: 'Employee'}],
+    schemas: [{id: 'employee', name: 'Employee', ouId: 'test-ou'}],
   };
 
   const mockSchemaData: ApiUserSchema = {
@@ -502,6 +502,15 @@ describe('ViewUserPage', () => {
         error: null,
         refetch: mockRefetchUser,
       });
+      mockUseGetUserSchemas.mockReturnValue({
+        data: {
+          ...mockSchemasData,
+          schemas: [{...mockSchemasData.schemas[0], ouId: ''}],
+        },
+        loading: false,
+        error: null,
+        refetch: vi.fn(),
+      });
 
       render(<ViewUserPage />);
 
@@ -645,6 +654,62 @@ describe('ViewUserPage', () => {
           },
         });
         expect(mockRefetchUser).toHaveBeenCalled();
+      });
+    });
+
+    it('uses schema organization unit when updating user', async () => {
+      const user = userEvent.setup();
+      mockUseGetUser.mockReturnValue({
+        data: {...mockUserData, organizationUnit: 'stale-ou'},
+        loading: false,
+        error: null,
+        refetch: mockRefetchUser,
+      });
+      mockUseGetUserSchemas.mockReturnValue({
+        data: {
+          ...mockSchemasData,
+          schemas: [{...mockSchemasData.schemas[0], ouId: 'schema-ou'}],
+        },
+        loading: false,
+        error: null,
+        refetch: vi.fn(),
+      });
+
+      render(<ViewUserPage />);
+
+      await user.click(screen.getByRole('button', {name: /edit/i}));
+      await user.click(screen.getByRole('button', {name: /save changes/i}));
+
+      await waitFor(() => {
+        expect(mockUpdateUser).toHaveBeenCalledWith(
+          'user123',
+          expect.objectContaining({organizationUnit: 'schema-ou'}),
+        );
+      });
+    });
+
+    it('falls back to user organization unit when schema does not provide one', async () => {
+      const user = userEvent.setup();
+      mockUseGetUserSchemas.mockReturnValue({
+        data: {
+          ...mockSchemasData,
+          schemas: [{...mockSchemasData.schemas[0], ouId: ''}],
+        },
+        loading: false,
+        error: null,
+        refetch: vi.fn(),
+      });
+
+      render(<ViewUserPage />);
+
+      await user.click(screen.getByRole('button', {name: /edit/i}));
+      await user.click(screen.getByRole('button', {name: /save changes/i}));
+
+      await waitFor(() => {
+        expect(mockUpdateUser).toHaveBeenCalledWith(
+          'user123',
+          expect.objectContaining({organizationUnit: 'test-ou'}),
+        );
       });
     });
 
