@@ -13,7 +13,8 @@
   },
   "security": {
     "cert_file": "repository/resources/security/server.cert",
-    "key_file": "repository/resources/security/server.key"
+    "key_file": "repository/resources/security/server.key",
+    "crypto_key": "repository/resources/security/crypto.key"
   },
   "database": {
     "identity": {
@@ -69,8 +70,5 @@
     "authn": {
       "default_flow": "auth_flow_config_basic"
     }
-  },
-  "crypto": {
-    "key": ""
   }
 }

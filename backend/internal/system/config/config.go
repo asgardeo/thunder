@@ -49,8 +49,9 @@ type GateClientConfig struct {
 
 // SecurityConfig holds the security configuration details.
 type SecurityConfig struct {
-	CertFile string `yaml:"cert_file" json:"cert_file"`
-	KeyFile  string `yaml:"key_file" json:"key_file"`
+	CertFile   string `yaml:"cert_file" json:"cert_file"`
+	KeyFile    string `yaml:"key_file" json:"key_file"`
+	CryptoFile string `yaml:"crypto_file" json:"crypto_file"`
 }
 
 // DataSource holds the individual database connection details.
@@ -172,7 +173,6 @@ type Config struct {
 	JWT                JWTConfig           `yaml:"jwt" json:"jwt"`
 	OAuth              OAuthConfig         `yaml:"oauth" json:"oauth"`
 	Flow               FlowConfig          `yaml:"flow" json:"flow"`
-	Crypto             CryptoConfig        `yaml:"crypto" json:"crypto"`
 	Hash               HashConfig          `yaml:"hash"`
 	CORS               CORSConfig          `yaml:"cors" json:"cors"`
 	ImmutableResources ImmutableResources  `yaml:"immutable_resources" json:"immutable_resources"`
