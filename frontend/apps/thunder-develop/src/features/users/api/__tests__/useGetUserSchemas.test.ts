@@ -65,10 +65,12 @@ describe('useGetUserSchemas', () => {
         {
           id: 'schema-1',
           name: 'Customer',
+          ouId: 'root-ou',
         },
         {
           id: 'schema-2',
           name: 'Employee',
+          ouId: 'child-ou',
         },
       ],
     };
