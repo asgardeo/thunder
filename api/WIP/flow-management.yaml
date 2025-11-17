@@ -1,0 +1,847 @@
+openapi: 3.0.3
+
+info:
+  title: Flow Management API
+  version: "1.0"
+  description: |
+    This API is used to manage flow definitions such as authentication and registration flows.
+    
+    Flows are defined using a step-based visual representation that includes UI components,
+    layout information, and execution logic.
+    
+    ## Flow Types
+    - **AUTHENTICATION**: User login flows
+    - **REGISTRATION**: User registration/signup flows
+    
+    ## Step Types
+    - **VIEW**: Interactive UI step with form fields and action buttons
+    - **EXECUTION**: Background executor step without UI components
+    - **AUTHENTICATION_SUCCESS**: Final step for authentication flows and 
+      auto-login step for registration flows (with AuthAssertExecutor)
+    - **REGISTRATION_START**: Initial step for registration flows (with UserTypeResolverExecutor)
+    - **PROVISIONING**: User provisioning step for registration flows (with ProvisioningExecutor)
+    
+    ## Internationalization
+    All user-facing text (labels, placeholders, hints, button text, etc.) use i18n keys in 
+    dot notation format (e.g., "registration.username.label"). The frontend needs to resolve
+    these keys from language-specific resource bundles.
+  license:
+    name: Apache 2.0
+    url: https://www.apache.org/licenses/LICENSE-2.0.html
+
+servers:
+  - url: https://{host}:{port}
+    variables:
+      host:
+        default: "localhost"
+      port:
+        default: "8090"
+
+paths:
+  /flows:
+    get:
+      tags:
+        - Flow Management
+      summary: List all flows
+      description: Retrieves a paginated list of all flow definitions
+      operationId: listFlows
+      parameters:
+        - name: flowType
+          in: query
+          description: Filter by flow type
+          required: false
+          schema:
+            type: string
+            enum:
+              - AUTHENTICATION
+              - REGISTRATION
+        - name: limit
+          in: query
+          description: Maximum number of flows to return
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 30
+        - name: offset
+          in: query
+          description: Number of flows to skip
+          required: false
+          schema:
+            type: integer
+            minimum: 0
+            default: 0
+      responses:
+        '200':
+          description: List of flows retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FlowListResponse'
+        '400':
+          description: Invalid query parameters
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: "FMS-1001"
+                message: "Invalid pagination parameter"
+                description: "The limit parameter must be between 1 and 100"
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ServerError'
+
+    post:
+      tags:
+        - Flow Management
+      summary: Create a new flow
+      description: |
+        Creates a new flow definition
+        
+        **Validation Rules:**
+        - AUTHENTICATION flows must contain an AUTHENTICATION_SUCCESS step
+        - REGISTRATION flows must start with REGISTRATION_START step
+        - REGISTRATION flows must contain a PROVISIONING step
+        - All step IDs must be unique within the flow
+        - All `next` references must point to valid step IDs
+      operationId: createFlow
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/FlowDefinitionRequest'
+      responses:
+        '201':
+          description: Flow created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FlowDefinitionResponse'
+        '400':
+          description: Invalid flow definition
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: "FMS-1001"
+                message: "Invalid request format"
+                description: "The request body is malformed or contains invalid data"
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ServerError'
+
+  /flows/{flowId}:
+    get:
+      tags:
+        - Flow Management
+      summary: Get flow by ID
+      description: Retrieves a specific flow definition by its unique identifier
+      operationId: getFlow
+      parameters:
+        - name: flowId
+          in: path
+          required: true
+          description: Unique identifier of the flow
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Flow retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FlowDefinitionResponse'
+        '404':
+          description: Flow not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: "FMS-1006"
+                message: "Flow not found"
+                description: "The flow with the specified ID does not exist"
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ServerError'
+
+    put:
+      tags:
+        - Flow Management
+      summary: Update flow
+      description: Updates an existing flow definition by its unique identifier
+      operationId: updateFlow
+      parameters:
+        - name: flowId
+          in: path
+          required: true
+          description: Unique identifier of the flow to update
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/FlowDefinitionRequest'
+      responses:
+        '200':
+          description: Flow updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FlowDefinitionResponse'
+        '400':
+          description: Invalid flow definition
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: "FMS-1001"
+                message: "Invalid request format"
+                description: "The request body is malformed or contains invalid data"
+        '404':
+          description: Flow not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: "FMS-1006"
+                message: "Flow not found"
+                description: "The flow with the specified ID does not exist"
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ServerError'
+
+    delete:
+      tags:
+        - Flow Management
+      summary: Delete flow
+      description: Deletes an existing flow definition by its unique identifier
+      operationId: deleteFlow
+      parameters:
+        - name: flowId
+          in: path
+          required: true
+          description: Unique identifier of the flow to delete
+          schema:
+            type: string
+      responses:
+        '204':
+          description: Flow deleted successfully
+        '400':
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: "FMS-1002"
+                message: "Invalid flow ID"
+                description: "The provided flow ID is not a valid UUID"
+        '409':
+          description: Flow cannot be deleted (e.g., it's a default flow or currently in use)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: "FMS-1007"
+                message: "Flow cannot be deleted"
+                description: "Cannot delete a default flow or a flow that is currently in use"
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ServerError'
+
+components:
+  schemas:
+    FlowListResponse:
+      type: object
+      properties:
+        totalResults:
+          type: integer
+          description: "Number of results that match the listing operation."
+          example: 5
+        startIndex:
+          type: integer
+          description: "Index of the first element of the page, which will be equal to offset + 1."
+          example: 1
+        count:
+          type: integer
+          description: "Number of elements in the returned page."
+          example: 3
+        flows:
+          type: array
+          items:
+            $ref: '#/components/schemas/BasicFlowDefinitionResponse'
+      example:
+        totalResults: 5
+        startIndex: 1
+        count: 3
+        flows:
+          - id: "641af221-75ff-4247-ab1f-ff139040a91b"
+            flowType: "AUTHENTICATION"
+            name: "Basic Authentication Flow"
+            isEnabled: true
+            createdAt: "2024-01-15T10:20:30Z"
+            updatedAt: "2024-02-20T14:25:35Z"
+          - id: "2sd4f6g7-h8i9-0j1k-2l3m-4n5o6p7q8r9s"
+            flowType: "REGISTRATION"
+            name: "Basic Registration Flow"
+            isEnabled: true
+            createdAt: "2024-03-10T09:15:25Z"
+            updatedAt: "2024-04-12T11:30:40Z"
+          - id: "b12c3d45-6789-4e0f-9abc-def123456789"
+            flowType: "REGISTRATION"
+            name: "Google Registration Flow"
+            isEnabled: false
+            createdAt: "2024-05-05T08:10:20Z"
+            updatedAt: "2024-06-01T12:00:00Z"
+    
+    BasicFlowDefinitionResponse:
+      type: object
+      required:
+        - id
+        - flowType
+        - name
+        - isEnabled
+        - createdAt
+        - updatedAt
+      properties:
+        id:
+          type: string
+          description: Unique identifier for the flow
+        flowType:
+          type: string
+          enum:
+            - AUTHENTICATION
+            - REGISTRATION
+        name:
+          type: string
+          description: Name of the flow
+        isEnabled:
+          type: boolean
+          description: Indicates if the flow is enabled or disabled
+        createdAt:
+          type: string
+          format: date-time
+          description: Timestamp when the flow was created
+        updatedAt:
+          type: string
+          format: date-time
+          description: Timestamp when the flow was last updated
+
+    FlowDefinitionRequest:
+      type: object
+      required:
+        - name
+        - flowType
+        - isEnabled
+        - steps
+      properties:
+        name:
+          type: string
+          description: Name of the flow
+          example: "Basic Registration Flow"
+        flowType:
+          type: string
+          enum:
+            - AUTHENTICATION
+            - REGISTRATION
+          description: |
+            Type of flow. Determines required steps:
+            - AUTHENTICATION: Must end with AUTHENTICATION_SUCCESS step
+            - REGISTRATION: Must start with REGISTRATION_START and include PROVISIONING step
+        isEnabled:
+          type: boolean
+          description: Indicates if the flow is enabled or disabled
+          example: true
+        steps:
+          type: array
+          minItems: 2
+          items:
+            $ref: '#/components/schemas/Step'
+          description: Ordered list of steps that define the flow
+      example:
+        name: Basic Registration Flow
+        flowType: REGISTRATION
+        isEnabled: true
+        steps: &registrationFlowSteps
+          - id: reg_start
+            type: REGISTRATION_START
+            size:
+              width: 200
+              height: 100
+            position:
+              x: 100
+              y: 200
+            data:
+              action:
+                type: EXECUTOR
+                executor:
+                  name: UserTypeResolverExecutor
+                next: view_choose_method
+          - id: view_choose_method
+            type: VIEW
+            size:
+              width: 400
+              height: 500
+            position:
+              x: 100
+              y: 400
+            data:
+              components:
+                - id: title_1
+                  category: DISPLAY
+                  type: TYPOGRAPHY
+                  variant: H3
+                  config:
+                    text: registration.title
+                - id: form_credentials
+                  category: BLOCK
+                  type: FORM
+                  config: {}
+                  components:
+                    - id: input_username
+                      category: FIELD
+                      type: INPUT
+                      variant: TEXT
+                      config:
+                        type: text
+                        label: registration.username.label
+                        placeholder: registration.username.placeholder
+                        hint: registration.username.hint
+                        required: true
+                        identifier: username
+                    - id: input_password
+                      category: FIELD
+                      type: INPUT
+                      variant: PASSWORD
+                      config:
+                        type: password
+                        label: registration.password.label
+                        placeholder: registration.password.placeholder
+                        hint: registration.password.hint
+                        required: true
+                        identifier: password
+                    - id: button_continue
+                      category: ACTION
+                      type: BUTTON
+                      variant: PRIMARY
+                      config:
+                        type: submit
+                        text: registration.continue.button
+                      action:
+                        type: EXECUTOR
+                        executor:
+                          name: BasicAuthExecutor
+                        next: view_profile_info
+                - id: button_google
+                  category: ACTION
+                  type: BUTTON
+                  variant: SOCIAL
+                  config:
+                    type: button
+                    text: registration.google.button
+                    image: assets/images/icons/google.svg
+                  action:
+                    type: NEXT
+                    next: google_auth
+          - id: view_profile_info
+            type: VIEW
+            size:
+              width: 400
+              height: 500
+            position:
+              x: 100
+              y: 700
+            data:
+              components:
+                - id: title_profile
+                  category: DISPLAY
+                  type: TYPOGRAPHY
+                  variant: H3
+                  config:
+                    text: registration.profile.title
+                - id: form_profile
+                  category: BLOCK
+                  type: FORM
+                  config: {}
+                  components:
+                    - id: input_email
+                      category: FIELD
+                      type: INPUT
+                      variant: EMAIL
+                      config:
+                        type: email
+                        label: registration.email.label
+                        placeholder: registration.email.placeholder
+                        hint: registration.email.hint
+                        required: true
+                        identifier: email
+                    - id: input_firstname
+                      category: FIELD
+                      type: INPUT
+                      variant: TEXT
+                      config:
+                        type: text
+                        label: registration.firstName.label
+                        placeholder: registration.firstName.placeholder
+                        hint: registration.firstName.hint
+                        required: true
+                        identifier: firstName
+                    - id: input_lastname
+                      category: FIELD
+                      type: INPUT
+                      variant: TEXT
+                      config:
+                        type: text
+                        label: registration.lastName.label
+                        placeholder: registration.lastName.placeholder
+                        hint: registration.lastName.hint
+                        required: true
+                        identifier: lastName
+                    - id: button_submit
+                      category: ACTION
+                      type: BUTTON
+                      variant: PRIMARY
+                      config:
+                        type: submit
+                        text: registration.submit.button
+                      action:
+                        type: NEXT
+                        next: provisioning
+          - id: google_auth
+            type: EXECUTION
+            size:
+              width: 200
+              height: 100
+            position:
+              x: 600
+              y: 500
+            data:
+              action:
+                type: EXECUTOR
+                executor:
+                  name: GoogleOIDCAuthExecutor
+                  meta:
+                    idpId: abcdef12-3456-7890-abcd-ef1234567890
+                next: provisioning
+          - id: provisioning
+            type: PROVISIONING
+            size:
+              width: 200
+              height: 100
+            position:
+              x: 350
+              y: 950
+            data:
+              action:
+                type: EXECUTOR
+                executor:
+                  name: ProvisioningExecutor
+                next: success
+          - id: success
+            type: AUTHENTICATION_SUCCESS
+            size:
+              width: 400
+              height: 250
+            position:
+              x: 350
+              y: 1150
+            data:
+              action:
+                type: EXECUTOR
+                executor:
+                  name: AuthAssertExecutor
+              components:
+                - id: success_title
+                  category: DISPLAY
+                  type: TYPOGRAPHY
+                  variant: H3
+                  config:
+                    text: registration.success.title
+                - id: success_message
+                  category: DISPLAY
+                  type: RICH_TEXT
+                  config:
+                    text: registration.success.message
+
+    FlowDefinitionResponse:
+      type: object
+      required:
+        - id
+        - name
+        - flowType
+        - isEnabled
+        - steps
+        - createdAt
+        - updatedAt
+      properties:
+        id:
+          type: string
+          description: Unique identifier for the flow
+          example: a23b45c6-d7e8-90f1-2345-6789abcdef01
+        name:
+          type: string
+          description: Name of the flow
+          example: "Basic Registration Flow"
+        flowType:
+          type: string
+          enum:
+            - AUTHENTICATION
+            - REGISTRATION
+          description: |
+            Type of flow. Determines required steps:
+            - AUTHENTICATION: Must end with AUTHENTICATION_SUCCESS step
+            - REGISTRATION: Must start with REGISTRATION_START and include PROVISIONING step
+        isEnabled:
+          type: boolean
+          description: Indicates if the flow is enabled or disabled
+          example: true
+        steps:
+          type: array
+          minItems: 2
+          items:
+            $ref: '#/components/schemas/Step'
+          description: Ordered list of steps that define the flow
+        createdAt:
+          type: string
+          format: date-time
+          description: Timestamp when the flow was created
+        updatedAt:
+          type: string
+          format: date-time
+          description: Timestamp when the flow was last updated
+      example:
+        id: a23b45c6-d7e8-90f1-2345-6789abcdef01
+        name: Basic Registration Flow
+        flowType: REGISTRATION
+        isEnabled: true
+        steps: *registrationFlowSteps
+        createdAt: 2024-06-15T10:20:30Z
+        updatedAt: 2024-06-20T14:25:35Z
+
+    Step:
+      type: object
+      required:
+        - id
+        - type
+      properties:
+        id:
+          type: string
+          description: Unique identifier for the step within the flow
+          example: view_choose_method
+        type:
+          type: string
+          enum:
+            - VIEW
+            - EXECUTION
+            - AUTHENTICATION_SUCCESS
+            - REGISTRATION_START
+            - PROVISIONING
+          description: |
+            Type of step:
+            - VIEW: Interactive UI step with components
+            - EXECUTION: Background executor step without UI
+            - AUTHENTICATION_SUCCESS: Final step for auth flows and auto-login step for registration flows
+            - REGISTRATION_START: Initial step for registration flows
+            - PROVISIONING: User provisioning step
+        size:
+          $ref: '#/components/schemas/Size'
+        position:
+          $ref: '#/components/schemas/Position'
+        data:
+          $ref: '#/components/schemas/StepData'
+
+    Size:
+      type: object
+      description: Visual dimensions of the step in the flow composer UI
+      properties:
+        width:
+          type: number
+          minimum: 0
+          example: 400
+        height:
+          type: number
+          minimum: 0
+          example: 500
+
+    Position:
+      type: object
+      description: Position coordinates of the step in the flow composer canvas
+      properties:
+        x:
+          type: number
+          example: 100
+        y:
+          type: number
+          example: 400
+
+    StepData:
+      type: object
+      description: Contains the step's components and/or action configuration
+      properties:
+        components:
+          type: array
+          items:
+            $ref: '#/components/schemas/Component'
+          description: UI components for VIEW steps (forms, buttons, text, etc.)
+        action:
+          $ref: '#/components/schemas/Action'
+          description: Action configuration for steps
+
+    Component:
+      type: object
+      required:
+        - id
+        - category
+        - type
+      properties:
+        id:
+          type: string
+          description: Unique identifier for the component within the step
+          example: input_username
+        category:
+          type: string
+          enum:
+            - DISPLAY
+            - FIELD
+            - ACTION
+            - BLOCK
+          description: |
+            Component category:
+            - DISPLAY: Non-interactive elements (typography, rich text, images)
+            - FIELD: Input fields (text, password, email, etc.)
+            - ACTION: Interactive elements (buttons, links)
+            - BLOCK: Container elements (forms, sections)
+          example: FIELD
+        type:
+          type: string
+          description: Specific component type (TYPOGRAPHY, INPUT, BUTTON, FORM, etc.)
+          example: INPUT
+        variant:
+          type: string
+          description: Component style variant (e.g., TEXT, PASSWORD, PRIMARY, etc.)
+          example: TEXT
+        config:
+          type: object
+          additionalProperties: true
+          description: |
+            Component-specific configuration. Common properties:
+            - type: HTML input type (text, password, email, etc.)
+            - text: Display text or i18n key
+            - label: Field label (i18n key)
+            - placeholder: Input placeholder (i18n key)
+            - hint: Help text (i18n key)
+            - required: Whether field is required (boolean)
+            - identifier: Attribute identifier for data collection
+          example:
+            type: text
+            label: registration.username.label
+            placeholder: registration.username.placeholder
+            hint: registration.username.hint
+            required: true
+            identifier: username
+        components:
+          type: array
+          items:
+            $ref: '#/components/schemas/Component'
+          description: Nested child components (for BLOCK category components like FORM)
+        action:
+          $ref: '#/components/schemas/Action'
+          description: Action triggered by this component (for ACTION category components)
+
+    Action:
+      type: object
+      required:
+        - type
+      properties:
+        type:
+          type: string
+          enum:
+            - EXECUTOR
+            - NEXT
+          description: |
+            Action type:
+            - EXECUTOR: Execute a backend executor and optionally navigate to next step
+            - NEXT: Navigate directly to the next step without executor execution
+        executor:
+          $ref: '#/components/schemas/ExecutorRef'
+          description: Executor configuration (required if type is EXECUTOR)
+        next:
+          type: string
+          description: ID of the next step to navigate to after action completes
+          example: provisioning
+
+    ExecutorRef:
+      type: object
+      required:
+        - name
+      properties:
+        name:
+          type: string
+          description: Name of the registered executor
+          example: BasicAuthExecutor
+        meta:
+          type: object
+          additionalProperties: true
+          description: |
+            Executor-specific metadata. Common properties:
+            - idpId: Identity provider ID (for social login executors)
+            - senderId: Notification sender ID (for notification executors)
+          example:
+            idpId: a456b7c8-d9e0-1234-5678-9abcdef01234
+
+    Error:
+      type: object
+      properties:
+        code:
+          type: string
+          description: The error code
+          example: "FMS-1001"
+        message:
+          type: string
+          description: The error message
+          example: "Invalid request format"
+        description:
+          type: string
+          description: A detailed description of the error
+          example: "The request body is malformed or contains invalid data"
+    
+    ServerError:
+      type: object
+      properties:
+        code:
+          type: string
+          description: The server error code
+          example: "SSE-5000"
+        message:
+          type: string
+          description: The server error message
+          example: "Internal server error"
+        description:
+          type: string
+          description: A detailed description of the server error
+          example: "An unexpected error occurred while processing the request"
