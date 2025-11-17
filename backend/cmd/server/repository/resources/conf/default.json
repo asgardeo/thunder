@@ -88,5 +88,16 @@
   },
   "immutable_resources": {
     "enabled": false
+  },
+  "crypto": {
+    "key": "",
+    "password_hashing": {
+      "algorithm": "PBKDF2",
+      "parameters": {
+        "iterations": 600000,
+        "key_size": 32,
+        "salt_size": 16
+      }
+    }
   }
 }

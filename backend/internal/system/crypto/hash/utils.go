@@ -33,21 +33,25 @@ import (
 const (
 	defaultSaltSize         = 16
 	defaultPBKDF2Iterations = 600000
-	defaultPBKDF2KeyLength  = 32
+	defaultPBKDF2KeySize    = 32
 )
 
 // Generate creates a credential using the configured hash provider.
 func Generate(credentialValue []byte) Credential {
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, "HashProvider"))
-	algorithm := CredAlgorithm(config.GetThunderRuntime().Config.Hash.Algorithm)
+	algorithm := CredAlgorithm(config.GetThunderRuntime().Config.Crypto.PasswordHashing.Algorithm)
 
 	switch algorithm {
 	case SHA256:
 		logger.Debug("Using SHA256 hash provider as per configuration.")
 		return newSHA256Credential(credentialValue)
-	default:
+	case PBKDF2:
 		logger.Debug("Using PBKDF2 hash provider as per configuration.")
 		return newPBKDF2Credential(credentialValue)
+	default:
+		logger.Error("Unsupported hash algorithm in configuration",
+			log.String("algorithm", string(algorithm)))
+		return Credential{}
 	}
 }
 
@@ -73,20 +77,26 @@ func Verify(credentialValueToVerify []byte, referenceCredential Credential) bool
 
 // newSHA256Credential generates a SHA256 hash of the input data combined with salt.
 func newSHA256Credential(credentialValue []byte) Credential {
-	credSalt, _ := generateSalt()
+	saltSize := config.GetThunderRuntime().Config.Crypto.PasswordHashing.Parameters.SaltSize
+	if saltSize == 0 {
+		saltSize = defaultSaltSize
+	}
+	credSalt, _ := generateSalt(saltSize)
 	credentialValue = append(credentialValue, credSalt...)
 	hash := sha256.Sum256(credentialValue)
 
 	return Credential{
 		Algorithm: SHA256,
 		Hash:      hex.EncodeToString(hash[:]),
-		Salt:      hex.EncodeToString(credSalt),
+		Parameters: CredParameters{
+			Salt: hex.EncodeToString(credSalt),
+		},
 	}
 }
 
 // verifySHA256Credential checks if the SHA256 hash of the input data and salt matches the expected hash.
 func verifySHA256Credential(credentialValueToVerify []byte, referenceCredential Credential) bool {
-	saltBytes, err := hex.DecodeString(referenceCredential.Salt)
+	saltBytes, err := hex.DecodeString(referenceCredential.Parameters.Salt)
 	if err != nil {
 		return false
 	}
@@ -97,9 +107,21 @@ func verifySHA256Credential(credentialValueToVerify []byte, referenceCredential 
 
 // newPBKDF2Credential generates a PBKDF2 hash of the input data using the provided salt.
 func newPBKDF2Credential(credentialValue []byte) Credential {
-	credSalt, _ := generateSalt()
+	saltSize := config.GetThunderRuntime().Config.Crypto.PasswordHashing.Parameters.SaltSize
+	iterations := config.GetThunderRuntime().Config.Crypto.PasswordHashing.Parameters.Iterations
+	keySize := config.GetThunderRuntime().Config.Crypto.PasswordHashing.Parameters.KeySize
+	if saltSize == 0 {
+		saltSize = defaultSaltSize
+	}
+	if iterations == 0 {
+		iterations = defaultPBKDF2Iterations
+	}
+	if keySize == 0 {
+		keySize = defaultPBKDF2KeySize
+	}
+	credSalt, _ := generateSalt(saltSize)
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, "PBKDF2HashProvider"))
-	hash, err := pbkdf2.Key(sha256.New, string(credentialValue), credSalt, defaultPBKDF2Iterations, defaultPBKDF2KeyLength)
+	hash, err := pbkdf2.Key(sha256.New, string(credentialValue), credSalt, iterations, keySize)
 	if err != nil {
 		logger.Error("Error hashing data with PBKDF2: %v", log.Error(err))
 		return Credential{}
@@ -107,35 +129,37 @@ func newPBKDF2Credential(credentialValue []byte) Credential {
 	return Credential{
 		Algorithm: PBKDF2,
 		Hash:      hex.EncodeToString(hash),
-		Salt:      hex.EncodeToString(credSalt),
+		Parameters: CredParameters{
+			Iterations: iterations,
+			KeySize:    keySize,
+			Salt:       hex.EncodeToString(credSalt),
+		},
 	}
 }
 
 // verifyPBKDF2Credential checks if the PBKDF2 hash of the input data and salt matches the expected hash.
 func verifyPBKDF2Credential(credentialValueToVerify []byte, referenceCredential Credential) bool {
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, "PBKDF2HashProvider"))
-	saltBytes, err := hex.DecodeString(referenceCredential.Salt)
+	iterations := referenceCredential.Parameters.Iterations
+	if iterations == 0 {
+		iterations = defaultPBKDF2Iterations
+	}
+	keySize := referenceCredential.Parameters.KeySize
+	if keySize == 0 {
+		keySize = defaultPBKDF2KeySize
+	}
+	saltBytes, err := hex.DecodeString(referenceCredential.Parameters.Salt)
 	if err != nil {
 		logger.Error("Error decoding salt: %v", log.Error(err))
 		return false
 	}
 	hash, err := pbkdf2.Key(sha256.New,
-		string(credentialValueToVerify), saltBytes, defaultPBKDF2Iterations, defaultPBKDF2KeyLength)
+		string(credentialValueToVerify), saltBytes, iterations, keySize)
 	if err != nil {
 		logger.Error("Error hashing data with PBKDF2: %v", log.Error(err))
 		return false
 	}
 	return hex.EncodeToString(hash) == referenceCredential.Hash
-}
-
-// generateSalt generates a random salt string.
-func generateSalt() ([]byte, error) {
-	salt := make([]byte, defaultSaltSize)
-	_, err := rand.Read(salt)
-	if err != nil {
-		return nil, err
-	}
-	return salt, nil
 }
 
 // GenerateThumbprint generates a SHA-256 thumbprint for the given data.
@@ -147,4 +171,14 @@ func GenerateThumbprint(data []byte) string {
 // GenerateThumbprintFromString generates a SHA-256 thumbprint for the given string data.
 func GenerateThumbprintFromString(data string) string {
 	return GenerateThumbprint([]byte(data))
+}
+
+// generateSalt generates a random salt string.
+func generateSalt(saltSize int) ([]byte, error) {
+	salt := make([]byte, saltSize)
+	_, err := rand.Read(salt)
+	if err != nil {
+		return nil, err
+	}
+	return salt, nil
 }

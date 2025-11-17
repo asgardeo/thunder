@@ -126,14 +126,28 @@ type FlowConfig struct {
 	Authn          FlowAuthnConfig `yaml:"authn" json:"authn"`
 }
 
+// CryptoConfig holds the cryptographic configuration details.
+type CryptoConfig struct {
+	Key             string                `yaml:"key" json:"key"`
+	PasswordHashing PasswordHashingConfig `yaml:"password_hashing" json:"password_hashing"`
+}
+
+// PasswordHashingConfig holds the password hashing configuration details.
+type PasswordHashingConfig struct {
+	Algorithm  string                      `yaml:"algorithm" json:"algorithm"`
+	Parameters PasswordHashingParamsConfig `yaml:"parameters,omitempty" json:"parameters,omitempty"`
+}
+
+// PasswordHashingParamsConfig holds the parameters for password hashing.
+type PasswordHashingParamsConfig struct {
+	Iterations int `yaml:"iterations,omitempty" json:"iterations,omitempty"`
+	KeySize    int `yaml:"key_size,omitempty" json:"key_size,omitempty"`
+	SaltSize   int `yaml:"salt_size,omitempty" json:"salt_size,omitempty"`
+}
+
 // CORSConfig holds the configuration details for the CORS.
 type CORSConfig struct {
 	AllowedOrigins []string `yaml:"allowed_origins" json:"allowed_origins"`
-}
-
-// HashConfig holds the hashing configuration details.
-type HashConfig struct {
-	Algorithm string `yaml:"algorithm"`
 }
 
 // ImmutableResources holds the configuration details for the immutable resources.
@@ -170,7 +184,7 @@ type Config struct {
 	JWT                JWTConfig           `yaml:"jwt" json:"jwt"`
 	OAuth              OAuthConfig         `yaml:"oauth" json:"oauth"`
 	Flow               FlowConfig          `yaml:"flow" json:"flow"`
-	Hash               HashConfig          `yaml:"hash"`
+	Crypto             CryptoConfig        `yaml:"crypto" json:"crypto"`
 	CORS               CORSConfig          `yaml:"cors" json:"cors"`
 	ImmutableResources ImmutableResources  `yaml:"immutable_resources" json:"immutable_resources"`
 	Observability      ObservabilityConfig `yaml:"observability" json:"observability"`

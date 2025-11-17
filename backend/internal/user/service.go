@@ -266,8 +266,12 @@ func extractCredentials(user *User) ([]Credential, error) {
 				CredentialType: credField,
 				StorageType:    "hash",
 				StorageAlgo:    credHash.Algorithm,
-				Value:          credHash.Hash,
-				Salt:           credHash.Salt,
+				StorageAlgoParams: hash.CredParameters{
+					Iterations: credHash.Parameters.Iterations,
+					KeySize:    credHash.Parameters.KeySize,
+					Salt:       credHash.Parameters.Salt,
+				},
+				Value: credHash.Hash,
 			}
 
 			credentials = append(credentials, credential)
@@ -498,7 +502,11 @@ func (us *userService) VerifyUser(
 		verifyingCredential := hash.Credential{
 			Algorithm: matchingCredential.StorageAlgo,
 			Hash:      matchingCredential.Value,
-			Salt:      matchingCredential.Salt,
+			Parameters: hash.CredParameters{
+				Salt:       matchingCredential.StorageAlgoParams.Salt,
+				Iterations: matchingCredential.StorageAlgoParams.Iterations,
+				KeySize:    matchingCredential.StorageAlgoParams.KeySize,
+			},
 		}
 		hashVerified := hash.Verify([]byte(credValue), verifyingCredential)
 
