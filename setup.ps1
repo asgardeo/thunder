@@ -529,34 +529,18 @@ try {
         Log-Info "Started at: $(Get-Date)"
         Write-Host ""
 
-        # Collect all PowerShell scripts from both built-in and custom directories
+        # Collect all PowerShell scripts from bootstrap directory
         $scripts = @()
 
-        # Find PowerShell scripts in main bootstrap directory
+        # Find PowerShell scripts in bootstrap directory
         if (Test-Path $BOOTSTRAP_DIR) {
             Log-Debug "Scanning $BOOTSTRAP_DIR for PowerShell scripts..."
-            $psScripts = Get-ChildItem -Path $BOOTSTRAP_DIR -Filter "*.ps1" -File -ErrorAction SilentlyContinue
+            $scripts = Get-ChildItem -Path $BOOTSTRAP_DIR -Filter "*.ps1" -File -ErrorAction SilentlyContinue
 
-            Log-Debug "Found $($psScripts.Count) PowerShell script(s)"
-            foreach ($bootstrapScript in $psScripts) {
+            Log-Debug "Found $($scripts.Count) PowerShell script(s)"
+            foreach ($bootstrapScript in $scripts) {
                 Log-Debug "  - $($bootstrapScript.Name)"
             }
-
-            $scripts += $psScripts
-        }
-
-        # Find PowerShell scripts in custom directory
-        $customDir = Join-Path $BOOTSTRAP_DIR "custom"
-        if (Test-Path $customDir) {
-            Log-Debug "Searching for PowerShell scripts in: $customDir"
-            $customPsScripts = Get-ChildItem -Path $customDir -Filter "*.ps1" -File -ErrorAction SilentlyContinue
-
-            Log-Debug "Found $($customPsScripts.Count) PowerShell script(s) in custom directory"
-            foreach ($bootstrapScript in $customPsScripts) {
-                Log-Debug "  - $($bootstrapScript.Name)"
-            }
-
-            $scripts += $customPsScripts
         }
 
         # Sort scripts by filename (numeric prefix determines order)

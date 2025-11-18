@@ -219,12 +219,23 @@ The setup job runs `setup.sh` as a one-time Helm pre-install hook to initialize 
 
 ### Bootstrap Script Parameters
 
-Custom bootstrap scripts can be added to extend the setup process. These scripts run after Thunder's default resources are created.
+Bootstrap scripts extend Thunder's setup process by adding your own initialization logic. These scripts run as the part of the setup job.
+
+#### Understanding Default Bootstrap Scripts
+
+Thunder provides these default bootstrap scripts in `/opt/thunder/bootstrap/`:
+- **`common.sh`** - Helper functions for logging (`log_info`, `log_success`, `log_warning`, `log_error`) and API calls (`thunder_api_call`)
+- **`01-default-resources.sh`** - Creates admin user, default organization, and Person user schema
+- **`02-sample-resources.sh`** - Creates sample resources for testing
+
+**Important:** Custom scripts are mounted individually using `subPath` to preserve these default scripts. This ensures `common.sh` is available for your scripts to source, and default resources are created. Mount/copy the entire `/opt/thunder/bootstrap/` directory only if you want to replace all default scripts.
 
 | Name                                   | Description                                                     | Default                      |
 | -------------------------------------- | --------------------------------------------------------------- | ---------------------------- |
 | `bootstrap.scripts`                    | Inline custom bootstrap scripts (key: filename, value: content)| `{}`                         |
 | `bootstrap.existingConfigMap`          | Reference an existing ConfigMap with bootstrap scripts          | `""`                         |
+
+**For comprehensive examples, helper function documentation, and best practices, see:** [Custom Bootstrap Guide](../../docs/guides/setup/custom-bootstrap.md)
 
 ### Custom Configuration
 
