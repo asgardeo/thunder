@@ -24,6 +24,7 @@ import (
 	"os"
 	"path/filepath"
 	"reflect"
+	"time"
 
 	"github.com/asgardeo/thunder/internal/system/log"
 
@@ -145,21 +146,47 @@ type ImmutableResources struct {
 
 // ObservabilityConfig holds the observability configuration details.
 type ObservabilityConfig struct {
-	Enabled     bool                       `yaml:"enabled" json:"enabled"`
-	Output      ObservabilityOutputConfig  `yaml:"output" json:"output"`
-	Metrics     ObservabilityMetricsConfig `yaml:"metrics" json:"metrics"`
-	FailureMode string                     `yaml:"failure_mode" json:"failure_mode"`
+	Enabled     bool                      `yaml:"enabled" json:"enabled"`
+	Output      ObservabilityOutputConfig `yaml:"output" json:"output"`
+	FailureMode string                    `yaml:"failure_mode" json:"failure_mode"`
 }
 
 // ObservabilityOutputConfig holds observability output configuration.
 type ObservabilityOutputConfig struct {
-	Type   string `yaml:"type" json:"type"`
-	Format string `yaml:"format" json:"format"`
+	File          ObservabilityFileConfig    `yaml:"file" json:"file"`
+	Console       ObservabilityConsoleConfig `yaml:"console" json:"console"`
+	OpenTelemetry ObservabilityOTelConfig    `yaml:"opentelemetry" json:"opentelemetry"`
 }
 
-// ObservabilityMetricsConfig holds observability metrics configuration.
-type ObservabilityMetricsConfig struct {
-	Enabled bool `yaml:"enabled" json:"enabled"`
+// ObservabilityFileConfig captures file sink settings for observability events.
+type ObservabilityFileConfig struct {
+	Enabled       bool          `yaml:"enabled" json:"enabled"`
+	FilePath      string        `yaml:"file_path" json:"file_path"`
+	Format        string        `yaml:"format" json:"format"`
+	BufferSize    int           `yaml:"buffer_size" json:"buffer_size"`
+	FlushInterval time.Duration `yaml:"flush_interval" json:"flush_interval"`
+	Categories    []string      `yaml:"categories" json:"categories"`
+}
+
+// ObservabilityConsoleConfig captures console sink settings for observability events.
+type ObservabilityConsoleConfig struct {
+	Enabled    bool     `yaml:"enabled" json:"enabled"`
+	Format     string   `yaml:"format" json:"format"`
+	Categories []string `yaml:"categories" json:"categories"`
+}
+
+// ObservabilityOTelConfig holds OpenTelemetry configuration.
+type ObservabilityOTelConfig struct {
+	Enabled        bool     `yaml:"enabled" json:"enabled"`
+	ExporterType   string   `yaml:"exporter_type" json:"exporter_type"`
+	OTLPEndpoint   string   `yaml:"otlp_endpoint" json:"otlp_endpoint"`
+	ServiceName    string   `yaml:"service_name" json:"service_name"`
+	ServiceVersion string   `yaml:"service_version" json:"service_version"`
+	Environment    string   `yaml:"environment" json:"environment"`
+	SampleRate     float64  `yaml:"sample_rate" json:"sample_rate"`
+	Categories     []string `yaml:"categories" json:"categories"`
+	// Insecure disables TLS for OTLP (not recommended for production)
+	Insecure bool `yaml:"insecure" json:"insecure"`
 }
 
 // Config holds the complete configuration details of the server.

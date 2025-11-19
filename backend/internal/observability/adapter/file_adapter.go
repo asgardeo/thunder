@@ -16,8 +16,8 @@
  * under the License.
  */
 
-// Package file provides a file-based output adapter for observability events.
-package file
+// Package adapter provides output adapters for observability events.
+package adapter
 
 import (
 	"bufio"
@@ -30,7 +30,6 @@ import (
 	"sync"
 	"time"
 
-	"github.com/asgardeo/thunder/internal/observability/adapter"
 	"github.com/asgardeo/thunder/internal/system/log"
 )
 
@@ -73,7 +72,7 @@ type FileAdapter struct {
 	closed      bool
 }
 
-var _ adapter.OutputAdapter = (*FileAdapter)(nil)
+var _ OutputAdapterInterface = (*FileAdapter)(nil)
 
 // NewFileAdapter creates a new file-based output adapter with simple path.
 // This uses default settings with no rotation (backward compatible).

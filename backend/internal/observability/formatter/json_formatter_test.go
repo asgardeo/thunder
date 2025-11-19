@@ -16,7 +16,7 @@
  * under the License.
  */
 
-package json
+package formatter
 
 import (
 	"encoding/json"
@@ -25,21 +25,20 @@ import (
 	"time"
 
 	"github.com/asgardeo/thunder/internal/observability/event"
-	"github.com/asgardeo/thunder/internal/observability/formatter"
 )
 
 func TestNewJSONFormatter(t *testing.T) {
-	f := NewJSONFormatter()
+	f := newJSONFormatter()
 	if f == nil {
 		t.Fatal("NewJSONFormatter() returned nil")
 	}
 
 	// Verify it implements the Formatter interface
-	var _ formatter.Formatter = f
+	var _ FormatterInterface = f
 }
 
 func TestJSONFormatter_GetName(t *testing.T) {
-	f := NewJSONFormatter()
+	f := newJSONFormatter()
 	name := f.GetName()
 
 	if name == "" {
@@ -52,7 +51,7 @@ func TestJSONFormatter_GetName(t *testing.T) {
 }
 
 func TestJSONFormatter_Format(t *testing.T) {
-	f := NewJSONFormatter()
+	f := newJSONFormatter()
 
 	timestamp := time.Date(2025, 11, 3, 10, 0, 0, 0, time.UTC)
 
@@ -79,7 +78,7 @@ func TestJSONFormatter_Format(t *testing.T) {
 			event: &event.Event{
 				TraceID:   "trace-123",
 				EventID:   "event-456",
-				Type:      string(event.EventTypeTokenIssued),
+				Type:      string(event.EventTypeFlowStarted),
 				Component: "TokenHandler",
 				Timestamp: timestamp,
 				Status:    event.StatusSuccess,
@@ -171,7 +170,7 @@ func TestJSONFormatter_Format(t *testing.T) {
 }
 
 func TestJSONFormatter_FormatMultipleEvents(t *testing.T) {
-	f := NewJSONFormatter()
+	f := newJSONFormatter()
 
 	timestamp := time.Date(2025, 11, 3, 10, 0, 0, 0, time.UTC)
 
@@ -197,7 +196,7 @@ func TestJSONFormatter_FormatMultipleEvents(t *testing.T) {
 		{
 			TraceID:   "trace-1",
 			EventID:   "event-3",
-			Type:      string(event.EventTypeTokenIssued),
+			Type:      string(event.EventTypeFlowStarted),
 			Component: "TokenHandler",
 			Timestamp: timestamp.Add(2 * time.Second),
 			Status:    event.StatusSuccess,
@@ -219,7 +218,7 @@ func TestJSONFormatter_FormatMultipleEvents(t *testing.T) {
 }
 
 func TestJSONFormatter_FormatPreservesDataTypes(t *testing.T) {
-	f := NewJSONFormatter()
+	f := newJSONFormatter()
 
 	timestamp := time.Date(2025, 11, 3, 10, 0, 0, 0, time.UTC)
 
@@ -278,7 +277,7 @@ func TestJSONFormatter_FormatPreservesDataTypes(t *testing.T) {
 }
 
 func TestJSONFormatter_FormatEmptyEvent(t *testing.T) {
-	f := NewJSONFormatter()
+	f := newJSONFormatter()
 
 	evt := &event.Event{}
 	data, err := f.Format(evt)
@@ -299,7 +298,7 @@ func TestJSONFormatter_FormatEmptyEvent(t *testing.T) {
 }
 
 func BenchmarkJSONFormatter_Format(b *testing.B) {
-	f := NewJSONFormatter()
+	f := newJSONFormatter()
 
 	timestamp := time.Now()
 	evt := &event.Event{
@@ -323,7 +322,7 @@ func BenchmarkJSONFormatter_Format(b *testing.B) {
 }
 
 func BenchmarkJSONFormatter_FormatLargeData(b *testing.B) {
-	f := NewJSONFormatter()
+	f := newJSONFormatter()
 
 	timestamp := time.Now()
 

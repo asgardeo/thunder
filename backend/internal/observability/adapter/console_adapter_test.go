@@ -16,7 +16,7 @@
  * under the License.
  */
 
-package console
+package adapter
 
 import (
 	"bytes"
@@ -28,14 +28,14 @@ import (
 )
 
 func TestNewConsoleAdapter(t *testing.T) {
-	adp := NewConsoleAdapter()
+	adp := InitializeConsoleAdapter()
 	if adp == nil {
-		t.Fatal("NewConsoleAdapter() returned nil")
+		t.Fatal("InitializeConsoleAdapter() returned nil")
 	}
 }
 
 func TestConsoleAdapter_GetName(t *testing.T) {
-	adapter := NewConsoleAdapter()
+	adapter := InitializeConsoleAdapter()
 	name := adapter.GetName()
 
 	if name == "" {
@@ -53,7 +53,7 @@ func TestConsoleAdapter_Write(t *testing.T) {
 	r, w, _ := os.Pipe()
 	os.Stdout = w
 
-	adapter := NewConsoleAdapter()
+	adapter := InitializeConsoleAdapter()
 
 	testData := []byte("test event data")
 	err := adapter.Write(testData)
@@ -88,7 +88,7 @@ func TestConsoleAdapter_WriteMultiple(t *testing.T) {
 	r, w, _ := os.Pipe()
 	os.Stdout = w
 
-	adapter := NewConsoleAdapter()
+	adapter := InitializeConsoleAdapter()
 
 	testData := [][]byte{
 		[]byte("event 1"),
@@ -121,7 +121,7 @@ func TestConsoleAdapter_WriteMultiple(t *testing.T) {
 }
 
 func TestConsoleAdapter_WriteAfterClose(t *testing.T) {
-	adapter := NewConsoleAdapter()
+	adapter := InitializeConsoleAdapter()
 
 	// Close the adapter
 	err := adapter.Close()
@@ -143,7 +143,7 @@ func TestConsoleAdapter_WriteAfterClose(t *testing.T) {
 }
 
 func TestConsoleAdapter_Flush(t *testing.T) {
-	adapter := NewConsoleAdapter()
+	adapter := InitializeConsoleAdapter()
 
 	// Flush should be a no-op and not return error
 	err := adapter.Flush()
@@ -153,7 +153,7 @@ func TestConsoleAdapter_Flush(t *testing.T) {
 }
 
 func TestConsoleAdapter_Close(t *testing.T) {
-	adapter := NewConsoleAdapter()
+	adapter := InitializeConsoleAdapter()
 
 	err := adapter.Close()
 	if err != nil {
@@ -173,7 +173,7 @@ func TestConsoleAdapter_WriteEmpty(t *testing.T) {
 	r, w, _ := os.Pipe()
 	os.Stdout = w
 
-	adapter := NewConsoleAdapter()
+	adapter := InitializeConsoleAdapter()
 
 	// Write empty data
 	err := adapter.Write([]byte{})
@@ -203,7 +203,7 @@ func TestConsoleAdapter_WriteLargeData(t *testing.T) {
 	r, w, _ := os.Pipe()
 	os.Stdout = w
 
-	adapter := NewConsoleAdapter()
+	adapter := InitializeConsoleAdapter()
 
 	// Create large data
 	largeData := make([]byte, 10000)
@@ -238,7 +238,7 @@ func TestConsoleAdapter_ConcurrentWrites(t *testing.T) {
 	r, w, _ := os.Pipe()
 	os.Stdout = w
 
-	adapter := NewConsoleAdapter()
+	adapter := InitializeConsoleAdapter()
 
 	const numGoroutines = 10
 	const writesPerGoroutine = 100
@@ -277,7 +277,7 @@ func TestConsoleAdapter_ConcurrentWrites(t *testing.T) {
 }
 
 func TestConsoleAdapter_ThreadSafety(t *testing.T) {
-	adapter := NewConsoleAdapter()
+	adapter := InitializeConsoleAdapter()
 
 	var wg sync.WaitGroup
 	wg.Add(3)
@@ -321,7 +321,7 @@ func BenchmarkConsoleAdapter_Write(b *testing.B) {
 		_ = devNull.Close()
 	}()
 
-	adapter := NewConsoleAdapter()
+	adapter := InitializeConsoleAdapter()
 	testData := []byte("benchmark test data")
 
 	b.ResetTimer()
@@ -340,7 +340,7 @@ func BenchmarkConsoleAdapter_WriteLarge(b *testing.B) {
 		_ = devNull.Close()
 	}()
 
-	adapter := NewConsoleAdapter()
+	adapter := InitializeConsoleAdapter()
 	largeData := make([]byte, 10000)
 
 	b.ResetTimer()

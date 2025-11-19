@@ -16,18 +16,30 @@
  * under the License.
  */
 
-// Package formatter provides formatter interfaces and implementations for events.
 package formatter
 
-import (
-	"github.com/asgardeo/thunder/internal/observability/event"
-)
-
-// FormatterInterface is the interface for formatting events into different output formats.
-type FormatterInterface interface {
-	// Format formats an event into bytes.
-	Format(evt *event.Event) ([]byte, error)
-
-	// GetName returns the name of this formatter.
-	GetName() string
+// Initialize creates and returns a formatter instance based on the specified format type.
+//
+// Supported format types:
+//   - "json": JSON formatter (default)
+//   - Future: "csv", "text", etc.
+//
+// Parameters:
+//   - formatType: The type of formatter to create ("json", etc.)
+//
+// Returns:
+//   - FormatterInterface: The initialized formatter instance
+//
+// Example:
+//
+//	formatter := formatter.Initialize("json")
+//	data, err := formatter.Format(event)
+func Initialize(formatType string) FormatterInterface {
+	switch formatType {
+	case "json":
+		return newJSONFormatter()
+	default:
+		// Default to JSON formatter
+		return newJSONFormatter()
+	}
 }

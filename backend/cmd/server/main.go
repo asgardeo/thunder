@@ -31,7 +31,6 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/asgardeo/thunder/internal/observability"
 	"github.com/asgardeo/thunder/internal/system/cache"
 	"github.com/asgardeo/thunder/internal/system/cert"
 	"github.com/asgardeo/thunder/internal/system/config"
@@ -57,9 +56,6 @@ func main() {
 
 	// Initialize the cache manager.
 	initCacheManager(logger)
-
-	// Initialize observability from configuration
-	initObservability(logger, cfg)
 
 	// Create a new HTTP multiplexer.
 	mux := http.NewServeMux()
@@ -149,39 +145,6 @@ func initCacheManager(logger *log.Logger) {
 		logger.Fatal("Failed to get cache manager instance")
 	}
 	cm.Init()
-}
-
-// initObservability initializes the observability service from configuration.
-func initObservability(logger *log.Logger, cfg *config.Config) {
-	// Start with defaults and override with non-empty values from system config
-	observabilityCfg := observability.DefaultConfig()
-
-	// Override with system configuration values if provided
-	observabilityCfg.Enabled = cfg.Observability.Enabled
-
-	if cfg.Observability.Output.Type != "" {
-		observabilityCfg.Output.Type = cfg.Observability.Output.Type
-	}
-	if cfg.Observability.Output.Format != "" {
-		observabilityCfg.Output.Format = cfg.Observability.Output.Format
-	}
-	if cfg.Observability.FailureMode != "" {
-		observabilityCfg.FailureMode = cfg.Observability.FailureMode
-	}
-
-	observabilityCfg.Metrics.Enabled = cfg.Observability.Metrics.Enabled
-
-	svc, err := observability.InitializeWithConfig(observabilityCfg)
-	if err != nil {
-		logger.Error("Failed to initialize observability service", log.Error(err))
-		return
-	}
-
-	if svc.IsEnabled() {
-		logger.Debug("Observability service initialized successfully with console adapter and JSON format")
-	} else {
-		logger.Debug("Observability service is disabled")
-	}
 }
 
 // loadCertConfig loads the certificate configuration and extracts the Key ID (kid).
@@ -290,7 +253,10 @@ func createSecurityMiddleware(logger *log.Logger, mux *http.ServeMux,
 }
 
 // gracefulShutdown handles the graceful shutdown of all components.
-func gracefulShutdown(logger *log.Logger, server *http.Server) {
+func gracefulShutdown(
+	logger *log.Logger,
+	server *http.Server,
+) {
 	ctx, cancel := context.WithTimeout(context.Background(), shutdownTimeout)
 	defer cancel()
 
@@ -301,12 +267,8 @@ func gracefulShutdown(logger *log.Logger, server *http.Server) {
 		logger.Debug("HTTP server shutdown completed")
 	}
 
-	// Shutdown observability service
-	observabilitySvc := observability.GetService()
-	if observabilitySvc != nil {
-		observabilitySvc.Shutdown()
-		logger.Debug("Observability service shutdown completed")
-	}
+	// Shutdown services
+	unregisterServices()
 
 	// Close database connections
 	dbCloser := provider.GetDBProviderCloser()

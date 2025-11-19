@@ -22,28 +22,30 @@ package publisher
 import (
 	"context"
 	"sync"
-	"time"
 
 	"github.com/asgardeo/thunder/internal/observability/event"
-	"github.com/asgardeo/thunder/internal/observability/metrics"
 	"github.com/asgardeo/thunder/internal/observability/subscriber"
 	"github.com/asgardeo/thunder/internal/system/log"
 )
 
-// CategoryPublisher is an event bus interface with category-based routing.
+// CategoryPublisherInterface is an event bus interface with category-based routing.
 // Events are published synchronously to all interested subscribers.
-type CategoryPublisher interface {
+type CategoryPublisherInterface interface {
 	// Publish publishes an event immediately to all interested subscribers.
 	Publish(event *event.Event)
 
 	// Subscribe adds a subscriber (subscriber decides what categories it wants).
-	Subscribe(sub subscriber.Subscriber)
+	Subscribe(sub subscriber.SubscriberInterface)
 
 	// Unsubscribe removes a subscriber.
-	Unsubscribe(sub subscriber.Subscriber)
+	Unsubscribe(sub subscriber.SubscriberInterface)
 
 	// GetActiveCategories returns categories that have at least one subscriber.
 	GetActiveCategories() []event.EventCategory
+
+	// GetSubscribers returns a list of all currently subscribed subscribers.
+	// Returns a copy to prevent external modification.
+	GetSubscribers() []subscriber.SubscriberInterface
 
 	// Shutdown gracefully shuts down the publisher.
 	Shutdown()
@@ -53,26 +55,28 @@ type CategoryPublisher interface {
 // This is a simple synchronous event bus - no queuing, no async processing.
 // Events are published directly to subscribers who can decide whether to process them.
 type categoryEventPublisher struct {
-	subscribers           map[string]subscriber.Subscriber // subscriberID -> subscriber
-	subscribersByCategory map[event.EventCategory][]string // category -> []subscriberIDs
+	subscribers           map[string]subscriber.SubscriberInterface // subscriberID -> subscriber
+	subscribersByCategory map[event.EventCategory][]string          // category -> []subscriberIDs
 	mu                    sync.RWMutex
 	isShutdown            bool
 	wg                    sync.WaitGroup // Tracks active goroutines for graceful shutdown
 	ctx                   context.Context
 	cancel                context.CancelFunc
+	logger                *log.Logger // Stored logger to avoid repeated creation
 }
 
 const loggerComponentName = "CategoryEventPublisher"
 
 // NewCategoryPublisher creates a new category-based event bus.
-func NewCategoryPublisher() CategoryPublisher {
+func NewCategoryPublisher() CategoryPublisherInterface {
 	ctx, cancel := context.WithCancel(context.Background())
 	return &categoryEventPublisher{
-		subscribers:           make(map[string]subscriber.Subscriber),
+		subscribers:           make(map[string]subscriber.SubscriberInterface),
 		subscribersByCategory: make(map[event.EventCategory][]string),
 		isShutdown:            false,
 		ctx:                   ctx,
 		cancel:                cancel,
+		logger:                log.GetLogger().With(log.String(log.LoggerKeyComponentName, loggerComponentName)),
 	}
 }
 
@@ -89,19 +93,23 @@ func (p *categoryEventPublisher) Publish(evt *event.Event) {
 
 	// Validate event
 	if err := evt.Validate(); err != nil {
-		logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, loggerComponentName))
-		logger.Warn("Invalid event, skipping publish", log.Error(err))
+		p.logger.Warn("Invalid event, skipping publish", log.Error(err))
 		return
 	}
 
 	// Get event category
-	category := evt.GetCategory()
+	category, err := evt.GetCategory()
+	if err != nil {
+		p.logger.Error("Failed to get event category, skipping publish",
+			log.String("eventType", evt.Type),
+			log.Error(err))
+		return
+	}
 
 	p.mu.RLock()
 	if p.isShutdown {
 		p.mu.RUnlock()
-		logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, loggerComponentName))
-		logger.Warn("Attempted to publish event after shutdown",
+		p.logger.Warn("Attempted to publish event after shutdown",
 			log.String("eventType", evt.Type),
 			log.String("category", string(category)))
 		return
@@ -120,10 +128,8 @@ func (p *categoryEventPublisher) Publish(evt *event.Event) {
 	if !hasSubscribers {
 		// No subscribers for this category - skip it!
 		p.mu.RUnlock()
-		metrics.GetMetrics().IncrementEventsSkipped()
-		logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, loggerComponentName))
-		if logger.IsDebugEnabled() {
-			logger.Debug("No subscribers for event category, skipping",
+		if p.logger.IsDebugEnabled() {
+			p.logger.Debug("No subscribers for event category, skipping",
 				log.String("eventType", evt.Type),
 				log.String("category", string(category)))
 		}
@@ -131,28 +137,22 @@ func (p *categoryEventPublisher) Publish(evt *event.Event) {
 	}
 
 	// Get ALL subscribers (they will filter themselves)
-	allSubscribers := make([]subscriber.Subscriber, 0, len(p.subscribers))
+	allSubscribers := make([]subscriber.SubscriberInterface, 0, len(p.subscribers))
 	for _, sub := range p.subscribers {
 		allSubscribers = append(allSubscribers, sub)
 	}
 	p.mu.RUnlock()
 
-	// Event has interested subscribers
-	metrics.GetMetrics().IncrementEventsPublished()
-
 	// Broadcast to all subscribers asynchronously
 	// Each subscriber runs in its own goroutine to avoid blocking
-	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, loggerComponentName))
 	for _, sub := range allSubscribers {
 		// Increment WaitGroup before spawning goroutine
 		p.wg.Add(1)
-		go func(s subscriber.Subscriber) {
+		go func(s subscriber.SubscriberInterface) {
 			defer p.wg.Done() // Ensure WaitGroup is decremented when goroutine completes
-			startTime := time.Now()
 			defer func() {
 				if r := recover(); r != nil {
-					metrics.GetMetrics().IncrementSubscriberErrors()
-					logger.Error("Subscriber panicked while handling event",
+					p.logger.Error("Subscriber panicked while handling event",
 						log.String("subscriberID", s.GetID()),
 						log.Any("panic", r))
 				}
@@ -162,7 +162,7 @@ func (p *categoryEventPublisher) Publish(evt *event.Event) {
 			select {
 			case <-p.ctx.Done():
 				// Shutdown in progress, skip event processing
-				logger.Warn("Skipping event processing due to shutdown",
+				p.logger.Warn("Skipping event processing due to shutdown",
 					log.String("subscriberID", s.GetID()),
 					log.String("eventType", evt.Type))
 				return
@@ -172,17 +172,10 @@ func (p *categoryEventPublisher) Publish(evt *event.Event) {
 
 			// Subscriber will filter the event itself based on its interests
 			if err := s.OnEvent(evt); err != nil {
-				metrics.GetMetrics().IncrementSubscriberErrors()
-				logger.Error("Subscriber failed to handle event",
+				p.logger.Error("Subscriber failed to handle event",
 					log.String("subscriberID", s.GetID()),
 					log.String("eventType", evt.Type),
 					log.Error(err))
-			} else {
-				// Record successful processing
-				metrics.GetMetrics().IncrementEventsProcessed()
-				latency := time.Since(startTime).Microseconds()
-				// #nosec G115 -- latency is positive time duration, safe conversion
-				metrics.GetMetrics().RecordProcessingLatency(uint64(latency))
 			}
 		}(sub)
 	}
@@ -190,7 +183,7 @@ func (p *categoryEventPublisher) Publish(evt *event.Event) {
 
 // Subscribe adds a subscriber.
 // The subscriber's GetCategories() method determines what categories it receives.
-func (p *categoryEventPublisher) Subscribe(sub subscriber.Subscriber) {
+func (p *categoryEventPublisher) Subscribe(sub subscriber.SubscriberInterface) {
 	if sub == nil {
 		return
 	}
@@ -210,15 +203,14 @@ func (p *categoryEventPublisher) Subscribe(sub subscriber.Subscriber) {
 		p.subscribersByCategory[category] = append(p.subscribersByCategory[category], subscriberID)
 	}
 
-	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, loggerComponentName))
-	logger.Info("Subscriber registered",
+	p.logger.Info("Subscriber registered",
 		log.String("subscriberID", subscriberID),
 		log.Int("categoryCount", len(categories)),
 		log.Any("categories", categories))
 }
 
 // Unsubscribe removes a subscriber.
-func (p *categoryEventPublisher) Unsubscribe(sub subscriber.Subscriber) {
+func (p *categoryEventPublisher) Unsubscribe(sub subscriber.SubscriberInterface) {
 	if sub == nil {
 		return
 	}
@@ -247,8 +239,7 @@ func (p *categoryEventPublisher) Unsubscribe(sub subscriber.Subscriber) {
 		}
 	}
 
-	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, loggerComponentName))
-	logger.Info("Subscriber unregistered", log.String("subscriberID", subscriberID))
+	p.logger.Info("Subscriber unregistered", log.String("subscriberID", subscriberID))
 }
 
 // GetActiveCategories returns categories that have at least one subscriber.
@@ -266,6 +257,20 @@ func (p *categoryEventPublisher) GetActiveCategories() []event.EventCategory {
 	return categories
 }
 
+// GetSubscribers returns a list of all currently subscribed subscribers.
+// Returns a copy to prevent external modification.
+func (p *categoryEventPublisher) GetSubscribers() []subscriber.SubscriberInterface {
+	p.mu.RLock()
+	defer p.mu.RUnlock()
+
+	subscribers := make([]subscriber.SubscriberInterface, 0, len(p.subscribers))
+	for _, sub := range p.subscribers {
+		subscribers = append(subscribers, sub)
+	}
+
+	return subscribers
+}
+
 // Shutdown gracefully shuts down the publisher and all subscribers.
 func (p *categoryEventPublisher) Shutdown() {
 	p.mu.Lock()
@@ -275,32 +280,31 @@ func (p *categoryEventPublisher) Shutdown() {
 	}
 	p.isShutdown = true
 
-	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, loggerComponentName))
-	logger.Info("Shutting down event publisher")
+	p.logger.Info("Shutting down event publisher")
 
 	// Signal all goroutines to stop accepting new events
 	p.cancel()
 
 	// Get all subscribers
-	subscribers := make([]subscriber.Subscriber, 0, len(p.subscribers))
+	subscribers := make([]subscriber.SubscriberInterface, 0, len(p.subscribers))
 	for _, sub := range p.subscribers {
 		subscribers = append(subscribers, sub)
 	}
 	p.mu.Unlock()
 
 	// Wait for all in-flight event processing to complete
-	logger.Info("Waiting for in-flight event processing to complete")
+	p.logger.Info("Waiting for in-flight event processing to complete")
 	p.wg.Wait()
-	logger.Info("All in-flight events processed")
+	p.logger.Info("All in-flight events processed")
 
 	// Close all subscribers
 	for _, sub := range subscribers {
 		if err := sub.Close(); err != nil {
-			logger.Error("Error closing subscriber",
+			p.logger.Error("Error closing subscriber",
 				log.String("subscriberID", sub.GetID()),
 				log.Error(err))
 		}
 	}
 
-	logger.Info("Event bus shutdown complete")
+	p.logger.Info("Event bus shutdown complete")
 }

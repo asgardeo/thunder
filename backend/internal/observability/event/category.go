@@ -19,9 +19,7 @@
 // Package event provides event models and types for the observability system.
 package event
 
-import (
-	"github.com/asgardeo/thunder/internal/system/log"
-)
+import "fmt"
 
 // EventCategory represents a category for grouping related events.
 // Used by the event bus for efficient routing - subscribers declare which
@@ -46,26 +44,25 @@ const (
 	// CategoryAuthorization groups all authorization-related events.
 	CategoryAuthorization EventCategory = "observability.authorization"
 
-	// CategoryTokens groups all token-related events.
-	CategoryTokens EventCategory = "observability.tokens" // #nosec G101 -- Not a credential, observability category name
-
-	// CategoryFlows groups all flow execution events.
+	// CategoryFlows groups all flow orchestration events for tracing end-to-end flows.
 	CategoryFlows EventCategory = "observability.flows"
-
-	// CategorySessions groups all session-related events.
-	CategorySessions EventCategory = "observability.sessions"
-
-	// CategoryRegistration groups all user registration events.
-	CategoryRegistration EventCategory = "observability.registration"
 
 	// CategoryAll is a special category that matches all events.
 	// Subscribers to this category receive all events regardless of type.
 	CategoryAll EventCategory = "observability.all"
-
-	// CategoryUnknown represents events that are not mapped to any category.
-	// This indicates a missing mapping in eventTypeToCategory and should be investigated.
-	CategoryUnknown EventCategory = "observability.unknown"
 )
+
+// UnmappedEventTypeError represents an error when an event type is not mapped to a category.
+type UnmappedEventTypeError struct {
+	EventType EventType
+}
+
+func (e *UnmappedEventTypeError) Error() string {
+	return fmt.Sprintf(
+		"event type not mapped to category: %s - all event types must be explicitly mapped",
+		string(e.EventType),
+	)
+}
 
 // eventTypeToCategory maps each event type to its category.
 // This enables automatic routing of events to appropriate categories.
@@ -87,27 +84,6 @@ var eventTypeToCategory = map[EventType]EventCategory{
 	EventTypeAuthenticationCompleted:      CategoryAuthentication,
 	EventTypeAuthenticationFailed:         CategoryAuthentication,
 
-	// Authorization events
-	EventTypeAuthorizationStarted:       CategoryAuthorization,
-	EventTypeAuthorizationValidated:     CategoryAuthorization,
-	EventTypeAuthorizationRedirect:      CategoryAuthorization,
-	EventTypeAuthorizationCodeGenerated: CategoryAuthorization,
-	EventTypeAuthorizationCompleted:     CategoryAuthorization,
-	EventTypeAuthorizationFailed:        CategoryAuthorization,
-
-	// Token events
-	EventTypeTokenRequestReceived:       CategoryTokens,
-	EventTypeTokenRequestValidated:      CategoryTokens,
-	EventTypeAuthorizationCodeValidated: CategoryTokens,
-	EventTypePKCEValidated:              CategoryTokens,
-	EventTypePKCEFailed:                 CategoryTokens,
-	EventTypeAccessTokenGenerated:       CategoryTokens,
-	EventTypeIDTokenGenerated:           CategoryTokens,
-	EventTypeRefreshTokenGenerated:      CategoryTokens,
-	EventTypeTokenIssued:                CategoryTokens,
-	EventTypeTokenRequestFailed:         CategoryTokens,
-	EventTypeRefreshTokenUsed:           CategoryTokens,
-
 	// Flow events
 	EventTypeFlowStarted:                CategoryFlows,
 	EventTypeFlowNodeExecutionStarted:   CategoryFlows,
@@ -116,50 +92,24 @@ var eventTypeToCategory = map[EventType]EventCategory{
 	EventTypeFlowUserInputRequired:      CategoryFlows,
 	EventTypeFlowCompleted:              CategoryFlows,
 	EventTypeFlowFailed:                 CategoryFlows,
-
-	// Registration events
-	EventTypeRegistrationStarted:   CategoryRegistration,
-	EventTypeUserProvisioned:       CategoryRegistration,
-	EventTypeRegistrationCompleted: CategoryRegistration,
-	EventTypeRegistrationFailed:    CategoryRegistration,
-
-	// Session events
-	EventTypeSessionCreated:   CategorySessions,
-	EventTypeSessionUpdated:   CategorySessions,
-	EventTypeSessionExpired:   CategorySessions,
-	EventTypeSessionDestroyed: CategorySessions,
 }
 
 // GetCategory returns the category for a given event type.
-// If the event type is not mapped, it returns CategoryUnknown and logs a warning.
-// This helps detect missing event type mappings during development.
-func GetCategory(eventType EventType) EventCategory {
+// If the event type is not mapped, it returns an error to prevent unintentional use
+// of unmapped event types. All event types must be explicitly mapped to categories.
+func GetCategory(eventType EventType) (EventCategory, error) {
 	if category, exists := eventTypeToCategory[eventType]; exists {
-		return category
+		return category, nil
 	}
-
-	// Log warning for unmapped event type to aid debugging
-	// This should not happen in production if all event types are properly mapped
-	// Using a simple approach to avoid circular dependencies with the log package
-	// The caller (Event.GetCategory) can log this if needed
-	return CategoryUnknown
+	// Return error for unmapped event types
+	return "", &UnmappedEventTypeError{EventType: eventType}
 }
 
 // GetCategory returns the category for the given event.
-// If the event type is not mapped to a category, it returns CategoryUnknown
-// and logs a warning to help identify missing mappings.
-func (e *Event) GetCategory() EventCategory {
-	category := GetCategory(EventType(e.Type))
-
-	// Log warning if event type is unmapped
-	if category == CategoryUnknown {
-		logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, "EventCategory"))
-		logger.Warn("Event type not mapped to any category",
-			log.String("eventType", e.Type),
-			log.String("eventID", e.EventID))
-	}
-
-	return category
+// If the event type is not mapped to a category, it returns an error.
+// This ensures all event types are explicitly mapped to prevent unintentional wildcard usage.
+func (e *Event) GetCategory() (EventCategory, error) {
+	return GetCategory(EventType(e.Type))
 }
 
 // GetAllCategories returns all defined event categories (excluding CategoryAll).
@@ -167,16 +117,13 @@ func GetAllCategories() []EventCategory {
 	return []EventCategory{
 		CategoryAuthentication,
 		CategoryAuthorization,
-		CategoryTokens,
 		CategoryFlows,
-		CategorySessions,
-		CategoryRegistration,
 	}
 }
 
 // IsValidCategory checks if a category is valid.
 func IsValidCategory(category EventCategory) bool {
-	if category == CategoryAll || category == CategoryUnknown {
+	if category == CategoryAll {
 		return true
 	}
 

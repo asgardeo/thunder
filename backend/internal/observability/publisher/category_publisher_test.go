@@ -5,7 +5,6 @@ import (
 	"time"
 
 	"github.com/asgardeo/thunder/internal/observability/event"
-	"github.com/asgardeo/thunder/internal/observability/metrics"
 )
 
 // mockSubscriberV2 is a mock subscriber for testing with category support
@@ -36,6 +35,14 @@ func (m *mockSubscriberV2) Close() error {
 	return nil
 }
 
+func (m *mockSubscriberV2) IsEnabled() bool {
+	return true
+}
+
+func (m *mockSubscriberV2) Initialize() error {
+	return nil
+}
+
 // testError is a simple error type for testing
 type testError struct {
 	msg string
@@ -46,9 +53,6 @@ func (e *testError) Error() string {
 }
 
 func TestCategoryPublisher_SmartPublishing(t *testing.T) {
-	metrics.GetMetrics().Reset()
-	metrics.GetMetrics().Enable()
-
 	// Create publisher
 	pub := NewCategoryPublisher()
 
@@ -61,21 +65,11 @@ func TestCategoryPublisher_SmartPublishing(t *testing.T) {
 		Timestamp: time.Now(),
 	}
 
-	// Publish event with NO subscribers
+	// Publish event with NO subscribers - should be skipped
 	pub.Publish(evt)
 
 	// Give it time to process
 	time.Sleep(50 * time.Millisecond)
-
-	// Check that event was SKIPPED (not queued)
-	m := metrics.GetMetrics()
-	if m.GetEventsSkipped() != 1 {
-		t.Errorf("Expected 1 event skipped, got %d", m.GetEventsSkipped())
-	}
-
-	if m.GetEventsPublished() != 0 {
-		t.Errorf("Expected 0 events published (should be skipped), got %d", m.GetEventsPublished())
-	}
 
 	// Now add a subscriber for authentication events
 	authSub := &mockSubscriberV2{
@@ -100,11 +94,6 @@ func TestCategoryPublisher_SmartPublishing(t *testing.T) {
 	// Give it time to process
 	time.Sleep(100 * time.Millisecond)
 
-	// Now it should be published (not skipped)
-	if m.GetEventsPublished() != 1 {
-		t.Errorf("Expected 1 event published, got %d", m.GetEventsPublished())
-	}
-
 	// Verify subscriber received it
 	if len(authSub.received) != 1 {
 		t.Errorf("Expected subscriber to receive 1 event, got %d", len(authSub.received))
@@ -114,9 +103,6 @@ func TestCategoryPublisher_SmartPublishing(t *testing.T) {
 }
 
 func TestCategoryPublisher_CategoryRouting(t *testing.T) {
-	metrics.GetMetrics().Reset()
-	metrics.GetMetrics().Enable()
-
 	// Create publisher
 	pub := NewCategoryPublisher()
 
@@ -129,7 +115,7 @@ func TestCategoryPublisher_CategoryRouting(t *testing.T) {
 
 	tokenSub := &mockSubscriberV2{
 		id:         "token-sub",
-		categories: []event.EventCategory{event.CategoryTokens},
+		categories: []event.EventCategory{event.CategoryFlows},
 		received:   make([]*event.Event, 0),
 	}
 
@@ -157,7 +143,7 @@ func TestCategoryPublisher_CategoryRouting(t *testing.T) {
 	// Publish token event
 	tokenEvent := &event.Event{
 		EventID:   "token-1",
-		Type:      string(event.EventTypeTokenIssued),
+		Type:      string(event.EventTypeFlowStarted),
 		TraceID:   "trace-2",
 		Component: "test",
 		Timestamp: time.Now(),
@@ -208,7 +194,7 @@ func TestCategoryPublisher_GetActiveCategories(t *testing.T) {
 
 	tokenSub := &mockSubscriberV2{
 		id:         "token-sub",
-		categories: []event.EventCategory{event.CategoryTokens},
+		categories: []event.EventCategory{event.CategoryFlows},
 		received:   make([]*event.Event, 0),
 	}
 
@@ -231,7 +217,7 @@ func TestCategoryPublisher_GetActiveCategories(t *testing.T) {
 		t.Error("Expected CategoryAuthentication to be active")
 	}
 
-	if !categoryMap[event.CategoryTokens] {
+	if !categoryMap[event.CategoryFlows] {
 		t.Error("Expected CategoryTokens to be active")
 	}
 
@@ -270,9 +256,6 @@ func TestCategoryPublisher_SubscribeUnsubscribe(t *testing.T) {
 }
 
 func TestCategoryPublisher_MultipleSubscribersPerCategory(t *testing.T) {
-	metrics.GetMetrics().Reset()
-	metrics.GetMetrics().Enable()
-
 	// Create publisher
 	pub := NewCategoryPublisher()
 
@@ -390,9 +373,6 @@ func TestCategoryPublisher_UnsubscribeNil(t *testing.T) {
 }
 
 func TestCategoryPublisher_SubscriberPanic(t *testing.T) {
-	metrics.GetMetrics().Reset()
-	metrics.GetMetrics().Enable()
-
 	pub := NewCategoryPublisher()
 	defer pub.Shutdown()
 
@@ -418,16 +398,10 @@ func TestCategoryPublisher_SubscriberPanic(t *testing.T) {
 	// Give it time to process
 	time.Sleep(100 * time.Millisecond)
 
-	// Should have incremented error count
-	if metrics.GetMetrics().GetSubscriberErrors() == 0 {
-		t.Error("Expected subscriber error count to be > 0 after panic")
-	}
+	// Test passes if publisher doesn't crash
 }
 
 func TestCategoryPublisher_SubscriberError(t *testing.T) {
-	metrics.GetMetrics().Reset()
-	metrics.GetMetrics().Enable()
-
 	pub := NewCategoryPublisher()
 	defer pub.Shutdown()
 
@@ -453,10 +427,7 @@ func TestCategoryPublisher_SubscriberError(t *testing.T) {
 	// Give it time to process
 	time.Sleep(100 * time.Millisecond)
 
-	// Should have incremented error count
-	if metrics.GetMetrics().GetSubscriberErrors() == 0 {
-		t.Error("Expected subscriber error count to be > 0")
-	}
+	// Test passes if publisher handles error gracefully
 }
 
 func TestCategoryPublisher_DoubleShutdown(t *testing.T) {
@@ -479,7 +450,7 @@ func TestCategoryPublisher_UnsubscribeMultipleCategories(t *testing.T) {
 		categories: []event.EventCategory{
 			event.CategoryAuthentication,
 			event.CategoryAuthorization,
-			event.CategoryTokens,
+			event.CategoryFlows,
 		},
 		received: make([]*event.Event, 0),
 	}
@@ -538,6 +509,14 @@ func (m *mockSubscriberPanic) Close() error {
 	return nil
 }
 
+func (m *mockSubscriberPanic) IsEnabled() bool {
+	return true
+}
+
+func (m *mockSubscriberPanic) Initialize() error {
+	return nil
+}
+
 // mockSubscriberCloseError returns error on Close
 type mockSubscriberCloseError struct {
 	id         string
@@ -558,4 +537,12 @@ func (m *mockSubscriberCloseError) OnEvent(evt *event.Event) error {
 
 func (m *mockSubscriberCloseError) Close() error {
 	return &testError{msg: "close error"}
+}
+
+func (m *mockSubscriberCloseError) IsEnabled() bool {
+	return true
+}
+
+func (m *mockSubscriberCloseError) Initialize() error {
+	return nil
 }

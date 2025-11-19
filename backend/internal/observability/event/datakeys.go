@@ -32,36 +32,24 @@ var DataKey = struct {
 	ClientID string
 	AppID    string
 
-	// OAuth/OIDC Keys
-	GrantType    string
-	Scope        string
-	TokenType    string
-	RedirectURI  string
-	ResponseType string
-	State        string
-
-	// PKCE Keys
-	PKCEEnabled         string
-	CodeChallenge       string
-	CodeChallengeMethod string
-	CodeVerifier        string
-
-	// Token Keys
-	HasRefreshToken     string
-	HasIDToken          string
-	ValidityPeriod      string
-	CodeLifetimeSeconds string
-
-	// Request Context Keys
-	IPAddress      string
-	UserAgent      string
-	SessionID      string
-	SessionDataKey string
-
 	// Flow Execution Keys
-	FlowID     string
-	NodeID     string
-	RedirectTo string
+	FlowID        string
+	FlowType      string
+	NodeID        string
+	NodeType      string
+	NodeStatus    string
+	ExecutorName  string
+	ExecutorType  string
+	StepNumber    string
+	AttemptNumber string
+	AuthMethod    string
+	RedirectTo    string
+	FailedStep    string
+	FailureReason string
+
+	// OAuth/Token Keys
+	Scope     string
+	GrantType string
 
 	// Event Metadata Keys
 	Message    string
@@ -80,36 +68,24 @@ var DataKey = struct {
 	ClientID: "client_id",
 	AppID:    "app_id",
 
-	// OAuth/OIDC Keys
-	GrantType:    "grant_type",
-	Scope:        "scope",
-	TokenType:    "token_type",
-	RedirectURI:  "redirect_uri",
-	ResponseType: "response_type",
-	State:        "state",
-
-	// PKCE Keys
-	PKCEEnabled:         "pkce_enabled",
-	CodeChallenge:       "code_challenge",
-	CodeChallengeMethod: "code_challenge_method",
-	CodeVerifier:        "code_verifier",
-
-	// Token Keys
-	HasRefreshToken:     "has_refresh_token",
-	HasIDToken:          "has_id_token",
-	ValidityPeriod:      "validity_period",
-	CodeLifetimeSeconds: "code_lifetime_seconds",
-
-	// Request Context Keys
-	IPAddress:      "ip_address",
-	UserAgent:      "user_agent",
-	SessionID:      "session_id",
-	SessionDataKey: "session_data_key",
-
 	// Flow Execution Keys
-	FlowID:     "flow_id",
-	NodeID:     "node_id",
-	RedirectTo: "redirect_to",
+	FlowID:        "flow_id",
+	FlowType:      "flow_type",
+	NodeID:        "node_id",
+	NodeType:      "node_type",
+	NodeStatus:    "node_status",
+	ExecutorName:  "executor_name",
+	ExecutorType:  "executor_type",
+	StepNumber:    "step_number",
+	AttemptNumber: "attempt_number",
+	AuthMethod:    "auth_method",
+	RedirectTo:    "redirect_to",
+	FailedStep:    "failed_step",
+	FailureReason: "failure_reason",
+
+	// OAuth/Token Keys
+	Scope:     "scope",
+	GrantType: "grant_type",
 
 	// Event Metadata Keys
 	Message:    "message",
