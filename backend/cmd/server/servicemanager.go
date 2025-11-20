@@ -36,6 +36,7 @@ import (
 	"github.com/asgardeo/thunder/internal/notification"
 	"github.com/asgardeo/thunder/internal/oauth"
 	"github.com/asgardeo/thunder/internal/ou"
+	"github.com/asgardeo/thunder/internal/resource"
 	"github.com/asgardeo/thunder/internal/role"
 	"github.com/asgardeo/thunder/internal/system/export"
 	"github.com/asgardeo/thunder/internal/system/jwt"
@@ -53,6 +54,9 @@ func registerServices(mux *http.ServeMux, jwtService jwt.JWTServiceInterface) {
 	userSchemaService := userschema.Initialize(mux, ouService)
 	userService := user.Initialize(mux, ouService, userSchemaService)
 	groupService := group.Initialize(mux, ouService, userService)
+
+	// Initialize resource service.
+	_ = resource.Initialize(mux, ouService)
 	roleService := role.Initialize(mux, userService, groupService, ouService)
 	authZService := authz.Initialize(roleService)
 
