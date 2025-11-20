@@ -30,7 +30,6 @@ gate_client:
 security:
   cert_file: {{ .Values.configuration.security.certFile | quote }}
   key_file: {{ .Values.configuration.security.keyFile | quote }}
-  crypto_file: {{ .Values.configuration.security.cryptoFile | quote }}
 
 database:
   identity:
@@ -103,3 +102,7 @@ cors:
   {{- range .Values.configuration.cors.allowedOrigins }}
     - {{ . | quote }}
   {{- end }}
+
+crypto:
+  encrypt:
+    key: {{ .Values.configuration.crypto.encrypt.key | quote }}

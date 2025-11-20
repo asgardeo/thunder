@@ -107,6 +107,7 @@ OUTPUT_DIR=$TARGET_DIR/out
 DIST_DIR=$TARGET_DIR/dist
 BUILD_DIR=$OUTPUT_DIR/.build
 LOCAL_CERT_DIR=$OUTPUT_DIR/.cert
+SECRETS_DIR=$OUTPUT_DIR/.secrets
 BACKEND_BASE_DIR=backend
 BACKEND_DIR=$BACKEND_BASE_DIR/cmd/server
 REPOSITORY_DIR=$BACKEND_BASE_DIR/cmd/server/repository
@@ -114,6 +115,7 @@ REPOSITORY_DB_DIR=$REPOSITORY_DIR/database
 SERVER_SCRIPTS_DIR=$BACKEND_BASE_DIR/scripts
 SERVER_DB_SCRIPTS_DIR=$BACKEND_BASE_DIR/dbscripts
 SECURITY_DIR=repository/resources/security
+CONF_DIR=repository/conf
 FRONTEND_BASE_DIR=frontend
 GATE_APP_DIST_DIR=apps/gate
 DEVELOP_APP_DIST_DIR=apps/develop
@@ -211,6 +213,9 @@ function clean() {
     echo "================================================================"
     echo "Cleaning build artifacts..."
     rm -rf "$TARGET_DIR"
+
+    echo "Removing environment variables in the $BACKEND_DIR/$CONF_DIR"
+    rm -f "$BACKEND_DIR/$CONF_DIR/.env"
 
     echo "Removing certificates in the $BACKEND_DIR/$SECURITY_DIR"
     rm -rf "$BACKEND_DIR/$SECURITY_DIR"
@@ -365,8 +370,8 @@ function prepare_backend_for_packaging() {
     ensure_certificates "$DIST_DIR/$PRODUCT_FOLDER/$SECURITY_DIR"
     echo "================================================================"
 
-    echo "=== Ensuring crypto file exists in the distribution ==="
-    ensure_crypto_file "$DIST_DIR/$PRODUCT_FOLDER/$SECURITY_DIR"
+    echo "=== Ensuring environment secrets are set in the distribution ==="
+    ensure_environment_secrets "$DIST_DIR/$PRODUCT_FOLDER/$CONF_DIR"
     echo "================================================================"
 }
 
@@ -780,95 +785,40 @@ function ensure_certificates() {
     fi
 }
 
-function ensure_crypto_file() {
-    local KEY_DIR="$1"
-    local DEPLOYMENT_FILE="$KEY_DIR/../../conf/deployment.yaml"
-    
-    # Define the default path for the key file
-    local KEY_FILE="$KEY_DIR/crypto.key"
-    local KEY_PATH_IN_YAML="$SECURITY_DIR/crypto.key"
+function ensure_environment_secrets() {
+    local env_dir=$1
+    local secret_file_name=".env"
 
-    echo "=== Ensuring crypto key file exists in the distribution ==="
+    # Generate secrets file if it doesn't exist in the secrets directory
+    local local_secrets_file="$SECRETS_DIR/$secret_file_name"
+    if [[ ! -f "$local_secrets_file" ]]; then
+        mkdir -p "$SECRETS_DIR"
+        echo "Generating secrets in $SECRETS_DIR..."
 
-    # Check Whether the key file exists
-    if [ -f "$KEY_FILE" ]; then
-        echo "Default crypto key file already present in $KEY_FILE. Skipping generation."
-    else
-        echo "Default crypto key file not found. Generating new key at $KEY_FILE..."
-        
-        # Generate key using openssl
-        # 32 bytes = 64 hex characters
-        local NEW_KEY
-        NEW_KEY=$(openssl rand -hex 32 2> /dev/null)
-        
-        if [[ $? -ne 0 || -z "$NEW_KEY" ]]; then
-            echo "ERROR: Failed to generate crypto key with 'openssl rand -hex 32'."
-            echo "Please ensure OpenSSL is installed and in your PATH (required for certs anyway)."
+        # Can add more secrets as needed
+        local aes_key
+        if ! aes_key=$(head -c 32 /dev/urandom | xxd -p -c 32 2>/dev/null); then
+            echo "ERROR: Failed to generate AES key. /dev/urandom or xxd not available."
             exit 1
         fi
+        echo "THUNDER_CRYPTO_ENC_KEY=$aes_key" > "$local_secrets_file"
 
-        # Ensure the target directory exists
-        mkdir -p "$KEY_DIR"
-
-        # Write the key to the new file.
-        echo -n "$NEW_KEY" > "$KEY_FILE"
-        
-        echo "Successfully generated and added new crypto key to $KEY_FILE."
+        echo "Secrets generated successfully in $SECRETS_DIR."
+    else
+        echo "Secrets already exist in $SECRETS_DIR."
     fi
 
+    # Copy the generated secrets to the specified directory
+    local secrets_file="$env_dir/$secret_file_name"
 
-    # Check if the crypto_file key is defined 
-    if grep -qE "^\s*crypto_file\s*:" "$DEPLOYMENT_FILE"; then
-        
-        # If it is defined check if it matches the default path.
-        local expected_line_pattern="^\s*crypto_file\s*:\s*\"$KEY_PATH_IN_YAML\""
-        
-        if grep -qE "$expected_line_pattern" "$DEPLOYMENT_FILE"; then
-            # The line exists and matches the default then proceed
-            echo "Crypto key file is already configured in $DEPLOYMENT_FILE."
-        else
-            # The line exists, but has a different value. This is a user misconfiguration.
-            echo "ERROR: 'crypto_file' is defined in $DEPLOYMENT_FILE but does not match the default path." >&2
-            echo "This script expects to manage the default key: '$KEY_PATH_IN_YAML'" >&2
-            echo "If you have a custom key, this build script cannot verify it." >&2
-            echo "Please remove the 'crypto_file' line to allow this script to set the default," >&2
-            echo "or ensure it points to the correct default path." >&2
-            exit 1
-        fi
-        
+    if [[ ! -f "$secrets_file" ]]; then
+        mkdir -p "$env_dir"
+        echo "Copying secrets to $env_dir..."
+        cp "$local_secrets_file" "$secrets_file"
+        echo "Secrets copied successfully to $env_dir."
     else
-        # The crypto_file line is missing it needs to be added.
-        echo "Crypto key file is not configured in $DEPLOYMENT_FILE. Inserting entry..."
-        
-        local KEY_FILE_LINE_TO_INSERT="  crypto_file: \"$KEY_PATH_IN_YAML\""
-        local ANCHOR_LINE_PATTERN="key_file: \"repository/resources/security/server.key\""
-        local TEMP_FILE="$DEPLOYMENT_FILE.tmp"
-
-        # Using 'awk' for a safer and more readable insertion
-        awk -v anchor="$ANCHOR_LINE_PATTERN" -v new_line="$KEY_FILE_LINE_TO_INSERT" '
-        {
-            print $0  # Print the current line
-            if ($0 ~ anchor) {
-                print new_line  # Print the new line after the anchor
-            }
-        }
-        ' "$DEPLOYMENT_FILE" > "$TEMP_FILE"
-
-        # Check if the new line was added.
-        if ! grep -q "crypto_file:" "$TEMP_FILE"; then
-            echo "ERROR: Could not insert crypto_file line into $DEPLOYMENT_FILE." >&2
-            echo "Anchor line (or pattern '$ANCHOR_LINE_PATTERN') not found." >&2
-            rm "$TEMP_FILE"
-            exit 1
-        fi
-
-        # Move the new file into place
-        mv "$TEMP_FILE" "$DEPLOYMENT_FILE"
-        
-        echo "Successfully updated $DEPLOYMENT_FILE to use the default key file."
+        echo "Secrets already exist in $env_dir."
     fi
-    
-    echo "================================================================"
 }
 
 function run() {
@@ -979,7 +929,8 @@ function run_backend() {
     echo "=== Ensuring sample app certificates exist ==="
     ensure_certificates "$VANILLA_SAMPLE_APP_DIR"
 
-    ensure_crypto_file "$BACKEND_DIR/$SECURITY_DIR"
+    echo "=== Ensuring environment secrets exist ==="
+    ensure_environment_secrets "$BACKEND_DIR/$CONF_DIR"
 
     echo "Initializing databases..."
     initialize_databases

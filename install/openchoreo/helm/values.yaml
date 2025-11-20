@@ -105,3 +105,8 @@ organization:
   name: identity-platform           # Organization name (must match project references)
   displayName: Default Organization # Human-readable organization name
   description: "Default organization created by Helm chart"  # Organization description
+
+crypto:
+  encrypt:
+    # Encryption key for cryptography
+    key: "<ENCRYPTION_KEY>"

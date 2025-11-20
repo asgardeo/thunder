@@ -19,213 +19,124 @@
 package encrypt
 
 import (
+	"crypto/rand"
 	"encoding/base64"
-	"encoding/hex"
 	"encoding/json"
-	"errors"
+	"sync"
 	"testing"
 
 	"github.com/asgardeo/thunder/internal/system/config"
 
-	"github.com/stretchr/testify/require"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/suite"
 )
 
-// Mock config for testing.
-type MockThunderRuntime struct {
-	Config struct {
-		Crypto struct {
-			Key string
-		}
-	}
+type EncryptionTestSuite struct {
+	suite.Suite
 }
 
-const (
-	expectedPath = "/home/thunder/config/crypto.key"
-)
+func TestEncryptionTestSuite(t *testing.T) {
+	suite.Run(t, new(EncryptionTestSuite))
+}
 
-func TestInitEncryptionServiceCryptoFilePathNotFound(t *testing.T) {
-	mockFileReader := func(name string) ([]byte, error) { return nil, nil }
-	mockPathJoiner := func(elem ...string) string { return "/mock/path" }
+func (suite *EncryptionTestSuite) TearDownTest() {
+	resetSingleton()
+}
 
-	mockConfig := &config.Config{
-		Security: config.SecurityConfig{
-			CryptoFile: "",
+func (suite *EncryptionTestSuite) TestEncryptionService() {
+	testConfig := &config.Config{
+		Crypto: config.CryptoConfig{
+			Encrypt: config.EncryptConfig{
+				Key: "2729a7928c79371e5f312167269294a14bb0660fd166b02a408a20fa73271580",
+			},
 		},
 	}
 	config.ResetThunderRuntime()
-	err := config.InitializeThunderRuntime("/home/thunder", mockConfig)
-	require.NoError(t, err)
+	_ = config.InitializeThunderRuntime("/test/thunder/home", testConfig)
 
-	service, err := initEncryptionService(
-		mockFileReader,
-		mockPathJoiner,
-	)
+	service := GetEncryptionService()
 
-	config.ResetThunderRuntime()
-
-	require.Error(t, err)
-	require.Contains(t, err.Error(), "crypto key file path not found in configs")
-	require.Nil(t, service)
-}
-
-func TestInitEncryptionServiceCryptoFileReadError(t *testing.T) {
-	expectedError := errors.New("permission denied")
-
-	mockFileReader := func(name string) ([]byte, error) {
-		require.Equal(t, expectedPath, name)
-		return nil, expectedError
-	}
-
-	mockPathJoiner := func(elem ...string) string {
-		require.Equal(t, "/home/thunder", elem[0])
-		require.Equal(t, "config/crypto.key", elem[1])
-		return expectedPath
-	}
-
-	mockConfig := &config.Config{
-		Security: config.SecurityConfig{
-			CryptoFile: "config/crypto.key",
-		},
-	}
-	config.ResetThunderRuntime()
-	err := config.InitializeThunderRuntime("/home/thunder", mockConfig)
-	require.NoError(t, err)
-
-	service, err := initEncryptionService(
-		mockFileReader,
-		mockPathJoiner,
-	)
-
-	config.ResetThunderRuntime()
-
-	require.Error(t, err)
-	require.Contains(t, err.Error(), "failed to read crypto key file at path")
-	require.Contains(t, err.Error(), expectedPath)
-	require.ErrorIs(t, err, expectedError)
-	require.Nil(t, service)
-}
-
-func TestInitEncryptionServiceInvalidHexInCryptoFile(t *testing.T) {
-	invalidHexData := []byte("INVALID_HEX_STRING")
-
-	mockFileReader := func(name string) ([]byte, error) {
-		return invalidHexData, nil
-	}
-
-	mockPathJoiner := func(elem ...string) string {
-		return expectedPath
-	}
-	mockConfig := &config.Config{
-		Security: config.SecurityConfig{
-			CryptoFile: "config/crypto.key",
-		},
-	}
-	config.ResetThunderRuntime()
-	err := config.InitializeThunderRuntime("/home/thunder", mockConfig)
-	require.NoError(t, err)
-
-	service, err := initEncryptionService(
-		mockFileReader,
-		mockPathJoiner,
-	)
-
-	config.ResetThunderRuntime()
-
-	require.Error(t, err)
-	require.Contains(t, err.Error(), "error while reading crypto key file at path")
-	require.Contains(t, err.Error(), expectedPath)
-	require.Contains(t, err.Error(), "invalid byte")
-	require.Nil(t, service)
-}
-
-func TestInitEncryptionServiceSuccess(t *testing.T) {
-	validKey, _ := generateRandomKey(defaultKeySize)
-	validHexData := []byte(hex.EncodeToString(validKey))
-
-	mockFileReader := func(name string) ([]byte, error) {
-		return validHexData, nil
-	}
-
-	mockPathJoiner := func(elem ...string) string {
-		return expectedPath
-	}
-
-	mockConfig := &config.Config{
-		Security: config.SecurityConfig{
-			CryptoFile: "config/crypto.key",
-		},
-	}
-	config.ResetThunderRuntime()
-	err := config.InitializeThunderRuntime("/home/thunder", mockConfig)
-	require.NoError(t, err)
-
-	service, err := initEncryptionService(
-		mockFileReader,
-		mockPathJoiner,
-	)
-
-	config.ResetThunderRuntime()
-
-	require.NoError(t, err)
-	require.NotNil(t, service)
-	require.Equal(t, validKey, service.Key)
-	require.Equal(t, getKeyID(validKey), service.Kid)
-}
-func TestEncryptionService(t *testing.T) {
-	// Generate a random key
-	key, err := generateRandomKey(defaultKeySize)
-	if err != nil {
-		t.Fatalf("Failed to generate key: %v", err)
-	}
-
-	t.Logf("Generated random key: %x", key)
-
-	// Create crypto service
-	service, err := NewEncryptionService(key)
-	if err != nil {
-		t.Fatalf("Failed to create crypto service: %v", err)
-	}
+	// Check service not null
+	assert.NotEmpty(suite.T(), service, "EncryptionService should not be nil")
 
 	// Test data
 	original := "This is a secret message that needs encryption!"
 
 	// Encrypt
 	encrypted, err := service.EncryptString(original)
-	if err != nil {
-		t.Fatalf("Encryption failed: %v", err)
-	}
-
-	t.Logf("Encrypted data: %x", encrypted)
+	assert.NoError(suite.T(), err, "Encryption should not produce an error")
 
 	// Decrypt
 	decrypted, err := service.DecryptString(encrypted)
-	if err != nil {
-		t.Fatalf("Decryption failed: %v", err)
-	}
-
-	t.Logf("Decrypted data: %s", decrypted)
+	assert.NoError(suite.T(), err, "Decryption should not produce an error")
 
 	// Verify
-	if decrypted != original {
-		t.Errorf("Decryption result doesn't match original. Got %q, want %q", decrypted, original)
-	}
+	assert.Equal(suite.T(), original, decrypted, "Decrypted data should match the original")
 }
 
-func TestTampering(t *testing.T) {
+func (suite *EncryptionTestSuite) TestGetEncryptionService_Singleton() {
+	testConfig := &config.Config{
+		Crypto: config.CryptoConfig{
+			Encrypt: config.EncryptConfig{
+				Key: "2729a7928c79371e5f312167269294a14bb0660fd166b02a408a20fa73271580",
+			},
+		},
+	}
+	config.ResetThunderRuntime()
+	_ = config.InitializeThunderRuntime("/test/thunder/home", testConfig)
+
+	service1 := GetEncryptionService()
+	service2 := GetEncryptionService()
+
+	assert.Same(suite.T(), service1, service2, "GetEncryptionService should return the same instance")
+}
+
+func (suite *EncryptionTestSuite) TestGetEncryptionService_PanicOnInvalidConfig() {
+	testConfig := &config.Config{
+		Crypto: config.CryptoConfig{
+			Encrypt: config.EncryptConfig{
+				Key: "invalid-hex",
+			},
+		},
+	}
+	config.ResetThunderRuntime()
+	_ = config.InitializeThunderRuntime("/test/thunder/home", testConfig)
+
+	assert.Panics(suite.T(), func() {
+		GetEncryptionService()
+	}, "GetEncryptionService should panic on invalid config")
+}
+
+func (suite *EncryptionTestSuite) TestGetEncryptionService_PanicOnEmptyConfig() {
+	testConfig := &config.Config{
+		Crypto: config.CryptoConfig{
+			Encrypt: config.EncryptConfig{
+				Key: "",
+			},
+		},
+	}
+	config.ResetThunderRuntime()
+	_ = config.InitializeThunderRuntime("/test/thunder/home", testConfig)
+
+	assert.Panics(suite.T(), func() {
+		GetEncryptionService()
+	}, "GetEncryptionService should panic on invalid config")
+}
+
+func (suite *EncryptionTestSuite) TestTampering() {
 	// Generate a random key
-	key, _ := generateRandomKey(defaultKeySize)
-	service, _ := NewEncryptionService(key)
+	key, _ := generateRandomKey(32)
+	service := NewEncryptionService(key)
 
 	// Encrypt some data
 	original := "Protected data"
-	encrypted, _ := service.EncryptString(original)
+	encrypted, err := service.EncryptString(original)
+	assert.NoError(suite.T(), err, "Encryption should not produce an error")
 
 	// Parse the JSON to get the encrypted data structure
 	var encData EncryptedData
-	err := json.Unmarshal([]byte(encrypted), &encData)
-	if err != nil {
-		t.Fatalf("Failed to parse encrypted JSON: %v", err)
-	}
+	err = json.Unmarshal([]byte(encrypted), &encData)
+	assert.NoError(suite.T(), err, "Failed to parse encrypted JSON")
 
 	// Tamper with the ciphertext field
 	cipherBytes := []byte(encData.Ciphertext)
@@ -236,49 +147,38 @@ func TestTampering(t *testing.T) {
 
 	// Re-encode to JSON
 	tamperedJSON, err := json.Marshal(encData)
-	if err != nil {
-		t.Fatalf("Failed to marshal tampered data: %v", err)
-	}
+	assert.NoError(suite.T(), err, "Failed to marshal tampered data")
 
 	// Attempt to decrypt tampered data
-	out, err := service.DecryptString(string(tamperedJSON))
-	if err == nil {
-		t.Error("Expected decryption of tampered data to fail, but it succeeded", out)
-	}
+	_, err = service.DecryptString(string(tamperedJSON))
+	assert.Error(suite.T(), err, "Expected decryption of tampered data to fail")
 }
 
-func TestEncryptedObjectFormat(t *testing.T) {
+func (suite *EncryptionTestSuite) TestEncryptedObjectFormat() {
 	// Generate a random key
-	key, _ := generateRandomKey(defaultKeySize)
-	service, _ := NewEncryptionService(key)
+	key, _ := generateRandomKey(32)
+	service := NewEncryptionService(key)
 
 	// Encrypt some data
 	original := "Data to encrypt"
-	encrypted, _ := service.EncryptString(original)
+	encrypted, err := service.EncryptString(original)
+	assert.NoError(suite.T(), err, "Encryption should not produce an error")
 
 	// Parse the JSON to verify structure
 	var encData EncryptedData
-	err := json.Unmarshal([]byte(encrypted), &encData)
-	if err != nil {
-		t.Fatalf("Failed to parse encrypted JSON: %v", err)
-	}
+	err = json.Unmarshal([]byte(encrypted), &encData)
+	assert.NoError(suite.T(), err, "Failed to parse encrypted JSON")
 
 	// Verify the structure
-	if encData.Algorithm != AESGCM {
-		t.Errorf("Expected algorithm %s, got %s", AESGCM, encData.Algorithm)
-	}
-	if encData.Ciphertext == "" {
-		t.Error("Ciphertext should not be empty")
-	}
-	if encData.KeyID != getKeyID(key) {
-		t.Error("KeyID should match the expected value")
-	}
+	assert.Equal(suite.T(), AESGCM, encData.Algorithm, "Algorithm should be AESGCM")
+	assert.NotEmpty(suite.T(), encData.Ciphertext, "Ciphertext should not be empty")
+	assert.Equal(suite.T(), getKeyID(key), encData.KeyID, "KeyID should match the expected value")
 }
 
-func TestEncryptDecryptCycle(t *testing.T) {
+func (suite *EncryptionTestSuite) TestEncryptDecryptCycle() {
 	// Generate a key
-	key, _ := generateRandomKey(defaultKeySize)
-	service, _ := NewEncryptionService(key)
+	key, _ := generateRandomKey(32)
+	service := NewEncryptionService(key)
 
 	// Test various data types
 	testCases := []string{
@@ -291,68 +191,58 @@ func TestEncryptDecryptCycle(t *testing.T) {
 
 	for _, tc := range testCases {
 		encrypted, err := service.EncryptString(tc)
-		if err != nil {
-			t.Errorf("Failed to encrypt %q: %v", tc, err)
-			continue
-		}
+		assert.NoError(suite.T(), err, "Encryption should not produce an error")
 
 		decrypted, err := service.DecryptString(encrypted)
-		if err != nil {
-			t.Errorf("Failed to decrypt %q: %v", tc, err)
-			continue
-		}
-
-		if decrypted != tc {
-			t.Errorf("Decryption result doesn't match original. Got %q, want %q", decrypted, tc)
-		}
-		t.Logf("Decryption successful. Decrypted data: %q", decrypted)
+		assert.NoError(suite.T(), err, "Decryption should not produce an error")
+		assert.Equal(suite.T(), tc, decrypted, "Decrypted data should match the original")
 	}
 }
 
-func TestDifferentKeysEncryption(t *testing.T) {
+func (suite *EncryptionTestSuite) TestDifferentKeysEncryption() {
 	// Generate two different keys
-	key1, _ := generateRandomKey(defaultKeySize)
-	key2, _ := generateRandomKey(defaultKeySize)
+	key1, err := generateRandomKey(32)
+	assert.NoError(suite.T(), err, "Key generation should not produce an error")
+	key2, err := generateRandomKey(32)
+	assert.NoError(suite.T(), err, "Key generation should not produce an error")
 
-	service1, _ := NewEncryptionService(key1)
-	service2, _ := NewEncryptionService(key2)
+	service1 := NewEncryptionService(key1)
+	service2 := NewEncryptionService(key2)
 
 	// Encrypt with first service
 	original := "Secret message"
 	encrypted, err := service1.EncryptString(original)
-	if err != nil {
-		t.Fatalf("Encryption with first key failed: %v", err)
-	}
-
+	assert.NoError(suite.T(), err, "Encryption with first key should not produce an error")
 	// Try to decrypt with second service (should fail)
 	_, err = service2.DecryptString(encrypted)
-	if err == nil {
-		t.Error("Expected decryption with different key to fail, but it succeeded")
-	}
+	assert.Error(suite.T(), err, "Expected decryption with different key to fail")
 }
 
-func TestEncryptWithInvalidKey(t *testing.T) {
+func (suite *EncryptionTestSuite) TestEncryptWithInvalidKey() {
 	service := &EncryptionService{
 		Key: []byte("short"),
 		Kid: "kid",
 	}
 
 	_, err := service.Encrypt([]byte("data"))
-	require.Error(t, err)
+
+	assert.Error(suite.T(), err)
 }
 
-func TestDecryptInvalidJSON(t *testing.T) {
-	key, _ := generateRandomKey(defaultKeySize)
-	service, _ := NewEncryptionService(key)
+func (suite *EncryptionTestSuite) TestDecryptInvalidJSON() {
+	key, err := generateRandomKey(32)
+	assert.NoError(suite.T(), err, "Key generation should not produce an error")
+	service := NewEncryptionService(key)
 
-	_, err := service.Decrypt("not-json")
-	require.Error(t, err)
-	require.Contains(t, err.Error(), "invalid data format")
+	_, err = service.Decrypt("not-json")
+	assert.Error(suite.T(), err)
+	assert.Contains(suite.T(), err.Error(), "invalid data format")
 }
 
-func TestDecryptUnsupportedAlgorithm(t *testing.T) {
-	key, _ := generateRandomKey(defaultKeySize)
-	service, _ := NewEncryptionService(key)
+func (suite *EncryptionTestSuite) TestDecryptUnsupportedAlgorithm() {
+	key, err := generateRandomKey(32)
+	assert.NoError(suite.T(), err, "Key generation should not produce an error")
+	service := NewEncryptionService(key)
 
 	payload := EncryptedData{
 		Algorithm:  "RSA",
@@ -361,14 +251,14 @@ func TestDecryptUnsupportedAlgorithm(t *testing.T) {
 	}
 	raw, _ := json.Marshal(payload)
 
-	_, err := service.Decrypt(string(raw))
-	require.Error(t, err)
-	require.Contains(t, err.Error(), "unsupported algorithm")
+	_, err = service.Decrypt(string(raw))
+	assert.Error(suite.T(), err)
+	assert.Contains(suite.T(), err.Error(), "unsupported algorithm")
 }
 
-func TestDecryptInvalidBase64(t *testing.T) {
-	key, _ := generateRandomKey(defaultKeySize)
-	service, _ := NewEncryptionService(key)
+func (suite *EncryptionTestSuite) TestDecryptInvalidBase64() {
+	key, _ := generateRandomKey(32)
+	service := NewEncryptionService(key)
 
 	payload := EncryptedData{
 		Algorithm:  AESGCM,
@@ -378,13 +268,14 @@ func TestDecryptInvalidBase64(t *testing.T) {
 	raw, _ := json.Marshal(payload)
 
 	_, err := service.Decrypt(string(raw))
-	require.Error(t, err)
-	require.Contains(t, err.Error(), "invalid payload encoding")
+	assert.Error(suite.T(), err)
+	assert.Contains(suite.T(), err.Error(), "invalid payload encoding")
 }
 
-func TestDecryptCiphertextTooShort(t *testing.T) {
-	key, _ := generateRandomKey(defaultKeySize)
-	service, _ := NewEncryptionService(key)
+func (suite *EncryptionTestSuite) TestDecryptCiphertextTooShort() {
+	key, err := generateRandomKey(32)
+	assert.NoError(suite.T(), err, "Key generation should not produce an error")
+	service := NewEncryptionService(key)
 
 	payload := EncryptedData{
 		Algorithm:  AESGCM,
@@ -393,12 +284,11 @@ func TestDecryptCiphertextTooShort(t *testing.T) {
 	}
 	raw, _ := json.Marshal(payload)
 
-	_, err := service.Decrypt(string(raw))
-	require.Error(t, err)
-	require.EqualError(t, err, "ciphertext too short")
+	_, err = service.Decrypt(string(raw))
+	assert.Error(suite.T(), err)
 }
 
-func TestDecryptWithInvalidKeyLength(t *testing.T) {
+func (suite *EncryptionTestSuite) TestDecryptWithInvalidKeyLength() {
 	service := &EncryptionService{
 		Key: []byte("short"),
 		Kid: "kid",
@@ -412,43 +302,48 @@ func TestDecryptWithInvalidKeyLength(t *testing.T) {
 	raw, _ := json.Marshal(payload)
 
 	_, err := service.Decrypt(string(raw))
-	require.Error(t, err)
+	assert.Error(suite.T(), err)
 }
 
-func TestNondefaultKeySize(t *testing.T) {
+func (suite *EncryptionTestSuite) TestNon32() {
 	// Test various key sizes
 	testCases := []int{16, 24} // 128, 192 bits
 	// Test data
 	original := "This is a secret message that needs encryption!"
 	for _, size := range testCases {
-		key, _ := generateRandomKey(size)
-		service, _ := NewEncryptionService(key)
+		key, err := generateRandomKey(size)
+		assert.NoError(suite.T(), err, "Key generation should not produce an error")
+		service := NewEncryptionService(key)
 
 		encrypted, err := service.EncryptString(original)
-		if err != nil {
-			t.Errorf("Failed to encrypt %q: %v", original, err)
-			continue
-		}
+		assert.NoError(suite.T(), err, "Encryption should not produce an error")
 
 		decrypted, err := service.DecryptString(encrypted)
-		if err != nil {
-			t.Errorf("Failed to decrypt %q: %v", original, err)
-			continue
-		}
+		assert.NoError(suite.T(), err, "Decryption should not produce an error")
 
-		if decrypted != original {
-			t.Errorf("Decryption result doesn't match original. Got %q, want %q", decrypted, original)
-		}
-		t.Logf("Decryption successful. Decrypted data: %q", decrypted)
+		assert.Equal(suite.T(), original, decrypted, "Decrypted data should match the original")
 	}
 }
 
-func TestWrongKeySize(t *testing.T) {
+func (suite *EncryptionTestSuite) TestWrongKeySize() {
 	// Generate a key of incorrect size
 	key, _ := generateRandomKey(30)
-	service, _ := NewEncryptionService(key)
+	service := NewEncryptionService(key)
 	_, err := service.EncryptString("Test data")
-	if err == nil {
-		t.Error("Expected error when creating EncryptionService with short key, but got none")
+	assert.Error(suite.T(), err, "Expected error due to wrong key size")
+}
+
+// resetSingleton resets the singleton state for testing purposes
+func resetSingleton() {
+	instance = nil
+	once = sync.Once{}
+}
+
+func generateRandomKey(keySize int) ([]byte, error) {
+	key := make([]byte, keySize)
+	_, err := rand.Read(key)
+	if err != nil {
+		return nil, err
 	}
+	return key, nil
 }

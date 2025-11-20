@@ -324,6 +324,7 @@ func StartServer(port string, zipFilePattern string) error {
 	// Preserve GOCOVERDIR environment variable for coverage collection
 	envVars := []string{
 		"PORT=" + port,
+		"THUNDER_CRYPTO_ENC_KEY=6671db1b7ec7e231a71bbb08e117210cc965f9fe23a65d5847d55a705c4029b3",
 	}
 
 	if goCoverDir := os.Getenv("GOCOVERDIR"); goCoverDir != "" {

@@ -34,6 +34,7 @@ import (
 	"github.com/asgardeo/thunder/internal/system/cache"
 	"github.com/asgardeo/thunder/internal/system/cert"
 	"github.com/asgardeo/thunder/internal/system/config"
+	"github.com/asgardeo/thunder/internal/system/crypto/encrypt"
 	"github.com/asgardeo/thunder/internal/system/database/provider"
 	"github.com/asgardeo/thunder/internal/system/jwt"
 	"github.com/asgardeo/thunder/internal/system/log"
@@ -68,6 +69,9 @@ func main() {
 	if err := jwtService.Init(); err != nil { // TODO: Two-Phase Initialization is anti-pattern. Refactor this.
 		logger.Fatal("Failed to load private key", log.Error(err))
 	}
+
+	// Load the encryption service.
+	encrypt.GetEncryptionService()
 
 	// Register the services.
 	registerServices(mux, jwtService)
@@ -122,6 +126,13 @@ func getThunderHome(logger *log.Logger) string {
 
 // initThunderConfigurations initializes the Thunder configurations.
 func initThunderConfigurations(logger *log.Logger, thunderHome string) *config.Config {
+	// Load the environment variables.
+	envFilePath := path.Join(thunderHome, "repository/conf/.env")
+	if err := config.LoadEnv(envFilePath); err != nil {
+		logger.Fatal("Failed to load environment variables", log.Error(err))
+	} else {
+		logger.Debug("Environment variables loaded successfully from %s", log.String("envFilePath", envFilePath))
+	}
 	// Load the configurations.
 	configFilePath := path.Join(thunderHome, "repository/conf/deployment.yaml")
 	defaultConfigPath := path.Join(thunderHome, "repository/resources/conf/default.json")

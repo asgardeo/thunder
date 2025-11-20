@@ -20,8 +20,6 @@ package notification
 
 import (
 	"errors"
-	"os"
-	"path/filepath"
 	"testing"
 
 	"github.com/stretchr/testify/suite"
@@ -47,24 +45,14 @@ func TestStoreTestSuite(t *testing.T) {
 }
 
 func (suite *StoreTestSuite) SetupSuite() {
-	// Get the current working directory.
-	cwd, err := os.Getwd()
-	if err != nil {
-		suite.T().Fatalf("Failed to get working directory: %v", err)
-	}
-	suite.T().Logf("Current working directory: %s", cwd)
-	cryptoFile := filepath.Join(cwd, "..", "..", "tests", "resources", "testKey")
-
-	if _, err := os.Stat(cryptoFile); os.IsNotExist(err) {
-		suite.T().Fatalf("Crypto file not found at expected path: %s", cryptoFile)
-	}
-
 	testConfig := &config.Config{
-		Security: config.SecurityConfig{
-			CryptoFile: cryptoFile,
+		Crypto: config.CryptoConfig{
+			Encrypt: config.EncryptConfig{
+				Key: "b735c757d03c6496575f4c1eb5ba708ad3d06a635566d0fe0440802cf750b3f8",
+			},
 		},
 	}
-	err = config.InitializeThunderRuntime("", testConfig)
+	err := config.InitializeThunderRuntime("", testConfig)
 	if err != nil {
 		suite.T().Fatalf("Failed to initialize ThunderRuntime: %v", err)
 	}
