@@ -5,7 +5,6 @@ server:
 security:
   cert_file: "repository/resources/security/server.cert"
   key_file: "repository/resources/security/server.key"
-  crypto_file: "repository/resources/security/crypto.key"
 
 database:
   identity:
@@ -25,3 +24,7 @@ flow:
   graph_directory: "repository/resources/graphs/"
   authn:
     default_flow: "auth_flow_config_basic"
+
+crypto:
+  encrypt:
+    key: "$THUNDER_CRYPTO_ENC_KEY"

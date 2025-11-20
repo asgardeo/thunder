@@ -24,6 +24,7 @@ import (
 	"os"
 	"path/filepath"
 	"reflect"
+	"strings"
 
 	"github.com/asgardeo/thunder/internal/system/log"
 
@@ -49,9 +50,8 @@ type GateClientConfig struct {
 
 // SecurityConfig holds the security configuration details.
 type SecurityConfig struct {
-	CertFile   string `yaml:"cert_file" json:"cert_file"`
-	KeyFile    string `yaml:"key_file" json:"key_file"`
-	CryptoFile string `yaml:"crypto_file" json:"crypto_file"`
+	CertFile string `yaml:"cert_file" json:"cert_file"`
+	KeyFile  string `yaml:"key_file" json:"key_file"`
 }
 
 // DataSource holds the individual database connection details.
@@ -126,6 +126,16 @@ type FlowConfig struct {
 	Authn          FlowAuthnConfig `yaml:"authn" json:"authn"`
 }
 
+// CryptoConfig holds the cryptographic configuration details.
+type CryptoConfig struct {
+	Encrypt EncryptConfig `yaml:"encrypt" json:"encrypt"`
+}
+
+// EncryptConfig holds the encryption configuration details.
+type EncryptConfig struct {
+	Key string `yaml:"key" json:"key"`
+}
+
 // CORSConfig holds the configuration details for the CORS.
 type CORSConfig struct {
 	AllowedOrigins []string `yaml:"allowed_origins" json:"allowed_origins"`
@@ -170,6 +180,7 @@ type Config struct {
 	JWT                JWTConfig           `yaml:"jwt" json:"jwt"`
 	OAuth              OAuthConfig         `yaml:"oauth" json:"oauth"`
 	Flow               FlowConfig          `yaml:"flow" json:"flow"`
+	Crypto             CryptoConfig        `yaml:"crypto" json:"crypto"`
 	Hash               HashConfig          `yaml:"hash"`
 	CORS               CORSConfig          `yaml:"cors" json:"cors"`
 	ImmutableResources ImmutableResources  `yaml:"immutable_resources" json:"immutable_resources"`
@@ -190,20 +201,17 @@ func LoadConfig(path string, defaultsPath string) (*Config, error) {
 		cfg = *defaultCfg
 	}
 
-	// Load user configuration
-	file, err := os.Open(path)
+	// Load user configuration with environment variable expansion
+	content, err := os.ReadFile(path)
 	if err != nil {
 		return nil, err
 	}
-	defer func() {
-		if ferr := file.Close(); ferr != nil {
-			log.GetLogger().Error("Failed to close config file", log.Error(ferr))
-		}
-	}()
 
-	decoder := yaml.NewDecoder(file)
+	// Expand environment variables like ${VAR} or $VAR
+	expanded := os.ExpandEnv(string(content))
+
 	var userCfg Config
-	if err := decoder.Decode(&userCfg); err != nil {
+	if err := yaml.Unmarshal([]byte(expanded), &userCfg); err != nil {
 		return nil, err
 	}
 
@@ -211,6 +219,37 @@ func LoadConfig(path string, defaultsPath string) (*Config, error) {
 	mergeConfigs(&cfg, &userCfg)
 
 	return &cfg, nil
+}
+
+// LoadEnv loads environment variables from a .env file.
+func LoadEnv(path string) error {
+	path = filepath.Clean(path)
+	content, err := os.ReadFile(path)
+	if err != nil {
+		return err
+	}
+
+	for _, line := range strings.Split(string(content), "\n") {
+		// Skip empty lines and comments
+		if line == "" || strings.HasPrefix(line, "#") {
+			continue
+		}
+		parts := strings.SplitN(line, "=", 2)
+		if len(parts) != 2 {
+			continue
+		}
+		key := strings.TrimSpace(parts[0])
+		value := strings.TrimSpace(parts[1])
+
+		// Set the environment variable only if it's not already set
+		if _, exists := os.LookupEnv(key); !exists {
+			if err := os.Setenv(key, value); err != nil {
+				return err
+			}
+		}
+	}
+
+	return nil
 }
 
 // loadDefaultConfig loads the default configuration from a JSON file.
