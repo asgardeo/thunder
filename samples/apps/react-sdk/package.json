@@ -1,11 +1,12 @@
 {
   "name": "react-sdk",
   "private": true,
-  "version": "0.0.0",
+  "version": "0.13.0",
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "tsc -b && vite build",
+    "build": "tsc -b && vite build && npm run copy:certs",
+    "copy:certs": "test -f server.key && test -f server.cert && cp -f server.key server.cert dist/ || echo 'Warning: SSL certificates not found, skipping copy'",
     "lint": "eslint .",
     "preview": "vite preview"
   },
@@ -21,6 +22,7 @@
     "@types/node": "^24.10.1",
     "@types/react": "^19.2.5",
     "@types/react-dom": "^19.2.3",
+    "@vitejs/plugin-basic-ssl": "^2.1.0",
     "@vitejs/plugin-react": "^5.1.1",
     "eslint": "^9.39.1",
     "eslint-plugin-react-hooks": "^7.0.1",

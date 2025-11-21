@@ -17,10 +17,19 @@
  */
 
 import "./App.css";
-import { SignedIn, SignedOut, SignInButton } from "@asgardeo/react";
+import {
+  SignedIn,
+  SignedOut,
+  SignInButton,
+  useAsgardeo,
+} from "@asgardeo/react";
 import HomePage from "./pages/HomePage";
 
 function App() {
+  const { isSignedIn } = useAsgardeo();
+
+  console.log("isSignedIn", isSignedIn);
+
   return (
     <>
       <SignedIn>

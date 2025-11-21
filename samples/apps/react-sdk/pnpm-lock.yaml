@@ -39,6 +39,9 @@ importers:
       '@types/react-dom':
         specifier: ^19.2.3
         version: 19.2.3(@types/react@19.2.6)
+      '@vitejs/plugin-basic-ssl':
+        specifier: ^2.1.0
+        version: 2.1.0(rolldown-vite@7.2.5(@types/node@24.10.1)(esbuild@0.25.12))
       '@vitejs/plugin-react':
         specifier: ^5.1.1
         version: 5.1.1(rolldown-vite@7.2.5(@types/node@24.10.1)(esbuild@0.25.12))
@@ -926,6 +929,12 @@ packages:
   '@typescript-eslint/visitor-keys@8.47.0':
     resolution: {integrity: sha512-SIV3/6eftCy1bNzCQoPmbWsRLujS8t5iDIZ4spZOBHqrM+yfX2ogg8Tt3PDTAVKw3sSCiUgg30uOAvK2r9zGjQ==}
     engines: {node: ^18.18.0 || ^20.9.0 || >=21.1.0}
+
+  '@vitejs/plugin-basic-ssl@2.1.0':
+    resolution: {integrity: sha512-dOxxrhgyDIEUADhb/8OlV9JIqYLgos03YorAueTIeOUskLJSEsfwCByjbu98ctXitUN3znXKp0bYD/WHSudCeA==}
+    engines: {node: ^18.0.0 || ^20.0.0 || >=22.0.0}
+    peerDependencies:
+      vite: ^6.0.0 || ^7.0.0
 
   '@vitejs/plugin-react@5.1.1':
     resolution: {integrity: sha512-WQfkSw0QbQ5aJ2CHYw23ZGkqnRwqKHD/KYsMeTkZzPT4Jcf0DcBxBtwMJxnu6E7oxw5+JC6ZAiePgh28uJ1HBA==}
@@ -3013,6 +3022,10 @@ snapshots:
     dependencies:
       '@typescript-eslint/types': 8.47.0
       eslint-visitor-keys: 4.2.1
+
+  '@vitejs/plugin-basic-ssl@2.1.0(rolldown-vite@7.2.5(@types/node@24.10.1)(esbuild@0.25.12))':
+    dependencies:
+      vite: rolldown-vite@7.2.5(@types/node@24.10.1)(esbuild@0.25.12)
 
   '@vitejs/plugin-react@5.1.1(rolldown-vite@7.2.5(@types/node@24.10.1)(esbuild@0.25.12))':
     dependencies:
