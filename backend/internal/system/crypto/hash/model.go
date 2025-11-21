@@ -26,11 +26,24 @@ const (
 	SHA256 CredAlgorithm = "SHA256"
 	// PBKDF2 represents PBKDF2 key derivation function
 	PBKDF2 CredAlgorithm = "PBKDF2"
+	// SaltSize represents the size of the salt in bytes
+	SaltSize string = "salt_size"
+	// Iterations represents the number of iterations for PBKDF2
+	Iterations string = "iterations"
+	// KeySize represents the length of the derived key in bytes for PBKDF2
+	KeySize string = "key_size"
 )
+
+// CredParameters holds the parameters for credential hashing algorithms
+type CredParameters struct {
+	Iterations int
+	KeySize    int
+	Salt       string
+}
 
 // Credential represents the credentials of a hashed value.
 type Credential struct {
-	Algorithm CredAlgorithm
-	Hash      string
-	Salt      string
+	Algorithm  CredAlgorithm
+	Hash       string
+	Parameters CredParameters
 }

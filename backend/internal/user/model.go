@@ -34,11 +34,11 @@ type User struct {
 
 // Credential represents the credentials of a user.
 type Credential struct {
-	CredentialType string             `json:"credentialType"`
-	StorageType    string             `json:"storageType"`
-	StorageAlgo    hash.CredAlgorithm `json:"storageAlgo"`
-	Value          string             `json:"value"`
-	Salt           string             `json:"salt"`
+	CredentialType    string              `json:"credentialType"`
+	StorageType       string              `json:"storageType"`
+	StorageAlgo       hash.CredAlgorithm  `json:"storageAlgo"`
+	StorageAlgoParams hash.CredParameters `json:"storageAlgoParams"`
+	Value             string              `json:"value"`
 }
 
 // Link represents a pagination link.
