@@ -180,3 +180,10 @@ packages:
       structname: '{{.InterfaceName}}Mock'
       pkgname: cert
       filename: "{{.InterfaceName}}_mock_test.go"
+  github.com/asgardeo/thunder/internal/resource:
+    config:
+      all: true
+      dir: internal/resource
+      structname: '{{.InterfaceName}}Mock'
+      pkgname: resource
+      filename: "{{.InterfaceName}}_mock_test.go"

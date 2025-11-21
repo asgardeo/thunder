@@ -137,3 +137,91 @@ CREATE TABLE CERTIFICATE (
     UPDATED_AT TEXT DEFAULT (datetime('now')),
     UNIQUE (REF_TYPE, REF_ID)
 );
+
+-- Table to store resource servers.
+CREATE TABLE RESOURCE_SERVER (
+    ID INTEGER PRIMARY KEY AUTOINCREMENT,
+    RESOURCE_SERVER_ID VARCHAR(36) NOT NULL UNIQUE,
+    OU_ID VARCHAR(36) NOT NULL,
+    NAME VARCHAR(100) NOT NULL,
+    DESCRIPTION TEXT,
+    IDENTIFIER VARCHAR(100),
+    PROPERTIES TEXT,
+    CREATED_AT TEXT DEFAULT (datetime('now')),
+    UPDATED_AT TEXT DEFAULT (datetime('now'))
+);
+
+-- Unique constraint: Resource server name must be unique within an OU
+CREATE UNIQUE INDEX uq_resource_server_ou_name
+    ON RESOURCE_SERVER(OU_ID, NAME);
+
+-- Unique constraint: Resource server identifier must be globally unique (when not null)
+CREATE UNIQUE INDEX uq_resource_server_identifier
+    ON RESOURCE_SERVER(IDENTIFIER)
+    WHERE IDENTIFIER IS NOT NULL;
+
+-- Table to store resources within resource servers.
+CREATE TABLE RESOURCE (
+    ID INTEGER PRIMARY KEY AUTOINCREMENT,
+    RESOURCE_ID VARCHAR(36) NOT NULL UNIQUE,
+    RESOURCE_SERVER_ID INTEGER NOT NULL,
+    PARENT_RESOURCE_ID INTEGER,
+    NAME VARCHAR(100) NOT NULL,
+    HANDLE VARCHAR(100) NOT NULL,
+    DESCRIPTION TEXT,
+    PROPERTIES TEXT,
+    CREATED_AT TEXT DEFAULT (datetime('now')),
+    UPDATED_AT TEXT DEFAULT (datetime('now')),
+
+    FOREIGN KEY (RESOURCE_SERVER_ID)
+        REFERENCES RESOURCE_SERVER(ID)
+        ON DELETE CASCADE
+        ON UPDATE CASCADE,
+    FOREIGN KEY (PARENT_RESOURCE_ID)
+        REFERENCES RESOURCE(ID)
+        ON DELETE CASCADE
+        ON UPDATE CASCADE
+);
+
+-- Unique constraint: Resource handle must be unique under the same parent
+CREATE UNIQUE INDEX uq_resource_handle_with_parent
+    ON RESOURCE(RESOURCE_SERVER_ID, PARENT_RESOURCE_ID, HANDLE)
+    WHERE PARENT_RESOURCE_ID IS NOT NULL;
+
+-- Unique constraint: Root-level resource handles must be unique per resource server
+CREATE UNIQUE INDEX uq_resource_handle_null_parent
+    ON RESOURCE(RESOURCE_SERVER_ID, HANDLE)
+    WHERE PARENT_RESOURCE_ID IS NULL;
+
+-- Table to store actions at resource server or resource level.
+CREATE TABLE ACTION (
+    ID INTEGER PRIMARY KEY AUTOINCREMENT,
+    ACTION_ID VARCHAR(36) NOT NULL UNIQUE,
+    RESOURCE_SERVER_ID INTEGER NOT NULL,
+    RESOURCE_ID INTEGER,
+    NAME VARCHAR(100) NOT NULL,
+    HANDLE VARCHAR(100) NOT NULL,
+    DESCRIPTION TEXT,
+    PROPERTIES TEXT,
+    CREATED_AT TEXT DEFAULT (datetime('now')),
+    UPDATED_AT TEXT DEFAULT (datetime('now')),
+
+    FOREIGN KEY (RESOURCE_SERVER_ID)
+        REFERENCES RESOURCE_SERVER(ID)
+        ON DELETE CASCADE
+        ON UPDATE CASCADE,
+    FOREIGN KEY (RESOURCE_ID)
+        REFERENCES RESOURCE(ID)
+        ON DELETE CASCADE
+        ON UPDATE CASCADE
+);
+
+-- Unique constraint: Server-level action handles must be unique per resource server
+CREATE UNIQUE INDEX uq_action_server_handle
+    ON ACTION(RESOURCE_SERVER_ID, HANDLE)
+    WHERE RESOURCE_ID IS NULL;
+
+-- Unique constraint: Resource-level action handles must be unique per resource
+CREATE UNIQUE INDEX uq_action_resource_handle
+    ON ACTION(RESOURCE_ID, HANDLE)
+    WHERE RESOURCE_ID IS NOT NULL;
