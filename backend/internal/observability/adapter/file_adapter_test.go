@@ -16,7 +16,7 @@
  * under the License.
  */
 
-package file
+package adapter
 
 import (
 	"compress/gzip"

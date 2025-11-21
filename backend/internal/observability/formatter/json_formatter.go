@@ -16,23 +16,22 @@
  * under the License.
  */
 
-// Package json provides JSON formatting for events.
-package json
+// Package formatter provides formatting for events.
+package formatter
 
 import (
 	"encoding/json"
 
 	"github.com/asgardeo/thunder/internal/observability/event"
-	"github.com/asgardeo/thunder/internal/observability/formatter"
 )
 
 // JSONFormatter formats events as JSON.
 type JSONFormatter struct{}
 
-var _ formatter.Formatter = (*JSONFormatter)(nil)
+var _ FormatterInterface = (*JSONFormatter)(nil)
 
 // NewJSONFormatter creates a new JSON formatter.
-func NewJSONFormatter() *JSONFormatter {
+func newJSONFormatter() *JSONFormatter {
 	return &JSONFormatter{}
 }
 

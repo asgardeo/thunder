@@ -35,6 +35,7 @@ import (
 	"github.com/asgardeo/thunder/internal/idp"
 	"github.com/asgardeo/thunder/internal/notification"
 	"github.com/asgardeo/thunder/internal/oauth"
+	"github.com/asgardeo/thunder/internal/observability"
 	"github.com/asgardeo/thunder/internal/ou"
 	"github.com/asgardeo/thunder/internal/role"
 	"github.com/asgardeo/thunder/internal/system/export"
@@ -45,9 +46,17 @@ import (
 	"github.com/asgardeo/thunder/internal/userschema"
 )
 
+// observabilitySvc is the observability service instance. This is used for graceful shutdown.
+var observabilitySvc observability.ObservabilityServiceInterface
+
 // registerServices registers all the services with the provided HTTP multiplexer.
-func registerServices(mux *http.ServeMux, jwtService jwt.JWTServiceInterface) {
+func registerServices(
+	mux *http.ServeMux,
+	jwtService jwt.JWTServiceInterface,
+) {
 	logger := log.GetLogger()
+
+	observabilitySvc = observability.Initialize()
 
 	ouService := ou.Initialize(mux)
 	userSchemaService := userschema.Initialize(mux, ouService)
@@ -78,7 +87,7 @@ func registerServices(mux *http.ServeMux, jwtService jwt.JWTServiceInterface) {
 	// Initialize export service with application service dependency
 	_ = export.Initialize(mux, applicationService)
 
-	flowExecService := flowexec.Initialize(mux, flowMgtService, applicationService, execRegistry)
+	flowExecService := flowexec.Initialize(mux, flowMgtService, applicationService, execRegistry, observabilitySvc)
 
 	// Initialize OAuth services.
 	oauth.Initialize(mux, applicationService, userService, jwtService, flowExecService)
@@ -88,4 +97,9 @@ func registerServices(mux *http.ServeMux, jwtService jwt.JWTServiceInterface) {
 
 	// Register the health service.
 	services.NewHealthCheckService(mux)
+}
+
+// unregisterServices unregisters all services that require cleanup during shutdown.
+func unregisterServices() {
+	observabilitySvc.Shutdown()
 }

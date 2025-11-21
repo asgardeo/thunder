@@ -36,12 +36,3 @@ database:
 cors:
   allowed_origins:
     - "https://localhost:3000"
-
-observability:
-  enabled: false
-  output:
-    type: "console"
-    format: "json"
-  metrics:
-    enabled: false
-  failure_mode: "graceful"

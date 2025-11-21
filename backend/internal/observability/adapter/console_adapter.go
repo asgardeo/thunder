@@ -16,34 +16,31 @@
  * under the License.
  */
 
-// Package console provides a console-based output adapter for analytics events.
-package console
+package adapter
 
 import (
 	"fmt"
 	"os"
 	"sync"
-
-	"github.com/asgardeo/thunder/internal/observability/adapter"
 )
 
 // ConsoleAdapter writes events to stdout/stderr.
-type ConsoleAdapter struct {
+type consoleAdapter struct {
 	mu     sync.Mutex
 	closed bool
 }
 
-var _ adapter.OutputAdapter = (*ConsoleAdapter)(nil)
+var _ OutputAdapterInterface = (*consoleAdapter)(nil)
 
-// NewConsoleAdapter creates a new console-based output adapter.
-func NewConsoleAdapter() *ConsoleAdapter {
-	return &ConsoleAdapter{
+// newConsoleAdapter creates a new console-based output adapter.
+func newConsoleAdapter() *consoleAdapter {
+	return &consoleAdapter{
 		closed: false,
 	}
 }
 
 // Write writes data to stdout.
-func (ca *ConsoleAdapter) Write(data []byte) error {
+func (ca *consoleAdapter) Write(data []byte) error {
 	ca.mu.Lock()
 	defer ca.mu.Unlock()
 
@@ -56,12 +53,12 @@ func (ca *ConsoleAdapter) Write(data []byte) error {
 }
 
 // Flush is a no-op for console adapter as stdout is unbuffered.
-func (ca *ConsoleAdapter) Flush() error {
+func (ca *consoleAdapter) Flush() error {
 	return nil
 }
 
 // Close closes the console adapter.
-func (ca *ConsoleAdapter) Close() error {
+func (ca *consoleAdapter) Close() error {
 	ca.mu.Lock()
 	defer ca.mu.Unlock()
 
@@ -70,6 +67,6 @@ func (ca *ConsoleAdapter) Close() error {
 }
 
 // GetName returns the name of this adapter.
-func (ca *ConsoleAdapter) GetName() string {
+func (ca *consoleAdapter) GetName() string {
 	return "ConsoleAdapter"
 }
