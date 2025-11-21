@@ -340,10 +340,10 @@ else
     log_info "Started at: $(date)"
     echo ""
 
-    # Collect all scripts from both built-in and custom directories
+    # Collect all scripts from bootstrap directory
     SCRIPTS=()
 
-    # Find scripts in main bootstrap directory (exclude common.sh)
+    # Find scripts in bootstrap directory (exclude common.sh)
     if [ -d "$BOOTSTRAP_DIR" ]; then
         for script in "$BOOTSTRAP_DIR"/*.sh "$BOOTSTRAP_DIR"/*.bash; do
             [ ! -e "$script" ] && continue
@@ -354,19 +354,8 @@ else
         done
     fi
 
-    # Find scripts in custom directory
-    if [ -d "$BOOTSTRAP_DIR/custom" ]; then
-        for script in "$BOOTSTRAP_DIR/custom"/*.sh "$BOOTSTRAP_DIR/custom"/*.bash; do
-            [ ! -e "$script" ] && continue
-            SCRIPTS+=("$script")
-        done
-    fi
-
     # Sort scripts by filename (numeric prefix determines order)
-    # Use basename for sorting so custom scripts with numeric prefixes work correctly
-    IFS=$'\n' SORTED_SCRIPTS=($(printf '%s\n' "${SCRIPTS[@]}" | while read -r script; do
-        echo "$(basename "$script")|$script"
-    done | sort | cut -d'|' -f2))
+    IFS=$'\n' SORTED_SCRIPTS=($(printf '%s\n' "${SCRIPTS[@]}" | sort))
     unset IFS
 
     if [ ${#SORTED_SCRIPTS[@]} -eq 0 ]; then

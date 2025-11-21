@@ -253,17 +253,30 @@ setup:
     #     secretName: thunder-secrets
 
 # Bootstrap configuration
+# Custom bootstrap scripts extend Thunder's setup process by adding initialization logic.
 bootstrap:
-  # Enable custom bootstrap scripts
-  enabled: false
-  # Custom bootstrap scripts provided inline
-  # Scripts will be mounted to /opt/thunder/bootstrap/custom/
+  # Custom bootstrap scripts provided inline (key: filename, value: script content)
+  # Each script will be mounted individually using subPath to preserve default scripts
   scripts: {}
-    # Example:
+    # Example - Creating custom users:
     # 30-custom-users.sh: |
     #   #!/bin/bash
     #   set -e
+    #   # Source common functions (provides log_* and thunder_api_call)
+    #   SCRIPT_DIR="$(dirname "${BASH_SOURCE[0]:-$0}")"
+    #   source "${SCRIPT_DIR}/common.sh"
+    #
     #   log_info "Creating custom users..."
-    #   # Your script here
-  # Or reference an existing ConfigMap
+    #   thunder_api_call POST "/users" '{
+    #     "type": "person",
+    #     "attributes": {
+    #       "username": "alice",
+    #       "password": "alice123",
+    #       "sub": "alice",
+    #       "email": "alice@example.com",
+    #       "name": "Alice Johnson"
+    #     }
+    #   }'
+    #   log_success "Custom users created"
+    #
   existingConfigMap: ""
