@@ -21,15 +21,42 @@ import { createRoot } from "react-dom/client";
 import "./index.css";
 import App from "./App.tsx";
 import { AsgardeoProvider } from "@asgardeo/react";
+import { ConfigurationError } from "./ConfigurationError.tsx";
+
+const baseUrl = import.meta.env.VITE_THUNDER_BASE_URL as string;
+const clientId = import.meta.env.VITE_REACT_APP_CLIENT_ID as string;
+
+// Validate required configuration
+const missingConfig: string[] = [];
+if (!baseUrl) {
+  missingConfig.push("VITE_THUNDER_BASE_URL");
+}
+if (!clientId) {
+  missingConfig.push("VITE_REACT_APP_CLIENT_ID");
+}
+
+if (missingConfig.length > 0) {
+  console.error(
+    "⚠️ Missing required environment variables:",
+    missingConfig.join(", ")
+  );
+  console.error(
+    "Please configure these variables in your .env file. See .env.example for reference."
+  );
+}
 
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
-    <AsgardeoProvider
-      baseUrl={import.meta.env.VITE_THUNDER_BASE_URL as string}
-      clientId={import.meta.env.VITE_REACT_APP_CLIENT_ID as string}
-      platform="AsgardeoV2"
-    >
-      <App />
-    </AsgardeoProvider>
+    {missingConfig.length > 0 ? (
+      <ConfigurationError missingConfig={missingConfig} />
+    ) : (
+      <AsgardeoProvider
+        baseUrl={baseUrl}
+        clientId={clientId}
+        platform="AsgardeoV2"
+      >
+        <App />
+      </AsgardeoProvider>
+    )}
   </StrictMode>
 );

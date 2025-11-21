@@ -417,20 +417,31 @@ jobs:
           package-manager: 'npm'
           dependency-path: 'samples/apps/oauth'
 
+      - name: 📦 Install pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9
+
       - name: 🏷️ Update Sample Apps Version
         run: |
           NEXT_VERSION="${{ steps.next_version.outputs.next_version }}"
           echo "📝 Setting sample apps version to $NEXT_VERSION"
-          
-          # Update the main sample app package.json
+
+          # Update the oauth sample app package.json
           cd samples/apps/oauth
           npm version $NEXT_VERSION --no-git-tag-version --allow-same-version
-          
+
           # Update the server package.json
           cd server
           npm version $NEXT_VERSION --no-git-tag-version --allow-same-version
-          
-          cd ../../../..
+
+          cd "$GITHUB_WORKSPACE"
+
+          # Update the react-sdk sample app package.json
+          cd samples/apps/react-sdk
+          pnpm version $NEXT_VERSION --no-git-tag-version --allow-same-version
+
+          cd "$GITHUB_WORKSPACE"
           echo "✅ Updated sample apps version to $NEXT_VERSION"
 
       # - name: 📈 Commit and Push Version Update
@@ -481,12 +492,12 @@ jobs:
         run: |
           # Get the product version from the previous job
           SAMPLE_VERSION="${{ github.event.inputs.version }}"
-          
+
           # Remove 'v' prefix if present
           if [[ $SAMPLE_VERSION == v* ]]; then
             SAMPLE_VERSION="${SAMPLE_VERSION#v}"
           fi
-          
+
           echo "✅ Sample version set to '$SAMPLE_VERSION'"
           echo "SAMPLE_VERSION=$SAMPLE_VERSION" >> $GITHUB_ENV
 
@@ -495,16 +506,22 @@ jobs:
           # Get the clean sample version without v prefix
           SAMPLE_VERSION="${{ env.SAMPLE_VERSION }}"
           echo "📝 Setting sample apps version to $SAMPLE_VERSION"
-          
-          # Update the main sample app package.json
+
+          # Update the oauth sample app package.json
           cd samples/apps/oauth
           npm version $SAMPLE_VERSION --no-git-tag-version --allow-same-version
-          
+
           # Update the server package.json
           cd server
           npm version $SAMPLE_VERSION --no-git-tag-version --allow-same-version
-          
-          cd ../../../..
+
+          cd ../../..
+
+          # Update the react-sdk sample app package.json
+          cd samples/apps/react-sdk
+          npm version $SAMPLE_VERSION --no-git-tag-version --allow-same-version
+
+          cd ../../..
           echo "✅ Updated sample apps version to $SAMPLE_VERSION"
 
       - name: 🔨 Build Sample Apps (Once)
@@ -560,12 +577,12 @@ jobs:
         run: |
           # Get the product version from the previous job
           SAMPLE_VERSION="${{ github.event.inputs.version }}"
-          
+
           # Remove 'v' prefix if present
           if [[ $SAMPLE_VERSION == v* ]]; then
             SAMPLE_VERSION="${SAMPLE_VERSION#v}"
           fi
-          
+
           echo "✅ Sample version set to '$SAMPLE_VERSION'"
           echo "SAMPLE_VERSION=$SAMPLE_VERSION" >> $GITHUB_ENV
 
@@ -574,16 +591,22 @@ jobs:
           # Get the clean sample version without v prefix
           SAMPLE_VERSION="${{ env.SAMPLE_VERSION }}"
           echo "📝 Setting sample apps version to $SAMPLE_VERSION"
-          
-          # Update the main sample app package.json
+
+          # Update the oauth sample app package.json
           cd samples/apps/oauth
           npm version $SAMPLE_VERSION --no-git-tag-version --allow-same-version
-          
+
           # Update the server package.json
           cd server
           npm version $SAMPLE_VERSION --no-git-tag-version --allow-same-version
-          
-          cd ../../../..
+
+          cd ../../..
+
+          # Update the react-sdk sample app package.json
+          cd samples/apps/react-sdk
+          npm version $SAMPLE_VERSION --no-git-tag-version --allow-same-version
+
+          cd ../../..
           echo "✅ Updated sample apps version to $SAMPLE_VERSION"
 
       - name: 🔨 Build and Package macOS Samples
