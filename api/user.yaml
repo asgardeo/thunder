@@ -20,6 +20,8 @@ tags:
     description: Operations related to user management
   - name: users-by-path
     description: Operations related to user management using hierarchical handle paths
+  - name: self
+    description: Self service operations related to the user
   - name: user-schemas
     description: Operations related to user type schema management
 
@@ -689,6 +691,106 @@ paths:
                 type: string
               example: "Internal server error"
 
+  /users/me:
+    get:
+      tags:
+        - self
+      summary: Get self user profile
+      security:
+        - OAuth2: [self/profile/get]
+      responses:
+        "200":
+          description: User details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+              example:
+                id: "e1b6ba6c-deb2-4d24-87b0-bbf79fa4487c"
+                organizationUnit: "26eec421-f1bb-4deb-a5d3-9ab6554c2ae6"
+                type: "employee"
+                attributes:
+                  username: "alice.wu"
+                  firstname: "Alice"
+                  lastname: "Wu"
+                  email: "alice.wu@company.inc"
+        "401":
+          description: Unauthorized - missing or invalid token
+        "404":
+          description: Authenticated user not found
+        "500":
+          description: Internal server error
+    put:
+      tags:
+        - self
+      summary: Update self user profile
+      security:
+        - OAuth2: [self/profile/update]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateSelfUserRequest'
+            example:
+              attributes:
+                username: "alice.wu"
+                firstname: "Alice"
+                lastname: "Wu"
+                email: "alice.wu@company.io"
+      responses:
+        "200":
+          description: User updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+              example:
+                id: "e1b6ba6c-deb2-4d24-87b0-bbf79fa4487c"
+                organizationUnit: "26eec421-f1bb-4deb-a5d3-9ab6554c2ae6"
+                type: "employee"
+                attributes:
+                  username: "alice.wu"
+                  firstname: "Alice"
+                  lastname: "Wu"
+                  email: "alice.wu@company.io"
+        "400":
+          description: Bad request (invalid attributes)
+        "401":
+          description: Unauthorized - missing or invalid token
+        "404":
+          description: Authenticated user not found
+        "500":
+          description: Internal server error
+
+  /users/me/update-credentials:
+    post:
+      tags:
+        - self
+      summary: Update self user credentials
+      security:
+        - OAuth2: [self/credentials/update]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateSelfUserRequest'
+            example:
+              attributes:
+                password: "n3wP@ssword!"
+      responses:
+        "204":
+          description: Credentials updated
+        "400":
+          description: Bad request (invalid attributes)
+        "401":
+          description: Unauthorized - missing or invalid token
+        "404":
+          description: Authenticated user not found
+        "500":
+          description: Internal server error
+
   /user-schemas:
     get:
       tags:
@@ -1095,6 +1197,9 @@ components:
           tokenUrl: https://localhost:8090/oauth2/token
           scopes:
             system: Access to system management APIs
+            self/profile/get: Access to get own user profile
+            self/profile/update: Access to update own user profile
+            self/credentials/update: Access to update own user credentials
 
   parameters:
     limitQueryParam:
@@ -1300,6 +1405,14 @@ components:
             type: string
             format: uuid
             description: "Group ID"
+        attributes:
+          type: object
+          description: "User attributes"
+          additionalProperties: true
+    UpdateSelfUserRequest:
+      type: object
+      required: [attributes]
+      properties:
         attributes:
           type: object
           description: "User attributes"
