@@ -26,7 +26,9 @@ import (
 	"strings"
 
 	"github.com/asgardeo/thunder/internal/system/cmodels"
+	"github.com/asgardeo/thunder/internal/system/config"
 	"github.com/asgardeo/thunder/internal/system/error/serviceerror"
+	filebasedruntime "github.com/asgardeo/thunder/internal/system/file_based_runtime"
 	"github.com/asgardeo/thunder/internal/system/log"
 	"github.com/asgardeo/thunder/internal/system/utils"
 )
@@ -56,6 +58,9 @@ func newIDPService(idpStore idpStoreInterface) IDPServiceInterface {
 // CreateIdentityProvider creates a new Identity Provider.
 func (is *idpService) CreateIdentityProvider(idp *IDPDTO) (*IDPDTO, *serviceerror.ServiceError) {
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, "IdPService"))
+	if config.GetThunderRuntime().Config.ImmutableResources.Enabled {
+		return nil, &filebasedruntime.ErrorImmutableResourceCreateOperation
+	}
 
 	if svcErr := is.validateIDP(idp); svcErr != nil {
 		return nil, svcErr
@@ -140,6 +145,9 @@ func (is *idpService) GetIdentityProviderByName(idpName string) (*IDPDTO, *servi
 func (is *idpService) UpdateIdentityProvider(idpID string, idp *IDPDTO) (*IDPDTO,
 	*serviceerror.ServiceError) {
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, "IdPService"))
+	if config.GetThunderRuntime().Config.ImmutableResources.Enabled {
+		return nil, &filebasedruntime.ErrorImmutableResourceUpdateOperation
+	}
 
 	if strings.TrimSpace(idpID) == "" {
 		return nil, &ErrorInvalidIDPID
@@ -187,6 +195,9 @@ func (is *idpService) UpdateIdentityProvider(idpID string, idp *IDPDTO) (*IDPDTO
 // DeleteIdentityProvider deletes an Identity Provider by its ID.
 func (is *idpService) DeleteIdentityProvider(idpID string) *serviceerror.ServiceError {
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, "IdPService"))
+	if config.GetThunderRuntime().Config.ImmutableResources.Enabled {
+		return &filebasedruntime.ErrorImmutableResourceDeleteOperation
+	}
 
 	if strings.TrimSpace(idpID) == "" {
 		return &ErrorInvalidIDPID

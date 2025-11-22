@@ -23,6 +23,7 @@ import (
 	"time"
 
 	"github.com/asgardeo/thunder/internal/application"
+	"github.com/asgardeo/thunder/internal/idp"
 	"github.com/asgardeo/thunder/internal/system/error/serviceerror"
 	"github.com/asgardeo/thunder/internal/system/log"
 )
@@ -32,7 +33,10 @@ const (
 	formatJSON = "json"
 )
 
-var parameterizerInstance = newParameterizer(rules)
+// ParameterizerInterface defines the interface for template parameterization.
+type ParameterizerInterface interface {
+	ToParameterizedYAML(obj interface{}, resourceType string, resourceName string) (string, error)
+}
 
 // ExportServiceInterface defines the interface for the export service.
 type ExportServiceInterface interface {
@@ -42,16 +46,21 @@ type ExportServiceInterface interface {
 // exportService implements the ExportServiceInterface.
 type exportService struct {
 	applicationService application.ApplicationServiceInterface
+	idpService         idp.IDPServiceInterface
+	parameterizer      ParameterizerInterface
 	// Future: Add other service dependencies
 	// groupService group.GroupServiceInterface
 	// userService  user.UserServiceInterface
-	// idpService   idp.IDPServiceInterface
 }
 
 // newExportService creates a new instance of exportService.
-func newExportService(appService application.ApplicationServiceInterface) ExportServiceInterface {
+func newExportService(appService application.ApplicationServiceInterface,
+	idpService idp.IDPServiceInterface,
+	param ParameterizerInterface) ExportServiceInterface {
 	return &exportService{
 		applicationService: appService,
+		idpService:         idpService,
+		parameterizer:      param,
 	}
 }
 
@@ -85,6 +94,14 @@ func (es *exportService) ExportResources(request *ExportRequest) (*ExportRespons
 		exportFiles = append(exportFiles, appFiles...)
 		exportErrors = append(exportErrors, appErrors...)
 		resourceCounts["applications"] = len(appFiles)
+	}
+
+	// Export identity providers if requested
+	if len(request.IdentityProviders) > 0 {
+		idpFiles, idpErrors := es.exportIdentityProviders(request.IdentityProviders, options)
+		exportFiles = append(exportFiles, idpFiles...)
+		exportErrors = append(exportErrors, idpErrors...)
+		resourceCounts["identity_providers"] = len(idpFiles)
 	}
 
 	if len(exportFiles) == 0 {
@@ -162,7 +179,7 @@ func (es *exportService) exportApplications(applicationIDs []string, options *Ex
 			options.Format = formatYAML
 		}
 
-		templateContent, err := generateTemplateFromStruct(app, app.Name)
+		templateContent, err := es.generateTemplateFromStruct(app, "Application", app.Name)
 		if err != nil {
 			logger.Warn("Failed to generate template from struct",
 				log.String("appID", appID), log.String("error", err.Error()))
@@ -194,8 +211,107 @@ func (es *exportService) exportApplications(applicationIDs []string, options *Ex
 	return exportFiles, exportErrors
 }
 
-func generateTemplateFromStruct(data interface{}, appName string) (string, error) {
-	template, err := parameterizerInstance.ToParameterizedYAML(data, "Application", appName)
+// exportIdentityProviders exports identity provider configurations as YAML files.
+func (es *exportService) exportIdentityProviders(idpIDs []string, options *ExportOptions) (
+	[]ExportFile, []ExportError) {
+	logger := log.GetLogger().With(log.String("component", "ExportService"))
+	exportFiles := make([]ExportFile, 0, len(idpIDs))
+	exportErrors := make([]ExportError, 0, len(idpIDs))
+
+	idpIDList := make([]string, 0)
+	if len(idpIDs) == 1 && idpIDs[0] == "*" {
+		// Export all identity providers
+		idps, err := es.idpService.GetIdentityProviderList()
+		if err != nil {
+			logger.Warn("Failed to get all identity providers", log.Any("error", err))
+			return nil, nil
+		}
+		for _, idp := range idps {
+			idpIDList = append(idpIDList, idp.ID)
+		}
+	} else {
+		idpIDList = idpIDs
+	}
+
+	for _, idpID := range idpIDList {
+		// Get the identity provider
+		idp, svcErr := es.idpService.GetIdentityProvider(idpID)
+		if svcErr != nil {
+			logger.Warn("Failed to get identity provider for export",
+				log.String("idpID", idpID), log.String("error", svcErr.Error))
+			exportErrors = append(exportErrors, ExportError{
+				ResourceType: "identity_provider",
+				ResourceID:   idpID,
+				Error:        svcErr.Error,
+				Code:         svcErr.Code,
+			})
+			continue // Skip IDPs that can't be found
+		}
+
+		// Validate IDP has required fields
+		if idp.Name == "" {
+			logger.Warn("Identity provider missing name, skipping export",
+				log.String("idpID", idpID))
+			exportErrors = append(exportErrors, ExportError{
+				ResourceType: "identity_provider",
+				ResourceID:   idpID,
+				Error:        "Identity provider name is empty",
+				Code:         "IDP_VALIDATION_ERROR",
+			})
+			continue
+		}
+
+		// Check if IDP has properties - warn if empty but continue
+		if len(idp.Properties) == 0 {
+			logger.Warn("Identity provider has no properties",
+				log.String("idpID", idpID), log.String("name", idp.Name))
+		}
+
+		// Convert to export format based on options
+		var content string
+		var fileName string
+
+		if options.Format == formatJSON {
+			// Convert to JSON format (could be implemented later)
+			logger.Warn("JSON format not yet implemented, falling back to YAML")
+			options.Format = formatYAML
+		}
+
+		templateContent, err := es.generateTemplateFromStruct(idp, "IdentityProvider", idp.Name)
+		if err != nil {
+			logger.Warn("Failed to generate template from struct",
+				log.String("idpID", idpID), log.String("error", err.Error()))
+			exportErrors = append(exportErrors, ExportError{
+				ResourceType: "identity_provider",
+				ResourceID:   idpID,
+				Error:        err.Error(),
+				Code:         "TemplateGenerationError",
+			})
+			continue
+		}
+		content = templateContent
+
+		// Determine file name and folder path based on options
+		fileName = es.generateFileName(idp.Name, "identity_provider", idpID, options)
+		folderPath := es.generateFolderPath("identity_provider", options)
+
+		// Create export file
+		exportFile := ExportFile{
+			FileName:     fileName,
+			Content:      content,
+			FolderPath:   folderPath,
+			ResourceType: "identity_provider",
+			ResourceID:   idpID,
+		}
+		exportFiles = append(exportFiles, exportFile)
+	}
+
+	return exportFiles, exportErrors
+}
+
+func (es *exportService) generateTemplateFromStruct(
+	data interface{}, resourceType string, resourceName string) (string, error) {
+	template, err := es.parameterizer.ToParameterizedYAML(data, resourceType, resourceName)
 	if err != nil {
 		return "", err
 	}

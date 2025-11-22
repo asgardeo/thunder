@@ -1184,3 +1184,21 @@ func TestFindFieldByNameCaseInsensitive_NotFound(t *testing.T) {
 	// Should generate output without the non-existent field
 	assert.Contains(t, result, "name: TestApp")
 }
+
+// TestToParameterizedYAML_InvalidStruct tests error when passing non-struct type.
+func TestToParameterizedYAML_InvalidStruct(t *testing.T) {
+	p := newParameterizer(templatingRules{
+		Application: &resourceRules{
+			Variables: []string{"Name"},
+		},
+	})
+
+	// Pass non-struct type
+	var notAStruct int = 42
+
+	_, err := p.ToParameterizedYAML(notAStruct, "Application", "Test")
+
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "failed to convert object to node")
+	assert.Contains(t, err.Error(), "expected struct")
+}

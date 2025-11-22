@@ -26,7 +26,9 @@ import (
 	"github.com/stretchr/testify/suite"
 
 	"github.com/asgardeo/thunder/internal/system/cmodels"
+	"github.com/asgardeo/thunder/internal/system/config"
 	"github.com/asgardeo/thunder/internal/system/error/serviceerror"
+	filebasedruntime "github.com/asgardeo/thunder/internal/system/file_based_runtime"
 )
 
 type IDPServiceTestSuite struct {
@@ -40,8 +42,21 @@ func TestIDPServiceTestSuite(t *testing.T) {
 }
 
 func (s *IDPServiceTestSuite) SetupTest() {
+	// Initialize ThunderRuntime with immutable mode disabled by default
+	config.ResetThunderRuntime()
+	testConfig := &config.Config{
+		ImmutableResources: config.ImmutableResources{
+			Enabled: false,
+		},
+	}
+	_ = config.InitializeThunderRuntime("/tmp/test", testConfig)
+
 	s.mockStore = newIdpStoreInterfaceMock(s.T())
 	s.idpService = newIDPService(s.mockStore)
+}
+
+func (s *IDPServiceTestSuite) TearDownTest() {
+	config.ResetThunderRuntime()
 }
 
 // TestCreateIdentityProvider_Success tests successful IDP creation
@@ -553,6 +568,72 @@ func (s *IDPServiceTestSuite) TestDeleteIdentityProvider_StoreError() {
 	s.NotNil(err)
 	s.Equal(serviceerror.InternalServerError.Code, err.Code)
 	s.mockStore.AssertExpectations(s.T())
+}
+
+// TestCreateIdentityProvider_ImmutableModeEnabled tests creation is blocked when immutable mode is enabled
+func (s *IDPServiceTestSuite) TestCreateIdentityProvider_ImmutableModeEnabled() {
+	// Setup immutable mode
+	config.ResetThunderRuntime()
+	testConfig := &config.Config{
+		ImmutableResources: config.ImmutableResources{
+			Enabled: true,
+		},
+	}
+	_ = config.InitializeThunderRuntime("/tmp/test", testConfig)
+	defer config.ResetThunderRuntime()
+
+	idp := &IDPDTO{
+		Name: "Test IDP",
+		Type: IDPTypeOIDC,
+	}
+
+	result, err := s.idpService.CreateIdentityProvider(idp)
+
+	s.Nil(result)
+	s.NotNil(err)
+	s.Equal(filebasedruntime.ErrorImmutableResourceCreateOperation.Code, err.Code)
+}
+
+// TestUpdateIdentityProvider_ImmutableModeEnabled tests update is blocked when immutable mode is enabled
+func (s *IDPServiceTestSuite) TestUpdateIdentityProvider_ImmutableModeEnabled() {
+	// Setup immutable mode
+	config.ResetThunderRuntime()
+	testConfig := &config.Config{
+		ImmutableResources: config.ImmutableResources{
+			Enabled: true,
+		},
+	}
+	_ = config.InitializeThunderRuntime("/tmp/test", testConfig)
+	defer config.ResetThunderRuntime()
+
+	idp := &IDPDTO{
+		Name: "Updated IDP",
+		Type: IDPTypeOIDC,
+	}
+
+	result, err := s.idpService.UpdateIdentityProvider("idp-123", idp)
+
+	s.Nil(result)
+	s.NotNil(err)
+	s.Equal(filebasedruntime.ErrorImmutableResourceUpdateOperation.Code, err.Code)
+}
+
+// TestDeleteIdentityProvider_ImmutableModeEnabled tests deletion is blocked when immutable mode is enabled
+func (s *IDPServiceTestSuite) TestDeleteIdentityProvider_ImmutableModeEnabled() {
+	// Setup immutable mode
+	config.ResetThunderRuntime()
+	testConfig := &config.Config{
+		ImmutableResources: config.ImmutableResources{
+			Enabled: true,
+		},
+	}
+	_ = config.InitializeThunderRuntime("/tmp/test", testConfig)
+	defer config.ResetThunderRuntime()
+
+	err := s.idpService.DeleteIdentityProvider("idp-123")
+
+	s.NotNil(err)
+	s.Equal(filebasedruntime.ErrorImmutableResourceDeleteOperation.Code, err.Code)
 }
 
 // TestValidateIDPProperties tests property validation

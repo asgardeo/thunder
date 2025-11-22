@@ -1,0 +1,17 @@
+id: "google-idp-1"
+name: "Google IDP"
+description: "Google OAuth2 Identity Provider"
+type: "GOOGLE"
+properties:
+  - name: "client_id"
+    value: "{{.GOOGLE_CLIENT_ID}}"
+    is_secret: false
+  - name: "client_secret"
+    value: "{{.GOOGLE_CLIENT_SECRET}}"
+    is_secret: true
+  - name: "redirect_uri"
+    value: "{{.GOOGLE_CALLBACK_URL}}"
+    is_secret: false
+  - name: "scopes"
+    value: "openid email profile"
+    is_secret: false

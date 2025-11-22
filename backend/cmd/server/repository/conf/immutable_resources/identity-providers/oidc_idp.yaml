@@ -1,0 +1,23 @@
+id: "custom-oidc-idp-1"
+name: "Custom OIDC Provider"
+description: "Custom OpenID Connect Identity Provider"
+type: "OIDC"
+properties:
+  - name: "client_id"
+    value: "{{.OIDC_CLIENT_ID}}"
+    is_secret: false
+  - name: "client_secret"
+    value: "{{.OIDC_CLIENT_SECRET}}"
+    is_secret: true
+  - name: "authorization_endpoint"
+    value: "{{.OIDC_AUTH_ENDPOINT}}"
+    is_secret: false
+  - name: "token_endpoint"
+    value: "{{.OIDC_TOKEN_ENDPOINT}}"
+    is_secret: false
+  - name: "redirect_uri"
+    value: "{{.OIDC_CALLBACK_URL}}"
+    is_secret: false
+  - name: "scopes"
+    value: "openid email profile"
+    is_secret: false

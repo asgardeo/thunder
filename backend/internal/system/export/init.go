@@ -23,14 +23,20 @@ import (
 	"net/http"
 
 	"github.com/asgardeo/thunder/internal/application"
+	"github.com/asgardeo/thunder/internal/idp"
 	"github.com/asgardeo/thunder/internal/system/middleware"
 )
 
 // Initialize initializes the export service and registers its routes.
-func Initialize(mux *http.ServeMux, appService application.ApplicationServiceInterface) ExportServiceInterface {
+func Initialize(mux *http.ServeMux, appService application.ApplicationServiceInterface,
+	idpService idp.IDPServiceInterface) ExportServiceInterface {
 	// Create the export service with dependencies
 
-	exportService := newExportService(appService)
+	// Create parameterizer instance
+	parameterizerInstance := newParameterizer(rules)
+
+	// Inject dependencies into export service
+	exportService := newExportService(appService, idpService, parameterizerInstance)
 
 	// Create the handler
 	exportHandler := newExportHandler(exportService)

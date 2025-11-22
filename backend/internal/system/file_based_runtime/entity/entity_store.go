@@ -31,6 +31,7 @@ type KeyType string
 const (
 	KeyTypeApplication  KeyType = "application"
 	KeyTypeNotification KeyType = "notification"
+	KeyTypeIDP          KeyType = "idp"
 )
 
 // String returns the string representation of KeyType
@@ -41,7 +42,7 @@ func (kt KeyType) String() string {
 // IsValid checks if the KeyType is one of the predefined types
 func (kt KeyType) IsValid() bool {
 	switch kt {
-	case KeyTypeApplication, KeyTypeNotification:
+	case KeyTypeApplication, KeyTypeNotification, KeyTypeIDP:
 		return true
 	default:
 		return false

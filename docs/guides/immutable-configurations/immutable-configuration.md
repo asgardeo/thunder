@@ -60,8 +60,10 @@ repository/conf/immutable_resources/
 │   ├── my-web-app.yaml
 │   ├── mobile-app.yaml
 │   └── admin-portal.yaml
-├── identity-providers/          # Coming soon
-│   └── google-idp.yaml
+├── identity-providers/
+│   ├── google-idp.yaml
+│   ├── github-idp.yaml
+│   └── oidc-idp.yaml
 └── notification-senders/        # Coming soon
     └── smtp-sender.yaml
 ```
@@ -71,7 +73,7 @@ repository/conf/immutable_resources/
 | Resource Type | Directory | Status |
 |---------------|-----------|--------|
 | Applications | `applications/` | ✅ Supported |
-| Identity Providers | `identity-providers/` | 🔜 Coming Soon |
+| Identity Providers | `identity-providers/` | ✅ Supported |
 | Notification Senders | `notification-senders/` | 🔜 Coming Soon |
 | Groups | `groups/` | 🔜 Coming Soon |
 | Roles | `roles/` | 🔜 Coming Soon |
@@ -89,6 +91,13 @@ curl -X POST https://localhost:8090/export \
   -d '{
     "applications": ["<application-id>"]
   }' > repository/conf/immutable_resources/applications/my-app.yaml
+
+# Export an identity provider
+curl -X POST https://localhost:8090/export \
+  -H "Content-Type: application/json" \
+  -d '{
+    "identity_providers": ["<idp-id>"]
+  }' > repository/conf/immutable_resources/identity-providers/google-idp.yaml
 ```
 
 See the [Export Configurations Guide](./export-configurations.md) for detailed export instructions.

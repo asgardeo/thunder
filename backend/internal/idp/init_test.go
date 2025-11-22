@@ -21,10 +21,13 @@ package idp
 import (
 	"net/http"
 	"net/http/httptest"
+	"os"
 	"testing"
 
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
 
+	"github.com/asgardeo/thunder/internal/system/cmodels"
 	"github.com/asgardeo/thunder/internal/system/config"
 )
 
@@ -108,4 +111,336 @@ func (s *IDPInitTestSuite) TestNewIDPService() {
 	idpSvc, ok := service.(*idpService)
 	s.True(ok)
 	s.Equal(store, idpSvc.idpStore)
+}
+
+func (suite *IDPInitTestSuite) TearDownTest() {
+	// Reset config to clear singleton state for next test
+	config.ResetThunderRuntime()
+}
+
+func (suite *IDPInitTestSuite) TestParseToIDPDTO_Valid() {
+	yamlData := `
+id: "test-idp-1"
+name: "Test IDP"
+description: "Test Identity Provider"
+type: "GOOGLE"
+properties:
+  - name: "client_id"
+    value: "test_client_id"
+    is_secret: false
+  - name: "client_secret"
+    value: "test_secret"
+    is_secret: false
+`
+
+	idp, err := parseToIDPDTO([]byte(yamlData))
+	suite.NoError(err)
+	suite.NotNil(idp)
+	suite.Equal("test-idp-1", idp.ID)
+	suite.Equal("Test IDP", idp.Name)
+	suite.Equal("Test Identity Provider", idp.Description)
+	suite.Equal(IDPTypeGoogle, idp.Type)
+	suite.Len(idp.Properties, 2)
+}
+
+func (suite *IDPInitTestSuite) TestParseToIDPDTO_InvalidYAML() {
+	yamlData := `
+invalid yaml content
+  - this is not valid
+`
+
+	idp, err := parseToIDPDTO([]byte(yamlData))
+	suite.Error(err)
+	suite.Nil(idp)
+}
+
+func (suite *IDPInitTestSuite) TestParseToIDPDTO_InvalidType() {
+	yamlData := `
+id: "test-idp-2"
+name: "Test IDP"
+type: "INVALID_TYPE"
+`
+
+	idp, err := parseToIDPDTO([]byte(yamlData))
+	suite.Error(err)
+	suite.Nil(idp)
+	suite.Contains(err.Error(), "unsupported IDP type")
+}
+
+func (suite *IDPInitTestSuite) TestParseIDPType_Google() {
+	idpType, err := parseIDPType("GOOGLE")
+	suite.NoError(err)
+	suite.Equal(IDPTypeGoogle, idpType)
+}
+
+func (suite *IDPInitTestSuite) TestParseIDPType_GitHub() {
+	idpType, err := parseIDPType("GITHUB")
+	suite.NoError(err)
+	suite.Equal(IDPTypeGitHub, idpType)
+}
+
+func (suite *IDPInitTestSuite) TestParseIDPType_OIDC() {
+	idpType, err := parseIDPType("OIDC")
+	suite.NoError(err)
+	suite.Equal(IDPTypeOIDC, idpType)
+}
+
+func (suite *IDPInitTestSuite) TestParseIDPType_OAuth() {
+	idpType, err := parseIDPType("OAUTH")
+	suite.NoError(err)
+	suite.Equal(IDPTypeOAuth, idpType)
+}
+
+func (suite *IDPInitTestSuite) TestParseIDPType_Invalid() {
+	idpType, err := parseIDPType("INVALID")
+	suite.Error(err)
+	suite.Empty(idpType)
+	suite.Contains(err.Error(), "unsupported IDP type")
+}
+
+func (suite *IDPInitTestSuite) TestValidateIDPForInit_Valid() {
+	prop, _ := cmodels.NewProperty("client_id", "test_value", false)
+
+	idp := &IDPDTO{
+		ID:          "test-idp-1",
+		Name:        "Test IDP",
+		Description: "Test",
+		Type:        IDPTypeGoogle,
+		Properties:  []cmodels.Property{*prop},
+	}
+
+	err := validateIDPForInit(idp)
+	suite.Nil(err)
+}
+
+func (suite *IDPInitTestSuite) TestValidateIDPForInit_NilIDP() {
+	err := validateIDPForInit(nil)
+	suite.NotNil(err)
+	suite.Equal(ErrorIDPNil.Code, err.Code)
+}
+
+func (suite *IDPInitTestSuite) TestValidateIDPForInit_EmptyName() {
+	idp := &IDPDTO{
+		ID:   "test-idp-1",
+		Name: "",
+		Type: IDPTypeGoogle,
+	}
+
+	err := validateIDPForInit(idp)
+	suite.NotNil(err)
+	suite.Equal(ErrorInvalidIDPName.Code, err.Code)
+}
+
+func (suite *IDPInitTestSuite) TestValidateIDPForInit_EmptyType() {
+	idp := &IDPDTO{
+		ID:   "test-idp-1",
+		Name: "Test IDP",
+		Type: "",
+	}
+
+	err := validateIDPForInit(idp)
+	suite.NotNil(err)
+	suite.Equal(ErrorInvalidIDPType.Code, err.Code)
+}
+
+func (suite *IDPInitTestSuite) TestValidateIDPForInit_InvalidType() {
+	idp := &IDPDTO{
+		ID:   "test-idp-1",
+		Name: "Test IDP",
+		Type: "INVALID",
+	}
+
+	err := validateIDPForInit(idp)
+	suite.NotNil(err)
+	suite.Equal(ErrorInvalidIDPType.Code, err.Code)
+}
+
+func (suite *IDPInitTestSuite) TestValidateIDPPropertiesForInit_Valid() {
+	prop1, _ := cmodels.NewProperty("client_id", "test_id", false)
+	prop2, _ := cmodels.NewProperty("client_secret", "test_secret", false)
+
+	properties := []cmodels.Property{*prop1, *prop2}
+
+	err := validateIDPProperties(properties)
+	suite.Nil(err)
+}
+
+func (suite *IDPInitTestSuite) TestValidateIDPProperties_EmptyList() {
+	err := validateIDPProperties([]cmodels.Property{})
+	suite.Nil(err)
+}
+
+func (suite *IDPInitTestSuite) TestValidateIDPProperties_UnsupportedProperty() {
+	prop, _ := cmodels.NewProperty("unsupported_property", "value", false)
+
+	properties := []cmodels.Property{*prop}
+
+	err := validateIDPProperties(properties)
+	suite.NotNil(err)
+	suite.Equal(ErrorUnsupportedIDPProperty.Code, err.Code)
+}
+
+// TestInitialize_WithImmutableResourcesDisabled tests the Initialize function when immutable resources are disabled
+func (suite *IDPInitTestSuite) TestInitialize_WithImmutableResourcesDisabled() {
+	// Setup - ensure config is reset and initialized for this test
+	config.ResetThunderRuntime()
+	testConfig := &config.Config{
+		ImmutableResources: config.ImmutableResources{
+			Enabled: false,
+		},
+	}
+	err := config.InitializeThunderRuntime("/tmp/test", testConfig)
+	assert.NoError(suite.T(), err)
+
+	mux := http.NewServeMux()
+
+	// Execute
+	service := Initialize(mux)
+
+	// Assert
+	assert.NotNil(suite.T(), service)
+	assert.Implements(suite.T(), (*IDPServiceInterface)(nil), service)
+}
+
+// TestInitialize_WithImmutableResourcesEnabled_EmptyDirectory tests Initialize with immutable resources
+// enabled but no configuration files in the directory
+func TestInitialize_WithImmutableResourcesEnabled_EmptyDirectory(t *testing.T) {
+	// Setup minimal config for testing
+	testConfig := &config.Config{
+		ImmutableResources: config.ImmutableResources{
+			Enabled: true,
+		},
+	}
+
+	// Create a temporary directory structure for file-based runtime
+	tmpDir := t.TempDir()
+	confDir := tmpDir + "/repository/conf/immutable_resources"
+	idpDir := confDir + "/identity-providers"
+
+	// Create the directory structure
+	err := os.MkdirAll(idpDir, 0750)
+	assert.NoError(t, err)
+
+	// Reset and initialize with test config
+	config.ResetThunderRuntime()
+	err = config.InitializeThunderRuntime(tmpDir, testConfig)
+	assert.NoError(t, err)
+
+	defer config.ResetThunderRuntime() // Clean up after test
+
+	mux := http.NewServeMux()
+
+	// Execute
+	service := Initialize(mux)
+
+	// Assert
+	assert.NotNil(t, service)
+	assert.Implements(t, (*IDPServiceInterface)(nil), service)
+
+	// Verify no IDPs are loaded
+	idps, svcErr := service.GetIdentityProviderList()
+	assert.Nil(t, svcErr)
+	assert.Empty(t, idps)
+}
+
+// TestInitialize_WithImmutableResourcesEnabled_ValidConfigs tests Initialize with immutable resources
+// enabled and valid YAML configuration files
+func TestInitialize_WithImmutableResourcesEnabled_ValidConfigs(t *testing.T) {
+	// Create a temporary directory structure for file-based runtime
+	tmpDir := t.TempDir()
+	confDir := tmpDir + "/repository/conf/immutable_resources"
+	idpDir := confDir + "/identity-providers"
+
+	// Create the directory structure
+	err := os.MkdirAll(idpDir, 0750)
+	assert.NoError(t, err)
+
+	// Create crypto key file for encryption (relative to tmpDir)
+	cryptoFilePath := tmpDir + "/repository/conf/crypto.key"
+	dummyCryptoKey := "0579f866ac7c9273580d0ff163fa01a7b2401a7ff3ddc3e3b14ae3136fa6025e"
+	err = os.WriteFile(cryptoFilePath, []byte(dummyCryptoKey), 0600)
+	assert.NoError(t, err)
+
+	// Setup config with encryption support (path relative to thunderHome)
+	testConfig := &config.Config{
+		ImmutableResources: config.ImmutableResources{
+			Enabled: true,
+		},
+		Security: config.SecurityConfig{
+			CryptoFile: "repository/conf/crypto.key",
+		},
+	}
+
+	// Create a valid Google IDP YAML file
+	googleIDPYAML := `id: google-idp-1
+name: Google IDP
+description: Google Identity Provider for SSO
+type: GOOGLE
+properties:
+  - name: client_id
+    value: google-client-id
+    is_secret: false
+  - name: client_secret
+    value: google-client-secret
+    is_secret: true
+`
+	err = os.WriteFile(idpDir+"/google_idp.yaml", []byte(googleIDPYAML), 0600)
+	assert.NoError(t, err)
+
+	// Create a valid GitHub IDP YAML file
+	githubIDPYAML := `id: github-idp-1
+name: GitHub IDP
+description: GitHub Identity Provider
+type: GITHUB
+properties:
+  - name: client_id
+    value: github-client-id
+    is_secret: false
+  - name: client_secret
+    value: github-client-secret
+    is_secret: true
+`
+	err = os.WriteFile(idpDir+"/github_idp.yaml", []byte(githubIDPYAML), 0600)
+	assert.NoError(t, err)
+
+	// Reset and initialize with test config
+	config.ResetThunderRuntime()
+	err = config.InitializeThunderRuntime(tmpDir, testConfig)
+	assert.NoError(t, err)
+
+	defer config.ResetThunderRuntime() // Clean up after test
+
+	mux := http.NewServeMux()
+
+	// Execute
+	service := Initialize(mux)
+
+	// Assert
+	assert.NotNil(t, service)
+	assert.Implements(t, (*IDPServiceInterface)(nil), service)
+
+	// Verify IDPs are loaded
+	idps, svcErr := service.GetIdentityProviderList()
+	assert.Nil(t, svcErr)
+	assert.Len(t, idps, 2)
+
+	// Verify IDP names (order may vary)
+	idpNames := []string{idps[0].Name, idps[1].Name}
+	assert.Contains(t, idpNames, "Google IDP")
+	assert.Contains(t, idpNames, "GitHub IDP")
+
+	// Verify we can get individual IDPs by name
+	googleIDP, svcErr := service.GetIdentityProviderByName("Google IDP")
+	assert.Nil(t, svcErr)
+	assert.NotNil(t, googleIDP)
+	assert.Equal(t, "Google IDP", googleIDP.Name)
+	assert.Equal(t, IDPTypeGoogle, googleIDP.Type)
+	assert.Len(t, googleIDP.Properties, 2)
+
+	githubIDP, svcErr := service.GetIdentityProviderByName("GitHub IDP")
+	assert.Nil(t, svcErr)
+	assert.NotNil(t, githubIDP)
+	assert.Equal(t, "GitHub IDP", githubIDP.Name)
+	assert.Equal(t, IDPTypeGitHub, githubIDP.Type)
+	assert.Len(t, githubIDP.Properties, 2)
 }
