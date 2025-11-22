@@ -31,10 +31,10 @@ export default function ApplicationsListPage(): JSX.Element {
     <Box>
       <Stack direction="row" justifyContent="space-between" alignItems="center" mb={4} flexWrap="wrap" gap={2}>
         <Box>
-          <Typography variant="h4" component="h1" gutterBottom>
+          <Typography variant="h1" gutterBottom>
             {t('applications:listing.title')}
           </Typography>
-          <Typography variant="body2" color="text.secondary">
+          <Typography variant="subtitle1" color="text.secondary">
             {t('applications:listing.subtitle')}
           </Typography>
         </Box>

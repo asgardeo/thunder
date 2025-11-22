@@ -67,7 +67,7 @@ export default function ConfigureName({
 
   return (
     <Stack direction="column" spacing={4}>
-      <Typography variant="h4" component="h1" gutterBottom>
+      <Typography variant="h1" gutterBottom>
         {t('applications:onboarding.configure.name.title')}
       </Typography>
 

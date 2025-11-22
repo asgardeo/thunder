@@ -80,7 +80,7 @@ export default function AppNavbar(): JSX.Element {
         >
           <Stack direction="row" spacing={1} sx={{justifyContent: 'center', mr: 'auto'}}>
             {/* <CustomIcon /> */}
-            <Typography variant="h4" component="h1" sx={{color: 'text.primary'}}>
+            <Typography variant="h1" sx={{color: 'text.primary'}}>
               Dashboard
             </Typography>
           </Stack>

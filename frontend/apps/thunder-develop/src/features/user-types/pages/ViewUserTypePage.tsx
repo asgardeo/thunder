@@ -343,10 +343,10 @@ export default function ViewUserTypePage() {
 
       <Stack direction="row" alignItems="flex-start" justifyContent="space-between" mb={4} gap={2}>
         <Box>
-          <Typography variant="h4" component="h1" gutterBottom>
+          <Typography variant="h1" gutterBottom>
             User Type Details
           </Typography>
-          <Typography variant="body2" color="text.secondary">
+          <Typography variant="subtitle1" color="text.secondary">
             View and manage user type schema
           </Typography>
         </Box>

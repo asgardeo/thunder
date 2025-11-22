@@ -272,10 +272,10 @@ export default function CreateUserTypePage() {
 
       <Stack direction="row" alignItems="flex-start" justifyContent="space-between" mb={4} gap={2}>
         <Box>
-          <Typography variant="h4" component="h1" gutterBottom>
+          <Typography variant="h1" gutterBottom>
             {t('userTypes:addUserType')}
           </Typography>
-          <Typography variant="body2" color="text.secondary">
+          <Typography variant="subtitle1" color="text.secondary">
             {t('userTypes:createDescription')}
           </Typography>
         </Box>

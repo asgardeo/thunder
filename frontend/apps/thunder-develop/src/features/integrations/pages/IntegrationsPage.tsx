@@ -25,10 +25,10 @@ export default function IntegrationsPage() {
   return (
     <Box>
       <Box mb={4}>
-        <Typography variant="h4" component="h1" gutterBottom>
+        <Typography variant="h1" gutterBottom>
           {t('integrations:title')}
         </Typography>
-        <Typography variant="body2" color="text.secondary">
+        <Typography variant="subtitle1" color="text.secondary">
           {t('integrations:subtitle')}
         </Typography>
       </Box>

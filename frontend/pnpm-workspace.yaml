@@ -23,8 +23,8 @@ catalog:
   '@vitejs/plugin-basic-ssl': ^2.1.0
   '@vitejs/plugin-react': ^5.0.4
   '@vitest/coverage-istanbul': ^3.2.4
-  '@wso2/oxygen-ui': 0.0.1-alpha.3
-  '@wso2/oxygen-ui-icons-react': 0.0.1-alpha.1
+  '@wso2/oxygen-ui': 0.0.1-alpha.4
+  '@wso2/oxygen-ui-icons-react': 0.0.1-alpha.4
   babel-plugin-react-compiler: ^19.1.0-rc.3
   clsx: ^2.1.1
   dayjs: ^1.11.18

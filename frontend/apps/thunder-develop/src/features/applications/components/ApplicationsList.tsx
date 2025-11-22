@@ -103,7 +103,7 @@ export default function ApplicationsList(): JSX.Element {
               slotProps={{
                 img: {
                   onError: (e: React.SyntheticEvent<HTMLImageElement>) => {
-                    e.currentTarget.style.display = 'none';
+                    e.currentTarget.src = '';
                   },
                 },
               }}

@@ -144,8 +144,13 @@ export default function Preview({appName, appLogo, selectedColor, integrations}:
               sx={{
                 width: 64,
                 height: 64,
-                bgcolor: selectedColor,
                 p: 1,
+                ...theme.applyStyles('light', {
+                  backgroundColor: selectedColor,
+                }),
+                ...theme.applyStyles('dark', {
+                  backgroundColor: selectedColor,
+                })
               }}
             />
           </Box>

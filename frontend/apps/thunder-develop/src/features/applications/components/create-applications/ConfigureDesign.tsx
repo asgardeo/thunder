@@ -175,7 +175,7 @@ export default function ConfigureDesign({
   return (
     <Stack direction="column" spacing={4}>
       <Stack direction="column" spacing={1}>
-        <Typography variant="h4" component="h1" gutterBottom>
+        <Typography variant="h1" gutterBottom>
           {t('applications:onboarding.configure.design.title')}
         </Typography>
         <Stack direction="row" alignItems="center" spacing={1}>
@@ -218,7 +218,6 @@ export default function ConfigureDesign({
                     border: isSelected
                       ? `2px solid ${theme.vars?.palette.primary.main}`
                       : `1px solid ${theme.vars?.palette.divider}`,
-                    bgcolor: isSelected ? selectedColor : undefined,
                     p: 1,
                     '&:hover': {
                       transform: 'scale(1.1)',
@@ -226,6 +225,9 @@ export default function ConfigureDesign({
                     },
                     transition: 'all 0.2s ease-in-out',
                     ...theme.applyStyles('light', {
+                      backgroundColor: isSelected ? selectedColor : theme.vars?.palette.grey[600],
+                    }),
+                    ...theme.applyStyles('dark', {
                       backgroundColor: isSelected ? selectedColor : theme.vars?.palette.grey[600],
                     }),
                   }}
