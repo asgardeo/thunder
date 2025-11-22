@@ -40,11 +40,17 @@ System APIs of Thunder are secured by default. You need to obtain an access toke
 
 This documentation is organized into the following sections:
 
+### [Standards-Based Flows](standards-based/)
+
+Comprehensive documentation for OAuth 2.0 and OpenID Connect (OIDC) standards:
+
+- **[OAuth 2.0 & OpenID Connect (OIDC)](standards-based/)** - Grant types, endpoints, and features for OAuth 2.0 and OIDC with samples
+
 ### [Authentication](authentication/)
 
 Learn how to implement authentication in your applications using Thunder:
 
-- **[Standards-Based Authentication](authentication/standards-based/)** - OAuth 2.0, OpenID Connect (OIDC) flows including Authorization Code, Client Credentials, and Refresh Token
+- **[Standards-Based Authentication](authentication/standards-based/)** - Quick reference for OAuth 2.0 and OIDC (see [Standards-Based Flows](standards-based/) for comprehensive documentation)
 - **[Server Orchestrated Flows](authentication/server-orchestrated-flow/)** - App native authentication using server orchestrated flows
 - **[Client Orchestrated Flows](authentication/client-orchestrated-flow/)** - App native authentication using client orchestrated flows
 
