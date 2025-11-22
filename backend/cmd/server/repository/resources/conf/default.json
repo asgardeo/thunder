@@ -13,8 +13,7 @@
   },
   "security": {
     "cert_file": "repository/resources/security/server.cert",
-    "key_file": "repository/resources/security/server.key",
-    "crypto_file": "repository/resources/security/crypto.key"
+    "key_file": "repository/resources/security/server.key"
   },
   "database": {
     "identity": {
@@ -84,6 +83,11 @@
     "graph_directory": "repository/resources/graphs/",
     "authn": {
       "default_flow": "auth_flow_config_basic"
+    }
+  },
+  "crypto": {
+    "encrypt": {
+      "key": null
     }
   },
   "immutable_resources": {
