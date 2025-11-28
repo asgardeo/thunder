@@ -27,7 +27,6 @@ import (
 	"testing"
 
 	"github.com/asgardeo/thunder/internal/system/error/apierror"
-	"github.com/asgardeo/thunder/internal/system/log"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
 )
@@ -528,9 +527,8 @@ func (suite *HTTPUtilTestSuite) TestWriteSuccessResponse() {
 	for _, tc := range testCases {
 		suite.T().Run(tc.name, func(t *testing.T) {
 			w := httptest.NewRecorder()
-			logger := log.GetLogger()
 
-			WriteSuccessResponse(w, tc.statusCode, tc.data, logger)
+			WriteSuccessResponse(w, tc.statusCode, tc.data)
 
 			// Verify status code
 			assert.Equal(t, tc.statusCode, w.Code)
@@ -551,20 +549,18 @@ func (suite *HTTPUtilTestSuite) TestWriteSuccessResponse() {
 func (suite *HTTPUtilTestSuite) TestWriteSuccessResponse_EncodingError() {
 	suite.T().Run("UnserializableData", func(t *testing.T) {
 		w := httptest.NewRecorder()
-		logger := log.GetLogger()
 
 		// Channel cannot be JSON encoded, should trigger encoding error
 		unserializableData := make(chan int)
 
-		WriteSuccessResponse(w, http.StatusOK, unserializableData, logger)
+		WriteSuccessResponse(w, http.StatusOK, unserializableData)
 
 		// The function should have attempted to write status code
 		assert.Equal(t, http.StatusOK, w.Code)
 
-		// After encoding fails, http.Error() is called which overwrites headers/body
-		// The response body should contain the error message
+		// After encoding fails, http.Error() is called which writes the predefined error message
 		responseBody := w.Body.String()
-		assert.Contains(t, responseBody, "Failed to encode response")
+		assert.Contains(t, responseBody, "Encoding error")
 	})
 }
 
@@ -642,9 +638,8 @@ func (suite *HTTPUtilTestSuite) TestWriteErrorResponse() {
 	for _, tc := range testCases {
 		suite.T().Run(tc.name, func(t *testing.T) {
 			w := httptest.NewRecorder()
-			logger := log.GetLogger()
 
-			WriteErrorResponse(w, tc.statusCode, tc.errorResp, logger)
+			WriteErrorResponse(w, tc.statusCode, tc.errorResp)
 
 			// Verify status code
 			assert.Equal(t, tc.statusCode, w.Code)
@@ -666,7 +661,6 @@ func (suite *HTTPUtilTestSuite) TestWriteErrorResponse() {
 func (suite *HTTPUtilTestSuite) TestWriteErrorResponse_EncodingError() {
 	suite.T().Run("ValidErrorResponse", func(t *testing.T) {
 		w := httptest.NewRecorder()
-		logger := log.GetLogger()
 
 		// Create a valid error response to ensure the happy path works
 		errorResp := apierror.ErrorResponse{
@@ -675,7 +669,7 @@ func (suite *HTTPUtilTestSuite) TestWriteErrorResponse_EncodingError() {
 			Description: "This is a test error",
 		}
 
-		WriteErrorResponse(w, http.StatusBadRequest, errorResp, logger)
+		WriteErrorResponse(w, http.StatusBadRequest, errorResp)
 
 		// Verify the response is written correctly
 		assert.Equal(t, http.StatusBadRequest, w.Code)
@@ -688,8 +682,6 @@ func (suite *HTTPUtilTestSuite) TestWriteErrorResponse_EncodingError() {
 	})
 
 	suite.T().Run("EncodingErrorOnWrite", func(t *testing.T) {
-		logger := log.GetLogger()
-
 		// Create a response writer that fails on Write
 		w := &failingResponseWriter{
 			ResponseRecorder: httptest.NewRecorder(),
@@ -703,7 +695,7 @@ func (suite *HTTPUtilTestSuite) TestWriteErrorResponse_EncodingError() {
 		}
 
 		// This should trigger the encoding error path
-		WriteErrorResponse(w, http.StatusBadRequest, errorResp, logger)
+		WriteErrorResponse(w, http.StatusBadRequest, errorResp)
 
 		// Status code should still be set before the write failure
 		assert.Equal(t, http.StatusBadRequest, w.ResponseRecorder.Code)

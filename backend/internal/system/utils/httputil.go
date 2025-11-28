@@ -29,6 +29,7 @@ import (
 
 	"github.com/asgardeo/thunder/internal/system/constants"
 	"github.com/asgardeo/thunder/internal/system/error/apierror"
+	"github.com/asgardeo/thunder/internal/system/error/serviceerror"
 	"github.com/asgardeo/thunder/internal/system/log"
 )
 
@@ -169,23 +170,25 @@ func ExtractBearerToken(authHeader string) (string, error) {
 }
 
 // WriteSuccessResponse writes a JSON success response with the given status code and data.
-func WriteSuccessResponse(w http.ResponseWriter, statusCode int, data interface{}, logger *log.Logger) {
+func WriteSuccessResponse(w http.ResponseWriter, statusCode int, data interface{}) {
+	logger := log.GetLogger()
 	w.Header().Set(constants.ContentTypeHeaderName, constants.ContentTypeJSON)
 	w.WriteHeader(statusCode)
 
 	if err := json.NewEncoder(w).Encode(data); err != nil {
 		logger.Error("Failed to encode response", log.Error(err))
-		http.Error(w, "Failed to encode response", http.StatusInternalServerError)
+		http.Error(w, serviceerror.ErrorEncodingError, http.StatusInternalServerError)
 	}
 }
 
 // WriteErrorResponse writes a JSON error response with the given status code and error details.
-func WriteErrorResponse(w http.ResponseWriter, statusCode int, errorResp apierror.ErrorResponse, logger *log.Logger) {
+func WriteErrorResponse(w http.ResponseWriter, statusCode int, errorResp apierror.ErrorResponse) {
+	logger := log.GetLogger()
 	w.Header().Set(constants.ContentTypeHeaderName, constants.ContentTypeJSON)
 	w.WriteHeader(statusCode)
 
 	if err := json.NewEncoder(w).Encode(errorResp); err != nil {
 		logger.Error("Failed to encode error response", log.Error(err))
-		http.Error(w, "Failed to encode error response", http.StatusInternalServerError)
+		http.Error(w, serviceerror.ErrorEncodingError, http.StatusInternalServerError)
 	}
 }
