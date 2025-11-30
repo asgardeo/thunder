@@ -53,8 +53,12 @@ const (
 	DefaultHTTPPort         = 9091
 	DefaultGithubPort       = 8092
 	DefaultGooglePort       = 8093
-	DefaultOAuthPort        = 8092
-	DefaultOIDCPort         = 8093
+	// Note: OAuth and OIDC servers share the same ports as GitHub and Google servers respectively.
+	// Only one of each pair can be active at a time. Tests are run sequentially, so this is acceptable.
+	DefaultOAuthPort = 8092
+	DefaultOIDCPort  = 8093
+	// ServerStartupWaitTime is the duration to wait for a mock server to start
+	ServerStartupWaitTime = 100 * time.Millisecond
 )
 
 // Singleton instance
@@ -87,7 +91,7 @@ func (s *SharedMockServers) GetNotificationServer() (*MockNotificationServer, er
 	}
 
 	// Wait for server to be ready
-	time.Sleep(100 * time.Millisecond)
+	time.Sleep(ServerStartupWaitTime)
 	s.notificationStarted = true
 	log.Printf("Shared notification server started on port %d", DefaultNotificationPort)
 
@@ -109,7 +113,7 @@ func (s *SharedMockServers) GetHTTPServer() (*MockHTTPServer, error) {
 	}
 
 	// Wait for server to be ready
-	time.Sleep(100 * time.Millisecond)
+	time.Sleep(ServerStartupWaitTime)
 	s.httpStarted = true
 	log.Printf("Shared HTTP mock server started on port %d", DefaultHTTPPort)
 
@@ -118,7 +122,7 @@ func (s *SharedMockServers) GetHTTPServer() (*MockHTTPServer, error) {
 
 // GetGithubServer returns the shared GitHub OAuth server, starting it if necessary.
 // The clientID and clientSecret are used for the first initialization only.
-// Note: This server and GetOAuthServer use the same port (8092). Only one can be active at a time.
+// Note: This server and GetOAuthServer use the same port (DefaultGithubPort). Only one can be active at a time.
 func (s *SharedMockServers) GetGithubServer(clientID, clientSecret string) (*MockGithubOAuthServer, error) {
 	s.mutex.Lock()
 	defer s.mutex.Unlock()
@@ -138,7 +142,7 @@ func (s *SharedMockServers) GetGithubServer(clientID, clientSecret string) (*Moc
 	}
 
 	// Wait for server to be ready
-	time.Sleep(100 * time.Millisecond)
+	time.Sleep(ServerStartupWaitTime)
 	s.githubStarted = true
 	log.Printf("Shared GitHub OAuth server started on port %d", DefaultGithubPort)
 
@@ -147,7 +151,7 @@ func (s *SharedMockServers) GetGithubServer(clientID, clientSecret string) (*Moc
 
 // GetGoogleServer returns the shared Google OIDC server, starting it if necessary.
 // The clientID and clientSecret are used for the first initialization only.
-// Note: This server and GetOIDCServer use the same port (8093). Only one can be active at a time.
+// Note: This server and GetOIDCServer use the same port (DefaultGooglePort). Only one can be active at a time.
 func (s *SharedMockServers) GetGoogleServer(clientID, clientSecret string) (*MockGoogleOIDCServer, error) {
 	s.mutex.Lock()
 	defer s.mutex.Unlock()
@@ -172,7 +176,7 @@ func (s *SharedMockServers) GetGoogleServer(clientID, clientSecret string) (*Moc
 	}
 
 	// Wait for server to be ready
-	time.Sleep(100 * time.Millisecond)
+	time.Sleep(ServerStartupWaitTime)
 	s.googleStarted = true
 	log.Printf("Shared Google OIDC server started on port %d", DefaultGooglePort)
 
@@ -180,7 +184,7 @@ func (s *SharedMockServers) GetGoogleServer(clientID, clientSecret string) (*Moc
 }
 
 // GetOAuthServer returns the shared generic OAuth server, starting it if necessary.
-// Note: This server and GetGithubServer use the same port (8092). Only one can be active at a time.
+// Note: This server and GetGithubServer use the same port (DefaultOAuthPort). Only one can be active at a time.
 func (s *SharedMockServers) GetOAuthServer(clientID, clientSecret string) (*MockOAuthServer, error) {
 	s.mutex.Lock()
 	defer s.mutex.Unlock()
@@ -200,7 +204,7 @@ func (s *SharedMockServers) GetOAuthServer(clientID, clientSecret string) (*Mock
 	}
 
 	// Wait for server to be ready
-	time.Sleep(100 * time.Millisecond)
+	time.Sleep(ServerStartupWaitTime)
 	s.oauthStarted = true
 	log.Printf("Shared OAuth server started on port %d", DefaultOAuthPort)
 
@@ -208,7 +212,7 @@ func (s *SharedMockServers) GetOAuthServer(clientID, clientSecret string) (*Mock
 }
 
 // GetOIDCServer returns the shared generic OIDC server, starting it if necessary.
-// Note: This server and GetGoogleServer use the same port (8093). Only one can be active at a time.
+// Note: This server and GetGoogleServer use the same port (DefaultOIDCPort). Only one can be active at a time.
 func (s *SharedMockServers) GetOIDCServer(clientID, clientSecret string) (*MockOIDCServer, error) {
 	s.mutex.Lock()
 	defer s.mutex.Unlock()
@@ -233,7 +237,7 @@ func (s *SharedMockServers) GetOIDCServer(clientID, clientSecret string) (*MockO
 	}
 
 	// Wait for server to be ready
-	time.Sleep(100 * time.Millisecond)
+	time.Sleep(ServerStartupWaitTime)
 	s.oidcStarted = true
 	log.Printf("Shared OIDC server started on port %d", DefaultOIDCPort)
 
