@@ -23,7 +23,6 @@ import (
 	"net/url"
 	"strings"
 	"testing"
-	"time"
 
 	"github.com/asgardeo/thunder/tests/integration/testutils"
 	"github.com/stretchr/testify/suite"
@@ -79,9 +78,7 @@ var (
 	googleRegTestOUID  string
 )
 
-const (
-	mockGoogleRegFlowPort = 8093
-)
+
 
 type GoogleRegistrationFlowTestSuite struct {
 	suite.Suite
@@ -98,11 +95,13 @@ func TestGoogleRegistrationFlowTestSuite(t *testing.T) {
 func (ts *GoogleRegistrationFlowTestSuite) SetupSuite() {
 	ts.config = &TestSuiteConfig{}
 
-	// Start mock Google server
-	mockServer, err := testutils.NewMockGoogleOIDCServer(mockGoogleRegFlowPort,
+	// Get shared Google OIDC server (started once for all test suites)
+	var err error
+	ts.mockGoogleServer, err = testutils.GetSharedMockServers().GetGoogleServer(
 		"test_google_client", "test_google_secret")
-	ts.Require().NoError(err, "Failed to create mock Google server")
-	ts.mockGoogleServer = mockServer
+	if err != nil {
+		ts.T().Fatalf("Failed to get shared Google server: %v", err)
+	}
 
 	ts.mockGoogleServer.AddUser(&testutils.GoogleUserInfo{
 		Sub:           "google-reg-user-456",
@@ -114,9 +113,6 @@ func (ts *GoogleRegistrationFlowTestSuite) SetupSuite() {
 		Picture:       "https://example.com/regpicture.jpg",
 		Locale:        "en",
 	})
-
-	err = ts.mockGoogleServer.Start()
-	ts.Require().NoError(err, "Failed to start mock Google server")
 
 	// Use the IDP created by database scripts
 	ts.idpID = "test-google-idp-id"
@@ -180,12 +176,8 @@ func (ts *GoogleRegistrationFlowTestSuite) TearDownSuite() {
 		_ = testutils.DeleteUserType(ts.userSchemaID)
 	}
 
-	// Stop mock server
-	if ts.mockGoogleServer != nil {
-		_ = ts.mockGoogleServer.Stop()
-		// Wait for port to be released
-		time.Sleep(200 * time.Millisecond)
-	}
+	// Note: We don't stop the mock server here because it's shared across test suites.
+	// The shared server will be cleaned up when the test process exits.
 }
 
 func (ts *GoogleRegistrationFlowTestSuite) TestGoogleRegistrationFlowInitiation() {

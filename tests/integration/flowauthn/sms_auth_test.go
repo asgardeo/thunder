@@ -27,9 +27,7 @@ import (
 	"github.com/stretchr/testify/suite"
 )
 
-const (
-	mockNotificationServerPort = 8098
-)
+
 
 var (
 	smsAuthTestApp = testutils.Application{
@@ -149,14 +147,12 @@ func (ts *SMSAuthFlowTestSuite) SetupSuite() {
 	}
 	smsAuthUserSchemaID = schemaID
 
-	// Start mock notification server
-	ts.mockServer = testutils.NewMockNotificationServer(mockNotificationServerPort)
-	err = ts.mockServer.Start()
+	// Get shared notification server (started once for all test suites)
+	ts.mockServer, err = testutils.GetSharedMockServers().GetNotificationServer()
 	if err != nil {
-		ts.T().Fatalf("Failed to start mock notification server: %v", err)
+		ts.T().Fatalf("Failed to get shared notification server: %v", err)
 	}
-	time.Sleep(100 * time.Millisecond)
-	ts.T().Log("Mock notification server started successfully")
+	ts.T().Log("Using shared notification server")
 
 	// Create test user with mobile number using the created OU
 	testUserWithMobile := testUserWithMobile
@@ -181,13 +177,8 @@ func (ts *SMSAuthFlowTestSuite) TearDownSuite() {
 		ts.T().Logf("Failed to cleanup users during teardown: %v", err)
 	}
 
-	// Stop mock server
-	if ts.mockServer != nil {
-		err := ts.mockServer.Stop()
-		if err != nil {
-			ts.T().Logf("Failed to stop mock notification server during teardown: %v", err)
-		}
-	}
+	// Note: We don't stop the mock server here because it's shared across test suites.
+	// The shared server will be cleaned up when the test process exits.
 
 	// Delete test application
 	if smsAuthTestAppID != "" {

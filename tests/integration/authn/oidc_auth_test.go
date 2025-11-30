@@ -33,7 +33,6 @@ import (
 const (
 	oidcAuthStart  = "/auth/oauth/standard/start"
 	oidcAuthFinish = "/auth/oauth/standard/finish"
-	mockOIDCPort   = 8093
 )
 
 var oidcAuthTestOU = testutils.OrganizationUnit{
@@ -81,10 +80,13 @@ func TestOIDCAuthTestSuite(t *testing.T) {
 }
 
 func (suite *OIDCAuthTestSuite) SetupSuite() {
+	// Get shared OIDC server (started once for all test suites)
 	var err error
-	suite.mockOIDCServer, err = testutils.NewMockOIDCServer(mockOIDCPort,
+	suite.mockOIDCServer, err = testutils.GetSharedMockServers().GetOIDCServer(
 		"test-oidc-client", "test-oidc-secret")
-	suite.Require().NoError(err, "Failed to create mock OIDC server")
+	if err != nil {
+		suite.T().Fatalf("Failed to get shared OIDC server: %v", err)
+	}
 
 	suite.mockOIDCServer.AddUser(&testutils.OIDCUserInfo{
 		Sub:           "user456",
@@ -99,9 +101,6 @@ func (suite *OIDCAuthTestSuite) SetupSuite() {
 			"tenant": "acme-corp",
 		},
 	})
-
-	err = suite.mockOIDCServer.Start()
-	suite.Require().NoError(err, "Failed to start mock OIDC server")
 
 	ouID, err := testutils.CreateOrganizationUnit(oidcAuthTestOU)
 	suite.Require().NoError(err, "Failed to create test organization unit")
@@ -200,9 +199,8 @@ func (suite *OIDCAuthTestSuite) TearDownSuite() {
 		_ = testutils.DeleteIDP(suite.idpID)
 	}
 
-	if suite.mockOIDCServer != nil {
-		_ = suite.mockOIDCServer.Stop()
-	}
+	// Note: We don't stop the mock server here because it's shared across test suites.
+	// The shared server will be cleaned up when the test process exits.
 
 	if suite.ouID != "" {
 		if err := testutils.DeleteOrganizationUnit(suite.ouID); err != nil {
