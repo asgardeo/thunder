@@ -45,14 +45,15 @@ func (suite *BrandingStoreTestSuite) SetupTest() {
 	suite.mockDBProvider = providermock.NewDBProviderInterfaceMock(suite.T())
 	suite.mockDBClient = clientmock.NewDBClientInterfaceMock(suite.T())
 	suite.store = &brandingStore{
-		dbProvider: suite.mockDBProvider,
+		dbProvider:   suite.mockDBProvider,
+		deploymentID: "test-deployment-id",
 	}
 }
 
 // GetBrandingListCount Tests
 func (suite *BrandingStoreTestSuite) TestGetBrandingListCount_Success() {
 	suite.mockDBProvider.On("GetConfigDBClient").Return(suite.mockDBClient, nil)
-	suite.mockDBClient.On("Query", queryGetBrandingListCount).Return([]map[string]interface{}{
+	suite.mockDBClient.On("Query", queryGetBrandingListCount, mock.Anything).Return([]map[string]interface{}{
 		{"total": int64(10)},
 	}, nil)
 
@@ -64,7 +65,7 @@ func (suite *BrandingStoreTestSuite) TestGetBrandingListCount_Success() {
 
 func (suite *BrandingStoreTestSuite) TestGetBrandingListCount_EmptyResult() {
 	suite.mockDBProvider.On("GetConfigDBClient").Return(suite.mockDBClient, nil)
-	suite.mockDBClient.On("Query", queryGetBrandingListCount).Return([]map[string]interface{}{}, nil)
+	suite.mockDBClient.On("Query", queryGetBrandingListCount, mock.Anything).Return([]map[string]interface{}{}, nil)
 
 	count, err := suite.store.GetBrandingListCount()
 
@@ -86,7 +87,7 @@ func (suite *BrandingStoreTestSuite) TestGetBrandingListCount_DBClientError() {
 func (suite *BrandingStoreTestSuite) TestGetBrandingListCount_QueryError() {
 	queryError := errors.New("query error")
 	suite.mockDBProvider.On("GetConfigDBClient").Return(suite.mockDBClient, nil)
-	suite.mockDBClient.On("Query", queryGetBrandingListCount).Return(nil, queryError)
+	suite.mockDBClient.On("Query", queryGetBrandingListCount, mock.Anything).Return(nil, queryError)
 
 	count, err := suite.store.GetBrandingListCount()
 
@@ -97,7 +98,7 @@ func (suite *BrandingStoreTestSuite) TestGetBrandingListCount_QueryError() {
 
 func (suite *BrandingStoreTestSuite) TestGetBrandingListCount_InvalidCountResult() {
 	suite.mockDBProvider.On("GetConfigDBClient").Return(suite.mockDBClient, nil)
-	suite.mockDBClient.On("Query", queryGetBrandingListCount).Return([]map[string]interface{}{
+	suite.mockDBClient.On("Query", queryGetBrandingListCount, mock.Anything).Return([]map[string]interface{}{
 		{"invalid": "value"},
 	}, nil)
 
@@ -111,7 +112,7 @@ func (suite *BrandingStoreTestSuite) TestGetBrandingListCount_InvalidCountResult
 // GetBrandingList Tests
 func (suite *BrandingStoreTestSuite) TestGetBrandingList_Success() {
 	suite.mockDBProvider.On("GetConfigDBClient").Return(suite.mockDBClient, nil)
-	suite.mockDBClient.On("Query", queryGetBrandingList, 10, 0).Return([]map[string]interface{}{
+	suite.mockDBClient.On("Query", queryGetBrandingList, 10, 0, mock.Anything).Return([]map[string]interface{}{
 		{
 			"branding_id":  "brand1",
 			"display_name": "Application 1 Branding",
@@ -134,7 +135,7 @@ func (suite *BrandingStoreTestSuite) TestGetBrandingList_Success() {
 
 func (suite *BrandingStoreTestSuite) TestGetBrandingList_EmptyResult() {
 	suite.mockDBProvider.On("GetConfigDBClient").Return(suite.mockDBClient, nil)
-	suite.mockDBClient.On("Query", queryGetBrandingList, 10, 0).Return([]map[string]interface{}{}, nil)
+	suite.mockDBClient.On("Query", queryGetBrandingList, 10, 0, mock.Anything).Return([]map[string]interface{}{}, nil)
 
 	brandings, err := suite.store.GetBrandingList(10, 0)
 
@@ -156,7 +157,7 @@ func (suite *BrandingStoreTestSuite) TestGetBrandingList_DBClientError() {
 func (suite *BrandingStoreTestSuite) TestGetBrandingList_QueryError() {
 	queryError := errors.New("query error")
 	suite.mockDBProvider.On("GetConfigDBClient").Return(suite.mockDBClient, nil)
-	suite.mockDBClient.On("Query", queryGetBrandingList, 10, 0).Return(nil, queryError)
+	suite.mockDBClient.On("Query", queryGetBrandingList, 10, 0, mock.Anything).Return(nil, queryError)
 
 	brandings, err := suite.store.GetBrandingList(10, 0)
 
@@ -167,7 +168,7 @@ func (suite *BrandingStoreTestSuite) TestGetBrandingList_QueryError() {
 
 func (suite *BrandingStoreTestSuite) TestGetBrandingList_InvalidBrandingID() {
 	suite.mockDBProvider.On("GetConfigDBClient").Return(suite.mockDBClient, nil)
-	suite.mockDBClient.On("Query", queryGetBrandingList, 10, 0).Return([]map[string]interface{}{
+	suite.mockDBClient.On("Query", queryGetBrandingList, 10, 0, mock.Anything).Return([]map[string]interface{}{
 		{"branding_id": 123, "preferences": `{}`}, // Invalid type
 	}, nil)
 
@@ -181,7 +182,7 @@ func (suite *BrandingStoreTestSuite) TestGetBrandingList_InvalidBrandingID() {
 func (suite *BrandingStoreTestSuite) TestGetBrandingList_PreferencesAsMap() {
 	// Note: GetBrandingList now only returns id and displayName (no preferences)
 	suite.mockDBProvider.On("GetConfigDBClient").Return(suite.mockDBClient, nil)
-	suite.mockDBClient.On("Query", queryGetBrandingList, 10, 0).Return([]map[string]interface{}{
+	suite.mockDBClient.On("Query", queryGetBrandingList, 10, 0, mock.Anything).Return([]map[string]interface{}{
 		{
 			"branding_id":  "brand1",
 			"display_name": "Application 1 Branding",
@@ -206,7 +207,7 @@ func (suite *BrandingStoreTestSuite) TestCreateBranding_Success() {
 
 	suite.mockDBProvider.On("GetConfigDBClient").Return(suite.mockDBClient, nil)
 	suite.mockDBClient.On("Execute", queryCreateBranding, "brand1",
-		"Application 1 Branding", mock.Anything).Return(int64(1), nil)
+		"Application 1 Branding", mock.Anything, mock.Anything).Return(int64(1), nil)
 
 	err := suite.store.CreateBranding("brand1", request)
 
@@ -239,7 +240,7 @@ func (suite *BrandingStoreTestSuite) TestCreateBranding_ExecuteError() {
 
 	suite.mockDBProvider.On("GetConfigDBClient").Return(suite.mockDBClient, nil)
 	suite.mockDBClient.On("Execute", queryCreateBranding, "brand1",
-		"Application 1 Branding", mock.Anything).Return(int64(0), executeError)
+		"Application 1 Branding", mock.Anything, mock.Anything).Return(int64(0), executeError)
 
 	err := suite.store.CreateBranding("brand1", request)
 
@@ -251,7 +252,7 @@ func (suite *BrandingStoreTestSuite) TestCreateBranding_ExecuteError() {
 func (suite *BrandingStoreTestSuite) TestGetBranding_Success() {
 	preferencesJSON := json.RawMessage(`{"theme":{"activeColorScheme":"dark"}}`)
 	suite.mockDBProvider.On("GetConfigDBClient").Return(suite.mockDBClient, nil)
-	suite.mockDBClient.On("Query", queryGetBrandingByID, "brand1").Return([]map[string]interface{}{
+	suite.mockDBClient.On("Query", queryGetBrandingByID, "brand1", mock.Anything).Return([]map[string]interface{}{
 		{
 			"branding_id":  "brand1",
 			"display_name": "Application 1 Branding",
@@ -268,7 +269,8 @@ func (suite *BrandingStoreTestSuite) TestGetBranding_Success() {
 
 func (suite *BrandingStoreTestSuite) TestGetBranding_NotFound() {
 	suite.mockDBProvider.On("GetConfigDBClient").Return(suite.mockDBClient, nil)
-	suite.mockDBClient.On("Query", queryGetBrandingByID, "brand1").Return([]map[string]interface{}{}, nil)
+	suite.mockDBClient.On("Query", queryGetBrandingByID, "brand1", mock.Anything).
+		Return([]map[string]interface{}{}, nil)
 
 	branding, err := suite.store.GetBranding("brand1")
 
@@ -279,7 +281,7 @@ func (suite *BrandingStoreTestSuite) TestGetBranding_NotFound() {
 
 func (suite *BrandingStoreTestSuite) TestGetBranding_MultipleResults() {
 	suite.mockDBProvider.On("GetConfigDBClient").Return(suite.mockDBClient, nil)
-	suite.mockDBClient.On("Query", queryGetBrandingByID, "brand1").Return([]map[string]interface{}{
+	suite.mockDBClient.On("Query", queryGetBrandingByID, "brand1", mock.Anything).Return([]map[string]interface{}{
 		{"branding_id": "brand1", "display_name": "Application 1 Branding", "preferences": `{}`},
 		{"branding_id": "brand2", "display_name": "Application 2 Branding", "preferences": `{}`},
 	}, nil)
@@ -305,7 +307,7 @@ func (suite *BrandingStoreTestSuite) TestGetBranding_DBClientError() {
 func (suite *BrandingStoreTestSuite) TestGetBranding_QueryError() {
 	queryError := errors.New("query error")
 	suite.mockDBProvider.On("GetConfigDBClient").Return(suite.mockDBClient, nil)
-	suite.mockDBClient.On("Query", queryGetBrandingByID, "brand1").Return(nil, queryError)
+	suite.mockDBClient.On("Query", queryGetBrandingByID, "brand1", mock.Anything).Return(nil, queryError)
 
 	branding, err := suite.store.GetBranding("brand1")
 
@@ -317,7 +319,7 @@ func (suite *BrandingStoreTestSuite) TestGetBranding_QueryError() {
 // IsBrandingExist Tests
 func (suite *BrandingStoreTestSuite) TestIsBrandingExist_True() {
 	suite.mockDBProvider.On("GetConfigDBClient").Return(suite.mockDBClient, nil)
-	suite.mockDBClient.On("Query", queryCheckBrandingExists, "brand1").Return([]map[string]interface{}{
+	suite.mockDBClient.On("Query", queryCheckBrandingExists, "brand1", mock.Anything).Return([]map[string]interface{}{
 		{"count": int64(1)},
 	}, nil)
 
@@ -329,7 +331,7 @@ func (suite *BrandingStoreTestSuite) TestIsBrandingExist_True() {
 
 func (suite *BrandingStoreTestSuite) TestIsBrandingExist_False() {
 	suite.mockDBProvider.On("GetConfigDBClient").Return(suite.mockDBClient, nil)
-	suite.mockDBClient.On("Query", queryCheckBrandingExists, "brand1").Return([]map[string]interface{}{
+	suite.mockDBClient.On("Query", queryCheckBrandingExists, "brand1", mock.Anything).Return([]map[string]interface{}{
 		{"count": int64(0)},
 	}, nil)
 
@@ -341,7 +343,8 @@ func (suite *BrandingStoreTestSuite) TestIsBrandingExist_False() {
 
 func (suite *BrandingStoreTestSuite) TestIsBrandingExist_EmptyResult() {
 	suite.mockDBProvider.On("GetConfigDBClient").Return(suite.mockDBClient, nil)
-	suite.mockDBClient.On("Query", queryCheckBrandingExists, "brand1").Return([]map[string]interface{}{}, nil)
+	suite.mockDBClient.On("Query", queryCheckBrandingExists, "brand1", mock.Anything).
+		Return([]map[string]interface{}{}, nil)
 
 	exists, err := suite.store.IsBrandingExist("brand1")
 
@@ -351,7 +354,7 @@ func (suite *BrandingStoreTestSuite) TestIsBrandingExist_EmptyResult() {
 
 func (suite *BrandingStoreTestSuite) TestIsBrandingExist_InvalidCount() {
 	suite.mockDBProvider.On("GetConfigDBClient").Return(suite.mockDBClient, nil)
-	suite.mockDBClient.On("Query", queryCheckBrandingExists, "brand1").Return([]map[string]interface{}{
+	suite.mockDBClient.On("Query", queryCheckBrandingExists, "brand1", mock.Anything).Return([]map[string]interface{}{
 		{"invalid": "value"},
 	}, nil)
 
@@ -376,7 +379,7 @@ func (suite *BrandingStoreTestSuite) TestIsBrandingExist_DBClientError() {
 func (suite *BrandingStoreTestSuite) TestIsBrandingExist_QueryError() {
 	queryError := errors.New("query error")
 	suite.mockDBProvider.On("GetConfigDBClient").Return(suite.mockDBClient, nil)
-	suite.mockDBClient.On("Query", queryCheckBrandingExists, "brand1").Return(nil, queryError)
+	suite.mockDBClient.On("Query", queryCheckBrandingExists, "brand1", mock.Anything).Return(nil, queryError)
 
 	exists, err := suite.store.IsBrandingExist("brand1")
 
@@ -395,7 +398,7 @@ func (suite *BrandingStoreTestSuite) TestUpdateBranding_Success() {
 
 	suite.mockDBProvider.On("GetConfigDBClient").Return(suite.mockDBClient, nil)
 	suite.mockDBClient.On("Execute", queryUpdateBranding, "Application 2 Branding",
-		mock.Anything, "brand1").Return(int64(1), nil)
+		mock.Anything, "brand1", mock.Anything).Return(int64(1), nil)
 
 	err := suite.store.UpdateBranding("brand1", request)
 
@@ -411,7 +414,7 @@ func (suite *BrandingStoreTestSuite) TestUpdateBranding_NotFound() {
 
 	suite.mockDBProvider.On("GetConfigDBClient").Return(suite.mockDBClient, nil)
 	suite.mockDBClient.On("Execute", queryUpdateBranding, "Application 1 Branding",
-		mock.Anything, "brand1").Return(int64(0), nil)
+		mock.Anything, "brand1", mock.Anything).Return(int64(0), nil)
 
 	err := suite.store.UpdateBranding("brand1", request)
 
@@ -445,7 +448,7 @@ func (suite *BrandingStoreTestSuite) TestUpdateBranding_ExecuteError() {
 
 	suite.mockDBProvider.On("GetConfigDBClient").Return(suite.mockDBClient, nil)
 	suite.mockDBClient.On("Execute", queryUpdateBranding, "Application 1 Branding",
-		mock.Anything, "brand1").Return(int64(0), executeError)
+		mock.Anything, "brand1", mock.Anything).Return(int64(0), executeError)
 
 	err := suite.store.UpdateBranding("brand1", request)
 
@@ -456,7 +459,7 @@ func (suite *BrandingStoreTestSuite) TestUpdateBranding_ExecuteError() {
 // DeleteBranding Tests
 func (suite *BrandingStoreTestSuite) TestDeleteBranding_Success() {
 	suite.mockDBProvider.On("GetConfigDBClient").Return(suite.mockDBClient, nil)
-	suite.mockDBClient.On("Execute", queryDeleteBranding, "brand1").Return(int64(1), nil)
+	suite.mockDBClient.On("Execute", queryDeleteBranding, "brand1", mock.Anything).Return(int64(1), nil)
 
 	err := suite.store.DeleteBranding("brand1")
 
@@ -465,7 +468,7 @@ func (suite *BrandingStoreTestSuite) TestDeleteBranding_Success() {
 
 func (suite *BrandingStoreTestSuite) TestDeleteBranding_NotFound() {
 	suite.mockDBProvider.On("GetConfigDBClient").Return(suite.mockDBClient, nil)
-	suite.mockDBClient.On("Execute", queryDeleteBranding, "brand1").Return(int64(0), nil)
+	suite.mockDBClient.On("Execute", queryDeleteBranding, "brand1", mock.Anything).Return(int64(0), nil)
 
 	err := suite.store.DeleteBranding("brand1")
 
@@ -485,7 +488,7 @@ func (suite *BrandingStoreTestSuite) TestDeleteBranding_DBClientError() {
 func (suite *BrandingStoreTestSuite) TestDeleteBranding_ExecuteError() {
 	executeError := errors.New("execute error")
 	suite.mockDBProvider.On("GetConfigDBClient").Return(suite.mockDBClient, nil)
-	suite.mockDBClient.On("Execute", queryDeleteBranding, "brand1").Return(int64(0), executeError)
+	suite.mockDBClient.On("Execute", queryDeleteBranding, "brand1", mock.Anything).Return(int64(0), executeError)
 
 	err := suite.store.DeleteBranding("brand1")
 
@@ -496,9 +499,8 @@ func (suite *BrandingStoreTestSuite) TestDeleteBranding_ExecuteError() {
 // GetApplicationsCountByBrandingID Tests
 func (suite *BrandingStoreTestSuite) TestGetApplicationsCountByBrandingID_Success() {
 	suite.mockDBProvider.On("GetConfigDBClient").Return(suite.mockDBClient, nil)
-	suite.mockDBClient.On("Query", queryGetApplicationsCountByBrandingID, "brand1").Return([]map[string]interface{}{
-		{"count": int64(3)},
-	}, nil)
+	suite.mockDBClient.On("Query", queryGetApplicationsCountByBrandingID, "brand1", mock.Anything).
+		Return([]map[string]interface{}{{"count": int64(3)}}, nil)
 
 	count, err := suite.store.GetApplicationsCountByBrandingID("brand1")
 
@@ -508,9 +510,8 @@ func (suite *BrandingStoreTestSuite) TestGetApplicationsCountByBrandingID_Succes
 
 func (suite *BrandingStoreTestSuite) TestGetApplicationsCountByBrandingID_Zero() {
 	suite.mockDBProvider.On("GetConfigDBClient").Return(suite.mockDBClient, nil)
-	suite.mockDBClient.On("Query", queryGetApplicationsCountByBrandingID, "brand1").Return([]map[string]interface{}{
-		{"count": int64(0)},
-	}, nil)
+	suite.mockDBClient.On("Query", queryGetApplicationsCountByBrandingID, "brand1", mock.Anything).
+		Return([]map[string]interface{}{{"count": int64(0)}}, nil)
 
 	count, err := suite.store.GetApplicationsCountByBrandingID("brand1")
 
@@ -520,7 +521,8 @@ func (suite *BrandingStoreTestSuite) TestGetApplicationsCountByBrandingID_Zero()
 
 func (suite *BrandingStoreTestSuite) TestGetApplicationsCountByBrandingID_EmptyResult() {
 	suite.mockDBProvider.On("GetConfigDBClient").Return(suite.mockDBClient, nil)
-	suite.mockDBClient.On("Query", queryGetApplicationsCountByBrandingID, "brand1").Return([]map[string]interface{}{}, nil)
+	suite.mockDBClient.On("Query", queryGetApplicationsCountByBrandingID, "brand1", mock.Anything).
+		Return([]map[string]interface{}{}, nil)
 
 	count, err := suite.store.GetApplicationsCountByBrandingID("brand1")
 
@@ -542,7 +544,7 @@ func (suite *BrandingStoreTestSuite) TestGetApplicationsCountByBrandingID_DBClie
 func (suite *BrandingStoreTestSuite) TestGetApplicationsCountByBrandingID_QueryError() {
 	queryError := errors.New("query error")
 	suite.mockDBProvider.On("GetConfigDBClient").Return(suite.mockDBClient, nil)
-	suite.mockDBClient.On("Query", queryGetApplicationsCountByBrandingID, "brand1").Return(nil, queryError)
+	suite.mockDBClient.On("Query", queryGetApplicationsCountByBrandingID, "brand1", mock.Anything).Return(nil, queryError)
 
 	count, err := suite.store.GetApplicationsCountByBrandingID("brand1")
 

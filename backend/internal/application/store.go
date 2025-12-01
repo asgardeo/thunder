@@ -25,6 +25,7 @@ import (
 
 	"github.com/asgardeo/thunder/internal/application/model"
 	oauth2const "github.com/asgardeo/thunder/internal/oauth/oauth2/constants"
+	"github.com/asgardeo/thunder/internal/system/config"
 	dbmodel "github.com/asgardeo/thunder/internal/system/database/model"
 	"github.com/asgardeo/thunder/internal/system/database/provider"
 	"github.com/asgardeo/thunder/internal/system/log"
@@ -76,11 +77,15 @@ type applicationStoreInterface interface {
 }
 
 // applicationStore implements the applicationStoreInterface for handling application data persistence.
-type applicationStore struct{}
+type applicationStore struct {
+	deploymentID string
+}
 
 // NewApplicationStore creates a new instance of applicationStore.
 func newApplicationStore() applicationStoreInterface {
-	return &applicationStore{}
+	return &applicationStore{
+		deploymentID: config.GetThunderRuntime().Config.Server.Identifier,
+	}
 }
 
 // CreateApplication creates a new application in the database.
@@ -100,13 +105,14 @@ func (st *applicationStore) CreateApplication(app model.ApplicationProcessedDTO)
 				brandingID = nil
 			}
 			_, err := tx.Exec(QueryCreateApplication.Query, app.ID, app.Name, app.Description,
-				app.AuthFlowGraphID, app.RegistrationFlowGraphID, isRegistrationEnabledStr, brandingID, jsonDataBytes)
+				app.AuthFlowGraphID, app.RegistrationFlowGraphID, isRegistrationEnabledStr, brandingID, jsonDataBytes,
+				st.deploymentID)
 			return err
 		},
 	}
 	// TODO: Need to refactor when supporting other/multiple inbound auth types.
 	if len(app.InboundAuthConfig) > 0 {
-		queries = append(queries, createOAuthAppQuery(&app, QueryCreateOAuthApplication))
+		queries = append(queries, createOAuthAppQuery(&app, QueryCreateOAuthApplication, st.deploymentID))
 	}
 
 	return executeTransaction(queries)
@@ -119,7 +125,7 @@ func (st *applicationStore) GetTotalApplicationCount() (int, error) {
 		return 0, fmt.Errorf("failed to get database client: %w", err)
 	}
 
-	results, err := dbClient.Query(QueryGetApplicationCount)
+	results, err := dbClient.Query(QueryGetApplicationCount, st.deploymentID)
 	if err != nil {
 		return 0, fmt.Errorf("failed to execute query: %w", err)
 	}
@@ -146,7 +152,7 @@ func (st *applicationStore) GetApplicationList() ([]model.BasicApplicationDTO, e
 		return nil, fmt.Errorf("failed to get database client: %w", err)
 	}
 
-	results, err := dbClient.Query(QueryGetApplicationList)
+	results, err := dbClient.Query(QueryGetApplicationList, st.deploymentID)
 	if err != nil {
 		logger.Error("Failed to execute query", log.Error(err))
 		return nil, fmt.Errorf("failed to execute query: %w", err)
@@ -176,7 +182,7 @@ func (st *applicationStore) GetOAuthApplication(clientID string) (*model.OAuthAp
 		return nil, fmt.Errorf("failed to get database client: %w", err)
 	}
 
-	results, err := dbClient.Query(QueryGetOAuthApplicationByClientID, clientID)
+	results, err := dbClient.Query(QueryGetOAuthApplicationByClientID, clientID, st.deploymentID)
 	if err != nil {
 		return nil, err
 	}
@@ -276,16 +282,16 @@ func (st *applicationStore) GetOAuthApplication(clientID string) (*model.OAuthAp
 
 // GetApplicationByID retrieves a specific application by its ID from the database.
 func (st *applicationStore) GetApplicationByID(id string) (*model.ApplicationProcessedDTO, error) {
-	return st.getApplicationByQuery(QueryGetApplicationByAppID, id)
+	return st.getApplicationByQuery(QueryGetApplicationByAppID, id, st.deploymentID)
 }
 
 // GetApplicationByName retrieves a specific application by its name from the database.
 func (st *applicationStore) GetApplicationByName(name string) (*model.ApplicationProcessedDTO, error) {
-	return st.getApplicationByQuery(QueryGetApplicationByName, name)
+	return st.getApplicationByQuery(QueryGetApplicationByName, name, st.deploymentID)
 }
 
 // getApplicationByQuery retrieves a specific application from the database using the provided query and parameter.
-func (st *applicationStore) getApplicationByQuery(query dbmodel.DBQuery, param string) (
+func (st *applicationStore) getApplicationByQuery(query dbmodel.DBQuery, params ...interface{}) (
 	*model.ApplicationProcessedDTO, error) {
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, "ApplicationStore"))
 
@@ -295,7 +301,7 @@ func (st *applicationStore) getApplicationByQuery(query dbmodel.DBQuery, param s
 		return nil, fmt.Errorf("failed to get database client: %w", err)
 	}
 
-	results, err := dbClient.Query(query, param)
+	results, err := dbClient.Query(query, params...)
 	if err != nil {
 		logger.Error("Failed to execute query", log.Error(err))
 		return nil, fmt.Errorf("failed to execute query: %w", err)
@@ -337,21 +343,21 @@ func (st *applicationStore) UpdateApplication(existingApp, updatedApp *model.App
 			}
 			_, err := tx.Exec(QueryUpdateApplicationByAppID.Query, updatedApp.ID, updatedApp.Name,
 				updatedApp.Description, updatedApp.AuthFlowGraphID, updatedApp.RegistrationFlowGraphID,
-				isRegistrationEnabledStr, brandingID, jsonDataBytes)
+				isRegistrationEnabledStr, brandingID, jsonDataBytes, st.deploymentID)
 			return err
 		},
 	}
 	// TODO: Need to refactor when supporting other/multiple inbound auth types.
 	if len(updatedApp.InboundAuthConfig) > 0 && len(existingApp.InboundAuthConfig) > 0 {
-		queries = append(queries, createOAuthAppQuery(updatedApp, QueryUpdateOAuthApplicationByAppID))
+		queries = append(queries, createOAuthAppQuery(updatedApp, QueryUpdateOAuthApplicationByAppID, st.deploymentID))
 	} else if len(existingApp.InboundAuthConfig) > 0 {
 		clientID := ""
 		if len(existingApp.InboundAuthConfig) > 0 && existingApp.InboundAuthConfig[0].OAuthAppConfig != nil {
 			clientID = existingApp.InboundAuthConfig[0].OAuthAppConfig.ClientID
 		}
-		queries = append(queries, deleteOAuthAppQuery(clientID))
+		queries = append(queries, deleteOAuthAppQuery(clientID, st.deploymentID))
 	} else if len(updatedApp.InboundAuthConfig) > 0 {
-		queries = append(queries, createOAuthAppQuery(updatedApp, QueryCreateOAuthApplication))
+		queries = append(queries, createOAuthAppQuery(updatedApp, QueryCreateOAuthApplication, st.deploymentID))
 	}
 
 	return executeTransaction(queries)
@@ -367,7 +373,7 @@ func (st *applicationStore) DeleteApplication(id string) error {
 		return fmt.Errorf("failed to get database client: %w", err)
 	}
 
-	_, err = dbClient.Execute(QueryDeleteApplicationByAppID, id)
+	_, err = dbClient.Execute(QueryDeleteApplicationByAppID, id, st.deploymentID)
 	if err != nil {
 		logger.Error("Failed to execute query", log.Error(err))
 		return fmt.Errorf("failed to execute query: %w", err)
@@ -456,7 +462,7 @@ func getOAuthConfigJSONBytes(inboundAuthConfig model.InboundAuthConfigProcessedD
 
 // createOAuthAppQuery creates a query function for creating or updating an OAuth application.
 func createOAuthAppQuery(app *model.ApplicationProcessedDTO,
-	oauthAppMgtQuery dbmodel.DBQuery) func(tx dbmodel.TxInterface) error {
+	oauthAppMgtQuery dbmodel.DBQuery, deploymentID string) func(tx dbmodel.TxInterface) error {
 	inboundAuthConfig := app.InboundAuthConfig[0]
 	clientID := inboundAuthConfig.OAuthAppConfig.ClientID
 	clientSecret := inboundAuthConfig.OAuthAppConfig.HashedClientSecret
@@ -470,15 +476,15 @@ func createOAuthAppQuery(app *model.ApplicationProcessedDTO,
 	}
 
 	return func(tx dbmodel.TxInterface) error {
-		_, err := tx.Exec(oauthAppMgtQuery.Query, app.ID, clientID, clientSecret, oauthConfigJSON)
+		_, err := tx.Exec(oauthAppMgtQuery.Query, app.ID, clientID, clientSecret, oauthConfigJSON, deploymentID)
 		return err
 	}
 }
 
 // deleteOAuthAppQuery creates a query function for deleting an OAuth application by client ID.
-func deleteOAuthAppQuery(clientID string) func(tx dbmodel.TxInterface) error {
+func deleteOAuthAppQuery(clientID string, deploymentID string) func(tx dbmodel.TxInterface) error {
 	return func(tx dbmodel.TxInterface) error {
-		_, err := tx.Exec(QueryDeleteOAuthApplicationByClientID.Query, clientID)
+		_, err := tx.Exec(QueryDeleteOAuthApplicationByClientID.Query, clientID, deploymentID)
 		return err
 	}
 }

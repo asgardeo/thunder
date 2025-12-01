@@ -31,98 +31,100 @@ var (
 	// queryCreateRole creates a new role.
 	queryCreateRole = dbmodel.DBQuery{
 		ID:    "RLQ-ROLE_MGT-01",
-		Query: `INSERT INTO "ROLE" (ROLE_ID, OU_ID, NAME, DESCRIPTION) VALUES ($1, $2, $3, $4)`,
+		Query: `INSERT INTO "ROLE" (ROLE_ID, OU_ID, NAME, DESCRIPTION, DEPLOYMENT_ID) VALUES ($1, $2, $3, $4, $5)`,
 	}
 
 	// queryGetRoleByID retrieves a role by ID.
 	queryGetRoleByID = dbmodel.DBQuery{
 		ID:    "RLQ-ROLE_MGT-02",
-		Query: `SELECT ROLE_ID, OU_ID, NAME, DESCRIPTION FROM "ROLE" WHERE ROLE_ID = $1`,
+		Query: `SELECT ROLE_ID, OU_ID, NAME, DESCRIPTION FROM "ROLE" WHERE ROLE_ID = $1 AND DEPLOYMENT_ID = $2`,
 	}
 
 	// queryGetRoleList retrieves a list of roles with pagination.
 	queryGetRoleList = dbmodel.DBQuery{
-		ID:    "RLQ-ROLE_MGT-03",
-		Query: `SELECT ROLE_ID, OU_ID, NAME, DESCRIPTION FROM "ROLE" ORDER BY CREATED_AT DESC LIMIT $1 OFFSET $2`,
+		ID: "RLQ-ROLE_MGT-03",
+		Query: `SELECT ROLE_ID, OU_ID, NAME, DESCRIPTION FROM "ROLE" ` +
+			`WHERE DEPLOYMENT_ID = $3 ORDER BY CREATED_AT DESC LIMIT $1 OFFSET $2`,
 	}
 
 	// queryGetRoleListCount retrieves the total count of roles.
 	queryGetRoleListCount = dbmodel.DBQuery{
 		ID:    "RLQ-ROLE_MGT-04",
-		Query: `SELECT COUNT(*) as total FROM "ROLE"`,
+		Query: `SELECT COUNT(*) as total FROM "ROLE" WHERE DEPLOYMENT_ID = $1`,
 	}
 
 	// queryUpdateRole updates a role.
 	queryUpdateRole = dbmodel.DBQuery{
 		ID:    "RLQ-ROLE_MGT-05",
-		Query: `UPDATE "ROLE" SET OU_ID = $1, NAME = $2, DESCRIPTION = $3 WHERE ROLE_ID = $4`,
+		Query: `UPDATE "ROLE" SET OU_ID = $1, NAME = $2, DESCRIPTION = $3 WHERE ROLE_ID = $4 AND DEPLOYMENT_ID = $5`,
 	}
 
 	// queryDeleteRole deletes a role.
 	queryDeleteRole = dbmodel.DBQuery{
 		ID:    "RLQ-ROLE_MGT-06",
-		Query: `DELETE FROM "ROLE" WHERE ROLE_ID = $1`,
+		Query: `DELETE FROM "ROLE" WHERE ROLE_ID = $1 AND DEPLOYMENT_ID = $2`,
 	}
 
 	// queryCreateRolePermission creates a new role permission.
 	queryCreateRolePermission = dbmodel.DBQuery{
 		ID:    "RLQ-ROLE_MGT-07",
-		Query: `INSERT INTO ROLE_PERMISSION (ROLE_ID, PERMISSION) VALUES ($1, $2)`,
+		Query: `INSERT INTO ROLE_PERMISSION (ROLE_ID, PERMISSION, DEPLOYMENT_ID) VALUES ($1, $2, $3)`,
 	}
 
 	// queryGetRolePermissions retrieves all permissions for a role.
 	queryGetRolePermissions = dbmodel.DBQuery{
 		ID:    "RLQ-ROLE_MGT-08",
-		Query: `SELECT PERMISSION FROM ROLE_PERMISSION WHERE ROLE_ID = $1 ORDER BY CREATED_AT`,
+		Query: `SELECT PERMISSION FROM ROLE_PERMISSION WHERE ROLE_ID = $1 AND DEPLOYMENT_ID = $2 ORDER BY CREATED_AT`,
 	}
 
 	// queryDeleteRolePermissions deletes all permissions for a role.
 	queryDeleteRolePermissions = dbmodel.DBQuery{
 		ID:    "RLQ-ROLE_MGT-09",
-		Query: `DELETE FROM ROLE_PERMISSION WHERE ROLE_ID = $1`,
+		Query: `DELETE FROM ROLE_PERMISSION WHERE ROLE_ID = $1 AND DEPLOYMENT_ID = $2`,
 	}
 
 	// queryCreateRoleAssignment creates a new role assignment.
 	queryCreateRoleAssignment = dbmodel.DBQuery{
 		ID:    "RLQ-ROLE_MGT-10",
-		Query: `INSERT INTO ROLE_ASSIGNMENT (ROLE_ID, ASSIGNEE_TYPE, ASSIGNEE_ID) VALUES ($1, $2, $3)`,
+		Query: `INSERT INTO ROLE_ASSIGNMENT (ROLE_ID, ASSIGNEE_TYPE, ASSIGNEE_ID, DEPLOYMENT_ID) VALUES ($1, $2, $3, $4)`,
 	}
 
 	// queryGetRoleAssignments retrieves all assignments for a role with pagination.
 	queryGetRoleAssignments = dbmodel.DBQuery{
 		ID: "RLQ-ROLE_MGT-11",
 		Query: `SELECT ASSIGNEE_ID, ASSIGNEE_TYPE FROM ROLE_ASSIGNMENT
-			WHERE ROLE_ID = $1 ORDER BY CREATED_AT LIMIT $2 OFFSET $3`,
+			WHERE ROLE_ID = $1 AND DEPLOYMENT_ID = $4 ORDER BY CREATED_AT LIMIT $2 OFFSET $3`,
 	}
 
 	// queryGetRoleAssignmentsCount retrieves the total count of assignments for a role.
 	queryGetRoleAssignmentsCount = dbmodel.DBQuery{
 		ID:    "RLQ-ROLE_MGT-12",
-		Query: `SELECT COUNT(*) as total FROM ROLE_ASSIGNMENT WHERE ROLE_ID = $1`,
+		Query: `SELECT COUNT(*) as total FROM ROLE_ASSIGNMENT WHERE ROLE_ID = $1 AND DEPLOYMENT_ID = $2`,
 	}
 
 	// queryDeleteRoleAssignmentsByIDs deletes specific assignments for a role.
 	queryDeleteRoleAssignmentsByIDs = dbmodel.DBQuery{
-		ID:    "RLQ-ROLE_MGT-13",
-		Query: `DELETE FROM ROLE_ASSIGNMENT WHERE ROLE_ID = $1 AND ASSIGNEE_TYPE = $2 AND ASSIGNEE_ID = $3`,
+		ID: "RLQ-ROLE_MGT-13",
+		Query: `DELETE FROM ROLE_ASSIGNMENT ` +
+			`WHERE ROLE_ID = $1 AND ASSIGNEE_TYPE = $2 AND ASSIGNEE_ID = $3 AND DEPLOYMENT_ID = $4`,
 	}
 
 	// queryCheckRoleNameExists checks if a role name already exists for a given organization unit.
 	queryCheckRoleNameExists = dbmodel.DBQuery{
 		ID:    "RLQ-ROLE_MGT-14",
-		Query: `SELECT COUNT(*) as count FROM "ROLE" WHERE OU_ID = $1 AND NAME = $2`,
+		Query: `SELECT COUNT(*) as count FROM "ROLE" WHERE OU_ID = $1 AND NAME = $2 AND DEPLOYMENT_ID = $3`,
 	}
 
 	// queryCheckRoleNameExistsExcludingID checks if a role name exists for an OU excluding a specific role ID.
 	queryCheckRoleNameExistsExcludingID = dbmodel.DBQuery{
 		ID:    "RLQ-ROLE_MGT-15",
-		Query: `SELECT COUNT(*) as count FROM "ROLE" WHERE OU_ID = $1 AND NAME = $2 AND ROLE_ID != $3`,
+		Query: `SELECT COUNT(*) as count FROM "ROLE" WHERE OU_ID = $1 AND NAME = $2 AND ROLE_ID != $3 AND DEPLOYMENT_ID = $4`,
 	}
 
 	// queryCheckRoleExists checks if a role exists by its ID.
 	queryCheckRoleExists = dbmodel.DBQuery{
 		ID:    "RLQ-ROLE_MGT-16",
-		Query: `SELECT COUNT(*) as count FROM "ROLE" WHERE ROLE_ID = $1`,
+		Query: `SELECT COUNT(*) as count FROM "ROLE" WHERE ROLE_ID = $1 AND DEPLOYMENT_ID = $2`,
 	}
 )
 
@@ -133,23 +135,25 @@ func buildAuthorizedPermissionsQuery(
 	userID string,
 	groupIDs []string,
 	requestedPermissions []string,
+	deploymentID string,
 ) (dbmodel.DBQuery, []interface{}) {
 	// Base query structure
 	baseQuery := `SELECT DISTINCT rp.PERMISSION
 		FROM ROLE_PERMISSION rp
-		INNER JOIN ROLE_ASSIGNMENT ra ON rp.ROLE_ID = ra.ROLE_ID
-		WHERE `
+		INNER JOIN ROLE_ASSIGNMENT ra ON rp.ROLE_ID = ra.ROLE_ID AND rp.DEPLOYMENT_ID = $1 AND ra.DEPLOYMENT_ID = $1
+		WHERE rp.DEPLOYMENT_ID = $1 AND `
 
 	var postgresWhere []string
 	var sqliteWhere []string
 
 	// Pre-allocate args slice with estimated capacity
-	argsCapacity := len(groupIDs) + len(requestedPermissions)
+	argsCapacity := 1 + len(groupIDs) + len(requestedPermissions) // +1 for DEPLOYMENT_ID
 	if userID != "" {
 		argsCapacity++
 	}
 	args := make([]interface{}, 0, argsCapacity)
-	paramIndex := 1
+	args = append(args, deploymentID)
+	paramIndex := 2 // Start from $2 since $1 is DEPLOYMENT_ID
 
 	// Build user condition if userID is provided
 	if userID != "" {

@@ -23,6 +23,7 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/asgardeo/thunder/internal/system/config"
 	"github.com/asgardeo/thunder/internal/system/database/provider"
 	"github.com/asgardeo/thunder/internal/system/log"
 )
@@ -40,13 +41,15 @@ type userSchemaStoreInterface interface {
 
 // userSchemaStore is the default implementation of userSchemaStoreInterface.
 type userSchemaStore struct {
-	dbProvider provider.DBProviderInterface
+	dbProvider   provider.DBProviderInterface
+	deploymentID string
 }
 
 // newUserSchemaStore creates a new instance of userSchemaStore.
 func newUserSchemaStore() userSchemaStoreInterface {
 	return &userSchemaStore{
-		dbProvider: provider.GetDBProvider(),
+		dbProvider:   provider.GetDBProvider(),
+		deploymentID: config.GetThunderRuntime().Config.Server.Identifier,
 	}
 }
 
@@ -57,7 +60,7 @@ func (s *userSchemaStore) GetUserSchemaListCount() (int, error) {
 		return 0, fmt.Errorf("failed to get database client: %w", err)
 	}
 
-	countResults, err := dbClient.Query(queryGetUserSchemaCount)
+	countResults, err := dbClient.Query(queryGetUserSchemaCount, s.deploymentID)
 	if err != nil {
 		return 0, fmt.Errorf("failed to execute count query: %w", err)
 	}
@@ -83,7 +86,7 @@ func (s *userSchemaStore) GetUserSchemaList(limit, offset int) ([]UserSchemaList
 		return nil, fmt.Errorf("failed to get database client: %w", err)
 	}
 
-	results, err := dbClient.Query(queryGetUserSchemaList, limit, offset)
+	results, err := dbClient.Query(queryGetUserSchemaList, limit, offset, s.deploymentID)
 	if err != nil {
 		return nil, fmt.Errorf("failed to execute query: %w", err)
 	}
@@ -115,6 +118,7 @@ func (s *userSchemaStore) CreateUserSchema(userSchema UserSchema) error {
 		userSchema.OrganizationUnitID,
 		userSchema.AllowSelfRegistration,
 		string(userSchema.Schema),
+		s.deploymentID,
 	)
 	if err != nil {
 		return fmt.Errorf("failed to create user schema: %w", err)
@@ -130,7 +134,7 @@ func (s *userSchemaStore) GetUserSchemaByID(schemaID string) (UserSchema, error)
 		return UserSchema{}, fmt.Errorf("failed to get database client: %w", err)
 	}
 
-	results, err := dbClient.Query(queryGetUserSchemaByID, schemaID)
+	results, err := dbClient.Query(queryGetUserSchemaByID, schemaID, s.deploymentID)
 	if err != nil {
 		return UserSchema{}, fmt.Errorf("failed to execute query: %w", err)
 	}
@@ -149,7 +153,7 @@ func (s *userSchemaStore) GetUserSchemaByName(name string) (UserSchema, error) {
 		return UserSchema{}, fmt.Errorf("failed to get database client: %w", err)
 	}
 
-	results, err := dbClient.Query(queryGetUserSchemaByName, name)
+	results, err := dbClient.Query(queryGetUserSchemaByName, name, s.deploymentID)
 	if err != nil {
 		return UserSchema{}, fmt.Errorf("failed to execute query: %w", err)
 	}
@@ -175,6 +179,7 @@ func (s *userSchemaStore) UpdateUserSchemaByID(schemaID string, userSchema UserS
 		userSchema.AllowSelfRegistration,
 		string(userSchema.Schema),
 		schemaID,
+		s.deploymentID,
 	)
 	if err != nil {
 		return fmt.Errorf("failed to update user schema: %w", err)
@@ -192,7 +197,7 @@ func (s *userSchemaStore) DeleteUserSchemaByID(schemaID string) error {
 		return fmt.Errorf("failed to get database client: %w", err)
 	}
 
-	rowsAffected, err := dbClient.Execute(queryDeleteUserSchemaByID, schemaID)
+	rowsAffected, err := dbClient.Execute(queryDeleteUserSchemaByID, schemaID, s.deploymentID)
 	if err != nil {
 		return fmt.Errorf("failed to delete user schema: %w", err)
 	}

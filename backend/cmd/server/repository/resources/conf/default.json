@@ -2,7 +2,8 @@
   "server": {
     "hostname": "localhost",
     "port": 8090,
-    "http_only": false
+    "http_only": false,
+    "identifier": "default-deployment"
   },
   "gate_client": {
     "hostname": "localhost",

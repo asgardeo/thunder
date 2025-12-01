@@ -24,18 +24,18 @@ import dbmodel "github.com/asgardeo/thunder/internal/system/database/model"
 var queryInsertAuthorizationCode = dbmodel.DBQuery{
 	ID: "AZQ-ACS-01",
 	Query: "INSERT INTO AUTHORIZATION_CODE (CODE_ID, AUTHORIZATION_CODE, CLIENT_ID, STATE, AUTHZ_DATA, " +
-		"TIME_CREATED, EXPIRY_TIME) VALUES ($1, $2, $3, $4, $5, $6, $7)",
+		"TIME_CREATED, EXPIRY_TIME, DEPLOYMENT_ID) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)",
 }
 
 // queryGetAuthorizationCode is the query to retrieve an authorization code by client ID and code.
 var queryGetAuthorizationCode = dbmodel.DBQuery{
 	ID: "AZQ-ACS-02",
 	Query: "SELECT CODE_ID, AUTHORIZATION_CODE, CLIENT_ID, STATE, AUTHZ_DATA, TIME_CREATED, " +
-		"EXPIRY_TIME FROM AUTHORIZATION_CODE WHERE CLIENT_ID = $1 AND AUTHORIZATION_CODE = $2",
+		"EXPIRY_TIME FROM AUTHORIZATION_CODE WHERE CLIENT_ID = $1 AND AUTHORIZATION_CODE = $2 AND DEPLOYMENT_ID = $3",
 }
 
 // queryUpdateAuthorizationCodeState is the query to update the state of an authorization code.
 var queryUpdateAuthorizationCodeState = dbmodel.DBQuery{
 	ID:    "AZQ-ACS-03",
-	Query: "UPDATE AUTHORIZATION_CODE SET STATE = $1 WHERE CODE_ID = $2",
+	Query: "UPDATE AUTHORIZATION_CODE SET STATE = $1 WHERE CODE_ID = $2 AND DEPLOYMENT_ID = $3",
 }

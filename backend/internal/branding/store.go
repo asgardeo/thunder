@@ -22,6 +22,7 @@ import (
 	"encoding/json"
 	"fmt"
 
+	"github.com/asgardeo/thunder/internal/system/config"
 	"github.com/asgardeo/thunder/internal/system/database/provider"
 	"github.com/asgardeo/thunder/internal/system/log"
 )
@@ -42,13 +43,15 @@ type brandingStoreInterface interface {
 
 // brandingStore is the default implementation of brandingStoreInterface.
 type brandingStore struct {
-	dbProvider provider.DBProviderInterface
+	dbProvider   provider.DBProviderInterface
+	deploymentID string
 }
 
 // newBrandingStore creates a new instance of brandingStore.
 func newBrandingStore() brandingStoreInterface {
 	return &brandingStore{
-		dbProvider: provider.GetDBProvider(),
+		dbProvider:   provider.GetDBProvider(),
+		deploymentID: config.GetThunderRuntime().Config.Server.Identifier,
 	}
 }
 
@@ -59,7 +62,7 @@ func (s *brandingStore) GetBrandingListCount() (int, error) {
 		return 0, err
 	}
 
-	countResults, err := dbClient.Query(queryGetBrandingListCount)
+	countResults, err := dbClient.Query(queryGetBrandingListCount, s.deploymentID)
 	if err != nil {
 		return 0, fmt.Errorf("failed to execute count query: %w", err)
 	}
@@ -74,7 +77,7 @@ func (s *brandingStore) GetBrandingList(limit, offset int) ([]Branding, error) {
 		return nil, err
 	}
 
-	results, err := dbClient.Query(queryGetBrandingList, limit, offset)
+	results, err := dbClient.Query(queryGetBrandingList, limit, offset, s.deploymentID)
 	if err != nil {
 		return nil, fmt.Errorf("failed to execute branding list query: %w", err)
 	}
@@ -103,7 +106,7 @@ func (s *brandingStore) CreateBranding(id string, branding CreateBrandingRequest
 		return fmt.Errorf("failed to marshal preferences: %w", err)
 	}
 
-	_, err = dbClient.Execute(queryCreateBranding, id, branding.DisplayName, preferencesJSON)
+	_, err = dbClient.Execute(queryCreateBranding, id, branding.DisplayName, preferencesJSON, s.deploymentID)
 	if err != nil {
 		return fmt.Errorf("failed to execute query: %w", err)
 	}
@@ -118,7 +121,7 @@ func (s *brandingStore) GetBranding(id string) (Branding, error) {
 		return Branding{}, err
 	}
 
-	results, err := dbClient.Query(queryGetBrandingByID, id)
+	results, err := dbClient.Query(queryGetBrandingByID, id, s.deploymentID)
 	if err != nil {
 		return Branding{}, fmt.Errorf("failed to execute query: %w", err)
 	}
@@ -141,7 +144,7 @@ func (s *brandingStore) IsBrandingExist(id string) (bool, error) {
 		return false, err
 	}
 
-	results, err := dbClient.Query(queryCheckBrandingExists, id)
+	results, err := dbClient.Query(queryCheckBrandingExists, id, s.deploymentID)
 	if err != nil {
 		return false, fmt.Errorf("failed to check branding existence: %w", err)
 	}
@@ -161,7 +164,7 @@ func (s *brandingStore) UpdateBranding(id string, branding UpdateBrandingRequest
 		return fmt.Errorf("failed to marshal preferences: %w", err)
 	}
 
-	rowsAffected, err := dbClient.Execute(queryUpdateBranding, branding.DisplayName, preferencesJSON, id)
+	rowsAffected, err := dbClient.Execute(queryUpdateBranding, branding.DisplayName, preferencesJSON, id, s.deploymentID)
 	if err != nil {
 		return fmt.Errorf("failed to execute query: %w", err)
 	}
@@ -182,7 +185,7 @@ func (s *brandingStore) DeleteBranding(id string) error {
 		return fmt.Errorf("failed to get database client: %w", err)
 	}
 
-	rowsAffected, err := dbClient.Execute(queryDeleteBranding, id)
+	rowsAffected, err := dbClient.Execute(queryDeleteBranding, id, s.deploymentID)
 	if err != nil {
 		return fmt.Errorf("failed to execute query: %w", err)
 	}
@@ -201,7 +204,7 @@ func (s *brandingStore) GetApplicationsCountByBrandingID(id string) (int, error)
 		return 0, err
 	}
 
-	results, err := dbClient.Query(queryGetApplicationsCountByBrandingID, id)
+	results, err := dbClient.Query(queryGetApplicationsCountByBrandingID, id, s.deploymentID)
 	if err != nil {
 		return 0, fmt.Errorf("failed to get applications count: %w", err)
 	}

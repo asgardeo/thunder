@@ -30,12 +30,14 @@ import (
 
 	"github.com/asgardeo/thunder/internal/application/model"
 	oauth2const "github.com/asgardeo/thunder/internal/oauth/oauth2/constants"
+	"github.com/asgardeo/thunder/internal/system/config"
 	dbmodel "github.com/asgardeo/thunder/internal/system/database/model"
 	"github.com/asgardeo/thunder/tests/mocks/database/clientmock"
 	"github.com/asgardeo/thunder/tests/mocks/database/modelmock"
 )
 
 const testAppID = "test-app-id"
+const testServerID = "test-server-id"
 
 // ApplicationStoreTestSuite contains comprehensive tests for the application store helper functions.
 type ApplicationStoreTestSuite struct {
@@ -48,6 +50,7 @@ func TestApplicationStoreTestSuite(t *testing.T) {
 }
 
 func (suite *ApplicationStoreTestSuite) SetupTest() {
+	_ = config.InitializeThunderRuntime("test", &config.Config{})
 	suite.mockDBClient = clientmock.NewDBClientInterfaceMock(suite.T())
 }
 
@@ -881,7 +884,7 @@ func (suite *ApplicationStoreTestSuite) TestBuildOAuthInboundAuthConfig_InvalidO
 
 func (suite *ApplicationStoreTestSuite) TestCreateOAuthAppQuery_Success() {
 	app := suite.createTestApplication()
-	query := createOAuthAppQuery(&app, QueryCreateOAuthApplication)
+	query := createOAuthAppQuery(&app, QueryCreateOAuthApplication, testServerID)
 
 	suite.NotNil(query)
 	suite.IsType((func(dbmodel.TxInterface) error)(nil), query)
@@ -889,7 +892,7 @@ func (suite *ApplicationStoreTestSuite) TestCreateOAuthAppQuery_Success() {
 
 func (suite *ApplicationStoreTestSuite) TestDeleteOAuthAppQuery_Success() {
 	clientID := "test_client_id"
-	query := deleteOAuthAppQuery(clientID)
+	query := deleteOAuthAppQuery(clientID, testServerID)
 
 	suite.NotNil(query)
 	suite.IsType((func(dbmodel.TxInterface) error)(nil), query)
@@ -1285,12 +1288,12 @@ func (suite *ApplicationStoreTestSuite) TestGetOAuthApplication_WithComplexToken
 	}
 
 	suite.mockDBClient.
-		On("Query", QueryGetOAuthApplicationByClientID, clientID).
+		On("Query", QueryGetOAuthApplicationByClientID, clientID, testServerID).
 		Return([]map[string]interface{}{mockRow}, nil).
 		Once()
 
 	// Execute
-	results, err := suite.mockDBClient.Query(QueryGetOAuthApplicationByClientID, clientID)
+	results, err := suite.mockDBClient.Query(QueryGetOAuthApplicationByClientID, clientID, testServerID)
 	suite.Require().NoError(err)
 	result, err := getOAuthApplicationFromResults(clientID, results)
 
@@ -1342,12 +1345,12 @@ func (suite *ApplicationStoreTestSuite) TestGetOAuthApplication_WithNilTokenConf
 	}
 
 	suite.mockDBClient.
-		On("Query", QueryGetOAuthApplicationByClientID, mock.Anything).
+		On("Query", QueryGetOAuthApplicationByClientID, mock.Anything, testServerID).
 		Return([]map[string]interface{}{mockRow}, nil).
 		Once()
 
 	// Execute
-	results, err := suite.mockDBClient.Query(QueryGetOAuthApplicationByClientID, clientID)
+	results, err := suite.mockDBClient.Query(QueryGetOAuthApplicationByClientID, clientID, testServerID)
 	suite.Require().NoError(err)
 	result, err := getOAuthApplicationFromResults(clientID, results)
 
@@ -1374,12 +1377,12 @@ func (suite *ApplicationStoreTestSuite) TestGetOAuthApplication_WithJSONAsBytes(
 	}
 
 	suite.mockDBClient.
-		On("Query", QueryGetOAuthApplicationByClientID, mock.Anything).
+		On("Query", QueryGetOAuthApplicationByClientID, mock.Anything, testServerID).
 		Return([]map[string]interface{}{mockRow}, nil).
 		Once()
 
 	// Execute
-	results, err := suite.mockDBClient.Query(QueryGetOAuthApplicationByClientID, clientID)
+	results, err := suite.mockDBClient.Query(QueryGetOAuthApplicationByClientID, clientID, testServerID)
 	suite.Require().NoError(err)
 	result, err := getOAuthApplicationFromResults(clientID, results)
 
@@ -1399,12 +1402,12 @@ func (suite *ApplicationStoreTestSuite) TestGetOAuthApplication_WithNilJSON() {
 	}
 
 	suite.mockDBClient.
-		On("Query", QueryGetOAuthApplicationByClientID, mock.Anything).
+		On("Query", QueryGetOAuthApplicationByClientID, mock.Anything, testServerID).
 		Return([]map[string]interface{}{mockRow}, nil).
 		Once()
 
 	// Execute
-	results, err := suite.mockDBClient.Query(QueryGetOAuthApplicationByClientID, clientID)
+	results, err := suite.mockDBClient.Query(QueryGetOAuthApplicationByClientID, clientID, testServerID)
 	suite.Require().NoError(err)
 	result, err := getOAuthApplicationFromResults(clientID, results)
 
@@ -1417,12 +1420,12 @@ func (suite *ApplicationStoreTestSuite) TestGetOAuthApplication_WithNilJSON() {
 func (suite *ApplicationStoreTestSuite) TestGetOAuthApplication_NotFound() {
 	clientID := "non-existent-client"
 	suite.mockDBClient.
-		On("Query", QueryGetOAuthApplicationByClientID, mock.Anything).
+		On("Query", QueryGetOAuthApplicationByClientID, mock.Anything, testServerID).
 		Return([]map[string]interface{}{}, nil).
 		Once()
 
 	// Execute
-	results, err := suite.mockDBClient.Query(QueryGetOAuthApplicationByClientID, clientID)
+	results, err := suite.mockDBClient.Query(QueryGetOAuthApplicationByClientID, clientID, testServerID)
 	suite.Require().NoError(err)
 	result, err := getOAuthApplicationFromResults(clientID, results)
 
@@ -1435,12 +1438,12 @@ func (suite *ApplicationStoreTestSuite) TestGetOAuthApplication_NotFound() {
 func (suite *ApplicationStoreTestSuite) TestGetOAuthApplication_DatabaseError() {
 	clientID := "test-client-error"
 	suite.mockDBClient.
-		On("Query", QueryGetOAuthApplicationByClientID, mock.Anything).
+		On("Query", QueryGetOAuthApplicationByClientID, mock.Anything, testServerID).
 		Return(nil, errors.New("database connection error")).
 		Once()
 
 	// Execute
-	_, err := suite.mockDBClient.Query(QueryGetOAuthApplicationByClientID, clientID)
+	_, err := suite.mockDBClient.Query(QueryGetOAuthApplicationByClientID, clientID, testServerID)
 	result := (*model.OAuthAppConfigProcessedDTO)(nil)
 
 	// Assert
@@ -1459,12 +1462,12 @@ func (suite *ApplicationStoreTestSuite) TestGetOAuthApplication_InvalidAppIDType
 	}
 
 	suite.mockDBClient.
-		On("Query", QueryGetOAuthApplicationByClientID, mock.Anything).
+		On("Query", QueryGetOAuthApplicationByClientID, mock.Anything, testServerID).
 		Return([]map[string]interface{}{mockRow}, nil).
 		Once()
 
 	// Execute
-	results, err := suite.mockDBClient.Query(QueryGetOAuthApplicationByClientID, clientID)
+	results, err := suite.mockDBClient.Query(QueryGetOAuthApplicationByClientID, clientID, testServerID)
 	suite.Require().NoError(err)
 	result, err := getOAuthApplicationFromResults(clientID, results)
 
@@ -1484,12 +1487,12 @@ func (suite *ApplicationStoreTestSuite) TestGetOAuthApplication_InvalidJSONType(
 	}
 
 	suite.mockDBClient.
-		On("Query", QueryGetOAuthApplicationByClientID, mock.Anything).
+		On("Query", QueryGetOAuthApplicationByClientID, mock.Anything, testServerID).
 		Return([]map[string]interface{}{mockRow}, nil).
 		Once()
 
 	// Execute
-	results, err := suite.mockDBClient.Query(QueryGetOAuthApplicationByClientID, clientID)
+	results, err := suite.mockDBClient.Query(QueryGetOAuthApplicationByClientID, clientID, testServerID)
 	suite.Require().NoError(err)
 	result, err := getOAuthApplicationFromResults(clientID, results)
 
@@ -1509,12 +1512,12 @@ func (suite *ApplicationStoreTestSuite) TestGetOAuthApplication_MalformedJSON() 
 	}
 
 	suite.mockDBClient.
-		On("Query", QueryGetOAuthApplicationByClientID, mock.Anything).
+		On("Query", QueryGetOAuthApplicationByClientID, mock.Anything, testServerID).
 		Return([]map[string]interface{}{mockRow}, nil).
 		Once()
 
 	// Execute
-	results, err := suite.mockDBClient.Query(QueryGetOAuthApplicationByClientID, clientID)
+	results, err := suite.mockDBClient.Query(QueryGetOAuthApplicationByClientID, clientID, testServerID)
 	suite.Require().NoError(err)
 	result, err := getOAuthApplicationFromResults(clientID, results)
 
@@ -1541,11 +1544,12 @@ func TestCreateOAuthAppQuery_ExecError(t *testing.T) {
 		},
 	}
 
-	queryFunc := createOAuthAppQuery(&app, QueryCreateOAuthApplication)
+	queryFunc := createOAuthAppQuery(&app, QueryCreateOAuthApplication, testServerID)
 
 	mockTx := modelmock.NewTxInterfaceMock(t)
 	mockTx.
-		On("Exec", QueryCreateOAuthApplication.Query, mock.Anything, mock.Anything, mock.Anything, mock.Anything).
+		On("Exec", QueryCreateOAuthApplication.Query, mock.Anything, mock.Anything, mock.Anything, mock.Anything,
+			testServerID).
 		Return(nil, errors.New("database exec error")).
 		Once()
 
@@ -1558,11 +1562,11 @@ func TestCreateOAuthAppQuery_ExecError(t *testing.T) {
 func TestDeleteOAuthAppQuery_ExecError(t *testing.T) {
 	clientID := "test-client-id"
 
-	queryFunc := deleteOAuthAppQuery(clientID)
+	queryFunc := deleteOAuthAppQuery(clientID, testServerID)
 
 	mockTx := modelmock.NewTxInterfaceMock(t)
 	mockTx.
-		On("Exec", QueryDeleteOAuthApplicationByClientID.Query, mock.Anything).
+		On("Exec", QueryDeleteOAuthApplicationByClientID.Query, mock.Anything, testServerID).
 		Return(nil, errors.New("database delete error")).
 		Once()
 
@@ -1605,13 +1609,13 @@ func (suite *ApplicationStoreTestSuite) TestGetApplicationByQuery_UnexpectedNumb
 
 	// Mock the database client to return multiple results
 	suite.mockDBClient.
-		On("Query", QueryGetApplicationByAppID, appID).
+		On("Query", QueryGetApplicationByAppID, appID, testServerID).
 		Return([]map[string]interface{}{mockRow1, mockRow2}, nil).
 		Once()
 
 	// Create a test helper that simulates getApplicationByQuery
 	// Since getApplicationByQuery is private, we test it through a test helper
-	results, err := suite.mockDBClient.Query(QueryGetApplicationByAppID, appID)
+	results, err := suite.mockDBClient.Query(QueryGetApplicationByAppID, appID, testServerID)
 	suite.Require().NoError(err)
 
 	// Simulate the error check from getApplicationByQuery
@@ -1648,12 +1652,12 @@ func (suite *ApplicationStoreTestSuite) TestGetApplicationByQuery_BuildApplicati
 
 	// Mock the database client to return a single result with invalid data
 	suite.mockDBClient.
-		On("Query", QueryGetApplicationByAppID, appID).
+		On("Query", QueryGetApplicationByAppID, appID, testServerID).
 		Return([]map[string]interface{}{mockRow}, nil).
 		Once()
 
 	// Execute query
-	results, err := suite.mockDBClient.Query(QueryGetApplicationByAppID, appID)
+	results, err := suite.mockDBClient.Query(QueryGetApplicationByAppID, appID, testServerID)
 	suite.Require().NoError(err)
 	suite.Require().Len(results, 1)
 
@@ -1686,12 +1690,12 @@ func (suite *ApplicationStoreTestSuite) TestGetApplicationByQuery_BuildApplicati
 
 	// Mock the database client to return a single result with invalid app_json
 	suite.mockDBClient.
-		On("Query", QueryGetApplicationByAppID, appID).
+		On("Query", QueryGetApplicationByAppID, appID, testServerID).
 		Return([]map[string]interface{}{mockRow}, nil).
 		Once()
 
 	// Execute query
-	results, err := suite.mockDBClient.Query(QueryGetApplicationByAppID, appID)
+	results, err := suite.mockDBClient.Query(QueryGetApplicationByAppID, appID, testServerID)
 	suite.Require().NoError(err)
 	suite.Require().Len(results, 1)
 
@@ -1724,12 +1728,12 @@ func (suite *ApplicationStoreTestSuite) TestGetApplicationByQuery_BuildApplicati
 
 	// Mock the database client to return a single result with malformed JSON
 	suite.mockDBClient.
-		On("Query", QueryGetApplicationByAppID, appID).
+		On("Query", QueryGetApplicationByAppID, appID, testServerID).
 		Return([]map[string]interface{}{mockRow}, nil).
 		Once()
 
 	// Execute query
-	results, err := suite.mockDBClient.Query(QueryGetApplicationByAppID, appID)
+	results, err := suite.mockDBClient.Query(QueryGetApplicationByAppID, appID, testServerID)
 	suite.Require().NoError(err)
 	suite.Require().Len(results, 1)
 

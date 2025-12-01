@@ -328,3 +328,152 @@ func (suite *QueryBuilderTestSuite) TestBuildFilterQueryDeeplyNestedPath() {
 		" AND json_extract(data, '$.company.location.address.city') = ?"
 	assert.Equal(suite.T(), expectedSQLite, sqliteQuery)
 }
+
+func (suite *QueryBuilderTestSuite) TestAppendDeploymentIDToFilterQueryWithNoExistingArgs() {
+	queryID := "test_query"
+	baseQuery := "SELECT * FROM users WHERE 1=1"
+	deploymentID := "server-123"
+
+	// Create initial query with no filters
+	initialQuery := model.DBQuery{
+		ID:            queryID,
+		Query:         baseQuery,
+		PostgresQuery: baseQuery,
+		SQLiteQuery:   baseQuery,
+	}
+	initialArgs := []interface{}{}
+
+	// Append server ID
+	updatedQuery, updatedArgs := AppendDeploymentIDToFilterQuery(initialQuery, initialArgs, deploymentID)
+
+	// Verify query ID is preserved
+	assert.Equal(suite.T(), queryID, updatedQuery.ID)
+
+	// Verify args
+	assert.Len(suite.T(), updatedArgs, 1)
+	assert.Equal(suite.T(), deploymentID, updatedArgs[0])
+
+	// Verify PostgreSQL query
+	expectedPostgres := baseQuery + " AND DEPLOYMENT_ID = $1"
+	assert.Equal(suite.T(), expectedPostgres, updatedQuery.PostgresQuery)
+	assert.Equal(suite.T(), expectedPostgres, updatedQuery.Query)
+
+	// Verify SQLite query
+	expectedSQLite := baseQuery + " AND DEPLOYMENT_ID = ?"
+	assert.Equal(suite.T(), expectedSQLite, updatedQuery.SQLiteQuery)
+}
+
+func (suite *QueryBuilderTestSuite) TestAppendDeploymentIDToFilterQueryWithExistingArgs() {
+	queryID := "filter_query"
+	baseQuery := testUserBaseQuery
+	columnName := testAttributesColumn
+	filters := map[string]interface{}{
+		"email": "user@example.com",
+		"role":  "admin",
+	}
+	deploymentID := "server-456"
+
+	// Build initial filter query
+	query, args, err := BuildFilterQuery(queryID, baseQuery, columnName, filters)
+	assert.NoError(suite.T(), err)
+	assert.Len(suite.T(), args, 2)
+
+	// Append server ID
+	updatedQuery, updatedArgs := AppendDeploymentIDToFilterQuery(query, args, deploymentID)
+
+	// Verify query ID is preserved
+	assert.Equal(suite.T(), queryID, updatedQuery.ID)
+
+	// Verify args - should have original args plus server ID
+	assert.Len(suite.T(), updatedArgs, 3)
+	assert.Equal(suite.T(), "user@example.com", updatedArgs[0])
+	assert.Equal(suite.T(), "admin", updatedArgs[1])
+	assert.Equal(suite.T(), deploymentID, updatedArgs[2])
+
+	// Verify PostgreSQL query
+	expectedPostgres := testUserBaseQuery +
+		" AND ATTRIBUTES->>'email' = $1" +
+		" AND ATTRIBUTES->>'role' = $2" +
+		" AND DEPLOYMENT_ID = $3"
+	assert.Equal(suite.T(), expectedPostgres, updatedQuery.PostgresQuery)
+	assert.Equal(suite.T(), expectedPostgres, updatedQuery.Query)
+
+	// Verify SQLite query
+	expectedSQLite := testUserBaseQuery +
+		" AND json_extract(ATTRIBUTES, '$.email') = ?" +
+		" AND json_extract(ATTRIBUTES, '$.role') = ?" +
+		" AND DEPLOYMENT_ID = ?"
+	assert.Equal(suite.T(), expectedSQLite, updatedQuery.SQLiteQuery)
+}
+
+func (suite *QueryBuilderTestSuite) TestAppendDeploymentIDToFilterQueryWithSingleFilter() {
+	queryID := "single_filter_query"
+	baseQuery := "SELECT USER_ID FROM \"USER\" WHERE active = true"
+	columnName := "metadata"
+	filters := map[string]interface{}{
+		"department": "engineering",
+	}
+	deploymentID := "primary-server"
+
+	// Build initial filter query
+	query, args, err := BuildFilterQuery(queryID, baseQuery, columnName, filters)
+	assert.NoError(suite.T(), err)
+
+	// Append server ID
+	updatedQuery, updatedArgs := AppendDeploymentIDToFilterQuery(query, args, deploymentID)
+
+	// Verify args
+	assert.Len(suite.T(), updatedArgs, 2)
+	assert.Equal(suite.T(), "engineering", updatedArgs[0])
+	assert.Equal(suite.T(), deploymentID, updatedArgs[1])
+
+	// Verify PostgreSQL query
+	expectedPostgres := "SELECT USER_ID FROM \"USER\" WHERE active = true" +
+		" AND metadata->>'department' = $1" +
+		" AND DEPLOYMENT_ID = $2"
+	assert.Equal(suite.T(), expectedPostgres, updatedQuery.PostgresQuery)
+
+	// Verify SQLite query
+	expectedSQLite := "SELECT USER_ID FROM \"USER\" WHERE active = true" +
+		" AND json_extract(metadata, '$.department') = ?" +
+		" AND DEPLOYMENT_ID = ?"
+	assert.Equal(suite.T(), expectedSQLite, updatedQuery.SQLiteQuery)
+}
+
+func (suite *QueryBuilderTestSuite) TestAppendDeploymentIDToFilterQueryWithNestedFilters() {
+	queryID := "nested_filter_query"
+	baseQuery := testUserBaseQuery
+	columnName := testAttributesColumn
+	filters := map[string]interface{}{
+		"address.city": "San Francisco",
+		"name":         "John Doe",
+	}
+	deploymentID := "west-coast-server"
+
+	// Build initial filter query
+	query, args, err := BuildFilterQuery(queryID, baseQuery, columnName, filters)
+	assert.NoError(suite.T(), err)
+
+	// Append server ID
+	updatedQuery, updatedArgs := AppendDeploymentIDToFilterQuery(query, args, deploymentID)
+
+	// Verify args
+	assert.Len(suite.T(), updatedArgs, 3)
+	assert.Equal(suite.T(), "San Francisco", updatedArgs[0])
+	assert.Equal(suite.T(), "John Doe", updatedArgs[1])
+	assert.Equal(suite.T(), deploymentID, updatedArgs[2])
+
+	// Verify PostgreSQL query
+	expectedPostgres := testUserBaseQuery +
+		" AND ATTRIBUTES#>>'{address,city}' = $1" +
+		" AND ATTRIBUTES->>'name' = $2" +
+		" AND DEPLOYMENT_ID = $3"
+	assert.Equal(suite.T(), expectedPostgres, updatedQuery.PostgresQuery)
+
+	// Verify SQLite query
+	expectedSQLite := testUserBaseQuery +
+		" AND json_extract(ATTRIBUTES, '$.address.city') = ?" +
+		" AND json_extract(ATTRIBUTES, '$.name') = ?" +
+		" AND DEPLOYMENT_ID = ?"
+	assert.Equal(suite.T(), expectedSQLite, updatedQuery.SQLiteQuery)
+}

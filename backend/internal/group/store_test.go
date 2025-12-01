@@ -41,6 +41,7 @@ func TestGroupStoreTestSuite(t *testing.T) {
 }
 
 const queryGroupExistsID = "GRQ-GROUP_MGT-15"
+const testDeploymentID = "test-deployment-id"
 
 type validateGroupIDsSetupFn func(
 	*providermock.DBProviderInterfaceMock,
@@ -116,7 +117,7 @@ func (suite *GroupStoreTestSuite) runGroupNameConflictTestCases(testCases []grou
 		suite.Run(tc.name, func() {
 			providerMock := providermock.NewDBProviderInterfaceMock(suite.T())
 			dbClientMock := clientmock.NewDBClientInterfaceMock(suite.T())
-			store := &groupStore{dbProvider: providerMock}
+			store := &groupStore{dbProvider: providerMock, deploymentID: testDeploymentID}
 
 			if tc.setupDB != nil {
 				tc.setupDB(dbClientMock)
@@ -149,7 +150,7 @@ func testExecRollbackError(t *testing.T, query string, operation func(*groupStor
 	dbClientMock := clientmock.NewDBClientInterfaceMock(t)
 	txMock := modelmock.NewTxInterfaceMock(t)
 
-	store := &groupStore{dbProvider: providerMock}
+	store := &groupStore{dbProvider: providerMock, deploymentID: testDeploymentID}
 	group := GroupDAO{ID: "grp-001"}
 
 	providerMock.
@@ -170,6 +171,7 @@ func testExecRollbackError(t *testing.T, query string, operation func(*groupStor
 			group.OrganizationUnitID,
 			group.Name,
 			group.Description,
+			testDeploymentID,
 		).
 		Return(nil, errors.New("exec failed")).
 		Once()
@@ -204,7 +206,7 @@ func (suite *GroupStoreTestSuite) TestGroupStore_GetGroupListCount() {
 					Once()
 
 				dbClientMock.
-					On("Query", QueryGetGroupListCount).
+					On("Query", QueryGetGroupListCount, testDeploymentID).
 					Return([]map[string]interface{}{{"total": int64(7)}}, nil).
 					Once()
 			},
@@ -236,7 +238,7 @@ func (suite *GroupStoreTestSuite) TestGroupStore_GetGroupListCount() {
 					Once()
 
 				dbClientMock.
-					On("Query", QueryGetGroupListCount).
+					On("Query", QueryGetGroupListCount, testDeploymentID).
 					Return(nil, errors.New("boom")).
 					Once()
 			},
@@ -249,7 +251,7 @@ func (suite *GroupStoreTestSuite) TestGroupStore_GetGroupListCount() {
 		suite.Run(tc.name, func() {
 			providerMock := providermock.NewDBProviderInterfaceMock(suite.T())
 			dbClientMock := clientmock.NewDBClientInterfaceMock(suite.T())
-			store := &groupStore{dbProvider: providerMock}
+			store := &groupStore{dbProvider: providerMock, deploymentID: testDeploymentID}
 
 			if tc.setup != nil {
 				tc.setup(providerMock, dbClientMock)
@@ -315,7 +317,7 @@ func (suite *GroupStoreTestSuite) TestGroupStore_GetGroupList() {
 				}
 
 				dbClientMock.
-					On("Query", QueryGetGroupList, 5, 0).
+					On("Query", QueryGetGroupList, 5, 0, testDeploymentID).
 					Return(rows, nil).
 					Once()
 			},
@@ -353,7 +355,7 @@ func (suite *GroupStoreTestSuite) TestGroupStore_GetGroupList() {
 					Once()
 
 				dbClientMock.
-					On("Query", QueryGetGroupList, 1, 0).
+					On("Query", QueryGetGroupList, 1, 0, testDeploymentID).
 					Return(nil, errors.New("query fail")).
 					Once()
 			},
@@ -373,7 +375,7 @@ func (suite *GroupStoreTestSuite) TestGroupStore_GetGroupList() {
 					Once()
 
 				dbClientMock.
-					On("Query", QueryGetGroupList, 1, 0).
+					On("Query", QueryGetGroupList, 1, 0, testDeploymentID).
 					Return([]map[string]interface{}{
 						{
 							"group_id": "g1",
@@ -392,7 +394,7 @@ func (suite *GroupStoreTestSuite) TestGroupStore_GetGroupList() {
 		suite.Run(tc.name, func() {
 			providerMock := providermock.NewDBProviderInterfaceMock(suite.T())
 			dbClientMock := clientmock.NewDBClientInterfaceMock(suite.T())
-			store := &groupStore{dbProvider: providerMock}
+			store := &groupStore{dbProvider: providerMock, deploymentID: testDeploymentID}
 
 			if tc.setup != nil {
 				tc.setup(providerMock, dbClientMock)
@@ -482,6 +484,7 @@ func (suite *GroupStoreTestSuite) TestGroupStore_CreateGroup() {
 						groupWithMember.OrganizationUnitID,
 						groupWithMember.Name,
 						groupWithMember.Description,
+						testDeploymentID,
 					).
 					Return(stubSQLResult{rows: 1}, nil).
 					Once()
@@ -493,6 +496,7 @@ func (suite *GroupStoreTestSuite) TestGroupStore_CreateGroup() {
 						groupWithMember.ID,
 						MemberTypeUser,
 						"user-1",
+						testDeploymentID,
 					).
 					Return(stubSQLResult{rows: 1}, nil).
 					Once()
@@ -533,6 +537,7 @@ func (suite *GroupStoreTestSuite) TestGroupStore_CreateGroup() {
 						groupNoMembers.OrganizationUnitID,
 						groupNoMembers.Name,
 						groupNoMembers.Description,
+						testDeploymentID,
 					).
 					Return(nil, errors.New("insert failed")).
 					Once()
@@ -596,6 +601,7 @@ func (suite *GroupStoreTestSuite) TestGroupStore_CreateGroup() {
 						groupMemberOnly.OrganizationUnitID,
 						groupMemberOnly.Name,
 						groupMemberOnly.Description,
+						testDeploymentID,
 					).
 					Return(stubSQLResult{rows: 1}, nil).
 					Once()
@@ -607,6 +613,7 @@ func (suite *GroupStoreTestSuite) TestGroupStore_CreateGroup() {
 						groupMemberOnly.ID,
 						MemberTypeUser,
 						"usr-1",
+						testDeploymentID,
 					).
 					Return(nil, errors.New("member fail")).
 					Once()
@@ -645,6 +652,7 @@ func (suite *GroupStoreTestSuite) TestGroupStore_CreateGroup() {
 						groupMemberOnly.OrganizationUnitID,
 						groupMemberOnly.Name,
 						groupMemberOnly.Description,
+						testDeploymentID,
 					).
 					Return(stubSQLResult{rows: 1}, nil).
 					Once()
@@ -656,6 +664,7 @@ func (suite *GroupStoreTestSuite) TestGroupStore_CreateGroup() {
 						groupMemberOnly.ID,
 						MemberTypeUser,
 						"usr-1",
+						testDeploymentID,
 					).
 					Return(stubSQLResult{rows: 1}, nil).
 					Once()
@@ -715,6 +724,7 @@ func (suite *GroupStoreTestSuite) TestGroupStore_CreateGroup() {
 						groupWithMember.OrganizationUnitID,
 						groupWithMember.Name,
 						groupWithMember.Description,
+						testDeploymentID,
 					).
 					Return(stubSQLResult{rows: 1}, nil).
 					Once()
@@ -726,6 +736,7 @@ func (suite *GroupStoreTestSuite) TestGroupStore_CreateGroup() {
 						groupWithMember.ID,
 						MemberTypeUser,
 						"user-1",
+						testDeploymentID,
 					).
 					Return(nil, errors.New("member fail")).
 					Once()
@@ -754,7 +765,7 @@ func (suite *GroupStoreTestSuite) TestGroupStore_CreateGroup() {
 				txMock = modelmock.NewTxInterfaceMock(suite.T())
 			}
 
-			store := &groupStore{dbProvider: providerMock}
+			store := &groupStore{dbProvider: providerMock, deploymentID: testDeploymentID}
 
 			if tc.setup != nil {
 				tc.setup(providerMock, dbClientMock, txMock)
@@ -806,7 +817,7 @@ func (suite *GroupStoreTestSuite) TestGroupStore_GetGroup() {
 					Once()
 
 				dbClientMock.
-					On("Query", QueryGetGroupByID, "grp-001").
+					On("Query", QueryGetGroupByID, "grp-001", testDeploymentID).
 					Return([]map[string]interface{}{
 						{
 							"group_id":    "grp-001",
@@ -849,7 +860,7 @@ func (suite *GroupStoreTestSuite) TestGroupStore_GetGroup() {
 					Once()
 
 				dbClientMock.
-					On("Query", QueryGetGroupByID, "grp-001").
+					On("Query", QueryGetGroupByID, "grp-001", testDeploymentID).
 					Return([]map[string]interface{}{{"name": "group"}}, nil).
 					Once()
 			},
@@ -868,7 +879,7 @@ func (suite *GroupStoreTestSuite) TestGroupStore_GetGroup() {
 					Once()
 
 				dbClientMock.
-					On("Query", QueryGetGroupByID, "grp-001").
+					On("Query", QueryGetGroupByID, "grp-001", testDeploymentID).
 					Return(nil, errors.New("query fail")).
 					Once()
 			},
@@ -887,7 +898,7 @@ func (suite *GroupStoreTestSuite) TestGroupStore_GetGroup() {
 					Once()
 
 				dbClientMock.
-					On("Query", QueryGetGroupByID, "grp-001").
+					On("Query", QueryGetGroupByID, "grp-001", testDeploymentID).
 					Return([]map[string]interface{}{
 						{"group_id": "grp-001"},
 						{"group_id": "grp-002"},
@@ -909,7 +920,7 @@ func (suite *GroupStoreTestSuite) TestGroupStore_GetGroup() {
 					Once()
 
 				dbClientMock.
-					On("Query", QueryGetGroupByID, "grp-404").
+					On("Query", QueryGetGroupByID, "grp-404", testDeploymentID).
 					Return([]map[string]interface{}{}, nil).
 					Once()
 			},
@@ -925,7 +936,7 @@ func (suite *GroupStoreTestSuite) TestGroupStore_GetGroup() {
 		suite.Run(tc.name, func() {
 			providerMock := providermock.NewDBProviderInterfaceMock(suite.T())
 			dbClientMock := clientmock.NewDBClientInterfaceMock(suite.T())
-			store := &groupStore{dbProvider: providerMock}
+			store := &groupStore{dbProvider: providerMock, deploymentID: testDeploymentID}
 
 			if tc.setup != nil {
 				tc.setup(providerMock, dbClientMock)
@@ -978,7 +989,7 @@ func (suite *GroupStoreTestSuite) TestGroupStore_GetGroupMembers() {
 					Once()
 
 				dbClientMock.
-					On("Query", QueryGetGroupMembers, "grp-001", 2, 0).
+					On("Query", QueryGetGroupMembers, "grp-001", 2, 0, testDeploymentID).
 					Return([]map[string]interface{}{
 						{"member_id": "usr-1", "member_type": "user"},
 						{"member_id": "grp-2", "member_type": "group"},
@@ -1006,7 +1017,7 @@ func (suite *GroupStoreTestSuite) TestGroupStore_GetGroupMembers() {
 					Once()
 
 				dbClientMock.
-					On("Query", QueryGetGroupMembers, "grp-001", 2, 0).
+					On("Query", QueryGetGroupMembers, "grp-001", 2, 0, testDeploymentID).
 					Return(nil, errors.New("query failed")).
 					Once()
 			},
@@ -1033,7 +1044,7 @@ func (suite *GroupStoreTestSuite) TestGroupStore_GetGroupMembers() {
 		suite.Run(tc.name, func() {
 			providerMock := providermock.NewDBProviderInterfaceMock(suite.T())
 			dbClientMock := clientmock.NewDBClientInterfaceMock(suite.T())
-			store := &groupStore{dbProvider: providerMock}
+			store := &groupStore{dbProvider: providerMock, deploymentID: testDeploymentID}
 
 			if tc.setup != nil {
 				tc.setup(providerMock, dbClientMock)
@@ -1077,7 +1088,7 @@ func (suite *GroupStoreTestSuite) TestGroupStore_GetGroupMemberCount() {
 					Once()
 
 				dbClientMock.
-					On("Query", QueryGetGroupMemberCount, "grp-001").
+					On("Query", QueryGetGroupMemberCount, "grp-001", testDeploymentID).
 					Return([]map[string]interface{}{
 						{"total": int64(3)},
 					}, nil).
@@ -1098,7 +1109,7 @@ func (suite *GroupStoreTestSuite) TestGroupStore_GetGroupMemberCount() {
 					Once()
 
 				dbClientMock.
-					On("Query", QueryGetGroupMemberCount, "grp-001").
+					On("Query", QueryGetGroupMemberCount, "grp-001", testDeploymentID).
 					Return(nil, errors.New("query fail")).
 					Once()
 			},
@@ -1131,7 +1142,7 @@ func (suite *GroupStoreTestSuite) TestGroupStore_GetGroupMemberCount() {
 					Once()
 
 				dbClientMock.
-					On("Query", QueryGetGroupMemberCount, "grp-001").
+					On("Query", QueryGetGroupMemberCount, "grp-001", testDeploymentID).
 					Return([]map[string]interface{}{}, nil).
 					Once()
 			},
@@ -1150,7 +1161,7 @@ func (suite *GroupStoreTestSuite) TestGroupStore_GetGroupMemberCount() {
 					Once()
 
 				dbClientMock.
-					On("Query", QueryGetGroupMemberCount, "grp-001").
+					On("Query", QueryGetGroupMemberCount, "grp-001", testDeploymentID).
 					Return([]map[string]interface{}{{"total": "invalid"}}, nil).
 					Once()
 			},
@@ -1163,7 +1174,7 @@ func (suite *GroupStoreTestSuite) TestGroupStore_GetGroupMemberCount() {
 		suite.Run(tc.name, func() {
 			providerMock := providermock.NewDBProviderInterfaceMock(suite.T())
 			dbClientMock := clientmock.NewDBClientInterfaceMock(suite.T())
-			store := &groupStore{dbProvider: providerMock}
+			store := &groupStore{dbProvider: providerMock, deploymentID: testDeploymentID}
 
 			if tc.setup != nil {
 				tc.setup(providerMock, dbClientMock)
@@ -1241,6 +1252,7 @@ func (suite *GroupStoreTestSuite) TestGroupStore_UpdateGroup() {
 						groupWithMembers.OrganizationUnitID,
 						groupWithMembers.Name,
 						groupWithMembers.Description,
+						testDeploymentID,
 					).
 					Return(stubSQLResult{rows: 0}, nil).
 					Once()
@@ -1300,6 +1312,7 @@ func (suite *GroupStoreTestSuite) TestGroupStore_UpdateGroup() {
 						groupMinimal.OrganizationUnitID,
 						groupMinimal.Name,
 						groupMinimal.Description,
+						testDeploymentID,
 					).
 					Return(errSQLResult{err: errors.New("rows fail")}, nil).
 					Once()
@@ -1335,6 +1348,7 @@ func (suite *GroupStoreTestSuite) TestGroupStore_UpdateGroup() {
 						groupMinimal.OrganizationUnitID,
 						groupMinimal.Name,
 						groupMinimal.Description,
+						testDeploymentID,
 					).
 					Return(stubSQLResult{rows: 0}, nil).
 					Once()
@@ -1370,6 +1384,7 @@ func (suite *GroupStoreTestSuite) TestGroupStore_UpdateGroup() {
 						"",
 						"",
 						"",
+						testDeploymentID,
 					).
 					Return(stubSQLResult{rows: 1}, nil).
 					Once()
@@ -1378,6 +1393,7 @@ func (suite *GroupStoreTestSuite) TestGroupStore_UpdateGroup() {
 						"Exec",
 						QueryDeleteGroupMembers.Query,
 						"grp-001",
+						testDeploymentID,
 					).
 					Return(stubSQLResult{rows: 1}, nil).
 					Once()
@@ -1388,6 +1404,7 @@ func (suite *GroupStoreTestSuite) TestGroupStore_UpdateGroup() {
 						"grp-001",
 						MemberTypeUser,
 						"usr-1",
+						testDeploymentID,
 					).
 					Return(nil, errors.New("member fail")).
 					Once()
@@ -1423,6 +1440,7 @@ func (suite *GroupStoreTestSuite) TestGroupStore_UpdateGroup() {
 						groupMinimal.OrganizationUnitID,
 						groupMinimal.Name,
 						groupMinimal.Description,
+						testDeploymentID,
 					).
 					Return(stubSQLResult{rows: 1}, nil).
 					Once()
@@ -1431,6 +1449,7 @@ func (suite *GroupStoreTestSuite) TestGroupStore_UpdateGroup() {
 						"Exec",
 						QueryDeleteGroupMembers.Query,
 						groupMinimal.ID,
+						testDeploymentID,
 					).
 					Return(stubSQLResult{rows: 1}, nil).
 					Once()
@@ -1441,6 +1460,7 @@ func (suite *GroupStoreTestSuite) TestGroupStore_UpdateGroup() {
 						groupMinimal.ID,
 						mock.Anything,
 						mock.Anything,
+						testDeploymentID,
 					).
 					Return(stubSQLResult{rows: 1}, nil).
 					Maybe()
@@ -1495,6 +1515,7 @@ func (suite *GroupStoreTestSuite) TestGroupStore_UpdateGroup() {
 						groupMinimal.OrganizationUnitID,
 						groupMinimal.Name,
 						groupMinimal.Description,
+						testDeploymentID,
 					).
 					Return(nil, errors.New("exec fail")).
 					Once()
@@ -1530,6 +1551,7 @@ func (suite *GroupStoreTestSuite) TestGroupStore_UpdateGroup() {
 						groupWithoutMembers.OrganizationUnitID,
 						groupWithoutMembers.Name,
 						groupWithoutMembers.Description,
+						testDeploymentID,
 					).
 					Return(stubSQLResult{rows: 1}, nil).
 					Once()
@@ -1538,6 +1560,7 @@ func (suite *GroupStoreTestSuite) TestGroupStore_UpdateGroup() {
 						"Exec",
 						QueryDeleteGroupMembers.Query,
 						groupWithoutMembers.ID,
+						testDeploymentID,
 					).
 					Return(nil, errors.New("delete fail")).
 					Once()
@@ -1573,6 +1596,7 @@ func (suite *GroupStoreTestSuite) TestGroupStore_UpdateGroup() {
 						groupWithMembers.OrganizationUnitID,
 						groupWithMembers.Name,
 						groupWithMembers.Description,
+						testDeploymentID,
 					).
 					Return(stubSQLResult{rows: 1}, nil).
 					Once()
@@ -1581,6 +1605,7 @@ func (suite *GroupStoreTestSuite) TestGroupStore_UpdateGroup() {
 						"Exec",
 						QueryDeleteGroupMembers.Query,
 						groupWithMembers.ID,
+						testDeploymentID,
 					).
 					Return(stubSQLResult{rows: 1}, nil).
 					Once()
@@ -1591,6 +1616,7 @@ func (suite *GroupStoreTestSuite) TestGroupStore_UpdateGroup() {
 						groupWithMembers.ID,
 						MemberTypeUser,
 						"user-1",
+						testDeploymentID,
 					).
 					Return(stubSQLResult{rows: 1}, nil).
 					Once()
@@ -1620,7 +1646,7 @@ func (suite *GroupStoreTestSuite) TestGroupStore_UpdateGroup() {
 				txMock = modelmock.NewTxInterfaceMock(suite.T())
 			}
 
-			store := &groupStore{dbProvider: providerMock}
+			store := &groupStore{dbProvider: providerMock, deploymentID: testDeploymentID}
 
 			if tc.setup != nil {
 				tc.setup(providerMock, dbClientMock, txMock)
@@ -1704,6 +1730,7 @@ func (suite *GroupStoreTestSuite) TestGroupStore_DeleteGroup() {
 						"Exec",
 						QueryDeleteGroupMembers.Query,
 						"grp-001",
+						testDeploymentID,
 					).
 					Return(nil, errors.New("delete fail")).
 					Once()
@@ -1739,6 +1766,7 @@ func (suite *GroupStoreTestSuite) TestGroupStore_DeleteGroup() {
 						"Exec",
 						QueryDeleteGroupMembers.Query,
 						"grp-001",
+						testDeploymentID,
 					).
 					Return(stubSQLResult{rows: 1}, nil).
 					Once()
@@ -1748,6 +1776,7 @@ func (suite *GroupStoreTestSuite) TestGroupStore_DeleteGroup() {
 						"Exec",
 						QueryDeleteGroup.Query,
 						"grp-001",
+						testDeploymentID,
 					).
 					Return(nil, errors.New("delete fail")).
 					Once()
@@ -1783,6 +1812,7 @@ func (suite *GroupStoreTestSuite) TestGroupStore_DeleteGroup() {
 						"Exec",
 						QueryDeleteGroupMembers.Query,
 						"grp-001",
+						testDeploymentID,
 					).
 					Return(stubSQLResult{rows: 1}, nil).
 					Once()
@@ -1792,6 +1822,7 @@ func (suite *GroupStoreTestSuite) TestGroupStore_DeleteGroup() {
 						"Exec",
 						QueryDeleteGroup.Query,
 						"grp-001",
+						testDeploymentID,
 					).
 					Return(stubSQLResult{rows: 1}, nil).
 					Once()
@@ -1827,6 +1858,7 @@ func (suite *GroupStoreTestSuite) TestGroupStore_DeleteGroup() {
 						"Exec",
 						QueryDeleteGroupMembers.Query,
 						"grp-001",
+						testDeploymentID,
 					).
 					Return(stubSQLResult{rows: 1}, nil).
 					Once()
@@ -1836,6 +1868,7 @@ func (suite *GroupStoreTestSuite) TestGroupStore_DeleteGroup() {
 						"Exec",
 						QueryDeleteGroup.Query,
 						"grp-001",
+						testDeploymentID,
 					).
 					Return(errSQLResult{err: errors.New("rows fail")}, nil).
 					Once()
@@ -1871,6 +1904,7 @@ func (suite *GroupStoreTestSuite) TestGroupStore_DeleteGroup() {
 						"Exec",
 						QueryDeleteGroupMembers.Query,
 						"grp-001",
+						testDeploymentID,
 					).
 					Return(stubSQLResult{rows: 1}, nil).
 					Once()
@@ -1880,6 +1914,7 @@ func (suite *GroupStoreTestSuite) TestGroupStore_DeleteGroup() {
 						"Exec",
 						QueryDeleteGroup.Query,
 						"grp-001",
+						testDeploymentID,
 					).
 					Return(stubSQLResult{rows: 1}, nil).
 					Once()
@@ -1931,6 +1966,7 @@ func (suite *GroupStoreTestSuite) TestGroupStore_DeleteGroup() {
 						"Exec",
 						QueryDeleteGroupMembers.Query,
 						"grp-001",
+						testDeploymentID,
 					).
 					Return(nil, errors.New("delete fail")).
 					Once()
@@ -1966,6 +2002,7 @@ func (suite *GroupStoreTestSuite) TestGroupStore_DeleteGroup() {
 						"Exec",
 						QueryDeleteGroupMembers.Query,
 						"grp-001",
+						testDeploymentID,
 					).
 					Return(stubSQLResult{rows: 1}, nil).
 					Once()
@@ -1975,6 +2012,7 @@ func (suite *GroupStoreTestSuite) TestGroupStore_DeleteGroup() {
 						"Exec",
 						QueryDeleteGroup.Query,
 						"grp-001",
+						testDeploymentID,
 					).
 					Return(nil, errors.New("delete fail")).
 					Once()
@@ -2010,6 +2048,7 @@ func (suite *GroupStoreTestSuite) TestGroupStore_DeleteGroup() {
 						"Exec",
 						QueryDeleteGroupMembers.Query,
 						"grp-001",
+						testDeploymentID,
 					).
 					Return(stubSQLResult{rows: 1}, nil).
 					Once()
@@ -2019,6 +2058,7 @@ func (suite *GroupStoreTestSuite) TestGroupStore_DeleteGroup() {
 						"Exec",
 						QueryDeleteGroup.Query,
 						"grp-001",
+						testDeploymentID,
 					).
 					Return(stubSQLResult{rows: 0}, nil).
 					Once()
@@ -2041,7 +2081,7 @@ func (suite *GroupStoreTestSuite) TestGroupStore_DeleteGroup() {
 				txMock = modelmock.NewTxInterfaceMock(suite.T())
 			}
 
-			store := &groupStore{dbProvider: providerMock}
+			store := &groupStore{dbProvider: providerMock, deploymentID: testDeploymentID}
 
 			if tc.setup != nil {
 				tc.setup(providerMock, dbClientMock, txMock)
@@ -2099,7 +2139,7 @@ func (suite *GroupStoreTestSuite) TestGroupStore_ValidateGroupIDs() {
 					Once()
 
 				dbClientMock.
-					On("Query", queryMatcher(), "grp-1", "grp-2").
+					On("Query", queryMatcher(), testDeploymentID, "grp-1", "grp-2").
 					Return([]map[string]interface{}{{"group_id": "grp-1"}}, nil).
 					Once()
 			},
@@ -2118,7 +2158,7 @@ func (suite *GroupStoreTestSuite) TestGroupStore_ValidateGroupIDs() {
 					Once()
 
 				dbClientMock.
-					On("Query", queryMatcher(), "grp-miss", "", "grp-hit").
+					On("Query", queryMatcher(), testDeploymentID, "grp-miss", "", "grp-hit").
 					Return([]map[string]interface{}{{"group_id": "grp-hit"}}, nil).
 					Once()
 			},
@@ -2137,7 +2177,7 @@ func (suite *GroupStoreTestSuite) TestGroupStore_ValidateGroupIDs() {
 					Once()
 
 				dbClientMock.
-					On("Query", queryMatcher(), "grp-1").
+					On("Query", queryMatcher(), testDeploymentID, "grp-1").
 					Return(nil, errors.New("query fail")).
 					Once()
 			},
@@ -2157,7 +2197,9 @@ func (suite *GroupStoreTestSuite) TestGroupStore_ValidateGroupIDs() {
 			},
 			overrideBuilder: func(builderCalled *bool) func() {
 				originalBuilder := buildBulkGroupExistsQueryFunc
-				buildBulkGroupExistsQueryFunc = func(groupIDs []string) (dbmodel.DBQuery, []interface{}, error) {
+				buildBulkGroupExistsQueryFunc = func(
+					groupIDs []string, deploymentID string,
+				) (dbmodel.DBQuery, []interface{}, error) {
 					if builderCalled != nil {
 						*builderCalled = true
 					}
@@ -2188,11 +2230,13 @@ func (suite *GroupStoreTestSuite) TestGroupStore_ValidateGroupIDs() {
 			wantInvalid: []string{},
 			overrideBuilder: func(builderCalled *bool) func() {
 				originalBuilder := buildBulkGroupExistsQueryFunc
-				buildBulkGroupExistsQueryFunc = func(groupIDs []string) (dbmodel.DBQuery, []interface{}, error) {
+				buildBulkGroupExistsQueryFunc = func(
+					groupIDs []string, deploymentID string,
+				) (dbmodel.DBQuery, []interface{}, error) {
 					if builderCalled != nil {
 						*builderCalled = true
 					}
-					return originalBuilder(groupIDs)
+					return originalBuilder(groupIDs, deploymentID)
 				}
 				return func() { buildBulkGroupExistsQueryFunc = originalBuilder }
 			},
@@ -2211,7 +2255,7 @@ func (suite *GroupStoreTestSuite) TestGroupStore_ValidateGroupIDs() {
 					Once()
 
 				dbClientMock.
-					On("Query", queryMatcher(), "", "").
+					On("Query", queryMatcher(), testDeploymentID, "", "").
 					Return([]map[string]interface{}{}, nil).
 					Once()
 			},
@@ -2234,7 +2278,7 @@ func (suite *GroupStoreTestSuite) TestGroupStore_ValidateGroupIDs() {
 				tc.setup(providerMock, dbClientMock)
 			}
 
-			store := &groupStore{dbProvider: providerMock}
+			store := &groupStore{dbProvider: providerMock, deploymentID: testDeploymentID}
 			invalid, err := store.ValidateGroupIDs(tc.groupIDs)
 
 			if tc.wantErr != "" {
@@ -2288,7 +2332,7 @@ func (suite *GroupStoreTestSuite) TestGroupStore_GetGroupsByOrganizationUnitCoun
 					Once()
 
 				dbClientMock.
-					On("Query", QueryGetGroupsByOrganizationUnitCount, "ou-1").
+					On("Query", QueryGetGroupsByOrganizationUnitCount, "ou-1", testDeploymentID).
 					Return(nil, errors.New("query fail")).
 					Once()
 			},
@@ -2306,7 +2350,7 @@ func (suite *GroupStoreTestSuite) TestGroupStore_GetGroupsByOrganizationUnitCoun
 					Once()
 
 				dbClientMock.
-					On("Query", QueryGetGroupsByOrganizationUnitCount, "ou-1").
+					On("Query", QueryGetGroupsByOrganizationUnitCount, "ou-1", testDeploymentID).
 					Return([]map[string]interface{}{}, nil).
 					Once()
 			},
@@ -2324,7 +2368,7 @@ func (suite *GroupStoreTestSuite) TestGroupStore_GetGroupsByOrganizationUnitCoun
 					Once()
 
 				dbClientMock.
-					On("Query", QueryGetGroupsByOrganizationUnitCount, "ou-1").
+					On("Query", QueryGetGroupsByOrganizationUnitCount, "ou-1", testDeploymentID).
 					Return([]map[string]interface{}{{"total": "not-number"}}, nil).
 					Once()
 			},
@@ -2337,7 +2381,7 @@ func (suite *GroupStoreTestSuite) TestGroupStore_GetGroupsByOrganizationUnitCoun
 		suite.Run(tc.name, func() {
 			providerMock := providermock.NewDBProviderInterfaceMock(suite.T())
 			dbClientMock := clientmock.NewDBClientInterfaceMock(suite.T())
-			store := &groupStore{dbProvider: providerMock}
+			store := &groupStore{dbProvider: providerMock, deploymentID: testDeploymentID}
 
 			if tc.setup != nil {
 				tc.setup(providerMock, dbClientMock)
@@ -2391,7 +2435,7 @@ func (suite *GroupStoreTestSuite) TestGroupStore_GetGroupsByOrganizationUnit() {
 					Once()
 
 				dbClientMock.
-					On("Query", QueryGetGroupsByOrganizationUnit, "ou-1", 10, 0).
+					On("Query", QueryGetGroupsByOrganizationUnit, "ou-1", 10, 0, testDeploymentID).
 					Return(nil, errors.New("query fail")).
 					Once()
 			},
@@ -2409,7 +2453,7 @@ func (suite *GroupStoreTestSuite) TestGroupStore_GetGroupsByOrganizationUnit() {
 					Once()
 
 				dbClientMock.
-					On("Query", QueryGetGroupsByOrganizationUnit, "ou-1", 10, 0).
+					On("Query", QueryGetGroupsByOrganizationUnit, "ou-1", 10, 0, testDeploymentID).
 					Return([]map[string]interface{}{
 						{"group_id": "grp-1", "ou_id": "ou-1", "name": "g1", "description": "desc"},
 					}, nil).
@@ -2428,7 +2472,7 @@ func (suite *GroupStoreTestSuite) TestGroupStore_GetGroupsByOrganizationUnit() {
 		suite.Run(tc.name, func() {
 			providerMock := providermock.NewDBProviderInterfaceMock(suite.T())
 			dbClientMock := clientmock.NewDBClientInterfaceMock(suite.T())
-			store := &groupStore{dbProvider: providerMock}
+			store := &groupStore{dbProvider: providerMock, deploymentID: testDeploymentID}
 
 			if tc.setup != nil {
 				tc.setup(providerMock, dbClientMock)
@@ -2457,12 +2501,12 @@ func (suite *GroupStoreTestSuite) TestGroupStore_CheckGroupNameConflictForCreate
 			name: "conflict detected",
 			setupDB: func(dbClientMock *clientmock.DBClientInterfaceMock) {
 				dbClientMock.
-					On("Query", QueryCheckGroupNameConflict, "engineering", "ou-1").
+					On("Query", QueryCheckGroupNameConflict, "engineering", "ou-1", testDeploymentID).
 					Return([]map[string]interface{}{{"count": int64(1)}}, nil).
 					Once()
 			},
 			invoke: func(_ *groupStore, dbClientMock *clientmock.DBClientInterfaceMock) error {
-				return checkGroupNameConflictForCreate(dbClientMock, "engineering", "ou-1")
+				return checkGroupNameConflictForCreate(dbClientMock, "engineering", "ou-1", testDeploymentID)
 			},
 			expectErrIs: ErrGroupNameConflict,
 		},
@@ -2470,12 +2514,12 @@ func (suite *GroupStoreTestSuite) TestGroupStore_CheckGroupNameConflictForCreate
 			name: "query error",
 			setupDB: func(dbClientMock *clientmock.DBClientInterfaceMock) {
 				dbClientMock.
-					On("Query", QueryCheckGroupNameConflict, "engineering", "ou-1").
+					On("Query", QueryCheckGroupNameConflict, "engineering", "ou-1", testDeploymentID).
 					Return(nil, errors.New("query fail")).
 					Once()
 			},
 			invoke: func(_ *groupStore, dbClientMock *clientmock.DBClientInterfaceMock) error {
-				return checkGroupNameConflictForCreate(dbClientMock, "engineering", "ou-1")
+				return checkGroupNameConflictForCreate(dbClientMock, "engineering", "ou-1", testDeploymentID)
 			},
 			expectErr: "failed to check group name conflict",
 		},
@@ -2483,12 +2527,12 @@ func (suite *GroupStoreTestSuite) TestGroupStore_CheckGroupNameConflictForCreate
 			name: "no conflict",
 			setupDB: func(dbClientMock *clientmock.DBClientInterfaceMock) {
 				dbClientMock.
-					On("Query", QueryCheckGroupNameConflict, "engineering", "ou-1").
+					On("Query", QueryCheckGroupNameConflict, "engineering", "ou-1", testDeploymentID).
 					Return([]map[string]interface{}{{"count": int64(0)}}, nil).
 					Once()
 			},
 			invoke: func(_ *groupStore, dbClientMock *clientmock.DBClientInterfaceMock) error {
-				return checkGroupNameConflictForCreate(dbClientMock, "engineering", "ou-1")
+				return checkGroupNameConflictForCreate(dbClientMock, "engineering", "ou-1", testDeploymentID)
 			},
 		},
 		{
@@ -2515,24 +2559,24 @@ func (suite *GroupStoreTestSuite) TestGroupStore_CheckGroupNameConflictForUpdate
 			name: "success",
 			setupDB: func(dbClientMock *clientmock.DBClientInterfaceMock) {
 				dbClientMock.
-					On("Query", QueryCheckGroupNameConflictForUpdate, "engineering", "ou-1", "grp-1").
+					On("Query", QueryCheckGroupNameConflictForUpdate, "engineering", "ou-1", "grp-1", testDeploymentID).
 					Return([]map[string]interface{}{{"count": int64(0)}}, nil).
 					Once()
 			},
 			invoke: func(_ *groupStore, dbClientMock *clientmock.DBClientInterfaceMock) error {
-				return checkGroupNameConflictForUpdate(dbClientMock, "engineering", "ou-1", "grp-1")
+				return checkGroupNameConflictForUpdate(dbClientMock, "engineering", "ou-1", "grp-1", testDeploymentID)
 			},
 		},
 		{
 			name: "conflict detected",
 			setupDB: func(dbClientMock *clientmock.DBClientInterfaceMock) {
 				dbClientMock.
-					On("Query", QueryCheckGroupNameConflictForUpdate, "engineering", "ou-1", "grp-1").
+					On("Query", QueryCheckGroupNameConflictForUpdate, "engineering", "ou-1", "grp-1", testDeploymentID).
 					Return([]map[string]interface{}{{"count": int64(1)}}, nil).
 					Once()
 			},
 			invoke: func(_ *groupStore, dbClientMock *clientmock.DBClientInterfaceMock) error {
-				return checkGroupNameConflictForUpdate(dbClientMock, "engineering", "ou-1", "grp-1")
+				return checkGroupNameConflictForUpdate(dbClientMock, "engineering", "ou-1", "grp-1", testDeploymentID)
 			},
 			expectErrIs: ErrGroupNameConflict,
 		},
@@ -2540,12 +2584,12 @@ func (suite *GroupStoreTestSuite) TestGroupStore_CheckGroupNameConflictForUpdate
 			name: "query error",
 			setupDB: func(dbClientMock *clientmock.DBClientInterfaceMock) {
 				dbClientMock.
-					On("Query", QueryCheckGroupNameConflictForUpdate, "engineering", "ou-1", "grp-1").
+					On("Query", QueryCheckGroupNameConflictForUpdate, "engineering", "ou-1", "grp-1", testDeploymentID).
 					Return(nil, errors.New("query fail")).
 					Once()
 			},
 			invoke: func(_ *groupStore, dbClientMock *clientmock.DBClientInterfaceMock) error {
-				return checkGroupNameConflictForUpdate(dbClientMock, "engineering", "ou-1", "grp-1")
+				return checkGroupNameConflictForUpdate(dbClientMock, "engineering", "ou-1", "grp-1", testDeploymentID)
 			},
 			expectErr: "failed to check group name conflict",
 		},
@@ -2616,7 +2660,7 @@ func (suite *GroupStoreTestSuite) TestGroupStore_BuildGroupFromResultRowValidati
 
 func (suite *GroupStoreTestSuite) TestGroupStore_BuildBulkGroupExistsQueryEmpty() {
 	t := suite.T()
-	_, _, err := buildBulkGroupExistsQuery([]string{})
+	_, _, err := buildBulkGroupExistsQuery([]string{}, testDeploymentID)
 	require.Error(t, err)
 	require.Contains(t, err.Error(), "groupIDs list cannot be empty")
 }
@@ -2632,11 +2676,12 @@ func (suite *GroupStoreTestSuite) TestGroupStore_AddMembersToGroupReturnsError()
 			"grp-001",
 			MemberTypeUser,
 			"usr-1",
+			testDeploymentID,
 		).
 		Return(nil, errors.New("insert fail")).
 		Once()
 
-	err := addMembersToGroup(txMock, "grp-001", []Member{{ID: "usr-1", Type: MemberTypeUser}})
+	err := addMembersToGroup(txMock, "grp-001", []Member{{ID: "usr-1", Type: MemberTypeUser}}, testDeploymentID)
 
 	require.Error(t, err)
 	require.Contains(t, err.Error(), "failed to add member to group")
@@ -2659,6 +2704,7 @@ func (suite *GroupStoreTestSuite) TestGroupStore_UpdateGroupMembers() {
 						"Exec",
 						QueryDeleteGroupMembers.Query,
 						"grp-001",
+						testDeploymentID,
 					).
 					Return(stubSQLResult{rows: 1}, nil).
 					Once()
@@ -2670,6 +2716,7 @@ func (suite *GroupStoreTestSuite) TestGroupStore_UpdateGroupMembers() {
 						"grp-001",
 						MemberTypeUser,
 						"usr-1",
+						testDeploymentID,
 					).
 					Return(stubSQLResult{rows: 1}, nil).
 					Once()
@@ -2686,6 +2733,7 @@ func (suite *GroupStoreTestSuite) TestGroupStore_UpdateGroupMembers() {
 						"Exec",
 						QueryDeleteGroupMembers.Query,
 						"grp-001",
+						testDeploymentID,
 					).
 					Return(nil, errors.New("delete fail")).
 					Once()
@@ -2702,6 +2750,7 @@ func (suite *GroupStoreTestSuite) TestGroupStore_UpdateGroupMembers() {
 						"Exec",
 						QueryDeleteGroupMembers.Query,
 						"grp-001",
+						testDeploymentID,
 					).
 					Return(stubSQLResult{rows: 1}, nil).
 					Once()
@@ -2713,6 +2762,7 @@ func (suite *GroupStoreTestSuite) TestGroupStore_UpdateGroupMembers() {
 						"grp-001",
 						MemberTypeUser,
 						"usr-1",
+						testDeploymentID,
 					).
 					Return(nil, errors.New("member fail")).
 					Once()
@@ -2730,7 +2780,7 @@ func (suite *GroupStoreTestSuite) TestGroupStore_UpdateGroupMembers() {
 				tc.setup(txMock)
 			}
 
-			err := updateGroupMembers(txMock, "grp-001", tc.members)
+			err := updateGroupMembers(txMock, "grp-001", tc.members, testDeploymentID)
 
 			if tc.expectErr != "" {
 				suite.Require().Error(err)

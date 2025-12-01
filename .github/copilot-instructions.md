@@ -107,6 +107,19 @@ The project is structured as a monorepo to manage the backend, frontend, and sam
 - Use `DBQuery` from `internal/system/database/model` to define queries with a unique ID. This allows for DB-specific queries where needed.
   - Define each query with a unique identifier for traceability
   - Support database-specific query variations when necessary (e.g., SQLite vs PostgreSQL)
+- All tables must support multi-deployment scenarios by including `DEPLOYMENT_ID` as part of the composite primary key
+  - When defining SQL queries, always include `DEPLOYMENT_ID` and follow these patterns:
+    - **INSERT queries**: Add `DEPLOYMENT_ID` as the **last column** in the column list and the **last parameter** in VALUES
+      - Example: `INSERT INTO TABLE_NAME (COL1, COL2, ..., DEPLOYMENT_ID) VALUES ($1, $2, ..., $N)`
+    - **UPDATE queries**: Add `AND DEPLOYMENT_ID = $N` to the WHERE clause, where `$N` is the **last parameter**
+      - Example: `UPDATE TABLE_NAME SET COL1 = $2, COL2 = $3 WHERE ID = $1 AND DEPLOYMENT_ID = $4`
+    - **DELETE queries**: Add `AND DEPLOYMENT_ID = $N` to the WHERE clause, where `$N` is the **last parameter**
+      - Example: `DELETE FROM TABLE_NAME WHERE ID = $1 AND DEPLOYMENT_ID = $2`
+    - **SELECT queries**: Add `AND DEPLOYMENT_ID = $N` to the WHERE clause for single-table queries
+      - Example: `SELECT * FROM TABLE_NAME WHERE ID = $1 AND DEPLOYMENT_ID = $2`
+    - **JOIN queries**: Include `DEPLOYMENT_ID` in JOIN conditions and WHERE clauses
+      - Example: `SELECT * FROM T1 LEFT JOIN T2 ON T1.ID = T2.ID AND T1.DEPLOYMENT_ID = T2.DEPLOYMENT_ID WHERE T1.ID = $1 AND T1.DEPLOYMENT_ID = $2`
+  - Always ensure `DEPLOYMENT_ID` is the last parameter in the query to maintain consistency across the codebase
 
 ### Store Layer (Data Access)
 - Define store interfaces (e.g., `xStoreInterface`) and implementations (e.g., `xStore` struct) in `store.go`.

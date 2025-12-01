@@ -50,6 +50,27 @@ func BuildFilterQuery(
 	return resultQuery, args, nil
 }
 
+// AppendDeploymentIDToFilterQuery appends a DEPLOYMENT_ID condition to the given filter query.
+func AppendDeploymentIDToFilterQuery(
+	query model.DBQuery, args []interface{}, deploymentID string,
+) (model.DBQuery, []interface{}) {
+	postgresQuery := fmt.Sprintf("%s AND DEPLOYMENT_ID = $%d", query.PostgresQuery, len(args)+1)
+	sqliteQuery := fmt.Sprintf("%s AND DEPLOYMENT_ID = ?", query.SQLiteQuery)
+
+	argsWithDeploymentID := make([]interface{}, 0, len(args)+1)
+	argsWithDeploymentID = append(argsWithDeploymentID, args...)
+	argsWithDeploymentID = append(argsWithDeploymentID, deploymentID)
+
+	updatedQuery := &model.DBQuery{
+		ID:            query.ID,
+		Query:         postgresQuery,
+		PostgresQuery: postgresQuery,
+		SQLiteQuery:   sqliteQuery,
+	}
+
+	return *updatedQuery, argsWithDeploymentID
+}
+
 // buildPostgresJSONCondition builds a PostgreSQL JSON filter condition.
 // For nested paths (e.g., "address.city"), it uses the #>> operator with an array path.
 // For simple paths (e.g., "email"), it uses the ->> operator.

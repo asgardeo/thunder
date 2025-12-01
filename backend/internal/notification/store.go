@@ -23,6 +23,7 @@ import (
 
 	"github.com/asgardeo/thunder/internal/notification/common"
 	"github.com/asgardeo/thunder/internal/system/cmodels"
+	"github.com/asgardeo/thunder/internal/system/config"
 	dbmodel "github.com/asgardeo/thunder/internal/system/database/model"
 	"github.com/asgardeo/thunder/internal/system/database/provider"
 	"github.com/asgardeo/thunder/internal/system/log"
@@ -45,13 +46,15 @@ type notificationStoreInterface interface {
 
 // notificationStore is the implementation of notificationStoreInterface.
 type notificationStore struct {
-	dbProvider provider.DBProviderInterface
+	dbProvider   provider.DBProviderInterface
+	deploymentID string
 }
 
 // newNotificationStore returns a new instance of notificationStoreInterface.
 func newNotificationStore() notificationStoreInterface {
 	return &notificationStore{
-		dbProvider: provider.GetDBProvider(),
+		dbProvider:   provider.GetDBProvider(),
+		deploymentID: config.GetThunderRuntime().Config.Server.Identifier,
 	}
 }
 
@@ -72,7 +75,7 @@ func (s *notificationStore) createSender(sender common.NotificationSenderDTO) er
 	}
 
 	_, err = dbClient.Execute(queryCreateNotificationSender, sender.Name, sender.ID,
-		sender.Description, string(sender.Type), string(sender.Provider), propertiesJSON)
+		sender.Description, string(sender.Type), string(sender.Provider), propertiesJSON, s.deploymentID)
 	if err != nil {
 		return fmt.Errorf("failed to execute query: %w", err)
 	}
@@ -87,7 +90,7 @@ func (s *notificationStore) listSenders() ([]common.NotificationSenderDTO, error
 		return nil, fmt.Errorf("failed to get database client: %w", err)
 	}
 
-	results, err := dbClient.Query(queryGetAllNotificationSenders)
+	results, err := dbClient.Query(queryGetAllNotificationSenders, s.deploymentID)
 	if err != nil {
 		return nil, fmt.Errorf("failed to execute query: %w", err)
 	}
@@ -142,7 +145,7 @@ func (s *notificationStore) getSender(query dbmodel.DBQuery,
 		return nil, fmt.Errorf("failed to get database client: %w", err)
 	}
 
-	results, err := dbClient.Query(query, identifier)
+	results, err := dbClient.Query(query, identifier, s.deploymentID)
 	if err != nil {
 		return nil, fmt.Errorf("failed to execute query: %w", err)
 	}
@@ -196,7 +199,7 @@ func (s *notificationStore) updateSender(id string, sender common.NotificationSe
 	}
 
 	_, err = dbClient.Execute(queryUpdateNotificationSender, sender.Name, sender.Description,
-		string(sender.Provider), propertiesJSON, id, string(sender.Type))
+		string(sender.Provider), propertiesJSON, id, string(sender.Type), s.deploymentID)
 	if err != nil {
 		return fmt.Errorf("failed to execute query: %w", err)
 	}
@@ -213,7 +216,7 @@ func (s *notificationStore) deleteSender(id string) error {
 		return fmt.Errorf("failed to get database client: %w", err)
 	}
 
-	rowsAffected, err := dbClient.Execute(queryDeleteNotificationSender, id)
+	rowsAffected, err := dbClient.Execute(queryDeleteNotificationSender, id, s.deploymentID)
 	if err != nil {
 		return fmt.Errorf("failed to execute delete query: %w", err)
 	}
