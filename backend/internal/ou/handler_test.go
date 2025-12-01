@@ -356,7 +356,7 @@ func (suite *OrganizationUnitHandlerTestSuite) TestOUHandler_HandleOUListRequest
 			},
 			assert: func(recorder *httptest.ResponseRecorder) {
 				suite.Equal(http.StatusOK, recorder.Code)
-				suite.Equal("Failed to encode response\n", recorder.Body.String())
+				suite.Equal("{Code: \"SSE-5001\",Error: \"Encoding error\",ErrorDescription: \"An error occurred while encoding the response\"}\n", recorder.Body.String())
 			},
 		},
 	}
@@ -428,7 +428,7 @@ func (suite *OrganizationUnitHandlerTestSuite) TestOUHandler_HandleOUPostRequest
 			useFlaky: true,
 			assert: func(recorder *httptest.ResponseRecorder) {
 				suite.Equal(http.StatusBadRequest, recorder.Code)
-				suite.Equal("Failed to encode error response\n", recorder.Body.String())
+				suite.Equal("{Code: \"SSE-5001\",Error: \"Encoding error\",ErrorDescription: \"An error occurred while encoding the response\"}\n", recorder.Body.String())
 			},
 			assertService: func(serviceMock *OrganizationUnitServiceInterfaceMock) {
 				serviceMock.AssertNotCalled(suite.T(), "CreateOrganizationUnit", mock.Anything)
@@ -502,7 +502,7 @@ func (suite *OrganizationUnitHandlerTestSuite) TestOUHandler_HandleOUPostRequest
 			},
 			assert: func(recorder *httptest.ResponseRecorder) {
 				suite.Equal(http.StatusInternalServerError, recorder.Code)
-				suite.Equal("Failed to encode error response\n", recorder.Body.String())
+				suite.Equal("{Code: \"SSE-5001\",Error: \"Encoding error\",ErrorDescription: \"An error occurred while encoding the response\"}\n", recorder.Body.String())
 			},
 		},
 		{
@@ -517,7 +517,7 @@ func (suite *OrganizationUnitHandlerTestSuite) TestOUHandler_HandleOUPostRequest
 			},
 			assert: func(recorder *httptest.ResponseRecorder) {
 				suite.Equal(http.StatusCreated, recorder.Code)
-				suite.Equal("Failed to encode response\n", recorder.Body.String())
+				suite.Equal("{Code: \"SSE-5001\",Error: \"Encoding error\",ErrorDescription: \"An error occurred while encoding the response\"}\n", recorder.Body.String())
 			},
 		},
 	}
@@ -582,7 +582,7 @@ func (suite *OrganizationUnitHandlerTestSuite) TestOUHandler_HandleOUGetRequest(
 			useFlaky: true,
 			assert: func(recorder *httptest.ResponseRecorder) {
 				suite.Equal(http.StatusBadRequest, recorder.Code)
-				suite.Equal("Failed to encode error response\n", recorder.Body.String())
+				suite.Equal("{Code: \"SSE-5001\",Error: \"Encoding error\",ErrorDescription: \"An error occurred while encoding the response\"}\n", recorder.Body.String())
 			},
 			assertService: func(serviceMock *OrganizationUnitServiceInterfaceMock) {
 				serviceMock.AssertNotCalled(suite.T(), "GetOrganizationUnit", mock.Anything)
@@ -620,7 +620,7 @@ func (suite *OrganizationUnitHandlerTestSuite) TestOUHandler_HandleOUGetRequest(
 			},
 			assert: func(recorder *httptest.ResponseRecorder) {
 				suite.Equal(http.StatusOK, recorder.Code)
-				suite.Equal("Failed to encode response\n", recorder.Body.String())
+				suite.Equal("{Code: \"SSE-5001\",Error: \"Encoding error\",ErrorDescription: \"An error occurred while encoding the response\"}\n", recorder.Body.String())
 			},
 		},
 		{
@@ -695,7 +695,7 @@ func (suite *OrganizationUnitHandlerTestSuite) TestOUHandler_HandleOUPutRequest(
 			useFlaky:       true,
 			assert: func(recorder *httptest.ResponseRecorder) {
 				suite.Equal(http.StatusBadRequest, recorder.Code)
-				suite.Equal("Failed to encode error response\n", recorder.Body.String())
+				suite.Equal("{Code: \"SSE-5001\",Error: \"Encoding error\",ErrorDescription: \"An error occurred while encoding the response\"}\n", recorder.Body.String())
 			},
 		},
 		{
@@ -765,7 +765,7 @@ func (suite *OrganizationUnitHandlerTestSuite) TestOUHandler_HandleOUPutRequest(
 			},
 			assert: func(recorder *httptest.ResponseRecorder) {
 				suite.Equal(http.StatusOK, recorder.Code)
-				suite.Equal("Failed to encode response\n", recorder.Body.String())
+				suite.Equal("{Code: \"SSE-5001\",Error: \"Encoding error\",ErrorDescription: \"An error occurred while encoding the response\"}\n", recorder.Body.String())
 			},
 		},
 	}
@@ -948,7 +948,7 @@ func (suite *OrganizationUnitHandlerTestSuite) TestOUHandler_HandleOUChildrenLis
 			},
 			assert: func(recorder *httptest.ResponseRecorder) {
 				suite.Equal(http.StatusOK, recorder.Code)
-				suite.Equal("Failed to encode response\n", recorder.Body.String())
+				suite.Equal("{Code: \"SSE-5001\",Error: \"Encoding error\",ErrorDescription: \"An error occurred while encoding the response\"}\n", recorder.Body.String())
 			},
 		},
 		{
@@ -1044,7 +1044,7 @@ func (suite *OrganizationUnitHandlerTestSuite) TestOUHandler_HandleOUGetByPathRe
 			useFlaky: true,
 			assert: func(recorder *httptest.ResponseRecorder) {
 				suite.Equal(http.StatusBadRequest, recorder.Code)
-				suite.Equal("Failed to encode error response\n", recorder.Body.String())
+				suite.Equal("{Code: \"SSE-5001\",Error: \"Encoding error\",ErrorDescription: \"An error occurred while encoding the response\"}\n", recorder.Body.String())
 			},
 			assertService: func(serviceMock *OrganizationUnitServiceInterfaceMock) {
 				serviceMock.AssertNotCalled(suite.T(), "GetOrganizationUnitByPath", mock.Anything)
@@ -1082,7 +1082,7 @@ func (suite *OrganizationUnitHandlerTestSuite) TestOUHandler_HandleOUGetByPathRe
 			},
 			assert: func(recorder *httptest.ResponseRecorder) {
 				suite.Equal(http.StatusOK, recorder.Code)
-				suite.Equal("Failed to encode response\n", recorder.Body.String())
+				suite.Equal("{Code: \"SSE-5001\",Error: \"Encoding error\",ErrorDescription: \"An error occurred while encoding the response\"}\n", recorder.Body.String())
 			},
 		},
 		{
@@ -1182,7 +1182,7 @@ func (suite *OrganizationUnitHandlerTestSuite) TestOUHandler_HandleOUPutByPathRe
 			},
 			assert: func(recorder *httptest.ResponseRecorder) {
 				suite.Equal(http.StatusOK, recorder.Code)
-				suite.Equal("Failed to encode response\n", recorder.Body.String())
+				suite.Equal("{Code: \"SSE-5001\",Error: \"Encoding error\",ErrorDescription: \"An error occurred while encoding the response\"}\n", recorder.Body.String())
 			},
 		},
 		{
@@ -1352,7 +1352,7 @@ func (suite *OrganizationUnitHandlerTestSuite) TestOUHandler_HandleOUUsersListBy
 			},
 			assert: func(recorder *httptest.ResponseRecorder) {
 				suite.Equal(http.StatusOK, recorder.Code)
-				suite.Equal("Failed to encode response\n", recorder.Body.String())
+				suite.Equal("{Code: \"SSE-5001\",Error: \"Encoding error\",ErrorDescription: \"An error occurred while encoding the response\"}\n", recorder.Body.String())
 			},
 		},
 		{
