@@ -277,9 +277,9 @@ func (suite *DiscoveryTestSuite) TestGetBaseURL_WithPublicHostname() {
 	config.ResetThunderRuntime()
 	testConfig := &config.Config{
 		Server: config.ServerConfig{
-			PublicHostname: "https://public.thunder.io",
-			Hostname:       "localhost",
-			Port:           8080,
+			PublicURL: "https://public.thunder.io",
+			Hostname:  "localhost",
+			Port:      8080,
 		},
 		JWT: config.JWTConfig{
 			Issuer: "https://test.thunder.io",

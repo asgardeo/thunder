@@ -27,5 +27,5 @@ metadata:
     "helm.sh/hook": pre-install
     "helm.sh/hook-weight": "-10"
 data:
-  deployment.yaml: {{ tpl (.Files.Get "conf/deployment.yaml") . | replace (.Values.configuration.server.hostname | quote) "\"0.0.0.0\"" | quote }}
+  deployment.yaml: {{ tpl (.Files.Get "conf/deployment.yaml") . | quote }}
 {{- end }}

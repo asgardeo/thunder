@@ -108,16 +108,22 @@ ingress:
 configuration:
   # Server configuration
   server:
-    hostname: "0.0.0.0"
     port: 8090
     httpOnly: false
+    publicUrl: "https://thunder.local"
 
   # Gate client configuration
   gateClient:
-    hostname: "0.0.0.0"
-    port: 8090
+    hostname: "thunder.local"
+    port: 443
     scheme: "https"
     path: "/gate"
+
+  # Developer client configuration
+  developerClient:
+    path: "/develop"
+    clientId: "DEVELOP"
+    scopes: "['openid', 'profile', 'email', 'system']"
 
   # Security configuration
   security:

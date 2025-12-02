@@ -15,9 +15,10 @@
 # under the License.
 
 server:
-  hostname: {{ .Values.configuration.server.hostname | quote }}
+  hostname: "0.0.0.0"
   port: {{ .Values.configuration.server.port }}
   http_only: {{ .Values.configuration.server.httpOnly }}
+  public_url: {{ .Values.configuration.server.publicUrl | quote }}
 
 gate_client:
   hostname: {{ .Values.configuration.gateClient.hostname | quote }}

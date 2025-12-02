@@ -122,7 +122,19 @@ spec:
             - name: deployment-yaml-volume
               mountPath: /opt/thunder/repository/conf/deployment.yaml
               subPath: deployment.yaml
+            - name: gate-config-volume
+              mountPath: /opt/thunder/apps/gate/config.js
+              subPath: gate-config.js
+            - name: develop-config-volume
+              mountPath: /opt/thunder/apps/develop/config.js
+              subPath: develop-config.js
       volumes:
         - name: deployment-yaml-volume
+          configMap:
+            name: {{ include "thunder.fullname" . }}-config-map
+        - name: gate-config-volume
+          configMap:
+            name: {{ include "thunder.fullname" . }}-config-map
+        - name: develop-config-volume
           configMap:
             name: {{ include "thunder.fullname" . }}-config-map

@@ -40,6 +40,13 @@ export interface ServerConfig {
    * When false, HTTPS will be used for secure connections.
    */
   http_only: boolean;
+
+  /**
+   * Optional public URL for the server. If provided, this will be used instead of
+   * constructing the URL from hostname, port, and http_only.
+   * @example "https://thunder.example.com", "https://api.thunder.local:8080"
+   */
+  public_url?: string;
 }
 
 /**

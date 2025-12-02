@@ -87,6 +87,11 @@ export default function ConfigProvider({children}: ConfigProviderProps) {
     () => ({
       config,
       getServerUrl: () => {
+        // If public_url is provided, use it directly
+        if (config.server.public_url) {
+          return config.server.public_url;
+        }
+        // Otherwise, construct from hostname, port, and http_only
         const {hostname, port, http_only: httpOnly} = config.server;
         const protocol: string = httpOnly ? 'http' : 'https';
         return `${protocol}://${hostname}:${port}`;
