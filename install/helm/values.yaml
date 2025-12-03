@@ -215,6 +215,15 @@ configuration:
     allowedOrigins:
       - "https://localhost:3000"
 
+# Persistence configuration for SQLite databases
+# Only relevant when using SQLite as the database type
+persistence:
+  enabled: false
+  storageClass: ""
+  accessMode: ReadWriteOnce
+  size: 1Gi
+  annotations: {}
+
 # Setup Job configuration
 # Runs setup.sh as a one-time initialization job during Helm install
 setup:

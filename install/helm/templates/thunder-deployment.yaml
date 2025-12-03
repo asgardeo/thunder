@@ -14,6 +14,7 @@
 # specific language governing permissions and limitations
 # under the License.
 
+{{- $usingSqlite := or (eq .Values.configuration.database.identity.type "sqlite") (eq .Values.configuration.database.runtime.type "sqlite") (eq .Values.configuration.database.user.type "sqlite") }}
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -119,6 +120,10 @@ spec:
             - containerPort: {{ .Values.deployment.container.port }}
               protocol: TCP
           volumeMounts:
+            {{- if or .Values.persistence.enabled $usingSqlite }}
+            - name: database-storage
+              mountPath: /opt/thunder/repository/database
+            {{- end }}
             - name: deployment-yaml-volume
               mountPath: /opt/thunder/repository/conf/deployment.yaml
               subPath: deployment.yaml
@@ -129,6 +134,11 @@ spec:
               mountPath: /opt/thunder/apps/develop/config.js
               subPath: develop-config.js
       volumes:
+        {{- if or .Values.persistence.enabled $usingSqlite }}
+        - name: database-storage
+          persistentVolumeClaim:
+            claimName: {{ include "thunder.fullname" . }}-database-pvc
+        {{- end }}
         - name: deployment-yaml-volume
           configMap:
             name: {{ include "thunder.fullname" . }}-config-map

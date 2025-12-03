@@ -44,6 +44,20 @@ helm install my-thunder oci://ghcr.io/asgardeo/helm-charts/thunder -f custom-val
 
 The command deploys Thunder on the Kubernetes cluster with the default configuration. The [Parameters](#parameters) section lists the available parameters that can be configured during installation.
 
+If you want to install Thunder with SQLite databases, use the following command:
+
+```bash
+helm install my-thunder oci://ghcr.io/asgardeo/helm-charts/thunder \
+  --set configuration.database.identity.type=sqlite \
+  --set configuration.database.runtime.type=sqlite \
+  --set configuration.database.user.type=sqlite
+```
+
+**Note:** When using SQLite:
+- **Persistence is automatically enabled** when any database is configured to use SQLite
+- The setup job's init container will automatically copy SQLite databases from the image to a PVC
+- Database files will persist across pod restarts
+
 ### 2. Obtain the External IP
 
 After deploying Thunder, you need to find its external IP address to access it outside the cluster. Run the following command to list the Ingress resources:
@@ -209,6 +223,23 @@ The following table lists the configurable parameters of the Thunder chart and t
 | `configuration.flow.graphDirectory`    | Flow graph directory                                            | `repository/resources/graphs/` |
 | `configuration.flow.authn.defaultFlow` | Default authentication flow                                     | `auth_flow_config_basic`     |
 | `configuration.cors.allowedOrigins`    | CORS allowed origins                                            | See values.yaml              |
+
+### Persistence Parameters
+
+Persistence is **automatically enabled** when using SQLite as the database type for any database (identity, runtime, or user). It creates a PersistentVolumeClaim to store SQLite database files.
+
+| Name                                   | Description                                                     | Default                      |
+| -------------------------------------- | --------------------------------------------------------------- | ---------------------------- |
+| `persistence.enabled`                  | Enable persistence for SQLite databases (auto-enabled for SQLite) | `false`                    |
+| `persistence.storageClass`             | Storage class name (use "-" for no storage class)               | `""`                         |
+| `persistence.accessMode`               | PVC access mode                                                 | `ReadWriteOnce`              |
+| `persistence.size`                     | PVC storage size                                                | `1Gi`                        |
+| `persistence.annotations`              | Additional annotations for PVC                                  | `{}`                         |
+
+**Note:** 
+- When any database is configured to use SQLite, a PersistentVolumeClaim (PVC) is **always created** to store the database files, regardless of the `persistence.enabled` or `setup.enabled` settings.
+- The PVC is mounted by the setup job's init container (if `setup.enabled` is true) to initialize the database, and by the main Thunder deployment for ongoing operation.
+- You can customize the storage size and storage class for the PVC using the `persistence.size` and `persistence.storageClass` values.
 
 ### Setup Job Parameters
 

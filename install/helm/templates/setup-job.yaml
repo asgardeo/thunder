@@ -15,6 +15,7 @@
 # under the License.
 
 {{- if .Values.setup.enabled }}
+{{- $usingSqlite := or (eq .Values.configuration.database.identity.type "sqlite") (eq .Values.configuration.database.runtime.type "sqlite") (eq .Values.configuration.database.user.type "sqlite") }}
 apiVersion: batch/v1
 kind: Job
 metadata:
@@ -53,6 +54,40 @@ spec:
       {{- if .Values.deployment.image.imagePullSecret }}
       imagePullSecrets:
         - name: {{ .Values.deployment.image.imagePullSecret }}
+      {{- end }}
+      {{- if or .Values.persistence.enabled $usingSqlite }}
+      initContainers:
+        - name: init-database
+          {{- if .Values.deployment.image.digest }}
+          image: {{ .Values.deployment.image.registry }}/{{ .Values.deployment.image.repository }}@{{ .Values.deployment.image.digest }}
+          {{- else }}
+          image: {{ .Values.deployment.image.registry }}/{{ .Values.deployment.image.repository }}:{{ default "latest" .Values.deployment.image.tag }}
+          {{- end }}
+          imagePullPolicy: {{ .Values.deployment.image.pullPolicy }}
+          securityContext:
+            allowPrivilegeEscalation: false
+            runAsNonRoot: true
+            {{- if .Values.deployment.securityContext.enableRunAsUser }}
+            runAsUser: {{ .Values.deployment.securityContext.runAsUser }}
+            runAsGroup: {{ .Values.deployment.securityContext.runAsUser }}
+            {{- end }}
+            capabilities:
+              drop:
+                - ALL
+          command: ['sh', '-c']
+          args:
+            - |
+              if [ ! -f /data/.initialized ]; then
+                echo "Copying database directory from image..."
+                cp -r /opt/thunder/repository/database/* /data/
+                touch /data/.initialized
+                echo "Database initialization complete"
+              else
+                echo "Database already initialized"
+              fi
+          volumeMounts:
+            - name: database-storage
+              mountPath: /data
       {{- end }}
       containers:
         - name: setup
@@ -93,6 +128,10 @@ spec:
               drop:
                 - all
           volumeMounts:
+            {{- if or .Values.persistence.enabled $usingSqlite }}
+            - name: database-storage
+              mountPath: /opt/thunder/repository/database
+            {{- end }}
             - name: deployment-yaml-volume
               mountPath: /opt/thunder/repository/conf/deployment.yaml
               subPath: deployment.yaml
@@ -131,6 +170,11 @@ spec:
             {{- toYaml .Values.setup.extraVolumeMounts | nindent 12 }}
             {{- end }}
       volumes:
+        {{- if or .Values.persistence.enabled $usingSqlite }}
+        - name: database-storage
+          persistentVolumeClaim:
+            claimName: {{ include "thunder.fullname" . }}-database-pvc
+        {{- end }}
         - name: deployment-yaml-volume
           configMap:
             name: {{ include "thunder.fullname" . }}-setup-config-map
