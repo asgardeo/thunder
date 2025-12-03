@@ -90,13 +90,13 @@ spec:
             httpGet:
               path: /health/liveness
               port: {{ .Values.deployment.container.port }}
-              scheme: HTTPS
+              scheme: {{ if .Values.configuration.server.httpOnly }}HTTP{{ else }}HTTPS{{ end }}
             periodSeconds: {{ .Values.deployment.livenessProbe.periodSeconds }}
           readinessProbe:
             httpGet:
               path: /health/readiness
               port: {{ .Values.deployment.container.port }}
-              scheme: HTTPS
+              scheme: {{ if .Values.configuration.server.httpOnly }}HTTP{{ else }}HTTPS{{ end }}
             initialDelaySeconds: {{ .Values.deployment.readinessProbe.initialDelaySeconds }}
             periodSeconds: {{ .Values.deployment.readinessProbe.periodSeconds }}
           resources:
