@@ -249,7 +249,8 @@ The setup job runs `setup.sh` as a one-time Helm pre-install hook to initialize 
 | -------------------------------------- | --------------------------------------------------------------- | ---------------------------- |
 | `setup.enabled`                        | Enable setup job (runs on install via Helm hook)                | `true`                       |
 | `setup.backoffLimit`                   | Number of retries if setup fails                                | `3`                          |
-| `setup.ttlSecondsAfterFinished`        | Time to keep job after completion (0 = indefinite)              | `86400` (24 hours)           |
+| `setup.preserveJob`                    | Preserve job after completion (false = delete on success)       | `false`                      |
+| `setup.ttlSecondsAfterFinished`        | Time to keep failed jobs (only if preserveJob=false)            | `86400` (24 hours)           |
 | `setup.debug`                          | Enable debug mode for setup                                     | `false`                      |
 | `setup.args`                           | Additional command-line arguments for setup.sh                  | `[]`                         |
 | `setup.env`                            | Additional environment variables for setup job                  | `[]`                         |
@@ -259,6 +260,10 @@ The setup job runs `setup.sh` as a one-time Helm pre-install hook to initialize 
 | `setup.resources.limits.memory`        | Memory limit for setup job                                      | `256Mi`                      |
 | `setup.extraVolumeMounts`              | Additional volume mounts for setup job                          | `[]`                         |
 | `setup.extraVolumes`                   | Additional volumes for setup job                                | `[]`                         |
+
+**Job Retention Behavior:**
+- When `preserveJob=false` (default): Successful jobs are deleted immediately. Failed jobs are kept for `ttlSecondsAfterFinished` (24 hours) to allow debugging.
+- When `preserveJob=true`: Job is kept indefinitely regardless of success/failure status. Use this for troubleshooting or audit purposes.
 
 ### Bootstrap Script Parameters
 

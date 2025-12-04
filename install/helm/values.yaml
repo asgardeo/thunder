@@ -230,7 +230,12 @@ setup:
   enabled: true
   # Number of retries if setup fails
   backoffLimit: 3
-  # Time to keep job after completion (seconds, 0 = indefinite)
+  # Whether to preserve the setup job after completion
+  # When false: Job is deleted immediately on success, and after ttlSecondsAfterFinished on failure
+  # When true: Job is kept indefinitely (ttlSecondsAfterFinished is not applied)
+  preserveJob: false
+  # Time to keep failed jobs after completion (seconds, 0 = indefinite)
+  # Only applies when preserveJob=false. Successful jobs are deleted immediately via hook-delete-policy.
   ttlSecondsAfterFinished: 86400  # 24 hours
   # Enable debug mode for setup
   debug: false

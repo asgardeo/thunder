@@ -27,12 +27,16 @@ metadata:
   annotations:
     "helm.sh/hook": pre-install
     "helm.sh/hook-weight": "-5"
+    {{- if not .Values.setup.preserveJob }}
     "helm.sh/hook-delete-policy": hook-succeeded
+    {{- end }}
 spec:
   completions: 1
   parallelism: 1
   backoffLimit: {{ .Values.setup.backoffLimit }}
+  {{- if not .Values.setup.preserveJob }}
   ttlSecondsAfterFinished: {{ .Values.setup.ttlSecondsAfterFinished }}
+  {{- end }}
   template:
     metadata:
       labels:

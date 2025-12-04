@@ -18,12 +18,16 @@ apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
   annotations:
+    {{- if eq .Values.ingress.className "nginx" }}
     {{- $annotations := deepCopy .Values.ingress.combinedAnnotations }}
     {{- if .Values.configuration.server.httpOnly }}
     {{- $_ := set $annotations "nginx.ingress.kubernetes.io/backend-protocol" "HTTP" }}
     {{- $_ := unset $annotations "nginx.ingress.kubernetes.io/force-ssl-redirect" }}
     {{- end }}
     {{- toYaml $annotations | nindent 4 }}
+    {{- else }}
+    {{- toYaml .Values.ingress.customAnnotations | nindent 4 }}
+    {{- end }}
   name: {{ include "thunder.fullname" . }}-ingress
   namespace: {{ .Release.Namespace }}
   labels:
