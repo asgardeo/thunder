@@ -141,6 +141,298 @@ func (ts *ExportAPITestSuite) TestExportWithEmptyRequest() {
 	ts.Require().Error(err)
 }
 
+// TestIdentityProviderExportYAML tests the identity provider export functionality returning YAML.
+func (ts *ExportAPITestSuite) TestIdentityProviderExportYAML() {
+	// Create a test IDP first
+	idp := IDP{
+		Name:        "Export Test IDP",
+		Description: "Test identity provider for export functionality",
+		Type:        "OAUTH",
+		Properties: []IDPProperty{
+			{
+				Name:     "client_id",
+				Value:    "export_test_oauth_client",
+				IsSecret: false,
+			},
+			{
+				Name:     "client_secret",
+				Value:    "export_test_oauth_secret",
+				IsSecret: true,
+			},
+			{
+				Name:     "redirect_uri",
+				Value:    "https://localhost:3000/oauth/callback",
+				IsSecret: false,
+			},
+		},
+	}
+
+	idpID, err := ts.createIDP(idp)
+	ts.Require().NoError(err)
+	defer ts.deleteIDP(idpID)
+
+	// Test YAML export functionality
+	exportRequest := ExportRequest{
+		IdentityProviders: []string{idpID},
+	}
+
+	yamlContent, err := ts.exportResourcesYAML(exportRequest)
+	ts.Require().NoError(err)
+	ts.Require().NotEmpty(yamlContent)
+
+	// Verify the exported YAML content
+	ts.Assert().Contains(yamlContent, "name: Export Test IDP")
+	ts.Assert().Contains(yamlContent, "description: Test identity provider for export functionality")
+	ts.Assert().Contains(yamlContent, "type: OAUTH")
+	ts.Assert().Contains(yamlContent, "properties:")
+	ts.Assert().Contains(yamlContent, "name: client_id")
+	ts.Assert().Contains(yamlContent, "value: {{.EXPORT_TEST_IDP_CLIENT_ID}}")
+	ts.Assert().Contains(yamlContent, "name: client_secret")
+	ts.Assert().Contains(yamlContent, "value: {{.EXPORT_TEST_IDP_CLIENT_SECRET}}")
+	ts.Assert().Contains(yamlContent, "is_secret: true")
+	ts.Assert().Contains(yamlContent, "# File: Export_Test_IDP.yaml")
+}
+
+// TestMultipleIdentityProvidersExportYAML tests exporting multiple identity providers.
+func (ts *ExportAPITestSuite) TestMultipleIdentityProvidersExportYAML() {
+	// Create first IDP
+	idp1 := IDP{
+		Name:        "GitHub IDP Export",
+		Description: "GitHub identity provider for export",
+		Type:        "OAUTH",
+		Properties: []IDPProperty{
+			{
+				Name:     "client_id",
+				Value:    "github_export_client",
+				IsSecret: false,
+			},
+			{
+				Name:     "client_secret",
+				Value:    "github_export_secret",
+				IsSecret: true,
+			},
+		},
+	}
+
+	idpID1, err := ts.createIDP(idp1)
+	ts.Require().NoError(err)
+	defer ts.deleteIDP(idpID1)
+
+	// Create second IDP
+	idp2 := IDP{
+		Name:        "Google IDP Export",
+		Description: "Google identity provider for export",
+		Type:        "OIDC",
+		Properties: []IDPProperty{
+			{
+				Name:     "client_id",
+				Value:    "google_export_client",
+				IsSecret: false,
+			},
+			{
+				Name:     "client_secret",
+				Value:    "google_export_secret",
+				IsSecret: true,
+			},
+		},
+	}
+
+	idpID2, err := ts.createIDP(idp2)
+	ts.Require().NoError(err)
+	defer ts.deleteIDP(idpID2)
+
+	// Test exporting multiple IDPs
+	exportRequest := ExportRequest{
+		IdentityProviders: []string{idpID1, idpID2},
+	}
+
+	yamlContent, err := ts.exportResourcesYAML(exportRequest)
+	ts.Require().NoError(err)
+	ts.Require().NotEmpty(yamlContent)
+
+	// Verify both IDPs are in the export
+	ts.Assert().Contains(yamlContent, "name: GitHub IDP Export")
+	ts.Assert().Contains(yamlContent, "name: Google IDP Export")
+	ts.Assert().Contains(yamlContent, "type: OAUTH")
+	ts.Assert().Contains(yamlContent, "type: OIDC")
+	ts.Assert().Contains(yamlContent, "# File: GitHub_IDP_Export.yaml")
+	ts.Assert().Contains(yamlContent, "# File: Google_IDP_Export.yaml")
+}
+
+// TestMixedResourcesExportYAML tests exporting both applications and identity providers.
+func (ts *ExportAPITestSuite) TestMixedResourcesExportYAML() {
+	// Create a test application
+	app := Application{
+		Name:                      "Mixed Export App",
+		Description:               "Test application for mixed export",
+		IsRegistrationFlowEnabled: true,
+		URL:                       "https://mixedexport.example.com",
+		AuthFlowGraphID:           "auth_flow_config_basic",
+		RegistrationFlowGraphID:   "registration_flow_config_basic",
+		Certificate: &ApplicationCert{
+			Type:  "NONE",
+			Value: "",
+		},
+		InboundAuthConfig: []InboundAuthConfig{
+			{
+				Type: "oauth2",
+				OAuthAppConfig: &OAuthAppConfig{
+					ClientID:                "mixed_export_client",
+					ClientSecret:            "mixed_export_secret",
+					RedirectURIs:            []string{"https://mixedexport.example.com/callback"},
+					GrantTypes:              []string{"authorization_code"},
+					ResponseTypes:           []string{"code"},
+					TokenEndpointAuthMethod: "client_secret_basic",
+				},
+			},
+		},
+	}
+
+	appID, err := ts.createApplication(app)
+	ts.Require().NoError(err)
+	defer ts.deleteApplication(appID)
+
+	// Create a test IDP
+	idp := IDP{
+		Name:        "Mixed Export IDP",
+		Description: "Test IDP for mixed export",
+		Type:        "OAUTH",
+		Properties: []IDPProperty{
+			{
+				Name:     "client_id",
+				Value:    "mixed_idp_client",
+				IsSecret: false,
+			},
+			{
+				Name:     "client_secret",
+				Value:    "mixed_idp_secret",
+				IsSecret: true,
+			},
+		},
+	}
+
+	idpID, err := ts.createIDP(idp)
+	ts.Require().NoError(err)
+	defer ts.deleteIDP(idpID)
+
+	// Test exporting both application and IDP
+	exportRequest := ExportRequest{
+		Applications:      []string{appID},
+		IdentityProviders: []string{idpID},
+	}
+
+	yamlContent, err := ts.exportResourcesYAML(exportRequest)
+	ts.Require().NoError(err)
+	ts.Require().NotEmpty(yamlContent)
+
+	// Verify both resources are in the export
+	ts.Assert().Contains(yamlContent, "name: Mixed Export App")
+	ts.Assert().Contains(yamlContent, "name: Mixed Export IDP")
+	ts.Assert().Contains(yamlContent, "# File: Mixed_Export_App.yaml")
+	ts.Assert().Contains(yamlContent, "# File: Mixed_Export_IDP.yaml")
+}
+
+// TestIdentityProviderExportWithWildcard tests exporting all identity providers using wildcard.
+func (ts *ExportAPITestSuite) TestIdentityProviderExportWithWildcard() {
+	// Create a test IDP
+	idp := IDP{
+		Name:        "Wildcard Test IDP",
+		Description: "Test IDP for wildcard export",
+		Type:        "OAUTH",
+		Properties: []IDPProperty{
+			{
+				Name:     "client_id",
+				Value:    "wildcard_test_client",
+				IsSecret: false,
+			},
+		},
+	}
+
+	idpID, err := ts.createIDP(idp)
+	ts.Require().NoError(err)
+	defer ts.deleteIDP(idpID)
+
+	// Test wildcard export
+	exportRequest := ExportRequest{
+		IdentityProviders: []string{"*"},
+	}
+
+	yamlContent, err := ts.exportResourcesYAML(exportRequest)
+	ts.Require().NoError(err)
+	ts.Require().NotEmpty(yamlContent)
+
+	// Verify the test IDP is included in wildcard export
+	ts.Assert().Contains(yamlContent, "name: Wildcard Test IDP")
+}
+
+// TestIdentityProviderExportWithProperties tests exporting IDP with various property types.
+func (ts *ExportAPITestSuite) TestIdentityProviderExportWithProperties() {
+	// Create IDP with multiple property types
+	idp := IDP{
+		Name:        "Properties Test IDP",
+		Description: "Test IDP with various properties",
+		Type:        "OIDC",
+		Properties: []IDPProperty{
+			{
+				Name:     "client_id",
+				Value:    "props_test_client",
+				IsSecret: false,
+			},
+			{
+				Name:     "client_secret",
+				Value:    "props_test_secret",
+				IsSecret: true,
+			},
+			{
+				Name:     "redirect_uri",
+				Value:    "https://localhost:3000/callback",
+				IsSecret: false,
+			},
+			{
+				Name:     "scopes",
+				Value:    "openid,email,profile",
+				IsSecret: false,
+			},
+		},
+	}
+
+	idpID, err := ts.createIDP(idp)
+	ts.Require().NoError(err)
+	defer ts.deleteIDP(idpID)
+
+	// Export the IDP
+	exportRequest := ExportRequest{
+		IdentityProviders: []string{idpID},
+	}
+
+	yamlContent, err := ts.exportResourcesYAML(exportRequest)
+	ts.Require().NoError(err)
+	ts.Require().NotEmpty(yamlContent)
+
+	// Verify all properties are properly parameterized
+	ts.Assert().Contains(yamlContent, "name: client_id")
+	ts.Assert().Contains(yamlContent, "value: {{.PROPERTIES_TEST_IDP_CLIENT_ID}}")
+	ts.Assert().Contains(yamlContent, "name: client_secret")
+	ts.Assert().Contains(yamlContent, "value: {{.PROPERTIES_TEST_IDP_CLIENT_SECRET}}")
+	ts.Assert().Contains(yamlContent, "name: redirect_uri")
+	ts.Assert().Contains(yamlContent, "value: {{.PROPERTIES_TEST_IDP_REDIRECT_URI}}")
+	ts.Assert().Contains(yamlContent, "name: scopes")
+	ts.Assert().Contains(yamlContent, "value: {{.PROPERTIES_TEST_IDP_SCOPES}}")
+	// Verify is_secret flag is preserved
+	ts.Assert().Contains(yamlContent, "is_secret: true")
+}
+
+// TestExportWithInvalidIdentityProviderID tests export with invalid IDP ID.
+func (ts *ExportAPITestSuite) TestExportWithInvalidIdentityProviderID() {
+	// Test export with invalid IDP ID
+	invalidExportRequest := ExportRequest{
+		IdentityProviders: []string{"invalid-uuid"},
+	}
+
+	_, err := ts.exportResourcesYAML(invalidExportRequest)
+	ts.Require().Error(err)
+}
+
 // Helper functions
 
 func (ts *ExportAPITestSuite) createApplication(app Application) (string, error) {
@@ -276,4 +568,64 @@ func (ts *ExportAPITestSuite) exportResourcesJSON(exportRequest ExportRequest) (
 	}
 
 	return &exportResponse, nil
+}
+
+func (ts *ExportAPITestSuite) createIDP(idp IDP) (string, error) {
+	idpJSON, err := json.Marshal(idp)
+	if err != nil {
+		return "", fmt.Errorf("failed to marshal IDP: %w", err)
+	}
+
+	reqBody := bytes.NewReader(idpJSON)
+	req, err := http.NewRequest("POST", testServerURL+"/identity-providers", reqBody)
+	if err != nil {
+		return "", fmt.Errorf("failed to create request: %w", err)
+	}
+	req.Header.Set("Content-Type", "application/json")
+
+	client := testutils.GetHTTPClient()
+
+	resp, err := client.Do(req)
+	if err != nil {
+		return "", fmt.Errorf("failed to send request: %w", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusCreated {
+		responseBody, _ := io.ReadAll(resp.Body)
+		return "", fmt.Errorf("expected status 201, got %d. Response: %s", resp.StatusCode, string(responseBody))
+	}
+
+	var createdIDP IDP
+	err = json.NewDecoder(resp.Body).Decode(&createdIDP)
+	if err != nil {
+		return "", fmt.Errorf("failed to parse response body: %w", err)
+	}
+
+	id := createdIDP.ID
+	if id == "" {
+		return "", fmt.Errorf("response does not contain id")
+	}
+	return id, nil
+}
+
+func (ts *ExportAPITestSuite) deleteIDP(idpID string) error {
+	req, err := http.NewRequest("DELETE", testServerURL+"/identity-providers/"+idpID, nil)
+	if err != nil {
+		return fmt.Errorf("failed to create delete request: %w", err)
+	}
+
+	client := testutils.GetHTTPClient()
+
+	resp, err := client.Do(req)
+	if err != nil {
+		return fmt.Errorf("failed to send delete request: %w", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusNoContent {
+		responseBody, _ := io.ReadAll(resp.Body)
+		return fmt.Errorf("expected status 204, got %d. Response: %s", resp.StatusCode, string(responseBody))
+	}
+	return nil
 }

@@ -1,0 +1,5 @@
+id: 8602c755-a326-4531-bfeb-0559b66e19d4
+name: Customer
+organization_unit_id: dae4ae0e-c21c-4a59-865c-96a55083415c
+allow_self_registration: true
+schema: '{"sub":{"type":"string","required":true,"unique":true},"username":{"type":"string","required":false,"unique":false},"email":{"type":"string","required":false,"unique":false}}'

@@ -127,6 +127,9 @@ func GetConfigs(configDirectoryPath string) ([][]byte, error) {
 	absoluteDirectoryPath := filepath.Join(immutableConfigFilePath, configDirectoryPath)
 	files, err := os.ReadDir(absoluteDirectoryPath)
 	if err != nil {
+		if os.IsNotExist(err) {
+			return [][]byte{}, nil
+		}
 		logger.Error("Failed to read configuration directory",
 			log.String("path", absoluteDirectoryPath), log.Error(err))
 		return nil, err

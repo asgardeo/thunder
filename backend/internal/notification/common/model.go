@@ -38,12 +38,12 @@ type OTP struct {
 
 // NotificationSenderDTO represents the data transfer object for a notification sender.
 type NotificationSenderDTO struct {
-	ID          string
-	Name        string
-	Description string
-	Type        NotificationSenderType
-	Provider    MessageProviderType
-	Properties  []cmodels.Property
+	ID          string                 `yaml:"id,omitempty"`
+	Name        string                 `yaml:"name"`
+	Description string                 `yaml:"description,omitempty"`
+	Type        NotificationSenderType `yaml:"-"`
+	Provider    MessageProviderType    `yaml:"provider"`
+	Properties  []cmodels.Property     `yaml:"properties,omitempty"`
 }
 
 // NotificationSenderRequest represents the request structure for creating or updating a notification sender.
@@ -118,4 +118,13 @@ type OTPSessionData struct {
 	SenderID   string `json:"sender_id"`
 	OTPValue   string `json:"otp_value"`
 	ExpiryTime int64  `json:"expiry_time"`
+}
+
+// NotificationSenderRequestWithID represents the request structure for creating a notification sender from file-based config.
+type NotificationSenderRequestWithID struct {
+	ID          string                `yaml:"id"`
+	Name        string                `yaml:"name"`
+	Description string                `yaml:"description,omitempty"`
+	Provider    string                `yaml:"provider"`
+	Properties  []cmodels.PropertyDTO `yaml:"properties,omitempty"`
 }

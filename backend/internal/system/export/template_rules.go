@@ -28,4 +28,7 @@ var rules templatingRules = templatingRules{
 			"InboundAuthConfig[].OAuthAppConfig.RedirectURIs",
 		},
 	},
+	IdentityProvider: &resourceRules{
+		DynamicPropertyFields: []string{"Properties"},
+	},
 }

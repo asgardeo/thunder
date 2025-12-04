@@ -14,6 +14,7 @@ Thunder provides an export functionality that allows you to export resource conf
 
 **Currently Supported Resources:**
 - ✅ **Applications** - Full support with parameterization
+- ✅ **Identity Providers** - Full support with parameterization
 
 
 ## Export API
@@ -104,6 +105,83 @@ curl -X POST https://localhost:8090/export \
   }'
 ```
 
+### Export Identity Providers
+
+You can export identity provider configurations using the same `/export` API endpoint.
+
+#### Export as YAML
+
+```bash
+curl -X POST https://localhost:8090/export \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer <access-token>" \
+  -d '{
+    "identity_providers": ["<idp-id>"]
+  }'
+```
+
+**Response:**
+```yaml
+# File: Google_IDP.yaml
+# Resource Type: identity_provider
+# Resource ID: 550e8400-e29b-41d4-a716-446655440000
+
+id: 550e8400-e29b-41d4-a716-446655440000
+name: Google IDP
+description: Google OIDC identity provider for authentication
+type: GOOGLE
+properties:
+  - name: client_id
+    value: {{.GOOGLE_IDP_CLIENT_ID}}
+  - name: client_secret
+    value: {{.GOOGLE_IDP_CLIENT_SECRET}}
+    is_secret: true
+  - name: scope
+    value: {{.GOOGLE_IDP_SCOPE}}
+  - name: redirect_uri
+    value: {{.GOOGLE_IDP_REDIRECT_URI}}
+```
+
+#### Export Multiple Identity Providers
+
+Export all identity providers or specific ones:
+
+```bash
+# Export all identity providers
+curl -X POST https://localhost:8090/export \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer <access-token>" \
+  -d '{
+    "identity_providers": ["*"]
+  }'
+
+# Export specific identity providers
+curl -X POST https://localhost:8090/export \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer <access-token>" \
+  -d '{
+    "identity_providers": [
+      "idp-id-1",
+      "idp-id-2",
+      "idp-id-3"
+    ]
+  }'
+```
+
+#### Export Mixed Resources
+
+You can export both applications and identity providers in a single request:
+
+```bash
+curl -X POST https://localhost:8090/export \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer <access-token>" \
+  -d '{
+    "applications": ["app-id-1"],
+    "identity_providers": ["idp-id-1"]
+  }'
+```
+
 #### Export as ZIP Archive
 
 For downloading multiple files at once:
@@ -113,7 +191,8 @@ curl -X POST https://localhost:8090/export/zip \
   -H "Content-Type: application/json" \
   -H "Authorization: Bearer <access-token>" \
   -d '{
-    "applications": ["*"]
+    "applications": ["*"],
+    "identity_providers": ["*"]
   }' \
   --output thunder-export.zip
 ```
@@ -121,10 +200,14 @@ curl -X POST https://localhost:8090/export/zip \
 This creates a ZIP file with the following structure:
 ```
 thunder-export.zip
-└── applications/
-    ├── My_Application.yaml
-    ├── Mobile_App.yaml
-    └── Web_Portal.yaml
+├── applications/
+│   ├── My_Application.yaml
+│   ├── Mobile_App.yaml
+│   └── Web_Portal.yaml
+└── identity_providers/
+    ├── Google_IDP.yaml
+    ├── GitHub_IDP.yaml
+    └── OIDC_IDP.yaml
 ```
 
 ## Parameterized Variables
@@ -158,16 +241,50 @@ redirect_uris:
 
 ### Variable Naming Convention
 
-Variables are automatically generated from the application name:
+Variables are automatically generated from the resource name:
 
-1. Application name is converted to uppercase
+1. Resource name is converted to uppercase
 2. Spaces and special characters are replaced with underscores
 3. Field name is appended
 
-**Examples:**
+**Application Examples:**
 - "My Application" + `client_id` → `MY_APPLICATION_CLIENT_ID`
 - "Web-Portal" + `client_secret` → `WEB_PORTAL_CLIENT_SECRET`
 - "Mobile App" + `redirect_uris` → `MOBILE_APP_REDIRECT_URIS`
+
+**Identity Provider Examples:**
+- "Google IDP" + `client_id` → `GOOGLE_IDP_CLIENT_ID`
+- "GitHub IDP" + `client_secret` → `GITHUB_IDP_CLIENT_SECRET`
+- "OIDC Provider" + `scope` → `OIDC_PROVIDER_SCOPE`
+
+### Identity Provider Parameterization
+
+The following fields are automatically parameterized in identity provider exports:
+
+#### Property Values
+
+| Field | Parameter Format | Example |
+|-------|-----------------|----------|
+| `properties[].value` | `{{.IDP_NAME_PROPERTY_NAME}}` | `{{.GOOGLE_IDP_CLIENT_ID}}` |
+
+**Property Parameterization Example:**
+```yaml
+properties:
+  - name: client_id
+    value: {{.GOOGLE_IDP_CLIENT_ID}}
+  - name: client_secret
+    value: {{.GOOGLE_IDP_CLIENT_SECRET}}
+    is_secret: true
+  - name: scope
+    value: {{.GOOGLE_IDP_SCOPE}}
+```
+
+**Environment Variables:**
+```bash
+export GOOGLE_IDP_CLIENT_ID=123456789.apps.googleusercontent.com
+export GOOGLE_IDP_CLIENT_SECRET=GOCSPX-abc123def456
+export GOOGLE_IDP_SCOPE="openid email profile"
+```
 
 ### Non-Parameterized Fields
 
@@ -329,24 +446,100 @@ export ADMIN_PORTAL_CLIENT_ID=admin-client-789
 export ADMIN_PORTAL_REDIRECT_URIS_0=https://admin.example.com/callback
 ```
 
+### Identity Provider Example
+
+Here's a complete example for an exported identity provider:
+
+**Exported YAML** (`Google_IDP.yaml`):
+```yaml
+id: 550e8400-e29b-41d4-a716-446655440000
+name: Google IDP
+description: Google OIDC identity provider for authentication
+type: GOOGLE
+properties:
+  - name: client_id
+    value: {{.GOOGLE_IDP_CLIENT_ID}}
+  - name: client_secret
+    value: {{.GOOGLE_IDP_CLIENT_SECRET}}
+    is_secret: true
+  - name: scope
+    value: {{.GOOGLE_IDP_SCOPE}}
+  - name: redirect_uri
+    value: {{.GOOGLE_IDP_REDIRECT_URI}}
+```
+
+**Environment Variables:**
+```bash
+export GOOGLE_IDP_CLIENT_ID=123456789.apps.googleusercontent.com
+export GOOGLE_IDP_CLIENT_SECRET=GOCSPX-abc123def456
+export GOOGLE_IDP_SCOPE="openid email profile"
+export GOOGLE_IDP_REDIRECT_URI=https://thunder.example.com/oauth2/callback
+```
+
+**Resulting Configuration** (what Thunder loads):
+```yaml
+id: 550e8400-e29b-41d4-a716-446655440000
+name: Google IDP
+description: Google OIDC identity provider for authentication
+type: GOOGLE
+properties:
+  - name: client_id
+    value: 123456789.apps.googleusercontent.com
+  - name: client_secret
+    value: GOCSPX-abc123def456
+    is_secret: true
+  - name: scope
+    value: openid email profile
+  - name: redirect_uri
+    value: https://thunder.example.com/oauth2/callback
+```
+
+### Multiple Resources Example
+
+When managing both applications and identity providers:
+
+```bash
+# Applications
+export WEB_APP_CLIENT_ID=web-client-123
+export WEB_APP_REDIRECT_URIS_0=https://web.example.com/callback
+
+# Identity Providers
+export GOOGLE_IDP_CLIENT_ID=123456789.apps.googleusercontent.com
+export GOOGLE_IDP_CLIENT_SECRET=GOCSPX-abc123
+export GOOGLE_IDP_SCOPE="openid email profile"
+
+export GITHUB_IDP_CLIENT_ID=github-client-id
+export GITHUB_IDP_CLIENT_SECRET=github-secret
+export GITHUB_IDP_SCOPE="read:user user:email"
+```
+
 ### Using Environment Files
 
 For easier management, store variables in environment files:
 
 **production.env:**
 ```bash
-# Web Application
+# Applications
 WEB_APP_CLIENT_ID=web-prod-client-id
 WEB_APP_CLIENT_SECRET=web-prod-secret-xyz
 WEB_APP_REDIRECT_URIS_0=https://app.example.com/callback
 WEB_APP_REDIRECT_URIS_1=https://app.example.com/silent-callback
 WEB_APP_REDIRECT_URIS_2=https://app.example.com/logout
 
-# Mobile Application
 MOBILE_APP_CLIENT_ID=mobile-prod-client-id
 MOBILE_APP_CLIENT_SECRET=mobile-prod-secret-abc
 MOBILE_APP_REDIRECT_URIS_0=myapp://callback
 MOBILE_APP_REDIRECT_URIS_1=myapp://logout
+
+# Identity Providers
+GOOGLE_IDP_CLIENT_ID=123456789.apps.googleusercontent.com
+GOOGLE_IDP_CLIENT_SECRET=GOCSPX-prod-secret
+GOOGLE_IDP_SCOPE="openid email profile"
+GOOGLE_IDP_REDIRECT_URI=https://thunder.example.com/oauth2/callback
+
+GITHUB_IDP_CLIENT_ID=github-prod-client-id
+GITHUB_IDP_CLIENT_SECRET=github-prod-secret
+GITHUB_IDP_SCOPE="read:user user:email"
 ```
 
 **Load and run:**
@@ -429,13 +622,13 @@ Store exported YAML configurations in version control, but **never commit enviro
 
 ```bash
 # Create a configs directory
-mkdir -p configs/applications
+mkdir -p configs/applications configs/identity-providers
 
-# Export all applications
+# Export all applications and identity providers
 curl -X POST https://localhost:8090/export/zip \
   -H "Content-Type: application/json" \
   -H "Authorization: Bearer <access-token>" \
-  -d '{"applications": ["*"]}' \
+  -d '{"applications": ["*"], "identity_providers": ["*"]}' \
   --output configs.zip
 
 # Extract to configs directory
@@ -460,9 +653,12 @@ Create separate environment files for each deployment:
 ```
 project/
 ├── configs/
-│   └── applications/
-│       ├── web-app.yaml
-│       └── mobile-app.yaml
+│   ├── applications/
+│   │   ├── web-app.yaml
+│   │   └── mobile-app.yaml
+│   └── identity-providers/
+│       ├── google-idp.yaml
+│       └── github-idp.yaml
 └── environments/
     ├── dev.env
     ├── staging.env

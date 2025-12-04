@@ -263,6 +263,6 @@ type InboundAuthConfig struct {
 
 // InboundAuthConfigComplete represents the complete structure for inbound authentication configuration.
 type InboundAuthConfigComplete struct {
-	Type           InboundAuthType         `json:"type"`
+	Type           InboundAuthType         `json:"type" yaml:"type"`
 	OAuthAppConfig *OAuthAppConfigComplete `json:"config,omitempty" yaml:"config,omitempty"`
 }

@@ -25,8 +25,10 @@ import (
 	"fmt"
 
 	oupkg "github.com/asgardeo/thunder/internal/ou"
+	"github.com/asgardeo/thunder/internal/system/config"
 	serverconst "github.com/asgardeo/thunder/internal/system/constants"
 	"github.com/asgardeo/thunder/internal/system/error/serviceerror"
+	filebasedruntime "github.com/asgardeo/thunder/internal/system/file_based_runtime"
 	"github.com/asgardeo/thunder/internal/system/log"
 	"github.com/asgardeo/thunder/internal/system/utils"
 	"github.com/asgardeo/thunder/internal/userschema/model"
@@ -55,9 +57,10 @@ type userSchemaService struct {
 }
 
 // newUserSchemaService creates a new instance of userSchemaService.
-func newUserSchemaService(ouService oupkg.OrganizationUnitServiceInterface) UserSchemaServiceInterface {
+func newUserSchemaService(ouService oupkg.OrganizationUnitServiceInterface,
+	store userSchemaStoreInterface) UserSchemaServiceInterface {
 	return &userSchemaService{
-		userSchemaStore: newUserSchemaStore(),
+		userSchemaStore: store,
 		ouService:       ouService,
 	}
 }
@@ -96,6 +99,10 @@ func (us *userSchemaService) GetUserSchemaList(limit, offset int) (
 func (us *userSchemaService) CreateUserSchema(request CreateUserSchemaRequest) (
 	*UserSchema, *serviceerror.ServiceError) {
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, userSchemaLoggerComponentName))
+
+	if config.GetThunderRuntime().Config.ImmutableResources.Enabled {
+		return nil, &filebasedruntime.ErrorImmutableResourceCreateOperation
+	}
 
 	if request.Name == "" {
 		return nil, invalidSchemaRequestError("user schema name must not be empty")
@@ -190,6 +197,10 @@ func (us *userSchemaService) UpdateUserSchema(schemaID string, request UpdateUse
 	*UserSchema, *serviceerror.ServiceError) {
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, userSchemaLoggerComponentName))
 
+	if config.GetThunderRuntime().Config.ImmutableResources.Enabled {
+		return nil, &filebasedruntime.ErrorImmutableResourceUpdateOperation
+	}
+
 	if schemaID == "" {
 		return nil, invalidSchemaRequestError("schema id must not be empty")
 	}
@@ -255,6 +266,10 @@ func (us *userSchemaService) UpdateUserSchema(schemaID string, request UpdateUse
 // DeleteUserSchema deletes a user schema by its ID.
 func (us *userSchemaService) DeleteUserSchema(schemaID string) *serviceerror.ServiceError {
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, userSchemaLoggerComponentName))
+
+	if config.GetThunderRuntime().Config.ImmutableResources.Enabled {
+		return &filebasedruntime.ErrorImmutableResourceDeleteOperation
+	}
 
 	if schemaID == "" {
 		return invalidSchemaRequestError("schema id must not be empty")

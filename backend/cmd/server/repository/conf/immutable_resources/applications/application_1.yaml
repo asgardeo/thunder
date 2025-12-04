@@ -1,32 +1,30 @@
-name: "Sample App"
-description: "Sample application for testing"
-url: "https://localhost:3000"
-logo_url: "https://localhost:3000/logo.png"
-auth_flow_graph_id: "auth_flow_config_basic"
-registration_flow_graph_id: "registration_flow_config_basic"
+id: "90bf87e4-ddae-474e-b52c-fddb998138b1"
+name: "Develop"
+description: "Developer application for Thunder"
+url: "https://localhost:8090/develop"
+logo_url: "https://localhost:8090/develop/assets/images/trifacta.svg"
+auth_flow_graph_id: "auth_flow_config_wso2_cloud"
+registration_flow_graph_id: "registration_flow_config_wso2_cloud"
 is_registration_flow_enabled: true
-user_attributes:
-  - "given_name"
-  - "family_name"
-  - "email"
-  - "groups"
+certificate:
+  type: "NONE"
+  value: ""
 inbound_auth_config:
   - type: "oauth2"
     config:
-      client_id: "{{ .CLIENT_ID }}"
+      client_id: "DEVELOP"
       redirect_uris:
-        {{- range .REDIRECT_URIS}}
-          - {{.}}
-        {{- end}}
+        - "https://localhost:5191/develop"
+        - "https://localhost:5190/gate/signin"
       grant_types:
         - "authorization_code"
       response_types:
         - "code"
       token_endpoint_auth_method: "none"
-      pkce_required: true
+      pkce_required: false
       public_client: true
       token:
-        issuer: "thunder"
+        issuer: "https://localhost:8090/oauth2/token"
         access_token:
           validity_period: 3600
           user_attributes:
@@ -34,6 +32,7 @@ inbound_auth_config:
             - "family_name"
             - "email"
             - "groups"
+            - "name"
         id_token:
           validity_period: 3600
           user_attributes:
@@ -41,6 +40,7 @@ inbound_auth_config:
             - "family_name"
             - "email"
             - "groups"
+            - "name"
           scope_claims:
             profile:
               - "name"
@@ -55,3 +55,5 @@ inbound_auth_config:
               - "phone_number_verified"
             group:
               - "groups"
+allowed_user_types:
+  - "Customer"

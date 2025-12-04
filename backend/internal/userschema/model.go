@@ -28,11 +28,11 @@ import (
 
 // UserSchema represents a user type schema definition.
 type UserSchema struct {
-	ID                    string          `json:"id,omitempty"`
-	Name                  string          `json:"name,omitempty"`
-	OrganizationUnitID    string          `json:"ouId"`
-	AllowSelfRegistration bool            `json:"allowSelfRegistration"`
-	Schema                json.RawMessage `json:"schema,omitempty"`
+	ID                    string          `json:"id,omitempty" yaml:"id,omitempty"`
+	Name                  string          `json:"name,omitempty" yaml:"name"`
+	OrganizationUnitID    string          `json:"ouId" yaml:"organization_unit_id"`
+	AllowSelfRegistration bool            `json:"allowSelfRegistration" yaml:"allow_self_registration,omitempty"`
+	Schema                json.RawMessage `json:"schema,omitempty" yaml:"schema"`
 }
 
 // UserSchemaListItem represents a simplified user schema for listing operations.
@@ -72,4 +72,13 @@ type UpdateUserSchemaRequest struct {
 	OrganizationUnitID    string          `json:"ouId"`
 	AllowSelfRegistration bool            `json:"allowSelfRegistration,omitempty"`
 	Schema                json.RawMessage `json:"schema"`
+}
+
+// UserSchemaRequestWithID represents the request structure for creating a user schema from file-based config.
+type UserSchemaRequestWithID struct {
+	ID                    string `yaml:"id"`
+	Name                  string `yaml:"name"`
+	OrganizationUnitID    string `yaml:"organization_unit_id"`
+	AllowSelfRegistration bool   `yaml:"allow_self_registration,omitempty"`
+	Schema                string `yaml:"schema"`
 }

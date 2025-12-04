@@ -70,7 +70,7 @@ func registerServices(
 	authZService := authz.Initialize(roleService)
 
 	idpService := idp.Initialize(mux)
-	_, otpService := notification.Initialize(mux, jwtService)
+	notificationSenderMgtService, otpService := notification.Initialize(mux, jwtService)
 
 	// Initialize authentication services.
 	_, authSvcRegistry := authn.Initialize(mux, idpService, jwtService, userService, otpService)
@@ -89,8 +89,8 @@ func registerServices(
 	applicationService := application.Initialize(mux, certservice, flowMgtService, brandingMgtService, userSchemaService)
 	_ = brandingresolve.Initialize(mux, brandingMgtService, applicationService)
 
-	// Initialize export service with application service dependency
-	_ = export.Initialize(mux, applicationService)
+	// Initialize export service with application, IDP, notification sender, and user schema service dependencies
+	_ = export.Initialize(mux, applicationService, idpService, notificationSenderMgtService, userSchemaService)
 
 	flowExecService := flowexec.Initialize(mux, flowMgtService, applicationService, execRegistry, observabilitySvc)
 

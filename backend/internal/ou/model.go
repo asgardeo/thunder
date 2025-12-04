@@ -86,3 +86,12 @@ type GroupListResponse struct {
 	Groups       []Group `json:"groups"`
 	Links        []Link  `json:"links"`
 }
+
+// OrganizationUnitWithID represents the organization unit for file-based configuration with ID.
+type OrganizationUnitWithID struct {
+	ID          string  `yaml:"id"`
+	Handle      string  `yaml:"handle"`
+	Name        string  `yaml:"name"`
+	Description string  `yaml:"description,omitempty"`
+	Parent      *string `yaml:"parent,omitempty"`
+}

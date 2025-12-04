@@ -430,9 +430,8 @@ func (suite *FileBasedRuntimeManagerTestSuite) TestGetConfigs_NonExistentDirecto
 
 	configs, err := GetConfigs(configDir)
 
-	suite.Error(err)
-	suite.Nil(configs)
-	suite.Contains(err.Error(), "no such file or directory")
+	suite.Nil(err)
+	suite.Len(configs, 0)
 }
 
 // Error Scenario Tests

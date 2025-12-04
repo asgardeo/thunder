@@ -1,0 +1,17 @@
+id: "456efc02-bad3-47bb-bd87-01cc94f8388c"
+name: "Google"
+description: "Login with Google"
+type: "GOOGLE"
+properties:
+  - name: "client_id"
+    value: "1032237601709-k1sn07vg6641pavk760al7hfgelsihdb.apps.googleusercontent.com"
+    is_secret: false
+  - name: "client_secret"
+    value: "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"
+    is_secret: true
+  - name: "redirect_uri"
+    value: "https://localhost:5190/gate/signin"
+    is_secret: false
+  - name: "scopes"
+    value: "openid,email,profile"
+    is_secret: false

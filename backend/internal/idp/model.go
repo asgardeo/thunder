@@ -22,11 +22,11 @@ import "github.com/asgardeo/thunder/internal/system/cmodels"
 
 // IDPDTO represents the data transfer object for an identity provider.
 type IDPDTO struct {
-	ID          string
-	Name        string
-	Description string
-	Type        IDPType
-	Properties  []cmodels.Property
+	ID          string             `yaml:"id"`
+	Name        string             `yaml:"name"`
+	Description string             `yaml:"description,omitempty"`
+	Type        IDPType            `yaml:"type"`
+	Properties  []cmodels.Property `yaml:"properties,omitempty"`
 }
 
 // BasicIDPDTO represents a basic data transfer object for an identity provider.
@@ -60,4 +60,13 @@ type basicIDPResponse struct {
 	Name        string `json:"name"`
 	Description string `json:"description,omitempty"`
 	Type        string `json:"type"`
+}
+
+// idpRequestWithID represents the request payload for creating an identity provider from file-based config.
+type idpRequestWithID struct {
+	ID          string                `yaml:"id"`
+	Name        string                `yaml:"name"`
+	Description string                `yaml:"description,omitempty"`
+	Type        string                `yaml:"type"`
+	Properties  []cmodels.PropertyDTO `yaml:"properties,omitempty"`
 }

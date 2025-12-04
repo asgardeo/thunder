@@ -29,8 +29,12 @@ type KeyType string
 
 // Predefined key types for common entities
 const (
-	KeyTypeApplication  KeyType = "application"
-	KeyTypeNotification KeyType = "notification"
+	KeyTypeApplication        KeyType = "application"
+	KeyTypeNotification       KeyType = "notification"
+	KeyTypeIDP                KeyType = "idp"
+	KeyTypeNotificationSender KeyType = "notification-sender"
+	KeyTypeUserSchema         KeyType = "user-schema"
+	KeyTypeOrganizationUnit   KeyType = "organization-unit"
 )
 
 // String returns the string representation of KeyType
@@ -41,7 +45,7 @@ func (kt KeyType) String() string {
 // IsValid checks if the KeyType is one of the predefined types
 func (kt KeyType) IsValid() bool {
 	switch kt {
-	case KeyTypeApplication, KeyTypeNotification:
+	case KeyTypeApplication, KeyTypeNotification, KeyTypeIDP, KeyTypeNotificationSender, KeyTypeUserSchema, KeyTypeOrganizationUnit:
 		return true
 	default:
 		return false
