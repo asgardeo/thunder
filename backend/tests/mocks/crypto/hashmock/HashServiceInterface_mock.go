@@ -37,7 +37,7 @@ func (_m *HashServiceInterfaceMock) EXPECT() *HashServiceInterfaceMock_Expecter 
 }
 
 // Generate provides a mock function for the type HashServiceInterfaceMock
-func (_mock *HashServiceInterfaceMock) Generate(credentialValue []byte) hash.Credential {
+func (_mock *HashServiceInterfaceMock) Generate(credentialValue []byte) (hash.Credential, error) {
 	ret := _mock.Called(credentialValue)
 
 	if len(ret) == 0 {
@@ -45,12 +45,21 @@ func (_mock *HashServiceInterfaceMock) Generate(credentialValue []byte) hash.Cre
 	}
 
 	var r0 hash.Credential
+	var r1 error
+	if returnFunc, ok := ret.Get(0).(func([]byte) (hash.Credential, error)); ok {
+		return returnFunc(credentialValue)
+	}
 	if returnFunc, ok := ret.Get(0).(func([]byte) hash.Credential); ok {
 		r0 = returnFunc(credentialValue)
 	} else {
 		r0 = ret.Get(0).(hash.Credential)
 	}
-	return r0
+	if returnFunc, ok := ret.Get(1).(func([]byte) error); ok {
+		r1 = returnFunc(credentialValue)
+	} else {
+		r1 = ret.Error(1)
+	}
+	return r0, r1
 }
 
 // HashServiceInterfaceMock_Generate_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'Generate'
@@ -77,18 +86,18 @@ func (_c *HashServiceInterfaceMock_Generate_Call) Run(run func(credentialValue [
 	return _c
 }
 
-func (_c *HashServiceInterfaceMock_Generate_Call) Return(credential hash.Credential) *HashServiceInterfaceMock_Generate_Call {
-	_c.Call.Return(credential)
+func (_c *HashServiceInterfaceMock_Generate_Call) Return(credential hash.Credential, err error) *HashServiceInterfaceMock_Generate_Call {
+	_c.Call.Return(credential, err)
 	return _c
 }
 
-func (_c *HashServiceInterfaceMock_Generate_Call) RunAndReturn(run func(credentialValue []byte) hash.Credential) *HashServiceInterfaceMock_Generate_Call {
+func (_c *HashServiceInterfaceMock_Generate_Call) RunAndReturn(run func(credentialValue []byte) (hash.Credential, error)) *HashServiceInterfaceMock_Generate_Call {
 	_c.Call.Return(run)
 	return _c
 }
 
 // Verify provides a mock function for the type HashServiceInterfaceMock
-func (_mock *HashServiceInterfaceMock) Verify(credentialValueToVerify []byte, referenceCredential hash.Credential) bool {
+func (_mock *HashServiceInterfaceMock) Verify(credentialValueToVerify []byte, referenceCredential hash.Credential) (bool, error) {
 	ret := _mock.Called(credentialValueToVerify, referenceCredential)
 
 	if len(ret) == 0 {
@@ -96,12 +105,21 @@ func (_mock *HashServiceInterfaceMock) Verify(credentialValueToVerify []byte, re
 	}
 
 	var r0 bool
+	var r1 error
+	if returnFunc, ok := ret.Get(0).(func([]byte, hash.Credential) (bool, error)); ok {
+		return returnFunc(credentialValueToVerify, referenceCredential)
+	}
 	if returnFunc, ok := ret.Get(0).(func([]byte, hash.Credential) bool); ok {
 		r0 = returnFunc(credentialValueToVerify, referenceCredential)
 	} else {
 		r0 = ret.Get(0).(bool)
 	}
-	return r0
+	if returnFunc, ok := ret.Get(1).(func([]byte, hash.Credential) error); ok {
+		r1 = returnFunc(credentialValueToVerify, referenceCredential)
+	} else {
+		r1 = ret.Error(1)
+	}
+	return r0, r1
 }
 
 // HashServiceInterfaceMock_Verify_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'Verify'
@@ -134,12 +152,12 @@ func (_c *HashServiceInterfaceMock_Verify_Call) Run(run func(credentialValueToVe
 	return _c
 }
 
-func (_c *HashServiceInterfaceMock_Verify_Call) Return(b bool) *HashServiceInterfaceMock_Verify_Call {
-	_c.Call.Return(b)
+func (_c *HashServiceInterfaceMock_Verify_Call) Return(b bool, err error) *HashServiceInterfaceMock_Verify_Call {
+	_c.Call.Return(b, err)
 	return _c
 }
 
-func (_c *HashServiceInterfaceMock_Verify_Call) RunAndReturn(run func(credentialValueToVerify []byte, referenceCredential hash.Credential) bool) *HashServiceInterfaceMock_Verify_Call {
+func (_c *HashServiceInterfaceMock_Verify_Call) RunAndReturn(run func(credentialValueToVerify []byte, referenceCredential hash.Credential) (bool, error)) *HashServiceInterfaceMock_Verify_Call {
 	_c.Call.Return(run)
 	return _c
 }
