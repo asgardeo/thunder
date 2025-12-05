@@ -18,7 +18,7 @@
 
 # WSO2 Thunder Docker Image
 # Build stage - compile the Go binary and build frontend for the target architecture
-FROM golang:1.25-alpine AS builder
+FROM golang:1.25-alpine3.22 AS builder
 
 # Install build dependencies including Node.js and npm
 RUN apk add --no-cache git make bash sqlite openssl zip nodejs npm
