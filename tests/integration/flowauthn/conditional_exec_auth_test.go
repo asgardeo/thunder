@@ -21,14 +21,12 @@ package flowauthn
 import (
 	"encoding/json"
 	"testing"
-	"time"
 
 	"github.com/asgardeo/thunder/tests/integration/testutils"
 	"github.com/stretchr/testify/suite"
 )
 
 const (
-	conditionalExecMockGooglePort    = 8093
 	conditionalExecNewUserSub        = "conditional-exec-new-user-sub"
 	conditionalExecNewUserEmail      = "newuser@conditional-exec-test.com"
 	conditionalExecExistingUserSub   = "conditional-exec-existing-user-sub"
@@ -91,11 +89,13 @@ func TestConditionalExecAuthFlowTestSuite(t *testing.T) {
 }
 
 func (ts *ConditionalExecAuthFlowTestSuite) SetupSuite() {
-	// Start mock Google server
-	mockGoogleServer, err := testutils.NewMockGoogleOIDCServer(conditionalExecMockGooglePort,
+	// Get shared Google OIDC server (started once for all test suites)
+	var err error
+	ts.mockGoogleServer, err = testutils.GetSharedMockServers().GetGoogleServer(
 		"test_google_client", "test_google_secret")
-	ts.Require().NoError(err, "Failed to create mock Google server")
-	ts.mockGoogleServer = mockGoogleServer
+	if err != nil {
+		ts.T().Fatalf("Failed to get shared Google server: %v", err)
+	}
 
 	// Add test users
 	ts.mockGoogleServer.AddUser(&testutils.GoogleUserInfo{
@@ -118,9 +118,6 @@ func (ts *ConditionalExecAuthFlowTestSuite) SetupSuite() {
 		Picture:       "https://example.com/picture2.jpg",
 		Locale:        "en",
 	})
-
-	err = ts.mockGoogleServer.Start()
-	ts.Require().NoError(err, "Failed to start mock Google server")
 
 	// Create test organization unit
 	ouID, err := testutils.CreateOrganizationUnit(conditionalExecTestOU)
@@ -186,11 +183,8 @@ func (ts *ConditionalExecAuthFlowTestSuite) TearDownSuite() {
 		_ = testutils.DeleteOrganizationUnit(conditionalExecPreCreatedOUID)
 	}
 
-	// Stop mock server
-	if ts.mockGoogleServer != nil {
-		_ = ts.mockGoogleServer.Stop()
-		time.Sleep(200 * time.Millisecond)
-	}
+	// Note: We don't stop the mock server here because it's shared across test suites.
+	// The shared server will be cleaned up when the test process exits.
 }
 
 func (ts *ConditionalExecAuthFlowTestSuite) TestSkipConditionalNodes() {
