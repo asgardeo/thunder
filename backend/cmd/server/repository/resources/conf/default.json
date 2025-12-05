@@ -78,6 +78,9 @@
     "refresh_token": {
       "renew_on_grant": false,
       "validity_period": 86400
+    },
+    "authorization_code": {
+      "validity_period": 600
     }
   },
   "flow": {

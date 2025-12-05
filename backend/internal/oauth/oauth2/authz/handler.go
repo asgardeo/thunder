@@ -535,8 +535,9 @@ func createAuthorizationCode(
 	allScopes := append(append([]string{}, StandardScopes...), permissionScopes...)
 	resource := authRequestCtx.OAuthParameters.Resource
 
-	// TODO: Add expiry time logic.
-	expiryTime := authTime.Add(10 * time.Minute)
+	oauthConfig := config.GetThunderRuntime().Config.OAuth
+	validityPeriod := oauthConfig.AuthorizationCode.ValidityPeriod
+	expiryTime := authTime.Add(time.Duration(validityPeriod) * time.Second)
 
 	return AuthorizationCode{
 		CodeID:              utils.GenerateUUID(),

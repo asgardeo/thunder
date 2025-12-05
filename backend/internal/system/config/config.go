@@ -114,9 +114,15 @@ type RefreshTokenConfig struct {
 	ValidityPeriod int64 `yaml:"validity_period" json:"validity_period"`
 }
 
+// AuthorizationCodeConfig holds the authorization code configuration details.
+type AuthorizationCodeConfig struct {
+	ValidityPeriod int64 `yaml:"validity_period" json:"validity_period"`
+}
+
 // OAuthConfig holds the OAuth configuration details.
 type OAuthConfig struct {
-	RefreshToken RefreshTokenConfig `yaml:"refresh_token" json:"refresh_token"`
+	RefreshToken      RefreshTokenConfig      `yaml:"refresh_token" json:"refresh_token"`
+	AuthorizationCode AuthorizationCodeConfig `yaml:"authorization_code" json:"authorization_code"`
 }
 
 // FlowAuthnConfig holds the configuration details for the authentication flows.

@@ -202,6 +202,8 @@ configuration:
     refreshToken:
       renewOnGrant: false
       validityPeriod: 86400
+    authorizationCode:
+      validityPeriod: 600
 
   # Flow configuration
   flow:
