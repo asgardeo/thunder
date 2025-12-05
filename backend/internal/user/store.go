@@ -20,9 +20,12 @@ package user
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
+	"strings"
 
 	"github.com/asgardeo/thunder/internal/system/config"
+	dbmodel "github.com/asgardeo/thunder/internal/system/database/model"
 	"github.com/asgardeo/thunder/internal/system/database/provider"
 	"github.com/asgardeo/thunder/internal/system/log"
 )
@@ -44,15 +47,31 @@ type userStoreInterface interface {
 }
 
 // userStore is the default implementation of userStoreInterface.
+//
+// indexedAttributes: Set of attribute keys that are indexed; immutable after initialization.
 type userStore struct {
-	deploymentID string
+	deploymentID      string
+	indexedAttributes map[string]bool
 }
 
 // newUserStore creates a new instance of userStore.
-func newUserStore() userStoreInterface {
-	return &userStore{
-		deploymentID: config.GetThunderRuntime().Config.Server.Identifier,
+func newUserStore() (userStoreInterface, error) {
+	runtime := config.GetThunderRuntime()
+
+	indexedAttributesFromConfig := runtime.Config.User.IndexedAttributes
+
+	if err := validateIndexedAttributesConfig(indexedAttributesFromConfig); err != nil {
+		return nil, fmt.Errorf("indexed attributes configuration validation failed: %w", err)
 	}
+	indexedAttributes := make(map[string]bool, len(indexedAttributesFromConfig))
+	for _, attr := range indexedAttributesFromConfig {
+		indexedAttributes[attr] = true
+	}
+
+	return &userStore{
+		deploymentID:      runtime.Config.Server.Identifier,
+		indexedAttributes: indexedAttributes,
+	}, nil
 }
 
 // GetUserListCount retrieves the total count of users.
@@ -139,8 +158,15 @@ func (us *userStore) CreateUser(user User, credentials []Credential) error {
 		credentialsJSON = string(credentialsBytes)
 	}
 
-	_, err = dbClient.Execute(
-		QueryCreateUser,
+	// Begin transaction
+	tx, err := dbClient.BeginTx()
+	if err != nil {
+		return fmt.Errorf("failed to begin transaction: %w", err)
+	}
+
+	// Insert user
+	_, err = tx.Exec(
+		QueryCreateUser.Query,
 		user.ID,
 		user.OrganizationUnit,
 		user.Type,
@@ -149,7 +175,23 @@ func (us *userStore) CreateUser(user User, credentials []Credential) error {
 		us.deploymentID,
 	)
 	if err != nil {
-		return fmt.Errorf("failed to execute query: %w", err)
+		if rollbackErr := tx.Rollback(); rollbackErr != nil {
+			err = errors.Join(err, fmt.Errorf("failed to rollback transaction: %w", rollbackErr))
+		}
+		return fmt.Errorf("failed to create user: %w", err)
+	}
+
+	// Sync indexed attributes
+	if err := us.syncIndexedAttributesWithTx(tx, user.ID, user.Attributes); err != nil {
+		if rollbackErr := tx.Rollback(); rollbackErr != nil {
+			err = errors.Join(err, fmt.Errorf("failed to rollback transaction: %w", rollbackErr))
+		}
+		return fmt.Errorf("failed to sync indexed attributes: %w", err)
+	}
+
+	// Commit transaction
+	if err = tx.Commit(); err != nil {
+		return fmt.Errorf("failed to commit transaction: %w", err)
 	}
 
 	return nil
@@ -197,14 +239,62 @@ func (us *userStore) UpdateUser(user *User) error {
 		return ErrBadAttributesInRequest
 	}
 
-	rowsAffected, err := dbClient.Execute(
-		QueryUpdateUserByUserID, user.ID, user.OrganizationUnit, user.Type, string(attributes), us.deploymentID)
+	// Begin transaction
+	tx, err := dbClient.BeginTx()
 	if err != nil {
-		return fmt.Errorf("failed to execute query: %w", err)
+		return fmt.Errorf("failed to begin transaction: %w", err)
+	}
+
+	// Update user
+	result, err := tx.Exec(
+		QueryUpdateUserByUserID.Query,
+		user.ID, user.OrganizationUnit, user.Type, string(attributes), us.deploymentID)
+	if err != nil {
+		if rollbackErr := tx.Rollback(); rollbackErr != nil {
+			err = errors.Join(err, fmt.Errorf("failed to rollback transaction: %w", rollbackErr))
+		}
+		return fmt.Errorf("failed to update user: %w", err)
+	}
+
+	rowsAffected, err := result.RowsAffected()
+	if err != nil {
+		if rollbackErr := tx.Rollback(); rollbackErr != nil {
+			err = errors.Join(err, fmt.Errorf("failed to rollback transaction: %w", rollbackErr))
+		}
+		return fmt.Errorf("failed to get rows affected: %w", err)
 	}
 
 	if rowsAffected == 0 {
+		if rollbackErr := tx.Rollback(); rollbackErr != nil {
+			return errors.Join(ErrUserNotFound, fmt.Errorf("failed to rollback transaction: %w", rollbackErr))
+		}
 		return ErrUserNotFound
+	}
+
+	// Delete existing indexed attributes
+	_, err = tx.Exec(
+		QueryDeleteIndexedAttributesByUser.Query,
+		user.ID,
+		us.deploymentID,
+	)
+	if err != nil {
+		if rollbackErr := tx.Rollback(); rollbackErr != nil {
+			err = errors.Join(err, fmt.Errorf("failed to rollback transaction: %w", rollbackErr))
+		}
+		return fmt.Errorf("failed to delete indexed attributes: %w", err)
+	}
+
+	// Sync new indexed attributes
+	if err := us.syncIndexedAttributesWithTx(tx, user.ID, attributes); err != nil {
+		if rollbackErr := tx.Rollback(); rollbackErr != nil {
+			err = errors.Join(err, fmt.Errorf("failed to rollback transaction: %w", rollbackErr))
+		}
+		return fmt.Errorf("failed to sync indexed attributes: %w", err)
+	}
+
+	// Commit transaction
+	if err = tx.Commit(); err != nil {
+		return fmt.Errorf("failed to commit transaction: %w", err)
 	}
 
 	return nil
@@ -264,9 +354,40 @@ func (us *userStore) IdentifyUser(filters map[string]interface{}) (*string, erro
 		return nil, fmt.Errorf("failed to get database client: %w", err)
 	}
 
-	identifyUserQuery, args, err := buildIdentifyQuery(filters, us.deploymentID)
-	if err != nil {
-		return nil, fmt.Errorf("failed to build identify query: %w", err)
+	// Categorize filters into indexed and non-indexed
+	indexedFilters := make(map[string]interface{})
+	nonIndexedFilters := make(map[string]interface{})
+
+	for key, value := range filters {
+		if us.isAttributeIndexed(key) {
+			indexedFilters[key] = value
+		} else {
+			nonIndexedFilters[key] = value
+		}
+	}
+
+	// Determine which query strategy to use based on indexed attribute coverage
+	var identifyUserQuery dbmodel.DBQuery
+	var args []interface{}
+
+	if len(indexedFilters) == len(filters) && len(indexedFilters) > 0 {
+		// Case 1: All filters are indexed - use indexed attributes table only
+		identifyUserQuery, args, err = buildIdentifyQueryFromIndexedAttributes(filters, us.deploymentID)
+		if err != nil {
+			return nil, fmt.Errorf("failed to build indexed query: %w", err)
+		}
+	} else if len(indexedFilters) > 0 {
+		// Case 2: Partial indexed - use hybrid approach (indexed + JSON)
+		identifyUserQuery, args, err = buildIdentifyQueryHybrid(indexedFilters, nonIndexedFilters, us.deploymentID)
+		if err != nil {
+			return nil, fmt.Errorf("failed to build hybrid query: %w", err)
+		}
+	} else {
+		// Case 3: No indexed filters - fallback to JSON query
+		identifyUserQuery, args, err = buildIdentifyQuery(filters, us.deploymentID)
+		if err != nil {
+			return nil, fmt.Errorf("failed to build identify query: %w", err)
+		}
 	}
 
 	results, err := dbClient.Query(identifyUserQuery, args...)
@@ -511,4 +632,97 @@ func maskMapValues(input map[string]interface{}) map[string]interface{} {
 		}
 	}
 	return masked
+}
+
+// syncIndexedAttributesWithTx synchronizes indexed attributes to the
+// USER_INDEXED_ATTRIBUTES table within a transaction.
+func (us *userStore) syncIndexedAttributesWithTx(
+	tx dbmodel.TxInterface, userID string, attributes json.RawMessage) error {
+	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, "UserStore"))
+
+	if len(attributes) == 0 {
+		return nil
+	}
+
+	// Parse user attributes
+	var userAttrs map[string]interface{}
+	if err := json.Unmarshal(attributes, &userAttrs); err != nil {
+		return fmt.Errorf("failed to unmarshal user attributes: %w", err)
+	}
+
+	// Collect indexed attributes to insert
+	type indexedAttr struct {
+		name  string
+		value string
+	}
+	toInsert := make([]indexedAttr, 0, len(userAttrs))
+
+	for attrName, attrValue := range userAttrs {
+		// Check if this attribute should be indexed
+		if !us.isAttributeIndexed(attrName) {
+			continue
+		}
+
+		// Convert attribute value to string for storage
+		var valueStr string
+		switch v := attrValue.(type) {
+		case string:
+			valueStr = v
+		case float64, int, int64, bool:
+			valueStr = fmt.Sprintf("%v", v)
+		default:
+			// Skip complex types (objects, arrays)
+			logger.Warn("Skipping indexing complex attribute; only primitive types are indexed",
+				log.String("attribute", attrName))
+			continue
+		}
+
+		toInsert = append(toInsert, indexedAttr{name: attrName, value: valueStr})
+	}
+
+	// Return early if no indexed attributes to insert
+	if len(toInsert) == 0 {
+		return nil
+	}
+
+	// Build batch INSERT query using the pre-defined query constant
+	valuePlaceholders := make([]string, 0, len(toInsert))
+	args := make([]interface{}, 0, len(toInsert)*4)
+	paramIndex := 1
+
+	for _, attr := range toInsert {
+		valuePlaceholders = append(valuePlaceholders,
+			fmt.Sprintf("($%d, $%d, $%d, $%d)", paramIndex, paramIndex+1, paramIndex+2, paramIndex+3))
+		args = append(args, userID, attr.name, attr.value, us.deploymentID)
+		paramIndex += 4
+	}
+
+	// Construct the complete query with dynamic VALUES placeholders
+	query := QueryBatchInsertIndexedAttributes.Query + strings.Join(valuePlaceholders, ", ")
+
+	// Execute batch insert
+	_, err := tx.Exec(query, args...)
+	if err != nil {
+		return fmt.Errorf("failed to batch insert indexed attributes (query ID: %s): %w",
+			QueryBatchInsertIndexedAttributes.ID, err)
+	}
+
+	return nil
+}
+
+// isAttributeIndexed checks if a given attribute is configured to be indexed.
+// This is an O(1) operation.
+func (us *userStore) isAttributeIndexed(attributeName string) bool {
+	return us.indexedAttributes[attributeName]
+}
+
+// validateIndexedAttributesConfig validates that the current configuration
+// matches the previously stored configuration in the database.
+func validateIndexedAttributesConfig(configuredAttrs []string) error {
+	// Validate that indexed attributes count is less than the maximum allowed
+	if len(configuredAttrs) > MaxIndexedAttributesCount {
+		return fmt.Errorf("indexed attributes count (%d) must not exceed %d",
+			len(configuredAttrs), MaxIndexedAttributesCount)
+	}
+	return nil
 }

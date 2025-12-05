@@ -32,12 +32,16 @@ func Initialize(
 	mux *http.ServeMux,
 	ouService oupkg.OrganizationUnitServiceInterface,
 	userSchemaService userschema.UserSchemaServiceInterface,
-) UserServiceInterface {
-	userService := newUserService(ouService, userSchemaService)
+) (UserServiceInterface, error) {
+	userStore, err := newUserStore()
+	if err != nil {
+		return nil, err
+	}
+	userService := newUserService(userStore, ouService, userSchemaService)
 	setUserService(userService) // Set the provider for backward compatibility
 	userHandler := newUserHandler(userService)
 	registerRoutes(mux, userHandler)
-	return userService
+	return userService, nil
 }
 
 // registerRoutes registers the routes for user management operations.

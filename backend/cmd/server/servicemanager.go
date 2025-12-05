@@ -62,7 +62,10 @@ func registerServices(
 
 	ouService := ou.Initialize(mux)
 	userSchemaService := userschema.Initialize(mux, ouService)
-	userService := user.Initialize(mux, ouService, userSchemaService)
+	userService, err := user.Initialize(mux, ouService, userSchemaService)
+	if err != nil {
+		logger.Fatal("Failed to initialize UserService", log.Error(err))
+	}
 	groupService := group.Initialize(mux, ouService, userService)
 
 	_ = resource.Initialize(mux, ouService)

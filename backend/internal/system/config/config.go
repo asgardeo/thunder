@@ -196,6 +196,11 @@ type ObservabilityOTelConfig struct {
 	Insecure bool `yaml:"insecure" json:"insecure"`
 }
 
+// UserConfig holds the user management configuration details.
+type UserConfig struct {
+	IndexedAttributes []string `yaml:"indexed_attributes" json:"indexed_attributes"`
+}
+
 // Config holds the complete configuration details of the server.
 type Config struct {
 	Server             ServerConfig        `yaml:"server" json:"server"`
@@ -208,6 +213,7 @@ type Config struct {
 	Flow               FlowConfig          `yaml:"flow" json:"flow"`
 	Hash               HashConfig          `yaml:"hash"`
 	CORS               CORSConfig          `yaml:"cors" json:"cors"`
+	User               UserConfig          `yaml:"user" json:"user"`
 	ImmutableResources ImmutableResources  `yaml:"immutable_resources" json:"immutable_resources"`
 	Observability      ObservabilityConfig `yaml:"observability" json:"observability"`
 }

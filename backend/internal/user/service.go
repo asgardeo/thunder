@@ -72,11 +72,12 @@ type userService struct {
 
 // newUserService creates a new instance of userService with injected dependencies.
 func newUserService(
+	userStore userStoreInterface,
 	ouService oupkg.OrganizationUnitServiceInterface,
 	userSchemaService userschema.UserSchemaServiceInterface,
 ) UserServiceInterface {
 	return &userService{
-		userStore:         newUserStore(),
+		userStore:         userStore,
 		ouService:         ouService,
 		userSchemaService: userSchemaService,
 	}

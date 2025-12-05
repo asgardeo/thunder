@@ -89,6 +89,9 @@
       "default_flow": "auth_flow_config_basic"
     }
   },
+  "user": {
+    "indexed_attributes": ["username", "email", "mobileNumber", "sub"]
+  },
   "immutable_resources": {
     "enabled": false
   },

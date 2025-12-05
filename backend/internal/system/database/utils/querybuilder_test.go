@@ -144,7 +144,7 @@ func (suite *QueryBuilderTestSuite) TestValidateKey() {
 	}
 
 	for _, key := range validKeys {
-		err := validateKey(key)
+		err := ValidateKey(key)
 		assert.NoError(suite.T(), err, "Key should be valid: %s", key)
 	}
 }
@@ -160,7 +160,7 @@ func (suite *QueryBuilderTestSuite) TestValidateKeyInvalid() {
 	}
 
 	for _, key := range invalidKeys {
-		err := validateKey(key)
+		err := ValidateKey(key)
 		assert.Error(suite.T(), err, "Key should be invalid: %s", key)
 		assert.Contains(suite.T(), err.Error(), "invalid characters")
 	}
