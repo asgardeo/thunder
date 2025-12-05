@@ -128,7 +128,6 @@ configuration:
   security:
     certFile: "repository/resources/security/server.cert"
     keyFile: "repository/resources/security/server.key"
-    cryptoFile: "repository/resources/security/crypto.key"
 
   # Database configuration
   database:
@@ -196,6 +195,13 @@ configuration:
     issuer: "thunder"
     validityPeriod: 3600
     audience: "application"
+
+  # Cryptography configuration
+  crypto:
+    encrypt:
+      # Uses the value of THUNDER_CRYPTO_ENC_KEY from the environment.
+      # This may come from the local .env file or from a Kubernetes secret when deployed.
+      key: "${THUNDER_CRYPTO_ENC_KEY}"
 
   # OAuth configuration
   oauth:

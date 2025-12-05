@@ -81,6 +81,13 @@ The chart creates the following OpenChoreo resources:
 | `database.user.username` | User database username | `<DB_USERNAME>` | **Yes** |
 | `database.user.password` | User database password | `<DB_PASSWORD>` | **Yes** |
 
+### Cryptography Configuration
+
+**⚠️ Required**: Replace placeholder value `<ENCRYPTION_KEY>` with a secure encryption key.
+| Parameter | Description | Default | Required |
+|-----------|-------------|---------|----------|
+| `crypto.encrypt.key` | Encryption key for cryptography | `<ENCRYPTION_KEY>` | **Yes** |
+
 ### Authentication & Security
 
 | Parameter | Description | Default |

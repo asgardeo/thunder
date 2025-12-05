@@ -28,18 +28,11 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"os"
-	"path/filepath"
 	"sync"
 
 	"github.com/asgardeo/thunder/internal/system/config"
 	"github.com/asgardeo/thunder/internal/system/crypto/hash"
 	"github.com/asgardeo/thunder/internal/system/log"
-)
-
-const (
-	// defaultKeySize defines the default key size for AES-GCM
-	defaultKeySize = 32
 )
 
 // EncryptionService provides cryptographic operations.
@@ -57,68 +50,42 @@ var (
 
 // GetEncryptionService creates and returns a singleton instance of the EncryptionService.
 func GetEncryptionService() *EncryptionService {
-	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, "EncryptionService"))
 	once.Do(func() {
 		var err error
-		instance, err = initEncryptionService(
-			os.ReadFile,
-			filepath.Join,
-		)
+		instance, err = initEncryptionService()
 		if err != nil {
-			logger.Error("Failed to initialize EncryptionService: %v", log.Error(err))
+			panic(fmt.Sprintf("failed to initialize EncryptionService: %v", err))
 		}
 	})
 	return instance
 }
 
 // initEncryptionService initializes the EncryptionService from configuration sources.
-func initEncryptionService(
-	fileReader func(name string) ([]byte, error),
-	pathJoiner func(elem ...string) string,
-) (*EncryptionService, error) {
-	thunderHome := config.GetThunderRuntime().ThunderHome
-	cryptoFilePath := config.GetThunderRuntime().Config.Security.CryptoFile
-
+func initEncryptionService() (*EncryptionService, error) {
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, "EncryptionService"))
+	// Try to get key from the application configuration
+	config := config.GetThunderRuntime().Config.Crypto.Encrypt.Key
 
-	if cryptoFilePath != "" {
-		var keyBytes []byte
-		var err error
-
-		cryptoFilePath = filepath.Clean(cryptoFilePath)
-		cryptoFilePath = pathJoiner(thunderHome, cryptoFilePath)
-		fileData, fileErr := fileReader(cryptoFilePath)
-		if fileErr == nil {
-			logger.Debug("Attempting to load crypto key from file", log.String("path", cryptoFilePath))
-			keyBytes, err = hex.DecodeString(string(fileData))
-			if err == nil {
-				logger.Debug("Successfully loaded crypto key from file")
-				return NewEncryptionService(keyBytes)
-			} else {
-				err = fmt.Errorf(
-					"error while reading crypto key file at path %s: %w",
-					cryptoFilePath,
-					err)
-				return nil, err
-			}
+	// Check if crypto configuration exists
+	if config != "" {
+		key, err := hex.DecodeString(config)
+		if err == nil {
+			return NewEncryptionService(key), nil
 		} else {
-			fileErr = fmt.Errorf("failed to read crypto key file at path %s: %w", cryptoFilePath, fileErr)
-			return nil, fileErr
+			logger.Error("failed to decode encryption key from config", log.Error(err))
+			return nil, err
 		}
 	} else {
-		err := fmt.Errorf("crypto key file path not found in configs")
-		return nil, err
+		return nil, errors.New("encryption key not found")
 	}
 }
 
 // NewEncryptionService creates a new instance of EncryptionService with the provided key.
-func NewEncryptionService(key []byte) (*EncryptionService, error) {
-	// Check key size for algorithm
-
+func NewEncryptionService(key []byte) *EncryptionService {
 	return &EncryptionService{
 		Key: key,
 		Kid: getKeyID(key), // Generate a unique key ID
-	}, nil
+	}
 }
 
 // Encrypt encrypts the given plaintext and returns a JSON string
@@ -223,16 +190,6 @@ func (cs *EncryptionService) DecryptString(ciphertext string) (string, error) {
 		return "", err
 	}
 	return string(plaintext), nil
-}
-
-// generateRandomKey generates a random key of the specified size.
-func generateRandomKey(keySize int) ([]byte, error) {
-	key := make([]byte, keySize)
-	_, err := rand.Read(key)
-	if err != nil {
-		return nil, err
-	}
-	return key, nil
 }
 
 // getKeyID generates a unique identifier for the key.

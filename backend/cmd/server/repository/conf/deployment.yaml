@@ -5,7 +5,6 @@ server:
 security:
   cert_file: "repository/resources/security/server.cert"
   key_file: "repository/resources/security/server.key"
-  crypto_file: "repository/resources/security/crypto.key"
 
 database:
   identity:
@@ -32,6 +31,11 @@ database:
     max_idle_conns: 100
     conn_max_lifetime: 3600
 
+crypto:
+  encrypt:
+    # Encryption key for AES-GCM encryption (64 hex characters for 256-bit key)
+    # Set THUNDER_CRYPTO_ENC_KEY environment variable in production or use .env file for development
+    key: "$THUNDER_CRYPTO_ENC_KEY"
 
 cors:
   allowed_origins:

@@ -19,7 +19,6 @@
 package config
 
 import (
-	"fmt"
 	"os"
 	"path/filepath"
 	"reflect"
@@ -38,10 +37,8 @@ func TestConfigTestSuite(t *testing.T) {
 }
 
 func (suite *ConfigTestSuite) TestLoadConfigWithDefaults() {
-	tempDir := suite.T().TempDir()
-	cryptoFilePath := filepath.Join(tempDir, "crypto.key")
-
-	defaultContent := fmt.Sprintf(`{
+	// Create a temporary JSON default configuration file.
+	defaultContent := `{
   "server": {
     "hostname": "default-host",
     "port": 8080,
@@ -54,9 +51,6 @@ func (suite *ConfigTestSuite) TestLoadConfigWithDefaults() {
     "login_path": "/default-login",
     "error_path": "/default-error"
   },
-  "security": {
-    "crypto_file": %q
-  },
   "jwt": {
     "issuer": "default-issuer",
     "validity_period": 7200
@@ -66,8 +60,13 @@ func (suite *ConfigTestSuite) TestLoadConfigWithDefaults() {
       "renew_on_grant": false,
       "validity_period": 86400
     }
+  },
+  "crypto": {
+	"encrypt": {
+		"key": "default-crypto-key"
+	}
   }
-}`, cryptoFilePath)
+}`
 
 	// Create a partial YAML user configuration file.
 	userContent := `
@@ -79,18 +78,14 @@ jwt:
   issuer: "user-issuer"
 `
 
+	tempDir := suite.T().TempDir()
 	defaultFile := filepath.Join(tempDir, "default.json")
 	userFile := filepath.Join(tempDir, "user.yaml")
-	cryptoFile := filepath.Join(tempDir, "crypto.key")
-	dummyCryptoKey := "0579f866ac7c9273580d0ff163fa01a7b2401a7ff3ddc3e3b14ae3136fa6025e"
 
 	err := os.WriteFile(defaultFile, []byte(defaultContent), 0600)
 	assert.NoError(suite.T(), err)
 
 	err = os.WriteFile(userFile, []byte(userContent), 0600)
-	assert.NoError(suite.T(), err)
-
-	err = os.WriteFile(cryptoFile, []byte(dummyCryptoKey), 0600)
 	assert.NoError(suite.T(), err)
 
 	// Test loading the configuration with defaults.
@@ -109,7 +104,7 @@ jwt:
 	assert.Equal(suite.T(), "/default-error", config.GateClient.ErrorPath)
 	assert.Equal(suite.T(), "user-issuer", config.JWT.Issuer)       // User override
 	assert.Equal(suite.T(), int64(7200), config.JWT.ValidityPeriod) // Default value
-	assert.Equal(suite.T(), cryptoFile, config.Security.CryptoFile)
+	assert.Equal(suite.T(), "default-crypto-key", config.Crypto.Encrypt.Key)
 }
 
 func (suite *ConfigTestSuite) TestLoadConfigWithDefaults_NoDefaults() {
@@ -693,4 +688,58 @@ gate_client:
 	assert.Equal(suite.T(), "/newapp", config5.GateClient.Path)
 	assert.Equal(suite.T(), "/newapp/signin", config5.GateClient.LoginPath)
 	assert.Equal(suite.T(), "/newapp/error", config5.GateClient.ErrorPath)
+}
+
+func (suite *ConfigTestSuite) TestLoadEnv() {
+	// Test loading environment variables from a .env file
+	envContent := `# This is a comment
+TEST_VAR1=value1
+TEST_VAR2="value2"
+TEST_VAR3=value with spaces
+
+# Another comment
+TEST_VAR4=value4
+`
+
+	tempDir := suite.T().TempDir()
+	envFile := filepath.Join(tempDir, ".env")
+
+	err := os.WriteFile(envFile, []byte(envContent), 0600)
+	assert.NoError(suite.T(), err)
+
+	// Clear any existing test variables
+	err = os.Unsetenv("TEST_VAR1")
+	assert.NoError(suite.T(), err)
+	err = os.Unsetenv("TEST_VAR2")
+	assert.NoError(suite.T(), err)
+	err = os.Unsetenv("TEST_VAR3")
+	assert.NoError(suite.T(), err)
+	err = os.Unsetenv("TEST_VAR4")
+	assert.NoError(suite.T(), err)
+
+	// Load environment variables
+	err = LoadEnv(envFile)
+	assert.NoError(suite.T(), err)
+
+	// Validate environment variables are set
+	assert.Equal(suite.T(), "value1", os.Getenv("TEST_VAR1"))
+	assert.Equal(suite.T(), "value2", os.Getenv("TEST_VAR2"))
+	assert.Equal(suite.T(), "value with spaces", os.Getenv("TEST_VAR3"))
+	assert.Equal(suite.T(), "value4", os.Getenv("TEST_VAR4"))
+
+	// Cleanup
+	err = os.Unsetenv("TEST_VAR1")
+	assert.NoError(suite.T(), err)
+	err = os.Unsetenv("TEST_VAR2")
+	assert.NoError(suite.T(), err)
+	err = os.Unsetenv("TEST_VAR3")
+	assert.NoError(suite.T(), err)
+	err = os.Unsetenv("TEST_VAR4")
+	assert.NoError(suite.T(), err)
+}
+
+func (suite *ConfigTestSuite) TestLoadEnv_FileNotFound() {
+	// Test with non-existent file
+	err := LoadEnv("/non/existent/path/.env")
+	assert.Error(suite.T(), err)
 }

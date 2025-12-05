@@ -137,6 +137,7 @@ $OUTPUT_DIR = Join-Path $TARGET_DIR "out"
 $DIST_DIR = Join-Path $TARGET_DIR "dist"
 $BUILD_DIR = Join-Path $OUTPUT_DIR ".build"
 $LOCAL_CERT_DIR = Join-Path $OUTPUT_DIR ".cert"
+$SECRETS_DIR = Join-Path $OUTPUT_DIR ".secrets"
 $BACKEND_BASE_DIR = "backend"
 $BACKEND_DIR = Join-Path $BACKEND_BASE_DIR "cmd/server"
 $REPOSITORY_DIR = Join-Path $BACKEND_BASE_DIR "cmd/server/repository"
@@ -144,6 +145,7 @@ $REPOSITORY_DB_DIR = Join-Path $REPOSITORY_DIR "database"
 $SERVER_SCRIPTS_DIR = Join-Path $BACKEND_BASE_DIR "scripts"
 $SERVER_DB_SCRIPTS_DIR = Join-Path $BACKEND_BASE_DIR "dbscripts"
 $SECURITY_DIR = "repository/resources/security"
+$CONF_DIR = "repository/conf"
 $FRONTEND_BASE_DIR = "frontend"
 $GATE_APP_DIST_DIR = "apps/gate"
 $DEVELOP_APP_DIST_DIR = "apps/develop"
@@ -272,6 +274,11 @@ function Clean {
     Write-Host "Cleaning build artifacts..."
     if (Test-Path $TARGET_DIR) {
         Remove-Item -Path $TARGET_DIR -Recurse -Force -ErrorAction SilentlyContinue
+    }
+
+    Write-Host "Removing environment variables in the $BACKEND_DIR/$CONF_DIR"
+    if (Test-Path (Join-Path $BACKEND_DIR $CONF_DIR ".env")) {
+        Remove-Item -Path (Join-Path $BACKEND_DIR $CONF_DIR ".env") -Force -ErrorAction SilentlyContinue
     }
 
     Write-Host "Removing certificates in $BACKEND_DIR/$SECURITY_DIR"
@@ -485,8 +492,8 @@ function Prepare-Backend-For-Packaging {
     Ensure-Certificates -cert_dir $security_dir
     Write-Host "================================================================"
 
-    Write-Host "=== Ensuring crypto file exists in the distribution ==="
-    Ensure-Crypto-File -conf_dir (Join-Path $package_folder "repository/conf")
+    Write-Host "=== Ensuring environment secrets are set in the distribution ==="
+    Ensure-Environment-Secrets -env_dir (Join-Path $package_folder $CONF_DIR)
     Write-Host "================================================================"
 }
 
@@ -1195,149 +1202,48 @@ function Ensure-Certificates {
     }
 }
 
-function Ensure-Crypto-File {
+function Ensure-Environment-Secrets {
     param(
-        [string]$conf_dir
+        [string]$env_dir
     )
+    
+    $secret_file_name = ".env"
 
-    $DEPLOYMENT_FILE = Join-Path $conf_dir "deployment.yaml"
-    # Resolve the .. path segment to get a clean key directory path
-    $KEY_DIR_Temp = Join-Path $conf_dir ".." "resources/security"
-    $KEY_DIR = (Resolve-Path -Path $KEY_DIR_Temp).Path
-    $KEY_FILE = Join-Path $KEY_DIR "crypto.key"
-    $KEY_PATH_IN_YAML = "repository/resources/security/crypto.key"
+    # Generate secrets file if it doesn't exist in the secrets directory
+    $local_secrets_file = Join-Path $SECRETS_DIR $secret_file_name
+    
+    if (-not (Test-Path $local_secrets_file)) {
+        New-Item -Path $SECRETS_DIR -ItemType Directory -Force | Out-Null
+        Write-Host "Generating secrets in $SECRETS_DIR..."
 
-    Write-Host "================================================================"
-    Write-Host "Ensuring crypto key file exists..."
+        # Generate AES key using random bytes
+        $bytes = New-Object byte[] 32
+        $rng = [System.Security.Cryptography.RandomNumberGenerator]::Create()
+        $rng.GetBytes($bytes)
+        $aes_key = [System.BitConverter]::ToString($bytes).Replace('-', '').ToLower()
+        $rng.Dispose()
 
-    # 1. Check if the key file exists
-    if (Test-Path $KEY_FILE) {
-        Write-Host "Default crypto key file already present in $KEY_FILE. Skipping generation."
+        # Write secret to file
+        "THUNDER_CRYPTO_ENC_KEY=$aes_key" | Set-Content -Path $local_secrets_file -Encoding ascii
+
+        Write-Host "Secrets generated successfully in $SECRETS_DIR."
     }
     else {
-        Write-Host "Default crypto key file not found. Generating new key at $KEY_FILE..."
-        $NEW_KEY = $null
-        
-        # Try generating key using OpenSSL first
-        $openssl = Get-Command openssl -ErrorAction SilentlyContinue
-        if ($openssl) {
-            try {
-                Write-Host " - Using OpenSSL to generate key..."
-                # openssl rand -hex 32 returns a 64-char string.
-                $NEW_KEY = (openssl rand -hex 32 | Out-String).Trim()
-                
-                if ($LASTEXITCODE -ne 0 -or [string]::IsNullOrEmpty($NEW_KEY) -or $NEW_KEY.Length -ne 64) {
-                    throw "OpenSSL rand command failed or returned empty/incorrect length."
-                }
-            }
-            catch {
-                Write-Host " - OpenSSL failed: $_. Falling back to POSIX tools/DOTNET."
-                $NEW_KEY = $null
-            }
-        }
-        else {
-            Write-Host " - OpenSSL not found. Falling back to POSIX tools/DOTNET."
-        }
-
-        # Try POSIX tools as first fallback option
-        if ([string]::IsNullOrEmpty($NEW_KEY)) {
-            $bash = Get-Command bash -ErrorAction SilentlyContinue
-            if ($bash -and (Test-Path /dev/urandom)) {
-                try {
-                    Write-Host " - Using POSIX tools (/dev/urandom) to generate key..."
-                    # Command: head -c 32 /dev/urandom | xxd -p -c 256
-                    # Generates 32 random bytes, converts to a single line of hex (64 chars)
-                    # The ToLower() ensures consistency with the openssl/dotnet output.
-                    $POS_KEY_RAW = (& bash -c 'head -c 32 /dev/urandom | xxd -p -c 256' | Out-String).Trim()
-                    $NEW_KEY = $POS_KEY_RAW.ToLower()
-                    
-                    if ($LASTEXITCODE -ne 0 -or [string]::IsNullOrEmpty($NEW_KEY) -or $NEW_KEY.Length -ne 64) {
-                         throw "POSIX key generation command failed or returned invalid length."
-                    }
-                }
-                catch {
-                    Write-Host " - POSIX tool failed: $_. Falling back to .NET cryptography."
-                    $NEW_KEY = $null
-                }
-            }
-            else {
-                Write-Host " - POSIX tools not found or not suitable. Falling back to .NET cryptography."
-            }
-        }
-
-        # try .NET cryptography as final fallback
-        if ([string]::IsNullOrEmpty($NEW_KEY)) {
-            try {
-                Write-Host " - Using .NET cryptography to generate key..."
-                $bytes = New-Object byte[] 32
-                # Note: System.Security.Cryptography.RandomNumberGenerator is available in both .NET Framework and .NET (Core)
-                $rng = [System.Security.Cryptography.RandomNumberGenerator]::Create()
-                $rng.GetBytes($bytes)
-                $rng.Dispose()
-                # Convert bytes to lowercase hex string (64 chars)
-                $NEW_KEY = ([System.BitConverter]::ToString($bytes) -replace '-', '').ToLower()
-            }
-            catch {
-                 throw "Failed to generate crypto key using .NET: $_"
-            }
-        }
-        # --- END: .NET cryptography fallback ---
-        
-        # Ensure the target directory exists
-        New-Item -Path $KEY_DIR -ItemType Directory -Force | Out-Null
-
-        # Write the key to the new file (NoNewline matches 'echo -n')
-        Set-Content -Path $KEY_FILE -Value $NEW_KEY -NoNewline -Encoding Ascii
-        
-        Write-Host "Successfully generated and added new crypto key to $KEY_FILE."
+        Write-Host "Secrets already exist in $SECRETS_DIR."
     }
 
-    # 2. Check and update deployment.yaml
-    if (-not (Test-Path $DEPLOYMENT_FILE)) {
-        throw "ERROR: $DEPLOYMENT_FILE not found. Cannot configure crypto key."
-    }
-    
-    $configLines = Get-Content $DEPLOYMENT_FILE
-    $cryptoLine = $configLines | Select-String -Pattern "^\s*crypto_file\s*:" -ErrorAction SilentlyContinue
+    # Copy the generated secrets to the specified directory
+    $secrets_file = Join-Path $env_dir $secret_file_name
 
-   
-    $ANCHOR_LINE_PATTERN = '^\s*key_file\s*:\s*".*server\.key"'
-    $KEY_FILE_LINE_TO_INSERT = '  crypto_file: "{0}"' -f $KEY_PATH_IN_YAML
-    
-    if ($cryptoLine) {
-        # Config exists, check if it's correct
-        $expected_line_pattern = '^\s*crypto_file\s*:\s*"{0}"' -f $KEY_PATH_IN_YAML
-        if ($cryptoLine -match $expected_line_pattern) {
-            Write-Host "Crypto key file is already configured in $DEPLOYMENT_FILE."
-        }
-        else {
-            throw "ERROR: 'crypto_file' is defined in $DEPLOYMENT_FILE but does not match the default path '$KEY_PATH_IN_YAML'. Please fix or remove the line."
-        }
+    if (-not (Test-Path $secrets_file)) {
+        New-Item -Path $env_dir -ItemType Directory -Force | Out-Null
+        Write-Host "Copying secrets to $env_dir..."
+        Copy-Item -Path $local_secrets_file -Destination $secrets_file -Force
+        Write-Host "Secrets copied successfully to $env_dir."
     }
     else {
-        # Config is missing, add it
-        Write-Host "Crypto key file is not configured in $DEPLOYMENT_FILE. Inserting entry..."
-        
-        $newConfigLines = @()
-        $lineInserted = $false
-
-        foreach ($line in $configLines) {
-            $newConfigLines += $line
-            if ($line -match $ANCHOR_LINE_PATTERN) {
-                $newConfigLines += $KEY_FILE_LINE_TO_INSERT
-                $lineInserted = $true
-            }
-        }
-
-        if (-not $lineInserted) {
-            throw "ERROR: Could not insert crypto_file line into $DEPLOYMENT_FILE. Anchor line (pattern '$ANCHOR_LINE_PATTERN') not found."
-        }
-
-        # Save the file (YAML should use UTF-8)
-        Set-Content -Path $DEPLOYMENT_FILE -Value $newConfigLines -Encoding UTF8
-        Write-Host "Successfully updated $DEPLOYMENT_FILE to use the default key file."
+        Write-Host "Secrets already exist in $env_dir."
     }
-    Write-Host "================================================================"
 }
 
 function Run {
@@ -1438,8 +1344,8 @@ function Run-Backend {
     Write-Host "=== Ensuring React Vanilla sample app certificates exist ==="
     Ensure-Certificates -cert_dir $VANILLA_SAMPLE_APP_DIR
 
-    Write-Host "=== Ensuring crypto file exists for run ==="
-    Ensure-Crypto-File -conf_dir (Join-Path $BACKEND_DIR "repository/conf")
+    Write-Host "=== Ensuring environment secrets are set in the backend ==="
+    Ensure-Environment-Secrets -env_dir (Join-Path $BACKEND_DIR $CONF_DIR)
 
     Write-Host "Initializing databases..."
     Initialize-Databases
