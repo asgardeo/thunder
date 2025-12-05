@@ -42,8 +42,8 @@ var (
 
 // HashServiceInterface defines the interface for hashing services.
 type HashServiceInterface interface {
-	Generate(credentialValue []byte) Credential
-	Verify(credentialValueToVerify []byte, referenceCredential Credential) bool
+	Generate(credentialValue []byte) (Credential, error)
+	Verify(credentialValueToVerify []byte, referenceCredential Credential) (bool, error)
 }
 
 type sha256HashProvider struct {
@@ -85,8 +85,11 @@ func newSHA256Provider(saltSize int) *sha256HashProvider {
 }
 
 // Generate SHA256Credential generates a SHA256 hash
-func (a *sha256HashProvider) Generate(credentialValue []byte) Credential {
-	credSalt := generateSalt(a.SaltSize)
+func (a *sha256HashProvider) Generate(credentialValue []byte) (Credential, error) {
+	credSalt, err := generateSalt(a.SaltSize)
+	if err != nil {
+		return Credential{}, err
+	}
 	credentialWithSalt := append([]byte(nil), credentialValue...)
 	credentialWithSalt = append(credentialWithSalt, credSalt...)
 	hash := sha256.Sum256(credentialWithSalt)
@@ -97,19 +100,19 @@ func (a *sha256HashProvider) Generate(credentialValue []byte) Credential {
 		Parameters: CredParameters{
 			Salt: hex.EncodeToString(credSalt),
 		},
-	}
+	}, nil
 }
 
 // Verify SHA256Credential checks if the SHA256 hash of the input data and salt matches the expected hash.
-func (a *sha256HashProvider) Verify(credentialValueToVerify []byte, referenceCredential Credential) bool {
+func (a *sha256HashProvider) Verify(credentialValueToVerify []byte, referenceCredential Credential) (bool, error) {
 	saltBytes, err := hex.DecodeString(referenceCredential.Parameters.Salt)
 	if err != nil {
-		return false
+		return false, err
 	}
 	credentialWithSalt := append([]byte(nil), credentialValueToVerify...)
 	credentialWithSalt = append(credentialWithSalt, saltBytes...)
 	hashedData := sha256.Sum256(credentialWithSalt)
-	return referenceCredential.Hash == hex.EncodeToString(hashedData[:])
+	return referenceCredential.Hash == hex.EncodeToString(hashedData[:]), nil
 }
 
 // newPBKDF2Provider creates a new PBKDF2HashProvider instance
@@ -131,12 +134,15 @@ func newPBKDF2Provider(saltSize, iterations, keySize int) *pbkdf2HashProvider {
 }
 
 // Generate PBKDF2Credential generates a PBKDF2 hash of the input data using the provided salt.
-func (a *pbkdf2HashProvider) Generate(credentialValue []byte) Credential {
-	credSalt := generateSalt(a.SaltSize)
+func (a *pbkdf2HashProvider) Generate(credentialValue []byte) (Credential, error) {
+	credSalt, err := generateSalt(a.SaltSize)
+	if err != nil {
+		return Credential{}, err
+	}
 	hash, err := pbkdf2.Key(sha256.New, string(credentialValue), credSalt, a.Iterations, a.KeySize)
 	if err != nil {
 		logger.Error("Error hashing data with PBKDF2: %v", log.Error(err))
-		return Credential{}
+		return Credential{}, err
 	}
 	return Credential{
 		Algorithm: PBKDF2,
@@ -146,11 +152,11 @@ func (a *pbkdf2HashProvider) Generate(credentialValue []byte) Credential {
 			KeySize:    a.KeySize,
 			Salt:       hex.EncodeToString(credSalt),
 		},
-	}
+	}, nil
 }
 
 // Verify PBKDF2Credential checks if the PBKDF2 hash of the input data and salt matches the expected hash.
-func (a *pbkdf2HashProvider) Verify(credentialValueToVerify []byte, referenceCredential Credential) bool {
+func (a *pbkdf2HashProvider) Verify(credentialValueToVerify []byte, referenceCredential Credential) (bool, error) {
 	iterations := referenceCredential.Parameters.Iterations
 	if iterations <= 0 {
 		iterations = defaultPBKDF2Iterations
@@ -162,24 +168,24 @@ func (a *pbkdf2HashProvider) Verify(credentialValueToVerify []byte, referenceCre
 	saltBytes, err := hex.DecodeString(referenceCredential.Parameters.Salt)
 	if err != nil {
 		logger.Error("Error decoding salt: %v", log.Error(err))
-		return false
+		return false, err
 	}
 	hash, err := pbkdf2.Key(sha256.New,
 		string(credentialValueToVerify), saltBytes, iterations, keySize)
 	if err != nil {
 		logger.Error("Error hashing data with PBKDF2: %v", log.Error(err))
-		return false
+		return false, err
 	}
-	return hex.EncodeToString(hash) == referenceCredential.Hash
+	return hex.EncodeToString(hash) == referenceCredential.Hash, nil
 }
 
 // generateSalt generates a random salt string.
-func generateSalt(saltSize int) []byte {
+func generateSalt(saltSize int) ([]byte, error) {
 	salt := make([]byte, saltSize)
 	_, err := rand.Read(salt)
 	if err != nil {
 		logger.Error("Error generating salt: %v", log.Error(err))
-		return nil
+		return nil, err
 	}
-	return salt
+	return salt, nil
 }

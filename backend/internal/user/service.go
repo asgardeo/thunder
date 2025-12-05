@@ -264,7 +264,10 @@ func (us *userService) extractCredentials(user *User) ([]Credential, error) {
 
 	for credField := range supportedCredentialFields {
 		if credValue, ok := attrsMap[credField].(string); ok {
-			credHash := us.hashService.Generate([]byte(credValue))
+			credHash, err := us.hashService.Generate([]byte(credValue))
+			if err != nil {
+				return nil, err
+			}
 
 			delete(attrsMap, credField)
 
@@ -698,9 +701,9 @@ func (us *userService) VerifyUser(
 				KeySize:    matchingCredential.StorageAlgoParams.KeySize,
 			},
 		}
-		hashVerified := us.hashService.Verify([]byte(credValue), verifyingCredential)
+		hashVerified, err := us.hashService.Verify([]byte(credValue), verifyingCredential)
 
-		if hashVerified {
+		if err == nil && hashVerified {
 			logger.Debug("Credential verified successfully",
 				log.String("userID", userID), log.String("credType", credType))
 		} else {
