@@ -5,22 +5,24 @@
         {
             "id": "registration_start",
             "type": "REGISTRATION_START",
-            "next": [
-                "prompt_mobile"
-            ]
+            "onSuccess": "prompt_mobile"
         },
         {
             "id": "prompt_mobile",
-            "type": "PROMPT_ONLY",
-            "inputData": [
+            "type": "PROMPT",
+            "inputs": [
                 {
-                    "name": "mobileNumber",
+                    "ref": "input_001",
+                    "identifier": "mobileNumber",
                     "type": "string",
                     "required": true
                 }
             ],
-            "next": [
-                "sms_otp_auth"
+            "actions": [
+                {
+                    "ref": "action_001",
+                    "nextNode": "sms_otp_auth"
+                }
             ]
         },
         {
@@ -32,31 +34,33 @@
             "executor": {
                 "name": "SMSOTPAuthExecutor"
             },
-            "next": [
-                "provisioning"
-            ]
+            "onSuccess": "provisioning"
         },
         {
             "id": "provisioning",
             "type": "TASK_EXECUTION",
-            "inputData": [
+            "inputs": [
                 {
-                    "name": "firstName",
+                    "ref": "input_002",
+                    "identifier": "firstName",
                     "type": "string",
                     "required": false
                 },
                 {
-                    "name": "lastName",
+                    "ref": "input_003",
+                    "identifier": "lastName",
                     "type": "string",
                     "required": false
                 },
                 {
-                    "name": "email",
+                    "ref": "input_004",
+                    "identifier": "email",
                     "type": "string",
                     "required": true
                 },
                 {
-                    "name": "mobileNumber",
+                    "ref": "input_005",
+                    "identifier": "mobileNumber",
                     "type": "string",
                     "required": true
                 }
@@ -64,9 +68,7 @@
             "executor": {
                 "name": "ProvisioningExecutor"
             },
-            "next": [
-                "authenticated"
-            ]
+            "onSuccess": "authenticated"
         },
         {
             "id": "authenticated",

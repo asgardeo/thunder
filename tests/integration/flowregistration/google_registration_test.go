@@ -339,7 +339,7 @@ func (ts *GoogleRegistrationFlowTestSuite) TestGoogleRegistrationFlowCompleteWit
 	ts.Require().NotEmpty(flowStep.Data.Inputs, "Should still require inputs")
 	hasCodeInput := false
 	for _, input := range flowStep.Data.Inputs {
-		if input.Name == "code" && input.Required {
+		if input.Identifier == "code" && input.Required {
 			hasCodeInput = true
 			break
 		}

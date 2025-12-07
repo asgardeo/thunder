@@ -11,9 +11,7 @@
             "executor": {
                 "name": "GoogleOIDCAuthExecutor"
             },
-            "next": [
-                "authenticated"
-            ]
+            "onSuccess": "authenticated"
         },
         {
             "id": "authenticated",

@@ -44,7 +44,7 @@ func (s *NodeTestSuite) TestExecuteBaseNodeReturnsError() {
 }
 
 func (s *NodeTestSuite) TestStartAndFinalFlags() {
-	node := newDecisionNode("d1", nil, false, false)
+	node := newPromptNode("p1", nil, false, false)
 
 	s.False(node.IsStartNode())
 	s.False(node.IsFinalNode())
@@ -58,65 +58,65 @@ func (s *NodeTestSuite) TestStartAndFinalFlags() {
 
 func (s *NodeTestSuite) TestNextAndPreviousNodeListBehavior() {
 	// next node list behavior
-	n := newPromptOnlyNode("p1", nil, false, false)
+	n := newPromptNode("p1", nil, false, false)
 
 	s.Empty(n.GetNextNodeList())
 
 	n.SetNextNodeList(nil)
 	s.Empty(n.GetNextNodeList())
 
-	n.AddNextNodeID("")
+	n.AddNextNode("")
 	s.Empty(n.GetNextNodeList())
 
-	n.AddNextNodeID("n1")
-	n.AddNextNodeID("n1")
-	n.AddNextNodeID("n2")
+	n.AddNextNode("n1")
+	n.AddNextNode("n1")
+	n.AddNextNode("n2")
 	s.Len(n.GetNextNodeList(), 2)
 	s.Contains(n.GetNextNodeList(), "n1")
 	s.Contains(n.GetNextNodeList(), "n2")
 
-	n.RemoveNextNodeID("n1")
+	n.RemoveNextNode("n1")
 	s.Len(n.GetNextNodeList(), 1)
 	s.NotContains(n.GetNextNodeList(), "n1")
 
-	n.RemoveNextNodeID("")
-	n.RemoveNextNodeID("nope")
+	n.RemoveNextNode("")
+	n.RemoveNextNode("nope")
 	s.Len(n.GetNextNodeList(), 1)
 
 	// previous node list behavior
-	p := newPromptOnlyNode("p2", nil, false, false)
+	p := newPromptNode("p2", nil, false, false)
 
 	s.Empty(p.GetPreviousNodeList())
 
 	p.SetPreviousNodeList(nil)
 	s.Empty(p.GetPreviousNodeList())
 
-	p.AddPreviousNodeID("")
+	p.AddPreviousNode("")
 	s.Empty(p.GetPreviousNodeList())
 
-	p.AddPreviousNodeID("p1")
-	p.AddPreviousNodeID("p2")
-	p.AddPreviousNodeID("p2")
+	p.AddPreviousNode("p1")
+	p.AddPreviousNode("p2")
+	p.AddPreviousNode("p2")
 	s.Len(p.GetPreviousNodeList(), 2)
 	s.Contains(p.GetPreviousNodeList(), "p1")
 	s.Contains(p.GetPreviousNodeList(), "p2")
 
-	p.RemovePreviousNodeID("p1")
+	p.RemovePreviousNode("p1")
 	s.Len(p.GetPreviousNodeList(), 1)
 	s.NotContains(p.GetPreviousNodeList(), "p1")
 
-	p.RemovePreviousNodeID("")
-	p.RemovePreviousNodeID("nope")
+	p.RemovePreviousNode("")
+	p.RemovePreviousNode("nope")
 	s.Len(p.GetPreviousNodeList(), 1)
 }
 
-func (s *NodeTestSuite) TestInputDataAndProperties() {
+func (s *NodeTestSuite) TestInputsAndProperties() {
 	props := map[string]interface{}{"k": "v"}
 	node := newTaskExecutionNode("t1", props, false, false)
 
 	s.Equal(props, node.GetProperties())
 
-	inputs := []common.InputData{{Name: "i1", Required: true}}
-	node.SetInputData(inputs)
-	s.Equal(inputs, node.GetInputData())
+	inputs := []common.Input{{Identifier: "i1", Required: true}}
+	node.SetInputs(inputs)
+	s.Equal(inputs, node.GetInputs())
 }

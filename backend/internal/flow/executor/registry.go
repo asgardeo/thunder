@@ -22,32 +22,32 @@ import (
 	"fmt"
 	"sync"
 
-	flowcore "github.com/asgardeo/thunder/internal/flow/core"
+	"github.com/asgardeo/thunder/internal/flow/core"
 	"github.com/asgardeo/thunder/internal/system/log"
 )
 
 // ExecutorRegistryInterface defines registry operations for executors.
 type ExecutorRegistryInterface interface {
-	GetExecutor(name string) (flowcore.ExecutorInterface, error)
-	RegisterExecutor(name string, ex flowcore.ExecutorInterface)
+	GetExecutor(name string) (core.ExecutorInterface, error)
+	RegisterExecutor(name string, ex core.ExecutorInterface)
 	IsRegistered(name string) bool
 }
 
 // executorRegistry is the default implementation of ExecutorRegistryInterface.
 type executorRegistry struct {
 	mu        sync.RWMutex
-	executors map[string]flowcore.ExecutorInterface
+	executors map[string]core.ExecutorInterface
 }
 
 // newExecutorRegistry creates a new instance of executorRegistry.
 func newExecutorRegistry() ExecutorRegistryInterface {
 	return &executorRegistry{
-		executors: make(map[string]flowcore.ExecutorInterface),
+		executors: make(map[string]core.ExecutorInterface),
 	}
 }
 
 // RegisterExecutor registers an executor instance.
-func (r *executorRegistry) RegisterExecutor(name string, exec flowcore.ExecutorInterface) {
+func (r *executorRegistry) RegisterExecutor(name string, exec core.ExecutorInterface) {
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, "ExecutorRegistry"))
 	logger.Debug("Registering executor", log.String("executorName", exec.GetName()))
 
@@ -70,7 +70,7 @@ func (r *executorRegistry) RegisterExecutor(name string, exec flowcore.ExecutorI
 }
 
 // GetExecutor retrieves executor instance from the executor registry.
-func (r *executorRegistry) GetExecutor(name string) (flowcore.ExecutorInterface, error) {
+func (r *executorRegistry) GetExecutor(name string) (core.ExecutorInterface, error) {
 	r.mu.RLock()
 	defer r.mu.RUnlock()
 	ex, ok := r.executors[name]

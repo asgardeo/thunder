@@ -5,22 +5,24 @@
         {
             "id": "registration_start",
             "type": "REGISTRATION_START",
-            "next": [
-                "mobile_prompt_username"
-            ]
+            "onSuccess": "mobile_prompt_username"
         },
         {
             "id": "mobile_prompt_username",
-            "type": "PROMPT_ONLY",
-            "inputData": [
+            "type": "PROMPT",
+            "inputs": [
                 {
-                    "name": "username",
+                    "ref": "input_001",
+                    "identifier": "username",
                     "type": "string",
                     "required": true
                 }
             ],
-            "next": [
-                "sms_otp_auth"
+            "actions": [
+                {
+                    "ref": "action_001",
+                    "nextNode": "sms_otp_auth"
+                }
             ]
         },
         {
@@ -32,9 +34,7 @@
             "executor": {
                 "name": "SMSOTPAuthExecutor"
             },
-            "next": [
-                "provisioning"
-            ]
+            "onSuccess": "provisioning"
         },
         {
             "id": "provisioning",
@@ -42,9 +42,7 @@
             "executor": {
                 "name": "ProvisioningExecutor"
             },
-            "next": [
-                "authenticated"
-            ]
+            "onSuccess": "authenticated"
         },
         {
             "id": "authenticated",

@@ -4,10 +4,16 @@
     "nodes": [
         {
             "id": "choose_auth",
-            "type": "DECISION",
-            "next": [
-                "basic_auth",
-                "google_auth"
+            "type": "PROMPT",
+            "actions": [
+                {
+                    "ref": "action_001",
+                    "nextNode": "basic_auth"
+                },
+                {
+                    "ref": "action_002",
+                    "nextNode": "google_auth"
+                }
             ]
         },
         {
@@ -16,9 +22,7 @@
             "executor": {
                 "name": "BasicAuthExecutor"
             },
-            "next": [
-                "authenticated"
-            ]
+            "onSuccess": "authenticated"
         },
         {
             "id": "google_auth",
@@ -26,12 +30,18 @@
             "properties": {
                 "idpId": "<google-idp-id>"
             },
+            "inputs": [
+                {
+                    "ref": "input_003",
+                    "type": "TEXT_INPUT",
+                    "identifier": "code",
+                    "required": true
+                }
+            ],
             "executor": {
                 "name": "GoogleOIDCAuthExecutor"
             },
-            "next": [
-                "authenticated"
-            ]
+            "onSuccess": "authenticated"
         },
         {
             "id": "authenticated",

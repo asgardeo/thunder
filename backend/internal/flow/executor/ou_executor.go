@@ -21,8 +21,8 @@ package executor
 import (
 	"errors"
 
-	flowcm "github.com/asgardeo/thunder/internal/flow/common"
-	flowcore "github.com/asgardeo/thunder/internal/flow/core"
+	"github.com/asgardeo/thunder/internal/flow/common"
+	"github.com/asgardeo/thunder/internal/flow/core"
 	"github.com/asgardeo/thunder/internal/ou"
 	"github.com/asgardeo/thunder/internal/system/error/serviceerror"
 	"github.com/asgardeo/thunder/internal/system/log"
@@ -34,36 +34,36 @@ const (
 
 // ouExecutor is responsible for creating organizational units (OUs) within the system.
 type ouExecutor struct {
-	flowcore.ExecutorInterface
+	core.ExecutorInterface
 	ouService ou.OrganizationUnitServiceInterface
 	logger    *log.Logger
 }
 
-var _ flowcore.ExecutorInterface = (*ouExecutor)(nil)
+var _ core.ExecutorInterface = (*ouExecutor)(nil)
 
 // newOUExecutor creates a new instance of OUExecutor with the given parameters.
 func newOUExecutor(
-	flowFactory flowcore.FlowFactoryInterface,
+	flowFactory core.FlowFactoryInterface,
 	ouService ou.OrganizationUnitServiceInterface,
 ) *ouExecutor {
-	defaultInputs := []flowcm.InputData{
+	defaultInputs := []common.Input{
 		{
-			Name:     userInputOuName,
-			Required: true,
-			Type:     "string",
+			Identifier: userInputOuName,
+			Type:       "string",
+			Required:   true,
 		},
 		{
-			Name:     userInputOuHandle,
-			Required: true,
-			Type:     "string",
+			Identifier: userInputOuHandle,
+			Type:       "string",
+			Required:   true,
 		},
 	}
 
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, ouExecLoggerComponentName),
 		log.String(log.LoggerKeyExecutorName, ExecutorNameOUCreation))
 
-	base := flowFactory.CreateExecutor(ExecutorNameOUCreation, flowcm.ExecutorTypeRegistration,
-		defaultInputs, []flowcm.InputData{})
+	base := flowFactory.CreateExecutor(ExecutorNameOUCreation, common.ExecutorTypeRegistration,
+		defaultInputs, []common.Input{})
 
 	return &ouExecutor{
 		ExecutorInterface: base,
@@ -73,25 +73,25 @@ func newOUExecutor(
 }
 
 // Execute executes the ou creation logic.
-func (o *ouExecutor) Execute(ctx *flowcore.NodeContext) (*flowcm.ExecutorResponse, error) {
+func (o *ouExecutor) Execute(ctx *core.NodeContext) (*common.ExecutorResponse, error) {
 	logger := o.logger.With(log.String(log.LoggerKeyFlowID, ctx.FlowID))
 	logger.Debug("Executing OU creation executor")
 
-	execResp := &flowcm.ExecutorResponse{
+	execResp := &common.ExecutorResponse{
 		AdditionalData: make(map[string]string),
 		RuntimeData:    make(map[string]string),
 	}
 
 	if !o.ValidatePrerequisites(ctx, execResp) {
 		logger.Debug("Prerequisites validation failed for OU creation")
-		execResp.Status = flowcm.ExecFailure
+		execResp.Status = common.ExecFailure
 		execResp.FailureReason = "Prerequisites validation failed for OU creation"
 		return execResp, nil
 	}
 
-	if o.CheckInputData(ctx, execResp) {
-		logger.Debug("Required input data for OU creation is not provided")
-		execResp.Status = flowcm.ExecUserInputRequired
+	if !o.HasRequiredInputs(ctx, execResp) {
+		logger.Debug("Required inputs for OU creation is not provided")
+		execResp.Status = common.ExecUserInputRequired
 		return execResp, nil
 	}
 
@@ -100,7 +100,7 @@ func (o *ouExecutor) Execute(ctx *flowcore.NodeContext) (*flowcm.ExecutorRespons
 	createdOU, svcErr := o.ouService.CreateOrganizationUnit(ouRequest)
 	if svcErr != nil {
 		if svcErr.Type == serviceerror.ClientErrorType {
-			execResp.Status = flowcm.ExecFailure
+			execResp.Status = common.ExecFailure
 
 			switch svcErr.Code {
 			case ou.ErrorOrganizationUnitNameConflict.Code:
@@ -128,16 +128,16 @@ func (o *ouExecutor) Execute(ctx *flowcore.NodeContext) (*flowcm.ExecutorRespons
 	execResp.RuntimeData[ouIDKey] = createdOU.ID
 
 	logger.Debug("Organization unit created successfully", log.String(ouIDKey, createdOU.ID))
-	execResp.Status = flowcm.ExecComplete
+	execResp.Status = common.ExecComplete
 	return execResp, nil
 }
 
 // getOrganizationUnitRequest constructs an OrganizationUnitRequest from the NodeContext.
-func (o *ouExecutor) getOrganizationUnitRequest(ctx *flowcore.NodeContext) ou.OrganizationUnitRequest {
+func (o *ouExecutor) getOrganizationUnitRequest(ctx *core.NodeContext) ou.OrganizationUnitRequest {
 	ouRequest := ou.OrganizationUnitRequest{
-		Name:        ctx.UserInputData[userInputOuName],
-		Handle:      ctx.UserInputData[userInputOuHandle],
-		Description: ctx.UserInputData[userInputOuDesc],
+		Name:        ctx.UserInputs[userInputOuName],
+		Handle:      ctx.UserInputs[userInputOuHandle],
+		Description: ctx.UserInputs[userInputOuDesc],
 	}
 
 	// Set parent OU ID if defaultOUID is present in runtime data

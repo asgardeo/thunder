@@ -5,16 +5,28 @@
         {
             "id": "registration_start",
             "type": "REGISTRATION_START",
-            "next": ["choose_auth"]
+            "onSuccess": "choose_auth"
         },
         {
             "id": "choose_auth",
-            "type": "DECISION",
-            "next": [
-                "basic_auth",
-                "google_auth",
-                "github_auth",
-                "prompt_mobile"
+            "type": "PROMPT",
+            "actions": [
+                {
+                    "ref": "action_001",
+                    "nextNode": "basic_auth"
+                },
+                {
+                    "ref": "action_002",
+                    "nextNode": "google_auth"
+                },
+                {
+                    "ref": "action_003",
+                    "nextNode": "github_auth"
+                },
+                {
+                    "ref": "action_004",
+                    "nextNode": "prompt_mobile"
+                }
             ]
         },
         {
@@ -23,9 +35,7 @@
             "executor": {
                 "name": "BasicAuthExecutor"
             },
-            "next": [
-                "sms_otp_auth_basic"
-            ]
+            "onSuccess": "sms_otp_auth_basic"
         },
         {
             "id": "google_auth",
@@ -36,9 +46,7 @@
             "executor": {
                 "name": "GoogleOIDCAuthExecutor"
             },
-            "next": [
-                "provisioning_social"
-            ]
+            "onSuccess": "provisioning_social"
         },
         {
             "id": "github_auth",
@@ -49,22 +57,24 @@
             "executor": {
                 "name": "GithubOAuthExecutor"
             },
-            "next": [
-                "provisioning_social"
-            ]
+            "onSuccess": "provisioning_social"
         },
         {
             "id": "prompt_mobile",
-            "type": "PROMPT_ONLY",
-            "inputData": [
+            "type": "PROMPT",
+            "inputs": [
                 {
-                    "name": "mobileNumber",
-                    "type": "string",
+                    "ref": "input_001",
+                    "identifier": "mobileNumber",
+                    "type": "TEXT_INPUT",
                     "required": true
                 }
             ],
-            "next": [
-                "sms_otp_auth"
+            "actions": [
+                {
+                    "ref": "action_001",
+                    "nextNode": "sms_otp_auth"
+                }
             ]
         },
         {
@@ -76,9 +86,7 @@
             "executor": {
                 "name": "SMSOTPAuthExecutor"
             },
-            "next": [
-                "provisioning_local_sms"
-            ]
+            "onSuccess": "provisioning_local_sms"
         },
         {
             "id": "sms_otp_auth_basic",
@@ -89,73 +97,75 @@
             "executor": {
                 "name": "SMSOTPAuthExecutor"
             },
-            "next": [
-                "provisioning_local_basic"
-            ]
+            "onSuccess": "provisioning_local_basic"
         },
         {
             "id": "provisioning_local_basic",
             "type": "TASK_EXECUTION",
-            "inputData": [
+            "inputs": [
                 {
-                    "name": "username",
-                    "type": "string",
+                    "ref": "input_002",
+                    "identifier": "username",
+                    "type": "TEXT_INPUT",
                     "required": true
                 },
                 {
-                    "name": "password",
-                    "type": "string",
+                    "ref": "input_003",
+                    "identifier": "password",
+                    "type": "PASSWORD_INPUT",
                     "required": true
                 },
                 {
-                    "name": "firstName",
-                    "type": "string",
+                    "ref": "input_004",
+                    "identifier": "firstName",
+                    "type": "TEXT_INPUT",
                     "required": false
                 },
                 {
-                    "name": "lastName",
-                    "type": "string",
+                    "ref": "input_005",
+                    "identifier": "lastName",
+                    "type": "TEXT_INPUT",
                     "required": false
                 },
                 {
-                    "name": "mobileNumber",
-                    "type": "string",
+                    "ref": "input_006",
+                    "identifier": "mobileNumber",
+                    "type": "TEXT_INPUT",
                     "required": false
                 }
             ],
             "executor": {
                 "name": "ProvisioningExecutor"
             },
-            "next": [
-                "authenticated"
-            ]
+            "onSuccess": "authenticated"
         },
         {
             "id": "provisioning_local_sms",
             "type": "TASK_EXECUTION",
-            "inputData": [
+            "inputs": [
                 {
-                    "name": "firstName",
-                    "type": "string",
+                    "ref": "input_007",
+                    "identifier": "firstName",
+                    "type": "TEXT_INPUT",
                     "required": false
                 },
                 {
-                    "name": "lastName",
-                    "type": "string",
+                    "ref": "input_008",
+                    "identifier": "lastName",
+                    "type": "TEXT_INPUT",
                     "required": false
                 },
                 {
-                    "name": "mobileNumber",
-                    "type": "string",
+                    "ref": "input_009",
+                    "identifier": "mobileNumber",
+                    "type": "TEXT_INPUT",
                     "required": true
                 }
             ],
             "executor": {
                 "name": "ProvisioningExecutor"
             },
-            "next": [
-                "authenticated"
-            ]
+            "onSuccess": "authenticated"
         },
         {
             "id": "provisioning_social",
@@ -163,9 +173,7 @@
             "executor": {
                 "name": "ProvisioningExecutor"
             },
-            "next": [
-                "authenticated"
-            ]
+            "onSuccess": "authenticated"
         },
         {
             "id": "authenticated",

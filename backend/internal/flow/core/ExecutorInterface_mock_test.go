@@ -36,63 +36,6 @@ func (_m *ExecutorInterfaceMock) EXPECT() *ExecutorInterfaceMock_Expecter {
 	return &ExecutorInterfaceMock_Expecter{mock: &_m.Mock}
 }
 
-// CheckInputData provides a mock function for the type ExecutorInterfaceMock
-func (_mock *ExecutorInterfaceMock) CheckInputData(ctx *NodeContext, execResp *common.ExecutorResponse) bool {
-	ret := _mock.Called(ctx, execResp)
-
-	if len(ret) == 0 {
-		panic("no return value specified for CheckInputData")
-	}
-
-	var r0 bool
-	if returnFunc, ok := ret.Get(0).(func(*NodeContext, *common.ExecutorResponse) bool); ok {
-		r0 = returnFunc(ctx, execResp)
-	} else {
-		r0 = ret.Get(0).(bool)
-	}
-	return r0
-}
-
-// ExecutorInterfaceMock_CheckInputData_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'CheckInputData'
-type ExecutorInterfaceMock_CheckInputData_Call struct {
-	*mock.Call
-}
-
-// CheckInputData is a helper method to define mock.On call
-//   - ctx *NodeContext
-//   - execResp *common.ExecutorResponse
-func (_e *ExecutorInterfaceMock_Expecter) CheckInputData(ctx interface{}, execResp interface{}) *ExecutorInterfaceMock_CheckInputData_Call {
-	return &ExecutorInterfaceMock_CheckInputData_Call{Call: _e.mock.On("CheckInputData", ctx, execResp)}
-}
-
-func (_c *ExecutorInterfaceMock_CheckInputData_Call) Run(run func(ctx *NodeContext, execResp *common.ExecutorResponse)) *ExecutorInterfaceMock_CheckInputData_Call {
-	_c.Call.Run(func(args mock.Arguments) {
-		var arg0 *NodeContext
-		if args[0] != nil {
-			arg0 = args[0].(*NodeContext)
-		}
-		var arg1 *common.ExecutorResponse
-		if args[1] != nil {
-			arg1 = args[1].(*common.ExecutorResponse)
-		}
-		run(
-			arg0,
-			arg1,
-		)
-	})
-	return _c
-}
-
-func (_c *ExecutorInterfaceMock_CheckInputData_Call) Return(b bool) *ExecutorInterfaceMock_CheckInputData_Call {
-	_c.Call.Return(b)
-	return _c
-}
-
-func (_c *ExecutorInterfaceMock_CheckInputData_Call) RunAndReturn(run func(ctx *NodeContext, execResp *common.ExecutorResponse) bool) *ExecutorInterfaceMock_CheckInputData_Call {
-	_c.Call.Return(run)
-	return _c
-}
-
 // Execute provides a mock function for the type ExecutorInterfaceMock
 func (_mock *ExecutorInterfaceMock) Execute(ctx *NodeContext) (*common.ExecutorResponse, error) {
 	ret := _mock.Called(ctx)
@@ -155,48 +98,48 @@ func (_c *ExecutorInterfaceMock_Execute_Call) RunAndReturn(run func(ctx *NodeCon
 	return _c
 }
 
-// GetDefaultExecutorInputs provides a mock function for the type ExecutorInterfaceMock
-func (_mock *ExecutorInterfaceMock) GetDefaultExecutorInputs() []common.InputData {
+// GetDefaultInputs provides a mock function for the type ExecutorInterfaceMock
+func (_mock *ExecutorInterfaceMock) GetDefaultInputs() []common.Input {
 	ret := _mock.Called()
 
 	if len(ret) == 0 {
-		panic("no return value specified for GetDefaultExecutorInputs")
+		panic("no return value specified for GetDefaultInputs")
 	}
 
-	var r0 []common.InputData
-	if returnFunc, ok := ret.Get(0).(func() []common.InputData); ok {
+	var r0 []common.Input
+	if returnFunc, ok := ret.Get(0).(func() []common.Input); ok {
 		r0 = returnFunc()
 	} else {
 		if ret.Get(0) != nil {
-			r0 = ret.Get(0).([]common.InputData)
+			r0 = ret.Get(0).([]common.Input)
 		}
 	}
 	return r0
 }
 
-// ExecutorInterfaceMock_GetDefaultExecutorInputs_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'GetDefaultExecutorInputs'
-type ExecutorInterfaceMock_GetDefaultExecutorInputs_Call struct {
+// ExecutorInterfaceMock_GetDefaultInputs_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'GetDefaultInputs'
+type ExecutorInterfaceMock_GetDefaultInputs_Call struct {
 	*mock.Call
 }
 
-// GetDefaultExecutorInputs is a helper method to define mock.On call
-func (_e *ExecutorInterfaceMock_Expecter) GetDefaultExecutorInputs() *ExecutorInterfaceMock_GetDefaultExecutorInputs_Call {
-	return &ExecutorInterfaceMock_GetDefaultExecutorInputs_Call{Call: _e.mock.On("GetDefaultExecutorInputs")}
+// GetDefaultInputs is a helper method to define mock.On call
+func (_e *ExecutorInterfaceMock_Expecter) GetDefaultInputs() *ExecutorInterfaceMock_GetDefaultInputs_Call {
+	return &ExecutorInterfaceMock_GetDefaultInputs_Call{Call: _e.mock.On("GetDefaultInputs")}
 }
 
-func (_c *ExecutorInterfaceMock_GetDefaultExecutorInputs_Call) Run(run func()) *ExecutorInterfaceMock_GetDefaultExecutorInputs_Call {
+func (_c *ExecutorInterfaceMock_GetDefaultInputs_Call) Run(run func()) *ExecutorInterfaceMock_GetDefaultInputs_Call {
 	_c.Call.Run(func(args mock.Arguments) {
 		run()
 	})
 	return _c
 }
 
-func (_c *ExecutorInterfaceMock_GetDefaultExecutorInputs_Call) Return(inputDatas []common.InputData) *ExecutorInterfaceMock_GetDefaultExecutorInputs_Call {
-	_c.Call.Return(inputDatas)
+func (_c *ExecutorInterfaceMock_GetDefaultInputs_Call) Return(inputs []common.Input) *ExecutorInterfaceMock_GetDefaultInputs_Call {
+	_c.Call.Return(inputs)
 	return _c
 }
 
-func (_c *ExecutorInterfaceMock_GetDefaultExecutorInputs_Call) RunAndReturn(run func() []common.InputData) *ExecutorInterfaceMock_GetDefaultExecutorInputs_Call {
+func (_c *ExecutorInterfaceMock_GetDefaultInputs_Call) RunAndReturn(run func() []common.Input) *ExecutorInterfaceMock_GetDefaultInputs_Call {
 	_c.Call.Return(run)
 	return _c
 }
@@ -246,19 +189,19 @@ func (_c *ExecutorInterfaceMock_GetName_Call) RunAndReturn(run func() string) *E
 }
 
 // GetPrerequisites provides a mock function for the type ExecutorInterfaceMock
-func (_mock *ExecutorInterfaceMock) GetPrerequisites() []common.InputData {
+func (_mock *ExecutorInterfaceMock) GetPrerequisites() []common.Input {
 	ret := _mock.Called()
 
 	if len(ret) == 0 {
 		panic("no return value specified for GetPrerequisites")
 	}
 
-	var r0 []common.InputData
-	if returnFunc, ok := ret.Get(0).(func() []common.InputData); ok {
+	var r0 []common.Input
+	if returnFunc, ok := ret.Get(0).(func() []common.Input); ok {
 		r0 = returnFunc()
 	} else {
 		if ret.Get(0) != nil {
-			r0 = ret.Get(0).([]common.InputData)
+			r0 = ret.Get(0).([]common.Input)
 		}
 	}
 	return r0
@@ -281,47 +224,47 @@ func (_c *ExecutorInterfaceMock_GetPrerequisites_Call) Run(run func()) *Executor
 	return _c
 }
 
-func (_c *ExecutorInterfaceMock_GetPrerequisites_Call) Return(inputDatas []common.InputData) *ExecutorInterfaceMock_GetPrerequisites_Call {
-	_c.Call.Return(inputDatas)
+func (_c *ExecutorInterfaceMock_GetPrerequisites_Call) Return(inputs []common.Input) *ExecutorInterfaceMock_GetPrerequisites_Call {
+	_c.Call.Return(inputs)
 	return _c
 }
 
-func (_c *ExecutorInterfaceMock_GetPrerequisites_Call) RunAndReturn(run func() []common.InputData) *ExecutorInterfaceMock_GetPrerequisites_Call {
+func (_c *ExecutorInterfaceMock_GetPrerequisites_Call) RunAndReturn(run func() []common.Input) *ExecutorInterfaceMock_GetPrerequisites_Call {
 	_c.Call.Return(run)
 	return _c
 }
 
-// GetRequiredData provides a mock function for the type ExecutorInterfaceMock
-func (_mock *ExecutorInterfaceMock) GetRequiredData(ctx *NodeContext) []common.InputData {
+// GetRequiredInputs provides a mock function for the type ExecutorInterfaceMock
+func (_mock *ExecutorInterfaceMock) GetRequiredInputs(ctx *NodeContext) []common.Input {
 	ret := _mock.Called(ctx)
 
 	if len(ret) == 0 {
-		panic("no return value specified for GetRequiredData")
+		panic("no return value specified for GetRequiredInputs")
 	}
 
-	var r0 []common.InputData
-	if returnFunc, ok := ret.Get(0).(func(*NodeContext) []common.InputData); ok {
+	var r0 []common.Input
+	if returnFunc, ok := ret.Get(0).(func(*NodeContext) []common.Input); ok {
 		r0 = returnFunc(ctx)
 	} else {
 		if ret.Get(0) != nil {
-			r0 = ret.Get(0).([]common.InputData)
+			r0 = ret.Get(0).([]common.Input)
 		}
 	}
 	return r0
 }
 
-// ExecutorInterfaceMock_GetRequiredData_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'GetRequiredData'
-type ExecutorInterfaceMock_GetRequiredData_Call struct {
+// ExecutorInterfaceMock_GetRequiredInputs_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'GetRequiredInputs'
+type ExecutorInterfaceMock_GetRequiredInputs_Call struct {
 	*mock.Call
 }
 
-// GetRequiredData is a helper method to define mock.On call
+// GetRequiredInputs is a helper method to define mock.On call
 //   - ctx *NodeContext
-func (_e *ExecutorInterfaceMock_Expecter) GetRequiredData(ctx interface{}) *ExecutorInterfaceMock_GetRequiredData_Call {
-	return &ExecutorInterfaceMock_GetRequiredData_Call{Call: _e.mock.On("GetRequiredData", ctx)}
+func (_e *ExecutorInterfaceMock_Expecter) GetRequiredInputs(ctx interface{}) *ExecutorInterfaceMock_GetRequiredInputs_Call {
+	return &ExecutorInterfaceMock_GetRequiredInputs_Call{Call: _e.mock.On("GetRequiredInputs", ctx)}
 }
 
-func (_c *ExecutorInterfaceMock_GetRequiredData_Call) Run(run func(ctx *NodeContext)) *ExecutorInterfaceMock_GetRequiredData_Call {
+func (_c *ExecutorInterfaceMock_GetRequiredInputs_Call) Run(run func(ctx *NodeContext)) *ExecutorInterfaceMock_GetRequiredInputs_Call {
 	_c.Call.Run(func(args mock.Arguments) {
 		var arg0 *NodeContext
 		if args[0] != nil {
@@ -334,12 +277,12 @@ func (_c *ExecutorInterfaceMock_GetRequiredData_Call) Run(run func(ctx *NodeCont
 	return _c
 }
 
-func (_c *ExecutorInterfaceMock_GetRequiredData_Call) Return(inputDatas []common.InputData) *ExecutorInterfaceMock_GetRequiredData_Call {
-	_c.Call.Return(inputDatas)
+func (_c *ExecutorInterfaceMock_GetRequiredInputs_Call) Return(inputs []common.Input) *ExecutorInterfaceMock_GetRequiredInputs_Call {
+	_c.Call.Return(inputs)
 	return _c
 }
 
-func (_c *ExecutorInterfaceMock_GetRequiredData_Call) RunAndReturn(run func(ctx *NodeContext) []common.InputData) *ExecutorInterfaceMock_GetRequiredData_Call {
+func (_c *ExecutorInterfaceMock_GetRequiredInputs_Call) RunAndReturn(run func(ctx *NodeContext) []common.Input) *ExecutorInterfaceMock_GetRequiredInputs_Call {
 	_c.Call.Return(run)
 	return _c
 }
@@ -435,6 +378,63 @@ func (_c *ExecutorInterfaceMock_GetUserIDFromContext_Call) Return(s string) *Exe
 }
 
 func (_c *ExecutorInterfaceMock_GetUserIDFromContext_Call) RunAndReturn(run func(ctx *NodeContext) string) *ExecutorInterfaceMock_GetUserIDFromContext_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
+// HasRequiredInputs provides a mock function for the type ExecutorInterfaceMock
+func (_mock *ExecutorInterfaceMock) HasRequiredInputs(ctx *NodeContext, execResp *common.ExecutorResponse) bool {
+	ret := _mock.Called(ctx, execResp)
+
+	if len(ret) == 0 {
+		panic("no return value specified for HasRequiredInputs")
+	}
+
+	var r0 bool
+	if returnFunc, ok := ret.Get(0).(func(*NodeContext, *common.ExecutorResponse) bool); ok {
+		r0 = returnFunc(ctx, execResp)
+	} else {
+		r0 = ret.Get(0).(bool)
+	}
+	return r0
+}
+
+// ExecutorInterfaceMock_HasRequiredInputs_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'HasRequiredInputs'
+type ExecutorInterfaceMock_HasRequiredInputs_Call struct {
+	*mock.Call
+}
+
+// HasRequiredInputs is a helper method to define mock.On call
+//   - ctx *NodeContext
+//   - execResp *common.ExecutorResponse
+func (_e *ExecutorInterfaceMock_Expecter) HasRequiredInputs(ctx interface{}, execResp interface{}) *ExecutorInterfaceMock_HasRequiredInputs_Call {
+	return &ExecutorInterfaceMock_HasRequiredInputs_Call{Call: _e.mock.On("HasRequiredInputs", ctx, execResp)}
+}
+
+func (_c *ExecutorInterfaceMock_HasRequiredInputs_Call) Run(run func(ctx *NodeContext, execResp *common.ExecutorResponse)) *ExecutorInterfaceMock_HasRequiredInputs_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 *NodeContext
+		if args[0] != nil {
+			arg0 = args[0].(*NodeContext)
+		}
+		var arg1 *common.ExecutorResponse
+		if args[1] != nil {
+			arg1 = args[1].(*common.ExecutorResponse)
+		}
+		run(
+			arg0,
+			arg1,
+		)
+	})
+	return _c
+}
+
+func (_c *ExecutorInterfaceMock_HasRequiredInputs_Call) Return(b bool) *ExecutorInterfaceMock_HasRequiredInputs_Call {
+	_c.Call.Return(b)
+	return _c
+}
+
+func (_c *ExecutorInterfaceMock_HasRequiredInputs_Call) RunAndReturn(run func(ctx *NodeContext, execResp *common.ExecutorResponse) bool) *ExecutorInterfaceMock_HasRequiredInputs_Call {
 	_c.Call.Return(run)
 	return _c
 }

@@ -35,18 +35,18 @@ func TestPromptOnlyNodeTestSuite(t *testing.T) {
 }
 
 func (s *PromptOnlyNodeTestSuite) TestNewPromptOnlyNode() {
-	node := newPromptOnlyNode("prompt-1", map[string]interface{}{"key": "value"}, true, false)
+	node := newPromptNode("prompt-1", map[string]interface{}{"key": "value"}, true, false)
 
 	s.NotNil(node)
 	s.Equal("prompt-1", node.GetID())
-	s.Equal(common.NodeTypePromptOnly, node.GetType())
+	s.Equal(common.NodeTypePrompt, node.GetType())
 	s.True(node.IsStartNode())
 	s.False(node.IsFinalNode())
 }
 
-func (s *PromptOnlyNodeTestSuite) TestExecuteNoInputData() {
-	node := newPromptOnlyNode("prompt-1", map[string]interface{}{}, false, false)
-	ctx := &NodeContext{FlowID: "test-flow", UserInputData: map[string]string{}}
+func (s *PromptOnlyNodeTestSuite) TestExecuteNoInputs() {
+	node := newPromptNode("prompt-1", map[string]interface{}{}, false, false)
+	ctx := &NodeContext{FlowID: "test-flow", UserInputs: map[string]string{}}
 
 	resp, err := node.Execute(ctx)
 
@@ -59,7 +59,7 @@ func (s *PromptOnlyNodeTestSuite) TestExecuteNoInputData() {
 func (s *PromptOnlyNodeTestSuite) TestExecuteWithRequiredData() {
 	tests := []struct {
 		name           string
-		userInputData  map[string]string
+		userInputs     map[string]string
 		expectComplete bool
 		requiredCount  int
 	}{
@@ -75,13 +75,13 @@ func (s *PromptOnlyNodeTestSuite) TestExecuteWithRequiredData() {
 
 	for _, tt := range tests {
 		s.Run(tt.name, func() {
-			node := newPromptOnlyNode("prompt-1", map[string]interface{}{}, false, false)
-			node.SetInputData([]common.InputData{
-				{Name: "username", Required: true},
-				{Name: "email", Required: true},
+			node := newPromptNode("prompt-1", map[string]interface{}{}, false, false)
+			node.SetInputs([]common.Input{
+				{Identifier: "username", Required: true},
+				{Identifier: "email", Required: true},
 			})
 
-			ctx := &NodeContext{FlowID: "test-flow", UserInputData: tt.userInputData}
+			ctx := &NodeContext{FlowID: "test-flow", UserInputs: tt.userInputs}
 			resp, err := node.Execute(ctx)
 
 			s.Nil(err)
@@ -93,20 +93,20 @@ func (s *PromptOnlyNodeTestSuite) TestExecuteWithRequiredData() {
 			} else {
 				s.Equal(common.NodeStatusIncomplete, resp.Status)
 				s.Equal(common.NodeResponseTypeView, resp.Type)
-				s.Len(resp.RequiredData, tt.requiredCount)
+				s.Len(resp.Inputs, tt.requiredCount)
 			}
 		})
 	}
 }
 
 func (s *PromptOnlyNodeTestSuite) TestExecuteWithOptionalData() {
-	node := newPromptOnlyNode("prompt-1", map[string]interface{}{}, false, false)
-	node.SetInputData([]common.InputData{
-		{Name: "username", Required: true},
-		{Name: "nickname", Required: false},
+	node := newPromptNode("prompt-1", map[string]interface{}{}, false, false)
+	node.SetInputs([]common.Input{
+		{Identifier: "username", Required: true},
+		{Identifier: "nickname", Required: false},
 	})
 
-	ctx := &NodeContext{FlowID: "test-flow", UserInputData: map[string]string{"username": "testuser"}}
+	ctx := &NodeContext{FlowID: "test-flow", UserInputs: map[string]string{"username": "testuser"}}
 	resp, err := node.Execute(ctx)
 
 	s.Nil(err)
@@ -116,24 +116,24 @@ func (s *PromptOnlyNodeTestSuite) TestExecuteWithOptionalData() {
 }
 
 func (s *PromptOnlyNodeTestSuite) TestExecuteMissingRequiredOnly() {
-	node := newPromptOnlyNode("prompt-1", map[string]interface{}{}, false, false)
-	node.SetInputData([]common.InputData{
-		{Name: "username", Required: true},
-		{Name: "nickname", Required: false},
+	node := newPromptNode("prompt-1", map[string]interface{}{}, false, false)
+	node.SetInputs([]common.Input{
+		{Identifier: "username", Required: true},
+		{Identifier: "nickname", Required: false},
 	})
 
-	ctx := &NodeContext{FlowID: "test-flow", UserInputData: map[string]string{"nickname": "testnick"}}
+	ctx := &NodeContext{FlowID: "test-flow", UserInputs: map[string]string{"nickname": "testnick"}}
 	resp, err := node.Execute(ctx)
 
 	s.Nil(err)
 	s.NotNil(resp)
 	s.Equal(common.NodeStatusIncomplete, resp.Status)
 	s.Equal(common.NodeResponseTypeView, resp.Type)
-	s.Len(resp.RequiredData, 1)
+	s.Len(resp.Inputs, 1)
 
 	foundRequired := false
-	for _, data := range resp.RequiredData {
-		if data.Name == "username" && data.Required {
+	for _, data := range resp.Inputs {
+		if data.Identifier == "username" && data.Required {
 			foundRequired = true
 		}
 	}

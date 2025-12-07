@@ -4,11 +4,20 @@
     "nodes": [
         {
             "id": "choose_auth",
-            "type": "DECISION",
-            "next": [
-                "basic_auth",
-                "google_auth",
-                "github_auth"
+            "type": "PROMPT",
+            "actions": [
+                {
+                    "ref": "action_001",
+                    "nextNode": "basic_auth"
+                },
+                {
+                    "ref": "action_002",
+                    "nextNode": "google_auth"
+                },
+                {
+                    "ref": "action_003",
+                    "nextNode": "github_auth"
+                }
             ]
         },
         {
@@ -17,9 +26,7 @@
             "executor": {
                 "name": "BasicAuthExecutor"
             },
-            "next": [
-                "authenticated"
-            ]
+            "onSuccess": "authenticated"
         },
         {
             "id": "google_auth",
@@ -27,12 +34,18 @@
             "properties": {
                 "idpId": "<google-idp-id>"
             },
+            "inputs": [
+                {
+                    "ref": "input_001",
+                    "identifier": "code",
+                    "type": "TEXT_INPUT",
+                    "required": true
+                }
+            ],
             "executor": {
                 "name": "GoogleOIDCAuthExecutor"
             },
-            "next": [
-                "authenticated"
-            ]
+            "onSuccess": "authenticated"
         },
         {
             "id": "github_auth",
@@ -40,12 +53,18 @@
             "properties": {
                 "idpId": "<github-idp-id>"
             },
+            "inputs": [
+                {
+                    "ref": "input_002",
+                    "identifier": "code",
+                    "type": "TEXT_INPUT",
+                    "required": true
+                }
+            ],
             "executor": {
                 "name": "GithubOAuthExecutor"
             },
-            "next": [
-                "authenticated"
-            ]
+            "onSuccess": "authenticated"
         },
         {
             "id": "authenticated",

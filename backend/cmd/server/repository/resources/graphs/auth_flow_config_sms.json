@@ -4,16 +4,20 @@
     "nodes": [
         {
             "id": "prompt_mobile",
-            "type": "PROMPT_ONLY",
-            "inputData": [
+            "type": "PROMPT",
+            "inputs": [
                 {
-                    "name": "mobileNumber",
-                    "type": "string",
+                    "ref": "input_001",
+                    "identifier": "mobileNumber",
+                    "type": "TEXT_INPUT",
                     "required": true
                 }
             ],
-            "next": [
-                "sms_otp_auth"
+            "actions": [
+                {
+                    "ref": "action_001",
+                    "nextNode": "sms_otp_auth"
+                }
             ]
         },
         {
@@ -25,9 +29,7 @@
             "executor": {
                 "name": "SMSOTPAuthExecutor"
             },
-            "next": [
-                "authenticated"
-            ]
+            "onSuccess": "authenticated"
         },
         {
             "id": "authenticated",

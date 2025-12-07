@@ -32,13 +32,16 @@ import (
 const testServerURL = "https://localhost:8095"
 
 // Helper function to initiate the registration flow
-func initiateRegistrationFlow(appID string, inputs map[string]string) (*FlowStep, error) {
+func initiateRegistrationFlow(appID string, inputs map[string]string, action ...string) (*FlowStep, error) {
 	flowReqBody := map[string]interface{}{
 		"applicationId": appID,
 		"flowType":      "REGISTRATION",
 	}
 	if len(inputs) > 0 {
 		flowReqBody["inputs"] = inputs
+	}
+	if len(action) > 0 && action[0] != "" {
+		flowReqBody["action"] = action[0]
 	}
 
 	reqBody, err := json.Marshal(flowReqBody)
@@ -82,7 +85,7 @@ func completeRegistrationFlow(flowID string, actionID string, inputs map[string]
 		"inputs": inputs,
 	}
 	if actionID != "" {
-		flowReqBody["actionId"] = actionID
+		flowReqBody["action"] = actionID
 	}
 
 	reqBody, err := json.Marshal(flowReqBody)
@@ -238,7 +241,7 @@ func RestoreAppConfig(appID string, originalConfig map[string]interface{}) error
 }
 
 // Helper function to validate required inputs
-func ValidateRequiredInputs(inputs []InputData, required []string) bool {
+func ValidateRequiredInputs(inputs []Inputs, required []string) bool {
 	requiredMap := make(map[string]bool)
 	for _, req := range required {
 		requiredMap[req] = false
@@ -246,8 +249,8 @@ func ValidateRequiredInputs(inputs []InputData, required []string) bool {
 
 	for _, input := range inputs {
 		if input.Required {
-			if _, exists := requiredMap[input.Name]; exists {
-				requiredMap[input.Name] = true
+			if _, exists := requiredMap[input.Identifier]; exists {
+				requiredMap[input.Identifier] = true
 			}
 		}
 	}
@@ -262,9 +265,9 @@ func ValidateRequiredInputs(inputs []InputData, required []string) bool {
 }
 
 // Helper function to check if a specific input exists
-func HasInput(inputs []InputData, inputName string) bool {
+func HasInput(inputs []Inputs, inputName string) bool {
 	for _, input := range inputs {
-		if input.Name == inputName {
+		if input.Identifier == inputName {
 			return true
 		}
 	}

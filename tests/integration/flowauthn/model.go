@@ -28,21 +28,23 @@ type FlowStep struct {
 }
 
 type FlowData struct {
-	Inputs         []InputData       `json:"inputs,omitempty"`
-	Actions        []FlowAction      `json:"actions,omitempty"`
+	Inputs         []Inputs          `json:"inputs,omitempty"`
+	Actions        []Action          `json:"actions,omitempty"`
 	RedirectURL    string            `json:"redirectURL,omitempty"`
 	AdditionalData map[string]string `json:"additionalData,omitempty"`
 }
 
-type InputData struct {
-	Name     string `json:"name"`
-	Type     string `json:"type"`
-	Required bool   `json:"required"`
+type Inputs struct {
+	Ref        string   `json:"ref,omitempty"`
+	Identifier string   `json:"identifier"`
+	Type       string   `json:"type"`
+	Required   bool     `json:"required"`
+	Options    []string `json:"options,omitempty"`
 }
 
-type FlowAction struct {
-	Type string `json:"type"`
-	ID   string `json:"id"`
+type Action struct {
+	Ref      string `json:"ref"`
+	NextNode string `json:"nextNode,omitempty"`
 }
 
 type ErrorResponse struct {

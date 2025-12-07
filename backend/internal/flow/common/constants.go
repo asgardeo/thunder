@@ -63,10 +63,8 @@ const (
 	NodeTypeRegistrationStart NodeType = "REGISTRATION_START"
 	// NodeTypeTaskExecution represents a task execution node
 	NodeTypeTaskExecution NodeType = "TASK_EXECUTION"
-	// NodeTypePromptOnly represents a prompt-only node
-	NodeTypePromptOnly NodeType = "PROMPT_ONLY"
-	// NodeTypeDecision represents a decision node
-	NodeTypeDecision NodeType = "DECISION"
+	// NodeTypePrompt represents a prompt node
+	NodeTypePrompt NodeType = "PROMPT"
 )
 
 // NodeStatus defines the status of a node in the flow execution.
@@ -79,6 +77,9 @@ const (
 	NodeStatusIncomplete NodeStatus = "INCOMPLETE"
 	// NodeStatusFailure indicates that the node has failed during its execution.
 	NodeStatusFailure NodeStatus = "FAILURE"
+	// NodeStatusForward indicates that the engine should forward execution to NextNodeID.
+	// Used for scenarios like onFailure handlers where context should be preserved.
+	NodeStatusForward NodeStatus = "FORWARD"
 )
 
 // NodeResponseType defines the type of response from a node in the flow execution.
@@ -124,16 +125,6 @@ const (
 const (
 	// DataIDPName is the key used for the identity provider name in the flow response.
 	DataIDPName = "idpName"
-)
-
-// ActionType defines the type of action that can be performed in a decision node.
-type ActionType string
-
-const (
-	// ActionTypeView indicates that the action is a view type, requiring user selection.
-	ActionTypeView ActionType = "VIEW"
-	// ActionTypeUserInput indicates that the action requires user input to proceed.
-	ActionTypeUserInput ActionType = "USER_INPUT"
 )
 
 const (

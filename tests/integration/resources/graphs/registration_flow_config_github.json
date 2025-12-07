@@ -5,9 +5,7 @@
         {
             "id": "registration_start",
             "type": "REGISTRATION_START",
-            "next": [
-                "github_auth"
-            ]
+            "onSuccess": "github_auth"
         },
         {
             "id": "github_auth",
@@ -18,9 +16,7 @@
             "executor": {
                 "name": "GithubOAuthExecutor"
             },
-            "next": [
-                "provisioning"
-            ]
+            "onSuccess": "provisioning"
         },
         {
             "id": "provisioning",
@@ -28,9 +24,7 @@
             "executor": {
                 "name": "ProvisioningExecutor"
             },
-            "next": [
-                "authenticated"
-            ]
+            "onSuccess": "authenticated"
         },
         {
             "id": "authenticated",

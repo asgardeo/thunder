@@ -31,6 +31,8 @@ type taskExecutionNode struct {
 	*node
 	executorName string
 	executor     ExecutorInterface
+	onSuccess    string
+	onFailure    string
 }
 
 // Ensure taskExecutionNode implements ExecutorBackedNodeInterface
@@ -48,7 +50,7 @@ func newTaskExecutionNode(id string, properties map[string]interface{}, isStartN
 			isFinalNode:      isFinalNode,
 			nextNodeList:     []string{},
 			previousNodeList: []string{},
-			inputData:        []common.InputData{},
+			inputs:           []common.Input{},
 		},
 		executorName: "",
 		executor:     nil,
@@ -79,7 +81,26 @@ func (n *taskExecutionNode) Execute(ctx *NodeContext) (*common.NodeResponse, *se
 		return nil, svcErr
 	}
 
-	return buildNodeResponse(execResp), nil
+	nodeResp := buildNodeResponse(execResp)
+
+	// Set the next node ID based on execution outcome
+	if nodeResp.Status == common.NodeStatusComplete {
+		if n.onSuccess != "" {
+			nodeResp.NextNodeID = n.onSuccess
+		}
+	} else if nodeResp.FailureReason != "" && n.onFailure != "" {
+		// Change status to Forward so engine forwards execution to onFailure node
+		nodeResp.Status = common.NodeStatusForward
+		nodeResp.NextNodeID = n.onFailure
+
+		// Store failure reason in RuntimeData so it's available to the onFailure handler
+		if nodeResp.RuntimeData == nil {
+			nodeResp.RuntimeData = make(map[string]string)
+		}
+		nodeResp.RuntimeData["failureReason"] = nodeResp.FailureReason
+	}
+
+	return nodeResp, nil
 }
 
 // triggerExecutor triggers the executor configured for the node.
@@ -102,7 +123,7 @@ func (n *taskExecutionNode) triggerExecutor(ctx *NodeContext, logger *log.Logger
 func buildNodeResponse(execResp *common.ExecutorResponse) *common.NodeResponse {
 	nodeResp := &common.NodeResponse{
 		FailureReason:     execResp.FailureReason,
-		RequiredData:      execResp.RequiredData,
+		Inputs:            execResp.Inputs,
 		AdditionalData:    execResp.AdditionalData,
 		RedirectURL:       execResp.RedirectURL,
 		RuntimeData:       execResp.RuntimeData,
@@ -115,8 +136,8 @@ func buildNodeResponse(execResp *common.ExecutorResponse) *common.NodeResponse {
 	if nodeResp.RuntimeData == nil {
 		nodeResp.RuntimeData = make(map[string]string)
 	}
-	if nodeResp.RequiredData == nil {
-		nodeResp.RequiredData = make([]common.InputData, 0)
+	if nodeResp.Inputs == nil {
+		nodeResp.Inputs = make([]common.Input, 0)
 	}
 	if nodeResp.Actions == nil {
 		nodeResp.Actions = make([]common.Action, 0)
@@ -167,4 +188,24 @@ func (n *taskExecutionNode) SetExecutor(executor ExecutorInterface) {
 	if executor != nil {
 		n.executorName = executor.GetName()
 	}
+}
+
+// GetOnSuccess returns the onSuccess node ID
+func (n *taskExecutionNode) GetOnSuccess() string {
+	return n.onSuccess
+}
+
+// SetOnSuccess sets the onSuccess node ID
+func (n *taskExecutionNode) SetOnSuccess(nodeID string) {
+	n.onSuccess = nodeID
+}
+
+// GetOnFailure returns the onFailure node ID
+func (n *taskExecutionNode) GetOnFailure() string {
+	return n.onFailure
+}
+
+// SetOnFailure sets the onFailure node ID
+func (n *taskExecutionNode) SetOnFailure(nodeID string) {
+	n.onFailure = nodeID
 }

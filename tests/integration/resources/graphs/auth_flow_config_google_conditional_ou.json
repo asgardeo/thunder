@@ -12,37 +12,33 @@
             "executor": {
                 "name": "GoogleOIDCAuthExecutor"
             },
-            "next": [
-                "conditional_ou_creation"
-            ]
+            "onSuccess": "conditional_ou_creation"
         },
         {
             "id": "conditional_ou_creation",
             "type": "TASK_EXECUTION",
             "condition": {
                 "key": "{{ context.userEligibleForProvisioning }}",
-                "value": "true"
+                "value": "true",
+                "onSkip": "authenticated"
             },
             "executor": {
                 "name": "OUExecutor"
             },
-            "next": [
-                "provisioning"
-            ]
+            "onSuccess": "provisioning"
         },
         {
             "id": "provisioning",
             "type": "TASK_EXECUTION",
             "condition": {
                 "key": "{{ context.userEligibleForProvisioning }}",
-                "value": "true"
+                "value": "true",
+                "onSkip": "authenticated"
             },
             "executor": {
                 "name": "ProvisioningExecutor"
             },
-            "next": [
-                "authenticated"
-            ]
+            "onSuccess": "authenticated"
         },
         {
             "id": "authenticated",

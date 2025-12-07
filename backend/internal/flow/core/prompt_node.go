@@ -24,97 +24,170 @@ import (
 	"github.com/asgardeo/thunder/internal/system/log"
 )
 
-const promptNodeLoggerComponentName = "PromptOnlyNode"
+const promptNodeLoggerComponentName = "PromptNode"
 
-// promptOnlyNode represents a node that only prompts for input without executing any logic.
-type promptOnlyNode struct {
+// promptNode represents a node that prompts for user input/ action in the flow execution.
+type promptNode struct {
 	*node
+	actions []common.Action
 }
 
-// newPromptOnlyNode creates a new PromptOnlyNode with the given details.
-func newPromptOnlyNode(id string, properties map[string]interface{}, isStartNode bool, isFinalNode bool) NodeInterface {
-	return &promptOnlyNode{
+// newPromptNode creates a new instance of PromptNode with the given details.
+func newPromptNode(id string, properties map[string]interface{},
+	isStartNode bool, isFinalNode bool) NodeInterface {
+	return &promptNode{
 		node: &node{
 			id:               id,
-			_type:            common.NodeTypePromptOnly,
+			_type:            common.NodeTypePrompt,
 			properties:       properties,
 			isStartNode:      isStartNode,
 			isFinalNode:      isFinalNode,
 			nextNodeList:     []string{},
 			previousNodeList: []string{},
-			inputData:        []common.InputData{},
+			inputs:           []common.Input{},
 		},
+		actions: []common.Action{},
 	}
 }
 
-// Execute executes the prompt-only node logic based on the current context.
-func (n *promptOnlyNode) Execute(ctx *NodeContext) (*common.NodeResponse, *serviceerror.ServiceError) {
+// Execute executes the prompt node logic based on the current context.
+func (n *promptNode) Execute(ctx *NodeContext) (*common.NodeResponse, *serviceerror.ServiceError) {
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, promptNodeLoggerComponentName),
 		log.String(log.LoggerKeyNodeID, n.GetID()),
 		log.String(log.LoggerKeyFlowID, ctx.FlowID))
-	logger.Debug("Executing prompt-only node")
+	logger.Debug("Executing prompt node")
 
 	nodeResp := &common.NodeResponse{
-		RequiredData:   make([]common.InputData, 0),
+		Inputs:         make([]common.Input, 0),
 		AdditionalData: make(map[string]string),
 		Actions:        make([]common.Action, 0),
 		RuntimeData:    make(map[string]string),
 	}
 
-	if n.checkInputData(ctx, nodeResp) {
-		logger.Debug("Required input data is not available in the context, returning incomplete response",
-			log.Any("requiredData", nodeResp.RequiredData))
-		nodeResp.Status = common.NodeStatusIncomplete
-		nodeResp.Type = common.NodeResponseTypeView
+	// Check if this prompt is handling a failure
+	if ctx.RuntimeData != nil {
+		if failureReason, exists := ctx.RuntimeData["failureReason"]; exists && failureReason != "" {
+			logger.Debug("Prompt node is handling a failure", log.String("failureReason", failureReason))
+			nodeResp.FailureReason = failureReason
+			delete(ctx.RuntimeData, "failureReason")
+		}
+	}
+
+	hasAllInputs := n.hasRequiredInputs(ctx, nodeResp)
+	hasAction := n.hasSelectedAction(ctx, nodeResp)
+
+	// If both inputs and action are satisfied, complete the node
+	if hasAllInputs && hasAction {
+		logger.Debug("All required inputs and action are available, returning complete status")
+
+		// If an action was selected, set the next node
+		if ctx.CurrentAction != "" {
+			if nextNode := n.getNextNodeForActionRef(ctx.CurrentAction, logger); nextNode != "" {
+				nodeResp.NextNodeID = nextNode
+			} else {
+				logger.Debug("Invalid action selected", log.String("actionRef", ctx.CurrentAction))
+				nodeResp.Status = common.NodeStatusFailure
+				nodeResp.FailureReason = "Invalid action selected"
+				return nodeResp, nil
+			}
+		}
+
+		nodeResp.Status = common.NodeStatusComplete
+		nodeResp.Type = ""
 		return nodeResp, nil
 	}
 
-	logger.Debug("All required input data is available in the context, proceeding with next steps")
-	nodeResp.Status = common.NodeStatusComplete
-	nodeResp.Type = ""
+	// If required inputs or action is not yet available, prompt for user interaction
+	logger.Debug("Required inputs or action not available, prompting user",
+		log.Any("inputs", nodeResp.Inputs), log.Any("actions", nodeResp.Actions))
+
+	nodeResp.Status = common.NodeStatusIncomplete
+	nodeResp.Type = common.NodeResponseTypeView
 	return nodeResp, nil
 }
 
-// checkInputData checks if the required input data is available in the context.
-// If not, it appends the required data to the node response and returns true.
-// If all required data is available, it returns false.
-func (n *promptOnlyNode) checkInputData(ctx *NodeContext, nodeResp *common.NodeResponse) bool {
-	requiredData := n.GetInputData()
-	if len(requiredData) == 0 {
-		return false
-	}
+// GetActions returns the actions available for the prompt node
+func (n *promptNode) GetActions() []common.Action {
+	return n.actions
+}
 
-	if nodeResp.RequiredData == nil {
-		nodeResp.RequiredData = make([]common.InputData, 0)
-	}
+// SetActions sets the actions available for the prompt node
+func (n *promptNode) SetActions(actions []common.Action) {
+	n.actions = actions
+}
 
-	if len(ctx.UserInputData) == 0 {
-		nodeResp.RequiredData = append(nodeResp.RequiredData, requiredData...)
+// hasRequiredInputs checks if all required inputs are available in the context. Adds missing
+// inputs to the node response.
+// Returns true if all required inputs are available, otherwise false.
+func (n *promptNode) hasRequiredInputs(ctx *NodeContext, nodeResp *common.NodeResponse) bool {
+	requiredInputs := n.GetInputs()
+	if len(requiredInputs) == 0 {
 		return true
 	}
 
-	return n.appendRequiredData(ctx, nodeResp, requiredData)
+	if nodeResp.Inputs == nil {
+		nodeResp.Inputs = make([]common.Input, 0)
+	}
+
+	if len(ctx.UserInputs) == 0 {
+		nodeResp.Inputs = append(nodeResp.Inputs, requiredInputs...)
+		return false
+	}
+
+	return !n.appendMissingInputs(ctx, nodeResp, requiredInputs)
 }
 
-// appendRequiredData appends the required input data to the node response if not
-// present in the context. Returns true if any required data is missing, false otherwise.
-func (n *promptOnlyNode) appendRequiredData(ctx *NodeContext, nodeResp *common.NodeResponse,
-	requiredData []common.InputData) bool {
+// appendMissingInputs appends the missing required inputs to the node response.
+// Returns true if any required data is found missing, otherwise false.
+func (n *promptNode) appendMissingInputs(ctx *NodeContext, nodeResp *common.NodeResponse,
+	requiredInputs []common.Input) bool {
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, promptNodeLoggerComponentName),
 		log.String(log.LoggerKeyNodeID, n.GetID()),
 		log.String(log.LoggerKeyFlowID, ctx.FlowID))
 
-	requireData := false
-	for _, inputData := range requiredData {
-		if _, ok := ctx.UserInputData[inputData.Name]; !ok {
-			if inputData.Required {
-				requireData = true
+	requireInputs := false
+	for _, input := range requiredInputs {
+		if _, ok := ctx.UserInputs[input.Identifier]; !ok {
+			if input.Required {
+				requireInputs = true
 			}
-			nodeResp.RequiredData = append(nodeResp.RequiredData, inputData)
-			logger.Debug("Input data not available in the context",
-				log.String("inputDataName", inputData.Name), log.Bool("isRequired", inputData.Required))
+			nodeResp.Inputs = append(nodeResp.Inputs, input)
+			logger.Debug("Input not available in the context",
+				log.String("identifier", input.Identifier), log.Bool("isRequired", input.Required))
 		}
 	}
 
-	return requireData
+	return requireInputs
+}
+
+// hasSelectedAction checks if an action has been selected when actions are defined. Adds actions
+// to the response if they haven't been selected yet.
+// Returns true if an action is already selected or no actions are defined, otherwise false.
+func (n *promptNode) hasSelectedAction(ctx *NodeContext, nodeResp *common.NodeResponse) bool {
+	actions := n.GetActions()
+	if len(actions) == 0 {
+		return true
+	}
+
+	// Returns true if an action is already selected
+	if ctx.CurrentAction != "" {
+		return true
+	}
+
+	// If not yet selected, add actions to response
+	nodeResp.Actions = append(nodeResp.Actions, actions...)
+	return false
+}
+
+// getNextNodeForActionRef finds the next node for the given action reference
+func (n *promptNode) getNextNodeForActionRef(actionRef string, logger *log.Logger) string {
+	actions := n.GetActions()
+	for i := range actions {
+		if actions[i].Ref == actionRef {
+			logger.Debug("Action selected successfully", log.String("actionRef", actions[i].Ref),
+				log.String("nextNode", actions[i].NextNode))
+			return actions[i].NextNode
+		}
+	}
+	return ""
 }

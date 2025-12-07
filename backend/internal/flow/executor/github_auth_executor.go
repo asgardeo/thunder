@@ -21,8 +21,8 @@ package executor
 import (
 	authngithub "github.com/asgardeo/thunder/internal/authn/github"
 	authnoauth "github.com/asgardeo/thunder/internal/authn/oauth"
-	flowcm "github.com/asgardeo/thunder/internal/flow/common"
-	flowcore "github.com/asgardeo/thunder/internal/flow/core"
+	"github.com/asgardeo/thunder/internal/flow/common"
+	"github.com/asgardeo/thunder/internal/flow/core"
 	"github.com/asgardeo/thunder/internal/idp"
 	"github.com/asgardeo/thunder/internal/userschema"
 )
@@ -33,11 +33,11 @@ type githubOAuthExecutor struct {
 	githubAuthService authngithub.GithubOAuthAuthnServiceInterface
 }
 
-var _ flowcore.ExecutorInterface = (*githubOAuthExecutor)(nil)
+var _ core.ExecutorInterface = (*githubOAuthExecutor)(nil)
 
 // newGithubOAuthExecutor creates a new instance of GithubOAuthExecutor with the provided details.
 func newGithubOAuthExecutor(
-	flowFactory flowcore.FlowFactoryInterface,
+	flowFactory core.FlowFactoryInterface,
 	idpService idp.IDPServiceInterface,
 	userSchemaService userschema.UserSchemaServiceInterface,
 	authService authngithub.GithubOAuthAuthnServiceInterface,
@@ -47,7 +47,7 @@ func newGithubOAuthExecutor(
 		panic("failed to cast GithubOAuthAuthnService to OAuthAuthnCoreServiceInterface")
 	}
 
-	base := newOAuthExecutor(ExecutorNameGitHubAuth, []flowcm.InputData{}, []flowcm.InputData{},
+	base := newOAuthExecutor(ExecutorNameGitHubAuth, []common.Input{}, []common.Input{},
 		flowFactory, idpService, userSchemaService, oauthSvcCast)
 
 	return &githubOAuthExecutor{

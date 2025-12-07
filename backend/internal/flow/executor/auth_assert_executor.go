@@ -25,8 +25,8 @@ import (
 
 	"github.com/asgardeo/thunder/internal/authn/assert"
 	authncm "github.com/asgardeo/thunder/internal/authn/common"
-	flowcm "github.com/asgardeo/thunder/internal/flow/common"
-	flowcore "github.com/asgardeo/thunder/internal/flow/core"
+	"github.com/asgardeo/thunder/internal/flow/common"
+	"github.com/asgardeo/thunder/internal/flow/core"
 	"github.com/asgardeo/thunder/internal/ou"
 	"github.com/asgardeo/thunder/internal/system/config"
 	"github.com/asgardeo/thunder/internal/system/error/serviceerror"
@@ -41,7 +41,7 @@ const (
 
 // authAssertExecutor is an executor that handles authentication assertions in the flow.
 type authAssertExecutor struct {
-	flowcore.ExecutorInterface
+	core.ExecutorInterface
 	jwtService          jwt.JWTServiceInterface
 	userService         user.UserServiceInterface
 	ouService           ou.OrganizationUnitServiceInterface
@@ -49,11 +49,11 @@ type authAssertExecutor struct {
 	logger              *log.Logger
 }
 
-var _ flowcore.ExecutorInterface = (*authAssertExecutor)(nil)
+var _ core.ExecutorInterface = (*authAssertExecutor)(nil)
 
 // newAuthAssertExecutor creates a new instance of AuthAssertExecutor.
 func newAuthAssertExecutor(
-	flowFactory flowcore.FlowFactoryInterface,
+	flowFactory core.FlowFactoryInterface,
 	jwtService jwt.JWTServiceInterface,
 	userService user.UserServiceInterface,
 	ouService ou.OrganizationUnitServiceInterface,
@@ -62,8 +62,8 @@ func newAuthAssertExecutor(
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, authAssertLoggerComponentName),
 		log.String(log.LoggerKeyExecutorName, ExecutorNameAuthAssert))
 
-	base := flowFactory.CreateExecutor(ExecutorNameAuthAssert, flowcm.ExecutorTypeUtility,
-		[]flowcm.InputData{}, []flowcm.InputData{})
+	base := flowFactory.CreateExecutor(ExecutorNameAuthAssert, common.ExecutorTypeUtility,
+		[]common.Input{}, []common.Input{})
 
 	return &authAssertExecutor{
 		ExecutorInterface:   base,
@@ -76,11 +76,11 @@ func newAuthAssertExecutor(
 }
 
 // Execute executes the authentication assertion logic.
-func (a *authAssertExecutor) Execute(ctx *flowcore.NodeContext) (*flowcm.ExecutorResponse, error) {
+func (a *authAssertExecutor) Execute(ctx *core.NodeContext) (*common.ExecutorResponse, error) {
 	logger := a.logger.With(log.String(log.LoggerKeyFlowID, ctx.FlowID))
 	logger.Debug("Executing authentication assertion executor")
 
-	execResp := &flowcm.ExecutorResponse{
+	execResp := &common.ExecutorResponse{
 		AdditionalData: make(map[string]string),
 		RuntimeData:    make(map[string]string),
 	}
@@ -93,10 +93,10 @@ func (a *authAssertExecutor) Execute(ctx *flowcore.NodeContext) (*flowcm.Executo
 
 		logger.Debug("Generated JWT token for authentication assertion")
 
-		execResp.Status = flowcm.ExecComplete
+		execResp.Status = common.ExecComplete
 		execResp.Assertion = token
 	} else {
-		execResp.Status = flowcm.ExecFailure
+		execResp.Status = common.ExecFailure
 		execResp.FailureReason = failureReasonUserNotAuthenticated
 	}
 
@@ -107,7 +107,7 @@ func (a *authAssertExecutor) Execute(ctx *flowcore.NodeContext) (*flowcm.Executo
 }
 
 // generateAuthAssertion generates the authentication assertion token.
-func (a *authAssertExecutor) generateAuthAssertion(ctx *flowcore.NodeContext, logger *log.Logger) (string, error) {
+func (a *authAssertExecutor) generateAuthAssertion(ctx *core.NodeContext, logger *log.Logger) (string, error) {
 	tokenSub := ""
 	if ctx.AuthenticatedUser.UserID != "" {
 		tokenSub = ctx.AuthenticatedUser.UserID
@@ -180,14 +180,14 @@ func (a *authAssertExecutor) generateAuthAssertion(ctx *flowcore.NodeContext, lo
 
 // extractAuthenticatorReferences extracts authenticator references from execution history.
 func (a *authAssertExecutor) extractAuthenticatorReferences(
-	history map[string]*flowcm.NodeExecutionRecord) []authncm.AuthenticatorReference {
+	history map[string]*common.NodeExecutionRecord) []authncm.AuthenticatorReference {
 	refs := make([]authncm.AuthenticatorReference, 0)
 
 	for _, record := range history {
-		if record.ExecutorType != flowcm.ExecutorTypeAuthentication {
+		if record.ExecutorType != common.ExecutorTypeAuthentication {
 			continue
 		}
-		if record.Status != flowcm.FlowStatusComplete {
+		if record.Status != common.FlowStatusComplete {
 			continue
 		}
 
@@ -218,7 +218,7 @@ func (a *authAssertExecutor) extractAuthenticatorReferences(
 }
 
 // appendUserDetailsToClaims appends user details to the JWT claims.
-func (a *authAssertExecutor) appendUserDetailsToClaims(ctx *flowcore.NodeContext,
+func (a *authAssertExecutor) appendUserDetailsToClaims(ctx *core.NodeContext,
 	jwtClaims map[string]interface{}) error {
 	if ctx.Application.Token != nil && len(ctx.Application.Token.UserAttributes) > 0 &&
 		ctx.AuthenticatedUser.UserID != "" {

@@ -21,8 +21,8 @@ package executor
 import (
 	authngoogle "github.com/asgardeo/thunder/internal/authn/google"
 	authnoidc "github.com/asgardeo/thunder/internal/authn/oidc"
-	flowcm "github.com/asgardeo/thunder/internal/flow/common"
-	flowcore "github.com/asgardeo/thunder/internal/flow/core"
+	"github.com/asgardeo/thunder/internal/flow/common"
+	"github.com/asgardeo/thunder/internal/flow/core"
 	"github.com/asgardeo/thunder/internal/idp"
 	"github.com/asgardeo/thunder/internal/userschema"
 )
@@ -33,25 +33,25 @@ type googleOIDCAuthExecutor struct {
 	googleAuthService authngoogle.GoogleOIDCAuthnServiceInterface
 }
 
-var _ flowcore.ExecutorInterface = (*googleOIDCAuthExecutor)(nil)
+var _ core.ExecutorInterface = (*googleOIDCAuthExecutor)(nil)
 
 // newGoogleOIDCAuthExecutor creates a new instance of GoogleOIDCAuthExecutor with the provided details.
 func newGoogleOIDCAuthExecutor(
-	flowFactory flowcore.FlowFactoryInterface,
+	flowFactory core.FlowFactoryInterface,
 	idpService idp.IDPServiceInterface,
 	userSchemaService userschema.UserSchemaServiceInterface,
 	authService authngoogle.GoogleOIDCAuthnServiceInterface,
 ) oidcAuthExecutorInterface {
-	defaultInputs := []flowcm.InputData{
+	defaultInputs := []common.Input{
 		{
-			Name:     "code",
-			Type:     "string",
-			Required: true,
+			Identifier: "code",
+			Type:       "string",
+			Required:   true,
 		},
 		{
-			Name:     "nonce",
-			Type:     "string",
-			Required: false,
+			Identifier: "nonce",
+			Type:       "string",
+			Required:   false,
 		},
 	}
 
@@ -60,7 +60,7 @@ func newGoogleOIDCAuthExecutor(
 		panic("failed to cast GoogleOIDCAuthnService to OIDCAuthnCoreServiceInterface")
 	}
 
-	base := newOIDCAuthExecutor(ExecutorNameGoogleAuth, defaultInputs, []flowcm.InputData{},
+	base := newOIDCAuthExecutor(ExecutorNameGoogleAuth, defaultInputs, []common.Input{},
 		flowFactory, idpService, userSchemaService, oidcSvcCast)
 
 	return &googleOIDCAuthExecutor{

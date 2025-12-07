@@ -60,7 +60,7 @@ func (s *flowStore) StoreFlowContext(ctx EngineContext) error {
 	queries := []func(tx dbmodel.TxInterface) error{
 		func(tx dbmodel.TxInterface) error {
 			_, err := tx.Exec(QueryCreateFlowContext.Query, dbModel.FlowID, dbModel.AppID,
-				dbModel.CurrentNodeID, dbModel.CurrentActionID, dbModel.GraphID,
+				dbModel.CurrentNodeID, dbModel.CurrentAction, dbModel.GraphID,
 				dbModel.RuntimeData, dbModel.ExecutionHistory, s.deploymentID)
 			return err
 		},
@@ -110,7 +110,7 @@ func (s *flowStore) UpdateFlowContext(ctx EngineContext) error {
 	queries := []func(tx dbmodel.TxInterface) error{
 		func(tx dbmodel.TxInterface) error {
 			_, err := tx.Exec(QueryUpdateFlowContext.Query, dbModel.FlowID,
-				dbModel.CurrentNodeID, dbModel.CurrentActionID, dbModel.RuntimeData, dbModel.ExecutionHistory,
+				dbModel.CurrentNodeID, dbModel.CurrentAction, dbModel.RuntimeData, dbModel.ExecutionHistory,
 				s.deploymentID)
 			return err
 		},
@@ -189,7 +189,7 @@ func (s *flowStore) buildFlowContextFromResultRow(row map[string]interface{}) (*
 
 	// Parse optional fields
 	currentNodeID := s.parseOptionalString(row["current_node_id"])
-	currentActionID := s.parseOptionalString(row["current_action_id"])
+	currentAction := s.parseOptionalString(row["current_action"])
 	userID := s.parseOptionalString(row["user_id"])
 	organizationUnitID := s.parseOptionalString(row["ou_id"])
 	userType := s.parseOptionalString(row["user_type"])
@@ -205,7 +205,7 @@ func (s *flowStore) buildFlowContextFromResultRow(row map[string]interface{}) (*
 		FlowID:             flowID,
 		AppID:              appID,
 		CurrentNodeID:      currentNodeID,
-		CurrentActionID:    currentActionID,
+		CurrentAction:      currentAction,
 		GraphID:            graphID,
 		RuntimeData:        runtimeData,
 		IsAuthenticated:    isAuthenticated,

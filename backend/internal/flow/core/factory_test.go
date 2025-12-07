@@ -56,10 +56,8 @@ func (s *FlowFactoryTestSuite) TestCreateNodeSuccess() {
 	}{
 		{"Create task execution node", "node-1", string(common.NodeTypeTaskExecution),
 			map[string]interface{}{"key": "value"}, true, false, common.NodeTypeTaskExecution},
-		{"Create decision node", "node-2", string(common.NodeTypeDecision),
-			map[string]interface{}{}, false, false, common.NodeTypeDecision},
-		{"Create prompt only node", "node-3", string(common.NodeTypePromptOnly),
-			nil, false, true, common.NodeTypePromptOnly},
+		{"Create prompt only node", "node-3", string(common.NodeTypePrompt),
+			nil, false, true, common.NodeTypePrompt},
 		{"Create auth success node", "node-4", string(common.NodeTypeAuthSuccess),
 			map[string]interface{}{}, false, true, common.NodeTypeTaskExecution},
 	}
@@ -136,8 +134,8 @@ func (s *FlowFactoryTestSuite) TestCreateGraph() {
 }
 
 func (s *FlowFactoryTestSuite) TestCreateExecutor() {
-	defaultInputs := []common.InputData{{Name: "input1", Required: true}}
-	prerequisites := []common.InputData{{Name: "prereq1", Required: true}}
+	defaultInputs := []common.Input{{Identifier: "input1", Required: true}}
+	prerequisites := []common.Input{{Identifier: "prereq1", Required: true}}
 
 	executor := s.factory.CreateExecutor("test-executor", common.ExecutorTypeAuthentication,
 		defaultInputs, prerequisites)
@@ -145,16 +143,16 @@ func (s *FlowFactoryTestSuite) TestCreateExecutor() {
 	s.NotNil(executor)
 	s.Equal("test-executor", executor.GetName())
 	s.Equal(common.ExecutorTypeAuthentication, executor.GetType())
-	s.Equal(defaultInputs, executor.GetDefaultExecutorInputs())
+	s.Equal(defaultInputs, executor.GetDefaultInputs())
 	s.Equal(prerequisites, executor.GetPrerequisites())
 }
 
 func (s *FlowFactoryTestSuite) TestCloneNodeSuccess() {
 	node, _ := s.factory.CreateNode("node-1", string(common.NodeTypeTaskExecution),
 		map[string]interface{}{"key": "value"}, true, false)
-	node.SetInputData([]common.InputData{{Name: "input1", Required: true}})
-	node.AddNextNodeID("next-1")
-	node.AddPreviousNodeID("prev-1")
+	node.SetInputs([]common.Input{{Identifier: "input1", Required: true}})
+	node.AddNextNode("next-1")
+	node.AddPreviousNode("prev-1")
 	if execNode, ok := node.(ExecutorBackedNodeInterface); ok {
 		execNode.SetExecutorName("test-executor")
 	}
@@ -169,7 +167,7 @@ func (s *FlowFactoryTestSuite) TestCloneNodeSuccess() {
 	s.Equal(node.IsFinalNode(), clonedNode.IsFinalNode())
 	s.Equal(node.GetNextNodeList(), clonedNode.GetNextNodeList())
 	s.Equal(node.GetPreviousNodeList(), clonedNode.GetPreviousNodeList())
-	s.Len(clonedNode.GetInputData(), len(node.GetInputData()))
+	s.Len(clonedNode.GetInputs(), len(node.GetInputs()))
 
 	if sourceExecNode, ok := node.(ExecutorBackedNodeInterface); ok {
 		if clonedExecNode, ok := clonedNode.(ExecutorBackedNodeInterface); ok {
@@ -177,7 +175,7 @@ func (s *FlowFactoryTestSuite) TestCloneNodeSuccess() {
 		}
 	}
 
-	clonedNode.AddNextNodeID("new-next")
+	clonedNode.AddNextNode("new-next")
 	s.NotEqual(len(node.GetNextNodeList()), len(clonedNode.GetNextNodeList()))
 }
 
@@ -217,7 +215,7 @@ func (s *FlowFactoryTestSuite) TestCloneNodesSuccess() {
 	nodes := make(map[string]NodeInterface)
 	node1, _ := s.factory.CreateNode("node-1", string(common.NodeTypeTaskExecution),
 		map[string]interface{}{}, true, false)
-	node2, _ := s.factory.CreateNode("node-2", string(common.NodeTypeDecision),
+	node2, _ := s.factory.CreateNode("node-2", string(common.NodeTypePrompt),
 		map[string]interface{}{}, false, false)
 	nodes["node-1"] = node1
 	nodes["node-2"] = node2
@@ -263,7 +261,7 @@ func (f *fakeExecutorBackedNode) GetID() string {
 }
 
 func (f *fakeExecutorBackedNode) GetType() common.NodeType {
-	return common.NodeTypeDecision
+	return common.NodeTypePrompt
 }
 
 func (f *fakeExecutorBackedNode) GetProperties() map[string]interface{} {
@@ -288,9 +286,9 @@ func (f *fakeExecutorBackedNode) GetNextNodeList() []string {
 
 func (f *fakeExecutorBackedNode) SetNextNodeList(nextNodeIDList []string) {}
 
-func (f *fakeExecutorBackedNode) AddNextNodeID(nextNodeID string) {}
+func (f *fakeExecutorBackedNode) AddNextNode(nextNodeID string) {}
 
-func (f *fakeExecutorBackedNode) RemoveNextNodeID(nextNodeID string) {}
+func (f *fakeExecutorBackedNode) RemoveNextNode(nextNodeID string) {}
 
 func (f *fakeExecutorBackedNode) GetPreviousNodeList() []string {
 	return []string{}
@@ -298,15 +296,15 @@ func (f *fakeExecutorBackedNode) GetPreviousNodeList() []string {
 
 func (f *fakeExecutorBackedNode) SetPreviousNodeList(previousNodeIDList []string) {}
 
-func (f *fakeExecutorBackedNode) AddPreviousNodeID(previousNodeID string) {}
+func (f *fakeExecutorBackedNode) AddPreviousNode(previousNodeID string) {}
 
-func (f *fakeExecutorBackedNode) RemovePreviousNodeID(previousNodeID string) {}
+func (f *fakeExecutorBackedNode) RemovePreviousNode(previousNodeID string) {}
 
-func (f *fakeExecutorBackedNode) GetInputData() []common.InputData {
+func (f *fakeExecutorBackedNode) GetInputs() []common.Input {
 	return nil
 }
 
-func (f *fakeExecutorBackedNode) SetInputData(inputData []common.InputData) {}
+func (f *fakeExecutorBackedNode) SetInputs(inputs []common.Input) {}
 
 func (f *fakeExecutorBackedNode) GetCondition() *NodeCondition {
 	return nil
@@ -330,8 +328,20 @@ func (f *fakeExecutorBackedNode) GetExecutor() ExecutorInterface {
 
 func (f *fakeExecutorBackedNode) SetExecutor(executor ExecutorInterface) {}
 
+func (f *fakeExecutorBackedNode) GetOnSuccess() string {
+	return ""
+}
+
+func (f *fakeExecutorBackedNode) SetOnSuccess(nodeID string) {}
+
+func (f *fakeExecutorBackedNode) GetOnFailure() string {
+	return ""
+}
+
+func (f *fakeExecutorBackedNode) SetOnFailure(nodeID string) {}
+
 func (s *FlowFactoryTestSuite) TestCloneNodeMismatchExecutorBacked() {
-	// source claims to be executor-backed but GetType returns Decision which
+	// source claims to be executor-backed but GetType returns Prompt which
 	// CreateNode maps to a non-executor-backed node. This should trigger the
 	// mismatch error in CloneNode.
 	src := &fakeExecutorBackedNode{id: "fake-1"}

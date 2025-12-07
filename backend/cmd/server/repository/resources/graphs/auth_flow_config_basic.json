@@ -5,12 +5,24 @@
         {
             "id": "basic_auth",
             "type": "TASK_EXECUTION",
+            "inputs": [
+                {
+                    "ref": "input_001",
+                    "type": "TEXT_INPUT",
+                    "identifier": "username",
+                    "required": true
+                },
+                {
+                    "ref": "input_002",
+                    "type": "PASSWORD_INPUT",
+                    "identifier": "password",
+                    "required": true
+                }
+            ],
             "executor": {
                 "name": "BasicAuthExecutor"
             },
-            "next": [
-                "authorization_check"
-            ]
+            "onSuccess": "authorization_check"
         },
         {
             "id": "authorization_check",
@@ -18,9 +30,7 @@
             "executor": {
                 "name": "AuthorizationExecutor"
             },
-            "next": [
-                "authenticated"
-            ]
+            "onSuccess": "authenticated"
         },
         {
             "id": "authenticated",

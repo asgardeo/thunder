@@ -5,7 +5,7 @@
         {
             "id": "registration_start",
             "type": "REGISTRATION_START",
-            "next": ["basic_auth"]
+            "onSuccess": "basic_auth"
         },
         {
             "id": "basic_auth",
@@ -13,46 +13,47 @@
             "executor": {
                 "name": "BasicAuthExecutor"
             },
-            "next": [
-                "provisioning"
-            ]
+            "onSuccess": "provisioning"
         },
         {
             "id": "provisioning",
             "type": "TASK_EXECUTION",
-            "inputData": [
+            "inputs": [
                 {
-                    "name": "username",
-                    "type": "string",
+                    "ref": "input_001",
+                    "identifier": "username",
+                    "type": "TEXT_INPUT",
                     "required": true
                 },
                 {
-                    "name": "password",
-                    "type": "string",
+                    "ref": "input_002",
+                    "identifier": "password",
+                    "type": "PASSWORD_INPUT",
                     "required": true
                 },
                 {
-                    "name": "firstName",
-                    "type": "string",
+                    "ref": "input_003",
+                    "identifier": "firstName",
+                    "type": "TEXT_INPUT",
                     "required": true
                 },
                 {
-                    "name": "lastName",
-                    "type": "string",
+                    "ref": "input_004",
+                    "identifier": "lastName",
+                    "type": "TEXT_INPUT",
                     "required": true
                 },
                 {
-                    "name": "email",
-                    "type": "string",
+                    "ref": "input_005",
+                    "identifier": "email",
+                    "type": "TEXT_INPUT",
                     "required": true
                 }
             ],
             "executor": {
                 "name": "ProvisioningExecutor"
             },
-            "next": [
-                "authenticated"
-            ]
+            "onSuccess": "authenticated"
         },
         {
             "id": "authenticated",
