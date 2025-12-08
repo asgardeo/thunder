@@ -33,7 +33,7 @@ import (
 	serverconst "github.com/asgardeo/thunder/internal/system/constants"
 	"github.com/asgardeo/thunder/internal/system/crypto/hash"
 	"github.com/asgardeo/thunder/internal/system/error/serviceerror"
-	filebasedruntime "github.com/asgardeo/thunder/internal/system/file_based_runtime"
+	"github.com/asgardeo/thunder/internal/system/immutableresource"
 	"github.com/asgardeo/thunder/internal/system/log"
 	sysutils "github.com/asgardeo/thunder/internal/system/utils"
 	"github.com/asgardeo/thunder/internal/userschema"
@@ -81,8 +81,8 @@ func newApplicationService(
 func (as *applicationService) CreateApplication(app *model.ApplicationDTO) (*model.ApplicationDTO,
 	*serviceerror.ServiceError) {
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, "ApplicationService"))
-	if config.GetThunderRuntime().Config.ImmutableResources.Enabled {
-		return nil, &filebasedruntime.ErrorImmutableResourceCreateOperation
+	if err := immutableresource.CheckImmutableCreate(); err != nil {
+		return nil, err
 	}
 
 	processedDTO, inboundAuthConfig, svcErr := as.ValidateApplication(app)
@@ -414,8 +414,8 @@ func (as *applicationService) enrichApplicationWithCertificate(application *mode
 func (as *applicationService) UpdateApplication(appID string, app *model.ApplicationDTO) (
 	*model.ApplicationDTO, *serviceerror.ServiceError) {
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, "ApplicationService"))
-	if config.GetThunderRuntime().Config.ImmutableResources.Enabled {
-		return nil, &filebasedruntime.ErrorImmutableResourceUpdateOperation
+	if err := immutableresource.CheckImmutableUpdate(); err != nil {
+		return nil, err
 	}
 
 	if appID == "" {
@@ -593,8 +593,8 @@ func (as *applicationService) UpdateApplication(appID string, app *model.Applica
 
 // DeleteApplication delete the application for given app id.
 func (as *applicationService) DeleteApplication(appID string) *serviceerror.ServiceError {
-	if config.GetThunderRuntime().Config.ImmutableResources.Enabled {
-		return &filebasedruntime.ErrorImmutableResourceDeleteOperation
+	if err := immutableresource.CheckImmutableDelete(); err != nil {
+		return err
 	}
 	if appID == "" {
 		return &ErrorInvalidApplicationID

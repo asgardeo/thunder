@@ -58,6 +58,7 @@ type exportService struct {
 	notificationSenderService notification.NotificationSenderMgtSvcInterface
 	userSchemaService         userschema.UserSchemaServiceInterface
 	parameterizer             ParameterizerInterface
+	registry                  *ResourceExporterRegistry
 	// Future: Add other service dependencies
 	// groupService group.GroupServiceInterface
 	// userService  user.UserServiceInterface
@@ -69,12 +70,20 @@ func newExportService(appService application.ApplicationServiceInterface,
 	notificationSenderService notification.NotificationSenderMgtSvcInterface,
 	userSchemaService userschema.UserSchemaServiceInterface,
 	param ParameterizerInterface) ExportServiceInterface {
+	// Create registry and register all exporters
+	registry := NewResourceExporterRegistry()
+	registry.Register(NewApplicationExporter(appService))
+	registry.Register(NewIDPExporter(idpService))
+	registry.Register(NewNotificationSenderExporter(notificationSenderService))
+	registry.Register(NewUserSchemaExporter(userSchemaService))
+
 	return &exportService{
 		applicationService:        appService,
 		idpService:                idpService,
 		notificationSenderService: notificationSenderService,
 		userSchemaService:         userSchemaService,
 		parameterizer:             param,
+		registry:                  registry,
 	}
 }
 

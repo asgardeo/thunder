@@ -20,6 +20,7 @@
 package application
 
 import (
+	"fmt"
 	"net/http"
 
 	"github.com/asgardeo/thunder/internal/application/model"
@@ -27,7 +28,7 @@ import (
 	"github.com/asgardeo/thunder/internal/cert"
 	"github.com/asgardeo/thunder/internal/flow/flowmgt"
 	"github.com/asgardeo/thunder/internal/system/config"
-	filebasedruntime "github.com/asgardeo/thunder/internal/system/file_based_runtime"
+	"github.com/asgardeo/thunder/internal/system/immutableresource"
 	"github.com/asgardeo/thunder/internal/system/log"
 	"github.com/asgardeo/thunder/internal/system/middleware"
 	"github.com/asgardeo/thunder/internal/userschema"
@@ -55,32 +56,51 @@ func Initialize(
 	appService := newApplicationService(appStore, certService, flowMgtService, brandingService, userSchemaService)
 
 	if config.GetThunderRuntime().Config.ImmutableResources.Enabled {
-		configs, err := filebasedruntime.GetConfigs("applications")
-		if err != nil {
-			logger.Fatal("Failed to read application configs from file-based runtime", log.Error(err))
+		// Type assert to access Storer interface for resource loading
+		fileBasedStore, ok := appStore.(*fileBasedStore)
+		if !ok {
+			logger.Fatal("Failed to assert appStore to *fileBasedStore")
 		}
-		for _, cfg := range configs {
-			appDTO, err := parseToApplicationDTO(cfg)
-			if err != nil {
-				logger.Fatal("Error parsing application config", log.Error(err))
-			}
-			validatedApp, _, svcErr := appService.ValidateApplication(appDTO)
-			if svcErr != nil {
-				logger.Fatal("Error validating application",
-					log.String("applicationName", appDTO.Name), log.Any("serviceError", svcErr))
-			}
 
-			err = appStore.CreateApplication(*validatedApp)
-			if err != nil {
-				logger.Fatal("Failed to store application in file-based store",
-					log.String("applicationName", appDTO.Name), log.Error(err))
-			}
+		// Use a custom loader for applications due to transformation from DTO to ProcessedDTO
+		resourceConfig := immutableresource.ResourceConfig{
+			ResourceType:  "Application",
+			DirectoryName: "applications",
+			Parser:        parseAndValidateApplicationWrapper(appService),
+			Validator:     nil, // Validation is done in the parser for applications
+			IDExtractor: func(data interface{}) string {
+				return data.(*model.ApplicationProcessedDTO).ID
+			},
+		}
+
+		loader := immutableresource.NewResourceLoader(resourceConfig, fileBasedStore)
+		if err := loader.LoadResources(); err != nil {
+			logger.Fatal("Failed to load application resources", log.Error(err))
 		}
 	}
 
 	appHandler := newApplicationHandler(appService)
 	registerRoutes(mux, appHandler)
 	return appService
+}
+
+// parseAndValidateApplicationWrapper combines parsing and validation for applications
+// This is needed because applications undergo transformation from ApplicationDTO to ApplicationProcessedDTO
+func parseAndValidateApplicationWrapper(appService ApplicationServiceInterface) func([]byte) (interface{}, error) {
+	return func(data []byte) (interface{}, error) {
+		appDTO, err := parseToApplicationDTO(data)
+		if err != nil {
+			return nil, err
+		}
+
+		// Validate and transform the application
+		validatedApp, _, svcErr := appService.ValidateApplication(appDTO)
+		if svcErr != nil {
+			return nil, fmt.Errorf("error validating application '%s': %v", appDTO.Name, svcErr)
+		}
+
+		return validatedApp, nil
+	}
 }
 
 func parseToApplicationDTO(data []byte) (*model.ApplicationDTO, error) {

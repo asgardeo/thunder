@@ -25,7 +25,7 @@ import (
 
 	oupkg "github.com/asgardeo/thunder/internal/ou"
 	"github.com/asgardeo/thunder/internal/system/config"
-	filebasedruntime "github.com/asgardeo/thunder/internal/system/file_based_runtime"
+	"github.com/asgardeo/thunder/internal/system/immutableresource"
 	"github.com/asgardeo/thunder/internal/system/log"
 	"github.com/asgardeo/thunder/internal/system/middleware"
 
@@ -48,43 +48,58 @@ func Initialize(
 	userSchemaService := newUserSchemaService(ouService, userSchemaStore)
 
 	if config.GetThunderRuntime().Config.ImmutableResources.Enabled {
-		configs, err := filebasedruntime.GetConfigs("user_schemas")
-		if err != nil {
-			logger.Fatal("Failed to read user schema configs from file-based runtime", log.Error(err))
+		// Type assert to access Storer interface for resource loading
+		fileBasedStore, ok := userSchemaStore.(*userSchemaFileBasedStore)
+		if !ok {
+			logger.Fatal("Failed to assert userSchemaStore to *userSchemaFileBasedStore")
 		}
-		for _, cfg := range configs {
-			schemaDTO, err := parseToUserSchemaDTO(cfg)
-			if err != nil {
-				logger.Fatal("Error parsing user schema config", log.Error(err))
-			}
 
-			// Validate user schema before storing
-			if validationErr := validateUserSchemaDefinition(*schemaDTO); validationErr != nil {
-				logger.Fatal("Invalid user schema configuration",
-					log.String("schemaName", schemaDTO.Name),
-					log.String("error", validationErr.Error),
-					log.String("errorDescription", validationErr.ErrorDescription))
-			}
+		resourceConfig := immutableresource.ResourceConfig{
+			ResourceType:  "UserSchema",
+			DirectoryName: "user_schemas",
+			Parser:        parseToUserSchemaDTOWrapper,
+			Validator:     validateUserSchemaWrapper(ouService),
+			IDExtractor: func(data interface{}) string {
+				return data.(*UserSchema).ID
+			},
+		}
 
-			_, svcErr := ouService.GetOrganizationUnit(schemaDTO.OrganizationUnitID)
-			if svcErr != nil {
-				logger.Fatal("Failed to fetch referred organization unit for user schema",
-					log.String("schemaName", schemaDTO.Name),
-					log.String("ouID", schemaDTO.OrganizationUnitID),
-					log.Any("serviceError", svcErr))
-			}
-
-			err = userSchemaStore.CreateUserSchema(*schemaDTO)
-			if err != nil {
-				logger.Fatal("Failed to store user schema in file-based store",
-					log.String("schemaName", schemaDTO.Name), log.Error(err))
-			}
+		loader := immutableresource.NewResourceLoader(resourceConfig, fileBasedStore)
+		if err := loader.LoadResources(); err != nil {
+			logger.Fatal("Failed to load user schema resources", log.Error(err))
 		}
 	}
 
 	userSchemaHandler := newUserSchemaHandler(userSchemaService)
 	registerRoutes(mux, userSchemaHandler)
 	return userSchemaService
+}
+
+// parseToUserSchemaDTOWrapper wraps parseToUserSchemaDTO to match ResourceConfig.Parser signature
+func parseToUserSchemaDTOWrapper(data []byte) (interface{}, error) {
+	return parseToUserSchemaDTO(data)
+}
+
+// validateUserSchemaWrapper wraps validation logic to match ResourceConfig.Validator signature
+func validateUserSchemaWrapper(ouService oupkg.OrganizationUnitServiceInterface) func(interface{}) error {
+	return func(data interface{}) error {
+		schema := data.(*UserSchema)
+
+		// Validate user schema definition
+		if validationErr := validateUserSchemaDefinition(*schema); validationErr != nil {
+			return fmt.Errorf("invalid user schema configuration for '%s': %s - %s",
+				schema.Name, validationErr.Error, validationErr.ErrorDescription)
+		}
+
+		// Validate organization unit reference
+		_, svcErr := ouService.GetOrganizationUnit(schema.OrganizationUnitID)
+		if svcErr != nil {
+			return fmt.Errorf("failed to fetch referred organization unit for user schema '%s' with ouID '%s': %v",
+				schema.Name, schema.OrganizationUnitID, svcErr)
+		}
+
+		return nil
+	}
 }
 
 func parseToUserSchemaDTO(data []byte) (*UserSchema, error) {

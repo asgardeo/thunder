@@ -27,6 +27,7 @@ import (
 	"github.com/asgardeo/thunder/internal/system/cmodels"
 	"github.com/asgardeo/thunder/internal/system/config"
 	"github.com/asgardeo/thunder/internal/system/file_based_runtime/entity"
+	"github.com/asgardeo/thunder/internal/system/immutableresource"
 
 	"github.com/stretchr/testify/suite"
 )
@@ -72,10 +73,9 @@ func (suite *FileBasedStoreTestSuite) TearDownSuite() {
 }
 
 func (suite *FileBasedStoreTestSuite) SetupTest() {
-	// Create a new file-based store for each test
-	storage := entity.NewStore()
+	genericStore := immutableresource.NewGenericFileBasedStoreForTest(entity.KeyTypeNotificationSender)
 	suite.store = &notificationFileBasedStore{
-		storage: storage,
+		GenericFileBasedStore: genericStore,
 	}
 }
 

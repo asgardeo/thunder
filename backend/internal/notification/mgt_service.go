@@ -21,9 +21,8 @@ package notification
 
 import (
 	"github.com/asgardeo/thunder/internal/notification/common"
-	"github.com/asgardeo/thunder/internal/system/config"
 	"github.com/asgardeo/thunder/internal/system/error/serviceerror"
-	filebasedruntime "github.com/asgardeo/thunder/internal/system/file_based_runtime"
+	"github.com/asgardeo/thunder/internal/system/immutableresource"
 	"github.com/asgardeo/thunder/internal/system/log"
 	sysutils "github.com/asgardeo/thunder/internal/system/utils"
 )
@@ -65,8 +64,8 @@ func (s *notificationSenderMgtService) CreateSender(
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, "NotificationSenderMgtService"))
 	logger.Debug("Creating notification sender", log.String("name", sender.Name))
 
-	if config.GetThunderRuntime().Config.ImmutableResources.Enabled {
-		return nil, &filebasedruntime.ErrorImmutableResourceCreateOperation
+	if err := immutableresource.CheckImmutableCreate(); err != nil {
+		return nil, err
 	}
 
 	if err := validateNotificationSender(sender); err != nil {
@@ -165,8 +164,8 @@ func (s *notificationSenderMgtService) UpdateSender(id string,
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, "NotificationSenderMgtService"))
 	logger.Debug("Updating notification sender", log.String("id", id), log.String("name", sender.Name))
 
-	if config.GetThunderRuntime().Config.ImmutableResources.Enabled {
-		return nil, &filebasedruntime.ErrorImmutableResourceUpdateOperation
+	if err := immutableresource.CheckImmutableUpdate(); err != nil {
+		return nil, err
 	}
 
 	if id == "" {
@@ -230,8 +229,8 @@ func (s *notificationSenderMgtService) DeleteSender(id string) *serviceerror.Ser
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, "NotificationSenderMgtService"))
 	logger.Debug("Deleting notification sender", log.String("id", id))
 
-	if config.GetThunderRuntime().Config.ImmutableResources.Enabled {
-		return &filebasedruntime.ErrorImmutableResourceDeleteOperation
+	if err := immutableresource.CheckImmutableDelete(); err != nil {
+		return err
 	}
 
 	if id == "" {

@@ -23,9 +23,8 @@ import (
 	"errors"
 	"strings"
 
-	"github.com/asgardeo/thunder/internal/system/config"
 	"github.com/asgardeo/thunder/internal/system/error/serviceerror"
-	filebasedruntime "github.com/asgardeo/thunder/internal/system/file_based_runtime"
+	"github.com/asgardeo/thunder/internal/system/immutableresource"
 	"github.com/asgardeo/thunder/internal/system/log"
 	"github.com/asgardeo/thunder/internal/system/utils"
 )
@@ -57,8 +56,8 @@ func newIDPService(idpStore idpStoreInterface) IDPServiceInterface {
 // CreateIdentityProvider creates a new Identity Provider.
 func (is *idpService) CreateIdentityProvider(idp *IDPDTO) (*IDPDTO, *serviceerror.ServiceError) {
 	logger := is.logger
-	if config.GetThunderRuntime().Config.ImmutableResources.Enabled {
-		return nil, &filebasedruntime.ErrorImmutableResourceCreateOperation
+	if err := immutableresource.CheckImmutableCreate(); err != nil {
+		return nil, err
 	}
 
 	if svcErr := validateIDP(idp, logger); svcErr != nil {
@@ -141,8 +140,8 @@ func (is *idpService) GetIdentityProviderByName(idpName string) (*IDPDTO, *servi
 func (is *idpService) UpdateIdentityProvider(idpID string, idp *IDPDTO) (*IDPDTO,
 	*serviceerror.ServiceError) {
 	logger := is.logger
-	if config.GetThunderRuntime().Config.ImmutableResources.Enabled {
-		return nil, &filebasedruntime.ErrorImmutableResourceUpdateOperation
+	if err := immutableresource.CheckImmutableUpdate(); err != nil {
+		return nil, err
 	}
 
 	if strings.TrimSpace(idpID) == "" {
@@ -188,11 +187,11 @@ func (is *idpService) UpdateIdentityProvider(idpID string, idp *IDPDTO) (*IDPDTO
 	return idp, nil
 }
 
-// DeleteIdentityProvider deletes an Identity Provider by its ID.
+// DeleteIdentityProvider deletes an identity provider.
 func (is *idpService) DeleteIdentityProvider(idpID string) *serviceerror.ServiceError {
 	logger := is.logger
-	if config.GetThunderRuntime().Config.ImmutableResources.Enabled {
-		return &filebasedruntime.ErrorImmutableResourceDeleteOperation
+	if err := immutableresource.CheckImmutableDelete(); err != nil {
+		return err
 	}
 
 	if strings.TrimSpace(idpID) == "" {

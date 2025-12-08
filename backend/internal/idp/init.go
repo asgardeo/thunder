@@ -25,8 +25,7 @@ import (
 	"strings"
 
 	"github.com/asgardeo/thunder/internal/system/cmodels"
-	"github.com/asgardeo/thunder/internal/system/config"
-	filebasedruntime "github.com/asgardeo/thunder/internal/system/file_based_runtime"
+	"github.com/asgardeo/thunder/internal/system/immutableresource"
 	"github.com/asgardeo/thunder/internal/system/log"
 	"github.com/asgardeo/thunder/internal/system/middleware"
 
@@ -36,8 +35,10 @@ import (
 // Initialize initializes the IDP service and registers its routes.
 func Initialize(mux *http.ServeMux) IDPServiceInterface {
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, "IDPInit"))
+
+	// Create store based on configuration
 	var idpStore idpStoreInterface
-	if config.GetThunderRuntime().Config.ImmutableResources.Enabled {
+	if immutableresource.IsImmutableModeEnabled() {
 		idpStore = newIDPFileBasedStore()
 	} else {
 		idpStore = newIDPStore()
@@ -45,33 +46,51 @@ func Initialize(mux *http.ServeMux) IDPServiceInterface {
 
 	idpService := newIDPService(idpStore)
 
-	if config.GetThunderRuntime().Config.ImmutableResources.Enabled {
-		configs, err := filebasedruntime.GetConfigs("identity_providers")
-		if err != nil {
-			logger.Fatal("Failed to read identity provider configs from file-based runtime", log.Error(err))
+	// Load immutable resources if enabled
+	if immutableresource.IsImmutableModeEnabled() {
+		// Create a storer wrapper since idpStore interface doesn't expose Create directly
+		var storer immutableresource.Storer
+		if fileBasedStore, ok := idpStore.(*idpFileBasedStore); ok {
+			storer = fileBasedStore
+		} else {
+			logger.Fatal("Invalid store type for immutable resources")
 		}
-		for _, cfg := range configs {
-			idpDTO, err := parseToIDPDTO(cfg)
-			if err != nil {
-				logger.Fatal("Error parsing identity provider config", log.Error(err))
-			}
-			svcErr := validateIDP(idpDTO, logger)
-			if svcErr != nil {
-				logger.Fatal("Error validating identity provider",
-					log.String("idpName", idpDTO.Name), log.Any("serviceError", svcErr))
-			}
 
-			err = idpStore.CreateIdentityProvider(*idpDTO)
-			if err != nil {
-				logger.Fatal("Failed to store identity provider in file-based store",
-					log.String("idpName", idpDTO.Name), log.Error(err))
-			}
+		resourceConfig := immutableresource.ResourceConfig{
+			ResourceType:  "IdentityProvider",
+			DirectoryName: "identity_providers",
+			Parser:        parseToIDPDTOWrapper,
+			Validator:     validateIDPWrapper,
+			IDExtractor: func(dto interface{}) string {
+				return dto.(*IDPDTO).ID
+			},
+		}
+
+		loader := immutableresource.NewResourceLoader(resourceConfig, storer)
+		if err := loader.LoadResources(); err != nil {
+			logger.Fatal("Failed to load identity providers", log.Error(err))
 		}
 	}
 
 	idpHandler := newIDPHandler(idpService)
 	registerRoutes(mux, idpHandler)
 	return idpService
+}
+
+// parseToIDPDTOWrapper wraps parseToIDPDTO to match the expected signature
+func parseToIDPDTOWrapper(data []byte) (interface{}, error) {
+	return parseToIDPDTO(data)
+}
+
+// validateIDPWrapper wraps validateIDP to match the expected signature
+func validateIDPWrapper(dto interface{}) error {
+	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, "IDPInit"))
+	idpDTO := dto.(*IDPDTO)
+	svcErr := validateIDP(idpDTO, logger)
+	if svcErr != nil {
+		return fmt.Errorf("%s: %s", svcErr.Error, svcErr.ErrorDescription)
+	}
+	return nil
 }
 
 func parseToIDPDTO(data []byte) (*IDPDTO, error) {

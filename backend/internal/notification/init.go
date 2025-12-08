@@ -26,7 +26,7 @@ import (
 	"github.com/asgardeo/thunder/internal/notification/common"
 	"github.com/asgardeo/thunder/internal/system/cmodels"
 	"github.com/asgardeo/thunder/internal/system/config"
-	filebasedruntime "github.com/asgardeo/thunder/internal/system/file_based_runtime"
+	"github.com/asgardeo/thunder/internal/system/immutableresource"
 	"github.com/asgardeo/thunder/internal/system/jwt"
 	"github.com/asgardeo/thunder/internal/system/log"
 	"github.com/asgardeo/thunder/internal/system/middleware"
@@ -48,29 +48,25 @@ func Initialize(mux *http.ServeMux, jwtService jwt.JWTServiceInterface) (
 	mgtService := newNotificationSenderMgtService(notificationStore)
 
 	if config.GetThunderRuntime().Config.ImmutableResources.Enabled {
-		configs, err := filebasedruntime.GetConfigs("notification_senders")
-		if err != nil {
-			logger.Fatal("Failed to read notification sender configs from file-based runtime", log.Error(err))
+		// Type assert to access Storer interface for resource loading
+		fileBasedStore, ok := notificationStore.(*notificationFileBasedStore)
+		if !ok {
+			logger.Fatal("Failed to assert notificationStore to *notificationFileBasedStore")
 		}
-		for _, cfg := range configs {
-			senderDTO, err := parseToNotificationSenderDTO(cfg)
-			if err != nil {
-				logger.Fatal("Error parsing notification sender config", log.Error(err))
-			}
 
-			// Validate notification sender before storing
-			if validationErr := validateNotificationSender(*senderDTO); validationErr != nil {
-				logger.Fatal("Invalid notification sender configuration",
-					log.String("senderName", senderDTO.Name),
-					log.String("error", validationErr.Error),
-					log.String("errorDescription", validationErr.ErrorDescription))
-			}
+		resourceConfig := immutableresource.ResourceConfig{
+			ResourceType:  "NotificationSender",
+			DirectoryName: "notification_senders",
+			Parser:        parseToNotificationSenderDTOWrapper,
+			Validator:     validateNotificationSenderWrapper,
+			IDExtractor: func(data interface{}) string {
+				return data.(*common.NotificationSenderDTO).ID
+			},
+		}
 
-			err = notificationStore.createSender(*senderDTO)
-			if err != nil {
-				logger.Fatal("Failed to store notification sender in file-based store",
-					log.String("senderName", senderDTO.Name), log.Error(err))
-			}
+		loader := immutableresource.NewResourceLoader(resourceConfig, fileBasedStore)
+		if err := loader.LoadResources(); err != nil {
+			logger.Fatal("Failed to load notification sender resources", log.Error(err))
 		}
 	}
 
@@ -78,6 +74,24 @@ func Initialize(mux *http.ServeMux, jwtService jwt.JWTServiceInterface) (
 	handler := newMessageNotificationSenderHandler(mgtService, otpService)
 	registerRoutes(mux, handler)
 	return mgtService, otpService
+}
+
+// parseToNotificationSenderDTOWrapper wraps parseToNotificationSenderDTO to match ResourceConfig.Parser signature
+func parseToNotificationSenderDTOWrapper(data []byte) (interface{}, error) {
+	return parseToNotificationSenderDTO(data)
+}
+
+// validateNotificationSenderWrapper wraps validation logic to match ResourceConfig.Validator signature
+func validateNotificationSenderWrapper(data interface{}) error {
+	sender := data.(*common.NotificationSenderDTO)
+
+	// Validate notification sender
+	if validationErr := validateNotificationSender(*sender); validationErr != nil {
+		return fmt.Errorf("invalid notification sender configuration for '%s': %s - %s",
+			sender.Name, validationErr.Error, validationErr.ErrorDescription)
+	}
+
+	return nil
 }
 
 func parseToNotificationSenderDTO(data []byte) (*common.NotificationSenderDTO, error) {
