@@ -347,6 +347,7 @@ func (ts *OAuthAuthzScopeTestSuite) createOAuthApplication() (string, error) {
 		"auth_flow_graph_id":           "auth_flow_config_basic",
 		"registration_flow_graph_id":   "registration_flow_config_basic",
 		"is_registration_flow_enabled": false,
+		"allowed_user_types":           []string{"authz-test-person"},
 		"inbound_auth_config": []map[string]interface{}{
 			{
 				"type": "oauth2",

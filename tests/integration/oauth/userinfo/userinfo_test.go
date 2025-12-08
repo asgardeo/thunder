@@ -160,6 +160,7 @@ func (ts *UserInfoTestSuite) createTestApplication() string {
 		"auth_flow_graph_id":           "auth_flow_config_basic",
 		"registration_flow_graph_id":   "registration_flow_config_basic",
 		"is_registration_flow_enabled": true,
+		"allowed_user_types":           []string{"userinfo-person"},
 		"inbound_auth_config": []map[string]interface{}{
 			{
 				"type": "oauth2",

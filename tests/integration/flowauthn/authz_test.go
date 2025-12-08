@@ -65,6 +65,7 @@ var (
 		ClientID:                  "authz_flow_test_client",
 		ClientSecret:              "authz_flow_test_secret",
 		RedirectURIs:              []string{"http://localhost:3000/callback"},
+		AllowedUserTypes:          []string{"authz-test-person"},
 	}
 
 	userWithRole = testutils.User{

@@ -3,8 +3,8 @@
     "type": "REGISTRATION",
     "nodes": [
         {
-            "id": "registration_start",
-            "type": "REGISTRATION_START",
+            "id": "start",
+            "type": "START",
             "onSuccess": "google_auth"
         },
         {

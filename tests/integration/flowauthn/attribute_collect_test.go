@@ -40,6 +40,7 @@ var (
 		ClientID:                  "attr_collect_flow_test_client",
 		ClientSecret:              "attr_collect_flow_test_secret",
 		RedirectURIs:              []string{"http://localhost:3000/callback"},
+		AllowedUserTypes:          []string{"attr_collect_flow_user"},
 	}
 
 	attrCollectTestOU = testutils.OrganizationUnit{
@@ -50,7 +51,7 @@ var (
 	}
 
 	attrCollectUserSchema = testutils.UserSchema{
-		Name: "attr_collect_user",
+		Name: "attr_collect_flow_user",
 		Schema: map[string]interface{}{
 			"username": map[string]interface{}{
 				"type": "string",
@@ -148,19 +149,20 @@ func (ts *AttributeCollectFlowTestSuite) SetupSuite() {
 	}
 	attrCollectTestOUID = ouID
 
-	// Create test application for attribute collect tests
-	appID, err := testutils.CreateApplication(attrCollectTestApp)
-	if err != nil {
-		ts.T().Fatalf("Failed to create test application during setup: %v", err)
-	}
-	attrCollectTestAppID = appID
-
+	// Create test user schema within the OU
 	attrCollectUserSchema.OrganizationUnitId = attrCollectTestOUID
 	schemaID, err := testutils.CreateUserType(attrCollectUserSchema)
 	if err != nil {
 		ts.T().Fatalf("Failed to create test user schema during setup: %v", err)
 	}
 	attrCollectUserSchemaID = schemaID
+
+	// Create test application for attribute collect tests
+	appID, err := testutils.CreateApplication(attrCollectTestApp)
+	if err != nil {
+		ts.T().Fatalf("Failed to create test application during setup: %v", err)
+	}
+	attrCollectTestAppID = appID
 
 	// Store original app config (this will be the created app config)
 	ts.config.OriginalAppConfig, err = getAppConfig(attrCollectTestAppID)

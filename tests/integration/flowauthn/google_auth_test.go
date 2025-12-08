@@ -39,12 +39,13 @@ var (
 		ClientID:                  "google_auth_flow_test_client",
 		ClientSecret:              "google_auth_flow_test_secret",
 		RedirectURIs:              []string{"http://localhost:3000/callback"},
+		AllowedUserTypes:          []string{"google_auth_user"},
 	}
 )
 
 var (
 	googleAuthTestAppID string
-	googleAuthTestOU = testutils.OrganizationUnit{
+	googleAuthTestOU    = testutils.OrganizationUnit{
 		Handle:      "google-auth-flow-test-ou",
 		Name:        "Google Auth Flow Test OU",
 		Description: "Organization unit for Google authentication flow tests",
@@ -56,7 +57,7 @@ const (
 )
 
 var googleUserSchema = testutils.UserSchema{
-	Name: "google_flow_user",
+	Name: "google_auth_user",
 	Schema: map[string]interface{}{
 		"username": map[string]interface{}{
 			"type": "string",

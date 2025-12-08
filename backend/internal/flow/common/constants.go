@@ -59,8 +59,8 @@ type NodeType string
 const (
 	// NodeTypeAuthSuccess represents a node that does auth assertion
 	NodeTypeAuthSuccess NodeType = "AUTHENTICATION_SUCCESS"
-	// NodeTypeRegistrationStart represents the beginning of a registration flow
-	NodeTypeRegistrationStart NodeType = "REGISTRATION_START"
+	// NodeTypeStart represents the beginning of a flow
+	NodeTypeStart NodeType = "START"
 	// NodeTypeTaskExecution represents a task execution node
 	NodeTypeTaskExecution NodeType = "TASK_EXECUTION"
 	// NodeTypePrompt represents a prompt node

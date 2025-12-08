@@ -79,14 +79,60 @@ func (suite *UserTypeResolverTestSuite) TestNewUserTypeResolver() {
 	assert.Equal(suite.T(), ExecutorNameUserTypeResolver, executor.GetName())
 }
 
-func (suite *UserTypeResolverTestSuite) TestExecute_NonRegistrationFlow() {
+func (suite *UserTypeResolverTestSuite) TestExecute_AuthenticationFlow_WithAllowedUserTypes() {
+	suite.SetupTest()
+
+	ctx := &core.NodeContext{
+		FlowID:   "flow-123",
+		FlowType: common.FlowTypeAuthentication,
+		Application: appmodel.Application{
+			AllowedUserTypes: []string{"employee", "customer"},
+		},
+		RuntimeData: map[string]string{},
+	}
+
+	result, err := suite.executor.Execute(ctx)
+
+	assert.NoError(suite.T(), err)
+	assert.NotNil(suite.T(), result)
+	assert.Equal(suite.T(), common.ExecComplete, result.Status)
+	assert.Empty(suite.T(), result.RuntimeData[userTypeKey])
+	suite.mockUserSchemaService.AssertNotCalled(suite.T(), "GetUserSchemaByName")
+}
+
+func (suite *UserTypeResolverTestSuite) TestExecute_AuthenticationFlow_NoAllowedUserTypes() {
+	suite.SetupTest()
+
+	ctx := &core.NodeContext{
+		FlowID:   "flow-123",
+		FlowType: common.FlowTypeAuthentication,
+		Application: appmodel.Application{
+			AllowedUserTypes: []string{},
+		},
+		RuntimeData: map[string]string{},
+	}
+
+	result, err := suite.executor.Execute(ctx)
+
+	assert.NoError(suite.T(), err)
+	assert.NotNil(suite.T(), result)
+	assert.Equal(suite.T(), common.ExecFailure, result.Status)
+	assert.Equal(suite.T(), "Authentication not available for this application", result.FailureReason)
+	suite.mockUserSchemaService.AssertNotCalled(suite.T(), "GetUserSchemaByName")
+}
+
+func (suite *UserTypeResolverTestSuite) TestExecute_UnsupportedFlowType() {
 	testCases := []struct {
 		name     string
 		flowType common.FlowType
 	}{
 		{
-			name:     "Authentication flow",
-			flowType: common.FlowTypeAuthentication,
+			name:     "UnknownFlowType",
+			flowType: common.FlowType("UNKNOWN"),
+		},
+		{
+			name:     "EmptyFlowType",
+			flowType: common.FlowType(""),
 		},
 	}
 
@@ -100,6 +146,7 @@ func (suite *UserTypeResolverTestSuite) TestExecute_NonRegistrationFlow() {
 				Application: appmodel.Application{
 					AllowedUserTypes: []string{"employee"},
 				},
+				RuntimeData: map[string]string{},
 			}
 
 			result, err := suite.executor.Execute(ctx)
@@ -108,7 +155,7 @@ func (suite *UserTypeResolverTestSuite) TestExecute_NonRegistrationFlow() {
 			assert.NotNil(suite.T(), result)
 			assert.Equal(suite.T(), common.ExecComplete, result.Status)
 			assert.Empty(suite.T(), result.RuntimeData[userTypeKey])
-			suite.mockUserSchemaService.AssertNotCalled(suite.T(), "GetOUForUserType")
+			suite.mockUserSchemaService.AssertNotCalled(suite.T(), "GetUserSchemaByName")
 		})
 	}
 }

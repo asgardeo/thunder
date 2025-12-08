@@ -39,12 +39,13 @@ var (
 		ClientID:                  "github_auth_flow_test_client",
 		ClientSecret:              "github_auth_flow_test_secret",
 		RedirectURIs:              []string{"http://localhost:3000/callback"},
+		AllowedUserTypes:          []string{"github_auth_user"},
 	}
 )
 
 var (
 	githubAuthTestAppID string
-	githubAuthTestOU = testutils.OrganizationUnit{
+	githubAuthTestOU    = testutils.OrganizationUnit{
 		Handle:      "github-auth-flow-test-ou",
 		Name:        "GitHub Auth Flow Test OU",
 		Description: "Organization unit for GitHub authentication flow tests",
@@ -56,7 +57,7 @@ const (
 )
 
 var githubUserSchema = testutils.UserSchema{
-	Name: "github_flow_user",
+	Name: "github_auth_user",
 	Schema: map[string]interface{}{
 		"username": map[string]interface{}{
 			"type": "string",

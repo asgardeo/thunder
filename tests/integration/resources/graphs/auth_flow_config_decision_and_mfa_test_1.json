@@ -3,6 +3,11 @@
     "type": "AUTHENTICATION",
     "nodes": [
         {
+            "id": "start",
+            "type": "START",
+            "onSuccess": "choose_auth"
+        },
+        {
             "id": "choose_auth",
             "type": "PROMPT",
             "actions": [

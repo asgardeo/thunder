@@ -3,6 +3,11 @@
     "type": "AUTHENTICATION",
     "nodes": [
         {
+            "id": "start",
+            "type": "START",
+            "onSuccess": "mobile_prompt_username"
+        },
+        {
             "id": "mobile_prompt_username",
             "type": "PROMPT",
             "inputs": [

@@ -64,7 +64,7 @@ func (f *flowFactory) CreateNode(id, _type string, properties map[string]interfa
 		return newPromptNode(id, properties, isStartNode, isFinalNode), nil
 	case common.NodeTypeAuthSuccess:
 		return newTaskExecutionNode(id, properties, isStartNode, isFinalNode), nil
-	case common.NodeTypeRegistrationStart:
+	case common.NodeTypeStart:
 		return newTaskExecutionNode(id, properties, isStartNode, isFinalNode), nil
 	default:
 		return nil, errors.New("unsupported node type: " + _type)

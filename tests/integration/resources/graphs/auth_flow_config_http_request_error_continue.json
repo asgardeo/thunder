@@ -3,6 +3,11 @@
     "type": "AUTHENTICATION",
     "nodes": [
         {
+            "id": "start",
+            "type": "START",
+            "onSuccess": "basic_auth"
+        },
+        {
             "id": "basic_auth",
             "type": "TASK_EXECUTION",
             "executor": {
