@@ -88,6 +88,9 @@ func (suite *OIDCAuthTestSuite) SetupSuite() {
 		suite.T().Fatalf("Failed to get shared OIDC server: %v", err)
 	}
 
+	// Reset the server to clear any state from previous test suites
+	suite.mockOIDCServer.Reset()
+
 	suite.mockOIDCServer.AddUser(&testutils.OIDCUserInfo{
 		Sub:           "user456",
 		Email:         "testuser@oidc.com",

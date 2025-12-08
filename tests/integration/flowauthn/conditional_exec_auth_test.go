@@ -97,6 +97,9 @@ func (ts *ConditionalExecAuthFlowTestSuite) SetupSuite() {
 		ts.T().Fatalf("Failed to get shared Google server: %v", err)
 	}
 
+	// Reset the server to clear any state from previous test suites
+	ts.mockGoogleServer.Reset()
+
 	// Add test users
 	ts.mockGoogleServer.AddUser(&testutils.GoogleUserInfo{
 		Sub:           conditionalExecNewUserSub,

@@ -179,6 +179,17 @@ func (m *MockOIDCServer) Stop() error {
 	return nil
 }
 
+// Reset clears all users, auth codes, and tokens from the mock server.
+// This should be called at the start of each test suite to ensure clean state.
+func (m *MockOIDCServer) Reset() {
+	m.mutex.Lock()
+	defer m.mutex.Unlock()
+	m.authCodes = make(map[string]*OIDCAuthCodeData)
+	m.accessTokens = make(map[string]*OIDCTokenData)
+	m.users = make(map[string]*OIDCUserInfo)
+	m.authorizeFunc = nil
+}
+
 // GetURL returns the base URL
 func (m *MockOIDCServer) GetURL() string {
 	return m.issuer

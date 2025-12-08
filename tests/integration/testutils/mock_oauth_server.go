@@ -127,6 +127,17 @@ func (m *MockOAuthServer) Stop() error {
 	return nil
 }
 
+// Reset clears all users, auth codes, and tokens from the mock server.
+// This should be called at the start of each test suite to ensure clean state.
+func (m *MockOAuthServer) Reset() {
+	m.mutex.Lock()
+	defer m.mutex.Unlock()
+	m.authCodes = make(map[string]*OAuthAuthCodeData)
+	m.accessTokens = make(map[string]*OAuthTokenData)
+	m.users = make(map[string]*OAuthUserInfo)
+	m.authorizeFunc = nil
+}
+
 // GetURL returns the base URL
 func (m *MockOAuthServer) GetURL() string {
 	return m.baseURL

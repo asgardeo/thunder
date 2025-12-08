@@ -89,6 +89,9 @@ func (suite *OAuthAuthTestSuite) SetupSuite() {
 		suite.T().Fatalf("Failed to get shared OAuth server: %v", err)
 	}
 
+	// Reset the server to clear any state from previous test suites
+	suite.mockOAuthServer.Reset()
+
 	suite.mockOAuthServer.AddUser(&testutils.OAuthUserInfo{
 		Sub:     "user123",
 		Email:   "testuser@example.com",

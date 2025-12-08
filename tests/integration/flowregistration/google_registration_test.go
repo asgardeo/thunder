@@ -103,6 +103,9 @@ func (ts *GoogleRegistrationFlowTestSuite) SetupSuite() {
 		ts.T().Fatalf("Failed to get shared Google server: %v", err)
 	}
 
+	// Reset the server to clear any state from previous test suites
+	ts.mockGoogleServer.Reset()
+
 	ts.mockGoogleServer.AddUser(&testutils.GoogleUserInfo{
 		Sub:           "google-reg-user-456",
 		Email:         "reguser@gmail.com",

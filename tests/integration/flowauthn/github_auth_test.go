@@ -97,6 +97,9 @@ func (ts *GithubAuthFlowTestSuite) SetupSuite() {
 		ts.T().Fatalf("Failed to get shared GitHub server: %v", err)
 	}
 
+	// Reset the server to clear any state from previous test suites
+	ts.mockGithubServer.Reset()
+
 	email := "testuser@github.com"
 	ts.mockGithubServer.AddUser(&testutils.GithubUserInfo{
 		Login:     "testuser",

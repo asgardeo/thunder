@@ -97,6 +97,9 @@ func (ts *GoogleAuthFlowTestSuite) SetupSuite() {
 		ts.T().Fatalf("Failed to get shared Google server: %v", err)
 	}
 
+	// Reset the server to clear any state from previous test suites
+	ts.mockGoogleServer.Reset()
+
 	ts.mockGoogleServer.AddUser(&testutils.GoogleUserInfo{
 		Sub:           "google-test-user-123",
 		Email:         "testuser@gmail.com",

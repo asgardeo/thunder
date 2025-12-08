@@ -163,6 +163,18 @@ func (m *MockGithubOAuthServer) Stop() error {
 	return nil
 }
 
+// Reset clears all users, auth codes, and tokens from the mock server.
+// This should be called at the start of each test suite to ensure clean state.
+func (m *MockGithubOAuthServer) Reset() {
+	m.mutex.Lock()
+	defer m.mutex.Unlock()
+	m.authCodes = make(map[string]*GithubAuthCodeData)
+	m.accessTokens = make(map[string]*GithubTokenData)
+	m.users = make(map[string]*GithubUserInfo)
+	m.emails = make(map[string][]*GithubEmail)
+	m.authorizeFunc = nil
+}
+
 // GetURL returns the base URL of the mock server
 func (m *MockGithubOAuthServer) GetURL() string {
 	return fmt.Sprintf("http://localhost:%d", m.port)
