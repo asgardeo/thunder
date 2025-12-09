@@ -38,6 +38,7 @@ var (
 		AuthFlowGraphID:           "auth_flow_config_basic_http_request",
 		RegistrationFlowGraphID:   "registration_flow_config_basic",
 		IsRegistrationFlowEnabled: false,
+		AllowedUserTypes:          []string{"http_request_test_person"},
 	}
 
 	httpRequestTestOU = testutils.OrganizationUnit{

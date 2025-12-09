@@ -43,6 +43,7 @@ var (
 		ClientID:                  "flow_test_client",
 		ClientSecret:              "flow_test_secret",
 		RedirectURIs:              []string{"http://localhost:3000/callback"},
+		AllowedUserTypes:          []string{"basic_auth_user"},
 	}
 
 	testUserSchema = testutils.UserSchema{
@@ -102,13 +103,6 @@ func (ts *BasicAuthFlowTestSuite) SetupSuite() {
 	ts.Require().NoError(err, "Failed to create test organization unit")
 	ts.ouID = ouID
 
-	// Create test application
-	appID, err := testutils.CreateApplication(testApp)
-	if err != nil {
-		ts.T().Fatalf("Failed to create test application during setup: %v", err)
-	}
-	testAppID = appID
-
 	// Create test user schema
 	testUserSchema.OrganizationUnitId = ts.ouID
 	schemaID, err := testutils.CreateUserType(testUserSchema)
@@ -116,6 +110,13 @@ func (ts *BasicAuthFlowTestSuite) SetupSuite() {
 		ts.T().Fatalf("Failed to create test user schema during setup: %v", err)
 	}
 	userSchemaID = schemaID
+
+	// Create test application
+	appID, err := testutils.CreateApplication(testApp)
+	if err != nil {
+		ts.T().Fatalf("Failed to create test application during setup: %v", err)
+	}
+	testAppID = appID
 
 	// Create test user with the created OU
 	testUser := testUser

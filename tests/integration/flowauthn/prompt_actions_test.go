@@ -41,6 +41,7 @@ var (
 		ClientID:                  "prompt_actions_flow_test_client",
 		ClientSecret:              "prompt_actions_flow_test_secret",
 		RedirectURIs:              []string{"http://localhost:3000/callback"},
+		AllowedUserTypes:          []string{"prompt_actions_test_person"},
 	}
 
 	promptActionsTestOU = testutils.OrganizationUnit{
@@ -51,7 +52,7 @@ var (
 	}
 
 	promptActionsUserSchema = testutils.UserSchema{
-		Name: "prompt_actions_user",
+		Name: "prompt_actions_test_person",
 		Schema: map[string]interface{}{
 			"username": map[string]interface{}{
 				"type": "string",
@@ -125,19 +126,20 @@ func (ts *PromptActionsAndMFAFlowTestSuite) SetupSuite() {
 	}
 	promptActionsTestOUID = ouID
 
-	// Create test application for prompt actions tests
-	appID, err := testutils.CreateApplication(promptActionsTestApp)
-	if err != nil {
-		ts.T().Fatalf("Failed to create test application during setup: %v", err)
-	}
-	promptActionsTestAppID = appID
-
+	// Create test user schema within the OU
 	promptActionsUserSchema.OrganizationUnitId = promptActionsTestOUID
 	schemaID, err := testutils.CreateUserType(promptActionsUserSchema)
 	if err != nil {
 		ts.T().Fatalf("Failed to create test user schema during setup: %v", err)
 	}
 	promptActionsUserSchemaID = schemaID
+
+	// Create test application for prompt actions tests
+	appID, err := testutils.CreateApplication(promptActionsTestApp)
+	if err != nil {
+		ts.T().Fatalf("Failed to create test application during setup: %v", err)
+	}
+	promptActionsTestAppID = appID
 
 	// Start mock notification server
 	ts.mockServer = testutils.NewMockNotificationServer(mockPromptActionsNotificationServerPort)

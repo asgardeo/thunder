@@ -3,6 +3,11 @@
     "type": "AUTHENTICATION",
     "nodes": [
         {
+            "id": "start",
+            "type": "START",
+            "onSuccess": "google_auth"
+        },
+        {
             "id": "google_auth",
             "type": "TASK_EXECUTION",
             "properties": {

@@ -255,7 +255,7 @@ func (s *flowMgtService) processNodeDefinition(nodeDef *nodeDefinition, allNodes
 
 	s.configureNodeCondition(nodeDef, node)
 
-	if err := s.configureNodeExecutor(nodeDef, node); err != nil {
+	if err := s.configureNodeExecutor(nodeDef, node, g.GetType()); err != nil {
 		return err
 	}
 
@@ -368,15 +368,19 @@ func (s *flowMgtService) configureNodeCondition(nodeDef *nodeDefinition, node co
 }
 
 // configureNodeExecutor configures the executor for a node
-func (s *flowMgtService) configureNodeExecutor(nodeDef *nodeDefinition, node core.NodeInterface) error {
+func (s *flowMgtService) configureNodeExecutor(nodeDef *nodeDefinition, node core.NodeInterface,
+	flowType common.FlowType) error {
 	executorName := nodeDef.Executor.Name
 
 	// Determine executor name for special node types if not explicitly defined
 	if executorName == "" {
 		if nodeDef.Type == string(common.NodeTypeAuthSuccess) {
 			executorName = executor.ExecutorNameAuthAssert
-		} else if nodeDef.Type == string(common.NodeTypeRegistrationStart) {
-			executorName = executor.ExecutorNameUserTypeResolver
+		} else if nodeDef.Type == string(common.NodeTypeStart) {
+			if flowType == common.FlowTypeRegistration || flowType == common.FlowTypeAuthentication {
+				executorName = executor.ExecutorNameUserTypeResolver
+			}
+			// Related init executors for other flow types can be added here
 		}
 	}
 
@@ -581,8 +585,8 @@ func (s *flowMgtService) createProvisioningNode() (core.NodeInterface, error) {
 // createRegistrationStartNode creates the registration start node
 func (s *flowMgtService) createRegistrationStartNode() (core.NodeInterface, error) {
 	regStartNode, err := s.flowFactory.CreateNode(
-		"registration_start",
-		string(common.NodeTypeRegistrationStart),
+		"start",
+		string(common.NodeTypeStart),
 		map[string]interface{}{},
 		false,
 		false,

@@ -302,6 +302,7 @@ RESPONSE=$(thunder_api_call POST "/applications" "{
   \"auth_flow_graph_id\": \"auth_flow_config_basic\",
   \"registration_flow_graph_id\": \"registration_flow_config_basic\",
   \"is_registration_flow_enabled\": true,
+  \"allowed_user_types\": [\"Person\"],
   \"user_attributes\": [\"given_name\",\"family_name\",\"email\",\"groups\", \"name\"],
   \"inbound_auth_config\": [{
     \"type\": \"oauth2\",

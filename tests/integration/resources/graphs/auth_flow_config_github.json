@@ -3,6 +3,11 @@
     "type": "AUTHENTICATION",
     "nodes": [
         {
+            "id": "start",
+            "type": "START",
+            "onSuccess": "github_auth"
+        },
+        {
             "id": "github_auth",
             "type": "TASK_EXECUTION",
             "properties": {

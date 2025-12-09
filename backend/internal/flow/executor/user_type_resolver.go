@@ -75,13 +75,24 @@ func (u *userTypeResolver) Execute(ctx *core.NodeContext) (*common.ExecutorRespo
 		RuntimeData:    make(map[string]string),
 	}
 
-	// Only applies to registration flows
-	if ctx.FlowType != common.FlowTypeRegistration {
+	allowed := ctx.Application.AllowedUserTypes
+
+	if ctx.FlowType == common.FlowTypeAuthentication {
+		// For authentication flows, validate that allowed user types are defined
+		if len(allowed) == 0 {
+			logger.Debug("No allowed user types configured for authentication")
+			execResp.Status = common.ExecFailure
+			execResp.FailureReason = "Authentication not available for this application"
+			return execResp, nil
+		}
+
+		execResp.Status = common.ExecComplete
+		return execResp, nil
+	} else if ctx.FlowType != common.FlowTypeRegistration {
+		logger.Debug("User type resolver is only applicable for registration and authentication flows")
 		execResp.Status = common.ExecComplete
 		return execResp, nil
 	}
-
-	allowed := ctx.Application.AllowedUserTypes
 
 	// If a userType is provided in inputs, validate and accept it
 	if userType, ok := ctx.UserInputs[userTypeKey]; ok && userType != "" {
