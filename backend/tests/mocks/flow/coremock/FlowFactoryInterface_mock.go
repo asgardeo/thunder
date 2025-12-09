@@ -162,7 +162,7 @@ func (_c *FlowFactoryInterfaceMock_CloneNodes_Call) RunAndReturn(run func(nodes 
 }
 
 // CreateExecutor provides a mock function for the type FlowFactoryInterfaceMock
-func (_mock *FlowFactoryInterfaceMock) CreateExecutor(name string, executorType common.ExecutorType, defaultInputs []common.InputData, prerequisites []common.InputData) core.ExecutorInterface {
+func (_mock *FlowFactoryInterfaceMock) CreateExecutor(name string, executorType common.ExecutorType, defaultInputs []common.Input, prerequisites []common.Input) core.ExecutorInterface {
 	ret := _mock.Called(name, executorType, defaultInputs, prerequisites)
 
 	if len(ret) == 0 {
@@ -170,7 +170,7 @@ func (_mock *FlowFactoryInterfaceMock) CreateExecutor(name string, executorType 
 	}
 
 	var r0 core.ExecutorInterface
-	if returnFunc, ok := ret.Get(0).(func(string, common.ExecutorType, []common.InputData, []common.InputData) core.ExecutorInterface); ok {
+	if returnFunc, ok := ret.Get(0).(func(string, common.ExecutorType, []common.Input, []common.Input) core.ExecutorInterface); ok {
 		r0 = returnFunc(name, executorType, defaultInputs, prerequisites)
 	} else {
 		if ret.Get(0) != nil {
@@ -188,13 +188,13 @@ type FlowFactoryInterfaceMock_CreateExecutor_Call struct {
 // CreateExecutor is a helper method to define mock.On call
 //   - name string
 //   - executorType common.ExecutorType
-//   - defaultInputs []common.InputData
-//   - prerequisites []common.InputData
+//   - defaultInputs []common.Input
+//   - prerequisites []common.Input
 func (_e *FlowFactoryInterfaceMock_Expecter) CreateExecutor(name interface{}, executorType interface{}, defaultInputs interface{}, prerequisites interface{}) *FlowFactoryInterfaceMock_CreateExecutor_Call {
 	return &FlowFactoryInterfaceMock_CreateExecutor_Call{Call: _e.mock.On("CreateExecutor", name, executorType, defaultInputs, prerequisites)}
 }
 
-func (_c *FlowFactoryInterfaceMock_CreateExecutor_Call) Run(run func(name string, executorType common.ExecutorType, defaultInputs []common.InputData, prerequisites []common.InputData)) *FlowFactoryInterfaceMock_CreateExecutor_Call {
+func (_c *FlowFactoryInterfaceMock_CreateExecutor_Call) Run(run func(name string, executorType common.ExecutorType, defaultInputs []common.Input, prerequisites []common.Input)) *FlowFactoryInterfaceMock_CreateExecutor_Call {
 	_c.Call.Run(func(args mock.Arguments) {
 		var arg0 string
 		if args[0] != nil {
@@ -204,13 +204,13 @@ func (_c *FlowFactoryInterfaceMock_CreateExecutor_Call) Run(run func(name string
 		if args[1] != nil {
 			arg1 = args[1].(common.ExecutorType)
 		}
-		var arg2 []common.InputData
+		var arg2 []common.Input
 		if args[2] != nil {
-			arg2 = args[2].([]common.InputData)
+			arg2 = args[2].([]common.Input)
 		}
-		var arg3 []common.InputData
+		var arg3 []common.Input
 		if args[3] != nil {
-			arg3 = args[3].([]common.InputData)
+			arg3 = args[3].([]common.Input)
 		}
 		run(
 			arg0,
@@ -227,7 +227,7 @@ func (_c *FlowFactoryInterfaceMock_CreateExecutor_Call) Return(executorInterface
 	return _c
 }
 
-func (_c *FlowFactoryInterfaceMock_CreateExecutor_Call) RunAndReturn(run func(name string, executorType common.ExecutorType, defaultInputs []common.InputData, prerequisites []common.InputData) core.ExecutorInterface) *FlowFactoryInterfaceMock_CreateExecutor_Call {
+func (_c *FlowFactoryInterfaceMock_CreateExecutor_Call) RunAndReturn(run func(name string, executorType common.ExecutorType, defaultInputs []common.Input, prerequisites []common.Input) core.ExecutorInterface) *FlowFactoryInterfaceMock_CreateExecutor_Call {
 	_c.Call.Return(run)
 	return _c
 }

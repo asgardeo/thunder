@@ -97,63 +97,6 @@ func (_c *oidcAuthExecutorInterfaceMock_BuildAuthorizeFlow_Call) RunAndReturn(ru
 	return _c
 }
 
-// CheckInputData provides a mock function for the type oidcAuthExecutorInterfaceMock
-func (_mock *oidcAuthExecutorInterfaceMock) CheckInputData(ctx *core.NodeContext, execResp *common.ExecutorResponse) bool {
-	ret := _mock.Called(ctx, execResp)
-
-	if len(ret) == 0 {
-		panic("no return value specified for CheckInputData")
-	}
-
-	var r0 bool
-	if returnFunc, ok := ret.Get(0).(func(*core.NodeContext, *common.ExecutorResponse) bool); ok {
-		r0 = returnFunc(ctx, execResp)
-	} else {
-		r0 = ret.Get(0).(bool)
-	}
-	return r0
-}
-
-// oidcAuthExecutorInterfaceMock_CheckInputData_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'CheckInputData'
-type oidcAuthExecutorInterfaceMock_CheckInputData_Call struct {
-	*mock.Call
-}
-
-// CheckInputData is a helper method to define mock.On call
-//   - ctx *core.NodeContext
-//   - execResp *common.ExecutorResponse
-func (_e *oidcAuthExecutorInterfaceMock_Expecter) CheckInputData(ctx interface{}, execResp interface{}) *oidcAuthExecutorInterfaceMock_CheckInputData_Call {
-	return &oidcAuthExecutorInterfaceMock_CheckInputData_Call{Call: _e.mock.On("CheckInputData", ctx, execResp)}
-}
-
-func (_c *oidcAuthExecutorInterfaceMock_CheckInputData_Call) Run(run func(ctx *core.NodeContext, execResp *common.ExecutorResponse)) *oidcAuthExecutorInterfaceMock_CheckInputData_Call {
-	_c.Call.Run(func(args mock.Arguments) {
-		var arg0 *core.NodeContext
-		if args[0] != nil {
-			arg0 = args[0].(*core.NodeContext)
-		}
-		var arg1 *common.ExecutorResponse
-		if args[1] != nil {
-			arg1 = args[1].(*common.ExecutorResponse)
-		}
-		run(
-			arg0,
-			arg1,
-		)
-	})
-	return _c
-}
-
-func (_c *oidcAuthExecutorInterfaceMock_CheckInputData_Call) Return(b bool) *oidcAuthExecutorInterfaceMock_CheckInputData_Call {
-	_c.Call.Return(b)
-	return _c
-}
-
-func (_c *oidcAuthExecutorInterfaceMock_CheckInputData_Call) RunAndReturn(run func(ctx *core.NodeContext, execResp *common.ExecutorResponse) bool) *oidcAuthExecutorInterfaceMock_CheckInputData_Call {
-	_c.Call.Return(run)
-	return _c
-}
-
 // ExchangeCodeForToken provides a mock function for the type oidcAuthExecutorInterfaceMock
 func (_mock *oidcAuthExecutorInterfaceMock) ExchangeCodeForToken(ctx *core.NodeContext, execResp *common.ExecutorResponse, code string) (*executor.OAuthTokenResponse, error) {
 	ret := _mock.Called(ctx, execResp, code)
@@ -290,48 +233,48 @@ func (_c *oidcAuthExecutorInterfaceMock_Execute_Call) RunAndReturn(run func(ctx 
 	return _c
 }
 
-// GetDefaultExecutorInputs provides a mock function for the type oidcAuthExecutorInterfaceMock
-func (_mock *oidcAuthExecutorInterfaceMock) GetDefaultExecutorInputs() []common.InputData {
+// GetDefaultInputs provides a mock function for the type oidcAuthExecutorInterfaceMock
+func (_mock *oidcAuthExecutorInterfaceMock) GetDefaultInputs() []common.Input {
 	ret := _mock.Called()
 
 	if len(ret) == 0 {
-		panic("no return value specified for GetDefaultExecutorInputs")
+		panic("no return value specified for GetDefaultInputs")
 	}
 
-	var r0 []common.InputData
-	if returnFunc, ok := ret.Get(0).(func() []common.InputData); ok {
+	var r0 []common.Input
+	if returnFunc, ok := ret.Get(0).(func() []common.Input); ok {
 		r0 = returnFunc()
 	} else {
 		if ret.Get(0) != nil {
-			r0 = ret.Get(0).([]common.InputData)
+			r0 = ret.Get(0).([]common.Input)
 		}
 	}
 	return r0
 }
 
-// oidcAuthExecutorInterfaceMock_GetDefaultExecutorInputs_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'GetDefaultExecutorInputs'
-type oidcAuthExecutorInterfaceMock_GetDefaultExecutorInputs_Call struct {
+// oidcAuthExecutorInterfaceMock_GetDefaultInputs_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'GetDefaultInputs'
+type oidcAuthExecutorInterfaceMock_GetDefaultInputs_Call struct {
 	*mock.Call
 }
 
-// GetDefaultExecutorInputs is a helper method to define mock.On call
-func (_e *oidcAuthExecutorInterfaceMock_Expecter) GetDefaultExecutorInputs() *oidcAuthExecutorInterfaceMock_GetDefaultExecutorInputs_Call {
-	return &oidcAuthExecutorInterfaceMock_GetDefaultExecutorInputs_Call{Call: _e.mock.On("GetDefaultExecutorInputs")}
+// GetDefaultInputs is a helper method to define mock.On call
+func (_e *oidcAuthExecutorInterfaceMock_Expecter) GetDefaultInputs() *oidcAuthExecutorInterfaceMock_GetDefaultInputs_Call {
+	return &oidcAuthExecutorInterfaceMock_GetDefaultInputs_Call{Call: _e.mock.On("GetDefaultInputs")}
 }
 
-func (_c *oidcAuthExecutorInterfaceMock_GetDefaultExecutorInputs_Call) Run(run func()) *oidcAuthExecutorInterfaceMock_GetDefaultExecutorInputs_Call {
+func (_c *oidcAuthExecutorInterfaceMock_GetDefaultInputs_Call) Run(run func()) *oidcAuthExecutorInterfaceMock_GetDefaultInputs_Call {
 	_c.Call.Run(func(args mock.Arguments) {
 		run()
 	})
 	return _c
 }
 
-func (_c *oidcAuthExecutorInterfaceMock_GetDefaultExecutorInputs_Call) Return(inputDatas []common.InputData) *oidcAuthExecutorInterfaceMock_GetDefaultExecutorInputs_Call {
-	_c.Call.Return(inputDatas)
+func (_c *oidcAuthExecutorInterfaceMock_GetDefaultInputs_Call) Return(inputs []common.Input) *oidcAuthExecutorInterfaceMock_GetDefaultInputs_Call {
+	_c.Call.Return(inputs)
 	return _c
 }
 
-func (_c *oidcAuthExecutorInterfaceMock_GetDefaultExecutorInputs_Call) RunAndReturn(run func() []common.InputData) *oidcAuthExecutorInterfaceMock_GetDefaultExecutorInputs_Call {
+func (_c *oidcAuthExecutorInterfaceMock_GetDefaultInputs_Call) RunAndReturn(run func() []common.Input) *oidcAuthExecutorInterfaceMock_GetDefaultInputs_Call {
 	_c.Call.Return(run)
 	return _c
 }
@@ -577,19 +520,19 @@ func (_c *oidcAuthExecutorInterfaceMock_GetName_Call) RunAndReturn(run func() st
 }
 
 // GetPrerequisites provides a mock function for the type oidcAuthExecutorInterfaceMock
-func (_mock *oidcAuthExecutorInterfaceMock) GetPrerequisites() []common.InputData {
+func (_mock *oidcAuthExecutorInterfaceMock) GetPrerequisites() []common.Input {
 	ret := _mock.Called()
 
 	if len(ret) == 0 {
 		panic("no return value specified for GetPrerequisites")
 	}
 
-	var r0 []common.InputData
-	if returnFunc, ok := ret.Get(0).(func() []common.InputData); ok {
+	var r0 []common.Input
+	if returnFunc, ok := ret.Get(0).(func() []common.Input); ok {
 		r0 = returnFunc()
 	} else {
 		if ret.Get(0) != nil {
-			r0 = ret.Get(0).([]common.InputData)
+			r0 = ret.Get(0).([]common.Input)
 		}
 	}
 	return r0
@@ -612,47 +555,47 @@ func (_c *oidcAuthExecutorInterfaceMock_GetPrerequisites_Call) Run(run func()) *
 	return _c
 }
 
-func (_c *oidcAuthExecutorInterfaceMock_GetPrerequisites_Call) Return(inputDatas []common.InputData) *oidcAuthExecutorInterfaceMock_GetPrerequisites_Call {
-	_c.Call.Return(inputDatas)
+func (_c *oidcAuthExecutorInterfaceMock_GetPrerequisites_Call) Return(inputs []common.Input) *oidcAuthExecutorInterfaceMock_GetPrerequisites_Call {
+	_c.Call.Return(inputs)
 	return _c
 }
 
-func (_c *oidcAuthExecutorInterfaceMock_GetPrerequisites_Call) RunAndReturn(run func() []common.InputData) *oidcAuthExecutorInterfaceMock_GetPrerequisites_Call {
+func (_c *oidcAuthExecutorInterfaceMock_GetPrerequisites_Call) RunAndReturn(run func() []common.Input) *oidcAuthExecutorInterfaceMock_GetPrerequisites_Call {
 	_c.Call.Return(run)
 	return _c
 }
 
-// GetRequiredData provides a mock function for the type oidcAuthExecutorInterfaceMock
-func (_mock *oidcAuthExecutorInterfaceMock) GetRequiredData(ctx *core.NodeContext) []common.InputData {
+// GetRequiredInputs provides a mock function for the type oidcAuthExecutorInterfaceMock
+func (_mock *oidcAuthExecutorInterfaceMock) GetRequiredInputs(ctx *core.NodeContext) []common.Input {
 	ret := _mock.Called(ctx)
 
 	if len(ret) == 0 {
-		panic("no return value specified for GetRequiredData")
+		panic("no return value specified for GetRequiredInputs")
 	}
 
-	var r0 []common.InputData
-	if returnFunc, ok := ret.Get(0).(func(*core.NodeContext) []common.InputData); ok {
+	var r0 []common.Input
+	if returnFunc, ok := ret.Get(0).(func(*core.NodeContext) []common.Input); ok {
 		r0 = returnFunc(ctx)
 	} else {
 		if ret.Get(0) != nil {
-			r0 = ret.Get(0).([]common.InputData)
+			r0 = ret.Get(0).([]common.Input)
 		}
 	}
 	return r0
 }
 
-// oidcAuthExecutorInterfaceMock_GetRequiredData_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'GetRequiredData'
-type oidcAuthExecutorInterfaceMock_GetRequiredData_Call struct {
+// oidcAuthExecutorInterfaceMock_GetRequiredInputs_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'GetRequiredInputs'
+type oidcAuthExecutorInterfaceMock_GetRequiredInputs_Call struct {
 	*mock.Call
 }
 
-// GetRequiredData is a helper method to define mock.On call
+// GetRequiredInputs is a helper method to define mock.On call
 //   - ctx *core.NodeContext
-func (_e *oidcAuthExecutorInterfaceMock_Expecter) GetRequiredData(ctx interface{}) *oidcAuthExecutorInterfaceMock_GetRequiredData_Call {
-	return &oidcAuthExecutorInterfaceMock_GetRequiredData_Call{Call: _e.mock.On("GetRequiredData", ctx)}
+func (_e *oidcAuthExecutorInterfaceMock_Expecter) GetRequiredInputs(ctx interface{}) *oidcAuthExecutorInterfaceMock_GetRequiredInputs_Call {
+	return &oidcAuthExecutorInterfaceMock_GetRequiredInputs_Call{Call: _e.mock.On("GetRequiredInputs", ctx)}
 }
 
-func (_c *oidcAuthExecutorInterfaceMock_GetRequiredData_Call) Run(run func(ctx *core.NodeContext)) *oidcAuthExecutorInterfaceMock_GetRequiredData_Call {
+func (_c *oidcAuthExecutorInterfaceMock_GetRequiredInputs_Call) Run(run func(ctx *core.NodeContext)) *oidcAuthExecutorInterfaceMock_GetRequiredInputs_Call {
 	_c.Call.Run(func(args mock.Arguments) {
 		var arg0 *core.NodeContext
 		if args[0] != nil {
@@ -665,12 +608,12 @@ func (_c *oidcAuthExecutorInterfaceMock_GetRequiredData_Call) Run(run func(ctx *
 	return _c
 }
 
-func (_c *oidcAuthExecutorInterfaceMock_GetRequiredData_Call) Return(inputDatas []common.InputData) *oidcAuthExecutorInterfaceMock_GetRequiredData_Call {
-	_c.Call.Return(inputDatas)
+func (_c *oidcAuthExecutorInterfaceMock_GetRequiredInputs_Call) Return(inputs []common.Input) *oidcAuthExecutorInterfaceMock_GetRequiredInputs_Call {
+	_c.Call.Return(inputs)
 	return _c
 }
 
-func (_c *oidcAuthExecutorInterfaceMock_GetRequiredData_Call) RunAndReturn(run func(ctx *core.NodeContext) []common.InputData) *oidcAuthExecutorInterfaceMock_GetRequiredData_Call {
+func (_c *oidcAuthExecutorInterfaceMock_GetRequiredInputs_Call) RunAndReturn(run func(ctx *core.NodeContext) []common.Input) *oidcAuthExecutorInterfaceMock_GetRequiredInputs_Call {
 	_c.Call.Return(run)
 	return _c
 }
@@ -840,6 +783,63 @@ func (_c *oidcAuthExecutorInterfaceMock_GetUserInfo_Call) Return(stringToString 
 }
 
 func (_c *oidcAuthExecutorInterfaceMock_GetUserInfo_Call) RunAndReturn(run func(ctx *core.NodeContext, execResp *common.ExecutorResponse, accessToken string) (map[string]string, error)) *oidcAuthExecutorInterfaceMock_GetUserInfo_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
+// HasRequiredInputs provides a mock function for the type oidcAuthExecutorInterfaceMock
+func (_mock *oidcAuthExecutorInterfaceMock) HasRequiredInputs(ctx *core.NodeContext, execResp *common.ExecutorResponse) bool {
+	ret := _mock.Called(ctx, execResp)
+
+	if len(ret) == 0 {
+		panic("no return value specified for HasRequiredInputs")
+	}
+
+	var r0 bool
+	if returnFunc, ok := ret.Get(0).(func(*core.NodeContext, *common.ExecutorResponse) bool); ok {
+		r0 = returnFunc(ctx, execResp)
+	} else {
+		r0 = ret.Get(0).(bool)
+	}
+	return r0
+}
+
+// oidcAuthExecutorInterfaceMock_HasRequiredInputs_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'HasRequiredInputs'
+type oidcAuthExecutorInterfaceMock_HasRequiredInputs_Call struct {
+	*mock.Call
+}
+
+// HasRequiredInputs is a helper method to define mock.On call
+//   - ctx *core.NodeContext
+//   - execResp *common.ExecutorResponse
+func (_e *oidcAuthExecutorInterfaceMock_Expecter) HasRequiredInputs(ctx interface{}, execResp interface{}) *oidcAuthExecutorInterfaceMock_HasRequiredInputs_Call {
+	return &oidcAuthExecutorInterfaceMock_HasRequiredInputs_Call{Call: _e.mock.On("HasRequiredInputs", ctx, execResp)}
+}
+
+func (_c *oidcAuthExecutorInterfaceMock_HasRequiredInputs_Call) Run(run func(ctx *core.NodeContext, execResp *common.ExecutorResponse)) *oidcAuthExecutorInterfaceMock_HasRequiredInputs_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 *core.NodeContext
+		if args[0] != nil {
+			arg0 = args[0].(*core.NodeContext)
+		}
+		var arg1 *common.ExecutorResponse
+		if args[1] != nil {
+			arg1 = args[1].(*common.ExecutorResponse)
+		}
+		run(
+			arg0,
+			arg1,
+		)
+	})
+	return _c
+}
+
+func (_c *oidcAuthExecutorInterfaceMock_HasRequiredInputs_Call) Return(b bool) *oidcAuthExecutorInterfaceMock_HasRequiredInputs_Call {
+	_c.Call.Return(b)
+	return _c
+}
+
+func (_c *oidcAuthExecutorInterfaceMock_HasRequiredInputs_Call) RunAndReturn(run func(ctx *core.NodeContext, execResp *common.ExecutorResponse) bool) *oidcAuthExecutorInterfaceMock_HasRequiredInputs_Call {
 	_c.Call.Return(run)
 	return _c
 }

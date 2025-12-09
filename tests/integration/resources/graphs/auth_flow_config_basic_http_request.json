@@ -8,9 +8,7 @@
             "executor": {
                 "name": "BasicAuthExecutor"
             },
-            "next": [
-                "http_request_notification"
-            ]
+            "onSuccess": "http_request_notification"
         },
         {
             "id": "http_request_notification",
@@ -26,9 +24,7 @@
             "executor": {
                 "name": "HTTPRequestExecutor"
             },
-            "next": [
-                "authenticated"
-            ]
+            "onSuccess": "authenticated"
         },
         {
             "id": "authenticated",

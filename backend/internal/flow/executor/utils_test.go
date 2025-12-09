@@ -25,8 +25,8 @@ import (
 	"github.com/stretchr/testify/suite"
 
 	authncm "github.com/asgardeo/thunder/internal/authn/common"
-	flowcm "github.com/asgardeo/thunder/internal/flow/common"
-	flowcore "github.com/asgardeo/thunder/internal/flow/core"
+	"github.com/asgardeo/thunder/internal/flow/common"
+	"github.com/asgardeo/thunder/internal/flow/core"
 	"github.com/asgardeo/thunder/tests/mocks/flow/coremock"
 )
 
@@ -64,24 +64,24 @@ func (s *UtilsTestSuite) TestGetAuthnServiceName() {
 }
 
 // createMockAuthExecutor creates a mock executor for OAuth/OIDC authentication.
-func createMockAuthExecutor(t *testing.T, executorName string) flowcore.ExecutorInterface {
+func createMockAuthExecutor(t *testing.T, executorName string) core.ExecutorInterface {
 	mockExec := coremock.NewExecutorInterfaceMock(t)
 	mockExec.On("GetName").Return(executorName).Maybe()
-	mockExec.On("GetType").Return(flowcm.ExecutorTypeAuthentication).Maybe()
-	mockExec.On("GetDefaultExecutorInputs").Return([]flowcm.InputData{
-		{Name: "code", Type: "string", Required: true},
+	mockExec.On("GetType").Return(common.ExecutorTypeAuthentication).Maybe()
+	mockExec.On("GetDefaultInputs").Return([]common.Input{
+		{Identifier: "code", Type: "string", Required: true},
 	}).Maybe()
-	mockExec.On("GetPrerequisites").Return([]flowcm.InputData{}).Maybe()
-	mockExec.On("CheckInputData", mock.Anything, mock.Anything).Return(
-		func(ctx *flowcore.NodeContext, execResp *flowcm.ExecutorResponse) bool {
-			if code, ok := ctx.UserInputData["code"]; ok && code != "" {
-				return false
+	mockExec.On("GetPrerequisites").Return([]common.Input{}).Maybe()
+	mockExec.On("HasRequiredInputs", mock.Anything, mock.Anything).Return(
+		func(ctx *core.NodeContext, execResp *common.ExecutorResponse) bool {
+			if code, ok := ctx.UserInputs["code"]; ok && code != "" {
+				return true
 			}
-			if len(ctx.NodeInputData) == 0 {
-				return false
+			if len(ctx.NodeInputs) == 0 {
+				return true
 			}
-			execResp.RequiredData = []flowcm.InputData{{Name: "code", Type: "string", Required: true}}
-			return true
+			execResp.Inputs = []common.Input{{Identifier: "code", Type: "string", Required: true}}
+			return false
 		}).Maybe()
 	return mockExec
 }

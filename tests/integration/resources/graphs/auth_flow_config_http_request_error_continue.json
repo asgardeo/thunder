@@ -8,9 +8,7 @@
             "executor": {
                 "name": "BasicAuthExecutor"
             },
-            "next": [
-                "http_request_error"
-            ]
+            "onSuccess": "http_request_error"
         },
         {
             "id": "http_request_error",
@@ -26,9 +24,7 @@
             "executor": {
                 "name": "HTTPRequestExecutor"
             },
-            "next": [
-                "authenticated"
-            ]
+            "onSuccess": "authenticated"
         },
         {
             "id": "authenticated",

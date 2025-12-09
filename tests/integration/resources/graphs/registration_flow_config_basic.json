@@ -5,9 +5,7 @@
         {
             "id": "registration_start",
             "type": "REGISTRATION_START",
-            "next": [
-                "basic_auth"
-            ]
+            "onSuccess": "basic_auth"
         },
         {
             "id": "basic_auth",
@@ -15,36 +13,39 @@
             "executor": {
                 "name": "BasicAuthExecutor"
             },
-            "next": [
-                "provisioning"
-            ]
+            "onSuccess": "provisioning"
         },
         {
             "id": "provisioning",
             "type": "TASK_EXECUTION",
-            "inputData": [
+            "inputs": [
                 {
-                    "name": "username",
+                    "ref": "input_001",
+                    "identifier": "username",
                     "type": "string",
                     "required": true
                 },
                 {
-                    "name": "password",
+                    "ref": "input_002",
+                    "identifier": "password",
                     "type": "string",
                     "required": true
                 },
                 {
-                    "name": "firstName",
+                    "ref": "input_003",
+                    "identifier": "firstName",
                     "type": "string",
                     "required": true
                 },
                 {
-                    "name": "lastName",
+                    "ref": "input_004",
+                    "identifier": "lastName",
                     "type": "string",
                     "required": true
                 },
                 {
-                    "name": "email",
+                    "ref": "input_005",
+                    "identifier": "email",
                     "type": "string",
                     "required": true
                 }
@@ -52,9 +53,7 @@
             "executor": {
                 "name": "ProvisioningExecutor"
             },
-            "next": [
-                "authenticated"
-            ]
+            "onSuccess": "authenticated"
         },
         {
             "id": "authenticated",

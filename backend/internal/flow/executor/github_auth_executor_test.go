@@ -24,7 +24,7 @@ import (
 	"github.com/stretchr/testify/suite"
 
 	authnoauth "github.com/asgardeo/thunder/internal/authn/oauth"
-	flowcm "github.com/asgardeo/thunder/internal/flow/common"
+	"github.com/asgardeo/thunder/internal/flow/common"
 	"github.com/asgardeo/thunder/tests/mocks/authn/githubmock"
 	"github.com/asgardeo/thunder/tests/mocks/authn/oauthmock"
 	"github.com/asgardeo/thunder/tests/mocks/flow/coremock"
@@ -54,16 +54,16 @@ func (suite *GithubAuthExecutorTestSuite) SetupTest() {
 }
 
 func (suite *GithubAuthExecutorTestSuite) TestNewGithubOAuthExecutor_Success() {
-	defaultInputs := []flowcm.InputData{
+	defaultInputs := []common.Input{
 		{
-			Name:     "code",
-			Type:     "string",
-			Required: true,
+			Identifier: "code",
+			Type:       "string",
+			Required:   true,
 		},
 	}
 	baseExec := coremock.NewExecutorInterfaceMock(suite.T())
 	suite.mockFlowFactory.On("CreateExecutor", ExecutorNameGitHubAuth,
-		flowcm.ExecutorTypeAuthentication, defaultInputs, []flowcm.InputData{}).
+		common.ExecutorTypeAuthentication, defaultInputs, []common.Input{}).
 		Return(baseExec).Once()
 
 	mockGithubSvc := &mockGithubServiceWithOAuth{

@@ -29,8 +29,8 @@ import (
 	appmodel "github.com/asgardeo/thunder/internal/application/model"
 	authnassert "github.com/asgardeo/thunder/internal/authn/assert"
 	authncm "github.com/asgardeo/thunder/internal/authn/common"
-	flowcm "github.com/asgardeo/thunder/internal/flow/common"
-	flowcore "github.com/asgardeo/thunder/internal/flow/core"
+	"github.com/asgardeo/thunder/internal/flow/common"
+	"github.com/asgardeo/thunder/internal/flow/core"
 	"github.com/asgardeo/thunder/internal/ou"
 	"github.com/asgardeo/thunder/internal/system/config"
 	"github.com/asgardeo/thunder/internal/system/error/serviceerror"
@@ -66,21 +66,21 @@ func (suite *AuthAssertExecutorTestSuite) SetupTest() {
 	suite.mockAssertGenerator = assertmock.NewAuthAssertGeneratorInterfaceMock(suite.T())
 	suite.mockFlowFactory = coremock.NewFlowFactoryInterfaceMock(suite.T())
 
-	mockExec := createMockExecutorSimple(suite.T(), ExecutorNameAuthAssert, flowcm.ExecutorTypeUtility)
-	suite.mockFlowFactory.On("CreateExecutor", ExecutorNameAuthAssert, flowcm.ExecutorTypeUtility,
-		[]flowcm.InputData{}, []flowcm.InputData{}).Return(mockExec)
+	mockExec := createMockExecutorSimple(suite.T(), ExecutorNameAuthAssert, common.ExecutorTypeUtility)
+	suite.mockFlowFactory.On("CreateExecutor", ExecutorNameAuthAssert, common.ExecutorTypeUtility,
+		[]common.Input{}, []common.Input{}).Return(mockExec)
 
 	suite.executor = newAuthAssertExecutor(suite.mockFlowFactory, suite.mockJWTService,
 		suite.mockUserService, suite.mockOUService, suite.mockAssertGenerator)
 }
 
 func createMockExecutorSimple(t *testing.T, name string,
-	executorType flowcm.ExecutorType) flowcore.ExecutorInterface {
+	executorType common.ExecutorType) core.ExecutorInterface {
 	mockExec := coremock.NewExecutorInterfaceMock(t)
 	mockExec.On("GetName").Return(name).Maybe()
 	mockExec.On("GetType").Return(executorType).Maybe()
-	mockExec.On("GetDefaultExecutorInputs").Return([]flowcm.InputData{}).Maybe()
-	mockExec.On("GetPrerequisites").Return([]flowcm.InputData{}).Maybe()
+	mockExec.On("GetDefaultInputs").Return([]common.Input{}).Maybe()
+	mockExec.On("GetPrerequisites").Return([]common.Input{}).Maybe()
 	return mockExec
 }
 
@@ -102,21 +102,21 @@ func (suite *AuthAssertExecutorTestSuite) TestNewAuthAssertExecutor() {
 }
 
 func (suite *AuthAssertExecutorTestSuite) TestExecute_UserAuthenticated_Success() {
-	ctx := &flowcore.NodeContext{
+	ctx := &core.NodeContext{
 		FlowID:   "flow-123",
 		AppID:    "app-123",
-		FlowType: flowcm.FlowTypeAuthentication,
+		FlowType: common.FlowTypeAuthentication,
 		AuthenticatedUser: authncm.AuthenticatedUser{
 			IsAuthenticated:    true,
 			UserID:             "user-123",
 			OrganizationUnitID: "ou-123",
 			UserType:           "INTERNAL",
 		},
-		ExecutionHistory: map[string]*flowcm.NodeExecutionRecord{
+		ExecutionHistory: map[string]*common.NodeExecutionRecord{
 			"node1": {
 				ExecutorName: ExecutorNameBasicAuth,
-				ExecutorType: flowcm.ExecutorTypeAuthentication,
-				Status:       flowcm.FlowStatusComplete,
+				ExecutorType: common.ExecutorTypeAuthentication,
+				Status:       common.FlowStatusComplete,
 				Step:         1,
 				EndTime:      1234567890,
 			},
@@ -139,16 +139,16 @@ func (suite *AuthAssertExecutorTestSuite) TestExecute_UserAuthenticated_Success(
 
 	assert.NoError(suite.T(), err)
 	assert.NotNil(suite.T(), resp)
-	assert.Equal(suite.T(), flowcm.ExecComplete, resp.Status)
+	assert.Equal(suite.T(), common.ExecComplete, resp.Status)
 	assert.Equal(suite.T(), "jwt-token", resp.Assertion)
 	suite.mockAssertGenerator.AssertExpectations(suite.T())
 	suite.mockJWTService.AssertExpectations(suite.T())
 }
 
 func (suite *AuthAssertExecutorTestSuite) TestExecute_UserNotAuthenticated() {
-	ctx := &flowcore.NodeContext{
+	ctx := &core.NodeContext{
 		FlowID:   "flow-123",
-		FlowType: flowcm.FlowTypeAuthentication,
+		FlowType: common.FlowTypeAuthentication,
 		AuthenticatedUser: authncm.AuthenticatedUser{
 			IsAuthenticated: false,
 		},
@@ -158,15 +158,15 @@ func (suite *AuthAssertExecutorTestSuite) TestExecute_UserNotAuthenticated() {
 
 	assert.NoError(suite.T(), err)
 	assert.NotNil(suite.T(), resp)
-	assert.Equal(suite.T(), flowcm.ExecFailure, resp.Status)
+	assert.Equal(suite.T(), common.ExecFailure, resp.Status)
 	assert.Equal(suite.T(), failureReasonUserNotAuthenticated, resp.FailureReason)
 }
 
 func (suite *AuthAssertExecutorTestSuite) TestExecute_WithAuthorizedPermissions() {
-	ctx := &flowcore.NodeContext{
+	ctx := &core.NodeContext{
 		FlowID:   "flow-123",
 		AppID:    "app-123",
-		FlowType: flowcm.FlowTypeAuthentication,
+		FlowType: common.FlowTypeAuthentication,
 		AuthenticatedUser: authncm.AuthenticatedUser{
 			IsAuthenticated: true,
 			UserID:          "user-123",
@@ -174,7 +174,7 @@ func (suite *AuthAssertExecutorTestSuite) TestExecute_WithAuthorizedPermissions(
 		RuntimeData: map[string]string{
 			"authorized_permissions": "read:documents write:documents",
 		},
-		ExecutionHistory: map[string]*flowcm.NodeExecutionRecord{},
+		ExecutionHistory: map[string]*common.NodeExecutionRecord{},
 		Application:      appmodel.Application{},
 	}
 
@@ -188,7 +188,7 @@ func (suite *AuthAssertExecutorTestSuite) TestExecute_WithAuthorizedPermissions(
 
 	assert.NoError(suite.T(), err)
 	assert.NotNil(suite.T(), resp)
-	assert.Equal(suite.T(), flowcm.ExecComplete, resp.Status)
+	assert.Equal(suite.T(), common.ExecComplete, resp.Status)
 	assert.Equal(suite.T(), "jwt-token", resp.Assertion)
 	suite.mockJWTService.AssertExpectations(suite.T())
 }
@@ -197,16 +197,16 @@ func (suite *AuthAssertExecutorTestSuite) TestExecute_WithUserAttributes() {
 	attrs := map[string]interface{}{"email": "test@example.com", "phone": "1234567890"}
 	attrsJSON, _ := json.Marshal(attrs)
 
-	ctx := &flowcore.NodeContext{
+	ctx := &core.NodeContext{
 		FlowID:   "flow-123",
 		AppID:    "app-123",
-		FlowType: flowcm.FlowTypeAuthentication,
+		FlowType: common.FlowTypeAuthentication,
 		AuthenticatedUser: authncm.AuthenticatedUser{
 			IsAuthenticated: true,
 			UserID:          "user-123",
 			Attributes:      map[string]interface{}{"email": "test@example.com"},
 		},
-		ExecutionHistory: map[string]*flowcm.NodeExecutionRecord{},
+		ExecutionHistory: map[string]*common.NodeExecutionRecord{},
 		Application: appmodel.Application{
 			Token: &appmodel.TokenConfig{
 				UserAttributes: []string{"email", "phone"},
@@ -229,21 +229,21 @@ func (suite *AuthAssertExecutorTestSuite) TestExecute_WithUserAttributes() {
 
 	assert.NoError(suite.T(), err)
 	assert.NotNil(suite.T(), resp)
-	assert.Equal(suite.T(), flowcm.ExecComplete, resp.Status)
+	assert.Equal(suite.T(), common.ExecComplete, resp.Status)
 	suite.mockUserService.AssertExpectations(suite.T())
 	suite.mockJWTService.AssertExpectations(suite.T())
 }
 
 func (suite *AuthAssertExecutorTestSuite) TestExecute_JWTGenerationFails() {
-	ctx := &flowcore.NodeContext{
+	ctx := &core.NodeContext{
 		FlowID:   "flow-123",
 		AppID:    "app-123",
-		FlowType: flowcm.FlowTypeAuthentication,
+		FlowType: common.FlowTypeAuthentication,
 		AuthenticatedUser: authncm.AuthenticatedUser{
 			IsAuthenticated: true,
 			UserID:          "user-123",
 		},
-		ExecutionHistory: map[string]*flowcm.NodeExecutionRecord{},
+		ExecutionHistory: map[string]*common.NodeExecutionRecord{},
 		Application:      appmodel.Application{},
 	}
 
@@ -258,19 +258,19 @@ func (suite *AuthAssertExecutorTestSuite) TestExecute_JWTGenerationFails() {
 }
 
 func (suite *AuthAssertExecutorTestSuite) TestExecute_AssertionGenerationFails_ServerError() {
-	ctx := &flowcore.NodeContext{
+	ctx := &core.NodeContext{
 		FlowID:   "flow-123",
 		AppID:    "app-123",
-		FlowType: flowcm.FlowTypeAuthentication,
+		FlowType: common.FlowTypeAuthentication,
 		AuthenticatedUser: authncm.AuthenticatedUser{
 			IsAuthenticated: true,
 			UserID:          "user-123",
 		},
-		ExecutionHistory: map[string]*flowcm.NodeExecutionRecord{
+		ExecutionHistory: map[string]*common.NodeExecutionRecord{
 			"node1": {
 				ExecutorName: ExecutorNameBasicAuth,
-				ExecutorType: flowcm.ExecutorTypeAuthentication,
-				Status:       flowcm.FlowStatusComplete,
+				ExecutorType: common.ExecutorTypeAuthentication,
+				Status:       common.FlowStatusComplete,
 				Step:         1,
 			},
 		},
@@ -290,31 +290,31 @@ func (suite *AuthAssertExecutorTestSuite) TestExecute_AssertionGenerationFails_S
 }
 
 func (suite *AuthAssertExecutorTestSuite) TestExtractAuthenticatorReferences() {
-	history := map[string]*flowcm.NodeExecutionRecord{
+	history := map[string]*common.NodeExecutionRecord{
 		"node1": {
 			ExecutorName: ExecutorNameBasicAuth,
-			ExecutorType: flowcm.ExecutorTypeAuthentication,
-			Status:       flowcm.FlowStatusComplete,
+			ExecutorType: common.ExecutorTypeAuthentication,
+			Status:       common.FlowStatusComplete,
 			Step:         3,
 			EndTime:      1000,
 		},
 		"node2": {
 			ExecutorName: ExecutorNameSMSAuth,
-			ExecutorType: flowcm.ExecutorTypeAuthentication,
-			Status:       flowcm.FlowStatusComplete,
+			ExecutorType: common.ExecutorTypeAuthentication,
+			Status:       common.FlowStatusComplete,
 			Step:         1,
 			EndTime:      2000,
 		},
 		"node3": {
 			ExecutorName: ExecutorNameProvisioning,
-			ExecutorType: flowcm.ExecutorTypeRegistration,
-			Status:       flowcm.FlowStatusComplete,
+			ExecutorType: common.ExecutorTypeRegistration,
+			Status:       common.FlowStatusComplete,
 			Step:         2,
 		},
 		"node4": {
 			ExecutorName: ExecutorNameOAuth,
-			ExecutorType: flowcm.ExecutorTypeAuthentication,
-			Status:       flowcm.FlowStatusError,
+			ExecutorType: common.ExecutorTypeAuthentication,
+			Status:       common.FlowStatusError,
 			Step:         4,
 		},
 	}
@@ -329,7 +329,7 @@ func (suite *AuthAssertExecutorTestSuite) TestExtractAuthenticatorReferences() {
 }
 
 func (suite *AuthAssertExecutorTestSuite) TestExtractAuthenticatorReferences_EmptyHistory() {
-	history := map[string]*flowcm.NodeExecutionRecord{}
+	history := map[string]*common.NodeExecutionRecord{}
 
 	refs := suite.executor.extractAuthenticatorReferences(history)
 
@@ -337,11 +337,11 @@ func (suite *AuthAssertExecutorTestSuite) TestExtractAuthenticatorReferences_Emp
 }
 
 func (suite *AuthAssertExecutorTestSuite) TestExtractAuthenticatorReferences_UnknownExecutor() {
-	history := map[string]*flowcm.NodeExecutionRecord{
+	history := map[string]*common.NodeExecutionRecord{
 		"node1": {
 			ExecutorName: "UnknownExecutor",
-			ExecutorType: flowcm.ExecutorTypeAuthentication,
-			Status:       flowcm.FlowStatusComplete,
+			ExecutorType: common.ExecutorTypeAuthentication,
+			Status:       common.FlowStatusComplete,
 			Step:         1,
 		},
 	}
@@ -401,17 +401,17 @@ func (suite *AuthAssertExecutorTestSuite) TestGetUserAttributes_InvalidJSON() {
 }
 
 func (suite *AuthAssertExecutorTestSuite) TestExecute_WithUserTypeAndOU() {
-	ctx := &flowcore.NodeContext{
+	ctx := &core.NodeContext{
 		FlowID:   "flow-123",
 		AppID:    "app-123",
-		FlowType: flowcm.FlowTypeAuthentication,
+		FlowType: common.FlowTypeAuthentication,
 		AuthenticatedUser: authncm.AuthenticatedUser{
 			IsAuthenticated:    true,
 			UserID:             "user-123",
 			UserType:           "EXTERNAL",
 			OrganizationUnitID: "ou-456",
 		},
-		ExecutionHistory: map[string]*flowcm.NodeExecutionRecord{},
+		ExecutionHistory: map[string]*common.NodeExecutionRecord{},
 		Application:      appmodel.Application{},
 	}
 
@@ -426,20 +426,20 @@ func (suite *AuthAssertExecutorTestSuite) TestExecute_WithUserTypeAndOU() {
 
 	assert.NoError(suite.T(), err)
 	assert.NotNil(suite.T(), resp)
-	assert.Equal(suite.T(), flowcm.ExecComplete, resp.Status)
+	assert.Equal(suite.T(), common.ExecComplete, resp.Status)
 	suite.mockJWTService.AssertExpectations(suite.T())
 }
 
 func (suite *AuthAssertExecutorTestSuite) TestExecute_WithCustomTokenConfig() {
-	ctx := &flowcore.NodeContext{
+	ctx := &core.NodeContext{
 		FlowID:   "flow-123",
 		AppID:    "app-123",
-		FlowType: flowcm.FlowTypeAuthentication,
+		FlowType: common.FlowTypeAuthentication,
 		AuthenticatedUser: authncm.AuthenticatedUser{
 			IsAuthenticated: true,
 			UserID:          "user-123",
 		},
-		ExecutionHistory: map[string]*flowcm.NodeExecutionRecord{},
+		ExecutionHistory: map[string]*common.NodeExecutionRecord{},
 		Application: appmodel.Application{
 			Token: &appmodel.TokenConfig{
 				Issuer:         "custom-issuer",
@@ -455,21 +455,21 @@ func (suite *AuthAssertExecutorTestSuite) TestExecute_WithCustomTokenConfig() {
 
 	assert.NoError(suite.T(), err)
 	assert.NotNil(suite.T(), resp)
-	assert.Equal(suite.T(), flowcm.ExecComplete, resp.Status)
+	assert.Equal(suite.T(), common.ExecComplete, resp.Status)
 	suite.mockJWTService.AssertExpectations(suite.T())
 }
 
 func (suite *AuthAssertExecutorTestSuite) TestExecute_WithOUNameAndHandle() {
-	ctx := &flowcore.NodeContext{
+	ctx := &core.NodeContext{
 		FlowID:   "flow-123",
 		AppID:    "app-123",
-		FlowType: flowcm.FlowTypeAuthentication,
+		FlowType: common.FlowTypeAuthentication,
 		AuthenticatedUser: authncm.AuthenticatedUser{
 			IsAuthenticated:    true,
 			UserID:             "user-123",
 			OrganizationUnitID: "ou-789",
 		},
-		ExecutionHistory: map[string]*flowcm.NodeExecutionRecord{},
+		ExecutionHistory: map[string]*common.NodeExecutionRecord{},
 		Application:      appmodel.Application{},
 	}
 
@@ -490,7 +490,7 @@ func (suite *AuthAssertExecutorTestSuite) TestExecute_WithOUNameAndHandle() {
 
 	assert.NoError(suite.T(), err)
 	assert.NotNil(suite.T(), resp)
-	assert.Equal(suite.T(), flowcm.ExecComplete, resp.Status)
+	assert.Equal(suite.T(), common.ExecComplete, resp.Status)
 	assert.Equal(suite.T(), "jwt-token", resp.Assertion)
 	suite.mockOUService.AssertExpectations(suite.T())
 	suite.mockJWTService.AssertExpectations(suite.T())
@@ -500,15 +500,15 @@ func (suite *AuthAssertExecutorTestSuite) TestExecute_AppendUserDetailsToClaimsF
 	attrs := map[string]interface{}{"email": "test@example.com"}
 	attrsJSON, _ := json.Marshal(attrs)
 
-	ctx := &flowcore.NodeContext{
+	ctx := &core.NodeContext{
 		FlowID:   "flow-123",
 		AppID:    "app-123",
-		FlowType: flowcm.FlowTypeAuthentication,
+		FlowType: common.FlowTypeAuthentication,
 		AuthenticatedUser: authncm.AuthenticatedUser{
 			IsAuthenticated: true,
 			UserID:          "user-123",
 		},
-		ExecutionHistory: map[string]*flowcm.NodeExecutionRecord{},
+		ExecutionHistory: map[string]*common.NodeExecutionRecord{},
 		Application: appmodel.Application{
 			Token: &appmodel.TokenConfig{
 				UserAttributes: []string{"email"},
@@ -560,20 +560,20 @@ func (suite *AuthAssertExecutorTestSuite) TestExecute_AppendUserDetailsToClaimsF
 
 	assert.NoError(suite.T(), err)
 	assert.NotNil(suite.T(), resp)
-	assert.Equal(suite.T(), flowcm.ExecComplete, resp.Status)
+	assert.Equal(suite.T(), common.ExecComplete, resp.Status)
 }
 
 func (suite *AuthAssertExecutorTestSuite) TestExecute_AppendOUDetailsToClaimsFails() {
-	ctx := &flowcore.NodeContext{
+	ctx := &core.NodeContext{
 		FlowID:   "flow-123",
 		AppID:    "app-123",
-		FlowType: flowcm.FlowTypeAuthentication,
+		FlowType: common.FlowTypeAuthentication,
 		AuthenticatedUser: authncm.AuthenticatedUser{
 			IsAuthenticated:    true,
 			UserID:             "user-123",
 			OrganizationUnitID: "ou-123",
 		},
-		ExecutionHistory: map[string]*flowcm.NodeExecutionRecord{},
+		ExecutionHistory: map[string]*common.NodeExecutionRecord{},
 		Application:      appmodel.Application{},
 	}
 
@@ -591,16 +591,16 @@ func (suite *AuthAssertExecutorTestSuite) TestExecute_AppendOUDetailsToClaimsFai
 }
 
 func (suite *AuthAssertExecutorTestSuite) TestAppendUserDetailsToClaims_GetUserAttributesFails() {
-	ctx := &flowcore.NodeContext{
+	ctx := &core.NodeContext{
 		FlowID:   "flow-123",
 		AppID:    "app-123",
-		FlowType: flowcm.FlowTypeAuthentication,
+		FlowType: common.FlowTypeAuthentication,
 		AuthenticatedUser: authncm.AuthenticatedUser{
 			IsAuthenticated: true,
 			UserID:          "user-123",
 			Attributes:      map[string]interface{}{"email": "test@example.com"},
 		},
-		ExecutionHistory: map[string]*flowcm.NodeExecutionRecord{},
+		ExecutionHistory: map[string]*common.NodeExecutionRecord{},
 		Application: appmodel.Application{
 			Token: &appmodel.TokenConfig{
 				UserAttributes: []string{"email", "phone"},
@@ -622,16 +622,16 @@ func (suite *AuthAssertExecutorTestSuite) TestAppendUserDetailsToClaims_GetUserA
 }
 
 func (suite *AuthAssertExecutorTestSuite) TestAppendOUDetailsToClaims_GetOrganizationUnitFails() {
-	ctx := &flowcore.NodeContext{
+	ctx := &core.NodeContext{
 		FlowID:   "flow-123",
 		AppID:    "app-123",
-		FlowType: flowcm.FlowTypeAuthentication,
+		FlowType: common.FlowTypeAuthentication,
 		AuthenticatedUser: authncm.AuthenticatedUser{
 			IsAuthenticated:    true,
 			UserID:             "user-123",
 			OrganizationUnitID: "ou-invalid",
 		},
-		ExecutionHistory: map[string]*flowcm.NodeExecutionRecord{},
+		ExecutionHistory: map[string]*common.NodeExecutionRecord{},
 		Application:      appmodel.Application{},
 	}
 

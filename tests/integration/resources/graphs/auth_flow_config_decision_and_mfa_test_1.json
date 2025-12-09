@@ -4,23 +4,31 @@
     "nodes": [
         {
             "id": "choose_auth",
-            "type": "DECISION",
-            "next": [
-                "basic_auth",
-                "prompt_mobile"
+            "type": "PROMPT",
+            "actions": [
+                {
+                    "ref": "basic_auth",
+                    "nextNode": "basic_auth"
+                },
+                {
+                    "ref": "prompt_mobile",
+                    "nextNode": "prompt_mobile"
+                }
             ]
         },
         {
             "id": "basic_auth",
             "type": "TASK_EXECUTION",
-            "inputData": [
+            "inputs": [
                 {
-                    "name": "username",
+                    "ref": "input_001",
+                    "identifier": "username",
                     "type": "string",
                     "required": true
                 },
                 {
-                    "name": "password",
+                    "ref": "input_002",
+                    "identifier": "password",
                     "type": "string",
                     "required": true
                 }
@@ -28,16 +36,15 @@
             "executor": {
                 "name": "BasicAuthExecutor"
             },
-            "next": [
-                "attr_collector"
-            ]
+            "onSuccess": "attr_collector"
         },
         {
             "id": "attr_collector",
             "type": "TASK_EXECUTION",
-            "inputData": [
+            "inputs": [
                 {
-                    "name": "mobileNumber",
+                    "ref": "input_003",
+                    "identifier": "mobileNumber",
                     "type": "string",
                     "required": true
                 }
@@ -45,30 +52,33 @@
             "executor": {
                 "name": "AttributeCollector"
             },
-            "next": [
-                "sms_otp_auth"
-            ]
+            "onSuccess": "sms_otp_auth"
         },
         {
             "id": "prompt_mobile",
-            "type": "PROMPT_ONLY",
-            "inputData": [
+            "type": "PROMPT",
+            "inputs": [
                 {
-                    "name": "mobileNumber",
+                    "ref": "input_004",
+                    "identifier": "mobileNumber",
                     "type": "string",
                     "required": true
                 }
             ],
-            "next": [
-                "sms_otp_auth"
+            "actions": [
+                {
+                    "ref": "action_mobile",
+                    "nextNode": "sms_otp_auth"
+                }
             ]
         },
         {
             "id": "sms_otp_auth",
             "type": "TASK_EXECUTION",
-            "inputData": [
+            "inputs": [
                 {
-                    "name": "otp",
+                    "ref": "input_005",
+                    "identifier": "otp",
                     "type": "number",
                     "required": true
                 }
@@ -79,9 +89,7 @@
             "executor": {
                 "name": "SMSOTPAuthExecutor"
             },
-            "next": [
-                "authenticated"
-            ]
+            "onSuccess": "authenticated"
         },
         {
             "id": "authenticated",

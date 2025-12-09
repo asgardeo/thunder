@@ -4,12 +4,24 @@
     "nodes": [
         {
             "id": "choose_auth",
-            "type": "DECISION",
-            "next": [
-                "basic_auth",
-                "google_auth",
-                "github_auth",
-                "prompt_mobile"
+            "type": "PROMPT",
+            "actions": [
+                {
+                    "ref": "action_001",
+                    "nextNode": "basic_auth"
+                },
+                {
+                    "ref": "action_002",
+                    "nextNode": "google_auth"
+                },
+                {
+                    "ref": "action_003",
+                    "nextNode": "github_auth"
+                },
+                {
+                    "ref": "action_004",
+                    "nextNode": "prompt_mobile"
+                }
             ]
         },
         {
@@ -18,17 +30,22 @@
             "executor": {
                 "name": "BasicAuthExecutor"
             },
-            "next": [
-                "sms_otp_auth"
-            ]
+            "onSuccess": "sms_otp_auth"
         },
         {
             "id": "google_auth",
             "type": "TASK_EXECUTION",
-            "inputData": [
+            "inputs": [
                 {
-                    "name": "nonce",
-                    "type": "string",
+                    "ref": "input_001",
+                    "identifier": "code",
+                    "type": "TEXT_INPUT",
+                    "required": true
+                },
+                {
+                    "ref": "input_002",
+                    "identifier": "nonce",
+                    "type": "TEXT_INPUT",
                     "required": false
                 }
             ],
@@ -38,9 +55,7 @@
             "executor": {
                 "name": "GoogleOIDCAuthExecutor"
             },
-            "next": [
-                "authenticated"
-            ]
+            "onSuccess": "authenticated"
         },
         {
             "id": "github_auth",
@@ -48,25 +63,35 @@
             "properties": {
                 "idpId": "<github-idp-id>"
             },
-            "executor": {
-                "name": "GithubOAuthExecutor"
-            },
-            "next": [
-                "authenticated"
-            ]
-        },
-        {
-            "id": "prompt_mobile",
-            "type": "PROMPT_ONLY",
-            "inputData": [
+            "inputs": [
                 {
-                    "name": "mobileNumber",
-                    "type": "string",
+                    "ref": "input_003",
+                    "identifier": "code",
+                    "type": "TEXT_INPUT",
                     "required": true
                 }
             ],
-            "next": [
-                "sms_otp_auth"
+            "executor": {
+                "name": "GithubOAuthExecutor"
+            },
+            "onSuccess": "authenticated"
+        },
+        {
+            "id": "prompt_mobile",
+            "type": "PROMPT",
+            "inputs": [
+                {
+                    "ref": "input_004",
+                    "identifier": "mobileNumber",
+                    "type": "TEXT_INPUT",
+                    "required": true
+                }
+            ],
+            "actions": [
+                {
+                    "ref": "action_001",
+                    "nextNode": "sms_otp_auth"
+                }
             ]
         },
         {
@@ -78,26 +103,23 @@
             "executor": {
                 "name": "SMSOTPAuthExecutor"
             },
-            "next": [
-                "attr_collector"
-            ]
+            "onSuccess": "attr_collector"
         },
         {
             "id": "attr_collector",
             "type": "TASK_EXECUTION",
-            "inputData": [
+            "inputs": [
                 {
-                    "name": "mobileNumber",
-                    "type": "string",
+                    "ref": "input_005",
+                    "identifier": "mobileNumber",
+                    "type": "TEXT_INPUT",
                     "required": false
                 }
             ],
             "executor": {
                 "name": "AttributeCollector"
             },
-            "next": [
-                "authenticated"
-            ]
+            "onSuccess": "authenticated"
         },
         {
             "id": "authenticated",

@@ -30,15 +30,15 @@ import (
 
 // EngineContext holds the overall context used by the flow engine during execution.
 type EngineContext struct {
-	FlowID        string
-	FlowType      common.FlowType
-	AppID         string
-	UserInputData map[string]string
-	RuntimeData   map[string]string
+	FlowID      string
+	FlowType    common.FlowType
+	AppID       string
+	UserInputs  map[string]string
+	RuntimeData map[string]string
 
 	CurrentNode         core.NodeInterface
 	CurrentNodeResponse *common.NodeResponse
-	CurrentActionID     string
+	CurrentAction       string
 
 	Graph       core.GraphInterface
 	Application appmodel.Application
@@ -60,10 +60,10 @@ type FlowStep struct {
 
 // FlowData holds the data returned by a flow execution step
 type FlowData struct {
-	Inputs         []common.InputData `json:"inputs,omitempty"`
-	RedirectURL    string             `json:"redirectURL,omitempty"`
-	Actions        []common.Action    `json:"actions,omitempty"`
-	AdditionalData map[string]string  `json:"additionalData,omitempty"`
+	Inputs         []common.Input    `json:"inputs,omitempty"`
+	RedirectURL    string            `json:"redirectURL,omitempty"`
+	Actions        []common.Action   `json:"actions,omitempty"`
+	AdditionalData map[string]string `json:"additionalData,omitempty"`
 }
 
 // FlowResponse represents the flow execution API response body
@@ -82,7 +82,7 @@ type FlowRequest struct {
 	ApplicationID string            `json:"applicationId"`
 	FlowType      string            `json:"flowType"`
 	FlowID        string            `json:"flowId"`
-	ActionID      string            `json:"actionId"`
+	Action        string            `json:"action"`
 	Inputs        map[string]string `json:"inputs"`
 }
 
@@ -98,7 +98,7 @@ type FlowContextWithUserDataDB struct {
 	FlowID             string
 	AppID              string
 	CurrentNodeID      *string
-	CurrentActionID    *string
+	CurrentAction      *string
 	GraphID            string
 	RuntimeData        *string
 	IsAuthenticated    bool
@@ -114,14 +114,14 @@ type FlowContextWithUserDataDB struct {
 
 // ToEngineContext converts the database model to the flow engine context.
 func (f *FlowContextWithUserDataDB) ToEngineContext(graph core.GraphInterface) (EngineContext, error) {
-	// Parse user input data
-	var userInputData map[string]string
+	// Parse user inputs
+	var userInputs map[string]string
 	if f.UserInputs != nil {
-		if err := json.Unmarshal([]byte(*f.UserInputs), &userInputData); err != nil {
+		if err := json.Unmarshal([]byte(*f.UserInputs), &userInputs); err != nil {
 			return EngineContext{}, err
 		}
 	} else {
-		userInputData = make(map[string]string)
+		userInputs = make(map[string]string)
 	}
 
 	// Parse runtime data
@@ -178,20 +178,20 @@ func (f *FlowContextWithUserDataDB) ToEngineContext(graph core.GraphInterface) (
 		}
 	}
 
-	// Get current action ID
-	currentActionID := ""
-	if f.CurrentActionID != nil {
-		currentActionID = *f.CurrentActionID
+	// Get current action
+	currentAction := ""
+	if f.CurrentAction != nil {
+		currentAction = *f.CurrentAction
 	}
 
 	return EngineContext{
 		FlowID:            f.FlowID,
 		FlowType:          graph.GetType(),
 		AppID:             f.AppID,
-		UserInputData:     userInputData,
+		UserInputs:        userInputs,
 		RuntimeData:       runtimeData,
 		CurrentNode:       currentNode,
-		CurrentActionID:   currentActionID,
+		CurrentAction:     currentAction,
 		Graph:             graph,
 		AuthenticatedUser: authenticatedUser,
 		ExecutionHistory:  executionHistory,
@@ -200,12 +200,12 @@ func (f *FlowContextWithUserDataDB) ToEngineContext(graph core.GraphInterface) (
 
 // FromEngineContext creates a database model from the flow engine context.
 func FromEngineContext(ctx EngineContext) (*FlowContextWithUserDataDB, error) {
-	// Serialize user input data
-	userInputDataJSON, err := json.Marshal(ctx.UserInputData)
+	// Serialize user inputs
+	userInputsJSON, err := json.Marshal(ctx.UserInputs)
 	if err != nil {
 		return nil, err
 	}
-	userInputData := string(userInputDataJSON)
+	userInputs := string(userInputsJSON)
 
 	// Serialize runtime data
 	runtimeDataJSON, err := json.Marshal(ctx.RuntimeData)
@@ -235,10 +235,10 @@ func FromEngineContext(ctx EngineContext) (*FlowContextWithUserDataDB, error) {
 		currentNodeID = &nodeID
 	}
 
-	// Get current action ID
-	var currentActionID *string
-	if ctx.CurrentActionID != "" {
-		currentActionID = &ctx.CurrentActionID
+	// Get current action
+	var currentAction *string
+	if ctx.CurrentAction != "" {
+		currentAction = &ctx.CurrentAction
 	}
 
 	// Get authenticated user ID
@@ -269,14 +269,14 @@ func FromEngineContext(ctx EngineContext) (*FlowContextWithUserDataDB, error) {
 		FlowID:             ctx.FlowID,
 		AppID:              ctx.AppID,
 		CurrentNodeID:      currentNodeID,
-		CurrentActionID:    currentActionID,
+		CurrentAction:      currentAction,
 		GraphID:            graphID,
 		RuntimeData:        &runtimeData,
 		IsAuthenticated:    ctx.AuthenticatedUser.IsAuthenticated,
 		UserID:             authenticatedUserID,
 		OrganizationUnitID: organizationUnitID,
 		UserType:           userType,
-		UserInputs:         &userInputData,
+		UserInputs:         &userInputs,
 		UserAttributes:     &userAttributes,
 		ExecutionHistory:   &executionHistory,
 	}, nil

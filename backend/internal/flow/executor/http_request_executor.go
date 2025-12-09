@@ -30,9 +30,8 @@ import (
 	"strings"
 	"time"
 
-	flowcm "github.com/asgardeo/thunder/internal/flow/common"
+	"github.com/asgardeo/thunder/internal/flow/common"
 	"github.com/asgardeo/thunder/internal/flow/core"
-	flowcore "github.com/asgardeo/thunder/internal/flow/core"
 	httpservice "github.com/asgardeo/thunder/internal/system/http"
 	"github.com/asgardeo/thunder/internal/system/log"
 )
@@ -75,21 +74,21 @@ type errorHandlingConfig struct {
 
 // httpRequestExecutor implements the ExecutorInterface for making HTTP requests to external endpoints.
 type httpRequestExecutor struct {
-	flowcore.ExecutorInterface
+	core.ExecutorInterface
 	logger *log.Logger
 }
 
-var _ flowcore.ExecutorInterface = (*httpRequestExecutor)(nil)
+var _ core.ExecutorInterface = (*httpRequestExecutor)(nil)
 
 // newHTTPRequestExecutor creates a new instance of HTTPRequestExecutor.
 func newHTTPRequestExecutor(
-	flowFactory flowcore.FlowFactoryInterface,
+	flowFactory core.FlowFactoryInterface,
 ) *httpRequestExecutor {
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, httpRequestLoggerComponentName),
 		log.String(log.LoggerKeyExecutorName, ExecutorNameHTTPRequest))
 
-	base := flowFactory.CreateExecutor(ExecutorNameHTTPRequest, flowcm.ExecutorTypeUtility,
-		[]flowcm.InputData{}, []flowcm.InputData{})
+	base := flowFactory.CreateExecutor(ExecutorNameHTTPRequest, common.ExecutorTypeUtility,
+		[]common.Input{}, []common.Input{})
 
 	return &httpRequestExecutor{
 		ExecutorInterface: base,
@@ -98,11 +97,11 @@ func newHTTPRequestExecutor(
 }
 
 // Execute executes the HTTP request logic.
-func (h *httpRequestExecutor) Execute(ctx *flowcore.NodeContext) (*flowcm.ExecutorResponse, error) {
+func (h *httpRequestExecutor) Execute(ctx *core.NodeContext) (*common.ExecutorResponse, error) {
 	logger := h.logger.With(log.String(log.LoggerKeyFlowID, ctx.FlowID))
 	logger.Debug("Executing HTTP request executor")
 
-	execResp := &flowcm.ExecutorResponse{
+	execResp := &common.ExecutorResponse{
 		AdditionalData: make(map[string]string),
 		RuntimeData:    make(map[string]string),
 	}
@@ -110,7 +109,7 @@ func (h *httpRequestExecutor) Execute(ctx *flowcore.NodeContext) (*flowcm.Execut
 	config, err := h.parseAndValidateConfig(ctx.NodeProperties)
 	if err != nil {
 		logger.Error("Failed to parse/validate HTTP request configuration", log.Error(err))
-		execResp.Status = flowcm.ExecFailure
+		execResp.Status = common.ExecFailure
 		execResp.FailureReason = "Configuration error: " + err.Error()
 		return execResp, nil
 	}
@@ -128,7 +127,7 @@ func (h *httpRequestExecutor) Execute(ctx *flowcore.NodeContext) (*flowcm.Execut
 		return h.handleRequestError(execResp, config, err.Error(), logger), nil
 	}
 
-	execResp.Status = flowcm.ExecComplete
+	execResp.Status = common.ExecComplete
 	logger.Debug("HTTP request executor execution completed", log.String("status", string(execResp.Status)))
 
 	return execResp, nil
@@ -280,7 +279,7 @@ func (h *httpRequestExecutor) parseErrorHandling(config *httpRequestConfig, prop
 }
 
 // resolvePlaceholders resolves placeholders in the configuration using context data.
-func (h *httpRequestExecutor) resolvePlaceholders(ctx *flowcore.NodeContext, config *httpRequestConfig) {
+func (h *httpRequestExecutor) resolvePlaceholders(ctx *core.NodeContext, config *httpRequestConfig) {
 	config.URL = core.ResolvePlaceholder(ctx, config.URL)
 
 	// Resolve headers
@@ -293,7 +292,7 @@ func (h *httpRequestExecutor) resolvePlaceholders(ctx *flowcore.NodeContext, con
 }
 
 // resolveMapPlaceholders recursively resolves placeholders in a map or slice.
-func (h *httpRequestExecutor) resolveMapPlaceholders(ctx *flowcore.NodeContext, data interface{}) interface{} {
+func (h *httpRequestExecutor) resolveMapPlaceholders(ctx *core.NodeContext, data interface{}) interface{} {
 	switch v := data.(type) {
 	case map[string]interface{}:
 		result := make(map[string]interface{})
@@ -315,7 +314,7 @@ func (h *httpRequestExecutor) resolveMapPlaceholders(ctx *flowcore.NodeContext, 
 }
 
 // executeRequestWithRetry executes the HTTP request with retry logic.
-func (h *httpRequestExecutor) executeRequestWithRetry(ctx *flowcore.NodeContext,
+func (h *httpRequestExecutor) executeRequestWithRetry(ctx *core.NodeContext,
 	config *httpRequestConfig) (*http.Response, error) {
 	logger := h.logger.With(log.String(log.LoggerKeyFlowID, ctx.FlowID))
 
@@ -350,7 +349,7 @@ func (h *httpRequestExecutor) executeRequestWithRetry(ctx *flowcore.NodeContext,
 }
 
 // executeRequest executes a single HTTP request.
-func (h *httpRequestExecutor) executeRequest(ctx *flowcore.NodeContext, config *httpRequestConfig,
+func (h *httpRequestExecutor) executeRequest(ctx *core.NodeContext, config *httpRequestConfig,
 	httpClient httpservice.HTTPClientInterface) (*http.Response, error) {
 	logger := h.logger.With(log.String(log.LoggerKeyFlowID, ctx.FlowID))
 
@@ -392,8 +391,8 @@ func (h *httpRequestExecutor) executeRequest(ctx *flowcore.NodeContext, config *
 }
 
 // processResponse processes the HTTP response and extracts data based on response mapping.
-func (h *httpRequestExecutor) processResponse(ctx *flowcore.NodeContext, config *httpRequestConfig,
-	response *http.Response, execResp *flowcm.ExecutorResponse) error {
+func (h *httpRequestExecutor) processResponse(ctx *core.NodeContext, config *httpRequestConfig,
+	response *http.Response, execResp *common.ExecutorResponse) error {
 	logger := h.logger.With(log.String(log.LoggerKeyFlowID, ctx.FlowID))
 	defer func() {
 		if err := response.Body.Close(); err != nil {
@@ -471,8 +470,8 @@ func (h *httpRequestExecutor) extractValueFromPath(data map[string]interface{}, 
 
 // handleRequestError handles HTTP request errors and sets the appropriate response status based on the
 // failOnError configuration.
-func (h *httpRequestExecutor) handleRequestError(execResp *flowcm.ExecutorResponse, config *httpRequestConfig,
-	errorMessage string, logger *log.Logger) *flowcm.ExecutorResponse {
+func (h *httpRequestExecutor) handleRequestError(execResp *common.ExecutorResponse, config *httpRequestConfig,
+	errorMessage string, logger *log.Logger) *common.ExecutorResponse {
 	failOnError := false
 	if config != nil && config.ErrorHandling != nil {
 		failOnError = config.ErrorHandling.FailOnError
@@ -480,11 +479,11 @@ func (h *httpRequestExecutor) handleRequestError(execResp *flowcm.ExecutorRespon
 
 	if failOnError {
 		logger.Debug("Failing execution due to HTTP request error")
-		execResp.Status = flowcm.ExecFailure
+		execResp.Status = common.ExecFailure
 		execResp.FailureReason = errorMessage
 	} else {
 		logger.Debug("Continuing execution despite HTTP request error", log.String("error", errorMessage))
-		execResp.Status = flowcm.ExecComplete
+		execResp.Status = common.ExecComplete
 	}
 
 	return execResp

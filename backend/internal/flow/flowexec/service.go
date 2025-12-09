@@ -34,7 +34,7 @@ import (
 // FlowExecServiceInterface defines the interface for flow orchestration and acts as the
 // entry point for flow execution
 type FlowExecServiceInterface interface {
-	Execute(appID, flowID, actionID, flowType string, inputData map[string]string) (
+	Execute(appID, flowID, action, flowType string, inputs map[string]string) (
 		*FlowStep, *serviceerror.ServiceError)
 	InitiateFlow(initContext *FlowInitContext) (string, *serviceerror.ServiceError)
 }
@@ -58,8 +58,9 @@ func newFlowExecService(flowMgtService flowmgt.FlowMgtServiceInterface,
 	}
 }
 
+// TODO: Move flowType to the beginning
 // Execute executes a flow with the given data
-func (s *flowExecService) Execute(appID, flowID, actionID, flowType string, inputData map[string]string) (
+func (s *flowExecService) Execute(appID, flowID, action, flowType string, inputs map[string]string) (
 	*FlowStep, *serviceerror.ServiceError) {
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, "FlowExecService"))
 
@@ -67,7 +68,7 @@ func (s *flowExecService) Execute(appID, flowID, actionID, flowType string, inpu
 	var loadErr *serviceerror.ServiceError
 
 	if isNewFlow(flowID) {
-		context, loadErr = s.loadNewContext(appID, actionID, flowType, inputData, logger)
+		context, loadErr = s.loadNewContext(appID, action, flowType, inputs, logger)
 		if loadErr != nil {
 			logger.Error("Failed to load new flow context",
 				log.String("appID", appID),
@@ -76,7 +77,7 @@ func (s *flowExecService) Execute(appID, flowID, actionID, flowType string, inpu
 			return nil, loadErr
 		}
 	} else {
-		context, loadErr = s.loadPrevContext(flowID, actionID, inputData, logger)
+		context, loadErr = s.loadPrevContext(flowID, action, inputs, logger)
 		if loadErr != nil {
 			logger.Error("Failed to load previous flow context",
 				log.String("flowID", flowID),
@@ -126,8 +127,8 @@ func (s *flowExecService) Execute(appID, flowID, actionID, flowType string, inpu
 }
 
 // initContext initializes a new flow context with the given details.
-func (s *flowExecService) loadNewContext(appID, actionID, flowTypeStr string,
-	inputData map[string]string, logger *log.Logger) (*EngineContext, *serviceerror.ServiceError) {
+func (s *flowExecService) loadNewContext(appID, action, flowTypeStr string,
+	inputs map[string]string, logger *log.Logger) (*EngineContext, *serviceerror.ServiceError) {
 	flowType, err := validateFlowType(flowTypeStr)
 	if err != nil {
 		return nil, err
@@ -138,7 +139,7 @@ func (s *flowExecService) loadNewContext(appID, actionID, flowTypeStr string,
 		return nil, err
 	}
 
-	prepareContext(ctx, actionID, inputData)
+	prepareContext(ctx, action, inputs)
 	return ctx, nil
 }
 
@@ -172,14 +173,14 @@ func (s *flowExecService) initContext(appID string, flowType common.FlowType,
 }
 
 // loadPrevContext retrieves the flow context from the store based on the given details.
-func (s *flowExecService) loadPrevContext(flowID, actionID string, inputData map[string]string,
+func (s *flowExecService) loadPrevContext(flowID, action string, inputs map[string]string,
 	logger *log.Logger) (*EngineContext, *serviceerror.ServiceError) {
 	ctx, err := s.loadContextFromStore(flowID, logger)
 	if err != nil {
 		return nil, err
 	}
 
-	prepareContext(ctx, actionID, inputData)
+	prepareContext(ctx, action, inputs)
 	return ctx, nil
 }
 
@@ -366,22 +367,22 @@ func isComplete(step FlowStep) bool {
 }
 
 // prepareContext prepares the flow context by merging any data.
-func prepareContext(ctx *EngineContext, actionID string, inputData map[string]string) {
-	// Append any input data present to the context
-	if len(inputData) > 0 {
-		ctx.UserInputData = sysutils.MergeStringMaps(ctx.UserInputData, inputData)
+func prepareContext(ctx *EngineContext, action string, inputs map[string]string) {
+	// Append any inputs present to the context
+	if len(inputs) > 0 {
+		ctx.UserInputs = sysutils.MergeStringMaps(ctx.UserInputs, inputs)
 	}
 
-	if ctx.UserInputData == nil {
-		ctx.UserInputData = make(map[string]string)
+	if ctx.UserInputs == nil {
+		ctx.UserInputs = make(map[string]string)
 	}
 	if ctx.RuntimeData == nil {
 		ctx.RuntimeData = make(map[string]string)
 	}
 
-	// Set the action ID if provided
-	if actionID != "" {
-		ctx.CurrentActionID = actionID
+	// Set the action if provided
+	if action != "" {
+		ctx.CurrentAction = action
 	}
 }
 

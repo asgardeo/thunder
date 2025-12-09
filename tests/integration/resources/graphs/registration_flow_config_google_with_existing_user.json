@@ -5,9 +5,7 @@
         {
             "id": "registration_start",
             "type": "REGISTRATION_START",
-            "next": [
-                "google_auth"
-            ]
+            "onSuccess": "google_auth"
         },
         {
             "id": "google_auth",
@@ -19,9 +17,7 @@
             "executor": {
                 "name": "GoogleOIDCAuthExecutor"
             },
-            "next": [
-                "provisioning"
-            ]
+            "onSuccess": "provisioning"
         },
         {
             "id": "provisioning",
@@ -29,9 +25,7 @@
             "executor": {
                 "name": "ProvisioningExecutor"
             },
-            "next": [
-                "authenticated"
-            ]
+            "onSuccess": "authenticated"
         },
         {
             "id": "authenticated",

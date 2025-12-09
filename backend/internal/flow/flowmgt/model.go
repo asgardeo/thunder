@@ -30,17 +30,26 @@ type nodeDefinition struct {
 	ID         string                 `json:"id"`
 	Type       string                 `json:"type"`
 	Properties map[string]interface{} `json:"properties,omitempty"`
-	InputData  []inputDefinition      `json:"inputData"`
+	Inputs     []inputDefinition      `json:"inputs"`
+	Actions    []actionDefinition     `json:"actions,omitempty"`
 	Executor   executorDefinition     `json:"executor"`
-	Next       []string               `json:"next,omitempty"`
+	OnSuccess  string                 `json:"onSuccess,omitempty"`
+	OnFailure  string                 `json:"onFailure,omitempty"`
 	Condition  *conditionDefinition   `json:"condition,omitempty"`
 }
 
 // inputDefinition represents an input parameter for a node
 type inputDefinition struct {
-	Name     string `json:"name"`
-	Type     string `json:"type"`
-	Required bool   `json:"required"`
+	Ref        string `json:"ref,omitempty"`
+	Identifier string `json:"identifier"`
+	Type       string `json:"type"`
+	Required   bool   `json:"required"`
+}
+
+// actionDefinition represents an action that can be triggered from a node
+type actionDefinition struct {
+	Ref      string `json:"ref"`
+	NextNode string `json:"nextNode"`
 }
 
 // executorDefinition represents the executor configuration for a node
@@ -50,7 +59,9 @@ type executorDefinition struct {
 
 // conditionDefinition represents a condition that must be met for a node to execute.
 // If specified, the node will only execute when the resolved value of Key matches Value.
+// OnSkip specifies which node to skip to if the condition is not met.
 type conditionDefinition struct {
-	Key   string `json:"key"`
-	Value string `json:"value"`
+	Key    string `json:"key"`
+	Value  string `json:"value"`
+	OnSkip string `json:"onSkip"`
 }

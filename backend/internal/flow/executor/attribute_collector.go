@@ -23,8 +23,8 @@ import (
 	"errors"
 	"fmt"
 
-	flowcm "github.com/asgardeo/thunder/internal/flow/common"
-	flowcore "github.com/asgardeo/thunder/internal/flow/core"
+	"github.com/asgardeo/thunder/internal/flow/common"
+	"github.com/asgardeo/thunder/internal/flow/core"
 	"github.com/asgardeo/thunder/internal/system/log"
 	"github.com/asgardeo/thunder/internal/user"
 )
@@ -38,30 +38,30 @@ const (
 
 // attributeCollector is an executor that collects user attributes and updates the user profile.
 type attributeCollector struct {
-	flowcore.ExecutorInterface
+	core.ExecutorInterface
 	userService user.UserServiceInterface
 	logger      *log.Logger
 }
 
-var _ flowcore.ExecutorInterface = (*attributeCollector)(nil)
+var _ core.ExecutorInterface = (*attributeCollector)(nil)
 
 // newAttributeCollector creates a new instance of AttributeCollector.
 func newAttributeCollector(
-	flowFactory flowcore.FlowFactoryInterface,
+	flowFactory core.FlowFactoryInterface,
 	userService user.UserServiceInterface,
 ) *attributeCollector {
-	prerequisites := []flowcm.InputData{
+	prerequisites := []common.Input{
 		{
-			Name:     "userID",
-			Type:     "string",
-			Required: true,
+			Identifier: "userID",
+			Type:       "string",
+			Required:   true,
 		},
 	}
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, attrCollectLoggerComponentName),
 		log.String(log.LoggerKeyExecutorName, ExecutorNameAttributeCollect))
 
-	base := flowFactory.CreateExecutor(ExecutorNameAttributeCollect, flowcm.ExecutorTypeUtility,
-		[]flowcm.InputData{}, prerequisites)
+	base := flowFactory.CreateExecutor(ExecutorNameAttributeCollect, common.ExecutorTypeUtility,
+		[]common.Input{}, prerequisites)
 
 	return &attributeCollector{
 		ExecutorInterface: base,
@@ -71,170 +71,160 @@ func newAttributeCollector(
 }
 
 // Execute executes the attribute collection logic.
-func (a *attributeCollector) Execute(ctx *flowcore.NodeContext) (*flowcm.ExecutorResponse, error) {
+func (a *attributeCollector) Execute(ctx *core.NodeContext) (*common.ExecutorResponse, error) {
 	logger := a.logger.With(log.String(log.LoggerKeyFlowID, ctx.FlowID))
 	logger.Debug("Executing attribute collect executor")
 
-	execResp := &flowcm.ExecutorResponse{
+	execResp := &common.ExecutorResponse{
 		AdditionalData: make(map[string]string),
 		RuntimeData:    make(map[string]string),
 	}
 
-	if ctx.FlowType == flowcm.FlowTypeRegistration {
+	if ctx.FlowType == common.FlowTypeRegistration {
 		logger.Debug("Flow type is registration, skipping attribute collection")
-		execResp.Status = flowcm.ExecComplete
+		execResp.Status = common.ExecComplete
 		return execResp, nil
 	}
 
 	if !ctx.AuthenticatedUser.IsAuthenticated {
 		logger.Debug("User is not authenticated, cannot collect attributes")
-		execResp.Status = flowcm.ExecFailure
+		execResp.Status = common.ExecFailure
 		execResp.FailureReason = failureReasonUserNotAuthenticated
 		return execResp, nil
 	}
 
 	if !a.ValidatePrerequisites(ctx, execResp) {
 		logger.Debug("Prerequisites validation failed for attribute collector")
-		execResp.Status = flowcm.ExecFailure
+		execResp.Status = common.ExecFailure
 		execResp.FailureReason = "Prerequisites validation failed for attribute collector"
 		return execResp, nil
 	}
 
-	if a.CheckInputData(ctx, execResp) {
-		if execResp.Status == flowcm.ExecFailure {
-			return execResp, nil
-		}
-
-		logger.Debug("Required input data for attribute collector is not provided")
-		execResp.Status = flowcm.ExecUserInputRequired
-		return execResp, nil
-	}
-	if execResp.Status == flowcm.ExecComplete {
-		logger.Debug("Attribute collection is complete, no further action required")
+	if !a.HasRequiredInputs(ctx, execResp) {
+		logger.Debug("Required inputs for attribute collector is not provided")
+		execResp.Status = common.ExecUserInputRequired
 		return execResp, nil
 	}
 
 	if err := a.updateUserInStore(ctx); err != nil {
 		logger.Error("Failed to update user attributes", log.Error(err))
-		execResp.Status = flowcm.ExecFailure
+		execResp.Status = common.ExecFailure
 		execResp.FailureReason = "Failed to update user attributes"
 		return execResp, nil
 	}
 
 	logger.Debug("User attributes updated successfully")
-	execResp.Status = flowcm.ExecComplete
+	execResp.Status = common.ExecComplete
 	return execResp, nil
 }
 
-// CheckInputData checks if the required input data is provided in the context.
-// If not present, it tries to retrieve user attributes from the user profile.
-// If the attributes are not found, it adds the required data to the executor response.
-func (a *attributeCollector) CheckInputData(ctx *flowcore.NodeContext, execResp *flowcm.ExecutorResponse) bool {
+// HasRequiredInputs checks if the required inputs are provided in the context and appends any
+// missing inputs to the executor response. Returns true if required inputs are found, otherwise false.
+func (a *attributeCollector) HasRequiredInputs(ctx *core.NodeContext,
+	execResp *common.ExecutorResponse) bool {
 	logger := a.logger.With(log.String(log.LoggerKeyFlowID, ctx.FlowID))
-	logger.Debug("Checking input data for the attribute collector")
+	logger.Debug("Checking inputs for the attribute collector")
 
-	inputRequired := a.ExecutorInterface.CheckInputData(ctx, execResp)
-	if !inputRequired {
-		return false
+	if a.ExecutorInterface.HasRequiredInputs(ctx, execResp) {
+		return true
 	}
-	if len(execResp.RequiredData) == 0 {
-		return false
+	if len(execResp.Inputs) == 0 {
+		return true
 	}
 
-	// Update the executor response with the required data retrieved from authenticated user attributes.
+	// Update the executor response with the required inputs retrieved from authenticated user attributes.
 	authnUserAttrs := ctx.AuthenticatedUser.Attributes
 	if len(authnUserAttrs) > 0 {
-		logger.Debug("Authenticated user attributes found, updating executor response required data")
+		logger.Debug("Authenticated user attributes found, updating executor response required inputs")
 
 		// Clear the required data in the executor response to avoid duplicates.
-		missingAttributes := execResp.RequiredData
-		execResp.RequiredData = make([]flowcm.InputData, 0)
+		missingAttributes := execResp.Inputs
+		execResp.Inputs = make([]common.Input, 0)
 		if execResp.RuntimeData == nil {
 			execResp.RuntimeData = make(map[string]string)
 		}
 
-		for _, inputData := range missingAttributes {
-			attribute, exists := authnUserAttrs[inputData.Name]
+		for _, input := range missingAttributes {
+			attribute, exists := authnUserAttrs[input.Identifier]
 			if exists {
 				// If the attribute is a password, do not retrieve it from the profile.
-				if inputData.Name == userAttributePassword {
+				if input.Identifier == userAttributePassword {
 					continue
 				}
 
 				attributeStr, ok := attribute.(string)
 				if ok {
-					logger.Debug("Attribute exists in authenticated user attributes, adding to runtime data",
-						log.String("attributeName", inputData.Name))
-					execResp.RuntimeData[inputData.Name] = attributeStr
+					logger.Debug("Input exists in authenticated user attributes, adding to runtime data",
+						log.String("attributeName", input.Identifier))
+					execResp.RuntimeData[input.Identifier] = attributeStr
 				}
 			} else {
-				logger.Debug("Attribute does not exist in authenticated user attributes, adding to required data",
-					log.String("attributeName", inputData.Name))
-				execResp.RequiredData = append(execResp.RequiredData, inputData)
+				logger.Debug("Input does not exist in authenticated user attributes, adding to required inputs",
+					log.String("attributeName", input.Identifier))
+				execResp.Inputs = append(execResp.Inputs, input)
 			}
 		}
 
-		if len(execResp.RequiredData) == 0 {
-			logger.Debug("All required attributes are available in authenticated user attributes, " +
+		if len(execResp.Inputs) == 0 {
+			logger.Debug("All required inputs are available in authenticated user attributes, " +
 				"no further action needed")
-			return false
+			return true
 		}
 	}
 
-	// Update the executor response with the required data by checking the user profile.
+	// Update the executor response with the required inputs by checking the user profile.
 	userAttributes, err := a.getUserAttributes(ctx)
 	if err != nil {
+		// Silently log the error and proceed with prompting for required inputs.
 		logger.Error("Failed to retrieve user attributes", log.Error(err))
-		execResp.Status = flowcm.ExecFailure
-		execResp.FailureReason = "Failed to retrieve user attributes from user profile"
-		return true
+		return false
 	}
 	if userAttributes == nil {
-		logger.Debug("No user attributes found in the user profile, proceeding with required data")
-		return true
+		logger.Debug("No user attributes found in the user profile, proceeding with required inputs")
+		return false
 	}
 
-	// Clear the required data in the executor response to avoid duplicates.
-	missingAttributes := execResp.RequiredData
-	execResp.RequiredData = make([]flowcm.InputData, 0)
+	// Clear the required inputs in the executor response to avoid duplicates.
+	missingInputs := execResp.Inputs
+	execResp.Inputs = make([]common.Input, 0)
 	if execResp.RuntimeData == nil {
 		execResp.RuntimeData = make(map[string]string)
 	}
 
-	for _, inputData := range missingAttributes {
-		attribute, exists := userAttributes[inputData.Name]
+	for _, input := range missingInputs {
+		attribute, exists := userAttributes[input.Identifier]
 		if exists {
 			// If the attribute is a password, do not retrieve it from the profile.
-			if inputData.Name == userAttributePassword {
+			if input.Identifier == userAttributePassword {
 				continue
 			}
-			logger.Debug("Attribute exists in user profile, adding to runtime data",
-				log.String("attributeName", inputData.Name))
+			logger.Debug("Input exists in user profile, adding to runtime data",
+				log.String("attributeName", input.Identifier))
 
 			// TODO: This conversion should be modified according to the storage mechanism of the
 			//  user store implementation.
 			if strVal, ok := attribute.(string); ok {
-				execResp.RuntimeData[inputData.Name] = strVal
+				execResp.RuntimeData[input.Identifier] = strVal
 			} else {
-				execResp.RuntimeData[inputData.Name] = fmt.Sprintf("%v", attribute)
+				execResp.RuntimeData[input.Identifier] = fmt.Sprintf("%v", attribute)
 			}
 		} else {
-			logger.Debug("Attribute does not exist in user profile, adding to required data",
-				log.String("attributeName", inputData.Name))
-			execResp.RequiredData = append(execResp.RequiredData, inputData)
+			logger.Debug("Input does not exist in user profile, adding to required inputs",
+				log.String("attributeName", input.Identifier))
+			execResp.Inputs = append(execResp.Inputs, input)
 		}
 	}
 
-	if len(execResp.RequiredData) == 0 {
-		logger.Debug("All required attributes are available in the user profile, no further action needed")
-		return false
+	if len(execResp.Inputs) == 0 {
+		logger.Debug("All required inputs are available in the user profile, no further action needed")
+		return true
 	}
 
-	return true
+	return false
 }
 
 // getUserAttributes retrieves the user attributes from the user profile.
-func (a *attributeCollector) getUserAttributes(ctx *flowcore.NodeContext) (map[string]interface{}, error) {
+func (a *attributeCollector) getUserAttributes(ctx *core.NodeContext) (map[string]interface{}, error) {
 	logger := a.logger.With(log.String(log.LoggerKeyFlowID, ctx.FlowID))
 	logger.Debug("Retrieving user attributes from the user profile")
 
@@ -261,7 +251,7 @@ func (a *attributeCollector) getUserAttributes(ctx *flowcore.NodeContext) (map[s
 }
 
 // updateUserInStore updates the user profile with the collected attributes.
-func (a *attributeCollector) updateUserInStore(ctx *flowcore.NodeContext) error {
+func (a *attributeCollector) updateUserInStore(ctx *core.NodeContext) error {
 	logger := a.logger.With(log.String(log.LoggerKeyFlowID, ctx.FlowID))
 	logger.Debug("Updating user attributes")
 
@@ -295,7 +285,7 @@ func (a *attributeCollector) updateUserInStore(ctx *flowcore.NodeContext) error 
 }
 
 // getUserFromStore retrieves the user profile from the user store.
-func (a *attributeCollector) getUserFromStore(ctx *flowcore.NodeContext) (*user.User, error) {
+func (a *attributeCollector) getUserFromStore(ctx *core.NodeContext) (*user.User, error) {
 	userID := a.GetUserIDFromContext(ctx)
 	if userID == "" {
 		return nil, errors.New("user ID is not available in the context")
@@ -310,7 +300,7 @@ func (a *attributeCollector) getUserFromStore(ctx *flowcore.NodeContext) (*user.
 }
 
 // getUpdatedUserObject creates a new user object with the updated attributes.
-func (a *attributeCollector) getUpdatedUserObject(ctx *flowcore.NodeContext,
+func (a *attributeCollector) getUpdatedUserObject(ctx *core.NodeContext,
 	userData *user.User) (bool, *user.User, error) {
 	logger := a.logger.With(log.String(log.LoggerKeyFlowID, ctx.FlowID))
 
@@ -356,47 +346,47 @@ func (a *attributeCollector) getUpdatedUserObject(ctx *flowcore.NodeContext,
 }
 
 // getInputAttributes retrieves the input attributes from the context.
-func (a *attributeCollector) getInputAttributes(ctx *flowcore.NodeContext) map[string]interface{} {
+func (a *attributeCollector) getInputAttributes(ctx *core.NodeContext) map[string]interface{} {
 	attributesMap := make(map[string]interface{})
-	requiredInputAttrs := a.getRequiredData(ctx)
+	requiredInputAttrs := a.getInputs(ctx)
 
 	for _, inputAttr := range requiredInputAttrs {
 		// Skip special attributes that shouldn't be stored/ updated in the user profile
-		if inputAttr.Name == userAttributeUserID {
+		if inputAttr.Identifier == userAttributeUserID {
 			continue
 		}
 
-		value, exists := ctx.UserInputData[inputAttr.Name]
+		value, exists := ctx.UserInputs[inputAttr.Identifier]
 		if exists {
-			attributesMap[inputAttr.Name] = value
-		} else if runtimeValue, exists := ctx.RuntimeData[inputAttr.Name]; exists {
-			attributesMap[inputAttr.Name] = runtimeValue
+			attributesMap[inputAttr.Identifier] = value
+		} else if runtimeValue, exists := ctx.RuntimeData[inputAttr.Identifier]; exists {
+			attributesMap[inputAttr.Identifier] = runtimeValue
 		}
 	}
 
 	return attributesMap
 }
 
-// getRequiredData returns the required input data for the AttributeCollector.
-func (a *attributeCollector) getRequiredData(ctx *flowcore.NodeContext) []flowcm.InputData {
-	executorReqData := a.GetDefaultExecutorInputs()
-	requiredData := ctx.NodeInputData
+// getInputs returns the required inputs for the AttributeCollector.
+func (a *attributeCollector) getInputs(ctx *core.NodeContext) []common.Input {
+	executorReqData := a.GetDefaultInputs()
+	requiredData := ctx.NodeInputs
 
 	if len(requiredData) == 0 {
 		requiredData = executorReqData
 	} else {
 		// Append the default required data if not already present.
-		for _, inputData := range executorReqData {
+		for _, input := range executorReqData {
 			exists := false
-			for _, existingInputData := range requiredData {
-				if existingInputData.Name == inputData.Name {
+			for _, existingInput := range requiredData {
+				if existingInput.Identifier == input.Identifier {
 					exists = true
 					break
 				}
 			}
-			// If the input data already exists, skip adding it again.
+			// If the inputs already exists, skip adding it again.
 			if !exists {
-				requiredData = append(requiredData, inputData)
+				requiredData = append(requiredData, input)
 			}
 		}
 	}

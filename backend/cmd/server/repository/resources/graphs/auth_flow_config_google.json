@@ -8,12 +8,18 @@
             "properties": {
                 "idpId": "<google-idp-id>"
             },
+            "inputs": [
+                {
+                    "ref": "input_001",
+                    "identifier": "code",
+                    "type": "TEXT_INPUT",
+                    "required": true
+                }
+            ],
             "executor": {
                 "name": "GoogleOIDCAuthExecutor"
             },
-            "next": [
-                "authenticated"
-            ]
+            "onSuccess": "authenticated"
         },
         {
             "id": "authenticated",

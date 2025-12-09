@@ -22,8 +22,8 @@ import (
 	"encoding/json"
 
 	authzsvc "github.com/asgardeo/thunder/internal/authz"
-	flowcm "github.com/asgardeo/thunder/internal/flow/common"
-	flowcore "github.com/asgardeo/thunder/internal/flow/core"
+	"github.com/asgardeo/thunder/internal/flow/common"
+	"github.com/asgardeo/thunder/internal/flow/core"
 	"github.com/asgardeo/thunder/internal/system/log"
 	"github.com/asgardeo/thunder/internal/system/utils"
 )
@@ -37,23 +37,23 @@ const (
 // authorizationExecutor implements the ExecutorInterface for performing authorization checks
 // during flow execution. It enriches the flow context with authorized permissions.
 type authorizationExecutor struct {
-	flowcore.ExecutorInterface
+	core.ExecutorInterface
 	authzService authzsvc.AuthorizationServiceInterface
 	logger       *log.Logger
 }
 
-var _ flowcore.ExecutorInterface = (*authorizationExecutor)(nil)
+var _ core.ExecutorInterface = (*authorizationExecutor)(nil)
 
 // newAuthorizationExecutor creates a new instance of AuthorizationExecutor.
 func newAuthorizationExecutor(
-	flowFactory flowcore.FlowFactoryInterface,
+	flowFactory core.FlowFactoryInterface,
 	authZService authzsvc.AuthorizationServiceInterface,
 ) *authorizationExecutor {
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, authzLoggerComponentName),
 		log.String(log.LoggerKeyExecutorName, ExecutorNameAuthorization))
 
-	base := flowFactory.CreateExecutor(ExecutorNameAuthorization, flowcm.ExecutorTypeUtility,
-		[]flowcm.InputData{}, []flowcm.InputData{})
+	base := flowFactory.CreateExecutor(ExecutorNameAuthorization, common.ExecutorTypeUtility,
+		[]common.Input{}, []common.Input{})
 
 	return &authorizationExecutor{
 		ExecutorInterface: base,
@@ -64,16 +64,16 @@ func newAuthorizationExecutor(
 
 // Execute executes the authorization logic by determining required permissions based on context,
 // calling the authorization service, and storing authorized permissions in runtime data.
-func (a *authorizationExecutor) Execute(ctx *flowcore.NodeContext) (*flowcm.ExecutorResponse, error) {
+func (a *authorizationExecutor) Execute(ctx *core.NodeContext) (*common.ExecutorResponse, error) {
 	logger := a.logger.With(log.String(log.LoggerKeyFlowID, ctx.FlowID))
 	logger.Debug("Executing authorization executor")
 
-	execResp := &flowcm.ExecutorResponse{
+	execResp := &common.ExecutorResponse{
 		RuntimeData: make(map[string]string),
 	}
 
 	if !ctx.AuthenticatedUser.IsAuthenticated {
-		execResp.Status = flowcm.ExecFailure
+		execResp.Status = common.ExecFailure
 		execResp.FailureReason = failureReasonUserNotAuthenticated
 		return execResp, nil
 	}
@@ -83,7 +83,7 @@ func (a *authorizationExecutor) Execute(ctx *flowcore.NodeContext) (*flowcm.Exec
 
 	if len(requestedPerms) == 0 {
 		logger.Debug("No permissions to check, returning empty permissions")
-		execResp.Status = flowcm.ExecComplete
+		execResp.Status = common.ExecComplete
 		return execResp, nil
 	}
 
@@ -108,7 +108,7 @@ func (a *authorizationExecutor) Execute(ctx *flowcore.NodeContext) (*flowcm.Exec
 	authzResp, svcErr := a.authzService.GetAuthorizedPermissions(authzReq)
 	if svcErr != nil {
 		logger.Error("Authorization service call failed", log.String("error", svcErr.Error))
-		execResp.Status = flowcm.ExecFailure
+		execResp.Status = common.ExecFailure
 		execResp.FailureReason = "Authorization validation failure"
 		return execResp, nil
 	}
@@ -117,27 +117,27 @@ func (a *authorizationExecutor) Execute(ctx *flowcore.NodeContext) (*flowcm.Exec
 	logger.Debug("Authorization completed successfully",
 		log.Int("authorizedCount", len(authzResp.AuthorizedPermissions)))
 
-	execResp.Status = flowcm.ExecComplete
+	execResp.Status = common.ExecComplete
 	return execResp, nil
 }
 
 // extractRequestedPermissions extracts requested permissions from the context.
-func extractRequestedPermissions(ctx *flowcore.NodeContext) []string {
+func extractRequestedPermissions(ctx *core.NodeContext) []string {
 	requestedPermissions := ctx.RuntimeData[requestedPermissionsKey]
 	if requestedPermissions != "" {
 		return utils.ParseStringArray(requestedPermissions, " ")
 	}
-	requestedPermissions = ctx.UserInputData[requestedPermissionsKey]
+	requestedPermissions = ctx.UserInputs[requestedPermissionsKey]
 	return utils.ParseStringArray(requestedPermissions, " ")
 }
 
 // setAuthorizedPermissions sets the authorized permissions in the executor response's runtime data.
-func setAuthorizedPermissions(execResp *flowcm.ExecutorResponse, authorizedPermissions []string) {
+func setAuthorizedPermissions(execResp *common.ExecutorResponse, authorizedPermissions []string) {
 	execResp.RuntimeData[authorizedPermissionsKey] = utils.StringifyStringArray(authorizedPermissions, " ")
 }
 
 // extractGroupIDs extracts group IDs from the authenticated user's attributes or runtime data.
-func (a *authorizationExecutor) extractGroupIDs(ctx *flowcore.NodeContext) []string {
+func (a *authorizationExecutor) extractGroupIDs(ctx *core.NodeContext) []string {
 	// Try to get groups from authenticated user attributes
 	if groupsAttr, ok := ctx.AuthenticatedUser.Attributes[userAttributeGroups]; ok {
 		// Handle different group attribute formats

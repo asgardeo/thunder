@@ -11,9 +11,7 @@
             "executor": {
                 "name": "GithubOAuthExecutor"
             },
-            "next": [
-                "authenticated"
-            ]
+            "onSuccess": "authenticated"
         },
         {
             "id": "authenticated",

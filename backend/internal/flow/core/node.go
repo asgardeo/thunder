@@ -36,14 +36,14 @@ type NodeInterface interface {
 	SetAsFinalNode()
 	GetNextNodeList() []string
 	SetNextNodeList(nextNodeIDList []string)
-	AddNextNodeID(nextNodeID string)
-	RemoveNextNodeID(nextNodeID string)
+	AddNextNode(nextNodeID string)
+	RemoveNextNode(nextNodeID string)
 	GetPreviousNodeList() []string
 	SetPreviousNodeList(previousNodeIDList []string)
-	AddPreviousNodeID(previousNodeID string)
-	RemovePreviousNodeID(previousNodeID string)
-	GetInputData() []common.InputData
-	SetInputData(inputData []common.InputData)
+	AddPreviousNode(previousNodeID string)
+	RemovePreviousNode(previousNodeID string)
+	GetInputs() []common.Input
+	SetInputs(inputs []common.Input)
 	GetCondition() *NodeCondition
 	SetCondition(condition *NodeCondition)
 }
@@ -56,6 +56,17 @@ type ExecutorBackedNodeInterface interface {
 	SetExecutorName(name string)
 	GetExecutor() ExecutorInterface
 	SetExecutor(executor ExecutorInterface)
+	GetOnSuccess() string
+	SetOnSuccess(nodeID string)
+	GetOnFailure() string
+	SetOnFailure(nodeID string)
+}
+
+// PromptNodeInterface extends NodeInterface for nodes that require user interaction.
+type PromptNodeInterface interface {
+	NodeInterface
+	GetActions() []common.Action
+	SetActions(actions []common.Action)
 }
 
 // node implements the NodeInterface
@@ -67,7 +78,7 @@ type node struct {
 	isFinalNode      bool
 	nextNodeList     []string
 	previousNodeList []string
-	inputData        []common.InputData
+	inputs           []common.Input
 	condition        *NodeCondition
 }
 
@@ -82,11 +93,6 @@ func (n *node) Execute(ctx *NodeContext) (*common.NodeResponse, *serviceerror.Se
 // Returns true if no condition is set or if the condition is met.
 func (n *node) ShouldExecute(ctx *NodeContext) bool {
 	if n.condition == nil {
-		return true
-	}
-
-	// Decision nodes should always execute to evaluate their branches
-	if n._type == common.NodeTypeDecision {
 		return true
 	}
 
@@ -146,8 +152,8 @@ func (n *node) SetNextNodeList(nextNodeIDList []string) {
 	}
 }
 
-// AddNextNodeID adds a next node ID to the list
-func (n *node) AddNextNodeID(nextNodeID string) {
+// AddNextNode adds a next node ID to the list
+func (n *node) AddNextNode(nextNodeID string) {
 	if nextNodeID == "" {
 		return
 	}
@@ -163,8 +169,8 @@ func (n *node) AddNextNodeID(nextNodeID string) {
 	n.nextNodeList = append(n.nextNodeList, nextNodeID)
 }
 
-// RemoveNextNodeID removes a next node ID from the list
-func (n *node) RemoveNextNodeID(nextNodeID string) {
+// RemoveNextNode removes a next node ID from the list
+func (n *node) RemoveNextNode(nextNodeID string) {
 	if nextNodeID == "" || n.nextNodeList == nil {
 		return
 	}
@@ -194,8 +200,8 @@ func (n *node) SetPreviousNodeList(previousNodeIDList []string) {
 	}
 }
 
-// AddPreviousNodeID adds a previous node ID to the list
-func (n *node) AddPreviousNodeID(previousNodeID string) {
+// AddPreviousNode adds a previous node ID to the list
+func (n *node) AddPreviousNode(previousNodeID string) {
 	if previousNodeID == "" {
 		return
 	}
@@ -211,8 +217,8 @@ func (n *node) AddPreviousNodeID(previousNodeID string) {
 	n.previousNodeList = append(n.previousNodeList, previousNodeID)
 }
 
-// RemovePreviousNodeID removes a previous node ID from the list
-func (n *node) RemovePreviousNodeID(previousNodeID string) {
+// RemovePreviousNode removes a previous node ID from the list
+func (n *node) RemovePreviousNode(previousNodeID string) {
 	if previousNodeID == "" || n.previousNodeList == nil {
 		return
 	}
@@ -225,14 +231,14 @@ func (n *node) RemovePreviousNodeID(previousNodeID string) {
 	}
 }
 
-// GetInputData returns the input data for the node
-func (n *node) GetInputData() []common.InputData {
-	return n.inputData
+// GetInputs returns the inputs required for the node
+func (n *node) GetInputs() []common.Input {
+	return n.inputs
 }
 
-// SetInputData sets the input data for the node
-func (n *node) SetInputData(inputData []common.InputData) {
-	n.inputData = inputData
+// SetInputs sets the inputs required for the node
+func (n *node) SetInputs(inputs []common.Input) {
+	n.inputs = inputs
 }
 
 // GetCondition returns the execution condition for the node

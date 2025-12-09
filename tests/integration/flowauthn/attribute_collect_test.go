@@ -370,7 +370,7 @@ func (ts *AttributeCollectFlowTestSuite) TestInvalidCredentials() {
 		"Expected failure reason to indicate user not found")
 }
 
-func (ts *AttributeCollectFlowTestSuite) validateRequiredInputs(actualInputs []InputData,
+func (ts *AttributeCollectFlowTestSuite) validateRequiredInputs(actualInputs []Inputs,
 	expectedInputNames []string) {
 	// Use utility function for basic validation
 	ts.Require().True(ValidateRequiredInputs(actualInputs, expectedInputNames),
@@ -380,9 +380,9 @@ func (ts *AttributeCollectFlowTestSuite) validateRequiredInputs(actualInputs []I
 	ts.Require().Len(actualInputs, len(expectedInputNames),
 		"Expected %d inputs, got %d", len(expectedInputNames), len(actualInputs))
 
-	actualInputMap := make(map[string]InputData)
+	actualInputMap := make(map[string]Inputs)
 	for _, input := range actualInputs {
-		actualInputMap[input.Name] = input
+		actualInputMap[input.Identifier] = input
 	}
 
 	for _, expectedName := range expectedInputNames {

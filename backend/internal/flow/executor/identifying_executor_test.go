@@ -24,7 +24,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
 
-	flowcm "github.com/asgardeo/thunder/internal/flow/common"
+	"github.com/asgardeo/thunder/internal/flow/common"
 	"github.com/asgardeo/thunder/internal/system/error/serviceerror"
 	"github.com/asgardeo/thunder/internal/user"
 	"github.com/asgardeo/thunder/tests/mocks/flow/coremock"
@@ -46,12 +46,12 @@ func (suite *IdentifyingExecutorTestSuite) SetupTest() {
 	suite.mockUserService = usermock.NewUserServiceInterfaceMock(suite.T())
 	suite.mockFlowFactory = coremock.NewFlowFactoryInterfaceMock(suite.T())
 
-	mockExec := createMockExecutor(suite.T(), ExecutorNameIdentifying, flowcm.ExecutorTypeUtility)
-	suite.mockFlowFactory.On("CreateExecutor", ExecutorNameIdentifying, flowcm.ExecutorTypeUtility,
-		[]flowcm.InputData{}, []flowcm.InputData{}).Return(mockExec)
+	mockExec := createMockExecutor(suite.T(), ExecutorNameIdentifying, common.ExecutorTypeUtility)
+	suite.mockFlowFactory.On("CreateExecutor", ExecutorNameIdentifying, common.ExecutorTypeUtility,
+		[]common.Input{}, []common.Input{}).Return(mockExec)
 
-	suite.executor = newIdentifyingExecutor(ExecutorNameIdentifying, []flowcm.InputData{},
-		[]flowcm.InputData{}, suite.mockFlowFactory, suite.mockUserService)
+	suite.executor = newIdentifyingExecutor(ExecutorNameIdentifying, []common.Input{},
+		[]common.Input{}, suite.mockFlowFactory, suite.mockUserService)
 }
 
 func (suite *IdentifyingExecutorTestSuite) TestNewIdentifyingExecutor() {
@@ -61,7 +61,7 @@ func (suite *IdentifyingExecutorTestSuite) TestNewIdentifyingExecutor() {
 
 func (suite *IdentifyingExecutorTestSuite) TestIdentifyUser_Success() {
 	filters := map[string]interface{}{"username": "testuser"}
-	execResp := &flowcm.ExecutorResponse{
+	execResp := &common.ExecutorResponse{
 		RuntimeData: make(map[string]string),
 	}
 	userID := "user-123"
@@ -78,7 +78,7 @@ func (suite *IdentifyingExecutorTestSuite) TestIdentifyUser_Success() {
 
 func (suite *IdentifyingExecutorTestSuite) TestIdentifyUser_UserNotFound() {
 	filters := map[string]interface{}{"username": "nonexistent"}
-	execResp := &flowcm.ExecutorResponse{
+	execResp := &common.ExecutorResponse{
 		RuntimeData: make(map[string]string),
 	}
 
@@ -89,14 +89,14 @@ func (suite *IdentifyingExecutorTestSuite) TestIdentifyUser_UserNotFound() {
 
 	assert.NoError(suite.T(), err)
 	assert.Nil(suite.T(), result)
-	assert.Equal(suite.T(), flowcm.ExecFailure, execResp.Status)
+	assert.Equal(suite.T(), common.ExecFailure, execResp.Status)
 	assert.Equal(suite.T(), failureReasonUserNotFound, execResp.FailureReason)
 	suite.mockUserService.AssertExpectations(suite.T())
 }
 
 func (suite *IdentifyingExecutorTestSuite) TestIdentifyUser_ServiceError() {
 	filters := map[string]interface{}{"username": "testuser"}
-	execResp := &flowcm.ExecutorResponse{
+	execResp := &common.ExecutorResponse{
 		RuntimeData: make(map[string]string),
 	}
 
@@ -107,14 +107,14 @@ func (suite *IdentifyingExecutorTestSuite) TestIdentifyUser_ServiceError() {
 
 	assert.NoError(suite.T(), err)
 	assert.Nil(suite.T(), result)
-	assert.Equal(suite.T(), flowcm.ExecFailure, execResp.Status)
+	assert.Equal(suite.T(), common.ExecFailure, execResp.Status)
 	assert.Contains(suite.T(), execResp.FailureReason, "Failed to identify user")
 	suite.mockUserService.AssertExpectations(suite.T())
 }
 
 func (suite *IdentifyingExecutorTestSuite) TestIdentifyUser_EmptyUserID() {
 	filters := map[string]interface{}{"username": "testuser"}
-	execResp := &flowcm.ExecutorResponse{
+	execResp := &common.ExecutorResponse{
 		RuntimeData: make(map[string]string),
 	}
 	emptyID := ""
@@ -125,7 +125,7 @@ func (suite *IdentifyingExecutorTestSuite) TestIdentifyUser_EmptyUserID() {
 
 	assert.NoError(suite.T(), err)
 	assert.Nil(suite.T(), result)
-	assert.Equal(suite.T(), flowcm.ExecFailure, execResp.Status)
+	assert.Equal(suite.T(), common.ExecFailure, execResp.Status)
 	assert.Equal(suite.T(), failureReasonUserNotFound, execResp.FailureReason)
 	suite.mockUserService.AssertExpectations(suite.T())
 }
@@ -138,7 +138,7 @@ func (suite *IdentifyingExecutorTestSuite) TestIdentifyUser_FilterNonSearchableA
 		"nonce":    "nonce-value",
 		"otp":      "123456",
 	}
-	execResp := &flowcm.ExecutorResponse{
+	execResp := &common.ExecutorResponse{
 		RuntimeData: make(map[string]string),
 	}
 	userID := "user-123"
@@ -157,7 +157,7 @@ func (suite *IdentifyingExecutorTestSuite) TestIdentifyUser_FilterNonSearchableA
 
 func (suite *IdentifyingExecutorTestSuite) TestIdentifyUser_WithEmail() {
 	filters := map[string]interface{}{"email": "test@example.com"}
-	execResp := &flowcm.ExecutorResponse{
+	execResp := &common.ExecutorResponse{
 		RuntimeData: make(map[string]string),
 	}
 	userID := "user-456"
@@ -174,7 +174,7 @@ func (suite *IdentifyingExecutorTestSuite) TestIdentifyUser_WithEmail() {
 
 func (suite *IdentifyingExecutorTestSuite) TestIdentifyUser_WithMobileNumber() {
 	filters := map[string]interface{}{"mobileNumber": "+1234567890"}
-	execResp := &flowcm.ExecutorResponse{
+	execResp := &common.ExecutorResponse{
 		RuntimeData: make(map[string]string),
 	}
 	userID := "user-789"

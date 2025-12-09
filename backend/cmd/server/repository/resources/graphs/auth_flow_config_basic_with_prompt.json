@@ -4,34 +4,37 @@
     "nodes": [
         {
             "id": "prompt_username",
-            "type": "PROMPT_ONLY",
-            "inputData": [
+            "type": "PROMPT",
+            "inputs": [
                 {
-                    "name": "username",
-                    "type": "string",
+                    "ref": "input_001",
+                    "identifier": "username",
+                    "type": "TEXT_INPUT",
                     "required": true
                 }
             ],
-            "next": [
-                "basic_auth"
+            "actions": [
+                {
+                    "ref": "action_001",
+                    "nextNode": "basic_auth"
+                }
             ]
         },
         {
             "id": "basic_auth",
             "type": "TASK_EXECUTION",
-            "inputData": [
+            "inputs": [
                 {
-                    "name": "password",
-                    "type": "string",
+                    "ref": "input_002",
+                    "identifier": "password",
+                    "type": "PASSWORD_INPUT",
                     "required": true
                 }
             ],
             "executor": {
                 "name": "BasicAuthExecutor"
             },
-            "next": [
-                "authenticated"
-            ]
+            "onSuccess": "authenticated"
         },
         {
             "id": "authenticated",

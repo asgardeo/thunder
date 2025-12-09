@@ -5,14 +5,16 @@
         {
             "id": "basic_auth",
             "type": "TASK_EXECUTION",
-            "inputData": [
+            "inputs": [
                 {
-                    "name": "username",
+                    "ref": "input_001",
+                    "identifier": "username",
                     "type": "string",
                     "required": true
                 },
                 {
-                    "name": "password",
+                    "ref": "input_002",
+                    "identifier": "password",
                     "type": "string",
                     "required": true
                 }
@@ -20,31 +22,33 @@
             "executor": {
                 "name": "BasicAuthExecutor"
             },
-            "next": [
-                "attr_collector"
-            ]
+            "onSuccess": "attr_collector"
         },
         {
             "id": "attr_collector",
             "type": "TASK_EXECUTION",
-            "inputData": [
+            "inputs": [
                 {
-                    "name": "firstName",
+                    "ref": "input_003",
+                    "identifier": "firstName",
                     "type": "string",
                     "required": true
                 },
                 {
-                    "name": "lastName",
+                    "ref": "input_004",
+                    "identifier": "lastName",
                     "type": "string",
                     "required": true
                 },
                 {
-                    "name": "email",
+                    "ref": "input_005",
+                    "identifier": "email",
                     "type": "string",
                     "required": true
                 },
                 {
-                    "name": "mobileNumber",
+                    "ref": "input_006",
+                    "identifier": "mobileNumber",
                     "type": "string",
                     "required": false
                 }
@@ -52,9 +56,7 @@
             "executor": {
                 "name": "AttributeCollector"
             },
-            "next": [
-                "authenticated"
-            ]
+            "onSuccess": "authenticated"
         },
         {
             "id": "authenticated",

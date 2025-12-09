@@ -31,13 +31,16 @@ import (
 const testServerURL = "https://localhost:8095"
 
 // Helper function to initiate the authentication flow
-func initiateAuthFlow(appID string, inputs map[string]string) (*FlowStep, error) {
+func initiateAuthFlow(appID string, inputs map[string]string, action ...string) (*FlowStep, error) {
 	flowReqBody := map[string]interface{}{
 		"applicationId": appID,
 		"flowType":      "AUTHENTICATION",
 	}
 	if len(inputs) > 0 {
 		flowReqBody["inputs"] = inputs
+	}
+	if len(action) > 0 && action[0] != "" {
+		flowReqBody["action"] = action[0]
 	}
 
 	reqBody, err := json.Marshal(flowReqBody)
@@ -126,7 +129,7 @@ func completeAuthFlow(flowID string, actionID string, inputs map[string]string) 
 		"inputs": inputs,
 	}
 	if actionID != "" {
-		flowReqBody["actionId"] = actionID
+		flowReqBody["action"] = actionID
 	}
 
 	reqBody, err := json.Marshal(flowReqBody)
@@ -420,10 +423,10 @@ func RestoreAppConfig(appID string, originalConfig map[string]interface{}) error
 }
 
 // ValidateRequiredInputs validates that the expected input names are present in the flow data
-func ValidateRequiredInputs(actualInputs []InputData, expectedInputNames []string) bool {
+func ValidateRequiredInputs(actualInputs []Inputs, expectedInputNames []string) bool {
 	inputMap := make(map[string]bool)
 	for _, input := range actualInputs {
-		inputMap[input.Name] = true
+		inputMap[input.Identifier] = true
 	}
 
 	for _, expectedName := range expectedInputNames {
@@ -435,15 +438,15 @@ func ValidateRequiredInputs(actualInputs []InputData, expectedInputNames []strin
 	return true
 }
 
-// ValidateRequiredActions validates that the expected action IDs are present in the flow data
-func ValidateRequiredActions(actualActions []FlowAction, expectedActionIDs []string) bool {
+// ValidateRequiredActions validates that the expected action refs are present in the flow data
+func ValidateRequiredActions(actualActions []Action, expectedActionRefs []string) bool {
 	actionMap := make(map[string]bool)
 	for _, action := range actualActions {
-		actionMap[action.ID] = true
+		actionMap[action.Ref] = true
 	}
 
-	for _, expectedID := range expectedActionIDs {
-		if !actionMap[expectedID] {
+	for _, expectedRef := range expectedActionRefs {
+		if !actionMap[expectedRef] {
 			return false
 		}
 	}
@@ -452,9 +455,9 @@ func ValidateRequiredActions(actualActions []FlowAction, expectedActionIDs []str
 }
 
 // HasInput checks if a specific input is present in the flow data
-func HasInput(inputs []InputData, inputName string) bool {
+func HasInput(inputs []Inputs, inputName string) bool {
 	for _, input := range inputs {
-		if input.Name == inputName {
+		if input.Identifier == inputName {
 			return true
 		}
 	}
@@ -462,9 +465,9 @@ func HasInput(inputs []InputData, inputName string) bool {
 }
 
 // HasAction checks if a specific action is present in the flow data
-func HasAction(actions []FlowAction, actionID string) bool {
+func HasAction(actions []Action, actionRef string) bool {
 	for _, action := range actions {
-		if action.ID == actionID {
+		if action.Ref == actionRef {
 			return true
 		}
 	}

@@ -21,8 +21,8 @@ package executor
 import (
 	"github.com/asgardeo/thunder/internal/authn"
 	"github.com/asgardeo/thunder/internal/authz"
-	flowcm "github.com/asgardeo/thunder/internal/flow/common"
-	flowcore "github.com/asgardeo/thunder/internal/flow/core"
+	"github.com/asgardeo/thunder/internal/flow/common"
+	"github.com/asgardeo/thunder/internal/flow/core"
 	"github.com/asgardeo/thunder/internal/idp"
 	"github.com/asgardeo/thunder/internal/notification"
 	"github.com/asgardeo/thunder/internal/ou"
@@ -33,7 +33,7 @@ import (
 
 // Initialize registers available executors and returns the executor registry.
 func Initialize(
-	flowFactory flowcore.FlowFactoryInterface,
+	flowFactory core.FlowFactoryInterface,
 	userService user.UserServiceInterface,
 	ouService ou.OrganizationUnitServiceInterface,
 	idpService idp.IDPServiceInterface,
@@ -50,10 +50,10 @@ func Initialize(
 		flowFactory, userService, otpService))
 
 	reg.RegisterExecutor(ExecutorNameOAuth, newOAuthExecutor(
-		"", []flowcm.InputData{}, []flowcm.InputData{}, flowFactory, idpService, userSchemaService,
+		"", []common.Input{}, []common.Input{}, flowFactory, idpService, userSchemaService,
 		authRegistry.OAuthAuthnService))
 	reg.RegisterExecutor(ExecutorNameOIDCAuth, newOIDCAuthExecutor(
-		"", []flowcm.InputData{}, []flowcm.InputData{}, flowFactory, idpService, userSchemaService,
+		"", []common.Input{}, []common.Input{}, flowFactory, idpService, userSchemaService,
 		authRegistry.OIDCAuthnService))
 	reg.RegisterExecutor(ExecutorNameGitHubAuth, newGithubOAuthExecutor(
 		flowFactory, idpService, userSchemaService, authRegistry.GithubOAuthAuthnService))

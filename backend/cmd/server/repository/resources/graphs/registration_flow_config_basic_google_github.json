@@ -5,15 +5,24 @@
         {
             "id": "registration_start",
             "type": "REGISTRATION_START",
-            "next": ["choose_auth"]
+            "onSuccess": "choose_auth"
         },
         {
             "id": "choose_auth",
-            "type": "DECISION",
-            "next": [
-                "basic_auth",
-                "google_auth",
-                "github_auth"
+            "type": "PROMPT",
+            "actions": [
+                {
+                    "ref": "action_001",
+                    "nextNode": "basic_auth"
+                },
+                {
+                    "ref": "action_002",
+                    "nextNode": "google_auth"
+                },
+                {
+                    "ref": "action_003",
+                    "nextNode": "github_auth"
+                }
             ]
         },
         {
@@ -22,9 +31,7 @@
             "executor": {
                 "name": "BasicAuthExecutor"
             },
-            "next": [
-                "provisioning"
-            ]
+            "onSuccess": "provisioning"
         },
         {
             "id": "google_auth",
@@ -35,9 +42,7 @@
             "executor": {
                 "name": "GoogleOIDCAuthExecutor"
             },
-            "next": [
-                "provisioning"
-            ]
+            "onSuccess": "provisioning"
         },
         {
             "id": "github_auth",
@@ -48,9 +53,7 @@
             "executor": {
                 "name": "GithubOAuthExecutor"
             },
-            "next": [
-                "provisioning"
-            ]
+            "onSuccess": "provisioning"
         },
         {
             "id": "provisioning",
@@ -58,9 +61,7 @@
             "executor": {
                 "name": "ProvisioningExecutor"
             },
-            "next": [
-                "authenticated"
-            ]
+            "onSuccess": "authenticated"
         },
         {
             "id": "authenticated",

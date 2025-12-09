@@ -53,13 +53,13 @@ func ResolvePlaceholder(ctx *NodeContext, value string) string {
 			return match // Keep placeholder if not found
 		}
 
-		// Check RuntimeData first
+		// Check runtime data first
 		if runtimeValue, ok := ctx.RuntimeData[key]; ok && runtimeValue != "" {
 			return runtimeValue
 		}
 
-		// Check UserInputData
-		if userInputValue, ok := ctx.UserInputData[key]; ok && userInputValue != "" {
+		// Check user inputs next
+		if userInputValue, ok := ctx.UserInputs[key]; ok && userInputValue != "" {
 			return userInputValue
 		}
 

@@ -5,39 +5,52 @@
         {
             "id": "registration_start",
             "type": "REGISTRATION_START",
-            "next": [
-                "sms_auth"
-            ]
+            "onSuccess": "sms_auth"
         },
         {
             "id": "sms_auth",
             "type": "TASK_EXECUTION",
+            "inputs": [
+                {
+                    "ref": "input_000",
+                    "identifier": "mobileNumber",
+                    "type": "string",
+                    "required": true
+                },
+                {
+                    "ref": "input_000_otp",
+                    "identifier": "otp",
+                    "type": "string",
+                    "required": true
+                }
+            ],
             "properties": {
                 "senderId": "test-sms-sender-id"
             },
             "executor": {
                 "name": "SMSOTPAuthExecutor"
             },
-            "next": [
-                "ou_creation"
-            ]
+            "onSuccess": "ou_creation"
         },
         {
             "id": "ou_creation",
             "type": "TASK_EXECUTION",
-            "inputData": [
+            "inputs": [
                 {
-                    "name": "ouName",
+                    "ref": "input_001",
+                    "identifier": "ouName",
                     "type": "string",
                     "required": true
                 },
                 {
-                    "name": "ouHandle",
+                    "ref": "input_002",
+                    "identifier": "ouHandle",
                     "type": "string",
                     "required": true
                 },
                 {
-                    "name": "ouDescription",
+                    "ref": "input_003",
+                    "identifier": "ouDescription",
                     "type": "string",
                     "required": false
                 }
@@ -45,31 +58,33 @@
             "executor": {
                 "name": "OUExecutor"
             },
-            "next": [
-                "provisioning"
-            ]
+            "onSuccess": "provisioning"
         },
         {
             "id": "provisioning",
             "type": "TASK_EXECUTION",
-            "inputData": [
+            "inputs": [
                 {
-                    "name": "mobileNumber",
+                    "ref": "input_004",
+                    "identifier": "mobileNumber",
                     "type": "string",
                     "required": true
                 },
                 {
-                    "name": "firstName",
+                    "ref": "input_005",
+                    "identifier": "firstName",
                     "type": "string",
                     "required": true
                 },
                 {
-                    "name": "lastName",
+                    "ref": "input_006",
+                    "identifier": "lastName",
                     "type": "string",
                     "required": true
                 },
                 {
-                    "name": "email",
+                    "ref": "input_007",
+                    "identifier": "email",
                     "type": "string",
                     "required": true
                 }
@@ -77,9 +92,7 @@
             "executor": {
                 "name": "ProvisioningExecutor"
             },
-            "next": [
-                "authenticated"
-            ]
+            "onSuccess": "authenticated"
         },
         {
             "id": "authenticated",

@@ -202,7 +202,7 @@ func (ts *SMSRegistrationFlowTestSuite) TestSMSRegistrationFlowWithMobileNumber(
 		"mobileNumber": mobileNumber,
 	}
 
-	otpFlowStep, err := completeRegistrationFlow(flowStep.FlowID, "", inputs)
+	otpFlowStep, err := completeRegistrationFlow(flowStep.FlowID, "action_001", inputs)
 	if err != nil {
 		ts.T().Fatalf("Failed to complete registration flow with mobile number: %v", err)
 	}
@@ -241,16 +241,16 @@ func (ts *SMSRegistrationFlowTestSuite) TestSMSRegistrationFlowWithMobileNumber(
 		"Email should be a required inputs after first step")
 
 	// Step 4: Provide additional attributes
-	fillInputs := []InputData{
+	fillInputs := []Inputs{
 		{
-			Name:     "firstName",
-			Type:     "string",
-			Required: true,
+			Identifier: "firstName",
+			Type:       "string",
+			Required:   true,
 		},
 		{
-			Name:     "lastName",
-			Type:     "string",
-			Required: true,
+			Identifier: "lastName",
+			Type:       "string",
+			Required:   true,
 		},
 	}
 	fillInputs = append(fillInputs, completeFlowStep.Data.Inputs...)
@@ -322,7 +322,7 @@ func (ts *SMSRegistrationFlowTestSuite) TestSMSRegistrationFlowWithUsername() {
 	inputs := map[string]string{
 		"username": username,
 	}
-	otpFlowStep, err := completeRegistrationFlow(flowStep.FlowID, "", inputs)
+	otpFlowStep, err := completeRegistrationFlow(flowStep.FlowID, "action_001", inputs)
 	if err != nil {
 		ts.T().Fatalf("Failed to continue registration flow with username: %v", err)
 	}
@@ -426,7 +426,7 @@ func (ts *SMSRegistrationFlowTestSuite) TestSMSRegistrationFlowInvalidOTP() {
 	ts.mockServer.ClearMessages()
 
 	// Continue flow to trigger OTP sending
-	otpFlowStep, err := completeRegistrationFlow(flowStep.FlowID, "", inputs)
+	otpFlowStep, err := completeRegistrationFlow(flowStep.FlowID, "action_001", inputs)
 	if err != nil {
 		ts.T().Fatalf("Failed to complete registration flow with mobile number: %v", err)
 	}
@@ -467,22 +467,26 @@ func (ts *SMSRegistrationFlowTestSuite) TestSMSRegistrationFlowSingleRequestWith
 	// Generate unique mobile number
 	mobileNumber := generateUniqueMobileNumber()
 
-	// Step 1: Initialize the registration flow with mobile number
-	inputs := map[string]string{
-		"mobileNumber": mobileNumber,
-		"firstName":    "Test",
-		"lastName":     "User",
-		"email":        fmt.Sprintf("%s@example.com", mobileNumber),
-	}
-
-	flowStep, err := initiateRegistrationFlow(ts.testAppID, inputs)
+	// Step 1: Initialize the registration flow
+	flowStep, err := initiateRegistrationFlow(ts.testAppID, nil)
 	if err != nil {
 		ts.T().Fatalf("Failed to initiate registration flow: %v", err)
 	}
 
+	// Step 2: Provide mobile number with action to trigger SMS
+	ts.mockServer.ClearMessages()
+	inputs := map[string]string{
+		"mobileNumber": mobileNumber,
+	}
+
+	otpStep, err := completeRegistrationFlow(flowStep.FlowID, "action_001", inputs)
+	if err != nil {
+		ts.T().Fatalf("Failed to provide mobile number: %v", err)
+	}
+
 	// Should require OTP input now
-	ts.Require().Equal("INCOMPLETE", flowStep.FlowStatus, "Expected flow status to be INCOMPLETE")
-	ts.Require().Equal("VIEW", flowStep.Type, "Expected flow type to be VIEW")
+	ts.Require().Equal("INCOMPLETE", otpStep.FlowStatus, "Expected flow status to be INCOMPLETE")
+	ts.Require().Equal("VIEW", otpStep.Type, "Expected flow type to be VIEW")
 
 	// Wait for SMS to be sent
 	time.Sleep(500 * time.Millisecond)
@@ -492,14 +496,30 @@ func (ts *SMSRegistrationFlowTestSuite) TestSMSRegistrationFlowSingleRequestWith
 	ts.Require().NotNil(lastMessage, "SMS should have been sent")
 	ts.Require().NotEmpty(lastMessage.OTP, "OTP should be available")
 
-	// Step 2: Complete with OTP
+	// Step 3: Complete with OTP
 	otpInputs := map[string]string{
 		"otp": lastMessage.OTP,
 	}
 
-	completeFlowStep, err := completeRegistrationFlow(flowStep.FlowID, "", otpInputs)
+	provisionStep, err := completeRegistrationFlow(otpStep.FlowID, "", otpInputs)
 	if err != nil {
 		ts.T().Fatalf("Failed to complete registration flow with OTP: %v", err)
+	}
+
+	// Should now require user attributes
+	ts.Require().Equal("INCOMPLETE", provisionStep.FlowStatus, "Expected flow status to be INCOMPLETE for provisioning")
+
+	// Step 4: Provide user attributes
+	userInputs := map[string]string{
+		"firstName":    "Test",
+		"lastName":     "User",
+		"email":        fmt.Sprintf("%s@example.com", mobileNumber),
+		"mobileNumber": mobileNumber,
+	}
+
+	completeFlowStep, err := completeRegistrationFlow(provisionStep.FlowID, "", userInputs)
+	if err != nil {
+		ts.T().Fatalf("Failed to complete registration with user attributes: %v", err)
 	}
 
 	// Verify successful registration
@@ -539,11 +559,11 @@ func generateUniqueMobileNumber() string {
 }
 
 // Helper to fill required attributes for registration
-func fillRequiredRegistrationAttributes(inputs []InputData, mobile string) map[string]string {
+func fillRequiredRegistrationAttributes(inputs []Inputs, mobile string) map[string]string {
 	attrInputs := map[string]string{}
 	for _, input := range inputs {
 		if input.Required {
-			switch input.Name {
+			switch input.Identifier {
 			case "firstName":
 				attrInputs["firstName"] = "Test"
 			case "lastName":
@@ -551,7 +571,7 @@ func fillRequiredRegistrationAttributes(inputs []InputData, mobile string) map[s
 			case "email":
 				attrInputs["email"] = fmt.Sprintf("%s@example.com", mobile)
 			default:
-				attrInputs[input.Name] = "dummy"
+				attrInputs[input.Identifier] = "dummy"
 			}
 		}
 	}

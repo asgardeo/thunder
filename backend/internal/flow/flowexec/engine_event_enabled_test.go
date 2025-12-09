@@ -201,7 +201,7 @@ func TestPublishNodeExecutionStartedEvent(t *testing.T) {
 	t.Run("new_node_execution", func(t *testing.T) {
 		node := coremock.NewNodeInterfaceMock(t)
 		node.On("GetID").Return("node-001")
-		node.On("GetType").Return(common.NodeTypePromptOnly)
+		node.On("GetType").Return(common.NodeTypePrompt)
 
 		ctx := &EngineContext{
 			FlowID:           "flow-006",
@@ -258,7 +258,7 @@ func TestPublishNodeExecutionCompletedEvent(t *testing.T) {
 	t.Run("node_completed_successfully", func(t *testing.T) {
 		node := coremock.NewNodeInterfaceMock(t)
 		node.On("GetID").Return("node-003")
-		node.On("GetType").Return(common.NodeTypeDecision)
+		node.On("GetType").Return(common.NodeTypePrompt)
 
 		ctx := &EngineContext{
 			FlowID:   "flow-008",
@@ -333,7 +333,7 @@ func TestPublishNodeExecutionCompletedEvent(t *testing.T) {
 	t.Run("node_incomplete_status", func(t *testing.T) {
 		node := coremock.NewNodeInterfaceMock(t)
 		node.On("GetID").Return("node-005")
-		node.On("GetType").Return(common.NodeTypePromptOnly)
+		node.On("GetType").Return(common.NodeTypePrompt)
 
 		ctx := &EngineContext{
 			FlowID:           "flow-010",

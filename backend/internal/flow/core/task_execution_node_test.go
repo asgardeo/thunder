@@ -110,8 +110,8 @@ func (s *TaskExecutionNodeTestSuite) TestExecuteSuccess() {
 				m.On("GetName").Return("test-executor").Once()
 				m.On("Execute", mock.Anything).Return(
 					&common.ExecutorResponse{
-						Status:       common.ExecUserInputRequired,
-						RequiredData: []common.InputData{{Name: "username", Required: true}},
+						Status: common.ExecUserInputRequired,
+						Inputs: []common.Input{{Identifier: "username", Required: true}},
 					}, nil,
 				).Once()
 			},
@@ -183,6 +183,30 @@ func (s *TaskExecutionNodeTestSuite) TestExecuteFailure() {
 	s.NotNil(resp)
 	s.Equal(common.NodeStatusFailure, resp.Status)
 	s.Equal("AUTH_FAILED", resp.FailureReason)
+}
+
+func (s *TaskExecutionNodeTestSuite) TestExecuteFailureWithOnFailureHandler() {
+	s.mockExecutor.On("GetName").Return("test-executor").Once()
+	s.mockExecutor.On("Execute", mock.Anything).Return(
+		&common.ExecutorResponse{Status: common.ExecFailure, FailureReason: "AUTH_FAILED"},
+		nil,
+	).Once()
+
+	node := newTaskExecutionNode("task-1", map[string]interface{}{}, false, false)
+	execNode, _ := node.(ExecutorBackedNodeInterface)
+	execNode.SetOnFailure("error-prompt")
+	execNode.SetExecutor(s.mockExecutor)
+
+	ctx := &NodeContext{FlowID: "test-flow"}
+	resp, err := node.Execute(ctx)
+
+	s.Nil(err)
+	s.NotNil(resp)
+	s.Equal(common.NodeStatusForward, resp.Status)
+	s.Equal("error-prompt", resp.NextNodeID)
+	s.Equal("AUTH_FAILED", resp.FailureReason)
+	s.NotNil(resp.RuntimeData)
+	s.Equal("AUTH_FAILED", resp.RuntimeData["failureReason"])
 }
 
 func (s *TaskExecutionNodeTestSuite) TestExecuteExecutorError() {
@@ -264,7 +288,7 @@ func (s *TaskExecutionNodeTestSuite) TestBuildNodeResponse() {
 			s.Equal(tt.responseType, nodeResp.Type)
 			s.NotNil(nodeResp.AdditionalData)
 			s.NotNil(nodeResp.RuntimeData)
-			s.NotNil(nodeResp.RequiredData)
+			s.NotNil(nodeResp.Inputs)
 			s.NotNil(nodeResp.Actions)
 		})
 	}
