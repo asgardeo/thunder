@@ -165,13 +165,13 @@ func (ts *HTTPRequestRegistrationFlowTestSuite) SetupTest() {
 }
 
 func (ts *HTTPRequestRegistrationFlowTestSuite) TestHTTPRequestRegistrationFlow_Success() {
-	step1, err := initiateRegistrationFlow(httpRequestRegTestAppID, map[string]string{
+	step1, err := initiateRegistrationFlow(httpRequestRegTestAppID, false, map[string]string{
 		"username":  "newuser123",
 		"password":  "NewUserPass123!",
 		"email":     "newuser@test.com",
 		"firstName": "New",
 		"lastName":  "User",
-	})
+	}, "")
 
 	ts.NoError(err, "Registration flow should complete without error")
 	ts.NotNil(step1, "Flow response should not be nil")

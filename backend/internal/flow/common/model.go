@@ -46,6 +46,7 @@ type NodeResponse struct {
 	AdditionalData    map[string]string         `json:"additional_data,omitempty"`
 	RedirectURL       string                    `json:"redirect_url,omitempty"`
 	Actions           []Action                  `json:"actions,omitempty"`
+	Meta              interface{}               `json:"meta,omitempty"`
 	NextNodeID        string                    `json:"next_node_id,omitempty"`
 	RuntimeData       map[string]string         `json:"runtime_data,omitempty"`
 	AuthenticatedUser authncm.AuthenticatedUser `json:"authenticated_user,omitempty"`

@@ -30,6 +30,7 @@ type nodeDefinition struct {
 	ID         string                 `json:"id"`
 	Type       string                 `json:"type"`
 	Properties map[string]interface{} `json:"properties,omitempty"`
+	Meta       interface{}            `json:"meta,omitempty"`
 	Inputs     []inputDefinition      `json:"inputs"`
 	Actions    []actionDefinition     `json:"actions,omitempty"`
 	Executor   executorDefinition     `json:"executor"`

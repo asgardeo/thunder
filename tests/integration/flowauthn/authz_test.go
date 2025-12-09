@@ -211,7 +211,7 @@ func (ts *FlowAuthzTestSuite) TestAuthorizationFlow_UserWithDirectRoleAssignment
 		"requested_permissions": "read:documents write:documents",
 	}
 
-	flowStep, err := initiateAuthFlow(authzTestAppID, inputs)
+	flowStep, err := initiateAuthFlow(authzTestAppID, false, inputs, "")
 	ts.Require().NoError(err, "Failed to initiate flow")
 	ts.Require().Equal("INCOMPLETE", flowStep.FlowStatus, "Expected flow status to be INCOMPLETE")
 	ts.Require().NotEmpty(flowStep.FlowID, "Flow ID should not be empty")
@@ -222,7 +222,7 @@ func (ts *FlowAuthzTestSuite) TestAuthorizationFlow_UserWithDirectRoleAssignment
 		"password": "SecurePass123!",
 	}
 
-	flowStep, err = completeAuthFlow(flowStep.FlowID, flowStep.Data.Inputs[0].Identifier, authInputs)
+	flowStep, err = completeAuthFlow(flowStep.FlowID, authInputs, flowStep.Data.Inputs[0].Identifier)
 	ts.Require().NoError(err, "Failed to complete authentication")
 	ts.Require().NotNil(flowStep, "Flow step should not be nil")
 	ts.Require().Equal("COMPLETE", flowStep.FlowStatus, "Flow should be complete")
@@ -255,7 +255,7 @@ func (ts *FlowAuthzTestSuite) TestAuthorizationFlow_UserWithNoRole() {
 		"requested_permissions": "read:documents write:documents",
 	}
 
-	flowStep, err := initiateAuthFlow(authzTestAppID, inputs)
+	flowStep, err := initiateAuthFlow(authzTestAppID, false, inputs, "")
 	ts.Require().NoError(err, "Failed to initiate flow")
 	ts.Require().Equal("INCOMPLETE", flowStep.FlowStatus, "Expected flow status to be INCOMPLETE")
 	ts.Require().NotEmpty(flowStep.FlowID, "Flow ID should not be empty")
@@ -266,7 +266,7 @@ func (ts *FlowAuthzTestSuite) TestAuthorizationFlow_UserWithNoRole() {
 		"password": "SecurePass123!",
 	}
 
-	flowStep, err = completeAuthFlow(flowStep.FlowID, flowStep.Data.Inputs[0].Identifier, authInputs)
+	flowStep, err = completeAuthFlow(flowStep.FlowID, authInputs, flowStep.Data.Inputs[0].Identifier)
 	ts.Require().NoError(err, "Failed to complete authentication")
 	ts.Require().NotNil(flowStep, "Flow step should not be nil")
 	ts.Require().Equal("COMPLETE", flowStep.FlowStatus, "Flow should be complete")
@@ -290,7 +290,7 @@ func (ts *FlowAuthzTestSuite) TestAuthorizationFlow_UserWithPartialPermissions()
 		"requested_permissions": "read:documents write:documents delete:documents",
 	}
 
-	flowStep, err := initiateAuthFlow(authzTestAppID, inputs)
+	flowStep, err := initiateAuthFlow(authzTestAppID, false, inputs, "")
 	ts.Require().NoError(err, "Failed to initiate flow")
 	ts.Require().Equal("INCOMPLETE", flowStep.FlowStatus, "Expected flow status to be INCOMPLETE")
 	ts.Require().NotEmpty(flowStep.FlowID, "Flow ID should not be empty")
@@ -301,7 +301,7 @@ func (ts *FlowAuthzTestSuite) TestAuthorizationFlow_UserWithPartialPermissions()
 		"password": "SecurePass123!",
 	}
 
-	flowStep, err = completeAuthFlow(flowStep.FlowID, flowStep.Data.Inputs[0].Identifier, authInputs)
+	flowStep, err = completeAuthFlow(flowStep.FlowID, authInputs, flowStep.Data.Inputs[0].Identifier)
 	ts.Require().NoError(err, "Failed to complete authentication")
 	ts.Require().NotNil(flowStep, "Flow step should not be nil")
 	ts.Require().Equal("COMPLETE", flowStep.FlowStatus, "Flow should be complete")

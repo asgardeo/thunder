@@ -23,7 +23,7 @@ Thunder comes with several preconfigured authentication flows:
 | `auth_flow_config_github` | Authentication with GitHub |
 | `auth_flow_config_sms` | SMS OTP authentication with mobile number |
 | `auth_flow_config_sms_with_username` | SMS OTP authentication with username |
-| `auth_flow_config_basic_with_prompt` | Username and password authentication where the username is prompted first and then the password as a two-step process |
+| `auth_flow_config_basic_with_prompt` | Username and password authentication with prompt nodes |
 | `auth_flow_config_basic_google` | Authentication with username/password or Google |
 | `auth_flow_config_basic_google_github` | Authentication with username/password, Google, or GitHub |
 | `auth_flow_config_basic_google_github_sms` | Authentication with username/password, Google, GitHub, or SMS OTP |

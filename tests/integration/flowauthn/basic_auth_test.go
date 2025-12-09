@@ -159,7 +159,7 @@ func (ts *BasicAuthFlowTestSuite) TearDownSuite() {
 
 func (ts *BasicAuthFlowTestSuite) TestBasicAuthFlowSuccess() {
 	// Step 1: Initialize the flow by calling the flow execution API
-	flowStep, err := initiateAuthFlow(testAppID, nil)
+	flowStep, err := initiateAuthFlow(testAppID, false, nil, "")
 	if err != nil {
 		ts.T().Fatalf("Failed to initiate authentication flow: %v", err)
 	}
@@ -188,7 +188,7 @@ func (ts *BasicAuthFlowTestSuite) TestBasicAuthFlowSuccess() {
 		"password": userAttrs["password"].(string),
 	}
 
-	completeFlowStep, err := completeAuthFlow(flowStep.FlowID, "", inputs)
+	completeFlowStep, err := completeAuthFlow(flowStep.FlowID, inputs, "")
 	if err != nil {
 		ts.T().Fatalf("Failed to complete authentication flow: %v", err)
 	}
@@ -223,7 +223,7 @@ func (ts *BasicAuthFlowTestSuite) TestBasicAuthFlowSuccessWithSingleRequest() {
 		"password": userAttrs["password"].(string),
 	}
 
-	flowStep, err := initiateAuthFlow(testAppID, inputs)
+	flowStep, err := initiateAuthFlow(testAppID, false, inputs, "")
 	if err != nil {
 		ts.T().Fatalf("Failed to initiate authentication flow: %v", err)
 	}
@@ -250,7 +250,7 @@ func (ts *BasicAuthFlowTestSuite) TestBasicAuthFlowSuccessWithSingleRequest() {
 
 func (ts *BasicAuthFlowTestSuite) TestBasicAuthFlowWithTwoStepInput() {
 	// Step 1: Initialize the flow
-	flowStep, err := initiateAuthFlow(testAppID, nil)
+	flowStep, err := initiateAuthFlow(testAppID, false, nil, "")
 	if err != nil {
 		ts.T().Fatalf("Failed to initiate authentication flow: %v", err)
 	}
@@ -266,7 +266,7 @@ func (ts *BasicAuthFlowTestSuite) TestBasicAuthFlowWithTwoStepInput() {
 		"username": userAttrs["username"].(string),
 	}
 
-	intermediateFlowStep, err := completeAuthFlow(flowStep.FlowID, "", inputs)
+	intermediateFlowStep, err := completeAuthFlow(flowStep.FlowID, inputs, "")
 	if err != nil {
 		ts.T().Fatalf("Failed to complete authentication flow with missing credentials: %v", err)
 	}
@@ -287,7 +287,7 @@ func (ts *BasicAuthFlowTestSuite) TestBasicAuthFlowWithTwoStepInput() {
 		"password": userAttrs["password"].(string),
 	}
 
-	completeFlowStep, err := completeAuthFlow(flowStep.FlowID, "", inputs)
+	completeFlowStep, err := completeAuthFlow(flowStep.FlowID, inputs, "")
 	if err != nil {
 		ts.T().Fatalf("Failed to complete authentication flow: %v", err)
 	}
@@ -313,7 +313,7 @@ func (ts *BasicAuthFlowTestSuite) TestBasicAuthFlowWithTwoStepInput() {
 
 func (ts *BasicAuthFlowTestSuite) TestBasicAuthFlowInvalidCredentials() {
 	// Step 1: Initialize the flow
-	flowStep, err := initiateAuthFlow(testAppID, nil)
+	flowStep, err := initiateAuthFlow(testAppID, false, nil, "")
 	if err != nil {
 		ts.T().Fatalf("Failed to initiate authentication flow: %v", err)
 	}
@@ -326,7 +326,7 @@ func (ts *BasicAuthFlowTestSuite) TestBasicAuthFlowInvalidCredentials() {
 		"password": "wrong_password",
 	}
 
-	completeFlowStep, err := completeAuthFlow(flowStep.FlowID, "", inputs)
+	completeFlowStep, err := completeAuthFlow(flowStep.FlowID, inputs, "")
 	if err != nil {
 		ts.T().Fatalf("Failed to complete authentication flow with invalid credentials: %v", err)
 	}
@@ -353,7 +353,7 @@ func (ts *BasicAuthFlowTestSuite) TestBasicAuthFlowInvalidAppID() {
 
 func (ts *BasicAuthFlowTestSuite) TestBasicAuthFlowInvalidFlowID() {
 	// Step 1: Initialize the flow by calling the flow execution API
-	flowStep, err := initiateAuthFlow(testAppID, nil)
+	flowStep, err := initiateAuthFlow(testAppID, false, nil, "")
 	if err != nil {
 		ts.T().Fatalf("Failed to initiate authentication flow: %v", err)
 	}

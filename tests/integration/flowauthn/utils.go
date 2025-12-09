@@ -31,16 +31,19 @@ import (
 const testServerURL = "https://localhost:8095"
 
 // Helper function to initiate the authentication flow
-func initiateAuthFlow(appID string, inputs map[string]string, action ...string) (*FlowStep, error) {
+func initiateAuthFlow(appID string, verbose bool, inputs map[string]string, action string) (*FlowStep, error) {
 	flowReqBody := map[string]interface{}{
 		"applicationId": appID,
 		"flowType":      "AUTHENTICATION",
 	}
+	if verbose {
+		flowReqBody["verbose"] = true
+	}
 	if len(inputs) > 0 {
 		flowReqBody["inputs"] = inputs
 	}
-	if len(action) > 0 && action[0] != "" {
-		flowReqBody["action"] = action[0]
+	if action != "" {
+		flowReqBody["action"] = action
 	}
 
 	reqBody, err := json.Marshal(flowReqBody)
@@ -123,13 +126,16 @@ func initiateAuthFlowWithError(appID string, inputs map[string]string) (*ErrorRe
 }
 
 // Helper function to complete the authentication flow
-func completeAuthFlow(flowID string, actionID string, inputs map[string]string) (*FlowStep, error) {
+func completeAuthFlow(flowID string, inputs map[string]string, action string) (*FlowStep, error) {
 	flowReqBody := map[string]interface{}{
-		"flowId": flowID,
-		"inputs": inputs,
+		"flowId":   flowID,
+		"flowType": "AUTHENTICATION",
 	}
-	if actionID != "" {
-		flowReqBody["action"] = actionID
+	if len(inputs) > 0 {
+		flowReqBody["inputs"] = inputs
+	}
+	if action != "" {
+		flowReqBody["action"] = action
 	}
 
 	reqBody, err := json.Marshal(flowReqBody)

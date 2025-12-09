@@ -190,7 +190,7 @@ func (ts *GoogleRegistrationFlowTestSuite) TearDownSuite() {
 
 func (ts *GoogleRegistrationFlowTestSuite) TestGoogleRegistrationFlowInitiation() {
 	// Initialize the flow by calling the flow execution API
-	flowStep, err := initiateRegistrationFlow(googleRegTestAppID, nil)
+	flowStep, err := initiateRegistrationFlow(googleRegTestAppID, false, nil, "")
 	if err != nil {
 		ts.T().Fatalf("Failed to initiate Google registration flow: %v", err)
 	}
@@ -229,7 +229,7 @@ func (ts *GoogleRegistrationFlowTestSuite) TestGoogleRegistrationFlowInitiation(
 
 func (ts *GoogleRegistrationFlowTestSuite) TestGoogleRegistrationFlowCompleteSuccess() {
 	// Step 1: Initialize the flow by calling the flow execution API
-	flowStep, err := initiateRegistrationFlow(googleRegTestAppID, nil)
+	flowStep, err := initiateRegistrationFlow(googleRegTestAppID, false, nil, "")
 	if err != nil {
 		ts.T().Fatalf("Failed to initiate Google registration flow: %v", err)
 	}
@@ -255,7 +255,7 @@ func (ts *GoogleRegistrationFlowTestSuite) TestGoogleRegistrationFlowCompleteSuc
 		"code": authCode,
 	}
 
-	completeFlowStep, err := completeRegistrationFlow(flowID, "", inputs)
+	completeFlowStep, err := completeRegistrationFlow(flowID, inputs, "")
 	if err != nil {
 		ts.T().Fatalf("Failed to complete Google registration flow: %v", err)
 	}
@@ -299,7 +299,7 @@ func (ts *GoogleRegistrationFlowTestSuite) TestGoogleRegistrationFlowCompleteSuc
 
 func (ts *GoogleRegistrationFlowTestSuite) TestGoogleRegistrationFlowCompleteWithInvalidCode() {
 	// Step 1: Initialize the flow
-	flowStep, err := initiateRegistrationFlow(googleRegTestAppID, nil)
+	flowStep, err := initiateRegistrationFlow(googleRegTestAppID, false, nil, "")
 	if err != nil {
 		ts.T().Fatalf("Failed to initiate Google registration flow: %v", err)
 	}
@@ -311,13 +311,13 @@ func (ts *GoogleRegistrationFlowTestSuite) TestGoogleRegistrationFlowCompleteWit
 		"code": "invalid-reg-auth-code-12345",
 	}
 
-	_, err = completeRegistrationFlow(flowID, "", inputs)
+	_, err = completeRegistrationFlow(flowID, inputs, "")
 	ts.Require().Error(err, "Should fail with invalid authorization code")
 }
 
 func (ts *GoogleRegistrationFlowTestSuite) TestGoogleRegistrationFlowCompleteWithMissingCode() {
 	// Step 1: Initialize the flow
-	flowStep, err := initiateRegistrationFlow(googleRegTestAppID, nil)
+	flowStep, err := initiateRegistrationFlow(googleRegTestAppID, false, nil, "")
 	if err != nil {
 		ts.T().Fatalf("Failed to initiate Google registration flow: %v", err)
 	}
@@ -329,7 +329,7 @@ func (ts *GoogleRegistrationFlowTestSuite) TestGoogleRegistrationFlowCompleteWit
 
 	// When required inputs are missing, the flow returns INCOMPLETE status (not an error)
 	// and asks for the missing inputs again
-	flowStep, err = completeRegistrationFlow(flowID, "", inputs)
+	flowStep, err = completeRegistrationFlow(flowID, inputs, "")
 	ts.Require().NoError(err, "Should not return error when inputs are missing")
 	ts.Require().Equal("INCOMPLETE", flowStep.FlowStatus,
 		"Flow should remain INCOMPLETE when required inputs are missing")
@@ -349,7 +349,7 @@ func (ts *GoogleRegistrationFlowTestSuite) TestGoogleRegistrationFlowCompleteWit
 
 func (ts *GoogleRegistrationFlowTestSuite) TestGoogleRegistrationFlowDuplicateUser() {
 	// Step 1: First, create a user through registration
-	flowStep, err := initiateRegistrationFlow(googleRegTestAppID, nil)
+	flowStep, err := initiateRegistrationFlow(googleRegTestAppID, false, nil, "")
 	if err != nil {
 		ts.T().Fatalf("Failed to initiate first Google registration flow: %v", err)
 	}
@@ -364,7 +364,7 @@ func (ts *GoogleRegistrationFlowTestSuite) TestGoogleRegistrationFlowDuplicateUs
 		"code": authCode,
 	}
 
-	completeFlowStep, err := completeRegistrationFlow(flowStep.FlowID, "", inputs)
+	completeFlowStep, err := completeRegistrationFlow(flowStep.FlowID, inputs, "")
 	if err != nil {
 		ts.T().Fatalf("Failed to complete first Google registration flow: %v", err)
 	}
@@ -378,7 +378,7 @@ func (ts *GoogleRegistrationFlowTestSuite) TestGoogleRegistrationFlowDuplicateUs
 	}
 
 	// Step 2: Try to register again with the same Google user
-	flowStep2, err := initiateRegistrationFlow(googleRegTestAppID, nil)
+	flowStep2, err := initiateRegistrationFlow(googleRegTestAppID, false, nil, "")
 	if err != nil {
 		ts.T().Fatalf("Failed to initiate second Google registration flow: %v", err)
 	}
@@ -393,7 +393,7 @@ func (ts *GoogleRegistrationFlowTestSuite) TestGoogleRegistrationFlowDuplicateUs
 		"code": authCode2,
 	}
 
-	completeFlowStep2, err := completeRegistrationFlow(flowStep2.FlowID, "", inputs2)
+	completeFlowStep2, err := completeRegistrationFlow(flowStep2.FlowID, inputs2, "")
 	if err != nil {
 		ts.T().Fatalf("Failed to complete second Google registration flow: %v", err)
 	}
@@ -406,7 +406,7 @@ func (ts *GoogleRegistrationFlowTestSuite) TestGoogleRegistrationFlowDuplicateUs
 
 func (ts *GoogleRegistrationFlowTestSuite) TestGoogleRegistrationFlowWithExistingUserAllowed() {
 	// Step 1: First, create a user through registration with the default flow
-	flowStep, err := initiateRegistrationFlow(googleRegTestAppID, nil)
+	flowStep, err := initiateRegistrationFlow(googleRegTestAppID, false, nil, "")
 	if err != nil {
 		ts.T().Fatalf("Failed to initiate first Google registration flow: %v", err)
 	}
@@ -421,7 +421,7 @@ func (ts *GoogleRegistrationFlowTestSuite) TestGoogleRegistrationFlowWithExistin
 		"code": authCode,
 	}
 
-	completeFlowStep, err := completeRegistrationFlow(flowStep.FlowID, "", inputs)
+	completeFlowStep, err := completeRegistrationFlow(flowStep.FlowID, inputs, "")
 	if err != nil {
 		ts.T().Fatalf("Failed to complete first Google registration flow: %v", err)
 	}
@@ -447,7 +447,7 @@ func (ts *GoogleRegistrationFlowTestSuite) TestGoogleRegistrationFlowWithExistin
 	ts.Require().NoError(err, "Failed to update app config with custom registration flow")
 
 	// Step 3: Try to register again with the same Google user
-	flowStep2, err := initiateRegistrationFlow(googleRegTestAppID, nil)
+	flowStep2, err := initiateRegistrationFlow(googleRegTestAppID, false, nil, "")
 	if err != nil {
 		ts.T().Fatalf("Failed to initiate second Google registration flow: %v", err)
 	}
@@ -462,7 +462,7 @@ func (ts *GoogleRegistrationFlowTestSuite) TestGoogleRegistrationFlowWithExistin
 		"code": authCode2,
 	}
 
-	completeFlowStep2, err := completeRegistrationFlow(flowStep2.FlowID, "", inputs2)
+	completeFlowStep2, err := completeRegistrationFlow(flowStep2.FlowID, inputs2, "")
 	if err != nil {
 		ts.T().Fatalf("Failed to complete second Google registration flow: %v", err)
 	}

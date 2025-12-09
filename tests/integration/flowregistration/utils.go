@@ -32,16 +32,20 @@ import (
 const testServerURL = "https://localhost:8095"
 
 // Helper function to initiate the registration flow
-func initiateRegistrationFlow(appID string, inputs map[string]string, action ...string) (*FlowStep, error) {
+func initiateRegistrationFlow(appID string, verbose bool, inputs map[string]string, action string) (
+	*FlowStep, error) {
 	flowReqBody := map[string]interface{}{
 		"applicationId": appID,
 		"flowType":      "REGISTRATION",
 	}
+	if verbose {
+		flowReqBody["verbose"] = true
+	}
 	if len(inputs) > 0 {
 		flowReqBody["inputs"] = inputs
 	}
-	if len(action) > 0 && action[0] != "" {
-		flowReqBody["action"] = action[0]
+	if action != "" {
+		flowReqBody["action"] = action
 	}
 
 	reqBody, err := json.Marshal(flowReqBody)
@@ -79,13 +83,16 @@ func initiateRegistrationFlow(appID string, inputs map[string]string, action ...
 }
 
 // Helper function to complete the registration flow
-func completeRegistrationFlow(flowID string, actionID string, inputs map[string]string) (*FlowStep, error) {
+func completeRegistrationFlow(flowID string, inputs map[string]string, action string) (*FlowStep, error) {
 	flowReqBody := map[string]interface{}{
-		"flowId": flowID,
-		"inputs": inputs,
+		"flowId":   flowID,
+		"flowType": "REGISTRATION",
 	}
-	if actionID != "" {
-		flowReqBody["action"] = actionID
+	if len(inputs) > 0 {
+		flowReqBody["inputs"] = inputs
+	}
+	if action != "" {
+		flowReqBody["action"] = action
 	}
 
 	reqBody, err := json.Marshal(flowReqBody)

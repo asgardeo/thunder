@@ -30,6 +30,7 @@ const promptNodeLoggerComponentName = "PromptNode"
 type promptNode struct {
 	*node
 	actions []common.Action
+	meta    interface{}
 }
 
 // newPromptNode creates a new instance of PromptNode with the given details.
@@ -101,6 +102,11 @@ func (n *promptNode) Execute(ctx *NodeContext) (*common.NodeResponse, *serviceer
 	logger.Debug("Required inputs or action not available, prompting user",
 		log.Any("inputs", nodeResp.Inputs), log.Any("actions", nodeResp.Actions))
 
+	// Include meta in the response if verbose mode is enabled
+	if ctx.Verbose && n.meta != nil {
+		nodeResp.Meta = n.meta
+	}
+
 	nodeResp.Status = common.NodeStatusIncomplete
 	nodeResp.Type = common.NodeResponseTypeView
 	return nodeResp, nil
@@ -114,6 +120,16 @@ func (n *promptNode) GetActions() []common.Action {
 // SetActions sets the actions available for the prompt node
 func (n *promptNode) SetActions(actions []common.Action) {
 	n.actions = actions
+}
+
+// GetMeta returns the meta object for the prompt node
+func (n *promptNode) GetMeta() interface{} {
+	return n.meta
+}
+
+// SetMeta sets the meta object for the prompt node
+func (n *promptNode) SetMeta(meta interface{}) {
+	n.meta = meta
 }
 
 // hasRequiredInputs checks if all required inputs are available in the context. Adds missing

@@ -253,6 +253,8 @@ func (s *flowMgtService) processNodeDefinition(nodeDef *nodeDefinition, allNodes
 		return err
 	}
 
+	s.configureNodeMeta(nodeDef, node)
+
 	s.configureNodeCondition(nodeDef, node)
 
 	if err := s.configureNodeExecutor(nodeDef, node, g.GetType()); err != nil {
@@ -354,6 +356,18 @@ func (s *flowMgtService) configureNodeActions(nodeDef *nodeDefinition, node core
 	}
 
 	return nil
+}
+
+// configureNodeMeta configures the meta object for a prompt node
+func (s *flowMgtService) configureNodeMeta(nodeDef *nodeDefinition, node core.NodeInterface) {
+	if nodeDef.Meta == nil {
+		return
+	}
+
+	// Set meta only if the node is a prompt node
+	if promptNode, ok := node.(core.PromptNodeInterface); ok {
+		promptNode.SetMeta(nodeDef.Meta)
+	}
 }
 
 // configureNodeCondition configures the condition for a node

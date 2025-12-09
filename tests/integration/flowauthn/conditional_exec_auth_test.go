@@ -200,7 +200,7 @@ func (ts *ConditionalExecAuthFlowTestSuite) TestSkipConditionalNodes() {
 	})
 
 	// Step 1: Initialize the flow
-	flowStep, err := initiateAuthFlow(conditionalExecTestAppID, nil)
+	flowStep, err := initiateAuthFlow(conditionalExecTestAppID, false, nil, "")
 	ts.Require().NoError(err, "Failed to initiate authentication flow")
 	ts.Require().Equal("INCOMPLETE", flowStep.FlowStatus, "Expected flow status to be INCOMPLETE")
 	ts.Require().Equal("REDIRECTION", flowStep.Type, "Expected flow type to be REDIRECTION")
@@ -216,7 +216,7 @@ func (ts *ConditionalExecAuthFlowTestSuite) TestSkipConditionalNodes() {
 	inputs := map[string]string{
 		"code": authCode,
 	}
-	flowStep, err = completeAuthFlow(flowID, "", inputs)
+	flowStep, err = completeAuthFlow(flowID, inputs, "")
 	ts.Require().NoError(err, "Failed to complete authentication flow")
 
 	// For existing user, flow should complete directly
@@ -245,7 +245,7 @@ func (ts *ConditionalExecAuthFlowTestSuite) TestExecuteConditionalNodes() {
 	})
 
 	// Step 1: Initialize the flow
-	flowStep, err := initiateAuthFlow(conditionalExecTestAppID, nil)
+	flowStep, err := initiateAuthFlow(conditionalExecTestAppID, false, nil, "")
 	ts.Require().NoError(err, "Failed to initiate authentication flow")
 	ts.Require().Equal("INCOMPLETE", flowStep.FlowStatus, "Expected flow status to be INCOMPLETE")
 	ts.Require().Equal("REDIRECTION", flowStep.Type, "Expected flow type to be REDIRECTION")
@@ -263,7 +263,7 @@ func (ts *ConditionalExecAuthFlowTestSuite) TestExecuteConditionalNodes() {
 	inputs := map[string]string{
 		"code": authCode,
 	}
-	flowStep, err = completeAuthFlow(flowID, "", inputs)
+	flowStep, err = completeAuthFlow(flowID, inputs, "")
 	ts.Require().NoError(err, "Failed to complete authentication flow")
 	ts.Require().Equal("INCOMPLETE", flowStep.FlowStatus, "Expected flow status to be INCOMPLETE")
 	ts.Require().Equal("VIEW", flowStep.Type, "Expected flow type to be VIEW")
@@ -274,7 +274,7 @@ func (ts *ConditionalExecAuthFlowTestSuite) TestExecuteConditionalNodes() {
 		"ouHandle":      conditionalExecNewOUHandle,
 		"ouDescription": "Organization Unit created during conditional exec auth flow test",
 	}
-	flowStep, err = completeAuthFlow(flowID, "", ouInputs)
+	flowStep, err = completeAuthFlow(flowID, ouInputs, "")
 	ts.Require().NoError(err, "Failed to complete authentication flow after OU details")
 	ts.Require().Equal("COMPLETE", flowStep.FlowStatus, "Expected flow status to be COMPLETE")
 	ts.Require().NotEmpty(flowStep.Assertion, "Assertion token should be present")

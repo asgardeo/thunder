@@ -186,10 +186,10 @@ func (ts *HTTPRequestAuthFlowTestSuite) SetupTest() {
 }
 
 func (ts *HTTPRequestAuthFlowTestSuite) TestHTTPRequestAuthFlow_Success() {
-	step1, err := initiateAuthFlow(httpRequestTestAppID, map[string]string{
+	step1, err := initiateAuthFlow(httpRequestTestAppID, false, map[string]string{
 		"username": "httprequestuser",
 		"password": "SecurePass123!",
-	})
+	}, "")
 
 	ts.NoError(err, "Authentication flow should complete without error")
 	ts.NotNil(step1, "Flow response should not be nil")
@@ -234,10 +234,10 @@ func (ts *HTTPRequestAuthFlowTestSuite) TestHTTPRequestAuthFlow_WithFailOnErrorF
 		updateAppConfig(httpRequestTestAppID, "auth_flow_config_basic_http_request")
 	}()
 
-	step1, err := initiateAuthFlow(httpRequestTestAppID, map[string]string{
+	step1, err := initiateAuthFlow(httpRequestTestAppID, false, map[string]string{
 		"username": "httprequestuser",
 		"password": "SecurePass123!",
-	})
+	}, "")
 
 	ts.NoError(err, "Authentication flow should complete without error")
 	ts.NotNil(step1, "Flow response should not be nil")

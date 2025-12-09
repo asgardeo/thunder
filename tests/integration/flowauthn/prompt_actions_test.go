@@ -214,7 +214,7 @@ func (ts *PromptActionsAndMFAFlowTestSuite) TearDownSuite() {
 
 func (ts *PromptActionsAndMFAFlowTestSuite) TestBasicAuthWithMobileUserSMSOTP() {
 	// Step 1: Initialize the flow - should present prompt with action choices
-	flowStep, err := initiateAuthFlow(promptActionsTestAppID, nil)
+	flowStep, err := initiateAuthFlow(promptActionsTestAppID, false, nil, "")
 	if err != nil {
 		ts.T().Fatalf("Failed to initiate authentication flow: %v", err)
 	}
@@ -233,7 +233,7 @@ func (ts *PromptActionsAndMFAFlowTestSuite) TestBasicAuthWithMobileUserSMSOTP() 
 		"Expected actions basic_auth and prompt_mobile should be present")
 
 	// Step 2: Choose basic auth
-	basicAuthStep, err := completeAuthFlow(flowStep.FlowID, "basic_auth", map[string]string{})
+	basicAuthStep, err := completeAuthFlow(flowStep.FlowID, map[string]string{}, "basic_auth")
 	if err != nil {
 		ts.T().Fatalf("Failed to complete authentication flow with decision: %v", err)
 	}
@@ -259,7 +259,7 @@ func (ts *PromptActionsAndMFAFlowTestSuite) TestBasicAuthWithMobileUserSMSOTP() 
 	// Clear any previous messages before SMS flow
 	ts.mockServer.ClearMessages()
 
-	otpFlowStep, err := completeAuthFlow(flowStep.FlowID, "", basicInputs)
+	otpFlowStep, err := completeAuthFlow(flowStep.FlowID, basicInputs, "")
 	if err != nil {
 		ts.T().Fatalf("Failed to complete authentication flow with credentials: %v", err)
 	}
@@ -290,7 +290,7 @@ func (ts *PromptActionsAndMFAFlowTestSuite) TestBasicAuthWithMobileUserSMSOTP() 
 		"otp": lastMessage.OTP,
 	}
 
-	completeFlowStep, err := completeAuthFlow(flowStep.FlowID, "", otpInputs)
+	completeFlowStep, err := completeAuthFlow(flowStep.FlowID, otpInputs, "")
 	if err != nil {
 		ts.T().Fatalf("Failed to complete authentication flow with OTP: %v", err)
 	}
@@ -318,7 +318,7 @@ func (ts *PromptActionsAndMFAFlowTestSuite) TestBasicAuthWithoutMobileUserSMSOTP
 	// Test case 1: Authentication with basic auth with user not having mobile, provide mobile, then SMS OTP
 	ts.Run("TestBasicAuthWithoutMobileUserSMSOTP_ProvideMobile", func() {
 		// Step 1: Initialize the flow - should present prompt with action choices
-		flowStep, err := initiateAuthFlow(promptActionsTestAppID, nil)
+		flowStep, err := initiateAuthFlow(promptActionsTestAppID, false, nil, "")
 		if err != nil {
 			ts.T().Fatalf("Failed to initiate authentication flow: %v", err)
 		}
@@ -336,7 +336,7 @@ func (ts *PromptActionsAndMFAFlowTestSuite) TestBasicAuthWithoutMobileUserSMSOTP
 		}
 
 		// Step 2: Choose basic auth
-		_, err = completeAuthFlow(flowStep.FlowID, "basic_auth", map[string]string{})
+		_, err = completeAuthFlow(flowStep.FlowID, map[string]string{}, "basic_auth")
 		if err != nil {
 			ts.T().Fatalf("Failed to complete authentication flow with decision: %v", err)
 		}
@@ -351,7 +351,7 @@ func (ts *PromptActionsAndMFAFlowTestSuite) TestBasicAuthWithoutMobileUserSMSOTP
 			"password": userAttrs["password"].(string),
 		}
 
-		mobilePromptStep, err := completeAuthFlow(flowStep.FlowID, "", basicInputs)
+		mobilePromptStep, err := completeAuthFlow(flowStep.FlowID, basicInputs, "")
 		if err != nil {
 			ts.T().Fatalf("Failed to complete authentication flow with credentials: %v", err)
 		}
@@ -377,7 +377,7 @@ func (ts *PromptActionsAndMFAFlowTestSuite) TestBasicAuthWithoutMobileUserSMSOTP
 			"mobileNumber": "+1987654321",
 		}
 
-		otpFlowStep, err := completeAuthFlow(flowStep.FlowID, "", mobileInputs)
+		otpFlowStep, err := completeAuthFlow(flowStep.FlowID, mobileInputs, "")
 		if err != nil {
 			ts.T().Fatalf("Failed to complete authentication flow with mobile number: %v", err)
 		}
@@ -408,7 +408,7 @@ func (ts *PromptActionsAndMFAFlowTestSuite) TestBasicAuthWithoutMobileUserSMSOTP
 			"otp": lastMessage.OTP,
 		}
 
-		completeFlowStep, err := completeAuthFlow(flowStep.FlowID, "", otpInputs)
+		completeFlowStep, err := completeAuthFlow(flowStep.FlowID, otpInputs, "")
 		if err != nil {
 			ts.T().Fatalf("Failed to complete authentication flow with OTP: %v", err)
 		}
@@ -436,7 +436,7 @@ func (ts *PromptActionsAndMFAFlowTestSuite) TestBasicAuthWithoutMobileUserSMSOTP
 	// Test case 2: Retry auth flow for same user - should not prompt for mobile again
 	ts.Run("TestBasicAuthWithoutMobileUserSMSOTP_RetryAuth", func() {
 		// Step 1: Initialize the flow - should present prompt with action choices
-		flowStep, err := initiateAuthFlow(promptActionsTestAppID, nil)
+		flowStep, err := initiateAuthFlow(promptActionsTestAppID, false, nil, "")
 		if err != nil {
 			ts.T().Fatalf("Failed to initiate authentication flow: %v", err)
 		}
@@ -453,7 +453,7 @@ func (ts *PromptActionsAndMFAFlowTestSuite) TestBasicAuthWithoutMobileUserSMSOTP
 		}
 
 		// Step 2: Choose basic auth
-		basicAuthStep, err := completeAuthFlow(flowStep.FlowID, "basic_auth", map[string]string{})
+		basicAuthStep, err := completeAuthFlow(flowStep.FlowID, map[string]string{}, "basic_auth")
 		if err != nil {
 			ts.T().Fatalf("Failed to complete authentication flow with decision: %v", err)
 		}
@@ -484,7 +484,7 @@ func (ts *PromptActionsAndMFAFlowTestSuite) TestBasicAuthWithoutMobileUserSMSOTP
 			"password": userAttrs["password"].(string),
 		}
 
-		otpFlowStep, err := completeAuthFlow(flowStep.FlowID, "", basicInputs)
+		otpFlowStep, err := completeAuthFlow(flowStep.FlowID, basicInputs, "")
 		if err != nil {
 			ts.T().Fatalf("Failed to complete authentication flow with mobile number: %v", err)
 		}
@@ -515,7 +515,7 @@ func (ts *PromptActionsAndMFAFlowTestSuite) TestBasicAuthWithoutMobileUserSMSOTP
 			"otp": lastMessage.OTP,
 		}
 
-		completeFlowStep, err := completeAuthFlow(flowStep.FlowID, "", otpInputs)
+		completeFlowStep, err := completeAuthFlow(flowStep.FlowID, otpInputs, "")
 		if err != nil {
 			ts.T().Fatalf("Failed to complete authentication flow with OTP: %v", err)
 		}
@@ -543,7 +543,7 @@ func (ts *PromptActionsAndMFAFlowTestSuite) TestBasicAuthWithoutMobileUserSMSOTP
 
 func (ts *PromptActionsAndMFAFlowTestSuite) TestSMSOTPAuthWithValidMobile() {
 	// Step 1: Initialize the flow - should present prompt with action choices
-	flowStep, err := initiateAuthFlow(promptActionsTestAppID, nil)
+	flowStep, err := initiateAuthFlow(promptActionsTestAppID, false, nil, "")
 	if err != nil {
 		ts.T().Fatalf("Failed to initiate authentication flow: %v", err)
 	}
@@ -560,7 +560,7 @@ func (ts *PromptActionsAndMFAFlowTestSuite) TestSMSOTPAuthWithValidMobile() {
 	}
 
 	// Step 2: Choose sms OTP auth
-	smsAuthStep, err := completeAuthFlow(flowStep.FlowID, "prompt_mobile", map[string]string{})
+	smsAuthStep, err := completeAuthFlow(flowStep.FlowID, map[string]string{}, "prompt_mobile")
 	if err != nil {
 		ts.T().Fatalf("Failed to complete authentication flow with decision: %v", err)
 	}
@@ -590,7 +590,7 @@ func (ts *PromptActionsAndMFAFlowTestSuite) TestSMSOTPAuthWithValidMobile() {
 		"mobileNumber": userAttrs["mobileNumber"].(string),
 	}
 
-	otpFlowStep, err := completeAuthFlow(flowStep.FlowID, "action_mobile", mobileInputs)
+	otpFlowStep, err := completeAuthFlow(flowStep.FlowID, mobileInputs, "action_mobile")
 	if err != nil {
 		ts.T().Fatalf("Failed to complete authentication flow with mobile number: %v", err)
 	}
@@ -621,7 +621,7 @@ func (ts *PromptActionsAndMFAFlowTestSuite) TestSMSOTPAuthWithValidMobile() {
 		"otp": lastMessage.OTP,
 	}
 
-	completeFlowStep, err := completeAuthFlow(flowStep.FlowID, "", otpInputs)
+	completeFlowStep, err := completeAuthFlow(flowStep.FlowID, otpInputs, "")
 	if err != nil {
 		ts.T().Fatalf("Failed to complete authentication flow with OTP: %v", err)
 	}
@@ -649,7 +649,7 @@ func (ts *PromptActionsAndMFAFlowTestSuite) TestSMSOTPAuthWithInvalidMobile() {
 	ts.T().Log("Test Case 5: Authentication with SMS OTP and prompt actions - invalid mobile should fail")
 
 	// Step 1: Initialize the flow - should present prompt with action choices
-	flowStep, err := initiateAuthFlow(promptActionsTestAppID, nil)
+	flowStep, err := initiateAuthFlow(promptActionsTestAppID, false, nil, "")
 	if err != nil {
 		ts.T().Fatalf("Failed to initiate authentication flow: %v", err)
 	}
@@ -666,7 +666,7 @@ func (ts *PromptActionsAndMFAFlowTestSuite) TestSMSOTPAuthWithInvalidMobile() {
 	}
 
 	// Step 2: Choose sms OTP auth
-	smsAuthStep, err := completeAuthFlow(flowStep.FlowID, "prompt_mobile", map[string]string{})
+	smsAuthStep, err := completeAuthFlow(flowStep.FlowID, map[string]string{}, "prompt_mobile")
 	if err != nil {
 		ts.T().Fatalf("Failed to complete authentication flow with decision: %v", err)
 	}

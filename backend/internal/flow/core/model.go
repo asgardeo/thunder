@@ -29,6 +29,7 @@ type NodeContext struct {
 	FlowID        string
 	FlowType      common.FlowType
 	AppID         string
+	Verbose       bool
 	CurrentAction string
 
 	NodeProperties map[string]interface{}

@@ -32,6 +32,7 @@ type FlowData struct {
 	Actions        []Action          `json:"actions,omitempty"`
 	RedirectURL    string            `json:"redirectURL,omitempty"`
 	AdditionalData map[string]string `json:"additionalData,omitempty"`
+	Meta           interface{}       `json:"meta,omitempty"`
 }
 
 type Inputs struct {
