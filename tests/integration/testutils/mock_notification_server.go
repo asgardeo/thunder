@@ -25,6 +25,7 @@ import (
 	"log"
 	"net/http"
 	"sync"
+	"time"
 )
 
 // MockNotificationServer provides a mock HTTP server for testing SMS notifications
@@ -180,6 +181,29 @@ func (m *MockNotificationServer) GetLastMessage() *SMSMessage {
 	lastMessage := m.messages[len(m.messages)-1]
 	m.messages = m.messages[:len(m.messages)-1]
 	return &lastMessage
+}
+
+// WaitForMessage waits for a message to arrive with a timeout.
+// It polls every 50ms until a message is available or the timeout is reached.
+// This is more reliable than a fixed sleep for integration tests.
+func (m *MockNotificationServer) WaitForMessage(timeoutMs int) *SMSMessage {
+	pollInterval := 50 // milliseconds
+	elapsed := 0
+
+	for elapsed < timeoutMs {
+		m.mutex.RLock()
+		hasMessages := len(m.messages) > 0
+		m.mutex.RUnlock()
+
+		if hasMessages {
+			return m.GetLastMessage()
+		}
+
+		time.Sleep(time.Duration(pollInterval) * time.Millisecond)
+		elapsed += pollInterval
+	}
+
+	return nil
 }
 
 // ClearMessages clears all stored messages

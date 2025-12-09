@@ -27,8 +27,6 @@ import (
 	"github.com/stretchr/testify/suite"
 )
 
-
-
 var (
 	ouRegTestOU = testutils.OrganizationUnit{
 		Handle:      "ou-reg-flow-test-ou",
@@ -364,10 +362,9 @@ func (ts *OURegistrationFlowTestSuite) TestSMSRegistrationFlowWithOUCreation() {
 			ts.Require().NoError(err)
 			ts.Require().Equal("INCOMPLETE", flowStep.FlowStatus)
 
-			time.Sleep(500 * time.Millisecond)
-
-			lastMessage := ts.mockServer.GetLastMessage()
-			ts.Require().NotNil(lastMessage)
+			// Wait for SMS message with timeout (more reliable than fixed sleep)
+			lastMessage := ts.mockServer.WaitForMessage(2000)
+			ts.Require().NotNil(lastMessage, "Expected SMS message to be received within timeout")
 			ts.Require().NotEmpty(lastMessage.OTP)
 
 			inputs = map[string]string{
@@ -466,10 +463,9 @@ func (ts *OURegistrationFlowTestSuite) TestSMSRegistrationFlowWithOUCreationDupl
 			flowStep, err := initiateRegistrationFlow(ts.smsFlowTestAppID, inputs)
 			ts.Require().NoError(err)
 
-			time.Sleep(500 * time.Millisecond)
-
-			lastMessage := ts.mockServer.GetLastMessage()
-			ts.Require().NotNil(lastMessage)
+			// Wait for SMS message with timeout (more reliable than fixed sleep)
+			lastMessage := ts.mockServer.WaitForMessage(2000)
+			ts.Require().NotNil(lastMessage, "Expected SMS message to be received within timeout")
 
 			newHandle := tc.newOUHandle
 			if newHandle == "" {
