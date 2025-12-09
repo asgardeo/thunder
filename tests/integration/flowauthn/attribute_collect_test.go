@@ -277,7 +277,7 @@ func (ts *AttributeCollectFlowTestSuite) TestAttributeCollectionFlow() {
 			// Test First Login - should prompt for missing attributes
 			ts.Run("FirstLogin", func() {
 				// Step 1: Initialize the flow - should prompt for username/password
-				flowStep, err := initiateAuthFlow(attrCollectTestAppID, nil)
+				flowStep, err := initiateAuthFlow(attrCollectTestAppID, false, nil, "")
 				ts.Require().NoError(err, "Failed to initiate authentication flow")
 				ts.Require().Equal("INCOMPLETE", flowStep.FlowStatus, "Expected flow status to be INCOMPLETE")
 				ts.Require().Equal("VIEW", flowStep.Type, "Expected flow type to be VIEW")
@@ -286,7 +286,7 @@ func (ts *AttributeCollectFlowTestSuite) TestAttributeCollectionFlow() {
 				ts.validateRequiredInputs(flowStep.Data.Inputs, []string{"username", "password"})
 
 				// Step 2: Provide credentials - should authenticate and proceed to attribute collection
-				credentialStep, err := completeAuthFlow(flowStep.FlowID, "", testCase.credentials)
+				credentialStep, err := completeAuthFlow(flowStep.FlowID, testCase.credentials, "")
 				ts.Require().NoError(err, "Failed to complete basic authentication")
 
 				if len(testCase.expectedMissingAttrs) == 0 {
@@ -305,7 +305,7 @@ func (ts *AttributeCollectFlowTestSuite) TestAttributeCollectionFlow() {
 
 					// Step 3: Provide missing attributes
 					if len(testCase.providedAttrs) > 0 {
-						finalStep, err := completeAuthFlow(credentialStep.FlowID, "", testCase.providedAttrs)
+						finalStep, err := completeAuthFlow(credentialStep.FlowID, testCase.providedAttrs, "")
 						ts.Require().NoError(err, "Failed to complete attribute collection")
 						ts.Require().Equal("COMPLETE", finalStep.FlowStatus, "Expected flow status to be COMPLETE")
 						ts.Require().NotEmpty(finalStep.Assertion, "Expected assertion after attribute collection")
@@ -317,13 +317,13 @@ func (ts *AttributeCollectFlowTestSuite) TestAttributeCollectionFlow() {
 			if len(testCase.expectedMissingAttrs) > 0 {
 				ts.Run("SecondLogin", func() {
 					// Now perform second login - should not prompt for attributes
-					flowStep, err := initiateAuthFlow(attrCollectTestAppID, nil)
+					flowStep, err := initiateAuthFlow(attrCollectTestAppID, false, nil, "")
 					ts.Require().NoError(err, "Failed to initiate second authentication flow")
 					ts.Require().Equal("INCOMPLETE", flowStep.FlowStatus, "Expected flow status to be INCOMPLETE")
 					ts.Require().Equal("VIEW", flowStep.Type, "Expected flow type to be VIEW")
 
 					// Provide credentials
-					credentialStep, err := completeAuthFlow(flowStep.FlowID, "", testCase.credentials)
+					credentialStep, err := completeAuthFlow(flowStep.FlowID, testCase.credentials, "")
 					ts.Require().NoError(err, "Failed to complete second authentication")
 					ts.Require().Equal("COMPLETE", credentialStep.FlowStatus,
 						"Expected flow to complete on second login")
@@ -335,7 +335,7 @@ func (ts *AttributeCollectFlowTestSuite) TestAttributeCollectionFlow() {
 }
 
 func (ts *AttributeCollectFlowTestSuite) TestSingleRequestLogin_WithAllInputs() {
-	flowStep, err := initiateAuthFlow(attrCollectTestAppID, nil)
+	flowStep, err := initiateAuthFlow(attrCollectTestAppID, false, nil, "")
 	ts.Require().NoError(err, "Failed to initiate authentication flow")
 	ts.Require().Equal("INCOMPLETE", flowStep.FlowStatus, "Expected flow status to be INCOMPLETE")
 	ts.Require().Equal("VIEW", flowStep.Type, "Expected flow type to be VIEW")
@@ -350,7 +350,7 @@ func (ts *AttributeCollectFlowTestSuite) TestSingleRequestLogin_WithAllInputs() 
 		"email":        "john.doe2@example.com",
 		"mobileNumber": "+1987654345",
 	}
-	finalStep, err := completeAuthFlow(flowStep.FlowID, "", allInputs)
+	finalStep, err := completeAuthFlow(flowStep.FlowID, allInputs, "")
 	ts.Require().NoError(err, "Failed to complete authentication with all inputs")
 	ts.Require().Equal("COMPLETE", finalStep.FlowStatus, "Expected flow status to be COMPLETE")
 	ts.Require().NotEmpty(finalStep.Assertion, "Expected assertion after completing flow with all inputs")
@@ -362,10 +362,10 @@ func (ts *AttributeCollectFlowTestSuite) TestInvalidCredentials() {
 		"password": "wrongpassword",
 	}
 
-	flowStep, err := initiateAuthFlow(attrCollectTestAppID, nil)
+	flowStep, err := initiateAuthFlow(attrCollectTestAppID, false, nil, "")
 	ts.Require().NoError(err, "Failed to initiate authentication flow")
 
-	errorResp, err := completeAuthFlow(flowStep.FlowID, "", invalidCredentials)
+	errorResp, err := completeAuthFlow(flowStep.FlowID, invalidCredentials, "")
 	ts.Require().NoError(err, "Expected error response for invalid credentials")
 	ts.Require().NotEmpty(errorResp.FailureReason, "Expected failure reason for invalid credentials")
 	ts.Require().Equal("User not found", errorResp.FailureReason,

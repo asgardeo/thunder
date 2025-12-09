@@ -34,7 +34,7 @@ import (
 // FlowExecServiceInterface defines the interface for flow orchestration and acts as the
 // entry point for flow execution
 type FlowExecServiceInterface interface {
-	Execute(appID, flowID, action, flowType string, inputs map[string]string) (
+	Execute(appID, flowID, flowType string, verbose bool, action string, inputs map[string]string) (
 		*FlowStep, *serviceerror.ServiceError)
 	InitiateFlow(initContext *FlowInitContext) (string, *serviceerror.ServiceError)
 }
@@ -58,9 +58,9 @@ func newFlowExecService(flowMgtService flowmgt.FlowMgtServiceInterface,
 	}
 }
 
-// TODO: Move flowType to the beginning
 // Execute executes a flow with the given data
-func (s *flowExecService) Execute(appID, flowID, action, flowType string, inputs map[string]string) (
+func (s *flowExecService) Execute(appID, flowID, flowType string, verbose bool,
+	action string, inputs map[string]string) (
 	*FlowStep, *serviceerror.ServiceError) {
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, "FlowExecService"))
 
@@ -68,7 +68,7 @@ func (s *flowExecService) Execute(appID, flowID, action, flowType string, inputs
 	var loadErr *serviceerror.ServiceError
 
 	if isNewFlow(flowID) {
-		context, loadErr = s.loadNewContext(appID, action, flowType, inputs, logger)
+		context, loadErr = s.loadNewContext(appID, flowType, verbose, action, inputs, logger)
 		if loadErr != nil {
 			logger.Error("Failed to load new flow context",
 				log.String("appID", appID),
@@ -127,14 +127,15 @@ func (s *flowExecService) Execute(appID, flowID, action, flowType string, inputs
 }
 
 // initContext initializes a new flow context with the given details.
-func (s *flowExecService) loadNewContext(appID, action, flowTypeStr string,
-	inputs map[string]string, logger *log.Logger) (*EngineContext, *serviceerror.ServiceError) {
+func (s *flowExecService) loadNewContext(appID, flowTypeStr string, verbose bool,
+	action string, inputs map[string]string, logger *log.Logger) (
+	*EngineContext, *serviceerror.ServiceError) {
 	flowType, err := validateFlowType(flowTypeStr)
 	if err != nil {
 		return nil, err
 	}
 
-	ctx, err := s.initContext(appID, flowType, logger)
+	ctx, err := s.initContext(appID, flowType, verbose, logger)
 	if err != nil {
 		return nil, err
 	}
@@ -145,7 +146,7 @@ func (s *flowExecService) loadNewContext(appID, action, flowTypeStr string,
 
 // initContext initializes a new flow context with the given details.
 func (s *flowExecService) initContext(appID string, flowType common.FlowType,
-	logger *log.Logger) (*EngineContext, *serviceerror.ServiceError) {
+	verbose bool, logger *log.Logger) (*EngineContext, *serviceerror.ServiceError) {
 	graphID, svcErr := s.getFlowGraph(appID, flowType, logger)
 	if svcErr != nil {
 		return nil, svcErr
@@ -163,6 +164,7 @@ func (s *flowExecService) initContext(appID string, flowType common.FlowType,
 	ctx.FlowType = graph.GetType()
 	ctx.Graph = graph
 	ctx.AppID = appID
+	ctx.Verbose = verbose
 
 	svcErr = s.setApplicationToContext(&ctx, logger)
 	if svcErr != nil {
@@ -402,7 +404,8 @@ func (s *flowExecService) InitiateFlow(initContext *FlowInitContext) (string, *s
 	}
 
 	// Initialize the engine context
-	ctx, err := s.initContext(initContext.ApplicationID, flowType, logger)
+	// This uses verbose true to ensure step layouts are returned during execution
+	ctx, err := s.initContext(initContext.ApplicationID, flowType, true, logger)
 	if err != nil {
 		logger.Error("Failed to initialize flow context",
 			log.String("appID", initContext.ApplicationID),

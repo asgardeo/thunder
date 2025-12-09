@@ -33,6 +33,7 @@ type EngineContext struct {
 	FlowID      string
 	FlowType    common.FlowType
 	AppID       string
+	Verbose     bool
 	UserInputs  map[string]string
 	RuntimeData map[string]string
 
@@ -63,6 +64,7 @@ type FlowData struct {
 	Inputs         []common.Input    `json:"inputs,omitempty"`
 	RedirectURL    string            `json:"redirectURL,omitempty"`
 	Actions        []common.Action   `json:"actions,omitempty"`
+	Meta           interface{}       `json:"meta,omitempty"`
 	AdditionalData map[string]string `json:"additionalData,omitempty"`
 }
 
@@ -81,6 +83,7 @@ type FlowResponse struct {
 type FlowRequest struct {
 	ApplicationID string            `json:"applicationId"`
 	FlowType      string            `json:"flowType"`
+	Verbose       bool              `json:"verbose,omitempty"`
 	FlowID        string            `json:"flowId"`
 	Action        string            `json:"action"`
 	Inputs        map[string]string `json:"inputs"`
@@ -97,6 +100,7 @@ type FlowInitContext struct {
 type FlowContextWithUserDataDB struct {
 	FlowID             string
 	AppID              string
+	Verbose            bool
 	CurrentNodeID      *string
 	CurrentAction      *string
 	GraphID            string
@@ -188,6 +192,7 @@ func (f *FlowContextWithUserDataDB) ToEngineContext(graph core.GraphInterface) (
 		FlowID:            f.FlowID,
 		FlowType:          graph.GetType(),
 		AppID:             f.AppID,
+		Verbose:           f.Verbose,
 		UserInputs:        userInputs,
 		RuntimeData:       runtimeData,
 		CurrentNode:       currentNode,
@@ -268,6 +273,7 @@ func FromEngineContext(ctx EngineContext) (*FlowContextWithUserDataDB, error) {
 	return &FlowContextWithUserDataDB{
 		FlowID:             ctx.FlowID,
 		AppID:              ctx.AppID,
+		Verbose:            ctx.Verbose,
 		CurrentNodeID:      currentNodeID,
 		CurrentAction:      currentAction,
 		GraphID:            graphID,

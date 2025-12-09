@@ -196,7 +196,7 @@ func (ts *GithubRegistrationFlowTestSuite) TearDownSuite() {
 
 func (ts *GithubRegistrationFlowTestSuite) TestGithubRegistrationFlowInitiation() {
 	// Initialize the flow by calling the flow execution API
-	flowStep, err := initiateRegistrationFlow(githubRegTestAppID, nil)
+	flowStep, err := initiateRegistrationFlow(githubRegTestAppID, false, nil, "")
 	if err != nil {
 		ts.T().Fatalf("Failed to initiate GitHub registration flow: %v", err)
 	}
@@ -232,7 +232,7 @@ func (ts *GithubRegistrationFlowTestSuite) TestGithubRegistrationFlowInitiation(
 
 func (ts *GithubRegistrationFlowTestSuite) TestGithubRegistrationFlowCompleteSuccess() {
 	// Step 1: Initialize the flow by calling the flow execution API
-	flowStep, err := initiateRegistrationFlow(githubRegTestAppID, nil)
+	flowStep, err := initiateRegistrationFlow(githubRegTestAppID, false, nil, "")
 	if err != nil {
 		ts.T().Fatalf("Failed to initiate GitHub registration flow: %v", err)
 	}
@@ -258,7 +258,7 @@ func (ts *GithubRegistrationFlowTestSuite) TestGithubRegistrationFlowCompleteSuc
 		"code": authCode,
 	}
 
-	completeFlowStep, err := completeRegistrationFlow(flowID, "", inputs)
+	completeFlowStep, err := completeRegistrationFlow(flowID, inputs, "")
 	if err != nil {
 		ts.T().Fatalf("Failed to complete GitHub registration flow: %v", err)
 	}
@@ -302,7 +302,7 @@ func (ts *GithubRegistrationFlowTestSuite) TestGithubRegistrationFlowCompleteSuc
 
 func (ts *GithubRegistrationFlowTestSuite) TestGithubRegistrationFlowCompleteWithInvalidCode() {
 	// Step 1: Initialize the flow
-	flowStep, err := initiateRegistrationFlow(githubRegTestAppID, nil)
+	flowStep, err := initiateRegistrationFlow(githubRegTestAppID, false, nil, "")
 	if err != nil {
 		ts.T().Fatalf("Failed to initiate GitHub registration flow: %v", err)
 	}
@@ -314,13 +314,13 @@ func (ts *GithubRegistrationFlowTestSuite) TestGithubRegistrationFlowCompleteWit
 		"code": "invalid-reg-auth-code-12345",
 	}
 
-	_, err = completeRegistrationFlow(flowID, "", inputs)
+	_, err = completeRegistrationFlow(flowID, inputs, "")
 	ts.Require().Error(err, "Should fail with invalid authorization code")
 }
 
 func (ts *GithubRegistrationFlowTestSuite) TestGithubRegistrationFlowCompleteWithMissingCode() {
 	// Step 1: Initialize the flow
-	flowStep, err := initiateRegistrationFlow(githubRegTestAppID, nil)
+	flowStep, err := initiateRegistrationFlow(githubRegTestAppID, false, nil, "")
 	if err != nil {
 		ts.T().Fatalf("Failed to initiate GitHub registration flow: %v", err)
 	}
@@ -332,7 +332,7 @@ func (ts *GithubRegistrationFlowTestSuite) TestGithubRegistrationFlowCompleteWit
 
 	// When required inputs are missing, the flow returns INCOMPLETE status (not an error)
 	// and asks for the missing inputs again
-	flowStep, err = completeRegistrationFlow(flowID, "", inputs)
+	flowStep, err = completeRegistrationFlow(flowID, inputs, "")
 	ts.Require().NoError(err, "Should not return error when inputs are missing")
 	ts.Require().Equal("INCOMPLETE", flowStep.FlowStatus,
 		"Flow should remain INCOMPLETE when required inputs are missing")
@@ -352,7 +352,7 @@ func (ts *GithubRegistrationFlowTestSuite) TestGithubRegistrationFlowCompleteWit
 
 func (ts *GithubRegistrationFlowTestSuite) TestGithubRegistrationFlowDuplicateUser() {
 	// Step 1: First, create a user through registration
-	flowStep, err := initiateRegistrationFlow(githubRegTestAppID, nil)
+	flowStep, err := initiateRegistrationFlow(githubRegTestAppID, false, nil, "")
 	if err != nil {
 		ts.T().Fatalf("Failed to initiate first GitHub registration flow: %v", err)
 	}
@@ -367,7 +367,7 @@ func (ts *GithubRegistrationFlowTestSuite) TestGithubRegistrationFlowDuplicateUs
 		"code": authCode,
 	}
 
-	completeFlowStep, err := completeRegistrationFlow(flowStep.FlowID, "", inputs)
+	completeFlowStep, err := completeRegistrationFlow(flowStep.FlowID, inputs, "")
 	if err != nil {
 		ts.T().Fatalf("Failed to complete first GitHub registration flow: %v", err)
 	}
@@ -381,7 +381,7 @@ func (ts *GithubRegistrationFlowTestSuite) TestGithubRegistrationFlowDuplicateUs
 	}
 
 	// Step 2: Try to register again with the same GitHub user
-	flowStep2, err := initiateRegistrationFlow(githubRegTestAppID, nil)
+	flowStep2, err := initiateRegistrationFlow(githubRegTestAppID, false, nil, "")
 	if err != nil {
 		ts.T().Fatalf("Failed to initiate second GitHub registration flow: %v", err)
 	}
@@ -396,7 +396,7 @@ func (ts *GithubRegistrationFlowTestSuite) TestGithubRegistrationFlowDuplicateUs
 		"code": authCode2,
 	}
 
-	completeFlowStep2, err := completeRegistrationFlow(flowStep2.FlowID, "", inputs2)
+	completeFlowStep2, err := completeRegistrationFlow(flowStep2.FlowID, inputs2, "")
 	if err != nil {
 		ts.T().Fatalf("Failed to complete second GitHub registration flow: %v", err)
 	}

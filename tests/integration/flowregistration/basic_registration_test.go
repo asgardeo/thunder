@@ -158,7 +158,7 @@ func (ts *BasicRegistrationFlowTestSuite) TestBasicRegistrationFlowSuccess() {
 	username := generateUniqueUsername("reguser")
 
 	// Step 1: Initialize the registration flow
-	flowStep, err := initiateRegistrationFlow(ts.testAppID, nil)
+	flowStep, err := initiateRegistrationFlow(ts.testAppID, false, nil, "")
 	if err != nil {
 		ts.T().Fatalf("Failed to initiate registration flow: %v", err)
 	}
@@ -181,7 +181,7 @@ func (ts *BasicRegistrationFlowTestSuite) TestBasicRegistrationFlowSuccess() {
 		"password": "testpassword123",
 	}
 
-	completeFlowStep, err := completeRegistrationFlow(flowStep.FlowID, "", inputs)
+	completeFlowStep, err := completeRegistrationFlow(flowStep.FlowID, inputs, "")
 	if err != nil {
 		ts.T().Fatalf("Failed to complete registration flow: %v", err)
 	}
@@ -200,7 +200,7 @@ func (ts *BasicRegistrationFlowTestSuite) TestBasicRegistrationFlowSuccess() {
 		"firstName": "Test",
 		"lastName":  "User",
 	}
-	completeFlowStep, err = completeRegistrationFlow(completeFlowStep.FlowID, "", inputs)
+	completeFlowStep, err = completeRegistrationFlow(completeFlowStep.FlowID, inputs, "")
 	if err != nil {
 		ts.T().Fatalf("Failed to complete registration flow with additional attributes: %v", err)
 	}
@@ -256,7 +256,7 @@ func (ts *BasicRegistrationFlowTestSuite) TestBasicRegistrationFlowDuplicateUser
 	ts.config.CreatedUserIDs = append(ts.config.CreatedUserIDs, userIDs...)
 
 	// Step 1: Initialize the registration flow
-	flowStep, err := initiateRegistrationFlow(ts.testAppID, nil)
+	flowStep, err := initiateRegistrationFlow(ts.testAppID, false, nil, "")
 	if err != nil {
 		ts.T().Fatalf("Failed to initiate registration flow: %v", err)
 	}
@@ -267,7 +267,7 @@ func (ts *BasicRegistrationFlowTestSuite) TestBasicRegistrationFlowDuplicateUser
 		"password": "newpassword123",
 	}
 
-	completeFlowStep, err := completeRegistrationFlow(flowStep.FlowID, "", inputs)
+	completeFlowStep, err := completeRegistrationFlow(flowStep.FlowID, inputs, "")
 	if err != nil {
 		ts.T().Fatalf("Failed to complete registration flow: %v", err)
 	}
@@ -282,7 +282,7 @@ func (ts *BasicRegistrationFlowTestSuite) TestBasicRegistrationFlowDuplicateUser
 
 func (ts *BasicRegistrationFlowTestSuite) TestBasicRegistrationFlowInitialInvalidInput() {
 	// Step 1: Initialize the registration flow
-	flowStep, err := initiateRegistrationFlow(ts.testAppID, nil)
+	flowStep, err := initiateRegistrationFlow(ts.testAppID, false, nil, "")
 	if err != nil {
 		ts.T().Fatalf("Failed to initiate registration flow: %v", err)
 	}
@@ -292,7 +292,7 @@ func (ts *BasicRegistrationFlowTestSuite) TestBasicRegistrationFlowInitialInvali
 	inputs := map[string]string{
 		"username": username,
 	}
-	completeFlowStep, err := completeRegistrationFlow(flowStep.FlowID, "", inputs)
+	completeFlowStep, err := completeRegistrationFlow(flowStep.FlowID, inputs, "")
 	if err != nil {
 		ts.T().Fatalf("Failed to complete registration flow: %v", err)
 	}
@@ -308,7 +308,7 @@ func (ts *BasicRegistrationFlowTestSuite) TestBasicRegistrationFlowInitialInvali
 	inputs = map[string]string{
 		"password": "testpassword123",
 	}
-	completeFlowStep, err = completeRegistrationFlow(completeFlowStep.FlowID, "", inputs)
+	completeFlowStep, err = completeRegistrationFlow(completeFlowStep.FlowID, inputs, "")
 	if err != nil {
 		ts.T().Fatalf("Failed to complete registration flow with username input: %v", err)
 	}
@@ -327,7 +327,7 @@ func (ts *BasicRegistrationFlowTestSuite) TestBasicRegistrationFlowInitialInvali
 		"firstName": "Test",
 		"lastName":  "User",
 	}
-	completeFlowStep, err = completeRegistrationFlow(completeFlowStep.FlowID, "", inputs)
+	completeFlowStep, err = completeRegistrationFlow(completeFlowStep.FlowID, inputs, "")
 	if err != nil {
 		ts.T().Fatalf("Failed to complete registration flow with additional attributes: %v", err)
 	}
@@ -375,7 +375,7 @@ func (ts *BasicRegistrationFlowTestSuite) TestBasicRegistrationFlowSingleRequest
 		"lastName":  "Request",
 	}
 
-	flowStep, err := initiateRegistrationFlow(ts.testAppID, inputs)
+	flowStep, err := initiateRegistrationFlow(ts.testAppID, false, inputs, "")
 	if err != nil {
 		ts.T().Fatalf("Failed to initiate registration flow with inputs: %v", err)
 	}

@@ -235,7 +235,7 @@ func (ts *OURegistrationFlowTestSuite) TestBasicRegistrationFlowWithOU() {
 				"email":         username + "@example.com",
 			}
 
-			flowStep, err := initiateRegistrationFlow(ts.basicFlowTestAppID, inputs)
+			flowStep, err := initiateRegistrationFlow(ts.basicFlowTestAppID, false, inputs, "")
 			ts.Require().NoError(err)
 			ts.Require().Equal("COMPLETE", flowStep.FlowStatus)
 			ts.Require().NotEmpty(flowStep.Assertion)
@@ -328,7 +328,7 @@ func (ts *OURegistrationFlowTestSuite) TestBasicRegistrationFlowWithOUCreationDu
 				"email":         username + "@example.com",
 			}
 
-			flowStep, err := initiateRegistrationFlow(ts.basicFlowTestAppID, inputs)
+			flowStep, err := initiateRegistrationFlow(ts.basicFlowTestAppID, false, inputs, "")
 			ts.Require().NoError(err)
 			ts.Require().Equal("ERROR", flowStep.FlowStatus)
 			ts.Require().Empty(flowStep.Assertion)
@@ -367,7 +367,7 @@ func (ts *OURegistrationFlowTestSuite) TestSMSRegistrationFlowWithOUCreation() {
 				"mobileNumber": mobileNumber,
 			}
 
-			flowStep, err := initiateRegistrationFlow(ts.smsFlowTestAppID, inputs)
+			flowStep, err := initiateRegistrationFlow(ts.smsFlowTestAppID, false, inputs, "")
 			ts.Require().NoError(err)
 			ts.Require().Equal("INCOMPLETE", flowStep.FlowStatus)
 
@@ -387,7 +387,7 @@ func (ts *OURegistrationFlowTestSuite) TestSMSRegistrationFlowWithOUCreation() {
 				"email":         mobileNumber + "@example.com",
 			}
 
-			flowStep, err = completeRegistrationFlow(flowStep.FlowID, "", inputs)
+			flowStep, err = completeRegistrationFlow(flowStep.FlowID, inputs, "")
 			ts.Require().NoError(err)
 			ts.Require().Equal("COMPLETE", flowStep.FlowStatus)
 			ts.Require().NotEmpty(flowStep.Assertion)
@@ -470,7 +470,7 @@ func (ts *OURegistrationFlowTestSuite) TestSMSRegistrationFlowWithOUCreationDupl
 				"mobileNumber": mobileNumber,
 			}
 
-			flowStep, err := initiateRegistrationFlow(ts.smsFlowTestAppID, inputs)
+			flowStep, err := initiateRegistrationFlow(ts.smsFlowTestAppID, false, inputs, "")
 			ts.Require().NoError(err)
 
 			time.Sleep(500 * time.Millisecond)
@@ -493,7 +493,7 @@ func (ts *OURegistrationFlowTestSuite) TestSMSRegistrationFlowWithOUCreationDupl
 				"email":         mobileNumber + "@example.com",
 			}
 
-			flowStep, err = completeRegistrationFlow(flowStep.FlowID, "", inputs)
+			flowStep, err = completeRegistrationFlow(flowStep.FlowID, inputs, "")
 			ts.Require().NoError(err)
 			ts.Require().Equal("ERROR", flowStep.FlowStatus)
 			ts.Require().Empty(flowStep.Assertion)

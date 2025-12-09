@@ -67,6 +67,8 @@ type PromptNodeInterface interface {
 	NodeInterface
 	GetActions() []common.Action
 	SetActions(actions []common.Action)
+	GetMeta() interface{}
+	SetMeta(meta interface{})
 }
 
 // node implements the NodeInterface

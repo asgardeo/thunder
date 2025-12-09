@@ -139,3 +139,91 @@ func (s *PromptOnlyNodeTestSuite) TestExecuteMissingRequiredOnly() {
 	}
 	s.True(foundRequired)
 }
+
+func (s *PromptOnlyNodeTestSuite) TestExecuteWithVerboseModeEnabled() {
+	meta := map[string]interface{}{
+		"components": []interface{}{
+			map[string]interface{}{
+				"type":  "TEXT",
+				"id":    "text_001",
+				"label": "Welcome",
+			},
+		},
+	}
+
+	node := newPromptNode("prompt-1", map[string]interface{}{}, false, false)
+	promptNode := node.(PromptNodeInterface)
+	promptNode.SetMeta(meta)
+	promptNode.SetInputs([]common.Input{
+		{Identifier: "username", Required: true},
+	})
+
+	// Test with verbose mode enabled
+	ctx := &NodeContext{
+		FlowID:     "test-flow",
+		UserInputs: map[string]string{},
+		Verbose:    true,
+	}
+	resp, err := node.Execute(ctx)
+
+	s.Nil(err)
+	s.NotNil(resp)
+	s.Equal(common.NodeStatusIncomplete, resp.Status)
+	s.Equal(common.NodeResponseTypeView, resp.Type)
+	s.NotNil(resp.Meta)
+	s.Equal(meta, resp.Meta)
+}
+
+func (s *PromptOnlyNodeTestSuite) TestExecuteWithVerboseModeDisabled() {
+	meta := map[string]interface{}{
+		"components": []interface{}{
+			map[string]interface{}{
+				"type":  "TEXT",
+				"id":    "text_001",
+				"label": "Welcome",
+			},
+		},
+	}
+
+	node := newPromptNode("prompt-1", map[string]interface{}{}, false, false)
+	promptNode := node.(PromptNodeInterface)
+	promptNode.SetMeta(meta)
+	promptNode.SetInputs([]common.Input{
+		{Identifier: "username", Required: true},
+	})
+
+	// Test with verbose mode disabled (default)
+	ctx := &NodeContext{
+		FlowID:     "test-flow",
+		UserInputs: map[string]string{},
+		Verbose:    false,
+	}
+	resp, err := node.Execute(ctx)
+
+	s.Nil(err)
+	s.NotNil(resp)
+	s.Equal(common.NodeStatusIncomplete, resp.Status)
+	s.Equal(common.NodeResponseTypeView, resp.Type)
+	s.Nil(resp.Meta)
+}
+
+func (s *PromptOnlyNodeTestSuite) TestExecuteVerboseModeNoMeta() {
+	node := newPromptNode("prompt-1", map[string]interface{}{}, false, false)
+	node.SetInputs([]common.Input{
+		{Identifier: "username", Required: true},
+	})
+
+	// Test with verbose mode enabled but no meta defined
+	ctx := &NodeContext{
+		FlowID:     "test-flow",
+		UserInputs: map[string]string{},
+		Verbose:    true,
+	}
+	resp, err := node.Execute(ctx)
+
+	s.Nil(err)
+	s.NotNil(resp)
+	s.Equal(common.NodeStatusIncomplete, resp.Status)
+	s.Equal(common.NodeResponseTypeView, resp.Type)
+	s.Nil(resp.Meta)
+}

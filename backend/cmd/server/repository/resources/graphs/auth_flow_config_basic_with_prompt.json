@@ -5,16 +5,57 @@
         {
             "id": "start",
             "type": "START",
-            "onSuccess": "prompt_username"
+            "onSuccess": "prompt_credentials"
         },
         {
-            "id": "prompt_username",
+            "id": "prompt_credentials",
             "type": "PROMPT",
+            "meta": {
+                "components": [
+                    {
+                        "type": "TEXT",
+                        "id": "text_001",
+                        "label": "{{ t(signin:heading.label) }}",
+                        "variant": "HEADING_01"
+                    },
+                    {
+                        "type": "BLOCK",
+                        "id": "block_001",
+                        "components": [
+                            {
+                                "type": "TEXT_INPUT",
+                                "id": "input_001",
+                                "label": "{{ t(signin:fields.username.label) }}",
+                                "required": true,
+                                "placeholder": "{{ t(signin:fields.username.placeholder) }}"
+                            },
+                            {
+                                "type": "TEXT_INPUT",
+                                "id": "input_002",
+                                "label": "{{ t(signin:fields.password.label) }}",
+                                "required": true,
+                                "placeholder": "{{ t(signin:fields.password.placeholder) }}"
+                            },
+                            {
+                                "type": "ACTION",
+                                "id": "action_001",
+                                "label": "{{ t(signin:buttons.submit.label) }}"
+                            }
+                        ]
+                    }
+                ]
+            },
             "inputs": [
                 {
                     "ref": "input_001",
                     "identifier": "username",
                     "type": "TEXT_INPUT",
+                    "required": true
+                },
+                {
+                    "ref": "input_002",
+                    "identifier": "password",
+                    "type": "PASSWORD_INPUT",
                     "required": true
                 }
             ],
@@ -28,14 +69,6 @@
         {
             "id": "basic_auth",
             "type": "TASK_EXECUTION",
-            "inputs": [
-                {
-                    "ref": "input_002",
-                    "identifier": "password",
-                    "type": "PASSWORD_INPUT",
-                    "required": true
-                }
-            ],
             "executor": {
                 "name": "BasicAuthExecutor"
             },
