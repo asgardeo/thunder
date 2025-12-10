@@ -165,8 +165,8 @@ func (fe *flowEngine) Execute(ctx *EngineContext) (FlowStep, *serviceerror.Servi
 
 	// If we reach here, it means the flow has been executed successfully.
 	flowStep.Status = common.FlowStatusComplete
-	if ctx.CurrentNodeResponse != nil && ctx.CurrentNodeResponse.Assertion != "" {
-		flowStep.Assertion = ctx.CurrentNodeResponse.Assertion
+	if ctx.Assertion != "" {
+		flowStep.Assertion = ctx.Assertion
 	}
 
 	// Publish flow completed event
@@ -290,6 +290,11 @@ func (fe *flowEngine) updateContextWithNodeResponse(engineCtx *EngineContext, no
 				engineCtx.RuntimeData["userID"] = engineCtx.AuthenticatedUser.UserID
 			}
 		}
+	}
+
+	// Add assertion to the context
+	if nodeResp.Assertion != "" {
+		engineCtx.Assertion = nodeResp.Assertion
 	}
 }
 

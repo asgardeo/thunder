@@ -60,7 +60,7 @@
             "executor": {
                 "name": "GoogleOIDCAuthExecutor"
             },
-            "onSuccess": "authenticated"
+            "onSuccess": "auth_assert"
         },
         {
             "id": "github_auth",
@@ -79,7 +79,7 @@
             "executor": {
                 "name": "GithubOAuthExecutor"
             },
-            "onSuccess": "authenticated"
+            "onSuccess": "auth_assert"
         },
         {
             "id": "prompt_mobile",
@@ -124,11 +124,19 @@
             "executor": {
                 "name": "AttributeCollector"
             },
-            "onSuccess": "authenticated"
+            "onSuccess": "auth_assert"
         },
         {
-            "id": "authenticated",
-            "type": "AUTHENTICATION_SUCCESS"
+            "id": "auth_assert",
+            "type": "TASK_EXECUTION",
+            "executor": {
+                "name": "AuthAssertExecutor"
+            },
+            "onSuccess": "end"
+        },
+        {
+            "id": "end",
+            "type": "END"
         }
     ]
 }

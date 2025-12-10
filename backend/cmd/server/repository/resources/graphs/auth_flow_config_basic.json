@@ -35,11 +35,19 @@
             "executor": {
                 "name": "AuthorizationExecutor"
             },
-            "onSuccess": "authenticated"
+            "onSuccess": "auth_assert"
         },
         {
-            "id": "authenticated",
-            "type": "AUTHENTICATION_SUCCESS"
+            "id": "auth_assert",
+            "type": "TASK_EXECUTION",
+            "executor": {
+                "name": "AuthAssertExecutor"
+            },
+            "onSuccess": "end"
+        },
+        {
+            "id": "end",
+            "type": "END"
         }
     ]
 }

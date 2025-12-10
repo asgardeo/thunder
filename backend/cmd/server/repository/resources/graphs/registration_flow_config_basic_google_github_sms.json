@@ -5,6 +5,14 @@
         {
             "id": "start",
             "type": "START",
+            "onSuccess": "user_type_resolver"
+        },
+        {
+            "id": "user_type_resolver",
+            "type": "TASK_EXECUTION",
+            "executor": {
+                "name": "UserTypeResolver"
+            },
             "onSuccess": "choose_auth"
         },
         {
@@ -137,7 +145,7 @@
             "executor": {
                 "name": "ProvisioningExecutor"
             },
-            "onSuccess": "authenticated"
+            "onSuccess": "auth_assert"
         },
         {
             "id": "provisioning_local_sms",
@@ -165,7 +173,7 @@
             "executor": {
                 "name": "ProvisioningExecutor"
             },
-            "onSuccess": "authenticated"
+            "onSuccess": "auth_assert"
         },
         {
             "id": "provisioning_social",
@@ -173,11 +181,19 @@
             "executor": {
                 "name": "ProvisioningExecutor"
             },
-            "onSuccess": "authenticated"
+            "onSuccess": "auth_assert"
         },
         {
-            "id": "authenticated",
-            "type": "AUTHENTICATION_SUCCESS"
+            "id": "auth_assert",
+            "type": "TASK_EXECUTION",
+            "executor": {
+                "name": "AuthAssertExecutor"
+            },
+            "onSuccess": "end"
+        },
+        {
+            "id": "end",
+            "type": "END"
         }
     ]
 }

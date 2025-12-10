@@ -58,8 +58,10 @@ func (s *FlowFactoryTestSuite) TestCreateNodeSuccess() {
 			map[string]interface{}{"key": "value"}, true, false, common.NodeTypeTaskExecution},
 		{"Create prompt only node", "node-3", string(common.NodeTypePrompt),
 			nil, false, true, common.NodeTypePrompt},
-		{"Create auth success node", "node-4", string(common.NodeTypeAuthSuccess),
-			map[string]interface{}{}, false, true, common.NodeTypeTaskExecution},
+		{"Create start node", "node-4", string(common.NodeTypeStart),
+			map[string]interface{}{}, true, false, common.NodeTypeStart},
+		{"Create end node", "node-5", string(common.NodeTypeEnd),
+			map[string]interface{}{}, false, true, common.NodeTypeEnd},
 	}
 
 	for _, tt := range tests {
@@ -95,6 +97,42 @@ func (s *FlowFactoryTestSuite) TestCreateNodeFailure() {
 			s.Error(err)
 			s.Nil(node)
 		})
+	}
+}
+
+func (s *FlowFactoryTestSuite) TestCreateStartNodeWithOnSuccess() {
+	node, err := s.factory.CreateNode("start", string(common.NodeTypeStart),
+		map[string]interface{}{}, true, false)
+
+	s.NoError(err)
+	s.NotNil(node)
+	s.Equal(common.NodeTypeStart, node.GetType())
+	s.True(node.IsStartNode())
+
+	// Test that we can set and get onSuccess (START is a representation node)
+	if repNode, ok := node.(RepresentationNodeInterface); ok {
+		repNode.SetOnSuccess("next-node")
+		s.Equal("next-node", repNode.GetOnSuccess())
+	} else {
+		s.Fail("Node should implement RepresentationNodeInterface")
+	}
+}
+
+func (s *FlowFactoryTestSuite) TestCreateEndNodeWithOnSuccess() {
+	node, err := s.factory.CreateNode("end", string(common.NodeTypeEnd),
+		map[string]interface{}{}, false, true)
+
+	s.NoError(err)
+	s.NotNil(node)
+	s.Equal(common.NodeTypeEnd, node.GetType())
+	s.True(node.IsFinalNode())
+
+	// Test that we can set and get onSuccess (END is a representation node)
+	if repNode, ok := node.(RepresentationNodeInterface); ok {
+		repNode.SetOnSuccess("should-be-empty")
+		s.Equal("should-be-empty", repNode.GetOnSuccess())
+	} else {
+		s.Fail("Node should implement RepresentationNodeInterface")
 	}
 }
 
@@ -209,6 +247,54 @@ func (s *FlowFactoryTestSuite) TestCloneNodeWithCondition() {
 		Value: "newValue",
 	})
 	s.NotEqual(node.GetCondition().Key, clonedNode.GetCondition().Key)
+}
+
+func (s *FlowFactoryTestSuite) TestCloneStartNodeWithOnSuccess() {
+	node, _ := s.factory.CreateNode("start", string(common.NodeTypeStart),
+		map[string]interface{}{}, true, false)
+
+	repNode, ok := node.(RepresentationNodeInterface)
+	s.True(ok, "Node should implement RepresentationNodeInterface")
+	repNode.SetOnSuccess("next-node")
+
+	clonedNode, err := s.factory.CloneNode(node)
+
+	s.NoError(err)
+	s.NotNil(clonedNode)
+
+	clonedRepNode, ok := clonedNode.(RepresentationNodeInterface)
+	s.True(ok, "Cloned node should implement RepresentationNodeInterface")
+	s.Equal(repNode.GetOnSuccess(), clonedRepNode.GetOnSuccess())
+	s.Equal("next-node", clonedRepNode.GetOnSuccess())
+
+	// Verify deep copy - modifying cloned onSuccess doesn't affect source
+	clonedRepNode.SetOnSuccess("different-node")
+	s.Equal("next-node", repNode.GetOnSuccess())
+	s.Equal("different-node", clonedRepNode.GetOnSuccess())
+}
+
+func (s *FlowFactoryTestSuite) TestCloneTaskExecutionNodeWithOnSuccess() {
+	node, _ := s.factory.CreateNode("task", string(common.NodeTypeTaskExecution),
+		map[string]interface{}{}, false, false)
+
+	if execNode, ok := node.(ExecutorBackedNodeInterface); ok {
+		execNode.SetOnSuccess("success-node")
+		execNode.SetOnFailure("failure-node")
+		execNode.SetExecutorName("test-executor")
+	}
+
+	clonedNode, err := s.factory.CloneNode(node)
+
+	s.NoError(err)
+	s.NotNil(clonedNode)
+
+	if clonedExecNode, ok := clonedNode.(ExecutorBackedNodeInterface); ok {
+		s.Equal("success-node", clonedExecNode.GetOnSuccess())
+		s.Equal("failure-node", clonedExecNode.GetOnFailure())
+		s.Equal("test-executor", clonedExecNode.GetExecutorName())
+	} else {
+		s.Fail("Cloned node should be ExecutorBackedNodeInterface")
+	}
 }
 
 func (s *FlowFactoryTestSuite) TestCloneNodesSuccess() {

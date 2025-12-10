@@ -48,6 +48,14 @@ type NodeInterface interface {
 	SetCondition(condition *NodeCondition)
 }
 
+// RepresentationNodeInterface extends NodeInterface for representation nodes (START/END).
+// These nodes use simple onSuccess navigation for linear flow.
+type RepresentationNodeInterface interface {
+	NodeInterface
+	GetOnSuccess() string
+	SetOnSuccess(nodeID string)
+}
+
 // ExecutorBackedNodeInterface extends NodeInterface for nodes backed by executors.
 // Only task execution nodes implement this interface to delegate their execution logic to executors.
 type ExecutorBackedNodeInterface interface {
@@ -86,7 +94,7 @@ type node struct {
 
 var _ NodeInterface = (*node)(nil)
 
-// Execute executes the node
+// Execute is a default implementation that should be overridden by specific node types
 func (n *node) Execute(ctx *NodeContext) (*common.NodeResponse, *serviceerror.ServiceError) {
 	return nil, nil
 }

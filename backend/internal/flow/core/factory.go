@@ -62,10 +62,8 @@ func (f *flowFactory) CreateNode(id, _type string, properties map[string]interfa
 		return newTaskExecutionNode(id, properties, isStartNode, isFinalNode), nil
 	case common.NodeTypePrompt:
 		return newPromptNode(id, properties, isStartNode, isFinalNode), nil
-	case common.NodeTypeAuthSuccess:
-		return newTaskExecutionNode(id, properties, isStartNode, isFinalNode), nil
-	case common.NodeTypeStart:
-		return newTaskExecutionNode(id, properties, isStartNode, isFinalNode), nil
+	case common.NodeTypeStart, common.NodeTypeEnd:
+		return newRepresentationNode(id, nodeType, properties, isStartNode, isFinalNode), nil
 	default:
 		return nil, errors.New("unsupported node type: " + _type)
 	}
@@ -133,10 +131,19 @@ func (f *flowFactory) CloneNode(source NodeInterface) (NodeInterface, error) {
 		})
 	}
 
-	// Copy executor name if the node is executor-backed
+	// Copy onSuccess for representation nodes (START/END)
+	if repSource, ok := source.(RepresentationNodeInterface); ok {
+		if repCopy, ok := nodeCopy.(RepresentationNodeInterface); ok {
+			repCopy.SetOnSuccess(repSource.GetOnSuccess())
+		}
+	}
+
+	// Copy executor name, onSuccess, and onFailure if the node is executor-backed
 	if executableSource, ok := source.(ExecutorBackedNodeInterface); ok {
 		if executableCopy, ok := nodeCopy.(ExecutorBackedNodeInterface); ok {
 			executableCopy.SetExecutorName(executableSource.GetExecutorName())
+			executableCopy.SetOnSuccess(executableSource.GetOnSuccess())
+			executableCopy.SetOnFailure(executableSource.GetOnFailure())
 		} else {
 			return nil, errors.New("mismatch in node types during cloning. copy is not executor-backed")
 		}

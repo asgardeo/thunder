@@ -57,10 +57,10 @@ const (
 type NodeType string
 
 const (
-	// NodeTypeAuthSuccess represents a node that does auth assertion
-	NodeTypeAuthSuccess NodeType = "AUTHENTICATION_SUCCESS"
-	// NodeTypeStart represents the beginning of a flow
+	// NodeTypeStart represents the beginning of a flow (representation node)
 	NodeTypeStart NodeType = "START"
+	// NodeTypeEnd represents the end of a flow (representation node)
+	NodeTypeEnd NodeType = "END"
 	// NodeTypeTaskExecution represents a task execution node
 	NodeTypeTaskExecution NodeType = "TASK_EXECUTION"
 	// NodeTypePrompt represents a prompt node

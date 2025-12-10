@@ -31,7 +31,7 @@
             "executor": {
                 "name": "BasicAuthExecutor"
             },
-            "onSuccess": "authenticated"
+            "onSuccess": "auth_assert"
         },
         {
             "id": "google_auth",
@@ -50,7 +50,7 @@
             "executor": {
                 "name": "GoogleOIDCAuthExecutor"
             },
-            "onSuccess": "authenticated"
+            "onSuccess": "auth_assert"
         },
         {
             "id": "github_auth",
@@ -69,11 +69,19 @@
             "executor": {
                 "name": "GithubOAuthExecutor"
             },
-            "onSuccess": "authenticated"
+            "onSuccess": "auth_assert"
         },
         {
-            "id": "authenticated",
-            "type": "AUTHENTICATION_SUCCESS"
+            "id": "auth_assert",
+            "type": "TASK_EXECUTION",
+            "executor": {
+                "name": "AuthAssertExecutor"
+            },
+            "onSuccess": "end"
+        },
+        {
+            "id": "end",
+            "type": "END"
         }
     ]
 }

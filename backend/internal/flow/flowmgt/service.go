@@ -257,7 +257,7 @@ func (s *flowMgtService) processNodeDefinition(nodeDef *nodeDefinition, allNodes
 
 	s.configureNodeCondition(nodeDef, node)
 
-	if err := s.configureNodeExecutor(nodeDef, node, g.GetType()); err != nil {
+	if err := s.configureNodeExecutor(nodeDef, node); err != nil {
 		return err
 	}
 
@@ -274,8 +274,8 @@ func (s *flowMgtService) configureNodeNavigation(nodeDef *nodeDefinition, allNod
 	node core.NodeInterface, edges map[string][]string) error {
 	// Set onSuccess if defined
 	if nodeDef.OnSuccess != "" {
-		if taskNode, ok := node.(core.ExecutorBackedNodeInterface); ok {
-			taskNode.SetOnSuccess(nodeDef.OnSuccess)
+		if nodeWithOnSuccess, ok := node.(interface{ SetOnSuccess(string) }); ok {
+			nodeWithOnSuccess.SetOnSuccess(nodeDef.OnSuccess)
 		}
 
 		// Add edge for graph structure
@@ -382,23 +382,8 @@ func (s *flowMgtService) configureNodeCondition(nodeDef *nodeDefinition, node co
 }
 
 // configureNodeExecutor configures the executor for a node
-func (s *flowMgtService) configureNodeExecutor(nodeDef *nodeDefinition, node core.NodeInterface,
-	flowType common.FlowType) error {
+func (s *flowMgtService) configureNodeExecutor(nodeDef *nodeDefinition, node core.NodeInterface) error {
 	executorName := nodeDef.Executor.Name
-
-	// Determine executor name for special node types if not explicitly defined
-	if executorName == "" {
-		if nodeDef.Type == string(common.NodeTypeAuthSuccess) {
-			executorName = executor.ExecutorNameAuthAssert
-		} else if nodeDef.Type == string(common.NodeTypeStart) {
-			if flowType == common.FlowTypeRegistration || flowType == common.FlowTypeAuthentication {
-				executorName = executor.ExecutorNameUserTypeResolver
-			}
-			// Related init executors for other flow types can be added here
-		}
-	}
-
-	// Set executor name if defined
 	if executorName != "" {
 		if err := s.validateExecutorName(executorName); err != nil {
 			return fmt.Errorf("error while validating executor %s: %w", executorName, err)
@@ -428,7 +413,7 @@ func (s *flowMgtService) addGraphEdges(g core.GraphInterface, edges map[string][
 // determineAndSetStartNode determines the start node and sets it in the graph
 func (s *flowMgtService) determineAndSetStartNode(g core.GraphInterface) error {
 	for _, node := range g.GetNodes() {
-		if len(node.GetPreviousNodeList()) == 0 {
+		if node.GetType() == common.NodeTypeStart {
 			return g.SetStartNode(node.GetID())
 		}
 	}
@@ -494,17 +479,17 @@ func (s *flowMgtService) createRegistrationGraph(registrationGraphID string,
 	registrationGraph.SetNodes(nodesCopy)
 	registrationGraph.SetEdges(sysutils.DeepCopyMapOfStringSlices(authGraph.GetEdges()))
 
-	// Find authentication success node to insert provisioning node before it
-	authSuccessNodeID := ""
+	// Find end node to insert provisioning node before it
+	endNodeID := ""
 	nodes := registrationGraph.GetNodes()
 	for nodeID, node := range nodes {
 		if node.IsFinalNode() {
-			authSuccessNodeID = nodeID
+			endNodeID = nodeID
 			break
 		}
 	}
-	if authSuccessNodeID == "" {
-		return nil, fmt.Errorf("no authentication success node found in the authentication graph")
+	if endNodeID == "" {
+		return nil, fmt.Errorf("no end node found in the authentication graph")
 	}
 
 	// Create and add provisioning node
@@ -517,10 +502,10 @@ func (s *flowMgtService) createRegistrationGraph(registrationGraphID string,
 		return nil, fmt.Errorf("failed to add provisioning node to registration graph: %w", err)
 	}
 
-	// Modify the edges that lead to the auth success node to point to the provisioning node
+	// Modify the edges that lead to the end node to point to the provisioning node
 	for fromNodeID, toNodeIDs := range registrationGraph.GetEdges() {
 		for _, toNodeID := range toNodeIDs {
-			if toNodeID == authSuccessNodeID {
+			if toNodeID == endNodeID {
 				err := registrationGraph.RemoveEdge(fromNodeID, toNodeID)
 				if err != nil {
 					return nil, fmt.Errorf("failed to remove edge from %s to %s: %w", fromNodeID, toNodeID, err)
@@ -534,28 +519,56 @@ func (s *flowMgtService) createRegistrationGraph(registrationGraphID string,
 		}
 	}
 
-	// Add an edge from the provisioning node to the auth success node
-	err = registrationGraph.AddEdge(provisioningNode.GetID(), authSuccessNodeID)
+	// Add an edge from the provisioning node to the end node
+	err = registrationGraph.AddEdge(provisioningNode.GetID(), endNodeID)
 	if err != nil {
-		return nil, fmt.Errorf("failed to add edge from provisioning node to auth success node: %w", err)
+		return nil, fmt.Errorf("failed to add edge from provisioning node to end node: %w", err)
 	}
 
-	// Insert the registration start node
-	regStartNode, err := s.createRegistrationStartNode()
-	if err != nil {
-		return nil, fmt.Errorf("failed to create registration start node: %w", err)
-	}
-	err = registrationGraph.AddNode(regStartNode)
-	if err != nil {
-		return nil, fmt.Errorf("failed to add registration start node: %w", err)
-	}
+	// Check if UserTypeResolver already exists in the authentication graph.
+	// If not, insert it after the start node
+	if !s.hasUserTypeResolverNode(registrationGraph) {
+		userTypeResolverNode, err := s.createUserTypeResolverNode()
+		if err != nil {
+			return nil, fmt.Errorf("failed to create user type resolver node: %w", err)
+		}
 
-	// Add edge from registration start to the previous start node
-	if err := registrationGraph.AddEdge(regStartNode.GetID(), authGraph.GetStartNodeID()); err != nil {
-		return nil, fmt.Errorf("failed to connect registration start to previous start: %w", err)
-	}
-	if err := registrationGraph.SetStartNode(regStartNode.GetID()); err != nil {
-		return nil, fmt.Errorf("failed to set registration start node as start: %w", err)
+		err = registrationGraph.AddNode(userTypeResolverNode)
+		if err != nil {
+			return nil, fmt.Errorf("failed to add user type resolver node: %w", err)
+		}
+
+		// Find the original start node and insert user type resolver after it
+		originalStartNodeID := authGraph.GetStartNodeID()
+		originalStartNode, exists := registrationGraph.GetNode(originalStartNodeID)
+		if !exists {
+			return nil, fmt.Errorf("original start node %s not found in registration graph", originalStartNodeID)
+		}
+
+		// Get the next nodes of the original start node
+		nextNodes := originalStartNode.GetNextNodeList()
+		if len(nextNodes) == 0 {
+			return nil, fmt.Errorf("original start node has no next nodes")
+		}
+
+		// Remove edges from original start to its next nodes
+		for _, nextNodeID := range nextNodes {
+			if err := registrationGraph.RemoveEdge(originalStartNodeID, nextNodeID); err != nil {
+				return nil, fmt.Errorf("failed to remove edge from start to %s: %w", nextNodeID, err)
+			}
+		}
+
+		// Add edge from original start to user type resolver
+		if err := registrationGraph.AddEdge(originalStartNodeID, userTypeResolverNode.GetID()); err != nil {
+			return nil, fmt.Errorf("failed to connect start to user type resolver: %w", err)
+		}
+
+		// Add edges from user type resolver to the original next nodes
+		for _, nextNodeID := range nextNodes {
+			if err := registrationGraph.AddEdge(userTypeResolverNode.GetID(), nextNodeID); err != nil {
+				return nil, fmt.Errorf("failed to connect user type resolver to %s: %w", nextNodeID, err)
+			}
+		}
 	}
 
 	// Log the graph model as JSON for debugging
@@ -596,27 +609,39 @@ func (s *flowMgtService) createProvisioningNode() (core.NodeInterface, error) {
 	return provisioningNode, nil
 }
 
-// createRegistrationStartNode creates the registration start node
-func (s *flowMgtService) createRegistrationStartNode() (core.NodeInterface, error) {
-	regStartNode, err := s.flowFactory.CreateNode(
-		"start",
-		string(common.NodeTypeStart),
+// createUserTypeResolverNode creates a user type resolver node for registration flows
+func (s *flowMgtService) createUserTypeResolverNode() (core.NodeInterface, error) {
+	userTypeResolverNode, err := s.flowFactory.CreateNode(
+		"user_type_resolver",
+		string(common.NodeTypeTaskExecution),
 		map[string]interface{}{},
 		false,
 		false,
 	)
 	if err != nil {
-		return nil, fmt.Errorf("failed to create registration start node: %w", err)
+		return nil, fmt.Errorf("failed to create user type resolver node: %w", err)
 	}
 
-	// Set executor name for the registration start node
-	if executableNode, ok := regStartNode.(core.ExecutorBackedNodeInterface); ok {
+	// Set executor name for the user type resolver node
+	if executableNode, ok := userTypeResolverNode.(core.ExecutorBackedNodeInterface); ok {
 		executableNode.SetExecutorName(executor.ExecutorNameUserTypeResolver)
 	} else {
-		return nil, fmt.Errorf("registration start node does not implement ExecutorBackedNodeInterface")
+		return nil, fmt.Errorf("user type resolver node does not implement ExecutorBackedNodeInterface")
 	}
 
-	return regStartNode, nil
+	return userTypeResolverNode, nil
+}
+
+// hasUserTypeResolverNode checks if a UserTypeResolver node already exists in the graph
+func (s *flowMgtService) hasUserTypeResolverNode(graph core.GraphInterface) bool {
+	for _, node := range graph.GetNodes() {
+		if executableNode, ok := node.(core.ExecutorBackedNodeInterface); ok {
+			if executableNode.GetExecutorName() == executor.ExecutorNameUserTypeResolver {
+				return true
+			}
+		}
+	}
+	return false
 }
 
 // validateDefaultFlowConfigs validates the default flow configurations

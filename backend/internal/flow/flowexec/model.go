@@ -45,6 +45,7 @@ type EngineContext struct {
 	Application appmodel.Application
 
 	AuthenticatedUser authncm.AuthenticatedUser
+	Assertion         string
 	ExecutionHistory  map[string]*common.NodeExecutionRecord
 }
 

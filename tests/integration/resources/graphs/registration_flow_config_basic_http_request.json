@@ -5,6 +5,14 @@
         {
             "id": "start",
             "type": "START",
+            "onSuccess": "user_type_resolver"
+        },
+        {
+            "id": "user_type_resolver",
+            "type": "TASK_EXECUTION",
+            "executor": {
+                "name": "UserTypeResolver"
+            },
             "onSuccess": "provision_user"
         },
         {
@@ -73,7 +81,20 @@
             },
             "executor": {
                 "name": "HTTPRequestExecutor"
-            }
+            },
+            "onSuccess": "auth_assert"
+        },
+        {
+            "id": "auth_assert",
+            "type": "TASK_EXECUTION",
+            "executor": {
+                "name": "AuthAssertExecutor"
+            },
+            "onSuccess": "end"
+        },
+        {
+            "id": "end",
+            "type": "END"
         }
     ]
 }

@@ -25,7 +25,7 @@
             "condition": {
                 "key": "{{ context.userEligibleForProvisioning }}",
                 "value": "true",
-                "onSkip": "authenticated"
+                "onSkip": "auth_assert"
             },
             "executor": {
                 "name": "OUExecutor"
@@ -38,16 +38,24 @@
             "condition": {
                 "key": "{{ context.userEligibleForProvisioning }}",
                 "value": "true",
-                "onSkip": "authenticated"
+                "onSkip": "auth_assert"
             },
             "executor": {
                 "name": "ProvisioningExecutor"
             },
-            "onSuccess": "authenticated"
+            "onSuccess": "auth_assert"
         },
         {
-            "id": "authenticated",
-            "type": "AUTHENTICATION_SUCCESS"
+            "id": "auth_assert",
+            "type": "TASK_EXECUTION",
+            "executor": {
+                "name": "AuthAssertExecutor"
+            },
+            "onSuccess": "end"
+        },
+        {
+            "id": "end",
+            "type": "END"
         }
     ]
 }
