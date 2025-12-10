@@ -39,7 +39,7 @@ import {
 } from '@xyflow/react';
 import type {UpdateNodeInternals} from '@xyflow/system';
 import cloneDeep from 'lodash-es/cloneDeep';
-import {type Dispatch, useCallback, type ReactElement, type SetStateAction, useState, useRef} from 'react';
+import {type Dispatch, useCallback, memo, type ReactElement, type SetStateAction, useState, useRef} from 'react';
 import {Box} from '@wso2/oxygen-ui';
 import classNames from 'classnames';
 import VisualFlow, {type VisualFlowPropsInterface} from './VisualFlow';
@@ -67,6 +67,7 @@ import ResourcePropertyPanel from '../resource-property-panel/ResourcePropertyPa
 import useComponentDelete from '../../hooks/useComponentDelete';
 import applyAutoLayout from '../../utils/applyAutoLayout';
 import {resolveCollisions} from '../../utils/resolveCollisions';
+import ValidationPanel from '../validation-panel/ValidationPanel';
 
 /**
  * Props interface of {@link DecoratedVisualFlow}
@@ -173,7 +174,7 @@ function DecoratedVisualFlow({
   // Event handlers for static content in execution steps.
   useStaticContentField();
 
-  const {screenToFlowPosition, updateNodeData, toObject, fitView} = useReactFlow();
+  const {screenToFlowPosition, updateNodeData, toObject, fitView, getNodes, getEdges} = useReactFlow();
   const {generateStepElement} = useGenerateStepElement();
   const updateNodeInternals: UpdateNodeInternals = useUpdateNodeInternals();
   const {deleteComponent} = useComponentDelete();
@@ -271,7 +272,7 @@ function DecoratedVisualFlow({
 
       updateNodeData(targetStepId, (node: Node) => {
         const nodeData = node?.data as StepData | undefined;
-        const updatedComponents: Element[] = move([...(cloneDeep(nodeData?.components) ?? [])], event);
+        const updatedComponents: Element[] = move([...(nodeData?.components ?? [])], event);
 
         return {
           components: mutateComponents([...updatedComponents, generatedElement]),
@@ -279,9 +280,9 @@ function DecoratedVisualFlow({
       });
 
       // Update node internals to fix handle positions after adding element
-      setTimeout(() => {
+      requestAnimationFrame(() => {
         updateNodeInternals(targetStepId);
-      }, 50);
+      });
 
       onResourceDropOnCanvas(generatedElement, targetStepId);
     }
@@ -301,7 +302,7 @@ function DecoratedVisualFlow({
       updateNodeData(targetStepId, (node: Node) => {
         const nodeData = node?.data as StepData | undefined;
         const updatedComponents: Element[] =
-          cloneDeep(nodeData?.components)?.map((component: Element) =>
+          nodeData?.components?.map((component: Element) =>
             component.id === targetResource.id
               ? {
                   ...component,
@@ -316,9 +317,9 @@ function DecoratedVisualFlow({
       });
 
       // Update node internals to fix handle positions after adding element
-      setTimeout(() => {
+      requestAnimationFrame(() => {
         updateNodeInternals(targetStepId);
-      }, 50);
+      });
 
       onResourceDropOnCanvas(generatedElement, targetStepId);
     }
@@ -347,30 +348,35 @@ function DecoratedVisualFlow({
           const updatedNodes = newNodes.map((node) => {
             if (node.id === targetStepId) {
               const nodeData = node.data as StepData | undefined;
-              const components: Element[] = cloneDeep(nodeData?.components) ?? [];
+              const components: Element[] = nodeData?.components ?? [];
+
+              if (components.length === 0) {
+                return node;
+              }
 
               // The widget button was appended to the end, find it (it's the last element)
               const widgetButton = components[components.length - 1];
-
-              // Remove it from the end
-              components.pop();
+              // Get all components except the last one (immutably)
+              const componentsWithoutLast = components.slice(0, -1);
 
               // Find the target index and insert there
-              const targetIndex = components.findIndex((c) => c.id === targetElementId);
+              const targetIndex = componentsWithoutLast.findIndex((c) => c.id === targetElementId);
 
-              if (targetIndex !== -1) {
-                // Insert at the target index (before the target element)
-                components.splice(targetIndex, 0, widgetButton);
-              } else {
-                // Fallback: append to end if target not found
-                components.push(widgetButton);
-              }
+              // Create new array with widget inserted at target index
+              const reorderedComponents =
+                targetIndex !== -1
+                  ? [
+                      ...componentsWithoutLast.slice(0, targetIndex),
+                      widgetButton,
+                      ...componentsWithoutLast.slice(targetIndex),
+                    ]
+                  : [...componentsWithoutLast, widgetButton];
 
               return {
                 ...node,
                 data: {
                   ...nodeData,
-                  components: mutateComponents(components),
+                  components: mutateComponents(reorderedComponents),
                 },
               };
             }
@@ -396,28 +402,26 @@ function DecoratedVisualFlow({
 
         updateNodeData(targetStepId, (node: Node) => {
           const nodeData = node?.data as StepData | undefined;
-          const components: Element[] = cloneDeep(nodeData?.components) ?? [];
+          const components: Element[] = nodeData?.components ?? [];
 
           // Find the index of the target element
           const targetIndex = components.findIndex((c) => c.id === targetElementId);
 
-          if (targetIndex !== -1) {
-            // Insert at the target index (before the target element)
-            components.splice(targetIndex, 0, generatedElement);
-          } else {
-            // Fallback: append to end if target not found
-            components.push(generatedElement);
-          }
+          // Create new array with element inserted at target index
+          const updatedComponents =
+            targetIndex !== -1
+              ? [...components.slice(0, targetIndex), generatedElement, ...components.slice(targetIndex)]
+              : [...components, generatedElement];
 
           return {
-            components: mutateComponents(components),
+            components: mutateComponents(updatedComponents),
           };
         });
 
         // Update node internals to fix handle positions after adding element
-        setTimeout(() => {
+        requestAnimationFrame(() => {
           updateNodeInternals(targetStepId);
-        }, 50);
+        });
 
         onResourceDropOnCanvas(generatedElement, targetStepId);
       }
@@ -441,22 +445,20 @@ function DecoratedVisualFlow({
       updateNodeData(targetStepId, (node: Node) => {
         const nodeData = node?.data as StepData | undefined;
         const components: Element[] =
-          cloneDeep(nodeData?.components)?.map((component: Element) => {
+          nodeData?.components?.map((component: Element) => {
             if (component.id === formId && component.components) {
-              const formComponents = [...component.components];
+              const formComponents = component.components;
               const targetIndex = formComponents.findIndex((c) => c.id === targetElementId);
 
-              if (targetIndex !== -1) {
-                // Insert at the target index (before the target element)
-                formComponents.splice(targetIndex, 0, generatedElement);
-              } else {
-                // Fallback: append to end if target not found
-                formComponents.push(generatedElement);
-              }
+              // Create new array with element inserted at target index
+              const updatedFormComponents =
+                targetIndex !== -1
+                  ? [...formComponents.slice(0, targetIndex), generatedElement, ...formComponents.slice(targetIndex)]
+                  : [...formComponents, generatedElement];
 
               return {
                 ...component,
-                components: formComponents,
+                components: updatedFormComponents,
               };
             }
 
@@ -469,9 +471,9 @@ function DecoratedVisualFlow({
       });
 
       // Update node internals to fix handle positions after adding element
-      setTimeout(() => {
+      requestAnimationFrame(() => {
         updateNodeInternals(targetStepId);
-      }, 50);
+      });
 
       onResourceDropOnCanvas(generatedElement, targetStepId);
     }
@@ -539,13 +541,13 @@ function DecoratedVisualFlow({
       }
 
       updateNodeData(sourceData.stepId, (node: Node) => {
-        const unorderedComponents: Element[] = cloneDeep((node?.data as StepData)?.components ?? []);
+        const unorderedComponents: Element[] = (node?.data as StepData)?.components ?? [];
 
         const reorderedNested = unorderedComponents.map((component: Element) => {
           if (component?.components) {
             return {
               ...component,
-              components: move(component.components, event),
+              components: move([...component.components], event),
             };
           }
 
@@ -558,10 +560,9 @@ function DecoratedVisualFlow({
       });
 
       // Update node internals to fix handle positions after reordering
-      // Use setTimeout with a small delay to ensure React has committed the state changes and DOM has updated
-      setTimeout(() => {
+      requestAnimationFrame(() => {
         updateNodeInternals(sourceData.stepId!);
-      }, 50);
+      });
     } else if (typeof target?.id === 'string' && target.id.startsWith(VisualFlowConstants.FLOW_BUILDER_CANVAS_ID)) {
       addCanvasNode(event, sourceData, targetData);
     } else if (typeof target?.id === 'string' && target.id.startsWith(VisualFlowConstants.FLOW_BUILDER_VIEW_ID)) {
@@ -610,13 +611,13 @@ function DecoratedVisualFlow({
 
       updateNodeData(stepId, (node: Node) => {
         const nodeData = node?.data as StepData | undefined;
-        const unorderedComponents: Element[] = cloneDeep(nodeData?.components) ?? [];
+        const unorderedComponents: Element[] = nodeData?.components ?? [];
 
         const reorderedNested = unorderedComponents.map((component: Element) => {
           if (component?.components) {
             return {
               ...component,
-              components: move(component.components, event),
+              components: move([...component.components], event),
             };
           }
 
@@ -629,10 +630,9 @@ function DecoratedVisualFlow({
       });
 
       // Update node internals to fix handle positions after reordering
-      // Use setTimeout to ensure React has committed the state changes and DOM has updated
-      setTimeout(() => {
+      requestAnimationFrame(() => {
         updateNodeInternals(stepId);
-      }, 50);
+      });
     },
     [updateNodeData, updateNodeInternals],
   );
@@ -804,7 +804,7 @@ function DecoratedVisualFlow({
 
       if (existingViewStep) {
         const nodeData = existingViewStep.data as StepData | undefined;
-        const existingComponents: Element[] = cloneDeep(nodeData?.components ?? []);
+        const existingComponents: Element[] = [...(nodeData?.components ?? [])];
 
         // Check if the widget being added will create a Form
         // We need to check the widget's data to see if it contains Form components
@@ -1028,7 +1028,7 @@ function DecoratedVisualFlow({
 
           updateNodeData(existingViewStep.id, (node: Node) => {
             const nodeData = node?.data as StepData | undefined;
-            const existingComponents: Element[] = cloneDeep(nodeData?.components ?? []);
+            const existingComponents: Element[] = nodeData?.components ?? [];
 
             // Remove any existing Form
             const componentsWithoutForm = existingComponents.filter(
@@ -1042,9 +1042,9 @@ function DecoratedVisualFlow({
           });
 
           // Update node internals to fix handle positions after adding element
-          setTimeout(() => {
+          requestAnimationFrame(() => {
             updateNodeInternals(existingViewStep.id);
-          }, 50);
+          });
 
           onResourceDropOnCanvas(generatedElement, existingViewStep.id);
         } else {
@@ -1085,7 +1085,7 @@ function DecoratedVisualFlow({
 
           updateNodeData(existingViewStep.id, (node: Node) => {
             const nodeData = node?.data as StepData | undefined;
-            const existingComponents: Element[] = cloneDeep(nodeData?.components ?? []);
+            const existingComponents: Element[] = nodeData?.components ?? [];
 
             // Find existing Form in the View
             const existingForm = existingComponents.find((comp: Element) => comp.type === BlockTypes.Form);
@@ -1121,9 +1121,9 @@ function DecoratedVisualFlow({
           });
 
           // Update node internals to fix handle positions after adding element
-          setTimeout(() => {
+          requestAnimationFrame(() => {
             updateNodeInternals(existingViewStep.id);
-          }, 50);
+          });
 
           onResourceDropOnCanvas(generatedElement, existingViewStep.id);
         } else {
@@ -1173,7 +1173,7 @@ function DecoratedVisualFlow({
 
         updateNodeData(existingViewStep.id, (node: Node) => {
           const nodeData = node?.data as StepData | undefined;
-          const existingComponents: Element[] = cloneDeep(nodeData?.components ?? []);
+          const existingComponents: Element[] = nodeData?.components ?? [];
 
           return {
             components: mutateComponents([...existingComponents, generatedElement]),
@@ -1181,9 +1181,9 @@ function DecoratedVisualFlow({
         });
 
         // Update node internals to fix handle positions after adding element
-        setTimeout(() => {
+        requestAnimationFrame(() => {
           updateNodeInternals(existingViewStep.id);
-        }, 50);
+        });
 
         onResourceDropOnCanvas(generatedElement, existingViewStep.id);
       }
@@ -1294,7 +1294,7 @@ function DecoratedVisualFlow({
       const targetStepId = targetData.stepId;
       if (targetStepId) {
         updateNodeData(targetStepId, (node: Node) => {
-          const existingComponents: Element[] = cloneDeep((node?.data as StepData)?.components ?? []);
+          const existingComponents: Element[] = (node?.data as StepData)?.components ?? [];
           return {
             components: [...existingComponents, formElement],
           };
@@ -1355,7 +1355,11 @@ function DecoratedVisualFlow({
   };
 
   const handleAutoLayout = useCallback((): void => {
-    applyAutoLayout(nodes, edges, {
+    // Use getNodes/getEdges to get current state at call time
+    // This prevents creating new function references on every nodes/edges change
+    const currentNodes = getNodes();
+    const currentEdges = getEdges();
+    applyAutoLayout(currentNodes, currentEdges, {
       direction: 'RIGHT',
       nodeSpacing: 150, // Vertical spacing between nodes in the same layer
       rankSpacing: 300, // Horizontal spacing between layers
@@ -1364,23 +1368,27 @@ function DecoratedVisualFlow({
     })
       .then((layoutedNodes) => {
         setNodes(layoutedNodes);
-        // Fit view after layout with a small delay to ensure nodes are rendered
-        setTimeout(() => {
+        // Fit view after layout - use RAF to ensure nodes are rendered
+        requestAnimationFrame(() => {
           void fitView({padding: 0.2, duration: 300});
-        }, 50);
+        });
       })
       .catch(() => {
         // Layout failed, keep original positions
       });
-  }, [nodes, edges, setNodes, fitView]);
+  }, [getNodes, getEdges, setNodes, fitView]);
 
   /**
    * Handles node drag stop event to resolve collisions between nodes.
    * When a node is dragged and released, this function checks for overlapping nodes
    * and pushes them apart to prevent visual collisions.
+   *
+   * Uses getNodes() to get current nodes at call time instead of closure,
+   * which prevents creating new function references on every nodes change.
    */
   const handleNodeDragStop = useCallback((): void => {
-    const resolvedNodes = resolveCollisions(nodes, {
+    const currentNodes = getNodes();
+    const resolvedNodes = resolveCollisions(currentNodes, {
       maxIterations: 50,
       overlapThreshold: 0.5,
       margin: 20, // Add margin around nodes to prevent them from being too close
@@ -1389,13 +1397,14 @@ function DecoratedVisualFlow({
     // Only update if positions actually changed
     const hasChanges = resolvedNodes.some(
       (resolvedNode, index) =>
-        resolvedNode.position.x !== nodes[index].position.x || resolvedNode.position.y !== nodes[index].position.y,
+        resolvedNode.position.x !== currentNodes[index].position.x ||
+        resolvedNode.position.y !== currentNodes[index].position.y,
     );
 
     if (hasChanges) {
       setNodes(resolvedNodes);
     }
-  }, [nodes, setNodes]);
+  }, [getNodes, setNodes]);
 
   return (
     <Box
@@ -1437,7 +1446,7 @@ function DecoratedVisualFlow({
                 {...rest}
               />
               {/* </VersionHistoryPanel> */}
-              {/* <ValidationPanel /> */}
+              <ValidationPanel />
             </ResourcePropertyPanel>
           </ResourcePanel>
         </DragDropProvider>
@@ -1453,4 +1462,5 @@ function DecoratedVisualFlow({
   );
 }
 
-export default DecoratedVisualFlow;
+// PERFORMANCE: Memoize to prevent re-renders from parent components
+export default memo(DecoratedVisualFlow);

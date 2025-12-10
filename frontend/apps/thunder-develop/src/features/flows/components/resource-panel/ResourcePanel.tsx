@@ -17,7 +17,7 @@
  */
 
 import kebabCase from 'lodash-es/kebabCase';
-import {type HTMLAttributes, type ReactElement} from 'react';
+import {memo, useCallback, useMemo, type HTMLAttributes, type ReactElement} from 'react';
 import {
   Accordion,
   AccordionDetails,
@@ -96,20 +96,27 @@ function ResourcePanel({
     templates: unfilteredTemplates,
   } = resources;
 
-  const handleTogglePanel = (): void => {
+  // PERFORMANCE: Memoize toggle callback
+  const handleTogglePanel = useCallback((): void => {
     setIsResourcePanelOpen((prev: boolean) => !prev);
-  };
+  }, [setIsResourcePanelOpen]);
 
-  const elements: Element[] = unfilteredElements?.filter(
-    (element: Element) => element.display?.showOnResourcePanel !== false,
+  // PERFORMANCE: Memoize filtered arrays to prevent unnecessary re-renders
+  const elements: Element[] = useMemo(
+    () => unfilteredElements?.filter((element: Element) => element.display?.showOnResourcePanel !== false),
+    [unfilteredElements],
   );
-  const widgets: Widget[] = unfilteredWidgets?.filter(
-    (widget: Widget) => widget.display?.showOnResourcePanel !== false,
+  const widgets: Widget[] = useMemo(
+    () => unfilteredWidgets?.filter((widget: Widget) => widget.display?.showOnResourcePanel !== false),
+    [unfilteredWidgets],
   );
-
-  const steps: Step[] = unfilteredSteps?.filter((step: Step) => step.display?.showOnResourcePanel !== false);
-  const templates: Template[] = unfilteredTemplates?.filter(
-    (template: Template) => template.display?.showOnResourcePanel !== false,
+  const steps: Step[] = useMemo(
+    () => unfilteredSteps?.filter((step: Step) => step.display?.showOnResourcePanel !== false),
+    [unfilteredSteps],
+  );
+  const templates: Template[] = useMemo(
+    () => unfilteredTemplates?.filter((template: Template) => template.display?.showOnResourcePanel !== false),
+    [unfilteredTemplates],
   );
 
   return (
@@ -469,4 +476,5 @@ function ResourcePanel({
   );
 }
 
-export default ResourcePanel;
+// PERFORMANCE: Memoize to prevent re-renders from parent components
+export default memo(ResourcePanel);

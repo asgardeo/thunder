@@ -17,7 +17,7 @@
  */
 
 import {StepTypes, type Step} from '@/features/flows/models/steps';
-import type {ReactElement} from 'react';
+import {memo, type ReactElement} from 'react';
 import type {NodeProps} from '@xyflow/react';
 import View from './view/View';
 import End from './end/End';
@@ -96,4 +96,12 @@ function CommonStepFactory({
   return null;
 }
 
-export default CommonStepFactory;
+// Memoize to prevent re-renders during drag operations
+export default memo(CommonStepFactory, (prevProps, nextProps) =>
+  prevProps.id === nextProps.id &&
+  prevProps.data === nextProps.data &&
+  prevProps.resources === nextProps.resources &&
+  prevProps.allResources === nextProps.allResources &&
+  prevProps.onAddElement === nextProps.onAddElement &&
+  prevProps.onAddElementToForm === nextProps.onAddElementToForm
+);

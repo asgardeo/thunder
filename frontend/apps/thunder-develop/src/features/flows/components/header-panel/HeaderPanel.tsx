@@ -16,7 +16,7 @@
  * under the License.
  */
 
-import {type HTMLAttributes, type ReactElement, useContext, useState} from 'react';
+import {type HTMLAttributes, type ReactElement, useCallback, useContext, useState} from 'react';
 import {useNavigate} from 'react-router';
 import {
   Box,
@@ -78,18 +78,18 @@ function HeaderPanel({
   const [edgeStyleMenuAnchor, setEdgeStyleMenuAnchor] = useState<null | HTMLElement>(null);
   const isEdgeStyleMenuOpen = Boolean(edgeStyleMenuAnchor);
 
-  const handleEdgeStyleMenuOpen = (event: React.MouseEvent<HTMLButtonElement>): void => {
+  const handleEdgeStyleMenuOpen = useCallback((event: React.MouseEvent<HTMLButtonElement>): void => {
     setEdgeStyleMenuAnchor(event.currentTarget);
-  };
+  }, []);
 
-  const handleEdgeStyleMenuClose = (): void => {
+  const handleEdgeStyleMenuClose = useCallback((): void => {
     setEdgeStyleMenuAnchor(null);
-  };
+  }, []);
 
-  const handleEdgeStyleChange = (style: typeof edgeStyle): void => {
+  const handleEdgeStyleChange = useCallback((style: typeof edgeStyle): void => {
     setEdgeStyle(style);
-    handleEdgeStyleMenuClose();
-  };
+    setEdgeStyleMenuAnchor(null);
+  }, [setEdgeStyle]);
 
   const getEdgeStyleLabel = (): string => {
     switch (edgeStyle) {
@@ -104,7 +104,7 @@ function HeaderPanel({
     }
   };
 
-  const handleBackClick = () => {
+  const handleBackClick = useCallback(() => {
     if (onBack) {
       onBack();
       return;
@@ -113,13 +113,13 @@ function HeaderPanel({
     // Go back to the flows list
     // eslint-disable-next-line @typescript-eslint/no-floating-promises
     navigate('/flows');
-  };
+  }, [onBack, navigate]);
 
-  const handleSaveClick = () => {
+  const handleSaveClick = useCallback(() => {
     // Note: getNodes/getEdges returns visually displayed nodes (may be filtered)
     // The actual save handler uses the full unfiltered data
     onSave?.();
-  };
+  }, [onSave]);
 
   return (
     <Box sx={{flexShrink: 0, pb: 1}} {...rest}>

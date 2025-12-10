@@ -16,12 +16,20 @@
  * under the License.
  */
 
-import {useMemo, type ReactElement} from 'react';
+import {memo, useMemo, type ReactElement} from 'react';
 import {DividerVariants, type Element as FlowElement} from '@/features/flows/models/elements';
-import {Trans, useTranslation} from 'react-i18next';
+import {Trans} from 'react-i18next';
 import type {RequiredFieldInterface} from '@/features/flows/hooks/useRequiredFields';
 import {Divider, type DividerProps} from '@wso2/oxygen-ui';
 import useRequiredFields from '@/features/flows/hooks/useRequiredFields';
+
+// PERFORMANCE: Define fields outside component to prevent recreation on every render
+const DIVIDER_VALIDATION_FIELDS: RequiredFieldInterface[] = [
+  {
+    errorMessage: 'Variant is required',
+    name: 'variant',
+  },
+];
 
 /**
  * Configuration interface for Divider element.
@@ -50,12 +58,16 @@ export interface DividerAdapterPropsInterface {
 /**
  * Adapter for the Divider component.
  *
+ * PERFORMANCE: This component has been optimized to:
+ * 1. Use static validation fields defined outside the component
+ * 2. Remove useTranslation hook to avoid re-renders
+ * 3. Memoize the general message and config
+ *
  * @param props - Props injected to the component.
  * @returns The DividerAdapter component.
  */
 function DividerAdapter({resource}: DividerAdapterPropsInterface): ReactElement {
-  const {t} = useTranslation();
-
+  // PERFORMANCE: Memoize general message - only depends on resource.id
   const generalMessage: ReactElement = useMemo(
     () => (
       <Trans i18nKey="flows:core.validation.fields.divider.general" values={{id: resource.id}}>
@@ -65,37 +77,32 @@ function DividerAdapter({resource}: DividerAdapterPropsInterface): ReactElement 
     [resource?.id],
   );
 
-  const fields: RequiredFieldInterface[] = useMemo(
-    () => [
-      {
-        errorMessage: t('flows:core.validation.fields.divider.variant'),
-        name: 'variant',
-      },
-    ],
-    [t],
-  );
-
-  useRequiredFields(resource, generalMessage, fields);
+  // PERFORMANCE: Use static fields array defined outside component
+  useRequiredFields(resource, generalMessage, DIVIDER_VALIDATION_FIELDS);
 
   // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment -- Config type is validated at runtime
   const dividerConfig = resource.config as DividerConfig | undefined;
   const variantStr = resource?.variant as string | undefined;
 
-  let config: DividerProps = {};
-
-  if (variantStr === DividerVariants.Horizontal || variantStr === DividerVariants.Vertical) {
-    config = {
-      ...config,
-      orientation: variantStr.toLowerCase() as 'horizontal' | 'vertical',
-    };
-  } else if (variantStr) {
-    config = {
-      ...config,
-      variant: variantStr.toLowerCase() as DividerProps['variant'],
-    };
-  }
+  // PERFORMANCE: Memoize config object
+  const config: DividerProps = useMemo(() => {
+    if (variantStr === DividerVariants.Horizontal || variantStr === DividerVariants.Vertical) {
+      return {
+        orientation: variantStr.toLowerCase() as 'horizontal' | 'vertical',
+      };
+    }
+    if (variantStr) {
+      return {
+        variant: variantStr.toLowerCase() as DividerProps['variant'],
+      };
+    }
+    return {};
+  }, [variantStr]);
 
   return <Divider {...config}>{dividerConfig?.text}</Divider>;
 }
 
-export default DividerAdapter;
+// PERFORMANCE: Memoize to prevent re-renders during drag operations
+export default memo(DividerAdapter, (prevProps, nextProps) =>
+  prevProps.resource === nextProps.resource
+);

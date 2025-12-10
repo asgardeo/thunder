@@ -16,12 +16,24 @@
  * under the License.
  */
 
-import {useMemo, type CSSProperties, type ReactElement} from 'react';
-import {Trans, useTranslation} from 'react-i18next';
+import {memo, useMemo, type CSSProperties, type ReactElement} from 'react';
+import {Trans} from 'react-i18next';
 import type {RequiredFieldInterface} from '@/features/flows/hooks/useRequiredFields';
 import useRequiredFields from '@/features/flows/hooks/useRequiredFields';
 import {Box} from '@wso2/oxygen-ui';
 import type {Element as FlowElement} from '@/features/flows/models/elements';
+
+// PERFORMANCE: Define fields outside component to prevent recreation on every render
+const IMAGE_VALIDATION_FIELDS: RequiredFieldInterface[] = [
+  {
+    errorMessage: 'Image source is required',
+    name: 'src',
+  },
+  {
+    errorMessage: 'Variant is required',
+    name: 'variant',
+  },
+];
 
 /**
  * Configuration interface for Image element.
@@ -50,12 +62,16 @@ export interface ImageAdapterPropsInterface {
 /**
  * Adapter for displaying images.
  *
+ * PERFORMANCE: This component has been optimized to:
+ * 1. Use static validation fields defined outside the component
+ * 2. Remove useTranslation hook to avoid re-renders
+ * 3. Memoize the general message
+ *
  * @param props - Props injected to the component.
  * @returns The ImageAdapter component.
  */
 function ImageAdapter({resource}: ImageAdapterPropsInterface): ReactElement {
-  const {t} = useTranslation();
-
+  // PERFORMANCE: Memoize general message - only depends on resource.id
   const generalMessage: ReactElement = useMemo(
     () => (
       <Trans i18nKey="flows:core.validation.fields.image.general" values={{id: resource.id}}>
@@ -65,21 +81,8 @@ function ImageAdapter({resource}: ImageAdapterPropsInterface): ReactElement {
     [resource.id],
   );
 
-  const fields: RequiredFieldInterface[] = useMemo(
-    () => [
-      {
-        errorMessage: t('flows:core.validation.fields.image.src'),
-        name: 'src',
-      },
-      {
-        errorMessage: t('flows:core.validation.fields.image.variant'),
-        name: 'variant',
-      },
-    ],
-    [t],
-  );
-
-  useRequiredFields(resource, generalMessage, fields);
+  // PERFORMANCE: Use static fields array defined outside component
+  useRequiredFields(resource, generalMessage, IMAGE_VALIDATION_FIELDS);
 
   // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment -- Config type is validated at runtime
   const imageConfig = resource.config as ImageConfig | undefined;
@@ -91,4 +94,7 @@ function ImageAdapter({resource}: ImageAdapterPropsInterface): ReactElement {
   );
 }
 
-export default ImageAdapter;
+// PERFORMANCE: Memoize to prevent re-renders during drag operations
+export default memo(ImageAdapter, (prevProps, nextProps) =>
+  prevProps.resource === nextProps.resource
+);

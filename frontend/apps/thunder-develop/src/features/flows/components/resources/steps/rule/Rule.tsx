@@ -16,9 +16,9 @@
  * under the License.
  */
 
-import {useCallback, useRef, type DragEvent, type ReactElement} from 'react';
+import {memo, useCallback, useMemo, useRef, type DragEvent, type ReactElement} from 'react';
 import './Rule.scss';
-import {Handle, Position, useNodeId, useNodesData, useReactFlow, type Node} from '@xyflow/react';
+import {Handle, Position, useNodeId, useReactFlow} from '@xyflow/react';
 import useFlowBuilderCore from '@/features/flows/hooks/useFlowBuilderCore';
 import {Box, IconButton, Tooltip, Typography} from '@wso2/oxygen-ui';
 import {CrossIcon} from '@wso2/oxygen-ui-icons-react';
@@ -36,10 +36,11 @@ export type RulePropsInterface = CommonStepFactoryPropsInterface;
  * @param props - Props injected to the component.
  * @returns Rule component.
  */
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-function Rule(_props: RulePropsInterface): ReactElement {
+// PERFORMANCE: Use data prop instead of useNodesData to prevent re-renders on ANY node change
+function Rule({data, id}: RulePropsInterface): ReactElement {
   const nodeId: string | null = useNodeId();
-  const node: Pick<Node, 'data' | 'type' | 'id'> | null = useNodesData(nodeId ?? '');
+  // PERFORMANCE: Removed useNodesData hook - it caused re-renders on ANY node change
+  // The `data` and `id` props already contain the node's data, passed down from React Flow
   const {deleteElements} = useReactFlow();
   const {setLastInteractedResource} = useFlowBuilderCore();
 
@@ -60,10 +61,11 @@ function Rule(_props: RulePropsInterface): ReactElement {
     event.preventDefault();
   }, []);
 
-  const ruleStep: Resource = {
-    ...(typeof node?.data === 'object' && node.data !== null ? node.data : {}),
-    id: node?.id ?? '',
-  } as Resource;
+  // Memoize ruleStep to prevent recreation on each render
+  const ruleStep: Resource = useMemo(() => ({
+    ...(typeof data === 'object' && data !== null ? data : {}),
+    id: id ?? nodeId ?? '',
+  } as Resource), [data, id, nodeId]);
 
   return (
     <div ref={ref} className="flow-builder-rule" onDrop={handleDrop} onDrag={handleDragOver}>
@@ -97,4 +99,8 @@ function Rule(_props: RulePropsInterface): ReactElement {
   );
 }
 
-export default Rule;
+// Memoize to prevent re-renders during drag operations
+export default memo(Rule, (prevProps, nextProps) =>
+  prevProps.id === nextProps.id &&
+  prevProps.data === nextProps.data
+);

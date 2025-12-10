@@ -15,8 +15,8 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-import {useMemo, type ReactElement} from 'react';
-import {Trans, useTranslation} from 'react-i18next';
+import {memo, useMemo, type ReactElement} from 'react';
+import {Trans} from 'react-i18next';
 import DOMPurify from 'dompurify';
 import parse from 'html-react-parser';
 import type {RequiredFieldInterface} from '@/features/flows/hooks/useRequiredFields';
@@ -39,6 +39,14 @@ import './RichTextAdapter.scss';
     }
   },
 );
+
+// PERFORMANCE: Define fields outside component to prevent recreation on every render
+const RICHTEXT_VALIDATION_FIELDS: RequiredFieldInterface[] = [
+  {
+    errorMessage: 'Text is required',
+    name: 'text',
+  },
+];
 
 /**
  * Configuration interface for RichText element.
@@ -65,12 +73,16 @@ export interface RichTextAdapterPropsInterface {
 /**
  * Adapter for the Rich Text component.
  *
+ * PERFORMANCE: This component has been optimized to:
+ * 1. Use static validation fields defined outside the component
+ * 2. Remove useTranslation hook to avoid re-renders
+ * 3. Memoize the general message and sanitized HTML
+ *
  * @param props - Props injected to the component.
  * @returns The RichTextAdapter component.
  */
 function RichTextAdapter({resource}: RichTextAdapterPropsInterface): ReactElement {
-  const {t} = useTranslation();
-
+  // PERFORMANCE: Memoize general message - only depends on resource.id
   const generalMessage: ReactElement = useMemo(
     () => (
       <Trans i18nKey="flows:core.validation.fields.richText.general" values={{id: resource.id}}>
@@ -80,25 +92,21 @@ function RichTextAdapter({resource}: RichTextAdapterPropsInterface): ReactElemen
     [resource.id],
   );
 
-  const fields: RequiredFieldInterface[] = useMemo(
-    () => [
-      {
-        errorMessage: t('flows:core.validation.fields.richText.text'),
-        name: 'text',
-      },
-    ],
-    [t],
-  );
-
-  useRequiredFields(resource, generalMessage, fields);
+  // PERFORMANCE: Use static fields array defined outside component
+  useRequiredFields(resource, generalMessage, RICHTEXT_VALIDATION_FIELDS);
 
   // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment -- Config type is validated at runtime
   const richTextConfig = resource.config as RichTextConfig | undefined;
 
-  const sanitizedHtml: string = DOMPurify.sanitize(richTextConfig?.text ?? '', {
-    ADD_ATTR: ['target'],
-    RETURN_TRUSTED_TYPE: false,
-  });
+  // PERFORMANCE: Memoize sanitized HTML to avoid re-computation
+  const sanitizedHtml: string = useMemo(
+    () =>
+      DOMPurify.sanitize(richTextConfig?.text ?? '', {
+        ADD_ATTR: ['target'],
+        RETURN_TRUSTED_TYPE: false,
+      }),
+    [richTextConfig?.text],
+  );
 
   return (
     <div className="rich-text-content">
@@ -108,4 +116,7 @@ function RichTextAdapter({resource}: RichTextAdapterPropsInterface): ReactElemen
   );
 }
 
-export default RichTextAdapter;
+// PERFORMANCE: Memoize to prevent re-renders during drag operations
+export default memo(RichTextAdapter, (prevProps, nextProps) =>
+  prevProps.resource === nextProps.resource
+);

@@ -16,7 +16,7 @@
  * under the License.
  */
 
-import type {ReactElement} from 'react';
+import {memo, type ReactElement} from 'react';
 import {Handle, Position} from '@xyflow/react';
 import VisualFlowConstants from '@/features/flows/constants/VisualFlowConstants';
 import {Fab} from '@wso2/oxygen-ui';
@@ -53,4 +53,5 @@ function End(_props: EndPropsInterface): ReactElement {
   );
 }
 
-export default End;
+// Memoize to prevent re-renders during drag operations
+export default memo(End);

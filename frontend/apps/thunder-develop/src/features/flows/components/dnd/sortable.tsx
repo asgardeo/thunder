@@ -17,12 +17,86 @@
  */
 
 import {Box, type CSSProperties} from '@wso2/oxygen-ui';
-import type {PropsWithChildren, RefObject} from 'react';
+import {memo, type PropsWithChildren, type RefObject, useMemo, useSyncExternalStore, useRef} from 'react';
 import {type UseSortableInput, useSortable} from '@dnd-kit/react/sortable';
 import {RestrictToVerticalAxis} from '@dnd-kit/abstract/modifiers';
 import {useDragDropManager} from '@dnd-kit/react';
 import classNames from 'classnames';
 import './sortable.scss';
+
+// PERFORMANCE: Global drag operation state to avoid per-component subscriptions
+interface DragOperationState {
+  isDragging: boolean;
+  sourceIndex: number | undefined;
+  isReordering: boolean;
+}
+
+let globalDragOperationState: DragOperationState = {
+  isDragging: false,
+  sourceIndex: undefined,
+  isReordering: false,
+};
+const dragOperationListeners = new Set<() => void>();
+
+function setGlobalDragOperationState(state: DragOperationState): void {
+  // Only notify if state actually changed
+  if (
+    globalDragOperationState.isDragging !== state.isDragging ||
+    globalDragOperationState.sourceIndex !== state.sourceIndex ||
+    globalDragOperationState.isReordering !== state.isReordering
+  ) {
+    globalDragOperationState = state;
+    dragOperationListeners.forEach((listener) => listener());
+  }
+}
+
+function subscribeToDragOperation(callback: () => void): () => void {
+  dragOperationListeners.add(callback);
+  return () => dragOperationListeners.delete(callback);
+}
+
+function getDragOperationState(): DragOperationState {
+  return globalDragOperationState;
+}
+
+/**
+ * Hook to subscribe to global drag operation state with minimal re-renders.
+ */
+function useGlobalDragOperationState(): DragOperationState {
+  return useSyncExternalStore(subscribeToDragOperation, getDragOperationState, getDragOperationState);
+}
+
+/**
+ * Hook to set up drag operation monitoring once.
+ */
+function useDragOperationMonitorSetup(): void {
+  const manager = useDragDropManager();
+  const isSetupRef = useRef(false);
+
+  if (manager && !isSetupRef.current) {
+    isSetupRef.current = true;
+
+    manager.monitor.addEventListener('dragstart', (event) => {
+      const source = event.operation.source;
+      const sourceIndex = (source as {index?: number} | undefined)?.index;
+      const isReordering = (source?.data as {isReordering?: boolean} | undefined)?.isReordering === true;
+
+      setGlobalDragOperationState({
+        isDragging: true,
+        sourceIndex,
+        isReordering,
+      });
+    });
+
+    manager.monitor.addEventListener('dragend', () => {
+      setGlobalDragOperationState({
+        isDragging: false,
+        sourceIndex: undefined,
+        isReordering: false,
+      });
+    });
+  }
+}
 
 /**
  * Props interface of {@link Sortable}
@@ -57,39 +131,44 @@ function Sortable({
     ...rest,
   });
 
-  const manager = useDragDropManager();
-  const isDragActive = manager?.dragOperation?.status?.dragging ?? false;
-  const dragSource = manager?.dragOperation?.source;
-  // Get the source index from the data property where it's stored
-  const dragSourceIndex = (dragSource as {index?: number} | undefined)?.index;
-  // Check if this is a reordering operation (dragging within the list) vs new item from resource panel
-  const isReorderingOperation = (dragSource?.data as {isReordering?: boolean} | undefined)?.isReordering === true;
+  // PERFORMANCE: Set up drag operation monitoring once (uses ref guard internally)
+  useDragOperationMonitorSetup();
 
-  // Determine if the drop indicator should be shown above this element
-  // Show indicator when: dragging is active, this element is the drop target,
-  // and we're not the element being dragged
-  const showDropIndicator = isDragActive && isDropTarget && !isDragging;
+  // PERFORMANCE: Subscribe to global drag operation state instead of reading manager directly
+  // This only re-renders when drag state actually changes, not on every mouse move
+  const {isDragging: isDragActive, sourceIndex: dragSourceIndex, isReordering: isReorderingOperation} = useGlobalDragOperationState();
 
-  // Determine indicator position (before or after this element)
-  // For reordering: If dragging from below (higher index) to above (lower index), show indicator at top
-  // For new items from resource panel: Always show indicator at top (insert before)
-  const showIndicatorBefore =
-    showDropIndicator &&
-    (isReorderingOperation
-      ? typeof dragSourceIndex === 'number' && typeof index === 'number' && dragSourceIndex > index
-      : true); // For new items, always show before
-  const showIndicatorAfter =
-    showDropIndicator &&
-    isReorderingOperation &&
-    typeof dragSourceIndex === 'number' &&
-    typeof index === 'number' &&
-    dragSourceIndex < index;
+  // PERFORMANCE: Memoize indicator calculations
+  const {showIndicatorBefore, showIndicatorAfter} = useMemo(() => {
+    // Determine if the drop indicator should be shown above this element
+    // Show indicator when: dragging is active, this element is the drop target,
+    // and we're not the element being dragged
+    const showDropIndicator = isDragActive && isDropTarget && !isDragging;
 
-  const elementStyle: CSSProperties = {
+    // Determine indicator position (before or after this element)
+    // For reordering: If dragging from below (higher index) to above (lower index), show indicator at top
+    // For new items from resource panel: Always show indicator at top (insert before)
+    const indicatorBefore =
+      showDropIndicator &&
+      (isReorderingOperation
+        ? typeof dragSourceIndex === 'number' && typeof index === 'number' && dragSourceIndex > index
+        : true); // For new items, always show before
+    const indicatorAfter =
+      showDropIndicator &&
+      isReorderingOperation &&
+      typeof dragSourceIndex === 'number' &&
+      typeof index === 'number' &&
+      dragSourceIndex < index;
+
+    return {showIndicatorBefore: indicatorBefore, showIndicatorAfter: indicatorAfter};
+  }, [isDragActive, isDropTarget, isDragging, isReorderingOperation, dragSourceIndex, index]);
+
+  // PERFORMANCE: Memoize element style
+  const elementStyle: CSSProperties = useMemo(() => ({
     opacity: isDragging ? 0.4 : 1,
     transform: isDragging ? 'scale(1.01)' : 'none',
     transition: isDragging ? 'none' : 'all 0.2s ease',
-  };
+  }), [isDragging]);
 
   return (
     <Box
@@ -106,4 +185,5 @@ function Sortable({
   );
 }
 
-export default Sortable;
+// PERFORMANCE: Memoize to prevent re-renders from parent components
+export default memo(Sortable);

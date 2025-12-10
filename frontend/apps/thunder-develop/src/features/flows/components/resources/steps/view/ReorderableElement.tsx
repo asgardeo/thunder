@@ -17,7 +17,7 @@
  */
 
 import {Box, Menu, MenuItem, type BoxProps} from '@wso2/oxygen-ui';
-import {useRef, useState, type MouseEvent, type ReactElement} from 'react';
+import {useRef, useState, memo, useCallback, useMemo, type MouseEvent, type ReactElement} from 'react';
 import PluginRegistry from '@/features/flows/plugins/PluginRegistry';
 import FlowEventTypes from '@/features/flows/models/extension';
 import classNames from 'classnames';
@@ -88,20 +88,23 @@ export function ReorderableElement({
    *
    * @param event - React MouseEvent triggered on element interaction.
    */
-  const handlePropertyPanelOpen = (event: React.MouseEvent<HTMLElement>): void => {
-    event.stopPropagation();
-    setOpenValidationPanel?.(false);
-    setSelectedNotification?.(null);
-    if (stepId) {
-      setLastInteractedStepId(stepId);
-    }
-    setLastInteractedResource(element);
-  };
+  const handlePropertyPanelOpen = useCallback(
+    (event: React.MouseEvent<HTMLElement>): void => {
+      event.stopPropagation();
+      setOpenValidationPanel?.(false);
+      setSelectedNotification?.(null);
+      if (stepId) {
+        setLastInteractedStepId(stepId);
+      }
+      setLastInteractedResource(element);
+    },
+    [stepId, element, setOpenValidationPanel, setSelectedNotification, setLastInteractedStepId, setLastInteractedResource],
+  );
 
   /**
    * Handles the deletion of the element.
    */
-  const handleElementDelete = (): void => {
+  const handleElementDelete = useCallback((): void => {
     /**
      * Execute plugins for ON_NODE_ELEMENT_DELETE event and handle deletion.
      */
@@ -117,40 +120,46 @@ export function ReorderableElement({
         // TODO: Handle error with proper error notification
         throw error;
       });
-  };
+  }, [stepId, element, deleteComponent, setIsOpenResourcePropertiesPanel]);
 
   /**
    * Handles opening the add field menu for Forms.
    */
-  const handleMenuOpen = (event: MouseEvent<HTMLElement>): void => {
+  const handleMenuOpen = useCallback((event: MouseEvent<HTMLElement>): void => {
     event.stopPropagation();
     setAnchorEl(event.currentTarget);
-  };
+  }, []);
 
   /**
    * Handles closing the add field menu.
    */
-  const handleMenuClose = (): void => {
+  const handleMenuClose = useCallback((): void => {
     setAnchorEl(null);
-  };
+  }, []);
 
   /**
    * Handles adding an element to the form.
    */
-  const handleAddFieldToForm = (fieldElement: Resource): void => {
-    if (onAddElementToForm) {
-      onAddElementToForm(fieldElement, element.id);
-    }
-    handleMenuClose();
-  };
+  const handleAddFieldToForm = useCallback(
+    (fieldElement: Resource): void => {
+      if (onAddElementToForm) {
+        onAddElementToForm(fieldElement, element.id);
+      }
+      setAnchorEl(null);
+    },
+    [onAddElementToForm, element.id],
+  );
 
   // Filter available elements to only show form-compatible types
-  const formCompatibleElements =
-    isForm && availableElements
-      ? availableElements.filter((el: Resource) =>
-          VisualFlowConstants.FLOW_BUILDER_FORM_ALLOWED_RESOURCE_TYPES.includes(el.type),
-        )
-      : [];
+  const formCompatibleElements = useMemo(
+    () =>
+      isForm && availableElements
+        ? availableElements.filter((el: Resource) =>
+            VisualFlowConstants.FLOW_BUILDER_FORM_ALLOWED_RESOURCE_TYPES.includes(el.type),
+          )
+        : [],
+    [isForm, availableElements],
+  );
 
   return (
     <Sortable
@@ -233,4 +242,11 @@ export function ReorderableElement({
   );
 }
 
-export default ReorderableElement;
+export default memo(ReorderableElement, (prevProps, nextProps) =>
+  prevProps.id === nextProps.id &&
+  prevProps.index === nextProps.index &&
+  prevProps.element === nextProps.element &&
+  prevProps.className === nextProps.className &&
+  prevProps.availableElements === nextProps.availableElements &&
+  prevProps.onAddElementToForm === nextProps.onAddElementToForm
+);

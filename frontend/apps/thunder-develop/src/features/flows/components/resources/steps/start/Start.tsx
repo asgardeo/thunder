@@ -16,7 +16,7 @@
  * under the License.
  */
 
-import type {ReactElement} from 'react';
+import {memo, type ReactElement} from 'react';
 import {Handle, Position} from '@xyflow/react';
 import {StaticStepTypes} from '@/features/flows/models/steps';
 import VisualFlowConstants from '@/features/flows/constants/VisualFlowConstants';
@@ -54,4 +54,5 @@ function Start(): ReactElement {
   );
 }
 
-export default Start;
+// PERFORMANCE: Memoize to prevent re-renders during drag operations
+export default memo(Start);

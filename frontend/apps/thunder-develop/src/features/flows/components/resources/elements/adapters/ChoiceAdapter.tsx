@@ -16,7 +16,7 @@
  * under the License.
  */
 
-import type {ReactElement} from 'react';
+import {memo, type ReactElement} from 'react';
 import type {Element as FlowElement} from '@/features/flows/models/elements';
 import type {FieldOption} from '@/features/flows/models/base';
 import {FormControl, FormControlLabel, FormHelperText, FormLabel, Radio, RadioGroup} from '@wso2/oxygen-ui';
@@ -73,4 +73,7 @@ function ChoiceAdapter({resource}: ChoiceAdapterPropsInterface): ReactElement {
   );
 }
 
-export default ChoiceAdapter;
+// PERFORMANCE: Memoize to prevent re-renders during drag operations
+export default memo(ChoiceAdapter, (prevProps, nextProps) =>
+  prevProps.resource === nextProps.resource
+);

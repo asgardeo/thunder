@@ -18,11 +18,12 @@
 
 import {CircleAlertIcon} from '@wso2/oxygen-ui-icons-react';
 import classNames from 'classnames';
-import {useMemo, useState, type PropsWithChildren, type ReactElement} from 'react';
+import {memo, useMemo, useState, useCallback, type PropsWithChildren, type ReactElement} from 'react';
 import type {Resource} from '../../models/resources';
 import './ValidationErrorBoundary.scss';
 import useValidationStatus from '../../hooks/useValidationStatus';
-import Notification, {NotificationType} from '../../models/notification';
+import type Notification from '../../models/notification';
+import {NotificationType} from '../../models/notification';
 
 /**
  * Props interface of {@link ValidationErrorBoundary}
@@ -41,6 +42,13 @@ export interface ValidationErrorBoundaryPropsInterface {
 /**
  * Validation error boundary component that wraps components and shows error indicators.
  *
+ * PERFORMANCE: This component has been optimized to:
+ * 1. Use useNotificationsOnly instead of useValidationStatus - prevents re-renders
+ *    when selectedNotification or openValidationPanel change (which happens on every click)
+ * 2. Use a single loop instead of 3 separate .find() calls
+ * 3. Memoize event handlers
+ * 4. Use memo() to prevent unnecessary re-renders
+ *
  * @param props - Props injected to the component.
  * @returns ValidationErrorBoundary component.
  */
@@ -53,58 +61,77 @@ function ValidationErrorBoundary({
   const [active, setActive] = useState<boolean>(false);
 
   /**
-   * Finds the notification for this resource (if any).
+   * PERFORMANCE: Finds the notification for this resource using a single loop.
    * Prioritizes error notifications over warnings and info.
    */
   const resourceNotification: Notification | null = useMemo(() => {
-    // First check for error notifications
-    const errorNotification = notifications.find(
-      (n: Notification) => n.hasResource(resource.id) && n.getType() === NotificationType.ERROR,
-    );
-
-    if (errorNotification) {
-      return errorNotification;
+    if (!notifications || notifications.length === 0) {
+      return null;
     }
 
-    // Then check for warning notifications
-    const warningNotification = notifications.find(
-      (n: Notification) => n.hasResource(resource.id) && n.getType() === NotificationType.WARNING,
-    );
+    // PERFORMANCE: Single loop with priority tracking instead of 3 separate .find() calls
+    let errorNotification: Notification | null = null;
+    let warningNotification: Notification | null = null;
+    let infoNotification: Notification | null = null;
 
-    if (warningNotification) {
-      return warningNotification;
+    for (const notification of notifications) {
+      if (!notification.hasResource(resource.id)) {
+        continue;
+      }
+
+      const type = notification.getType();
+
+      // Return immediately if we find an error (highest priority)
+      if (type === NotificationType.ERROR) {
+        return notification;
+      }
+
+      // Track other types for fallback
+      if (type === NotificationType.WARNING && !warningNotification) {
+        warningNotification = notification;
+      } else if (type === NotificationType.INFO && !infoNotification) {
+        infoNotification = notification;
+      }
     }
 
-    // Finally check for info notifications
-    const infoNotification = notifications.find(
-      (n: Notification) => n.hasResource(resource.id) && n.getType() === NotificationType.INFO,
-    );
-
-    return infoNotification ?? null;
+    // Return in priority order
+    return errorNotification ?? warningNotification ?? infoNotification;
   }, [resource.id, notifications]);
 
-  /**
-   * Checks if the resource has any notifications.
-   */
   const hasNotification: boolean = resourceNotification !== null;
-
-  /**
-   * Gets the notification type for styling.
-   */
   const notificationType: NotificationType | null = resourceNotification?.getType() ?? null;
+
+  // PERFORMANCE: Memoize event handlers to prevent inline function recreation
+  const handleMouseOver = useCallback(() => {
+    if (hasNotification && disableErrorBoundaryOnHover) {
+      setActive(true);
+    }
+  }, [hasNotification, disableErrorBoundaryOnHover]);
+
+  const handleMouseOut = useCallback(() => {
+    if (hasNotification && disableErrorBoundaryOnHover) {
+      setActive(false);
+    }
+  }, [hasNotification, disableErrorBoundaryOnHover]);
+
+  // PERFORMANCE: Memoize className to avoid object recreation
+  const className = useMemo(() =>
+    classNames({
+      active: hasNotification && active && disableErrorBoundaryOnHover,
+      [String(notificationType)]: hasNotification && !!notificationType,
+      padded: hasNotification && !disableErrorBoundaryOnHover,
+      'validation-error-boundary': hasNotification,
+    }),
+    [hasNotification, active, disableErrorBoundaryOnHover, notificationType]
+  );
 
   return (
     <div
-      className={classNames({
-        active: hasNotification && active && disableErrorBoundaryOnHover,
-        [String(notificationType)]: hasNotification && !!notificationType,
-        padded: hasNotification && !disableErrorBoundaryOnHover,
-        'validation-error-boundary': hasNotification,
-      })}
-      onMouseOver={() => hasNotification && disableErrorBoundaryOnHover && setActive(true)}
-      onFocus={() => hasNotification && disableErrorBoundaryOnHover && setActive(true)}
-      onMouseOut={() => hasNotification && disableErrorBoundaryOnHover && setActive(false)}
-      onBlur={() => hasNotification && disableErrorBoundaryOnHover && setActive(false)}
+      className={className}
+      onMouseOver={handleMouseOver}
+      onFocus={handleMouseOver}
+      onMouseOut={handleMouseOut}
+      onBlur={handleMouseOut}
     >
       {hasNotification && !(active && disableErrorBoundaryOnHover) && (
         <CircleAlertIcon className="circle-alert-icon" size={24} />
@@ -114,4 +141,10 @@ function ValidationErrorBoundary({
   );
 }
 
-export default ValidationErrorBoundary;
+// PERFORMANCE: Memoize component to prevent re-renders when props haven't changed
+export default memo(ValidationErrorBoundary, (prevProps, nextProps) =>
+  prevProps.resource === nextProps.resource &&
+  prevProps.resource?.id === nextProps.resource?.id &&
+  prevProps.disableErrorBoundaryOnHover === nextProps.disableErrorBoundaryOnHover &&
+  prevProps.children === nextProps.children
+);

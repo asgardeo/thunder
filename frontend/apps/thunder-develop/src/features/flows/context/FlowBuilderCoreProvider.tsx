@@ -30,6 +30,8 @@ import {
   useMemo,
   useRef,
   useState,
+  type Dispatch,
+  type SetStateAction,
 } from 'react';
 import {Stack, Typography} from '@wso2/oxygen-ui';
 import useUserPreferences from '@/features/common/hooks/useUserPreferences';
@@ -138,6 +140,19 @@ function FlowContextWrapper({
   const [isCollisionAvoidanceEnabled, setIsCollisionAvoidanceEnabled] = useState<boolean>(true);
 
   const intervalRef: MutableRefObject<NodeJS.Timeout | null> = useRef<NodeJS.Timeout | null>(null);
+
+  // PERFORMANCE: Store state setters in refs to create stable callbacks
+  // This prevents context value changes when only these callbacks are used
+  const setResourcePropertiesPanelHeadingRef = useRef(setResourcePropertiesPanelHeading);
+  const setLastInteractedElementInternalRef = useRef(setLastInteractedElementInternal);
+  const setIsOpenResourcePropertiesPanelRef = useRef<Dispatch<SetStateAction<boolean>>>(setIsOpenResourcePropertiesPanel);
+  const setLastInteractedStepIdRef = useRef(setLastInteractedStepId);
+
+  // Keep refs in sync (this is cheap - just pointer assignment)
+  setResourcePropertiesPanelHeadingRef.current = setResourcePropertiesPanelHeading;
+  setLastInteractedElementInternalRef.current = setLastInteractedElementInternal;
+  setIsOpenResourcePropertiesPanelRef.current = setIsOpenResourcePropertiesPanel;
+  setLastInteractedStepIdRef.current = setLastInteractedStepId;
 
   // Temp variables for data fetching and error handling.
   const flowMetadata = undefined;
@@ -364,15 +379,17 @@ function FlowContextWrapper({
     [],
   );
 
+  // PERFORMANCE: Use refs instead of state setters to create a stable callback
+  // This callback never changes, preventing unnecessary re-renders in consumers
   const setLastInteractedResource = useCallback((resource: Resource): void => {
     // TODO: Internationalize this string and get from a mapping.
-    setResourcePropertiesPanelHeading(
+    setResourcePropertiesPanelHeadingRef.current(
       <Stack direction="row" className="sub-title" gap={1} alignItems="center">
         <Settings />
         <Typography variant="h5">{startCase(resource?.type?.toLowerCase())} Properties</Typography>
       </Stack>,
     );
-    setLastInteractedElementInternal(resource);
+    setLastInteractedElementInternalRef.current(resource);
     // If the element is a step node, do not open the properties panel for now.
     // TODO: Figure out if there are properties for a step.
     if (
@@ -380,20 +397,30 @@ function FlowContextWrapper({
       resource.resourceType === ResourceTypes.Template ||
       resource.resourceType === ResourceTypes.Widget
     ) {
-      setIsOpenResourcePropertiesPanel(false);
+      setIsOpenResourcePropertiesPanelRef.current(false);
 
       return;
     }
 
-    setIsOpenResourcePropertiesPanel(true);
+    setIsOpenResourcePropertiesPanelRef.current(true);
+  }, []);
+
+  // PERFORMANCE: Stable callback for setting last interacted step ID
+  const setLastInteractedStepIdStable = useCallback((stepId: string): void => {
+    setLastInteractedStepIdRef.current(stepId);
+  }, []);
+
+  // PERFORMANCE: Stable callback for setting properties panel open state
+  const setIsOpenResourcePropertiesPanelStable = useCallback((isOpen: boolean): void => {
+    setIsOpenResourcePropertiesPanelRef.current(isOpen);
   }, []);
 
   const onResourceDropOnCanvas = useCallback(
     (resource: Resource, stepId: string): void => {
       setLastInteractedResource(resource);
-      setLastInteractedStepId(stepId);
+      setLastInteractedStepIdStable(stepId);
     },
-    [setLastInteractedResource],
+    [setLastInteractedResource, setLastInteractedStepIdStable],
   );
 
   /**
@@ -445,12 +472,14 @@ function FlowContextWrapper({
       setFlowCompletionConfigs,
       setFlowEdgeTypes,
       setFlowNodeTypes,
-      setIsOpenResourcePropertiesPanel,
+      // PERFORMANCE: Use stable callbacks that never change
+      setIsOpenResourcePropertiesPanel: setIsOpenResourcePropertiesPanelStable,
       setIsResourcePanelOpen,
       setIsVersionHistoryPanelOpen,
       setLanguage,
       setLastInteractedResource,
-      setLastInteractedStepId,
+      // PERFORMANCE: Use stable callback that never changes
+      setLastInteractedStepId: setLastInteractedStepIdStable,
       setLocalHistoryAutoSaveEnabled: setIsAutoSaveLocalHistoryEnabled,
       setResourcePropertiesPanelHeading,
       setSelectedAttributes,
@@ -496,6 +525,9 @@ function FlowContextWrapper({
       restoreFromHistory,
       selectedAttributes,
       setLastInteractedResource,
+      // PERFORMANCE: Stable callbacks - these never change so don't trigger re-renders
+      setLastInteractedStepIdStable,
+      setIsOpenResourcePropertiesPanelStable,
       supportedLocales,
       textPreferenceLoading,
       triggerLocalHistoryAutoSave,

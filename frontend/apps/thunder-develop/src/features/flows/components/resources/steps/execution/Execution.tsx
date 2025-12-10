@@ -16,7 +16,7 @@
  * under the License.
  */
 
-import {useCallback, useEffect, useMemo, type ReactElement} from 'react';
+import {memo, useCallback, useEffect, useMemo, type ReactElement} from 'react';
 import cloneDeep from 'lodash-es/cloneDeep';
 import {useTranslation} from 'react-i18next';
 import useFlowBuilderCore from '@/features/flows/hooks/useFlowBuilderCore';
@@ -234,4 +234,9 @@ function Execution({id, data, resources}: ExecutionPropsInterface): ReactElement
   );
 }
 
-export default Execution;
+// Memoize to prevent re-renders during drag operations
+export default memo(Execution, (prevProps, nextProps) =>
+  prevProps.id === nextProps.id &&
+  prevProps.data === nextProps.data &&
+  prevProps.resources === nextProps.resources
+);

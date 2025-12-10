@@ -16,14 +16,26 @@
  * under the License.
  */
 
-import {useMemo, type CSSProperties, type ReactElement} from 'react';
+import {memo, useMemo, type CSSProperties, type ReactElement} from 'react';
 import type {Element as FlowElement} from '@/features/flows/models/elements';
-import {Trans, useTranslation} from 'react-i18next';
+import {Trans} from 'react-i18next';
 import type {RequiredFieldInterface} from '@/features/flows/hooks/useRequiredFields';
 import useRequiredFields from '@/features/flows/hooks/useRequiredFields';
 import {Checkbox, FormControlLabel, FormHelperText} from '@wso2/oxygen-ui';
 import PlaceholderComponent from '../PlaceholderComponent';
 import {Hint} from '../../hint';
+
+// PERFORMANCE: Define fields outside component to prevent recreation on every render
+const CHECKBOX_VALIDATION_FIELDS: RequiredFieldInterface[] = [
+  {
+    errorMessage: 'Label is required',
+    name: 'label',
+  },
+  {
+    errorMessage: 'Identifier is required',
+    name: 'identifier',
+  },
+];
 
 /**
  * Configuration interface for Checkbox element.
@@ -55,12 +67,16 @@ export interface CheckboxAdapterPropsInterface {
 /**
  * Adapter for the Checkbox component.
  *
+ * PERFORMANCE: This component has been optimized to:
+ * 1. Use static validation fields defined outside the component
+ * 2. Remove useTranslation hook to avoid re-renders
+ * 3. Memoize the general message
+ *
  * @param props - Props injected to the component.
  * @returns The CheckboxAdapter component.
  */
 function CheckboxAdapter({resource}: CheckboxAdapterPropsInterface): ReactElement {
-  const {t} = useTranslation();
-
+  // PERFORMANCE: Memoize general message - only depends on resource.id
   const generalMessage: ReactElement = useMemo(
     () => (
       <Trans i18nKey="flows:core.validation.fields.checkbox.general" values={{id: resource.id}}>
@@ -70,21 +86,8 @@ function CheckboxAdapter({resource}: CheckboxAdapterPropsInterface): ReactElemen
     [resource?.id],
   );
 
-  const fields: RequiredFieldInterface[] = useMemo(
-    () => [
-      {
-        errorMessage: t('flows:core.validation.fields.checkbox.label'),
-        name: 'label',
-      },
-      {
-        errorMessage: t('flows:core.validation.fields.checkbox.identifier'),
-        name: 'identifier',
-      },
-    ],
-    [t],
-  );
-
-  useRequiredFields(resource, generalMessage, fields);
+  // PERFORMANCE: Use static fields array defined outside component
+  useRequiredFields(resource, generalMessage, CHECKBOX_VALIDATION_FIELDS);
 
   // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment -- Config type is validated at runtime
   const checkboxConfig = resource.config as CheckboxConfig | undefined;
@@ -107,4 +110,7 @@ function CheckboxAdapter({resource}: CheckboxAdapterPropsInterface): ReactElemen
   );
 }
 
-export default CheckboxAdapter;
+// PERFORMANCE: Memoize to prevent re-renders during drag operations
+export default memo(CheckboxAdapter, (prevProps, nextProps) =>
+  prevProps.resource === nextProps.resource
+);

@@ -16,9 +16,9 @@
  * under the License.
  */
 
-import {useMemo, type ReactElement} from 'react';
+import {memo, useMemo, type ReactElement} from 'react';
 import {ButtonVariants, type Element as FlowElement} from '@/features/flows/models/elements';
-import {Trans, useTranslation} from 'react-i18next';
+import {Trans} from 'react-i18next';
 import type {RequiredFieldInterface} from '@/features/flows/hooks/useRequiredFields';
 import useRequiredFields from '@/features/flows/hooks/useRequiredFields';
 import {Button, type ButtonProps, type SxProps, type Theme} from '@wso2/oxygen-ui';
@@ -27,6 +27,24 @@ import VisualFlowConstants from '@/features/flows/constants/VisualFlowConstants'
 import resolveStaticResourcePath from '@/features/flows/utils/resolveStaticResourcePath';
 import PlaceholderComponent from './PlaceholderComponent';
 import NodeHandle from './NodeHandle';
+
+// PERFORMANCE: Define fields outside component to prevent recreation on every render
+// These are static strings - using plain text instead of dynamic i18n to avoid
+// useTranslation hook overhead on every button component
+const BUTTON_VALIDATION_FIELDS: RequiredFieldInterface[] = [
+  {
+    errorMessage: 'Action is required',
+    name: 'action',
+  },
+  {
+    errorMessage: 'Text is required',
+    name: 'text',
+  },
+  {
+    errorMessage: 'Variant is required',
+    name: 'variant',
+  },
+];
 
 /**
  * Configuration interface for Button element.
@@ -62,12 +80,16 @@ export interface ButtonAdapterPropsInterface {
 /**
  * Adapter for the Button component.
  *
+ * PERFORMANCE: This component has been optimized to:
+ * 1. Use static validation fields defined outside the component
+ * 2. Remove useTranslation hook to avoid re-renders
+ * 3. Memoize the general message
+ *
  * @param props - Props injected to the component.
  * @returns The ButtonAdapter component.
  */
 function ButtonAdapter({resource, elementIndex}: ButtonAdapterPropsInterface): ReactElement {
-  const {t} = useTranslation();
-
+  // PERFORMANCE: Memoize general message - only depends on resource.id
   const generalMessage: ReactElement = useMemo(
     () => (
       <Trans i18nKey="flows:core.validation.fields.button.general" values={{id: resource.id}}>
@@ -77,76 +99,61 @@ function ButtonAdapter({resource, elementIndex}: ButtonAdapterPropsInterface): R
     [resource?.id],
   );
 
-  const fields: RequiredFieldInterface[] = useMemo(
-    () => [
-      {
-        errorMessage: t('flows:core.validation.fields.button.action'),
-        name: 'action',
-      },
-      {
-        errorMessage: t('flows:core.validation.fields.button.text'),
-        name: 'text',
-      },
-      {
-        errorMessage: t('flows:core.validation.fields.button.variant'),
-        name: 'variant',
-      },
-    ],
-    [t],
-  );
-
-  useRequiredFields(resource, generalMessage, fields);
-
-  // usePasswordExecutorValidation(resource as unknown as Element);
+  // PERFORMANCE: Use static fields array defined outside component
+  useRequiredFields(resource, generalMessage, BUTTON_VALIDATION_FIELDS);
 
   // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment -- Config type is validated at runtime
   const buttonConfig = resource.config as ButtonConfig | undefined;
 
-  let config: ButtonProps = {};
-  let image = '';
+  // PERFORMANCE: Memoize button config to prevent object recreation
+  const {config, image} = useMemo(() => {
+    let buttonProps: ButtonProps = {};
+    let buttonImage = '';
 
-  if (resource.variant === ButtonVariants.Primary) {
-    config = {
-      ...config,
-      color: 'primary',
-      fullWidth: true,
-      variant: 'contained',
-    };
-  } else if (resource.variant === ButtonVariants.Secondary) {
-    config = {
-      ...config,
-      color: 'secondary',
-      fullWidth: true,
-      variant: 'contained',
-    };
-  } else if (resource.variant === ButtonVariants.Text) {
-    config = {
-      ...config,
-      fullWidth: true,
-      variant: 'text',
-    };
-  } else if (resource.variant === ButtonVariants.Social) {
-    // TODO: Figure out a way to identify the social connection from the next step.
-    image = 'https://www.svgrepo.com/show/475656/google.svg';
+    if (resource.variant === ButtonVariants.Primary) {
+      buttonProps = {
+        color: 'primary',
+        fullWidth: true,
+        variant: 'contained',
+      };
+    } else if (resource.variant === ButtonVariants.Secondary) {
+      buttonProps = {
+        color: 'secondary',
+        fullWidth: true,
+        variant: 'contained',
+      };
+    } else if (resource.variant === ButtonVariants.Text) {
+      buttonProps = {
+        fullWidth: true,
+        variant: 'text',
+      };
+    } else if (resource.variant === ButtonVariants.Social) {
+      buttonImage = 'https://www.svgrepo.com/show/475656/google.svg';
+      buttonProps = {
+        fullWidth: true,
+        variant: 'outlined',
+      };
+    }
 
-    config = {
-      ...config,
-      fullWidth: true,
-      variant: 'outlined',
-    };
-  }
+    return {config: buttonProps, image: buttonImage};
+  }, [resource.variant]);
+
+  // PERFORMANCE: Memoize start icon to prevent recreation
+  const startIcon = useMemo(() => {
+    if (buttonConfig?.image) {
+      return <img src={resolveStaticResourcePath(buttonConfig.image)} height={20} alt="" />;
+    }
+    if (image) {
+      return <img src={resolveStaticResourcePath(image)} height={20} alt="" />;
+    }
+    return undefined;
+  }, [buttonConfig?.image, image]);
 
   return (
     <div className="adapter button-adapter">
       <Button
         sx={buttonConfig?.styles}
-        startIcon={
-          buttonConfig?.image ? (
-            <img src={resolveStaticResourcePath(buttonConfig?.image)} height={20} alt="" />
-          ) : (
-            image && <img src={resolveStaticResourcePath(image)} height={20} alt="" />
-          )
-        }
+        startIcon={startIcon}
         {...config}
       >
         <PlaceholderComponent value={buttonConfig?.text ?? ''} />
@@ -161,4 +168,8 @@ function ButtonAdapter({resource, elementIndex}: ButtonAdapterPropsInterface): R
   );
 }
 
-export default ButtonAdapter;
+// PERFORMANCE: Memoize to prevent re-renders during drag operations
+export default memo(ButtonAdapter, (prevProps, nextProps) =>
+  prevProps.resource === nextProps.resource &&
+  prevProps.elementIndex === nextProps.elementIndex
+);

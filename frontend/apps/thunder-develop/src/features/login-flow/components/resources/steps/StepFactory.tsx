@@ -20,7 +20,7 @@ import CommonStepFactory, {
   type CommonStepFactoryPropsInterface,
 } from '@/features/flows/components/resources/steps/CommonStepFactory';
 import type {Node} from '@xyflow/react';
-import type {ReactElement} from 'react';
+import {memo, type ReactElement} from 'react';
 import type {Resources} from '@/features/flows/models/resources';
 import type {Element} from '@/features/flows/models/elements';
 
@@ -71,4 +71,12 @@ function StepFactory({
   );
 }
 
-export default StepFactory;
+// Memoize to prevent re-renders during drag operations
+export default memo(StepFactory, (prevProps, nextProps) =>
+  prevProps.id === nextProps.id &&
+  prevProps.data === nextProps.data &&
+  prevProps.resources === nextProps.resources &&
+  prevProps.allResources === nextProps.allResources &&
+  prevProps.onAddElement === nextProps.onAddElement &&
+  prevProps.onAddElementToForm === nextProps.onAddElementToForm
+);

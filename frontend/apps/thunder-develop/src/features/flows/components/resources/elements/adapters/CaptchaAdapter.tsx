@@ -16,7 +16,7 @@
  * under the License.
  */
 
-import type {ReactElement} from 'react';
+import {memo, type ReactElement} from 'react';
 import type {Element as FlowElement} from '@/features/flows/models/elements';
 import {Box} from '@wso2/oxygen-ui';
 
@@ -180,4 +180,7 @@ function CaptchaAdapter({resource}: CaptchaAdapterPropsInterface): ReactElement 
   );
 }
 
-export default CaptchaAdapter;
+// PERFORMANCE: Memoize to prevent re-renders during drag operations
+export default memo(CaptchaAdapter, (prevProps, nextProps) =>
+  prevProps.resource === nextProps.resource
+);

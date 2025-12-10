@@ -16,7 +16,7 @@
  * under the License.
  */
 
-import {type PropsWithChildren, type ReactElement, useCallback, useMemo, useState} from 'react';
+import {type PropsWithChildren, type ReactElement, useCallback, useMemo, useRef, useState} from 'react';
 import Notification, {NotificationType} from '../models/notification';
 import {ValidationContext, type ValidationConfig} from './ValidationContext';
 
@@ -39,10 +39,24 @@ function ValidationProvider({
   const [openValidationPanel, setOpenValidationPanel] = useState<boolean>(false);
   const [currentActiveTab, setCurrentActiveTab] = useState<number>(0);
 
+  // PERFORMANCE: Use ref to access current notifications without dependency
+  // This prevents getNotification from changing on every notification update
+  const notificationsRef = useRef(notifications);
+  notificationsRef.current = notifications;
+
+  // PERFORMANCE: Store setters in refs to create stable callbacks
+  const setOpenValidationPanelRef = useRef(setOpenValidationPanel);
+  const setSelectedNotificationRef = useRef(setSelectedNotification);
+  setOpenValidationPanelRef.current = setOpenValidationPanel;
+  setSelectedNotificationRef.current = setSelectedNotification;
+
   /**
    * Get the list of notifications.
    */
-  const notificationList: Notification[] = useMemo(() => Array.from(notifications.values()), [notifications]);
+  const notificationList: Notification[] = useMemo(
+    () => Array.from(notifications.values()),
+    [notifications],
+  );
 
   /**
    * Indicates whether the current state of the flow is valid.
@@ -84,13 +98,25 @@ function ValidationProvider({
 
   /**
    * Gets a notification by its ID.
+   * PERFORMANCE: Uses ref to avoid recreating this callback when notifications change.
+   * This prevents cascading re-renders in useRequiredFields.
    * @param id - The ID of the notification to retrieve.
    * @returns The notification with the specified ID, or undefined if not found.
    */
   const getNotification: (id: string) => Notification | undefined = useCallback(
-    (id: string): Notification | undefined => notifications.get(id),
-    [notifications],
+    (id: string): Notification | undefined => notificationsRef.current.get(id),
+    [],
   );
+
+  // PERFORMANCE: Stable callback for setOpenValidationPanel - never changes
+  const setOpenValidationPanelStable = useCallback((isOpen: boolean): void => {
+    setOpenValidationPanelRef.current(isOpen);
+  }, []);
+
+  // PERFORMANCE: Stable callback for setSelectedNotification - never changes
+  const setSelectedNotificationStable = useCallback((notification: Notification | null): void => {
+    setSelectedNotificationRef.current(notification);
+  }, []);
 
   const contextValue = useMemo(
     () => ({
@@ -103,8 +129,9 @@ function ValidationProvider({
       removeNotification,
       selectedNotification,
       setCurrentActiveTab,
-      setOpenValidationPanel,
-      setSelectedNotification,
+      // PERFORMANCE: Use stable callbacks that never change
+      setOpenValidationPanel: setOpenValidationPanelStable,
+      setSelectedNotification: setSelectedNotificationStable,
       validationConfig,
     }),
     [
@@ -117,8 +144,9 @@ function ValidationProvider({
       removeNotification,
       selectedNotification,
       setCurrentActiveTab,
-      setOpenValidationPanel,
-      setSelectedNotification,
+      // PERFORMANCE: Stable callbacks - these never change so don't cause re-renders
+      setOpenValidationPanelStable,
+      setSelectedNotificationStable,
       validationConfig,
     ],
   );

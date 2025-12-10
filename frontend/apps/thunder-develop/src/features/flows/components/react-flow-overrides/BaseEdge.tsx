@@ -225,19 +225,18 @@ function BaseEdgeComponent({
   const edgeStyle: EdgeStyleType = (data?.edgeStyle as EdgeStyleType) ?? EdgeStyleTypes.SmoothStep;
   const isCollisionAvoidanceEnabled = (data?.isCollisionAvoidanceEnabled as boolean) ?? true;
 
-  // Use stable references from data to avoid creating new arrays on every render
-  const allObstaclesFromData = data?.allObstacles as CachedObstacle[] | undefined;
-  const allEdgesFromData = data?.allEdges as Edge[] | undefined;
-
-  // Memoize the fallback empty arrays to maintain stable references
-  const emptyObstacles = useMemo<CachedObstacle[]>(() => [], []);
-  const emptyEdges = useMemo<Edge[]>(() => [], []);
-
-  const allObstacles = allObstaclesFromData ?? emptyObstacles;
-  const allEdges = allEdgesFromData ?? emptyEdges;
+  // Use refs passed from VisualFlow to access obstacle/edge data lazily
+  // This prevents re-renders when obstacles change during node dragging
+  const obstaclesRef = data?.obstaclesRef as React.RefObject<CachedObstacle[]> | undefined;
+  const edgesRef = data?.edgesRef as React.RefObject<Edge[]> | undefined;
 
   // Calculate edge path with pre-computed obstacles
+  // NOTE: We read from refs INSIDE useMemo to get latest data without causing dependency changes
   const {edgePath, labelX, labelY} = useMemo(() => {
+    // Access current values from refs inside the callback
+    // This avoids the refs changing the dependency array while still getting fresh data
+    const allObstacles = obstaclesRef?.current ?? [];
+    const allEdges = edgesRef?.current ?? [];
     // If collision avoidance is disabled, use simple paths for better performance
     if (!isCollisionAvoidanceEnabled) {
       if (edgeStyle === EdgeStyleTypes.Bezier) {
@@ -425,7 +424,8 @@ function BaseEdgeComponent({
       offset: 0,
     });
     return {edgePath: path, labelX: lx, labelY: ly};
-  }, [sourceX, sourceY, targetX, targetY, sourcePosition, targetPosition, allObstacles, source, target, allEdges, id, edgeStyle, isCollisionAvoidanceEnabled]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- obstaclesRef and edgesRef are stable refs, we intentionally read .current inside
+  }, [sourceX, sourceY, targetX, targetY, sourcePosition, targetPosition, source, target, id, edgeStyle, isCollisionAvoidanceEnabled]);
 
   const handleDelete = (event: SyntheticEvent) => {
     event.stopPropagation();
@@ -530,6 +530,7 @@ function BaseEdgeComponent({
 const BaseEdge = memo(BaseEdgeComponent, (prevProps, nextProps) =>
   // Custom comparison function for better performance
   // Only re-render if relevant props have changed
+  // Note: obstaclesRef and edgesRef are stable refs, so we don't need to compare them
   prevProps.id === nextProps.id &&
   prevProps.sourceX === nextProps.sourceX &&
   prevProps.sourceY === nextProps.sourceY &&
@@ -542,9 +543,7 @@ const BaseEdge = memo(BaseEdgeComponent, (prevProps, nextProps) =>
   prevProps.source === nextProps.source &&
   prevProps.target === nextProps.target &&
   prevProps.data?.edgeStyle === nextProps.data?.edgeStyle &&
-  prevProps.data?.isCollisionAvoidanceEnabled === nextProps.data?.isCollisionAvoidanceEnabled &&
-  prevProps.data?.allObstacles === nextProps.data?.allObstacles &&
-  prevProps.data?.allEdges === nextProps.data?.allEdges
+  prevProps.data?.isCollisionAvoidanceEnabled === nextProps.data?.isCollisionAvoidanceEnabled
 );
 
 export default BaseEdge;

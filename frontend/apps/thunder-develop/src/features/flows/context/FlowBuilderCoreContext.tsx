@@ -87,8 +87,9 @@ export interface FlowBuilderCoreContextProps {
   setLastInteractedResource: (resource: Resource) => void;
   /**
    * Sets the active element node ID.
+   * PERFORMANCE: This is a stable callback that never changes reference.
    */
-  setLastInteractedStepId: Dispatch<SetStateAction<string>>;
+  setLastInteractedStepId: (stepId: string) => void;
   /**
    * Sets the heading for the element properties panel.
    *
@@ -103,10 +104,11 @@ export interface FlowBuilderCoreContextProps {
   setIsResourcePanelOpen: Dispatch<SetStateAction<boolean>>;
   /**
    * Function to set the state of the element properties panel.
+   * PERFORMANCE: This is a stable callback that never changes reference.
    *
    * @param isOpen - Boolean indicating whether the element properties panel should be open.
    */
-  setIsOpenResourcePropertiesPanel: Dispatch<SetStateAction<boolean>>;
+  setIsOpenResourcePropertiesPanel: (isOpen: boolean) => void;
   /**
    * Function to set the state of the version history panel.
    */

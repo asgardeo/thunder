@@ -16,7 +16,7 @@
  * under the License.
  */
 
-import {type ReactElement} from 'react';
+import {memo, useMemo, type ReactElement} from 'react';
 import {Badge, Box, Typography} from '@wso2/oxygen-ui';
 import {ElementCategories, type Element as FlowElement} from '@/features/flows/models/elements';
 import generateResourceId from '@/features/flows/utils/generateResourceId';
@@ -59,6 +59,14 @@ function FormAdapter({resource, stepId}: FormAdapterPropsInterface): ReactElemen
     (element: FlowElement) => element.category === ElementCategories.Field,
   );
 
+  // PERFORMANCE: Pre-filter components using PluginRegistry once, not on every render
+  const filteredComponents = useMemo(() => {
+    if (!resource?.components) return [];
+    return resource.components.filter((component: FlowElement) =>
+      PluginRegistry.getInstance().executeSync(FlowEventTypes.ON_NODE_ELEMENT_FILTER, component)
+    );
+  }, [resource?.components]);
+
   return (
     <Badge
       anchorOrigin={{
@@ -86,28 +94,29 @@ function FormAdapter({resource, stepId}: FormAdapterPropsInterface): ReactElemen
               </Typography>
             </Box>
           )}
-        {resource?.components?.map(
-          (component: FlowElement, index: number) =>
-            PluginRegistry.getInstance().executeSync(FlowEventTypes.ON_NODE_ELEMENT_FILTER, component) && (
-              <ReorderableFlowElement
-                key={component.id}
-                id={component.id}
-                index={index}
-                element={component}
-                className={classNames('flow-builder-step-content-form-field')}
-                group={resource.id}
-                type={VisualFlowConstants.FLOW_BUILDER_DRAGGABLE_ID}
-                accept={[
-                  VisualFlowConstants.FLOW_BUILDER_DRAGGABLE_ID,
-                  ...VisualFlowConstants.FLOW_BUILDER_FORM_ALLOWED_RESOURCE_TYPES,
-                ]}
-              />
-            ),
-        )}
+          {filteredComponents.map((component: FlowElement, index: number) => (
+            <ReorderableFlowElement
+              key={component.id}
+              id={component.id}
+              index={index}
+              element={component}
+              className={classNames('flow-builder-step-content-form-field')}
+              group={resource.id}
+              type={VisualFlowConstants.FLOW_BUILDER_DRAGGABLE_ID}
+              accept={[
+                VisualFlowConstants.FLOW_BUILDER_DRAGGABLE_ID,
+                ...VisualFlowConstants.FLOW_BUILDER_FORM_ALLOWED_RESOURCE_TYPES,
+              ]}
+            />
+          ))}
         </Droppable>
       </Box>
     </Badge>
   );
 }
 
-export default FormAdapter;
+// PERFORMANCE: Memoize to prevent re-renders during drag operations
+export default memo(FormAdapter, (prevProps, nextProps) =>
+  prevProps.resource === nextProps.resource &&
+  prevProps.stepId === nextProps.stepId
+);

@@ -1104,27 +1104,43 @@ function LoginFlowBuilder() {
     handleAddElementToFormRef.current = handleAddElementToForm;
   }, [handleAddElementToView, handleAddElementToForm]);
 
-  const nodeTypes = useMemo((): NodeTypes => {
-    if (!steps) {
-      return {};
+  // PERFORMANCE: Use refs for resources to avoid nodeTypes recreation
+  // nodeTypes MUST be stable - recreating them causes all nodes to remount
+  const resourcesRef = useRef(resources);
+
+  // Update refs when data changes (doesn't trigger re-render)
+  useEffect(() => {
+    resourcesRef.current = resources;
+  }, [resources]);
+
+  // PERFORMANCE: Pre-compute stepsByType once and store in ref
+  const stepsByTypeRef = useRef<Record<string, Step[]>>({});
+  useEffect(() => {
+    if (steps) {
+      stepsByTypeRef.current = steps.reduce((acc: Record<string, Step[]>, step: Step) => {
+        if (!acc[step.type]) {
+          acc[step.type] = [];
+        }
+        acc[step.type].push(step);
+        return acc;
+      }, {});
     }
+  }, [steps]);
 
-    const stepsByType: Record<string, Step[]> = steps.reduce((acc: Record<string, Step[]>, step: Step) => {
-      if (!acc[step.type]) {
-        acc[step.type] = [];
-      }
-      acc[step.type].push(step);
+  // PERFORMANCE: Create nodeTypes ONLY ONCE using refs for dynamic data access
+  // This prevents React Flow from remounting all nodes on every render
+  const nodeTypes = useMemo((): NodeTypes => {
+    // Get unique step types from steps (only to determine which types we need)
+    const stepTypeSet = new Set(steps?.map((s) => s.type) ?? []);
 
-      return acc;
-    }, {});
-
-    const stepNodes: NodeTypes = steps.reduce((acc: NodeTypes, resource: Step) => {
-      acc[resource.type] = (props: NodeProps) => (
+    const stepNodes: NodeTypes = Array.from(stepTypeSet).reduce((acc: NodeTypes, stepType: string) => {
+      // Create a stable component that reads from refs at render time
+      acc[stepType] = (props: NodeProps) => (
         // @ts-expect-error NodeProps doesn't include all required properties but they're provided at runtime
         <StepFactory
           resourceId={props.id}
-          resources={stepsByType[resource.type]}
-          allResources={resources}
+          resources={stepsByTypeRef.current[stepType] ?? []}
+          allResources={resourcesRef.current}
           onAddElement={(element: Element) => handleAddElementToViewRef.current?.(element)}
           onAddElementToForm={(element: Element, formId: string) =>
             handleAddElementToFormRef.current?.(element, formId)
@@ -1132,7 +1148,6 @@ function LoginFlowBuilder() {
           {...props}
         />
       );
-
       return acc;
     }, {});
 
@@ -1152,7 +1167,10 @@ function LoginFlowBuilder() {
       ...staticStepNodes,
       ...stepNodes,
     };
-  }, [steps, resources]);
+    // IMPORTANT: Only depend on the step types array, not resources
+    // The actual data is accessed via refs at render time
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [steps?.map((s) => s.type).join(',')]);
 
   /**
    * Handle save button click - transforms React Flow data to backend format.

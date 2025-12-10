@@ -16,7 +16,7 @@
  * under the License.
  */
 
-import {useState, type HTMLAttributes, type ReactElement} from 'react';
+import {memo, useCallback, useState, type HTMLAttributes, type ReactElement} from 'react';
 import {Box, Button, Drawer, IconButton, type DrawerProps} from '@wso2/oxygen-ui';
 import {useReactFlow} from '@xyflow/react';
 import classNames from 'classnames';
@@ -58,6 +58,23 @@ function ResourcePropertyPanel({
     lastInteractedResource,
   } = useFlowBuilderCore();
 
+  // PERFORMANCE: Memoize callbacks to prevent re-renders
+  const handleClose = useCallback(() => {
+    setIsOpenResourcePropertiesPanel(false);
+  }, [setIsOpenResourcePropertiesPanel]);
+
+  const handleDelete = useCallback(() => {
+    if (!lastInteractedResource) return;
+
+    if (lastInteractedResource.resourceType === ResourceTypes.Step) {
+      // eslint-disable-next-line @typescript-eslint/no-floating-promises
+      deleteElements({nodes: [{id: lastInteractedResource.id}]});
+    } else {
+      onComponentDelete(lastInteractedStepId, lastInteractedResource);
+    }
+    setIsOpenResourcePropertiesPanel(false);
+  }, [deleteElements, lastInteractedResource, lastInteractedStepId, onComponentDelete, setIsOpenResourcePropertiesPanel]);
+
   return (
     <Box
       ref={setContainerEl}
@@ -72,7 +89,7 @@ function ResourcePropertyPanel({
       <Drawer
         open={open}
         anchor={anchor}
-        onClose={() => setIsOpenResourcePropertiesPanel(false)}
+        onClose={handleClose}
         elevation={5}
         slotProps={{
           paper: {
@@ -105,7 +122,7 @@ function ResourcePropertyPanel({
           className="flow-builder-right-panel header"
         >
           {resourcePropertiesPanelHeading}
-          <IconButton onClick={() => setIsOpenResourcePropertiesPanel(false)}>
+          <IconButton onClick={handleClose}>
             <X height={16} width={16} />
           </IconButton>
         </Box>
@@ -124,16 +141,7 @@ function ResourcePropertyPanel({
                 (lastInteractedResource?.deletable === undefined && (
                   <Button
                     variant="outlined"
-                    onClick={() => {
-                      if (lastInteractedResource.resourceType === ResourceTypes.Step) {
-                        // eslint-disable-next-line @typescript-eslint/no-floating-promises
-                        deleteElements({nodes: [{id: lastInteractedResource.id}]});
-                      } else {
-                        onComponentDelete(lastInteractedStepId, lastInteractedResource);
-                      }
-
-                      setIsOpenResourcePropertiesPanel(false);
-                    }}
+                    onClick={handleDelete}
                     color="error"
                     startIcon={<TrashIcon size={16} />}
                     fullWidth
@@ -148,4 +156,5 @@ function ResourcePropertyPanel({
   );
 }
 
-export default ResourcePropertyPanel;
+// PERFORMANCE: Memoize to prevent re-renders from parent components
+export default memo(ResourcePropertyPanel);

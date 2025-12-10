@@ -19,7 +19,7 @@
 import {BlockTypes, ElementTypes, InputVariants, type Element} from '@/features/flows/models/elements';
 import FlowEventTypes from '@/features/flows/models/extension';
 import PluginRegistry from '@/features/flows/plugins/PluginRegistry';
-import type {ReactElement} from 'react';
+import {memo, type ReactElement} from 'react';
 import FormAdapter from './adapters/FormAdapter';
 import CheckboxAdapter from './adapters/input/CheckboxAdapter';
 import PhoneNumberInputAdapter from './adapters/input/PhoneNumberInputAdapter';
@@ -130,4 +130,8 @@ function CommonElementFactory({
   return null;
 }
 
-export default CommonElementFactory;
+export default memo(CommonElementFactory, (prevProps, nextProps) =>
+  prevProps.stepId === nextProps.stepId &&
+  prevProps.resource === nextProps.resource &&
+  prevProps.elementIndex === nextProps.elementIndex
+);

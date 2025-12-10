@@ -16,9 +16,9 @@
  * under the License.
  */
 
-import {useDragDropManager, useDroppable, type DragDropEventHandlers, type UseDroppableInput} from '@dnd-kit/react';
+import {useDragDropManager, useDroppable, type UseDroppableInput} from '@dnd-kit/react';
 import {Box, type BoxProps} from '@wso2/oxygen-ui';
-import {type PropsWithChildren, type ReactElement, useState, useEffect} from 'react';
+import {memo, type PropsWithChildren, type ReactElement, useRef, useCallback, useSyncExternalStore} from 'react';
 import {pointerIntersection} from '@dnd-kit/collision';
 import './droppable.scss';
 
@@ -29,40 +29,60 @@ interface Resource {
   type: string;
 }
 
+// PERFORMANCE: Global drag state managed outside React to avoid per-component state updates
+// This prevents ALL Droppable components from re-rendering on every drag move
+let globalDraggedResource: Resource | null = null;
+const dragStateListeners = new Set<() => void>();
+
+function setGlobalDraggedResource(resource: Resource | null): void {
+  if (globalDraggedResource?.type !== resource?.type) {
+    globalDraggedResource = resource;
+    // Notify all subscribers only when the type actually changes
+    dragStateListeners.forEach((listener) => listener());
+  }
+}
+
+function subscribeToGlobalDragState(callback: () => void): () => void {
+  dragStateListeners.add(callback);
+  return () => dragStateListeners.delete(callback);
+}
+
+function getGlobalDraggedResource(): Resource | null {
+  return globalDraggedResource;
+}
+
 /**
- * A safe version of useDragDropMonitor that only subscribes when inside a DragDropProvider.
- * This prevents the "useDndMonitor hook was called outside of a DragDropProvider" warning.
+ * Hook to subscribe to global drag state with minimal re-renders.
+ * Only triggers re-render when the dragged resource type changes.
  */
-function useSafeDragDropMonitor(handlers: Partial<DragDropEventHandlers>): void {
+function useGlobalDragState(): Resource | null {
+  return useSyncExternalStore(subscribeToGlobalDragState, getGlobalDraggedResource, getGlobalDraggedResource);
+}
+
+/**
+ * Hook to set up drag monitoring once per provider, not per Droppable.
+ * Uses refs to avoid re-subscriptions.
+ */
+function useDragMonitorSetup(): void {
   const manager = useDragDropManager();
+  const isSetupRef = useRef(false);
 
-  useEffect(() => {
-    if (!manager) {
-      return undefined;
-    }
+  // Set up listeners only once when manager is available
+  if (manager && !isSetupRef.current) {
+    isSetupRef.current = true;
 
-    const unsubscribers: (() => void)[] = [];
+    manager.monitor.addEventListener('dragend', () => {
+      setGlobalDraggedResource(null);
+    });
 
-    if (handlers.onDragEnd) {
-      unsubscribers.push(manager.monitor.addEventListener('dragend', handlers.onDragEnd));
-    }
-
-    if (handlers.onDragOver) {
-      unsubscribers.push(manager.monitor.addEventListener('dragover', handlers.onDragOver));
-    }
-
-    if (handlers.onDragStart) {
-      unsubscribers.push(manager.monitor.addEventListener('dragstart', handlers.onDragStart));
-    }
-
-    if (handlers.onDragMove) {
-      unsubscribers.push(manager.monitor.addEventListener('dragmove', handlers.onDragMove));
-    }
-
-    return () => {
-      unsubscribers.forEach((unsubscribe) => unsubscribe());
-    };
-  }, [manager, handlers]);
+    manager.monitor.addEventListener('dragstart', (event) => {
+      const {source} = event.operation;
+      const sourceData = source?.data as {dragged?: Resource} | undefined;
+      if (sourceData?.dragged) {
+        setGlobalDraggedResource(sourceData.dragged);
+      }
+    });
+  }
 }
 
 /**
@@ -94,31 +114,25 @@ function Droppable({
     ...rest,
   });
 
-  const [draggedResource, setDraggedResource] = useState<Resource | null>(null);
+  // PERFORMANCE: Set up drag monitoring (only runs setup once due to ref guard)
+  useDragMonitorSetup();
 
-  useSafeDragDropMonitor({
-    onDragEnd() {
-      setDraggedResource(null);
-    },
-    onDragOver(event) {
-      const {source} = event.operation;
-      const sourceData = source?.data as {dragged?: Resource} | undefined;
+  // PERFORMANCE: Subscribe to global drag state instead of per-component state
+  // This only triggers re-render when the dragged resource TYPE changes, not on every drag move
+  const draggedResource = useGlobalDragState();
 
-      if (sourceData?.dragged) {
-        setDraggedResource(sourceData.dragged);
-      }
-    },
-  });
-
-  const droppableClassName = [
-    'flow-builder-dnd-droppable',
-    draggedResource && (accept as string[])?.includes(draggedResource.type) && 'allowed',
-    draggedResource && !(accept as string[])?.includes(draggedResource.type) && 'disallowed',
-    isDropTarget && typeof id === 'string' && id.includes((data as {stepId?: string})?.stepId ?? '') && 'is-dropping',
-    className,
-  ]
-    .filter(Boolean)
-    .join(' ');
+  // PERFORMANCE: Memoize className computation
+  const droppableClassName = useCallback(() => {
+    return [
+      'flow-builder-dnd-droppable',
+      draggedResource && (accept as string[])?.includes(draggedResource.type) && 'allowed',
+      draggedResource && !(accept as string[])?.includes(draggedResource.type) && 'disallowed',
+      isDropTarget && typeof id === 'string' && id.includes((data as {stepId?: string})?.stepId ?? '') && 'is-dropping',
+      className,
+    ]
+      .filter(Boolean)
+      .join(' ');
+  }, [draggedResource, accept, isDropTarget, id, data, className])();
 
   return (
     <Box
@@ -139,4 +153,5 @@ function Droppable({
   );
 }
 
-export default Droppable;
+// PERFORMANCE: Memoize to prevent re-renders from parent components
+export default memo(Droppable);

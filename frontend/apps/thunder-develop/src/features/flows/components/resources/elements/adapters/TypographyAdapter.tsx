@@ -16,13 +16,25 @@
  * under the License.
  */
 
-import {useMemo, type CSSProperties, type ReactElement} from 'react';
-import {Trans, useTranslation} from 'react-i18next';
+import {memo, useMemo, type CSSProperties, type ReactElement} from 'react';
+import {Trans} from 'react-i18next';
 import type {RequiredFieldInterface} from '@/features/flows/hooks/useRequiredFields';
 import useRequiredFields from '@/features/flows/hooks/useRequiredFields';
 import {Typography, type TypographyProps} from '@wso2/oxygen-ui';
 import {TypographyVariants, type Element} from '@/features/flows/models/elements';
 import PlaceholderComponent from './PlaceholderComponent';
+
+// PERFORMANCE: Define fields outside component to prevent recreation on every render
+const TYPOGRAPHY_VALIDATION_FIELDS: RequiredFieldInterface[] = [
+  {
+    errorMessage: 'Text is required',
+    name: 'text',
+  },
+  {
+    errorMessage: 'Variant is required',
+    name: 'variant',
+  },
+];
 
 /**
  * Configuration interface for Typography element.
@@ -56,12 +68,16 @@ export interface TypographyAdapterPropsInterface {
 /**
  * Adapter for the Typography component.
  *
+ * PERFORMANCE: This component has been optimized to:
+ * 1. Use static validation fields defined outside the component
+ * 2. Remove useTranslation hook to avoid re-renders
+ * 3. Memoize the general message and config
+ *
  * @param props - Props injected to the component.
  * @returns The TypographyAdapter component.
  */
 function TypographyAdapter({resource}: TypographyAdapterPropsInterface): ReactElement {
-  const {t} = useTranslation();
-
+  // PERFORMANCE: Memoize general message - only depends on resource.id
   const generalMessage: ReactElement = useMemo(
     () => (
       <Trans i18nKey="flows:core.validation.fields.typography.general" values={{id: resource.id}}>
@@ -71,41 +87,27 @@ function TypographyAdapter({resource}: TypographyAdapterPropsInterface): ReactEl
     [resource?.id],
   );
 
-  const fields: RequiredFieldInterface[] = useMemo(
-    () => [
-      {
-        errorMessage: t('flows:core.validation.fields.typography.text'),
-        name: 'text',
-      },
-      {
-        errorMessage: t('flows:core.validation.fields.typography.variant'),
-        name: 'variant',
-      },
-    ],
-    [t],
-  );
-
-  useRequiredFields(resource, generalMessage, fields);
+  // PERFORMANCE: Use static fields array defined outside component
+  useRequiredFields(resource, generalMessage, TYPOGRAPHY_VALIDATION_FIELDS);
 
   // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment -- Config type is validated at runtime
   const typographyConfig = resource.config as TypographyConfig | undefined;
   const variantStr = resource?.variant as string | undefined;
 
-  let config: TypographyProps = {};
-
-  if (
-    variantStr === TypographyVariants.H1 ||
-    variantStr === TypographyVariants.H2 ||
-    variantStr === TypographyVariants.H3 ||
-    variantStr === TypographyVariants.H4 ||
-    variantStr === TypographyVariants.H5 ||
-    variantStr === TypographyVariants.H6
-  ) {
-    config = {
-      ...config,
-      textAlign: 'center',
-    };
-  }
+  // PERFORMANCE: Memoize config object
+  const config: TypographyProps = useMemo(() => {
+    if (
+      variantStr === TypographyVariants.H1 ||
+      variantStr === TypographyVariants.H2 ||
+      variantStr === TypographyVariants.H3 ||
+      variantStr === TypographyVariants.H4 ||
+      variantStr === TypographyVariants.H5 ||
+      variantStr === TypographyVariants.H6
+    ) {
+      return {textAlign: 'center'};
+    }
+    return {};
+  }, [variantStr]);
 
   return (
     <Typography
@@ -118,4 +120,8 @@ function TypographyAdapter({resource}: TypographyAdapterPropsInterface): ReactEl
   );
 }
 
-export default TypographyAdapter;
+// PERFORMANCE: Memoize to prevent re-renders during drag operations
+export default memo(TypographyAdapter, (prevProps, nextProps) =>
+  prevProps.resource === nextProps.resource &&
+  prevProps.stepId === nextProps.stepId
+);

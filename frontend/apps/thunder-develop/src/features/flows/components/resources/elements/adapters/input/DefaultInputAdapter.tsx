@@ -16,14 +16,26 @@
  * under the License.
  */
 
-import {useMemo, type CSSProperties, type ReactElement} from 'react';
+import {memo, useMemo, type CSSProperties, type ReactElement} from 'react';
 import type {Element as FlowElement} from '@/features/flows/models/elements';
-import {Trans, useTranslation} from 'react-i18next';
+import {Trans} from 'react-i18next';
 import type {RequiredFieldInterface} from '@/features/flows/hooks/useRequiredFields';
 import useRequiredFields from '@/features/flows/hooks/useRequiredFields';
 import {TextField} from '@wso2/oxygen-ui';
 import PlaceholderComponent from '../PlaceholderComponent';
 import {Hint} from '../../hint';
+
+// PERFORMANCE: Define fields outside component to prevent recreation on every render
+const INPUT_VALIDATION_FIELDS: RequiredFieldInterface[] = [
+  {
+    errorMessage: 'Label is required',
+    name: 'label',
+  },
+  {
+    errorMessage: 'Identifier is required',
+    name: 'identifier',
+  },
+];
 
 /**
  * Configuration interface for Input element.
@@ -60,12 +72,16 @@ export interface DefaultInputAdapterPropsInterface {
 /**
  * Fallback adapter for the inputs.
  *
+ * PERFORMANCE: This component has been optimized to:
+ * 1. Use static validation fields defined outside the component
+ * 2. Remove useTranslation hook to avoid re-renders
+ * 3. Memoize the general message
+ *
  * @param props - Props injected to the component.
  * @returns The DefaultInputAdapter component.
  */
 function DefaultInputAdapter({resource}: DefaultInputAdapterPropsInterface): ReactElement {
-  const {t} = useTranslation();
-
+  // PERFORMANCE: Memoize general message - only depends on resource.id
   const generalMessage: ReactElement = useMemo(
     () => (
       <Trans i18nKey="flows:core.validation.fields.input.general" values={{id: resource.id}}>
@@ -75,21 +91,8 @@ function DefaultInputAdapter({resource}: DefaultInputAdapterPropsInterface): Rea
     [resource?.id],
   );
 
-  const fields: RequiredFieldInterface[] = useMemo(
-    () => [
-      {
-        errorMessage: t('flows:core.validation.fields.input.label'),
-        name: 'label',
-      },
-      {
-        errorMessage: t('flows:core.validation.fields.input.identifier'),
-        name: 'identifier',
-      },
-    ],
-    [t],
-  );
-
-  useRequiredFields(resource, generalMessage, fields);
+  // PERFORMANCE: Use static fields array defined outside component
+  useRequiredFields(resource, generalMessage, INPUT_VALIDATION_FIELDS);
 
   // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment -- Config type is validated at runtime
   const inputConfig = resource.config as InputConfig | undefined;
@@ -118,4 +121,7 @@ function DefaultInputAdapter({resource}: DefaultInputAdapterPropsInterface): Rea
   );
 }
 
-export default DefaultInputAdapter;
+// PERFORMANCE: Memoize to prevent re-renders during drag operations
+export default memo(DefaultInputAdapter, (prevProps, nextProps) =>
+  prevProps.resource === nextProps.resource
+);

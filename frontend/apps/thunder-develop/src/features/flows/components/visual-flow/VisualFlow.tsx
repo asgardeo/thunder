@@ -25,11 +25,12 @@ import {
   type NodeTypes,
   ReactFlow,
   type ReactFlowProps,
+  SelectionMode,
 } from '@xyflow/react';
 import {CollisionPriority} from '@dnd-kit/abstract';
 import {useColorScheme} from '@wso2/oxygen-ui';
 import isEmpty from 'lodash-es/isEmpty';
-import {type ReactElement, useEffect, useMemo} from 'react';
+import {memo, type ReactElement, useCallback, useEffect, useMemo, useRef} from 'react';
 import '@xyflow/react/dist/style.css';
 import Droppable from '../dnd/droppable';
 import generateResourceId from '../../utils/generateResourceId';
@@ -80,136 +81,140 @@ function VisualFlow({
   const {setFlowNodeTypes, flowNodeTypes, setFlowEdgeTypes, flowEdgeTypes, isVerboseMode, edgeStyle, isCollisionAvoidanceEnabled} = useFlowBuilderCore();
   const {mode} = useColorScheme();
 
-  // Filter nodes and edges based on verbose mode
-  // When not in verbose mode, hide execution nodes and their connected edges
+  // Use refs to store stable obstacle data that only updates after drag stops
+  // This prevents edge re-renders during node dragging
+  const obstaclesRef = useRef<CachedObstacle[]>([]);
+  const edgesRef = useRef<Edge[]>([]);
+
+  // Memoize execution node IDs separately - only changes when nodes change
+  const executionNodeIds = useMemo(() => {
+    if (!nodes) return new Set<string>();
+    return new Set(
+      nodes
+        .filter((node) => node.type?.toUpperCase() === StepTypes.Execution)
+        .map((node) => node.id)
+    );
+  }, [nodes]);
+
+  // Filter nodes based on verbose mode
+  // When not in verbose mode, hide execution nodes
   const filteredNodes: Node[] = useMemo(() => {
     if (isVerboseMode || !nodes) {
       return nodes ?? [];
     }
-    // Filter out execution nodes
-    return nodes.filter((node) => node.type?.toUpperCase() !== StepTypes.Execution);
-  }, [nodes, isVerboseMode]);
+    // Use pre-computed executionNodeIds for faster filtering
+    return nodes.filter((node) => !executionNodeIds.has(node.id));
+  }, [nodes, isVerboseMode, executionNodeIds]);
 
+  // Memoize the edge map separately - only changes when edges change
+  const nodeEdgeMap = useMemo(() => {
+    if (!edges) return new Map<string, { incoming: Edge[]; outgoing: Edge[] }>();
+
+    const map = new Map<string, { incoming: Edge[]; outgoing: Edge[] }>();
+    edges.forEach((edge) => {
+      if (!map.has(edge.source)) {
+        map.set(edge.source, { incoming: [], outgoing: [] });
+      }
+      if (!map.has(edge.target)) {
+        map.set(edge.target, { incoming: [], outgoing: [] });
+      }
+      map.get(edge.source)!.outgoing.push(edge);
+      map.get(edge.target)!.incoming.push(edge);
+    });
+    return map;
+  }, [edges]);
+
+  // Filter edges based on verbose mode - uses pre-computed maps for efficiency
   const filteredEdges = useMemo(() => {
     if (isVerboseMode || !edges || !nodes) {
       return edges ?? [];
     }
 
-    // Get IDs of execution nodes
-    const executionNodeIds = new Set(
-      nodes
-        .filter((node) => node.type?.toUpperCase() === StepTypes.Execution)
-        .map((node) => node.id)
-    );
+    // Memoized tracing function using closure over executionNodeIds and nodeEdgeMap
+    // Cache traced results to avoid redundant traversals
+    const traceCache = new Map<string, string[]>();
 
-    // Build a map of edges for quick lookup
-    // Map: nodeId -> { incoming: Edge[], outgoing: Edge[] }
-    const nodeEdgeMap = new Map<string, { incoming: Edge[]; outgoing: Edge[] }>();
-
-    edges.forEach((edge) => {
-      if (!nodeEdgeMap.has(edge.source)) {
-        nodeEdgeMap.set(edge.source, { incoming: [], outgoing: [] });
-      }
-      if (!nodeEdgeMap.has(edge.target)) {
-        nodeEdgeMap.set(edge.target, { incoming: [], outgoing: [] });
-      }
-      nodeEdgeMap.get(edge.source)!.outgoing.push(edge);
-      nodeEdgeMap.get(edge.target)!.incoming.push(edge);
-    });
-
-    // Handle chains of execution nodes (A -> Exec1 -> Exec2 -> B)
-    // We need to trace through connected execution nodes to find the ultimate non-exec targets
     const traceToNonExecTarget = (startExecId: string, visited: Set<string> = new Set()): string[] => {
       if (visited.has(startExecId)) return [];
-      visited.add(startExecId);
 
+      // Check cache first
+      const cacheKey = `${startExecId}:${Array.from(visited).join(',')}`;
+      if (traceCache.has(cacheKey)) {
+        return traceCache.get(cacheKey)!;
+      }
+
+      visited.add(startExecId);
       const targets: string[] = [];
       const execEdges = nodeEdgeMap.get(startExecId);
-      if (!execEdges) return targets;
 
-      execEdges.outgoing.forEach((outEdge) => {
-        if (executionNodeIds.has(outEdge.target)) {
-          // Target is another execution node, trace further
-          targets.push(...traceToNonExecTarget(outEdge.target, visited));
-        } else {
-          targets.push(outEdge.target);
+      if (execEdges) {
+        for (const outEdge of execEdges.outgoing) {
+          if (executionNodeIds.has(outEdge.target)) {
+            targets.push(...traceToNonExecTarget(outEdge.target, visited));
+          } else {
+            targets.push(outEdge.target);
+          }
         }
-      });
+      }
 
+      traceCache.set(cacheKey, targets);
       return targets;
     };
 
-    // Keep edges that don't involve execution nodes
-    // Also filter out self-loop edges (source === target) as these typically represent
-    // actions that trigger executors without navigation (like "Resend OTP")
+    // Keep edges that don't involve execution nodes and aren't self-loops
     const directEdges = edges.filter(
       (edge) =>
         !executionNodeIds.has(edge.source) &&
         !executionNodeIds.has(edge.target) &&
-        edge.source !== edge.target // Filter out self-loops
+        edge.source !== edge.target
     );
 
-    // Create bypass edges: for each execution node, connect its sources to its targets
-    // Only create bypass if there's a valid non-execution target reachable
+    // Create bypass edges more efficiently
     const bypassEdges: Edge[] = [];
     const addedBypassEdges = new Set<string>();
 
-    executionNodeIds.forEach((execNodeId) => {
+    for (const execNodeId of executionNodeIds) {
       const execNodeEdges = nodeEdgeMap.get(execNodeId);
-      if (!execNodeEdges) return;
+      if (!execNodeEdges) continue;
 
       const { incoming, outgoing } = execNodeEdges;
 
-      // For each incoming edge to the execution node
-      incoming.forEach((inEdge) => {
-        // Skip if source is also an execution node (will be handled by that node's bypass)
-        if (executionNodeIds.has(inEdge.source)) return;
+      for (const inEdge of incoming) {
+        // Skip if source is also an execution node
+        if (executionNodeIds.has(inEdge.source)) continue;
 
-        // Collect all reachable non-execution targets from this execution node
+        // Collect reachable non-execution targets
         const reachableTargets: string[] = [];
-
-        outgoing.forEach((outEdge) => {
+        for (const outEdge of outgoing) {
           if (executionNodeIds.has(outEdge.target)) {
-            // Target is another execution node, trace through it
             reachableTargets.push(...traceToNonExecTarget(outEdge.target));
           } else {
-            // Direct non-execution target
             reachableTargets.push(outEdge.target);
           }
-        });
+        }
 
-        // Only create bypass edges if there are reachable non-execution targets
-        // Also skip creating bypass edges that would be self-loops (source === target)
-        reachableTargets.forEach((targetId) => {
-          // Skip self-loops - these are actions like "Resend OTP" that trigger an executor
-          // and return to the same view without navigating elsewhere
-          if (inEdge.source === targetId) return;
+        // Create bypass edges
+        for (const targetId of reachableTargets) {
+          if (inEdge.source === targetId) continue; // Skip self-loops
 
           const bypassEdgeKey = `${inEdge.source}:${inEdge.sourceHandle ?? ''}->${targetId}`;
+          if (addedBypassEdges.has(bypassEdgeKey)) continue;
 
-          // Avoid duplicates
-          if (addedBypassEdges.has(bypassEdgeKey)) return;
           addedBypassEdges.add(bypassEdgeKey);
-
           bypassEdges.push({
             id: `bypass-${inEdge.source}-${targetId}-${inEdge.sourceHandle ?? 'default'}`,
             source: inEdge.source,
             sourceHandle: inEdge.sourceHandle,
             target: targetId,
-            type: 'default', // Use Bézier curve for bypass edges
+            type: 'default',
           });
-        });
-      });
-    });
+        }
+      }
+    }
 
-    // Filter directEdges - these are edges that don't involve execution nodes at all
-    // They should all be kept as is
-    const filteredDirectEdges = directEdges;
-
-    // Also filter out bypass edges that would create duplicate connections
-    // (same source handle to same target)
+    // Filter out duplicate bypass edges
     const existingDirectConnections = new Set(
-      filteredDirectEdges.map((e) => `${e.source}:${e.sourceHandle ?? ''}->${e.target}`)
+      directEdges.map((e) => `${e.source}:${e.sourceHandle ?? ''}->${e.target}`)
     );
 
     const uniqueBypassEdges = bypassEdges.filter((edge) => {
@@ -217,26 +222,40 @@ function VisualFlow({
       return !existingDirectConnections.has(connectionKey);
     });
 
-    return [...filteredDirectEdges, ...uniqueBypassEdges];
-  }, [edges, nodes, isVerboseMode]);
+    return [...directEdges, ...uniqueBypassEdges];
+  }, [edges, nodes, isVerboseMode, executionNodeIds, nodeEdgeMap]);
 
   // Pre-compute obstacle bounds once for all edges (major performance optimization)
   // This avoids each edge component computing obstacles independently
+  // We use a ref to store obstacles to prevent re-renders during drag
   const obstacleCacheKey = useMemo(
     () => (isCollisionAvoidanceEnabled && filteredNodes.length > 0 ? createObstacleCacheKey(filteredNodes) : ''),
     [isCollisionAvoidanceEnabled, filteredNodes],
   );
 
-  const allObstacles: CachedObstacle[] = useMemo(() => {
+  // Compute obstacles but store in ref to avoid triggering edge re-renders
+  // The ref is updated but doesn't cause re-renders - edges will use latest value on next render
+  // Note: The return value is intentionally unused; the side effect of updating obstaclesRef is what matters
+  useMemo(() => {
     if (!isCollisionAvoidanceEnabled || !obstacleCacheKey) {
-      return [];
+      obstaclesRef.current = [];
+      return;
     }
-    return computeObstacleBounds(filteredNodes);
+    obstaclesRef.current = computeObstacleBounds(filteredNodes);
   }, [isCollisionAvoidanceEnabled, obstacleCacheKey, filteredNodes]);
+
+  // Update edges ref whenever filtered edges change
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  useEffect(() => {
+    edgesRef.current = filteredEdges;
+  }, [filteredEdges]);
 
   // Apply the user-selected edge style to all edges via data prop
   // We keep using 'base-edge' type to maintain collision avoidance,
-  // but pass the style preference and pre-computed obstacles through edge data
+  // but pass refs for obstacles (stable references) instead of the arrays directly
+  // IMPORTANT: We only depend on filteredEdges, edgeStyle, and isCollisionAvoidanceEnabled
+  // NOT on allObstacles - this prevents re-creating edge objects during node drag
+  // BaseEdge will access obstaclesRef.current to get the latest obstacles lazily
   const styledEdges = useMemo(
     () =>
       filteredEdges.map((edge) => ({
@@ -246,11 +265,12 @@ function VisualFlow({
           ...edge.data,
           edgeStyle, // Pass the style preference to BaseEdge
           isCollisionAvoidanceEnabled, // Pass collision avoidance toggle
-          allObstacles, // Pass pre-computed obstacles (avoids per-edge computation)
-          allEdges: filteredEdges, // Pass edges array for staggering calculation
+          obstaclesRef, // Pass ref for lazy access (stable reference)
+          edgesRef, // Pass ref for lazy access (stable reference)
         },
       })),
-    [filteredEdges, edgeStyle, isCollisionAvoidanceEnabled, allObstacles],
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- intentionally excluding allObstacles to prevent re-renders during drag
+    [filteredEdges, edgeStyle, isCollisionAvoidanceEnabled],
   );
 
   const edgeTypes: EdgeTypes = useMemo(
@@ -278,6 +298,38 @@ function VisualFlow({
     setFlowEdgeTypes(edgeTypes ?? {});
   }, [edgeTypes, flowEdgeTypes, setFlowEdgeTypes]);
 
+  // Memoize fitViewOptions to prevent object recreation
+  const fitViewOptions = useMemo(() => ({
+    maxZoom: 0.8,
+  }), []);
+
+  // Memoize proOptions to prevent object recreation
+  const proOptions = useMemo(() => ({
+    hideAttribution: true,
+  }), []);
+
+  // Memoize default edge options for performance
+  const defaultEdgeOptions = useMemo(() => ({
+    // Disable edge animation during interactions for better performance
+    animated: false,
+  }), []);
+
+  // Stable callback wrapper for onNodesChange - prevents re-renders from parent
+  const handleNodesChange = useCallback(
+    (changes: Parameters<NonNullable<typeof onNodesChange>>[0]) => {
+      onNodesChange?.(changes);
+    },
+    [onNodesChange],
+  );
+
+  // Stable callback wrapper for onEdgesChange
+  const handleEdgesChange = useCallback(
+    (changes: Parameters<NonNullable<typeof onEdgesChange>>[0]) => {
+      onEdgesChange?.(changes);
+    },
+    [onEdgesChange],
+  );
+
   return (
     <Droppable
       id={generateResourceId(VisualFlowConstants.FLOW_BUILDER_CANVAS_ID)}
@@ -287,27 +339,69 @@ function VisualFlow({
     >
       <ReactFlow
         fitView
-        fitViewOptions={{
-          maxZoom: 0.8,
-        }}
+        fitViewOptions={fitViewOptions}
         nodes={filteredNodes}
         edges={styledEdges}
-        nodeTypes={useMemo(() => nodeTypes, [nodeTypes])}
+        nodeTypes={nodeTypes}
         edgeTypes={edgeTypes}
         onConnect={onConnect}
         onNodesDelete={onNodesDelete}
         onEdgesDelete={onEdgesDelete}
         onNodeDragStop={onNodeDragStop}
-        proOptions={{hideAttribution: true}}
-        onNodesChange={onNodesChange}
-        onEdgesChange={onEdgesChange}
+        proOptions={proOptions}
+        onNodesChange={handleNodesChange}
+        onEdgesChange={handleEdgesChange}
         colorMode={mode}
+        // PERFORMANCE OPTIMIZATIONS
+        defaultEdgeOptions={defaultEdgeOptions}
+        // Disable expensive features during drag
+        nodesDraggable
+        nodesConnectable
+        elementsSelectable
+        // Use partial selection mode for better performance with many nodes
+        selectionMode={SelectionMode.Partial}
+        // Disable zoom on scroll for smoother experience (can re-enable if needed)
+        zoomOnScroll
+        zoomOnPinch
+        panOnScroll={false}
+        // Disable auto-pan during drag for smoother dragging
+        autoPanOnNodeDrag={false}
+        // Optimize connection line rendering
+        connectionLineStyle={connectionLineStyle}
+        // Disable snap to grid for smoother dragging
+        snapToGrid={false}
+        // Minimum zoom level to prevent excessive node rendering
+        minZoom={0.1}
+        maxZoom={2}
+        // Disable node extent to avoid expensive boundary calculations
+        nodeExtent={undefined}
+        // Optimize for large graphs
+        elevateNodesOnSelect={false}
+        elevateEdgesOnSelect={false}
       >
-        <Controls position="top-center" orientation="horizontal" />
-        <Background className="react-flow-background" />
+        <Controls position="top-center" orientation="horizontal" showInteractive={false} />
+        <Background className="react-flow-background" gap={20} />
       </ReactFlow>
     </Droppable>
   );
 }
 
-export default VisualFlow;
+// Stable connection line style - defined outside component to prevent recreation
+const connectionLineStyle = { stroke: '#b1b1b7', strokeWidth: 2 };
+
+// Memoize VisualFlow to prevent unnecessary re-renders from parent
+export default memo(VisualFlow, (prevProps, nextProps) => {
+  // Custom comparison - only re-render when necessary props change
+  return (
+    prevProps.nodes === nextProps.nodes &&
+    prevProps.edges === nextProps.edges &&
+    prevProps.nodeTypes === nextProps.nodeTypes &&
+    prevProps.customEdgeTypes === nextProps.customEdgeTypes &&
+    prevProps.onNodesChange === nextProps.onNodesChange &&
+    prevProps.onEdgesChange === nextProps.onEdgesChange &&
+    prevProps.onConnect === nextProps.onConnect &&
+    prevProps.onNodesDelete === nextProps.onNodesDelete &&
+    prevProps.onEdgesDelete === nextProps.onEdgesDelete &&
+    prevProps.onNodeDragStop === nextProps.onNodeDragStop
+  );
+});

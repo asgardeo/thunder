@@ -17,7 +17,7 @@
  */
 
 import {useReactFlow} from '@xyflow/react';
-import cloneDeep from 'lodash-es/cloneDeep';
+import {useCallback} from 'react';
 import {type Element} from '../models/elements';
 
 /**
@@ -50,36 +50,40 @@ const useComponentDelete = (): UseComponentDelete => {
    * @param stepId - The unique identifier of the step node.
    * @param component - The component object to be deleted.
    */
-  const deleteComponent = (stepId: string, component: Element): void => {
-    /**
-     * Recursively filters out the specified component and its children.
-     *
-     * @param components - Array of components to update.
-     * @returns A new array of components with the specified one removed.
-     */
-    const updateComponent = (components: Element[]): Element[] =>
-      components?.reduce((acc: Element[], _component: Element) => {
-        if (_component.id === component.id) {
+  const deleteComponent = useCallback(
+    (stepId: string, component: Element): void => {
+      /**
+       * Recursively filters out the specified component and its children.
+       * Creates new arrays/objects immutably without needing cloneDeep.
+       *
+       * @param components - Array of components to update.
+       * @returns A new array of components with the specified one removed.
+       */
+      const updateComponent = (components: Element[]): Element[] =>
+        components?.reduce((acc: Element[], _component: Element) => {
+          if (_component.id === component.id) {
+            return acc;
+          }
+
+          const updatedComponent = _component.components
+            ? {..._component, components: updateComponent(_component.components)}
+            : _component;
+
+          acc.push(updatedComponent);
+
           return acc;
-        }
+        }, []);
 
-        const updatedComponent = _component.components
-          ? {..._component, components: updateComponent(_component.components)}
-          : _component;
+      updateNodeData(stepId, (node: {data?: {components?: Element[]}}) => {
+        const components: Element[] = updateComponent(node?.data?.components ?? []);
 
-        acc.push(updatedComponent);
-
-        return acc;
-      }, []);
-
-    updateNodeData(stepId, (node: {data?: {components?: Element[]}}) => {
-      const components: Element[] = updateComponent(cloneDeep(node?.data?.components ?? []));
-
-      return {
-        components,
-      };
-    });
-  };
+        return {
+          components,
+        };
+      });
+    },
+    [updateNodeData],
+  );
 
   return {deleteComponent};
 };

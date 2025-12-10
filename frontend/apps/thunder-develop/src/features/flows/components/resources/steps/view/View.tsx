@@ -18,9 +18,9 @@
 
 import {Box, FormGroup, IconButton, Menu, MenuItem, Paper, Tooltip, Typography} from '@wso2/oxygen-ui';
 import {CogIcon, PlusIcon, TrashIcon} from '@wso2/oxygen-ui-icons-react';
-import {Handle, Position, useNodeId, useNodesData, useReactFlow, type Node} from '@xyflow/react';
+import {Handle, Position, useNodeId, useReactFlow} from '@xyflow/react';
 import classNames from 'classnames';
-import {useEffect, useState, type HTMLAttributes, type MouseEvent, type ReactElement} from 'react';
+import {memo, useCallback, useMemo, useState, type HTMLAttributes, type MouseEvent, type ReactElement} from 'react';
 import generateResourceId from '@/features/flows/utils/generateResourceId';
 import VisualFlowConstants from '@/features/flows/constants/VisualFlowConstants';
 import PluginRegistry from '@/features/flows/plugins/PluginRegistry';
@@ -124,38 +124,38 @@ function View({
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const unusedResources = resources;
   const stepId: string | null = useNodeId();
-  const node: Pick<Node, 'data'> | null = useNodesData(stepId ?? '');
-  const {deleteElements, updateNodeData} = useReactFlow();
+  // PERFORMANCE: Removed useNodesData hook - it caused re-renders on ANY node change
+  // The `data` prop already contains the node's data, passed down from React Flow
+  const {deleteElements} = useReactFlow();
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const menuOpen = Boolean(anchorEl);
 
-  const handleMenuOpen = (event: MouseEvent<HTMLElement>): void => {
+  const handleMenuOpen = useCallback((event: MouseEvent<HTMLElement>): void => {
     setAnchorEl(event.currentTarget);
-  };
+  }, []);
 
-  const handleMenuClose = (): void => {
+  const handleMenuClose = useCallback((): void => {
     setAnchorEl(null);
-  };
+  }, []);
 
-  const handleAddResource = (element: Element): void => {
+  const handleAddResource = useCallback((element: Element): void => {
     if (onAddElement) {
       onAddElement(element);
     }
-    handleMenuClose();
-  };
+    setAnchorEl(null);
+  }, [onAddElement]);
 
-  //   useOTPValidation(node as unknown as Node);
-  //   useRecoveryFactorValidation(node as unknown as Node);
+  // Memoize components to prevent unnecessary re-renders
+  const components = useMemo(() => data?.components as Element[] | undefined, [data?.components]);
 
-  useEffect(() => {
-    if (!data?.components || data.components.length <= 0 || !stepId) {
-      return;
-    }
-
-    updateNodeData(stepId, () => ({
-      components: data?.components,
-    }));
-  }, [data?.components, stepId, updateNodeData]);
+  // PERFORMANCE: Pre-filter components using PluginRegistry once, not on every render
+  // This avoids calling executeSync N times during each render cycle
+  const filteredComponents = useMemo(() => {
+    if (!components) return [];
+    return components.filter((component: Element) =>
+      PluginRegistry.getInstance().executeSync(FlowEventTypes.ON_NODE_ELEMENT_FILTER, component)
+    );
+  }, [components]);
 
   return (
     // <ValidationErrorBoundary disableErrorBoundaryOnHover={false} resource={node}>
@@ -334,7 +334,7 @@ function View({
             <FormGroup>
               <Droppable
                 id={generateResourceId(`${VisualFlowConstants.FLOW_BUILDER_VIEW_ID}_${stepId}`)}
-                data={{droppedOn: node, stepId}}
+                data={{droppedOn: data, stepId}}
                 type={VisualFlowConstants.FLOW_BUILDER_DROPPABLE_VIEW_ID}
                 accept={
                   droppableAllowedTypes
@@ -351,9 +351,7 @@ function View({
                 }
                 collisionPriority={CollisionPriority.High}
               >
-                {((node?.data?.components ?? data?.components) as Element[])?.map(
-                  (component: Element, index: number) =>
-                    PluginRegistry.getInstance().executeSync(FlowEventTypes.ON_NODE_ELEMENT_FILTER, component) && (
+{filteredComponents.map((component: Element, index: number) => (
                       <ReorderableViewElement
                         key={component.id}
                         id={component.id}
@@ -372,8 +370,7 @@ function View({
                         availableElements={availableElements}
                         onAddElementToForm={onAddElementToForm}
                       />
-                    ),
-                )}
+                    ))}
               </Droppable>
             </FormGroup>
           </Box>
@@ -391,4 +388,17 @@ function View({
   );
 }
 
-export default View;
+// Memoize View to prevent unnecessary re-renders during drag operations
+export default memo(View, (prevProps, nextProps) =>
+  prevProps.heading === nextProps.heading &&
+  prevProps.data === nextProps.data &&
+  prevProps.enableSourceHandle === nextProps.enableSourceHandle &&
+  prevProps.deletable === nextProps.deletable &&
+  prevProps.configurable === nextProps.configurable &&
+  prevProps.className === nextProps.className &&
+  prevProps.availableElements === nextProps.availableElements &&
+  prevProps.onAddElement === nextProps.onAddElement &&
+  prevProps.onAddElementToForm === nextProps.onAddElementToForm &&
+  prevProps.onActionPanelDoubleClick === nextProps.onActionPanelDoubleClick &&
+  prevProps.onConfigure === nextProps.onConfigure
+);
