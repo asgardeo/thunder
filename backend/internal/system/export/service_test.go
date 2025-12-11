@@ -20,8 +20,6 @@ package export
 
 import (
 	"fmt"
-	"os"
-	"path/filepath"
 	"strings"
 	"testing"
 
@@ -63,22 +61,17 @@ type ExportServiceTestSuite struct {
 
 // SetupTest sets up the test environment before each test.
 func (suite *ExportServiceTestSuite) SetupTest() {
-	// Create temporary directory and crypto key file
+	// Create temporary directory
 	tempDir := suite.T().TempDir()
-	cryptoFile := filepath.Join(tempDir, "crypto.key")
-	dummyCryptoKey := "0579f866ac7c9273580d0ff163fa01a7b2401a7ff3ddc3e3b14ae3136fa6025e"
-
-	err := os.WriteFile(cryptoFile, []byte(dummyCryptoKey), 0600)
-	if err != nil {
-		suite.T().Fatalf("Failed to create crypto key file: %v", err)
-	}
 
 	// Initialize ThunderRuntime with immutable mode disabled
 	// Use just the filename since InitializeThunderRuntime will prepend the base path
 	config.ResetThunderRuntime()
 	testConfig := &config.Config{
-		Security: config.SecurityConfig{
-			CryptoFile: "crypto.key",
+		Crypto: config.CryptoConfig{
+			Encryption: config.EncryptionConfig{
+				Key: "0579f866ac7c9273580d0ff163fa01a7b2401a7ff3ddc3e3b14ae3136fa6025e",
+			},
 		},
 		ImmutableResources: config.ImmutableResources{
 			Enabled: false,

@@ -347,12 +347,6 @@ func TestInitialize_WithImmutableResourcesEnabled_ValidConfigs(t *testing.T) {
 	err := os.MkdirAll(idpDir, 0750)
 	assert.NoError(t, err)
 
-	// Create crypto key file for encryption (relative to tmpDir)
-	cryptoFilePath := tmpDir + "/repository/conf/crypto.key"
-	dummyCryptoKey := "0579f866ac7c9273580d0ff163fa01a7b2401a7ff3ddc3e3b14ae3136fa6025e"
-	err = os.WriteFile(cryptoFilePath, []byte(dummyCryptoKey), 0600)
-	assert.NoError(t, err)
-
 	// Setup config with encryption support (path relative to thunderHome)
 	testConfig := &config.Config{
 		Database: config.DatabaseConfig{
@@ -368,8 +362,10 @@ func TestInitialize_WithImmutableResourcesEnabled_ValidConfigs(t *testing.T) {
 		ImmutableResources: config.ImmutableResources{
 			Enabled: true,
 		},
-		Security: config.SecurityConfig{
-			CryptoFile: "repository/conf/crypto.key",
+		Crypto: config.CryptoConfig{
+			Encryption: config.EncryptionConfig{
+				Key: "0579f866ac7c9273580d0ff163fa01a7b2401a7ff3ddc3e3b14ae3136fa6025e",
+			},
 		},
 	}
 

@@ -132,7 +132,6 @@ configuration:
   security:
     certFile: "repository/resources/security/server.cert"
     keyFile: "repository/resources/security/server.key"
-    cryptoFile: "repository/resources/security/crypto.key"
 
   # Database configuration
   database:
