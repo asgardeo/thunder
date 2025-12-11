@@ -22,17 +22,22 @@ import (
 	"errors"
 
 	"github.com/asgardeo/thunder/internal/system/file_based_runtime/entity"
-	"github.com/asgardeo/thunder/internal/system/log"
+	"github.com/asgardeo/thunder/internal/system/immutableresource"
 )
 
 type idpFileBasedStore struct {
-	storage entity.StoreInterface
+	*immutableresource.GenericFileBasedStore
+}
+
+// Create implements immutableresource.Storer interface for resource loader
+func (f *idpFileBasedStore) Create(id string, data interface{}) error {
+	idp := data.(*IDPDTO)
+	return f.CreateIdentityProvider(*idp)
 }
 
 // CreateIdentityProvider implements idpStoreInterface.
 func (f *idpFileBasedStore) CreateIdentityProvider(idp IDPDTO) error {
-	idpKey := entity.NewCompositeKey(idp.ID, entity.KeyTypeIDP)
-	return f.storage.Set(idpKey, &idp)
+	return f.GenericFileBasedStore.Create(idp.ID, &idp)
 }
 
 // DeleteIdentityProvider implements idpStoreInterface.
@@ -42,14 +47,13 @@ func (f *idpFileBasedStore) DeleteIdentityProvider(id string) error {
 
 // GetIdentityProvider implements idpStoreInterface.
 func (f *idpFileBasedStore) GetIdentityProvider(idpID string) (*IDPDTO, error) {
-	entity, err := f.storage.Get(entity.NewCompositeKey(idpID, entity.KeyTypeIDP))
+	data, err := f.GenericFileBasedStore.Get(idpID)
 	if err != nil {
 		return nil, ErrIDPNotFound
 	}
-	idp, ok := entity.Data.(*IDPDTO)
+	idp, ok := data.(*IDPDTO)
 	if !ok {
-		log.GetLogger().Error("Type assertion failed while retrieving identity provider by ID",
-			log.String("idpID", idpID))
+		immutableresource.LogTypeAssertionError("identity provider", idpID)
 		return nil, errors.New("identity provider data corrupted")
 	}
 	return idp, nil
@@ -57,23 +61,18 @@ func (f *idpFileBasedStore) GetIdentityProvider(idpID string) (*IDPDTO, error) {
 
 // GetIdentityProviderByName implements idpStoreInterface.
 func (f *idpFileBasedStore) GetIdentityProviderByName(idpName string) (*IDPDTO, error) {
-	list, err := f.storage.ListByType(entity.KeyTypeIDP)
+	data, err := f.GenericFileBasedStore.GetByField(idpName, func(d interface{}) string {
+		return d.(*IDPDTO).Name
+	})
 	if err != nil {
-		return nil, err
+		return nil, ErrIDPNotFound
 	}
-
-	for _, item := range list {
-		if idp, ok := item.Data.(*IDPDTO); ok && idp.Name == idpName {
-			return idp, nil
-		}
-	}
-
-	return nil, ErrIDPNotFound
+	return data.(*IDPDTO), nil
 }
 
 // GetIdentityProviderList implements idpStoreInterface.
 func (f *idpFileBasedStore) GetIdentityProviderList() ([]BasicIDPDTO, error) {
-	list, err := f.storage.ListByType(entity.KeyTypeIDP)
+	list, err := f.GenericFileBasedStore.List()
 	if err != nil {
 		return nil, err
 	}
@@ -100,8 +99,8 @@ func (f *idpFileBasedStore) UpdateIdentityProvider(idp *IDPDTO) error {
 
 // newIDPFileBasedStore creates a new instance of a file-based store.
 func newIDPFileBasedStore() idpStoreInterface {
-	store := entity.GetInstance()
+	genericStore := immutableresource.NewGenericFileBasedStore(entity.KeyTypeIDP)
 	return &idpFileBasedStore{
-		storage: store,
+		GenericFileBasedStore: genericStore,
 	}
 }

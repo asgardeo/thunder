@@ -63,7 +63,10 @@ func registerServices(
 
 	ouService := ou.Initialize(mux)
 	hashService := hash.Initialize()
-	userSchemaService := userschema.Initialize(mux, ouService)
+	userSchemaService, err := userschema.Initialize(mux, ouService)
+	if err != nil {
+		logger.Fatal("Failed to initialize UserSchemaService", log.Error(err))
+	}
 	userService, err := user.Initialize(mux, ouService, userSchemaService, hashService)
 	if err != nil {
 		logger.Fatal("Failed to initialize UserService", log.Error(err))
@@ -77,8 +80,14 @@ func registerServices(
 	roleService := role.Initialize(mux, userService, groupService, ouService)
 	authZService := authz.Initialize(roleService)
 
-	idpService := idp.Initialize(mux)
-	notificationSenderMgtService, otpService := notification.Initialize(mux, jwtService)
+	idpService, err := idp.Initialize(mux)
+	if err != nil {
+		logger.Fatal("Failed to initialize IDPService", log.Error(err))
+	}
+	notificationSenderMgtService, otpService, err := notification.Initialize(mux, jwtService)
+	if err != nil {
+		logger.Fatal("Failed to initialize NotificationService", log.Error(err))
+	}
 
 	// Initialize authentication services.
 	_, authSvcRegistry := authn.Initialize(mux, idpService, jwtService, userService, otpService)
@@ -94,8 +103,11 @@ func registerServices(
 	}
 	certservice := cert.Initialize()
 	brandingMgtService := brandingmgt.Initialize(mux)
-	applicationService := application.Initialize(mux, certservice, flowMgtService,
+	applicationService, err := application.Initialize(mux, certservice, flowMgtService,
 		brandingMgtService, userSchemaService)
+	if err != nil {
+		logger.Fatal("Failed to initialize ApplicationService", log.Error(err))
+	}
 	_ = brandingresolve.Initialize(mux, brandingMgtService, applicationService)
 
 	// Initialize export service with application, IDP, notification sender, and user schema service dependencies

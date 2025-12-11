@@ -23,17 +23,22 @@ import (
 
 	"github.com/asgardeo/thunder/internal/notification/common"
 	"github.com/asgardeo/thunder/internal/system/file_based_runtime/entity"
-	"github.com/asgardeo/thunder/internal/system/log"
+	"github.com/asgardeo/thunder/internal/system/immutableresource"
 )
 
 type notificationFileBasedStore struct {
-	storage entity.StoreInterface
+	*immutableresource.GenericFileBasedStore
+}
+
+// Create implements immutableresource.Storer interface for resource loader
+func (f *notificationFileBasedStore) Create(id string, data interface{}) error {
+	sender := data.(*common.NotificationSenderDTO)
+	return f.createSender(*sender)
 }
 
 // createSender implements notificationStoreInterface.
 func (f *notificationFileBasedStore) createSender(sender common.NotificationSenderDTO) error {
-	senderKey := entity.NewCompositeKey(sender.ID, entity.KeyTypeNotificationSender)
-	return f.storage.Set(senderKey, &sender)
+	return f.GenericFileBasedStore.Create(sender.ID, &sender)
 }
 
 // deleteSender implements notificationStoreInterface.
@@ -43,14 +48,13 @@ func (f *notificationFileBasedStore) deleteSender(id string) error {
 
 // getSenderByID implements notificationStoreInterface.
 func (f *notificationFileBasedStore) getSenderByID(id string) (*common.NotificationSenderDTO, error) {
-	entity, err := f.storage.Get(entity.NewCompositeKey(id, entity.KeyTypeNotificationSender))
+	data, err := f.GenericFileBasedStore.Get(id)
 	if err != nil {
 		return nil, err
 	}
-	sender, ok := entity.Data.(*common.NotificationSenderDTO)
+	sender, ok := data.(*common.NotificationSenderDTO)
 	if !ok {
-		log.GetLogger().Error("Type assertion failed while retrieving notification sender by ID",
-			log.String("senderID", id))
+		immutableresource.LogTypeAssertionError("notification sender", id)
 		return nil, errors.New("notification sender data corrupted")
 	}
 	return sender, nil
@@ -58,23 +62,18 @@ func (f *notificationFileBasedStore) getSenderByID(id string) (*common.Notificat
 
 // getSenderByName implements notificationStoreInterface.
 func (f *notificationFileBasedStore) getSenderByName(name string) (*common.NotificationSenderDTO, error) {
-	list, err := f.storage.ListByType(entity.KeyTypeNotificationSender)
+	data, err := f.GenericFileBasedStore.GetByField(name, func(d interface{}) string {
+		return d.(*common.NotificationSenderDTO).Name
+	})
 	if err != nil {
-		return nil, err
+		return nil, nil // Return nil for not found to match original behavior
 	}
-
-	for _, item := range list {
-		if sender, ok := item.Data.(*common.NotificationSenderDTO); ok && sender.Name == name {
-			return sender, nil
-		}
-	}
-
-	return nil, nil
+	return data.(*common.NotificationSenderDTO), nil
 }
 
 // listSenders implements notificationStoreInterface.
 func (f *notificationFileBasedStore) listSenders() ([]common.NotificationSenderDTO, error) {
-	list, err := f.storage.ListByType(entity.KeyTypeNotificationSender)
+	list, err := f.GenericFileBasedStore.List()
 	if err != nil {
 		return nil, err
 	}
@@ -95,8 +94,8 @@ func (f *notificationFileBasedStore) updateSender(id string, sender common.Notif
 
 // newNotificationFileBasedStore creates a new instance of a file-based store.
 func newNotificationFileBasedStore() notificationStoreInterface {
-	storage := entity.NewStore()
+	genericStore := immutableresource.NewGenericFileBasedStore(entity.KeyTypeNotificationSender)
 	return &notificationFileBasedStore{
-		storage: storage,
+		GenericFileBasedStore: genericStore,
 	}
 }

@@ -22,34 +22,38 @@ import (
 	"errors"
 
 	"github.com/asgardeo/thunder/internal/system/file_based_runtime/entity"
-	"github.com/asgardeo/thunder/internal/system/log"
+	"github.com/asgardeo/thunder/internal/system/immutableresource"
 )
 
 type userSchemaFileBasedStore struct {
-	storage entity.StoreInterface
+	*immutableresource.GenericFileBasedStore
+}
+
+// Create implements immutableresource.Storer interface for resource loader
+func (f *userSchemaFileBasedStore) Create(id string, data interface{}) error {
+	schema := data.(*UserSchema)
+	return f.CreateUserSchema(*schema)
 }
 
 // CreateUserSchema implements userSchemaStoreInterface.
 func (f *userSchemaFileBasedStore) CreateUserSchema(schema UserSchema) error {
-	schemaKey := entity.NewCompositeKey(schema.ID, entity.KeyTypeUserSchema)
-	return f.storage.Set(schemaKey, &schema)
+	return f.GenericFileBasedStore.Create(schema.ID, &schema)
 }
 
 // DeleteUserSchemaByID implements userSchemaStoreInterface.
 func (f *userSchemaFileBasedStore) DeleteUserSchemaByID(id string) error {
-	return errors.New("delete operation not supported in immutable mode")
+	return errors.New("DeleteUserSchemaByID is not supported in file-based store")
 }
 
 // GetUserSchemaByID implements userSchemaStoreInterface.
 func (f *userSchemaFileBasedStore) GetUserSchemaByID(schemaID string) (UserSchema, error) {
-	entity, err := f.storage.Get(entity.NewCompositeKey(schemaID, entity.KeyTypeUserSchema))
+	data, err := f.GenericFileBasedStore.Get(schemaID)
 	if err != nil {
 		return UserSchema{}, ErrUserSchemaNotFound
 	}
-	schema, ok := entity.Data.(*UserSchema)
+	schema, ok := data.(*UserSchema)
 	if !ok {
-		log.GetLogger().Error("Type assertion failed while retrieving user schema by ID",
-			log.String("schemaID", schemaID))
+		immutableresource.LogTypeAssertionError("user schema", schemaID)
 		return UserSchema{}, errors.New("user schema data corrupted")
 	}
 	return *schema, nil
@@ -57,23 +61,18 @@ func (f *userSchemaFileBasedStore) GetUserSchemaByID(schemaID string) (UserSchem
 
 // GetUserSchemaByName implements userSchemaStoreInterface.
 func (f *userSchemaFileBasedStore) GetUserSchemaByName(schemaName string) (UserSchema, error) {
-	list, err := f.storage.ListByType(entity.KeyTypeUserSchema)
+	data, err := f.GenericFileBasedStore.GetByField(schemaName, func(d interface{}) string {
+		return d.(*UserSchema).Name
+	})
 	if err != nil {
-		return UserSchema{}, err
+		return UserSchema{}, ErrUserSchemaNotFound
 	}
-
-	for _, item := range list {
-		if schema, ok := item.Data.(*UserSchema); ok && schema.Name == schemaName {
-			return *schema, nil
-		}
-	}
-
-	return UserSchema{}, ErrUserSchemaNotFound
+	return *data.(*UserSchema), nil
 }
 
 // GetUserSchemaList implements userSchemaStoreInterface.
 func (f *userSchemaFileBasedStore) GetUserSchemaList(limit, offset int) ([]UserSchemaListItem, error) {
-	list, err := f.storage.ListByType(entity.KeyTypeUserSchema)
+	list, err := f.GenericFileBasedStore.List()
 	if err != nil {
 		return nil, err
 	}
@@ -106,22 +105,18 @@ func (f *userSchemaFileBasedStore) GetUserSchemaList(limit, offset int) ([]UserS
 
 // GetUserSchemaListCount implements userSchemaStoreInterface.
 func (f *userSchemaFileBasedStore) GetUserSchemaListCount() (int, error) {
-	list, err := f.storage.ListByType(entity.KeyTypeUserSchema)
-	if err != nil {
-		return 0, err
-	}
-	return len(list), nil
+	return f.GenericFileBasedStore.Count()
 }
 
 // UpdateUserSchemaByID implements userSchemaStoreInterface.
 func (f *userSchemaFileBasedStore) UpdateUserSchemaByID(schemaID string, schema UserSchema) error {
-	return errors.New("update operation not supported in immutable mode")
+	return errors.New("UpdateUserSchemaByID is not supported in file-based store")
 }
 
 // newUserSchemaFileBasedStore creates a new instance of a file-based store.
 func newUserSchemaFileBasedStore() userSchemaStoreInterface {
-	storage := entity.NewStore()
+	genericStore := immutableresource.NewGenericFileBasedStore(entity.KeyTypeUserSchema)
 	return &userSchemaFileBasedStore{
-		storage: storage,
+		GenericFileBasedStore: genericStore,
 	}
 }
