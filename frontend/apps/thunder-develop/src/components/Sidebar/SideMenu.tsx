@@ -26,7 +26,7 @@ import {
   Stack,
   Typography,
   IconButton,
-  useTheme
+  useTheme,
 } from '@wso2/oxygen-ui';
 import {User} from '@asgardeo/react';
 import {Menu} from '@wso2/oxygen-ui-icons-react';
@@ -137,8 +137,7 @@ export default function SideMenu({
         <Box
           sx={{
             display: 'flex',
-            mt: 'calc(var(--template-frame-height, 0px) + 4px)',
-            py: 1.5,
+            height: 55,
             px: 2,
             justifyContent: mini ? 'center' : 'space-between',
             alignItems: 'center',

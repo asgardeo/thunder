@@ -1,0 +1,518 @@
+[
+  {
+    "resourceType": "ELEMENT",
+    "category": "BLOCK",
+    "type": "FORM",
+    "version": "0.1.0",
+    "deprecated": false,
+    "display": {
+      "label": "Form",
+      "image": "assets/images/icons/form.svg"
+    },
+    "config": {}
+  },
+  {
+    "resourceType": "ELEMENT",
+    "category": "FIELD",
+    "type": "INPUT",
+    "version": "0.1.0",
+    "deprecated": false,
+    "variant": "TEXT",
+    "display": {
+      "label": "Text Input",
+      "image": "assets/images/icons/textbox.svg"
+    },
+    "config": {
+      "type": "text",
+      "hint": "",
+      "label": "Text",
+      "required": false,
+      "placeholder": "Enter your text"
+    }
+  },
+  {
+    "resourceType": "ELEMENT",
+    "category": "FIELD",
+    "type": "INPUT",
+    "version": "0.1.0",
+    "deprecated": false,
+    "variant": "PASSWORD",
+    "display": {
+      "label": "Password Input",
+      "image": "assets/images/icons/password-input.svg"
+    },
+    "config": {
+      "identifier": "password",
+      "type": "password",
+      "hint": "",
+      "label": "Password",
+      "required": false,
+      "placeholder": "Enter your password"
+    }
+  },
+  {
+    "resourceType": "ELEMENT",
+    "category": "FIELD",
+    "type": "INPUT",
+    "version": "0.1.0",
+    "deprecated": false,
+    "variant": "EMAIL",
+    "display": {
+      "label": "Email Input",
+      "image": "assets/images/icons/at.svg"
+    },
+    "config": {
+      "type": "email",
+      "hint": "",
+      "label": "Email",
+      "required": false,
+      "placeholder": "Enter your email"
+    }
+  },
+  {
+    "resourceType": "ELEMENT",
+    "category": "FIELD",
+    "type": "INPUT",
+    "version": "0.1.0",
+    "deprecated": false,
+    "variant": "TELEPHONE",
+    "display": {
+      "label": "Phone Input",
+      "image": "assets/images/icons/phone.svg"
+    },
+    "config": {
+      "type": "tel",
+      "hint": "",
+      "label": "Phone",
+      "required": false,
+      "placeholder": "Enter your phone number"
+    }
+  },
+  {
+    "resourceType": "ELEMENT",
+    "category": "FIELD",
+    "type": "INPUT",
+    "version": "0.1.0",
+    "deprecated": false,
+    "variant": "NUMBER",
+    "display": {
+      "label": "Number Input",
+      "image": "assets/images/icons/number-input.svg"
+    },
+    "config": {
+      "type": "number",
+      "hint": "",
+      "label": "Number",
+      "required": false,
+      "placeholder": "Enter a number"
+    }
+  },
+  {
+    "resourceType": "ELEMENT",
+    "category": "FIELD",
+    "type": "INPUT",
+    "version": "0.1.0",
+    "deprecated": false,
+    "variant": "DATE",
+    "display": {
+      "label": "Date Input",
+      "image": "assets/images/icons/date.svg"
+    },
+    "config": {
+      "type": "date",
+      "hint": "",
+      "label": "Date",
+      "required": false,
+      "placeholder": "dd-mm-yyyy"
+    }
+  },
+  {
+    "resourceType": "ELEMENT",
+    "category": "FIELD",
+    "type": "INPUT",
+    "version": "0.1.0",
+    "deprecated": false,
+    "variant": "OTP",
+    "display": {
+      "label": "OTP Input",
+      "image": "assets/images/icons/transaction-password-otp-verification-code-security.svg"
+    },
+    "config": {
+      "type": "text",
+      "hint": "",
+      "identifier": "otp",
+      "label": "OTP",
+      "required": false,
+      "placeholder": ""
+    }
+  },
+  {
+    "resourceType": "ELEMENT",
+    "category": "CAPTCHA",
+    "type": "CAPTCHA",
+    "version": "0.1.0",
+    "deprecated": false,
+    "variant": "RECAPTCHA_V2",
+    "display": {
+      "label": "reCAPTCHA",
+      "image": "assets/images/icons/recaptcha.png",
+      "showOnResourcePanel": true
+    },
+    "config": {
+      "version": 2
+    }
+  },
+  {
+    "resourceType": "ELEMENT",
+    "category": "FIELD",
+    "type": "INPUT",
+    "version": "0.1.0",
+    "deprecated": false,
+    "variant": "CHECKBOX",
+    "display": {
+      "label": "Checkbox",
+      "image": "assets/images/icons/checkbox-check.svg"
+    },
+    "config": {
+      "hint": "",
+      "label": "Checkbox",
+      "required": false
+    }
+  },
+  {
+    "resourceType": "ELEMENT",
+    "category": "FIELD",
+    "type": "INPUT",
+    "version": "0.1.0",
+    "deprecated": false,
+    "display": {
+      "label": "Choice",
+      "image": "assets/images/icons/boolean.svg",
+      "showOnResourcePanel": false
+    },
+    "variant": "DROPDOWN",
+    "config": {
+      "hint": "",
+      "label": "Choice",
+      "required": false,
+      "defaultValue": "option1",
+      "options": [
+        {
+          "label": "Option 1",
+          "key": "option1",
+          "value": "option1"
+        },
+        {
+          "label": "Option 2",
+          "key": "option2",
+          "value": "option2"
+        },
+        {
+          "label": "Option 3",
+          "key": "option3",
+          "value": "option3"
+        }
+      ]
+    }
+  },
+  {
+    "resourceType": "ELEMENT",
+    "category": "ACTION",
+    "type": "BUTTON",
+    "version": "0.1.0",
+    "deprecated": false,
+    "display": {
+      "label": "Button",
+      "image": "assets/images/icons/button.svg",
+      "defaultVariant": "PRIMARY"
+    },
+    "variants": [
+      {
+        "resourceType": "ELEMENT",
+        "category": "ACTION",
+        "type": "BUTTON",
+        "version": "0.1.0",
+        "variant": "PRIMARY",
+        "deprecated": false,
+        "display": {
+          "label": "Primary Button",
+          "image": "assets/images/icons/button.svg"
+        },
+        "config": {
+          "type": "button",
+          "text": "Button"
+        }
+      },
+      {
+        "resourceType": "ELEMENT",
+        "category": "ACTION",
+        "type": "BUTTON",
+        "version": "0.1.0",
+        "variant": "SECONDARY",
+        "deprecated": false,
+        "display": {
+          "label": "Secondary Button",
+          "image": "assets/images/icons/button.svg"
+        },
+        "config": {
+          "type": "button",
+          "text": "Secondary Button"
+        }
+      },
+      {
+        "resourceType": "ELEMENT",
+        "category": "ACTION",
+        "type": "BUTTON",
+        "version": "0.1.0",
+        "variant": "TEXT",
+        "deprecated": false,
+        "display": {
+          "label": "Text Button",
+          "image": "assets/images/icons/button.svg"
+        },
+        "config": {
+          "type": "button",
+          "text": "Text Button"
+        }
+      },
+      {
+        "resourceType": "ELEMENT",
+        "category": "ACTION",
+        "type": "BUTTON",
+        "version": "0.1.0",
+        "variant": "SOCIAL",
+        "deprecated": false,
+        "display": {
+          "label": "Social Button",
+          "image": "assets/images/icons/button.svg"
+        },
+        "config": {
+          "type": "button",
+          "text": "Social Button"
+        }
+      }
+    ]
+  },
+  {
+    "resourceType": "ELEMENT",
+    "category": "ACTION",
+    "type": "RESEND",
+    "version": "0.1.0",
+    "deprecated": false,
+    "display": {
+      "label": "Resend",
+      "image": "assets/images/icons/loop.svg"
+    },
+    "config": {
+      "type": "submit",
+      "text": "Resend"
+    }
+  },
+  {
+    "resourceType": "ELEMENT",
+    "category": "DISPLAY",
+    "type": "TYPOGRAPHY",
+    "version": "0.1.0",
+    "deprecated": false,
+    "display": {
+      "label": "Text",
+      "image": "assets/images/icons/text-size.svg",
+      "defaultVariant": "H3"
+    },
+    "variants": [
+      {
+        "resourceType": "ELEMENT",
+        "category": "DISPLAY",
+        "type": "TYPOGRAPHY",
+        "version": "0.1.0",
+        "variant": "H1",
+        "deprecated": false,
+        "display": {
+          "label": "H1",
+          "image": null
+        },
+        "config": {
+          "text": "Heading - H1"
+        }
+      },
+      {
+        "resourceType": "ELEMENT",
+        "category": "DISPLAY",
+        "type": "TYPOGRAPHY",
+        "version": "0.1.0",
+        "variant": "H2",
+        "deprecated": false,
+        "display": {
+          "label": "H2",
+          "image": null
+        },
+        "config": {
+          "text": "Heading - H2"
+        }
+      },
+      {
+        "resourceType": "ELEMENT",
+        "category": "DISPLAY",
+        "type": "TYPOGRAPHY",
+        "version": "0.1.0",
+        "variant": "H3",
+        "deprecated": false,
+        "display": {
+          "label": "H3",
+          "image": null
+        },
+        "config": {
+          "text": "Heading - H3"
+        }
+      },
+      {
+        "resourceType": "ELEMENT",
+        "category": "DISPLAY",
+        "type": "TYPOGRAPHY",
+        "version": "0.1.0",
+        "variant": "H4",
+        "deprecated": false,
+        "display": {
+          "label": "H4",
+          "image": null
+        },
+        "config": {
+          "text": "Heading - H4"
+        }
+      },
+      {
+        "resourceType": "ELEMENT",
+        "category": "DISPLAY",
+        "type": "TYPOGRAPHY",
+        "version": "0.1.0",
+        "variant": "H5",
+        "deprecated": false,
+        "display": {
+          "label": "H5",
+          "image": null
+        },
+        "config": {
+          "text": "Heading - H5"
+        }
+      },
+      {
+        "resourceType": "ELEMENT",
+        "category": "DISPLAY",
+        "type": "TYPOGRAPHY",
+        "version": "0.1.0",
+        "variant": "H6",
+        "deprecated": false,
+        "display": {
+          "label": "H6",
+          "image": null
+        },
+        "config": {
+          "text": "Heading - H6"
+        }
+      },
+      {
+        "resourceType": "ELEMENT",
+        "category": "DISPLAY",
+        "type": "TYPOGRAPHY",
+        "version": "0.1.0",
+        "variant": "BODY1",
+        "deprecated": false,
+        "display": {
+          "label": "Body1",
+          "image": null
+        },
+        "config": {
+          "text": "Body Text"
+        }
+      },
+      {
+        "resourceType": "ELEMENT",
+        "category": "DISPLAY",
+        "type": "TYPOGRAPHY",
+        "version": "0.1.0",
+        "variant": "BODY2",
+        "deprecated": false,
+        "display": {
+          "label": "Body2",
+          "image": null
+        },
+        "config": {
+          "text": "Body Text - Muted"
+        }
+      }
+    ]
+  },
+  {
+    "resourceType": "ELEMENT",
+    "category": "DISPLAY",
+    "type": "RICH_TEXT",
+    "version": "0.1.0",
+    "deprecated": false,
+    "display": {
+      "label": "Rich Text",
+      "image": "assets/images/icons/display-rich-text.svg",
+      "showOnResourcePanel": true
+    },
+    "config": {
+      "text": "<h3>Rich Text</h3>"
+    }
+  },
+  {
+    "resourceType": "ELEMENT",
+    "category": "DISPLAY",
+    "type": "DIVIDER",
+    "version": "0.1.0",
+    "deprecated": false,
+    "display": {
+      "label": "Divider",
+      "image": "assets/images/icons/divider.svg",
+      "defaultVariant": "HORIZONTAL"
+    },
+    "variants": [
+      {
+        "resourceType": "ELEMENT",
+        "category": "DISPLAY",
+        "type": "DIVIDER",
+        "version": "0.1.0",
+        "deprecated": false,
+        "variant": "HORIZONTAL",
+        "display": {
+          "label": "Horizontal Divider",
+          "image": null
+        },
+        "config": {
+          "text": "Or"
+        }
+      }
+    ]
+  },
+  {
+    "resourceType": "ELEMENT",
+    "category": "DISPLAY",
+    "type": "IMAGE",
+    "version": "0.1.0",
+    "deprecated": false,
+    "display": {
+      "label": "Image",
+      "image": "assets/images/icons/image-square.svg",
+      "defaultVariant": "IMAGE_BLOCK"
+    },
+    "variants": [
+      {
+        "resourceType": "ELEMENT",
+        "category": "DISPLAY",
+        "type": "IMAGE",
+        "version": "0.1.0",
+        "deprecated": false,
+        "variant": "IMAGE_BLOCK",
+        "display": {
+          "label": "Image Block",
+          "image": null
+        },
+        "config": {
+          "src": "assets/images/icons/landscape-placeholder.svg"
+        }
+      }
+    ]
+  }
+]

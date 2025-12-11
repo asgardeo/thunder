@@ -1,0 +1,209 @@
+/**
+ * Copyright (c) 2025, WSO2 LLC. (https://www.wso2.com).
+ *
+ * WSO2 LLC. licenses this file to you under the Apache License,
+ * Version 2.0 (the "License"); you may not use this file except
+ * in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing,
+ * software distributed under the License is distributed on an
+ * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+ * KIND, either express or implied. See the License for the
+ * specific language governing permissions and limitations
+ * under the License.
+ */
+
+:root {
+  --flow-builder-step-action-panel-height: 44px;
+  --flow-builder-step-content-box-width: 350px;
+  --flow-builder-step-content-form-field-drag-handle-width: 25px;
+  --flow-builder-allowed-droppable-area-highlight: #e0ffe1;
+  --flow-builder-disallowed-droppable-area-highlight: #ffeaea;
+  --flow-builder-dragging-form-field-hover-border-color: var(--mui-palette-primary-main);
+  --flow-builder-dragging-form-field-action-panel-background-color: var(--mui-palette-primary-main);
+  --flow-builder-dragging-form-field-hover-background-color: var(--mui-palette-action-hover);
+}
+
+html[data-color-scheme='dark'] {
+  --flow-builder-allowed-droppable-area-highlight: #1b4332;
+  --flow-builder-disallowed-droppable-area-highlight: #442222;
+}
+
+.flow-builder-step {
+  border-radius: 8px;
+
+  .flow-builder-step-content {
+    display: flex;
+    flex-flow: column nowrap;
+    align-content: center;
+    justify-content: center;
+    align-items: center;
+    text-align: left;
+
+    .flow-builder-dnd-droppable {
+      &.is-dropping {
+        &.allowed {
+          background-color: var(--flow-builder-allowed-droppable-area-highlight);
+        }
+
+        &.disallowed {
+          background-color: var(--flow-builder-disallowed-droppable-area-highlight);
+        }
+
+        .MuiBadge-badge {
+          border: 1px solid var(--flow-builder-step-background-color);
+        }
+      }
+    }
+
+    .flow-builder-step-content-box {
+      width: var(--flow-builder-step-content-box-width);
+      min-height: 50px;
+      cursor: auto;
+      border-radius: 0px 0px 8px 8px;
+      border: none;
+    }
+
+    .flow-builder-step-content-form {
+      .flow-builder-dnd-droppable {
+        padding: calc(8px * 1);
+      }
+
+      .reorderable-component {
+        position: relative;
+        border: 2px dashed transparent;
+        padding: calc(8px * 2) calc(8px * 1);
+
+        .flow-builder-step-content-form-field-drag-handle {
+          display: flex;
+          visibility: hidden;
+          justify-content: center;
+          width: var(--flow-builder-step-content-form-field-drag-handle-width);
+          border-right: 2px dashed transparent;
+          margin-right: 5px;
+
+          svg {
+            margin: 5px 0;
+          }
+        }
+
+        .flow-builder-step-content-form-field-content {
+          width: 100%;
+          display: flex;
+          flex-direction: column;
+          gap: calc(8px * 1);
+
+          .adapter {
+            position: relative;
+          }
+        }
+
+        .flow-builder-dnd-actions {
+          visibility: hidden;
+          position: absolute;
+          background: var(--flow-builder-dragging-form-field-action-panel-background-color);
+          right: 0;
+          top: 0;
+          width: 120px;
+          height: 32px;
+          display: flex;
+          flex-direction: row;
+          align-items: center;
+          justify-content: center;
+          border-bottom-left-radius: 4px;
+          z-index: 10;
+          pointer-events: none;
+
+          svg {
+            pointer-events: auto;
+          }
+        }
+
+        &:hover,
+        &:focus,
+        &:active {
+          border-color: var(--flow-builder-dragging-form-field-hover-border-color);
+          background-color: var(--flow-builder-dragging-form-field-hover-background-color);
+
+          > .flow-builder-dnd-actions {
+            visibility: visible;
+          }
+
+          .flow-builder-step-content-form-field-drag-handle {
+            visibility: visible;
+            border-right: 'grey.200';
+          }
+        }
+
+        .flow-builder-dnd-action {
+          background-color: transparent;
+          border: none;
+        }
+      }
+
+      .dnd-sortable {
+        &.is-dragging {
+          .flow-builder-step-content-form-field {
+            background-color: var(--mui-palette-background-paper);
+            border-right: 2px dashed 'grey.200';
+          }
+
+          .flow-builder-step-content-form-field-content {
+            display: flex !important;
+            visibility: visible !important;
+            opacity: 1 !important;
+          }
+
+          .flow-builder-dnd-actions {
+            visibility: visible;
+          }
+        }
+      }
+    }
+  }
+
+  .flow-builder-step-action-panel {
+    padding: 10px 14px;
+    height: var(--flow-builder-step-action-panel-height);
+
+    .flow-builder-step-action {
+      padding: 2px;
+      color: var(--flow-builder-step-action-button-color);
+      border-radius: 5px;
+
+      svg {
+        width: 20px;
+        height: 20px;
+      }
+
+      &:hover {
+        border-color: var(--flow-builder-step-action-button-hover-color);
+        color: var(--flow-builder-step-action-button-hover-color);
+      }
+
+      &:hover,
+      &:active {
+        background-color: var(--background, rgba(0, 0, 0, 0.05));
+        --fill: #6f7b88;
+      }
+    }
+  }
+}
+
+html[data-color-scheme='light'] .flow-builder-step {
+  box-shadow:
+    0 10px 22px 0 rgba(6, 6, 14, 0.1),
+    0 24px 48px 0 rgba(199, 211, 234, 0.05) inset,
+    0 1px 1px 0 rgba(199, 211, 234, 0.12) inset;
+}
+
+html[data-color-scheme='dark'] .flow-builder-step {
+  box-shadow:
+    0 24px 32px 0 rgba(6, 6, 14, 0.70),
+    0 24px 48px 0 rgba(199, 211, 234, 0.05) inset,
+    0 1px 1px 0 rgba(199, 211, 234, 0.12) inset;
+}
+

@@ -1,0 +1,80 @@
+/**
+ * Copyright (c) 2025, WSO2 LLC. (https://www.wso2.com).
+ *
+ * WSO2 LLC. licenses this file to you under the Apache License,
+ * Version 2.0 (the "License"); you may not use this file except
+ * in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing,
+ * software distributed under the License is distributed on an
+ * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+ * KIND, either express or implied. See the License for the
+ * specific language governing permissions and limitations
+ * under the License.
+ */
+
+@use "../right-panel.scss";
+@use "../../styles/variables";
+
+.validation-panel-tabs-container {
+    padding: 0 16px;
+    background: var(--mui-palette-common-white);
+    border-bottom: 1px solid var(--flow-builder-right-panel-border, #E0E0E0);
+
+    .validation-tabs {
+        min-height: 44px;
+
+        .MuiTab-root {
+            min-height: 44px;
+            padding: 8px 12px;
+            text-transform: none;
+            font-size: 0.875rem;
+            font-weight: 500;
+
+            .oxygen-typography {
+                font-size: 0.8rem;
+            }
+        }
+    }
+}
+
+.validation-panel-content {
+    padding: 16px !important;
+    height: calc(100% - 120px) !important;
+
+    .notification-item {
+        width: 100%;
+        border-radius: 8px;
+
+        .notification-action-button {
+            padding: 0;
+            width: auto;
+            text-transform: none;
+            font-size: 0.8rem;
+            font-weight: 500;
+            text-decoration: underline;
+            margin-top: var(--flow-builder-spacing-1);
+
+            &:hover {
+                background-color: transparent;
+                text-decoration: underline;
+                color: var(--mui-palette-primary-dark);
+            }
+
+            &.MuiButtonBase-root {
+                justify-content: flex-end;
+            }
+        }
+    }
+
+    .MuiList-root {
+        padding: 0;
+
+        .MuiListItem-root {
+            padding: 6px 0;
+        }
+    }
+}
