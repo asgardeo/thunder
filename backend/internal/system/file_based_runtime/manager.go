@@ -20,104 +20,16 @@
 package filebasedruntime
 
 import (
-	"bytes"
 	"fmt"
 	"os"
 	"path"
 	"path/filepath"
-	"regexp"
 	"sync"
-	"text/template"
 
 	"github.com/asgardeo/thunder/internal/system/config"
 	"github.com/asgardeo/thunder/internal/system/log"
+	"github.com/asgardeo/thunder/internal/system/utils"
 )
-
-var (
-	// Pattern to match Go template variables like {{.Variable}}
-	varPattern = regexp.MustCompile(`\{\{\s*\.\s*([A-Za-z_][A-Za-z0-9_]*)\s*\}\}`)
-
-	// Pattern to match Go template range patterns like {{- range .ArrayVar}}
-	rangePattern = regexp.MustCompile(`\{\{-\s*range\s+\.\s*([A-Za-z_][A-Za-z0-9_]*)\s*\}\}`)
-)
-
-// buildArrayFromEnvVars builds an array by reading environment variables with indexed suffixes
-// starting from VARNAME_0, VARNAME_1, etc., until an empty or non-existent variable is found.
-func buildArrayFromEnvVars(varName string) []string {
-	var elements []string
-	index := 0
-
-	for {
-		indexedVarName := fmt.Sprintf("%s_%d", varName, index)
-		value, exists := os.LookupEnv(indexedVarName)
-
-		// Stop if the variable doesn't exist or is empty
-		if !exists || value == "" {
-			break
-		}
-
-		elements = append(elements, value)
-		index++
-	}
-
-	return elements
-}
-
-// substituteEnvironmentVariables replaces Go template variable placeholders in the given content.
-//
-// Supported patterns:
-//  1. {{.Variable}} - Simple variable substitution from environment variables
-//  2. {{- range .ArrayVariable}} - Array iteration using VARIABLE_NAME_0, VARIABLE_NAME_1, ... pattern
-//
-// If an environment variable is not set, an error is returned.
-func substituteEnvironmentVariables(content []byte) ([]byte, error) {
-	contentStr := string(content)
-
-	// Find all variables referenced in the template
-	templateVars := make(map[string]interface{})
-
-	// Extract simple variables
-	varMatches := varPattern.FindAllStringSubmatch(contentStr, -1)
-	for _, match := range varMatches {
-		if len(match) > 1 {
-			varName := match[1]
-			envValue, exists := os.LookupEnv(varName)
-			if !exists {
-				return nil, fmt.Errorf("environment variable %s is not set", varName)
-			}
-			templateVars[varName] = envValue
-		}
-	}
-
-	// Extract array variables from range statements
-	rangeMatches := rangePattern.FindAllStringSubmatch(contentStr, -1)
-	for _, match := range rangeMatches {
-		if len(match) > 1 {
-			varName := match[1]
-			arrayElements := buildArrayFromEnvVars(varName)
-			templateVars[varName] = arrayElements
-		}
-	}
-
-	// If no template variables found, return original content
-	if len(templateVars) == 0 {
-		return content, nil
-	}
-
-	// Create and execute the template
-	tmpl, err := template.New("config").Parse(contentStr)
-	if err != nil {
-		return nil, fmt.Errorf("failed to parse template: %w", err)
-	}
-
-	var buf bytes.Buffer
-	err = tmpl.Execute(&buf, templateVars)
-	if err != nil {
-		return nil, fmt.Errorf("failed to execute template: %w", err)
-	}
-
-	return buf.Bytes(), nil
-}
 
 // GetConfigs reads all configuration files from the specified directory within the immutable_resources directory.
 func GetConfigs(configDirectoryPath string) ([][]byte, error) {
@@ -171,7 +83,7 @@ func GetConfigs(configDirectoryPath string) ([][]byte, error) {
 					return
 				}
 				// Substitute environment variables
-				processedContent, err := substituteEnvironmentVariables(fileContent)
+				processedContent, err := utils.SubstituteEnvironmentVariables(fileContent)
 				if err != nil {
 					logger.Warn("Failed to substitute environment variables in configuration file",
 						log.String("filePath", fileName), log.Error(err))

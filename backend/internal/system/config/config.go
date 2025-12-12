@@ -26,9 +26,10 @@ import (
 	urlpath "path"
 	"path/filepath"
 	"reflect"
+	"strings"
 	"time"
 
-	"github.com/asgardeo/thunder/internal/system/log"
+	"github.com/asgardeo/thunder/internal/system/utils"
 
 	yaml "gopkg.in/yaml.v3"
 )
@@ -54,9 +55,8 @@ type GateClientConfig struct {
 
 // SecurityConfig holds the security configuration details.
 type SecurityConfig struct {
-	CertFile   string `yaml:"cert_file" json:"cert_file"`
-	KeyFile    string `yaml:"key_file" json:"key_file"`
-	CryptoFile string `yaml:"crypto_file" json:"crypto_file"`
+	CertFile string `yaml:"cert_file" json:"cert_file"`
+	KeyFile  string `yaml:"key_file" json:"key_file"`
 }
 
 // DataSource holds the individual database connection details.
@@ -139,8 +139,13 @@ type FlowConfig struct {
 
 // CryptoConfig holds the cryptographic configuration details.
 type CryptoConfig struct {
-	Key             string                `yaml:"key" json:"key"`
+	Encryption      EncryptionConfig      `yaml:"encryption" json:"encryption"`
 	PasswordHashing PasswordHashingConfig `yaml:"password_hashing" json:"password_hashing"`
+}
+
+// EncryptionConfig holds the encryption configuration details.
+type EncryptionConfig struct {
+	Key string `yaml:"key" json:"key"`
 }
 
 // PasswordHashingConfig holds the password hashing configuration details.
@@ -240,13 +245,13 @@ type Config struct {
 }
 
 // LoadConfig loads the configurations from the specified YAML file and applies defaults.
-func LoadConfig(path string, defaultsPath string) (*Config, error) {
+func LoadConfig(path string, defaultsPath string, baseDir string) (*Config, error) {
 	var cfg Config
 	path = filepath.Clean(path)
 
 	// Load default configuration if provided
 	if defaultsPath != "" {
-		defaultCfg, err := loadDefaultConfig(defaultsPath)
+		defaultCfg, err := loadDefaultConfig(defaultsPath, baseDir)
 		if err != nil {
 			return nil, err
 		}
@@ -254,19 +259,9 @@ func LoadConfig(path string, defaultsPath string) (*Config, error) {
 	}
 
 	// Load user configuration
-	file, err := os.Open(path)
-	if err != nil {
-		return nil, err
-	}
-	defer func() {
-		if ferr := file.Close(); ferr != nil {
-			log.GetLogger().Error("Failed to close config file", log.Error(ferr))
-		}
-	}()
-
-	decoder := yaml.NewDecoder(file)
 	var userCfg Config
-	if err := decoder.Decode(&userCfg); err != nil {
+	userCfg, err := loadUserConfig(path, baseDir)
+	if err != nil {
 		return nil, err
 	}
 
@@ -291,25 +286,36 @@ func LoadConfig(path string, defaultsPath string) (*Config, error) {
 }
 
 // loadDefaultConfig loads the default configuration from a JSON file.
-func loadDefaultConfig(path string) (*Config, error) {
+func loadDefaultConfig(path string, baseDir string) (*Config, error) {
 	var cfg Config
 	path = filepath.Clean(path)
 
-	file, err := os.Open(path)
+	data, err := readAndSubstituteConfigFile(path, baseDir)
 	if err != nil {
 		return nil, err
 	}
-	defer func() {
-		if ferr := file.Close(); ferr != nil {
-			log.GetLogger().Error("Failed to close default config file", log.Error(ferr))
-		}
-	}()
 
-	decoder := json.NewDecoder(file)
-	if err := decoder.Decode(&cfg); err != nil {
+	if err := json.Unmarshal(data, &cfg); err != nil {
 		return nil, err
 	}
 	return &cfg, nil
+}
+
+func loadUserConfig(path string, baseDir string) (Config, error) {
+	var cfg Config
+	path = filepath.Clean(path)
+
+	data, err := readAndSubstituteConfigFile(path, baseDir)
+	if err != nil {
+		return Config{}, err
+	}
+
+	decoder := yaml.NewDecoder(strings.NewReader(string(data)))
+	decoder.KnownFields(true)
+	if err := decoder.Decode(&cfg); err != nil {
+		return Config{}, err
+	}
+	return cfg, nil
 }
 
 // GetServerURL constructs the server URL from the server configuration.
@@ -376,6 +382,26 @@ func mergeStructs(base, user reflect.Value) {
 			base.Set(user)
 		}
 	}
+}
+
+// readAndSubstituteConfigFile reads the configuration file at the given path,
+// substitutes file paths and environment variables within its contents, and returns
+// the resulting byte slice.
+func readAndSubstituteConfigFile(path string, baseDir string) ([]byte, error) {
+	// #nosec G304 -- File path is controlled and within a trusted directory
+	data, err := os.ReadFile(path)
+	if err != nil {
+		return nil, err
+	}
+	data, err = utils.SubstituteEnvironmentVariables(data)
+	if err != nil {
+		return nil, err
+	}
+	data, err = utils.SubstituteFilePaths(data, baseDir)
+	if err != nil {
+		return nil, err
+	}
+	return data, nil
 }
 
 // isZeroValue checks if a reflect.Value represents the zero value for its type.

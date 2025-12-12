@@ -11,7 +11,6 @@ server:
 security:
   cert_file: "repository/resources/security/server.cert"
   key_file: "repository/resources/security/server.key"
-  crypto_file: "repository/resources/security/crypto.key"
 
 database:
 EOF
