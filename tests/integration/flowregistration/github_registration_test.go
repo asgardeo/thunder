@@ -23,7 +23,6 @@ import (
 	"net/url"
 	"strings"
 	"testing"
-	"time"
 
 	"github.com/asgardeo/thunder/tests/integration/testutils"
 	"github.com/stretchr/testify/suite"
@@ -79,9 +78,7 @@ var (
 	githubRegTestOUID  string
 )
 
-const (
-	mockGithubRegFlowPort = 8092
-)
+
 
 type GithubRegistrationFlowTestSuite struct {
 	suite.Suite
@@ -98,9 +95,16 @@ func TestGithubRegistrationFlowTestSuite(t *testing.T) {
 func (ts *GithubRegistrationFlowTestSuite) SetupSuite() {
 	ts.config = &TestSuiteConfig{}
 
-	// Start mock GitHub server
-	ts.mockGithubServer = testutils.NewMockGithubOAuthServer(mockGithubRegFlowPort,
+	// Get shared GitHub OAuth server (started once for all test suites)
+	var err error
+	ts.mockGithubServer, err = testutils.GetSharedMockServers().GetGithubServer(
 		"test_github_client", "test_github_secret")
+	if err != nil {
+		ts.T().Fatalf("Failed to get shared GitHub server: %v", err)
+	}
+
+	// Reset the server to clear any state from previous test suites
+	ts.mockGithubServer.Reset()
 
 	email := "reguser@github.com"
 	ts.mockGithubServer.AddUser(&testutils.GithubUserInfo{
@@ -120,9 +124,6 @@ func (ts *GithubRegistrationFlowTestSuite) SetupSuite() {
 			Verified: true,
 		},
 	})
-
-	err := ts.mockGithubServer.Start()
-	ts.Require().NoError(err, "Failed to start mock GitHub server")
 
 	// Use the IDP created by database scripts
 	ts.idpID = "test-github-idp-id"
@@ -186,12 +187,8 @@ func (ts *GithubRegistrationFlowTestSuite) TearDownSuite() {
 		_ = testutils.DeleteUserType(ts.userSchemaID)
 	}
 
-	// Stop mock server
-	if ts.mockGithubServer != nil {
-		_ = ts.mockGithubServer.Stop()
-		// Wait for port to be released
-		time.Sleep(200 * time.Millisecond)
-	}
+	// Note: We don't stop the mock server here because it's shared across test suites.
+	// The shared server will be cleaned up when the test process exits.
 }
 
 func (ts *GithubRegistrationFlowTestSuite) TestGithubRegistrationFlowInitiation() {

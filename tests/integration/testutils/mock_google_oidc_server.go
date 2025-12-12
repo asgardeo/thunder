@@ -182,6 +182,17 @@ func (m *MockGoogleOIDCServer) Stop() error {
 	return nil
 }
 
+// Reset clears all users, auth codes, and tokens from the mock server.
+// This should be called at the start of each test suite to ensure clean state.
+func (m *MockGoogleOIDCServer) Reset() {
+	m.mutex.Lock()
+	defer m.mutex.Unlock()
+	m.authCodes = make(map[string]*AuthCodeData)
+	m.accessTokens = make(map[string]*TokenData)
+	m.users = make(map[string]*GoogleUserInfo)
+	m.authorizeFunc = nil
+}
+
 // GetURL returns the base URL of the mock server
 func (m *MockGoogleOIDCServer) GetURL() string {
 	return fmt.Sprintf("http://localhost:%d", m.port)
