@@ -95,6 +95,9 @@ oauth:
 
 flow:
   graph_directory: {{ .Values.configuration.flow.graphDirectory | quote }}
+  max_version_history: {{ .Values.configuration.flow.maxVersionHistory }}
+  auto_infer_registration: {{ .Values.configuration.flow.autoInferRegistration }}
+
   authn:
     default_flow: {{ .Values.configuration.flow.authn.defaultFlow | quote }}
 

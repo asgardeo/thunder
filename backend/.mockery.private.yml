@@ -85,10 +85,18 @@ packages:
       pkgname: flowexec
       filename: "{{.InterfaceName}}_mock_test.go"
 
-  github.com/asgardeo/thunder/internal/flow/flowmgt:
+  github.com/asgardeo/thunder/internal/flow/flowmgt_legacy:
     config:
       all: true
-      dir: internal/flow/flowmgt
+      dir: internal/flow/flowmgt_legacy
+      structname: '{{.InterfaceName}}Mock'
+      pkgname: flowmgt_legacy
+      filename: "{{.InterfaceName}}_mock_test.go"
+  
+  github.com/asgardeo/thunder/internal/flow/mgt:
+    config:
+      all: true
+      dir: internal/flow/mgt
       structname: '{{.InterfaceName}}Mock'
       pkgname: flowmgt
       filename: "{{.InterfaceName}}_mock_test.go"

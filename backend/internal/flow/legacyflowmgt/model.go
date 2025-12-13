@@ -16,7 +16,7 @@
  * under the License.
  */
 
-package flowmgt
+package legacyflowmgt
 
 // graphDefinition represents the direct graph structure from JSON
 type graphDefinition struct {

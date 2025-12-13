@@ -86,7 +86,9 @@
     "graph_directory": "repository/resources/graphs/",
     "authn": {
       "default_flow": "auth_flow_config_basic"
-    }
+    },
+    "max_version_history": 10,
+    "auto_infer_registration": true
   },
   "user": {
     "indexed_attributes": ["username", "email", "mobileNumber", "sub"]

@@ -29,7 +29,7 @@ import (
 	"github.com/asgardeo/thunder/internal/system/config"
 	"github.com/asgardeo/thunder/tests/mocks/brandingmock"
 	"github.com/asgardeo/thunder/tests/mocks/certmock"
-	"github.com/asgardeo/thunder/tests/mocks/flow/flowmgtmock"
+	"github.com/asgardeo/thunder/tests/mocks/flow/flowmgt_legacymock"
 	"github.com/asgardeo/thunder/tests/mocks/userschemamock"
 
 	"github.com/stretchr/testify/assert"
@@ -45,14 +45,14 @@ import (
 type InitTestSuite struct {
 	suite.Suite
 	mockCertService       *certmock.CertificateServiceInterfaceMock
-	mockFlowMgtService    *flowmgtmock.FlowMgtServiceInterfaceMock
+	mockFlowMgtService    *flowmgt_legacymock.LegacyFlowMgtServiceInterfaceMock
 	mockBrandingService   *brandingmock.BrandingMgtServiceInterfaceMock
 	mockUserSchemaService *userschemamock.UserSchemaServiceInterfaceMock
 }
 
 func (suite *InitTestSuite) SetupTest() {
 	suite.mockCertService = certmock.NewCertificateServiceInterfaceMock(suite.T())
-	suite.mockFlowMgtService = flowmgtmock.NewFlowMgtServiceInterfaceMock(suite.T())
+	suite.mockFlowMgtService = flowmgt_legacymock.NewLegacyFlowMgtServiceInterfaceMock(suite.T())
 	suite.mockBrandingService = brandingmock.NewBrandingMgtServiceInterfaceMock(suite.T())
 	suite.mockUserSchemaService = userschemamock.NewUserSchemaServiceInterfaceMock(suite.T())
 }
@@ -474,7 +474,7 @@ func TestInitialize_Standalone(t *testing.T) {
 
 	mux := http.NewServeMux()
 	mockCertService := certmock.NewCertificateServiceInterfaceMock(t)
-	mockFlowMgtService := flowmgtmock.NewFlowMgtServiceInterfaceMock(t)
+	mockFlowMgtService := flowmgt_legacymock.NewLegacyFlowMgtServiceInterfaceMock(t)
 	mockBrandingService := brandingmock.NewBrandingMgtServiceInterfaceMock(t)
 	mockUserSchemaService := userschemamock.NewUserSchemaServiceInterfaceMock(t)
 
@@ -513,7 +513,7 @@ func TestInitialize_WithImmutableResources_Standalone(t *testing.T) {
 
 	mux := http.NewServeMux()
 	mockCertService := certmock.NewCertificateServiceInterfaceMock(t)
-	mockFlowMgtService := flowmgtmock.NewFlowMgtServiceInterfaceMock(t)
+	mockFlowMgtService := flowmgt_legacymock.NewLegacyFlowMgtServiceInterfaceMock(t)
 	mockBrandingService := brandingmock.NewBrandingMgtServiceInterfaceMock(t)
 	mockUserSchemaService := userschemamock.NewUserSchemaServiceInterfaceMock(t)
 

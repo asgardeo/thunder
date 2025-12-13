@@ -24,7 +24,7 @@ import (
 
 	"github.com/asgardeo/thunder/internal/application"
 	"github.com/asgardeo/thunder/internal/flow/common"
-	"github.com/asgardeo/thunder/internal/flow/flowmgt"
+	"github.com/asgardeo/thunder/internal/flow/legacyflowmgt"
 
 	"github.com/asgardeo/thunder/internal/system/error/serviceerror"
 	"github.com/asgardeo/thunder/internal/system/log"
@@ -42,12 +42,12 @@ type FlowExecServiceInterface interface {
 // flowExecService is the implementation of FlowExecServiceInterface
 type flowExecService struct {
 	flowEngine     flowEngineInterface
-	flowMgtService flowmgt.FlowMgtServiceInterface
+	flowMgtService legacyflowmgt.LegacyFlowMgtServiceInterface
 	flowStore      flowStoreInterface
 	appService     application.ApplicationServiceInterface
 }
 
-func newFlowExecService(flowMgtService flowmgt.FlowMgtServiceInterface,
+func newFlowExecService(flowMgtService legacyflowmgt.LegacyFlowMgtServiceInterface,
 	flowStore flowStoreInterface, flowEngine flowEngineInterface,
 	applicationService application.ApplicationServiceInterface) FlowExecServiceInterface {
 	return &flowExecService{

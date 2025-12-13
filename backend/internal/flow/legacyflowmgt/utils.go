@@ -16,7 +16,7 @@
  * under the License.
  */
 
-package flowmgt
+package legacyflowmgt
 
 import (
 	"fmt"

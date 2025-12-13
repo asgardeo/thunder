@@ -26,7 +26,7 @@ import (
 	"github.com/asgardeo/thunder/internal/application/model"
 	brandingmgt "github.com/asgardeo/thunder/internal/branding/mgt"
 	"github.com/asgardeo/thunder/internal/cert"
-	"github.com/asgardeo/thunder/internal/flow/flowmgt"
+	"github.com/asgardeo/thunder/internal/flow/legacyflowmgt"
 	oauth2const "github.com/asgardeo/thunder/internal/oauth/oauth2/constants"
 	oauthutils "github.com/asgardeo/thunder/internal/oauth/oauth2/utils"
 	"github.com/asgardeo/thunder/internal/system/config"
@@ -55,7 +55,7 @@ type ApplicationServiceInterface interface {
 type applicationService struct {
 	appStore          applicationStoreInterface
 	certService       cert.CertificateServiceInterface
-	flowMgtService    flowmgt.FlowMgtServiceInterface
+	flowMgtService    legacyflowmgt.LegacyFlowMgtServiceInterface
 	brandingService   brandingmgt.BrandingMgtServiceInterface
 	userSchemaService userschema.UserSchemaServiceInterface
 }
@@ -64,7 +64,7 @@ type applicationService struct {
 func newApplicationService(
 	appStore applicationStoreInterface,
 	certService cert.CertificateServiceInterface,
-	flowMgtService flowmgt.FlowMgtServiceInterface,
+	flowMgtService legacyflowmgt.LegacyFlowMgtServiceInterface,
 	brandingService brandingmgt.BrandingMgtServiceInterface,
 	userSchemaService userschema.UserSchemaServiceInterface,
 ) ApplicationServiceInterface {

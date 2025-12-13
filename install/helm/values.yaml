@@ -211,6 +211,8 @@ configuration:
   # Flow configuration
   flow:
     graphDirectory: "repository/resources/graphs/"
+    maxVersionHistory: 3
+    autoInferRegistration: true
     authn:
       defaultFlow: "auth_flow_config_basic"
 

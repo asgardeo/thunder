@@ -43,7 +43,7 @@ func TestHTTPRequestExecutorTestSuite(t *testing.T) {
 }
 
 func (suite *HTTPRequestExecutorTestSuite) SetupTest() {
-	flowFactory := core.Initialize()
+	flowFactory, _ := core.Initialize()
 	suite.executor = newHTTPRequestExecutor(flowFactory)
 }
 

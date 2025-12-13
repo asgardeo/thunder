@@ -16,7 +16,7 @@
  * under the License.
  */
 
-package flowmgt
+package legacyflowmgt
 
 import (
 	"github.com/asgardeo/thunder/internal/flow/core"
@@ -28,6 +28,6 @@ import (
 func Initialize(
 	flowFactory core.FlowFactoryInterface,
 	executorRegistry executor.ExecutorRegistryInterface,
-) (FlowMgtServiceInterface, error) {
-	return newFlowMgtService(flowFactory, executorRegistry)
+) (LegacyFlowMgtServiceInterface, error) {
+	return newLegacyFlowMgtService(flowFactory, executorRegistry)
 }

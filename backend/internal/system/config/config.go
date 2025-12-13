@@ -133,8 +133,10 @@ type FlowAuthnConfig struct {
 
 // FlowConfig holds the configuration details for the flow service.
 type FlowConfig struct {
-	GraphDirectory string          `yaml:"graph_directory" json:"graph_directory"`
-	Authn          FlowAuthnConfig `yaml:"authn" json:"authn"`
+	GraphDirectory        string          `yaml:"graph_directory" json:"graph_directory"`
+	Authn                 FlowAuthnConfig `yaml:"authn" json:"authn"`
+	MaxVersionHistory     int             `yaml:"max_version_history" json:"max_version_history"`
+	AutoInferRegistration bool            `yaml:"auto_infer_registration" json:"auto_infer_registration"`
 }
 
 // CryptoConfig holds the cryptographic configuration details.

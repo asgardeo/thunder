@@ -34,7 +34,7 @@ import (
 	"github.com/asgardeo/thunder/internal/system/error/serviceerror"
 	"github.com/asgardeo/thunder/internal/userschema"
 	"github.com/asgardeo/thunder/tests/mocks/certmock"
-	"github.com/asgardeo/thunder/tests/mocks/flow/flowmgtmock"
+	"github.com/asgardeo/thunder/tests/mocks/flow/flowmgt_legacymock"
 	"github.com/asgardeo/thunder/tests/mocks/userschemamock"
 )
 
@@ -666,11 +666,11 @@ func (suite *ServiceTestSuite) setupTestService() (
 	*applicationService,
 	*applicationStoreInterfaceMock,
 	*certmock.CertificateServiceInterfaceMock,
-	*flowmgtmock.FlowMgtServiceInterfaceMock,
+	*flowmgt_legacymock.LegacyFlowMgtServiceInterfaceMock,
 ) {
 	mockStore := newApplicationStoreInterfaceMock(suite.T())
 	mockCertService := certmock.NewCertificateServiceInterfaceMock(suite.T())
-	mockFlowMgtService := flowmgtmock.NewFlowMgtServiceInterfaceMock(suite.T())
+	mockFlowMgtService := flowmgt_legacymock.NewLegacyFlowMgtServiceInterfaceMock(suite.T())
 	mockUserSchemaService := userschemamock.NewUserSchemaServiceInterfaceMock(suite.T())
 	service := &applicationService{
 		appStore:          mockStore,
@@ -3077,7 +3077,7 @@ func (suite *ServiceTestSuite) TestValidateAllowedUserTypes_EmptyString() {
 	// Mock GetUserSchemaList to return an empty list
 	mockStore := newApplicationStoreInterfaceMock(suite.T())
 	mockCertService := certmock.NewCertificateServiceInterfaceMock(suite.T())
-	mockFlowMgtService := flowmgtmock.NewFlowMgtServiceInterfaceMock(suite.T())
+	mockFlowMgtService := flowmgt_legacymock.NewLegacyFlowMgtServiceInterfaceMock(suite.T())
 	mockUserSchemaService := userschemamock.NewUserSchemaServiceInterfaceMock(suite.T())
 
 	// Mock GetUserSchemaList to return empty list (first call)
@@ -3110,7 +3110,7 @@ func (suite *ServiceTestSuite) TestValidateAllowedUserTypes_EmptyString() {
 func (suite *ServiceTestSuite) TestValidateAllowedUserTypes_EmptyStringWithValidTypes() {
 	mockStore := newApplicationStoreInterfaceMock(suite.T())
 	mockCertService := certmock.NewCertificateServiceInterfaceMock(suite.T())
-	mockFlowMgtService := flowmgtmock.NewFlowMgtServiceInterfaceMock(suite.T())
+	mockFlowMgtService := flowmgt_legacymock.NewLegacyFlowMgtServiceInterfaceMock(suite.T())
 	mockUserSchemaService := userschemamock.NewUserSchemaServiceInterfaceMock(suite.T())
 
 	// Mock GetUserSchemaList to return a list with one valid user type

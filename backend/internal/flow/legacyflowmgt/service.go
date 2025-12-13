@@ -16,8 +16,8 @@
  * under the License.
  */
 
-// Package flowmgt provides the flow management service implementation.
-package flowmgt
+// Package legacyflowmgt provides the legacy flow management service implementation.
+package legacyflowmgt
 
 import (
 	"encoding/json"
@@ -36,15 +36,15 @@ import (
 	sysutils "github.com/asgardeo/thunder/internal/system/utils"
 )
 
-// FlowMgtServiceInterface defines the interface for the flow management service
-type FlowMgtServiceInterface interface {
+// LegacyFlowMgtServiceInterface defines the interface for the legacy flow management service
+type LegacyFlowMgtServiceInterface interface {
 	RegisterGraph(graphID string, g core.GraphInterface)
 	GetGraph(graphID string) (core.GraphInterface, bool)
 	IsValidGraphID(graphID string) bool
 }
 
-// flowMgtService is the implementation of FlowMgtServiceInterface
-type flowMgtService struct {
+// legacyFlowMgtService is the implementation of FlowMgtServiceInterface
+type legacyFlowMgtService struct {
 	graphs           map[string]core.GraphInterface
 	mu               sync.Mutex
 	flowFactory      core.FlowFactoryInterface
@@ -52,10 +52,10 @@ type flowMgtService struct {
 	logger           *log.Logger
 }
 
-// newFlowMgtService creates a new instance of FlowMgtServiceInterface
-func newFlowMgtService(flowFactory core.FlowFactoryInterface,
-	executorRegistry executor.ExecutorRegistryInterface) (FlowMgtServiceInterface, error) {
-	flowMgtInstance := &flowMgtService{
+// newLegacyFlowMgtService creates a new instance of FlowMgtServiceInterface
+func newLegacyFlowMgtService(flowFactory core.FlowFactoryInterface,
+	executorRegistry executor.ExecutorRegistryInterface) (LegacyFlowMgtServiceInterface, error) {
+	flowMgtInstance := &legacyFlowMgtService{
 		graphs:           make(map[string]core.GraphInterface),
 		mu:               sync.Mutex{},
 		flowFactory:      flowFactory,
@@ -75,7 +75,7 @@ func newFlowMgtService(flowFactory core.FlowFactoryInterface,
 }
 
 // Init initializes the FlowMgtService by loading graph configurations into runtime
-func (s *flowMgtService) init() error {
+func (s *legacyFlowMgtService) init() error {
 	logger := s.logger
 	logger.Debug("Initializing the flow management service")
 
@@ -181,18 +181,18 @@ func (s *flowMgtService) init() error {
 }
 
 // RegisterGraph registers a graph with the FlowMgtService by its ID
-func (s *flowMgtService) RegisterGraph(graphID string, g core.GraphInterface) {
+func (s *legacyFlowMgtService) RegisterGraph(graphID string, g core.GraphInterface) {
 	s.graphs[graphID] = g
 }
 
 // GetGraph retrieves a graph by its ID
-func (s *flowMgtService) GetGraph(graphID string) (core.GraphInterface, bool) {
+func (s *legacyFlowMgtService) GetGraph(graphID string) (core.GraphInterface, bool) {
 	g, ok := s.graphs[graphID]
 	return g, ok
 }
 
 // IsValidGraphID checks if the provided graph ID is valid and exists in the service
-func (s *flowMgtService) IsValidGraphID(graphID string) bool {
+func (s *legacyFlowMgtService) IsValidGraphID(graphID string) bool {
 	if graphID == "" {
 		return false
 	}
@@ -201,7 +201,7 @@ func (s *flowMgtService) IsValidGraphID(graphID string) bool {
 }
 
 // buildGraphFromDefinition builds a graph from a graph definition json
-func (s *flowMgtService) buildGraphFromDefinition(definition *graphDefinition) (core.GraphInterface, error) {
+func (s *legacyFlowMgtService) buildGraphFromDefinition(definition *graphDefinition) (core.GraphInterface, error) {
 	if definition == nil || len(definition.Nodes) == 0 {
 		return nil, fmt.Errorf("graph definition is nil or has no nodes")
 	}
@@ -233,7 +233,7 @@ func (s *flowMgtService) buildGraphFromDefinition(definition *graphDefinition) (
 }
 
 // processNodeDefinition processes a single node definition and adds it to the graph
-func (s *flowMgtService) processNodeDefinition(nodeDef *nodeDefinition, allNodes []nodeDefinition,
+func (s *legacyFlowMgtService) processNodeDefinition(nodeDef *nodeDefinition, allNodes []nodeDefinition,
 	g core.GraphInterface, edges map[string][]string) error {
 	isFinalNode := nodeDef.OnSuccess == "" && nodeDef.OnFailure == "" && len(nodeDef.Actions) == 0
 
@@ -270,7 +270,7 @@ func (s *flowMgtService) processNodeDefinition(nodeDef *nodeDefinition, allNodes
 }
 
 // configureNodeNavigation configures the onSuccess and onFailure properties for a node
-func (s *flowMgtService) configureNodeNavigation(nodeDef *nodeDefinition, allNodes []nodeDefinition,
+func (s *legacyFlowMgtService) configureNodeNavigation(nodeDef *nodeDefinition, allNodes []nodeDefinition,
 	node core.NodeInterface, edges map[string][]string) error {
 	// Set onSuccess if defined
 	if nodeDef.OnSuccess != "" {
@@ -318,7 +318,7 @@ func validateOnFailureTarget(nodes []nodeDefinition, targetNodeID string) error 
 }
 
 // configureNodeInputs configures the inputs for a node
-func (s *flowMgtService) configureNodeInputs(nodeDef *nodeDefinition, node core.NodeInterface) {
+func (s *legacyFlowMgtService) configureNodeInputs(nodeDef *nodeDefinition, node core.NodeInterface) {
 	inputs := make([]common.Input, len(nodeDef.Inputs))
 	for i, input := range nodeDef.Inputs {
 		inputs[i] = common.Input{
@@ -332,7 +332,7 @@ func (s *flowMgtService) configureNodeInputs(nodeDef *nodeDefinition, node core.
 }
 
 // configureNodeActions configures the actions for a prompt node
-func (s *flowMgtService) configureNodeActions(nodeDef *nodeDefinition, node core.NodeInterface,
+func (s *legacyFlowMgtService) configureNodeActions(nodeDef *nodeDefinition, node core.NodeInterface,
 	edges map[string][]string) error {
 	if len(nodeDef.Actions) == 0 {
 		return nil
@@ -359,7 +359,7 @@ func (s *flowMgtService) configureNodeActions(nodeDef *nodeDefinition, node core
 }
 
 // configureNodeMeta configures the meta object for a prompt node
-func (s *flowMgtService) configureNodeMeta(nodeDef *nodeDefinition, node core.NodeInterface) {
+func (s *legacyFlowMgtService) configureNodeMeta(nodeDef *nodeDefinition, node core.NodeInterface) {
 	if nodeDef.Meta == nil {
 		return
 	}
@@ -371,7 +371,7 @@ func (s *flowMgtService) configureNodeMeta(nodeDef *nodeDefinition, node core.No
 }
 
 // configureNodeCondition configures the condition for a node
-func (s *flowMgtService) configureNodeCondition(nodeDef *nodeDefinition, node core.NodeInterface) {
+func (s *legacyFlowMgtService) configureNodeCondition(nodeDef *nodeDefinition, node core.NodeInterface) {
 	if nodeDef.Condition != nil && (nodeDef.Condition.Key != "" || nodeDef.Condition.Value != "") {
 		node.SetCondition(&core.NodeCondition{
 			Key:    nodeDef.Condition.Key,
@@ -382,7 +382,7 @@ func (s *flowMgtService) configureNodeCondition(nodeDef *nodeDefinition, node co
 }
 
 // configureNodeExecutor configures the executor for a node
-func (s *flowMgtService) configureNodeExecutor(nodeDef *nodeDefinition, node core.NodeInterface) error {
+func (s *legacyFlowMgtService) configureNodeExecutor(nodeDef *nodeDefinition, node core.NodeInterface) error {
 	executorName := nodeDef.Executor.Name
 	if executorName != "" {
 		if err := s.validateExecutorName(executorName); err != nil {
@@ -399,7 +399,7 @@ func (s *flowMgtService) configureNodeExecutor(nodeDef *nodeDefinition, node cor
 }
 
 // addGraphEdges adds all collected edges to the graph
-func (s *flowMgtService) addGraphEdges(g core.GraphInterface, edges map[string][]string) error {
+func (s *legacyFlowMgtService) addGraphEdges(g core.GraphInterface, edges map[string][]string) error {
 	for sourceID, targetIDs := range edges {
 		for _, targetID := range targetIDs {
 			if err := g.AddEdge(sourceID, targetID); err != nil {
@@ -411,7 +411,7 @@ func (s *flowMgtService) addGraphEdges(g core.GraphInterface, edges map[string][
 }
 
 // determineAndSetStartNode determines the start node and sets it in the graph
-func (s *flowMgtService) determineAndSetStartNode(g core.GraphInterface) error {
+func (s *legacyFlowMgtService) determineAndSetStartNode(g core.GraphInterface) error {
 	for _, node := range g.GetNodes() {
 		if node.GetType() == common.NodeTypeStart {
 			return g.SetStartNode(node.GetID())
@@ -421,7 +421,7 @@ func (s *flowMgtService) determineAndSetStartNode(g core.GraphInterface) error {
 }
 
 // validateExecutorName validates that an executor with the given name is registered
-func (s *flowMgtService) validateExecutorName(executorName string) error {
+func (s *legacyFlowMgtService) validateExecutorName(executorName string) error {
 	if executorName == "" {
 		return fmt.Errorf("executor name cannot be empty")
 	}
@@ -433,12 +433,12 @@ func (s *flowMgtService) validateExecutorName(executorName string) error {
 }
 
 // getRegistrationGraphID constructs the registration graph ID from the auth graph ID
-func (s *flowMgtService) getRegistrationGraphID(authGraphID string) string {
+func (s *legacyFlowMgtService) getRegistrationGraphID(authGraphID string) string {
 	return common.RegistrationFlowGraphPrefix + strings.TrimPrefix(authGraphID, common.AuthFlowGraphPrefix)
 }
 
 // createAndRegisterRegistrationGraph creates a registration graph from an authentication graph and registers it
-func (s *flowMgtService) createAndRegisterRegistrationGraph(
+func (s *legacyFlowMgtService) createAndRegisterRegistrationGraph(
 	registrationGraphID string, authGraph core.GraphInterface) error {
 	logger := s.logger
 	registrationGraph, err := s.createRegistrationGraph(registrationGraphID, authGraph)
@@ -463,7 +463,7 @@ func (s *flowMgtService) createAndRegisterRegistrationGraph(
 }
 
 // createRegistrationGraph creates a registration graph from an authentication graph
-func (s *flowMgtService) createRegistrationGraph(registrationGraphID string,
+func (s *legacyFlowMgtService) createRegistrationGraph(registrationGraphID string,
 	authGraph core.GraphInterface) (core.GraphInterface, error) {
 	logger := s.logger
 	logger.Debug("Creating registration graph from authentication graph",
@@ -587,7 +587,7 @@ func (s *flowMgtService) createRegistrationGraph(registrationGraphID string,
 }
 
 // createProvisioningNode creates a provisioning node that leads to the specified auth success node
-func (s *flowMgtService) createProvisioningNode() (core.NodeInterface, error) {
+func (s *legacyFlowMgtService) createProvisioningNode() (core.NodeInterface, error) {
 	provisioningNode, err := s.flowFactory.CreateNode(
 		"provisioning",
 		string(common.NodeTypeTaskExecution),
@@ -610,7 +610,7 @@ func (s *flowMgtService) createProvisioningNode() (core.NodeInterface, error) {
 }
 
 // createUserTypeResolverNode creates a user type resolver node for registration flows
-func (s *flowMgtService) createUserTypeResolverNode() (core.NodeInterface, error) {
+func (s *legacyFlowMgtService) createUserTypeResolverNode() (core.NodeInterface, error) {
 	userTypeResolverNode, err := s.flowFactory.CreateNode(
 		"user_type_resolver",
 		string(common.NodeTypeTaskExecution),
@@ -633,7 +633,7 @@ func (s *flowMgtService) createUserTypeResolverNode() (core.NodeInterface, error
 }
 
 // hasUserTypeResolverNode checks if a UserTypeResolver node already exists in the graph
-func (s *flowMgtService) hasUserTypeResolverNode(graph core.GraphInterface) bool {
+func (s *legacyFlowMgtService) hasUserTypeResolverNode(graph core.GraphInterface) bool {
 	for _, node := range graph.GetNodes() {
 		if executableNode, ok := node.(core.ExecutorBackedNodeInterface); ok {
 			if executableNode.GetExecutorName() == executor.ExecutorNameUserTypeResolver {
@@ -645,7 +645,7 @@ func (s *flowMgtService) hasUserTypeResolverNode(graph core.GraphInterface) bool
 }
 
 // validateDefaultFlowConfigs validates the default flow configurations
-func (s *flowMgtService) validateDefaultFlowConfigs() error {
+func (s *legacyFlowMgtService) validateDefaultFlowConfigs() error {
 	flowConfig := config.GetThunderRuntime().Config.Flow
 
 	// Validate auth flow.

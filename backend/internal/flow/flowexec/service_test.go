@@ -27,9 +27,10 @@ import (
 	appmodel "github.com/asgardeo/thunder/internal/application/model"
 	"github.com/asgardeo/thunder/internal/flow/common"
 	"github.com/asgardeo/thunder/internal/flow/core"
+	"github.com/asgardeo/thunder/internal/system/config"
 	"github.com/asgardeo/thunder/internal/system/error/serviceerror"
 	"github.com/asgardeo/thunder/tests/mocks/applicationmock"
-	"github.com/asgardeo/thunder/tests/mocks/flow/flowmgtmock"
+	"github.com/asgardeo/thunder/tests/mocks/flow/flowmgt_legacymock"
 )
 
 func TestInitiateFlowNilContext(t *testing.T) {
@@ -105,13 +106,17 @@ func TestInitiateFlowInvalidFlowType(t *testing.T) {
 func TestInitiateFlowSuccessScenarios(t *testing.T) {
 	appID := "test-app-123"
 
+	testConfig := &config.Config{}
+	_ = config.InitializeThunderRuntime("/tmp/test", testConfig)
+
+	flowFactory, _ := core.Initialize()
+	testGraph := flowFactory.CreateGraph("auth-graph-1", common.FlowTypeAuthentication)
+
 	// Mock application and graph - shared across all test cases
 	mockApp := &appmodel.Application{
 		ID:              "app-id-123",
 		AuthFlowGraphID: "auth-graph-1",
 	}
-	flowFactory := core.Initialize()
-	testGraph := flowFactory.CreateGraph("auth-graph-1", common.FlowTypeAuthentication)
 
 	tests := []struct {
 		name                     string
@@ -169,7 +174,7 @@ func TestInitiateFlowSuccessScenarios(t *testing.T) {
 			// Setup mocks
 			mockStore := newFlowStoreInterfaceMock(t)
 			mockAppService := applicationmock.NewApplicationServiceInterfaceMock(t)
-			mockFlowMgtSvc := flowmgtmock.NewFlowMgtServiceInterfaceMock(t)
+			mockFlowMgtSvc := flowmgt_legacymock.NewLegacyFlowMgtServiceInterfaceMock(t)
 
 			// Create service with mocked dependencies
 			service := &flowExecService{
@@ -225,14 +230,18 @@ func TestInitiateFlowSuccessScenarios(t *testing.T) {
 
 func TestInitiateFlowErrorScenarios(t *testing.T) {
 	appID := "test-app-123"
-	flowFactory := core.Initialize()
+
+	testConfig := &config.Config{}
+	_ = config.InitializeThunderRuntime("/tmp/test", testConfig)
+
+	flowFactory, _ := core.Initialize()
 
 	tests := []struct {
 		name       string
 		setupMocks func(
 			*flowStoreInterfaceMock,
 			*applicationmock.ApplicationServiceInterfaceMock,
-			*flowmgtmock.FlowMgtServiceInterfaceMock,
+			*flowmgt_legacymock.LegacyFlowMgtServiceInterfaceMock,
 		)
 		expectedErrorCode        string
 		expectedErrorDescription string
@@ -242,7 +251,7 @@ func TestInitiateFlowErrorScenarios(t *testing.T) {
 			setupMocks: func(
 				mockStore *flowStoreInterfaceMock,
 				mockAppService *applicationmock.ApplicationServiceInterfaceMock,
-				mockFlowMgtSvc *flowmgtmock.FlowMgtServiceInterfaceMock,
+				mockFlowMgtSvc *flowmgt_legacymock.LegacyFlowMgtServiceInterfaceMock,
 			) {
 				// Import application package for its error constants
 				appNotFoundErr := &serviceerror.ServiceError{
@@ -261,7 +270,7 @@ func TestInitiateFlowErrorScenarios(t *testing.T) {
 			setupMocks: func(
 				mockStore *flowStoreInterfaceMock,
 				mockAppService *applicationmock.ApplicationServiceInterfaceMock,
-				mockFlowMgtSvc *flowmgtmock.FlowMgtServiceInterfaceMock,
+				mockFlowMgtSvc *flowmgt_legacymock.LegacyFlowMgtServiceInterfaceMock,
 			) {
 				// Mock application service to return a different client error
 				mockAppService.EXPECT().GetApplication(appID).Return(nil, &ErrorApplicationRetrievalClientError)
@@ -274,7 +283,7 @@ func TestInitiateFlowErrorScenarios(t *testing.T) {
 			setupMocks: func(
 				mockStore *flowStoreInterfaceMock,
 				mockAppService *applicationmock.ApplicationServiceInterfaceMock,
-				mockFlowMgtSvc *flowmgtmock.FlowMgtServiceInterfaceMock,
+				mockFlowMgtSvc *flowmgt_legacymock.LegacyFlowMgtServiceInterfaceMock,
 			) {
 				// Mock application service to return valid app
 				mockApp := &appmodel.Application{
@@ -294,7 +303,7 @@ func TestInitiateFlowErrorScenarios(t *testing.T) {
 			setupMocks: func(
 				mockStore *flowStoreInterfaceMock,
 				mockAppService *applicationmock.ApplicationServiceInterfaceMock,
-				mockFlowMgtSvc *flowmgtmock.FlowMgtServiceInterfaceMock,
+				mockFlowMgtSvc *flowmgt_legacymock.LegacyFlowMgtServiceInterfaceMock,
 			) {
 				// Mock application service to return valid app
 				mockApp := &appmodel.Application{
@@ -319,7 +328,7 @@ func TestInitiateFlowErrorScenarios(t *testing.T) {
 			// Setup mocks
 			mockStore := newFlowStoreInterfaceMock(t)
 			mockAppService := applicationmock.NewApplicationServiceInterfaceMock(t)
-			mockFlowMgtSvc := flowmgtmock.NewFlowMgtServiceInterfaceMock(t)
+			mockFlowMgtSvc := flowmgt_legacymock.NewLegacyFlowMgtServiceInterfaceMock(t)
 
 			// Create service with mocked dependencies
 			service := &flowExecService{
