@@ -1,0 +1,28 @@
+{
+  "name": "e2e-tests-thunder",
+  "version": "1.0.0",
+  "description": "End-to-end tests for WSO2 Thunder using Playwright",
+  "main": "index.js",
+  "scripts": {
+    "pretest": "npm run clean-reports",
+    "clean-reports": "rm -rf blob-report playwright-report test-results",
+    "test": "npx playwright test",
+    "test:chromium": "npx playwright test --project=chromium",
+    "test:firefox": "npx playwright test --project=firefox",
+    "test:webkit": "npx playwright test --project=webkit",
+    "posttest": "npx playwright merge-reports --reporter html ./blob-report",
+    "ui": "npx playwright test --ui",
+    "report": "npx playwright show-report"
+  },
+  "keywords": ["e2e", "testing", "playwright", "automation", "wso2", "thunder"],
+  "author": "WSO2 LLC",
+  "license": "Apache-2.0",
+  "type": "commonjs",
+  "devDependencies": {
+    "@playwright/test": "1.57.0",
+    "@types/node": "25.0.2"
+  },
+  "dependencies": {
+    "dotenv": "17.2.3"
+  }
+}
