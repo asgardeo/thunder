@@ -19,6 +19,7 @@
 package provider
 
 import (
+	"context"
 	"database/sql"
 	"database/sql/driver"
 	"errors"
@@ -27,6 +28,7 @@ import (
 	"github.com/DATA-DOG/go-sqlmock"
 
 	"github.com/asgardeo/thunder/internal/system/database/model"
+	"github.com/asgardeo/thunder/internal/system/database/transaction"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
@@ -254,4 +256,142 @@ func (suite *DBClientTestSuite) TestBeginTxError() {
 	assert.Equal(suite.T(), expectedErr, err)
 	assert.Nil(suite.T(), tx)
 	assert.NoError(suite.T(), suite.mock.ExpectationsWereMet())
+}
+
+func (suite *DBClientTestSuite) TestQueryContextWithoutTransaction() {
+	testQuery := model.DBQuery{
+		ID:    "test_query_ctx_no_tx",
+		Query: "SELECT id, name FROM users WHERE id = ?",
+	}
+	args := []interface{}{1}
+	mockArgs := []driver.Value{1}
+
+	columns := []string{"id", "name"}
+	rows := sqlmock.NewRows(columns).AddRow(1, "John Doe")
+	suite.mock.ExpectQuery("SELECT id, name FROM users WHERE id = ?").
+		WithArgs(mockArgs...).
+		WillReturnRows(rows)
+
+	ctx := context.Background()
+	results, err := suite.dbClient.QueryContext(ctx, testQuery, args...)
+
+	assert.NoError(suite.T(), err)
+	assert.Len(suite.T(), results, 1)
+	assert.Equal(suite.T(), int64(1), results[0]["id"])
+	assert.Equal(suite.T(), "John Doe", results[0]["name"])
+}
+
+func (suite *DBClientTestSuite) TestQueryContextWithTransaction() {
+	testQuery := model.DBQuery{
+		ID:    "test_query_ctx_with_tx",
+		Query: "SELECT id FROM users",
+	}
+
+	columns := []string{"id"}
+	rows := sqlmock.NewRows(columns).AddRow(1)
+
+	suite.mock.ExpectBegin()
+	suite.mock.ExpectQuery("SELECT id FROM users").WillReturnRows(rows)
+
+	tx, _ := suite.mockDB.Begin()
+	ctx := transaction.WithTx(context.Background(), tx)
+
+	results, err := suite.dbClient.QueryContext(ctx, testQuery)
+
+	assert.NoError(suite.T(), err)
+	assert.Len(suite.T(), results, 1)
+	assert.Equal(suite.T(), int64(1), results[0]["id"])
+}
+
+func (suite *DBClientTestSuite) TestQueryContextError() {
+	testQuery := model.DBQuery{
+		ID:    "test_query_ctx_error",
+		Query: "SELECT * FROM invalid",
+	}
+
+	expectedErr := errors.New("query error")
+	suite.mock.ExpectQuery("SELECT \\* FROM invalid").WillReturnError(expectedErr)
+
+	ctx := context.Background()
+	results, err := suite.dbClient.QueryContext(ctx, testQuery)
+
+	assert.Error(suite.T(), err)
+	assert.Nil(suite.T(), results)
+	assert.Equal(suite.T(), expectedErr, err)
+}
+
+func (suite *DBClientTestSuite) TestExecuteContextWithoutTransaction() {
+	testQuery := model.DBQuery{
+		ID:    "test_execute_ctx_no_tx",
+		Query: "UPDATE users SET name = ? WHERE id = ?",
+	}
+	args := []interface{}{"Updated Name", 1}
+	mockArgs := []driver.Value{"Updated Name", 1}
+
+	suite.mock.ExpectExec("UPDATE users SET name = \\? WHERE id = \\?").
+		WithArgs(mockArgs...).
+		WillReturnResult(sqlmock.NewResult(0, 1))
+
+	ctx := context.Background()
+	rowsAffected, err := suite.dbClient.ExecuteContext(ctx, testQuery, args...)
+
+	assert.NoError(suite.T(), err)
+	assert.Equal(suite.T(), int64(1), rowsAffected)
+}
+
+func (suite *DBClientTestSuite) TestExecuteContextWithTransaction() {
+	testQuery := model.DBQuery{
+		ID:    "test_execute_ctx_with_tx",
+		Query: "DELETE FROM users WHERE id = ?",
+	}
+	args := []interface{}{1}
+
+	suite.mock.ExpectBegin()
+	suite.mock.ExpectExec("DELETE FROM users WHERE id = \\?").
+		WithArgs(1).
+		WillReturnResult(sqlmock.NewResult(0, 1))
+
+	tx, _ := suite.mockDB.Begin()
+	ctx := transaction.WithTx(context.Background(), tx)
+
+	rowsAffected, err := suite.dbClient.ExecuteContext(ctx, testQuery, args...)
+
+	assert.NoError(suite.T(), err)
+	assert.Equal(suite.T(), int64(1), rowsAffected)
+}
+
+func (suite *DBClientTestSuite) TestExecuteContextError() {
+	testQuery := model.DBQuery{
+		ID:    "test_execute_ctx_error",
+		Query: "UPDATE invalid SET x = 1",
+	}
+
+	expectedErr := errors.New("execute error")
+	suite.mock.ExpectExec("UPDATE invalid SET x = 1").WillReturnError(expectedErr)
+
+	ctx := context.Background()
+	rowsAffected, err := suite.dbClient.ExecuteContext(ctx, testQuery)
+
+	assert.Error(suite.T(), err)
+	assert.Equal(suite.T(), int64(0), rowsAffected)
+	assert.Equal(suite.T(), expectedErr, err)
+}
+
+func (suite *DBClientTestSuite) TestExecuteContextRowsAffectedError() {
+	testQuery := model.DBQuery{
+		ID:    "test_execute_ctx_rows_error",
+		Query: "UPDATE users SET name = ?",
+	}
+	args := []interface{}{"Test"}
+
+	expectedErr := errors.New("rows affected error")
+	suite.mock.ExpectExec("UPDATE users SET name = \\?").
+		WithArgs("Test").
+		WillReturnResult(sqlmock.NewErrorResult(expectedErr))
+
+	ctx := context.Background()
+	rowsAffected, err := suite.dbClient.ExecuteContext(ctx, testQuery, args...)
+
+	assert.Error(suite.T(), err)
+	assert.Equal(suite.T(), int64(0), rowsAffected)
 }
