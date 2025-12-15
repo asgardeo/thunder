@@ -84,6 +84,7 @@ func (fe *flowEngine) Execute(ctx *EngineContext) (FlowStep, *serviceerror.Servi
 			log.String("nodeType", string(currentNode.GetType())))
 
 		nodeCtx := &core.NodeContext{
+			Context:           ctx.Context,
 			FlowID:            ctx.FlowID,
 			FlowType:          ctx.FlowType,
 			AppID:             ctx.AppID,

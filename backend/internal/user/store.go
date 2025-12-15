@@ -19,6 +19,7 @@
 package user
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -34,7 +35,7 @@ import (
 type userStoreInterface interface {
 	GetUserListCount(filters map[string]interface{}) (int, error)
 	GetUserList(limit, offset int, filters map[string]interface{}) ([]User, error)
-	CreateUser(user User, credentials Credentials) error
+	CreateUser(ctx context.Context, user User, credentials Credentials) error
 	GetUser(id string) (User, error)
 	GetGroupCountForUser(userID string) (int, error)
 	GetUserGroups(userID string, limit, offset int) ([]UserGroup, error)
@@ -134,7 +135,7 @@ func (us *userStore) GetUserList(limit, offset int, filters map[string]interface
 }
 
 // CreateUser handles the user creation in the database.
-func (us *userStore) CreateUser(user User, credentials Credentials) error {
+func (us *userStore) CreateUser(ctx context.Context, user User, credentials Credentials) error {
 	dbClient, err := provider.GetDBProvider().GetUserDBClient()
 	if err != nil {
 		return fmt.Errorf("failed to get database client: %w", err)
@@ -158,14 +159,9 @@ func (us *userStore) CreateUser(user User, credentials Credentials) error {
 		credentialsJSON = string(credentialsBytes)
 	}
 
-	// Begin transaction
-	tx, err := dbClient.BeginTx()
-	if err != nil {
-		return fmt.Errorf("failed to begin transaction: %w", err)
-	}
-
-	// Insert user
-	_, err = tx.Exec(
+	// Insert user using context-aware method
+	_, err = dbClient.ExecuteContext(
+		ctx,
 		QueryCreateUser,
 		user.ID,
 		user.OrganizationUnit,
@@ -175,23 +171,12 @@ func (us *userStore) CreateUser(user User, credentials Credentials) error {
 		us.deploymentID,
 	)
 	if err != nil {
-		if rollbackErr := tx.Rollback(); rollbackErr != nil {
-			err = errors.Join(err, fmt.Errorf("failed to rollback transaction: %w", rollbackErr))
-		}
 		return fmt.Errorf("failed to create user: %w", err)
 	}
 
-	// Sync indexed attributes
-	if err := us.syncIndexedAttributesWithTx(tx, user.ID, user.Attributes); err != nil {
-		if rollbackErr := tx.Rollback(); rollbackErr != nil {
-			err = errors.Join(err, fmt.Errorf("failed to rollback transaction: %w", rollbackErr))
-		}
+	// Sync indexed attributes using context
+	if err := us.syncIndexedAttributes(ctx, dbClient, user.ID, user.Attributes); err != nil {
 		return fmt.Errorf("failed to sync indexed attributes: %w", err)
-	}
-
-	// Commit transaction
-	if err = tx.Commit(); err != nil {
-		return fmt.Errorf("failed to commit transaction: %w", err)
 	}
 
 	return nil
@@ -633,20 +618,64 @@ func maskMapValues(input map[string]interface{}) map[string]interface{} {
 	return masked
 }
 
-// syncIndexedAttributesWithTx synchronizes indexed attributes to the
-// USER_INDEXED_ATTRIBUTES table within a transaction.
+// syncIndexedAttributes synchronizes indexed attributes to the
+// USER_INDEXED_ATTRIBUTES table using context-aware transaction execution.
+func (us *userStore) syncIndexedAttributes(
+	ctx context.Context, dbClient provider.DBClientInterface, userID string, attributes json.RawMessage) error {
+	query, args, err := us.prepareIndexedAttributesQuery(userID, attributes)
+	if err != nil {
+		return err
+	}
+	if query == nil {
+		return nil
+	}
+
+	// Execute batch insert using context-aware method
+	_, err = dbClient.ExecuteContext(ctx, *query, args...)
+	if err != nil {
+		return fmt.Errorf("failed to batch insert indexed attributes (query ID: %s): %w",
+			QueryBatchInsertIndexedAttributes.ID, err)
+	}
+
+	return nil
+}
+
+// syncIndexedAttributesWithTx is a backward-compatible wrapper for UpdateUser that still uses manual transactions.
+// This method uses the transaction interface directly for compatibility with existing UpdateUser code.
 func (us *userStore) syncIndexedAttributesWithTx(
 	tx dbmodel.TxInterface, userID string, attributes json.RawMessage) error {
+	query, args, err := us.prepareIndexedAttributesQuery(userID, attributes)
+	if err != nil {
+		return err
+	}
+	if query == nil {
+		return nil
+	}
+
+	// Execute batch insert using transaction
+	_, err = tx.Exec(*query, args...)
+	if err != nil {
+		return fmt.Errorf("failed to batch insert indexed attributes (query ID: %s): %w",
+			QueryBatchInsertIndexedAttributes.ID, err)
+	}
+
+	return nil
+}
+
+// prepareIndexedAttributesQuery matches attributes with configuration and builds the batch insert query.
+func (us *userStore) prepareIndexedAttributesQuery(
+	userID string, attributes json.RawMessage,
+) (*dbmodel.DBQuery, []interface{}, error) {
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, "UserStore"))
 
 	if len(attributes) == 0 {
-		return nil
+		return nil, nil, nil
 	}
 
 	// Parse user attributes
 	var userAttrs map[string]interface{}
 	if err := json.Unmarshal(attributes, &userAttrs); err != nil {
-		return fmt.Errorf("failed to unmarshal user attributes: %w", err)
+		return nil, nil, fmt.Errorf("failed to unmarshal user attributes: %w", err)
 	}
 
 	// Collect indexed attributes to insert
@@ -681,7 +710,7 @@ func (us *userStore) syncIndexedAttributesWithTx(
 
 	// Return early if no indexed attributes to insert
 	if len(toInsert) == 0 {
-		return nil
+		return nil, nil, nil
 	}
 
 	// Build batch INSERT query using the pre-defined query constant
@@ -698,19 +727,12 @@ func (us *userStore) syncIndexedAttributesWithTx(
 
 	// Construct the complete query with dynamic VALUES placeholders
 	queryStr := QueryBatchInsertIndexedAttributes.Query + strings.Join(valuePlaceholders, ", ")
-	query := dbmodel.DBQuery{
+	query := &dbmodel.DBQuery{
 		ID:    QueryBatchInsertIndexedAttributes.ID,
 		Query: queryStr,
 	}
 
-	// Execute batch insert
-	_, err := tx.Exec(query, args...)
-	if err != nil {
-		return fmt.Errorf("failed to batch insert indexed attributes (query ID: %s): %w",
-			QueryBatchInsertIndexedAttributes.ID, err)
-	}
-
-	return nil
+	return query, args, nil
 }
 
 // isAttributeIndexed checks if a given attribute is configured to be indexed.

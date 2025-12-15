@@ -19,6 +19,7 @@
 package flowexec
 
 import (
+	"context"
 	"encoding/json"
 	"time"
 
@@ -30,6 +31,8 @@ import (
 
 // EngineContext holds the overall context used by the flow engine during execution.
 type EngineContext struct {
+	Context context.Context
+
 	FlowID      string
 	FlowType    common.FlowType
 	AppID       string
