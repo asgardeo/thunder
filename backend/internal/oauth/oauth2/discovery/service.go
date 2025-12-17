@@ -19,8 +19,6 @@
 package discovery
 
 import (
-	"fmt"
-
 	"github.com/asgardeo/thunder/internal/oauth/oauth2/constants"
 	"github.com/asgardeo/thunder/internal/oauth/oauth2/pkce"
 	"github.com/asgardeo/thunder/internal/system/config"
@@ -39,8 +37,9 @@ type discoveryService struct {
 
 // NewDiscoveryService creates a new discovery service instance
 func newDiscoveryService() DiscoveryServiceInterface {
+	runtime := config.GetThunderRuntime()
 	ds := &discoveryService{}
-	ds.baseURL = getBaseURL()
+	ds.baseURL = config.GetServerURL(&runtime.Config.Server)
 	return ds
 }
 
@@ -71,22 +70,6 @@ func (ds *discoveryService) GetOIDCMetadata() *OIDCProviderMetadata {
 		IDTokenSigningAlgValuesSupported:  ds.getSupportedIDTokenSigningAlgorithms(),
 		ClaimsSupported:                   ds.getSupportedClaims(),
 	}
-}
-
-// Helper methods for building URLs and discovering capabilities
-func getBaseURL() string {
-	runtime := config.GetThunderRuntime()
-	if runtime.Config.Server.PublicURL != "" {
-		return runtime.Config.Server.PublicURL
-	}
-	scheme := "https"
-	if runtime.Config.Server.HTTPOnly {
-		scheme = "http"
-	}
-	return fmt.Sprintf("%s://%s:%d",
-		scheme,
-		runtime.Config.Server.Hostname,
-		runtime.Config.Server.Port)
 }
 
 func (ds *discoveryService) getIssuer() string {

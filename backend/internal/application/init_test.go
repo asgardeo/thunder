@@ -81,7 +81,7 @@ func (suite *InitTestSuite) TestInitialize_WithImmutableResourcesDisabled() {
 	mux := http.NewServeMux()
 
 	// Execute
-	service := Initialize(
+	service, _, err := Initialize(
 		mux,
 		suite.mockCertService,
 		suite.mockFlowMgtService,
@@ -90,6 +90,7 @@ func (suite *InitTestSuite) TestInitialize_WithImmutableResourcesDisabled() {
 	)
 
 	// Assert
+	assert.NoError(suite.T(), err)
 	assert.NotNil(suite.T(), service)
 	assert.Implements(suite.T(), (*ApplicationServiceInterface)(nil), service)
 }
@@ -479,9 +480,10 @@ func TestInitialize_Standalone(t *testing.T) {
 	mockUserSchemaService := userschemamock.NewUserSchemaServiceInterfaceMock(t)
 
 	// Execute
-	service := Initialize(mux, mockCertService, mockFlowMgtService, mockBrandingService, mockUserSchemaService)
+	service, _, err := Initialize(mux, mockCertService, mockFlowMgtService, mockBrandingService, mockUserSchemaService)
 
 	// Assert
+	assert.NoError(t, err)
 	assert.NotNil(t, service)
 	assert.Implements(t, (*ApplicationServiceInterface)(nil), service)
 }
@@ -518,9 +520,10 @@ func TestInitialize_WithImmutableResources_Standalone(t *testing.T) {
 	mockUserSchemaService := userschemamock.NewUserSchemaServiceInterfaceMock(t)
 
 	// Execute
-	service := Initialize(mux, mockCertService, mockFlowMgtService, mockBrandingService, mockUserSchemaService)
+	service, _, err := Initialize(mux, mockCertService, mockFlowMgtService, mockBrandingService, mockUserSchemaService)
 
 	// Assert
+	assert.NoError(t, err)
 	assert.NotNil(t, service)
 	assert.Implements(t, (*ApplicationServiceInterface)(nil), service)
 }

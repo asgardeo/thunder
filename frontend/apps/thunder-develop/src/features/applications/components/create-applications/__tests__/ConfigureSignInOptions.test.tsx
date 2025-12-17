@@ -20,8 +20,8 @@ import {describe, it, expect, beforeEach, vi} from 'vitest';
 import {render, screen} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {IdentityProviderTypes, type IdentityProvider} from '@/features/integrations/models/identity-provider';
+import {AuthenticatorTypes} from '@/features/integrations/models/authenticators';
 import ConfigureSignInOptions, {type ConfigureSignInOptionsProps} from '../ConfigureSignInOptions';
-import {USERNAME_PASSWORD_AUTHENTICATION_OPTION_KEY} from '../../../utils/resolveAuthFlowGraphId';
 
 // Mock react-i18next
 vi.mock('react-i18next', () => ({
@@ -72,7 +72,7 @@ describe('ConfigureSignInOptions', () => {
 
   const defaultProps: ConfigureSignInOptionsProps = {
     integrations: {
-      [USERNAME_PASSWORD_AUTHENTICATION_OPTION_KEY]: true,
+      [AuthenticatorTypes.BASIC_AUTH]: true,
     },
     onIntegrationToggle: mockOnIntegrationToggle,
   };
@@ -145,13 +145,13 @@ describe('ConfigureSignInOptions', () => {
 
     renderComponent({
       integrations: {
-        [USERNAME_PASSWORD_AUTHENTICATION_OPTION_KEY]: true,
+        [AuthenticatorTypes.BASIC_AUTH]: true,
       },
     });
 
     const switches = screen.getAllByRole('switch');
     expect(switches[0]).toBeChecked();
-    
+
     // Should be toggleable (not disabled)
     expect(switches[0]).not.toBeDisabled();
   });
@@ -200,7 +200,7 @@ describe('ConfigureSignInOptions', () => {
       await user.click(usernamePasswordButton);
     }
 
-    expect(mockOnIntegrationToggle).toHaveBeenCalledWith(USERNAME_PASSWORD_AUTHENTICATION_OPTION_KEY);
+    expect(mockOnIntegrationToggle).toHaveBeenCalledWith(AuthenticatorTypes.BASIC_AUTH);
   });
 
   it('should call onIntegrationToggle when clicking provider list item', async () => {
@@ -248,7 +248,7 @@ describe('ConfigureSignInOptions', () => {
 
     renderComponent({
       integrations: {
-        [USERNAME_PASSWORD_AUTHENTICATION_OPTION_KEY]: true,
+        [AuthenticatorTypes.BASIC_AUTH]: true,
         'google-idp': true,
         'github-idp': false,
       },
@@ -401,7 +401,7 @@ describe('ConfigureSignInOptions', () => {
 
     const {rerender} = renderComponent({
       integrations: {
-        [USERNAME_PASSWORD_AUTHENTICATION_OPTION_KEY]: true,
+        [AuthenticatorTypes.BASIC_AUTH]: true,
         'google-idp': true,
       },
     });
@@ -412,7 +412,7 @@ describe('ConfigureSignInOptions', () => {
     rerender(
       <ConfigureSignInOptions
         integrations={{
-          [USERNAME_PASSWORD_AUTHENTICATION_OPTION_KEY]: true,
+          [AuthenticatorTypes.BASIC_AUTH]: true,
           'google-idp': true,
         }}
         onIntegrationToggle={mockOnIntegrationToggle}
@@ -460,16 +460,16 @@ describe('ConfigureSignInOptions', () => {
       const googleText = screen.getByText('Google');
       const listItem = googleText.closest('.MuiListItem-root');
       expect(listItem).toBeInTheDocument();
-      
+
       // Should have "Not configured" as secondary text (both Google and GitHub show it)
       const notConfiguredTexts = screen.getAllByText('Not configured');
       expect(notConfiguredTexts.length).toBeGreaterThanOrEqual(1);
-      
+
       // Should not have a switch for Google (disabled)
       const switches = screen.getAllByRole('switch');
       // Only username/password should have a switch
       expect(switches.length).toBe(1);
-      
+
       // Google button should be disabled
       const googleButton = googleText.closest('.MuiListItemButton-root');
       expect(googleButton).toHaveAttribute('aria-disabled', 'true');
@@ -487,7 +487,7 @@ describe('ConfigureSignInOptions', () => {
       const githubText = screen.getByText('GitHub');
       const listItem = githubText.closest('.MuiListItem-root');
       expect(listItem).toBeInTheDocument();
-      
+
       // Should have "Not configured" as secondary text
       const notConfiguredTexts = screen.getAllByText('Not configured');
       expect(notConfiguredTexts.length).toBeGreaterThan(0);
@@ -505,7 +505,7 @@ describe('ConfigureSignInOptions', () => {
       const switches = screen.getAllByRole('switch');
       // Should have switches for username/password, Google, and GitHub
       expect(switches.length).toBe(3);
-      
+
       // Google should be toggleable
       const googleButton = screen.getByText('Google').closest('.MuiListItemButton-root');
       expect(googleButton).not.toBeDisabled();
@@ -523,7 +523,7 @@ describe('ConfigureSignInOptions', () => {
       const switches = screen.getAllByRole('switch');
       // Should have switches for username/password, Google, and GitHub
       expect(switches.length).toBe(3);
-      
+
       // GitHub should be toggleable
       const githubButton = screen.getByText('GitHub').closest('.MuiListItemButton-root');
       expect(githubButton).not.toBeDisabled();
@@ -541,11 +541,11 @@ describe('ConfigureSignInOptions', () => {
       // Google should be enabled
       const googleButton = screen.getByText('Google').closest('.MuiListItemButton-root');
       expect(googleButton).not.toHaveAttribute('aria-disabled', 'true');
-      
+
       // GitHub should be disabled
       const githubButton = screen.getByText('GitHub').closest('.MuiListItemButton-root');
       expect(githubButton).toHaveAttribute('aria-disabled', 'true');
-      
+
       // Should show "Not configured" for GitHub
       const notConfiguredTexts = screen.getAllByText('Not configured');
       expect(notConfiguredTexts.length).toBeGreaterThan(0);
@@ -579,7 +579,7 @@ describe('ConfigureSignInOptions', () => {
 
       renderComponent({
         integrations: {
-          [USERNAME_PASSWORD_AUTHENTICATION_OPTION_KEY]: true,
+          [AuthenticatorTypes.BASIC_AUTH]: true,
         },
       });
 
@@ -598,7 +598,7 @@ describe('ConfigureSignInOptions', () => {
 
       renderComponent({
         integrations: {
-          [USERNAME_PASSWORD_AUTHENTICATION_OPTION_KEY]: false,
+          [AuthenticatorTypes.BASIC_AUTH]: false,
           'google-idp': false,
           'github-idp': false,
         },
@@ -627,16 +627,16 @@ describe('ConfigureSignInOptions', () => {
       rerender(
         <ConfigureSignInOptions
           integrations={{
-            [USERNAME_PASSWORD_AUTHENTICATION_OPTION_KEY]: true,
+            [AuthenticatorTypes.BASIC_AUTH]: true,
           }}
           onIntegrationToggle={mockOnIntegrationToggle}
         />,
       );
 
       // Warning should be gone
-      const warningAlerts = screen.queryAllByRole('alert').filter((alert) =>
-        alert.textContent?.includes('at least one'),
-      );
+      const warningAlerts = screen
+        .queryAllByRole('alert')
+        .filter((alert) => alert.textContent?.includes('at least one'));
       expect(warningAlerts.length).toBe(0);
     });
   });

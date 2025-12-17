@@ -1,7 +1,7 @@
 {
   "name": "react-sdk-sample",
   "private": true,
-  "version": "0.14.0",
+  "version": "0.15.0",
   "type": "module",
   "scripts": {
     "dev": "vite",
@@ -11,11 +11,11 @@
     "preview": "vite preview"
   },
   "dependencies": {
-    "@asgardeo/react": "0.6.15",
-    "@wso2/oxygen-ui": "0.0.1-alpha.9",
+    "@asgardeo/react": "0.6.17",
+    "@wso2/oxygen-ui": "0.0.1-alpha.10",
     "jwt-decode": "4.0.0",
-    "react": "19.2.1",
-    "react-dom": "19.2.1"
+    "react": "19.2.3",
+    "react-dom": "19.2.3"
   },
   "devDependencies": {
     "@eslint/js": "9.39.0",

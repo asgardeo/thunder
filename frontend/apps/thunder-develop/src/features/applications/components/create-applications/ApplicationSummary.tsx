@@ -16,23 +16,18 @@
  * under the License.
  */
 
-import {
-  Box,
-  Typography,
-  Stack,
-  TextField,
-  IconButton,
-  InputAdornment,
-  Alert,
-  Avatar,
-  Paper,
-} from '@wso2/oxygen-ui';
+import {Box, Typography, Stack, TextField, IconButton, InputAdornment, Alert, Avatar, Paper} from '@wso2/oxygen-ui';
 import {Copy, Eye, EyeOff, Check} from '@wso2/oxygen-ui-icons-react';
 import type {JSX} from 'react';
 import {useState, useEffect, useRef} from 'react';
 import {useTranslation} from 'react-i18next';
 import {useNavigate} from 'react-router';
 
+/**
+ * Props for the {@link ApplicationSummary} component.
+ *
+ * @public
+ */
 export interface ApplicationSummaryProps {
   /**
    * The name of the created application
@@ -65,8 +60,55 @@ export interface ApplicationSummaryProps {
 }
 
 /**
- * Component that displays a summary of the created application
- * with success message and credentials (if OAuth was configured)
+ * React component that displays a success summary after application creation,
+ * showing the application details and OAuth credentials if applicable.
+ *
+ * This final step in the onboarding flow presents:
+ * 1. Success confirmation with application name and logo
+ * 2. OAuth2 credentials (Client ID and Secret) with copy functionality
+ * 3. Security warnings and best practices for credential management
+ * 4. Next steps guidance with links to quick start guides
+ *
+ * The component handles different scenarios:
+ * - Public clients (show Client ID only, no secret)
+ * - Confidential clients (show both Client ID and Secret with visibility toggle)
+ * - Applications without OAuth configuration (success message only)
+ *
+ * Credentials are displayed in copyable text fields with visual feedback. A countdown
+ * timer alerts users that credentials won't be shown again. The component provides
+ * links to documentation and the application detail page.
+ *
+ * @param props - The component props
+ * @param props.appName - Name of the created application
+ * @param props.appLogo - URL of the application logo
+ * @param props.selectedColor - Brand color for visual elements
+ * @param props.clientId - OAuth2 client ID (if applicable)
+ * @param props.clientSecret - OAuth2 client secret (if applicable)
+ * @param props.hasOAuthConfig - Whether OAuth was configured
+ * @param props.applicationId - ID of the created application for navigation
+ *
+ * @returns JSX element displaying the application creation summary
+ *
+ * @example
+ * ```tsx
+ * import ApplicationSummary from './ApplicationSummary';
+ *
+ * function OnboardingComplete() {
+ *   return (
+ *     <ApplicationSummary
+ *       appName="My Application"
+ *       appLogo="https://example.com/logo.png"
+ *       selectedColor="#FF5733"
+ *       clientId="abc123"
+ *       clientSecret="secret456"
+ *       hasOAuthConfig={true}
+ *       applicationId="app-uuid"
+ *     />
+ *   );
+ * }
+ * ```
+ *
+ * @public
  */
 export default function ApplicationSummary({
   appName,
@@ -79,15 +121,22 @@ export default function ApplicationSummary({
 }: ApplicationSummaryProps): JSX.Element {
   const {t} = useTranslation();
   const navigate = useNavigate();
+
   const [showSecret, setShowSecret] = useState(false);
   const [copied, setCopied] = useState<{clientId: boolean; clientSecret: boolean}>({
     clientId: false,
     clientSecret: false,
   });
-  const copyTimeoutsRef = useRef<{clientId?: ReturnType<typeof setTimeout>; clientSecret?: ReturnType<typeof setTimeout>}>({});
 
-  // Clean up timeouts on unmount to prevent memory leaks
-  useEffect(() => {
+  const copyTimeoutsRef = useRef<{
+    clientId?: ReturnType<typeof setTimeout>;
+    clientSecret?: ReturnType<typeof setTimeout>;
+  }>({});
+
+  /**
+   * Clean up timeouts on unmount to prevent memory leaks
+   */
+  useEffect((): (() => void) => {
     const timeouts = copyTimeoutsRef.current;
     return (): void => {
       if (timeouts.clientId) {
@@ -103,12 +152,12 @@ export default function ApplicationSummary({
     try {
       await navigator.clipboard.writeText(text);
       setCopied((prev) => ({...prev, [type]: true}));
-      
+
       // Clear existing timeout for this type if any
       if (copyTimeoutsRef.current[type]) {
         clearTimeout(copyTimeoutsRef.current[type]);
       }
-      
+
       const timeoutId = setTimeout(() => {
         setCopied((prev) => ({...prev, [type]: false}));
         copyTimeoutsRef.current[type] = undefined;
@@ -124,12 +173,12 @@ export default function ApplicationSummary({
       try {
         document.execCommand('copy');
         setCopied((prev) => ({...prev, [type]: true}));
-        
+
         // Clear existing timeout for this type if any
         if (copyTimeoutsRef.current[type]) {
           clearTimeout(copyTimeoutsRef.current[type]);
         }
-        
+
         const timeoutId = setTimeout(() => {
           setCopied((prev) => ({...prev, [type]: false}));
           copyTimeoutsRef.current[type] = undefined;
@@ -169,9 +218,7 @@ export default function ApplicationSummary({
         <Typography variant="h3" component="h1" gutterBottom>
           {t('applications:onboarding.summary.title')}
         </Typography>
-        <Typography variant="body1" color="text.secondary">
-          {t('applications:onboarding.summary.subtitle')}
-        </Typography>
+        <Typography variant="subtitle1">{t('applications:onboarding.summary.subtitle')}</Typography>
       </Stack>
 
       {/* Application Details Card */}

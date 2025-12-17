@@ -1,0 +1,25 @@
+{
+  "name": "React Application",
+  "description": "Single Page Application built with React",
+  "inbound_auth_config": [
+    {
+      "type": "oauth2",
+      "config": {
+        "grant_types": [
+          "authorization_code",
+          "refresh_token"
+        ],
+        "response_types": [
+          "code"
+        ],
+        "redirect_uris": [
+          "http://localhost:5173"
+        ],
+        "pkce_required": true,
+        "token_endpoint_auth_method": "none",
+        "public_client": true
+      }
+    }
+  ],
+  "allowed_user_types": []
+}

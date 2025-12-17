@@ -32,14 +32,14 @@ import (
 
 	"github.com/asgardeo/thunder/internal/oauth/oauth2/model"
 	"github.com/asgardeo/thunder/internal/system/config"
-	"github.com/asgardeo/thunder/tests/mocks/database/clientmock"
+
 	"github.com/asgardeo/thunder/tests/mocks/database/providermock"
 )
 
 type AuthorizationRequestStoreTestSuite struct {
 	suite.Suite
 	mockdbProvider         *providermock.DBProviderInterfaceMock
-	mockDBClient           *clientmock.DBClientInterfaceMock
+	mockDBClient           *providermock.DBClientInterfaceMock
 	store                  *authorizationRequestStore
 	testAuthRequestContext authRequestContext
 }
@@ -64,7 +64,7 @@ func (suite *AuthorizationRequestStoreTestSuite) SetupTest() {
 	_ = config.InitializeThunderRuntime("test", testConfig)
 
 	suite.mockdbProvider = &providermock.DBProviderInterfaceMock{}
-	suite.mockDBClient = &clientmock.DBClientInterfaceMock{}
+	suite.mockDBClient = &providermock.DBClientInterfaceMock{}
 
 	suite.store = &authorizationRequestStore{
 		dbProvider:     suite.mockdbProvider,

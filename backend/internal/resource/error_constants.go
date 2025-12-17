@@ -124,6 +124,28 @@ var (
 		Error:            "Handle conflict",
 		ErrorDescription: "The same handle already exists within the specified resource",
 	}
+	// ErrorInvalidDelimiter is returned when delimiter is invalid.
+	ErrorInvalidDelimiter = serviceerror.ServiceError{
+		Type:             serviceerror.ClientErrorType,
+		Code:             "RES-1015",
+		Error:            "Invalid delimiter",
+		ErrorDescription: "Delimiter must be a single valid character (a-z A-Z 0-9 . _ : - /)",
+	}
+	// ErrorInvalidHandle is returned when handle contains invalid characters.
+	ErrorInvalidHandle = serviceerror.ServiceError{
+		Type:  serviceerror.ClientErrorType,
+		Code:  "RES-1016",
+		Error: "Invalid handle",
+		ErrorDescription: "Handle length must be less than 100 characters " +
+			"and contain valid characters (a-z A-Z 0-9 . _ : - /)",
+	}
+	// ErrorDelimiterInHandle is returned when handle contains invalid characters.
+	ErrorDelimiterInHandle = serviceerror.ServiceError{
+		Type:             serviceerror.ClientErrorType,
+		Code:             "RES-1017",
+		Error:            "Delimiter conflict in handle",
+		ErrorDescription: "Handle cannot contain the delimiter character",
+	}
 )
 
 // Internal error constants.

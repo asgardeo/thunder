@@ -24,7 +24,9 @@ import {useTranslation} from 'react-i18next';
 import generateAppNameSuggestions from '../../utils/generateAppNameSuggestions';
 
 /**
- * Props for the ConfigureName component.
+ * Props for the {@link ConfigureName} component.
+ *
+ * @public
  */
 export interface ConfigureNameProps {
   /**
@@ -43,6 +45,45 @@ export interface ConfigureNameProps {
   onReadyChange?: (isReady: boolean) => void;
 }
 
+/**
+ * React component that renders the application name input step in the
+ * application creation onboarding flow.
+ *
+ * This component provides a text field for users to enter their application name,
+ * along with AI-generated name suggestions displayed as clickable chips. Users can
+ * either type a custom name or select from the suggestions. The step is marked as
+ * ready when a non-empty name is provided.
+ *
+ * The component generates random application name suggestions on mount and displays
+ * them with helpful context about the naming purpose.
+ *
+ * @param props - The component props
+ * @param props.appName - The current application name value
+ * @param props.onAppNameChange - Callback invoked when the name is changed
+ * @param props.onReadyChange - Optional callback to notify parent of step readiness
+ *
+ * @returns JSX element displaying the application name configuration interface
+ *
+ * @example
+ * ```tsx
+ * import ConfigureName from './ConfigureName';
+ *
+ * function OnboardingFlow() {
+ *   const [name, setName] = useState('');
+ *   const [isReady, setIsReady] = useState(false);
+ *
+ *   return (
+ *     <ConfigureName
+ *       appName={name}
+ *       onAppNameChange={setName}
+ *       onReadyChange={setIsReady}
+ *     />
+ *   );
+ * }
+ * ```
+ *
+ * @public
+ */
 export default function ConfigureName({
   appName,
   onAppNameChange,
@@ -53,9 +94,11 @@ export default function ConfigureName({
 
   const appNameSuggestions: string[] = useMemo((): string[] => generateAppNameSuggestions(), []);
 
-  // Broadcast readiness whenever appName changes
-  useEffect(() => {
-    const isReady = appName.trim().length > 0;
+  /**
+   * Broadcast readiness whenever appName changes.
+   */
+  useEffect((): void => {
+    const isReady: boolean = appName.trim().length > 0;
     if (onReadyChange) {
       onReadyChange(isReady);
     }

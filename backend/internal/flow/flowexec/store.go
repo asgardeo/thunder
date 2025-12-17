@@ -59,13 +59,13 @@ func (s *flowStore) StoreFlowContext(ctx EngineContext) error {
 
 	queries := []func(tx dbmodel.TxInterface) error{
 		func(tx dbmodel.TxInterface) error {
-			_, err := tx.Exec(QueryCreateFlowContext.Query, dbModel.FlowID, dbModel.AppID,
+			_, err := tx.Exec(QueryCreateFlowContext, dbModel.FlowID, dbModel.AppID,
 				dbModel.CurrentNodeID, dbModel.CurrentActionID, dbModel.GraphID,
 				dbModel.RuntimeData, dbModel.ExecutionHistory, s.deploymentID)
 			return err
 		},
 		func(tx dbmodel.TxInterface) error {
-			_, err := tx.Exec(QueryCreateFlowUserData.Query, dbModel.FlowID,
+			_, err := tx.Exec(QueryCreateFlowUserData, dbModel.FlowID,
 				dbModel.IsAuthenticated, dbModel.UserID, dbModel.OrganizationUnitID,
 				dbModel.UserType, dbModel.UserInputs, dbModel.UserAttributes, s.deploymentID)
 			return err
@@ -109,13 +109,13 @@ func (s *flowStore) UpdateFlowContext(ctx EngineContext) error {
 
 	queries := []func(tx dbmodel.TxInterface) error{
 		func(tx dbmodel.TxInterface) error {
-			_, err := tx.Exec(QueryUpdateFlowContext.Query, dbModel.FlowID,
+			_, err := tx.Exec(QueryUpdateFlowContext, dbModel.FlowID,
 				dbModel.CurrentNodeID, dbModel.CurrentActionID, dbModel.RuntimeData, dbModel.ExecutionHistory,
 				s.deploymentID)
 			return err
 		},
 		func(tx dbmodel.TxInterface) error {
-			_, err := tx.Exec(QueryUpdateFlowUserData.Query, dbModel.FlowID, dbModel.IsAuthenticated,
+			_, err := tx.Exec(QueryUpdateFlowUserData, dbModel.FlowID, dbModel.IsAuthenticated,
 				dbModel.UserID, dbModel.OrganizationUnitID, dbModel.UserType,
 				dbModel.UserInputs, dbModel.UserAttributes, s.deploymentID)
 			return err
@@ -129,11 +129,11 @@ func (s *flowStore) UpdateFlowContext(ctx EngineContext) error {
 func (s *flowStore) DeleteFlowContext(flowID string) error {
 	queries := []func(tx dbmodel.TxInterface) error{
 		func(tx dbmodel.TxInterface) error {
-			_, err := tx.Exec(QueryDeleteFlowUserData.Query, flowID, s.deploymentID)
+			_, err := tx.Exec(QueryDeleteFlowUserData, flowID, s.deploymentID)
 			return err
 		},
 		func(tx dbmodel.TxInterface) error {
-			_, err := tx.Exec(QueryDeleteFlowContext.Query, flowID, s.deploymentID)
+			_, err := tx.Exec(QueryDeleteFlowContext, flowID, s.deploymentID)
 			return err
 		},
 	}

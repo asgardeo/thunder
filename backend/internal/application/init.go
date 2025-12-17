@@ -22,17 +22,13 @@ package application
 import (
 	"net/http"
 
-	"github.com/asgardeo/thunder/internal/application/model"
 	brandingmgt "github.com/asgardeo/thunder/internal/branding/mgt"
 	"github.com/asgardeo/thunder/internal/cert"
 	"github.com/asgardeo/thunder/internal/flow/flowmgt"
 	"github.com/asgardeo/thunder/internal/system/config"
-	filebasedruntime "github.com/asgardeo/thunder/internal/system/file_based_runtime"
-	"github.com/asgardeo/thunder/internal/system/log"
+	immutableresource "github.com/asgardeo/thunder/internal/system/immutable_resource"
 	"github.com/asgardeo/thunder/internal/system/middleware"
 	"github.com/asgardeo/thunder/internal/userschema"
-
-	"gopkg.in/yaml.v3"
 )
 
 // Initialize initializes the application service and registers its routes.
@@ -42,8 +38,7 @@ func Initialize(
 	flowMgtService flowmgt.FlowMgtServiceInterface,
 	brandingService brandingmgt.BrandingMgtServiceInterface,
 	userSchemaService userschema.UserSchemaServiceInterface,
-) ApplicationServiceInterface {
-	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, "ApplicationInit"))
+) (ApplicationServiceInterface, immutableresource.ResourceExporter, error) {
 	var appStore applicationStoreInterface
 	if config.GetThunderRuntime().Config.ImmutableResources.Enabled {
 		appStore = newFileBasedStore()
@@ -55,80 +50,17 @@ func Initialize(
 	appService := newApplicationService(appStore, certService, flowMgtService, brandingService, userSchemaService)
 
 	if config.GetThunderRuntime().Config.ImmutableResources.Enabled {
-		configs, err := filebasedruntime.GetConfigs("applications")
-		if err != nil {
-			logger.Fatal("Failed to read application configs from file-based runtime", log.Error(err))
-		}
-		for _, cfg := range configs {
-			appDTO, err := parseToApplicationDTO(cfg)
-			if err != nil {
-				logger.Fatal("Error parsing application config", log.Error(err))
-			}
-			validatedApp, _, svcErr := appService.ValidateApplication(appDTO)
-			if svcErr != nil {
-				logger.Fatal("Error validating application",
-					log.String("applicationName", appDTO.Name), log.Any("serviceError", svcErr))
-			}
-
-			err = appStore.CreateApplication(*validatedApp)
-			if err != nil {
-				logger.Fatal("Failed to store application in file-based store",
-					log.String("applicationName", appDTO.Name), log.Error(err))
-			}
+		if err := loadImmutableResources(appStore, appService); err != nil {
+			return nil, nil, err
 		}
 	}
 
 	appHandler := newApplicationHandler(appService)
 	registerRoutes(mux, appHandler)
-	return appService
-}
 
-func parseToApplicationDTO(data []byte) (*model.ApplicationDTO, error) {
-	var appRequest model.ApplicationRequestWithID
-	err := yaml.Unmarshal(data, &appRequest)
-	if err != nil {
-		return nil, err
-	}
-
-	appDTO := model.ApplicationDTO{
-		ID:                        appRequest.ID,
-		Name:                      appRequest.Name,
-		Description:               appRequest.Description,
-		AuthFlowGraphID:           appRequest.AuthFlowGraphID,
-		RegistrationFlowGraphID:   appRequest.RegistrationFlowGraphID,
-		IsRegistrationFlowEnabled: appRequest.IsRegistrationFlowEnabled,
-		URL:                       appRequest.URL,
-		LogoURL:                   appRequest.LogoURL,
-		Token:                     appRequest.Token,
-		Certificate:               appRequest.Certificate,
-		AllowedUserTypes:          appRequest.AllowedUserTypes,
-	}
-	if len(appRequest.InboundAuthConfig) > 0 {
-		inboundAuthConfigDTOs := make([]model.InboundAuthConfigDTO, 0)
-		for _, config := range appRequest.InboundAuthConfig {
-			if config.Type != model.OAuthInboundAuthType || config.OAuthAppConfig == nil {
-				continue
-			}
-
-			inboundAuthConfigDTO := model.InboundAuthConfigDTO{
-				Type: config.Type,
-				OAuthAppConfig: &model.OAuthAppConfigDTO{
-					ClientID:                config.OAuthAppConfig.ClientID,
-					ClientSecret:            config.OAuthAppConfig.ClientSecret,
-					RedirectURIs:            config.OAuthAppConfig.RedirectURIs,
-					GrantTypes:              config.OAuthAppConfig.GrantTypes,
-					ResponseTypes:           config.OAuthAppConfig.ResponseTypes,
-					TokenEndpointAuthMethod: config.OAuthAppConfig.TokenEndpointAuthMethod,
-					PKCERequired:            config.OAuthAppConfig.PKCERequired,
-					PublicClient:            config.OAuthAppConfig.PublicClient,
-					Token:                   config.OAuthAppConfig.Token,
-				},
-			}
-			inboundAuthConfigDTOs = append(inboundAuthConfigDTOs, inboundAuthConfigDTO)
-		}
-		appDTO.InboundAuthConfig = inboundAuthConfigDTOs
-	}
-	return &appDTO, nil
+	// Create and return exporter
+	exporter := newApplicationExporter(appService)
+	return appService, exporter, nil
 }
 
 func registerRoutes(mux *http.ServeMux, appHandler *applicationHandler) {

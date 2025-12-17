@@ -24,11 +24,6 @@ import {
 import {AUTH_FLOW_GRAPHS} from '../models/auth-flow-graphs';
 
 /**
- * Special key for username/password authentication option
- */
-export const USERNAME_PASSWORD_AUTHENTICATION_OPTION_KEY = 'basic_auth';
-
-/**
  * Options for resolving authentication flow graph configuration.
  */
 interface ResolveAuthFlowOptions {

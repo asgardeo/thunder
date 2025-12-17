@@ -33,7 +33,7 @@ import (
 	serverconst "github.com/asgardeo/thunder/internal/system/constants"
 	"github.com/asgardeo/thunder/internal/system/crypto/hash"
 	"github.com/asgardeo/thunder/internal/system/error/serviceerror"
-	filebasedruntime "github.com/asgardeo/thunder/internal/system/file_based_runtime"
+	immutableresource "github.com/asgardeo/thunder/internal/system/immutable_resource"
 	"github.com/asgardeo/thunder/internal/system/log"
 	sysutils "github.com/asgardeo/thunder/internal/system/utils"
 	"github.com/asgardeo/thunder/internal/userschema"
@@ -81,8 +81,8 @@ func newApplicationService(
 func (as *applicationService) CreateApplication(app *model.ApplicationDTO) (*model.ApplicationDTO,
 	*serviceerror.ServiceError) {
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, "ApplicationService"))
-	if config.GetThunderRuntime().Config.ImmutableResources.Enabled {
-		return nil, &filebasedruntime.ErrorImmutableResourceCreateOperation
+	if err := immutableresource.CheckImmutableCreate(); err != nil {
+		return nil, err
 	}
 
 	processedDTO, inboundAuthConfig, svcErr := as.ValidateApplication(app)
@@ -129,6 +129,7 @@ func (as *applicationService) CreateApplication(app *model.ApplicationDTO) (*mod
 		RegistrationFlowGraphID:   app.RegistrationFlowGraphID,
 		IsRegistrationFlowEnabled: app.IsRegistrationFlowEnabled,
 		BrandingID:                app.BrandingID,
+		Template:                  app.Template,
 		URL:                       app.URL,
 		LogoURL:                   app.LogoURL,
 		Token:                     rootToken,
@@ -225,6 +226,7 @@ func (as *applicationService) ValidateApplication(app *model.ApplicationDTO) (
 		RegistrationFlowGraphID:   app.RegistrationFlowGraphID,
 		IsRegistrationFlowEnabled: app.IsRegistrationFlowEnabled,
 		BrandingID:                app.BrandingID,
+		Template:                  app.Template,
 		URL:                       app.URL,
 		LogoURL:                   app.LogoURL,
 		Token:                     rootToken,
@@ -304,6 +306,7 @@ func buildBasicApplicationResponse(app model.BasicApplicationDTO) model.BasicApp
 		RegistrationFlowGraphID:   app.RegistrationFlowGraphID,
 		IsRegistrationFlowEnabled: app.IsRegistrationFlowEnabled,
 		BrandingID:                app.BrandingID,
+		Template:                  app.Template,
 	}
 }
 
@@ -352,6 +355,7 @@ func (as *applicationService) GetApplication(appID string) (*model.Application,
 		RegistrationFlowGraphID:   applicationDTO.RegistrationFlowGraphID,
 		IsRegistrationFlowEnabled: applicationDTO.IsRegistrationFlowEnabled,
 		BrandingID:                applicationDTO.BrandingID,
+		Template:                  applicationDTO.Template,
 		URL:                       applicationDTO.URL,
 		LogoURL:                   applicationDTO.LogoURL,
 		TosURI:                    applicationDTO.TosURI,
@@ -414,8 +418,8 @@ func (as *applicationService) enrichApplicationWithCertificate(application *mode
 func (as *applicationService) UpdateApplication(appID string, app *model.ApplicationDTO) (
 	*model.ApplicationDTO, *serviceerror.ServiceError) {
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, "ApplicationService"))
-	if config.GetThunderRuntime().Config.ImmutableResources.Enabled {
-		return nil, &filebasedruntime.ErrorImmutableResourceUpdateOperation
+	if err := immutableresource.CheckImmutableUpdate(); err != nil {
+		return nil, err
 	}
 
 	if appID == "" {
@@ -497,6 +501,7 @@ func (as *applicationService) UpdateApplication(appID string, app *model.Applica
 		RegistrationFlowGraphID:   app.RegistrationFlowGraphID,
 		IsRegistrationFlowEnabled: app.IsRegistrationFlowEnabled,
 		BrandingID:                app.BrandingID,
+		Template:                  app.Template,
 		URL:                       app.URL,
 		LogoURL:                   app.LogoURL,
 		Token:                     rootToken,
@@ -552,6 +557,7 @@ func (as *applicationService) UpdateApplication(appID string, app *model.Applica
 		RegistrationFlowGraphID:   app.RegistrationFlowGraphID,
 		IsRegistrationFlowEnabled: app.IsRegistrationFlowEnabled,
 		BrandingID:                app.BrandingID,
+		Template:                  app.Template,
 		URL:                       app.URL,
 		LogoURL:                   app.LogoURL,
 		Token:                     rootToken,
@@ -593,8 +599,8 @@ func (as *applicationService) UpdateApplication(appID string, app *model.Applica
 
 // DeleteApplication delete the application for given app id.
 func (as *applicationService) DeleteApplication(appID string) *serviceerror.ServiceError {
-	if config.GetThunderRuntime().Config.ImmutableResources.Enabled {
-		return &filebasedruntime.ErrorImmutableResourceDeleteOperation
+	if err := immutableresource.CheckImmutableDelete(); err != nil {
+		return err
 	}
 	if appID == "" {
 		return &ErrorInvalidApplicationID

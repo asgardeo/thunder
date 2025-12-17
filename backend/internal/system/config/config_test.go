@@ -603,6 +603,98 @@ func (suite *ConfigTestSuite) TestIsZeroValue_AdditionalCases() {
 	close(ch)
 }
 
+func (suite *ConfigTestSuite) TestGetServerURL() {
+	// Test with PublicURL set
+	serverWithPublicURL := &ServerConfig{
+		Hostname:  "localhost",
+		Port:      8090,
+		HTTPOnly:  false,
+		PublicURL: "https://auth.example.com",
+	}
+	assert.Equal(suite.T(), "https://auth.example.com", GetServerURL(serverWithPublicURL))
+
+	// Test HTTPS (HTTPOnly = false)
+	serverHTTPS := &ServerConfig{
+		Hostname: "localhost",
+		Port:     8090,
+		HTTPOnly: false,
+	}
+	assert.Equal(suite.T(), "https://localhost:8090", GetServerURL(serverHTTPS))
+
+	// Test HTTP (HTTPOnly = true)
+	serverHTTP := &ServerConfig{
+		Hostname: "localhost",
+		Port:     8080,
+		HTTPOnly: true,
+	}
+	assert.Equal(suite.T(), "http://localhost:8080", GetServerURL(serverHTTP))
+}
+
+func (suite *ConfigTestSuite) TestLoadConfigWithDerivedIssuer() {
+	tempDir := suite.T().TempDir()
+
+	// Case 1: Issuer not set - should derive from server config
+	userContent1 := `
+server:
+  hostname: "auth.example.com"
+  port: 443
+  http_only: false
+`
+	userFile1 := filepath.Join(tempDir, "user1.yaml")
+	err := os.WriteFile(userFile1, []byte(userContent1), 0600)
+	assert.NoError(suite.T(), err)
+
+	config1, err := LoadConfig(userFile1, "")
+	assert.NoError(suite.T(), err)
+	assert.Equal(suite.T(), "https://auth.example.com:443", config1.JWT.Issuer)
+
+	// Case 2: Issuer explicitly set - should use the explicit value
+	userContent2 := `
+server:
+  hostname: "auth.example.com"
+  port: 443
+jwt:
+  issuer: "custom-issuer"
+`
+	userFile2 := filepath.Join(tempDir, "user2.yaml")
+	err = os.WriteFile(userFile2, []byte(userContent2), 0600)
+	assert.NoError(suite.T(), err)
+
+	config2, err := LoadConfig(userFile2, "")
+	assert.NoError(suite.T(), err)
+	assert.Equal(suite.T(), "custom-issuer", config2.JWT.Issuer)
+
+	// Case 3: PublicURL is set - issuer should use PublicURL
+	userContent3 := `
+server:
+  hostname: "internal-host"
+  port: 8090
+  public_url: "https://auth.public.com"
+`
+	userFile3 := filepath.Join(tempDir, "user3.yaml")
+	err = os.WriteFile(userFile3, []byte(userContent3), 0600)
+	assert.NoError(suite.T(), err)
+
+	config3, err := LoadConfig(userFile3, "")
+	assert.NoError(suite.T(), err)
+	assert.Equal(suite.T(), "https://auth.public.com", config3.JWT.Issuer)
+
+	// Case 4: HTTP only mode
+	userContent4 := `
+server:
+  hostname: "localhost"
+  port: 8080
+  http_only: true
+`
+	userFile4 := filepath.Join(tempDir, "user4.yaml")
+	err = os.WriteFile(userFile4, []byte(userContent4), 0600)
+	assert.NoError(suite.T(), err)
+
+	config4, err := LoadConfig(userFile4, "")
+	assert.NoError(suite.T(), err)
+	assert.Equal(suite.T(), "http://localhost:8080", config4.JWT.Issuer)
+}
+
 func (suite *ConfigTestSuite) TestLoadConfigWithDerivedPaths() {
 	tempDir := suite.T().TempDir()
 

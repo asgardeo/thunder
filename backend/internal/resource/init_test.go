@@ -70,9 +70,10 @@ func (suite *InitTestSuite) TestInitialize() {
 	mux := http.NewServeMux()
 
 	// Execute
-	service := Initialize(mux, suite.mockOUService)
+	service, err := Initialize(mux, suite.mockOUService)
 
 	// Assert
+	suite.NoError(err)
 	suite.NotNil(service)
 	suite.Implements((*ResourceServiceInterface)(nil), service)
 }
@@ -295,9 +296,10 @@ func (suite *InitTestSuite) TestNewResourceService() {
 	mockStore := newResourceStoreInterfaceMock(suite.T())
 
 	// Execute
-	service := newResourceService(mockStore, suite.mockOUService)
+	service, err := newResourceService(mockStore, suite.mockOUService)
 
 	// Assert
+	suite.NoError(err)
 	suite.NotNil(service)
 	suite.Implements((*ResourceServiceInterface)(nil), service)
 
@@ -364,9 +366,10 @@ func (suite *InitTestSuite) TestInitialize_IntegrationFlow() {
 	mux := http.NewServeMux()
 
 	// Execute
-	service := Initialize(mux, suite.mockOUService)
+	service, err := Initialize(mux, suite.mockOUService)
 
 	// Assert service is created
+	suite.NoError(err)
 	suite.NotNil(service)
 	suite.Implements((*ResourceServiceInterface)(nil), service)
 

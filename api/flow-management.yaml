@@ -1,0 +1,1057 @@
+openapi: 3.0.3
+
+info:
+  title: Flow Management API
+  version: "1.0"
+  description: |
+    This API is used to manage flow definitions such as authentication and registration flows.
+    
+    Flows are defined using a **node-based graph representation** where each node represents 
+    a specific action or interaction in the flow. Nodes are connected through explicit 
+    references (actions, onSuccess, onFailure) to define the flow logic.
+    
+    ## Flow Types
+    - **AUTHENTICATION**: User login flows
+    - **REGISTRATION**: User registration/signup flows
+    
+    ## Node Types
+    - **START**: Initial node indicating the starting point of the flow. Must be present in all flows.
+    - **PROMPT**: Interactive UI node that displays components and collects user input.
+      Contains optional UI metadata for rendering (verbose mode).
+    - **TASK_EXECUTION**: Background executor node that performs server-side operations
+      (authentication, authorization, provisioning, etc.). Uses onSuccess/onFailure for navigation.
+      Can optionally have inputs for executors that need user input references.
+    - **END**: Terminal node indicating the end of the flow.
+    
+    ## Representation Modes
+    - **Verbose Mode**: Includes full UI metadata (components, layouts, labels) for visual flow composer and runtime rendering
+    - **Non-Verbose Mode**: Contains only logical flow structure without UI metadata
+    
+    ## Internationalization
+    User-facing text (labels, placeholders, hints, button text, etc.) can be:
+    - **i18n keys**: Use the format `{{ t(namespace:key) }}` (e.g., `{{ t(signin:heading.label) }}`)
+    - **Plain text**: Any string without the `{{ t() }}` wrapper is treated as literal text
+    
+    The frontend resolves i18n keys from language-specific resource bundles based on the 
+    namespace and key structure.
+  license:
+    name: Apache 2.0
+    url: https://www.apache.org/licenses/LICENSE-2.0.html
+
+servers:
+  - url: https://{host}:{port}
+    variables:
+      host:
+        default: "localhost"
+      port:
+        default: "8090"
+
+security:
+  - OAuth2: [system]
+
+paths:
+  /flows:
+    get:
+      tags:
+        - Flow Management
+      summary: List all flows
+      description: Retrieves a paginated list of all flow definitions
+      operationId: listFlows
+      parameters:
+        - name: flowType
+          in: query
+          description: Filter by flow type
+          required: false
+          schema:
+            type: string
+            enum:
+              - AUTHENTICATION
+              - REGISTRATION
+        - name: limit
+          in: query
+          description: Maximum number of flows to return
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 30
+        - name: offset
+          in: query
+          description: Number of flows to skip
+          required: false
+          schema:
+            type: integer
+            minimum: 0
+            default: 0
+      responses:
+        '200':
+          description: List of flows retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FlowListResponse'
+        '400':
+          description: Invalid query parameters
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ClientError'
+              example:
+                code: "FMS-1001"
+                message: "Invalid pagination parameter"
+                description: "The limit parameter must be between 1 and 100"
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ServerError'
+
+    post:
+      tags:
+        - Flow Management
+      summary: Create a new flow
+      description: |
+        Creates a new flow definition
+      operationId: createFlow
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/FlowDefinitionRequest'
+      responses:
+        '201':
+          description: Flow created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FlowDefinitionResponse'
+        '400':
+          description: Invalid flow definition
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ClientError'
+              example:
+                code: "FMS-1001"
+                message: "Invalid request format"
+                description: "The request body is malformed or contains invalid data"
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ServerError'
+
+  /flows/{flowId}:
+    get:
+      tags:
+        - Flow Management
+      summary: Get flow by ID
+      description: Retrieves a specific flow definition by its unique identifier
+      operationId: getFlow
+      parameters:
+        - name: flowId
+          in: path
+          required: true
+          description: Unique identifier of the flow
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Flow retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FlowDefinitionResponse'
+        '404':
+          description: Flow not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ClientError'
+              example:
+                code: "FMS-1006"
+                message: "Flow not found"
+                description: "The flow with the specified ID does not exist"
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ServerError'
+
+    put:
+      tags:
+        - Flow Management
+      summary: Update flow
+      description: Updates an existing flow definition by its unique identifier
+      operationId: updateFlow
+      parameters:
+        - name: flowId
+          in: path
+          required: true
+          description: Unique identifier of the flow to update
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/FlowDefinitionRequest'
+      responses:
+        '200':
+          description: Flow updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FlowDefinitionResponse'
+        '400':
+          description: Invalid flow definition
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ClientError'
+              example:
+                code: "FMS-1001"
+                message: "Invalid request format"
+                description: "The request body is malformed or contains invalid data"
+        '404':
+          description: Flow not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ClientError'
+              example:
+                code: "FMS-1006"
+                message: "Flow not found"
+                description: "The flow with the specified ID does not exist"
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ServerError'
+
+    delete:
+      tags:
+        - Flow Management
+      summary: Delete flow
+      description: Deletes an existing flow definition by its unique identifier
+      operationId: deleteFlow
+      parameters:
+        - name: flowId
+          in: path
+          required: true
+          description: Unique identifier of the flow to delete
+          schema:
+            type: string
+      responses:
+        '204':
+          description: Flow deleted successfully
+        '400':
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ClientError'
+              example:
+                code: "FMS-1002"
+                message: "Invalid flow ID"
+                description: "The provided flow ID is not a valid UUID"
+        '409':
+          description: Flow cannot be deleted (e.g., it's a default flow or currently in use)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ClientError'
+              example:
+                code: "FMS-1007"
+                message: "Flow cannot be deleted"
+                description: "Cannot delete a default flow or a flow that is currently in use"
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ServerError'
+
+  /flows/{flowId}/versions:
+    get:
+      tags:
+        - Flow Versioning
+      summary: Get flow version history
+      description: |
+        Retrieves the complete version history of a specific flow.
+      operationId: getFlowVersions
+      parameters:
+        - name: flowId
+          in: path
+          required: true
+          description: Unique identifier of the flow
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Flow version history retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FlowVersionListResponse'
+        '404':
+          description: Flow not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ClientError'
+              example:
+                code: "FMS-1006"
+                message: "Flow not found"
+                description: "The flow with the specified ID does not exist"
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ServerError'
+
+  /flows/{flowId}/versions/{version}:
+    get:
+      tags:
+        - Flow Versioning
+      summary: Get specific flow version
+      description: Retrieves a specific version of a flow by version number
+      operationId: getFlowVersion
+      parameters:
+        - name: flowId
+          in: path
+          required: true
+          description: Unique identifier of the flow
+          schema:
+            type: string
+        - name: version
+          in: path
+          required: true
+          description: Version number to retrieve
+          schema:
+            type: integer
+            minimum: 1
+      responses:
+        '200':
+          description: Flow version retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FlowVersionResponse'
+        '404':
+          description: Flow or version not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ClientError'
+              example:
+                code: "FMS-1006"
+                message: "Version not found"
+                description: "The specified version does not exist for this flow"
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ServerError'
+
+  /flows/{flowId}/restore:
+    post:
+      tags:
+        - Flow Versioning
+      summary: Restore flow to a previous version
+      description: |
+        Restores a flow to a specific previous version. This creates a new version 
+        with the content from the specified version.
+      operationId: restoreFlowVersion
+      parameters:
+        - name: flowId
+          in: path
+          required: true
+          description: Unique identifier of the flow
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RestoreVersionRequest'
+      responses:
+        '200':
+          description: Flow restored successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FlowVersionResponse'
+        '400':
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ClientError'
+              example:
+                code: "FMS-1001"
+                message: "Invalid version"
+                description: "The specified version number is invalid"
+        '404':
+          description: Flow or version not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ClientError'
+              example:
+                code: "FMS-1006"
+                message: "Version not found"
+                description: "The specified version does not exist for this flow"
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ServerError'
+
+components:
+  securitySchemes:
+    OAuth2:
+      type: oauth2
+      flows:
+        authorizationCode:
+          authorizationUrl: https://localhost:8090/oauth2/authorize
+          tokenUrl: https://localhost:8090/oauth2/token
+          scopes:
+            system: Access to system management APIs
+
+  schemas:
+    FlowListResponse:
+      type: object
+      properties:
+        totalResults:
+          type: integer
+          description: "Number of results that match the listing operation."
+          example: 5
+        startIndex:
+          type: integer
+          description: "Index of the first element of the page, which will be equal to offset + 1."
+          example: 1
+        count:
+          type: integer
+          description: "Number of elements in the returned page."
+          example: 3
+        flows:
+          type: array
+          items:
+            $ref: '#/components/schemas/BasicFlowDefinitionResponse'
+        links:
+          type: array
+          items:
+            $ref: '#/components/schemas/Link'
+          description: "Navigation links for pagination."
+      example:
+        totalResults: 5
+        startIndex: 1
+        count: 3
+        flows:
+          - id: "641af221-75ff-4247-ab1f-ff139040a91b"
+            flowType: "AUTHENTICATION"
+            name: "Basic Authentication Flow"
+            activeVersion: 2
+            createdAt: "2024-01-15T10:20:30Z"
+            updatedAt: "2024-02-20T14:25:35Z"
+          - id: "2sd4f6g7-h8i9-0j1k-2l3m-4n5o6p7q8r9s"
+            flowType: "REGISTRATION"
+            name: "Basic Registration Flow"
+            activeVersion: 7
+            createdAt: "2024-03-10T09:15:25Z"
+            updatedAt: "2024-04-12T11:30:40Z"
+          - id: "b12c3d45-6789-4e0f-9abc-def123456789"
+            flowType: "REGISTRATION"
+            name: "Google Registration Flow"
+            activeVersion: 1
+            createdAt: "2024-05-05T08:10:20Z"
+            updatedAt: "2024-06-01T12:00:00Z"
+        links:
+          - href: "/flows?offset=3&limit=3"
+            rel: "next"
+
+    FlowVersionListResponse:
+      type: object
+      properties:
+        totalVersions:
+          type: integer
+          description: Total number of versions available for this flow
+          example: 8
+        versions:
+          type: array
+          items:
+            $ref: '#/components/schemas/FlowVersionInfo'
+          description: List of flow versions (most recent first)
+      example:
+        totalVersions: 8
+        versions:
+          - version: 8
+            createdAt: "2024-12-01T15:30:00Z"
+            isActive: true
+          - version: 7
+            createdAt: "2024-11-25T10:15:00Z"
+            isActive: false
+          - version: 6
+            createdAt: "2024-11-20T14:20:00Z"
+            isActive: false
+
+    FlowVersionInfo:
+      type: object
+      required:
+        - version
+        - createdAt
+        - isActive
+      properties:
+        version:
+          type: integer
+          description: Version number
+          example: 5
+        createdAt:
+          type: string
+          format: date-time
+          description: Timestamp when this specific version was created
+        isActive:
+          type: boolean
+          description: Indicates if this is the currently active version
+          example: false
+
+    RestoreVersionRequest:
+      type: object
+      required:
+        - version
+      properties:
+        version:
+          type: integer
+          description: Version number to restore to
+          minimum: 1
+          example: 5
+      example:
+        version: 5
+
+    Link:
+      type: object
+      required:
+        - href
+        - rel
+      properties:
+        href:
+          type: string
+          description: The URI of the link
+          example: "/flows?offset=1&limit=30"
+        rel:
+          type: string
+          description: The link relation type (first, next, previous, last)
+          example: "next"
+    
+    BasicFlowDefinitionResponse:
+      type: object
+      required:
+        - id
+        - flowType
+        - name
+        - activeVersion
+        - createdAt
+        - updatedAt
+      properties:
+        id:
+          type: string
+          description: Unique identifier for the flow
+        flowType:
+          type: string
+          enum:
+            - AUTHENTICATION
+            - REGISTRATION
+        name:
+          type: string
+          description: Name of the flow
+        activeVersion:
+          type: integer
+          description: The version number that is currently active
+          example: 5
+        createdAt:
+          type: string
+          format: date-time
+          description: Timestamp when the flow was initially created
+        updatedAt:
+          type: string
+          format: date-time
+          description: Timestamp when the flow was last modified
+
+    FlowDefinitionRequest:
+      type: object
+      required:
+        - name
+        - flowType
+        - nodes
+      properties:
+        name:
+          type: string
+          description: Name of the flow
+          example: "Basic Authentication Flow"
+        flowType:
+          type: string
+          enum:
+            - AUTHENTICATION
+            - REGISTRATION
+          description: |
+            Type of flow
+          example: AUTHENTICATION
+        nodes:
+          type: array
+          minItems: 2
+          items:
+            $ref: '#/components/schemas/Node'
+          description: List of nodes that define the flow graph
+      example:
+        name: Basic Authentication Flow
+        flowType: AUTHENTICATION
+        nodes: &authFlowNodes
+          - id: node_000
+            type: START
+            onSuccess: node_001
+          - id: node_001
+            type: PROMPT
+            meta:
+              components:
+                - type: TEXT
+                  id: text_001
+                  label: "{{ t(signin:heading.label) }}"
+                  variant: HEADING_01
+                - type: BLOCK
+                  id: block_001
+                  components:
+                    - type: TEXT_INPUT
+                      id: input_001
+                      label: "{{ t(signin:fields.username.label) }}"
+                      required: true
+                      placeholder: "{{ t(signin:fields.username.placeholder) }}"
+                    - type: PASSWORD_INPUT
+                      id: input_002
+                      label: "{{ t(signin:fields.password.label) }}"
+                      required: true
+                      placeholder: "{{ t(signin:fields.password.placeholder) }}"
+                    - type: ACTION
+                      id: action_001
+                      label: "{{ t(signin:buttons.submit) }}"
+                - type: DIVIDER
+                  id: divider_001
+                  label: "{{ t(signin:divider.or.label) }}"
+                - type: ACTION
+                  id: action_002
+                  label: "{{ t(signin:buttons.continue.with.sms.otp.label) }}"
+            inputs:
+              - ref: input_001
+                type: TEXT_INPUT
+                identifier: username
+                required: true
+              - ref: input_002
+                type: PASSWORD_INPUT
+                identifier: password
+                required: true
+            actions:
+              - ref: action_001
+                nextNode: node_004
+              - ref: action_002
+                nextNode: node_002
+          - id: node_002
+            type: TASK_EXECUTION
+            executor:
+              name: SendSMSExecutor
+            properties:
+              senderId: "<SENDER_ID>"
+            onSuccess: node_003
+            onFailure: node_007
+          - id: node_003
+            type: PROMPT
+            meta:
+              components:
+                - type: HEADING
+                  id: heading_003
+                  label: "{{ t(sms.otp:verify.heading) }}"
+                - type: TEXT
+                  id: text_003
+                  label: "{{ t(sms.otp:verify.heading.label) }}"
+                  variant: HEADING_01
+                - type: OTP_INPUT
+                  id: otp_001
+                  label: "{{ t(sms.otp:verify.otp.input.label) }}"
+                  length: 6
+                  required: true
+                - type: ACTION
+                  id: action_003
+                  label: "{{ t(sms.otp:verify.buttons.submit) }}"
+                - type: ACTION
+                  id: action_004
+                  label: "{{ t(sms.otp:verify.buttons.resend) }}"
+            inputs:
+              - ref: otp_001
+                type: OTP_INPUT
+                identifier: otp
+                required: true
+            actions:
+              - ref: action_003
+                nextNode: node_005
+              - ref: action_004
+                nextNode: node_002
+          - id: node_004
+            type: TASK_EXECUTION
+            executor:
+              name: BasicAuthExecutor
+            inputs:
+              - ref: input_001
+                identifier: username
+                type: TEXT_INPUT
+                required: true
+              - ref: input_002
+                identifier: password
+                type: PASSWORD_INPUT
+                required: true
+            onSuccess: node_008
+          - id: node_005
+            type: TASK_EXECUTION
+            executor:
+              name: VerifyOTPExecutor
+            properties:
+              senderId: "<SENDER_ID>"
+            inputs:
+              - ref: otp_001
+                identifier: otp
+                type: OTP_INPUT
+                required: true
+            onSuccess: node_008
+          - id: node_007
+            type: PROMPT
+            meta:
+              components:
+                - type: HEADING
+                  id: heading_007
+                  label: "{{ t(sms.otp:error.heading) }}"
+                - type: TEXT
+                  id: text_007
+                  label: "{{ t(sms.otp:error.message) }}"
+                - type: ACTION
+                  id: action_007
+                  label: "{{ t(sms.otp:error.buttons.retry) }}"
+            actions:
+              - ref: action_007
+                nextNode: node_002
+          - id: node_008
+            type: END
+
+    FlowDefinitionResponse:
+      type: object
+      required:
+        - id
+        - name
+        - flowType
+        - activeVersion
+        - nodes
+        - createdAt
+        - updatedAt
+      properties:
+        id:
+          type: string
+          description: Unique identifier for the flow
+          example: a23b45c6-d7e8-90f1-2345-6789abcdef01
+        name:
+          type: string
+          description: Name of the flow
+          example: "Basic Authentication Flow"
+        flowType:
+          type: string
+          enum:
+            - AUTHENTICATION
+            - REGISTRATION
+          description: |
+            Type of flow
+          example: AUTHENTICATION
+        activeVersion:
+          type: integer
+          description: The version number that is currently active
+          example: 5
+        nodes:
+          type: array
+          minItems: 2
+          items:
+            $ref: '#/components/schemas/Node'
+          description: List of nodes that define the flow graph
+        createdAt:
+          type: string
+          format: date-time
+          description: Timestamp when the flow was initially created
+        updatedAt:
+          type: string
+          format: date-time
+          description: Timestamp when the flow was last modified
+      example:
+        id: a23b45c6-d7e8-90f1-2345-6789abcdef01
+        name: Basic Authentication Flow
+        flowType: AUTHENTICATION
+        activeVersion: 5
+        nodes: *authFlowNodes
+        createdAt: "2024-06-15T10:20:30Z"
+        updatedAt: "2024-06-20T14:25:35Z"
+
+    FlowVersionResponse:
+      type: object
+      required:
+        - id
+        - name
+        - flowType
+        - version
+        - isActive
+        - nodes
+        - createdAt
+      properties:
+        id:
+          type: string
+          description: Unique identifier for the flow
+          example: a23b45c6-d7e8-90f1-2345-6789abcdef01
+        name:
+          type: string
+          description: Name of the flow
+          example: "Basic Authentication Flow"
+        flowType:
+          type: string
+          enum:
+            - AUTHENTICATION
+            - REGISTRATION
+          description: |
+            Type of flow
+          example: AUTHENTICATION
+        version:
+          type: integer
+          description: Version number of this flow snapshot
+          example: 3
+        isActive:
+          type: boolean
+          description: Indicates if this is the currently active version of the flow
+          example: false
+        nodes:
+          type: array
+          minItems: 2
+          items:
+            $ref: '#/components/schemas/Node'
+          description: List of nodes that define the flow graph
+        createdAt:
+          type: string
+          format: date-time
+          description: Timestamp when this specific version was created
+      example:
+        id: a23b45c6-d7e8-90f1-2345-6789abcdef01
+        name: Basic Authentication Flow
+        flowType: AUTHENTICATION
+        version: 3
+        isActive: false
+        nodes: *authFlowNodes
+        createdAt: "2024-06-15T10:20:30Z"
+
+    Node:
+      type: object
+      required:
+        - id
+        - type
+      properties:
+        id:
+          type: string
+          description: Unique identifier for the node within the flow
+          example: node_001
+        type:
+          type: string
+          enum:
+            - START
+            - PROMPT
+            - TASK_EXECUTION
+            - END
+          description: |
+            Type of node
+          example: PROMPT
+        meta:
+          description: Optional UI metadata for PROMPT nodes (verbose mode)
+          allOf:
+            - $ref: '#/components/schemas/NodeMeta'
+        inputs:
+          type: array
+          items:
+            $ref: '#/components/schemas/NodeInput'
+          description: |
+            Input definitions for PROMPT nodes (required) and TASK_EXECUTION nodes (optional).
+            For TASK_EXECUTION nodes, inputs indicate which identifiers the executor should use.
+        actions:
+          type: array
+          items:
+            $ref: '#/components/schemas/NodeAction'
+          description: Available actions for PROMPT nodes
+        properties:
+          type: object
+          additionalProperties: true
+          description: |
+            Node-level properties for configuration (e.g., senderId for notification executors,
+            idpId for social login executors)
+          example:
+            senderId: "<SENDER_ID>"
+        executor:
+          description: Executor configuration for TASK_EXECUTION nodes (required)
+          allOf:
+            - $ref: '#/components/schemas/Executor'
+        onSuccess:
+          type: string
+          description: Next node ID on successful execution (START and TASK_EXECUTION nodes)
+          example: node_003
+        onFailure:
+          type: string
+          description: Next node ID on failed execution (TASK_EXECUTION nodes)
+          example: node_007
+
+    NodeMeta:
+      type: object
+      description: UI metadata for rendering PROMPT nodes in verbose mode
+      properties:
+        components:
+          type: array
+          items:
+            $ref: '#/components/schemas/Component'
+          description: UI components to render (headings, inputs, buttons, etc.)
+
+    NodeInput:
+      type: object
+      required:
+        - type
+        - identifier
+        - required
+      properties:
+        ref:
+          type: string
+          description: |
+            Reference to the input component ID. For PROMPT nodes, this refers to components
+            in meta.components. Optional but recommended for better
+            flow visualization and debugging.
+          example: input_001
+        type:
+          type: string
+          description: Input type (TEXT_INPUT, PASSWORD_INPUT, OTP_INPUT, etc.)
+          example: TEXT_INPUT
+        identifier:
+          type: string
+          description: The mapped attribute identifier (e.g., username, password, otp)
+          example: username
+        required:
+          type: boolean
+          description: Whether this input is required
+          example: true
+
+    NodeAction:
+      type: object
+      required:
+        - ref
+        - nextNode
+      properties:
+        ref:
+          type: string
+          description: Reference to the action component ID in meta.components
+          example: action_001
+        nextNode:
+          type: string
+          description: ID of the next node to navigate to when this action is triggered
+          example: node_004
+
+    Executor:
+      type: object
+      required:
+        - name
+      properties:
+        name:
+          type: string
+          description: |
+            Name of the registered executor
+          example: BasicAuthExecutor
+
+    Component:
+      type: object
+      required:
+        - id
+        - type
+      properties:
+        id:
+          type: string
+          description: Unique identifier for the component
+          example: input_001
+        type:
+          type: string
+          description: |
+            Component type. Common types:
+            - TEXT, HEADING: Display text elements
+            - TEXT_INPUT, PASSWORD_INPUT, OTP_INPUT: Input fields
+            - ACTION: Buttons and clickable elements
+            - BLOCK: Container for grouping components
+            - DIVIDER: Visual separator
+          example: TEXT_INPUT
+        label:
+          type: string
+          description: Display label or text content (use {{ t(namespace:key) }} for i18n or plain text)
+          example: "{{ t(signin:fields.username.label) }}"
+        variant:
+          type: string
+          description: Component style variant (e.g., HEADING_01, PRIMARY, etc.)
+          example: HEADING_01
+        required:
+          type: boolean
+          description: Whether the component is required (for input fields)
+          example: true
+        placeholder:
+          type: string
+          description: Placeholder text for input fields (use {{ t(namespace:key) }} for i18n or plain text)
+          example: "{{ t(signin:fields.username.placeholder) }}"
+        length:
+          type: integer
+          description: Length specification (e.g., for OTP_INPUT)
+          example: 6
+        components:
+          type: array
+          items:
+            $ref: '#/components/schemas/Component'
+          description: Nested child components (for BLOCK type)
+
+    ClientError:
+      type: object
+      properties:
+        code:
+          type: string
+          description: The error code
+          example: "FMS-1001"
+        message:
+          type: string
+          description: The error message
+          example: "Invalid request format"
+        description:
+          type: string
+          description: A detailed description of the error
+          example: "The request body is malformed or contains invalid data"
+    
+    ServerError:
+      type: object
+      properties:
+        code:
+          type: string
+          description: The server error code
+          example: "SSE-5000"
+        message:
+          type: string
+          description: The server error message
+          example: "Internal server error"
+        description:
+          type: string
+          description: A detailed description of the server error
+          example: "An unexpected error occurred while processing the request"

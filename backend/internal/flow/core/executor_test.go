@@ -337,14 +337,14 @@ func (s *ExecutorTestSuite) TestGetRequiredData() {
 			[]string{testInputName},
 		},
 		{
-			"Node input provided, merge with default",
+			"Node input provided, use node input only",
 			[]common.InputData{{Name: testInputName, Required: true}},
 			[]common.InputData{{Name: "email", Required: true}},
-			2,
-			[]string{testInputName, "email"},
+			1,
+			[]string{"email"},
 		},
 		{
-			"Duplicate in node input, no duplication in result",
+			"Node input with same name as default, use node input",
 			[]common.InputData{{Name: testInputName, Required: true}},
 			[]common.InputData{{Name: testInputName, Required: true}},
 			1,
@@ -356,6 +356,20 @@ func (s *ExecutorTestSuite) TestGetRequiredData() {
 			[]common.InputData{{Name: "custom", Required: false}},
 			1,
 			[]string{"custom"},
+		},
+		{
+			"Multiple node inputs, use all node inputs",
+			[]common.InputData{{Name: testInputName, Required: true}},
+			[]common.InputData{{Name: "email", Required: true}, {Name: "phone", Required: true}},
+			2,
+			[]string{"email", "phone"},
+		},
+		{
+			"No default and no node input, return empty",
+			[]common.InputData{},
+			[]common.InputData{},
+			0,
+			[]string{},
 		},
 	}
 
@@ -375,7 +389,7 @@ func (s *ExecutorTestSuite) TestGetRequiredData() {
 						break
 					}
 				}
-				s.True(found)
+				s.True(found, "Expected to find input name: %s", name)
 			}
 		})
 	}

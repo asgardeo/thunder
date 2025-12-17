@@ -286,8 +286,8 @@ func (s *UserInfoHandlerTestSuite) TestHandleUserInfo_EncodingError() {
 
 	s.handler.HandleUserInfo(rr, req)
 
-	// The handler should detect the encoding error - the utility logs the error and returns text/plain
-	assert.Equal(s.T(), http.StatusOK, rr.Code)
+	// With buffer approach, encoding fails BEFORE headers are sent, so we get HTTP 500
+	assert.Equal(s.T(), http.StatusInternalServerError, rr.Code)
 	// Verify that encoding error message is returned
 	assert.Contains(s.T(), rr.Body.String(), serviceerror.ErrorEncodingError)
 	s.mockService.AssertExpectations(s.T())

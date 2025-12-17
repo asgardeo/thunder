@@ -1,0 +1,25 @@
+{
+  "name": "Next.js Application",
+  "description": "Server-side rendered application built with Next.js",
+  "inbound_auth_config": [
+    {
+      "type": "oauth2",
+      "config": {
+        "grant_types": [
+          "authorization_code",
+          "refresh_token"
+        ],
+        "response_types": [
+          "code"
+        ],
+        "redirect_uris": [
+          "http://localhost:3000"
+        ],
+        "pkce_required": true,
+        "token_endpoint_auth_method": "client_secret_basic",
+        "public_client": false
+      }
+    }
+  ],
+  "allowed_user_types": []
+}

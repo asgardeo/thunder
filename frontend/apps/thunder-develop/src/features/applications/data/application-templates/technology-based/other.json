@@ -1,0 +1,21 @@
+{
+  "name": "Custom Application",
+  "description": "Custom application with standard OAuth2 configuration",
+  "inbound_auth_config": [
+    {
+      "type": "oauth2",
+      "config": {
+        "grant_types": [
+          "authorization_code",
+          "refresh_token"
+        ],
+        "response_types": [
+          "code"
+        ],
+        "pkce_required": true,
+        "token_endpoint_auth_method": "none",
+        "public_client": true
+      }
+    }
+  ]
+}

@@ -22,15 +22,28 @@ package resource
 import (
 	"errors"
 	"fmt"
+	"strings"
 
 	oupkg "github.com/asgardeo/thunder/internal/ou"
+	"github.com/asgardeo/thunder/internal/system/config"
 	serverconst "github.com/asgardeo/thunder/internal/system/constants"
 	"github.com/asgardeo/thunder/internal/system/error/serviceerror"
 	"github.com/asgardeo/thunder/internal/system/log"
 	"github.com/asgardeo/thunder/internal/system/utils"
 )
 
-const loggerComponentName = "ResourceMgtService"
+const (
+	loggerComponentName = "ResourceMgtService"
+
+	// validDelimiterCharacters defines the allowed characters for delimiters.
+	// Allowed: . _ : - /
+	validDelimiterCharacters = "._:-/"
+
+	// validPermissionCharacters defines the allowed characters for permission strings.
+	// Allowed: a-z A-Z 0-9 and delimiter characters (. _ : - /)
+	validPermissionCharacters = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789" +
+		validDelimiterCharacters
+)
 
 // ResourceServiceInterface defines the interface for the resource service.
 type ResourceServiceInterface interface {
@@ -64,21 +77,29 @@ type ResourceServiceInterface interface {
 
 // resourceService is the default implementation of ResourceServiceInterface.
 type resourceService struct {
-	logger        log.Logger
-	resourceStore resourceStoreInterface
-	ouService     oupkg.OrganizationUnitServiceInterface
+	logger           log.Logger
+	resourceStore    resourceStoreInterface
+	ouService        oupkg.OrganizationUnitServiceInterface
+	defaultDelimiter string
 }
 
 // newResourceService creates a new instance of ResourceService.
 func newResourceService(
 	resourceStore resourceStoreInterface,
 	ouService oupkg.OrganizationUnitServiceInterface,
-) ResourceServiceInterface {
-	return &resourceService{
-		logger:        *log.GetLogger().With(log.String(log.LoggerKeyComponentName, loggerComponentName)),
-		resourceStore: resourceStore,
-		ouService:     ouService,
+) (ResourceServiceInterface, error) {
+	// Load default delimiter from config
+	defaultDelimiter := getDefaultDelimiter()
+	if err := validateDelimiter(defaultDelimiter); err != nil {
+		return nil, fmt.Errorf("configured permission delimiter is invalid")
 	}
+
+	return &resourceService{
+		logger:           *log.GetLogger().With(log.String(log.LoggerKeyComponentName, loggerComponentName)),
+		resourceStore:    resourceStore,
+		ouService:        ouService,
+		defaultDelimiter: defaultDelimiter,
+	}, nil
 }
 
 // Resource Server Methods
@@ -128,6 +149,10 @@ func (rs *resourceService) CreateResourceServer(
 			return nil, &ErrorIdentifierConflict
 		}
 	}
+	// Set default delimiter if not provided
+	if resourceServer.Delimiter == "" {
+		resourceServer.Delimiter = rs.defaultDelimiter
+	}
 
 	id, err := utils.GenerateUUIDv7()
 	if err != nil {
@@ -145,6 +170,7 @@ func (rs *resourceService) CreateResourceServer(
 		Description:        resourceServer.Description,
 		Identifier:         resourceServer.Identifier,
 		OrganizationUnitID: resourceServer.OrganizationUnitID,
+		Delimiter:          resourceServer.Delimiter,
 	}
 
 	rs.logger.Debug("Successfully created resource server", log.String("id", id))
@@ -157,7 +183,7 @@ func (rs *resourceService) GetResourceServer(id string) (*ResourceServer, *servi
 		return nil, &ErrorMissingID
 	}
 
-	resourceServer, err := rs.resourceStore.GetResourceServer(id)
+	_, resourceServer, err := rs.resourceStore.GetResourceServer(id)
 	if err != nil {
 		if errors.Is(err, errResourceServerNotFound) {
 			rs.logger.Debug("Resource server not found", log.String("id", id))
@@ -211,7 +237,7 @@ func (rs *resourceService) UpdateResourceServer(
 		return nil, err
 	}
 
-	existingResServer, err := rs.resourceStore.GetResourceServer(id)
+	_, existingResServer, err := rs.resourceStore.GetResourceServer(id)
 	if err != nil {
 		if errors.Is(err, errResourceServerNotFound) {
 			rs.logger.Debug("Resource server not found", log.String("id", id))
@@ -220,6 +246,9 @@ func (rs *resourceService) UpdateResourceServer(
 		rs.logger.Error("Failed to check resource server existence", log.Error(err))
 		return nil, &serviceerror.InternalServerError
 	}
+
+	// Preserve the immutable delimiter from existing record
+	resourceServer.Delimiter = existingResServer.Delimiter
 
 	// Validate organization unit
 	_, svcErr := rs.ouService.GetOrganizationUnit(resourceServer.OrganizationUnitID)
@@ -267,6 +296,7 @@ func (rs *resourceService) UpdateResourceServer(
 		Description:        resourceServer.Description,
 		Identifier:         resourceServer.Identifier,
 		OrganizationUnitID: resourceServer.OrganizationUnitID,
+		Delimiter:          resourceServer.Delimiter,
 	}
 
 	return updatedRS, nil
@@ -278,7 +308,7 @@ func (rs *resourceService) DeleteResourceServer(id string) *serviceerror.Service
 		return &ErrorMissingID
 	}
 
-	resServerInternalID, err := rs.resourceStore.CheckResourceServerExistAndGetInternalID(id)
+	resServerInternalID, _, err := rs.resourceStore.GetResourceServer(id)
 	if err != nil {
 		if errors.Is(err, errResourceServerNotFound) {
 			return nil // Idempotent delete
@@ -312,19 +342,20 @@ func (rs *resourceService) CreateResource(
 	resourceServerID string, resource Resource,
 ) (*Resource, *serviceerror.ServiceError) {
 	// Validate resource server exists and get internal ID
-	resServerInternalID, svcErr := rs.validateAndGetResourceServerInternalID(resourceServerID)
+	resServerInternalID, resourceServer, svcErr := rs.validateAndGetResourceServerInternalID(resourceServerID)
 	if svcErr != nil {
 		return nil, svcErr
 	}
 
-	if err := rs.validateResourceCreate(resource); err != nil {
+	if err := rs.validateResourceCreate(resource, resourceServer.Delimiter); err != nil {
 		return nil, err
 	}
 
 	// Validate parent if specified and get internal ID
 	var parentInternalID *int
+	var parentResource *Resource
 	if resource.Parent != nil {
-		parentID, err := rs.resourceStore.CheckResourceExistAndGetInternalID(*resource.Parent, resServerInternalID)
+		parentID, res, err := rs.resourceStore.GetResource(*resource.Parent, resServerInternalID)
 		if err != nil {
 			if errors.Is(err, errResourceNotFound) {
 				return nil, &ErrorParentResourceNotFound
@@ -333,6 +364,7 @@ func (rs *resourceService) CreateResource(
 			return nil, &serviceerror.InternalServerError
 		}
 		parentInternalID = &parentID
+		parentResource = &res
 	}
 
 	// Check handle uniqueness under parent
@@ -346,6 +378,9 @@ func (rs *resourceService) CreateResource(
 	if handleExists {
 		return nil, &ErrorHandleConflict
 	}
+
+	// Derive permission string based on hierarchy
+	resource.Permission = derivePermission(resourceServer, parentResource, resource.Handle)
 
 	id, err := utils.GenerateUUIDv7()
 	if err != nil {
@@ -363,6 +398,7 @@ func (rs *resourceService) CreateResource(
 		Handle:      resource.Handle,
 		Description: resource.Description,
 		Parent:      resource.Parent,
+		Permission:  resource.Permission,
 	}
 
 	return createdResource, nil
@@ -375,12 +411,12 @@ func (rs *resourceService) GetResource(resourceServerID, id string) (*Resource, 
 	}
 
 	// Validate resource server exists and get internal ID
-	resServerInternalID, svcErr := rs.validateAndGetResourceServerInternalID(resourceServerID)
+	resServerInternalID, _, svcErr := rs.validateAndGetResourceServerInternalID(resourceServerID)
 	if svcErr != nil {
 		return nil, svcErr
 	}
 
-	resource, err := rs.resourceStore.GetResource(id, resServerInternalID)
+	_, resource, err := rs.resourceStore.GetResource(id, resServerInternalID)
 	if err != nil {
 		if errors.Is(err, errResourceNotFound) {
 			return nil, &ErrorResourceNotFound
@@ -403,7 +439,7 @@ func (rs *resourceService) GetResourceList(
 		return nil, &ErrorMissingID
 	}
 	// Validate resource server exists and get internal ID
-	resServerInternalID, svcErr := rs.validateAndGetResourceServerInternalID(resourceServerID)
+	resServerInternalID, _, svcErr := rs.validateAndGetResourceServerInternalID(resourceServerID)
 	if svcErr != nil {
 		return nil, svcErr
 	}
@@ -415,7 +451,7 @@ func (rs *resourceService) GetResourceList(
 	// Resolve internal ID for parent if specified
 	if parentID != nil {
 		// ParentID specified - validate and get internal ID
-		parentIntID, svcErr := rs.validateAndGetResourceInternalID(*parentID, resServerInternalID)
+		parentIntID, _, svcErr := rs.validateAndGetResource(*parentID, resServerInternalID)
 		if svcErr != nil {
 			return nil, svcErr
 		}
@@ -455,25 +491,18 @@ func (rs *resourceService) UpdateResource(
 	}
 
 	// Validate resource server exists and get internal ID
-	resServerInternalID, svcErr := rs.validateAndGetResourceServerInternalID(resourceServerID)
+	resServerInternalID, _, svcErr := rs.validateAndGetResourceServerInternalID(resourceServerID)
 	if svcErr != nil {
 		return nil, svcErr
 	}
 
 	// Validate resource exists
-	_, err := rs.resourceStore.GetResource(id, resServerInternalID)
+	_, currentResource, err := rs.resourceStore.GetResource(id, resServerInternalID)
 	if err != nil {
 		if errors.Is(err, errResourceNotFound) {
 			return nil, &ErrorResourceNotFound
 		}
 		rs.logger.Error("Failed to check resource existence", log.Error(err))
-		return nil, &serviceerror.InternalServerError
-	}
-
-	// Get current resource to preserve immutable handle and parent
-	currentResource, err := rs.resourceStore.GetResource(id, resServerInternalID)
-	if err != nil {
-		rs.logger.Error("Failed to get current resource", log.Error(err))
 		return nil, &serviceerror.InternalServerError
 	}
 
@@ -509,7 +538,7 @@ func (rs *resourceService) DeleteResource(resourceServerID, id string) *servicee
 	}
 
 	// Validate resource server exists and get internal ID
-	resServerInternalID, err := rs.resourceStore.CheckResourceServerExistAndGetInternalID(resourceServerID)
+	resServerInternalID, _, err := rs.resourceStore.GetResourceServer(resourceServerID)
 	if err != nil {
 		if errors.Is(err, errResourceServerNotFound) {
 			return nil // Idempotent delete
@@ -519,7 +548,7 @@ func (rs *resourceService) DeleteResource(resourceServerID, id string) *servicee
 	}
 
 	// Check resource exists and get internal ID
-	resInternalID, err := rs.resourceStore.CheckResourceExistAndGetInternalID(id, resServerInternalID)
+	resInternalID, _, err := rs.resourceStore.GetResource(id, resServerInternalID)
 	if err != nil {
 		if errors.Is(err, errResourceNotFound) {
 			return nil // Idempotent delete
@@ -555,22 +584,24 @@ func (rs *resourceService) CreateAction(
 	resourceServerID string, resourceID *string, action Action,
 ) (*Action, *serviceerror.ServiceError) {
 	// Validate resource server exists and get internal ID
-	resServerInternalID, svcErr := rs.validateAndGetResourceServerInternalID(resourceServerID)
+	resServerInternalID, resourceServer, svcErr := rs.validateAndGetResourceServerInternalID(resourceServerID)
 	if svcErr != nil {
 		return nil, svcErr
 	}
 
 	// Validate resource if provided and get internal ID
 	var resInternalID *int
+	var resource *Resource
 	if resourceID != nil {
-		resID, svcErr := rs.validateAndGetResourceInternalID(*resourceID, resServerInternalID)
+		resID, res, svcErr := rs.validateAndGetResource(*resourceID, resServerInternalID)
 		if svcErr != nil {
 			return nil, svcErr
 		}
 		resInternalID = &resID
+		resource = &res
 	}
 
-	if err := rs.validateActionCreate(action); err != nil {
+	if err := rs.validateActionCreate(action, resourceServer.Delimiter); err != nil {
 		return nil, err
 	}
 
@@ -583,6 +614,9 @@ func (rs *resourceService) CreateAction(
 	if handleExists {
 		return nil, &ErrorHandleConflict
 	}
+
+	// Derive permission string based on hierarchy
+	action.Permission = derivePermission(resourceServer, resource, action.Handle)
 
 	id, err := utils.GenerateUUIDv7()
 	if err != nil {
@@ -599,6 +633,7 @@ func (rs *resourceService) CreateAction(
 		Name:        action.Name,
 		Handle:      action.Handle,
 		Description: action.Description,
+		Permission:  action.Permission,
 	}
 	return createdAction, nil
 }
@@ -618,7 +653,7 @@ func (rs *resourceService) GetAction(
 	}
 
 	// Validate resource server exists and get internal ID
-	resServerInternalID, svcErr := rs.validateAndGetResourceServerInternalID(resourceServerID)
+	resServerInternalID, _, svcErr := rs.validateAndGetResourceServerInternalID(resourceServerID)
 	if svcErr != nil {
 		return nil, svcErr
 	}
@@ -626,7 +661,7 @@ func (rs *resourceService) GetAction(
 	// Validate resource if provided and get internal ID
 	var resInternalID *int
 	if resourceID != nil {
-		resID, svcErr := rs.validateAndGetResourceInternalID(*resourceID, resServerInternalID)
+		resID, _, svcErr := rs.validateAndGetResource(*resourceID, resServerInternalID)
 		if svcErr != nil {
 			return nil, svcErr
 		}
@@ -663,7 +698,7 @@ func (rs *resourceService) GetActionList(
 	}
 
 	// Validate resource server exists and get internal ID
-	resServerInternalID, svcErr := rs.validateAndGetResourceServerInternalID(resourceServerID)
+	resServerInternalID, _, svcErr := rs.validateAndGetResourceServerInternalID(resourceServerID)
 	if svcErr != nil {
 		return nil, svcErr
 	}
@@ -671,7 +706,7 @@ func (rs *resourceService) GetActionList(
 	// Validate resource if provided and get internal ID
 	var resInternalID *int
 	if resourceID != nil {
-		resID, svcErr := rs.validateAndGetResourceInternalID(*resourceID, resServerInternalID)
+		resID, _, svcErr := rs.validateAndGetResource(*resourceID, resServerInternalID)
 		if svcErr != nil {
 			return nil, svcErr
 		}
@@ -724,7 +759,7 @@ func (rs *resourceService) UpdateAction(
 	}
 
 	// Validate resource server exists and get internal ID
-	resServerInternalID, svcErr := rs.validateAndGetResourceServerInternalID(resourceServerID)
+	resServerInternalID, _, svcErr := rs.validateAndGetResourceServerInternalID(resourceServerID)
 	if svcErr != nil {
 		return nil, svcErr
 	}
@@ -732,7 +767,7 @@ func (rs *resourceService) UpdateAction(
 	// Validate resource if provided and get internal ID
 	var resInternalID *int
 	if resourceID != nil {
-		resID, svcErr := rs.validateAndGetResourceInternalID(*resourceID, resServerInternalID)
+		resID, _, svcErr := rs.validateAndGetResource(*resourceID, resServerInternalID)
 		if svcErr != nil {
 			return nil, svcErr
 		}
@@ -786,7 +821,7 @@ func (rs *resourceService) DeleteAction(
 	}
 
 	// Validate resource server exists and get internal ID
-	resServerInternalID, svcErr := rs.validateAndGetResourceServerInternalID(resourceServerID)
+	resServerInternalID, _, svcErr := rs.validateAndGetResourceServerInternalID(resourceServerID)
 	if svcErr != nil {
 		if svcErr.Code == ErrorResourceServerNotFound.Code {
 			return nil // Idempotent delete
@@ -797,7 +832,7 @@ func (rs *resourceService) DeleteAction(
 	// Validate resource if provided and get internal ID
 	var resInternalID *int
 	if resourceID != nil {
-		resID, svcErr := rs.validateAndGetResourceInternalID(*resourceID, resServerInternalID)
+		resID, _, svcErr := rs.validateAndGetResource(*resourceID, resServerInternalID)
 		if svcErr != nil {
 			if svcErr.Code == ErrorResourceNotFound.Code {
 				return nil // Idempotent delete
@@ -830,32 +865,32 @@ func (rs *resourceService) DeleteAction(
 // validateAndGetResourceServerInternalID validates resource server exists and returns its internal ID.
 func (rs *resourceService) validateAndGetResourceServerInternalID(
 	resourceServerID string,
-) (int, *serviceerror.ServiceError) {
-	resServerInternalID, err := rs.resourceStore.CheckResourceServerExistAndGetInternalID(resourceServerID)
+) (int, ResourceServer, *serviceerror.ServiceError) {
+	resServerInternalID, resourceServer, err := rs.resourceStore.GetResourceServer(resourceServerID)
 	if err != nil {
 		if errors.Is(err, errResourceServerNotFound) {
-			return 0, &ErrorResourceServerNotFound
+			return 0, ResourceServer{}, &ErrorResourceServerNotFound
 		}
 		rs.logger.Error("Failed to check resource server", log.Error(err))
-		return 0, &serviceerror.InternalServerError
+		return 0, ResourceServer{}, &serviceerror.InternalServerError
 	}
-	return resServerInternalID, nil
+	return resServerInternalID, resourceServer, nil
 }
 
-// validateAndGetResourceInternalID validates resource exists and returns its internal ID.
-func (rs *resourceService) validateAndGetResourceInternalID(
+// validateAndGetResource validates resource exists and returns its internal ID.
+func (rs *resourceService) validateAndGetResource(
 	resourceID string,
 	resourceServerInternalID int,
-) (int, *serviceerror.ServiceError) {
-	resInternalID, err := rs.resourceStore.CheckResourceExistAndGetInternalID(resourceID, resourceServerInternalID)
+) (int, Resource, *serviceerror.ServiceError) {
+	resInternalID, resource, err := rs.resourceStore.GetResource(resourceID, resourceServerInternalID)
 	if err != nil {
 		if errors.Is(err, errResourceNotFound) {
-			return 0, &ErrorResourceNotFound
+			return 0, Resource{}, &ErrorResourceNotFound
 		}
 		rs.logger.Error("Failed to check resource", log.Error(err))
-		return 0, &serviceerror.InternalServerError
+		return 0, Resource{}, &serviceerror.InternalServerError
 	}
-	return resInternalID, nil
+	return resInternalID, resource, nil
 }
 
 // validateResourceServerCreate validates the input for creating a resource server.
@@ -865,6 +900,11 @@ func (rs *resourceService) validateResourceServerCreate(resourceServer ResourceS
 	}
 	if resourceServer.OrganizationUnitID == "" {
 		return &ErrorInvalidRequestFormat
+	}
+	if resourceServer.Delimiter != "" {
+		if err := validateDelimiter(resourceServer.Delimiter); err != nil {
+			return err
+		}
 	}
 	return nil
 }
@@ -881,23 +921,31 @@ func (rs *resourceService) validateResourceServerUpdate(resourceServer ResourceS
 }
 
 // validateResourceCreate validates the input for creating a resource.
-func (rs *resourceService) validateResourceCreate(resource Resource) *serviceerror.ServiceError {
+func (rs *resourceService) validateResourceCreate(resource Resource, delimiter string) *serviceerror.ServiceError {
 	if resource.Name == "" {
 		return &ErrorInvalidRequestFormat
 	}
 	if resource.Handle == "" {
 		return &ErrorInvalidRequestFormat
 	}
+	// Validate handle
+	if err := validateHandle(resource.Handle, delimiter); err != nil {
+		return err
+	}
 	return nil
 }
 
 // validateActionCreate validates the input for creating an action.
-func (rs *resourceService) validateActionCreate(action Action) *serviceerror.ServiceError {
+func (rs *resourceService) validateActionCreate(action Action, delimiter string) *serviceerror.ServiceError {
 	if action.Name == "" {
 		return &ErrorInvalidRequestFormat
 	}
 	if action.Handle == "" {
 		return &ErrorInvalidRequestFormat
+	}
+	// Validate handle
+	if err := validateHandle(action.Handle, delimiter); err != nil {
+		return err
 	}
 	return nil
 }
@@ -951,4 +999,59 @@ func buildPaginationLinks(base string, limit, offset, totalCount int) []Link {
 	}
 
 	return links
+}
+
+// isValidPermissionCharacter checks if a character is valid for permission strings.
+// Allowed characters: a-z A-Z 0-9 . _ : - /
+func isValidPermissionCharacter(c rune) bool {
+	return strings.ContainsRune(validPermissionCharacters, c)
+}
+
+// validateDelimiter validates delimiter is a single valid delimiter character.
+func validateDelimiter(delimiter string) *serviceerror.ServiceError {
+	if len(delimiter) != 1 {
+		return &ErrorInvalidDelimiter
+	}
+	if !strings.ContainsRune(validDelimiterCharacters, rune(delimiter[0])) {
+		return &ErrorInvalidDelimiter
+	}
+	return nil
+}
+
+// validateHandle validates a handle string.
+func validateHandle(handle string, delimiter string) *serviceerror.ServiceError {
+	if len(handle) > 100 {
+		return &ErrorInvalidHandle
+	}
+	for _, c := range handle {
+		if !isValidPermissionCharacter(c) {
+			return &ErrorInvalidHandle
+		}
+		if string(c) == delimiter {
+			return &ErrorDelimiterInHandle
+		}
+	}
+	return nil
+}
+
+// getDefaultDelimiter returns the default delimiter from configuration.
+func getDefaultDelimiter() string {
+	delimiter := config.GetThunderRuntime().Config.Resource.DefaultDelimiter
+	if delimiter == "" {
+		return ":" // Fallback default if not configured
+	}
+	return delimiter
+}
+
+// derivePermission builds permission string for a resource based on parent hierarchy.
+func derivePermission(
+	resourceServer ResourceServer,
+	parentResource *Resource,
+	handle string,
+) string {
+	if parentResource != nil {
+		// Build permission: parent_permission + delimiter + handle
+		return parentResource.Permission + resourceServer.Delimiter + handle
+	}
+	return handle // Top-level resource - permission is just the handle
 }

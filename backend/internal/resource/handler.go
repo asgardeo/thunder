@@ -75,6 +75,7 @@ func (h *resourceHandler) HandleResourceServerPostRequest(w http.ResponseWriter,
 		Description:        sanitized.Description,
 		Identifier:         sanitized.Identifier,
 		OrganizationUnitID: sanitized.OrganizationUnitID,
+		Delimiter:          sanitized.Delimiter,
 	}
 
 	result, svcErr := h.resourceService.CreateResourceServer(serviceReq)
@@ -521,6 +522,7 @@ func sanitizeCreateResourceServerRequest(req *CreateResourceServerRequest) Creat
 		Description:        sysutils.SanitizeString(req.Description),
 		Identifier:         sysutils.SanitizeString(req.Identifier),
 		OrganizationUnitID: sysutils.SanitizeString(req.OrganizationUnitID),
+		Delimiter:          sysutils.SanitizeString(req.Delimiter),
 	}
 }
 
@@ -586,6 +588,7 @@ func toResourceServerResponse(rs *ResourceServer) *ResourceServerResponse {
 		Description:        rs.Description,
 		Identifier:         rs.Identifier,
 		OrganizationUnitID: rs.OrganizationUnitID,
+		Delimiter:          rs.Delimiter,
 	}
 }
 
@@ -593,7 +596,7 @@ func toResourceServerResponse(rs *ResourceServer) *ResourceServerResponse {
 func toResourceServerListResponse(list *ResourceServerList) *ResourceServerListResponse {
 	resourceServers := make([]ResourceServerResponse, len(list.ResourceServers))
 	for i, rs := range list.ResourceServers {
-		resourceServers[i] = ResourceServerResponse(rs)
+		resourceServers[i] = *toResourceServerResponse(&rs)
 	}
 
 	links := make([]LinkResponse, len(list.Links))
@@ -618,6 +621,7 @@ func toResourceResponse(res *Resource) *ResourceResponse {
 		Handle:      res.Handle,
 		Description: res.Description,
 		Parent:      res.Parent,
+		Permission:  res.Permission,
 	}
 }
 
@@ -625,7 +629,7 @@ func toResourceResponse(res *Resource) *ResourceResponse {
 func toResourceListResponse(list *ResourceList) *ResourceListResponse {
 	resources := make([]ResourceResponse, len(list.Resources))
 	for i, res := range list.Resources {
-		resources[i] = ResourceResponse(res)
+		resources[i] = *toResourceResponse(&res)
 	}
 
 	links := make([]LinkResponse, len(list.Links))
@@ -649,6 +653,7 @@ func toActionResponse(action *Action) *ActionResponse {
 		Name:        action.Name,
 		Handle:      action.Handle,
 		Description: action.Description,
+		Permission:  action.Permission,
 	}
 }
 

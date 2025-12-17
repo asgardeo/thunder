@@ -28,13 +28,13 @@ import (
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 
-	syscontext "github.com/asgardeo/thunder/internal/system/context"
 	"github.com/asgardeo/thunder/internal/system/error/apierror"
+	"github.com/asgardeo/thunder/internal/system/security"
 )
 
 func TestHandleSelfUserGetRequest_Success(t *testing.T) {
 	userID := "user-123"
-	authCtx := syscontext.NewAuthenticationContext(userID, "", "", "", nil)
+	authCtx := security.NewSecurityContextForTest(userID, "", "", "", nil)
 
 	mockSvc := NewUserServiceInterfaceMock(t)
 	expectedUser := &User{
@@ -45,7 +45,7 @@ func TestHandleSelfUserGetRequest_Success(t *testing.T) {
 
 	handler := newUserHandler(mockSvc)
 	req := httptest.NewRequest(http.MethodGet, "/users/me", nil)
-	req = req.WithContext(syscontext.WithAuthenticationContext(req.Context(), authCtx))
+	req = req.WithContext(security.WithSecurityContextTest(req.Context(), authCtx))
 	rr := httptest.NewRecorder()
 
 	handler.HandleSelfUserGetRequest(rr, req)
@@ -76,7 +76,7 @@ func TestHandleSelfUserGetRequest_Unauthorized(t *testing.T) {
 
 func TestHandleSelfUserPutRequest_Success(t *testing.T) {
 	userID := "user-456"
-	authCtx := syscontext.NewAuthenticationContext(userID, "", "", "", nil)
+	authCtx := security.NewSecurityContextForTest(userID, "", "", "", nil)
 	attributes := json.RawMessage(`{"email":"alice@example.com"}`)
 
 	mockSvc := NewUserServiceInterfaceMock(t)
@@ -90,7 +90,7 @@ func TestHandleSelfUserPutRequest_Success(t *testing.T) {
 	handler := newUserHandler(mockSvc)
 	body := bytes.NewBufferString(`{"attributes":{"email":"alice@example.com"}}`)
 	req := httptest.NewRequest(http.MethodPut, "/users/me", body)
-	req = req.WithContext(syscontext.WithAuthenticationContext(req.Context(), authCtx))
+	req = req.WithContext(security.WithSecurityContextTest(req.Context(), authCtx))
 	rr := httptest.NewRecorder()
 
 	handler.HandleSelfUserPutRequest(rr, req)
@@ -105,13 +105,13 @@ func TestHandleSelfUserPutRequest_Success(t *testing.T) {
 
 func TestHandleSelfUserPutRequest_InvalidBody(t *testing.T) {
 	userID := "user-456"
-	authCtx := syscontext.NewAuthenticationContext(userID, "", "", "", nil)
+	authCtx := security.NewSecurityContextForTest(userID, "", "", "", nil)
 
 	mockSvc := NewUserServiceInterfaceMock(t)
 	handler := newUserHandler(mockSvc)
 
 	req := httptest.NewRequest(http.MethodPut, "/users/me", bytes.NewBufferString(`{"attributes":`))
-	req = req.WithContext(syscontext.WithAuthenticationContext(req.Context(), authCtx))
+	req = req.WithContext(security.WithSecurityContextTest(req.Context(), authCtx))
 	rr := httptest.NewRecorder()
 
 	handler.HandleSelfUserPutRequest(rr, req)
@@ -125,7 +125,7 @@ func TestHandleSelfUserPutRequest_InvalidBody(t *testing.T) {
 
 func TestHandleSelfUserCredentialUpdateRequest_Success(t *testing.T) {
 	userID := "user-789"
-	authCtx := syscontext.NewAuthenticationContext(userID, "", "", "", nil)
+	authCtx := security.NewSecurityContextForTest(userID, "", "", "", nil)
 	attrs := json.RawMessage(`{"password":"Secret123!"}`)
 
 	mockSvc := NewUserServiceInterfaceMock(t)
@@ -134,7 +134,7 @@ func TestHandleSelfUserCredentialUpdateRequest_Success(t *testing.T) {
 	handler := newUserHandler(mockSvc)
 	req := httptest.NewRequest(http.MethodPost, "/users/me/update-credentials",
 		bytes.NewBufferString(`{"attributes":{"password":"Secret123!"}}`))
-	req = req.WithContext(syscontext.WithAuthenticationContext(req.Context(), authCtx))
+	req = req.WithContext(security.WithSecurityContextTest(req.Context(), authCtx))
 	rr := httptest.NewRecorder()
 
 	handler.HandleSelfUserCredentialUpdateRequest(rr, req)
@@ -145,7 +145,7 @@ func TestHandleSelfUserCredentialUpdateRequest_Success(t *testing.T) {
 
 func TestHandleSelfUserCredentialUpdateRequest_MissingCredentials(t *testing.T) {
 	userID := "user-789"
-	authCtx := syscontext.NewAuthenticationContext(userID, "", "", "", nil)
+	authCtx := security.NewSecurityContextForTest(userID, "", "", "", nil)
 
 	mockSvc := NewUserServiceInterfaceMock(t)
 	mockSvc.On("UpdateUserCredentials", userID, mock.Anything).Return(&ErrorMissingCredentials)
@@ -153,7 +153,7 @@ func TestHandleSelfUserCredentialUpdateRequest_MissingCredentials(t *testing.T) 
 
 	req := httptest.NewRequest(http.MethodPost, "/users/me/update-credentials",
 		bytes.NewBufferString(`{"attributes":{}}`))
-	req = req.WithContext(syscontext.WithAuthenticationContext(req.Context(), authCtx))
+	req = req.WithContext(security.WithSecurityContextTest(req.Context(), authCtx))
 	rr := httptest.NewRecorder()
 
 	handler.HandleSelfUserCredentialUpdateRequest(rr, req)

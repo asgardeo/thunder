@@ -210,6 +210,12 @@ export interface Application {
   user_attributes?: string[];
 
   /**
+   * Allowed user types (user schema IDs) that can access this application
+   * @example ['person', 'person_2', 'person_3']
+   */
+  allowed_user_types?: string[];
+
+  /**
    * Inbound authentication configuration
    * Contains OAuth2/OIDC settings
    * Note: client_secret is masked in GET responses

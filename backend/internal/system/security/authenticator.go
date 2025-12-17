@@ -20,8 +20,6 @@ package security
 
 import (
 	"net/http"
-
-	sysContext "github.com/asgardeo/thunder/internal/system/context"
 )
 
 // AuthenticatorInterface defines the interface for pluggable authentication and authorization mechanisms.
@@ -32,12 +30,12 @@ type AuthenticatorInterface interface {
 	// Returns true if the authenticator recognizes the authentication mechanism in the request.
 	CanHandle(r *http.Request) bool
 
-	// Authenticate validates credentials and builds an AuthenticationContext on success.
+	// Authenticate validates credentials and builds a SecurityContext on success.
 	// On failure, returns an authentication error (401).
-	Authenticate(r *http.Request) (*sysContext.AuthenticationContext, error)
+	Authenticate(r *http.Request) (*SecurityContext, error)
 
 	// Authorize verifies the authenticated principal has permission to access the resource.
-	// The provided AuthenticationContext is the result of Authenticate.
+	// The provided SecurityContext is the result of Authenticate.
 	// On failure, returns an authorization error (403).
-	Authorize(r *http.Request, authCtx *sysContext.AuthenticationContext) error
+	Authorize(r *http.Request, ctx *SecurityContext) error
 }

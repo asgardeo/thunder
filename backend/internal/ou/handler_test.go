@@ -345,7 +345,7 @@ func (suite *OrganizationUnitHandlerTestSuite) TestOUHandler_HandleOUListRequest
 			},
 		},
 		{
-			name:     "encode error",
+			name:     "response write error",
 			url:      "/organization-units",
 			useFlaky: true,
 			setup: func(serviceMock *OrganizationUnitServiceInterfaceMock) {
@@ -356,7 +356,7 @@ func (suite *OrganizationUnitHandlerTestSuite) TestOUHandler_HandleOUListRequest
 			},
 			assert: func(recorder *httptest.ResponseRecorder) {
 				suite.Equal(http.StatusOK, recorder.Code)
-				suite.Equal(serviceerror.ErrorEncodingError+"\n", recorder.Body.String())
+				suite.Equal("", recorder.Body.String()) // Write fails, body remains empty
 			},
 		},
 	}
@@ -423,12 +423,12 @@ func (suite *OrganizationUnitHandlerTestSuite) TestOUHandler_HandleOUPostRequest
 			},
 		},
 		{
-			name:     "invalid json encode error",
+			name:     "invalid json response write error",
 			body:     "{invalid",
 			useFlaky: true,
 			assert: func(recorder *httptest.ResponseRecorder) {
 				suite.Equal(http.StatusBadRequest, recorder.Code)
-				suite.Equal(serviceerror.ErrorEncodingError+"\n", recorder.Body.String())
+				suite.Equal("", recorder.Body.String()) // Write fails, body remains empty
 			},
 			assertService: func(serviceMock *OrganizationUnitServiceInterfaceMock) {
 				serviceMock.AssertNotCalled(suite.T(), "CreateOrganizationUnit", mock.Anything)
@@ -491,7 +491,7 @@ func (suite *OrganizationUnitHandlerTestSuite) TestOUHandler_HandleOUPostRequest
 			},
 		},
 		{
-			name:     "service error encode failure",
+			name:     "service error response write failure",
 			body:     `{"handle":"finance","name":"Finance"}`,
 			useFlaky: true,
 			setup: func(serviceMock *OrganizationUnitServiceInterfaceMock) {
@@ -502,11 +502,11 @@ func (suite *OrganizationUnitHandlerTestSuite) TestOUHandler_HandleOUPostRequest
 			},
 			assert: func(recorder *httptest.ResponseRecorder) {
 				suite.Equal(http.StatusInternalServerError, recorder.Code)
-				suite.Equal(serviceerror.ErrorEncodingError+"\n", recorder.Body.String())
+				suite.Equal("", recorder.Body.String()) // Write fails, body remains empty
 			},
 		},
 		{
-			name:     "encode error",
+			name:     "response write error",
 			body:     `{"handle":"finance","name":"Finance"}`,
 			useFlaky: true,
 			setup: func(serviceMock *OrganizationUnitServiceInterfaceMock) {
@@ -517,7 +517,7 @@ func (suite *OrganizationUnitHandlerTestSuite) TestOUHandler_HandleOUPostRequest
 			},
 			assert: func(recorder *httptest.ResponseRecorder) {
 				suite.Equal(http.StatusCreated, recorder.Code)
-				suite.Equal(serviceerror.ErrorEncodingError+"\n", recorder.Body.String())
+				suite.Equal("", recorder.Body.String()) // Write fails, body remains empty
 			},
 		},
 	}
@@ -577,12 +577,12 @@ func (suite *OrganizationUnitHandlerTestSuite) TestOUHandler_HandleOUGetRequest(
 			},
 		},
 		{
-			name:     "missing id encode error",
+			name:     "missing id response write error",
 			url:      "/organization-units/" + defaultOURequestID,
 			useFlaky: true,
 			assert: func(recorder *httptest.ResponseRecorder) {
 				suite.Equal(http.StatusBadRequest, recorder.Code)
-				suite.Equal(serviceerror.ErrorEncodingError+"\n", recorder.Body.String())
+				suite.Equal("", recorder.Body.String()) // Write fails, body remains empty
 			},
 			assertService: func(serviceMock *OrganizationUnitServiceInterfaceMock) {
 				serviceMock.AssertNotCalled(suite.T(), "GetOrganizationUnit", mock.Anything)
@@ -607,7 +607,7 @@ func (suite *OrganizationUnitHandlerTestSuite) TestOUHandler_HandleOUGetRequest(
 			},
 		},
 		{
-			name:           "encode error",
+			name:           "response write error",
 			url:            "/organization-units/" + defaultOURequestID,
 			pathParamKey:   "id",
 			pathParamValue: defaultOURequestID,
@@ -620,7 +620,7 @@ func (suite *OrganizationUnitHandlerTestSuite) TestOUHandler_HandleOUGetRequest(
 			},
 			assert: func(recorder *httptest.ResponseRecorder) {
 				suite.Equal(http.StatusOK, recorder.Code)
-				suite.Equal(serviceerror.ErrorEncodingError+"\n", recorder.Body.String())
+				suite.Equal("", recorder.Body.String()) // Write fails, body remains empty
 			},
 		},
 		{
@@ -685,7 +685,7 @@ func (suite *OrganizationUnitHandlerTestSuite) TestOUHandler_HandleOUPutRequest(
 			},
 		},
 		{
-			name:           "invalid json encode error",
+			name:           "invalid json response write error",
 			method:         http.MethodPut,
 			url:            "/organization-units/" + defaultOURequestID,
 			body:           "{invalid",
@@ -695,7 +695,7 @@ func (suite *OrganizationUnitHandlerTestSuite) TestOUHandler_HandleOUPutRequest(
 			useFlaky:       true,
 			assert: func(recorder *httptest.ResponseRecorder) {
 				suite.Equal(http.StatusBadRequest, recorder.Code)
-				suite.Equal(serviceerror.ErrorEncodingError+"\n", recorder.Body.String())
+				suite.Equal("", recorder.Body.String()) // Write fails, body remains empty
 			},
 		},
 		{
@@ -749,7 +749,7 @@ func (suite *OrganizationUnitHandlerTestSuite) TestOUHandler_HandleOUPutRequest(
 			},
 		},
 		{
-			name:           "encode error",
+			name:           "response write error",
 			method:         http.MethodPut,
 			url:            "/organization-units/" + defaultOURequestID,
 			body:           bodyValid,
@@ -765,7 +765,7 @@ func (suite *OrganizationUnitHandlerTestSuite) TestOUHandler_HandleOUPutRequest(
 			},
 			assert: func(recorder *httptest.ResponseRecorder) {
 				suite.Equal(http.StatusOK, recorder.Code)
-				suite.Equal(serviceerror.ErrorEncodingError+"\n", recorder.Body.String())
+				suite.Equal("", recorder.Body.String()) // Write fails, body remains empty
 			},
 		},
 	}
@@ -935,7 +935,7 @@ func (suite *OrganizationUnitHandlerTestSuite) TestOUHandler_HandleOUChildrenLis
 			},
 		},
 		{
-			name:           "encode error",
+			name:           "response write error",
 			url:            "/organization-units/" + defaultOURequestID + "/ous",
 			pathParamKey:   "id",
 			pathParamValue: defaultOURequestID,
@@ -948,7 +948,7 @@ func (suite *OrganizationUnitHandlerTestSuite) TestOUHandler_HandleOUChildrenLis
 			},
 			assert: func(recorder *httptest.ResponseRecorder) {
 				suite.Equal(http.StatusOK, recorder.Code)
-				suite.Equal(serviceerror.ErrorEncodingError+"\n", recorder.Body.String())
+				suite.Equal("", recorder.Body.String()) // Write fails, body remains empty
 			},
 		},
 		{
@@ -1039,12 +1039,12 @@ func (suite *OrganizationUnitHandlerTestSuite) TestOUHandler_HandleOUGetByPathRe
 			},
 		},
 		{
-			name:     "missing path encode error",
+			name:     "missing path response write error",
 			url:      "/organization-units/tree/" + defaultOUPath,
 			useFlaky: true,
 			assert: func(recorder *httptest.ResponseRecorder) {
 				suite.Equal(http.StatusBadRequest, recorder.Code)
-				suite.Equal(serviceerror.ErrorEncodingError+"\n", recorder.Body.String())
+				suite.Equal("", recorder.Body.String()) // Write fails, body remains empty
 			},
 			assertService: func(serviceMock *OrganizationUnitServiceInterfaceMock) {
 				serviceMock.AssertNotCalled(suite.T(), "GetOrganizationUnitByPath", mock.Anything)
@@ -1069,7 +1069,7 @@ func (suite *OrganizationUnitHandlerTestSuite) TestOUHandler_HandleOUGetByPathRe
 			},
 		},
 		{
-			name:           "encode error",
+			name:           "response write error",
 			url:            "/organization-units/tree/" + defaultOUPath,
 			pathParamKey:   "path",
 			pathParamValue: defaultOUPath,
@@ -1082,7 +1082,7 @@ func (suite *OrganizationUnitHandlerTestSuite) TestOUHandler_HandleOUGetByPathRe
 			},
 			assert: func(recorder *httptest.ResponseRecorder) {
 				suite.Equal(http.StatusOK, recorder.Code)
-				suite.Equal(serviceerror.ErrorEncodingError+"\n", recorder.Body.String())
+				suite.Equal("", recorder.Body.String()) // Write fails, body remains empty
 			},
 		},
 		{
@@ -1167,7 +1167,7 @@ func (suite *OrganizationUnitHandlerTestSuite) TestOUHandler_HandleOUPutByPathRe
 			},
 		},
 		{
-			name:           "encode error",
+			name:           "response write error",
 			method:         http.MethodPut,
 			url:            "/organization-units/tree/" + defaultOUPath,
 			body:           `{"handle":"finance","name":"Finance"}`,
@@ -1184,7 +1184,7 @@ func (suite *OrganizationUnitHandlerTestSuite) TestOUHandler_HandleOUPutByPathRe
 			},
 			assert: func(recorder *httptest.ResponseRecorder) {
 				suite.Equal(http.StatusOK, recorder.Code)
-				suite.Equal(serviceerror.ErrorEncodingError+"\n", recorder.Body.String())
+				suite.Equal("", recorder.Body.String()) // Write fails, body remains empty
 			},
 		},
 		{
@@ -1342,7 +1342,7 @@ func (suite *OrganizationUnitHandlerTestSuite) TestOUHandler_HandleOUUsersListBy
 			},
 		},
 		{
-			name:           "encode error",
+			name:           "response write error",
 			url:            "/organization-units/tree/" + defaultOUPath + "/users",
 			pathParamKey:   "path",
 			pathParamValue: defaultOUPath,
@@ -1355,7 +1355,7 @@ func (suite *OrganizationUnitHandlerTestSuite) TestOUHandler_HandleOUUsersListBy
 			},
 			assert: func(recorder *httptest.ResponseRecorder) {
 				suite.Equal(http.StatusOK, recorder.Code)
-				suite.Equal(serviceerror.ErrorEncodingError+"\n", recorder.Body.String())
+				suite.Equal("", recorder.Body.String()) // Write fails, body remains empty
 			},
 		},
 		{

@@ -7,7 +7,6 @@ package security
 import (
 	"net/http"
 
-	"github.com/asgardeo/thunder/internal/system/context"
 	mock "github.com/stretchr/testify/mock"
 )
 
@@ -39,23 +38,23 @@ func (_m *AuthenticatorInterfaceMock) EXPECT() *AuthenticatorInterfaceMock_Expec
 }
 
 // Authenticate provides a mock function for the type AuthenticatorInterfaceMock
-func (_mock *AuthenticatorInterfaceMock) Authenticate(r *http.Request) (*context.AuthenticationContext, error) {
+func (_mock *AuthenticatorInterfaceMock) Authenticate(r *http.Request) (*SecurityContext, error) {
 	ret := _mock.Called(r)
 
 	if len(ret) == 0 {
 		panic("no return value specified for Authenticate")
 	}
 
-	var r0 *context.AuthenticationContext
+	var r0 *SecurityContext
 	var r1 error
-	if returnFunc, ok := ret.Get(0).(func(*http.Request) (*context.AuthenticationContext, error)); ok {
+	if returnFunc, ok := ret.Get(0).(func(*http.Request) (*SecurityContext, error)); ok {
 		return returnFunc(r)
 	}
-	if returnFunc, ok := ret.Get(0).(func(*http.Request) *context.AuthenticationContext); ok {
+	if returnFunc, ok := ret.Get(0).(func(*http.Request) *SecurityContext); ok {
 		r0 = returnFunc(r)
 	} else {
 		if ret.Get(0) != nil {
-			r0 = ret.Get(0).(*context.AuthenticationContext)
+			r0 = ret.Get(0).(*SecurityContext)
 		}
 	}
 	if returnFunc, ok := ret.Get(1).(func(*http.Request) error); ok {
@@ -90,27 +89,27 @@ func (_c *AuthenticatorInterfaceMock_Authenticate_Call) Run(run func(r *http.Req
 	return _c
 }
 
-func (_c *AuthenticatorInterfaceMock_Authenticate_Call) Return(authenticationContext *context.AuthenticationContext, err error) *AuthenticatorInterfaceMock_Authenticate_Call {
-	_c.Call.Return(authenticationContext, err)
+func (_c *AuthenticatorInterfaceMock_Authenticate_Call) Return(securityContext *SecurityContext, err error) *AuthenticatorInterfaceMock_Authenticate_Call {
+	_c.Call.Return(securityContext, err)
 	return _c
 }
 
-func (_c *AuthenticatorInterfaceMock_Authenticate_Call) RunAndReturn(run func(r *http.Request) (*context.AuthenticationContext, error)) *AuthenticatorInterfaceMock_Authenticate_Call {
+func (_c *AuthenticatorInterfaceMock_Authenticate_Call) RunAndReturn(run func(r *http.Request) (*SecurityContext, error)) *AuthenticatorInterfaceMock_Authenticate_Call {
 	_c.Call.Return(run)
 	return _c
 }
 
 // Authorize provides a mock function for the type AuthenticatorInterfaceMock
-func (_mock *AuthenticatorInterfaceMock) Authorize(r *http.Request, authCtx *context.AuthenticationContext) error {
-	ret := _mock.Called(r, authCtx)
+func (_mock *AuthenticatorInterfaceMock) Authorize(r *http.Request, ctx *SecurityContext) error {
+	ret := _mock.Called(r, ctx)
 
 	if len(ret) == 0 {
 		panic("no return value specified for Authorize")
 	}
 
 	var r0 error
-	if returnFunc, ok := ret.Get(0).(func(*http.Request, *context.AuthenticationContext) error); ok {
-		r0 = returnFunc(r, authCtx)
+	if returnFunc, ok := ret.Get(0).(func(*http.Request, *SecurityContext) error); ok {
+		r0 = returnFunc(r, ctx)
 	} else {
 		r0 = ret.Error(0)
 	}
@@ -124,20 +123,20 @@ type AuthenticatorInterfaceMock_Authorize_Call struct {
 
 // Authorize is a helper method to define mock.On call
 //   - r *http.Request
-//   - authCtx *context.AuthenticationContext
-func (_e *AuthenticatorInterfaceMock_Expecter) Authorize(r interface{}, authCtx interface{}) *AuthenticatorInterfaceMock_Authorize_Call {
-	return &AuthenticatorInterfaceMock_Authorize_Call{Call: _e.mock.On("Authorize", r, authCtx)}
+//   - ctx *SecurityContext
+func (_e *AuthenticatorInterfaceMock_Expecter) Authorize(r interface{}, ctx interface{}) *AuthenticatorInterfaceMock_Authorize_Call {
+	return &AuthenticatorInterfaceMock_Authorize_Call{Call: _e.mock.On("Authorize", r, ctx)}
 }
 
-func (_c *AuthenticatorInterfaceMock_Authorize_Call) Run(run func(r *http.Request, authCtx *context.AuthenticationContext)) *AuthenticatorInterfaceMock_Authorize_Call {
+func (_c *AuthenticatorInterfaceMock_Authorize_Call) Run(run func(r *http.Request, ctx *SecurityContext)) *AuthenticatorInterfaceMock_Authorize_Call {
 	_c.Call.Run(func(args mock.Arguments) {
 		var arg0 *http.Request
 		if args[0] != nil {
 			arg0 = args[0].(*http.Request)
 		}
-		var arg1 *context.AuthenticationContext
+		var arg1 *SecurityContext
 		if args[1] != nil {
-			arg1 = args[1].(*context.AuthenticationContext)
+			arg1 = args[1].(*SecurityContext)
 		}
 		run(
 			arg0,
@@ -152,7 +151,7 @@ func (_c *AuthenticatorInterfaceMock_Authorize_Call) Return(err error) *Authenti
 	return _c
 }
 
-func (_c *AuthenticatorInterfaceMock_Authorize_Call) RunAndReturn(run func(r *http.Request, authCtx *context.AuthenticationContext) error) *AuthenticatorInterfaceMock_Authorize_Call {
+func (_c *AuthenticatorInterfaceMock_Authorize_Call) RunAndReturn(run func(r *http.Request, ctx *SecurityContext) error) *AuthenticatorInterfaceMock_Authorize_Call {
 	_c.Call.Return(run)
 	return _c
 }

@@ -60,7 +60,6 @@ database:
     sslmode: disable          # SSL mode: disable, require, verify-ca, verify-full
 
 jwt:
-  issuer: thunder     # JWT token issuer identifier
   validity: 3600      # JWT token validity in seconds (default: 1 hour)
 
 oauth:

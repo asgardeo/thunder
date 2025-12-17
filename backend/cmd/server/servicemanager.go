@@ -42,6 +42,7 @@ import (
 	"github.com/asgardeo/thunder/internal/role"
 	"github.com/asgardeo/thunder/internal/system/crypto/hash"
 	"github.com/asgardeo/thunder/internal/system/export"
+	immutableresource "github.com/asgardeo/thunder/internal/system/immutable_resource"
 	"github.com/asgardeo/thunder/internal/system/jwt"
 	"github.com/asgardeo/thunder/internal/system/log"
 	"github.com/asgardeo/thunder/internal/system/services"
@@ -61,21 +62,41 @@ func registerServices(
 
 	observabilitySvc = observability.Initialize()
 
+	// List to collect exporters from each package
+	var exporters []immutableresource.ResourceExporter
+
 	ouService := ou.Initialize(mux)
 	hashService := hash.Initialize()
-	userSchemaService := userschema.Initialize(mux, ouService)
+	userSchemaService, userSchemaExporter, err := userschema.Initialize(mux, ouService)
+	if err != nil {
+		logger.Fatal("Failed to initialize UserSchemaService", log.Error(err))
+	}
+	exporters = append(exporters, userSchemaExporter)
+
 	userService, err := user.Initialize(mux, ouService, userSchemaService, hashService)
 	if err != nil {
 		logger.Fatal("Failed to initialize UserService", log.Error(err))
 	}
 	groupService := group.Initialize(mux, ouService, userService)
 
-	_ = resource.Initialize(mux, ouService)
+	_, err = resource.Initialize(mux, ouService)
+	if err != nil {
+		logger.Fatal("Failed to initialize Resource Service", log.Error(err))
+	}
 	roleService := role.Initialize(mux, userService, groupService, ouService)
 	authZService := authz.Initialize(roleService)
 
-	idpService := idp.Initialize(mux)
-	notificationSenderMgtService, otpService := notification.Initialize(mux, jwtService)
+	idpService, idpExporter, err := idp.Initialize(mux)
+	if err != nil {
+		logger.Fatal("Failed to initialize IDPService", log.Error(err))
+	}
+	exporters = append(exporters, idpExporter)
+
+	_, otpService, notificationExporter, err := notification.Initialize(mux, jwtService)
+	if err != nil {
+		logger.Fatal("Failed to initialize NotificationService", log.Error(err))
+	}
+	exporters = append(exporters, notificationExporter)
 
 	// Initialize authentication services.
 	_, authSvcRegistry := authn.Initialize(mux, idpService, jwtService, userService, otpService)
@@ -91,12 +112,17 @@ func registerServices(
 	}
 	certservice := cert.Initialize()
 	brandingMgtService := brandingmgt.Initialize(mux)
-	applicationService := application.Initialize(mux, certservice, flowMgtService,
+	applicationService, applicationExporter, err := application.Initialize(mux, certservice, flowMgtService,
 		brandingMgtService, userSchemaService)
+	if err != nil {
+		logger.Fatal("Failed to initialize ApplicationService", log.Error(err))
+	}
+	exporters = append(exporters, applicationExporter)
+
 	_ = brandingresolve.Initialize(mux, brandingMgtService, applicationService)
 
-	// Initialize export service with application, IDP, notification sender, and user schema service dependencies
-	_ = export.Initialize(mux, applicationService, idpService, notificationSenderMgtService, userSchemaService)
+	// Initialize export service with collected exporters
+	_ = export.Initialize(mux, exporters)
 
 	flowExecService := flowexec.Initialize(mux, flowMgtService, applicationService, execRegistry, observabilitySvc)
 

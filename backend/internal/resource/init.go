@@ -29,12 +29,15 @@ import (
 func Initialize(
 	mux *http.ServeMux,
 	ouService oupkg.OrganizationUnitServiceInterface,
-) ResourceServiceInterface {
+) (ResourceServiceInterface, error) {
 	resourceStore := newResourceStore()
-	resourceService := newResourceService(resourceStore, ouService)
+	resourceService, err := newResourceService(resourceStore, ouService)
+	if err != nil {
+		return nil, err
+	}
 	resourceHandler := newResourceHandler(resourceService)
 	registerRoutes(mux, resourceHandler)
-	return resourceService
+	return resourceService, nil
 }
 
 // registerRoutes registers all routes for the resource management API.

@@ -1,7 +1,7 @@
 {
   "name": "react-vanilla-sample",
   "private": true,
-  "version": "0.14.0",
+  "version": "0.15.0",
   "type": "module",
   "scripts": {
     "dev": "vite",
@@ -20,8 +20,8 @@
     "@mui/material": "7.1.0",
     "@mui/system": "7.1.0",
     "axios": "1.12.0",
-    "react": "19.2.1",
-    "react-dom": "19.2.1",
+    "react": "19.2.3",
+    "react-dom": "19.2.3",
     "react-router-dom": "7.6.1"
   },
   "devDependencies": {

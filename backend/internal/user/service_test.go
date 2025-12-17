@@ -744,7 +744,7 @@ func TestUserService_UpdateUserCredentials_UserNotFound(t *testing.T) {
 			Algorithm:  hash.PBKDF2,
 			Hash:       "hashed-value",
 			Parameters: hash.CredParameters{Salt: "random-salt"},
-		}).
+		}, nil).
 		Once()
 
 	service := &userService{
@@ -817,7 +817,7 @@ func TestUserService_UpdateUserCredentials_Succeeds(t *testing.T) {
 			Algorithm:  hash.PBKDF2,
 			Hash:       "hash",
 			Parameters: hash.CredParameters{Salt: "random-salt"},
-		}).
+		}, nil).
 		Once()
 
 	service := &userService{

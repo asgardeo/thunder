@@ -63,28 +63,28 @@ func resolveTokenConfig(oauthApp *appmodel.OAuthAppConfigProcessedDTO, tokenType
 		ValidityPeriod: conf.JWT.ValidityPeriod,
 	}
 
-	if oauthApp == nil || oauthApp.Token == nil {
-		return tokenConfig
-	}
-
-	// Use OAuth-level issuer for all token types
-	if oauthApp.Token.Issuer != "" {
+	// Use OAuth-level issuer for all token types if app config is available
+	if oauthApp != nil && oauthApp.Token != nil && oauthApp.Token.Issuer != "" {
 		tokenConfig.Issuer = oauthApp.Token.Issuer
 	}
 
 	// Override with token-type specific configuration if available
 	switch tokenType {
 	case TokenTypeAccess:
-		if oauthApp.Token.AccessToken != nil {
+		if oauthApp != nil && oauthApp.Token != nil && oauthApp.Token.AccessToken != nil {
 			if oauthApp.Token.AccessToken.ValidityPeriod > 0 {
 				tokenConfig.ValidityPeriod = oauthApp.Token.AccessToken.ValidityPeriod
 			}
 		}
 	case TokenTypeID:
-		if oauthApp.Token.IDToken != nil {
+		if oauthApp != nil && oauthApp.Token != nil && oauthApp.Token.IDToken != nil {
 			if oauthApp.Token.IDToken.ValidityPeriod > 0 {
 				tokenConfig.ValidityPeriod = oauthApp.Token.IDToken.ValidityPeriod
 			}
+		}
+	case TokenTypeRefresh:
+		if conf.OAuth.RefreshToken.ValidityPeriod > 0 {
+			tokenConfig.ValidityPeriod = conf.OAuth.RefreshToken.ValidityPeriod
 		}
 	}
 

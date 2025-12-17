@@ -25,6 +25,7 @@ type ResourceServerResponse struct {
 	Description        string `json:"description,omitempty"`
 	Identifier         string `json:"identifier,omitempty"`
 	OrganizationUnitID string `json:"ouId"`
+	Delimiter          string `json:"delimiter"`
 }
 
 // ResourceResponse represents a resource response.
@@ -34,6 +35,7 @@ type ResourceResponse struct {
 	Handle           string  `json:"handle"`
 	Description      string  `json:"description,omitempty"`
 	Parent           *string `json:"parent"`
+	Permission       string  `json:"permission"`
 }
 
 // ActionResponse represents an action response.
@@ -42,6 +44,7 @@ type ActionResponse struct {
 	Name             string  `json:"name"`
 	Handle           string  `json:"handle"`
 	Description      string  `json:"description,omitempty"`
+	Permission       string  `json:"permission"`
 }
 
 // LinkResponse represents a pagination link.
@@ -94,10 +97,11 @@ type ResourcePermissionListResponse struct {
 
 // CreateResourceServerRequest represents the request to create a resource server.
 type CreateResourceServerRequest struct {
-	Name               string `json:"name"`
-	Description        string `json:"description,omitempty"`
-	Identifier         string `json:"identifier,omitempty"`
-	OrganizationUnitID string `json:"ouId"`
+	Name               string  `json:"name"`
+	Description        string  `json:"description,omitempty"`
+	Identifier         string  `json:"identifier,omitempty"`
+	OrganizationUnitID string  `json:"ouId"`
+	Delimiter          *string `json:"delimiter,omitempty"`
 }
 
 // UpdateResourceServerRequest represents the request to update a resource server.

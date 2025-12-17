@@ -23,8 +23,6 @@ import (
 	"context"
 	"net/http"
 	"strings"
-
-	sysContext "github.com/asgardeo/thunder/internal/system/context"
 )
 
 // SecurityServiceInterface defines the contract for security processing services.
@@ -65,19 +63,19 @@ func (s *securityService) Process(r *http.Request) (context.Context, error) {
 	}
 
 	// Authenticate the request
-	authCtx, err := authenticator.Authenticate(r)
+	securityCtx, err := authenticator.Authenticate(r)
 	if err != nil {
 		return nil, err
 	}
 
 	// Add authentication context to request context if available
 	ctx := r.Context()
-	if authCtx != nil {
-		ctx = sysContext.WithAuthenticationContext(ctx, authCtx)
+	if securityCtx != nil {
+		ctx = withSecurityContext(ctx, securityCtx)
 	}
 
 	// Authorize the authenticated principal
-	if err := authenticator.Authorize(r.WithContext(ctx), authCtx); err != nil {
+	if err := authenticator.Authorize(r.WithContext(ctx), securityCtx); err != nil {
 		return nil, err
 	}
 

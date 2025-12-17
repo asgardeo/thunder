@@ -22,18 +22,33 @@ import {useAsgardeo} from '@asgardeo/react';
 import type {ApplicationListResponse} from '../models/responses';
 import ApplicationQueryKeys from '../constants/application-query-keys';
 
-interface UseGetApplicationsParams {
+/**
+ * Parameters for the {@link useGetApplications} hook.
+ *
+ * @public
+ */
+export interface UseGetApplicationsParams {
+  /**
+   * Maximum number of records to return.
+   */
   limit?: number;
+  /**
+   * Number of records to skip for pagination.
+   */
   offset?: number;
 }
 
 /**
- * Custom hook to fetch the list of applications from the Thunder server.
+ * Custom React hook to fetch a paginated list of applications from the Thunder server.
  *
- * @param params - Optional query parameters
+ * This hook uses TanStack Query to manage the server state and provides automatic
+ * caching, refetching, and background updates. The query is keyed by the pagination
+ * parameters to ensure proper cache management.
+ *
+ * @param params - Optional pagination parameters
  * @param params.limit - Maximum number of records to return (default: 30)
  * @param params.offset - Number of records to skip for pagination (default: 0)
- * @returns TanStack Query result object with applications list data
+ * @returns TanStack Query result object containing applications list data, loading state, and error information
  *
  * @example
  * ```tsx
@@ -52,6 +67,8 @@ interface UseGetApplicationsParams {
  *   );
  * }
  * ```
+ *
+ * @public
  */
 export default function useGetApplications(params?: UseGetApplicationsParams): UseQueryResult<ApplicationListResponse> {
   const {http} = useAsgardeo();

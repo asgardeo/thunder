@@ -130,7 +130,7 @@ func (s *groupStore) CreateGroup(group GroupDAO) error {
 	}
 
 	_, err = tx.Exec(
-		QueryCreateGroup.Query,
+		QueryCreateGroup,
 		group.ID,
 		group.OrganizationUnitID,
 		group.Name,
@@ -251,7 +251,7 @@ func (s *groupStore) UpdateGroup(group GroupDAO) error {
 	}
 
 	result, err := tx.Exec(
-		QueryUpdateGroup.Query,
+		QueryUpdateGroup,
 		group.ID,
 		group.OrganizationUnitID,
 		group.Name,
@@ -309,7 +309,7 @@ func (s *groupStore) DeleteGroup(id string) error {
 		return fmt.Errorf("failed to begin transaction: %w", err)
 	}
 
-	_, err = tx.Exec(QueryDeleteGroupMembers.Query, id, s.deploymentID)
+	_, err = tx.Exec(QueryDeleteGroupMembers, id, s.deploymentID)
 	if err != nil {
 		if rollbackErr := tx.Rollback(); rollbackErr != nil {
 			err = errors.Join(err, fmt.Errorf("failed to rollback transaction: %w", rollbackErr))
@@ -317,7 +317,7 @@ func (s *groupStore) DeleteGroup(id string) error {
 		return fmt.Errorf("failed to delete group members: %w", err)
 	}
 
-	result, err := tx.Exec(QueryDeleteGroup.Query, id, s.deploymentID)
+	result, err := tx.Exec(QueryDeleteGroup, id, s.deploymentID)
 	if err != nil {
 		if rollbackErr := tx.Rollback(); rollbackErr != nil {
 			err = errors.Join(err, fmt.Errorf("failed to rollback transaction: %w", rollbackErr))
@@ -494,7 +494,7 @@ func addMembersToGroup(
 	deploymentID string,
 ) error {
 	for _, member := range members {
-		_, err := tx.Exec(QueryAddMemberToGroup.Query, groupID, member.Type, member.ID, deploymentID)
+		_, err := tx.Exec(QueryAddMemberToGroup, groupID, member.Type, member.ID, deploymentID)
 		if err != nil {
 			return fmt.Errorf("failed to add member to group: %w", err)
 		}
@@ -510,7 +510,7 @@ func updateGroupMembers(
 	members []Member,
 	deploymentID string,
 ) error {
-	_, err := tx.Exec(QueryDeleteGroupMembers.Query, groupID, deploymentID)
+	_, err := tx.Exec(QueryDeleteGroupMembers, groupID, deploymentID)
 	if err != nil {
 		return fmt.Errorf("failed to delete existing group member assignments: %w", err)
 	}

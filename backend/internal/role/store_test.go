@@ -27,7 +27,7 @@ import (
 	"github.com/stretchr/testify/suite"
 
 	dbmodel "github.com/asgardeo/thunder/internal/system/database/model"
-	"github.com/asgardeo/thunder/tests/mocks/database/clientmock"
+
 	"github.com/asgardeo/thunder/tests/mocks/database/modelmock"
 	"github.com/asgardeo/thunder/tests/mocks/database/providermock"
 )
@@ -54,7 +54,7 @@ var _ sql.Result = (*mockResult)(nil)
 type RoleStoreTestSuite struct {
 	suite.Suite
 	mockDBProvider *providermock.DBProviderInterfaceMock
-	mockDBClient   *clientmock.DBClientInterfaceMock
+	mockDBClient   *providermock.DBClientInterfaceMock
 	mockTx         *modelmock.TxInterfaceMock
 	store          *roleStore
 }
@@ -67,7 +67,7 @@ func TestRoleStoreTestSuite(t *testing.T) {
 // SetupTest sets up the test suite.
 func (suite *RoleStoreTestSuite) SetupTest() {
 	suite.mockDBProvider = providermock.NewDBProviderInterfaceMock(suite.T())
-	suite.mockDBClient = clientmock.NewDBClientInterfaceMock(suite.T())
+	suite.mockDBClient = providermock.NewDBClientInterfaceMock(suite.T())
 	suite.mockTx = modelmock.NewTxInterfaceMock(suite.T())
 	suite.store = &roleStore{
 		dbProvider:   suite.mockDBProvider,
@@ -149,13 +149,13 @@ func (suite *RoleStoreTestSuite) TestCreateRole_Success() {
 
 	suite.mockDBProvider.On("GetConfigDBClient").Return(suite.mockDBClient, nil)
 	suite.mockDBClient.On("BeginTx").Return(suite.mockTx, nil)
-	suite.mockTx.On("Exec", queryCreateRole.Query, mock.Anything, "ou1", "Test Role", "Test Description",
+	suite.mockTx.On("Exec", queryCreateRole, mock.Anything, "ou1", "Test Role", "Test Description",
 		testDeploymentID).Return(&mockResult{}, nil)
-	suite.mockTx.On("Exec", queryCreateRolePermission.Query, mock.Anything, "perm1", testDeploymentID).
+	suite.mockTx.On("Exec", queryCreateRolePermission, mock.Anything, "perm1", testDeploymentID).
 		Return(&mockResult{}, nil)
-	suite.mockTx.On("Exec", queryCreateRolePermission.Query, mock.Anything, "perm2", testDeploymentID).
+	suite.mockTx.On("Exec", queryCreateRolePermission, mock.Anything, "perm2", testDeploymentID).
 		Return(&mockResult{}, nil)
-	suite.mockTx.On("Exec", queryCreateRoleAssignment.Query, mock.Anything, AssigneeTypeUser, "user1",
+	suite.mockTx.On("Exec", queryCreateRoleAssignment, mock.Anything, AssigneeTypeUser, "user1",
 		testDeploymentID).Return(&mockResult{}, nil)
 	suite.mockTx.On("Commit").Return(nil)
 
@@ -176,7 +176,7 @@ func (suite *RoleStoreTestSuite) TestCreateRole_ExecError() {
 	execError := errors.New("insert failed")
 	suite.mockDBProvider.On("GetConfigDBClient").Return(suite.mockDBClient, nil)
 	suite.mockDBClient.On("BeginTx").Return(suite.mockTx, nil)
-	suite.mockTx.On("Exec", queryCreateRole.Query, mock.Anything, "ou1", "Test Role", "Test Description",
+	suite.mockTx.On("Exec", queryCreateRole, mock.Anything, "ou1", "Test Role", "Test Description",
 		testDeploymentID).Return(nil, execError)
 	suite.mockTx.On("Rollback").Return(nil)
 
@@ -294,10 +294,10 @@ func (suite *RoleStoreTestSuite) TestUpdateRole_Success() {
 
 	suite.mockDBProvider.On("GetConfigDBClient").Return(suite.mockDBClient, nil)
 	suite.mockDBClient.On("BeginTx").Return(suite.mockTx, nil)
-	suite.mockTx.On("Exec", queryUpdateRole.Query, "ou1", "Updated Role", "Updated Description", "role1",
+	suite.mockTx.On("Exec", queryUpdateRole, "ou1", "Updated Role", "Updated Description", "role1",
 		testDeploymentID).Return(&mockResult{rowsAffected: 1}, nil)
-	suite.mockTx.On("Exec", queryDeleteRolePermissions.Query, "role1", testDeploymentID).Return(&mockResult{}, nil)
-	suite.mockTx.On("Exec", queryCreateRolePermission.Query, "role1", "perm1", testDeploymentID).
+	suite.mockTx.On("Exec", queryDeleteRolePermissions, "role1", testDeploymentID).Return(&mockResult{}, nil)
+	suite.mockTx.On("Exec", queryCreateRolePermission, "role1", "perm1", testDeploymentID).
 		Return(&mockResult{}, nil)
 	suite.mockTx.On("Commit").Return(nil)
 
@@ -317,7 +317,7 @@ func (suite *RoleStoreTestSuite) TestUpdateRole_NotFound() {
 	suite.mockDBProvider.On("GetConfigDBClient").Return(suite.mockDBClient, nil)
 	suite.mockDBClient.On("BeginTx").Return(suite.mockTx, nil)
 	suite.mockTx.On(
-		"Exec", queryUpdateRole.Query, "ou1", "Updated Role", "Updated Description", "nonexistent", testDeploymentID,
+		"Exec", queryUpdateRole, "ou1", "Updated Role", "Updated Description", "nonexistent", testDeploymentID,
 	).Return(&mockResult{rowsAffected: 0}, nil)
 	suite.mockTx.On("Rollback").Return(nil)
 
@@ -353,7 +353,7 @@ func (suite *RoleStoreTestSuite) TestAddAssignments_Success() {
 
 	suite.mockDBProvider.On("GetConfigDBClient").Return(suite.mockDBClient, nil)
 	suite.mockDBClient.On("BeginTx").Return(suite.mockTx, nil)
-	suite.mockTx.On("Exec", queryCreateRoleAssignment.Query, "role1", AssigneeTypeUser, "user1", testDeploymentID).
+	suite.mockTx.On("Exec", queryCreateRoleAssignment, "role1", AssigneeTypeUser, "user1", testDeploymentID).
 		Return(&mockResult{}, nil)
 	suite.mockTx.On("Commit").Return(nil)
 
@@ -369,7 +369,7 @@ func (suite *RoleStoreTestSuite) TestRemoveAssignments_Success() {
 
 	suite.mockDBProvider.On("GetConfigDBClient").Return(suite.mockDBClient, nil)
 	suite.mockDBClient.On("BeginTx").Return(suite.mockTx, nil)
-	suite.mockTx.On("Exec", queryDeleteRoleAssignmentsByIDs.Query, "role1", AssigneeTypeUser, "user1",
+	suite.mockTx.On("Exec", queryDeleteRoleAssignmentsByIDs, "role1", AssigneeTypeUser, "user1",
 		testDeploymentID).Return(&mockResult{}, nil)
 	suite.mockTx.On("Commit").Return(nil)
 

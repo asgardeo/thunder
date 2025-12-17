@@ -19,6 +19,7 @@
 package utils
 
 import (
+	"bytes"
 	"encoding/json"
 	"errors"
 	"html"
@@ -178,23 +179,34 @@ func WriteSuccessResponse(w http.ResponseWriter, statusCode int, data interface{
 		return
 	}
 
-	w.Header().Set(constants.ContentTypeHeaderName, constants.ContentTypeJSON)
-	w.WriteHeader(statusCode)
-
-	if err := json.NewEncoder(w).Encode(data); err != nil {
+	// Encode to buffer first to ensure encoding succeeds before sending headers
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(data); err != nil {
 		logger.Error("Failed to encode response", log.Error(err))
 		http.Error(w, serviceerror.ErrorEncodingError, http.StatusInternalServerError)
+		return
 	}
+
+	// Encoding succeeded, now safe to send headers and write response
+	w.Header().Set(constants.ContentTypeHeaderName, constants.ContentTypeJSON)
+	w.WriteHeader(statusCode)
+	_, _ = w.Write(buf.Bytes())
 }
 
 // WriteErrorResponse writes a JSON error response with the given status code and error details.
 func WriteErrorResponse(w http.ResponseWriter, statusCode int, errorResp apierror.ErrorResponse) {
 	logger := log.GetLogger()
-	w.Header().Set(constants.ContentTypeHeaderName, constants.ContentTypeJSON)
-	w.WriteHeader(statusCode)
 
-	if err := json.NewEncoder(w).Encode(errorResp); err != nil {
+	// Encode to buffer first to ensure encoding succeeds before sending headers
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(errorResp); err != nil {
 		logger.Error("Failed to encode error response", log.Error(err))
 		http.Error(w, serviceerror.ErrorEncodingError, http.StatusInternalServerError)
+		return
 	}
+
+	// Encoding succeeded, now safe to send headers and write response
+	w.Header().Set(constants.ContentTypeHeaderName, constants.ContentTypeJSON)
+	w.WriteHeader(statusCode)
+	_, _ = w.Write(buf.Bytes())
 }

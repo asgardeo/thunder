@@ -109,6 +109,7 @@ func (suite *ActionAPITestSuite) TestCreateActionAtResourceServer() {
 	suite.Equal(req.Name, action.Name)
 	suite.Equal(req.Handle, action.Handle)
 	suite.Equal(req.Description, action.Description)
+	suite.Equal("read", action.Permission, "Server-level action permission should be just the handle")
 }
 
 func (suite *ActionAPITestSuite) TestCreateActionAtResourceServerDuplicateHandle() {
@@ -190,10 +191,12 @@ func (suite *ActionAPITestSuite) TestListActionsAtResourceServer() {
 		if action.ID == action1ID {
 			foundAction1 = true
 			suite.Equal(action1.Name, action.Name)
+			suite.Equal("list-action-1", action.Permission, "Permission should be returned in list response")
 		}
 		if action.ID == action2ID {
 			foundAction2 = true
 			suite.Equal(action2.Name, action.Name)
+			suite.Equal("list-action-2", action.Permission, "Permission should be returned in list response")
 		}
 	}
 	suite.True(foundAction1, "Should find first action")
@@ -225,6 +228,7 @@ func (suite *ActionAPITestSuite) TestUpdateActionAtResourceServer() {
 	suite.Equal(updateReq.Name, action.Name, "Name should be mutable")
 	suite.Equal(req.Handle, action.Handle, "Handle should be immutable")
 	suite.Equal(updateReq.Description, action.Description)
+	suite.Equal("update-action", action.Permission, "Permission should be immutable")
 }
 
 func (suite *ActionAPITestSuite) TestDeleteActionAtResourceServer() {
@@ -266,6 +270,7 @@ func (suite *ActionAPITestSuite) TestCreateActionAtResource() {
 	suite.Require().NoError(err)
 	suite.Equal(req.Name, action.Name)
 	suite.Equal(req.Description, action.Description)
+	suite.Equal("test-resource:view", action.Permission, "Action permission should be resource:action")
 }
 
 func (suite *ActionAPITestSuite) TestCreateActionAtResourceDuplicateHandle() {
@@ -540,6 +545,62 @@ func (suite *ActionAPITestSuite) TestDeleteActionAtResourceServerUsingWrongEndpo
 	action, err := getActionAtResourceServer(suite.resourceServerID, actionID)
 	suite.Require().NoError(err, "Action should still exist")
 	suite.Equal(actionID, action.ID)
+}
+
+func (suite *ActionAPITestSuite) TestActionPermissionDerivationWithCustomDelimiter() {
+	// Create resource server with custom delimiter
+	delimiter := "-"
+	rsReq := CreateResourceServerRequest{
+		Name:               "Action Permission Test Server",
+		OrganizationUnitID: suite.ouID,
+		Delimiter:          &delimiter,
+	}
+	customRsID, err := createResourceServer(rsReq)
+	suite.Require().NoError(err)
+	defer deleteResourceServer(customRsID)
+
+	// Create level 1 resource: hotels
+	level1Req := CreateResourceRequest{
+		Name:   "Hotels",
+		Handle: "hotels",
+		Parent: nil,
+	}
+	level1ID, err := createResource(customRsID, level1Req)
+	suite.Require().NoError(err)
+	defer deleteResource(customRsID, level1ID)
+
+	// Create level 2 resource: hotels-rooms
+	level2Req := CreateResourceRequest{
+		Name:   "Rooms",
+		Handle: "rooms",
+		Parent: &level1ID,
+	}
+	level2ID, err := createResource(customRsID, level2Req)
+	suite.Require().NoError(err)
+	defer deleteResource(customRsID, level2ID)
+
+	// Create level 3 resource: hotels-rooms-suites
+	level3Req := CreateResourceRequest{
+		Name:   "Suites",
+		Handle: "suites",
+		Parent: &level2ID,
+	}
+	level3ID, err := createResource(customRsID, level3Req)
+	suite.Require().NoError(err)
+	defer deleteResource(customRsID, level3ID)
+
+	// Create action at level 3: hotels-rooms-suites-book
+	actionReq := CreateActionRequest{
+		Name:   "Book",
+		Handle: "book",
+	}
+	actionID, err := createActionAtResource(customRsID, level3ID, actionReq)
+	suite.Require().NoError(err)
+	defer deleteActionAtResource(customRsID, level3ID, actionID)
+
+	action, err := getActionAtResource(customRsID, level3ID, actionID)
+	suite.Require().NoError(err)
+	suite.Equal("hotels-rooms-suites-book", action.Permission, "Deeply nested action permission should use custom delimiter")
 }
 
 // Helper functions

@@ -54,7 +54,7 @@ func (suite *BasicAuthExecutorTestSuite) SetupTest() {
 
 	defaultInputs := []flowcm.InputData{
 		{Name: userAttributeUsername, Type: "string", Required: true},
-		{Name: userAttributePassword, Type: "string", Required: true},
+		{Name: userAttributePassword, Type: inputDataTypePassword, Required: true},
 	}
 
 	// Mock the embedded identifying executor first
@@ -66,7 +66,8 @@ func (suite *BasicAuthExecutorTestSuite) SetupTest() {
 	suite.mockFlowFactory.On("CreateExecutor", ExecutorNameBasicAuth, flowcm.ExecutorTypeAuthentication,
 		defaultInputs, []flowcm.InputData{}).Return(mockExec)
 
-	suite.executor = newBasicAuthExecutor(suite.mockFlowFactory, suite.mockUserService, suite.mockCredsService)
+	suite.executor = newBasicAuthExecutor(suite.mockFlowFactory, suite.mockUserService,
+		suite.mockCredsService)
 }
 
 func createMockIdentifyingExecutor(t *testing.T) flowcore.ExecutorInterface {
@@ -78,15 +79,49 @@ func createMockIdentifyingExecutor(t *testing.T) flowcore.ExecutorInterface {
 	return mockExec
 }
 
+func createMockExecutorWithCustomInputs(t *testing.T, name string,
+	inputs []flowcm.InputData) flowcore.ExecutorInterface {
+	mockExec := coremock.NewExecutorInterfaceMock(t)
+	mockExec.On("GetName").Return(name).Maybe()
+	mockExec.On("GetType").Return(flowcm.ExecutorTypeAuthentication).Maybe()
+	mockExec.On("GetDefaultExecutorInputs").Return(inputs).Maybe()
+	mockExec.On("GetPrerequisites").Return([]flowcm.InputData{}).Maybe()
+	mockExec.On("GetRequiredData", mock.Anything).Return(
+		func(ctx *flowcore.NodeContext) []flowcm.InputData {
+			return inputs
+		}).Maybe()
+	mockExec.On("CheckInputData", mock.Anything, mock.Anything).Return(
+		func(ctx *flowcore.NodeContext, execResp *flowcm.ExecutorResponse) bool {
+			for _, input := range inputs {
+				if input.Required {
+					value, exists := ctx.UserInputData[input.Name]
+					if !exists || value == "" {
+						execResp.RequiredData = inputs
+						return true
+					}
+				}
+			}
+			return false
+		}).Maybe()
+	return mockExec
+}
+
 func createMockBasicAuthExecutor(t *testing.T) flowcore.ExecutorInterface {
 	mockExec := coremock.NewExecutorInterfaceMock(t)
 	mockExec.On("GetName").Return(ExecutorNameBasicAuth).Maybe()
 	mockExec.On("GetType").Return(flowcm.ExecutorTypeAuthentication).Maybe()
 	mockExec.On("GetDefaultExecutorInputs").Return([]flowcm.InputData{
 		{Name: userAttributeUsername, Type: "string", Required: true},
-		{Name: userAttributePassword, Type: "string", Required: true},
+		{Name: userAttributePassword, Type: inputDataTypePassword, Required: true},
 	}).Maybe()
 	mockExec.On("GetPrerequisites").Return([]flowcm.InputData{}).Maybe()
+	mockExec.On("GetRequiredData", mock.Anything).Return(
+		func(ctx *flowcore.NodeContext) []flowcm.InputData {
+			return []flowcm.InputData{
+				{Name: userAttributeUsername, Type: "string", Required: true},
+				{Name: userAttributePassword, Type: inputDataTypePassword, Required: true},
+			}
+		}).Maybe()
 	mockExec.On("CheckInputData", mock.Anything, mock.Anything).Return(
 		func(ctx *flowcore.NodeContext, execResp *flowcm.ExecutorResponse) bool {
 			username, hasUsername := ctx.UserInputData[userAttributeUsername]
@@ -94,7 +129,7 @@ func createMockBasicAuthExecutor(t *testing.T) flowcore.ExecutorInterface {
 			if !hasUsername || username == "" || !hasPassword || password == "" {
 				execResp.RequiredData = []flowcm.InputData{
 					{Name: userAttributeUsername, Type: "string", Required: true},
-					{Name: userAttributePassword, Type: "string", Required: true},
+					{Name: userAttributePassword, Type: inputDataTypePassword, Required: true},
 				}
 				return true
 			}
@@ -150,6 +185,56 @@ func (suite *BasicAuthExecutorTestSuite) TestExecute_Success_AuthenticationFlow(
 	suite.mockCredsService.AssertExpectations(suite.T())
 }
 
+func (suite *BasicAuthExecutorTestSuite) TestExecute_Success_WithEmailAttribute() {
+	attrs := map[string]interface{}{"phone": "+1234567890"}
+	attrsJSON, _ := json.Marshal(attrs)
+
+	ctx := &flowcore.NodeContext{
+		FlowID:   "flow-123",
+		FlowType: flowcm.FlowTypeAuthentication,
+		UserInputData: map[string]string{
+			"email":    "test@example.com",
+			"password": "password123",
+		},
+		RuntimeData: make(map[string]string),
+	}
+
+	// Override GetRequiredData to return email and password as required fields
+	originalInputs := []flowcm.InputData{
+		{Name: "email", Type: "string", Required: true},
+		{Name: "password", Type: inputDataTypePassword, Required: true},
+	}
+	suite.executor.ExecutorInterface = createMockExecutorWithCustomInputs(
+		suite.T(), ExecutorNameBasicAuth, originalInputs)
+
+	userID := testUserID
+	suite.mockUserService.On("IdentifyUser", map[string]interface{}{
+		"email": "test@example.com",
+	}).Return(&userID, nil)
+
+	authenticatedUser := &user.User{
+		ID:               testUserID,
+		OrganizationUnit: "ou-123",
+		Type:             "INTERNAL",
+		Attributes:       attrsJSON,
+	}
+
+	suite.mockCredsService.On("Authenticate", map[string]interface{}{
+		"email":    "test@example.com",
+		"password": "password123",
+	}).Return(authenticatedUser, nil)
+
+	resp, err := suite.executor.Execute(ctx)
+
+	assert.NoError(suite.T(), err)
+	assert.NotNil(suite.T(), resp)
+	assert.Equal(suite.T(), flowcm.ExecComplete, resp.Status)
+	assert.True(suite.T(), resp.AuthenticatedUser.IsAuthenticated)
+	assert.Equal(suite.T(), testUserID, resp.AuthenticatedUser.UserID)
+	suite.mockUserService.AssertExpectations(suite.T())
+	suite.mockCredsService.AssertExpectations(suite.T())
+}
+
 func (suite *BasicAuthExecutorTestSuite) TestExecute_Success_RegistrationFlow() {
 	ctx := &flowcore.NodeContext{
 		FlowID:   "flow-123",
@@ -173,6 +258,60 @@ func (suite *BasicAuthExecutorTestSuite) TestExecute_Success_RegistrationFlow() 
 	assert.False(suite.T(), resp.AuthenticatedUser.IsAuthenticated)
 	assert.Equal(suite.T(), "newuser", resp.AuthenticatedUser.Attributes[userAttributeUsername])
 	suite.mockUserService.AssertExpectations(suite.T())
+}
+
+func (suite *BasicAuthExecutorTestSuite) TestExecute_Success_WithMultipleAttributes() {
+	attrs := map[string]interface{}{"name": "Test User", "role": "admin"}
+	attrsJSON, _ := json.Marshal(attrs)
+
+	ctx := &flowcore.NodeContext{
+		FlowID:   "flow-123",
+		FlowType: flowcm.FlowTypeAuthentication,
+		UserInputData: map[string]string{
+			"email":    "test@example.com",
+			"phone":    "+1234567890",
+			"password": "password123",
+		},
+		RuntimeData: make(map[string]string),
+	}
+
+	// Override GetRequiredData to return email, phone, and password as required fields
+	customInputs := []flowcm.InputData{
+		{Name: "email", Type: "string", Required: true},
+		{Name: "phone", Type: "string", Required: true},
+		{Name: "password", Type: inputDataTypePassword, Required: true},
+	}
+	suite.executor.ExecutorInterface = createMockExecutorWithCustomInputs(
+		suite.T(), ExecutorNameBasicAuth, customInputs)
+
+	userID := testUserID
+	suite.mockUserService.On("IdentifyUser", map[string]interface{}{
+		"email": "test@example.com",
+		"phone": "+1234567890",
+	}).Return(&userID, nil)
+
+	authenticatedUser := &user.User{
+		ID:               testUserID,
+		OrganizationUnit: "ou-123",
+		Type:             "INTERNAL",
+		Attributes:       attrsJSON,
+	}
+
+	suite.mockCredsService.On("Authenticate", map[string]interface{}{
+		"email":    "test@example.com",
+		"phone":    "+1234567890",
+		"password": "password123",
+	}).Return(authenticatedUser, nil)
+
+	resp, err := suite.executor.Execute(ctx)
+
+	assert.NoError(suite.T(), err)
+	assert.NotNil(suite.T(), resp)
+	assert.Equal(suite.T(), flowcm.ExecComplete, resp.Status)
+	assert.True(suite.T(), resp.AuthenticatedUser.IsAuthenticated)
+	assert.Equal(suite.T(), testUserID, resp.AuthenticatedUser.UserID)
+	suite.mockUserService.AssertExpectations(suite.T())
+	suite.mockCredsService.AssertExpectations(suite.T())
 }
 
 func (suite *BasicAuthExecutorTestSuite) TestExecute_UserInputRequired() {

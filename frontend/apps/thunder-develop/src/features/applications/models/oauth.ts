@@ -381,7 +381,7 @@ export interface OAuth2Config {
    * All URIs must be pre-registered to prevent open redirect attacks
    * @example ['https://myapp.com/callback', 'https://myapp.com/oauth/callback']
    */
-  redirect_uris: string[];
+  redirect_uris?: string[];
 
   /**
    * Allowed OAuth2 grant types
@@ -428,13 +428,13 @@ export interface OAuth2Config {
    * Standard OIDC scopes: openid, profile, email, phone, address
    * @example ['openid', 'profile', 'email']
    */
-  scopes: string[];
+  scopes?: string[];
 
   /**
    * Token configuration
    * Defines how access tokens and ID tokens are generated
    */
-  token: OAuth2Token;
+  token?: OAuth2Token;
 }
 
 /**

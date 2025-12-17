@@ -23,10 +23,14 @@ import type {Application} from '../models/application';
 import ApplicationQueryKeys from '../constants/application-query-keys';
 
 /**
- * Custom hook to fetch a single application by ID from the Thunder server.
+ * Custom React hook to fetch a single application by ID from the Thunder server.
  *
- * @param applicationId - The unique identifier of the application
- * @returns TanStack Query result object with application data
+ * This hook uses TanStack Query to manage the server state and provides automatic
+ * caching, refetching, and background updates. The query is automatically disabled
+ * when no applicationId is provided.
+ *
+ * @param applicationId - The unique identifier of the application to fetch
+ * @returns TanStack Query result object containing application data, loading state, and error information
  *
  * @example
  * ```tsx
@@ -45,6 +49,8 @@ import ApplicationQueryKeys from '../constants/application-query-keys';
  *   );
  * }
  * ```
+ *
+ * @public
  */
 export default function useGetApplication(applicationId: string): UseQueryResult<Application> {
   const {http} = useAsgardeo();

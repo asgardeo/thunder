@@ -18,13 +18,14 @@
 
 import {describe, expect, it} from 'vitest';
 import {IdentityProviderTypes, type IdentityProvider} from '@/features/integrations/models/identity-provider';
-import resolveAuthFlowGraphId, {USERNAME_PASSWORD_AUTHENTICATION_OPTION_KEY} from '../resolveAuthFlowGraphId';
+import {AuthenticatorTypes} from '../../../integrations/models/authenticators';
+import resolveAuthFlowGraphId from '../resolveAuthFlowGraphId';
 import {AUTH_FLOW_GRAPHS} from '../../models/auth-flow-graphs';
 
 describe('resolveAuthFlowGraphId', () => {
   describe('Constants', () => {
-    it('should export USERNAME_PASSWORD_AUTHENTICATION_OPTION_KEY', () => {
-      expect(USERNAME_PASSWORD_AUTHENTICATION_OPTION_KEY).toBe('basic_auth');
+    it('should export AuthenticatorTypes.BASIC_AUTH', () => {
+      expect(AuthenticatorTypes.BASIC_AUTH).toBe('basic_auth');
     });
   });
 

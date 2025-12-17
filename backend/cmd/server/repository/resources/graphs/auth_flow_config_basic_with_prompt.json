@@ -21,8 +21,13 @@
             "type": "TASK_EXECUTION",
             "inputData": [
                 {
-                    "name": "password",
+                    "name": "username",
                     "type": "string",
+                    "required": true
+                },
+                {
+                    "name": "password",
+                    "type": "PASSWORD_INPUT",
                     "required": true
                 }
             ],

@@ -24,9 +24,14 @@ import type {CreateApplicationRequest} from '../models/requests';
 import ApplicationQueryKeys from '../constants/application-query-keys';
 
 /**
- * Custom hook to create a new application in the Thunder server.
+ * Custom React hook to create a new application in the Thunder server.
  *
- * @returns TanStack Query mutation object for creating applications
+ * This hook uses TanStack Query mutations to handle the application creation process,
+ * providing loading states, error handling, and automatic cache invalidation. Upon
+ * successful creation, it automatically invalidates the applications list query to
+ * trigger a refetch.
+ *
+ * @returns TanStack Query mutation object for creating applications with mutate function, loading state, and error information
  *
  * @example
  * ```tsx
@@ -51,6 +56,8 @@ import ApplicationQueryKeys from '../constants/application-query-keys';
  *   );
  * }
  * ```
+ *
+ * @public
  */
 export default function useCreateApplication(): UseMutationResult<Application, Error, CreateApplicationRequest> {
   const {http} = useAsgardeo();

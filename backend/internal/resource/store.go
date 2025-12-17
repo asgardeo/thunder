@@ -19,6 +19,7 @@
 package resource
 
 import (
+	"encoding/json"
 	"fmt"
 
 	"github.com/asgardeo/thunder/internal/system/config"
@@ -29,7 +30,7 @@ import (
 type resourceStoreInterface interface {
 	// Resource Server operations
 	CreateResourceServer(id string, rs ResourceServer) error
-	GetResourceServer(id string) (ResourceServer, error)
+	GetResourceServer(id string) (int, ResourceServer, error)
 	GetResourceServerList(limit, offset int) ([]ResourceServer, error)
 	GetResourceServerListCount() (int, error)
 	UpdateResourceServer(id string, rs ResourceServer) error
@@ -37,11 +38,10 @@ type resourceStoreInterface interface {
 	CheckResourceServerNameExists(name string) (bool, error)
 	CheckResourceServerIdentifierExists(identifier string) (bool, error)
 	CheckResourceServerHasDependencies(resServerInternalID int) (bool, error)
-	CheckResourceServerExistAndGetInternalID(uuid string) (int, error)
 
 	// Resource operations
 	CreateResource(uuid string, resServerInternalID int, parentInternalID *int, res Resource) error
-	GetResource(id string, resServerInternalID int) (Resource, error)
+	GetResource(id string, resServerInternalID int) (int, Resource, error)
 	GetResourceList(resServerInternalID int, limit, offset int) ([]Resource, error)
 	GetResourceListByParent(resServerInternalID int, parentInternalID *int, limit, offset int) ([]Resource, error)
 	GetResourceListCount(resServerInternalID int) (int, error)
@@ -51,7 +51,6 @@ type resourceStoreInterface interface {
 	CheckResourceHandleExists(resServerInternalID int, handle string, parentInternalID *int) (bool, error)
 	CheckResourceHasDependencies(resInternalID int) (bool, error)
 	CheckCircularDependency(resourceID, newParentID string) (bool, error)
-	CheckResourceExistAndGetInternalID(uuid string, resServerInternalID int) (int, error)
 
 	// Action operations
 	CreateAction(uuid string, resServerInternalID int, resInternalID *int, action Action) error
@@ -68,6 +67,11 @@ type resourceStoreInterface interface {
 type resourceStore struct {
 	dbProvider   provider.DBProviderInterface
 	deploymentID string
+}
+
+// resourceServerProperties represents the JSON structure of PROPERTIES column.
+type resourceServerProperties struct {
+	Delimiter string `json:"delimiter"`
 }
 
 // newResourceStore creates a new instance of resourceStore.
@@ -88,7 +92,7 @@ func (s *resourceStore) CreateResourceServer(id string, rs ResourceServer) error
 			rs.Name,
 			rs.Description,
 			resolveIdentifier(rs.Identifier),
-			"{}", // PROPERTIES as empty JSON, as of now. Future: can be extended to accept properties.
+			buildPropertiesJSON(rs),
 			s.deploymentID,
 		)
 		if err != nil {
@@ -99,9 +103,10 @@ func (s *resourceStore) CreateResourceServer(id string, rs ResourceServer) error
 	})
 }
 
-// GetResourceServer retrieves a resource server by ID.
-func (s *resourceStore) GetResourceServer(id string) (ResourceServer, error) {
+// GetResourceServer retrieves a resource server and internal ID by UUID.
+func (s *resourceStore) GetResourceServer(id string) (int, ResourceServer, error) {
 	var rs ResourceServer
+	var internalID int
 	err := s.withDBClient(func(dbClient provider.DBClientInterface) error {
 		results, err := dbClient.Query(queryGetResourceServerByID, id, s.deploymentID)
 		if err != nil {
@@ -112,10 +117,10 @@ func (s *resourceStore) GetResourceServer(id string) (ResourceServer, error) {
 			return errResourceServerNotFound
 		}
 
-		rs, err = buildResourceServerFromResultRow(results[0])
+		internalID, rs, err = buildResourceServerFromResultRow(results[0])
 		return err
 	})
-	return rs, err
+	return internalID, rs, err
 }
 
 // GetResourceServerList retrieves a list of resource servers with pagination.
@@ -129,7 +134,7 @@ func (s *resourceStore) GetResourceServerList(limit, offset int) ([]ResourceServ
 
 		resourceServers = make([]ResourceServer, 0, len(results))
 		for _, row := range results {
-			rs, err := buildResourceServerFromResultRow(row)
+			_, rs, err := buildResourceServerFromResultRow(row)
 			if err != nil {
 				return fmt.Errorf("failed to build resource server: %w", err)
 			}
@@ -168,7 +173,7 @@ func (s *resourceStore) UpdateResourceServer(id string, rs ResourceServer) error
 			rs.Name,
 			rs.Description,
 			resolveIdentifier(rs.Identifier),
-			"{}", // PROPERTIES as empty JSON, as of now. Future: can be extended to accept properties.
+			buildPropertiesJSON(rs),
 			id,
 			s.deploymentID,
 		)
@@ -237,25 +242,6 @@ func (s *resourceStore) CheckResourceServerHasDependencies(resServerInternalID i
 	return hasDeps, err
 }
 
-// CheckResourceServerExistAndGetInternalID checks if resource server exists and returns its internal ID.
-func (s *resourceStore) CheckResourceServerExistAndGetInternalID(uuid string) (int, error) {
-	var id int
-	err := s.withDBClient(func(dbClient provider.DBClientInterface) error {
-		results, err := dbClient.Query(queryGetResourceServerInternalID, uuid, s.deploymentID)
-		if err != nil {
-			return fmt.Errorf("failed to check resource server: %w", err)
-		}
-
-		if len(results) == 0 {
-			return errResourceServerNotFound
-		}
-
-		id, err = resolveInternalID(results[0])
-		return err
-	})
-	return id, err
-}
-
 // Resource Store Methods
 
 // CreateResource creates a new resource.
@@ -273,9 +259,10 @@ func (s *resourceStore) CreateResource(
 			res.Name,            // $3: NAME
 			res.Handle,          // $4: HANDLE
 			res.Description,     // $5: DESCRIPTION
-			"{}",                // $6: PROPERTIES (empty JSON). Future: can be extended to accept properties.
-			parentInternalID,    // $7: PARENT_RESOURCE_ID (int FK or NULL)
-			s.deploymentID,      // $8: DEPLOYMENT_ID
+			res.Permission,      // $6: PERMISSION
+			"{}",                // $7: PROPERTIES (empty JSON).
+			parentInternalID,    // $8: PARENT_RESOURCE_ID (int FK or NULL)
+			s.deploymentID,      // $9: DEPLOYMENT_ID
 		)
 		if err != nil {
 			return fmt.Errorf("failed to create resource: %w", err)
@@ -285,9 +272,10 @@ func (s *resourceStore) CreateResource(
 	})
 }
 
-// GetResource retrieves a resource by ID.
-func (s *resourceStore) GetResource(id string, resServerInternalID int) (Resource, error) {
+// GetResource retrieves a resource and internal ID by UUID.
+func (s *resourceStore) GetResource(id string, resServerInternalID int) (int, Resource, error) {
 	var res Resource
+	var internalID int
 	err := s.withDBClient(func(dbClient provider.DBClientInterface) error {
 		results, err := dbClient.Query(queryGetResourceByID, id, resServerInternalID, s.deploymentID)
 		if err != nil {
@@ -298,10 +286,10 @@ func (s *resourceStore) GetResource(id string, resServerInternalID int) (Resourc
 			return errResourceNotFound
 		}
 
-		res, err = buildResourceFromResultRow(results[0])
+		internalID, res, err = buildResourceFromResultRow(results[0])
 		return err
 	})
-	return res, err
+	return internalID, res, err
 }
 
 // GetResourceList retrieves all resources for a resource server.
@@ -315,7 +303,7 @@ func (s *resourceStore) GetResourceList(resServerInternalID int, limit, offset i
 
 		resources = make([]Resource, 0, len(results))
 		for _, row := range results {
-			res, err := buildResourceFromResultRow(row)
+			_, res, err := buildResourceFromResultRow(row)
 			if err != nil {
 				return fmt.Errorf("failed to build resource: %w", err)
 			}
@@ -355,7 +343,7 @@ func (s *resourceStore) GetResourceListByParent(
 
 		resources = make([]Resource, 0, len(results))
 		for _, row := range results {
-			res, err := buildResourceFromResultRow(row)
+			_, res, err := buildResourceFromResultRow(row)
 			if err != nil {
 				return fmt.Errorf("failed to build resource: %w", err)
 			}
@@ -416,7 +404,7 @@ func (s *resourceStore) UpdateResource(id string, resServerInternalID int, res R
 			queryUpdateResource,
 			res.Name,            // $1: NAME
 			res.Description,     // $2: DESCRIPTION
-			"{}",                // $3: PROPERTIES (empty JSON). Future: can be extended to accept properties.
+			"{}",                // $3: PROPERTIES (empty JSON).
 			id,                  // $4: RESOURCE_ID
 			resServerInternalID, // $5: RESOURCE_SERVER_ID (internal ID)
 			s.deploymentID,      // $6: DEPLOYMENT_ID
@@ -500,25 +488,6 @@ func (s *resourceStore) CheckCircularDependency(resourceID, newParentID string) 
 	return hasCircular, err
 }
 
-// CheckResourceExistAndGetInternalID checks if resource exists and returns its internal ID.
-func (s *resourceStore) CheckResourceExistAndGetInternalID(uuid string, resServerInternalID int) (int, error) {
-	var id int
-	err := s.withDBClient(func(dbClient provider.DBClientInterface) error {
-		results, err := dbClient.Query(queryGetResourceInternalID, uuid, resServerInternalID, s.deploymentID)
-		if err != nil {
-			return fmt.Errorf("failed to check resource: %w", err)
-		}
-
-		if len(results) == 0 {
-			return errResourceNotFound
-		}
-
-		id, err = resolveInternalID(results[0])
-		return err
-	})
-	return id, err
-}
-
 // Action Store Methods
 
 // CreateAction creates a new action.
@@ -537,8 +506,9 @@ func (s *resourceStore) CreateAction(
 			action.Name,         // $4: NAME
 			action.Handle,       // $5: handle
 			action.Description,  // $6: DESCRIPTION
-			"{}",                // $7: PROPERTIES (empty JSON). Future: can be extended to accept properties.
-			s.deploymentID,      // $8: DEPLOYMENT_ID
+			action.Permission,   // $7: PERMISSION
+			"{}",                // $8: PROPERTIES (empty JSON).
+			s.deploymentID,      // $9: DEPLOYMENT_ID
 		)
 		if err != nil {
 			return fmt.Errorf("failed to create action: %w", err)
@@ -548,7 +518,7 @@ func (s *resourceStore) CreateAction(
 	})
 }
 
-// GetAction retrieves an action by ID.
+// GetAction retrieves an action and internal ID by UUID.
 // If resInternalID is nil, retrieves action at resource server level.
 // If resInternalID is provided, retrieves action at resource level.
 func (s *resourceStore) GetAction(id string, resServerInternalID int, resInternalID *int) (Action, error) {
@@ -622,7 +592,7 @@ func (s *resourceStore) UpdateAction(id string, resServerInternalID int, resInte
 			queryUpdateAction,
 			action.Name,         // $1: NAME
 			action.Description,  // $2: DESCRIPTION
-			"{}",                // $3: PROPERTIES (empty JSON). Future: can be extended to accept properties.
+			"{}",                // $3: PROPERTIES (empty JSON).
 			id,                  // $4: ACTION_ID
 			resServerInternalID, // $5: RESOURCE_SERVER_ID (internal ID)
 			resInternalID,       // $6: RESOURCE_ID (internal ID or NULL)
@@ -766,26 +736,60 @@ func resolveInternalID(row map[string]interface{}) (int, error) {
 	}
 }
 
+// resolveProperties extracts and sets the properties from the PROPERTIES column.
+func resolveProperties(row map[string]interface{}, rs *ResourceServer) {
+	if propsVal, ok := row["properties"]; ok && propsVal != nil {
+		var props resourceServerProperties
+		var propsBytes []byte
+
+		switch v := propsVal.(type) {
+		case string:
+			propsBytes = []byte(v)
+		case []byte:
+			propsBytes = v
+		}
+
+		if len(propsBytes) > 0 {
+			if err := json.Unmarshal(propsBytes, &props); err == nil {
+				rs.Delimiter = props.Delimiter
+			}
+		}
+	}
+}
+
+// buildPropertiesJSON builds the PROPERTIES JSON for a ResourceServer.
+func buildPropertiesJSON(rs ResourceServer) interface{} {
+	properties := resourceServerProperties{Delimiter: rs.Delimiter}
+	if propsJSON, err := json.Marshal(properties); err == nil {
+		return propsJSON
+	}
+	return json.RawMessage("{}")
+}
+
 // buildResourceServerFromResultRow builds a ResourceServer from a database result row.
-func buildResourceServerFromResultRow(row map[string]interface{}) (ResourceServer, error) {
+func buildResourceServerFromResultRow(row map[string]interface{}) (int, ResourceServer, error) {
 	rs := ResourceServer{}
 
+	internalID, err := resolveInternalID(row)
+	if err != nil {
+		return 0, rs, err
+	}
 	if id, ok := row["resource_server_id"].(string); ok {
 		rs.ID = id
 	} else {
-		return rs, fmt.Errorf("resource_server_id field is missing or invalid")
+		return 0, rs, fmt.Errorf("resource_server_id field is missing or invalid")
 	}
 
 	if ouID, ok := row["ou_id"].(string); ok {
 		rs.OrganizationUnitID = ouID
 	} else {
-		return rs, fmt.Errorf("ou_id field is missing or invalid")
+		return 0, rs, fmt.Errorf("ou_id field is missing or invalid")
 	}
 
 	if name, ok := row["name"].(string); ok {
 		rs.Name = name
 	} else {
-		return rs, fmt.Errorf("name field is missing or invalid")
+		return 0, rs, fmt.Errorf("name field is missing or invalid")
 	}
 
 	if desc, ok := row["description"].(string); ok {
@@ -796,33 +800,42 @@ func buildResourceServerFromResultRow(row map[string]interface{}) (ResourceServe
 		rs.Identifier = identifier
 	}
 
-	return rs, nil
+	resolveProperties(row, &rs)
+
+	return internalID, rs, nil
 }
 
 // buildResourceFromResultRow builds a Resource from a database result row.
-func buildResourceFromResultRow(row map[string]interface{}) (Resource, error) {
+func buildResourceFromResultRow(row map[string]interface{}) (int, Resource, error) {
 	res := Resource{}
-
+	internalID, err := resolveInternalID(row)
+	if err != nil {
+		return 0, res, err
+	}
 	if id, ok := row["resource_id"].(string); ok {
 		res.ID = id
 	} else {
-		return res, fmt.Errorf("resource_id field is missing or invalid")
+		return 0, res, fmt.Errorf("resource_id field is missing or invalid")
 	}
 
 	if name, ok := row["name"].(string); ok {
 		res.Name = name
 	} else {
-		return res, fmt.Errorf("name field is missing or invalid")
+		return 0, res, fmt.Errorf("name field is missing or invalid")
 	}
 
 	if handle, ok := row["handle"].(string); ok {
 		res.Handle = handle
 	} else {
-		return res, fmt.Errorf("handle field is missing or invalid")
+		return 0, res, fmt.Errorf("handle field is missing or invalid")
 	}
 
 	if desc, ok := row["description"].(string); ok {
 		res.Description = desc
+	}
+
+	if permission, ok := row["permission"].(string); ok {
+		res.Permission = permission
 	}
 
 	// PROPERTIES column exists in DB but not mapped to model (store as empty JSON)
@@ -831,7 +844,7 @@ func buildResourceFromResultRow(row map[string]interface{}) (Resource, error) {
 		res.Parent = &parentID
 	}
 
-	return res, nil
+	return internalID, res, nil
 }
 
 // buildActionFromResultRow builds an Action from a database result row.
@@ -858,6 +871,10 @@ func buildActionFromResultRow(row map[string]interface{}) (Action, error) {
 
 	if desc, ok := row["description"].(string); ok {
 		action.Description = desc
+	}
+
+	if permission, ok := row["permission"].(string); ok {
+		action.Permission = permission
 	}
 
 	// PROPERTIES column exists in DB but not mapped to model (store as empty JSON)

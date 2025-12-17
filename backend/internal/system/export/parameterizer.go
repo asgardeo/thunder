@@ -26,6 +26,7 @@ import (
 
 	"gopkg.in/yaml.v3"
 
+	immutableresource "github.com/asgardeo/thunder/internal/system/immutable_resource"
 	"github.com/asgardeo/thunder/internal/system/log"
 )
 
@@ -55,30 +56,26 @@ func newParameterizer(rules templatingRules) *parameterizer {
 
 // ToParameterizedYAML converts an object directly to parameterized YAML
 // This is the easiest method when you already have the object
-func (p *parameterizer) ToParameterizedYAML(obj interface{}, resourceType string, resourceName string) (string, error) {
-	// Get rules for the resource type
-	var rules *resourceRules
-	switch resourceType {
-	case "Application":
-		rules = p.rules.Application
-	case "IdentityProvider":
-		rules = p.rules.IdentityProvider
-	case "NotificationSender":
-		rules = p.rules.NotificationSender
-	case "UserSchema":
-		rules = p.rules.UserSchema
-	default:
-		return "", fmt.Errorf("unknown resource type: %s", resourceType)
+func (p *parameterizer) ToParameterizedYAML(obj interface{},
+	resourceType string, resourceName string, rules *immutableresource.ResourceRules) (string, error) {
+	// Convert imported type to local type for compatibility
+	var localRules *resourceRules
+	if rules != nil {
+		localRules = &resourceRules{
+			Variables:             rules.Variables,
+			ArrayVariables:        rules.ArrayVariables,
+			DynamicPropertyFields: rules.DynamicPropertyFields,
+		}
 	}
 
 	// Convert object to yaml.Node directly to preserve field order and handle omitempty
 	// Pass rules so fields in parameterization rules bypass omitempty
 	var node yaml.Node
-	if err := p.structToNodeIgnoringOmitempty(obj, &node, rules, "", resourceName); err != nil {
+	if err := p.structToNodeIgnoringOmitempty(obj, &node, localRules, "", resourceName); err != nil {
 		return "", fmt.Errorf("failed to convert object to node: %w", err)
 	}
 
-	if rules == nil {
+	if localRules == nil {
 		// No rules, just marshal the node as-is
 		var buf bytes.Buffer
 		encoder := yaml.NewEncoder(&buf)
@@ -94,7 +91,7 @@ func (p *parameterizer) ToParameterizedYAML(obj interface{}, resourceType string
 	}
 
 	// Convert struct field paths to YAML field paths
-	rulesWithYAMLPaths := p.convertStructPathsToYAMLPaths(obj, rules)
+	rulesWithYAMLPaths := p.convertStructPathsToYAMLPaths(obj, localRules)
 
 	// Apply parameterization to the node tree
 	if err := p.parameterizeNode(&node, rulesWithYAMLPaths, resourceName); err != nil {

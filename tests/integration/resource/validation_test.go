@@ -405,3 +405,79 @@ func (suite *ValidationTestSuite) TestInvalidContentType() {
 		suite.T().Logf("Correctly rejected invalid content type: %d, %s", resp.StatusCode, string(bodyBytes))
 	}
 }
+
+// Handle Validation Tests (must not contain delimiter)
+
+func (suite *ValidationTestSuite) TestCreateResourceHandleContainsDelimiter() {
+	// First create a resource server to get its delimiter
+	rsReq := CreateResourceServerRequest{
+		Name:               "delimiter-test-server",
+		OrganizationUnitID: suite.ouID,
+	}
+	rsID, err := createResourceServer(rsReq)
+	suite.Require().NoError(err)
+	defer deleteResourceServer(rsID)
+
+	rs, err := getResourceServer(rsID)
+	suite.Require().NoError(err)
+	delimiter := rs.Delimiter
+
+	// Try to create resource with handle containing the delimiter
+	req := CreateResourceRequest{
+		Name:   "Invalid Handle Resource",
+		Handle: "bad" + delimiter + "handle",
+		Parent: nil,
+	}
+
+	_, err = createResource(rsID, req)
+	suite.Error(err, "Should fail when handle contains delimiter")
+	suite.Contains(err.Error(), "400")
+}
+
+func (suite *ValidationTestSuite) TestCreateActionHandleContainsDelimiter() {
+	// First create a resource server to get its delimiter
+	rsReq := CreateResourceServerRequest{
+		Name:               "action-delimiter-test-server",
+		OrganizationUnitID: suite.ouID,
+	}
+	rsID, err := createResourceServer(rsReq)
+	suite.Require().NoError(err)
+	defer deleteResourceServer(rsID)
+
+	rs, err := getResourceServer(rsID)
+	suite.Require().NoError(err)
+	delimiter := rs.Delimiter
+
+	// Try to create action with handle containing the delimiter
+	req := CreateActionRequest{
+		Name:   "Invalid Handle Action",
+		Handle: "bad" + delimiter + "handle",
+	}
+
+	_, err = createActionAtResourceServer(rsID, req)
+	suite.Error(err, "Should fail when handle contains delimiter")
+	suite.Contains(err.Error(), "400")
+}
+
+func (suite *ValidationTestSuite) TestCreateResourceHandleInvalidCharacters() {
+	req := CreateResourceRequest{
+		Name:   "Invalid Characters Resource",
+		Handle: "bad handle",
+		Parent: nil,
+	}
+
+	_, err := createResource(suite.resourceServerID, req)
+	suite.Error(err, "Should fail when handle contains space")
+	suite.Contains(err.Error(), "400")
+}
+
+func (suite *ValidationTestSuite) TestCreateActionHandleInvalidCharacters() {
+	req := CreateActionRequest{
+		Name:   "Invalid Characters Action",
+		Handle: "bad\"handle",
+	}
+
+	_, err := createActionAtResourceServer(suite.resourceServerID, req)
+	suite.Error(err, "Should fail when handle contains invalid characters")
+	suite.Contains(err.Error(), "400")
+}

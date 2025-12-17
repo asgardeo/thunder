@@ -70,6 +70,48 @@ func (suite *ServiceTestSuite) TestBuildBasicApplicationResponse() {
 	assert.Equal(suite.T(), "client-123", result.ClientID)
 }
 
+func (suite *ServiceTestSuite) TestBuildBasicApplicationResponse_WithTemplate() {
+	app := model.BasicApplicationDTO{
+		ID:                        "app-123",
+		Name:                      "Test App",
+		Description:               "Test Description",
+		AuthFlowGraphID:           "auth_flow_1",
+		RegistrationFlowGraphID:   "reg_flow_1",
+		IsRegistrationFlowEnabled: true,
+		BrandingID:                "brand-123",
+		Template:                  "spa",
+		ClientID:                  "client-123",
+		LogoURL:                   "https://example.com/logo.png",
+	}
+
+	result := buildBasicApplicationResponse(app)
+
+	assert.Equal(suite.T(), "app-123", result.ID)
+	assert.Equal(suite.T(), "Test App", result.Name)
+	assert.Equal(suite.T(), "brand-123", result.BrandingID)
+	assert.Equal(suite.T(), "spa", result.Template)
+	assert.Equal(suite.T(), "client-123", result.ClientID)
+	assert.Equal(suite.T(), "https://example.com/logo.png", result.LogoURL)
+}
+
+func (suite *ServiceTestSuite) TestBuildBasicApplicationResponse_WithEmptyTemplate() {
+	app := model.BasicApplicationDTO{
+		ID:                        "app-123",
+		Name:                      "Test App",
+		Description:               "Test Description",
+		AuthFlowGraphID:           "auth_flow_1",
+		RegistrationFlowGraphID:   "reg_flow_1",
+		IsRegistrationFlowEnabled: true,
+		Template:                  "",
+		ClientID:                  "client-123",
+	}
+
+	result := buildBasicApplicationResponse(app)
+
+	assert.Equal(suite.T(), "app-123", result.ID)
+	assert.Equal(suite.T(), "", result.Template)
+}
+
 func (suite *ServiceTestSuite) TestGetDefaultTokenConfigFromDeployment() {
 	testConfig := &config.Config{
 		JWT: config.JWTConfig{

@@ -33,15 +33,17 @@ import {
 } from '@wso2/oxygen-ui';
 import type {JSX} from 'react';
 import {useEffect} from 'react';
-import {Info, Lightbulb, UserRound, Google, GitHub} from '@wso2/oxygen-ui-icons-react';
+import {Lightbulb, UserRound, Google, GitHub} from '@wso2/oxygen-ui-icons-react';
 import {useTranslation} from 'react-i18next';
 import {type IdentityProvider, IdentityProviderTypes} from '@/features/integrations/models/identity-provider';
 import getIntegrationIcon from '@/features/integrations/utils/getIntegrationIcon';
+import {AuthenticatorTypes} from '@/features/integrations/models/authenticators';
 import useIdentityProviders from '../../../integrations/api/useIdentityProviders';
-import {USERNAME_PASSWORD_AUTHENTICATION_OPTION_KEY} from '../../utils/resolveAuthFlowGraphId';
 
 /**
- * Props for the ConfigureSignInOptions component.
+ * Props for the {@link ConfigureSignInOptions} component.
+ *
+ * @public
  */
 export interface ConfigureSignInOptionsProps {
   /**
@@ -63,10 +65,65 @@ export interface ConfigureSignInOptionsProps {
 
 /**
  * Check if at least one authentication option is selected
+ *
+ * @param integrations - Record of integration states
+ * @returns True if at least one integration is enabled
+ *
+ * @internal
  */
 const hasAtLeastOneSelected = (integrations: Record<string, boolean>): boolean =>
   Object.values(integrations).some((isEnabled) => isEnabled);
 
+/**
+ * React component that renders the sign-in options configuration step in the
+ * application creation onboarding flow.
+ *
+ * This component allows users to configure authentication methods for their application
+ * by toggling between:
+ * 1. Username & Password authentication (default enabled)
+ * 2. Social/Enterprise identity provider integrations (Google, GitHub, etc.)
+ *
+ * The component fetches available identity providers and displays them as toggleable
+ * list items with appropriate icons. Users can enable/disable multiple authentication
+ * methods. The step is marked as ready only when at least one authentication option
+ * is selected, ensuring applications have a valid sign-in mechanism.
+ *
+ * @param props - The component props
+ * @param props.integrations - Record of enabled integrations (key: integration ID, value: enabled state)
+ * @param props.onIntegrationToggle - Callback invoked when an integration is toggled
+ * @param props.onReadyChange - Optional callback to notify parent of step readiness
+ *
+ * @returns JSX element displaying the sign-in options configuration interface
+ *
+ * @example
+ * ```tsx
+ * import ConfigureSignInOptions from './ConfigureSignInOptions';
+ *
+ * function OnboardingFlow() {
+ *   const [integrations, setIntegrations] = useState({
+ *     'username-password': true,
+ *     'google-idp-id': false,
+ *   });
+ *
+ *   const handleToggle = (id: string) => {
+ *     setIntegrations(prev => ({
+ *       ...prev,
+ *       [id]: !prev[id]
+ *     }));
+ *   };
+ *
+ *   return (
+ *     <ConfigureSignInOptions
+ *       integrations={integrations}
+ *       onIntegrationToggle={handleToggle}
+ *       onReadyChange={(isReady) => console.log('Ready:', isReady)}
+ *     />
+ *   );
+ * }
+ * ```
+ *
+ * @public
+ */
 export default function ConfigureSignInOptions({
   integrations,
   onIntegrationToggle,
@@ -76,9 +133,11 @@ export default function ConfigureSignInOptions({
   const theme = useTheme();
   const {data, isLoading, error} = useIdentityProviders();
 
-  // Broadcast readiness whenever integrations change
-  useEffect(() => {
-    const isReady = hasAtLeastOneSelected(integrations);
+  /**
+   * Broadcast readiness whenever integrations change.
+   */
+  useEffect((): void => {
+    const isReady: boolean = hasAtLeastOneSelected(integrations);
     if (onReadyChange) {
       onReadyChange(isReady);
     }
@@ -101,13 +160,14 @@ export default function ConfigureSignInOptions({
   }
 
   const availableIntegrations: IdentityProvider[] = data ?? [];
-  
-  // Check if Google and GitHub exist in the API data
-  const googleProvider = availableIntegrations.find((idp) => idp.type === IdentityProviderTypes.GOOGLE);
-  const githubProvider = availableIntegrations.find((idp) => idp.type === IdentityProviderTypes.GITHUB);
-  
-  const hasAtLeastOneSelectedOption = hasAtLeastOneSelected(integrations);
-  const hasUsernamePassword = integrations[USERNAME_PASSWORD_AUTHENTICATION_OPTION_KEY] ?? false;
+  const googleProvider: IdentityProvider | undefined = availableIntegrations.find(
+    (idp: IdentityProvider): boolean => idp.type === IdentityProviderTypes.GOOGLE,
+  );
+  const githubProvider: IdentityProvider | undefined = availableIntegrations.find(
+    (idp: IdentityProvider): boolean => idp.type === IdentityProviderTypes.GITHUB,
+  );
+  const hasAtLeastOneSelectedOption: boolean = hasAtLeastOneSelected(integrations);
+  const hasUsernamePassword: boolean = integrations[AuthenticatorTypes.BASIC_AUTH] ?? false;
 
   return (
     <Stack direction="column" spacing={4}>
@@ -115,12 +175,9 @@ export default function ConfigureSignInOptions({
         <Typography variant="h1" gutterBottom>
           {t('applications:onboarding.configure.SignInOptions.title')}
         </Typography>
-        <Stack direction="row" alignItems="center" spacing={1}>
-          <Info size={14} />
-          <Typography variant="body1" color="text.secondary" sx={{mb: 4}}>
-            {t('applications:onboarding.configure.SignInOptions.subtitle')}
-          </Typography>
-        </Stack>
+        <Typography variant="subtitle1" gutterBottom>
+          {t('applications:onboarding.configure.SignInOptions.subtitle')}
+        </Typography>
       </Stack>
 
       {/* Validation warning if no options selected */}
@@ -138,19 +195,19 @@ export default function ConfigureSignInOptions({
             <Switch
               edge="end"
               checked={hasUsernamePassword}
-              onChange={(): void => onIntegrationToggle(USERNAME_PASSWORD_AUTHENTICATION_OPTION_KEY)}
+              onChange={(): void => onIntegrationToggle(AuthenticatorTypes.BASIC_AUTH)}
               color="primary"
             />
           }
         >
-          <ListItemButton onClick={(): void => onIntegrationToggle(USERNAME_PASSWORD_AUTHENTICATION_OPTION_KEY)}>
+          <ListItemButton onClick={(): void => onIntegrationToggle(AuthenticatorTypes.BASIC_AUTH)}>
             <ListItemIcon>
               <UserRound size={24} />
             </ListItemIcon>
             <ListItemText primary={t('applications:onboarding.configure.SignInOptions.usernamePassword')} />
           </ListItemButton>
         </ListItem>
-        
+
         <Divider component="li" />
 
         {/* Google Option - Always shown, enabled if configured */}
@@ -179,8 +236,8 @@ export default function ConfigureSignInOptions({
               <ListItemIcon>
                 <Google size={24} />
               </ListItemIcon>
-              <ListItemText 
-                primary={t('applications:onboarding.configure.SignInOptions.google')} 
+              <ListItemText
+                primary={t('applications:onboarding.configure.SignInOptions.google')}
                 secondary={t('applications:onboarding.configure.SignInOptions.notConfigured')}
               />
             </ListItemButton>
@@ -214,8 +271,8 @@ export default function ConfigureSignInOptions({
               <ListItemIcon>
                 <GitHub size={24} />
               </ListItemIcon>
-              <ListItemText 
-                primary={t('applications:onboarding.configure.SignInOptions.github')} 
+              <ListItemText
+                primary={t('applications:onboarding.configure.SignInOptions.github')}
                 secondary={t('applications:onboarding.configure.SignInOptions.notConfigured')}
               />
             </ListItemButton>
@@ -224,9 +281,12 @@ export default function ConfigureSignInOptions({
 
         {/* Other Social Login Providers (if any) */}
         {availableIntegrations
-          .filter((provider) => provider.type !== IdentityProviderTypes.GOOGLE && provider.type !== IdentityProviderTypes.GITHUB)
+          .filter(
+            (provider: IdentityProvider): boolean =>
+              provider.type !== IdentityProviderTypes.GOOGLE && provider.type !== IdentityProviderTypes.GITHUB,
+          )
           .map(
-            (provider: IdentityProvider, index: number, filteredProviders): JSX.Element => (
+            (provider: IdentityProvider, index: number, filteredProviders: IdentityProvider[]): JSX.Element => (
               <>
                 <ListItem
                   key={provider.id}

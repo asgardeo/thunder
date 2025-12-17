@@ -27,10 +27,10 @@ import (
 	"strings"
 
 	serverconst "github.com/asgardeo/thunder/internal/system/constants"
-	syscontext "github.com/asgardeo/thunder/internal/system/context"
 	"github.com/asgardeo/thunder/internal/system/error/apierror"
 	"github.com/asgardeo/thunder/internal/system/error/serviceerror"
 	"github.com/asgardeo/thunder/internal/system/log"
+	"github.com/asgardeo/thunder/internal/system/security"
 	sysutils "github.com/asgardeo/thunder/internal/system/utils"
 )
 
@@ -317,7 +317,7 @@ func (uh *userHandler) HandleUserPostByPathRequest(w http.ResponseWriter, r *htt
 func (uh *userHandler) HandleSelfUserGetRequest(w http.ResponseWriter, r *http.Request) {
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, handlerLoggerComponentName))
 
-	userID := syscontext.GetUserID(r.Context())
+	userID := security.GetUserID(r.Context())
 	if strings.TrimSpace(userID) == "" {
 		handleError(w, &ErrorAuthenticationFailed)
 		return
@@ -338,7 +338,7 @@ func (uh *userHandler) HandleSelfUserGetRequest(w http.ResponseWriter, r *http.R
 func (uh *userHandler) HandleSelfUserPutRequest(w http.ResponseWriter, r *http.Request) {
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, handlerLoggerComponentName))
 
-	userID := syscontext.GetUserID(r.Context())
+	userID := security.GetUserID(r.Context())
 	if strings.TrimSpace(userID) == "" {
 		handleError(w, &ErrorAuthenticationFailed)
 		return
@@ -370,7 +370,7 @@ func (uh *userHandler) HandleSelfUserPutRequest(w http.ResponseWriter, r *http.R
 func (uh *userHandler) HandleSelfUserCredentialUpdateRequest(w http.ResponseWriter, r *http.Request) {
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, handlerLoggerComponentName))
 
-	userID := syscontext.GetUserID(r.Context())
+	userID := security.GetUserID(r.Context())
 	if strings.TrimSpace(userID) == "" {
 		handleError(w, &ErrorAuthenticationFailed)
 		return

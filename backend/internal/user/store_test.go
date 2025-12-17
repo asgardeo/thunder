@@ -27,6 +27,7 @@ import (
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/suite"
 
+	dbmodel "github.com/asgardeo/thunder/internal/system/database/model"
 	"github.com/asgardeo/thunder/tests/mocks/database/modelmock"
 )
 
@@ -74,12 +75,12 @@ func (suite *UserStoreTestSuite) TestSyncIndexedAttributesWithTx_Success_StringV
 	}`)
 
 	// Expect batch insert with all indexed attributes
-	suite.mockTx.On("Exec", mock.MatchedBy(func(query string) bool {
-		return strings.Contains(query, "INSERT INTO USER_INDEXED_ATTRIBUTES") &&
-			strings.Contains(query, "USER_ID") &&
-			strings.Contains(query, "ATTRIBUTE_NAME") &&
-			strings.Contains(query, "ATTRIBUTE_VALUE") &&
-			strings.Contains(query, "DEPLOYMENT_ID")
+	suite.mockTx.On("Exec", mock.MatchedBy(func(query dbmodel.DBQuery) bool {
+		return strings.Contains(query.Query, "INSERT INTO USER_INDEXED_ATTRIBUTES") &&
+			strings.Contains(query.Query, "USER_ID") &&
+			strings.Contains(query.Query, "ATTRIBUTE_NAME") &&
+			strings.Contains(query.Query, "ATTRIBUTE_VALUE") &&
+			strings.Contains(query.Query, "DEPLOYMENT_ID")
 	}), mock.Anything, mock.Anything, mock.Anything, mock.Anything,
 		mock.Anything, mock.Anything, mock.Anything, mock.Anything,
 		mock.Anything, mock.Anything, mock.Anything, mock.Anything,
@@ -105,12 +106,12 @@ func (suite *UserStoreTestSuite) TestSyncIndexedAttributesWithTx_Success_MixedTy
 
 	// Expect batch insert with only indexed attributes (username, email)
 	// age, active, score should be converted to strings
-	suite.mockTx.On("Exec", mock.MatchedBy(func(query string) bool {
-		return strings.Contains(query, "INSERT INTO USER_INDEXED_ATTRIBUTES") &&
-			strings.Contains(query, "USER_ID") &&
-			strings.Contains(query, "ATTRIBUTE_NAME") &&
-			strings.Contains(query, "ATTRIBUTE_VALUE") &&
-			strings.Contains(query, "DEPLOYMENT_ID")
+	suite.mockTx.On("Exec", mock.MatchedBy(func(query dbmodel.DBQuery) bool {
+		return strings.Contains(query.Query, "INSERT INTO USER_INDEXED_ATTRIBUTES") &&
+			strings.Contains(query.Query, "USER_ID") &&
+			strings.Contains(query.Query, "ATTRIBUTE_NAME") &&
+			strings.Contains(query.Query, "ATTRIBUTE_VALUE") &&
+			strings.Contains(query.Query, "DEPLOYMENT_ID")
 	}), mock.Anything, mock.Anything, mock.Anything, mock.Anything,
 		mock.Anything, mock.Anything, mock.Anything, mock.Anything).
 		Return(nil, nil)

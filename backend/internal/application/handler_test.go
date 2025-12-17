@@ -152,6 +152,64 @@ func (suite *HandlerTestSuite) TestHandleApplicationPostRequest_SuccessWithOAuth
 	mockService.AssertExpectations(suite.T())
 }
 
+func (suite *HandlerTestSuite) TestHandleApplicationPostRequest_TemplateScenarios() {
+	testCases := []struct {
+		name             string
+		template         string
+		expectedTemplate string
+	}{
+		{
+			name:             "with template",
+			template:         "spa",
+			expectedTemplate: "spa",
+		},
+		{
+			name:             "with empty template",
+			template:         "",
+			expectedTemplate: "",
+		},
+	}
+
+	for _, tc := range testCases {
+		suite.Run(tc.name, func() {
+			mockService := NewApplicationServiceInterfaceMock(suite.T())
+			handler := newApplicationHandler(mockService)
+
+			appRequest := model.ApplicationRequest{
+				Name:        "TestApp",
+				Description: "Test Description",
+				Template:    tc.template,
+			}
+
+			expectedApp := &model.ApplicationDTO{
+				ID:          "test-app-id",
+				Name:        "TestApp",
+				Description: "Test Description",
+				Template:    tc.expectedTemplate,
+			}
+
+			mockService.On("CreateApplication", mock.AnythingOfType("*model.ApplicationDTO")).Return(expectedApp, nil)
+
+			body, _ := json.Marshal(appRequest)
+			req := httptest.NewRequest(http.MethodPost, "/applications", bytes.NewBuffer(body))
+			req.Header.Set("Content-Type", "application/json")
+			w := httptest.NewRecorder()
+
+			handler.HandleApplicationPostRequest(w, req)
+
+			assert.Equal(suite.T(), http.StatusCreated, w.Code)
+
+			var response model.ApplicationCompleteResponse
+			err := json.Unmarshal(w.Body.Bytes(), &response)
+			assert.NoError(suite.T(), err)
+			assert.Equal(suite.T(), "test-app-id", response.ID)
+			assert.Equal(suite.T(), tc.expectedTemplate, response.Template)
+
+			mockService.AssertExpectations(suite.T())
+		})
+	}
+}
+
 func (suite *HandlerTestSuite) TestHandleApplicationPostRequest_InvalidJSON() {
 	mockService := NewApplicationServiceInterfaceMock(suite.T())
 	handler := newApplicationHandler(mockService)
@@ -304,6 +362,48 @@ func (suite *HandlerTestSuite) TestHandleApplicationListRequest_Success() {
 	mockService.AssertExpectations(suite.T())
 }
 
+func (suite *HandlerTestSuite) TestHandleApplicationListRequest_WithTemplate() {
+	mockService := NewApplicationServiceInterfaceMock(suite.T())
+	handler := newApplicationHandler(mockService)
+
+	expectedList := &model.ApplicationListResponse{
+		TotalResults: 2,
+		Count:        2,
+		Applications: []model.BasicApplicationResponse{
+			{
+				ID:          "app1",
+				Name:        "App1",
+				Description: "Description 1",
+				Template:    "spa",
+			},
+			{
+				ID:          "app2",
+				Name:        "App2",
+				Description: "Description 2",
+				Template:    "mobile",
+			},
+		},
+	}
+
+	mockService.On("GetApplicationList").Return(expectedList, nil)
+
+	req := httptest.NewRequest(http.MethodGet, "/applications", nil)
+	w := httptest.NewRecorder()
+
+	handler.HandleApplicationListRequest(w, req)
+
+	assert.Equal(suite.T(), http.StatusOK, w.Code)
+
+	var response model.ApplicationListResponse
+	err := json.Unmarshal(w.Body.Bytes(), &response)
+	assert.NoError(suite.T(), err)
+	assert.Equal(suite.T(), 2, response.TotalResults)
+	assert.Equal(suite.T(), "spa", response.Applications[0].Template)
+	assert.Equal(suite.T(), "mobile", response.Applications[1].Template)
+
+	mockService.AssertExpectations(suite.T())
+}
+
 func (suite *HandlerTestSuite) TestHandleApplicationListRequest_ServiceError() {
 	mockService := NewApplicationServiceInterfaceMock(suite.T())
 	handler := newApplicationHandler(mockService)
@@ -397,6 +497,68 @@ func (suite *HandlerTestSuite) TestHandleApplicationGetRequest_SuccessWithOAuth(
 	assert.Equal(suite.T(), "test-app-id", response.ID)
 	assert.Equal(suite.T(), "TestApp", response.Name)
 	assert.Equal(suite.T(), "test-client-id", response.ClientID)
+
+	mockService.AssertExpectations(suite.T())
+}
+
+func (suite *HandlerTestSuite) TestHandleApplicationGetRequest_WithTemplate() {
+	mockService := NewApplicationServiceInterfaceMock(suite.T())
+	handler := newApplicationHandler(mockService)
+
+	expectedApp := &model.Application{
+		ID:          "test-app-id",
+		Name:        "TestApp",
+		Description: "Test Description",
+		BrandingID:  "brand-123",
+		Template:    "spa",
+	}
+
+	mockService.On("GetApplication", "test-app-id").Return(expectedApp, nil)
+
+	req := httptest.NewRequest(http.MethodGet, "/applications/test-app-id", nil)
+	req.SetPathValue("id", "test-app-id")
+	w := httptest.NewRecorder()
+
+	handler.HandleApplicationGetRequest(w, req)
+
+	assert.Equal(suite.T(), http.StatusOK, w.Code)
+
+	var response model.ApplicationGetResponse
+	err := json.Unmarshal(w.Body.Bytes(), &response)
+	assert.NoError(suite.T(), err)
+	assert.Equal(suite.T(), "test-app-id", response.ID)
+	assert.Equal(suite.T(), "brand-123", response.BrandingID)
+	assert.Equal(suite.T(), "spa", response.Template)
+
+	mockService.AssertExpectations(suite.T())
+}
+
+func (suite *HandlerTestSuite) TestHandleApplicationGetRequest_WithEmptyTemplate() {
+	mockService := NewApplicationServiceInterfaceMock(suite.T())
+	handler := newApplicationHandler(mockService)
+
+	expectedApp := &model.Application{
+		ID:          "test-app-id",
+		Name:        "TestApp",
+		Description: "Test Description",
+		Template:    "",
+	}
+
+	mockService.On("GetApplication", "test-app-id").Return(expectedApp, nil)
+
+	req := httptest.NewRequest(http.MethodGet, "/applications/test-app-id", nil)
+	req.SetPathValue("id", "test-app-id")
+	w := httptest.NewRecorder()
+
+	handler.HandleApplicationGetRequest(w, req)
+
+	assert.Equal(suite.T(), http.StatusOK, w.Code)
+
+	var response model.ApplicationGetResponse
+	err := json.Unmarshal(w.Body.Bytes(), &response)
+	assert.NoError(suite.T(), err)
+	assert.Equal(suite.T(), "test-app-id", response.ID)
+	assert.Equal(suite.T(), "", response.Template)
 
 	mockService.AssertExpectations(suite.T())
 }
@@ -564,6 +726,104 @@ func (suite *HandlerTestSuite) TestHandleApplicationPutRequest_Success() {
 	assert.Equal(suite.T(), "UpdatedApp", response.Name)
 
 	mockService.AssertExpectations(suite.T())
+}
+
+func (suite *HandlerTestSuite) TestHandleApplicationPutRequest_WithTemplate() {
+	mockService := NewApplicationServiceInterfaceMock(suite.T())
+	handler := newApplicationHandler(mockService)
+
+	appRequest := model.ApplicationRequest{
+		Name:        "UpdatedApp",
+		Description: "Updated Description",
+		Template:    "mobile",
+	}
+
+	expectedApp := &model.ApplicationDTO{
+		ID:          "test-app-id",
+		Name:        "UpdatedApp",
+		Description: "Updated Description",
+		Template:    "mobile",
+	}
+
+	mockService.On("UpdateApplication", "test-app-id", mock.AnythingOfType("*model.ApplicationDTO")).
+		Return(expectedApp, nil)
+
+	body, _ := json.Marshal(appRequest)
+	req := httptest.NewRequest(http.MethodPut, "/applications/test-app-id", bytes.NewBuffer(body))
+	req.Header.Set("Content-Type", "application/json")
+	req.SetPathValue("id", "test-app-id")
+	w := httptest.NewRecorder()
+
+	handler.HandleApplicationPutRequest(w, req)
+
+	assert.Equal(suite.T(), http.StatusOK, w.Code)
+
+	var response model.ApplicationCompleteResponse
+	err := json.Unmarshal(w.Body.Bytes(), &response)
+	assert.NoError(suite.T(), err)
+	assert.Equal(suite.T(), "test-app-id", response.ID)
+	assert.Equal(suite.T(), "mobile", response.Template)
+
+	mockService.AssertExpectations(suite.T())
+}
+
+func (suite *HandlerTestSuite) TestHandleApplicationPutRequest_TemplateScenarios() {
+	testCases := []struct {
+		name             string
+		template         string
+		expectedTemplate string
+	}{
+		{
+			name:             "update template",
+			template:         "traditional_web_app",
+			expectedTemplate: "traditional_web_app",
+		},
+		{
+			name:             "clear template",
+			template:         "",
+			expectedTemplate: "",
+		},
+	}
+
+	for _, tc := range testCases {
+		suite.Run(tc.name, func() {
+			mockService := NewApplicationServiceInterfaceMock(suite.T())
+			handler := newApplicationHandler(mockService)
+
+			appRequest := model.ApplicationRequest{
+				Name:        "UpdatedApp",
+				Description: "Updated Description",
+				Template:    tc.template,
+			}
+
+			expectedApp := &model.ApplicationDTO{
+				ID:          "test-app-id",
+				Name:        "UpdatedApp",
+				Description: "Updated Description",
+				Template:    tc.expectedTemplate,
+			}
+
+			mockService.On("UpdateApplication", "test-app-id", mock.AnythingOfType("*model.ApplicationDTO")).
+				Return(expectedApp, nil)
+
+			body, _ := json.Marshal(appRequest)
+			req := httptest.NewRequest(http.MethodPut, "/applications/test-app-id", bytes.NewBuffer(body))
+			req.Header.Set("Content-Type", "application/json")
+			req.SetPathValue("id", "test-app-id")
+			w := httptest.NewRecorder()
+
+			handler.HandleApplicationPutRequest(w, req)
+
+			assert.Equal(suite.T(), http.StatusOK, w.Code)
+
+			var response model.ApplicationCompleteResponse
+			err := json.Unmarshal(w.Body.Bytes(), &response)
+			assert.NoError(suite.T(), err)
+			assert.Equal(suite.T(), tc.expectedTemplate, response.Template)
+
+			mockService.AssertExpectations(suite.T())
+		})
+	}
 }
 
 func (suite *HandlerTestSuite) TestHandleApplicationPutRequest_InvalidID() {

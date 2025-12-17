@@ -167,7 +167,7 @@ func (us *userStore) CreateUser(user User, credentials CredentialMap) error {
 
 	// Insert user
 	_, err = tx.Exec(
-		QueryCreateUser.Query,
+		QueryCreateUser,
 		user.ID,
 		user.OrganizationUnit,
 		user.Type,
@@ -248,8 +248,7 @@ func (us *userStore) UpdateUser(user *User) error {
 
 	// Update user
 	result, err := tx.Exec(
-		QueryUpdateUserByUserID.Query,
-		user.ID, user.OrganizationUnit, user.Type, string(attributes), us.deploymentID)
+		QueryUpdateUserByUserID, user.ID, user.OrganizationUnit, user.Type, string(attributes), us.deploymentID)
 	if err != nil {
 		if rollbackErr := tx.Rollback(); rollbackErr != nil {
 			err = errors.Join(err, fmt.Errorf("failed to rollback transaction: %w", rollbackErr))
@@ -274,7 +273,7 @@ func (us *userStore) UpdateUser(user *User) error {
 
 	// Delete existing indexed attributes
 	_, err = tx.Exec(
-		QueryDeleteIndexedAttributesByUser.Query,
+		QueryDeleteIndexedAttributesByUser,
 		user.ID,
 		us.deploymentID,
 	)
@@ -699,7 +698,11 @@ func (us *userStore) syncIndexedAttributesWithTx(
 	}
 
 	// Construct the complete query with dynamic VALUES placeholders
-	query := QueryBatchInsertIndexedAttributes.Query + strings.Join(valuePlaceholders, ", ")
+	queryStr := QueryBatchInsertIndexedAttributes.Query + strings.Join(valuePlaceholders, ", ")
+	query := dbmodel.DBQuery{
+		ID:    QueryBatchInsertIndexedAttributes.ID,
+		Query: queryStr,
+	}
 
 	// Execute batch insert
 	_, err := tx.Exec(query, args...)

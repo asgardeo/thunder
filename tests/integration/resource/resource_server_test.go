@@ -88,6 +88,8 @@ func (suite *ResourceServerAPITestSuite) TestCreateResourceServer() {
 	suite.Equal(reqBody.Description, rs.Description)
 	suite.Equal(reqBody.Identifier, rs.Identifier)
 	suite.Equal(reqBody.OrganizationUnitID, rs.OrganizationUnitID)
+	suite.NotEmpty(rs.Delimiter, "Delimiter should be set to default value")
+	suite.Equal(":", rs.Delimiter, "Default delimiter should be ':' based on default configuration")
 }
 
 func (suite *ResourceServerAPITestSuite) TestCreateResourceServerWithoutOptionalFields() {
@@ -187,10 +189,12 @@ func (suite *ResourceServerAPITestSuite) TestGetResourceServerNotFound() {
 }
 
 func (suite *ResourceServerAPITestSuite) TestListResourceServers() {
+	delimiter := "-"
 	rs1 := CreateResourceServerRequest{
 		Name:               "List Resource Server 1",
 		Description:        "First resource server",
 		OrganizationUnitID: testOUID,
+		Delimiter:          &delimiter,
 	}
 	rs2 := CreateResourceServerRequest{
 		Name:               "List Resource Server 2",
@@ -217,6 +221,7 @@ func (suite *ResourceServerAPITestSuite) TestListResourceServers() {
 		if rs.ID == rsID1 {
 			foundRS1 = true
 			suite.Equal(rs1.Name, rs.Name)
+			suite.Equal("-", rs.Delimiter)
 		}
 		if rs.ID == rsID2 {
 			foundRS2 = true
@@ -239,11 +244,13 @@ func (suite *ResourceServerAPITestSuite) TestListResourceServersWithPagination()
 }
 
 func (suite *ResourceServerAPITestSuite) TestUpdateResourceServer() {
+	delimiter := "/"
 	reqBody := CreateResourceServerRequest{
 		Name:               "Update Test Resource Server",
 		Description:        "Original description",
 		Identifier:         "original-identifier",
 		OrganizationUnitID: testOUID,
+		Delimiter:          &delimiter,
 	}
 
 	rsID, err := createResourceServer(reqBody)
@@ -265,6 +272,7 @@ func (suite *ResourceServerAPITestSuite) TestUpdateResourceServer() {
 	suite.Equal(updateReq.Name, rs.Name)
 	suite.Equal(updateReq.Description, rs.Description)
 	suite.Equal(updateReq.Identifier, rs.Identifier)
+	suite.Equal("/", rs.Delimiter, "Delimiter should remain unchanged after update")
 }
 
 func (suite *ResourceServerAPITestSuite) TestUpdateResourceServerNotFound() {
@@ -360,6 +368,58 @@ func (suite *ResourceServerAPITestSuite) TestDeleteResourceServer() {
 func (suite *ResourceServerAPITestSuite) TestDeleteResourceServerNotFound() {
 	err := deleteResourceServer("00000000-0000-0000-0000-000000000000")
 	suite.NoError(err, "Delete should be idempotent")
+}
+
+// Delimiter Tests
+func (suite *ResourceServerAPITestSuite) TestCreateResourceServerWithVariousDelimiters() {
+	// Valid delimiters: a-zA-Z0-9._:-/
+	validDelimiters := []string{":", ".", "-", "_", "/"}
+
+	for _, delim := range validDelimiters {
+		delimiter := delim
+		reqBody := CreateResourceServerRequest{
+			Name:               "Server With " + delim + " Delimiter",
+			OrganizationUnitID: testOUID,
+			Delimiter:          &delimiter,
+		}
+
+		rsID, err := createResourceServer(reqBody)
+		suite.Require().NoError(err, "Should accept delimiter: %s", delim)
+		defer deleteResourceServer(rsID)
+
+		rs, err := getResourceServer(rsID)
+		suite.Require().NoError(err)
+		suite.Equal(delim, rs.Delimiter, "Delimiter should be %s", delim)
+	}
+
+	// Invalid delimiters - characters not in a-zA-Z0-9._:-/
+	invalidDelimiters := []struct {
+		value       string
+		description string
+	}{
+		{"\"", "quote"},
+		{"\\", "backslash"},
+		{"::", "multi-character"},
+		{"ñ", "non-ASCII"},
+		{"#", "hash"},
+		{"|", "pipe"},
+		{"!", "exclamation"},
+		{"@", "at"},
+		{"$", "dollar"},
+	}
+
+	for _, tc := range invalidDelimiters {
+		delimiter := tc.value
+		reqBody := CreateResourceServerRequest{
+			Name:               "Server With " + tc.description + " Delimiter",
+			OrganizationUnitID: testOUID,
+			Delimiter:          &delimiter,
+		}
+
+		_, err := createResourceServer(reqBody)
+		suite.Error(err, "Should reject %s delimiter", tc.description)
+		suite.Contains(err.Error(), "400", "Should return 400 for %s delimiter", tc.description)
+	}
 }
 
 // Helper functions

@@ -85,7 +85,7 @@ The chart creates the following OpenChoreo resources:
 
 | Parameter | Description | Default |
 |-----------|-------------|---------|
-| `jwt.issuer` | JWT token issuer identifier | `thunder` |
+| `jwt.issuer` | JWT token issuer identifier (derived from server URL if not set) | derived |
 | `jwt.validity` | JWT token validity in seconds | `3600` (1 hour) |
 | `oauth.refresh_token_validity` | Refresh token validity in seconds | `86400` (24 hours) |
 | `cors.allowed_origins` | List of allowed CORS origins | See values.yaml |

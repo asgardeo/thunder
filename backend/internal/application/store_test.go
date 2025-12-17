@@ -32,8 +32,8 @@ import (
 	oauth2const "github.com/asgardeo/thunder/internal/oauth/oauth2/constants"
 	"github.com/asgardeo/thunder/internal/system/config"
 	dbmodel "github.com/asgardeo/thunder/internal/system/database/model"
-	"github.com/asgardeo/thunder/tests/mocks/database/clientmock"
 	"github.com/asgardeo/thunder/tests/mocks/database/modelmock"
+	"github.com/asgardeo/thunder/tests/mocks/database/providermock"
 )
 
 const testAppID = "test-app-id"
@@ -42,7 +42,7 @@ const testServerID = "test-server-id"
 // ApplicationStoreTestSuite contains comprehensive tests for the application store helper functions.
 type ApplicationStoreTestSuite struct {
 	suite.Suite
-	mockDBClient *clientmock.DBClientInterfaceMock
+	mockDBClient *providermock.DBClientInterfaceMock
 }
 
 func TestApplicationStoreTestSuite(t *testing.T) {
@@ -51,7 +51,7 @@ func TestApplicationStoreTestSuite(t *testing.T) {
 
 func (suite *ApplicationStoreTestSuite) SetupTest() {
 	_ = config.InitializeThunderRuntime("test", &config.Config{})
-	suite.mockDBClient = clientmock.NewDBClientInterfaceMock(suite.T())
+	suite.mockDBClient = providermock.NewDBClientInterfaceMock(suite.T())
 }
 
 func (suite *ApplicationStoreTestSuite) createTestApplication() model.ApplicationProcessedDTO {
@@ -214,6 +214,36 @@ func (suite *ApplicationStoreTestSuite) TestGetAppJSONDataBytes_EmptyContacts() 
 	contacts, ok := result["contacts"].([]interface{})
 	suite.True(ok)
 	suite.Len(contacts, 0)
+}
+
+func (suite *ApplicationStoreTestSuite) TestGetAppJSONDataBytes_WithTemplate() {
+	app := suite.createTestApplication()
+	app.Template = "spa"
+
+	jsonBytes, err := getAppJSONDataBytes(&app)
+
+	suite.NoError(err)
+	suite.NotNil(jsonBytes)
+
+	var result map[string]interface{}
+	err = json.Unmarshal(jsonBytes, &result)
+	suite.NoError(err)
+	suite.Equal("spa", result["template"])
+}
+
+func (suite *ApplicationStoreTestSuite) TestGetAppJSONDataBytes_WithEmptyTemplate() {
+	app := suite.createTestApplication()
+	app.Template = ""
+
+	jsonBytes, err := getAppJSONDataBytes(&app)
+
+	suite.NoError(err)
+	suite.NotNil(jsonBytes)
+
+	var result map[string]interface{}
+	err = json.Unmarshal(jsonBytes, &result)
+	suite.NoError(err)
+	suite.Nil(result["template"]) // Empty template should not be included
 }
 
 func (suite *ApplicationStoreTestSuite) TestGetOAuthConfigJSONBytes_Success() {
@@ -410,6 +440,78 @@ func (suite *ApplicationStoreTestSuite) TestBuildBasicApplicationFromResultRow_W
 	suite.False(result.IsRegistrationFlowEnabled)
 }
 
+func (suite *ApplicationStoreTestSuite) TestBuildBasicApplicationFromResultRow_WithTemplate() {
+	appJSON := map[string]interface{}{
+		"template": "spa",
+	}
+	appJSONBytes, _ := json.Marshal(appJSON)
+
+	row := map[string]interface{}{
+		"app_id":                       "app1",
+		"app_name":                     "Test App 1",
+		"description":                  "Test description",
+		"auth_flow_graph_id":           "auth_flow_1",
+		"registration_flow_graph_id":   "reg_flow_1",
+		"is_registration_flow_enabled": "1",
+		"branding_id":                  "brand-123",
+		"app_json":                     string(appJSONBytes),
+		"consumer_key":                 "client_app1",
+	}
+
+	result, err := buildBasicApplicationFromResultRow(row)
+
+	suite.NoError(err)
+	suite.Equal("app1", result.ID)
+	suite.Equal("brand-123", result.BrandingID)
+	suite.Equal("spa", result.Template)
+}
+
+func (suite *ApplicationStoreTestSuite) TestBuildBasicApplicationFromResultRow_WithNullTemplate() {
+	appJSON := map[string]interface{}{}
+	appJSONBytes, _ := json.Marshal(appJSON)
+
+	row := map[string]interface{}{
+		"app_id":                       "app1",
+		"app_name":                     "Test App 1",
+		"description":                  "Test description",
+		"auth_flow_graph_id":           "auth_flow_1",
+		"registration_flow_graph_id":   "reg_flow_1",
+		"is_registration_flow_enabled": "1",
+		"app_json":                     string(appJSONBytes),
+		"consumer_key":                 "client_app1",
+	}
+
+	result, err := buildBasicApplicationFromResultRow(row)
+
+	suite.NoError(err)
+	suite.Equal("app1", result.ID)
+	suite.Equal("", result.Template)
+}
+
+func (suite *ApplicationStoreTestSuite) TestBuildBasicApplicationFromResultRow_WithEmptyTemplate() {
+	appJSON := map[string]interface{}{
+		"template": "",
+	}
+	appJSONBytes, _ := json.Marshal(appJSON)
+
+	row := map[string]interface{}{
+		"app_id":                       "app1",
+		"app_name":                     "Test App 1",
+		"description":                  "Test description",
+		"auth_flow_graph_id":           "auth_flow_1",
+		"registration_flow_graph_id":   "reg_flow_1",
+		"is_registration_flow_enabled": "1",
+		"app_json":                     string(appJSONBytes),
+		"consumer_key":                 "client_app1",
+	}
+
+	result, err := buildBasicApplicationFromResultRow(row)
+
+	suite.NoError(err)
+	suite.Equal("app1", result.ID)
+	suite.Equal("", result.Template)
+}
+
 func (suite *ApplicationStoreTestSuite) TestBuildBasicApplicationFromResultRow_InvalidAppID() {
 	row := map[string]interface{}{
 		"app_id": 123, // Invalid type
@@ -540,6 +642,59 @@ func (suite *ApplicationStoreTestSuite) TestBuildApplicationFromResultRow_Succes
 	suite.Equal("client_app1", result.InboundAuthConfig[0].OAuthAppConfig.ClientID)
 }
 
+func (suite *ApplicationStoreTestSuite) TestBuildApplicationFromResultRow_WithTemplate() {
+	appJSON := map[string]interface{}{
+		"url":      "https://example.com",
+		"logo_url": "https://example.com/logo.png",
+		"template": "mobile",
+	}
+	appJSONBytes, _ := json.Marshal(appJSON)
+
+	row := map[string]interface{}{
+		"app_id":                       "app1",
+		"app_name":                     "Test App 1",
+		"description":                  "Test description",
+		"auth_flow_graph_id":           "auth_flow_1",
+		"registration_flow_graph_id":   "reg_flow_1",
+		"is_registration_flow_enabled": "1",
+		"branding_id":                  "brand-123",
+		"app_json":                     string(appJSONBytes),
+	}
+
+	result, err := buildApplicationFromResultRow(row)
+
+	suite.NoError(err)
+	suite.Equal("app1", result.ID)
+	suite.Equal("brand-123", result.BrandingID)
+	suite.Equal("mobile", result.Template)
+	suite.Equal("https://example.com", result.URL)
+}
+
+func (suite *ApplicationStoreTestSuite) TestBuildApplicationFromResultRow_WithoutTemplate() {
+	appJSON := map[string]interface{}{
+		"url":      "https://example.com",
+		"logo_url": "https://example.com/logo.png",
+	}
+	appJSONBytes, _ := json.Marshal(appJSON)
+
+	row := map[string]interface{}{
+		"app_id":                       "app1",
+		"app_name":                     "Test App 1",
+		"description":                  "Test description",
+		"auth_flow_graph_id":           "auth_flow_1",
+		"registration_flow_graph_id":   "reg_flow_1",
+		"is_registration_flow_enabled": "1",
+		"app_json":                     string(appJSONBytes),
+	}
+
+	result, err := buildApplicationFromResultRow(row)
+
+	suite.NoError(err)
+	suite.Equal("app1", result.ID)
+	suite.Equal("", result.Template) // No template in app_json
+	suite.Equal("https://example.com", result.URL)
+}
+
 func (suite *ApplicationStoreTestSuite) TestBuildApplicationFromResultRow_WithNullAppJSON() {
 	row := map[string]interface{}{
 		"app_id":                       "app1",
@@ -556,6 +711,7 @@ func (suite *ApplicationStoreTestSuite) TestBuildApplicationFromResultRow_WithNu
 	suite.NoError(err)
 	suite.Equal("", result.URL)
 	suite.Equal("", result.LogoURL)
+	suite.Equal("", result.Template) // Null app_json means no template
 	suite.Nil(result.Token)
 }
 
@@ -1548,7 +1704,7 @@ func TestCreateOAuthAppQuery_ExecError(t *testing.T) {
 
 	mockTx := modelmock.NewTxInterfaceMock(t)
 	mockTx.
-		On("Exec", QueryCreateOAuthApplication.Query, mock.Anything, mock.Anything, mock.Anything, mock.Anything,
+		On("Exec", QueryCreateOAuthApplication, mock.Anything, mock.Anything, mock.Anything, mock.Anything,
 			testServerID).
 		Return(nil, errors.New("database exec error")).
 		Once()
@@ -1566,7 +1722,7 @@ func TestDeleteOAuthAppQuery_ExecError(t *testing.T) {
 
 	mockTx := modelmock.NewTxInterfaceMock(t)
 	mockTx.
-		On("Exec", QueryDeleteOAuthApplicationByClientID.Query, mock.Anything, testServerID).
+		On("Exec", QueryDeleteOAuthApplicationByClientID, mock.Anything, testServerID).
 		Return(nil, errors.New("database delete error")).
 		Once()
 

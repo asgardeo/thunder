@@ -24,9 +24,11 @@ import type {CreateApplicationRequest} from '../models/requests';
 import ApplicationQueryKeys from '../constants/application-query-keys';
 
 /**
- * Variables for the update application mutation
+ * Variables for the {@link useUpdateApplication} mutation.
+ *
+ * @public
  */
-interface UpdateApplicationVariables {
+export interface UpdateApplicationVariables {
   /**
    * The unique identifier of the application to update
    */
@@ -38,9 +40,14 @@ interface UpdateApplicationVariables {
 }
 
 /**
- * Custom hook to update an existing application in the Thunder server.
+ * Custom React hook to update an existing application in the Thunder server.
  *
- * @returns TanStack Query mutation object for updating applications
+ * This hook uses TanStack Query mutations to handle the application update process,
+ * providing loading states and error handling. Upon successful update, it automatically
+ * updates the cached application data and invalidates related queries to ensure
+ * the UI reflects the latest changes.
+ *
+ * @returns TanStack Query mutation object for updating applications with mutate function, loading state, and error information
  *
  * @example
  * ```tsx
@@ -68,6 +75,8 @@ interface UpdateApplicationVariables {
  *   );
  * }
  * ```
+ *
+ * @public
  */
 export default function useUpdateApplication(): UseMutationResult<Application, Error, UpdateApplicationVariables> {
   const {http} = useAsgardeo();

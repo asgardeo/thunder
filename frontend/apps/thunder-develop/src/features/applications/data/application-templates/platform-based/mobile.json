@@ -1,0 +1,23 @@
+{
+  "name": "Mobile Application",
+  "description": "Native mobile application",
+  "inbound_auth_config": [
+    {
+      "type": "oauth2",
+      "config": {
+        "grant_types": [
+          "authorization_code",
+          "refresh_token"
+        ],
+        "response_types": [
+          "code"
+        ],
+        "redirect_uris": [],
+        "pkce_required": true,
+        "token_endpoint_auth_method": "none",
+        "public_client": true
+      }
+    }
+  ],
+  "allowed_user_types": []
+}

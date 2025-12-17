@@ -27,6 +27,7 @@ type ResourceServerResponse struct {
 	Description        string `json:"description,omitempty"`
 	Identifier         string `json:"identifier,omitempty"`
 	OrganizationUnitID string `json:"ouId"`
+	Delimiter          string `json:"delimiter"`
 }
 
 // ResourceResponse represents a resource.
@@ -36,6 +37,7 @@ type ResourceResponse struct {
 	Handle      string  `json:"handle"`
 	Description string  `json:"description,omitempty"`
 	Parent      *string `json:"parent,omitempty"`
+	Permission  string  `json:"permission"`
 }
 
 // ActionResponse represents an action.
@@ -44,6 +46,7 @@ type ActionResponse struct {
 	Name        string `json:"name"`
 	Handle      string `json:"handle"`
 	Description string `json:"description,omitempty"`
+	Permission  string `json:"permission"`
 }
 
 // LinkResponse represents a pagination link.
@@ -85,6 +88,7 @@ type CreateResourceServerRequest struct {
 	Description        string `json:"description,omitempty"`
 	Identifier         string `json:"identifier,omitempty"`
 	OrganizationUnitID string `json:"ouId"`
+	Delimiter          string `json:"delimiter,omitempty"`
 }
 
 // UpdateResourceServerRequest represents the request to update a resource server.
@@ -131,6 +135,7 @@ type ResourceServer struct {
 	Description        string
 	Identifier         string
 	OrganizationUnitID string
+	Delimiter          string
 }
 
 // Resource represents a resource in the service layer.
@@ -140,6 +145,7 @@ type Resource struct {
 	Handle      string
 	Description string
 	Parent      *string
+	Permission  string
 }
 
 // Action represents an action in the service layer.
@@ -148,6 +154,7 @@ type Action struct {
 	Name        string
 	Handle      string
 	Description string
+	Permission  string
 }
 
 // Link represents a pagination link in the service layer.

@@ -56,8 +56,9 @@ func (suite *HashServiceTestSuite) TestGenerateSha256() {
 	config.ResetThunderRuntime()
 	_ = config.InitializeThunderRuntime("/test/thunder/home", testConfig)
 
-	cred := newHashService().Generate(suite.input)
+	cred, err := newHashService().Generate(suite.input)
 
+	assert.NoError(suite.T(), err, "Error should be nil when generating hash")
 	assert.Equal(suite.T(), SHA256, cred.Algorithm, "Algorithm should be SHA256")
 	assert.NotEmpty(suite.T(), cred.Hash, "Hash should not be empty")
 }
@@ -79,8 +80,8 @@ func (suite *HashServiceTestSuite) TestSHA256HashWithCustomSaltSize() {
 	config.ResetThunderRuntime()
 	_ = config.InitializeThunderRuntime("/test/thunder/home", testConfig)
 
-	cred := newHashService().Generate(suite.input)
-
+	cred, err := newHashService().Generate(suite.input)
+	assert.NoError(suite.T(), err, "Error should be nil when generating hash")
 	assert.Equal(suite.T(), SHA256, cred.Algorithm, "Algorithm should be SHA256")
 	assert.NotEmpty(suite.T(), cred.Hash, "Hash should not be empty")
 	assert.NotEmpty(suite.T(), cred.Parameters.Salt, "Salt should not be empty")
@@ -91,8 +92,9 @@ func (suite *HashServiceTestSuite) TestSHA256HashWithCustomSaltSize() {
 		"Salt should be hex encoded with expected length")
 
 	// Verify that the generated credential can be verified
-	assert.True(suite.T(), newHashService().Verify(suite.input, cred),
-		"Hash verification should succeed for the same input with custom salt size")
+	ok, err := newHashService().Verify(suite.input, cred)
+	assert.NoError(suite.T(), err, "Error should be nil when verifying hash")
+	assert.True(suite.T(), ok, "Hash verification should succeed for the same input with custom salt size")
 }
 
 func (suite *HashServiceTestSuite) TestVerifySha256() {
@@ -142,9 +144,9 @@ func (suite *HashServiceTestSuite) TestVerifySha256() {
 
 	for _, tc := range testCases {
 		suite.T().Run(tc.name, func(t *testing.T) {
-			hash := newHashService().Verify([]byte(tc.input), tc.expected)
-
-			assert.True(t, hash)
+			ok, err := newHashService().Verify([]byte(tc.input), tc.expected)
+			assert.NoError(t, err, "Error should be nil when verifying hash")
+			assert.True(t, ok)
 		})
 	}
 }
@@ -154,6 +156,7 @@ func (suite *HashServiceTestSuite) TestVerifySha256_Failure() {
 		name     string
 		input    string
 		expected Credential
+		error    bool
 	}{
 		{
 			name:  "IncorrectHash",
@@ -162,6 +165,7 @@ func (suite *HashServiceTestSuite) TestVerifySha256_Failure() {
 				Algorithm: SHA256,
 				Hash:      "incorrecthashvalue",
 			},
+			error: false,
 		},
 		{
 			name:  "IncorrectSalt",
@@ -173,14 +177,29 @@ func (suite *HashServiceTestSuite) TestVerifySha256_Failure() {
 					Salt: "incorrectsalt",
 				},
 			},
+			error: true,
 		},
 	}
 
+	testConfig := &config.Config{
+		Crypto: config.CryptoConfig{
+			PasswordHashing: config.PasswordHashingConfig{
+				Algorithm: string(SHA256),
+			},
+		},
+	}
+	config.ResetThunderRuntime()
+	_ = config.InitializeThunderRuntime("/test/thunder/home", testConfig)
+
 	for _, tc := range testCases {
 		suite.T().Run(tc.name, func(t *testing.T) {
-			hash := newHashService().Verify([]byte(tc.input), tc.expected)
-
-			assert.False(t, hash)
+			ok, err := newHashService().Verify([]byte(tc.input), tc.expected)
+			assert.False(t, ok)
+			if !tc.error {
+				assert.NoError(t, err, "Error should be nil when verifying hash")
+			} else {
+				assert.Error(t, err, "Error should not be nil when verifying hash with invalid parameters")
+			}
 		})
 	}
 }
@@ -200,10 +219,12 @@ func (suite *HashServiceTestSuite) TestSha256HashAndVerify() {
 	config.ResetThunderRuntime()
 	_ = config.InitializeThunderRuntime("/test/thunder/home", testConfig)
 
-	cred := newHashService().Generate(suite.input)
+	cred, err := newHashService().Generate(suite.input)
+	assert.NoError(suite.T(), err, "Error should be nil when generating hash")
 
-	assert.True(suite.T(), newHashService().Verify(suite.input, cred),
-		"Hash verification should succeed for the same input")
+	ok, err := newHashService().Verify(suite.input, cred)
+	assert.NoError(suite.T(), err, "Error should be nil when verifying hash")
+	assert.True(suite.T(), ok, "Hash verification should succeed for the same input")
 }
 
 func (suite *HashServiceTestSuite) TestGeneratePBKDF2() {
@@ -218,8 +239,8 @@ func (suite *HashServiceTestSuite) TestGeneratePBKDF2() {
 	config.ResetThunderRuntime()
 	_ = config.InitializeThunderRuntime("/test/thunder/home", testConfig)
 
-	cred := newHashService().Generate(suite.input)
-
+	cred, err := newHashService().Generate(suite.input)
+	assert.NoError(suite.T(), err, "Error should be nil when generating hash")
 	assert.Equal(suite.T(), PBKDF2, cred.Algorithm, "Algorithm should be PBKDF2")
 	assert.NotEmpty(suite.T(), cred.Hash, "Hash should not be empty")
 }
@@ -245,8 +266,8 @@ func (suite *HashServiceTestSuite) TestPBKDF2HashWithCustomParameters() {
 	config.ResetThunderRuntime()
 	_ = config.InitializeThunderRuntime("/test/thunder/home", testConfig)
 
-	cred := newHashService().Generate(suite.input)
-
+	cred, err := newHashService().Generate(suite.input)
+	assert.NoError(suite.T(), err, "Error should be nil when generating hash")
 	assert.Equal(suite.T(), PBKDF2, cred.Algorithm, "Algorithm should be PBKDF2")
 	assert.NotEmpty(suite.T(), cred.Hash, "Hash should not be empty")
 	assert.NotEmpty(suite.T(), cred.Parameters.Salt, "Salt should not be empty")
@@ -266,8 +287,9 @@ func (suite *HashServiceTestSuite) TestPBKDF2HashWithCustomParameters() {
 		"Hash length should match configured key size")
 
 	// Verify that the generated credential can be verified
-	assert.True(suite.T(), newHashService().Verify(suite.input, cred),
-		"Hash verification should succeed for the same input with custom parameters")
+	ok, err := newHashService().Verify(suite.input, cred)
+	assert.NoError(suite.T(), err, "Error should be nil when verifying hash")
+	assert.True(suite.T(), ok, "Hash verification should succeed for the same input with custom parameters")
 }
 
 func (suite *HashServiceTestSuite) TestGeneratePBKDF2_Failure() {
@@ -285,8 +307,8 @@ func (suite *HashServiceTestSuite) TestGeneratePBKDF2_Failure() {
 	config.ResetThunderRuntime()
 	_ = config.InitializeThunderRuntime("/test/thunder/home", testConfig)
 
-	cred := newHashService().Generate(suite.input)
-
+	cred, err := newHashService().Generate(suite.input)
+	assert.Error(suite.T(), err, "Error should not be nil when generating hash with invalid parameters")
 	assert.Empty(suite.T(), cred.Hash, "Hash should be empty")
 }
 
@@ -339,9 +361,9 @@ func (suite *HashServiceTestSuite) TestVerifyBKDF2() {
 
 	for _, tc := range testCases {
 		suite.T().Run(tc.name, func(t *testing.T) {
-			hash := newHashService().Verify([]byte(tc.input), tc.expected)
-
-			assert.True(t, hash)
+			ok, err := newHashService().Verify([]byte(tc.input), tc.expected)
+			assert.NoError(t, err, "Error should be nil when verifying hash")
+			assert.True(t, ok)
 		})
 	}
 }
@@ -351,6 +373,7 @@ func (suite *HashServiceTestSuite) TestVerifyPBKDF2_Failure() {
 		name     string
 		input    string
 		expected Credential
+		error    bool
 	}{
 		{
 			name:  "IncorrectHash",
@@ -359,6 +382,7 @@ func (suite *HashServiceTestSuite) TestVerifyPBKDF2_Failure() {
 				Algorithm: PBKDF2,
 				Hash:      "incorrecthashvalue",
 			},
+			error: false,
 		},
 		{
 			name:  "IncorrectSalt",
@@ -370,6 +394,7 @@ func (suite *HashServiceTestSuite) TestVerifyPBKDF2_Failure() {
 					Salt: "incorrectsalt",
 				},
 			},
+			error: true,
 		},
 		{
 			name:  "IncorrectParameters",
@@ -382,6 +407,7 @@ func (suite *HashServiceTestSuite) TestVerifyPBKDF2_Failure() {
 					KeySize: 137438953473,
 				},
 			},
+			error: true,
 		},
 	}
 
@@ -397,9 +423,13 @@ func (suite *HashServiceTestSuite) TestVerifyPBKDF2_Failure() {
 
 	for _, tc := range testCases {
 		suite.T().Run(tc.name, func(t *testing.T) {
-			hash := newHashService().Verify([]byte(tc.input), tc.expected)
-
-			assert.False(t, hash)
+			ok, err := newHashService().Verify([]byte(tc.input), tc.expected)
+			if !tc.error {
+				assert.NoError(t, err, "Error should be nil when verifying hash")
+			} else {
+				assert.Error(t, err, "Error should not be nil when verifying hash with invalid parameters")
+			}
+			assert.False(t, ok)
 		})
 	}
 }
@@ -416,10 +446,12 @@ func (suite *HashServiceTestSuite) TestPBKDF2HashWithAndVerify() {
 	config.ResetThunderRuntime()
 	_ = config.InitializeThunderRuntime("/test/thunder/home", testConfig)
 
-	cred := newHashService().Generate(suite.input)
+	cred, err := newHashService().Generate(suite.input)
+	assert.NoError(suite.T(), err, "Error should be nil when generating hash")
 
-	assert.True(suite.T(), newHashService().Verify(suite.input, cred),
-		"Hash verification should succeed for the same input")
+	ok, err := newHashService().Verify(suite.input, cred)
+	assert.NoError(suite.T(), err, "Error should be nil when verifying hash")
+	assert.True(suite.T(), ok, "Hash verification should succeed for the same input")
 }
 
 func (suite *HashServiceTestSuite) TestUnsupportedAlgorithm_Failure() {
@@ -441,7 +473,8 @@ func (suite *HashServiceTestSuite) TestUnsupportedAlgorithm_Failure() {
 	}()
 
 	// Expecting error log and empty credential
-	cred := newHashService().Generate(suite.input)
+	cred, err := newHashService().Generate(suite.input)
+	assert.NoError(suite.T(), err, "Error should be nil when generating hash")
 	assert.Equal(suite.T(), Credential{}, cred, "Credential should be empty for unsupported algorithm")
 }
 
@@ -453,8 +486,6 @@ func (suite *HashServiceTestSuite) TestUnsupportedAlgorithmVerify_Failure() {
 			Salt: "somesalt",
 		},
 	}
-	result := newHashService().Verify(suite.input, referenceCredential)
-
 	// Expecting error log and empty credential
 	defer func() {
 		if r := recover(); r != nil {
@@ -462,18 +493,23 @@ func (suite *HashServiceTestSuite) TestUnsupportedAlgorithmVerify_Failure() {
 		}
 	}()
 
-	assert.False(suite.T(), result, "Verification should fail for unsupported algorithm")
+	ok, err := newHashService().Verify(suite.input, referenceCredential)
+	assert.Error(suite.T(), err, "Error should not be nil when verifying hash with unsupported algorithm")
+	assert.False(suite.T(), ok, "Verification should fail for unsupported algorithm")
 }
 
 func (suite *HashServiceTestSuite) TestGenerateSalt() {
-	salt := generateSalt(defaultSaltSize)
+	salt, err := generateSalt(defaultSaltSize)
+	assert.NoError(suite.T(), err, "Error should be nil when generating salt")
 	assert.NotEmpty(suite.T(), salt)
 	assert.Equal(suite.T(), 16, len(salt), "Generated salt should be 16 bytes")
 }
 
 func (suite *HashServiceTestSuite) TestGenerateSaltUniqueness() {
-	salt1 := generateSalt(defaultSaltSize)
-	salt2 := generateSalt(defaultSaltSize)
+	salt1, err := generateSalt(defaultSaltSize)
+	assert.NoError(suite.T(), err, "Error should be nil when generating salt")
+	salt2, err := generateSalt(defaultSaltSize)
+	assert.NoError(suite.T(), err, "Error should be nil when generating salt")
 
 	assert.NotEqual(suite.T(), salt1, salt2, "Generated salts should be different")
 }

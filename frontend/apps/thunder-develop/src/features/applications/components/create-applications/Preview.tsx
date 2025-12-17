@@ -36,11 +36,13 @@ import type {JSX} from 'react';
 import {useTranslation} from 'react-i18next';
 import {type IdentityProvider} from '@/features/integrations/models/identity-provider';
 import getIntegrationIcon from '@/features/integrations/utils/getIntegrationIcon';
+import {AuthenticatorTypes} from '@/features/integrations/models/authenticators';
 import useIdentityProviders from '../../../integrations/api/useIdentityProviders';
-import {USERNAME_PASSWORD_AUTHENTICATION_OPTION_KEY} from '../../utils/resolveAuthFlowGraphId';
 
 /**
- * Props for the Preview component that displays a live preview of the application sign-in page.
+ * Props for the {@link Preview} component that displays a live preview of the application sign-in page.
+ *
+ * @public
  */
 export interface PreviewProps {
   /**
@@ -65,17 +67,60 @@ export interface PreviewProps {
   integrations: Record<string, boolean>;
 }
 
+/**
+ * React component that renders a live preview of the application's sign-in page
+ * based on the user's design and authentication configuration choices.
+ *
+ * This component displays a simulated browser window containing a login interface that
+ * reflects the user's selections including:
+ * - Application name and logo
+ * - Primary brand color for buttons and interactive elements
+ * - Enabled authentication methods (username/password, social logins)
+ * - Identity provider buttons with appropriate branding
+ *
+ * The preview updates in real-time as users make changes in the onboarding flow,
+ * providing immediate visual feedback of their customization choices. The component
+ * fetches identity provider data and displays enabled providers with their respective
+ * icons and labels.
+ *
+ * @param props - The component props
+ * @param props.appName - The application name to display in the preview
+ * @param props.appLogo - URL of the logo to display in the preview
+ * @param props.selectedColor - Hex color code for branding elements
+ * @param props.integrations - Record of enabled authentication integrations
+ *
+ * @returns JSX element displaying the sign-in page preview in a browser mockup
+ *
+ * @example
+ * ```tsx
+ * import Preview from './Preview';
+ *
+ * function OnboardingFlow() {
+ *   return (
+ *     <Preview
+ *       appName="My Application"
+ *       appLogo="https://example.com/logo.png"
+ *       selectedColor="#FF5733"
+ *       integrations={{
+ *         'username-password': true,
+ *         'google-idp': true
+ *       }}
+ *     />
+ *   );
+ * }
+ * ```
+ *
+ * @public
+ */
 export default function Preview({appName, appLogo, selectedColor, integrations}: PreviewProps): JSX.Element {
   const {t} = useTranslation();
   const {mode} = useColorScheme();
   const theme = useTheme();
   const {data: identityProviders} = useIdentityProviders();
 
-  const hasUsernamePassword: boolean = integrations[USERNAME_PASSWORD_AUTHENTICATION_OPTION_KEY] ?? false;
-  
+  const hasUsernamePassword: boolean = integrations[AuthenticatorTypes.BASIC_AUTH] ?? false;
   const selectedProviders: IdentityProvider[] =
     identityProviders?.filter((idp: IdentityProvider): boolean => integrations[idp.id]) ?? [];
-  
   const hasSocialLogins: boolean = selectedProviders.length > 0;
 
   return (
@@ -150,12 +195,12 @@ export default function Preview({appName, appLogo, selectedColor, integrations}:
                 }),
                 ...theme.applyStyles('dark', {
                   backgroundColor: selectedColor,
-                })
+                }),
               }}
             />
           </Box>
         )}
-        <Paper sx={{pointerEvents: 'none', width: 400}}>
+        <Paper sx={{pointerEvents: 'none', width: 400, position: 'relative'}}>
           <ThemeProvider mode={mode}>
             <Box>
               <BaseSignIn onError={() => {}} onSuccess={() => {}}>
@@ -214,13 +259,15 @@ export default function Preview({appName, appLogo, selectedColor, integrations}:
                             },
                           }}
                         >
-                          Sign In
+                          {t('applications:onboarding.preview.signInButton')}
                         </Button>
                       </Box>
                     )}
 
                     {/* Divider - Show only when both username/password and social logins exist */}
-                    {hasUsernamePassword && hasSocialLogins && <Divider>or</Divider>}
+                    {hasUsernamePassword && hasSocialLogins && (
+                      <Divider>{t('applications:onboarding.preview.dividerText')}</Divider>
+                    )}
 
                     {/* Social login buttons with actual provider names */}
                     {hasSocialLogins && (
@@ -234,7 +281,7 @@ export default function Preview({appName, appLogo, selectedColor, integrations}:
                               disabled
                               startIcon={getIntegrationIcon(provider.type)}
                             >
-                              Continue with {provider.name}
+                              {t('applications:onboarding.preview.continueWith', {providerName: provider.name})}
                             </Button>
                           ),
                         )}

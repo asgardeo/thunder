@@ -25,6 +25,7 @@ import {QueryClient, QueryClientProvider} from '@tanstack/react-query';
 import {BrowserRouter} from 'react-router';
 import {ConfigProvider} from '@thunder/commons-contexts';
 import ApplicationCreatePage from '../ApplicationCreatePage';
+import ApplicationCreateProvider from '../../contexts/ApplicationCreate/ApplicationCreateProvider';
 
 // Mock child components
 vi.mock('../../components/create-applications/ConfigureName', () => ({
@@ -135,6 +136,33 @@ vi.mock('../../components/create-applications/ConfigureOAuth', () => ({
   },
 }));
 
+// Add missing mocks for the new onboarding components
+vi.mock('../../components/create-applications/ConfigureApproach', () => ({
+  default: ({onReadyChange}: {onReadyChange: (ready: boolean) => void}) => {
+    setTimeout(() => onReadyChange(true), 0);
+    return <div data-testid="configure-approach">Configure Approach</div>;
+  },
+}));
+
+vi.mock('../../components/create-applications/ConfigureStack', () => ({
+  default: ({onReadyChange}: {onReadyChange: (ready: boolean) => void}) => {
+    setTimeout(() => onReadyChange(true), 0);
+    return <div data-testid="configure-stack">Configure Stack</div>;
+  },
+}));
+
+vi.mock('../../components/create-applications/ConfigureDetails', () => ({
+  default: ({onReadyChange}: {onReadyChange: (ready: boolean) => void}) => {
+    setTimeout(() => onReadyChange(true), 0);
+    return <div data-testid="configure-details">Configure Details</div>;
+  },
+}));
+
+// Mock utility function to force URL configuration type
+vi.mock('../../utils/getConfigurationTypeFromTemplate', () => ({
+  default: vi.fn(() => 'URL'),
+}));
+
 vi.mock('../../components/create-applications/ApplicationSummary', () => ({
   default: ({
     appName,
@@ -201,7 +229,9 @@ describe('ApplicationCreatePage', () => {
       <BrowserRouter>
         <QueryClientProvider client={queryClient}>
           <ConfigProvider>
-            <ApplicationCreatePage />
+            <ApplicationCreateProvider>
+              <ApplicationCreatePage />
+            </ApplicationCreateProvider>
           </ConfigProvider>
         </QueryClientProvider>
       </BrowserRouter>,
@@ -216,6 +246,8 @@ describe('ApplicationCreatePage', () => {
         },
       },
     });
+
+    window.history.replaceState({}, '', '/');
 
     // Set up runtime config
     if (typeof window !== 'undefined') {
@@ -357,7 +389,7 @@ describe('ApplicationCreatePage', () => {
       expect(screen.queryByTestId('configure-design')).not.toBeInTheDocument();
     });
 
-    it('should show Create Application button on final step', async () => {
+    it('should reach configuration step with continue button', async () => {
       renderWithProviders();
 
       // Step 1: Name
@@ -374,22 +406,33 @@ describe('ApplicationCreatePage', () => {
       });
       await user.click(screen.getByRole('button', {name: /continue/i}));
 
-      // Step 3: Sign In Options - select an integration
-
+      // Step 3: Sign In Options
       await waitFor(() => {
         expect(screen.getByRole('button', {name: /continue/i})).not.toBeDisabled();
       });
       await user.click(screen.getByRole('button', {name: /continue/i}));
 
-      // Step 4: Configure Redirect URIs - add a URI
-      const addUriButton = screen.queryByTestId('add-redirect-uri');
-      if (addUriButton) {
-        await user.click(addUriButton);
-      }
-
+      // Step 4: Configure Approach
       await waitFor(() => {
-        expect(screen.getByRole('button', {name: /create application/i})).toBeInTheDocument();
+        expect(screen.getByTestId('configure-approach')).toBeInTheDocument();
       });
+      await user.click(screen.getByRole('button', {name: /continue/i}));
+
+      // Step 5: Configure Stack
+      await waitFor(() => {
+        expect(screen.getByTestId('configure-stack')).toBeInTheDocument();
+      });
+      await user.click(screen.getByRole('button', {name: /continue/i}));
+
+      // Step 6: Configure Details
+      await waitFor(() => {
+        expect(screen.getByTestId('configure-details')).toBeInTheDocument();
+      });
+
+      // Should have Continue button on configuration step (this is the final user-facing step)
+      const continueButton = screen.getByRole('button', {name: /continue/i});
+      expect(continueButton).toBeInTheDocument();
+      expect(continueButton).toBeEnabled();
     });
   });
 
@@ -521,7 +564,7 @@ describe('ApplicationCreatePage', () => {
   });
 
   describe('Application Creation', () => {
-    it('should call createApplication when Create Application is clicked', async () => {
+    it('should call createApplication when continuing from configuration step', async () => {
       renderWithProviders();
 
       // Step 1: Name
@@ -538,31 +581,37 @@ describe('ApplicationCreatePage', () => {
       });
       await user.click(screen.getByRole('button', {name: /continue/i}));
 
-      // Step 3: Sign In Options - select an integration
-
+      // Step 3: Sign In Options
       await waitFor(() => {
         expect(screen.getByRole('button', {name: /continue/i})).not.toBeDisabled();
       });
       await user.click(screen.getByRole('button', {name: /continue/i}));
 
-      // Step 4: Configure OAuth
+      // Navigate through all steps to reach configuration step
       await waitFor(() => {
-        expect(screen.getByTestId('configure-oauth')).toBeInTheDocument();
+        expect(screen.getByTestId('configure-approach')).toBeInTheDocument();
       });
+      await user.click(screen.getByRole('button', {name: /continue/i}));
+
       await waitFor(() => {
-        expect(screen.getByRole('button', {name: /create application/i})).not.toBeDisabled();
+        expect(screen.getByTestId('configure-stack')).toBeInTheDocument();
+      });
+      await user.click(screen.getByRole('button', {name: /continue/i}));
+
+      await waitFor(() => {
+        expect(screen.getByTestId('configure-details')).toBeInTheDocument();
       });
 
-      // Click Create Application
-      const createButton = screen.getByRole('button', {name: /create application/i});
-      await user.click(createButton);
+      // Continue from configuration step (this triggers application creation)
+      const continueButton = screen.getByRole('button', {name: /continue/i});
+      await user.click(continueButton);
 
       await waitFor(() => {
         expect(mockCreateBranding).toHaveBeenCalled();
       });
     });
 
-    it('should navigate to applications list after successful creation', async () => {
+    it('should show summary step after successful creation', async () => {
       mockCreateBranding.mockImplementation((_data, {onSuccess}: any) => {
         onSuccess({id: 'branding-123', name: 'Test Branding'});
       });
@@ -600,30 +649,36 @@ describe('ApplicationCreatePage', () => {
       });
       await user.click(screen.getByRole('button', {name: /continue/i}));
 
-      // Step 3: Sign In Options - select an integration
-
+      // Step 3: Sign In Options
       await waitFor(() => {
         expect(screen.getByRole('button', {name: /continue/i})).not.toBeDisabled();
       });
       await user.click(screen.getByRole('button', {name: /continue/i}));
 
-      // Step 4: Configure OAuth
+      // Navigate through all steps to reach configuration step
       await waitFor(() => {
-        expect(screen.getByTestId('configure-oauth')).toBeInTheDocument();
+        expect(screen.getByTestId('configure-approach')).toBeInTheDocument();
       });
+      await user.click(screen.getByRole('button', {name: /continue/i}));
+
       await waitFor(() => {
-        expect(screen.getByRole('button', {name: /create application/i})).not.toBeDisabled();
+        expect(screen.getByTestId('configure-stack')).toBeInTheDocument();
+      });
+      await user.click(screen.getByRole('button', {name: /continue/i}));
+
+      await waitFor(() => {
+        expect(screen.getByTestId('configure-details')).toBeInTheDocument();
       });
 
-      // Click Create Application
-      const createButton = screen.getByRole('button', {name: /create application/i});
-      await user.click(createButton);
+      // Continue from configuration step (this triggers application creation)
+      const continueButton = screen.getByRole('button', {name: /continue/i});
+      await user.click(continueButton);
 
       // After successful creation, should show summary step
       await waitFor(() => {
         expect(screen.getByTestId('application-summary')).toBeInTheDocument();
       });
-      
+
       // Verify the summary shows the created app
       expect(screen.getByTestId('summary-app-name')).toHaveTextContent('My App');
       expect(screen.getByTestId('summary-app-id')).toHaveTextContent('app-123');
@@ -650,24 +705,30 @@ describe('ApplicationCreatePage', () => {
       });
       await user.click(screen.getByRole('button', {name: /continue/i}));
 
-      // Step 3: Sign In Options - need to select at least one integration
-
+      // Step 3: Sign In Options
       await waitFor(() => {
         expect(screen.getByRole('button', {name: /continue/i})).not.toBeDisabled();
       });
       await user.click(screen.getByRole('button', {name: /continue/i}));
 
-      // Step 4: Configure OAuth
+      // Navigate through all steps to reach configuration step
       await waitFor(() => {
-        expect(screen.getByTestId('configure-oauth')).toBeInTheDocument();
+        expect(screen.getByTestId('configure-approach')).toBeInTheDocument();
       });
+      await user.click(screen.getByRole('button', {name: /continue/i}));
+
       await waitFor(() => {
-        expect(screen.getByRole('button', {name: /create application/i})).not.toBeDisabled();
+        expect(screen.getByTestId('configure-stack')).toBeInTheDocument();
+      });
+      await user.click(screen.getByRole('button', {name: /continue/i}));
+
+      await waitFor(() => {
+        expect(screen.getByTestId('configure-details')).toBeInTheDocument();
       });
 
-      // Click Create Application button
-      const createButton = screen.getByRole('button', {name: /create application/i});
-      await user.click(createButton);
+      // Continue from configuration step (this triggers application creation and fails)
+      const continueButton = screen.getByRole('button', {name: /continue/i});
+      await user.click(continueButton);
 
       await waitFor(() => {
         expect(screen.getByText(/failed to create branding/i)).toBeInTheDocument();
@@ -695,24 +756,30 @@ describe('ApplicationCreatePage', () => {
       });
       await user.click(screen.getByRole('button', {name: /continue/i}));
 
-      // Step 3: Sign In Options - need to select at least one integration
-
+      // Step 3: Sign In Options
       await waitFor(() => {
         expect(screen.getByRole('button', {name: /continue/i})).not.toBeDisabled();
       });
       await user.click(screen.getByRole('button', {name: /continue/i}));
 
-      // Step 4: Configure OAuth
+      // Navigate through all steps to reach configuration step
       await waitFor(() => {
-        expect(screen.getByTestId('configure-oauth')).toBeInTheDocument();
+        expect(screen.getByTestId('configure-approach')).toBeInTheDocument();
       });
+      await user.click(screen.getByRole('button', {name: /continue/i}));
+
       await waitFor(() => {
-        expect(screen.getByRole('button', {name: /create application/i})).not.toBeDisabled();
+        expect(screen.getByTestId('configure-stack')).toBeInTheDocument();
+      });
+      await user.click(screen.getByRole('button', {name: /continue/i}));
+
+      await waitFor(() => {
+        expect(screen.getByTestId('configure-details')).toBeInTheDocument();
       });
 
-      // Click Create Application button
-      const createButton = screen.getByRole('button', {name: /create application/i});
-      await user.click(createButton);
+      // Continue from configuration step (this triggers application creation and fails)
+      const continueButton = screen.getByRole('button', {name: /continue/i});
+      await user.click(continueButton);
 
       await waitFor(() => {
         expect(screen.getByText(/failed to create branding/i)).toBeInTheDocument();

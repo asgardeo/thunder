@@ -19,25 +19,17 @@
 package notification
 
 import (
-	"fmt"
 	"net/http"
-	"strings"
 
-	"github.com/asgardeo/thunder/internal/notification/common"
-	"github.com/asgardeo/thunder/internal/system/cmodels"
 	"github.com/asgardeo/thunder/internal/system/config"
-	filebasedruntime "github.com/asgardeo/thunder/internal/system/file_based_runtime"
+	immutableresource "github.com/asgardeo/thunder/internal/system/immutable_resource"
 	"github.com/asgardeo/thunder/internal/system/jwt"
-	"github.com/asgardeo/thunder/internal/system/log"
 	"github.com/asgardeo/thunder/internal/system/middleware"
-
-	"gopkg.in/yaml.v3"
 )
 
 // Initialize creates and configures the notification service components.
 func Initialize(mux *http.ServeMux, jwtService jwt.JWTServiceInterface) (
-	NotificationSenderMgtSvcInterface, OTPServiceInterface) {
-	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, "NotificationInit"))
+	NotificationSenderMgtSvcInterface, OTPServiceInterface, immutableresource.ResourceExporter, error) {
 	var notificationStore notificationStoreInterface
 	if config.GetThunderRuntime().Config.ImmutableResources.Enabled {
 		notificationStore = newNotificationFileBasedStore()
@@ -48,93 +40,18 @@ func Initialize(mux *http.ServeMux, jwtService jwt.JWTServiceInterface) (
 	mgtService := newNotificationSenderMgtService(notificationStore)
 
 	if config.GetThunderRuntime().Config.ImmutableResources.Enabled {
-		configs, err := filebasedruntime.GetConfigs("notification_senders")
-		if err != nil {
-			logger.Fatal("Failed to read notification sender configs from file-based runtime", log.Error(err))
-		}
-		for _, cfg := range configs {
-			senderDTO, err := parseToNotificationSenderDTO(cfg)
-			if err != nil {
-				logger.Fatal("Error parsing notification sender config", log.Error(err))
-			}
-
-			// Validate notification sender before storing
-			if validationErr := validateNotificationSender(*senderDTO); validationErr != nil {
-				logger.Fatal("Invalid notification sender configuration",
-					log.String("senderName", senderDTO.Name),
-					log.String("error", validationErr.Error),
-					log.String("errorDescription", validationErr.ErrorDescription))
-			}
-
-			err = notificationStore.createSender(*senderDTO)
-			if err != nil {
-				logger.Fatal("Failed to store notification sender in file-based store",
-					log.String("senderName", senderDTO.Name), log.Error(err))
-			}
+		if err := loadImmutableResources(notificationStore); err != nil {
+			return nil, nil, nil, err
 		}
 	}
 
 	otpService := newOTPService(mgtService, jwtService)
 	handler := newMessageNotificationSenderHandler(mgtService, otpService)
 	registerRoutes(mux, handler)
-	return mgtService, otpService
-}
 
-func parseToNotificationSenderDTO(data []byte) (*common.NotificationSenderDTO, error) {
-	var senderRequest common.NotificationSenderRequestWithID
-	err := yaml.Unmarshal(data, &senderRequest)
-	if err != nil {
-		return nil, err
-	}
-
-	senderDTO := &common.NotificationSenderDTO{
-		ID:          senderRequest.ID,
-		Name:        senderRequest.Name,
-		Description: senderRequest.Description,
-		Type:        common.NotificationSenderTypeMessage,
-	}
-
-	// Parse provider type
-	provider, err := parseProviderType(senderRequest.Provider)
-	if err != nil {
-		return nil, err
-	}
-	senderDTO.Provider = provider
-
-	// Convert PropertyDTO to Property
-	if len(senderRequest.Properties) > 0 {
-		properties := make([]cmodels.Property, 0, len(senderRequest.Properties))
-		for _, propDTO := range senderRequest.Properties {
-			prop, err := cmodels.NewProperty(propDTO.Name, propDTO.Value, propDTO.IsSecret)
-			if err != nil {
-				return nil, err
-			}
-			properties = append(properties, *prop)
-		}
-		senderDTO.Properties = properties
-	}
-
-	return senderDTO, nil
-}
-
-func parseProviderType(providerStr string) (common.MessageProviderType, error) {
-	// Convert string to lowercase for case-insensitive matching
-	providerStrLower := common.MessageProviderType(strings.ToLower(providerStr))
-
-	// Check if it's a valid provider
-	supportedProviders := []common.MessageProviderType{
-		common.MessageProviderTypeVonage,
-		common.MessageProviderTypeTwilio,
-		common.MessageProviderTypeCustom,
-	}
-
-	for _, supportedProvider := range supportedProviders {
-		if supportedProvider == providerStrLower {
-			return supportedProvider, nil
-		}
-	}
-
-	return "", fmt.Errorf("unsupported provider type: %s", providerStr)
+	// Create and return exporter
+	exporter := newNotificationSenderExporter(mgtService)
+	return mgtService, otpService, exporter, nil
 }
 
 // registerRoutes registers the HTTP routes for notification services.

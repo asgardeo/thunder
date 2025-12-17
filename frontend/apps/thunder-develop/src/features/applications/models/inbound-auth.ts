@@ -127,7 +127,7 @@ export interface InboundAuthConfig {
    * Currently only 'oauth2' is supported
    * @example InboundAuthTypes.OAUTH2
    */
-  type: 'oauth2';
+  type: string;
 
   /**
    * Protocol-specific configuration

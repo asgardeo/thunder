@@ -25,7 +25,7 @@ import (
 	"github.com/stretchr/testify/suite"
 
 	"github.com/asgardeo/thunder/internal/system/database/provider"
-	"github.com/asgardeo/thunder/tests/mocks/database/clientmock"
+
 	"github.com/asgardeo/thunder/tests/mocks/database/providermock"
 )
 
@@ -43,7 +43,7 @@ const (
 type ResourceStoreTestSuite struct {
 	suite.Suite
 	mockDBProvider *providermock.DBProviderInterfaceMock
-	mockDBClient   *clientmock.DBClientInterfaceMock
+	mockDBClient   *providermock.DBClientInterfaceMock
 	store          *resourceStore
 }
 
@@ -55,7 +55,7 @@ func TestResourceStoreTestSuite(t *testing.T) {
 // SetupTest sets up the test suite.
 func (suite *ResourceStoreTestSuite) SetupTest() {
 	suite.mockDBProvider = providermock.NewDBProviderInterfaceMock(suite.T())
-	suite.mockDBClient = clientmock.NewDBClientInterfaceMock(suite.T())
+	suite.mockDBClient = providermock.NewDBClientInterfaceMock(suite.T())
 	suite.store = &resourceStore{
 		dbProvider:   suite.mockDBProvider,
 		deploymentID: "test-deployment",
@@ -70,11 +70,12 @@ func (suite *ResourceStoreTestSuite) TestCreateResourceServer_Success() {
 		Name:               "Test Server",
 		Description:        "Test Description",
 		Identifier:         "test-identifier",
+		Delimiter:          ":",
 	}
 
 	suite.mockDBProvider.On("GetConfigDBClient").Return(suite.mockDBClient, nil)
 	suite.mockDBClient.On("Execute", queryCreateResourceServer, "rs1", "ou1", "Test Server",
-		"Test Description", "test-identifier", "{}", "test-deployment").
+		"Test Description", "test-identifier", []byte(`{"delimiter":":"}`), "test-deployment").
 		Return(int64(1), nil)
 
 	err := suite.store.CreateResourceServer("rs1", rs)
@@ -88,12 +89,13 @@ func (suite *ResourceStoreTestSuite) TestCreateResourceServer_ExecuteError() {
 		Name:               "Test Server",
 		Description:        "Test Description",
 		Identifier:         "test-identifier",
+		Delimiter:          ":",
 	}
 
 	execError := errors.New("insert failed")
 	suite.mockDBProvider.On("GetConfigDBClient").Return(suite.mockDBClient, nil)
 	suite.mockDBClient.On("Execute", queryCreateResourceServer, "rs1", "ou1", "Test Server",
-		"Test Description", "test-identifier", "{}", "test-deployment").
+		"Test Description", "test-identifier", []byte(`{"delimiter":":"}`), "test-deployment").
 		Return(int64(0), execError)
 
 	err := suite.store.CreateResourceServer("rs1", rs)
@@ -124,22 +126,26 @@ func (suite *ResourceStoreTestSuite) TestGetResourceServer_Success() {
 	suite.mockDBClient.On("Query", queryGetResourceServerByID, "rs1", "test-deployment").
 		Return([]map[string]interface{}{
 			{
+				"id":                 7,
 				"resource_server_id": "rs1",
 				"ou_id":              "ou1",
 				"name":               "Test Server",
 				"description":        "Test Description",
 				"identifier":         "test-identifier",
+				"properties":         []byte(`{"delimiter":"/"}`),
 			},
 		}, nil)
 
-	rs, err := suite.store.GetResourceServer("rs1")
+	internalID, rs, err := suite.store.GetResourceServer("rs1")
 
 	suite.NoError(err)
+	suite.Equal(7, internalID)
 	suite.Equal("rs1", rs.ID)
 	suite.Equal("ou1", rs.OrganizationUnitID)
 	suite.Equal("Test Server", rs.Name)
 	suite.Equal("Test Description", rs.Description)
 	suite.Equal("test-identifier", rs.Identifier)
+	suite.Equal("/", rs.Delimiter)
 }
 
 func (suite *ResourceStoreTestSuite) TestGetResourceServer_NotFound() {
@@ -147,10 +153,11 @@ func (suite *ResourceStoreTestSuite) TestGetResourceServer_NotFound() {
 	suite.mockDBClient.On("Query", queryGetResourceServerByID, "nonexistent",
 		"test-deployment").Return([]map[string]interface{}{}, nil)
 
-	rs, err := suite.store.GetResourceServer("nonexistent")
+	internalID, rs, err := suite.store.GetResourceServer("nonexistent")
 
 	suite.Error(err)
 	suite.Equal(errResourceServerNotFound, err)
+	suite.Equal(0, internalID)
 	suite.Empty(rs.ID)
 }
 
@@ -159,10 +166,11 @@ func (suite *ResourceStoreTestSuite) TestGetResourceServer_QueryError() {
 	suite.mockDBProvider.On("GetConfigDBClient").Return(suite.mockDBClient, nil)
 	suite.mockDBClient.On("Query", queryGetResourceServerByID, "rs1", "test-deployment").Return(nil, queryError)
 
-	rs, err := suite.store.GetResourceServer("rs1")
+	internalID, rs, err := suite.store.GetResourceServer("rs1")
 
 	suite.Error(err)
 	suite.Contains(err.Error(), "failed to get resource server")
+	suite.Equal(0, internalID)
 	suite.Empty(rs.ID)
 }
 
@@ -171,6 +179,7 @@ func (suite *ResourceStoreTestSuite) TestGetResourceServerList_Success() {
 	suite.mockDBClient.On("Query", queryGetResourceServerList, 10, 0, "test-deployment").
 		Return([]map[string]interface{}{
 			{
+				"id":                 1,
 				"resource_server_id": "rs1",
 				"ou_id":              "ou1",
 				"name":               "Server 1",
@@ -178,6 +187,7 @@ func (suite *ResourceStoreTestSuite) TestGetResourceServerList_Success() {
 				"identifier":         "identifier-1",
 			},
 			{
+				"id":                 2,
 				"resource_server_id": "rs2",
 				"ou_id":              "ou1",
 				"name":               "Server 2",
@@ -210,6 +220,7 @@ func (suite *ResourceStoreTestSuite) TestGetResourceServerList_InvalidRowData() 
 	suite.mockDBClient.On("Query", queryGetResourceServerList, 10, 0, "test-deployment").
 		Return([]map[string]interface{}{
 			{
+				"id":                 3,
 				"resource_server_id": 123, // Invalid type
 				"ou_id":              "ou1",
 				"name":               "Server 1",
@@ -252,11 +263,12 @@ func (suite *ResourceStoreTestSuite) TestUpdateResourceServer_Success() {
 		Name:               "Updated Server",
 		Description:        "Updated Description",
 		Identifier:         "updated-identifier",
+		Delimiter:          "-",
 	}
 
 	suite.mockDBProvider.On("GetConfigDBClient").Return(suite.mockDBClient, nil)
 	suite.mockDBClient.On("Execute", queryUpdateResourceServer, "ou1", "Updated Server",
-		"Updated Description", "updated-identifier", "{}", "rs1", "test-deployment").
+		"Updated Description", "updated-identifier", []byte(`{"delimiter":"-"}`), "rs1", "test-deployment").
 		Return(int64(1), nil)
 
 	err := suite.store.UpdateResourceServer("rs1", rs)
@@ -270,12 +282,13 @@ func (suite *ResourceStoreTestSuite) TestUpdateResourceServer_ExecuteError() {
 		Name:               "Updated Server",
 		Description:        "Updated Description",
 		Identifier:         "updated-identifier",
+		Delimiter:          "-",
 	}
 
 	execError := errors.New("update failed")
 	suite.mockDBProvider.On("GetConfigDBClient").Return(suite.mockDBClient, nil)
 	suite.mockDBClient.On("Execute", queryUpdateResourceServer, "ou1", "Updated Server",
-		"Updated Description", "updated-identifier", "{}", "rs1", "test-deployment").
+		"Updated Description", "updated-identifier", []byte(`{"delimiter":"-"}`), "rs1", "test-deployment").
 		Return(int64(0), execError)
 
 	err := suite.store.UpdateResourceServer("rs1", rs)
@@ -379,55 +392,6 @@ func (suite *ResourceStoreTestSuite) TestCheckResourceServerHasDependencies_Quer
 	suite.False(hasDeps)
 }
 
-func (suite *ResourceStoreTestSuite) TestCheckResourceServerExistAndGetInternalID_TypeConversion() {
-	testCases := []struct {
-		name      string
-		idValue   interface{}
-		expected  int
-		shouldErr bool
-		errMsg    string
-	}{
-		{"Int64Type", int64(42), 42, false, ""},
-		{"IntType", int(42), 42, false, ""},
-		{"Float64Type", float64(42), 42, false, ""},
-		{"InvalidType", "invalid", 0, true, "unexpected internal ID type"},
-	}
-
-	for _, tc := range testCases {
-		suite.Run(tc.name, func() {
-			suite.SetupTest()
-			suite.mockDBProvider.On("GetConfigDBClient").Return(suite.mockDBClient, nil)
-			suite.mockDBClient.On("Query", queryGetResourceServerInternalID, "rs1",
-				"test-deployment").Return([]map[string]interface{}{
-				{"id": tc.idValue},
-			}, nil)
-
-			id, err := suite.store.CheckResourceServerExistAndGetInternalID("rs1")
-
-			if tc.shouldErr {
-				suite.Error(err)
-				suite.Contains(err.Error(), tc.errMsg)
-				suite.Equal(0, id)
-			} else {
-				suite.NoError(err)
-				suite.Equal(tc.expected, id)
-			}
-		})
-	}
-}
-
-func (suite *ResourceStoreTestSuite) TestCheckResourceServerExistAndGetInternalID_NotFound() {
-	suite.mockDBProvider.On("GetConfigDBClient").Return(suite.mockDBClient, nil)
-	suite.mockDBClient.On("Query", queryGetResourceServerInternalID, "nonexistent",
-		"test-deployment").Return([]map[string]interface{}{}, nil)
-
-	id, err := suite.store.CheckResourceServerExistAndGetInternalID("nonexistent")
-
-	suite.Error(err)
-	suite.Equal(errResourceServerNotFound, err)
-	suite.Equal(0, id)
-}
-
 // Resource Tests
 
 func (suite *ResourceStoreTestSuite) TestCreateResource_Success() {
@@ -435,12 +399,13 @@ func (suite *ResourceStoreTestSuite) TestCreateResource_Success() {
 		Name:        "Test Resource",
 		Handle:      "test-handle",
 		Description: "Test Description",
+		Permission:  "perm:create",
 	}
 	parentID := 10
 
 	suite.mockDBProvider.On("GetConfigDBClient").Return(suite.mockDBClient, nil)
 	suite.mockDBClient.On("Execute", queryCreateResource, "res1", 5, "Test Resource",
-		"test-handle", "Test Description", "{}", &parentID, "test-deployment").
+		"test-handle", "Test Description", "perm:create", "{}", &parentID, "test-deployment").
 		Return(int64(1), nil)
 
 	err := suite.store.CreateResource("res1", 5, &parentID, res)
@@ -453,11 +418,12 @@ func (suite *ResourceStoreTestSuite) TestCreateResource_NullParent() {
 		Name:        "Test Resource",
 		Handle:      "test-handle",
 		Description: "Test Description",
+		Permission:  "perm:create",
 	}
 
 	suite.mockDBProvider.On("GetConfigDBClient").Return(suite.mockDBClient, nil)
 	suite.mockDBClient.On("Execute", queryCreateResource, "res1", 5, "Test Resource",
-		"test-handle", "Test Description", "{}", (*int)(nil), "test-deployment").
+		"test-handle", "Test Description", "perm:create", "{}", (*int)(nil), "test-deployment").
 		Return(int64(1), nil)
 
 	err := suite.store.CreateResource("res1", 5, nil, res)
@@ -470,12 +436,13 @@ func (suite *ResourceStoreTestSuite) TestCreateResource_ExecuteError() {
 		Name:        "Test Resource",
 		Handle:      "test-handle",
 		Description: "Test Description",
+		Permission:  "perm:create",
 	}
 
 	execError := errors.New("insert failed")
 	suite.mockDBProvider.On("GetConfigDBClient").Return(suite.mockDBClient, nil)
 	suite.mockDBClient.On("Execute", queryCreateResource, "res1", 5, "Test Resource",
-		"test-handle", "Test Description", "{}", (*int)(nil), "test-deployment").
+		"test-handle", "Test Description", "perm:create", "{}", (*int)(nil), "test-deployment").
 		Return(int64(0), execError)
 
 	err := suite.store.CreateResource("res1", 5, nil, res)
@@ -490,22 +457,26 @@ func (suite *ResourceStoreTestSuite) TestGetResource_Success() {
 	suite.mockDBClient.On("Query", queryGetResourceByID, testResourceID1, 1,
 		"test-deployment").Return([]map[string]interface{}{
 		{
+			"id":                 11,
 			"resource_id":        "res1",
 			"resource_server_id": "rs1",
 			"name":               "Test Resource",
 			"handle":             "test-handle",
 			"description":        "Test Description",
 			"parent_resource_id": parentID,
+			"permission":         "perm:read",
 		},
 	}, nil)
 
-	res, err := suite.store.GetResource("res1", 1)
+	internalID, res, err := suite.store.GetResource("res1", 1)
 
 	suite.NoError(err)
+	suite.Equal(11, internalID)
 	suite.Equal("res1", res.ID)
 	suite.Equal("Test Resource", res.Name)
 	suite.Equal("test-handle", res.Handle)
 	suite.Equal("Test Description", res.Description)
+	suite.Equal("perm:read", res.Permission)
 	suite.NotNil(res.Parent)
 	suite.Equal(parentID, *res.Parent)
 }
@@ -515,10 +486,11 @@ func (suite *ResourceStoreTestSuite) TestGetResource_NotFound() {
 	suite.mockDBClient.On("Query", queryGetResourceByID, "nonexistent", 1,
 		"test-deployment").Return([]map[string]interface{}{}, nil)
 
-	res, err := suite.store.GetResource("nonexistent", 1)
+	internalID, res, err := suite.store.GetResource("nonexistent", 1)
 
 	suite.Error(err)
 	suite.Equal(errResourceNotFound, err)
+	suite.Equal(0, internalID)
 	suite.Empty(res.ID)
 }
 
@@ -526,18 +498,22 @@ func (suite *ResourceStoreTestSuite) TestGetResourceList_Success() {
 	suite.mockDBProvider.On("GetConfigDBClient").Return(suite.mockDBClient, nil)
 	suite.mockDBClient.On("Query", queryGetResourceList, 1, 10, 0, "test-deployment").Return([]map[string]interface{}{
 		{
+			"id":                 21,
 			"resource_id":        "res1",
 			"resource_server_id": "rs1",
 			"name":               "Resource 1",
 			"handle":             "resource-1",
 			"description":        "Description 1",
+			"permission":         "perm:r1",
 		},
 		{
+			"id":                 22,
 			"resource_id":        "res2",
 			"resource_server_id": "rs1",
 			"name":               "Resource 2",
 			"handle":             "resource-2",
 			"description":        "Description 2",
+			"permission":         "perm:r2",
 		},
 	}, nil)
 
@@ -566,6 +542,7 @@ func (suite *ResourceStoreTestSuite) TestGetResourceList_InvalidRowData() {
 	suite.mockDBProvider.On("GetConfigDBClient").Return(suite.mockDBClient, nil)
 	suite.mockDBClient.On("Query", queryGetResourceList, 1, 10, 0, "test-deployment").Return([]map[string]interface{}{
 		{
+			"id":                 23,
 			"resource_id":        123, // Invalid type
 			"resource_server_id": "rs1",
 			"name":               "Resource 1",
@@ -584,6 +561,7 @@ func (suite *ResourceStoreTestSuite) TestGetResourceListByParent_NullParent() {
 	suite.mockDBClient.On("Query", queryGetResourceListByNullParent, 1, 10, 0,
 		"test-deployment").Return([]map[string]interface{}{
 		{
+			"id":                 31,
 			"resource_id":        "res1",
 			"resource_server_id": "rs1",
 			"name":               "Resource 1",
@@ -606,6 +584,7 @@ func (suite *ResourceStoreTestSuite) TestGetResourceListByParent_WithParent() {
 	suite.mockDBClient.On("Query", queryGetResourceListByParent, 1, parentID, 10, 0,
 		"test-deployment").Return([]map[string]interface{}{
 		{
+			"id":                 32,
 			"resource_id":        "res1",
 			"resource_server_id": "rs1",
 			"name":               "Resource 1",
@@ -851,31 +830,6 @@ func (suite *ResourceStoreTestSuite) TestCheckCircularDependency_QueryError() {
 	suite.False(hasCircular)
 }
 
-func (suite *ResourceStoreTestSuite) TestCheckResourceExistAndGetInternalID_Success() {
-	suite.mockDBProvider.On("GetConfigDBClient").Return(suite.mockDBClient, nil)
-	suite.mockDBClient.On("Query", queryGetResourceInternalID, "res1", 1,
-		"test-deployment").Return([]map[string]interface{}{
-		{"id": int64(100)},
-	}, nil)
-
-	id, err := suite.store.CheckResourceExistAndGetInternalID("res1", 1)
-
-	suite.NoError(err)
-	suite.Equal(100, id)
-}
-
-func (suite *ResourceStoreTestSuite) TestCheckResourceExistAndGetInternalID_NotFound() {
-	suite.mockDBProvider.On("GetConfigDBClient").Return(suite.mockDBClient, nil)
-	suite.mockDBClient.On("Query", queryGetResourceInternalID, "nonexistent", 1,
-		"test-deployment").Return([]map[string]interface{}{}, nil)
-
-	id, err := suite.store.CheckResourceExistAndGetInternalID("nonexistent", 1)
-
-	suite.Error(err)
-	suite.Equal(errResourceNotFound, err)
-	suite.Equal(0, id)
-}
-
 // Action Tests
 
 func (suite *ResourceStoreTestSuite) TestCreateAction_Success() {
@@ -883,12 +837,13 @@ func (suite *ResourceStoreTestSuite) TestCreateAction_Success() {
 		Name:        "Test Action",
 		Handle:      "test-handle",
 		Description: "Test Description",
+		Permission:  "perm:act",
 	}
 	resourceID := 10
 
 	suite.mockDBProvider.On("GetConfigDBClient").Return(suite.mockDBClient, nil)
 	suite.mockDBClient.On("Execute", queryCreateAction, "action1", 5, &resourceID,
-		"Test Action", "test-handle", "Test Description", "{}", "test-deployment").
+		"Test Action", "test-handle", "Test Description", "perm:act", "{}", "test-deployment").
 		Return(int64(1), nil)
 
 	err := suite.store.CreateAction("action1", 5, &resourceID, action)
@@ -901,11 +856,12 @@ func (suite *ResourceStoreTestSuite) TestCreateAction_NullResource() {
 		Name:        "Test Action",
 		Handle:      "test-handle",
 		Description: "Test Description",
+		Permission:  "perm:act",
 	}
 
 	suite.mockDBProvider.On("GetConfigDBClient").Return(suite.mockDBClient, nil)
 	suite.mockDBClient.On("Execute", queryCreateAction, "action1", 5, (*int)(nil),
-		"Test Action", "test-handle", "Test Description", "{}", "test-deployment").
+		"Test Action", "test-handle", "Test Description", "perm:act", "{}", "test-deployment").
 		Return(int64(1), nil)
 
 	err := suite.store.CreateAction("action1", 5, nil, action)
@@ -918,12 +874,13 @@ func (suite *ResourceStoreTestSuite) TestCreateAction_ExecuteError() {
 		Name:        "Test Action",
 		Handle:      "test-handle",
 		Description: "Test Description",
+		Permission:  "perm:act",
 	}
 
 	execError := errors.New("insert error")
 	suite.mockDBProvider.On("GetConfigDBClient").Return(suite.mockDBClient, nil)
 	suite.mockDBClient.On("Execute", queryCreateAction, "action1", 5, (*int)(nil),
-		"Test Action", "test-handle", "Test Description", "{}", "test-deployment").
+		"Test Action", "test-handle", "Test Description", "perm:act", "{}", "test-deployment").
 		Return(int64(0), execError)
 
 	err := suite.store.CreateAction("action1", 5, nil, action)
@@ -943,6 +900,7 @@ func (suite *ResourceStoreTestSuite) TestGetAction_AtResourceServer() {
 			"name":               "Test Action",
 			"handle":             "test-handle",
 			"description":        "Test Description",
+			"permission":         "perm:a",
 		},
 	}, nil)
 
@@ -952,6 +910,7 @@ func (suite *ResourceStoreTestSuite) TestGetAction_AtResourceServer() {
 	suite.Equal("action1", action.ID)
 	suite.Equal("Test Action", action.Name)
 	suite.Equal("test-handle", action.Handle)
+	suite.Equal("perm:a", action.Permission)
 }
 
 func (suite *ResourceStoreTestSuite) TestGetAction_AtResource() {
@@ -966,6 +925,7 @@ func (suite *ResourceStoreTestSuite) TestGetAction_AtResource() {
 			"name":               "Test Action",
 			"handle":             "test-handle",
 			"description":        "Test Description",
+			"permission":         "perm:a",
 		},
 	}, nil)
 
@@ -974,6 +934,7 @@ func (suite *ResourceStoreTestSuite) TestGetAction_AtResource() {
 	suite.NoError(err)
 	suite.Equal("action1", action.ID)
 	suite.Equal("test-handle", action.Handle)
+	suite.Equal("perm:a", action.Permission)
 }
 
 func (suite *ResourceStoreTestSuite) TestGetAction_NotFound() {
@@ -1014,6 +975,7 @@ func (suite *ResourceStoreTestSuite) TestGetActionListAtResourceServer_Success()
 			"name":               "Action 1",
 			"handle":             "action-1",
 			"description":        "Description 1",
+			"permission":         "perm:1",
 		},
 		{
 			"action_id":          "action2",
@@ -1021,6 +983,7 @@ func (suite *ResourceStoreTestSuite) TestGetActionListAtResourceServer_Success()
 			"name":               "Action 2",
 			"handle":             "action-2",
 			"description":        "Description 2",
+			"permission":         "perm:2",
 		},
 	}, nil)
 
@@ -1031,6 +994,7 @@ func (suite *ResourceStoreTestSuite) TestGetActionListAtResourceServer_Success()
 	suite.Equal("action1", actions[0].ID)
 	suite.Equal("Action 1", actions[0].Name)
 	suite.Equal("action-1", actions[0].Handle)
+	suite.Equal("perm:1", actions[0].Permission)
 }
 
 func (suite *ResourceStoreTestSuite) TestGetActionListAtResourceServer_QueryError() {
@@ -1075,6 +1039,7 @@ func (suite *ResourceStoreTestSuite) TestGetActionListAtResource_Success() {
 			"name":               "Action 1",
 			"handle":             "action-1",
 			"description":        "Description 1",
+			"permission":         "perm:r",
 		},
 	}, nil)
 
@@ -1084,6 +1049,7 @@ func (suite *ResourceStoreTestSuite) TestGetActionListAtResource_Success() {
 	suite.Len(actions, 1)
 	suite.Equal("action1", actions[0].ID)
 	suite.Equal("action-1", actions[0].Handle)
+	suite.Equal("perm:r", actions[0].Permission)
 }
 
 func (suite *ResourceStoreTestSuite) TestGetActionListAtResource_QueryError() {
@@ -1525,17 +1491,20 @@ func (suite *ResourceStoreTestSuite) TestBuildResourceServerFromResultRow() {
 		name                   string
 		row                    map[string]interface{}
 		expectedResourceServer ResourceServer
+		expectedInternalID     int
 		shouldErr              bool
 		errContains            string
 	}{
 		{
 			name: "Success_AllFields",
 			row: map[string]interface{}{
+				"id":                 50,
 				"resource_server_id": "rs1",
 				"ou_id":              "ou1",
 				"name":               "Test Server",
 				"description":        "Test Description",
 				"identifier":         "test-identifier",
+				"properties":         []byte(`{"delimiter":"|"}`),
 			},
 			expectedResourceServer: ResourceServer{
 				ID:                 "rs1",
@@ -1543,12 +1512,15 @@ func (suite *ResourceStoreTestSuite) TestBuildResourceServerFromResultRow() {
 				Name:               "Test Server",
 				Description:        "Test Description",
 				Identifier:         "test-identifier",
+				Delimiter:          "|",
 			},
-			shouldErr: false,
+			expectedInternalID: 50,
+			shouldErr:          false,
 		},
 		{
 			name: "Success_OptionalFields",
 			row: map[string]interface{}{
+				"id":                 51,
 				"resource_server_id": "rs1",
 				"ou_id":              "ou1",
 				"name":               "Test Server",
@@ -1560,11 +1532,31 @@ func (suite *ResourceStoreTestSuite) TestBuildResourceServerFromResultRow() {
 				Description:        "",
 				Identifier:         "",
 			},
-			shouldErr: false,
+			expectedInternalID: 51,
+			shouldErr:          false,
+		},
+		{
+			name: "Success_PropertiesString",
+			row: map[string]interface{}{
+				"id":                 52,
+				"resource_server_id": "rs1",
+				"ou_id":              "ou1",
+				"name":               "Test Server",
+				"properties":         `{"delimiter":"."}`,
+			},
+			expectedResourceServer: ResourceServer{
+				ID:                 "rs1",
+				OrganizationUnitID: "ou1",
+				Name:               "Test Server",
+				Delimiter:          ".",
+			},
+			expectedInternalID: 52,
+			shouldErr:          false,
 		},
 		{
 			name: "Error_MissingResourceServerID",
 			row: map[string]interface{}{
+				"id":    60,
 				"ou_id": "ou1",
 				"name":  "Test Server",
 			},
@@ -1574,6 +1566,7 @@ func (suite *ResourceStoreTestSuite) TestBuildResourceServerFromResultRow() {
 		{
 			name: "Error_InvalidResourceServerID",
 			row: map[string]interface{}{
+				"id":                 61,
 				"resource_server_id": 123,
 				"ou_id":              "ou1",
 				"name":               "Test Server",
@@ -1584,6 +1577,7 @@ func (suite *ResourceStoreTestSuite) TestBuildResourceServerFromResultRow() {
 		{
 			name: "Error_MissingOuID",
 			row: map[string]interface{}{
+				"id":                 62,
 				"resource_server_id": "rs1",
 				"name":               "Test Server",
 			},
@@ -1593,6 +1587,7 @@ func (suite *ResourceStoreTestSuite) TestBuildResourceServerFromResultRow() {
 		{
 			name: "Error_InvalidOuID",
 			row: map[string]interface{}{
+				"id":                 63,
 				"resource_server_id": "rs1",
 				"ou_id":              123,
 				"name":               "Test Server",
@@ -1603,6 +1598,7 @@ func (suite *ResourceStoreTestSuite) TestBuildResourceServerFromResultRow() {
 		{
 			name: "Error_MissingName",
 			row: map[string]interface{}{
+				"id":                 64,
 				"resource_server_id": "rs1",
 				"ou_id":              "ou1",
 			},
@@ -1612,6 +1608,7 @@ func (suite *ResourceStoreTestSuite) TestBuildResourceServerFromResultRow() {
 		{
 			name: "Error_InvalidName",
 			row: map[string]interface{}{
+				"id":                 65,
 				"resource_server_id": "rs1",
 				"ou_id":              "ou1",
 				"name":               123,
@@ -1619,22 +1616,34 @@ func (suite *ResourceStoreTestSuite) TestBuildResourceServerFromResultRow() {
 			shouldErr:   true,
 			errContains: "name",
 		},
+		{
+			name: "Error_MissingInternalID",
+			row: map[string]interface{}{
+				"resource_server_id": "rs1",
+				"ou_id":              "ou1",
+				"name":               "Test Server",
+			},
+			shouldErr:   true,
+			errContains: "unexpected internal ID",
+		},
 	}
 
 	for _, tc := range testCases {
 		suite.Run(tc.name, func() {
-			rs, err := buildResourceServerFromResultRow(tc.row)
+			internalID, rs, err := buildResourceServerFromResultRow(tc.row)
 
 			if tc.shouldErr {
 				suite.Error(err)
 				suite.Contains(err.Error(), tc.errContains)
 			} else {
 				suite.NoError(err)
+				suite.Equal(tc.expectedInternalID, internalID)
 				suite.Equal(tc.expectedResourceServer.ID, rs.ID)
 				suite.Equal(tc.expectedResourceServer.OrganizationUnitID, rs.OrganizationUnitID)
 				suite.Equal(tc.expectedResourceServer.Name, rs.Name)
 				suite.Equal(tc.expectedResourceServer.Description, rs.Description)
 				suite.Equal(tc.expectedResourceServer.Identifier, rs.Identifier)
+				suite.Equal(tc.expectedResourceServer.Delimiter, rs.Delimiter)
 			}
 		})
 	}
@@ -1646,83 +1655,101 @@ func (suite *ResourceStoreTestSuite) TestBuildResourceFromResultRow() {
 		name             string
 		row              map[string]interface{}
 		expectedResource Resource
+		expectedID       int
 		shouldErr        bool
 		errContains      string
 	}{
 		{
 			name: "Success_WithParent",
 			row: map[string]interface{}{
+				"id":                 70,
 				"resource_id":        "res1",
 				"resource_server_id": "rs1",
 				"name":               "Test Resource",
 				"handle":             "test-handle",
 				"description":        "Test Description",
 				"parent_resource_id": parentID,
+				"permission":         "perm:r",
 			},
 			expectedResource: Resource{
 				ID:          "res1",
 				Name:        "Test Resource",
 				Handle:      "test-handle",
 				Description: "Test Description",
+				Permission:  "perm:r",
 				Parent:      &parentID,
 			},
-			shouldErr: false,
+			expectedID: 70,
+			shouldErr:  false,
 		},
 		{
 			name: "Success_NullParent",
 			row: map[string]interface{}{
+				"id":                 71,
 				"resource_id":        "res1",
 				"resource_server_id": "rs1",
 				"name":               "Test Resource",
 				"handle":             "test-handle",
 				"description":        "Test Description",
 				"parent_resource_id": "",
+				"permission":         "perm:r",
 			},
 			expectedResource: Resource{
 				ID:          "res1",
 				Name:        "Test Resource",
 				Handle:      "test-handle",
 				Description: "Test Description",
+				Permission:  "perm:r",
 				Parent:      nil,
 			},
-			shouldErr: false,
+			expectedID: 71,
+			shouldErr:  false,
 		},
 		{
 			name: "Success_EmptyDescription",
 			row: map[string]interface{}{
+				"id":          72,
 				"resource_id": "res1",
 				"name":        "Test Resource",
 				"handle":      "test-handle",
 				"description": "",
+				"permission":  "perm:r",
 			},
 			expectedResource: Resource{
 				ID:          "res1",
 				Name:        "Test Resource",
 				Handle:      "test-handle",
 				Description: "",
+				Permission:  "perm:r",
 				Parent:      nil,
 			},
-			shouldErr: false,
+			expectedID: 72,
+			shouldErr:  false,
 		},
 		{
 			name: "Success_MissingDescription",
 			row: map[string]interface{}{
+				"id":          73,
 				"resource_id": "res1",
 				"name":        "Test Resource",
 				"handle":      "test-handle",
+				"permission":  "perm:r",
 			},
 			expectedResource: Resource{
 				ID:          "res1",
 				Name:        "Test Resource",
 				Handle:      "test-handle",
 				Description: "",
+				Permission:  "perm:r",
 				Parent:      nil,
 			},
-			shouldErr: false,
+			expectedID: 73,
+			shouldErr:  false,
 		},
 		{
 			name: "Error_MissingResourceID",
 			row: map[string]interface{}{
+				"id":     80,
 				"name":   "Test Resource",
 				"handle": "test-handle",
 			},
@@ -1732,6 +1759,7 @@ func (suite *ResourceStoreTestSuite) TestBuildResourceFromResultRow() {
 		{
 			name: "Error_InvalidResourceID",
 			row: map[string]interface{}{
+				"id":          81,
 				"resource_id": 123,
 				"name":        "Test Resource",
 				"handle":      "test-handle",
@@ -1742,6 +1770,7 @@ func (suite *ResourceStoreTestSuite) TestBuildResourceFromResultRow() {
 		{
 			name: "Error_MissingName",
 			row: map[string]interface{}{
+				"id":          82,
 				"resource_id": "res1",
 				"handle":      "test-handle",
 			},
@@ -1751,6 +1780,7 @@ func (suite *ResourceStoreTestSuite) TestBuildResourceFromResultRow() {
 		{
 			name: "Error_InvalidName",
 			row: map[string]interface{}{
+				"id":          83,
 				"resource_id": "res1",
 				"name":        123,
 				"handle":      "test-handle",
@@ -1761,6 +1791,7 @@ func (suite *ResourceStoreTestSuite) TestBuildResourceFromResultRow() {
 		{
 			name: "Error_MissingHandle",
 			row: map[string]interface{}{
+				"id":          84,
 				"resource_id": "res1",
 				"name":        "Test Resource",
 			},
@@ -1770,6 +1801,7 @@ func (suite *ResourceStoreTestSuite) TestBuildResourceFromResultRow() {
 		{
 			name: "Error_InvalidHandle",
 			row: map[string]interface{}{
+				"id":          85,
 				"resource_id": "res1",
 				"name":        "Test Resource",
 				"handle":      123,
@@ -1777,21 +1809,33 @@ func (suite *ResourceStoreTestSuite) TestBuildResourceFromResultRow() {
 			shouldErr:   true,
 			errContains: "handle",
 		},
+		{
+			name: "Error_MissingInternalID",
+			row: map[string]interface{}{
+				"resource_id": "res1",
+				"name":        "Test Resource",
+				"handle":      "test-handle",
+			},
+			shouldErr:   true,
+			errContains: "unexpected internal ID type",
+		},
 	}
 
 	for _, tc := range testCases {
 		suite.Run(tc.name, func() {
-			res, err := buildResourceFromResultRow(tc.row)
+			internalID, res, err := buildResourceFromResultRow(tc.row)
 
 			if tc.shouldErr {
 				suite.Error(err)
 				suite.Contains(err.Error(), tc.errContains)
 			} else {
 				suite.NoError(err)
+				suite.Equal(tc.expectedID, internalID)
 				suite.Equal(tc.expectedResource.ID, res.ID)
 				suite.Equal(tc.expectedResource.Name, res.Name)
 				suite.Equal(tc.expectedResource.Handle, res.Handle)
 				suite.Equal(tc.expectedResource.Description, res.Description)
+				suite.Equal(tc.expectedResource.Permission, res.Permission)
 				if tc.expectedResource.Parent != nil {
 					suite.NotNil(res.Parent)
 					suite.Equal(*tc.expectedResource.Parent, *res.Parent)

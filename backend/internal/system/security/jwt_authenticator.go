@@ -23,7 +23,6 @@ import (
 	"strings"
 
 	"github.com/asgardeo/thunder/internal/system/constants"
-	sysContext "github.com/asgardeo/thunder/internal/system/context"
 	"github.com/asgardeo/thunder/internal/system/jwt"
 )
 
@@ -45,8 +44,8 @@ func (h *jwtAuthenticator) CanHandle(r *http.Request) bool {
 	return strings.HasPrefix(authHeader, "Bearer ")
 }
 
-// Authenticate validates the JWT token and builds an AuthenticationContext.
-func (h *jwtAuthenticator) Authenticate(r *http.Request) (*sysContext.AuthenticationContext, error) {
+// Authenticate validates the JWT token and builds a SecurityContext.
+func (h *jwtAuthenticator) Authenticate(r *http.Request) (*SecurityContext, error) {
 	// Step 1: Extract Bearer token
 	authHeader := r.Header.Get(constants.AuthorizationHeaderName)
 	token, err := extractToken(authHeader)
@@ -63,45 +62,45 @@ func (h *jwtAuthenticator) Authenticate(r *http.Request) (*sysContext.Authentica
 		return nil, errInvalidToken
 	}
 
-	// Step 3: Decode JWT payload to extract claims
-	claims, err := jwt.DecodeJWTPayload(token)
+	// Step 3: Decode JWT payload to extract attributes
+	attributes, err := jwt.DecodeJWTPayload(token)
 	if err != nil {
 		return nil, errInvalidToken
 	}
 
-	// Step 4: Extract user information and build AuthenticationContext
+	// Step 4: Extract user information and build SecurityContext
 	userID := ""
-	if sub, ok := claims["sub"].(string); ok && sub != "" {
+	if sub, ok := attributes["sub"].(string); ok && sub != "" {
 		userID = sub
 	}
 
-	ouID := extractClaim(claims, "ou_id")
-	appID := extractClaim(claims, "app_id")
+	ouID := extractAttribute(attributes, "ou_id")
+	appID := extractAttribute(attributes, "app_id")
 
-	// Create immutable AuthenticationContext
-	return sysContext.NewAuthenticationContext(userID, ouID, appID, token, claims), nil
+	// Create immutable SecurityContext
+	return newSecurityContext(userID, ouID, appID, token, attributes), nil
 }
 
 // Authorize verifies the authenticated user has the required scopes for the request.
-func (h *jwtAuthenticator) Authorize(r *http.Request, authCtx *sysContext.AuthenticationContext) error {
-	if authCtx == nil {
+func (h *jwtAuthenticator) Authorize(r *http.Request, securityCtx *SecurityContext) error {
+	if securityCtx == nil {
 		return errUnauthorized
 	}
 
 	ctx := r.Context()
-	claims := map[string]interface{}{}
+	attributes := map[string]interface{}{}
 
-	if scope := sysContext.GetClaim(ctx, "scope"); scope != nil {
-		claims["scope"] = scope
+	if scope := GetAttribute(ctx, "scope"); scope != nil {
+		attributes["scope"] = scope
 	}
-	if scopes := sysContext.GetClaim(ctx, "scopes"); scopes != nil {
-		claims["scopes"] = scopes
+	if scopes := GetAttribute(ctx, "scopes"); scopes != nil {
+		attributes["scopes"] = scopes
 	}
-	if perms := sysContext.GetClaim(ctx, "authorized_permissions"); perms != nil {
-		claims["authorized_permissions"] = perms
+	if perms := GetAttribute(ctx, "authorized_permissions"); perms != nil {
+		attributes["authorized_permissions"] = perms
 	}
 
-	scopes := extractScopes(claims)
+	scopes := extractScopes(attributes)
 	requiredScopes := h.getRequiredScopes(r)
 
 	if len(requiredScopes) > 0 && !hasAnyScope(scopes, requiredScopes) {
@@ -123,14 +122,14 @@ func extractToken(authHeader string) (string, error) {
 
 // extractScopes extracts OAuth2 scopes from JWT claims.
 // Scopes can be in "scope" (string with space-separated values) or "scopes" (array) claim.
-func extractScopes(claims map[string]interface{}) []string {
+func extractScopes(attributes map[string]interface{}) []string {
 	// Try "scope" claim (OAuth2 standard - space-separated string)
-	if scopeStr, ok := claims["scope"].(string); ok && scopeStr != "" {
+	if scopeStr, ok := attributes["scope"].(string); ok && scopeStr != "" {
 		return strings.Fields(scopeStr)
 	}
 
 	// Try "scopes" claim (array format)
-	if scopesRaw, ok := claims["scopes"]; ok {
+	if scopesRaw, ok := attributes["scopes"]; ok {
 		switch scopes := scopesRaw.(type) {
 		case []interface{}:
 			result := make([]string, 0, len(scopes))
@@ -146,16 +145,16 @@ func extractScopes(claims map[string]interface{}) []string {
 	}
 
 	// Try "authorized_permissions" from the Thunder assertion
-	if permsStr, ok := claims["authorized_permissions"].(string); ok && permsStr != "" {
+	if permsStr, ok := attributes["authorized_permissions"].(string); ok && permsStr != "" {
 		return strings.Fields(permsStr)
 	}
 
 	return []string{}
 }
 
-// extractClaim extracts a string claim from JWT claims map.
-func extractClaim(claims map[string]interface{}, key string) string {
-	if value, ok := claims[key].(string); ok {
+// extractAttribute extracts a string claim from JWT claims map.
+func extractAttribute(attributes map[string]interface{}, key string) string {
+	if value, ok := attributes[key].(string); ok {
 		return value
 	}
 	return ""

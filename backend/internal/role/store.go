@@ -110,7 +110,7 @@ func (s *roleStore) CreateRole(id string, role RoleCreationDetail) error {
 
 	return s.executeInTransaction(dbClient, func(tx dbmodel.TxInterface) error {
 		_, err := tx.Exec(
-			queryCreateRole.Query,
+			queryCreateRole,
 			id,
 			role.OrganizationUnitID,
 			role.Name,
@@ -243,7 +243,7 @@ func (s *roleStore) UpdateRole(id string, role RoleUpdateDetail) error {
 
 	return s.executeInTransaction(dbClient, func(tx dbmodel.TxInterface) error {
 		result, err := tx.Exec(
-			queryUpdateRole.Query,
+			queryUpdateRole,
 			role.OrganizationUnitID,
 			role.Name,
 			role.Description,
@@ -313,7 +313,7 @@ func (s *roleStore) RemoveAssignments(id string, assignments []RoleAssignment) e
 
 	return s.executeInTransaction(dbClient, func(tx dbmodel.TxInterface) error {
 		for _, assignment := range assignments {
-			_, err := tx.Exec(queryDeleteRoleAssignmentsByIDs.Query, id, assignment.Type, assignment.ID, s.deploymentID)
+			_, err := tx.Exec(queryDeleteRoleAssignmentsByIDs, id, assignment.Type, assignment.ID, s.deploymentID)
 			if err != nil {
 				return fmt.Errorf("failed to remove assignment from role: %w", err)
 			}
@@ -364,7 +364,7 @@ func addPermissionsToRole(
 	deploymentID string,
 ) error {
 	for _, permission := range permissions {
-		_, err := tx.Exec(queryCreateRolePermission.Query, id, permission, deploymentID)
+		_, err := tx.Exec(queryCreateRolePermission, id, permission, deploymentID)
 		if err != nil {
 			return fmt.Errorf("failed to add permission to role: %w", err)
 		}
@@ -380,7 +380,7 @@ func addAssignmentsToRole(
 	deploymentID string,
 ) error {
 	for _, assignment := range assignments {
-		_, err := tx.Exec(queryCreateRoleAssignment.Query, id, assignment.Type, assignment.ID, deploymentID)
+		_, err := tx.Exec(queryCreateRoleAssignment, id, assignment.Type, assignment.ID, deploymentID)
 		if err != nil {
 			return fmt.Errorf("failed to add assignment to role: %w", err)
 		}
@@ -396,7 +396,7 @@ func updateRolePermissions(
 	permissions []string,
 	deploymentID string,
 ) error {
-	_, err := tx.Exec(queryDeleteRolePermissions.Query, id, deploymentID)
+	_, err := tx.Exec(queryDeleteRolePermissions, id, deploymentID)
 	if err != nil {
 		return fmt.Errorf("failed to delete existing role permissions: %w", err)
 	}

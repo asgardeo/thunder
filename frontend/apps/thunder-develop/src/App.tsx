@@ -31,6 +31,7 @@ import ApplicationCreatePage from './features/applications/pages/ApplicationCrea
 import ViewApplicationPage from './features/applications/pages/ViewApplicationPage';
 import DashboardLayout from './layouts/DashboardLayout';
 import FullScreenLayout from './layouts/FullScreenLayout';
+import ApplicationCreateProvider from './features/applications/contexts/ApplicationCreate/ApplicationCreateProvider';
 
 export default function App(): JSX.Element {
   return (
@@ -59,7 +60,9 @@ export default function App(): JSX.Element {
           path="/applications/create"
           element={
             <ProtectedRoute>
-              <FullScreenLayout />
+              <ApplicationCreateProvider>
+                <FullScreenLayout />
+              </ApplicationCreateProvider>
             </ProtectedRoute>
           }
         >

@@ -19,8 +19,8 @@
 import {describe, it, expect, beforeEach, vi} from 'vitest';
 import {render, screen} from '@testing-library/react';
 import {IdentityProviderTypes, type IdentityProvider} from '@/features/integrations/models/identity-provider';
+import {AuthenticatorTypes} from '@/features/integrations/models/authenticators';
 import Preview, {type PreviewProps} from '../Preview';
-import {USERNAME_PASSWORD_AUTHENTICATION_OPTION_KEY} from '../../../utils/resolveAuthFlowGraphId';
 
 // Mock the @asgardeo/react module
 vi.mock('@asgardeo/react', () => ({
@@ -54,7 +54,7 @@ describe('Preview', () => {
     appLogo: 'https://example.com/logo.png',
     selectedColor: '#FF5733',
     integrations: {
-      [USERNAME_PASSWORD_AUTHENTICATION_OPTION_KEY]: true,
+      [AuthenticatorTypes.BASIC_AUTH]: true,
     },
   };
 
@@ -119,7 +119,7 @@ describe('Preview', () => {
   it('should not render username/password fields when disabled', () => {
     renderComponent({
       integrations: {
-        [USERNAME_PASSWORD_AUTHENTICATION_OPTION_KEY]: false,
+        [AuthenticatorTypes.BASIC_AUTH]: false,
         'google-idp': true,
       },
     });
@@ -132,7 +132,7 @@ describe('Preview', () => {
   it('should render social login buttons for enabled providers', () => {
     renderComponent({
       integrations: {
-        [USERNAME_PASSWORD_AUTHENTICATION_OPTION_KEY]: true,
+        [AuthenticatorTypes.BASIC_AUTH]: true,
         'google-idp': true,
         'github-idp': true,
       },
@@ -145,7 +145,7 @@ describe('Preview', () => {
   it('should not render social login buttons when no providers are enabled', () => {
     renderComponent({
       integrations: {
-        [USERNAME_PASSWORD_AUTHENTICATION_OPTION_KEY]: true,
+        [AuthenticatorTypes.BASIC_AUTH]: true,
       },
     });
 
@@ -155,7 +155,7 @@ describe('Preview', () => {
   it('should render divider when both username/password and social logins are enabled', () => {
     renderComponent({
       integrations: {
-        [USERNAME_PASSWORD_AUTHENTICATION_OPTION_KEY]: true,
+        [AuthenticatorTypes.BASIC_AUTH]: true,
         'google-idp': true,
       },
     });
@@ -166,7 +166,7 @@ describe('Preview', () => {
   it('should not render divider when only username/password is enabled', () => {
     renderComponent({
       integrations: {
-        [USERNAME_PASSWORD_AUTHENTICATION_OPTION_KEY]: true,
+        [AuthenticatorTypes.BASIC_AUTH]: true,
       },
     });
 
@@ -176,7 +176,7 @@ describe('Preview', () => {
   it('should not render divider when only social logins are enabled', () => {
     renderComponent({
       integrations: {
-        [USERNAME_PASSWORD_AUTHENTICATION_OPTION_KEY]: false,
+        [AuthenticatorTypes.BASIC_AUTH]: false,
         'google-idp': true,
       },
     });
@@ -187,7 +187,7 @@ describe('Preview', () => {
   it('should render only selected social providers', () => {
     renderComponent({
       integrations: {
-        [USERNAME_PASSWORD_AUTHENTICATION_OPTION_KEY]: true,
+        [AuthenticatorTypes.BASIC_AUTH]: true,
         'google-idp': true,
         // github-idp not included
       },
@@ -242,7 +242,7 @@ describe('Preview', () => {
   it('should render social login buttons as disabled', () => {
     renderComponent({
       integrations: {
-        [USERNAME_PASSWORD_AUTHENTICATION_OPTION_KEY]: true,
+        [AuthenticatorTypes.BASIC_AUTH]: true,
         'google-idp': true,
       },
     });
@@ -260,7 +260,7 @@ describe('Preview', () => {
 
     renderComponent({
       integrations: {
-        [USERNAME_PASSWORD_AUTHENTICATION_OPTION_KEY]: true,
+        [AuthenticatorTypes.BASIC_AUTH]: true,
         'google-idp': true,
       },
     });
@@ -278,7 +278,7 @@ describe('Preview', () => {
 
     renderComponent({
       integrations: {
-        [USERNAME_PASSWORD_AUTHENTICATION_OPTION_KEY]: true,
+        [AuthenticatorTypes.BASIC_AUTH]: true,
         'google-idp': true,
         // 'github-idp' is not in API, so even if selected, it won't show
       },
@@ -298,7 +298,7 @@ describe('Preview', () => {
 
     renderComponent({
       integrations: {
-        [USERNAME_PASSWORD_AUTHENTICATION_OPTION_KEY]: true,
+        [AuthenticatorTypes.BASIC_AUTH]: true,
         'google-idp': true,
         'github-idp': false, // Not selected
       },
@@ -312,7 +312,7 @@ describe('Preview', () => {
   it('should render multiple social providers in order', () => {
     renderComponent({
       integrations: {
-        [USERNAME_PASSWORD_AUTHENTICATION_OPTION_KEY]: true,
+        [AuthenticatorTypes.BASIC_AUTH]: true,
         'google-idp': true,
         'github-idp': true,
       },
@@ -327,7 +327,7 @@ describe('Preview', () => {
   it('should render sign in form when only username/password is enabled', () => {
     renderComponent({
       integrations: {
-        [USERNAME_PASSWORD_AUTHENTICATION_OPTION_KEY]: true,
+        [AuthenticatorTypes.BASIC_AUTH]: true,
       },
     });
 
@@ -340,7 +340,7 @@ describe('Preview', () => {
   it('should render only social logins when username/password is disabled', () => {
     renderComponent({
       integrations: {
-        [USERNAME_PASSWORD_AUTHENTICATION_OPTION_KEY]: false,
+        [AuthenticatorTypes.BASIC_AUTH]: false,
         'google-idp': true,
         'github-idp': true,
       },

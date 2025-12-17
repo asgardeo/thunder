@@ -51,6 +51,12 @@ spec:
         {{- if .Values.deployment.securityContext.enableRunAsUser }}
         runAsUser: {{ .Values.deployment.securityContext.runAsUser }}
         {{- end }}
+        {{- if .Values.deployment.securityContext.enableRunAsGroup }}
+        runAsGroup: {{ .Values.deployment.securityContext.runAsGroup }}
+        {{- end }}
+        {{- if .Values.deployment.securityContext.enableFsGroup }}
+        fsGroup: {{ .Values.deployment.securityContext.fsGroup }}
+        {{- end }}
         {{- if .Values.deployment.securityContext.seccompProfile.enabled }}
         seccompProfile:
           type: {{ .Values.deployment.securityContext.seccompProfile.type }}

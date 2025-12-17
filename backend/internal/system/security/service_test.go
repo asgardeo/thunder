@@ -27,17 +27,15 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/suite"
-
-	sysContext "github.com/asgardeo/thunder/internal/system/context"
 )
 
 // SecurityServiceTestSuite defines the test suite for SecurityService
 type SecurityServiceTestSuite struct {
 	suite.Suite
-	service     *securityService
-	mockAuth1   *AuthenticatorInterfaceMock
-	mockAuth2   *AuthenticatorInterfaceMock
-	testAuthCtx *sysContext.AuthenticationContext
+	service   *securityService
+	mockAuth1 *AuthenticatorInterfaceMock
+	mockAuth2 *AuthenticatorInterfaceMock
+	testCtx   *SecurityContext
 }
 
 func (suite *SecurityServiceTestSuite) SetupTest() {
@@ -49,7 +47,7 @@ func (suite *SecurityServiceTestSuite) SetupTest() {
 	}
 
 	// Create test authentication context
-	suite.testAuthCtx = sysContext.NewAuthenticationContext(
+	suite.testCtx = newSecurityContext(
 		"user123",
 		"ou456",
 		"app789",
@@ -117,8 +115,8 @@ func (suite *SecurityServiceTestSuite) TestProcess_SuccessfulAuthentication_Firs
 
 	// First authenticator can handle the request
 	suite.mockAuth1.On("CanHandle", req).Return(true)
-	suite.mockAuth1.On("Authenticate", req).Return(suite.testAuthCtx, nil)
-	suite.mockAuth1.On("Authorize", mock.AnythingOfType("*http.Request"), suite.testAuthCtx).Return(nil)
+	suite.mockAuth1.On("Authenticate", req).Return(suite.testCtx, nil)
+	suite.mockAuth1.On("Authorize", mock.AnythingOfType("*http.Request"), suite.testCtx).Return(nil)
 
 	ctx, err := suite.service.Process(req)
 
@@ -126,13 +124,13 @@ func (suite *SecurityServiceTestSuite) TestProcess_SuccessfulAuthentication_Firs
 	assert.NotNil(suite.T(), ctx)
 
 	// Verify authentication context is added to the context
-	userID := sysContext.GetUserID(ctx)
+	userID := GetUserID(ctx)
 	assert.Equal(suite.T(), "user123", userID)
 
-	ouID := sysContext.GetOUID(ctx)
+	ouID := GetOUID(ctx)
 	assert.Equal(suite.T(), "ou456", ouID)
 
-	appID := sysContext.GetAppID(ctx)
+	appID := GetAppID(ctx)
 	assert.Equal(suite.T(), "app789", appID)
 
 	// Second authenticator should not be called
@@ -148,8 +146,8 @@ func (suite *SecurityServiceTestSuite) TestProcess_SuccessfulAuthentication_Seco
 	// First authenticator cannot handle the request, second can
 	suite.mockAuth1.On("CanHandle", req).Return(false)
 	suite.mockAuth2.On("CanHandle", req).Return(true)
-	suite.mockAuth2.On("Authenticate", req).Return(suite.testAuthCtx, nil)
-	suite.mockAuth2.On("Authorize", mock.AnythingOfType("*http.Request"), suite.testAuthCtx).Return(nil)
+	suite.mockAuth2.On("Authenticate", req).Return(suite.testCtx, nil)
+	suite.mockAuth2.On("Authorize", mock.AnythingOfType("*http.Request"), suite.testCtx).Return(nil)
 
 	ctx, err := suite.service.Process(req)
 
@@ -157,7 +155,7 @@ func (suite *SecurityServiceTestSuite) TestProcess_SuccessfulAuthentication_Seco
 	assert.NotNil(suite.T(), ctx)
 
 	// Verify authentication context is added
-	userID := sysContext.GetUserID(ctx)
+	userID := GetUserID(ctx)
 	assert.Equal(suite.T(), "user123", userID)
 }
 
@@ -233,7 +231,7 @@ func (suite *SecurityServiceTestSuite) TestProcess_SecurityErrors() {
 }
 
 // Test Process method with nil authenticator context
-func (suite *SecurityServiceTestSuite) TestProcess_NilAuthenticationContext() {
+func (suite *SecurityServiceTestSuite) TestProcess_NilSecurityContext() {
 	req := httptest.NewRequest(http.MethodGet, "/api/users", nil)
 
 	suite.mockAuth1.On("CanHandle", req).Return(true)
@@ -241,7 +239,7 @@ func (suite *SecurityServiceTestSuite) TestProcess_NilAuthenticationContext() {
 	suite.mockAuth1.
 		On("Authorize",
 			mock.AnythingOfType("*http.Request"),
-			(*sysContext.AuthenticationContext)(nil),
+			(*SecurityContext)(nil),
 		).
 		Return(nil)
 
@@ -251,7 +249,7 @@ func (suite *SecurityServiceTestSuite) TestProcess_NilAuthenticationContext() {
 	assert.NotNil(suite.T(), ctx)
 
 	// Verify empty context values when auth context is nil
-	userID := sysContext.GetUserID(ctx)
+	userID := GetUserID(ctx)
 	assert.Empty(suite.T(), userID)
 }
 
@@ -354,15 +352,15 @@ func (suite *SecurityServiceTestSuite) TestProcess_DifferentHTTPMethods() {
 			suite.service.authenticators = []AuthenticatorInterface{suite.mockAuth1, suite.mockAuth2}
 
 			suite.mockAuth1.On("CanHandle", req).Return(true)
-			suite.mockAuth1.On("Authenticate", req).Return(suite.testAuthCtx, nil)
-			suite.mockAuth1.On("Authorize", mock.AnythingOfType("*http.Request"), suite.testAuthCtx).Return(nil)
+			suite.mockAuth1.On("Authenticate", req).Return(suite.testCtx, nil)
+			suite.mockAuth1.On("Authorize", mock.AnythingOfType("*http.Request"), suite.testCtx).Return(nil)
 
 			ctx, err := suite.service.Process(req)
 
 			assert.NoError(suite.T(), err)
 			assert.NotNil(suite.T(), ctx)
 
-			userID := sysContext.GetUserID(ctx)
+			userID := GetUserID(ctx)
 			assert.Equal(suite.T(), "user123", userID)
 
 			suite.mockAuth1.AssertExpectations(suite.T())

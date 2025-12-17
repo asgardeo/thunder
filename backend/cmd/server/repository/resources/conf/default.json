@@ -70,7 +70,6 @@
     "properties": []
   },
   "jwt": {
-    "issuer": "thunder",
     "validity_period": 3600,
     "audience": "application"
   },
@@ -94,6 +93,9 @@
   },
   "immutable_resources": {
     "enabled": false
+  },
+  "resource": {
+    "default_delimiter": ":"
   },
   "observability": {
     "enabled": false,

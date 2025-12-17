@@ -605,6 +605,15 @@ components:
           description: Indicates if the registration flow is enabled for the application.
           example: true
           default: false
+        branding_id:
+          type: string
+          format: uuid
+          description: The ID of the branding configuration associated with this application.
+          example: "660e8400-e29b-41d4-a716-446655440001"
+        template:
+          type: string
+          description: The template type of the application.
+          example: "spa"
         url:
           type: string
           format: uri
@@ -680,6 +689,15 @@ components:
           type: boolean
           description: Indicates if the registration flow is enabled for the application.
           example: true
+        branding_id:
+          type: string
+          format: uuid
+          description: The ID of the branding configuration associated with this application.
+          example: "660e8400-e29b-41d4-a716-446655440001"
+        template:
+          type: string
+          description: The template type of the application.
+          example: "spa"
         url:
           type: string
           format: uri
@@ -755,6 +773,15 @@ components:
           type: boolean
           description: Indicates if the registration flow is enabled for the application.
           example: true
+        branding_id:
+          type: string
+          format: uuid
+          description: The ID of the branding configuration associated with this application.
+          example: "660e8400-e29b-41d4-a716-446655440001"
+        template:
+          type: string
+          description: The template type of the application.
+          example: "spa"
         url:
           type: string
           format: uri
@@ -835,6 +862,15 @@ components:
           type: boolean
           description: Indicates if the registration flow is enabled for the application.
           example: true
+        branding_id:
+          type: string
+          format: uuid
+          description: The ID of the branding configuration associated with this application.
+          example: "660e8400-e29b-41d4-a716-446655440001"
+        template:
+          type: string
+          description: The template type of the application.
+          example: "spa"
 
     ApplicationListResponse:
       type: object

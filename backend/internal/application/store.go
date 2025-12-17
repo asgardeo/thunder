@@ -104,9 +104,9 @@ func (st *applicationStore) CreateApplication(app model.ApplicationProcessedDTO)
 			} else {
 				brandingID = nil
 			}
-			_, err := tx.Exec(QueryCreateApplication.Query, app.ID, app.Name, app.Description,
-				app.AuthFlowGraphID, app.RegistrationFlowGraphID, isRegistrationEnabledStr, brandingID, jsonDataBytes,
-				st.deploymentID)
+			_, err := tx.Exec(QueryCreateApplication, app.ID, app.Name, app.Description,
+				app.AuthFlowGraphID, app.RegistrationFlowGraphID, isRegistrationEnabledStr, brandingID,
+				jsonDataBytes, st.deploymentID)
 			return err
 		},
 	}
@@ -341,7 +341,7 @@ func (st *applicationStore) UpdateApplication(existingApp, updatedApp *model.App
 			} else {
 				brandingID = nil
 			}
-			_, err := tx.Exec(QueryUpdateApplicationByAppID.Query, updatedApp.ID, updatedApp.Name,
+			_, err := tx.Exec(QueryUpdateApplicationByAppID, updatedApp.ID, updatedApp.Name,
 				updatedApp.Description, updatedApp.AuthFlowGraphID, updatedApp.RegistrationFlowGraphID,
 				isRegistrationEnabledStr, brandingID, jsonDataBytes, st.deploymentID)
 			return err
@@ -390,6 +390,11 @@ func getAppJSONDataBytes(app *model.ApplicationProcessedDTO) ([]byte, error) {
 		"tos_uri":    app.TosURI,
 		"policy_uri": app.PolicyURI,
 		"contacts":   app.Contacts,
+	}
+
+	// Include template if present
+	if app.Template != "" {
+		jsonData["template"] = app.Template
 	}
 
 	// Include allowed_user_types if present (include even if empty to preserve the field)
@@ -476,7 +481,7 @@ func createOAuthAppQuery(app *model.ApplicationProcessedDTO,
 	}
 
 	return func(tx dbmodel.TxInterface) error {
-		_, err := tx.Exec(oauthAppMgtQuery.Query, app.ID, clientID, clientSecret, oauthConfigJSON, deploymentID)
+		_, err := tx.Exec(oauthAppMgtQuery, app.ID, clientID, clientSecret, oauthConfigJSON, deploymentID)
 		return err
 	}
 }
@@ -484,7 +489,7 @@ func createOAuthAppQuery(app *model.ApplicationProcessedDTO,
 // deleteOAuthAppQuery creates a query function for deleting an OAuth application by client ID.
 func deleteOAuthAppQuery(clientID string, deploymentID string) func(tx dbmodel.TxInterface) error {
 	return func(tx dbmodel.TxInterface) error {
-		_, err := tx.Exec(QueryDeleteOAuthApplicationByClientID.Query, clientID, deploymentID)
+		_, err := tx.Exec(QueryDeleteOAuthApplicationByClientID, clientID, deploymentID)
 		return err
 	}
 }
@@ -561,7 +566,7 @@ func buildBasicApplicationFromResultRow(row map[string]interface{}) (model.Basic
 		application.ClientID = clientID
 	}
 
-	// Extract logo_url from app_json if present.
+	// Extract logo_url and template from app_json if present.
 	if row["app_json"] != nil {
 		var appJSON string
 		if v, ok := row["app_json"].(string); ok {
@@ -581,6 +586,12 @@ func buildBasicApplicationFromResultRow(row map[string]interface{}) (model.Basic
 				return model.BasicApplicationDTO{}, err
 			}
 			application.LogoURL = logoURL
+
+			template, err := extractStringFromJSON(appJSONData, "template")
+			if err != nil {
+				return model.BasicApplicationDTO{}, err
+			}
+			application.Template = template
 		}
 	}
 
@@ -705,6 +716,12 @@ func buildApplicationFromResultRow(row map[string]interface{}) (model.Applicatio
 
 	rootTokenConfig := extractTokenConfigFromJSON(appJSONData)
 
+	// Extract template from app JSON if present
+	template, err := extractStringFromJSON(appJSONData, "template")
+	if err != nil {
+		return model.ApplicationProcessedDTO{}, err
+	}
+
 	application := model.ApplicationProcessedDTO{
 		ID:                        basicApp.ID,
 		Name:                      basicApp.Name,
@@ -713,6 +730,7 @@ func buildApplicationFromResultRow(row map[string]interface{}) (model.Applicatio
 		RegistrationFlowGraphID:   basicApp.RegistrationFlowGraphID,
 		IsRegistrationFlowEnabled: basicApp.IsRegistrationFlowEnabled,
 		BrandingID:                basicApp.BrandingID,
+		Template:                  template,
 		URL:                       url,
 		LogoURL:                   logoURL,
 		Token:                     rootTokenConfig,

@@ -16,8 +16,8 @@
  * under the License.
  */
 
-// Package filebasedruntime provides functionality to read file-based runtime configurations.
-package filebasedruntime
+// Package immutable_resource provides functionality for managing immutable resources.
+package immutableresource
 
 import (
 	"fmt"

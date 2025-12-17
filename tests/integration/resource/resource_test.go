@@ -94,6 +94,7 @@ func (suite *ResourceAPITestSuite) TestCreateResource() {
 	suite.Equal(req.Handle, res.Handle)
 	suite.Equal(req.Description, res.Description)
 	suite.Nil(res.Parent)
+	suite.Equal("hotels", res.Permission, "Top-level resource permission should be just the handle")
 }
 
 func (suite *ResourceAPITestSuite) TestCreateResourceWithParent() {
@@ -126,6 +127,7 @@ func (suite *ResourceAPITestSuite) TestCreateResourceWithParent() {
 	suite.Equal(childReq.Handle, child.Handle)
 	suite.NotNil(child.Parent)
 	suite.Equal(parentID, *child.Parent)
+	suite.Equal("bookings:confirmed", child.Permission, "Nested resource permission should be parent:child")
 }
 
 func (suite *ResourceAPITestSuite) TestCreateResourceDuplicateHandle() {
@@ -264,10 +266,12 @@ func (suite *ResourceAPITestSuite) TestListResources() {
 		if res.ID == res1ID {
 			foundRes1 = true
 			suite.Equal(res1.Name, res.Name)
+			suite.Equal("list-resource-1", res.Permission, "Permission should be returned in list response")
 		}
 		if res.ID == res2ID {
 			foundRes2 = true
 			suite.Equal(res2.Name, res.Name)
+			suite.Equal("list-resource-2", res.Permission, "Permission should be returned in list response")
 		}
 	}
 	suite.True(foundRes1, "Should find first resource")
@@ -385,6 +389,7 @@ func (suite *ResourceAPITestSuite) TestUpdateResource() {
 	suite.Equal(req.Handle, res.Handle, "Handle should be immutable")
 	suite.Equal(updateReq.Description, res.Description)
 	suite.Nil(res.Parent, "Parent should remain immutable")
+	suite.Equal("update-test-resource", res.Permission, "Permission should be immutable")
 }
 
 func (suite *ResourceAPITestSuite) TestUpdateResourceHandleIsImmutable() {
@@ -476,6 +481,61 @@ func (suite *ResourceAPITestSuite) TestDeleteResourceNotFound() {
 func (suite *ResourceAPITestSuite) TestDeleteResourceServerNotFound() {
 	err := deleteResource("00000000-0000-0000-0000-000000000000", "00000000-0000-0000-0000-000000000000")
 	suite.NoError(err, "Delete should be idempotent")
+}
+
+func (suite *ResourceAPITestSuite) TestResourcePermissionDerivationWithCustomDelimiter() {
+	// Create resource server with custom delimiter
+	delimiter := "."
+	rsReq := CreateResourceServerRequest{
+		Name:               "Custom Delimiter Server",
+		OrganizationUnitID: suite.ouID,
+		Delimiter:          &delimiter,
+	}
+	customRsID, err := createResourceServer(rsReq)
+	suite.Require().NoError(err)
+	defer deleteResourceServer(customRsID)
+
+	// Create level 1: org
+	level1Req := CreateResourceRequest{
+		Name:   "Organization",
+		Handle: "org",
+		Parent: nil,
+	}
+	level1ID, err := createResource(customRsID, level1Req)
+	suite.Require().NoError(err)
+	defer deleteResource(customRsID, level1ID)
+
+	level1, err := getResource(customRsID, level1ID)
+	suite.Require().NoError(err)
+	suite.Equal("org", level1.Permission, "Top-level resource permission should be just the handle")
+
+	// Create level 2: org.dept
+	level2Req := CreateResourceRequest{
+		Name:   "Department",
+		Handle: "dept",
+		Parent: &level1ID,
+	}
+	level2ID, err := createResource(customRsID, level2Req)
+	suite.Require().NoError(err)
+	defer deleteResource(customRsID, level2ID)
+
+	level2, err := getResource(customRsID, level2ID)
+	suite.Require().NoError(err)
+	suite.Equal("org.dept", level2.Permission, "Permission should use custom delimiter")
+
+	// Create level 3: org.dept.team
+	level3Req := CreateResourceRequest{
+		Name:   "Team",
+		Handle: "team",
+		Parent: &level2ID,
+	}
+	level3ID, err := createResource(customRsID, level3Req)
+	suite.Require().NoError(err)
+	defer deleteResource(customRsID, level3ID)
+
+	level3, err := getResource(customRsID, level3ID)
+	suite.Require().NoError(err)
+	suite.Equal("org.dept.team", level3.Permission, "Deeply nested permission should use custom delimiter")
 }
 
 func (suite *ResourceAPITestSuite) TestDeleteResourceWithChildren() {

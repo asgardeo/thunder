@@ -21,6 +21,7 @@ package config
 
 import (
 	"encoding/json"
+	"fmt"
 	"os"
 	urlpath "path"
 	"path/filepath"
@@ -215,6 +216,11 @@ type UserConfig struct {
 	IndexedAttributes []string `yaml:"indexed_attributes" json:"indexed_attributes"`
 }
 
+// ResourceConfig holds the resource management configuration details.
+type ResourceConfig struct {
+	DefaultDelimiter string `yaml:"default_delimiter" json:"default_delimiter"`
+}
+
 // Config holds the complete configuration details of the server.
 type Config struct {
 	Server             ServerConfig        `yaml:"server" json:"server"`
@@ -229,6 +235,7 @@ type Config struct {
 	CORS               CORSConfig          `yaml:"cors" json:"cors"`
 	User               UserConfig          `yaml:"user" json:"user"`
 	ImmutableResources ImmutableResources  `yaml:"immutable_resources" json:"immutable_resources"`
+	Resource           ResourceConfig      `yaml:"resource" json:"resource"`
 	Observability      ObservabilityConfig `yaml:"observability" json:"observability"`
 }
 
@@ -275,6 +282,11 @@ func LoadConfig(path string, defaultsPath string) (*Config, error) {
 		}
 	}
 
+	// Derive JWT issuer from server config if not set
+	if cfg.JWT.Issuer == "" {
+		cfg.JWT.Issuer = GetServerURL(&cfg.Server)
+	}
+
 	return &cfg, nil
 }
 
@@ -298,6 +310,19 @@ func loadDefaultConfig(path string) (*Config, error) {
 		return nil, err
 	}
 	return &cfg, nil
+}
+
+// GetServerURL constructs the server URL from the server configuration.
+// It uses PublicURL if set, otherwise constructs from hostname, port, and scheme.
+func GetServerURL(server *ServerConfig) string {
+	if server.PublicURL != "" {
+		return server.PublicURL
+	}
+	scheme := "https"
+	if server.HTTPOnly {
+		scheme = "http"
+	}
+	return fmt.Sprintf("%s://%s:%d", scheme, server.Hostname, server.Port)
 }
 
 // mergeConfigs merges user configuration into the base configuration.

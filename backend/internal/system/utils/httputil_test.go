@@ -578,8 +578,9 @@ func (suite *HTTPUtilTestSuite) TestWriteSuccessResponse_EncodingError() {
 
 		WriteSuccessResponse(w, http.StatusOK, unserializableData)
 
-		// The function should have attempted to write status code
-		assert.Equal(t, http.StatusOK, w.Code)
+		// With buffer approach, encoding fails BEFORE headers are sent
+		// So we get HTTP 500 instead of the intended 200
+		assert.Equal(t, http.StatusInternalServerError, w.Code)
 
 		// After encoding fails, http.Error() is called which writes the predefined error message
 		responseBody := w.Body.String()

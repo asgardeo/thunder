@@ -17,10 +17,11 @@
  */
 
 import {Box, Typography, Stack, Button, Avatar, Grid, Chip, Tooltip, useTheme} from '@wso2/oxygen-ui';
-import {Info, Palette, Plus, Shuffle} from '@wso2/oxygen-ui-icons-react';
+import {Palette, Plus, Shuffle} from '@wso2/oxygen-ui-icons-react';
 import type {JSX} from 'react';
 import {useState, useMemo, useEffect} from 'react';
 import {useTranslation} from 'react-i18next';
+import type {BrandingListItem} from '@/features/branding/models/responses';
 import generateAppLogoSuggestions from '../../utils/generateAppLogoSuggestion';
 import generateAppPrimaryColorSuggestions from '../../utils/generateAppPrimaryColorSuggestions';
 import useGetBrandings from '../../../branding/api/useGetBrandings';
@@ -28,7 +29,9 @@ import useGetBranding from '../../../branding/api/useGetBranding';
 import BrandingConstants from '../../constants/branding-contants';
 
 /**
- * Props for the ConfigureDesign component.
+ * Props for the {@link ConfigureDesign} component.
+ *
+ * @public
  */
 export interface ConfigureDesignProps {
   /**
@@ -73,6 +76,55 @@ export interface ConfigureDesignProps {
   onBrandingSelectionChange?: (useDefaultBranding: boolean, defaultBrandingId?: string) => void;
 }
 
+/**
+ * React component that renders the design customization step in the
+ * application creation onboarding flow.
+ *
+ * This component allows users to customize their application's visual identity by:
+ * 1. Selecting a logo from AI-generated avatar suggestions (with shuffle capability)
+ * 2. Choosing a primary brand color from preset options or entering a custom hex value
+ * 3. Optionally using an existing DEFAULT branding or creating a new one
+ *
+ * The component displays a grid of logo avatars and color chips for selection, with
+ * the ability to shuffle logos for new suggestions. It checks for existing DEFAULT
+ * branding and allows users to leverage it or create custom branding. The step is
+ * always ready since default selections are provided.
+ *
+ * @param props - The component props
+ * @param props.appLogo - The currently selected logo URL
+ * @param props.selectedColor - The currently selected brand color (hex)
+ * @param props.appName - Optional application name for display
+ * @param props.onLogoSelect - Callback when logo is selected
+ * @param props.onColorSelect - Callback when color is selected
+ * @param props.onInitialLogoLoad - Optional callback when initial logo loads
+ * @param props.onReadyChange - Optional callback for step readiness
+ * @param props.onBrandingSelectionChange - Optional callback for branding choice
+ *
+ * @returns JSX element displaying the design customization interface
+ *
+ * @example
+ * ```tsx
+ * import ConfigureDesign from './ConfigureDesign';
+ *
+ * function OnboardingFlow() {
+ *   const [logo, setLogo] = useState<string | null>(null);
+ *   const [color, setColor] = useState('#FF5733');
+ *
+ *   return (
+ *     <ConfigureDesign
+ *       appLogo={logo}
+ *       selectedColor={color}
+ *       appName="My App"
+ *       onLogoSelect={setLogo}
+ *       onColorSelect={setColor}
+ *       onInitialLogoLoad={(url) => console.log('Initial logo:', url)}
+ *     />
+ *   );
+ * }
+ * ```
+ *
+ * @public
+ */
 export default function ConfigureDesign({
   appLogo,
   selectedColor,
@@ -85,44 +137,41 @@ export default function ConfigureDesign({
 }: ConfigureDesignProps): JSX.Element {
   const {t} = useTranslation();
   const theme = useTheme();
+  const {data: brandingsData} = useGetBrandings({limit: 100});
+  const defaultBranding: BrandingListItem | undefined = brandingsData?.brandings.find(
+    (b) => b.displayName === BrandingConstants.DEFAULT_BRANDING_NAME,
+  );
+  const {data: defaultBrandingDetails} = useGetBranding(defaultBranding?.id ?? '');
 
   const [logoSeed, setLogoSeed] = useState<number>(0);
   const [customColor, setCustomColor] = useState<string>('');
   const [showCustomColorInput, setShowCustomColorInput] = useState<boolean>(false);
   const [showColorOptions, setShowColorOptions] = useState<boolean>(false);
 
-  // Fetch brandings to check for DEFAULT branding
-  const {data: brandingsData} = useGetBrandings({limit: 100});
-
-  // Find the DEFAULT branding
-  const defaultBranding = brandingsData?.brandings.find(
-    (b) => b.displayName === BrandingConstants.DEFAULT_BRANDING_NAME,
-  );
-
-  // Fetch full DEFAULT branding details if it exists
-  const {data: defaultBrandingDetails} = useGetBranding(defaultBranding?.id ?? '');
-
   // logoSeed is intentionally used as a dependency to trigger logo regeneration on shuffle
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  const logoSuggestions: string[] = useMemo(() => generateAppLogoSuggestions(8), [logoSeed]);
-
-  const colorOptions: string[] = useMemo(() => generateAppPrimaryColorSuggestions(), []);
+  const logoSuggestions: string[] = useMemo((): string[] => generateAppLogoSuggestions(8), [logoSeed]);
+  const colorOptions: string[] = useMemo((): string[] => generateAppPrimaryColorSuggestions(), []);
 
   /**
-   * Set the first logo as default when component mounts or logos rotate.
+   * Set the first logo as default when component mounts, or when the currently selected
+   * logo is no longer available in the shuffled suggestions.
    */
-  useEffect(() => {
+  useEffect((): void => {
     if (logoSuggestions.length > 0 && onInitialLogoLoad) {
-      onInitialLogoLoad(logoSuggestions[0]);
+      // Only auto-select if there's no current selection, or current selection is not in the new suggestions
+      if (!appLogo || !logoSuggestions.includes(appLogo)) {
+        onInitialLogoLoad(logoSuggestions[0]);
+      }
     }
-  }, [logoSuggestions, onInitialLogoLoad]);
+  }, [logoSuggestions, onInitialLogoLoad, appLogo]);
 
   /**
    * Apply DEFAULT branding color if it exists
    */
-  useEffect(() => {
+  useEffect((): void => {
     if (defaultBrandingDetails?.preferences?.theme?.colorSchemes?.light?.colors?.primary?.main) {
-      const defaultColor = defaultBrandingDetails.preferences.theme.colorSchemes.light.colors.primary.main;
+      const defaultColor: string = defaultBrandingDetails.preferences.theme.colorSchemes.light.colors.primary.main;
       onColorSelect(defaultColor);
     }
   }, [defaultBrandingDetails, onColorSelect]);
@@ -130,7 +179,7 @@ export default function ConfigureDesign({
   /**
    * Notify parent about branding selection
    */
-  useEffect(() => {
+  useEffect((): void => {
     if (onBrandingSelectionChange) {
       // User is using DEFAULT branding if it exists and they haven't opted to pick a different color
       const useDefaultBranding = Boolean(defaultBrandingDetails && !showColorOptions);
@@ -141,7 +190,7 @@ export default function ConfigureDesign({
   /**
    * Broadcast readiness - Design step is always ready since it has default values
    */
-  useEffect(() => {
+  useEffect((): void => {
     if (onReadyChange) {
       onReadyChange(true);
     }
@@ -158,7 +207,8 @@ export default function ConfigureDesign({
   const handleColorSelect = (color: string): void => {
     setShowCustomColorInput(false);
     setCustomColor('');
-    setShowColorOptions(true); // Keep color options visible once user selects
+    // Keep color options visible once user selects
+    setShowColorOptions(true);
     onColorSelect(color);
   };
 
@@ -178,12 +228,9 @@ export default function ConfigureDesign({
         <Typography variant="h1" gutterBottom>
           {t('applications:onboarding.configure.design.title')}
         </Typography>
-        <Stack direction="row" alignItems="center" spacing={1}>
-          <Info size={14} />
-          <Typography variant="body1" color="text.secondary" sx={{mb: 4}}>
-            {t('applications:onboarding.configure.design.subtitle')}
-          </Typography>
-        </Stack>
+        <Typography variant="subtitle1" gutterBottom>
+          {t('applications:onboarding.configure.design.subtitle')}
+        </Typography>
       </Stack>
 
       {/* Logo Selection */}
@@ -265,10 +312,10 @@ export default function ConfigureDesign({
                       <Typography component="strong" fontWeight="bold">
                         {appName}
                       </Typography>{' '}
-                      will use the default brand color
+                      {t('applications:onboarding.configure.design.color.defaultBranding.withAppName')}
                     </>
                   ) : (
-                    'Using the default brand color'
+                    t('applications:onboarding.configure.design.color.defaultBranding.withoutAppName')
                   )}
                 </Typography>
                 <Typography variant="body1" fontWeight={500}>
@@ -283,7 +330,7 @@ export default function ConfigureDesign({
               onClick={(): void => setShowColorOptions(true)}
               sx={{alignSelf: 'flex-start'}}
             >
-              Pick a different color
+              {t('applications:onboarding.configure.design.color.pickDifferent')}
             </Button>
           </Stack>
         ) : (
@@ -376,9 +423,9 @@ export default function ConfigureDesign({
                     width: 50,
                     height: 50,
                     borderRadius: '8px',
-                    border: customColor ?
-                      `2px solid ${theme.vars?.palette.primary.main}` :
-                      `2px solid ${theme.vars?.palette.text.primary}`,
+                    border: customColor
+                      ? `2px solid ${theme.vars?.palette.primary.main}`
+                      : `2px solid ${theme.vars?.palette.text.primary}`,
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
@@ -386,9 +433,7 @@ export default function ConfigureDesign({
                     fontSize: '1.5rem',
                     fontWeight: 300,
                     ...theme.applyStyles('light', {
-                      color: customColor ? 
-                        theme.vars?.palette.background.default :
-                        theme.vars?.palette.text.primary,
+                      color: customColor ? theme.vars?.palette.background.default : theme.vars?.palette.text.primary,
                     }),
                     ...theme.applyStyles('dark', {
                       color: theme.vars?.palette.text.primary,

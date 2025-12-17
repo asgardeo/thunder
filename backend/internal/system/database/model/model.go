@@ -19,7 +19,9 @@
 // Package model defines the data structures and interfaces for database operations.
 package model
 
-import "database/sql"
+import (
+	"database/sql"
+)
 
 // DBInterface defines the wrapper interface for database operations.
 type DBInterface interface {
@@ -63,23 +65,23 @@ func (d *DB) Close() error {
 
 // TxInterface defines the wrapper interface for transaction management.
 type TxInterface interface {
-	// Commit commits the transaction.
 	Commit() error
-	// Rollback rolls back the transaction.
 	Rollback() error
-	// Exec executes a query with the given arguments.
-	Exec(query string, args ...any) (sql.Result, error)
+	Exec(query DBQuery, args ...any) (sql.Result, error)
+	Query(query DBQuery, args ...any) (*sql.Rows, error)
 }
 
 // Tx is the implementation of TxInterface for managing database transactions.
 type Tx struct {
 	internal *sql.Tx
+	dbType   string
 }
 
 // NewTx creates a new instance of Tx with the provided sql.Tx.
-func NewTx(tx *sql.Tx) TxInterface {
+func NewTx(tx *sql.Tx, dbType string) TxInterface {
 	return &Tx{
 		internal: tx,
+		dbType:   dbType,
 	}
 }
 
@@ -94,6 +96,13 @@ func (t *Tx) Rollback() error {
 }
 
 // Exec executes a query with the given arguments.
-func (t *Tx) Exec(query string, args ...any) (sql.Result, error) {
-	return t.internal.Exec(query, args...)
+func (t *Tx) Exec(query DBQuery, args ...any) (sql.Result, error) {
+	sqlQuery := query.GetQuery(t.dbType)
+	return t.internal.Exec(sqlQuery, args...)
+}
+
+// Query executes a query that returns rows, typically a SELECT, and returns the result as *sql.Rows.
+func (t *Tx) Query(query DBQuery, args ...any) (*sql.Rows, error) {
+	sqlQuery := query.GetQuery(t.dbType)
+	return t.internal.Query(sqlQuery, args...)
 }

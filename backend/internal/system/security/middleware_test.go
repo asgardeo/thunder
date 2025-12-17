@@ -28,8 +28,6 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
-
-	sysContext "github.com/asgardeo/thunder/internal/system/context"
 )
 
 // MiddlewareTestSuite defines the test suite for middleware functionality
@@ -63,7 +61,7 @@ func (suite *MiddlewareTestSuite) TestMiddleware_SuccessfulAuthentication() {
 	w := httptest.NewRecorder()
 
 	// Create enriched context with authentication information
-	authCtx := sysContext.NewAuthenticationContext(
+	ctx := newSecurityContext(
 		"user123",
 		"ou456",
 		"app789",
@@ -73,7 +71,7 @@ func (suite *MiddlewareTestSuite) TestMiddleware_SuccessfulAuthentication() {
 			"role":  "admin",
 		},
 	)
-	enrichedCtx := sysContext.WithAuthenticationContext(context.Background(), authCtx)
+	enrichedCtx := withSecurityContext(context.Background(), ctx)
 
 	// Mock successful authentication
 	suite.mockService.EXPECT().Process(req).Return(enrichedCtx, nil)
@@ -87,9 +85,9 @@ func (suite *MiddlewareTestSuite) TestMiddleware_SuccessfulAuthentication() {
 
 	// Verify enriched context was passed to next handler
 	assert.NotNil(suite.T(), suite.testCtx)
-	assert.Equal(suite.T(), "user123", sysContext.GetUserID(suite.testCtx))
-	assert.Equal(suite.T(), "ou456", sysContext.GetOUID(suite.testCtx))
-	assert.Equal(suite.T(), "app789", sysContext.GetAppID(suite.testCtx))
+	assert.Equal(suite.T(), "user123", GetUserID(suite.testCtx))
+	assert.Equal(suite.T(), "ou456", GetOUID(suite.testCtx))
+	assert.Equal(suite.T(), "app789", GetAppID(suite.testCtx))
 }
 
 // Test authentication failure with unauthorized error
@@ -244,8 +242,8 @@ func (suite *MiddlewareTestSuite) TestMiddleware_DifferentHTTPMethods() {
 			// Reset test context for each iteration
 			suite.testCtx = nil
 
-			authCtx := sysContext.NewAuthenticationContext("user", "ou", "app", "token", nil)
-			enrichedCtx := sysContext.WithAuthenticationContext(context.Background(), authCtx)
+			ctx := newSecurityContext("user", "ou", "app", "token", nil)
+			enrichedCtx := withSecurityContext(context.Background(), ctx)
 
 			suite.mockService.EXPECT().Process(req).Return(enrichedCtx, nil)
 
@@ -278,8 +276,8 @@ func (suite *MiddlewareTestSuite) TestMiddleware_Chaining() {
 		w.WriteHeader(http.StatusOK)
 	})
 
-	authCtx := sysContext.NewAuthenticationContext("user", "ou", "app", "token", nil)
-	enrichedCtx := sysContext.WithAuthenticationContext(context.Background(), authCtx)
+	ctx := newSecurityContext("user", "ou", "app", "token", nil)
+	enrichedCtx := withSecurityContext(context.Background(), ctx)
 	suite.mockService.EXPECT().Process(req).Return(enrichedCtx, nil)
 
 	// Chain middleware: first -> security -> final
@@ -296,8 +294,8 @@ func (suite *MiddlewareTestSuite) TestMiddleware_ErrorHandling_EdgeCases() {
 	w := httptest.NewRecorder()
 
 	// Test with service returning context but also error (edge case)
-	authCtx := sysContext.NewAuthenticationContext("user", "ou", "app", "token", nil)
-	enrichedCtx := sysContext.WithAuthenticationContext(context.Background(), authCtx)
+	ctx := newSecurityContext("user", "ou", "app", "token", nil)
+	enrichedCtx := withSecurityContext(context.Background(), ctx)
 	suite.mockService.EXPECT().Process(req).Return(enrichedCtx, errUnauthorized)
 
 	handler := suite.middleware(suite.testHandler)

@@ -35,7 +35,7 @@ var (
 	// queryGetResourceServerByID retrieves a resource server by ID.
 	queryGetResourceServerByID = dbmodel.DBQuery{
 		ID: "RSQ-RES_MGT-02",
-		Query: `SELECT RESOURCE_SERVER_ID, OU_ID, NAME, DESCRIPTION, IDENTIFIER, PROPERTIES
+		Query: `SELECT ID, RESOURCE_SERVER_ID, OU_ID, NAME, DESCRIPTION, IDENTIFIER, PROPERTIES
 			FROM RESOURCE_SERVER
 			WHERE RESOURCE_SERVER_ID = $1 AND DEPLOYMENT_ID = $2`,
 	}
@@ -43,7 +43,7 @@ var (
 	// queryGetResourceServerList retrieves a list of resource servers with pagination.
 	queryGetResourceServerList = dbmodel.DBQuery{
 		ID: "RSQ-RES_MGT-03",
-		Query: `SELECT RESOURCE_SERVER_ID, OU_ID, NAME, DESCRIPTION, IDENTIFIER, PROPERTIES
+		Query: `SELECT ID, RESOURCE_SERVER_ID, OU_ID, NAME, DESCRIPTION, IDENTIFIER, PROPERTIES
 			FROM RESOURCE_SERVER
 			WHERE DEPLOYMENT_ID = $3
 			ORDER BY CREATED_AT DESC
@@ -94,29 +94,23 @@ var (
 			LIMIT 1
 		) as dependencies`,
 	}
-
-	// queryGetResourceServerInternalID retrieves the internal ID of a resource server by UUID.
-	queryGetResourceServerInternalID = dbmodel.DBQuery{
-		ID:    "RSQ-RES_MGT-10",
-		Query: `SELECT ID FROM RESOURCE_SERVER WHERE RESOURCE_SERVER_ID = $1 AND DEPLOYMENT_ID = $2`,
-	}
 )
 
 // Resource Queries
 var (
 	// queryCreateResource creates a new resource.
 	queryCreateResource = dbmodel.DBQuery{
-		ID: "RSQ-RES_MGT-11",
+		ID: "RSQ-RES_MGT-10",
 		Query: `INSERT INTO RESOURCE
-		        (RESOURCE_ID, RESOURCE_SERVER_ID, NAME, HANDLE, DESCRIPTION, PROPERTIES,
+		        (RESOURCE_ID, RESOURCE_SERVER_ID, NAME, HANDLE, DESCRIPTION, PERMISSION, PROPERTIES,
 				PARENT_RESOURCE_ID, DEPLOYMENT_ID)
-		        VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
+		        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)`,
 	}
 
 	// queryGetResourceByID retrieves a resource by ID.
 	queryGetResourceByID = dbmodel.DBQuery{
-		ID: "RSQ-RES_MGT-12",
-		Query: `SELECT r.RESOURCE_ID, r.NAME, r.HANDLE, r.DESCRIPTION,
+		ID: "RSQ-RES_MGT-11",
+		Query: `SELECT r.ID, r.RESOURCE_ID, r.NAME, r.HANDLE, r.DESCRIPTION, r.PERMISSION,
 				r.PROPERTIES, pr.RESOURCE_ID as PARENT_RESOURCE_ID
 			FROM RESOURCE r
 			LEFT JOIN RESOURCE pr ON r.PARENT_RESOURCE_ID = pr.ID
@@ -125,8 +119,8 @@ var (
 
 	// queryGetResourceList retrieves a list of resources with pagination.
 	queryGetResourceList = dbmodel.DBQuery{
-		ID: "RSQ-RES_MGT-13",
-		Query: `SELECT r.RESOURCE_ID, r.NAME, r.HANDLE, r.DESCRIPTION,
+		ID: "RSQ-RES_MGT-12",
+		Query: `SELECT r.ID, r.RESOURCE_ID, r.NAME, r.HANDLE, r.DESCRIPTION, r.PERMISSION,
 				r.PROPERTIES, pr.RESOURCE_ID as PARENT_RESOURCE_ID
 			FROM RESOURCE r
 			LEFT JOIN RESOURCE pr ON r.PARENT_RESOURCE_ID = pr.ID
@@ -136,8 +130,8 @@ var (
 
 	// queryGetResourceListByParent retrieves resources by parent ID with pagination.
 	queryGetResourceListByParent = dbmodel.DBQuery{
-		ID: "RSQ-RES_MGT-14",
-		Query: `SELECT r.RESOURCE_ID, r.NAME, r.HANDLE, r.DESCRIPTION,
+		ID: "RSQ-RES_MGT-13",
+		Query: `SELECT r.ID, r.RESOURCE_ID, r.NAME, r.HANDLE, r.DESCRIPTION, r.PERMISSION,
 				r.PROPERTIES, pr.RESOURCE_ID as PARENT_RESOURCE_ID
 			FROM RESOURCE r
 			LEFT JOIN RESOURCE pr ON r.PARENT_RESOURCE_ID = pr.ID
@@ -147,8 +141,8 @@ var (
 
 	// queryGetResourceListByNullParent retrieves top-level resources with pagination.
 	queryGetResourceListByNullParent = dbmodel.DBQuery{
-		ID: "RSQ-RES_MGT-15",
-		Query: `SELECT r.RESOURCE_ID, r.NAME, r.HANDLE, r.DESCRIPTION,
+		ID: "RSQ-RES_MGT-14",
+		Query: `SELECT r.ID, r.RESOURCE_ID, r.NAME, r.HANDLE, r.DESCRIPTION, r.PERMISSION,
 				r.PROPERTIES, pr.RESOURCE_ID as PARENT_RESOURCE_ID
 			FROM RESOURCE r
 		        LEFT JOIN RESOURCE pr ON r.PARENT_RESOURCE_ID = pr.ID
@@ -158,7 +152,7 @@ var (
 
 	// queryGetResourceListCount retrieves the total count of resources.
 	queryGetResourceListCount = dbmodel.DBQuery{
-		ID: "RSQ-RES_MGT-16",
+		ID: "RSQ-RES_MGT-15",
 		Query: `SELECT COUNT(*) as total
 		        FROM RESOURCE r
 		        WHERE r.RESOURCE_SERVER_ID = $1 AND r.DEPLOYMENT_ID = $2`,
@@ -166,7 +160,7 @@ var (
 
 	// queryGetResourceListCountByParent retrieves count of resources by parent.
 	queryGetResourceListCountByParent = dbmodel.DBQuery{
-		ID: "RSQ-RES_MGT-17",
+		ID: "RSQ-RES_MGT-16",
 		Query: `SELECT COUNT(*) as total
 		        FROM RESOURCE r
 		        WHERE r.RESOURCE_SERVER_ID = $1 AND r.PARENT_RESOURCE_ID = $2 AND r.DEPLOYMENT_ID = $3`,
@@ -174,7 +168,7 @@ var (
 
 	// queryGetResourceListCountByNullParent retrieves count of top-level resources.
 	queryGetResourceListCountByNullParent = dbmodel.DBQuery{
-		ID: "RSQ-RES_MGT-18",
+		ID: "RSQ-RES_MGT-17",
 		Query: `SELECT COUNT(*) as total
 		        FROM RESOURCE r
 		        WHERE r.RESOURCE_SERVER_ID = $1 AND r.PARENT_RESOURCE_ID IS NULL AND r.DEPLOYMENT_ID = $2`,
@@ -182,7 +176,7 @@ var (
 
 	// queryUpdateResource updates a resource.
 	queryUpdateResource = dbmodel.DBQuery{
-		ID: "RSQ-RES_MGT-19",
+		ID: "RSQ-RES_MGT-18",
 		Query: `UPDATE RESOURCE
 		        SET NAME = $1,
 				    DESCRIPTION = $2,
@@ -194,7 +188,7 @@ var (
 
 	// queryDeleteResource deletes a resource.
 	queryDeleteResource = dbmodel.DBQuery{
-		ID: "RSQ-RES_MGT-20",
+		ID: "RSQ-RES_MGT-19",
 		Query: `DELETE FROM RESOURCE
 		        WHERE RESOURCE_ID = $1
 		          AND RESOURCE_SERVER_ID = $2
@@ -203,7 +197,7 @@ var (
 
 	// queryCheckResourceHandleExistsUnderParent checks if resource handle exists under same parent.
 	queryCheckResourceHandleExistsUnderParent = dbmodel.DBQuery{
-		ID: "RSQ-RES_MGT-21",
+		ID: "RSQ-RES_MGT-20",
 		Query: `SELECT COUNT(*) as count
 		        FROM RESOURCE r WHERE r.RESOURCE_SERVER_ID = $1 AND r.HANDLE = $2
 				AND r.PARENT_RESOURCE_ID = $3 AND r.DEPLOYMENT_ID = $4`,
@@ -211,7 +205,7 @@ var (
 
 	// queryCheckResourceHandleExistsUnderNullParent checks if resource handle exists at top level.
 	queryCheckResourceHandleExistsUnderNullParent = dbmodel.DBQuery{
-		ID: "RSQ-RES_MGT-22",
+		ID: "RSQ-RES_MGT-21",
 		Query: `SELECT COUNT(*) as count
 		        FROM RESOURCE r WHERE r.RESOURCE_SERVER_ID = $1 AND r.HANDLE = $2
 				AND r.PARENT_RESOURCE_ID IS NULL AND r.DEPLOYMENT_ID = $3`,
@@ -219,7 +213,7 @@ var (
 
 	// queryCheckResourceHasDependencies checks if resource has sub-resources or actions.
 	queryCheckResourceHasDependencies = dbmodel.DBQuery{
-		ID: "RSQ-RES_MGT-23",
+		ID: "RSQ-RES_MGT-22",
 		Query: `SELECT COUNT(*) as count FROM (
 			SELECT 1 FROM RESOURCE child
 				WHERE child.PARENT_RESOURCE_ID = $1 AND child.DEPLOYMENT_ID = $2
@@ -233,7 +227,7 @@ var (
 	// queryCheckCircularDependency checks if setting a parent would create a circular dependency.
 	// It traverses UP the parent chain from newParentID to check if resourceID appears as an ancestor.
 	queryCheckCircularDependency = dbmodel.DBQuery{
-		ID: "RSQ-RES_MGT-24",
+		ID: "RSQ-RES_MGT-23",
 		Query: `WITH RECURSIVE parent_hierarchy AS (
 			SELECT ID, RESOURCE_ID, PARENT_RESOURCE_ID, DEPLOYMENT_ID FROM RESOURCE 
 			WHERE RESOURCE_ID = $1 AND DEPLOYMENT_ID = $3
@@ -244,29 +238,23 @@ var (
 		)
 		SELECT COUNT(*) as count FROM parent_hierarchy WHERE RESOURCE_ID = $2`,
 	}
-
-	// queryGetResourceInternalID retrieves the internal ID of a resource by UUID.
-	queryGetResourceInternalID = dbmodel.DBQuery{
-		ID: "RSQ-RES_MGT-25",
-		Query: `SELECT ID FROM RESOURCE
-		        WHERE RESOURCE_ID = $1 AND RESOURCE_SERVER_ID = $2 AND DEPLOYMENT_ID = $3`,
-	}
 )
 
 // Action Queries
 var (
 	// queryCreateAction creates a new action.
 	queryCreateAction = dbmodel.DBQuery{
-		ID: "RSQ-RES_MGT-26",
+		ID: "RSQ-RES_MGT-24",
 		Query: `INSERT INTO ACTION
-		        (ACTION_ID, RESOURCE_SERVER_ID, RESOURCE_ID, NAME, HANDLE, DESCRIPTION, PROPERTIES, DEPLOYMENT_ID)
-		        VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
+		        (ACTION_ID, RESOURCE_SERVER_ID, RESOURCE_ID, NAME, HANDLE, DESCRIPTION, PERMISSION,
+				PROPERTIES, DEPLOYMENT_ID)
+		        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)`,
 	}
 
 	// queryGetActionByID retrieves an action by ID.
 	queryGetActionByID = dbmodel.DBQuery{
-		ID: "RSQ-RES_MGT-27",
-		Query: `SELECT a.ACTION_ID, a.NAME, a.HANDLE, a.DESCRIPTION, a.PROPERTIES
+		ID: "RSQ-RES_MGT-25",
+		Query: `SELECT a.ID, a.ACTION_ID, a.NAME, a.HANDLE, a.DESCRIPTION, a.PERMISSION, a.PROPERTIES
 		        FROM ACTION a
 		        WHERE a.ACTION_ID = $1
 		          AND a.RESOURCE_SERVER_ID = $2
@@ -276,8 +264,8 @@ var (
 
 	// queryGetActionList retrieves actions with pagination.
 	queryGetActionList = dbmodel.DBQuery{
-		ID: "RSQ-RES_MGT-28",
-		Query: `SELECT a.ACTION_ID, a.NAME, a.HANDLE, a.DESCRIPTION, a.PROPERTIES
+		ID: "RSQ-RES_MGT-26",
+		Query: `SELECT a.ID, a.ACTION_ID, a.NAME, a.HANDLE, a.DESCRIPTION, a.PERMISSION, a.PROPERTIES
 		        FROM ACTION a
 		        WHERE a.RESOURCE_SERVER_ID = $1
 		          AND (a.RESOURCE_ID = $2 OR (a.RESOURCE_ID IS NULL AND $2 IS NULL))
@@ -287,7 +275,7 @@ var (
 
 	// queryGetActionListCount retrieves count of actions.
 	queryGetActionListCount = dbmodel.DBQuery{
-		ID: "RSQ-RES_MGT-29",
+		ID: "RSQ-RES_MGT-27",
 		Query: `SELECT COUNT(*) as total
 		        FROM ACTION a
 		        WHERE a.RESOURCE_SERVER_ID = $1
@@ -297,7 +285,7 @@ var (
 
 	// queryUpdateAction updates an action.
 	queryUpdateAction = dbmodel.DBQuery{
-		ID: "RSQ-RES_MGT-30",
+		ID: "RSQ-RES_MGT-28",
 		Query: `UPDATE ACTION
 		        SET NAME = $1, DESCRIPTION = $2, PROPERTIES = $3
 		        WHERE ACTION_ID = $4
@@ -308,7 +296,7 @@ var (
 
 	// queryDeleteAction deletes an action.
 	queryDeleteAction = dbmodel.DBQuery{
-		ID: "RSQ-RES_MGT-31",
+		ID: "RSQ-RES_MGT-29",
 		Query: `DELETE FROM ACTION
 		        WHERE ACTION_ID = $1
 		          AND RESOURCE_SERVER_ID = $2
@@ -318,7 +306,7 @@ var (
 
 	// queryCheckActionExists checks if an action exists by ID.
 	queryCheckActionExists = dbmodel.DBQuery{
-		ID: "RSQ-RES_MGT-32",
+		ID: "RSQ-RES_MGT-30",
 		Query: `SELECT COUNT(*) as count
 		        FROM ACTION a
 		        WHERE a.ACTION_ID = $1
@@ -329,7 +317,7 @@ var (
 
 	// queryCheckActionHandleExists checks if action handle exists.
 	queryCheckActionHandleExists = dbmodel.DBQuery{
-		ID: "RSQ-RES_MGT-33",
+		ID: "RSQ-RES_MGT-31",
 		Query: `SELECT COUNT(*) as count
 		        FROM ACTION a
 		        WHERE a.RESOURCE_SERVER_ID = $1

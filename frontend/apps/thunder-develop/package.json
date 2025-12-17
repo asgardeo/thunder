@@ -36,6 +36,7 @@
     "@asgardeo/react-router": "catalog:",
     "@emotion/react": "catalog:",
     "@emotion/styled": "catalog:",
+    "@hookform/resolvers": "catalog:",
     "@mui/material": "catalog:",
     "@tanstack/react-query": "catalog:",
     "@tanstack/react-query-devtools": "catalog:",
@@ -51,7 +52,8 @@
     "react-dom": "catalog:",
     "react-hook-form": "catalog:",
     "react-i18next": "catalog:",
-    "react-router": "catalog:"
+    "react-router": "catalog:",
+    "zod": "catalog:"
   },
   "devDependencies": {
     "@testing-library/jest-dom": "catalog:",

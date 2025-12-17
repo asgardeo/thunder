@@ -22,9 +22,14 @@ import {useAsgardeo} from '@asgardeo/react';
 import ApplicationQueryKeys from '../constants/application-query-keys';
 
 /**
- * Custom hook to delete an application from the Thunder server.
+ * Custom React hook to delete an application from the Thunder server.
  *
- * @returns TanStack Query mutation object for deleting applications
+ * This hook uses TanStack Query mutations to handle the application deletion process,
+ * providing loading states and error handling. Upon successful deletion, it automatically
+ * removes the application from cache and invalidates the applications list query to
+ * trigger a refetch.
+ *
+ * @returns TanStack Query mutation object for deleting applications with mutate function, loading state, and error information
  *
  * @example
  * ```tsx
@@ -51,6 +56,8 @@ import ApplicationQueryKeys from '../constants/application-query-keys';
  *   );
  * }
  * ```
+ *
+ * @public
  */
 export default function useDeleteApplication(): UseMutationResult<void, Error, string> {
   const {http} = useAsgardeo();

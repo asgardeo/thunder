@@ -27,7 +27,6 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
 
-	sysContext "github.com/asgardeo/thunder/internal/system/context"
 	"github.com/asgardeo/thunder/tests/mocks/jwtmock"
 )
 
@@ -99,7 +98,7 @@ func (suite *JWTAuthenticatorTestSuite) TestCanHandle() {
 }
 
 func (suite *JWTAuthenticatorTestSuite) TestAuthenticate() {
-	// Valid JWT token with claims (simplified representation)
+	// Valid JWT token with attributes (simplified representation)
 	// Payload: {"sub":"user123","scope":"system users:read","ou_id":"ou1","app_id":"app1"}
 	//nolint:gosec,lll // Test data, not a real credential
 	validToken := "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJ1c2VyMTIzIiwic2NvcGUiOiJzeXN0ZW0gdXNlcnM6cmVhZCIsIm91X2lkIjoib3UxIiwiYXBwX2lkIjoiYXBwMSJ9.signature"
@@ -109,7 +108,7 @@ func (suite *JWTAuthenticatorTestSuite) TestAuthenticate() {
 		authHeader     string
 		setupMock      func(*jwtmock.JWTServiceInterfaceMock)
 		expectedError  error
-		validateResult func(*testing.T, *sysContext.AuthenticationContext)
+		validateResult func(*testing.T, *SecurityContext)
 	}{
 		{
 			name:       "Successful authentication with system scope",
@@ -118,12 +117,11 @@ func (suite *JWTAuthenticatorTestSuite) TestAuthenticate() {
 				m.On("VerifyJWTSignature", validToken).Return(nil)
 			},
 			expectedError: nil,
-			validateResult: func(t *testing.T, ctx *sysContext.AuthenticationContext) {
-				baseCtx := sysContext.WithAuthenticationContext(context.Background(), ctx)
-				assert.Equal(t, "user123", sysContext.GetUserID(baseCtx))
-				assert.Equal(t, "ou1", sysContext.GetOUID(baseCtx))
-				assert.Equal(t, "app1", sysContext.GetAppID(baseCtx))
-				assert.Equal(t, "system users:read", sysContext.GetClaimString(baseCtx, "scope"))
+			validateResult: func(t *testing.T, ctx *SecurityContext) {
+				baseCtx := withSecurityContext(context.Background(), ctx)
+				assert.Equal(t, "user123", GetUserID(baseCtx))
+				assert.Equal(t, "ou1", GetOUID(baseCtx))
+				assert.Equal(t, "app1", GetAppID(baseCtx))
 			},
 		},
 		{
@@ -213,33 +211,33 @@ func (suite *JWTAuthenticatorTestSuite) TestAuthenticate() {
 func (suite *JWTAuthenticatorTestSuite) TestAuthorize() {
 	tests := []struct {
 		name          string
-		claims        map[string]interface{}
+		attributes    map[string]interface{}
 		expectedError error
 	}{
 		{
-			name: "Has system scope in scope claim",
-			claims: map[string]interface{}{
+			name: "Has system scope in scope attribute",
+			attributes: map[string]interface{}{
 				"scope": "system users:read",
 			},
 			expectedError: nil,
 		},
 		{
-			name: "Has authorized_permissions claim",
-			claims: map[string]interface{}{
+			name: "Has authorized_permissions attribute",
+			attributes: map[string]interface{}{
 				"authorized_permissions": "other system",
 			},
 			expectedError: nil,
 		},
 		{
 			name: "Missing required scopes",
-			claims: map[string]interface{}{
+			attributes: map[string]interface{}{
 				"scope": "users:read",
 			},
 			expectedError: errInsufficientScopes,
 		},
 		{
 			name:          "Nil authentication context",
-			claims:        nil,
+			attributes:    nil,
 			expectedError: errUnauthorized,
 		},
 	}
@@ -248,10 +246,10 @@ func (suite *JWTAuthenticatorTestSuite) TestAuthorize() {
 		suite.Run(tt.name, func() {
 			req := httptest.NewRequest(http.MethodGet, "/users", nil)
 
-			var authCtx *sysContext.AuthenticationContext
-			if tt.claims != nil {
-				authCtx = sysContext.NewAuthenticationContext("user123", "ou1", "app1", "token", tt.claims)
-				ctx := sysContext.WithAuthenticationContext(req.Context(), authCtx)
+			var authCtx *SecurityContext
+			if tt.attributes != nil {
+				authCtx = newSecurityContext("user123", "ou1", "app1", "token", tt.attributes)
+				ctx := withSecurityContext(req.Context(), authCtx)
 				req = req.WithContext(ctx)
 			}
 
@@ -269,52 +267,52 @@ func (suite *JWTAuthenticatorTestSuite) TestAuthorize() {
 func (suite *JWTAuthenticatorTestSuite) TestExtractScopes() {
 	tests := []struct {
 		name           string
-		claims         map[string]interface{}
+		attributes     map[string]interface{}
 		expectedScopes []string
 	}{
 		{
-			name: "OAuth2 standard scope claim (space-separated)",
-			claims: map[string]interface{}{
+			name: "OAuth2 standard scope attribute (space-separated)",
+			attributes: map[string]interface{}{
 				"scope": "users:read users:write applications:manage",
 			},
 			expectedScopes: []string{"users:read", "users:write", "applications:manage"},
 		},
 		{
 			name: "Scopes as array of strings",
-			claims: map[string]interface{}{
+			attributes: map[string]interface{}{
 				"scopes": []string{"users:read", "users:write"},
 			},
 			expectedScopes: []string{"users:read", "users:write"},
 		},
 		{
 			name: "Scopes as array of interfaces",
-			claims: map[string]interface{}{
+			attributes: map[string]interface{}{
 				"scopes": []interface{}{"users:read", "users:write"},
 			},
 			expectedScopes: []string{"users:read", "users:write"},
 		},
 		{
-			name: "Empty scope claim",
-			claims: map[string]interface{}{
+			name: "Empty scope attribute",
+			attributes: map[string]interface{}{
 				"scope": "",
 			},
 			expectedScopes: []string{},
 		},
 		{
-			name:           "No scope claim",
-			claims:         map[string]interface{}{},
+			name:           "No scope attribute",
+			attributes:     map[string]interface{}{},
 			expectedScopes: []string{},
 		},
 		{
 			name: "Single scope",
-			claims: map[string]interface{}{
+			attributes: map[string]interface{}{
 				"scope": "users:read",
 			},
 			expectedScopes: []string{"users:read"},
 		},
 		{
-			name: "Thunder assertion authorized_permissions claim",
-			claims: map[string]interface{}{
+			name: "Thunder assertion authorized_permissions attribute",
+			attributes: map[string]interface{}{
 				"authorized_permissions": "perm1 perm2 perm3",
 			},
 			expectedScopes: []string{"perm1", "perm2", "perm3"},
@@ -323,40 +321,40 @@ func (suite *JWTAuthenticatorTestSuite) TestExtractScopes() {
 
 	for _, tt := range tests {
 		suite.Run(tt.name, func() {
-			scopes := extractScopes(tt.claims)
+			scopes := extractScopes(tt.attributes)
 			assert.ElementsMatch(suite.T(), tt.expectedScopes, scopes)
 		})
 	}
 }
 
-func (suite *JWTAuthenticatorTestSuite) TestExtractClaim() {
+func (suite *JWTAuthenticatorTestSuite) TestExtractAttribute() {
 	tests := []struct {
 		name          string
-		claims        map[string]interface{}
+		attributes    map[string]interface{}
 		key           string
 		expectedValue string
 	}{
 		{
-			name:          "Existing string claim",
-			claims:        map[string]interface{}{"ou_id": "ou123"},
+			name:          "Existing string attribute",
+			attributes:    map[string]interface{}{"ou_id": "ou123"},
 			key:           "ou_id",
 			expectedValue: "ou123",
 		},
 		{
-			name:          "Non-existent claim",
-			claims:        map[string]interface{}{"other": "value"},
+			name:          "Non-existent attribute",
+			attributes:    map[string]interface{}{"other": "value"},
 			key:           "ou_id",
 			expectedValue: "",
 		},
 		{
-			name:          "Non-string claim value",
-			claims:        map[string]interface{}{"ou_id": 123},
+			name:          "Non-string attribute value",
+			attributes:    map[string]interface{}{"ou_id": 123},
 			key:           "ou_id",
 			expectedValue: "",
 		},
 		{
-			name:          "Empty claims",
-			claims:        map[string]interface{}{},
+			name:          "Empty attributes",
+			attributes:    map[string]interface{}{},
 			key:           "ou_id",
 			expectedValue: "",
 		},
@@ -364,7 +362,7 @@ func (suite *JWTAuthenticatorTestSuite) TestExtractClaim() {
 
 	for _, tt := range tests {
 		suite.Run(tt.name, func() {
-			result := extractClaim(tt.claims, tt.key)
+			result := extractAttribute(tt.attributes, tt.key)
 			assert.Equal(suite.T(), tt.expectedValue, result)
 		})
 	}
@@ -468,33 +466,33 @@ func (suite *JWTAuthenticatorTestSuite) TestGetRequiredScopes() {
 func (suite *JWTAuthenticatorTestSuite) TestExtractScopes_EdgeCases() {
 	tests := []struct {
 		name           string
-		claims         map[string]interface{}
+		attributes     map[string]interface{}
 		expectedScopes []string
 	}{
 		{
 			name: "Scopes array with mixed types (should filter non-strings)",
-			claims: map[string]interface{}{
+			attributes: map[string]interface{}{
 				"scopes": []interface{}{"valid", 123, true, "another_valid"},
 			},
 			expectedScopes: []string{"valid", "another_valid"},
 		},
 		{
 			name: "Scopes as non-array, non-string type",
-			claims: map[string]interface{}{
+			attributes: map[string]interface{}{
 				"scopes": map[string]string{"invalid": "format"},
 			},
 			expectedScopes: []string{},
 		},
 		{
-			name: "Scope claim with extra whitespace",
-			claims: map[string]interface{}{
+			name: "Scope attribute with extra whitespace",
+			attributes: map[string]interface{}{
 				"scope": "  users:read   users:write  ",
 			},
 			expectedScopes: []string{"users:read", "users:write"},
 		},
 		{
 			name: "Both scope and scopes present (scope takes precedence)",
-			claims: map[string]interface{}{
+			attributes: map[string]interface{}{
 				"scope":  "from_scope",
 				"scopes": []string{"from_scopes"},
 			},
@@ -502,7 +500,7 @@ func (suite *JWTAuthenticatorTestSuite) TestExtractScopes_EdgeCases() {
 		},
 		{
 			name: "Scope as non-string type",
-			claims: map[string]interface{}{
+			attributes: map[string]interface{}{
 				"scope": 12345,
 			},
 			expectedScopes: []string{},
@@ -511,7 +509,7 @@ func (suite *JWTAuthenticatorTestSuite) TestExtractScopes_EdgeCases() {
 
 	for _, tt := range tests {
 		suite.Run(tt.name, func() {
-			scopes := extractScopes(tt.claims)
+			scopes := extractScopes(tt.attributes)
 			assert.ElementsMatch(suite.T(), tt.expectedScopes, scopes)
 		})
 	}

@@ -1,0 +1,23 @@
+{
+  "name": "Server Application",
+  "description": "Server-side application with confidential client",
+  "inbound_auth_config": [
+    {
+      "type": "oauth2",
+      "config": {
+        "grant_types": [
+          "authorization_code",
+          "refresh_token"
+        ],
+        "response_types": [
+          "code"
+        ],
+        "redirect_uris": [],
+        "pkce_required": true,
+        "token_endpoint_auth_method": "client_secret_basic",
+        "public_client": false
+      }
+    }
+  ],
+  "allowed_user_types": []
+}
