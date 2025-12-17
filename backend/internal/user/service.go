@@ -37,11 +37,20 @@ import (
 
 const loggerComponentName = "UserService"
 
+// Credential type constants
+const (
+	CredentialTypePassword = "password"
+	CredentialTypePin      = "pin"
+	CredentialTypeSecret   = "secret"
+	CredentialTypePasskey  = "passkey"
+)
+
 // SupportedCredentialFields defines the set of credential field names that are supported.
 var supportedCredentialFields = map[string]struct{}{
-	"password": {},
-	"pin":      {},
-	"secret":   {},
+	CredentialTypePassword: {},
+	CredentialTypePin:      {},
+	CredentialTypeSecret:   {},
+	CredentialTypePasskey:  {},
 }
 
 // UserServiceInterface defines the interface for the user service.
@@ -61,6 +70,11 @@ type UserServiceInterface interface {
 	VerifyUser(userID string, credentials map[string]interface{}) (*User, *serviceerror.ServiceError)
 	AuthenticateUser(request AuthenticateUserRequest) (*AuthenticateUserResponse, *serviceerror.ServiceError)
 	ValidateUserIDs(userIDs []string) ([]string, *serviceerror.ServiceError)
+	AddPasskeyCredential(userID string, credential Credential) *serviceerror.ServiceError
+	GetUserCredentials(userID string, credentialType string) ([]Credential, *serviceerror.ServiceError)
+	GetUserWithCredentials(userID string) (*User, CredentialMap, *serviceerror.ServiceError)
+	UpdateCredentialMap(userID string, credentialMap CredentialMap) *serviceerror.ServiceError
+	UpdateCredentialInMap(userID string, credentialType string, updatedCredentials []Credential) *serviceerror.ServiceError
 }
 
 // userService is the default implementation of the UserServiceInterface.
@@ -249,10 +263,10 @@ func (us *userService) CreateUserByPath(
 	return us.CreateUser(user)
 }
 
-// extractCredentials extracts the credentials from the user attributes and returns a Credentials array.
-func (us *userService) extractCredentials(user *User) ([]Credential, error) {
+// extractCredentials extracts the credentials from the user attributes and returns a CredentialMap.
+func (us *userService) extractCredentials(user *User) (CredentialMap, error) {
 	if user.Attributes == nil {
-		return []Credential{}, nil
+		return CredentialMap{}, nil
 	}
 
 	var attrsMap map[string]interface{}
@@ -260,7 +274,7 @@ func (us *userService) extractCredentials(user *User) ([]Credential, error) {
 		return nil, err
 	}
 
-	var credentials []Credential
+	credentials := make(CredentialMap)
 
 	for credField := range supportedCredentialFields {
 		if credValue, ok := attrsMap[credField].(string); ok {
@@ -280,7 +294,11 @@ func (us *userService) extractCredentials(user *User) ([]Credential, error) {
 				Value: credHash.Hash,
 			}
 
-			credentials = append(credentials, credential)
+			// Initialize the credential type array if it doesn't exist
+			if credentials[credField] == nil {
+				credentials[credField] = []Credential{}
+			}
+			credentials[credField] = append(credentials[credField], credential)
 		}
 	}
 
@@ -554,31 +572,17 @@ func (us *userService) UpdateUserCredentials(userID string, attributes json.RawM
 }
 
 // mergeCredentials combines existing credentials with provided credentials, preferring provided values.
-func (us *userService) mergeCredentials(existing []Credential, provided []Credential) []Credential {
-	providedMap := make(map[string]Credential, len(provided))
-	providedOrder := make([]string, 0, len(provided))
-	for _, cred := range provided {
-		if _, exists := providedMap[cred.CredentialType]; !exists {
-			providedOrder = append(providedOrder, cred.CredentialType)
-		}
-		providedMap[cred.CredentialType] = cred
+func (us *userService) mergeCredentials(existing CredentialMap, provided CredentialMap) CredentialMap {
+	merged := make(CredentialMap)
+
+	// Copy all existing credentials
+	for credType, credList := range existing {
+		merged[credType] = append([]Credential{}, credList...)
 	}
 
-	merged := make([]Credential, 0, len(existing)+len(providedMap))
-
-	for _, storedCred := range existing {
-		if updatedCred, found := providedMap[storedCred.CredentialType]; found {
-			merged = append(merged, updatedCred)
-			delete(providedMap, storedCred.CredentialType)
-		} else {
-			merged = append(merged, storedCred)
-		}
-	}
-
-	for _, credType := range providedOrder {
-		if cred, found := providedMap[credType]; found {
-			merged = append(merged, cred)
-		}
+	// Override or add provided credentials
+	for credType, credList := range provided {
+		merged[credType] = credList
 	}
 
 	return merged
@@ -675,35 +679,37 @@ func (us *userService) VerifyUser(
 	}
 
 	for credType, credValue := range credentialsToVerify {
-		var matchingCredential *Credential
-		for _, storedCred := range storedCredentials {
-			if storedCred.CredentialType == credType {
-				matchingCredential = &storedCred
-				break
-			}
-		}
-
-		if matchingCredential == nil {
+		// Get credentials of this type from the map
+		credList, exists := storedCredentials[credType]
+		if !exists || len(credList) == 0 {
 			logger.Debug("No stored credential found for type",
 				log.String("userID", userID), log.String("credType", credType))
 			return nil, &ErrorAuthenticationFailed
 		}
 
-		verifyingCredential := hash.Credential{
-			Algorithm: matchingCredential.StorageAlgo,
-			Hash:      matchingCredential.Value,
-			Parameters: hash.CredParameters{
-				Salt:       matchingCredential.StorageAlgoParams.Salt,
-				Iterations: matchingCredential.StorageAlgoParams.Iterations,
-				KeySize:    matchingCredential.StorageAlgoParams.KeySize,
-			},
-		}
-		hashVerified := us.hashService.Verify([]byte(credValue), verifyingCredential)
+		// Try to verify against any credential of this type (typically first one)
+		verified := false
+		for _, storedCred := range credList {
+			verifyingCredential := hash.Credential{
+				Algorithm: storedCred.StorageAlgo,
+				Hash:      storedCred.Value,
+				Parameters: hash.CredParameters{
+					Salt:       storedCred.StorageAlgoParams.Salt,
+					Iterations: storedCred.StorageAlgoParams.Iterations,
+					KeySize:    storedCred.StorageAlgoParams.KeySize,
+				},
+			}
+			hashVerified := us.hashService.Verify([]byte(credValue), verifyingCredential)
 
-		if hashVerified {
-			logger.Debug("Credential verified successfully",
-				log.String("userID", userID), log.String("credType", credType))
-		} else {
+			if hashVerified {
+				logger.Debug("Credential verified successfully",
+					log.String("userID", userID), log.String("credType", credType))
+				verified = true
+				break
+			}
+		}
+
+		if !verified {
 			logger.Debug("Credential verification failed",
 				log.String("userID", userID), log.String("credType", credType))
 			return nil, &ErrorAuthenticationFailed
@@ -777,6 +783,281 @@ func (us *userService) ValidateUserIDs(userIDs []string) ([]string, *serviceerro
 	}
 
 	return invalidUserIDs, nil
+}
+
+// AddPasskeyCredential adds a passkey credential to a user's credential map.
+func (us *userService) AddPasskeyCredential(userID string, credential Credential) *serviceerror.ServiceError {
+	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, loggerComponentName))
+	logger.Debug("Adding passkey credential", log.String("userID", log.MaskString(userID)))
+
+	if strings.TrimSpace(userID) == "" {
+		return &ErrorMissingUserID
+	}
+
+	if credential.CredentialType != CredentialTypePasskey {
+		logger.Debug("Invalid credential type for passkey",
+			log.String("providedType", credential.CredentialType))
+		return &ErrorInvalidCredential
+	}
+
+	if strings.TrimSpace(credential.Value) == "" {
+		logger.Debug("Empty credential value")
+		return &ErrorInvalidCredential
+	}
+
+	// Get existing credentials
+	_, existingCredentials, err := us.userStore.GetCredentials(userID)
+	if err != nil {
+		if errors.Is(err, ErrUserNotFound) {
+			logger.Debug("User not found", log.String("userID", userID))
+			return &ErrorUserNotFound
+		}
+		return logErrorAndReturnServerError(
+			logger,
+			"Failed to retrieve existing user credentials",
+			err,
+			log.String("userID", userID),
+		)
+	}
+
+	// Add the passkey credential to the map
+	if existingCredentials == nil {
+		existingCredentials = make(CredentialMap)
+	}
+
+	// Initialize passkey credentials array if it doesn't exist
+	if existingCredentials[CredentialTypePasskey] == nil {
+		existingCredentials[CredentialTypePasskey] = []Credential{}
+	}
+
+	// Append the new passkey credential
+	existingCredentials[CredentialTypePasskey] = append(
+		existingCredentials[CredentialTypePasskey],
+		credential,
+	)
+
+	// Update credentials in the database
+	err = us.userStore.UpdateUserCredentials(userID, existingCredentials)
+	if err != nil {
+		if errors.Is(err, ErrUserNotFound) {
+			logger.Debug("User not found", log.String("userID", userID))
+			return &ErrorUserNotFound
+		}
+		return logErrorAndReturnServerError(
+			logger,
+			"Failed to update user credentials",
+			err,
+			log.String("userID", userID),
+		)
+	}
+
+	logger.Debug("Successfully added passkey credential", log.String("userID", log.MaskString(userID)))
+	return nil
+}
+
+// GetUserCredentials retrieves credentials of a specific type for a user.
+// If credentialType is empty, returns all credentials.
+func (us *userService) GetUserCredentials(userID string, credentialType string) ([]Credential, *serviceerror.ServiceError) {
+	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, loggerComponentName))
+	logger.Debug("Retrieving user credentials",
+		log.String("userID", log.MaskString(userID)),
+		log.String("credentialType", credentialType))
+
+	if strings.TrimSpace(userID) == "" {
+		return nil, &ErrorMissingUserID
+	}
+
+	// Get all credentials for the user
+	_, credentialMap, err := us.userStore.GetCredentials(userID)
+	if err != nil {
+		if errors.Is(err, ErrUserNotFound) {
+			logger.Debug("User not found", log.String("userID", userID))
+			return nil, &ErrorUserNotFound
+		}
+		return nil, logErrorAndReturnServerError(
+			logger,
+			"Failed to retrieve user credentials",
+			err,
+			log.String("userID", userID),
+		)
+	}
+
+	// If no credential type specified, return all credentials
+	if strings.TrimSpace(credentialType) == "" {
+		allCredentials := []Credential{}
+		for _, credList := range credentialMap {
+			allCredentials = append(allCredentials, credList...)
+		}
+		logger.Debug("Retrieved all credentials", log.String("userID", log.MaskString(userID)))
+		return allCredentials, nil
+	}
+
+	// Return credentials of the specified type
+	credentials, exists := credentialMap[credentialType]
+	if !exists || len(credentials) == 0 {
+		logger.Debug("No credentials found for type",
+			log.String("userID", log.MaskString(userID)),
+			log.String("credentialType", credentialType))
+		return []Credential{}, nil
+	}
+
+	logger.Debug("Retrieved credentials for type",
+		log.String("userID", log.MaskString(userID)),
+		log.String("credentialType", credentialType),
+		log.Int("count", len(credentials)))
+	return credentials, nil
+}
+
+// GetUserWithCredentials retrieves a user along with their complete credential map.
+// This method is useful when you need both user information and credentials in a single call.
+func (us *userService) GetUserWithCredentials(userID string) (*User, CredentialMap, *serviceerror.ServiceError) {
+	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, loggerComponentName))
+	logger.Debug("Retrieving user with credentials", log.String("userID", log.MaskString(userID)))
+
+	if strings.TrimSpace(userID) == "" {
+		return nil, nil, &ErrorMissingUserID
+	}
+
+	// Get user and credentials from store
+	user, credentialMap, err := us.userStore.GetCredentials(userID)
+	if err != nil {
+		if errors.Is(err, ErrUserNotFound) {
+			logger.Debug("User not found", log.String("userID", userID))
+			return nil, nil, &ErrorUserNotFound
+		}
+		return nil, nil, logErrorAndReturnServerError(
+			logger,
+			"Failed to retrieve user with credentials",
+			err,
+			log.String("userID", userID),
+		)
+	}
+
+	logger.Debug("Retrieved user with credentials",
+		log.String("userID", log.MaskString(userID)),
+		log.Int("credentialTypeCount", len(credentialMap)))
+	return &user, credentialMap, nil
+}
+
+// UpdateCredentialMap updates the entire credential map for a user.
+// This method replaces all existing credentials with the provided credential map.
+// Use with caution as it will overwrite all existing credentials.
+func (us *userService) UpdateCredentialMap(userID string, credentialMap CredentialMap) *serviceerror.ServiceError {
+	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, loggerComponentName))
+	logger.Debug("Updating credential map",
+		log.String("userID", log.MaskString(userID)),
+		log.Int("credentialTypeCount", len(credentialMap)))
+
+	if strings.TrimSpace(userID) == "" {
+		return &ErrorMissingUserID
+	}
+
+	if credentialMap == nil {
+		logger.Debug("Credential map is nil")
+		return &ErrorInvalidRequestFormat
+	}
+
+	// Validate credential map structure
+	for credType, credentials := range credentialMap {
+		if credType == "" {
+			logger.Debug("Empty credential type in map")
+			return &ErrorInvalidRequestFormat
+		}
+		for _, cred := range credentials {
+			if cred.CredentialType != credType {
+				logger.Debug("Credential type mismatch in map",
+					log.String("mapKey", credType),
+					log.String("credentialType", cred.CredentialType))
+				return &ErrorInvalidRequestFormat
+			}
+		}
+	}
+
+	// Update credentials in store
+	err := us.userStore.UpdateUserCredentials(userID, credentialMap)
+	if err != nil {
+		if errors.Is(err, ErrUserNotFound) {
+			logger.Debug("User not found", log.String("userID", userID))
+			return &ErrorUserNotFound
+		}
+		return logErrorAndReturnServerError(
+			logger,
+			"Failed to update credential map",
+			err,
+			log.String("userID", userID),
+		)
+	}
+
+	logger.Debug("Successfully updated credential map", log.String("userID", log.MaskString(userID)))
+	return nil
+}
+
+// UpdateCredentialInMap updates credentials of a specific type for a user.
+// This method retrieves the existing credential map, updates the credentials for the specified type,
+// and saves the updated map back to the store.
+func (us *userService) UpdateCredentialInMap(userID string, credentialType string, updatedCredentials []Credential) *serviceerror.ServiceError {
+	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, loggerComponentName))
+	logger.Debug("Updating credentials in map",
+		log.String("userID", log.MaskString(userID)),
+		log.String("credentialType", credentialType),
+		log.Int("credentialCount", len(updatedCredentials)))
+
+	if strings.TrimSpace(userID) == "" {
+		return &ErrorMissingUserID
+	}
+
+	if strings.TrimSpace(credentialType) == "" {
+		logger.Debug("Credential type is empty")
+		return &ErrorInvalidRequestFormat
+	}
+
+	// Validate that all credentials have the correct type
+	for _, cred := range updatedCredentials {
+		if cred.CredentialType != credentialType {
+			logger.Debug("Credential type mismatch",
+				log.String("expected", credentialType),
+				log.String("actual", cred.CredentialType))
+			return &ErrorInvalidRequestFormat
+		}
+	}
+
+	// Get existing credential map
+	_, existingCredMap, err := us.userStore.GetCredentials(userID)
+	if err != nil {
+		if errors.Is(err, ErrUserNotFound) {
+			logger.Debug("User not found", log.String("userID", userID))
+			return &ErrorUserNotFound
+		}
+		return logErrorAndReturnServerError(
+			logger,
+			"Failed to retrieve existing credentials",
+			err,
+			log.String("userID", userID),
+		)
+	}
+
+	// Update the credentials for the specified type
+	existingCredMap[credentialType] = updatedCredentials
+
+	// Save the updated credential map
+	err = us.userStore.UpdateUserCredentials(userID, existingCredMap)
+	if err != nil {
+		if errors.Is(err, ErrUserNotFound) {
+			logger.Debug("User not found", log.String("userID", userID))
+			return &ErrorUserNotFound
+		}
+		return logErrorAndReturnServerError(
+			logger,
+			"Failed to update credentials in map",
+			err,
+			log.String("userID", userID),
+		)
+	}
+
+	logger.Debug("Successfully updated credentials in map",
+		log.String("userID", log.MaskString(userID)),
+		log.String("credentialType", credentialType))
+	return nil
 }
 
 // validateOrganizationUnitForUserType ensures that the organization unit ID is valid and belongs to the user type.

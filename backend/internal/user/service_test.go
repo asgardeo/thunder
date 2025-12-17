@@ -735,7 +735,7 @@ func TestUserService_UpdateUserCredentials_UserNotFound(t *testing.T) {
 	userStoreMock := newUserStoreInterfaceMock(t)
 	userStoreMock.
 		On("GetCredentials", "user-1").
-		Return(User{}, []Credential{}, ErrUserNotFound).
+		Return(User{}, CredentialMap{}, ErrUserNotFound).
 		Once()
 	hashServiceMock := hashmock.NewHashServiceInterfaceMock(t)
 	hashServiceMock.
@@ -771,23 +771,27 @@ func TestUserService_UpdateUserCredentials_UserNotFound(t *testing.T) {
 
 func TestUserService_UpdateUserCredentials_Succeeds(t *testing.T) {
 	userStoreMock := newUserStoreInterfaceMock(t)
-	existingCredentials := []Credential{
-		{
-			CredentialType: "password",
-			StorageType:    "hash",
-			StorageAlgo:    hash.SHA256,
-			Value:          "old-hash",
-			StorageAlgoParams: hash.CredParameters{
-				Salt: "old-salt",
+	existingCredentials := CredentialMap{
+		"password": {
+			{
+				CredentialType: "password",
+				StorageType:    "hash",
+				StorageAlgo:    hash.SHA256,
+				Value:          "old-hash",
+				StorageAlgoParams: hash.CredParameters{
+					Salt: "old-salt",
+				},
 			},
 		},
-		{
-			CredentialType: "pin",
-			StorageType:    "hash",
-			StorageAlgo:    hash.SHA256,
-			Value:          "pin-hash",
-			StorageAlgoParams: hash.CredParameters{
-				Salt: "pin-salt",
+		"pin": {
+			{
+				CredentialType: "pin",
+				StorageType:    "hash",
+				StorageAlgo:    hash.SHA256,
+				Value:          "pin-hash",
+				StorageAlgoParams: hash.CredParameters{
+					Salt: "pin-salt",
+				},
 			},
 		},
 	}
@@ -795,11 +799,11 @@ func TestUserService_UpdateUserCredentials_Succeeds(t *testing.T) {
 		On("GetCredentials", "user-1").
 		Return(User{ID: "user-1"}, existingCredentials, nil).
 		Once()
-	var captured []Credential
+	var captured CredentialMap
 	userStoreMock.
 		On("UpdateUserCredentials", "user-1", mock.Anything).
 		Run(func(args mock.Arguments) {
-			if creds, ok := args[1].([]Credential); ok {
+			if creds, ok := args[1].(CredentialMap); ok {
 				captured = creds
 			}
 		}).
@@ -834,26 +838,22 @@ func TestUserService_UpdateUserCredentials_Succeeds(t *testing.T) {
 
 	svcErr := service.UpdateUserCredentials("user-1", json.RawMessage(`{"password":"newPass"}`))
 	require.Nil(t, svcErr)
-	require.Len(t, captured, 2)
 
-	var passwordCred, pinCred *Credential
-	for i := range captured {
-		switch captured[i].CredentialType {
-		case "password":
-			passwordCred = &captured[i]
-		case "pin":
-			pinCred = &captured[i]
-		}
-	}
+	// Verify password credential was updated
+	passwordCreds, exists := captured["password"]
+	require.True(t, exists)
+	require.Len(t, passwordCreds, 1)
+	require.Equal(t, "hash", passwordCreds[0].StorageType)
+	require.NotEmpty(t, passwordCreds[0].Value)
+	require.NotEmpty(t, passwordCreds[0].StorageAlgoParams.Salt)
+	require.NotEqual(t, "old-hash", passwordCreds[0].Value)
 
-	require.NotNil(t, passwordCred)
-	require.NotNil(t, pinCred)
-	require.Equal(t, "hash", passwordCred.StorageType)
-	require.NotEmpty(t, passwordCred.Value)
-	require.NotEmpty(t, passwordCred.StorageAlgoParams.Salt)
-	require.NotEqual(t, "old-hash", passwordCred.Value)
-	require.Equal(t, "pin-hash", pinCred.Value)
-	require.Equal(t, "pin-salt", pinCred.StorageAlgoParams.Salt)
+	// Verify pin credential was preserved
+	pinCreds, exists := captured["pin"]
+	require.True(t, exists)
+	require.Len(t, pinCreds, 1)
+	require.Equal(t, "pin-hash", pinCreds[0].Value)
+	require.Equal(t, "pin-salt", pinCreds[0].StorageAlgoParams.Salt)
 }
 
 func TestUserService_MergeCredentials(t *testing.T) {
@@ -861,142 +861,153 @@ func TestUserService_MergeCredentials(t *testing.T) {
 
 	type testCase struct {
 		name     string
-		existing []Credential
-		provided []Credential
-		expected []Credential
+		existing CredentialMap
+		provided CredentialMap
+		expected CredentialMap
 	}
 
 	tests := []testCase{
 		{
-			name: "ReplacesMatchingAndPreservesExistingOrder",
-			existing: []Credential{
-				{
-					CredentialType: "password", StorageType: "hash", Value: "old-pass",
-					StorageAlgoParams: hash.CredParameters{Salt: "salt-1"},
+			name: "ReplacesExistingTypeAndPreservesOthers",
+			existing: CredentialMap{
+				"password": {
+					{
+						CredentialType: "password", StorageType: "hash", Value: "old-pass",
+						StorageAlgoParams: hash.CredParameters{Salt: "salt-1"},
+					},
 				},
-				{
-					CredentialType: "pin", StorageType: "hash", Value: "old-pin",
-					StorageAlgoParams: hash.CredParameters{Salt: "salt-2"},
-				},
-			},
-			provided: []Credential{
-				{
-					CredentialType: "password", StorageType: "hash", Value: "new-pass",
-					StorageAlgoParams: hash.CredParameters{Salt: "salt-3"},
-				},
-				{
-					CredentialType: "secret", StorageType: "hash", Value: "secret",
-					StorageAlgoParams: hash.CredParameters{Salt: "salt-4"},
+				"pin": {
+					{
+						CredentialType: "pin", StorageType: "hash", Value: "old-pin",
+						StorageAlgoParams: hash.CredParameters{Salt: "salt-2"},
+					},
 				},
 			},
-			expected: []Credential{
-				{
-					CredentialType: "password", StorageType: "hash", Value: "new-pass",
-					StorageAlgoParams: hash.CredParameters{Salt: "salt-3"},
+			provided: CredentialMap{
+				"password": {
+					{
+						CredentialType: "password", StorageType: "hash", Value: "new-pass",
+						StorageAlgoParams: hash.CredParameters{Salt: "salt-3"},
+					},
 				},
-				{
-					CredentialType: "pin", StorageType: "hash", Value: "old-pin",
-					StorageAlgoParams: hash.CredParameters{Salt: "salt-2"},
-				},
-				{
-					CredentialType: "secret", StorageType: "hash", Value: "secret",
-					StorageAlgoParams: hash.CredParameters{Salt: "salt-4"},
-				},
-			},
-		},
-		{
-			name: "ProvidedDuplicatesKeepLastValue",
-			existing: []Credential{
-				{
-					CredentialType: "pin", StorageType: "hash", Value: "existing-pin",
-					StorageAlgoParams: hash.CredParameters{Salt: "salt-1"},
+				"secret": {
+					{
+						CredentialType: "secret", StorageType: "hash", Value: "secret",
+						StorageAlgoParams: hash.CredParameters{Salt: "salt-4"},
+					},
 				},
 			},
-			provided: []Credential{
-				{
-					CredentialType: "password", StorageType: "hash", Value: "first-pass",
-					StorageAlgoParams: hash.CredParameters{Salt: "salt-a"},
+			expected: CredentialMap{
+				"password": {
+					{
+						CredentialType: "password", StorageType: "hash", Value: "new-pass",
+						StorageAlgoParams: hash.CredParameters{Salt: "salt-3"},
+					},
 				},
-				{
-					CredentialType: "password", StorageType: "hash", Value: "second-pass",
-					StorageAlgoParams: hash.CredParameters{Salt: "salt-b"},
+				"pin": {
+					{
+						CredentialType: "pin", StorageType: "hash", Value: "old-pin",
+						StorageAlgoParams: hash.CredParameters{Salt: "salt-2"},
+					},
 				},
-			},
-			expected: []Credential{
-				{
-					CredentialType: "pin", StorageType: "hash", Value: "existing-pin",
-					StorageAlgoParams: hash.CredParameters{Salt: "salt-1"},
-				},
-				{
-					CredentialType: "password", StorageType: "hash", Value: "second-pass",
-					StorageAlgoParams: hash.CredParameters{Salt: "salt-b"},
+				"secret": {
+					{
+						CredentialType: "secret", StorageType: "hash", Value: "secret",
+						StorageAlgoParams: hash.CredParameters{Salt: "salt-4"},
+					},
 				},
 			},
 		},
 		{
 			name: "NoProvidedCredentialsReturnsExisting",
-			existing: []Credential{
-				{
-					CredentialType: "password", StorageType: "hash", Value: "only",
-					StorageAlgoParams: hash.CredParameters{Salt: "salt-1"},
+			existing: CredentialMap{
+				"password": {
+					{
+						CredentialType: "password", StorageType: "hash", Value: "only",
+						StorageAlgoParams: hash.CredParameters{Salt: "salt-1"},
+					},
 				},
 			},
-			provided: []Credential{},
-			expected: []Credential{
-				{
-					CredentialType: "password", StorageType: "hash", Value: "only",
-					StorageAlgoParams: hash.CredParameters{Salt: "salt-1"},
+			provided: CredentialMap{},
+			expected: CredentialMap{
+				"password": {
+					{
+						CredentialType: "password", StorageType: "hash", Value: "only",
+						StorageAlgoParams: hash.CredParameters{Salt: "salt-1"},
+					},
 				},
 			},
 		},
 		{
-			name:     "NoExistingCredentialsReturnsProvidedInOrder",
-			existing: []Credential{},
-			provided: []Credential{
-				{CredentialType: "password", StorageType: "hash", Value: "first",
-					StorageAlgoParams: hash.CredParameters{Salt: "salt-1"}},
-				{CredentialType: "password", StorageType: "hash", Value: "second",
-					StorageAlgoParams: hash.CredParameters{Salt: "salt-2"}},
-				{CredentialType: "pin", StorageType: "hash", Value: "pin-val",
-					StorageAlgoParams: hash.CredParameters{Salt: "salt-3"}},
+			name:     "NoExistingCredentialsReturnsProvided",
+			existing: CredentialMap{},
+			provided: CredentialMap{
+				"password": {
+					{CredentialType: "password", StorageType: "hash", Value: "pass",
+						StorageAlgoParams: hash.CredParameters{Salt: "salt-1"}},
+				},
+				"pin": {
+					{CredentialType: "pin", StorageType: "hash", Value: "pin-val",
+						StorageAlgoParams: hash.CredParameters{Salt: "salt-3"}},
+				},
 			},
-			expected: []Credential{
-				{CredentialType: "password", StorageType: "hash", Value: "second",
-					StorageAlgoParams: hash.CredParameters{Salt: "salt-2"}},
-				{CredentialType: "pin", StorageType: "hash", Value: "pin-val",
-					StorageAlgoParams: hash.CredParameters{Salt: "salt-3"}},
+			expected: CredentialMap{
+				"password": {
+					{CredentialType: "password", StorageType: "hash", Value: "pass",
+						StorageAlgoParams: hash.CredParameters{Salt: "salt-1"}},
+				},
+				"pin": {
+					{CredentialType: "pin", StorageType: "hash", Value: "pin-val",
+						StorageAlgoParams: hash.CredParameters{Salt: "salt-3"}},
+				},
 			},
 		},
 		{
-			name: "ReplacesMultipleExistingTypesAndAppendsNew",
-			existing: []Credential{
-				{CredentialType: "password", StorageType: "hash", Value: "old-pass",
-					StorageAlgoParams: hash.CredParameters{Salt: "salt-1"}},
-				{CredentialType: "pin", StorageType: "hash", Value: "old-pin",
-					StorageAlgoParams: hash.CredParameters{Salt: "salt-2"}},
+			name: "ReplacesMultipleTypes",
+			existing: CredentialMap{
+				"password": {
+					{CredentialType: "password", StorageType: "hash", Value: "old-pass",
+						StorageAlgoParams: hash.CredParameters{Salt: "salt-1"}},
+				},
+				"pin": {
+					{CredentialType: "pin", StorageType: "hash", Value: "old-pin",
+						StorageAlgoParams: hash.CredParameters{Salt: "salt-2"}},
+				},
 			},
-			provided: []Credential{
-				{CredentialType: "pin", StorageType: "hash", Value: "new-pin",
-					StorageAlgoParams: hash.CredParameters{Salt: "salt-3"}},
-				{CredentialType: "password", StorageType: "hash", Value: "new-pass",
-					StorageAlgoParams: hash.CredParameters{Salt: "salt-4"}},
-				{CredentialType: "secret", StorageType: "hash", Value: "new-secret",
-					StorageAlgoParams: hash.CredParameters{Salt: "salt-5"}},
+			provided: CredentialMap{
+				"pin": {
+					{CredentialType: "pin", StorageType: "hash", Value: "new-pin",
+						StorageAlgoParams: hash.CredParameters{Salt: "salt-3"}},
+				},
+				"password": {
+					{CredentialType: "password", StorageType: "hash", Value: "new-pass",
+						StorageAlgoParams: hash.CredParameters{Salt: "salt-4"}},
+				},
+				"secret": {
+					{CredentialType: "secret", StorageType: "hash", Value: "new-secret",
+						StorageAlgoParams: hash.CredParameters{Salt: "salt-5"}},
+				},
 			},
-			expected: []Credential{
-				{CredentialType: "password", StorageType: "hash", Value: "new-pass",
-					StorageAlgoParams: hash.CredParameters{Salt: "salt-4"}},
-				{CredentialType: "pin", StorageType: "hash", Value: "new-pin",
-					StorageAlgoParams: hash.CredParameters{Salt: "salt-3"}},
-				{CredentialType: "secret", StorageType: "hash", Value: "new-secret",
-					StorageAlgoParams: hash.CredParameters{Salt: "salt-5"}},
+			expected: CredentialMap{
+				"password": {
+					{CredentialType: "password", StorageType: "hash", Value: "new-pass",
+						StorageAlgoParams: hash.CredParameters{Salt: "salt-4"}},
+				},
+				"pin": {
+					{CredentialType: "pin", StorageType: "hash", Value: "new-pin",
+						StorageAlgoParams: hash.CredParameters{Salt: "salt-3"}},
+				},
+				"secret": {
+					{CredentialType: "secret", StorageType: "hash", Value: "new-secret",
+						StorageAlgoParams: hash.CredParameters{Salt: "salt-5"}},
+				},
 			},
 		},
 		{
 			name:     "ReturnsEmptyWhenNoCredentials",
-			existing: []Credential{},
-			provided: []Credential{},
-			expected: []Credential{},
+			existing: CredentialMap{},
+			provided: CredentialMap{},
+			expected: CredentialMap{},
 		},
 	}
 

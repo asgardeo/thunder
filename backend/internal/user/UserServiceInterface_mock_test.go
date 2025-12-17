@@ -38,6 +38,65 @@ func (_m *UserServiceInterfaceMock) EXPECT() *UserServiceInterfaceMock_Expecter 
 	return &UserServiceInterfaceMock_Expecter{mock: &_m.Mock}
 }
 
+// AddPasskeyCredential provides a mock function for the type UserServiceInterfaceMock
+func (_mock *UserServiceInterfaceMock) AddPasskeyCredential(userID string, credential Credential) *serviceerror.ServiceError {
+	ret := _mock.Called(userID, credential)
+
+	if len(ret) == 0 {
+		panic("no return value specified for AddPasskeyCredential")
+	}
+
+	var r0 *serviceerror.ServiceError
+	if returnFunc, ok := ret.Get(0).(func(string, Credential) *serviceerror.ServiceError); ok {
+		r0 = returnFunc(userID, credential)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(*serviceerror.ServiceError)
+		}
+	}
+	return r0
+}
+
+// UserServiceInterfaceMock_AddPasskeyCredential_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'AddPasskeyCredential'
+type UserServiceInterfaceMock_AddPasskeyCredential_Call struct {
+	*mock.Call
+}
+
+// AddPasskeyCredential is a helper method to define mock.On call
+//   - userID string
+//   - credential Credential
+func (_e *UserServiceInterfaceMock_Expecter) AddPasskeyCredential(userID interface{}, credential interface{}) *UserServiceInterfaceMock_AddPasskeyCredential_Call {
+	return &UserServiceInterfaceMock_AddPasskeyCredential_Call{Call: _e.mock.On("AddPasskeyCredential", userID, credential)}
+}
+
+func (_c *UserServiceInterfaceMock_AddPasskeyCredential_Call) Run(run func(userID string, credential Credential)) *UserServiceInterfaceMock_AddPasskeyCredential_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 string
+		if args[0] != nil {
+			arg0 = args[0].(string)
+		}
+		var arg1 Credential
+		if args[1] != nil {
+			arg1 = args[1].(Credential)
+		}
+		run(
+			arg0,
+			arg1,
+		)
+	})
+	return _c
+}
+
+func (_c *UserServiceInterfaceMock_AddPasskeyCredential_Call) Return(serviceError *serviceerror.ServiceError) *UserServiceInterfaceMock_AddPasskeyCredential_Call {
+	_c.Call.Return(serviceError)
+	return _c
+}
+
+func (_c *UserServiceInterfaceMock_AddPasskeyCredential_Call) RunAndReturn(run func(userID string, credential Credential) *serviceerror.ServiceError) *UserServiceInterfaceMock_AddPasskeyCredential_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
 // AuthenticateUser provides a mock function for the type UserServiceInterfaceMock
 func (_mock *UserServiceInterfaceMock) AuthenticateUser(request AuthenticateUserRequest) (*AuthenticateUserResponse, *serviceerror.ServiceError) {
 	ret := _mock.Called(request)
@@ -353,6 +412,76 @@ func (_c *UserServiceInterfaceMock_GetUser_Call) RunAndReturn(run func(userID st
 	return _c
 }
 
+// GetUserCredentials provides a mock function for the type UserServiceInterfaceMock
+func (_mock *UserServiceInterfaceMock) GetUserCredentials(userID string, credentialType string) ([]Credential, *serviceerror.ServiceError) {
+	ret := _mock.Called(userID, credentialType)
+
+	if len(ret) == 0 {
+		panic("no return value specified for GetUserCredentials")
+	}
+
+	var r0 []Credential
+	var r1 *serviceerror.ServiceError
+	if returnFunc, ok := ret.Get(0).(func(string, string) ([]Credential, *serviceerror.ServiceError)); ok {
+		return returnFunc(userID, credentialType)
+	}
+	if returnFunc, ok := ret.Get(0).(func(string, string) []Credential); ok {
+		r0 = returnFunc(userID, credentialType)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).([]Credential)
+		}
+	}
+	if returnFunc, ok := ret.Get(1).(func(string, string) *serviceerror.ServiceError); ok {
+		r1 = returnFunc(userID, credentialType)
+	} else {
+		if ret.Get(1) != nil {
+			r1 = ret.Get(1).(*serviceerror.ServiceError)
+		}
+	}
+	return r0, r1
+}
+
+// UserServiceInterfaceMock_GetUserCredentials_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'GetUserCredentials'
+type UserServiceInterfaceMock_GetUserCredentials_Call struct {
+	*mock.Call
+}
+
+// GetUserCredentials is a helper method to define mock.On call
+//   - userID string
+//   - credentialType string
+func (_e *UserServiceInterfaceMock_Expecter) GetUserCredentials(userID interface{}, credentialType interface{}) *UserServiceInterfaceMock_GetUserCredentials_Call {
+	return &UserServiceInterfaceMock_GetUserCredentials_Call{Call: _e.mock.On("GetUserCredentials", userID, credentialType)}
+}
+
+func (_c *UserServiceInterfaceMock_GetUserCredentials_Call) Run(run func(userID string, credentialType string)) *UserServiceInterfaceMock_GetUserCredentials_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 string
+		if args[0] != nil {
+			arg0 = args[0].(string)
+		}
+		var arg1 string
+		if args[1] != nil {
+			arg1 = args[1].(string)
+		}
+		run(
+			arg0,
+			arg1,
+		)
+	})
+	return _c
+}
+
+func (_c *UserServiceInterfaceMock_GetUserCredentials_Call) Return(credentials []Credential, serviceError *serviceerror.ServiceError) *UserServiceInterfaceMock_GetUserCredentials_Call {
+	_c.Call.Return(credentials, serviceError)
+	return _c
+}
+
+func (_c *UserServiceInterfaceMock_GetUserCredentials_Call) RunAndReturn(run func(userID string, credentialType string) ([]Credential, *serviceerror.ServiceError)) *UserServiceInterfaceMock_GetUserCredentials_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
 // GetUserGroups provides a mock function for the type UserServiceInterfaceMock
 func (_mock *UserServiceInterfaceMock) GetUserGroups(userID string, limit int, offset int) (*UserGroupListResponse, *serviceerror.ServiceError) {
 	ret := _mock.Called(userID, limit, offset)
@@ -505,6 +634,78 @@ func (_c *UserServiceInterfaceMock_GetUserList_Call) RunAndReturn(run func(limit
 	return _c
 }
 
+// GetUserWithCredentials provides a mock function for the type UserServiceInterfaceMock
+func (_mock *UserServiceInterfaceMock) GetUserWithCredentials(userID string) (*User, CredentialMap, *serviceerror.ServiceError) {
+	ret := _mock.Called(userID)
+
+	if len(ret) == 0 {
+		panic("no return value specified for GetUserWithCredentials")
+	}
+
+	var r0 *User
+	var r1 CredentialMap
+	var r2 *serviceerror.ServiceError
+	if returnFunc, ok := ret.Get(0).(func(string) (*User, CredentialMap, *serviceerror.ServiceError)); ok {
+		return returnFunc(userID)
+	}
+	if returnFunc, ok := ret.Get(0).(func(string) *User); ok {
+		r0 = returnFunc(userID)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(*User)
+		}
+	}
+	if returnFunc, ok := ret.Get(1).(func(string) CredentialMap); ok {
+		r1 = returnFunc(userID)
+	} else {
+		if ret.Get(1) != nil {
+			r1 = ret.Get(1).(CredentialMap)
+		}
+	}
+	if returnFunc, ok := ret.Get(2).(func(string) *serviceerror.ServiceError); ok {
+		r2 = returnFunc(userID)
+	} else {
+		if ret.Get(2) != nil {
+			r2 = ret.Get(2).(*serviceerror.ServiceError)
+		}
+	}
+	return r0, r1, r2
+}
+
+// UserServiceInterfaceMock_GetUserWithCredentials_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'GetUserWithCredentials'
+type UserServiceInterfaceMock_GetUserWithCredentials_Call struct {
+	*mock.Call
+}
+
+// GetUserWithCredentials is a helper method to define mock.On call
+//   - userID string
+func (_e *UserServiceInterfaceMock_Expecter) GetUserWithCredentials(userID interface{}) *UserServiceInterfaceMock_GetUserWithCredentials_Call {
+	return &UserServiceInterfaceMock_GetUserWithCredentials_Call{Call: _e.mock.On("GetUserWithCredentials", userID)}
+}
+
+func (_c *UserServiceInterfaceMock_GetUserWithCredentials_Call) Run(run func(userID string)) *UserServiceInterfaceMock_GetUserWithCredentials_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 string
+		if args[0] != nil {
+			arg0 = args[0].(string)
+		}
+		run(
+			arg0,
+		)
+	})
+	return _c
+}
+
+func (_c *UserServiceInterfaceMock_GetUserWithCredentials_Call) Return(user *User, credentialMap CredentialMap, serviceError *serviceerror.ServiceError) *UserServiceInterfaceMock_GetUserWithCredentials_Call {
+	_c.Call.Return(user, credentialMap, serviceError)
+	return _c
+}
+
+func (_c *UserServiceInterfaceMock_GetUserWithCredentials_Call) RunAndReturn(run func(userID string) (*User, CredentialMap, *serviceerror.ServiceError)) *UserServiceInterfaceMock_GetUserWithCredentials_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
 // GetUsersByPath provides a mock function for the type UserServiceInterfaceMock
 func (_mock *UserServiceInterfaceMock) GetUsersByPath(handlePath string, limit int, offset int, filters map[string]interface{}) (*UserListResponse, *serviceerror.ServiceError) {
 	ret := _mock.Called(handlePath, limit, offset, filters)
@@ -647,6 +848,130 @@ func (_c *UserServiceInterfaceMock_IdentifyUser_Call) Return(s *string, serviceE
 }
 
 func (_c *UserServiceInterfaceMock_IdentifyUser_Call) RunAndReturn(run func(filters map[string]interface{}) (*string, *serviceerror.ServiceError)) *UserServiceInterfaceMock_IdentifyUser_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
+// UpdateCredentialInMap provides a mock function for the type UserServiceInterfaceMock
+func (_mock *UserServiceInterfaceMock) UpdateCredentialInMap(userID string, credentialType string, updatedCredentials []Credential) *serviceerror.ServiceError {
+	ret := _mock.Called(userID, credentialType, updatedCredentials)
+
+	if len(ret) == 0 {
+		panic("no return value specified for UpdateCredentialInMap")
+	}
+
+	var r0 *serviceerror.ServiceError
+	if returnFunc, ok := ret.Get(0).(func(string, string, []Credential) *serviceerror.ServiceError); ok {
+		r0 = returnFunc(userID, credentialType, updatedCredentials)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(*serviceerror.ServiceError)
+		}
+	}
+	return r0
+}
+
+// UserServiceInterfaceMock_UpdateCredentialInMap_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'UpdateCredentialInMap'
+type UserServiceInterfaceMock_UpdateCredentialInMap_Call struct {
+	*mock.Call
+}
+
+// UpdateCredentialInMap is a helper method to define mock.On call
+//   - userID string
+//   - credentialType string
+//   - updatedCredentials []Credential
+func (_e *UserServiceInterfaceMock_Expecter) UpdateCredentialInMap(userID interface{}, credentialType interface{}, updatedCredentials interface{}) *UserServiceInterfaceMock_UpdateCredentialInMap_Call {
+	return &UserServiceInterfaceMock_UpdateCredentialInMap_Call{Call: _e.mock.On("UpdateCredentialInMap", userID, credentialType, updatedCredentials)}
+}
+
+func (_c *UserServiceInterfaceMock_UpdateCredentialInMap_Call) Run(run func(userID string, credentialType string, updatedCredentials []Credential)) *UserServiceInterfaceMock_UpdateCredentialInMap_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 string
+		if args[0] != nil {
+			arg0 = args[0].(string)
+		}
+		var arg1 string
+		if args[1] != nil {
+			arg1 = args[1].(string)
+		}
+		var arg2 []Credential
+		if args[2] != nil {
+			arg2 = args[2].([]Credential)
+		}
+		run(
+			arg0,
+			arg1,
+			arg2,
+		)
+	})
+	return _c
+}
+
+func (_c *UserServiceInterfaceMock_UpdateCredentialInMap_Call) Return(serviceError *serviceerror.ServiceError) *UserServiceInterfaceMock_UpdateCredentialInMap_Call {
+	_c.Call.Return(serviceError)
+	return _c
+}
+
+func (_c *UserServiceInterfaceMock_UpdateCredentialInMap_Call) RunAndReturn(run func(userID string, credentialType string, updatedCredentials []Credential) *serviceerror.ServiceError) *UserServiceInterfaceMock_UpdateCredentialInMap_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
+// UpdateCredentialMap provides a mock function for the type UserServiceInterfaceMock
+func (_mock *UserServiceInterfaceMock) UpdateCredentialMap(userID string, credentialMap CredentialMap) *serviceerror.ServiceError {
+	ret := _mock.Called(userID, credentialMap)
+
+	if len(ret) == 0 {
+		panic("no return value specified for UpdateCredentialMap")
+	}
+
+	var r0 *serviceerror.ServiceError
+	if returnFunc, ok := ret.Get(0).(func(string, CredentialMap) *serviceerror.ServiceError); ok {
+		r0 = returnFunc(userID, credentialMap)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(*serviceerror.ServiceError)
+		}
+	}
+	return r0
+}
+
+// UserServiceInterfaceMock_UpdateCredentialMap_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'UpdateCredentialMap'
+type UserServiceInterfaceMock_UpdateCredentialMap_Call struct {
+	*mock.Call
+}
+
+// UpdateCredentialMap is a helper method to define mock.On call
+//   - userID string
+//   - credentialMap CredentialMap
+func (_e *UserServiceInterfaceMock_Expecter) UpdateCredentialMap(userID interface{}, credentialMap interface{}) *UserServiceInterfaceMock_UpdateCredentialMap_Call {
+	return &UserServiceInterfaceMock_UpdateCredentialMap_Call{Call: _e.mock.On("UpdateCredentialMap", userID, credentialMap)}
+}
+
+func (_c *UserServiceInterfaceMock_UpdateCredentialMap_Call) Run(run func(userID string, credentialMap CredentialMap)) *UserServiceInterfaceMock_UpdateCredentialMap_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 string
+		if args[0] != nil {
+			arg0 = args[0].(string)
+		}
+		var arg1 CredentialMap
+		if args[1] != nil {
+			arg1 = args[1].(CredentialMap)
+		}
+		run(
+			arg0,
+			arg1,
+		)
+	})
+	return _c
+}
+
+func (_c *UserServiceInterfaceMock_UpdateCredentialMap_Call) Return(serviceError *serviceerror.ServiceError) *UserServiceInterfaceMock_UpdateCredentialMap_Call {
+	_c.Call.Return(serviceError)
+	return _c
+}
+
+func (_c *UserServiceInterfaceMock_UpdateCredentialMap_Call) RunAndReturn(run func(userID string, credentialMap CredentialMap) *serviceerror.ServiceError) *UserServiceInterfaceMock_UpdateCredentialMap_Call {
 	_c.Call.Return(run)
 	return _c
 }

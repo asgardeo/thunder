@@ -41,6 +41,11 @@ type Credential struct {
 	Value             string              `json:"value"`
 }
 
+// CredentialMap represents the credential storage structure where credentials are organized by type.
+// Key: Credential type (e.g., "password", "pin", "secret", "passkey")
+// Value: Array of credentials of that type
+type CredentialMap map[string][]Credential
+
 // Link represents a pagination link.
 type Link struct {
 	Href string `json:"href"`
