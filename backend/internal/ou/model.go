@@ -28,11 +28,11 @@ type OrganizationUnitBasic struct {
 
 // OrganizationUnit represents an organization unit.
 type OrganizationUnit struct {
-	ID          string  `json:"id"`
-	Handle      string  `json:"handle"`
-	Name        string  `json:"name"`
-	Description string  `json:"description,omitempty"`
-	Parent      *string `json:"parent"`
+	ID          string  `json:"id" yaml:"id"`
+	Handle      string  `json:"handle" yaml:"handle"`
+	Name        string  `json:"name" yaml:"name"`
+	Description string  `json:"description,omitempty" yaml:"description,omitempty"`
+	Parent      *string `json:"parent" yaml:"parent"`
 }
 
 // OrganizationUnitRequest represents the request body for creating an organization unit.

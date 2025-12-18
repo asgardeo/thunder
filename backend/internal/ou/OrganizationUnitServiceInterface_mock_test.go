@@ -916,6 +916,57 @@ func (_c *OrganizationUnitServiceInterfaceMock_IsOrganizationUnitExists_Call) Ru
 	return _c
 }
 
+// IsOrganizationUnitImmutable provides a mock function for the type OrganizationUnitServiceInterfaceMock
+func (_mock *OrganizationUnitServiceInterfaceMock) IsOrganizationUnitImmutable(id string) bool {
+	ret := _mock.Called(id)
+
+	if len(ret) == 0 {
+		panic("no return value specified for IsOrganizationUnitImmutable")
+	}
+
+	var r0 bool
+	if returnFunc, ok := ret.Get(0).(func(string) bool); ok {
+		r0 = returnFunc(id)
+	} else {
+		r0 = ret.Get(0).(bool)
+	}
+	return r0
+}
+
+// OrganizationUnitServiceInterfaceMock_IsOrganizationUnitImmutable_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'IsOrganizationUnitImmutable'
+type OrganizationUnitServiceInterfaceMock_IsOrganizationUnitImmutable_Call struct {
+	*mock.Call
+}
+
+// IsOrganizationUnitImmutable is a helper method to define mock.On call
+//   - id string
+func (_e *OrganizationUnitServiceInterfaceMock_Expecter) IsOrganizationUnitImmutable(id interface{}) *OrganizationUnitServiceInterfaceMock_IsOrganizationUnitImmutable_Call {
+	return &OrganizationUnitServiceInterfaceMock_IsOrganizationUnitImmutable_Call{Call: _e.mock.On("IsOrganizationUnitImmutable", id)}
+}
+
+func (_c *OrganizationUnitServiceInterfaceMock_IsOrganizationUnitImmutable_Call) Run(run func(id string)) *OrganizationUnitServiceInterfaceMock_IsOrganizationUnitImmutable_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 string
+		if args[0] != nil {
+			arg0 = args[0].(string)
+		}
+		run(
+			arg0,
+		)
+	})
+	return _c
+}
+
+func (_c *OrganizationUnitServiceInterfaceMock_IsOrganizationUnitImmutable_Call) Return(b bool) *OrganizationUnitServiceInterfaceMock_IsOrganizationUnitImmutable_Call {
+	_c.Call.Return(b)
+	return _c
+}
+
+func (_c *OrganizationUnitServiceInterfaceMock_IsOrganizationUnitImmutable_Call) RunAndReturn(run func(id string) bool) *OrganizationUnitServiceInterfaceMock_IsOrganizationUnitImmutable_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
 // IsParent provides a mock function for the type OrganizationUnitServiceInterfaceMock
 func (_mock *OrganizationUnitServiceInterfaceMock) IsParent(parentID string, childID string) (bool, *serviceerror.ServiceError) {
 	ret := _mock.Called(parentID, childID)

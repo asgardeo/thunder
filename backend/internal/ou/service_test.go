@@ -783,6 +783,9 @@ func (suite *OrganizationUnitServiceTestSuite) TestOUService_UpdateOrganizationU
 				store.On("GetOrganizationUnit", "ou-1").
 					Return(existing, nil).
 					Once()
+				store.On("IsOrganizationUnitImmutable", "ou-1").
+					Return(false).
+					Once()
 				store.On("UpdateOrganizationUnit", OrganizationUnit{
 					ID:          "ou-1",
 					Handle:      "root",
@@ -837,6 +840,9 @@ func (suite *OrganizationUnitServiceTestSuite) TestOUService_UpdateOrganizationU
 				store.On("GetOrganizationUnit", "ou-1").
 					Return(existing, nil).
 					Once()
+				store.On("IsOrganizationUnitImmutable", "ou-1").
+					Return(false).
+					Once()
 			},
 			wantErr: &ErrorInvalidRequestFormat,
 		},
@@ -852,6 +858,9 @@ func (suite *OrganizationUnitServiceTestSuite) TestOUService_UpdateOrganizationU
 				existing := OrganizationUnit{ID: "ou-1", Handle: "root", Name: "Root"}
 				store.On("GetOrganizationUnit", "ou-1").
 					Return(existing, nil).
+					Once()
+				store.On("IsOrganizationUnitImmutable", "ou-1").
+					Return(false).
 					Once()
 				store.On("IsOrganizationUnitExists", parentID).
 					Return(false, errors.New("boom")).
@@ -872,6 +881,9 @@ func (suite *OrganizationUnitServiceTestSuite) TestOUService_UpdateOrganizationU
 				store.On("GetOrganizationUnit", "ou-1").
 					Return(existing, nil).
 					Once()
+				store.On("IsOrganizationUnitImmutable", "ou-1").
+					Return(false).
+					Once()
 				store.On("IsOrganizationUnitExists", parentID).
 					Return(false, nil).
 					Once()
@@ -891,6 +903,9 @@ func (suite *OrganizationUnitServiceTestSuite) TestOUService_UpdateOrganizationU
 				store.On("GetOrganizationUnit", "ou-1").
 					Return(existing, nil).
 					Once()
+				store.On("IsOrganizationUnitImmutable", "ou-1").
+					Return(false).
+					Once()
 				store.On("IsOrganizationUnitExists", "ou-1").
 					Return(true, nil).
 					Once()
@@ -908,6 +923,9 @@ func (suite *OrganizationUnitServiceTestSuite) TestOUService_UpdateOrganizationU
 				existing := OrganizationUnit{ID: "ou-1", Handle: "root", Name: "Root"}
 				store.On("GetOrganizationUnit", "ou-1").
 					Return(existing, nil).
+					Once()
+				store.On("IsOrganizationUnitImmutable", "ou-1").
+					Return(false).
 					Once()
 				store.On("CheckOrganizationUnitNameConflict", "Finance", (*string)(nil)).
 					Return(true, nil).
@@ -927,6 +945,9 @@ func (suite *OrganizationUnitServiceTestSuite) TestOUService_UpdateOrganizationU
 				store.On("GetOrganizationUnit", "ou-1").
 					Return(existing, nil).
 					Once()
+				store.On("IsOrganizationUnitImmutable", "ou-1").
+					Return(false).
+					Once()
 				store.On("CheckOrganizationUnitNameConflict", "Finance", (*string)(nil)).
 					Return(false, errors.New("boom")).
 					Once()
@@ -944,6 +965,9 @@ func (suite *OrganizationUnitServiceTestSuite) TestOUService_UpdateOrganizationU
 				existing := OrganizationUnit{ID: "ou-1", Handle: "root", Name: "Root"}
 				store.On("GetOrganizationUnit", "ou-1").
 					Return(existing, nil).
+					Once()
+				store.On("IsOrganizationUnitImmutable", "ou-1").
+					Return(false).
 					Once()
 				store.On("CheckOrganizationUnitHandleConflict", "finance", (*string)(nil)).
 					Return(true, nil).
@@ -963,6 +987,9 @@ func (suite *OrganizationUnitServiceTestSuite) TestOUService_UpdateOrganizationU
 				store.On("GetOrganizationUnit", "ou-1").
 					Return(existing, nil).
 					Once()
+				store.On("IsOrganizationUnitImmutable", "ou-1").
+					Return(false).
+					Once()
 				store.On("CheckOrganizationUnitHandleConflict", "finance", (*string)(nil)).
 					Return(false, errors.New("boom")).
 					Once()
@@ -981,6 +1008,9 @@ func (suite *OrganizationUnitServiceTestSuite) TestOUService_UpdateOrganizationU
 				store.On("GetOrganizationUnit", "ou-1").
 					Return(existing, nil).
 					Once()
+				store.On("IsOrganizationUnitImmutable", "ou-1").
+					Return(false).
+					Once()
 				store.On("UpdateOrganizationUnit", mock.AnythingOfType("ou.OrganizationUnit")).
 					Return(ErrOrganizationUnitNotFound).
 					Once()
@@ -998,6 +1028,9 @@ func (suite *OrganizationUnitServiceTestSuite) TestOUService_UpdateOrganizationU
 				existing := OrganizationUnit{ID: "ou-1", Handle: "root", Name: "Root"}
 				store.On("GetOrganizationUnit", "ou-1").
 					Return(existing, nil).
+					Once()
+				store.On("IsOrganizationUnitImmutable", "ou-1").
+					Return(false).
 					Once()
 				store.On("UpdateOrganizationUnit", mock.AnythingOfType("ou.OrganizationUnit")).
 					Return(errors.New("boom")).
@@ -1076,6 +1109,9 @@ func (suite *OrganizationUnitServiceTestSuite) TestOUService_UpdateOrganizationU
 		store.On("GetOrganizationUnitByPath", []string{"root"}).
 			Return(existing, nil).
 			Once()
+		store.On("IsOrganizationUnitImmutable", "ou-1").
+			Return(false).
+			Once()
 		store.On("UpdateOrganizationUnit", mock.AnythingOfType("ou.OrganizationUnit")).
 			Return(nil).
 			Once()
@@ -1118,6 +1154,9 @@ func (suite *OrganizationUnitServiceTestSuite) TestOUService_DeleteOrganizationU
 				store.On("IsOrganizationUnitExists", "ou-1").
 					Return(true, nil).
 					Once()
+				store.On("IsOrganizationUnitImmutable", "ou-1").
+					Return(false).
+					Once()
 				store.On("CheckOrganizationUnitHasChildResources", "ou-1").
 					Return(true, nil).
 					Once()
@@ -1130,6 +1169,9 @@ func (suite *OrganizationUnitServiceTestSuite) TestOUService_DeleteOrganizationU
 				store.On("IsOrganizationUnitExists", "ou-1").
 					Return(true, nil).
 					Once()
+				store.On("IsOrganizationUnitImmutable", "ou-1").
+					Return(false).
+					Once()
 				store.On("CheckOrganizationUnitHasChildResources", "ou-1").
 					Return(false, errors.New("boom")).
 					Once()
@@ -1141,6 +1183,9 @@ func (suite *OrganizationUnitServiceTestSuite) TestOUService_DeleteOrganizationU
 			setup: func(store *organizationUnitStoreInterfaceMock) {
 				store.On("IsOrganizationUnitExists", "ou-1").
 					Return(true, nil).
+					Once()
+				store.On("IsOrganizationUnitImmutable", "ou-1").
+					Return(false).
 					Once()
 				store.On("CheckOrganizationUnitHasChildResources", "ou-1").
 					Return(false, nil).
@@ -1157,6 +1202,9 @@ func (suite *OrganizationUnitServiceTestSuite) TestOUService_DeleteOrganizationU
 				store.On("IsOrganizationUnitExists", "ou-1").
 					Return(true, nil).
 					Once()
+				store.On("IsOrganizationUnitImmutable", "ou-1").
+					Return(false).
+					Once()
 				store.On("CheckOrganizationUnitHasChildResources", "ou-1").
 					Return(false, nil).
 					Once()
@@ -1171,6 +1219,9 @@ func (suite *OrganizationUnitServiceTestSuite) TestOUService_DeleteOrganizationU
 			setup: func(store *organizationUnitStoreInterfaceMock) {
 				store.On("IsOrganizationUnitExists", "ou-1").
 					Return(true, nil).
+					Once()
+				store.On("IsOrganizationUnitImmutable", "ou-1").
+					Return(false).
 					Once()
 				store.On("CheckOrganizationUnitHasChildResources", "ou-1").
 					Return(false, nil).
@@ -1240,6 +1291,9 @@ func (suite *OrganizationUnitServiceTestSuite) TestOUService_DeleteOrganizationU
 		store.On("GetOrganizationUnitByPath", []string{"root"}).
 			Return(OrganizationUnit{ID: "ou-1"}, nil).
 			Once()
+		store.On("IsOrganizationUnitImmutable", "ou-1").
+			Return(false).
+			Once()
 		store.On("CheckOrganizationUnitHasChildResources", "ou-1").
 			Return(true, nil).
 			Once()
@@ -1254,6 +1308,9 @@ func (suite *OrganizationUnitServiceTestSuite) TestOUService_DeleteOrganizationU
 		store := newOrganizationUnitStoreInterfaceMock(suite.T())
 		store.On("GetOrganizationUnitByPath", []string{"root"}).
 			Return(OrganizationUnit{ID: "ou-1"}, nil).
+			Once()
+		store.On("IsOrganizationUnitImmutable", "ou-1").
+			Return(false).
 			Once()
 		store.On("CheckOrganizationUnitHasChildResources", "ou-1").
 			Return(false, nil).

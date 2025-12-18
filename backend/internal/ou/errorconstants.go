@@ -103,6 +103,13 @@ var (
 		Error:            "Invalid offset parameter",
 		ErrorDescription: "The offset parameter must be a non-negative integer",
 	}
+	// ErrorCannotModifyImmutableResource is the error returned when trying to modify an immutable resource.
+	ErrorCannotModifyImmutableResource = serviceerror.ServiceError{
+		Type:             serviceerror.ClientErrorType,
+		Code:             "OU-1012",
+		Error:            "Cannot modify immutable resource",
+		ErrorDescription: "The organization unit is immutable and cannot be modified or deleted",
+	}
 )
 
 // Server errors for organization unit management operations.
@@ -120,4 +127,8 @@ var (
 var (
 	// ErrOrganizationUnitNotFound is returned when the organization unit is not found in the system.
 	ErrOrganizationUnitNotFound = errors.New("organization unit not found")
+	// ErrCannotUpdateImmutableOU is returned when attempting to update an immutable organization unit.
+	ErrCannotUpdateImmutableOU = errors.New("cannot update immutable organization unit")
+	// ErrCannotDeleteImmutableOU is returned when attempting to delete an immutable organization unit.
+	ErrCannotDeleteImmutableOU = errors.New("cannot delete immutable organization unit")
 )

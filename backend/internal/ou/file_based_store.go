@@ -174,6 +174,13 @@ func (f *fileBasedStore) IsOrganizationUnitExists(id string) (bool, error) {
 	return true, nil
 }
 
+// IsOrganizationUnitImmutable checks if an organization unit is immutable.
+// File-based resources are always immutable, returns true if exists.
+func (f *fileBasedStore) IsOrganizationUnitImmutable(id string) bool {
+	exists, err := f.IsOrganizationUnitExists(id)
+	return err == nil && exists
+}
+
 // CheckOrganizationUnitNameConflict implements organizationUnitStoreInterface.
 func (f *fileBasedStore) CheckOrganizationUnitNameConflict(name string, parent *string) (bool, error) {
 	list, err := f.GenericFileBasedStore.List()

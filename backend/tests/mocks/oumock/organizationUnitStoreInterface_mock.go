@@ -1033,6 +1033,57 @@ func (_c *organizationUnitStoreInterfaceMock_IsOrganizationUnitExists_Call) RunA
 	return _c
 }
 
+// IsOrganizationUnitImmutable provides a mock function for the type organizationUnitStoreInterfaceMock
+func (_mock *organizationUnitStoreInterfaceMock) IsOrganizationUnitImmutable(id string) bool {
+	ret := _mock.Called(id)
+
+	if len(ret) == 0 {
+		panic("no return value specified for IsOrganizationUnitImmutable")
+	}
+
+	var r0 bool
+	if returnFunc, ok := ret.Get(0).(func(string) bool); ok {
+		r0 = returnFunc(id)
+	} else {
+		r0 = ret.Get(0).(bool)
+	}
+	return r0
+}
+
+// organizationUnitStoreInterfaceMock_IsOrganizationUnitImmutable_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'IsOrganizationUnitImmutable'
+type organizationUnitStoreInterfaceMock_IsOrganizationUnitImmutable_Call struct {
+	*mock.Call
+}
+
+// IsOrganizationUnitImmutable is a helper method to define mock.On call
+//   - id string
+func (_e *organizationUnitStoreInterfaceMock_Expecter) IsOrganizationUnitImmutable(id interface{}) *organizationUnitStoreInterfaceMock_IsOrganizationUnitImmutable_Call {
+	return &organizationUnitStoreInterfaceMock_IsOrganizationUnitImmutable_Call{Call: _e.mock.On("IsOrganizationUnitImmutable", id)}
+}
+
+func (_c *organizationUnitStoreInterfaceMock_IsOrganizationUnitImmutable_Call) Run(run func(id string)) *organizationUnitStoreInterfaceMock_IsOrganizationUnitImmutable_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 string
+		if args[0] != nil {
+			arg0 = args[0].(string)
+		}
+		run(
+			arg0,
+		)
+	})
+	return _c
+}
+
+func (_c *organizationUnitStoreInterfaceMock_IsOrganizationUnitImmutable_Call) Return(b bool) *organizationUnitStoreInterfaceMock_IsOrganizationUnitImmutable_Call {
+	_c.Call.Return(b)
+	return _c
+}
+
+func (_c *organizationUnitStoreInterfaceMock_IsOrganizationUnitImmutable_Call) RunAndReturn(run func(id string) bool) *organizationUnitStoreInterfaceMock_IsOrganizationUnitImmutable_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
 // UpdateOrganizationUnit provides a mock function for the type organizationUnitStoreInterfaceMock
 func (_mock *organizationUnitStoreInterfaceMock) UpdateOrganizationUnit(ou1 ou.OrganizationUnit) error {
 	ret := _mock.Called(ou1)

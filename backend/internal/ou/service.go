@@ -42,6 +42,7 @@ type OrganizationUnitServiceInterface interface {
 	GetOrganizationUnit(id string) (OrganizationUnit, *serviceerror.ServiceError)
 	GetOrganizationUnitByPath(handlePath string) (OrganizationUnit, *serviceerror.ServiceError)
 	IsOrganizationUnitExists(id string) (bool, *serviceerror.ServiceError)
+	IsOrganizationUnitImmutable(id string) bool
 	IsParent(parentID, childID string) (bool, *serviceerror.ServiceError)
 	UpdateOrganizationUnit(
 		id string, request OrganizationUnitRequest,
@@ -119,8 +120,9 @@ func (ous *organizationUnitService) CreateOrganizationUnit(
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, loggerComponentNameService))
 	logger.Debug("Creating organization unit", log.String("name", request.Name))
 
-	if err := immutableresource.CheckImmutableCreate(); err != nil {
-		return OrganizationUnit{}, err
+	// Fail if store is in immutable mode
+	if isImmutableModeEnabled() {
+		return OrganizationUnit{}, &ErrorCannotModifyImmutableResource
 	}
 
 	if err := ous.validateOUName(request.Name); err != nil {
@@ -161,6 +163,7 @@ func (ous *organizationUnitService) CreateOrganizationUnit(
 	}
 
 	ouID := utils.GenerateUUID()
+
 	ou := OrganizationUnit{
 		ID:          ouID,
 		Handle:      request.Handle,
@@ -237,6 +240,10 @@ func (ous *organizationUnitService) IsOrganizationUnitExists(id string) (bool, *
 	return exists, nil
 }
 
+func (ous *organizationUnitService) IsOrganizationUnitImmutable(id string) bool {
+	return ous.ouStore.IsOrganizationUnitImmutable(id)
+}
+
 // IsParent checks whether the provided parentID is an ancestor of childID.
 // Returns true if the parent and child are the same or if parentID is an ancestor of childID.
 func (ous *organizationUnitService) IsParent(
@@ -277,8 +284,9 @@ func (ous *organizationUnitService) UpdateOrganizationUnit(
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, loggerComponentNameService))
 	logger.Debug("Updating organization unit", log.String("ouID", id))
 
-	if err := immutableresource.CheckImmutableUpdate(); err != nil {
-		return OrganizationUnit{}, err
+	// Fail if store is in immutable mode
+	if isImmutableModeEnabled() {
+		return OrganizationUnit{}, &ErrorCannotModifyImmutableResource
 	}
 
 	existingOU, err := ous.ouStore.GetOrganizationUnit(id)
@@ -310,6 +318,11 @@ func (ous *organizationUnitService) UpdateOrganizationUnitByPath(
 		return OrganizationUnit{}, err
 	}
 
+	// Fail if store is in immutable mode (OU-specific check)
+	if isImmutableModeEnabled() {
+		return OrganizationUnit{}, &ErrorCannotModifyImmutableResource
+	}
+
 	handles, serviceError := validateAndProcessHandlePath(handlePath)
 	if serviceError != nil {
 		return OrganizationUnit{}, serviceError
@@ -339,6 +352,11 @@ func (ous *organizationUnitService) updateOUInternal(
 	existingOU OrganizationUnit,
 	logger *log.Logger,
 ) (OrganizationUnit, *serviceerror.ServiceError) {
+	// Check if OU is immutable (for composite mode)
+	if ous.ouStore.IsOrganizationUnitImmutable(id) {
+		return OrganizationUnit{}, &ErrorCannotModifyImmutableResource
+	}
+
 	if err := ous.validateOUName(request.Name); err != nil {
 		return OrganizationUnit{}, err
 	}
@@ -413,8 +431,9 @@ func (ous *organizationUnitService) DeleteOrganizationUnit(id string) *serviceer
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, loggerComponentNameService))
 	logger.Debug("Deleting organization unit", log.String("ouID", id))
 
-	if err := immutableresource.CheckImmutableDelete(); err != nil {
-		return err
+	// Fail if store is in immutable mode
+	if isImmutableModeEnabled() {
+		return &ErrorCannotModifyImmutableResource
 	}
 
 	// Check if organization unit exists
@@ -445,6 +464,11 @@ func (ous *organizationUnitService) DeleteOrganizationUnitByPath(handlePath stri
 		return err
 	}
 
+	// Fail if store is in immutable mode (OU-specific check)
+	if isImmutableModeEnabled() {
+		return &ErrorCannotModifyImmutableResource
+	}
+
 	handles, serviceError := validateAndProcessHandlePath(handlePath)
 	if serviceError != nil {
 		return serviceError
@@ -470,6 +494,11 @@ func (ous *organizationUnitService) DeleteOrganizationUnitByPath(handlePath stri
 
 // deleteOUInternal deletes an organization unit by ID after checking if it has child resources.
 func (ous *organizationUnitService) deleteOUInternal(id string, logger *log.Logger) *serviceerror.ServiceError {
+	// Check if OU is immutable (for composite mode)
+	if ous.ouStore.IsOrganizationUnitImmutable(id) {
+		return &ErrorCannotModifyImmutableResource
+	}
+
 	hasChildren, err := ous.ouStore.CheckOrganizationUnitHasChildResources(id)
 	if err != nil {
 		logger.Error("Failed to check if organization unit has children", log.Error(err))

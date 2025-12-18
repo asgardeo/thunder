@@ -133,47 +133,125 @@ description: Root organization unit
 }
 
 func (s *ImmutableResourceTestSuite) TestValidateOUWrapper() {
+	store := newFileBasedStore().(*fileBasedStore)
 	ou := &OrganizationUnit{
 		ID:     "test-ou-1",
 		Handle: "test",
 		Name:   "Test OU",
 	}
 
-	err := validateOUWrapper(ou)
+	err := validateOUWrapper(ou, store, nil)
 	assert.NoError(s.T(), err)
 }
 
 func (s *ImmutableResourceTestSuite) TestValidateOUWrapperMissingID() {
+	store := newFileBasedStore().(*fileBasedStore)
 	ou := &OrganizationUnit{
 		Handle: "test",
 		Name:   "Test OU",
 	}
 
-	err := validateOUWrapper(ou)
+	err := validateOUWrapper(ou, store, nil)
 	assert.Error(s.T(), err)
 	assert.Contains(s.T(), err.Error(), "ID is required")
 }
 
 func (s *ImmutableResourceTestSuite) TestValidateOUWrapperMissingName() {
+	store := newFileBasedStore().(*fileBasedStore)
 	ou := &OrganizationUnit{
 		ID:     "test-ou-1",
 		Handle: "test",
 	}
 
-	err := validateOUWrapper(ou)
+	err := validateOUWrapper(ou, store, nil)
 	assert.Error(s.T(), err)
 	assert.Contains(s.T(), err.Error(), "name is required")
 }
 
 func (s *ImmutableResourceTestSuite) TestValidateOUWrapperMissingHandle() {
+	store := newFileBasedStore().(*fileBasedStore)
 	ou := &OrganizationUnit{
 		ID:   "test-ou-1",
 		Name: "Test OU",
 	}
 
-	err := validateOUWrapper(ou)
+	err := validateOUWrapper(ou, store, nil)
 	assert.Error(s.T(), err)
 	assert.Contains(s.T(), err.Error(), "handle is required")
+}
+
+func (s *ImmutableResourceTestSuite) TestValidateOUWrapperDuplicateID() {
+	store := newFileBasedStore().(*fileBasedStore)
+
+	// First OU - should succeed
+	ou1 := &OrganizationUnit{
+		ID:     "test-ou-duplicate",
+		Handle: "test1",
+		Name:   "Test OU 1",
+	}
+
+	err := store.CreateOrganizationUnit(*ou1)
+	assert.NoError(s.T(), err)
+
+	// Second OU with same ID - should fail validation
+	ou2 := &OrganizationUnit{
+		ID:     "test-ou-duplicate",
+		Handle: "test2",
+		Name:   "Test OU 2",
+	}
+
+	err = validateOUWrapper(ou2, store, nil)
+	assert.Error(s.T(), err)
+	assert.Contains(s.T(), err.Error(), "duplicate organization unit ID")
+	assert.Contains(s.T(), err.Error(), "test-ou-duplicate")
+	assert.Contains(s.T(), err.Error(), "immutable resources")
+}
+
+func (s *ImmutableResourceTestSuite) TestValidateOUWrapperDuplicateIDInDBStore() {
+	fileStore := newFileBasedStore().(*fileBasedStore)
+	dbStore := newOrganizationUnitStoreInterfaceMock(s.T())
+
+	// Mock dbStore to return that the ID exists
+	dbStore.On("IsOrganizationUnitExists", "test-ou-db-duplicate").
+		Return(true, nil).
+		Once()
+
+	// Try to add an OU with an ID that exists in DB
+	ou := &OrganizationUnit{
+		ID:     "test-ou-db-duplicate",
+		Handle: "test",
+		Name:   "Test OU",
+	}
+
+	err := validateOUWrapper(ou, fileStore, dbStore)
+	assert.Error(s.T(), err)
+	assert.Contains(s.T(), err.Error(), "duplicate organization unit ID")
+	assert.Contains(s.T(), err.Error(), "test-ou-db-duplicate")
+	assert.Contains(s.T(), err.Error(), "database")
+
+	dbStore.AssertExpectations(s.T())
+}
+
+func (s *ImmutableResourceTestSuite) TestValidateOUWrapperNoDuplicateInCompositeMode() {
+	fileStore := newFileBasedStore().(*fileBasedStore)
+	dbStore := newOrganizationUnitStoreInterfaceMock(s.T())
+
+	// Mock dbStore to return that the ID does not exist
+	dbStore.On("IsOrganizationUnitExists", "test-ou-new").
+		Return(false, nil).
+		Once()
+
+	// Valid OU that doesn't exist in either store
+	ou := &OrganizationUnit{
+		ID:     "test-ou-new",
+		Handle: "test",
+		Name:   "Test OU",
+	}
+
+	err := validateOUWrapper(ou, fileStore, dbStore)
+	assert.NoError(s.T(), err)
+
+	dbStore.AssertExpectations(s.T())
 }
 
 func (s *ImmutableResourceTestSuite) TestGetResourceRules() {
@@ -210,6 +288,10 @@ func (s *ImmutableResourceTestSuite) TestGetAllResourceIDs_RootOUsOnly() {
 	s.mockService.EXPECT().GetOrganizationUnitList(1000, 0).Return(&OrganizationUnitListResponse{
 		OrganizationUnits: []OrganizationUnitBasic{rootOU1, rootOU2},
 	}, (*serviceerror.ServiceError)(nil))
+
+	// Mock IsOrganizationUnitImmutable to indicate these are mutable OUs
+	s.mockService.EXPECT().IsOrganizationUnitImmutable("root-1").Return(false)
+	s.mockService.EXPECT().IsOrganizationUnitImmutable("root-2").Return(false)
 
 	// Mock GetOrganizationUnitChildren to return empty lists for both roots
 	s.mockService.EXPECT().GetOrganizationUnitChildren("root-1", 1000, 0).Return(&OrganizationUnitListResponse{
@@ -249,14 +331,21 @@ func (s *ImmutableResourceTestSuite) TestGetAllResourceIDs_WithChildren() {
 		OrganizationUnits: []OrganizationUnitBasic{rootOU},
 	}, (*serviceerror.ServiceError)(nil))
 
+	// Mock IsOrganizationUnitImmutable to indicate these are mutable OUs
+	s.mockService.EXPECT().IsOrganizationUnitImmutable("root-1").Return(false)
+
 	// Mock children at each level
 	s.mockService.EXPECT().GetOrganizationUnitChildren("root-1", 1000, 0).Return(&OrganizationUnitListResponse{
 		OrganizationUnits: []OrganizationUnitBasic{childOU},
 	}, (*serviceerror.ServiceError)(nil))
 
+	s.mockService.EXPECT().IsOrganizationUnitImmutable("child-1").Return(false)
+
 	s.mockService.EXPECT().GetOrganizationUnitChildren("child-1", 1000, 0).Return(&OrganizationUnitListResponse{
 		OrganizationUnits: []OrganizationUnitBasic{grandchildOU},
 	}, (*serviceerror.ServiceError)(nil))
+
+	s.mockService.EXPECT().IsOrganizationUnitImmutable("grandchild-1").Return(false)
 
 	s.mockService.EXPECT().GetOrganizationUnitChildren("grandchild-1", 1000, 0).Return(&OrganizationUnitListResponse{
 		OrganizationUnits: []OrganizationUnitBasic{},
@@ -297,9 +386,15 @@ func (s *ImmutableResourceTestSuite) TestGetAllResourceIDs_MultipleRootsWithChil
 		OrganizationUnits: []OrganizationUnitBasic{rootOU1, rootOU2},
 	}, (*serviceerror.ServiceError)(nil))
 
+	// Mock IsOrganizationUnitImmutable to indicate these are mutable OUs
+	s.mockService.EXPECT().IsOrganizationUnitImmutable("root-1").Return(false)
+	s.mockService.EXPECT().IsOrganizationUnitImmutable("root-2").Return(false)
+
 	s.mockService.EXPECT().GetOrganizationUnitChildren("root-1", 1000, 0).Return(&OrganizationUnitListResponse{
 		OrganizationUnits: []OrganizationUnitBasic{child1},
 	}, (*serviceerror.ServiceError)(nil))
+
+	s.mockService.EXPECT().IsOrganizationUnitImmutable("child-1").Return(false)
 
 	s.mockService.EXPECT().GetOrganizationUnitChildren("child-1", 1000, 0).Return(&OrganizationUnitListResponse{
 		OrganizationUnits: []OrganizationUnitBasic{},
@@ -308,6 +403,8 @@ func (s *ImmutableResourceTestSuite) TestGetAllResourceIDs_MultipleRootsWithChil
 	s.mockService.EXPECT().GetOrganizationUnitChildren("root-2", 1000, 0).Return(&OrganizationUnitListResponse{
 		OrganizationUnits: []OrganizationUnitBasic{child2},
 	}, (*serviceerror.ServiceError)(nil))
+
+	s.mockService.EXPECT().IsOrganizationUnitImmutable("child-2").Return(false)
 
 	s.mockService.EXPECT().GetOrganizationUnitChildren("child-2", 1000, 0).Return(&OrganizationUnitListResponse{
 		OrganizationUnits: []OrganizationUnitBasic{},
@@ -347,6 +444,9 @@ func (s *ImmutableResourceTestSuite) TestGetAllResourceIDs_ErrorGettingChildren(
 		OrganizationUnits: []OrganizationUnitBasic{rootOU},
 	}, (*serviceerror.ServiceError)(nil))
 
+	// Mock IsOrganizationUnitImmutable to indicate this is a mutable OU
+	s.mockService.EXPECT().IsOrganizationUnitImmutable("root-1").Return(false)
+
 	s.mockService.EXPECT().GetOrganizationUnitChildren("root-1", 1000, 0).Return(
 		(*OrganizationUnitListResponse)(nil),
 		&serviceerror.InternalServerError,
@@ -369,21 +469,32 @@ func (s *ImmutableResourceTestSuite) TestGetAllResourceIDs_DeepNesting() {
 		OrganizationUnits: []OrganizationUnitBasic{level1},
 	}, (*serviceerror.ServiceError)(nil))
 
+	// Mock IsOrganizationUnitImmutable for all levels
+	s.mockService.EXPECT().IsOrganizationUnitImmutable("level-1").Return(false)
+
 	s.mockService.EXPECT().GetOrganizationUnitChildren("level-1", 1000, 0).Return(&OrganizationUnitListResponse{
 		OrganizationUnits: []OrganizationUnitBasic{level2},
 	}, (*serviceerror.ServiceError)(nil))
+
+	s.mockService.EXPECT().IsOrganizationUnitImmutable("level-2").Return(false)
 
 	s.mockService.EXPECT().GetOrganizationUnitChildren("level-2", 1000, 0).Return(&OrganizationUnitListResponse{
 		OrganizationUnits: []OrganizationUnitBasic{level3},
 	}, (*serviceerror.ServiceError)(nil))
 
+	s.mockService.EXPECT().IsOrganizationUnitImmutable("level-3").Return(false)
+
 	s.mockService.EXPECT().GetOrganizationUnitChildren("level-3", 1000, 0).Return(&OrganizationUnitListResponse{
 		OrganizationUnits: []OrganizationUnitBasic{level4},
 	}, (*serviceerror.ServiceError)(nil))
 
+	s.mockService.EXPECT().IsOrganizationUnitImmutable("level-4").Return(false)
+
 	s.mockService.EXPECT().GetOrganizationUnitChildren("level-4", 1000, 0).Return(&OrganizationUnitListResponse{
 		OrganizationUnits: []OrganizationUnitBasic{level5},
 	}, (*serviceerror.ServiceError)(nil))
+
+	s.mockService.EXPECT().IsOrganizationUnitImmutable("level-5").Return(false)
 
 	s.mockService.EXPECT().GetOrganizationUnitChildren("level-5", 1000, 0).Return(&OrganizationUnitListResponse{
 		OrganizationUnits: []OrganizationUnitBasic{},
@@ -424,9 +535,17 @@ func (s *ImmutableResourceTestSuite) TestGetAllResourceIDs_MultipleChildrenPerLe
 		OrganizationUnits: []OrganizationUnitBasic{rootOU},
 	}, (*serviceerror.ServiceError)(nil))
 
+	// Mock IsOrganizationUnitImmutable for root
+	s.mockService.EXPECT().IsOrganizationUnitImmutable("root-1").Return(false)
+
 	s.mockService.EXPECT().GetOrganizationUnitChildren("root-1", 1000, 0).Return(&OrganizationUnitListResponse{
 		OrganizationUnits: []OrganizationUnitBasic{child1, child2, child3},
 	}, (*serviceerror.ServiceError)(nil))
+
+	// Mock IsOrganizationUnitImmutable for all children
+	s.mockService.EXPECT().IsOrganizationUnitImmutable("child-1").Return(false)
+	s.mockService.EXPECT().IsOrganizationUnitImmutable("child-2").Return(false)
+	s.mockService.EXPECT().IsOrganizationUnitImmutable("child-3").Return(false)
 
 	// Each child has no children
 	s.mockService.EXPECT().GetOrganizationUnitChildren("child-1", 1000, 0).Return(&OrganizationUnitListResponse{

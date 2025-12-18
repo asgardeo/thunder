@@ -41,7 +41,7 @@ When immutable configuration mode is enabled:
 
 ## Enabling Immutable Configuration Mode
 
-### 1. Configuration File
+### 1. Global Configuration
 
 Edit `repository/conf/deployment.yaml`:
 
@@ -49,6 +49,103 @@ Edit `repository/conf/deployment.yaml`:
 immutable_resources:
   enabled: true
 ```
+
+This enables immutable mode for **all** supported resources.
+
+### 2. Service-Level Configuration (Organization Units)
+
+Organization Units support fine-grained control with three store modes:
+
+```yaml
+organization_unit:
+  store: "mutable"      # Options: "mutable", "immutable", "composite"
+```
+
+#### Store Modes
+
+| Mode | Description | Use Case |
+|------|-------------|----------|
+| `mutable` | Database-only storage. Full CRUD operations. | Development, dynamic environments |
+| `immutable` | File-based storage only (YAML). Read-only via API. | Production, GitOps workflows |
+| `composite` (hybrid) | Both file-based (immutable) + database (mutable). Reads merge both stores, writes to database only. | Mixed environments with predefined OUs + runtime OUs |
+
+#### Examples
+
+**Mutable Mode (Default):**
+```yaml
+# All OUs stored in database, full CRUD via API
+organization_unit:
+  store: "mutable"
+```
+
+**Immutable Mode:**
+```yaml
+# All OUs loaded from YAML files, read-only via API
+organization_unit:
+  store: "immutable"
+```
+
+**Composite Mode:**
+```yaml
+# Predefined OUs from YAML (immutable) + runtime OUs in database (mutable)
+organization_unit:
+  store: "composite"
+```
+
+#### Configuration Fallback
+
+If `organization_unit.store` is not specified, it falls back to the global `immutable_resources.enabled` setting:
+
+- If `immutable_resources.enabled = true` → behaves as **immutable** mode
+- If `immutable_resources.enabled = false` → behaves as **mutable** mode
+
+**Example:**
+```yaml
+# Global immutable mode
+immutable_resources:
+  enabled: true
+
+# OU will use "immutable" mode (fallback)
+# organization_unit:
+#   store: not specified
+
+# To override for OUs specifically:
+organization_unit:
+  store: "composite"  # OUs use composite mode despite global immutable=true
+```
+
+#### Composite Mode Behavior
+
+In composite mode:
+
+1. **Reads:** Merge results from both file-based and database stores
+2. **List operations:** Return all OUs (both immutable from YAML and mutable from DB)
+3. **Create operations:** New OUs go to database store
+4. **Update operations:** 
+   - File-based OUs (immutable): Returns error "Cannot update immutable OU"
+   - Database OUs (mutable): Update succeeds
+5. **Delete operations:**
+   - File-based OUs (immutable): Returns error "Cannot delete immutable OU"
+   - Database OUs (mutable): Delete succeeds
+
+**Example Composite Setup:**
+```yaml
+organization_unit:
+  store: "composite"
+```
+
+```
+repository/conf/immutable_resources/
+└── organization_units/
+    ├── production.yaml      # Immutable OU from YAML
+    ├── staging.yaml         # Immutable OU from YAML
+    └── development.yaml     # Immutable OU from YAML
+```
+
+At runtime:
+- YAML OUs (`production`, `staging`, `development`) are **read-only**
+- New OUs created via API are stored in **database** and **mutable**
+- List API returns all OUs from both sources
 
 ## Directory Structure
 
@@ -64,19 +161,22 @@ repository/conf/immutable_resources/
 │   ├── google-idp.yaml
 │   ├── github-idp.yaml
 │   └── oidc-idp.yaml
+├── organization_units/
+│   ├── production.yaml
+│   ├── staging.yaml
+│   └── development.yaml
 └── notification_senders/        # Coming soon
     └── smtp-sender.yaml
 ```
 
 ### Supported Resource Types
 
-| Resource Type | Directory | Status |
-|---------------|-----------|--------|
-| Applications | `applications/` | ✅ Supported |
-| Identity Providers | `identity-providers/` | ✅ Supported |
-| Notification Senders | `notification-senders/` | 🔜 Coming Soon |
-| Groups | `groups/` | 🔜 Coming Soon |
-| Roles | `roles/` | 🔜 Coming Soon |
+| Resource Type | Directory | Store Modes | Status |
+|---------------|-----------|-------------|--------|
+| Applications | `applications/` | Global only | ✅ Supported |
+| Identity Providers | `identity_providers/` | Global only | ✅ Supported |
+| Organization Units | `organization_units/` | mutable / immutable / composite | ✅ Supported |
+| Notification Senders | `notification_senders/` | Global only | ✅ Supported |
 
 ## Creating Configuration Files
 

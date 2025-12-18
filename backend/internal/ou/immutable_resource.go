@@ -62,19 +62,28 @@ func (e *OUExporter) GetParameterizerType() string {
 	return paramTypeOU
 }
 
-// GetAllResourceIDs retrieves all organization unit IDs.
+// GetAllResourceIDs retrieves all organization unit IDs from the database store.
+// Note: This only exports DB-backed OUs (runtime OUs). YAML-based immutable resources
+// are not included in the export as they are already defined in YAML files.
 func (e *OUExporter) GetAllResourceIDs() ([]string, *serviceerror.ServiceError) {
-	// Get all OUs by requesting a large limit
+	// Get all OUs by requesting a large limit from the service
+	// In composite mode, this returns OUs from both file-based and database stores
 	ous, err := e.service.GetOrganizationUnitList(1000, 0)
 	if err != nil {
 		return nil, err
 	}
+
+	// Collect only mutable OUs (exclude immutable OUs from file store)
+	// In composite mode, we need to filter out immutable resources
 	ids := make([]string, 0, len(ous.OrganizationUnits))
-	for _, ou := range ous.OrganizationUnits {
-		ids = append(ids, ou.ID)
+	for _, ouBasic := range ous.OrganizationUnits {
+		// Only include mutable OUs (exclude immutable ones)
+		if !e.service.IsOrganizationUnitImmutable(ouBasic.ID) {
+			ids = append(ids, ouBasic.ID)
+		}
 	}
 
-	// Also get all child OUs recursively
+	// Also get all child OUs recursively (only mutable ones)
 	allIDs := make(map[string]bool)
 	for _, id := range ids {
 		allIDs[id] = true
@@ -95,7 +104,7 @@ func (e *OUExporter) GetAllResourceIDs() ([]string, *serviceerror.ServiceError) 
 	return result, nil
 }
 
-// getAllChildIDs recursively retrieves all child OU IDs.
+// getAllChildIDs recursively retrieves all child OU IDs (excluding immutable ones).
 func (e *OUExporter) getAllChildIDs(parentID string) ([]string, *serviceerror.ServiceError) {
 	children, err := e.service.GetOrganizationUnitChildren(parentID, 1000, 0)
 	if err != nil {
@@ -103,13 +112,16 @@ func (e *OUExporter) getAllChildIDs(parentID string) ([]string, *serviceerror.Se
 	}
 
 	allIDs := []string{}
-	for _, child := range children.OrganizationUnits {
-		allIDs = append(allIDs, child.ID)
-		grandchildIDs, err := e.getAllChildIDs(child.ID)
-		if err != nil {
-			return nil, err
+	for _, childBasic := range children.OrganizationUnits {
+		// Only include mutable children (exclude immutable ones)
+		if !e.service.IsOrganizationUnitImmutable(childBasic.ID) {
+			allIDs = append(allIDs, childBasic.ID)
+			grandchildIDs, err := e.getAllChildIDs(childBasic.ID)
+			if err != nil {
+				return nil, err
+			}
+			allIDs = append(allIDs, grandchildIDs...)
 		}
-		allIDs = append(allIDs, grandchildIDs...)
 	}
 
 	return allIDs, nil
@@ -151,24 +163,27 @@ func (e *OUExporter) GetResourceRules() *immutableresource.ResourceRules {
 }
 
 // loadImmutableResources loads immutable organization unit resources from files.
-func loadImmutableResources(ouStore organizationUnitStoreInterface) error {
-	// Type assert to access Storer interface for resource loading
-	fileBasedStore, ok := ouStore.(*fileBasedStore)
+// The dbStore parameter is optional (can be nil) and is used for duplicate checking in composite mode.
+func loadImmutableResources(fileStore organizationUnitStoreInterface, dbStore organizationUnitStoreInterface) error {
+	// Type assert to get the file-based store for resource loading
+	store, ok := fileStore.(*fileBasedStore)
 	if !ok {
-		return fmt.Errorf("failed to assert ouStore to *fileBasedStore")
+		return fmt.Errorf("fileStore must be a file-based store implementation")
 	}
 
 	resourceConfig := immutableresource.ResourceConfig{
 		ResourceType:  "OrganizationUnit",
-		DirectoryName: "organizational_units",
+		DirectoryName: "organization_units",
 		Parser:        parseToOUWrapper,
-		Validator:     validateOUWrapper,
+		Validator: func(data interface{}) error {
+			return validateOUWrapper(data, store, dbStore)
+		},
 		IDExtractor: func(data interface{}) string {
 			return data.(*OrganizationUnit).ID
 		},
 	}
 
-	loader := immutableresource.NewResourceLoader(resourceConfig, fileBasedStore)
+	loader := immutableresource.NewResourceLoader(resourceConfig, store)
 	if err := loader.LoadResources(); err != nil {
 		return fmt.Errorf("failed to load organization unit resources: %w", err)
 	}
@@ -208,7 +223,10 @@ func parseToOU(data []byte) (*OrganizationUnit, error) {
 }
 
 // validateOUWrapper wraps validateOU to match ResourceConfig.Validator signature.
-func validateOUWrapper(data interface{}) error {
+// Checks for duplicate IDs in both the file store and optionally the database store.
+// In immutable mode, dbStore is nil and only file store is checked.
+// In composite mode, both stores are checked to prevent conflicts.
+func validateOUWrapper(data interface{}, fileStore *fileBasedStore, dbStore organizationUnitStoreInterface) error {
 	ou, ok := data.(*OrganizationUnit)
 	if !ok {
 		return fmt.Errorf("invalid type: expected *OrganizationUnit")
@@ -224,6 +242,20 @@ func validateOUWrapper(data interface{}) error {
 
 	if ou.Handle == "" {
 		return fmt.Errorf("organization unit handle is required")
+	}
+
+	// Check for duplicate ID in the file store
+	if existingData, err := fileStore.GenericFileBasedStore.Get(ou.ID); err == nil && existingData != nil {
+		return fmt.Errorf("duplicate organization unit ID '%s': "+
+			"an organization unit with this ID already exists in immutable resources", ou.ID)
+	}
+
+	// Check for duplicate ID in the database store (only in composite mode)
+	if dbStore != nil {
+		if exists, err := dbStore.IsOrganizationUnitExists(ou.ID); err == nil && exists {
+			return fmt.Errorf("duplicate organization unit ID '%s': "+
+				"an organization unit with this ID already exists in the database store", ou.ID)
+		}
 	}
 
 	return nil
