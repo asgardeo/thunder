@@ -28,7 +28,6 @@ import (
 	"github.com/asgardeo/thunder/internal/flow/common"
 	"github.com/asgardeo/thunder/internal/system/config"
 	"github.com/asgardeo/thunder/internal/system/log"
-	"github.com/asgardeo/thunder/tests/mocks/database/clientmock"
 	"github.com/asgardeo/thunder/tests/mocks/database/modelmock"
 	"github.com/asgardeo/thunder/tests/mocks/database/providermock"
 )
@@ -36,7 +35,7 @@ import (
 type FlowStoreTestSuite struct {
 	suite.Suite
 	mockDBProvider *providermock.DBProviderInterfaceMock
-	mockDBClient   *clientmock.DBClientInterfaceMock
+	mockDBClient   *providermock.DBClientInterfaceMock
 	store          *flowStore
 }
 
@@ -51,7 +50,7 @@ func (s *FlowStoreTestSuite) SetupTest() {
 	})
 
 	s.mockDBProvider = providermock.NewDBProviderInterfaceMock(s.T())
-	s.mockDBClient = clientmock.NewDBClientInterfaceMock(s.T())
+	s.mockDBClient = providermock.NewDBClientInterfaceMock(s.T())
 	s.store = &flowStore{
 		dbProvider:        s.mockDBProvider,
 		deploymentID:      "test-deployment",

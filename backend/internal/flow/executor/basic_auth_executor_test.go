@@ -92,23 +92,21 @@ func createMockExecutorWithCustomInputs(t *testing.T, name string,
 	mockExec.On("GetName").Return(name).Maybe()
 	mockExec.On("GetType").Return(common.ExecutorTypeAuthentication).Maybe()
 	mockExec.On("GetDefaultExecutorInputs").Return(inputs).Maybe()
+	mockExec.On("GetRequiredInputs", mock.Anything).Return(inputs).Maybe()
 	mockExec.On("GetPrerequisites").Return([]common.Input{}).Maybe()
-	mockExec.On("GetRequiredData", mock.Anything).Return(
-		func(ctx *core.NodeContext) []common.Input {
-			return inputs
-		}).Maybe()
-	mockExec.On("CheckInputData", mock.Anything, mock.Anything).Return(
+	mockExec.On("HasRequiredInputs", mock.Anything, mock.Anything).Return(
 		func(ctx *core.NodeContext, execResp *common.ExecutorResponse) bool {
 			for _, input := range inputs {
 				if input.Required {
 					value, exists := ctx.UserInputs[input.Identifier]
 					if !exists || value == "" {
 						execResp.Inputs = inputs
-						return true
+						execResp.Status = common.ExecUserInputRequired
+						return false
 					}
 				}
 			}
-			return false
+			return true
 		}).Maybe()
 	return mockExec
 }
@@ -121,15 +119,12 @@ func createMockBasicAuthExecutor(t *testing.T) core.ExecutorInterface {
 		{Identifier: userAttributeUsername, Type: "string", Required: true},
 		{Identifier: userAttributePassword, Type: inputDataTypePassword, Required: true},
 	}).Maybe()
+	mockExec.On("GetRequiredInputs", mock.Anything).Return([]common.Input{
+		{Identifier: userAttributeUsername, Type: "string", Required: true},
+		{Identifier: userAttributePassword, Type: inputDataTypePassword, Required: true},
+	}).Maybe()
 	mockExec.On("GetPrerequisites").Return([]common.Input{}).Maybe()
-	mockExec.On("GetRequiredData", mock.Anything).Return(
-		func(ctx *core.NodeContext) []common.Input {
-			return []common.Input{
-				{Identifier: userAttributeUsername, Type: "string", Required: true},
-				{Identifier: userAttributePassword, Type: inputDataTypePassword, Required: true},
-			}
-		}).Maybe()
-	mockExec.On("CheckInputData", mock.Anything, mock.Anything).Return(
+	mockExec.On("HasRequiredInputs", mock.Anything, mock.Anything).Return(
 		func(ctx *core.NodeContext, execResp *common.ExecutorResponse) bool {
 			username, hasUsername := ctx.UserInputs[userAttributeUsername]
 			password, hasPassword := ctx.UserInputs[userAttributePassword]
@@ -138,6 +133,7 @@ func createMockBasicAuthExecutor(t *testing.T) core.ExecutorInterface {
 					{Identifier: userAttributeUsername, Type: "string", Required: true},
 					{Identifier: userAttributePassword, Type: inputDataTypePassword, Required: true},
 				}
+				execResp.Status = common.ExecUserInputRequired
 				return false
 			}
 			return true
@@ -206,7 +202,7 @@ func (suite *BasicAuthExecutorTestSuite) TestExecute_Success_WithEmailAttribute(
 		RuntimeData: make(map[string]string),
 	}
 
-	// Override GetRequiredData to return email and password as required fields
+	// Override GetRequiredInputs to return email and password as required fields
 	originalInputs := []common.Input{
 		{Identifier: "email", Type: "string", Required: true},
 		{Identifier: "password", Type: inputDataTypePassword, Required: true},
@@ -282,7 +278,7 @@ func (suite *BasicAuthExecutorTestSuite) TestExecute_Success_WithMultipleAttribu
 		RuntimeData: make(map[string]string),
 	}
 
-	// Override GetRequiredData to return email, phone, and password as required fields
+	// Override GetRequiredInputs to return email, phone, and password as required fields
 	customInputs := []common.Input{
 		{Identifier: "email", Type: "string", Required: true},
 		{Identifier: "phone", Type: "string", Required: true},

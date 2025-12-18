@@ -26,8 +26,8 @@ import (
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/suite"
 
-	flowcm "github.com/asgardeo/thunder/internal/flow/common"
-	flowcore "github.com/asgardeo/thunder/internal/flow/core"
+	"github.com/asgardeo/thunder/internal/flow/common"
+	"github.com/asgardeo/thunder/internal/flow/core"
 	notifcommon "github.com/asgardeo/thunder/internal/notification/common"
 	"github.com/asgardeo/thunder/internal/observability/event"
 	"github.com/asgardeo/thunder/internal/user"
@@ -59,36 +59,46 @@ func (suite *SMSAuthExecutorTestSuite) SetupTest() {
 	// Default behavior for observability: disabled
 	suite.mockObservability.On("IsEnabled").Return(false).Maybe()
 
-	defaultInputs := []flowcm.InputData{
+	defaultInputs := []common.Input{
 		{
-			Name:     userInputOTP,
-			Type:     "string",
-			Required: true,
+			Identifier: userInputOTP,
+			Type:       "string",
+			Required:   true,
 		},
 	}
-	prerequisites := []flowcm.InputData{
+	prerequisites := []common.Input{
 		{
-			Name:     userAttributeMobileNumber,
-			Type:     "string",
-			Required: true,
+			Identifier: userAttributeMobileNumber,
+			Type:       "string",
+			Required:   true,
 		},
 	}
 
 	// Mock identifying executor
 	identifyingMock := createMockIdentifyingExecutor(suite.T())
-	suite.mockFlowFactory.On("CreateExecutor", ExecutorNameIdentifying, flowcm.ExecutorTypeUtility,
+	suite.mockFlowFactory.On("CreateExecutor", ExecutorNameIdentifying, common.ExecutorTypeUtility,
 		mock.Anything, mock.Anything).Return(identifyingMock).Maybe()
 
 	// Mock base executor
 	mockExec := coremock.NewExecutorInterfaceMock(suite.T())
 	mockExec.On("GetName").Return(ExecutorNameSMSAuth).Maybe()
-	mockExec.On("GetType").Return(flowcm.ExecutorTypeAuthentication).Maybe()
+	mockExec.On("GetType").Return(common.ExecutorTypeAuthentication).Maybe()
 	mockExec.On("GetDefaultExecutorInputs").Return(defaultInputs).Maybe()
+	mockExec.On("GetRequiredInputs", mock.Anything).Return(defaultInputs).Maybe()
 	mockExec.On("GetPrerequisites").Return(prerequisites).Maybe()
 	mockExec.On("ValidatePrerequisites", mock.Anything, mock.Anything).Return(true).Maybe()
-	mockExec.On("CheckInputData", mock.Anything, mock.Anything).Return(true).Maybe()
+	mockExec.On("HasRequiredInputs", mock.Anything, mock.Anything).Return(
+		func(ctx *core.NodeContext, execResp *common.ExecutorResponse) bool {
+			otp, exists := ctx.UserInputs[userInputOTP]
+			if !exists || otp == "" {
+				execResp.Inputs = defaultInputs
+				execResp.Status = common.ExecUserInputRequired
+				return false
+			}
+			return true
+		}).Maybe()
 
-	suite.mockFlowFactory.On("CreateExecutor", ExecutorNameSMSAuth, flowcm.ExecutorTypeAuthentication,
+	suite.mockFlowFactory.On("CreateExecutor", ExecutorNameSMSAuth, common.ExecutorTypeAuthentication,
 		defaultInputs, prerequisites).Return(mockExec)
 
 	suite.executor = newSMSOTPAuthExecutor(suite.mockFlowFactory, suite.mockUserService,
@@ -109,19 +119,31 @@ func (suite *SMSAuthExecutorTestSuite) TestExecute_Observability_Success() {
 	// Mock dependencies for validation flow
 	suite.executor.ExecutorInterface.(*coremock.ExecutorInterfaceMock).ExpectedCalls = nil
 	suite.executor.ExecutorInterface.(*coremock.ExecutorInterfaceMock).
-		On("CheckInputData", mock.Anything, mock.Anything).
-		Return(false)
+		On("GetRequiredInputs", mock.Anything).Return([]common.Input{
+		{Identifier: userInputOTP, Type: "string", Required: true},
+	}).Maybe()
+	suite.executor.ExecutorInterface.(*coremock.ExecutorInterfaceMock).
+		On("HasRequiredInputs", mock.Anything, mock.Anything).
+		Return(func(ctx *core.NodeContext, execResp *common.ExecutorResponse) bool {
+			otp := ctx.UserInputs[userInputOTP]
+			if otp == "" {
+				execResp.Inputs = []common.Input{{Identifier: userInputOTP, Type: "string", Required: true}}
+				execResp.Status = common.ExecUserInputRequired
+				return false
+			}
+			return true
+		})
 
 	suite.executor.ExecutorInterface.(*coremock.ExecutorInterfaceMock).
 		On("ValidatePrerequisites", mock.Anything, mock.Anything).
 		Return(true)
 
-	ctx := &flowcore.NodeContext{
+	ctx := &core.NodeContext{
 		FlowID:        "flow-123",
 		AppID:         "app-1",
 		CurrentNodeID: "node-1",
-		FlowType:      flowcm.FlowTypeAuthentication,
-		UserInputData: map[string]string{
+		FlowType:      common.FlowTypeAuthentication,
+		UserInputs: map[string]string{
 			userInputOTP: "123456",
 		},
 		RuntimeData: map[string]string{
@@ -163,7 +185,7 @@ func (suite *SMSAuthExecutorTestSuite) TestExecute_Observability_Success() {
 	resp, err := suite.executor.Execute(ctx)
 	assert.NoError(suite.T(), err)
 	assert.NotNil(suite.T(), resp)
-	assert.Equal(suite.T(), flowcm.ExecComplete, resp.Status)
+	assert.Equal(suite.T(), common.ExecComplete, resp.Status)
 
 	suite.mockObservability.AssertExpectations(suite.T())
 }
@@ -176,11 +198,23 @@ func (suite *SMSAuthExecutorTestSuite) TestExecute_Observability_InitiateOTP() {
 	userID := testUserID
 	mobileNumber := "+1234567890"
 
-	// Mock CheckInputData to return TRUE (Inputs missing -> Initiate OTP)
+	// Mock GetRequiredInputs to return TRUE (Inputs missing -> Initiate OTP)
 	suite.executor.ExecutorInterface.(*coremock.ExecutorInterfaceMock).ExpectedCalls = nil
 	suite.executor.ExecutorInterface.(*coremock.ExecutorInterfaceMock).
-		On("CheckInputData", mock.Anything, mock.Anything).
-		Return(true)
+		On("GetRequiredInputs", mock.Anything).Return([]common.Input{
+		{Identifier: userInputOTP, Type: "string", Required: true},
+	}).Maybe()
+	suite.executor.ExecutorInterface.(*coremock.ExecutorInterfaceMock).
+		On("HasRequiredInputs", mock.Anything, mock.Anything).
+		Return(func(ctx *core.NodeContext, execResp *common.ExecutorResponse) bool {
+			otp := ctx.UserInputs[userInputOTP]
+			if otp == "" {
+				execResp.Inputs = []common.Input{{Identifier: userInputOTP, Type: "string", Required: true}}
+				execResp.Status = common.ExecUserInputRequired
+				return false
+			}
+			return true
+		})
 
 	suite.executor.ExecutorInterface.(*coremock.ExecutorInterfaceMock).
 		On("ValidatePrerequisites", mock.Anything, mock.Anything).
@@ -191,12 +225,12 @@ func (suite *SMSAuthExecutorTestSuite) TestExecute_Observability_InitiateOTP() {
 		userAttributeMobileNumber: mobileNumber,
 	}).Return(&userID, nil)
 
-	ctx := &flowcore.NodeContext{
+	ctx := &core.NodeContext{
 		FlowID:        "flow-123",
 		AppID:         "app-1",
 		CurrentNodeID: "node-1",
-		FlowType:      flowcm.FlowTypeAuthentication,
-		UserInputData: map[string]string{},
+		FlowType:      common.FlowTypeAuthentication,
+		UserInputs:    map[string]string{},
 		RuntimeData: map[string]string{
 			userAttributeUserID:       userID,
 			userAttributeMobileNumber: mobileNumber,
@@ -229,7 +263,7 @@ func (suite *SMSAuthExecutorTestSuite) TestExecute_Observability_InitiateOTP() {
 	resp, err := suite.executor.Execute(ctx)
 	assert.NoError(suite.T(), err)
 	assert.NotNil(suite.T(), resp)
-	assert.Equal(suite.T(), flowcm.ExecUserInputRequired, resp.Status)
+	assert.Equal(suite.T(), common.ExecUserInputRequired, resp.Status)
 	suite.mockObservability.AssertExpectations(suite.T())
 }
 
@@ -241,22 +275,34 @@ func (suite *SMSAuthExecutorTestSuite) TestExecute_Observability_Failure() {
 	userID := testUserID
 	sessionToken := "session-123"
 
-	// Mock CheckInputData to return FALSE (Process Response)
+	// Mock GetRequiredInputs to return FALSE (Process Response)
 	suite.executor.ExecutorInterface.(*coremock.ExecutorInterfaceMock).ExpectedCalls = nil
 	suite.executor.ExecutorInterface.(*coremock.ExecutorInterfaceMock).
-		On("CheckInputData", mock.Anything, mock.Anything).
-		Return(false)
+		On("GetRequiredInputs", mock.Anything).Return([]common.Input{
+		{Identifier: userInputOTP, Type: "string", Required: true},
+	}).Maybe()
+	suite.executor.ExecutorInterface.(*coremock.ExecutorInterfaceMock).
+		On("HasRequiredInputs", mock.Anything, mock.Anything).
+		Return(func(ctx *core.NodeContext, execResp *common.ExecutorResponse) bool {
+			otp := ctx.UserInputs[userInputOTP]
+			if otp == "" {
+				execResp.Inputs = []common.Input{{Identifier: userInputOTP, Type: "string", Required: true}}
+				execResp.Status = common.ExecUserInputRequired
+				return false
+			}
+			return true
+		})
 
 	suite.executor.ExecutorInterface.(*coremock.ExecutorInterfaceMock).
 		On("ValidatePrerequisites", mock.Anything, mock.Anything).
 		Return(true)
 
-	ctx := &flowcore.NodeContext{
+	ctx := &core.NodeContext{
 		FlowID:        "flow-123",
 		AppID:         "app-1",
 		CurrentNodeID: "node-1",
-		FlowType:      flowcm.FlowTypeAuthentication,
-		UserInputData: map[string]string{
+		FlowType:      common.FlowTypeAuthentication,
+		UserInputs: map[string]string{
 			userInputOTP: "wrong-otp",
 		},
 		RuntimeData: map[string]string{
@@ -284,7 +330,7 @@ func (suite *SMSAuthExecutorTestSuite) TestExecute_Observability_Failure() {
 	resp, err := suite.executor.Execute(ctx)
 	assert.NoError(suite.T(), err)
 	assert.NotNil(suite.T(), resp)
-	assert.Equal(suite.T(), flowcm.ExecFailure, resp.Status)
+	assert.Equal(suite.T(), common.ExecFailure, resp.Status)
 
 	suite.mockObservability.AssertExpectations(suite.T())
 }

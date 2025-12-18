@@ -321,7 +321,7 @@ func (s *ExecutorTestSuite) TestGetUserIDFromContext() {
 	}
 }
 
-func (s *ExecutorTestSuite) TestGetRequiredData() {
+func (s *ExecutorTestSuite) TestGetRequiredInputs() {
 	tests := []struct {
 		name              string
 		defaultInputs     []common.Input
