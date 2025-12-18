@@ -27,10 +27,6 @@ import (
 	"github.com/stretchr/testify/suite"
 )
 
-const (
-	mockNotificationServerPort = 8098
-)
-
 var (
 	smsRegTestOU = testutils.OrganizationUnit{
 		Handle:      "sms-reg-flow-test-ou",
@@ -116,14 +112,12 @@ func (ts *SMSRegistrationFlowTestSuite) SetupSuite() {
 	}
 	ts.testAppID = appID
 
-	// Start mock notification server
-	ts.mockServer = testutils.NewMockNotificationServer(mockNotificationServerPort)
-	err = ts.mockServer.Start()
+	// Get shared notification server (started once for all test suites)
+	ts.mockServer, err = testutils.GetSharedMockServers().GetNotificationServer()
 	if err != nil {
-		ts.T().Fatalf("Failed to start mock notification server: %v", err)
+		ts.T().Fatalf("Failed to get shared notification server: %v", err)
 	}
-	time.Sleep(100 * time.Millisecond)
-	ts.T().Log("Mock notification server started successfully")
+	ts.T().Log("Using shared notification server")
 
 	// Store original app config (this will be the created app config)
 	ts.config.OriginalAppConfig, err = getAppConfig(ts.testAppID)
@@ -138,13 +132,8 @@ func (ts *SMSRegistrationFlowTestSuite) TearDownSuite() {
 		ts.T().Logf("Failed to cleanup users during teardown: %v", err)
 	}
 
-	// Stop mock server
-	if ts.mockServer != nil {
-		err := ts.mockServer.Stop()
-		if err != nil {
-			ts.T().Logf("Failed to stop mock notification server during teardown: %v", err)
-		}
-	}
+	// Note: We don't stop the mock server here because it's shared across test suites.
+	// The shared server will be cleaned up when the test process exits.
 
 	// Delete test application
 	if ts.testAppID != "" {
@@ -214,12 +203,9 @@ func (ts *SMSRegistrationFlowTestSuite) TestSMSRegistrationFlowWithMobileNumber(
 	ts.Require().NotEmpty(otpFlowStep.Data.Inputs, "Flow should require inputs")
 	ts.Require().True(HasInput(otpFlowStep.Data.Inputs, "otp"), "OTP input should be required")
 
-	// Wait for SMS to be sent
-	time.Sleep(1000 * time.Millisecond)
-
-	// Verify SMS was sent
-	lastMessage := ts.mockServer.GetLastMessage()
-	ts.Require().NotNil(lastMessage, "Last message should not be nil")
+	// Wait for SMS message with timeout (more reliable than fixed sleep)
+	lastMessage := ts.mockServer.WaitForMessage(2000)
+	ts.Require().NotNil(lastMessage, "Expected SMS message to be received within timeout")
 	ts.Require().NotEmpty(lastMessage.OTP, "OTP should be extracted from message")
 
 	// Step 3: Complete registration with OTP
@@ -354,12 +340,9 @@ func (ts *SMSRegistrationFlowTestSuite) TestSMSRegistrationFlowWithUsername() {
 	ts.Require().NotEmpty(otpFlowStep.Data.Inputs, "Flow should require inputs after username input")
 	ts.Require().True(HasInput(otpFlowStep.Data.Inputs, "otp"), "OTP input should be required after username input")
 
-	// Wait for SMS to be sent
-	time.Sleep(500 * time.Millisecond)
-
-	// Verify SMS was sent
-	lastMessage := ts.mockServer.GetLastMessage()
-	ts.Require().NotNil(lastMessage, "SMS should have been sent")
+	// Wait for SMS message with timeout (more reliable than fixed sleep)
+	lastMessage := ts.mockServer.WaitForMessage(2000)
+	ts.Require().NotNil(lastMessage, "Expected SMS message to be received within timeout")
 	ts.Require().NotEmpty(lastMessage.OTP, "OTP should be available")
 
 	// Step 4: Complete registration with OTP
@@ -433,8 +416,8 @@ func (ts *SMSRegistrationFlowTestSuite) TestSMSRegistrationFlowInvalidOTP() {
 
 	ts.Require().Equal("INCOMPLETE", otpFlowStep.FlowStatus, "Expected flow status to be INCOMPLETE")
 
-	// Wait for SMS to be sent
-	time.Sleep(500 * time.Millisecond)
+	// Wait for SMS to be sent (we don't need the actual message for this test, just ensure it was sent)
+	_ = ts.mockServer.WaitForMessage(2000)
 
 	// Step 2: Try with invalid OTP
 	invalidOTPInputs := map[string]string{
@@ -484,12 +467,9 @@ func (ts *SMSRegistrationFlowTestSuite) TestSMSRegistrationFlowSingleRequestWith
 	ts.Require().Equal("INCOMPLETE", flowStep.FlowStatus, "Expected flow status to be INCOMPLETE")
 	ts.Require().Equal("VIEW", flowStep.Type, "Expected flow type to be VIEW")
 
-	// Wait for SMS to be sent
-	time.Sleep(500 * time.Millisecond)
-
-	// Get the OTP from mock server
-	lastMessage := ts.mockServer.GetLastMessage()
-	ts.Require().NotNil(lastMessage, "SMS should have been sent")
+	// Wait for SMS message with timeout (more reliable than fixed sleep)
+	lastMessage := ts.mockServer.WaitForMessage(2000)
+	ts.Require().NotNil(lastMessage, "Expected SMS message to be received within timeout")
 	ts.Require().NotEmpty(lastMessage.OTP, "OTP should be available")
 
 	// Step 2: Complete with OTP

@@ -26,9 +26,7 @@ import (
 	"github.com/stretchr/testify/suite"
 )
 
-const (
-	mockHTTPServerPortReg = 9091
-)
+
 
 var (
 	httpRequestRegTestOU = testutils.OrganizationUnit{
@@ -111,24 +109,17 @@ func (ts *HTTPRequestRegistrationFlowTestSuite) SetupSuite() {
 	}
 	httpRequestRegTestAppID = appID
 
-	// Start mock HTTP server
-	ts.mockServer = testutils.NewMockHTTPServer(mockHTTPServerPortReg)
-	err = ts.mockServer.Start()
+	// Get shared HTTP mock server (started once for all test suites)
+	ts.mockServer, err = testutils.GetSharedMockServers().GetHTTPServer()
 	if err != nil {
-		ts.T().Fatalf("Failed to start mock HTTP server: %v", err)
+		ts.T().Fatalf("Failed to get shared HTTP server: %v", err)
 	}
-	time.Sleep(100 * time.Millisecond)
-	ts.T().Log("Mock HTTP server started successfully")
+	ts.T().Log("Using shared HTTP mock server")
 }
 
 func (ts *HTTPRequestRegistrationFlowTestSuite) TearDownSuite() {
-	// Stop the mock HTTP server
-	if ts.mockServer != nil {
-		err := ts.mockServer.Stop()
-		if err != nil {
-			ts.T().Logf("Failed to stop mock HTTP server during teardown: %v", err)
-		}
-	}
+	// Note: We don't stop the mock server here because it's shared across test suites.
+	// The shared server will be cleaned up when the test process exits.
 
 	// Delete all created users
 	if err := testutils.CleanupUsers(ts.config.CreatedUserIDs); err != nil {

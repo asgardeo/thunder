@@ -27,10 +27,6 @@ import (
 	"github.com/stretchr/testify/suite"
 )
 
-const (
-	mockNotificationServerPortOU = 8098
-)
-
 var (
 	ouRegTestOU = testutils.OrganizationUnit{
 		Handle:      "ou-reg-flow-test-ou",
@@ -149,12 +145,11 @@ func (ts *OURegistrationFlowTestSuite) SetupSuite() {
 	}
 	ts.smsFlowTestOUID = smsOUID
 
-	ts.mockServer = testutils.NewMockNotificationServer(mockNotificationServerPortOU)
-	err = ts.mockServer.Start()
+	// Get shared notification server (started once for all test suites)
+	ts.mockServer, err = testutils.GetSharedMockServers().GetNotificationServer()
 	if err != nil {
-		ts.T().Fatalf("Failed to start mock notification server: %v", err)
+		ts.T().Fatalf("Failed to get shared notification server: %v", err)
 	}
-	time.Sleep(100 * time.Millisecond)
 }
 
 func (ts *OURegistrationFlowTestSuite) TearDownSuite() {
@@ -166,12 +161,8 @@ func (ts *OURegistrationFlowTestSuite) TearDownSuite() {
 			ts.T().Logf("Failed to delete created OU %s during teardown: %v", ouID, err)
 		}
 	}
-	if ts.mockServer != nil {
-		err := ts.mockServer.Stop()
-		if err != nil {
-			ts.T().Logf("Failed to stop mock notification server during teardown: %v", err)
-		}
-	}
+	// Note: We don't stop the mock server here because it's shared across test suites.
+	// The shared server will be cleaned up when the test process exits.
 	if ts.basicFlowTestAppID != "" {
 		if err := testutils.DeleteApplication(ts.basicFlowTestAppID); err != nil {
 			ts.T().Logf("Failed to delete test application during teardown: %v", err)
@@ -371,10 +362,9 @@ func (ts *OURegistrationFlowTestSuite) TestSMSRegistrationFlowWithOUCreation() {
 			ts.Require().NoError(err)
 			ts.Require().Equal("INCOMPLETE", flowStep.FlowStatus)
 
-			time.Sleep(500 * time.Millisecond)
-
-			lastMessage := ts.mockServer.GetLastMessage()
-			ts.Require().NotNil(lastMessage)
+			// Wait for SMS message with timeout (more reliable than fixed sleep)
+			lastMessage := ts.mockServer.WaitForMessage(2000)
+			ts.Require().NotNil(lastMessage, "Expected SMS message to be received within timeout")
 			ts.Require().NotEmpty(lastMessage.OTP)
 
 			inputs = map[string]string{
@@ -473,10 +463,9 @@ func (ts *OURegistrationFlowTestSuite) TestSMSRegistrationFlowWithOUCreationDupl
 			flowStep, err := initiateRegistrationFlow(ts.smsFlowTestAppID, inputs)
 			ts.Require().NoError(err)
 
-			time.Sleep(500 * time.Millisecond)
-
-			lastMessage := ts.mockServer.GetLastMessage()
-			ts.Require().NotNil(lastMessage)
+			// Wait for SMS message with timeout (more reliable than fixed sleep)
+			lastMessage := ts.mockServer.WaitForMessage(2000)
+			ts.Require().NotNil(lastMessage, "Expected SMS message to be received within timeout")
 
 			newHandle := tc.newOUHandle
 			if newHandle == "" {
