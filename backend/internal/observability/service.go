@@ -58,10 +58,10 @@ func newServiceWithConfig() *Service {
 
 	// Check if observability is disabled
 
-	logger.Info("Initializing observability service")
+	logger.Debug("Initializing observability service")
 	config := config.GetThunderRuntime().Config.Observability
 	if !config.Enabled {
-		logger.Info("Observability is disabled in configuration")
+		logger.Debug("Observability is disabled in configuration")
 		return &Service{
 			logger: logger,
 			config: config,
@@ -94,7 +94,7 @@ func newServiceWithConfig() *Service {
 			log.String("subscriberID", sub.GetID()))
 	}
 
-	logger.Info("Observability service initialized successfully",
+	logger.Debug("Observability service initialized successfully",
 		log.Int("activeSubscribers", len(subscribers)))
 	return svc
 }
@@ -135,7 +135,7 @@ func (s *Service) RegisterSubscriber(sub subscriber.SubscriberInterface) {
 	// Subscribe to publisher (publisher now owns the subscriber list)
 	s.publisher.Subscribe(sub)
 
-	s.logger.Info("Subscriber registered and activated successfully",
+	s.logger.Debug("Subscriber registered and activated successfully",
 		log.String("subscriberType", fmt.Sprintf("%T", sub)),
 		log.String("subscriberID", sub.GetID()))
 }

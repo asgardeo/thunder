@@ -42,6 +42,7 @@ import (
 	"github.com/asgardeo/thunder/internal/role"
 	"github.com/asgardeo/thunder/internal/system/crypto/hash"
 	"github.com/asgardeo/thunder/internal/system/export"
+	immutableresource "github.com/asgardeo/thunder/internal/system/immutable_resource"
 	"github.com/asgardeo/thunder/internal/system/jwt"
 	"github.com/asgardeo/thunder/internal/system/log"
 	"github.com/asgardeo/thunder/internal/system/services"
@@ -61,24 +62,46 @@ func registerServices(
 
 	observabilitySvc = observability.Initialize()
 
-	ouService := ou.Initialize(mux)
+	// List to collect exporters from each package
+	var exporters []immutableresource.ResourceExporter
+
+	ouService, ouExporter, err := ou.Initialize(mux)
+	if err != nil {
+		logger.Fatal("Failed to initialize OrganizationUnitService", log.Error(err))
+	}
+	exporters = append(exporters, ouExporter)
+
 	hashService := hash.Initialize()
-	userSchemaService := userschema.Initialize(mux, ouService)
+	userSchemaService, userSchemaExporter, err := userschema.Initialize(mux, ouService)
+	if err != nil {
+		logger.Fatal("Failed to initialize UserSchemaService", log.Error(err))
+	}
+	exporters = append(exporters, userSchemaExporter)
+
 	userService, err := user.Initialize(mux, ouService, userSchemaService, hashService)
 	if err != nil {
 		logger.Fatal("Failed to initialize UserService", log.Error(err))
 	}
 	groupService := group.Initialize(mux, ouService, userService)
 
-	_, err = resource.Initialize(mux, ouService)
+	resourceService, err := resource.Initialize(mux, ouService)
 	if err != nil {
 		logger.Fatal("Failed to initialize Resource Service", log.Error(err))
 	}
-	roleService := role.Initialize(mux, userService, groupService, ouService)
+	roleService := role.Initialize(mux, userService, groupService, ouService, resourceService)
 	authZService := authz.Initialize(roleService)
 
-	idpService := idp.Initialize(mux)
-	notificationSenderMgtService, otpService := notification.Initialize(mux, jwtService)
+	idpService, idpExporter, err := idp.Initialize(mux)
+	if err != nil {
+		logger.Fatal("Failed to initialize IDPService", log.Error(err))
+	}
+	exporters = append(exporters, idpExporter)
+
+	_, otpService, notificationExporter, err := notification.Initialize(mux, jwtService)
+	if err != nil {
+		logger.Fatal("Failed to initialize NotificationService", log.Error(err))
+	}
+	exporters = append(exporters, notificationExporter)
 
 	// Initialize authentication services.
 	_, authSvcRegistry := authn.Initialize(mux, idpService, jwtService, userService, otpService)
@@ -86,7 +109,7 @@ func registerServices(
 	// Initialize flow and executor services.
 	flowFactory := flowcore.Initialize()
 	execRegistry := executor.Initialize(flowFactory, userService, ouService,
-		idpService, otpService, jwtService, authSvcRegistry, authZService, userSchemaService)
+		idpService, otpService, jwtService, authSvcRegistry, authZService, userSchemaService, observabilitySvc)
 
 	flowMgtService, err := flowmgt.Initialize(flowFactory, execRegistry)
 	if err != nil {
@@ -94,17 +117,22 @@ func registerServices(
 	}
 	certservice := cert.Initialize()
 	brandingMgtService := brandingmgt.Initialize(mux)
-	applicationService := application.Initialize(mux, certservice, flowMgtService,
+	applicationService, applicationExporter, err := application.Initialize(mux, certservice, flowMgtService,
 		brandingMgtService, userSchemaService)
+	if err != nil {
+		logger.Fatal("Failed to initialize ApplicationService", log.Error(err))
+	}
+	exporters = append(exporters, applicationExporter)
+
 	_ = brandingresolve.Initialize(mux, brandingMgtService, applicationService)
 
-	// Initialize export service with application, IDP, notification sender, and user schema service dependencies
-	_ = export.Initialize(mux, applicationService, idpService, notificationSenderMgtService, userSchemaService)
+	// Initialize export service with collected exporters
+	_ = export.Initialize(mux, exporters)
 
 	flowExecService := flowexec.Initialize(mux, flowMgtService, applicationService, execRegistry, observabilitySvc)
 
 	// Initialize OAuth services.
-	oauth.Initialize(mux, applicationService, userService, jwtService, flowExecService)
+	oauth.Initialize(mux, applicationService, userService, jwtService, flowExecService, observabilitySvc)
 
 	// TODO: Legacy way of initializing services. These need to be refactored in the future aligning to the
 	// dependency injection pattern used above.

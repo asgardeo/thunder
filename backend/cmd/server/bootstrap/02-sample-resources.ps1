@@ -17,6 +17,22 @@
 # under the License.
 # ----------------------------------------------------------------------------
 
+# Check for PowerShell Version Compatibility
+if ($PSVersionTable.PSVersion.Major -lt 7) {
+    Write-Host ""
+    Write-Host "================================================================" -ForegroundColor Red
+    Write-Host " [ERROR] UNSUPPORTED POWERSHELL VERSION" -ForegroundColor Red
+    Write-Host "================================================================" -ForegroundColor Red
+    Write-Host ""
+    Write-Host " You are currently running PowerShell $($PSVersionTable.PSVersion.ToString())" -ForegroundColor Yellow
+    Write-Host " Thunder requires PowerShell 7 (Core) or later." -ForegroundColor Yellow
+    Write-Host ""
+    Write-Host " Please install the latest version from:"
+    Write-Host " https://github.com/PowerShell/PowerShell" -ForegroundColor Cyan
+    Write-Host ""
+    exit 1
+}
+
 # Bootstrap Script: Sample Resources Setup
 # Creates resources required to run the Thunder sample experience
 

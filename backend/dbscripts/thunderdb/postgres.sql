@@ -35,17 +35,20 @@ CREATE INDEX idx_role_deployment_id ON "ROLE" (DEPLOYMENT_ID);
 
 -- Table to store Role permissions
 CREATE TABLE ROLE_PERMISSION (
-    ID              INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    ID                  INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
     DEPLOYMENT_ID       VARCHAR(255) NOT NULL,
-    ROLE_ID         VARCHAR(36) NOT NULL,
-    PERMISSION      VARCHAR(100) NOT NULL,
-    CREATED_AT      TIMESTAMPTZ DEFAULT NOW(),
+    ROLE_ID             VARCHAR(36) NOT NULL,
+    RESOURCE_SERVER_ID  VARCHAR(36) NOT NULL,
+    PERMISSION          VARCHAR(100) NOT NULL,
+    CREATED_AT          TIMESTAMPTZ DEFAULT NOW(),
     FOREIGN KEY (ROLE_ID, DEPLOYMENT_ID) REFERENCES "ROLE" (ROLE_ID, DEPLOYMENT_ID) ON DELETE CASCADE,
-    CONSTRAINT unique_role_permission UNIQUE (ROLE_ID, PERMISSION, DEPLOYMENT_ID)
+    CONSTRAINT unique_role_permission UNIQUE (ROLE_ID, RESOURCE_SERVER_ID, PERMISSION, DEPLOYMENT_ID)
 );
 
--- Index for deployment isolation on ROLE_PERMISSION
-CREATE INDEX idx_role_permission_deployment_id ON ROLE_PERMISSION (DEPLOYMENT_ID);
+
+-- Index for resource server queries with deployment isolation on ROLE_PERMISSION
+CREATE INDEX idx_role_permission_resource_server ON ROLE_PERMISSION (RESOURCE_SERVER_ID, DEPLOYMENT_ID);
+
 
 -- Table to store Role assignments (to users and groups)
 CREATE TABLE ROLE_ASSIGNMENT (

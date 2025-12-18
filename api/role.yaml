@@ -106,15 +106,19 @@ paths:
               description: "Front desk agent role with booking and customer management permissions"
               ouId: "a839f4bd-39dc-4eaa-b5cc-210d8ecaee87"
               permissions:
-                - "create_reservation"
-                - "view_reservation"
-                - "update_reservation"
-                - "check_in_guest"
-                - "check_out_guest"
-                - "process_payment"
-                - "view_payment"
-                - "view_customer_profile"
-                - "update_customer_profile"
+                - resourceServerId: "3fa85f64-5717-4562-b3fc-2c963f66afa6"
+                  permissions:
+                    - "create_reservation"
+                    - "view_reservation"
+                    - "update_reservation"
+                    - "check_in_guest"
+                    - "check_out_guest"
+                - resourceServerId: "7b8c9d0e-1f2a-3b4c-5d6e-7f8a9b0c1d2e"
+                  permissions:
+                    - "process_payment"
+                    - "view_payment"
+                    - "view_customer_profile"
+                    - "update_customer_profile"
               assignments:
                 - type: "user"
                   id: "7a4b1f8e-5c69-4b60-9232-2b0aaf65ef3c"
@@ -133,15 +137,19 @@ paths:
                 description: "Front desk agent role with booking and customer management permissions"
                 ouId: "a839f4bd-39dc-4eaa-b5cc-210d8ecaee87"
                 permissions:
-                  - "create_reservation"
-                  - "view_reservation"
-                  - "update_reservation"
-                  - "check_in_guest"
-                  - "check_out_guest"
-                  - "process_payment"
-                  - "view_payment"
-                  - "view_customer_profile"
-                  - "update_customer_profile"
+                  - resourceServerId: "3fa85f64-5717-4562-b3fc-2c963f66afa6"
+                    permissions:
+                      - "create_reservation"
+                      - "view_reservation"
+                      - "update_reservation"
+                      - "check_in_guest"
+                      - "check_out_guest"
+                  - resourceServerId: "7b8c9d0e-1f2a-3b4c-5d6e-7f8a9b0c1d2e"
+                    permissions:
+                      - "process_payment"
+                      - "view_payment"
+                      - "view_customer_profile"
+                      - "update_customer_profile"
                 assignments:
                   - type: "user"
                     id: "7a4b1f8e-5c69-4b60-9232-2b0aaf65ef3c"
@@ -174,6 +182,12 @@ paths:
                     code: "ROL-1005"
                     message: "Organization unit not found"
                     description: "Organization unit not found"
+                invalid-permissions:
+                  summary: Invalid permissions
+                  value:
+                    code: "ROL-1012"
+                    message: "Invalid permissions"
+                    description: "One or more permissions do not exist in the resource management system"
         "409":
           description: Conflict
           content:
@@ -279,15 +293,19 @@ paths:
               description: "Senior front desk agent with additional permissions"
               ouId: "a839f4bd-39dc-4eaa-b5cc-210d8ecaee87"
               permissions:
-                - "create_reservation"
-                - "view_reservation"
-                - "update_reservation"
-                - "cancel_reservation"
-                - "process_payment"
-                - "view_payment"
-                - "refund_payment"
-                - "view_customer_profile"
-                - "update_customer_profile"
+                - resourceServerId: "3fa85f64-5717-4562-b3fc-2c963f66afa6"
+                  permissions:
+                    - "create_reservation"
+                    - "view_reservation"
+                    - "update_reservation"
+                    - "cancel_reservation"
+                - resourceServerId: "7b8c9d0e-1f2a-3b4c-5d6e-7f8a9b0c1d2e"
+                  permissions:
+                    - "process_payment"
+                    - "view_payment"
+                    - "refund_payment"
+                    - "view_customer_profile"
+                    - "update_customer_profile"
       responses:
         "200":
           description: Role updated
@@ -301,15 +319,19 @@ paths:
                 description: "Senior front desk agent with additional permissions"
                 ouId: "a839f4bd-39dc-4eaa-b5cc-210d8ecaee87"
                 permissions:
-                  - "create_reservation"
-                  - "view_reservation"
-                  - "update_reservation"
-                  - "cancel_reservation"
-                  - "process_payment"
-                  - "view_payment"
-                  - "refund_payment"
-                  - "view_customer_profile"
-                  - "update_customer_profile"
+                  - resourceServerId: "3fa85f64-5717-4562-b3fc-2c963f66afa6"
+                    permissions:
+                      - "create_reservation"
+                      - "view_reservation"
+                      - "update_reservation"
+                      - "cancel_reservation"
+                  - resourceServerId: "7b8c9d0e-1f2a-3b4c-5d6e-7f8a9b0c1d2e"
+                    permissions:
+                      - "process_payment"
+                      - "view_payment"
+                      - "refund_payment"
+                      - "view_customer_profile"
+                      - "update_customer_profile"
         "400":
           description: Bad request
           content:
@@ -335,6 +357,12 @@ paths:
                     code: "ROL-1005"
                     message: "Organization unit not found"
                     description: "Organization unit not found"
+                invalid-permissions:
+                  summary: Invalid permissions
+                  value:
+                    code: "ROL-1012"
+                    message: "Invalid permissions"
+                    description: "One or more permissions do not exist in the resource management system"
         "404":
           description: Role not found
           content:
@@ -722,6 +750,20 @@ components:
             - group
           description: "Type of entity being assigned (user or group)"
 
+    ResourcePermissions:
+      type: object
+      required: [resourceServerId, permissions]
+      properties:
+        resourceServerId:
+          type: string
+          format: uuid
+          description: "ID of the resource server these permissions belong to"
+        permissions:
+          type: array
+          items:
+            type: string
+          description: "List of permission strings for this resource server"
+
     RoleSummary:
       type: object
       required: [id, name, ouId]
@@ -764,8 +806,8 @@ components:
         permissions:
           type: array
           items:
-            type: string
-          description: "List of permission strings"
+            $ref: '#/components/schemas/ResourcePermissions'
+          description: "List of resource permissions grouped by resource server"
 
     RoleWithAssignments:
       allOf:
@@ -795,8 +837,8 @@ components:
         permissions:
           type: array
           items:
-            type: string
-          description: "Optional list of initial permissions (e.g., 'create_reservation', 'view_customer_profile')"
+            $ref: '#/components/schemas/ResourcePermissions'
+          description: "Optional list of initial permissions grouped by resource server"
         assignments:
           type: array
           items:
@@ -820,8 +862,8 @@ components:
         permissions:
           type: array
           items:
-            type: string
-          description: "List of permission strings (e.g., 'create_reservation', 'view_customer_profile')"
+            $ref: '#/components/schemas/ResourcePermissions'
+          description: "List of resource permissions grouped by resource server"
 
     AssignmentsRequest:
       type: object

@@ -30,6 +30,7 @@ type NodeContext struct {
 	FlowType        common.FlowType
 	AppID           string
 	CurrentActionID string
+	CurrentNodeID   string
 
 	NodeProperties map[string]interface{}
 	NodeInputData  []common.InputData

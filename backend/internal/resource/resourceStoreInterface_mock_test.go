@@ -1868,3 +1868,71 @@ func (_c *resourceStoreInterfaceMock_UpdateResourceServer_Call) RunAndReturn(run
 	_c.Call.Return(run)
 	return _c
 }
+
+// ValidatePermissions provides a mock function for the type resourceStoreInterfaceMock
+func (_mock *resourceStoreInterfaceMock) ValidatePermissions(resServerInternalID int, permissions []string) ([]string, error) {
+	ret := _mock.Called(resServerInternalID, permissions)
+
+	if len(ret) == 0 {
+		panic("no return value specified for ValidatePermissions")
+	}
+
+	var r0 []string
+	var r1 error
+	if returnFunc, ok := ret.Get(0).(func(int, []string) ([]string, error)); ok {
+		return returnFunc(resServerInternalID, permissions)
+	}
+	if returnFunc, ok := ret.Get(0).(func(int, []string) []string); ok {
+		r0 = returnFunc(resServerInternalID, permissions)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).([]string)
+		}
+	}
+	if returnFunc, ok := ret.Get(1).(func(int, []string) error); ok {
+		r1 = returnFunc(resServerInternalID, permissions)
+	} else {
+		r1 = ret.Error(1)
+	}
+	return r0, r1
+}
+
+// resourceStoreInterfaceMock_ValidatePermissions_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'ValidatePermissions'
+type resourceStoreInterfaceMock_ValidatePermissions_Call struct {
+	*mock.Call
+}
+
+// ValidatePermissions is a helper method to define mock.On call
+//   - resServerInternalID int
+//   - permissions []string
+func (_e *resourceStoreInterfaceMock_Expecter) ValidatePermissions(resServerInternalID interface{}, permissions interface{}) *resourceStoreInterfaceMock_ValidatePermissions_Call {
+	return &resourceStoreInterfaceMock_ValidatePermissions_Call{Call: _e.mock.On("ValidatePermissions", resServerInternalID, permissions)}
+}
+
+func (_c *resourceStoreInterfaceMock_ValidatePermissions_Call) Run(run func(resServerInternalID int, permissions []string)) *resourceStoreInterfaceMock_ValidatePermissions_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 int
+		if args[0] != nil {
+			arg0 = args[0].(int)
+		}
+		var arg1 []string
+		if args[1] != nil {
+			arg1 = args[1].([]string)
+		}
+		run(
+			arg0,
+			arg1,
+		)
+	})
+	return _c
+}
+
+func (_c *resourceStoreInterfaceMock_ValidatePermissions_Call) Return(strings []string, err error) *resourceStoreInterfaceMock_ValidatePermissions_Call {
+	_c.Call.Return(strings, err)
+	return _c
+}
+
+func (_c *resourceStoreInterfaceMock_ValidatePermissions_Call) RunAndReturn(run func(resServerInternalID int, permissions []string) ([]string, error)) *resourceStoreInterfaceMock_ValidatePermissions_Call {
+	_c.Call.Return(run)
+	return _c
+}

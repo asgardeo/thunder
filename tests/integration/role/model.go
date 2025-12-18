@@ -35,29 +35,29 @@ type Assignment struct {
 
 // CreateRoleRequest represents the request to create a role
 type CreateRoleRequest struct {
-	Name               string       `json:"name"`
-	Description        string       `json:"description,omitempty"`
-	OrganizationUnitID string       `json:"ouId"`
-	Permissions        []string     `json:"permissions"`
-	Assignments        []Assignment `json:"assignments,omitempty"`
+	Name               string                `json:"name"`
+	Description        string                `json:"description,omitempty"`
+	OrganizationUnitID string                `json:"ouId"`
+	Permissions        []ResourcePermissions `json:"permissions"`
+	Assignments        []Assignment          `json:"assignments,omitempty"`
 }
 
 // UpdateRoleRequest represents the request to update a role
 type UpdateRoleRequest struct {
-	Name               string   `json:"name"`
-	Description        string   `json:"description,omitempty"`
-	OrganizationUnitID string   `json:"ouId"`
-	Permissions        []string `json:"permissions"`
+	Name               string                `json:"name"`
+	Description        string                `json:"description,omitempty"`
+	OrganizationUnitID string                `json:"ouId"`
+	Permissions        []ResourcePermissions `json:"permissions"`
 }
 
 // Role represents a complete role resource
 type Role struct {
-	ID                 string       `json:"id"`
-	Name               string       `json:"name"`
-	Description        string       `json:"description,omitempty"`
-	OrganizationUnitID string       `json:"ouId"`
-	Permissions        []string     `json:"permissions"`
-	Assignments        []Assignment `json:"assignments,omitempty"`
+	ID                 string                `json:"id"`
+	Name               string                `json:"name"`
+	Description        string                `json:"description,omitempty"`
+	OrganizationUnitID string                `json:"ouId"`
+	Permissions        []ResourcePermissions `json:"permissions"`
+	Assignments        []Assignment          `json:"assignments,omitempty"`
 }
 
 // RoleSummary represents a minimal role information
@@ -102,4 +102,10 @@ type ErrorResponse struct {
 	Code        string `json:"code"`
 	Message     string `json:"message"`
 	Description string `json:"description,omitempty"`
+}
+
+// ResourcePermissions represents permissions grouped by resource server
+type ResourcePermissions struct {
+	ResourceServerID string   `json:"resourceServerId"`
+	Permissions      []string `json:"permissions"`
 }

@@ -1094,3 +1094,73 @@ func (_c *ResourceServiceInterfaceMock_UpdateResourceServer_Call) RunAndReturn(r
 	_c.Call.Return(run)
 	return _c
 }
+
+// ValidatePermissions provides a mock function for the type ResourceServiceInterfaceMock
+func (_mock *ResourceServiceInterfaceMock) ValidatePermissions(resourceServerID string, permissions []string) ([]string, *serviceerror.ServiceError) {
+	ret := _mock.Called(resourceServerID, permissions)
+
+	if len(ret) == 0 {
+		panic("no return value specified for ValidatePermissions")
+	}
+
+	var r0 []string
+	var r1 *serviceerror.ServiceError
+	if returnFunc, ok := ret.Get(0).(func(string, []string) ([]string, *serviceerror.ServiceError)); ok {
+		return returnFunc(resourceServerID, permissions)
+	}
+	if returnFunc, ok := ret.Get(0).(func(string, []string) []string); ok {
+		r0 = returnFunc(resourceServerID, permissions)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).([]string)
+		}
+	}
+	if returnFunc, ok := ret.Get(1).(func(string, []string) *serviceerror.ServiceError); ok {
+		r1 = returnFunc(resourceServerID, permissions)
+	} else {
+		if ret.Get(1) != nil {
+			r1 = ret.Get(1).(*serviceerror.ServiceError)
+		}
+	}
+	return r0, r1
+}
+
+// ResourceServiceInterfaceMock_ValidatePermissions_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'ValidatePermissions'
+type ResourceServiceInterfaceMock_ValidatePermissions_Call struct {
+	*mock.Call
+}
+
+// ValidatePermissions is a helper method to define mock.On call
+//   - resourceServerID string
+//   - permissions []string
+func (_e *ResourceServiceInterfaceMock_Expecter) ValidatePermissions(resourceServerID interface{}, permissions interface{}) *ResourceServiceInterfaceMock_ValidatePermissions_Call {
+	return &ResourceServiceInterfaceMock_ValidatePermissions_Call{Call: _e.mock.On("ValidatePermissions", resourceServerID, permissions)}
+}
+
+func (_c *ResourceServiceInterfaceMock_ValidatePermissions_Call) Run(run func(resourceServerID string, permissions []string)) *ResourceServiceInterfaceMock_ValidatePermissions_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 string
+		if args[0] != nil {
+			arg0 = args[0].(string)
+		}
+		var arg1 []string
+		if args[1] != nil {
+			arg1 = args[1].([]string)
+		}
+		run(
+			arg0,
+			arg1,
+		)
+	})
+	return _c
+}
+
+func (_c *ResourceServiceInterfaceMock_ValidatePermissions_Call) Return(strings []string, serviceError *serviceerror.ServiceError) *ResourceServiceInterfaceMock_ValidatePermissions_Call {
+	_c.Call.Return(strings, serviceError)
+	return _c
+}
+
+func (_c *ResourceServiceInterfaceMock_ValidatePermissions_Call) RunAndReturn(run func(resourceServerID string, permissions []string) ([]string, *serviceerror.ServiceError)) *ResourceServiceInterfaceMock_ValidatePermissions_Call {
+	_c.Call.Return(run)
+	return _c
+}

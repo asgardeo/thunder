@@ -19,25 +19,19 @@
 package userschema
 
 import (
-	"encoding/json"
-	"fmt"
 	"net/http"
 
 	oupkg "github.com/asgardeo/thunder/internal/ou"
 	"github.com/asgardeo/thunder/internal/system/config"
-	filebasedruntime "github.com/asgardeo/thunder/internal/system/file_based_runtime"
-	"github.com/asgardeo/thunder/internal/system/log"
+	immutableresource "github.com/asgardeo/thunder/internal/system/immutable_resource"
 	"github.com/asgardeo/thunder/internal/system/middleware"
-
-	"gopkg.in/yaml.v3"
 )
 
 // Initialize initializes the user schema service and registers its routes.
 func Initialize(
 	mux *http.ServeMux,
 	ouService oupkg.OrganizationUnitServiceInterface,
-) UserSchemaServiceInterface {
-	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, "UserSchemaInit"))
+) (UserSchemaServiceInterface, immutableresource.ResourceExporter, error) {
 	var userSchemaStore userSchemaStoreInterface
 	if config.GetThunderRuntime().Config.ImmutableResources.Enabled {
 		userSchemaStore = newUserSchemaFileBasedStore()
@@ -48,67 +42,17 @@ func Initialize(
 	userSchemaService := newUserSchemaService(ouService, userSchemaStore)
 
 	if config.GetThunderRuntime().Config.ImmutableResources.Enabled {
-		configs, err := filebasedruntime.GetConfigs("user_schemas")
-		if err != nil {
-			logger.Fatal("Failed to read user schema configs from file-based runtime", log.Error(err))
-		}
-		for _, cfg := range configs {
-			schemaDTO, err := parseToUserSchemaDTO(cfg)
-			if err != nil {
-				logger.Fatal("Error parsing user schema config", log.Error(err))
-			}
-
-			// Validate user schema before storing
-			if validationErr := validateUserSchemaDefinition(*schemaDTO); validationErr != nil {
-				logger.Fatal("Invalid user schema configuration",
-					log.String("schemaName", schemaDTO.Name),
-					log.String("error", validationErr.Error),
-					log.String("errorDescription", validationErr.ErrorDescription))
-			}
-
-			_, svcErr := ouService.GetOrganizationUnit(schemaDTO.OrganizationUnitID)
-			if svcErr != nil {
-				logger.Fatal("Failed to fetch referred organization unit for user schema",
-					log.String("schemaName", schemaDTO.Name),
-					log.String("ouID", schemaDTO.OrganizationUnitID),
-					log.Any("serviceError", svcErr))
-			}
-
-			err = userSchemaStore.CreateUserSchema(*schemaDTO)
-			if err != nil {
-				logger.Fatal("Failed to store user schema in file-based store",
-					log.String("schemaName", schemaDTO.Name), log.Error(err))
-			}
+		if err := loadImmutableResources(userSchemaStore, ouService); err != nil {
+			return nil, nil, err
 		}
 	}
 
 	userSchemaHandler := newUserSchemaHandler(userSchemaService)
 	registerRoutes(mux, userSchemaHandler)
-	return userSchemaService
-}
 
-func parseToUserSchemaDTO(data []byte) (*UserSchema, error) {
-	var schemaRequest UserSchemaRequestWithID
-	err := yaml.Unmarshal(data, &schemaRequest)
-	if err != nil {
-		return nil, err
-	}
-
-	// Validate that schema is valid JSON
-	schemaBytes := []byte(schemaRequest.Schema)
-	if !json.Valid(schemaBytes) {
-		return nil, fmt.Errorf("schema field contains invalid JSON")
-	}
-
-	schemaDTO := &UserSchema{
-		ID:                    schemaRequest.ID,
-		Name:                  schemaRequest.Name,
-		OrganizationUnitID:    schemaRequest.OrganizationUnitID,
-		AllowSelfRegistration: schemaRequest.AllowSelfRegistration,
-		Schema:                []byte(schemaRequest.Schema),
-	}
-
-	return schemaDTO, nil
+	// Create and return exporter
+	exporter := newUserSchemaExporter(userSchemaService)
+	return userSchemaService, exporter, nil
 }
 
 // registerRoutes registers the routes for user schema management operations.

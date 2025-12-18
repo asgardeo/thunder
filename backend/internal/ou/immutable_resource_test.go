@@ -1,0 +1,451 @@
+/*
+ * Copyright (c) 2025, WSO2 LLC. (https://www.wso2.com).
+ *
+ * WSO2 LLC. licenses this file to you under the Apache License,
+ * Version 2.0 (the "License"); you may not use this file except
+ * in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing,
+ * software distributed under the License is distributed on an
+ * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+ * KIND, either express or implied.  See the License for the
+ * specific language governing permissions and limitations
+ * under the License.
+ */
+
+package ou
+
+import (
+	"strconv"
+	"testing"
+
+	"github.com/asgardeo/thunder/internal/system/error/serviceerror"
+
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/suite"
+)
+
+type ImmutableResourceTestSuite struct {
+	suite.Suite
+	mockService *OrganizationUnitServiceInterfaceMock
+	exporter    *OUExporter
+}
+
+func TestImmutableResourceTestSuite(t *testing.T) {
+	suite.Run(t, new(ImmutableResourceTestSuite))
+}
+
+func (s *ImmutableResourceTestSuite) SetupTest() {
+	s.mockService = NewOrganizationUnitServiceInterfaceMock(s.T())
+	s.exporter = NewOUExporterForTest(s.mockService)
+}
+
+func (s *ImmutableResourceTestSuite) TestGetResourceType() {
+	resourceType := s.exporter.GetResourceType()
+	assert.Equal(s.T(), "organization_unit", resourceType)
+}
+
+func (s *ImmutableResourceTestSuite) TestGetParameterizerType() {
+	paramType := s.exporter.GetParameterizerType()
+	assert.Equal(s.T(), "OrganizationUnit", paramType)
+}
+
+func (s *ImmutableResourceTestSuite) TestGetResourceByID() {
+	ou := OrganizationUnit{
+		ID:          "test-ou-1",
+		Handle:      "test",
+		Name:        "Test OU",
+		Description: "Test organization unit",
+		Parent:      nil,
+	}
+
+	s.mockService.EXPECT().GetOrganizationUnit("test-ou-1").Return(ou, (*serviceerror.ServiceError)(nil))
+
+	resource, name, err := s.exporter.GetResourceByID("test-ou-1")
+	assert.Nil(s.T(), err)
+	assert.Equal(s.T(), "Test OU", name)
+	assert.NotNil(s.T(), resource)
+
+	retrievedOU, ok := resource.(*OrganizationUnit)
+	assert.True(s.T(), ok)
+	assert.Equal(s.T(), "test-ou-1", retrievedOU.ID)
+}
+
+func (s *ImmutableResourceTestSuite) TestValidateResource() {
+	ou := &OrganizationUnit{
+		ID:     "test-ou-1",
+		Handle: "test",
+		Name:   "Test OU",
+	}
+
+	name, err := s.exporter.ValidateResource(ou, "test-ou-1", nil)
+	assert.Nil(s.T(), err)
+	assert.Equal(s.T(), "Test OU", name)
+}
+
+func (s *ImmutableResourceTestSuite) TestValidateResourceInvalidType() {
+	invalidResource := "not an OU"
+
+	name, err := s.exporter.ValidateResource(invalidResource, "test-id", nil)
+	assert.NotNil(s.T(), err)
+	assert.Empty(s.T(), name)
+	assert.Equal(s.T(), "INVALID_TYPE", err.Code)
+}
+
+func (s *ImmutableResourceTestSuite) TestParseToOU() {
+	yamlData := []byte(`
+id: test-ou-1
+handle: test
+name: Test OU
+description: Test organization unit
+parent: parent-id
+`)
+
+	ou, err := parseToOU(yamlData)
+	assert.NoError(s.T(), err)
+	assert.NotNil(s.T(), ou)
+	assert.Equal(s.T(), "test-ou-1", ou.ID)
+	assert.Equal(s.T(), "test", ou.Handle)
+	assert.Equal(s.T(), "Test OU", ou.Name)
+	assert.Equal(s.T(), "Test organization unit", ou.Description)
+	assert.NotNil(s.T(), ou.Parent)
+	assert.Equal(s.T(), "parent-id", *ou.Parent)
+}
+
+func (s *ImmutableResourceTestSuite) TestParseToOUWithoutParent() {
+	yamlData := []byte(`
+id: root-ou
+handle: root
+name: Root OU
+description: Root organization unit
+`)
+
+	ou, err := parseToOU(yamlData)
+	assert.NoError(s.T(), err)
+	assert.NotNil(s.T(), ou)
+	assert.Equal(s.T(), "root-ou", ou.ID)
+	assert.Equal(s.T(), "root", ou.Handle)
+	assert.Equal(s.T(), "Root OU", ou.Name)
+	assert.Nil(s.T(), ou.Parent)
+}
+
+func (s *ImmutableResourceTestSuite) TestValidateOUWrapper() {
+	ou := &OrganizationUnit{
+		ID:     "test-ou-1",
+		Handle: "test",
+		Name:   "Test OU",
+	}
+
+	err := validateOUWrapper(ou)
+	assert.NoError(s.T(), err)
+}
+
+func (s *ImmutableResourceTestSuite) TestValidateOUWrapperMissingID() {
+	ou := &OrganizationUnit{
+		Handle: "test",
+		Name:   "Test OU",
+	}
+
+	err := validateOUWrapper(ou)
+	assert.Error(s.T(), err)
+	assert.Contains(s.T(), err.Error(), "ID is required")
+}
+
+func (s *ImmutableResourceTestSuite) TestValidateOUWrapperMissingName() {
+	ou := &OrganizationUnit{
+		ID:     "test-ou-1",
+		Handle: "test",
+	}
+
+	err := validateOUWrapper(ou)
+	assert.Error(s.T(), err)
+	assert.Contains(s.T(), err.Error(), "name is required")
+}
+
+func (s *ImmutableResourceTestSuite) TestValidateOUWrapperMissingHandle() {
+	ou := &OrganizationUnit{
+		ID:   "test-ou-1",
+		Name: "Test OU",
+	}
+
+	err := validateOUWrapper(ou)
+	assert.Error(s.T(), err)
+	assert.Contains(s.T(), err.Error(), "handle is required")
+}
+
+func (s *ImmutableResourceTestSuite) TestGetResourceRules() {
+	rules := s.exporter.GetResourceRules()
+	assert.NotNil(s.T(), rules)
+	assert.Empty(s.T(), rules.Variables)
+	assert.Empty(s.T(), rules.ArrayVariables)
+}
+
+func (s *ImmutableResourceTestSuite) TestGetAllResourceIDs_NoOUs() {
+	// Test with empty result
+	s.mockService.EXPECT().GetOrganizationUnitList(1000, 0).Return(&OrganizationUnitListResponse{
+		OrganizationUnits: []OrganizationUnitBasic{},
+	}, (*serviceerror.ServiceError)(nil))
+
+	ids, err := s.exporter.GetAllResourceIDs()
+	assert.Nil(s.T(), err)
+	assert.Empty(s.T(), ids)
+}
+
+func (s *ImmutableResourceTestSuite) TestGetAllResourceIDs_RootOUsOnly() {
+	// Test with only root OUs (no children)
+	rootOU1 := OrganizationUnitBasic{
+		ID:     "root-1",
+		Handle: "root1",
+		Name:   "Root 1",
+	}
+	rootOU2 := OrganizationUnitBasic{
+		ID:     "root-2",
+		Handle: "root2",
+		Name:   "Root 2",
+	}
+
+	s.mockService.EXPECT().GetOrganizationUnitList(1000, 0).Return(&OrganizationUnitListResponse{
+		OrganizationUnits: []OrganizationUnitBasic{rootOU1, rootOU2},
+	}, (*serviceerror.ServiceError)(nil))
+
+	// Mock GetOrganizationUnitChildren to return empty lists for both roots
+	s.mockService.EXPECT().GetOrganizationUnitChildren("root-1", 1000, 0).Return(&OrganizationUnitListResponse{
+		OrganizationUnits: []OrganizationUnitBasic{},
+	}, (*serviceerror.ServiceError)(nil))
+
+	s.mockService.EXPECT().GetOrganizationUnitChildren("root-2", 1000, 0).Return(&OrganizationUnitListResponse{
+		OrganizationUnits: []OrganizationUnitBasic{},
+	}, (*serviceerror.ServiceError)(nil))
+
+	ids, err := s.exporter.GetAllResourceIDs()
+	assert.Nil(s.T(), err)
+	assert.Len(s.T(), ids, 2)
+	assert.Contains(s.T(), ids, "root-1")
+	assert.Contains(s.T(), ids, "root-2")
+}
+
+func (s *ImmutableResourceTestSuite) TestGetAllResourceIDs_WithChildren() {
+	// Test with nested OUs
+	rootOU := OrganizationUnitBasic{
+		ID:     "root-1",
+		Handle: "root",
+		Name:   "Root OU",
+	}
+	childOU := OrganizationUnitBasic{
+		ID:     "child-1",
+		Handle: "child",
+		Name:   "Child OU",
+	}
+	grandchildOU := OrganizationUnitBasic{
+		ID:     "grandchild-1",
+		Handle: "grandchild",
+		Name:   "Grandchild OU",
+	}
+
+	s.mockService.EXPECT().GetOrganizationUnitList(1000, 0).Return(&OrganizationUnitListResponse{
+		OrganizationUnits: []OrganizationUnitBasic{rootOU},
+	}, (*serviceerror.ServiceError)(nil))
+
+	// Mock children at each level
+	s.mockService.EXPECT().GetOrganizationUnitChildren("root-1", 1000, 0).Return(&OrganizationUnitListResponse{
+		OrganizationUnits: []OrganizationUnitBasic{childOU},
+	}, (*serviceerror.ServiceError)(nil))
+
+	s.mockService.EXPECT().GetOrganizationUnitChildren("child-1", 1000, 0).Return(&OrganizationUnitListResponse{
+		OrganizationUnits: []OrganizationUnitBasic{grandchildOU},
+	}, (*serviceerror.ServiceError)(nil))
+
+	s.mockService.EXPECT().GetOrganizationUnitChildren("grandchild-1", 1000, 0).Return(&OrganizationUnitListResponse{
+		OrganizationUnits: []OrganizationUnitBasic{},
+	}, (*serviceerror.ServiceError)(nil))
+
+	ids, err := s.exporter.GetAllResourceIDs()
+	assert.Nil(s.T(), err)
+	assert.Len(s.T(), ids, 3)
+	assert.Contains(s.T(), ids, "root-1")
+	assert.Contains(s.T(), ids, "child-1")
+	assert.Contains(s.T(), ids, "grandchild-1")
+}
+
+func (s *ImmutableResourceTestSuite) TestGetAllResourceIDs_MultipleRootsWithChildren() {
+	// Test with multiple root OUs each having children
+	rootOU1 := OrganizationUnitBasic{
+		ID:     "root-1",
+		Handle: "root1",
+		Name:   "Root 1",
+	}
+	rootOU2 := OrganizationUnitBasic{
+		ID:     "root-2",
+		Handle: "root2",
+		Name:   "Root 2",
+	}
+	child1 := OrganizationUnitBasic{
+		ID:     "child-1",
+		Handle: "child1",
+		Name:   "Child 1",
+	}
+	child2 := OrganizationUnitBasic{
+		ID:     "child-2",
+		Handle: "child2",
+		Name:   "Child 2",
+	}
+
+	s.mockService.EXPECT().GetOrganizationUnitList(1000, 0).Return(&OrganizationUnitListResponse{
+		OrganizationUnits: []OrganizationUnitBasic{rootOU1, rootOU2},
+	}, (*serviceerror.ServiceError)(nil))
+
+	s.mockService.EXPECT().GetOrganizationUnitChildren("root-1", 1000, 0).Return(&OrganizationUnitListResponse{
+		OrganizationUnits: []OrganizationUnitBasic{child1},
+	}, (*serviceerror.ServiceError)(nil))
+
+	s.mockService.EXPECT().GetOrganizationUnitChildren("child-1", 1000, 0).Return(&OrganizationUnitListResponse{
+		OrganizationUnits: []OrganizationUnitBasic{},
+	}, (*serviceerror.ServiceError)(nil))
+
+	s.mockService.EXPECT().GetOrganizationUnitChildren("root-2", 1000, 0).Return(&OrganizationUnitListResponse{
+		OrganizationUnits: []OrganizationUnitBasic{child2},
+	}, (*serviceerror.ServiceError)(nil))
+
+	s.mockService.EXPECT().GetOrganizationUnitChildren("child-2", 1000, 0).Return(&OrganizationUnitListResponse{
+		OrganizationUnits: []OrganizationUnitBasic{},
+	}, (*serviceerror.ServiceError)(nil))
+
+	ids, err := s.exporter.GetAllResourceIDs()
+	assert.Nil(s.T(), err)
+	assert.Len(s.T(), ids, 4)
+	assert.Contains(s.T(), ids, "root-1")
+	assert.Contains(s.T(), ids, "root-2")
+	assert.Contains(s.T(), ids, "child-1")
+	assert.Contains(s.T(), ids, "child-2")
+}
+
+func (s *ImmutableResourceTestSuite) TestGetAllResourceIDs_ErrorGettingList() {
+	// Test error handling when getting the OU list fails
+	s.mockService.EXPECT().GetOrganizationUnitList(1000, 0).Return(
+		(*OrganizationUnitListResponse)(nil),
+		&serviceerror.InternalServerError,
+	)
+
+	ids, err := s.exporter.GetAllResourceIDs()
+	assert.NotNil(s.T(), err)
+	assert.Nil(s.T(), ids)
+	assert.Equal(s.T(), serviceerror.InternalServerError.Code, err.Code)
+}
+
+func (s *ImmutableResourceTestSuite) TestGetAllResourceIDs_ErrorGettingChildren() {
+	// Test error handling when getting children fails
+	rootOU := OrganizationUnitBasic{
+		ID:     "root-1",
+		Handle: "root",
+		Name:   "Root OU",
+	}
+
+	s.mockService.EXPECT().GetOrganizationUnitList(1000, 0).Return(&OrganizationUnitListResponse{
+		OrganizationUnits: []OrganizationUnitBasic{rootOU},
+	}, (*serviceerror.ServiceError)(nil))
+
+	s.mockService.EXPECT().GetOrganizationUnitChildren("root-1", 1000, 0).Return(
+		(*OrganizationUnitListResponse)(nil),
+		&serviceerror.InternalServerError,
+	)
+
+	ids, err := s.exporter.GetAllResourceIDs()
+	assert.NotNil(s.T(), err)
+	assert.Nil(s.T(), ids)
+}
+
+func (s *ImmutableResourceTestSuite) TestGetAllResourceIDs_DeepNesting() {
+	// Test with deeply nested hierarchy (5 levels)
+	level1 := OrganizationUnitBasic{ID: "level-1", Handle: "l1", Name: "Level 1"}
+	level2 := OrganizationUnitBasic{ID: "level-2", Handle: "l2", Name: "Level 2"}
+	level3 := OrganizationUnitBasic{ID: "level-3", Handle: "l3", Name: "Level 3"}
+	level4 := OrganizationUnitBasic{ID: "level-4", Handle: "l4", Name: "Level 4"}
+	level5 := OrganizationUnitBasic{ID: "level-5", Handle: "l5", Name: "Level 5"}
+
+	s.mockService.EXPECT().GetOrganizationUnitList(1000, 0).Return(&OrganizationUnitListResponse{
+		OrganizationUnits: []OrganizationUnitBasic{level1},
+	}, (*serviceerror.ServiceError)(nil))
+
+	s.mockService.EXPECT().GetOrganizationUnitChildren("level-1", 1000, 0).Return(&OrganizationUnitListResponse{
+		OrganizationUnits: []OrganizationUnitBasic{level2},
+	}, (*serviceerror.ServiceError)(nil))
+
+	s.mockService.EXPECT().GetOrganizationUnitChildren("level-2", 1000, 0).Return(&OrganizationUnitListResponse{
+		OrganizationUnits: []OrganizationUnitBasic{level3},
+	}, (*serviceerror.ServiceError)(nil))
+
+	s.mockService.EXPECT().GetOrganizationUnitChildren("level-3", 1000, 0).Return(&OrganizationUnitListResponse{
+		OrganizationUnits: []OrganizationUnitBasic{level4},
+	}, (*serviceerror.ServiceError)(nil))
+
+	s.mockService.EXPECT().GetOrganizationUnitChildren("level-4", 1000, 0).Return(&OrganizationUnitListResponse{
+		OrganizationUnits: []OrganizationUnitBasic{level5},
+	}, (*serviceerror.ServiceError)(nil))
+
+	s.mockService.EXPECT().GetOrganizationUnitChildren("level-5", 1000, 0).Return(&OrganizationUnitListResponse{
+		OrganizationUnits: []OrganizationUnitBasic{},
+	}, (*serviceerror.ServiceError)(nil))
+
+	ids, err := s.exporter.GetAllResourceIDs()
+	assert.Nil(s.T(), err)
+	assert.Len(s.T(), ids, 5)
+	for i := 1; i <= 5; i++ {
+		assert.Contains(s.T(), ids, "level-"+strconv.Itoa(i))
+	}
+}
+
+func (s *ImmutableResourceTestSuite) TestGetAllResourceIDs_MultipleChildrenPerLevel() {
+	// Test with multiple children at same level
+	rootOU := OrganizationUnitBasic{
+		ID:     "root-1",
+		Handle: "root",
+		Name:   "Root OU",
+	}
+	child1 := OrganizationUnitBasic{
+		ID:     "child-1",
+		Handle: "child1",
+		Name:   "Child 1",
+	}
+	child2 := OrganizationUnitBasic{
+		ID:     "child-2",
+		Handle: "child2",
+		Name:   "Child 2",
+	}
+	child3 := OrganizationUnitBasic{
+		ID:     "child-3",
+		Handle: "child3",
+		Name:   "Child 3",
+	}
+
+	s.mockService.EXPECT().GetOrganizationUnitList(1000, 0).Return(&OrganizationUnitListResponse{
+		OrganizationUnits: []OrganizationUnitBasic{rootOU},
+	}, (*serviceerror.ServiceError)(nil))
+
+	s.mockService.EXPECT().GetOrganizationUnitChildren("root-1", 1000, 0).Return(&OrganizationUnitListResponse{
+		OrganizationUnits: []OrganizationUnitBasic{child1, child2, child3},
+	}, (*serviceerror.ServiceError)(nil))
+
+	// Each child has no children
+	s.mockService.EXPECT().GetOrganizationUnitChildren("child-1", 1000, 0).Return(&OrganizationUnitListResponse{
+		OrganizationUnits: []OrganizationUnitBasic{},
+	}, (*serviceerror.ServiceError)(nil))
+
+	s.mockService.EXPECT().GetOrganizationUnitChildren("child-2", 1000, 0).Return(&OrganizationUnitListResponse{
+		OrganizationUnits: []OrganizationUnitBasic{},
+	}, (*serviceerror.ServiceError)(nil))
+
+	s.mockService.EXPECT().GetOrganizationUnitChildren("child-3", 1000, 0).Return(&OrganizationUnitListResponse{
+		OrganizationUnits: []OrganizationUnitBasic{},
+	}, (*serviceerror.ServiceError)(nil))
+
+	ids, err := s.exporter.GetAllResourceIDs()
+	assert.Nil(s.T(), err)
+	assert.Len(s.T(), ids, 4)
+	assert.Contains(s.T(), ids, "root-1")
+	assert.Contains(s.T(), ids, "child-1")
+	assert.Contains(s.T(), ids, "child-2")
+	assert.Contains(s.T(), ids, "child-3")
+}

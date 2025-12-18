@@ -388,7 +388,12 @@ func (ts *AttributeCollectFlowTestSuite) validateRequiredInputs(actualInputs []I
 	for _, expectedName := range expectedInputNames {
 		input, exists := actualInputMap[expectedName]
 		ts.Require().True(exists, "Expected input '%s' not found", expectedName)
-		ts.Require().Equal("string", input.Type, "Expected input '%s' to be of type string", expectedName)
+
+		if expectedName == "password" {
+			ts.Require().Equal("PASSWORD_INPUT", input.Type, "Expected input password to be of type PASSWORD_INPUT")
+		} else {
+			ts.Require().Equal("string", input.Type, "Expected input '%s' to be of type string", expectedName)
+		}
 
 		// Check if required field is set correctly based on the flow definition
 		if expectedName == "mobileNumber" {

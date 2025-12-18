@@ -82,10 +82,7 @@ func NewCategoryPublisher() CategoryPublisherInterface {
 
 // Publish publishes an event to all interested subscribers.
 // This method returns immediately without blocking the caller.
-// Each subscriber receives the event in its own goroutine, ensuring:
-// - No blocking of the main thread
-// - Parallel processing by all subscribers
-// - Isolated failures (one subscriber's panic doesn't affect others)
+// The entire publishing process (validation, routing, and dispatching) runs asynchronously.
 func (p *categoryEventPublisher) Publish(evt *event.Event) {
 	if evt == nil {
 		return
@@ -97,88 +94,92 @@ func (p *categoryEventPublisher) Publish(evt *event.Event) {
 		return
 	}
 
-	// Get event category
-	category, err := evt.GetCategory()
-	if err != nil {
-		p.logger.Error("Failed to get event category, skipping publish",
-			log.String("eventType", evt.Type),
-			log.Error(err))
-		return
-	}
-
 	p.mu.RLock()
 	if p.isShutdown {
 		p.mu.RUnlock()
 		p.logger.Warn("Attempted to publish event after shutdown",
-			log.String("eventType", evt.Type),
-			log.String("category", string(category)))
+			log.String("eventType", evt.Type))
 		return
-	}
-
-	// Smart Publishing: Check if anyone cares about this category
-	hasSubscribers := false
-	if subscribers, exists := p.subscribersByCategory[category]; exists && len(subscribers) > 0 {
-		hasSubscribers = true
-	}
-	// Also check for CategoryAll subscribers
-	if allSubscribers, exists := p.subscribersByCategory[event.CategoryAll]; exists && len(allSubscribers) > 0 {
-		hasSubscribers = true
-	}
-
-	if !hasSubscribers {
-		// No subscribers for this category - skip it!
-		p.mu.RUnlock()
-		if p.logger.IsDebugEnabled() {
-			p.logger.Debug("No subscribers for event category, skipping",
-				log.String("eventType", evt.Type),
-				log.String("category", string(category)))
-		}
-		return
-	}
-
-	// Get ALL subscribers (they will filter themselves)
-	allSubscribers := make([]subscriber.SubscriberInterface, 0, len(p.subscribers))
-	for _, sub := range p.subscribers {
-		allSubscribers = append(allSubscribers, sub)
 	}
 	p.mu.RUnlock()
 
-	// Broadcast to all subscribers asynchronously
-	// Each subscriber runs in its own goroutine to avoid blocking
-	for _, sub := range allSubscribers {
-		// Increment WaitGroup before spawning goroutine
-		p.wg.Add(1)
-		go func(s subscriber.SubscriberInterface) {
-			defer p.wg.Done() // Ensure WaitGroup is decremented when goroutine completes
-			defer func() {
-				if r := recover(); r != nil {
-					p.logger.Error("Subscriber panicked while handling event",
-						log.String("subscriberID", s.GetID()),
-						log.Any("panic", r))
-				}
-			}()
+	// Increment WaitGroup for the dispatcher goroutine
+	p.wg.Add(1)
 
-			// Check if shutdown was initiated
-			select {
-			case <-p.ctx.Done():
-				// Shutdown in progress, skip event processing
-				p.logger.Warn("Skipping event processing due to shutdown",
-					log.String("subscriberID", s.GetID()),
-					log.String("eventType", evt.Type))
-				return
-			default:
-				// Continue with event processing
-			}
-
-			// Subscriber will filter the event itself based on its interests
-			if err := s.OnEvent(evt); err != nil {
-				p.logger.Error("Subscriber failed to handle event",
-					log.String("subscriberID", s.GetID()),
+	// Process event asynchronously to avoid blocking the caller
+	go func() {
+		defer p.wg.Done()
+		defer func() {
+			if r := recover(); r != nil {
+				p.logger.Error("Panic in event publisher dispatcher",
 					log.String("eventType", evt.Type),
-					log.Error(err))
+					log.Any("panic", r))
 			}
-		}(sub)
-	}
+		}()
+
+		// Get event category
+		category, err := evt.GetCategory()
+		if err != nil {
+			p.logger.Error("Failed to get event category, skipping publish",
+				log.String("eventType", evt.Type),
+				log.Error(err))
+			return
+		}
+
+		p.mu.RLock()
+		// Smart Publishing: Check if anyone cares about this category
+		hasSubscribers := false
+		if subscribers, exists := p.subscribersByCategory[category]; exists && len(subscribers) > 0 {
+			hasSubscribers = true
+		}
+		// Also check for CategoryAll subscribers
+		if allSubscribers, exists := p.subscribersByCategory[event.CategoryAll]; exists && len(allSubscribers) > 0 {
+			hasSubscribers = true
+		}
+
+		if !hasSubscribers {
+			// No subscribers for this category - skip it!
+			p.mu.RUnlock()
+			if p.logger.IsDebugEnabled() {
+				p.logger.Debug("No subscribers for event category, skipping",
+					log.String("eventType", evt.Type),
+					log.String("category", string(category)))
+			}
+			return
+		}
+
+		// Get ALL subscribers (they will filter themselves)
+		allSubscribers := make([]subscriber.SubscriberInterface, 0, len(p.subscribers))
+		for _, sub := range p.subscribers {
+			allSubscribers = append(allSubscribers, sub)
+		}
+		p.mu.RUnlock()
+
+		// Broadcast to all subscribers asynchronously
+		// Each subscriber runs in its own goroutine to avoid blocking
+		for _, sub := range allSubscribers {
+			// Increment WaitGroup before spawning goroutine
+			p.wg.Add(1)
+			go func(s subscriber.SubscriberInterface) {
+				defer p.wg.Done() // Ensure WaitGroup is decremented when goroutine completes
+				defer func() {
+					if r := recover(); r != nil {
+						p.logger.Error("Subscriber panicked while handling event",
+							log.String("subscriberID", s.GetID()),
+							log.Any("panic", r))
+					}
+				}()
+
+				// Subscriber will filter the event itself based on its interests
+				if err := s.OnEvent(evt); err != nil {
+					p.logger.Error("Subscriber failed to handle event",
+						log.String("subscriberID", s.GetID()),
+						log.String("eventType", evt.Type),
+						log.Error(err))
+				}
+			}(sub)
+		}
+	}()
 }
 
 // Subscribe adds a subscriber.
@@ -203,7 +204,7 @@ func (p *categoryEventPublisher) Subscribe(sub subscriber.SubscriberInterface) {
 		p.subscribersByCategory[category] = append(p.subscribersByCategory[category], subscriberID)
 	}
 
-	p.logger.Info("Subscriber registered",
+	p.logger.Debug("Subscriber registered",
 		log.String("subscriberID", subscriberID),
 		log.Int("categoryCount", len(categories)),
 		log.Any("categories", categories))
@@ -239,7 +240,7 @@ func (p *categoryEventPublisher) Unsubscribe(sub subscriber.SubscriberInterface)
 		}
 	}
 
-	p.logger.Info("Subscriber unregistered", log.String("subscriberID", subscriberID))
+	p.logger.Debug("Subscriber unregistered", log.String("subscriberID", subscriberID))
 }
 
 // GetActiveCategories returns categories that have at least one subscriber.
@@ -280,7 +281,7 @@ func (p *categoryEventPublisher) Shutdown() {
 	}
 	p.isShutdown = true
 
-	p.logger.Info("Shutting down event publisher")
+	p.logger.Debug("Shutting down event publisher")
 
 	// Signal all goroutines to stop accepting new events
 	p.cancel()
@@ -293,9 +294,9 @@ func (p *categoryEventPublisher) Shutdown() {
 	p.mu.Unlock()
 
 	// Wait for all in-flight event processing to complete
-	p.logger.Info("Waiting for in-flight event processing to complete")
+	p.logger.Debug("Waiting for in-flight event processing to complete")
 	p.wg.Wait()
-	p.logger.Info("All in-flight events processed")
+	p.logger.Debug("All in-flight events processed")
 
 	// Close all subscribers
 	for _, sub := range subscribers {
@@ -306,5 +307,5 @@ func (p *categoryEventPublisher) Shutdown() {
 		}
 	}
 
-	p.logger.Info("Event bus shutdown complete")
+	p.logger.Debug("Event bus shutdown complete")
 }

@@ -64,7 +64,7 @@ func (fe *flowEngine) Execute(ctx *EngineContext) (FlowStep, *serviceerror.Servi
 	}
 
 	// Track flow execution start time
-	flowStartTime := time.Now().Unix()
+	flowStartTime := time.Now().UnixMilli()
 
 	// Publish flow started event (only if this is the first execution - check if ExecutionHistory is empty)
 	if len(ctx.ExecutionHistory) == 0 {
@@ -74,7 +74,7 @@ func (fe *flowEngine) Execute(ctx *EngineContext) (FlowStep, *serviceerror.Servi
 	currentNode, err := fe.setCurrentExecutionNode(ctx, logger)
 	if err != nil {
 		// Publish flow failed event before returning error
-		publishFlowFailedEvent(ctx, err, flowStartTime, time.Now().Unix(), fe.observabilitySvc)
+		publishFlowFailedEvent(ctx, err, flowStartTime, time.Now().UnixMilli(), fe.observabilitySvc)
 		return flowStep, err
 	}
 
@@ -88,6 +88,7 @@ func (fe *flowEngine) Execute(ctx *EngineContext) (FlowStep, *serviceerror.Servi
 			FlowType:          ctx.FlowType,
 			AppID:             ctx.AppID,
 			CurrentActionID:   ctx.CurrentActionID,
+			CurrentNodeID:     ctx.CurrentNode.GetID(),
 			NodeInputData:     ctx.CurrentNode.GetInputData(),
 			UserInputData:     ctx.UserInputData,
 			RuntimeData:       ctx.RuntimeData,
@@ -121,13 +122,13 @@ func (fe *flowEngine) Execute(ctx *EngineContext) (FlowStep, *serviceerror.Servi
 			return flowStep, svcErr
 		}
 
-		executionStartTime := time.Now().Unix()
+		executionStartTime := time.Now().UnixMilli()
 
 		// Publish node execution started event
 		publishNodeExecutionStartedEvent(ctx, currentNode, fe.observabilitySvc)
 
 		nodeResp, nodeErr := currentNode.Execute(nodeCtx)
-		executionEndTime := time.Now().Unix()
+		executionEndTime := time.Now().UnixMilli()
 
 		recordNodeExecution(ctx, currentNode, nodeResp, nodeErr, executionStartTime, executionEndTime)
 
@@ -139,7 +140,7 @@ func (fe *flowEngine) Execute(ctx *EngineContext) (FlowStep, *serviceerror.Servi
 
 		if nodeErr != nil {
 			// Publish flow failed event before returning error
-			publishFlowFailedEvent(ctx, nodeErr, flowStartTime, time.Now().Unix(), fe.observabilitySvc)
+			publishFlowFailedEvent(ctx, nodeErr, flowStartTime, time.Now().UnixMilli(), fe.observabilitySvc)
 			return flowStep, nodeErr
 		}
 
@@ -149,13 +150,13 @@ func (fe *flowEngine) Execute(ctx *EngineContext) (FlowStep, *serviceerror.Servi
 			&flowStep, logger)
 		if svcErr != nil {
 			// Publish flow failed event before returning error
-			publishFlowFailedEvent(ctx, svcErr, flowStartTime, time.Now().Unix(), fe.observabilitySvc)
+			publishFlowFailedEvent(ctx, svcErr, flowStartTime, time.Now().UnixMilli(), fe.observabilitySvc)
 			return flowStep, svcErr
 		}
 		if !continueExecution {
 			// Check if flow failed or just incomplete
 			if flowStep.Status == common.FlowStatusError {
-				publishFlowFailedEvent(ctx, nil, flowStartTime, time.Now().Unix(), fe.observabilitySvc)
+				publishFlowFailedEvent(ctx, nil, flowStartTime, time.Now().UnixMilli(), fe.observabilitySvc)
 			}
 			// Don't publish completed event here - flow is incomplete (waiting for user input)
 			return flowStep, nil
@@ -170,7 +171,7 @@ func (fe *flowEngine) Execute(ctx *EngineContext) (FlowStep, *serviceerror.Servi
 	}
 
 	// Publish flow completed event
-	flowEndTime := time.Now().Unix()
+	flowEndTime := time.Now().UnixMilli()
 	publishFlowCompletedEvent(ctx, flowStartTime, flowEndTime, fe.observabilitySvc)
 
 	return flowStep, nil
@@ -704,7 +705,7 @@ func publishNodeExecutionCompletedEvent(ctx *EngineContext, node core.NodeInterf
 	}
 
 	// Calculate duration in milliseconds
-	durationMs := (executionEndTime - executionStartTime) * 1000
+	durationMs := executionEndTime - executionStartTime
 
 	evt := event.NewEvent(
 		ctx.FlowID, // Use FlowID as TraceID
@@ -725,7 +726,8 @@ func publishNodeExecutionCompletedEvent(ctx *EngineContext, node core.NodeInterf
 	// Add error or failure details
 	if nodeErr != nil {
 		evt.WithData(event.DataKey.Error, nodeErr.Error).
-			WithData(event.DataKey.ErrorCode, nodeErr.Code)
+			WithData(event.DataKey.ErrorCode, nodeErr.Code).
+			WithData(event.DataKey.ErrorType, string(nodeErr.Type))
 		if nodeErr.ErrorDescription != "" {
 			evt.WithData(event.DataKey.Message, nodeErr.ErrorDescription)
 		}
@@ -748,7 +750,7 @@ func publishFlowStartedEvent(ctx *EngineContext, obsSvc observability.Observabil
 	}
 
 	evt := event.NewEvent(
-		ctx.FlowID, // Use FlowID as TraceID
+		ctx.TraceID, // Use TraceID from context
 		string(event.EventTypeFlowStarted),
 		event.ComponentFlowEngine,
 	).
@@ -777,7 +779,7 @@ func publishFlowCompletedEvent(
 	}
 
 	// Calculate duration in milliseconds
-	durationMs := (flowEndTime - flowStartTime) * 1000
+	durationMs := flowEndTime - flowStartTime
 
 	evt := event.NewEvent(
 		ctx.FlowID, // Use FlowID as TraceID
@@ -806,10 +808,10 @@ func publishFlowFailedEvent(ctx *EngineContext, svcErr *serviceerror.ServiceErro
 	}
 
 	// Calculate duration in milliseconds
-	durationMs := (flowEndTime - flowStartTime) * 1000
+	durationMs := flowEndTime - flowStartTime
 
 	evt := event.NewEvent(
-		ctx.FlowID, // Use FlowID as TraceID
+		ctx.TraceID, // Use TraceID from context
 		string(event.EventTypeFlowFailed),
 		event.ComponentFlowEngine,
 	).
@@ -822,7 +824,8 @@ func publishFlowFailedEvent(ctx *EngineContext, svcErr *serviceerror.ServiceErro
 	// Add error details if available
 	if svcErr != nil {
 		evt.WithData(event.DataKey.Error, svcErr.Error).
-			WithData(event.DataKey.ErrorCode, svcErr.Code)
+			WithData(event.DataKey.ErrorCode, svcErr.Code).
+			WithData(event.DataKey.ErrorType, string(svcErr.Type))
 		if svcErr.ErrorDescription != "" {
 			evt.WithData(event.DataKey.Message, svcErr.ErrorDescription)
 		}

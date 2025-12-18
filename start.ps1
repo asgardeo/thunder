@@ -17,6 +17,22 @@
 # under the License.
 # ----------------------------------------------------------------------------
 
+# Check for PowerShell Version Compatibility
+if ($PSVersionTable.PSVersion.Major -lt 7) {
+    Write-Host ""
+    Write-Host "================================================================" -ForegroundColor Red
+    Write-Host " [ERROR] UNSUPPORTED POWERSHELL VERSION" -ForegroundColor Red
+    Write-Host "================================================================" -ForegroundColor Red
+    Write-Host ""
+    Write-Host " You are currently running PowerShell $($PSVersionTable.PSVersion.ToString())" -ForegroundColor Yellow
+    Write-Host " Thunder requires PowerShell 7 (Core) or later." -ForegroundColor Yellow
+    Write-Host ""
+    Write-Host " Please install the latest version from:"
+    Write-Host " https://github.com/PowerShell/PowerShell" -ForegroundColor Cyan
+    Write-Host ""
+    exit 1
+}
+
 $BACKEND_PORT = if ($env:BACKEND_PORT) { [int]$env:BACKEND_PORT } else { 8090 }
 $DEBUG_PORT = if ($env:DEBUG_PORT) { [int]$env:DEBUG_PORT } else { 2345 }
 $DEBUG_MODE = $false
@@ -73,9 +89,9 @@ while ($i -lt $args.Count) {
             Write-Host "    .\start.ps1"
             Write-Host ""
             Write-Host "Examples:"
-            Write-Host "  .\start.ps1                   Start server normally"
-            Write-Host "  .\start.ps1 --debug           Start in debug mode"
-            Write-Host "  .\start.ps1 --port 9090       Start on custom port"
+            Write-Host "  .\start.ps1                    Start server normally"
+            Write-Host "  .\start.ps1 --debug            Start in debug mode"
+            Write-Host "  .\start.ps1 --port 9090        Start on custom port"
             exit 0
         }
         default {
@@ -136,12 +152,12 @@ Start-Sleep -Seconds 1
 # Check if Delve is available for debug mode
 if ($DEBUG_MODE) {
     if (-not (Get-Command dlv -ErrorAction SilentlyContinue)) {
-        Write-Host "❌ Debug mode requires Delve debugger" -ForegroundColor Red
+        Write-Host "[ERROR] Debug mode requires Delve debugger" -ForegroundColor Red
         Write-Host ""
-        Write-Host "💡 Install Delve using:" -ForegroundColor Cyan
+        Write-Host "[INFO] Install Delve using:" -ForegroundColor Cyan
         Write-Host "   go install github.com/go-delve/delve/cmd/dlv@latest" -ForegroundColor Cyan
         Write-Host ""
-        Write-Host "🔧 Add Delve to PATH and re-run this script with --debug" -ForegroundColor Cyan
+        Write-Host "[INFO] Add Delve to PATH and re-run this script with --debug" -ForegroundColor Cyan
         exit 1
     }
 }
@@ -161,11 +177,11 @@ if (-not $thunderPath) {
 $proc = $null
 try {
     if ($DEBUG_MODE) {
-        Write-Host "⚡ Starting Thunder Server in DEBUG mode..."
-        Write-Host "📝 Application will run on: https://localhost:$BACKEND_PORT"
-        Write-Host "🐛 Remote debugger will listen on: localhost:$DEBUG_PORT"
+        Write-Host "[INFO] Starting Thunder Server in DEBUG mode..."
+        Write-Host "[INFO] Application will run on: https://localhost:$BACKEND_PORT"
+        Write-Host "[INFO] Remote debugger will listen on: localhost:$DEBUG_PORT"
         Write-Host ""
-        Write-Host "💡 Connect using remote debugging configuration:" -ForegroundColor Gray
+        Write-Host "[INFO] Connect using remote debugging configuration:" -ForegroundColor Gray
         Write-Host "   Host: 127.0.0.1, Port: $DEBUG_PORT" -ForegroundColor Gray
         Write-Host ""
 
@@ -182,7 +198,7 @@ try {
         $proc = Start-Process -FilePath dlv -ArgumentList $dlvArgs -WorkingDirectory $scriptDir -NoNewWindow -PassThru
     }
     else {
-        Write-Host "⚡ Starting Thunder Server ..."
+        Write-Host "[INFO] Starting Thunder Server ..."
 
         # Export BACKEND_PORT for the child process
         $env:BACKEND_PORT = $BACKEND_PORT
@@ -190,11 +206,11 @@ try {
     }
 
     Write-Host ""
-    Write-Host "🚀 Server running. PID: $($proc.Id)"
+    Write-Host "[INFO] Server running. PID: $($proc.Id)"
     Write-Host ""
-    Write-Host "📱 Frontend Apps:"
-    Write-Host "   🚪 Gate (Login/Register): $BACKEND_PORT/gate"
-    Write-Host "   🛠️  Develop (Admin Console): $BACKEND_PORT/develop"
+    Write-Host "[INFO] Frontend Apps:"
+    Write-Host "   [GATE] Gate (Login/Register): $BACKEND_PORT/gate"
+    Write-Host "   [DEV]  Develop (Admin Console): $BACKEND_PORT/develop"
     Write-Host ""
 
     Write-Host "Press Ctrl+C to stop the server."
@@ -203,7 +219,7 @@ try {
     Wait-Process -Id $proc.Id
 }
 finally {
-    Write-Host "`n🛑 Stopping server..."
+    Write-Host "`n[STOP] Stopping server..."
     if ($proc -and -not $proc.HasExited) {
         try { Stop-Process -Id $proc.Id -Force -ErrorAction SilentlyContinue } catch { }
     }

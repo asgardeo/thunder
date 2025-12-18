@@ -28,6 +28,8 @@ import (
 	authncreds "github.com/asgardeo/thunder/internal/authn/credentials"
 	flowcm "github.com/asgardeo/thunder/internal/flow/common"
 	flowcore "github.com/asgardeo/thunder/internal/flow/core"
+	"github.com/asgardeo/thunder/internal/observability"
+	"github.com/asgardeo/thunder/internal/observability/event"
 	"github.com/asgardeo/thunder/internal/system/error/serviceerror"
 	"github.com/asgardeo/thunder/internal/system/log"
 	"github.com/asgardeo/thunder/internal/user"
@@ -35,14 +37,16 @@ import (
 
 const (
 	basicAuthLoggerComponentName = "BasicAuthExecutor"
+	inputDataTypePassword        = "PASSWORD_INPUT"
 )
 
 // basicAuthExecutor implements the ExecutorInterface for basic authentication.
 type basicAuthExecutor struct {
 	flowcore.ExecutorInterface
 	identifyingExecutorInterface
-	credsAuthSvc authncreds.CredentialsAuthnServiceInterface
-	logger       *log.Logger
+	credsAuthSvc     authncreds.CredentialsAuthnServiceInterface
+	observabilitySvc observability.ObservabilityServiceInterface
+	logger           *log.Logger
 }
 
 var _ flowcore.ExecutorInterface = (*basicAuthExecutor)(nil)
@@ -53,6 +57,7 @@ func newBasicAuthExecutor(
 	flowFactory flowcore.FlowFactoryInterface,
 	userService user.UserServiceInterface,
 	credsAuthSvc authncreds.CredentialsAuthnServiceInterface,
+	observabilitySvc observability.ObservabilityServiceInterface,
 ) *basicAuthExecutor {
 	defaultInputs := []flowcm.InputData{
 		{
@@ -62,7 +67,7 @@ func newBasicAuthExecutor(
 		},
 		{
 			Name:     userAttributePassword,
-			Type:     "string",
+			Type:     inputDataTypePassword,
 			Required: true,
 		},
 	}
@@ -79,6 +84,7 @@ func newBasicAuthExecutor(
 		ExecutorInterface:            base,
 		identifyingExecutorInterface: identifyExec,
 		credsAuthSvc:                 credsAuthSvc,
+		observabilitySvc:             observabilitySvc,
 		logger:                       logger,
 	}
 }
@@ -87,6 +93,20 @@ func newBasicAuthExecutor(
 func (b *basicAuthExecutor) Execute(ctx *flowcore.NodeContext) (*flowcm.ExecutorResponse, error) {
 	logger := b.logger.With(log.String(log.LoggerKeyFlowID, ctx.FlowID))
 	logger.Debug("Executing basic authentication executor")
+
+	if b.observabilitySvc.IsEnabled() {
+		evt := event.NewEvent(
+			ctx.FlowID,
+			string(event.EventTypeFlowNodeExecutionStarted),
+			event.ComponentFlowEngine,
+		).
+			WithStatus(event.StatusInProgress).
+			WithData(event.DataKey.FlowID, ctx.FlowID).
+			WithData(event.DataKey.AppID, ctx.AppID).
+			WithData(event.DataKey.NodeID, ctx.CurrentNodeID)
+
+		b.observabilitySvc.PublishEvent(evt)
+	}
 
 	execResp := &flowcm.ExecutorResponse{
 		AdditionalData: make(map[string]string),
@@ -134,15 +154,26 @@ func (b *basicAuthExecutor) Execute(ctx *flowcore.NodeContext) (*flowcm.Executor
 	return execResp, nil
 }
 
-// getAuthenticatedUser perform authentication based on the provided username and password and return
-// authenticated user details.
+// getAuthenticatedUser perform authentication based on the provided identifying and
+// credential attributes and returns the authenticated user details.
 func (b *basicAuthExecutor) getAuthenticatedUser(ctx *flowcore.NodeContext,
 	execResp *flowcm.ExecutorResponse) (*authncm.AuthenticatedUser, error) {
 	logger := b.logger.With(log.String(log.LoggerKeyFlowID, ctx.FlowID))
 
-	username := ctx.UserInputData[userAttributeUsername]
-	filters := map[string]interface{}{userAttributeUsername: username}
-	userID, err := b.IdentifyUser(filters, execResp)
+	userSearchAttributes := map[string]interface{}{}
+	userAuthenticateAttributes := map[string]interface{}{}
+
+	for _, inputData := range b.GetRequiredData(ctx) {
+		if value, ok := ctx.UserInputData[inputData.Name]; ok {
+			if inputData.Type != inputDataTypePassword {
+				userSearchAttributes[inputData.Name] = value
+			}
+			userAuthenticateAttributes[inputData.Name] = value
+		}
+	}
+
+	// Identify the user based on the provided attributes.
+	userID, err := b.IdentifyUser(userSearchAttributes, execResp)
 	if err != nil {
 		return nil, err
 	}
@@ -151,14 +182,12 @@ func (b *basicAuthExecutor) getAuthenticatedUser(ctx *flowcore.NodeContext,
 	if ctx.FlowType == flowcm.FlowTypeRegistration {
 		if execResp.Status == flowcm.ExecFailure {
 			if execResp.FailureReason == failureReasonUserNotFound {
-				logger.Debug("User not found for the provided username. Proceeding with registration flow.")
+				logger.Debug("User not found for the provided attributes. Proceeding with registration flow.")
 				execResp.Status = flowcm.ExecComplete
 
 				return &authncm.AuthenticatedUser{
 					IsAuthenticated: false,
-					Attributes: map[string]interface{}{
-						userAttributeUsername: username,
-					},
+					Attributes:      userSearchAttributes,
 				}, nil
 			}
 			return nil, err
@@ -166,7 +195,7 @@ func (b *basicAuthExecutor) getAuthenticatedUser(ctx *flowcore.NodeContext,
 
 		// At this point, a unique user is found in the system. Hence fail the execution.
 		execResp.Status = flowcm.ExecFailure
-		execResp.FailureReason = "User already exists with the provided username."
+		execResp.FailureReason = "User already exists with the provided attributes."
 		return nil, nil
 	}
 
@@ -174,14 +203,28 @@ func (b *basicAuthExecutor) getAuthenticatedUser(ctx *flowcore.NodeContext,
 		return nil, nil
 	}
 
-	// Prepare authentication attributes with user identifier and credentials.
-	authAttributes := map[string]interface{}{
-		userAttributeUsername: username,
-		userAttributePassword: ctx.UserInputData[userAttributePassword],
-	}
-
-	user, svcErr := b.credsAuthSvc.Authenticate(authAttributes)
+	// Authenticate the user based on all the provided attributes including credentials.
+	user, svcErr := b.credsAuthSvc.Authenticate(userAuthenticateAttributes)
 	if svcErr != nil {
+		if b.observabilitySvc.IsEnabled() {
+			evt := event.NewEvent(
+				ctx.FlowID,
+				string(event.EventTypeFlowNodeExecutionFailed),
+				event.ComponentFlowEngine,
+			).
+				WithStatus(event.StatusFailure).
+				WithData(event.DataKey.FlowID, ctx.FlowID).
+				WithData(event.DataKey.AppID, ctx.AppID).
+				WithData(event.DataKey.NodeID, ctx.CurrentNodeID).
+				WithData(event.DataKey.Error, svcErr.Error).
+				WithData(event.DataKey.ErrorCode, svcErr.Code).
+				WithData(event.DataKey.ErrorType, string(svcErr.Type))
+
+			if svcErr.ErrorDescription != "" {
+				evt.WithData(event.DataKey.Message, svcErr.ErrorDescription)
+			}
+			b.observabilitySvc.PublishEvent(evt)
+		}
 		if svcErr.Type == serviceerror.ClientErrorType {
 			execResp.Status = flowcm.ExecFailure
 			execResp.FailureReason = "Failed to authenticate user: " + svcErr.ErrorDescription
@@ -205,5 +248,21 @@ func (b *basicAuthExecutor) getAuthenticatedUser(ctx *flowcore.NodeContext,
 		UserType:           user.Type,
 		Attributes:         attrs,
 	}
+
+	if b.observabilitySvc.IsEnabled() {
+		evt := event.NewEvent(
+			ctx.FlowID,
+			string(event.EventTypeFlowNodeExecutionCompleted),
+			event.ComponentFlowEngine,
+		).
+			WithStatus(event.StatusSuccess).
+			WithData(event.DataKey.FlowID, ctx.FlowID).
+			WithData(event.DataKey.AppID, ctx.AppID).
+			WithData(event.DataKey.NodeID, ctx.CurrentNodeID).
+			WithData(event.DataKey.UserID, user.ID)
+
+		b.observabilitySvc.PublishEvent(evt)
+	}
+
 	return &authenticatedUser, nil
 }

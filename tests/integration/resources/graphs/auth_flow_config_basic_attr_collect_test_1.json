@@ -13,7 +13,7 @@
                 },
                 {
                     "name": "password",
-                    "type": "string",
+                    "type": "PASSWORD_INPUT",
                     "required": true
                 }
             ],

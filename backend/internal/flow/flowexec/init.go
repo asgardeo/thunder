@@ -41,7 +41,7 @@ func Initialize(
 	dbProvider := dbprovider.GetDBProvider()
 	flowStore := newFlowStore(dbProvider)
 	flowEngine := newFlowEngine(executorRegistry, observabilitySvc)
-	flowExecService := newFlowExecService(flowMgtService, flowStore, flowEngine, applicationService)
+	flowExecService := newFlowExecService(flowMgtService, flowStore, flowEngine, applicationService, observabilitySvc)
 
 	handler := newFlowExecutionHandler(flowExecService)
 	registerRoutes(mux, handler)
@@ -56,7 +56,7 @@ func registerRoutes(mux *http.ServeMux, handler *flowExecutionHandler) {
 		AllowCredentials: true,
 	}
 	mux.HandleFunc(middleware.WithCORS("POST /flow/execute",
-		handler.HandleFlowExecutionRequest, opts))
+		middleware.CorrelationIDMiddleware(http.HandlerFunc(handler.HandleFlowExecutionRequest)).ServeHTTP, opts))
 	mux.HandleFunc(middleware.WithCORS("OPTIONS /flow/execute",
 		func(w http.ResponseWriter, r *http.Request) {
 			w.WriteHeader(http.StatusNoContent)

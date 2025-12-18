@@ -26,7 +26,6 @@ import (
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
 
-	"github.com/asgardeo/thunder/tests/mocks/database/clientmock"
 	"github.com/asgardeo/thunder/tests/mocks/database/providermock"
 )
 
@@ -35,7 +34,7 @@ const testDeploymentID = "test-deployment-id"
 type OrganizationUnitStoreTestSuite struct {
 	suite.Suite
 	providerMock *providermock.DBProviderInterfaceMock
-	dbClientMock *clientmock.DBClientInterfaceMock
+	dbClientMock *providermock.DBClientInterfaceMock
 	store        *organizationUnitStore
 }
 
@@ -45,7 +44,7 @@ func TestOrganizationUnitStoreTestSuite(t *testing.T) {
 
 func (suite *OrganizationUnitStoreTestSuite) SetupTest() {
 	suite.providerMock = providermock.NewDBProviderInterfaceMock(suite.T())
-	suite.dbClientMock = clientmock.NewDBClientInterfaceMock(suite.T())
+	suite.dbClientMock = providermock.NewDBClientInterfaceMock(suite.T())
 	suite.store = &organizationUnitStore{
 		dbProvider:   suite.providerMock,
 		deploymentID: testDeploymentID,

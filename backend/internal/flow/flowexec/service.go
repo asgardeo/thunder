@@ -20,12 +20,17 @@
 package flowexec
 
 import (
+	"context"
 	"fmt"
 
 	"github.com/asgardeo/thunder/internal/application"
 	"github.com/asgardeo/thunder/internal/flow/common"
 	"github.com/asgardeo/thunder/internal/flow/flowmgt"
 
+	sysContext "github.com/asgardeo/thunder/internal/system/context"
+
+	"github.com/asgardeo/thunder/internal/observability"
+	"github.com/asgardeo/thunder/internal/observability/event"
 	"github.com/asgardeo/thunder/internal/system/error/serviceerror"
 	"github.com/asgardeo/thunder/internal/system/log"
 	sysutils "github.com/asgardeo/thunder/internal/system/utils"
@@ -34,34 +39,41 @@ import (
 // FlowExecServiceInterface defines the interface for flow orchestration and acts as the
 // entry point for flow execution
 type FlowExecServiceInterface interface {
-	Execute(appID, flowID, actionID, flowType string, inputData map[string]string) (
+	Execute(ctx context.Context, appID, flowID, actionID, flowType string, inputData map[string]string) (
 		*FlowStep, *serviceerror.ServiceError)
 	InitiateFlow(initContext *FlowInitContext) (string, *serviceerror.ServiceError)
 }
 
 // flowExecService is the implementation of FlowExecServiceInterface
 type flowExecService struct {
-	flowEngine     flowEngineInterface
-	flowMgtService flowmgt.FlowMgtServiceInterface
-	flowStore      flowStoreInterface
-	appService     application.ApplicationServiceInterface
+	flowEngine       flowEngineInterface
+	flowMgtService   flowmgt.FlowMgtServiceInterface
+	flowStore        flowStoreInterface
+	appService       application.ApplicationServiceInterface
+	observabilitySvc observability.ObservabilityServiceInterface
 }
 
 func newFlowExecService(flowMgtService flowmgt.FlowMgtServiceInterface,
 	flowStore flowStoreInterface, flowEngine flowEngineInterface,
-	applicationService application.ApplicationServiceInterface) FlowExecServiceInterface {
+	applicationService application.ApplicationServiceInterface,
+	observabilitySvc observability.ObservabilityServiceInterface) FlowExecServiceInterface {
 	return &flowExecService{
-		flowMgtService: flowMgtService,
-		flowStore:      flowStore,
-		flowEngine:     flowEngine,
-		appService:     applicationService,
+		flowMgtService:   flowMgtService,
+		flowStore:        flowStore,
+		flowEngine:       flowEngine,
+		appService:       applicationService,
+		observabilitySvc: observabilitySvc,
 	}
 }
 
 // Execute executes a flow with the given data
-func (s *flowExecService) Execute(appID, flowID, actionID, flowType string, inputData map[string]string) (
+func (s *flowExecService) Execute(ctx context.Context, appID, flowID, actionID, flowType string,
+	inputData map[string]string) (
 	*FlowStep, *serviceerror.ServiceError) {
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, "FlowExecService"))
+
+	// Get trace ID from context
+	traceID := sysContext.GetTraceID(ctx)
 
 	var context *EngineContext
 	var loadErr *serviceerror.ServiceError
@@ -73,6 +85,25 @@ func (s *flowExecService) Execute(appID, flowID, actionID, flowType string, inpu
 				log.String("appID", appID),
 				log.String("flowType", flowType),
 				log.String("error", loadErr.Error))
+
+			if s.observabilitySvc.IsEnabled() {
+				evt := event.NewEvent(
+					traceID,
+					string(event.EventTypeFlowFailed),
+					event.ComponentFlowEngine,
+				).
+					WithStatus(event.StatusFailure).
+					WithData(event.DataKey.AppID, appID).
+					WithData(event.DataKey.FlowType, flowType).
+					WithData(event.DataKey.Error, loadErr.Error).
+					WithData(event.DataKey.ErrorCode, loadErr.Code).
+					WithData(event.DataKey.ErrorType, string(loadErr.Type))
+
+				if loadErr.ErrorDescription != "" {
+					evt.WithData(event.DataKey.Message, loadErr.ErrorDescription)
+				}
+				s.observabilitySvc.PublishEvent(evt)
+			}
 			return nil, loadErr
 		}
 	} else {
@@ -84,6 +115,9 @@ func (s *flowExecService) Execute(appID, flowID, actionID, flowType string, inpu
 			return nil, loadErr
 		}
 	}
+
+	// Set trace ID to context
+	context.TraceID = traceID
 
 	flowStep, flowErr := s.flowEngine.Execute(context)
 

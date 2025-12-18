@@ -26,7 +26,7 @@ import (
 
 	"github.com/asgardeo/thunder/internal/system/cmodels"
 	"github.com/asgardeo/thunder/internal/system/config"
-	"github.com/asgardeo/thunder/tests/mocks/database/clientmock"
+
 	"github.com/asgardeo/thunder/tests/mocks/database/providermock"
 )
 
@@ -35,7 +35,7 @@ const testDeploymentID = "test-deployment-id"
 type IDPStoreTestSuite struct {
 	suite.Suite
 	mockDBProvider *providermock.DBProviderInterfaceMock
-	mockDBClient   *clientmock.DBClientInterfaceMock
+	mockDBClient   *providermock.DBClientInterfaceMock
 	store          *idpStore
 }
 
@@ -59,7 +59,7 @@ func (s *IDPStoreTestSuite) SetupTest() {
 	_ = config.InitializeThunderRuntime("test", testConfig)
 
 	s.mockDBProvider = &providermock.DBProviderInterfaceMock{}
-	s.mockDBClient = &clientmock.DBClientInterfaceMock{}
+	s.mockDBClient = &providermock.DBClientInterfaceMock{}
 
 	s.store = &idpStore{
 		dbProvider:   s.mockDBProvider,

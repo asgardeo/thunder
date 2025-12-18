@@ -26,14 +26,13 @@ import (
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/suite"
 
-	"github.com/asgardeo/thunder/tests/mocks/database/clientmock"
 	"github.com/asgardeo/thunder/tests/mocks/database/providermock"
 )
 
 type StoreTestSuite struct {
 	suite.Suite
 	mockDBProvider *providermock.DBProviderInterfaceMock
-	mockDBClient   *clientmock.DBClientInterfaceMock
+	mockDBClient   *providermock.DBClientInterfaceMock
 	store          *certificateStore
 }
 
@@ -43,7 +42,7 @@ func TestStoreTestSuite(t *testing.T) {
 
 func (suite *StoreTestSuite) SetupTest() {
 	suite.mockDBProvider = providermock.NewDBProviderInterfaceMock(suite.T())
-	suite.mockDBClient = clientmock.NewDBClientInterfaceMock(suite.T())
+	suite.mockDBClient = providermock.NewDBClientInterfaceMock(suite.T())
 	suite.store = &certificateStore{
 		dbProvider:   suite.mockDBProvider,
 		deploymentID: "test-deployment-id",

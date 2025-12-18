@@ -104,7 +104,7 @@ func (st *applicationStore) CreateApplication(app model.ApplicationProcessedDTO)
 			} else {
 				brandingID = nil
 			}
-			_, err := tx.Exec(QueryCreateApplication.Query, app.ID, app.Name, app.Description,
+			_, err := tx.Exec(QueryCreateApplication, app.ID, app.Name, app.Description,
 				app.AuthFlowGraphID, app.RegistrationFlowGraphID, isRegistrationEnabledStr, brandingID,
 				jsonDataBytes, st.deploymentID)
 			return err
@@ -341,7 +341,7 @@ func (st *applicationStore) UpdateApplication(existingApp, updatedApp *model.App
 			} else {
 				brandingID = nil
 			}
-			_, err := tx.Exec(QueryUpdateApplicationByAppID.Query, updatedApp.ID, updatedApp.Name,
+			_, err := tx.Exec(QueryUpdateApplicationByAppID, updatedApp.ID, updatedApp.Name,
 				updatedApp.Description, updatedApp.AuthFlowGraphID, updatedApp.RegistrationFlowGraphID,
 				isRegistrationEnabledStr, brandingID, jsonDataBytes, st.deploymentID)
 			return err
@@ -481,7 +481,7 @@ func createOAuthAppQuery(app *model.ApplicationProcessedDTO,
 	}
 
 	return func(tx dbmodel.TxInterface) error {
-		_, err := tx.Exec(oauthAppMgtQuery.Query, app.ID, clientID, clientSecret, oauthConfigJSON, deploymentID)
+		_, err := tx.Exec(oauthAppMgtQuery, app.ID, clientID, clientSecret, oauthConfigJSON, deploymentID)
 		return err
 	}
 }
@@ -489,7 +489,7 @@ func createOAuthAppQuery(app *model.ApplicationProcessedDTO,
 // deleteOAuthAppQuery creates a query function for deleting an OAuth application by client ID.
 func deleteOAuthAppQuery(clientID string, deploymentID string) func(tx dbmodel.TxInterface) error {
 	return func(tx dbmodel.TxInterface) error {
-		_, err := tx.Exec(QueryDeleteOAuthApplicationByClientID.Query, clientID, deploymentID)
+		_, err := tx.Exec(QueryDeleteOAuthApplicationByClientID, clientID, deploymentID)
 		return err
 	}
 }

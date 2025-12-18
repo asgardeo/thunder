@@ -16,8 +16,7 @@
  * under the License.
  */
 
-// Package filebasedruntime provides functionality to read file-based runtime configurations.
-package filebasedruntime
+package immutableresource
 
 import (
 	"bytes"

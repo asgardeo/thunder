@@ -152,31 +152,14 @@ func (e *executor) GetUserIDFromContext(ctx *NodeContext) string {
 }
 
 // GetRequiredData returns the required input data for the executor.
-// It combines the default executor inputs with the node input data, ensuring no duplicates.
 func (e *executor) GetRequiredData(ctx *NodeContext) []common.InputData {
-	executorReqData := e.GetDefaultExecutorInputs()
 	requiredData := ctx.NodeInputData
 
-	if len(requiredData) == 0 {
-		requiredData = executorReqData
-	} else {
-		// Append the default required data if not already present.
-		for _, inputData := range executorReqData {
-			exists := false
-			for _, existingInputData := range requiredData {
-				if existingInputData.Name == inputData.Name {
-					exists = true
-					break
-				}
-			}
-			// If the input data already exists, skip adding it again.
-			if !exists {
-				requiredData = append(requiredData, inputData)
-			}
-		}
+	if len(requiredData) > 0 {
+		return requiredData
 	}
 
-	return requiredData
+	return e.GetDefaultExecutorInputs()
 }
 
 // appendRequiredData appends the required input data to the executor response if not present

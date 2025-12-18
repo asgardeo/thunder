@@ -28,7 +28,7 @@ import (
 	"github.com/asgardeo/thunder/internal/system/cmodels"
 	"github.com/asgardeo/thunder/internal/system/config"
 	"github.com/asgardeo/thunder/internal/system/error/serviceerror"
-	filebasedruntime "github.com/asgardeo/thunder/internal/system/file_based_runtime"
+	immutableresource "github.com/asgardeo/thunder/internal/system/immutable_resource"
 	"github.com/asgardeo/thunder/internal/system/log"
 )
 
@@ -609,7 +609,7 @@ func (s *IDPServiceTestSuite) TestCreateIdentityProvider_ImmutableModeEnabled() 
 
 	s.Nil(result)
 	s.NotNil(err)
-	s.Equal(filebasedruntime.ErrorImmutableResourceCreateOperation.Code, err.Code)
+	s.Equal(immutableresource.ErrorImmutableResourceCreateOperation.Code, err.Code)
 }
 
 // TestUpdateIdentityProvider_ImmutableModeEnabled tests update is blocked when immutable mode is enabled
@@ -633,7 +633,7 @@ func (s *IDPServiceTestSuite) TestUpdateIdentityProvider_ImmutableModeEnabled() 
 
 	s.Nil(result)
 	s.NotNil(err)
-	s.Equal(filebasedruntime.ErrorImmutableResourceUpdateOperation.Code, err.Code)
+	s.Equal(immutableresource.ErrorImmutableResourceUpdateOperation.Code, err.Code)
 }
 
 // TestDeleteIdentityProvider_ImmutableModeEnabled tests deletion is blocked when immutable mode is enabled
@@ -651,7 +651,7 @@ func (s *IDPServiceTestSuite) TestDeleteIdentityProvider_ImmutableModeEnabled() 
 	err := s.idpService.DeleteIdentityProvider("idp-123")
 
 	s.NotNil(err)
-	s.Equal(filebasedruntime.ErrorImmutableResourceDeleteOperation.Code, err.Code)
+	s.Equal(immutableresource.ErrorImmutableResourceDeleteOperation.Code, err.Code)
 }
 
 // TestValidateIDP tests IDP validation

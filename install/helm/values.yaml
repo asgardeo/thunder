@@ -24,6 +24,10 @@ deployment:
     readOnlyRootFilesystem: true # This must be false if sqlite is used as the database
     enableRunAsUser: true
     runAsUser: 802
+    enableRunAsGroup: true
+    runAsGroup: 802
+    enableFsGroup: true
+    fsGroup: 802
     seccompProfile:
       enabled: false
       type: "RuntimeDefault"
@@ -37,7 +41,7 @@ deployment:
     # -- Container image digest
     digest: ""
     # -- Container image tag. Either "tag" or "digest" should be defined
-    tag: "0.14.0"
+    tag: "0.15.0"
     pullPolicy: "Always"
   startupProbe:
     initialDelaySeconds: 1

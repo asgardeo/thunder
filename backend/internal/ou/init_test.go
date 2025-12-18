@@ -1,0 +1,217 @@
+/*
+ * Copyright (c) 2025, WSO2 LLC. (https://www.wso2.com).
+ *
+ * WSO2 LLC. licenses this file to you under the Apache License,
+ * Version 2.0 (the "License"); you may not use this file except
+ * in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing,
+ * software distributed under the License is distributed on an
+ * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+ * KIND, either express or implied.  See the License for the
+ * specific language governing permissions and limitations
+ * under the License.
+ */
+
+package ou
+
+import (
+	"net/http"
+	"testing"
+
+	"github.com/asgardeo/thunder/internal/system/config"
+	immutableresource "github.com/asgardeo/thunder/internal/system/immutable_resource"
+
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/suite"
+)
+
+type InitTestSuite struct {
+	suite.Suite
+}
+
+func TestInitTestSuite(t *testing.T) {
+	suite.Run(t, new(InitTestSuite))
+}
+
+func (suite *InitTestSuite) SetupTest() {
+	// Initialize ThunderRuntime for each test
+	config.ResetThunderRuntime()
+	testConfig := &config.Config{
+		ImmutableResources: config.ImmutableResources{
+			Enabled: false,
+		},
+	}
+	_ = config.InitializeThunderRuntime("/tmp/test", testConfig)
+}
+
+func (suite *InitTestSuite) TearDownTest() {
+	// Clean up after each test
+	config.ResetThunderRuntime()
+}
+
+func (suite *InitTestSuite) TestInitialize_WithImmutableResourcesDisabled() {
+	// Setup: Disable immutable resources
+	runtime := config.GetThunderRuntime()
+	runtime.Config.ImmutableResources.Enabled = false
+
+	mux := http.NewServeMux()
+
+	// Execute
+	service, exporter, err := Initialize(mux)
+
+	// Assert
+	assert.NoError(suite.T(), err)
+	assert.NotNil(suite.T(), service)
+	assert.NotNil(suite.T(), exporter)
+
+	// Verify exporter is properly created
+	assert.Equal(suite.T(), "organization_unit", exporter.GetResourceType())
+	assert.Equal(suite.T(), "OrganizationUnit", exporter.GetParameterizerType())
+}
+
+func (suite *InitTestSuite) TestInitialize_WithImmutableResourcesEnabled() {
+	// Setup: Enable immutable resources
+	runtime := config.GetThunderRuntime()
+	runtime.Config.ImmutableResources.Enabled = true
+
+	mux := http.NewServeMux()
+
+	// Execute
+	service, exporter, err := Initialize(mux)
+
+	// Assert
+	assert.NoError(suite.T(), err)
+	assert.NotNil(suite.T(), service)
+	assert.NotNil(suite.T(), exporter)
+
+	// Verify exporter is properly created
+	assert.Equal(suite.T(), "organization_unit", exporter.GetResourceType())
+	assert.Equal(suite.T(), "OrganizationUnit", exporter.GetParameterizerType())
+}
+
+func (suite *InitTestSuite) TestInitialize_FileBasedStoreCreation() {
+	// Setup: Enable immutable resources
+	runtime := config.GetThunderRuntime()
+	runtime.Config.ImmutableResources.Enabled = true
+
+	mux := http.NewServeMux()
+
+	// Execute
+	service, exporter, err := Initialize(mux)
+
+	// Assert
+	assert.NoError(suite.T(), err)
+	assert.NotNil(suite.T(), service)
+	assert.NotNil(suite.T(), exporter)
+
+	// Test that the service works (would use file-based store)
+	// We can't directly verify the store type, but we can check the service is functional
+	assert.NotNil(suite.T(), service)
+}
+
+func (suite *InitTestSuite) TestInitialize_DatabaseStoreCreation() {
+	// Setup: Disable immutable resources (uses database store)
+	runtime := config.GetThunderRuntime()
+	runtime.Config.ImmutableResources.Enabled = false
+
+	mux := http.NewServeMux()
+
+	// Execute
+	service, exporter, err := Initialize(mux)
+
+	// Assert
+	assert.NoError(suite.T(), err)
+	assert.NotNil(suite.T(), service)
+	assert.NotNil(suite.T(), exporter)
+}
+
+func (suite *InitTestSuite) TestInitialize_RoutesRegistered() {
+	// Setup
+	runtime := config.GetThunderRuntime()
+	runtime.Config.ImmutableResources.Enabled = false
+
+	mux := http.NewServeMux()
+
+	// Execute
+	service, exporter, err := Initialize(mux)
+
+	// Assert
+	assert.NoError(suite.T(), err)
+	assert.NotNil(suite.T(), service)
+	assert.NotNil(suite.T(), exporter)
+
+	// Verify routes are registered by checking if requests can be matched
+	// Note: We can't easily verify all routes without making actual HTTP requests,
+	// but we can verify the function completed successfully
+}
+
+func (suite *InitTestSuite) TestInitialize_ExporterInterfaceCompliance() {
+	// Setup
+	runtime := config.GetThunderRuntime()
+	runtime.Config.ImmutableResources.Enabled = false
+
+	mux := http.NewServeMux()
+
+	// Execute
+	service, exporter, err := Initialize(mux)
+
+	// Assert
+	assert.NoError(suite.T(), err)
+	assert.NotNil(suite.T(), service)
+
+	// Verify exporter implements ResourceExporter interface
+	var _ immutableresource.ResourceExporter = exporter
+
+	// Test exporter methods
+	assert.Equal(suite.T(), "organization_unit", exporter.GetResourceType())
+	assert.Equal(suite.T(), "OrganizationUnit", exporter.GetParameterizerType())
+
+	rules := exporter.GetResourceRules()
+	assert.NotNil(suite.T(), rules)
+	assert.Empty(suite.T(), rules.Variables)
+	assert.Empty(suite.T(), rules.ArrayVariables)
+}
+
+func (suite *InitTestSuite) TestInitialize_ServiceInterfaceCompliance() {
+	// Setup
+	runtime := config.GetThunderRuntime()
+	runtime.Config.ImmutableResources.Enabled = false
+
+	mux := http.NewServeMux()
+
+	// Execute
+	service, exporter, err := Initialize(mux)
+
+	// Assert
+	assert.NoError(suite.T(), err)
+	assert.NotNil(suite.T(), exporter)
+
+	// Verify service implements OrganizationUnitServiceInterface
+	var _ OrganizationUnitServiceInterface = service
+}
+
+func (suite *InitTestSuite) TestInitialize_MultipleInitializations() {
+	// Test that multiple initializations work (e.g., for testing scenarios)
+	runtime := config.GetThunderRuntime()
+	runtime.Config.ImmutableResources.Enabled = false
+
+	mux1 := http.NewServeMux()
+	service1, exporter1, err1 := Initialize(mux1)
+	assert.NoError(suite.T(), err1)
+	assert.NotNil(suite.T(), service1)
+	assert.NotNil(suite.T(), exporter1)
+
+	mux2 := http.NewServeMux()
+	service2, exporter2, err2 := Initialize(mux2)
+	assert.NoError(suite.T(), err2)
+	assert.NotNil(suite.T(), service2)
+	assert.NotNil(suite.T(), exporter2)
+
+	// Services should be different instances
+	assert.NotSame(suite.T(), service1, service2)
+	assert.NotSame(suite.T(), exporter1, exporter2)
+}

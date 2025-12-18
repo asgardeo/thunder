@@ -33,33 +33,18 @@ func TestGetCategory(t *testing.T) {
 	}{
 		// Authentication events
 		{
-			name:         "authentication started",
-			eventType:    EventTypeAuthenticationStarted,
+			name:         "token issuance started",
+			eventType:    EventTypeTokenIssuanceStarted,
 			wantCategory: CategoryAuthentication,
 		},
 		{
-			name:         "authentication completed",
-			eventType:    EventTypeAuthenticationCompleted,
+			name:         "token issued",
+			eventType:    EventTypeTokenIssued,
 			wantCategory: CategoryAuthentication,
 		},
 		{
-			name:         "authentication failed",
-			eventType:    EventTypeAuthenticationFailed,
-			wantCategory: CategoryAuthentication,
-		},
-		{
-			name:         "credentials auth started",
-			eventType:    EventTypeCredentialsAuthStarted,
-			wantCategory: CategoryAuthentication,
-		},
-		{
-			name:         "OTP sent",
-			eventType:    EventTypeOTPSent,
-			wantCategory: CategoryAuthentication,
-		},
-		{
-			name:         "social auth started",
-			eventType:    EventTypeSocialAuthStarted,
+			name:         "token issuance failed",
+			eventType:    EventTypeTokenIssuanceFailed,
 			wantCategory: CategoryAuthentication,
 		},
 
@@ -105,7 +90,7 @@ func TestEvent_GetCategory(t *testing.T) {
 			event: &Event{
 				TraceID:   "trace-1",
 				EventID:   "event-1",
-				Type:      string(EventTypeAuthenticationStarted),
+				Type:      string(EventTypeTokenIssuanceStarted),
 				Component: "test",
 				Timestamp: time.Now(),
 			},
@@ -296,21 +281,9 @@ func TestEventTypeToCategoryMapping_Comprehensive(t *testing.T) {
 	// Verify all defined event types have a category mapping
 	allEventTypes := []EventType{
 		// Authentication
-		EventTypeAuthenticationStarted,
-		EventTypeAuthenticationMethodSelected,
-		EventTypeCredentialsAuthStarted,
-		EventTypeCredentialsAuthCompleted,
-		EventTypeCredentialsAuthFailed,
-		EventTypeOTPSent,
-		EventTypeOTPVerificationStarted,
-		EventTypeOTPVerified,
-		EventTypeOTPVerificationFailed,
-		EventTypeSocialAuthStarted,
-		EventTypeSocialAuthCallbackReceived,
-		EventTypeSocialAuthCompleted,
-		EventTypeSocialAuthFailed,
-		EventTypeAuthenticationCompleted,
-		EventTypeAuthenticationFailed,
+		EventTypeTokenIssuanceStarted,
+		EventTypeTokenIssued,
+		EventTypeTokenIssuanceFailed,
 
 		// Flows
 		EventTypeFlowStarted,
@@ -340,7 +313,7 @@ func TestCategoryToEventTypeConsistency(t *testing.T) {
 	categoryEventCount := make(map[EventCategory]int)
 
 	allEventTypes := []EventType{
-		EventTypeAuthenticationStarted, EventTypeAuthenticationCompleted, EventTypeAuthenticationFailed,
+		EventTypeTokenIssuanceStarted, EventTypeTokenIssued, EventTypeTokenIssuanceFailed,
 		EventTypeFlowStarted, EventTypeFlowCompleted, EventTypeFlowFailed,
 	}
 

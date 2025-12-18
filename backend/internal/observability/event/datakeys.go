@@ -55,6 +55,7 @@ var DataKey = struct {
 	Message     string
 	Error       string
 	ErrorCode   string
+	ErrorType   string
 	DurationMs  string
 	LatencyUs   string
 	TraceParent string
@@ -92,6 +93,7 @@ var DataKey = struct {
 	Message:     "message",
 	Error:       "error",
 	ErrorCode:   "error_code",
+	ErrorType:   "error_type",
 	DurationMs:  "duration_ms",
 	LatencyUs:   "latency_us",
 	TraceParent: "trace_parent",

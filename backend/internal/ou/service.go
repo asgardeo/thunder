@@ -26,6 +26,7 @@ import (
 
 	serverconst "github.com/asgardeo/thunder/internal/system/constants"
 	"github.com/asgardeo/thunder/internal/system/error/serviceerror"
+	immutableresource "github.com/asgardeo/thunder/internal/system/immutable_resource"
 	"github.com/asgardeo/thunder/internal/system/log"
 	"github.com/asgardeo/thunder/internal/system/utils"
 )
@@ -72,9 +73,9 @@ type organizationUnitService struct {
 }
 
 // newOrganizationUnitService creates a new instance of OrganizationUnitService.
-func newOrganizationUnitService() OrganizationUnitServiceInterface {
+func newOrganizationUnitService(ouStore organizationUnitStoreInterface) OrganizationUnitServiceInterface {
 	return &organizationUnitService{
-		ouStore: newOrganizationUnitStore(),
+		ouStore: ouStore,
 	}
 }
 
@@ -117,6 +118,10 @@ func (ous *organizationUnitService) CreateOrganizationUnit(
 ) (OrganizationUnit, *serviceerror.ServiceError) {
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, loggerComponentNameService))
 	logger.Debug("Creating organization unit", log.String("name", request.Name))
+
+	if err := immutableresource.CheckImmutableCreate(); err != nil {
+		return OrganizationUnit{}, err
+	}
 
 	if err := ous.validateOUName(request.Name); err != nil {
 		return OrganizationUnit{}, err
@@ -272,6 +277,10 @@ func (ous *organizationUnitService) UpdateOrganizationUnit(
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, loggerComponentNameService))
 	logger.Debug("Updating organization unit", log.String("ouID", id))
 
+	if err := immutableresource.CheckImmutableUpdate(); err != nil {
+		return OrganizationUnit{}, err
+	}
+
 	existingOU, err := ous.ouStore.GetOrganizationUnit(id)
 	if err != nil {
 		if errors.Is(err, ErrOrganizationUnitNotFound) {
@@ -296,6 +305,10 @@ func (ous *organizationUnitService) UpdateOrganizationUnitByPath(
 ) (OrganizationUnit, *serviceerror.ServiceError) {
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, loggerComponentNameService))
 	logger.Debug("Updating organization unit by path", log.String("path", handlePath))
+
+	if err := immutableresource.CheckImmutableUpdate(); err != nil {
+		return OrganizationUnit{}, err
+	}
 
 	handles, serviceError := validateAndProcessHandlePath(handlePath)
 	if serviceError != nil {
@@ -400,6 +413,10 @@ func (ous *organizationUnitService) DeleteOrganizationUnit(id string) *serviceer
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, loggerComponentNameService))
 	logger.Debug("Deleting organization unit", log.String("ouID", id))
 
+	if err := immutableresource.CheckImmutableDelete(); err != nil {
+		return err
+	}
+
 	// Check if organization unit exists
 	exists, err := ous.ouStore.IsOrganizationUnitExists(id)
 	if err != nil {
@@ -423,6 +440,10 @@ func (ous *organizationUnitService) DeleteOrganizationUnit(id string) *serviceer
 func (ous *organizationUnitService) DeleteOrganizationUnitByPath(handlePath string) *serviceerror.ServiceError {
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, loggerComponentNameService))
 	logger.Debug("Deleting organization unit by path", log.String("path", handlePath))
+
+	if err := immutableresource.CheckImmutableDelete(); err != nil {
+		return err
+	}
 
 	handles, serviceError := validateAndProcessHandlePath(handlePath)
 	if serviceError != nil {

@@ -61,6 +61,7 @@ type resourceStoreInterface interface {
 	DeleteAction(id string, resServerInternalID int, resInternalID *int) error
 	IsActionExist(id string, resServerInternalID int, resInternalID *int) (bool, error)
 	CheckActionHandleExists(resServerInternalID int, resInternalID *int, handle string) (bool, error)
+	ValidatePermissions(resServerInternalID int, permissions []string) ([]string, error)
 }
 
 // resourceStore is the default implementation of resourceStoreInterface.
@@ -656,6 +657,53 @@ func (s *resourceStore) CheckActionHandleExists(
 		return err
 	})
 	return exists, err
+}
+
+// ValidatePermissions validates that permissions exist for a given resource server.
+// Returns array of invalid permissions (empty if all are valid).
+func (s *resourceStore) ValidatePermissions(resServerInternalID int, permissions []string) ([]string, error) {
+	// Early return for empty input
+	if len(permissions) == 0 {
+		return []string{}, nil
+	}
+
+	var invalidPermissions []string
+
+	err := s.withDBClient(func(dbClient provider.DBClientInterface) error {
+		// Convert permissions to JSON array for json_each()
+		permissionsJSON, jsonErr := json.Marshal(permissions)
+		if jsonErr != nil {
+			return fmt.Errorf("failed to marshal permissions to JSON: %w", jsonErr)
+		}
+
+		// Query directly returns invalid permissions
+		results, err := dbClient.Query(
+			queryValidatePermissions,
+			resServerInternalID,
+			s.deploymentID,
+			string(permissionsJSON),
+		)
+		if err != nil {
+			return fmt.Errorf("failed to validate permissions: %w", err)
+		}
+
+		// Simply collect the invalid permissions returned by the query
+		for _, row := range results {
+			perm, ok := row["permission"].(string)
+			if !ok {
+				return fmt.Errorf("permission field is missing or invalid in query result")
+			}
+			invalidPermissions = append(invalidPermissions, perm)
+		}
+
+		return nil
+	})
+
+	if err != nil {
+		return nil, err
+	}
+
+	return invalidPermissions, nil
 }
 
 // Helper methods

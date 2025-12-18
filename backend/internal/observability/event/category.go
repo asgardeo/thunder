@@ -68,21 +68,9 @@ func (e *UnmappedEventTypeError) Error() string {
 // This enables automatic routing of events to appropriate categories.
 var eventTypeToCategory = map[EventType]EventCategory{
 	// Authentication events
-	EventTypeAuthenticationStarted:        CategoryAuthentication,
-	EventTypeAuthenticationMethodSelected: CategoryAuthentication,
-	EventTypeCredentialsAuthStarted:       CategoryAuthentication,
-	EventTypeCredentialsAuthCompleted:     CategoryAuthentication,
-	EventTypeCredentialsAuthFailed:        CategoryAuthentication,
-	EventTypeOTPSent:                      CategoryAuthentication,
-	EventTypeOTPVerificationStarted:       CategoryAuthentication,
-	EventTypeOTPVerified:                  CategoryAuthentication,
-	EventTypeOTPVerificationFailed:        CategoryAuthentication,
-	EventTypeSocialAuthStarted:            CategoryAuthentication,
-	EventTypeSocialAuthCallbackReceived:   CategoryAuthentication,
-	EventTypeSocialAuthCompleted:          CategoryAuthentication,
-	EventTypeSocialAuthFailed:             CategoryAuthentication,
-	EventTypeAuthenticationCompleted:      CategoryAuthentication,
-	EventTypeAuthenticationFailed:         CategoryAuthentication,
+	EventTypeTokenIssuanceStarted: CategoryAuthentication,
+	EventTypeTokenIssued:          CategoryAuthentication,
+	EventTypeTokenIssuanceFailed:  CategoryAuthentication,
 
 	// Flow events
 	EventTypeFlowStarted:                CategoryFlows,

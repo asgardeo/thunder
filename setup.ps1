@@ -17,6 +17,22 @@
 # under the License.
 # ----------------------------------------------------------------------------
 
+# Check for PowerShell Version Compatibility
+if ($PSVersionTable.PSVersion.Major -lt 7) {
+    Write-Host ""
+    Write-Host "================================================================" -ForegroundColor Red
+    Write-Host " [ERROR] UNSUPPORTED POWERSHELL VERSION" -ForegroundColor Red
+    Write-Host "================================================================" -ForegroundColor Red
+    Write-Host ""
+    Write-Host " You are currently running PowerShell $($PSVersionTable.PSVersion.ToString())" -ForegroundColor Yellow
+    Write-Host " Thunder requires PowerShell 7 (Core) or later." -ForegroundColor Yellow
+    Write-Host ""
+    Write-Host " Please install the latest version from:"
+    Write-Host " https://github.com/PowerShell/PowerShell" -ForegroundColor Cyan
+    Write-Host ""
+    exit 1
+}
+
 # Thunder Setup Script
 # Orchestrates the complete setup lifecycle:
 # 1. Starts Thunder server with security disabled
@@ -46,17 +62,17 @@ function Log-Info {
 
 function Log-Success {
     param([string]$Message)
-    Write-Host "[SUCCESS] ✓ $Message" -ForegroundColor Green
+    Write-Host "[SUCCESS] [OK] $Message" -ForegroundColor Green
 }
 
 function Log-Warning {
     param([string]$Message)
-    Write-Host "[WARNING] ⚠ $Message" -ForegroundColor Yellow
+    Write-Host "[WARNING] ! $Message" -ForegroundColor Yellow
 }
 
 function Log-Error {
     param([string]$Message)
-    Write-Host "[ERROR] ✗ $Message" -ForegroundColor Red
+    Write-Host "[ERROR] X $Message" -ForegroundColor Red
 }
 
 function Log-Debug {
@@ -126,7 +142,7 @@ function Invoke-ThunderApi {
         Log-Debug "curl command: curl $($curlArgs -join ' ')"
 
         # Execute curl and capture output
-        $curlOutput = & curl @curlArgs 2>&1
+        $curlOutput = & curl.exe @curlArgs 2>&1
         $curlExitCode = $LASTEXITCODE
 
         # The last line should be the status code
@@ -153,9 +169,11 @@ function Invoke-ThunderApi {
         Log-Debug "Response Status: $statusCode"
         Log-Debug "Response Body: $body"
 
+        $finalBody = if ($body) { $body } else { "" }
+
         return @{
             StatusCode = [int]$statusCode
-            Body = $body ?? ""
+            Body = $finalBody
         }
     }
     catch {
@@ -384,9 +402,9 @@ Start-Sleep -Seconds 1
 
 # Check for Delve if debug mode is enabled
 if ($DEBUG_MODE -and -not (Get-Command dlv -ErrorAction SilentlyContinue)) {
-    Write-Host "❌ Debug mode requires Delve debugger" -ForegroundColor Red
+    Write-Host "[ERROR] Debug mode requires Delve debugger" -ForegroundColor Red
     Write-Host ""
-    Write-Host "💡 Install Delve using:" -ForegroundColor Cyan
+    Write-Host "[INFO] Install Delve using:" -ForegroundColor Cyan
     Write-Host "   go install github.com/go-delve/delve/cmd/dlv@latest" -ForegroundColor Cyan
     exit 1
 }
@@ -395,7 +413,7 @@ if ($DEBUG_MODE -and -not (Get-Command dlv -ErrorAction SilentlyContinue)) {
 # Start Thunder Server with Security Disabled
 # ============================================================================
 
-Write-Host "⚠️  Starting temporary server with security disabled..." -ForegroundColor Yellow
+Write-Host "[WARN] Starting temporary server with security disabled..." -ForegroundColor Yellow
 Write-Host ""
 
 # Export environment variable to skip security
@@ -435,7 +453,7 @@ try {
     # Cleanup function
     $cleanup = {
         Write-Host ""
-        Write-Host "🛑 Stopping temporary server..." -ForegroundColor Cyan
+        Write-Host "[STOP] Stopping temporary server..." -ForegroundColor Cyan
         if ($proc -and -not $proc.HasExited) {
             try {
                 Stop-Process -Id $proc.Id -Force -ErrorAction SilentlyContinue
@@ -450,7 +468,7 @@ try {
     # Wait for Server to be Ready
     # ============================================================================
 
-    Write-Host "⏳ Waiting for server to be ready..." -ForegroundColor Blue
+    Write-Host "[WAIT] Waiting for server to be ready..." -ForegroundColor Blue
     Write-Host "   Server URL: $BASE_URL" -ForegroundColor Blue
 
     $TIMEOUT = 60
@@ -465,14 +483,14 @@ try {
         Log-Debug "Making request to: $healthUrl"
 
         $requestStart = Get-Date
-        $statusCode = & curl -k -s -w "%{http_code}" -o NUL $healthUrl 2>&1 | Select-Object -Last 1
+        $statusCode = & curl.exe -k -s -w "%{http_code}" -o NUL $healthUrl 2>&1 | Select-Object -Last 1
         $requestDuration = (Get-Date) - $requestStart
 
         Log-Debug "Request completed in $([math]::Round($requestDuration.TotalSeconds, 2))s with status: $statusCode"
 
         if ($statusCode -eq "200") {
             Write-Host ""
-            Write-Host "✓ Server is ready" -ForegroundColor Green
+            Write-Host "[OK] Server is ready" -ForegroundColor Green
             Log-Debug "Health check response: $body"
             Write-Host ""
             break
@@ -505,7 +523,7 @@ try {
 
     if ($ELAPSED -ge $TIMEOUT) {
         Write-Host ""
-        Write-Host "❌ Server health check failed within $TIMEOUT seconds" -ForegroundColor Red
+        Write-Host "[ERROR] Server health check failed within $TIMEOUT seconds" -ForegroundColor Red
         Write-Host "Expected server at: $BASE_URL" -ForegroundColor Red
         Write-Host "Last status: $lastError" -ForegroundColor Red
         exit 1
@@ -568,19 +586,19 @@ try {
 
                 # Skip if matches skip pattern
                 if ($BOOTSTRAP_SKIP_PATTERN -and ($scriptName -match $BOOTSTRAP_SKIP_PATTERN)) {
-                    Log-Info "⊘ Skipping $scriptName (matches skip pattern regex: $BOOTSTRAP_SKIP_PATTERN)"
+                    Log-Info "[SKIP] Skipping $scriptName (matches skip pattern regex: $BOOTSTRAP_SKIP_PATTERN)"
                     $skippedCount++
                     continue
                 }
 
                 # Skip if doesn't match only pattern
                 if ($BOOTSTRAP_ONLY_PATTERN -and ($scriptName -notmatch $BOOTSTRAP_ONLY_PATTERN)) {
-                    Log-Info "⊘ Skipping $scriptName (doesn't match only pattern: $BOOTSTRAP_ONLY_PATTERN)"
+                    Log-Info "[SKIP] Skipping $scriptName (doesn't match only pattern: $BOOTSTRAP_ONLY_PATTERN)"
                     $skippedCount++
                     continue
                 }
 
-                Log-Info "▶ Executing: $scriptName"
+                Log-Info "[EXEC] Executing: $scriptName"
                 $scriptCount++
 
                 # Execute PowerShell script
@@ -657,10 +675,10 @@ try {
 
     Write-Host ""
     Write-Host "========================================="
-    Write-Host "✅ Setup completed successfully!" -ForegroundColor Green
+    Write-Host "[OK] Setup completed successfully!" -ForegroundColor Green
     Write-Host "========================================="
     Write-Host ""
-    Write-Host "💡 Next steps:"
+    Write-Host "[INFO] Next steps:"
     Write-Host "   1. Start the server: .\start.ps1" -ForegroundColor Cyan
     Write-Host "   2. Access Thunder at: $BASE_URL" -ForegroundColor Cyan
     Write-Host "   3. Login with admin credentials:"
@@ -671,7 +689,7 @@ try {
 finally {
     # Cleanup
     Write-Host ""
-    Write-Host "🛑 Stopping temporary server..." -ForegroundColor Cyan
+    Write-Host "[STOP] Stopping temporary server..." -ForegroundColor Cyan
     if ($proc -and -not $proc.HasExited) {
         try {
             Stop-Process -Id $proc.Id -Force -ErrorAction SilentlyContinue

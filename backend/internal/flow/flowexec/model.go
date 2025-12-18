@@ -35,6 +35,7 @@ type EngineContext struct {
 	AppID         string
 	UserInputData map[string]string
 	RuntimeData   map[string]string
+	TraceID       string
 
 	CurrentNode         core.NodeInterface
 	CurrentNodeResponse *common.NodeResponse
@@ -186,6 +187,7 @@ func (f *FlowContextWithUserDataDB) ToEngineContext(graph core.GraphInterface) (
 
 	return EngineContext{
 		FlowID:            f.FlowID,
+		TraceID:           "", // TraceID is transient and set from request context
 		FlowType:          graph.GetType(),
 		AppID:             f.AppID,
 		UserInputData:     userInputData,

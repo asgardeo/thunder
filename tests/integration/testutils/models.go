@@ -128,12 +128,12 @@ type Assignment struct {
 
 // Role represents a role in the system
 type Role struct {
-	ID                 string       `json:"id,omitempty"`
-	Name               string       `json:"name"`
-	Description        string       `json:"description,omitempty"`
-	OrganizationUnitID string       `json:"ouId"`
-	Permissions        []string     `json:"permissions"`
-	Assignments        []Assignment `json:"assignments,omitempty"`
+	ID                 string                `json:"id,omitempty"`
+	Name               string                `json:"name"`
+	Description        string                `json:"description,omitempty"`
+	OrganizationUnitID string                `json:"ouId"`
+	Permissions        []ResourcePermissions `json:"permissions,omitempty"`
+	Assignments        []Assignment          `json:"assignments,omitempty"`
 }
 
 // TokenResponse represents the response from token exchange
@@ -188,4 +188,29 @@ type FlowStep struct {
 	Data          *FlowData `json:"data,omitempty"`
 	Assertion     string    `json:"assertion,omitempty"`
 	FailureReason string    `json:"failureReason,omitempty"`
+}
+
+// ResourceServer represents a resource server in the system
+type ResourceServer struct {
+	ID                 string  `json:"id,omitempty"`
+	Name               string  `json:"name"`
+	Description        string  `json:"description,omitempty"`
+	Identifier         string  `json:"identifier,omitempty"`
+	OrganizationUnitID string  `json:"ouId"`
+	Delimiter          *string `json:"delimiter,omitempty"`
+}
+
+// Action represents an action in the resource system
+type Action struct {
+	ID          string `json:"id,omitempty"`
+	Name        string `json:"name"`
+	Handle      string `json:"handle"`
+	Description string `json:"description,omitempty"`
+	Permission  string `json:"permission,omitempty"`
+}
+
+// ResourcePermissions represents permissions grouped by resource server
+type ResourcePermissions struct {
+	ResourceServerID string   `json:"resourceServerId"`
+	Permissions      []string `json:"permissions"`
 }

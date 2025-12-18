@@ -18,7 +18,7 @@
 # ----------------------------------------------------------------------------
 
 # Bootstrap Script: Default Resources Setup
-# Creates default organization unit, user schema, admin user, admin role, and DEVELOP application
+# Creates default organization unit, user schema, admin user, system resource server, system action, admin role, and DEVELOP application
 
 set -e
 
@@ -225,6 +225,101 @@ fi
 echo ""
 
 # ============================================================================
+# Create System Resource Server
+# ============================================================================
+
+log_info "Creating system resource server..."
+
+if [[ -z "$DEFAULT_OU_ID" ]]; then
+    log_error "Default OU ID is not available. Cannot create resource server."
+    exit 1
+fi
+
+RESPONSE=$(thunder_api_call POST "/resource-servers" "{
+  \"name\": \"System\",
+  \"description\": \"System resource server\",
+  \"identifier\": \"system\",
+  \"ouId\": \"${DEFAULT_OU_ID}\"
+}")
+
+HTTP_CODE="${RESPONSE: -3}"
+BODY="${RESPONSE%???}"
+
+if [[ "$HTTP_CODE" == "201" ]] || [[ "$HTTP_CODE" == "200" ]]; then
+    log_success "Resource server created successfully"
+    SYSTEM_RS_ID=$(echo "$BODY" | grep -o '"id":"[^"]*"' | head -1 | cut -d'"' -f4)
+    if [[ -n "$SYSTEM_RS_ID" ]]; then
+        log_info "System resource server ID: $SYSTEM_RS_ID"
+    else
+        log_error "Could not extract resource server ID from response"
+        exit 1
+    fi
+elif [[ "$HTTP_CODE" == "409" ]]; then
+    log_warning "Resource server already exists, retrieving ID..."
+    # Get existing resource server ID
+    RESPONSE=$(thunder_api_call GET "/resource-servers")
+    HTTP_CODE="${RESPONSE: -3}"
+    BODY="${RESPONSE%???}"
+
+    if [[ "$HTTP_CODE" == "200" ]]; then
+        SYSTEM_RS_ID=$(echo "$BODY" | grep -o '"id":"[^"]*","[^"]*":"System"' | grep -o '"id":"[^"]*"' | head -1 | cut -d'"' -f4)
+
+        # Fallback parsing
+        if [[ -z "$SYSTEM_RS_ID" ]]; then
+            SYSTEM_RS_ID=$(echo "$BODY" | sed 's/},{/}\n{/g' | grep '"identifier":"system"' | grep -o '"id":"[^"]*"' | head -1 | cut -d'"' -f4)
+        fi
+
+        if [[ -n "$SYSTEM_RS_ID" ]]; then
+            log_success "Found resource server ID: $SYSTEM_RS_ID"
+        else
+            log_error "Could not find resource server ID in response"
+            exit 1
+        fi
+    else
+        log_error "Failed to fetch resource servers (HTTP $HTTP_CODE)"
+        exit 1
+    fi
+else
+    log_error "Failed to create resource server (HTTP $HTTP_CODE)"
+    echo "Response: $BODY"
+    exit 1
+fi
+
+echo ""
+
+# ============================================================================
+# Create System Action
+# ============================================================================
+
+log_info "Creating 'system' action on resource server..."
+
+if [[ -z "$SYSTEM_RS_ID" ]]; then
+    log_error "System resource server ID is not available. Cannot create action."
+    exit 1
+fi
+
+RESPONSE=$(thunder_api_call POST "/resource-servers/${SYSTEM_RS_ID}/actions" '{
+  "name": "System Access",
+  "description": "Full system access permission",
+  "handle": "system"
+}')
+
+HTTP_CODE="${RESPONSE: -3}"
+BODY="${RESPONSE%???}"
+
+if [[ "$HTTP_CODE" == "201" ]] || [[ "$HTTP_CODE" == "200" ]]; then
+    log_success "System action created successfully"
+elif [[ "$HTTP_CODE" == "409" ]]; then
+    log_warning "System action already exists, skipping"
+else
+    log_error "Failed to create system action (HTTP $HTTP_CODE)"
+    echo "Response: $BODY"
+    exit 1
+fi
+
+echo ""
+
+# ============================================================================
 # Create Admin Role
 # ============================================================================
 
@@ -240,11 +335,21 @@ if [[ -z "$DEFAULT_OU_ID" ]]; then
     exit 1
 fi
 
+if [[ -z "$SYSTEM_RS_ID" ]]; then
+    log_error "System resource server ID is not available. Cannot create role."
+    exit 1
+fi
+
 RESPONSE=$(thunder_api_call POST "/roles" "{
   \"name\": \"Administrator\",
   \"description\": \"System administrator role with full permissions\",
   \"ouId\": \"${DEFAULT_OU_ID}\",
-  \"permissions\": [\"system\"],
+  \"permissions\": [
+    {
+      \"resourceServerId\": \"${SYSTEM_RS_ID}\",
+      \"permissions\": [\"system\"]
+    }
+  ],
   \"assignments\": [
     {
       \"id\": \"${ADMIN_USER_ID}\",

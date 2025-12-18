@@ -32,6 +32,10 @@ import (
 	"github.com/asgardeo/thunder/internal/system/log"
 )
 
+const (
+	testCryptoKey = "0579f866ac7c9273580d0ff163fa01a7b2401a7ff3ddc3e3b14ae3136fa6025e"
+)
+
 type IDPInitTestSuite struct {
 	suite.Suite
 }
@@ -71,7 +75,8 @@ func (s *IDPInitTestSuite) TestInitialize() {
 	_ = config.InitializeThunderRuntime("test", testConfig)
 	mux := http.NewServeMux()
 
-	service := Initialize(mux)
+	service, _, err := Initialize(mux)
+	s.NoError(err)
 	s.NotNil(service)
 	s.Implements((*IDPServiceInterface)(nil), service)
 }
@@ -287,9 +292,10 @@ func (suite *IDPInitTestSuite) TestInitialize_WithImmutableResourcesDisabled() {
 	mux := http.NewServeMux()
 
 	// Execute
-	service := Initialize(mux)
+	service, _, err := Initialize(mux)
 
 	// Assert
+	suite.NoError(err)
 	assert.NotNil(suite.T(), service)
 	assert.Implements(suite.T(), (*IDPServiceInterface)(nil), service)
 }
@@ -323,9 +329,10 @@ func TestInitialize_WithImmutableResourcesEnabled_EmptyDirectory(t *testing.T) {
 	mux := http.NewServeMux()
 
 	// Execute
-	service := Initialize(mux)
+	service, _, err := Initialize(mux)
 
 	// Assert
+	assert.NoError(t, err)
 	assert.NotNil(t, service)
 	assert.Implements(t, (*IDPServiceInterface)(nil), service)
 
@@ -349,8 +356,7 @@ func TestInitialize_WithImmutableResourcesEnabled_ValidConfigs(t *testing.T) {
 
 	// Create crypto key file for encryption (relative to tmpDir)
 	cryptoFilePath := tmpDir + "/repository/conf/crypto.key"
-	dummyCryptoKey := "0579f866ac7c9273580d0ff163fa01a7b2401a7ff3ddc3e3b14ae3136fa6025e"
-	err = os.WriteFile(cryptoFilePath, []byte(dummyCryptoKey), 0600)
+	err = os.WriteFile(cryptoFilePath, []byte(testCryptoKey), 0600)
 	assert.NoError(t, err)
 
 	// Setup config with encryption support (path relative to thunderHome)
@@ -421,9 +427,10 @@ properties:
 	mux := http.NewServeMux()
 
 	// Execute
-	service := Initialize(mux)
+	service, _, err := Initialize(mux)
 
 	// Assert
+	assert.NoError(t, err)
 	assert.NotNil(t, service)
 	assert.Implements(t, (*IDPServiceInterface)(nil), service)
 
@@ -457,4 +464,152 @@ properties:
 	// client_id, client_secret, redirect_uri (from YAML) + authorization_endpoint, token_endpoint,
 	// userinfo_endpoint, user_email_endpoint (defaults)
 	assert.Len(t, githubIDP.Properties, 7)
+}
+
+// TestInitialize_WithImmutableResourcesEnabled_InvalidYAML tests Initialize with invalid YAML files
+//
+//nolint:dupl // Similar test setup required for different error scenarios
+func TestInitialize_WithImmutableResourcesEnabled_InvalidYAML(t *testing.T) {
+	tmpDir := t.TempDir()
+	confDir := tmpDir + "/repository/conf/immutable_resources"
+	idpDir := confDir + "/identity_providers"
+
+	err := os.MkdirAll(idpDir, 0750)
+	assert.NoError(t, err)
+
+	// Create an invalid YAML file
+	invalidYAML := `invalid yaml content
+  - this is not: valid
+`
+	err = os.WriteFile(idpDir+"/invalid-idp.yaml", []byte(invalidYAML), 0600)
+	assert.NoError(t, err)
+
+	// Setup config
+	cryptoFilePath := tmpDir + "/repository/conf/crypto.key"
+	// Use testCryptoKey constant
+	err = os.WriteFile(cryptoFilePath, []byte(testCryptoKey), 0600)
+	assert.NoError(t, err)
+
+	testConfig := &config.Config{
+		ImmutableResources: config.ImmutableResources{
+			Enabled: true,
+		},
+		Security: config.SecurityConfig{
+			CryptoFile: "repository/conf/crypto.key",
+		},
+	}
+
+	config.ResetThunderRuntime()
+	err = config.InitializeThunderRuntime(tmpDir, testConfig)
+	assert.NoError(t, err)
+	defer config.ResetThunderRuntime()
+
+	mux := http.NewServeMux()
+
+	// Initialize should return an error due to invalid YAML
+	_, _, err = Initialize(mux)
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "failed to load identity provider resources")
+}
+
+// TestInitialize_WithImmutableResourcesEnabled_ValidationFailure tests Initialize with validation errors
+//
+//nolint:dupl // Similar test setup required for different error scenarios
+func TestInitialize_WithImmutableResourcesEnabled_ValidationFailure(t *testing.T) {
+	tmpDir := t.TempDir()
+	confDir := tmpDir + "/repository/conf/immutable_resources"
+	idpDir := confDir + "/identity_providers"
+
+	err := os.MkdirAll(idpDir, 0750)
+	assert.NoError(t, err)
+
+	// Create a YAML file with invalid configuration (empty name)
+	invalidIDPYAML := `id: "invalid-idp"
+name: ""
+type: GOOGLE
+properties:
+  - name: "client_id"
+    value: "test"
+    is_secret: false
+`
+	err = os.WriteFile(idpDir+"/invalid-idp.yaml", []byte(invalidIDPYAML), 0600)
+	assert.NoError(t, err)
+
+	// Setup config
+	cryptoFilePath := tmpDir + "/repository/conf/crypto.key"
+	// Use testCryptoKey constant
+	err = os.WriteFile(cryptoFilePath, []byte(testCryptoKey), 0600)
+	assert.NoError(t, err)
+
+	testConfig := &config.Config{
+		ImmutableResources: config.ImmutableResources{
+			Enabled: true,
+		},
+		Security: config.SecurityConfig{
+			CryptoFile: "repository/conf/crypto.key",
+		},
+	}
+
+	config.ResetThunderRuntime()
+	err = config.InitializeThunderRuntime(tmpDir, testConfig)
+	assert.NoError(t, err)
+	defer config.ResetThunderRuntime()
+
+	mux := http.NewServeMux()
+
+	// Initialize should return an error due to validation failure
+	_, _, err = Initialize(mux)
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "failed to load identity provider resources")
+}
+
+// TestInitialize_WithImmutableResourcesEnabled_InvalidIDPType tests Initialize with invalid IDP type
+//
+//nolint:dupl // Similar test setup required for different error scenarios
+func TestInitialize_WithImmutableResourcesEnabled_InvalidIDPType(t *testing.T) {
+	tmpDir := t.TempDir()
+	confDir := tmpDir + "/repository/conf/immutable_resources"
+	idpDir := confDir + "/identity_providers"
+
+	err := os.MkdirAll(idpDir, 0750)
+	assert.NoError(t, err)
+
+	// Create a YAML file with invalid IDP type
+	invalidTypeYAML := `id: "invalid-type-idp"
+name: "Invalid Type IDP"
+type: "UNSUPPORTED_TYPE"
+properties:
+  - name: "client_id"
+    value: "test"
+    is_secret: false
+`
+	err = os.WriteFile(idpDir+"/invalid-type.yaml", []byte(invalidTypeYAML), 0600)
+	assert.NoError(t, err)
+
+	// Setup config
+	cryptoFilePath := tmpDir + "/repository/conf/crypto.key"
+	// Use testCryptoKey constant
+	err = os.WriteFile(cryptoFilePath, []byte(testCryptoKey), 0600)
+	assert.NoError(t, err)
+
+	testConfig := &config.Config{
+		ImmutableResources: config.ImmutableResources{
+			Enabled: true,
+		},
+		Security: config.SecurityConfig{
+			CryptoFile: "repository/conf/crypto.key",
+		},
+	}
+
+	config.ResetThunderRuntime()
+	err = config.InitializeThunderRuntime(tmpDir, testConfig)
+	assert.NoError(t, err)
+	defer config.ResetThunderRuntime()
+
+	mux := http.NewServeMux()
+
+	// Initialize should return an error due to invalid IDP type
+	_, _, err = Initialize(mux)
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "failed to load identity provider resources")
 }
