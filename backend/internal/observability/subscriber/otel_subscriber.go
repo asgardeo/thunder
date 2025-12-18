@@ -210,12 +210,16 @@ func (o *OTelSubscriber) createSpan(evt *event.Event) error {
 		trace.WithAttributes(spanAttrs...),
 	)
 
-	// Convert event data to span event attributes
-	// According to OTel best practices: use span events when timestamp is meaningful
+	// Convert event data to attributes
+	// These will be used for both span tags (attributes) and span events (logs)
 	eventAttrs := o.convertDataToAttributes(evt.Data)
 
-	// Add span event with the event data
-	// This represents "something that happened at a point in time"
+	// Add event data as span attributes (tags) for searchability
+	// This allows querying/filtering traces by event data fields
+	span.SetAttributes(eventAttrs...)
+
+	// Add span event with the event data (logs)
+	// This represents "something that happened at a point in time" and preserves backward compatibility
 	span.AddEvent(evt.Type,
 		trace.WithTimestamp(evt.Timestamp),
 		trace.WithAttributes(eventAttrs...),
