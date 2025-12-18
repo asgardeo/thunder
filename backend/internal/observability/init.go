@@ -41,13 +41,13 @@ import (
 func Initialize() ObservabilityServiceInterface {
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, loggerComponentName))
 
-	logger.Info("Initializing observability service")
+	logger.Debug("Initializing observability service")
 
 	// Get configuration
 	cfg := config.GetThunderRuntime().Config.Observability
 
 	if !cfg.Enabled {
-		logger.Info("Observability is disabled in configuration")
+		logger.Debug("Observability is disabled in configuration")
 		// Return a disabled service (handles all operations as no-ops)
 		return &Service{
 			logger: logger,
@@ -60,7 +60,7 @@ func Initialize() ObservabilityServiceInterface {
 
 	// Log initialization status
 	activeSubscribers := svc.GetActiveSubscribers()
-	logger.Info("Observability service initialized successfully",
+	logger.Debug("Observability service initialized successfully",
 		log.Int("activeSubscribers", len(activeSubscribers)))
 
 	return svc

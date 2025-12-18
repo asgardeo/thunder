@@ -5,6 +5,8 @@
 package flowexecmock
 
 import (
+	"context"
+
 	"github.com/asgardeo/thunder/internal/flow/flowexec"
 	"github.com/asgardeo/thunder/internal/system/error/serviceerror"
 	mock "github.com/stretchr/testify/mock"
@@ -73,6 +75,7 @@ type FlowExecServiceInterfaceMock_Execute_Call struct {
 }
 
 // Execute is a helper method to define mock.On call
+//   - ctx context.Context
 //   - appID string
 //   - flowID string
 //   - flowType string
@@ -85,9 +88,9 @@ func (_e *FlowExecServiceInterfaceMock_Expecter) Execute(appID interface{}, flow
 
 func (_c *FlowExecServiceInterfaceMock_Execute_Call) Run(run func(appID string, flowID string, flowType string, verbose bool, action string, inputs map[string]string)) *FlowExecServiceInterfaceMock_Execute_Call {
 	_c.Call.Run(func(args mock.Arguments) {
-		var arg0 string
+		var arg0 context.Context
 		if args[0] != nil {
-			arg0 = args[0].(string)
+			arg0 = args[0].(context.Context)
 		}
 		var arg1 string
 		if args[1] != nil {

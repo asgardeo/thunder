@@ -309,9 +309,16 @@ func (rh *roleHandler) sanitizeCreateRoleRequest(request *CreateRoleRequest) Cre
 	}
 
 	if request.Permissions != nil {
-		sanitized.Permissions = make([]string, len(request.Permissions))
-		for i, permission := range request.Permissions {
-			sanitized.Permissions[i] = sysutils.SanitizeString(permission)
+		sanitized.Permissions = make([]ResourcePermissions, len(request.Permissions))
+		for i, resPerm := range request.Permissions {
+			sanitizedPerms := make([]string, len(resPerm.Permissions))
+			for j, perm := range resPerm.Permissions {
+				sanitizedPerms[j] = sysutils.SanitizeString(perm)
+			}
+			sanitized.Permissions[i] = ResourcePermissions{
+				ResourceServerID: sysutils.SanitizeString(resPerm.ResourceServerID),
+				Permissions:      sanitizedPerms,
+			}
 		}
 	}
 
@@ -337,9 +344,16 @@ func (rh *roleHandler) sanitizeUpdateRoleRequest(request *UpdateRoleRequest) Upd
 	}
 
 	if request.Permissions != nil {
-		sanitized.Permissions = make([]string, len(request.Permissions))
-		for i, permission := range request.Permissions {
-			sanitized.Permissions[i] = sysutils.SanitizeString(permission)
+		sanitized.Permissions = make([]ResourcePermissions, len(request.Permissions))
+		for i, resPerm := range request.Permissions {
+			sanitizedPerms := make([]string, len(resPerm.Permissions))
+			for j, perm := range resPerm.Permissions {
+				sanitizedPerms[j] = sysutils.SanitizeString(perm)
+			}
+			sanitized.Permissions[i] = ResourcePermissions{
+				ResourceServerID: sysutils.SanitizeString(resPerm.ResourceServerID),
+				Permissions:      sanitizedPerms,
+			}
 		}
 	}
 

@@ -65,7 +65,7 @@ func TestJSONFormatter_Format(t *testing.T) {
 			event: &event.Event{
 				TraceID:   "trace-123",
 				EventID:   "event-456",
-				Type:      string(event.EventTypeAuthenticationStarted),
+				Type:      string(event.EventTypeTokenIssuanceStarted),
 				Component: "AuthHandler",
 				Timestamp: timestamp,
 				Status:    event.StatusInProgress,
@@ -178,16 +178,16 @@ func TestJSONFormatter_FormatMultipleEvents(t *testing.T) {
 		{
 			TraceID:   "trace-1",
 			EventID:   "event-1",
-			Type:      string(event.EventTypeAuthenticationStarted),
-			Component: "AuthHandler",
+			Type:      string(event.EventTypeTokenIssuanceStarted),
+			Component: "test",
 			Timestamp: timestamp,
 			Status:    event.StatusInProgress,
-			Data:      make(map[string]interface{}),
+			Data:      nil, // nil data map
 		},
 		{
 			TraceID:   "trace-1",
 			EventID:   "event-2",
-			Type:      string(event.EventTypeAuthenticationCompleted),
+			Type:      string(event.EventTypeTokenIssued),
 			Component: "AuthHandler",
 			Timestamp: timestamp.Add(time.Second),
 			Status:    event.StatusSuccess,
@@ -304,7 +304,7 @@ func BenchmarkJSONFormatter_Format(b *testing.B) {
 	evt := &event.Event{
 		TraceID:   "trace-123",
 		EventID:   "event-456",
-		Type:      string(event.EventTypeAuthenticationStarted),
+		Type:      string(event.EventTypeTokenIssuanceStarted),
 		Component: "AuthHandler",
 		Timestamp: timestamp,
 		Status:    event.StatusSuccess,
@@ -335,7 +335,7 @@ func BenchmarkJSONFormatter_FormatLargeData(b *testing.B) {
 	evt := &event.Event{
 		TraceID:   "trace-123",
 		EventID:   "event-456",
-		Type:      string(event.EventTypeAuthenticationStarted),
+		Type:      string(event.EventTypeTokenIssuanceStarted),
 		Component: "AuthHandler",
 		Timestamp: timestamp,
 		Status:    event.StatusSuccess,

@@ -28,19 +28,22 @@ import (
 
 	"github.com/asgardeo/thunder/internal/flow/common"
 	"github.com/asgardeo/thunder/internal/flow/core"
+	"github.com/asgardeo/thunder/internal/observability/event"
 	"github.com/asgardeo/thunder/internal/system/error/serviceerror"
 	"github.com/asgardeo/thunder/internal/user"
 	"github.com/asgardeo/thunder/tests/mocks/authn/credentialsmock"
 	"github.com/asgardeo/thunder/tests/mocks/flow/coremock"
+	"github.com/asgardeo/thunder/tests/mocks/observabilitymock"
 	"github.com/asgardeo/thunder/tests/mocks/usermock"
 )
 
 type BasicAuthExecutorTestSuite struct {
 	suite.Suite
-	mockUserService  *usermock.UserServiceInterfaceMock
-	mockCredsService *credentialsmock.CredentialsAuthnServiceInterfaceMock
-	mockFlowFactory  *coremock.FlowFactoryInterfaceMock
-	executor         *basicAuthExecutor
+	mockUserService   *usermock.UserServiceInterfaceMock
+	mockCredsService  *credentialsmock.CredentialsAuthnServiceInterfaceMock
+	mockFlowFactory   *coremock.FlowFactoryInterfaceMock
+	mockObservability *observabilitymock.ObservabilityServiceInterfaceMock
+	executor          *basicAuthExecutor
 }
 
 func TestBasicAuthExecutorSuite(t *testing.T) {
@@ -51,10 +54,14 @@ func (suite *BasicAuthExecutorTestSuite) SetupTest() {
 	suite.mockUserService = usermock.NewUserServiceInterfaceMock(suite.T())
 	suite.mockCredsService = credentialsmock.NewCredentialsAuthnServiceInterfaceMock(suite.T())
 	suite.mockFlowFactory = coremock.NewFlowFactoryInterfaceMock(suite.T())
+	suite.mockObservability = observabilitymock.NewObservabilityServiceInterfaceMock(suite.T())
+
+	// Default behavior for observability: disabled
+	suite.mockObservability.On("IsEnabled").Return(false).Maybe()
 
 	defaultInputs := []common.Input{
 		{Identifier: userAttributeUsername, Type: "string", Required: true},
-		{Identifier: userAttributePassword, Type: "string", Required: true},
+		{Identifier: userAttributePassword, Type: inputDataTypePassword, Required: true},
 	}
 
 	// Mock the embedded identifying executor first
@@ -66,7 +73,8 @@ func (suite *BasicAuthExecutorTestSuite) SetupTest() {
 	suite.mockFlowFactory.On("CreateExecutor", ExecutorNameBasicAuth, common.ExecutorTypeAuthentication,
 		defaultInputs, []common.Input{}).Return(mockExec)
 
-	suite.executor = newBasicAuthExecutor(suite.mockFlowFactory, suite.mockUserService, suite.mockCredsService)
+	suite.executor = newBasicAuthExecutor(suite.mockFlowFactory, suite.mockUserService, suite.mockCredsService,
+		suite.mockObservability)
 }
 
 func createMockIdentifyingExecutor(t *testing.T) core.ExecutorInterface {
@@ -78,23 +86,57 @@ func createMockIdentifyingExecutor(t *testing.T) core.ExecutorInterface {
 	return mockExec
 }
 
+func createMockExecutorWithCustomInputs(t *testing.T, name string,
+	inputs []common.Input) core.ExecutorInterface {
+	mockExec := coremock.NewExecutorInterfaceMock(t)
+	mockExec.On("GetName").Return(name).Maybe()
+	mockExec.On("GetType").Return(common.ExecutorTypeAuthentication).Maybe()
+	mockExec.On("GetDefaultExecutorInputs").Return(inputs).Maybe()
+	mockExec.On("GetPrerequisites").Return([]common.Input{}).Maybe()
+	mockExec.On("GetRequiredData", mock.Anything).Return(
+		func(ctx *core.NodeContext) []common.Input {
+			return inputs
+		}).Maybe()
+	mockExec.On("CheckInputData", mock.Anything, mock.Anything).Return(
+		func(ctx *core.NodeContext, execResp *common.ExecutorResponse) bool {
+			for _, input := range inputs {
+				if input.Required {
+					value, exists := ctx.UserInputs[input.Identifier]
+					if !exists || value == "" {
+						execResp.Inputs = inputs
+						return true
+					}
+				}
+			}
+			return false
+		}).Maybe()
+	return mockExec
+}
+
 func createMockBasicAuthExecutor(t *testing.T) core.ExecutorInterface {
 	mockExec := coremock.NewExecutorInterfaceMock(t)
 	mockExec.On("GetName").Return(ExecutorNameBasicAuth).Maybe()
 	mockExec.On("GetType").Return(common.ExecutorTypeAuthentication).Maybe()
-	mockExec.On("GetDefaultInputs").Return([]common.Input{
+	mockExec.On("GetDefaultExecutorInputs").Return([]common.Input{
 		{Identifier: userAttributeUsername, Type: "string", Required: true},
-		{Identifier: userAttributePassword, Type: "string", Required: true},
+		{Identifier: userAttributePassword, Type: inputDataTypePassword, Required: true},
 	}).Maybe()
 	mockExec.On("GetPrerequisites").Return([]common.Input{}).Maybe()
-	mockExec.On("HasRequiredInputs", mock.Anything, mock.Anything).Return(
+	mockExec.On("GetRequiredData", mock.Anything).Return(
+		func(ctx *core.NodeContext) []common.Input {
+			return []common.Input{
+				{Identifier: userAttributeUsername, Type: "string", Required: true},
+				{Identifier: userAttributePassword, Type: inputDataTypePassword, Required: true},
+			}
+		}).Maybe()
+	mockExec.On("CheckInputData", mock.Anything, mock.Anything).Return(
 		func(ctx *core.NodeContext, execResp *common.ExecutorResponse) bool {
 			username, hasUsername := ctx.UserInputs[userAttributeUsername]
 			password, hasPassword := ctx.UserInputs[userAttributePassword]
 			if !hasUsername || username == "" || !hasPassword || password == "" {
 				execResp.Inputs = []common.Input{
 					{Identifier: userAttributeUsername, Type: "string", Required: true},
-					{Identifier: userAttributePassword, Type: "string", Required: true},
+					{Identifier: userAttributePassword, Type: inputDataTypePassword, Required: true},
 				}
 				return false
 			}
@@ -150,6 +192,56 @@ func (suite *BasicAuthExecutorTestSuite) TestExecute_Success_AuthenticationFlow(
 	suite.mockCredsService.AssertExpectations(suite.T())
 }
 
+func (suite *BasicAuthExecutorTestSuite) TestExecute_Success_WithEmailAttribute() {
+	attrs := map[string]interface{}{"phone": "+1234567890"}
+	attrsJSON, _ := json.Marshal(attrs)
+
+	ctx := &core.NodeContext{
+		FlowID:   "flow-123",
+		FlowType: common.FlowTypeAuthentication,
+		UserInputs: map[string]string{
+			"email":    "test@example.com",
+			"password": "password123",
+		},
+		RuntimeData: make(map[string]string),
+	}
+
+	// Override GetRequiredData to return email and password as required fields
+	originalInputs := []common.Input{
+		{Identifier: "email", Type: "string", Required: true},
+		{Identifier: "password", Type: inputDataTypePassword, Required: true},
+	}
+	suite.executor.ExecutorInterface = createMockExecutorWithCustomInputs(
+		suite.T(), ExecutorNameBasicAuth, originalInputs)
+
+	userID := testUserID
+	suite.mockUserService.On("IdentifyUser", map[string]interface{}{
+		"email": "test@example.com",
+	}).Return(&userID, nil)
+
+	authenticatedUser := &user.User{
+		ID:               testUserID,
+		OrganizationUnit: "ou-123",
+		Type:             "INTERNAL",
+		Attributes:       attrsJSON,
+	}
+
+	suite.mockCredsService.On("Authenticate", map[string]interface{}{
+		"email":    "test@example.com",
+		"password": "password123",
+	}).Return(authenticatedUser, nil)
+
+	resp, err := suite.executor.Execute(ctx)
+
+	assert.NoError(suite.T(), err)
+	assert.NotNil(suite.T(), resp)
+	assert.Equal(suite.T(), common.ExecComplete, resp.Status)
+	assert.True(suite.T(), resp.AuthenticatedUser.IsAuthenticated)
+	assert.Equal(suite.T(), testUserID, resp.AuthenticatedUser.UserID)
+	suite.mockUserService.AssertExpectations(suite.T())
+	suite.mockCredsService.AssertExpectations(suite.T())
+}
+
 func (suite *BasicAuthExecutorTestSuite) TestExecute_Success_RegistrationFlow() {
 	ctx := &core.NodeContext{
 		FlowID:   "flow-123",
@@ -173,6 +265,60 @@ func (suite *BasicAuthExecutorTestSuite) TestExecute_Success_RegistrationFlow() 
 	assert.False(suite.T(), resp.AuthenticatedUser.IsAuthenticated)
 	assert.Equal(suite.T(), "newuser", resp.AuthenticatedUser.Attributes[userAttributeUsername])
 	suite.mockUserService.AssertExpectations(suite.T())
+}
+
+func (suite *BasicAuthExecutorTestSuite) TestExecute_Success_WithMultipleAttributes() {
+	attrs := map[string]interface{}{"name": "Test User", "role": "admin"}
+	attrsJSON, _ := json.Marshal(attrs)
+
+	ctx := &core.NodeContext{
+		FlowID:   "flow-123",
+		FlowType: common.FlowTypeAuthentication,
+		UserInputs: map[string]string{
+			"email":    "test@example.com",
+			"phone":    "+1234567890",
+			"password": "password123",
+		},
+		RuntimeData: make(map[string]string),
+	}
+
+	// Override GetRequiredData to return email, phone, and password as required fields
+	customInputs := []common.Input{
+		{Identifier: "email", Type: "string", Required: true},
+		{Identifier: "phone", Type: "string", Required: true},
+		{Identifier: "password", Type: inputDataTypePassword, Required: true},
+	}
+	suite.executor.ExecutorInterface = createMockExecutorWithCustomInputs(
+		suite.T(), ExecutorNameBasicAuth, customInputs)
+
+	userID := testUserID
+	suite.mockUserService.On("IdentifyUser", map[string]interface{}{
+		"email": "test@example.com",
+		"phone": "+1234567890",
+	}).Return(&userID, nil)
+
+	authenticatedUser := &user.User{
+		ID:               testUserID,
+		OrganizationUnit: "ou-123",
+		Type:             "INTERNAL",
+		Attributes:       attrsJSON,
+	}
+
+	suite.mockCredsService.On("Authenticate", map[string]interface{}{
+		"email":    "test@example.com",
+		"phone":    "+1234567890",
+		"password": "password123",
+	}).Return(authenticatedUser, nil)
+
+	resp, err := suite.executor.Execute(ctx)
+
+	assert.NoError(suite.T(), err)
+	assert.NotNil(suite.T(), resp)
+	assert.Equal(suite.T(), common.ExecComplete, resp.Status)
+	assert.True(suite.T(), resp.AuthenticatedUser.IsAuthenticated)
+	assert.Equal(suite.T(), testUserID, resp.AuthenticatedUser.UserID)
+	suite.mockUserService.AssertExpectations(suite.T())
+	suite.mockCredsService.AssertExpectations(suite.T())
 }
 
 func (suite *BasicAuthExecutorTestSuite) TestExecute_UserInputRequired() {
@@ -409,4 +555,126 @@ func (suite *BasicAuthExecutorTestSuite) TestGetAuthenticatedUser_InvalidJSONAtt
 	assert.Nil(suite.T(), resp)
 	suite.mockUserService.AssertExpectations(suite.T())
 	suite.mockCredsService.AssertExpectations(suite.T())
+}
+
+func (suite *BasicAuthExecutorTestSuite) TestExecute_Observability_Success() {
+	// Enable observability for this test
+	suite.mockObservability.ExpectedCalls = nil
+	suite.mockObservability.On("IsEnabled").Return(true)
+
+	userID := testUserID
+	attrs := map[string]interface{}{"email": "test@example.com"}
+	attrsJSON, _ := json.Marshal(attrs)
+
+	ctx := &core.NodeContext{
+		FlowID:        "flow-123",
+		AppID:         "app-1",
+		CurrentNodeID: "node-1",
+		FlowType:      common.FlowTypeAuthentication,
+		UserInputs: map[string]string{
+			userAttributeUsername: "testuser",
+			userAttributePassword: "password123",
+		},
+	}
+
+	suite.mockUserService.On("IdentifyUser", map[string]interface{}{
+		userAttributeUsername: "testuser",
+	}).Return(&userID, nil)
+
+	authenticatedUser := &user.User{
+		ID:               testUserID,
+		OrganizationUnit: "ou-123",
+		Type:             "INTERNAL",
+		Attributes:       attrsJSON,
+	}
+
+	suite.mockCredsService.On("Authenticate", map[string]interface{}{
+		userAttributeUsername: "testuser",
+		userAttributePassword: "password123",
+	}).Return(authenticatedUser, nil)
+
+	// Expect Started event
+	suite.mockObservability.On("PublishEvent", mock.MatchedBy(func(evt *event.Event) bool {
+		return evt.Type == string(event.EventTypeFlowNodeExecutionStarted) &&
+			evt.Status == event.StatusInProgress &&
+			evt.Data[event.DataKey.FlowID] == "flow-123" &&
+			evt.Data[event.DataKey.AppID] == "app-1" &&
+			evt.Data[event.DataKey.NodeID] == "node-1"
+	})).Return()
+
+	// Expect Completed event
+	suite.mockObservability.On("PublishEvent", mock.MatchedBy(func(evt *event.Event) bool {
+		return evt.Type == string(event.EventTypeFlowNodeExecutionCompleted) &&
+			evt.Status == event.StatusSuccess &&
+			evt.Data[event.DataKey.FlowID] == "flow-123" &&
+			evt.Data[event.DataKey.AppID] == "app-1" &&
+			evt.Data[event.DataKey.NodeID] == "node-1" &&
+			evt.Data[event.DataKey.UserID] == testUserID
+	})).Return()
+
+	resp, err := suite.executor.Execute(ctx)
+	assert.NoError(suite.T(), err)
+	assert.NotNil(suite.T(), resp)
+	assert.Equal(suite.T(), common.ExecComplete, resp.Status)
+
+	suite.mockUserService.AssertExpectations(suite.T())
+	suite.mockCredsService.AssertExpectations(suite.T())
+	suite.mockObservability.AssertExpectations(suite.T())
+}
+
+func (suite *BasicAuthExecutorTestSuite) TestExecute_Observability_Failure() {
+	// Enable observability for this test
+	suite.mockObservability.ExpectedCalls = nil
+	suite.mockObservability.On("IsEnabled").Return(true)
+
+	userID := testUserID
+	ctx := &core.NodeContext{
+		FlowID:        "flow-123",
+		AppID:         "app-1",
+		CurrentNodeID: "node-1",
+		FlowType:      common.FlowTypeAuthentication,
+		UserInputs: map[string]string{
+			userAttributeUsername: "testuser",
+			userAttributePassword: "wrongpassword",
+		},
+	}
+
+	suite.mockUserService.On("IdentifyUser", map[string]interface{}{
+		userAttributeUsername: "testuser",
+	}).Return(&userID, nil)
+
+	suite.mockCredsService.On("Authenticate", map[string]interface{}{
+		userAttributeUsername: "testuser",
+		userAttributePassword: "wrongpassword",
+	}).Return(nil, &serviceerror.ServiceError{
+		Type:             serviceerror.ClientErrorType,
+		ErrorDescription: "Invalid credentials",
+		Error:            "invalid_credentials",
+		Code:             "1001",
+	})
+
+	// Expect Started event
+	suite.mockObservability.On("PublishEvent", mock.MatchedBy(func(evt *event.Event) bool {
+		return evt.Type == string(event.EventTypeFlowNodeExecutionStarted) &&
+			evt.Status == event.StatusInProgress
+	})).Return()
+
+	// Expect Failed event
+	suite.mockObservability.On("PublishEvent", mock.MatchedBy(func(evt *event.Event) bool {
+		return evt.Type == string(event.EventTypeFlowNodeExecutionFailed) &&
+			evt.Status == event.StatusFailure &&
+			evt.Data[event.DataKey.Error] == "invalid_credentials" &&
+			evt.Data[event.DataKey.ErrorCode] == "1001" &&
+			evt.Data[event.DataKey.ErrorType] == string(serviceerror.ClientErrorType) &&
+			evt.Data[event.DataKey.Message] == "Invalid credentials"
+	})).Return()
+
+	resp, err := suite.executor.Execute(ctx)
+	assert.NoError(suite.T(), err)
+	assert.NotNil(suite.T(), resp)
+	assert.Equal(suite.T(), common.ExecFailure, resp.Status)
+
+	suite.mockUserService.AssertExpectations(suite.T())
+	suite.mockCredsService.AssertExpectations(suite.T())
+	suite.mockObservability.AssertExpectations(suite.T())
 }

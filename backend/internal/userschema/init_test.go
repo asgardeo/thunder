@@ -21,6 +21,7 @@ package userschema
 import (
 	"net/http"
 	"net/http/httptest"
+	"os"
 	"testing"
 
 	oupkg "github.com/asgardeo/thunder/internal/ou"
@@ -30,6 +31,10 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
+)
+
+const (
+	testCryptoKey = "0579f866ac7c9273580d0ff163fa01a7b2401a7ff3ddc3e3b14ae3136fa6025e"
 )
 
 // InitTestSuite contains comprehensive tests for the init.go file.
@@ -62,7 +67,8 @@ func (suite *InitTestSuite) TestInitialize() {
 	err := config.InitializeThunderRuntime("", testConfig)
 	assert.NoError(suite.T(), err)
 
-	service := Initialize(suite.mux, suite.mockOUService)
+	service, _, err := Initialize(suite.mux, suite.mockOUService)
+	assert.NoError(suite.T(), err)
 
 	suite.NotNil(service)
 	suite.Implements((*UserSchemaServiceInterface)(nil), service)
@@ -78,7 +84,8 @@ func (suite *InitTestSuite) TestRegisterRoutes_ListEndpoint() {
 	err := config.InitializeThunderRuntime("", testConfig)
 	assert.NoError(suite.T(), err)
 
-	Initialize(suite.mux, suite.mockOUService)
+	_, _, err = Initialize(suite.mux, suite.mockOUService)
+	assert.NoError(suite.T(), err)
 
 	req := httptest.NewRequest(http.MethodGet, "/user-schemas", nil)
 	w := httptest.NewRecorder()
@@ -98,7 +105,8 @@ func (suite *InitTestSuite) TestRegisterRoutes_CreateEndpoint() {
 	err := config.InitializeThunderRuntime("", testConfig)
 	assert.NoError(suite.T(), err)
 
-	Initialize(suite.mux, suite.mockOUService)
+	_, _, err = Initialize(suite.mux, suite.mockOUService)
+	assert.NoError(suite.T(), err)
 
 	req := httptest.NewRequest(http.MethodPost, "/user-schemas", nil)
 	w := httptest.NewRecorder()
@@ -118,7 +126,8 @@ func (suite *InitTestSuite) TestRegisterRoutes_GetByIDEndpoint() {
 	err := config.InitializeThunderRuntime("", testConfig)
 	assert.NoError(suite.T(), err)
 
-	Initialize(suite.mux, suite.mockOUService)
+	_, _, err = Initialize(suite.mux, suite.mockOUService)
+	assert.NoError(suite.T(), err)
 
 	req := httptest.NewRequest(http.MethodGet, "/user-schemas/test-id", nil)
 	w := httptest.NewRecorder()
@@ -138,7 +147,8 @@ func (suite *InitTestSuite) TestRegisterRoutes_UpdateEndpoint() {
 	err := config.InitializeThunderRuntime("", testConfig)
 	assert.NoError(suite.T(), err)
 
-	Initialize(suite.mux, suite.mockOUService)
+	_, _, err = Initialize(suite.mux, suite.mockOUService)
+	assert.NoError(suite.T(), err)
 
 	req := httptest.NewRequest(http.MethodPut, "/user-schemas/test-id", nil)
 	w := httptest.NewRecorder()
@@ -158,7 +168,8 @@ func (suite *InitTestSuite) TestRegisterRoutes_DeleteEndpoint() {
 	err := config.InitializeThunderRuntime("", testConfig)
 	assert.NoError(suite.T(), err)
 
-	Initialize(suite.mux, suite.mockOUService)
+	_, _, err = Initialize(suite.mux, suite.mockOUService)
+	assert.NoError(suite.T(), err)
 
 	req := httptest.NewRequest(http.MethodDelete, "/user-schemas/test-id", nil)
 	w := httptest.NewRecorder()
@@ -178,7 +189,8 @@ func (suite *InitTestSuite) TestRegisterRoutes_CORSPreflight() {
 	err := config.InitializeThunderRuntime("", testConfig)
 	assert.NoError(suite.T(), err)
 
-	Initialize(suite.mux, suite.mockOUService)
+	_, _, err = Initialize(suite.mux, suite.mockOUService)
+	assert.NoError(suite.T(), err)
 
 	req := httptest.NewRequest(http.MethodOptions, "/user-schemas", nil)
 	w := httptest.NewRecorder()
@@ -198,7 +210,8 @@ func (suite *InitTestSuite) TestRegisterRoutes_CORSPreflightByID() {
 	err := config.InitializeThunderRuntime("", testConfig)
 	assert.NoError(suite.T(), err)
 
-	Initialize(suite.mux, suite.mockOUService)
+	_, _, err = Initialize(suite.mux, suite.mockOUService)
+	assert.NoError(suite.T(), err)
 
 	req := httptest.NewRequest(http.MethodOptions, "/user-schemas/test-id", nil)
 	w := httptest.NewRecorder()
@@ -399,7 +412,8 @@ func TestInitialize_Standalone(t *testing.T) {
 	mux := http.NewServeMux()
 	mockOUService := oumock.NewOrganizationUnitServiceInterfaceMock(t)
 
-	service := Initialize(mux, mockOUService)
+	service, _, err := Initialize(mux, mockOUService)
+	assert.NoError(t, err)
 
 	assert.NotNil(t, service)
 	assert.Implements(t, (*UserSchemaServiceInterface)(nil), service)
@@ -701,4 +715,215 @@ this is not valid yaml:
 			}
 		})
 	}
+}
+
+// TestInitialize_WithImmutableResourcesEnabled_InvalidYAML tests Initialize with invalid YAML files
+//
+//nolint:dupl // Similar test setup required for different error scenarios
+func TestInitialize_WithImmutableResourcesEnabled_InvalidYAML(t *testing.T) {
+	tmpDir := t.TempDir()
+	confDir := tmpDir + "/repository/conf/immutable_resources"
+	schemaDir := confDir + "/user_schemas"
+
+	err := os.MkdirAll(schemaDir, 0750)
+	assert.NoError(t, err)
+
+	// Create an invalid YAML file
+	invalidYAML := `invalid yaml content
+  - this is not: valid
+`
+	err = os.WriteFile(schemaDir+"/invalid-schema.yaml", []byte(invalidYAML), 0600)
+	assert.NoError(t, err)
+
+	// Setup config
+	cryptoFilePath := tmpDir + "/repository/conf/crypto.key"
+	// Use testCryptoKey constant
+	err = os.WriteFile(cryptoFilePath, []byte(testCryptoKey), 0600)
+	assert.NoError(t, err)
+
+	testConfig := &config.Config{
+		ImmutableResources: config.ImmutableResources{
+			Enabled: true,
+		},
+		Security: config.SecurityConfig{
+			CryptoFile: "repository/conf/crypto.key",
+		},
+	}
+
+	config.ResetThunderRuntime()
+	err = config.InitializeThunderRuntime(tmpDir, testConfig)
+	assert.NoError(t, err)
+	defer config.ResetThunderRuntime()
+
+	mux := http.NewServeMux()
+	mockOUService := oumock.NewOrganizationUnitServiceInterfaceMock(t)
+
+	// Initialize should return an error due to invalid YAML
+	_, _, err = Initialize(mux, mockOUService)
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "failed to load user schema resources")
+}
+
+// TestInitialize_WithImmutableResourcesEnabled_ValidationFailure tests Initialize with validation errors
+//
+//nolint:dupl // Similar test setup required for different error scenarios
+func TestInitialize_WithImmutableResourcesEnabled_ValidationFailure(t *testing.T) {
+	tmpDir := t.TempDir()
+	confDir := tmpDir + "/repository/conf/immutable_resources"
+	schemaDir := confDir + "/user_schemas"
+
+	err := os.MkdirAll(schemaDir, 0750)
+	assert.NoError(t, err)
+
+	// Create a YAML file with invalid configuration (empty name)
+	invalidSchemaYAML := `id: "invalid-schema"
+name: ""
+organization_unit_id: "550e8400-e29b-41d4-a716-446655440000"
+schema: |
+  {
+    "email": {"type": "string"}
+  }
+`
+	err = os.WriteFile(schemaDir+"/invalid-schema.yaml", []byte(invalidSchemaYAML), 0600)
+	assert.NoError(t, err)
+
+	// Setup config
+	cryptoFilePath := tmpDir + "/repository/conf/crypto.key"
+	// Use testCryptoKey constant
+	err = os.WriteFile(cryptoFilePath, []byte(testCryptoKey), 0600)
+	assert.NoError(t, err)
+
+	testConfig := &config.Config{
+		ImmutableResources: config.ImmutableResources{
+			Enabled: true,
+		},
+		Security: config.SecurityConfig{
+			CryptoFile: "repository/conf/crypto.key",
+		},
+	}
+
+	config.ResetThunderRuntime()
+	err = config.InitializeThunderRuntime(tmpDir, testConfig)
+	assert.NoError(t, err)
+	defer config.ResetThunderRuntime()
+
+	mux := http.NewServeMux()
+	mockOUService := oumock.NewOrganizationUnitServiceInterfaceMock(t)
+
+	// Initialize should return an error due to validation failure
+	_, _, err = Initialize(mux, mockOUService)
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "failed to load user schema resources")
+}
+
+// TestInitialize_WithImmutableResourcesEnabled_OUServiceError tests Initialize when OU service fails
+func TestInitialize_WithImmutableResourcesEnabled_OUServiceError(t *testing.T) {
+	tmpDir := t.TempDir()
+	confDir := tmpDir + "/repository/conf/immutable_resources"
+	schemaDir := confDir + "/user_schemas"
+
+	err := os.MkdirAll(schemaDir, 0750)
+	assert.NoError(t, err)
+
+	// Create a valid YAML file
+	validSchemaYAML := `id: "test-schema"
+name: "Test Schema"
+organization_unit_id: "550e8400-e29b-41d4-a716-446655440000"
+allow_self_registration: true
+schema: |
+  {
+    "email": {"type": "string", "required": true}
+  }
+`
+	err = os.WriteFile(schemaDir+"/test-schema.yaml", []byte(validSchemaYAML), 0600)
+	assert.NoError(t, err)
+
+	// Setup config
+	cryptoFilePath := tmpDir + "/repository/conf/crypto.key"
+	// Use testCryptoKey constant
+	err = os.WriteFile(cryptoFilePath, []byte(testCryptoKey), 0600)
+	assert.NoError(t, err)
+
+	testConfig := &config.Config{
+		ImmutableResources: config.ImmutableResources{
+			Enabled: true,
+		},
+		Security: config.SecurityConfig{
+			CryptoFile: "repository/conf/crypto.key",
+		},
+	}
+
+	config.ResetThunderRuntime()
+	err = config.InitializeThunderRuntime(tmpDir, testConfig)
+	assert.NoError(t, err)
+	defer config.ResetThunderRuntime()
+
+	mux := http.NewServeMux()
+	mockOUService := oumock.NewOrganizationUnitServiceInterfaceMock(t)
+
+	// Mock OU service to return an error
+	mockOUService.On("GetOrganizationUnit", "550e8400-e29b-41d4-a716-446655440000").
+		Return(oupkg.OrganizationUnit{}, &serviceerror.ServiceError{
+			Code:             "OUS-1002",
+			Type:             serviceerror.ClientErrorType,
+			Error:            "Organization unit not found",
+			ErrorDescription: "The organization unit does not exist",
+		}).Once()
+
+	// Initialize should return an error due to OU service failure
+	_, _, err = Initialize(mux, mockOUService)
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "failed to load user schema resources")
+
+	mockOUService.AssertExpectations(t)
+}
+
+// TestInitialize_WithImmutableResourcesEnabled_InvalidJSONSchema tests Initialize with invalid JSON in schema
+//
+//nolint:dupl // Similar test setup required for different error scenarios
+func TestInitialize_WithImmutableResourcesEnabled_InvalidJSONSchema(t *testing.T) {
+	tmpDir := t.TempDir()
+	confDir := tmpDir + "/repository/conf/immutable_resources"
+	schemaDir := confDir + "/user_schemas"
+
+	err := os.MkdirAll(schemaDir, 0750)
+	assert.NoError(t, err)
+
+	// Create a YAML file with invalid JSON in schema field
+	invalidJSONYAML := `id: "invalid-json-schema"
+name: "Invalid JSON Schema"
+organization_unit_id: "550e8400-e29b-41d4-a716-446655440000"
+schema: |
+  {invalid json here}
+`
+	err = os.WriteFile(schemaDir+"/invalid-json.yaml", []byte(invalidJSONYAML), 0600)
+	assert.NoError(t, err)
+
+	// Setup config
+	cryptoFilePath := tmpDir + "/repository/conf/crypto.key"
+	// Use testCryptoKey constant
+	err = os.WriteFile(cryptoFilePath, []byte(testCryptoKey), 0600)
+	assert.NoError(t, err)
+
+	testConfig := &config.Config{
+		ImmutableResources: config.ImmutableResources{
+			Enabled: true,
+		},
+		Security: config.SecurityConfig{
+			CryptoFile: "repository/conf/crypto.key",
+		},
+	}
+
+	config.ResetThunderRuntime()
+	err = config.InitializeThunderRuntime(tmpDir, testConfig)
+	assert.NoError(t, err)
+	defer config.ResetThunderRuntime()
+
+	mux := http.NewServeMux()
+	mockOUService := oumock.NewOrganizationUnitServiceInterfaceMock(t)
+
+	// Initialize should return an error due to invalid JSON
+	_, _, err = Initialize(mux, mockOUService)
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "failed to load user schema resources")
 }

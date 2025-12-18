@@ -24,6 +24,7 @@ import (
 
 	"github.com/asgardeo/thunder/internal/group"
 	oupkg "github.com/asgardeo/thunder/internal/ou"
+	resourcepkg "github.com/asgardeo/thunder/internal/resource"
 	"github.com/asgardeo/thunder/internal/system/middleware"
 	"github.com/asgardeo/thunder/internal/user"
 )
@@ -34,9 +35,10 @@ func Initialize(
 	userService user.UserServiceInterface,
 	groupService group.GroupServiceInterface,
 	ouService oupkg.OrganizationUnitServiceInterface,
+	resourceService resourcepkg.ResourceServiceInterface,
 ) RoleServiceInterface {
 	roleStore := newRoleStore()
-	roleService := newRoleService(roleStore, userService, groupService, ouService)
+	roleService := newRoleService(roleStore, userService, groupService, ouService, resourceService)
 	roleHandler := newRoleHandler(roleService)
 	registerRoutes(mux, roleHandler)
 	return roleService

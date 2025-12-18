@@ -32,8 +32,8 @@ import (
 	oauth2const "github.com/asgardeo/thunder/internal/oauth/oauth2/constants"
 	"github.com/asgardeo/thunder/internal/system/config"
 	dbmodel "github.com/asgardeo/thunder/internal/system/database/model"
-	"github.com/asgardeo/thunder/tests/mocks/database/clientmock"
 	"github.com/asgardeo/thunder/tests/mocks/database/modelmock"
+	"github.com/asgardeo/thunder/tests/mocks/database/providermock"
 )
 
 const testAppID = "test-app-id"
@@ -42,7 +42,7 @@ const testServerID = "test-server-id"
 // ApplicationStoreTestSuite contains comprehensive tests for the application store helper functions.
 type ApplicationStoreTestSuite struct {
 	suite.Suite
-	mockDBClient *clientmock.DBClientInterfaceMock
+	mockDBClient *providermock.DBClientInterfaceMock
 }
 
 func TestApplicationStoreTestSuite(t *testing.T) {
@@ -51,7 +51,7 @@ func TestApplicationStoreTestSuite(t *testing.T) {
 
 func (suite *ApplicationStoreTestSuite) SetupTest() {
 	_ = config.InitializeThunderRuntime("test", &config.Config{})
-	suite.mockDBClient = clientmock.NewDBClientInterfaceMock(suite.T())
+	suite.mockDBClient = providermock.NewDBClientInterfaceMock(suite.T())
 }
 
 func (suite *ApplicationStoreTestSuite) createTestApplication() model.ApplicationProcessedDTO {

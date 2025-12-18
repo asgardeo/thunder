@@ -31,6 +31,7 @@ type NodeContext struct {
 	AppID         string
 	Verbose       bool
 	CurrentAction string
+	CurrentNodeID string
 
 	NodeProperties map[string]interface{}
 	NodeInputs     []common.Input

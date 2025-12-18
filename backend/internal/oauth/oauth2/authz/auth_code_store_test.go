@@ -29,7 +29,7 @@ import (
 	"github.com/stretchr/testify/suite"
 
 	"github.com/asgardeo/thunder/internal/system/config"
-	"github.com/asgardeo/thunder/tests/mocks/database/clientmock"
+
 	"github.com/asgardeo/thunder/tests/mocks/database/providermock"
 )
 
@@ -38,7 +38,7 @@ const testDeploymentID = "test-deployment-id"
 type AuthorizationCodeStoreTestSuite struct {
 	suite.Suite
 	mockdbProvider *providermock.DBProviderInterfaceMock
-	mockDBClient   *clientmock.DBClientInterfaceMock
+	mockDBClient   *providermock.DBClientInterfaceMock
 	store          *authorizationCodeStore
 	testAuthzCode  AuthorizationCode
 }
@@ -63,7 +63,7 @@ func (suite *AuthorizationCodeStoreTestSuite) SetupTest() {
 	_ = config.InitializeThunderRuntime("test", testConfig)
 
 	suite.mockdbProvider = providermock.NewDBProviderInterfaceMock(suite.T())
-	suite.mockDBClient = clientmock.NewDBClientInterfaceMock(suite.T())
+	suite.mockDBClient = providermock.NewDBClientInterfaceMock(suite.T())
 
 	suite.store = &authorizationCodeStore{
 		dbProvider:   suite.mockdbProvider,

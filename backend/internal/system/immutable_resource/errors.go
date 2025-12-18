@@ -16,7 +16,7 @@
  * under the License.
  */
 
-package filebasedruntime
+package immutableresource
 
 import "github.com/asgardeo/thunder/internal/system/error/serviceerror"
 

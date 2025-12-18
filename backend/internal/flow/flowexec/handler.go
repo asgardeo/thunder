@@ -56,7 +56,8 @@ func (h *flowExecutionHandler) HandleFlowExecutionRequest(w http.ResponseWriter,
 	action := sysutils.SanitizeString(flowR.Action)
 	inputs := sysutils.SanitizeStringMap(flowR.Inputs)
 
-	flowStep, flowErr := h.flowExecService.Execute(appID, flowID, flowTypeStr, verbose, action, inputs)
+	flowStep, flowErr := h.flowExecService.Execute(
+		r.Context(), appID, flowID, flowTypeStr, verbose, action, inputs)
 
 	if flowErr != nil {
 		handleFlowError(w, flowErr)

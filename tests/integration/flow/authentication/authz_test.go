@@ -94,17 +94,17 @@ var (
 	documentEditorRole = testutils.Role{
 		Name:        "DocumentEditor",
 		Description: "Can read and write documents",
-		Permissions: []string{"read:documents", "write:documents"},
 	}
 )
 
 var (
-	authzTestOUID     string
-	authzTestAppID    string
-	authzTestRoleID   string
-	authzUserWithRole string
-	authzUserNoRole   string
-	authzUserSchemaID string
+	authzTestOUID           string
+	authzTestAppID          string
+	authzTestRoleID         string
+	authzUserWithRole       string
+	authzUserNoRole         string
+	authzUserSchemaID       string
+	authzTestResourceServer string
 )
 
 type FlowAuthzTestSuite struct {
@@ -153,9 +153,39 @@ func (ts *FlowAuthzTestSuite) SetupSuite() {
 		ts.T().Fatalf("Failed to create user without role during setup: %v", err)
 	}
 
+	// Create resource server with actions for permissions
+	resourceServer := testutils.ResourceServer{
+		Name:               "Document Management System",
+		Description:        "System for managing documents",
+		Identifier:         "document-mgmt",
+		OrganizationUnitID: authzTestOUID,
+	}
+	actions := []testutils.Action{
+		{
+			Name:        "Read Documents",
+			Handle:      "read",
+			Description: "Permission to read documents",
+		},
+		{
+			Name:        "Write Documents",
+			Handle:      "write",
+			Description: "Permission to write documents",
+		},
+	}
+	authzTestResourceServer, err := testutils.CreateResourceServerWithActions(resourceServer, actions)
+	if err != nil {
+		ts.T().Fatalf("Failed to create resource server with actions during setup: %v", err)
+	}
+
 	// Create role with user assignment
 	roleToCreate := documentEditorRole
 	roleToCreate.OrganizationUnitID = authzTestOUID
+	roleToCreate.Permissions = []testutils.ResourcePermissions{
+		{
+			ResourceServerID: authzTestResourceServer,
+			Permissions:      []string{"read", "write"},
+		},
+	}
 	roleToCreate.Assignments = []testutils.Assignment{
 		{ID: authzUserWithRole, Type: "user"},
 	}
@@ -170,6 +200,12 @@ func (ts *FlowAuthzTestSuite) TearDownSuite() {
 	if authzTestRoleID != "" {
 		if err := testutils.DeleteRole(authzTestRoleID); err != nil {
 			ts.T().Logf("Failed to delete test role during teardown: %v", err)
+		}
+	}
+
+	if authzTestResourceServer != "" {
+		if err := testutils.DeleteResourceServer(authzTestResourceServer); err != nil {
+			ts.T().Logf("Failed to delete test resource server during teardown: %v", err)
 		}
 	}
 
@@ -209,7 +245,7 @@ func (ts *FlowAuthzTestSuite) TestAuthorizationFlow_UserWithDirectRoleAssignment
 	// Initiate authentication flow with requested permissions
 	inputs := map[string]string{
 		"applicationId":         authzTestAppID,
-		"requested_permissions": "read:documents write:documents",
+		"requested_permissions": "read write",
 	}
 
 	flowStep, err := common.InitiateAuthenticationFlow(authzTestAppID, false, inputs, "")
@@ -244,8 +280,8 @@ func (ts *FlowAuthzTestSuite) TestAuthorizationFlow_UserWithDirectRoleAssignment
 	// Parse space-separated permissions
 	authorizedPerms := strings.Split(strings.TrimSpace(authorizedPermsStr), " ")
 	ts.Require().Len(authorizedPerms, 2, "Should have 2 authorized permissions")
-	ts.Require().Contains(authorizedPerms, "read:documents", "Should contain read:documents")
-	ts.Require().Contains(authorizedPerms, "write:documents", "Should contain write:documents")
+	ts.Require().Contains(authorizedPerms, "read", "Should contain read")
+	ts.Require().Contains(authorizedPerms, "write", "Should contain write")
 }
 
 // TestAuthorizationFlow_UserWithNoRole tests authorization when user has no role/permissions
@@ -253,7 +289,7 @@ func (ts *FlowAuthzTestSuite) TestAuthorizationFlow_UserWithNoRole() {
 	// Initiate authentication flow with requested permissions
 	inputs := map[string]string{
 		"applicationId":         authzTestAppID,
-		"requested_permissions": "read:documents write:documents",
+		"requested_permissions": "read write",
 	}
 
 	flowStep, err := common.InitiateAuthenticationFlow(authzTestAppID, false, inputs, "")
@@ -288,7 +324,7 @@ func (ts *FlowAuthzTestSuite) TestAuthorizationFlow_UserWithPartialPermissions()
 	// Initiate authentication flow requesting 3 permissions (user only has 2)
 	inputs := map[string]string{
 		"applicationId":         authzTestAppID,
-		"requested_permissions": "read:documents write:documents delete:documents",
+		"requested_permissions": "read write delete",
 	}
 
 	flowStep, err := common.InitiateAuthenticationFlow(authzTestAppID, false, inputs, "")
@@ -323,7 +359,7 @@ func (ts *FlowAuthzTestSuite) TestAuthorizationFlow_UserWithPartialPermissions()
 	// Parse space-separated permissions
 	authorizedPerms := strings.Split(strings.TrimSpace(authorizedPermsStr), " ")
 	ts.Require().Len(authorizedPerms, 2, "Should have 2 authorized permissions (not 3)")
-	ts.Require().Contains(authorizedPerms, "read:documents", "Should contain read:documents")
-	ts.Require().Contains(authorizedPerms, "write:documents", "Should contain write:documents")
-	ts.Require().NotContains(authorizedPerms, "delete:documents", "Should NOT contain delete:documents")
+	ts.Require().Contains(authorizedPerms, "read", "Should contain read")
+	ts.Require().Contains(authorizedPerms, "write", "Should contain write")
+	ts.Require().NotContains(authorizedPerms, "delete", "Should NOT contain delete")
 }

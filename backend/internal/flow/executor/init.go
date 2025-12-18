@@ -25,6 +25,7 @@ import (
 	"github.com/asgardeo/thunder/internal/flow/core"
 	"github.com/asgardeo/thunder/internal/idp"
 	"github.com/asgardeo/thunder/internal/notification"
+	"github.com/asgardeo/thunder/internal/observability"
 	"github.com/asgardeo/thunder/internal/ou"
 	"github.com/asgardeo/thunder/internal/system/jwt"
 	"github.com/asgardeo/thunder/internal/user"
@@ -42,12 +43,13 @@ func Initialize(
 	authRegistry *authn.AuthServiceRegistry,
 	authZService authz.AuthorizationServiceInterface,
 	userSchemaService userschema.UserSchemaServiceInterface,
+	observabilitySvc observability.ObservabilityServiceInterface,
 ) ExecutorRegistryInterface {
 	reg := newExecutorRegistry()
 	reg.RegisterExecutor(ExecutorNameBasicAuth, newBasicAuthExecutor(
-		flowFactory, userService, authRegistry.CredentialsAuthnService))
+		flowFactory, userService, authRegistry.CredentialsAuthnService, observabilitySvc))
 	reg.RegisterExecutor(ExecutorNameSMSAuth, newSMSOTPAuthExecutor(
-		flowFactory, userService, otpService))
+		flowFactory, userService, otpService, observabilitySvc))
 
 	reg.RegisterExecutor(ExecutorNameOAuth, newOAuthExecutor(
 		"", []common.Input{}, []common.Input{}, flowFactory, idpService, userSchemaService,

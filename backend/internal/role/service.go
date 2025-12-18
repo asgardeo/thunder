@@ -25,6 +25,7 @@ import (
 
 	"github.com/asgardeo/thunder/internal/group"
 	oupkg "github.com/asgardeo/thunder/internal/ou"
+	resourcepkg "github.com/asgardeo/thunder/internal/resource"
 	serverconst "github.com/asgardeo/thunder/internal/system/constants"
 	"github.com/asgardeo/thunder/internal/system/error/serviceerror"
 	"github.com/asgardeo/thunder/internal/system/log"
@@ -52,10 +53,11 @@ type RoleServiceInterface interface {
 
 // roleService is the default implementation of the RoleServiceInterface.
 type roleService struct {
-	roleStore    roleStoreInterface
-	userService  user.UserServiceInterface
-	groupService group.GroupServiceInterface
-	ouService    oupkg.OrganizationUnitServiceInterface
+	roleStore       roleStoreInterface
+	userService     user.UserServiceInterface
+	groupService    group.GroupServiceInterface
+	ouService       oupkg.OrganizationUnitServiceInterface
+	resourceService resourcepkg.ResourceServiceInterface
 }
 
 // newRoleService creates a new instance of RoleService with injected dependencies.
@@ -64,12 +66,14 @@ func newRoleService(
 	userService user.UserServiceInterface,
 	groupService group.GroupServiceInterface,
 	ouService oupkg.OrganizationUnitServiceInterface,
+	resourceService resourcepkg.ResourceServiceInterface,
 ) RoleServiceInterface {
 	return &roleService{
-		roleStore:    roleStore,
-		userService:  userService,
-		groupService: groupService,
-		ouService:    ouService,
+		roleStore:       roleStore,
+		userService:     userService,
+		groupService:    groupService,
+		ouService:       ouService,
+		resourceService: resourceService,
 	}
 }
 
@@ -112,6 +116,11 @@ func (rs *roleService) CreateRole(
 	logger.Debug("Creating role", log.String("name", role.Name))
 
 	if err := rs.validateCreateRoleRequest(role); err != nil {
+		return nil, err
+	}
+
+	// Validate permissions exist in resource management system
+	if err := rs.validatePermissions(role.Permissions); err != nil {
 		return nil, err
 	}
 
@@ -198,6 +207,11 @@ func (rs *roleService) UpdateRoleWithPermissions(
 	}
 
 	if err := rs.validateUpdateRoleRequest(role); err != nil {
+		return nil, err
+	}
+
+	// Validate permissions exist in resource management system
+	if err := rs.validatePermissions(role.Permissions); err != nil {
 		return nil, err
 	}
 
@@ -642,4 +656,49 @@ func (rs *roleService) getDisplayNameForAssignment(assignment *RoleAssignment) (
 	default:
 		return "", fmt.Errorf("unknown assignment type: %s", assignment.Type)
 	}
+}
+
+// validatePermissions validates that all permissions exist in the resource management system.
+func (rs *roleService) validatePermissions(permissions []ResourcePermissions) *serviceerror.ServiceError {
+	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, loggerComponentName))
+
+	if len(permissions) == 0 {
+		return nil
+	}
+
+	// Validate each resource server's permissions
+	for _, resPerm := range permissions {
+		if resPerm.ResourceServerID == "" {
+			logger.Debug("Empty resource server ID")
+			return &ErrorInvalidPermissions
+		}
+
+		if len(resPerm.Permissions) == 0 {
+			continue
+		}
+
+		// Call resource service to validate permissions
+		invalidPerms, svcErr := rs.resourceService.ValidatePermissions(
+			resPerm.ResourceServerID,
+			resPerm.Permissions,
+		)
+
+		if svcErr != nil {
+			logger.Error("Failed to validate permissions",
+				log.String("resourceServerId", resPerm.ResourceServerID),
+				log.String("error", svcErr.Error))
+			return &ErrorInternalServerError
+		}
+
+		// If any permissions are invalid, return error
+		if len(invalidPerms) > 0 {
+			logger.Debug("Invalid permissions found",
+				log.String("resourceServerId", resPerm.ResourceServerID),
+				log.Any("invalidPermissions", invalidPerms),
+				log.Int("count", len(invalidPerms)))
+			return &ErrorInvalidPermissions
+		}
+	}
+
+	return nil
 }

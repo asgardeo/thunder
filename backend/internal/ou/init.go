@@ -22,15 +22,33 @@ import (
 	"net/http"
 	"strings"
 
+	immutableresource "github.com/asgardeo/thunder/internal/system/immutable_resource"
 	"github.com/asgardeo/thunder/internal/system/middleware"
 )
 
 // Initialize initializes the organization unit service and registers its routes.
-func Initialize(mux *http.ServeMux) OrganizationUnitServiceInterface {
-	ouService := newOrganizationUnitService()
+func Initialize(mux *http.ServeMux) (OrganizationUnitServiceInterface, immutableresource.ResourceExporter, error) {
+	var ouStore organizationUnitStoreInterface
+	if immutableresource.IsImmutableModeEnabled() {
+		ouStore = newFileBasedStore()
+	} else {
+		ouStore = newOrganizationUnitStore()
+	}
+
+	ouService := newOrganizationUnitService(ouStore)
+
+	if immutableresource.IsImmutableModeEnabled() {
+		if err := loadImmutableResources(ouStore); err != nil {
+			return nil, nil, err
+		}
+	}
+
 	ouHandler := newOrganizationUnitHandler(ouService)
 	registerRoutes(mux, ouHandler)
-	return ouService
+
+	// Create and return exporter
+	exporter := newOUExporter(ouService)
+	return ouService, exporter, nil
 }
 
 // registerRoutes registers the routes for organization unit management operations.

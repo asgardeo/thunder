@@ -17,7 +17,46 @@ This approach provides standards-compliant OAuth 2.0 authorization while maintai
 
 This example demonstrates OAuth 2.0 authorization code flow with custom permission scopes.
 
-### Step 1: Create Organization Unit
+### Step 1: Set Up Resource Server and Permissions
+
+Before creating roles, set up your permission model. You'll need to create a resource server and define the permissions (actions) that can be granted.
+
+**Quick setup for this example:**
+
+```bash
+# Create document API resource server
+DOCS_RS_ID=$(curl -kL -X POST -H 'Content-Type: application/json' https://localhost:8090/resource-servers \
+-H 'Authorization: Bearer <token>' \
+-d '{"name": "Document API", "identifier": "document-api", "ouId": "<organization-unit-id>"}' | jq -r '.id')
+
+# Create documents resource
+DOC_RESOURCE_ID=$(curl -kL -X POST https://localhost:8090/resource-servers/$DOCS_RS_ID/resources \
+-H 'Authorization: Bearer <token>' -H 'Content-Type: application/json' \
+-d '{"name": "Documents", "handle": "documents"}' | jq -r '.id')
+
+# Create read action
+curl -kL -X POST https://localhost:8090/resource-servers/$DOCS_RS_ID/resources/$DOC_RESOURCE_ID/actions \
+-H 'Authorization: Bearer <token>' -H 'Content-Type: application/json' \
+-d '{"name": "Read", "handle": "read"}'
+
+# Create write action
+curl -kL -X POST https://localhost:8090/resource-servers/$DOCS_RS_ID/resources/$DOC_RESOURCE_ID/actions \
+-H 'Authorization: Bearer <token>' -H 'Content-Type: application/json' \
+-d '{"name": "Write", "handle": "write"}'
+
+# Create delete action
+curl -kL -X POST https://localhost:8090/resource-servers/$DOCS_RS_ID/resources/$DOC_RESOURCE_ID/actions \
+-H 'Authorization: Bearer <token>' -H 'Content-Type: application/json' \
+-d '{"name": "Delete", "handle": "delete"}'
+```
+
+This creates permissions: `documents:read`, `documents:write`, `documents:delete`
+
+> **📖 For complete details on resource servers and permission setup, see:**
+>
+> **[Resource Server Management →](./resource-server-management.md)**
+
+### Step 2: Create Organization Unit
 
 ```bash
 curl -kL -X POST -H 'Content-Type: application/json' https://localhost:8090/organization-units \
@@ -31,7 +70,7 @@ curl -kL -X POST -H 'Content-Type: application/json' https://localhost:8090/orga
 
 Save the organization unit `id` from the response.
 
-### Step 2: Create OAuth Application
+### Step 3: Create OAuth Application
 
 Create an application with OAuth 2.0 inbound authentication:
 
@@ -65,7 +104,7 @@ curl -kL -X POST -H 'Content-Type: application/json' https://localhost:8090/appl
 }'
 ```
 
-### Step 3: Create User Schema
+### Step 4: Create User Schema
 
 Before creating users, define a user schema. 
 
@@ -96,7 +135,7 @@ curl -kL -X POST -H 'Content-Type: application/json' https://localhost:8090/user
 
 > **Note:** User schema creation is mandatory. You only need to create a schema once.
 
-### Step 4: Create User with Role
+### Step 5: Create User with Role
 
 Create a user and assign a role with document permissions:
 
@@ -128,8 +167,13 @@ curl -kL -X POST -H 'Content-Type: application/json' https://localhost:8090/role
     "description": "Can read and write documents",
     "ouId": "<organization-unit-id>",
     "permissions": [
-        "read:documents",
-        "write:documents"
+        {
+            "resourceServerId": "<document-api-resource-server-id>",
+            "permissions": [
+                "read:documents",
+                "write:documents"
+            ]
+        }
     ],
     "assignments": [
         {
@@ -140,7 +184,7 @@ curl -kL -X POST -H 'Content-Type: application/json' https://localhost:8090/role
 }'
 ```
 
-### Step 5: Initiate OAuth Authorization
+### Step 6: Initiate OAuth Authorization
 
 Open a browser and start the OAuth authorization code flow with custom scopes:
 
@@ -164,7 +208,7 @@ state=random_state_value
 
 The server will redirect to the gate client for authentication. Follow the authentication flow (typically username/password).
 
-### Step 6: Complete Authentication
+### Step 7: Complete Authentication
 
 After successful authentication, Thunder redirects back to your application with an authorization code:
 
@@ -172,7 +216,7 @@ After successful authentication, Thunder redirects back to your application with
 https://localhost:3000/callback?code=<auth-code>&state=random_state_value
 ```
 
-### Step 7: Exchange Code for Token
+### Step 8: Exchange Code for Token
 
 Exchange the authorization code for an access token:
 
@@ -202,7 +246,7 @@ curl -k -X POST https://localhost:8090/oauth2/token \
 - Token contains: `openid profile email read:documents write:documents`
 - `delete:documents` was filtered out (user not authorized)
 
-### Step 8: Decode Access Token
+### Step 9: Decode Access Token
 
 Decode the JWT access token to verify the scopes:
 

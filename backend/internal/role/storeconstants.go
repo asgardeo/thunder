@@ -67,14 +67,16 @@ var (
 
 	// queryCreateRolePermission creates a new role permission.
 	queryCreateRolePermission = dbmodel.DBQuery{
-		ID:    "RLQ-ROLE_MGT-07",
-		Query: `INSERT INTO ROLE_PERMISSION (ROLE_ID, PERMISSION, DEPLOYMENT_ID) VALUES ($1, $2, $3)`,
+		ID: "RLQ-ROLE_MGT-07",
+		Query: `INSERT INTO ROLE_PERMISSION (ROLE_ID, RESOURCE_SERVER_ID, PERMISSION, ` +
+			`DEPLOYMENT_ID) VALUES ($1, $2, $3, $4)`,
 	}
 
 	// queryGetRolePermissions retrieves all permissions for a role.
 	queryGetRolePermissions = dbmodel.DBQuery{
-		ID:    "RLQ-ROLE_MGT-08",
-		Query: `SELECT PERMISSION FROM ROLE_PERMISSION WHERE ROLE_ID = $1 AND DEPLOYMENT_ID = $2 ORDER BY CREATED_AT`,
+		ID: "RLQ-ROLE_MGT-08",
+		Query: `SELECT RESOURCE_SERVER_ID, PERMISSION FROM ROLE_PERMISSION WHERE ` +
+			`ROLE_ID = $1 AND DEPLOYMENT_ID = $2 ORDER BY CREATED_AT`,
 	}
 
 	// queryDeleteRolePermissions deletes all permissions for a role.

@@ -20,9 +20,12 @@
 package token
 
 import (
+	"context"
 	"errors"
+	"fmt"
 	"net/http"
 	"strings"
+	"time"
 
 	"github.com/asgardeo/thunder/internal/application"
 	"github.com/asgardeo/thunder/internal/oauth/oauth2/clientauth"
@@ -30,6 +33,9 @@ import (
 	"github.com/asgardeo/thunder/internal/oauth/oauth2/granthandlers"
 	"github.com/asgardeo/thunder/internal/oauth/oauth2/model"
 	"github.com/asgardeo/thunder/internal/oauth/scope"
+	"github.com/asgardeo/thunder/internal/observability"
+	"github.com/asgardeo/thunder/internal/observability/event"
+	sysContext "github.com/asgardeo/thunder/internal/system/context"
 	"github.com/asgardeo/thunder/internal/system/log"
 	"github.com/asgardeo/thunder/internal/system/utils"
 )
@@ -44,6 +50,7 @@ type tokenHandler struct {
 	appService           application.ApplicationServiceInterface
 	grantHandlerProvider granthandlers.GrantHandlerProviderInterface
 	scopeValidator       scope.ScopeValidatorInterface
+	observabilitySvc     observability.ObservabilityServiceInterface
 }
 
 // newTokenHandler creates a new instance of tokenHandler.
@@ -51,11 +58,13 @@ func newTokenHandler(
 	appService application.ApplicationServiceInterface,
 	grantHandlerProvider granthandlers.GrantHandlerProviderInterface,
 	scopeValidator scope.ScopeValidatorInterface,
+	observabilitySvc observability.ObservabilityServiceInterface,
 ) TokenHandlerInterface {
 	return &tokenHandler{
 		appService:           appService,
 		grantHandlerProvider: grantHandlerProvider,
 		scopeValidator:       scopeValidator,
+		observabilitySvc:     observabilitySvc,
 	}
 }
 
@@ -64,8 +73,11 @@ func newTokenHandler(
 func (th *tokenHandler) HandleTokenRequest(w http.ResponseWriter, r *http.Request) {
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, "TokenHandler"))
 
+	startTime := time.Now().UnixMilli()
+
 	// Parse the form data from the request body.
 	if err := r.ParseForm(); err != nil {
+		th.publishTokenIssuanceFailedEvent(r.Context(), "", "", "", http.StatusBadRequest, err.Error(), startTime)
 		utils.WriteJSONError(w, constants.ErrorInvalidRequest,
 			"Failed to parse request body", http.StatusBadRequest, nil)
 		return
@@ -73,13 +85,28 @@ func (th *tokenHandler) HandleTokenRequest(w http.ResponseWriter, r *http.Reques
 
 	// Validate the grant_type.
 	grantTypeStr := r.FormValue(constants.RequestParamGrantType)
+	scopeStr := r.FormValue("scope")
+	clientID := ""
+
+	// Get authenticated client from context
+	clientInfo := clientauth.GetOAuthClient(r.Context())
+	if clientInfo != nil {
+		clientID = clientInfo.ClientID
+	}
+
+	th.publishTokenIssuanceStartedEvent(r.Context(), clientID, grantTypeStr, scopeStr)
+
 	if grantTypeStr == "" {
+		th.publishTokenIssuanceFailedEvent(r.Context(), clientID, grantTypeStr, scopeStr, http.StatusBadRequest,
+			"Missing grant_type parameter", startTime)
 		utils.WriteJSONError(w, constants.ErrorInvalidRequest,
 			"Missing grant_type parameter", http.StatusBadRequest, nil)
 		return
 	}
 	grantType := constants.GrantType(grantTypeStr)
 	if !grantType.IsValid() {
+		th.publishTokenIssuanceFailedEvent(r.Context(), clientID, grantTypeStr, scopeStr, http.StatusBadRequest,
+			"Invalid grant_type parameter", startTime)
 		utils.WriteJSONError(w, constants.ErrorUnsupportedGrantType,
 			"Invalid grant_type parameter", http.StatusBadRequest, nil)
 		return
@@ -88,31 +115,36 @@ func (th *tokenHandler) HandleTokenRequest(w http.ResponseWriter, r *http.Reques
 	grantHandler, handlerErr := th.grantHandlerProvider.GetGrantHandler(grantType)
 	if handlerErr != nil {
 		if errors.Is(handlerErr, constants.UnSupportedGrantTypeError) {
+			th.publishTokenIssuanceFailedEvent(r.Context(), clientID, grantTypeStr, scopeStr, http.StatusBadRequest,
+				"Unsupported grant type", startTime)
 			utils.WriteJSONError(w, constants.ErrorUnsupportedGrantType, "Unsupported grant type",
 				http.StatusBadRequest, nil)
 			return
 		}
 		logger.Error("Failed to get grant handler", log.Error(handlerErr))
+		th.publishTokenIssuanceFailedEvent(r.Context(), clientID, grantTypeStr, scopeStr,
+			http.StatusInternalServerError, "Failed to get grant handler", startTime)
 		utils.WriteJSONError(w, constants.ErrorServerError,
 			"Failed to get grant handler", http.StatusInternalServerError, nil)
 		return
 	}
 
-	// Get authenticated client from context
-	clientInfo := clientauth.GetOAuthClient(r.Context())
 	if clientInfo == nil {
 		logger.Error("OAuth client not found in context - ClientAuthMiddleware must be applied")
+		th.publishTokenIssuanceFailedEvent(r.Context(), clientID, grantTypeStr, scopeStr,
+			http.StatusInternalServerError, "Authentication context not available", startTime)
 		utils.WriteJSONError(w, constants.ErrorServerError,
 			"Internal server error: authentication context not available", http.StatusInternalServerError, nil)
 		return
 	}
 
 	oauthApp := clientInfo.OAuthApp
-	clientID := clientInfo.ClientID
 	clientSecret := clientInfo.ClientSecret
 
 	// Validate grant type against the application.
 	if !oauthApp.IsAllowedGrantType(grantType) {
+		th.publishTokenIssuanceFailedEvent(r.Context(), clientID, grantTypeStr, scopeStr, http.StatusUnauthorized,
+			"Client not authorized for grant type", startTime)
 		utils.WriteJSONError(w, constants.ErrorUnauthorizedClient,
 			"The client is not authorized to use this grant type", http.StatusUnauthorized, nil)
 		return
@@ -142,6 +174,8 @@ func (th *tokenHandler) HandleTokenRequest(w http.ResponseWriter, r *http.Reques
 	// Validate the token request.
 	tokenError := grantHandler.ValidateGrant(tokenRequest, oauthApp)
 	if tokenError != nil && tokenError.Error != "" {
+		th.publishTokenIssuanceFailedEvent(r.Context(), clientID, grantTypeStr, scopeStr, http.StatusBadRequest,
+			tokenError.ErrorDescription, startTime)
 		utils.WriteJSONError(w, tokenError.Error, tokenError.ErrorDescription, http.StatusBadRequest, nil)
 		return
 	}
@@ -149,6 +183,8 @@ func (th *tokenHandler) HandleTokenRequest(w http.ResponseWriter, r *http.Reques
 	// Validate and filter scopes.
 	validScopes, scopeError := th.scopeValidator.ValidateScopes(tokenRequest.Scope, oauthApp.ClientID)
 	if scopeError != nil {
+		th.publishTokenIssuanceFailedEvent(r.Context(), clientID, grantTypeStr, scopeStr, http.StatusBadRequest,
+			scopeError.ErrorDescription, startTime)
 		utils.WriteJSONError(w, scopeError.Error, scopeError.ErrorDescription, http.StatusBadRequest, nil)
 		return
 	}
@@ -157,7 +193,13 @@ func (th *tokenHandler) HandleTokenRequest(w http.ResponseWriter, r *http.Reques
 	// Delegate to the grant handler.
 	tokenRespDTO, tokenError := grantHandler.HandleGrant(tokenRequest, oauthApp)
 	if tokenError != nil && tokenError.Error != "" {
-		utils.WriteJSONError(w, tokenError.Error, tokenError.ErrorDescription, http.StatusBadRequest, nil)
+		code := http.StatusBadRequest
+		if tokenError.Error == constants.ErrorServerError {
+			code = http.StatusInternalServerError
+		}
+		th.publishTokenIssuanceFailedEvent(r.Context(), clientID, grantTypeStr, scopeStr, code,
+			tokenError.ErrorDescription, startTime)
+		utils.WriteJSONError(w, tokenError.Error, tokenError.ErrorDescription, code, nil)
 		return
 	}
 
@@ -170,6 +212,8 @@ func (th *tokenHandler) HandleTokenRequest(w http.ResponseWriter, r *http.Reques
 		refreshGrantHandler, handlerErr := th.grantHandlerProvider.GetGrantHandler(constants.GrantTypeRefreshToken)
 		if handlerErr != nil {
 			logger.Error("Failed to get refresh grant handler", log.Error(handlerErr))
+			th.publishTokenIssuanceFailedEvent(r.Context(), clientID, grantTypeStr, scopeStr,
+				http.StatusInternalServerError, "Failed to get refresh grant handler", startTime)
 			utils.WriteJSONError(w, constants.ErrorServerError,
 				"Failed to get refresh grant handler", http.StatusInternalServerError, nil)
 			return
@@ -178,6 +222,8 @@ func (th *tokenHandler) HandleTokenRequest(w http.ResponseWriter, r *http.Reques
 		if !ok {
 			logger.Error("Failed to cast refresh grant handler", log.String("client_id", clientID),
 				log.String("grant_type", grantTypeStr))
+			th.publishTokenIssuanceFailedEvent(r.Context(), clientID, grantTypeStr, scopeStr,
+				http.StatusInternalServerError, "Internal Server Error", startTime)
 			utils.WriteJSONError(w, constants.ErrorServerError, "Something went wrong",
 				http.StatusInternalServerError, nil)
 			return
@@ -189,6 +235,8 @@ func (th *tokenHandler) HandleTokenRequest(w http.ResponseWriter, r *http.Reques
 			tokenRespDTO.AccessToken.UserType, tokenRespDTO.AccessToken.OuID,
 			tokenRespDTO.AccessToken.OuName, tokenRespDTO.AccessToken.OuHandle)
 		if refreshTokenError != nil && refreshTokenError.Error != "" {
+			th.publishTokenIssuanceFailedEvent(r.Context(), clientID, grantTypeStr, scopeStr,
+				http.StatusInternalServerError, refreshTokenError.ErrorDescription, startTime)
 			utils.WriteJSONError(w, refreshTokenError.Error, refreshTokenError.ErrorDescription,
 				http.StatusInternalServerError, nil)
 			return
@@ -226,4 +274,79 @@ func (th *tokenHandler) HandleTokenRequest(w http.ResponseWriter, r *http.Reques
 	// Write the token response.
 	utils.WriteSuccessResponse(w, http.StatusOK, tokenResponse)
 	logger.Debug("Token response sent", log.String("client_id", clientID), log.String("grant_type", grantTypeStr))
+
+	th.publishTokenIssuedEvent(r.Context(), clientID, grantTypeStr, scopes, startTime)
+}
+
+func (th *tokenHandler) publishTokenIssuanceStartedEvent(ctx context.Context, clientID, grantType, scope string) {
+	if th.observabilitySvc == nil || !th.observabilitySvc.IsEnabled() {
+		return
+	}
+
+	evt := event.NewEvent(
+		sysContext.GetTraceID(ctx),
+		string(event.EventTypeTokenIssuanceStarted),
+		event.ComponentAuthHandler,
+	).
+		WithStatus(event.StatusInProgress).
+		WithData(event.DataKey.ClientID, clientID).
+		WithData(event.DataKey.GrantType, grantType).
+		WithData(event.DataKey.Scope, scope)
+
+	th.observabilitySvc.PublishEvent(evt)
+}
+
+func (th *tokenHandler) publishTokenIssuedEvent(
+	ctx context.Context, clientID, grantType, scope string, startTime int64,
+) {
+	if th.observabilitySvc == nil || !th.observabilitySvc.IsEnabled() {
+		return
+	}
+
+	duration := time.Now().UnixMilli() - startTime
+
+	evt := event.NewEvent(
+		sysContext.GetTraceID(ctx),
+		string(event.EventTypeTokenIssued),
+		event.ComponentAuthHandler,
+	).
+		WithStatus(event.StatusSuccess).
+		WithData(event.DataKey.ClientID, clientID).
+		WithData(event.DataKey.GrantType, grantType).
+		WithData(event.DataKey.Scope, scope).
+		WithData(event.DataKey.DurationMs, fmt.Sprintf("%d", duration))
+
+	th.observabilitySvc.PublishEvent(evt)
+}
+
+func (th *tokenHandler) publishTokenIssuanceFailedEvent(
+	ctx context.Context, clientID, grantType, scope string, statusCode int, message string, startTime int64,
+) {
+	if th.observabilitySvc == nil || !th.observabilitySvc.IsEnabled() {
+		return
+	}
+
+	duration := time.Now().UnixMilli() - startTime
+
+	// Classify error type based on status code
+	errorType := "client_error"
+	if statusCode >= 500 {
+		errorType = "server_error"
+	}
+
+	evt := event.NewEvent(
+		sysContext.GetTraceID(ctx),
+		string(event.EventTypeTokenIssuanceFailed),
+		event.ComponentAuthHandler,
+	).
+		WithStatus(event.StatusFailure).
+		WithData(event.DataKey.ClientID, clientID).
+		WithData(event.DataKey.GrantType, grantType).
+		WithData(event.DataKey.Scope, scope).
+		WithData(event.DataKey.Error, message).
+		WithData(event.DataKey.ErrorCode, fmt.Sprintf("%d", statusCode)).
+		WithData(event.DataKey.ErrorType, errorType).
+		WithData(event.DataKey.DurationMs, fmt.Sprintf("%d", duration))
+
+	th.observabilitySvc.PublishEvent(evt)
 }

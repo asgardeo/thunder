@@ -73,6 +73,7 @@ type ResourceServiceInterface interface {
 		resourceServerID string, resourceID *string, id string, action Action,
 	) (*Action, *serviceerror.ServiceError)
 	DeleteAction(resourceServerID string, resourceID *string, id string) *serviceerror.ServiceError
+	ValidatePermissions(resourceServerID string, permissions []string) ([]string, *serviceerror.ServiceError)
 }
 
 // resourceService is the default implementation of ResourceServiceInterface.
@@ -858,6 +859,49 @@ func (rs *resourceService) DeleteAction(
 	}
 
 	return nil
+}
+
+// ValidatePermissions checks if permissions exist for a given resource server.
+// Returns array of invalid permissions (empty if all valid).
+func (rs *resourceService) ValidatePermissions(
+	resourceServerID string,
+	permissions []string,
+) ([]string, *serviceerror.ServiceError) {
+	rs.logger.Debug("Validating permissions",
+		log.String("resourceServerId", resourceServerID),
+		log.Int("permissionCount", len(permissions)))
+
+	if len(permissions) == 0 {
+		return []string{}, nil
+	}
+
+	// Validate resource server exists
+	resServerInternalID, _, err := rs.resourceStore.GetResourceServer(resourceServerID)
+	if err != nil {
+		if !errors.Is(err, errResourceServerNotFound) {
+			rs.logger.Error("Failed to validate resource server existence",
+				log.String("resourceServerId", resourceServerID),
+				log.Error(err))
+			return nil, &serviceerror.InternalServerError
+		}
+	}
+	if resServerInternalID == 0 {
+		rs.logger.Debug("Resource server not found",
+			log.String("resourceServerId", resourceServerID))
+		// Return all permissions as invalid if resource server doesn't exist
+		return permissions, nil
+	}
+
+	// Call store to validate permissions
+	invalidPermissions, storeErr := rs.resourceStore.ValidatePermissions(resServerInternalID, permissions)
+	if storeErr != nil {
+		rs.logger.Error("Failed to validate permissions in store",
+			log.String("resourceServerId", resourceServerID),
+			log.Error(storeErr))
+		return nil, &serviceerror.InternalServerError
+	}
+
+	return invalidPermissions, nil
 }
 
 // Validation helper methods

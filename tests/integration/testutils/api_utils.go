@@ -835,6 +835,119 @@ func SimulateFederatedOAuthFlow(redirectURL string) (string, error) {
 	return code, nil
 }
 
+// CreateResourceServerWithActions creates a resource server and multiple actions, returning the resource server ID
+func CreateResourceServerWithActions(rs ResourceServer, actions []Action) (string, error) {
+	// Create the resource server
+	rsID, err := createResourceServer(rs)
+	if err != nil {
+		return "", fmt.Errorf("failed to create resource server: %w", err)
+	}
+
+	for i, action := range actions {
+		_, err := createAction(rsID, action)
+		if err != nil {
+			// Cleanup: delete the resource server on failure
+			DeleteResourceServer(rsID)
+			return "", fmt.Errorf("failed to create action %d: %w", i, err)
+		}
+	}
+
+	return rsID, nil
+}
+
+// createResourceServer creates a resource server via API and returns the resource server ID
+func createResourceServer(rs ResourceServer) (string, error) {
+	client := GetHTTPClient()
+
+	rsJSON, err := json.Marshal(rs)
+	if err != nil {
+		return "", fmt.Errorf("failed to marshal resource server: %w", err)
+	}
+
+	req, err := http.NewRequest("POST", TestServerURL+"/resource-servers", bytes.NewReader(rsJSON))
+	if err != nil {
+		return "", fmt.Errorf("failed to create request: %w", err)
+	}
+	req.Header.Set("Content-Type", "application/json")
+
+	resp, err := client.Do(req)
+	if err != nil {
+		return "", fmt.Errorf("failed to send request: %w", err)
+	}
+	defer resp.Body.Close()
+
+	bodyBytes, _ := io.ReadAll(resp.Body)
+
+	if resp.StatusCode != http.StatusCreated {
+		return "", fmt.Errorf("expected status 201, got %d. Response: %s", resp.StatusCode, string(bodyBytes))
+	}
+
+	var createdRS ResourceServer
+	if err := json.Unmarshal(bodyBytes, &createdRS); err != nil {
+		return "", fmt.Errorf("failed to unmarshal resource server response: %w", err)
+	}
+
+	return createdRS.ID, nil
+}
+
+// DeleteResourceServer deletes a resource server by ID
+func DeleteResourceServer(rsID string) error {
+	client := GetHTTPClient()
+
+	req, err := http.NewRequest("DELETE", TestServerURL+"/resource-servers/"+rsID, nil)
+	if err != nil {
+		return fmt.Errorf("failed to create delete request: %w", err)
+	}
+
+	resp, err := client.Do(req)
+	if err != nil {
+		return fmt.Errorf("failed to delete resource server: %w", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusNoContent {
+		bodyBytes, _ := io.ReadAll(resp.Body)
+		return fmt.Errorf("expected status 204, got %d. Response: %s", resp.StatusCode, string(bodyBytes))
+	}
+	return nil
+}
+
+// createAction creates an action on a resource server via API and returns the action ID
+func createAction(resourceServerID string, action Action) (string, error) {
+	client := GetHTTPClient()
+
+	actionJSON, err := json.Marshal(action)
+	if err != nil {
+		return "", fmt.Errorf("failed to marshal action: %w", err)
+	}
+
+	url := fmt.Sprintf("%s/resource-servers/%s/actions", TestServerURL, resourceServerID)
+	req, err := http.NewRequest("POST", url, bytes.NewReader(actionJSON))
+	if err != nil {
+		return "", fmt.Errorf("failed to create request: %w", err)
+	}
+	req.Header.Set("Content-Type", "application/json")
+
+	resp, err := client.Do(req)
+	if err != nil {
+		return "", fmt.Errorf("failed to send request: %w", err)
+	}
+	defer resp.Body.Close()
+
+	bodyBytes, _ := io.ReadAll(resp.Body)
+
+	if resp.StatusCode != http.StatusCreated {
+		return "", fmt.Errorf("expected status 201, got %d. Response: %s", resp.StatusCode, string(bodyBytes))
+	}
+
+	var createdAction Action
+	if err := json.Unmarshal(bodyBytes, &createdAction); err != nil {
+		return "", fmt.Errorf("failed to unmarshal action response: %w", err)
+	}
+
+	return createdAction.ID, nil
+}
+
 // CreateFlow creates a flow via API and returns the flow ID
 func CreateFlow(flowDefinition Flow) (string, error) {
 	flowJSON, err := json.Marshal(flowDefinition)

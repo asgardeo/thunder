@@ -26,6 +26,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
 
+	"github.com/asgardeo/thunder/internal/system/config"
 	serverconst "github.com/asgardeo/thunder/internal/system/constants"
 	"github.com/asgardeo/thunder/internal/system/error/serviceerror"
 )
@@ -38,6 +39,21 @@ const testParentID = "parent"
 
 func TestOUService_OrganizationUnitServiceTestSuite_Run(t *testing.T) {
 	suite.Run(t, new(OrganizationUnitServiceTestSuite))
+}
+
+func (suite *OrganizationUnitServiceTestSuite) SetupTest() {
+	// Initialize ThunderRuntime with immutable mode disabled by default
+	config.ResetThunderRuntime()
+	testConfig := &config.Config{
+		ImmutableResources: config.ImmutableResources{
+			Enabled: false,
+		},
+	}
+	_ = config.InitializeThunderRuntime("/tmp/test", testConfig)
+}
+
+func (suite *OrganizationUnitServiceTestSuite) TearDownTest() {
+	config.ResetThunderRuntime()
 }
 
 type ouListExpectations struct {

@@ -264,7 +264,7 @@ func (ts *BasicRegistrationFlowTestSuite) TestBasicRegistrationFlowDuplicateUser
 	ts.Require().Equal("ERROR", completeFlowStep.FlowStatus, "Expected flow status to be ERROR")
 	ts.Require().Empty(completeFlowStep.Assertion, "No JWT assertion should be returned for failed registration")
 	ts.Require().NotEmpty(completeFlowStep.FailureReason, "Failure reason should be provided for duplicate user")
-	ts.Equal("User already exists with the provided username.", completeFlowStep.FailureReason,
+	ts.Equal("User already exists with the provided attributes.", completeFlowStep.FailureReason,
 		"Failure reason should indicate duplicate username")
 }
 

@@ -29,7 +29,7 @@ import (
 	"github.com/asgardeo/thunder/internal/notification/common"
 	"github.com/asgardeo/thunder/internal/system/cmodels"
 	"github.com/asgardeo/thunder/internal/system/config"
-	"github.com/asgardeo/thunder/tests/mocks/database/clientmock"
+
 	"github.com/asgardeo/thunder/tests/mocks/database/providermock"
 )
 
@@ -38,7 +38,7 @@ const testDeploymentID = "test-deployment-id"
 type StoreTestSuite struct {
 	suite.Suite
 	mockDBProvider *providermock.DBProviderInterfaceMock
-	mockDBClient   *clientmock.DBClientInterfaceMock
+	mockDBClient   *providermock.DBClientInterfaceMock
 	store          *notificationStore
 }
 
@@ -72,7 +72,7 @@ func (suite *StoreTestSuite) SetupSuite() {
 
 func (suite *StoreTestSuite) SetupTest() {
 	suite.mockDBProvider = providermock.NewDBProviderInterfaceMock(suite.T())
-	suite.mockDBClient = clientmock.NewDBClientInterfaceMock(suite.T())
+	suite.mockDBClient = providermock.NewDBClientInterfaceMock(suite.T())
 	suite.store = &notificationStore{
 		dbProvider:   suite.mockDBProvider,
 		deploymentID: testDeploymentID,

@@ -42,6 +42,7 @@ import (
 	"github.com/asgardeo/thunder/tests/mocks/jwtmock"
 	"github.com/asgardeo/thunder/tests/mocks/oauth/oauth2/granthandlersmock"
 	"github.com/asgardeo/thunder/tests/mocks/oauth/scopemock"
+	"github.com/asgardeo/thunder/tests/mocks/observabilitymock"
 	"github.com/asgardeo/thunder/tests/mocks/usermock"
 )
 
@@ -53,6 +54,7 @@ type TokenHandlerTestSuite struct {
 	mockGrantProvider  *granthandlersmock.GrantHandlerProviderInterfaceMock
 	mockScopeValidator *scopemock.ScopeValidatorInterfaceMock
 	mockGrantHandler   *granthandlersmock.GrantHandlerInterfaceMock
+	mockObsSvc         *observabilitymock.ObservabilityServiceInterfaceMock
 }
 
 func TestTokenHandlerSuite(t *testing.T) {
@@ -78,16 +80,22 @@ func (suite *TokenHandlerTestSuite) SetupTest() {
 	// Using Maybe() allows tests to override this if needed
 	suite.mockGrantProvider.On("GetGrantHandler", constants.GrantTypeAuthorizationCode).
 		Return(suite.mockGrantHandler, nil).Maybe()
+
+	suite.mockObsSvc = observabilitymock.NewObservabilityServiceInterfaceMock(suite.T())
+	suite.mockObsSvc.On("IsEnabled").Return(true).Maybe()
+	suite.mockObsSvc.On("PublishEvent", mock.Anything).Return().Maybe()
 }
 
 func (suite *TokenHandlerTestSuite) TestnewTokenHandler() {
-	handler := newTokenHandler(suite.mockAppService, suite.mockGrantProvider, suite.mockScopeValidator)
+	handler := newTokenHandler(suite.mockAppService, suite.mockGrantProvider, suite.mockScopeValidator,
+		suite.mockObsSvc)
 	assert.NotNil(suite.T(), handler)
 	assert.Implements(suite.T(), (*TokenHandlerInterface)(nil), handler)
 }
 
 func (suite *TokenHandlerTestSuite) TestHandleTokenRequest_InvalidFormData() {
-	handler := newTokenHandler(suite.mockAppService, suite.mockGrantProvider, suite.mockScopeValidator)
+	handler := newTokenHandler(suite.mockAppService, suite.mockGrantProvider, suite.mockScopeValidator,
+		suite.mockObsSvc)
 	req, _ := http.NewRequest("POST", "/token", strings.NewReader("invalid-form-data%"))
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 
@@ -116,7 +124,8 @@ func (suite *TokenHandlerTestSuite) TestHandleTokenRequest_MissingGrantType() {
 // Helper function to test token request error scenarios
 func (suite *TokenHandlerTestSuite) testTokenRequestError(formData url.Values,
 	expectedStatusCode int, expectedError, expectedErrorDescription string) {
-	handler := newTokenHandler(suite.mockAppService, suite.mockGrantProvider, suite.mockScopeValidator)
+	handler := newTokenHandler(suite.mockAppService, suite.mockGrantProvider, suite.mockScopeValidator,
+		suite.mockObsSvc)
 
 	req, _ := http.NewRequest("POST", "/token", strings.NewReader(formData.Encode()))
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
@@ -160,7 +169,8 @@ func (suite *TokenHandlerTestSuite) TestHandleTokenRequest_InvalidGrantType() {
 }
 
 func (suite *TokenHandlerTestSuite) TestHandleTokenRequest_MissingClientID() {
-	handler := newTokenHandler(suite.mockAppService, suite.mockGrantProvider, suite.mockScopeValidator)
+	handler := newTokenHandler(suite.mockAppService, suite.mockGrantProvider, suite.mockScopeValidator,
+		suite.mockObsSvc)
 	formData := url.Values{}
 	formData.Set("grant_type", "authorization_code")
 
@@ -184,7 +194,8 @@ func (suite *TokenHandlerTestSuite) TestHandleTokenRequest_UnsupportedGrantTypeE
 	formData := url.Values{}
 	formData.Set("grant_type", "authorization_code")
 
-	handler := newTokenHandler(suite.mockAppService, suite.mockGrantProvider, suite.mockScopeValidator)
+	handler := newTokenHandler(suite.mockAppService, suite.mockGrantProvider, suite.mockScopeValidator,
+		suite.mockObsSvc)
 	req, _ := http.NewRequest("POST", "/token", strings.NewReader(formData.Encode()))
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 
@@ -221,7 +232,8 @@ func (suite *TokenHandlerTestSuite) TestHandleTokenRequest_GrantHandlerProviderE
 	formData := url.Values{}
 	formData.Set("grant_type", "authorization_code")
 
-	handler := newTokenHandler(suite.mockAppService, suite.mockGrantProvider, suite.mockScopeValidator)
+	handler := newTokenHandler(suite.mockAppService, suite.mockGrantProvider, suite.mockScopeValidator,
+		suite.mockObsSvc)
 	req, _ := http.NewRequest("POST", "/token", strings.NewReader(formData.Encode()))
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 
@@ -258,7 +270,8 @@ func (suite *TokenHandlerTestSuite) TestHandleTokenRequest_UnauthorizedClient() 
 	formData := url.Values{}
 	formData.Set("grant_type", "client_credentials")
 
-	handler := newTokenHandler(suite.mockAppService, suite.mockGrantProvider, suite.mockScopeValidator)
+	handler := newTokenHandler(suite.mockAppService, suite.mockGrantProvider, suite.mockScopeValidator,
+		suite.mockObsSvc)
 	req, _ := http.NewRequest("POST", "/token", strings.NewReader(formData.Encode()))
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 
@@ -297,7 +310,8 @@ func (suite *TokenHandlerTestSuite) TestHandleTokenRequest_ValidateGrantError() 
 	formData.Set("grant_type", "authorization_code")
 	formData.Set("code", "test-code")
 
-	handler := newTokenHandler(suite.mockAppService, suite.mockGrantProvider, suite.mockScopeValidator)
+	handler := newTokenHandler(suite.mockAppService, suite.mockGrantProvider, suite.mockScopeValidator,
+		suite.mockObsSvc)
 	req, _ := http.NewRequest("POST", "/token", strings.NewReader(formData.Encode()))
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 
@@ -344,7 +358,8 @@ func (suite *TokenHandlerTestSuite) TestHandleTokenRequest_ScopeValidationError(
 	formData.Set("code", "test-code")
 	formData.Set("scope", "invalid_scope")
 
-	handler := newTokenHandler(suite.mockAppService, suite.mockGrantProvider, suite.mockScopeValidator)
+	handler := newTokenHandler(suite.mockAppService, suite.mockGrantProvider, suite.mockScopeValidator,
+		suite.mockObsSvc)
 	req, _ := http.NewRequest("POST", "/token", strings.NewReader(formData.Encode()))
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 
@@ -392,7 +407,8 @@ func (suite *TokenHandlerTestSuite) TestHandleTokenRequest_Success() {
 	formData.Set("code", "test-code")
 	formData.Set("scope", "openid profile")
 
-	handler := newTokenHandler(suite.mockAppService, suite.mockGrantProvider, suite.mockScopeValidator)
+	handler := newTokenHandler(suite.mockAppService, suite.mockGrantProvider, suite.mockScopeValidator,
+		suite.mockObsSvc)
 	req, _ := http.NewRequest("POST", "/token", strings.NewReader(formData.Encode()))
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 
@@ -460,7 +476,8 @@ func (suite *TokenHandlerTestSuite) TestHandleTokenRequest_HandleGrantError() {
 	formData.Set("code", "test-code")
 	formData.Set("scope", "openid")
 
-	handler := newTokenHandler(suite.mockAppService, suite.mockGrantProvider, suite.mockScopeValidator)
+	handler := newTokenHandler(suite.mockAppService, suite.mockGrantProvider, suite.mockScopeValidator,
+		suite.mockObsSvc)
 	req, _ := http.NewRequest("POST", "/token", strings.NewReader(formData.Encode()))
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 
@@ -511,7 +528,8 @@ func (suite *TokenHandlerTestSuite) TestHandleTokenRequest_WithRefreshToken() {
 	formData.Set("code", "test-code")
 	formData.Set("scope", "openid")
 
-	handler := newTokenHandler(suite.mockAppService, suite.mockGrantProvider, suite.mockScopeValidator)
+	handler := newTokenHandler(suite.mockAppService, suite.mockGrantProvider, suite.mockScopeValidator,
+		suite.mockObsSvc)
 	req, _ := http.NewRequest("POST", "/token", strings.NewReader(formData.Encode()))
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 
@@ -586,7 +604,8 @@ func (suite *TokenHandlerTestSuite) TestHandleTokenRequest_RefreshTokenIssuanceE
 	formData.Set("code", "test-code")
 	formData.Set("scope", "openid")
 
-	handler := newTokenHandler(suite.mockAppService, suite.mockGrantProvider, suite.mockScopeValidator)
+	handler := newTokenHandler(suite.mockAppService, suite.mockGrantProvider, suite.mockScopeValidator,
+		suite.mockObsSvc)
 	req, _ := http.NewRequest("POST", "/token", strings.NewReader(formData.Encode()))
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 
@@ -664,7 +683,8 @@ func (suite *TokenHandlerTestSuite) TestHandleTokenRequest_RefreshTokenHandlerNo
 	formData.Set("code", "test-code")
 	formData.Set("scope", "openid")
 
-	handler := newTokenHandler(suite.mockAppService, suite.mockGrantProvider, suite.mockScopeValidator)
+	handler := newTokenHandler(suite.mockAppService, suite.mockGrantProvider, suite.mockScopeValidator,
+		suite.mockObsSvc)
 	req, _ := http.NewRequest("POST", "/token", strings.NewReader(formData.Encode()))
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 
@@ -734,7 +754,8 @@ func (suite *TokenHandlerTestSuite) TestHandleTokenRequest_RefreshTokenHandlerCa
 	formData.Set("code", "test-code")
 	formData.Set("scope", "openid")
 
-	handler := newTokenHandler(suite.mockAppService, suite.mockGrantProvider, suite.mockScopeValidator)
+	handler := newTokenHandler(suite.mockAppService, suite.mockGrantProvider, suite.mockScopeValidator,
+		suite.mockObsSvc)
 	req, _ := http.NewRequest("POST", "/token", strings.NewReader(formData.Encode()))
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 
@@ -804,7 +825,8 @@ func (suite *TokenHandlerTestSuite) TestHandleTokenRequest_TokenExchange() {
 	formData.Set("subject_token", "subject-token")
 	formData.Set("requested_token_type", "urn:ietf:params:oauth:token-type:access_token")
 
-	handler := newTokenHandler(suite.mockAppService, suite.mockGrantProvider, suite.mockScopeValidator)
+	handler := newTokenHandler(suite.mockAppService, suite.mockGrantProvider, suite.mockScopeValidator,
+		suite.mockObsSvc)
 	req, _ := http.NewRequest("POST", "/token", strings.NewReader(formData.Encode()))
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 
@@ -867,7 +889,8 @@ func (suite *TokenHandlerTestSuite) TestHandleTokenRequest_TokenExchangeWithJWTT
 	formData.Set("subject_token", "subject-token")
 	formData.Set("requested_token_type", "urn:ietf:params:oauth:token-type:jwt")
 
-	handler := newTokenHandler(suite.mockAppService, suite.mockGrantProvider, suite.mockScopeValidator)
+	handler := newTokenHandler(suite.mockAppService, suite.mockGrantProvider, suite.mockScopeValidator,
+		suite.mockObsSvc)
 	req, _ := http.NewRequest("POST", "/token", strings.NewReader(formData.Encode()))
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 

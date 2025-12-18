@@ -37,12 +37,13 @@ const (
 )
 
 var (
-	scopeTestOUID       string
-	scopeTestRoleID     string
-	scopeUserWithRole   string
-	scopeUserNoRole     string
-	scopeUserSchemaID   string
-	scopeTestUserSchema = testutils.UserSchema{
+	scopeTestOUID           string
+	scopeTestRoleID         string
+	scopeUserWithRole       string
+	scopeUserNoRole         string
+	scopeUserSchemaID       string
+	scopeTestResourceServer string
+	scopeTestUserSchema     = testutils.UserSchema{
 		Name: "authz-test-person",
 		Schema: map[string]interface{}{
 			"username": map[string]interface{}{
@@ -138,12 +139,41 @@ func (ts *OAuthAuthzScopeTestSuite) SetupSuite() {
 		ts.T().Fatalf("Failed to create user without role: %v", err)
 	}
 
+	// Create resource server with actions for permissions
+	resourceServer := testutils.ResourceServer{
+		Name:               "OAuth Document Management System",
+		Description:        "System for managing documents via OAuth",
+		Identifier:         "oauth-document-mgmt",
+		OrganizationUnitID: scopeTestOUID,
+	}
+	actions := []testutils.Action{
+		{
+			Name:        "Read Documents",
+			Handle:      "read",
+			Description: "Permission to read documents",
+		},
+		{
+			Name:        "Write Documents",
+			Handle:      "write",
+			Description: "Permission to write documents",
+		},
+	}
+	scopeTestResourceServer, err := testutils.CreateResourceServerWithActions(resourceServer, actions)
+	if err != nil {
+		ts.T().Fatalf("Failed to create resource server with actions: %v", err)
+	}
+
 	// Create role with permissions and assign to first user
 	role := testutils.Role{
 		Name:               "OAuth_DocumentEditor",
 		Description:        "Can read and write documents (OAuth test)",
 		OrganizationUnitID: scopeTestOUID,
-		Permissions:        []string{"read:documents", "write:documents"},
+		Permissions: []testutils.ResourcePermissions{
+			{
+				ResourceServerID: scopeTestResourceServer,
+				Permissions:      []string{"read", "write"},
+			},
+		},
 		Assignments: []testutils.Assignment{
 			{ID: scopeUserWithRole, Type: "user"},
 		},
@@ -159,6 +189,12 @@ func (ts *OAuthAuthzScopeTestSuite) TearDownSuite() {
 	if scopeTestRoleID != "" {
 		if err := testutils.DeleteRole(scopeTestRoleID); err != nil {
 			ts.T().Logf("Failed to delete test role: %v", err)
+		}
+	}
+
+	if scopeTestResourceServer != "" {
+		if err := testutils.DeleteResourceServer(scopeTestResourceServer); err != nil {
+			ts.T().Logf("Failed to delete test resource server: %v", err)
 		}
 	}
 
@@ -196,7 +232,7 @@ func (ts *OAuthAuthzScopeTestSuite) TearDownSuite() {
 // TestOAuthAuthzFlow_WithAuthorizedScopes tests complete OAuth flow with authorized scopes
 func (ts *OAuthAuthzScopeTestSuite) TestOAuthAuthzFlow_WithAuthorizedScopes() {
 	// Step 1: Initiate OAuth authorization request
-	scope := "openid read:documents write:documents"
+	scope := "openid read write"
 	state := "test_state_with_scopes"
 
 	authResp, err := testutils.InitiateAuthorizationFlow(scopeTestClientID, scopeTestRedirectURI, "code", scope, state)
@@ -258,14 +294,14 @@ func (ts *OAuthAuthzScopeTestSuite) TestOAuthAuthzFlow_WithAuthorizedScopes() {
 	// Parse scopes (space-separated)
 	scopes := strings.Split(scopeStr, " ")
 	ts.Require().Contains(scopes, "openid", "Token should contain openid scope")
-	ts.Require().Contains(scopes, "read:documents", "Token should contain read:documents scope")
-	ts.Require().Contains(scopes, "write:documents", "Token should contain write:documents scope")
+	ts.Require().Contains(scopes, "read", "Token should contain read scope")
+	ts.Require().Contains(scopes, "write", "Token should contain write scope")
 }
 
 // TestOAuthAuthzFlow_WithNoAuthorizedScopes tests OAuth flow when user has no custom scopes
 func (ts *OAuthAuthzScopeTestSuite) TestOAuthAuthzFlow_WithNoAuthorizedScopes() {
 	// Step 1: Initiate OAuth authorization request
-	scope := "openid read:documents write:documents"
+	scope := "openid read write"
 	state := "test_state_no_scopes"
 
 	authResp, err := testutils.InitiateAuthorizationFlow(scopeTestClientID, scopeTestRedirectURI, "code", scope, state)
@@ -327,8 +363,8 @@ func (ts *OAuthAuthzScopeTestSuite) TestOAuthAuthzFlow_WithNoAuthorizedScopes() 
 	// Parse scopes (space-separated)
 	scopes := strings.Split(scopeStr, " ")
 	ts.Require().Contains(scopes, "openid", "Token should contain openid scope")
-	ts.Require().NotContains(scopes, "read:documents", "Token should NOT contain read:documents scope")
-	ts.Require().NotContains(scopes, "write:documents", "Token should NOT contain write:documents scope")
+	ts.Require().NotContains(scopes, "read", "Token should NOT contain read scope")
+	ts.Require().NotContains(scopes, "write", "Token should NOT contain write scope")
 
 	// Verify only OIDC scopes are present
 	for _, scope := range scopes {
