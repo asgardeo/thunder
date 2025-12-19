@@ -352,4 +352,47 @@ describe('Preview', () => {
     expect(screen.getByRole('button', {name: /Continue with Google/i})).toBeInTheDocument();
     expect(screen.getByRole('button', {name: /Continue with GitHub/i})).toBeInTheDocument();
   });
+
+  describe('Custom flow selected', () => {
+    it('should render custom flow overlay when isCustomFlowSelected is true', () => {
+      renderComponent({
+        isCustomFlowSelected: true,
+      });
+
+      expect(screen.getByText('Custom Flow Selected')).toBeInTheDocument();
+    });
+
+    it('should render custom flow name when provided', () => {
+      renderComponent({
+        isCustomFlowSelected: true,
+        customFlowName: 'My Custom Flow',
+      });
+
+      expect(screen.getByText('My Custom Flow')).toBeInTheDocument();
+    });
+
+    it('should render hint message about Flow Builder', () => {
+      renderComponent({
+        isCustomFlowSelected: true,
+      });
+
+      expect(screen.getByText(/Preview is not available for custom flows/i)).toBeInTheDocument();
+    });
+
+    it('should not render overlay when isCustomFlowSelected is false', () => {
+      renderComponent({
+        isCustomFlowSelected: false,
+      });
+
+      expect(screen.queryByText('Custom Flow Selected')).not.toBeInTheDocument();
+    });
+
+    it('should still render preview container when custom flow is selected', () => {
+      renderComponent({
+        isCustomFlowSelected: true,
+      });
+
+      expect(screen.getByText('Preview')).toBeInTheDocument();
+    });
+  });
 });

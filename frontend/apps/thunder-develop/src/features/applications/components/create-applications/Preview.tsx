@@ -65,6 +65,16 @@ export interface PreviewProps {
    * Keys are integration IDs, values indicate whether they are enabled
    */
   integrations: Record<string, boolean>;
+
+  /**
+   * Whether a custom flow is selected (preview will be blurred)
+   */
+  isCustomFlowSelected?: boolean;
+
+  /**
+   * Name of the custom flow (for display in the overlay)
+   */
+  customFlowName?: string;
 }
 
 /**
@@ -112,7 +122,8 @@ export interface PreviewProps {
  *
  * @public
  */
-export default function Preview({appName, appLogo, selectedColor, integrations}: PreviewProps): JSX.Element {
+export default function Preview({appName, appLogo, selectedColor, integrations, 
+  isCustomFlowSelected = false, customFlowName = undefined}: PreviewProps): JSX.Element {
   const {t} = useTranslation();
   const {mode} = useColorScheme();
   const theme = useTheme();
@@ -137,6 +148,7 @@ export default function Preview({appName, appLogo, selectedColor, integrations}:
         height: '100%',
         borderRadius: theme.vars?.shape.borderRadius,
         boxShadow: `0 0 0 1px rgba(199, 211, 234, 0.08) inset, 0 24px 48px 0 rgba(168, 216, 245, 0.06) inset, 0 1px 1px 0 rgba(216, 236, 248, 0.20) inset;`,
+        position: 'relative',
         ...theme.applyStyles('dark', {
           backgroundImage: `radial-gradient(circle at 30% 10%, rgba(255, 117, 2, 0.3) 0%, rgba(0,0,0,0) 40%),
           radial-gradient(circle at 60% 40%, rgba(69, 30, 175, 0.14) 0%, rgba(0,0,0,0) 70%),
@@ -174,8 +186,53 @@ export default function Preview({appName, appLogo, selectedColor, integrations}:
           flexDirection: 'column',
           alignItems: 'center',
           height: '100%',
+          position: 'relative',
         }}
       >
+        {/* Blur overlay when custom flow selected - covers only inner content */}
+        {isCustomFlowSelected && (
+          <Box
+            sx={{
+              position: 'absolute',
+              top: 0,
+              left: 0,
+              right: 0,
+              bottom: 0,
+              zIndex: 10,
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              justifyContent: 'center',
+              backdropFilter: 'blur(6px)',
+              backgroundColor: 'rgba(255, 255, 255, 0.25)',
+              ...theme.applyStyles('dark', {
+                backgroundColor: 'rgba(0, 0, 0, 0.2)',
+              }),
+            }}
+          >
+            <Paper
+              elevation={6}
+              sx={{
+                p: 3,
+                textAlign: 'center',
+                maxWidth: 280,
+                border: `1px solid ${theme.vars?.palette.divider}`,
+              }}
+            >
+              <Typography variant="subtitle1" gutterBottom>
+                {t('applications:onboarding.preview.customFlowSelected')}
+              </Typography>
+              {customFlowName && (
+                <Typography variant="body2" color="text.secondary" sx={{mb: 2}}>
+                  {customFlowName}
+                </Typography>
+              )}
+              <Typography variant="caption" color="text.secondary">
+                {t('applications:onboarding.preview.customFlowHint')}
+              </Typography>
+            </Paper>
+          </Box>
+        )}
         {appLogo && (
           <Box
             sx={{

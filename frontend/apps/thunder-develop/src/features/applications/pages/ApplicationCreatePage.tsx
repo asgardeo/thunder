@@ -33,7 +33,8 @@ import {getDefaultOAuthConfig} from '../models/oauth';
 import Preview from '../components/create-applications/Preview';
 import ApplicationSummary from '../components/create-applications/ApplicationSummary';
 import useCreateApplication from '../api/useCreateApplication';
-import resolveAuthFlowGraphId from '../utils/resolveAuthFlowGraphId';
+import useAuthenticationFlows from '../api/useAuthenticationFlows';
+import resolveAuthFlowHandle from '../utils/resolveAuthFlowHandle';
 import useIdentityProviders from '../../integrations/api/useIdentityProviders';
 import type {CreateApplicationRequest} from '../models/requests';
 import type {OAuth2Config} from '../models/oauth';
@@ -65,6 +66,8 @@ export default function ApplicationCreatePage(): JSX.Element {
     setAppLogo,
     integrations,
     toggleIntegration,
+    customFlowId,
+    setCustomFlowId,
     signInApproach,
     setSignInApproach,
     selectedTechnology,
@@ -94,6 +97,7 @@ export default function ApplicationCreatePage(): JSX.Element {
   const createBranding = useCreateBranding();
   const {data: identityProviders} = useIdentityProviders();
   const {data: userTypesData} = useGetUserTypes();
+  const {flows: authFlows, getFlowIdByHandle, isFlowAvailable, isLoading: isLoadingFlows} = useAuthenticationFlows();
 
   const [selectedUserTypes, setSelectedUserTypes] = useState<string[]>([]);
 
@@ -158,12 +162,28 @@ export default function ApplicationCreatePage(): JSX.Element {
     const oauthConfigSelected = !skipOAuthConfig && oauthConfig !== null;
     setHasOAuthConfig(oauthConfigSelected);
 
-    const hasUsernamePassword = integrations[AuthenticatorTypes.BASIC_AUTH] ?? false;
-    const selectedIdentityProviders = identityProviders?.filter((idp) => integrations[idp.id]) ?? [];
-    const authFlowGraphId = resolveAuthFlowGraphId({
-      hasUsernamePassword,
-      identityProviders: selectedIdentityProviders,
-    });
+    let authFlowGraphId: string;
+
+    // Use custom flow if selected, otherwise resolve from toggles
+    if (customFlowId) {
+      authFlowGraphId = customFlowId;
+    } else {
+      const hasUsernamePassword = integrations[AuthenticatorTypes.BASIC_AUTH] ?? false;
+      const selectedIdentityProviders = identityProviders?.filter((idp) => integrations[idp.id]) ?? [];
+      const authFlowHandle = resolveAuthFlowHandle({
+        hasUsernamePassword,
+        identityProviders: selectedIdentityProviders,
+      });
+
+      // Convert flow handle to UUID
+      const resolvedFlowId = getFlowIdByHandle(authFlowHandle);
+      if (!resolvedFlowId) {
+        setError(t('applications:onboarding.errors.flowNotFound', {flowHandle: authFlowHandle}));
+        return;
+      }
+      authFlowGraphId = resolvedFlowId;
+    }
+
     const createApplicationWithBranding = (brandingId: string): void => {
       const userTypes = userTypesData?.schemas ?? [];
       const allowedUserTypes = (() => {
@@ -413,6 +433,11 @@ export default function ApplicationCreatePage(): JSX.Element {
             integrations={integrations}
             onIntegrationToggle={handleIntegrationToggle}
             onReadyChange={handleOptionsStepReadyChange}
+            isFlowAvailable={isFlowAvailable}
+            isLoadingFlows={isLoadingFlows}
+            customFlowId={customFlowId}
+            onCustomFlowChange={setCustomFlowId}
+            authFlows={authFlows}
           />
         );
 
@@ -659,7 +684,14 @@ export default function ApplicationCreatePage(): JSX.Element {
         {/* Right side - Preview (show from design step onwards, but not on summary) */}
         {currentStep !== ApplicationCreateFlowStep.NAME && currentStep !== ApplicationCreateFlowStep.SUMMARY && (
           <Box sx={{flex: '0 0 50%', display: 'flex', flexDirection: 'column', p: 5}}>
-            <Preview appName={appName} appLogo={appLogo} selectedColor={selectedColor} integrations={integrations} />
+            <Preview
+              appName={appName}
+              appLogo={appLogo}
+              selectedColor={selectedColor}
+              integrations={integrations}
+              isCustomFlowSelected={customFlowId !== null}
+              customFlowName={authFlows.find((f) => f.id === customFlowId)?.name}
+            />
           </Box>
         )}
       </Box>

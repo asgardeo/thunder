@@ -103,6 +103,19 @@ export interface ApplicationCreateContextType {
   toggleIntegration: (integrationId: string) => void;
 
   /**
+   * The ID of a custom/existing flow selected by the user.
+   * When set, this overrides the automatic flow selection based on integrations.
+   * @remark Needed for step 03: Sign-in Options (advanced mode).
+   */
+  customFlowId: string | null;
+
+  /**
+   * Sets the custom flow ID. Set to null to use automatic flow selection.
+   * @remark Needed for step 03: Sign-in Options (advanced mode).
+   */
+  setCustomFlowId: (flowId: string | null) => void;
+
+  /**
    * The selected sign-in approach (INBUILT or CUSTOM).
    * @remark Needed for step 04: Configure Approach.
    */

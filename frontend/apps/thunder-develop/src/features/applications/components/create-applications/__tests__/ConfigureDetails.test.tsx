@@ -64,6 +64,8 @@ const renderWithContext = (
     integrations: {},
     setIntegrations: vi.fn(),
     toggleIntegration: vi.fn(),
+    customFlowId: null,
+    setCustomFlowId: vi.fn(),
     signInApproach: null as unknown as ApplicationCreateContextType['signInApproach'],
     setSignInApproach: vi.fn(),
     selectedTechnology: null,

@@ -46,6 +46,7 @@ const INITIAL_STATE: {
   selectedColor: string;
   appLogo: string | null;
   integrations: Record<string, boolean>;
+  customFlowId: string | null;
   signInApproach: ApplicationCreateFlowSignInApproach;
   selectedTechnology: TechnologyApplicationTemplate | null;
   selectedPlatform: PlatformApplicationTemplate | null;
@@ -60,6 +61,7 @@ const INITIAL_STATE: {
   integrations: {
     [AuthenticatorTypes.BASIC_AUTH]: true,
   },
+  customFlowId: null,
   signInApproach: ApplicationCreateFlowSignInApproach.INBUILT as ApplicationCreateFlowSignInApproach,
   selectedTechnology: null,
   selectedPlatform: null,
@@ -106,6 +108,7 @@ export default function ApplicationCreateProvider({children}: ApplicationCreateP
   const [selectedColor, setSelectedColor] = useState<string>(INITIAL_STATE.selectedColor);
   const [appLogo, setAppLogo] = useState<string | null>(INITIAL_STATE.appLogo);
   const [integrations, setIntegrations] = useState<Record<string, boolean>>(INITIAL_STATE.integrations);
+  const [customFlowId, setCustomFlowId] = useState<string | null>(INITIAL_STATE.customFlowId);
   const [signInApproach, setSignInApproach] = useState<ApplicationCreateFlowSignInApproach>(
     INITIAL_STATE.signInApproach,
   );
@@ -133,6 +136,7 @@ export default function ApplicationCreateProvider({children}: ApplicationCreateP
     setSelectedColor(INITIAL_STATE.selectedColor);
     setAppLogo(INITIAL_STATE.appLogo);
     setIntegrations(INITIAL_STATE.integrations);
+    setCustomFlowId(INITIAL_STATE.customFlowId);
     setSignInApproach(INITIAL_STATE.signInApproach);
     setSelectedTechnology(INITIAL_STATE.selectedTechnology);
     setSelectedPlatform(INITIAL_STATE.selectedPlatform);
@@ -154,6 +158,8 @@ export default function ApplicationCreateProvider({children}: ApplicationCreateP
       integrations,
       setIntegrations,
       toggleIntegration,
+      customFlowId,
+      setCustomFlowId,
       signInApproach,
       setSignInApproach,
       selectedTechnology,
@@ -177,6 +183,7 @@ export default function ApplicationCreateProvider({children}: ApplicationCreateP
       appLogo,
       integrations,
       toggleIntegration,
+      customFlowId,
       signInApproach,
       selectedTechnology,
       selectedPlatform,

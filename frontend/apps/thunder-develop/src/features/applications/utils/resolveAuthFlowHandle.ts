@@ -21,7 +21,7 @@ import {
   type IdentityProvider,
   type IdentityProviderType,
 } from '@/features/integrations/models/identity-provider';
-import {AUTH_FLOW_GRAPHS} from '../models/auth-flow-graphs';
+import {AUTH_FLOW_HANDLES} from '../models/auth-flow-graphs';
 
 /**
  * Options for resolving authentication flow graph configuration.
@@ -39,50 +39,50 @@ interface ResolveAuthFlowOptions {
 }
 
 /**
- * Resolves the appropriate authentication flow graph ID based on selected sign-in options.
+ * Resolves the appropriate authentication flow handle based on selected sign-in options.
  *
  * The resolver follows these rules:
- * 1. If only username/password is selected -> auth_flow_config_basic
- * 2. If only Google is selected -> auth_flow_config_google
- * 3. If only GitHub is selected -> auth_flow_config_github
- * 4. If username/password + Google -> auth_flow_config_basic_google
- * 5. If username/password + GitHub -> auth_flow_config_basic (GitHub not supported alone with basic)
- * 6. If username/password + Google + GitHub -> auth_flow_config_basic_google_github
- * 7. If only social logins (Google and/or GitHub) -> Uses the appropriate social flow
+ * 1. If only username/password is selected -> default-basic-flow
+ * 2. If only Google is selected -> default-google-flow
+ * 3. If only GitHub is selected -> default-github-flow
+ * 4. If username/password + Google -> basic-google-flow
+ * 5. If username/password + GitHub -> basic-github-flow
+ * 6. If Google + GitHub (no basic) -> google-github-flow
+ * 7. If username/password + Google + GitHub -> basic-google-github-flow
  *
  * @param options - Configuration object with sign-in options
  * @param options.hasUsernamePassword - Whether username/password authentication is enabled
  * @param options.identityProviders - Array of selected identity providers
- * @returns The authentication flow graph ID that matches the selected options
+ * @returns The authentication flow handle that matches the selected options
  *
  * @example
  * ```tsx
  * // Username & Password only
- * const flowId = resolveAuthFlowGraphId({
+ * const flowHandle = resolveAuthFlowHandle({
  *   hasUsernamePassword: true,
  *   identityProviders: []
  * });
- * // Returns: 'auth_flow_config_basic'
+ * // Returns: 'default-basic-flow'
  *
  * // Username & Password + Google
- * const flowId = resolveAuthFlowGraphId({
+ * const flowHandle = resolveAuthFlowHandle({
  *   hasUsernamePassword: true,
  *   identityProviders: [{ id: '123', name: 'Google', type: 'GOOGLE' }]
  * });
- * // Returns: 'auth_flow_config_basic_google'
+ * // Returns: 'basic-google-flow'
  *
  * // Username & Password + Google + GitHub
- * const flowId = resolveAuthFlowGraphId({
+ * const flowHandle = resolveAuthFlowHandle({
  *   hasUsernamePassword: true,
  *   identityProviders: [
  *     { id: '123', name: 'Google', type: 'GOOGLE' },
  *     { id: '456', name: 'GitHub', type: 'GITHUB' }
  *   ]
  * });
- * // Returns: 'auth_flow_config_basic_google_github'
+ * // Returns: 'basic-google-github-flow'
  * ```
  */
-export default function resolveAuthFlowGraphId({
+export default function resolveAuthFlowHandle({
   hasUsernamePassword,
   identityProviders,
 }: ResolveAuthFlowOptions): string {
@@ -92,40 +92,39 @@ export default function resolveAuthFlowGraphId({
 
   // Only username/password
   if (hasUsernamePassword && !hasGoogle && !hasGitHub) {
-    return AUTH_FLOW_GRAPHS.BASIC;
+    return AUTH_FLOW_HANDLES.BASIC;
   }
 
   // Only Google
   if (!hasUsernamePassword && hasGoogle && !hasGitHub) {
-    return AUTH_FLOW_GRAPHS.GOOGLE;
+    return AUTH_FLOW_HANDLES.GOOGLE;
   }
 
   // Only GitHub
   if (!hasUsernamePassword && !hasGoogle && hasGitHub) {
-    return AUTH_FLOW_GRAPHS.GITHUB;
+    return AUTH_FLOW_HANDLES.GITHUB;
   }
 
   // Username/Password + Google
   if (hasUsernamePassword && hasGoogle && !hasGitHub) {
-    return AUTH_FLOW_GRAPHS.BASIC_GOOGLE;
+    return AUTH_FLOW_HANDLES.BASIC_GOOGLE;
   }
 
   // Username/Password + Google + GitHub
   if (hasUsernamePassword && hasGoogle && hasGitHub) {
-    return AUTH_FLOW_GRAPHS.BASIC_GOOGLE_GITHUB;
+    return AUTH_FLOW_HANDLES.BASIC_GOOGLE_GITHUB;
   }
 
-  // Username/Password + GitHub (fallback to basic since there's no basic_github flow)
+  // Username/Password + GitHub
   if (hasUsernamePassword && !hasGoogle && hasGitHub) {
-    return AUTH_FLOW_GRAPHS.BASIC;
+    return AUTH_FLOW_HANDLES.BASIC_GITHUB;
   }
 
   // Only Google + GitHub (no username/password)
   if (!hasUsernamePassword && hasGoogle && hasGitHub) {
-    // Fallback to basic_google_github since there's no social-only multi-provider flow
-    return AUTH_FLOW_GRAPHS.BASIC_GOOGLE_GITHUB;
+    return AUTH_FLOW_HANDLES.GOOGLE_GITHUB;
   }
 
   // Default fallback to basic
-  return AUTH_FLOW_GRAPHS.BASIC;
+  return AUTH_FLOW_HANDLES.BASIC;
 }

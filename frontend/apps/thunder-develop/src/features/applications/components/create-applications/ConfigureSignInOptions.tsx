@@ -30,14 +30,18 @@ import {
   ListItemIcon,
   ListItemText,
   Divider,
+  Autocomplete,
+  TextField,
 } from '@wso2/oxygen-ui';
 import type {JSX} from 'react';
 import {useEffect} from 'react';
 import {Lightbulb, UserRound, Google, GitHub} from '@wso2/oxygen-ui-icons-react';
 import {useTranslation} from 'react-i18next';
+import type {BasicFlowDefinition} from '@/features/flows/models/responses';
 import {type IdentityProvider, IdentityProviderTypes} from '@/features/integrations/models/identity-provider';
 import getIntegrationIcon from '@/features/integrations/utils/getIntegrationIcon';
 import {AuthenticatorTypes} from '@/features/integrations/models/authenticators';
+import {AUTH_FLOW_HANDLES, SYSTEM_FLOW_HANDLES} from '../../models/auth-flow-graphs';
 import useIdentityProviders from '../../../integrations/api/useIdentityProviders';
 
 /**
@@ -61,6 +65,32 @@ export interface ConfigureSignInOptionsProps {
    * Callback function to broadcast whether this step is ready to proceed
    */
   onReadyChange?: (isReady: boolean) => void;
+
+  /**
+   * Function to check if a flow is available for a given handle
+   * Used to disable sign-in options when their required flows are not configured
+   */
+  isFlowAvailable?: (handle: string) => boolean;
+
+  /**
+   * Whether flow data is currently being loaded
+   */
+  isLoadingFlows?: boolean;
+
+  /**
+   * Currently selected custom flow ID, or null if using toggle-based selection
+   */
+  customFlowId?: string | null;
+
+  /**
+   * Callback when custom flow selection changes
+   */
+  onCustomFlowChange?: (flowId: string | null) => void;
+
+  /**
+   * List of available authentication flows for the dropdown
+   */
+  authFlows?: BasicFlowDefinition[];
 }
 
 /**
@@ -128,6 +158,11 @@ export default function ConfigureSignInOptions({
   integrations,
   onIntegrationToggle,
   onReadyChange = undefined,
+  isFlowAvailable = undefined,
+  isLoadingFlows = false,
+  customFlowId = null,
+  onCustomFlowChange = undefined,
+  authFlows = [],
 }: ConfigureSignInOptionsProps): JSX.Element {
   const {t} = useTranslation();
   const theme = useTheme();
@@ -137,13 +172,14 @@ export default function ConfigureSignInOptions({
    * Broadcast readiness whenever integrations change.
    */
   useEffect((): void => {
-    const isReady: boolean = hasAtLeastOneSelected(integrations);
+    // Ready if using custom flow OR at least one toggle is selected
+    const isReady: boolean = customFlowId !== null || hasAtLeastOneSelected(integrations);
     if (onReadyChange) {
       onReadyChange(isReady);
     }
-  }, [integrations, onReadyChange]);
+  }, [integrations, customFlowId, onReadyChange]);
 
-  if (isLoading) {
+  if (isLoading || isLoadingFlows) {
     return (
       <Box sx={{display: 'flex', justifyContent: 'center', alignItems: 'center', py: 8}}>
         <CircularProgress />
@@ -168,6 +204,27 @@ export default function ConfigureSignInOptions({
   );
   const hasAtLeastOneSelectedOption: boolean = hasAtLeastOneSelected(integrations);
   const hasUsernamePassword: boolean = integrations[AuthenticatorTypes.BASIC_AUTH] ?? false;
+  const isUsingCustomFlow: boolean = customFlowId !== null;
+
+  // Check flow availability for validation
+  const isBasicFlowAvailable = isFlowAvailable?.(AUTH_FLOW_HANDLES.BASIC) ?? true;
+  const isGoogleFlowAvailable = isFlowAvailable?.(AUTH_FLOW_HANDLES.GOOGLE) ?? true;
+  const isGitHubFlowAvailable = isFlowAvailable?.(AUTH_FLOW_HANDLES.GITHUB) ?? true;
+  const isBasicGoogleFlowAvailable = isFlowAvailable?.(AUTH_FLOW_HANDLES.BASIC_GOOGLE) ?? true;
+  const isBasicGitHubFlowAvailable = isFlowAvailable?.(AUTH_FLOW_HANDLES.BASIC_GITHUB) ?? true;
+  const isGoogleGitHubFlowAvailable = isFlowAvailable?.(AUTH_FLOW_HANDLES.GOOGLE_GITHUB) ?? true;
+  const isBasicGoogleGitHubFlowAvailable = isFlowAvailable?.(AUTH_FLOW_HANDLES.BASIC_GOOGLE_GITHUB) ?? true;
+
+  // Determine if each option should be disabled based on required flows
+  // Username/Password requires at least basic flow or any flow that includes basic
+  const isBasicAuthDisabled = !isBasicFlowAvailable && !isBasicGoogleFlowAvailable && 
+    !isBasicGitHubFlowAvailable && !isBasicGoogleGitHubFlowAvailable;
+  // Google requires google flow or any flow that includes google
+  const isGoogleDisabled = !isGoogleFlowAvailable && !isBasicGoogleFlowAvailable && 
+    !isGoogleGitHubFlowAvailable && !isBasicGoogleGitHubFlowAvailable;
+  // GitHub requires github flow or any flow that includes github
+  const isGitHubDisabled = !isGitHubFlowAvailable && !isBasicGitHubFlowAvailable && 
+    !isGoogleGitHubFlowAvailable && !isBasicGoogleGitHubFlowAvailable;
 
   return (
     <Stack direction="column" spacing={4}>
@@ -181,14 +238,16 @@ export default function ConfigureSignInOptions({
       </Stack>
 
       {/* Validation warning if no options selected */}
-      {!hasAtLeastOneSelectedOption && (
+      {!hasAtLeastOneSelectedOption && !isUsingCustomFlow && (
         <Alert severity="warning" sx={{mb: 2}}>
           {t('applications:onboarding.configure.SignInOptions.noSelectionWarning')}
         </Alert>
       )}
 
+      {/* Toggle options - disabled when using custom flow */}
+      <Box sx={{opacity: isUsingCustomFlow ? 0.5 : 1, pointerEvents: isUsingCustomFlow ? 'none' : 'auto'}}>
       <List sx={{bgcolor: 'background.paper', borderRadius: 1, border: 1, borderColor: 'divider'}}>
-        {/* Username & Password Option - Always shown first, always toggleable */}
+        {/* Username & Password Option - Disabled if basic flow unavailable */}
         <ListItem
           disablePadding
           secondaryAction={
@@ -197,37 +256,58 @@ export default function ConfigureSignInOptions({
               checked={hasUsernamePassword}
               onChange={(): void => onIntegrationToggle(AuthenticatorTypes.BASIC_AUTH)}
               color="primary"
+              disabled={isBasicAuthDisabled}
             />
           }
         >
-          <ListItemButton onClick={(): void => onIntegrationToggle(AuthenticatorTypes.BASIC_AUTH)}>
+          <ListItemButton
+            onClick={(): void => onIntegrationToggle(AuthenticatorTypes.BASIC_AUTH)}
+            disabled={isBasicAuthDisabled}
+          >
             <ListItemIcon>
               <UserRound size={24} />
             </ListItemIcon>
-            <ListItemText primary={t('applications:onboarding.configure.SignInOptions.usernamePassword')} />
+            <ListItemText
+              primary={t('applications:onboarding.configure.SignInOptions.usernamePassword')}
+              secondary={isBasicAuthDisabled 
+                ? t('applications:onboarding.configure.SignInOptions.flowNotAvailable') 
+                : undefined}
+            />
           </ListItemButton>
         </ListItem>
 
         <Divider component="li" />
 
-        {/* Google Option - Always shown, enabled if configured */}
+        {/* Google Option - Always shown if provider exists, disabled if flow unavailable */}
         {googleProvider ? (
           <ListItem
             disablePadding
             secondaryAction={
-              <Switch
-                edge="end"
-                checked={integrations[googleProvider.id] ?? false}
-                onChange={(): void => onIntegrationToggle(googleProvider.id)}
-                color="primary"
-              />
+              !isGoogleDisabled ? (
+                <Switch
+                  edge="end"
+                  checked={integrations[googleProvider.id] ?? false}
+                  onChange={(): void => onIntegrationToggle(googleProvider.id)}
+                  color="primary"
+                />
+              ) : null
             }
           >
-            <ListItemButton onClick={(): void => onIntegrationToggle(googleProvider.id)}>
+            <ListItemButton
+              onClick={!isGoogleDisabled ? (): void => onIntegrationToggle(googleProvider.id) : undefined}
+              disabled={isGoogleDisabled}
+            >
               <ListItemIcon>
                 <Google size={24} />
               </ListItemIcon>
-              <ListItemText primary={t('applications:onboarding.configure.SignInOptions.google')} />
+              <ListItemText
+                primary={t('applications:onboarding.configure.SignInOptions.google')}
+                secondary={
+                  isGoogleDisabled
+                    ? t('applications:onboarding.configure.SignInOptions.flowNotAvailable')
+                    : null
+                }
+              />
             </ListItemButton>
           </ListItem>
         ) : (
@@ -245,24 +325,36 @@ export default function ConfigureSignInOptions({
         )}
         <Divider component="li" />
 
-        {/* GitHub Option - Always shown, enabled if configured */}
+        {/* GitHub Option - Always shown if provider exists, disabled if flow unavailable */}
         {githubProvider ? (
           <ListItem
             disablePadding
             secondaryAction={
-              <Switch
-                edge="end"
-                checked={integrations[githubProvider.id] ?? false}
-                onChange={(): void => onIntegrationToggle(githubProvider.id)}
-                color="primary"
-              />
+              !isGitHubDisabled ? (
+                <Switch
+                  edge="end"
+                  checked={integrations[githubProvider.id] ?? false}
+                  onChange={(): void => onIntegrationToggle(githubProvider.id)}
+                  color="primary"
+                />
+              ) : null
             }
           >
-            <ListItemButton onClick={(): void => onIntegrationToggle(githubProvider.id)}>
+            <ListItemButton
+              onClick={!isGitHubDisabled ? (): void => onIntegrationToggle(githubProvider.id) : undefined}
+              disabled={isGitHubDisabled}
+            >
               <ListItemIcon>
                 <GitHub size={24} />
               </ListItemIcon>
-              <ListItemText primary={t('applications:onboarding.configure.SignInOptions.github')} />
+              <ListItemText
+                primary={t('applications:onboarding.configure.SignInOptions.github')}
+                secondary={
+                  isGitHubDisabled
+                    ? t('applications:onboarding.configure.SignInOptions.flowNotAvailable')
+                    : null
+                }
+              />
             </ListItemButton>
           </ListItem>
         ) : (
@@ -310,6 +402,72 @@ export default function ConfigureSignInOptions({
             ),
           )}
       </List>
+      </Box>
+
+      {/* Custom Flow Selection Section - Only show when flows are available */}
+      {authFlows.filter((flow: BasicFlowDefinition) => flow.handle !== SYSTEM_FLOW_HANDLES.DEVELOP_APP).length > 0 && (
+        <>
+          <Divider sx={{my: 2}}>
+            <Typography variant="caption" color="text.secondary">
+              {t('applications:onboarding.configure.SignInOptions.orDivider')}
+            </Typography>
+          </Divider>
+
+          <Autocomplete
+            id="custom-flow-select"
+            size="small"
+            options={authFlows.filter((flow: BasicFlowDefinition) => flow.handle !== SYSTEM_FLOW_HANDLES.DEVELOP_APP)}
+            getOptionLabel={(option): string => {
+              if (typeof option === 'string') {
+                const flow = authFlows.find((f) => f.id === option);
+                return flow?.name ?? flow?.handle ?? '';
+              }
+              return option.name ?? option.handle;
+            }}
+            value={authFlows.find((f) => f.id === customFlowId) ?? null}
+            onChange={(_event, newValue): void => {
+              if (onCustomFlowChange) {
+                onCustomFlowChange(newValue ? newValue.id : null);
+              }
+            }}
+            isOptionEqualToValue={(option, value): boolean => option.id === value.id}
+            renderInput={(params): JSX.Element => (
+              <TextField
+                {...params}
+                label={t('applications:onboarding.configure.SignInOptions.selectExistingFlow')}
+              />
+            )}
+            renderOption={(props, option): JSX.Element => (
+              <li {...props} key={option.id}>
+                <Box>
+                  <Typography variant="body1">{option.name ?? option.handle}</Typography>
+                  <Typography variant="caption" color="text.secondary">
+                    {option.handle}
+                  </Typography>
+                </Box>
+              </li>
+            )}
+            filterOptions={(options, state): BasicFlowDefinition[] => {
+              const inputValue = state.inputValue.toLowerCase();
+              if (!inputValue) {
+                return options;
+              }
+              return options.filter(
+                (option) =>
+                  option.name?.toLowerCase().includes(inputValue) ||
+                  option.handle.toLowerCase().includes(inputValue),
+              );
+            }}
+            ListboxProps={{
+              sx: {
+                maxHeight: 300,
+              },
+            }}
+            noOptionsText={t('applications:onboarding.configure.SignInOptions.noFlowsFound')}
+            clearText={t('applications:onboarding.configure.SignInOptions.clear')}
+          />
+        </>
+      )}
 
       <Stack direction="row" alignItems="center" spacing={1}>
         <Lightbulb size={20} color={theme?.vars?.palette.warning.main} />

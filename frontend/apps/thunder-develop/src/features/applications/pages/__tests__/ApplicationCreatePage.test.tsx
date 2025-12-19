@@ -220,6 +220,36 @@ vi.mock('../../../integrations/api/useIdentityProviders', () => ({
   }),
 }));
 
+// Mock useAuthenticationFlows to provide flow resolution
+vi.mock('../../api/useAuthenticationFlows', () => ({
+  default: () => ({
+    flows: [
+      {id: 'flow-basic-123', handle: 'default-basic-flow', name: 'Basic Flow'},
+      {id: 'flow-google-123', handle: 'default-google-flow', name: 'Google Flow'},
+      {id: 'flow-github-123', handle: 'default-github-flow', name: 'GitHub Flow'},
+      {id: 'flow-basic-google-123', handle: 'basic-google-flow', name: 'Basic + Google Flow'},
+      {id: 'flow-basic-github-123', handle: 'basic-github-flow', name: 'Basic + GitHub Flow'},
+      {id: 'flow-google-github-123', handle: 'google-github-flow', name: 'Google + GitHub Flow'},
+      {id: 'flow-basic-google-github-123', handle: 'basic-google-github-flow', name: 'Basic + Google + GitHub Flow'},
+    ],
+    isLoading: false,
+    error: null,
+    getFlowIdByHandle: (handle: string) => {
+      const flowMap: Record<string, string> = {
+        'default-basic-flow': 'flow-basic-123',
+        'default-google-flow': 'flow-google-123',
+        'default-github-flow': 'flow-github-123',
+        'basic-google-flow': 'flow-basic-google-123',
+        'basic-github-flow': 'flow-basic-github-123',
+        'google-github-flow': 'flow-google-github-123',
+        'basic-google-github-flow': 'flow-basic-google-github-123',
+      };
+      return flowMap[handle];
+    },
+    isFlowAvailable: () => true,
+  }),
+}));
+
 describe('ApplicationCreatePage', () => {
   let queryClient: QueryClient;
   let user: ReturnType<typeof userEvent.setup>;
@@ -880,6 +910,54 @@ describe('ApplicationCreatePage', () => {
       // Continue button should have accessible text
       const continueButton = screen.getByRole('button', {name: /continue/i});
       expect(continueButton).toBeInTheDocument();
+    });
+  });
+
+  describe('Flow Resolution', () => {
+    it('should render the create application page successfully', () => {
+      renderWithProviders();
+      expect(screen.getByTestId('configure-name')).toBeInTheDocument();
+    });
+
+    it('should navigate through steps without errors', async () => {
+      renderWithProviders();
+
+      // Step 1: Name
+      const nameInput = screen.getByTestId('app-name-input');
+      await user.type(nameInput, 'My App');
+      await waitFor(() => expect(screen.getByRole('button', {name: /continue/i})).toBeEnabled());
+      await user.click(screen.getByRole('button', {name: /continue/i}));
+
+      // Step 2: Design
+      await waitFor(() => expect(screen.getByTestId('configure-design')).toBeInTheDocument());
+      await user.click(screen.getByRole('button', {name: /continue/i}));
+
+      // Step 3: Sign In Options
+      await waitFor(() => expect(screen.getByTestId('configure-sign-in')).toBeInTheDocument());
+    });
+
+    it('should maintain state when navigating between steps', async () => {
+      renderWithProviders();
+
+      // Navigate to Sign In Options step
+      const nameInput = screen.getByTestId('app-name-input');
+      await user.type(nameInput, 'My App');
+      await waitFor(() => expect(screen.getByRole('button', {name: /continue/i})).toBeEnabled());
+      await user.click(screen.getByRole('button', {name: /continue/i}));
+
+      // Design step
+      await waitFor(() => expect(screen.getByRole('button', {name: /continue/i})).toBeEnabled());
+      await user.click(screen.getByRole('button', {name: /continue/i}));
+
+      // Should be on Sign In Options step
+      expect(screen.getByTestId('configure-sign-in')).toBeInTheDocument();
+
+      // Toggle an integration - this validates the interaction works
+      const toggleButton = screen.getByTestId('toggle-integration');
+      await user.click(toggleButton);
+
+      // Component should handle the toggle without errors
+      expect(screen.getByTestId('configure-sign-in')).toBeInTheDocument();
     });
   });
 });
