@@ -20,6 +20,7 @@ package oauth
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"errors"
 	"io"
@@ -514,30 +515,30 @@ func (suite *OAuthAuthnServiceTestSuite) TestGetInternalUserSuccess() {
 		OrganizationUnit: "test-ou",
 	}
 
-	suite.mockUserService.On("IdentifyUser", mock.MatchedBy(
+	suite.mockUserService.On("IdentifyUser", mock.Anything, mock.MatchedBy(
 		func(filters map[string]interface{}) bool {
 			return filters["sub"] == testSub
 		}),
 	).Return(&userID, nil)
-	suite.mockUserService.On("GetUser", userID).Return(user, nil)
+	suite.mockUserService.On("GetUser", mock.Anything, userID).Return(user, nil)
 
-	result, err := suite.service.GetInternalUser(testSub)
+	result, err := suite.service.GetInternalUser(context.Background(), testSub)
 	suite.Nil(err)
 	suite.NotNil(result)
 	suite.Equal(userID, result.ID)
 }
 
 func (suite *OAuthAuthnServiceTestSuite) TestGetInternalUserWithError_EmptySub() {
-	result, err := suite.service.GetInternalUser("")
+	result, err := suite.service.GetInternalUser(context.Background(), "")
 	suite.Nil(result)
 	suite.NotNil(err)
 	suite.Equal(ErrorEmptySubClaim.Code, err.Code)
 }
 
 func (suite *OAuthAuthnServiceTestSuite) TestGetInternalUserWithError_UserNotFound() {
-	suite.mockUserService.On("IdentifyUser", mock.Anything).Return(nil, &user.ErrorUserNotFound)
+	suite.mockUserService.On("IdentifyUser", mock.Anything, mock.Anything).Return(nil, &user.ErrorUserNotFound)
 
-	result, err := suite.service.GetInternalUser(testSub)
+	result, err := suite.service.GetInternalUser(context.Background(), testSub)
 	suite.Nil(result)
 	suite.NotNil(err)
 	suite.Equal(common.ErrorUserNotFound.Code, err.Code)
@@ -557,7 +558,7 @@ func (suite *OAuthAuthnServiceTestSuite) TestGetInternalUserWithServiceError() {
 					Code:             "INTERNAL_ERROR",
 					ErrorDescription: "Database unavailable",
 				}
-				m.On("IdentifyUser", mock.Anything).Return(nil, serverErr)
+				m.On("IdentifyUser", mock.Anything, mock.Anything).Return(nil, serverErr)
 			},
 			expectedErrCode: serviceerror.InternalServerError.Code,
 		},
@@ -570,15 +571,15 @@ func (suite *OAuthAuthnServiceTestSuite) TestGetInternalUserWithServiceError() {
 					Code:             "INTERNAL_ERROR",
 					ErrorDescription: "Database unavailable",
 				}
-				m.On("IdentifyUser", mock.Anything).Return(&userID, nil)
-				m.On("GetUser", userID).Return(nil, serverErr)
+				m.On("IdentifyUser", mock.Anything, mock.Anything).Return(&userID, nil)
+				m.On("GetUser", mock.Anything, userID).Return(nil, serverErr)
 			},
 			expectedErrCode: serviceerror.InternalServerError.Code,
 		},
 		{
 			name: "IdentifyNilUserID",
 			mockSetup: func(m *usermock.UserServiceInterfaceMock) {
-				m.On("IdentifyUser", mock.Anything).Return(nil, (*serviceerror.ServiceError)(nil))
+				m.On("IdentifyUser", mock.Anything, mock.Anything).Return(nil, (*serviceerror.ServiceError)(nil))
 			},
 			expectedErrCode: common.ErrorUserNotFound.Code,
 		},
@@ -595,7 +596,7 @@ func (suite *OAuthAuthnServiceTestSuite) TestGetInternalUserWithServiceError() {
 				tc.mockSetup(freshUserMock)
 			}
 
-			result, err := suite.service.GetInternalUser(testSub)
+			result, err := suite.service.GetInternalUser(context.Background(), testSub)
 			suite.Nil(result)
 			suite.NotNil(err)
 			suite.Equal(tc.expectedErrCode, err.Code)

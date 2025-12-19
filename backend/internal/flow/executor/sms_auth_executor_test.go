@@ -138,7 +138,7 @@ func (suite *SMSAuthExecutorTestSuite) TestExecute_Observability_Success() {
 		Attributes: attrsJSON,
 	}
 
-	suite.mockUserService.On("GetUser", userID).Return(userObj, nil)
+	suite.mockUserService.On("GetUser", mock.Anything, userID).Return(userObj, nil)
 
 	suite.mockOTPService.On("VerifyOTP", notifcommon.VerifyOTPDTO{
 		SessionToken: sessionToken,
@@ -187,7 +187,7 @@ func (suite *SMSAuthExecutorTestSuite) TestExecute_Observability_InitiateOTP() {
 		Return(true)
 
 	// Expect IdentifyUser to be called because user is not authenticated in context
-	suite.mockUserService.On("IdentifyUser", map[string]interface{}{
+	suite.mockUserService.On("IdentifyUser", mock.Anything, map[string]interface{}{
 		userAttributeMobileNumber: mobileNumber,
 	}).Return(&userID, nil)
 

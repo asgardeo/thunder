@@ -20,6 +20,7 @@
 package oauth
 
 import (
+	"context"
 	"strings"
 
 	"github.com/asgardeo/thunder/internal/authn/common"
@@ -41,7 +42,7 @@ type OAuthAuthnCoreServiceInterface interface {
 	BuildAuthorizeURL(idpID string) (string, *serviceerror.ServiceError)
 	ExchangeCodeForToken(idpID, code string, validateResponse bool) (*TokenResponse, *serviceerror.ServiceError)
 	FetchUserInfo(idpID, accessToken string) (map[string]interface{}, *serviceerror.ServiceError)
-	GetInternalUser(sub string) (*user.User, *serviceerror.ServiceError)
+	GetInternalUser(ctx context.Context, sub string) (*user.User, *serviceerror.ServiceError)
 	GetOAuthClientConfig(idpID string) (*OAuthClientConfig, *serviceerror.ServiceError)
 }
 
@@ -256,8 +257,9 @@ func (s *oAuthAuthnService) FetchUserInfoWithClientConfig(oAuthClientConfig *OAu
 }
 
 // GetInternalUser retrieves the internal user based on the external subject identifier.
-func (s *oAuthAuthnService) GetInternalUser(sub string) (*user.User, *serviceerror.ServiceError) {
-	logger := s.logger.With(log.String("sub", log.MaskString(sub)))
+func (s *oAuthAuthnService) GetInternalUser(ctx context.Context, sub string) (*user.User, *serviceerror.ServiceError) {
+	logger := log.GetLoggerWithContext(ctx).With(log.String(log.LoggerKeyComponentName, loggerComponentName),
+		log.String("sub", log.MaskString(sub)))
 	logger.Debug("Retrieving internal user for the given sub claim")
 
 	if strings.TrimSpace(sub) == "" {
@@ -267,7 +269,7 @@ func (s *oAuthAuthnService) GetInternalUser(sub string) (*user.User, *serviceerr
 	filters := map[string]interface{}{
 		"sub": sub,
 	}
-	userID, svcErr := s.userService.IdentifyUser(filters)
+	userID, svcErr := s.userService.IdentifyUser(ctx, filters)
 	if svcErr != nil {
 		if svcErr.Code == user.ErrorUserNotFound.Code {
 			logger.Debug("No user found for the provided sub claim")
@@ -286,7 +288,7 @@ func (s *oAuthAuthnService) GetInternalUser(sub string) (*user.User, *serviceerr
 		return nil, &common.ErrorUserNotFound
 	}
 
-	user, svcErr := s.userService.GetUser(*userID)
+	user, svcErr := s.userService.GetUser(ctx, *userID)
 	if svcErr != nil {
 		if svcErr.Type == serviceerror.ClientErrorType {
 			return nil, &ErrorClientErrorWhileRetrievingUser

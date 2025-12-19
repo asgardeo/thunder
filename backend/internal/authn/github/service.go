@@ -20,6 +20,7 @@
 package github
 
 import (
+	"context"
 	"slices"
 
 	authncm "github.com/asgardeo/thunder/internal/authn/common"
@@ -148,8 +149,8 @@ func (g *githubOAuthAuthnService) fetchPrimaryEmail(
 }
 
 // GetInternalUser retrieves the internal user based on the external subject identifier.
-func (g *githubOAuthAuthnService) GetInternalUser(sub string) (*user.User, *serviceerror.ServiceError) {
-	return g.internal.GetInternalUser(sub)
+func (g *githubOAuthAuthnService) GetInternalUser(ctx context.Context, sub string) (*user.User, *serviceerror.ServiceError) {
+	return g.internal.GetInternalUser(ctx, sub)
 }
 
 // GetOAuthClientConfig retrieves and validates the OAuth client configuration for the given identity provider ID.

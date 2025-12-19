@@ -191,7 +191,7 @@ func (suite *GroupHandlerTestSuite) TestGroupHandler_RegisterRoutesGroupIDDispat
 	registerRoutes(mux, handler)
 
 	serviceMock.
-		On("GetGroup", "grp-001").
+		On("GetGroup", mock.Anything, "grp-001").
 		Return(&Group{ID: "grp-001"}, nil).
 		Once()
 
@@ -211,7 +211,7 @@ func (suite *GroupHandlerTestSuite) TestGroupHandler_RegisterRoutesGroupMembersD
 	registerRoutes(mux, handler)
 
 	serviceMock.
-		On("GetGroupMembers", "grp-001", serverconst.DefaultPageSize, 0).
+		On("GetGroupMembers", mock.Anything, "grp-001", serverconst.DefaultPageSize, 0).
 		Return(&MemberListResponse{}, nil).
 		Once()
 
@@ -279,7 +279,7 @@ func (suite *GroupHandlerTestSuite) TestGroupHandler_HandleGroupListRequest() {
 			requestPath: "/groups?limit=3&offset=2",
 			setup: func(svc *GroupServiceInterfaceMock) {
 				svc.
-					On("GetGroupList", 3, 2).
+					On("GetGroupList", mock.Anything, 3, 2).
 					Return(&GroupListResponse{
 						TotalResults: 5,
 						StartIndex:   3,
@@ -327,7 +327,7 @@ func (suite *GroupHandlerTestSuite) TestGroupHandler_HandleGroupListRequest() {
 			useFlaky:    true,
 			setup: func(svc *GroupServiceInterfaceMock) {
 				svc.
-					On("GetGroupList", serverconst.DefaultPageSize, 0).
+					On("GetGroupList", mock.Anything, serverconst.DefaultPageSize, 0).
 					Return(&GroupListResponse{}, nil).
 					Once()
 			},
@@ -353,7 +353,7 @@ func (suite *GroupHandlerTestSuite) TestGroupHandler_HandleGroupListRequest() {
 			requestPath: "/groups",
 			setup: func(svc *GroupServiceInterfaceMock) {
 				svc.
-					On("GetGroupList", serverconst.DefaultPageSize, 0).
+					On("GetGroupList", mock.Anything, serverconst.DefaultPageSize, 0).
 					Return((*GroupListResponse)(nil), &ErrorInternalServerError).
 					Once()
 			},
@@ -412,7 +412,7 @@ func (suite *GroupHandlerTestSuite) TestGroupHandler_HandleGroupListByPathReques
 			pathParamValue: "root",
 			setup: func(serviceMock *GroupServiceInterfaceMock) {
 				serviceMock.
-					On("GetGroupsByPath", "root", serverconst.DefaultPageSize, 0).
+					On("GetGroupsByPath", mock.Anything, "root", serverconst.DefaultPageSize, 0).
 					Return(&GroupListResponse{
 						TotalResults: 1,
 						StartIndex:   1,
@@ -451,7 +451,7 @@ func (suite *GroupHandlerTestSuite) TestGroupHandler_HandleGroupListByPathReques
 			pathParamValue: "root",
 			setup: func(serviceMock *GroupServiceInterfaceMock) {
 				serviceMock.
-					On("GetGroupsByPath", "root", serverconst.DefaultPageSize, 0).
+					On("GetGroupsByPath", mock.Anything, "root", serverconst.DefaultPageSize, 0).
 					Return((*GroupListResponse)(nil), &ErrorInternalServerError).
 					Once()
 			},
@@ -485,7 +485,7 @@ func (suite *GroupHandlerTestSuite) TestGroupHandler_HandleGroupListByPathReques
 			useFlaky:       true,
 			setup: func(serviceMock *GroupServiceInterfaceMock) {
 				serviceMock.
-					On("GetGroupsByPath", "root", serverconst.DefaultPageSize, 0).
+					On("GetGroupsByPath", mock.Anything, "root", serverconst.DefaultPageSize, 0).
 					Return(&GroupListResponse{}, nil).
 					Once()
 			},
@@ -538,7 +538,7 @@ func (suite *GroupHandlerTestSuite) TestGroupHandler_HandleGroupPostRequest() {
 			}`,
 			setup: func(serviceMock *GroupServiceInterfaceMock) {
 				serviceMock.
-					On("CreateGroup", mock.MatchedBy(func(request CreateGroupRequest) bool {
+					On("CreateGroup", mock.Anything, mock.MatchedBy(func(request CreateGroupRequest) bool {
 						return request.Name == "Team &lt;script&gt;" &&
 							request.Description == "desc" &&
 							request.OrganizationUnitID == testOrganizationUnitID &&
@@ -565,7 +565,7 @@ func (suite *GroupHandlerTestSuite) TestGroupHandler_HandleGroupPostRequest() {
 			body: `{"name":"group","organizationUnitId":"ou"}`,
 			setup: func(serviceMock *GroupServiceInterfaceMock) {
 				serviceMock.
-					On("CreateGroup", mock.AnythingOfType("group.CreateGroupRequest")).
+					On("CreateGroup", mock.Anything, mock.AnythingOfType("group.CreateGroupRequest")).
 					Return((*Group)(nil), &ErrorGroupNameConflict).
 					Once()
 			},
@@ -581,7 +581,7 @@ func (suite *GroupHandlerTestSuite) TestGroupHandler_HandleGroupPostRequest() {
 			body: `{"name":"group","organizationUnitId":"ou"}`,
 			setup: func(serviceMock *GroupServiceInterfaceMock) {
 				serviceMock.
-					On("CreateGroup", mock.AnythingOfType("group.CreateGroupRequest")).
+					On("CreateGroup", mock.Anything, mock.AnythingOfType("group.CreateGroupRequest")).
 					Return((*Group)(nil), &ErrorInternalServerError).
 					Once()
 			},
@@ -596,7 +596,7 @@ func (suite *GroupHandlerTestSuite) TestGroupHandler_HandleGroupPostRequest() {
 			useFlaky: true,
 			setup: func(serviceMock *GroupServiceInterfaceMock) {
 				serviceMock.
-					On("CreateGroup", mock.MatchedBy(func(request CreateGroupRequest) bool {
+					On("CreateGroup", mock.Anything, mock.MatchedBy(func(request CreateGroupRequest) bool {
 						return request.Name == "team" && request.OrganizationUnitID == "ou"
 					})).
 					Return(&Group{ID: "grp-001", Name: "team"}, nil).
@@ -672,7 +672,7 @@ func (suite *GroupHandlerTestSuite) TestGroupHandler_HandleGroupPostByPathReques
 			setJSONHeader:  true,
 			setup: func(serviceMock *GroupServiceInterfaceMock) {
 				serviceMock.
-					On("CreateGroupByPath", "root", CreateGroupByPathRequest{Name: "name"}).
+					On("CreateGroupByPath", mock.Anything, "root", CreateGroupByPathRequest{Name: "name"}).
 					Return(&Group{ID: "grp-001", Name: "name"}, nil).
 					Once()
 			},
@@ -724,7 +724,7 @@ func (suite *GroupHandlerTestSuite) TestGroupHandler_HandleGroupPostByPathReques
 			setJSONHeader:  true,
 			setup: func(serviceMock *GroupServiceInterfaceMock) {
 				serviceMock.
-					On("CreateGroupByPath", "root", CreateGroupByPathRequest{Name: "n"}).
+					On("CreateGroupByPath", mock.Anything, "root", CreateGroupByPathRequest{Name: "n"}).
 					Return((*Group)(nil), &ErrorGroupNotFound).
 					Once()
 			},
@@ -743,7 +743,7 @@ func (suite *GroupHandlerTestSuite) TestGroupHandler_HandleGroupPostByPathReques
 			setJSONHeader:  true,
 			setup: func(serviceMock *GroupServiceInterfaceMock) {
 				serviceMock.
-					On("CreateGroupByPath", "root", CreateGroupByPathRequest{Name: "team"}).
+					On("CreateGroupByPath", mock.Anything, "root", CreateGroupByPathRequest{Name: "team"}).
 					Return(&Group{ID: "grp-001", Name: "team"}, nil).
 					Once()
 			},
@@ -779,7 +779,7 @@ func (suite *GroupHandlerTestSuite) TestGroupHandler_HandleGroupPostByPathReques
 			setJSONHeader:  true,
 			setup: func(serviceMock *GroupServiceInterfaceMock) {
 				serviceMock.
-					On("CreateGroupByPath", "root", CreateGroupByPathRequest{Name: "n"}).
+					On("CreateGroupByPath", mock.Anything, "root", CreateGroupByPathRequest{Name: "n"}).
 					Return((*Group)(nil), &ErrorInternalServerError).
 					Once()
 			},
@@ -805,7 +805,7 @@ func (suite *GroupHandlerTestSuite) TestGroupHandler_HandleGroupGetRequest() {
 			pathParamValue: "grp-404",
 			setup: func(serviceMock *GroupServiceInterfaceMock) {
 				serviceMock.
-					On("GetGroup", "grp-404").
+					On("GetGroup", mock.Anything, "grp-404").
 					Return(nil, &ErrorGroupNotFound).
 					Once()
 			},
@@ -825,7 +825,7 @@ func (suite *GroupHandlerTestSuite) TestGroupHandler_HandleGroupGetRequest() {
 			pathParamValue: "grp-001",
 			setup: func(serviceMock *GroupServiceInterfaceMock) {
 				serviceMock.
-					On("GetGroup", "grp-001").
+					On("GetGroup", mock.Anything, "grp-001").
 					Return((*Group)(nil), &ErrorInternalServerError).
 					Once()
 			},
@@ -843,7 +843,7 @@ func (suite *GroupHandlerTestSuite) TestGroupHandler_HandleGroupGetRequest() {
 			useFlaky:       true,
 			setup: func(serviceMock *GroupServiceInterfaceMock) {
 				serviceMock.
-					On("GetGroup", "grp-001").
+					On("GetGroup", mock.Anything, "grp-001").
 					Return(&Group{ID: "grp-001"}, nil).
 					Once()
 			},
@@ -905,7 +905,7 @@ func (suite *GroupHandlerTestSuite) TestGroupHandler_HandleGroupPutRequest() {
 			setJSONHeader: true,
 			setup: func(serviceMock *GroupServiceInterfaceMock) {
 				serviceMock.
-					On("UpdateGroup", "grp-001", mock.MatchedBy(func(request UpdateGroupRequest) bool {
+					On("UpdateGroup", mock.Anything, "grp-001", mock.MatchedBy(func(request UpdateGroupRequest) bool {
 						return request.Name == "team &lt;script&gt;" &&
 							request.Description == "desc" &&
 							request.OrganizationUnitID == testOrganizationUnitID &&
@@ -933,7 +933,7 @@ func (suite *GroupHandlerTestSuite) TestGroupHandler_HandleGroupPutRequest() {
 			setJSONHeader:  true,
 			setup: func(serviceMock *GroupServiceInterfaceMock) {
 				serviceMock.
-					On("UpdateGroup", "grp-001", mock.AnythingOfType("group.UpdateGroupRequest")).
+					On("UpdateGroup", mock.Anything, "grp-001", mock.AnythingOfType("group.UpdateGroupRequest")).
 					Return(nil, &ErrorGroupNotFound).
 					Once()
 			},
@@ -951,7 +951,7 @@ func (suite *GroupHandlerTestSuite) TestGroupHandler_HandleGroupPutRequest() {
 			setJSONHeader:  true,
 			setup: func(serviceMock *GroupServiceInterfaceMock) {
 				serviceMock.
-					On("UpdateGroup", "grp-001", mock.AnythingOfType("group.UpdateGroupRequest")).
+					On("UpdateGroup", mock.Anything, "grp-001", mock.AnythingOfType("group.UpdateGroupRequest")).
 					Return(nil, &ErrorInternalServerError).
 					Once()
 			},
@@ -971,7 +971,7 @@ func (suite *GroupHandlerTestSuite) TestGroupHandler_HandleGroupPutRequest() {
 			setJSONHeader:  true,
 			setup: func(serviceMock *GroupServiceInterfaceMock) {
 				serviceMock.
-					On("UpdateGroup", "grp-001", mock.AnythingOfType("group.UpdateGroupRequest")).
+					On("UpdateGroup", mock.Anything, "grp-001", mock.AnythingOfType("group.UpdateGroupRequest")).
 					Return(&Group{ID: "grp-001"}, nil).
 					Once()
 			},
@@ -1092,7 +1092,7 @@ func (suite *GroupHandlerTestSuite) TestGroupHandler_HandleGroupDeleteRequest() 
 			pathParamValue: "grp-001",
 			setup: func(serviceMock *GroupServiceInterfaceMock) {
 				serviceMock.
-					On("DeleteGroup", "grp-001").
+					On("DeleteGroup", mock.Anything, "grp-001").
 					Return(&ErrorCannotDeleteGroup).
 					Once()
 			},
@@ -1111,7 +1111,7 @@ func (suite *GroupHandlerTestSuite) TestGroupHandler_HandleGroupDeleteRequest() 
 			pathParamValue: "grp-001",
 			setup: func(serviceMock *GroupServiceInterfaceMock) {
 				serviceMock.
-					On("DeleteGroup", "grp-001").
+					On("DeleteGroup", mock.Anything, "grp-001").
 					Return(&ErrorInternalServerError).
 					Once()
 			},
@@ -1128,7 +1128,7 @@ func (suite *GroupHandlerTestSuite) TestGroupHandler_HandleGroupDeleteRequest() 
 			pathParamValue: "grp-001",
 			setup: func(serviceMock *GroupServiceInterfaceMock) {
 				serviceMock.
-					On("DeleteGroup", "grp-001").
+					On("DeleteGroup", mock.Anything, "grp-001").
 					Return(nil).
 					Once()
 			},
@@ -1154,7 +1154,7 @@ func (suite *GroupHandlerTestSuite) TestGroupHandler_HandleGroupMembersGetReques
 			pathParamValue: "grp-001",
 			setup: func(serviceMock *GroupServiceInterfaceMock) {
 				serviceMock.
-					On("GetGroupMembers", "grp-001", 2, 1).
+					On("GetGroupMembers", mock.Anything, "grp-001", 2, 1).
 					Return(&MemberListResponse{
 						TotalResults: 3,
 						StartIndex:   2,
@@ -1198,7 +1198,7 @@ func (suite *GroupHandlerTestSuite) TestGroupHandler_HandleGroupMembersGetReques
 			pathParamValue: "grp-001",
 			setup: func(serviceMock *GroupServiceInterfaceMock) {
 				serviceMock.
-					On("GetGroupMembers", "grp-001", serverconst.DefaultPageSize, 0).
+					On("GetGroupMembers", mock.Anything, "grp-001", serverconst.DefaultPageSize, 0).
 					Return((*MemberListResponse)(nil), &ErrorGroupNotFound).
 					Once()
 			},
@@ -1215,7 +1215,7 @@ func (suite *GroupHandlerTestSuite) TestGroupHandler_HandleGroupMembersGetReques
 			useFlaky:       true,
 			setup: func(serviceMock *GroupServiceInterfaceMock) {
 				serviceMock.
-					On("GetGroupMembers", "grp-001", serverconst.DefaultPageSize, 0).
+					On("GetGroupMembers", mock.Anything, "grp-001", serverconst.DefaultPageSize, 0).
 					Return(&MemberListResponse{}, nil).
 					Once()
 			},
@@ -1245,7 +1245,7 @@ func (suite *GroupHandlerTestSuite) TestGroupHandler_HandleGroupMembersGetReques
 			pathParamValue: "grp-001",
 			setup: func(serviceMock *GroupServiceInterfaceMock) {
 				serviceMock.
-					On("GetGroupMembers", "grp-001", serverconst.DefaultPageSize, 0).
+					On("GetGroupMembers", mock.Anything, "grp-001", serverconst.DefaultPageSize, 0).
 					Return((*MemberListResponse)(nil), &ErrorInternalServerError).
 					Once()
 			},

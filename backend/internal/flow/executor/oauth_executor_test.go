@@ -22,6 +22,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	mock "github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/suite"
 
 	appmodel "github.com/asgardeo/thunder/internal/application/model"
@@ -135,7 +136,7 @@ func (suite *OAuthExecutorTestSuite) TestExecute_CodeProvided_AuthenticatesUser(
 		Return(tokenResp, nil)
 	suite.mockOAuthService.On("FetchUserInfo", "idp-123", "access_token_123").
 		Return(userInfo, nil)
-	suite.mockOAuthService.On("GetInternalUser", "user-sub-123").
+	suite.mockOAuthService.EXPECT().GetInternalUser(mock.Anything, "user-sub-123").
 		Return(existingUser, nil)
 
 	resp, err := suite.executor.Execute(ctx)
@@ -502,7 +503,7 @@ func (suite *OAuthExecutorTestSuite) TestProcessAuthFlowResponse_RegistrationFlo
 		Return(tokenResp, nil)
 	suite.mockOAuthService.On("FetchUserInfo", "idp-123", "access_token_123").
 		Return(userInfo, nil)
-	suite.mockOAuthService.On("GetInternalUser", "new-user-sub").
+	suite.mockOAuthService.On("GetInternalUser", mock.Anything, "new-user-sub").
 		Return(nil, &serviceerror.ServiceError{
 			Code: authncm.ErrorUserNotFound.Code,
 			Type: serviceerror.ClientErrorType,
@@ -551,7 +552,7 @@ func (suite *OAuthExecutorTestSuite) TestProcessAuthFlowResponse_AuthFlow_UserNo
 		Return(tokenResp, nil)
 	suite.mockOAuthService.On("FetchUserInfo", "idp-123", "access_token_123").
 		Return(userInfo, nil)
-	suite.mockOAuthService.On("GetInternalUser", "unknown-user").
+	suite.mockOAuthService.On("GetInternalUser", mock.Anything, "unknown-user").
 		Return(nil, &serviceerror.ServiceError{
 			Code: authncm.ErrorUserNotFound.Code,
 			Type: serviceerror.ClientErrorType,
@@ -603,7 +604,7 @@ func (suite *OAuthExecutorTestSuite) TestProcessAuthFlowResponse_UserAlreadyExis
 		Return(tokenResp, nil)
 	suite.mockOAuthService.On("FetchUserInfo", "idp-123", "access_token_123").
 		Return(userInfo, nil)
-	suite.mockOAuthService.On("GetInternalUser", "existing-user-sub").
+	suite.mockOAuthService.On("GetInternalUser", mock.Anything, "existing-user-sub").
 		Return(existingUser, nil)
 
 	err := suite.executor.ProcessAuthFlowResponse(ctx, execResp)
@@ -864,7 +865,7 @@ func (suite *OAuthExecutorTestSuite) TestProcessAuthFlowResponse_RegistrationFlo
 		Return(tokenResp, nil)
 	suite.mockOAuthService.On("FetchUserInfo", "idp-123", "access_token_123").
 		Return(userInfo, nil)
-	suite.mockOAuthService.On("GetInternalUser", "new-user-sub").
+	suite.mockOAuthService.On("GetInternalUser", mock.Anything, "new-user-sub").
 		Return(nil, &serviceerror.ServiceError{
 			Code: authncm.ErrorUserNotFound.Code,
 			Type: serviceerror.ClientErrorType,
@@ -939,7 +940,7 @@ func (suite *OAuthExecutorTestSuite) TestProcessAuthFlowResponse_AllowAuthWithou
 		Return(tokenResp, nil)
 	suite.mockOAuthService.On("FetchUserInfo", "idp-123", "access_token_123").
 		Return(userInfo, nil)
-	suite.mockOAuthService.On("GetInternalUser", "new-user-sub").
+	suite.mockOAuthService.On("GetInternalUser", mock.Anything, "new-user-sub").
 		Return(nil, &serviceerror.ServiceError{
 			Code: authncm.ErrorUserNotFound.Code,
 			Type: serviceerror.ClientErrorType,
@@ -997,7 +998,7 @@ func (suite *OAuthExecutorTestSuite) TestProcessAuthFlowResponse_PreventAuthWith
 		Return(tokenResp, nil)
 	suite.mockOAuthService.On("FetchUserInfo", "idp-123", "access_token_123").
 		Return(userInfo, nil)
-	suite.mockOAuthService.On("GetInternalUser", "new-user-sub").
+	suite.mockOAuthService.On("GetInternalUser", mock.Anything, "new-user-sub").
 		Return(nil, &serviceerror.ServiceError{
 			Code: authncm.ErrorUserNotFound.Code,
 			Type: serviceerror.ClientErrorType,
@@ -1052,7 +1053,7 @@ func (suite *OAuthExecutorTestSuite) TestProcessAuthFlowResponse_AllowRegistrati
 		Return(tokenResp, nil)
 	suite.mockOAuthService.On("FetchUserInfo", "idp-123", "access_token_123").
 		Return(userInfo, nil)
-	suite.mockOAuthService.On("GetInternalUser", "existing-user-sub").
+	suite.mockOAuthService.On("GetInternalUser", mock.Anything, "existing-user-sub").
 		Return(existingUser, nil)
 
 	err := suite.executor.ProcessAuthFlowResponse(ctx, execResp)
@@ -1105,7 +1106,7 @@ func (suite *OAuthExecutorTestSuite) TestProcessAuthFlowResponse_PreventRegistra
 		Return(tokenResp, nil)
 	suite.mockOAuthService.On("FetchUserInfo", "idp-123", "access_token_123").
 		Return(userInfo, nil)
-	suite.mockOAuthService.On("GetInternalUser", "existing-user-sub").
+	suite.mockOAuthService.On("GetInternalUser", mock.Anything, "existing-user-sub").
 		Return(existingUser, nil)
 
 	err := suite.executor.ProcessAuthFlowResponse(ctx, execResp)
@@ -1295,10 +1296,10 @@ func (suite *OAuthExecutorTestSuite) TestGetInternalUser_Errors() {
 				RuntimeData:    make(map[string]string),
 			}
 
-			suite.mockOAuthService.On("GetInternalUser", tt.sub).
+			suite.mockOAuthService.On("GetInternalUser", mock.Anything, tt.sub).
 				Return(nil, tt.serviceError).Once()
 
-			result, err := suite.executor.GetInternalUser(tt.sub, execResp)
+			result, err := suite.executor.GetInternalUser(&flowcore.NodeContext{}, tt.sub, execResp)
 
 			assert.Nil(suite.T(), result)
 			if tt.expectError {
@@ -1330,10 +1331,10 @@ func (suite *OAuthExecutorTestSuite) TestGetInternalUser_Success() {
 		Type:             "INTERNAL",
 	}
 
-	suite.mockOAuthService.On("GetInternalUser", "user-sub-123").
+	suite.mockOAuthService.On("GetInternalUser", mock.Anything, "user-sub-123").
 		Return(existingUser, nil)
 
-	result, err := suite.executor.GetInternalUser("user-sub-123", execResp)
+	result, err := suite.executor.GetInternalUser(&flowcore.NodeContext{}, "user-sub-123", execResp)
 
 	assert.NoError(suite.T(), err)
 	assert.NotNil(suite.T(), result)

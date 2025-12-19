@@ -106,7 +106,7 @@ func (p *provisioningExecutor) Execute(ctx *flowcore.NodeContext) (*flowcm.Execu
 		return execResp, nil
 	}
 
-	userID, err := p.IdentifyUser(userAttributes, execResp)
+	userID, err := p.IdentifyUser(ctx, userAttributes, execResp)
 	if err != nil {
 		logger.Error("Failed to identify user", log.Error(err))
 		execResp.Status = flowcm.ExecFailure
@@ -313,7 +313,7 @@ func (p *provisioningExecutor) createUserInStore(ctx *flowcore.NodeContext,
 	}
 	newUser.Attributes = attributesJSON
 
-	retUser, svcErr := p.userService.CreateUser(&newUser)
+	retUser, svcErr := p.userService.CreateUser(ctx.RequestContext, &newUser)
 	if svcErr != nil {
 		return nil, fmt.Errorf("failed to create user in the store: %s", svcErr.Error)
 	}

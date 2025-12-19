@@ -19,6 +19,7 @@
 package tokenservice
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"slices"
@@ -268,9 +269,9 @@ func BuildOIDCClaimsFromScopes(
 // FetchUserAttributesAndGroups fetches user attributes and groups from the user service.
 // It returns user attributes, user groups, and an error if any.
 // Callers should log errors with their own context.
-func FetchUserAttributesAndGroups(userService user.UserServiceInterface, userID string,
+func FetchUserAttributesAndGroups(ctx context.Context, userService user.UserServiceInterface, userID string,
 	includeGroups bool) (map[string]interface{}, []string, error) {
-	user, svcErr := userService.GetUser(userID)
+	user, svcErr := userService.GetUser(ctx, userID)
 	if svcErr != nil {
 		return nil, nil, fmt.Errorf("failed to fetch user: %s", svcErr.Error)
 	}
@@ -286,7 +287,7 @@ func FetchUserAttributesAndGroups(userService user.UserServiceInterface, userID 
 		return attrs, []string{}, nil
 	}
 
-	groups, svcErr := userService.GetUserGroups(userID, constants.DefaultGroupListLimit, 0)
+	groups, svcErr := userService.GetUserGroups(ctx, userID, constants.DefaultGroupListLimit, 0)
 	if svcErr != nil {
 		return nil, nil, fmt.Errorf("failed to fetch user groups: %s", svcErr.Error)
 	}

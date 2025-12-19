@@ -19,6 +19,7 @@
 package group
 
 import (
+	"context"
 	"errors"
 	"fmt"
 
@@ -34,19 +35,19 @@ var buildBulkGroupExistsQueryFunc = buildBulkGroupExistsQuery
 
 // groupStoreInterface defines the interface for group store operations.
 type groupStoreInterface interface {
-	GetGroupListCount() (int, error)
-	GetGroupList(limit, offset int) ([]GroupBasicDAO, error)
-	CreateGroup(group GroupDAO) error
-	GetGroup(id string) (GroupDAO, error)
-	GetGroupMembers(groupID string, limit, offset int) ([]Member, error)
-	GetGroupMemberCount(groupID string) (int, error)
-	UpdateGroup(group GroupDAO) error
-	DeleteGroup(id string) error
-	ValidateGroupIDs(groupIDs []string) ([]string, error)
-	CheckGroupNameConflictForCreate(name string, organizationUnitID string) error
-	CheckGroupNameConflictForUpdate(name string, organizationUnitID string, groupID string) error
-	GetGroupsByOrganizationUnitCount(organizationUnitID string) (int, error)
-	GetGroupsByOrganizationUnit(organizationUnitID string, limit, offset int) ([]GroupBasicDAO, error)
+	GetGroupListCount(ctx context.Context) (int, error)
+	GetGroupList(ctx context.Context, limit, offset int) ([]GroupBasicDAO, error)
+	CreateGroup(ctx context.Context, group GroupDAO) error
+	GetGroup(ctx context.Context, id string) (GroupDAO, error)
+	GetGroupMembers(ctx context.Context, groupID string, limit, offset int) ([]Member, error)
+	GetGroupMemberCount(ctx context.Context, groupID string) (int, error)
+	UpdateGroup(ctx context.Context, group GroupDAO) error
+	DeleteGroup(ctx context.Context, id string) error
+	ValidateGroupIDs(ctx context.Context, groupIDs []string) ([]string, error)
+	CheckGroupNameConflictForCreate(ctx context.Context, name string, organizationUnitID string) error
+	CheckGroupNameConflictForUpdate(ctx context.Context, name string, organizationUnitID string, groupID string) error
+	GetGroupsByOrganizationUnitCount(ctx context.Context, organizationUnitID string) (int, error)
+	GetGroupsByOrganizationUnit(ctx context.Context, organizationUnitID string, limit, offset int) ([]GroupBasicDAO, error)
 }
 
 // groupStore is the default implementation of groupStoreInterface.
@@ -64,7 +65,7 @@ func newGroupStore() groupStoreInterface {
 }
 
 // GetGroupListCount retrieves the total count of root groups.
-func (s *groupStore) GetGroupListCount() (int, error) {
+func (s *groupStore) GetGroupListCount(ctx context.Context) (int, error) {
 	dbClient, err := s.dbProvider.GetUserDBClient()
 	if err != nil {
 		return 0, fmt.Errorf("failed to get database client: %w", err)
@@ -86,7 +87,7 @@ func (s *groupStore) GetGroupListCount() (int, error) {
 }
 
 // GetGroupList retrieves root groups.
-func (s *groupStore) GetGroupList(limit, offset int) ([]GroupBasicDAO, error) {
+func (s *groupStore) GetGroupList(ctx context.Context, limit, offset int) ([]GroupBasicDAO, error) {
 	dbClient, err := s.dbProvider.GetUserDBClient()
 	if err != nil {
 		return nil, fmt.Errorf("failed to get database client: %w", err)
@@ -118,7 +119,7 @@ func (s *groupStore) GetGroupList(limit, offset int) ([]GroupBasicDAO, error) {
 }
 
 // CreateGroup creates a new group in the database.
-func (s *groupStore) CreateGroup(group GroupDAO) error {
+func (s *groupStore) CreateGroup(ctx context.Context, group GroupDAO) error {
 	dbClient, err := s.dbProvider.GetUserDBClient()
 	if err != nil {
 		return fmt.Errorf("failed to get database client: %w", err)
@@ -160,7 +161,7 @@ func (s *groupStore) CreateGroup(group GroupDAO) error {
 }
 
 // GetGroup retrieves a group by its id.
-func (s *groupStore) GetGroup(id string) (GroupDAO, error) {
+func (s *groupStore) GetGroup(ctx context.Context, id string) (GroupDAO, error) {
 	dbClient, err := s.dbProvider.GetUserDBClient()
 	if err != nil {
 		return GroupDAO{}, fmt.Errorf("failed to get database client: %w", err)
@@ -189,7 +190,7 @@ func (s *groupStore) GetGroup(id string) (GroupDAO, error) {
 }
 
 // GetGroupMembers retrieves members of a group with pagination.
-func (s *groupStore) GetGroupMembers(groupID string, limit, offset int) ([]Member, error) {
+func (s *groupStore) GetGroupMembers(ctx context.Context, groupID string, limit, offset int) ([]Member, error) {
 	dbClient, err := s.dbProvider.GetUserDBClient()
 	if err != nil {
 		return nil, fmt.Errorf("failed to get database client: %w", err)
@@ -216,7 +217,7 @@ func (s *groupStore) GetGroupMembers(groupID string, limit, offset int) ([]Membe
 }
 
 // GetGroupMemberCount retrieves the total count of members in a group.
-func (s *groupStore) GetGroupMemberCount(groupID string) (int, error) {
+func (s *groupStore) GetGroupMemberCount(ctx context.Context, groupID string) (int, error) {
 	dbClient, err := s.dbProvider.GetUserDBClient()
 	if err != nil {
 		return 0, fmt.Errorf("failed to get database client: %w", err)
@@ -239,7 +240,7 @@ func (s *groupStore) GetGroupMemberCount(groupID string) (int, error) {
 }
 
 // UpdateGroup updates an existing group.
-func (s *groupStore) UpdateGroup(group GroupDAO) error {
+func (s *groupStore) UpdateGroup(ctx context.Context, group GroupDAO) error {
 	dbClient, err := s.dbProvider.GetUserDBClient()
 	if err != nil {
 		return fmt.Errorf("failed to get database client: %w", err)
@@ -296,8 +297,8 @@ func (s *groupStore) UpdateGroup(group GroupDAO) error {
 }
 
 // DeleteGroup deletes a group.
-func (s *groupStore) DeleteGroup(id string) error {
-	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, storeLoggerComponentName))
+func (s *groupStore) DeleteGroup(ctx context.Context, id string) error {
+	logger := log.GetLoggerWithContext(ctx).With(log.String(log.LoggerKeyComponentName, storeLoggerComponentName))
 
 	dbClient, err := s.dbProvider.GetUserDBClient()
 	if err != nil {
@@ -340,7 +341,7 @@ func (s *groupStore) DeleteGroup(id string) error {
 }
 
 // ValidateGroupIDs checks if all provided group IDs exist.
-func (s *groupStore) ValidateGroupIDs(groupIDs []string) ([]string, error) {
+func (s *groupStore) ValidateGroupIDs(ctx context.Context, groupIDs []string) ([]string, error) {
 	if len(groupIDs) == 0 {
 		return []string{}, nil
 	}
@@ -379,7 +380,7 @@ func (s *groupStore) ValidateGroupIDs(groupIDs []string) ([]string, error) {
 
 // CheckGroupNameConflictForCreate checks if the new group name conflicts with existing groups
 // in the same organization unit.
-func (s *groupStore) CheckGroupNameConflictForCreate(name string, organizationUnitID string) error {
+func (s *groupStore) CheckGroupNameConflictForCreate(ctx context.Context, name string, organizationUnitID string) error {
 	dbClient, err := s.dbProvider.GetUserDBClient()
 	if err != nil {
 		return fmt.Errorf("failed to get database client: %w", err)
@@ -390,7 +391,7 @@ func (s *groupStore) CheckGroupNameConflictForCreate(name string, organizationUn
 
 // CheckGroupNameConflictForUpdate checks if the new group name conflicts with other groups
 // in the same organization unit.
-func (s *groupStore) CheckGroupNameConflictForUpdate(name string, organizationUnitID string, groupID string) error {
+func (s *groupStore) CheckGroupNameConflictForUpdate(ctx context.Context, name string, organizationUnitID string, groupID string) error {
 	dbClient, err := s.dbProvider.GetUserDBClient()
 	if err != nil {
 		return fmt.Errorf("failed to get database client: %w", err)
@@ -400,7 +401,7 @@ func (s *groupStore) CheckGroupNameConflictForUpdate(name string, organizationUn
 }
 
 // GetGroupsByOrganizationUnitCount retrieves the total count of groups in a specific organization unit.
-func (s *groupStore) GetGroupsByOrganizationUnitCount(organizationUnitID string) (int, error) {
+func (s *groupStore) GetGroupsByOrganizationUnitCount(ctx context.Context, organizationUnitID string) (int, error) {
 	dbClient, err := s.dbProvider.GetUserDBClient()
 	if err != nil {
 		return 0, fmt.Errorf("failed to get database client: %w", err)
@@ -424,7 +425,7 @@ func (s *groupStore) GetGroupsByOrganizationUnitCount(organizationUnitID string)
 
 // GetGroupsByOrganizationUnit retrieves a list of groups in a specific organization unit with pagination.
 func (s *groupStore) GetGroupsByOrganizationUnit(
-	organizationUnitID string, limit, offset int,
+	ctx context.Context, organizationUnitID string, limit, offset int,
 ) ([]GroupBasicDAO, error) {
 	dbClient, err := s.dbProvider.GetUserDBClient()
 	if err != nil {

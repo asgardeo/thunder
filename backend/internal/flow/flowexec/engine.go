@@ -95,6 +95,7 @@ func (fe *flowEngine) Execute(ctx *EngineContext) (FlowStep, *serviceerror.Servi
 			Application:       ctx.Application,
 			AuthenticatedUser: ctx.AuthenticatedUser,
 			ExecutionHistory:  ctx.ExecutionHistory,
+			RequestContext:    ctx.RequestContext,
 		}
 		if nodeCtx.NodeInputData == nil {
 			nodeCtx.NodeInputData = make([]common.InputData, 0)

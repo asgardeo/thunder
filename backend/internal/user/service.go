@@ -20,6 +20,7 @@
 package user
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -46,21 +47,21 @@ var supportedCredentialFields = map[string]struct{}{
 
 // UserServiceInterface defines the interface for the user service.
 type UserServiceInterface interface {
-	GetUserList(limit, offset int, filters map[string]interface{}) (*UserListResponse, *serviceerror.ServiceError)
-	GetUsersByPath(handlePath string, limit, offset int,
+	GetUserList(ctx context.Context, limit, offset int, filters map[string]interface{}) (*UserListResponse, *serviceerror.ServiceError)
+	GetUsersByPath(ctx context.Context, handlePath string, limit, offset int,
 		filters map[string]interface{}) (*UserListResponse, *serviceerror.ServiceError)
-	CreateUser(user *User) (*User, *serviceerror.ServiceError)
-	CreateUserByPath(handlePath string, request CreateUserByPathRequest) (*User, *serviceerror.ServiceError)
-	GetUser(userID string) (*User, *serviceerror.ServiceError)
-	GetUserGroups(userID string, limit, offset int) (*UserGroupListResponse, *serviceerror.ServiceError)
-	UpdateUser(userID string, user *User) (*User, *serviceerror.ServiceError)
-	UpdateUserAttributes(userID string, attributes json.RawMessage) (*User, *serviceerror.ServiceError)
-	UpdateUserCredentials(userID string, attributes json.RawMessage) *serviceerror.ServiceError
-	DeleteUser(userID string) *serviceerror.ServiceError
-	IdentifyUser(filters map[string]interface{}) (*string, *serviceerror.ServiceError)
-	VerifyUser(userID string, credentials map[string]interface{}) (*User, *serviceerror.ServiceError)
-	AuthenticateUser(request AuthenticateUserRequest) (*AuthenticateUserResponse, *serviceerror.ServiceError)
-	ValidateUserIDs(userIDs []string) ([]string, *serviceerror.ServiceError)
+	CreateUser(ctx context.Context, user *User) (*User, *serviceerror.ServiceError)
+	CreateUserByPath(ctx context.Context, handlePath string, request CreateUserByPathRequest) (*User, *serviceerror.ServiceError)
+	GetUser(ctx context.Context, userID string) (*User, *serviceerror.ServiceError)
+	GetUserGroups(ctx context.Context, userID string, limit, offset int) (*UserGroupListResponse, *serviceerror.ServiceError)
+	UpdateUser(ctx context.Context, userID string, user *User) (*User, *serviceerror.ServiceError)
+	UpdateUserAttributes(ctx context.Context, userID string, attributes json.RawMessage) (*User, *serviceerror.ServiceError)
+	UpdateUserCredentials(ctx context.Context, userID string, attributes json.RawMessage) *serviceerror.ServiceError
+	DeleteUser(ctx context.Context, userID string) *serviceerror.ServiceError
+	IdentifyUser(ctx context.Context, filters map[string]interface{}) (*string, *serviceerror.ServiceError)
+	VerifyUser(ctx context.Context, userID string, credentials map[string]interface{}) (*User, *serviceerror.ServiceError)
+	AuthenticateUser(ctx context.Context, request AuthenticateUserRequest) (*AuthenticateUserResponse, *serviceerror.ServiceError)
+	ValidateUserIDs(ctx context.Context, userIDs []string) ([]string, *serviceerror.ServiceError)
 }
 
 // userService is the default implementation of the UserServiceInterface.
@@ -87,20 +88,20 @@ func newUserService(
 }
 
 // GetUserList lists the users.
-func (us *userService) GetUserList(limit, offset int,
+func (us *userService) GetUserList(ctx context.Context, limit, offset int,
 	filters map[string]interface{}) (*UserListResponse, *serviceerror.ServiceError) {
-	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, loggerComponentName))
+	logger := log.GetLoggerWithContext(ctx).With(log.String(log.LoggerKeyComponentName, loggerComponentName))
 
 	if err := validatePaginationParams(limit, offset); err != nil {
 		return nil, err
 	}
 
-	totalCount, err := us.userStore.GetUserListCount(filters)
+	totalCount, err := us.userStore.GetUserListCount(ctx, filters)
 	if err != nil {
 		return nil, logErrorAndReturnServerError(logger, "Failed to get user list count", err)
 	}
 
-	users, err := us.userStore.GetUserList(limit, offset, filters)
+	users, err := us.userStore.GetUserList(ctx, limit, offset, filters)
 	if err != nil {
 		return nil, logErrorAndReturnServerError(logger, "Failed to get user list", err)
 	}
@@ -117,10 +118,10 @@ func (us *userService) GetUserList(limit, offset int,
 }
 
 // GetUsersByPath retrieves a list of users by hierarchical handle path.
-func (us *userService) GetUsersByPath(
+func (us *userService) GetUsersByPath(ctx context.Context,
 	handlePath string, limit, offset int, filters map[string]interface{},
 ) (*UserListResponse, *serviceerror.ServiceError) {
-	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, loggerComponentName))
+	logger := log.GetLoggerWithContext(ctx).With(log.String(log.LoggerKeyComponentName, loggerComponentName))
 	logger.Debug("Getting users by path", log.String("path", handlePath))
 
 	serviceError := validateAndProcessHandlePath(handlePath)
@@ -183,8 +184,8 @@ func (us *userService) GetUsersByPath(
 }
 
 // CreateUser creates the user.
-func (us *userService) CreateUser(user *User) (*User, *serviceerror.ServiceError) {
-	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, loggerComponentName))
+func (us *userService) CreateUser(ctx context.Context, user *User) (*User, *serviceerror.ServiceError) {
+	logger := log.GetLoggerWithContext(ctx).With(log.String(log.LoggerKeyComponentName, loggerComponentName))
 
 	if user == nil {
 		return nil, &ErrorInvalidRequestFormat
@@ -205,7 +206,7 @@ func (us *userService) CreateUser(user *User) (*User, *serviceerror.ServiceError
 		return nil, logErrorAndReturnServerError(logger, "Failed to create user DTO", err)
 	}
 
-	err = us.userStore.CreateUser(*user, credentials)
+	err = us.userStore.CreateUser(ctx, *user, credentials)
 	if err != nil {
 		return nil, logErrorAndReturnServerError(logger, "Failed to create user", err)
 	}
@@ -215,10 +216,10 @@ func (us *userService) CreateUser(user *User) (*User, *serviceerror.ServiceError
 }
 
 // CreateUserByPath creates a new user under the organization unit specified by the handle path.
-func (us *userService) CreateUserByPath(
+func (us *userService) CreateUserByPath(ctx context.Context,
 	handlePath string, request CreateUserByPathRequest,
 ) (*User, *serviceerror.ServiceError) {
-	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, loggerComponentName))
+	logger := log.GetLoggerWithContext(ctx).With(log.String(log.LoggerKeyComponentName, loggerComponentName))
 	logger.Debug("Creating user by path", log.String("path", handlePath), log.String("type", request.Type))
 
 	serviceError := validateAndProcessHandlePath(handlePath)
@@ -246,7 +247,7 @@ func (us *userService) CreateUserByPath(
 		Attributes:       request.Attributes,
 	}
 
-	return us.CreateUser(user)
+	return us.CreateUser(ctx, user)
 }
 
 // extractCredentials extracts the credentials from the user attributes and returns a Credentials array.
@@ -299,15 +300,15 @@ func (us *userService) extractCredentials(user *User) ([]Credential, error) {
 }
 
 // GetUser get the user for given user id.
-func (us *userService) GetUser(userID string) (*User, *serviceerror.ServiceError) {
-	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, loggerComponentName))
+func (us *userService) GetUser(ctx context.Context, userID string) (*User, *serviceerror.ServiceError) {
+	logger := log.GetLoggerWithContext(ctx).With(log.String(log.LoggerKeyComponentName, loggerComponentName))
 	logger.Debug("Retrieving user", log.String("id", userID))
 
 	if userID == "" {
 		return nil, &ErrorMissingUserID
 	}
 
-	user, err := us.userStore.GetUser(userID)
+	user, err := us.userStore.GetUser(ctx, userID)
 	if err != nil {
 		if errors.Is(err, ErrUserNotFound) {
 			logger.Debug("User not found", log.String("id", userID))
@@ -321,9 +322,9 @@ func (us *userService) GetUser(userID string) (*User, *serviceerror.ServiceError
 }
 
 // GetUserGroups retrieves groups of a user with pagination.
-func (as *userService) GetUserGroups(userID string, limit, offset int) (
+func (as *userService) GetUserGroups(ctx context.Context, userID string, limit, offset int) (
 	*UserGroupListResponse, *serviceerror.ServiceError) {
-	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, loggerComponentName))
+	logger := log.GetLoggerWithContext(ctx).With(log.String(log.LoggerKeyComponentName, loggerComponentName))
 
 	if userID == "" {
 		return nil, &ErrorMissingUserID
@@ -333,7 +334,7 @@ func (as *userService) GetUserGroups(userID string, limit, offset int) (
 		return nil, err
 	}
 
-	invalidUserIDs, err := as.userStore.ValidateUserIDs([]string{userID})
+	invalidUserIDs, err := as.userStore.ValidateUserIDs(ctx, []string{userID})
 	if err != nil {
 		logger.Error("Failed to validate user IDs", log.String("error", err.Error()))
 		return nil, &ErrorInternalServerError
@@ -344,13 +345,13 @@ func (as *userService) GetUserGroups(userID string, limit, offset int) (
 		return nil, &ErrorUserNotFound
 	}
 
-	totalCount, err := as.userStore.GetGroupCountForUser(userID)
+	totalCount, err := as.userStore.GetGroupCountForUser(ctx, userID)
 	if err != nil {
 		logger.Error("Failed to get group count for user", log.String("userID", userID), log.Error(err))
 		return nil, &ErrorInternalServerError
 	}
 
-	groups, err := as.userStore.GetUserGroups(userID, limit, offset)
+	groups, err := as.userStore.GetUserGroups(ctx, userID, limit, offset)
 	if err != nil {
 		logger.Error("Failed to get user groups", log.String("id", userID), log.Error(err))
 		return nil, &ErrorInternalServerError
@@ -371,8 +372,8 @@ func (as *userService) GetUserGroups(userID string, limit, offset int) (
 }
 
 // UpdateUser update the user for given user id.
-func (us *userService) UpdateUser(userID string, user *User) (*User, *serviceerror.ServiceError) {
-	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, loggerComponentName))
+func (us *userService) UpdateUser(ctx context.Context, userID string, user *User) (*User, *serviceerror.ServiceError) {
+	logger := log.GetLoggerWithContext(ctx).With(log.String(log.LoggerKeyComponentName, loggerComponentName))
 	logger.Debug("Updating user", log.String("id", userID))
 
 	if userID == "" {
@@ -391,7 +392,7 @@ func (us *userService) UpdateUser(userID string, user *User) (*User, *serviceerr
 		return nil, svcErr
 	}
 
-	err := us.userStore.UpdateUser(user)
+	err := us.userStore.UpdateUser(ctx, user)
 	if err != nil {
 		if errors.Is(err, ErrUserNotFound) {
 			logger.Debug("User not found", log.String("id", userID))
@@ -405,10 +406,10 @@ func (us *userService) UpdateUser(userID string, user *User) (*User, *serviceerr
 }
 
 // UpdateUserAttributes updates only the attributes of a user while preserving immutable fields.
-func (us *userService) UpdateUserAttributes(
+func (us *userService) UpdateUserAttributes(ctx context.Context,
 	userID string, attributes json.RawMessage,
 ) (*User, *serviceerror.ServiceError) {
-	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, loggerComponentName))
+	logger := log.GetLoggerWithContext(ctx).With(log.String(log.LoggerKeyComponentName, loggerComponentName))
 	logger.Debug("Updating user attributes", log.String("id", userID))
 
 	if strings.TrimSpace(userID) == "" {
@@ -427,7 +428,7 @@ func (us *userService) UpdateUserAttributes(
 		return nil, &ErrorInvalidRequestFormat
 	}
 
-	user, err := us.userStore.GetUser(userID)
+	user, err := us.userStore.GetUser(ctx, userID)
 	if errors.Is(err, ErrUserNotFound) {
 		logger.Debug("User not found", log.String("id", userID))
 		return nil, &ErrorUserNotFound
@@ -439,7 +440,7 @@ func (us *userService) UpdateUserAttributes(
 		return nil, svcErr
 	}
 
-	err = us.userStore.UpdateUser(&user)
+	err = us.userStore.UpdateUser(ctx, &user)
 	if err != nil {
 		if errors.Is(err, ErrUserNotFound) {
 			logger.Debug("User not found", log.String("id", userID))
@@ -474,8 +475,8 @@ func (us *userService) containsCredentialFields(attributes json.RawMessage) (boo
 }
 
 // UpdateUserCredentials updates the credentials of a user.
-func (us *userService) UpdateUserCredentials(userID string, attributes json.RawMessage) *serviceerror.ServiceError {
-	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, loggerComponentName))
+func (us *userService) UpdateUserCredentials(ctx context.Context, userID string, attributes json.RawMessage) *serviceerror.ServiceError {
+	logger := log.GetLoggerWithContext(ctx).With(log.String(log.LoggerKeyComponentName, loggerComponentName))
 	logger.Debug("Updating user credentials", log.String("id", userID))
 
 	if strings.TrimSpace(userID) == "" {
@@ -527,7 +528,7 @@ func (us *userService) UpdateUserCredentials(userID string, attributes json.RawM
 		return &ErrorMissingCredentials
 	}
 
-	_, existingCredentials, err := us.userStore.GetCredentials(userID)
+	_, existingCredentials, err := us.userStore.GetCredentials(ctx, userID)
 	if err != nil {
 		if errors.Is(err, ErrUserNotFound) {
 			logger.Debug("User not found", log.String("id", userID))
@@ -543,7 +544,7 @@ func (us *userService) UpdateUserCredentials(userID string, attributes json.RawM
 
 	mergedCredentials := us.mergeCredentials(existingCredentials, credentials)
 
-	err = us.userStore.UpdateUserCredentials(userID, mergedCredentials)
+	err = us.userStore.UpdateUserCredentials(ctx, userID, mergedCredentials)
 	if err != nil {
 		if errors.Is(err, ErrUserNotFound) {
 			logger.Debug("User not found", log.String("id", userID))
@@ -588,15 +589,15 @@ func (us *userService) mergeCredentials(existing []Credential, provided []Creden
 }
 
 // DeleteUser delete the user for given user id.
-func (us *userService) DeleteUser(userID string) *serviceerror.ServiceError {
-	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, loggerComponentName))
+func (us *userService) DeleteUser(ctx context.Context, userID string) *serviceerror.ServiceError {
+	logger := log.GetLoggerWithContext(ctx).With(log.String(log.LoggerKeyComponentName, loggerComponentName))
 	logger.Debug("Deleting user", log.String("id", userID))
 
 	if userID == "" {
 		return &ErrorMissingUserID
 	}
 
-	err := us.userStore.DeleteUser(userID)
+	err := us.userStore.DeleteUser(ctx, userID)
 	if err != nil {
 		if errors.Is(err, ErrUserNotFound) {
 			logger.Debug("User not found", log.String("id", userID))
@@ -610,14 +611,14 @@ func (us *userService) DeleteUser(userID string) *serviceerror.ServiceError {
 }
 
 // IdentifyUser identifies a user with the given filters.
-func (us *userService) IdentifyUser(filters map[string]interface{}) (*string, *serviceerror.ServiceError) {
-	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, loggerComponentName))
+func (us *userService) IdentifyUser(ctx context.Context, filters map[string]interface{}) (*string, *serviceerror.ServiceError) {
+	logger := log.GetLoggerWithContext(ctx).With(log.String(log.LoggerKeyComponentName, loggerComponentName))
 
 	if len(filters) == 0 {
 		return nil, &ErrorInvalidRequestFormat
 	}
 
-	userID, err := us.userStore.IdentifyUser(filters)
+	userID, err := us.userStore.IdentifyUser(ctx, filters)
 	if err != nil {
 		if errors.Is(err, ErrUserNotFound) {
 			logger.Debug("User not found with provided filters")
@@ -630,10 +631,10 @@ func (us *userService) IdentifyUser(filters map[string]interface{}) (*string, *s
 }
 
 // VerifyUser validate the specified user with the given credentials.
-func (us *userService) VerifyUser(
+func (us *userService) VerifyUser(ctx context.Context,
 	userID string, credentials map[string]interface{},
 ) (*User, *serviceerror.ServiceError) {
-	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, loggerComponentName))
+	logger := log.GetLoggerWithContext(ctx).With(log.String(log.LoggerKeyComponentName, loggerComponentName))
 
 	if userID == "" {
 		return nil, &ErrorMissingUserID
@@ -663,7 +664,7 @@ func (us *userService) VerifyUser(
 		return nil, &ErrorAuthenticationFailed
 	}
 
-	user, storedCredentials, err := us.userStore.GetCredentials(userID)
+	user, storedCredentials, err := us.userStore.GetCredentials(ctx, userID)
 	if err != nil {
 		if errors.Is(err, ErrUserNotFound) {
 			logger.Debug("User not found", log.String("id", userID))
@@ -718,10 +719,10 @@ func (us *userService) VerifyUser(
 }
 
 // AuthenticateUser authenticates a user by combining identify and verify operations.
-func (us *userService) AuthenticateUser(
+func (us *userService) AuthenticateUser(ctx context.Context,
 	request AuthenticateUserRequest,
 ) (*AuthenticateUserResponse, *serviceerror.ServiceError) {
-	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, loggerComponentName))
+	logger := log.GetLoggerWithContext(ctx).With(log.String(log.LoggerKeyComponentName, loggerComponentName))
 
 	if len(request) == 0 {
 		return nil, &ErrorInvalidRequestFormat
@@ -745,7 +746,7 @@ func (us *userService) AuthenticateUser(
 		return nil, &ErrorMissingCredentials
 	}
 
-	userID, svcErr := us.IdentifyUser(identifyFilters)
+	userID, svcErr := us.IdentifyUser(ctx, identifyFilters)
 	if svcErr != nil {
 		if svcErr.Code == ErrorUserNotFound.Code {
 			return nil, &ErrorUserNotFound
@@ -753,7 +754,7 @@ func (us *userService) AuthenticateUser(
 		return nil, svcErr
 	}
 
-	user, svcErr := us.VerifyUser(*userID, credentials)
+	user, svcErr := us.VerifyUser(ctx, *userID, credentials)
 	if svcErr != nil {
 		return nil, svcErr
 	}
@@ -767,14 +768,14 @@ func (us *userService) AuthenticateUser(
 }
 
 // ValidateUserIDs validates that all provided user IDs exist.
-func (us *userService) ValidateUserIDs(userIDs []string) ([]string, *serviceerror.ServiceError) {
-	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, loggerComponentName))
+func (us *userService) ValidateUserIDs(ctx context.Context, userIDs []string) ([]string, *serviceerror.ServiceError) {
+	logger := log.GetLoggerWithContext(ctx).With(log.String(log.LoggerKeyComponentName, loggerComponentName))
 
 	if len(userIDs) == 0 {
 		return []string{}, nil
 	}
 
-	invalidUserIDs, err := us.userStore.ValidateUserIDs(userIDs)
+	invalidUserIDs, err := us.userStore.ValidateUserIDs(ctx, userIDs)
 	if err != nil {
 		return nil, logErrorAndReturnServerError(logger, "Failed to validate user IDs", err)
 	}
@@ -884,7 +885,7 @@ func (us *userService) validateUserAndUniqueness(
 
 	isValid, svcErr = us.userSchemaService.ValidateUserUniqueness(userType, attributes,
 		func(filters map[string]interface{}) (*string, error) {
-			userID, svcErr := us.IdentifyUser(filters)
+			userID, svcErr := us.IdentifyUser(context.Background(), filters)
 			if svcErr != nil {
 				if svcErr.Code == ErrorUserNotFound.Code {
 					return nil, nil

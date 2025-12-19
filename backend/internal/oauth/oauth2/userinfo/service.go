@@ -20,6 +20,7 @@
 package userinfo
 
 import (
+	"context"
 	"slices"
 
 	"github.com/asgardeo/thunder/internal/application"
@@ -93,7 +94,7 @@ func (s *userInfoService) GetUserInfo(accessToken string) (map[string]interface{
 		oauthApp.Token.IDToken != nil &&
 		slices.Contains(oauthApp.Token.IDToken.UserAttributes, constants.UserAttributeGroups)
 
-	userAttributes, userGroups, err := tokenservice.FetchUserAttributesAndGroups(s.userService,
+	userAttributes, userGroups, err := tokenservice.FetchUserAttributesAndGroups(context.Background(), s.userService,
 		sub, includeGroups)
 	if err != nil {
 		s.logger.Error("Failed to fetch user attributes", log.String("userID", sub), log.Error(err))

@@ -20,6 +20,7 @@
 package google
 
 import (
+	"context"
 	"strings"
 	"time"
 
@@ -213,8 +214,8 @@ func (g *googleOIDCAuthnService) FetchUserInfo(idpID, accessToken string) (
 }
 
 // GetInternalUser retrieves the internal user based on the external subject identifier.
-func (g *googleOIDCAuthnService) GetInternalUser(sub string) (*user.User, *serviceerror.ServiceError) {
-	return g.internal.GetInternalUser(sub)
+func (g *googleOIDCAuthnService) GetInternalUser(ctx context.Context, sub string) (*user.User, *serviceerror.ServiceError) {
+	return g.internal.GetInternalUser(ctx, sub)
 }
 
 // GetOAuthClientConfig retrieves and validates the OAuth client configuration for the given identity provider ID.

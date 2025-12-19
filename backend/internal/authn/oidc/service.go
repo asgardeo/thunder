@@ -20,6 +20,7 @@
 package oidc
 
 import (
+	"context"
 	"strings"
 
 	authncm "github.com/asgardeo/thunder/internal/authn/common"
@@ -206,8 +207,8 @@ func (s *oidcAuthnService) FetchUserInfo(idpID, accessToken string) (
 }
 
 // GetInternalUser retrieves the internal user based on the external subject identifier.
-func (s *oidcAuthnService) GetInternalUser(sub string) (*user.User, *serviceerror.ServiceError) {
-	return s.internal.GetInternalUser(sub)
+func (s *oidcAuthnService) GetInternalUser(ctx context.Context, sub string) (*user.User, *serviceerror.ServiceError) {
+	return s.internal.GetInternalUser(ctx, sub)
 }
 
 // getMetadata returns the authenticator metadata for OIDC authenticator.

@@ -465,8 +465,8 @@ func (_c *oidcAuthExecutorInterfaceMock_GetIdpID_Call) RunAndReturn(run func(ctx
 }
 
 // GetInternalUser provides a mock function for the type oidcAuthExecutorInterfaceMock
-func (_mock *oidcAuthExecutorInterfaceMock) GetInternalUser(sub string, execResp *common.ExecutorResponse) (*user.User, error) {
-	ret := _mock.Called(sub, execResp)
+func (_mock *oidcAuthExecutorInterfaceMock) GetInternalUser(ctx *core.NodeContext, sub string, execResp *common.ExecutorResponse) (*user.User, error) {
+	ret := _mock.Called(ctx, sub, execResp)
 
 	if len(ret) == 0 {
 		panic("no return value specified for GetInternalUser")
@@ -474,18 +474,18 @@ func (_mock *oidcAuthExecutorInterfaceMock) GetInternalUser(sub string, execResp
 
 	var r0 *user.User
 	var r1 error
-	if returnFunc, ok := ret.Get(0).(func(string, *common.ExecutorResponse) (*user.User, error)); ok {
-		return returnFunc(sub, execResp)
+	if returnFunc, ok := ret.Get(0).(func(*core.NodeContext, string, *common.ExecutorResponse) (*user.User, error)); ok {
+		return returnFunc(ctx, sub, execResp)
 	}
-	if returnFunc, ok := ret.Get(0).(func(string, *common.ExecutorResponse) *user.User); ok {
-		r0 = returnFunc(sub, execResp)
+	if returnFunc, ok := ret.Get(0).(func(*core.NodeContext, string, *common.ExecutorResponse) *user.User); ok {
+		r0 = returnFunc(ctx, sub, execResp)
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).(*user.User)
 		}
 	}
-	if returnFunc, ok := ret.Get(1).(func(string, *common.ExecutorResponse) error); ok {
-		r1 = returnFunc(sub, execResp)
+	if returnFunc, ok := ret.Get(1).(func(*core.NodeContext, string, *common.ExecutorResponse) error); ok {
+		r1 = returnFunc(ctx, sub, execResp)
 	} else {
 		r1 = ret.Error(1)
 	}
@@ -498,25 +498,31 @@ type oidcAuthExecutorInterfaceMock_GetInternalUser_Call struct {
 }
 
 // GetInternalUser is a helper method to define mock.On call
+//   - ctx *core.NodeContext
 //   - sub string
 //   - execResp *common.ExecutorResponse
-func (_e *oidcAuthExecutorInterfaceMock_Expecter) GetInternalUser(sub interface{}, execResp interface{}) *oidcAuthExecutorInterfaceMock_GetInternalUser_Call {
-	return &oidcAuthExecutorInterfaceMock_GetInternalUser_Call{Call: _e.mock.On("GetInternalUser", sub, execResp)}
+func (_e *oidcAuthExecutorInterfaceMock_Expecter) GetInternalUser(ctx interface{}, sub interface{}, execResp interface{}) *oidcAuthExecutorInterfaceMock_GetInternalUser_Call {
+	return &oidcAuthExecutorInterfaceMock_GetInternalUser_Call{Call: _e.mock.On("GetInternalUser", ctx, sub, execResp)}
 }
 
-func (_c *oidcAuthExecutorInterfaceMock_GetInternalUser_Call) Run(run func(sub string, execResp *common.ExecutorResponse)) *oidcAuthExecutorInterfaceMock_GetInternalUser_Call {
+func (_c *oidcAuthExecutorInterfaceMock_GetInternalUser_Call) Run(run func(ctx *core.NodeContext, sub string, execResp *common.ExecutorResponse)) *oidcAuthExecutorInterfaceMock_GetInternalUser_Call {
 	_c.Call.Run(func(args mock.Arguments) {
-		var arg0 string
+		var arg0 *core.NodeContext
 		if args[0] != nil {
-			arg0 = args[0].(string)
+			arg0 = args[0].(*core.NodeContext)
 		}
-		var arg1 *common.ExecutorResponse
+		var arg1 string
 		if args[1] != nil {
-			arg1 = args[1].(*common.ExecutorResponse)
+			arg1 = args[1].(string)
+		}
+		var arg2 *common.ExecutorResponse
+		if args[2] != nil {
+			arg2 = args[2].(*common.ExecutorResponse)
 		}
 		run(
 			arg0,
 			arg1,
+			arg2,
 		)
 	})
 	return _c
@@ -527,7 +533,7 @@ func (_c *oidcAuthExecutorInterfaceMock_GetInternalUser_Call) Return(user1 *user
 	return _c
 }
 
-func (_c *oidcAuthExecutorInterfaceMock_GetInternalUser_Call) RunAndReturn(run func(sub string, execResp *common.ExecutorResponse) (*user.User, error)) *oidcAuthExecutorInterfaceMock_GetInternalUser_Call {
+func (_c *oidcAuthExecutorInterfaceMock_GetInternalUser_Call) RunAndReturn(run func(ctx *core.NodeContext, sub string, execResp *common.ExecutorResponse) (*user.User, error)) *oidcAuthExecutorInterfaceMock_GetInternalUser_Call {
 	_c.Call.Return(run)
 	return _c
 }

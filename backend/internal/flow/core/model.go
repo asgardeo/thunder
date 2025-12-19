@@ -19,6 +19,8 @@
 package core
 
 import (
+	"context"
+
 	appmodel "github.com/asgardeo/thunder/internal/application/model"
 	authncm "github.com/asgardeo/thunder/internal/authn/common"
 	"github.com/asgardeo/thunder/internal/flow/common"
@@ -40,6 +42,9 @@ type NodeContext struct {
 	Application       appmodel.Application
 	AuthenticatedUser authncm.AuthenticatedUser
 	ExecutionHistory  map[string]*common.NodeExecutionRecord
+
+	// RequestContext is the context from the HTTP request for trace ID propagation.
+	RequestContext context.Context
 }
 
 // NodeCondition represents a condition that must be met for a node to execute.

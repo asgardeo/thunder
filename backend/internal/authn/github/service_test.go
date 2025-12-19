@@ -20,6 +20,7 @@ package github
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"errors"
 	"io"
@@ -335,9 +336,9 @@ func (suite *GithubOAuthAuthnServiceTestSuite) TestGetInternalUserSuccess() {
 		ID:   "user123",
 		Type: "person",
 	}
-	suite.mockOAuthService.On("GetInternalUser", sub).Return(user, nil)
+	suite.mockOAuthService.On("GetInternalUser", mock.Anything, sub).Return(user, nil)
 
-	result, err := suite.service.GetInternalUser(sub)
+	result, err := suite.service.GetInternalUser(context.Background(), sub)
 	suite.Nil(err)
 	suite.NotNil(result)
 	suite.Equal(user.ID, result.ID)
@@ -349,9 +350,9 @@ func (suite *GithubOAuthAuthnServiceTestSuite) TestGetInternalUserError() {
 		Code:             "USER_NOT_FOUND",
 		ErrorDescription: "User not found",
 	}
-	suite.mockOAuthService.On("GetInternalUser", sub).Return(nil, svcErr)
+	suite.mockOAuthService.On("GetInternalUser", mock.Anything, sub).Return(nil, svcErr)
 
-	result, err := suite.service.GetInternalUser(sub)
+	result, err := suite.service.GetInternalUser(context.Background(), sub)
 	suite.Nil(result)
 	suite.NotNil(err)
 	suite.Equal(svcErr.Code, err.Code)

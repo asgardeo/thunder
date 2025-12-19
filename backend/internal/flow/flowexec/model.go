@@ -19,6 +19,7 @@
 package flowexec
 
 import (
+	"context"
 	"encoding/json"
 	"time"
 
@@ -46,6 +47,9 @@ type EngineContext struct {
 
 	AuthenticatedUser authncm.AuthenticatedUser
 	ExecutionHistory  map[string]*common.NodeExecutionRecord
+
+	// RequestContext is the context from the HTTP request for trace ID propagation.
+	RequestContext context.Context
 }
 
 // FlowStep represents the outcome of a individual flow step

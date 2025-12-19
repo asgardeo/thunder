@@ -165,7 +165,7 @@ func (suite *BasicAuthExecutorTestSuite) TestExecute_Success_AuthenticationFlow(
 	}
 
 	userID := testUserID
-	suite.mockUserService.On("IdentifyUser", map[string]interface{}{
+	suite.mockUserService.On("IdentifyUser", mock.Anything, map[string]interface{}{
 		userAttributeUsername: "testuser",
 	}).Return(&userID, nil)
 
@@ -176,7 +176,7 @@ func (suite *BasicAuthExecutorTestSuite) TestExecute_Success_AuthenticationFlow(
 		Attributes:       attrsJSON,
 	}
 
-	suite.mockCredsService.On("Authenticate", map[string]interface{}{
+	suite.mockCredsService.On("Authenticate", mock.Anything, map[string]interface{}{
 		userAttributeUsername: "testuser",
 		userAttributePassword: "password123",
 	}).Return(authenticatedUser, nil)
@@ -215,7 +215,7 @@ func (suite *BasicAuthExecutorTestSuite) TestExecute_Success_WithEmailAttribute(
 		suite.T(), ExecutorNameBasicAuth, originalInputs)
 
 	userID := testUserID
-	suite.mockUserService.On("IdentifyUser", map[string]interface{}{
+	suite.mockUserService.On("IdentifyUser", mock.Anything, map[string]interface{}{
 		"email": "test@example.com",
 	}).Return(&userID, nil)
 
@@ -226,7 +226,7 @@ func (suite *BasicAuthExecutorTestSuite) TestExecute_Success_WithEmailAttribute(
 		Attributes:       attrsJSON,
 	}
 
-	suite.mockCredsService.On("Authenticate", map[string]interface{}{
+	suite.mockCredsService.On("Authenticate", mock.Anything, map[string]interface{}{
 		"email":    "test@example.com",
 		"password": "password123",
 	}).Return(authenticatedUser, nil)
@@ -253,7 +253,7 @@ func (suite *BasicAuthExecutorTestSuite) TestExecute_Success_RegistrationFlow() 
 		RuntimeData: make(map[string]string),
 	}
 
-	suite.mockUserService.On("IdentifyUser", map[string]interface{}{
+	suite.mockUserService.On("IdentifyUser", mock.Anything, map[string]interface{}{
 		userAttributeUsername: "newuser",
 	}).Return(nil, &user.ErrorUserNotFound)
 
@@ -292,7 +292,7 @@ func (suite *BasicAuthExecutorTestSuite) TestExecute_Success_WithMultipleAttribu
 		suite.T(), ExecutorNameBasicAuth, customInputs)
 
 	userID := testUserID
-	suite.mockUserService.On("IdentifyUser", map[string]interface{}{
+	suite.mockUserService.On("IdentifyUser", mock.Anything, map[string]interface{}{
 		"email": "test@example.com",
 		"phone": "+1234567890",
 	}).Return(&userID, nil)
@@ -304,7 +304,7 @@ func (suite *BasicAuthExecutorTestSuite) TestExecute_Success_WithMultipleAttribu
 		Attributes:       attrsJSON,
 	}
 
-	suite.mockCredsService.On("Authenticate", map[string]interface{}{
+	suite.mockCredsService.On("Authenticate", mock.Anything, map[string]interface{}{
 		"email":    "test@example.com",
 		"phone":    "+1234567890",
 		"password": "password123",
@@ -349,11 +349,11 @@ func (suite *BasicAuthExecutorTestSuite) TestExecute_AuthenticationFailed() {
 	}
 
 	userID := testUserID
-	suite.mockUserService.On("IdentifyUser", map[string]interface{}{
+	suite.mockUserService.On("IdentifyUser", mock.Anything, map[string]interface{}{
 		userAttributeUsername: "testuser",
 	}).Return(&userID, nil)
 
-	suite.mockCredsService.On("Authenticate", map[string]interface{}{
+	suite.mockCredsService.On("Authenticate", mock.Anything, map[string]interface{}{
 		userAttributeUsername: "testuser",
 		userAttributePassword: "wrongpassword",
 	}).Return(nil, &serviceerror.ServiceError{
@@ -382,7 +382,7 @@ func (suite *BasicAuthExecutorTestSuite) TestExecute_UserNotFound_Authentication
 		RuntimeData: make(map[string]string),
 	}
 
-	suite.mockUserService.On("IdentifyUser", map[string]interface{}{
+	suite.mockUserService.On("IdentifyUser", mock.Anything, map[string]interface{}{
 		userAttributeUsername: "nonexistent",
 	}).Return(nil, &user.ErrorUserNotFound)
 
@@ -406,7 +406,7 @@ func (suite *BasicAuthExecutorTestSuite) TestExecute_UserAlreadyExists_Registrat
 	}
 
 	userID := testUserID
-	suite.mockUserService.On("IdentifyUser", map[string]interface{}{
+	suite.mockUserService.On("IdentifyUser", mock.Anything, map[string]interface{}{
 		userAttributeUsername: "existinguser",
 	}).Return(&userID, nil)
 
@@ -430,7 +430,7 @@ func (suite *BasicAuthExecutorTestSuite) TestExecute_ServiceError() {
 		RuntimeData: make(map[string]string),
 	}
 
-	suite.mockUserService.On("IdentifyUser", map[string]interface{}{
+	suite.mockUserService.On("IdentifyUser", mock.Anything, map[string]interface{}{
 		userAttributeUsername: "testuser",
 	}).Return(nil, &serviceerror.ServiceError{Error: "database error"})
 
@@ -454,11 +454,11 @@ func (suite *BasicAuthExecutorTestSuite) TestExecute_AuthenticationServiceError(
 	}
 
 	userID := testUserID
-	suite.mockUserService.On("IdentifyUser", map[string]interface{}{
+	suite.mockUserService.On("IdentifyUser", mock.Anything, map[string]interface{}{
 		userAttributeUsername: "testuser",
 	}).Return(&userID, nil)
 
-	suite.mockCredsService.On("Authenticate", mock.Anything).
+	suite.mockCredsService.On("Authenticate", mock.Anything, mock.Anything).
 		Return(nil, &serviceerror.ServiceError{
 			Type:  serviceerror.ServerErrorType,
 			Error: "internal server error",
@@ -492,7 +492,7 @@ func (suite *BasicAuthExecutorTestSuite) TestGetAuthenticatedUser_SuccessfulAuth
 	}
 
 	userID := testUserID
-	suite.mockUserService.On("IdentifyUser", map[string]interface{}{
+	suite.mockUserService.On("IdentifyUser", mock.Anything, map[string]interface{}{
 		userAttributeUsername: "testuser",
 	}).Return(&userID, nil)
 
@@ -503,7 +503,7 @@ func (suite *BasicAuthExecutorTestSuite) TestGetAuthenticatedUser_SuccessfulAuth
 		Attributes:       attrsJSON,
 	}
 
-	suite.mockCredsService.On("Authenticate", map[string]interface{}{
+	suite.mockCredsService.On("Authenticate", mock.Anything, map[string]interface{}{
 		userAttributeUsername: "testuser",
 		userAttributePassword: "password123",
 	}).Return(authenticatedUser, nil)
@@ -536,7 +536,7 @@ func (suite *BasicAuthExecutorTestSuite) TestGetAuthenticatedUser_InvalidJSONAtt
 	}
 
 	userID := testUserID
-	suite.mockUserService.On("IdentifyUser", map[string]interface{}{
+	suite.mockUserService.On("IdentifyUser", mock.Anything, map[string]interface{}{
 		userAttributeUsername: "testuser",
 	}).Return(&userID, nil)
 
@@ -547,7 +547,7 @@ func (suite *BasicAuthExecutorTestSuite) TestGetAuthenticatedUser_InvalidJSONAtt
 		Attributes:       json.RawMessage(`invalid json`),
 	}
 
-	suite.mockCredsService.On("Authenticate", mock.Anything).Return(authenticatedUser, nil)
+	suite.mockCredsService.On("Authenticate", mock.Anything, mock.Anything).Return(authenticatedUser, nil)
 
 	resp, err := suite.executor.getAuthenticatedUser(ctx, execResp)
 
@@ -577,7 +577,7 @@ func (suite *BasicAuthExecutorTestSuite) TestExecute_Observability_Success() {
 		},
 	}
 
-	suite.mockUserService.On("IdentifyUser", map[string]interface{}{
+	suite.mockUserService.On("IdentifyUser", mock.Anything, map[string]interface{}{
 		userAttributeUsername: "testuser",
 	}).Return(&userID, nil)
 
@@ -588,7 +588,7 @@ func (suite *BasicAuthExecutorTestSuite) TestExecute_Observability_Success() {
 		Attributes:       attrsJSON,
 	}
 
-	suite.mockCredsService.On("Authenticate", map[string]interface{}{
+	suite.mockCredsService.On("Authenticate", mock.Anything, map[string]interface{}{
 		userAttributeUsername: "testuser",
 		userAttributePassword: "password123",
 	}).Return(authenticatedUser, nil)
@@ -639,11 +639,11 @@ func (suite *BasicAuthExecutorTestSuite) TestExecute_Observability_Failure() {
 		},
 	}
 
-	suite.mockUserService.On("IdentifyUser", map[string]interface{}{
+	suite.mockUserService.On("IdentifyUser", mock.Anything, map[string]interface{}{
 		userAttributeUsername: "testuser",
 	}).Return(&userID, nil)
 
-	suite.mockCredsService.On("Authenticate", map[string]interface{}{
+	suite.mockCredsService.On("Authenticate", mock.Anything, map[string]interface{}{
 		userAttributeUsername: "testuser",
 		userAttributePassword: "wrongpassword",
 	}).Return(nil, &serviceerror.ServiceError{

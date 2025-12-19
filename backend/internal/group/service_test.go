@@ -19,6 +19,7 @@
 package group
 
 import (
+	"context"
 	"errors"
 	"testing"
 
@@ -107,10 +108,10 @@ func (suite *GroupServiceTestSuite) TestGroupService_GetGroupList() {
 			limit:  2,
 			offset: 1,
 			setup: func(storeMock *groupStoreInterfaceMock) {
-				storeMock.On("GetGroupListCount").
+				storeMock.On("GetGroupListCount", mock.Anything).
 					Return(3, nil).
 					Once()
-				storeMock.On("GetGroupList", 2, 1).
+				storeMock.On("GetGroupList", mock.Anything, 2, 1).
 					Return([]GroupBasicDAO{
 						{ID: "g1", Name: "group-1", Description: "desc-1", OrganizationUnitID: "ou-1"},
 						{ID: "g2", Name: "group-2", Description: "desc-2", OrganizationUnitID: "ou-2"},
@@ -138,7 +139,7 @@ func (suite *GroupServiceTestSuite) TestGroupService_GetGroupList() {
 			limit:  5,
 			offset: 0,
 			setup: func(storeMock *groupStoreInterfaceMock) {
-				storeMock.On("GetGroupListCount").
+				storeMock.On("GetGroupListCount", mock.Anything).
 					Return(0, errors.New("count failure")).
 					Once()
 			},
@@ -149,10 +150,10 @@ func (suite *GroupServiceTestSuite) TestGroupService_GetGroupList() {
 			limit:  5,
 			offset: 0,
 			setup: func(storeMock *groupStoreInterfaceMock) {
-				storeMock.On("GetGroupListCount").
+				storeMock.On("GetGroupListCount", mock.Anything).
 					Return(2, nil).
 					Once()
-				storeMock.On("GetGroupList", 5, 0).
+				storeMock.On("GetGroupList", mock.Anything, 5, 0).
 					Return(nil, errors.New("list failure")).
 					Once()
 			},
@@ -173,7 +174,7 @@ func (suite *GroupServiceTestSuite) TestGroupService_GetGroupList() {
 				groupStore: storeMock,
 			}
 
-			response, err := service.GetGroupList(tc.limit, tc.offset)
+			response, err := service.GetGroupList(context.Background(), tc.limit, tc.offset)
 
 			if tc.wantErr != nil {
 				suite.Require().Nil(response)
@@ -185,7 +186,7 @@ func (suite *GroupServiceTestSuite) TestGroupService_GetGroupList() {
 			}
 
 			if tc.wantErr == &ErrorInvalidLimit {
-				storeMock.AssertNotCalled(suite.T(), "GetGroupListCount")
+				storeMock.AssertNotCalled(suite.T(), "GetGroupListCount", mock.Anything)
 			}
 			storeMock.AssertExpectations(suite.T())
 		})
@@ -216,10 +217,10 @@ func (suite *GroupServiceTestSuite) TestGroupService_GetGroupsByPath() {
 				storeMock *groupStoreInterfaceMock,
 				ouMock *oumock.OrganizationUnitServiceInterfaceMock,
 			) *serviceerror.ServiceError {
-				storeMock.On("GetGroupsByOrganizationUnitCount", "ou-123").
+				storeMock.On("GetGroupsByOrganizationUnitCount", mock.Anything, "ou-123").
 					Return(4, nil).
 					Once()
-				storeMock.On("GetGroupsByOrganizationUnit", "ou-123", 2, 0).
+				storeMock.On("GetGroupsByOrganizationUnit", mock.Anything, "ou-123", 2, 0).
 					Return([]GroupBasicDAO{
 						{ID: "g1", Name: "group-1", OrganizationUnitID: "ou-123"},
 						{ID: "g2", Name: "group-2", OrganizationUnitID: "ou-123"},
@@ -250,7 +251,7 @@ func (suite *GroupServiceTestSuite) TestGroupService_GetGroupsByPath() {
 				ouMock.AssertNotCalled(suite.T(), "GetOrganizationUnitByPath", mock.Anything)
 			},
 			assertStoreCalls: func(storeMock *groupStoreInterfaceMock) {
-				storeMock.AssertNotCalled(suite.T(), "GetGroupsByOrganizationUnitCount", mock.Anything)
+				storeMock.AssertNotCalled(suite.T(), "GetGroupsByOrganizationUnitCount", mock.Anything, mock.Anything)
 			},
 		},
 		{
@@ -269,7 +270,7 @@ func (suite *GroupServiceTestSuite) TestGroupService_GetGroupsByPath() {
 			},
 			wantErr: &ErrorGroupNotFound,
 			assertStoreCalls: func(storeMock *groupStoreInterfaceMock) {
-				storeMock.AssertNotCalled(suite.T(), "GetGroupsByOrganizationUnitCount", mock.Anything)
+				storeMock.AssertNotCalled(suite.T(), "GetGroupsByOrganizationUnitCount", mock.Anything, mock.Anything)
 			},
 		},
 		{
@@ -308,7 +309,7 @@ func (suite *GroupServiceTestSuite) TestGroupService_GetGroupsByPath() {
 			},
 			wantErr: &ErrorInvalidLimit,
 			assertStoreCalls: func(storeMock *groupStoreInterfaceMock) {
-				storeMock.AssertNotCalled(suite.T(), "GetGroupsByOrganizationUnitCount", mock.Anything)
+				storeMock.AssertNotCalled(suite.T(), "GetGroupsByOrganizationUnitCount", mock.Anything, mock.Anything)
 			},
 		},
 		{
@@ -320,7 +321,7 @@ func (suite *GroupServiceTestSuite) TestGroupService_GetGroupsByPath() {
 				storeMock *groupStoreInterfaceMock,
 				ouMock *oumock.OrganizationUnitServiceInterfaceMock,
 			) *serviceerror.ServiceError {
-				storeMock.On("GetGroupsByOrganizationUnitCount", "ou-123").
+				storeMock.On("GetGroupsByOrganizationUnitCount", mock.Anything, "ou-123").
 					Return(0, errors.New("count fail")).
 					Once()
 
@@ -332,7 +333,7 @@ func (suite *GroupServiceTestSuite) TestGroupService_GetGroupsByPath() {
 			wantErr: &ErrorInternalServerError,
 			assertStoreCalls: func(storeMock *groupStoreInterfaceMock) {
 				storeMock.AssertNotCalled(suite.T(), "GetGroupsByOrganizationUnit",
-					mock.Anything, mock.Anything, mock.Anything)
+					mock.Anything, mock.Anything, mock.Anything, mock.Anything)
 			},
 		},
 		{
@@ -344,10 +345,10 @@ func (suite *GroupServiceTestSuite) TestGroupService_GetGroupsByPath() {
 				storeMock *groupStoreInterfaceMock,
 				ouMock *oumock.OrganizationUnitServiceInterfaceMock,
 			) *serviceerror.ServiceError {
-				storeMock.On("GetGroupsByOrganizationUnitCount", "ou-123").
+				storeMock.On("GetGroupsByOrganizationUnitCount", mock.Anything, "ou-123").
 					Return(1, nil).
 					Once()
-				storeMock.On("GetGroupsByOrganizationUnit", "ou-123", 5, 0).
+				storeMock.On("GetGroupsByOrganizationUnit", mock.Anything, "ou-123", 5, 0).
 					Return(nil, errors.New("list fail")).
 					Once()
 
@@ -376,7 +377,7 @@ func (suite *GroupServiceTestSuite) TestGroupService_GetGroupsByPath() {
 				ouService:  ouServiceMock,
 			}
 
-			response, err := service.GetGroupsByPath(tc.path, tc.limit, tc.offset)
+			response, err := service.GetGroupsByPath(context.Background(), tc.path, tc.limit, tc.offset)
 
 			if tc.wantErr != nil || tc.wantErrFromSetup {
 				suite.Require().Nil(response)
@@ -430,13 +431,13 @@ func (suite *GroupServiceTestSuite) TestGroupService_CreateGroup() {
 				},
 			},
 			setup: func(args *setupArgs) {
-				args.store.On("CheckGroupNameConflictForCreate", "engineering", "ou-001").
+				args.store.On("CheckGroupNameConflictForCreate", mock.Anything, "engineering", "ou-001").
 					Return(nil).
 					Once()
-				args.store.On("ValidateGroupIDs", []string{"grp-002"}).
+				args.store.On("ValidateGroupIDs", mock.Anything, []string{"grp-002"}).
 					Return([]string{}, nil).
 					Once()
-				args.store.On("CreateGroup", mock.MatchedBy(func(group GroupDAO) bool {
+				args.store.On("CreateGroup", mock.Anything, mock.MatchedBy(func(group GroupDAO) bool {
 					return group.Name == "engineering" &&
 						group.OrganizationUnitID == "ou-001" &&
 						len(group.Members) == 2
@@ -448,7 +449,7 @@ func (suite *GroupServiceTestSuite) TestGroupService_CreateGroup() {
 					Return(oupkg.OrganizationUnit{ID: "ou-001"}, nil).
 					Once()
 
-				args.user.On("ValidateUserIDs", []string{"usr-001"}).
+				args.user.On("ValidateUserIDs", mock.Anything, []string{"usr-001"}).
 					Return([]string{}, nil).
 					Once()
 			},
@@ -464,7 +465,7 @@ func (suite *GroupServiceTestSuite) TestGroupService_CreateGroup() {
 				args.ou.On("GetOrganizationUnit", "ou-unknown").
 					Return(oupkg.OrganizationUnit{}, &oupkg.ErrorOrganizationUnitNotFound).
 					Once()
-				args.user.On("ValidateUserIDs", []string{}).
+				args.user.On("ValidateUserIDs", mock.Anything, []string{}).
 					Return([]string{}, nil).
 					Maybe()
 			},
@@ -484,7 +485,7 @@ func (suite *GroupServiceTestSuite) TestGroupService_CreateGroup() {
 				args.ou.On("GetOrganizationUnit", "ou-001").
 					Return(oupkg.OrganizationUnit{ID: "ou-001"}, nil).
 					Once()
-				args.user.On("ValidateUserIDs", []string{"usr-invalid"}).
+				args.user.On("ValidateUserIDs", mock.Anything, []string{"usr-invalid"}).
 					Return([]string{"usr-invalid"}, nil).
 					Once()
 			},
@@ -497,16 +498,16 @@ func (suite *GroupServiceTestSuite) TestGroupService_CreateGroup() {
 				OrganizationUnitID: "ou-001",
 			},
 			setup: func(args *setupArgs) {
-				args.store.On("CheckGroupNameConflictForCreate", "engineering", "ou-001").
+				args.store.On("CheckGroupNameConflictForCreate", mock.Anything, "engineering", "ou-001").
 					Return(ErrGroupNameConflict).
 					Once()
 				args.ou.On("GetOrganizationUnit", "ou-001").
 					Return(oupkg.OrganizationUnit{ID: "ou-001"}, nil).
 					Once()
-				args.user.On("ValidateUserIDs", mock.Anything).
+				args.user.On("ValidateUserIDs", mock.Anything, mock.Anything).
 					Return([]string{}, nil).
 					Once()
-				args.store.On("ValidateGroupIDs", mock.Anything).
+				args.store.On("ValidateGroupIDs", mock.Anything, mock.Anything).
 					Return([]string{}, nil).
 					Once()
 			},
@@ -519,16 +520,16 @@ func (suite *GroupServiceTestSuite) TestGroupService_CreateGroup() {
 				OrganizationUnitID: "ou-001",
 			},
 			setup: func(args *setupArgs) {
-				args.store.On("CheckGroupNameConflictForCreate", "engineering", "ou-001").
+				args.store.On("CheckGroupNameConflictForCreate", mock.Anything, "engineering", "ou-001").
 					Return(errors.New("db failure")).
 					Once()
 				args.ou.On("GetOrganizationUnit", "ou-001").
 					Return(oupkg.OrganizationUnit{ID: "ou-001"}, nil).
 					Once()
-				args.user.On("ValidateUserIDs", mock.Anything).
+				args.user.On("ValidateUserIDs", mock.Anything, mock.Anything).
 					Return([]string{}, nil).
 					Once()
-				args.store.On("ValidateGroupIDs", mock.Anything).
+				args.store.On("ValidateGroupIDs", mock.Anything, mock.Anything).
 					Return([]string{}, nil).
 					Once()
 			},
@@ -541,19 +542,19 @@ func (suite *GroupServiceTestSuite) TestGroupService_CreateGroup() {
 				OrganizationUnitID: "ou-001",
 			},
 			setup: func(args *setupArgs) {
-				args.store.On("CheckGroupNameConflictForCreate", "engineering", "ou-001").
+				args.store.On("CheckGroupNameConflictForCreate", mock.Anything, "engineering", "ou-001").
 					Return(nil).
 					Once()
-				args.store.On("ValidateGroupIDs", mock.Anything).
+				args.store.On("ValidateGroupIDs", mock.Anything, mock.Anything).
 					Return([]string{}, nil).
 					Once()
-				args.store.On("CreateGroup", mock.Anything).
+				args.store.On("CreateGroup", mock.Anything, mock.Anything).
 					Return(errors.New("create fail")).
 					Once()
 				args.ou.On("GetOrganizationUnit", "ou-001").
 					Return(oupkg.OrganizationUnit{ID: "ou-001"}, nil).
 					Once()
-				args.user.On("ValidateUserIDs", mock.Anything).
+				args.user.On("ValidateUserIDs", mock.Anything, mock.Anything).
 					Return([]string{}, nil).
 					Once()
 			},
@@ -595,7 +596,7 @@ func (suite *GroupServiceTestSuite) TestGroupService_CreateGroup() {
 				userService: userServiceMock,
 			}
 
-			group, err := service.CreateGroup(tc.request)
+			group, err := service.CreateGroup(context.Background(), tc.request)
 
 			if tc.expectErr != nil {
 				suite.Require().Nil(group)
@@ -689,7 +690,7 @@ func (suite *GroupServiceTestSuite) TestGroupService_CreateGroupByPath() {
 				userService: userServiceMock,
 			}
 
-			group, err := service.CreateGroupByPath(tc.path, tc.request)
+			group, err := service.CreateGroupByPath(context.Background(), tc.path, tc.request)
 
 			if tc.expectErr != nil {
 				if expectedOUError != nil {
@@ -730,7 +731,7 @@ func (suite *GroupServiceTestSuite) TestGroupService_GetGroup() {
 			name: "internal error",
 			id:   "grp-001",
 			setup: func(storeMock *groupStoreInterfaceMock) {
-				storeMock.On("GetGroup", "grp-001").
+				storeMock.On("GetGroup", mock.Anything, "grp-001").
 					Return(GroupDAO{}, errors.New("db error")).
 					Once()
 			},
@@ -740,7 +741,7 @@ func (suite *GroupServiceTestSuite) TestGroupService_GetGroup() {
 			name: "not found",
 			id:   "grp-404",
 			setup: func(storeMock *groupStoreInterfaceMock) {
-				storeMock.On("GetGroup", "grp-404").
+				storeMock.On("GetGroup", mock.Anything, "grp-404").
 					Return(GroupDAO{}, ErrGroupNotFound).
 					Once()
 			},
@@ -760,7 +761,7 @@ func (suite *GroupServiceTestSuite) TestGroupService_GetGroup() {
 
 			service := &groupService{groupStore: storeMock}
 
-			group, err := service.GetGroup(tc.id)
+			group, err := service.GetGroup(context.Background(), tc.id)
 
 			if tc.wantErr != nil {
 				suite.Require().Nil(group)
@@ -814,17 +815,17 @@ func (suite *GroupServiceTestSuite) TestGroupService_UpdateGroup() {
 				Members:            []Member{{ID: "usr-1", Type: MemberTypeUser}},
 			},
 			setup: func(args *setupArgs) {
-				args.store.On("GetGroup", "grp-001").
+				args.store.On("GetGroup", mock.Anything, "grp-001").
 					Return(GroupDAO{ID: "grp-001", Name: "old", Description: "legacy",
 						OrganizationUnitID: "ou-old"}, nil).
 					Once()
-				args.store.On("CheckGroupNameConflictForUpdate", "new-name", "ou-new", "grp-001").
+				args.store.On("CheckGroupNameConflictForUpdate", mock.Anything, "new-name", "ou-new", "grp-001").
 					Return(nil).
 					Once()
-				args.store.On("ValidateGroupIDs", mock.Anything).
+				args.store.On("ValidateGroupIDs", mock.Anything, mock.Anything).
 					Return([]string{}, nil).
 					Once()
-				args.store.On("UpdateGroup", mock.MatchedBy(func(group GroupDAO) bool {
+				args.store.On("UpdateGroup", mock.Anything, mock.MatchedBy(func(group GroupDAO) bool {
 					return group.ID == "grp-001" && group.Name == "new-name" && group.OrganizationUnitID == "ou-new"
 				})).
 					Return(nil).
@@ -832,7 +833,7 @@ func (suite *GroupServiceTestSuite) TestGroupService_UpdateGroup() {
 				args.ou.On("GetOrganizationUnit", "ou-new").
 					Return(oupkg.OrganizationUnit{ID: "ou-new"}, nil).
 					Once()
-				args.user.On("ValidateUserIDs", mock.Anything).
+				args.user.On("ValidateUserIDs", mock.Anything, mock.Anything).
 					Return([]string{}, nil).
 					Once()
 			},
@@ -846,19 +847,19 @@ func (suite *GroupServiceTestSuite) TestGroupService_UpdateGroup() {
 				OrganizationUnitID: "ou-new",
 			},
 			setup: func(args *setupArgs) {
-				args.store.On("GetGroup", "grp-001").
+				args.store.On("GetGroup", mock.Anything, "grp-001").
 					Return(GroupDAO{ID: "grp-001", Name: "old", OrganizationUnitID: "ou-old"}, nil).
 					Once()
-				args.store.On("CheckGroupNameConflictForUpdate", "new-name", "ou-new", "grp-001").
+				args.store.On("CheckGroupNameConflictForUpdate", mock.Anything, "new-name", "ou-new", "grp-001").
 					Return(ErrGroupNameConflict).
 					Once()
 				args.ou.On("GetOrganizationUnit", "ou-new").
 					Return(oupkg.OrganizationUnit{ID: "ou-new"}, nil).
 					Once()
-				args.user.On("ValidateUserIDs", mock.Anything).
+				args.user.On("ValidateUserIDs", mock.Anything, mock.Anything).
 					Return([]string{}, nil).
 					Once()
-				args.store.On("ValidateGroupIDs", mock.Anything).
+				args.store.On("ValidateGroupIDs", mock.Anything, mock.Anything).
 					Return([]string{}, nil).
 					Once()
 			},
@@ -872,7 +873,7 @@ func (suite *GroupServiceTestSuite) TestGroupService_UpdateGroup() {
 				OrganizationUnitID: "ou",
 			},
 			setup: func(args *setupArgs) {
-				args.store.On("GetGroup", "grp-001").
+				args.store.On("GetGroup", mock.Anything, "grp-001").
 					Return(GroupDAO{}, ErrGroupNotFound).
 					Once()
 			},
@@ -886,7 +887,7 @@ func (suite *GroupServiceTestSuite) TestGroupService_UpdateGroup() {
 				OrganizationUnitID: "ou",
 			},
 			setup: func(args *setupArgs) {
-				args.store.On("GetGroup", "grp-001").
+				args.store.On("GetGroup", mock.Anything, "grp-001").
 					Return(GroupDAO{}, errors.New("db error")).
 					Once()
 			},
@@ -900,16 +901,16 @@ func (suite *GroupServiceTestSuite) TestGroupService_UpdateGroup() {
 				OrganizationUnitID: "ou-new",
 			},
 			setup: func(args *setupArgs) {
-				args.store.On("GetGroup", "grp-001").
+				args.store.On("GetGroup", mock.Anything, "grp-001").
 					Return(GroupDAO{ID: "grp-001", Name: "name", OrganizationUnitID: "ou-old"}, nil).
 					Once()
 				args.ou.On("GetOrganizationUnit", "ou-new").
 					Return(oupkg.OrganizationUnit{}, &oupkg.ErrorOrganizationUnitNotFound).
 					Once()
-				args.user.On("ValidateUserIDs", mock.Anything).
+				args.user.On("ValidateUserIDs", mock.Anything, mock.Anything).
 					Return([]string{}, nil).
 					Maybe()
-				args.store.On("ValidateGroupIDs", mock.Anything).
+				args.store.On("ValidateGroupIDs", mock.Anything, mock.Anything).
 					Return([]string{}, nil).
 					Maybe()
 			},
@@ -924,13 +925,13 @@ func (suite *GroupServiceTestSuite) TestGroupService_UpdateGroup() {
 				Members:            []Member{{ID: "usr-1", Type: MemberTypeUser}},
 			},
 			setup: func(args *setupArgs) {
-				args.store.On("GetGroup", "grp-001").
+				args.store.On("GetGroup", mock.Anything, "grp-001").
 					Return(GroupDAO{ID: "grp-001", Name: "name", OrganizationUnitID: "ou"}, nil).
 					Once()
-				args.user.On("ValidateUserIDs", []string{"usr-1"}).
+				args.user.On("ValidateUserIDs", mock.Anything, []string{"usr-1"}).
 					Return([]string{"usr-1"}, nil).
 					Once()
-				args.store.On("ValidateGroupIDs", mock.Anything).
+				args.store.On("ValidateGroupIDs", mock.Anything, mock.Anything).
 					Return([]string{}, nil).
 					Maybe()
 			},
@@ -945,13 +946,13 @@ func (suite *GroupServiceTestSuite) TestGroupService_UpdateGroup() {
 				Members:            []Member{{ID: "grp-2", Type: MemberTypeGroup}},
 			},
 			setup: func(args *setupArgs) {
-				args.store.On("GetGroup", "grp-001").
+				args.store.On("GetGroup", mock.Anything, "grp-001").
 					Return(GroupDAO{ID: "grp-001", Name: "name", OrganizationUnitID: "ou"}, nil).
 					Once()
-				args.store.On("ValidateGroupIDs", mock.Anything).
+				args.store.On("ValidateGroupIDs", mock.Anything, mock.Anything).
 					Return(nil, errors.New("validate fail")).
 					Once()
-				args.user.On("ValidateUserIDs", mock.Anything).
+				args.user.On("ValidateUserIDs", mock.Anything, mock.Anything).
 					Return([]string{}, nil).
 					Once()
 			},
@@ -966,13 +967,13 @@ func (suite *GroupServiceTestSuite) TestGroupService_UpdateGroup() {
 				Members:            []Member{{ID: "grp-2", Type: MemberTypeGroup}},
 			},
 			setup: func(args *setupArgs) {
-				args.store.On("GetGroup", "grp-001").
+				args.store.On("GetGroup", mock.Anything, "grp-001").
 					Return(GroupDAO{ID: "grp-001", Name: "name", OrganizationUnitID: "ou"}, nil).
 					Once()
-				args.store.On("ValidateGroupIDs", mock.Anything).
+				args.store.On("ValidateGroupIDs", mock.Anything, mock.Anything).
 					Return([]string{"grp-2"}, nil).
 					Once()
-				args.user.On("ValidateUserIDs", mock.Anything).
+				args.user.On("ValidateUserIDs", mock.Anything, mock.Anything).
 					Return([]string{}, nil).
 					Once()
 			},
@@ -986,16 +987,16 @@ func (suite *GroupServiceTestSuite) TestGroupService_UpdateGroup() {
 				OrganizationUnitID: "ou",
 			},
 			setup: func(args *setupArgs) {
-				args.store.On("GetGroup", "grp-001").
+				args.store.On("GetGroup", mock.Anything, "grp-001").
 					Return(GroupDAO{ID: "grp-001", Name: "old", OrganizationUnitID: "ou"}, nil).
 					Once()
-				args.store.On("CheckGroupNameConflictForUpdate", "new", "ou", "grp-001").
+				args.store.On("CheckGroupNameConflictForUpdate", mock.Anything, "new", "ou", "grp-001").
 					Return(errors.New("db error")).
 					Once()
-				args.store.On("ValidateGroupIDs", mock.Anything).
+				args.store.On("ValidateGroupIDs", mock.Anything, mock.Anything).
 					Return([]string{}, nil).
 					Once()
-				args.user.On("ValidateUserIDs", mock.Anything).
+				args.user.On("ValidateUserIDs", mock.Anything, mock.Anything).
 					Return([]string{}, nil).
 					Once()
 			},
@@ -1009,19 +1010,19 @@ func (suite *GroupServiceTestSuite) TestGroupService_UpdateGroup() {
 				OrganizationUnitID: "ou",
 			},
 			setup: func(args *setupArgs) {
-				args.store.On("GetGroup", "grp-001").
+				args.store.On("GetGroup", mock.Anything, "grp-001").
 					Return(GroupDAO{ID: "grp-001", Name: "old-name", OrganizationUnitID: "ou"}, nil).
 					Once()
-				args.store.On("CheckGroupNameConflictForUpdate", "new", "ou", "grp-001").
+				args.store.On("CheckGroupNameConflictForUpdate", mock.Anything, "new", "ou", "grp-001").
 					Return(nil).
 					Once()
-				args.store.On("ValidateGroupIDs", mock.Anything).
+				args.store.On("ValidateGroupIDs", mock.Anything, mock.Anything).
 					Return([]string{}, nil).
 					Once()
-				args.store.On("UpdateGroup", mock.Anything).
+				args.store.On("UpdateGroup", mock.Anything, mock.Anything).
 					Return(errors.New("update fail")).
 					Once()
-				args.user.On("ValidateUserIDs", mock.Anything).
+				args.user.On("ValidateUserIDs", mock.Anything, mock.Anything).
 					Return([]string{}, nil).
 					Once()
 			},
@@ -1049,7 +1050,7 @@ func (suite *GroupServiceTestSuite) TestGroupService_UpdateGroup() {
 				userService: userServiceMock,
 			}
 
-			group, err := service.UpdateGroup(tc.groupID, tc.request)
+			group, err := service.UpdateGroup(context.Background(), tc.groupID, tc.request)
 
 			if tc.expectErr != nil {
 				suite.Require().Nil(group)
@@ -1086,10 +1087,10 @@ func (suite *GroupServiceTestSuite) TestGroupService_DeleteGroup() {
 			name: "success",
 			id:   "grp-001",
 			setup: func(storeMock *groupStoreInterfaceMock) {
-				storeMock.On("GetGroup", "grp-001").
+				storeMock.On("GetGroup", mock.Anything, "grp-001").
 					Return(GroupDAO{ID: "grp-001"}, nil).
 					Once()
-				storeMock.On("DeleteGroup", "grp-001").
+				storeMock.On("DeleteGroup", mock.Anything, "grp-001").
 					Return(nil).
 					Once()
 			},
@@ -1103,7 +1104,7 @@ func (suite *GroupServiceTestSuite) TestGroupService_DeleteGroup() {
 			name: "get group error",
 			id:   "grp-001",
 			setup: func(storeMock *groupStoreInterfaceMock) {
-				storeMock.On("GetGroup", "grp-001").
+				storeMock.On("GetGroup", mock.Anything, "grp-001").
 					Return(GroupDAO{}, errors.New("db error")).
 					Once()
 			},
@@ -1113,10 +1114,10 @@ func (suite *GroupServiceTestSuite) TestGroupService_DeleteGroup() {
 			name: "delete error",
 			id:   "grp-001",
 			setup: func(storeMock *groupStoreInterfaceMock) {
-				storeMock.On("GetGroup", "grp-001").
+				storeMock.On("GetGroup", mock.Anything, "grp-001").
 					Return(GroupDAO{ID: "grp-001"}, nil).
 					Once()
-				storeMock.On("DeleteGroup", "grp-001").
+				storeMock.On("DeleteGroup", mock.Anything, "grp-001").
 					Return(errors.New("delete fail")).
 					Once()
 			},
@@ -1126,7 +1127,7 @@ func (suite *GroupServiceTestSuite) TestGroupService_DeleteGroup() {
 			name: "group not found",
 			id:   "grp-001",
 			setup: func(storeMock *groupStoreInterfaceMock) {
-				storeMock.On("GetGroup", "grp-001").
+				storeMock.On("GetGroup", mock.Anything, "grp-001").
 					Return(GroupDAO{}, ErrGroupNotFound).
 					Once()
 			},
@@ -1145,7 +1146,7 @@ func (suite *GroupServiceTestSuite) TestGroupService_DeleteGroup() {
 
 			service := &groupService{groupStore: storeMock}
 
-			err := service.DeleteGroup(tc.id)
+			err := service.DeleteGroup(context.Background(), tc.id)
 
 			if tc.expectErr != nil {
 				suite.Require().NotNil(err)
@@ -1177,13 +1178,13 @@ func (suite *GroupServiceTestSuite) TestGroupService_GetGroupMembers() {
 			limit:  2,
 			offset: 0,
 			setup: func(storeMock *groupStoreInterfaceMock) {
-				storeMock.On("GetGroup", "grp-001").
+				storeMock.On("GetGroup", mock.Anything, "grp-001").
 					Return(GroupDAO{ID: "grp-001"}, nil).
 					Once()
-				storeMock.On("GetGroupMemberCount", "grp-001").
+				storeMock.On("GetGroupMemberCount", mock.Anything, "grp-001").
 					Return(3, nil).
 					Once()
-				storeMock.On("GetGroupMembers", "grp-001", 2, 0).
+				storeMock.On("GetGroupMembers", mock.Anything, "grp-001", 2, 0).
 					Return([]Member{
 						{ID: "usr-001", Type: MemberTypeUser},
 						{ID: "grp-002", Type: MemberTypeGroup},
@@ -1198,7 +1199,7 @@ func (suite *GroupServiceTestSuite) TestGroupService_GetGroupMembers() {
 			limit:  5,
 			offset: 0,
 			setup: func(storeMock *groupStoreInterfaceMock) {
-				storeMock.On("GetGroup", "grp-001").
+				storeMock.On("GetGroup", mock.Anything, "grp-001").
 					Return(GroupDAO{}, ErrGroupNotFound).
 					Once()
 			},
@@ -1224,7 +1225,7 @@ func (suite *GroupServiceTestSuite) TestGroupService_GetGroupMembers() {
 			limit:  5,
 			offset: 0,
 			setup: func(storeMock *groupStoreInterfaceMock) {
-				storeMock.On("GetGroup", "grp-001").
+				storeMock.On("GetGroup", mock.Anything, "grp-001").
 					Return(GroupDAO{}, errors.New("db error")).
 					Once()
 			},
@@ -1236,10 +1237,10 @@ func (suite *GroupServiceTestSuite) TestGroupService_GetGroupMembers() {
 			limit:  5,
 			offset: 0,
 			setup: func(storeMock *groupStoreInterfaceMock) {
-				storeMock.On("GetGroup", "grp-001").
+				storeMock.On("GetGroup", mock.Anything, "grp-001").
 					Return(GroupDAO{ID: "grp-001"}, nil).
 					Once()
-				storeMock.On("GetGroupMemberCount", "grp-001").
+				storeMock.On("GetGroupMemberCount", mock.Anything, "grp-001").
 					Return(0, errors.New("count fail")).
 					Once()
 			},
@@ -1251,13 +1252,13 @@ func (suite *GroupServiceTestSuite) TestGroupService_GetGroupMembers() {
 			limit:  5,
 			offset: 0,
 			setup: func(storeMock *groupStoreInterfaceMock) {
-				storeMock.On("GetGroup", "grp-001").
+				storeMock.On("GetGroup", mock.Anything, "grp-001").
 					Return(GroupDAO{ID: "grp-001"}, nil).
 					Once()
-				storeMock.On("GetGroupMemberCount", "grp-001").
+				storeMock.On("GetGroupMemberCount", mock.Anything, "grp-001").
 					Return(1, nil).
 					Once()
-				storeMock.On("GetGroupMembers", "grp-001", 5, 0).
+				storeMock.On("GetGroupMembers", mock.Anything, "grp-001", 5, 0).
 					Return(nil, errors.New("list fail")).
 					Once()
 			},
@@ -1276,7 +1277,7 @@ func (suite *GroupServiceTestSuite) TestGroupService_GetGroupMembers() {
 
 			service := &groupService{groupStore: storeMock}
 
-			response, err := service.GetGroupMembers(tc.id, tc.limit, tc.offset)
+			response, err := service.GetGroupMembers(context.Background(), tc.id, tc.limit, tc.offset)
 
 			if tc.expectErr != nil {
 				suite.Require().Nil(response)
@@ -1406,7 +1407,7 @@ func (suite *GroupServiceTestSuite) TestGroupService_ValidateOUHandlesInternalEr
 		ouService: ouServiceMock,
 	}
 
-	err := service.validateOU("ou-1")
+	err := service.validateOU(context.Background(), "ou-1")
 
 	require.NotNil(t, err)
 	require.Equal(t, ErrorInternalServerError, *err)
@@ -1475,7 +1476,7 @@ func (suite *GroupServiceTestSuite) TestGroupService_ValidateAndProcessHandlePat
 func (suite *GroupServiceTestSuite) TestGroupService_ValidateUserIDsHandlesServiceError() {
 	t := suite.T()
 	userServiceMock := usermock.NewUserServiceInterfaceMock(t)
-	userServiceMock.On("ValidateUserIDs", []string{"usr-001"}).
+	userServiceMock.On("ValidateUserIDs", mock.Anything, []string{"usr-001"}).
 		Return([]string{}, &serviceerror.ServiceError{
 			Code: "USR-5000",
 			Type: serviceerror.ServerErrorType,
@@ -1486,7 +1487,7 @@ func (suite *GroupServiceTestSuite) TestGroupService_ValidateUserIDsHandlesServi
 		userService: userServiceMock,
 	}
 
-	err := service.validateUserIDs([]string{"usr-001"})
+	err := service.validateUserIDs(context.Background(), []string{"usr-001"})
 
 	require.NotNil(t, err)
 	require.Equal(t, ErrorInternalServerError, *err)
@@ -1501,7 +1502,7 @@ func (suite *GroupServiceTestSuite) TestGroupService_ValidateGroupIDs() {
 		{
 			name: "invalid ids",
 			setup: func(storeMock *groupStoreInterfaceMock) {
-				storeMock.On("ValidateGroupIDs", []string{"grp-001"}).
+				storeMock.On("ValidateGroupIDs", mock.Anything, []string{"grp-001"}).
 					Return([]string{"grp-001"}, nil).
 					Once()
 			},
@@ -1510,7 +1511,7 @@ func (suite *GroupServiceTestSuite) TestGroupService_ValidateGroupIDs() {
 		{
 			name: "store error",
 			setup: func(storeMock *groupStoreInterfaceMock) {
-				storeMock.On("ValidateGroupIDs", []string{"grp-001"}).
+				storeMock.On("ValidateGroupIDs", mock.Anything, []string{"grp-001"}).
 					Return(nil, errors.New("db error")).
 					Once()
 			},
@@ -1525,7 +1526,7 @@ func (suite *GroupServiceTestSuite) TestGroupService_ValidateGroupIDs() {
 			service := &groupService{groupStore: storeMock}
 			tc.setup(storeMock)
 
-			err := service.ValidateGroupIDs([]string{"grp-001"})
+			err := service.ValidateGroupIDs(context.Background(), []string{"grp-001"})
 
 			suite.Require().NotNil(err)
 			suite.Require().Equal(*tc.expectErr, *err)

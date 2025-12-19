@@ -173,7 +173,7 @@ func (b *basicAuthExecutor) getAuthenticatedUser(ctx *flowcore.NodeContext,
 	}
 
 	// Identify the user based on the provided attributes.
-	userID, err := b.IdentifyUser(userSearchAttributes, execResp)
+	userID, err := b.IdentifyUser(ctx, userSearchAttributes, execResp)
 	if err != nil {
 		return nil, err
 	}
@@ -204,7 +204,7 @@ func (b *basicAuthExecutor) getAuthenticatedUser(ctx *flowcore.NodeContext,
 	}
 
 	// Authenticate the user based on all the provided attributes including credentials.
-	user, svcErr := b.credsAuthSvc.Authenticate(userAuthenticateAttributes)
+	user, svcErr := b.credsAuthSvc.Authenticate(ctx.RequestContext, userAuthenticateAttributes)
 	if svcErr != nil {
 		if b.observabilitySvc.IsEnabled() {
 			evt := event.NewEvent(

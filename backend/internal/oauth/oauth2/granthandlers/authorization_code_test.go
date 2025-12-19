@@ -212,7 +212,7 @@ func (suite *AuthorizationCodeGrantHandlerTestSuite) TestHandleGrant_Success() {
 		ID:         testUserID,
 		Attributes: json.RawMessage(`{"email":"test@example.com","username":"testuser"}`),
 	}
-	suite.mockUserService.On("GetUser", testUserID).Return(mockUser, nil)
+	suite.mockUserService.On("GetUser", mock.Anything, testUserID).Return(mockUser, nil)
 
 	// Mock token builder to generate access token
 	suite.mockTokenBuilder.On("BuildAccessToken", mock.MatchedBy(func(ctx *tokenservice.AccessTokenBuildContext) bool {
@@ -282,7 +282,7 @@ func (suite *AuthorizationCodeGrantHandlerTestSuite) TestHandleGrant_JWTGenerati
 		ID:         testUserID,
 		Attributes: json.RawMessage(`{"email":"test@example.com","username":"testuser"}`),
 	}
-	suite.mockUserService.On("GetUser", testUserID).Return(mockUser, nil)
+	suite.mockUserService.On("GetUser", mock.Anything, testUserID).Return(mockUser, nil)
 
 	// Mock token builder to fail token generation
 	suite.mockTokenBuilder.On("BuildAccessToken", mock.Anything).Return(nil, errors.New("jwt generation failed"))
@@ -315,7 +315,7 @@ func (suite *AuthorizationCodeGrantHandlerTestSuite) TestHandleGrant_EmptyScopes
 		ID:         testUserID,
 		Attributes: json.RawMessage(`{"email":"test@example.com","username":"testuser"}`),
 	}
-	suite.mockUserService.On("GetUser", testUserID).Return(mockUser, nil)
+	suite.mockUserService.On("GetUser", mock.Anything, testUserID).Return(mockUser, nil)
 
 	suite.mockTokenBuilder.On("BuildAccessToken", mock.Anything).Return(&model.TokenDTO{
 		Token:     "test-jwt-token",
@@ -350,7 +350,7 @@ func (suite *AuthorizationCodeGrantHandlerTestSuite) TestHandleGrant_NilTokenAtt
 		ID:         testUserID,
 		Attributes: json.RawMessage(`{"email":"test@example.com","username":"testuser"}`),
 	}
-	suite.mockUserService.On("GetUser", testUserID).Return(mockUser, nil)
+	suite.mockUserService.On("GetUser", mock.Anything, testUserID).Return(mockUser, nil)
 
 	suite.mockTokenBuilder.On("BuildAccessToken", mock.Anything).Return(&model.TokenDTO{
 		Token:     "test-jwt-token",
@@ -552,7 +552,7 @@ func (suite *AuthorizationCodeGrantHandlerTestSuite) TestHandleGrant_WithGroups(
 				ID:         testUserID,
 				Attributes: json.RawMessage(`{"email":"test@example.com","username":"testuser"}`),
 			}
-			suite.mockUserService.On("GetUser", testUserID).Return(mockUser, nil)
+			suite.mockUserService.On("GetUser", mock.Anything, testUserID).Return(mockUser, nil)
 
 			mockGroups := &user.UserGroupListResponse{
 				TotalResults: len(tc.mockGroups),
@@ -560,7 +560,7 @@ func (suite *AuthorizationCodeGrantHandlerTestSuite) TestHandleGrant_WithGroups(
 				Count:        len(tc.mockGroups),
 				Groups:       tc.mockGroups,
 			}
-			suite.mockUserService.On("GetUserGroups", testUserID, constants.DefaultGroupListLimit, 0).
+			suite.mockUserService.On("GetUserGroups", mock.Anything, testUserID, constants.DefaultGroupListLimit, 0).
 				Return(mockGroups, nil)
 
 			var capturedAccessTokenClaims map[string]interface{}
@@ -759,7 +759,7 @@ func (suite *AuthorizationCodeGrantHandlerTestSuite) TestHandleGrant_WithEmptyGr
 				ID:         testUserID,
 				Attributes: json.RawMessage(`{"email":"test@example.com","username":"testuser"}`),
 			}
-			suite.mockUserService.On("GetUser", testUserID).Return(mockUser, nil)
+			suite.mockUserService.On("GetUser", mock.Anything, testUserID).Return(mockUser, nil)
 
 			mockGroups := &user.UserGroupListResponse{
 				TotalResults: 0,
@@ -767,7 +767,7 @@ func (suite *AuthorizationCodeGrantHandlerTestSuite) TestHandleGrant_WithEmptyGr
 				Count:        0,
 				Groups:       []user.UserGroup{}, // Empty groups
 			}
-			suite.mockUserService.On("GetUserGroups", testUserID, constants.DefaultGroupListLimit, 0).
+			suite.mockUserService.On("GetUserGroups", mock.Anything, testUserID, constants.DefaultGroupListLimit, 0).
 				Return(mockGroups, nil)
 
 			var capturedAccessTokenClaims map[string]interface{}
@@ -875,7 +875,7 @@ func (suite *AuthorizationCodeGrantHandlerTestSuite) TestHandleGrant_ResourcePar
 		ID:         testUserID,
 		Attributes: json.RawMessage(`{"email":"test@example.com","username":"testuser"}`),
 	}
-	suite.mockUserService.On("GetUser", testUserID).Return(mockUser, nil)
+	suite.mockUserService.On("GetUser", mock.Anything, testUserID).Return(mockUser, nil)
 
 	var capturedAudience string
 	suite.mockTokenBuilder.On("BuildAccessToken", mock.MatchedBy(func(ctx *tokenservice.AccessTokenBuildContext) bool {
@@ -911,7 +911,7 @@ func (suite *AuthorizationCodeGrantHandlerTestSuite) TestHandleGrant_NoResourceP
 		ID:         testUserID,
 		Attributes: json.RawMessage(`{"email":"test@example.com","username":"testuser"}`),
 	}
-	suite.mockUserService.On("GetUser", testUserID).Return(mockUser, nil)
+	suite.mockUserService.On("GetUser", mock.Anything, testUserID).Return(mockUser, nil)
 
 	var capturedAudience string
 	suite.mockTokenBuilder.On("BuildAccessToken", mock.MatchedBy(func(ctx *tokenservice.AccessTokenBuildContext) bool {
@@ -957,7 +957,7 @@ func (suite *AuthorizationCodeGrantHandlerTestSuite) TestHandleGrant_IDTokenGene
 		ID:         testUserID,
 		Attributes: json.RawMessage(`{"email":"test@example.com","username":"testuser"}`),
 	}
-	suite.mockUserService.On("GetUser", testUserID).Return(mockUser, nil)
+	suite.mockUserService.On("GetUser", mock.Anything, testUserID).Return(mockUser, nil)
 
 	// Mock access token generation succeeds
 	suite.mockTokenBuilder.On("BuildAccessToken", mock.Anything).Return(&model.TokenDTO{
@@ -1027,7 +1027,7 @@ func (suite *AuthorizationCodeGrantHandlerTestSuite) TestHandleGrant_FetchUserAt
 		Code:             "INTERNAL_ERROR",
 		ErrorDescription: "user not found",
 	}
-	suite.mockUserService.On("GetUser", testUserID).Return(nil, serverErr)
+	suite.mockUserService.On("GetUser", mock.Anything, testUserID).Return(nil, serverErr)
 
 	result, err := suite.handler.HandleGrant(suite.testTokenReq, suite.oauthApp)
 
@@ -1116,7 +1116,7 @@ func (suite *AuthorizationCodeGrantHandlerTestSuite) TestRetrieveAndValidateAuth
 		ID:         testUserID,
 		Attributes: json.RawMessage(`{"email":"test@example.com","username":"testuser"}`),
 	}
-	suite.mockUserService.On("GetUser", testUserID).Return(mockUser, nil)
+	suite.mockUserService.On("GetUser", mock.Anything, testUserID).Return(mockUser, nil)
 
 	// Mock token builder
 	suite.mockTokenBuilder.On("BuildAccessToken", mock.Anything).Return(&model.TokenDTO{

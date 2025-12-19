@@ -235,7 +235,7 @@ func (a *authAssertExecutor) appendUserDetailsToClaims(ctx *flowcore.NodeContext
 			// fetch user details only once
 			if user == nil {
 				var err error
-				user, attrs, err = a.getUserAttributes(ctx.AuthenticatedUser.UserID)
+				user, attrs, err = a.getUserAttributes(ctx)
 				if err != nil {
 					return err
 				}
@@ -252,11 +252,12 @@ func (a *authAssertExecutor) appendUserDetailsToClaims(ctx *flowcore.NodeContext
 }
 
 // getUserAttributes retrieves user details and unmarshal the attributes.
-func (a *authAssertExecutor) getUserAttributes(userID string) (*user.User, map[string]interface{}, error) {
+func (a *authAssertExecutor) getUserAttributes(ctx *flowcore.NodeContext) (*user.User, map[string]interface{}, error) {
+	userID := ctx.AuthenticatedUser.UserID
 	logger := a.logger.With(log.String("userID", userID))
 
 	var svcErr *serviceerror.ServiceError
-	user, svcErr := a.userService.GetUser(userID)
+	user, svcErr := a.userService.GetUser(ctx.RequestContext, userID)
 	if svcErr != nil {
 		logger.Error("Failed to fetch user attributes",
 			log.String("userID", userID), log.Any("error", svcErr))

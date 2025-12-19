@@ -22,6 +22,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	mock "github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/suite"
 
 	appmodel "github.com/asgardeo/thunder/internal/application/model"
@@ -143,7 +144,7 @@ func (suite *OIDCAuthExecutorTestSuite) TestExecute_CodeProvided_ValidIDToken_Au
 		Return(tokenResp, nil)
 	suite.mockOIDCService.On("GetIDTokenClaims", "id_token_jwt_123").
 		Return(idTokenClaims, nil)
-	suite.mockOIDCService.On("GetInternalUser", "user-sub-123").
+	suite.mockOIDCService.On("GetInternalUser", mock.Anything, "user-sub-123").
 		Return(existingUser, nil)
 	suite.mockOIDCService.On("GetOAuthClientConfig", "idp-123").
 		Return(oauthConfig, nil)
@@ -206,7 +207,7 @@ func (suite *OIDCAuthExecutorTestSuite) TestProcessAuthFlowResponse_ValidIDToken
 		Return(tokenResp, nil)
 	suite.mockOIDCService.On("GetIDTokenClaims", "id_token_jwt").
 		Return(idTokenClaims, nil)
-	suite.mockOIDCService.On("GetInternalUser", "user-sub-456").
+	suite.mockOIDCService.On("GetInternalUser", mock.Anything, "user-sub-456").
 		Return(existingUser, nil)
 	suite.mockOIDCService.On("GetOAuthClientConfig", "idp-123").
 		Return(oauthConfig, nil)
@@ -345,7 +346,7 @@ func (suite *OIDCAuthExecutorTestSuite) TestProcessAuthFlowResponse_Registration
 		Return(tokenResp, nil)
 	suite.mockOIDCService.On("GetIDTokenClaims", "id_token_jwt").
 		Return(idTokenClaims, nil)
-	suite.mockOIDCService.On("GetInternalUser", "new-user-sub").
+	suite.mockOIDCService.On("GetInternalUser", mock.Anything, "new-user-sub").
 		Return(nil, &serviceerror.ServiceError{
 			Code: authncm.ErrorUserNotFound.Code,
 			Type: serviceerror.ClientErrorType,
@@ -395,7 +396,7 @@ func (suite *OIDCAuthExecutorTestSuite) TestProcessAuthFlowResponse_AuthFlow_Use
 		Return(tokenResp, nil)
 	suite.mockOIDCService.On("GetIDTokenClaims", "id_token_jwt").
 		Return(idTokenClaims, nil)
-	suite.mockOIDCService.On("GetInternalUser", "unknown-user").
+	suite.mockOIDCService.On("GetInternalUser", mock.Anything, "unknown-user").
 		Return(nil, &serviceerror.ServiceError{
 			Code: authncm.ErrorUserNotFound.Code,
 			Type: serviceerror.ClientErrorType,
@@ -447,7 +448,7 @@ func (suite *OIDCAuthExecutorTestSuite) TestProcessAuthFlowResponse_UserAlreadyE
 		Return(tokenResp, nil)
 	suite.mockOIDCService.On("GetIDTokenClaims", "id_token_jwt").
 		Return(idTokenClaims, nil)
-	suite.mockOIDCService.On("GetInternalUser", "existing-user-sub").
+	suite.mockOIDCService.On("GetInternalUser", mock.Anything, "existing-user-sub").
 		Return(existingUser, nil)
 
 	err := suite.executor.ProcessAuthFlowResponse(ctx, execResp)
@@ -594,7 +595,7 @@ func (suite *OIDCAuthExecutorTestSuite) TestProcessAuthFlowResponse_WithAddition
 		Return(tokenResp, nil)
 	suite.mockOIDCService.On("GetIDTokenClaims", "id_token_jwt").
 		Return(idTokenClaims, nil)
-	suite.mockOIDCService.On("GetInternalUser", "user-sub-123").
+	suite.mockOIDCService.On("GetInternalUser", mock.Anything, "user-sub-123").
 		Return(existingUser, nil)
 	suite.mockOIDCService.On("GetOAuthClientConfig", "idp-123").
 		Return(oauthConfig, nil)
@@ -683,7 +684,7 @@ func (suite *OIDCAuthExecutorTestSuite) TestProcessAuthFlowResponse_FiltersNonUs
 		Return(tokenResp, nil)
 	suite.mockOIDCService.On("GetIDTokenClaims", "id_token_jwt").
 		Return(idTokenClaims, nil)
-	suite.mockOIDCService.On("GetInternalUser", "user-sub-123").
+	suite.mockOIDCService.On("GetInternalUser", mock.Anything, "user-sub-123").
 		Return(existingUser, nil)
 	suite.mockOIDCService.On("GetOAuthClientConfig", "idp-123").
 		Return(oauthConfig, nil)
@@ -750,7 +751,7 @@ func (suite *OIDCAuthExecutorTestSuite) TestProcessAuthFlowResponse_EmailInIDTok
 		Return(tokenResp, nil)
 	suite.mockOIDCService.On("GetIDTokenClaims", "id_token_jwt").
 		Return(idTokenClaims, nil)
-	suite.mockOIDCService.On("GetInternalUser", "user-sub-789").
+	suite.mockOIDCService.On("GetInternalUser", mock.Anything, "user-sub-789").
 		Return(existingUser, nil)
 	suite.mockOIDCService.On("GetOAuthClientConfig", "idp-123").
 		Return(oauthConfig, nil)
@@ -811,7 +812,7 @@ func (suite *OIDCAuthExecutorTestSuite) TestProcessAuthFlowResponse_NoEmailInIDT
 		Return(tokenResp, nil)
 	suite.mockOIDCService.On("GetIDTokenClaims", "id_token_jwt").
 		Return(idTokenClaims, nil)
-	suite.mockOIDCService.On("GetInternalUser", "user-sub-789").
+	suite.mockOIDCService.On("GetInternalUser", mock.Anything, "user-sub-789").
 		Return(existingUser, nil)
 	suite.mockOIDCService.On("GetOAuthClientConfig", "idp-123").
 		Return(oauthConfig, nil)
@@ -872,7 +873,7 @@ func (suite *OIDCAuthExecutorTestSuite) TestProcessAuthFlowResponse_EmptyEmailIn
 		Return(tokenResp, nil)
 	suite.mockOIDCService.On("GetIDTokenClaims", "id_token_jwt").
 		Return(idTokenClaims, nil)
-	suite.mockOIDCService.On("GetInternalUser", "user-sub-789").
+	suite.mockOIDCService.On("GetInternalUser", mock.Anything, "user-sub-789").
 		Return(existingUser, nil)
 	suite.mockOIDCService.On("GetOAuthClientConfig", "idp-123").
 		Return(oauthConfig, nil)
@@ -928,7 +929,7 @@ func (suite *OIDCAuthExecutorTestSuite) TestProcessAuthFlowResponse_Registration
 		Return(tokenResp, nil)
 	suite.mockOIDCService.On("GetIDTokenClaims", "id_token_jwt").
 		Return(idTokenClaims, nil)
-	suite.mockOIDCService.On("GetInternalUser", "new-user-sub").
+	suite.mockOIDCService.On("GetInternalUser", mock.Anything, "new-user-sub").
 		Return(nil, &serviceerror.ServiceError{
 			Code: authncm.ErrorUserNotFound.Code,
 			Type: serviceerror.ClientErrorType,
@@ -999,7 +1000,7 @@ func (suite *OIDCAuthExecutorTestSuite) TestProcessAuthFlowResponse_EmailFromUse
 		Return(tokenResp, nil)
 	suite.mockOIDCService.On("GetIDTokenClaims", "id_token_jwt").
 		Return(idTokenClaims, nil)
-	suite.mockOIDCService.On("GetInternalUser", "user-sub-789").
+	suite.mockOIDCService.On("GetInternalUser", mock.Anything, "user-sub-789").
 		Return(existingUser, nil)
 	suite.mockOIDCService.On("GetOAuthClientConfig", "idp-123").
 		Return(oauthConfig, nil)
@@ -1062,7 +1063,7 @@ func (suite *OIDCAuthExecutorTestSuite) TestProcessAuthFlowResponse_EmailInIDTok
 		Return(tokenResp, nil)
 	suite.mockOIDCService.On("GetIDTokenClaims", "id_token_jwt").
 		Return(idTokenClaims, nil)
-	suite.mockOIDCService.On("GetInternalUser", "user-sub-999").
+	suite.mockOIDCService.On("GetInternalUser", mock.Anything, "user-sub-999").
 		Return(existingUser, nil)
 	suite.mockOIDCService.On("GetOAuthClientConfig", "idp-123").
 		Return(oauthConfig, nil)
@@ -1125,7 +1126,7 @@ func (suite *OIDCAuthExecutorTestSuite) TestProcessAuthFlowResponse_AllowAuthWit
 		Return(tokenResp, nil)
 	suite.mockOIDCService.On("GetIDTokenClaims", "id_token_jwt").
 		Return(idTokenClaims, nil)
-	suite.mockOIDCService.On("GetInternalUser", "new-user-sub").
+	suite.mockOIDCService.On("GetInternalUser", mock.Anything, "new-user-sub").
 		Return(nil, &serviceerror.ServiceError{
 			Code: authncm.ErrorUserNotFound.Code,
 			Type: serviceerror.ClientErrorType,
@@ -1189,7 +1190,7 @@ func (suite *OIDCAuthExecutorTestSuite) TestProcessAuthFlowResponse_PreventAuthW
 		Return(tokenResp, nil)
 	suite.mockOIDCService.On("GetIDTokenClaims", "id_token_jwt").
 		Return(idTokenClaims, nil)
-	suite.mockOIDCService.On("GetInternalUser", "new-user-sub").
+	suite.mockOIDCService.On("GetInternalUser", mock.Anything, "new-user-sub").
 		Return(nil, &serviceerror.ServiceError{
 			Code: authncm.ErrorUserNotFound.Code,
 			Type: serviceerror.ClientErrorType,
@@ -1253,7 +1254,7 @@ func (suite *OIDCAuthExecutorTestSuite) TestProcessAuthFlowResponse_AllowRegistr
 		Return(tokenResp, nil)
 	suite.mockOIDCService.On("GetIDTokenClaims", "id_token_jwt").
 		Return(idTokenClaims, nil)
-	suite.mockOIDCService.On("GetInternalUser", "existing-user-sub").
+	suite.mockOIDCService.On("GetInternalUser", mock.Anything, "existing-user-sub").
 		Return(existingUser, nil)
 	suite.mockOIDCService.On("GetOAuthClientConfig", "idp-123").
 		Return(oauthConfig, nil)
@@ -1312,7 +1313,7 @@ func (suite *OIDCAuthExecutorTestSuite) TestProcessAuthFlowResponse_PreventRegis
 		Return(tokenResp, nil)
 	suite.mockOIDCService.On("GetIDTokenClaims", "id_token_jwt").
 		Return(idTokenClaims, nil)
-	suite.mockOIDCService.On("GetInternalUser", "existing-user-sub").
+	suite.mockOIDCService.On("GetInternalUser", mock.Anything, "existing-user-sub").
 		Return(existingUser, nil)
 
 	err := suite.executor.ProcessAuthFlowResponse(ctx, execResp)

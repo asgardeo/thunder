@@ -19,12 +19,14 @@
 package google
 
 import (
+	"context"
 	"encoding/base64"
 	"encoding/json"
 	"errors"
 	"testing"
 	"time"
 
+	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/suite"
 
 	"github.com/asgardeo/thunder/internal/authn/oauth"
@@ -763,9 +765,9 @@ func (suite *GoogleOIDCAuthnServiceTestSuite) TestGetInternalUserSuccess() {
 		ID:   "user123",
 		Type: "person",
 	}
-	suite.mockOIDCService.On("GetInternalUser", sub).Return(user, nil)
+	suite.mockOIDCService.On("GetInternalUser", mock.Anything, sub).Return(user, nil)
 
-	result, err := suite.service.GetInternalUser(sub)
+	result, err := suite.service.GetInternalUser(context.Background(), sub)
 	suite.Nil(err)
 	suite.NotNil(result)
 	suite.Equal(user.ID, result.ID)

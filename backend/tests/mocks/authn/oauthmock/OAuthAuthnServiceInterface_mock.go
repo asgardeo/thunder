@@ -5,6 +5,8 @@
 package oauthmock
 
 import (
+	"context"
+
 	"github.com/asgardeo/thunder/internal/authn/oauth"
 	"github.com/asgardeo/thunder/internal/system/error/serviceerror"
 	"github.com/asgardeo/thunder/internal/user"
@@ -317,8 +319,8 @@ func (_c *OAuthAuthnServiceInterfaceMock_FetchUserInfoWithClientConfig_Call) Run
 }
 
 // GetInternalUser provides a mock function for the type OAuthAuthnServiceInterfaceMock
-func (_mock *OAuthAuthnServiceInterfaceMock) GetInternalUser(sub string) (*user.User, *serviceerror.ServiceError) {
-	ret := _mock.Called(sub)
+func (_mock *OAuthAuthnServiceInterfaceMock) GetInternalUser(ctx context.Context, sub string) (*user.User, *serviceerror.ServiceError) {
+	ret := _mock.Called(ctx, sub)
 
 	if len(ret) == 0 {
 		panic("no return value specified for GetInternalUser")
@@ -326,18 +328,18 @@ func (_mock *OAuthAuthnServiceInterfaceMock) GetInternalUser(sub string) (*user.
 
 	var r0 *user.User
 	var r1 *serviceerror.ServiceError
-	if returnFunc, ok := ret.Get(0).(func(string) (*user.User, *serviceerror.ServiceError)); ok {
-		return returnFunc(sub)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string) (*user.User, *serviceerror.ServiceError)); ok {
+		return returnFunc(ctx, sub)
 	}
-	if returnFunc, ok := ret.Get(0).(func(string) *user.User); ok {
-		r0 = returnFunc(sub)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string) *user.User); ok {
+		r0 = returnFunc(ctx, sub)
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).(*user.User)
 		}
 	}
-	if returnFunc, ok := ret.Get(1).(func(string) *serviceerror.ServiceError); ok {
-		r1 = returnFunc(sub)
+	if returnFunc, ok := ret.Get(1).(func(context.Context, string) *serviceerror.ServiceError); ok {
+		r1 = returnFunc(ctx, sub)
 	} else {
 		if ret.Get(1) != nil {
 			r1 = ret.Get(1).(*serviceerror.ServiceError)
@@ -352,19 +354,25 @@ type OAuthAuthnServiceInterfaceMock_GetInternalUser_Call struct {
 }
 
 // GetInternalUser is a helper method to define mock.On call
+//   - ctx context.Context
 //   - sub string
-func (_e *OAuthAuthnServiceInterfaceMock_Expecter) GetInternalUser(sub interface{}) *OAuthAuthnServiceInterfaceMock_GetInternalUser_Call {
-	return &OAuthAuthnServiceInterfaceMock_GetInternalUser_Call{Call: _e.mock.On("GetInternalUser", sub)}
+func (_e *OAuthAuthnServiceInterfaceMock_Expecter) GetInternalUser(ctx interface{}, sub interface{}) *OAuthAuthnServiceInterfaceMock_GetInternalUser_Call {
+	return &OAuthAuthnServiceInterfaceMock_GetInternalUser_Call{Call: _e.mock.On("GetInternalUser", ctx, sub)}
 }
 
-func (_c *OAuthAuthnServiceInterfaceMock_GetInternalUser_Call) Run(run func(sub string)) *OAuthAuthnServiceInterfaceMock_GetInternalUser_Call {
+func (_c *OAuthAuthnServiceInterfaceMock_GetInternalUser_Call) Run(run func(ctx context.Context, sub string)) *OAuthAuthnServiceInterfaceMock_GetInternalUser_Call {
 	_c.Call.Run(func(args mock.Arguments) {
-		var arg0 string
+		var arg0 context.Context
 		if args[0] != nil {
-			arg0 = args[0].(string)
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 string
+		if args[1] != nil {
+			arg1 = args[1].(string)
 		}
 		run(
 			arg0,
+			arg1,
 		)
 	})
 	return _c
@@ -375,7 +383,7 @@ func (_c *OAuthAuthnServiceInterfaceMock_GetInternalUser_Call) Return(user1 *use
 	return _c
 }
 
-func (_c *OAuthAuthnServiceInterfaceMock_GetInternalUser_Call) RunAndReturn(run func(sub string) (*user.User, *serviceerror.ServiceError)) *OAuthAuthnServiceInterfaceMock_GetInternalUser_Call {
+func (_c *OAuthAuthnServiceInterfaceMock_GetInternalUser_Call) RunAndReturn(run func(ctx context.Context, sub string) (*user.User, *serviceerror.ServiceError)) *OAuthAuthnServiceInterfaceMock_GetInternalUser_Call {
 	_c.Call.Return(run)
 	return _c
 }

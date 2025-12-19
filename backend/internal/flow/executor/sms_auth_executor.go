@@ -167,7 +167,7 @@ func (s *smsOTPAuthExecutor) InitiateOTP(ctx *flowcore.NodeContext,
 		}
 
 		filter := map[string]interface{}{userAttributeMobileNumber: mobileNumber}
-		userID, err = s.IdentifyUser(filter, execResp)
+		userID, err = s.IdentifyUser(ctx, filter, execResp)
 		if err != nil {
 			logger.Error("Failed to identify user", log.Error(err))
 			return fmt.Errorf("failed to identify user: %w", err)
@@ -410,7 +410,7 @@ func (s *smsOTPAuthExecutor) resolveUserIDFromAttribute(ctx *flowcore.NodeContex
 	}
 	if attributeValue != "" {
 		filters := map[string]interface{}{attributeName: attributeValue}
-		userID, svcErr := s.userService.IdentifyUser(filters)
+		userID, svcErr := s.userService.IdentifyUser(ctx.RequestContext, filters)
 		if svcErr != nil {
 			return false, fmt.Errorf("failed to identify user by %s: %s", attributeName, svcErr.Error)
 		}
@@ -435,7 +435,7 @@ func (s *smsOTPAuthExecutor) getUserMobileNumber(userID string, ctx *flowcore.No
 	logger.Debug("Retrieving user mobile number")
 
 	var err error
-	user, svcErr := s.userService.GetUser(userID)
+	user, svcErr := s.userService.GetUser(ctx.RequestContext, userID)
 	if svcErr != nil {
 		return "", fmt.Errorf("failed to retrieve user details: %s", svcErr.Error)
 	}
@@ -667,7 +667,7 @@ func (s *smsOTPAuthExecutor) getAuthenticatedUser(ctx *flowcore.NodeContext,
 		return nil, errors.New("user ID is empty")
 	}
 
-	user, svcErr := s.userService.GetUser(userID)
+	user, svcErr := s.userService.GetUser(ctx.RequestContext, userID)
 	if svcErr != nil {
 		return nil, fmt.Errorf("failed to get user details: %s", svcErr.Error)
 	}

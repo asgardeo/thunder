@@ -19,6 +19,7 @@
 package granthandlers
 
 import (
+	"context"
 	"net/url"
 	"slices"
 	"time"
@@ -135,7 +136,7 @@ func (h *authorizationCodeGrantHandler) HandleGrant(tokenRequest *model.TokenReq
 				slices.Contains(oauthApp.Token.IDToken.UserAttributes, constants.UserAttributeGroups))))
 
 	// Fetch user attributes and groups
-	attrs, userGroups, err := tokenservice.FetchUserAttributesAndGroups(h.userService,
+	attrs, userGroups, err := tokenservice.FetchUserAttributesAndGroups(context.Background(), h.userService,
 		authCode.AuthorizedUserID, includeGroups)
 	if err != nil {
 		logger.Error("Failed to fetch user attributes and groups",

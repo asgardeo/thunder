@@ -19,6 +19,7 @@
 package user
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"testing"
@@ -204,7 +205,7 @@ func TestOUStore_ValidateUserAndUniqueness(t *testing.T) {
 				schemaMock := userschemamock.NewUserSchemaServiceInterfaceMock(t)
 				userStoreMock := newUserStoreInterfaceMock(t)
 				userStoreMock.
-					On("IdentifyUser", mock.AnythingOfType("map[string]interface {}")).
+					On("IdentifyUser", mock.Anything, mock.AnythingOfType("map[string]interface {}")).
 					Return(&existingUserID, nil).
 					Once()
 				schemaMock.
@@ -244,7 +245,7 @@ func TestOUStore_ValidateUserAndUniqueness(t *testing.T) {
 				schemaMock := userschemamock.NewUserSchemaServiceInterfaceMock(t)
 				userStoreMock := newUserStoreInterfaceMock(t)
 				userStoreMock.
-					On("IdentifyUser", mock.AnythingOfType("map[string]interface {}")).
+					On("IdentifyUser", mock.Anything, mock.AnythingOfType("map[string]interface {}")).
 					Return((*string)(nil), nil).
 					Once()
 				schemaMock.
@@ -282,7 +283,7 @@ func TestOUStore_ValidateUserAndUniqueness(t *testing.T) {
 				schemaMock := userschemamock.NewUserSchemaServiceInterfaceMock(t)
 				userStoreMock := newUserStoreInterfaceMock(t)
 				userStoreMock.
-					On("IdentifyUser", mock.AnythingOfType("map[string]interface {}")).
+					On("IdentifyUser", mock.Anything, mock.AnythingOfType("map[string]interface {}")).
 					Return((*string)(nil), errors.New("store failure")).
 					Once()
 				schemaMock.
@@ -646,7 +647,7 @@ func TestUserService_GetUsersByPath_HandlesOUServiceErrors(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			service := tc.setup(t)
 
-			resp, err := service.GetUsersByPath("root", 10, 0, nil)
+			resp, err := service.GetUsersByPath(context.Background(), "root", 10, 0, nil)
 			require.Nil(t, resp)
 			require.NotNil(t, err)
 			require.Equal(t, *tc.expectedErr, *err)
@@ -668,7 +669,7 @@ func TestUserService_CreateUserByPath_HandlesOUServiceErrors(t *testing.T) {
 		ouService: ouServiceMock,
 	}
 
-	resp, err := service.CreateUserByPath("root/engineering", CreateUserByPathRequest{
+	resp, err := service.CreateUserByPath(context.Background(), "root/engineering", CreateUserByPathRequest{
 		Type: testUserType,
 	})
 	require.Nil(t, resp)
@@ -717,7 +718,7 @@ func TestUserService_UpdateUserCredentials_Validation(t *testing.T) {
 	t.Run("ReturnsAuthErrorWhenUserIDMissing", func(t *testing.T) {
 		service := &userService{}
 
-		err := service.UpdateUserCredentials("", json.RawMessage(`{"password":"pw"}`))
+		err := service.UpdateUserCredentials(context.Background(), "", json.RawMessage(`{"password":"pw"}`))
 		require.NotNil(t, err)
 		require.Equal(t, ErrorAuthenticationFailed, *err)
 	})
@@ -725,7 +726,7 @@ func TestUserService_UpdateUserCredentials_Validation(t *testing.T) {
 	t.Run("ReturnsMissingCredentialsWhenPayloadEmpty", func(t *testing.T) {
 		service := &userService{}
 
-		err := service.UpdateUserCredentials("user-1", json.RawMessage{})
+		err := service.UpdateUserCredentials(context.Background(), "user-1", json.RawMessage{})
 		require.NotNil(t, err)
 		require.Equal(t, ErrorMissingCredentials, *err)
 	})
@@ -734,7 +735,7 @@ func TestUserService_UpdateUserCredentials_Validation(t *testing.T) {
 func TestUserService_UpdateUserCredentials_UserNotFound(t *testing.T) {
 	userStoreMock := newUserStoreInterfaceMock(t)
 	userStoreMock.
-		On("GetCredentials", "user-1").
+		On("GetCredentials", mock.Anything, "user-1").
 		Return(User{}, []Credential{}, ErrUserNotFound).
 		Once()
 	hashServiceMock := hashmock.NewHashServiceInterfaceMock(t)
@@ -763,7 +764,7 @@ func TestUserService_UpdateUserCredentials_UserNotFound(t *testing.T) {
 	require.NoError(t, initErr)
 	t.Cleanup(config.ResetThunderRuntime)
 
-	svcErr := service.UpdateUserCredentials("user-1", json.RawMessage(`{"password":"pw"}`))
+	svcErr := service.UpdateUserCredentials(context.Background(), "user-1", json.RawMessage(`{"password":"pw"}`))
 	require.NotNil(t, svcErr)
 	require.Equal(t, ErrorUserNotFound, *svcErr)
 	userStoreMock.AssertNotCalled(t, "UpdateUserCredentials", mock.Anything, mock.Anything)
@@ -792,14 +793,14 @@ func TestUserService_UpdateUserCredentials_Succeeds(t *testing.T) {
 		},
 	}
 	userStoreMock.
-		On("GetCredentials", "user-1").
+		On("GetCredentials", mock.Anything, "user-1").
 		Return(User{ID: "user-1"}, existingCredentials, nil).
 		Once()
 	var captured []Credential
 	userStoreMock.
-		On("UpdateUserCredentials", "user-1", mock.Anything).
+		On("UpdateUserCredentials", mock.Anything, "user-1", mock.Anything).
 		Run(func(args mock.Arguments) {
-			if creds, ok := args[1].([]Credential); ok {
+			if creds, ok := args[2].([]Credential); ok {
 				captured = creds
 			}
 		}).
@@ -832,7 +833,7 @@ func TestUserService_UpdateUserCredentials_Succeeds(t *testing.T) {
 	require.NoError(t, initErr)
 	t.Cleanup(config.ResetThunderRuntime)
 
-	svcErr := service.UpdateUserCredentials("user-1", json.RawMessage(`{"password":"newPass"}`))
+	svcErr := service.UpdateUserCredentials(context.Background(), "user-1", json.RawMessage(`{"password":"newPass"}`))
 	require.Nil(t, svcErr)
 	require.Len(t, captured, 2)
 
@@ -1011,17 +1012,17 @@ func TestUserService_MergeCredentials(t *testing.T) {
 func TestUserService_UpdateUserAttributes_Validation(t *testing.T) {
 	service := &userService{}
 
-	resp, err := service.UpdateUserAttributes("", json.RawMessage(`{"email":"a@b.com"}`))
+	resp, err := service.UpdateUserAttributes(context.Background(), "", json.RawMessage(`{"email":"a@b.com"}`))
 	require.Nil(t, resp)
 	require.NotNil(t, err)
 	require.Equal(t, ErrorMissingUserID, *err)
 
-	resp, err = service.UpdateUserAttributes("user-1", json.RawMessage{})
+	resp, err = service.UpdateUserAttributes(context.Background(), "user-1", json.RawMessage{})
 	require.Nil(t, resp)
 	require.NotNil(t, err)
 	require.Equal(t, ErrorInvalidRequestFormat, *err)
 
-	resp, err = service.UpdateUserAttributes("user-1", json.RawMessage(`{"password":"Secret123"}`))
+	resp, err = service.UpdateUserAttributes(context.Background(), "user-1", json.RawMessage(`{"password":"Secret123"}`))
 	require.Nil(t, resp)
 	require.NotNil(t, err)
 	require.Equal(t, ErrorInvalidRequestFormat, *err)
@@ -1029,13 +1030,13 @@ func TestUserService_UpdateUserAttributes_Validation(t *testing.T) {
 
 func TestUserService_UpdateUserAttributes_UserNotFound(t *testing.T) {
 	storeMock := newUserStoreInterfaceMock(t)
-	storeMock.On("GetUser", "user-1").Return(User{}, ErrUserNotFound).Once()
+	storeMock.On("GetUser", mock.Anything, "user-1").Return(User{}, ErrUserNotFound).Once()
 
 	service := &userService{
 		userStore: storeMock,
 	}
 
-	resp, err := service.UpdateUserAttributes("user-1", json.RawMessage(`{"email":"a@b.com"}`))
+	resp, err := service.UpdateUserAttributes(context.Background(), "user-1", json.RawMessage(`{"email":"a@b.com"}`))
 	require.Nil(t, resp)
 	require.NotNil(t, err)
 	require.Equal(t, ErrorUserNotFound, *err)
@@ -1045,7 +1046,7 @@ func TestUserService_UpdateUserAttributes_UserNotFound(t *testing.T) {
 func TestUserService_UpdateUserAttributes_SchemaValidationFails(t *testing.T) {
 	storeMock := newUserStoreInterfaceMock(t)
 	storeMock.
-		On("GetUser", "user-1").
+		On("GetUser", mock.Anything, "user-1").
 		Return(User{ID: "user-1", Type: testUserType, Attributes: json.RawMessage(`{"email":"old"}`)}, nil).
 		Once()
 
@@ -1060,7 +1061,7 @@ func TestUserService_UpdateUserAttributes_SchemaValidationFails(t *testing.T) {
 		userSchemaService: schemaMock,
 	}
 
-	resp, err := service.UpdateUserAttributes("user-1", json.RawMessage(`{"email":"new@example.com"}`))
+	resp, err := service.UpdateUserAttributes(context.Background(), "user-1", json.RawMessage(`{"email":"new@example.com"}`))
 	require.Nil(t, resp)
 	require.NotNil(t, err)
 	require.Equal(t, ErrorUserSchemaNotFound, *err)
@@ -1070,7 +1071,7 @@ func TestUserService_UpdateUserAttributes_SchemaValidationFails(t *testing.T) {
 func TestUserService_UpdateUserAttributes_Succeeds(t *testing.T) {
 	storeMock := newUserStoreInterfaceMock(t)
 	storeMock.
-		On("GetUser", "user-1").
+		On("GetUser", mock.Anything, "user-1").
 		Return(User{ID: "user-1", Type: testUserType, Attributes: json.RawMessage(`{"email":"old@example.com"}`)}, nil).
 		Once()
 
@@ -1086,9 +1087,9 @@ func TestUserService_UpdateUserAttributes_Succeeds(t *testing.T) {
 
 	var savedUser *User
 	storeMock.
-		On("UpdateUser", mock.Anything).
+		On("UpdateUser", mock.Anything, mock.Anything).
 		Run(func(args mock.Arguments) {
-			if u, ok := args[0].(*User); ok {
+			if u, ok := args[1].(*User); ok {
 				savedUser = u
 			}
 		}).
@@ -1101,7 +1102,7 @@ func TestUserService_UpdateUserAttributes_Succeeds(t *testing.T) {
 	}
 
 	newAttrs := json.RawMessage(`{"email":"new@example.com"}`)
-	resp, err := service.UpdateUserAttributes("user-1", newAttrs)
+	resp, err := service.UpdateUserAttributes(context.Background(), "user-1", newAttrs)
 	require.Nil(t, err)
 	require.NotNil(t, resp)
 	require.Equal(t, "user-1", resp.ID)

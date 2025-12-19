@@ -49,18 +49,18 @@ func AccessLogHandler(logger *Logger, next http.Handler) http.Handler {
 		}
 
 		// Apache CLF-style format with correlation ID and response time
-		// Format: host - - [timestamp] method uri protocol status size elapsed_ms correlation_id
+		// Format: host - - [timestamp] correlation_id method uri protocol status size elapsed_ms
 		logger.Info(fmt.Sprintf(
-			"%s - - [%s] %s %s %s %d %d %d %s",
+			"%s - - [%s] %s %s %s %s %d %d %d",
 			host,
 			start.Format("02/Jan/2006:15:04:05 -0700"),
+			correlationID,
 			r.Method,
 			r.RequestURI,
 			r.Proto,
 			lrw.statusCode,
 			lrw.size,
 			elapsedMs,
-			correlationID,
 		))
 	})
 }

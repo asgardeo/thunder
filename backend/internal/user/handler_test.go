@@ -41,7 +41,7 @@ func TestHandleSelfUserGetRequest_Success(t *testing.T) {
 		ID:         userID,
 		Attributes: json.RawMessage(`{"username":"alice"}`),
 	}
-	mockSvc.On("GetUser", userID).Return(expectedUser, nil)
+	mockSvc.On("GetUser", mock.Anything, userID).Return(expectedUser, nil)
 
 	handler := newUserHandler(mockSvc)
 	req := httptest.NewRequest(http.MethodGet, "/users/me", nil)
@@ -85,7 +85,7 @@ func TestHandleSelfUserPutRequest_Success(t *testing.T) {
 		Type:       "employee",
 		Attributes: attributes,
 	}
-	mockSvc.On("UpdateUserAttributes", userID, attributes).Return(updatedUser, nil)
+	mockSvc.On("UpdateUserAttributes", mock.Anything, userID, attributes).Return(updatedUser, nil)
 
 	handler := newUserHandler(mockSvc)
 	body := bytes.NewBufferString(`{"attributes":{"email":"alice@example.com"}}`)
@@ -129,7 +129,7 @@ func TestHandleSelfUserCredentialUpdateRequest_Success(t *testing.T) {
 	attrs := json.RawMessage(`{"password":"Secret123!"}`)
 
 	mockSvc := NewUserServiceInterfaceMock(t)
-	mockSvc.On("UpdateUserCredentials", userID, attrs).Return(nil)
+	mockSvc.On("UpdateUserCredentials", mock.Anything, userID, attrs).Return(nil)
 
 	handler := newUserHandler(mockSvc)
 	req := httptest.NewRequest(http.MethodPost, "/users/me/update-credentials",
@@ -148,7 +148,7 @@ func TestHandleSelfUserCredentialUpdateRequest_MissingCredentials(t *testing.T) 
 	authCtx := security.NewSecurityContextForTest(userID, "", "", "", nil)
 
 	mockSvc := NewUserServiceInterfaceMock(t)
-	mockSvc.On("UpdateUserCredentials", userID, mock.Anything).Return(&ErrorMissingCredentials)
+	mockSvc.On("UpdateUserCredentials", mock.Anything, userID, mock.Anything).Return(&ErrorMissingCredentials)
 	handler := newUserHandler(mockSvc)
 
 	req := httptest.NewRequest(http.MethodPost, "/users/me/update-credentials",

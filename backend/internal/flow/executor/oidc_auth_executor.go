@@ -169,7 +169,7 @@ func (o *oidcAuthExecutor) ProcessAuthFlowResponse(ctx *flowcore.NodeContext,
 		return nil
 	}
 
-	internalUser, err := o.GetInternalUser(parsedSub, execResp)
+	internalUser, err := o.GetInternalUser(ctx, parsedSub, execResp)
 	if err != nil {
 		return err
 	}

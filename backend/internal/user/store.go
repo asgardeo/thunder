@@ -19,6 +19,7 @@
 package user
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -32,18 +33,18 @@ import (
 
 // userStoreInterface defines the interface for user store operations.
 type userStoreInterface interface {
-	GetUserListCount(filters map[string]interface{}) (int, error)
-	GetUserList(limit, offset int, filters map[string]interface{}) ([]User, error)
-	CreateUser(user User, credentials []Credential) error
-	GetUser(id string) (User, error)
-	GetGroupCountForUser(userID string) (int, error)
-	GetUserGroups(userID string, limit, offset int) ([]UserGroup, error)
-	UpdateUser(user *User) error
-	UpdateUserCredentials(userID string, credentials []Credential) error
-	DeleteUser(id string) error
-	IdentifyUser(filters map[string]interface{}) (*string, error)
-	GetCredentials(id string) (User, []Credential, error)
-	ValidateUserIDs(userIDs []string) ([]string, error)
+	GetUserListCount(ctx context.Context, filters map[string]interface{}) (int, error)
+	GetUserList(ctx context.Context, limit, offset int, filters map[string]interface{}) ([]User, error)
+	CreateUser(ctx context.Context, user User, credentials []Credential) error
+	GetUser(ctx context.Context, id string) (User, error)
+	GetGroupCountForUser(ctx context.Context, userID string) (int, error)
+	GetUserGroups(ctx context.Context, userID string, limit, offset int) ([]UserGroup, error)
+	UpdateUser(ctx context.Context, user *User) error
+	UpdateUserCredentials(ctx context.Context, userID string, credentials []Credential) error
+	DeleteUser(ctx context.Context, id string) error
+	IdentifyUser(ctx context.Context, filters map[string]interface{}) (*string, error)
+	GetCredentials(ctx context.Context, id string) (User, []Credential, error)
+	ValidateUserIDs(ctx context.Context, userIDs []string) ([]string, error)
 }
 
 // userStore is the default implementation of userStoreInterface.
@@ -75,7 +76,8 @@ func newUserStore() (userStoreInterface, error) {
 }
 
 // GetUserListCount retrieves the total count of users.
-func (us *userStore) GetUserListCount(filters map[string]interface{}) (int, error) {
+func (us *userStore) GetUserListCount(ctx context.Context, filters map[string]interface{}) (int, error) {
+	_ = ctx // Reserved for future use (e.g., cancellation, logging with trace ID)
 	dbClient, err := provider.GetDBProvider().GetUserDBClient()
 	if err != nil {
 		return 0, fmt.Errorf("failed to get database client: %w", err)
@@ -104,7 +106,8 @@ func (us *userStore) GetUserListCount(filters map[string]interface{}) (int, erro
 }
 
 // GetUserList retrieves a list of users from the database.
-func (us *userStore) GetUserList(limit, offset int, filters map[string]interface{}) ([]User, error) {
+func (us *userStore) GetUserList(ctx context.Context, limit, offset int, filters map[string]interface{}) ([]User, error) {
+	_ = ctx // Reserved for future use
 	dbClient, err := provider.GetDBProvider().GetUserDBClient()
 	if err != nil {
 		return nil, fmt.Errorf("failed to get database client: %w", err)
@@ -134,7 +137,8 @@ func (us *userStore) GetUserList(limit, offset int, filters map[string]interface
 }
 
 // CreateUser handles the user creation in the database.
-func (us *userStore) CreateUser(user User, credentials []Credential) error {
+func (us *userStore) CreateUser(ctx context.Context, user User, credentials []Credential) error {
+	_ = ctx // Reserved for future use
 	dbClient, err := provider.GetDBProvider().GetUserDBClient()
 	if err != nil {
 		return fmt.Errorf("failed to get database client: %w", err)
@@ -198,7 +202,8 @@ func (us *userStore) CreateUser(user User, credentials []Credential) error {
 }
 
 // GetUser retrieves a specific user by its ID from the database.
-func (us *userStore) GetUser(id string) (User, error) {
+func (us *userStore) GetUser(ctx context.Context, id string) (User, error) {
+	_ = ctx // Reserved for future use
 	dbClient, err := provider.GetDBProvider().GetUserDBClient()
 	if err != nil {
 		return User{}, fmt.Errorf("failed to get database client: %w", err)
@@ -227,7 +232,8 @@ func (us *userStore) GetUser(id string) (User, error) {
 }
 
 // UpdateUser updates the user in the database.
-func (us *userStore) UpdateUser(user *User) error {
+func (us *userStore) UpdateUser(ctx context.Context, user *User) error {
+	_ = ctx // Reserved for future use
 	dbClient, err := provider.GetDBProvider().GetUserDBClient()
 	if err != nil {
 		return fmt.Errorf("failed to get database client: %w", err)
@@ -300,7 +306,8 @@ func (us *userStore) UpdateUser(user *User) error {
 }
 
 // UpdateUserCredentials updates the credentials for a given user.
-func (us *userStore) UpdateUserCredentials(userID string, credentials []Credential) error {
+func (us *userStore) UpdateUserCredentials(ctx context.Context, userID string, credentials []Credential) error {
+	_ = ctx // Reserved for future use
 	dbClient, err := provider.GetDBProvider().GetUserDBClient()
 	if err != nil {
 		return fmt.Errorf("failed to get database client: %w", err)
@@ -324,8 +331,8 @@ func (us *userStore) UpdateUserCredentials(userID string, credentials []Credenti
 }
 
 // DeleteUser deletes the user from the database.
-func (us *userStore) DeleteUser(id string) error {
-	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, "UserStore"))
+func (us *userStore) DeleteUser(ctx context.Context, id string) error {
+	logger := log.GetLoggerWithContext(ctx).With(log.String(log.LoggerKeyComponentName, "UserStore"))
 
 	dbClient, err := provider.GetDBProvider().GetUserDBClient()
 	if err != nil {
@@ -345,8 +352,8 @@ func (us *userStore) DeleteUser(id string) error {
 }
 
 // IdentifyUser identifies a user with the given filters.
-func (us *userStore) IdentifyUser(filters map[string]interface{}) (*string, error) {
-	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, "UserStore"))
+func (us *userStore) IdentifyUser(ctx context.Context, filters map[string]interface{}) (*string, error) {
+	logger := log.GetLoggerWithContext(ctx).With(log.String(log.LoggerKeyComponentName, "UserStore"))
 
 	dbClient, err := provider.GetDBProvider().GetUserDBClient()
 	if err != nil {
@@ -424,7 +431,8 @@ func (us *userStore) IdentifyUser(filters map[string]interface{}) (*string, erro
 }
 
 // GetCredentials retrieves the hashed credentials for a given user.
-func (us *userStore) GetCredentials(id string) (User, []Credential, error) {
+func (us *userStore) GetCredentials(ctx context.Context, id string) (User, []Credential, error) {
+	_ = ctx // Reserved for future use
 	dbClient, err := provider.GetDBProvider().GetUserDBClient()
 	if err != nil {
 		return User{}, []Credential{}, fmt.Errorf("failed to get database client: %w", err)
@@ -470,7 +478,8 @@ func (us *userStore) GetCredentials(id string) (User, []Credential, error) {
 }
 
 // ValidateUserIDs checks if all provided user IDs exist.
-func (us *userStore) ValidateUserIDs(userIDs []string) ([]string, error) {
+func (us *userStore) ValidateUserIDs(ctx context.Context, userIDs []string) ([]string, error) {
+	_ = ctx // Reserved for future use
 	if len(userIDs) == 0 {
 		return []string{}, nil
 	}
@@ -508,7 +517,8 @@ func (us *userStore) ValidateUserIDs(userIDs []string) ([]string, error) {
 }
 
 // GetGroupCountForUser retrieves the total count of groups a user belongs to.
-func (us *userStore) GetGroupCountForUser(userID string) (int, error) {
+func (us *userStore) GetGroupCountForUser(ctx context.Context, userID string) (int, error) {
+	_ = ctx // Reserved for future use
 	dbClient, err := provider.GetDBProvider().GetUserDBClient()
 	if err != nil {
 		return 0, fmt.Errorf("failed to get database client: %w", err)
@@ -530,7 +540,8 @@ func (us *userStore) GetGroupCountForUser(userID string) (int, error) {
 }
 
 // GetUserGroups retrieves groups that a user belongs to with pagination.
-func (us *userStore) GetUserGroups(userID string, limit, offset int) ([]UserGroup, error) {
+func (us *userStore) GetUserGroups(ctx context.Context, userID string, limit, offset int) ([]UserGroup, error) {
+	_ = ctx // Reserved for future use
 	dbClient, err := provider.GetDBProvider().GetUserDBClient()
 	if err != nil {
 		return nil, fmt.Errorf("failed to get database client: %w", err)

@@ -63,7 +63,7 @@ type oAuthExecutorInterface interface {
 		code string) (*OAuthTokenResponse, error)
 	GetUserInfo(ctx *flowcore.NodeContext, execResp *flowcm.ExecutorResponse,
 		accessToken string) (map[string]string, error)
-	GetInternalUser(sub string, execResp *flowcm.ExecutorResponse) (*user.User, error)
+	GetInternalUser(ctx *flowcore.NodeContext, sub string, execResp *flowcm.ExecutorResponse) (*user.User, error)
 	ResolveContextUser(ctx *flowcore.NodeContext, execResp *flowcm.ExecutorResponse,
 		sub string, internalUser *user.User) (*authncm.AuthenticatedUser, error)
 	GetIdpID(ctx *flowcore.NodeContext) (string, error)
@@ -238,7 +238,7 @@ func (o *oAuthExecutor) ProcessAuthFlowResponse(ctx *flowcore.NodeContext,
 		return nil
 	}
 
-	internalUser, err := o.GetInternalUser(sub, execResp)
+	internalUser, err := o.GetInternalUser(ctx, sub, execResp)
 	if err != nil {
 		return err
 	}
@@ -365,11 +365,11 @@ func (o *oAuthExecutor) getIDPName(idpID string) (string, error) {
 	return idp.Name, nil
 }
 
-func (o *oAuthExecutor) GetInternalUser(sub string, execResp *flowcm.ExecutorResponse) (*user.User, error) {
+func (o *oAuthExecutor) GetInternalUser(ctx *flowcore.NodeContext, sub string, execResp *flowcm.ExecutorResponse) (*user.User, error) {
 	logger := o.logger
 	logger.Debug("Resolving internal user with the given sub claim")
 
-	user, svcErr := o.authService.GetInternalUser(sub)
+	user, svcErr := o.authService.GetInternalUser(ctx.RequestContext, sub)
 	if svcErr != nil {
 		if svcErr.Code == authncm.ErrorUserNotFound.Code {
 			return nil, nil

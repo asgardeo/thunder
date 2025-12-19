@@ -19,6 +19,7 @@
 package group
 
 import (
+	"context"
 	"errors"
 	"testing"
 
@@ -257,7 +258,7 @@ func (suite *GroupStoreTestSuite) TestGroupStore_GetGroupListCount() {
 				tc.setup(providerMock, dbClientMock)
 			}
 
-			count, err := store.GetGroupListCount()
+			count, err := store.GetGroupListCount(context.Background())
 
 			if tc.wantErr != "" {
 				suite.Require().Error(err)
@@ -400,7 +401,7 @@ func (suite *GroupStoreTestSuite) TestGroupStore_GetGroupList() {
 				tc.setup(providerMock, dbClientMock)
 			}
 
-			groups, err := store.GetGroupList(tc.limit, tc.offset)
+			groups, err := store.GetGroupList(context.Background(), tc.limit, tc.offset)
 
 			if tc.wantErr != "" {
 				suite.Require().Error(err)
@@ -571,7 +572,7 @@ func (suite *GroupStoreTestSuite) TestGroupStore_CreateGroup() {
 			useHelper: true,
 			helper: func() {
 				testExecRollbackError(suite.T(), QueryCreateGroup, func(store *groupStore, group GroupDAO) error {
-					return store.CreateGroup(group)
+					return store.CreateGroup(context.Background(), group)
 				})
 			},
 		},
@@ -772,7 +773,7 @@ func (suite *GroupStoreTestSuite) TestGroupStore_CreateGroup() {
 				tc.setup(providerMock, dbClientMock, txMock)
 			}
 
-			err := store.CreateGroup(tc.group)
+			err := store.CreateGroup(context.Background(), tc.group)
 
 			if tc.expectErr != "" {
 				suite.Require().Error(err)
@@ -943,7 +944,7 @@ func (suite *GroupStoreTestSuite) TestGroupStore_GetGroup() {
 				tc.setup(providerMock, dbClientMock)
 			}
 
-			group, err := store.GetGroup(tc.groupID)
+			group, err := store.GetGroup(context.Background(), tc.groupID)
 
 			switch {
 			case tc.expectErrIs != nil:
@@ -1051,7 +1052,7 @@ func (suite *GroupStoreTestSuite) TestGroupStore_GetGroupMembers() {
 				tc.setup(providerMock, dbClientMock)
 			}
 
-			members, err := store.GetGroupMembers(tc.groupID, tc.limit, tc.offset)
+			members, err := store.GetGroupMembers(context.Background(), tc.groupID, tc.limit, tc.offset)
 
 			if tc.expectErr != "" {
 				suite.Require().Error(err)
@@ -1181,7 +1182,7 @@ func (suite *GroupStoreTestSuite) TestGroupStore_GetGroupMemberCount() {
 				tc.setup(providerMock, dbClientMock)
 			}
 
-			count, err := store.GetGroupMemberCount(tc.groupID)
+			count, err := store.GetGroupMemberCount(context.Background(), tc.groupID)
 
 			if tc.expectErr != "" {
 				suite.Require().Error(err)
@@ -1285,7 +1286,7 @@ func (suite *GroupStoreTestSuite) TestGroupStore_UpdateGroup() {
 			useHelper: true,
 			helper: func() {
 				testExecRollbackError(suite.T(), QueryUpdateGroup, func(store *groupStore, group GroupDAO) error {
-					return store.UpdateGroup(group)
+					return store.UpdateGroup(context.Background(), group)
 				})
 			},
 		},
@@ -1654,7 +1655,7 @@ func (suite *GroupStoreTestSuite) TestGroupStore_UpdateGroup() {
 				tc.setup(providerMock, dbClientMock, txMock)
 			}
 
-			err := store.UpdateGroup(tc.group)
+			err := store.UpdateGroup(context.Background(), tc.group)
 
 			switch {
 			case tc.expectErrIs != nil:
@@ -2090,7 +2091,7 @@ func (suite *GroupStoreTestSuite) TestGroupStore_DeleteGroup() {
 				tc.setup(providerMock, dbClientMock, txMock)
 			}
 
-			err := store.DeleteGroup(tc.groupID)
+			err := store.DeleteGroup(context.Background(), tc.groupID)
 
 			if tc.expectErr != "" {
 				suite.Require().Error(err)
@@ -2282,7 +2283,7 @@ func (suite *GroupStoreTestSuite) TestGroupStore_ValidateGroupIDs() {
 			}
 
 			store := &groupStore{dbProvider: providerMock, deploymentID: testDeploymentID}
-			invalid, err := store.ValidateGroupIDs(tc.groupIDs)
+			invalid, err := store.ValidateGroupIDs(context.Background(), tc.groupIDs)
 
 			if tc.wantErr != "" {
 				require.Error(t, err)
@@ -2390,7 +2391,7 @@ func (suite *GroupStoreTestSuite) TestGroupStore_GetGroupsByOrganizationUnitCoun
 				tc.setup(providerMock, dbClientMock)
 			}
 
-			count, err := store.GetGroupsByOrganizationUnitCount("ou-1")
+			count, err := store.GetGroupsByOrganizationUnitCount(context.Background(), "ou-1")
 
 			if tc.expectErr != "" {
 				suite.Require().Error(err)
@@ -2481,7 +2482,7 @@ func (suite *GroupStoreTestSuite) TestGroupStore_GetGroupsByOrganizationUnit() {
 				tc.setup(providerMock, dbClientMock)
 			}
 
-			groups, err := store.GetGroupsByOrganizationUnit("ou-1", 10, 0)
+			groups, err := store.GetGroupsByOrganizationUnit(context.Background(), "ou-1", 10, 0)
 
 			if tc.expectErr != "" {
 				suite.Require().Error(err)
@@ -2550,7 +2551,7 @@ func (suite *GroupStoreTestSuite) TestGroupStore_CheckGroupNameConflictForCreate
 					Once()
 			},
 			invoke: func(store *groupStore, _ *providermock.DBClientInterfaceMock) error {
-				return store.CheckGroupNameConflictForCreate("engineering", "ou-1")
+				return store.CheckGroupNameConflictForCreate(context.Background(), "engineering", "ou-1")
 			},
 			expectErr: "failed to get database client",
 		},
@@ -2611,7 +2612,7 @@ func (suite *GroupStoreTestSuite) TestGroupStore_CheckGroupNameConflictForUpdate
 					Once()
 			},
 			invoke: func(store *groupStore, _ *providermock.DBClientInterfaceMock) error {
-				return store.CheckGroupNameConflictForUpdate("engineering", "ou-1", "grp-1")
+				return store.CheckGroupNameConflictForUpdate(context.Background(), "engineering", "ou-1", "grp-1")
 			},
 			expectErr: "failed to get database client",
 		},

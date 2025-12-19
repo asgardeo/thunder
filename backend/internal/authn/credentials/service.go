@@ -20,6 +20,8 @@
 package credentials
 
 import (
+	"context"
+
 	"github.com/asgardeo/thunder/internal/authn/common"
 	"github.com/asgardeo/thunder/internal/system/error/serviceerror"
 	"github.com/asgardeo/thunder/internal/system/log"
@@ -32,7 +34,7 @@ const (
 
 // CredentialsAuthnServiceInterface defines the contract for credentials-based authenticator services.
 type CredentialsAuthnServiceInterface interface {
-	Authenticate(attributes map[string]interface{}) (*user.User, *serviceerror.ServiceError)
+	Authenticate(ctx context.Context, attributes map[string]interface{}) (*user.User, *serviceerror.ServiceError)
 }
 
 // credentialsAuthnService is the default implementation of CredentialsAuthnServiceInterface.
@@ -51,9 +53,9 @@ func newCredentialsAuthnService(userSvc user.UserServiceInterface) CredentialsAu
 }
 
 // Authenticate authenticates a user using credentials.
-func (c *credentialsAuthnService) Authenticate(attributes map[string]interface{}) (
+func (c *credentialsAuthnService) Authenticate(ctx context.Context, attributes map[string]interface{}) (
 	*user.User, *serviceerror.ServiceError) {
-	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, loggerComponentName))
+	logger := log.GetLoggerWithContext(ctx).With(log.String(log.LoggerKeyComponentName, loggerComponentName))
 	logger.Debug("Authenticating user with credentials")
 
 	if len(attributes) == 0 {
@@ -61,7 +63,7 @@ func (c *credentialsAuthnService) Authenticate(attributes map[string]interface{}
 	}
 
 	authRequest := user.AuthenticateUserRequest(attributes)
-	authResponse, svcErr := c.userService.AuthenticateUser(authRequest)
+	authResponse, svcErr := c.userService.AuthenticateUser(ctx, authRequest)
 	if svcErr != nil {
 		if svcErr.Type == serviceerror.ClientErrorType {
 			switch svcErr.Code {
@@ -81,7 +83,7 @@ func (c *credentialsAuthnService) Authenticate(attributes map[string]interface{}
 	}
 
 	// Fetch the user details
-	user, svcErr := c.userService.GetUser(authResponse.ID)
+	user, svcErr := c.userService.GetUser(ctx, authResponse.ID)
 	if svcErr != nil {
 		if svcErr.Type == serviceerror.ClientErrorType {
 			return nil, serviceerror.CustomServiceError(

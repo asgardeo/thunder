@@ -286,7 +286,7 @@ func (a *attributeCollector) updateUserInStore(ctx *flowcore.NodeContext) error 
 		return errors.New("failed to create updated user object")
 	}
 
-	if _, svcErr := a.userService.UpdateUser(userID, updatedUser); svcErr != nil {
+	if _, svcErr := a.userService.UpdateUser(ctx.RequestContext, userID, updatedUser); svcErr != nil {
 		return fmt.Errorf("failed to update user attributes: %s", svcErr.Error)
 	}
 	logger.Debug("User attributes updated successfully", log.String("userID", userID))
@@ -301,7 +301,7 @@ func (a *attributeCollector) getUserFromStore(ctx *flowcore.NodeContext) (*user.
 		return nil, errors.New("user ID is not available in the context")
 	}
 
-	user, svcErr := a.userService.GetUser(userID)
+	user, svcErr := a.userService.GetUser(ctx.RequestContext, userID)
 	if svcErr != nil {
 		return nil, fmt.Errorf("failed to get user by ID: %s", svcErr.Error)
 	}
