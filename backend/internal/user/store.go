@@ -34,15 +34,15 @@ import (
 type userStoreInterface interface {
 	GetUserListCount(filters map[string]interface{}) (int, error)
 	GetUserList(limit, offset int, filters map[string]interface{}) ([]User, error)
-	CreateUser(user User, credentials []Credential) error
+	CreateUser(user User, credentials Credentials) error
 	GetUser(id string) (User, error)
 	GetGroupCountForUser(userID string) (int, error)
 	GetUserGroups(userID string, limit, offset int) ([]UserGroup, error)
 	UpdateUser(user *User) error
-	UpdateUserCredentials(userID string, credentials []Credential) error
+	UpdateUserCredentials(userID string, credentials Credentials) error
 	DeleteUser(id string) error
 	IdentifyUser(filters map[string]interface{}) (*string, error)
-	GetCredentials(id string) (User, []Credential, error)
+	GetCredentials(id string) (User, Credentials, error)
 	ValidateUserIDs(userIDs []string) ([]string, error)
 }
 
@@ -134,7 +134,7 @@ func (us *userStore) GetUserList(limit, offset int, filters map[string]interface
 }
 
 // CreateUser handles the user creation in the database.
-func (us *userStore) CreateUser(user User, credentials []Credential) error {
+func (us *userStore) CreateUser(user User, credentials Credentials) error {
 	dbClient, err := provider.GetDBProvider().GetUserDBClient()
 	if err != nil {
 		return fmt.Errorf("failed to get database client: %w", err)
@@ -146,10 +146,10 @@ func (us *userStore) CreateUser(user User, credentials []Credential) error {
 		return ErrBadAttributesInRequest
 	}
 
-	// Convert credentials array to JSON string
+	// Convert credentials map to JSON string
 	var credentialsJSON string
 	if len(credentials) == 0 {
-		credentialsJSON = "[]"
+		credentialsJSON = "{}"
 	} else {
 		credentialsBytes, err := json.Marshal(credentials)
 		if err != nil {
@@ -300,7 +300,7 @@ func (us *userStore) UpdateUser(user *User) error {
 }
 
 // UpdateUserCredentials updates the credentials for a given user.
-func (us *userStore) UpdateUserCredentials(userID string, credentials []Credential) error {
+func (us *userStore) UpdateUserCredentials(userID string, credentials Credentials) error {
 	dbClient, err := provider.GetDBProvider().GetUserDBClient()
 	if err != nil {
 		return fmt.Errorf("failed to get database client: %w", err)
@@ -424,30 +424,30 @@ func (us *userStore) IdentifyUser(filters map[string]interface{}) (*string, erro
 }
 
 // GetCredentials retrieves the hashed credentials for a given user.
-func (us *userStore) GetCredentials(id string) (User, []Credential, error) {
+func (us *userStore) GetCredentials(id string) (User, Credentials, error) {
 	dbClient, err := provider.GetDBProvider().GetUserDBClient()
 	if err != nil {
-		return User{}, []Credential{}, fmt.Errorf("failed to get database client: %w", err)
+		return User{}, nil, fmt.Errorf("failed to get database client: %w", err)
 	}
 
 	results, err := dbClient.Query(QueryValidateUserWithCredentials, id, us.deploymentID)
 	if err != nil {
-		return User{}, []Credential{}, fmt.Errorf("failed to execute query: %w", err)
+		return User{}, nil, fmt.Errorf("failed to execute query: %w", err)
 	}
 
 	if len(results) == 0 {
-		return User{}, []Credential{}, ErrUserNotFound
+		return User{}, nil, ErrUserNotFound
 	}
 
 	if len(results) != 1 {
-		return User{}, []Credential{}, fmt.Errorf("unexpected number of results: %d", len(results))
+		return User{}, nil, fmt.Errorf("unexpected number of results: %d", len(results))
 	}
 
 	row := results[0]
 
 	user, err := buildUserFromResultRow(row)
 	if err != nil {
-		return User{}, []Credential{}, fmt.Errorf("failed to build user from result row: %w", err)
+		return User{}, nil, fmt.Errorf("failed to build user from result row: %w", err)
 	}
 
 	// build the UserDTO with credentials.
@@ -458,12 +458,12 @@ func (us *userStore) GetCredentials(id string) (User, []Credential, error) {
 	case []byte:
 		credentialsJSON = string(v)
 	default:
-		return User{}, []Credential{}, fmt.Errorf("failed to parse credentials as string")
+		return User{}, nil, fmt.Errorf("failed to parse credentials as string")
 	}
 
-	var credentials []Credential
+	var credentials Credentials
 	if err := json.Unmarshal([]byte(credentialsJSON), &credentials); err != nil {
-		return User{}, []Credential{}, fmt.Errorf("failed to unmarshal credentials: %w", err)
+		return User{}, nil, fmt.Errorf("failed to unmarshal credentials: %w", err)
 	}
 
 	return user, credentials, nil

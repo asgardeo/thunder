@@ -37,13 +37,6 @@ import (
 
 const loggerComponentName = "UserService"
 
-// SupportedCredentialFields defines the set of credential field names that are supported.
-var supportedCredentialFields = map[string]struct{}{
-	"password": {},
-	"pin":      {},
-	"secret":   {},
-}
-
 // UserServiceInterface defines the interface for the user service.
 type UserServiceInterface interface {
 	GetUserList(limit, offset int, filters map[string]interface{}) (*UserListResponse, *serviceerror.ServiceError)
@@ -55,12 +48,13 @@ type UserServiceInterface interface {
 	GetUserGroups(userID string, limit, offset int) (*UserGroupListResponse, *serviceerror.ServiceError)
 	UpdateUser(userID string, user *User) (*User, *serviceerror.ServiceError)
 	UpdateUserAttributes(userID string, attributes json.RawMessage) (*User, *serviceerror.ServiceError)
-	UpdateUserCredentials(userID string, attributes json.RawMessage) *serviceerror.ServiceError
+	UpdateUserCredentials(userID string, credentialType string, credentials []Credential) *serviceerror.ServiceError
 	DeleteUser(userID string) *serviceerror.ServiceError
 	IdentifyUser(filters map[string]interface{}) (*string, *serviceerror.ServiceError)
 	VerifyUser(userID string, credentials map[string]interface{}) (*User, *serviceerror.ServiceError)
 	AuthenticateUser(request AuthenticateUserRequest) (*AuthenticateUserResponse, *serviceerror.ServiceError)
 	ValidateUserIDs(userIDs []string) ([]string, *serviceerror.ServiceError)
+	GetUserCredentialsByType(userID string, credentialType string) ([]Credential, *serviceerror.ServiceError)
 }
 
 // userService is the default implementation of the UserServiceInterface.
@@ -249,10 +243,10 @@ func (us *userService) CreateUserByPath(
 	return us.CreateUser(user)
 }
 
-// extractCredentials extracts the credentials from the user attributes and returns a Credentials array.
-func (us *userService) extractCredentials(user *User) ([]Credential, error) {
+// extractCredentials extracts the credentials from the user attributes and returns Credentials.
+func (us *userService) extractCredentials(user *User) (Credentials, error) {
 	if user.Attributes == nil {
-		return []Credential{}, nil
+		return Credentials{}, nil
 	}
 
 	var attrsMap map[string]interface{}
@@ -260,9 +254,10 @@ func (us *userService) extractCredentials(user *User) ([]Credential, error) {
 		return nil, err
 	}
 
-	var credentials []Credential
+	credentials := make(Credentials)
 
-	for credField := range supportedCredentialFields {
+	for credType := range SupportedCredentialTypes {
+		credField := credType.String()
 		if credValue, ok := attrsMap[credField].(string); ok {
 			credHash, err := us.hashService.Generate([]byte(credValue))
 			if err != nil {
@@ -272,9 +267,8 @@ func (us *userService) extractCredentials(user *User) ([]Credential, error) {
 			delete(attrsMap, credField)
 
 			credential := Credential{
-				CredentialType: credField,
-				StorageType:    "hash",
-				StorageAlgo:    credHash.Algorithm,
+				StorageType: "hash",
+				StorageAlgo: credHash.Algorithm,
 				StorageAlgoParams: hash.CredParameters{
 					Iterations: credHash.Parameters.Iterations,
 					KeySize:    credHash.Parameters.KeySize,
@@ -283,7 +277,11 @@ func (us *userService) extractCredentials(user *User) ([]Credential, error) {
 				Value: credHash.Hash,
 			}
 
-			credentials = append(credentials, credential)
+			// Initialize the credential type array if it doesn't exist
+			if credentials[credField] == nil {
+				credentials[credField] = []Credential{}
+			}
+			credentials[credField] = append(credentials[credField], credential)
 		}
 	}
 
@@ -464,8 +462,8 @@ func (us *userService) containsCredentialFields(attributes json.RawMessage) (boo
 		return false, &ErrorInvalidRequestFormat
 	}
 
-	for credField := range supportedCredentialFields {
-		if _, ok := attrs[credField]; ok {
+	for credType := range SupportedCredentialTypes {
+		if _, ok := attrs[credType.String()]; ok {
 			return true, nil
 		}
 	}
@@ -473,118 +471,128 @@ func (us *userService) containsCredentialFields(attributes json.RawMessage) (boo
 	return false, nil
 }
 
-// UpdateUserCredentials updates the credentials of a user.
-func (us *userService) UpdateUserCredentials(userID string, attributes json.RawMessage) *serviceerror.ServiceError {
+// UpdateUserCredentials updates the credentials of a user for the specified credential type.
+// This method replaces all credentials of the specified type with the provided credentials array.
+// If the credential type doesn't exist yet, it will be created with the provided credentials.
+// Other credential types are preserved unchanged.
+func (us *userService) UpdateUserCredentials(
+	userID string,
+	credentialType string,
+	credentials []Credential,
+) *serviceerror.ServiceError {
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, loggerComponentName))
-	logger.Debug("Updating user credentials", log.String("id", userID))
+	logger.Debug("Updating user credentials",
+		log.String("userID", userID),
+		log.String("credentialType", credentialType),
+		log.Int("credentialCount", len(credentials)))
 
 	if strings.TrimSpace(userID) == "" {
 		return &ErrorAuthenticationFailed
 	}
 
-	if len(attributes) == 0 {
-		return &ErrorMissingCredentials
+	if strings.TrimSpace(credentialType) == "" {
+		return &ErrorInvalidCredential
 	}
 
-	var attrs map[string]interface{}
-	if err := json.Unmarshal(attributes, &attrs); err != nil {
-		return &ErrorInvalidRequestFormat
-	}
-	if len(attrs) == 0 {
-		return &ErrorMissingCredentials
-	}
-
-	var invalidCredentialFields []string
-	for key := range attrs {
-		if _, found := supportedCredentialFields[key]; !found {
-			invalidCredentialFields = append(invalidCredentialFields, key)
-		}
-	}
-	if len(invalidCredentialFields) > 0 {
-		errorDesc := fmt.Sprintf(
-			"Invalid credential fields in request: %s",
-			strings.Join(invalidCredentialFields, ", "),
-		)
+	if _, found := SupportedCredentialTypes[CredentialType(credentialType)]; !found {
+		errorDesc := fmt.Sprintf("Invalid credential type: %s", credentialType)
 		return serviceerror.CustomServiceError(ErrorInvalidCredential, errorDesc)
 	}
 
-	user := &User{
-		ID:         userID,
-		Attributes: attributes,
-	}
-
-	credentials, err := us.extractCredentials(user)
-	if err != nil {
-		return logErrorAndReturnServerError(
-			logger,
-			"Failed to extract credentials from request",
-			err,
-			log.String("userID", userID),
-		)
-	}
-
-	if len(credentials) == 0 {
+	if credentials == nil {
 		return &ErrorMissingCredentials
 	}
 
+	// Get existing credentials
 	_, existingCredentials, err := us.userStore.GetCredentials(userID)
 	if err != nil {
 		if errors.Is(err, ErrUserNotFound) {
-			logger.Debug("User not found", log.String("id", userID))
+			logger.Debug("User not found", log.String("userID", userID))
 			return &ErrorUserNotFound
 		}
 		return logErrorAndReturnServerError(
 			logger,
 			"Failed to retrieve existing user credentials",
 			err,
-			log.String("id", userID),
+			log.String("userID", userID),
 		)
 	}
 
-	mergedCredentials := us.mergeCredentials(existingCredentials, credentials)
-
-	err = us.userStore.UpdateUserCredentials(userID, mergedCredentials)
+	// Prepare updated credentials with validation
+	updatedCredentials, err := us.prepareUpdatedCredentials(existingCredentials, credentialType, credentials, logger)
 	if err != nil {
-		if errors.Is(err, ErrUserNotFound) {
-			logger.Debug("User not found", log.String("id", userID))
-			return &ErrorUserNotFound
-		}
-		return logErrorAndReturnServerError(logger, "Failed to update user credentials", err, log.String("id", userID))
+		return logErrorAndReturnServerError(logger, "Failed to prepare updated credentials", err)
 	}
 
-	logger.Debug("Successfully updated user credentials", log.String("id", userID))
+	// Update credentials in database
+	err = us.userStore.UpdateUserCredentials(userID, updatedCredentials)
+	if err != nil {
+		if errors.Is(err, ErrUserNotFound) {
+			logger.Debug("User not found", log.String("userID", userID))
+			return &ErrorUserNotFound
+		}
+		return logErrorAndReturnServerError(
+			logger,
+			"Failed to update user credentials",
+			err,
+			log.String("userID", userID),
+		)
+	}
+
+	logger.Debug("Successfully updated user credentials",
+		log.String("userID", userID),
+		log.String("credentialType", credentialType),
+		log.Int("credentialCount", len(credentials)))
 	return nil
 }
 
-// mergeCredentials combines existing credentials with provided credentials, preferring provided values.
-func (us *userService) mergeCredentials(existing []Credential, provided []Credential) []Credential {
-	providedMap := make(map[string]Credential, len(provided))
-	providedOrder := make([]string, 0, len(provided))
-	for _, cred := range provided {
-		if _, exists := providedMap[cred.CredentialType]; !exists {
-			providedOrder = append(providedOrder, cred.CredentialType)
-		}
-		providedMap[cred.CredentialType] = cred
+// validateCredential validates a single credential.
+func (us *userService) validateCredential(credential *Credential) error {
+	if credential == nil {
+		return errors.New("credential is nil")
+	}
+	if strings.TrimSpace(credential.Value) == "" {
+		return errors.New("credential value is empty")
+	}
+	return nil
+}
+
+// prepareUpdatedCredentials prepares the updated credentials map by copying existing credentials,
+// validating new credentials, and replacing credentials for the specified type.
+func (us *userService) prepareUpdatedCredentials(
+	existingCredentials Credentials,
+	credentialType string,
+	newCredentials []Credential,
+	logger *log.Logger,
+) (Credentials, error) {
+	// Copy existing credentials to preserve other types
+	updatedCredentials := make(Credentials)
+	for credType, credList := range existingCredentials {
+		updatedCredentials[credType] = append([]Credential{}, credList...)
 	}
 
-	merged := make([]Credential, 0, len(existing)+len(providedMap))
-
-	for _, storedCred := range existing {
-		if updatedCred, found := providedMap[storedCred.CredentialType]; found {
-			merged = append(merged, updatedCred)
-			delete(providedMap, storedCred.CredentialType)
-		} else {
-			merged = append(merged, storedCred)
+	// Validate all new credentials
+	for i := range newCredentials {
+		// Validate credential fields
+		if err := us.validateCredential(&newCredentials[i]); err != nil {
+			logger.Debug("Credential validation failed",
+				log.String("credentialType", credentialType),
+				log.Int("index", i),
+				log.Error(err))
+			return nil, err
 		}
 	}
 
-	for _, credType := range providedOrder {
-		if cred, found := providedMap[credType]; found {
-			merged = append(merged, cred)
-		}
-	}
+	// Replace credentials for the specified type
+	// Note: Credentials are already hashed/processed when they reach here
+	updatedCredentials[credentialType] = newCredentials
 
-	return merged
+	logger.Debug("Prepared updated credentials",
+		log.String("credentialType", credentialType),
+		log.Int("newCount", len(newCredentials)),
+		log.Int("totalTypes", len(updatedCredentials)))
+
+	return updatedCredentials, nil
 }
 
 // DeleteUser delete the user for given user id.
@@ -646,7 +654,7 @@ func (us *userService) VerifyUser(
 	credentialsToVerify := make(map[string]string)
 
 	for credType, credValueInterface := range credentials {
-		if _, isSupported := supportedCredentialFields[credType]; !isSupported {
+		if _, isSupported := SupportedCredentialTypes[CredentialType(credType)]; !isSupported {
 			continue
 		}
 
@@ -678,35 +686,37 @@ func (us *userService) VerifyUser(
 	}
 
 	for credType, credValue := range credentialsToVerify {
-		var matchingCredential *Credential
-		for _, storedCred := range storedCredentials {
-			if storedCred.CredentialType == credType {
-				matchingCredential = &storedCred
-				break
-			}
-		}
-
-		if matchingCredential == nil {
+		// Get credentials of this type from the map
+		credList, exists := storedCredentials[credType]
+		if !exists || len(credList) == 0 {
 			logger.Debug("No stored credential found for type",
 				log.String("userID", userID), log.String("credType", credType))
 			return nil, &ErrorAuthenticationFailed
 		}
 
-		verifyingCredential := hash.Credential{
-			Algorithm: matchingCredential.StorageAlgo,
-			Hash:      matchingCredential.Value,
-			Parameters: hash.CredParameters{
-				Salt:       matchingCredential.StorageAlgoParams.Salt,
-				Iterations: matchingCredential.StorageAlgoParams.Iterations,
-				KeySize:    matchingCredential.StorageAlgoParams.KeySize,
-			},
-		}
-		hashVerified, err := us.hashService.Verify([]byte(credValue), verifyingCredential)
+		// Try to verify against any credential of this type (typically first one)
+		verified := false
+		for _, storedCred := range credList {
+			verifyingCredential := hash.Credential{
+				Algorithm: storedCred.StorageAlgo,
+				Hash:      storedCred.Value,
+				Parameters: hash.CredParameters{
+					Salt:       storedCred.StorageAlgoParams.Salt,
+					Iterations: storedCred.StorageAlgoParams.Iterations,
+					KeySize:    storedCred.StorageAlgoParams.KeySize,
+				},
+			}
+			hashVerified, err := us.hashService.Verify([]byte(credValue), verifyingCredential)
 
-		if err == nil && hashVerified {
-			logger.Debug("Credential verified successfully",
-				log.String("userID", userID), log.String("credType", credType))
-		} else {
+			if err == nil && hashVerified {
+				logger.Debug("Credential verified successfully",
+					log.String("userID", userID), log.String("credType", credType))
+				verified = true
+				break
+			}
+		}
+
+		if !verified {
 			logger.Debug("Credential verification failed",
 				log.String("userID", userID), log.String("credType", credType))
 			return nil, &ErrorAuthenticationFailed
@@ -731,7 +741,7 @@ func (us *userService) AuthenticateUser(
 	credentials := make(map[string]interface{})
 
 	for key, value := range request {
-		if _, isCredential := supportedCredentialFields[key]; isCredential {
+		if _, isCredential := SupportedCredentialTypes[CredentialType(key)]; isCredential {
 			credentials[key] = value
 		} else {
 			identifyFilters[key] = value
@@ -780,6 +790,59 @@ func (us *userService) ValidateUserIDs(userIDs []string) ([]string, *serviceerro
 	}
 
 	return invalidUserIDs, nil
+}
+
+// GetUserCredentialsByType retrieves credentials of a specific type for a user.
+// Returns an empty array if no credentials of the specified type exist.
+func (us *userService) GetUserCredentialsByType(
+	userID string,
+	credentialType string,
+) ([]Credential, *serviceerror.ServiceError) {
+	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, loggerComponentName))
+	logger.Debug("Retrieving user credentials by type",
+		log.String("userID", log.MaskString(userID)),
+		log.String("credentialType", credentialType))
+
+	if strings.TrimSpace(userID) == "" {
+		return nil, &ErrorMissingUserID
+	}
+
+	if strings.TrimSpace(credentialType) == "" {
+		logger.Debug("Credential type is empty")
+		return nil, &ErrorInvalidRequestFormat
+	}
+
+	// Get all credentials for the user
+	_, allCredentials, err := us.userStore.GetCredentials(userID)
+	if err != nil {
+		if errors.Is(err, ErrUserNotFound) {
+			logger.Debug("User not found", log.String("userID", userID))
+			return nil, &ErrorUserNotFound
+		}
+		return nil, logErrorAndReturnServerError(
+			logger,
+			"Failed to retrieve user credentials",
+			err,
+			log.String("userID", userID),
+		)
+	}
+
+	// Get credentials of the specified type
+	credentials, exists := allCredentials[credentialType]
+	if !exists || len(credentials) == 0 {
+		logger.Debug("No credentials found for type",
+			log.String("userID", log.MaskString(userID)),
+			log.String("credentialType", credentialType))
+		// Return empty array
+		return []Credential{}, nil
+	}
+
+	logger.Debug("Retrieved credentials for type",
+		log.String("userID", log.MaskString(userID)),
+		log.String("credentialType", credentialType),
+		log.Int("count", len(credentials)))
+
+	return credentials, nil
 }
 
 // validateOrganizationUnitForUserType ensures that the organization unit ID is valid and belongs to the user type.

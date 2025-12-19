@@ -717,7 +717,7 @@ func TestUserService_UpdateUserCredentials_Validation(t *testing.T) {
 	t.Run("ReturnsAuthErrorWhenUserIDMissing", func(t *testing.T) {
 		service := &userService{}
 
-		err := service.UpdateUserCredentials("", json.RawMessage(`{"password":"pw"}`))
+		err := service.UpdateUserCredentials("", "password", []Credential{{Value: "pw"}})
 		require.NotNil(t, err)
 		require.Equal(t, ErrorAuthenticationFailed, *err)
 	})
@@ -725,7 +725,7 @@ func TestUserService_UpdateUserCredentials_Validation(t *testing.T) {
 	t.Run("ReturnsMissingCredentialsWhenPayloadEmpty", func(t *testing.T) {
 		service := &userService{}
 
-		err := service.UpdateUserCredentials("user-1", json.RawMessage{})
+		err := service.UpdateUserCredentials("user-1", "password", nil)
 		require.NotNil(t, err)
 		require.Equal(t, ErrorMissingCredentials, *err)
 	})
@@ -735,35 +735,21 @@ func TestUserService_UpdateUserCredentials_UserNotFound(t *testing.T) {
 	userStoreMock := newUserStoreInterfaceMock(t)
 	userStoreMock.
 		On("GetCredentials", "user-1").
-		Return(User{}, []Credential{}, ErrUserNotFound).
-		Once()
-	hashServiceMock := hashmock.NewHashServiceInterfaceMock(t)
-	hashServiceMock.
-		On("Generate", mock.Anything).
-		Return(hash.Credential{
-			Algorithm:  hash.PBKDF2,
-			Hash:       "hashed-value",
-			Parameters: hash.CredParameters{Salt: "random-salt"},
-		}, nil).
+		Return(User{}, Credentials{}, ErrUserNotFound).
 		Once()
 
 	service := &userService{
-		userStore:   userStoreMock,
-		hashService: hashServiceMock,
+		userStore: userStoreMock,
 	}
 
-	config.ResetThunderRuntime()
-	initErr := config.InitializeThunderRuntime("", &config.Config{
-		Crypto: config.CryptoConfig{
-			PasswordHashing: config.PasswordHashingConfig{
-				Algorithm: string(hash.PBKDF2),
-			},
+	// Credentials are already hashed
+	credentials := []Credential{
+		{
+			StorageType: "hash",
+			Value:       "already-hashed-password",
 		},
-	})
-	require.NoError(t, initErr)
-	t.Cleanup(config.ResetThunderRuntime)
-
-	svcErr := service.UpdateUserCredentials("user-1", json.RawMessage(`{"password":"pw"}`))
+	}
+	svcErr := service.UpdateUserCredentials("user-1", "password", credentials)
 	require.NotNil(t, svcErr)
 	require.Equal(t, ErrorUserNotFound, *svcErr)
 	userStoreMock.AssertNotCalled(t, "UpdateUserCredentials", mock.Anything, mock.Anything)
@@ -771,23 +757,25 @@ func TestUserService_UpdateUserCredentials_UserNotFound(t *testing.T) {
 
 func TestUserService_UpdateUserCredentials_Succeeds(t *testing.T) {
 	userStoreMock := newUserStoreInterfaceMock(t)
-	existingCredentials := []Credential{
-		{
-			CredentialType: "password",
-			StorageType:    "hash",
-			StorageAlgo:    hash.SHA256,
-			Value:          "old-hash",
-			StorageAlgoParams: hash.CredParameters{
-				Salt: "old-salt",
+	existingCredentials := Credentials{
+		"password": {
+			{
+				StorageType: "hash",
+				StorageAlgo: hash.SHA256,
+				Value:       "old-hash",
+				StorageAlgoParams: hash.CredParameters{
+					Salt: "old-salt",
+				},
 			},
 		},
-		{
-			CredentialType: "pin",
-			StorageType:    "hash",
-			StorageAlgo:    hash.SHA256,
-			Value:          "pin-hash",
-			StorageAlgoParams: hash.CredParameters{
-				Salt: "pin-salt",
+		"pin": {
+			{
+				StorageType: "hash",
+				StorageAlgo: hash.SHA256,
+				Value:       "pin-hash",
+				StorageAlgoParams: hash.CredParameters{
+					Salt: "pin-salt",
+				},
 			},
 		},
 	}
@@ -795,11 +783,11 @@ func TestUserService_UpdateUserCredentials_Succeeds(t *testing.T) {
 		On("GetCredentials", "user-1").
 		Return(User{ID: "user-1"}, existingCredentials, nil).
 		Once()
-	var captured []Credential
+	var captured Credentials
 	userStoreMock.
 		On("UpdateUserCredentials", "user-1", mock.Anything).
 		Run(func(args mock.Arguments) {
-			if creds, ok := args[1].([]Credential); ok {
+			if creds, ok := args[1].(Credentials); ok {
 				captured = creds
 			}
 		}).
@@ -807,14 +795,7 @@ func TestUserService_UpdateUserCredentials_Succeeds(t *testing.T) {
 		Once()
 
 	hashServiceMock := hashmock.NewHashServiceInterfaceMock(t)
-	hashServiceMock.
-		On("Generate", mock.Anything).
-		Return(hash.Credential{
-			Algorithm:  hash.PBKDF2,
-			Hash:       "hash",
-			Parameters: hash.CredParameters{Salt: "random-salt"},
-		}, nil).
-		Once()
+	// No hash service expectations - credentials are already hashed when passed to service
 
 	service := &userService{
 		userStore:   userStoreMock,
@@ -832,180 +813,216 @@ func TestUserService_UpdateUserCredentials_Succeeds(t *testing.T) {
 	require.NoError(t, initErr)
 	t.Cleanup(config.ResetThunderRuntime)
 
-	svcErr := service.UpdateUserCredentials("user-1", json.RawMessage(`{"password":"newPass"}`))
-	require.Nil(t, svcErr)
-	require.Len(t, captured, 2)
-
-	var passwordCred, pinCred *Credential
-	for i := range captured {
-		switch captured[i].CredentialType {
-		case "password":
-			passwordCred = &captured[i]
-		case "pin":
-			pinCred = &captured[i]
-		}
+	// Credentials are already hashed
+	newCredentials := []Credential{
+		{
+			StorageType: "hash",
+			StorageAlgo: hash.PBKDF2,
+			Value:       "already-hashed-password",
+			StorageAlgoParams: hash.CredParameters{
+				Salt:       "salt123",
+				Iterations: 10000,
+				KeySize:    32,
+			},
+		},
 	}
+	svcErr := service.UpdateUserCredentials("user-1", "password", newCredentials)
+	require.Nil(t, svcErr)
 
-	require.NotNil(t, passwordCred)
-	require.NotNil(t, pinCred)
-	require.Equal(t, "hash", passwordCred.StorageType)
-	require.NotEmpty(t, passwordCred.Value)
-	require.NotEmpty(t, passwordCred.StorageAlgoParams.Salt)
-	require.NotEqual(t, "old-hash", passwordCred.Value)
-	require.Equal(t, "pin-hash", pinCred.Value)
-	require.Equal(t, "pin-salt", pinCred.StorageAlgoParams.Salt)
+	// Verify password credential was stored as-is (already hashed)
+	passwordCreds, exists := captured["password"]
+	require.True(t, exists)
+	require.Len(t, passwordCreds, 1)
+	require.Equal(t, "hash", passwordCreds[0].StorageType)
+	require.Equal(t, hash.PBKDF2, passwordCreds[0].StorageAlgo)
+	require.Equal(t, "already-hashed-password", passwordCreds[0].Value)
+	require.Equal(t, "salt123", passwordCreds[0].StorageAlgoParams.Salt)
+	require.Equal(t, 10000, passwordCreds[0].StorageAlgoParams.Iterations)
+	require.Equal(t, 32, passwordCreds[0].StorageAlgoParams.KeySize)
+
+	// Verify pin credential was preserved
+	pinCreds, exists := captured["pin"]
+	require.True(t, exists)
+	require.Len(t, pinCreds, 1)
+	require.Equal(t, "pin-hash", pinCreds[0].Value)
+	require.Equal(t, "pin-salt", pinCreds[0].StorageAlgoParams.Salt)
 }
 
-func TestUserService_MergeCredentials(t *testing.T) {
+func TestUserService_GetUserCredentialsByType_Validation(t *testing.T) {
 	service := &userService{}
 
-	type testCase struct {
-		name     string
-		existing []Credential
-		provided []Credential
-		expected []Credential
+	// Test missing user ID
+	creds, err := service.GetUserCredentialsByType("", "password")
+	require.Nil(t, creds)
+	require.NotNil(t, err)
+	require.Equal(t, ErrorMissingUserID, *err)
+
+	// Test missing credential type
+	creds, err = service.GetUserCredentialsByType("user-1", "")
+	require.Nil(t, creds)
+	require.NotNil(t, err)
+	require.Equal(t, ErrorInvalidRequestFormat, *err)
+}
+
+func TestUserService_GetUserCredentialsByType_UserNotFound(t *testing.T) {
+	userStoreMock := newUserStoreInterfaceMock(t)
+	userStoreMock.
+		On("GetCredentials", "user-1").
+		Return(User{}, Credentials{}, ErrUserNotFound).
+		Once()
+
+	service := &userService{
+		userStore: userStoreMock,
 	}
 
-	tests := []testCase{
-		{
-			name: "ReplacesMatchingAndPreservesExistingOrder",
-			existing: []Credential{
-				{
-					CredentialType: "password", StorageType: "hash", Value: "old-pass",
-					StorageAlgoParams: hash.CredParameters{Salt: "salt-1"},
-				},
-				{
-					CredentialType: "pin", StorageType: "hash", Value: "old-pin",
-					StorageAlgoParams: hash.CredParameters{Salt: "salt-2"},
-				},
-			},
-			provided: []Credential{
-				{
-					CredentialType: "password", StorageType: "hash", Value: "new-pass",
-					StorageAlgoParams: hash.CredParameters{Salt: "salt-3"},
-				},
-				{
-					CredentialType: "secret", StorageType: "hash", Value: "secret",
-					StorageAlgoParams: hash.CredParameters{Salt: "salt-4"},
-				},
-			},
-			expected: []Credential{
-				{
-					CredentialType: "password", StorageType: "hash", Value: "new-pass",
-					StorageAlgoParams: hash.CredParameters{Salt: "salt-3"},
-				},
-				{
-					CredentialType: "pin", StorageType: "hash", Value: "old-pin",
-					StorageAlgoParams: hash.CredParameters{Salt: "salt-2"},
-				},
-				{
-					CredentialType: "secret", StorageType: "hash", Value: "secret",
-					StorageAlgoParams: hash.CredParameters{Salt: "salt-4"},
-				},
-			},
-		},
-		{
-			name: "ProvidedDuplicatesKeepLastValue",
-			existing: []Credential{
-				{
-					CredentialType: "pin", StorageType: "hash", Value: "existing-pin",
-					StorageAlgoParams: hash.CredParameters{Salt: "salt-1"},
-				},
-			},
-			provided: []Credential{
-				{
-					CredentialType: "password", StorageType: "hash", Value: "first-pass",
-					StorageAlgoParams: hash.CredParameters{Salt: "salt-a"},
-				},
-				{
-					CredentialType: "password", StorageType: "hash", Value: "second-pass",
-					StorageAlgoParams: hash.CredParameters{Salt: "salt-b"},
-				},
-			},
-			expected: []Credential{
-				{
-					CredentialType: "pin", StorageType: "hash", Value: "existing-pin",
-					StorageAlgoParams: hash.CredParameters{Salt: "salt-1"},
-				},
-				{
-					CredentialType: "password", StorageType: "hash", Value: "second-pass",
-					StorageAlgoParams: hash.CredParameters{Salt: "salt-b"},
-				},
-			},
-		},
-		{
-			name: "NoProvidedCredentialsReturnsExisting",
-			existing: []Credential{
-				{
-					CredentialType: "password", StorageType: "hash", Value: "only",
-					StorageAlgoParams: hash.CredParameters{Salt: "salt-1"},
-				},
-			},
-			provided: []Credential{},
-			expected: []Credential{
-				{
-					CredentialType: "password", StorageType: "hash", Value: "only",
-					StorageAlgoParams: hash.CredParameters{Salt: "salt-1"},
-				},
-			},
-		},
-		{
-			name:     "NoExistingCredentialsReturnsProvidedInOrder",
-			existing: []Credential{},
-			provided: []Credential{
-				{CredentialType: "password", StorageType: "hash", Value: "first",
-					StorageAlgoParams: hash.CredParameters{Salt: "salt-1"}},
-				{CredentialType: "password", StorageType: "hash", Value: "second",
-					StorageAlgoParams: hash.CredParameters{Salt: "salt-2"}},
-				{CredentialType: "pin", StorageType: "hash", Value: "pin-val",
-					StorageAlgoParams: hash.CredParameters{Salt: "salt-3"}},
-			},
-			expected: []Credential{
-				{CredentialType: "password", StorageType: "hash", Value: "second",
-					StorageAlgoParams: hash.CredParameters{Salt: "salt-2"}},
-				{CredentialType: "pin", StorageType: "hash", Value: "pin-val",
-					StorageAlgoParams: hash.CredParameters{Salt: "salt-3"}},
-			},
-		},
-		{
-			name: "ReplacesMultipleExistingTypesAndAppendsNew",
-			existing: []Credential{
-				{CredentialType: "password", StorageType: "hash", Value: "old-pass",
-					StorageAlgoParams: hash.CredParameters{Salt: "salt-1"}},
-				{CredentialType: "pin", StorageType: "hash", Value: "old-pin",
-					StorageAlgoParams: hash.CredParameters{Salt: "salt-2"}},
-			},
-			provided: []Credential{
-				{CredentialType: "pin", StorageType: "hash", Value: "new-pin",
-					StorageAlgoParams: hash.CredParameters{Salt: "salt-3"}},
-				{CredentialType: "password", StorageType: "hash", Value: "new-pass",
-					StorageAlgoParams: hash.CredParameters{Salt: "salt-4"}},
-				{CredentialType: "secret", StorageType: "hash", Value: "new-secret",
-					StorageAlgoParams: hash.CredParameters{Salt: "salt-5"}},
-			},
-			expected: []Credential{
-				{CredentialType: "password", StorageType: "hash", Value: "new-pass",
-					StorageAlgoParams: hash.CredParameters{Salt: "salt-4"}},
-				{CredentialType: "pin", StorageType: "hash", Value: "new-pin",
-					StorageAlgoParams: hash.CredParameters{Salt: "salt-3"}},
-				{CredentialType: "secret", StorageType: "hash", Value: "new-secret",
-					StorageAlgoParams: hash.CredParameters{Salt: "salt-5"}},
-			},
-		},
-		{
-			name:     "ReturnsEmptyWhenNoCredentials",
-			existing: []Credential{},
-			provided: []Credential{},
-			expected: []Credential{},
-		},
+	creds, err := service.GetUserCredentialsByType("user-1", "password")
+	require.Nil(t, creds)
+	require.NotNil(t, err)
+	require.Equal(t, ErrorUserNotFound, *err)
+}
+
+func TestUserService_GetUserCredentialsByType_StoreError(t *testing.T) {
+	userStoreMock := newUserStoreInterfaceMock(t)
+	userStoreMock.
+		On("GetCredentials", "user-1").
+		Return(User{}, Credentials{}, errors.New("database error")).
+		Once()
+
+	service := &userService{
+		userStore: userStoreMock,
 	}
 
-	for _, tc := range tests {
-		t.Run(tc.name, func(t *testing.T) {
-			merged := service.mergeCredentials(tc.existing, tc.provided)
-			require.Equal(t, tc.expected, merged)
-		})
+	creds, err := service.GetUserCredentialsByType("user-1", "password")
+	require.Nil(t, creds)
+	require.NotNil(t, err)
+	require.Equal(t, ErrorInternalServerError.Code, err.Code)
+}
+
+func TestUserService_GetUserCredentialsByType_CredentialTypeNotFound(t *testing.T) {
+	userStoreMock := newUserStoreInterfaceMock(t)
+	existingCredentials := Credentials{
+		"pin": {
+			{
+				StorageType: "hash",
+				Value:       "pin-hash",
+			},
+		},
 	}
+	userStoreMock.
+		On("GetCredentials", "user-1").
+		Return(User{ID: "user-1"}, existingCredentials, nil).
+		Once()
+
+	service := &userService{
+		userStore: userStoreMock,
+	}
+
+	// Request password credentials when only pin exists
+	creds, err := service.GetUserCredentialsByType("user-1", "password")
+	require.Nil(t, err)
+	require.NotNil(t, creds)
+	require.Empty(t, creds) // Should return empty array, not nil
+}
+
+func TestUserService_GetUserCredentialsByType_EmptyCredentialArray(t *testing.T) {
+	userStoreMock := newUserStoreInterfaceMock(t)
+	existingCredentials := Credentials{
+		"password": {}, // Empty array
+		"pin": {
+			{
+				StorageType: "hash",
+				Value:       "pin-hash",
+			},
+		},
+	}
+	userStoreMock.
+		On("GetCredentials", "user-1").
+		Return(User{ID: "user-1"}, existingCredentials, nil).
+		Once()
+
+	service := &userService{
+		userStore: userStoreMock,
+	}
+
+	// Request password credentials when array is empty
+	creds, err := service.GetUserCredentialsByType("user-1", "password")
+	require.Nil(t, err)
+	require.NotNil(t, creds)
+	require.Empty(t, creds) // Should return empty array
+}
+
+func TestUserService_GetUserCredentialsByType_Succeeds(t *testing.T) {
+	userStoreMock := newUserStoreInterfaceMock(t)
+	existingCredentials := Credentials{
+		"password": {
+			{
+				StorageType: "hash",
+				StorageAlgo: hash.PBKDF2,
+				Value:       "hashed-password",
+				StorageAlgoParams: hash.CredParameters{
+					Salt:       "salt123",
+					Iterations: 10000,
+					KeySize:    32,
+				},
+			},
+		},
+		"passkey": {
+			{
+				Value: "public-key-1",
+			},
+			{
+				Value: "public-key-2",
+			},
+		},
+	}
+	userStoreMock.
+		On("GetCredentials", "user-1").
+		Return(User{ID: "user-1"}, existingCredentials, nil).
+		Once()
+
+	service := &userService{
+		userStore: userStoreMock,
+	}
+
+	// Get password credentials
+	creds, err := service.GetUserCredentialsByType("user-1", "password")
+	require.Nil(t, err)
+	require.NotNil(t, creds)
+	require.Len(t, creds, 1)
+	require.Equal(t, "hash", creds[0].StorageType)
+	require.Equal(t, hash.PBKDF2, creds[0].StorageAlgo)
+	require.Equal(t, "hashed-password", creds[0].Value)
+	require.Equal(t, "salt123", creds[0].StorageAlgoParams.Salt)
+	require.Equal(t, 10000, creds[0].StorageAlgoParams.Iterations)
+	require.Equal(t, 32, creds[0].StorageAlgoParams.KeySize)
+}
+
+func TestUserService_GetUserCredentialsByType_MultipleCredentials(t *testing.T) {
+	userStoreMock := newUserStoreInterfaceMock(t)
+	existingCredentials := Credentials{
+		"passkey": {
+			{Value: "public-key-1"},
+			{Value: "public-key-2"},
+			{Value: "public-key-3"},
+		},
+	}
+	userStoreMock.
+		On("GetCredentials", "user-1").
+		Return(User{ID: "user-1"}, existingCredentials, nil).
+		Once()
+
+	service := &userService{
+		userStore: userStoreMock,
+	}
+
+	// Get passkey credentials
+	creds, err := service.GetUserCredentialsByType("user-1", "passkey")
+	require.Nil(t, err)
+	require.NotNil(t, creds)
+	require.Len(t, creds, 3)
+	require.Equal(t, "public-key-1", creds[0].Value)
+	require.Equal(t, "public-key-2", creds[1].Value)
+	require.Equal(t, "public-key-3", creds[2].Value)
 }
 
 func TestUserService_UpdateUserAttributes_Validation(t *testing.T) {
