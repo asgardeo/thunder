@@ -19,6 +19,7 @@
 package user
 
 import (
+	"encoding/json"
 	"fmt"
 	"net/http"
 	"net/url"
@@ -27,6 +28,7 @@ import (
 	"strings"
 
 	serverconst "github.com/asgardeo/thunder/internal/system/constants"
+	"github.com/asgardeo/thunder/internal/system/crypto/hash"
 	"github.com/asgardeo/thunder/internal/system/error/apierror"
 	"github.com/asgardeo/thunder/internal/system/error/serviceerror"
 	"github.com/asgardeo/thunder/internal/system/log"
@@ -39,12 +41,14 @@ const handlerLoggerComponentName = "UserHandler"
 // userHandler is the handler for user management operations.
 type userHandler struct {
 	userService UserServiceInterface
+	hashService hash.HashServiceInterface
 }
 
 // newUserHandler creates a new instance of userHandler with dependency injection.
-func newUserHandler(userService UserServiceInterface) *userHandler {
+func newUserHandler(userService UserServiceInterface, hashService hash.HashServiceInterface) *userHandler {
 	return &userHandler{
 		userService: userService,
+		hashService: hashService,
 	}
 }
 
@@ -387,13 +391,102 @@ func (uh *userHandler) HandleSelfUserCredentialUpdateRequest(w http.ResponseWrit
 		return
 	}
 
-	if svcErr := uh.userService.UpdateUserCredentials(userID, updateRequest.Attributes); svcErr != nil {
-		handleError(w, svcErr)
+	// Parse the attributes to get credential types and values
+	var attrs map[string]json.RawMessage
+	if err := json.Unmarshal(updateRequest.Attributes, &attrs); err != nil {
+		handleError(w, &ErrorInvalidRequestFormat)
 		return
+	}
+
+	if len(attrs) == 0 {
+		handleError(w, &ErrorMissingCredentials)
+		return
+	}
+
+	// Update each credential type
+	for credentialType, credentialValue := range attrs {
+		// Validate credential type early to avoid unnecessary parsing and hashing
+		if !CredentialType(credentialType).IsValid() {
+			handleError(w, serviceerror.CustomServiceError(
+				ErrorInvalidCredential,
+				fmt.Sprintf("Invalid credential type: %s", credentialType),
+			))
+			return
+		}
+
+		var credentials []Credential
+
+		// Try to parse as array of Credential first
+		if err := json.Unmarshal(credentialValue, &credentials); err != nil {
+			// If not an array, try parsing as a plain string value
+			var stringValue string
+			if err := json.Unmarshal(credentialValue, &stringValue); err != nil {
+				handleError(w, &ErrorInvalidRequestFormat)
+				return
+			}
+			// Convert string value to Credential array
+			credentials = []Credential{{Value: stringValue}}
+		}
+
+		// Hash credentials that require hashing (password, pin, secret)
+		// Note: The service expects pre-hashed credentials
+		hashedCredentials, svcErr := uh.hashCredentialsIfNeeded(credentialType, credentials)
+		if svcErr != nil {
+			handleError(w, svcErr)
+			return
+		}
+
+		if svcErr := uh.userService.UpdateUserCredentials(userID, credentialType, hashedCredentials); svcErr != nil {
+			handleError(w, svcErr)
+			return
+		}
 	}
 
 	sysutils.WriteSuccessResponse(w, http.StatusNoContent, nil)
 	logger.Debug("Self user credential update response sent", log.String("user id", userID))
+}
+
+// hashCredentialsIfNeeded hashes credentials for types that require hashing.
+// Password, PIN, and Secret credentials are hashed. Passkey credentials are stored as-is.
+func (uh *userHandler) hashCredentialsIfNeeded(
+	credentialType string,
+	credentials []Credential,
+) ([]Credential, *serviceerror.ServiceError) {
+	credType := CredentialType(credentialType)
+
+	if !credType.RequiresHashing() {
+		// Passkey and other types don't need hashing
+		return credentials, nil
+	}
+
+	// Hash each credential value
+	hashedCredentials := make([]Credential, 0, len(credentials))
+	for _, cred := range credentials {
+		// Hash the plain text value
+		credHash, err := uh.hashService.Generate([]byte(cred.Value))
+		if err != nil {
+			logger := log.GetLogger()
+			logger.Error("Failed to hash credential",
+				log.String("credentialType", credentialType),
+				log.Error(err))
+			return nil, &ErrorInternalServerError
+		}
+
+		// Create hashed credential
+		hashedCred := Credential{
+			StorageType: "hash",
+			StorageAlgo: credHash.Algorithm,
+			StorageAlgoParams: hash.CredParameters{
+				Iterations: credHash.Parameters.Iterations,
+				KeySize:    credHash.Parameters.KeySize,
+				Salt:       credHash.Parameters.Salt,
+			},
+			Value: credHash.Hash,
+		}
+		hashedCredentials = append(hashedCredentials, hashedCred)
+	}
+
+	return hashedCredentials, nil
 }
 
 // parsePaginationParams parses limit and offset query parameters from the request.
