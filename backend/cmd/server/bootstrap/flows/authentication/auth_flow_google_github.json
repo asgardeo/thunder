@@ -1,0 +1,76 @@
+{
+    "name": "Google + GitHub Authentication Flow",
+    "handle": "google-github-flow",
+    "flowType": "AUTHENTICATION",
+    "nodes": [
+        {
+            "id": "start",
+            "type": "START",
+            "onSuccess": "choose_auth"
+        },
+        {
+            "id": "choose_auth",
+            "type": "PROMPT",
+            "actions": [
+                {
+                    "ref": "action_001",
+                    "nextNode": "google_auth"
+                },
+                {
+                    "ref": "action_002",
+                    "nextNode": "github_auth"
+                }
+            ]
+        },
+        {
+            "id": "google_auth",
+            "type": "TASK_EXECUTION",
+            "properties": {
+                "idpId": "<google-idp-id>"
+            },
+            "inputs": [
+                {
+                    "ref": "input_003",
+                    "type": "TEXT_INPUT",
+                    "identifier": "code",
+                    "required": true
+                }
+            ],
+            "executor": {
+                "name": "GoogleOIDCAuthExecutor"
+            },
+            "onSuccess": "auth_assert"
+        },
+        {
+            "id": "github_auth",
+            "type": "TASK_EXECUTION",
+            "properties": {
+                "idpId": "<github-idp-id>"
+            },
+            "inputs": [
+                {
+                    "ref": "input_004",
+                    "type": "TEXT_INPUT",
+                    "identifier": "code",
+                    "required": true
+                }
+            ],
+            "executor": {
+                "name": "GithubOAuthExecutor"
+            },
+            "onSuccess": "auth_assert"
+        },
+        {
+            "id": "auth_assert",
+            "type": "TASK_EXECUTION",
+            "executor": {
+                "name": "AuthAssertExecutor"
+            },
+            "onSuccess": "end"
+        },
+        {
+            "id": "end",
+            "type": "END"
+        }
+    ]
+}
