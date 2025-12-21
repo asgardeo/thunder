@@ -24,11 +24,22 @@ import (
 	"github.com/asgardeo/thunder/internal/system/crypto/hash"
 )
 
+// User status constants
+const (
+	// UserStatusActive indicates an active user with credentials set
+	UserStatusActive = "active"
+	// UserStatusInvited indicates a user who has been invited but hasn't set credentials yet
+	UserStatusInvited = "invited"
+	// UserStatusDisabled indicates a disabled user account
+	UserStatusDisabled = "disabled"
+)
+
 // User represents a user in the system.
 type User struct {
 	ID               string          `json:"id,omitempty"`
 	OrganizationUnit string          `json:"organizationUnit,omitempty"`
 	Type             string          `json:"type,omitempty"`
+	Status           string          `json:"status,omitempty"`
 	Attributes       json.RawMessage `json:"attributes,omitempty"`
 }
 
