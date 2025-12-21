@@ -20,8 +20,11 @@ package invitation
 
 import (
 	"errors"
+	"fmt"
 	"time"
 
+	"github.com/asgardeo/thunder/internal/system/config"
+	dbmodel "github.com/asgardeo/thunder/internal/system/database/model"
 	"github.com/asgardeo/thunder/internal/system/database/provider"
 	"github.com/asgardeo/thunder/internal/system/log"
 )
@@ -31,6 +34,42 @@ var (
 	ErrInvitationNotFound = errors.New("invitation not found")
 	ErrTokenNotFound      = errors.New("invitation token not found")
 	ErrInvitationExpired  = errors.New("invitation has expired")
+)
+
+// Database query constants
+var (
+	QueryCreateInvitation = dbmodel.DBQuery{
+		ID:    "INV-001",
+		Query: `INSERT INTO INVITATION (INVITATION_ID, USER_ID, APPLICATION_ID, TOKEN, STATUS, EXPIRES_AT, CREATED_AT, DEPLOYMENT_ID) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
+	}
+	QueryGetInvitationByID = dbmodel.DBQuery{
+		ID:    "INV-002",
+		Query: `SELECT INVITATION_ID, USER_ID, APPLICATION_ID, TOKEN, STATUS, EXPIRES_AT, CREATED_AT, REDEEMED_AT FROM INVITATION WHERE INVITATION_ID = $1 AND DEPLOYMENT_ID = $2`,
+	}
+	QueryGetInvitationByToken = dbmodel.DBQuery{
+		ID:    "INV-003",
+		Query: `SELECT INVITATION_ID, USER_ID, APPLICATION_ID, TOKEN, STATUS, EXPIRES_AT, CREATED_AT, REDEEMED_AT FROM INVITATION WHERE TOKEN = $1 AND DEPLOYMENT_ID = $2`,
+	}
+	QueryGetInvitationByUserID = dbmodel.DBQuery{
+		ID:    "INV-004",
+		Query: `SELECT INVITATION_ID, USER_ID, APPLICATION_ID, TOKEN, STATUS, EXPIRES_AT, CREATED_AT, REDEEMED_AT FROM INVITATION WHERE USER_ID = $1 AND STATUS = $2 AND DEPLOYMENT_ID = $3 ORDER BY CREATED_AT DESC LIMIT 1`,
+	}
+	QueryUpdateInvitation = dbmodel.DBQuery{
+		ID:    "INV-005",
+		Query: `UPDATE INVITATION SET STATUS = $1, REDEEMED_AT = $2 WHERE INVITATION_ID = $3 AND DEPLOYMENT_ID = $4`,
+	}
+	QueryDeleteInvitation = dbmodel.DBQuery{
+		ID:    "INV-006",
+		Query: `DELETE FROM INVITATION WHERE INVITATION_ID = $1 AND DEPLOYMENT_ID = $2`,
+	}
+	QueryGetInvitationCount = dbmodel.DBQuery{
+		ID:    "INV-007",
+		Query: `SELECT COUNT(*) as total FROM INVITATION WHERE DEPLOYMENT_ID = $1`,
+	}
+	QueryGetInvitationList = dbmodel.DBQuery{
+		ID:    "INV-008",
+		Query: `SELECT INVITATION_ID, USER_ID, APPLICATION_ID, TOKEN, STATUS, EXPIRES_AT, CREATED_AT, REDEEMED_AT FROM INVITATION WHERE DEPLOYMENT_ID = $1 ORDER BY CREATED_AT DESC LIMIT $2 OFFSET $3`,
+	}
 )
 
 // invitationStoreInterface defines the interface for invitation data access operations.
@@ -46,13 +85,14 @@ type invitationStoreInterface interface {
 
 // invitationStore is the default implementation of invitationStoreInterface.
 type invitationStore struct {
-	dbClient provider.DBClientInterface
+	deploymentID string
 }
 
 // newInvitationStore creates a new instance of the invitation store.
-func newInvitationStore(dbClient provider.DBClientInterface) invitationStoreInterface {
+func newInvitationStore() invitationStoreInterface {
+	runtime := config.GetThunderRuntime()
 	return &invitationStore{
-		dbClient: dbClient,
+		deploymentID: runtime.Config.Server.Identifier,
 	}
 }
 
@@ -60,13 +100,13 @@ func newInvitationStore(dbClient provider.DBClientInterface) invitationStoreInte
 func (s *invitationStore) CreateInvitation(invitation Invitation) error {
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, "InvitationStore"))
 
-	query := `
-		INSERT INTO invitations (id, user_id, application_id, token, status, expires_at, created_at)
-		VALUES (?, ?, ?, ?, ?, ?, ?)
-	`
+	dbClient, err := provider.GetDBProvider().GetIdentityDBClient()
+	if err != nil {
+		return fmt.Errorf("failed to get database client: %w", err)
+	}
 
-	_, err := s.dbClient.Execute(
-		query,
+	_, err = dbClient.Execute(
+		QueryCreateInvitation,
 		invitation.ID,
 		invitation.UserID,
 		invitation.ApplicationID,
@@ -74,6 +114,7 @@ func (s *invitationStore) CreateInvitation(invitation Invitation) error {
 		invitation.Status,
 		invitation.ExpiresAt,
 		invitation.CreatedAt,
+		s.deploymentID,
 	)
 
 	if err != nil {
@@ -89,26 +130,24 @@ func (s *invitationStore) CreateInvitation(invitation Invitation) error {
 func (s *invitationStore) GetInvitation(invitationID string) (*Invitation, error) {
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, "InvitationStore"))
 
-	query := `
-		SELECT id, user_id, application_id, token, status, expires_at, created_at, redeemed_at
-		FROM invitations
-		WHERE id = ?
-	`
+	dbClient, err := provider.GetDBProvider().GetIdentityDBClient()
+	if err != nil {
+		return nil, fmt.Errorf("failed to get database client: %w", err)
+	}
 
-	rows, err := s.dbClient.Query(query, invitationID)
+	results, err := dbClient.Query(QueryGetInvitationByID, invitationID, s.deploymentID)
 	if err != nil {
 		logger.Error("Failed to query invitation", log.Error(err))
 		return nil, err
 	}
-	defer rows.Close()
 
-	if !rows.Next() {
+	if len(results) == 0 {
 		return nil, ErrInvitationNotFound
 	}
 
-	invitation, err := scanInvitation(rows)
+	invitation, err := buildInvitationFromRow(results[0])
 	if err != nil {
-		logger.Error("Failed to scan invitation", log.Error(err))
+		logger.Error("Failed to build invitation from row", log.Error(err))
 		return nil, err
 	}
 
@@ -119,26 +158,24 @@ func (s *invitationStore) GetInvitation(invitationID string) (*Invitation, error
 func (s *invitationStore) GetInvitationByToken(token string) (*Invitation, error) {
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, "InvitationStore"))
 
-	query := `
-		SELECT id, user_id, application_id, token, status, expires_at, created_at, redeemed_at
-		FROM invitations
-		WHERE token = ?
-	`
+	dbClient, err := provider.GetDBProvider().GetIdentityDBClient()
+	if err != nil {
+		return nil, fmt.Errorf("failed to get database client: %w", err)
+	}
 
-	rows, err := s.dbClient.Query(query, token)
+	results, err := dbClient.Query(QueryGetInvitationByToken, token, s.deploymentID)
 	if err != nil {
 		logger.Error("Failed to query invitation by token", log.Error(err))
 		return nil, err
 	}
-	defer rows.Close()
 
-	if !rows.Next() {
+	if len(results) == 0 {
 		return nil, ErrTokenNotFound
 	}
 
-	invitation, err := scanInvitation(rows)
+	invitation, err := buildInvitationFromRow(results[0])
 	if err != nil {
-		logger.Error("Failed to scan invitation", log.Error(err))
+		logger.Error("Failed to build invitation from row", log.Error(err))
 		return nil, err
 	}
 
@@ -149,28 +186,24 @@ func (s *invitationStore) GetInvitationByToken(token string) (*Invitation, error
 func (s *invitationStore) GetInvitationByUserID(userID string) (*Invitation, error) {
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, "InvitationStore"))
 
-	query := `
-		SELECT id, user_id, application_id, token, status, expires_at, created_at, redeemed_at
-		FROM invitations
-		WHERE user_id = ? AND status = ?
-		ORDER BY created_at DESC
-		LIMIT 1
-	`
+	dbClient, err := provider.GetDBProvider().GetIdentityDBClient()
+	if err != nil {
+		return nil, fmt.Errorf("failed to get database client: %w", err)
+	}
 
-	rows, err := s.dbClient.Query(query, userID, StatusPending)
+	results, err := dbClient.Query(QueryGetInvitationByUserID, userID, StatusPending, s.deploymentID)
 	if err != nil {
 		logger.Error("Failed to query invitation by user ID", log.Error(err))
 		return nil, err
 	}
-	defer rows.Close()
 
-	if !rows.Next() {
+	if len(results) == 0 {
 		return nil, ErrInvitationNotFound
 	}
 
-	invitation, err := scanInvitation(rows)
+	invitation, err := buildInvitationFromRow(results[0])
 	if err != nil {
-		logger.Error("Failed to scan invitation", log.Error(err))
+		logger.Error("Failed to build invitation from row", log.Error(err))
 		return nil, err
 	}
 
@@ -181,21 +214,20 @@ func (s *invitationStore) GetInvitationByUserID(userID string) (*Invitation, err
 func (s *invitationStore) UpdateInvitation(invitation *Invitation) error {
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, "InvitationStore"))
 
-	query := `
-		UPDATE invitations
-		SET status = ?, redeemed_at = ?
-		WHERE id = ?
-	`
-
-	result, err := s.dbClient.Execute(query, invitation.Status, invitation.RedeemedAt, invitation.ID)
+	dbClient, err := provider.GetDBProvider().GetIdentityDBClient()
 	if err != nil {
-		logger.Error("Failed to update invitation", log.Error(err))
-		return err
+		return fmt.Errorf("failed to get database client: %w", err)
 	}
 
-	rowsAffected, err := result.RowsAffected()
+	rowsAffected, err := dbClient.Execute(
+		QueryUpdateInvitation,
+		invitation.Status,
+		invitation.RedeemedAt,
+		invitation.ID,
+		s.deploymentID,
+	)
 	if err != nil {
-		logger.Error("Failed to get rows affected", log.Error(err))
+		logger.Error("Failed to update invitation", log.Error(err))
 		return err
 	}
 
@@ -211,17 +243,14 @@ func (s *invitationStore) UpdateInvitation(invitation *Invitation) error {
 func (s *invitationStore) DeleteInvitation(invitationID string) error {
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, "InvitationStore"))
 
-	query := `DELETE FROM invitations WHERE id = ?`
-
-	result, err := s.dbClient.Execute(query, invitationID)
+	dbClient, err := provider.GetDBProvider().GetIdentityDBClient()
 	if err != nil {
-		logger.Error("Failed to delete invitation", log.Error(err))
-		return err
+		return fmt.Errorf("failed to get database client: %w", err)
 	}
 
-	rowsAffected, err := result.RowsAffected()
+	rowsAffected, err := dbClient.Execute(QueryDeleteInvitation, invitationID, s.deploymentID)
 	if err != nil {
-		logger.Error("Failed to get rows affected", log.Error(err))
+		logger.Error("Failed to delete invitation", log.Error(err))
 		return err
 	}
 
@@ -237,43 +266,37 @@ func (s *invitationStore) DeleteInvitation(invitationID string) error {
 func (s *invitationStore) GetInvitationList(limit, offset int) ([]Invitation, int, error) {
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, "InvitationStore"))
 
+	dbClient, err := provider.GetDBProvider().GetIdentityDBClient()
+	if err != nil {
+		return nil, 0, fmt.Errorf("failed to get database client: %w", err)
+	}
+
 	// Get total count
-	countQuery := `SELECT COUNT(*) FROM invitations`
-	countRows, err := s.dbClient.Query(countQuery)
+	countResults, err := dbClient.Query(QueryGetInvitationCount, s.deploymentID)
 	if err != nil {
 		logger.Error("Failed to count invitations", log.Error(err))
 		return nil, 0, err
 	}
-	defer countRows.Close()
 
 	var totalCount int
-	if countRows.Next() {
-		if err := countRows.Scan(&totalCount); err != nil {
-			logger.Error("Failed to scan count", log.Error(err))
-			return nil, 0, err
+	if len(countResults) > 0 {
+		if count, ok := countResults[0]["total"].(int64); ok {
+			totalCount = int(count)
 		}
 	}
 
 	// Get invitations
-	query := `
-		SELECT id, user_id, application_id, token, status, expires_at, created_at, redeemed_at
-		FROM invitations
-		ORDER BY created_at DESC
-		LIMIT ? OFFSET ?
-	`
-
-	rows, err := s.dbClient.Query(query, limit, offset)
+	results, err := dbClient.Query(QueryGetInvitationList, s.deploymentID, limit, offset)
 	if err != nil {
 		logger.Error("Failed to query invitations", log.Error(err))
 		return nil, 0, err
 	}
-	defer rows.Close()
 
-	var invitations []Invitation
-	for rows.Next() {
-		invitation, err := scanInvitation(rows)
+	invitations := make([]Invitation, 0, len(results))
+	for _, row := range results {
+		invitation, err := buildInvitationFromRow(row)
 		if err != nil {
-			logger.Error("Failed to scan invitation", log.Error(err))
+			logger.Error("Failed to build invitation from row", log.Error(err))
 			return nil, 0, err
 		}
 		invitations = append(invitations, *invitation)
@@ -282,25 +305,76 @@ func (s *invitationStore) GetInvitationList(limit, offset int) ([]Invitation, in
 	return invitations, totalCount, nil
 }
 
-// scanInvitation scans a database row into an Invitation struct.
-func scanInvitation(rows provider.RowsInterface) (*Invitation, error) {
-	var invitation Invitation
-	var redeemedAt *time.Time
+// buildInvitationFromRow constructs an Invitation from a database result row.
+func buildInvitationFromRow(row map[string]interface{}) (*Invitation, error) {
+	invitation := &Invitation{}
 
-	err := rows.Scan(
-		&invitation.ID,
-		&invitation.UserID,
-		&invitation.ApplicationID,
-		&invitation.Token,
-		&invitation.Status,
-		&invitation.ExpiresAt,
-		&invitation.CreatedAt,
-		&redeemedAt,
-	)
-	if err != nil {
-		return nil, err
+	// Parse invitation ID
+	if id, ok := row["invitation_id"].(string); ok {
+		invitation.ID = id
+	} else {
+		return nil, fmt.Errorf("failed to parse invitation_id as string")
 	}
 
-	invitation.RedeemedAt = redeemedAt
-	return &invitation, nil
+	// Parse user ID
+	if userID, ok := row["user_id"].(string); ok {
+		invitation.UserID = userID
+	} else {
+		return nil, fmt.Errorf("failed to parse user_id as string")
+	}
+
+	// Parse application ID
+	if appID, ok := row["application_id"].(string); ok {
+		invitation.ApplicationID = appID
+	} else {
+		return nil, fmt.Errorf("failed to parse application_id as string")
+	}
+
+	// Parse token
+	if token, ok := row["token"].(string); ok {
+		invitation.Token = token
+	} else {
+		return nil, fmt.Errorf("failed to parse token as string")
+	}
+
+	// Parse status
+	if status, ok := row["status"].(string); ok {
+		invitation.Status = status
+	} else {
+		return nil, fmt.Errorf("failed to parse status as string")
+	}
+
+	// Parse expires_at
+	if expiresAt, ok := row["expires_at"].(time.Time); ok {
+		invitation.ExpiresAt = expiresAt
+	} else if expiresAtStr, ok := row["expires_at"].(string); ok {
+		parsed, err := time.Parse(time.RFC3339, expiresAtStr)
+		if err != nil {
+			return nil, fmt.Errorf("failed to parse expires_at: %w", err)
+		}
+		invitation.ExpiresAt = parsed
+	}
+
+	// Parse created_at
+	if createdAt, ok := row["created_at"].(time.Time); ok {
+		invitation.CreatedAt = createdAt
+	} else if createdAtStr, ok := row["created_at"].(string); ok {
+		parsed, err := time.Parse(time.RFC3339, createdAtStr)
+		if err != nil {
+			return nil, fmt.Errorf("failed to parse created_at: %w", err)
+		}
+		invitation.CreatedAt = parsed
+	}
+
+	// Parse redeemed_at (optional)
+	if redeemedAt, ok := row["redeemed_at"].(time.Time); ok {
+		invitation.RedeemedAt = &redeemedAt
+	} else if redeemedAtStr, ok := row["redeemed_at"].(string); ok && redeemedAtStr != "" {
+		parsed, err := time.Parse(time.RFC3339, redeemedAtStr)
+		if err == nil {
+			invitation.RedeemedAt = &parsed
+		}
+	}
+
+	return invitation, nil
 }
