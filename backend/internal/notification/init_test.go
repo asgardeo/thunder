@@ -28,8 +28,12 @@ import (
 	"github.com/stretchr/testify/suite"
 
 	"github.com/asgardeo/thunder/internal/system/config"
-	filebasedruntime "github.com/asgardeo/thunder/internal/system/file_based_runtime"
+	immutableresource "github.com/asgardeo/thunder/internal/system/immutable_resource"
 	"github.com/asgardeo/thunder/tests/mocks/jwtmock"
+)
+
+const (
+	testCryptoKey = "0579f866ac7c9273580d0ff163fa01a7b2401a7ff3ddc3e3b14ae3136fa6025e"
 )
 
 type InitTestSuite struct {
@@ -43,28 +47,18 @@ func TestInitTestSuite(t *testing.T) {
 }
 
 func (suite *InitTestSuite) SetupSuite() {
-	// Get the current working directory.
-	cwd, err := os.Getwd()
-	if err != nil {
-		suite.T().Fatalf("Failed to get working directory: %v", err)
-	}
-	suite.T().Logf("Current working directory: %s", cwd)
-	cryptoFile := filepath.Join(cwd, "..", "..", "tests", "resources", "testKey")
-
-	if _, err := os.Stat(cryptoFile); os.IsNotExist(err) {
-		suite.T().Fatalf("Crypto file not found at expected path: %s", cryptoFile)
-	}
-
 	testConfig := &config.Config{
 		JWT: config.JWTConfig{
 			Issuer:         "test-issuer",
 			ValidityPeriod: 3600,
 		},
-		Security: config.SecurityConfig{
-			CryptoFile: cryptoFile,
+		Crypto: config.CryptoConfig{
+			Encryption: config.EncryptionConfig{
+				Key: testCryptoKey,
+			},
 		},
 	}
-	err = config.InitializeThunderRuntime("", testConfig)
+	err := config.InitializeThunderRuntime("", testConfig)
 	if err != nil {
 		suite.T().Fatalf("Failed to initialize ThunderRuntime: %v", err)
 	}
@@ -76,7 +70,8 @@ func (suite *InitTestSuite) SetupTest() {
 }
 
 func (suite *InitTestSuite) TestInitialize() {
-	mgtService, otpService := Initialize(suite.mux, suite.mockJWTService)
+	mgtService, otpService, _, err := Initialize(suite.mux, suite.mockJWTService)
+	suite.NoError(err)
 
 	suite.NotNil(mgtService)
 	suite.NotNil(otpService)
@@ -90,7 +85,7 @@ func (suite *InitTestSuite) TestInitialize() {
 func (suite *InitTestSuite) TestInitialize_WithImmutableResourcesEnabled_FileLoading() {
 	// Create a temporary directory for immutable resources
 	tmpDir := suite.T().TempDir()
-	confDir := tmpDir + "/repository/conf/immutable_resources"
+	confDir := tmpDir + "/repository/resources"
 	senderDir := confDir + "/notification_senders"
 
 	// Create the directory structure
@@ -134,22 +129,9 @@ properties:
 	err = os.WriteFile(filepath.Join(senderDir, "vonage-sender.yaml"), []byte(vonageYAML), 0600)
 	suite.NoError(err)
 
-	// Copy the crypto key file to temp directory
-	cwd, err := os.Getwd()
-	suite.NoError(err)
-	srcCryptoFile := filepath.Join(cwd, "..", "..", "tests", "resources", "testKey")
-
 	// Create tests/resources directory in tmpDir
 	testsResourcesDir := filepath.Join(tmpDir, "tests", "resources")
 	err = os.MkdirAll(testsResourcesDir, 0750)
-	suite.NoError(err)
-
-	// Copy crypto key file
-	cryptoFilePath := filepath.Clean(srcCryptoFile)
-	cryptoData, err := os.ReadFile(cryptoFilePath)
-	suite.NoError(err)
-	destCryptoFile := filepath.Join(testsResourcesDir, "testKey")
-	err = os.WriteFile(destCryptoFile, cryptoData, 0600)
 	suite.NoError(err)
 
 	// Reset and initialize config with immutable resources enabled
@@ -159,8 +141,10 @@ properties:
 			Issuer:         "test-issuer",
 			ValidityPeriod: 3600,
 		},
-		Security: config.SecurityConfig{
-			CryptoFile: "tests/resources/testKey", // Relative to tmpDir (thunderHome)
+		Crypto: config.CryptoConfig{
+			Encryption: config.EncryptionConfig{
+				Key: testCryptoKey,
+			},
 		},
 		ImmutableResources: config.ImmutableResources{
 			Enabled: true,
@@ -170,7 +154,7 @@ properties:
 	suite.NoError(err)
 
 	// Verify files can be loaded using the file-based runtime
-	configs, err := filebasedruntime.GetConfigs("notification_senders")
+	configs, err := immutableresource.GetConfigs("notification_senders")
 	suite.NoError(err)
 	suite.Len(configs, 2, "Expected 2 notification sender configs to be loaded")
 
@@ -198,15 +182,15 @@ properties:
 
 	// Clean up - reset config and reinitialize with suite's test config
 	config.ResetThunderRuntime()
-	cwd, err = os.Getwd()
-	suite.NoError(err)
 	suiteConfig := &config.Config{
 		JWT: config.JWTConfig{
 			Issuer:         "test-issuer",
 			ValidityPeriod: 3600,
 		},
-		Security: config.SecurityConfig{
-			CryptoFile: filepath.Join(cwd, "..", "..", "tests", "resources", "testKey"),
+		Crypto: config.CryptoConfig{
+			Encryption: config.EncryptionConfig{
+				Key: testCryptoKey,
+			},
 		},
 	}
 	err = config.InitializeThunderRuntime("", suiteConfig)
@@ -214,7 +198,8 @@ properties:
 }
 
 func (suite *InitTestSuite) TestRegisterRoutes_ListEndpoint() {
-	Initialize(suite.mux, suite.mockJWTService)
+	_, _, _, err := Initialize(suite.mux, suite.mockJWTService)
+	suite.NoError(err)
 
 	req := httptest.NewRequest(http.MethodGet, "/notification-senders/message", nil)
 	w := httptest.NewRecorder()
@@ -225,7 +210,8 @@ func (suite *InitTestSuite) TestRegisterRoutes_ListEndpoint() {
 }
 
 func (suite *InitTestSuite) TestRegisterRoutes_CreateEndpoint() {
-	Initialize(suite.mux, suite.mockJWTService)
+	_, _, _, err := Initialize(suite.mux, suite.mockJWTService)
+	suite.NoError(err)
 
 	req := httptest.NewRequest(http.MethodPost, "/notification-senders/message", nil)
 	w := httptest.NewRecorder()
@@ -236,7 +222,8 @@ func (suite *InitTestSuite) TestRegisterRoutes_CreateEndpoint() {
 }
 
 func (suite *InitTestSuite) TestRegisterRoutes_GetByIDEndpoint() {
-	Initialize(suite.mux, suite.mockJWTService)
+	_, _, _, err := Initialize(suite.mux, suite.mockJWTService)
+	suite.NoError(err)
 
 	req := httptest.NewRequest(http.MethodGet, "/notification-senders/message/test-id", nil)
 	w := httptest.NewRecorder()
@@ -247,7 +234,8 @@ func (suite *InitTestSuite) TestRegisterRoutes_GetByIDEndpoint() {
 }
 
 func (suite *InitTestSuite) TestRegisterRoutes_UpdateEndpoint() {
-	Initialize(suite.mux, suite.mockJWTService)
+	_, _, _, err := Initialize(suite.mux, suite.mockJWTService)
+	suite.NoError(err)
 
 	req := httptest.NewRequest(http.MethodPut, "/notification-senders/message/test-id", nil)
 	w := httptest.NewRecorder()
@@ -258,7 +246,8 @@ func (suite *InitTestSuite) TestRegisterRoutes_UpdateEndpoint() {
 }
 
 func (suite *InitTestSuite) TestRegisterRoutes_DeleteEndpoint() {
-	Initialize(suite.mux, suite.mockJWTService)
+	_, _, _, err := Initialize(suite.mux, suite.mockJWTService)
+	suite.NoError(err)
 
 	req := httptest.NewRequest(http.MethodDelete, "/notification-senders/message/test-id", nil)
 	w := httptest.NewRecorder()
@@ -269,7 +258,8 @@ func (suite *InitTestSuite) TestRegisterRoutes_DeleteEndpoint() {
 }
 
 func (suite *InitTestSuite) TestRegisterRoutes_SendOTPEndpoint() {
-	Initialize(suite.mux, suite.mockJWTService)
+	_, _, _, err := Initialize(suite.mux, suite.mockJWTService)
+	suite.NoError(err)
 
 	req := httptest.NewRequest(http.MethodPost, "/notification-senders/otp/send", nil)
 	w := httptest.NewRecorder()
@@ -280,7 +270,8 @@ func (suite *InitTestSuite) TestRegisterRoutes_SendOTPEndpoint() {
 }
 
 func (suite *InitTestSuite) TestRegisterRoutes_VerifyOTPEndpoint() {
-	Initialize(suite.mux, suite.mockJWTService)
+	_, _, _, err := Initialize(suite.mux, suite.mockJWTService)
+	suite.NoError(err)
 
 	req := httptest.NewRequest(http.MethodPost, "/notification-senders/otp/verify", nil)
 	w := httptest.NewRecorder()
@@ -291,7 +282,8 @@ func (suite *InitTestSuite) TestRegisterRoutes_VerifyOTPEndpoint() {
 }
 
 func (suite *InitTestSuite) TestRegisterRoutes_CORSPreflight() {
-	Initialize(suite.mux, suite.mockJWTService)
+	_, _, _, err := Initialize(suite.mux, suite.mockJWTService)
+	suite.NoError(err)
 
 	req := httptest.NewRequest(http.MethodOptions, "/notification-senders/message", nil)
 	w := httptest.NewRecorder()
@@ -446,4 +438,131 @@ func (suite *InitTestSuite) TestParseProviderType_CaseSensitivity() {
 			suite.Equal(tt.expected, string(provider))
 		})
 	}
+}
+
+// TestInitialize_WithImmutableResourcesEnabled_InvalidYAML tests Initialize with immutable resources
+// enabled but with invalid YAML files
+//
+//nolint:dupl // Similar test setup required for different error scenarios
+func (suite *InitTestSuite) TestInitialize_WithImmutableResourcesEnabled_InvalidYAML() {
+	tmpDir := suite.T().TempDir()
+	confDir := tmpDir + "/repository/resources"
+	senderDir := confDir + "/notification_senders"
+
+	err := os.MkdirAll(senderDir, 0750)
+	suite.NoError(err)
+
+	// Create an invalid YAML file
+	invalidYAML := `invalid yaml content
+  - this is not: valid
+`
+	err = os.WriteFile(filepath.Join(senderDir, "invalid-sender.yaml"), []byte(invalidYAML), 0600)
+	suite.NoError(err)
+
+	config.ResetThunderRuntime()
+	testConfig := &config.Config{
+		JWT: config.JWTConfig{
+			Issuer:         "test-issuer",
+			ValidityPeriod: 3600,
+		},
+		Crypto: config.CryptoConfig{
+			Encryption: config.EncryptionConfig{
+				Key: testCryptoKey,
+			},
+		},
+		ImmutableResources: config.ImmutableResources{
+			Enabled: true,
+		},
+	}
+	err = config.InitializeThunderRuntime(tmpDir, testConfig)
+	suite.NoError(err)
+
+	mux := http.NewServeMux()
+
+	// Initialize should return an error due to invalid YAML
+	_, _, _, err = Initialize(mux, suite.mockJWTService)
+	suite.Error(err)
+	suite.Contains(err.Error(), "failed to load notification sender resources")
+
+	// Clean up
+	config.ResetThunderRuntime()
+	suiteConfig := &config.Config{
+		JWT: config.JWTConfig{
+			Issuer:         "test-issuer",
+			ValidityPeriod: 3600,
+		},
+		Crypto: config.CryptoConfig{
+			Encryption: config.EncryptionConfig{
+				Key: testCryptoKey,
+			},
+		},
+	}
+	err = config.InitializeThunderRuntime("", suiteConfig)
+	suite.NoError(err)
+}
+
+// TestInitialize_WithImmutableResourcesEnabled_ValidationFailure tests Initialize when
+// validation fails for loaded resources
+//
+//nolint:dupl // Similar test setup required for different error scenarios
+func (suite *InitTestSuite) TestInitialize_WithImmutableResourcesEnabled_ValidationFailure() {
+	tmpDir := suite.T().TempDir()
+	confDir := tmpDir + "/repository/resources"
+	senderDir := confDir + "/notification_senders"
+
+	err := os.MkdirAll(senderDir, 0750)
+	suite.NoError(err)
+
+	// Create a YAML file with invalid configuration (missing name)
+	invalidSenderYAML := `id: "invalid-sender"
+name: ""
+provider: "twilio"
+properties:
+  - name: "account_sid"
+    value: "test"
+    is_secret: false
+`
+	err = os.WriteFile(filepath.Join(senderDir, "invalid-sender.yaml"), []byte(invalidSenderYAML), 0600)
+	suite.NoError(err)
+
+	config.ResetThunderRuntime()
+	testConfig := &config.Config{
+		JWT: config.JWTConfig{
+			Issuer:         "test-issuer",
+			ValidityPeriod: 3600,
+		},
+		Crypto: config.CryptoConfig{
+			Encryption: config.EncryptionConfig{
+				Key: testCryptoKey,
+			},
+		},
+		ImmutableResources: config.ImmutableResources{
+			Enabled: true,
+		},
+	}
+	err = config.InitializeThunderRuntime(tmpDir, testConfig)
+	suite.NoError(err)
+
+	mux := http.NewServeMux()
+
+	// Initialize should return an error due to validation failure
+	_, _, _, err = Initialize(mux, suite.mockJWTService)
+	suite.Error(err)
+	suite.Contains(err.Error(), "failed to load notification sender resources")
+
+	// Clean up
+	config.ResetThunderRuntime()
+	suiteConfig := &config.Config{
+		JWT: config.JWTConfig{
+			Issuer:         "test-issuer",
+			ValidityPeriod: 3600,
+		},
+		Crypto: config.CryptoConfig{
+			Encryption: config.EncryptionConfig{
+				Key: testCryptoKey,
+			},
+		},
+	}
+	err = config.InitializeThunderRuntime("", suiteConfig)
+	suite.NoError(err)
 }

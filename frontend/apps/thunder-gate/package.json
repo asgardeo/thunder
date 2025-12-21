@@ -38,10 +38,14 @@
     "@emotion/styled": "catalog:",
     "@fontsource-variable/inter": "5.2.8",
     "@thunder/commons-contexts": "workspace:^",
+    "@thunder/i18n": "workspace:^",
+    "@thunder/shared-hooks": "workspace:^",
     "@wso2/oxygen-ui": "catalog:",
     "@wso2/oxygen-ui-icons-react": "catalog:",
+    "i18next": "catalog:",
     "react": "catalog:",
     "react-dom": "catalog:",
+    "react-i18next": "catalog:",
     "react-router": "catalog:"
   },
   "devDependencies": {

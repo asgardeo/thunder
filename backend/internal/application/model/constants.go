@@ -20,13 +20,6 @@ package model
 
 import "errors"
 
-const (
-	// AuthFlowGraphPrefix defines the prefix for authentication flow graph IDs.
-	AuthFlowGraphPrefix = "auth_flow_config_"
-	// RegistrationFlowGraphPrefix defines the prefix for registration flow graph IDs.
-	RegistrationFlowGraphPrefix = "registration_flow_config_"
-)
-
 // InboundAuthType represents the type of inbound authentication.
 type InboundAuthType string
 

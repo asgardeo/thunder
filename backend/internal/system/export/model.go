@@ -18,12 +18,15 @@
 
 package export
 
+import immutableresource "github.com/asgardeo/thunder/internal/system/immutable_resource"
+
 // ExportRequest represents the request structure for exporting resources.
 type ExportRequest struct {
 	Applications        []string `json:"applications,omitempty"`
 	IdentityProviders   []string `json:"identity_providers,omitempty"`
 	NotificationSenders []string `json:"notification_senders,omitempty"`
 	UserSchemas         []string `json:"user_schemas,omitempty"`
+	OrganizationUnits   []string `json:"organization_units,omitempty"`
 
 	Options *ExportOptions `json:"options,omitempty"`
 }
@@ -77,21 +80,17 @@ type ExportResponse struct {
 
 // ExportSummary provides metadata about the export operation.
 type ExportSummary struct {
-	TotalFiles    int             `json:"total_files"`
-	TotalSize     int64           `json:"total_size_bytes,omitempty"`
-	ExportedAt    string          `json:"exported_at,omitempty"`
-	ResourceTypes map[string]int  `json:"resource_types,omitempty"` // Type -> count
-	Errors        []ExportError   `json:"errors,omitempty"`
-	Pagination    *PaginationInfo `json:"pagination,omitempty"`
+	TotalFiles    int                             `json:"total_files"`
+	TotalSize     int64                           `json:"total_size_bytes,omitempty"`
+	ExportedAt    string                          `json:"exported_at,omitempty"`
+	ResourceTypes map[string]int                  `json:"resource_types,omitempty"` // Type -> count
+	Errors        []immutableresource.ExportError `json:"errors,omitempty"`
+	Pagination    *PaginationInfo                 `json:"pagination,omitempty"`
 }
 
 // ExportError represents errors that occurred during export.
-type ExportError struct {
-	ResourceType string `json:"resource_type"`
-	ResourceID   string `json:"resource_id,omitempty"`
-	Error        string `json:"error"`
-	Code         string `json:"code,omitempty"`
-}
+// Deprecated: Use immutableresource.ExportError instead.
+type ExportError = immutableresource.ExportError
 
 // PaginationInfo provides pagination metadata.
 type PaginationInfo struct {

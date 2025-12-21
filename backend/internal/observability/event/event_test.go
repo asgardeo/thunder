@@ -7,7 +7,7 @@ import (
 
 func TestNewEvent(t *testing.T) {
 	traceID := "trace-123"
-	eventType := string(EventTypeAuthenticationStarted)
+	eventType := string(EventTypeTokenIssuanceStarted)
 	component := "TestComponent"
 
 	evt := NewEvent(traceID, eventType, component)
@@ -46,7 +46,7 @@ func TestNewEvent(t *testing.T) {
 }
 
 func TestEventBuilderPattern(t *testing.T) {
-	evt := NewEvent("trace-123", string(EventTypeAuthenticationStarted), "AuthHandler")
+	evt := NewEvent("trace-123", string(EventTypeTokenIssuanceStarted), "test-component")
 
 	result := evt.
 		WithStatus(StatusSuccess).
@@ -113,7 +113,7 @@ func TestEventValidate(t *testing.T) {
 			event: &Event{
 				TraceID:   "trace-123",
 				EventID:   "event-456",
-				Type:      string(EventTypeAuthenticationStarted),
+				Type:      string(EventTypeTokenIssuanceStarted),
 				Component: "TestComponent",
 				Timestamp: time.Now(),
 			},
@@ -129,7 +129,7 @@ func TestEventValidate(t *testing.T) {
 			name: "missing trace ID",
 			event: &Event{
 				EventID:   "event-456",
-				Type:      string(EventTypeAuthenticationStarted),
+				Type:      string(EventTypeTokenIssuanceStarted),
 				Component: "TestComponent",
 				Timestamp: time.Now(),
 			},
@@ -140,7 +140,7 @@ func TestEventValidate(t *testing.T) {
 			name: "missing event ID",
 			event: &Event{
 				TraceID:   "trace-123",
-				Type:      string(EventTypeAuthenticationStarted),
+				Type:      string(EventTypeTokenIssuanceStarted),
 				Component: "TestComponent",
 				Timestamp: time.Now(),
 			},
@@ -163,7 +163,7 @@ func TestEventValidate(t *testing.T) {
 			event: &Event{
 				TraceID:   "trace-123",
 				EventID:   "event-456",
-				Type:      string(EventTypeAuthenticationStarted),
+				Type:      string(EventTypeTokenIssuanceStarted),
 				Timestamp: time.Now(),
 			},
 			wantErr: true,
@@ -174,7 +174,7 @@ func TestEventValidate(t *testing.T) {
 			event: &Event{
 				TraceID:   "trace-123",
 				EventID:   "event-456",
-				Type:      string(EventTypeAuthenticationStarted),
+				Type:      string(EventTypeTokenIssuanceStarted),
 				Component: "TestComponent",
 			},
 			wantErr: true,
@@ -200,7 +200,7 @@ func TestEventDataNilSafety(t *testing.T) {
 	evt := &Event{
 		TraceID:   "trace-123",
 		EventID:   "event-456",
-		Type:      string(EventTypeAuthenticationStarted),
+		Type:      string(EventTypeTokenIssuanceStarted),
 		Component: "TestComponent",
 		Timestamp: time.Now(),
 		Data:      nil, // Explicitly nil
@@ -220,16 +220,16 @@ func TestEventDataNilSafety(t *testing.T) {
 
 func TestEventTypeConstants(t *testing.T) {
 	// Just verify some key constants exist
-	if EventTypeAuthenticationStarted == "" {
-		t.Error("EventTypeAuthenticationStarted should not be empty")
+	if EventTypeTokenIssuanceStarted == "" {
+		t.Error("EventTypeTokenIssuanceStarted should not be empty")
 	}
 
-	if EventTypeFlowStarted == "" {
-		t.Error("EventTypeFlowStarted should not be empty")
+	if EventTypeTokenIssued == "" {
+		t.Error("EventTypeTokenIssued should not be empty")
 	}
 
-	if EventTypeAuthenticationCompleted == "" {
-		t.Error("EventTypeAuthenticationCompleted should not be empty")
+	if EventTypeTokenIssuanceFailed == "" {
+		t.Error("EventTypeTokenIssuanceFailed should not be empty")
 	}
 }
 

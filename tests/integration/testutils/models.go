@@ -111,6 +111,13 @@ type AuthenticationResponse struct {
 	Assertion        string `json:"assertion,omitempty"`
 }
 
+// GroupMember represents a member of a group
+type GroupMember struct {
+	ID      string `json:"id"`
+	Type    string `json:"type"`
+	Display string `json:"display,omitempty"`
+}
+
 // Group represents a group in the system
 type Group struct {
 	ID                 string `json:"id,omitempty"`
@@ -128,12 +135,12 @@ type Assignment struct {
 
 // Role represents a role in the system
 type Role struct {
-	ID                 string       `json:"id,omitempty"`
-	Name               string       `json:"name"`
-	Description        string       `json:"description,omitempty"`
-	OrganizationUnitID string       `json:"ouId"`
-	Permissions        []string     `json:"permissions"`
-	Assignments        []Assignment `json:"assignments,omitempty"`
+	ID                 string                `json:"id,omitempty"`
+	Name               string                `json:"name"`
+	Description        string                `json:"description,omitempty"`
+	OrganizationUnitID string                `json:"ouId"`
+	Permissions        []ResourcePermissions `json:"permissions,omitempty"`
+	Assignments        []Assignment          `json:"assignments,omitempty"`
 }
 
 // TokenResponse represents the response from token exchange
@@ -153,6 +160,36 @@ type TokenHTTPResult struct {
 	Token      *TokenResponse
 }
 
+// AuthorizationResponse represents the response from authorization completion
+type AuthorizationResponse struct {
+	RedirectURI string `json:"redirect_uri"`
+}
+
+// ResourceServer represents a resource server in the system
+type ResourceServer struct {
+	ID                 string  `json:"id,omitempty"`
+	Name               string  `json:"name"`
+	Description        string  `json:"description,omitempty"`
+	Identifier         string  `json:"identifier,omitempty"`
+	OrganizationUnitID string  `json:"ouId"`
+	Delimiter          *string `json:"delimiter,omitempty"`
+}
+
+// Action represents an action in the resource system
+type Action struct {
+	ID          string `json:"id,omitempty"`
+	Name        string `json:"name"`
+	Handle      string `json:"handle"`
+	Description string `json:"description,omitempty"`
+	Permission  string `json:"permission,omitempty"`
+}
+
+// ResourcePermissions represents permissions grouped by resource server
+type ResourcePermissions struct {
+	ResourceServerID string   `json:"resourceServerId"`
+	Permissions      []string `json:"permissions"`
+}
+
 // FlowResponse represents the response from flow execution
 type FlowResponse struct {
 	FlowID        string    `json:"flowId"`
@@ -165,19 +202,25 @@ type FlowResponse struct {
 
 // FlowData represents the data returned by flow execution
 type FlowData struct {
-	Inputs []FlowInput `json:"inputs,omitempty"`
+	Inputs         []FlowInput            `json:"inputs,omitempty"`
+	Actions        []FlowAction           `json:"actions,omitempty"`
+	RedirectURL    string                 `json:"redirectUrl,omitempty"`
+	Meta           map[string]interface{} `json:"meta,omitempty"`
+	AdditionalData map[string]interface{} `json:"additionalData,omitempty"`
 }
 
 // FlowInput represents an input required by the flow
 type FlowInput struct {
-	Name     string `json:"name"`
-	Type     string `json:"type"`
-	Required bool   `json:"required"`
+	Ref        string `json:"ref,omitempty"`
+	Identifier string `json:"identifier"`
+	Type       string `json:"type"`
+	Required   bool   `json:"required"`
 }
 
-// AuthorizationResponse represents the response from authorization completion
-type AuthorizationResponse struct {
-	RedirectURI string `json:"redirect_uri"`
+// FlowAction represents an action available in the flow
+type FlowAction struct {
+	Ref      string `json:"ref"`
+	NextNode string `json:"nextNode"`
 }
 
 // FlowStep represents a single step in a flow execution
@@ -188,4 +231,28 @@ type FlowStep struct {
 	Data          *FlowData `json:"data,omitempty"`
 	Assertion     string    `json:"assertion,omitempty"`
 	FailureReason string    `json:"failureReason,omitempty"`
+}
+
+// Flow represents a flow definition
+type Flow struct {
+	Name     string      `json:"name"`
+	FlowType string      `json:"flowType"`
+	Handle   string      `json:"handle"`
+	Nodes    interface{} `json:"nodes"`
+}
+
+// NotificationSender represents a notification sender in the system
+type NotificationSender struct {
+	ID          string           `json:"id,omitempty"`
+	Name        string           `json:"name"`
+	Description string           `json:"description"`
+	Provider    string           `json:"provider"`
+	Properties  []SenderProperty `json:"properties"`
+}
+
+// SenderProperty represents a property of a notification sender
+type SenderProperty struct {
+	Name     string `json:"name"`
+	Value    string `json:"value"`
+	IsSecret bool   `json:"is_secret"`
 }

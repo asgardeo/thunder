@@ -1,0 +1,82 @@
+/**
+ * Copyright (c) 2025, WSO2 LLC. (https://www.wso2.com).
+ *
+ * WSO2 LLC. licenses this file to you under the Apache License,
+ * Version 2.0 (the "License"); you may not use this file except
+ * in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing,
+ * software distributed under the License is distributed on an
+ * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+ * KIND, either express or implied. See the License for the
+ * specific language governing permissions and limitations
+ * under the License.
+ */
+
+:root {
+  --dnd-drop-indicator-color: var(--mui-palette-primary-main);
+  --dnd-drop-indicator-height: 3px;
+  --dnd-drop-indicator-spacing: 8px;
+}
+
+.dnd-sortable {
+  position: relative;
+
+  // Add padding to create larger drop zones between elements
+  margin-top: 4px;
+  margin-bottom: 4px;
+
+  &.show-drop-indicator-before::before,
+  &.show-drop-indicator-after::after {
+    content: '';
+    position: absolute;
+    left: 0;
+    right: 0;
+    height: var(--dnd-drop-indicator-height);
+    background-color: var(--dnd-drop-indicator-color);
+    border-radius: 2px;
+    z-index: 100;
+    pointer-events: none;
+    animation: dropIndicatorPulse 1s ease-in-out infinite;
+  }
+
+  &.show-drop-indicator-before::before {
+    top: calc(-1 * var(--dnd-drop-indicator-spacing));
+  }
+
+  &.show-drop-indicator-after::after {
+    bottom: calc(-1 * var(--dnd-drop-indicator-spacing));
+  }
+
+  // Add a semi-transparent background zone when dragging to show the drop area
+  &.show-drop-indicator-before,
+  &.show-drop-indicator-after {
+    &::after {
+      content: '';
+      position: absolute;
+      left: -4px;
+      right: -4px;
+      height: calc(var(--dnd-drop-indicator-spacing) * 2);
+      background-color: rgba(var(--mui-palette-primary-mainChannel) / 0.1);
+      border-radius: 4px;
+      z-index: 99;
+      pointer-events: none;
+    }
+  }
+
+  &.show-drop-indicator-before::after {
+    top: calc(-1 * var(--dnd-drop-indicator-spacing) - var(--dnd-drop-indicator-spacing));
+  }
+}
+
+@keyframes dropIndicatorPulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.6;
+  }
+}

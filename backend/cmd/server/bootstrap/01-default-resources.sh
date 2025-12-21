@@ -18,7 +18,7 @@
 # ----------------------------------------------------------------------------
 
 # Bootstrap Script: Default Resources Setup
-# Creates default organization unit, user schema, admin user, admin role, and DEVELOP application
+# Creates default organization unit, user schema, admin user, system resource server, system action, admin role, and DEVELOP application
 
 set -e
 
@@ -225,6 +225,101 @@ fi
 echo ""
 
 # ============================================================================
+# Create System Resource Server
+# ============================================================================
+
+log_info "Creating system resource server..."
+
+if [[ -z "$DEFAULT_OU_ID" ]]; then
+    log_error "Default OU ID is not available. Cannot create resource server."
+    exit 1
+fi
+
+RESPONSE=$(thunder_api_call POST "/resource-servers" "{
+  \"name\": \"System\",
+  \"description\": \"System resource server\",
+  \"identifier\": \"system\",
+  \"ouId\": \"${DEFAULT_OU_ID}\"
+}")
+
+HTTP_CODE="${RESPONSE: -3}"
+BODY="${RESPONSE%???}"
+
+if [[ "$HTTP_CODE" == "201" ]] || [[ "$HTTP_CODE" == "200" ]]; then
+    log_success "Resource server created successfully"
+    SYSTEM_RS_ID=$(echo "$BODY" | grep -o '"id":"[^"]*"' | head -1 | cut -d'"' -f4)
+    if [[ -n "$SYSTEM_RS_ID" ]]; then
+        log_info "System resource server ID: $SYSTEM_RS_ID"
+    else
+        log_error "Could not extract resource server ID from response"
+        exit 1
+    fi
+elif [[ "$HTTP_CODE" == "409" ]]; then
+    log_warning "Resource server already exists, retrieving ID..."
+    # Get existing resource server ID
+    RESPONSE=$(thunder_api_call GET "/resource-servers")
+    HTTP_CODE="${RESPONSE: -3}"
+    BODY="${RESPONSE%???}"
+
+    if [[ "$HTTP_CODE" == "200" ]]; then
+        SYSTEM_RS_ID=$(echo "$BODY" | grep -o '"id":"[^"]*","[^"]*":"System"' | grep -o '"id":"[^"]*"' | head -1 | cut -d'"' -f4)
+
+        # Fallback parsing
+        if [[ -z "$SYSTEM_RS_ID" ]]; then
+            SYSTEM_RS_ID=$(echo "$BODY" | sed 's/},{/}\n{/g' | grep '"identifier":"system"' | grep -o '"id":"[^"]*"' | head -1 | cut -d'"' -f4)
+        fi
+
+        if [[ -n "$SYSTEM_RS_ID" ]]; then
+            log_success "Found resource server ID: $SYSTEM_RS_ID"
+        else
+            log_error "Could not find resource server ID in response"
+            exit 1
+        fi
+    else
+        log_error "Failed to fetch resource servers (HTTP $HTTP_CODE)"
+        exit 1
+    fi
+else
+    log_error "Failed to create resource server (HTTP $HTTP_CODE)"
+    echo "Response: $BODY"
+    exit 1
+fi
+
+echo ""
+
+# ============================================================================
+# Create System Action
+# ============================================================================
+
+log_info "Creating 'system' action on resource server..."
+
+if [[ -z "$SYSTEM_RS_ID" ]]; then
+    log_error "System resource server ID is not available. Cannot create action."
+    exit 1
+fi
+
+RESPONSE=$(thunder_api_call POST "/resource-servers/${SYSTEM_RS_ID}/actions" '{
+  "name": "System Access",
+  "description": "Full system access permission",
+  "handle": "system"
+}')
+
+HTTP_CODE="${RESPONSE: -3}"
+BODY="${RESPONSE%???}"
+
+if [[ "$HTTP_CODE" == "201" ]] || [[ "$HTTP_CODE" == "200" ]]; then
+    log_success "System action created successfully"
+elif [[ "$HTTP_CODE" == "409" ]]; then
+    log_warning "System action already exists, skipping"
+else
+    log_error "Failed to create system action (HTTP $HTTP_CODE)"
+    echo "Response: $BODY"
+    exit 1
+fi
+
+echo ""
+
+# ============================================================================
 # Create Admin Role
 # ============================================================================
 
@@ -240,11 +335,21 @@ if [[ -z "$DEFAULT_OU_ID" ]]; then
     exit 1
 fi
 
+if [[ -z "$SYSTEM_RS_ID" ]]; then
+    log_error "System resource server ID is not available. Cannot create role."
+    exit 1
+fi
+
 RESPONSE=$(thunder_api_call POST "/roles" "{
   \"name\": \"Administrator\",
   \"description\": \"System administrator role with full permissions\",
   \"ouId\": \"${DEFAULT_OU_ID}\",
-  \"permissions\": [\"system\"],
+  \"permissions\": [
+    {
+      \"resourceServerId\": \"${SYSTEM_RS_ID}\",
+      \"permissions\": [\"system\"]
+    }
+  ],
   \"assignments\": [
     {
       \"id\": \"${ADMIN_USER_ID}\",
@@ -273,10 +378,302 @@ fi
 echo ""
 
 # ============================================================================
+# Create Default Flows
+# ============================================================================
+
+log_info "Creating default flows..."
+
+# Path to flow definitions directories
+AUTH_FLOWS_DIR="${SCRIPT_DIR}/flows/authentication"
+REG_FLOWS_DIR="${SCRIPT_DIR}/flows/registration"
+
+# Check if flows directory exists
+if [[ ! -d "$AUTH_FLOWS_DIR" ]] && [[ ! -d "$REG_FLOWS_DIR" ]]; then
+    log_warning "Flow definition directories not found, skipping flow creation"
+else
+    FLOW_COUNT=0
+    FLOW_SUCCESS=0
+    FLOW_SKIPPED=0
+
+    # Process authentication flows
+    if [[ -d "$AUTH_FLOWS_DIR" ]]; then
+        shopt -s nullglob
+        AUTH_FILES=("$AUTH_FLOWS_DIR"/*.json)
+        shopt -u nullglob
+
+        if [[ ${#AUTH_FILES[@]} -gt 0 ]]; then
+            log_info "Processing authentication flows..."
+            
+            # Fetch existing auth flows
+            RESPONSE=$(thunder_api_call GET "/flows?flowType=AUTHENTICATION&limit=200")
+            HTTP_CODE="${RESPONSE: -3}"
+            BODY="${RESPONSE%???}"
+
+            # Store existing auth flows as "handle|id" pairs
+            EXISTING_AUTH_FLOWS=""
+            if [[ "$HTTP_CODE" == "200" ]]; then
+                while IFS= read -r line; do
+                    FLOW_ID=$(echo "$line" | grep -o '"id":"[^"]*"' | cut -d'"' -f4)
+                    FLOW_HANDLE=$(echo "$line" | grep -o '"handle":"[^"]*"' | cut -d'"' -f4)
+                    if [[ -n "$FLOW_ID" ]] && [[ -n "$FLOW_HANDLE" ]]; then
+                        EXISTING_AUTH_FLOWS="${EXISTING_AUTH_FLOWS}${FLOW_HANDLE}|${FLOW_ID}"$'\n'
+                        log_debug "Found existing auth flow: handle=$FLOW_HANDLE (ID: $FLOW_ID)"
+                    fi
+                done < <(echo "$BODY" | grep -o '{[^}]*"id":"[^"]*"[^}]*"handle":"[^"]*"[^}]*}')
+            fi
+            
+            log_debug "Total existing auth flows found: $(echo "$EXISTING_AUTH_FLOWS" | grep -c '|' || echo 0)"
+            
+            for FLOW_FILE in "$AUTH_FLOWS_DIR"/*.json; do
+                [[ ! -f "$FLOW_FILE" ]] && continue
+
+                FLOW_COUNT=$((FLOW_COUNT + 1))
+                FLOW_HANDLE=$(grep -o '"handle"[[:space:]]*:[[:space:]]*"[^"]*"' "$FLOW_FILE" | head -1 | sed 's/"handle"[[:space:]]*:[[:space:]]*"\([^"]*\)"/\1/')
+                FLOW_NAME=$(grep -o '"name"[[:space:]]*:[[:space:]]*"[^"]*"' "$FLOW_FILE" | head -1 | sed 's/"name"[[:space:]]*:[[:space:]]*"\([^"]*\)"/\1/')
+                log_debug "Processing flow file: $FLOW_FILE with handle: $FLOW_HANDLE, name: $FLOW_NAME"
+                
+                # Check if flow exists by handle
+                if echo "$EXISTING_AUTH_FLOWS" | grep -q "^${FLOW_HANDLE}|"; then
+                    # Update existing flow
+                    FLOW_ID=$(echo "$EXISTING_AUTH_FLOWS" | grep "^${FLOW_HANDLE}|" | cut -d'|' -f2)
+                    log_info "Updating existing auth flow: $FLOW_NAME (handle: $FLOW_HANDLE)"
+                    update_flow "$FLOW_ID" "$FLOW_FILE"
+                    RESULT=$?
+                    if [[ $RESULT -eq 0 ]]; then
+                        FLOW_SUCCESS=$((FLOW_SUCCESS + 1))
+                    fi
+                else
+                    # Create new flow
+                    create_flow "$FLOW_FILE"
+                    RESULT=$?
+                    if [[ $RESULT -eq 0 ]]; then
+                        FLOW_SUCCESS=$((FLOW_SUCCESS + 1))
+                    elif [[ $RESULT -eq 2 ]]; then
+                        FLOW_SKIPPED=$((FLOW_SKIPPED + 1))
+                    fi
+                fi
+            done
+        else
+            log_warning "No authentication flow files found"
+        fi
+    fi
+
+    # Process registration flows
+    if [[ -d "$REG_FLOWS_DIR" ]]; then
+        shopt -s nullglob
+        REG_FILES=("$REG_FLOWS_DIR"/*.json)
+        shopt -u nullglob
+        
+        if [[ ${#REG_FILES[@]} -gt 0 ]]; then
+            log_info "Processing registration flows..."
+            
+            # Fetch existing registration flows
+            RESPONSE=$(thunder_api_call GET "/flows?flowType=REGISTRATION&limit=200")
+            HTTP_CODE="${RESPONSE: -3}"
+            BODY="${RESPONSE%???}"
+
+            # Store existing registration flows as "handle|id" pairs
+            EXISTING_REG_FLOWS=""
+            if [[ "$HTTP_CODE" == "200" ]]; then
+                while IFS= read -r line; do
+                    FLOW_ID=$(echo "$line" | grep -o '"id":"[^"]*"' | cut -d'"' -f4)
+                    FLOW_HANDLE=$(echo "$line" | grep -o '"handle":"[^"]*"' | cut -d'"' -f4)
+                    if [[ -n "$FLOW_ID" ]] && [[ -n "$FLOW_HANDLE" ]]; then
+                        EXISTING_REG_FLOWS="${EXISTING_REG_FLOWS}${FLOW_HANDLE}|${FLOW_ID}"$'\n'
+                    fi
+                done < <(echo "$BODY" | grep -o '{[^}]*"id":"[^"]*"[^}]*"handle":"[^"]*"[^}]*}')
+            fi
+
+            for FLOW_FILE in "$REG_FLOWS_DIR"/*.json; do
+                [[ ! -f "$FLOW_FILE" ]] && continue
+
+                FLOW_COUNT=$((FLOW_COUNT + 1))
+                FLOW_HANDLE=$(grep -o '"handle"[[:space:]]*:[[:space:]]*"[^"]*"' "$FLOW_FILE" | head -1 | sed 's/"handle"[[:space:]]*:[[:space:]]*"\([^"]*\)"/\1/')
+                FLOW_NAME=$(grep -o '"name"[[:space:]]*:[[:space:]]*"[^"]*"' "$FLOW_FILE" | head -1 | sed 's/"name"[[:space:]]*:[[:space:]]*"\([^"]*\)"/\1/')
+                
+                # Check if flow exists by handle
+                if echo "$EXISTING_REG_FLOWS" | grep -q "^${FLOW_HANDLE}|"; then
+                    # Update existing flow
+                    FLOW_ID=$(echo "$EXISTING_REG_FLOWS" | grep "^${FLOW_HANDLE}|" | cut -d'|' -f2)
+                    log_info "Updating existing registration flow: $FLOW_NAME (handle: $FLOW_HANDLE)"
+                    update_flow "$FLOW_ID" "$FLOW_FILE"
+                    RESULT=$?
+                    if [[ $RESULT -eq 0 ]]; then
+                        FLOW_SUCCESS=$((FLOW_SUCCESS + 1))
+                    fi
+                else
+                    # Create new flow
+                    create_flow "$FLOW_FILE"
+                    RESULT=$?
+                    if [[ $RESULT -eq 0 ]]; then
+                        FLOW_SUCCESS=$((FLOW_SUCCESS + 1))
+                    elif [[ $RESULT -eq 2 ]]; then
+                        FLOW_SKIPPED=$((FLOW_SKIPPED + 1))
+                    fi
+                fi
+            done
+        else
+            log_warning "No registration flow files found"
+        fi
+    fi
+
+    if [[ $FLOW_COUNT -gt 0 ]]; then
+        log_info "Flow creation summary: $FLOW_SUCCESS created/updated, $FLOW_SKIPPED skipped, $((FLOW_COUNT - FLOW_SUCCESS - FLOW_SKIPPED)) failed"
+    fi
+fi
+
+echo ""
+
+# ============================================================================
+# Create Application-Specific Flows
+# ============================================================================
+
+log_info "Creating application-specific flows..."
+
+APPS_FLOWS_DIR="${SCRIPT_DIR}/flows/apps"
+
+# Store application flow IDs as "app_name|auth_flow_id|reg_flow_id" pairs
+APP_FLOW_IDS=""
+
+if [[ -d "$APPS_FLOWS_DIR" ]]; then
+    # Fetch all existing flows once
+    log_info "Fetching existing flows for application flow processing..."
+    
+    # Get auth flows
+    RESPONSE=$(thunder_api_call GET "/flows?flowType=AUTHENTICATION&limit=200")
+    HTTP_CODE="${RESPONSE: -3}"
+    BODY="${RESPONSE%???}"
+    EXISTING_APP_AUTH_FLOWS=""
+    if [[ "$HTTP_CODE" == "200" ]]; then
+        while IFS= read -r line; do
+            FLOW_ID=$(echo "$line" | grep -o '"id":"[^"]*"' | cut -d'"' -f4)
+            FLOW_HANDLE=$(echo "$line" | grep -o '"handle":"[^"]*"' | cut -d'"' -f4)
+            if [[ -n "$FLOW_ID" ]] && [[ -n "$FLOW_HANDLE" ]]; then
+                EXISTING_APP_AUTH_FLOWS="${EXISTING_APP_AUTH_FLOWS}${FLOW_HANDLE}|${FLOW_ID}"$'\n'
+            fi
+        done < <(echo "$BODY" | grep -o '{[^}]*"id":"[^"]*"[^}]*"handle":"[^"]*"[^}]*}')
+    fi
+    
+    # Get registration flows
+    RESPONSE=$(thunder_api_call GET "/flows?flowType=REGISTRATION&limit=200")
+    HTTP_CODE="${RESPONSE: -3}"
+    BODY="${RESPONSE%???}"
+    EXISTING_APP_REG_FLOWS=""
+    if [[ "$HTTP_CODE" == "200" ]]; then
+        while IFS= read -r line; do
+            FLOW_ID=$(echo "$line" | grep -o '"id":"[^"]*"' | cut -d'"' -f4)
+            FLOW_HANDLE=$(echo "$line" | grep -o '"handle":"[^"]*"' | cut -d'"' -f4)
+            if [[ -n "$FLOW_ID" ]] && [[ -n "$FLOW_HANDLE" ]]; then
+                EXISTING_APP_REG_FLOWS="${EXISTING_APP_REG_FLOWS}${FLOW_HANDLE}|${FLOW_ID}"$'\n'
+            fi
+        done < <(echo "$BODY" | grep -o '{[^}]*"id":"[^"]*"[^}]*"handle":"[^"]*"[^}]*}')
+    fi
+
+    # Process each application directory
+    for APP_DIR in "$APPS_FLOWS_DIR"/*; do
+        [[ ! -d "$APP_DIR" ]] && continue
+        
+        APP_NAME=$(basename "$APP_DIR")
+        APP_AUTH_FLOW_ID=""
+        APP_REG_FLOW_ID=""
+        
+        log_info "Processing flows for application: $APP_NAME"
+        
+        # Process authentication flow for app
+        shopt -s nullglob
+        AUTH_FLOW_FILES=("$APP_DIR"/auth_*.json)
+        shopt -u nullglob
+        
+        if [[ ${#AUTH_FLOW_FILES[@]} -gt 0 ]]; then
+            AUTH_FLOW_FILE="${AUTH_FLOW_FILES[0]}"
+            FLOW_HANDLE=$(grep -o '"handle"[[:space:]]*:[[:space:]]*"[^"]*"' "$AUTH_FLOW_FILE" | head -1 | sed 's/"handle"[[:space:]]*:[[:space:]]*"\([^"]*\)"/\1/')
+            FLOW_NAME=$(grep -o '"name"[[:space:]]*:[[:space:]]*"[^"]*"' "$AUTH_FLOW_FILE" | head -1 | sed 's/"name"[[:space:]]*:[[:space:]]*"\([^"]*\)"/\1/')
+            
+            # Check if auth flow exists by handle
+            if echo "$EXISTING_APP_AUTH_FLOWS" | grep -q "^${FLOW_HANDLE}|"; then
+                # Update existing flow
+                APP_AUTH_FLOW_ID=$(echo "$EXISTING_APP_AUTH_FLOWS" | grep "^${FLOW_HANDLE}|" | cut -d'|' -f2)
+                log_info "Updating existing auth flow: $FLOW_NAME (handle: $FLOW_HANDLE)"
+                update_flow "$APP_AUTH_FLOW_ID" "$AUTH_FLOW_FILE"
+            else
+                # Create new flow
+                APP_AUTH_FLOW_ID=$(create_flow "$AUTH_FLOW_FILE")
+            fi
+            
+            # Re-fetch registration flows after creating auth flow
+            if [[ -n "$APP_AUTH_FLOW_ID" ]]; then
+                RESPONSE=$(thunder_api_call GET "/flows?flowType=REGISTRATION&limit=200")
+                HTTP_CODE="${RESPONSE: -3}"
+                BODY="${RESPONSE%???}"
+                EXISTING_APP_REG_FLOWS=""
+                if [[ "$HTTP_CODE" == "200" ]]; then
+                    while IFS= read -r line; do
+                        FLOW_ID=$(echo "$line" | grep -o '"id":"[^"]*"' | cut -d'"' -f4)
+                        FLOW_HANDLE_TEMP=$(echo "$line" | grep -o '"handle":"[^"]*"' | cut -d'"' -f4)
+                        if [[ -n "$FLOW_ID" ]] && [[ -n "$FLOW_HANDLE_TEMP" ]]; then
+                            EXISTING_APP_REG_FLOWS="${EXISTING_APP_REG_FLOWS}${FLOW_HANDLE_TEMP}|${FLOW_ID}"$'\n'
+                        fi
+                    done < <(echo "$BODY" | grep -o '{[^}]*"id":"[^"]*"[^}]*"handle":"[^"]*"[^}]*}')
+                fi
+            fi
+        else
+            log_warning "No authentication flow file found for app: $APP_NAME"
+        fi
+
+        # Process registration flow for app
+        shopt -s nullglob
+        REG_FLOW_FILES=("$APP_DIR"/registration_*.json)
+        shopt -u nullglob
+        
+        if [[ ${#REG_FLOW_FILES[@]} -gt 0 ]]; then
+            REG_FLOW_FILE="${REG_FLOW_FILES[0]}"
+            FLOW_HANDLE=$(grep -o '"handle"[[:space:]]*:[[:space:]]*"[^"]*"' "$REG_FLOW_FILE" | head -1 | sed 's/"handle"[[:space:]]*:[[:space:]]*"\([^"]*\)"/\1/')
+            FLOW_NAME=$(grep -o '"name"[[:space:]]*:[[:space:]]*"[^"]*"' "$REG_FLOW_FILE" | head -1 | sed 's/"name"[[:space:]]*:[[:space:]]*"\([^"]*\)"/\1/')
+            
+            # Check if registration flow exists by handle
+            if echo "$EXISTING_APP_REG_FLOWS" | grep -q "^${FLOW_HANDLE}|"; then
+                # Update existing flow
+                APP_REG_FLOW_ID=$(echo "$EXISTING_APP_REG_FLOWS" | grep "^${FLOW_HANDLE}|" | cut -d'|' -f2)
+                log_info "Updating existing registration flow: $FLOW_NAME (handle: $FLOW_HANDLE)"
+                update_flow "$APP_REG_FLOW_ID" "$REG_FLOW_FILE"
+            else
+                # Create new flow
+                APP_REG_FLOW_ID=$(create_flow "$REG_FLOW_FILE")
+            fi
+        else
+            log_warning "No registration flow file found for app: $APP_NAME"
+        fi
+        
+        # Store the flow IDs for this app
+        log_debug "Storing flow IDs for $APP_NAME: auth=$APP_AUTH_FLOW_ID, reg=$APP_REG_FLOW_ID"
+        APP_FLOW_IDS="${APP_FLOW_IDS}${APP_NAME}|${APP_AUTH_FLOW_ID}|${APP_REG_FLOW_ID}"$'\n'
+    done
+else
+    log_warning "Application flows directory not found at $APPS_FLOWS_DIR"
+fi
+
+echo ""
+
+# ============================================================================
 # Create DEVELOP Application
 # ============================================================================
 
 log_info "Creating DEVELOP application..."
+
+# Get flow IDs for develop app from the APP_FLOW_IDS created/found during flow processing
+DEVELOP_AUTH_FLOW_ID=$(echo "$APP_FLOW_IDS" | grep "^develop|" | cut -d'|' -f2)
+DEVELOP_REG_FLOW_ID=$(echo "$APP_FLOW_IDS" | grep "^develop|" | cut -d'|' -f3)
+log_debug "Extracted flow IDs: auth=$DEVELOP_AUTH_FLOW_ID, reg=$DEVELOP_REG_FLOW_ID"
+
+# Validate that flow IDs are available
+if [[ -z "$DEVELOP_AUTH_FLOW_ID" ]]; then
+    log_error "Develop authentication flow ID not found, cannot create DEVELOP application"
+    exit 1
+fi
+if [[ -z "$DEVELOP_REG_FLOW_ID" ]]; then
+    log_error "Develop registration flow ID not found, cannot create DEVELOP application"
+    exit 1
+fi
 
 # Use THUNDER_PUBLIC_URL for redirect URIs, fallback to THUNDER_API_BASE if not set
 PUBLIC_URL="${THUNDER_PUBLIC_URL:-$THUNDER_API_BASE}"
@@ -299,9 +696,10 @@ RESPONSE=$(thunder_api_call POST "/applications" "{
   \"description\": \"Developer application for Thunder\",
   \"url\": \"${PUBLIC_URL}/develop\",
   \"logo_url\": \"${PUBLIC_URL}/develop/assets/images/trifacta.svg\",
-  \"auth_flow_graph_id\": \"auth_flow_config_basic\",
-  \"registration_flow_graph_id\": \"registration_flow_config_basic\",
+  \"auth_flow_graph_id\": \"${DEVELOP_AUTH_FLOW_ID}\",
+  \"registration_flow_graph_id\": \"${DEVELOP_REG_FLOW_ID}\",
   \"is_registration_flow_enabled\": true,
+  \"allowed_user_types\": [\"Person\"],
   \"user_attributes\": [\"given_name\",\"family_name\",\"email\",\"groups\", \"name\"],
   \"inbound_auth_config\": [{
     \"type\": \"oauth2\",

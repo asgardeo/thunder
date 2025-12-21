@@ -1,0 +1,365 @@
+/*
+ * Copyright (c) 2025, WSO2 LLC. (https://www.wso2.com).
+ *
+ * WSO2 LLC. licenses this file to you under the Apache License,
+ * Version 2.0 (the "License"); you may not use this file except
+ * in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing,
+ * software distributed under the License is distributed on an
+ * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+ * KIND, either express or implied.  See the License for the
+ * specific language governing permissions and limitations
+ * under the License.
+ */
+
+package authentication
+
+import (
+	"encoding/json"
+	"strings"
+	"testing"
+
+	"github.com/asgardeo/thunder/tests/integration/flow/common"
+	"github.com/asgardeo/thunder/tests/integration/testutils"
+	"github.com/stretchr/testify/suite"
+)
+
+var (
+	authzTestOU = testutils.OrganizationUnit{
+		Handle:      "authz-flow-test-ou",
+		Name:        "Authorization Flow Test Organization Unit",
+		Description: "Organization unit for authorization flow testing",
+		Parent:      nil,
+	}
+
+	authzTestUserSchema = testutils.UserSchema{
+		Name: "authz-test-person",
+		Schema: map[string]interface{}{
+			"username": map[string]interface{}{
+				"type": "string",
+			},
+			"password": map[string]interface{}{
+				"type": "string",
+			},
+			"email": map[string]interface{}{
+				"type": "string",
+			},
+			"firstName": map[string]interface{}{
+				"type": "string",
+			},
+			"lastName": map[string]interface{}{
+				"type": "string",
+			},
+		},
+	}
+
+	// Application relies on the default flow set by the server. Hence no need
+	// to set the flow IDs here.
+	authzTestApp = testutils.Application{
+		Name:                      "Authz Flow Test Application",
+		Description:               "Application for testing authorization in flows",
+		IsRegistrationFlowEnabled: false,
+		ClientID:                  "authz_flow_test_client",
+		ClientSecret:              "authz_flow_test_secret",
+		RedirectURIs:              []string{"http://localhost:3000/callback"},
+		AllowedUserTypes:          []string{"authz-test-person"},
+	}
+
+	userWithRole = testutils.User{
+		Type: "authz-test-person",
+		Attributes: json.RawMessage(`{
+			"username": "authorized_user",
+			"password": "SecurePass123!",
+			"email": "authorized@test.com",
+			"firstName": "Authorized",
+			"lastName": "User"
+		}`),
+	}
+
+	userNoRole = testutils.User{
+		Type: "authz-test-person",
+		Attributes: json.RawMessage(`{
+			"username": "unauthorized_user",
+			"password": "SecurePass123!",
+			"email": "unauthorized@test.com",
+			"firstName": "Unauthorized",
+			"lastName": "User"
+		}`),
+	}
+
+	documentEditorRole = testutils.Role{
+		Name:        "DocumentEditor",
+		Description: "Can read and write documents",
+	}
+)
+
+var (
+	authzTestOUID           string
+	authzTestAppID          string
+	authzTestRoleID         string
+	authzUserWithRole       string
+	authzUserNoRole         string
+	authzUserSchemaID       string
+	authzTestResourceServer string
+)
+
+type FlowAuthzTestSuite struct {
+	suite.Suite
+}
+
+func TestFlowAuthzTestSuite(t *testing.T) {
+	suite.Run(t, new(FlowAuthzTestSuite))
+}
+
+func (ts *FlowAuthzTestSuite) SetupSuite() {
+	var err error
+
+	// Create test organization unit
+	authzTestOUID, err = testutils.CreateOrganizationUnit(authzTestOU)
+	if err != nil {
+		ts.T().Fatalf("Failed to create test organization unit during setup: %v", err)
+	}
+
+	// Create user schema within the test organization unit
+	authzTestUserSchema.OrganizationUnitId = authzTestOUID
+	authzUserSchemaID, err = testutils.CreateUserType(authzTestUserSchema)
+	if err != nil {
+		ts.T().Fatalf("Failed to create user schema during setup: %v", err)
+	}
+
+	// Create test application
+	authzTestAppID, err = testutils.CreateApplication(authzTestApp)
+	if err != nil {
+		ts.T().Fatalf("Failed to create test application during setup: %v", err)
+	}
+
+	// Create user with role
+	userWithRoleCopy := userWithRole
+	userWithRoleCopy.OrganizationUnit = authzTestOUID
+	authzUserWithRole, err = testutils.CreateUser(userWithRoleCopy)
+	if err != nil {
+		ts.T().Fatalf("Failed to create user with role during setup: %v", err)
+	}
+
+	// Create user without role
+	userNoRoleCopy := userNoRole
+	userNoRoleCopy.OrganizationUnit = authzTestOUID
+	authzUserNoRole, err = testutils.CreateUser(userNoRoleCopy)
+	if err != nil {
+		ts.T().Fatalf("Failed to create user without role during setup: %v", err)
+	}
+
+	// Create resource server with actions for permissions
+	resourceServer := testutils.ResourceServer{
+		Name:               "Document Management System",
+		Description:        "System for managing documents",
+		Identifier:         "document-mgmt",
+		OrganizationUnitID: authzTestOUID,
+	}
+	actions := []testutils.Action{
+		{
+			Name:        "Read Documents",
+			Handle:      "read",
+			Description: "Permission to read documents",
+		},
+		{
+			Name:        "Write Documents",
+			Handle:      "write",
+			Description: "Permission to write documents",
+		},
+	}
+	authzTestResourceServer, err := testutils.CreateResourceServerWithActions(resourceServer, actions)
+	if err != nil {
+		ts.T().Fatalf("Failed to create resource server with actions during setup: %v", err)
+	}
+
+	// Create role with user assignment
+	roleToCreate := documentEditorRole
+	roleToCreate.OrganizationUnitID = authzTestOUID
+	roleToCreate.Permissions = []testutils.ResourcePermissions{
+		{
+			ResourceServerID: authzTestResourceServer,
+			Permissions:      []string{"read", "write"},
+		},
+	}
+	roleToCreate.Assignments = []testutils.Assignment{
+		{ID: authzUserWithRole, Type: "user"},
+	}
+	authzTestRoleID, err = testutils.CreateRole(roleToCreate)
+	if err != nil {
+		ts.T().Fatalf("Failed to create test role during setup: %v", err)
+	}
+}
+
+func (ts *FlowAuthzTestSuite) TearDownSuite() {
+	// Delete in reverse order of creation
+	if authzTestRoleID != "" {
+		if err := testutils.DeleteRole(authzTestRoleID); err != nil {
+			ts.T().Logf("Failed to delete test role during teardown: %v", err)
+		}
+	}
+
+	if authzTestResourceServer != "" {
+		if err := testutils.DeleteResourceServer(authzTestResourceServer); err != nil {
+			ts.T().Logf("Failed to delete test resource server during teardown: %v", err)
+		}
+	}
+
+	if authzUserNoRole != "" {
+		if err := testutils.DeleteUser(authzUserNoRole); err != nil {
+			ts.T().Logf("Failed to delete user without role during teardown: %v", err)
+		}
+	}
+
+	if authzUserWithRole != "" {
+		if err := testutils.DeleteUser(authzUserWithRole); err != nil {
+			ts.T().Logf("Failed to delete user with role during teardown: %v", err)
+		}
+	}
+
+	if authzTestAppID != "" {
+		if err := testutils.DeleteApplication(authzTestAppID); err != nil {
+			ts.T().Logf("Failed to delete test application during teardown: %v", err)
+		}
+	}
+
+	if authzTestOUID != "" {
+		if err := testutils.DeleteOrganizationUnit(authzTestOUID); err != nil {
+			ts.T().Logf("Failed to delete test organization unit during teardown: %v", err)
+		}
+	}
+
+	if authzUserSchemaID != "" {
+		if err := testutils.DeleteUserType(authzUserSchemaID); err != nil {
+			ts.T().Logf("Failed to delete user schema during teardown: %v", err)
+		}
+	}
+}
+
+// TestAuthorizationFlow_UserWithDirectRoleAssignment tests authorization when user has all requested permissions
+func (ts *FlowAuthzTestSuite) TestAuthorizationFlow_UserWithDirectRoleAssignment() {
+	// Initiate authentication flow with requested permissions
+	inputs := map[string]string{
+		"applicationId":         authzTestAppID,
+		"requested_permissions": "read write",
+	}
+
+	flowStep, err := common.InitiateAuthenticationFlow(authzTestAppID, false, inputs, "")
+	ts.Require().NoError(err, "Failed to initiate flow")
+	ts.Require().Equal("INCOMPLETE", flowStep.FlowStatus, "Expected flow status to be INCOMPLETE")
+	ts.Require().NotEmpty(flowStep.FlowID, "Flow ID should not be empty")
+
+	// Execute basic auth step with authorized user credentials
+	authInputs := map[string]string{
+		"username": "authorized_user",
+		"password": "SecurePass123!",
+	}
+
+	flowStep, err = common.CompleteFlow(flowStep.FlowID, authInputs, flowStep.Data.Inputs[0].Identifier)
+	ts.Require().NoError(err, "Failed to complete authentication")
+	ts.Require().NotNil(flowStep, "Flow step should not be nil")
+	ts.Require().Equal("COMPLETE", flowStep.FlowStatus, "Flow should be complete")
+	ts.Require().NotEmpty(flowStep.Assertion, "Assertion should not be empty")
+
+	// Decode the JWT assertion
+	claims, err := testutils.DecodeJWT(flowStep.Assertion)
+	ts.Require().NoError(err, "Failed to decode JWT")
+	ts.Require().NotNil(claims, "Claims should not be nil")
+
+	// Verify authorized_permissions claim
+	authorizedPermsRaw, ok := claims.Additional["authorized_permissions"]
+	ts.Require().True(ok, "authorized_permissions claim should be present")
+
+	authorizedPermsStr, ok := authorizedPermsRaw.(string)
+	ts.Require().True(ok, "authorized_permissions should be a string")
+
+	// Parse space-separated permissions
+	authorizedPerms := strings.Split(strings.TrimSpace(authorizedPermsStr), " ")
+	ts.Require().Len(authorizedPerms, 2, "Should have 2 authorized permissions")
+	ts.Require().Contains(authorizedPerms, "read", "Should contain read")
+	ts.Require().Contains(authorizedPerms, "write", "Should contain write")
+}
+
+// TestAuthorizationFlow_UserWithNoRole tests authorization when user has no role/permissions
+func (ts *FlowAuthzTestSuite) TestAuthorizationFlow_UserWithNoRole() {
+	// Initiate authentication flow with requested permissions
+	inputs := map[string]string{
+		"applicationId":         authzTestAppID,
+		"requested_permissions": "read write",
+	}
+
+	flowStep, err := common.InitiateAuthenticationFlow(authzTestAppID, false, inputs, "")
+	ts.Require().NoError(err, "Failed to initiate flow")
+	ts.Require().Equal("INCOMPLETE", flowStep.FlowStatus, "Expected flow status to be INCOMPLETE")
+	ts.Require().NotEmpty(flowStep.FlowID, "Flow ID should not be empty")
+
+	// Execute basic auth step with unauthorized user credentials
+	authInputs := map[string]string{
+		"username": "unauthorized_user",
+		"password": "SecurePass123!",
+	}
+
+	flowStep, err = common.CompleteFlow(flowStep.FlowID, authInputs, flowStep.Data.Inputs[0].Identifier)
+	ts.Require().NoError(err, "Failed to complete authentication")
+	ts.Require().NotNil(flowStep, "Flow step should not be nil")
+	ts.Require().Equal("COMPLETE", flowStep.FlowStatus, "Flow should be complete")
+	ts.Require().NotEmpty(flowStep.Assertion, "Assertion should not be empty")
+
+	// Decode the JWT assertion
+	claims, err := testutils.DecodeJWT(flowStep.Assertion)
+	ts.Require().NoError(err, "Failed to decode JWT")
+	ts.Require().NotNil(claims, "Claims should not be nil")
+
+	// Verify authorized_permissions claim - should not be present
+	_, ok := claims.Additional["authorized_permissions"]
+	ts.Require().False(ok, "authorized_permissions claim should not be present")
+}
+
+// TestAuthorizationFlow_UserWithPartialPermissions tests authorization when user has only subset of requested permissions
+func (ts *FlowAuthzTestSuite) TestAuthorizationFlow_UserWithPartialPermissions() {
+	// Initiate authentication flow requesting 3 permissions (user only has 2)
+	inputs := map[string]string{
+		"applicationId":         authzTestAppID,
+		"requested_permissions": "read write delete",
+	}
+
+	flowStep, err := common.InitiateAuthenticationFlow(authzTestAppID, false, inputs, "")
+	ts.Require().NoError(err, "Failed to initiate flow")
+	ts.Require().Equal("INCOMPLETE", flowStep.FlowStatus, "Expected flow status to be INCOMPLETE")
+	ts.Require().NotEmpty(flowStep.FlowID, "Flow ID should not be empty")
+
+	// Execute basic auth step with authorized user credentials
+	authInputs := map[string]string{
+		"username": "authorized_user",
+		"password": "SecurePass123!",
+	}
+
+	flowStep, err = common.CompleteFlow(flowStep.FlowID, authInputs, flowStep.Data.Inputs[0].Identifier)
+	ts.Require().NoError(err, "Failed to complete authentication")
+	ts.Require().NotNil(flowStep, "Flow step should not be nil")
+	ts.Require().Equal("COMPLETE", flowStep.FlowStatus, "Flow should be complete")
+	ts.Require().NotEmpty(flowStep.Assertion, "Assertion should not be empty")
+
+	// Decode the JWT assertion
+	claims, err := testutils.DecodeJWT(flowStep.Assertion)
+	ts.Require().NoError(err, "Failed to decode JWT")
+	ts.Require().NotNil(claims, "Claims should not be nil")
+
+	// Verify authorized_permissions claim - should only have read and write, not delete
+	authorizedPermsRaw, ok := claims.Additional["authorized_permissions"]
+	ts.Require().True(ok, "authorized_permissions claim should be present")
+
+	authorizedPermsStr, ok := authorizedPermsRaw.(string)
+	ts.Require().True(ok, "authorized_permissions should be a string")
+
+	// Parse space-separated permissions
+	authorizedPerms := strings.Split(strings.TrimSpace(authorizedPermsStr), " ")
+	ts.Require().Len(authorizedPerms, 2, "Should have 2 authorized permissions (not 3)")
+	ts.Require().Contains(authorizedPerms, "read", "Should contain read")
+	ts.Require().Contains(authorizedPerms, "write", "Should contain write")
+	ts.Require().NotContains(authorizedPerms, "delete", "Should NOT contain delete")
+}

@@ -1,0 +1,731 @@
+[
+  {
+    "resourceType": "TEMPLATE",
+    "category": "STARTER",
+    "type": "BLANK",
+    "display": {
+      "label": "Blank",
+      "description": "Start a new flow from scratch",
+      "image": "assets/images/icons/refresh-ccw.svg",
+      "showOnResourcePanel": true
+    },
+    "config": {
+      "data": {
+        "steps": [
+          {
+            "id": "{{ID}}",
+            "type": "VIEW",
+            "size": {
+              "width": 350,
+              "height": 291
+            },
+            "position": {
+              "x": 300,
+              "y": 200
+            },
+            "data": {
+              "components": [
+                {
+                  "id": "{{ID}}",
+                  "category": "DISPLAY",
+                  "type": "TYPOGRAPHY",
+                  "variant": "H3",
+                  "label": "Heading"
+                },
+                {
+                  "category": "BLOCK",
+                  "type": "FORM",
+                  "id": "{{ID}}",
+                  "components": [
+                    {
+                      "category": "ACTION",
+                      "type": "BUTTON",
+                      "id": "{{ID}}",
+                      "variant": "PRIMARY",
+                      "eventType": "SUBMIT",
+                      "label": "Continue",
+                      "action": {
+                        "next": "END",
+                        "type": "NEXT"
+                      }
+                    }
+                  ]
+                }
+              ]
+            }
+          },
+          {
+            "id": "END",
+            "type": "END",
+            "size": {
+              "width": 280,
+              "height": 220
+            },
+            "position": {
+              "x": 790,
+              "y": 330
+            },
+            "config": {},
+            "data": {
+              "action": {
+                "type": "EXECUTOR",
+                "executor": {
+                  "name": "LoginCompletionExecutor"
+                }
+              }
+            }
+          }
+        ]
+      }
+    }
+  },
+  {
+    "resourceType": "TEMPLATE",
+    "category": "STARTER",
+    "type": "BASIC",
+    "display": {
+      "label": "Basic Login",
+      "description": "Basic login experience with username and password",
+      "image": "assets/images/icons/password.svg",
+      "showOnResourcePanel": true
+    },
+    "config": {
+      "data": {
+        "__generationMeta__": {
+          "defaultPropertySelectorId": "{{BASIC_AUTH_EXECUTION_STEP_ID}}",
+          "replacers": [
+            {
+              "key": "BASIC_AUTH_EXECUTION_STEP_ID",
+              "type": "ID"
+            }
+          ]
+        },
+        "steps": [
+          {
+            "id": "{{ID}}",
+            "type": "VIEW",
+            "size": {
+              "width": 350,
+              "height": 291
+            },
+            "position": {
+              "x": 300,
+              "y": 200
+            },
+            "data": {
+              "components": [
+                {
+                  "id": "{{ID}}",
+                  "category": "DISPLAY",
+                  "type": "TYPOGRAPHY",
+                  "variant": "H3",
+                  "label": "Sign In"
+                },
+                {
+                  "category": "BLOCK",
+                  "type": "FORM",
+                  "id": "{{ID}}",
+                  "components": [
+                    {
+                      "id": "{{ID}}",
+                      "category": "FIELD",
+                      "type": "INPUT",
+                      "variant": "TEXT",
+                      "inputType": "text",
+                      "hint": "",
+                      "label": "Username",
+                      "required": true,
+                      "placeholder": "Enter your username",
+                      "identifier": "username"
+                    },
+                    {
+                      "id": "{{ID}}",
+                      "category": "FIELD",
+                      "type": "INPUT",
+                      "variant": "PASSWORD",
+                      "inputType": "password",
+                      "identifier": "password",
+                      "hint": "",
+                      "label": "Password",
+                      "required": true,
+                      "placeholder": "Enter your password"
+                    },
+                    {
+                      "id": "{{ID}}",
+                      "category": "ACTION",
+                      "type": "BUTTON",
+                      "variant": "PRIMARY",
+                      "eventType": "SUBMIT",
+                      "label": "Sign In",
+                      "action": {
+                        "type": "NEXT",
+                        "next": "{{BASIC_AUTH_EXECUTION_STEP_ID}}"
+                      }
+                    },
+                    {
+                      "category": "DISPLAY",
+                      "label": "<p class=\"rich-text-paragraph\"><br></p><p class=\"rich-text-paragraph\"><span class=\"rich-text-pre-wrap\">Don't have an account? </span><a href=\"{{application.selfRegisterUrl}}\" target=\"_blank\" rel=\"noopener noreferrer\" class=\"rich-text-link\"><span class=\"rich-text-pre-wrap\">Sign up</span></a></p>",
+                      "id": "{{ID}}",
+                      "type": "RICH_TEXT"
+                    }
+                  ]
+                }
+              ]
+            }
+          },
+          {
+            "id": "{{BASIC_AUTH_EXECUTION_STEP_ID}}",
+            "type": "TASK_EXECUTION",
+            "size": {
+              "width": 350,
+              "height": 291
+            },
+            "position": {
+              "x": 690,
+              "y": 200
+            },
+            "data": {
+              "action": {
+                "type": "EXECUTOR",
+                "executor": {
+                  "name": "BasicAuthExecutor"
+                },
+                "next": "END"
+              }
+            }
+          },
+          {
+            "id": "END",
+            "type": "END",
+            "size": {
+              "width": 280,
+              "height": 220
+            },
+            "position": {
+              "x": 1080,
+              "y": 200
+            },
+            "config": {},
+            "data": {
+              "action": {
+                "type": "EXECUTOR",
+                "executor": {
+                  "name": "LoginCompletionExecutor"
+                }
+              }
+            }
+          }
+        ]
+      }
+    }
+  },
+  {
+    "resourceType": "TEMPLATE",
+    "category": "STARTER",
+    "type": "BASIC_FEDERATED",
+    "display": {
+      "label": "Basic + Google",
+      "description": "Basic login experience with Google as an additional option",
+      "image": "assets/images/icons/google-generic.svg",
+      "showOnResourcePanel": true
+    },
+    "config": {
+      "data": {
+        "__generationMeta__": {
+          "defaultPropertySelectorId": "{{GOOGLE_EXECUTION_STEP_ID}}",
+          "replacers": [
+            {
+              "key": "GOOGLE_EXECUTION_STEP_ID",
+              "type": "ID"
+            },
+            {
+              "key": "BASIC_AUTH_EXECUTION_STEP_ID",
+              "type": "ID"
+            }
+          ]
+        },
+        "steps": [
+          {
+            "id": "{{ID}}",
+            "type": "VIEW",
+            "size": {
+              "width": 350,
+              "height": 291
+            },
+            "position": {
+              "x": 0,
+              "y": 330
+            },
+            "data": {
+              "components": [
+                {
+                  "id": "{{ID}}",
+                  "category": "DISPLAY",
+                  "type": "TYPOGRAPHY",
+                  "variant": "H3",
+                  "label": "Login"
+                },
+                {
+                  "category": "BLOCK",
+                  "type": "FORM",
+                  "id": "{{ID}}",
+                  "components": [
+                    {
+                      "id": "{{ID}}",
+                      "category": "FIELD",
+                      "type": "INPUT",
+                      "variant": "TEXT",
+                      "inputType": "text",
+                      "hint": "",
+                      "label": "Username",
+                      "required": true,
+                      "placeholder": "Enter your username",
+                      "identifier": "username"
+                    },
+                    {
+                      "id": "{{ID}}",
+                      "category": "FIELD",
+                      "type": "INPUT",
+                      "variant": "PASSWORD",
+                      "inputType": "password",
+                      "identifier": "password",
+                      "hint": "",
+                      "label": "Password",
+                      "required": true,
+                      "placeholder": "Enter your password"
+                    },
+                    {
+                      "id": "{{ID}}",
+                      "category": "ACTION",
+                      "type": "BUTTON",
+                      "variant": "PRIMARY",
+                      "eventType": "SUBMIT",
+                      "label": "Continue",
+                      "action": {
+                        "type": "NEXT",
+                        "next": "{{BASIC_AUTH_EXECUTION_STEP_ID}}"
+                      }
+                    }
+                  ]
+                },
+                {
+                  "id": "{{ID}}",
+                  "category": "ACTION",
+                  "type": "BUTTON",
+                  "variant": "SOCIAL",
+                  "eventType": "TRIGGER",
+                  "label": "Continue with Google",
+                  "image": "assets/images/icons/google.svg",
+                  "action": {
+                    "type": "NEXT",
+                    "next": "{{GOOGLE_EXECUTION_STEP_ID}}"
+                  }
+                }
+              ]
+            }
+          },
+          {
+            "id": "{{BASIC_AUTH_EXECUTION_STEP_ID}}",
+            "type": "TASK_EXECUTION",
+            "size": {
+              "width": 350,
+              "height": 291
+            },
+            "position": {
+              "x": 580,
+              "y": 130
+            },
+            "data": {
+              "action": {
+                "type": "EXECUTOR",
+                "executor": {
+                  "name": "BasicAuthExecutor"
+                },
+                "next": "END"
+              }
+            }
+          },
+          {
+            "id": "{{GOOGLE_EXECUTION_STEP_ID}}",
+            "type": "TASK_EXECUTION",
+            "size": {
+              "width": 350,
+              "height": 291
+            },
+            "position": {
+              "x": 580,
+              "y": 530
+            },
+            "data": {
+              "action": {
+                "type": "EXECUTOR",
+                "executor": {
+                  "name": "GoogleOIDCAuthExecutor"
+                },
+                "next": "END"
+              },
+              "properties": {
+                "idpId": "{{IDP_ID}}"
+              }
+            }
+          },
+          {
+            "id": "END",
+            "type": "END",
+            "size": {
+              "width": 280,
+              "height": 220
+            },
+            "position": {
+              "x": 970,
+              "y": 330
+            },
+            "config": {},
+            "data": {
+              "action": {
+                "type": "EXECUTOR",
+                "executor": {
+                  "name": "LoginCompletionExecutor"
+                }
+              }
+            }
+          }
+        ]
+      }
+    }
+  },
+  {
+    "resourceType": "TEMPLATE",
+    "category": "STARTER",
+    "type": "BASIC_PASSKEY",
+    "display": {
+      "label": "Basic + Passkey",
+      "description": "Basic login experience with passkey authentication",
+      "image": "assets/images/icons/fingerprint.svg",
+      "showOnResourcePanel": false
+    },
+    "config": {
+      "data": {
+        "__generationMeta__": {
+          "defaultPropertySelectorId": "{{PASSKEY_ENROLLMENT_STEP_ID}}",
+          "replacers": [
+            {
+              "key": "PASSKEY_ENROLLMENT_STEP_ID",
+              "type": "ID"
+            }
+          ]
+        },
+        "steps": [
+          {
+            "id": "{{ID}}",
+            "type": "VIEW",
+            "size": {
+              "width": 350,
+              "height": 291
+            },
+            "position": {
+              "x": 0,
+              "y": 330
+            },
+            "data": {
+              "components": [
+                {
+                  "id": "{{ID}}",
+                  "category": "DISPLAY",
+                  "type": "TYPOGRAPHY",
+                  "variant": "H3",
+                  "label": "Login"
+                },
+                {
+                  "category": "BLOCK",
+                  "type": "FORM",
+                  "id": "{{ID}}",
+                  "components": [
+                    {
+                      "id": "{{ID}}",
+                      "category": "ACTION",
+                      "type": "BUTTON",
+                      "variant": "PRIMARY",
+                      "eventType": "TRIGGER",
+                      "label": "Login with Passkey",
+                      "action": {
+                        "type": "NEXT",
+                        "next": "{{PASSKEY_ENROLLMENT_STEP_ID}}"
+                      }
+                    }
+                  ]
+                }
+              ]
+            }
+          },
+          {
+            "id": "{{PASSKEY_ENROLLMENT_STEP_ID}}",
+            "type": "TASK_EXECUTION",
+            "size": {
+              "width": 350,
+              "height": 291
+            },
+            "position": {
+              "x": 500,
+              "y": 900
+            },
+            "data": {
+              "action": {
+                "type": "EXECUTOR",
+                "executor": {
+                  "name": "FIDO2Executor"
+                },
+                "next": "END"
+              }
+            }
+          },
+          {
+            "id": "END",
+            "type": "END",
+            "size": {
+              "width": 280,
+              "height": 220
+            },
+            "position": {
+              "x": 880,
+              "y": 800
+            },
+            "config": {},
+            "data": {
+              "action": {
+                "type": "EXECUTOR",
+                "executor": {
+                  "name": "LoginCompletionExecutor"
+                }
+              }
+            }
+          }
+        ]
+      }
+    }
+  },
+  {
+    "resourceType": "TEMPLATE",
+    "category": "STARTER",
+    "type": "SMS_OTP",
+    "display": {
+      "label": "SMS OTP",
+      "description": "Authentication flow with SMS OTP verification",
+      "image": "assets/images/icons/mobile-message.svg",
+      "showOnResourcePanel": true
+    },
+    "config": {
+      "data": {
+        "__generationMeta__": {
+          "replacers": [
+            {
+              "key": "SMS_SEND_EXECUTOR_ID",
+              "type": "ID"
+            },
+            {
+              "key": "SMS_OTP_VERIFICATION_STEP_ID",
+              "type": "ID"
+            },
+            {
+              "key": "SMS_VERIFY_EXECUTOR_ID",
+              "type": "ID"
+            }
+          ]
+        },
+        "steps": [
+          {
+            "id": "{{ID}}",
+            "type": "VIEW",
+            "size": {
+              "width": 350,
+              "height": 350
+            },
+            "position": {
+              "x": 300,
+              "y": 200
+            },
+            "data": {
+              "components": [
+                {
+                  "id": "{{ID}}",
+                  "category": "DISPLAY",
+                  "type": "TYPOGRAPHY",
+                  "variant": "H3",
+                  "label": "Sign In with SMS"
+                },
+                {
+                  "category": "BLOCK",
+                  "type": "FORM",
+                  "id": "{{ID}}",
+                  "components": [
+                    {
+                      "id": "{{ID}}",
+                      "category": "FIELD",
+                      "type": "INPUT",
+                      "variant": "TELEPHONE",
+                      "inputType": "tel",
+                      "hint": "",
+                      "label": "Mobile Number",
+                      "required": true,
+                      "placeholder": "Enter your mobile number",
+                      "identifier": "mobileNumber"
+                    },
+                    {
+                      "id": "{{ID}}",
+                      "category": "ACTION",
+                      "type": "BUTTON",
+                      "variant": "PRIMARY",
+                      "eventType": "SUBMIT",
+                      "label": "Send OTP",
+                      "action": {
+                        "type": "NEXT",
+                        "next": "{{SMS_SEND_EXECUTOR_ID}}"
+                      }
+                    }
+                  ]
+                }
+              ]
+            }
+          },
+          {
+            "id": "{{SMS_SEND_EXECUTOR_ID}}",
+            "type": "TASK_EXECUTION",
+            "size": {
+              "width": 200,
+              "height": 113
+            },
+            "position": {
+              "x": 690,
+              "y": 200
+            },
+            "data": {
+              "action": {
+                "type": "EXECUTOR",
+                "executor": {
+                  "name": "SMSOTPAuthExecutor",
+                  "mode": "send"
+                },
+                "next": "{{SMS_OTP_VERIFICATION_STEP_ID}}"
+              }
+            }
+          },
+          {
+            "id": "{{SMS_OTP_VERIFICATION_STEP_ID}}",
+            "type": "VIEW",
+            "size": {
+              "width": 350,
+              "height": 400
+            },
+            "position": {
+              "x": 1080,
+              "y": 200
+            },
+            "data": {
+              "components": [
+                {
+                  "id": "{{ID}}",
+                  "category": "DISPLAY",
+                  "type": "TYPOGRAPHY",
+                  "variant": "H3",
+                  "label": "Verify OTP"
+                },
+                {
+                  "id": "{{ID}}",
+                  "category": "DISPLAY",
+                  "type": "TYPOGRAPHY",
+                  "variant": "BODY1",
+                  "label": "Enter the verification code sent to your mobile number"
+                },
+                {
+                  "id": "{{ID}}",
+                  "category": "BLOCK",
+                  "type": "FORM",
+                  "components": [
+                    {
+                      "id": "{{ID}}",
+                      "category": "FIELD",
+                      "type": "INPUT",
+                      "variant": "OTP",
+                      "inputType": "text",
+                      "hint": "",
+                      "identifier": "otp",
+                      "label": "Enter the OTP code",
+                      "required": true,
+                      "placeholder": ""
+                    },
+                    {
+                      "id": "{{ID}}",
+                      "category": "ACTION",
+                      "type": "BUTTON",
+                      "variant": "PRIMARY",
+                      "eventType": "SUBMIT",
+                      "label": "Verify",
+                      "action": {
+                        "type": "NEXT",
+                        "next": "{{SMS_VERIFY_EXECUTOR_ID}}"
+                      }
+                    },
+                    {
+                      "id": "{{ID}}",
+                      "category": "ACTION",
+                      "type": "RESEND",
+                      "eventType": "SUBMIT",
+                      "label": "Resend OTP",
+                      "action": {
+                        "type": "NEXT",
+                        "next": "{{SMS_SEND_EXECUTOR_ID}}"
+                      }
+                    }
+                  ]
+                }
+              ]
+            }
+          },
+          {
+            "id": "{{SMS_VERIFY_EXECUTOR_ID}}",
+            "type": "TASK_EXECUTION",
+            "size": {
+              "width": 200,
+              "height": 113
+            },
+            "position": {
+              "x": 1470,
+              "y": 200
+            },
+            "data": {
+              "action": {
+                "type": "EXECUTOR",
+                "executor": {
+                  "name": "SMSOTPAuthExecutor",
+                  "mode": "verify"
+                },
+                "next": "END"
+              }
+            }
+          },
+          {
+            "id": "END",
+            "type": "END",
+            "size": {
+              "width": 280,
+              "height": 220
+            },
+            "position": {
+              "x": 1860,
+              "y": 200
+            },
+            "config": {},
+            "data": {
+              "action": {
+                "type": "EXECUTOR",
+                "executor": {
+                  "name": "LoginCompletionExecutor"
+                }
+              }
+            }
+          }
+        ]
+      }
+    }
+  }
+]

@@ -1,0 +1,69 @@
+/**
+ * Copyright (c) 2025, WSO2 LLC. (https://www.wso2.com).
+ *
+ * WSO2 LLC. licenses this file to you under the Apache License,
+ * Version 2.0 (the "License"); you may not use this file except
+ * in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing,
+ * software distributed under the License is distributed on an
+ * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+ * KIND, either express or implied. See the License for the
+ * specific language governing permissions and limitations
+ * under the License.
+ */
+
+import merge from 'lodash-es/merge';
+import type {Resources} from '../models/resources';
+import type {Step, StepData} from '../models/steps';
+
+/**
+ * Type-safe wrapper for lodash merge function.
+ *
+ * @param sources - Source objects to merge from.
+ * @returns The merged object.
+ */
+const safeMerge = <T>(...sources: Partial<T>[]): T => (merge as (...args: Partial<T>[]) => T)(...sources);
+
+const resolveStepMetadata = (resources: Resources, steps: Step[]): Step[] => {
+  const updateStepResourceType = (step: Step): Step => {
+    let updatedStep: Step = {...step};
+
+    const stepWithMeta = resources?.steps?.find((s) => s.type === step.type);
+
+    if (stepWithMeta) {
+      updatedStep = safeMerge<Step>({}, stepWithMeta, updatedStep);
+    }
+
+    // For EXECUTION type steps, also check executors for metadata based on executor name
+    const stepData = step.data as StepData | undefined;
+    const executorName = stepData?.action?.executor?.name;
+
+    if (executorName && resources?.executors) {
+      const executorWithMeta = resources.executors.find(
+        (executor) => (executor.data as StepData | undefined)?.action?.executor?.name === executorName,
+      );
+
+      if (executorWithMeta) {
+        // Merge executor display metadata into the step (at root level and in data for React Flow access)
+        updatedStep = {
+          ...updatedStep,
+          display: executorWithMeta.display,
+          data: {
+            ...updatedStep.data,
+            display: executorWithMeta.display,
+          },
+        };
+      }
+    }
+
+    return updatedStep;
+  };
+
+  return steps?.map(updateStepResourceType);
+};
+
+export default resolveStepMetadata;

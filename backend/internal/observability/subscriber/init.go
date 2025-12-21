@@ -115,12 +115,12 @@ func Initialize(observabilityConfig config.ObservabilityConfig) ([]SubscriberInt
 
 		// Successfully initialized - add to active list
 		activeSubscribers = append(activeSubscribers, instance)
-		logger.Info("Subscriber initialized successfully",
+		logger.Debug("Subscriber initialized successfully",
 			log.String("subscriberType", name),
 			log.String("subscriberID", instance.GetID()))
 	}
 
-	logger.Info("Subscriber initialization complete",
+	logger.Debug("Subscriber initialization complete",
 		log.Int("total", len(factories)),
 		log.Int("active", len(activeSubscribers)),
 		log.Int("errors", len(initErrors)))

@@ -59,13 +59,14 @@ func (s *flowStore) StoreFlowContext(ctx EngineContext) error {
 
 	queries := []func(tx dbmodel.TxInterface) error{
 		func(tx dbmodel.TxInterface) error {
-			_, err := tx.Exec(QueryCreateFlowContext.Query, dbModel.FlowID, dbModel.AppID,
-				dbModel.CurrentNodeID, dbModel.CurrentActionID, dbModel.GraphID,
+			_, err := tx.Exec(QueryCreateFlowContext,
+				dbModel.FlowID, dbModel.AppID, dbModel.Verbose,
+				dbModel.CurrentNodeID, dbModel.CurrentAction, dbModel.GraphID,
 				dbModel.RuntimeData, dbModel.ExecutionHistory, s.deploymentID)
 			return err
 		},
 		func(tx dbmodel.TxInterface) error {
-			_, err := tx.Exec(QueryCreateFlowUserData.Query, dbModel.FlowID,
+			_, err := tx.Exec(QueryCreateFlowUserData, dbModel.FlowID,
 				dbModel.IsAuthenticated, dbModel.UserID, dbModel.OrganizationUnitID,
 				dbModel.UserType, dbModel.UserInputs, dbModel.UserAttributes, s.deploymentID)
 			return err
@@ -109,13 +110,13 @@ func (s *flowStore) UpdateFlowContext(ctx EngineContext) error {
 
 	queries := []func(tx dbmodel.TxInterface) error{
 		func(tx dbmodel.TxInterface) error {
-			_, err := tx.Exec(QueryUpdateFlowContext.Query, dbModel.FlowID,
-				dbModel.CurrentNodeID, dbModel.CurrentActionID, dbModel.RuntimeData, dbModel.ExecutionHistory,
+			_, err := tx.Exec(QueryUpdateFlowContext, dbModel.FlowID,
+				dbModel.CurrentNodeID, dbModel.CurrentAction, dbModel.RuntimeData, dbModel.ExecutionHistory,
 				s.deploymentID)
 			return err
 		},
 		func(tx dbmodel.TxInterface) error {
-			_, err := tx.Exec(QueryUpdateFlowUserData.Query, dbModel.FlowID, dbModel.IsAuthenticated,
+			_, err := tx.Exec(QueryUpdateFlowUserData, dbModel.FlowID, dbModel.IsAuthenticated,
 				dbModel.UserID, dbModel.OrganizationUnitID, dbModel.UserType,
 				dbModel.UserInputs, dbModel.UserAttributes, s.deploymentID)
 			return err
@@ -129,11 +130,11 @@ func (s *flowStore) UpdateFlowContext(ctx EngineContext) error {
 func (s *flowStore) DeleteFlowContext(flowID string) error {
 	queries := []func(tx dbmodel.TxInterface) error{
 		func(tx dbmodel.TxInterface) error {
-			_, err := tx.Exec(QueryDeleteFlowUserData.Query, flowID, s.deploymentID)
+			_, err := tx.Exec(QueryDeleteFlowUserData, flowID, s.deploymentID)
 			return err
 		},
 		func(tx dbmodel.TxInterface) error {
-			_, err := tx.Exec(QueryDeleteFlowContext.Query, flowID, s.deploymentID)
+			_, err := tx.Exec(QueryDeleteFlowContext, flowID, s.deploymentID)
 			return err
 		},
 	}
@@ -189,7 +190,7 @@ func (s *flowStore) buildFlowContextFromResultRow(row map[string]interface{}) (*
 
 	// Parse optional fields
 	currentNodeID := s.parseOptionalString(row["current_node_id"])
-	currentActionID := s.parseOptionalString(row["current_action_id"])
+	currentAction := s.parseOptionalString(row["current_action"])
 	userID := s.parseOptionalString(row["user_id"])
 	organizationUnitID := s.parseOptionalString(row["ou_id"])
 	userType := s.parseOptionalString(row["user_type"])
@@ -198,16 +199,18 @@ func (s *flowStore) buildFlowContextFromResultRow(row map[string]interface{}) (*
 	userAttributes := s.parseOptionalString(row["user_attributes"])
 	executionHistory := s.parseOptionalString(row["execution_history"])
 
-	// Parse boolean field with type conversion support
+	// Parse boolean fields with type conversion support
 	isAuthenticated := s.parseBoolean(row["is_authenticated"])
+	verbose := s.parseBoolean(row["verbose"])
 
 	return &FlowContextWithUserDataDB{
 		FlowID:             flowID,
 		AppID:              appID,
 		CurrentNodeID:      currentNodeID,
-		CurrentActionID:    currentActionID,
+		CurrentAction:      currentAction,
 		GraphID:            graphID,
 		RuntimeData:        runtimeData,
+		Verbose:            verbose,
 		IsAuthenticated:    isAuthenticated,
 		UserID:             userID,
 		OrganizationUnitID: organizationUnitID,

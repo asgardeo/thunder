@@ -1,0 +1,43 @@
+{
+    "name": "Google Authentication Flow",
+    "handle": "default-google-flow",
+    "flowType": "AUTHENTICATION",
+    "nodes": [
+        {
+            "id": "start",
+            "type": "START",
+            "onSuccess": "google_auth"
+        },
+        {
+            "id": "google_auth",
+            "type": "TASK_EXECUTION",
+            "properties": {
+                "idpId": "<google-idp-id>"
+            },
+            "inputs": [
+                {
+                    "ref": "input_001",
+                    "identifier": "code",
+                    "type": "TEXT_INPUT",
+                    "required": true
+                }
+            ],
+            "executor": {
+                "name": "GoogleOIDCAuthExecutor"
+            },
+            "onSuccess": "auth_assert"
+        },
+        {
+            "id": "auth_assert",
+            "type": "TASK_EXECUTION",
+            "executor": {
+                "name": "AuthAssertExecutor"
+            },
+            "onSuccess": "end"
+        },
+        {
+            "id": "end",
+            "type": "END"
+        }
+    ]
+}

@@ -144,12 +144,77 @@ fi
 echo ""
 
 # ============================================================================
+# Retrieve Flow IDs
+# ============================================================================
+
+log_info "Retrieving flow IDs..."
+
+# Helper function to get flow ID by handle
+get_flow_id_by_handle() {
+    local HANDLE=$1
+    local TYPE=$2
+    
+    RESPONSE=$(thunder_api_call GET "/flows?flowType=${TYPE}&limit=200")
+    HTTP_CODE="${RESPONSE: -3}"
+    BODY="${RESPONSE%???}"
+    
+    if [[ "$HTTP_CODE" == "200" ]]; then
+        FLOW_ID=$(
+            FLOW_HANDLE_VALUE="$HANDLE" \
+            BODY_JSON="$BODY" \
+            python3 - <<'PY'
+import json
+import os
+
+body = json.loads(os.environ["BODY_JSON"])
+handle = os.environ["FLOW_HANDLE_VALUE"]
+
+for flow in body.get("flows", []):
+    if flow.get("handle") == handle:
+        print(flow.get("id", ""), end="")
+        break
+PY
+        )
+        echo "$FLOW_ID"
+    else
+        log_error "Failed to fetch flows (HTTP $HTTP_CODE)"
+        exit 1
+    fi
+}
+
+BASIC_AUTH_FLOW_ID=$(get_flow_id_by_handle "default-basic-flow" "AUTHENTICATION")
+BASIC_AUTH_PROMPT_FLOW_ID=$(get_flow_id_by_handle "basic-with-prompt-flow" "AUTHENTICATION")
+BASIC_REG_FLOW_ID=$(get_flow_id_by_handle "default-basic-flow" "REGISTRATION")
+
+if [[ -z "$BASIC_AUTH_FLOW_ID" ]]; then
+    log_error "Could not find 'default-basic-flow'"
+    exit 1
+fi
+
+if [[ -z "$BASIC_AUTH_PROMPT_FLOW_ID" ]]; then
+    log_error "Could not find 'basic-with-prompt-flow'"
+    exit 1
+fi
+
+if [[ -z "$BASIC_REG_FLOW_ID" ]]; then
+    log_error "Could not find 'default-basic-flow'"
+    exit 1
+fi
+
+log_info "Found Flow IDs:"
+log_info "  Basic Auth: $BASIC_AUTH_FLOW_ID"
+log_info "  Basic Auth (with prompt): $BASIC_AUTH_PROMPT_FLOW_ID"
+log_info "  Basic Registration: $BASIC_REG_FLOW_ID"
+
+echo ""
+
+# ============================================================================
 # Create Sample Application
 # ============================================================================
 
 log_info "Creating Sample App application..."
 
-read -r -d '' SAMPLE_APP_PAYLOAD <<'JSON' || true
+read -r -d '' SAMPLE_APP_PAYLOAD <<JSON || true
 {
   "name": "Sample App",
   "description": "Sample application for testing",
@@ -158,8 +223,8 @@ read -r -d '' SAMPLE_APP_PAYLOAD <<'JSON' || true
   "tos_uri": "https://localhost:3000/terms",
   "policy_uri": "https://localhost:3000/privacy",
   "contacts": ["admin@example.com", "support@example.com"],
-  "auth_flow_graph_id": "auth_flow_config_basic",
-  "registration_flow_graph_id": "registration_flow_config_basic",
+  "auth_flow_graph_id": "${BASIC_AUTH_FLOW_ID}",
+  "registration_flow_graph_id": "${BASIC_REG_FLOW_ID}",
   "is_registration_flow_enabled": true,
   "user_attributes": ["given_name","family_name","email","groups"],
   "allowed_user_types": ["Customer"],
@@ -226,7 +291,7 @@ echo ""
 
 log_info "Creating React SDK Sample App application..."
 
-read -r -d '' REACT_SDK_APP_PAYLOAD <<'JSON' || true
+read -r -d '' REACT_SDK_APP_PAYLOAD <<JSON || true
 {
   "name": "React SDK Sample",
   "description": "Sample React application using Thunder React SDK",
@@ -236,8 +301,8 @@ read -r -d '' REACT_SDK_APP_PAYLOAD <<'JSON' || true
   "tos_uri": "https://localhost:3000/terms",
   "policy_uri": "https://localhost:3000/privacy",
   "contacts": ["admin@example.com"],
-  "auth_flow_graph_id": "auth_flow_config_basic",
-  "registration_flow_graph_id": "registration_flow_config_basic",
+  "auth_flow_graph_id": "${BASIC_AUTH_PROMPT_FLOW_ID}",
+  "registration_flow_graph_id": "${BASIC_REG_FLOW_ID}",
   "is_registration_flow_enabled": true,
   "token": {
     "issuer": "thunder",

@@ -37,7 +37,6 @@ const (
 	ServerBinary                = "thunder"
 	TestDeploymentYamlPath      = "./resources/deployment.yaml"
 	TestDatabaseSchemaDirectory = "resources/dbscripts"
-	TestGraphsDirectory         = "resources/graphs"
 	InitScriptPath              = "./scripts/init_script.sh"
 	DBScriptPath                = "./scripts/setup_db.sh"
 	DatabaseFileBasePath        = "repository/database/"
@@ -180,23 +179,6 @@ func ReplaceResources(zipFilePattern string) error {
 	err = copyFile(TestDeploymentYamlPath, destPath)
 	if err != nil {
 		return fmt.Errorf("failed to replace deployment.yaml: %v", err)
-	}
-
-	if dbType == "postgres" {
-		log.Println("Skipping replacement of dbscripts for PostgreSQL.")
-	} else {
-		destPath = filepath.Join(extractedProductHome, "dbscripts")
-		err = copyDirectory(TestDatabaseSchemaDirectory, destPath)
-		if err != nil {
-			return fmt.Errorf("failed to replace database schema files: %v", err)
-		}
-	}
-
-	// copy graphs from the target directory to the product home
-	graphsDestPath := filepath.Join(extractedProductHome, "repository", "resources", "graphs")
-	err = copyDirectory(TestGraphsDirectory, graphsDestPath)
-	if err != nil {
-		return fmt.Errorf("failed to replace graph files: %v", err)
 	}
 
 	return nil

@@ -1,0 +1,51 @@
+/**
+ * Copyright (c) 2025, WSO2 LLC. (https://www.wso2.com).
+ *
+ * WSO2 LLC. licenses this file to you under the Apache License,
+ * Version 2.0 (the "License"); you may not use this file except
+ * in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing,
+ * software distributed under the License is distributed on an
+ * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+ * KIND, either express or implied. See the License for the
+ * specific language governing permissions and limitations
+ * under the License.
+ */
+
+.edge-label-renderer__deletable-edge {
+  pointer-events: auto;
+  position: absolute;
+  transform: translate(-50%, -50%) translate(var(--label-x), var(--label-y));
+  z-index: 1000;
+}
+
+.edge-delete-button {
+  position: absolute;
+  transform: translate(-50%, -50%) translate(var(--label-x), var(--label-y));
+  pointer-events: auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  background-color: #ef4444;
+  border-radius: 50%;
+  cursor: pointer;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+  transition: all 0.2s ease;
+  z-index: 10000;
+
+  &:hover,
+  &:focus {
+    background-color: #dc2626;
+    transform: translate(-50%, -50%) translate(var(--label-x), var(--label-y)) scale(1.1);
+  }
+
+  .edge-delete-button__icon {
+    color: white;
+  }
+}

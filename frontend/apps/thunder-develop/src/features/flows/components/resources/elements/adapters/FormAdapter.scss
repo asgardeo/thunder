@@ -1,0 +1,77 @@
+/**
+ * Copyright (c) 2025, WSO2 LLC. (https://www.wso2.com).
+ *
+ * WSO2 LLC. licenses this file to you under the Apache License,
+ * Version 2.0 (the "License"); you may not use this file except
+ * in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing,
+ * software distributed under the License is distributed on an
+ * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+ * KIND, either express or implied. See the License for the
+ * specific language governing permissions and limitations
+ * under the License.
+ */
+
+@use '../../../../styles/variables';
+
+.flow-builder-step {
+  .flow-builder-step-content {
+    .adapter.form-adapter {
+      width: 100%;
+      display: block;
+      min-height: 80px;
+      border-radius: var(--flow-builder-border-radius);
+      border: 1px dashed var(--mui-palette-divider);
+      background-color: var(--mui-palette-background-paper);
+
+      .flow-builder-dnd-droppable {
+        padding: var(--flow-builder-spacing-3) 0;
+      }
+
+      .MuiBadge-badge {
+        margin-left: 25px;
+        background-color: var(--mui-palette-background-default);
+        color: var(--mui-palette-text-secondary);
+        font-weight: 500;
+      }
+
+      .form-adapter-placeholder {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-direction: column;
+        background-color: var(--mui-palette-action-hover);
+        border: 2px dashed var(--mui-palette-divider);
+        border-radius: 4px;
+        min-height: 80px;
+        padding: 16px;
+        margin: 0 16px 16px 16px;
+        transition: all 200ms cubic-bezier(0.2, 0, 0, 1);
+
+        &:hover {
+          background-color: var(--mui-palette-action-selected);
+          border-color: var(--mui-palette-divider);
+        }
+      }
+
+      .flow-builder-step-content-form-field {
+        margin-left: 0 !important;
+        transition: all 200ms cubic-bezier(0.2, 0, 0, 1);
+        will-change: transform;
+        transform: translate3d(0, 0, 0);
+
+        &.is-dragging {
+          background: var(--mui-palette-background-paper);
+          box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+          opacity: 0.9;
+          transform: scale(1.02);
+          z-index: 1;
+        }
+      }
+    }
+  }
+}

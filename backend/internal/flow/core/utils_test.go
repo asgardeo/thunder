@@ -41,8 +41,8 @@ func (s *UtilsTestSuite) TestResolvePlaceholderWithNilContext() {
 
 func (s *UtilsTestSuite) TestResolvePlaceholderNoPlaceholder() {
 	ctx := &NodeContext{
-		RuntimeData:   map[string]string{"key1": "value1"},
-		UserInputData: map[string]string{"key2": "value2"},
+		RuntimeData: map[string]string{"key1": "value1"},
+		UserInputs:  map[string]string{"key2": "value2"},
 	}
 
 	result := ResolvePlaceholder(ctx, "plain text without placeholders")
@@ -51,8 +51,8 @@ func (s *UtilsTestSuite) TestResolvePlaceholderNoPlaceholder() {
 
 func (s *UtilsTestSuite) TestResolvePlaceholderFromRuntimeData() {
 	ctx := &NodeContext{
-		RuntimeData:   map[string]string{"status": "active", "role": "admin"},
-		UserInputData: map[string]string{},
+		RuntimeData: map[string]string{"status": "active", "role": "admin"},
+		UserInputs:  map[string]string{},
 	}
 
 	tests := []struct {
@@ -75,10 +75,10 @@ func (s *UtilsTestSuite) TestResolvePlaceholderFromRuntimeData() {
 	}
 }
 
-func (s *UtilsTestSuite) TestResolvePlaceholderFromUserInputData() {
+func (s *UtilsTestSuite) TestResolvePlaceholderFromUserInputs() {
 	ctx := &NodeContext{
-		RuntimeData:   map[string]string{},
-		UserInputData: map[string]string{"username": "john_doe", "email": "john@example.com"},
+		RuntimeData: map[string]string{},
+		UserInputs:  map[string]string{"username": "john_doe", "email": "john@example.com"},
 	}
 
 	tests := []struct {
@@ -101,12 +101,12 @@ func (s *UtilsTestSuite) TestResolvePlaceholderFromUserInputData() {
 
 func (s *UtilsTestSuite) TestResolvePlaceholderRuntimeTakesPrecedence() {
 	ctx := &NodeContext{
-		RuntimeData:   map[string]string{"key": "runtime_value"},
-		UserInputData: map[string]string{"key": "user_input_value"},
+		RuntimeData: map[string]string{"key": "runtime_value"},
+		UserInputs:  map[string]string{"key": "user_input_value"},
 	}
 
 	result := ResolvePlaceholder(ctx, "{{ context.key }}")
-	s.Equal("runtime_value", result, "RuntimeData should take precedence over UserInputData")
+	s.Equal("runtime_value", result, "RuntimeData should take precedence over UserInputs")
 }
 
 func (s *UtilsTestSuite) TestResolvePlaceholderUserIDFromAuthenticatedUser() {
@@ -145,23 +145,23 @@ func (s *UtilsTestSuite) TestResolvePlaceholderUserIDAuthenticatedUserTakesPrece
 	s.Equal("auth-user-id", result, "AuthenticatedUser.UserID should take precedence over RuntimeData")
 }
 
-func (s *UtilsTestSuite) TestResolvePlaceholderUserIDNotFromUserInputData() {
+func (s *UtilsTestSuite) TestResolvePlaceholderUserIDNotFromUserInputs() {
 	ctx := &NodeContext{
-		UserInputData: map[string]string{"userID": "input-user-id"},
-		RuntimeData:   map[string]string{},
+		UserInputs:  map[string]string{"userID": "input-user-id"},
+		RuntimeData: map[string]string{},
 		AuthenticatedUser: authncm.AuthenticatedUser{
 			UserID: "",
 		},
 	}
 
 	result := ResolvePlaceholder(ctx, "{{ context.userID }}")
-	s.Equal("{{ context.userID }}", result, "userID should NOT be resolved from UserInputData")
+	s.Equal("{{ context.userID }}", result, "userID should NOT be resolved from UserInputs")
 }
 
 func (s *UtilsTestSuite) TestResolvePlaceholderKeyNotFound() {
 	ctx := &NodeContext{
-		RuntimeData:   map[string]string{"existing": "value"},
-		UserInputData: map[string]string{},
+		RuntimeData: map[string]string{"existing": "value"},
+		UserInputs:  map[string]string{},
 	}
 
 	result := ResolvePlaceholder(ctx, "{{ context.nonexistent }}")
@@ -170,8 +170,8 @@ func (s *UtilsTestSuite) TestResolvePlaceholderKeyNotFound() {
 
 func (s *UtilsTestSuite) TestResolvePlaceholderEmptyValue() {
 	ctx := &NodeContext{
-		RuntimeData:   map[string]string{"empty": ""},
-		UserInputData: map[string]string{"nonempty": "value"},
+		RuntimeData: map[string]string{"empty": ""},
+		UserInputs:  map[string]string{"nonempty": "value"},
 	}
 
 	// Empty runtime value should fall through to user input (but since key doesn't match, keeps placeholder)
@@ -185,8 +185,8 @@ func (s *UtilsTestSuite) TestResolvePlaceholderEmptyValue() {
 
 func (s *UtilsTestSuite) TestResolvePlaceholderMixedStaticAndDynamic() {
 	ctx := &NodeContext{
-		RuntimeData:   map[string]string{"name": "John"},
-		UserInputData: map[string]string{"action": "login"},
+		RuntimeData: map[string]string{"name": "John"},
+		UserInputs:  map[string]string{"action": "login"},
 	}
 
 	tests := []struct {
@@ -211,8 +211,8 @@ func (s *UtilsTestSuite) TestResolvePlaceholderMixedStaticAndDynamic() {
 
 func (s *UtilsTestSuite) TestResolvePlaceholderWithNilMaps() {
 	ctx := &NodeContext{
-		RuntimeData:   nil,
-		UserInputData: nil,
+		RuntimeData: nil,
+		UserInputs:  nil,
 	}
 
 	// Should not panic with nil maps

@@ -26,15 +26,15 @@ var (
 	// QueryCreateFlowContext is the query to create a new flow context.
 	QueryCreateFlowContext = model.DBQuery{
 		ID: "FLQ-FLOW_CTX-01",
-		Query: "INSERT INTO FLOW_CONTEXT (FLOW_ID, APP_ID, CURRENT_NODE_ID, " +
-			"CURRENT_ACTION_ID, GRAPH_ID, RUNTIME_DATA, EXECUTION_HISTORY, DEPLOYMENT_ID) " +
-			"VALUES ($1, $2, $3, $4, $5, $6, $7, $8)",
+		Query: "INSERT INTO FLOW_CONTEXT (FLOW_ID, APP_ID, \"VERBOSE\", CURRENT_NODE_ID, " +
+			"CURRENT_ACTION, GRAPH_ID, RUNTIME_DATA, EXECUTION_HISTORY, DEPLOYMENT_ID) " +
+			"VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)",
 	}
 
 	// QueryUpdateFlowContext is the query to update a flow context.
 	QueryUpdateFlowContext = model.DBQuery{
 		ID: "FLQ-FLOW_CTX-03",
-		Query: "UPDATE FLOW_CONTEXT SET CURRENT_NODE_ID = $2, CURRENT_ACTION_ID = $3, " +
+		Query: "UPDATE FLOW_CONTEXT SET CURRENT_NODE_ID = $2, CURRENT_ACTION = $3, " +
 			"RUNTIME_DATA = $4, EXECUTION_HISTORY = $5, UPDATED_AT = CURRENT_TIMESTAMP " +
 			"WHERE FLOW_ID = $1 AND DEPLOYMENT_ID = $6",
 	}
@@ -70,7 +70,7 @@ var (
 	QueryGetFlowContextWithUserData = model.DBQuery{
 		ID: "FLQ-FLOW_CTX-05",
 		Query: `SELECT 
-			fc.FLOW_ID, fc.APP_ID, fc.CURRENT_NODE_ID, fc.CURRENT_ACTION_ID, 
+			fc.FLOW_ID, fc.APP_ID, fc."VERBOSE", fc.CURRENT_NODE_ID, fc.CURRENT_ACTION, 
 			fc.GRAPH_ID, fc.RUNTIME_DATA, fc.EXECUTION_HISTORY, fc.CREATED_AT, fc.UPDATED_AT,
 			fud.IS_AUTHENTICATED, fud.USER_ID, fud.OU_ID, fud.USER_TYPE, fud.USER_INPUTS,
 			fud.USER_ATTRIBUTES

@@ -1,0 +1,171 @@
+{
+    "name": "Basic + Google + GitHub + SMS Authentication Flow",
+    "handle": "basic-google-github-sms-flow",
+    "flowType": "AUTHENTICATION",
+    "nodes": [
+        {
+            "id": "start",
+            "type": "START",
+            "onSuccess": "choose_auth"
+        },
+        {
+            "id": "choose_auth",
+            "type": "PROMPT",
+            "actions": [
+                {
+                    "ref": "action_001",
+                    "nextNode": "basic_auth"
+                },
+                {
+                    "ref": "action_002",
+                    "nextNode": "google_auth"
+                },
+                {
+                    "ref": "action_003",
+                    "nextNode": "github_auth"
+                },
+                {
+                    "ref": "action_004",
+                    "nextNode": "prompt_mobile"
+                }
+            ]
+        },
+        {
+            "id": "basic_auth",
+            "type": "TASK_EXECUTION",
+            "executor": {
+                "name": "BasicAuthExecutor"
+            },
+            "onSuccess": "sms_otp_auth"
+        },
+        {
+            "id": "google_auth",
+            "type": "TASK_EXECUTION",
+            "inputs": [
+                {
+                    "ref": "input_001",
+                    "identifier": "code",
+                    "type": "TEXT_INPUT",
+                    "required": true
+                },
+                {
+                    "ref": "input_002",
+                    "identifier": "nonce",
+                    "type": "TEXT_INPUT",
+                    "required": false
+                }
+            ],
+            "properties": {
+                "idpId": "<google-idp-id>"
+            },
+            "executor": {
+                "name": "GoogleOIDCAuthExecutor"
+            },
+            "onSuccess": "auth_assert"
+        },
+        {
+            "id": "github_auth",
+            "type": "TASK_EXECUTION",
+            "properties": {
+                "idpId": "<github-idp-id>"
+            },
+            "inputs": [
+                {
+                    "ref": "input_003",
+                    "identifier": "code",
+                    "type": "TEXT_INPUT",
+                    "required": true
+                }
+            ],
+            "executor": {
+                "name": "GithubOAuthExecutor"
+            },
+            "onSuccess": "auth_assert"
+        },
+        {
+            "id": "prompt_mobile",
+            "type": "PROMPT",
+            "inputs": [
+                {
+                    "ref": "input_004",
+                    "identifier": "mobileNumber",
+                    "type": "TEXT_INPUT",
+                    "required": true
+                }
+            ],
+            "actions": [
+                {
+                    "ref": "action_001",
+                    "nextNode": "send_sms"
+                }
+            ]
+        },
+        {
+            "id": "send_sms",
+            "type": "TASK_EXECUTION",
+            "properties": {
+                "senderId": "<your-sender-id>"
+            },
+            "executor": {
+                "name": "SMSOTPAuthExecutor",
+                "mode": "send"
+            },
+            "onSuccess": "prompt_otp"
+        },
+        {
+            "id": "prompt_otp",
+            "type": "PROMPT",
+            "inputs": [
+                {
+                    "ref": "input_005",
+                    "identifier": "otp",
+                    "type": "TEXT_INPUT",
+                    "required": true
+                }
+            ],
+            "actions": [
+                {
+                    "ref": "action_001",
+                    "nextNode": "verify_sms"
+                }
+            ]
+        },
+        {
+            "id": "verify_sms",
+            "type": "TASK_EXECUTION",
+            "executor": {
+                "name": "SMSOTPAuthExecutor",
+                "mode": "verify"
+            },
+            "onSuccess": "attr_collector"
+        },
+        {
+            "id": "attr_collector",
+            "type": "TASK_EXECUTION",
+            "inputs": [
+                {
+                    "ref": "input_005",
+                    "identifier": "mobileNumber",
+                    "type": "TEXT_INPUT",
+                    "required": false
+                }
+            ],
+            "executor": {
+                "name": "AttributeCollector"
+            },
+            "onSuccess": "auth_assert"
+        },
+        {
+            "id": "auth_assert",
+            "type": "TASK_EXECUTION",
+            "executor": {
+                "name": "AuthAssertExecutor"
+            },
+            "onSuccess": "end"
+        },
+        {
+            "id": "end",
+            "type": "END"
+        }
+    ]
+}

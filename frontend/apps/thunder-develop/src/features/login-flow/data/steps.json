@@ -1,0 +1,60 @@
+[
+  {
+    "resourceType": "STEP",
+    "category": "INTERFACE",
+    "type": "VIEW",
+    "display": {
+      "label": "Username + Password",
+      "image": "assets/images/icons/password.svg",
+      "showOnResourcePanel": true
+    },
+    "config": {},
+    "data": {
+      "components": [
+        {
+          "category": "BLOCK",
+          "type": "FORM",
+          "config": {},
+          "id": "{{ID}}",
+          "components": [
+            {
+              "id": "{{ID}}",
+              "category": "FIELD",
+              "type": "INPUT",
+              "variant": "TEXT",
+              "inputType": "text",
+              "hint": "",
+              "label": "Username",
+              "required": true,
+              "placeholder": "Enter your username",
+              "identifier": "username"
+            },
+            {
+              "id": "{{ID}}",
+              "category": "FIELD",
+              "type": "INPUT",
+              "variant": "PASSWORD",
+              "identifier": "password",
+              "inputType": "password",
+              "hint": "",
+              "label": "Password",
+              "required": true,
+              "placeholder": "Enter your password"
+            },
+            {
+              "id": "{{ID}}",
+              "category": "ACTION",
+              "type": "BUTTON",
+              "variant": "PRIMARY",
+              "buttonType": "submit",
+              "label": "Continue",
+              "action": {
+                "type": "NEXT"
+              }
+            }
+          ]
+        }
+      ]
+    }
+  }
+]

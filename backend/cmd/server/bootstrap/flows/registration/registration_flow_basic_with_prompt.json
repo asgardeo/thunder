@@ -1,0 +1,185 @@
+{
+    "name": "Basic Registration with Prompt Flow",
+    "handle": "basic-with-prompt-flow",
+    "flowType": "REGISTRATION",
+    "nodes": [
+        {
+            "id": "start",
+            "type": "START",
+            "onSuccess": "user_type_resolver"
+        },
+        {
+            "id": "user_type_resolver",
+            "type": "TASK_EXECUTION",
+            "executor": {
+                "name": "UserTypeResolver"
+            },
+            "onSuccess": "prompt_registration"
+        },
+        {
+            "id": "prompt_registration",
+            "type": "PROMPT",
+            "meta": {
+                "components": [
+                    {
+                        "type": "TEXT",
+                        "id": "text_001",
+                        "label": "{{ t(signup:heading) }}",
+                        "variant": "HEADING_1"
+                    },
+                    {
+                        "type": "BLOCK",
+                        "id": "block_001",
+                        "components": [
+                            {
+                                "id": "input_001",
+                                "ref": "username",
+                                "type": "TEXT_INPUT",
+                                "label": "{{ t(elements:fields.username.label) }}",
+                                "required": true,
+                                "placeholder": "{{ t(elements:fields.username.placeholder) }}"
+                            },
+                            {
+                                "id": "input_002",
+                                "ref": "password",
+                                "type": "PASSWORD_INPUT",
+                                "label": "{{ t(elements:fields.password.label) }}",
+                                "required": true,
+                                "placeholder": "{{ t(elements:fields.password.placeholder) }}"
+                            },
+                            {
+                                "id": "input_003",
+                                "ref": "firstName",
+                                "type": "TEXT_INPUT",
+                                "label": "{{ t(elements:fields.first_name.label) }}",
+                                "required": true,
+                                "placeholder": "{{ t(elements:fields.first_name.placeholder) }}"
+                            },
+                            {
+                                "id": "input_004",
+                                "ref": "lastName",
+                                "type": "TEXT_INPUT",
+                                "label": "{{ t(elements:fields.last_name.label) }}",
+                                "required": true,
+                                "placeholder": "{{ t(elements:fields.last_name.placeholder) }}"
+                            },
+                            {
+                                "id": "input_005",
+                                "ref": "email",
+                                "type": "EMAIL_INPUT",
+                                "label": "{{ t(elements:fields.email.label) }}",
+                                "required": true,
+                                "placeholder": "{{ t(elements:fields.email.placeholder) }}"
+                            },
+                            {
+                                "type": "ACTION",
+                                "id": "action_001",
+                                "label": "{{ t(elements:buttons.submit.text) }}",
+                                "variant": "PRIMARY",
+                                "eventType": "SUBMIT"
+                            }
+                        ]
+                    }
+                ]
+            },
+            "inputs": [
+                {
+                    "ref": "input_001",
+                    "identifier": "username",
+                    "type": "TEXT_INPUT",
+                    "required": true
+                },
+                {
+                    "ref": "input_002",
+                    "identifier": "password",
+                    "type": "PASSWORD_INPUT",
+                    "required": true
+                },
+                {
+                    "ref": "input_003",
+                    "identifier": "firstName",
+                    "type": "TEXT_INPUT",
+                    "required": true
+                },
+                {
+                    "ref": "input_004",
+                    "identifier": "lastName",
+                    "type": "TEXT_INPUT",
+                    "required": true
+                },
+                {
+                    "ref": "input_005",
+                    "identifier": "email",
+                    "type": "TEXT_INPUT",
+                    "required": true
+                }
+            ],
+            "actions": [
+                {
+                    "ref": "action_001",
+                    "nextNode": "basic_auth"
+                }
+            ]
+        },
+        {
+            "id": "basic_auth",
+            "type": "TASK_EXECUTION",
+            "executor": {
+                "name": "BasicAuthExecutor"
+            },
+            "onSuccess": "provisioning"
+        },
+        {
+            "id": "provisioning",
+            "type": "TASK_EXECUTION",
+            "inputs": [
+                {
+                    "ref": "input_001",
+                    "identifier": "username",
+                    "type": "TEXT_INPUT",
+                    "required": true
+                },
+                {
+                    "ref": "input_002",
+                    "identifier": "password",
+                    "type": "PASSWORD_INPUT",
+                    "required": true
+                },
+                {
+                    "ref": "input_003",
+                    "identifier": "firstName",
+                    "type": "TEXT_INPUT",
+                    "required": true
+                },
+                {
+                    "ref": "input_004",
+                    "identifier": "lastName",
+                    "type": "TEXT_INPUT",
+                    "required": true
+                },
+                {
+                    "ref": "input_005",
+                    "identifier": "email",
+                    "type": "TEXT_INPUT",
+                    "required": true
+                }
+            ],
+            "executor": {
+                "name": "ProvisioningExecutor"
+            },
+            "onSuccess": "auth_assert"
+        },
+        {
+            "id": "auth_assert",
+            "type": "TASK_EXECUTION",
+            "executor": {
+                "name": "AuthAssertExecutor"
+            },
+            "onSuccess": "end"
+        },
+        {
+            "id": "end",
+            "type": "END"
+        }
+    ]
+}

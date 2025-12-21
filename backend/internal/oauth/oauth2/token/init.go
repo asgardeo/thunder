@@ -25,6 +25,7 @@ import (
 	"github.com/asgardeo/thunder/internal/oauth/oauth2/clientauth"
 	"github.com/asgardeo/thunder/internal/oauth/oauth2/granthandlers"
 	"github.com/asgardeo/thunder/internal/oauth/scope"
+	"github.com/asgardeo/thunder/internal/observability"
 	"github.com/asgardeo/thunder/internal/system/middleware"
 )
 
@@ -34,8 +35,9 @@ func Initialize(
 	appService application.ApplicationServiceInterface,
 	grantHandlerProvider granthandlers.GrantHandlerProviderInterface,
 	scopeValidator scope.ScopeValidatorInterface,
+	observabilitySvc observability.ObservabilityServiceInterface,
 ) TokenHandlerInterface {
-	tokenHandler := newTokenHandler(appService, grantHandlerProvider, scopeValidator)
+	tokenHandler := newTokenHandler(appService, grantHandlerProvider, scopeValidator, observabilitySvc)
 	registerRoutes(mux, tokenHandler, appService)
 	return tokenHandler
 }

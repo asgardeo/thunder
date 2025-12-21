@@ -32,32 +32,32 @@ type ExecutorInterface interface {
 	Execute(ctx *NodeContext) (*common.ExecutorResponse, error)
 	GetName() string
 	GetType() common.ExecutorType
-	GetDefaultExecutorInputs() []common.InputData
-	GetPrerequisites() []common.InputData
-	CheckInputData(ctx *NodeContext, execResp *common.ExecutorResponse) bool
+	GetDefaultInputs() []common.Input
+	GetPrerequisites() []common.Input
+	HasRequiredInputs(ctx *NodeContext, execResp *common.ExecutorResponse) bool
 	ValidatePrerequisites(ctx *NodeContext, execResp *common.ExecutorResponse) bool
 	GetUserIDFromContext(ctx *NodeContext) string
-	GetRequiredData(ctx *NodeContext) []common.InputData
+	GetRequiredInputs(ctx *NodeContext) []common.Input
 }
 
 // executor represents the basic implementation of an executor.
 type executor struct {
-	Name                  string
-	Type                  common.ExecutorType
-	DefaultExecutorInputs []common.InputData
-	Prerequisites         []common.InputData
+	Name          string
+	Type          common.ExecutorType
+	DefaultInputs []common.Input
+	Prerequisites []common.Input
 }
 
 var _ ExecutorInterface = (*executor)(nil)
 
 // newExecutor creates a new instance of Executor with the given properties.
-func newExecutor(name string, executorType common.ExecutorType, defaultInputs []common.InputData,
-	prerequisites []common.InputData) ExecutorInterface {
+func newExecutor(name string, executorType common.ExecutorType, defaultInputs []common.Input,
+	prerequisites []common.Input) ExecutorInterface {
 	return &executor{
-		Name:                  name,
-		Type:                  executorType,
-		DefaultExecutorInputs: defaultInputs,
-		Prerequisites:         prerequisites,
+		Name:          name,
+		Type:          executorType,
+		DefaultInputs: defaultInputs,
+		Prerequisites: prerequisites,
 	}
 }
 
@@ -78,30 +78,35 @@ func (e *executor) Execute(ctx *NodeContext) (*common.ExecutorResponse, error) {
 	return nil, nil
 }
 
-// GetDefaultExecutorInputs returns the default required input data for the executor.
-func (e *executor) GetDefaultExecutorInputs() []common.InputData {
-	return e.DefaultExecutorInputs
+// GetDefaultInputs returns the default required inputs for the executor.
+func (e *executor) GetDefaultInputs() []common.Input {
+	return e.DefaultInputs
 }
 
 // GetPrerequisites returns the prerequisites for the executor.
-func (e *executor) GetPrerequisites() []common.InputData {
+func (e *executor) GetPrerequisites() []common.Input {
 	return e.Prerequisites
 }
 
-// CheckInputData checks if the required input data is provided in the context.
-// If not, it adds the required data to the executor response and returns true.
-func (e *executor) CheckInputData(ctx *NodeContext, execResp *common.ExecutorResponse) bool {
-	requiredData := e.GetRequiredData(ctx)
+// HasRequiredInputs checks if the required inputs are provided in the context and appends any
+// missing inputs to the executor response. Returns true if required inputs are found, otherwise false.
+func (e *executor) HasRequiredInputs(ctx *NodeContext, execResp *common.ExecutorResponse) bool {
+	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, "Executor"),
+		log.String(log.LoggerKeyExecutorName, e.GetName()),
+		log.String(log.LoggerKeyFlowID, ctx.FlowID))
+	logger.Debug("Checking inputs for the executor")
 
-	if execResp.RequiredData == nil {
-		execResp.RequiredData = make([]common.InputData, 0)
+	requiredData := e.GetRequiredInputs(ctx)
+
+	if execResp.Inputs == nil {
+		execResp.Inputs = make([]common.Input, 0)
 	}
-	if len(ctx.UserInputData) == 0 && len(ctx.RuntimeData) == 0 {
-		execResp.RequiredData = append(execResp.RequiredData, requiredData...)
-		return true
+	if len(ctx.UserInputs) == 0 && len(ctx.RuntimeData) == 0 {
+		execResp.Inputs = append(execResp.Inputs, requiredData...)
+		return false
 	}
 
-	return e.appendRequiredData(ctx, execResp, requiredData)
+	return !e.appendMissingInputs(ctx, execResp, requiredData)
 }
 
 // ValidatePrerequisites validates whether the prerequisites for the executor are met.
@@ -117,19 +122,19 @@ func (e *executor) ValidatePrerequisites(ctx *NodeContext, execResp *common.Exec
 	}
 
 	for _, prerequisite := range prerequisites {
-		// Handle userID prerequisite specifically.
-		if prerequisite.Name == userAttributeUserID {
+		if prerequisite.Identifier == userAttributeUserID {
 			userID := ctx.AuthenticatedUser.UserID
 			if userID != "" {
 				continue
 			}
 		}
 
-		if _, ok := ctx.UserInputData[prerequisite.Name]; !ok {
-			if _, ok := ctx.RuntimeData[prerequisite.Name]; !ok {
-				logger.Debug("Prerequisite not met for the executor", log.String("name", prerequisite.Name))
+		if _, ok := ctx.UserInputs[prerequisite.Identifier]; !ok {
+			if _, ok := ctx.RuntimeData[prerequisite.Identifier]; !ok {
+				logger.Debug("Prerequisite not met for the executor",
+					log.String("identifier", prerequisite.Identifier))
 				execResp.Status = common.ExecFailure
-				execResp.FailureReason = "Prerequisite not met: " + prerequisite.Name
+				execResp.FailureReason = "Prerequisite not met: " + prerequisite.Identifier
 				return false
 			}
 		}
@@ -145,62 +150,43 @@ func (e *executor) GetUserIDFromContext(ctx *NodeContext) string {
 		userID = ctx.RuntimeData[userAttributeUserID]
 	}
 	if userID == "" {
-		userID = ctx.UserInputData[userAttributeUserID]
+		userID = ctx.UserInputs[userAttributeUserID]
 	}
 
 	return userID
 }
 
-// GetRequiredData returns the required input data for the executor.
-// It combines the default executor inputs with the node input data, ensuring no duplicates.
-func (e *executor) GetRequiredData(ctx *NodeContext) []common.InputData {
-	executorReqData := e.GetDefaultExecutorInputs()
-	requiredData := ctx.NodeInputData
-
-	if len(requiredData) == 0 {
-		requiredData = executorReqData
-	} else {
-		// Append the default required data if not already present.
-		for _, inputData := range executorReqData {
-			exists := false
-			for _, existingInputData := range requiredData {
-				if existingInputData.Name == inputData.Name {
-					exists = true
-					break
-				}
-			}
-			// If the input data already exists, skip adding it again.
-			if !exists {
-				requiredData = append(requiredData, inputData)
-			}
-		}
+// GetRequiredInputs returns the required inputs for the executor.
+// If node inputs are defined, they replace the defaults; otherwise defaults are used.
+func (e *executor) GetRequiredInputs(ctx *NodeContext) []common.Input {
+	if len(ctx.NodeInputs) > 0 {
+		return ctx.NodeInputs
 	}
 
-	return requiredData
+	return e.GetDefaultInputs()
 }
 
-// appendRequiredData appends the required input data to the executor response if not present
-// in the context. Returns true if any required data is missing, false otherwise.
-func (e *executor) appendRequiredData(ctx *NodeContext, execResp *common.ExecutorResponse,
-	requiredData []common.InputData) bool {
+// appendMissingInputs appends the missing required inputs to the executor response.
+// Returns true if any required input is found missing, otherwise false.
+func (e *executor) appendMissingInputs(ctx *NodeContext, execResp *common.ExecutorResponse,
+	requiredInputs []common.Input) bool {
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, "Executor"),
 		log.String(log.LoggerKeyExecutorName, e.GetName()),
 		log.String(log.LoggerKeyFlowID, ctx.FlowID))
 
 	requireData := false
-	for _, inputData := range requiredData {
-		if _, ok := ctx.UserInputData[inputData.Name]; !ok {
-			// If the input data is available in runtime data, skip adding it to the required data.
-			if _, ok := ctx.RuntimeData[inputData.Name]; ok {
-				logger.Debug("Input data available in runtime data, skipping required data addition",
-					log.String("inputDataName", inputData.Name), log.Bool("isRequired", inputData.Required))
+	for _, input := range requiredInputs {
+		if _, ok := ctx.UserInputs[input.Identifier]; !ok {
+			if _, ok := ctx.RuntimeData[input.Identifier]; ok {
+				logger.Debug("Input available in runtime data, skipping",
+					log.String("identifier", input.Identifier), log.Bool("isRequired", input.Required))
 				continue
 			}
 
 			requireData = true
-			execResp.RequiredData = append(execResp.RequiredData, inputData)
-			logger.Debug("Input data not available in the context",
-				log.String("inputDataName", inputData.Name), log.Bool("isRequired", inputData.Required))
+			execResp.Inputs = append(execResp.Inputs, input)
+			logger.Debug("Input not available in the context",
+				log.String("identifier", input.Identifier), log.Bool("isRequired", input.Required))
 		}
 	}
 

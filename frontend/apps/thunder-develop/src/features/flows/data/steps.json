@@ -1,0 +1,190 @@
+[
+  {
+    "resourceType": "STEP",
+    "category": "INTERFACE",
+    "type": "VIEW",
+    "display": {
+      "label": "Blank View",
+      "image": "assets/images/icons/step.svg",
+      "showOnResourcePanel": true
+    }
+  },
+  {
+    "resourceType": "STEP",
+    "category": "INTERFACE",
+    "type": "VIEW",
+    "display": {
+      "label": "Email OTP View",
+      "image": "assets/images/icons/email-down.svg",
+      "showOnResourcePanel": false
+    },
+    "data": {
+      "components": [
+        {
+          "id": "{{ID}}",
+          "category": "DISPLAY",
+          "type": "TYPOGRAPHY",
+          "variant": "H3",
+          "label": "Verify OTP"
+        },
+        {
+          "id": "{{ID}}",
+          "category": "BLOCK",
+          "type": "FORM",
+          "components": [
+            {
+              "id": "{{ID}}",
+              "category": "FIELD",
+              "type": "INPUT",
+              "variant": "OTP",
+              "inputType": "text",
+              "hint": "",
+              "identifier": "otp",
+              "label": "Enter the code sent to your email",
+              "placeholder": ""
+            },
+            {
+              "id": "{{ID}}",
+              "category": "ACTION",
+              "type": "BUTTON",
+              "variant": "PRIMARY",
+              "label": "Verify",
+              "action": {
+                "type": "EXECUTOR",
+                "executor": {
+                  "name": "EmailOTPExecutor"
+                },
+                "next": ""
+              }
+            },
+            {
+              "id": "{{ID}}",
+              "category": "ACTION",
+              "type": "RESEND",
+              "label": "Resend OTP"
+            }
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "resourceType": "STEP",
+    "category": "INTERFACE",
+    "type": "VIEW",
+    "display": {
+      "label": "SMS OTP View",
+      "image": "assets/images/icons/mobile-message.svg",
+      "showOnResourcePanel": true
+    },
+    "data": {
+      "components": [
+        {
+          "id": "{{ID}}",
+          "category": "DISPLAY",
+          "type": "TYPOGRAPHY",
+          "variant": "H3",
+          "label": "Verify OTP"
+        },
+        {
+          "id": "{{ID}}",
+          "category": "BLOCK",
+          "type": "FORM",
+          "components": [
+            {
+              "id": "{{ID}}",
+              "category": "FIELD",
+              "type": "INPUT",
+              "variant": "OTP",
+              "inputType": "text",
+              "hint": "",
+              "identifier": "otp",
+              "label": "Enter the code sent to your mobile",
+              "placeholder": ""
+            },
+            {
+              "id": "{{ID}}",
+              "category": "ACTION",
+              "type": "BUTTON",
+              "variant": "PRIMARY",
+              "label": "Verify",
+              "action": {
+                "type": "EXECUTOR",
+                "executor": {
+                  "name": "SMSOTPExecutor"
+                },
+                "next": ""
+              }
+            },
+            {
+              "id": "{{ID}}",
+              "category": "ACTION",
+              "type": "RESEND",
+              "label": "Resend OTP"
+            }
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "resourceType": "STEP",
+    "category": "DECISION",
+    "type": "RULE",
+    "display": {
+      "label": "Rule",
+      "image": "assets/images/icons/decide.svg",
+      "showOnResourcePanel": false
+    }
+  },
+  {
+    "resourceType": "STEP",
+    "category": "WORKFLOW",
+    "type": "TASK_EXECUTION",
+    "display": {
+      "label": "Execution",
+      "image": "assets/images/icons/play.svg",
+      "showOnResourcePanel": false
+    }
+  },
+  {
+    "resourceType": "STEP",
+    "category": "WORKFLOW",
+    "type": "TASK_EXECUTION",
+    "display": {
+      "label": "Magic Link View",
+      "image": "assets/images/icons/link.svg",
+      "showOnResourcePanel": false
+    },
+    "data": {
+      "action": {
+        "type": "EXECUTOR",
+        "executor": {
+          "name": "MagicLinkExecutor"
+        },
+        "next": ""
+      },
+      "components": [
+        {
+          "id": "{{ID}}",
+          "category": "DISPLAY",
+          "type": "RICH_TEXT",
+          "label": "<h3 class=\"rich-text-heading-h3 rich-text-align-center\"><span class=\"rich-text-pre-wrap\">Check Your Email</span></h3><h5 class=\"rich-text-heading-h5 rich-text-align-center\"><br><span class=\"rich-text-pre-wrap\">An email containing further instructions has been sent to your email address. Please check your inbox to continue.</span></h5>"
+        }
+      ]
+    }
+  },
+  {
+    "resourceType": "STEP",
+    "category": "INTERFACE",
+    "type": "END",
+    "version": "0.1.0",
+    "deprecated": false,
+    "deletable": false,
+    "display": {
+      "label": "End Screen",
+      "image": "assets/images/icons/check-mark-inside-a-black-box.svg",
+      "showOnResourcePanel": false
+    }
+  }
+]

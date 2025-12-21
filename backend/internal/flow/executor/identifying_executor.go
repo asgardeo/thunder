@@ -21,8 +21,8 @@ package executor
 import (
 	"slices"
 
-	flowcm "github.com/asgardeo/thunder/internal/flow/common"
-	flowcore "github.com/asgardeo/thunder/internal/flow/core"
+	"github.com/asgardeo/thunder/internal/flow/common"
+	"github.com/asgardeo/thunder/internal/flow/core"
 	"github.com/asgardeo/thunder/internal/system/log"
 
 	"github.com/asgardeo/thunder/internal/user"
@@ -35,24 +35,24 @@ const (
 // identifyingExecutorInterface defines the interface for identifying executors.
 type identifyingExecutorInterface interface {
 	IdentifyUser(filters map[string]interface{},
-		execResp *flowcm.ExecutorResponse) (*string, error)
+		execResp *common.ExecutorResponse) (*string, error)
 }
 
 // identifyingExecutor implements the ExecutorInterface for identifying users based on provided attributes.
 type identifyingExecutor struct {
-	flowcore.ExecutorInterface
+	core.ExecutorInterface
 	userService user.UserServiceInterface
 	logger      *log.Logger
 }
 
-var _ flowcore.ExecutorInterface = (*identifyingExecutor)(nil)
+var _ core.ExecutorInterface = (*identifyingExecutor)(nil)
 var _ identifyingExecutorInterface = (*identifyingExecutor)(nil)
 
 // newIdentifyingExecutor creates a new instance of IdentifyingExecutor.
 func newIdentifyingExecutor(
 	name string,
-	defaultInputs, prerequisites []flowcm.InputData,
-	flowFactory flowcore.FlowFactoryInterface,
+	defaultInputs, prerequisites []common.Input,
+	flowFactory core.FlowFactoryInterface,
 	userService user.UserServiceInterface,
 ) *identifyingExecutor {
 	if name == "" {
@@ -61,7 +61,7 @@ func newIdentifyingExecutor(
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, idfExecLoggerComponentName),
 		log.String(log.LoggerKeyExecutorName, name))
 
-	base := flowFactory.CreateExecutor(ExecutorNameIdentifying, flowcm.ExecutorTypeUtility,
+	base := flowFactory.CreateExecutor(ExecutorNameIdentifying, common.ExecutorTypeUtility,
 		defaultInputs, prerequisites)
 	return &identifyingExecutor{
 		ExecutorInterface: base,
@@ -72,7 +72,7 @@ func newIdentifyingExecutor(
 
 // IdentifyUser identifies a user based on the provided attributes.
 func (i *identifyingExecutor) IdentifyUser(filters map[string]interface{},
-	execResp *flowcm.ExecutorResponse) (*string, error) {
+	execResp *common.ExecutorResponse) (*string, error) {
 	logger := i.logger
 	logger.Debug("Identifying user with filters")
 
@@ -88,12 +88,12 @@ func (i *identifyingExecutor) IdentifyUser(filters map[string]interface{},
 	if svcErr != nil {
 		if svcErr.Code == user.ErrorUserNotFound.Code {
 			logger.Debug("User not found for the provided filters")
-			execResp.Status = flowcm.ExecFailure
+			execResp.Status = common.ExecFailure
 			execResp.FailureReason = failureReasonUserNotFound
 			return nil, nil
 		} else {
 			logger.Debug("Failed to identify user due to error: " + svcErr.Error)
-			execResp.Status = flowcm.ExecFailure
+			execResp.Status = common.ExecFailure
 			execResp.FailureReason = "Failed to identify user"
 			return nil, nil
 		}
@@ -101,7 +101,7 @@ func (i *identifyingExecutor) IdentifyUser(filters map[string]interface{},
 
 	if userID == nil || *userID == "" {
 		logger.Debug("User not found for the provided filter")
-		execResp.Status = flowcm.ExecFailure
+		execResp.Status = common.ExecFailure
 		execResp.FailureReason = failureReasonUserNotFound
 		return nil, nil
 	}

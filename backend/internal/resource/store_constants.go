@@ -325,4 +325,45 @@ var (
 		          AND a.HANDLE = $3
 		          AND a.DEPLOYMENT_ID = $4`,
 	}
+
+	// queryValidatePermissions validates if permissions exist for a resource server.
+	// Returns only the INVALID permissions (those not found in the database).
+	// Parameter $3 must be a JSON array string (e.g., ["read", "write", "admin"]).
+	queryValidatePermissions = dbmodel.DBQuery{
+		ID: "RSQ-RES_MGT-32",
+		// PostgreSQL-optimized version using json_array_elements_text()
+		PostgresQuery: `SELECT p.value::text AS permission
+		        FROM json_array_elements_text($3::json) AS p
+		        WHERE NOT EXISTS (
+		            SELECT 1
+		            FROM RESOURCE r
+		            WHERE r.RESOURCE_SERVER_ID = $1 
+		              AND r.DEPLOYMENT_ID = $2
+		              AND r.PERMISSION = p.value::text
+		        )
+		        AND NOT EXISTS (
+		            SELECT 1
+		            FROM ACTION a
+		            WHERE a.RESOURCE_SERVER_ID = $1
+		              AND a.DEPLOYMENT_ID = $2
+		              AND a.PERMISSION = p.value::text
+		        )`,
+		// SQLite-optimized version using json_each()
+		SQLiteQuery: `SELECT p.value AS permission
+		        FROM json_each($3) AS p
+		        WHERE NOT EXISTS (
+		            SELECT 1
+		            FROM RESOURCE r
+		            WHERE r.RESOURCE_SERVER_ID = $1
+		              AND r.DEPLOYMENT_ID = $2
+		              AND r.PERMISSION = p.value
+		        )
+		        AND NOT EXISTS (
+		            SELECT 1
+		            FROM ACTION a
+		            WHERE a.RESOURCE_SERVER_ID = $1
+		              AND a.DEPLOYMENT_ID = $2
+		              AND a.PERMISSION = p.value
+		        )`,
+	}
 )

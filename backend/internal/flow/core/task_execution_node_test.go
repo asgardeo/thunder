@@ -110,8 +110,8 @@ func (s *TaskExecutionNodeTestSuite) TestExecuteSuccess() {
 				m.On("GetName").Return("test-executor").Once()
 				m.On("Execute", mock.Anything).Return(
 					&common.ExecutorResponse{
-						Status:       common.ExecUserInputRequired,
-						RequiredData: []common.InputData{{Name: "username", Required: true}},
+						Status: common.ExecUserInputRequired,
+						Inputs: []common.Input{{Identifier: "username", Required: true}},
 					}, nil,
 				).Once()
 			},
@@ -183,6 +183,30 @@ func (s *TaskExecutionNodeTestSuite) TestExecuteFailure() {
 	s.NotNil(resp)
 	s.Equal(common.NodeStatusFailure, resp.Status)
 	s.Equal("AUTH_FAILED", resp.FailureReason)
+}
+
+func (s *TaskExecutionNodeTestSuite) TestExecuteFailureWithOnFailureHandler() {
+	s.mockExecutor.On("GetName").Return("test-executor").Once()
+	s.mockExecutor.On("Execute", mock.Anything).Return(
+		&common.ExecutorResponse{Status: common.ExecFailure, FailureReason: "AUTH_FAILED"},
+		nil,
+	).Once()
+
+	node := newTaskExecutionNode("task-1", map[string]interface{}{}, false, false)
+	execNode, _ := node.(ExecutorBackedNodeInterface)
+	execNode.SetOnFailure("error-prompt")
+	execNode.SetExecutor(s.mockExecutor)
+
+	ctx := &NodeContext{FlowID: "test-flow"}
+	resp, err := node.Execute(ctx)
+
+	s.Nil(err)
+	s.NotNil(resp)
+	s.Equal(common.NodeStatusForward, resp.Status)
+	s.Equal("error-prompt", resp.NextNodeID)
+	s.Equal("AUTH_FAILED", resp.FailureReason)
+	s.NotNil(resp.RuntimeData)
+	s.Equal("AUTH_FAILED", resp.RuntimeData["failureReason"])
 }
 
 func (s *TaskExecutionNodeTestSuite) TestExecuteExecutorError() {
@@ -264,8 +288,322 @@ func (s *TaskExecutionNodeTestSuite) TestBuildNodeResponse() {
 			s.Equal(tt.responseType, nodeResp.Type)
 			s.NotNil(nodeResp.AdditionalData)
 			s.NotNil(nodeResp.RuntimeData)
-			s.NotNil(nodeResp.RequiredData)
+			s.NotNil(nodeResp.Inputs)
 			s.NotNil(nodeResp.Actions)
 		})
 	}
+}
+
+func (s *TaskExecutionNodeTestSuite) TestModeMethods() {
+	node := newTaskExecutionNode("task-1", map[string]interface{}{}, false, false)
+	execNode, ok := node.(ExecutorBackedNodeInterface)
+	s.True(ok)
+
+	// Test default mode is empty
+	s.Empty(execNode.GetMode())
+
+	// Test setting mode
+	execNode.SetMode("send")
+	s.Equal("send", execNode.GetMode())
+
+	// Test updating mode
+	execNode.SetMode("verify")
+	s.Equal("verify", execNode.GetMode())
+}
+
+func (s *TaskExecutionNodeTestSuite) TestExecuteWithMode() {
+	mockExec := NewExecutorInterfaceMock(s.T())
+	node := newTaskExecutionNode("task-1", map[string]interface{}{}, false, false)
+	execNode, _ := node.(ExecutorBackedNodeInterface)
+
+	// Set mode
+	execNode.SetMode("send")
+
+	var capturedCtx *NodeContext
+	mockExec.On("GetName").Return("test-executor").Once()
+	mockExec.On("Execute", mock.Anything).Run(func(args mock.Arguments) {
+		capturedCtx = args.Get(0).(*NodeContext)
+	}).Return(
+		&common.ExecutorResponse{Status: common.ExecComplete}, nil,
+	).Once()
+
+	execNode.SetExecutor(mockExec)
+
+	ctx := &NodeContext{FlowID: "test-flow"}
+	resp, err := node.Execute(ctx)
+
+	s.Nil(err)
+	s.NotNil(resp)
+	s.NotNil(capturedCtx)
+	s.Equal("send", capturedCtx.ExecutorMode, "Mode should be set in context before calling executor")
+}
+
+func (s *TaskExecutionNodeTestSuite) TestOnSuccessMethods() {
+	node := newTaskExecutionNode("task-1", map[string]interface{}{}, false, false)
+	execNode, ok := node.(ExecutorBackedNodeInterface)
+	s.True(ok)
+
+	// Test default onSuccess is empty
+	s.Empty(execNode.GetOnSuccess())
+
+	// Test setting onSuccess
+	execNode.SetOnSuccess("success-node")
+	s.Equal("success-node", execNode.GetOnSuccess())
+
+	// Test updating onSuccess
+	execNode.SetOnSuccess("another-success-node")
+	s.Equal("another-success-node", execNode.GetOnSuccess())
+}
+
+func (s *TaskExecutionNodeTestSuite) TestOnFailureMethods() {
+	node := newTaskExecutionNode("task-1", map[string]interface{}{}, false, false)
+	execNode, ok := node.(ExecutorBackedNodeInterface)
+	s.True(ok)
+
+	// Test default onFailure is empty
+	s.Empty(execNode.GetOnFailure())
+
+	// Test setting onFailure
+	execNode.SetOnFailure("failure-node")
+	s.Equal("failure-node", execNode.GetOnFailure())
+
+	// Test updating onFailure
+	execNode.SetOnFailure("another-failure-node")
+	s.Equal("another-failure-node", execNode.GetOnFailure())
+}
+
+func (s *TaskExecutionNodeTestSuite) TestExecuteWithOnSuccess() {
+	mockExec := NewExecutorInterfaceMock(s.T())
+	node := newTaskExecutionNode("task-1", map[string]interface{}{}, false, false)
+	execNode, _ := node.(ExecutorBackedNodeInterface)
+
+	// Set onSuccess handler
+	execNode.SetOnSuccess("success-node")
+
+	mockExec.On("GetName").Return("test-executor").Once()
+	mockExec.On("Execute", mock.Anything).Return(
+		&common.ExecutorResponse{Status: common.ExecComplete}, nil,
+	).Once()
+
+	execNode.SetExecutor(mockExec)
+
+	ctx := &NodeContext{FlowID: "test-flow"}
+	resp, err := node.Execute(ctx)
+
+	s.Nil(err)
+	s.NotNil(resp)
+	s.Equal(common.NodeStatusComplete, resp.Status)
+	s.Equal("success-node", resp.NextNodeID, "OnSuccess node should be set as next node")
+}
+
+func (s *TaskExecutionNodeTestSuite) TestExecuteWithEmptyNodeProperties() {
+	mockExec := NewExecutorInterfaceMock(s.T())
+	node := newTaskExecutionNode("task-1", nil, false, false)
+	execNode, _ := node.(ExecutorBackedNodeInterface)
+
+	var capturedCtx *NodeContext
+	mockExec.On("GetName").Return("test-executor").Once()
+	mockExec.On("Execute", mock.Anything).Run(func(args mock.Arguments) {
+		capturedCtx = args.Get(0).(*NodeContext)
+	}).Return(
+		&common.ExecutorResponse{Status: common.ExecComplete}, nil,
+	).Once()
+
+	execNode.SetExecutor(mockExec)
+
+	ctx := &NodeContext{FlowID: "test-flow"}
+	resp, err := node.Execute(ctx)
+
+	s.Nil(err)
+	s.NotNil(resp)
+	s.NotNil(capturedCtx)
+	s.NotNil(capturedCtx.NodeProperties, "NodeProperties should be initialized even if empty")
+	s.Empty(capturedCtx.NodeProperties)
+}
+
+func (s *TaskExecutionNodeTestSuite) TestExecuteFailureWithoutOnFailureHandler() {
+	mockExec := NewExecutorInterfaceMock(s.T())
+	node := newTaskExecutionNode("task-1", map[string]interface{}{}, false, false)
+	execNode, _ := node.(ExecutorBackedNodeInterface)
+
+	mockExec.On("GetName").Return("test-executor").Once()
+	mockExec.On("Execute", mock.Anything).Return(
+		&common.ExecutorResponse{Status: common.ExecFailure, FailureReason: "AUTH_FAILED"},
+		nil,
+	).Once()
+
+	execNode.SetExecutor(mockExec)
+
+	ctx := &NodeContext{FlowID: "test-flow"}
+	resp, err := node.Execute(ctx)
+
+	s.Nil(err)
+	s.NotNil(resp)
+	s.Equal(common.NodeStatusFailure, resp.Status, "Status should remain failure without onFailure handler")
+	s.Empty(resp.NextNodeID, "NextNodeID should not be set without onFailure handler")
+	s.Equal("AUTH_FAILED", resp.FailureReason)
+}
+
+func (s *TaskExecutionNodeTestSuite) TestExecuteCompleteWithoutOnSuccess() {
+	mockExec := NewExecutorInterfaceMock(s.T())
+	node := newTaskExecutionNode("task-1", map[string]interface{}{}, false, false)
+	execNode, _ := node.(ExecutorBackedNodeInterface)
+
+	mockExec.On("GetName").Return("test-executor").Once()
+	mockExec.On("Execute", mock.Anything).Return(
+		&common.ExecutorResponse{Status: common.ExecComplete}, nil,
+	).Once()
+
+	execNode.SetExecutor(mockExec)
+
+	ctx := &NodeContext{FlowID: "test-flow"}
+	resp, err := node.Execute(ctx)
+
+	s.Nil(err)
+	s.NotNil(resp)
+	s.Equal(common.NodeStatusComplete, resp.Status)
+	s.Empty(resp.NextNodeID, "NextNodeID should not be set without onSuccess handler")
+}
+
+func (s *TaskExecutionNodeTestSuite) TestBuildNodeResponseWithNilMaps() {
+	execResp := &common.ExecutorResponse{
+		Status:         common.ExecComplete,
+		AdditionalData: nil,
+		RuntimeData:    nil,
+		Inputs:         nil,
+	}
+
+	nodeResp := buildNodeResponse(execResp)
+
+	s.NotNil(nodeResp)
+	s.NotNil(nodeResp.AdditionalData, "AdditionalData should be initialized")
+	s.NotNil(nodeResp.RuntimeData, "RuntimeData should be initialized")
+	s.NotNil(nodeResp.Inputs, "Inputs should be initialized")
+	s.NotNil(nodeResp.Actions, "Actions should be initialized")
+	s.Empty(nodeResp.AdditionalData)
+	s.Empty(nodeResp.RuntimeData)
+	s.Empty(nodeResp.Inputs)
+	s.Empty(nodeResp.Actions)
+}
+
+func (s *TaskExecutionNodeTestSuite) TestBuildNodeResponsePreservesExecutorData() {
+	authUser := authncm.AuthenticatedUser{
+		UserID:             "user-123",
+		OrganizationUnitID: "org-456",
+		IsAuthenticated:    true,
+	}
+	execResp := &common.ExecutorResponse{
+		Status:            common.ExecComplete,
+		FailureReason:     "TEST_FAILURE",
+		Inputs:            []common.Input{{Identifier: "email", Required: true}},
+		AdditionalData:    map[string]string{"key1": "value1"},
+		RedirectURL:       "https://example.com",
+		RuntimeData:       map[string]string{"runtime": "data"},
+		AuthenticatedUser: authUser,
+		Assertion:         "assertion-token",
+	}
+
+	nodeResp := buildNodeResponse(execResp)
+
+	s.NotNil(nodeResp)
+	s.Equal("TEST_FAILURE", nodeResp.FailureReason)
+	s.Equal(1, len(nodeResp.Inputs))
+	s.Equal("email", nodeResp.Inputs[0].Identifier)
+	s.Equal("value1", nodeResp.AdditionalData["key1"])
+	s.Equal("https://example.com", nodeResp.RedirectURL)
+	s.Equal("data", nodeResp.RuntimeData["runtime"])
+	s.Equal("user-123", nodeResp.AuthenticatedUser.UserID)
+	s.Equal("org-456", nodeResp.AuthenticatedUser.OrganizationUnitID)
+	s.True(nodeResp.AuthenticatedUser.IsAuthenticated)
+	s.Equal("assertion-token", nodeResp.Assertion)
+}
+
+func (s *TaskExecutionNodeTestSuite) TestExecuteFailureWithOnFailureStoresFailureReason() {
+	mockExec := NewExecutorInterfaceMock(s.T())
+	node := newTaskExecutionNode("task-1", map[string]interface{}{}, false, false)
+	execNode, _ := node.(ExecutorBackedNodeInterface)
+
+	execNode.SetOnFailure("error-handler")
+
+	mockExec.On("GetName").Return("test-executor").Once()
+	mockExec.On("Execute", mock.Anything).Return(
+		&common.ExecutorResponse{
+			Status:        common.ExecFailure,
+			FailureReason: "CUSTOM_ERROR",
+			RuntimeData:   map[string]string{"existing": "data"},
+		},
+		nil,
+	).Once()
+
+	execNode.SetExecutor(mockExec)
+
+	ctx := &NodeContext{FlowID: "test-flow"}
+	resp, err := node.Execute(ctx)
+
+	s.Nil(err)
+	s.NotNil(resp)
+	s.Equal(common.NodeStatusForward, resp.Status)
+	s.Equal("error-handler", resp.NextNodeID)
+	s.Equal("CUSTOM_ERROR", resp.FailureReason)
+	s.Equal("CUSTOM_ERROR", resp.RuntimeData["failureReason"], "Failure reason should be stored in RuntimeData")
+	s.Equal("data", resp.RuntimeData["existing"], "Existing runtime data should be preserved")
+}
+
+func (s *TaskExecutionNodeTestSuite) TestExecuteFailureWithOnFailureInitializesRuntimeData() {
+	mockExec := NewExecutorInterfaceMock(s.T())
+	node := newTaskExecutionNode("task-1", map[string]interface{}{}, false, false)
+	execNode, _ := node.(ExecutorBackedNodeInterface)
+
+	execNode.SetOnFailure("error-handler")
+
+	mockExec.On("GetName").Return("test-executor").Once()
+	mockExec.On("Execute", mock.Anything).Return(
+		&common.ExecutorResponse{
+			Status:        common.ExecFailure,
+			FailureReason: "CUSTOM_ERROR",
+			RuntimeData:   nil, // RuntimeData is nil
+		},
+		nil,
+	).Once()
+
+	execNode.SetExecutor(mockExec)
+
+	ctx := &NodeContext{FlowID: "test-flow"}
+	resp, err := node.Execute(ctx)
+
+	s.Nil(err)
+	s.NotNil(resp)
+	s.Equal(common.NodeStatusForward, resp.Status)
+	s.Equal("error-handler", resp.NextNodeID)
+	s.Equal("CUSTOM_ERROR", resp.FailureReason)
+	s.NotNil(resp.RuntimeData, "RuntimeData should be initialized if nil")
+	s.Equal("CUSTOM_ERROR", resp.RuntimeData["failureReason"], "Failure reason should be stored in RuntimeData")
+}
+
+func (s *TaskExecutionNodeTestSuite) TestExecuteFailureWithEmptyFailureReasonAndOnFailure() {
+	mockExec := NewExecutorInterfaceMock(s.T())
+	node := newTaskExecutionNode("task-1", map[string]interface{}{}, false, false)
+	execNode, _ := node.(ExecutorBackedNodeInterface)
+
+	execNode.SetOnFailure("error-handler")
+
+	mockExec.On("GetName").Return("test-executor").Once()
+	mockExec.On("Execute", mock.Anything).Return(
+		&common.ExecutorResponse{
+			Status:        common.ExecFailure,
+			FailureReason: "", // Empty failure reason
+		},
+		nil,
+	).Once()
+
+	execNode.SetExecutor(mockExec)
+
+	ctx := &NodeContext{FlowID: "test-flow"}
+	resp, err := node.Execute(ctx)
+
+	s.Nil(err)
+	s.NotNil(resp)
+	// When FailureReason is empty, onFailure handler should NOT be triggered
+	s.Equal(common.NodeStatusFailure, resp.Status, "Status should remain failure when FailureReason is empty")
+	s.Empty(resp.NextNodeID, "NextNodeID should not be set when FailureReason is empty")
 }

@@ -16,10 +16,9 @@
  * under the License.
  */
 
-// Tracker: https://github.com/asgardeo/javascript/issues/222
-/* eslint-disable @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-return */
+/* eslint-disable @typescript-eslint/no-unsafe-member-access */
 
-import type {JSX, Key} from 'react';
+import type {JSX} from 'react';
 import {
   Box,
   Button,
@@ -37,12 +36,41 @@ import {
   InputAdornment,
   Select,
   MenuItem,
+  CircularProgress,
 } from '@wso2/oxygen-ui';
-import {SignUp} from '@asgardeo/react';
-import {Smartphone, Google, Facebook, GitHub, Eye, EyeClosed} from '@wso2/oxygen-ui-icons-react';
+import {
+  EmbeddedFlowComponentType,
+  EmbeddedFlowEventType,
+  EmbeddedFlowTextVariant,
+  SignUp,
+  type EmbeddedFlowComponent,
+} from '@asgardeo/react';
+import {Eye, EyeClosed} from '@wso2/oxygen-ui-icons-react';
 import {useNavigate, useSearchParams} from 'react-router';
 import {useState} from 'react';
+import {Trans, useTranslation} from 'react-i18next';
+import {useTemplateLiteralResolver} from '@thunder/shared-hooks';
 import ROUTES from '../../constants/routes';
+
+interface ComponentWithType {
+  type: string;
+  [key: string]: unknown;
+}
+
+interface ComponentWithRef {
+  ref: string;
+  [key: string]: unknown;
+}
+
+interface ComponentWithLabel {
+  label: string;
+  [key: string]: unknown;
+}
+
+interface ComponentWithId {
+  id: string;
+  [key: string]: unknown;
+}
 
 const StyledPaper = styled(Paper)(({theme}) => ({
   display: 'flex',
@@ -59,7 +87,12 @@ const StyledPaper = styled(Paper)(({theme}) => ({
 export default function SignUpBox(): JSX.Element {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
+  const {resolve} = useTemplateLiteralResolver();
+  const {t} = useTranslation();
+
   const [showPasswordMap, setShowPasswordMap] = useState<Record<string, boolean>>({});
+  const [formInputs, setFormInputs] = useState<Record<string, string>>({});
+  const [formErrors, setFormErrors] = useState<Record<string, string>>({});
 
   const currentParams = searchParams.toString();
   const signInUrl = currentParams ? `${ROUTES.AUTH.SIGN_IN}?${currentParams}` : ROUTES.AUTH.SIGN_IN;
@@ -69,6 +102,40 @@ export default function SignUpBox(): JSX.Element {
       ...prev,
       [identifier]: !prev[identifier],
     }));
+  };
+
+  const validateForm = (components: EmbeddedFlowComponent[]): boolean => {
+    const errors: Record<string, string> = {};
+    let isValid = true;
+
+    components.forEach((component) => {
+      if (
+        ((component.type as EmbeddedFlowComponentType) === EmbeddedFlowComponentType.TextInput ||
+          (component.type as EmbeddedFlowComponentType) === EmbeddedFlowComponentType.PasswordInput) &&
+        component.required &&
+        component.ref &&
+        typeof component.ref === 'string' &&
+        typeof component.label === 'string'
+      ) {
+        const value = formInputs[component.ref] || '';
+        if (!value.trim()) {
+          errors[component.ref] = `${t('validations:form.field.required', {field: t(resolve(component.label)!)})}`;
+          isValid = false;
+        }
+      }
+    });
+
+    setFormErrors(errors);
+    return isValid;
+  };
+
+  const updateInput = (ref: string, value: string): void => {
+    setFormInputs((prev) => ({...prev, [ref]: value}));
+
+    // Clear error when user starts typing
+    if (formErrors[ref]) {
+      setFormErrors((prev) => ({...prev, [ref]: ''}));
+    }
   };
 
   return (
@@ -92,22 +159,18 @@ export default function SignUpBox(): JSX.Element {
         >
           {({errors, handleSubmit, isLoading, components}) => (
             <>
-              <Typography variant="h2" sx={{width: '100%', mb: 2}}>
-                Create Account
-              </Typography>
-
               {!components ? (
                 <Box sx={{display: 'flex', justifyContent: 'center', p: 3}}>
-                  <Typography>Loading registration...</Typography>
+                  <CircularProgress />
                 </Box>
               ) : (
                 <>
                   {errors && Object.keys(errors).length > 0 && (
                     <Alert severity="error" sx={{mb: 2}}>
-                      <AlertTitle>Error</AlertTitle>
-                      {Object.entries(errors).map(([key, err]) => (
+                      <AlertTitle>{t('Error')}</AlertTitle>
+                      {Object.entries(errors).map(([key, error]: [string, unknown]) => (
                         <Typography key={key} variant="body2">
-                          {String(err)}
+                          {String(error)}
                         </Typography>
                       ))}
                     </Alert>
@@ -115,220 +178,233 @@ export default function SignUpBox(): JSX.Element {
 
                   {/* Handle different flow types */}
                   {(() => {
-                    if (components && components.length > 0 && components.some((c) => c.type === 'FORM')) {
+                    // Handle new component structure with TEXT and BLOCK types
+                    if (components && components.length > 0) {
                       return (
                         <Box sx={{display: 'flex', flexDirection: 'column', gap: 2}}>
-                          {components
-                            .filter((c) => c.type === 'FORM')
-                            .map((form) => (
-                              <Box
-                                key={form.id}
-                                component="form"
-                                onSubmit={(event) => {
-                                  event.preventDefault();
-                                  const data = new FormData(event.currentTarget);
-                                  const inputs: Record<string, string> = {};
+                          {components.map(
+                            (
+                              component: ComponentWithType &
+                                ComponentWithId &
+                                ComponentWithLabel & {
+                                  variant?: string;
+                                  components?: EmbeddedFlowComponent[];
+                                },
+                              index: number,
+                            ) => {
+                              // Handle TEXT components (headings)
+                              if ((component.type as EmbeddedFlowComponentType) === EmbeddedFlowComponentType.Text) {
+                                const variant = component.variant === EmbeddedFlowTextVariant.Heading1 ? 'h2' : 'body1';
+                                return (
+                                  <Typography key={component.id ?? index} variant={variant} sx={{mb: 1}}>
+                                    {t(resolve(component.label)!)}
+                                  </Typography>
+                                );
+                              }
 
-                                  form.components
-                                    ?.filter((c: {type: string}) => c.type === 'INPUT' || c.type === 'SELECT')
-                                    .forEach((input: {config: {identifier: string}}) => {
-                                      if (input.config?.identifier) {
-                                        inputs[input.config.identifier] = data.get(input.config.identifier) as string;
+                              // Handle BLOCK components (form blocks)
+                              if ((component.type as EmbeddedFlowComponentType) === EmbeddedFlowComponentType.Block) {
+                                return (
+                                  <Box
+                                    key={component.id ?? index}
+                                    component="form"
+                                    onSubmit={(event) => {
+                                      event.preventDefault();
+                                      if (validateForm(component.components ?? [])) {
+                                        // Tracker: https://github.com/asgardeo/javascript/issues/222
+                                        handleSubmit(component, formInputs).catch(() => {
+                                          // Error handled by onError callback
+                                        });
                                       }
-                                    });
+                                    }}
+                                    noValidate
+                                    sx={{display: 'flex', flexDirection: 'column', width: '100%', gap: 2}}
+                                  >
+                                    {(component.components ?? []).map(
+                                      (_subComponent: EmbeddedFlowComponent, compIndex: number) => {
+                                        const subComponent: ComponentWithType &
+                                          ComponentWithRef &
+                                          ComponentWithLabel &
+                                          ComponentWithId & {
+                                            placeholder?: string;
+                                            required?: boolean;
+                                            options?: string[];
+                                            hint?: string;
+                                            variant?: string;
+                                            eventType?: string;
+                                          } = _subComponent as unknown as ComponentWithType &
+                                          ComponentWithRef &
+                                          ComponentWithLabel &
+                                          ComponentWithId & {
+                                            placeholder?: string;
+                                            required?: boolean;
+                                            options?: string[];
+                                            hint?: string;
+                                            variant?: string;
+                                            eventType?: string;
+                                          };
 
-                                  handleSubmit(form, inputs).catch(() => {
-                                    // Error handled by onError callback
-                                  });
-                                }}
-                                noValidate
-                                sx={{display: 'flex', flexDirection: 'column', width: '100%', gap: 2}}
-                              >
-                                {form.components?.map(
-                                  (component: {
-                                    type: string;
-                                    id: Key | null | undefined;
-                                    config: {
-                                      identifier: string;
-                                      label: string;
-                                      type: string;
-                                      placeholder: string;
-                                      required: boolean;
-                                      hint: string;
-                                      text: string;
-                                      options?: string[];
-                                    };
-                                    variant: string;
-                                  }) => {
-                                    if (component.type === 'SELECT' && component.config?.options) {
-                                      return (
-                                        <FormControl key={component.id} fullWidth>
-                                          <FormLabel htmlFor={component.config?.identifier}>
-                                            {component.config?.label}
-                                          </FormLabel>
-                                          <Select
-                                            displayEmpty
-                                            size="small"
-                                            id={component.config?.identifier}
-                                            name={component.config?.identifier}
-                                            required={component.config?.required}
-                                            fullWidth
-                                            disabled={isLoading}
-                                            error={!!errors[component.config?.identifier]}
-                                            defaultValue=""
-                                          >
-                                            <MenuItem value="" disabled>
-                                              {component.config?.placeholder || 'Select an option'}
-                                            </MenuItem>
-                                            {component.config.options.map((option: string) => (
-                                              <MenuItem key={option} value={option}>
-                                                {option}
-                                              </MenuItem>
-                                            ))}
-                                          </Select>
-                                          {errors[component.config?.identifier] && (
-                                            <Typography variant="caption" color="error.main" sx={{mt: 0.5}}>
-                                              {errors[component.config?.identifier]}
-                                            </Typography>
-                                          )}
-                                          {component.config?.hint && (
-                                            <Typography variant="caption" color="text.secondary">
-                                              {component.config.hint}
-                                            </Typography>
-                                          )}
-                                        </FormControl>
-                                      );
-                                    }
+                                        // Handle TEXT_INPUT components
+                                        if (
+                                          (subComponent.type as EmbeddedFlowComponentType) ===
+                                            EmbeddedFlowComponentType.TextInput &&
+                                          subComponent.ref
+                                        ) {
+                                          return (
+                                            <FormControl key={subComponent.id ?? compIndex}>
+                                              <FormLabel htmlFor={subComponent.ref}>
+                                                {t(resolve(subComponent.label)!)}
+                                              </FormLabel>
+                                              <TextField
+                                                error={!!formErrors[subComponent.ref]}
+                                                helperText={formErrors[subComponent.ref]}
+                                                id={subComponent.ref}
+                                                name={subComponent.ref}
+                                                type="text"
+                                                placeholder={t(resolve(subComponent.placeholder)!)}
+                                                autoComplete={(() => {
+                                                  if (subComponent.ref === 'username') return 'username';
+                                                  if (subComponent.ref === 'email') return 'email';
+                                                  return 'off';
+                                                })()}
+                                                autoFocus={subComponent.ref === 'firstName'}
+                                                required={subComponent.required}
+                                                fullWidth
+                                                variant="outlined"
+                                                color={formErrors[subComponent.ref] ? 'error' : 'primary'}
+                                                disabled={isLoading}
+                                                value={formInputs[subComponent.ref] || ''}
+                                                onChange={(e) => updateInput(subComponent.ref, e.target.value)}
+                                              />
+                                            </FormControl>
+                                          );
+                                        }
 
-                                    if (component.type === 'INPUT') {
-                                      const isPasswordField: boolean = component.config?.type === 'password';
-                                      const showPassword: boolean =
-                                        showPasswordMap[component.config?.identifier] || false;
+                                        // Handle PASSWORD_INPUT components
+                                        if (
+                                          (subComponent.type as EmbeddedFlowComponentType) ===
+                                            EmbeddedFlowComponentType.PasswordInput &&
+                                          subComponent.ref
+                                        ) {
+                                          const showPasswordForField = showPasswordMap[subComponent.ref] || false;
 
-                                      let inputType: string =
-                                        component.config?.type === 'text' ? 'text' : component.config?.type;
+                                          return (
+                                            <FormControl key={subComponent.id ?? compIndex}>
+                                              <FormLabel htmlFor={subComponent.ref}>
+                                                {t(resolve(subComponent.label)!)}
+                                              </FormLabel>
+                                              <TextField
+                                                error={!!formErrors[subComponent.ref]}
+                                                helperText={formErrors[subComponent.ref]}
+                                                id={subComponent.ref}
+                                                name={subComponent.ref}
+                                                type={showPasswordForField ? 'text' : 'password'}
+                                                placeholder={t(resolve(subComponent.placeholder)!)}
+                                                autoComplete={subComponent.ref === 'password' ? 'new-password' : 'off'}
+                                                required={subComponent.required}
+                                                fullWidth
+                                                variant="outlined"
+                                                color={formErrors[subComponent.ref] ? 'error' : 'primary'}
+                                                disabled={isLoading}
+                                                value={formInputs[subComponent.ref] || ''}
+                                                onChange={(e) => updateInput(subComponent.ref, e.target.value)}
+                                                slotProps={{
+                                                  input: {
+                                                    endAdornment: (
+                                                      <InputAdornment position="end">
+                                                        <IconButton
+                                                          aria-label="toggle password visibility"
+                                                          onClick={() => togglePasswordVisibility(subComponent.ref)}
+                                                          edge="end"
+                                                          disabled={isLoading}
+                                                        >
+                                                          {showPasswordForField ? <EyeClosed /> : <Eye />}
+                                                        </IconButton>
+                                                      </InputAdornment>
+                                                    ),
+                                                  },
+                                                }}
+                                              />
+                                            </FormControl>
+                                          );
+                                        }
 
-                                      if (isPasswordField) {
-                                        inputType = showPassword ? 'text' : 'password';
-                                      }
+                                        // Handle SELECT components
+                                        if (
+                                          subComponent.type === 'SELECT' &&
+                                          subComponent.options &&
+                                          subComponent.ref
+                                        ) {
+                                          return (
+                                            <FormControl key={subComponent.id ?? compIndex} fullWidth>
+                                              <FormLabel htmlFor={subComponent.ref}>
+                                                {t(resolve(subComponent.label)!)}
+                                              </FormLabel>
+                                              <Select
+                                                displayEmpty
+                                                size="small"
+                                                id={subComponent.ref}
+                                                name={subComponent.ref}
+                                                required={subComponent.required}
+                                                fullWidth
+                                                disabled={isLoading}
+                                                error={!!formErrors[subComponent.ref]}
+                                                value={formInputs[subComponent.ref] || ''}
+                                                onChange={(e) => updateInput(subComponent.ref, e.target.value)}
+                                              >
+                                                <MenuItem value="" disabled>
+                                                  {subComponent.placeholder ?? 'Select an option'}
+                                                </MenuItem>
+                                                {subComponent.options.map((option: string) => (
+                                                  <MenuItem key={option} value={option}>
+                                                    {option}
+                                                  </MenuItem>
+                                                ))}
+                                              </Select>
+                                              {formErrors[subComponent.ref] && (
+                                                <Typography variant="caption" color="error.main" sx={{mt: 0.5}}>
+                                                  {formErrors[subComponent.ref]}
+                                                </Typography>
+                                              )}
+                                              {subComponent.hint && (
+                                                <Typography variant="caption" color="text.secondary">
+                                                  {subComponent.hint}
+                                                </Typography>
+                                              )}
+                                            </FormControl>
+                                          );
+                                        }
 
-                                      return (
-                                        <FormControl key={component.id}>
-                                          <FormLabel htmlFor={component.config?.identifier}>
-                                            {component.config?.label}
-                                          </FormLabel>
-                                          <TextField
-                                            id={component.config?.identifier}
-                                            name={component.config?.identifier}
-                                            type={inputType}
-                                            placeholder={component.config?.placeholder}
-                                            required={component.config?.required}
-                                            fullWidth
-                                            variant="outlined"
-                                            disabled={isLoading}
-                                            error={!!errors[component.config?.identifier]}
-                                            helperText={errors[component.config?.identifier]}
-                                            slotProps={
-                                              isPasswordField
-                                                ? {
-                                                    input: {
-                                                      endAdornment: (
-                                                        <InputAdornment position="end">
-                                                          <IconButton
-                                                            aria-label="toggle password visibility"
-                                                            onClick={(): void =>
-                                                              togglePasswordVisibility(component.config?.identifier)
-                                                            }
-                                                            edge="end"
-                                                            disabled={isLoading}
-                                                          >
-                                                            {showPassword ? <EyeClosed /> : <Eye />}
-                                                          </IconButton>
-                                                        </InputAdornment>
-                                                      ),
-                                                    },
-                                                  }
-                                                : undefined
-                                            }
-                                          />
-                                          {component.config?.hint && (
-                                            <Typography variant="caption" color="text.secondary">
-                                              {component.config.hint}
-                                            </Typography>
-                                          )}
-                                        </FormControl>
-                                      );
-                                    }
+                                        // Handle ACTION components (submit buttons)
+                                        if (
+                                          (subComponent.type as EmbeddedFlowComponentType) ===
+                                            EmbeddedFlowComponentType.Action &&
+                                          subComponent.eventType === EmbeddedFlowEventType.Submit
+                                        ) {
+                                          return (
+                                            <Button
+                                              key={subComponent.id ?? compIndex}
+                                              type="submit"
+                                              fullWidth
+                                              variant={subComponent.variant === 'PRIMARY' ? 'contained' : 'outlined'}
+                                              disabled={isLoading}
+                                              sx={{mt: 2}}
+                                            >
+                                              {isLoading ? t('Creating account...') : t(resolve(subComponent.label)!)}
+                                            </Button>
+                                          );
+                                        }
 
-                                    if (component.type === 'BUTTON' && component.config?.type === 'submit') {
-                                      return (
-                                        <Button
-                                          key={component.id}
-                                          type="submit"
-                                          fullWidth
-                                          variant={component.variant === 'PRIMARY' ? 'contained' : 'outlined'}
-                                          disabled={isLoading}
-                                          sx={{mt: 2}}
-                                        >
-                                          {isLoading ? 'Creating account...' : component.config?.text}
-                                        </Button>
-                                      );
-                                    }
-                                    return null;
-                                  },
-                                )}
-                              </Box>
-                            ))}
-                        </Box>
-                      );
-                    }
+                                        return null;
+                                      },
+                                    )}
+                                  </Box>
+                                );
+                              }
 
-                    // Check if we have button components (multi-option flow)
-                    if (components && components.length > 0 && components.some((c) => c.type === 'BUTTON')) {
-                      return (
-                        <Box sx={{display: 'flex', flexDirection: 'column', gap: 2}}>
-                          {components
-                            .filter((c) => c.type === 'BUTTON')
-                            .map((button) => {
-                              const actionId = (button.config?.actionId as string) ?? '';
-
-                              const getIcon = () => {
-                                if (actionId.includes('google')) return <Google />;
-                                if (actionId.includes('facebook')) return <Facebook />;
-                                if (actionId.includes('github')) return <GitHub />;
-                                if (actionId.includes('mobile')) return <Smartphone />;
-                                return null;
-                              };
-
-                              const getLabel = () => {
-                                if (button.config?.text && typeof button.config.text === 'string') {
-                                  return button.config.text;
-                                }
-
-                                if (actionId.includes('google')) return 'Sign up with Google';
-                                if (actionId.includes('github')) return 'Sign up with GitHub';
-                                if (actionId.includes('facebook')) return 'Sign up with Facebook';
-                                if (actionId.includes('mobile')) return 'Sign up with SMS OTP';
-                                return `Sign up with ${actionId.replace('_auth', '').replace('_', ' ')}`;
-                              };
-
-                              return (
-                                <Button
-                                  key={button.id}
-                                  fullWidth
-                                  variant="outlined"
-                                  onClick={() => {
-                                    handleSubmit(button, {}).catch(() => {
-                                      // Error handled by onError callback
-                                    });
-                                  }}
-                                  disabled={isLoading}
-                                  startIcon={getIcon()}
-                                >
-                                  {getLabel()}
-                                </Button>
-                              );
-                            })}
+                              return null;
+                            },
+                          )}
                         </Box>
                       );
                     }
@@ -336,8 +412,8 @@ export default function SignUpBox(): JSX.Element {
                     // SignUpBox fallback error
                     return (
                       <Alert severity="error" sx={{mb: 2}}>
-                        <AlertTitle>Oops, that didn&apos;t work</AlertTitle>
-                        We&apos;re sorry, we ran into a problem. Please try again!
+                        <AlertTitle>{t("Oops, that didn't work")}</AlertTitle>
+                        {t("We're sorry, we ran into a problem. Please try again!")}
                       </Alert>
                     );
                   })()}
@@ -345,27 +421,29 @@ export default function SignUpBox(): JSX.Element {
               )}
 
               <Typography sx={{textAlign: 'center', mt: 3}}>
-                Already have an account?{' '}
-                <Button
-                  variant="text"
-                  onClick={() => {
-                    // eslint-disable-next-line @typescript-eslint/no-floating-promises
-                    navigate(signInUrl);
-                  }}
-                  sx={{
-                    p: 0,
-                    minWidth: 'auto',
-                    textTransform: 'none',
-                    color: 'primary.main',
-                    textDecoration: 'underline',
-                    '&:hover': {
+                <Trans i18nKey="signup:redirect.to.signin">
+                  Already have an account?
+                  <Button
+                    variant="text"
+                    onClick={() => {
+                      // eslint-disable-next-line @typescript-eslint/no-floating-promises
+                      navigate(signInUrl);
+                    }}
+                    sx={{
+                      p: 0,
+                      minWidth: 'auto',
+                      textTransform: 'none',
+                      color: 'primary.main',
                       textDecoration: 'underline',
-                      backgroundColor: 'transparent',
-                    },
-                  }}
-                >
-                  Sign in
-                </Button>
+                      '&:hover': {
+                        textDecoration: 'underline',
+                        backgroundColor: 'transparent',
+                      },
+                    }}
+                  >
+                    Sign in
+                  </Button>
+                </Trans>
               </Typography>
             </>
           )}

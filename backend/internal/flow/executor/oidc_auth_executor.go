@@ -26,8 +26,8 @@ import (
 	authncm "github.com/asgardeo/thunder/internal/authn/common"
 	authnoauth "github.com/asgardeo/thunder/internal/authn/oauth"
 	authnoidc "github.com/asgardeo/thunder/internal/authn/oidc"
-	flowcm "github.com/asgardeo/thunder/internal/flow/common"
-	flowcore "github.com/asgardeo/thunder/internal/flow/core"
+	"github.com/asgardeo/thunder/internal/flow/common"
+	"github.com/asgardeo/thunder/internal/flow/core"
 	"github.com/asgardeo/thunder/internal/idp"
 	"github.com/asgardeo/thunder/internal/system/error/serviceerror"
 	"github.com/asgardeo/thunder/internal/system/log"
@@ -44,7 +44,7 @@ var idTokenNonUserAttributes = []string{"aud", "exp", "iat", "iss", "at_hash", "
 // oidcAuthExecutorInterface defines the interface for OIDC authentication executors.
 type oidcAuthExecutorInterface interface {
 	oAuthExecutorInterface
-	GetIDTokenClaims(execResp *flowcm.ExecutorResponse, idToken string) (map[string]interface{}, error)
+	GetIDTokenClaims(execResp *common.ExecutorResponse, idToken string) (map[string]interface{}, error)
 }
 
 // oidcAuthExecutor implements the OIDCAuthExecutorInterface for handling generic OIDC authentication flows.
@@ -54,13 +54,13 @@ type oidcAuthExecutor struct {
 	logger      *log.Logger
 }
 
-var _ flowcore.ExecutorInterface = (*oidcAuthExecutor)(nil)
+var _ core.ExecutorInterface = (*oidcAuthExecutor)(nil)
 
 // newOIDCAuthExecutor creates a new instance of OIDCAuthExecutor.
 func newOIDCAuthExecutor(
 	name string,
-	defaultInputs, prerequisites []flowcm.InputData,
-	flowFactory flowcore.FlowFactoryInterface,
+	defaultInputs, prerequisites []common.Input,
+	flowFactory core.FlowFactoryInterface,
 	idpService idp.IDPServiceInterface,
 	userSchemaService userschema.UserSchemaServiceInterface,
 	authService authnoidc.OIDCAuthnCoreServiceInterface,
@@ -87,17 +87,17 @@ func newOIDCAuthExecutor(
 }
 
 // Execute executes the OIDC authentication logic.
-func (o *oidcAuthExecutor) Execute(ctx *flowcore.NodeContext) (*flowcm.ExecutorResponse, error) {
+func (o *oidcAuthExecutor) Execute(ctx *core.NodeContext) (*common.ExecutorResponse, error) {
 	logger := o.logger.With(log.String(log.LoggerKeyFlowID, ctx.FlowID))
 	logger.Debug("Executing OIDC authentication executor")
 
-	execResp := &flowcm.ExecutorResponse{
+	execResp := &common.ExecutorResponse{
 		AdditionalData: make(map[string]string),
 		RuntimeData:    make(map[string]string),
 	}
 
-	if o.CheckInputData(ctx, execResp) {
-		logger.Debug("Required input data for OIDC authentication executor is not provided")
+	if !o.HasRequiredInputs(ctx, execResp) {
+		logger.Debug("Required inputs for OIDC authentication executor is not provided")
 		err := o.BuildAuthorizeFlow(ctx, execResp)
 		if err != nil {
 			return nil, err
@@ -117,12 +117,12 @@ func (o *oidcAuthExecutor) Execute(ctx *flowcore.NodeContext) (*flowcm.ExecutorR
 }
 
 // ProcessAuthFlowResponse processes the response from the OIDC authentication flow and authenticates the user.
-func (o *oidcAuthExecutor) ProcessAuthFlowResponse(ctx *flowcore.NodeContext,
-	execResp *flowcm.ExecutorResponse) error {
+func (o *oidcAuthExecutor) ProcessAuthFlowResponse(ctx *core.NodeContext,
+	execResp *common.ExecutorResponse) error {
 	logger := o.logger.With(log.String(log.LoggerKeyFlowID, ctx.FlowID))
 	logger.Debug("Processing OIDC authentication response")
 
-	code, ok := ctx.UserInputData[userInputCode]
+	code, ok := ctx.UserInputs[userInputCode]
 	if !ok || code == "" {
 		execResp.AuthenticatedUser = authncm.AuthenticatedUser{
 			IsAuthenticated: false,
@@ -134,7 +134,7 @@ func (o *oidcAuthExecutor) ProcessAuthFlowResponse(ctx *flowcore.NodeContext,
 	if err != nil {
 		return err
 	}
-	if execResp.Status == flowcm.ExecFailure {
+	if execResp.Status == common.ExecFailure {
 		return nil
 	}
 
@@ -142,14 +142,14 @@ func (o *oidcAuthExecutor) ProcessAuthFlowResponse(ctx *flowcore.NodeContext,
 	if err != nil {
 		return err
 	}
-	if execResp.Status == flowcm.ExecFailure {
+	if execResp.Status == common.ExecFailure {
 		return nil
 	}
 
 	// Validate nonce if configured
-	if nonce, ok := ctx.UserInputData[userInputNonce]; ok && nonce != "" {
+	if nonce, ok := ctx.UserInputs[userInputNonce]; ok && nonce != "" {
 		if idTokenClaims[userInputNonce] != nonce {
-			execResp.Status = flowcm.ExecFailure
+			execResp.Status = common.ExecFailure
 			execResp.FailureReason = "Nonce mismatch in ID token claims."
 			return nil
 		}
@@ -164,7 +164,7 @@ func (o *oidcAuthExecutor) ProcessAuthFlowResponse(ctx *flowcore.NodeContext,
 		}
 	}
 	if parsedSub == "" {
-		execResp.Status = flowcm.ExecFailure
+		execResp.Status = common.ExecFailure
 		execResp.FailureReason = "sub claim not found in the ID token."
 		return nil
 	}
@@ -173,7 +173,7 @@ func (o *oidcAuthExecutor) ProcessAuthFlowResponse(ctx *flowcore.NodeContext,
 	if err != nil {
 		return err
 	}
-	if execResp.Status == flowcm.ExecFailure {
+	if execResp.Status == common.ExecFailure {
 		return nil
 	}
 
@@ -181,7 +181,7 @@ func (o *oidcAuthExecutor) ProcessAuthFlowResponse(ctx *flowcore.NodeContext,
 	if err != nil {
 		return err
 	}
-	if execResp.Status == flowcm.ExecFailure {
+	if execResp.Status == common.ExecFailure {
 		return nil
 	}
 	if contextUser == nil {
@@ -193,7 +193,7 @@ func (o *oidcAuthExecutor) ProcessAuthFlowResponse(ctx *flowcore.NodeContext,
 	if err != nil {
 		return err
 	}
-	if execResp.Status == flowcm.ExecFailure {
+	if execResp.Status == common.ExecFailure {
 		return nil
 	}
 
@@ -204,7 +204,7 @@ func (o *oidcAuthExecutor) ProcessAuthFlowResponse(ctx *flowcore.NodeContext,
 }
 
 // GetIDTokenClaims extracts the ID token claims from the provided ID token.
-func (o *oidcAuthExecutor) GetIDTokenClaims(execResp *flowcm.ExecutorResponse,
+func (o *oidcAuthExecutor) GetIDTokenClaims(execResp *common.ExecutorResponse,
 	idToken string) (map[string]interface{}, error) {
 	logger := o.logger
 	logger.Debug("Extracting claims from the ID token")
@@ -212,7 +212,7 @@ func (o *oidcAuthExecutor) GetIDTokenClaims(execResp *flowcm.ExecutorResponse,
 	claims, svcErr := o.authService.GetIDTokenClaims(idToken)
 	if svcErr != nil {
 		if svcErr.Type == serviceerror.ClientErrorType {
-			execResp.Status = flowcm.ExecFailure
+			execResp.Status = common.ExecFailure
 			execResp.FailureReason = svcErr.ErrorDescription
 			return nil, nil
 		}
@@ -227,7 +227,7 @@ func (o *oidcAuthExecutor) GetIDTokenClaims(execResp *flowcm.ExecutorResponse,
 
 // getContextUserAttributes retrieves user attributes from the ID token claims and user info endpoint.
 // TODO: Need to convert attributes as per the IDP to local attribute mapping when the support is implemented.
-func (o *oidcAuthExecutor) getContextUserAttributes(ctx *flowcore.NodeContext, execResp *flowcm.ExecutorResponse,
+func (o *oidcAuthExecutor) getContextUserAttributes(ctx *core.NodeContext, execResp *common.ExecutorResponse,
 	idTokenClaims map[string]interface{}, accessToken string) (map[string]interface{}, error) {
 	logger := o.logger.With(log.String(log.LoggerKeyFlowID, ctx.FlowID))
 	userClaims := make(map[string]interface{})
@@ -251,7 +251,7 @@ func (o *oidcAuthExecutor) getContextUserAttributes(ctx *flowcore.NodeContext, e
 	oauthConfigs, svcErr := o.authService.GetOAuthClientConfig(idpID)
 	if svcErr != nil {
 		if svcErr.Type == serviceerror.ClientErrorType {
-			execResp.Status = flowcm.ExecFailure
+			execResp.Status = common.ExecFailure
 			execResp.FailureReason = fmt.Sprintf("failed to retrieve OAuth client configuration: %s",
 				svcErr.ErrorDescription)
 			return nil, nil
@@ -268,7 +268,7 @@ func (o *oidcAuthExecutor) getContextUserAttributes(ctx *flowcore.NodeContext, e
 		if err != nil {
 			return nil, err
 		}
-		if execResp.Status == flowcm.ExecFailure {
+		if execResp.Status == common.ExecFailure {
 			return nil, nil
 		}
 

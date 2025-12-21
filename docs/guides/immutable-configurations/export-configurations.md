@@ -564,7 +564,7 @@ docker run \
   -e MY_APP_CLIENT_SECRET=prod-secret \
   -e MY_APP_REDIRECT_URIS_0=https://app.example.com/callback \
   -e MY_APP_REDIRECT_URIS_1=https://app.example.com/logout \
-  -v $(pwd)/configs:/app/repository/conf/immutable_resources \
+  -v $(pwd)/configs:/app/repository/resources \
   thunder:latest
 ```
 
@@ -572,7 +572,7 @@ Or use an environment file:
 
 ```bash
 docker run --env-file production.env \
-  -v $(pwd)/configs:/app/repository/conf/immutable_resources \
+  -v $(pwd)/configs:/app/repository/resources \
   thunder:latest
 ```
 

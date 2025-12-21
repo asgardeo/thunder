@@ -463,18 +463,21 @@ components:
           - id: "641af221-75ff-4247-ab1f-ff139040a91b"
             flowType: "AUTHENTICATION"
             name: "Basic Authentication Flow"
+            handle: "default-basic-flow"
             activeVersion: 2
             createdAt: "2024-01-15T10:20:30Z"
             updatedAt: "2024-02-20T14:25:35Z"
           - id: "2sd4f6g7-h8i9-0j1k-2l3m-4n5o6p7q8r9s"
             flowType: "REGISTRATION"
             name: "Basic Registration Flow"
+            handle: "basic-registration-flow"
             activeVersion: 7
             createdAt: "2024-03-10T09:15:25Z"
             updatedAt: "2024-04-12T11:30:40Z"
           - id: "b12c3d45-6789-4e0f-9abc-def123456789"
             flowType: "REGISTRATION"
             name: "Google Registration Flow"
+            handle: "google-registration-flow"
             activeVersion: 1
             createdAt: "2024-05-05T08:10:20Z"
             updatedAt: "2024-06-01T12:00:00Z"
@@ -561,6 +564,7 @@ components:
         - id
         - flowType
         - name
+        - handle
         - activeVersion
         - createdAt
         - updatedAt
@@ -576,6 +580,14 @@ components:
         name:
           type: string
           description: Name of the flow
+          example: "Basic Authentication Flow"
+        handle:
+          type: string
+          description: |
+            URL-friendly handle for the flow (lowercase letters, numbers, hyphens, and underscores only)
+            Once set, the handle cannot be changed.
+          pattern: '^[a-z0-9][a-z0-9_-]*[a-z0-9]$|^[a-z0-9]$'
+          example: "default-basic-flow"
         activeVersion:
           type: integer
           description: The version number that is currently active
@@ -594,12 +606,20 @@ components:
       required:
         - name
         - flowType
+        - handle
         - nodes
       properties:
         name:
           type: string
           description: Name of the flow
           example: "Basic Authentication Flow"
+        handle:
+          type: string
+          description: |
+            URL-friendly handle for the flow (lowercase letters, numbers, hyphens, and underscores only)
+            Once set, the handle cannot be changed.
+          pattern: '^[a-z0-9][a-z0-9_-]*[a-z0-9]$|^[a-z0-9]$'
+          example: "default-basic-flow"
         flowType:
           type: string
           enum:
@@ -616,13 +636,28 @@ components:
           description: List of nodes that define the flow graph
       example:
         name: Basic Authentication Flow
+        handle: default-basic-flow
         flowType: AUTHENTICATION
         nodes: &authFlowNodes
           - id: node_000
             type: START
+            layout:
+              size:
+                width: 180
+                height: 80
+              position:
+                x: 50
+                y: 50
             onSuccess: node_001
           - id: node_001
             type: PROMPT
+            layout:
+              size:
+                width: 320
+                height: 450
+              position:
+                x: 50
+                y: 180
             meta:
               components:
                 - type: TEXT
@@ -667,6 +702,13 @@ components:
                 nextNode: node_002
           - id: node_002
             type: TASK_EXECUTION
+            layout:
+              size:
+                width: 200
+                height: 120
+              position:
+                x: 450
+                y: 300
             executor:
               name: SendSMSExecutor
             properties:
@@ -675,6 +717,13 @@ components:
             onFailure: node_007
           - id: node_003
             type: PROMPT
+            layout:
+              size:
+                width: 320
+                height: 380
+              position:
+                x: 700
+                y: 280
             meta:
               components:
                 - type: HEADING
@@ -707,6 +756,13 @@ components:
                 nextNode: node_002
           - id: node_004
             type: TASK_EXECUTION
+            layout:
+              size:
+                width: 200
+                height: 140
+              position:
+                x: 450
+                y: 100
             executor:
               name: BasicAuthExecutor
             inputs:
@@ -721,6 +777,13 @@ components:
             onSuccess: node_008
           - id: node_005
             type: TASK_EXECUTION
+            layout:
+              size:
+                width: 200
+                height: 140
+              position:
+                x: 1100
+                y: 320
             executor:
               name: VerifyOTPExecutor
             properties:
@@ -733,6 +796,13 @@ components:
             onSuccess: node_008
           - id: node_007
             type: PROMPT
+            layout:
+              size:
+                width: 300
+                height: 280
+              position:
+                x: 450
+                y: 480
             meta:
               components:
                 - type: HEADING
@@ -749,6 +819,13 @@ components:
                 nextNode: node_002
           - id: node_008
             type: END
+            layout:
+              size:
+                width: 180
+                height: 80
+              position:
+                x: 1400
+                y: 200
 
     FlowDefinitionResponse:
       type: object
@@ -756,6 +833,7 @@ components:
         - id
         - name
         - flowType
+        - handle
         - activeVersion
         - nodes
         - createdAt
@@ -777,6 +855,13 @@ components:
           description: |
             Type of flow
           example: AUTHENTICATION
+        handle:
+          type: string
+          description: |
+            URL-friendly handle for the flow (lowercase letters, numbers, hyphens, and underscores only)
+            Once set, the handle cannot be changed.
+          pattern: '^[a-z0-9][a-z0-9_-]*[a-z0-9]$|^[a-z0-9]$'
+          example: "default-basic-flow"
         activeVersion:
           type: integer
           description: The version number that is currently active
@@ -799,6 +884,7 @@ components:
         id: a23b45c6-d7e8-90f1-2345-6789abcdef01
         name: Basic Authentication Flow
         flowType: AUTHENTICATION
+        handle: default-basic-flow
         activeVersion: 5
         nodes: *authFlowNodes
         createdAt: "2024-06-15T10:20:30Z"
@@ -810,6 +896,7 @@ components:
         - id
         - name
         - flowType
+        - handle
         - version
         - isActive
         - nodes
@@ -831,6 +918,13 @@ components:
           description: |
             Type of flow
           example: AUTHENTICATION
+        handle:
+          type: string
+          description: |
+            URL-friendly handle for the flow (lowercase letters, numbers, hyphens, and underscores only)
+            Once set, the handle cannot be changed.
+          pattern: '^[a-z0-9][a-z0-9_-]*[a-z0-9]$|^[a-z0-9]$'
+          example: "default-basic-flow"
         version:
           type: integer
           description: Version number of this flow snapshot
@@ -853,6 +947,7 @@ components:
         id: a23b45c6-d7e8-90f1-2345-6789abcdef01
         name: Basic Authentication Flow
         flowType: AUTHENTICATION
+        handle: default-basic-flow
         version: 3
         isActive: false
         nodes: *authFlowNodes
@@ -878,6 +973,9 @@ components:
           description: |
             Type of node
           example: PROMPT
+        layout:
+          allOf:
+            - $ref: '#/components/schemas/NodeLayout'
         meta:
           description: Optional UI metadata for PROMPT nodes (verbose mode)
           allOf:
@@ -914,6 +1012,50 @@ components:
           type: string
           description: Next node ID on failed execution (TASK_EXECUTION nodes)
           example: node_007
+
+    NodeLayout:
+      type: object
+      description: |
+        Layout information for the flow composer UI. This metadata is used 
+        only by the visual flow composer to position and size nodes on the canvas. 
+      properties:
+        size:
+          type: object
+          description: Dimensions of the node in the flow composer canvas
+          required:
+            - width
+            - height
+          properties:
+            width:
+              type: number
+              description: Width of the node in pixels
+              example: 200
+            height:
+              type: number
+              description: Height of the node in pixels
+              example: 150
+        position:
+          type: object
+          description: Position of the node in the flow composer canvas
+          required:
+            - x
+            - y
+          properties:
+            x:
+              type: number
+              description: X-coordinate of the node
+              example: 100
+            y:
+              type: number
+              description: Y-coordinate of the node
+              example: 100
+      example:
+        size:
+          width: 200
+          height: 150
+        position:
+          x: 100
+          y: 100
 
     NodeMeta:
       type: object

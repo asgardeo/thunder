@@ -26,7 +26,46 @@ Before implementing flow-based authorization, ensure you have:
 
 This example demonstrates authorization for a document management system with read and write permissions.
 
-### Step 1: Create Organization Unit
+### Step 1: Set Up Resource Server and Permissions
+
+Before creating roles, set up your permission model. You'll need to create a resource server and define the permissions (actions) that can be granted.
+
+**Quick setup for this example:**
+
+```bash
+# Create document API resource server
+DOCS_RS_ID=$(curl -kL -X POST -H 'Content-Type: application/json' https://localhost:8090/resource-servers \
+-H 'Authorization: Bearer <token>' \
+-d '{"name": "Document API", "identifier": "document-api", "ouId": "<organization-unit-id>"}' | jq -r '.id')
+
+# Create documents resource
+DOC_RESOURCE_ID=$(curl -kL -X POST https://localhost:8090/resource-servers/$DOCS_RS_ID/resources \
+-H 'Authorization: Bearer <token>' -H 'Content-Type: application/json' \
+-d '{"name": "Documents", "handle": "documents"}' | jq -r '.id')
+
+# Create read action
+curl -kL -X POST https://localhost:8090/resource-servers/$DOCS_RS_ID/resources/$DOC_RESOURCE_ID/actions \
+-H 'Authorization: Bearer <token>' -H 'Content-Type: application/json' \
+-d '{"name": "Read", "handle": "read"}'
+
+# Create write action
+curl -kL -X POST https://localhost:8090/resource-servers/$DOCS_RS_ID/resources/$DOC_RESOURCE_ID/actions \
+-H 'Authorization: Bearer <token>' -H 'Content-Type: application/json' \
+-d '{"name": "Write", "handle": "write"}'
+
+# Create delete action
+curl -kL -X POST https://localhost:8090/resource-servers/$DOCS_RS_ID/resources/$DOC_RESOURCE_ID/actions \
+-H 'Authorization: Bearer <token>' -H 'Content-Type: application/json' \
+-d '{"name": "Delete", "handle": "delete"}'
+```
+
+This creates permissions: `documents:read`, `documents:write`, `documents:delete`
+
+> **📖 For complete details on resource servers and permission setup, see:**
+>
+> **[Resource Server Management →](./resource-server-management.md)**
+
+### Step 2: Create Organization Unit
 
 ```bash
 curl -kL -X POST -H 'Content-Type: application/json' https://localhost:8090/organization-units \
@@ -40,7 +79,7 @@ curl -kL -X POST -H 'Content-Type: application/json' https://localhost:8090/orga
 
 Save the organization unit `id` from the response.
 
-### Step 2: Create Application
+### Step 3: Create Application
 
 Create an application that uses the basic authentication flow (which includes authorization):
 
@@ -56,7 +95,7 @@ curl -kL -X POST -H 'Content-Type: application/json' https://localhost:8090/appl
 
 Save the application `id` from the response.
 
-### Step 3: Create User Schema
+### Step 4: Create User Schema
 
 Before creating users, define a user schema:
 
@@ -87,7 +126,7 @@ curl -kL -X POST -H 'Content-Type: application/json' https://localhost:8090/user
 
 > **Note:** User schema creation is mandatory. You only need to create a schema once.
 
-### Step 4: Create User
+### Step 5: Create User
 
 Create a user in your organization unit:
 
@@ -109,7 +148,7 @@ curl -kL -X POST -H 'Content-Type: application/json' https://localhost:8090/user
 
 Save the user `id` from the response.
 
-### Step 5: Create Role with Permissions
+### Step 6: Create Role with Permissions
 
 Create a role with document permissions and assign it to the user:
 
@@ -121,8 +160,13 @@ curl -kL -X POST -H 'Content-Type: application/json' https://localhost:8090/role
     "description": "Can read and write documents",
     "ouId": "<organization-unit-id>",
     "permissions": [
-        "read:documents",
-        "write:documents"
+        {
+            "resourceServerId": "<document-api-resource-server-id>",
+            "permissions": [
+                "read:documents",
+                "write:documents"
+            ]
+        }
     ],
     "assignments": [
         {
@@ -133,7 +177,7 @@ curl -kL -X POST -H 'Content-Type: application/json' https://localhost:8090/role
 }'
 ```
 
-### Step 6: Initiate Authentication with Requested Permissions
+### Step 7: Initiate Authentication with Requested Permissions
 
 Start the authentication flow and request specific permissions:
 
@@ -174,7 +218,7 @@ curl -kL -H 'Content-Type: application/json' https://localhost:8090/flow/execute
 
 Note the `flowId` from the response.
 
-### Step 7: Complete Authentication
+### Step 8: Complete Authentication
 
 Complete the authentication by providing credentials:
 
@@ -199,7 +243,7 @@ curl -kL -H 'Content-Type: application/json' https://localhost:8090/flow/execute
 }
 ```
 
-### Step 8: Decode JWT and Extract Permissions
+### Step 9: Decode JWT and Extract Permissions
 
 The JWT assertion contains the authorized permissions. Decode the JWT to extract them:
 

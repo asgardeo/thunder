@@ -51,11 +51,13 @@ func (h *flowExecutionHandler) HandleFlowExecutionRequest(w http.ResponseWriter,
 	// Sanitize the input to prevent injection attacks
 	appID := sysutils.SanitizeString(flowR.ApplicationID)
 	flowID := sysutils.SanitizeString(flowR.FlowID)
-	actionID := sysutils.SanitizeString(flowR.ActionID)
-	inputs := sysutils.SanitizeStringMap(flowR.Inputs)
 	flowTypeStr := sysutils.SanitizeString(flowR.FlowType)
+	verbose := flowR.Verbose
+	action := sysutils.SanitizeString(flowR.Action)
+	inputs := sysutils.SanitizeStringMap(flowR.Inputs)
 
-	flowStep, flowErr := h.flowExecService.Execute(appID, flowID, actionID, flowTypeStr, inputs)
+	flowStep, flowErr := h.flowExecService.Execute(
+		r.Context(), appID, flowID, flowTypeStr, verbose, action, inputs)
 
 	if flowErr != nil {
 		handleFlowError(w, flowErr)

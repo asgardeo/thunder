@@ -3760,3 +3760,151 @@ func (suite *ResourceServiceTestSuite) TestPermissionHierarchyIntegration() {
 		})
 	}
 }
+
+// ValidatePermissions Tests
+
+func (suite *ResourceServiceTestSuite) TestValidatePermissions() {
+	// Initialize runtime config once for all sub-tests
+	testConfig := &config.Config{
+		Database: config.DatabaseConfig{
+			Identity: config.DataSource{
+				Type: "sqlite",
+				Path: ":memory:",
+			},
+			Runtime: config.DataSource{
+				Type: "sqlite",
+				Path: ":memory:",
+			},
+		},
+		Server: config.ServerConfig{
+			Identifier: "test-deployment",
+		},
+	}
+	config.ResetThunderRuntime()
+	err := config.InitializeThunderRuntime("/tmp/test-validate-permissions", testConfig)
+	suite.Require().NoError(err)
+	defer config.ResetThunderRuntime()
+
+	testCases := []struct {
+		name             string
+		resourceServerID string
+		permissions      []string
+		setupMocks       func(*resourceStoreInterfaceMock)
+		expectedInvalid  []string
+		expectedError    *serviceerror.ServiceError
+	}{
+		{
+			name:             "Success_EmptyPermissions",
+			resourceServerID: "rs-123",
+			permissions:      []string{},
+			setupMocks:       func(mockStore *resourceStoreInterfaceMock) {},
+			expectedInvalid:  []string{},
+			expectedError:    nil,
+		},
+		{
+			name:             "Success_AllPermissionsValid",
+			resourceServerID: "rs-123",
+			permissions:      []string{"read", "write", "delete"},
+			setupMocks: func(mockStore *resourceStoreInterfaceMock) {
+				mockStore.On("GetResourceServer", "rs-123").
+					Return(123, ResourceServer{ID: "rs-123"}, nil)
+				mockStore.On("ValidatePermissions", 123, []string{"read", "write", "delete"}).
+					Return([]string{}, nil)
+			},
+			expectedInvalid: []string{},
+			expectedError:   nil,
+		},
+		{
+			name:             "Success_SomePermissionsInvalid",
+			resourceServerID: "rs-123",
+			permissions:      []string{"read", "write", "invalid1", "delete", "invalid2"},
+			setupMocks: func(mockStore *resourceStoreInterfaceMock) {
+				mockStore.On("GetResourceServer", "rs-123").
+					Return(123, ResourceServer{ID: "rs-123"}, nil)
+				mockStore.On("ValidatePermissions", 123, []string{"read", "write", "invalid1", "delete", "invalid2"}).
+					Return([]string{"invalid1", "invalid2"}, nil)
+			},
+			expectedInvalid: []string{"invalid1", "invalid2"},
+			expectedError:   nil,
+		},
+		{
+			name:             "Success_AllPermissionsInvalid",
+			resourceServerID: "rs-123",
+			permissions:      []string{"badperm1", "badperm2", "badperm3"},
+			setupMocks: func(mockStore *resourceStoreInterfaceMock) {
+				mockStore.On("GetResourceServer", "rs-123").
+					Return(123, ResourceServer{ID: "rs-123"}, nil)
+				mockStore.On("ValidatePermissions", 123, []string{"badperm1", "badperm2", "badperm3"}).
+					Return([]string{"badperm1", "badperm2", "badperm3"}, nil)
+			},
+			expectedInvalid: []string{"badperm1", "badperm2", "badperm3"},
+			expectedError:   nil,
+		},
+		{
+			name:             "Success_ResourceServerNotFound_ReturnsAllPermissionsInvalid",
+			resourceServerID: "rs-nonexistent",
+			permissions:      []string{"read", "write"},
+			setupMocks: func(mockStore *resourceStoreInterfaceMock) {
+				mockStore.On("GetResourceServer", "rs-nonexistent").
+					Return(0, ResourceServer{}, errResourceServerNotFound)
+			},
+			expectedInvalid: []string{"read", "write"},
+			expectedError:   nil,
+		},
+		{
+			name:             "Error_GetResourceServerStoreError",
+			resourceServerID: "rs-123",
+			permissions:      []string{"read", "write"},
+			setupMocks: func(mockStore *resourceStoreInterfaceMock) {
+				mockStore.On("GetResourceServer", "rs-123").
+					Return(0, ResourceServer{}, errors.New("database connection failed"))
+			},
+			expectedInvalid: nil,
+			expectedError:   &serviceerror.InternalServerError,
+		},
+		{
+			name:             "Error_ValidatePermissionsStoreError",
+			resourceServerID: "rs-123",
+			permissions:      []string{"read", "write"},
+			setupMocks: func(mockStore *resourceStoreInterfaceMock) {
+				mockStore.On("GetResourceServer", "rs-123").
+					Return(123, ResourceServer{ID: "rs-123"}, nil)
+				mockStore.On("ValidatePermissions", 123, []string{"read", "write"}).
+					Return(nil, errors.New("database error"))
+			},
+			expectedInvalid: nil,
+			expectedError:   &serviceerror.InternalServerError,
+		},
+	}
+
+	for _, tc := range testCases {
+		suite.Run(tc.name, func() {
+			// Create fresh mocks for this specific sub-test
+			mockStore := newResourceStoreInterfaceMock(suite.T())
+			mockOU := new(oumock.OrganizationUnitServiceInterfaceMock)
+
+			// Create a fresh service instance with the fresh mocks
+			svc, err := newResourceService(mockStore, mockOU)
+			suite.Require().NoError(err)
+
+			// Setup mocks for this test case
+			tc.setupMocks(mockStore)
+
+			// Execute the test
+			invalidPerms, svcErr := svc.ValidatePermissions(tc.resourceServerID, tc.permissions)
+
+			// Assert results
+			if tc.expectedError != nil {
+				suite.NotNil(svcErr)
+				suite.Equal(tc.expectedError.Code, svcErr.Code)
+				suite.Nil(invalidPerms)
+			} else {
+				suite.Nil(svcErr)
+				suite.Equal(tc.expectedInvalid, invalidPerms)
+			}
+
+			// Verify all expected mock calls were made
+			mockStore.AssertExpectations(suite.T())
+		})
+	}
+}

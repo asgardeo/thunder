@@ -24,7 +24,7 @@ import (
 	"github.com/stretchr/testify/suite"
 
 	authnoidc "github.com/asgardeo/thunder/internal/authn/oidc"
-	flowcm "github.com/asgardeo/thunder/internal/flow/common"
+	"github.com/asgardeo/thunder/internal/flow/common"
 	"github.com/asgardeo/thunder/tests/mocks/authn/googlemock"
 	"github.com/asgardeo/thunder/tests/mocks/authn/oidcmock"
 	"github.com/asgardeo/thunder/tests/mocks/flow/coremock"
@@ -54,21 +54,21 @@ func (suite *GoogleAuthExecutorTestSuite) SetupTest() {
 }
 
 func (suite *GoogleAuthExecutorTestSuite) TestNewGoogleOIDCAuthExecutor_Success() {
-	defaultInputs := []flowcm.InputData{
+	defaultInputs := []common.Input{
 		{
-			Name:     "code",
-			Type:     "string",
-			Required: true,
+			Identifier: "code",
+			Type:       "string",
+			Required:   true,
 		},
 		{
-			Name:     "nonce",
-			Type:     "string",
-			Required: false,
+			Identifier: "nonce",
+			Type:       "string",
+			Required:   false,
 		},
 	}
 	baseExec := coremock.NewExecutorInterfaceMock(suite.T())
 	suite.mockFlowFactory.On("CreateExecutor", ExecutorNameGoogleAuth,
-		flowcm.ExecutorTypeAuthentication, defaultInputs, []flowcm.InputData{}).
+		common.ExecutorTypeAuthentication, defaultInputs, []common.Input{}).
 		Return(baseExec).Once()
 
 	mockGoogleSvc := &mockGoogleServiceWithOIDC{

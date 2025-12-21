@@ -20,6 +20,8 @@
 package core
 
 // Initialize initializes the core flow package
-func Initialize() FlowFactoryInterface {
-	return newFlowFactory()
+func Initialize() (FlowFactoryInterface, GraphCacheInterface) {
+	flowFactory := newFlowFactory()
+	graphCache := newGraphCache()
+	return flowFactory, graphCache
 }

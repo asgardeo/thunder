@@ -201,9 +201,8 @@ func (ts *TokenExchangeTestSuite) createTestApplication() string {
 	app := map[string]interface{}{
 		"name":                         tokenExchangeAppName,
 		"description":                  "Application for token exchange integration tests",
-		"auth_flow_graph_id":           "auth_flow_config_basic",
-		"registration_flow_graph_id":   "registration_flow_config_basic",
-		"is_registration_flow_enabled": true,
+		"is_registration_flow_enabled": false,
+		"allowed_user_types":           []string{"token-test-person"},
 		"inbound_auth_config": []map[string]interface{}{
 			{
 				"type": "oauth2",
@@ -505,9 +504,8 @@ func (ts *TokenExchangeTestSuite) TestTokenExchange_ApplicationNotRegisteredForG
 	app := map[string]interface{}{
 		"name":                         tokenExchangeAppName + "_no_te",
 		"description":                  "Application without token exchange",
-		"auth_flow_graph_id":           "auth_flow_config_basic",
-		"registration_flow_graph_id":   "registration_flow_config_basic",
-		"is_registration_flow_enabled": true,
+		"is_registration_flow_enabled": false,
+		"allowed_user_types":           []string{"token-test-person"},
 		"inbound_auth_config": []map[string]interface{}{
 			{
 				"type": "oauth2",

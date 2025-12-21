@@ -97,6 +97,8 @@ spec:
 
           flow:
             graph_directory: "repository/resources/graphs"
+            max_version_history: 3
+            auto_infer_registration: true
 
           cors:
             allowed_origins:

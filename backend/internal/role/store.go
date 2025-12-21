@@ -110,7 +110,7 @@ func (s *roleStore) CreateRole(id string, role RoleCreationDetail) error {
 
 	return s.executeInTransaction(dbClient, func(tx dbmodel.TxInterface) error {
 		_, err := tx.Exec(
-			queryCreateRole.Query,
+			queryCreateRole,
 			id,
 			role.OrganizationUnitID,
 			role.Name,
@@ -243,7 +243,7 @@ func (s *roleStore) UpdateRole(id string, role RoleUpdateDetail) error {
 
 	return s.executeInTransaction(dbClient, func(tx dbmodel.TxInterface) error {
 		result, err := tx.Exec(
-			queryUpdateRole.Query,
+			queryUpdateRole,
 			role.OrganizationUnitID,
 			role.Name,
 			role.Description,
@@ -313,7 +313,7 @@ func (s *roleStore) RemoveAssignments(id string, assignments []RoleAssignment) e
 
 	return s.executeInTransaction(dbClient, func(tx dbmodel.TxInterface) error {
 		for _, assignment := range assignments {
-			_, err := tx.Exec(queryDeleteRoleAssignmentsByIDs.Query, id, assignment.Type, assignment.ID, s.deploymentID)
+			_, err := tx.Exec(queryDeleteRoleAssignmentsByIDs, id, assignment.Type, assignment.ID, s.deploymentID)
 			if err != nil {
 				return fmt.Errorf("failed to remove assignment from role: %w", err)
 			}
@@ -323,19 +323,42 @@ func (s *roleStore) RemoveAssignments(id string, assignments []RoleAssignment) e
 }
 
 // getRolePermissions retrieves all permissions for a role.
-func (s *roleStore) getRolePermissions(dbClient provider.DBClientInterface, id string) ([]string, error) {
+func (s *roleStore) getRolePermissions(dbClient provider.DBClientInterface, id string) ([]ResourcePermissions, error) {
 	results, err := dbClient.Query(queryGetRolePermissions, id, s.deploymentID)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get role permissions: %w", err)
 	}
 
-	permissions := make([]string, 0)
+	// Group permissions by resource server
+	permMap := make(map[string][]string)
+	var resourceServerOrder []string
+
 	for _, row := range results {
 		permission, ok := row["permission"].(string)
 		if !ok {
 			return nil, fmt.Errorf("failed to parse permission as string")
 		}
-		permissions = append(permissions, permission)
+
+		resourceServerID, ok := row["resource_server_id"].(string)
+		if !ok {
+			return nil, fmt.Errorf("failed to parse resource_server_id as string")
+		}
+
+		// Track order of resource servers as they appear
+		if _, exists := permMap[resourceServerID]; !exists {
+			resourceServerOrder = append(resourceServerOrder, resourceServerID)
+		}
+
+		permMap[resourceServerID] = append(permMap[resourceServerID], permission)
+	}
+
+	// Convert map to array of ResourcePermissions
+	permissions := make([]ResourcePermissions, 0, len(permMap))
+	for _, rsID := range resourceServerOrder {
+		permissions = append(permissions, ResourcePermissions{
+			ResourceServerID: rsID,
+			Permissions:      permMap[rsID],
+		})
 	}
 
 	return permissions, nil
@@ -360,13 +383,15 @@ func buildRoleBasicInfoFromResultRow(row map[string]interface{}) (Role, error) {
 func addPermissionsToRole(
 	tx dbmodel.TxInterface,
 	id string,
-	permissions []string,
+	permissions []ResourcePermissions,
 	deploymentID string,
 ) error {
-	for _, permission := range permissions {
-		_, err := tx.Exec(queryCreateRolePermission.Query, id, permission, deploymentID)
-		if err != nil {
-			return fmt.Errorf("failed to add permission to role: %w", err)
+	for _, resPerm := range permissions {
+		for _, permission := range resPerm.Permissions {
+			_, err := tx.Exec(queryCreateRolePermission, id, resPerm.ResourceServerID, permission, deploymentID)
+			if err != nil {
+				return fmt.Errorf("failed to add permission to role: %w", err)
+			}
 		}
 	}
 	return nil
@@ -380,7 +405,7 @@ func addAssignmentsToRole(
 	deploymentID string,
 ) error {
 	for _, assignment := range assignments {
-		_, err := tx.Exec(queryCreateRoleAssignment.Query, id, assignment.Type, assignment.ID, deploymentID)
+		_, err := tx.Exec(queryCreateRoleAssignment, id, assignment.Type, assignment.ID, deploymentID)
 		if err != nil {
 			return fmt.Errorf("failed to add assignment to role: %w", err)
 		}
@@ -393,10 +418,10 @@ func addAssignmentsToRole(
 func updateRolePermissions(
 	tx dbmodel.TxInterface,
 	id string,
-	permissions []string,
+	permissions []ResourcePermissions,
 	deploymentID string,
 ) error {
-	_, err := tx.Exec(queryDeleteRolePermissions.Query, id, deploymentID)
+	_, err := tx.Exec(queryDeleteRolePermissions, id, deploymentID)
 	if err != nil {
 		return fmt.Errorf("failed to delete existing role permissions: %w", err)
 	}

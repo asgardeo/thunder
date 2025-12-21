@@ -1,0 +1,626 @@
+[
+  {
+    "resourceType": "WIDGET",
+    "category": "COMPOSITE",
+    "type": "IDENTIFIER_PASSWORD",
+    "display": {
+      "label": "Username + Password",
+      "description": "Basic login experience with username & password",
+      "image": "assets/images/icons/password.svg",
+      "showOnResourcePanel": true
+    },
+    "config": {
+      "data": {
+        "__generationMeta__": {},
+        "steps": [
+          {
+            "__generationMeta__": {
+              "strategy": "MERGE_WITH_DROP_POINT"
+            },
+            "type": "VIEW",
+            "data": {
+              "components": [
+                {
+                  "category": "BLOCK",
+                  "type": "FORM",
+                  "config": {},
+                  "id": "{{ID}}",
+                  "components": [
+                    {
+                      "id": "{{ID}}",
+                      "category": "FIELD",
+                      "type": "INPUT",
+                      "variant": "TEXT",
+                      "config": {
+                        "type": "text",
+                        "hint": "",
+                        "label": "Username",
+                        "required": true,
+                        "placeholder": "Enter your username",
+                        "identifier": "username"
+                      }
+                    },
+                    {
+                      "id": "{{ID}}",
+                      "category": "FIELD",
+                      "type": "INPUT",
+                      "variant": "PASSWORD",
+                      "config": {
+                        "identifier": "password",
+                        "type": "password",
+                        "hint": "",
+                        "label": "Password",
+                        "required": true,
+                        "placeholder": "Enter your password"
+                      }
+                    },
+                    {
+                      "id": "{{ID}}",
+                      "category": "ACTION",
+                      "type": "BUTTON",
+                      "variant": "PRIMARY",
+                      "eventType": "SUBMIT",
+                      "label": "Continue",
+                      "action": {
+                        "type": "EXECUTOR",
+                        "executor": {
+                          "name": "BasicAuthExecutor"
+                        }
+                      }
+                    }
+                  ]
+                }
+              ]
+            }
+          }
+        ]
+      }
+    }
+  },
+  {
+    "resourceType": "WIDGET",
+    "category": "FLOW",
+    "type": "GOOGLE_FEDERATION",
+    "display": {
+      "label": "Continue with Google",
+      "description": "Login experience with Google",
+      "image": "assets/images/icons/google-generic.svg",
+      "showOnResourcePanel": true
+    },
+    "config": {
+      "data": {
+        "__generationMeta__": {
+          "defaultPropertySelectorId": "{{GOOGLE_EXECUTION_STEP_ID}}",
+          "replacers": [
+            {
+              "key": "GOOGLE_EXECUTION_STEP_ID",
+              "type": "ID"
+            }
+          ]
+        },
+        "steps": [
+          {
+            "__generationMeta__": {
+              "strategy": "MERGE_WITH_DROP_POINT"
+            },
+            "type": "VIEW",
+            "data": {
+              "components": [
+                {
+                  "id": "{{ID}}",
+                  "category": "ACTION",
+                  "type": "BUTTON",
+                  "variant": "SOCIAL",
+                  "eventType": "TRIGGER",
+                  "label": "Continue with Google",
+                  "image": "assets/images/icons/google.svg",
+                  "action": {
+                    "type": "NEXT",
+                    "next": "{{GOOGLE_EXECUTION_STEP_ID}}"
+                  }
+                }
+              ]
+            }
+          },
+          {
+            "id": "{{GOOGLE_EXECUTION_STEP_ID}}",
+            "type": "TASK_EXECUTION",
+            "size": {
+              "width": 350,
+              "height": 291
+            },
+            "position": {
+              "x": 690,
+              "y": 500
+            },
+            "data": {
+              "action": {
+                "type": "EXECUTOR",
+                "executor": {
+                  "name": "GoogleOIDCAuthExecutor"
+                },
+                "next": "END"
+              },
+              "properties": {
+                "idpId": "{{IDP_ID}}"
+              }
+            }
+          }
+        ]
+      }
+    }
+  },
+  {
+    "resourceType": "WIDGET",
+    "category": "FLOW",
+    "type": "GITHUB_FEDERATION",
+    "display": {
+      "label": "Continue with GitHub",
+      "description": "Login experience with GitHub",
+      "image": "assets/images/icons/github.svg",
+      "showOnResourcePanel": true
+    },
+    "config": {
+      "data": {
+        "__generationMeta__": {
+          "defaultPropertySelectorId": "{{GITHUB_EXECUTION_STEP_ID}}",
+          "replacers": [
+            {
+              "key": "GITHUB_EXECUTION_STEP_ID",
+              "type": "ID"
+            }
+          ]
+        },
+        "steps": [
+          {
+            "__generationMeta__": {
+              "strategy": "MERGE_WITH_DROP_POINT"
+            },
+            "type": "VIEW",
+            "data": {
+              "components": [
+                {
+                  "id": "{{ID}}",
+                  "category": "ACTION",
+                  "type": "BUTTON",
+                  "variant": "SOCIAL",
+                  "eventType": "TRIGGER",
+                  "label": "Continue with GitHub",
+                  "image": "assets/images/icons/github.svg",
+                  "action": {
+                    "type": "NEXT",
+                    "next": "{{GITHUB_EXECUTION_STEP_ID}}"
+                  }
+                }
+              ]
+            }
+          },
+          {
+            "id": "{{GITHUB_EXECUTION_STEP_ID}}",
+            "type": "TASK_EXECUTION",
+            "size": {
+              "width": 350,
+              "height": 291
+            },
+            "position": {
+              "x": 690,
+              "y": 500
+            },
+            "data": {
+              "action": {
+                "type": "EXECUTOR",
+                "executor": {
+                  "name": "GithubOAuthExecutor"
+                },
+                "next": "END"
+              },
+              "properties": {
+                "idpId": "{{IDP_ID}}"
+              }
+            }
+          }
+        ]
+      }
+    }
+  },
+  {
+    "resourceType": "WIDGET",
+    "category": "FLOW",
+    "type": "EMAIL_OTP",
+    "display": {
+      "label": "Continue with Email OTP",
+      "description": "Login experience with Email OTP",
+      "image": "assets/images/icons/email-down.svg",
+      "showOnResourcePanel": false
+    },
+    "config": {
+      "data": {
+        "__generationMeta__": {
+          "replacers": [
+            {
+              "key": "EMAIL_SEND_EXECUTOR_ID",
+              "type": "ID"
+            },
+            {
+              "key": "EMAIL_OTP_VERIFICATION_STEP_ID",
+              "type": "ID"
+            },
+            {
+              "key": "EMAIL_VERIFY_EXECUTOR_ID",
+              "type": "ID"
+            }
+          ]
+        },
+        "steps": [
+          {
+            "__generationMeta__": {
+              "strategy": "MERGE_WITH_DROP_POINT"
+            },
+            "type": "VIEW",
+            "data": {
+              "components": [
+                {
+                  "id": "{{ID}}",
+                  "category": "ACTION",
+                  "type": "BUTTON",
+                  "variant": "PRIMARY",
+                  "eventType": "TRIGGER",
+                  "label": "Continue with Email OTP",
+                  "action": {
+                    "next": "{{EMAIL_SEND_EXECUTOR_ID}}",
+                    "type": "NEXT"
+                  }
+                }
+              ]
+            }
+          },
+          {
+            "id": "{{EMAIL_SEND_EXECUTOR_ID}}",
+            "type": "TASK_EXECUTION",
+            "size": {
+              "width": 200,
+              "height": 100
+            },
+            "position": {
+              "x": 690,
+              "y": -130
+            },
+            "data": {
+              "action": {
+                "type": "EXECUTOR",
+                "executor": {
+                  "name": "SendEmailOTPExecutor"
+                },
+                "next": "{{EMAIL_OTP_VERIFICATION_STEP_ID}}"
+              }
+            }
+          },
+          {
+            "id": "{{EMAIL_OTP_VERIFICATION_STEP_ID}}",
+            "type": "VIEW",
+            "size": {
+              "width": 350,
+              "height": 343
+            },
+            "position": {
+              "x": 690,
+              "y": 20
+            },
+            "data": {
+              "components": [
+                {
+                  "id": "{{ID}}",
+                  "category": "DISPLAY",
+                  "type": "TYPOGRAPHY",
+                  "variant": "H3",
+                  "label": "Verify OTP"
+                },
+                {
+                  "id": "{{ID}}",
+                  "category": "BLOCK",
+                  "type": "FORM",
+                  "components": [
+                    {
+                      "id": "{{ID}}",
+                      "category": "FIELD",
+                      "type": "INPUT",
+                      "variant": "OTP",
+                      "config": {
+                        "type": "text",
+                        "hint": "",
+                        "identifier": "otp",
+                        "label": "Enter the OTP code",
+                        "required": true,
+                        "placeholder": ""
+                      }
+                    },
+                    {
+                      "id": "{{ID}}",
+                      "category": "ACTION",
+                      "type": "BUTTON",
+                      "variant": "PRIMARY",
+                      "eventType": "SUBMIT",
+                      "label": "Verify",
+                      "action": {
+                        "type": "NEXT",
+                        "next": "{{EMAIL_VERIFY_EXECUTOR_ID}}"
+                      }
+                    },
+                    {
+                      "id": "{{ID}}",
+                      "category": "ACTION",
+                      "type": "RESEND",
+                      "eventType": "SUBMIT",
+                      "label": "Resend OTP",
+                      "action": {
+                        "type": "NEXT",
+                        "next": "{{EMAIL_SEND_EXECUTOR_ID}}"
+                      }
+                    }
+                  ]
+                }
+              ]
+            }
+          },
+          {
+            "id": "{{EMAIL_VERIFY_EXECUTOR_ID}}",
+            "type": "TASK_EXECUTION",
+            "size": {
+              "width": 200,
+              "height": 100
+            },
+            "position": {
+              "x": 690,
+              "y": 420
+            },
+            "data": {
+              "action": {
+                "type": "EXECUTOR",
+                "executor": {
+                  "name": "VerifyEmailOTPExecutor"
+                },
+                "next": "END"
+              }
+            }
+          }
+        ]
+      }
+    }
+  },
+  {
+    "resourceType": "WIDGET",
+    "category": "FLOW",
+    "type": "SMS_OTP",
+    "display": {
+      "label": "Continue with SMS OTP",
+      "description": "Login experience with SMS OTP",
+      "image": "assets/images/icons/mobile-message.svg",
+      "showOnResourcePanel": true
+    },
+    "config": {
+      "data": {
+        "__generationMeta__": {
+          "replacers": [
+            {
+              "key": "SMS_SEND_EXECUTOR_ID",
+              "type": "ID"
+            },
+            {
+              "key": "SMS_OTP_VERIFICATION_STEP_ID",
+              "type": "ID"
+            },
+            {
+              "key": "SMS_VERIFY_EXECUTOR_ID",
+              "type": "ID"
+            }
+          ]
+        },
+        "steps": [
+          {
+            "__generationMeta__": {
+              "strategy": "MERGE_WITH_DROP_POINT"
+            },
+            "type": "VIEW",
+            "data": {
+              "components": [
+                {
+                  "id": "{{ID}}",
+                  "category": "ACTION",
+                  "type": "BUTTON",
+                  "variant": "PRIMARY",
+                  "eventType": "TRIGGER",
+                  "label": "Continue with SMS OTP",
+                  "action": {
+                    "next": "{{SMS_SEND_EXECUTOR_ID}}",
+                    "type": "NEXT"
+                  }
+                }
+              ]
+            }
+          },
+          {
+            "id": "{{SMS_SEND_EXECUTOR_ID}}",
+            "type": "TASK_EXECUTION",
+            "size": {
+              "width": 200,
+              "height": 100
+            },
+            "position": {
+              "x": 690,
+              "y": 200
+            },
+            "data": {
+              "action": {
+                "type": "EXECUTOR",
+                "executor": {
+                  "name": "SMSOTPAuthExecutor",
+                  "mode": "send"
+                },
+                "next": "{{SMS_OTP_VERIFICATION_STEP_ID}}"
+              }
+            }
+          },
+          {
+            "id": "{{SMS_OTP_VERIFICATION_STEP_ID}}",
+            "type": "VIEW",
+            "size": {
+              "width": 350,
+              "height": 343
+            },
+            "position": {
+              "x": 690,
+              "y": 350
+            },
+            "data": {
+              "components": [
+                {
+                  "id": "{{ID}}",
+                  "category": "DISPLAY",
+                  "type": "TYPOGRAPHY",
+                  "variant": "H3",
+                  "label": "Verify OTP"
+                },
+                {
+                  "id": "{{ID}}",
+                  "category": "BLOCK",
+                  "type": "FORM",
+                  "components": [
+                    {
+                      "id": "{{ID}}",
+                      "category": "FIELD",
+                      "type": "INPUT",
+                      "variant": "OTP",
+                      "config": {
+                        "type": "text",
+                        "hint": "",
+                        "identifier": "otp",
+                        "label": "Enter the OTP code",
+                        "required": true,
+                        "placeholder": ""
+                      }
+                    },
+                    {
+                      "id": "{{ID}}",
+                      "category": "ACTION",
+                      "type": "BUTTON",
+                      "variant": "PRIMARY",
+                      "eventType": "SUBMIT",
+                      "label": "Verify",
+                      "action": {
+                        "type": "NEXT",
+                        "next": "{{SMS_VERIFY_EXECUTOR_ID}}"
+                      }
+                    },
+                    {
+                      "id": "{{ID}}",
+                      "category": "ACTION",
+                      "type": "RESEND",
+                      "eventType": "SUBMIT",
+                      "label": "Resend OTP",
+                      "action": {
+                        "type": "NEXT",
+                        "next": "{{SMS_SEND_EXECUTOR_ID}}"
+                      }
+                    }
+                  ]
+                }
+              ]
+            }
+          },
+          {
+            "id": "{{SMS_VERIFY_EXECUTOR_ID}}",
+            "type": "TASK_EXECUTION",
+            "size": {
+              "width": 200,
+              "height": 100
+            },
+            "position": {
+              "x": 690,
+              "y": 750
+            },
+            "data": {
+              "action": {
+                "type": "EXECUTOR",
+                "executor": {
+                  "name": "SMSOTPAuthExecutor",
+                  "mode": "verify"
+                },
+                "next": "END"
+              }
+            }
+          }
+        ]
+      }
+    }
+  },
+  {
+    "resourceType": "WIDGET",
+    "category": "FLOW",
+    "type": "PASSKEY_AUTHENTICATION",
+    "display": {
+      "label": "Continue with Passkey",
+      "description": "Login experience with Passkeys",
+      "image": "assets/images/icons/fingerprint.svg",
+      "showOnResourcePanel": false
+    },
+    "config": {
+      "data": {
+        "__generationMeta__": {
+          "defaultPropertySelectorId": "{{PASSKEY_EXECUTION_STEP_ID}}",
+          "replacers": [
+            {
+              "key": "PASSKEY_EXECUTION_STEP_ID",
+              "type": "ID"
+            }
+          ]
+        },
+        "steps": [
+          {
+            "__generationMeta__": {
+              "strategy": "MERGE_WITH_DROP_POINT"
+            },
+            "type": "VIEW",
+            "data": {
+              "components": [
+                {
+                  "id": "{{ID}}",
+                  "category": "ACTION",
+                  "type": "BUTTON",
+                  "variant": "SOCIAL",
+                  "eventType": "TRIGGER",
+                  "label": "Continue with Passkey",
+                  "image": "assets/images/icons/fingerprint.svg",
+                  "action": {
+                    "type": "NEXT",
+                    "next": "{{PASSKEY_EXECUTION_STEP_ID}}"
+                  }
+                }
+              ]
+            }
+          },
+          {
+            "id": "{{PASSKEY_EXECUTION_STEP_ID}}",
+            "type": "TASK_EXECUTION",
+            "size": {
+              "width": 350,
+              "height": 291
+            },
+            "position": {
+              "x": 690,
+              "y": 500
+            },
+            "data": {
+              "action": {
+                "type": "EXECUTOR",
+                "executor": {
+                  "name": "FIDO2Executor"
+                },
+                "next": "END"
+              }
+            }
+          }
+        ]
+      }
+    }
+  }
+]

@@ -21,11 +21,14 @@ package executor
 import (
 	"github.com/asgardeo/thunder/internal/authn"
 	"github.com/asgardeo/thunder/internal/authz"
-	flowcm "github.com/asgardeo/thunder/internal/flow/common"
-	flowcore "github.com/asgardeo/thunder/internal/flow/core"
+	"github.com/asgardeo/thunder/internal/flow/common"
+	"github.com/asgardeo/thunder/internal/flow/core"
+	"github.com/asgardeo/thunder/internal/group"
 	"github.com/asgardeo/thunder/internal/idp"
 	"github.com/asgardeo/thunder/internal/notification"
+	"github.com/asgardeo/thunder/internal/observability"
 	"github.com/asgardeo/thunder/internal/ou"
+	"github.com/asgardeo/thunder/internal/role"
 	"github.com/asgardeo/thunder/internal/system/jwt"
 	"github.com/asgardeo/thunder/internal/user"
 	"github.com/asgardeo/thunder/internal/userschema"
@@ -33,7 +36,7 @@ import (
 
 // Initialize registers available executors and returns the executor registry.
 func Initialize(
-	flowFactory flowcore.FlowFactoryInterface,
+	flowFactory core.FlowFactoryInterface,
 	userService user.UserServiceInterface,
 	ouService ou.OrganizationUnitServiceInterface,
 	idpService idp.IDPServiceInterface,
@@ -42,25 +45,29 @@ func Initialize(
 	authRegistry *authn.AuthServiceRegistry,
 	authZService authz.AuthorizationServiceInterface,
 	userSchemaService userschema.UserSchemaServiceInterface,
+	observabilitySvc observability.ObservabilityServiceInterface,
+	groupService group.GroupServiceInterface,
+	roleService role.RoleServiceInterface,
 ) ExecutorRegistryInterface {
 	reg := newExecutorRegistry()
 	reg.RegisterExecutor(ExecutorNameBasicAuth, newBasicAuthExecutor(
-		flowFactory, userService, authRegistry.CredentialsAuthnService))
+		flowFactory, userService, authRegistry.CredentialsAuthnService, observabilitySvc))
 	reg.RegisterExecutor(ExecutorNameSMSAuth, newSMSOTPAuthExecutor(
-		flowFactory, userService, otpService))
+		flowFactory, userService, otpService, observabilitySvc))
 
 	reg.RegisterExecutor(ExecutorNameOAuth, newOAuthExecutor(
-		"", []flowcm.InputData{}, []flowcm.InputData{}, flowFactory, idpService, userSchemaService,
+		"", []common.Input{}, []common.Input{}, flowFactory, idpService, userSchemaService,
 		authRegistry.OAuthAuthnService))
 	reg.RegisterExecutor(ExecutorNameOIDCAuth, newOIDCAuthExecutor(
-		"", []flowcm.InputData{}, []flowcm.InputData{}, flowFactory, idpService, userSchemaService,
+		"", []common.Input{}, []common.Input{}, flowFactory, idpService, userSchemaService,
 		authRegistry.OIDCAuthnService))
 	reg.RegisterExecutor(ExecutorNameGitHubAuth, newGithubOAuthExecutor(
 		flowFactory, idpService, userSchemaService, authRegistry.GithubOAuthAuthnService))
 	reg.RegisterExecutor(ExecutorNameGoogleAuth, newGoogleOIDCAuthExecutor(
 		flowFactory, idpService, userSchemaService, authRegistry.GoogleOIDCAuthnService))
 
-	reg.RegisterExecutor(ExecutorNameProvisioning, newProvisioningExecutor(flowFactory, userService))
+	reg.RegisterExecutor(ExecutorNameProvisioning, newProvisioningExecutor(flowFactory, userService,
+		groupService, roleService))
 	reg.RegisterExecutor(ExecutorNameOUCreation, newOUExecutor(flowFactory, ouService))
 
 	reg.RegisterExecutor(ExecutorNameAttributeCollect, newAttributeCollector(flowFactory, userService))

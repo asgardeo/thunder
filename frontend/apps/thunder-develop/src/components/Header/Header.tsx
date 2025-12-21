@@ -36,7 +36,7 @@ export default function Header(): JSX.Element {
         alignItems: {xs: 'flex-start', md: 'center'},
         justifyContent: 'space-between',
         maxWidth: {sm: '100%'},
-        pt: '10px',
+        height: 50,
         px: 3,
       }}
       spacing={2}
@@ -55,9 +55,7 @@ export default function Header(): JSX.Element {
           </MenuButton>
         </Tooltip>
         <LanguageSwitcher />
-        <ColorSchemeToggle
-          data-testid="theme-toggle"
-        />
+        <ColorSchemeToggle data-testid="theme-toggle" />
       </Stack>
     </Stack>
   );

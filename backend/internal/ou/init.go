@@ -22,15 +22,82 @@ import (
 	"net/http"
 	"strings"
 
+	"github.com/asgardeo/thunder/internal/system/config"
+	immutableresource "github.com/asgardeo/thunder/internal/system/immutable_resource"
 	"github.com/asgardeo/thunder/internal/system/middleware"
 )
 
 // Initialize initializes the organization unit service and registers its routes.
-func Initialize(mux *http.ServeMux) OrganizationUnitServiceInterface {
-	ouService := newOrganizationUnitService()
+func Initialize(mux *http.ServeMux) (OrganizationUnitServiceInterface, immutableresource.ResourceExporter, error) {
+	ouStore, err := initializeStore()
+	if err != nil {
+		return nil, nil, err
+	}
+
+	ouService := newOrganizationUnitService(ouStore)
+
 	ouHandler := newOrganizationUnitHandler(ouService)
 	registerRoutes(mux, ouHandler)
-	return ouService
+
+	// Create and return exporter
+	exporter := newOUExporter(ouService)
+	return ouService, exporter, nil
+}
+
+// Store Selection (based on organization_unit.store configuration):
+//
+// 1. MUTABLE mode (store: "mutable"):
+//   - Uses database store only (organizationUnitStore)
+//   - Supports full CRUD operations (Create/Read/Update/Delete)
+//   - All OUs are mutable
+//   - Export functionality exports DB-backed OUs
+//
+// 2. IMMUTABLE mode (store: "immutable"):
+//   - Uses file-based store only (from YAML resources)
+//   - All OUs are immutable (read-only)
+//   - No create/update/delete operations allowed
+//   - Export functionality not applicable
+//
+// 3. COMPOSITE mode (store: "composite" - hybrid):
+//   - Uses both file-based store (immutable) + database store (mutable)
+//   - YAML resources are loaded into file-based store (immutable, read-only)
+//   - Database store handles runtime OUs (mutable)
+//   - Reads check both stores (merged results)
+//   - Writes only go to database store
+//   - Immutable OUs cannot be updated or deleted
+//   - Export only exports DB-backed OUs (not YAML)
+//
+// Configuration Fallback:
+// - If organization_unit.store is not specified, falls back to global immutable_resources.enabled:
+//   - If immutable_resources.enabled = true: behaves as IMMUTABLE mode
+//   - If immutable_resources.enabled = false: behaves as MUTABLE mode
+func initializeStore() (organizationUnitStoreInterface, error) {
+	var ouStore organizationUnitStoreInterface
+
+	storeMode := getOrganizationUnitStoreMode()
+
+	switch storeMode {
+	case config.StoreModeComposite:
+		fileStore := newFileBasedStore()
+		dbStore := newOrganizationUnitStore()
+		ouStore = newCompositeOUStore(fileStore, dbStore)
+		if err := loadImmutableResources(fileStore, dbStore); err != nil {
+			return nil, err
+		}
+
+	case config.StoreModeImmutable:
+		fileStore := newFileBasedStore()
+		ouStore = fileStore
+
+		if err := loadImmutableResources(fileStore, nil); err != nil {
+			return nil, err
+		}
+
+	default:
+		ouStore = newOrganizationUnitStore()
+	}
+
+	return ouStore, nil
 }
 
 // registerRoutes registers the routes for organization unit management operations.

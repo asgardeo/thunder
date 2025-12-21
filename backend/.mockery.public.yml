@@ -21,14 +21,6 @@ template: testify
 template-data:
   unroll-variadic: true
 packages:
-  github.com/asgardeo/thunder/internal/system/database/client:
-    config:
-      all: true
-      dir: tests/mocks/database/clientmock
-      structname: '{{.InterfaceName}}Mock'
-      pkgname: clientmock
-      filename: "{{.InterfaceName}}_mock.go"
-
   github.com/asgardeo/thunder/internal/system/database/provider:
     config:
       all: true
@@ -269,7 +261,7 @@ packages:
       pkgname: flowexecmock
       filename: "{{.InterfaceName}}_mock.go"
   
-  github.com/asgardeo/thunder/internal/flow/flowmgt:
+  github.com/asgardeo/thunder/internal/flow/mgt:
     config:
       all: true
       dir: tests/mocks/flow/flowmgtmock
@@ -347,4 +339,12 @@ packages:
       dir: tests/mocks/crypto/hashmock
       structname: '{{.InterfaceName}}Mock'
       pkgname: hashmock
+      filename: "{{.InterfaceName}}_mock.go"
+
+  github.com/asgardeo/thunder/internal/resource:
+    config:
+      all: true
+      dir: tests/mocks/resourcemock
+      structname: '{{.InterfaceName}}Mock'
+      pkgname: resourcemock
       filename: "{{.InterfaceName}}_mock.go"

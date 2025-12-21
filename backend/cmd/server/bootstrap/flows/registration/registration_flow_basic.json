@@ -1,0 +1,80 @@
+{
+    "name": "Basic Registration Flow",
+    "handle": "default-basic-flow",
+    "flowType": "REGISTRATION",
+    "nodes": [
+        {
+            "id": "start",
+            "type": "START",
+            "onSuccess": "user_type_resolver"
+        },
+        {
+            "id": "user_type_resolver",
+            "type": "TASK_EXECUTION",
+            "executor": {
+                "name": "UserTypeResolver"
+            },
+            "onSuccess": "basic_auth"
+        },
+        {
+            "id": "basic_auth",
+            "type": "TASK_EXECUTION",
+            "executor": {
+                "name": "BasicAuthExecutor"
+            },
+            "onSuccess": "provisioning"
+        },
+        {
+            "id": "provisioning",
+            "type": "TASK_EXECUTION",
+            "inputs": [
+                {
+                    "ref": "input_001",
+                    "identifier": "username",
+                    "type": "TEXT_INPUT",
+                    "required": true
+                },
+                {
+                    "ref": "input_002",
+                    "identifier": "password",
+                    "type": "PASSWORD_INPUT",
+                    "required": true
+                },
+                {
+                    "ref": "input_003",
+                    "identifier": "firstName",
+                    "type": "TEXT_INPUT",
+                    "required": true
+                },
+                {
+                    "ref": "input_004",
+                    "identifier": "lastName",
+                    "type": "TEXT_INPUT",
+                    "required": true
+                },
+                {
+                    "ref": "input_005",
+                    "identifier": "email",
+                    "type": "TEXT_INPUT",
+                    "required": true
+                }
+            ],
+            "executor": {
+                "name": "ProvisioningExecutor"
+            },
+            "onSuccess": "auth_assert"
+        },
+        {
+            "id": "auth_assert",
+            "type": "TASK_EXECUTION",
+            "executor": {
+                "name": "AuthAssertExecutor"
+            },
+            "onSuccess": "end"
+        },
+        {
+            "id": "end",
+            "type": "END"
+        }
+    ]
+}

@@ -126,7 +126,7 @@ func (client *DBClient) BeginTx() (model.TxInterface, error) {
 	if err != nil {
 		return nil, err
 	}
-	return model.NewTx(tx), nil
+	return model.NewTx(tx, client.dbType), nil
 }
 
 // Close closes the database connection.

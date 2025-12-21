@@ -1,0 +1,54 @@
+{
+    "name": "Basic Authentication Flow",
+    "handle": "default-basic-flow",
+    "flowType": "AUTHENTICATION",
+    "nodes": [
+        {
+            "id": "start",
+            "type": "START",
+            "onSuccess": "basic_auth"
+        },
+        {
+            "id": "basic_auth",
+            "type": "TASK_EXECUTION",
+            "inputs": [
+                {
+                    "ref": "input_001",
+                    "type": "TEXT_INPUT",
+                    "identifier": "username",
+                    "required": true
+                },
+                {
+                    "ref": "input_002",
+                    "type": "PASSWORD_INPUT",
+                    "identifier": "password",
+                    "required": true
+                }
+            ],
+            "executor": {
+                "name": "BasicAuthExecutor"
+            },
+            "onSuccess": "authorization_check"
+        },
+        {
+            "id": "authorization_check",
+            "type": "TASK_EXECUTION",
+            "executor": {
+                "name": "AuthorizationExecutor"
+            },
+            "onSuccess": "auth_assert"
+        },
+        {
+            "id": "auth_assert",
+            "type": "TASK_EXECUTION",
+            "executor": {
+                "name": "AuthAssertExecutor"
+            },
+            "onSuccess": "end"
+        },
+        {
+            "id": "end",
+            "type": "END"
+        }
+    ]
+}

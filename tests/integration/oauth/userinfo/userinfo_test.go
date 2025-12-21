@@ -157,9 +157,8 @@ func (ts *UserInfoTestSuite) createTestApplication() string {
 	app := map[string]interface{}{
 		"name":                         appName,
 		"description":                  "Application for UserInfo integration tests",
-		"auth_flow_graph_id":           "auth_flow_config_basic",
-		"registration_flow_graph_id":   "registration_flow_config_basic",
-		"is_registration_flow_enabled": true,
+		"is_registration_flow_enabled": false,
+		"allowed_user_types":           []string{"userinfo-person"},
 		"inbound_auth_config": []map[string]interface{}{
 			{
 				"type": "oauth2",
@@ -293,7 +292,7 @@ func (ts *UserInfoTestSuite) getAuthorizationCodeToken(scope string) (string, er
 		"username": "userinfo_test_user",
 		"password": "SecurePass123!",
 	}
-	flowStep, err := testutils.ExecuteAuthenticationFlow(flowID, authInputs)
+	flowStep, err := testutils.ExecuteAuthenticationFlow(flowID, authInputs, "")
 	if err != nil {
 		return "", fmt.Errorf("failed to execute authentication flow: %w", err)
 	}
@@ -357,7 +356,7 @@ func (ts *UserInfoTestSuite) getRefreshToken(scope string) (string, error) {
 		"username": "userinfo_test_user",
 		"password": "SecurePass123!",
 	}
-	flowStep, err := testutils.ExecuteAuthenticationFlow(flowID, authInputs)
+	flowStep, err := testutils.ExecuteAuthenticationFlow(flowID, authInputs, "")
 	if err != nil {
 		return "", fmt.Errorf("failed to execute authentication flow: %w", err)
 	}

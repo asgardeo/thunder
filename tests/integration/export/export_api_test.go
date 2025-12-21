@@ -61,11 +61,9 @@ func (ts *ExportAPITestSuite) TestApplicationExportYAML() {
 	app := Application{
 		Name:                      "Export Test App",
 		Description:               "Test application for export functionality",
-		IsRegistrationFlowEnabled: true,
 		URL:                       "https://exporttest.example.com",
 		LogoURL:                   "https://exporttest.example.com/logo.png",
-		AuthFlowGraphID:           "auth_flow_config_basic",
-		RegistrationFlowGraphID:   "registration_flow_config_basic",
+		IsRegistrationFlowEnabled: true,
 		Certificate: &ApplicationCert{
 			Type:  "NONE",
 			Value: "",
@@ -315,10 +313,8 @@ func (ts *ExportAPITestSuite) TestMixedResourcesExportYAML() {
 	app := Application{
 		Name:                      "Mixed Export App",
 		Description:               "Test application for mixed export",
-		IsRegistrationFlowEnabled: true,
 		URL:                       "https://mixedexport.example.com",
-		AuthFlowGraphID:           "auth_flow_config_basic",
-		RegistrationFlowGraphID:   "registration_flow_config_basic",
+		IsRegistrationFlowEnabled: true,
 		Certificate: &ApplicationCert{
 			Type:  "NONE",
 			Value: "",

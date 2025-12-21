@@ -103,6 +103,13 @@ var (
 		Error:            "Invalid request format",
 		ErrorDescription: "Either userId or groups must be provided for authorization check",
 	}
+	// ErrorInvalidPermissions is returned when one or more permissions are invalid.
+	ErrorInvalidPermissions = serviceerror.ServiceError{
+		Type:             serviceerror.ClientErrorType,
+		Code:             "ROL-1012",
+		Error:            "Invalid permissions",
+		ErrorDescription: "One or more permissions do not exist in the resource management system",
+	}
 )
 
 // Server errors for role management operations.

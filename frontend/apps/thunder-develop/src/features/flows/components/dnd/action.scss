@@ -1,0 +1,55 @@
+/**
+ * Copyright (c) 2025, WSO2 LLC. (https://www.wso2.com).
+ *
+ * WSO2 LLC. licenses this file to you under the Apache License,
+ * Version 2.0 (the "License"); you may not use this file except
+ * in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing,
+ * software distributed under the License is distributed on an
+ * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+ * KIND, either express or implied. See the License for the
+ * specific language governing permissions and limitations
+ * under the License.
+ */
+
+.flow-builder-dnd-action {
+    display: flex;
+    width: 26px;
+    height: 26px;
+    padding: 5px 10px;
+    margin: 0 3px;
+    align-items: center;
+    justify-content: center;
+    flex: 0 0 auto;
+    touch-action: none;
+    cursor: var(--cursor, pointer);
+    border-radius: 5px;
+    border: none;
+    outline: none;
+    appearance: none;
+    background-color: transparent;
+    -webkit-tap-highlight-color: transparent;
+    --fill: #919eab;
+
+    &:hover, &:active {
+        background-color: var(--background, rgba(0, 0, 0, 0.05));
+        --fill: #6f7b88;
+    }
+
+    &:focus-visible {
+        outline: none;
+        box-shadow: 0 0 0 2px rgba(255, 255, 255, 0), inset 0 0px 0px 2.5px #4c9ffe;
+    }
+
+    svg {
+        flex: 0 0 auto;
+        margin: auto;
+        height: 100%;
+        overflow: visible;
+        fill: var(--fill);
+    }
+}

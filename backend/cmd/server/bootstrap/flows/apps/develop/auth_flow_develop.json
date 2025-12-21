@@ -1,0 +1,103 @@
+{
+    "name": "Develop App Authentication Flow",
+    "handle": "develop-app-flow",
+    "flowType": "AUTHENTICATION",
+    "nodes": [
+        {
+            "id": "start",
+            "type": "START",
+            "onSuccess": "prompt_credentials"
+        },
+        {
+            "id": "prompt_credentials",
+            "type": "PROMPT",
+            "meta": {
+                "components": [
+                    {
+                        "type": "TEXT",
+                        "id": "text_001",
+                        "label": "{{ t(signin:heading) }}",
+                        "variant": "HEADING_1"
+                    },
+                    {
+                        "type": "BLOCK",
+                        "id": "block_001",
+                        "components": [
+                            {
+                                "id": "input_001",
+                                "ref": "username",
+                                "type": "TEXT_INPUT",
+                                "label": "{{ t(elements:fields.username.label) }}",
+                                "required": true,
+                                "placeholder": "{{ t(elements:fields.username.placeholder) }}"
+                            },
+                            {
+                                "id": "input_002",
+                                "ref": "password",
+                                "type": "PASSWORD_INPUT",
+                                "label": "{{ t(elements:fields.password.label) }}",
+                                "required": true,
+                                "placeholder": "{{ t(elements:fields.password.placeholder) }}"
+                            },
+                            {
+                                "type": "ACTION",
+                                "id": "action_001",
+                                "label": "{{ t(elements:buttons.submit.text) }}",
+                                "variant": "PRIMARY",
+                                "eventType": "SUBMIT"
+                            }
+                        ]
+                    }
+                ]
+            },
+            "inputs": [
+                {
+                    "ref": "input_001",
+                    "identifier": "username",
+                    "type": "TEXT_INPUT",
+                    "required": true
+                },
+                {
+                    "ref": "input_002",
+                    "identifier": "password",
+                    "type": "PASSWORD_INPUT",
+                    "required": true
+                }
+            ],
+            "actions": [
+                {
+                    "ref": "action_001",
+                    "nextNode": "basic_auth"
+                }
+            ]
+        },
+        {
+            "id": "basic_auth",
+            "type": "TASK_EXECUTION",
+            "executor": {
+                "name": "BasicAuthExecutor"
+            },
+            "onSuccess": "authorization_check"
+        },
+        {
+            "id": "authorization_check",
+            "type": "TASK_EXECUTION",
+            "executor": {
+                "name": "AuthorizationExecutor"
+            },
+            "onSuccess": "auth_assert"
+        },
+        {
+            "id": "auth_assert",
+            "type": "TASK_EXECUTION",
+            "executor": {
+                "name": "AuthAssertExecutor"
+            },
+            "onSuccess": "end"
+        },
+        {
+            "id": "end",
+            "type": "END"
+        }
+    ]
+}

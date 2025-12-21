@@ -30,24 +30,24 @@ NC='\033[0m'
 
 # Logging Functions
 log_info() {
-    echo -e "${BLUE}[INFO]${NC} $1"
+    echo -e "${BLUE}[INFO]${NC} $1" >&2
 }
 
 log_success() {
-    echo -e "${GREEN}[SUCCESS]${NC} ✓ $1"
+    echo -e "${GREEN}[SUCCESS]${NC} ✓ $1" >&2
 }
 
 log_warning() {
-    echo -e "${YELLOW}[WARNING]${NC} ⚠ $1"
+    echo -e "${YELLOW}[WARNING]${NC} ⚠ $1" >&2
 }
 
 log_error() {
-    echo -e "${RED}[ERROR]${NC} ✗ $1"
+    echo -e "${RED}[ERROR]${NC} ✗ $1" >&2
 }
 
 log_debug() {
     if [ "${DEBUG:-false}" = "true" ]; then
-        echo -e "${CYAN}[DEBUG]${NC} $1"
+        echo -e "${CYAN}[DEBUG]${NC} $1" >&2
     fi
 }
 
@@ -70,5 +70,72 @@ thunder_api_call() {
             "$url" \
             -H "Content-Type: application/json" \
             -d "$data" 2>/dev/null || echo "000"
+    fi
+}
+
+# Helper function to create a flow and return its ID
+# Usage: create_flow <flow_file_path>
+# Returns: Flow ID via echo, or empty string on failure
+create_flow() {
+    local FLOW_FILE="$1"
+    local FLOW_PAYLOAD=$(cat "$FLOW_FILE")
+    local FLOW_DISPLAY_NAME=$(grep -o '"name"[[:space:]]*:[[:space:]]*"[^"]*"' "$FLOW_FILE" | head -1 | sed 's/"name"[[:space:]]*:[[:space:]]*"\([^"]*\)"/\1/')
+    
+    if [[ -z "$FLOW_DISPLAY_NAME" ]]; then
+        log_warning "Could not extract flow name from $(basename "$FLOW_FILE"), skipping"
+        echo ""
+        return 1
+    fi
+    
+    log_info "Creating flow: $FLOW_DISPLAY_NAME"
+    
+    local RESPONSE=$(thunder_api_call POST "/flows" "$FLOW_PAYLOAD")
+    local HTTP_CODE="${RESPONSE: -3}"
+    local BODY="${RESPONSE%???}"
+    
+    if [[ "$HTTP_CODE" == "201" ]] || [[ "$HTTP_CODE" == "200" ]]; then
+        local FLOW_ID=$(echo "$BODY" | grep -o '"id":"[^"]*"' | head -1 | cut -d'"' -f4)
+        log_success "Flow '$FLOW_DISPLAY_NAME' created successfully (ID: $FLOW_ID)"
+        echo "$FLOW_ID"
+        return 0
+    elif [[ "$HTTP_CODE" == "409" ]]; then
+        log_warning "Flow '$FLOW_DISPLAY_NAME' already exists, skipping"
+        echo ""
+        return 2
+    else
+        log_error "Failed to create flow '$FLOW_DISPLAY_NAME' (HTTP $HTTP_CODE)"
+        log_error "Response: $BODY"
+        echo ""
+        return 1
+    fi
+}
+
+# Helper function to update a flow
+# Usage: update_flow <flow_id> <flow_file_path>
+# Returns: 0 on success, 1 on failure
+update_flow() {
+    local FLOW_ID="$1"
+    local FLOW_FILE="$2"
+    local FLOW_PAYLOAD=$(cat "$FLOW_FILE")
+    local FLOW_DISPLAY_NAME=$(grep -o '"name"[[:space:]]*:[[:space:]]*"[^"]*"' "$FLOW_FILE" | head -1 | sed 's/"name"[[:space:]]*:[[:space:]]*"\([^"]*\)"/\1/')
+    
+    if [[ -z "$FLOW_DISPLAY_NAME" ]]; then
+        log_warning "Could not extract flow name from $(basename "$FLOW_FILE"), skipping"
+        return 1
+    fi
+    
+    log_info "Updating existing flow: $FLOW_DISPLAY_NAME (ID: $FLOW_ID)"
+    
+    local RESPONSE=$(thunder_api_call PUT "/flows/$FLOW_ID" "$FLOW_PAYLOAD")
+    local HTTP_CODE="${RESPONSE: -3}"
+    local BODY="${RESPONSE%???}"
+    
+    if [[ "$HTTP_CODE" == "200" ]]; then
+        log_success "Flow '$FLOW_DISPLAY_NAME' updated successfully"
+        return 0
+    else
+        log_error "Failed to update flow '$FLOW_DISPLAY_NAME' (HTTP $HTTP_CODE)"
+        log_error "Response: $BODY"
+        return 1
     fi
 }

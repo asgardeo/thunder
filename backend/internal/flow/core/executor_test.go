@@ -42,15 +42,15 @@ func TestExecutorTestSuite(t *testing.T) {
 }
 
 func (s *ExecutorTestSuite) TestNewExecutor() {
-	defaultInputs := []common.InputData{{Name: testInputName, Required: true}}
-	prerequisites := []common.InputData{{Name: userAttributeUserID, Required: true}}
+	defaultInputs := []common.Input{{Identifier: testInputName, Required: true}}
+	prerequisites := []common.Input{{Identifier: userAttributeUserID, Required: true}}
 
 	exec := newExecutor(testExecutorName, common.ExecutorTypeAuthentication, defaultInputs, prerequisites)
 
 	s.NotNil(exec)
 	s.Equal(testExecutorName, exec.GetName())
 	s.Equal(common.ExecutorTypeAuthentication, exec.GetType())
-	s.Equal(defaultInputs, exec.GetDefaultExecutorInputs())
+	s.Equal(defaultInputs, exec.GetDefaultInputs())
 	s.Equal(prerequisites, exec.GetPrerequisites())
 }
 
@@ -74,20 +74,20 @@ func (s *ExecutorTestSuite) TestExecute() {
 	s.Nil(resp)
 }
 
-func (s *ExecutorTestSuite) TestGetDefaultExecutorInputs() {
-	defaultInputs := []common.InputData{
-		{Name: testInputName, Required: true},
-		{Name: "password", Required: true},
+func (s *ExecutorTestSuite) TestGetDefaultInputs() {
+	defaultInputs := []common.Input{
+		{Identifier: testInputName, Required: true},
+		{Identifier: "password", Required: true},
 	}
 	exec := newExecutor(testExecutorName, common.ExecutorTypeAuthentication, defaultInputs, nil)
 
-	result := exec.GetDefaultExecutorInputs()
+	result := exec.GetDefaultInputs()
 
 	s.Equal(defaultInputs, result)
 }
 
 func (s *ExecutorTestSuite) TestGetPrerequisites() {
-	prerequisites := []common.InputData{{Name: userAttributeUserID, Required: true}}
+	prerequisites := []common.Input{{Identifier: userAttributeUserID, Required: true}}
 	exec := newExecutor(testExecutorName, common.ExecutorTypeAuthentication, nil, prerequisites)
 
 	result := exec.GetPrerequisites()
@@ -95,56 +95,56 @@ func (s *ExecutorTestSuite) TestGetPrerequisites() {
 	s.Equal(prerequisites, result)
 }
 
-func (s *ExecutorTestSuite) TestCheckInputData() {
+func (s *ExecutorTestSuite) TestHasRequiredInputs() {
 	tests := []struct {
 		name              string
-		defaultInputs     []common.InputData
-		userInputData     map[string]string
+		defaultInputs     []common.Input
+		userInputs        map[string]string
 		runtimeData       map[string]string
-		expectedRequires  bool
+		expectedHasInputs bool
 		expectedDataCount int
 	}{
 		{
-			"No input data provided",
-			[]common.InputData{{Name: testInputName, Required: true}},
+			"No inputs provided",
+			[]common.Input{{Identifier: testInputName, Required: true}},
 			map[string]string{},
 			map[string]string{},
-			true,
+			false,
 			1,
 		},
 		{
 			"All data in user input",
-			[]common.InputData{{Name: testInputName, Required: true}},
+			[]common.Input{{Identifier: testInputName, Required: true}},
 			map[string]string{testInputName: testInputValue},
 			map[string]string{},
-			false,
+			true,
 			0,
 		},
 		{
 			"Data in runtime data",
-			[]common.InputData{{Name: testInputName, Required: true}},
+			[]common.Input{{Identifier: testInputName, Required: true}},
 			map[string]string{},
 			map[string]string{testInputName: testInputValue},
-			false,
+			true,
 			0,
 		},
 		{
 			"Partial data in user input",
-			[]common.InputData{
-				{Name: testInputName, Required: true},
-				{Name: "password", Required: true},
+			[]common.Input{
+				{Identifier: testInputName, Required: true},
+				{Identifier: "password", Required: true},
 			},
 			map[string]string{testInputName: testInputValue},
 			map[string]string{},
-			true,
+			false,
 			1,
 		},
 		{
 			"Empty inputs and empty context",
-			[]common.InputData{},
+			[]common.Input{},
 			map[string]string{},
 			map[string]string{},
-			true,
+			false,
 			0,
 		},
 	}
@@ -153,16 +153,16 @@ func (s *ExecutorTestSuite) TestCheckInputData() {
 		s.Run(tt.name, func() {
 			exec := newExecutor(testExecutorName, common.ExecutorTypeAuthentication, tt.defaultInputs, nil)
 			ctx := &NodeContext{
-				FlowID:        "test-flow",
-				UserInputData: tt.userInputData,
-				RuntimeData:   tt.runtimeData,
+				FlowID:      "test-flow",
+				UserInputs:  tt.userInputs,
+				RuntimeData: tt.runtimeData,
 			}
 			execResp := &common.ExecutorResponse{}
 
-			result := exec.CheckInputData(ctx, execResp)
+			result := exec.HasRequiredInputs(ctx, execResp)
 
-			s.Equal(tt.expectedRequires, result)
-			s.Len(execResp.RequiredData, tt.expectedDataCount)
+			s.Equal(tt.expectedHasInputs, result)
+			s.Len(execResp.Inputs, tt.expectedDataCount)
 		})
 	}
 }
@@ -170,9 +170,9 @@ func (s *ExecutorTestSuite) TestCheckInputData() {
 func (s *ExecutorTestSuite) TestValidatePrerequisites() {
 	tests := []struct {
 		name               string
-		prerequisites      []common.InputData
+		prerequisites      []common.Input
 		authenticatedUser  authncm.AuthenticatedUser
-		userInputData      map[string]string
+		userInputs         map[string]string
 		runtimeData        map[string]string
 		expectedValid      bool
 		expectedStatus     common.ExecutorStatus
@@ -180,7 +180,7 @@ func (s *ExecutorTestSuite) TestValidatePrerequisites() {
 	}{
 		{
 			"No prerequisites",
-			[]common.InputData{},
+			[]common.Input{},
 			authncm.AuthenticatedUser{},
 			map[string]string{},
 			map[string]string{},
@@ -190,7 +190,7 @@ func (s *ExecutorTestSuite) TestValidatePrerequisites() {
 		},
 		{
 			"UserID prerequisite met via authenticated user",
-			[]common.InputData{{Name: userAttributeUserID, Required: true}},
+			[]common.Input{{Identifier: userAttributeUserID, Required: true}},
 			authncm.AuthenticatedUser{UserID: "user-123"},
 			map[string]string{},
 			map[string]string{},
@@ -200,7 +200,7 @@ func (s *ExecutorTestSuite) TestValidatePrerequisites() {
 		},
 		{
 			"UserID prerequisite not met",
-			[]common.InputData{{Name: userAttributeUserID, Required: true}},
+			[]common.Input{{Identifier: userAttributeUserID, Required: true}},
 			authncm.AuthenticatedUser{},
 			map[string]string{},
 			map[string]string{},
@@ -210,7 +210,7 @@ func (s *ExecutorTestSuite) TestValidatePrerequisites() {
 		},
 		{
 			"Other prerequisite met via user input",
-			[]common.InputData{{Name: "email", Required: true}},
+			[]common.Input{{Identifier: "email", Required: true}},
 			authncm.AuthenticatedUser{},
 			map[string]string{"email": "test@example.com"},
 			map[string]string{},
@@ -220,7 +220,7 @@ func (s *ExecutorTestSuite) TestValidatePrerequisites() {
 		},
 		{
 			"Other prerequisite met via runtime data",
-			[]common.InputData{{Name: "token", Required: true}},
+			[]common.Input{{Identifier: "token", Required: true}},
 			authncm.AuthenticatedUser{},
 			map[string]string{},
 			map[string]string{"token": "abc123"},
@@ -230,7 +230,7 @@ func (s *ExecutorTestSuite) TestValidatePrerequisites() {
 		},
 		{
 			"Prerequisite not met",
-			[]common.InputData{{Name: "apiKey", Required: true}},
+			[]common.Input{{Identifier: "apiKey", Required: true}},
 			authncm.AuthenticatedUser{},
 			map[string]string{},
 			map[string]string{},
@@ -246,7 +246,7 @@ func (s *ExecutorTestSuite) TestValidatePrerequisites() {
 			ctx := &NodeContext{
 				FlowID:            "test-flow",
 				AuthenticatedUser: tt.authenticatedUser,
-				UserInputData:     tt.userInputData,
+				UserInputs:        tt.userInputs,
 				RuntimeData:       tt.runtimeData,
 			}
 			execResp := &common.ExecutorResponse{}
@@ -265,7 +265,7 @@ func (s *ExecutorTestSuite) TestGetUserIDFromContext() {
 		name              string
 		authenticatedUser authncm.AuthenticatedUser
 		runtimeData       map[string]string
-		userInputData     map[string]string
+		userInputs        map[string]string
 		expectedUserID    string
 	}{
 		{
@@ -283,7 +283,7 @@ func (s *ExecutorTestSuite) TestGetUserIDFromContext() {
 			"user-456",
 		},
 		{
-			"UserID from user input data",
+			"UserID from user inputs",
 			authncm.AuthenticatedUser{},
 			map[string]string{},
 			map[string]string{userAttributeUserID: "user-789"},
@@ -311,7 +311,7 @@ func (s *ExecutorTestSuite) TestGetUserIDFromContext() {
 			ctx := &NodeContext{
 				AuthenticatedUser: tt.authenticatedUser,
 				RuntimeData:       tt.runtimeData,
-				UserInputData:     tt.userInputData,
+				UserInputs:        tt.userInputs,
 			}
 
 			result := exec.GetUserIDFromContext(ctx)
@@ -321,39 +321,39 @@ func (s *ExecutorTestSuite) TestGetUserIDFromContext() {
 	}
 }
 
-func (s *ExecutorTestSuite) TestGetRequiredData() {
+func (s *ExecutorTestSuite) TestGetRequiredInputs() {
 	tests := []struct {
 		name              string
-		defaultInputs     []common.InputData
-		nodeInputData     []common.InputData
+		defaultInputs     []common.Input
+		nodeInputs        []common.Input
 		expectedDataCount int
 		expectedContains  []string
 	}{
 		{
 			"No node input, use default only",
-			[]common.InputData{{Name: testInputName, Required: true}},
-			[]common.InputData{},
+			[]common.Input{{Identifier: testInputName, Required: true}},
+			[]common.Input{},
 			1,
 			[]string{testInputName},
 		},
 		{
-			"Node input provided, merge with default",
-			[]common.InputData{{Name: testInputName, Required: true}},
-			[]common.InputData{{Name: "email", Required: true}},
-			2,
-			[]string{testInputName, "email"},
+			"Node input provided, replaces default",
+			[]common.Input{{Identifier: testInputName, Required: true}},
+			[]common.Input{{Identifier: "email", Required: true}},
+			1,
+			[]string{"email"},
 		},
 		{
 			"Duplicate in node input, no duplication in result",
-			[]common.InputData{{Name: testInputName, Required: true}},
-			[]common.InputData{{Name: testInputName, Required: true}},
+			[]common.Input{{Identifier: testInputName, Required: true}},
+			[]common.Input{{Identifier: testInputName, Required: true}},
 			1,
 			[]string{testInputName},
 		},
 		{
 			"No default inputs, use node input",
-			[]common.InputData{},
-			[]common.InputData{{Name: "custom", Required: false}},
+			[]common.Input{},
+			[]common.Input{{Identifier: "custom", Required: false}},
 			1,
 			[]string{"custom"},
 		},
@@ -362,15 +362,15 @@ func (s *ExecutorTestSuite) TestGetRequiredData() {
 	for _, tt := range tests {
 		s.Run(tt.name, func() {
 			exec := newExecutor(testExecutorName, common.ExecutorTypeAuthentication, tt.defaultInputs, nil)
-			ctx := &NodeContext{FlowID: "test-flow", NodeInputData: tt.nodeInputData}
+			ctx := &NodeContext{FlowID: "test-flow", NodeInputs: tt.nodeInputs}
 
-			result := exec.GetRequiredData(ctx)
+			result := exec.GetRequiredInputs(ctx)
 
 			s.Len(result, tt.expectedDataCount)
 			for _, name := range tt.expectedContains {
 				found := false
 				for _, input := range result {
-					if input.Name == name {
+					if input.Identifier == name {
 						found = true
 						break
 					}

@@ -41,10 +41,9 @@ runs:
         PGPASSWORD=asgthunder psql -h localhost -p 5432 -U asgthunder -d thunderdb -c "CREATE DATABASE identitydb;"
         PGPASSWORD=asgthunder psql -h localhost -p 5432 -U asgthunder -d thunderdb -c "CREATE DATABASE runtimedb;"
         PGPASSWORD=asgthunder psql -h localhost -p 5432 -U asgthunder -d thunderdb -c "CREATE DATABASE userdb;"
-        PGPASSWORD=asgthunder psql -h localhost -p 5432 -U asgthunder -d identitydb < tests/integration/resources/dbscripts/thunderdb/postgres.sql
-        PGPASSWORD=asgthunder psql -h localhost -p 5432 -U asgthunder -d runtimedb < tests/integration/resources/dbscripts/runtimedb/postgres.sql
-        PGPASSWORD=asgthunder psql -h localhost -p 5432 -U asgthunder -d userdb < tests/integration/resources/dbscripts/userdb/postgres.sql
-
+        PGPASSWORD=asgthunder psql -h localhost -p 5432 -U asgthunder -d identitydb < backend/dbscripts/thunderdb/postgres.sql
+        PGPASSWORD=asgthunder psql -h localhost -p 5432 -U asgthunder -d runtimedb < backend/dbscripts/runtimedb/postgres.sql
+        PGPASSWORD=asgthunder psql -h localhost -p 5432 -U asgthunder -d userdb < backend/dbscripts/userdb/postgres.sql
 
     - name: 📝 Configure Test Database
       shell: bash

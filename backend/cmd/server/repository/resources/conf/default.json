@@ -13,8 +13,7 @@
   },
   "security": {
     "cert_file": "repository/resources/security/server.cert",
-    "key_file": "repository/resources/security/server.key",
-    "crypto_file": "repository/resources/security/crypto.key"
+    "key_file": "repository/resources/security/server.key"
   },
   "database": {
     "identity": {
@@ -83,10 +82,9 @@
     }
   },
   "flow": {
-    "graph_directory": "repository/resources/graphs/",
-    "authn": {
-      "default_flow": "auth_flow_config_basic"
-    }
+    "default_auth_flow_handle": "default-basic-flow",
+    "max_version_history": 10,
+    "auto_infer_registration": true
   },
   "user": {
     "indexed_attributes": ["username", "email", "mobileNumber", "sub"]
@@ -108,7 +106,9 @@
     }
   },
   "crypto": {
-    "key": "",
+    "encryption": {
+      "key": "file://repository/resources/security/crypto.key"
+    },
     "password_hashing": {
       "algorithm": "PBKDF2",
       "parameters": {

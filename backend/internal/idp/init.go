@@ -20,24 +20,17 @@
 package idp
 
 import (
-	"fmt"
 	"net/http"
-	"strings"
 
-	"github.com/asgardeo/thunder/internal/system/cmodels"
-	"github.com/asgardeo/thunder/internal/system/config"
-	filebasedruntime "github.com/asgardeo/thunder/internal/system/file_based_runtime"
-	"github.com/asgardeo/thunder/internal/system/log"
+	immutableresource "github.com/asgardeo/thunder/internal/system/immutable_resource"
 	"github.com/asgardeo/thunder/internal/system/middleware"
-
-	"gopkg.in/yaml.v3"
 )
 
 // Initialize initializes the IDP service and registers its routes.
-func Initialize(mux *http.ServeMux) IDPServiceInterface {
-	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, "IDPInit"))
+func Initialize(mux *http.ServeMux) (IDPServiceInterface, immutableresource.ResourceExporter, error) {
+	// Create store based on configuration
 	var idpStore idpStoreInterface
-	if config.GetThunderRuntime().Config.ImmutableResources.Enabled {
+	if immutableresource.IsImmutableModeEnabled() {
 		idpStore = newIDPFileBasedStore()
 	} else {
 		idpStore = newIDPStore()
@@ -45,83 +38,19 @@ func Initialize(mux *http.ServeMux) IDPServiceInterface {
 
 	idpService := newIDPService(idpStore)
 
-	if config.GetThunderRuntime().Config.ImmutableResources.Enabled {
-		configs, err := filebasedruntime.GetConfigs("identity_providers")
-		if err != nil {
-			logger.Fatal("Failed to read identity provider configs from file-based runtime", log.Error(err))
-		}
-		for _, cfg := range configs {
-			idpDTO, err := parseToIDPDTO(cfg)
-			if err != nil {
-				logger.Fatal("Error parsing identity provider config", log.Error(err))
-			}
-			svcErr := validateIDP(idpDTO, logger)
-			if svcErr != nil {
-				logger.Fatal("Error validating identity provider",
-					log.String("idpName", idpDTO.Name), log.Any("serviceError", svcErr))
-			}
-
-			err = idpStore.CreateIdentityProvider(*idpDTO)
-			if err != nil {
-				logger.Fatal("Failed to store identity provider in file-based store",
-					log.String("idpName", idpDTO.Name), log.Error(err))
-			}
+	// Load immutable resources if enabled
+	if immutableresource.IsImmutableModeEnabled() {
+		if err := loadImmutableResources(idpStore); err != nil {
+			return nil, nil, err
 		}
 	}
 
 	idpHandler := newIDPHandler(idpService)
 	registerRoutes(mux, idpHandler)
-	return idpService
-}
 
-func parseToIDPDTO(data []byte) (*IDPDTO, error) {
-	var idpRequest idpRequestWithID
-	err := yaml.Unmarshal(data, &idpRequest)
-	if err != nil {
-		return nil, err
-	}
-
-	idpDTO := &IDPDTO{
-		ID:          idpRequest.ID,
-		Name:        idpRequest.Name,
-		Description: idpRequest.Description,
-	}
-
-	// Parse IDP type
-	idpType, err := parseIDPType(idpRequest.Type)
-	if err != nil {
-		return nil, err
-	}
-	idpDTO.Type = idpType
-
-	// Convert PropertyDTO to Property
-	if len(idpRequest.Properties) > 0 {
-		properties := make([]cmodels.Property, 0, len(idpRequest.Properties))
-		for _, propDTO := range idpRequest.Properties {
-			prop, err := cmodels.NewProperty(propDTO.Name, propDTO.Value, propDTO.IsSecret)
-			if err != nil {
-				return nil, err
-			}
-			properties = append(properties, *prop)
-		}
-		idpDTO.Properties = properties
-	}
-
-	return idpDTO, nil
-}
-
-func parseIDPType(typeStr string) (IDPType, error) {
-	// Convert string to uppercase for case-insensitive matching
-	typeStrUpper := IDPType(strings.ToUpper(typeStr))
-
-	// Check if it's a valid type
-	for _, supportedType := range supportedIDPTypes {
-		if supportedType == typeStrUpper {
-			return supportedType, nil
-		}
-	}
-
-	return "", fmt.Errorf("unsupported IDP type: %s", typeStr)
+	// Create and return exporter
+	exporter := newIDPExporter(idpService)
+	return idpService, exporter, nil
 }
 
 // RegisterRoutes registers the routes for identity provider operations.

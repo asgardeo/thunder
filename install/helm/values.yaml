@@ -41,7 +41,7 @@ deployment:
     # -- Container image digest
     digest: ""
     # -- Container image tag. Either "tag" or "digest" should be defined
-    tag: "0.14.0"
+    tag: "0.15.0"
     pullPolicy: "Always"
   startupProbe:
     initialDelaySeconds: 1
@@ -132,7 +132,6 @@ configuration:
   security:
     certFile: "repository/resources/security/server.cert"
     keyFile: "repository/resources/security/server.key"
-    cryptoFile: "repository/resources/security/crypto.key"
 
   # Database configuration
   database:
@@ -210,9 +209,9 @@ configuration:
 
   # Flow configuration
   flow:
-    graphDirectory: "repository/resources/graphs/"
-    authn:
-      defaultFlow: "auth_flow_config_basic"
+    defaultAuthFlowHandle: "default-basic-flow"
+    maxVersionHistory: 3
+    autoInferRegistration: true
 
   # CORS configuration
   cors:

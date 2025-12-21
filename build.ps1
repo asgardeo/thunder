@@ -17,6 +17,7 @@
 # under the License.
 # ----------------------------------------------------------------------------
 
+
 [CmdletBinding()]
 param(
     [Parameter(Position = 0)]
@@ -28,6 +29,22 @@ param(
     [Parameter(Position = 2)]
     [string]$GO_ARCH
 )
+
+# Check for PowerShell Version Compatibility
+if ($PSVersionTable.PSVersion.Major -lt 7) {
+    Write-Host ""
+    Write-Host "================================================================" -ForegroundColor Red
+    Write-Host " [ERROR] UNSUPPORTED POWERSHELL VERSION" -ForegroundColor Red
+    Write-Host "================================================================" -ForegroundColor Red
+    Write-Host ""
+    Write-Host " You are currently running PowerShell $($PSVersionTable.PSVersion.ToString())" -ForegroundColor Yellow
+    Write-Host " Thunder requires PowerShell 7 (Core) or later." -ForegroundColor Yellow
+    Write-Host ""
+    Write-Host " Please install the latest version from:"
+    Write-Host " https://github.com/PowerShell/PowerShell" -ForegroundColor Cyan
+    Write-Host ""
+    exit 1
+}
 
 $ErrorActionPreference = "Stop"
 
@@ -182,7 +199,7 @@ function Read-Config {
             $content = Get-Content $CONFIG_FILE -Raw
             
             # Try to extract hostname
-            if ($content -match 'hostname:\s*["\']?([^"\'\n]+)["\']?') {
+            if ($content -match 'hostname:\s*["'']?([^"''\n]+)["'']?') {
                 $script:HOSTNAME = $matches[1].Trim()
             }
             else {
@@ -206,7 +223,7 @@ function Read-Config {
             }
             
             # Try to extract public_hostname
-            if ($content -match 'public_hostname:\s*["\']?([^"\'\n]+)["\']?') {
+            if ($content -match 'public_hostname:\s*["'']?([^"''\n]+)["'']?') {
                 $script:PUBLIC_HOSTNAME = $matches[1].Trim()
             }
             else {
@@ -752,13 +769,13 @@ function Package-Vanilla-Sample {
 }
 
 function Package-React-SDK-Sample {
-    $react_sdk_sample_app_folder = Join-Path $DIST_DIR $REACT_SDK_SAMPLE_APP_FOLDER
-    New-Item -Path $react_sdk_sample_app_folder -ItemType Directory -Force | Out-Null
+    $react_sdk_sample_app_folder_t = Join-Path $DIST_DIR $REACT_SDK_SAMPLE_APP_FOLDER
+    New-Item -Path $react_sdk_sample_app_folder_t -ItemType Directory -Force | Out-Null
 
     # Copy the built React app (dist folder)
     if (Test-Path (Join-Path $REACT_SDK_SAMPLE_APP_DIR "dist")) {
         Write-Host "Copying React SDK sample build output..."
-        Copy-Item -Path (Join-Path $REACT_SDK_SAMPLE_APP_DIR "dist") -Destination $react_sdk_sample_app_folder -Recurse -Force
+        Copy-Item -Path (Join-Path $REACT_SDK_SAMPLE_APP_DIR "dist") -Destination $react_sdk_sample_app_folder_t -Recurse -Force
     }
     else {
         Write-Host "Warning: React SDK sample build output not found at $((Join-Path $REACT_SDK_SAMPLE_APP_DIR 'dist'))"
@@ -767,21 +784,21 @@ function Package-React-SDK-Sample {
 
     # Copy README and other necessary files
     if (Test-Path (Join-Path $REACT_SDK_SAMPLE_APP_DIR "README.md")) {
-        Copy-Item -Path (Join-Path $REACT_SDK_SAMPLE_APP_DIR "README.md") -Destination $react_sdk_sample_app_folder -Force
+        Copy-Item -Path (Join-Path $REACT_SDK_SAMPLE_APP_DIR "README.md") -Destination $react_sdk_sample_app_folder_t -Force
     }
 
     if (Test-Path (Join-Path $REACT_SDK_SAMPLE_APP_DIR ".env.example")) {
-        Copy-Item -Path (Join-Path $REACT_SDK_SAMPLE_APP_DIR ".env.example") -Destination $react_sdk_sample_app_folder -Force
+        Copy-Item -Path (Join-Path $REACT_SDK_SAMPLE_APP_DIR ".env.example") -Destination $react_sdk_sample_app_folder_t -Force
     }
 
     # Copy the appropriate startup script based on the target OS
     if ($SAMPLE_DIST_OS -eq "win") {
         Write-Host "Including Windows start script (start.ps1)..."
-        Copy-Item -Path (Join-Path $REACT_SDK_SAMPLE_APP_DIR "start.ps1") -Destination $react_sdk_sample_app_folder -Force
+        Copy-Item -Path (Join-Path $REACT_SDK_SAMPLE_APP_DIR "start.ps1") -Destination $react_sdk_sample_app_folder_t -Force
     }
     else {
         Write-Host "Including Unix start script (start.sh)..."
-        Copy-Item -Path (Join-Path $REACT_SDK_SAMPLE_APP_DIR "start.sh") -Destination $react_sdk_sample_app_folder -Force
+        Copy-Item -Path (Join-Path $REACT_SDK_SAMPLE_APP_DIR "start.sh") -Destination $react_sdk_sample_app_folder_t -Force
     }
 
     Write-Host "Creating React SDK sample zip file..."
@@ -792,9 +809,9 @@ function Package-React-SDK-Sample {
     }
 
     Add-Type -AssemblyName System.IO.Compression.FileSystem
-    [System.IO.Compression.ZipFile]::CreateFromDirectory($react_sdk_sample_app_folder, $zipFile)
+    [System.IO.Compression.ZipFile]::CreateFromDirectory($react_sdk_sample_app_folder_t, $zipFile)
 
-    Remove-Item -Path $react_sdk_sample_app_folder -Recurse -Force
+    Remove-Item -Path $react_sdk_sample_app_folder_t -Recurse -Force
 
     Write-Host "✅ React SDK sample app packaged successfully as $zipFile"
 }
@@ -1200,17 +1217,15 @@ function Ensure-Crypto-File {
         [string]$conf_dir
     )
 
-    $DEPLOYMENT_FILE = Join-Path $conf_dir "deployment.yaml"
     # Resolve the .. path segment to get a clean key directory path
     $KEY_DIR_Temp = Join-Path $conf_dir ".." "resources/security"
     $KEY_DIR = (Resolve-Path -Path $KEY_DIR_Temp).Path
     $KEY_FILE = Join-Path $KEY_DIR "crypto.key"
-    $KEY_PATH_IN_YAML = "repository/resources/security/crypto.key"
 
     Write-Host "================================================================"
     Write-Host "Ensuring crypto key file exists..."
 
-    # 1. Check if the key file exists
+    # Check Whether the key file exists
     if (Test-Path $KEY_FILE) {
         Write-Host "Default crypto key file already present in $KEY_FILE. Skipping generation."
     }
@@ -1292,51 +1307,6 @@ function Ensure-Crypto-File {
         Write-Host "Successfully generated and added new crypto key to $KEY_FILE."
     }
 
-    # 2. Check and update deployment.yaml
-    if (-not (Test-Path $DEPLOYMENT_FILE)) {
-        throw "ERROR: $DEPLOYMENT_FILE not found. Cannot configure crypto key."
-    }
-    
-    $configLines = Get-Content $DEPLOYMENT_FILE
-    $cryptoLine = $configLines | Select-String -Pattern "^\s*crypto_file\s*:" -ErrorAction SilentlyContinue
-
-   
-    $ANCHOR_LINE_PATTERN = '^\s*key_file\s*:\s*".*server\.key"'
-    $KEY_FILE_LINE_TO_INSERT = '  crypto_file: "{0}"' -f $KEY_PATH_IN_YAML
-    
-    if ($cryptoLine) {
-        # Config exists, check if it's correct
-        $expected_line_pattern = '^\s*crypto_file\s*:\s*"{0}"' -f $KEY_PATH_IN_YAML
-        if ($cryptoLine -match $expected_line_pattern) {
-            Write-Host "Crypto key file is already configured in $DEPLOYMENT_FILE."
-        }
-        else {
-            throw "ERROR: 'crypto_file' is defined in $DEPLOYMENT_FILE but does not match the default path '$KEY_PATH_IN_YAML'. Please fix or remove the line."
-        }
-    }
-    else {
-        # Config is missing, add it
-        Write-Host "Crypto key file is not configured in $DEPLOYMENT_FILE. Inserting entry..."
-        
-        $newConfigLines = @()
-        $lineInserted = $false
-
-        foreach ($line in $configLines) {
-            $newConfigLines += $line
-            if ($line -match $ANCHOR_LINE_PATTERN) {
-                $newConfigLines += $KEY_FILE_LINE_TO_INSERT
-                $lineInserted = $true
-            }
-        }
-
-        if (-not $lineInserted) {
-            throw "ERROR: Could not insert crypto_file line into $DEPLOYMENT_FILE. Anchor line (pattern '$ANCHOR_LINE_PATTERN') not found."
-        }
-
-        # Save the file (YAML should use UTF-8)
-        Set-Content -Path $DEPLOYMENT_FILE -Value $newConfigLines -Encoding UTF8
-        Write-Host "Successfully updated $DEPLOYMENT_FILE to use the default key file."
-    }
     Write-Host "================================================================"
 }
 

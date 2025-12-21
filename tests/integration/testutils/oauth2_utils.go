@@ -93,12 +93,16 @@ func initiateAuthorizationFlow(clientID, redirectURI, responseType, scope, state
 }
 
 // ExecuteAuthenticationFlow executes an authentication flow and returns the flow step
-func ExecuteAuthenticationFlow(flowID string, inputs map[string]string) (*FlowStep, error) {
+func ExecuteAuthenticationFlow(flowID string, inputs map[string]string, action string) (*FlowStep, error) {
 	flowData := map[string]interface{}{
 		"flowId": flowID,
 	}
+
 	if len(inputs) > 0 {
 		flowData["inputs"] = inputs
+	}
+	if action != "" {
+		flowData["action"] = action
 	}
 
 	flowJSON, err := json.Marshal(flowData)
@@ -129,8 +133,9 @@ func ExecuteAuthenticationFlow(flowID string, inputs map[string]string) (*FlowSt
 		return nil, fmt.Errorf("flow execution failed with status %d: %s", resp.StatusCode, string(bodyBytes))
 	}
 
+	bodyBytes, _ := io.ReadAll(resp.Body)
 	var flowStep FlowStep
-	err = json.NewDecoder(resp.Body).Decode(&flowStep)
+	err = json.Unmarshal(bodyBytes, &flowStep)
 	if err != nil {
 		return nil, fmt.Errorf("failed to decode flow response: %w", err)
 	}
@@ -394,37 +399,44 @@ func ObtainAccessTokenWithPassword(clientID, redirectURI, scope, username, passw
 		return nil, fmt.Errorf("failed to extract auth ID: %w", err)
 	}
 
-	// Step 3: Execute authentication flow with credentials
+	// Step 3: Execute initial authentication flow step (to get to the login prompt)
+	_, err = ExecuteAuthenticationFlow(flowID, nil, "")
+	if err != nil {
+		return nil, fmt.Errorf("failed to execute initial authentication flow: %w", err)
+	}
+
+	// Step 4: Execute authentication flow with credentials
 	flowStep, err := ExecuteAuthenticationFlow(flowID, map[string]string{
 		"username": username,
 		"password": password,
-	})
+	}, "action_001")
 	if err != nil {
 		return nil, fmt.Errorf("failed to execute authentication flow: %w", err)
 	}
 
 	if flowStep.FlowStatus != "COMPLETE" {
-		return nil, fmt.Errorf("authentication flow not complete: status=%s, failureReason=%s",
-			flowStep.FlowStatus, flowStep.FailureReason)
+		stepJSON, _ := json.Marshal(flowStep)
+		return nil, fmt.Errorf("authentication flow not complete: status=%s, failureReason=%s, step=%s",
+			flowStep.FlowStatus, flowStep.FailureReason, string(stepJSON))
 	}
 
 	if flowStep.Assertion == "" {
 		return nil, fmt.Errorf("no assertion returned from authentication flow")
 	}
 
-	// Step 4: Complete authorization with assertion
+	// Step 5: Complete authorization with assertion
 	authzResp, err := CompleteAuthorization(authID, flowStep.Assertion)
 	if err != nil {
 		return nil, fmt.Errorf("failed to complete authorization: %w", err)
 	}
 
-	// Step 5: Extract authorization code
+	// Step 6: Extract authorization code
 	code, err := ExtractAuthorizationCode(authzResp.RedirectURI)
 	if err != nil {
 		return nil, fmt.Errorf("failed to extract authorization code: %w", err)
 	}
 
-	// Step 6: Exchange code for token with PKCE verifier
+	// Step 7: Exchange code for token with PKCE verifier
 	tokenResult, err := RequestTokenWithPKCE(clientID, "", code, redirectURI, "authorization_code",
 		codeVerifier)
 	if err != nil {

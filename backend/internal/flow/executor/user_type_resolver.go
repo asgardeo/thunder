@@ -22,8 +22,8 @@ import (
 	"fmt"
 	"slices"
 
-	flowcm "github.com/asgardeo/thunder/internal/flow/common"
-	flowcore "github.com/asgardeo/thunder/internal/flow/core"
+	"github.com/asgardeo/thunder/internal/flow/common"
+	"github.com/asgardeo/thunder/internal/flow/core"
 	"github.com/asgardeo/thunder/internal/system/log"
 	"github.com/asgardeo/thunder/internal/userschema"
 )
@@ -40,23 +40,23 @@ type schemaWithOU struct {
 
 // userTypeResolver is a registration-flow executor that resolves the user type at flow start.
 type userTypeResolver struct {
-	flowcore.ExecutorInterface
+	core.ExecutorInterface
 	userSchemaService userschema.UserSchemaServiceInterface
 	logger            *log.Logger
 }
 
-var _ flowcore.ExecutorInterface = (*userTypeResolver)(nil)
+var _ core.ExecutorInterface = (*userTypeResolver)(nil)
 
 // newUserTypeResolver creates a new instance of the UserTypeResolver executor.
 func newUserTypeResolver(
-	flowFactory flowcore.FlowFactoryInterface,
+	flowFactory core.FlowFactoryInterface,
 	userSchemaService userschema.UserSchemaServiceInterface,
 ) *userTypeResolver {
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, userTypeResolverLoggerComponentName),
 		log.String(log.LoggerKeyExecutorName, ExecutorNameUserTypeResolver))
 
-	base := flowFactory.CreateExecutor(ExecutorNameUserTypeResolver, flowcm.ExecutorTypeRegistration,
-		[]flowcm.InputData{}, []flowcm.InputData{})
+	base := flowFactory.CreateExecutor(ExecutorNameUserTypeResolver, common.ExecutorTypeRegistration,
+		[]common.Input{}, []common.Input{})
 
 	return &userTypeResolver{
 		ExecutorInterface: base,
@@ -66,25 +66,36 @@ func newUserTypeResolver(
 }
 
 // Execute resolves the user type from inputs or prompts the user to select one.
-func (u *userTypeResolver) Execute(ctx *flowcore.NodeContext) (*flowcm.ExecutorResponse, error) {
+func (u *userTypeResolver) Execute(ctx *core.NodeContext) (*common.ExecutorResponse, error) {
 	logger := u.logger.With(log.String(log.LoggerKeyFlowID, ctx.FlowID))
 	logger.Debug("Executing user type resolver")
 
-	execResp := &flowcm.ExecutorResponse{
+	execResp := &common.ExecutorResponse{
 		AdditionalData: make(map[string]string),
 		RuntimeData:    make(map[string]string),
 	}
 
-	// Only applies to registration flows
-	if ctx.FlowType != flowcm.FlowTypeRegistration {
-		execResp.Status = flowcm.ExecComplete
+	allowed := ctx.Application.AllowedUserTypes
+
+	if ctx.FlowType == common.FlowTypeAuthentication {
+		// For authentication flows, validate that allowed user types are defined
+		if len(allowed) == 0 {
+			logger.Debug("No allowed user types configured for authentication")
+			execResp.Status = common.ExecFailure
+			execResp.FailureReason = "Authentication not available for this application"
+			return execResp, nil
+		}
+
+		execResp.Status = common.ExecComplete
+		return execResp, nil
+	} else if ctx.FlowType != common.FlowTypeRegistration {
+		logger.Debug("User type resolver is only applicable for registration and authentication flows")
+		execResp.Status = common.ExecComplete
 		return execResp, nil
 	}
 
-	allowed := ctx.Application.AllowedUserTypes
-
 	// If a userType is provided in inputs, validate and accept it
-	if userType, ok := ctx.UserInputData[userTypeKey]; ok && userType != "" {
+	if userType, ok := ctx.UserInputs[userTypeKey]; ok && userType != "" {
 		err := u.resolveUserTypeFromInput(execResp, userType, allowed)
 		return execResp, err
 	}
@@ -96,7 +107,7 @@ func (u *userTypeResolver) Execute(ctx *flowcore.NodeContext) (*flowcm.ExecutorR
 		//  Also should check if self registration is enabled for the user type when the support is available.
 
 		logger.Debug("No allowed user types found for the application")
-		execResp.Status = flowcm.ExecFailure
+		execResp.Status = common.ExecFailure
 		execResp.FailureReason = "Self-registration not available for this application"
 		return execResp, nil
 	}
@@ -111,7 +122,7 @@ func (u *userTypeResolver) Execute(ctx *flowcore.NodeContext) (*flowcm.ExecutorR
 }
 
 // resolveUserTypeFromInput resolves the user type from input and updates the executor response accordingly.
-func (u *userTypeResolver) resolveUserTypeFromInput(execResp *flowcm.ExecutorResponse,
+func (u *userTypeResolver) resolveUserTypeFromInput(execResp *common.ExecutorResponse,
 	userType string, allowed []string) error {
 	logger := u.logger
 	if len(allowed) == 0 || slices.Contains(allowed, userType) {
@@ -123,7 +134,7 @@ func (u *userTypeResolver) resolveUserTypeFromInput(execResp *flowcm.ExecutorRes
 		}
 		if !userSchema.AllowSelfRegistration {
 			logger.Debug("Self registration not enabled for user type", log.String(userTypeKey, userType))
-			execResp.Status = flowcm.ExecFailure
+			execResp.Status = common.ExecFailure
 			execResp.FailureReason = "Self-registration not enabled for the user type"
 			return nil
 		}
@@ -132,17 +143,17 @@ func (u *userTypeResolver) resolveUserTypeFromInput(execResp *flowcm.ExecutorRes
 		execResp.RuntimeData[userTypeKey] = userType
 		execResp.RuntimeData[defaultOUIDKey] = ouID
 
-		execResp.Status = flowcm.ExecComplete
+		execResp.Status = common.ExecComplete
 		return nil
 	}
 
-	execResp.Status = flowcm.ExecFailure
+	execResp.Status = common.ExecFailure
 	execResp.FailureReason = "Application does not allow registration for the user type"
 	return nil
 }
 
 // resolveUserTypeFromSingleAllowed resolves the user type when there is only a single allowed user type.
-func (u *userTypeResolver) resolveUserTypeFromSingleAllowed(execResp *flowcm.ExecutorResponse,
+func (u *userTypeResolver) resolveUserTypeFromSingleAllowed(execResp *common.ExecutorResponse,
 	allowedUserType string) error {
 	logger := u.logger
 	userSchema, ouID, err := u.getUserSchemaAndOU(allowedUserType)
@@ -152,7 +163,7 @@ func (u *userTypeResolver) resolveUserTypeFromSingleAllowed(execResp *flowcm.Exe
 
 	if !userSchema.AllowSelfRegistration {
 		logger.Debug("Self registration not enabled for user type", log.String(userTypeKey, allowedUserType))
-		execResp.Status = flowcm.ExecFailure
+		execResp.Status = common.ExecFailure
 		execResp.FailureReason = "Self-registration not enabled for the user type"
 		return nil
 	}
@@ -163,12 +174,12 @@ func (u *userTypeResolver) resolveUserTypeFromSingleAllowed(execResp *flowcm.Exe
 	execResp.RuntimeData[userTypeKey] = allowedUserType
 	execResp.RuntimeData[defaultOUIDKey] = ouID
 
-	execResp.Status = flowcm.ExecComplete
+	execResp.Status = common.ExecComplete
 	return nil
 }
 
 // resolveUserTypeFromMultipleAllowed resolves the user type when multiple allowed user types exist.
-func (u *userTypeResolver) resolveUserTypeFromMultipleAllowed(execResp *flowcm.ExecutorResponse,
+func (u *userTypeResolver) resolveUserTypeFromMultipleAllowed(execResp *common.ExecutorResponse,
 	allowed []string) error {
 	logger := u.logger
 
@@ -190,7 +201,7 @@ func (u *userTypeResolver) resolveUserTypeFromMultipleAllowed(execResp *flowcm.E
 	// Fail if no user types have self registration enabled
 	if len(selfRegEnabledUserTypes) == 0 {
 		logger.Debug("No user types with self registration enabled")
-		execResp.Status = flowcm.ExecFailure
+		execResp.Status = common.ExecFailure
 		execResp.FailureReason = "Self-registration not available for this application"
 		return nil
 	}
@@ -204,7 +215,7 @@ func (u *userTypeResolver) resolveUserTypeFromMultipleAllowed(execResp *flowcm.E
 		execResp.RuntimeData[userTypeKey] = record.userSchema.Name
 		execResp.RuntimeData[defaultOUIDKey] = record.ouID
 
-		execResp.Status = flowcm.ExecComplete
+		execResp.Status = common.ExecComplete
 		return nil
 	}
 
@@ -217,13 +228,13 @@ func (u *userTypeResolver) resolveUserTypeFromMultipleAllowed(execResp *flowcm.E
 	logger.Debug("Prompting for user type selection as multiple user types are available for self registration",
 		log.Any("userTypes", selfRegUserTypes))
 
-	execResp.Status = flowcm.ExecUserInputRequired
-	execResp.RequiredData = []flowcm.InputData{
+	execResp.Status = common.ExecUserInputRequired
+	execResp.Inputs = []common.Input{
 		{
-			Name:     userTypeKey,
-			Type:     "dropdown",
-			Required: true,
-			Options:  selfRegUserTypes,
+			Identifier: userTypeKey,
+			Type:       "dropdown",
+			Required:   true,
+			Options:    selfRegUserTypes,
 		},
 	}
 	return nil

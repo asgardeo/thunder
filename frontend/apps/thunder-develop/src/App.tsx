@@ -32,6 +32,8 @@ import ViewApplicationPage from './features/applications/pages/ViewApplicationPa
 import DashboardLayout from './layouts/DashboardLayout';
 import FullScreenLayout from './layouts/FullScreenLayout';
 import ApplicationCreateProvider from './features/applications/contexts/ApplicationCreate/ApplicationCreateProvider';
+import FlowsListPage from './features/flows/pages/FlowsListPage';
+import LoginFlowBuilderPage from './features/login-flow/pages/LoginFlowPage';
 
 export default function App(): JSX.Element {
   return (
@@ -55,6 +57,7 @@ export default function App(): JSX.Element {
           <Route path="integrations" element={<IntegrationsPage />} />
           <Route path="applications" element={<ApplicationsListPage />} />
           <Route path="applications/:applicationId" element={<ViewApplicationPage />} />
+          <Route path="flows" element={<FlowsListPage />} />
         </Route>
         <Route
           path="/applications/create"
@@ -67,6 +70,26 @@ export default function App(): JSX.Element {
           }
         >
           <Route index element={<ApplicationCreatePage />} />
+        </Route>
+        <Route
+          path="/flows/login-builder"
+          element={
+            <ProtectedRoute>
+              <FullScreenLayout />
+            </ProtectedRoute>
+          }
+        >
+          <Route index element={<LoginFlowBuilderPage />} />
+        </Route>
+        <Route
+          path="/flows/login/:flowId"
+          element={
+            <ProtectedRoute>
+              <FullScreenLayout />
+            </ProtectedRoute>
+          }
+        >
+          <Route index element={<LoginFlowBuilderPage />} />
         </Route>
       </Routes>
     </BrowserRouter>

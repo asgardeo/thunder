@@ -11,7 +11,6 @@ server:
 security:
   cert_file: "repository/resources/security/server.cert"
   key_file: "repository/resources/security/server.key"
-  crypto_file: "repository/resources/security/crypto.key"
 
 database:
 EOF
@@ -92,7 +91,5 @@ cat >> tests/integration/resources/deployment.yaml <<EOF
 
 
 flow:
-  graph_directory: "repository/resources/graphs/"
-  authn:
-    default_flow: "auth_flow_config_basic"
+  max_version_history: 3
 EOF

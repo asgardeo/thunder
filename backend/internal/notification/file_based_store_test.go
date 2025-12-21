@@ -19,14 +19,13 @@
 package notification
 
 import (
-	"os"
-	"path/filepath"
 	"testing"
 
 	"github.com/asgardeo/thunder/internal/notification/common"
 	"github.com/asgardeo/thunder/internal/system/cmodels"
 	"github.com/asgardeo/thunder/internal/system/config"
-	"github.com/asgardeo/thunder/internal/system/file_based_runtime/entity"
+	immutableresource "github.com/asgardeo/thunder/internal/system/immutable_resource"
+	"github.com/asgardeo/thunder/internal/system/immutable_resource/entity"
 
 	"github.com/stretchr/testify/suite"
 )
@@ -45,18 +44,13 @@ func TestFileBasedStoreTestSuite(t *testing.T) {
 func (suite *FileBasedStoreTestSuite) SetupSuite() {
 	// Create temporary directory and crypto key file
 	tempDir := suite.T().TempDir()
-	cryptoFile := filepath.Join(tempDir, "crypto.key")
-	dummyCryptoKey := "0579f866ac7c9273580d0ff163fa01a7b2401a7ff3ddc3e3b14ae3136fa6025e"
-
-	err := os.WriteFile(cryptoFile, []byte(dummyCryptoKey), 0600)
-	if err != nil {
-		suite.T().Fatalf("Failed to create crypto key file: %v", err)
-	}
 
 	// Initialize ThunderRuntime once for all tests
 	testConfig := &config.Config{
-		Security: config.SecurityConfig{
-			CryptoFile: "crypto.key",
+		Crypto: config.CryptoConfig{
+			Encryption: config.EncryptionConfig{
+				Key: "0579f866ac7c9273580d0ff163fa01a7b2401a7ff3ddc3e3b14ae3136fa6025e",
+			},
 		},
 		ImmutableResources: config.ImmutableResources{
 			Enabled: false,
@@ -72,10 +66,9 @@ func (suite *FileBasedStoreTestSuite) TearDownSuite() {
 }
 
 func (suite *FileBasedStoreTestSuite) SetupTest() {
-	// Create a new file-based store for each test
-	storage := entity.NewStore()
+	genericStore := immutableresource.NewGenericFileBasedStoreForTest(entity.KeyTypeNotificationSender)
 	suite.store = &notificationFileBasedStore{
-		storage: storage,
+		GenericFileBasedStore: genericStore,
 	}
 }
 

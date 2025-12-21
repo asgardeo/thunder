@@ -21,19 +21,19 @@ package application
 import (
 	"errors"
 	"slices"
-	"strings"
 
 	"github.com/asgardeo/thunder/internal/application/model"
 	brandingmgt "github.com/asgardeo/thunder/internal/branding/mgt"
 	"github.com/asgardeo/thunder/internal/cert"
-	"github.com/asgardeo/thunder/internal/flow/flowmgt"
+	flowcommon "github.com/asgardeo/thunder/internal/flow/common"
+	flowmgt "github.com/asgardeo/thunder/internal/flow/mgt"
 	oauth2const "github.com/asgardeo/thunder/internal/oauth/oauth2/constants"
 	oauthutils "github.com/asgardeo/thunder/internal/oauth/oauth2/utils"
 	"github.com/asgardeo/thunder/internal/system/config"
 	serverconst "github.com/asgardeo/thunder/internal/system/constants"
 	"github.com/asgardeo/thunder/internal/system/crypto/hash"
 	"github.com/asgardeo/thunder/internal/system/error/serviceerror"
-	filebasedruntime "github.com/asgardeo/thunder/internal/system/file_based_runtime"
+	immutableresource "github.com/asgardeo/thunder/internal/system/immutable_resource"
 	"github.com/asgardeo/thunder/internal/system/log"
 	sysutils "github.com/asgardeo/thunder/internal/system/utils"
 	"github.com/asgardeo/thunder/internal/userschema"
@@ -81,8 +81,8 @@ func newApplicationService(
 func (as *applicationService) CreateApplication(app *model.ApplicationDTO) (*model.ApplicationDTO,
 	*serviceerror.ServiceError) {
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, "ApplicationService"))
-	if config.GetThunderRuntime().Config.ImmutableResources.Enabled {
-		return nil, &filebasedruntime.ErrorImmutableResourceCreateOperation
+	if err := immutableresource.CheckImmutableCreate(); err != nil {
+		return nil, err
 	}
 
 	processedDTO, inboundAuthConfig, svcErr := as.ValidateApplication(app)
@@ -190,10 +190,10 @@ func (as *applicationService) ValidateApplication(app *model.ApplicationDTO) (
 		return nil, nil, svcErr
 	}
 
-	if svcErr := as.validateAuthFlowGraphID(app); svcErr != nil {
+	if svcErr := as.validateAuthFlowID(app); svcErr != nil {
 		return nil, nil, svcErr
 	}
-	if svcErr := as.validateRegistrationFlowGraphID(app); svcErr != nil {
+	if svcErr := as.validateRegistrationFlowID(app); svcErr != nil {
 		return nil, nil, svcErr
 	}
 
@@ -418,8 +418,8 @@ func (as *applicationService) enrichApplicationWithCertificate(application *mode
 func (as *applicationService) UpdateApplication(appID string, app *model.ApplicationDTO) (
 	*model.ApplicationDTO, *serviceerror.ServiceError) {
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, "ApplicationService"))
-	if config.GetThunderRuntime().Config.ImmutableResources.Enabled {
-		return nil, &filebasedruntime.ErrorImmutableResourceUpdateOperation
+	if err := immutableresource.CheckImmutableUpdate(); err != nil {
+		return nil, err
 	}
 
 	if appID == "" {
@@ -463,10 +463,10 @@ func (as *applicationService) UpdateApplication(appID string, app *model.Applica
 		return nil, svcErr
 	}
 
-	if svcErr := as.validateAuthFlowGraphID(app); svcErr != nil {
+	if svcErr := as.validateAuthFlowID(app); svcErr != nil {
 		return nil, svcErr
 	}
-	if svcErr := as.validateRegistrationFlowGraphID(app); svcErr != nil {
+	if svcErr := as.validateRegistrationFlowID(app); svcErr != nil {
 		return nil, svcErr
 	}
 
@@ -599,8 +599,8 @@ func (as *applicationService) UpdateApplication(appID string, app *model.Applica
 
 // DeleteApplication delete the application for given app id.
 func (as *applicationService) DeleteApplication(appID string) *serviceerror.ServiceError {
-	if config.GetThunderRuntime().Config.ImmutableResources.Enabled {
-		return &filebasedruntime.ErrorImmutableResourceDeleteOperation
+	if err := immutableresource.CheckImmutableDelete(); err != nil {
+		return err
 	}
 	if appID == "" {
 		return &ErrorInvalidApplicationID
@@ -627,36 +627,59 @@ func (as *applicationService) DeleteApplication(appID string) *serviceerror.Serv
 	return nil
 }
 
-// validateAuthFlowGraphID validates the auth flow graph ID for the application.
-// If the graph ID is not provided, it sets the default authentication flow graph ID.
-func (as *applicationService) validateAuthFlowGraphID(app *model.ApplicationDTO) *serviceerror.ServiceError {
+// validateAuthFlowID validates the auth flow ID for the application.
+// If the flow ID is not provided, it sets the default authentication flow ID.
+func (as *applicationService) validateAuthFlowID(app *model.ApplicationDTO) *serviceerror.ServiceError {
 	if app.AuthFlowGraphID != "" {
-		isValidFlowGraphID := as.flowMgtService.IsValidGraphID(app.AuthFlowGraphID)
-		if !isValidFlowGraphID {
-			return &ErrorInvalidAuthFlowGraphID
+		isValidFlow := as.flowMgtService.IsValidFlow(app.AuthFlowGraphID)
+		if !isValidFlow {
+			return &ErrorInvalidAuthFlowID
 		}
 	} else {
-		app.AuthFlowGraphID = getDefaultAuthFlowGraphID()
+		defaultFlowID, svcErr := as.getDefaultAuthFlowID()
+		if svcErr != nil {
+			return svcErr
+		}
+		app.AuthFlowGraphID = defaultFlowID
 	}
 
 	return nil
 }
 
-// validateRegistrationFlowGraphID validates the registration flow graph ID for the application.
-// If the graph ID is not provided, it attempts to infer it from the auth flow graph ID.
-func (as *applicationService) validateRegistrationFlowGraphID(app *model.ApplicationDTO) *serviceerror.ServiceError {
+// validateRegistrationFlowID validates the registration flow ID for the application.
+// If the ID is not provided, it attempts to infer it from the equivalent auth flow ID.
+func (as *applicationService) validateRegistrationFlowID(app *model.ApplicationDTO) *serviceerror.ServiceError {
+	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, "ApplicationService"))
+
 	if app.RegistrationFlowGraphID != "" {
-		isValidFlowGraphID := as.flowMgtService.IsValidGraphID(app.RegistrationFlowGraphID)
-		if !isValidFlowGraphID {
-			return &ErrorInvalidRegistrationFlowGraphID
+		isValidFlow := as.flowMgtService.IsValidFlow(app.RegistrationFlowGraphID)
+		if !isValidFlow {
+			return &ErrorInvalidRegistrationFlowID
 		}
 	} else {
-		if strings.HasPrefix(app.AuthFlowGraphID, model.AuthFlowGraphPrefix) {
-			suffix := strings.TrimPrefix(app.AuthFlowGraphID, model.AuthFlowGraphPrefix)
-			app.RegistrationFlowGraphID = model.RegistrationFlowGraphPrefix + suffix
-		} else {
-			return &ErrorInvalidRegistrationFlowGraphID
+		// Try to get the equivalent registration flow for the auth flow
+		authFlow, svcErr := as.flowMgtService.GetFlow(app.AuthFlowGraphID)
+		if svcErr != nil {
+			if svcErr.Type == serviceerror.ServerErrorType {
+				logger.Error("Error while retrieving auth flow definition",
+					log.String("flowID", app.AuthFlowGraphID), log.Any("error", svcErr))
+				return &serviceerror.InternalServerError
+			}
+			return &ErrorWhileRetrievingFlowDefinition
 		}
+
+		registrationFlow, svcErr := as.flowMgtService.GetFlowByHandle(
+			authFlow.Handle, flowcommon.FlowTypeRegistration)
+		if svcErr != nil {
+			if svcErr.Type == serviceerror.ServerErrorType {
+				logger.Error("Error while retrieving registration flow definition by handle",
+					log.String("flowHandle", authFlow.Handle), log.Any("error", svcErr))
+				return &serviceerror.InternalServerError
+			}
+			return &ErrorWhileRetrievingFlowDefinition
+		}
+
+		app.RegistrationFlowGraphID = registrationFlow.ID
 	}
 
 	return nil
@@ -865,10 +888,24 @@ func (as *applicationService) processInboundAuthConfig(app *model.ApplicationDTO
 	return inboundAuthConfig, nil
 }
 
-// getDefaultAuthFlowGraphID returns the configured default authentication flow graph ID.
-func getDefaultAuthFlowGraphID() string {
-	authFlowConfig := config.GetThunderRuntime().Config.Flow.Authn
-	return authFlowConfig.DefaultFlow
+// getDefaultAuthFlowID retrieves the default authentication flow ID from the configuration.
+func (as *applicationService) getDefaultAuthFlowID() (string, *serviceerror.ServiceError) {
+	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, "ApplicationService"))
+
+	defaultAuthFlowHandle := config.GetThunderRuntime().Config.Flow.DefaultAuthFlowHandle
+	defaultAuthFlow, svcErr := as.flowMgtService.GetFlowByHandle(
+		defaultAuthFlowHandle, flowcommon.FlowTypeAuthentication)
+
+	if svcErr != nil {
+		if svcErr.Type == serviceerror.ServerErrorType {
+			logger.Error("Error while retrieving default auth flow definition by handle",
+				log.String("flowHandle", defaultAuthFlowHandle), log.Any("error", svcErr))
+			return "", &serviceerror.InternalServerError
+		}
+		return "", &ErrorWhileRetrievingFlowDefinition
+	}
+
+	return defaultAuthFlow.ID, nil
 }
 
 // getValidatedCertificateForCreate validates and returns the certificate for the application during creation.

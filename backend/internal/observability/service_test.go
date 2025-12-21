@@ -123,7 +123,7 @@ func TestService_PublishEvent(t *testing.T) {
 	// Note: Subscribers are now auto-registered via registry pattern
 	// This test just verifies PublishEvent doesn't panic
 
-	evt := event.NewEvent("trace-123", string(event.EventTypeAuthenticationStarted), "test")
+	evt := event.NewEvent("trace-123", string(event.EventTypeTokenIssued), "test")
 	evt.WithStatus(event.StatusSuccess)
 
 	// Should not panic
@@ -141,7 +141,8 @@ func TestService_PublishEvent(t *testing.T) {
 func TestService_PublishEventDisabled(t *testing.T) {
 	svc := setupTestService(false)
 
-	evt := event.NewEvent("trace-123", string(event.EventTypeAuthenticationStarted), "test")
+	// Test creating a new event
+	evt := event.NewEvent("trace-123", string(event.EventTypeTokenIssuanceStarted), "test")
 
 	// Should not panic even when disabled
 	svc.PublishEvent(evt)

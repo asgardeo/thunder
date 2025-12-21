@@ -22,18 +22,23 @@ import (
 	"errors"
 
 	"github.com/asgardeo/thunder/internal/application/model"
-	"github.com/asgardeo/thunder/internal/system/file_based_runtime/entity"
-	"github.com/asgardeo/thunder/internal/system/log"
+	immutableresource "github.com/asgardeo/thunder/internal/system/immutable_resource"
+	"github.com/asgardeo/thunder/internal/system/immutable_resource/entity"
 )
 
 type fileBasedStore struct {
-	storage entity.StoreInterface
+	*immutableresource.GenericFileBasedStore
+}
+
+// Create implements immutableresource.Storer interface for resource loader
+func (f *fileBasedStore) Create(id string, data interface{}) error {
+	app := data.(*model.ApplicationProcessedDTO)
+	return f.CreateApplication(*app)
 }
 
 // CreateApplication implements applicationStoreInterface.
 func (f *fileBasedStore) CreateApplication(app model.ApplicationProcessedDTO) error {
-	appKey := entity.NewCompositeKey(app.ID, entity.KeyTypeApplication)
-	return f.storage.Set(appKey, &app)
+	return f.GenericFileBasedStore.Create(app.ID, &app)
 }
 
 // DeleteApplication implements applicationStoreInterface.
@@ -43,14 +48,13 @@ func (f *fileBasedStore) DeleteApplication(id string) error {
 
 // GetApplicationByID implements applicationStoreInterface.
 func (f *fileBasedStore) GetApplicationByID(id string) (*model.ApplicationProcessedDTO, error) {
-	entity, err := f.storage.Get(entity.NewCompositeKey(id, entity.KeyTypeApplication))
+	data, err := f.GenericFileBasedStore.Get(id)
 	if err != nil {
 		return nil, err
 	}
-	app, ok := entity.Data.(*model.ApplicationProcessedDTO)
+	app, ok := data.(*model.ApplicationProcessedDTO)
 	if !ok {
-		log.GetLogger().Error("Type assertion failed while retrieving application by ID",
-			log.String("appID", id))
+		immutableresource.LogTypeAssertionError("application", id)
 		return nil, model.ApplicationDataCorruptedError
 	}
 	return app, nil
@@ -58,23 +62,18 @@ func (f *fileBasedStore) GetApplicationByID(id string) (*model.ApplicationProces
 
 // GetApplicationByName implements applicationStoreInterface.
 func (f *fileBasedStore) GetApplicationByName(name string) (*model.ApplicationProcessedDTO, error) {
-	list, err := f.storage.ListByType(entity.KeyTypeApplication)
+	data, err := f.GenericFileBasedStore.GetByField(name, func(d interface{}) string {
+		return d.(*model.ApplicationProcessedDTO).Name
+	})
 	if err != nil {
-		return nil, err
+		return nil, model.ApplicationNotFoundError
 	}
-
-	for _, item := range list {
-		if app, ok := item.Data.(*model.ApplicationProcessedDTO); ok && app.Name == name {
-			return app, nil
-		}
-	}
-
-	return nil, model.ApplicationNotFoundError
+	return data.(*model.ApplicationProcessedDTO), nil
 }
 
 // GetApplicationList implements applicationStoreInterface.
 func (f *fileBasedStore) GetApplicationList() ([]model.BasicApplicationDTO, error) {
-	list, err := f.storage.ListByType(entity.KeyTypeApplication)
+	list, err := f.GenericFileBasedStore.List()
 	if err != nil {
 		return nil, err
 	}
@@ -98,7 +97,7 @@ func (f *fileBasedStore) GetApplicationList() ([]model.BasicApplicationDTO, erro
 
 // GetOAuthApplication implements applicationStoreInterface.
 func (f *fileBasedStore) GetOAuthApplication(clientID string) (*model.OAuthAppConfigProcessedDTO, error) {
-	list, err := f.storage.ListByType(entity.KeyTypeApplication)
+	list, err := f.GenericFileBasedStore.List()
 	if err != nil {
 		return nil, err
 	}
@@ -122,11 +121,7 @@ func (f *fileBasedStore) GetOAuthApplication(clientID string) (*model.OAuthAppCo
 
 // GetTotalApplicationCount implements applicationStoreInterface.
 func (f *fileBasedStore) GetTotalApplicationCount() (int, error) {
-	list, err := f.storage.ListByType(entity.KeyTypeApplication)
-	if err != nil {
-		return 0, err
-	}
-	return len(list), nil
+	return f.GenericFileBasedStore.Count()
 }
 
 // UpdateApplication implements applicationStoreInterface.
@@ -137,8 +132,8 @@ func (f *fileBasedStore) UpdateApplication(existingApp *model.ApplicationProcess
 
 // newFileBasedStore creates a new instance of a file-based store.
 func newFileBasedStore() applicationStoreInterface {
-	store := entity.GetInstance()
+	genericStore := immutableresource.NewGenericFileBasedStore(entity.KeyTypeApplication)
 	return &fileBasedStore{
-		storage: store,
+		GenericFileBasedStore: genericStore,
 	}
 }

@@ -116,9 +116,8 @@ func (ts *AuthzTestSuite) SetupSuite() {
 	app := map[string]interface{}{
 		"name":                         appName,
 		"description":                  "Application for authorization integration tests",
-		"auth_flow_graph_id":           "auth_flow_config_basic",
-		"registration_flow_graph_id":   "registration_flow_config_basic",
-		"is_registration_flow_enabled": true,
+		"is_registration_flow_enabled": false,
+		"allowed_user_types":           []string{"authz-test-person"},
 		"inbound_auth_config": []map[string]interface{}{
 			{
 				"type": "oauth2",
@@ -535,7 +534,7 @@ func initiateAuthorizeFlowAndRetrieveAuthzCode(ts *AuthzTestSuite, username stri
 	flowStep, err := testutils.ExecuteAuthenticationFlow(flowId, map[string]string{
 		"username": username,
 		"password": password,
-	})
+	}, "")
 	ts.NoError(err, "Failed to execute authentication flow")
 	ts.Equal("COMPLETE", flowStep.FlowStatus, "Flow should complete successfully")
 
@@ -720,7 +719,7 @@ func (ts *AuthzTestSuite) TestCompleteAuthorizationCodeFlow() {
 			flowStep, err := testutils.ExecuteAuthenticationFlow(flowId, map[string]string{
 				"username": tc.Username,
 				"password": tc.Password,
-			})
+			}, "")
 			if err != nil {
 				ts.T().Fatalf("Failed to execute authentication flow: %v", err)
 			}
@@ -830,7 +829,7 @@ func (ts *AuthzTestSuite) TestAuthorizationCodeErrorScenarios() {
 			flowStep, err := testutils.ExecuteAuthenticationFlow(flowId, map[string]string{
 				"username": tc.Username,
 				"password": tc.Password,
-			})
+			}, "")
 			if err != nil {
 				ts.T().Fatalf("Failed to execute authentication flow: %v", err)
 			}
@@ -915,7 +914,7 @@ func (ts *AuthzTestSuite) TestAuthorizationCodeFlowWithResourceParameter() {
 	flowStep, err := testutils.ExecuteAuthenticationFlow(flowId, map[string]string{
 		"username": "resourcetest",
 		"password": "testpass123",
-	})
+	}, "")
 	ts.NoError(err, "Failed to execute authentication flow")
 	ts.Equal("COMPLETE", flowStep.FlowStatus, "Expected flow status COMPLETE")
 

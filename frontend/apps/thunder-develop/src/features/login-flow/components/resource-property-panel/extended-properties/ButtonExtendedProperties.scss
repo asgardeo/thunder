@@ -1,0 +1,41 @@
+@use '@/features/flows/styles/variables.scss';
+
+.button-extended-properties {
+    margin-bottom: var(--flow-builder-spacing-1);
+
+    .extended-property.action-type {
+        cursor: pointer;
+
+        .action-type-icon {
+            background-color: transparent;
+            width: 32px;
+            height: 32px;
+
+            img {
+                height: 16px;
+                width: 16px;
+            }
+        }
+
+        &.selected {
+            border: 1px solid var(--flow-builder-primary-main);
+        }
+
+        &.error {
+            border: 1px solid var(--flow-builder-error-main);
+        }
+    }
+
+    .button-extended-properties-heading {
+        font-weight: 500;
+    }
+
+    .button-extended-properties-sub-heading {
+        margin-top: var(--flow-builder-spacing-2);
+        margin-bottom: var(--flow-builder-spacing-1);
+    }
+
+    .MuiFormHelperText-root {
+        margin-top: var(--flow-builder-spacing-1);
+    }
+}

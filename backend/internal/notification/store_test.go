@@ -20,8 +20,6 @@ package notification
 
 import (
 	"errors"
-	"os"
-	"path/filepath"
 	"testing"
 
 	"github.com/stretchr/testify/suite"
@@ -29,7 +27,7 @@ import (
 	"github.com/asgardeo/thunder/internal/notification/common"
 	"github.com/asgardeo/thunder/internal/system/cmodels"
 	"github.com/asgardeo/thunder/internal/system/config"
-	"github.com/asgardeo/thunder/tests/mocks/database/clientmock"
+
 	"github.com/asgardeo/thunder/tests/mocks/database/providermock"
 )
 
@@ -38,7 +36,7 @@ const testDeploymentID = "test-deployment-id"
 type StoreTestSuite struct {
 	suite.Suite
 	mockDBProvider *providermock.DBProviderInterfaceMock
-	mockDBClient   *clientmock.DBClientInterfaceMock
+	mockDBClient   *providermock.DBClientInterfaceMock
 	store          *notificationStore
 }
 
@@ -47,24 +45,14 @@ func TestStoreTestSuite(t *testing.T) {
 }
 
 func (suite *StoreTestSuite) SetupSuite() {
-	// Get the current working directory.
-	cwd, err := os.Getwd()
-	if err != nil {
-		suite.T().Fatalf("Failed to get working directory: %v", err)
-	}
-	suite.T().Logf("Current working directory: %s", cwd)
-	cryptoFile := filepath.Join(cwd, "..", "..", "tests", "resources", "testKey")
-
-	if _, err := os.Stat(cryptoFile); os.IsNotExist(err) {
-		suite.T().Fatalf("Crypto file not found at expected path: %s", cryptoFile)
-	}
-
 	testConfig := &config.Config{
-		Security: config.SecurityConfig{
-			CryptoFile: cryptoFile,
+		Crypto: config.CryptoConfig{
+			Encryption: config.EncryptionConfig{
+				Key: "0579f866ac7c9273580d0ff163fa01a7b2401a7ff3ddc3e3b14ae3136fa6025e",
+			},
 		},
 	}
-	err = config.InitializeThunderRuntime("", testConfig)
+	err := config.InitializeThunderRuntime("", testConfig)
 	if err != nil {
 		suite.T().Fatalf("Failed to initialize ThunderRuntime: %v", err)
 	}
@@ -72,7 +60,7 @@ func (suite *StoreTestSuite) SetupSuite() {
 
 func (suite *StoreTestSuite) SetupTest() {
 	suite.mockDBProvider = providermock.NewDBProviderInterfaceMock(suite.T())
-	suite.mockDBClient = clientmock.NewDBClientInterfaceMock(suite.T())
+	suite.mockDBClient = providermock.NewDBClientInterfaceMock(suite.T())
 	suite.store = &notificationStore{
 		dbProvider:   suite.mockDBProvider,
 		deploymentID: testDeploymentID,

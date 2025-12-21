@@ -27,8 +27,8 @@ import (
 	"github.com/stretchr/testify/suite"
 
 	authncm "github.com/asgardeo/thunder/internal/authn/common"
-	flowcm "github.com/asgardeo/thunder/internal/flow/common"
-	flowcore "github.com/asgardeo/thunder/internal/flow/core"
+	"github.com/asgardeo/thunder/internal/flow/common"
+	"github.com/asgardeo/thunder/internal/flow/core"
 	"github.com/asgardeo/thunder/internal/system/error/serviceerror"
 	"github.com/asgardeo/thunder/internal/user"
 	"github.com/asgardeo/thunder/tests/mocks/flow/coremock"
@@ -52,44 +52,44 @@ func (suite *AttributeCollectorTestSuite) SetupTest() {
 	suite.mockUserService = usermock.NewUserServiceInterfaceMock(suite.T())
 	suite.mockFlowFactory = coremock.NewFlowFactoryInterfaceMock(suite.T())
 
-	prerequisites := []flowcm.InputData{{Name: "userID", Type: "string", Required: true}}
+	prerequisites := []common.Input{{Identifier: "userID", Type: "string", Required: true}}
 	mockExec := createMockExecutorForAttrCollector(suite.T(), ExecutorNameAttributeCollect,
-		flowcm.ExecutorTypeUtility, prerequisites)
+		common.ExecutorTypeUtility, prerequisites)
 
-	suite.mockFlowFactory.On("CreateExecutor", ExecutorNameAttributeCollect, flowcm.ExecutorTypeUtility,
-		[]flowcm.InputData{}, prerequisites).Return(mockExec)
+	suite.mockFlowFactory.On("CreateExecutor", ExecutorNameAttributeCollect, common.ExecutorTypeUtility,
+		[]common.Input{}, prerequisites).Return(mockExec)
 
 	suite.executor = newAttributeCollector(suite.mockFlowFactory, suite.mockUserService)
 }
 
 func createMockExecutorForAttrCollector(t *testing.T, name string,
-	executorType flowcm.ExecutorType, prerequisites []flowcm.InputData) flowcore.ExecutorInterface {
+	executorType common.ExecutorType, prerequisites []common.Input) core.ExecutorInterface {
 	mockExec := coremock.NewExecutorInterfaceMock(t)
 	mockExec.On("GetName").Return(name).Maybe()
 	mockExec.On("GetType").Return(executorType).Maybe()
-	mockExec.On("GetDefaultExecutorInputs").Return([]flowcm.InputData{}).Maybe()
+	mockExec.On("GetDefaultInputs").Return([]common.Input{}).Maybe()
 	mockExec.On("GetPrerequisites").Return(prerequisites).Maybe()
-	mockExec.On("GetRequiredData", mock.Anything).Return([]flowcm.InputData{}).Maybe()
+	mockExec.On("GetInputs", mock.Anything).Return([]common.Input{}).Maybe()
 	mockExec.On("ValidatePrerequisites", mock.Anything, mock.Anything).
-		Return(func(ctx *flowcore.NodeContext, execResp *flowcm.ExecutorResponse) bool {
+		Return(func(ctx *core.NodeContext, execResp *common.ExecutorResponse) bool {
 			return ctx.RuntimeData != nil && ctx.RuntimeData[userAttributeUserID] != ""
 		}).Maybe()
-	mockExec.On("CheckInputData", mock.Anything, mock.Anything).
-		Return(func(ctx *flowcore.NodeContext, execResp *flowcm.ExecutorResponse) bool {
-			if len(ctx.NodeInputData) == 0 {
-				return false
+	mockExec.On("HasRequiredInputs", mock.Anything, mock.Anything).
+		Return(func(ctx *core.NodeContext, execResp *common.ExecutorResponse) bool {
+			if len(ctx.NodeInputs) == 0 {
+				return true
 			}
-			for _, input := range ctx.NodeInputData {
-				if _, ok := ctx.UserInputData[input.Name]; !ok {
-					if _, ok := ctx.RuntimeData[input.Name]; !ok {
-						execResp.RequiredData = append(execResp.RequiredData, input)
+			for _, input := range ctx.NodeInputs {
+				if _, ok := ctx.UserInputs[input.Identifier]; !ok {
+					if _, ok := ctx.RuntimeData[input.Identifier]; !ok {
+						execResp.Inputs = append(execResp.Inputs, input)
 					}
 				}
 			}
-			return len(execResp.RequiredData) > 0
+			return len(execResp.Inputs) == 0
 		}).Maybe()
 	mockExec.On("GetUserIDFromContext", mock.Anything).
-		Return(func(ctx *flowcore.NodeContext) string {
+		Return(func(ctx *core.NodeContext) string {
 			if ctx.RuntimeData != nil {
 				return ctx.RuntimeData[userAttributeUserID]
 			}
@@ -104,22 +104,22 @@ func (suite *AttributeCollectorTestSuite) TestNewAttributeCollector() {
 }
 
 func (suite *AttributeCollectorTestSuite) TestExecute_RegistrationFlow() {
-	ctx := &flowcore.NodeContext{
+	ctx := &core.NodeContext{
 		FlowID:   "flow-123",
-		FlowType: flowcm.FlowTypeRegistration,
+		FlowType: common.FlowTypeRegistration,
 	}
 
 	resp, err := suite.executor.Execute(ctx)
 
 	assert.NoError(suite.T(), err)
 	assert.NotNil(suite.T(), resp)
-	assert.Equal(suite.T(), flowcm.ExecComplete, resp.Status)
+	assert.Equal(suite.T(), common.ExecComplete, resp.Status)
 }
 
 func (suite *AttributeCollectorTestSuite) TestExecute_UserNotAuthenticated() {
-	ctx := &flowcore.NodeContext{
+	ctx := &core.NodeContext{
 		FlowID:            "flow-123",
-		FlowType:          flowcm.FlowTypeAuthentication,
+		FlowType:          common.FlowTypeAuthentication,
 		AuthenticatedUser: authncm.AuthenticatedUser{IsAuthenticated: false},
 	}
 
@@ -127,14 +127,14 @@ func (suite *AttributeCollectorTestSuite) TestExecute_UserNotAuthenticated() {
 
 	assert.NoError(suite.T(), err)
 	assert.NotNil(suite.T(), resp)
-	assert.Equal(suite.T(), flowcm.ExecFailure, resp.Status)
+	assert.Equal(suite.T(), common.ExecFailure, resp.Status)
 	assert.Equal(suite.T(), failureReasonUserNotAuthenticated, resp.FailureReason)
 }
 
 func (suite *AttributeCollectorTestSuite) TestExecute_PrerequisitesNotMet() {
-	ctx := &flowcore.NodeContext{
+	ctx := &core.NodeContext{
 		FlowID:            "flow-123",
-		FlowType:          flowcm.FlowTypeAuthentication,
+		FlowType:          common.FlowTypeAuthentication,
 		AuthenticatedUser: authncm.AuthenticatedUser{IsAuthenticated: true},
 		RuntimeData:       map[string]string{},
 	}
@@ -143,7 +143,7 @@ func (suite *AttributeCollectorTestSuite) TestExecute_PrerequisitesNotMet() {
 
 	assert.NoError(suite.T(), err)
 	assert.NotNil(suite.T(), resp)
-	assert.Equal(suite.T(), flowcm.ExecFailure, resp.Status)
+	assert.Equal(suite.T(), common.ExecFailure, resp.Status)
 }
 
 func (suite *AttributeCollectorTestSuite) TestExecute_UserInputRequired() {
@@ -157,32 +157,32 @@ func (suite *AttributeCollectorTestSuite) TestExecute_UserInputRequired() {
 
 	suite.mockUserService.On("GetUser", testUserID).Return(existingUser, nil)
 
-	ctx := &flowcore.NodeContext{
+	ctx := &core.NodeContext{
 		FlowID:            "flow-123",
-		FlowType:          flowcm.FlowTypeAuthentication,
+		FlowType:          common.FlowTypeAuthentication,
 		AuthenticatedUser: authncm.AuthenticatedUser{IsAuthenticated: true},
 		RuntimeData:       map[string]string{userAttributeUserID: testUserID},
-		NodeInputData:     []flowcm.InputData{{Name: "email", Type: "string", Required: true}},
-		UserInputData:     map[string]string{},
+		NodeInputs:        []common.Input{{Identifier: "email", Type: "string", Required: true}},
+		UserInputs:        map[string]string{},
 	}
 
 	resp, err := suite.executor.Execute(ctx)
 
 	assert.NoError(suite.T(), err)
 	assert.NotNil(suite.T(), resp)
-	assert.Equal(suite.T(), flowcm.ExecUserInputRequired, resp.Status)
-	assert.NotEmpty(suite.T(), resp.RequiredData)
+	assert.Equal(suite.T(), common.ExecUserInputRequired, resp.Status)
+	assert.NotEmpty(suite.T(), resp.Inputs)
 	suite.mockUserService.AssertExpectations(suite.T())
 }
 
 func (suite *AttributeCollectorTestSuite) TestExecute_Success() {
-	ctx := &flowcore.NodeContext{
+	ctx := &core.NodeContext{
 		FlowID:            "flow-123",
-		FlowType:          flowcm.FlowTypeAuthentication,
+		FlowType:          common.FlowTypeAuthentication,
 		AuthenticatedUser: authncm.AuthenticatedUser{IsAuthenticated: true},
 		RuntimeData:       map[string]string{userAttributeUserID: testUserID},
-		NodeInputData:     []flowcm.InputData{{Name: "email", Type: "string", Required: true}},
-		UserInputData:     map[string]string{"email": "test@example.com"},
+		NodeInputs:        []common.Input{{Identifier: "email", Type: "string", Required: true}},
+		UserInputs:        map[string]string{"email": "test@example.com"},
 	}
 
 	existingUser := &user.User{
@@ -210,18 +210,18 @@ func (suite *AttributeCollectorTestSuite) TestExecute_Success() {
 
 	assert.NoError(suite.T(), err)
 	assert.NotNil(suite.T(), resp)
-	assert.Equal(suite.T(), flowcm.ExecComplete, resp.Status)
+	assert.Equal(suite.T(), common.ExecComplete, resp.Status)
 	suite.mockUserService.AssertExpectations(suite.T())
 }
 
 func (suite *AttributeCollectorTestSuite) TestExecute_UpdateUserFails() {
-	ctx := &flowcore.NodeContext{
+	ctx := &core.NodeContext{
 		FlowID:            "flow-123",
-		FlowType:          flowcm.FlowTypeAuthentication,
+		FlowType:          common.FlowTypeAuthentication,
 		AuthenticatedUser: authncm.AuthenticatedUser{IsAuthenticated: true},
 		RuntimeData:       map[string]string{userAttributeUserID: testUserID},
-		NodeInputData:     []flowcm.InputData{{Name: "email", Type: "string", Required: true}},
-		UserInputData:     map[string]string{"email": "test@example.com"},
+		NodeInputs:        []common.Input{{Identifier: "email", Type: "string", Required: true}},
+		UserInputs:        map[string]string{"email": "test@example.com"},
 	}
 
 	existingUser := &user.User{
@@ -239,50 +239,50 @@ func (suite *AttributeCollectorTestSuite) TestExecute_UpdateUserFails() {
 
 	assert.NoError(suite.T(), err)
 	assert.NotNil(suite.T(), resp)
-	assert.Equal(suite.T(), flowcm.ExecFailure, resp.Status)
+	assert.Equal(suite.T(), common.ExecFailure, resp.Status)
 	assert.Contains(suite.T(), resp.FailureReason, "Failed to update user attributes")
 	suite.mockUserService.AssertExpectations(suite.T())
 }
 
-func (suite *AttributeCollectorTestSuite) TestCheckInputData_AttributesInAuthenticatedUser() {
-	ctx := &flowcore.NodeContext{
+func (suite *AttributeCollectorTestSuite) TestHasRequiredInputs_AttributesInAuthenticatedUser() {
+	ctx := &core.NodeContext{
 		FlowID:   "flow-123",
-		FlowType: flowcm.FlowTypeAuthentication,
+		FlowType: common.FlowTypeAuthentication,
 		AuthenticatedUser: authncm.AuthenticatedUser{
 			IsAuthenticated: true,
 			Attributes:      map[string]interface{}{"email": "test@example.com"},
 		},
-		NodeInputData: []flowcm.InputData{{Name: "email", Type: "string", Required: true}},
-		RuntimeData:   map[string]string{},
+		NodeInputs:  []common.Input{{Identifier: "email", Type: "string", Required: true}},
+		RuntimeData: map[string]string{},
 	}
 
-	execResp := &flowcm.ExecutorResponse{
-		RequiredData: []flowcm.InputData{{Name: "email", Type: "string", Required: true}},
-		RuntimeData:  make(map[string]string),
+	execResp := &common.ExecutorResponse{
+		Inputs:      []common.Input{{Identifier: "email", Type: "string", Required: true}},
+		RuntimeData: make(map[string]string),
 	}
 
-	result := suite.executor.CheckInputData(ctx, execResp)
+	result := suite.executor.HasRequiredInputs(ctx, execResp)
 
-	assert.False(suite.T(), result)
-	assert.Empty(suite.T(), execResp.RequiredData)
+	assert.True(suite.T(), result)
+	assert.Empty(suite.T(), execResp.Inputs)
 	assert.Equal(suite.T(), "test@example.com", execResp.RuntimeData["email"])
 }
 
-func (suite *AttributeCollectorTestSuite) TestCheckInputData_AttributesInUserProfile() {
+func (suite *AttributeCollectorTestSuite) TestHasRequiredInputs_AttributesInUserProfile() {
 	attrs := map[string]interface{}{"email": "profile@example.com"}
 	attrsJSON, _ := json.Marshal(attrs)
 
-	ctx := &flowcore.NodeContext{
+	ctx := &core.NodeContext{
 		FlowID:            "flow-123",
-		FlowType:          flowcm.FlowTypeAuthentication,
+		FlowType:          common.FlowTypeAuthentication,
 		AuthenticatedUser: authncm.AuthenticatedUser{IsAuthenticated: true},
 		RuntimeData:       map[string]string{userAttributeUserID: testUserID},
-		NodeInputData:     []flowcm.InputData{{Name: "email", Type: "string", Required: true}},
+		NodeInputs:        []common.Input{{Identifier: "email", Type: "string", Required: true}},
 	}
 
-	execResp := &flowcm.ExecutorResponse{
-		RequiredData: []flowcm.InputData{{Name: "email", Type: "string", Required: true}},
-		RuntimeData:  make(map[string]string),
+	execResp := &common.ExecutorResponse{
+		Inputs:      []common.Input{{Identifier: "email", Type: "string", Required: true}},
+		RuntimeData: make(map[string]string),
 	}
 
 	existingUser := &user.User{
@@ -292,10 +292,10 @@ func (suite *AttributeCollectorTestSuite) TestCheckInputData_AttributesInUserPro
 
 	suite.mockUserService.On("GetUser", testUserID).Return(existingUser, nil)
 
-	result := suite.executor.CheckInputData(ctx, execResp)
+	result := suite.executor.HasRequiredInputs(ctx, execResp)
 
-	assert.False(suite.T(), result)
-	assert.Empty(suite.T(), execResp.RequiredData)
+	assert.True(suite.T(), result)
+	assert.Empty(suite.T(), execResp.Inputs)
 	assert.Equal(suite.T(), "profile@example.com", execResp.RuntimeData["email"])
 	suite.mockUserService.AssertExpectations(suite.T())
 }
@@ -304,7 +304,7 @@ func (suite *AttributeCollectorTestSuite) TestGetUserAttributes_Success() {
 	attrs := map[string]interface{}{"email": "test@example.com", "phone": "1234567890"}
 	attrsJSON, _ := json.Marshal(attrs)
 
-	ctx := &flowcore.NodeContext{
+	ctx := &core.NodeContext{
 		RuntimeData: map[string]string{userAttributeUserID: testUserID},
 	}
 
@@ -325,7 +325,7 @@ func (suite *AttributeCollectorTestSuite) TestGetUserAttributes_Success() {
 }
 
 func (suite *AttributeCollectorTestSuite) TestGetUserAttributes_UserNotFound() {
-	ctx := &flowcore.NodeContext{
+	ctx := &core.NodeContext{
 		RuntimeData: map[string]string{userAttributeUserID: testUserID},
 	}
 
@@ -340,7 +340,7 @@ func (suite *AttributeCollectorTestSuite) TestGetUserAttributes_UserNotFound() {
 }
 
 func (suite *AttributeCollectorTestSuite) TestGetUserAttributes_InvalidJSON() {
-	ctx := &flowcore.NodeContext{
+	ctx := &core.NodeContext{
 		RuntimeData: map[string]string{userAttributeUserID: testUserID},
 	}
 
@@ -359,9 +359,9 @@ func (suite *AttributeCollectorTestSuite) TestGetUserAttributes_InvalidJSON() {
 }
 
 func (suite *AttributeCollectorTestSuite) TestGetUpdatedUserObject_NewAttributes() {
-	ctx := &flowcore.NodeContext{
-		UserInputData: map[string]string{"email": "new@example.com"},
-		NodeInputData: []flowcm.InputData{{Name: "email", Type: "string", Required: true}},
+	ctx := &core.NodeContext{
+		UserInputs: map[string]string{"email": "new@example.com"},
+		NodeInputs: []common.Input{{Identifier: "email", Type: "string", Required: true}},
 	}
 
 	existingUser := &user.User{
@@ -385,9 +385,9 @@ func (suite *AttributeCollectorTestSuite) TestGetUpdatedUserObject_NewAttributes
 }
 
 func (suite *AttributeCollectorTestSuite) TestGetUpdatedUserObject_NoNewAttributes() {
-	ctx := &flowcore.NodeContext{
-		UserInputData: map[string]string{},
-		NodeInputData: []flowcm.InputData{{Name: "email", Type: "string", Required: true}},
+	ctx := &core.NodeContext{
+		UserInputs: map[string]string{},
+		NodeInputs: []common.Input{{Identifier: "email", Type: "string", Required: true}},
 	}
 
 	existingUser := &user.User{
@@ -408,9 +408,9 @@ func (suite *AttributeCollectorTestSuite) TestGetUpdatedUserObject_MergeAttribut
 	existingAttrs := map[string]interface{}{"existing": "value"}
 	existingAttrsJSON, _ := json.Marshal(existingAttrs)
 
-	ctx := &flowcore.NodeContext{
-		UserInputData: map[string]string{"email": "new@example.com"},
-		NodeInputData: []flowcm.InputData{{Name: "email", Type: "string", Required: true}},
+	ctx := &core.NodeContext{
+		UserInputs: map[string]string{"email": "new@example.com"},
+		NodeInputs: []common.Input{{Identifier: "email", Type: "string", Required: true}},
 	}
 
 	existingUser := &user.User{
@@ -434,12 +434,12 @@ func (suite *AttributeCollectorTestSuite) TestGetUpdatedUserObject_MergeAttribut
 }
 
 func (suite *AttributeCollectorTestSuite) TestGetInputAttributes_FromUserInput() {
-	ctx := &flowcore.NodeContext{
-		UserInputData: map[string]string{"email": "test@example.com", "phone": "1234567890"},
-		RuntimeData:   map[string]string{},
-		NodeInputData: []flowcm.InputData{
-			{Name: "email", Type: "string", Required: true},
-			{Name: "phone", Type: "string", Required: true},
+	ctx := &core.NodeContext{
+		UserInputs:  map[string]string{"email": "test@example.com", "phone": "1234567890"},
+		RuntimeData: map[string]string{},
+		NodeInputs: []common.Input{
+			{Identifier: "email", Type: "string", Required: true},
+			{Identifier: "phone", Type: "string", Required: true},
 		},
 	}
 
@@ -451,10 +451,10 @@ func (suite *AttributeCollectorTestSuite) TestGetInputAttributes_FromUserInput()
 }
 
 func (suite *AttributeCollectorTestSuite) TestGetInputAttributes_FromRuntimeData() {
-	ctx := &flowcore.NodeContext{
-		UserInputData: map[string]string{},
-		RuntimeData:   map[string]string{"email": "runtime@example.com"},
-		NodeInputData: []flowcm.InputData{{Name: "email", Type: "string", Required: true}},
+	ctx := &core.NodeContext{
+		UserInputs:  map[string]string{},
+		RuntimeData: map[string]string{"email": "runtime@example.com"},
+		NodeInputs:  []common.Input{{Identifier: "email", Type: "string", Required: true}},
 	}
 
 	result := suite.executor.getInputAttributes(ctx)
@@ -464,12 +464,12 @@ func (suite *AttributeCollectorTestSuite) TestGetInputAttributes_FromRuntimeData
 }
 
 func (suite *AttributeCollectorTestSuite) TestGetInputAttributes_SkipUserID() {
-	ctx := &flowcore.NodeContext{
-		UserInputData: map[string]string{"userID": testUserID, "email": "test@example.com"},
-		RuntimeData:   map[string]string{},
-		NodeInputData: []flowcm.InputData{
-			{Name: "userID", Type: "string", Required: true},
-			{Name: "email", Type: "string", Required: true},
+	ctx := &core.NodeContext{
+		UserInputs:  map[string]string{"userID": testUserID, "email": "test@example.com"},
+		RuntimeData: map[string]string{},
+		NodeInputs: []common.Input{
+			{Identifier: "userID", Type: "string", Required: true},
+			{Identifier: "email", Type: "string", Required: true},
 		},
 	}
 

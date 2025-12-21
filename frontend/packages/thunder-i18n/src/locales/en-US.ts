@@ -71,6 +71,20 @@ const translations = {
     // Dictionary
     'dictionary.unknown': 'Unknown',
 
+    // Short action words (used as button labels, etc.)
+    show: 'Show',
+    publish: 'Publish',
+    saveDraft: 'Save Draft',
+    common: 'Common',
+    new: 'New',
+    edit: 'Edit',
+    delete: 'Delete',
+    close: 'Close',
+    back: 'Back',
+    create: 'Create',
+    update: 'Update',
+    save: 'Save',
+
     // Status messages
     status: {
       loading: 'Loading...',
@@ -312,6 +326,7 @@ const translations = {
       integrations: 'Integrations',
       applications: 'Applications',
       dashboard: 'Dashboard',
+      flows: 'Flows',
     },
     breadcrumb: {
       develop: 'Develop',
@@ -735,6 +750,290 @@ const translations = {
     'view.fields.updatedAt': 'Updated At',
     'view.values.yes': 'Yes',
     'view.values.no': 'No',
+  },
+
+  // ============================================================================
+  // Sign In - Sign In page translations
+  // ============================================================================
+  signin: {
+    'errors.signin.failed.message': 'Error',
+    'errors.signin.failed.description': 'We are sorry, something has gone wrong here. Please try again.',
+    'redirect.to.signup': "Don't have an account? <1>Sign up</1>",
+    heading: 'Sign In',
+  },
+
+  // ============================================================================
+  // Sign Up - Sign Up page translations
+  // ============================================================================
+  signup: {
+    'errors.signup.failed.message': 'Error',
+    'errors.signup.failed.description': 'We are sorry, but we were unable to create your account. Please try again.',
+    'redirect.to.signin': 'Already have an account? <1>Sign in</1>',
+    heading: 'Sign Up',
+  },
+
+  // ============================================================================
+  // Elements - Low level reusable element translations
+  // ============================================================================
+  elements: {
+    'buttons.submit.text': 'Continue',
+    'display.divider.or_separator': 'OR',
+    'fields.first_name.label': 'First Name',
+    'fields.first_name.placeholder': 'Enter your first name',
+    'fields.last_name.label': 'Last Name',
+    'fields.last_name.placeholder': 'Enter your last name',
+    'fields.email.label': 'Email',
+    'fields.email.placeholder': 'Enter your email address',
+    'fields.password.label': 'Password',
+    'fields.password.placeholder': 'Enter your password',
+    'fields.username.label': 'Username',
+    'fields.username.placeholder': 'Enter your username',
+  },
+
+  // ============================================================================
+  // Validations - Form & other validation messages translations
+  // ============================================================================
+  validations: {
+    'form.field.required': '{{field}} is required.',
+  },
+
+  // ============================================================================
+  // Flows - Flow builder feature translations
+  // ============================================================================
+  flows: {
+    // Flow listing page
+    'listing.title': 'Flows',
+    'listing.subtitle': 'Create and manage authentication and registration flows for your applications',
+    'listing.addFlow': 'Create New Flow',
+    'listing.columns.name': 'Name',
+    'listing.columns.flowType': 'Type',
+    'listing.columns.version': 'Version',
+    'listing.columns.updatedAt': 'Last Updated',
+    'listing.columns.actions': 'Actions',
+    'listing.error.title': 'Failed to load flows',
+    'listing.error.unknown': 'An unknown error occurred',
+    'delete.title': 'Delete Flow',
+    'delete.message': 'Are you sure you want to delete this flow? This action cannot be undone.',
+    'delete.disclaimer': 'Warning: All associated configurations will be permanently removed.',
+    'delete.error': 'Failed to delete flow. Please try again.',
+
+    // Flow labels and navigation
+    label: 'Flows',
+    'core.breadcrumb': '{{flowType}}',
+    'core.autoSave.savingInProgress': 'Saving...',
+    'core.labels.enableFlow': 'Enable Flow',
+    'core.labels.disableFlow': 'Disable Flow',
+    'core.tooltips.enableFlow': 'Enable this {{flowType}}',
+    'core.tooltips.disableFlow': 'Disable this {{flowType}}',
+
+    // Notification panel
+    'core.notificationPanel.header': 'Notifications',
+    'core.notificationPanel.trigger.label': 'View notifications',
+    'core.notificationPanel.tabs.errors': 'Errors',
+    'core.notificationPanel.tabs.warnings': 'Warnings',
+    'core.notificationPanel.tabs.info': 'Info',
+    'core.notificationPanel.emptyMessages.errors': 'No errors found',
+    'core.notificationPanel.emptyMessages.warnings': 'No warnings found',
+    'core.notificationPanel.emptyMessages.info': 'No information messages',
+
+    // Execution steps - names
+    'core.executions.names.google': 'Google',
+    'core.executions.names.apple': 'Apple',
+    'core.executions.names.github': 'GitHub',
+    'core.executions.names.facebook': 'Facebook',
+    'core.executions.names.microsoft': 'Microsoft',
+    'core.executions.names.passkeyEnrollment': 'Passkey Enrollment',
+    'core.executions.names.confirmationCode': 'Confirmation Code',
+    'core.executions.names.magicLink': 'Magic Link',
+    'core.executions.names.sendEmailOTP': 'Send Email OTP',
+    'core.executions.names.verifyEmailOTP': 'Verify Email OTP',
+    'core.executions.names.sendSMS': 'Send SMS',
+    'core.executions.names.verifySMSOTP': 'Verify SMS OTP',
+    'core.executions.names.default': 'Execution',
+
+    // SMS OTP executor modes
+    'core.executions.smsOtp.mode.send': 'Send OTP',
+    'core.executions.smsOtp.mode.verify': 'Verify OTP',
+    'core.executions.smsOtp.mode.label': 'Mode',
+    'core.executions.smsOtp.mode.placeholder': 'Select a mode',
+    'core.executions.smsOtp.description': 'Configure the SMS OTP executor mode.',
+
+    // Execution steps - tooltips and messages
+    'core.executions.tooltip.configurationHint': 'Click to configure this step',
+    'core.executions.landing.message': 'This {{executor}} step will redirect users to a landing page.',
+
+    // Steps - end
+    'core.steps.end.flowCompletionProperties': 'Flow Completion Properties',
+
+    // Validation messages - input fields
+    'core.validation.fields.input.general':
+      'Required fields are not properly configured for the input field with ID <code>{{id}}</code>.',
+    'core.validation.fields.input.idpName': 'Identity provider name is required',
+    'core.validation.fields.input.idpId': 'Connection is required',
+    'core.validation.fields.input.label': 'Label is required',
+    'core.validation.fields.input.identifier': 'Identifier is required',
+
+    // Validation messages - executor
+    'core.validation.fields.executor.general': 'The executor <0>{{id}}</0> is not properly configured.',
+
+    // Validation messages - button
+    'core.validation.fields.button.general':
+      'Required fields are not properly configured for the button with ID <code>{{id}}</code>.',
+    'core.validation.fields.button.text': 'Button text is required',
+    'core.validation.fields.button.label': 'Label is required',
+    'core.validation.fields.button.action': 'Action is required',
+    'core.validation.fields.button.variant': 'Variant is required',
+
+    // Validation messages - checkbox
+    'core.validation.fields.checkbox.general':
+      'Required fields are not properly configured for the checkbox with ID <code>{{id}}</code>.',
+    'core.validation.fields.checkbox.label': 'Label is required',
+    'core.validation.fields.checkbox.identifier': 'Identifier is required',
+
+    // Validation messages - divider
+    'core.validation.fields.divider.general':
+      'Required fields are not properly configured for the divider with ID <code>{{id}}</code>.',
+    'core.validation.fields.divider.variant': 'Variant is required',
+
+    // Validation messages - typography
+    'core.validation.fields.typography.general':
+      'Required fields are not properly configured for the typography with ID <code>{{id}}</code>.',
+    'core.validation.fields.typography.text': 'Text content is required',
+    'core.validation.fields.typography.label': 'Label is required',
+    'core.validation.fields.typography.variant': 'Variant is required',
+
+    // Validation messages - image
+    'core.validation.fields.image.general':
+      'Required fields are not properly configured for the image with ID <code>{{id}}</code>.',
+    'core.validation.fields.image.src': 'Image source is required',
+    'core.validation.fields.image.variant': 'Variant is required',
+
+    // Placeholders
+    'core.placeholders.image': 'No image source',
+
+    // Validation messages - rich text
+    'core.validation.fields.richText.general':
+      'Required fields are not properly configured for the rich text with ID <code>{{id}}</code>.',
+    'core.validation.fields.richText.text': 'Rich text content is required',
+    'core.validation.fields.richText.label': 'Label is required',
+
+    // Validation messages - OTP input
+    'core.validation.fields.otpInput.label': 'OTP input label is required',
+
+    // Validation messages - phone number input
+    'core.validation.fields.phoneNumberInput.label': 'Phone number label is required',
+    'core.validation.fields.phoneNumberInput.identifier': 'Phone number identifier is required',
+
+    // Elements - rich text
+    'core.elements.richText.placeholder': 'Enter text here...',
+    'core.elements.richText.linkEditor.urlTypeLabel': 'URL Type',
+    'core.elements.richText.linkEditor.placeholder': 'Enter URL',
+
+    // Elements - text property field
+    'core.elements.textPropertyField.placeholder': 'Enter {{propertyName}}',
+    'core.elements.textPropertyField.tooltip.configureTranslation': 'Configure translation',
+
+    // Elements - i18n card
+    'core.elements.textPropertyField.i18nCard.title': 'Translation for {{field}}',
+    'core.elements.textPropertyField.i18nCard.createTitle': 'Create Translation',
+    'core.elements.textPropertyField.i18nCard.updateTitle': 'Update Translation',
+    'core.elements.textPropertyField.i18nCard.i18nKey': 'Translation Key',
+    'core.elements.textPropertyField.i18nCard.i18nKeyInputPlaceholder': 'Enter a unique translation key',
+    'core.elements.textPropertyField.i18nCard.i18nKeyInputHint': 'Use format: screen.{{key}}',
+    'core.elements.textPropertyField.i18nCard.selectI18nKey': 'Select an existing key',
+    'core.elements.textPropertyField.i18nCard.language': 'Language',
+    'core.elements.textPropertyField.i18nCard.languageText': 'Translation Text',
+    'core.elements.textPropertyField.i18nCard.languageTextPlaceholder': 'Enter translation text',
+    'core.elements.textPropertyField.i18nCard.commonKeyWarning':
+      'This is a common key shared across screens. Changes will affect all usages.',
+    'core.elements.textPropertyField.i18nCard.chip.commonScreen.label': 'Common',
+    'core.elements.textPropertyField.i18nCard.tooltip.commonKeyTooltip': 'This key is shared across multiple screens',
+    'core.elements.textPropertyField.i18nCard.tooltip.editExistingTranslation': 'Edit existing translation',
+    'core.elements.textPropertyField.i18nCard.tooltip.addNewTranslation': 'Add new translation',
+
+    // Form requires view dialog
+    'core.dialogs.formRequiresView.formOnCanvas.title': 'Form Requires a View',
+    'core.dialogs.formRequiresView.formOnCanvas.description':
+      'Form components cannot be placed directly on the canvas. They must be inside a View component.',
+    'core.dialogs.formRequiresView.formOnCanvas.alertMessage': 'Would you like to create a View and add the Form inside it?',
+    'core.dialogs.formRequiresView.formOnCanvas.confirmButton': 'Add View with Form',
+    'core.dialogs.formRequiresView.inputOnCanvas.title': 'Input Requires a Form and View',
+    'core.dialogs.formRequiresView.inputOnCanvas.description':
+      'Input components cannot be placed directly on the canvas. They must be inside a Form, which must be inside a View.',
+    'core.dialogs.formRequiresView.inputOnCanvas.alertMessage':
+      'Would you like to create a View with a Form and add the Input inside it?',
+    'core.dialogs.formRequiresView.inputOnCanvas.confirmButton': 'Add View, Form and Input',
+    'core.dialogs.formRequiresView.inputOnView.title': 'Input Requires a Form',
+    'core.dialogs.formRequiresView.inputOnView.description':
+      'Input components cannot be placed directly inside a View. They must be inside a Form component.',
+    'core.dialogs.formRequiresView.inputOnView.alertMessage': 'Would you like to create a Form and add the Input inside it?',
+    'core.dialogs.formRequiresView.inputOnView.confirmButton': 'Add Form with Input',
+    'core.dialogs.formRequiresView.widgetOnCanvas.title': 'Widget Requires a View',
+    'core.dialogs.formRequiresView.widgetOnCanvas.description':
+      'Widgets cannot be placed directly on the canvas. They must be inside a View component.',
+    'core.dialogs.formRequiresView.widgetOnCanvas.alertMessage':
+      'Would you like to create a View and add the Widget inside it?',
+    'core.dialogs.formRequiresView.widgetOnCanvas.confirmButton': 'Add View with Widget',
+    'core.dialogs.formRequiresView.cancelButton': 'Cancel',
+
+    // Form adapter
+    'core.adapters.form.badgeLabel': 'Form',
+    'core.adapters.form.placeholder': 'DROP FORM COMPONENTS HERE',
+
+    // Header panel
+    'core.headerPanel.goBack': 'Go back to Flows',
+    'core.headerPanel.autoLayout': 'Auto Layout',
+    'core.headerPanel.save': 'Save',
+    'core.headerPanel.editTitle': 'Edit flow name',
+    'core.headerPanel.saveTitle': 'Save flow name',
+    'core.headerPanel.cancelEdit': 'Cancel',
+    'core.headerPanel.edgeStyleTooltip': 'Change edge style',
+    'core.headerPanel.edgeStyles.bezier': 'Bezier',
+    'core.headerPanel.edgeStyles.smoothStep': 'Smooth Step',
+    'core.headerPanel.edgeStyles.step': 'Step',
+
+    // Resource panel
+    'core.resourcePanel.title': 'Resources',
+    'core.resourcePanel.showResources': 'Show Resources',
+    'core.resourcePanel.hideResources': 'Hide Resources',
+    'core.resourcePanel.starterTemplates.title': 'Starter Templates',
+    'core.resourcePanel.starterTemplates.description': 'Choose one of these templates to start building registration experience',
+    'core.resourcePanel.widgets.title': 'Widgets',
+    'core.resourcePanel.widgets.description': 'Use these widgets to build up the flow using pre-created flow blocks',
+    'core.resourcePanel.steps.title': 'Steps',
+    'core.resourcePanel.steps.description': 'Use these as steps in your flow',
+    'core.resourcePanel.components.title': 'Components',
+    'core.resourcePanel.components.description': 'Use these components to build up your views',
+    'core.resourcePanel.executors.title': 'Executors',
+    'core.resourcePanel.executors.description': 'Add authentication executors to your flow',
+
+    // View step
+    'core.steps.view.addComponent': 'Add Component',
+    'core.steps.view.configure': 'Configure',
+    'core.steps.view.remove': 'Remove',
+    'core.steps.view.noComponentsAvailable': 'No components available',
+
+    // Rule
+    'core.rule.conditionalRule': 'Conditional Rule',
+    'core.rule.remove': 'Remove',
+
+    // Field extended properties
+    'core.fieldExtendedProperties.attribute': 'Attribute',
+    'core.fieldExtendedProperties.selectAttribute': 'Select an attribute',
+
+    // Button extended properties
+    'core.buttonExtendedProperties.type': 'Type',
+
+    // Rules properties
+    'core.rulesProperties.description': 'Define a rule to how conditionally proceed to next steps in the flow',
+
+    // Login flow builder
+    'core.loginFlowBuilder.form': 'Form',
+    'core.loginFlowBuilder.errors.validationRequired': 'Please fix all validation errors before saving.',
+    'core.loginFlowBuilder.errors.structureValidationFailed': 'Flow structure validation failed: {{error}}',
+    'core.loginFlowBuilder.errors.saveFailed': 'Failed to save flow. Please try again.',
+    'core.loginFlowBuilder.success.flowCreated': 'Flow created successfully.',
+    'core.loginFlowBuilder.success.flowUpdated': 'Flow updated successfully.',
   },
 } as const;
 

@@ -186,7 +186,6 @@ The following table lists the configurable parameters of the Thunder chart and t
 | `configuration.developerClient.scopes`   | Developer client scopes                                       | `['openid', 'profile', 'email', 'system']` |
 | `configuration.security.certFile`      | Server certificate file path                                    | `repository/resources/security/server.cert` |
 | `configuration.security.keyFile`       | Server key file path                                            | `repository/resources/security/server.key`  |
-| `configuration.security.cryptoFile`    | Crypto key file path                                            | `repository/resources/security/crypto.key`  |
 | `configuration.database.identity.type` | Identity database type (postgres or sqlite)                     | `postgres`                   |
 | `configuration.database.identity.sqlitePath` | SQLite database path (for sqlite only)                    | `repository/database/thunderdb.db` |
 | `configuration.database.identity.sqliteOptions` | SQLite options (for sqlite only)                       | `_journal_mode=WAL&_busy_timeout=5000` |
@@ -225,8 +224,10 @@ The following table lists the configurable parameters of the Thunder chart and t
 | `configuration.jwt.audience`           | Default audience for auth assertions                            | `application`                |
 | `configuration.oauth.refreshToken.renewOnGrant` | Renew refresh token on grant                           | `false`                      |
 | `configuration.oauth.refreshToken.validityPeriod` | Refresh token validity period in seconds             | `86400`                      |
+| `configuration.flow.defaultAuthFlowHandle` | Default authentication flow handle                          | `default-basic-flow`         |
+| `configuration.flow.maxVersionHistory` | Maximum flow version history to retain                          | `3`                          |
+| `configuration.flow.autoInferRegistration` | Enable auto-infer registration flow                         | `true`                       |
 | `configuration.flow.graphDirectory`    | Flow graph directory                                            | `repository/resources/graphs/` |
-| `configuration.flow.authn.defaultFlow` | Default authentication flow                                     | `auth_flow_config_basic`     |
 | `configuration.cors.allowedOrigins`    | CORS allowed origins                                            | See values.yaml              |
 
 ### Persistence Parameters

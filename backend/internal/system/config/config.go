@@ -26,9 +26,10 @@ import (
 	urlpath "path"
 	"path/filepath"
 	"reflect"
+	"strings"
 	"time"
 
-	"github.com/asgardeo/thunder/internal/system/log"
+	"github.com/asgardeo/thunder/internal/system/utils"
 
 	yaml "gopkg.in/yaml.v3"
 )
@@ -54,9 +55,8 @@ type GateClientConfig struct {
 
 // SecurityConfig holds the security configuration details.
 type SecurityConfig struct {
-	CertFile   string `yaml:"cert_file" json:"cert_file"`
-	KeyFile    string `yaml:"key_file" json:"key_file"`
-	CryptoFile string `yaml:"crypto_file" json:"crypto_file"`
+	CertFile string `yaml:"cert_file" json:"cert_file"`
+	KeyFile  string `yaml:"key_file" json:"key_file"`
 }
 
 // DataSource holds the individual database connection details.
@@ -126,21 +126,22 @@ type OAuthConfig struct {
 	AuthorizationCode AuthorizationCodeConfig `yaml:"authorization_code" json:"authorization_code"`
 }
 
-// FlowAuthnConfig holds the configuration details for the authentication flows.
-type FlowAuthnConfig struct {
-	DefaultFlow string `yaml:"default_flow" json:"default_flow"`
-}
-
 // FlowConfig holds the configuration details for the flow service.
 type FlowConfig struct {
-	GraphDirectory string          `yaml:"graph_directory" json:"graph_directory"`
-	Authn          FlowAuthnConfig `yaml:"authn" json:"authn"`
+	DefaultAuthFlowHandle string `yaml:"default_auth_flow_handle" json:"default_auth_flow_handle"`
+	MaxVersionHistory     int    `yaml:"max_version_history" json:"max_version_history"`
+	AutoInferRegistration bool   `yaml:"auto_infer_registration" json:"auto_infer_registration"`
 }
 
 // CryptoConfig holds the cryptographic configuration details.
 type CryptoConfig struct {
-	Key             string                `yaml:"key" json:"key"`
+	Encryption      EncryptionConfig      `yaml:"encryption" json:"encryption"`
 	PasswordHashing PasswordHashingConfig `yaml:"password_hashing" json:"password_hashing"`
+}
+
+// EncryptionConfig holds the encryption configuration details.
+type EncryptionConfig struct {
+	Key string `yaml:"key" json:"key"`
 }
 
 // PasswordHashingConfig holds the password hashing configuration details.
@@ -221,32 +222,42 @@ type ResourceConfig struct {
 	DefaultDelimiter string `yaml:"default_delimiter" json:"default_delimiter"`
 }
 
+// OrganizationUnitConfig holds the organization unit service configuration.
+type OrganizationUnitConfig struct {
+	// Store defines the storage mode for organization units.
+	// Valid values: "mutable", "immutable", "composite" (hybrid mode)
+	// If not specified, falls back to global ImmutableResources.Enabled setting:
+	//   - If ImmutableResources.Enabled = true: behaves as "immutable"
+	//   - If ImmutableResources.Enabled = false: behaves as "mutable"
+	Store string `yaml:"store" json:"store"`
+}
+
 // Config holds the complete configuration details of the server.
 type Config struct {
-	Server             ServerConfig        `yaml:"server" json:"server"`
-	GateClient         GateClientConfig    `yaml:"gate_client" json:"gate_client"`
-	Security           SecurityConfig      `yaml:"security" json:"security"`
-	Database           DatabaseConfig      `yaml:"database" json:"database"`
-	Cache              CacheConfig         `yaml:"cache" json:"cache"`
-	JWT                JWTConfig           `yaml:"jwt" json:"jwt"`
-	OAuth              OAuthConfig         `yaml:"oauth" json:"oauth"`
-	Flow               FlowConfig          `yaml:"flow" json:"flow"`
-	Crypto             CryptoConfig        `yaml:"crypto" json:"crypto"`
-	CORS               CORSConfig          `yaml:"cors" json:"cors"`
-	User               UserConfig          `yaml:"user" json:"user"`
-	ImmutableResources ImmutableResources  `yaml:"immutable_resources" json:"immutable_resources"`
-	Resource           ResourceConfig      `yaml:"resource" json:"resource"`
-	Observability      ObservabilityConfig `yaml:"observability" json:"observability"`
+	Server             ServerConfig           `yaml:"server" json:"server"`
+	GateClient         GateClientConfig       `yaml:"gate_client" json:"gate_client"`
+	Security           SecurityConfig         `yaml:"security" json:"security"`
+	Database           DatabaseConfig         `yaml:"database" json:"database"`
+	Cache              CacheConfig            `yaml:"cache" json:"cache"`
+	JWT                JWTConfig              `yaml:"jwt" json:"jwt"`
+	OAuth              OAuthConfig            `yaml:"oauth" json:"oauth"`
+	Flow               FlowConfig             `yaml:"flow" json:"flow"`
+	Crypto             CryptoConfig           `yaml:"crypto" json:"crypto"`
+	CORS               CORSConfig             `yaml:"cors" json:"cors"`
+	User               UserConfig             `yaml:"user" json:"user"`
+	ImmutableResources ImmutableResources     `yaml:"immutable_resources" json:"immutable_resources"`
+	Resource           ResourceConfig         `yaml:"resource" json:"resource"`
+	OrganizationUnit   OrganizationUnitConfig `yaml:"organization_unit" json:"organization_unit"`
+	Observability      ObservabilityConfig    `yaml:"observability" json:"observability"`
 }
 
 // LoadConfig loads the configurations from the specified YAML file and applies defaults.
-func LoadConfig(path string, defaultsPath string) (*Config, error) {
+func LoadConfig(configPath string, defaultPath string, thunderHome string) (*Config, error) {
 	var cfg Config
-	path = filepath.Clean(path)
 
 	// Load default configuration if provided
-	if defaultsPath != "" {
-		defaultCfg, err := loadDefaultConfig(defaultsPath)
+	if defaultPath != "" {
+		defaultCfg, err := loadDefaultConfig(defaultPath, thunderHome)
 		if err != nil {
 			return nil, err
 		}
@@ -254,19 +265,9 @@ func LoadConfig(path string, defaultsPath string) (*Config, error) {
 	}
 
 	// Load user configuration
-	file, err := os.Open(path)
-	if err != nil {
-		return nil, err
-	}
-	defer func() {
-		if ferr := file.Close(); ferr != nil {
-			log.GetLogger().Error("Failed to close config file", log.Error(ferr))
-		}
-	}()
-
-	decoder := yaml.NewDecoder(file)
 	var userCfg Config
-	if err := decoder.Decode(&userCfg); err != nil {
+	userCfg, err := loadUserConfig(configPath, thunderHome)
+	if err != nil {
 		return nil, err
 	}
 
@@ -291,25 +292,46 @@ func LoadConfig(path string, defaultsPath string) (*Config, error) {
 }
 
 // loadDefaultConfig loads the default configuration from a JSON file.
-func loadDefaultConfig(path string) (*Config, error) {
+func loadDefaultConfig(path string, thunderHome string) (*Config, error) {
 	var cfg Config
-	path = filepath.Clean(path)
-
-	file, err := os.Open(path)
+	configPath := filepath.Clean(path)
+	data, err := os.ReadFile(configPath)
 	if err != nil {
 		return nil, err
 	}
-	defer func() {
-		if ferr := file.Close(); ferr != nil {
-			log.GetLogger().Error("Failed to close default config file", log.Error(ferr))
-		}
-	}()
+	data, err = utils.SubstituteFilePaths(data, thunderHome)
+	if err != nil {
+		return nil, err
+	}
 
-	decoder := json.NewDecoder(file)
-	if err := decoder.Decode(&cfg); err != nil {
+	if err := json.Unmarshal(data, &cfg); err != nil {
 		return nil, err
 	}
 	return &cfg, nil
+}
+
+func loadUserConfig(path string, thunderHome string) (Config, error) {
+	var cfg Config
+	configPath := filepath.Clean(path)
+	data, err := os.ReadFile(configPath)
+	if err != nil {
+		return Config{}, err
+	}
+	data, err = utils.SubstituteEnvironmentVariables(data)
+	if err != nil {
+		return Config{}, err
+	}
+	data, err = utils.SubstituteFilePaths(data, thunderHome)
+	if err != nil {
+		return Config{}, err
+	}
+
+	decoder := yaml.NewDecoder(strings.NewReader(string(data)))
+	decoder.KnownFields(true)
+	if err := decoder.Decode(&cfg); err != nil {
+		return Config{}, err
+	}
+	return cfg, nil
 }
 
 // GetServerURL constructs the server URL from the server configuration.
@@ -403,3 +425,16 @@ func isZeroValue(v reflect.Value) bool {
 		return false
 	}
 }
+
+// Store modes for Immutable configurations.
+const (
+	// StoreModeMutable uses only the database store. All OUs are mutable and support full CRUD.
+	StoreModeMutable = "mutable"
+
+	// StoreModeImmutable uses only the file-based store. All OUs are immutable (read-only from YAML).
+	StoreModeImmutable = "immutable"
+
+	// StoreModeComposite (hybrid) uses both file-based (immutable) and database (mutable) stores.
+	// Reads merge both stores, writes only go to database store.
+	StoreModeComposite = "composite"
+)

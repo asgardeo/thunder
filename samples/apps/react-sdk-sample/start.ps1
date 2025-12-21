@@ -17,6 +17,23 @@
 # under the License.
 # ----------------------------------------------------------------------------
 
+# Check for PowerShell Version Compatibility
+if ($PSVersionTable.PSVersion.Major -lt 7) {
+    Write-Host ""
+    Write-Host "================================================================" -ForegroundColor Red
+    Write-Host " [ERROR] UNSUPPORTED POWERSHELL VERSION" -ForegroundColor Red
+    Write-Host "================================================================" -ForegroundColor Red
+    Write-Host ""
+    Write-Host " You are currently running PowerShell $($PSVersionTable.PSVersion.ToString())" -ForegroundColor Yellow
+    Write-Host " Thunder requires PowerShell 7 (Core) or later." -ForegroundColor Yellow
+    Write-Host ""
+    Write-Host " Please install the latest version from:"
+    Write-Host " https://github.com/PowerShell/PowerShell" -ForegroundColor Cyan
+    Write-Host ""
+    exit 1
+}
+
+
 $SERVER_PORT = 3000
 $scriptDir = Split-Path -Parent $MyInvocation.MyCommand.Definition
 
@@ -46,7 +63,7 @@ KillPort -Port $SERVER_PORT
 # Check if npx is available
 $npx = Get-Command npx -ErrorAction SilentlyContinue
 if (-not $npx) {
-    Write-Host "❌ Error: npx is not installed. Please install Node.js and npm."
+    Write-Host "[ERROR] Error: npx is not installed. Please install Node.js and npm."
     exit 1
 }
 
@@ -55,19 +72,19 @@ $distPath = Join-Path $scriptDir 'dist'
 $certFile = Join-Path $distPath 'server.cert'
 $keyFile = Join-Path $distPath 'server.key'
 
-Write-Host "⚡ Starting React SDK Sample App Server on port $SERVER_PORT..."
+Write-Host "[INFO] Starting React SDK Sample App Server on port $SERVER_PORT..."
 Write-Host ""
-Write-Host "📂 Serving static files from ./dist directory"
+Write-Host "[INFO] Serving static files from ./dist directory"
 Write-Host ""
 
 # Start the static file server with HTTPS if certificates exist
 if ((Test-Path $certFile) -and (Test-Path $keyFile)) {
-    Write-Host "🔐 Using HTTPS with SSL certificates"
+    Write-Host "[INFO] Using HTTPS with SSL certificates"
     $arguments = @("serve", "-s", $distPath, "-l", $SERVER_PORT, "--ssl-cert", $certFile, "--ssl-key", $keyFile)
     $protocol = "https"
 } else {
-    Write-Host "⚠️  SSL certificates not found. Running with HTTP"
-    Write-Host "    Run the build script to generate certificates"
+    Write-Host "[WARN] SSL certificates not found. Running with HTTP"
+    Write-Host "     Run the build script to generate certificates"
     $arguments = @("serve", "-s", $distPath, "-l", $SERVER_PORT)
     $protocol = "http"
 }
@@ -76,7 +93,7 @@ if ((Test-Path $certFile) -and (Test-Path $keyFile)) {
 $proc = Start-Process -FilePath "npx" -ArgumentList $arguments -PassThru -WorkingDirectory $scriptDir -NoNewWindow
 
 Write-Host ""
-Write-Host "🚀 React SDK Sample App running at ${protocol}://localhost:$SERVER_PORT"
+Write-Host "[INFO] React SDK Sample App running at ${protocol}://localhost:$SERVER_PORT"
 Write-Host "Press Ctrl+C to stop the server."
 Write-Host ""
 
@@ -86,7 +103,7 @@ try {
 }
 catch [System.Management.Automation.PipelineStoppedException] {
     # User pressed Ctrl+C
-    Write-Host "`n🛑 Stopping server..."
+    Write-Host "`n[STOP] Stopping server..."
 }
 finally {
     if ($proc -and -not $proc.HasExited) {

@@ -64,20 +64,20 @@ var (
 		Error:            "Invalid logo URL",
 		ErrorDescription: "The provided logo URL is not a valid URI",
 	}
-	// ErrorInvalidAuthFlowGraphID is the error returned when an invalid auth flow graph ID is provided.
-	ErrorInvalidAuthFlowGraphID = serviceerror.ServiceError{
+	// ErrorInvalidAuthFlowID is the error returned when an invalid auth flow ID is provided.
+	ErrorInvalidAuthFlowID = serviceerror.ServiceError{
 		Type:             serviceerror.ClientErrorType,
 		Code:             "APP-1007",
-		Error:            "Invalid auth flow graph ID",
-		ErrorDescription: "The provided authentication flow graph ID is invalid",
+		Error:            "Invalid auth flow ID",
+		ErrorDescription: "The provided authentication flow ID is invalid",
 	}
-	// ErrorInvalidRegistrationFlowGraphID is the error returned when an invalid registration flow graph ID
+	// ErrorInvalidRegistrationFlowID is the error returned when an invalid registration flow ID
 	// is provided.
-	ErrorInvalidRegistrationFlowGraphID = serviceerror.ServiceError{
+	ErrorInvalidRegistrationFlowID = serviceerror.ServiceError{
 		Type:             serviceerror.ClientErrorType,
 		Code:             "APP-1008",
-		Error:            "Invalid registration flow graph ID",
-		ErrorDescription: "The provided registration flow graph ID is invalid",
+		Error:            "Invalid registration flow ID",
+		ErrorDescription: "The provided registration flow ID is invalid",
 	}
 	// ErrorInvalidInboundAuthConfig is the error returned when invalid inbound auth config is provided.
 	ErrorInvalidInboundAuthConfig = serviceerror.ServiceError{
@@ -207,6 +207,13 @@ var (
 		Code:             "APP-1026",
 		Error:            "Branding not found",
 		ErrorDescription: "The specified branding configuration does not exist",
+	}
+	// ErrorWhileRetrievingFlowDefinition is the error returned when there is an issue retrieving flow definition.
+	ErrorWhileRetrievingFlowDefinition = serviceerror.ServiceError{
+		Type:             serviceerror.ClientErrorType,
+		Code:             "APP-1027",
+		Error:            "Error retrieving flow definition",
+		ErrorDescription: "An error occurred while retrieving the flow definition",
 	}
 )
 

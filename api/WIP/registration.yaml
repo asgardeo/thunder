@@ -1,0 +1,462 @@
+openapi: 3.0.3
+
+info:
+  title: Registration API
+  description: This API is used for user registration operations including WebAuthn/Passkey registration.
+  version: "1.0"
+  license:
+    name: Apache 2.0
+    url: http://www.apache.org/licenses/LICENSE-2.0.html
+
+servers:
+  - url: https://{host}:{port}
+    variables:
+      host:
+        default: "localhost"
+      port:
+        default: "8090"
+
+paths:
+  /register/webauthn/start:
+    post:
+      summary: Start WebAuthn credential registration
+      description: Initiate WebAuthn/Passkey credential creation for a user.
+      tags:
+        - WebAuthn / Passkey Registration
+      requestBody:
+        description: WebAuthn credential creation initiation data
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/WebAuthnRegistrationStartRequest'
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WebAuthnRegistrationStartResponse'
+        "400":
+          description: 'Bad Request: The request body is malformed or contains invalid data'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ClientErrorResponse'
+              example:
+                code: "AUTHN-1011"
+                message: "Empty user ID"
+                description: "The user ID is required to start WebAuthn registration"
+        "404":
+          description: 'Not Found: The user could not be found'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ClientErrorResponse'
+              example:
+                code: "AUTHN-1008"
+                message: "User not found"
+                description: "No user found with the provided User ID"
+        "500":
+          description: 'Internal Server Error: An unexpected error occurred while processing the request'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ServerErrorResponse'
+              example:
+                code: "SSE-5000"
+                message: "Internal server error"
+                description: "An unexpected error occurred while processing the request"
+
+  /register/webauthn/finish:
+    post:
+      summary: Finish WebAuthn credential registration
+      description: Complete WebAuthn/Passkey credential creation for a user.
+      tags:
+        - WebAuthn / Passkey Registration
+      requestBody:
+        description: WebAuthn credential creation completion data
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/WebAuthnRegistrationFinishRequest'
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WebAuthnRegistrationFinishResponse'
+        "400":
+          description: 'Bad Request: The request body is malformed or contains invalid data'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ClientErrorResponse'
+              examples:
+                emptyCredentialId:
+                  value:
+                    code: "AUTHN-1012"
+                    message: "Empty credential ID"
+                    description: "The credential ID is required to complete WebAuthn registration"
+                emptyCredentialType:
+                  value:
+                    code: "AUTHN-1013"
+                    message: "Empty credential type"
+                    description: "The credential type is required to complete WebAuthn registration"
+                invalidAttestationResponse:
+                  value:
+                    code: "AUTHN-1015"
+                    message: "Invalid attestation response"
+                    description: "The attestation response is missing required fields (clientDataJSON or attestationObject)"
+                emptySessionToken:
+                  value:
+                    code: "AUTHN-1004"
+                    message: "Empty session token"
+                    description: "The provided session token is empty"
+        "401":
+          description: 'Unauthorized: WebAuthn registration verification failed'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ClientErrorResponse'
+              example:
+                code: "WEBAUTHN-1009"
+                message: "Invalid attestation"
+                description: "The WebAuthn attestation verification failed"
+        "404":
+          description: 'Not Found: The user could not be found'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ClientErrorResponse'
+              example:
+                code: "AUTHN-1008"
+                message: "User not found"
+                description: "No user found for the provided session"
+        "500":
+          description: 'Internal Server Error: An unexpected error occurred while processing the request'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ServerErrorResponse'
+              example:
+                code: "SSE-5000"
+                message: "Internal server error"
+                description: "An unexpected error occurred while processing the request"
+
+components:
+  schemas:
+    WebAuthnRegistrationStartRequest:
+      type: object
+      properties:
+        userId:
+          type: string
+          description: User ID of the user to register credentials for
+          example: "550e8400-e29b-41d4-a716-446655440000"
+        relyingPartyId:
+          type: string
+          description: Relying Party ID (typically the domain)
+          example: "example.com"
+        relyingPartyName:
+          type: string
+          description: Human-readable name for the Relying Party
+          example: "Example Corp"
+        authenticatorSelection:
+          type: object
+          description: Criteria for selecting authenticators
+          properties:
+            authenticatorAttachment:
+              type: string
+              description: Authenticator attachment modality
+              enum: ["platform", "cross-platform"]
+              example: "platform"
+            requireResidentKey:
+              type: boolean
+              description: Whether a resident key is required
+              example: false
+            residentKey:
+              type: string
+              description: Resident key requirement
+              enum: ["discouraged", "preferred", "required"]
+              example: "preferred"
+            userVerification:
+              type: string
+              description: User verification requirement
+              enum: ["required", "preferred", "discouraged"]
+              example: "preferred"
+        attestation:
+          type: string
+          description: Attestation conveyance preference
+          enum: ["none", "indirect", "direct", "enterprise"]
+          example: "none"
+      required:
+        - userId
+        - relyingPartyId
+
+    WebAuthnRegistrationStartResponse:
+      type: object
+      properties:
+        publicKeyCredentialCreationOptions:
+          type: object
+          description: PublicKeyCredentialCreationOptions as per WebAuthn standard
+          properties:
+            challenge:
+              type: string
+              description: Base64url-encoded challenge for the registration ceremony
+              example: "Z29yZG9uQGV4YW1wbGUuY29tMjAyMS0wMy0xMlQxMjo0NTowMFo"
+            rp:
+              type: object
+              description: Relying Party information
+              properties:
+                id:
+                  type: string
+                  description: Relying Party identifier
+                  example: "example.com"
+                name:
+                  type: string
+                  description: Human-readable Relying Party name
+                  example: "Example Corp"
+              required:
+                - id
+                - name
+            user:
+              type: object
+              description: User information for the credential
+              properties:
+                id:
+                  type: string
+                  description: Base64url-encoded user handle
+                  example: "NTUwZTg0MDAtZTI5Yi00MWQ0LWE3MTYtNDQ2NjU1NDQwMDAw"
+                name:
+                  type: string
+                  description: User's username or email
+                  example: "gordon@example.com"
+                displayName:
+                  type: string
+                  description: User's display name
+                  example: "Gordon Freeman"
+              required:
+                - id
+                - name
+                - displayName
+            pubKeyCredParams:
+              type: array
+              description: Supported public key algorithms
+              items:
+                type: object
+                properties:
+                  type:
+                    type: string
+                    description: Type of credential
+                    example: "public-key"
+                  alg:
+                    type: integer
+                    description: COSE algorithm identifier
+                    example: -7
+              example:
+                - type: "public-key"
+                  alg: -7
+                - type: "public-key"
+                  alg: -257
+            timeout:
+              type: integer
+              description: Time in milliseconds that the user has to respond to the prompt
+              example: 60000
+            excludeCredentials:
+              type: array
+              description: Credentials to exclude from registration
+              items:
+                type: object
+                properties:
+                  type:
+                    type: string
+                    description: Type of the credential
+                    example: "public-key"
+                  id:
+                    type: string
+                    description: Base64url-encoded credential ID
+                    example: "AdC-ff_z-Z1gY2s6e_2A-g"
+                  transports:
+                    type: array
+                    description: Hints about where the credential might be stored
+                    items:
+                      type: string
+                      enum: ["usb", "nfc", "ble", "internal", "hybrid"]
+            authenticatorSelection:
+              type: object
+              description: Criteria for authenticator selection
+              properties:
+                authenticatorAttachment:
+                  type: string
+                  enum: ["platform", "cross-platform"]
+                  example: "platform"
+                requireResidentKey:
+                  type: boolean
+                  example: false
+                residentKey:
+                  type: string
+                  enum: ["discouraged", "preferred", "required"]
+                  example: "preferred"
+                userVerification:
+                  type: string
+                  enum: ["required", "preferred", "discouraged"]
+                  example: "preferred"
+            attestation:
+              type: string
+              description: Attestation conveyance preference
+              enum: ["none", "indirect", "direct", "enterprise"]
+              example: "none"
+          required:
+            - challenge
+            - rp
+            - user
+            - pubKeyCredParams
+          example:
+            challenge: "Z29yZG9uQGV4YW1wbGUuY29tMjAyMS0wMy0xMlQxMjo0NTowMFo"
+            rp:
+              id: "example.com"
+              name: "Example Corp"
+            user:
+              id: "NTUwZTg0MDAtZTI5Yi00MWQ0LWE3MTYtNDQ2NjU1NDQwMDAw"
+              name: "gordon@example.com"
+              displayName: "Gordon Freeman"
+            pubKeyCredParams:
+              - type: "public-key"
+                alg: -7
+              - type: "public-key"
+                alg: -257
+            timeout: 60000
+            authenticatorSelection:
+              authenticatorAttachment: "platform"
+              requireResidentKey: false
+              residentKey: "preferred"
+              userVerification: "preferred"
+            attestation: "none"
+        sessionToken:
+          type: string
+          description: JWT token for the WebAuthn registration session
+          example: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+      required:
+        - publicKeyCredentialCreationOptions
+        - sessionToken
+
+    WebAuthnRegistrationFinishRequest:
+      type: object
+      properties:
+        publicKeyCredential:
+          type: object
+          description: PublicKeyCredential as per WebAuthn standard
+          properties:
+            id:
+              type: string
+              description: Base64url-encoded credential ID
+              example: "AdC-ff_z-Z1gY2s6e_2A-g"
+            rawId:
+              type: string
+              description: Base64url-encoded raw credential ID
+              example: "AdC-ff_z-Z1gY2s6e_2A-g"
+            type:
+              type: string
+              description: Type of the credential
+              example: "public-key"
+            response:
+              type: object
+              description: AuthenticatorAttestationResponse
+              properties:
+                clientDataJSON:
+                  type: string
+                  description: Base64url-encoded client data JSON
+                  example: "eyJjaGFsbGVuZ2UiOiJaMm95Wm05eVpHOXVRR1Y0WVcxd2JHVXVZMjl0TWpBeU1TMHdNeTB4TWxSeE1qbzBOVG93TUZvIiwidHlwZSI6IndlYmF1dGhuLmNyZWF0ZSIsIm9yaWdpbiI6Imh0dHBzOi8vZXhhbXBsZS5jb20ifQ"
+                attestationObject:
+                  type: string
+                  description: Base64url-encoded attestation object
+                  example: "o2NmbXRkbm9uZWdhdHRTdG10oGhhdXRoRGF0YVkBZ0mWDeWIDoxodDQXD2R2YFuP5K65ooYyx5lc87qDHZdjRQAAAAA"
+                transports:
+                  type: array
+                  description: Available transports for this credential
+                  items:
+                    type: string
+                    enum: ["usb", "nfc", "ble", "internal", "hybrid"]
+                  example: ["internal", "hybrid"]
+              required:
+                - clientDataJSON
+                - attestationObject
+            authenticatorAttachment:
+              type: string
+              description: Authenticator attachment modality
+              enum: ["platform", "cross-platform"]
+              example: "platform"
+          required:
+            - id
+            - rawId
+            - type
+            - response
+          example:
+            id: "AdC-ff_z-Z1gY2s6e_2A-g"
+            rawId: "AdC-ff_z-Z1gY2s6e_2A-g"
+            type: "public-key"
+            response:
+              clientDataJSON: "eyJjaGFsbGVuZ2UiOiJaMm95Wm05eVpHOXVRR1Y0WVcxd2JHVXVZMjl0TWpBeU1TMHdNeTB4TWxSeE1qbzBOVG93TUZvIiwidHlwZSI6IndlYmF1dGhuLmNyZWF0ZSIsIm9yaWdpbiI6Imh0dHBzOi8vZXhhbXBsZS5jb20ifQ"
+              attestationObject: "o2NmbXRkbm9uZWdhdHRTdG10oGhhdXRoRGF0YVkBZ0mWDeWIDoxodDQXD2R2YFuP5K65ooYyx5lc87qDHZdjRQAAAAA"
+              transports: ["internal", "hybrid"]
+            authenticatorAttachment: "platform"
+        sessionToken:
+          type: string
+          description: JWT token for the WebAuthn registration session
+          example: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+        credentialName:
+          type: string
+          description: User-friendly name for the credential
+          example: "My iPhone"
+      required:
+        - publicKeyCredential
+        - sessionToken
+
+    WebAuthnRegistrationFinishResponse:
+      type: object
+      properties:
+        credentialId:
+          type: string
+          description: The unique identifier of the registered credential
+          example: "AdC-ff_z-Z1gY2s6e_2A-g"
+        credentialName:
+          type: string
+          description: User-friendly name for the credential
+          example: "My iPhone"
+        createdAt:
+          type: string
+          format: date-time
+          description: Timestamp when the credential was created
+          example: "2024-01-15T10:30:00Z"
+      required:
+        - credentialId
+
+    ErrorResponse:
+      type: object
+      properties:
+        code:
+          type: string
+          description: Error code
+        message:
+          type: string
+          description: Error message
+        description:
+          type: string
+          description: Detailed error description
+
+    ClientErrorResponse:
+      allOf:
+        - $ref: '#/components/schemas/ErrorResponse'
+        - type: object
+
+    ServerErrorResponse:
+      allOf:
+        - $ref: '#/components/schemas/ErrorResponse'
+        - type: object
+      example:
+        code: "SSE-5000"
+        message: "Internal server error"
+        description: "An unexpected error occurred while processing the request"
+

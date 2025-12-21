@@ -30,53 +30,16 @@ const (
 
 // Authentication and Authorization Event Types
 const (
+	// Token Issuance Events
 
-	// Authentication Flow Events
+	// EventTypeTokenIssuanceStarted is triggered when token issuance begins.
+	EventTypeTokenIssuanceStarted EventType = "TOKEN_ISSUANCE_STARTED" //nolint:gosec
 
-	// EventTypeAuthenticationStarted is triggered when authentication flow begins.
-	EventTypeAuthenticationStarted EventType = "AUTHENTICATION_STARTED"
+	// EventTypeTokenIssued is triggered when a token is successfully issued.
+	EventTypeTokenIssued EventType = "TOKEN_ISSUED"
 
-	// EventTypeAuthenticationMethodSelected is triggered when user selects auth method.
-	EventTypeAuthenticationMethodSelected EventType = "AUTHENTICATION_METHOD_SELECTED"
-
-	// EventTypeCredentialsAuthStarted is triggered when credentials authentication begins.
-	EventTypeCredentialsAuthStarted EventType = "CREDENTIALS_AUTH_STARTED"
-
-	// EventTypeCredentialsAuthCompleted is triggered when credentials authentication succeeds.
-	EventTypeCredentialsAuthCompleted EventType = "CREDENTIALS_AUTH_COMPLETED"
-
-	// EventTypeCredentialsAuthFailed is triggered when credentials authentication fails.
-	EventTypeCredentialsAuthFailed EventType = "CREDENTIALS_AUTH_FAILED"
-
-	// EventTypeOTPSent is triggered when OTP is sent to user.
-	EventTypeOTPSent EventType = "OTP_SENT"
-
-	// EventTypeOTPVerificationStarted is triggered when OTP verification begins.
-	EventTypeOTPVerificationStarted EventType = "OTP_VERIFICATION_STARTED"
-
-	// EventTypeOTPVerified is triggered when OTP is successfully verified.
-	EventTypeOTPVerified EventType = "OTP_VERIFIED"
-
-	// EventTypeOTPVerificationFailed is triggered when OTP verification fails.
-	EventTypeOTPVerificationFailed EventType = "OTP_VERIFICATION_FAILED"
-
-	// EventTypeSocialAuthStarted is triggered when social authentication begins.
-	EventTypeSocialAuthStarted EventType = "SOCIAL_AUTH_STARTED"
-
-	// EventTypeSocialAuthCallbackReceived is triggered when social provider calls back.
-	EventTypeSocialAuthCallbackReceived EventType = "SOCIAL_AUTH_CALLBACK_RECEIVED"
-
-	// EventTypeSocialAuthCompleted is triggered when social authentication succeeds.
-	EventTypeSocialAuthCompleted EventType = "SOCIAL_AUTH_COMPLETED"
-
-	// EventTypeSocialAuthFailed is triggered when social authentication fails.
-	EventTypeSocialAuthFailed EventType = "SOCIAL_AUTH_FAILED"
-
-	// EventTypeAuthenticationCompleted is triggered when authentication flow succeeds.
-	EventTypeAuthenticationCompleted EventType = "AUTHENTICATION_COMPLETED"
-
-	// EventTypeAuthenticationFailed is triggered when authentication flow fails.
-	EventTypeAuthenticationFailed EventType = "AUTHENTICATION_FAILED"
+	// EventTypeTokenIssuanceFailed is triggered when token issuance fails.
+	EventTypeTokenIssuanceFailed EventType = "TOKEN_ISSUANCE_FAILED" //nolint:gosec
 
 	// Flow Execution Events
 

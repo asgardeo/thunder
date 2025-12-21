@@ -17,10 +17,29 @@
 # under the License.
 # ----------------------------------------------------------------------------
 
+# Check for PowerShell Version Compatibility
+if ($PSVersionTable.PSVersion.Major -lt 7) {
+    Write-Host ""
+    Write-Host "================================================================" -ForegroundColor Red
+    Write-Host " [ERROR] UNSUPPORTED POWERSHELL VERSION" -ForegroundColor Red
+    Write-Host "================================================================" -ForegroundColor Red
+    Write-Host ""
+    Write-Host " You are currently running PowerShell $($PSVersionTable.PSVersion.ToString())" -ForegroundColor Yellow
+    Write-Host " Thunder requires PowerShell 7 (Core) or later." -ForegroundColor Yellow
+    Write-Host ""
+    Write-Host " Please install the latest version from:"
+    Write-Host " https://github.com/PowerShell/PowerShell" -ForegroundColor Cyan
+    Write-Host ""
+    exit 1
+}
+
 # Bootstrap Script: Sample Resources Setup
 # Creates resources required to run the Thunder sample experience
 
 $ErrorActionPreference = 'Stop'
+
+# Dot-source common functions from the same directory as this script
+. "$PSScriptRoot/common.ps1"
 
 Log-Info "Creating sample Thunder resources..."
 Write-Host ""
@@ -126,6 +145,48 @@ else {
 Write-Host ""
 
 # ============================================================================
+# Retrieve Flow IDs
+# ============================================================================
+
+Log-Info "Retrieving flow IDs..."
+
+function Get-FlowIdByHandle {
+    param(
+        [string]$Handle,
+        [string]$Type
+    )
+    $response = Invoke-ThunderApi -Method GET -Endpoint "/flows?flowType=$Type&limit=200"
+    if ($response.StatusCode -eq 200) {
+        $body = $response.Body | ConvertFrom-Json
+        $flow = $body.flows | Where-Object { $_.handle -eq $Handle } | Select-Object -First 1
+        return $flow.id
+    }
+    else {
+        Log-Error "Failed to fetch flows (HTTP $($response.StatusCode))"
+        exit 1
+    }
+}
+
+$BASIC_AUTH_FLOW_ID = Get-FlowIdByHandle -Handle "default-basic-flow" -Type "AUTHENTICATION"
+$BASIC_REG_FLOW_ID = Get-FlowIdByHandle -Handle "default-basic-flow" -Type "REGISTRATION"
+
+if (-not $BASIC_AUTH_FLOW_ID) {
+    Log-Error "Could not find 'default-basic-flow'"
+    exit 1
+}
+
+if (-not $BASIC_REG_FLOW_ID) {
+    Log-Error "Could not find 'default-basic-flow'"
+    exit 1
+}
+
+Log-Info "Found Flow IDs:"
+Log-Info "  Basic Auth: $BASIC_AUTH_FLOW_ID"
+Log-Info "  Basic Registration: $BASIC_REG_FLOW_ID"
+
+Write-Host ""
+
+# ============================================================================
 # Create Sample Application
 # ============================================================================
 
@@ -139,8 +200,8 @@ $appData = @{
     tos_uri = "https://localhost:3000/terms"
     policy_uri = "https://localhost:3000/privacy"
     contacts = @("admin@example.com", "support@example.com")
-    auth_flow_graph_id = "auth_flow_config_basic"
-    registration_flow_graph_id = "registration_flow_config_basic"
+    auth_flow_graph_id = $BASIC_AUTH_FLOW_ID
+    registration_flow_graph_id = $BASIC_REG_FLOW_ID
     is_registration_flow_enabled = $true
     user_attributes = @("given_name","family_name","email","groups")
     allowed_user_types = @("Customer")

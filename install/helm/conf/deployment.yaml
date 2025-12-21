@@ -30,7 +30,6 @@ gate_client:
 security:
   cert_file: {{ .Values.configuration.security.certFile | quote }}
   key_file: {{ .Values.configuration.security.keyFile | quote }}
-  crypto_file: {{ .Values.configuration.security.cryptoFile | quote }}
 
 database:
   identity:
@@ -94,7 +93,10 @@ oauth:
     validity_period: {{ .Values.configuration.oauth.authorizationCode.validityPeriod }}
 
 flow:
-  graph_directory: {{ .Values.configuration.flow.graphDirectory | quote }}
+  default_auth_flow_handle: {{ .Values.configuration.flow.defaultAuthFlowHandle | quote }}
+  max_version_history: {{ .Values.configuration.flow.maxVersionHistory }}
+  auto_infer_registration: {{ .Values.configuration.flow.autoInferRegistration }}
+
   authn:
     default_flow: {{ .Values.configuration.flow.authn.defaultFlow | quote }}
 

@@ -1,0 +1,256 @@
+{
+    "name": "Basic + Google + GitHub + SMS Registration Flow",
+    "handle": "basic-google-github-sms-flow",
+    "flowType": "REGISTRATION",
+    "nodes": [
+        {
+            "id": "start",
+            "type": "START",
+            "onSuccess": "user_type_resolver"
+        },
+        {
+            "id": "user_type_resolver",
+            "type": "TASK_EXECUTION",
+            "executor": {
+                "name": "UserTypeResolver"
+            },
+            "onSuccess": "choose_auth"
+        },
+        {
+            "id": "choose_auth",
+            "type": "PROMPT",
+            "actions": [
+                {
+                    "ref": "action_001",
+                    "nextNode": "basic_auth"
+                },
+                {
+                    "ref": "action_002",
+                    "nextNode": "google_auth"
+                },
+                {
+                    "ref": "action_003",
+                    "nextNode": "github_auth"
+                },
+                {
+                    "ref": "action_004",
+                    "nextNode": "prompt_mobile"
+                }
+            ]
+        },
+        {
+            "id": "basic_auth",
+            "type": "TASK_EXECUTION",
+            "executor": {
+                "name": "BasicAuthExecutor"
+            },
+            "onSuccess": "send_sms_for_basic"
+        },
+        {
+            "id": "google_auth",
+            "type": "TASK_EXECUTION",
+            "properties": {
+                "idpId": "<google-idp-id>"
+            },
+            "executor": {
+                "name": "GoogleOIDCAuthExecutor"
+            },
+            "onSuccess": "provisioning_social"
+        },
+        {
+            "id": "github_auth",
+            "type": "TASK_EXECUTION",
+            "properties": {
+                "idpId": "<github-idp-id>"
+            },
+            "executor": {
+                "name": "GithubOAuthExecutor"
+            },
+            "onSuccess": "provisioning_social"
+        },
+        {
+            "id": "prompt_mobile",
+            "type": "PROMPT",
+            "inputs": [
+                {
+                    "ref": "input_001",
+                    "identifier": "mobileNumber",
+                    "type": "TEXT_INPUT",
+                    "required": true
+                }
+            ],
+            "actions": [
+                {
+                    "ref": "action_001",
+                    "nextNode": "send_sms"
+                }
+            ]
+        },
+        {
+            "id": "send_sms",
+            "type": "TASK_EXECUTION",
+            "properties": {
+                "senderId": "<your-sender-id>"
+            },
+            "executor": {
+                "name": "SMSOTPAuthExecutor",
+                "mode": "send"
+            },
+            "onSuccess": "prompt_otp"
+        },
+        {
+            "id": "prompt_otp",
+            "type": "PROMPT",
+            "inputs": [
+                {
+                    "ref": "input_002",
+                    "identifier": "otp",
+                    "type": "TEXT_INPUT",
+                    "required": true
+                }
+            ],
+            "actions": [
+                {
+                    "ref": "action_001",
+                    "nextNode": "verify_sms"
+                }
+            ]
+        },
+        {
+            "id": "verify_sms",
+            "type": "TASK_EXECUTION",
+            "executor": {
+                "name": "SMSOTPAuthExecutor",
+                "mode": "verify"
+            },
+            "onSuccess": "provisioning_local_sms"
+        },
+        {
+            "id": "send_sms_for_basic",
+            "type": "TASK_EXECUTION",
+            "properties": {
+                "senderId": "<your-sender-id>"
+            },
+            "executor": {
+                "name": "SMSOTPAuthExecutor",
+                "mode": "send"
+            },
+            "onSuccess": "prompt_otp_for_basic"
+        },
+        {
+            "id": "prompt_otp_for_basic",
+            "type": "PROMPT",
+            "inputs": [
+                {
+                    "ref": "input_003",
+                    "identifier": "otp",
+                    "type": "TEXT_INPUT",
+                    "required": true
+                }
+            ],
+            "actions": [
+                {
+                    "ref": "action_001",
+                    "nextNode": "verify_sms_for_basic"
+                }
+            ]
+        },
+        {
+            "id": "verify_sms_for_basic",
+            "type": "TASK_EXECUTION",
+            "executor": {
+                "name": "SMSOTPAuthExecutor",
+                "mode": "verify"
+            },
+            "onSuccess": "provisioning_local_basic"
+        },
+        {
+            "id": "provisioning_local_basic",
+            "type": "TASK_EXECUTION",
+            "inputs": [
+                {
+                    "ref": "input_002",
+                    "identifier": "username",
+                    "type": "TEXT_INPUT",
+                    "required": true
+                },
+                {
+                    "ref": "input_003",
+                    "identifier": "password",
+                    "type": "PASSWORD_INPUT",
+                    "required": true
+                },
+                {
+                    "ref": "input_004",
+                    "identifier": "firstName",
+                    "type": "TEXT_INPUT",
+                    "required": false
+                },
+                {
+                    "ref": "input_005",
+                    "identifier": "lastName",
+                    "type": "TEXT_INPUT",
+                    "required": false
+                },
+                {
+                    "ref": "input_006",
+                    "identifier": "mobileNumber",
+                    "type": "TEXT_INPUT",
+                    "required": false
+                }
+            ],
+            "executor": {
+                "name": "ProvisioningExecutor"
+            },
+            "onSuccess": "auth_assert"
+        },
+        {
+            "id": "provisioning_local_sms",
+            "type": "TASK_EXECUTION",
+            "inputs": [
+                {
+                    "ref": "input_007",
+                    "identifier": "firstName",
+                    "type": "TEXT_INPUT",
+                    "required": false
+                },
+                {
+                    "ref": "input_008",
+                    "identifier": "lastName",
+                    "type": "TEXT_INPUT",
+                    "required": false
+                },
+                {
+                    "ref": "input_009",
+                    "identifier": "mobileNumber",
+                    "type": "TEXT_INPUT",
+                    "required": true
+                }
+            ],
+            "executor": {
+                "name": "ProvisioningExecutor"
+            },
+            "onSuccess": "auth_assert"
+        },
+        {
+            "id": "provisioning_social",
+            "type": "TASK_EXECUTION",
+            "executor": {
+                "name": "ProvisioningExecutor"
+            },
+            "onSuccess": "auth_assert"
+        },
+        {
+            "id": "auth_assert",
+            "type": "TASK_EXECUTION",
+            "executor": {
+                "name": "AuthAssertExecutor"
+            },
+            "onSuccess": "end"
+        },
+        {
+            "id": "end",
+            "type": "END"
+        }
+    ]
+}
