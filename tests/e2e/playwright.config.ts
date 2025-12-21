@@ -72,7 +72,7 @@ export default defineConfig({
    * This ensures the server is up before the setup project tries to authenticate.
    */
   webServer: {
-    command: "cd ../.. && ./start.sh",
+    command: "cd ../.. && ./build.sh run_backend",
     url: "https://localhost:8090/health/liveness",
     reuseExistingServer: !process.env.CI,
     ignoreHTTPSErrors: true,
@@ -86,6 +86,7 @@ export default defineConfig({
     screenshot: "only-on-failure",
     video: "retain-on-failure",
     actionTimeout: Timeouts.DEFAULT_ACTION,
+    baseURL: process.env.BASE_URL || "https://localhost:8090",
   },
 
   projects: [

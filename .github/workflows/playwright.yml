@@ -30,9 +30,6 @@ jobs:
     - name: 🛠️ Build Product
       run: make build
 
-    - name: 📦 Package Product
-      run: ./build.sh package
-
     - name: 📂 Extract Server to E2E
       run: |
         mkdir -p tests/e2e/thunder-server
