@@ -34,6 +34,7 @@ import (
 	flowmgt "github.com/asgardeo/thunder/internal/flow/mgt"
 	"github.com/asgardeo/thunder/internal/group"
 	"github.com/asgardeo/thunder/internal/idp"
+	"github.com/asgardeo/thunder/internal/invitation"
 	"github.com/asgardeo/thunder/internal/notification"
 	"github.com/asgardeo/thunder/internal/oauth"
 	"github.com/asgardeo/thunder/internal/observability"
@@ -82,6 +83,12 @@ func registerServices(
 	if err != nil {
 		logger.Fatal("Failed to initialize UserService", log.Error(err))
 	}
+
+	// Initialize invitation service for invited-user registration flow
+	if err := invitation.Initialize(mux); err != nil {
+		logger.Fatal("Failed to initialize InvitationService", log.Error(err))
+	}
+
 	groupService := group.Initialize(mux, ouService, userService)
 
 	resourceService, err := resource.Initialize(mux, ouService)
