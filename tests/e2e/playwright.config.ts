@@ -65,7 +65,7 @@ export default defineConfig({
   reporter: [["html"], ["list"], ["blob"]],
 
   /** Global test timeout */
-  timeout: Timeouts.GLOBAL_TEST,
+  timeout: 90000,
 
   /**
    * Run local dev server before starting the tests.

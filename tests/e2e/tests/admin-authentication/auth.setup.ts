@@ -66,18 +66,38 @@ setup('Admin login test', async ({ page, context, signinPage }) => {
   console.log('🌐 Navigating to develop page for authentication...');
   await signinPage.gotoHome();
 
-  console.log('⏳ Checking if redirected to authentication...');
-  if (await signinPage.isOnLoginPage()) {
-    console.log('✅ Detected authentication page, ready to login');
-  } else {
-    console.log('ℹ️ Already on target page, checking if authentication needed');
+  console.log('⏳ Waiting for redirect to authentication page...');
+  try {
+    // Wait for URL to contain 'signin' or 'auth' or 'login'
+    await page.waitForURL(url =>
+      url.pathname.includes('signin') ||
+      url.pathname.includes('auth') ||
+      url.pathname.includes('login'),
+      { timeout: 10000 }
+    );
+    console.log('✅ Redirected to authentication page:', page.url());
+  } catch (e) {
+    console.log('ℹ️ No redirect detected after 10s. Current URL:', page.url());
+    if (!await signinPage.isOnLoginPage()) {
+      console.log('⚠️ Not on login page, attempting direct navigation to signin...');
+      await signinPage.goto();
+      console.log('Current URL after direct navigation:', page.url());
+    }
   }
 
   await signinPage.screenshot('debug-login-page');
 
   // Use POM to login
   console.log('📝 Filling login credentials...');
-  await signinPage.waitForLoginForm();
+  try {
+    await signinPage.waitForLoginForm();
+  } catch (error) {
+    console.log('❌ Login form not visible after timeout. Current URL:', page.url());
+    const content = await page.content();
+    console.log('📄 Page content snippet:', content.substring(0, 500));
+    await signinPage.screenshot('debug-login-form-timeout');
+    throw error;
+  }
   await signinPage.fillUsername(username);
   await signinPage.fillPassword(password);
 
