@@ -74,7 +74,7 @@ export default defineConfig({
   webServer: {
     command: "cd ../.. && ./build.sh run_backend",
     url: "https://localhost:8090/health/liveness",
-    reuseExistingServer: !process.env.CI,
+    reuseExistingServer: true,
     ignoreHTTPSErrors: true,
     timeout: 120 * 1000,
   },
