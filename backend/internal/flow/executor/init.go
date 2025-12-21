@@ -77,5 +77,8 @@ func Initialize(
 	reg.RegisterExecutor(ExecutorNameHTTPRequest, newHTTPRequestExecutor(flowFactory))
 	reg.RegisterExecutor(ExecutorNameUserTypeResolver, newUserTypeResolver(flowFactory, userSchemaService))
 
+	// Register invitation redemption executor for invited user flows
+	reg.RegisterExecutor(ExecutorNameInvitationRedemption, newInvitationRedemptionExecutor(flowFactory, userService))
+
 	return reg
 }
