@@ -338,3 +338,28 @@ CREATE INDEX idx_flow_version_deployment_id ON FLOW_VERSION (DEPLOYMENT_ID);
 
 -- Index for flow lookup on FLOW_VERSION
 CREATE INDEX idx_flow_version_flow_internal_id ON FLOW_VERSION (FLOW_INTERNAL_ID, DEPLOYMENT_ID);
+
+-- Table to store user invitations for invited-user registration flow
+CREATE TABLE INVITATION (
+    ID INTEGER PRIMARY KEY AUTOINCREMENT,
+    DEPLOYMENT_ID VARCHAR(255) NOT NULL,
+    INVITATION_ID VARCHAR(36) NOT NULL,
+    USER_ID VARCHAR(36) NOT NULL,
+    APPLICATION_ID VARCHAR(36) NOT NULL,
+    TOKEN VARCHAR(255) NOT NULL,
+    STATUS VARCHAR(20) NOT NULL DEFAULT 'pending',
+    EXPIRES_AT TEXT NOT NULL,
+    CREATED_AT TEXT DEFAULT (datetime('now')),
+    REDEEMED_AT TEXT,
+    UNIQUE (INVITATION_ID, DEPLOYMENT_ID),
+    UNIQUE (TOKEN, DEPLOYMENT_ID)
+);
+
+-- Index for deployment isolation on INVITATION
+CREATE INDEX idx_invitation_deployment_id ON INVITATION (DEPLOYMENT_ID);
+
+-- Index for token lookups on INVITATION
+CREATE INDEX idx_invitation_token ON INVITATION (TOKEN, DEPLOYMENT_ID);
+
+-- Index for user lookups on INVITATION
+CREATE INDEX idx_invitation_user_id ON INVITATION (USER_ID, DEPLOYMENT_ID);
