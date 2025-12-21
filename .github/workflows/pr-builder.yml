@@ -114,6 +114,11 @@ jobs:
           set -e
           make clean
 
+      - name: 🔨 Build Frontend
+        run: |
+          cd frontend
+          pnpm build
+
       - name: 🔨 Build Product with Coverage
         run: |
           set -e
@@ -123,11 +128,6 @@ jobs:
           # Find the built distribution
           DIST_PATH=$(find target/dist -name "thunder-*.zip" | head -1)
           echo "Built distribution: $DIST_PATH"
-
-      - name: 🔨 Build Frontend
-        run: |
-          cd frontend
-          pnpm build
 
       - name: 🧪 Run Frontend Tests with Coverage
         run: |
@@ -287,6 +287,10 @@ jobs:
             rmdir "$EXTRACTED_DIR"
           fi
           chmod +x setup.sh start.sh
+          echo "📂 Server structure after extraction:"
+          ls -F
+          echo "📂 Frontend apps found:"
+          ls -R apps/ 2>/dev/null || echo "❌ apps directory missing!"
 
       - name: 🚀 Start Thunder Server
         run: |
