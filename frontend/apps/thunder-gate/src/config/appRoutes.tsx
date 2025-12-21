@@ -21,6 +21,7 @@ import ROUTES from '../constants/routes';
 import DefaultLayout from '../layouts/DefaultLayout';
 import SignInPage from '../pages/SignInPage';
 import SignUpPage from '../pages/SignUpPage';
+import InvitePage from '../pages/InvitePage';
 
 /**
  * Interface representing an application route configuration.
@@ -60,6 +61,7 @@ const appRoutes: AppRoute[] = [
       {path: ROUTES.ROOT, element: <Navigate to={ROUTES.AUTH.SIGN_IN} replace />},
       {path: ROUTES.AUTH.SIGN_IN, element: <SignInPage />},
       {path: ROUTES.AUTH.SIGN_UP, element: <SignUpPage />},
+      {path: ROUTES.AUTH.INVITE, element: <InvitePage />},
     ],
   },
 ];

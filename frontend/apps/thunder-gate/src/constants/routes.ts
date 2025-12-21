@@ -36,6 +36,10 @@ export interface Routes {
      * Sign-up page route.
      */
     SIGN_UP: string;
+    /**
+     * Invitation redemption page route.
+     */
+    INVITE: string;
   };
 }
 
@@ -58,6 +62,7 @@ const ROUTES: Routes = {
   AUTH: {
     SIGN_IN: '/signin',
     SIGN_UP: '/signup',
+    INVITE: '/invite',
   },
 } as const;
 
