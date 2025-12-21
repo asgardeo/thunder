@@ -20,12 +20,12 @@
  * Global timeouts for Playwright E2E tests
  */
 export const Timeouts = {
-    
+
     /** Default timeout for UI actions (clicks, fills) */
     DEFAULT_ACTION: 15000,
 
     /** Timeout for checking element visibility */
-    ELEMENT_VISIBILITY: 5000,
+    ELEMENT_VISIBILITY: 10000,
 
     /** Timeout for loading large forms */
     FORM_LOAD: 10000,
@@ -37,7 +37,7 @@ export const Timeouts = {
     GLOBAL_TEST: 60000,
 
     /** Wait for network idle state */
-    NETWORK_IDLE: 5000,
+    NETWORK_IDLE: 10000,
 
     /** Search debounce wait */
     SEARCH_DEBOUNCE: 500,

@@ -10,15 +10,68 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v4
-    - uses: actions/setup-node@v4
+      with:
+        fetch-depth: 0
+
+    - name: ⚙️ Set up Go Environment
+      uses: ./.github/actions/setup-go
+
+    - name: ⚙️ Set up Node.js
+      uses: actions/setup-node@v4
       with:
         node-version: lts/*
-    - name: Install dependencies
+
+    - name: 📦 Install pnpm
+      uses: pnpm/action-setup@v4
+      with:
+        version: '9.x'
+        run_install: false
+
+    - name: 🛠️ Build Product
+      run: make build
+
+    - name: 📦 Package Product
+      run: ./build.sh package
+
+    - name: 📂 Extract Server to E2E
+      run: |
+        mkdir -p tests/e2e/thunder-server
+        unzip target/dist/thunder-*.zip -d tests/e2e/thunder-server
+        cd tests/e2e/thunder-server
+        # Find the extracted folder (name includes version and arch) and move its contents to the root of tests/e2e/thunder-server
+        EXTRACTED_DIR=$(find . -maxdepth 1 -type d -name "thunder-*" | head -n 1)
+        if [ -n "$EXTRACTED_DIR" ]; then
+          mv "$EXTRACTED_DIR"/* .
+          rmdir "$EXTRACTED_DIR"
+        fi
+        chmod +x setup.sh start.sh
+
+    - name: 🚀 Start Thunder Server
+      run: |
+        cd tests/e2e/thunder-server
+        ./setup.sh
+        ./start.sh &
+        # Wait for server to be ready
+        echo "Waiting for server to be ready on https://localhost:8090..."
+        for i in {1..60}; do
+          if curl -s -k https://localhost:8090/health/liveness > /dev/null; then
+            echo "Server is UP!"
+            exit 0
+          fi
+          echo "Still waiting ($i/60)..."
+          sleep 2
+        done
+        echo "Server failed to start within 2 minutes"
+        exit 1
+
+    - name: Install E2E dependencies
       run: npm ci
       working-directory: tests/e2e
+
     - name: Install Playwright Browsers
       run: npx playwright install --with-deps
       working-directory: tests/e2e
+
     - name: Run Playwright tests
       run: npx playwright test
       working-directory: tests/e2e
@@ -31,6 +84,7 @@ jobs:
         TEST_USER_PASSWORD: ${{ secrets.PLAYWRIGHT_TEST_USER_PASSWORD || 'admin' }}
         PLAYWRIGHT_WORKERS: ${{ vars.PLAYWRIGHT_WORKERS || 1 }}
         DEBUG_AUTH: ${{ vars.PLAYWRIGHT_DEBUG_AUTH || 'false' }}
+
     - uses: actions/upload-artifact@v4
       if: ${{ !cancelled() }}
       with:
