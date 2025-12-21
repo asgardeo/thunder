@@ -96,22 +96,22 @@ type InvitationServiceInterface interface {
 	DeleteInvitation(invitationID string) *serviceerror.ServiceError
 }
 
-// invitationService is the default implementation of InvitationServiceInterface.
-type invitationService struct {
+// invitationServiceImpl is the default implementation of InvitationServiceInterface.
+type invitationServiceImpl struct {
 	store      invitationStoreInterface
 	serverConf *config.ServerConfig
 }
 
 // NewInvitationService creates a new instance of the invitation service.
 func NewInvitationService(store invitationStoreInterface, serverConf *config.ServerConfig) InvitationServiceInterface {
-	return &invitationService{
+	return &invitationServiceImpl{
 		store:      store,
 		serverConf: serverConf,
 	}
 }
 
 // CreateInvitation creates a new invitation for a user.
-func (s *invitationService) CreateInvitation(request CreateInvitationRequest) (*CreateInvitationResponse, *serviceerror.ServiceError) {
+func (s *invitationServiceImpl) CreateInvitation(request CreateInvitationRequest) (*CreateInvitationResponse, *serviceerror.ServiceError) {
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, loggerComponentName))
 	logger.Debug("Creating invitation", log.String("userID", request.UserID))
 
@@ -169,7 +169,7 @@ func (s *invitationService) CreateInvitation(request CreateInvitationRequest) (*
 }
 
 // ValidateToken validates an invitation token and returns the invitation details.
-func (s *invitationService) ValidateToken(token string) (*ValidateInvitationResponse, *serviceerror.ServiceError) {
+func (s *invitationServiceImpl) ValidateToken(token string) (*ValidateInvitationResponse, *serviceerror.ServiceError) {
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, loggerComponentName))
 
 	if token == "" {
@@ -211,7 +211,7 @@ func (s *invitationService) ValidateToken(token string) (*ValidateInvitationResp
 }
 
 // RedeemInvitation marks an invitation as redeemed.
-func (s *invitationService) RedeemInvitation(token string) *serviceerror.ServiceError {
+func (s *invitationServiceImpl) RedeemInvitation(token string) *serviceerror.ServiceError {
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, loggerComponentName))
 
 	invitation, err := s.store.GetInvitationByToken(token)
@@ -254,7 +254,7 @@ func (s *invitationService) RedeemInvitation(token string) *serviceerror.Service
 }
 
 // RevokeInvitation revokes an invitation.
-func (s *invitationService) RevokeInvitation(invitationID string) *serviceerror.ServiceError {
+func (s *invitationServiceImpl) RevokeInvitation(invitationID string) *serviceerror.ServiceError {
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, loggerComponentName))
 
 	invitation, err := s.store.GetInvitation(invitationID)
@@ -281,7 +281,7 @@ func (s *invitationService) RevokeInvitation(invitationID string) *serviceerror.
 }
 
 // GetInvitation retrieves an invitation by ID.
-func (s *invitationService) GetInvitation(invitationID string) (*Invitation, *serviceerror.ServiceError) {
+func (s *invitationServiceImpl) GetInvitation(invitationID string) (*Invitation, *serviceerror.ServiceError) {
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, loggerComponentName))
 
 	invitation, err := s.store.GetInvitation(invitationID)
@@ -297,7 +297,7 @@ func (s *invitationService) GetInvitation(invitationID string) (*Invitation, *se
 }
 
 // GetInvitationByUserID retrieves the pending invitation for a user.
-func (s *invitationService) GetInvitationByUserID(userID string) (*Invitation, *serviceerror.ServiceError) {
+func (s *invitationServiceImpl) GetInvitationByUserID(userID string) (*Invitation, *serviceerror.ServiceError) {
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, loggerComponentName))
 
 	invitation, err := s.store.GetInvitationByUserID(userID)
@@ -313,7 +313,7 @@ func (s *invitationService) GetInvitationByUserID(userID string) (*Invitation, *
 }
 
 // DeleteInvitation deletes an invitation.
-func (s *invitationService) DeleteInvitation(invitationID string) *serviceerror.ServiceError {
+func (s *invitationServiceImpl) DeleteInvitation(invitationID string) *serviceerror.ServiceError {
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, loggerComponentName))
 
 	if err := s.store.DeleteInvitation(invitationID); err != nil {
@@ -338,7 +338,7 @@ func generateSecureToken(length int) (string, error) {
 }
 
 // generateInviteLink generates the invite link URL.
-func (s *invitationService) generateInviteLink(token string) string {
+func (s *invitationServiceImpl) generateInviteLink(token string) string {
 	// Use server configuration to build the invite link
 	baseURL := "https://localhost:8090" // Default, should come from config
 	if s.serverConf != nil {

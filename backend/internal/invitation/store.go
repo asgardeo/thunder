@@ -100,7 +100,7 @@ func newInvitationStore() invitationStoreInterface {
 func (s *invitationStore) CreateInvitation(invitation Invitation) error {
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, "InvitationStore"))
 
-	dbClient, err := provider.GetDBProvider().GetIdentityDBClient()
+	dbClient, err := provider.GetDBProvider().GetConfigDBClient()
 	if err != nil {
 		return fmt.Errorf("failed to get database client: %w", err)
 	}
@@ -130,7 +130,7 @@ func (s *invitationStore) CreateInvitation(invitation Invitation) error {
 func (s *invitationStore) GetInvitation(invitationID string) (*Invitation, error) {
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, "InvitationStore"))
 
-	dbClient, err := provider.GetDBProvider().GetIdentityDBClient()
+	dbClient, err := provider.GetDBProvider().GetConfigDBClient()
 	if err != nil {
 		return nil, fmt.Errorf("failed to get database client: %w", err)
 	}
@@ -158,7 +158,7 @@ func (s *invitationStore) GetInvitation(invitationID string) (*Invitation, error
 func (s *invitationStore) GetInvitationByToken(token string) (*Invitation, error) {
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, "InvitationStore"))
 
-	dbClient, err := provider.GetDBProvider().GetIdentityDBClient()
+	dbClient, err := provider.GetDBProvider().GetConfigDBClient()
 	if err != nil {
 		return nil, fmt.Errorf("failed to get database client: %w", err)
 	}
@@ -186,7 +186,7 @@ func (s *invitationStore) GetInvitationByToken(token string) (*Invitation, error
 func (s *invitationStore) GetInvitationByUserID(userID string) (*Invitation, error) {
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, "InvitationStore"))
 
-	dbClient, err := provider.GetDBProvider().GetIdentityDBClient()
+	dbClient, err := provider.GetDBProvider().GetConfigDBClient()
 	if err != nil {
 		return nil, fmt.Errorf("failed to get database client: %w", err)
 	}
@@ -214,7 +214,7 @@ func (s *invitationStore) GetInvitationByUserID(userID string) (*Invitation, err
 func (s *invitationStore) UpdateInvitation(invitation *Invitation) error {
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, "InvitationStore"))
 
-	dbClient, err := provider.GetDBProvider().GetIdentityDBClient()
+	dbClient, err := provider.GetDBProvider().GetConfigDBClient()
 	if err != nil {
 		return fmt.Errorf("failed to get database client: %w", err)
 	}
@@ -243,7 +243,7 @@ func (s *invitationStore) UpdateInvitation(invitation *Invitation) error {
 func (s *invitationStore) DeleteInvitation(invitationID string) error {
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, "InvitationStore"))
 
-	dbClient, err := provider.GetDBProvider().GetIdentityDBClient()
+	dbClient, err := provider.GetDBProvider().GetConfigDBClient()
 	if err != nil {
 		return fmt.Errorf("failed to get database client: %w", err)
 	}
@@ -266,7 +266,7 @@ func (s *invitationStore) DeleteInvitation(invitationID string) error {
 func (s *invitationStore) GetInvitationList(limit, offset int) ([]Invitation, int, error) {
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, "InvitationStore"))
 
-	dbClient, err := provider.GetDBProvider().GetIdentityDBClient()
+	dbClient, err := provider.GetDBProvider().GetConfigDBClient()
 	if err != nil {
 		return nil, 0, fmt.Errorf("failed to get database client: %w", err)
 	}
