@@ -984,3 +984,115 @@ func (_c *UserServiceInterfaceMock_VerifyUser_Call) RunAndReturn(run func(userID
 	_c.Call.Return(run)
 	return _c
 }
+
+// ActivateUser provides a mock function for the type UserServiceInterfaceMock
+func (_mock *UserServiceInterfaceMock) ActivateUser(userID string) *serviceerror.ServiceError {
+	ret := _mock.Called(userID)
+
+	if len(ret) == 0 {
+		panic("no return value specified for ActivateUser")
+	}
+
+	var r0 *serviceerror.ServiceError
+	if returnFunc, ok := ret.Get(0).(func(string) *serviceerror.ServiceError); ok {
+		r0 = returnFunc(userID)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(*serviceerror.ServiceError)
+		}
+	}
+	return r0
+}
+
+// UserServiceInterfaceMock_ActivateUser_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'ActivateUser'
+type UserServiceInterfaceMock_ActivateUser_Call struct {
+	*mock.Call
+}
+
+// ActivateUser is a helper method to define mock.On call
+//   - userID string
+func (_e *UserServiceInterfaceMock_Expecter) ActivateUser(userID interface{}) *UserServiceInterfaceMock_ActivateUser_Call {
+	return &UserServiceInterfaceMock_ActivateUser_Call{Call: _e.mock.On("ActivateUser", userID)}
+}
+
+func (_c *UserServiceInterfaceMock_ActivateUser_Call) Run(run func(userID string)) *UserServiceInterfaceMock_ActivateUser_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 string
+		if args[0] != nil {
+			arg0 = args[0].(string)
+		}
+		run(
+			arg0,
+		)
+	})
+	return _c
+}
+
+func (_c *UserServiceInterfaceMock_ActivateUser_Call) Return(serviceError *serviceerror.ServiceError) *UserServiceInterfaceMock_ActivateUser_Call {
+	_c.Call.Return(serviceError)
+	return _c
+}
+
+func (_c *UserServiceInterfaceMock_ActivateUser_Call) RunAndReturn(run func(userID string) *serviceerror.ServiceError) *UserServiceInterfaceMock_ActivateUser_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
+// SetUserCredentialsAndActivate provides a mock function for the type UserServiceInterfaceMock
+func (_mock *UserServiceInterfaceMock) SetUserCredentialsAndActivate(userID string, credentials json.RawMessage) *serviceerror.ServiceError {
+	ret := _mock.Called(userID, credentials)
+
+	if len(ret) == 0 {
+		panic("no return value specified for SetUserCredentialsAndActivate")
+	}
+
+	var r0 *serviceerror.ServiceError
+	if returnFunc, ok := ret.Get(0).(func(string, json.RawMessage) *serviceerror.ServiceError); ok {
+		r0 = returnFunc(userID, credentials)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(*serviceerror.ServiceError)
+		}
+	}
+	return r0
+}
+
+// UserServiceInterfaceMock_SetUserCredentialsAndActivate_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'SetUserCredentialsAndActivate'
+type UserServiceInterfaceMock_SetUserCredentialsAndActivate_Call struct {
+	*mock.Call
+}
+
+// SetUserCredentialsAndActivate is a helper method to define mock.On call
+//   - userID string
+//   - credentials json.RawMessage
+func (_e *UserServiceInterfaceMock_Expecter) SetUserCredentialsAndActivate(userID interface{}, credentials interface{}) *UserServiceInterfaceMock_SetUserCredentialsAndActivate_Call {
+	return &UserServiceInterfaceMock_SetUserCredentialsAndActivate_Call{Call: _e.mock.On("SetUserCredentialsAndActivate", userID, credentials)}
+}
+
+func (_c *UserServiceInterfaceMock_SetUserCredentialsAndActivate_Call) Run(run func(userID string, credentials json.RawMessage)) *UserServiceInterfaceMock_SetUserCredentialsAndActivate_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 string
+		if args[0] != nil {
+			arg0 = args[0].(string)
+		}
+		var arg1 json.RawMessage
+		if args[1] != nil {
+			arg1 = args[1].(json.RawMessage)
+		}
+		run(
+			arg0,
+			arg1,
+		)
+	})
+	return _c
+}
+
+func (_c *UserServiceInterfaceMock_SetUserCredentialsAndActivate_Call) Return(serviceError *serviceerror.ServiceError) *UserServiceInterfaceMock_SetUserCredentialsAndActivate_Call {
+	_c.Call.Return(serviceError)
+	return _c
+}
+
+func (_c *UserServiceInterfaceMock_SetUserCredentialsAndActivate_Call) RunAndReturn(run func(userID string, credentials json.RawMessage) *serviceerror.ServiceError) *UserServiceInterfaceMock_SetUserCredentialsAndActivate_Call {
+	_c.Call.Return(run)
+	return _c
+}

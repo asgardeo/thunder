@@ -61,6 +61,10 @@ type UserServiceInterface interface {
 	VerifyUser(userID string, credentials map[string]interface{}) (*User, *serviceerror.ServiceError)
 	AuthenticateUser(request AuthenticateUserRequest) (*AuthenticateUserResponse, *serviceerror.ServiceError)
 	ValidateUserIDs(userIDs []string) ([]string, *serviceerror.ServiceError)
+	// ActivateUser activates an invited user after they have set their credentials.
+	ActivateUser(userID string) *serviceerror.ServiceError
+	// SetUserCredentialsAndActivate sets credentials for an invited user and activates them.
+	SetUserCredentialsAndActivate(userID string, credentials json.RawMessage) *serviceerror.ServiceError
 }
 
 // userService is the default implementation of the UserServiceInterface.
@@ -205,12 +209,32 @@ func (us *userService) CreateUser(user *User) (*User, *serviceerror.ServiceError
 		return nil, logErrorAndReturnServerError(logger, "Failed to create user DTO", err)
 	}
 
+	// Set default status based on credentials presence
+	if user.Status == "" {
+		if len(credentials) > 0 {
+			user.Status = UserStatusActive
+		} else {
+			// If no credentials provided and no status set, default to active
+			// (for backward compatibility with existing API consumers)
+			user.Status = UserStatusActive
+		}
+	}
+
+	// Validate status
+	switch user.Status {
+	case UserStatusActive, UserStatusInvited, UserStatusDisabled:
+		// Valid statuses
+	default:
+		logger.Debug("Invalid user status provided", log.String("status", user.Status))
+		return nil, &ErrorInvalidRequestFormat
+	}
+
 	err = us.userStore.CreateUser(*user, credentials)
 	if err != nil {
 		return nil, logErrorAndReturnServerError(logger, "Failed to create user", err)
 	}
 
-	logger.Debug("Successfully created user", log.String("id", user.ID))
+	logger.Debug("Successfully created user", log.String("id", user.ID), log.String("status", user.Status))
 	return user, nil
 }
 
@@ -585,6 +609,50 @@ func (us *userService) mergeCredentials(existing []Credential, provided []Creden
 	}
 
 	return merged
+}
+
+// ActivateUser activates an invited user by changing their status from invited to active.
+func (us *userService) ActivateUser(userID string) *serviceerror.ServiceError {
+	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, loggerComponentName))
+	logger.Debug("Activating user", log.String("id", userID))
+
+	if strings.TrimSpace(userID) == "" {
+		return &ErrorMissingUserID
+	}
+
+	user, svcErr := us.GetUser(userID)
+	if svcErr != nil {
+		return svcErr
+	}
+
+	if user.Status != UserStatusInvited {
+		logger.Debug("User is not in invited status, skipping activation",
+			log.String("id", userID), log.String("status", user.Status))
+		return nil
+	}
+
+	user.Status = UserStatusActive
+	if err := us.userStore.UpdateUser(user); err != nil {
+		return logErrorAndReturnServerError(logger, "Failed to activate user", err, log.String("id", userID))
+	}
+
+	logger.Debug("Successfully activated user", log.String("id", userID))
+	return nil
+}
+
+// SetUserCredentialsAndActivate sets credentials for an invited user and activates them.
+// This is used during the invitation redemption flow when a user sets their initial credentials.
+func (us *userService) SetUserCredentialsAndActivate(userID string, credentials json.RawMessage) *serviceerror.ServiceError {
+	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, loggerComponentName))
+	logger.Debug("Setting credentials and activating user", log.String("id", userID))
+
+	// First, update the credentials
+	if err := us.UpdateUserCredentials(userID, credentials); err != nil {
+		return err
+	}
+
+	// Then activate the user
+	return us.ActivateUser(userID)
 }
 
 // DeleteUser delete the user for given user id.

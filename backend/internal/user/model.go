@@ -87,6 +87,7 @@ type UserGroupListResponse struct {
 type CreateUserRequest struct {
 	OrganizationUnit string          `json:"organizationUnit"`
 	Type             string          `json:"type"`
+	Status           string          `json:"status,omitempty"`
 	Groups           []string        `json:"groups,omitempty"`
 	Attributes       json.RawMessage `json:"attributes,omitempty"`
 }
