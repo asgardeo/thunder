@@ -11,7 +11,7 @@ This framework uses the **Page Object Model (POM)** design pattern and Playwrigh
 - **Cross-Browser Support**: Configured for Chromium, Firefox, and WebKit (Safari).
 - **Token-Based Auth Support**: Specialized utilities to capture and inject OIDC/OAuth2 tokens for the WSO2 IS backend.
 - **Robustness**: Auto-retry logic, network idle waits, and intelligent locator handling.
-- **CI/CD Friendly**: includes a GitHub Actions workflow template; additional environment variables/secrets must be configured in your repository for CI to work (refer to the workflow file and project documentation for required settings).
+- **CI/CD Friendly**: Includes a GitHub Actions workflow that maps repository secrets/variables (e.g., `PLAYWRIGHT_BASE_URL`, `PLAYWRIGHT_ADMIN_PASSWORD`) to test environment variables. Refer to the workflow file for the complete list of required configurations.
 
 ---
 
@@ -43,7 +43,27 @@ BASE_URL=https://localhost:8090
 ADMIN_USERNAME=admin
 ADMIN_PASSWORD=admin
 TEST_USER_USERNAME=testuser
+TEST_USER_PASSWORD=admin
 ```
+
+---
+
+## 🛠 CI/CD Configuration
+
+The GitHub Actions workflow is designed to work with repository **Secrets** and **Variables**. The suite uses a priority system: **Secret > Variable > Hardcoded Default**.
+
+### Required GitHub Settings
+To customize the CI environment, add the following to **Settings > Secrets and variables > Actions**:
+
+| Name | Type | Purpose | Fallback |
+| :--- | :--- | :--- | :--- |
+| `PLAYWRIGHT_BASE_URL` | Variable | App URL | `https://localhost:8090` |
+| `PLAYWRIGHT_ADMIN_USERNAME` | Variable | Admin Login | `admin` |
+| `PLAYWRIGHT_ADMIN_PASSWORD` | **Secret** | Admin Password | `admin` |
+| `PLAYWRIGHT_TEST_USER_USERNAME` | Variable | Test User Login | `testuser` |
+| `PLAYWRIGHT_TEST_USER_PASSWORD` | **Secret** | Test User Password | `admin` |
+| `PLAYWRIGHT_WORKERS` | Variable | Parallel Processing | `1` |
+| `PLAYWRIGHT_DEBUG_AUTH` | Variable | Auth Debug Logs | `false` |
 
 ---
 
