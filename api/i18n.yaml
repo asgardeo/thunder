@@ -1,0 +1,568 @@
+openapi: 3.0.3
+info:
+  title: Thunder i18n API
+  version: "1.0"
+  description: API to manage internationalization (i18n) translations organized by language, namespace, and key.
+  license:
+    name: Apache 2.0
+    url: https://www.apache.org/licenses/LICENSE-2.0.html
+
+servers:
+  - url: https://{host}:{port}
+    variables:
+      host:
+        default: "localhost"
+      port:
+        default: "8090"
+
+tags:
+  - name: languages
+    description: List supported languages
+  - name: resolve
+    description: Resolve translations (runtime)
+  - name: management
+    description: Manage translations (admin)
+
+security:
+  - OAuth2: [system]
+
+paths:
+  /i18n/languages:
+    get:
+      tags:
+        - languages
+      security: []
+      summary: List all languages
+      description: Returns a list of all language tags that have translations in the system.
+      operationId: listLanguages
+      responses:
+        '200':
+          description: List of language tags retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LanguageListResponse'
+              examples:
+                multiple-languages:
+                  summary: Multiple languages
+                  value:
+                    languages:
+                      - en
+                      - es
+                      - fr
+                      - fr-CA
+                default-only:
+                  summary: Default language only
+                  value:
+                    languages:
+                      - en
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /i18n/languages/{language}/translations/resolve:
+    parameters:
+      - $ref: '#/components/parameters/languagePathParam'
+
+    get:
+      tags:
+        - resolve
+      security: []
+      summary: Resolve all translations for a language
+      description: Resolves all translations for a language by merging custom and default values; returns 200 even when only defaults exist (404 only if neither custom nor default exists for the requested scope).
+      operationId: resolveTranslations
+      parameters:
+        - name: namespace
+          in: query
+          required: false
+          description: Filter translations by namespace.
+          schema:
+            type: string
+            pattern: '^[a-zA-Z0-9_-]+$'
+            example: auth
+      responses:
+        '200':
+          description: Translations resolved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LanguageTranslationsResponse'
+              examples:
+                all-namespaces:
+                  summary: All namespaces for Spanish
+                  value:
+                    language: es
+                    totalResults: 5
+                    translations:
+                      auth:
+                        login.button: Iniciar sesión
+                        login.title: Bienvenido
+                        logout.button: Cerrar sesión
+                      errors:
+                        user.not_found: Usuario no encontrado
+                        invalid.input: Entrada inválida
+                filtered-namespace:
+                  summary: Filtered by namespace
+                  value:
+                    language: es
+                    totalResults: 3
+                    translations:
+                      auth:
+                        login.button: Iniciar sesión
+                        login.title: Bienvenido
+                        logout.button: Cerrar sesión
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /i18n/languages/{language}/translations:
+    parameters:
+      - $ref: '#/components/parameters/languagePathParam'
+
+    post:
+      tags:
+        - management
+      summary: Set translations for a language
+      description: Replaces all custom translations for the language with the provided values.
+      operationId: setTranslations
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SetTranslationsRequest'
+            example:
+              translations:
+                auth:
+                  login.button: Iniciar sesión
+                  login.title: Bienvenido
+                  logout.button: Cerrar sesión
+                errors:
+                  user.not_found: Usuario no encontrado
+                  invalid.input: Entrada inválida
+                common:
+                  save: Guardar
+                  cancel: Cancelar
+      responses:
+        '200':
+          description: Custom translations set successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LanguageTranslationsResponse'
+              example:
+                language: es
+                totalResults: 7
+                translations:
+                  auth:
+                    login.button: Iniciar sesión
+                    login.title: Bienvenido
+                    logout.button: Cerrar sesión
+                  errors:
+                    user.not_found: Usuario no encontrado
+                    invalid.input: Entrada inválida
+                  common:
+                    save: Guardar
+                    cancel: Cancelar
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+    delete:
+      tags:
+        - management
+      summary: Clear all translations for a language
+      description: Removes all custom translations for the language.
+      operationId: deleteTranslations
+      responses:
+        '204':
+          description: Translations reset to default successfully
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /i18n/languages/{language}/translations/ns/{namespace}/keys/{key}/resolve:
+    parameters:
+      - $ref: '#/components/parameters/languagePathParam'
+      - $ref: '#/components/parameters/namespacePathParam'
+      - $ref: '#/components/parameters/keyPathParam'
+
+    get:
+      tags:
+        - resolve
+      security: []
+      summary: Resolve a single translation
+      description: Resolves the final value for a translation by merging custom and default values; returns 200 even when only a default exists (404 only if neither custom nor default exists).
+      operationId: resolveTranslation
+      responses:
+        '200':
+          description: Translation resolved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TranslationResponse'
+              example:
+                language: es
+                namespace: errors
+                key: user.not_found
+                value: Usuario no encontrado
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /i18n/languages/{language}/translations/ns/{namespace}/keys/{key}:
+    parameters:
+      - $ref: '#/components/parameters/languagePathParam'
+      - $ref: '#/components/parameters/namespacePathParam'
+      - $ref: '#/components/parameters/keyPathParam'
+
+    post:
+      tags:
+        - management
+      summary: Set a single translation
+      description: Creates or updates a custom translation for the specified language, namespace, and key.
+      operationId: setTranslation
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SetTranslationRequest'
+            example:
+              value: Usuario no encontrado
+      responses:
+        '200':
+          description: Translation set successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TranslationResponse'
+              example:
+                language: es
+                namespace: errors
+                key: user.not_found
+                value: Usuario no encontrado
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+    delete:
+      tags:
+        - management
+      summary: Clear a single translation
+      description: Removes the custom translation. 
+      operationId: deleteTranslation
+      responses:
+        '204':
+          description: Translations reset to default successfully
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+components:
+  securitySchemes:
+    OAuth2:
+      type: oauth2
+      flows:
+        authorizationCode:
+          authorizationUrl: https://localhost:8090/oauth2/authorize
+          tokenUrl: https://localhost:8090/oauth2/token
+          scopes:
+            system: Access to system management APIs
+
+  parameters:
+    languagePathParam:
+      name: language
+      in: path
+      required: true
+      description: Language tag in BCP 47 format (e.g., `en`, `es`, `fr-CA`).
+      schema:
+        type: string
+        pattern: '^[a-z]{2}(-[A-Z]{2})?(-[A-Za-z]+)?$'
+        example: es
+
+    namespacePathParam:
+      name: namespace
+      in: path
+      required: true
+      description: Namespace for grouping translations (e.g., `auth`, `errors`, `common`).
+      schema:
+        type: string
+        pattern: '^[a-zA-Z0-9_-]+$'
+        minLength: 1
+        maxLength: 64
+        example: errors
+
+    keyPathParam:
+      name: key
+      in: path
+      required: true
+      description: Translation key within the namespace (e.g., `login.button`, `user.not_found`).
+      schema:
+        type: string
+        pattern: '^[a-zA-Z0-9._-]+$'
+        minLength: 1
+        maxLength: 256
+        example: user.not_found
+
+  schemas:
+    LanguageListResponse:
+      type: object
+      required:
+        - languages
+      properties:
+        languages:
+          type: array
+          items:
+            type: string
+          description: List of language tags available in the system.
+          example:
+            - en
+            - es
+            - fr
+            - fr-CA
+
+    TranslationResponse:
+      type: object
+      description: Single translation response.
+      required:
+        - language
+        - namespace
+        - key
+        - value
+      properties:
+        language:
+          type: string
+          description: Language tag.
+          example: es
+        namespace:
+          type: string
+          description: Namespace of the translation.
+          example: errors
+        key:
+          type: string
+          description: Translation key.
+          example: user.not_found
+        value:
+          type: string
+          description: Translated value.
+          example: Usuario no encontrado
+
+    SetTranslationRequest:
+      type: object
+      description: Request to set a single translation.
+      required:
+        - value
+      properties:
+        value:
+          type: string
+          description: Translation value.
+          minLength: 1
+          maxLength: 4096
+          example: Usuario no encontrado
+
+    LanguageTranslationsResponse:
+      type: object
+      description: All translations for a language, organized by namespace.
+      required:
+        - language
+        - translations
+      properties:
+        language:
+          type: string
+          description: Language tag.
+          example: es
+        totalResults:
+          type: integer
+          description: Total number of translation keys returned.
+          example: 5
+        translations:
+          type: object
+          description: Translations organized by namespace.
+          additionalProperties:
+            type: object
+            additionalProperties:
+              type: string
+          example:
+            auth:
+              login.button: Iniciar sesión
+              login.title: Bienvenido
+            errors:
+              user.not_found: Usuario no encontrado
+
+    SetTranslationsRequest:
+      type: object
+      description: Request to set custom translations for a language.
+      required:
+        - translations
+      properties:
+        translations:
+          type: object
+          description: Translations organized by namespace.
+          additionalProperties:
+            type: object
+            additionalProperties:
+              type: string
+          example:
+            auth:
+              login.button: Iniciar sesión
+              login.title: Bienvenido
+              logout.button: Cerrar sesión
+            errors:
+              user.not_found: Usuario no encontrado
+              invalid.input: Entrada inválida
+
+    I18nMessage:
+      type: object
+      description: Internationalized message with translation key and default value.
+      required:
+        - key
+        - defaultValue
+      properties:
+        key:
+          type: string
+          description: Translation key for fetching localized message.
+          example: error.i18nservice.missing_language
+        defaultValue:
+          type: string
+          description: Default message in English (fallback).
+          example: Missing language code
+
+    ErrorResponse:
+      type: object
+      required:
+        - code
+        - message
+      properties:
+        code:
+          type: string
+          description: Error code for programmatic handling.
+          example: I18N-1003
+        message:
+          $ref: '#/components/schemas/I18nMessage'
+        description:
+          $ref: '#/components/schemas/I18nMessage'
+
+  responses:
+    BadRequest:
+      description: Bad request - Invalid input
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          examples:
+            invalid-language:
+              summary: Invalid language tag format
+              value:
+                code: I18N-1001
+                message:
+                  key: error.i18nservice.invalid_language
+                  defaultValue: Invalid language tag format
+                description:
+                  key: error.i18nservice.invalid_language_description
+                  defaultValue: "The language tag must follow BCP 47 format (e.g., 'en', 'es', 'fr-CA')"
+            invalid-namespace:
+              summary: Invalid namespace format
+              value:
+                code: I18N-1002
+                message:
+                  key: error.i18nservice.invalid_namespace
+                  defaultValue: Invalid namespace format
+                description:
+                  key: error.i18nservice.invalid_namespace_description
+                  defaultValue: "The namespace can only contain alphanumeric characters, underscores, and hyphens"
+            invalid-key:
+              summary: Invalid key format
+              value:
+                code: I18N-1003
+                message:
+                  key: error.i18nservice.invalid_key
+                  defaultValue: Invalid key format
+                description:
+                  key: error.i18nservice.invalid_key_description
+                  defaultValue: "The key can only contain alphanumeric characters, dots, underscores, and hyphens"
+
+    Unauthorized:
+      description: Authentication required
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            code: AUTH-4001
+            message:
+              key: error.auth.unauthorized
+              defaultValue: Unauthorized
+            description:
+              key: error.auth.unauthorized_description
+              defaultValue: Authentication is required to access this resource
+
+    Forbidden:
+      description: Insufficient permissions
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            code: AUTH-4003
+            message:
+              key: error.auth.forbidden
+              defaultValue: Forbidden
+            description:
+              key: error.auth.forbidden_description
+              defaultValue: You do not have permission to access this resource
+
+    NotFound:
+      description: Resource not found
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            code: I18N-1006
+            message:
+              key: error.i18nservice.translation_not_found
+              defaultValue: Translation not found
+            description:
+              key: error.i18nservice.translation_not_found_description
+              defaultValue: The requested translation does not exist for the specified language, namespace, and key
+
+    InternalServerError:
+      description: Internal server error
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            code: I18N-5000
+            message:
+              key: error.i18nservice.internal_server_error
+              defaultValue: Internal server error
+            description:
+              key: error.i18nservice.internal_server_error_description
+              defaultValue: An unexpected error occurred while processing the request

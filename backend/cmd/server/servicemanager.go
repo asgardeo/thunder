@@ -42,6 +42,7 @@ import (
 	"github.com/asgardeo/thunder/internal/role"
 	"github.com/asgardeo/thunder/internal/system/crypto/hash"
 	"github.com/asgardeo/thunder/internal/system/export"
+	i18nmgt "github.com/asgardeo/thunder/internal/system/i18n/mgt"
 	immutableresource "github.com/asgardeo/thunder/internal/system/immutable_resource"
 	"github.com/asgardeo/thunder/internal/system/jwt"
 	"github.com/asgardeo/thunder/internal/system/log"
@@ -61,6 +62,9 @@ func registerServices(
 	logger := log.GetLogger()
 
 	observabilitySvc = observability.Initialize()
+
+	// Initialize i18n service for internationalization support.
+	_ = i18nmgt.Initialize(mux)
 
 	// List to collect exporters from each package
 	var exporters []immutableresource.ResourceExporter

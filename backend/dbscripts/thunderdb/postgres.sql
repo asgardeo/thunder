@@ -339,3 +339,28 @@ CREATE INDEX idx_flow_version_deployment_id ON FLOW_VERSION (DEPLOYMENT_ID);
 
 -- Index for flow lookup on FLOW_VERSION
 CREATE INDEX idx_flow_version_flow_internal_id ON FLOW_VERSION (FLOW_INTERNAL_ID, DEPLOYMENT_ID);
+
+-- Table to store i18n translations
+CREATE TABLE TRANSLATION (
+    ID              INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    DEPLOYMENT_ID   VARCHAR(255) NOT NULL,
+    MESSAGE_KEY     VARCHAR(255) NOT NULL,
+    LANGUAGE_CODE   VARCHAR(10) NOT NULL,
+    NAMESPACE       VARCHAR(50) NOT NULL DEFAULT 'default',
+    VALUE           TEXT NOT NULL,
+    CREATED_AT      TIMESTAMPTZ DEFAULT NOW(),
+    UPDATED_AT      TIMESTAMPTZ DEFAULT NOW(),
+    CONSTRAINT uq_translation_key_lang_ns UNIQUE (MESSAGE_KEY, LANGUAGE_CODE, NAMESPACE, DEPLOYMENT_ID)
+);
+
+-- Index for efficient language-based lookups
+CREATE INDEX idx_translation_language ON TRANSLATION (DEPLOYMENT_ID, LANGUAGE_CODE);
+
+-- Index for efficient key-based lookups
+CREATE INDEX idx_translation_key ON TRANSLATION (DEPLOYMENT_ID, MESSAGE_KEY);
+
+-- Index for efficient namespace-based lookups
+CREATE INDEX idx_translation_namespace ON TRANSLATION (DEPLOYMENT_ID, NAMESPACE);
+
+-- Index for efficient language and namespace combination lookups
+CREATE INDEX idx_translation_lang_namespace ON TRANSLATION (DEPLOYMENT_ID, LANGUAGE_CODE, NAMESPACE);
