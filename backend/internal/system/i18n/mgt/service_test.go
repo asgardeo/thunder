@@ -24,6 +24,9 @@ import (
 
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/suite"
+
+	"github.com/asgardeo/thunder/internal/system/config"
+	immutableresource "github.com/asgardeo/thunder/internal/system/immutable_resource"
 )
 
 type I18nMgtServiceTestSuite struct {
@@ -37,8 +40,19 @@ func TestI18nMgtServiceTestSuite(t *testing.T) {
 }
 
 func (suite *I18nMgtServiceTestSuite) SetupTest() {
+	config.ResetThunderRuntime()
+	testConfig := &config.Config{
+		ImmutableResources: config.ImmutableResources{
+			Enabled: false,
+		},
+	}
+	_ = config.InitializeThunderRuntime("/tmp/test", testConfig)
 	suite.mockStore = newI18nStoreInterfaceMock(suite.T())
 	suite.service = newI18nService(suite.mockStore)
+}
+
+func (suite *I18nMgtServiceTestSuite) TearDownTest() {
+	config.ResetThunderRuntime()
 }
 
 // ListLanguages Tests
@@ -190,6 +204,20 @@ func (suite *I18nMgtServiceTestSuite) TestSetTranslationOverrideForKey_StoreErro
 	suite.Equal(ErrorInternalServerError.Code, err.Code)
 }
 
+func (suite *I18nMgtServiceTestSuite) TestSetTranslationOverrideForKey_Immutable() {
+	// Enable immutable mode
+	config.GetThunderRuntime().Config.ImmutableResources.Enabled = true
+	defer func() {
+		config.GetThunderRuntime().Config.ImmutableResources.Enabled = false
+	}()
+
+	result, err := suite.service.SetTranslationOverrideForKey("en-US", "common", "welcome", "Hello")
+
+	suite.Nil(result)
+	suite.NotNil(err)
+	suite.Equal(immutableresource.I18nErrorImmutableResourceUpdateOperation.Code, err.Code)
+}
+
 // ClearTranslationOverrideForKey Tests
 func (suite *I18nMgtServiceTestSuite) TestClearTranslationOverrideForKey_Success() {
 	suite.mockStore.On("DeleteTranslation", "en-US", "welcome", "common").Return(nil)
@@ -224,6 +252,19 @@ func (suite *I18nMgtServiceTestSuite) TestClearTranslationOverrideForKey_StoreEr
 
 	suite.NotNil(err)
 	suite.Equal(ErrorInternalServerError.Code, err.Code)
+}
+
+func (suite *I18nMgtServiceTestSuite) TestClearTranslationOverrideForKey_Immutable() {
+	// Enable immutable mode
+	config.GetThunderRuntime().Config.ImmutableResources.Enabled = true
+	defer func() {
+		config.GetThunderRuntime().Config.ImmutableResources.Enabled = false
+	}()
+
+	err := suite.service.ClearTranslationOverrideForKey("en-US", "common", "welcome")
+
+	suite.NotNil(err)
+	suite.Equal(immutableresource.I18nErrorImmutableResourceDeleteOperation.Code, err.Code)
 }
 
 // ResolveTranslations Tests
@@ -439,6 +480,24 @@ func (suite *I18nMgtServiceTestSuite) TestSetTranslationOverrides_StoreError() {
 	suite.Equal(ErrorInternalServerError.Code, err.Code)
 }
 
+func (suite *I18nMgtServiceTestSuite) TestSetTranslationOverrides_Immutable() {
+	// Enable immutable mode
+	config.GetThunderRuntime().Config.ImmutableResources.Enabled = true
+	defer func() {
+		config.GetThunderRuntime().Config.ImmutableResources.Enabled = false
+	}()
+
+	translations := map[string]map[string]string{
+		"console": {"k": "v"},
+	}
+
+	result, err := suite.service.SetTranslationOverrides("en-US", translations)
+
+	suite.Nil(result)
+	suite.NotNil(err)
+	suite.Equal(immutableresource.I18nErrorImmutableResourceUpdateOperation.Code, err.Code)
+}
+
 // ClearTranslationOverrides Tests
 func (suite *I18nMgtServiceTestSuite) TestClearTranslationOverrides_Success() {
 	suite.mockStore.On("DeleteTranslationsByLanguage", "en-US").Return(nil)
@@ -465,4 +524,17 @@ func (suite *I18nMgtServiceTestSuite) TestClearTranslationOverrides_ValidationEr
 	err = suite.service.ClearTranslationOverrides("invalid")
 	suite.NotNil(err)
 	suite.Equal(ErrorInvalidLanguage.Code, err.Code)
+}
+
+func (suite *I18nMgtServiceTestSuite) TestClearTranslationOverrides_Immutable() {
+	// Enable immutable mode
+	config.GetThunderRuntime().Config.ImmutableResources.Enabled = true
+	defer func() {
+		config.GetThunderRuntime().Config.ImmutableResources.Enabled = false
+	}()
+
+	err := suite.service.ClearTranslationOverrides("en-US")
+
+	suite.NotNil(err)
+	suite.Equal(immutableresource.I18nErrorImmutableResourceDeleteOperation.Code, err.Code)
 }

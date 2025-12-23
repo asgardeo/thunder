@@ -51,3 +51,27 @@ func CheckImmutableDelete() *serviceerror.ServiceError {
 	}
 	return nil
 }
+
+// CheckImmutableCreateI18n returns an i18n error if immutable mode is enabled and create operation is attempted.
+func CheckImmutableCreateI18n() *serviceerror.I18nServiceError {
+	if IsImmutableModeEnabled() {
+		return &I18nErrorImmutableResourceCreateOperation
+	}
+	return nil
+}
+
+// CheckImmutableUpdateI18n returns an i18n error if immutable mode is enabled and update operation is attempted.
+func CheckImmutableUpdateI18n() *serviceerror.I18nServiceError {
+	if IsImmutableModeEnabled() {
+		return &I18nErrorImmutableResourceUpdateOperation
+	}
+	return nil
+}
+
+// CheckImmutableDeleteI18n returns an i18n error if immutable mode is enabled and delete operation is attempted.
+func CheckImmutableDeleteI18n() *serviceerror.I18nServiceError {
+	if IsImmutableModeEnabled() {
+		return &I18nErrorImmutableResourceDeleteOperation
+	}
+	return nil
+}

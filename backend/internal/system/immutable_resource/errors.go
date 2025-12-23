@@ -18,7 +18,10 @@
 
 package immutableresource
 
-import "github.com/asgardeo/thunder/internal/system/error/serviceerror"
+import (
+	"github.com/asgardeo/thunder/internal/system/error/serviceerror"
+	"github.com/asgardeo/thunder/internal/system/i18n/core"
+)
 
 var (
 	// ErrorImmutableResourceCreateOperation is the error returned when
@@ -30,6 +33,21 @@ var (
 		ErrorDescription: "Creating immutable resources is not permitted",
 	}
 
+	// I18nErrorImmutableResourceCreateOperation is the error returned when
+	// an immutable resource create operation is attempted.
+	I18nErrorImmutableResourceCreateOperation = serviceerror.I18nServiceError{
+		Type: serviceerror.ClientErrorType,
+		Code: "FBR-1001",
+		Error: core.I18nMessage{
+			Key:          "error.immutable_resource.create_operation_not_allowed",
+			DefaultValue: "Immutable resource create operation is not allowed",
+		},
+		ErrorDescription: core.I18nMessage{
+			Key:          "error.immutable_resource.create_operation_not_allowed_description",
+			DefaultValue: "Creating immutable resources is not permitted",
+		},
+	}
+
 	// ErrorImmutableResourceUpdateOperation is the error returned when
 	// an immutable resource update operation is attempted.
 	ErrorImmutableResourceUpdateOperation = serviceerror.ServiceError{
@@ -39,6 +57,21 @@ var (
 		ErrorDescription: "Updating immutable resources is not permitted",
 	}
 
+	// I18nErrorImmutableResourceUpdateOperation is the error returned when
+	// an immutable resource update operation is attempted.
+	I18nErrorImmutableResourceUpdateOperation = serviceerror.I18nServiceError{
+		Type: serviceerror.ClientErrorType,
+		Code: "FBR-1002",
+		Error: core.I18nMessage{
+			Key:          "error.immutable_resource.update_operation_not_allowed",
+			DefaultValue: "Immutable resource update operation is not allowed",
+		},
+		ErrorDescription: core.I18nMessage{
+			Key:          "error.immutable_resource.update_operation_not_allowed_description",
+			DefaultValue: "Updating immutable resources is not permitted",
+		},
+	}
+
 	// ErrorImmutableResourceDeleteOperation is the error returned when
 	// an immutable resource delete operation is attempted.
 	ErrorImmutableResourceDeleteOperation = serviceerror.ServiceError{
@@ -46,5 +79,20 @@ var (
 		Code:             "FBR-1003",
 		Error:            "Immutable resource delete operation is not allowed",
 		ErrorDescription: "Deleting immutable resources is not permitted",
+	}
+
+	// I18nErrorImmutableResourceDeleteOperation is the error returned when
+	// an immutable resource delete operation is attempted.
+	I18nErrorImmutableResourceDeleteOperation = serviceerror.I18nServiceError{
+		Type: serviceerror.ClientErrorType,
+		Code: "FBR-1003",
+		Error: core.I18nMessage{
+			Key:          "error.immutable_resource.delete_operation_not_allowed",
+			DefaultValue: "Immutable resource delete operation is not allowed",
+		},
+		ErrorDescription: core.I18nMessage{
+			Key:          "error.immutable_resource.delete_operation_not_allowed_description",
+			DefaultValue: "Deleting immutable resources is not permitted",
+		},
 	}
 )
