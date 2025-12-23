@@ -22,12 +22,29 @@ import (
 	"errors"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/suite"
 )
+
+var testPublicPaths = []string{
+	"/health/**",
+	"/auth/**",
+	"/flow/execute/**",
+	"/oauth2/**",
+	"/.well-known/openid-configuration/**",
+	"/.well-known/oauth-authorization-server/**",
+	"/gate/**",
+	"/develop/**",
+	"/error/**",
+	"/branding/resolve/**",
+	"/i18n/languages",
+	"/i18n/languages/*/translations/resolve",
+	"/i18n/languages/*/translations/ns/*/keys/*/resolve",
+}
 
 // SecurityServiceTestSuite defines the test suite for SecurityService
 type SecurityServiceTestSuite struct {
@@ -42,9 +59,9 @@ func (suite *SecurityServiceTestSuite) SetupTest() {
 	suite.mockAuth1 = &AuthenticatorInterfaceMock{}
 	suite.mockAuth2 = &AuthenticatorInterfaceMock{}
 
-	suite.service = &securityService{
-		authenticators: []AuthenticatorInterface{suite.mockAuth1, suite.mockAuth2},
-	}
+	var err error
+	suite.service, err = NewSecurityService([]AuthenticatorInterface{suite.mockAuth1, suite.mockAuth2}, testPublicPaths)
+	suite.Require().NoError(err)
 
 	// Create test authentication context
 	suite.testCtx = newSecurityContext(
@@ -273,6 +290,7 @@ func (suite *SecurityServiceTestSuite) TestIsPublicPath() {
 		{"Signin logo", "/gate/signin/logo/123", true},
 		{"Develop root", "/develop/", true},
 		{"Develop dashboard", "/develop/dashboard", true},
+		{"I18n languages", "/i18n/languages", true},
 
 		// Exact matches without trailing slash
 		{"Auth exact", "/auth", true},
@@ -293,6 +311,27 @@ func (suite *SecurityServiceTestSuite) TestIsPublicPath() {
 		// Edge cases
 		{"Empty path", "", false},
 		{"Just slash", "/", false},
+
+		// Parameterized paths
+		{"Parameterized path match", "/i18n/languages/en/translations/resolve", true},
+		{"Parameterized path mismatch prefix", "/i18n/languages/en/translations", false},
+		{"Parameterized path mismatch suffix", "/i18n/languages/en/translations/resolve/extra", false},
+		{"Parameterized path empty param", "/i18n/languages//translations/resolve", false},
+
+		// Multi-parameter paths
+		{"Multi-param path match", "/i18n/languages/en/translations/ns/common/keys/btn.submit/resolve", true},
+		{"Multi-param path mismatch namespace", "/i18n/languages/en/translations/ns//keys/btn.submit/resolve", false},
+		{"Multi-param path mismatch key", "/i18n/languages/en/translations/ns/common/keys//resolve", false},
+		{"Multi-param path mismatch structure", "/i18n/languages/en/translations/ns/common/keys/btn.submit", false},
+
+		// Special characters in parameters
+		{"Parameterized path with hyphen", "/i18n/languages/en-US/translations/resolve", true},
+		{"Multi-param path with dots", "/i18n/languages/en/translations/ns/common/keys/btn.submit.label/resolve", true},
+
+		// Performance/Robustness edge cases
+		{"Long parameter value within limit",
+			"/i18n/languages/" + strings.Repeat("a", 255) + "/translations/resolve", true},
+		{"Exceeds max path length", "/i18n/languages/" + strings.Repeat("a", 4096) + "/translations/resolve", false},
 	}
 
 	for _, tc := range testCases {
@@ -305,9 +344,8 @@ func (suite *SecurityServiceTestSuite) TestIsPublicPath() {
 
 // Test SecurityService with empty authenticators list
 func (suite *SecurityServiceTestSuite) TestProcess_EmptyAuthenticators() {
-	service := &securityService{
-		authenticators: []AuthenticatorInterface{},
-	}
+	service, err := NewSecurityService([]AuthenticatorInterface{}, testPublicPaths)
+	suite.Require().NoError(err)
 
 	req := httptest.NewRequest(http.MethodGet, "/api/protected", nil)
 
@@ -319,9 +357,8 @@ func (suite *SecurityServiceTestSuite) TestProcess_EmptyAuthenticators() {
 
 // Test SecurityService with nil authenticators list
 func (suite *SecurityServiceTestSuite) TestProcess_NilAuthenticators() {
-	service := &securityService{
-		authenticators: nil,
-	}
+	service, err := NewSecurityService(nil, testPublicPaths)
+	suite.Require().NoError(err)
 
 	req := httptest.NewRequest(http.MethodGet, "/api/protected", nil)
 
@@ -407,4 +444,100 @@ func (suite *SecurityServiceTestSuite) TestProcess_OptionsMethod() {
 	// Verify no authenticators were called for OPTIONS method
 	suite.mockAuth1.AssertNotCalled(suite.T(), "CanHandle")
 	suite.mockAuth2.AssertNotCalled(suite.T(), "CanHandle")
+}
+
+// Test NewSecurityService returns error on invalid paths
+func (suite *SecurityServiceTestSuite) TestNewSecurityService_Error() {
+	invalidPaths := []string{"/valid", "/invalid/**/middle/**"}
+	service, err := NewSecurityService(nil, invalidPaths)
+	assert.Error(suite.T(), err)
+	assert.Nil(suite.T(), service)
+	assert.Contains(suite.T(), err.Error(), "invalid pattern")
+}
+
+func (suite *SecurityServiceTestSuite) TestCompilePathPatterns() {
+	tests := []struct {
+		name           string
+		pattern        string
+		expectedRegex  string
+		shouldMatch    []string
+		shouldNotMatch []string
+	}{
+		{
+			name:           "Single wildcard segment",
+			pattern:        "/api/*/users",
+			expectedRegex:  "^/api/[^/]+/users$",
+			shouldMatch:    []string{"/api/v1/users", "/api/test/users"},
+			shouldNotMatch: []string{"/api/users", "/api/v1/v2/users"},
+		},
+		{
+			name:           "Recursive wildcard suffix",
+			pattern:        "/health/**",
+			expectedRegex:  "^/health(?:/.*)?$",
+			shouldMatch:    []string{"/health", "/health/", "/health/liveness", "/health/readiness/full"},
+			shouldNotMatch: []string{"/healthz", "/other"},
+		},
+		{
+			name:           "Multiple wildcards",
+			pattern:        "/i18n/languages/*/translations/ns/*/keys/*/resolve",
+			expectedRegex:  "^/i18n/languages/[^/]+/translations/ns/[^/]+/keys/[^/]+/resolve$",
+			shouldMatch:    []string{"/i18n/languages/en/translations/ns/common/keys/btn.submit/resolve"},
+			shouldNotMatch: []string{"/i18n/languages/en/translations/ns/common/keys/btn.submit/extra"},
+		},
+		{
+			name:           "Special characters escaping",
+			pattern:        "/api/v1.0/user",
+			expectedRegex:  "^/api/v1\\.0/user$",
+			shouldMatch:    []string{"/api/v1.0/user"},
+			shouldNotMatch: []string{"/api/v1a0/user"},
+		},
+	}
+
+	tests = append(tests, []struct {
+		name           string
+		pattern        string
+		expectedRegex  string
+		shouldMatch    []string
+		shouldNotMatch []string
+	}{
+		{
+			name:           "Invalid middle globstar (skipped)",
+			pattern:        "/api/**/users",
+			expectedRegex:  "", // Skipped
+			shouldMatch:    nil,
+			shouldNotMatch: nil,
+		},
+		{
+			name:           "Multiple globstars (skipped)",
+			pattern:        "/api/**/users/**",
+			expectedRegex:  "", // Skipped
+			shouldMatch:    nil,
+			shouldNotMatch: nil,
+		},
+	}...)
+
+	for _, tt := range tests {
+		suite.Run(tt.name, func() {
+			compiled, err := compilePathPatterns([]string{tt.pattern})
+
+			if tt.expectedRegex == "" {
+				// Invalid pattern. Error is expected.
+				assert.Error(suite.T(), err)
+				assert.Nil(suite.T(), compiled)
+			} else {
+				assert.NoError(suite.T(), err)
+				assert.Len(suite.T(), compiled, 1)
+				regex := compiled[0]
+				assert.Equal(suite.T(), tt.expectedRegex, regex.String())
+
+				for _, matchPath := range tt.shouldMatch {
+					assert.True(suite.T(), regex.MatchString(matchPath), "Should match: %s", matchPath)
+				}
+
+				for _, mismatchPath := range tt.shouldNotMatch {
+					assert.False(suite.T(), regex.MatchString(mismatchPath), "Should not match: %s", mismatchPath)
+				}
+			}
+		})
+	}
 }
