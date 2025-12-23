@@ -43,4 +43,10 @@ var defaultMessages = map[string]string{
 	"error.i18nservice.missing_value_description": "Translation value is required",
 	"error.i18nservice.translation_not_found": "Translation not found",
 	"error.i18nservice.translation_not_found_description": "The requested translation does not exist for the specified language, namespace, and key",
+	"error.immutable_resource.create_operation_not_allowed": "Immutable resource create operation is not allowed",
+	"error.immutable_resource.create_operation_not_allowed_description": "Creating immutable resources is not permitted",
+	"error.immutable_resource.delete_operation_not_allowed": "Immutable resource delete operation is not allowed",
+	"error.immutable_resource.delete_operation_not_allowed_description": "Deleting immutable resources is not permitted",
+	"error.immutable_resource.update_operation_not_allowed": "Immutable resource update operation is not allowed",
+	"error.immutable_resource.update_operation_not_allowed_description": "Updating immutable resources is not permitted",
 }

@@ -54,8 +54,14 @@ type SetTranslationsRequest struct {
 
 // Translation represents a translation entity in the service layer.
 type Translation struct {
-	Key       string
-	Language  string
-	Namespace string
-	Value     string
+	Key       string `yaml:"id"`
+	Language  string `yaml:"language"`
+	Namespace string `yaml:"namespace"`
+	Value     string `yaml:"value"`
+}
+
+// LanguageTranslations represents all translations for a single language.
+type LanguageTranslations struct {
+	Language     string                       `yaml:"language"`
+	Translations map[string]map[string]string `yaml:"translations"`
 }

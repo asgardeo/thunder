@@ -21,16 +21,32 @@ package mgt
 import (
 	"net/http"
 
+	immutableresource "github.com/asgardeo/thunder/internal/system/immutable_resource"
 	"github.com/asgardeo/thunder/internal/system/middleware"
 )
 
 // Initialize initializes the i18n service and registers its routes.
-func Initialize(mux *http.ServeMux) I18nServiceInterface {
-	store := newI18nStore()
+func Initialize(mux *http.ServeMux) (I18nServiceInterface, immutableresource.ResourceExporter, error) {
+	var store i18nStoreInterface
+	if immutableresource.IsImmutableModeEnabled() {
+		store = newFileBasedStore()
+	} else {
+		store = newI18nStore()
+	}
+
 	service := newI18nService(store)
+
+	if immutableresource.IsImmutableModeEnabled() {
+		if err := loadImmutableResources(store); err != nil {
+			return nil, nil, err
+		}
+	}
+
 	handler := newI18nHandler(service)
 	registerRoutes(mux, handler)
-	return service
+
+	exporter := newTranslationExporter(store)
+	return service, exporter, nil
 }
 
 // registerRoutes registers the routes for i18n management operations.
