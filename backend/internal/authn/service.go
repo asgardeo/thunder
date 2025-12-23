@@ -34,6 +34,7 @@ import (
 	"github.com/asgardeo/thunder/internal/authn/oauth"
 	"github.com/asgardeo/thunder/internal/authn/oidc"
 	"github.com/asgardeo/thunder/internal/authn/otp"
+	"github.com/asgardeo/thunder/internal/authn/webauthn"
 	"github.com/asgardeo/thunder/internal/idp"
 	notifcommon "github.com/asgardeo/thunder/internal/notification/common"
 	"github.com/asgardeo/thunder/internal/system/config"
@@ -61,6 +62,19 @@ type AuthenticationServiceInterface interface {
 		*IDPAuthInitData, *serviceerror.ServiceError)
 	FinishIDPAuthentication(requestedType idp.IDPType, sessionToken string, skipAssertion bool,
 		existingAssertion, code string) (*common.AuthenticationResponse, *serviceerror.ServiceError)
+	// WebAuthn methods
+	StartWebAuthnRegistration(userID, relyingPartyID, relyingPartyName string,
+		authSelection *WebAuthnAuthenticatorSelectionDTO, attestation string) (interface{}, *serviceerror.ServiceError)
+	FinishWebAuthnRegistration(credential WebAuthnPublicKeyCredentialDTO, sessionToken,
+		credentialName string) (interface{}, *serviceerror.ServiceError)
+	StartWebAuthnAuthentication(userID, relyingPartyID string) (interface{}, *serviceerror.ServiceError)
+	FinishWebAuthnAuthentication(
+		credentialID, credentialType string,
+		response WebAuthnCredentialResponseDTO,
+		sessionToken string,
+		skipAssertion bool,
+		existingAssertion string,
+	) (*common.AuthenticationResponse, *serviceerror.ServiceError)
 }
 
 // authenticationService is the default implementation of the AuthenticationServiceInterface.
@@ -74,6 +88,7 @@ type authenticationService struct {
 	oidcService            oidc.OIDCAuthnServiceInterface
 	googleService          google.GoogleOIDCAuthnServiceInterface
 	githubService          github.GithubOAuthAuthnServiceInterface
+	webauthnService        webauthn.WebAuthnAuthnServiceInterface
 }
 
 // newAuthenticationService creates a new instance of AuthenticationService.
@@ -87,6 +102,7 @@ func newAuthenticationService(
 	oidcAuthnSvc oidc.OIDCAuthnServiceInterface,
 	googleAuthnSvc google.GoogleOIDCAuthnServiceInterface,
 	githubAuthnSvc github.GithubOAuthAuthnServiceInterface,
+	webauthnSvc webauthn.WebAuthnAuthnServiceInterface,
 ) AuthenticationServiceInterface {
 	return &authenticationService{
 		idpService:             idpSvc,
@@ -98,6 +114,7 @@ func newAuthenticationService(
 		oidcService:            oidcAuthnSvc,
 		googleService:          googleAuthnSvc,
 		githubService:          githubAuthnSvc,
+		webauthnService:        webauthnSvc,
 	}
 }
 
@@ -647,4 +664,78 @@ func (as *authenticationService) getSubClaim(userClaims map[string]interface{}, 
 
 	logger.Debug("sub claim not found in user info claims")
 	return "", &common.ErrorSubClaimNotFound
+}
+
+// StartWebAuthnRegistration starts the WebAuthn registration process.
+func (as *authenticationService) StartWebAuthnRegistration(userID, relyingPartyID, relyingPartyName string,
+	authSelection *WebAuthnAuthenticatorSelectionDTO, attestation string) (interface{}, *serviceerror.ServiceError) {
+	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, svcLoggerComponentName))
+	logger.Debug("Starting WebAuthn registration")
+
+	var webAuthnAuthSelection *webauthn.AuthenticatorSelection
+	if authSelection != nil {
+		webAuthnAuthSelection = &webauthn.AuthenticatorSelection{
+			AuthenticatorAttachment: authSelection.AuthenticatorAttachment,
+			RequireResidentKey:      authSelection.RequireResidentKey,
+			ResidentKey:             authSelection.ResidentKey,
+			UserVerification:        authSelection.UserVerification,
+		}
+	}
+
+	req := &webauthn.WebAuthnRegisterStartRequest{
+		UserID:                 userID,
+		RelyingPartyID:         relyingPartyID,
+		RelyingPartyName:       relyingPartyName,
+		AuthenticatorSelection: webAuthnAuthSelection,
+		Attestation:            attestation,
+	}
+
+	return as.webauthnService.StartRegistration(req)
+}
+
+// FinishWebAuthnRegistration completes the WebAuthn registration process.
+func (as *authenticationService) FinishWebAuthnRegistration(credential WebAuthnPublicKeyCredentialDTO,
+	sessionToken, credentialName string) (interface{}, *serviceerror.ServiceError) {
+	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, svcLoggerComponentName))
+	logger.Debug("Finishing WebAuthn registration")
+
+	req := &webauthn.WebAuthnRegisterFinishRequest{
+		CredentialID:      credential.ID,
+		CredentialType:    credential.Type,
+		ClientDataJSON:    credential.Response.ClientDataJSON,
+		AttestationObject: credential.Response.AttestationObject,
+		SessionToken:      sessionToken,
+		CredentialName:    credentialName,
+	}
+
+	return as.webauthnService.FinishRegistration(req)
+}
+
+// StartWebAuthnAuthentication starts the WebAuthn authentication process.
+func (as *authenticationService) StartWebAuthnAuthentication(userID, relyingPartyID string) (
+	interface{}, *serviceerror.ServiceError) {
+	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, svcLoggerComponentName))
+	logger.Debug("Starting WebAuthn authentication")
+
+	return as.webauthnService.StartAuthentication(userID, relyingPartyID)
+}
+
+// FinishWebAuthnAuthentication completes the WebAuthn authentication process.
+func (as *authenticationService) FinishWebAuthnAuthentication(credentialID, credentialType string,
+	response WebAuthnCredentialResponseDTO, sessionToken string, skipAssertion bool,
+	existingAssertion string) (*common.AuthenticationResponse, *serviceerror.ServiceError) {
+	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, svcLoggerComponentName))
+	logger.Debug("Finishing WebAuthn authentication")
+
+	return as.webauthnService.FinishAuthentication(
+		credentialID,
+		credentialType,
+		response.ClientDataJSON,
+		response.AuthenticatorData,
+		response.Signature,
+		response.UserHandle,
+		sessionToken,
+		skipAssertion,
+		existingAssertion,
+	)
 }
