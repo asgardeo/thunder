@@ -63,11 +63,16 @@ func registerServices(
 
 	observabilitySvc = observability.Initialize()
 
-	// Initialize i18n service for internationalization support.
-	_ = i18nmgt.Initialize(mux)
-
 	// List to collect exporters from each package
 	var exporters []immutableresource.ResourceExporter
+
+	// Initialize i18n service for internationalization support.
+	_, i18nExporter, err := i18nmgt.Initialize(mux)
+	if err != nil {
+		logger.Fatal("Failed to initialize i18n service", log.Error(err))
+	}
+	// Add to exporters list (must be done after initializing list)
+	exporters = append(exporters, i18nExporter)
 
 	ouService, ouExporter, err := ou.Initialize(mux)
 	if err != nil {
