@@ -232,6 +232,11 @@ type OrganizationUnitConfig struct {
 	Store string `yaml:"store" json:"store"`
 }
 
+// WebAuthnConfig holds the WebAuthn configuration details.
+type WebAuthnConfig struct {
+	AllowedOrigins []string `yaml:"allowed_origins" json:"allowed_origins"`
+}
+
 // Config holds the complete configuration details of the server.
 type Config struct {
 	Server             ServerConfig           `yaml:"server" json:"server"`
@@ -249,6 +254,7 @@ type Config struct {
 	Resource           ResourceConfig         `yaml:"resource" json:"resource"`
 	OrganizationUnit   OrganizationUnitConfig `yaml:"organization_unit" json:"organization_unit"`
 	Observability      ObservabilityConfig    `yaml:"observability" json:"observability"`
+	WebAuthn           WebAuthnConfig         `yaml:"webauthn" json:"webauthn"`
 }
 
 // LoadConfig loads the configurations from the specified YAML file and applies defaults.

@@ -105,3 +105,9 @@ cors:
   {{- range .Values.configuration.cors.allowedOrigins }}
     - {{ . | quote }}
   {{- end }}
+
+webauthn:
+  allowed_origins:
+  {{- range .Values.configuration.webauthn.allowedOrigins }}
+    - {{ . | quote }}
+  {{- end }}

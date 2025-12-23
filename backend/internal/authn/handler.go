@@ -227,6 +227,95 @@ func (ah *authenticationHandler) HandleStandardOAuthFinishRequest(w http.Respons
 	sysutils.WriteSuccessResponse(w, http.StatusOK, responseDTO)
 }
 
+// HandleWebAuthnRegisterStartRequest handles the WebAuthn start registration request.
+func (ah *authenticationHandler) HandleWebAuthnRegisterStartRequest(w http.ResponseWriter, r *http.Request) {
+	regRequest, err := sysutils.DecodeJSONBody[WebAuthnRegisterStartRequestDTO](r)
+	if err != nil {
+		sysutils.WriteErrorResponse(w, http.StatusBadRequest, common.APIErrorInvalidRequestFormat)
+		return
+	}
+
+	regResponse, svcErr := ah.authService.StartWebAuthnRegistration(
+		regRequest.UserID,
+		regRequest.RelyingPartyID,
+		regRequest.RelyingPartyName,
+		regRequest.AuthenticatorSelection,
+		regRequest.Attestation,
+	)
+	if svcErr != nil {
+		ah.handleServiceError(w, svcErr)
+		return
+	}
+
+	sysutils.WriteSuccessResponse(w, http.StatusOK, regResponse)
+}
+
+// HandleWebAuthnRegisterFinishRequest handles the WebAuthn finish registration request.
+func (ah *authenticationHandler) HandleWebAuthnRegisterFinishRequest(w http.ResponseWriter, r *http.Request) {
+	regRequest, err := sysutils.DecodeJSONBody[WebAuthnRegisterFinishRequestDTO](r)
+	if err != nil {
+		sysutils.WriteErrorResponse(w, http.StatusBadRequest, common.APIErrorInvalidRequestFormat)
+		return
+	}
+
+	regResponse, svcErr := ah.authService.FinishWebAuthnRegistration(
+		regRequest.PublicKeyCredential,
+		regRequest.SessionToken,
+		regRequest.CredentialName,
+	)
+	if svcErr != nil {
+		ah.handleServiceError(w, svcErr)
+		return
+	}
+
+	sysutils.WriteSuccessResponse(w, http.StatusOK, regResponse)
+}
+
+// HandleWebAuthnStartRequest handles the WebAuthn start authentication request.
+func (ah *authenticationHandler) HandleWebAuthnStartRequest(w http.ResponseWriter, r *http.Request) {
+	authRequest, err := sysutils.DecodeJSONBody[WebAuthnStartRequestDTO](r)
+	if err != nil {
+		sysutils.WriteErrorResponse(w, http.StatusBadRequest, common.APIErrorInvalidRequestFormat)
+		return
+	}
+
+	authResponse, svcErr := ah.authService.StartWebAuthnAuthentication(
+		authRequest.UserID,
+		authRequest.RelyingPartyID,
+	)
+	if svcErr != nil {
+		ah.handleServiceError(w, svcErr)
+		return
+	}
+
+	sysutils.WriteSuccessResponse(w, http.StatusOK, authResponse)
+}
+
+// HandleWebAuthnFinishRequest handles the WebAuthn finish authentication request.
+func (ah *authenticationHandler) HandleWebAuthnFinishRequest(w http.ResponseWriter, r *http.Request) {
+	authRequest, err := sysutils.DecodeJSONBody[WebAuthnFinishRequestDTO](r)
+	if err != nil {
+		sysutils.WriteErrorResponse(w, http.StatusBadRequest, common.APIErrorInvalidRequestFormat)
+		return
+	}
+
+	authResponse, svcErr := ah.authService.FinishWebAuthnAuthentication(
+		authRequest.PublicKeyCredential.ID,
+		authRequest.PublicKeyCredential.Type,
+		authRequest.PublicKeyCredential.Response,
+		authRequest.SessionToken,
+		authRequest.SkipAssertion,
+		authRequest.Assertion,
+	)
+	if svcErr != nil {
+		ah.handleServiceError(w, svcErr)
+		return
+	}
+
+	responseDTO := AuthenticationResponseDTO(*authResponse)
+	sysutils.WriteSuccessResponse(w, http.StatusOK, responseDTO)
+}
+
 // handleServiceError converts service errors to appropriate HTTP responses.
 func (ah *authenticationHandler) handleServiceError(w http.ResponseWriter, svcErr *serviceerror.ServiceError) {
 	status := http.StatusInternalServerError

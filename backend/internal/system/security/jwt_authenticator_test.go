@@ -452,6 +452,26 @@ func (suite *JWTAuthenticatorTestSuite) TestGetRequiredScopes() {
 			path:     "/some/other/path",
 			expected: []string{"system"},
 		},
+		{
+			name:     "User self-service endpoint - /users/me",
+			path:     "/users/me",
+			expected: []string{},
+		},
+		{
+			name:     "User self-service endpoint - /users/me/update-credentials",
+			path:     "/users/me/update-credentials",
+			expected: []string{},
+		},
+		{
+			name:     "WebAuthn registration start endpoint",
+			path:     "/register/webauthn/start",
+			expected: []string{},
+		},
+		{
+			name:     "WebAuthn registration finish endpoint",
+			path:     "/register/webauthn/finish",
+			expected: []string{},
+		},
 	}
 
 	for _, tt := range tests {
