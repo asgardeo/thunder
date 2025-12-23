@@ -68,7 +68,7 @@ func (e *OUExporter) GetParameterizerType() string {
 func (e *OUExporter) GetAllResourceIDs() ([]string, *serviceerror.ServiceError) {
 	// Get all OUs by requesting a large limit from the service
 	// In composite mode, this returns OUs from both file-based and database stores
-	ous, err := e.service.GetOrganizationUnitList(1000, 0)
+	ous, err := e.service.GetOrganizationUnitList(99, 0)
 	if err != nil {
 		return nil, err
 	}
@@ -106,7 +106,7 @@ func (e *OUExporter) GetAllResourceIDs() ([]string, *serviceerror.ServiceError) 
 
 // getAllChildIDs recursively retrieves all child OU IDs (excluding immutable ones).
 func (e *OUExporter) getAllChildIDs(parentID string) ([]string, *serviceerror.ServiceError) {
-	children, err := e.service.GetOrganizationUnitChildren(parentID, 1000, 0)
+	children, err := e.service.GetOrganizationUnitChildren(parentID, 99, 0)
 	if err != nil {
 		return nil, err
 	}

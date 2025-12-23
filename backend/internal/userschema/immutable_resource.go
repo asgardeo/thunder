@@ -63,7 +63,7 @@ func (e *UserSchemaExporter) GetParameterizerType() string {
 
 // GetAllResourceIDs retrieves all user schema IDs.
 func (e *UserSchemaExporter) GetAllResourceIDs() ([]string, *serviceerror.ServiceError) {
-	response, err := e.service.GetUserSchemaList(0, 1000)
+	response, err := e.service.GetUserSchemaList(99, 0)
 	if err != nil {
 		return nil, err
 	}
