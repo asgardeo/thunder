@@ -60,6 +60,10 @@ spec:
             cert_file: "repository/resources/security/server.cert"
             key_file: "repository/resources/security/server.key"
 
+          crypto:
+            encryption:
+              key: "${THUNDER_CRYPTO_ENCRYPTION_KEY}"
+
           database:
             identity:
               type: "${THUNDER_DB_IDENTITY_TYPE}"
@@ -155,6 +159,8 @@ spec:
           value: "{{ .Values.jwt.validity }}"
         - key: THUNDER_OAUTH_REFRESH_TOKEN_VALIDITY
           value: "{{ .Values.oauth.refresh_token_validity }}"
+        - key: THUNDER_CRYPTO_ENCRYPTION_KEY
+          value: "{{ .Values.crypto.encryption.key }}"
 
   endpoints:
     identity-api:

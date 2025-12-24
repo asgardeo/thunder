@@ -109,7 +109,35 @@ Thunder provides comprehensive RESTful APIs for managing identity and access:
 
 ## 🔧 Configuration
 
-Refer to the `backend/cmd/server/repository/conf/deployment.yaml` file for detailed configuration options.
+Thunder's configuration is managed through the `deployment.yaml` file located at `backend/cmd/server/repository/conf/deployment.yaml`. The configuration system supports three ways to provide values:
+
+### Configuration Value Types
+
+1. **Direct Values** - Static values specified directly in YAML:
+   ```yaml
+   server:
+     hostname: "localhost"
+     port: 8090
+   ```
+
+2. **Environment Variables** - Use Go template syntax `{{.VARIABLE_NAME}}` to reference environment variables:
+   ```yaml
+   database:
+     identity:
+       password: "{{.DB_PASSWORD}}"
+   ```
+
+3. **File References** - Use `file://` protocol to load content from files:
+   ```yaml
+   crypto:
+     encryption:
+       key: "file://repository/resources/security/crypto.key"
+   ```
+   Supports both quoted and unquoted paths:
+   - `file://path/to/file` - Unquoted path (no spaces)
+   - `file://"path/with spaces"` - Quoted path (with spaces allowed)
+   - `file:///absolute/path` - Absolute paths
+   - `file://relative/path` - Relative paths (resolved from the Thunder home directory)
 
 ## 💡 Need Help?
 

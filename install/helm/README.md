@@ -2,6 +2,38 @@
 
 This repository contains the Helm chart for WSO2 Thunder, a lightweight user and identity management system designed for modern application development.
 
+## Configuration Value Types
+
+Thunder's configuration system supports multiple value formats for **any parameter** in the configuration:
+
+1. **Direct Values** - Static values specified directly in YAML:
+   ```yaml
+   server:
+     hostname: "localhost"
+     port: 8090
+   ```
+
+2. **Environment Variables** - Use Go template syntax `{{.VARIABLE_NAME}}` to reference environment variables:
+   ```yaml
+   database:
+     identity:
+       password: "{{.DB_PASSWORD}}"
+   server:
+     publicUrl: "{{.PUBLIC_URL}}"
+   ```
+
+3. **File References** - Use `file://` protocol to load content from files:
+   ```yaml
+   crypto:
+     encryption:
+       key: "file://repository/resources/security/crypto.key"
+   ```
+   Supports both quoted and unquoted paths:
+   - `file://path/to/file` - Unquoted path (no spaces)
+   - `file://"path/with spaces"` - Quoted path (with spaces allowed)
+   - `file:///absolute/path` - Absolute paths
+   - `file://relative/path` - Relative paths (resolved from the Thunder installation directory)
+
 ## Prerequisites
 
 ### Infrastructure
@@ -186,6 +218,7 @@ The following table lists the configurable parameters of the Thunder chart and t
 | `configuration.developerClient.scopes`   | Developer client scopes                                       | `['openid', 'profile', 'email', 'system']` |
 | `configuration.security.certFile`      | Server certificate file path                                    | `repository/resources/security/server.cert` |
 | `configuration.security.keyFile`       | Server key file path                                            | `repository/resources/security/server.key`  |
+| `configuration.crypto.encryption.key` | Crypto encryption key (change the default key with a 32-byte (64 character) hex string in production)   | `file://repository/resources/security/crypto.key` |
 | `configuration.database.identity.type` | Identity database type (postgres or sqlite)                     | `postgres`                   |
 | `configuration.database.identity.sqlitePath` | SQLite database path (for sqlite only)                    | `repository/database/thunderdb.db` |
 | `configuration.database.identity.sqliteOptions` | SQLite options (for sqlite only)                       | `_journal_mode=WAL&_busy_timeout=5000` |

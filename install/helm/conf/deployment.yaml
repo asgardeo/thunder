@@ -31,6 +31,10 @@ security:
   cert_file: {{ .Values.configuration.security.certFile | quote }}
   key_file: {{ .Values.configuration.security.keyFile | quote }}
 
+crypto:
+  encryption:
+    key: {{ .Values.configuration.crypto.encryption.key | quote }}
+
 database:
   identity:
     type: {{ .Values.configuration.database.identity.type | quote }}

@@ -133,6 +133,12 @@ configuration:
     certFile: "repository/resources/security/server.cert"
     keyFile: "repository/resources/security/server.key"
 
+  # Crypto configuration
+  crypto:
+    encryption:
+      # WARNING: Replace the default key with a 32-byte (64 character) hex string in production deployments
+      key: "file://repository/resources/security/crypto.key"
+
   # Database configuration
   database:
     identity:
