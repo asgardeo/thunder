@@ -213,3 +213,232 @@ func (suite *UserStoreTestSuite) TestIsAttributeIndexed_EmptyString() {
 	result := suite.store.isAttributeIndexed("")
 	suite.False(result)
 }
+
+// Test buildUserFromResultRow error cases
+
+func (suite *UserStoreTestSuite) TestBuildUserFromResultRow_MissingUserID() {
+	row := map[string]interface{}{
+		"ou_id":      "org1",
+		"type":       "employee",
+		"attributes": `{}`,
+	}
+
+	_, err := buildUserFromResultRow(row)
+
+	suite.Error(err)
+	suite.Contains(err.Error(), "failed to parse user_id as string")
+}
+
+func (suite *UserStoreTestSuite) TestBuildUserFromResultRow_MissingOuID() {
+	row := map[string]interface{}{
+		"user_id":    "user1",
+		"type":       "employee",
+		"attributes": `{}`,
+	}
+
+	_, err := buildUserFromResultRow(row)
+
+	suite.Error(err)
+	suite.Contains(err.Error(), "failed to parse org_id as string")
+}
+
+func (suite *UserStoreTestSuite) TestBuildUserFromResultRow_MissingType() {
+	row := map[string]interface{}{
+		"user_id":    "user1",
+		"ou_id":      "org1",
+		"attributes": `{}`,
+	}
+
+	_, err := buildUserFromResultRow(row)
+
+	suite.Error(err)
+	suite.Contains(err.Error(), "failed to parse type as string")
+}
+
+func (suite *UserStoreTestSuite) TestBuildUserFromResultRow_InvalidAttributesType() {
+	row := map[string]interface{}{
+		"user_id":    "user1",
+		"ou_id":      "org1",
+		"type":       "employee",
+		"attributes": 123, // Invalid type
+	}
+
+	_, err := buildUserFromResultRow(row)
+
+	suite.Error(err)
+	suite.Contains(err.Error(), "failed to parse attributes as string")
+}
+
+func (suite *UserStoreTestSuite) TestBuildUserFromResultRow_InvalidJSON() {
+	row := map[string]interface{}{
+		"user_id":    "user1",
+		"ou_id":      "org1",
+		"type":       "employee",
+		"attributes": `{invalid json}`,
+	}
+
+	_, err := buildUserFromResultRow(row)
+
+	suite.Error(err)
+	suite.Contains(err.Error(), "failed to unmarshal attributes")
+}
+
+func (suite *UserStoreTestSuite) TestBuildUserFromResultRow_AttributesAsBytes() {
+	row := map[string]interface{}{
+		"user_id":    "user1",
+		"ou_id":      "org1",
+		"type":       "employee",
+		"attributes": []byte(`{"email":"test@example.com"}`),
+	}
+
+	user, err := buildUserFromResultRow(row)
+
+	suite.NoError(err)
+	suite.Equal("user1", user.ID)
+	suite.Equal("org1", user.OrganizationUnit)
+	suite.Equal("employee", user.Type)
+}
+
+// Test buildGroupFromResultRow error cases
+
+func (suite *UserStoreTestSuite) TestBuildGroupFromResultRow_MissingGroupID() {
+	row := map[string]interface{}{
+		"name":  "Admins",
+		"ou_id": "org1",
+	}
+
+	_, err := buildGroupFromResultRow(row)
+
+	suite.Error(err)
+	suite.Contains(err.Error(), "failed to parse group_id as string")
+}
+
+func (suite *UserStoreTestSuite) TestBuildGroupFromResultRow_MissingName() {
+	row := map[string]interface{}{
+		"group_id": "group1",
+		"ou_id":    "org1",
+	}
+
+	_, err := buildGroupFromResultRow(row)
+
+	suite.Error(err)
+	suite.Contains(err.Error(), "failed to parse name as string")
+}
+
+func (suite *UserStoreTestSuite) TestBuildGroupFromResultRow_MissingOuID() {
+	row := map[string]interface{}{
+		"group_id": "group1",
+		"name":     "Admins",
+	}
+
+	_, err := buildGroupFromResultRow(row)
+
+	suite.Error(err)
+	suite.Contains(err.Error(), "failed to parse ou_id as string")
+}
+
+func (suite *UserStoreTestSuite) TestBuildGroupFromResultRow_Success() {
+	row := map[string]interface{}{
+		"group_id": "group1",
+		"name":     "Admins",
+		"ou_id":    "org1",
+	}
+
+	group, err := buildGroupFromResultRow(row)
+
+	suite.NoError(err)
+	suite.Equal("group1", group.ID)
+	suite.Equal("Admins", group.Name)
+	suite.Equal("org1", group.OrganizationUnitID)
+}
+
+// Test maskMapValues
+
+func (suite *UserStoreTestSuite) TestMaskMapValues_StringValues() {
+	input := map[string]interface{}{
+		"password": "secret123",
+		"username": "john.doe",
+	}
+
+	masked := maskMapValues(input)
+
+	suite.NotEqual("secret123", masked["password"])
+	suite.NotEqual("john.doe", masked["username"])
+	suite.Contains(masked["password"].(string), "*")
+	suite.Contains(masked["username"].(string), "*")
+}
+
+func (suite *UserStoreTestSuite) TestMaskMapValues_NonStringValues() {
+	input := map[string]interface{}{
+		"age":    30,
+		"active": true,
+		"score":  95.5,
+	}
+
+	masked := maskMapValues(input)
+
+	// Non-string values are masked as "***"
+	suite.Equal("***", masked["age"])
+	suite.Equal("***", masked["active"])
+	suite.Equal("***", masked["score"])
+}
+
+func (suite *UserStoreTestSuite) TestMaskMapValues_MixedValues() {
+	input := map[string]interface{}{
+		"username": "john.doe",
+		"age":      30,
+		"email":    "john@example.com",
+	}
+
+	masked := maskMapValues(input)
+
+	// String values are masked with log.MaskString
+	suite.NotEqual("john.doe", masked["username"])
+	suite.NotEqual("john@example.com", masked["email"])
+	// Non-string values are masked as "***"
+	suite.Equal("***", masked["age"])
+}
+
+// Test validateIndexedAttributesConfig
+
+func (suite *UserStoreTestSuite) TestValidateIndexedAttributesConfig_Success() {
+	configuredAttrs := []string{"username", "email", "mobileNumber"}
+
+	err := validateIndexedAttributesConfig(configuredAttrs)
+
+	suite.NoError(err)
+}
+
+func (suite *UserStoreTestSuite) TestValidateIndexedAttributesConfig_ExceedsMaximum() {
+	// Create more attributes than the maximum allowed
+	configuredAttrs := make([]string, MaxIndexedAttributesCount+1)
+	for i := range configuredAttrs {
+		configuredAttrs[i] = "attr" + string(rune(i))
+	}
+
+	err := validateIndexedAttributesConfig(configuredAttrs)
+
+	suite.Error(err)
+	suite.Contains(err.Error(), "indexed attributes count")
+	suite.Contains(err.Error(), "must not exceed")
+}
+
+func (suite *UserStoreTestSuite) TestValidateIndexedAttributesConfig_EmptyList() {
+	configuredAttrs := []string{}
+
+	err := validateIndexedAttributesConfig(configuredAttrs)
+
+	suite.NoError(err)
+}
+
+func (suite *UserStoreTestSuite) TestValidateIndexedAttributesConfig_AtMaximum() {
+	// Create exactly the maximum number of attributes
+	configuredAttrs := make([]string, MaxIndexedAttributesCount)
+	for i := range configuredAttrs {
+		configuredAttrs[i] = "attr" + string(rune(i))
+	}
+
+	err := validateIndexedAttributesConfig(configuredAttrs)
+
+	suite.NoError(err)
+}

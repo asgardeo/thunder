@@ -41,7 +41,7 @@ func Initialize(
 	}
 	userService := newUserService(userStore, ouService, userSchemaService, hashService)
 	setUserService(userService) // Set the provider for backward compatibility
-	userHandler := newUserHandler(userService)
+	userHandler := newUserHandler(userService, hashService)
 	registerRoutes(mux, userHandler)
 	return userService, nil
 }
