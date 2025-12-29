@@ -31,6 +31,7 @@ import (
 	"github.com/asgardeo/thunder/internal/authn/assert"
 	"github.com/asgardeo/thunder/internal/authn/common"
 	"github.com/asgardeo/thunder/internal/authn/oauth"
+	"github.com/asgardeo/thunder/internal/authn/webauthn"
 	"github.com/asgardeo/thunder/internal/idp"
 	notifcommon "github.com/asgardeo/thunder/internal/notification/common"
 	"github.com/asgardeo/thunder/internal/system/config"
@@ -44,6 +45,7 @@ import (
 	"github.com/asgardeo/thunder/tests/mocks/authn/oauthmock"
 	"github.com/asgardeo/thunder/tests/mocks/authn/oidcmock"
 	"github.com/asgardeo/thunder/tests/mocks/authn/otpmock"
+	"github.com/asgardeo/thunder/tests/mocks/authn/webauthnmock"
 	"github.com/asgardeo/thunder/tests/mocks/idp/idpmock"
 	"github.com/asgardeo/thunder/tests/mocks/jwtmock"
 )
@@ -71,6 +73,7 @@ type AuthenticationServiceTestSuite struct {
 	mockOIDCService        *oidcmock.OIDCAuthnServiceInterfaceMock
 	mockGoogleService      *googlemock.GoogleOIDCAuthnServiceInterfaceMock
 	mockGithubService      *githubmock.GithubOAuthAuthnServiceInterfaceMock
+	mockWebAuthnService    *webauthnmock.WebAuthnAuthnServiceInterfaceMock
 	service                *authenticationService
 }
 
@@ -120,6 +123,7 @@ func (suite *AuthenticationServiceTestSuite) SetupTest() {
 	suite.mockOIDCService = &oidcmock.OIDCAuthnServiceInterfaceMock{}
 	suite.mockGoogleService = &googlemock.GoogleOIDCAuthnServiceInterfaceMock{}
 	suite.mockGithubService = &githubmock.GithubOAuthAuthnServiceInterfaceMock{}
+	suite.mockWebAuthnService = &webauthnmock.WebAuthnAuthnServiceInterfaceMock{}
 
 	suite.service = &authenticationService{
 		idpService:             suite.mockIDPService,
@@ -131,6 +135,7 @@ func (suite *AuthenticationServiceTestSuite) SetupTest() {
 		oidcService:            suite.mockOIDCService,
 		googleService:          suite.mockGoogleService,
 		githubService:          suite.mockGithubService,
+		webauthnService:        suite.mockWebAuthnService,
 	}
 }
 
@@ -1594,4 +1599,357 @@ func (suite *AuthenticationServiceTestSuite) createTestAssertionWithoutAssurance
 	payloadBytes, _ := json.Marshal(payload)
 	encodedPayload := base64.RawURLEncoding.EncodeToString(payloadBytes)
 	return fmt.Sprintf("header.%s.signature", encodedPayload)
+}
+
+// ==================== WebAuthn Tests ====================
+
+func (suite *AuthenticationServiceTestSuite) TestStartWebAuthnRegistration_Success() {
+	userID := "user123"
+	relyingPartyID := "example.com"
+	relyingPartyName := "Example Corp"
+	attestation := "direct"
+
+	authSelection := &WebAuthnAuthenticatorSelectionDTO{
+		AuthenticatorAttachment: "platform",
+		RequireResidentKey:      true,
+		ResidentKey:             "required",
+		UserVerification:        "required",
+	}
+
+	expectedResponse := &webauthn.WebAuthnRegisterStartData{
+		SessionToken: testSessionTkn,
+	}
+
+	suite.mockWebAuthnService.On("StartRegistration", mock.Anything).Return(expectedResponse, nil).Once()
+
+	result, err := suite.service.StartWebAuthnRegistration(
+		userID, relyingPartyID, relyingPartyName, authSelection, attestation)
+
+	suite.Nil(err)
+	suite.NotNil(result)
+	suite.Equal(expectedResponse, result)
+	suite.mockWebAuthnService.AssertExpectations(suite.T())
+}
+
+func (suite *AuthenticationServiceTestSuite) TestStartWebAuthnRegistration_WithoutAuthSelection() {
+	userID := "user123"
+	relyingPartyID := "example.com"
+	relyingPartyName := "Example Corp"
+	attestation := ""
+
+	expectedResponse := &webauthn.WebAuthnRegisterStartData{
+		SessionToken: testSessionTkn,
+	}
+
+	suite.mockWebAuthnService.On("StartRegistration", mock.Anything).Return(expectedResponse, nil).Once()
+
+	result, err := suite.service.StartWebAuthnRegistration(
+		userID, relyingPartyID, relyingPartyName, nil, attestation)
+
+	suite.Nil(err)
+	suite.NotNil(result)
+	suite.mockWebAuthnService.AssertExpectations(suite.T())
+}
+
+func (suite *AuthenticationServiceTestSuite) TestStartWebAuthnRegistration_ServiceError() {
+	userID := "user123"
+	relyingPartyID := "example.com"
+	relyingPartyName := "Example Corp"
+
+	serviceError := &serviceerror.ServiceError{
+		Type:             serviceerror.ClientErrorType,
+		Code:             "WEBAUTHN_ERROR",
+		Error:            "WebAuthn error",
+		ErrorDescription: "Failed to start registration",
+	}
+
+	suite.mockWebAuthnService.On("StartRegistration", mock.Anything).
+		Return(nil, serviceError).Once()
+
+	result, err := suite.service.StartWebAuthnRegistration(
+		userID, relyingPartyID, relyingPartyName, nil, "")
+
+	suite.NotNil(err)
+	suite.Nil(result)
+	suite.Equal(serviceError, err)
+	suite.mockWebAuthnService.AssertExpectations(suite.T())
+}
+
+func (suite *AuthenticationServiceTestSuite) TestFinishWebAuthnRegistration_Success() {
+	credential := WebAuthnPublicKeyCredentialDTO{
+		ID:   "credential-id-123",
+		Type: "public-key",
+		Response: WebAuthnCredentialResponseDTO{
+			ClientDataJSON:    "base64-client-data",
+			AttestationObject: "base64-attestation",
+		},
+	}
+	sessionToken := testSessionTkn
+	credentialName := "My Passkey"
+
+	expectedResponse := &webauthn.WebAuthnRegisterFinishData{
+		CredentialID:   "credential-id-123",
+		CredentialName: "My Passkey",
+	}
+
+	suite.mockWebAuthnService.On("FinishRegistration", mock.Anything).Return(expectedResponse, nil).Once()
+
+	result, err := suite.service.FinishWebAuthnRegistration(credential, sessionToken, credentialName)
+
+	suite.Nil(err)
+	suite.NotNil(result)
+	suite.Equal(expectedResponse, result)
+	suite.mockWebAuthnService.AssertExpectations(suite.T())
+}
+
+func (suite *AuthenticationServiceTestSuite) TestFinishWebAuthnRegistration_WithoutCredentialName() {
+	credential := WebAuthnPublicKeyCredentialDTO{
+		ID:   "credential-id-123",
+		Type: "public-key",
+		Response: WebAuthnCredentialResponseDTO{
+			ClientDataJSON:    "base64-client-data",
+			AttestationObject: "base64-attestation",
+		},
+	}
+	sessionToken := testSessionTkn
+
+	expectedResponse := &webauthn.WebAuthnRegisterFinishData{
+		CredentialID: "credential-id-123",
+	}
+
+	suite.mockWebAuthnService.On("FinishRegistration", mock.Anything).
+		Return(expectedResponse, nil).Once()
+
+	result, err := suite.service.FinishWebAuthnRegistration(credential, sessionToken, "")
+
+	suite.Nil(err)
+	suite.NotNil(result)
+	suite.mockWebAuthnService.AssertExpectations(suite.T())
+}
+
+func (suite *AuthenticationServiceTestSuite) TestFinishWebAuthnRegistration_ServiceError() {
+	credential := WebAuthnPublicKeyCredentialDTO{
+		ID:   "credential-id-123",
+		Type: "public-key",
+		Response: WebAuthnCredentialResponseDTO{
+			ClientDataJSON:    "base64-client-data",
+			AttestationObject: "base64-attestation",
+		},
+	}
+
+	serviceError := &serviceerror.ServiceError{
+		Type:             serviceerror.ClientErrorType,
+		Code:             "INVALID_ATTESTATION",
+		Error:            "Invalid attestation",
+		ErrorDescription: "Failed to verify attestation",
+	}
+
+	suite.mockWebAuthnService.On("FinishRegistration", mock.Anything).
+		Return(nil, serviceError).Once()
+
+	result, err := suite.service.FinishWebAuthnRegistration(credential, testSessionTkn, "")
+
+	suite.NotNil(err)
+	suite.Nil(result)
+	suite.Equal(serviceError, err)
+	suite.mockWebAuthnService.AssertExpectations(suite.T())
+}
+
+func (suite *AuthenticationServiceTestSuite) TestStartWebAuthnAuthentication_Success() {
+	userID := "user123"
+	relyingPartyID := "example.com"
+
+	expectedResponse := &webauthn.WebAuthnStartData{
+		SessionToken: testSessionTkn,
+	}
+
+	suite.mockWebAuthnService.On("StartAuthentication", userID, relyingPartyID).
+		Return(expectedResponse, nil).Once()
+
+	result, err := suite.service.StartWebAuthnAuthentication(userID, relyingPartyID)
+
+	suite.Nil(err)
+	suite.NotNil(result)
+	suite.Equal(expectedResponse, result)
+	suite.mockWebAuthnService.AssertExpectations(suite.T())
+}
+
+func (suite *AuthenticationServiceTestSuite) TestStartWebAuthnAuthentication_ServiceError() {
+	userID := "user123"
+	relyingPartyID := "example.com"
+
+	serviceError := &serviceerror.ServiceError{
+		Type:             serviceerror.ClientErrorType,
+		Code:             "USER_NOT_FOUND",
+		Error:            "User not found",
+		ErrorDescription: "No user found with the given ID",
+	}
+
+	suite.mockWebAuthnService.On("StartAuthentication", userID, relyingPartyID).
+		Return(nil, serviceError).Once()
+
+	result, err := suite.service.StartWebAuthnAuthentication(userID, relyingPartyID)
+
+	suite.NotNil(err)
+	suite.Nil(result)
+	suite.Equal(serviceError, err)
+	suite.mockWebAuthnService.AssertExpectations(suite.T())
+}
+
+func (suite *AuthenticationServiceTestSuite) TestFinishWebAuthnAuthentication_Success() {
+	credentialID := "credential-id-123"
+	credentialType := "public-key"
+	response := WebAuthnCredentialResponseDTO{
+		ClientDataJSON:    "base64-client-data",
+		AuthenticatorData: "base64-auth-data",
+		Signature:         "base64-signature",
+		UserHandle:        "base64-user-handle",
+	}
+	sessionToken := testSessionTkn
+
+	expectedResponse := &common.AuthenticationResponse{
+		ID:               testUserID,
+		Type:             "person",
+		OrganizationUnit: testOrgUnit,
+		Assertion:        testJWTToken,
+	}
+
+	suite.mockWebAuthnService.On("FinishAuthentication",
+		credentialID,
+		credentialType,
+		response.ClientDataJSON,
+		response.AuthenticatorData,
+		response.Signature,
+		response.UserHandle,
+		sessionToken,
+		false,
+		"",
+	).Return(expectedResponse, nil).Once()
+
+	result, err := suite.service.FinishWebAuthnAuthentication(
+		credentialID, credentialType, response, sessionToken, false, "")
+
+	suite.Nil(err)
+	suite.NotNil(result)
+	suite.Equal(testUserID, result.ID)
+	suite.Equal("person", result.Type)
+	suite.Equal(testOrgUnit, result.OrganizationUnit)
+	suite.Equal(testJWTToken, result.Assertion)
+	suite.mockWebAuthnService.AssertExpectations(suite.T())
+}
+
+func (suite *AuthenticationServiceTestSuite) TestFinishWebAuthnAuthentication_WithSkipAssertion() {
+	credentialID := "credential-id-123"
+	credentialType := "public-key"
+	response := WebAuthnCredentialResponseDTO{
+		ClientDataJSON:    "base64-client-data",
+		AuthenticatorData: "base64-auth-data",
+		Signature:         "base64-signature",
+		UserHandle:        "", // Empty for this test
+	}
+	sessionToken := testSessionTkn
+
+	expectedResponse := &common.AuthenticationResponse{
+		ID:               testUserID,
+		Type:             "person",
+		OrganizationUnit: testOrgUnit,
+		// No Assertion when skipped
+	}
+
+	suite.mockWebAuthnService.On("FinishAuthentication",
+		credentialID,
+		credentialType,
+		response.ClientDataJSON,
+		response.AuthenticatorData,
+		response.Signature,
+		response.UserHandle, // Empty string
+		sessionToken,
+		true, // skipAssertion
+		"",   // existingAssertion
+	).Return(expectedResponse, nil).Once()
+
+	result, err := suite.service.FinishWebAuthnAuthentication(
+		credentialID, credentialType, response, sessionToken, true, "")
+
+	suite.Nil(err)
+	suite.NotNil(result)
+	suite.Equal(testUserID, result.ID)
+	suite.Empty(result.Assertion)
+	suite.mockWebAuthnService.AssertExpectations(suite.T())
+}
+
+func (suite *AuthenticationServiceTestSuite) TestFinishWebAuthnAuthentication_WithExistingAssertion() {
+	credentialID := "credential-id-123"
+	credentialType := "public-key"
+	response := WebAuthnCredentialResponseDTO{
+		ClientDataJSON:    "base64-client-data",
+		AuthenticatorData: "base64-auth-data",
+		Signature:         "base64-signature",
+	}
+	sessionToken := testSessionTkn
+	existingAssertion := "existing.jwt.token"
+
+	expectedResponse := &common.AuthenticationResponse{
+		ID:               testUserID,
+		Type:             "person",
+		OrganizationUnit: testOrgUnit,
+		Assertion:        "updated.jwt.token",
+	}
+
+	suite.mockWebAuthnService.On("FinishAuthentication",
+		credentialID,
+		credentialType,
+		response.ClientDataJSON,
+		response.AuthenticatorData,
+		response.Signature,
+		response.UserHandle,
+		sessionToken,
+		false,
+		existingAssertion,
+	).Return(expectedResponse, nil).Once()
+
+	result, err := suite.service.FinishWebAuthnAuthentication(
+		credentialID, credentialType, response, sessionToken, false, existingAssertion)
+
+	suite.Nil(err)
+	suite.NotNil(result)
+	suite.Equal("updated.jwt.token", result.Assertion)
+	suite.mockWebAuthnService.AssertExpectations(suite.T())
+}
+
+func (suite *AuthenticationServiceTestSuite) TestFinishWebAuthnAuthentication_ServiceError() {
+	credentialID := "credential-id-123"
+	credentialType := "public-key"
+	response := WebAuthnCredentialResponseDTO{
+		ClientDataJSON:    "base64-client-data",
+		AuthenticatorData: "base64-auth-data",
+		Signature:         "base64-signature",
+	}
+
+	serviceError := &serviceerror.ServiceError{
+		Type:             serviceerror.ClientErrorType,
+		Code:             "INVALID_SIGNATURE",
+		Error:            "Invalid signature",
+		ErrorDescription: "Failed to verify signature",
+	}
+
+	suite.mockWebAuthnService.On("FinishAuthentication",
+		credentialID,
+		credentialType,
+		response.ClientDataJSON,
+		response.AuthenticatorData,
+		response.Signature,
+		response.UserHandle,
+		testSessionTkn,
+		false,
+		"",
+	).Return(nil, serviceError).Once()
+
+	result, err := suite.service.FinishWebAuthnAuthentication(
+		credentialID, credentialType, response, testSessionTkn, false, "")
+
+	suite.NotNil(err)
+	suite.Nil(result)
+	suite.Equal(serviceError, err)
+	suite.mockWebAuthnService.AssertExpectations(suite.T())
 }

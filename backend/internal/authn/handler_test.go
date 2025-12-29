@@ -711,3 +711,347 @@ func (suite *AuthenticationHandlerTestSuite) TestHandleStandardOAuthFinishReques
 
 	suite.Equal(http.StatusBadRequest, w.Code)
 }
+
+// ==================== WebAuthn Handler Tests ====================
+
+func (suite *AuthenticationHandlerTestSuite) TestHandleWebAuthnRegisterStartRequestSuccess() {
+	regRequest := WebAuthnRegisterStartRequestDTO{
+		UserID:           "user123",
+		RelyingPartyID:   "example.com",
+		RelyingPartyName: "Example Corp",
+		Attestation:      "direct",
+	}
+	regResponse := map[string]interface{}{
+		"publicKeyCredentialCreationOptions": map[string]interface{}{
+			"challenge": "base64-challenge",
+			"rp": map[string]interface{}{
+				"name": "Example Corp",
+				"id":   "example.com",
+			},
+			"user": map[string]interface{}{
+				"id":          "user123",
+				"name":        "testuser",
+				"displayName": "Test User",
+			},
+		},
+		"sessionToken": testSessionTkn,
+	}
+
+	suite.mockService.On("StartWebAuthnRegistration",
+		regRequest.UserID,
+		regRequest.RelyingPartyID,
+		regRequest.RelyingPartyName,
+		regRequest.AuthenticatorSelection,
+		regRequest.Attestation).Return(regResponse, nil)
+
+	body, _ := json.Marshal(regRequest)
+	req := httptest.NewRequest(http.MethodPost, "/authenticate/webauthn/register/start", bytes.NewReader(body))
+	w := httptest.NewRecorder()
+
+	suite.handler.HandleWebAuthnRegisterStartRequest(w, req)
+
+	suite.Equal(http.StatusOK, w.Code)
+	var response map[string]interface{}
+	err := json.Unmarshal(w.Body.Bytes(), &response)
+	suite.NoError(err)
+	suite.Equal(testSessionTkn, response["sessionToken"])
+	suite.NotNil(response["publicKeyCredentialCreationOptions"])
+}
+
+func (suite *AuthenticationHandlerTestSuite) TestHandleWebAuthnRegisterStartRequestInvalidJSON() {
+	req := httptest.NewRequest(http.MethodPost, "/authenticate/webauthn/register/start",
+		bytes.NewReader([]byte("invalid-json")))
+	w := httptest.NewRecorder()
+
+	suite.handler.HandleWebAuthnRegisterStartRequest(w, req)
+
+	suite.Equal(http.StatusBadRequest, w.Code)
+	var errResp apierror.ErrorResponse
+	err := json.Unmarshal(w.Body.Bytes(), &errResp)
+	suite.NoError(err)
+	suite.Equal(common.APIErrorInvalidRequestFormat.Code, errResp.Code)
+}
+
+func (suite *AuthenticationHandlerTestSuite) TestHandleWebAuthnRegisterStartRequestServiceError() {
+	regRequest := WebAuthnRegisterStartRequestDTO{
+		UserID:         "user123",
+		RelyingPartyID: "example.com",
+	}
+	serviceError := &common.ErrorUserNotFound
+
+	suite.mockService.On("StartWebAuthnRegistration",
+		mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).
+		Return(nil, serviceError)
+
+	body, _ := json.Marshal(regRequest)
+	req := httptest.NewRequest(http.MethodPost, "/authenticate/webauthn/register/start", bytes.NewReader(body))
+	w := httptest.NewRecorder()
+
+	suite.handler.HandleWebAuthnRegisterStartRequest(w, req)
+
+	suite.Equal(http.StatusNotFound, w.Code)
+	var errResp apierror.ErrorResponse
+	err := json.Unmarshal(w.Body.Bytes(), &errResp)
+	suite.NoError(err)
+	suite.Equal(common.ErrorUserNotFound.Code, errResp.Code)
+}
+
+// ==================== HandleWebAuthnRegisterFinishRequest Tests ====================
+
+func (suite *AuthenticationHandlerTestSuite) TestHandleWebAuthnRegisterFinishRequestSuccess() {
+	regRequest := WebAuthnRegisterFinishRequestDTO{
+		PublicKeyCredential: WebAuthnPublicKeyCredentialDTO{
+			ID:   "credential-id-123",
+			Type: "public-key",
+			Response: WebAuthnCredentialResponseDTO{
+				ClientDataJSON:    "base64-client-data",
+				AttestationObject: "base64-attestation",
+			},
+		},
+		SessionToken:   testSessionTkn,
+		CredentialName: "My Passkey",
+	}
+	regResponse := map[string]interface{}{
+		"credentialId":   "credential-id-123",
+		"credentialName": "My Passkey",
+		"createdAt":      "2025-01-01T00:00:00Z",
+	}
+
+	suite.mockService.On("FinishWebAuthnRegistration",
+		regRequest.PublicKeyCredential,
+		testSessionTkn,
+		"My Passkey").Return(regResponse, nil)
+
+	body, _ := json.Marshal(regRequest)
+	req := httptest.NewRequest(http.MethodPost, "/authenticate/webauthn/register/finish", bytes.NewReader(body))
+	w := httptest.NewRecorder()
+
+	suite.handler.HandleWebAuthnRegisterFinishRequest(w, req)
+
+	suite.Equal(http.StatusOK, w.Code)
+	var response map[string]interface{}
+	err := json.Unmarshal(w.Body.Bytes(), &response)
+	suite.NoError(err)
+	suite.Equal("credential-id-123", response["credentialId"])
+	suite.Equal("My Passkey", response["credentialName"])
+}
+
+func (suite *AuthenticationHandlerTestSuite) TestHandleWebAuthnRegisterFinishRequestInvalidJSON() {
+	req := httptest.NewRequest(http.MethodPost, "/authenticate/webauthn/register/finish",
+		bytes.NewReader([]byte("invalid-json")))
+	w := httptest.NewRecorder()
+
+	suite.handler.HandleWebAuthnRegisterFinishRequest(w, req)
+
+	suite.Equal(http.StatusBadRequest, w.Code)
+	var errResp apierror.ErrorResponse
+	err := json.Unmarshal(w.Body.Bytes(), &errResp)
+	suite.NoError(err)
+	suite.Equal(common.APIErrorInvalidRequestFormat.Code, errResp.Code)
+}
+
+func (suite *AuthenticationHandlerTestSuite) TestHandleWebAuthnRegisterFinishRequestServiceError() {
+	regRequest := WebAuthnRegisterFinishRequestDTO{
+		PublicKeyCredential: WebAuthnPublicKeyCredentialDTO{
+			ID:   "credential-id-123",
+			Type: "public-key",
+			Response: WebAuthnCredentialResponseDTO{
+				ClientDataJSON:    "base64-client-data",
+				AttestationObject: "base64-attestation",
+			},
+		},
+		SessionToken: testSessionTkn,
+	}
+	serviceError := &serviceerror.ServiceError{
+		Type:             serviceerror.ClientErrorType,
+		Code:             "INVALID_ATTESTATION",
+		Error:            "Invalid attestation",
+		ErrorDescription: "Failed to verify attestation",
+	}
+
+	suite.mockService.On("FinishWebAuthnRegistration",
+		mock.Anything, mock.Anything, mock.Anything).Return(nil, serviceError)
+
+	body, _ := json.Marshal(regRequest)
+	req := httptest.NewRequest(http.MethodPost, "/authenticate/webauthn/register/finish", bytes.NewReader(body))
+	w := httptest.NewRecorder()
+
+	suite.handler.HandleWebAuthnRegisterFinishRequest(w, req)
+
+	suite.Equal(http.StatusBadRequest, w.Code)
+	var errResp apierror.ErrorResponse
+	err := json.Unmarshal(w.Body.Bytes(), &errResp)
+	suite.NoError(err)
+	suite.Equal("INVALID_ATTESTATION", errResp.Code)
+}
+
+// ==================== HandleWebAuthnStartRequest Tests ====================
+
+func (suite *AuthenticationHandlerTestSuite) TestHandleWebAuthnStartRequestSuccess() {
+	authRequest := WebAuthnStartRequestDTO{
+		UserID:         "user123",
+		RelyingPartyID: "example.com",
+	}
+	authResponse := map[string]interface{}{
+		"publicKeyCredentialRequestOptions": map[string]interface{}{
+			"challenge": "base64-challenge",
+			"rpId":      "example.com",
+			"allowCredentials": []map[string]interface{}{
+				{
+					"type": "public-key",
+					"id":   "credential-id-123",
+				},
+			},
+		},
+		"sessionToken": testSessionTkn,
+	}
+
+	suite.mockService.On("StartWebAuthnAuthentication",
+		authRequest.UserID,
+		authRequest.RelyingPartyID).Return(authResponse, nil)
+
+	body, _ := json.Marshal(authRequest)
+	req := httptest.NewRequest(http.MethodPost, "/authenticate/webauthn/start", bytes.NewReader(body))
+	w := httptest.NewRecorder()
+
+	suite.handler.HandleWebAuthnStartRequest(w, req)
+
+	suite.Equal(http.StatusOK, w.Code)
+	var response map[string]interface{}
+	err := json.Unmarshal(w.Body.Bytes(), &response)
+	suite.NoError(err)
+	suite.Equal(testSessionTkn, response["sessionToken"])
+	suite.NotNil(response["publicKeyCredentialRequestOptions"])
+}
+
+func (suite *AuthenticationHandlerTestSuite) TestHandleWebAuthnStartRequestInvalidJSON() {
+	req := httptest.NewRequest(http.MethodPost, "/authenticate/webauthn/start",
+		bytes.NewReader([]byte("invalid-json")))
+	w := httptest.NewRecorder()
+
+	suite.handler.HandleWebAuthnStartRequest(w, req)
+
+	suite.Equal(http.StatusBadRequest, w.Code)
+	var errResp apierror.ErrorResponse
+	err := json.Unmarshal(w.Body.Bytes(), &errResp)
+	suite.NoError(err)
+	suite.Equal(common.APIErrorInvalidRequestFormat.Code, errResp.Code)
+}
+
+func (suite *AuthenticationHandlerTestSuite) TestHandleWebAuthnStartRequestServiceError() {
+	authRequest := WebAuthnStartRequestDTO{
+		UserID:         "nonexistent",
+		RelyingPartyID: "example.com",
+	}
+	serviceError := &common.ErrorUserNotFound
+
+	suite.mockService.On("StartWebAuthnAuthentication",
+		mock.Anything, mock.Anything).Return(nil, serviceError)
+
+	body, _ := json.Marshal(authRequest)
+	req := httptest.NewRequest(http.MethodPost, "/authenticate/webauthn/start", bytes.NewReader(body))
+	w := httptest.NewRecorder()
+
+	suite.handler.HandleWebAuthnStartRequest(w, req)
+
+	suite.Equal(http.StatusNotFound, w.Code)
+	var errResp apierror.ErrorResponse
+	err := json.Unmarshal(w.Body.Bytes(), &errResp)
+	suite.NoError(err)
+	suite.Equal(common.ErrorUserNotFound.Code, errResp.Code)
+}
+
+// ==================== HandleWebAuthnFinishRequest Tests ====================
+
+func (suite *AuthenticationHandlerTestSuite) TestHandleWebAuthnFinishRequestSuccess() {
+	authRequest := WebAuthnFinishRequestDTO{
+		PublicKeyCredential: WebAuthnPublicKeyCredentialDTO{
+			ID:   "credential-id-123",
+			Type: "public-key",
+			Response: WebAuthnCredentialResponseDTO{
+				ClientDataJSON:    "base64-client-data",
+				AuthenticatorData: "base64-auth-data",
+				Signature:         "base64-signature",
+			},
+		},
+		SessionToken:  testSessionTkn,
+		SkipAssertion: false,
+		Assertion:     "",
+	}
+	authResponse := &common.AuthenticationResponse{
+		ID:               "user123",
+		Type:             "person",
+		OrganizationUnit: "test-ou",
+		Assertion:        "jwt-token",
+	}
+
+	suite.mockService.On("FinishWebAuthnAuthentication",
+		authRequest.PublicKeyCredential.ID,
+		authRequest.PublicKeyCredential.Type,
+		authRequest.PublicKeyCredential.Response,
+		testSessionTkn,
+		false,
+		"").Return(authResponse, nil)
+
+	body, _ := json.Marshal(authRequest)
+	req := httptest.NewRequest(http.MethodPost, "/authenticate/webauthn/finish", bytes.NewReader(body))
+	w := httptest.NewRecorder()
+
+	suite.handler.HandleWebAuthnFinishRequest(w, req)
+
+	suite.Equal(http.StatusOK, w.Code)
+	var response AuthenticationResponseDTO
+	err := json.Unmarshal(w.Body.Bytes(), &response)
+	suite.NoError(err)
+	suite.Equal(authResponse.ID, response.ID)
+	suite.Equal(authResponse.Assertion, response.Assertion)
+}
+
+func (suite *AuthenticationHandlerTestSuite) TestHandleWebAuthnFinishRequestInvalidJSON() {
+	req := httptest.NewRequest(http.MethodPost, "/authenticate/webauthn/finish",
+		bytes.NewReader([]byte("invalid-json")))
+	w := httptest.NewRecorder()
+
+	suite.handler.HandleWebAuthnFinishRequest(w, req)
+
+	suite.Equal(http.StatusBadRequest, w.Code)
+	var errResp apierror.ErrorResponse
+	err := json.Unmarshal(w.Body.Bytes(), &errResp)
+	suite.NoError(err)
+	suite.Equal(common.APIErrorInvalidRequestFormat.Code, errResp.Code)
+}
+
+func (suite *AuthenticationHandlerTestSuite) TestHandleWebAuthnFinishRequestServiceError() {
+	authRequest := WebAuthnFinishRequestDTO{
+		PublicKeyCredential: WebAuthnPublicKeyCredentialDTO{
+			ID:   "credential-id-123",
+			Type: "public-key",
+			Response: WebAuthnCredentialResponseDTO{
+				ClientDataJSON: "base64-client-data",
+			},
+		},
+		SessionToken: testSessionTkn,
+	}
+	serviceError := &serviceerror.ServiceError{
+		Type:             serviceerror.ClientErrorType,
+		Code:             "INVALID_SIGNATURE",
+		Error:            "Invalid signature",
+		ErrorDescription: "Failed to verify signature",
+	}
+
+	suite.mockService.On("FinishWebAuthnAuthentication",
+		mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).
+		Return(nil, serviceError)
+
+	body, _ := json.Marshal(authRequest)
+	req := httptest.NewRequest(http.MethodPost, "/authenticate/webauthn/finish", bytes.NewReader(body))
+	w := httptest.NewRecorder()
+
+	suite.handler.HandleWebAuthnFinishRequest(w, req)
+
+	suite.Equal(http.StatusBadRequest, w.Code)
+	var errResp apierror.ErrorResponse
+	err := json.Unmarshal(w.Body.Bytes(), &errResp)
+	suite.NoError(err)
+	suite.Equal("INVALID_SIGNATURE", errResp.Code)
+}

@@ -36,7 +36,7 @@ func (_m *userStoreInterfaceMock) EXPECT() *userStoreInterfaceMock_Expecter {
 }
 
 // CreateUser provides a mock function for the type userStoreInterfaceMock
-func (_mock *userStoreInterfaceMock) CreateUser(user User, credentials []Credential) error {
+func (_mock *userStoreInterfaceMock) CreateUser(user User, credentials Credentials) error {
 	ret := _mock.Called(user, credentials)
 
 	if len(ret) == 0 {
@@ -44,7 +44,7 @@ func (_mock *userStoreInterfaceMock) CreateUser(user User, credentials []Credent
 	}
 
 	var r0 error
-	if returnFunc, ok := ret.Get(0).(func(User, []Credential) error); ok {
+	if returnFunc, ok := ret.Get(0).(func(User, Credentials) error); ok {
 		r0 = returnFunc(user, credentials)
 	} else {
 		r0 = ret.Error(0)
@@ -59,20 +59,20 @@ type userStoreInterfaceMock_CreateUser_Call struct {
 
 // CreateUser is a helper method to define mock.On call
 //   - user User
-//   - credentials []Credential
+//   - credentials Credentials
 func (_e *userStoreInterfaceMock_Expecter) CreateUser(user interface{}, credentials interface{}) *userStoreInterfaceMock_CreateUser_Call {
 	return &userStoreInterfaceMock_CreateUser_Call{Call: _e.mock.On("CreateUser", user, credentials)}
 }
 
-func (_c *userStoreInterfaceMock_CreateUser_Call) Run(run func(user User, credentials []Credential)) *userStoreInterfaceMock_CreateUser_Call {
+func (_c *userStoreInterfaceMock_CreateUser_Call) Run(run func(user User, credentials Credentials)) *userStoreInterfaceMock_CreateUser_Call {
 	_c.Call.Run(func(args mock.Arguments) {
 		var arg0 User
 		if args[0] != nil {
 			arg0 = args[0].(User)
 		}
-		var arg1 []Credential
+		var arg1 Credentials
 		if args[1] != nil {
-			arg1 = args[1].([]Credential)
+			arg1 = args[1].(Credentials)
 		}
 		run(
 			arg0,
@@ -87,7 +87,7 @@ func (_c *userStoreInterfaceMock_CreateUser_Call) Return(err error) *userStoreIn
 	return _c
 }
 
-func (_c *userStoreInterfaceMock_CreateUser_Call) RunAndReturn(run func(user User, credentials []Credential) error) *userStoreInterfaceMock_CreateUser_Call {
+func (_c *userStoreInterfaceMock_CreateUser_Call) RunAndReturn(run func(user User, credentials Credentials) error) *userStoreInterfaceMock_CreateUser_Call {
 	_c.Call.Return(run)
 	return _c
 }
@@ -144,7 +144,7 @@ func (_c *userStoreInterfaceMock_DeleteUser_Call) RunAndReturn(run func(id strin
 }
 
 // GetCredentials provides a mock function for the type userStoreInterfaceMock
-func (_mock *userStoreInterfaceMock) GetCredentials(id string) (User, []Credential, error) {
+func (_mock *userStoreInterfaceMock) GetCredentials(id string) (User, Credentials, error) {
 	ret := _mock.Called(id)
 
 	if len(ret) == 0 {
@@ -152,9 +152,9 @@ func (_mock *userStoreInterfaceMock) GetCredentials(id string) (User, []Credenti
 	}
 
 	var r0 User
-	var r1 []Credential
+	var r1 Credentials
 	var r2 error
-	if returnFunc, ok := ret.Get(0).(func(string) (User, []Credential, error)); ok {
+	if returnFunc, ok := ret.Get(0).(func(string) (User, Credentials, error)); ok {
 		return returnFunc(id)
 	}
 	if returnFunc, ok := ret.Get(0).(func(string) User); ok {
@@ -162,11 +162,11 @@ func (_mock *userStoreInterfaceMock) GetCredentials(id string) (User, []Credenti
 	} else {
 		r0 = ret.Get(0).(User)
 	}
-	if returnFunc, ok := ret.Get(1).(func(string) []Credential); ok {
+	if returnFunc, ok := ret.Get(1).(func(string) Credentials); ok {
 		r1 = returnFunc(id)
 	} else {
 		if ret.Get(1) != nil {
-			r1 = ret.Get(1).([]Credential)
+			r1 = ret.Get(1).(Credentials)
 		}
 	}
 	if returnFunc, ok := ret.Get(2).(func(string) error); ok {
@@ -201,12 +201,12 @@ func (_c *userStoreInterfaceMock_GetCredentials_Call) Run(run func(id string)) *
 	return _c
 }
 
-func (_c *userStoreInterfaceMock_GetCredentials_Call) Return(user User, credentials []Credential, err error) *userStoreInterfaceMock_GetCredentials_Call {
+func (_c *userStoreInterfaceMock_GetCredentials_Call) Return(user User, credentials Credentials, err error) *userStoreInterfaceMock_GetCredentials_Call {
 	_c.Call.Return(user, credentials, err)
 	return _c
 }
 
-func (_c *userStoreInterfaceMock_GetCredentials_Call) RunAndReturn(run func(id string) (User, []Credential, error)) *userStoreInterfaceMock_GetCredentials_Call {
+func (_c *userStoreInterfaceMock_GetCredentials_Call) RunAndReturn(run func(id string) (User, Credentials, error)) *userStoreInterfaceMock_GetCredentials_Call {
 	_c.Call.Return(run)
 	return _c
 }
@@ -653,7 +653,7 @@ func (_c *userStoreInterfaceMock_UpdateUser_Call) RunAndReturn(run func(user *Us
 }
 
 // UpdateUserCredentials provides a mock function for the type userStoreInterfaceMock
-func (_mock *userStoreInterfaceMock) UpdateUserCredentials(userID string, credentials []Credential) error {
+func (_mock *userStoreInterfaceMock) UpdateUserCredentials(userID string, credentials Credentials) error {
 	ret := _mock.Called(userID, credentials)
 
 	if len(ret) == 0 {
@@ -661,7 +661,7 @@ func (_mock *userStoreInterfaceMock) UpdateUserCredentials(userID string, creden
 	}
 
 	var r0 error
-	if returnFunc, ok := ret.Get(0).(func(string, []Credential) error); ok {
+	if returnFunc, ok := ret.Get(0).(func(string, Credentials) error); ok {
 		r0 = returnFunc(userID, credentials)
 	} else {
 		r0 = ret.Error(0)
@@ -676,20 +676,20 @@ type userStoreInterfaceMock_UpdateUserCredentials_Call struct {
 
 // UpdateUserCredentials is a helper method to define mock.On call
 //   - userID string
-//   - credentials []Credential
+//   - credentials Credentials
 func (_e *userStoreInterfaceMock_Expecter) UpdateUserCredentials(userID interface{}, credentials interface{}) *userStoreInterfaceMock_UpdateUserCredentials_Call {
 	return &userStoreInterfaceMock_UpdateUserCredentials_Call{Call: _e.mock.On("UpdateUserCredentials", userID, credentials)}
 }
 
-func (_c *userStoreInterfaceMock_UpdateUserCredentials_Call) Run(run func(userID string, credentials []Credential)) *userStoreInterfaceMock_UpdateUserCredentials_Call {
+func (_c *userStoreInterfaceMock_UpdateUserCredentials_Call) Run(run func(userID string, credentials Credentials)) *userStoreInterfaceMock_UpdateUserCredentials_Call {
 	_c.Call.Run(func(args mock.Arguments) {
 		var arg0 string
 		if args[0] != nil {
 			arg0 = args[0].(string)
 		}
-		var arg1 []Credential
+		var arg1 Credentials
 		if args[1] != nil {
-			arg1 = args[1].([]Credential)
+			arg1 = args[1].(Credentials)
 		}
 		run(
 			arg0,
@@ -704,7 +704,7 @@ func (_c *userStoreInterfaceMock_UpdateUserCredentials_Call) Return(err error) *
 	return _c
 }
 
-func (_c *userStoreInterfaceMock_UpdateUserCredentials_Call) RunAndReturn(run func(userID string, credentials []Credential) error) *userStoreInterfaceMock_UpdateUserCredentials_Call {
+func (_c *userStoreInterfaceMock_UpdateUserCredentials_Call) RunAndReturn(run func(userID string, credentials Credentials) error) *userStoreInterfaceMock_UpdateUserCredentials_Call {
 	_c.Call.Return(run)
 	return _c
 }
