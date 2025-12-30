@@ -32,8 +32,8 @@ import (
 	"time"
 
 	"github.com/asgardeo/thunder/internal/system/cache"
-	"github.com/asgardeo/thunder/internal/system/cert"
 	"github.com/asgardeo/thunder/internal/system/config"
+	"github.com/asgardeo/thunder/internal/system/crypto/pki"
 	"github.com/asgardeo/thunder/internal/system/database/provider"
 	"github.com/asgardeo/thunder/internal/system/jwt"
 	"github.com/asgardeo/thunder/internal/system/log"
@@ -64,13 +64,18 @@ func main() {
 	}
 
 	// Load the server's private key for signing JWTs.
-	jwtService := jwt.GetJWTService()
-	if err := jwtService.Init(); err != nil { // TODO: Two-Phase Initialization is anti-pattern. Refactor this.
+	pkiService, err := pki.Initialize()
+	if err != nil {
+		logger.Fatal("Failed to initialize certificate service", log.Error(err))
+	}
+
+	jwtService, err := jwt.Initialize(pkiService)
+	if err != nil {
 		logger.Fatal("Failed to load private key", log.Error(err))
 	}
 
 	// Register the services.
-	registerServices(mux, jwtService)
+	registerServices(mux, jwtService, pkiService)
 
 	// Register static file handlers for frontend applications.
 	registerStaticFileHandlers(logger, mux, thunderHome)
@@ -149,24 +154,15 @@ func initCacheManager(logger *log.Logger) {
 
 // loadCertConfig loads the certificate configuration and extracts the Key ID (kid).
 func loadCertConfig(logger *log.Logger, cfg *config.Config, thunderHome string) *tls.Config {
-	sysCertSvc := cert.NewSystemCertificateService()
-	tlsConfig, err := sysCertSvc.GetTLSConfig(cfg, thunderHome)
+	// Build full paths for certificate and key files
+	certFilePath := path.Join(thunderHome, cfg.Security.CertFile)
+	keyFilePath := path.Join(thunderHome, cfg.Security.KeyFile)
+
+	// Load TLS configuration
+	tlsConfig, err := pki.LoadTLSConfig(certFilePath, keyFilePath)
 	if err != nil {
 		logger.Fatal("Failed to load TLS configuration", log.Error(err))
 	}
-
-	// Extract and set the certificate Key ID (kid).
-	kid, err := sysCertSvc.GetCertificateKid(tlsConfig)
-	if err != nil {
-		logger.Fatal("Failed to extract certificate kid", log.Error(err))
-	}
-
-	certConfig := config.CertConfig{
-		TLSConfig: tlsConfig,
-		CertKid:   kid,
-	}
-	config.GetThunderRuntime().SetCertConfig(certConfig)
-
 	return tlsConfig
 }
 

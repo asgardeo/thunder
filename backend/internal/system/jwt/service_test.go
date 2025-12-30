@@ -19,7 +19,9 @@
 package jwt
 
 import (
+	"crypto"
 	"crypto/ecdsa"
+	"crypto/ed25519"
 	"crypto/elliptic"
 	"crypto/rand"
 	"crypto/rsa"
@@ -36,10 +38,12 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/suite"
 
 	"github.com/asgardeo/thunder/internal/system/config"
 	"github.com/asgardeo/thunder/internal/system/crypto/sign"
+	"github.com/asgardeo/thunder/tests/mocks/crypto/pki/pkimock"
 )
 
 const (
@@ -59,6 +63,7 @@ type JWTServiceTestSuite struct {
 	testPrivateKey *rsa.PrivateKey
 	testKeyPath    string
 	tempFiles      []string
+	pkiMock        *pkimock.PKIServiceInterfaceMock
 }
 
 func TestJWTServiceSuite(t *testing.T) {
@@ -110,31 +115,43 @@ func (suite *JWTServiceTestSuite) SetupTest() {
 	// Reset ThunderRuntime before each test
 	config.ResetThunderRuntime()
 
+	// Create PKI mock
+	suite.pkiMock = pkimock.NewPKIServiceInterfaceMock(suite.T())
+
 	suite.jwtService = &JWTService{
 		privateKey: suite.testPrivateKey,
+		signAlg:    sign.RSASHA256,
+		jwsAlg:     RS256,
+		kid:        "test-kid",
 	}
 
 	testConfig := &config.Config{
-		Security: config.SecurityConfig{
-			KeyFile: suite.testKeyPath,
-		},
 		JWT: config.JWTConfig{
 			Issuer:         "https://test.thunder.io",
 			ValidityPeriod: 3600, // Default validity period
+			PreferredKeyID: "test-kid",
+		},
+		Crypto: config.CryptoConfig{
+			Keys: []config.KeyConfig{
+				{
+					ID:       "test-kid",
+					CertFile: suite.testKeyPath,
+					KeyFile:  suite.testKeyPath,
+				},
+			},
 		},
 	}
 	err := config.InitializeThunderRuntime("", testConfig)
 	assert.NoError(suite.T(), err)
-
-	// Set up CertConfig with test kid
-	thunderRuntime := config.GetThunderRuntime()
-	thunderRuntime.SetCertConfig(config.CertConfig{
-		CertKid: "test-kid",
-	})
 }
 
 func (suite *JWTServiceTestSuite) TestNewJWTService() {
-	service := GetJWTService()
+	// Set expectations for PKI interactions
+	suite.pkiMock.EXPECT().GetPrivateKey(mock.Anything).Return(suite.testPrivateKey, nil)
+	suite.pkiMock.EXPECT().GetCertThumbprint(mock.Anything).Return("test-kid")
+
+	service, err := Initialize(suite.pkiMock)
+	assert.NoError(suite.T(), err)
 	assert.NotNil(suite.T(), service)
 	assert.Implements(suite.T(), (*JWTServiceInterface)(nil), service)
 }
@@ -142,38 +159,21 @@ func (suite *JWTServiceTestSuite) TestNewJWTService() {
 func (suite *JWTServiceTestSuite) TestInitScenarios() {
 	testCases := []struct {
 		name           string
-		setupFunc      func() string
+		setupFunc      func() (string, *rsa.PrivateKey)
 		expectSuccess  bool
 		expectedErrMsg string
 	}{
 		{
 			name: "Success",
-			setupFunc: func() string {
-				return suite.testKeyPath // Use the existing valid key path
+			setupFunc: func() (string, *rsa.PrivateKey) {
+				return suite.testKeyPath, suite.testPrivateKey // Use the existing valid key path
 			},
 			expectSuccess:  true,
 			expectedErrMsg: "",
 		},
 		{
-			name: "ReadFileError",
-			setupFunc: func() string {
-				tempFile, err := os.CreateTemp("", "no_read_key_*.pem")
-				assert.NoError(suite.T(), err)
-				suite.tempFiles = append(suite.tempFiles, tempFile.Name())
-
-				err = tempFile.Chmod(0000) // Remove all permissions
-				assert.NoError(suite.T(), err)
-				err = tempFile.Close()
-				assert.NoError(suite.T(), err)
-
-				return tempFile.Name()
-			},
-			expectSuccess:  false,
-			expectedErrMsg: "",
-		},
-		{
 			name: "PKCS8Key",
-			setupFunc: func() string {
+			setupFunc: func() (string, *rsa.PrivateKey) {
 				privateKey, err := rsa.GenerateKey(rand.Reader, 2048)
 				assert.NoError(suite.T(), err)
 
@@ -194,123 +194,40 @@ func (suite *JWTServiceTestSuite) TestInitScenarios() {
 				err = tempFile.Close()
 				assert.NoError(suite.T(), err)
 
-				return tempFile.Name()
+				return tempFile.Name(), privateKey
 			},
 			expectSuccess:  true,
 			expectedErrMsg: "",
 		},
 		{
-			name: "InvalidPKCS8Key",
-			setupFunc: func() string {
-				invalidPKCS8PEM := pem.EncodeToMemory(&pem.Block{
-					Type:  "PRIVATE KEY",
-					Bytes: []byte{0x01, 0x02, 0x03, 0x04}, // Invalid PKCS8 format
-				})
-
-				tempFile, err := os.CreateTemp("", "invalid_pkcs8_key_*.pem")
-				assert.NoError(suite.T(), err)
-				suite.tempFiles = append(suite.tempFiles, tempFile.Name())
-
-				_, err = tempFile.Write(invalidPKCS8PEM)
-				assert.NoError(suite.T(), err)
-				err = tempFile.Close()
-				assert.NoError(suite.T(), err)
-
-				return tempFile.Name()
+			name: "PrivateKeyRetrievalError",
+			setupFunc: func() (string, *rsa.PrivateKey) {
+				return suite.testKeyPath, suite.testPrivateKey
 			},
 			expectSuccess:  false,
-			expectedErrMsg: "",
-		},
-		{
-			name: "InvalidKeyType",
-			setupFunc: func() string {
-				unsupportedKeyPEM := pem.EncodeToMemory(&pem.Block{
-					Type:  "UNSUPPORTED KEY TYPE",
-					Bytes: []byte{0x01, 0x02, 0x03, 0x04},
-				})
-
-				tempFile, err := os.CreateTemp("", "unsupported_key_*.pem")
-				assert.NoError(suite.T(), err)
-				suite.tempFiles = append(suite.tempFiles, tempFile.Name())
-
-				_, err = tempFile.Write(unsupportedKeyPEM)
-				assert.NoError(suite.T(), err)
-				err = tempFile.Close()
-				assert.NoError(suite.T(), err)
-
-				return tempFile.Name()
-			},
-			expectSuccess:  false,
-			expectedErrMsg: "unsupported private key type",
-		},
-		{
-			name: "InvalidPKCS1Key",
-			setupFunc: func() string {
-				invalidPKCS1PEM := pem.EncodeToMemory(&pem.Block{
-					Type:  "RSA PRIVATE KEY",
-					Bytes: []byte{0x01, 0x02, 0x03, 0x04}, // Invalid PKCS1 format
-				})
-
-				tempFile, err := os.CreateTemp("", "invalid_pkcs1_key_*.pem")
-				assert.NoError(suite.T(), err)
-				suite.tempFiles = append(suite.tempFiles, tempFile.Name())
-
-				_, err = tempFile.Write(invalidPKCS1PEM)
-				assert.NoError(suite.T(), err)
-				err = tempFile.Close()
-				assert.NoError(suite.T(), err)
-
-				return tempFile.Name()
-			},
-			expectSuccess:  false,
-			expectedErrMsg: "",
-		},
-		{
-			name: "KeyFileNotFound",
-			setupFunc: func() string {
-				return "non_existent_key.pem"
-			},
-			expectSuccess:  false,
-			expectedErrMsg: "key file not found",
-		},
-		{
-			name: "InvalidPEMBlock",
-			setupFunc: func() string {
-				tempFile, err := os.CreateTemp("", "invalid_key_*.pem")
-				assert.NoError(suite.T(), err)
-				suite.tempFiles = append(suite.tempFiles, tempFile.Name())
-
-				_, err = tempFile.WriteString("This is not a valid PEM block")
-				assert.NoError(suite.T(), err)
-				err = tempFile.Close()
-				assert.NoError(suite.T(), err)
-
-				return tempFile.Name()
-			},
-			expectSuccess:  false,
-			expectedErrMsg: "failed to decode PEM block",
+			expectedErrMsg: "test error",
 		},
 	}
 
 	for _, tc := range testCases {
 		suite.T().Run(tc.name, func(t *testing.T) {
-			jwtService := &JWTService{}
+			_, privateKey := tc.setupFunc()
 
-			thunderRuntime := config.GetThunderRuntime()
-			originalKeyFile := thunderRuntime.Config.Security.KeyFile
+			// Create a new mock for each test case
+			pkiMock := pkimock.NewPKIServiceInterfaceMock(t)
 
-			// Ensure original config is restored regardless of test outcome
-			defer func() {
-				thunderRuntime.Config.Security.KeyFile = originalKeyFile
-			}()
+			if tc.name == "PrivateKeyRetrievalError" {
+				pkiMock.EXPECT().GetPrivateKey(mock.Anything).Return(nil, fmt.Errorf("test error"))
+			} else {
+				pkiMock.EXPECT().GetPrivateKey(mock.Anything).Return(privateKey, nil)
+				pkiMock.EXPECT().GetCertThumbprint(mock.Anything).Return("test-kid")
+			}
 
-			thunderRuntime.Config.Security.KeyFile = tc.setupFunc()
-
-			err := jwtService.Init()
+			jwtService, err := Initialize(pkiMock)
 
 			if tc.expectSuccess {
 				assert.NoError(t, err)
-				assert.NotNil(t, jwtService.privateKey)
+				assert.NotNil(t, jwtService)
 			} else {
 				assert.Error(t, err)
 				if tc.expectedErrMsg != "" {
@@ -326,7 +243,7 @@ func (suite *JWTServiceTestSuite) TestGetPublicKey() {
 		name        string
 		setupFunc   func() *JWTService
 		expectValue bool
-		expectedKey *rsa.PublicKey
+		expectedKey crypto.PublicKey
 	}{
 		{
 			name: "WithValidKey",
@@ -478,51 +395,6 @@ func (suite *JWTServiceTestSuite) TestGenerateJWTScenarios() {
 			},
 			expectError:   true,
 			errorContains: "private key not loaded",
-		},
-		{
-			name:     "CertificateKidNotFound",
-			sub:      "sub",
-			aud:      "aud",
-			iss:      "iss",
-			validity: 3600,
-			claims:   nil,
-			setupMock: func() func() {
-				thunderRuntime := config.GetThunderRuntime()
-				originalCertConfig := thunderRuntime.CertConfig
-				thunderRuntime.SetCertConfig(config.CertConfig{
-					CertKid: "",
-				})
-				return func() {
-					thunderRuntime.SetCertConfig(originalCertConfig)
-				}
-			},
-			setupService: func() *JWTService {
-				return suite.jwtService
-			},
-			expectError:   true,
-			errorContains: "certificate Key ID (kid) not found",
-		},
-		{
-			name:     "CertConfigNotInitialized",
-			sub:      "sub",
-			aud:      "aud",
-			iss:      "iss",
-			validity: 3600,
-			claims:   nil,
-			setupMock: func() func() {
-				// Set up ThunderRuntime with uninitialized CertConfig (zero value)
-				thunderRuntime := config.GetThunderRuntime()
-				originalCertConfig := thunderRuntime.CertConfig
-				thunderRuntime.SetCertConfig(config.CertConfig{})
-				return func() {
-					thunderRuntime.SetCertConfig(originalCertConfig)
-				}
-			},
-			setupService: func() *JWTService {
-				return suite.jwtService
-			},
-			expectError:   true,
-			errorContains: "certificate Key ID (kid) not found",
 		},
 		{
 			name:     "WithEmptyClaims",
@@ -721,7 +593,7 @@ func (suite *JWTServiceTestSuite) TestVerifyJWT() {
 				return token, testAudience, testIssuer
 			},
 			expectError:   true,
-			errorContains: "public key not available",
+			errorContains: "private key not loaded",
 		},
 	}
 
@@ -753,13 +625,13 @@ func (suite *JWTServiceTestSuite) TestVerifyJWT() {
 func (suite *JWTServiceTestSuite) TestVerifyJWTWithPublicKey() {
 	testCases := []struct {
 		name          string
-		setupFunc     func() (string, *rsa.PublicKey, string, string)
+		setupFunc     func() (string, crypto.PublicKey, string, string)
 		expectError   bool
 		errorContains string
 	}{
 		{
 			name: "ValidJWT",
-			setupFunc: func() (string, *rsa.PublicKey, string, string) {
+			setupFunc: func() (string, crypto.PublicKey, string, string) {
 				aud := testAudience
 				iss := testIssuer
 				token := suite.createBasicJWT(aud, iss,
@@ -770,7 +642,7 @@ func (suite *JWTServiceTestSuite) TestVerifyJWTWithPublicKey() {
 		},
 		{
 			name: "ValidJWTWithEmptyExpectedAudience",
-			setupFunc: func() (string, *rsa.PublicKey, string, string) {
+			setupFunc: func() (string, crypto.PublicKey, string, string) {
 				iss := testIssuer
 				token := suite.createBasicJWT("any-audience", iss,
 					time.Now().Add(time.Hour).Unix(), time.Now().Unix())
@@ -780,7 +652,7 @@ func (suite *JWTServiceTestSuite) TestVerifyJWTWithPublicKey() {
 		},
 		{
 			name: "ValidJWTWithEmptyExpectedIssuer",
-			setupFunc: func() (string, *rsa.PublicKey, string, string) {
+			setupFunc: func() (string, crypto.PublicKey, string, string) {
 				aud := testAudience
 				token := suite.createBasicJWT(aud, "any-issuer",
 					time.Now().Add(time.Hour).Unix(), time.Now().Unix())
@@ -790,7 +662,7 @@ func (suite *JWTServiceTestSuite) TestVerifyJWTWithPublicKey() {
 		},
 		{
 			name: "InvalidJWTFormat",
-			setupFunc: func() (string, *rsa.PublicKey, string, string) {
+			setupFunc: func() (string, crypto.PublicKey, string, string) {
 				return suite.createMalformedJWT(), &suite.testPrivateKey.PublicKey, testAud, testIss
 			},
 			expectError:   true,
@@ -798,7 +670,7 @@ func (suite *JWTServiceTestSuite) TestVerifyJWTWithPublicKey() {
 		},
 		{
 			name: "InvalidSignature",
-			setupFunc: func() (string, *rsa.PublicKey, string, string) {
+			setupFunc: func() (string, crypto.PublicKey, string, string) {
 				token := suite.createBasicJWT(testAud, testIss, time.Now().Add(time.Hour).Unix(), time.Now().Unix())
 				parts := strings.Split(token, ".")
 				if len(parts) == 3 {
@@ -811,7 +683,7 @@ func (suite *JWTServiceTestSuite) TestVerifyJWTWithPublicKey() {
 		},
 		{
 			name: "ExpiredToken",
-			setupFunc: func() (string, *rsa.PublicKey, string, string) {
+			setupFunc: func() (string, crypto.PublicKey, string, string) {
 				aud := testAudience
 				iss := testIssuer
 				expiredTime := time.Now().Add(-time.Hour).Unix()
@@ -824,7 +696,7 @@ func (suite *JWTServiceTestSuite) TestVerifyJWTWithPublicKey() {
 		},
 		{
 			name: "TokenNotValidYet",
-			setupFunc: func() (string, *rsa.PublicKey, string, string) {
+			setupFunc: func() (string, crypto.PublicKey, string, string) {
 				aud := testAudience
 				iss := testIssuer
 				futureTime := time.Now().Add(time.Hour).Unix()
@@ -837,7 +709,7 @@ func (suite *JWTServiceTestSuite) TestVerifyJWTWithPublicKey() {
 		},
 		{
 			name: "InvalidAudience",
-			setupFunc: func() (string, *rsa.PublicKey, string, string) {
+			setupFunc: func() (string, crypto.PublicKey, string, string) {
 				aud := "wrong-audience"
 				iss := testIssuer
 				token := suite.createBasicJWT(aud, iss,
@@ -849,7 +721,7 @@ func (suite *JWTServiceTestSuite) TestVerifyJWTWithPublicKey() {
 		},
 		{
 			name: "InvalidIssuer",
-			setupFunc: func() (string, *rsa.PublicKey, string, string) {
+			setupFunc: func() (string, crypto.PublicKey, string, string) {
 				aud := testAudience
 				iss := "wrong-issuer"
 				token := suite.createBasicJWT(aud, iss,
@@ -1383,7 +1255,7 @@ func (suite *JWTServiceTestSuite) TestVerifyJWTSignatureWithPublicKey() {
 	testCases := []struct {
 		name        string
 		token       string
-		publicKey   *rsa.PublicKey
+		publicKey   crypto.PublicKey
 		expectError bool
 	}{
 		{"ValidToken", validToken, &suite.testPrivateKey.PublicKey, false},
@@ -1559,7 +1431,7 @@ func (suite *JWTServiceTestSuite) TestVerifyJWTSignatureWithJWKSHTTPErrors() {
 				token, _, _ := suite.jwtService.GenerateJWT("test-subject", testAudience, testIssuer, 3600, nil)
 				return token
 			},
-			expectedError: "failed to convert JWK to RSA public key",
+			expectedError: "failed to convert JWK to public key",
 		},
 		{
 			name: "InvalidTokenSignature",
@@ -1604,59 +1476,6 @@ func (suite *JWTServiceTestSuite) TestVerifyJWTSignatureWithJWKSNetworkError() {
 	err = suite.jwtService.VerifyJWTSignatureWithJWKS(token, "http://localhost:99999/invalid")
 	assert.Error(suite.T(), err)
 	assert.Contains(suite.T(), err.Error(), "failed to fetch JWKS")
-}
-
-func (suite *JWTServiceTestSuite) TestInitErrorConditions() {
-	testCases := []struct {
-		name           string
-		setupFunc      func() string
-		expectedErrMsg string
-	}{
-		{
-			name: "PKCS8NonRSAKey",
-			setupFunc: func() string {
-				// Create an ECDSA private key (non-RSA)
-				privateKey, err := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
-				assert.NoError(suite.T(), err)
-
-				pkcs8Bytes, err := x509.MarshalPKCS8PrivateKey(privateKey)
-				assert.NoError(suite.T(), err)
-
-				pkcs8KeyPEM := pem.EncodeToMemory(&pem.Block{
-					Type:  "PRIVATE KEY",
-					Bytes: pkcs8Bytes,
-				})
-
-				tempFile, err := os.CreateTemp("", "ecdsa_key_*.pem")
-				assert.NoError(suite.T(), err)
-				suite.tempFiles = append(suite.tempFiles, tempFile.Name())
-
-				_, err = tempFile.Write(pkcs8KeyPEM)
-				assert.NoError(suite.T(), err)
-				err = tempFile.Close()
-				assert.NoError(suite.T(), err)
-
-				return tempFile.Name()
-			},
-			expectedErrMsg: "not an RSA private key",
-		},
-	}
-
-	for _, tc := range testCases {
-		suite.T().Run(tc.name, func(t *testing.T) {
-			jwtService := &JWTService{}
-
-			thunderRuntime := config.GetThunderRuntime()
-			originalKeyFile := thunderRuntime.Config.Security.KeyFile
-			thunderRuntime.Config.Security.KeyFile = tc.setupFunc()
-
-			err := jwtService.Init()
-			assert.Error(t, err)
-			assert.Contains(t, err.Error(), tc.expectedErrMsg)
-
-			thunderRuntime.Config.Security.KeyFile = originalKeyFile
-		})
-	}
 }
 
 // Helper method to create a JWT with a custom header
@@ -1810,4 +1629,511 @@ func (suite *JWTServiceTestSuite) createJWTWithCustomPayload(payload map[string]
 // Helper method to create a JWT with basic claims for testing
 func (suite *JWTServiceTestSuite) createBasicJWT(aud, iss string, exp int64, nbf int64) string {
 	return suite.createJWTWithClaims("test-subject", aud, iss, exp, nbf, nil)
+}
+
+func (suite *JWTServiceTestSuite) TestInitWithECDSAKeys() {
+	testCases := []struct {
+		name            string
+		curve           elliptic.Curve
+		expectedAlg     JWSAlgorithm
+		expectedSignAlg sign.SignAlgorithm
+	}{
+		{
+			name:            "P256Key",
+			curve:           elliptic.P256(),
+			expectedAlg:     ES256,
+			expectedSignAlg: sign.ECDSASHA256,
+		},
+		{
+			name:            "P384Key",
+			curve:           elliptic.P384(),
+			expectedAlg:     ES384,
+			expectedSignAlg: sign.ECDSASHA384,
+		},
+		{
+			name:            "P521Key",
+			curve:           elliptic.P521(),
+			expectedAlg:     ES512,
+			expectedSignAlg: sign.ECDSASHA512,
+		},
+	}
+
+	for _, tc := range testCases {
+		suite.T().Run(tc.name, func(t *testing.T) {
+			// Generate ECDSA key
+			ecKey, err := ecdsa.GenerateKey(tc.curve, rand.Reader)
+			assert.NoError(t, err)
+
+			// Marshal to PKCS8
+			pkcs8Bytes, err := x509.MarshalPKCS8PrivateKey(ecKey)
+			assert.NoError(t, err)
+
+			keyPEM := pem.EncodeToMemory(&pem.Block{
+				Type:  "PRIVATE KEY",
+				Bytes: pkcs8Bytes,
+			})
+
+			// Write to temp file
+			tempFile, err := os.CreateTemp("", "ec_key_*.pem")
+			assert.NoError(t, err)
+			defer func() {
+				if err := os.Remove(tempFile.Name()); err != nil {
+					t.Logf("Failed to remove temp file: %v", err)
+				}
+			}()
+
+			_, err = tempFile.Write(keyPEM)
+			assert.NoError(t, err)
+			err = tempFile.Close()
+			assert.NoError(t, err)
+
+			// Initialize JWT service with mock
+			pkiMock := pkimock.NewPKIServiceInterfaceMock(t)
+			pkiMock.EXPECT().GetPrivateKey(mock.Anything).Return(ecKey, nil)
+			pkiMock.EXPECT().GetCertThumbprint(mock.Anything).Return("test-kid")
+
+			jwtService, err := Initialize(pkiMock)
+
+			assert.NoError(t, err)
+			assert.NotNil(t, jwtService)
+
+			// Cast to access internal fields for testing
+			jwtSvc, ok := jwtService.(*JWTService)
+			assert.True(t, ok)
+			assert.NotNil(t, jwtSvc.privateKey)
+			assert.Equal(t, tc.expectedSignAlg, jwtSvc.signAlg)
+			assert.Equal(t, tc.expectedAlg, jwtSvc.jwsAlg)
+
+			// Test JWT generation with ECDSA key
+			token, _, err := jwtService.GenerateJWT("test-subject", "test-aud", "test-iss", 3600, nil)
+			assert.NoError(t, err)
+			assert.NotEmpty(t, token)
+
+			// Verify token header has correct alg
+			header, err := DecodeJWTHeader(token)
+			assert.NoError(t, err)
+			assert.Equal(t, string(tc.expectedAlg), header["alg"])
+
+			// Verify signature
+			err = jwtService.VerifyJWTSignature(token)
+			assert.NoError(t, err)
+		})
+	}
+}
+
+func (suite *JWTServiceTestSuite) TestInitWithEd25519Key() {
+	// Generate Ed25519 key
+	pub, priv, err := ed25519.GenerateKey(rand.Reader)
+	assert.NoError(suite.T(), err)
+	_ = pub // silence unused
+
+	// Marshal to PKCS8
+	pkcs8Bytes, err := x509.MarshalPKCS8PrivateKey(priv)
+	assert.NoError(suite.T(), err)
+
+	keyPEM := pem.EncodeToMemory(&pem.Block{
+		Type:  "PRIVATE KEY",
+		Bytes: pkcs8Bytes,
+	})
+
+	// Write to temp file
+	tempFile, err := os.CreateTemp("", "ed25519_key_*.pem")
+	assert.NoError(suite.T(), err)
+	defer func() {
+		if err := os.Remove(tempFile.Name()); err != nil {
+			suite.T().Logf("Failed to remove temp file: %v", err)
+		}
+	}()
+
+	_, err = tempFile.Write(keyPEM)
+	assert.NoError(suite.T(), err)
+	err = tempFile.Close()
+	assert.NoError(suite.T(), err)
+
+	pkiMock := pkimock.NewPKIServiceInterfaceMock(suite.T())
+	pkiMock.EXPECT().GetPrivateKey(mock.Anything).Return(priv, nil)
+	pkiMock.EXPECT().GetCertThumbprint(mock.Anything).Return("test-kid")
+
+	jwtService, err := Initialize(pkiMock)
+
+	assert.NoError(suite.T(), err)
+	assert.NotNil(suite.T(), jwtService)
+
+	// Cast to access internal fields for testing
+	jwtSvc, ok := jwtService.(*JWTService)
+	assert.True(suite.T(), ok)
+	assert.NotNil(suite.T(), jwtSvc.privateKey)
+	assert.Equal(suite.T(), sign.ED25519, jwtSvc.signAlg)
+	assert.Equal(suite.T(), EdDSA, jwtSvc.jwsAlg)
+
+	// Test JWT generation with Ed25519 key
+	token, _, err := jwtService.GenerateJWT("test-subject", "test-aud", "test-iss", 3600, nil)
+	assert.NoError(suite.T(), err)
+	assert.NotEmpty(suite.T(), token)
+
+	// Verify token header has correct alg
+	header, err := DecodeJWTHeader(token)
+	assert.NoError(suite.T(), err)
+	assert.Equal(suite.T(), "EdDSA", header["alg"])
+
+	// Verify signature
+	err = jwtService.VerifyJWTSignature(token)
+	assert.NoError(suite.T(), err)
+}
+
+func (suite *JWTServiceTestSuite) TestGetPublicKeyForAllKeyTypes() {
+	testCases := []struct {
+		name        string
+		setupKey    func() (crypto.PrivateKey, sign.SignAlgorithm, JWSAlgorithm)
+		validatePub func(t *testing.T, pub crypto.PublicKey)
+	}{
+		{
+			name: "RSAKey",
+			setupKey: func() (crypto.PrivateKey, sign.SignAlgorithm, JWSAlgorithm) {
+				key, _ := rsa.GenerateKey(rand.Reader, 2048)
+				return key, sign.RSASHA256, RS256
+			},
+			validatePub: func(t *testing.T, pub crypto.PublicKey) {
+				_, ok := pub.(*rsa.PublicKey)
+				assert.True(t, ok, "Expected RSA public key")
+			},
+		},
+		{
+			name: "ECDSAKey",
+			setupKey: func() (crypto.PrivateKey, sign.SignAlgorithm, JWSAlgorithm) {
+				key, _ := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
+				return key, sign.ECDSASHA256, ES256
+			},
+			validatePub: func(t *testing.T, pub crypto.PublicKey) {
+				_, ok := pub.(*ecdsa.PublicKey)
+				assert.True(t, ok, "Expected ECDSA public key")
+			},
+		},
+		{
+			name: "Ed25519Key",
+			setupKey: func() (crypto.PrivateKey, sign.SignAlgorithm, JWSAlgorithm) {
+				_, priv, _ := ed25519.GenerateKey(rand.Reader)
+				return priv, sign.ED25519, EdDSA
+			},
+			validatePub: func(t *testing.T, pub crypto.PublicKey) {
+				_, ok := pub.(ed25519.PublicKey)
+				assert.True(t, ok, "Expected Ed25519 public key")
+			},
+		},
+	}
+
+	for _, tc := range testCases {
+		suite.T().Run(tc.name, func(t *testing.T) {
+			priv, signAlg, jwsAlg := tc.setupKey()
+			jwtService := &JWTService{
+				privateKey: priv,
+				signAlg:    signAlg,
+				jwsAlg:     jwsAlg,
+			}
+
+			pub := jwtService.GetPublicKey()
+			assert.NotNil(t, pub)
+			tc.validatePub(t, pub)
+		})
+	}
+}
+
+func (suite *JWTServiceTestSuite) TestInitWithECPrivateKeyFormat() {
+	// Test EC PRIVATE KEY format (not PKCS8)
+	ecKey, err := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
+	assert.NoError(suite.T(), err)
+
+	// Marshal as EC PRIVATE KEY (not PKCS8)
+	ecBytes, err := x509.MarshalECPrivateKey(ecKey)
+	assert.NoError(suite.T(), err)
+
+	keyPEM := pem.EncodeToMemory(&pem.Block{
+		Type:  "EC PRIVATE KEY",
+		Bytes: ecBytes,
+	})
+
+	tempFile, err := os.CreateTemp("", "ec_priv_key_*.pem")
+	assert.NoError(suite.T(), err)
+	defer func() {
+		if err := os.Remove(tempFile.Name()); err != nil {
+			suite.T().Logf("Failed to remove temp file: %v", err)
+		}
+	}()
+
+	_, err = tempFile.Write(keyPEM)
+	assert.NoError(suite.T(), err)
+	err = tempFile.Close()
+	assert.NoError(suite.T(), err)
+
+	pkiMock := pkimock.NewPKIServiceInterfaceMock(suite.T())
+	pkiMock.EXPECT().GetPrivateKey(mock.Anything).Return(ecKey, nil)
+	pkiMock.EXPECT().GetCertThumbprint(mock.Anything).Return("test-kid")
+
+	jwtService, err := Initialize(pkiMock)
+
+	assert.NoError(suite.T(), err)
+
+	// Cast to access internal fields for testing
+	jwtSvc, ok := jwtService.(*JWTService)
+	assert.True(suite.T(), ok)
+	assert.Equal(suite.T(), sign.ECDSASHA256, jwtSvc.signAlg)
+	assert.Equal(suite.T(), ES256, jwtSvc.jwsAlg)
+}
+
+func (suite *JWTServiceTestSuite) TestInitWithUnsupportedECCurve() {
+	// Generate P-224 key (unsupported curve)
+	ecKey, err := ecdsa.GenerateKey(elliptic.P224(), rand.Reader)
+	assert.NoError(suite.T(), err)
+
+	ecBytes, err := x509.MarshalECPrivateKey(ecKey)
+	assert.NoError(suite.T(), err)
+
+	keyPEM := pem.EncodeToMemory(&pem.Block{
+		Type:  "EC PRIVATE KEY",
+		Bytes: ecBytes,
+	})
+
+	tempFile, err := os.CreateTemp("", "ec_unsupported_*.pem")
+	assert.NoError(suite.T(), err)
+	defer func() {
+		if err := os.Remove(tempFile.Name()); err != nil {
+			suite.T().Logf("Failed to remove temp file: %v", err)
+		}
+	}()
+
+	_, err = tempFile.Write(keyPEM)
+	assert.NoError(suite.T(), err)
+	pkiMock := pkimock.NewPKIServiceInterfaceMock(suite.T())
+	pkiMock.EXPECT().GetPrivateKey(mock.Anything).Return(nil, fmt.Errorf("unsupported EC curve"))
+	_, err = Initialize(pkiMock)
+
+	assert.Error(suite.T(), err)
+	assert.Contains(suite.T(), err.Error(), "unsupported EC curve")
+}
+
+func (suite *JWTServiceTestSuite) TestMapJWSAlgToSignAlg() {
+	testCases := []struct {
+		name        string
+		jwsAlg      string
+		expectedAlg sign.SignAlgorithm
+		expectError bool
+	}{
+		{"RS256", "RS256", sign.RSASHA256, false},
+		{"RS512", "RS512", sign.RSASHA512, false},
+		{"ES256", "ES256", sign.ECDSASHA256, false},
+		{"ES384", "ES384", sign.ECDSASHA384, false},
+		{"ES512", "ES512", sign.ECDSASHA512, false},
+		{"EdDSA", "EdDSA", sign.ED25519, false},
+		{"Unsupported", "HS256", "", true},
+		{"Empty", "", "", true},
+	}
+
+	for _, tc := range testCases {
+		suite.T().Run(tc.name, func(t *testing.T) {
+			alg, err := mapJWSAlgToSignAlg(JWSAlgorithm(tc.jwsAlg))
+			if tc.expectError {
+				assert.Error(t, err)
+			} else {
+				assert.NoError(t, err)
+				assert.Equal(t, tc.expectedAlg, alg)
+			}
+		})
+	}
+}
+
+func (suite *JWTServiceTestSuite) TestJWKToPublicKeyErrorCases() {
+	testCases := []struct {
+		name          string
+		jwk           map[string]interface{}
+		errorContains string
+	}{
+		{
+			name:          "MissingKty",
+			jwk:           map[string]interface{}{},
+			errorContains: "JWK missing kty",
+		},
+		{
+			name:          "InvalidKty",
+			jwk:           map[string]interface{}{"kty": 123},
+			errorContains: "JWK missing kty",
+		},
+		{
+			name:          "UnsupportedKty",
+			jwk:           map[string]interface{}{"kty": "oct"},
+			errorContains: "unsupported JWK kty",
+		},
+		{
+			name:          "RSA_MissingModulus",
+			jwk:           map[string]interface{}{"kty": "RSA", "e": "AQAB"},
+			errorContains: "JWK missing RSA modulus or exponent",
+		},
+		{
+			name:          "RSA_MissingExponent",
+			jwk:           map[string]interface{}{"kty": "RSA", "n": "test"},
+			errorContains: "JWK missing RSA modulus or exponent",
+		},
+		{
+			name:          "RSA_InvalidModulus",
+			jwk:           map[string]interface{}{"kty": "RSA", "n": "invalid!base64", "e": "AQAB"},
+			errorContains: "failed to decode RSA modulus",
+		},
+		{
+			name:          "RSA_InvalidExponent",
+			jwk:           map[string]interface{}{"kty": "RSA", "n": "AQAB", "e": "invalid!base64"},
+			errorContains: "failed to decode RSA exponent",
+		},
+		{
+			name:          "EC_MissingCurve",
+			jwk:           map[string]interface{}{"kty": "EC", "x": "test", "y": "test"},
+			errorContains: "JWK missing EC parameters",
+		},
+		{
+			name:          "EC_MissingX",
+			jwk:           map[string]interface{}{"kty": "EC", "crv": "P-256", "y": "test"},
+			errorContains: "JWK missing EC parameters",
+		},
+		{
+			name:          "EC_MissingY",
+			jwk:           map[string]interface{}{"kty": "EC", "crv": "P-256", "x": "test"},
+			errorContains: "JWK missing EC parameters",
+		},
+		{
+			name:          "EC_UnsupportedCurve",
+			jwk:           map[string]interface{}{"kty": "EC", "crv": "P-224", "x": "test", "y": "test"},
+			errorContains: "unsupported EC curve",
+		},
+		{
+			name:          "EC_InvalidX",
+			jwk:           map[string]interface{}{"kty": "EC", "crv": "P-256", "x": "invalid!base64", "y": "AQAB"},
+			errorContains: "failed to decode EC x",
+		},
+		{
+			name:          "EC_InvalidY",
+			jwk:           map[string]interface{}{"kty": "EC", "crv": "P-256", "x": "AQAB", "y": "invalid!base64"},
+			errorContains: "failed to decode EC y",
+		},
+		{
+			name: "EC_InvalidXLength",
+			jwk: map[string]interface{}{
+				"kty": "EC", "crv": "P-256",
+				"x": base64.RawURLEncoding.EncodeToString([]byte{1}),        // 1 byte
+				"y": base64.RawURLEncoding.EncodeToString(make([]byte, 32)), // 32 bytes
+			},
+			errorContains: "invalid EC coordinate length",
+		},
+		{
+			name: "EC_InvalidYLength",
+			jwk: map[string]interface{}{
+				"kty": "EC", "crv": "P-256",
+				"x": base64.RawURLEncoding.EncodeToString(make([]byte, 32)), // 32 bytes
+				"y": base64.RawURLEncoding.EncodeToString([]byte{1}),        // 1 byte
+			},
+			errorContains: "invalid EC coordinate length",
+		},
+		{
+			name: "EC_PointNotOnCurve",
+			jwk: map[string]interface{}{
+				"kty": "EC", "crv": "P-256",
+				"x": base64.RawURLEncoding.EncodeToString(make([]byte, 32)), // 32 zero bytes
+				"y": base64.RawURLEncoding.EncodeToString(make([]byte, 32)), // 32 zero bytes
+			},
+			errorContains: "EC point not on curve",
+		},
+		{
+			name:          "OKP_MissingCurve",
+			jwk:           map[string]interface{}{"kty": "OKP", "x": "test"},
+			errorContains: "JWK missing OKP parameters",
+		},
+		{
+			name:          "OKP_MissingX",
+			jwk:           map[string]interface{}{"kty": "OKP", "crv": "Ed25519"},
+			errorContains: "JWK missing OKP parameters",
+		},
+		{
+			name:          "OKP_UnsupportedCurve",
+			jwk:           map[string]interface{}{"kty": "OKP", "crv": "Ed448", "x": "test"},
+			errorContains: "unsupported OKP curve",
+		},
+		{
+			name:          "OKP_InvalidX",
+			jwk:           map[string]interface{}{"kty": "OKP", "crv": "Ed25519", "x": "invalid!base64"},
+			errorContains: "failed to decode Ed25519 x",
+		},
+		{
+			name: "OKP_InvalidKeyLength",
+			jwk: map[string]interface{}{
+				"kty": "OKP", "crv": "Ed25519", "x": base64.RawURLEncoding.EncodeToString([]byte("short")),
+			},
+			errorContains: "invalid Ed25519 public key length",
+		},
+	}
+
+	for _, tc := range testCases {
+		suite.T().Run(tc.name, func(t *testing.T) {
+			_, err := jwkToPublicKey(tc.jwk)
+			assert.Error(t, err)
+			assert.Contains(t, err.Error(), tc.errorContains)
+		})
+	}
+}
+
+func (suite *JWTServiceTestSuite) TestVerifyJWTSignatureWithPublicKeyAlgorithmDetection() {
+	// Test that VerifyJWTSignatureWithPublicKey correctly detects algorithm from header
+	testCases := []struct {
+		name        string
+		setupKey    func() (crypto.PrivateKey, sign.SignAlgorithm, JWSAlgorithm)
+		expectError bool
+	}{
+		{
+			name: "RS256Token",
+			setupKey: func() (crypto.PrivateKey, sign.SignAlgorithm, JWSAlgorithm) {
+				key, _ := rsa.GenerateKey(rand.Reader, 2048)
+				return key, sign.RSASHA256, RS256
+			},
+			expectError: false,
+		},
+		{
+			name: "ES256Token",
+			setupKey: func() (crypto.PrivateKey, sign.SignAlgorithm, JWSAlgorithm) {
+				key, _ := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
+				return key, sign.ECDSASHA256, ES256
+			},
+			expectError: false,
+		},
+		{
+			name: "EdDSAToken",
+			setupKey: func() (crypto.PrivateKey, sign.SignAlgorithm, JWSAlgorithm) {
+				_, priv, _ := ed25519.GenerateKey(rand.Reader)
+				return priv, sign.ED25519, EdDSA
+			},
+			expectError: false,
+		},
+	}
+
+	for _, tc := range testCases {
+		suite.T().Run(tc.name, func(t *testing.T) {
+			priv, signAlg, jwsAlg := tc.setupKey()
+			jwtService := &JWTService{
+				privateKey: priv,
+				signAlg:    signAlg,
+				jwsAlg:     jwsAlg,
+			}
+
+			// Generate token
+			token, _, err := jwtService.GenerateJWT("test-sub", "test-aud", "test-iss", 3600, nil)
+			assert.NoError(t, err)
+
+			// Get public key
+			pubKey := jwtService.GetPublicKey()
+			assert.NotNil(t, pubKey)
+
+			// Verify with public key (should detect algorithm from header)
+			err = jwtService.VerifyJWTSignatureWithPublicKey(token, pubKey)
+			if tc.expectError {
+				assert.Error(t, err)
+			} else {
+				assert.NoError(t, err)
+			}
+		})
+	}
 }

@@ -21,13 +21,14 @@ package jwks
 import (
 	"net/http"
 
+	"github.com/asgardeo/thunder/internal/system/crypto/pki"
 	"github.com/asgardeo/thunder/internal/system/middleware"
 )
 
 // Initialize initializes the JWKS service and registers its routes.
-func Initialize(mux *http.ServeMux) JWKSServiceInterface {
+func Initialize(mux *http.ServeMux, pkiService pki.PKIServiceInterface) JWKSServiceInterface {
 	// Initialize the JWKS service
-	jwksService := newJWKSService()
+	jwksService := newJWKSService(pkiService)
 	jwksHandler := newJWKSHandler(jwksService)
 	registerRoutes(mux, jwksHandler)
 	return jwksService

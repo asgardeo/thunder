@@ -19,6 +19,10 @@
 package jwt
 
 import (
+	"crypto"
+	"crypto/ecdsa"
+	"crypto/ed25519"
+	"crypto/elliptic"
 	"crypto/rsa"
 	"encoding/base64"
 	"encoding/json"
@@ -96,41 +100,105 @@ func DecodeJWTHeader(jwtToken string) (map[string]interface{}, error) {
 	return header, nil
 }
 
-// jwkToRSAPublicKey converts a JWK (JSON Web Key) to an RSA Public Key.
-func jwkToRSAPublicKey(jwk map[string]interface{}) (*rsa.PublicKey, error) {
-	// Extract modulus (n) and exponent (e) from JWK
-	n, ok := jwk["n"].(string)
+// jwkToPublicKey converts a JWK map to a crypto.PublicKey supporting RSA, EC, and Ed25519.
+func jwkToPublicKey(jwk map[string]interface{}) (crypto.PublicKey, error) {
+	kty, ok := jwk["kty"].(string)
 	if !ok {
-		return nil, errors.New("invalid JWK format, missing 'n' parameter")
+		return nil, errors.New("JWK missing kty")
 	}
 
-	e, ok := jwk["e"].(string)
-	if !ok {
-		return nil, errors.New("invalid JWK format, missing 'e' parameter")
-	}
+	switch kty {
+	case "RSA":
+		nStr, nOK := jwk["n"].(string)
+		eStr, eOK := jwk["e"].(string)
+		if !nOK || !eOK {
+			return nil, errors.New("JWK missing RSA modulus or exponent")
+		}
 
-	// Decode modulus and exponent from Base64URL
-	nBytes, err := base64.RawURLEncoding.DecodeString(n)
-	if err != nil {
-		return nil, fmt.Errorf("failed to decode modulus: %w", err)
-	}
+		nBytes, err := base64.RawURLEncoding.DecodeString(nStr)
+		if err != nil {
+			return nil, fmt.Errorf("failed to decode RSA modulus: %w", err)
+		}
+		eBytes, err := base64.RawURLEncoding.DecodeString(eStr)
+		if err != nil {
+			return nil, fmt.Errorf("failed to decode RSA exponent: %w", err)
+		}
 
-	eBytes, err := base64.RawURLEncoding.DecodeString(e)
-	if err != nil {
-		return nil, fmt.Errorf("failed to decode exponent: %w", err)
-	}
+		n := new(big.Int).SetBytes(nBytes)
+		e := new(big.Int).SetBytes(eBytes).Int64()
+		if e <= 0 {
+			return nil, errors.New("invalid RSA exponent")
+		}
 
-	// Convert exponent bytes to int
-	var eInt int
-	for i := 0; i < len(eBytes); i++ {
-		eInt = eInt<<8 + int(eBytes[i])
-	}
+		return &rsa.PublicKey{N: n, E: int(e)}, nil
 
-	// Create RSA public key
-	pubKey := &rsa.PublicKey{
-		N: new(big.Int).SetBytes(nBytes),
-		E: eInt,
-	}
+	case "EC":
+		crv, crvOK := jwk["crv"].(string)
+		xStr, xOK := jwk["x"].(string)
+		yStr, yOK := jwk["y"].(string)
+		if !crvOK || !xOK || !yOK {
+			return nil, errors.New("JWK missing EC parameters")
+		}
 
-	return pubKey, nil
+		var curve elliptic.Curve
+		var expectedKeySize int
+		switch crv {
+		case P256:
+			curve = elliptic.P256()
+			expectedKeySize = 32 // P-256 uses 256-bit (32-byte) coordinates
+		case P384:
+			curve = elliptic.P384()
+			expectedKeySize = 48 // P-384 uses 384-bit (48-byte) coordinates
+		case P521:
+			curve = elliptic.P521()
+			expectedKeySize = 66 // P-521 uses 521-bit (66-byte) coordinates
+		default:
+			return nil, fmt.Errorf("unsupported EC curve: %s", crv)
+		}
+
+		xBytes, err := base64.RawURLEncoding.DecodeString(xStr)
+		if err != nil {
+			return nil, fmt.Errorf("failed to decode EC x: %w", err)
+		}
+		yBytes, err := base64.RawURLEncoding.DecodeString(yStr)
+		if err != nil {
+			return nil, fmt.Errorf("failed to decode EC y: %w", err)
+		}
+
+		// Validate coordinate byte lengths match the expected curve size
+		if len(xBytes) != expectedKeySize || len(yBytes) != expectedKeySize {
+			return nil, errors.New("invalid EC coordinate length")
+		}
+
+		x := new(big.Int).SetBytes(xBytes)
+		y := new(big.Int).SetBytes(yBytes)
+		if !curve.IsOnCurve(x, y) {
+			return nil, errors.New("EC point not on curve")
+		}
+
+		return &ecdsa.PublicKey{Curve: curve, X: x, Y: y}, nil
+
+	case "OKP":
+		crv, crvOK := jwk["crv"].(string)
+		xStr, xOK := jwk["x"].(string)
+		if !crvOK || !xOK {
+			return nil, errors.New("JWK missing OKP parameters")
+		}
+
+		switch crv {
+		case "Ed25519":
+			xBytes, err := base64.RawURLEncoding.DecodeString(xStr)
+			if err != nil {
+				return nil, fmt.Errorf("failed to decode Ed25519 x: %w", err)
+			}
+			if l := len(xBytes); l != ed25519.PublicKeySize {
+				return nil, fmt.Errorf("invalid Ed25519 public key length: %d", l)
+			}
+			return ed25519.PublicKey(xBytes), nil
+		default:
+			return nil, fmt.Errorf("unsupported OKP curve: %s", crv)
+		}
+	default:
+		return nil, fmt.Errorf("unsupported JWK kty: %s", kty)
+	}
 }

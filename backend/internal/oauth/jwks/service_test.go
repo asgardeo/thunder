@@ -20,25 +20,24 @@ package jwks
 
 import (
 	"crypto/ecdsa"
+	"crypto/ed25519"
 	"crypto/elliptic"
 	"crypto/rand"
 	"crypto/rsa"
-	"crypto/tls"
 	"crypto/x509"
-	"crypto/x509/pkix"
-	"math/big"
 	"testing"
-	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
 
 	"github.com/asgardeo/thunder/internal/system/config"
+	"github.com/asgardeo/thunder/tests/mocks/crypto/pki/pkimock"
 )
 
 type JWKSServiceTestSuite struct {
 	suite.Suite
-	jwksService *jwksService
+	jwksService JWKSServiceInterface
+	pkiMock     *pkimock.PKIServiceInterfaceMock
 }
 
 func TestJWKSServiceSuite(t *testing.T) {
@@ -46,327 +45,93 @@ func TestJWKSServiceSuite(t *testing.T) {
 }
 
 func (suite *JWKSServiceTestSuite) SetupTest() {
-	suite.jwksService = &jwksService{}
+	// Reset runtime and set preferred key ID
+	config.ResetThunderRuntime()
+	testConfig := &config.Config{JWT: config.JWTConfig{PreferredKeyID: "kid-1"}}
+	_ = config.InitializeThunderRuntime("", testConfig)
+
+	// Create PKI mock and service under test
+	suite.pkiMock = pkimock.NewPKIServiceInterfaceMock(suite.T())
+	suite.jwksService = newJWKSService(suite.pkiMock)
 }
 
-func (suite *JWKSServiceTestSuite) setupRuntimeConfig(tlsConfig *tls.Config, certKid string) error {
-	testConfig := &config.Config{
-		Security: config.SecurityConfig{
-			CertFile: "test-cert.pem",
-			KeyFile:  "test-key.pem",
-		},
-	}
-	err := config.InitializeThunderRuntime("/tmp", testConfig)
-	if err != nil {
-		return err
-	}
+func (suite *JWKSServiceTestSuite) TestGetJWKS_RSA_Success() {
+	// Prepare RSA cert and mock
+	key, _ := rsa.GenerateKey(rand.Reader, 2048)
+	cert := &x509.Certificate{Raw: []byte("rsa-cert-raw"), PublicKey: &key.PublicKey}
+	suite.pkiMock.EXPECT().GetX509Certificate("kid-1").Return(cert, nil)
+	suite.pkiMock.EXPECT().GetCertThumbprint("kid-1").Return("kid-1")
 
-	// Set the cert config in runtime
-	runtime := config.GetThunderRuntime()
-	runtime.CertConfig = config.CertConfig{
-		TLSConfig: tlsConfig,
-		CertKid:   certKid,
-	}
-	return nil
-}
-
-func (suite *JWKSServiceTestSuite) TestNewJWKSService() {
-	service := newJWKSService()
-	assert.NotNil(suite.T(), service)
-	assert.Implements(suite.T(), (*JWKSServiceInterface)(nil), service)
-}
-
-func (suite *JWKSServiceTestSuite) TestGetJWKS_RSAKey_Success() {
-	privateKey, err := rsa.GenerateKey(rand.Reader, 2048)
-	assert.NoError(suite.T(), err)
-
-	template := x509.Certificate{
-		SerialNumber: big.NewInt(1),
-		Subject: pkix.Name{
-			Organization: []string{"Test Org"},
-		},
-		NotBefore:   time.Now(),
-		NotAfter:    time.Now().Add(365 * 24 * time.Hour),
-		KeyUsage:    x509.KeyUsageKeyEncipherment | x509.KeyUsageDigitalSignature,
-		ExtKeyUsage: []x509.ExtKeyUsage{x509.ExtKeyUsageServerAuth},
-		IPAddresses: nil,
-	}
-
-	certDER, err := x509.CreateCertificate(rand.Reader, &template, &template, &privateKey.PublicKey, privateKey)
-	assert.NoError(suite.T(), err)
-
-	cert := tls.Certificate{
-		Certificate: [][]byte{certDER},
-		PrivateKey:  privateKey,
-	}
-
-	tlsConfig := &tls.Config{
-		Certificates: []tls.Certificate{cert},
-		MinVersion:   tls.VersionTLS12,
-	}
-
-	// Set up the runtime config with cert config
-	err = suite.setupRuntimeConfig(tlsConfig, "test-kid")
-	assert.NoError(suite.T(), err)
-
-	result, svcErr := suite.jwksService.GetJWKS()
+	resp, svcErr := suite.jwksService.GetJWKS()
 	assert.Nil(suite.T(), svcErr)
-	assert.NotNil(suite.T(), result)
-	assert.Len(suite.T(), result.Keys, 1)
-
-	jwk := result.Keys[0]
-	assert.Equal(suite.T(), "test-kid", jwk.Kid)
-	assert.Equal(suite.T(), "RSA", jwk.Kty)
-	assert.Equal(suite.T(), "sig", jwk.Use)
-	assert.Equal(suite.T(), "RS256", jwk.Alg)
-	assert.NotEmpty(suite.T(), jwk.N)
-	assert.NotEmpty(suite.T(), jwk.E)
-	assert.NotEmpty(suite.T(), jwk.X5c)
-	assert.NotEmpty(suite.T(), jwk.X5t)
-	assert.NotEmpty(suite.T(), jwk.X5tS256)
+	assert.NotNil(suite.T(), resp)
+	assert.Len(suite.T(), resp.Keys, 1)
+	k := resp.Keys[0]
+	assert.Equal(suite.T(), "RSA", k.Kty)
+	assert.Equal(suite.T(), "RS256", k.Alg)
+	assert.NotEmpty(suite.T(), k.N)
+	assert.NotEmpty(suite.T(), k.E)
+	assert.NotEmpty(suite.T(), k.X5c)
+	assert.NotEmpty(suite.T(), k.X5t)
+	assert.NotEmpty(suite.T(), k.X5tS256)
 }
 
-func (suite *JWKSServiceTestSuite) TestGetJWKS_ECDSAKey_Success() {
-	privateKey, err := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
-	assert.NoError(suite.T(), err)
+func (suite *JWKSServiceTestSuite) TestGetJWKS_ECDSA_P256_Success() {
+	// Prepare ECDSA P-256 cert and mock
+	ecdsaKey, _ := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
+	cert := &x509.Certificate{Raw: []byte("ec-cert-raw"), PublicKey: &ecdsaKey.PublicKey}
+	suite.pkiMock.EXPECT().GetX509Certificate("kid-1").Return(cert, nil)
+	suite.pkiMock.EXPECT().GetCertThumbprint("kid-1").Return("kid-1")
 
-	template := x509.Certificate{
-		SerialNumber: big.NewInt(1),
-		Subject: pkix.Name{
-			Organization: []string{"Test Org"},
-		},
-		NotBefore:   time.Now(),
-		NotAfter:    time.Now().Add(365 * 24 * time.Hour),
-		KeyUsage:    x509.KeyUsageKeyEncipherment | x509.KeyUsageDigitalSignature,
-		ExtKeyUsage: []x509.ExtKeyUsage{x509.ExtKeyUsageServerAuth},
-		IPAddresses: nil,
-	}
-
-	certDER, err := x509.CreateCertificate(rand.Reader, &template, &template, &privateKey.PublicKey, privateKey)
-	assert.NoError(suite.T(), err)
-
-	cert := tls.Certificate{
-		Certificate: [][]byte{certDER},
-		PrivateKey:  privateKey,
-	}
-
-	tlsConfig := &tls.Config{
-		Certificates: []tls.Certificate{cert},
-		MinVersion:   tls.VersionTLS12,
-	}
-
-	// Set up the runtime config with cert config
-	err = suite.setupRuntimeConfig(tlsConfig, "test-kid")
-	assert.NoError(suite.T(), err)
-
-	result, svcErr := suite.jwksService.GetJWKS()
+	resp, svcErr := suite.jwksService.GetJWKS()
 	assert.Nil(suite.T(), svcErr)
-	assert.NotNil(suite.T(), result)
-	assert.Len(suite.T(), result.Keys, 1)
-
-	jwk := result.Keys[0]
-	assert.Equal(suite.T(), "test-kid", jwk.Kid)
-	assert.Equal(suite.T(), "EC", jwk.Kty)
-	assert.Equal(suite.T(), "sig", jwk.Use)
-	assert.Equal(suite.T(), "ES256", jwk.Alg)
-	assert.Equal(suite.T(), "P-256", jwk.Crv)
-	assert.NotEmpty(suite.T(), jwk.X)
-	assert.NotEmpty(suite.T(), jwk.Y)
-	assert.NotEmpty(suite.T(), jwk.X5c)
-	assert.NotEmpty(suite.T(), jwk.X5t)
-	assert.NotEmpty(suite.T(), jwk.X5tS256)
+	assert.NotNil(suite.T(), resp)
+	assert.Len(suite.T(), resp.Keys, 1)
+	k := resp.Keys[0]
+	assert.Equal(suite.T(), "EC", k.Kty)
+	assert.Equal(suite.T(), "ES256", k.Alg)
+	assert.Equal(suite.T(), "P-256", k.Crv)
+	assert.NotEmpty(suite.T(), k.X)
+	assert.NotEmpty(suite.T(), k.Y)
+	assert.NotEmpty(suite.T(), k.X5c)
+	assert.NotEmpty(suite.T(), k.X5t)
+	assert.NotEmpty(suite.T(), k.X5tS256)
 }
 
-func (suite *JWKSServiceTestSuite) TestGetJWKS_NoCertificatesInTLSConfig() {
-	tlsConfig := &tls.Config{
-		Certificates: []tls.Certificate{},
-		MinVersion:   tls.VersionTLS12,
-	}
+func (suite *JWKSServiceTestSuite) TestGetJWKS_CertParseError() {
+	// Mock parse error
+	parseErr := assert.AnError
+	suite.pkiMock.EXPECT().GetX509Certificate("kid-1").Return(nil, parseErr)
 
-	// Set up the runtime config with cert config
-	err := suite.setupRuntimeConfig(tlsConfig, "test-kid")
-	assert.NoError(suite.T(), err)
-
-	result, svcErr := suite.jwksService.GetJWKS()
-	assert.Nil(suite.T(), result)
-	assert.NotNil(suite.T(), svcErr)
-	assert.Equal(suite.T(), ErrorNoCertificateFound.Code, svcErr.Code)
-}
-
-func (suite *JWKSServiceTestSuite) TestGetJWKS_EmptyCertificateInTLSConfig() {
-	cert := tls.Certificate{
-		Certificate: [][]byte{},
-	}
-
-	tlsConfig := &tls.Config{
-		Certificates: []tls.Certificate{cert},
-		MinVersion:   tls.VersionTLS12,
-	}
-
-	// Set up the runtime config with cert config
-	err := suite.setupRuntimeConfig(tlsConfig, "test-kid")
-	assert.NoError(suite.T(), err)
-
-	result, svcErr := suite.jwksService.GetJWKS()
-	assert.Nil(suite.T(), result)
-	assert.NotNil(suite.T(), svcErr)
-	assert.Equal(suite.T(), ErrorNoCertificateFound.Code, svcErr.Code)
-}
-
-func (suite *JWKSServiceTestSuite) TestGetJWKS_InvalidCertificateData() {
-	cert := tls.Certificate{
-		Certificate: [][]byte{[]byte("invalid certificate data")},
-	}
-
-	tlsConfig := &tls.Config{
-		Certificates: []tls.Certificate{cert},
-		MinVersion:   tls.VersionTLS12,
-	}
-
-	// Set up the runtime config with cert config
-	err := suite.setupRuntimeConfig(tlsConfig, "test-kid")
-	assert.NoError(suite.T(), err)
-
-	result, svcErr := suite.jwksService.GetJWKS()
-	assert.Nil(suite.T(), result)
+	resp, svcErr := suite.jwksService.GetJWKS()
+	assert.Nil(suite.T(), resp)
 	assert.NotNil(suite.T(), svcErr)
 	assert.Equal(suite.T(), ErrorWhileParsingCertificate.Code, svcErr.Code)
+	assert.Equal(suite.T(), parseErr.Error(), svcErr.ErrorDescription)
 }
 
-func (suite *JWKSServiceTestSuite) TestGetJWKS_CertKidNotFound() {
-	privateKey, err := rsa.GenerateKey(rand.Reader, 2048)
-	assert.NoError(suite.T(), err)
+func (suite *JWKSServiceTestSuite) TestGetJWKS_KidNotFoundError() {
+	// Mock empty kid to trigger ErrorCertificateKidNotFound
+	key, _ := rsa.GenerateKey(rand.Reader, 2048)
+	cert := &x509.Certificate{Raw: []byte("rsa-cert-raw"), PublicKey: &key.PublicKey}
+	suite.pkiMock.EXPECT().GetX509Certificate("kid-1").Return(cert, nil)
+	suite.pkiMock.EXPECT().GetCertThumbprint("kid-1").Return("")
 
-	template := x509.Certificate{
-		SerialNumber: big.NewInt(1),
-		Subject: pkix.Name{
-			Organization: []string{"Test Org"},
-		},
-		NotBefore:   time.Now(),
-		NotAfter:    time.Now().Add(365 * 24 * time.Hour),
-		KeyUsage:    x509.KeyUsageKeyEncipherment | x509.KeyUsageDigitalSignature,
-		ExtKeyUsage: []x509.ExtKeyUsage{x509.ExtKeyUsageServerAuth},
-		IPAddresses: nil,
-	}
-
-	certDER, err := x509.CreateCertificate(rand.Reader, &template, &template, &privateKey.PublicKey, privateKey)
-	assert.NoError(suite.T(), err)
-
-	cert := tls.Certificate{
-		Certificate: [][]byte{certDER},
-		PrivateKey:  privateKey,
-	}
-
-	tlsConfig := &tls.Config{
-		Certificates: []tls.Certificate{cert},
-		MinVersion:   tls.VersionTLS12,
-	}
-
-	// Set up the runtime config with cert config but empty CertKid
-	err = suite.setupRuntimeConfig(tlsConfig, "")
-	assert.NoError(suite.T(), err)
-
-	result, svcErr := suite.jwksService.GetJWKS()
-	assert.Nil(suite.T(), result)
+	resp, svcErr := suite.jwksService.GetJWKS()
+	assert.Nil(suite.T(), resp)
 	assert.NotNil(suite.T(), svcErr)
 	assert.Equal(suite.T(), ErrorCertificateKidNotFound.Code, svcErr.Code)
 }
 
-func (suite *JWKSServiceTestSuite) TestGetJWKS_TLSConfigNotFound() {
-	// Set up the runtime config with cert config but nil TLSConfig
-	err := suite.setupRuntimeConfig(nil, "test-kid")
-	assert.NoError(suite.T(), err)
+func (suite *JWKSServiceTestSuite) TestGetJWKS_UnsupportedPublicKeyType() {
+	// Provide unsupported ed25519 public key
+	_, edPriv, _ := ed25519.GenerateKey(rand.Reader)
+	cert := &x509.Certificate{Raw: []byte("ed-cert-raw"), PublicKey: edPriv.Public()}
+	suite.pkiMock.EXPECT().GetX509Certificate("kid-1").Return(cert, nil)
+	suite.pkiMock.EXPECT().GetCertThumbprint("kid-1").Return("kid-1")
 
-	result, svcErr := suite.jwksService.GetJWKS()
-	assert.Nil(suite.T(), result)
+	resp, svcErr := suite.jwksService.GetJWKS()
+	assert.Nil(suite.T(), resp)
 	assert.NotNil(suite.T(), svcErr)
-	assert.Equal(suite.T(), ErrorTLSConfigNotFound.Code, svcErr.Code)
-}
-
-func (suite *JWKSServiceTestSuite) TestGetJWKS_ECDSAKey_P384() {
-	privateKey, err := ecdsa.GenerateKey(elliptic.P384(), rand.Reader)
-	assert.NoError(suite.T(), err)
-
-	template := x509.Certificate{
-		SerialNumber: big.NewInt(1),
-		Subject: pkix.Name{
-			Organization: []string{"Test Org"},
-		},
-		NotBefore:   time.Now(),
-		NotAfter:    time.Now().Add(365 * 24 * time.Hour),
-		KeyUsage:    x509.KeyUsageKeyEncipherment | x509.KeyUsageDigitalSignature,
-		ExtKeyUsage: []x509.ExtKeyUsage{x509.ExtKeyUsageServerAuth},
-		IPAddresses: nil,
-	}
-
-	certDER, err := x509.CreateCertificate(rand.Reader, &template, &template, &privateKey.PublicKey, privateKey)
-	assert.NoError(suite.T(), err)
-
-	cert := tls.Certificate{
-		Certificate: [][]byte{certDER},
-		PrivateKey:  privateKey,
-	}
-
-	tlsConfig := &tls.Config{
-		Certificates: []tls.Certificate{cert},
-		MinVersion:   tls.VersionTLS12,
-	}
-
-	err = suite.setupRuntimeConfig(tlsConfig, "test-kid")
-	assert.NoError(suite.T(), err)
-
-	result, svcErr := suite.jwksService.GetJWKS()
-	assert.Nil(suite.T(), svcErr)
-	assert.NotNil(suite.T(), result)
-	assert.Len(suite.T(), result.Keys, 1)
-
-	jwk := result.Keys[0]
-	assert.Equal(suite.T(), "test-kid", jwk.Kid)
-	assert.Equal(suite.T(), "EC", jwk.Kty)
-	assert.Equal(suite.T(), "ES384", jwk.Alg)
-	assert.Equal(suite.T(), "P-384", jwk.Crv)
-}
-
-func (suite *JWKSServiceTestSuite) TestGetJWKS_ECDSAKey_P521() {
-	privateKey, err := ecdsa.GenerateKey(elliptic.P521(), rand.Reader)
-	assert.NoError(suite.T(), err)
-
-	template := x509.Certificate{
-		SerialNumber: big.NewInt(1),
-		Subject: pkix.Name{
-			Organization: []string{"Test Org"},
-		},
-		NotBefore:   time.Now(),
-		NotAfter:    time.Now().Add(365 * 24 * time.Hour),
-		KeyUsage:    x509.KeyUsageKeyEncipherment | x509.KeyUsageDigitalSignature,
-		ExtKeyUsage: []x509.ExtKeyUsage{x509.ExtKeyUsageServerAuth},
-		IPAddresses: nil,
-	}
-
-	certDER, err := x509.CreateCertificate(rand.Reader, &template, &template, &privateKey.PublicKey, privateKey)
-	assert.NoError(suite.T(), err)
-
-	cert := tls.Certificate{
-		Certificate: [][]byte{certDER},
-		PrivateKey:  privateKey,
-	}
-
-	tlsConfig := &tls.Config{
-		Certificates: []tls.Certificate{cert},
-		MinVersion:   tls.VersionTLS12,
-	}
-
-	err = suite.setupRuntimeConfig(tlsConfig, "test-kid")
-	assert.NoError(suite.T(), err)
-
-	result, svcErr := suite.jwksService.GetJWKS()
-	assert.Nil(suite.T(), svcErr)
-	assert.NotNil(suite.T(), result)
-	assert.Len(suite.T(), result.Keys, 1)
-
-	jwk := result.Keys[0]
-	assert.Equal(suite.T(), "test-kid", jwk.Kid)
-	assert.Equal(suite.T(), "EC", jwk.Kty)
-	assert.Equal(suite.T(), "ES512", jwk.Alg)
-	assert.Equal(suite.T(), "P-521", jwk.Crv)
+	assert.Equal(suite.T(), ErrorUnsupportedPublicKeyType.Code, svcErr.Code)
 }

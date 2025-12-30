@@ -22,7 +22,6 @@ package jwks
 import (
 	"crypto/ecdsa"
 	"crypto/rsa"
-	"crypto/x509"
 	"encoding/base64"
 	"strings"
 
@@ -31,6 +30,7 @@ import (
 
 	"github.com/asgardeo/thunder/internal/system/config"
 	"github.com/asgardeo/thunder/internal/system/crypto/hash"
+	"github.com/asgardeo/thunder/internal/system/crypto/pki"
 	"github.com/asgardeo/thunder/internal/system/error/serviceerror"
 )
 
@@ -40,36 +40,33 @@ type JWKSServiceInterface interface {
 }
 
 // jwksService implements the JWKSServiceInterface.
-type jwksService struct{}
+type jwksService struct {
+	pkiService pki.PKIServiceInterface
+}
 
 // newJWKSService creates a new instance of JWKSService.
-func newJWKSService() JWKSServiceInterface {
-	return &jwksService{}
+func newJWKSService(pkiService pki.PKIServiceInterface) JWKSServiceInterface {
+	return &jwksService{
+		pkiService: pkiService,
+	}
 }
 
 // GetJWKS retrieves the JSON Web Key Set (JWKS) from the server's TLS certificate.
 func (s *jwksService) GetJWKS() (*JWKSResponse, *serviceerror.ServiceError) {
-	certConfig := config.GetThunderRuntime().CertConfig
+	preferredKeyID := config.GetThunderRuntime().Config.JWT.PreferredKeyID
 
-	kid := certConfig.CertKid
-	if kid == "" {
-		return nil, ErrorCertificateKidNotFound
-	}
-
-	tlsConfig := certConfig.TLSConfig
-	if tlsConfig == nil {
-		return nil, ErrorTLSConfigNotFound
-	}
-	if len(tlsConfig.Certificates) == 0 || len(tlsConfig.Certificates[0].Certificate) == 0 {
-		return nil, ErrorNoCertificateFound
-	}
-
-	certData := tlsConfig.Certificates[0].Certificate[0]
-	parsedCert, err := x509.ParseCertificate(certData)
+	// Parse certificate
+	parsedCert, err := s.pkiService.GetX509Certificate(preferredKeyID)
 	if err != nil {
 		svcErr := ErrorWhileParsingCertificate
 		svcErr.ErrorDescription = err.Error()
 		return nil, svcErr
+	}
+
+	// Generate KID from certificate thumbprint
+	kid := s.pkiService.GetCertThumbprint(preferredKeyID)
+	if kid == "" {
+		return nil, ErrorCertificateKidNotFound
 	}
 
 	// x5c: base64 DER encoding

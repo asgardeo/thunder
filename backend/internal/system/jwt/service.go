@@ -20,112 +20,122 @@
 package jwt
 
 import (
+	"crypto"
+	"crypto/ecdsa"
+	"crypto/ed25519"
 	"crypto/rsa"
-	"crypto/x509"
 	"encoding/base64"
 	"encoding/json"
-	"encoding/pem"
 	"errors"
 	"fmt"
 	"io"
 	"net/http"
-	"os"
-	"path"
-	"path/filepath"
 	"strings"
-	"sync"
 	"time"
 
 	"github.com/asgardeo/thunder/internal/system/config"
+	"github.com/asgardeo/thunder/internal/system/crypto/pki"
 	"github.com/asgardeo/thunder/internal/system/crypto/sign"
 	httpservice "github.com/asgardeo/thunder/internal/system/http"
 	"github.com/asgardeo/thunder/internal/system/log"
 	"github.com/asgardeo/thunder/internal/system/utils"
 )
 
-var (
-	instance *JWTService
-	once     sync.Once
-)
-
 // JWTServiceInterface defines the interface for JWT operations.
 type JWTServiceInterface interface {
-	Init() error
-	GetPublicKey() *rsa.PublicKey
+	GetPublicKey() crypto.PublicKey
 	GenerateJWT(sub, aud, iss string, validityPeriod int64, claims map[string]interface{}) (string, int64, error)
 	VerifyJWT(jwtToken string, expectedAud, expectedIss string) error
-	VerifyJWTWithPublicKey(jwtToken string, jwtPublicKey *rsa.PublicKey, expectedAud, expectedIss string) error
+	VerifyJWTWithPublicKey(jwtToken string, jwtPublicKey crypto.PublicKey, expectedAud, expectedIss string) error
 	VerifyJWTWithJWKS(jwtToken, jwksURL, expectedAud, expectedIss string) error
 	VerifyJWTSignature(jwtToken string) error
-	VerifyJWTSignatureWithPublicKey(jwtToken string, jwtPublicKey *rsa.PublicKey) error
+	VerifyJWTSignatureWithPublicKey(jwtToken string, jwtPublicKey crypto.PublicKey) error
 	VerifyJWTSignatureWithJWKS(jwtToken string, jwksURL string) error
 }
 
 // JWTService implements the JWTServiceInterface for generating and managing JWT tokens.
 type JWTService struct {
-	privateKey *rsa.PrivateKey
+	privateKey crypto.PrivateKey
+	signAlg    sign.SignAlgorithm
+	jwsAlg     JWSAlgorithm
+	kid        string
 }
 
 // GetJWTService returns a singleton instance of JWTService.
-func GetJWTService() JWTServiceInterface {
-	once.Do(func() {
-		instance = &JWTService{}
-	})
-	return instance
-}
+func newJWTService(pkiService pki.PKIServiceInterface) (JWTServiceInterface, error) {
+	preferredKid := config.GetThunderRuntime().Config.JWT.PreferredKeyID
 
-// Init loads the private key from the configured file path.
-func (js *JWTService) Init() error {
-	thunderRuntime := config.GetThunderRuntime()
-	keyFilePath := path.Join(thunderRuntime.ThunderHome, thunderRuntime.Config.Security.KeyFile)
-	keyFilePath = filepath.Clean(keyFilePath)
-
-	// Check if the key file exists.
-	if _, err := os.Stat(keyFilePath); os.IsNotExist(err) {
-		return errors.New("key file not found at " + keyFilePath)
-	}
-
-	// Read the key file.
-	keyData, err := os.ReadFile(keyFilePath)
+	privateKey, err := pkiService.GetPrivateKey(preferredKid)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
-	// Decode the PEM block.
-	block, _ := pem.Decode(keyData)
-	if block == nil {
-		return errors.New("failed to decode PEM block containing private key")
-	}
+	kid := pkiService.GetCertThumbprint(preferredKid)
 
-	// Handle PKCS1 and PKCS8 private keys.
-	if block.Type == "RSA PRIVATE KEY" {
-		js.privateKey, err = x509.ParsePKCS1PrivateKey(block.Bytes)
-		if err != nil {
-			return err
+	// Get algorithm based on the type of private key
+	switch k := privateKey.(type) {
+	case *rsa.PrivateKey:
+		return &JWTService{
+			privateKey: k,
+			signAlg:    sign.RSASHA256,
+			jwsAlg:     RS256,
+			kid:        kid,
+		}, nil
+	case *ecdsa.PrivateKey:
+		// Determine ECDSA algorithm based on curve
+		crvName := k.Curve.Params().Name
+		switch crvName {
+		case "P-256":
+			return &JWTService{
+				privateKey: k,
+				signAlg:    sign.ECDSASHA256,
+				jwsAlg:     ES256,
+				kid:        kid,
+			}, nil
+		case "P-384":
+			return &JWTService{
+				privateKey: k,
+				signAlg:    sign.ECDSASHA384,
+				jwsAlg:     ES384,
+				kid:        kid,
+			}, nil
+		case "P-521":
+			return &JWTService{
+				privateKey: k,
+				signAlg:    sign.ECDSASHA512,
+				jwsAlg:     ES512,
+				kid:        kid,
+			}, nil
+		default:
+			return nil, errors.New("unsupported EC curve: " + crvName + " only P-256, P-384 and P-521 are supported")
 		}
-	} else if block.Type == "PRIVATE KEY" {
-		key, err := x509.ParsePKCS8PrivateKey(block.Bytes)
-		if err != nil {
-			return err
-		}
-		var ok bool
-		js.privateKey, ok = key.(*rsa.PrivateKey)
-		if !ok {
-			return errors.New("not an RSA private key")
-		}
-	} else {
-		return errors.New("unsupported private key type: " + block.Type)
+	case ed25519.PrivateKey:
+		return &JWTService{
+			privateKey: k,
+			signAlg:    sign.ED25519,
+			jwsAlg:     EdDSA,
+			kid:        kid,
+		}, nil
+	default:
+		return nil, errors.New("unsupported private key type")
 	}
-
-	return nil
 }
 
 // GetPublicKey returns the RSA public key corresponding to the server's private key.
-func (js *JWTService) GetPublicKey() *rsa.PublicKey {
+func (js *JWTService) GetPublicKey() crypto.PublicKey {
 	if js.privateKey == nil {
 		return nil
 	}
-	return &js.privateKey.PublicKey
+	switch k := js.privateKey.(type) {
+	case *rsa.PrivateKey:
+		return &k.PublicKey
+	case *ecdsa.PrivateKey:
+		return &k.PublicKey
+	case ed25519.PrivateKey:
+		return k.Public()
+	default:
+		return nil
+	}
 }
 
 // GenerateJWT generates a standard JWT signed with the server's private key.
@@ -134,20 +144,13 @@ func (js *JWTService) GenerateJWT(sub, aud, iss string, validityPeriod int64, cl
 	if js.privateKey == nil {
 		return "", 0, errors.New("private key not loaded")
 	}
-
 	thunderRuntime := config.GetThunderRuntime()
-
-	// Get the certificate kid (Key ID) for the JWT header.
-	kid := thunderRuntime.CertConfig.CertKid
-	if kid == "" {
-		return "", 0, errors.New("certificate Key ID (kid) not found")
-	}
 
 	// Create the JWT header.
 	header := map[string]string{
-		"alg": "RS256",
+		"alg": string(js.jwsAlg),
 		"typ": "JWT",
-		"kid": kid,
+		"kid": js.kid,
 	}
 
 	headerJSON, err := json.Marshal(header)
@@ -196,7 +199,7 @@ func (js *JWTService) GenerateJWT(sub, aud, iss string, validityPeriod int64, cl
 
 	// Create the signing input and sign it with the private key.
 	signingInput := headerBase64 + "." + payloadBase64
-	signature, err := sign.Generate([]byte(signingInput), sign.RSASHA256, js.privateKey)
+	signature, err := sign.Generate([]byte(signingInput), js.signAlg, js.privateKey)
 	if err != nil {
 		return "", 0, err
 	}
@@ -209,15 +212,21 @@ func (js *JWTService) GenerateJWT(sub, aud, iss string, validityPeriod int64, cl
 
 // VerifyJWT verifies the JWT token using the server's public key.
 func (js *JWTService) VerifyJWT(jwtToken string, expectedAud, expectedIss string) error {
-	publicKey := js.GetPublicKey()
-	if publicKey == nil {
-		return errors.New("public key not available")
+	if js.privateKey == nil {
+		return errors.New("private key not loaded")
 	}
-	return js.VerifyJWTWithPublicKey(jwtToken, publicKey, expectedAud, expectedIss)
+
+	// First verify signature using the configured server key and algorithm
+	if err := js.VerifyJWTSignature(jwtToken); err != nil {
+		return fmt.Errorf("invalid token signature: %w", err)
+	}
+
+	// Then verify claims
+	return js.verifyJWTClaims(jwtToken, expectedAud, expectedIss)
 }
 
 // VerifyJWTWithPublicKey verifies the JWT token using the provided public key.
-func (js *JWTService) VerifyJWTWithPublicKey(jwtToken string, jwtPublicKey *rsa.PublicKey,
+func (js *JWTService) VerifyJWTWithPublicKey(jwtToken string, jwtPublicKey crypto.PublicKey,
 	expectedAud, expectedIss string) error {
 	parts := strings.Split(jwtToken, ".")
 	if len(parts) != 3 {
@@ -247,15 +256,6 @@ func (js *JWTService) VerifyJWTWithJWKS(jwtToken, jwksURL, expectedAud, expected
 
 // VerifyJWTSignature verifies the signature of a JWT token using the server's public key.
 func (js *JWTService) VerifyJWTSignature(jwtToken string) error {
-	publicKey := js.GetPublicKey()
-	if publicKey == nil {
-		return errors.New("public key not available")
-	}
-	return js.VerifyJWTSignatureWithPublicKey(jwtToken, publicKey)
-}
-
-// VerifyJWTSignatureWithPublicKey verifies the signature of a JWT token using the provided public key.
-func (js *JWTService) VerifyJWTSignatureWithPublicKey(jwtToken string, jwtPublicKey *rsa.PublicKey) error {
 	parts := strings.Split(jwtToken, ".")
 	if len(parts) != 3 {
 		return errors.New("invalid JWT token format")
@@ -270,8 +270,72 @@ func (js *JWTService) VerifyJWTSignatureWithPublicKey(jwtToken string, jwtPublic
 	// Create the signing input
 	signingInput := parts[0] + "." + parts[1]
 
+	// Derive public key from configured private key
+	var pubKey crypto.PublicKey
+	switch k := js.privateKey.(type) {
+	case *rsa.PrivateKey:
+		pubKey = &k.PublicKey
+	case *ecdsa.PrivateKey:
+		pubKey = &k.PublicKey
+	case ed25519.PrivateKey:
+		pubKey = k.Public()
+	default:
+		return errors.New("unsupported private key type for verification")
+	}
+
+	// Verify the signature using the configured algorithm
+	return sign.Verify([]byte(signingInput), signature, js.signAlg, pubKey)
+}
+
+// VerifyJWTSignatureWithPublicKey verifies the signature of a JWT token using the provided public key.
+func (js *JWTService) VerifyJWTSignatureWithPublicKey(jwtToken string, jwtPublicKey crypto.PublicKey) error {
+	parts := strings.Split(jwtToken, ".")
+	if len(parts) != 3 {
+		return errors.New("invalid JWT token format")
+	}
+
+	// Decode the signature
+	signature, err := base64.RawURLEncoding.DecodeString(parts[2])
+	if err != nil {
+		return fmt.Errorf("failed to decode JWT signature: %w", err)
+	}
+
+	// Create the signing input
+	signingInput := parts[0] + "." + parts[1]
+
+	// Determine algorithm from JWT header
+	header, err := DecodeJWTHeader(jwtToken)
+	if err != nil {
+		return fmt.Errorf("failed to parse JWT header: %w", err)
+	}
+	algStr, _ := header["alg"].(string)
+	alg, err := mapJWSAlgToSignAlg(JWSAlgorithm(algStr))
+	if err != nil {
+		return err
+	}
+
 	// Verify the signature
-	return sign.Verify([]byte(signingInput), signature, sign.RSASHA256, jwtPublicKey)
+	return sign.Verify([]byte(signingInput), signature, alg, jwtPublicKey)
+}
+
+// mapJWSAlgToSignAlg maps JWS alg header values to internal SignAlgorithm.
+func mapJWSAlgToSignAlg(jwsAlg JWSAlgorithm) (sign.SignAlgorithm, error) {
+	switch jwsAlg {
+	case RS256:
+		return sign.RSASHA256, nil
+	case RS512:
+		return sign.RSASHA512, nil
+	case ES256:
+		return sign.ECDSASHA256, nil
+	case ES384:
+		return sign.ECDSASHA384, nil
+	case ES512:
+		return sign.ECDSASHA512, nil
+	case EdDSA:
+		return sign.ED25519, nil
+	default:
+		return "", fmt.Errorf("unsupported JWS alg: %s", jwsAlg)
+	}
 }
 
 // VerifyJWTSignatureWithJWKS verifies the signature of a JWT token using a JWK Set (JWKS) endpoint.
@@ -329,10 +393,10 @@ func (js *JWTService) VerifyJWTSignatureWithJWKS(jwtToken string, jwksURL string
 		return fmt.Errorf("no matching key found in JWKS")
 	}
 
-	// Convert JWK to RSA public key
-	pubKey, err := jwkToRSAPublicKey(jwk)
+	// Convert JWK to public key
+	pubKey, err := jwkToPublicKey(jwk)
 	if err != nil {
-		return fmt.Errorf("failed to convert JWK to RSA public key: %w", err)
+		return fmt.Errorf("failed to convert JWK to public key: %w", err)
 	}
 
 	// Verify JWT signature

@@ -341,6 +341,14 @@ packages:
       pkgname: hashmock
       filename: "{{.InterfaceName}}_mock.go"
 
+  github.com/asgardeo/thunder/internal/system/crypto/pki:
+    config:
+      all: true
+      dir: tests/mocks/crypto/pki/pkimock
+      structname: '{{.InterfaceName}}Mock'
+      pkgname: pkimock
+      filename: "{{.InterfaceName}}_mock.go"
+
   github.com/asgardeo/thunder/internal/resource:
     config:
       all: true

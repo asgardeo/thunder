@@ -107,6 +107,7 @@ type JWTConfig struct {
 	Issuer         string `yaml:"issuer" json:"issuer"`
 	ValidityPeriod int64  `yaml:"validity_period" json:"validity_period"`
 	Audience       string `yaml:"audience" json:"audience"`
+	PreferredKeyID string `yaml:"preferred_key_id" json:"preferred_key_id"`
 }
 
 // RefreshTokenConfig holds the refresh token configuration details.
@@ -137,6 +138,14 @@ type FlowConfig struct {
 type CryptoConfig struct {
 	Encryption      EncryptionConfig      `yaml:"encryption" json:"encryption"`
 	PasswordHashing PasswordHashingConfig `yaml:"password_hashing" json:"password_hashing"`
+	Keys            []KeyConfig           `yaml:"keys" json:"keys"`
+}
+
+// KeyConfig holds the key configuration details.
+type KeyConfig struct {
+	ID       string `yaml:"id" json:"id"`
+	CertFile string `yaml:"cert_file" json:"cert_file"`
+	KeyFile  string `yaml:"key_file" json:"key_file"`
 }
 
 // EncryptionConfig holds the encryption configuration details.
