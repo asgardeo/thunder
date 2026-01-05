@@ -54,7 +54,7 @@ The project is structured as a monorepo to manage the backend, frontend, and sam
   - content/: Other documentation files.
 
 ## General Guidelines
-
+### General
 - Follow general coding best practices, design patterns, and security recommendations.
 - Ensure all identity-related code aligns with relevant RFC specifications.
 - Follow https://wso2.com/whitepapers/wso2-rest-apis-design-guidelines/ for RESTful API design.
@@ -63,6 +63,30 @@ The project is structured as a monorepo to manage the backend, frontend, and sam
 - Ensure proper error handling and logging.
 - Write unit tests to achieve at least 80% coverage and integration tests where applicable.
 - Refer project README for other general instructions such as build the product, run the server, run tests, etc.
+
+### License Header
+- All Go files must include the following license header format:
+
+```
+/*
+ * Copyright (c) {current-year}, WSO2 LLC. (https://www.wso2.com).
+ *
+ * WSO2 LLC. licenses this file to you under the Apache License,
+ * Version 2.0 (the "License"); you may not use this file except
+ * in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing,
+ * software distributed under the License is distributed on an
+ * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+ * KIND, either express or implied.  See the License for the
+ * specific language governing permissions and limitations
+ * under the License.
+ */
+```
+- If the file is modified or created in a subsequent year, the copyright year should reflect the range (e.g., 2025-2026).
 
 ## Backend Specific Guidelines
 
