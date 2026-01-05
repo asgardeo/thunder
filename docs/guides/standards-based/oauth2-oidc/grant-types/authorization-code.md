@@ -69,7 +69,7 @@ curl -kL -X POST https://localhost:8090/applications \
   -d '{
     "name": "My Web Application",
     "description": "Web application using authorization code grant type",
-    "auth_flow_graph_id": "auth_flow_config_basic",
+    "auth_flow_id": "auth_flow_config_basic",
     "inbound_auth_config": [
       {
         "type": "oauth2",
@@ -143,7 +143,7 @@ curl -kL -X POST https://localhost:8090/applications \
   "description": "Web application using authorization code grant type",
   "client_id": "my_web_app_client",
   "client_secret": "my_web_app_secret",
-  "auth_flow_graph_id": "auth_flow_config_basic",
+  "auth_flow_id": "auth_flow_config_basic",
   "inbound_auth_config": [
     {
       "type": "oauth2",

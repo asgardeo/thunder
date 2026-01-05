@@ -223,7 +223,7 @@ func (ts *AttributeCollectFlowTestSuite) SetupSuite() {
 	attrFlowID, err := testutils.CreateFlow(attrCollectFlow)
 	ts.Require().NoError(err, "Failed to create attribute collect flow")
 	ts.config.CreatedFlowIDs = append(ts.config.CreatedFlowIDs, attrFlowID)
-	attrCollectTestApp.AuthFlowGraphID = attrFlowID
+	attrCollectTestApp.AuthFlowID = attrFlowID
 
 	// Create test application for attribute collect tests
 	appID, err := testutils.CreateApplication(attrCollectTestApp)

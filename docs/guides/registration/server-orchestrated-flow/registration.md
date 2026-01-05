@@ -22,8 +22,8 @@ To enable self-registration, set the `is_registration_flow_enabled` property to 
     -d '{
         "name": "App Native Login 1",
         "description": "Sample application for App native login",
-        "auth_flow_graph_id": "auth_flow_config_basic",
-        "registration_flow_graph_id": "registration_flow_config_basic",
+        "auth_flow_id": "edc013d0-e893-4dc0-990c-3e1d203e005b",
+        "registration_flow_id": "80024fb3-29ed-4c33-aa48-8aee5e96d522",
         "is_registration_flow_enabled": true
     }'
     ```
@@ -181,8 +181,8 @@ To enable self-registration, set the `is_registration_flow_enabled` property to 
     -d '{
         "name": "App Native Login 1",
         "description": "Sample application for App native login",
-        "auth_flow_graph_id": "auth_flow_config_sms",
-        "registration_flow_graph_id": "registration_flow_config_sms",
+        "auth_flow_id": "edc013d0-e893-4dc0-990c-3e1d203e005b",
+        "registration_flow_id": "80024fb3-29ed-4c33-aa48-8aee5e96d522",
         "is_registration_flow_enabled": true
     }'
     ```
@@ -360,8 +360,8 @@ To enable self-registration, set the `is_registration_flow_enabled` property to 
     -d '{
         "name": "App Native Login 1",
         "description": "Sample application for App native login",
-        "auth_flow_graph_id": "auth_flow_config_google",
-        "registration_flow_graph_id": "registration_flow_config_google",
+        "auth_flow_id": "edc013d0-e893-4dc0-990c-3e1d203e005b",
+        "registration_flow_id": "80024fb3-29ed-4c33-aa48-8aee5e96d522",
         "is_registration_flow_enabled": true
     }'
     ```
@@ -498,8 +498,8 @@ To enable self-registration, set the `is_registration_flow_enabled` property to 
     -d '{
         "name": "App Native Login 1",
         "description": "Sample application for App native login",
-        "auth_flow_graph_id": "auth_flow_config_github",
-        "registration_flow_graph_id": "registration_flow_config_github",
+        "auth_flow_id": "edc013d0-e893-4dc0-990c-3e1d203e005b",
+        "registration_flow_id": "80024fb3-29ed-4c33-aa48-8aee5e96d522",
         "is_registration_flow_enabled": true
     }'
     ```

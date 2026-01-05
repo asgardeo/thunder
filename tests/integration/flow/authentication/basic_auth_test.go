@@ -232,7 +232,7 @@ func (ts *BasicAuthFlowTestSuite) SetupSuite() {
 	flowID, err := testutils.CreateFlow(basicAuthTestFlow)
 	ts.Require().NoError(err, "Failed to create basic auth test flow")
 	ts.config.CreatedFlowIDs = append(ts.config.CreatedFlowIDs, flowID)
-	testApp.AuthFlowGraphID = flowID
+	testApp.AuthFlowID = flowID
 
 	withoutPromptFlow, err := testutils.CreateFlow(basicAuthWithoutPromptFlow)
 	ts.Require().NoError(err, "Failed to create basic auth without prompt flow")
@@ -268,10 +268,10 @@ func (ts *BasicAuthFlowTestSuite) TearDownSuite() {
 		}
 	}
 
-	// Delete test flow graphs
+	// Delete test flows
 	for _, flowID := range ts.config.CreatedFlowIDs {
 		if err := testutils.DeleteFlow(flowID); err != nil {
-			ts.T().Logf("Failed to delete test flow graph %s during teardown: %v", flowID, err)
+			ts.T().Logf("Failed to delete test flow %s during teardown: %v", flowID, err)
 		}
 	}
 

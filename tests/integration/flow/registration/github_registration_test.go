@@ -252,7 +252,7 @@ func (ts *GithubRegistrationFlowTestSuite) SetupSuite() {
 	flowID, err := testutils.CreateFlow(githubRegistrationFlow)
 	ts.Require().NoError(err, "Failed to create GitHub registration flow")
 	ts.config.CreatedFlowIDs = append(ts.config.CreatedFlowIDs, flowID)
-	githubRegTestApp.RegistrationFlowGraphID = flowID
+	githubRegTestApp.RegistrationFlowID = flowID
 
 	// Create test application
 	appID, err := testutils.CreateApplication(githubRegTestApp)

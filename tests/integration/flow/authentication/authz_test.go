@@ -215,7 +215,7 @@ func (ts *FlowAuthzTestSuite) SetupSuite() {
 	flowID, err := testutils.CreateFlow(authzTestFlow)
 	ts.Require().NoError(err, "Failed to create authorization test flow")
 	ts.config.CreatedFlowIDs = append(ts.config.CreatedFlowIDs, flowID)
-	authzTestApp.AuthFlowGraphID = flowID
+	authzTestApp.AuthFlowID = flowID
 
 	// Create test application
 	authzTestAppID, err = testutils.CreateApplication(authzTestApp)

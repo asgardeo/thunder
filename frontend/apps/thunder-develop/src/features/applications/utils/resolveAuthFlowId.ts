@@ -24,7 +24,7 @@ import {
 import {AUTH_FLOW_GRAPHS} from '../models/auth-flow-graphs';
 
 /**
- * Options for resolving authentication flow graph configuration.
+ * Options for resolving authentication flow configuration.
  */
 interface ResolveAuthFlowOptions {
   /**
@@ -39,7 +39,7 @@ interface ResolveAuthFlowOptions {
 }
 
 /**
- * Resolves the appropriate authentication flow graph ID based on selected sign-in options.
+ * Resolves the appropriate authentication flow ID based on selected sign-in options.
  *
  * The resolver follows these rules:
  * 1. If only username/password is selected -> auth_flow_config_basic
@@ -53,26 +53,26 @@ interface ResolveAuthFlowOptions {
  * @param options - Configuration object with sign-in options
  * @param options.hasUsernamePassword - Whether username/password authentication is enabled
  * @param options.identityProviders - Array of selected identity providers
- * @returns The authentication flow graph ID that matches the selected options
+ * @returns The authentication flow ID that matches the selected options
  *
  * @example
  * ```tsx
  * // Username & Password only
- * const flowId = resolveAuthFlowGraphId({
+ * const flowId = resolveAuthFlowId({
  *   hasUsernamePassword: true,
  *   identityProviders: []
  * });
  * // Returns: 'auth_flow_config_basic'
  *
  * // Username & Password + Google
- * const flowId = resolveAuthFlowGraphId({
+ * const flowId = resolveAuthFlowId({
  *   hasUsernamePassword: true,
  *   identityProviders: [{ id: '123', name: 'Google', type: 'GOOGLE' }]
  * });
  * // Returns: 'auth_flow_config_basic_google'
  *
  * // Username & Password + Google + GitHub
- * const flowId = resolveAuthFlowGraphId({
+ * const flowId = resolveAuthFlowId({
  *   hasUsernamePassword: true,
  *   identityProviders: [
  *     { id: '123', name: 'Google', type: 'GOOGLE' },
@@ -82,7 +82,7 @@ interface ResolveAuthFlowOptions {
  * // Returns: 'auth_flow_config_basic_google_github'
  * ```
  */
-export default function resolveAuthFlowGraphId({
+export default function resolveAuthFlowId({
   hasUsernamePassword,
   identityProviders,
 }: ResolveAuthFlowOptions): string {

@@ -55,8 +55,8 @@ func (suite *ServiceTestSuite) TestBuildBasicApplicationResponse() {
 		ID:                        "app-123",
 		Name:                      "Test App",
 		Description:               "Test Description",
-		AuthFlowGraphID:           "auth_flow_1",
-		RegistrationFlowGraphID:   "reg_flow_1",
+		AuthFlowID:                "auth_flow_1",
+		RegistrationFlowID:        "reg_flow_1",
 		IsRegistrationFlowEnabled: true,
 		ClientID:                  "client-123",
 	}
@@ -66,8 +66,8 @@ func (suite *ServiceTestSuite) TestBuildBasicApplicationResponse() {
 	assert.Equal(suite.T(), "app-123", result.ID)
 	assert.Equal(suite.T(), "Test App", result.Name)
 	assert.Equal(suite.T(), "Test Description", result.Description)
-	assert.Equal(suite.T(), "auth_flow_1", result.AuthFlowGraphID)
-	assert.Equal(suite.T(), "reg_flow_1", result.RegistrationFlowGraphID)
+	assert.Equal(suite.T(), "auth_flow_1", result.AuthFlowID)
+	assert.Equal(suite.T(), "reg_flow_1", result.RegistrationFlowID)
 	assert.True(suite.T(), result.IsRegistrationFlowEnabled)
 	assert.Equal(suite.T(), "client-123", result.ClientID)
 }
@@ -77,8 +77,8 @@ func (suite *ServiceTestSuite) TestBuildBasicApplicationResponse_WithTemplate() 
 		ID:                        "app-123",
 		Name:                      "Test App",
 		Description:               "Test Description",
-		AuthFlowGraphID:           "auth_flow_1",
-		RegistrationFlowGraphID:   "reg_flow_1",
+		AuthFlowID:                "auth_flow_1",
+		RegistrationFlowID:        "reg_flow_1",
 		IsRegistrationFlowEnabled: true,
 		BrandingID:                "brand-123",
 		Template:                  "spa",
@@ -101,8 +101,8 @@ func (suite *ServiceTestSuite) TestBuildBasicApplicationResponse_WithEmptyTempla
 		ID:                        "app-123",
 		Name:                      "Test App",
 		Description:               "Test Description",
-		AuthFlowGraphID:           "auth_flow_1",
-		RegistrationFlowGraphID:   "reg_flow_1",
+		AuthFlowID:                "auth_flow_1",
+		RegistrationFlowID:        "reg_flow_1",
 		IsRegistrationFlowEnabled: true,
 		Template:                  "",
 		ClientID:                  "client-123",
@@ -650,7 +650,7 @@ func (suite *ServiceTestSuite) TestValidateAuthFlowID_WithValidFlowID() {
 	service, _, _, mockFlowMgtService := suite.setupTestService()
 
 	app := &model.ApplicationDTO{
-		AuthFlowGraphID: "auth-flow-123",
+		AuthFlowID: "auth-flow-123",
 	}
 
 	mockFlowMgtService.EXPECT().IsValidFlow("auth-flow-123").Return(true)
@@ -658,14 +658,14 @@ func (suite *ServiceTestSuite) TestValidateAuthFlowID_WithValidFlowID() {
 	svcErr := service.validateAuthFlowID(app)
 
 	assert.Nil(suite.T(), svcErr)
-	assert.Equal(suite.T(), "auth-flow-123", app.AuthFlowGraphID)
+	assert.Equal(suite.T(), "auth-flow-123", app.AuthFlowID)
 }
 
 func (suite *ServiceTestSuite) TestValidateAuthFlowID_WithInvalidFlowID() {
 	service, _, _, mockFlowMgtService := suite.setupTestService()
 
 	app := &model.ApplicationDTO{
-		AuthFlowGraphID: "invalid-flow",
+		AuthFlowID: "invalid-flow",
 	}
 
 	mockFlowMgtService.EXPECT().IsValidFlow("invalid-flow").Return(false)
@@ -690,7 +690,7 @@ func (suite *ServiceTestSuite) TestValidateAuthFlowID_WithEmptyFlowID_SetsDefaul
 	service, _, _, mockFlowMgtService := suite.setupTestService()
 
 	app := &model.ApplicationDTO{
-		AuthFlowGraphID: "",
+		AuthFlowID: "",
 	}
 
 	defaultFlow := &flowmgt.CompleteFlowDefinition{
@@ -703,7 +703,7 @@ func (suite *ServiceTestSuite) TestValidateAuthFlowID_WithEmptyFlowID_SetsDefaul
 	svcErr := service.validateAuthFlowID(app)
 
 	assert.Nil(suite.T(), svcErr)
-	assert.Equal(suite.T(), "default-flow-id-123", app.AuthFlowGraphID)
+	assert.Equal(suite.T(), "default-flow-id-123", app.AuthFlowID)
 }
 
 func (suite *ServiceTestSuite) TestValidateAuthFlowID_WithEmptyFlowID_ErrorRetrievingDefault() {
@@ -720,7 +720,7 @@ func (suite *ServiceTestSuite) TestValidateAuthFlowID_WithEmptyFlowID_ErrorRetri
 	service, _, _, mockFlowMgtService := suite.setupTestService()
 
 	app := &model.ApplicationDTO{
-		AuthFlowGraphID: "",
+		AuthFlowID: "",
 	}
 
 	mockFlowMgtService.EXPECT().GetFlowByHandle("default_auth_flow", flowcommon.FlowTypeAuthentication).
@@ -736,7 +736,7 @@ func (suite *ServiceTestSuite) TestValidateRegistrationFlowID_WithValidFlowID() 
 	service, _, _, mockFlowMgtService := suite.setupTestService()
 
 	app := &model.ApplicationDTO{
-		RegistrationFlowGraphID: "reg-flow-123",
+		RegistrationFlowID: "reg-flow-123",
 	}
 
 	mockFlowMgtService.EXPECT().IsValidFlow("reg-flow-123").Return(true)
@@ -744,14 +744,14 @@ func (suite *ServiceTestSuite) TestValidateRegistrationFlowID_WithValidFlowID() 
 	svcErr := service.validateRegistrationFlowID(app)
 
 	assert.Nil(suite.T(), svcErr)
-	assert.Equal(suite.T(), "reg-flow-123", app.RegistrationFlowGraphID)
+	assert.Equal(suite.T(), "reg-flow-123", app.RegistrationFlowID)
 }
 
 func (suite *ServiceTestSuite) TestValidateRegistrationFlowID_WithInvalidFlowID() {
 	service, _, _, mockFlowMgtService := suite.setupTestService()
 
 	app := &model.ApplicationDTO{
-		RegistrationFlowGraphID: "invalid-reg-flow",
+		RegistrationFlowID: "invalid-reg-flow",
 	}
 
 	mockFlowMgtService.EXPECT().IsValidFlow("invalid-reg-flow").Return(false)
@@ -766,8 +766,8 @@ func (suite *ServiceTestSuite) TestValidateRegistrationFlowID_WithEmptyFlowID_In
 	service, _, _, mockFlowMgtService := suite.setupTestService()
 
 	app := &model.ApplicationDTO{
-		AuthFlowGraphID:         "auth-flow-123",
-		RegistrationFlowGraphID: "",
+		AuthFlowID:         "auth-flow-123",
+		RegistrationFlowID: "",
 	}
 
 	authFlow := &flowmgt.CompleteFlowDefinition{
@@ -786,15 +786,15 @@ func (suite *ServiceTestSuite) TestValidateRegistrationFlowID_WithEmptyFlowID_In
 	svcErr := service.validateRegistrationFlowID(app)
 
 	assert.Nil(suite.T(), svcErr)
-	assert.Equal(suite.T(), "reg-flow-456", app.RegistrationFlowGraphID)
+	assert.Equal(suite.T(), "reg-flow-456", app.RegistrationFlowID)
 }
 
 func (suite *ServiceTestSuite) TestValidateRegistrationFlowID_ErrorRetrievingAuthFlow() {
 	service, _, _, mockFlowMgtService := suite.setupTestService()
 
 	app := &model.ApplicationDTO{
-		AuthFlowGraphID:         "auth-flow-123",
-		RegistrationFlowGraphID: "",
+		AuthFlowID:         "auth-flow-123",
+		RegistrationFlowID: "",
 	}
 
 	mockFlowMgtService.EXPECT().GetFlow("auth-flow-123").
@@ -810,8 +810,8 @@ func (suite *ServiceTestSuite) TestValidateRegistrationFlowID_ErrorRetrievingReg
 	service, _, _, mockFlowMgtService := suite.setupTestService()
 
 	app := &model.ApplicationDTO{
-		AuthFlowGraphID:         "auth-flow-123",
-		RegistrationFlowGraphID: "",
+		AuthFlowID:         "auth-flow-123",
+		RegistrationFlowID: "",
 	}
 
 	authFlow := &flowmgt.CompleteFlowDefinition{
@@ -833,8 +833,8 @@ func (suite *ServiceTestSuite) TestValidateRegistrationFlowID_ClientErrorRetriev
 	service, _, _, mockFlowMgtService := suite.setupTestService()
 
 	app := &model.ApplicationDTO{
-		AuthFlowGraphID:         "auth-flow-123",
-		RegistrationFlowGraphID: "",
+		AuthFlowID:         "auth-flow-123",
+		RegistrationFlowID: "",
 	}
 
 	mockFlowMgtService.EXPECT().GetFlow("auth-flow-123").
@@ -850,8 +850,8 @@ func (suite *ServiceTestSuite) TestValidateRegistrationFlowID_ServerErrorRetriev
 	service, _, _, mockFlowMgtService := suite.setupTestService()
 
 	app := &model.ApplicationDTO{
-		AuthFlowGraphID:         "auth-flow-123",
-		RegistrationFlowGraphID: "",
+		AuthFlowID:         "auth-flow-123",
+		RegistrationFlowID: "",
 	}
 
 	authFlow := &flowmgt.CompleteFlowDefinition{
@@ -2424,9 +2424,9 @@ func (suite *ServiceTestSuite) TestValidateApplication_InvalidURL() {
 	service, mockStore, _, mockFlowMgtService := suite.setupTestService()
 
 	app := &model.ApplicationDTO{
-		Name:            "Test App",
-		URL:             "not-a-valid-uri",
-		AuthFlowGraphID: "edc013d0-e893-4dc0-990c-3e1d203e005b",
+		Name:       "Test App",
+		URL:        "not-a-valid-uri",
+		AuthFlowID: "edc013d0-e893-4dc0-990c-3e1d203e005b",
 	}
 
 	mockStore.On("GetApplicationByName", "Test App").Return(nil, model.ApplicationNotFoundError)
@@ -2467,9 +2467,9 @@ func (suite *ServiceTestSuite) TestValidateApplication_InvalidLogoURL() {
 	service, mockStore, _, mockFlowMgtService := suite.setupTestService()
 
 	app := &model.ApplicationDTO{
-		Name:            "Test App",
-		LogoURL:         "not-a-valid-uri",
-		AuthFlowGraphID: "edc013d0-e893-4dc0-990c-3e1d203e005b",
+		Name:       "Test App",
+		LogoURL:    "not-a-valid-uri",
+		AuthFlowID: "edc013d0-e893-4dc0-990c-3e1d203e005b",
 	}
 
 	mockStore.On("GetApplicationByName", "Test App").Return(nil, model.ApplicationNotFoundError)
@@ -2512,9 +2512,9 @@ func (suite *ServiceTestSuite) TestCreateApplication_StoreErrorWithRollback() {
 	service, mockStore, mockCertService, mockFlowMgtService := suite.setupTestService()
 
 	app := &model.ApplicationDTO{
-		Name:                    "Test App",
-		AuthFlowGraphID:         "edc013d0-e893-4dc0-990c-3e1d203e005b",
-		RegistrationFlowGraphID: "80024fb3-29ed-4c33-aa48-8aee5e96d522",
+		Name:               "Test App",
+		AuthFlowID:         "edc013d0-e893-4dc0-990c-3e1d203e005b",
+		RegistrationFlowID: "80024fb3-29ed-4c33-aa48-8aee5e96d522",
 		Certificate: &model.ApplicationCertificate{
 			Type:  "JWKS",
 			Value: `{"keys":[]}`,
@@ -2554,9 +2554,9 @@ func (suite *ServiceTestSuite) TestCreateApplication_StoreErrorWithRollbackFailu
 	service, mockStore, mockCertService, mockFlowMgtService := suite.setupTestService()
 
 	app := &model.ApplicationDTO{
-		Name:                    "Test App",
-		AuthFlowGraphID:         "edc013d0-e893-4dc0-990c-3e1d203e005b",
-		RegistrationFlowGraphID: "80024fb3-29ed-4c33-aa48-8aee5e96d522",
+		Name:               "Test App",
+		AuthFlowID:         "edc013d0-e893-4dc0-990c-3e1d203e005b",
+		RegistrationFlowID: "80024fb3-29ed-4c33-aa48-8aee5e96d522",
 		Certificate: &model.ApplicationCertificate{
 			Type:  "JWKS",
 			Value: `{"keys":[]}`,
@@ -2722,10 +2722,10 @@ func (suite *ServiceTestSuite) TestUpdateApplication_StoreErrorWithRollback() {
 	}
 
 	app := &model.ApplicationDTO{
-		ID:                      "app123",
-		Name:                    "Test App",
-		AuthFlowGraphID:         "edc013d0-e893-4dc0-990c-3e1d203e005b",
-		RegistrationFlowGraphID: "80024fb3-29ed-4c33-aa48-8aee5e96d522",
+		ID:                 "app123",
+		Name:               "Test App",
+		AuthFlowID:         "edc013d0-e893-4dc0-990c-3e1d203e005b",
+		RegistrationFlowID: "80024fb3-29ed-4c33-aa48-8aee5e96d522",
 		Certificate: &model.ApplicationCertificate{
 			Type:  "JWKS",
 			Value: `{"keys":[]}`,
@@ -3432,7 +3432,7 @@ func (suite *ServiceTestSuite) TestValidateAllowedUserTypes_EmptyStringWithValid
 	assert.Equal(suite.T(), &ErrorInvalidUserType, svcErr)
 }
 
-func (suite *ServiceTestSuite) TestValidateRegistrationFlowGraphID_NoPrefix() {
+func (suite *ServiceTestSuite) TestValidateRegistrationFlowID_NoPrefix() {
 	testConfig := &config.Config{
 		Flow: config.FlowConfig{
 			DefaultAuthFlowHandle: "default_auth_flow",
@@ -3446,15 +3446,15 @@ func (suite *ServiceTestSuite) TestValidateRegistrationFlowGraphID_NoPrefix() {
 	service, mockStore, _, mockFlowMgtService := suite.setupTestService()
 
 	app := &model.ApplicationDTO{
-		Name:                    "Test App",
-		AuthFlowGraphID:         "invalid_flow_graph_id", // Doesn't have prefix
-		RegistrationFlowGraphID: "",                      // Empty, should infer from auth flow
+		Name:               "Test App",
+		AuthFlowID:         "invalid_flow_id", // Doesn't have prefix
+		RegistrationFlowID: "",                // Empty, should infer from auth flow
 	}
 
 	mockStore.On("GetApplicationByName", "Test App").Return(nil, model.ApplicationNotFoundError)
-	mockFlowMgtService.EXPECT().IsValidFlow("invalid_flow_graph_id").Return(true)
-	mockFlowMgtService.EXPECT().GetFlow("invalid_flow_graph_id").Return(&flowmgt.CompleteFlowDefinition{
-		ID:     "invalid_flow_graph_id",
+	mockFlowMgtService.EXPECT().IsValidFlow("invalid_flow_id").Return(true)
+	mockFlowMgtService.EXPECT().GetFlow("invalid_flow_id").Return(&flowmgt.CompleteFlowDefinition{
+		ID:     "invalid_flow_id",
 		Handle: "test_flow",
 	}, nil).Maybe()
 	mockFlowMgtService.EXPECT().GetFlowByHandle(mock.Anything, flowcommon.FlowTypeRegistration).Return(

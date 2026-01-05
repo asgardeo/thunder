@@ -247,7 +247,7 @@ func (ts *UserInfoTestSuite) createTestApplication(authFlowID string) string {
 	app := map[string]interface{}{
 		"name":                         appName,
 		"description":                  "Application for UserInfo integration tests",
-		"auth_flow_graph_id":           authFlowID,
+		"auth_flow_id":                 authFlowID,
 		"is_registration_flow_enabled": false,
 		"allowed_user_types":           []string{"userinfo-person"},
 		"inbound_auth_config": []map[string]interface{}{

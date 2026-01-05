@@ -228,20 +228,20 @@ export default function ViewApplicationPage() {
           </Typography>
           <Divider sx={{mb: 2}} />
           <Stack spacing={2}>
-            {application.auth_flow_graph_id && (
+            {application.auth_flow_id && (
               <Box>
                 <Typography variant="caption" color="text.secondary">
-                  {t('applications:view.fields.authFlowGraphId')}
+                  {t('applications:view.fields.authFlowId')}
                 </Typography>
-                <Typography variant="body1">{application.auth_flow_graph_id}</Typography>
+                <Typography variant="body1">{application.auth_flow_id}</Typography>
               </Box>
             )}
-            {application.registration_flow_graph_id && (
+            {application.registration_flow_id && (
               <Box>
                 <Typography variant="caption" color="text.secondary">
-                  {t('applications:view.fields.registrationFlowGraphId')}
+                  {t('applications:view.fields.registrationFlowId')}
                 </Typography>
-                <Typography variant="body1">{application.registration_flow_graph_id}</Typography>
+                <Typography variant="body1">{application.registration_flow_id}</Typography>
               </Box>
             )}
             <Box>

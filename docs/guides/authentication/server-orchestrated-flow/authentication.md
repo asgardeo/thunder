@@ -60,7 +60,7 @@ Follow the steps below to configure and execute a login flow using username and 
     -d '{
         "name": "App Native Login 1",
         "description": "Sample application for App native login",
-        "auth_flow_graph_id": "auth_flow_config_basic"
+        "auth_flow_id": "auth_flow_config_basic"
     }'
     ```
 
@@ -167,7 +167,7 @@ Follow the steps below to configure and execute a login flow using username and 
     -d '{
         "name": "App Native Login 1",
         "description": "Sample application for App native login",
-        "auth_flow_graph_id": "auth_flow_config_sms"
+        "auth_flow_id": "auth_flow_config_sms"
     }'
     ```
 
@@ -312,7 +312,7 @@ Follow the steps below to configure and execute a login flow using Google OAuth 
     -d '{
         "name": "App Native Login 1",
         "description": "Sample application for App native login",
-        "auth_flow_graph_id": "auth_flow_config_google"
+        "auth_flow_id": "auth_flow_config_google"
     }'
     ```
 
@@ -443,7 +443,7 @@ Follow the steps below to configure and execute a login flow using GitHub OAuth 
     -d '{
         "name": "App Native Login 1",
         "description": "Sample application for App native login",
-        "auth_flow_graph_id": "auth_flow_config_github"
+        "auth_flow_id": "auth_flow_config_github"
     }'
     ```
 

@@ -404,7 +404,7 @@ func (ts *OAuthAuthzScopeTestSuite) createOAuthApplication(authFlowID string) (s
 	app := map[string]interface{}{
 		"name":                         scopeTestAppName,
 		"description":                  "OAuth application for scope authorization testing",
-		"auth_flow_graph_id":           authFlowID,
+		"auth_flow_id":                 authFlowID,
 		"is_registration_flow_enabled": false,
 		"allowed_user_types":           []string{"authz-test-person"},
 		"inbound_auth_config": []map[string]interface{}{

@@ -227,7 +227,6 @@ The following table lists the configurable parameters of the Thunder chart and t
 | `configuration.flow.defaultAuthFlowHandle` | Default authentication flow handle                          | `default-basic-flow`         |
 | `configuration.flow.maxVersionHistory` | Maximum flow version history to retain                          | `3`                          |
 | `configuration.flow.autoInferRegistration` | Enable auto-infer registration flow                         | `true`                       |
-| `configuration.flow.graphDirectory`    | Flow graph directory                                            | `repository/resources/graphs/` |
 | `configuration.cors.allowedOrigins`    | CORS allowed origins                                            | See values.yaml              |
 
 ### Persistence Parameters

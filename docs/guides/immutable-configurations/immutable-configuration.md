@@ -219,8 +219,8 @@ name: My Application
 description: Production web application
 url: https://myapp.example.com
 logo_url: https://myapp.example.com/logo.png
-auth_flow_graph_id: auth_flow_config_basic
-registration_flow_graph_id: registration_flow_config_basic
+auth_flow_id: edc013d0-e893-4dc0-990c-3e1d203e005b
+registration_flow_id: 80024fb3-29ed-4c33-aa48-8aee5e96d522
 is_registration_flow_enabled: true
 inbound_auth_config:
   - type: oauth2

@@ -284,7 +284,7 @@ func (ts *ConditionalExecAuthFlowTestSuite) SetupSuite() {
 	flowID, err := testutils.CreateFlow(conditionalExecFlow)
 	ts.Require().NoError(err, "Failed to create conditional exec flow")
 	ts.config.CreatedFlowIDs = append(ts.config.CreatedFlowIDs, flowID)
-	conditionalExecTestApp.AuthFlowGraphID = flowID
+	conditionalExecTestApp.AuthFlowID = flowID
 
 	// Create test application
 	appID, err := testutils.CreateApplication(conditionalExecTestApp)

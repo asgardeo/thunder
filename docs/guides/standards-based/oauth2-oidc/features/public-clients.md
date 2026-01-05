@@ -45,7 +45,7 @@ curl -kL -X POST https://localhost:8090/applications \
   -d '{
     "name": "My Public Client App",
     "description": "Mobile/SPA application using public client",
-    "auth_flow_graph_id": "auth_flow_config_basic",
+    "auth_flow_id": "auth_flow_config_basic",
     "inbound_auth_config": [
       {
         "type": "oauth2",
@@ -93,7 +93,7 @@ curl -kL -X POST https://localhost:8090/applications \
   "name": "My Public Client App",
   "description": "Mobile/SPA application using public client",
   "client_id": "auto-generated-client-id",
-  "auth_flow_graph_id": "auth_flow_config_basic",
+  "auth_flow_id": "auth_flow_config_basic",
   "inbound_auth_config": [
     {
       "type": "oauth2",

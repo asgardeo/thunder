@@ -202,7 +202,7 @@ func (ts *AuthzTestSuite) SetupSuite() {
 	app := map[string]interface{}{
 		"name":                         appName,
 		"description":                  "Application for authorization integration tests",
-		"auth_flow_graph_id":           ts.authFlowID,
+		"auth_flow_id":                 ts.authFlowID,
 		"is_registration_flow_enabled": false,
 		"allowed_user_types":           []string{"authz-test-person"},
 		"inbound_auth_config": []map[string]interface{}{

@@ -153,10 +153,10 @@ export default function ApplicationCreatePage(): JSX.Element {
     const oauthConfigSelected = !skipOAuthConfig && oauthConfig !== null;
     setHasOAuthConfig(oauthConfigSelected);
 
-    const authFlowGraphId: string | undefined = selectedAuthFlow?.id;
+    const authFlowId: string | undefined = selectedAuthFlow?.id;
 
     // Validate that we have a valid flow selected
-    if (!authFlowGraphId) {
+    if (!authFlowId) {
       setError(t('onboarding.configure.SignInOptions.noFlowFound'));
 
       return;
@@ -182,7 +182,7 @@ export default function ApplicationCreatePage(): JSX.Element {
       const applicationData: CreateApplicationRequest = {
         name: appName,
         logo_url: appLogo ?? undefined,
-        auth_flow_graph_id: authFlowGraphId,
+        auth_flow_id: authFlowId,
         user_attributes: ['given_name', 'family_name', 'email', 'groups'],
         branding_id: brandingId,
         is_registration_flow_enabled: true,

@@ -263,18 +263,18 @@ func GetAppConfig(appID string) (map[string]interface{}, error) {
 	return appConfig, nil
 }
 
-// UpdateAppConfig updates the application configuration with the specified flow graph IDs
-func UpdateAppConfig(appID, authFlowGraphID, registrationFlowGraphID string) error {
+// UpdateAppConfig updates the application configuration with the specified flow IDs
+func UpdateAppConfig(appID, authFlowID, registrationFlowID string) error {
 	appConfig, err := GetAppConfig(appID)
 	if err != nil {
 		return fmt.Errorf("failed to get current app config: %w", err)
 	}
 
-	if authFlowGraphID != "" {
-		appConfig["auth_flow_graph_id"] = authFlowGraphID
+	if authFlowID != "" {
+		appConfig["auth_flow_id"] = authFlowID
 	}
-	if registrationFlowGraphID != "" {
-		appConfig["registration_flow_graph_id"] = registrationFlowGraphID
+	if registrationFlowID != "" {
+		appConfig["registration_flow_id"] = registrationFlowID
 	}
 	appConfig["client_secret"] = "secret123"
 

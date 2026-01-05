@@ -19,10 +19,10 @@
 import {describe, expect, it} from 'vitest';
 import {IdentityProviderTypes, type IdentityProvider} from '@/features/integrations/models/identity-provider';
 import {AuthenticatorTypes} from '../../../integrations/models/authenticators';
-import resolveAuthFlowGraphId from '../resolveAuthFlowGraphId';
+import resolveAuthFlowId from '../resolveAuthFlowId';
 import {AUTH_FLOW_GRAPHS} from '../../models/auth-flow-graphs';
 
-describe('resolveAuthFlowGraphId', () => {
+describe('resolveAuthFlowId', () => {
   describe('Constants', () => {
     it('should export AuthenticatorTypes.BASIC_AUTH', () => {
       expect(AuthenticatorTypes.BASIC_AUTH).toBe('basic_auth');
@@ -31,7 +31,7 @@ describe('resolveAuthFlowGraphId', () => {
 
   describe('Single Authentication Method', () => {
     it('should return BASIC flow when only username/password is enabled', () => {
-      const result = resolveAuthFlowGraphId({
+      const result = resolveAuthFlowId({
         hasUsernamePassword: true,
         identityProviders: [],
       });
@@ -47,7 +47,7 @@ describe('resolveAuthFlowGraphId', () => {
         type: IdentityProviderTypes.GOOGLE,
       };
 
-      const result = resolveAuthFlowGraphId({
+      const result = resolveAuthFlowId({
         hasUsernamePassword: false,
         identityProviders: [googleProvider],
       });
@@ -63,7 +63,7 @@ describe('resolveAuthFlowGraphId', () => {
         type: IdentityProviderTypes.GITHUB,
       };
 
-      const result = resolveAuthFlowGraphId({
+      const result = resolveAuthFlowId({
         hasUsernamePassword: false,
         identityProviders: [githubProvider],
       });
@@ -81,7 +81,7 @@ describe('resolveAuthFlowGraphId', () => {
         type: IdentityProviderTypes.GOOGLE,
       };
 
-      const result = resolveAuthFlowGraphId({
+      const result = resolveAuthFlowId({
         hasUsernamePassword: true,
         identityProviders: [googleProvider],
       });
@@ -103,7 +103,7 @@ describe('resolveAuthFlowGraphId', () => {
         type: IdentityProviderTypes.GITHUB,
       };
 
-      const result = resolveAuthFlowGraphId({
+      const result = resolveAuthFlowId({
         hasUsernamePassword: true,
         identityProviders: [googleProvider, githubProvider],
       });
@@ -119,7 +119,7 @@ describe('resolveAuthFlowGraphId', () => {
         type: IdentityProviderTypes.GITHUB,
       };
 
-      const result = resolveAuthFlowGraphId({
+      const result = resolveAuthFlowId({
         hasUsernamePassword: true,
         identityProviders: [githubProvider],
       });
@@ -142,7 +142,7 @@ describe('resolveAuthFlowGraphId', () => {
         type: IdentityProviderTypes.GITHUB,
       };
 
-      const result = resolveAuthFlowGraphId({
+      const result = resolveAuthFlowId({
         hasUsernamePassword: false,
         identityProviders: [googleProvider, githubProvider],
       });
@@ -167,7 +167,7 @@ describe('resolveAuthFlowGraphId', () => {
         type: IdentityProviderTypes.GOOGLE,
       };
 
-      const result = resolveAuthFlowGraphId({
+      const result = resolveAuthFlowId({
         hasUsernamePassword: false,
         identityProviders: [googleProvider1, googleProvider2],
       });
@@ -189,12 +189,12 @@ describe('resolveAuthFlowGraphId', () => {
         type: IdentityProviderTypes.GITHUB,
       };
 
-      const result1 = resolveAuthFlowGraphId({
+      const result1 = resolveAuthFlowId({
         hasUsernamePassword: true,
         identityProviders: [googleProvider, githubProvider],
       });
 
-      const result2 = resolveAuthFlowGraphId({
+      const result2 = resolveAuthFlowId({
         hasUsernamePassword: true,
         identityProviders: [githubProvider, googleProvider],
       });
@@ -207,7 +207,7 @@ describe('resolveAuthFlowGraphId', () => {
 
   describe('Edge Cases', () => {
     it('should return BASIC flow when no authentication method is selected (fallback)', () => {
-      const result = resolveAuthFlowGraphId({
+      const result = resolveAuthFlowId({
         hasUsernamePassword: false,
         identityProviders: [],
       });
@@ -218,7 +218,7 @@ describe('resolveAuthFlowGraphId', () => {
     });
 
     it('should handle empty identity providers array', () => {
-      const result = resolveAuthFlowGraphId({
+      const result = resolveAuthFlowId({
         hasUsernamePassword: true,
         identityProviders: [],
       });
@@ -233,7 +233,7 @@ describe('resolveAuthFlowGraphId', () => {
         type: IdentityProviderTypes.GOOGLE,
       };
 
-      const result = resolveAuthFlowGraphId({
+      const result = resolveAuthFlowId({
         hasUsernamePassword: false,
         identityProviders: [customProvider],
       });
@@ -257,7 +257,7 @@ describe('resolveAuthFlowGraphId', () => {
         type: IdentityProviderTypes.GITHUB,
       };
 
-      const result = resolveAuthFlowGraphId({
+      const result = resolveAuthFlowId({
         hasUsernamePassword: false,
         identityProviders: [googleProvider, githubProvider],
       });
@@ -273,7 +273,7 @@ describe('resolveAuthFlowGraphId', () => {
         type: IdentityProviderTypes.GOOGLE,
       };
 
-      const result = resolveAuthFlowGraphId({
+      const result = resolveAuthFlowId({
         hasUsernamePassword: false,
         identityProviders: [provider],
       });
@@ -320,7 +320,7 @@ describe('resolveAuthFlowGraphId', () => {
       ];
 
       scenarios.forEach(({config, expected}) => {
-        const result = resolveAuthFlowGraphId(config);
+        const result = resolveAuthFlowId(config);
         expect(result).toBe(expected);
       });
     });
@@ -350,7 +350,7 @@ describe('resolveAuthFlowGraphId', () => {
       ];
 
       scenarios.forEach(({config, expected}) => {
-        const result = resolveAuthFlowGraphId(config);
+        const result = resolveAuthFlowId(config);
         expect(result).toBe(expected);
       });
     });
@@ -368,7 +368,7 @@ describe('resolveAuthFlowGraphId', () => {
       ];
 
       configs.forEach((config) => {
-        const result = resolveAuthFlowGraphId(config);
+        const result = resolveAuthFlowId(config);
         expect(typeof result).toBe('string');
         expect(result.length).toBeGreaterThan(0);
       });
@@ -395,7 +395,7 @@ describe('resolveAuthFlowGraphId', () => {
       const validFlowIds = Object.values(AUTH_FLOW_GRAPHS);
 
       configs.forEach((config) => {
-        const result = resolveAuthFlowGraphId(config);
+        const result = resolveAuthFlowId(config);
         expect(validFlowIds).toContain(result);
       });
     });
@@ -407,7 +407,7 @@ describe('resolveAuthFlowGraphId', () => {
       ];
 
       configs.forEach((config) => {
-        const result = resolveAuthFlowGraphId(config);
+        const result = resolveAuthFlowId(config);
         expect(result).not.toBeUndefined();
         expect(result).not.toBeNull();
       });

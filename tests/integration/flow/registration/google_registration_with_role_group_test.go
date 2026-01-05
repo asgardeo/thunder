@@ -271,7 +271,7 @@ func (ts *GoogleRegistrationGroupRoleTestSuite) SetupSuite() {
 	flowID, err := testutils.CreateFlow(googleRegGroupRoleFlow)
 	ts.Require().NoError(err, "Failed to create registration flow")
 	ts.config.CreatedFlowIDs = append(ts.config.CreatedFlowIDs, flowID)
-	googleRegGroupRoleTestApp.RegistrationFlowGraphID = flowID
+	googleRegGroupRoleTestApp.RegistrationFlowID = flowID
 
 	// Create test application
 	appID, err := testutils.CreateApplication(googleRegGroupRoleTestApp)

@@ -213,13 +213,13 @@ Save this file in the graphs directory (e.g., `<THUNDER_HOME>/backend/cmd/server
 
 ## Setting an Authentication Flow for an Application
 
-To set an authentication flow for an application, create a new application or update an existing one using the Thunder API. The `auth_flow_graph_id` field should reference your custom flow.
+To set an authentication flow for an application, create a new application or update an existing one using the Thunder API. The `auth_flow_id` field should reference your custom flow.
 
 ```bash
 curl -kL -X PUT -H 'Content-Type: application/json' -H 'Accept: application/json' https://localhost:8090/applications/<app_id> \
 --data '{
     "name": "My Application",
     "description": "Application with custom auth flow",
-    "auth_flow_graph_id": "custom_auth_flow"
+    "auth_flow_id": "custom_auth_flow"
 }'
 ```

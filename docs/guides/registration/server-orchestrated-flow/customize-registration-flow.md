@@ -299,7 +299,7 @@ Here's an example of a registration flow using Google OAuth:
 
 ## Setting up a Registration Flow for an Application
 
-When you configure an authentication flow for an application, Thunder automatically assigns the equivalent registration flow. For example, if you set `auth_flow_graph_id` to `auth_flow_config_basic`, the system will automatically use `registration_flow_config_basic` for registration.
+When you configure an authentication flow for an application, Thunder automatically assigns the equivalent registration flow. For example, if you set `auth_flow_id` to `auth_flow_config_basic`, the system will automatically use `registration_flow_config_basic` for registration.
 
 To use a custom registration flow, specify both the authentication and registration flow graph IDs when creating or updating an application:
 
@@ -309,8 +309,8 @@ curl -kL -X PUT -H 'Content-Type: application/json' -H 'Accept: application/json
 --data '{
     "name": "My Application",
     "description": "Application with custom registration flow",
-    "auth_flow_graph_id": "custom_auth_flow",
-    "registration_flow_graph_id": "custom_registration_flow",
+    "auth_flow_id": "edc013d0-e893-4dc0-990c-3e1d203e005b",
+    "registration_flow_id": "80024fb3-29ed-4c33-aa48-8aee5e96d522",
     "is_registration_flow_enabled": true
 }'
 ```

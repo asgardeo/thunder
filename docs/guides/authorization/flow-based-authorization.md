@@ -89,7 +89,7 @@ curl -kL -X POST -H 'Content-Type: application/json' https://localhost:8090/appl
 -d '{
     "name": "Document Manager App",
     "description": "Application for managing documents",
-    "auth_flow_graph_id": "auth_flow_config_basic"
+    "auth_flow_id": "auth_flow_config_basic"
 }'
 ```
 

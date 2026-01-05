@@ -57,7 +57,7 @@ curl -kL -X POST https://localhost:8090/applications \
   -d '{
     "name": "Backend Service",
     "description": "Backend service using client credentials grant type",
-    "auth_flow_graph_id": "auth_flow_config_basic",
+    "auth_flow_id": "auth_flow_config_basic",
     "inbound_auth_config": [
       {
         "type": "oauth2",
@@ -98,7 +98,7 @@ curl -kL -X POST https://localhost:8090/applications \
   "description": "Backend service using client credentials grant type",
   "client_id": "backend_service_client",
   "client_secret": "backend_service_secret",
-  "auth_flow_graph_id": "auth_flow_config_basic",
+  "auth_flow_id": "auth_flow_config_basic",
   "inbound_auth_config": [
     {
       "type": "oauth2",

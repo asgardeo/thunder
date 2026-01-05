@@ -51,8 +51,8 @@ describe('useUpdateApplication', () => {
     tos_uri: 'https://updated-test-app.com/terms',
     policy_uri: 'https://updated-test-app.com/privacy',
     contacts: ['admin@updated-test-app.com'],
-    auth_flow_graph_id: 'auth_flow_config_advanced',
-    registration_flow_graph_id: 'registration_flow_config_advanced',
+    auth_flow_id: 'edc013d0-e893-4dc0-990c-3e1d203e005b',
+    registration_flow_id: '80024fb3-29ed-4c33-aa48-8aee5e96d522',
     is_registration_flow_enabled: true,
     inbound_auth_config: [
       {
@@ -99,8 +99,8 @@ describe('useUpdateApplication', () => {
     tos_uri: 'https://updated-test-app.com/terms',
     policy_uri: 'https://updated-test-app.com/privacy',
     contacts: ['admin@updated-test-app.com'],
-    auth_flow_graph_id: 'auth_flow_config_advanced',
-    registration_flow_graph_id: 'registration_flow_config_advanced',
+    auth_flow_id: 'edc013d0-e893-4dc0-990c-3e1d203e005b',
+    registration_flow_id: '80024fb3-29ed-4c33-aa48-8aee5e96d522',
     is_registration_flow_enabled: true,
     inbound_auth_config: {
       grant_types: ['authorization_code', 'refresh_token'],
@@ -480,8 +480,8 @@ describe('useUpdateApplication', () => {
     const minimalApp: Application = {
       id: '550e8400-e29b-41d4-a716-446655440000',
       name: 'Minimal App',
-      auth_flow_graph_id: 'auth_flow_config_basic',
-      registration_flow_graph_id: 'registration_flow_config_basic',
+      auth_flow_id: 'edc013d0-e893-4dc0-990c-3e1d203e005b',
+      registration_flow_id: '80024fb3-29ed-4c33-aa48-8aee5e96d522',
       is_registration_flow_enabled: false,
       created_at: '2025-11-13T10:00:00Z',
       updated_at: '2025-11-14T15:30:00Z',

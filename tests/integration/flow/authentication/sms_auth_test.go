@@ -358,7 +358,7 @@ func (ts *SMSAuthFlowTestSuite) SetupSuite() {
 	ts.Require().NoError(err, "Failed to create SMS auth flow with mobile")
 	ts.config.CreatedFlowIDs = append(ts.config.CreatedFlowIDs, flowMobileID)
 	smsAuthFlowMobileID = flowMobileID
-	smsAuthTestApp.AuthFlowGraphID = flowMobileID
+	smsAuthTestApp.AuthFlowID = flowMobileID
 
 	flowUsernameID, err := testutils.CreateFlow(smsAuthFlowWithUsername)
 	ts.Require().NoError(err, "Failed to create SMS auth flow with username")
@@ -366,7 +366,7 @@ func (ts *SMSAuthFlowTestSuite) SetupSuite() {
 	smsAuthFlowUsernameID = flowUsernameID
 
 	// Create test application
-	smsAuthTestApp.AuthFlowGraphID = flowMobileID
+	smsAuthTestApp.AuthFlowID = flowMobileID
 	appID, err := testutils.CreateApplication(smsAuthTestApp)
 	if err != nil {
 		ts.T().Fatalf("Failed to create test application during setup: %v", err)

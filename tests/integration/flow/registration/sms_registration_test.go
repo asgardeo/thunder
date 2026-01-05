@@ -281,7 +281,7 @@ func (ts *SMSRegistrationFlowTestSuite) SetupSuite() {
 	flowID, err := testutils.CreateFlow(smsRegistrationFlow)
 	ts.Require().NoError(err, "Failed to create SMS registration flow")
 	ts.config.CreatedFlowIDs = append(ts.config.CreatedFlowIDs, flowID)
-	smsRegTestApp.RegistrationFlowGraphID = flowID
+	smsRegTestApp.RegistrationFlowID = flowID
 
 	// Create test application with allowed user types
 	appID, err := testutils.CreateApplication(smsRegTestApp)

@@ -125,8 +125,8 @@ func (as *applicationService) CreateApplication(app *model.ApplicationDTO) (*mod
 		ID:                        appID,
 		Name:                      app.Name,
 		Description:               app.Description,
-		AuthFlowGraphID:           app.AuthFlowGraphID,
-		RegistrationFlowGraphID:   app.RegistrationFlowGraphID,
+		AuthFlowID:                app.AuthFlowID,
+		RegistrationFlowID:        app.RegistrationFlowID,
 		IsRegistrationFlowEnabled: app.IsRegistrationFlowEnabled,
 		BrandingID:                app.BrandingID,
 		Template:                  app.Template,
@@ -222,8 +222,8 @@ func (as *applicationService) ValidateApplication(app *model.ApplicationDTO) (
 		ID:                        appID,
 		Name:                      app.Name,
 		Description:               app.Description,
-		AuthFlowGraphID:           app.AuthFlowGraphID,
-		RegistrationFlowGraphID:   app.RegistrationFlowGraphID,
+		AuthFlowID:                app.AuthFlowID,
+		RegistrationFlowID:        app.RegistrationFlowID,
 		IsRegistrationFlowEnabled: app.IsRegistrationFlowEnabled,
 		BrandingID:                app.BrandingID,
 		Template:                  app.Template,
@@ -302,8 +302,8 @@ func buildBasicApplicationResponse(app model.BasicApplicationDTO) model.BasicApp
 		Description:               app.Description,
 		ClientID:                  app.ClientID,
 		LogoURL:                   app.LogoURL,
-		AuthFlowGraphID:           app.AuthFlowGraphID,
-		RegistrationFlowGraphID:   app.RegistrationFlowGraphID,
+		AuthFlowID:                app.AuthFlowID,
+		RegistrationFlowID:        app.RegistrationFlowID,
 		IsRegistrationFlowEnabled: app.IsRegistrationFlowEnabled,
 		BrandingID:                app.BrandingID,
 		Template:                  app.Template,
@@ -351,8 +351,8 @@ func (as *applicationService) GetApplication(appID string) (*model.Application,
 		ID:                        applicationDTO.ID,
 		Name:                      applicationDTO.Name,
 		Description:               applicationDTO.Description,
-		AuthFlowGraphID:           applicationDTO.AuthFlowGraphID,
-		RegistrationFlowGraphID:   applicationDTO.RegistrationFlowGraphID,
+		AuthFlowID:                applicationDTO.AuthFlowID,
+		RegistrationFlowID:        applicationDTO.RegistrationFlowID,
 		IsRegistrationFlowEnabled: applicationDTO.IsRegistrationFlowEnabled,
 		BrandingID:                applicationDTO.BrandingID,
 		Template:                  applicationDTO.Template,
@@ -497,8 +497,8 @@ func (as *applicationService) UpdateApplication(appID string, app *model.Applica
 		ID:                        appID,
 		Name:                      app.Name,
 		Description:               app.Description,
-		AuthFlowGraphID:           app.AuthFlowGraphID,
-		RegistrationFlowGraphID:   app.RegistrationFlowGraphID,
+		AuthFlowID:                app.AuthFlowID,
+		RegistrationFlowID:        app.RegistrationFlowID,
 		IsRegistrationFlowEnabled: app.IsRegistrationFlowEnabled,
 		BrandingID:                app.BrandingID,
 		Template:                  app.Template,
@@ -553,8 +553,8 @@ func (as *applicationService) UpdateApplication(appID string, app *model.Applica
 		ID:                        appID,
 		Name:                      app.Name,
 		Description:               app.Description,
-		AuthFlowGraphID:           app.AuthFlowGraphID,
-		RegistrationFlowGraphID:   app.RegistrationFlowGraphID,
+		AuthFlowID:                app.AuthFlowID,
+		RegistrationFlowID:        app.RegistrationFlowID,
 		IsRegistrationFlowEnabled: app.IsRegistrationFlowEnabled,
 		BrandingID:                app.BrandingID,
 		Template:                  app.Template,
@@ -630,8 +630,8 @@ func (as *applicationService) DeleteApplication(appID string) *serviceerror.Serv
 // validateAuthFlowID validates the auth flow ID for the application.
 // If the flow ID is not provided, it sets the default authentication flow ID.
 func (as *applicationService) validateAuthFlowID(app *model.ApplicationDTO) *serviceerror.ServiceError {
-	if app.AuthFlowGraphID != "" {
-		isValidFlow := as.flowMgtService.IsValidFlow(app.AuthFlowGraphID)
+	if app.AuthFlowID != "" {
+		isValidFlow := as.flowMgtService.IsValidFlow(app.AuthFlowID)
 		if !isValidFlow {
 			return &ErrorInvalidAuthFlowID
 		}
@@ -640,7 +640,7 @@ func (as *applicationService) validateAuthFlowID(app *model.ApplicationDTO) *ser
 		if svcErr != nil {
 			return svcErr
 		}
-		app.AuthFlowGraphID = defaultFlowID
+		app.AuthFlowID = defaultFlowID
 	}
 
 	return nil
@@ -651,18 +651,18 @@ func (as *applicationService) validateAuthFlowID(app *model.ApplicationDTO) *ser
 func (as *applicationService) validateRegistrationFlowID(app *model.ApplicationDTO) *serviceerror.ServiceError {
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, "ApplicationService"))
 
-	if app.RegistrationFlowGraphID != "" {
-		isValidFlow := as.flowMgtService.IsValidFlow(app.RegistrationFlowGraphID)
+	if app.RegistrationFlowID != "" {
+		isValidFlow := as.flowMgtService.IsValidFlow(app.RegistrationFlowID)
 		if !isValidFlow {
 			return &ErrorInvalidRegistrationFlowID
 		}
 	} else {
 		// Try to get the equivalent registration flow for the auth flow
-		authFlow, svcErr := as.flowMgtService.GetFlow(app.AuthFlowGraphID)
+		authFlow, svcErr := as.flowMgtService.GetFlow(app.AuthFlowID)
 		if svcErr != nil {
 			if svcErr.Type == serviceerror.ServerErrorType {
 				logger.Error("Error while retrieving auth flow definition",
-					log.String("flowID", app.AuthFlowGraphID), log.Any("error", svcErr))
+					log.String("flowID", app.AuthFlowID), log.Any("error", svcErr))
 				return &serviceerror.InternalServerError
 			}
 			return &ErrorWhileRetrievingFlowDefinition
@@ -679,7 +679,7 @@ func (as *applicationService) validateRegistrationFlowID(app *model.ApplicationD
 			return &ErrorWhileRetrievingFlowDefinition
 		}
 
-		app.RegistrationFlowGraphID = registrationFlow.ID
+		app.RegistrationFlowID = registrationFlow.ID
 	}
 
 	return nil

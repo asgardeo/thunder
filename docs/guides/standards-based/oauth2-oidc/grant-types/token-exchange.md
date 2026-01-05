@@ -52,7 +52,7 @@ curl -kL -X POST https://localhost:8090/applications \
   -d '{
     "name": "Token Exchange Client",
     "description": "Client for token exchange",
-    "auth_flow_graph_id": "auth_flow_config_basic",
+    "auth_flow_id": "auth_flow_config_basic",
     "inbound_auth_config": [
       {
         "type": "oauth2",
@@ -78,7 +78,7 @@ curl -kL -X POST https://localhost:8090/applications \
   "description": "Client for token exchange",
   "client_id": "token_exchange_client",
   "client_secret": "token_exchange_secret",
-  "auth_flow_graph_id": "auth_flow_config_basic",
+  "auth_flow_id": "auth_flow_config_basic",
   "inbound_auth_config": [
     {
       "type": "oauth2",

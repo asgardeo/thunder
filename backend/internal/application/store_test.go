@@ -59,8 +59,8 @@ func (suite *ApplicationStoreTestSuite) createTestApplication() model.Applicatio
 		ID:                        "app1",
 		Name:                      "Test App 1",
 		Description:               "Test application description",
-		AuthFlowGraphID:           "auth_flow_1",
-		RegistrationFlowGraphID:   "reg_flow_1",
+		AuthFlowID:                "auth_flow_1",
+		RegistrationFlowID:        "reg_flow_1",
 		IsRegistrationFlowEnabled: true,
 		URL:                       "https://example.com",
 		LogoURL:                   "https://example.com/logo.png",
@@ -370,8 +370,8 @@ func (suite *ApplicationStoreTestSuite) TestBuildBasicApplicationFromResultRow_S
 		"app_id":                       "app1",
 		"app_name":                     "Test App 1",
 		"description":                  "Test description",
-		"auth_flow_graph_id":           "auth_flow_1",
-		"registration_flow_graph_id":   "reg_flow_1",
+		"auth_flow_id":                 "auth_flow_1",
+		"registration_flow_id":         "reg_flow_1",
 		"is_registration_flow_enabled": "1",
 		"consumer_key":                 "client_app1",
 	}
@@ -382,8 +382,8 @@ func (suite *ApplicationStoreTestSuite) TestBuildBasicApplicationFromResultRow_S
 	suite.Equal("app1", result.ID)
 	suite.Equal("Test App 1", result.Name)
 	suite.Equal("Test description", result.Description)
-	suite.Equal("auth_flow_1", result.AuthFlowGraphID)
-	suite.Equal("reg_flow_1", result.RegistrationFlowGraphID)
+	suite.Equal("auth_flow_1", result.AuthFlowID)
+	suite.Equal("reg_flow_1", result.RegistrationFlowID)
 	suite.True(result.IsRegistrationFlowEnabled)
 	suite.Equal("client_app1", result.ClientID)
 }
@@ -393,8 +393,8 @@ func (suite *ApplicationStoreTestSuite) TestBuildBasicApplicationFromResultRow_W
 		"app_id":                       "app1",
 		"app_name":                     "Test App 1",
 		"description":                  nil,
-		"auth_flow_graph_id":           "auth_flow_1",
-		"registration_flow_graph_id":   "reg_flow_1",
+		"auth_flow_id":                 "auth_flow_1",
+		"registration_flow_id":         "reg_flow_1",
 		"is_registration_flow_enabled": "1",
 		"consumer_key":                 nil,
 	}
@@ -411,8 +411,8 @@ func (suite *ApplicationStoreTestSuite) TestBuildBasicApplicationFromResultRow_W
 		"app_id":                       "app1",
 		"app_name":                     "Test App 1",
 		"description":                  "Test description",
-		"auth_flow_graph_id":           "auth_flow_1",
-		"registration_flow_graph_id":   "reg_flow_1",
+		"auth_flow_id":                 "auth_flow_1",
+		"registration_flow_id":         "reg_flow_1",
 		"is_registration_flow_enabled": []byte("1"),
 		"consumer_key":                 "client_app1",
 	}
@@ -428,8 +428,8 @@ func (suite *ApplicationStoreTestSuite) TestBuildBasicApplicationFromResultRow_W
 		"app_id":                       "app1",
 		"app_name":                     "Test App 1",
 		"description":                  "Test description",
-		"auth_flow_graph_id":           "auth_flow_1",
-		"registration_flow_graph_id":   "reg_flow_1",
+		"auth_flow_id":                 "auth_flow_1",
+		"registration_flow_id":         "reg_flow_1",
 		"is_registration_flow_enabled": "0",
 		"consumer_key":                 "client_app1",
 	}
@@ -450,8 +450,8 @@ func (suite *ApplicationStoreTestSuite) TestBuildBasicApplicationFromResultRow_W
 		"app_id":                       "app1",
 		"app_name":                     "Test App 1",
 		"description":                  "Test description",
-		"auth_flow_graph_id":           "auth_flow_1",
-		"registration_flow_graph_id":   "reg_flow_1",
+		"auth_flow_id":                 "auth_flow_1",
+		"registration_flow_id":         "reg_flow_1",
 		"is_registration_flow_enabled": "1",
 		"branding_id":                  "brand-123",
 		"app_json":                     string(appJSONBytes),
@@ -474,8 +474,8 @@ func (suite *ApplicationStoreTestSuite) TestBuildBasicApplicationFromResultRow_W
 		"app_id":                       "app1",
 		"app_name":                     "Test App 1",
 		"description":                  "Test description",
-		"auth_flow_graph_id":           "auth_flow_1",
-		"registration_flow_graph_id":   "reg_flow_1",
+		"auth_flow_id":                 "auth_flow_1",
+		"registration_flow_id":         "reg_flow_1",
 		"is_registration_flow_enabled": "1",
 		"app_json":                     string(appJSONBytes),
 		"consumer_key":                 "client_app1",
@@ -498,8 +498,8 @@ func (suite *ApplicationStoreTestSuite) TestBuildBasicApplicationFromResultRow_W
 		"app_id":                       "app1",
 		"app_name":                     "Test App 1",
 		"description":                  "Test description",
-		"auth_flow_graph_id":           "auth_flow_1",
-		"registration_flow_graph_id":   "reg_flow_1",
+		"auth_flow_id":                 "auth_flow_1",
+		"registration_flow_id":         "reg_flow_1",
 		"is_registration_flow_enabled": "1",
 		"app_json":                     string(appJSONBytes),
 		"consumer_key":                 "client_app1",
@@ -556,8 +556,8 @@ func (suite *ApplicationStoreTestSuite) TestBuildBasicApplicationFromResultRow_I
 		"app_id":                       "app1",
 		"app_name":                     "Test App 1",
 		"description":                  "Test description",
-		"auth_flow_graph_id":           "auth_flow_1",
-		"registration_flow_graph_id":   "reg_flow_1",
+		"auth_flow_id":                 "auth_flow_1",
+		"registration_flow_id":         "reg_flow_1",
 		"is_registration_flow_enabled": 123, // Invalid type
 	}
 
@@ -573,8 +573,8 @@ func (suite *ApplicationStoreTestSuite) TestBuildBasicApplicationFromResultRow_I
 		"app_id":                       "app1",
 		"app_name":                     "Test App 1",
 		"description":                  "Test description",
-		"auth_flow_graph_id":           "auth_flow_1",
-		"registration_flow_graph_id":   "reg_flow_1",
+		"auth_flow_id":                 "auth_flow_1",
+		"registration_flow_id":         "reg_flow_1",
 		"is_registration_flow_enabled": "1",
 		"consumer_key":                 123, // Invalid type
 	}
@@ -616,8 +616,8 @@ func (suite *ApplicationStoreTestSuite) TestBuildApplicationFromResultRow_Succes
 		"app_id":                       "app1",
 		"app_name":                     "Test App 1",
 		"description":                  "Test description",
-		"auth_flow_graph_id":           "auth_flow_1",
-		"registration_flow_graph_id":   "reg_flow_1",
+		"auth_flow_id":                 "auth_flow_1",
+		"registration_flow_id":         "reg_flow_1",
 		"is_registration_flow_enabled": "1",
 		"app_json":                     string(appJSONBytes),
 		"consumer_key":                 "client_app1",
@@ -654,8 +654,8 @@ func (suite *ApplicationStoreTestSuite) TestBuildApplicationFromResultRow_WithTe
 		"app_id":                       "app1",
 		"app_name":                     "Test App 1",
 		"description":                  "Test description",
-		"auth_flow_graph_id":           "auth_flow_1",
-		"registration_flow_graph_id":   "reg_flow_1",
+		"auth_flow_id":                 "auth_flow_1",
+		"registration_flow_id":         "reg_flow_1",
 		"is_registration_flow_enabled": "1",
 		"branding_id":                  "brand-123",
 		"app_json":                     string(appJSONBytes),
@@ -681,8 +681,8 @@ func (suite *ApplicationStoreTestSuite) TestBuildApplicationFromResultRow_Withou
 		"app_id":                       "app1",
 		"app_name":                     "Test App 1",
 		"description":                  "Test description",
-		"auth_flow_graph_id":           "auth_flow_1",
-		"registration_flow_graph_id":   "reg_flow_1",
+		"auth_flow_id":                 "auth_flow_1",
+		"registration_flow_id":         "reg_flow_1",
 		"is_registration_flow_enabled": "1",
 		"app_json":                     string(appJSONBytes),
 	}
@@ -700,8 +700,8 @@ func (suite *ApplicationStoreTestSuite) TestBuildApplicationFromResultRow_WithNu
 		"app_id":                       "app1",
 		"app_name":                     "Test App 1",
 		"description":                  "Test description",
-		"auth_flow_graph_id":           "auth_flow_1",
-		"registration_flow_graph_id":   "reg_flow_1",
+		"auth_flow_id":                 "auth_flow_1",
+		"registration_flow_id":         "reg_flow_1",
 		"is_registration_flow_enabled": "1",
 		"app_json":                     nil,
 	}
@@ -726,8 +726,8 @@ func (suite *ApplicationStoreTestSuite) TestBuildApplicationFromResultRow_WithBy
 		"app_id":                       "app1",
 		"app_name":                     "Test App 1",
 		"description":                  "Test description",
-		"auth_flow_graph_id":           "auth_flow_1",
-		"registration_flow_graph_id":   "reg_flow_1",
+		"auth_flow_id":                 "auth_flow_1",
+		"registration_flow_id":         "reg_flow_1",
 		"is_registration_flow_enabled": "1",
 		"app_json":                     appJSONBytes, // As bytes
 	}
@@ -744,8 +744,8 @@ func (suite *ApplicationStoreTestSuite) TestBuildApplicationFromResultRow_WithIn
 		"app_id":                       "app1",
 		"app_name":                     "Test App 1",
 		"description":                  "Test description",
-		"auth_flow_graph_id":           "auth_flow_1",
-		"registration_flow_graph_id":   "reg_flow_1",
+		"auth_flow_id":                 "auth_flow_1",
+		"registration_flow_id":         "reg_flow_1",
 		"is_registration_flow_enabled": "1",
 		"app_json":                     123, // Invalid type
 	}
@@ -762,8 +762,8 @@ func (suite *ApplicationStoreTestSuite) TestBuildApplicationFromResultRow_WithIn
 		"app_id":                       "app1",
 		"app_name":                     "Test App 1",
 		"description":                  "Test description",
-		"auth_flow_graph_id":           "auth_flow_1",
-		"registration_flow_graph_id":   "reg_flow_1",
+		"auth_flow_id":                 "auth_flow_1",
+		"registration_flow_id":         "reg_flow_1",
 		"is_registration_flow_enabled": "1",
 		"app_json":                     "invalid json",
 	}
@@ -785,8 +785,8 @@ func (suite *ApplicationStoreTestSuite) TestBuildApplicationFromResultRow_WithIn
 		"app_id":                       "app1",
 		"app_name":                     "Test App 1",
 		"description":                  "Test description",
-		"auth_flow_graph_id":           "auth_flow_1",
-		"registration_flow_graph_id":   "reg_flow_1",
+		"auth_flow_id":                 "auth_flow_1",
+		"registration_flow_id":         "reg_flow_1",
 		"is_registration_flow_enabled": "1",
 		"app_json":                     string(appJSONBytes),
 	}
@@ -809,8 +809,8 @@ func (suite *ApplicationStoreTestSuite) TestBuildApplicationFromResultRow_WithIn
 		"app_id":                       "app1",
 		"app_name":                     "Test App 1",
 		"description":                  "Test description",
-		"auth_flow_graph_id":           "auth_flow_1",
-		"registration_flow_graph_id":   "reg_flow_1",
+		"auth_flow_id":                 "auth_flow_1",
+		"registration_flow_id":         "reg_flow_1",
 		"is_registration_flow_enabled": "1",
 		"app_json":                     string(appJSONBytes),
 	}
@@ -834,8 +834,8 @@ func (suite *ApplicationStoreTestSuite) TestBuildApplicationFromResultRow_WithIn
 		"app_id":                       "app1",
 		"app_name":                     "Test App 1",
 		"description":                  "Test description",
-		"auth_flow_graph_id":           "auth_flow_1",
-		"registration_flow_graph_id":   "reg_flow_1",
+		"auth_flow_id":                 "auth_flow_1",
+		"registration_flow_id":         "reg_flow_1",
 		"is_registration_flow_enabled": "1",
 		"app_json":                     string(appJSONBytes),
 	}
@@ -1066,8 +1066,8 @@ func (suite *ApplicationStoreTestSuite) TestBuildApplicationFromResultRow_WithIn
 		"app_id":                       "app1",
 		"app_name":                     "Test App 1",
 		"description":                  "Test description",
-		"auth_flow_graph_id":           "auth_flow_1",
-		"registration_flow_graph_id":   "reg_flow_1",
+		"auth_flow_id":                 "auth_flow_1",
+		"registration_flow_id":         "reg_flow_1",
 		"is_registration_flow_enabled": "1",
 		"app_json":                     string(appJSONBytes),
 	}
@@ -1091,8 +1091,8 @@ func (suite *ApplicationStoreTestSuite) TestBuildApplicationFromResultRow_WithIn
 		"app_id":                       "app1",
 		"app_name":                     "Test App 1",
 		"description":                  "Test description",
-		"auth_flow_graph_id":           "auth_flow_1",
-		"registration_flow_graph_id":   "reg_flow_1",
+		"auth_flow_id":                 "auth_flow_1",
+		"registration_flow_id":         "reg_flow_1",
 		"is_registration_flow_enabled": "1",
 		"app_json":                     string(appJSONBytes),
 	}
@@ -1116,8 +1116,8 @@ func (suite *ApplicationStoreTestSuite) TestBuildApplicationFromResultRow_WithTo
 		"app_id":                       "app1",
 		"app_name":                     "Test App 1",
 		"description":                  "Test description",
-		"auth_flow_graph_id":           "auth_flow_1",
-		"registration_flow_graph_id":   "reg_flow_1",
+		"auth_flow_id":                 "auth_flow_1",
+		"registration_flow_id":         "reg_flow_1",
 		"is_registration_flow_enabled": "1",
 		"app_json":                     string(appJSONBytes),
 	}
@@ -1146,8 +1146,8 @@ func (suite *ApplicationStoreTestSuite) TestBuildApplicationFromResultRow_WithTo
 		"app_id":                       "app1",
 		"app_name":                     "Test App 1",
 		"description":                  "Test description",
-		"auth_flow_graph_id":           "auth_flow_1",
-		"registration_flow_graph_id":   "reg_flow_1",
+		"auth_flow_id":                 "auth_flow_1",
+		"registration_flow_id":         "reg_flow_1",
 		"is_registration_flow_enabled": "1",
 		"app_json":                     string(appJSONBytes),
 	}
@@ -1177,8 +1177,8 @@ func (suite *ApplicationStoreTestSuite) TestBuildApplicationFromResultRow_WithTo
 		"app_id":                       "app1",
 		"app_name":                     "Test App 1",
 		"description":                  "Test description",
-		"auth_flow_graph_id":           "auth_flow_1",
-		"registration_flow_graph_id":   "reg_flow_1",
+		"auth_flow_id":                 "auth_flow_1",
+		"registration_flow_id":         "reg_flow_1",
 		"is_registration_flow_enabled": "1",
 		"app_json":                     string(appJSONBytes),
 	}
@@ -1208,8 +1208,8 @@ func (suite *ApplicationStoreTestSuite) TestBuildApplicationFromResultRow_WithTo
 		"app_id":                       "app1",
 		"app_name":                     "Test App 1",
 		"description":                  "Test description",
-		"auth_flow_graph_id":           "auth_flow_1",
-		"registration_flow_graph_id":   "reg_flow_1",
+		"auth_flow_id":                 "auth_flow_1",
+		"registration_flow_id":         "reg_flow_1",
 		"is_registration_flow_enabled": "1",
 		"app_json":                     string(appJSONBytes),
 	}
@@ -1236,8 +1236,8 @@ func (suite *ApplicationStoreTestSuite) TestBuildApplicationFromResultRow_WithCo
 		"app_id":                       "app1",
 		"app_name":                     "Test App 1",
 		"description":                  "Test description",
-		"auth_flow_graph_id":           "auth_flow_1",
-		"registration_flow_graph_id":   "reg_flow_1",
+		"auth_flow_id":                 "auth_flow_1",
+		"registration_flow_id":         "reg_flow_1",
 		"is_registration_flow_enabled": "1",
 		"app_json":                     string(appJSONBytes),
 	}
@@ -1741,8 +1741,8 @@ func (suite *ApplicationStoreTestSuite) TestGetApplicationByQuery_UnexpectedNumb
 		"app_id":                       "app1",
 		"app_name":                     "Test App 1",
 		"description":                  "Test description",
-		"auth_flow_graph_id":           "auth_flow_1",
-		"registration_flow_graph_id":   "reg_flow_1",
+		"auth_flow_id":                 "auth_flow_1",
+		"registration_flow_id":         "reg_flow_1",
 		"is_registration_flow_enabled": "1",
 		"app_json":                     "{}",
 		"consumer_key":                 "client1",
@@ -1754,8 +1754,8 @@ func (suite *ApplicationStoreTestSuite) TestGetApplicationByQuery_UnexpectedNumb
 		"app_id":                       "app2",
 		"app_name":                     "Test App 2",
 		"description":                  "Test description 2",
-		"auth_flow_graph_id":           "auth_flow_1",
-		"registration_flow_graph_id":   "reg_flow_1",
+		"auth_flow_id":                 "auth_flow_1",
+		"registration_flow_id":         "reg_flow_1",
 		"is_registration_flow_enabled": "1",
 		"app_json":                     "{}",
 		"consumer_key":                 "client2",
@@ -1797,8 +1797,8 @@ func (suite *ApplicationStoreTestSuite) TestGetApplicationByQuery_BuildApplicati
 		"app_id":                       123, // Invalid type - should be string
 		"app_name":                     "Test App",
 		"description":                  "Test description",
-		"auth_flow_graph_id":           "auth_flow_1",
-		"registration_flow_graph_id":   "reg_flow_1",
+		"auth_flow_id":                 "auth_flow_1",
+		"registration_flow_id":         "reg_flow_1",
 		"is_registration_flow_enabled": "1",
 		"app_json":                     "{}",
 		"consumer_key":                 "client1",
@@ -1835,8 +1835,8 @@ func (suite *ApplicationStoreTestSuite) TestGetApplicationByQuery_BuildApplicati
 		"app_id":                       "app1",
 		"app_name":                     "Test App",
 		"description":                  "Test description",
-		"auth_flow_graph_id":           "auth_flow_1",
-		"registration_flow_graph_id":   "reg_flow_1",
+		"auth_flow_id":                 "auth_flow_1",
+		"registration_flow_id":         "reg_flow_1",
 		"is_registration_flow_enabled": "1",
 		"app_json":                     12345, // Invalid type - should be string or []byte
 		"consumer_key":                 "client1",
@@ -1873,8 +1873,8 @@ func (suite *ApplicationStoreTestSuite) TestGetApplicationByQuery_BuildApplicati
 		"app_id":                       "app1",
 		"app_name":                     "Test App",
 		"description":                  "Test description",
-		"auth_flow_graph_id":           "auth_flow_1",
-		"registration_flow_graph_id":   "reg_flow_1",
+		"auth_flow_id":                 "auth_flow_1",
+		"registration_flow_id":         "reg_flow_1",
 		"is_registration_flow_enabled": "1",
 		"app_json":                     "{invalid json", // Malformed JSON
 		"consumer_key":                 "client1",

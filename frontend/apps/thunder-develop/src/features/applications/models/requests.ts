@@ -47,8 +47,8 @@ import type {Application} from './application';
  *   tos_uri: 'https://myapp.com/terms',
  *   policy_uri: 'https://myapp.com/privacy',
  *   contacts: ['admin@myapp.com', 'support@myapp.com'],
- *   auth_flow_graph_id: 'auth_flow_config_basic',
- *   registration_flow_graph_id: 'registration_flow_config_basic',
+ *   auth_flow_id: 'edc013d0-e893-4dc0-990c-3e1d203e005b',
+ *   registration_flow_id: '80024fb3-29ed-4c33-aa48-8aee5e96d522',
  *   is_registration_flow_enabled: true,
  *   user_attributes: ['email', 'username', 'roles'],
  *   inbound_auth_config: [{
