@@ -78,3 +78,58 @@ type VerifyOTPAuthRequestDTO struct {
 	Assertion     string `json:"assertion,omitempty"`
 	OTP           string `json:"otp"`
 }
+
+// WebAuthnAuthenticatorSelectionDTO represents the authenticator selection criteria for WebAuthn.
+type WebAuthnAuthenticatorSelectionDTO struct {
+	AuthenticatorAttachment string `json:"authenticatorAttachment,omitempty"`
+	RequireResidentKey      bool   `json:"requireResidentKey,omitempty"`
+	ResidentKey             string `json:"residentKey,omitempty"`
+	UserVerification        string `json:"userVerification,omitempty"`
+}
+
+// WebAuthnRegisterStartRequestDTO is the request to start WebAuthn registration.
+type WebAuthnRegisterStartRequestDTO struct {
+	UserID                 string                             `json:"userId"`
+	RelyingPartyID         string                             `json:"relyingPartyId"`
+	RelyingPartyName       string                             `json:"relyingPartyName"`
+	AuthenticatorSelection *WebAuthnAuthenticatorSelectionDTO `json:"authenticatorSelection,omitempty"`
+	Attestation            string                             `json:"attestation,omitempty"`
+}
+
+// WebAuthnPublicKeyCredentialDTO represents a WebAuthn public key credential.
+type WebAuthnPublicKeyCredentialDTO struct {
+	ID       string                        `json:"id"`
+	RawID    string                        `json:"rawId,omitempty"`
+	Type     string                        `json:"type"`
+	Response WebAuthnCredentialResponseDTO `json:"response"`
+}
+
+// WebAuthnCredentialResponseDTO represents the response from a WebAuthn credential.
+type WebAuthnCredentialResponseDTO struct {
+	ClientDataJSON    string `json:"clientDataJSON"`
+	AttestationObject string `json:"attestationObject,omitempty"`
+	AuthenticatorData string `json:"authenticatorData,omitempty"`
+	Signature         string `json:"signature,omitempty"`
+	UserHandle        string `json:"userHandle,omitempty"`
+}
+
+// WebAuthnRegisterFinishRequestDTO is the request to finish WebAuthn registration.
+type WebAuthnRegisterFinishRequestDTO struct {
+	PublicKeyCredential WebAuthnPublicKeyCredentialDTO `json:"publicKeyCredential"`
+	SessionToken        string                         `json:"sessionToken"`
+	CredentialName      string                         `json:"credentialName,omitempty"`
+}
+
+// WebAuthnStartRequestDTO is the request to start WebAuthn authentication.
+type WebAuthnStartRequestDTO struct {
+	UserID         string `json:"userId"`
+	RelyingPartyID string `json:"relyingPartyId"`
+}
+
+// WebAuthnFinishRequestDTO is the request to finish WebAuthn authentication.
+type WebAuthnFinishRequestDTO struct {
+	PublicKeyCredential WebAuthnPublicKeyCredentialDTO `json:"publicKeyCredential"`
+	SessionToken        string                         `json:"sessionToken"`
+	SkipAssertion       bool                           `json:"skip_assertion"`
+	Assertion           string                         `json:"assertion,omitempty"`
+}
