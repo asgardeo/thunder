@@ -54,6 +54,7 @@ The project is structured as a monorepo to manage the backend, frontend, and sam
   - content/: Other documentation files.
 
 ## General Guidelines
+
 ### General
 - Follow general coding best practices, design patterns, and security recommendations.
 - Ensure all identity-related code aligns with relevant RFC specifications.
