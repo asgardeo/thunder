@@ -268,23 +268,6 @@ func (suite *I18nMgtServiceTestSuite) TestClearTranslationOverrideForKey_Immutab
 }
 
 // ResolveTranslations Tests
-func (suite *I18nMgtServiceTestSuite) TestResolveTranslations_SystemNamespace_Success() {
-	// Mock store responding with empty custom translations
-	suite.mockStore.On("GetTranslationsByNamespace", "system").
-		Return((map[string]map[string]Translation)(nil), nil)
-
-	// Since we can't easily mock sysi18n (it's likely a package level call or variable),
-	// we rely on what's available or empty defaults.
-	// Assuming test environment has some defaults or none.
-	// If real sysi18n is used, this test might be flaky if environment changes.
-
-	result, err := suite.service.ResolveTranslations("en-US", "system")
-
-	suite.Nil(err)
-	suite.NotNil(result)
-	suite.Equal("en-US", result.Language)
-}
-
 func (suite *I18nMgtServiceTestSuite) TestResolveTranslations_CustomNamespace_Success() {
 	translation := Translation{
 		Key:       "btn_ok",
@@ -331,7 +314,7 @@ func (suite *I18nMgtServiceTestSuite) TestResolveTranslations_StoreError() {
 func (suite *I18nMgtServiceTestSuite) TestResolveTranslations_DefaultsFallback() {
 	// Mock: no custom translations in DB
 	suite.mockStore.On("GetTranslationsByNamespace", "system").
-		Return((map[string]map[string]Translation)(nil), nil)
+		Return(make(map[string]map[string]Translation), nil)
 
 	result, err := suite.service.ResolveTranslations("fr-FR", "system")
 

@@ -94,11 +94,25 @@ func (s *i18nService) ResolveTranslationsForKey(
 		return nil, err
 	}
 
-	// Try to get from database first (custom override)
 	trans, err := s.store.GetTranslationsByKey(key, namespace)
 	if err != nil {
 		s.logger.Error("Failed to get translation from store", log.Error(err))
 		return nil, &ErrorInternalServerError
+	}
+
+	if _, exists := trans[SystemLanguage]; !exists {
+		if namespace == SystemNamespace {
+			// If no custom override for system language, use default translation for system language
+			defaultValue, exists := sysi18n.GetDefault(key)
+			if exists {
+				trans[SystemLanguage] = Translation{
+					Key:       key,
+					Language:  SystemLanguage,
+					Namespace: SystemNamespace,
+					Value:     defaultValue,
+				}
+			}
+		}
 	}
 
 	requestedLang := goi18n.Make(language)
@@ -107,27 +121,13 @@ func (s *i18nService) ResolveTranslationsForKey(
 
 	if bestTranslation.Value != "" {
 		return &TranslationResponse{
-			Language:  bestTranslation.Language,
+			Language:  language,
 			Namespace: bestTranslation.Namespace,
 			Key:       bestTranslation.Key,
 			Value:     bestTranslation.Value,
 		}, nil
 	}
 
-	// If not in DB, check system translations for the key
-	if namespace == SystemNamespace {
-		defaultValue, exists := sysi18n.GetDefault(key)
-		if exists {
-			return &TranslationResponse{
-				Language:  language,
-				Namespace: SystemNamespace,
-				Key:       key,
-				Value:     defaultValue,
-			}, nil
-		}
-	}
-
-	// Not found (neither custom nor default)
 	return nil, &ErrorTranslationNotFound
 }
 
@@ -202,57 +202,55 @@ func (s *i18nService) ResolveTranslations(
 
 	requestedLang := goi18n.Make(language)
 
-	// Build the merged translations map
-	result := make(map[string]map[string]string)
-	totalResults := 0
-
-	var dbTranslations map[string]map[string]Translation
+	var allTranslations map[string]map[string]Translation
 	var err error
 
 	if namespace == "" {
 		// Get all namespaces
-
-		// Start with defaults for system namespace
-		result, totalResults = getSystemTranslations()
-
-		dbTranslations, err = s.store.GetTranslations()
+		allTranslations, err = s.store.GetTranslations()
 		if err != nil {
 			s.logger.Error("Failed to get translations from store", log.Error(err))
 			return nil, &ErrorInternalServerError
 		}
 	} else {
-		// Get translations for specific namespace
-
-		if namespace == SystemNamespace {
-			// Start with defaults for system namespace
-			result, totalResults = getSystemTranslations()
-		}
-
-		// Get DB translations for this language and namespace
-		dbTranslations, err = s.store.GetTranslationsByNamespace(namespace)
+		allTranslations, err = s.store.GetTranslationsByNamespace(namespace)
 		if err != nil {
 			s.logger.Error("Failed to get translations from store", log.Error(err))
 			return nil, &ErrorInternalServerError
 		}
 	}
 
-	// Overlay DB translations
-	for _, translations := range dbTranslations {
-		translation := selectBestTranslation(translations, requestedLang)
+	if namespace == "" || namespace == SystemNamespace {
+		// Get system default translations
+		systemDefaults := sysi18n.GetAllDefaults()
 
+		for key, value := range systemDefaults {
+			if _, exists := allTranslations[key][SystemLanguage]; !exists {
+				if allTranslations[key] == nil {
+					allTranslations[key] = make(map[string]Translation)
+				}
+				allTranslations[key][SystemLanguage] = Translation{
+					Key:       key,
+					Language:  SystemLanguage,
+					Namespace: SystemNamespace,
+					Value:     value,
+				}
+			}
+		}
+	}
+
+	result := make(map[string]map[string]string)
+	for _, translations := range allTranslations {
+		translation := selectBestTranslation(translations, requestedLang)
 		if result[translation.Namespace] == nil {
 			result[translation.Namespace] = make(map[string]string)
-		}
-		// Check if this key already exists (from defaults)
-		if _, exists := result[translation.Namespace][translation.Key]; !exists {
-			totalResults++
 		}
 		result[translation.Namespace][translation.Key] = translation.Value
 	}
 
 	return &LanguageTranslationsResponse{
 		Language:     language,
-		TotalResults: totalResults,
+		TotalResults: len(allTranslations),
 		Translations: result,
 	}, nil
 }
@@ -356,18 +354,6 @@ func validate(language string, namespace string, key string) *serviceerror.I18nS
 		return &ErrorInvalidKey
 	}
 	return nil
-}
-
-func getSystemTranslations() (map[string]map[string]string, int) {
-	result := make(map[string]map[string]string)
-	allDefaults := sysi18n.GetAllDefaults()
-	if len(allDefaults) > 0 {
-		result[SystemNamespace] = make(map[string]string)
-		for key, value := range allDefaults {
-			result[SystemNamespace][key] = value
-		}
-	}
-	return result, len(allDefaults)
 }
 
 func selectBestTranslation(availableTranslations map[string]Translation, requestedLang goi18n.Tag) Translation {
