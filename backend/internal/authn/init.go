@@ -28,6 +28,7 @@ import (
 	"github.com/asgardeo/thunder/internal/authn/oauth"
 	"github.com/asgardeo/thunder/internal/authn/oidc"
 	"github.com/asgardeo/thunder/internal/authn/otp"
+	"github.com/asgardeo/thunder/internal/authn/webauthn"
 	"github.com/asgardeo/thunder/internal/idp"
 	"github.com/asgardeo/thunder/internal/notification"
 	"github.com/asgardeo/thunder/internal/system/jwt"
@@ -43,6 +44,7 @@ type AuthServiceRegistry struct {
 	OIDCAuthnService        oidc.OIDCAuthnServiceInterface
 	GithubOAuthAuthnService github.GithubOAuthAuthnServiceInterface
 	GoogleOIDCAuthnService  google.GoogleOIDCAuthnServiceInterface
+	WebAuthnAuthnService    webauthn.WebAuthnAuthnServiceInterface
 	AuthAssertGenerator     assert.AuthAssertGeneratorInterface
 }
 
@@ -65,6 +67,7 @@ func Initialize(
 		authServiceRegistry.OIDCAuthnService,
 		authServiceRegistry.GoogleOIDCAuthnService,
 		authServiceRegistry.GithubOAuthAuthnService,
+		authServiceRegistry.WebAuthnAuthnService,
 	)
 
 	authnHandler := newAuthenticationHandler(authnService)
@@ -87,6 +90,7 @@ func createAuthServiceRegistry(
 		OIDCAuthnService:        oidc.Initialize(idpSvc, userSvc, jwtSvc),
 		GithubOAuthAuthnService: github.Initialize(idpSvc, userSvc),
 		GoogleOIDCAuthnService:  google.Initialize(idpSvc, userSvc, jwtSvc),
+		WebAuthnAuthnService:    webauthn.Initialize(userSvc),
 		AuthAssertGenerator:     assert.Initialize(),
 	}
 }
@@ -149,6 +153,24 @@ func registerRoutes(mux *http.ServeMux, authnHandler *authenticationHandler) {
 			w.WriteHeader(http.StatusNoContent)
 		}, opts))
 	mux.HandleFunc(middleware.WithCORS("OPTIONS /auth/oauth/standard/finish",
+		optionsNoContentHandler, opts))
+
+	// WebAuthn routes
+	mux.HandleFunc(middleware.WithCORS("POST /register/webauthn/start",
+		authnHandler.HandleWebAuthnRegisterStartRequest, opts))
+	mux.HandleFunc(middleware.WithCORS("POST /register/webauthn/finish",
+		authnHandler.HandleWebAuthnRegisterFinishRequest, opts))
+	mux.HandleFunc(middleware.WithCORS("POST /auth/webauthn/start",
+		authnHandler.HandleWebAuthnStartRequest, opts))
+	mux.HandleFunc(middleware.WithCORS("POST /auth/webauthn/finish",
+		authnHandler.HandleWebAuthnFinishRequest, opts))
+	mux.HandleFunc(middleware.WithCORS("OPTIONS /register/webauthn/start",
+		optionsNoContentHandler, opts))
+	mux.HandleFunc(middleware.WithCORS("OPTIONS /register/webauthn/finish",
+		optionsNoContentHandler, opts))
+	mux.HandleFunc(middleware.WithCORS("OPTIONS /auth/webauthn/start",
+		optionsNoContentHandler, opts))
+	mux.HandleFunc(middleware.WithCORS("OPTIONS /auth/webauthn/finish",
 		optionsNoContentHandler, opts))
 }
 
