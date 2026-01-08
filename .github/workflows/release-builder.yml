@@ -6,11 +6,14 @@
 name: 🚀 Release Builder
 
 on:
+  schedule:
+    # Runs every Thursday at 4:00 PM IST (10:30 AM UTC)
+    - cron: '30 10 * * 4'
   workflow_dispatch:
     inputs:
       version:
-        description: 'Release version (e.g., v1.0.0)'
-        required: true
+        description: 'Release version (e.g., v1.0.0). Leave empty to use version.txt'
+        required: false
         type: string
       prerelease:
         description: 'Set as a pre-release'
@@ -32,27 +35,61 @@ env:
   GOFLAGS: "-mod=readonly"
 
 jobs:
-  build-thunder:  
-    name: ⚡ Build Thunder  
+  build-thunder:
+    name: ⚡ Build Thunder
     runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.get_version.outputs.version }}
+      prerelease: ${{ steps.get_version.outputs.prerelease }}
+      run_performance_test: ${{ steps.get_version.outputs.run_performance_test }}
     steps:  
-      - name: 📥 Checkout Code  
-        uses: actions/checkout@v4  
-        with:  
-          fetch-depth: 0  
+      - name: 📥 Checkout Code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
-      - name: ✅ Validate Release Version  
-        run: |  
-          if ! [[ ${{ github.event.inputs.version }} =~ ^v[0-9]+\.[0-9]+(\.[0-9]+)?(-[0-9a-zA-Z.-]+)?(\+[0-9a-zA-Z.-]+)?$ ]]; then  
-            echo "❌ Error: Version '${{ github.event.inputs.version }}' does not follow format vX.Y[.Z][-PRERELEASE][+BUILD]"  
-            echo "❌ Version must start with 'v'"  
-            exit 1  
-          fi  
-          echo "✅ Version '${{ github.event.inputs.version }}' is valid"  
+      - name: 📝 Determine Release Version
+        id: get_version
+        run: |
+          if [ "${{ github.event_name }}" == "workflow_dispatch" ] && [ -n "${{ github.event.inputs.version }}" ]; then
+            # Use manually provided version
+            VERSION="${{ github.event.inputs.version }}"
+            PRERELEASE="${{ github.event.inputs.prerelease }}"
+            RUN_PERF_TEST="${{ github.event.inputs.run_performance_test }}"
+          else
+            # Scheduled run or manual run without version - read from version.txt
+            VERSION=$(cat version.txt)
+            PRERELEASE="false"
+            RUN_PERF_TEST="false"
+          fi
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "prerelease=$PRERELEASE" >> $GITHUB_OUTPUT
+          echo "run_performance_test=$RUN_PERF_TEST" >> $GITHUB_OUTPUT
+          echo "✅ Using version: $VERSION"
 
-      - name: 🏷️ Update Product Version  
-        run: |  
-          VERSION="${{ github.event.inputs.version }}"  
+      - name: ✅ Validate Release Version
+        run: |
+          VERSION="${{ steps.get_version.outputs.version }}"
+
+          # Check version format
+          if ! [[ $VERSION =~ ^v[0-9]+\.[0-9]+(\.[0-9]+)?(-[0-9a-zA-Z.-]+)?(\+[0-9a-zA-Z.-]+)?$ ]]; then
+            echo "❌ Error: Version '$VERSION' does not follow format vX.Y[.Z][-PRERELEASE][+BUILD]"
+            echo "❌ Version must start with 'v'"
+            exit 1
+          fi
+          echo "✅ Version '$VERSION' format is valid"
+
+          # Check if tag already exists
+          if git rev-parse "$VERSION" >/dev/null 2>&1; then
+            echo "❌ Error: Version '$VERSION' already exists as a git tag"
+            echo "❌ Please update version.txt with a new version before running the release"
+            exit 1
+          fi
+          echo "✅ Version '$VERSION' does not exist yet - proceeding with release"
+
+      - name: 🏷️ Update Product Version
+        run: |
+          VERSION="${{ steps.get_version.outputs.version }}"
           echo "$VERSION" > version.txt  
 
       - name: ⚙️ Set up Go Environment  
@@ -172,7 +209,7 @@ jobs:
 
       - name: 🏷️ Update Product Version
         run: |
-          VERSION="${{ github.event.inputs.version }}"
+          VERSION="${{ needs.build-thunder.outputs.version }}"
           echo "$VERSION" > version.txt
 
       - name: ⚙️ Set up Go Environment
@@ -271,7 +308,7 @@ jobs:
           git config --local user.email "action@github.com"
           git config --local user.name "GitHub Action"
 
-          TAG_VERSION="${{ github.event.inputs.version }}"
+          TAG_VERSION="${{ needs.build-thunder.outputs.version }}"
           if [[ ! $TAG_VERSION == v* ]]; then
             TAG_VERSION="v$TAG_VERSION"
           fi
@@ -310,7 +347,7 @@ jobs:
           IMAGE_NAME="ghcr.io/${REPO_NAME}"
           
           # Get version without 'v' prefix for Docker tags
-          DOCKER_VERSION="${{ github.event.inputs.version }}"
+          DOCKER_VERSION="${{ needs.build-thunder.outputs.version }}"
           if [[ $DOCKER_VERSION == v* ]]; then
             DOCKER_VERSION="${DOCKER_VERSION#v}"
           fi
@@ -344,7 +381,7 @@ jobs:
           HELM_REGISTRY="ghcr.io/${OWNER_NAME}"
           
           # Get version without 'v' prefix for Helm chart version
-          CHART_VERSION="${{ github.event.inputs.version }}"
+          CHART_VERSION="${{ needs.build-thunder.outputs.version }}"
           if [[ $CHART_VERSION == v* ]]; then
             CHART_VERSION="${CHART_VERSION#v}"
           fi
@@ -376,7 +413,7 @@ jobs:
         id: next_version
         run: |
           # Get the current release version and remove 'v' prefix
-          RELEASE_VERSION="${{ github.event.inputs.version }}"
+          RELEASE_VERSION="${{ needs.build-thunder.outputs.version }}"
           if [[ $RELEASE_VERSION == v* ]]; then
             RELEASE_VERSION="${RELEASE_VERSION#v}"
           fi
@@ -465,7 +502,7 @@ jobs:
   package-samples-linux:
     name: 📦 Package Linux & Windows Samples
     runs-on: ubuntu-latest
-    needs: build-and-package
+    needs: [build-thunder, build-and-package]
     steps:
       - name: 📥 Checkout Code
         uses: actions/checkout@v4
@@ -496,7 +533,7 @@ jobs:
       - name: 🏷️ Set Sample Apps Version
         run: |
           # Get the product version from the previous job
-          SAMPLE_VERSION="${{ github.event.inputs.version }}"
+          SAMPLE_VERSION="${{ needs.build-thunder.outputs.version }}"
 
           # Remove 'v' prefix if present
           if [[ $SAMPLE_VERSION == v* ]]; then
@@ -555,7 +592,7 @@ jobs:
   package-samples-macos:
     name: 📦 Package macOS Samples
     runs-on: macos-latest
-    needs: build-and-package
+    needs: [build-thunder, build-and-package]
     steps:
       - name: 📥 Checkout Code
         uses: actions/checkout@v4
@@ -586,7 +623,7 @@ jobs:
       - name: 🏷️ Set Sample Apps Version
         run: |
           # Get the product version from the previous job
-          SAMPLE_VERSION="${{ github.event.inputs.version }}"
+          SAMPLE_VERSION="${{ needs.build-thunder.outputs.version }}"
 
           # Remove 'v' prefix if present
           if [[ $SAMPLE_VERSION == v* ]]; then
@@ -637,7 +674,7 @@ jobs:
   release:
     name: 🚀 Release
     runs-on: ubuntu-latest
-    needs: [build-and-package, package-samples-linux, package-samples-macos]
+    needs: [build-thunder, build-and-package, package-samples-linux, package-samples-macos]
     outputs:
       release_tag: ${{ steps.release_info.outputs.release_tag }}
     steps:
@@ -688,7 +725,7 @@ jobs:
       - name: 📝 Read Version
         id: version
         run: |
-          VERSION="${{ github.event.inputs.version }}"
+          VERSION="${{ needs.build-thunder.outputs.version }}"
           echo "version=$VERSION" >> $GITHUB_OUTPUT
 
       - name: 📝 Generate Automatic Release Notes
@@ -696,7 +733,7 @@ jobs:
         uses: actions/github-script@v7
         with:
           script: |
-            const currentTag = '${{ github.event.inputs.version }}';
+            const currentTag = '${{ needs.build-thunder.outputs.version }}';
             
             try {
               // Get only the 2 most recent releases (current + previous)
@@ -775,7 +812,7 @@ jobs:
         id: readme_extract
         run: |
           # Get the release version without v prefix for replacement
-          RELEASE_VERSION="${{ github.event.inputs.version }}"
+          RELEASE_VERSION="${{ needs.build-thunder.outputs.version }}"
           if [[ $RELEASE_VERSION == v* ]]; then
             RELEASE_VERSION="${RELEASE_VERSION#v}"
           fi
@@ -895,7 +932,7 @@ jobs:
           tag_name: ${{ steps.version.outputs.version }}
           name: Thunder ${{ steps.version.outputs.version }}
           draft: false
-          prerelease: ${{ github.event.inputs.prerelease }}
+          prerelease: ${{ needs.build-thunder.outputs.prerelease }}
           files: target/dist/*.zip
           body: ${{ env.RELEASE_BODY }}
           generate_release_notes: false
@@ -919,8 +956,8 @@ jobs:
   trigger-performance-test:
     name: 🧪 Trigger Performance Test
     runs-on: ubuntu-latest
-    needs: release
-    if: ${{ github.event.inputs.run_performance_test == 'true' }}
+    needs: [build-thunder, release]
+    if: ${{ needs.build-thunder.outputs.run_performance_test == 'true' }}
     steps:
       - name: 📥 Checkout Code
         uses: actions/checkout@v4
