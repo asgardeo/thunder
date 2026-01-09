@@ -76,6 +76,9 @@ func Initialize(
 	reg.RegisterExecutor(ExecutorNameAuthorization, newAuthorizationExecutor(flowFactory, authZService))
 	reg.RegisterExecutor(ExecutorNameHTTPRequest, newHTTPRequestExecutor(flowFactory))
 	reg.RegisterExecutor(ExecutorNameUserTypeResolver, newUserTypeResolver(flowFactory, userSchemaService))
+	reg.RegisterExecutor(ExecutorNameInviteExecutor, newInviteExecutor(flowFactory))
+	reg.RegisterExecutor(ExecutorNameCredentialSetter, newCredentialSetter(flowFactory, userService))
+	reg.RegisterExecutor(ExecutorNamePermissionValidator, newPermissionValidator(flowFactory))
 
 	return reg
 }

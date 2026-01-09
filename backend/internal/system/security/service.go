@@ -68,10 +68,7 @@ func NewSecurityService(authenticators []AuthenticatorInterface, publicPaths []s
 // Process handles the complete security flow: authentication and authorization.
 // Returns an enriched context on success, or an error if authentication or authorization fails.
 func (s *securityService) Process(r *http.Request) (context.Context, error) {
-	// Check if the path is public (skip authentication)
-	if s.isPublicPath(r.URL.Path) {
-		return r.Context(), nil
-	}
+	isPublic := s.isPublicPath(r.URL.Path)
 
 	// Check if the request is options (CORS preflight)
 	if r.Method == http.MethodOptions {
@@ -87,14 +84,24 @@ func (s *securityService) Process(r *http.Request) (context.Context, error) {
 		}
 	}
 
-	// If no authenticator found, request is unauthorized
+	// If no authenticator found
 	if authenticator == nil {
+		// For public paths, allow access without authentication
+		if isPublic {
+			return r.Context(), nil
+		}
+		// For protected paths, block access
 		return nil, errNoHandlerFound
 	}
 
 	// Authenticate the request
 	securityCtx, err := authenticator.Authenticate(r)
 	if err != nil {
+		// For public paths, allow access even if authentication fails
+		if isPublic {
+			return r.Context(), nil
+		}
+		// For protected paths, block access on authentication failure
 		return nil, err
 	}
 
@@ -106,6 +113,11 @@ func (s *securityService) Process(r *http.Request) (context.Context, error) {
 
 	// Authorize the authenticated principal
 	if err := authenticator.Authorize(r.WithContext(ctx), securityCtx); err != nil {
+		// For public paths, allow access even if authorization fails
+		if isPublic {
+			return r.Context(), nil
+		}
+		// For protected paths, block access on authorization failure
 		return nil, err
 	}
 

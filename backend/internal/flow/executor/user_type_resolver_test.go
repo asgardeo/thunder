@@ -791,3 +791,164 @@ func (suite *UserTypeResolverTestSuite) TestGetUserSchemaAndOU_SchemaNotFound() 
 	assert.Contains(suite.T(), err.Error(), "failed to resolve user schema for user type")
 	suite.mockUserSchemaService.AssertExpectations(suite.T())
 }
+
+// Tests for InviteRegistration flow
+func (suite *UserTypeResolverTestSuite) TestExecute_InviteRegistration_UserTypeProvided_Success() {
+	suite.SetupTest()
+
+	ctx := &core.NodeContext{
+		FlowID:   "flow-123",
+		FlowType: common.FlowTypeInviteRegistration,
+		UserInputs: map[string]string{
+			userTypeKey: "employee",
+		},
+		RuntimeData: map[string]string{},
+	}
+
+	userSchema := &userschema.UserSchema{
+		ID:                    "schema-123",
+		Name:                  "employee",
+		OrganizationUnitID:    "ou-123",
+		AllowSelfRegistration: true,
+	}
+	suite.mockUserSchemaService.On("GetUserSchemaByName", "employee").
+		Return(userSchema, nil)
+
+	result, err := suite.executor.Execute(ctx)
+
+	assert.NoError(suite.T(), err)
+	assert.NotNil(suite.T(), result)
+	assert.Equal(suite.T(), common.ExecComplete, result.Status)
+	assert.Equal(suite.T(), "employee", result.RuntimeData[userTypeKey])
+	assert.Equal(suite.T(), "ou-123", result.RuntimeData[defaultOUIDKey])
+	suite.mockUserSchemaService.AssertExpectations(suite.T())
+}
+
+func (suite *UserTypeResolverTestSuite) TestExecute_InviteRegistration_UserTypeProvided_InvalidUserType() {
+	suite.SetupTest()
+
+	ctx := &core.NodeContext{
+		FlowID:   "flow-123",
+		FlowType: common.FlowTypeInviteRegistration,
+		UserInputs: map[string]string{
+			userTypeKey: "invalid-type",
+		},
+		RuntimeData: map[string]string{},
+	}
+
+	svcErr := &serviceerror.ServiceError{
+		Type:             serviceerror.ClientErrorType,
+		Code:             "SCHEMA-404",
+		Error:            "Not Found",
+		ErrorDescription: "User schema not found",
+	}
+	suite.mockUserSchemaService.On("GetUserSchemaByName", "invalid-type").
+		Return(nil, svcErr)
+
+	result, err := suite.executor.Execute(ctx)
+
+	assert.NoError(suite.T(), err)
+	assert.NotNil(suite.T(), result)
+	assert.Equal(suite.T(), common.ExecFailure, result.Status)
+	assert.Equal(suite.T(), "Invalid user type", result.FailureReason)
+	suite.mockUserSchemaService.AssertExpectations(suite.T())
+}
+
+func (suite *UserTypeResolverTestSuite) TestExecute_InviteRegistration_NoUserTypeProvided_PromptsAdmin() {
+	suite.SetupTest()
+
+	ctx := &core.NodeContext{
+		FlowID:      "flow-123",
+		FlowType:    common.FlowTypeInviteRegistration,
+		UserInputs:  map[string]string{},
+		RuntimeData: map[string]string{},
+	}
+
+	// Mock schema list response
+	schemas := &userschema.UserSchemaListResponse{
+		Schemas: []userschema.UserSchemaListItem{
+			{
+				ID:                    "schema-employee",
+				Name:                  "employee",
+				OrganizationUnitID:    "ou-employee",
+				AllowSelfRegistration: true,
+			},
+			{
+				ID:                    "schema-customer",
+				Name:                  "customer",
+				OrganizationUnitID:    "ou-customer",
+				AllowSelfRegistration: true,
+			},
+		},
+	}
+	suite.mockUserSchemaService.On("GetUserSchemaList", 100, 0).
+		Return(schemas, nil)
+
+	result, err := suite.executor.Execute(ctx)
+
+	assert.NoError(suite.T(), err)
+	assert.NotNil(suite.T(), result)
+	assert.Equal(suite.T(), common.ExecUserInputRequired, result.Status)
+	assert.Len(suite.T(), result.Inputs, 1)
+
+	input := result.Inputs[0]
+	assert.Equal(suite.T(), userTypeKey, input.Identifier)
+	assert.Equal(suite.T(), "dropdown", input.Type)
+	assert.True(suite.T(), input.Required)
+	assert.ElementsMatch(suite.T(), []string{"employee", "customer"}, input.Options)
+
+	suite.mockUserSchemaService.AssertExpectations(suite.T())
+}
+
+func (suite *UserTypeResolverTestSuite) TestExecute_InviteRegistration_NoSchemasAvailable() {
+	suite.SetupTest()
+
+	ctx := &core.NodeContext{
+		FlowID:      "flow-123",
+		FlowType:    common.FlowTypeInviteRegistration,
+		UserInputs:  map[string]string{},
+		RuntimeData: map[string]string{},
+	}
+
+	schemas := &userschema.UserSchemaListResponse{
+		Schemas: []userschema.UserSchemaListItem{},
+	}
+	suite.mockUserSchemaService.On("GetUserSchemaList", 100, 0).
+		Return(schemas, nil)
+
+	result, err := suite.executor.Execute(ctx)
+
+	assert.NoError(suite.T(), err)
+	assert.NotNil(suite.T(), result)
+	assert.Equal(suite.T(), common.ExecFailure, result.Status)
+	assert.Equal(suite.T(), "No user types available", result.FailureReason)
+	suite.mockUserSchemaService.AssertExpectations(suite.T())
+}
+
+func (suite *UserTypeResolverTestSuite) TestExecute_InviteRegistration_SchemaListServiceError() {
+	suite.SetupTest()
+
+	ctx := &core.NodeContext{
+		FlowID:      "flow-123",
+		FlowType:    common.FlowTypeInviteRegistration,
+		UserInputs:  map[string]string{},
+		RuntimeData: map[string]string{},
+	}
+
+	svcErr := &serviceerror.ServiceError{
+		Type:             serviceerror.ServerErrorType,
+		Code:             "SCHEMA-500",
+		Error:            "Internal Server Error",
+		ErrorDescription: "Failed to list schemas",
+	}
+	suite.mockUserSchemaService.On("GetUserSchemaList", 100, 0).
+		Return(nil, svcErr)
+
+	result, err := suite.executor.Execute(ctx)
+
+	assert.NoError(suite.T(), err)
+	assert.NotNil(suite.T(), result)
+	assert.Equal(suite.T(), common.ExecFailure, result.Status)
+	assert.Equal(suite.T(), "Failed to retrieve user types", result.FailureReason)
+	suite.mockUserSchemaService.AssertExpectations(suite.T())
+}

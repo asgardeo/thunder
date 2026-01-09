@@ -93,6 +93,7 @@ func (fe *flowEngine) Execute(ctx *EngineContext) (FlowStep, *serviceerror.Servi
 			UserInputs:        ctx.UserInputs,
 			CurrentNodeID:     ctx.CurrentNode.GetID(),
 			RuntimeData:       ctx.RuntimeData,
+			HTTPContext:       ctx.HTTPContext,
 			Application:       ctx.Application,
 			AuthenticatedUser: ctx.AuthenticatedUser,
 			ExecutionHistory:  ctx.ExecutionHistory,
@@ -555,6 +556,16 @@ func (fe *flowEngine) resolveStepDetailsForPrompt(nodeResp *common.NodeResponse,
 	// Include meta in the flow step if present
 	if nodeResp.Meta != nil {
 		flowStep.Data.Meta = nodeResp.Meta
+	}
+
+	// Include additionalData in the flow step if present
+	if len(nodeResp.AdditionalData) > 0 {
+		if flowStep.Data.AdditionalData == nil {
+			flowStep.Data.AdditionalData = make(map[string]string)
+		}
+		for key, value := range nodeResp.AdditionalData {
+			flowStep.Data.AdditionalData[key] = value
+		}
 	}
 
 	// Set failure reason if present (e.g., when handling onFailure)

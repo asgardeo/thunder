@@ -19,6 +19,8 @@
 package core
 
 import (
+	"context"
+
 	appmodel "github.com/asgardeo/thunder/internal/application/model"
 	authncm "github.com/asgardeo/thunder/internal/authn/common"
 	"github.com/asgardeo/thunder/internal/flow/common"
@@ -39,6 +41,7 @@ type NodeContext struct {
 	UserInputs     map[string]string
 	RuntimeData    map[string]string
 
+	HTTPContext       context.Context
 	Application       appmodel.Application
 	AuthenticatedUser authncm.AuthenticatedUser
 	ExecutionHistory  map[string]*common.NodeExecutionRecord

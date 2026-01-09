@@ -386,6 +386,7 @@ log_info "Creating default flows..."
 # Path to flow definitions directories
 AUTH_FLOWS_DIR="${SCRIPT_DIR}/flows/authentication"
 REG_FLOWS_DIR="${SCRIPT_DIR}/flows/registration"
+INVITE_FLOWS_DIR="${SCRIPT_DIR}/flows/invite_registration"
 
 # Check if flows directory exists
 if [[ ! -d "$AUTH_FLOWS_DIR" ]] && [[ ! -d "$REG_FLOWS_DIR" ]]; then
@@ -514,6 +515,65 @@ else
             done
         else
             log_warning "No registration flow files found"
+        fi
+    fi
+
+    # Process invite registration flows
+    if [[ -d "$INVITE_FLOWS_DIR" ]]; then
+        shopt -s nullglob
+        INVITE_FILES=("$INVITE_FLOWS_DIR"/*.json)
+        shopt -u nullglob
+        
+        if [[ ${#INVITE_FILES[@]} -gt 0 ]]; then
+            log_info "Processing invite registration flows..."
+            
+            # Fetch existing invite registration flows
+            RESPONSE=$(thunder_api_call GET "/flows?flowType=INVITE_REGISTRATION&limit=200")
+            HTTP_CODE="${RESPONSE: -3}"
+            BODY="${RESPONSE%???}"
+
+            # Store existing invite registration flows as "handle|id" pairs
+            EXISTING_INVITE_FLOWS=""
+            if [[ "$HTTP_CODE" == "200" ]]; then
+                while IFS= read -r line; do
+                    FLOW_ID=$(echo "$line" | grep -o '"id":"[^"]*"' | cut -d'"' -f4)
+                    FLOW_HANDLE=$(echo "$line" | grep -o '"handle":"[^"]*"' | cut -d'"' -f4)
+                    if [[ -n "$FLOW_ID" ]] && [[ -n "$FLOW_HANDLE" ]]; then
+                        EXISTING_INVITE_FLOWS="${EXISTING_INVITE_FLOWS}${FLOW_HANDLE}|${FLOW_ID}"$'\n'
+                    fi
+                done < <(echo "$BODY" | grep -o '{[^}]*"id":"[^"]*"[^}]*"handle":"[^"]*"[^}]*}')
+            fi
+
+            for FLOW_FILE in "$INVITE_FLOWS_DIR"/*.json; do
+                [[ ! -f "$FLOW_FILE" ]] && continue
+
+                FLOW_COUNT=$((FLOW_COUNT + 1))
+                FLOW_HANDLE=$(grep -o '"handle"[[:space:]]*:[[:space:]]*"[^"]*"' "$FLOW_FILE" | head -1 | sed 's/"handle"[[:space:]]*:[[:space:]]*"\([^"]*\)"/\1/')
+                FLOW_NAME=$(grep -o '"name"[[:space:]]*:[[:space:]]*"[^"]*"' "$FLOW_FILE" | head -1 | sed 's/"name"[[:space:]]*:[[:space:]]*"\([^"]*\)"/\1/')
+                
+                # Check if flow exists by handle
+                if echo "$EXISTING_INVITE_FLOWS" | grep -q "^${FLOW_HANDLE}|"; then
+                    # Update existing flow
+                    FLOW_ID=$(echo "$EXISTING_INVITE_FLOWS" | grep "^${FLOW_HANDLE}|" | cut -d'|' -f2)
+                    log_info "Updating existing invite registration flow: $FLOW_NAME (handle: $FLOW_HANDLE)"
+                    update_flow "$FLOW_ID" "$FLOW_FILE"
+                    RESULT=$?
+                    if [[ $RESULT -eq 0 ]]; then
+                        FLOW_SUCCESS=$((FLOW_SUCCESS + 1))
+                    fi
+                else
+                    # Create new flow
+                    create_flow "$FLOW_FILE"
+                    RESULT=$?
+                    if [[ $RESULT -eq 0 ]]; then
+                        FLOW_SUCCESS=$((FLOW_SUCCESS + 1))
+                    elif [[ $RESULT -eq 2 ]]; then
+                        FLOW_SKIPPED=$((FLOW_SKIPPED + 1))
+                    fi
+                fi
+            done
+        else
+            log_debug "No invite registration flow files found"
         fi
     fi
 

@@ -1,0 +1,78 @@
+{
+    "name": "Invite Registration Flow",
+    "handle": "default-invite-registration",
+    "flowType": "INVITE_REGISTRATION",
+    "nodes": [
+        {
+            "id": "start",
+            "type": "START",
+            "onSuccess": "permission_validator"
+        },
+        {
+            "id": "permission_validator",
+            "type": "TASK_EXECUTION",
+            "executor": {
+                "name": "PermissionValidator"
+            },
+            "onSuccess": "user_type_resolver"
+        },
+        {
+            "id": "user_type_resolver",
+            "type": "TASK_EXECUTION",
+            "executor": {
+                "name": "UserTypeResolver"
+            },
+            "onSuccess": "provisioning"
+        },
+        {
+            "id": "provisioning",
+            "type": "TASK_EXECUTION",
+            "inputs": [
+                {
+                    "ref": "input_001",
+                    "identifier": "username",
+                    "type": "TEXT_INPUT",
+                    "required": true
+                },
+                {
+                    "ref": "input_002",
+                    "identifier": "email",
+                    "type": "TEXT_INPUT",
+                    "required": true
+                }
+            ],
+            "executor": {
+                "name": "ProvisioningExecutor"
+            },
+            "onSuccess": "invite"
+        },
+        {
+            "id": "invite",
+            "type": "TASK_EXECUTION",
+            "executor": {
+                "name": "InviteExecutor"
+            },
+            "onSuccess": "credential_setter"
+        },
+        {
+            "id": "credential_setter",
+            "type": "TASK_EXECUTION",
+            "inputs": [
+                {
+                    "ref": "input_003",
+                    "identifier": "password",
+                    "type": "PASSWORD_INPUT",
+                    "required": true
+                }
+            ],
+            "executor": {
+                "name": "CredentialSetter"
+            },
+            "onSuccess": "end"
+        },
+        {
+            "id": "end",
+            "type": "END"
+        }
+    ]
+}

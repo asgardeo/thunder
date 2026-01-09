@@ -115,13 +115,15 @@ func (suite *SecurityServiceTestSuite) TestProcess_PublicPaths() {
 		suite.Run(tc.name, func() {
 			req := httptest.NewRequest(http.MethodGet, tc.path, nil)
 
+			// With optional auth, authenticators are checked even for public paths
+			// Since there is no auth header, CanHandle returns false
+			suite.mockAuth1.On("CanHandle", req).Return(false)
+			suite.mockAuth2.On("CanHandle", req).Return(false)
+
 			ctx, err := suite.service.Process(req)
 
 			assert.NoError(suite.T(), err)
 			assert.Equal(suite.T(), req.Context(), ctx)
-			// Verify no authenticators were called for public paths
-			suite.mockAuth1.AssertNotCalled(suite.T(), "CanHandle")
-			suite.mockAuth2.AssertNotCalled(suite.T(), "CanHandle")
 		})
 	}
 }
@@ -424,6 +426,10 @@ func (suite *SecurityServiceTestSuite) TestProcess_PublicPathVariations() {
 		suite.Run(tc.name, func() {
 			req := httptest.NewRequest(http.MethodGet, tc.path, nil)
 
+			// With optional auth, authenticators are checked even for public paths
+			suite.mockAuth1.On("CanHandle", req).Return(false)
+			suite.mockAuth2.On("CanHandle", req).Return(false)
+
 			ctx, err := suite.service.Process(req)
 
 			assert.NoError(suite.T(), err, "Path should be public: %s", tc.path)
@@ -540,4 +546,46 @@ func (suite *SecurityServiceTestSuite) TestCompilePathPatterns() {
 			}
 		})
 	}
+}
+
+// Test Process method with public path and valid token
+func (suite *SecurityServiceTestSuite) TestProcess_PublicPath_WithToken() {
+	req := httptest.NewRequest(http.MethodGet, "/auth/login", nil)
+	// Add Authorization header to simulate optional auth
+	req.Header.Add("Authorization", "Bearer valid_token")
+
+	// First authenticator can handle the request
+	suite.mockAuth1.On("CanHandle", req).Return(true)
+	suite.mockAuth1.On("Authenticate", req).Return(suite.testCtx, nil)
+	suite.mockAuth1.On("Authorize", mock.AnythingOfType("*http.Request"), suite.testCtx).Return(nil)
+
+	ctx, err := suite.service.Process(req)
+
+	assert.NoError(suite.T(), err)
+	assert.NotNil(suite.T(), ctx)
+
+	// Verify authentication context is added
+	userID := GetUserID(ctx)
+	assert.Equal(suite.T(), "user123", userID)
+}
+
+// Test Process method with public path and invalid token (optional auth failure)
+func (suite *SecurityServiceTestSuite) TestProcess_PublicPath_WithInvalidToken() {
+	req := httptest.NewRequest(http.MethodGet, "/auth/login", nil)
+	// Add Authorization header
+	req.Header.Add("Authorization", "Bearer invalid_token")
+
+	authError := errors.New("invalid token")
+
+	// First authenticator handles it but fails
+	suite.mockAuth1.On("CanHandle", req).Return(true)
+	suite.mockAuth1.On("Authenticate", req).Return(nil, authError)
+
+	ctx, err := suite.service.Process(req)
+
+	assert.NoError(suite.T(), err)
+	assert.Equal(suite.T(), req.Context(), ctx)
+
+	userID := GetUserID(ctx)
+	assert.Empty(suite.T(), userID)
 }

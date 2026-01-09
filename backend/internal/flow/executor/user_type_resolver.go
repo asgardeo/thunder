@@ -77,6 +77,11 @@ func (u *userTypeResolver) Execute(ctx *core.NodeContext) (*common.ExecutorRespo
 
 	allowed := ctx.Application.AllowedUserTypes
 
+	// Handle invite registration flow
+	if ctx.FlowType == common.FlowTypeInviteRegistration {
+		return u.resolveForInviteRegistration(ctx, execResp)
+	}
+
 	if ctx.FlowType == common.FlowTypeAuthentication {
 		// For authentication flows, validate that allowed user types are defined
 		if len(allowed) == 0 {
@@ -259,4 +264,60 @@ func (u *userTypeResolver) getUserSchemaAndOU(userType string) (*userschema.User
 	logger.Debug("User schema resolved for user type", log.String(userTypeKey, userType),
 		log.String(ouIDKey, userSchema.OrganizationUnitID))
 	return userSchema, userSchema.OrganizationUnitID, nil
+}
+
+// resolveForInviteRegistration handles user type resolution for invite registration flows.
+func (u *userTypeResolver) resolveForInviteRegistration(ctx *core.NodeContext,
+	execResp *common.ExecutorResponse) (*common.ExecutorResponse, error) {
+	logger := u.logger.With(log.String(log.LoggerKeyFlowID, ctx.FlowID))
+
+	// If userType already provided, validate and set runtime data
+	if userType, ok := ctx.UserInputs[userTypeKey]; ok && userType != "" {
+		userSchema, ouID, err := u.getUserSchemaAndOU(userType)
+		if err != nil {
+			execResp.Status = common.ExecFailure
+			execResp.FailureReason = "Invalid user type"
+			return execResp, nil
+		}
+
+		execResp.RuntimeData[userTypeKey] = userType
+		execResp.RuntimeData[defaultOUIDKey] = ouID
+		logger.Debug("User type resolved for invite registration", log.String(userTypeKey, userType),
+			log.String(ouIDKey, userSchema.OrganizationUnitID))
+		execResp.Status = common.ExecComplete
+		return execResp, nil
+	}
+
+	// List all available user schemas
+	schemas, svcErr := u.userSchemaService.GetUserSchemaList(100, 0)
+	if svcErr != nil {
+		logger.Debug("Failed to list user schemas", log.String("error", svcErr.Error))
+		execResp.Status = common.ExecFailure
+		execResp.FailureReason = "Failed to retrieve user types"
+		return execResp, nil
+	}
+
+	if len(schemas.Schemas) == 0 {
+		logger.Debug("No user schemas available")
+		execResp.Status = common.ExecFailure
+		execResp.FailureReason = "No user types available"
+		return execResp, nil
+	}
+
+	options := make([]string, 0, len(schemas.Schemas))
+	for _, schema := range schemas.Schemas {
+		options = append(options, schema.Name)
+	}
+
+	logger.Debug("Prompting admin for user type selection", log.Any("userTypes", options))
+	execResp.Status = common.ExecUserInputRequired
+	execResp.Inputs = []common.Input{
+		{
+			Identifier: userTypeKey,
+			Type:       "dropdown",
+			Required:   true,
+			Options:    options,
+		},
+	}
+	return execResp, nil
 }

@@ -1,0 +1,120 @@
+/*
+ * Copyright (c) 2026, WSO2 LLC. (https://www.wso2.com).
+ *
+ * WSO2 LLC. licenses this file to you under the Apache License,
+ * Version 2.0 (the "License"); you may not use this file except
+ * in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing,
+ * software distributed under the License is distributed on an
+ * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+ * KIND, either express or implied.  See the License for the
+ * specific language governing permissions and limitations
+ * under the License.
+ */
+
+package executor
+
+import (
+	"encoding/json"
+
+	"github.com/asgardeo/thunder/internal/flow/common"
+	"github.com/asgardeo/thunder/internal/flow/core"
+	"github.com/asgardeo/thunder/internal/system/log"
+	"github.com/asgardeo/thunder/internal/user"
+)
+
+// credentialSetter allows users to set their credentials for an existing user account.
+type credentialSetter struct {
+	core.ExecutorInterface
+	userService user.UserServiceInterface
+	logger      *log.Logger
+}
+
+// newCredentialSetter creates a new instance of the credential setter executor.
+func newCredentialSetter(
+	flowFactory core.FlowFactoryInterface,
+	userService user.UserServiceInterface,
+) *credentialSetter {
+	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, "CredentialSetter"))
+	base := flowFactory.CreateExecutor(
+		ExecutorNameCredentialSetter,
+		common.ExecutorTypeRegistration,
+		[]common.Input{
+			{
+				Identifier: userAttributePassword,
+				Type:       "PASSWORD_INPUT",
+				Required:   true,
+			},
+		},
+		[]common.Input{},
+	)
+	return &credentialSetter{
+		ExecutorInterface: base,
+		userService:       userService,
+		logger:            logger,
+	}
+}
+
+// Execute sets the password for the user identified by userID in RuntimeData.
+func (e *credentialSetter) Execute(ctx *core.NodeContext) (*common.ExecutorResponse, error) {
+	logger := e.logger.With(log.String(log.LoggerKeyFlowID, ctx.FlowID))
+	logger.Debug("Executing credential set")
+
+	execResp := &common.ExecutorResponse{
+		AdditionalData: make(map[string]string),
+		RuntimeData:    make(map[string]string),
+	}
+
+	// Check if password is provided
+	if !e.HasRequiredInputs(ctx, execResp) {
+		logger.Debug("Password not provided, requesting input")
+		execResp.Status = common.ExecUserInputRequired
+		return execResp, nil
+	}
+
+	// Get userID from context
+	userID := e.GetUserIDFromContext(ctx)
+	if userID == "" {
+		logger.Debug("User ID not found in flow context")
+		execResp.Status = common.ExecFailure
+		execResp.FailureReason = "User ID not found in flow context"
+		return execResp, nil
+	}
+
+	password := ctx.UserInputs[userAttributePassword]
+	if password == "" {
+		logger.Debug("Password is empty")
+		execResp.Status = common.ExecFailure
+		execResp.FailureReason = "Password cannot be empty"
+		return execResp, nil
+	}
+
+	// Build credentials
+	credentials, err := json.Marshal(map[string]string{
+		userAttributePassword: password,
+	})
+	if err != nil {
+		logger.Debug("Failed to marshal credentials", log.Error(err))
+		execResp.Status = common.ExecFailure
+		execResp.FailureReason = "Failed to process credentials"
+		return execResp, nil
+	}
+
+	// Update user credentials
+	svcErr := e.userService.UpdateUserCredentials(userID, credentials)
+	if svcErr != nil {
+		logger.Debug("Failed to update user credentials",
+			log.String("userID", userID))
+		execResp.Status = common.ExecFailure
+		execResp.FailureReason = "Failed to set credentials"
+		return execResp, nil
+	}
+
+	logger.Debug("Successfully set credentials for user", log.String("userID", userID))
+	execResp.Status = common.ExecComplete
+	return execResp, nil
+}
