@@ -45,6 +45,7 @@ import (
 const shutdownTimeout = 5 * time.Second
 
 func main() {
+	startupStartedAt := time.Now()
 	logger := log.GetLogger()
 
 	thunderHome := getThunderHome(logger)
@@ -92,9 +93,9 @@ func main() {
 	// Start the server with or without TLS based on configuration.
 	if cfg.Server.HTTPOnly {
 		logger.Info("TLS is not enabled, starting server without TLS")
-		startHTTPServer(logger, server)
+		startHTTPServer(logger, server, startupStartedAt)
 	} else {
-		startTLSServer(logger, server, tlsConfig)
+		startTLSServer(logger, server, tlsConfig, startupStartedAt)
 	}
 
 	// Wait for shutdown signal
@@ -167,13 +168,16 @@ func loadCertConfig(logger *log.Logger, cfg *config.Config, thunderHome string) 
 }
 
 // startTLSServer starts the HTTPS server with TLS configuration.
-func startTLSServer(logger *log.Logger, server *http.Server, tlsConfig *tls.Config) {
+func startTLSServer(logger *log.Logger, server *http.Server, tlsConfig *tls.Config, startupStartedAt time.Time) {
 	ln, err := tls.Listen("tcp", server.Addr, tlsConfig)
 	if err != nil {
 		logger.Fatal("Failed to start TLS listener", log.Error(err))
 	}
 
-	logger.Info("WSO2 Thunder server started (HTTPS)...", log.String("address", server.Addr))
+	logger.Info(
+		fmt.Sprintf("WSO2 Thunder server started (HTTPS) in %s...", time.Since(startupStartedAt)),
+		log.String("address", server.Addr),
+	)
 
 	// Start server in a goroutine
 	go func() {
@@ -184,8 +188,11 @@ func startTLSServer(logger *log.Logger, server *http.Server, tlsConfig *tls.Conf
 }
 
 // startHTTPServer starts the HTTP server without TLS.
-func startHTTPServer(logger *log.Logger, server *http.Server) {
-	logger.Info("WSO2 Thunder server started (HTTP)...", log.String("address", server.Addr))
+func startHTTPServer(logger *log.Logger, server *http.Server, startupStartedAt time.Time) {
+	logger.Info(
+		fmt.Sprintf("WSO2 Thunder server started (HTTP) in %s...", time.Since(startupStartedAt)),
+		log.String("address", server.Addr),
+	)
 
 	// Start server in a goroutine
 	go func() {
