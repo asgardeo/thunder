@@ -382,7 +382,7 @@ Here's a complete example showing how to provide all variables for an exported a
 name: My Application
 description: Production application
 url: https://myapp.example.com
-auth_flow_id: auth_flow_config_basic
+auth_flow_id: <auth-flow-uuid>
 inbound_auth_config:
   - type: oauth2
     config:
@@ -412,7 +412,7 @@ export MY_APPLICATION_REDIRECT_URIS_2=https://myapp.example.com/silent-callback
 name: My Application
 description: Production application
 url: https://myapp.example.com
-auth_flow_id: auth_flow_config_basic
+auth_flow_id: <auth-flow-uuid>
 inbound_auth_config:
   - type: oauth2
     config:

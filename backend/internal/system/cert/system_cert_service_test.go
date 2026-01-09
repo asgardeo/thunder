@@ -66,7 +66,7 @@ func (suite *SystemCertificateServiceTestSuite) SetupSuite() {
 
 	// Create test config
 	suite.testConfig = &config.Config{
-		Security: config.SecurityConfig{
+		TLS: config.TLSConfig{
 			CertFile: suite.certFile,
 			KeyFile:  suite.keyFile,
 		},
@@ -153,12 +153,12 @@ func (suite *SystemCertificateServiceTestSuite) TestGetTLSConfig_ValidCertificat
 	suite.NoError(err)
 	suite.NotNil(tlsConfig)
 	suite.Len(tlsConfig.Certificates, 1)
-	suite.Equal(uint16(tls.VersionTLS12), tlsConfig.MinVersion)
+	suite.Equal(uint16(tls.VersionTLS13), tlsConfig.MinVersion)
 }
 
 func (suite *SystemCertificateServiceTestSuite) TestGetTLSConfig_CertificateFileNotFound() {
 	config := &config.Config{
-		Security: config.SecurityConfig{
+		TLS: config.TLSConfig{
 			CertFile: "nonexistent.crt",
 			KeyFile:  suite.keyFile,
 		},
@@ -173,7 +173,7 @@ func (suite *SystemCertificateServiceTestSuite) TestGetTLSConfig_CertificateFile
 
 func (suite *SystemCertificateServiceTestSuite) TestGetTLSConfig_KeyFileNotFound() {
 	config := &config.Config{
-		Security: config.SecurityConfig{
+		TLS: config.TLSConfig{
 			CertFile: suite.certFile,
 			KeyFile:  "nonexistent.key",
 		},
@@ -193,7 +193,7 @@ func (suite *SystemCertificateServiceTestSuite) TestGetTLSConfig_InvalidCertific
 	suite.Require().NoError(err)
 
 	config := &config.Config{
-		Security: config.SecurityConfig{
+		TLS: config.TLSConfig{
 			CertFile: "invalid.crt",
 			KeyFile:  suite.keyFile,
 		},
@@ -212,7 +212,7 @@ func (suite *SystemCertificateServiceTestSuite) TestGetTLSConfig_InvalidKeyFile(
 	suite.Require().NoError(err)
 
 	config := &config.Config{
-		Security: config.SecurityConfig{
+		TLS: config.TLSConfig{
 			CertFile: suite.certFile,
 			KeyFile:  "invalid.key",
 		},
@@ -259,7 +259,7 @@ func (suite *SystemCertificateServiceTestSuite) TestGetTLSConfig_DifferentDirect
 	suite.Require().NoError(err)
 
 	config := &config.Config{
-		Security: config.SecurityConfig{
+		TLS: config.TLSConfig{
 			CertFile: suite.certFile, // relative path
 			KeyFile:  suite.keyFile,  // relative path
 		},
@@ -275,7 +275,7 @@ func (suite *SystemCertificateServiceTestSuite) TestGetTLSConfig_DifferentDirect
 func (suite *SystemCertificateServiceTestSuite) TestGetTLSConfig_RelativePaths() {
 	// Test with relative paths from the temp directory
 	relativeConfig := &config.Config{
-		Security: config.SecurityConfig{
+		TLS: config.TLSConfig{
 			CertFile: "./test.crt",
 			KeyFile:  "./test.key",
 		},
@@ -382,7 +382,7 @@ func (suite *SystemCertificateServiceTestSuite) TestIntegration_GetTLSConfigAndK
 
 	// Verify the TLS config is actually usable
 	suite.Len(tlsConfig.Certificates, 1)
-	suite.Equal(uint16(tls.VersionTLS12), tlsConfig.MinVersion)
+	suite.Equal(uint16(tls.VersionTLS13), tlsConfig.MinVersion)
 
 	// Verify certificate data is accessible
 	certData := tlsConfig.Certificates[0].Certificate[0]

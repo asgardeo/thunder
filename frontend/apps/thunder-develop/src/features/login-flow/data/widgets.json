@@ -129,12 +129,12 @@
             "id": "{{GOOGLE_EXECUTION_STEP_ID}}",
             "type": "TASK_EXECUTION",
             "size": {
-              "width": 350,
-              "height": 291
+              "width": 200,
+              "height": 113
             },
             "position": {
-              "x": 690,
-              "y": 500
+              "x": 820,
+              "y": 350
             },
             "data": {
               "action": {
@@ -153,12 +153,12 @@
             "id": "{{AUTH_ASSERT_EXECUTOR_ID}}",
             "type": "TASK_EXECUTION",
             "size": {
-              "width": 200,
+              "width": 244,
               "height": 113
             },
             "position": {
-              "x": 1080,
-              "y": 570
+              "x": 1234,
+              "y": 230
             },
             "data": {
               "action": {
@@ -234,12 +234,12 @@
             "id": "{{GITHUB_EXECUTION_STEP_ID}}",
             "type": "TASK_EXECUTION",
             "size": {
-              "width": 350,
-              "height": 291
+              "width": 200,
+              "height": 113
             },
             "position": {
-              "x": 690,
-              "y": 500
+              "x": 820,
+              "y": 350
             },
             "data": {
               "action": {
@@ -258,12 +258,12 @@
             "id": "{{AUTH_ASSERT_EXECUTOR_ID}}",
             "type": "TASK_EXECUTION",
             "size": {
-              "width": 200,
+              "width": 244,
               "height": 113
             },
             "position": {
-              "x": 1080,
-              "y": 570
+              "x": 1234,
+              "y": 230
             },
             "data": {
               "action": {

@@ -67,7 +67,7 @@ test_unit:
 	./build.sh test_unit $(OS) $(ARCH)
 
 test_integration:
-	./build.sh test_integration $(OS) $(ARCH)
+	./build.sh test_integration "$(OS)" "$(ARCH)" "$(RUN)" "$(PACKAGE)"
 
 build_with_coverage:
 	@echo "================================================================"
@@ -76,7 +76,7 @@ build_with_coverage:
 	./build.sh test_unit $(OS) $(ARCH)
 	ENABLE_COVERAGE=true ./build.sh build_backend $(OS) $(ARCH)
 	./build.sh build_frontend
-	./build.sh test_integration $(OS) $(ARCH)
+	./build.sh test_integration $(OS) $(ARCH) "$(RUN)" "$(PACKAGE)"
 	./build.sh merge_coverage $(OS) $(ARCH)
 	@echo "================================================================"
 
@@ -147,7 +147,7 @@ help:
 	@echo "  package_samples               - Package sample applications."
 	@echo "  build_samples                 - Build sample applications."
 	@echo "  test_unit                     - Run unit tests."
-	@echo "  test_integration              - Run integration tests."
+	@echo "  test_integration              - Run integration tests. Use RUN= for test filter, PACKAGE= for package filter."
 	@echo "  build_with_coverage  		   - Build with coverage flags, run unit and integration tests, and generate combined coverage report."
 	@echo "  build_with_coverage_only      - Build with coverage instrumentation (unit tests only, no integration tests)."
 	@echo "  test                          - Run all tests (unit and integration)."

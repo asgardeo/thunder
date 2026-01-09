@@ -19,6 +19,7 @@
 import {beforeEach, describe, expect, it, vi} from 'vitest';
 import {render, screen, waitFor} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import {LoggerProvider, LogLevel} from '@thunder/logger';
 import ConfigureDetails from '../ConfigureDetails';
 import type {ApplicationTemplate} from '../../../models/application-templates';
 import ApplicationCreateContext, {
@@ -87,9 +88,16 @@ const renderWithContext = (
   };
 
   return render(
-    <ApplicationCreateContext.Provider value={baseContext}>
-      <ConfigureDetails {...props} />
-    </ApplicationCreateContext.Provider>,
+    <LoggerProvider
+      logger={{
+        level: LogLevel.ERROR,
+        transports: [],
+      }}
+    >
+      <ApplicationCreateContext.Provider value={baseContext}>
+        <ConfigureDetails {...props} />
+      </ApplicationCreateContext.Provider>
+    </LoggerProvider>,
   );
 };
 

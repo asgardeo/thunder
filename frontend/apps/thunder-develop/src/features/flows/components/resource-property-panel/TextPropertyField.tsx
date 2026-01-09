@@ -23,7 +23,7 @@ import startCase from 'lodash-es/startCase';
 import useValidationStatus from '../../hooks/useValidationStatus';
 import type {Resource} from '../../models/resources';
 import I18nConfigurationCard from './I18nConfigurationCard';
-import './TextPropertyField.scss';
+import {isI18nPattern as checkIsI18nPattern, extractI18nKey} from '../../utils/i18nPatternUtils';
 
 /**
  * Props interface of {@link TextPropertyField}
@@ -75,13 +75,7 @@ function TextPropertyField({
   /**
    * Check if the property value matches the i18n pattern.
    */
-  const isI18nPattern: boolean = useMemo(() => {
-    if (!propertyValue) return false;
-
-    const i18nPattern = /^\{\{[^}]+\}\}$/;
-
-    return i18nPattern.test(propertyValue.trim());
-  }, [propertyValue]);
+  const isI18nPattern: boolean = useMemo(() => checkIsI18nPattern(propertyValue), [propertyValue]);
 
   /**
    * Get the error message for the text property field.
@@ -111,7 +105,7 @@ function TextPropertyField({
   };
 
   return (
-    <Box className="flow-builder-resource-property-panel-text-field">
+    <Box>
       <FormControl fullWidth>
         <FormLabel htmlFor={`${resource.id}-${propertyKey}`}>{startCase(propertyKey)}</FormLabel>
         <TextField
@@ -140,8 +134,8 @@ function TextPropertyField({
           anchorEl={iconButtonRef.current}
           propertyKey={propertyKey}
           onClose={handleI18nClose}
-          i18nKey={isI18nPattern ? propertyValue.slice(2, -2) : ''}
-          onChange={(i18nKey: string) => onChange(propertyKey, i18nKey ? `{{${i18nKey}}}` : '', resource)}
+          i18nKey={extractI18nKey(propertyValue) ?? ''}
+          onChange={(i18nKey: string) => onChange(propertyKey, i18nKey ? `{{t(${i18nKey})}}` : '', resource)}
         />
       )}
     </Box>

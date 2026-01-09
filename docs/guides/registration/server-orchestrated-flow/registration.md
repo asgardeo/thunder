@@ -2,7 +2,8 @@
 
 Thunder supports self-registration flows where the server orchestrates the entire registration process. This allows users to execute registration flows via REST APIs, making it suitable for native applications, mobile apps, and single-page applications (SPAs).
 
-> Note: Refer [Customizing Registration Flows](./customize-registration-flow.md) for more details on customizing registration flows.
+> [!TIP]
+> To customize registration flows, see the [Flow Guides](/docs/guides/flows/) for creating and managing flows using the Visual Flow Builder or the Flow Management API.
 
 ## Enabling Self Registration
 
@@ -12,7 +13,13 @@ To enable self-registration, set the `is_registration_flow_enabled` property to 
 
 ## Register with Username and Password
 
-1. **Configure an Application with Username/Password Registration**
+1. **Create or Update the Registration Flow**
+
+    Use the Flow Management API or Visual Flow Builder to create a username/password registration flow. See the [Flow Examples](/docs/guides/flows/flow-examples.md#username-and-password-registration) for a complete example.
+
+    Note the `id` of the created registration flow for the next step.
+
+2. **Configure an Application with Username/Password Registration**
 
     Create an application to use the username/password registration template. You can use the following cURL command to create a new application.
 
@@ -23,12 +30,12 @@ To enable self-registration, set the `is_registration_flow_enabled` property to 
         "name": "App Native Login 1",
         "description": "Sample application for App native login",
         "auth_flow_id": "edc013d0-e893-4dc0-990c-3e1d203e005b",
-        "registration_flow_id": "80024fb3-29ed-4c33-aa48-8aee5e96d522",
+        "registration_flow_id": "<registration_flow_id>",
         "is_registration_flow_enabled": true
     }'
     ```
 
-2. **Start the Registration Flow**
+3. **Start the Registration Flow**
 
     Start registration flow for the application with the following cURL command:
 
@@ -48,23 +55,31 @@ To enable self-registration, set the `is_registration_flow_enabled` property to 
         "flowStatus": "PROMPT_ONLY",
         "type": "VIEW",
         "data": {
-        "inputs": [
+          "inputs": [
             {
-                "name": "username",
-                "type": "string",
+                "identifier": "username",
+                "type": "TEXT_INPUT",
                 "required": true
             },
             {
-                "name": "password",
-                "type": "string",
+                "identifier": "password",
+                "type": "PASSWORD_INPUT",
                 "required": true
             }
-        ]
+          ],
+          "actions": [
+            {
+                "ref": "action_001",
+                "nextNode": "basic_auth"
+            }
+          ]
         }
     }
     ```
 
-3. **Continue the Registration Flow**
+    The `actions` array contains the available actions the user can select. Use the `ref` value from the selected action in subsequent requests.
+
+4. **Continue the Registration Flow**
 
     Make the second cURL request to continue the registration flow. Make sure to replace `<flow_id>` with the `flowId` received in the previous response. Also, replace the `username` and `password` with the desired credentials for the new user.
 
@@ -72,6 +87,7 @@ To enable self-registration, set the `is_registration_flow_enabled` property to 
     curl -kL -H 'Content-Type: application/json' https://localhost:8090/flow/execute \
     -d '{
         "flowId": "<flow_id>",
+        "action": "<action_ref>",
         "inputs": {
             "username": "thor",
             "password": "<password>"
@@ -108,7 +124,7 @@ To enable self-registration, set the `is_registration_flow_enabled` property to 
     }
     ```
 
-4. **Complete the Registration Flow**
+5. **Complete the Registration Flow**
 
     Make the third cURL request to complete the registration flow. Make sure to replace `<flow_id>` with the `flowId` received in the previous response.
 
@@ -116,6 +132,7 @@ To enable self-registration, set the `is_registration_flow_enabled` property to 
     curl -kL -H 'Content-Type: application/json' https://localhost:8090/flow/execute \
     -d '{
         "flowId": "<flow_id>",
+        "action": "<action_ref>",
         "inputs": {
             "email": "thor@thunder.sky",
             "firstName": "Thor",
@@ -161,15 +178,11 @@ To enable self-registration, set the `is_registration_flow_enabled` property to 
 
     > Note: Refer [Configuring Message Senders](/../../notification-sender/configure-message-senders.md) for more details on configuring message senders.
 
-3. **Update the Registration Flow Graph**
+3. **Create or Update the Registration Flow**
 
-    Update the registration flow graph to use the configured message sender. To do so, open the `registration_flow_config_sms.json` file in the `repository/resources/graph/` directory and update the `senderId` with the unique identifier of the message sender you configured in the previous step.
+    Use the Flow Management API or Visual Flow Builder to create an SMS OTP registration flow with your `senderId`. See the [Flow Examples](/docs/guides/flows/flow-examples.md#sms-otp-registration) for a complete example.
 
-    If the file doesn't exist, that means the registration flow graph is automatically constructed from the equivalent authentication flow graph. In that case, you can update the `senderId` property in the `auth_flow_config_sms.json` file or create a new `registration_flow_config_sms.json` file and define the registration flow.
-
-    > Note: Refer [Customizing Registration Flows](./customize-registration-flow.md) for more details on automatic registration flow creation.
-
-    Make sure to restart the server after making this change.
+    Note the `id` of the created registration flow for the next step.
 
 4. **Configure an Application with SMS OTP Registration**
 
@@ -182,7 +195,7 @@ To enable self-registration, set the `is_registration_flow_enabled` property to 
         "name": "App Native Login 1",
         "description": "Sample application for App native login",
         "auth_flow_id": "edc013d0-e893-4dc0-990c-3e1d203e005b",
-        "registration_flow_id": "80024fb3-29ed-4c33-aa48-8aee5e96d522",
+        "registration_flow_id": "<registration_flow_id>",
         "is_registration_flow_enabled": true
     }'
     ```
@@ -226,6 +239,7 @@ To enable self-registration, set the `is_registration_flow_enabled` property to 
     curl -kL -H 'Content-Type: application/json' https://localhost:8090/flow/execute \
     -d '{
         "flowId": "<flow_id>",
+        "action": "<action_ref>",
         "inputs": {
             "mobileNumber": "+94xxxxxxxxx"
         }
@@ -242,6 +256,7 @@ To enable self-registration, set the `is_registration_flow_enabled` property to 
     curl -kL -H 'Content-Type: application/json' https://localhost:8090/flow/execute \
     -d '{
         "flowId": "<flow_id>",
+        "action": "<action_ref>",
         "inputs": {
             "otp": "696546"
         }
@@ -285,6 +300,7 @@ To enable self-registration, set the `is_registration_flow_enabled` property to 
     curl -kL -H 'Content-Type: application/json' https://localhost:8090/flow/execute \
     -d '{
         "flowId": "<flow_id>",
+        "action": "<action_ref>",
         "inputs": {
             "email": "thor@thunder.sky",
             "firstName": "Thor",
@@ -341,15 +357,11 @@ To enable self-registration, set the `is_registration_flow_enabled` property to 
 
     > Note: Refer [Configuring Identity Providers](/../../identity-provider/configure-identity-providers.md) for more details on configuring identity providers.
 
-3. **Update the Registration Flow Graph**
+3. **Create or Update the Registration Flow**
 
-    Update the registration flow graph to use the configured identity provider. To do so, open the `registration_flow_config_google.json` file in the `repository/resources/graph/` directory and update the `idpId` with the unique identifier of the identity provider you configured in the previous step.
+    Use the Flow Management API or Visual Flow Builder to create a Google registration flow with your `idpId`. See the [Flow Examples](/docs/guides/flows/flow-examples.md#google-oidc-registration) for a complete example.
 
-    If the file doesn't exist, that means the registration flow graph is automatically constructed from the equivalent authentication flow graph. In that case, you can update the `idpId` property in the `auth_flow_config_google.json` file or create a new `registration_flow_config_google.json` file and define the registration flow.
-
-    > Note: Refer [Customizing Registration Flows](./customize-registration-flow.md) for more details on automatic registration flow creation.
-    
-    Make sure to restart the server after making this change.
+    Note the `id` of the created registration flow for the next step.
 
 4. **Configure an Application with Google Sign Up**
 
@@ -361,7 +373,7 @@ To enable self-registration, set the `is_registration_flow_enabled` property to 
         "name": "App Native Login 1",
         "description": "Sample application for App native login",
         "auth_flow_id": "edc013d0-e893-4dc0-990c-3e1d203e005b",
-        "registration_flow_id": "80024fb3-29ed-4c33-aa48-8aee5e96d522",
+        "registration_flow_id": "<registration_flow_id>",
         "is_registration_flow_enabled": true
     }'
     ```
@@ -478,15 +490,11 @@ To enable self-registration, set the `is_registration_flow_enabled` property to 
 
     > Note: Refer [Configuring Identity Providers](/../../identity-provider/configure-identity-providers.md) for more details on configuring identity providers.
 
-3. **Update the Registration Flow Graph**
+3. **Create or Update the Registration Flow**
 
-    Update the registration flow graph to use the configured identity provider. To do so, open the `registration_flow_config_github.json` file in the `repository/resources/graph/` directory and update the `idpId` with the unique identifier of the identity provider you configured in the previous step.
+    Use the Flow Management API or Visual Flow Builder to create a GitHub registration flow with your `idpId`. See the [Flow Examples](/docs/guides/flows/flow-examples.md#github-oauth-registration) for a complete example.
 
-    If the file doesn't exist, that means the registration flow graph is automatically constructed from the equivalent authentication flow graph. In that case, you can update the `idpId` property in the `auth_flow_config_github.json` file or create a new `registration_flow_config_github.json` file and define the registration flow.
-
-    > Note: Refer [Customizing Registration Flows](./customize-registration-flow.md) for more details on automatic registration flow creation.
-    
-    Make sure to restart the server after making this change.
+    Note the `id` of the created registration flow for the next step.
 
 4. **Configure an Application with GitHub Sign Up**
 
@@ -499,7 +507,7 @@ To enable self-registration, set the `is_registration_flow_enabled` property to 
         "name": "App Native Login 1",
         "description": "Sample application for App native login",
         "auth_flow_id": "edc013d0-e893-4dc0-990c-3e1d203e005b",
-        "registration_flow_id": "80024fb3-29ed-4c33-aa48-8aee5e96d522",
+        "registration_flow_id": "<registration_flow_id>",
         "is_registration_flow_enabled": true
     }'
     ```

@@ -17,8 +17,8 @@
  */
 
 import {describe, it, expect, vi, beforeEach, afterEach} from 'vitest';
-import {renderHook, waitFor} from '@testing-library/react';
-
+import {waitFor} from '@testing-library/react';
+import {renderHook} from '../../../../test/test-utils';
 import useUpdateUser, {type UpdateUserRequest} from '../useUpdateUser';
 import type {ApiUser} from '../../types/users';
 
@@ -33,11 +33,15 @@ vi.mock('@asgardeo/react', () => ({
 }));
 
 // Mock useConfig
-vi.mock('@thunder/commons-contexts', () => ({
-  useConfig: () => ({
-    getServerUrl: () => 'https://localhost:8090',
-  }),
-}));
+vi.mock('@thunder/commons-contexts', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@thunder/commons-contexts')>();
+  return {
+    ...actual,
+    useConfig: () => ({
+      getServerUrl: () => 'https://localhost:8090',
+    }),
+  };
+});
 
 describe('useUpdateUser', () => {
   beforeEach(() => {
@@ -320,9 +324,7 @@ describe('useUpdateUser', () => {
       },
     };
 
-    mockHttpRequest
-      .mockResolvedValueOnce({data: mockResponse1})
-      .mockResolvedValueOnce({data: mockResponse2});
+    mockHttpRequest.mockResolvedValueOnce({data: mockResponse1}).mockResolvedValueOnce({data: mockResponse2});
 
     const {result} = renderHook(() => useUpdateUser());
 

@@ -18,6 +18,7 @@
 
 import {useMemo, useCallback, useState, type JSX} from 'react';
 import {useNavigate} from 'react-router';
+import {useLogger} from '@thunder/logger/react';
 import {
   Box,
   Avatar,
@@ -42,6 +43,7 @@ export default function ApplicationsList(): JSX.Element {
   const theme = useTheme();
   const navigate = useNavigate();
   const {t} = useTranslation();
+  const logger = useLogger('ApplicationsList');
   const dataGridLocaleText = useDataGridLocaleText();
   const {data, isLoading, error} = useGetApplications();
 
@@ -74,9 +76,8 @@ export default function ApplicationsList(): JSX.Element {
     if (selectedAppId) {
       (async (): Promise<void> => {
         await navigate(`/applications/${selectedAppId}`);
-      })().catch(() => {
-        // TODO: Log the errors
-        // Tracker: https://github.com/asgardeo/thunder/issues/618
+      })().catch((_error: unknown) => {
+        logger.error('Failed to navigate to application details', {error: _error, applicationId: selectedAppId});
       });
     }
   };
@@ -209,9 +210,8 @@ export default function ApplicationsList(): JSX.Element {
             const applicationId = (params.row as BasicApplication).id;
             (async (): Promise<void> => {
               await navigate(`/applications/${applicationId}`);
-            })().catch(() => {
-              // TODO: Log the errors
-              // Tracker: https://github.com/asgardeo/thunder/issues/618
+            })().catch((_error: unknown) => {
+              logger.error('Failed to navigate to application', {error: _error, applicationId});
             });
           }}
           initialState={{

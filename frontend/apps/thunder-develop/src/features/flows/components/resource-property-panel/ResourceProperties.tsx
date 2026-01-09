@@ -26,7 +26,6 @@ import set from 'lodash-es/set';
 import isEmpty from 'lodash-es/isEmpty';
 import type {Properties} from '../../models/base';
 import type {Resource} from '../../models/resources';
-import './ResourceProperties.scss';
 import useFlowBuilderCore from '../../hooks/useFlowBuilderCore';
 import ResourcePropertyPanelConstants from '../../constants/ResourcePropertyPanelConstants';
 import PluginRegistry from '../../plugins/PluginRegistry';
@@ -112,7 +111,9 @@ function ResourceProperties(): ReactElement {
     if (lastInteractedResource.config) {
       Object.keys(lastInteractedResource.config).forEach((key: string) => {
         if (!ResourcePropertyPanelConstants.EXCLUDED_PROPERTIES.includes(key)) {
-          (props as Record<string, unknown>)[key] = (lastInteractedResource.config as unknown as Record<string, unknown>)[key];
+          (props as Record<string, unknown>)[key] = (
+            lastInteractedResource.config as unknown as Record<string, unknown>
+          )[key];
         }
       });
     }
@@ -282,25 +283,23 @@ function ResourceProperties(): ReactElement {
     [],
   );
 
+  if (!lastInteractedResource) {
+    return (
+      <Typography variant="body2" color="textSecondary" sx={{padding: 2}}>
+        No properties available.
+      </Typography>
+    );
+  }
+
   return (
-    <div className="flow-builder-element-properties">
-      {lastInteractedResource ? (
-        <Stack gap={2}>
-          {lastInteractedResource && (
-            <ResourcePropertiesComponent
-              resource={lastInteractedResource}
-              properties={filteredProperties as Record<string, unknown>}
-              onChange={handlePropertyChange}
-              onVariantChange={changeSelectedVariant}
-            />
-          )}
-        </Stack>
-      ) : (
-        <Typography variant="body2" color="textSecondary" sx={{padding: 2}}>
-          No properties available.
-        </Typography>
-      )}
-    </div>
+    <Stack gap={2}>
+      <ResourcePropertiesComponent
+        resource={lastInteractedResource}
+        properties={filteredProperties as Record<string, unknown>}
+        onChange={handlePropertyChange}
+        onVariantChange={changeSelectedVariant}
+      />
+    </Stack>
   );
 }
 

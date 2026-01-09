@@ -137,3 +137,84 @@ func ValidateJWTAssertionFields(assertion, expectedAudience, expectedUserType,
 
 	return jwtClaims, nil
 }
+
+// AssuranceExpectation defines expected assurance values for validation.
+type AssuranceExpectation struct {
+	AAL                    string
+	IAL                    string
+	ExpectedAuthenticators []string // Order matters
+}
+
+// ValidateAssurance validates the assurance block in JWT claims.
+func ValidateAssurance(claims *JWTClaims, expected AssuranceExpectation) error {
+	if claims.Assurance == nil {
+		return fmt.Errorf("assurance block is missing from JWT claims")
+	}
+
+	// Validate AAL
+	if aal, ok := claims.Assurance["aal"].(string); ok {
+		if aal != expected.AAL {
+			return fmt.Errorf("expected AAL '%s', got '%s'", expected.AAL, aal)
+		}
+	} else {
+		return fmt.Errorf("AAL is missing or not a string")
+	}
+
+	// Validate IAL
+	if ial, ok := claims.Assurance["ial"].(string); ok {
+		if ial != expected.IAL {
+			return fmt.Errorf("expected IAL '%s', got '%s'", expected.IAL, ial)
+		}
+	} else {
+		return fmt.Errorf("IAL is missing or not a string")
+	}
+
+	// Validate authenticators
+	authenticators, ok := claims.Assurance["authenticators"].([]interface{})
+	if !ok {
+		return fmt.Errorf("authenticators field is missing or not an array")
+	}
+
+	expectedCount := len(expected.ExpectedAuthenticators)
+	if len(authenticators) != expectedCount {
+		return fmt.Errorf("expected %d authenticators, got %d", expectedCount, len(authenticators))
+	}
+
+	// Validate each authenticator
+	for i, auth := range authenticators {
+		authMap, ok := auth.(map[string]interface{})
+		if !ok {
+			return fmt.Errorf("authenticator at index %d is not a valid object", i)
+		}
+
+		// Validate authenticator name
+		authenticatorName, ok := authMap["authenticator"].(string)
+		if !ok {
+			return fmt.Errorf("authenticator name at index %d is missing or not a string", i)
+		}
+		if authenticatorName != expected.ExpectedAuthenticators[i] {
+			return fmt.Errorf("expected authenticator at step %d to be '%s', got '%s'",
+				i+1, expected.ExpectedAuthenticators[i], authenticatorName)
+		}
+
+		// Validate step number
+		step, ok := authMap["step"].(float64)
+		if !ok {
+			return fmt.Errorf("step at index %d is missing or not a number", i)
+		}
+		if int(step) != i+1 {
+			return fmt.Errorf("expected step %d, got %d", i+1, int(step))
+		}
+
+		// Validate timestamp exists and is positive
+		timestamp, ok := authMap["timestamp"].(float64)
+		if !ok {
+			return fmt.Errorf("timestamp at index %d is missing or not a number", i)
+		}
+		if timestamp <= 0 {
+			return fmt.Errorf("timestamp at index %d should be positive, got %f", i, timestamp)
+		}
+	}
+
+	return nil
+}

@@ -24,7 +24,6 @@ import type {ToolbarPluginProps} from './helper-plugins/ToolbarPlugin';
 import RichText from './RichText';
 import type {LanguageTextFieldProps} from '../I18nConfigurationCard';
 import I18nConfigurationCard from '../I18nConfigurationCard';
-import './RichTextWithTranslation.scss';
 
 /**
  * Props interface for the RichTextWithTranslation component.
@@ -50,7 +49,11 @@ export interface RichTextWithTranslationProps {
   resource: Resource;
 }
 
-function TranslationRichText({onChange, value, disabled}: LanguageTextFieldProps): ReactElement {
+/**
+ * Rich text component used within I18nConfigurationCard for translation editing.
+ * Exported for testing purposes.
+ */
+export function TranslationRichText({onChange, value, disabled}: LanguageTextFieldProps): ReactElement {
   /**
    * Resource object to hold the rich text editor content.
    * Note: This is a partial mock object that contains the `label` property (new format)
@@ -77,14 +80,7 @@ function TranslationRichText({onChange, value, disabled}: LanguageTextFieldProps
     } as ChangeEvent<HTMLInputElement>);
   };
 
-  return (
-    <RichText
-      onChange={handleRichTextChange}
-      resource={resource}
-      disabled={disabled}
-      className="without-translation-icon"
-    />
-  );
+  return <RichText onChange={handleRichTextChange} resource={resource} disabled={disabled} />;
 }
 
 /**
@@ -114,14 +110,8 @@ function RichTextWithTranslation({
   }, [resource, selectedNotification]);
 
   return (
-    <Box className="rich-text-with-translation-container">
-      <RichText
-        ToolbarProps={ToolbarProps}
-        className={className}
-        onChange={onChange}
-        resource={resource}
-        hasError={!!errorMessage}
-      />
+    <Box>
+      <RichText ToolbarProps={ToolbarProps} className={className} onChange={onChange} resource={resource} />
       {errorMessage && <FormHelperText error>{errorMessage}</FormHelperText>}
       {/* <Tooltip title={t('flows:core.elements.textPropertyField.tooltip.configureTranslation')}>
         <IconButton
@@ -141,9 +131,10 @@ function RichTextWithTranslation({
           onClose={() => setIsI18nCardOpen(false)}
           i18nKey={(() => {
             const text = String((resource as Resource & {label?: string})?.label ?? '');
-            return /^{{(.*)}}$/.test(text) ? text.slice(2, -2) : '';
+            const match = /^\{\{t\(([^)]+)\)\}\}$/.exec(text);
+            return match?.[1] ?? '';
           })()}
-          onChange={(i18nKey: string) => onChange(i18nKey ? `{{${i18nKey}}}` : '')}
+          onChange={(i18nKey: string) => onChange(i18nKey ? `{{t(${i18nKey})}}` : '')}
           LanguageTextField={TranslationRichText}
         />
       )}

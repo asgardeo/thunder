@@ -32,7 +32,7 @@ import './VisualFlow.scss';
 import {LayoutGrid, Save} from '@wso2/oxygen-ui-icons-react';
 import {useTranslation} from 'react-i18next';
 import CanvasValidationIndicator from '../validation-panel/CanvasValidationIndicator';
-import EdgeStyleMenu from '../header-panel/EdgeStyleSelector';
+import EdgeStyleMenu from './EdgeStyleSelector';
 import useFlowBuilderCore from '../../hooks/useFlowBuilderCore';
 import useEdgeStyleSelector from '../../hooks/useEdgeStyleSelector';
 import getEdgeStyleIcon from '../../utils/getEdgeStyleIcon';

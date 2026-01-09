@@ -29,17 +29,28 @@ import {
   useUpdateNodeInternals,
 } from '@xyflow/react';
 import type {UpdateNodeInternals} from '@xyflow/system';
-import {type Dispatch, useCallback, useEffect, useRef, useState, type ReactElement, type SetStateAction} from 'react';
+import {
+  type Dispatch,
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type ReactElement,
+  type SetStateAction,
+} from 'react';
 import {Box} from '@wso2/oxygen-ui';
 import classNames from 'classnames';
+import useIdentityProviders from '@/features/integrations/api/useIdentityProviders';
+import useNotificationSenders from '@/features/notification-senders/api/useNotificationSenders';
 import VisualFlow, {type VisualFlowPropsInterface} from './VisualFlow';
-import Droppable from '../dnd/droppable';
+import Droppable from '../dnd/Droppable';
 import VisualFlowConstants from '../../constants/VisualFlowConstants';
 import generateResourceId from '../../utils/generateResourceId';
 import {BlockTypes, type Element} from '../../models/elements';
 import type {DragSourceData, DragTargetData, DragEventWithNative} from '../../models/drag-drop';
 import {ResourceTypes, type Resource, type Resources} from '../../models/resources';
-import FormRequiresViewDialog from '../form-requires-view-dialog/FormRequiresViewDialog';
+import FormRequiresViewDialog from './FormRequiresViewDialog';
 import {type Step, type StepData} from '../../models/steps';
 import {type Template} from '../../models/templates';
 import type {Widget} from '../../models/widget';
@@ -58,6 +69,8 @@ import {resolveCollisions} from '../../utils/resolveCollisions';
 import ResourcePanel from '../resource-panel/ResourcePanel';
 import ResourcePropertyPanel from '../resource-property-panel/ResourcePropertyPanel';
 import ValidationPanel from '../validation-panel/ValidationPanel';
+import computeExecutorConnections from '../../utils/computeExecutorConnections';
+import type {MetadataInterface} from '../../models/metadata';
 
 /**
  * Props interface of {@link DecoratedVisualFlow}
@@ -133,6 +146,22 @@ function DecoratedVisualFlow({
     useFlowBuilderCore();
   const {generateStepElement} = useGenerateStepElement();
 
+  // Fetch identity providers and notification senders to compute executor connections
+  const {data: identityProviders} = useIdentityProviders();
+  const {data: notificationSenders} = useNotificationSenders();
+  const computedMetadata: MetadataInterface | undefined = useMemo(() => {
+    const executorConnections = computeExecutorConnections({identityProviders, notificationSenders});
+
+    if (executorConnections.length === 0 && !metadata) {
+      return undefined;
+    }
+
+    return {
+      ...metadata,
+      executorConnections: executorConnections.length > 0 ? executorConnections : (metadata?.executorConnections ?? []),
+    } as MetadataInterface;
+  }, [identityProviders, notificationSenders, metadata]);
+
   const [isContainerDialogOpen, setIsContainerDialogOpen] = useState<boolean>(false);
   const [dropScenario, setDropScenario] = useState<
     'form-on-canvas' | 'input-on-canvas' | 'input-on-view' | 'widget-on-canvas'
@@ -158,7 +187,7 @@ function DecoratedVisualFlow({
     setEdges,
     onResourceDropOnCanvas,
     onWidgetLoad,
-    metadata,
+    metadata: computedMetadata,
     pendingDropRef,
   });
 
@@ -169,7 +198,7 @@ function DecoratedVisualFlow({
     setNodes,
     setEdges,
     generateStepElement,
-    metadata,
+    metadata: computedMetadata,
     onResourceDropOnCanvas,
   });
 
@@ -186,7 +215,7 @@ function DecoratedVisualFlow({
     generateStepElement,
     mutateComponents,
     onWidgetLoad,
-    metadata,
+    metadata: computedMetadata,
   });
 
   // Memoized handleSave

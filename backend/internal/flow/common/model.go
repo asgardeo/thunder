@@ -71,6 +71,7 @@ type NodeExecutionRecord struct {
 	NodeType     string             `json:"node_type"`
 	ExecutorName string             `json:"executor_name,omitempty"`
 	ExecutorType ExecutorType       `json:"executor_type,omitempty"`
+	ExecutorMode string             `json:"executor_mode,omitempty"`
 	Step         int                `json:"step"`
 	Status       FlowStatus         `json:"status"`
 	Executions   []ExecutionAttempt `json:"executions"`

@@ -182,6 +182,7 @@ func (a *authAssertExecutor) generateAuthAssertion(ctx *core.NodeContext, logger
 func (a *authAssertExecutor) extractAuthenticatorReferences(
 	history map[string]*common.NodeExecutionRecord) []authncm.AuthenticatorReference {
 	refs := make([]authncm.AuthenticatorReference, 0)
+	seenAuthenticators := make(map[string]bool)
 
 	for _, record := range history {
 		if record.ExecutorType != common.ExecutorTypeAuthentication {
@@ -196,6 +197,12 @@ func (a *authAssertExecutor) extractAuthenticatorReferences(
 		if authnServiceName == "" {
 			continue
 		}
+
+		// Skip if we've already seen this authenticator
+		if seenAuthenticators[authnServiceName] {
+			continue
+		}
+		seenAuthenticators[authnServiceName] = true
 
 		refs = append(refs, authncm.AuthenticatorReference{
 			Authenticator: authnServiceName,

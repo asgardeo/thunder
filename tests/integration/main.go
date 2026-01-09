@@ -19,6 +19,7 @@
 package main
 
 import (
+	"flag"
 	"fmt"
 	"os"
 	"os/exec"
@@ -31,9 +32,14 @@ const (
 	serverPort = "8095"
 )
 
-var zipFilePattern string
+var (
+	zipFilePattern string
+	testRun        string
+	testPackage    string
+)
 
 func main() {
+	parseFlags()
 	initTests()
 
 	// Step 1: Unzip the product
@@ -99,6 +105,12 @@ func main() {
 	fmt.Println("All tests completed successfully!")
 }
 
+func parseFlags() {
+	flag.StringVar(&testRun, "run", "", "Run only tests matching the regular expression (passed to go test -run)")
+	flag.StringVar(&testPackage, "package", "./...", "Package(s) to test (default: ./...)")
+	flag.Parse()
+}
+
 func initTests() {
 	// Read database type from environment variable
 	dbType := os.Getenv("DB_TYPE")
@@ -131,15 +143,32 @@ func runTests() error {
 		return fmt.Errorf("failed to clean test cache: %w", err)
 	}
 
+	// Determine command and build args
 	_, err = exec.LookPath("gotestsum")
-	if err == nil {
+	useGotestsum := err == nil
+
+	var cmdName string
+	var args []string
+
+	if useGotestsum {
 		fmt.Println("Running integration tests using gotestsum...")
-		cmd = exec.Command("gotestsum", "--format", "testname", "--", "-p=1", "./...")
+		cmdName = "gotestsum"
+		args = append(args, "--format", "testname", "--", "-p=1")
 	} else {
 		fmt.Println("Running integration tests using go test...")
-		cmd = exec.Command("go", "test", "-p=1", "-v", "./...")
+		cmdName = "go"
+		args = append(args, "test", "-p=1", "-v")
 	}
 
+	// Add test filters if provided
+	if testRun != "" {
+		args = append(args, "-run", testRun)
+		fmt.Printf("Test filter: -run %s\n", testRun)
+	}
+	args = append(args, testPackage)
+	fmt.Printf("Test package: %s\n", testPackage)
+
+	cmd = exec.Command(cmdName, args...)
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 	return cmd.Run()

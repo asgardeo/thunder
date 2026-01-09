@@ -33,11 +33,10 @@ import {
 } from 'react';
 import {createPortal} from 'react-dom';
 import {useTranslation} from 'react-i18next';
-import {Button, IconButton, MenuItem, Select, TextField} from '@wso2/oxygen-ui';
-import {EditIcon} from '@wso2/oxygen-ui-icons-react';
+import {Box, Button, Card, IconButton, Link, MenuItem, Select, TextField} from '@wso2/oxygen-ui';
+import {EditIcon, SaveIcon, X} from '@wso2/oxygen-ui-icons-react';
 import getSelectedNode from '../utils/getSelectedNode';
 import TOGGLE_SAFE_LINK_COMMAND from './commands';
-import './CustomLinkPlugin.scss';
 
 const LowPriority: CommandListenerPriority = 1;
 const HighPriority: CommandListenerPriority = 3;
@@ -49,38 +48,7 @@ interface PredefinedUrlOption {
   value: string;
 }
 
-const PREDEFINED_URLS: PredefinedUrlOption[] = [
-  {
-    label: 'flows:core.elements.richText.linkEditor.predefinedUrls.callbackOrApplicationAccessUrl',
-    placeholder: '{{CALLBACK_OR_APPLICATION_ACCESS_URL}}',
-    value: '{{application.callbackOrAccessUrl}}',
-  },
-  {
-    label: 'flows:core.elements.richText.linkEditor.predefinedUrls.applicationAccessUrl',
-    placeholder: '{{APPLICATION_ACCESS_URL}}',
-    value: '{{application.accessUrl}}',
-  },
-  {
-    label: 'flows:core.elements.richText.linkEditor.predefinedUrls.privacyPolicyUrl',
-    placeholder: '{{PRIVACY_POLICY_URL}}',
-    value: '{{branding.privacyPolicyUrl}}',
-  },
-  {
-    label: 'flows:core.elements.richText.linkEditor.predefinedUrls.termsOfUseUrl',
-    placeholder: '{{TERMS_OF_USE_URL}}',
-    value: '{{branding.termsOfUseUrl}}',
-  },
-  {
-    label: 'flows:core.elements.richText.linkEditor.predefinedUrls.supportEmail',
-    placeholder: '{{SUPPORT_EMAIL}}',
-    value: 'mailto:{{branding.supportEmail}}',
-  },
-  {
-    label: 'flows:core.elements.richText.linkEditor.predefinedUrls.customUrl',
-    placeholder: '',
-    value: 'CUSTOM',
-  },
-];
+const PREDEFINED_URLS: PredefinedUrlOption[] = [];
 
 /**
  * Positions the editor element based on the selection rectangle.
@@ -412,11 +380,43 @@ function LinkEditor(): ReactElement {
     }
   }, [isEditMode]);
 
+  const handleClose = useCallback(() => {
+    if (editorRef.current) {
+      positionEditorElement(editorRef.current, null);
+    }
+    setLastSelection(null);
+    setEditMode(false);
+    setLinkUrl('');
+  }, []);
+
   return (
-    <div ref={editorRef} className="rich-text-toolbar-link-editor">
-      <div className="link-input">
-        {isEditMode ? (
-          <>
+    <Card
+      ref={editorRef}
+      elevation={0}
+      sx={{
+        position: 'absolute',
+        right: 1.25,
+        zIndex: 1200,
+        maxWidth: 350,
+        padding: 1,
+        display: 'flex',
+        flexDirection: 'column',
+        gap: 1,
+      }}
+    >
+      <Box display="flex" justifyContent="space-between" alignItems="center">
+        <Box component="span" sx={{fontSize: '14px', fontWeight: 500}}>
+          {isEditMode
+            ? t('flows:core.elements.richText.linkEditor.editLink')
+            : t('flows:core.elements.richText.linkEditor.viewLink')}
+        </Box>
+        <IconButton size="small" onClick={handleClose}>
+          <X size={16} />
+        </IconButton>
+      </Box>
+      {isEditMode ? (
+        <Box width="100%" display="flex" flexDirection="column" gap={1}>
+          {PREDEFINED_URLS.length > 0 && (
             <Select
               value={selectedUrlType}
               label={t('flows:core.elements.richText.linkEditor.urlTypeLabel')}
@@ -429,44 +429,17 @@ function LinkEditor(): ReactElement {
                 </MenuItem>
               ))}
             </Select>
-            <TextField
-              inputRef={inputRef}
-              fullWidth
-              value={selectedUrlType === 'CUSTOM' ? linkUrl : ''}
-              onChange={(event: ChangeEvent<HTMLInputElement>) => {
-                if (selectedUrlType === 'CUSTOM') {
-                  setLinkUrl(event.target.value);
-                }
-              }}
-              placeholder={
-                selectedUrlType === 'CUSTOM'
-                  ? t('flows:core.elements.richText.linkEditor.placeholder')
-                  : PREDEFINED_URLS.find((option: PredefinedUrlOption) => option.value === selectedUrlType)
-                      ?.placeholder ?? ''
-              }
-              disabled={selectedUrlType !== 'CUSTOM'}
-              onKeyDown={(event: KeyboardEvent<HTMLInputElement>) => {
-                if (event.key === 'Enter') {
-                  event.preventDefault();
-                  if (lastSelection !== null) {
-                    const currentUrl: string = getCurrentUrl();
-
-                    if (currentUrl !== '') {
-                      editor.dispatchCommand(TOGGLE_SAFE_LINK_COMMAND, currentUrl);
-                    }
-                    setEditMode(false);
-                  }
-                } else if (event.key === 'Escape') {
-                  event.preventDefault();
-                  setEditMode(false);
-                }
-              }}
-            />
-            <Button
-              size="small"
-              variant="outlined"
-              className="link-input-save-button"
-              onClick={(event: ReactMouseEvent<HTMLButtonElement>) => {
+          )}
+          <TextField
+            inputRef={inputRef}
+            fullWidth
+            value={linkUrl}
+            onChange={(event: ChangeEvent<HTMLInputElement>) => {
+              setLinkUrl(event.target.value);
+            }}
+            placeholder={t('flows:core.elements.richText.linkEditor.placeholder')}
+            onKeyDown={(event: KeyboardEvent<HTMLInputElement>) => {
+              if (event.key === 'Enter') {
                 event.preventDefault();
                 if (lastSelection !== null) {
                   const currentUrl: string = getCurrentUrl();
@@ -474,25 +447,54 @@ function LinkEditor(): ReactElement {
                   if (currentUrl !== '') {
                     editor.dispatchCommand(TOGGLE_SAFE_LINK_COMMAND, currentUrl);
                   }
+                  setEditMode(false);
                 }
+              } else if (event.key === 'Escape') {
+                event.preventDefault();
                 setEditMode(false);
-              }}
-            >
-              {t('common:save')}
-            </Button>
-          </>
-        ) : (
-          <>
-            <a href={linkUrl} target="_blank" rel="noopener noreferrer">
-              {linkUrl}
-            </a>
-            <IconButton onClick={() => setEditMode(true)}>
-              <EditIcon />
-            </IconButton>
-          </>
-        )}
-      </div>
-    </div>
+              }
+            }}
+          />
+          <Button
+            size="small"
+            variant="outlined"
+            sx={{
+              marginTop: 2,
+            }}
+            onClick={(event: ReactMouseEvent<HTMLButtonElement>) => {
+              event.preventDefault();
+              if (lastSelection !== null) {
+                const currentUrl: string = getCurrentUrl();
+
+                if (currentUrl !== '') {
+                  editor.dispatchCommand(TOGGLE_SAFE_LINK_COMMAND, currentUrl);
+                }
+              }
+              setEditMode(false);
+            }}
+            startIcon={<SaveIcon size={20} />}
+          >
+            {t('common:save')}
+          </Button>
+        </Box>
+      ) : (
+        <Box width="100%" display="flex" flexDirection="column" gap={1}>
+          <Link
+            paddingTop={1}
+            paddingBottom={3}
+            paddingLeft={2}
+            href={linkUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            {linkUrl}
+          </Link>
+          <Button size="small" variant="outlined" onClick={() => setEditMode(true)} startIcon={<EditIcon size={20} />}>
+            {t('common:edit')}
+          </Button>
+        </Box>
+      )}
+    </Card>
   );
 }
 

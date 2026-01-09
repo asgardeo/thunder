@@ -23,11 +23,11 @@ deployment:
   securityContext:
     readOnlyRootFilesystem: true # This must be false if sqlite is used as the database
     enableRunAsUser: true
-    runAsUser: 802
+    runAsUser: 10001
     enableRunAsGroup: true
-    runAsGroup: 802
+    runAsGroup: 10001
     enableFsGroup: true
-    fsGroup: 802
+    fsGroup: 10001
     seccompProfile:
       enabled: false
       type: "RuntimeDefault"
@@ -128,10 +128,17 @@ configuration:
     clientId: "DEVELOP"
     scopes: "['openid', 'profile', 'email', 'system']"
 
-  # Security configuration
-  security:
+  # TLS configuration
+  tls:
+    minVersion: "1.3"
     certFile: "repository/resources/security/server.cert"
     keyFile: "repository/resources/security/server.key"
+
+  # Crypto configuration
+  crypto:
+    encryption:
+      # WARNING: Replace the default key with a 32-byte (64 character) hex string in production deployments
+      key: "file://repository/resources/security/crypto.key"
 
   # Database configuration
   database:

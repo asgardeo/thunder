@@ -115,7 +115,7 @@ func (suite *JWTServiceTestSuite) SetupTest() {
 	}
 
 	testConfig := &config.Config{
-		Security: config.SecurityConfig{
+		TLS: config.TLSConfig{
 			KeyFile: suite.testKeyPath,
 		},
 		JWT: config.JWTConfig{
@@ -297,14 +297,14 @@ func (suite *JWTServiceTestSuite) TestInitScenarios() {
 			jwtService := &JWTService{}
 
 			thunderRuntime := config.GetThunderRuntime()
-			originalKeyFile := thunderRuntime.Config.Security.KeyFile
+			originalKeyFile := thunderRuntime.Config.TLS.KeyFile
 
 			// Ensure original config is restored regardless of test outcome
 			defer func() {
-				thunderRuntime.Config.Security.KeyFile = originalKeyFile
+				thunderRuntime.Config.TLS.KeyFile = originalKeyFile
 			}()
 
-			thunderRuntime.Config.Security.KeyFile = tc.setupFunc()
+			thunderRuntime.Config.TLS.KeyFile = tc.setupFunc()
 
 			err := jwtService.Init()
 
@@ -1647,14 +1647,14 @@ func (suite *JWTServiceTestSuite) TestInitErrorConditions() {
 			jwtService := &JWTService{}
 
 			thunderRuntime := config.GetThunderRuntime()
-			originalKeyFile := thunderRuntime.Config.Security.KeyFile
-			thunderRuntime.Config.Security.KeyFile = tc.setupFunc()
+			originalKeyFile := thunderRuntime.Config.TLS.KeyFile
+			thunderRuntime.Config.TLS.KeyFile = tc.setupFunc()
 
 			err := jwtService.Init()
 			assert.Error(t, err)
 			assert.Contains(t, err.Error(), tc.expectedErrMsg)
 
-			thunderRuntime.Config.Security.KeyFile = originalKeyFile
+			thunderRuntime.Config.TLS.KeyFile = originalKeyFile
 		})
 	}
 }

@@ -27,6 +27,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/asgardeo/thunder/internal/system/config"
+
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
 )
@@ -39,6 +41,16 @@ type HTTPClientTestSuite struct {
 // TestHTTPClientSuite runs the HTTP client test suite.
 func TestHTTPClientSuite(t *testing.T) {
 	suite.Run(t, new(HTTPClientTestSuite))
+}
+
+func (suite *HTTPClientTestSuite) SetupSuite() {
+	thunderConfig := &config.Config{
+		TLS: config.TLSConfig{
+			MinVersion: "1.3",
+		},
+	}
+	err := config.InitializeThunderRuntime("", thunderConfig)
+	assert.NoError(suite.T(), err)
 }
 
 func (suite *HTTPClientTestSuite) TestNewHTTPClient() {

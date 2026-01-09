@@ -248,6 +248,9 @@ importers:
       '@thunder/i18n':
         specifier: workspace:^
         version: link:../../packages/thunder-i18n
+      '@thunder/logger':
+        specifier: workspace:^
+        version: link:../../packages/thunder-logger
       '@thunder/shared-branding':
         specifier: workspace:^
         version: link:../../packages/thunder-shared-branding
@@ -417,6 +420,9 @@ importers:
       '@thunder/i18n':
         specifier: workspace:^
         version: link:../../packages/thunder-i18n
+      '@thunder/logger':
+        specifier: workspace:^
+        version: link:../../packages/thunder-logger
       '@thunder/shared-branding':
         specifier: workspace:^
         version: link:../../packages/thunder-shared-branding
@@ -692,12 +698,18 @@ importers:
       '@types/node':
         specifier: 'catalog:'
         version: 24.7.2
+      '@types/react':
+        specifier: 'catalog:'
+        version: 19.2.7
       eslint:
         specifier: 'catalog:'
         version: 8.57.1
       prettier:
         specifier: 'catalog:'
         version: 3.6.2
+      react:
+        specifier: 'catalog:'
+        version: 19.2.3
       rimraf:
         specifier: 'catalog:'
         version: 6.0.1

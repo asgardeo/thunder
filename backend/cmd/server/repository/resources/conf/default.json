@@ -11,7 +11,8 @@
     "scheme": "https",
     "path": "/gate"
   },
-  "security": {
+  "tls": {
+    "min_version": "1.3",
     "cert_file": "repository/resources/security/server.cert",
     "key_file": "repository/resources/security/server.key"
   },

@@ -28,21 +28,26 @@ The Authorization Code grant type is the recommended OAuth 2.0 grant type for ap
 
 ### Step 1: Obtain Admin Token
 
-First, obtain an admin token to create applications:
+First, obtain an admin token to create applications.
+
+#### 1.1: Initiate the Authentication Flow
+
+Run the following command, replacing `<application_id>` with your sample app ID (created during Thunder setup).
 
 ```bash
-# Replace <application_id> with your sample app ID (created during Thunder setup)
+FLOW_RESPONSE=$(curl -k -s -X POST 'https://localhost:8090/flow/execute' \
+  -d '{"applicationId":"<application_id>","flowType":"AUTHENTICATION"}')
+
+FLOW_ID=$(echo $FLOW_RESPONSE | jq -r '.flowId')
+```
+
+#### 1.2: Submit Admin Credentials
+
+Run the following command with the extracted `flowId`.
+
+```bash
 ADMIN_TOKEN_RESPONSE=$(curl -k -s -X POST 'https://localhost:8090/flow/execute' \
-  -H 'Content-Type: application/json' \
-  -d '{
-    "applicationId": "<application_id>",
-    "flowType": "AUTHENTICATION",
-    "inputs": {
-      "username": "admin",
-      "password": "admin",
-      "requested_permissions": "system"
-    }
-  }')
+  -d '{"flowId":"'$FLOW_ID'","inputs":{"username":"admin","password":"admin","requested_permissions":"system"},"action":"action_001"}')
 
 ADMIN_TOKEN=$(echo $ADMIN_TOKEN_RESPONSE | jq -r '.assertion')
 ```
@@ -69,7 +74,7 @@ curl -kL -X POST https://localhost:8090/applications \
   -d '{
     "name": "My Web Application",
     "description": "Web application using authorization code grant type",
-    "auth_flow_id": "auth_flow_config_basic",
+    "auth_flow_id": "<auth-flow-uuid>",
     "inbound_auth_config": [
       {
         "type": "oauth2",
@@ -143,7 +148,7 @@ curl -kL -X POST https://localhost:8090/applications \
   "description": "Web application using authorization code grant type",
   "client_id": "my_web_app_client",
   "client_secret": "my_web_app_secret",
-  "auth_flow_id": "auth_flow_config_basic",
+  "auth_flow_id": "<auth-flow-uuid>",
   "inbound_auth_config": [
     {
       "type": "oauth2",

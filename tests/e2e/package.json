@@ -1,0 +1,49 @@
+{
+  "name": "e2e-tests-thunder",
+  "version": "1.0.0",
+  "description": "End-to-end tests for WSO2 Thunder using Playwright",
+  "main": "index.js",
+  "scripts": {
+    "pretest": "npm run clean-reports",
+    "clean-reports": "rm -rf blob-report playwright-report test-results",
+    "test": "npx playwright test",
+    "test:chromium": "npx playwright test --project=chromium",
+    "test:firefox": "npx playwright test --project=firefox",
+    "test:webkit": "npx playwright test --project=webkit",
+    "test:headed": "npx playwright test --headed",
+    "test:debug": "npx playwright test --debug",
+    "test:trace": "npx playwright test --trace on",
+    "posttest": "npx playwright merge-reports --reporter html ./blob-report",
+    "ui": "npx playwright test --ui",
+    "report": "npx playwright show-report",
+    "lint": "eslint . --ext .ts",
+    "lint:fix": "eslint . --ext .ts --fix",
+    "format": "prettier --write \"**/*.{ts,json,md}\"",
+    "format:check": "prettier --check \"**/*.{ts,json,md}\"",
+    "type-check": "tsc --noEmit"
+  },
+  "keywords": [
+    "e2e",
+    "testing",
+    "playwright",
+    "automation",
+    "wso2",
+    "thunder"
+  ],
+  "author": "WSO2 LLC",
+  "license": "Apache-2.0",
+  "type": "commonjs",
+  "devDependencies": {
+    "@playwright/test": "1.57.0",
+    "@types/node": "25.0.2",
+    "@typescript-eslint/eslint-plugin": "8.0.0",
+    "@typescript-eslint/parser": "8.0.0",
+    "eslint": "9.0.0",
+    "eslint-plugin-playwright": "2.1.0",
+    "prettier": "3.4.2",
+    "typescript": "5.7.3"
+  },
+  "dependencies": {
+    "dotenv": "17.2.3"
+  }
+}

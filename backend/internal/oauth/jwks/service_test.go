@@ -51,7 +51,7 @@ func (suite *JWKSServiceTestSuite) SetupTest() {
 
 func (suite *JWKSServiceTestSuite) setupRuntimeConfig(tlsConfig *tls.Config, certKid string) error {
 	testConfig := &config.Config{
-		Security: config.SecurityConfig{
+		TLS: config.TLSConfig{
 			CertFile: "test-cert.pem",
 			KeyFile:  "test-key.pem",
 		},

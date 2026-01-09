@@ -19,7 +19,7 @@
 import {useEffect, useRef, useState, useMemo} from 'react';
 import {useAsgardeo} from '@asgardeo/react';
 import {useConfig} from '@thunder/commons-contexts';
-
+import {useLogger} from '@thunder/logger/react';
 import type {ApiError, UserSchemaListParams, UserSchemaListResponse} from '../types/user-types';
 
 /**
@@ -30,6 +30,7 @@ import type {ApiError, UserSchemaListParams, UserSchemaListResponse} from '../ty
 export default function useGetUserTypes(params?: UserSchemaListParams) {
   const {http} = useAsgardeo();
   const {getServerUrl} = useConfig();
+  const logger = useLogger();
   const [data, setData] = useState<UserSchemaListResponse | null>(null);
   const [error, setError] = useState<ApiError | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(false);
@@ -89,9 +90,8 @@ export default function useGetUserTypes(params?: UserSchemaListParams) {
       }
     };
 
-    fetchUserTypes().catch(() => {
-      // TODO: Log the errors
-      // Tracker: https://github.com/asgardeo/thunder/issues/618
+    fetchUserTypes().catch((_error: unknown) => {
+      logger.error('Failed to fetch user types', {error: _error});
     });
 
     // Cleanup: abort request on unmount

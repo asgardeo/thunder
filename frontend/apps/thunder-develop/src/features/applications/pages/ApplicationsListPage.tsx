@@ -21,11 +21,13 @@ import {Plus, Search} from '@wso2/oxygen-ui-icons-react';
 import type {JSX} from 'react';
 import {useTranslation} from 'react-i18next';
 import {useNavigate} from 'react-router';
+import {useLogger} from '@thunder/logger/react';
 import ApplicationsList from '../components/ApplicationsList';
 
 export default function ApplicationsListPage(): JSX.Element {
   const navigate = useNavigate();
   const {t} = useTranslation();
+  const logger = useLogger('ApplicationsListPage');
 
   return (
     <Box>
@@ -45,9 +47,8 @@ export default function ApplicationsListPage(): JSX.Element {
             onClick={() => {
               (async () => {
                 await navigate('/applications/create');
-              })().catch(() => {
-                // TODO: Log the errors
-                // Tracker: https://github.com/asgardeo/thunder/issues/618
+              })().catch((error: unknown) => {
+                logger.error('Failed to navigate to create application page', {error});
               });
             }}
           >

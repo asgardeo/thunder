@@ -1,0 +1,93 @@
+name: E2E Tests
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main, develop]
+  workflow_dispatch:
+
+jobs:
+  test:
+    timeout-minutes: 60
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        browser: [chromium, firefox, webkit]
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+          cache-dependency-path: tests/e2e/package-lock.json
+
+      - name: Install dependencies
+        working-directory: tests/e2e
+        run: npm ci
+
+      - name: Install Playwright Browsers
+        working-directory: tests/e2e
+        run: npx playwright install --with-deps ${{ matrix.browser }}
+
+      - name: Run E2E tests
+        working-directory: tests/e2e
+        env:
+          BASE_URL: ${{ vars.PLAYWRIGHT_BASE_URL != '' && vars.PLAYWRIGHT_BASE_URL || 'https://localhost:8090' }}
+          ADMIN_USERNAME: ${{ vars.PLAYWRIGHT_ADMIN_USERNAME != '' && vars.PLAYWRIGHT_ADMIN_USERNAME || 'admin' }}
+          ADMIN_PASSWORD: ${{ secrets.PLAYWRIGHT_ADMIN_PASSWORD != '' && secrets.PLAYWRIGHT_ADMIN_PASSWORD || 'admin' }}
+          TEST_USER_USERNAME: ${{ vars.PLAYWRIGHT_TEST_USER_USERNAME != '' && vars.PLAYWRIGHT_TEST_USER_USERNAME || 'testuser' }}
+          TEST_USER_PASSWORD: ${{ secrets.PLAYWRIGHT_TEST_USER_PASSWORD != '' && secrets.PLAYWRIGHT_TEST_USER_PASSWORD || 'admin' }}
+          PLAYWRIGHT_WORKERS: ${{ vars.PLAYWRIGHT_WORKERS != '' && vars.PLAYWRIGHT_WORKERS || '1' }}
+          DEBUG_AUTH: ${{ vars.PLAYWRIGHT_DEBUG_AUTH != '' && vars.PLAYWRIGHT_DEBUG_AUTH || 'false' }}
+        run: npm run test:${{ matrix.browser }}
+
+      - name: Upload test results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: playwright-report-${{ matrix.browser }}
+          path: tests/e2e/playwright-report/
+          retention-days: 30
+
+      - name: Upload test artifacts
+        uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: test-results-${{ matrix.browser }}
+          path: tests/e2e/test-results/
+          retention-days: 7
+
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+          cache-dependency-path: tests/e2e/package-lock.json
+
+      - name: Install dependencies
+        working-directory: tests/e2e
+        run: npm ci
+
+      - name: Run ESLint
+        working-directory: tests/e2e
+        run: npm run lint
+
+      - name: Check TypeScript
+        working-directory: tests/e2e
+        run: npm run type-check
+
+      - name: Check formatting
+        working-directory: tests/e2e
+        run: npm run format:check

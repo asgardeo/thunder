@@ -18,10 +18,11 @@
 
 /* eslint-disable react-refresh/only-export-components */
 import type {ReactElement, ReactNode} from 'react';
-import {render, type RenderOptions} from '@testing-library/react';
+import {render, renderHook as rtlRenderHook, type RenderOptions, type RenderHookOptions} from '@testing-library/react';
 import {MemoryRouter} from 'react-router';
 import {OxygenUIThemeProvider} from '@wso2/oxygen-ui';
 import {ConfigProvider} from '@thunder/commons-contexts';
+import {LoggerProvider, LogLevel} from '@thunder/logger';
 
 interface ProvidersProps {
   children: ReactNode;
@@ -49,7 +50,14 @@ function Providers({children}: ProvidersProps) {
   return (
     <MemoryRouter>
       <ConfigProvider>
-        <OxygenUIThemeProvider>{children}</OxygenUIThemeProvider>
+        <LoggerProvider
+          logger={{
+            level: LogLevel.ERROR,
+            transports: [],
+          }}
+        >
+          <OxygenUIThemeProvider>{children}</OxygenUIThemeProvider>
+        </LoggerProvider>
       </ConfigProvider>
     </MemoryRouter>
   );
@@ -66,6 +74,17 @@ function customRender(ui: ReactElement, options?: Omit<RenderOptions, 'wrapper'>
  */
 export function renderWithProviders(ui: ReactElement, options?: RenderOptions) {
   return customRender(ui, options ?? {});
+}
+
+/**
+ * Custom renderHook function that includes providers
+ * Wraps hooks with necessary context providers for testing
+ */
+export function renderHook<Result, Props>(
+  hook: (props: Props) => Result,
+  options?: Omit<RenderHookOptions<Props>, 'wrapper'>,
+) {
+  return rtlRenderHook(hook, {wrapper: Providers, ...options});
 }
 
 /**

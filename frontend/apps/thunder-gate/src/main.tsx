@@ -19,6 +19,7 @@
 import * as ReactDOM from 'react-dom/client';
 import {StrictMode} from 'react';
 import {ConfigProvider} from '@thunder/commons-contexts';
+import {LoggerProvider, LogLevel} from '@thunder/logger/react';
 import i18n from 'i18next';
 import {initReactI18next} from 'react-i18next';
 import enUS from '@thunder/i18n/locales/en-US';
@@ -46,10 +47,16 @@ const queryClient: QueryClient = new QueryClient();
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <ConfigProvider>
-      <QueryClientProvider client={queryClient}>
-        <AppWithConfig />
-        <ReactQueryDevtools initialIsOpen={false} />
-      </QueryClientProvider>
+      <LoggerProvider
+        logger={{
+          level: import.meta.env.DEV ? LogLevel.DEBUG : LogLevel.INFO
+        }}
+      >
+        <QueryClientProvider client={queryClient}>
+          <AppWithConfig />
+          <ReactQueryDevtools initialIsOpen={false} />
+        </QueryClientProvider>
+      </LoggerProvider>
     </ConfigProvider>
   </StrictMode>,
 );

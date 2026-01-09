@@ -22,13 +22,22 @@ import {join} from 'path';
 
 const pkg = JSON.parse(readFileSync('./package.json', 'utf8'));
 
-const external = [...Object.keys(pkg.dependencies || {}), ...Object.keys(pkg.peerDependencies || {})];
+const external = [
+  ...Object.keys(pkg.dependencies || {}),
+  ...Object.keys(pkg.peerDependencies || {}),
+  'react',
+  'react/jsx-runtime',
+  /^react\//,
+];
 
 const commonOptions = {
-  input: join('src', 'index.ts'),
+  input: {
+    index: join('src', 'index.ts'),
+    react: join('src', 'react.ts'),
+  },
   preserveModules: true,
   external,
-  platform: 'node',
+  platform: 'neutral',
   target: 'es2020',
   sourcemap: true,
 };

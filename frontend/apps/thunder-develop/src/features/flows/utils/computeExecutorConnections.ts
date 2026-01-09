@@ -1,0 +1,75 @@
+/**
+ * Copyright (c) 2025, WSO2 LLC. (https://www.wso2.com).
+ *
+ * WSO2 LLC. licenses this file to you under the Apache License,
+ * Version 2.0 (the "License"); you may not use this file except
+ * in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing,
+ * software distributed under the License is distributed on an
+ * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+ * KIND, either express or implied. See the License for the
+ * specific language governing permissions and limitations
+ * under the License.
+ */
+
+import type {BasicIdentityProvider} from '@/features/integrations/models/identity-provider';
+import {IdentityProviderTypes} from '@/features/integrations/models/identity-provider';
+import type {NotificationSender} from '@/features/notification-senders/models/notification-sender';
+import type {ExecutorConnectionInterface} from '../models/metadata';
+import {ExecutionTypes} from '../models/steps';
+
+/**
+ * Mapping from IDP types to executor names.
+ */
+const IDP_TYPE_TO_EXECUTOR: Record<string, string> = {
+  [IdentityProviderTypes.GOOGLE]: ExecutionTypes.GoogleFederation,
+  [IdentityProviderTypes.GITHUB]: ExecutionTypes.GithubFederation,
+};
+
+export interface ComputeExecutorConnectionsParams {
+  identityProviders?: BasicIdentityProvider[];
+  notificationSenders?: NotificationSender[];
+}
+
+/**
+ * Computes executor connections from identity providers and notification senders.
+ * Groups connections by their corresponding executor type.
+ *
+ * @param params - Object containing identity providers and notification senders
+ * @returns Array of executor connections with their associated IDs
+ */
+const computeExecutorConnections = (params: ComputeExecutorConnectionsParams): ExecutorConnectionInterface[] => {
+  const {identityProviders, notificationSenders} = params;
+
+  const executorMap = new Map<string, string[]>();
+
+  // Process identity providers (for Google, GitHub, etc.)
+  if (identityProviders && identityProviders.length > 0) {
+    identityProviders.forEach((idp) => {
+      const executorName = IDP_TYPE_TO_EXECUTOR[idp.type];
+
+      if (executorName) {
+        const existingConnections = executorMap.get(executorName) ?? [];
+        // Use idp.id since the executor expects idpId (the unique identifier)
+        executorMap.set(executorName, [...existingConnections, idp.id]);
+      }
+    });
+  }
+
+  // Process notification senders (for SMS OTP executor)
+  if (notificationSenders && notificationSenders.length > 0) {
+    const senderIds = notificationSenders.map((sender) => sender.id);
+    executorMap.set(ExecutionTypes.SMSOTPAuth, senderIds);
+  }
+
+  return Array.from(executorMap.entries()).map(([executorName, connections]) => ({
+    executorName,
+    connections,
+  }));
+};
+
+export default computeExecutorConnections;

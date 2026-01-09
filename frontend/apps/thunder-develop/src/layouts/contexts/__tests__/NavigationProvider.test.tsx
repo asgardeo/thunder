@@ -17,8 +17,9 @@
  */
 
 import {describe, it, expect, vi, beforeEach} from 'vitest';
-import {screen, renderHook, waitFor, render} from '@testing-library/react';
+import {screen, waitFor, render, renderHook} from '@testing-library/react';
 import {act} from 'react';
+import type {ReactNode} from 'react';
 import {MemoryRouter} from 'react-router';
 import NavigationProvider from '../NavigationProvider';
 import useNavigation from '../useNavigation';
@@ -221,7 +222,7 @@ describe('useNavigation', () => {
 
   it('returns context when used inside NavigationProvider', () => {
     const {result} = renderHook(() => useNavigation(), {
-      wrapper: ({children}) => (
+      wrapper: ({children}: {children: ReactNode}) => (
         <MemoryRouter>
           <NavigationProvider>{children}</NavigationProvider>
         </MemoryRouter>

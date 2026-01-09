@@ -208,11 +208,15 @@ The React Vanilla sample supports user self-registration and login:
 
 1. Open [https://localhost:3000](https://localhost:3000) and click **"Sign up"** to register a new user.
 
-    ![Self Registration Username Password](resources/images/sample-app-self-registration-basic.png)
+    <p align="left">
+        <img src="resources/images/sample-app-self-registration-basic.png" alt="Self Registration Username Password" width="400">
+    </p>
 
 2. After registration, use the same credentials to **"Sign In"**.
 
-    ![Login to Sample App](resources/images/sample-app-login.png)
+    <p align="left">
+        <img src="resources/images/sample-app-login.png" alt="Login to Sample App" width="400">
+    </p>
 
 3. Upon successful login, you'll see the home page with your access token.
 

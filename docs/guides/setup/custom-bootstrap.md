@@ -321,7 +321,7 @@ RESPONSE=$(thunder_api_call POST "/applications" '{
   "name": "Mobile App",
   "description": "Corporate mobile application",
   "url": "myapp://home",
-  "auth_flow_id": "auth_flow_config_basic",
+  "auth_flow_id": "<auth-flow-uuid>",
   "inbound_auth_config": [{
     "type": "oauth2",
     "config": {

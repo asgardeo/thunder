@@ -18,12 +18,18 @@
 
 import type {Node} from '@xyflow/react';
 import type {ExecutorConnectionInterface} from '../models/metadata';
-import {type Step, StepTypes} from '../models/steps';
+import {ExecutionTypes, type Step, StepTypes} from '../models/steps';
 
-const IDP_NAME_PLACEHOLDER = '{{IDP_NAME}}';
+const IDP_ID_PLACEHOLDER = '{{IDP_ID}}';
+const SENDER_ID_PLACEHOLDER = '{{SENDER_ID}}';
 
 /**
  * Automatically assigns connections to nodes based on available connections.
+ * - Sets idpId in data.properties for IDP-based executors (Google, GitHub, etc.)
+ * - Sets senderId in data.properties for SMS OTP executor
+ *
+ * Only auto-assigns when there's exactly one connection configured.
+ * If there are multiple connections, the user should select one from the resource panel.
  *
  * @param nodes - The array of nodes to process.
  * @param availableConnections - The array of available executor connections.
@@ -41,7 +47,8 @@ const autoAssignConnections = (nodes: Node[], availableConnections: ExecutorConn
     // Only process execution step nodes.
     if (node.type === StepTypes.Execution) {
       const step: Step = node as Step;
-      const action = step.data?.action as {executor?: {name?: string; meta?: {idpName?: string}}} | undefined;
+      const action = step.data?.action as {executor?: {name?: string}} | undefined;
+      const properties = step.data?.properties as {idpId?: string; senderId?: string} | undefined;
       const executorName = action?.executor?.name;
 
       if (typeof executorName !== 'string') {
@@ -51,8 +58,26 @@ const autoAssignConnections = (nodes: Node[], availableConnections: ExecutorConn
       const connections: string[] = availableConnectionsMap[executorName] ?? [];
       const [firstConnection] = connections;
 
-      if (firstConnection && action?.executor?.meta?.idpName === IDP_NAME_PLACEHOLDER) {
-        action.executor.meta.idpName = firstConnection;
+      // Only auto-assign if there's exactly one connection configured.
+      if (connections.length !== 1 || !firstConnection) {
+        return;
+      }
+
+      // Handle SMS OTP executor - uses senderId
+      if (executorName === ExecutionTypes.SMSOTPAuth) {
+        if (properties?.senderId === SENDER_ID_PLACEHOLDER || properties?.senderId === '' || !properties?.senderId) {
+          // Initialize properties if needed
+          step.data.properties ??= {};
+          (step.data.properties as Record<string, string>).senderId = firstConnection;
+        }
+        return;
+      }
+
+      // Handle IDP-based executors (Google, GitHub, etc.) - uses idpId
+      if (properties?.idpId === IDP_ID_PLACEHOLDER || properties?.idpId === '' || !properties?.idpId) {
+        // Initialize properties if needed
+        step.data.properties ??= {};
+        (step.data.properties as Record<string, string>).idpId = firstConnection;
       }
     }
   });

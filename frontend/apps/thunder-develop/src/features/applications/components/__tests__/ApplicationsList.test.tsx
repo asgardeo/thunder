@@ -22,6 +22,7 @@ import userEvent from '@testing-library/user-event';
 import {BrowserRouter} from 'react-router';
 import {QueryClient, QueryClientProvider} from '@tanstack/react-query';
 import {ConfigProvider} from '@thunder/commons-contexts';
+import {LoggerProvider, LogLevel} from '@thunder/logger';
 import type {ReactNode} from 'react';
 import type {ApplicationListResponse} from '../../models/responses';
 import ApplicationsList from '../ApplicationsList';
@@ -160,7 +161,14 @@ describe('ApplicationsList', () => {
       return (
         <QueryClientProvider client={queryClient}>
           <ConfigProvider>
-            <BrowserRouter>{children}</BrowserRouter>
+            <LoggerProvider
+              logger={{
+                level: LogLevel.ERROR,
+                transports: [],
+              }}
+            >
+              <BrowserRouter>{children}</BrowserRouter>
+            </LoggerProvider>
           </ConfigProvider>
         </QueryClientProvider>
       );

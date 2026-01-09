@@ -20,6 +20,7 @@ import {Avatar, Box, Card, CardContent, IconButton, Stack, Typography, useColorS
 import {PlusIcon} from '@wso2/oxygen-ui-icons-react';
 import React, {type HTMLAttributes, type ReactElement} from 'react';
 import type {Resource} from '../../models/resources';
+import resolveStaticResourcePath from '../../utils/resolveStaticResourcePath';
 
 /**
  * Props interface of {@link ResourcePanelItem}
@@ -67,17 +68,10 @@ function ResourcePanelItem({
       <Card
         elevation={0}
         sx={{
-          border: '1px solid',
-          borderColor: 'divider',
-          borderRadius: 1.5,
           transition: 'all 0.2s ease-in-out',
           cursor: type === 'draggable' ? 'grab' : 'default',
-          backgroundColor: 'background.paper',
           '&:hover': {
-            borderColor: type === 'draggable' ? 'primary.main' : 'divider',
-            boxShadow: type === 'draggable' ? 2 : 'none',
-            transform: type === 'draggable' ? 'translateY(-2px)' : 'none',
-            backgroundColor: type === 'draggable' ? 'action.hover' : 'background.paper',
+            backgroundColor: 'action.hover',
           },
           '&:active': {
             cursor: type === 'draggable' ? 'grabbing' : 'default',
@@ -95,7 +89,7 @@ function ResourcePanelItem({
           <Box display="flex" justifyContent="space-between" alignItems="center" gap={1}>
             <Stack direction="row" spacing={1.5} alignItems="center" flex={1}>
               <Avatar
-                src={resource?.display?.image ? `${import.meta.env.BASE_URL}/${resource.display.image}` : undefined}
+                src={resource?.display?.image ? resolveStaticResourcePath(resource.display.image) : undefined}
                 variant="square"
                 sx={{
                   height: 20,

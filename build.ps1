@@ -27,7 +27,13 @@ param(
     [string]$GO_OS,
     
     [Parameter(Position = 2)]
-    [string]$GO_ARCH
+    [string]$GO_ARCH,
+    
+    [Parameter(Position = 3)]
+    [string]$TestRun,
+    
+    [Parameter(Position = 4)]
+    [string]$TestPackage
 )
 
 # Check for PowerShell Version Compatibility
@@ -883,6 +889,21 @@ function Test-Integration {
     Write-Host "================================================================"
     Write-Host "Running integration tests..."
     
+    # Build extra args for test filtering
+    $extra_args = @()
+    
+    if ($TestRun) {
+        $extra_args += "-run"
+        $extra_args += $TestRun
+        Write-Host "Test filter: -run $TestRun"
+    }
+    
+    if ($TestPackage) {
+        $extra_args += "-package"
+        $extra_args += $TestPackage
+        Write-Host "Test package: $TestPackage"
+    }
+    
     Push-Location $SCRIPT_DIR
     try {
         # Set up coverage directory for integration tests
@@ -893,7 +914,11 @@ function Test-Integration {
         $env:GOCOVERDIR = $coverage_dir
         
         Write-Host "Coverage data will be collected in: $coverage_dir"
-        & go run -C ./tests/integration ./main.go
+        if ($extra_args.Count -gt 0) {
+            & go run -C ./tests/integration ./main.go @extra_args
+        } else {
+            & go run -C ./tests/integration ./main.go
+        }
         $test_exit_code = $LASTEXITCODE
         
         # Process coverage data if tests passed or failed
@@ -1558,7 +1583,7 @@ switch ($Command) {
         Write-Host "  build_frontend           - Build only the Next.js frontend applications"
         Write-Host "  build_samples            - Build the sample applications"
         Write-Host "  test_unit                - Run unit tests with coverage"
-        Write-Host "  test_integration         - Run integration tests"
+        Write-Host "  test_integration         - Run integration tests. Use -TestRun and -TestPackage for filtering."
         Write-Host "  merge_coverage           - Merge unit and integration test coverage reports"
         Write-Host "  test                     - Run all tests (unit and integration)"
         Write-Host "  run                      - Run the Thunder server for development (with automatic initial data setup)"

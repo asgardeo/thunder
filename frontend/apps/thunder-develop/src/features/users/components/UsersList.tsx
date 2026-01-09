@@ -36,10 +36,11 @@ import {
   DialogContentText,
   DialogActions,
   Button,
-  DataGrid
+  DataGrid,
 } from '@wso2/oxygen-ui';
 import {EllipsisVertical, Trash2, Eye} from '@wso2/oxygen-ui-icons-react';
 import {useTranslation} from 'react-i18next';
+import {useLogger} from '@thunder/logger/react';
 import useDataGridLocaleText from '../../../hooks/useDataGridLocaleText';
 import useGetUsers from '../api/useGetUsers';
 import useGetUserSchema from '../api/useGetUserSchema';
@@ -52,7 +53,9 @@ interface UsersListProps {
 
 export default function UsersList(props: UsersListProps) {
   const {selectedSchema} = props;
+  const navigate = useNavigate();
   const {t} = useTranslation();
+  const logger = useLogger('UsersList');
   const dataGridLocaleText = useDataGridLocaleText();
 
   const {data: userData, loading: isUsersRequestLoading, error: usersRequestError, refetch} = useGetUsers();
@@ -71,8 +74,6 @@ export default function UsersList(props: UsersListProps) {
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
-
-  const navigate = useNavigate();
 
   // Show snackbar when error occurs
   useEffect(() => {
@@ -124,10 +125,7 @@ export default function UsersList(props: UsersListProps) {
     } catch (err) {
       // Error is already handled in the hook
       setDeleteDialogOpen(false);
-      // TODO: Log the errors
-      // Tracker: https://github.com/asgardeo/thunder/issues/618
-      // eslint-disable-next-line no-console
-      console.error('Failed to delete user:', err);
+      logger.error('Failed to delete user', {error: err, userId: selectedUserId});
     }
   };
 
@@ -381,9 +379,8 @@ export default function UsersList(props: UsersListProps) {
 
             (async () => {
               await navigate(`/users/${userId}`);
-            })().catch(() => {
-              // TODO: Log the errors
-              // Tracker: https://github.com/asgardeo/thunder/issues/618
+            })().catch((_error: unknown) => {
+              logger.error('Failed to navigate to user details', {error: _error, userId});
             });
           }}
           initialState={{

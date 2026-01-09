@@ -22,6 +22,7 @@ import type {JSX} from 'react';
 import {useNavigate} from 'react-router';
 import {useState, useCallback, useMemo, useEffect} from 'react';
 import {useTranslation} from 'react-i18next';
+import {useLogger} from '@thunder/logger/react';
 import {useCreateBranding, type CreateBrandingRequest, type Branding, LayoutType} from '@thunder/shared-branding';
 import ConfigureSignInOptions from '../components/create-applications/configure-signin-options/ConfigureSignInOptions';
 import ConfigureDesign from '../components/create-applications/ConfigureDesign';
@@ -86,6 +87,7 @@ export default function ApplicationCreatePage(): JSX.Element {
     [t],
   );
   const navigate = useNavigate();
+  const logger = useLogger('ApplicationCreatePage');
   const createApplication = useCreateApplication();
   const createBranding = useCreateBranding();
   const {data: userTypesData} = useGetUserTypes();
@@ -128,9 +130,8 @@ export default function ApplicationCreatePage(): JSX.Element {
   const handleClose = (): void => {
     (async () => {
       await navigate('/applications');
-    })().catch(() => {
-      // TODO: Log the errors
-      // Tracker: https://github.com/asgardeo/thunder/issues/618
+    })().catch((_error: unknown) => {
+      logger.error('Failed to navigate to applications page', {error: _error});
     });
   };
 

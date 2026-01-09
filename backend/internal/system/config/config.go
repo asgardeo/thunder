@@ -53,10 +53,11 @@ type GateClientConfig struct {
 	ErrorPath string `yaml:"error_path" json:"error_path"`
 }
 
-// SecurityConfig holds the security configuration details.
-type SecurityConfig struct {
-	CertFile string `yaml:"cert_file" json:"cert_file"`
-	KeyFile  string `yaml:"key_file" json:"key_file"`
+// TLSConfig holds the TLS configuration details.
+type TLSConfig struct {
+	MinVersion string `yaml:"min_version" json:"min_version"`
+	CertFile   string `yaml:"cert_file" json:"cert_file"`
+	KeyFile    string `yaml:"key_file" json:"key_file"`
 }
 
 // DataSource holds the individual database connection details.
@@ -236,7 +237,7 @@ type OrganizationUnitConfig struct {
 type Config struct {
 	Server             ServerConfig           `yaml:"server" json:"server"`
 	GateClient         GateClientConfig       `yaml:"gate_client" json:"gate_client"`
-	Security           SecurityConfig         `yaml:"security" json:"security"`
+	TLS                TLSConfig              `yaml:"tls" json:"tls"`
 	Database           DatabaseConfig         `yaml:"database" json:"database"`
 	Cache              CacheConfig            `yaml:"cache" json:"cache"`
 	JWT                JWTConfig              `yaml:"jwt" json:"jwt"`

@@ -21,15 +21,27 @@
         },
         "steps": [
           {
+            "id": "start",
+            "type": "START",
+            "size": {
+              "width": 101,
+              "height": 34
+            },
+            "position": {
+              "x": -300,
+              "y": 330
+            }
+          },
+          {
             "id": "{{ID}}",
             "type": "VIEW",
             "size": {
               "width": 350,
-              "height": 291
+              "height": 471
             },
             "position": {
-              "x": 300,
-              "y": 200
+              "x": -74,
+              "y": 112
             },
             "data": {
               "components": [
@@ -66,12 +78,12 @@
             "id": "{{AUTH_ASSERT_EXECUTOR_ID}}",
             "type": "TASK_EXECUTION",
             "size": {
-              "width": 200,
+              "width": 244,
               "height": 113
             },
             "position": {
-              "x": 690,
-              "y": 270
+              "x": 404,
+              "y": 365
             },
             "data": {
               "action": {
@@ -87,12 +99,12 @@
             "id": "END",
             "type": "END",
             "size": {
-              "width": 280,
-              "height": 220
+              "width": 85,
+              "height": 34
             },
             "position": {
-              "x": 1080,
-              "y": 270
+              "x": 764,
+              "y": 404
             },
             "config": {},
             "data": {
@@ -135,15 +147,27 @@
         },
         "steps": [
           {
+            "id": "start",
+            "type": "START",
+            "size": {
+              "width": 101,
+              "height": 34
+            },
+            "position": {
+              "x": 62,
+              "y": 87
+            }
+          },
+          {
             "id": "{{ID}}",
             "type": "VIEW",
             "size": {
               "width": 350,
-              "height": 291
+              "height": 620
             },
             "position": {
-              "x": 300,
-              "y": 200
+              "x": 310,
+              "y": -206
             },
             "data": {
               "components": [
@@ -195,7 +219,7 @@
                     },
                     {
                       "category": "DISPLAY",
-                      "label": "<p class=\"rich-text-paragraph\"><br></p><p class=\"rich-text-paragraph\"><span class=\"rich-text-pre-wrap\">Don't have an account? </span><a href=\"{{application.selfRegisterUrl}}\" target=\"_blank\" rel=\"noopener noreferrer\" class=\"rich-text-link\"><span class=\"rich-text-pre-wrap\">Sign up</span></a></p>",
+                      "label": "<p class=\"rich-text-paragraph\"><span class=\"rich-text-pre-wrap\">Don't have an account? </span><a href=\"{{application.selfRegisterUrl}}\" target=\"_blank\" rel=\"noopener noreferrer\" class=\"rich-text-link\"><span class=\"rich-text-pre-wrap\">Sign up</span></a></p>",
                       "id": "{{ID}}",
                       "type": "RICH_TEXT"
                     }
@@ -208,12 +232,12 @@
             "id": "{{BASIC_AUTH_EXECUTION_STEP_ID}}",
             "type": "TASK_EXECUTION",
             "size": {
-              "width": 350,
-              "height": 291
+              "width": 217,
+              "height": 113
             },
             "position": {
-              "x": 690,
-              "y": 200
+              "x": 820,
+              "y": 108
             },
             "data": {
               "action": {
@@ -229,12 +253,12 @@
             "id": "{{AUTH_ASSERT_EXECUTOR_ID}}",
             "type": "TASK_EXECUTION",
             "size": {
-              "width": 200,
+              "width": 244,
               "height": 113
             },
             "position": {
-              "x": 1080,
-              "y": 270
+              "x": 1234,
+              "y": 108
             },
             "data": {
               "action": {
@@ -250,12 +274,12 @@
             "id": "END",
             "type": "END",
             "size": {
-              "width": 280,
-              "height": 220
+              "width": 85,
+              "height": 34
             },
             "position": {
-              "x": 1470,
-              "y": 200
+              "x": 1650,
+              "y": 147
             },
             "config": {},
             "data": {
@@ -302,15 +326,27 @@
         },
         "steps": [
           {
+            "id": "start",
+            "type": "START",
+            "size": {
+              "width": 101,
+              "height": 34
+            },
+            "position": {
+              "x": -300,
+              "y": 330
+            }
+          },
+          {
             "id": "{{ID}}",
             "type": "VIEW",
             "size": {
               "width": 350,
-              "height": 291
+              "height": 740
             },
             "position": {
-              "x": 0,
-              "y": 330
+              "x": -72,
+              "y": -24
             },
             "data": {
               "components": [
@@ -396,12 +432,12 @@
             "id": "{{BASIC_AUTH_EXECUTION_STEP_ID}}",
             "type": "TASK_EXECUTION",
             "size": {
-              "width": 350,
-              "height": 291
+              "width": 217,
+              "height": 113
             },
             "position": {
-              "x": 580,
-              "y": 130
+              "x": 410,
+              "y": 292
             },
             "data": {
               "action": {
@@ -417,12 +453,12 @@
             "id": "{{GOOGLE_EXECUTION_STEP_ID}}",
             "type": "TASK_EXECUTION",
             "size": {
-              "width": 350,
-              "height": 291
+              "width": 200,
+              "height": 113
             },
             "position": {
-              "x": 580,
-              "y": 530
+              "x": 418,
+              "y": 550
             },
             "data": {
               "action": {
@@ -441,12 +477,12 @@
             "id": "{{AUTH_ASSERT_EXECUTOR_ID}}",
             "type": "TASK_EXECUTION",
             "size": {
-              "width": 200,
+              "width": 244,
               "height": 113
             },
             "position": {
-              "x": 970,
-              "y": 330
+              "x": 770,
+              "y": 424
             },
             "data": {
               "action": {
@@ -462,12 +498,12 @@
             "id": "END",
             "type": "END",
             "size": {
-              "width": 280,
-              "height": 220
+              "width": 85,
+              "height": 34
             },
             "position": {
-              "x": 1360,
-              "y": 330
+              "x": 1122,
+              "y": 462
             },
             "config": {},
             "data": {
@@ -597,8 +633,8 @@
             "id": "END",
             "type": "END",
             "size": {
-              "width": 280,
-              "height": 220
+              "width": 85,
+              "height": 34
             },
             "position": {
               "x": 1280,
@@ -652,15 +688,27 @@
         },
         "steps": [
           {
+            "id": "start",
+            "type": "START",
+            "size": {
+              "width": 101,
+              "height": 34
+            },
+            "position": {
+              "x": -300,
+              "y": 330
+            }
+          },
+          {
             "id": "{{ID}}",
             "type": "VIEW",
             "size": {
               "width": 350,
-              "height": 350
+              "height": 440
             },
             "position": {
-              "x": 300,
-              "y": 200
+              "x": -70,
+              "y": 126
             },
             "data": {
               "components": [
@@ -712,8 +760,8 @@
               "height": 113
             },
             "position": {
-              "x": 690,
-              "y": 200
+              "x": 386,
+              "y": 350
             },
             "data": {
               "action": {
@@ -731,11 +779,11 @@
             "type": "VIEW",
             "size": {
               "width": 350,
-              "height": 400
+              "height": 652
             },
             "position": {
-              "x": 1080,
-              "y": 200
+              "x": 688,
+              "y": 80
             },
             "data": {
               "components": [
@@ -805,8 +853,8 @@
               "height": 113
             },
             "position": {
-              "x": 1470,
-              "y": 200
+              "x": 1138,
+              "y": 426
             },
             "data": {
               "action": {
@@ -823,12 +871,12 @@
             "id": "{{AUTH_ASSERT_EXECUTOR_ID}}",
             "type": "TASK_EXECUTION",
             "size": {
-              "width": 200,
+              "width": 244,
               "height": 113
             },
             "position": {
-              "x": 1860,
-              "y": 270
+              "x": 1447,
+              "y": 426
             },
             "data": {
               "action": {
@@ -844,12 +892,12 @@
             "id": "END",
             "type": "END",
             "size": {
-              "width": 280,
-              "height": 220
+              "width": 85,
+              "height": 34
             },
             "position": {
-              "x": 2250,
-              "y": 200
+              "x": 1812,
+              "y": 466
             },
             "config": {},
             "data": {

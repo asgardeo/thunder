@@ -31,7 +31,6 @@ vi.mock('react-i18next', () => ({
         'applications:onboarding.configure.SignInOptions.usernamePassword': 'Username & Password',
         'applications:onboarding.configure.SignInOptions.google': 'Google',
         'applications:onboarding.configure.SignInOptions.github': 'GitHub',
-        'applications:onboarding.configure.SignInOptions.smsOtp': 'SMS OTP',
         'applications:onboarding.configure.SignInOptions.notConfigured': 'Not configured',
       };
       return translations[key] || key;
@@ -41,19 +40,10 @@ vi.mock('react-i18next', () => ({
 
 // Mock the integration icon utility
 vi.mock('@/features/integrations/utils/getIntegrationIcon', () => ({
-  default: vi.fn((type: string) => {
-    const iconMap: Record<string, string> = {
-      [IdentityProviderTypes.OAUTH]: 'icon-oauth',
-      [IdentityProviderTypes.OIDC]: 'icon-oidc',
-    };
-    const testId = iconMap[type] || `icon-${type}`;
-    return <div data-testid={testId}>Mock Icon</div>;
-  }),
+  default: vi.fn((type: string) => <div data-testid={`icon-${type}`}>Mock Icon</div>),
 }));
 
-const {default: getIntegrationIcon} = await import('@/features/integrations/utils/getIntegrationIcon');
-
-describe.skip('IndividualMethodsToggleView', () => {
+describe('IndividualMethodsToggleView', () => {
   const mockOnIntegrationToggle = vi.fn();
 
   const mockIdentityProviders: IdentityProvider[] = [
@@ -93,273 +83,196 @@ describe.skip('IndividualMethodsToggleView', () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
-    vi.mocked(getIntegrationIcon).mockImplementation((type: string) => (
-      <div data-testid={`icon-${type}`}>Mock Icon</div>
-    ));
   });
 
   const renderComponent = (props: Partial<IndividualMethodsToggleViewProps> = {}) =>
     render(<IndividualMethodsToggleView {...defaultProps} {...props} />);
 
   describe('core authentication methods', () => {
-    it('should render Username & Password option first', () => {
+    it('should render Username & Password option', () => {
       renderComponent();
 
       expect(screen.getByText('Username & Password')).toBeInTheDocument();
+    });
 
-      // Should be the first item in the list
+    it('should render Google option', () => {
+      renderComponent();
+
+      expect(screen.getByText('Google')).toBeInTheDocument();
+    });
+
+    it('should render GitHub option', () => {
+      renderComponent();
+
+      expect(screen.getByText('GitHub')).toBeInTheDocument();
+    });
+
+    it('should render in correct order: Username & Password, Google, GitHub', () => {
+      renderComponent();
+
       const listItems = screen.getAllByRole('button');
-      const firstItem = listItems[0];
-      expect(firstItem).toHaveTextContent('Username & Password');
-    });
-
-    it('should render Google and GitHub options', () => {
-      renderComponent();
-
-      expect(screen.getByText('Google')).toBeInTheDocument();
-      expect(screen.getByText('GitHub')).toBeInTheDocument();
-    });
-
-    it('should show correct icons for each method', () => {
-      renderComponent();
-
-      // Username & Password uses UserRound icon (built-in)
-      // Google and GitHub use their specific icons (built-in, not mocked)
-      // Verify the built-in components are rendered
-      expect(screen.getByText('Username & Password')).toBeInTheDocument();
-      expect(screen.getByText('Google')).toBeInTheDocument();
-      expect(screen.getByText('GitHub')).toBeInTheDocument();
-
-      // Other providers should only be rendered if they pass the filter logic
-      // Since only OAUTH and OIDC are in otherProviders, verify they are rendered
-      expect(screen.getByText('OAuth Provider')).toBeInTheDocument();
-      expect(screen.getByText('OIDC Provider')).toBeInTheDocument();
+      // First item should be Username & Password
+      expect(listItems[0]).toHaveTextContent('Username & Password');
     });
   });
 
   describe('integration states', () => {
-    it('should show enabled state for selected integrations', () => {
+    it('should show Username & Password as enabled when basic_auth is true', () => {
       renderComponent({
         integrations: {
           [AuthenticatorTypes.BASIC_AUTH]: true,
-          'google-idp': true,
-          'github-idp': false,
         },
       });
 
       const switches = screen.getAllByRole('switch');
-
-      // Username & Password should be checked
-      expect(switches.find((s) => s.closest('[data-testid*="basic"]') ?? s)).toBeChecked();
-
-      // Should have switches for each integration
-      expect(switches.length).toBeGreaterThan(0);
+      // First switch should be for Username & Password
+      expect(switches[0]).toBeChecked();
     });
 
-    it('should call onIntegrationToggle when an integration is toggled', async () => {
-      const user = userEvent.setup();
-      renderComponent();
-
-      // Find switch for Username & Password
-      const usernamePasswordSwitch = screen.getAllByRole('switch')[0]; // First switch should be Username & Password
-      await user.click(usernamePasswordSwitch);
-
-      expect(mockOnIntegrationToggle).toHaveBeenCalledWith(AuthenticatorTypes.BASIC_AUTH);
-    });
-
-    it('should handle Google provider toggle', async () => {
-      const user = userEvent.setup();
-      renderComponent();
-
-      // Find the Google switch by finding the text first, then locating its associated switch
-      const googleItem = screen.getByText('Google').closest('li');
-      const googleSwitch = googleItem?.querySelector('input[type="checkbox"]');
-
-      if (googleSwitch) {
-        await user.click(googleSwitch);
-      }
-
-      expect(mockOnIntegrationToggle).toHaveBeenCalledWith('google-idp');
-    });
-
-    it('should handle GitHub provider toggle', async () => {
-      const user = userEvent.setup();
-      renderComponent();
-
-      // Find the GitHub switch by finding the text first, then locating its associated switch
-      const githubItem = screen.getByText('GitHub').closest('li');
-      const githubSwitch = githubItem?.querySelector('input[type="checkbox"]');
-
-      if (githubSwitch) {
-        await user.click(githubSwitch);
-      }
-
-      expect(mockOnIntegrationToggle).toHaveBeenCalledWith('github-idp');
-    });
-  });
-
-  describe('flow integration display', () => {
-    it('should show flow information when integration is enabled and has associated flow', () => {
+    it('should show Username & Password as disabled when basic_auth is false', () => {
       renderComponent({
         integrations: {
-          [AuthenticatorTypes.BASIC_AUTH]: true,
+          [AuthenticatorTypes.BASIC_AUTH]: false,
+        },
+      });
+
+      const switches = screen.getAllByRole('switch');
+      expect(switches[0]).not.toBeChecked();
+    });
+
+    it('should show Google as enabled when its ID is in integrations', () => {
+      renderComponent({
+        integrations: {
+          [AuthenticatorTypes.BASIC_AUTH]: false,
           'google-idp': true,
         },
       });
 
-      expect(screen.getByText(/Flow: Basic Authentication Flow/)).toBeInTheDocument();
-      expect(screen.getByText(/Flow: Google OAuth Flow/)).toBeInTheDocument();
+      const switches = screen.getAllByRole('switch');
+      // Second switch should be for Google
+      expect(switches[1]).toBeChecked();
     });
 
-    it('should not show flow information when integration is disabled', () => {
+    it('should show GitHub as enabled when its ID is in integrations', () => {
       renderComponent({
         integrations: {
           [AuthenticatorTypes.BASIC_AUTH]: false,
-          'google-idp': false,
+          'github-idp': true,
         },
       });
 
-      expect(screen.queryByText(/Flow: Basic Authentication Flow/)).not.toBeInTheDocument();
-      expect(screen.queryByText(/Flow: Google OAuth Flow/)).not.toBeInTheDocument();
-    });
-
-    it('should not show flow information when no flow is available', () => {
-      renderComponent({
-        integrations: {
-          [AuthenticatorTypes.BASIC_AUTH]: true,
-        },
-      });
-
-      expect(screen.queryByText(/Flow: Basic Authentication Flow/)).not.toBeInTheDocument();
+      const switches = screen.getAllByRole('switch');
+      // Third switch should be for GitHub
+      expect(switches[2]).toBeChecked();
     });
   });
 
-  describe('SMS OTP integration', () => {
-    it('should render SMS OTP when flow is available', () => {
-      renderComponent();
-
-      expect(screen.getByText('SMS OTP')).toBeInTheDocument();
-    });
-
-    it('should not render SMS OTP when flow is not available', () => {
-      renderComponent({});
-
-      expect(screen.queryByText('SMS OTP')).not.toBeInTheDocument();
-    });
-
-    it('should handle SMS OTP toggle', async () => {
+  describe('toggle interactions', () => {
+    it('should call onIntegrationToggle with basic_auth when Username & Password is toggled', async () => {
       const user = userEvent.setup();
       renderComponent();
 
-      // Find the SMS OTP switch
-      const smsOtpItem = screen.getByText('SMS OTP').closest('li');
-      const smsOtpSwitch = smsOtpItem?.querySelector('input[type="checkbox"]');
+      const switches = screen.getAllByRole('switch');
+      await user.click(switches[0]);
 
-      if (smsOtpSwitch) {
-        await user.click(smsOtpSwitch);
-      }
-
-      expect(mockOnIntegrationToggle).toHaveBeenCalledWith('sms-otp');
+      expect(mockOnIntegrationToggle).toHaveBeenCalledWith(AuthenticatorTypes.BASIC_AUTH);
     });
 
-    it('should show flow information for SMS OTP when enabled', () => {
-      renderComponent({
-        integrations: {
-          'sms-otp': true,
-        },
-      });
+    it('should call onIntegrationToggle with google provider ID when Google is toggled', async () => {
+      const user = userEvent.setup();
+      renderComponent();
 
-      expect(screen.getByText(/Flow: SMS OTP Flow/)).toBeInTheDocument();
+      const switches = screen.getAllByRole('switch');
+      await user.click(switches[1]); // Google switch
+
+      expect(mockOnIntegrationToggle).toHaveBeenCalledWith('google-idp');
+    });
+
+    it('should call onIntegrationToggle with github provider ID when GitHub is toggled', async () => {
+      const user = userEvent.setup();
+      renderComponent();
+
+      const switches = screen.getAllByRole('switch');
+      await user.click(switches[2]); // GitHub switch
+
+      expect(mockOnIntegrationToggle).toHaveBeenCalledWith('github-idp');
+    });
+
+    it('should call onIntegrationToggle when clicking on list item button', async () => {
+      const user = userEvent.setup();
+      renderComponent();
+
+      const buttons = screen.getAllByRole('button');
+      await user.click(buttons[0]); // Username & Password button
+
+      expect(mockOnIntegrationToggle).toHaveBeenCalledWith(AuthenticatorTypes.BASIC_AUTH);
     });
   });
 
   describe('other social providers', () => {
-    it('should render other social providers', () => {
+    it('should render other providers (non-Google, non-GitHub)', () => {
       renderComponent();
 
       expect(screen.getByText('OAuth Provider')).toBeInTheDocument();
       expect(screen.getByText('OIDC Provider')).toBeInTheDocument();
     });
 
-    it('should use getIntegrationIcon for other providers', () => {
-      renderComponent();
-
-      expect(getIntegrationIcon).toHaveBeenCalledWith(IdentityProviderTypes.OAUTH);
-      expect(getIntegrationIcon).toHaveBeenCalledWith(IdentityProviderTypes.OIDC);
-    });
-
-    it('should handle other provider toggles', async () => {
+    it('should call onIntegrationToggle with provider ID when other provider is toggled', async () => {
       const user = userEvent.setup();
       renderComponent();
 
-      // Find the OAuth Provider switch
+      // Find the OAuth Provider item and its switch
       const oauthItem = screen.getByText('OAuth Provider').closest('li');
       const oauthSwitch = oauthItem?.querySelector('input[type="checkbox"]');
 
       if (oauthSwitch) {
         await user.click(oauthSwitch);
+        expect(mockOnIntegrationToggle).toHaveBeenCalledWith('oauth-idp-1');
       }
-
-      expect(mockOnIntegrationToggle).toHaveBeenCalledWith('oauth-idp-1');
-    });
-  });
-
-  describe('custom flows', () => {
-    it('should render custom flows from other category', () => {
-      renderComponent();
-
-      expect(screen.getByText('Custom Authentication Flow')).toBeInTheDocument();
     });
 
-    it('should handle custom flow toggles', async () => {
-      const user = userEvent.setup();
-      renderComponent();
-
-      // Find the Custom Authentication Flow switch
-      const customFlowItem = screen.getByText('Custom Authentication Flow').closest('li');
-      const customFlowSwitch = customFlowItem?.querySelector('input[type="checkbox"]');
-
-      if (customFlowSwitch) {
-        await user.click(customFlowSwitch);
-      }
-
-      expect(mockOnIntegrationToggle).toHaveBeenCalledWith('custom-auth-flow');
-    });
-
-    it('should show flow information for enabled custom flows', () => {
+    it('should show other provider as enabled when its ID is in integrations', () => {
       renderComponent({
         integrations: {
-          'custom-auth-flow': true,
+          [AuthenticatorTypes.BASIC_AUTH]: false,
+          'oauth-idp-1': true,
         },
       });
 
-      expect(screen.getByText(/Flow: Custom Authentication Flow/)).toBeInTheDocument();
+      const oauthItem = screen.getByText('OAuth Provider').closest('li');
+      const oauthSwitch = oauthItem?.querySelector('input[type="checkbox"]');
+
+      expect(oauthSwitch).toBeChecked();
     });
   });
 
   describe('unavailable providers', () => {
-    it('should handle missing Google provider gracefully', () => {
+    it('should show Google as unavailable when not in availableIntegrations', () => {
       renderComponent({
         availableIntegrations: mockIdentityProviders.filter((idp) => idp.type !== IdentityProviderTypes.GOOGLE),
       });
 
-      const googleElement = screen.getByText('Google');
-      expect(googleElement).toBeInTheDocument();
-
-      // Should show as not configured
+      expect(screen.getByText('Google')).toBeInTheDocument();
       expect(screen.getByText('Not configured')).toBeInTheDocument();
     });
 
-    it('should handle missing GitHub provider gracefully', () => {
+    it('should show GitHub as unavailable when not in availableIntegrations', () => {
       renderComponent({
         availableIntegrations: mockIdentityProviders.filter((idp) => idp.type !== IdentityProviderTypes.GITHUB),
       });
 
-      const githubElement = screen.getByText('GitHub');
-      expect(githubElement).toBeInTheDocument();
-
-      // Should show as not configured
+      expect(screen.getByText('GitHub')).toBeInTheDocument();
       expect(screen.getByText('Not configured')).toBeInTheDocument();
+    });
+
+    it('should show both Google and GitHub as unavailable when empty integrations', () => {
+      renderComponent({
+        availableIntegrations: [],
+      });
+
+      expect(screen.getByText('Google')).toBeInTheDocument();
+      expect(screen.getByText('GitHub')).toBeInTheDocument();
+      expect(screen.getAllByText('Not configured')).toHaveLength(2);
     });
 
     it('should disable unavailable provider buttons', () => {
@@ -367,45 +280,40 @@ describe.skip('IndividualMethodsToggleView', () => {
         availableIntegrations: [],
       });
 
-      // When providers are unavailable, Google and GitHub should show "Not configured"
-      expect(screen.getByText('Google')).toBeInTheDocument();
-      expect(screen.getByText('GitHub')).toBeInTheDocument();
-      expect(screen.getAllByText('Not configured')).toHaveLength(2);
+      // Find all buttons - Google and GitHub should be disabled (aria-disabled)
+      const buttons = screen.getAllByRole('button');
+      // The unavailable providers will have buttons with aria-disabled attribute
+      const disabledButtons = buttons.filter((btn) => btn.getAttribute('aria-disabled') === 'true');
 
-      // The buttons should not have switches since they're unavailable
-      const googleItem = screen.getByText('Google').closest('li');
-      const githubItem = screen.getByText('GitHub').closest('li');
+      // Should have 2 disabled buttons (Google and GitHub)
+      expect(disabledButtons).toHaveLength(2);
+    });
 
-      expect(googleItem).toBeInTheDocument();
-      expect(githubItem).toBeInTheDocument();
+    it('should not render switch for unavailable providers', () => {
+      renderComponent({
+        availableIntegrations: [],
+      });
 
-      // These should not have switches since they're unavailable
-      expect(googleItem?.querySelector('input[type="checkbox"]')).toBeNull();
-      expect(githubItem?.querySelector('input[type="checkbox"]')).toBeNull();
-
-      // When unavailable, the AuthenticationMethodItem renders disabled ListItemButton
-      // We can verify by checking that the "Not configured" secondary text is present
-      expect(screen.getAllByText('Not configured').length).toBe(2);
+      // Only Username & Password should have a switch
+      const switches = screen.getAllByRole('switch');
+      expect(switches).toHaveLength(1);
     });
   });
 
   describe('list structure', () => {
-    it('should render items with proper dividers', () => {
+    it('should render a list element', () => {
       renderComponent();
 
       const list = screen.getByRole('list');
       expect(list).toBeInTheDocument();
-
-      // Should have dividers between items (MUI Divider components)
-      const dividers = list.querySelectorAll('hr, .MuiDivider-root');
-      expect(dividers.length).toBeGreaterThan(0);
     });
 
-    it('should apply proper styling to the list container', () => {
+    it('should render dividers between items', () => {
       renderComponent();
 
       const list = screen.getByRole('list');
-      expect(list).toHaveClass('MuiList-root');
+      const dividers = list.querySelectorAll('hr, .MuiDivider-root');
+      expect(dividers.length).toBeGreaterThan(0);
     });
   });
 
@@ -417,35 +325,40 @@ describe.skip('IndividualMethodsToggleView', () => {
 
       // Should not crash and should render all options as unchecked
       expect(screen.getByText('Username & Password')).toBeInTheDocument();
-      expect(screen.getByText('Google')).toBeInTheDocument();
-      expect(screen.getByText('GitHub')).toBeInTheDocument();
+      const switches = screen.getAllByRole('switch');
+      switches.forEach((switchEl) => {
+        expect(switchEl).not.toBeChecked();
+      });
     });
 
-    it('should handle empty available integrations array', () => {
+    it('should handle undefined integration value for basic_auth', () => {
+      renderComponent({
+        integrations: {
+          // basic_auth not defined
+        },
+      });
+
+      const switches = screen.getAllByRole('switch');
+      // Username & Password switch should be unchecked when undefined
+      expect(switches[0]).not.toBeChecked();
+    });
+
+    it('should use default ID for Google when provider not found', () => {
       renderComponent({
         availableIntegrations: [],
       });
 
-      // Should still render username/password, Google, and GitHub
-      expect(screen.getByText('Username & Password')).toBeInTheDocument();
+      // Google should still render with fallback ID 'google'
       expect(screen.getByText('Google')).toBeInTheDocument();
-      expect(screen.getByText('GitHub')).toBeInTheDocument();
-
-      // But should show them as not configured
-      const notConfiguredElements = screen.getAllByText('Not configured');
-      expect(notConfiguredElements.length).toBe(2); // Google and GitHub
     });
 
-    it('should handle flows with missing or null values', () => {
-      renderComponent({});
+    it('should use default ID for GitHub when provider not found', () => {
+      renderComponent({
+        availableIntegrations: [],
+      });
 
-      // Should still render basic options
-      expect(screen.getByText('Username & Password')).toBeInTheDocument();
-      expect(screen.getByText('Google')).toBeInTheDocument();
+      // GitHub should still render with fallback ID 'github'
       expect(screen.getByText('GitHub')).toBeInTheDocument();
-
-      // Should not render SMS OTP or other flows
-      expect(screen.queryByText('SMS OTP')).not.toBeInTheDocument();
     });
 
     it('should handle providers with special characters in names', () => {
@@ -472,23 +385,31 @@ describe.skip('IndividualMethodsToggleView', () => {
 
       const list = screen.getByRole('list');
       expect(list).toBeInTheDocument();
-
-      const listItems = screen.getAllByRole('button');
-      expect(listItems.length).toBeGreaterThan(0);
     });
 
-    it('should have keyboard navigation support', async () => {
+    it('should have switches with proper roles', () => {
+      renderComponent();
+
+      const switches = screen.getAllByRole('switch');
+      expect(switches.length).toBeGreaterThan(0);
+    });
+
+    it('should have buttons with proper roles', () => {
+      renderComponent();
+
+      const buttons = screen.getAllByRole('button');
+      expect(buttons.length).toBeGreaterThan(0);
+    });
+
+    it('should be keyboard navigable', async () => {
       const user = userEvent.setup();
       renderComponent();
 
-      // Focus first item
+      // Tab to first focusable element
       await user.tab();
+
       const firstButton = screen.getAllByRole('button')[0];
       expect(firstButton).toHaveFocus();
-
-      // Should be able to activate with Enter or Space
-      await user.keyboard('{Enter}');
-      expect(mockOnIntegrationToggle).toHaveBeenCalled();
     });
   });
 });

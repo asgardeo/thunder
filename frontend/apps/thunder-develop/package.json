@@ -48,6 +48,7 @@
     "@lexical/react": "0.38.2",
     "@lexical/rich-text": "0.38.2",
     "@lexical/selection": "0.38.2",
+    "@thunder/logger": "workspace:^",
     "@lexical/utils": "0.38.2",
     "@mui/material": "catalog:",
     "@tanstack/react-query": "catalog:",

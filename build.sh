@@ -124,6 +124,10 @@ VANILLA_SAMPLE_APP_DIR=$SAMPLE_BASE_DIR/apps/react-vanilla-sample
 VANILLA_SAMPLE_APP_SERVER_DIR=$VANILLA_SAMPLE_APP_DIR/server
 REACT_SDK_SAMPLE_APP_DIR=$SAMPLE_BASE_DIR/apps/react-sdk-sample
 
+# Integration test filters (optional)
+TEST_RUN="${4:-}"
+TEST_PACKAGE="${5:-}"
+
 # ============================================================================
 # Read Configuration from deployment.yaml
 # ============================================================================
@@ -619,6 +623,19 @@ function test_integration() {
     echo "Running integration tests..."
     cd "$SCRIPT_DIR" || exit 1
     
+    # Build extra args from test filters
+    local extra_args=""
+    
+    if [ -n "$TEST_RUN" ]; then
+        extra_args="$extra_args -run $TEST_RUN"
+        echo "Test filter: -run $TEST_RUN"
+    fi
+    
+    if [ -n "$TEST_PACKAGE" ]; then
+        extra_args="$extra_args -package $TEST_PACKAGE"
+        echo "Test package: $TEST_PACKAGE"
+    fi
+    
     # Set up coverage directory for integration tests
     local coverage_dir="$(pwd)/$OUTPUT_DIR/.test/integration"
     mkdir -p "$coverage_dir"
@@ -627,7 +644,7 @@ function test_integration() {
     export GOCOVERDIR="$coverage_dir"
     
     echo "Coverage data will be collected in: $coverage_dir"
-    go run -C ./tests/integration ./main.go
+    go run -C ./tests/integration ./main.go $extra_args
     test_exit_code=$?
     
     # Process coverage data if tests passed or failed
@@ -1042,7 +1059,7 @@ case "$1" in
         echo "  build_frontend           - Build only the Next.js frontend applications"
         echo "  build_samples            - Build the sample applications"
         echo "  test_unit                - Run unit tests with coverage"
-        echo "  test_integration         - Run integration tests"
+        echo "  test_integration         - Run integration tests. Use -run and -package for filtering"
         echo "  merge_coverage           - Merge unit and integration test coverage reports"
         echo "  test                     - Run all tests (unit and integration)"
         echo "  run                      - Run the Thunder server for development (with automatic initial data setup)"

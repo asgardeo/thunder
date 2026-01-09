@@ -945,8 +945,11 @@ const translations = {
 
     // Elements - rich text
     'core.elements.richText.placeholder': 'Enter text here...',
+    'core.elements.richText.resolvedI18nValue': 'Resolved i18n value',
     'core.elements.richText.linkEditor.urlTypeLabel': 'URL Type',
     'core.elements.richText.linkEditor.placeholder': 'Enter URL',
+    'core.elements.richText.linkEditor.editLink': 'Edit Link',
+    'core.elements.richText.linkEditor.viewLink': 'Link',
 
     // Elements - text property field
     'core.elements.textPropertyField.placeholder': 'Enter {{propertyName}}',

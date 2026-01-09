@@ -395,20 +395,27 @@ function LoginFlowBuilder() {
 
   const generateSteps = useCallback(
     (stepNodes: Node[]): Node[] => {
+      // Check if template already includes a START step with custom position
+      const existingStartStep = stepNodes.find((step) => step.type === StaticStepTypes.Start);
+      const startPosition = existingStartStep?.position ?? {x: -300, y: 330};
+
       const START_STEP: Node = {
         data: {
           displayOnly: true,
         },
         deletable: false,
         id: INITIAL_FLOW_START_STEP_ID,
-        position: {x: -300, y: 330},
+        position: startPosition,
         type: StaticStepTypes.Start,
       };
+
+      // Filter out START step from stepNodes if it exists (we'll add our own)
+      const nonStartSteps = stepNodes.filter((step) => step.type !== StaticStepTypes.Start);
 
       return generateIdsForResources<Node[]>(
         resolveStepMetadata(resources, [
           START_STEP,
-          ...stepNodes.map((step: Node) => ({
+          ...nonStartSteps.map((step: Node) => ({
             data: step.data?.components
               ? {
                   ...step.data,

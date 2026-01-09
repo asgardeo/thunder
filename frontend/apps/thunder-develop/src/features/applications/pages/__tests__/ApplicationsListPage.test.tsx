@@ -22,6 +22,7 @@ import userEvent from '@testing-library/user-event';
 import {QueryClient, QueryClientProvider} from '@tanstack/react-query';
 import {BrowserRouter} from 'react-router';
 import {ConfigProvider} from '@thunder/commons-contexts';
+import {LoggerProvider, LogLevel} from '@thunder/logger';
 import ApplicationsListPage from '../ApplicationsListPage';
 
 // Mock the ApplicationsList component
@@ -62,7 +63,14 @@ describe('ApplicationsListPage', () => {
       <BrowserRouter>
         <QueryClientProvider client={queryClient}>
           <ConfigProvider>
-            <ApplicationsListPage />
+            <LoggerProvider
+              logger={{
+                level: LogLevel.ERROR,
+                transports: [],
+              }}
+            >
+              <ApplicationsListPage />
+            </LoggerProvider>
           </ConfigProvider>
         </QueryClientProvider>
       </BrowserRouter>,
@@ -164,8 +172,8 @@ describe('ApplicationsListPage', () => {
 
       expect(mockNavigate).toHaveBeenCalledWith('/applications/create');
 
-      // Should not throw error
-      expect(consoleErrorSpy).not.toHaveBeenCalled();
+      // Logger should log the error
+      expect(consoleErrorSpy).toHaveBeenCalled();
 
       consoleErrorSpy.mockRestore();
     });

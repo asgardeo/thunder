@@ -21,6 +21,7 @@ import {Box, Stack, Typography, TextField, Button, InputAdornment, Select, MenuI
 import {useMemo, useState} from 'react';
 import {Plus, Search} from '@wso2/oxygen-ui-icons-react';
 import {useTranslation} from 'react-i18next';
+import {useLogger} from '@thunder/logger/react';
 import UsersList from '../components/UsersList';
 import useGetUserSchemas from '../api/useGetUserSchemas';
 import type {SchemaInterface} from '../types/users';
@@ -28,6 +29,7 @@ import type {SchemaInterface} from '../types/users';
 export default function UsersListPage() {
   const navigate = useNavigate();
   const {t} = useTranslation();
+  const logger = useLogger('UsersListPage');
 
   const [selectedSchema, setSelectedSchema] = useState<string>();
 
@@ -61,9 +63,8 @@ export default function UsersListPage() {
             onClick={() => {
               (async () => {
                 await navigate('/users/create');
-              })().catch(() => {
-                // TODO: Log the errors
-                // Tracker: https://github.com/asgardeo/thunder/issues/618
+              })().catch((error: unknown) => {
+                logger.error('Failed to navigate to create user page', {error});
               });
             }}
           >

@@ -17,8 +17,9 @@
  */
 
 import {describe, it, expect, vi, beforeEach} from 'vitest';
-import {renderHook, waitFor} from '@testing-library/react';
+import {waitFor} from '@testing-library/react';
 import {useTranslation} from 'react-i18next';
+import {renderHook} from '../../test/test-utils';
 
 // Mock @thunder/i18n
 vi.mock('@thunder/i18n', () => ({

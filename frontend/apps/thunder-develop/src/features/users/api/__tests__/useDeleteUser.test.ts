@@ -17,8 +17,8 @@
  */
 
 import {describe, it, expect, vi, beforeEach, afterEach} from 'vitest';
-import {renderHook, waitFor} from '@testing-library/react';
-
+import {waitFor} from '@testing-library/react';
+import {renderHook} from '../../../../test/test-utils';
 import useDeleteUser from '../useDeleteUser';
 
 // Mock useAsgardeo
@@ -32,11 +32,15 @@ vi.mock('@asgardeo/react', () => ({
 }));
 
 // Mock useConfig
-vi.mock('@thunder/commons-contexts', () => ({
-  useConfig: () => ({
-    getServerUrl: () => 'https://localhost:8090',
-  }),
-}));
+vi.mock('@thunder/commons-contexts', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@thunder/commons-contexts')>();
+  return {
+    ...actual,
+    useConfig: () => ({
+      getServerUrl: () => 'https://localhost:8090',
+    }),
+  };
+});
 
 describe('useDeleteUser', () => {
   beforeEach(() => {
@@ -145,9 +149,7 @@ describe('useDeleteUser', () => {
       resolveRequest = resolve;
     });
 
-    mockHttpRequest.mockImplementationOnce(() =>
-      requestPromise.then(() => ({data: null})),
-    );
+    mockHttpRequest.mockImplementationOnce(() => requestPromise.then(() => ({data: null})));
 
     const {result} = renderHook(() => useDeleteUser());
 
@@ -166,9 +168,7 @@ describe('useDeleteUser', () => {
   });
 
   it('should clear previous error on new delete attempt', async () => {
-    mockHttpRequest
-      .mockRejectedValueOnce(new Error('User not found'))
-      .mockResolvedValueOnce({data: null});
+    mockHttpRequest.mockRejectedValueOnce(new Error('User not found')).mockResolvedValueOnce({data: null});
 
     const {result} = renderHook(() => useDeleteUser());
 
@@ -194,9 +194,7 @@ describe('useDeleteUser', () => {
   });
 
   it('should handle multiple delete operations', async () => {
-    mockHttpRequest
-      .mockResolvedValueOnce({data: null})
-      .mockResolvedValueOnce({data: null});
+    mockHttpRequest.mockResolvedValueOnce({data: null}).mockResolvedValueOnce({data: null});
 
     const {result} = renderHook(() => useDeleteUser());
 

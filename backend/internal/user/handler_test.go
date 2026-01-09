@@ -25,11 +25,14 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 
 	"github.com/asgardeo/thunder/internal/system/error/apierror"
 	"github.com/asgardeo/thunder/internal/system/security"
+)
+
+const (
+	testUserID789 = "user-789"
 )
 
 func TestHandleSelfUserGetRequest_Success(t *testing.T) {
@@ -124,16 +127,36 @@ func TestHandleSelfUserPutRequest_InvalidBody(t *testing.T) {
 }
 
 func TestHandleSelfUserCredentialUpdateRequest_Success(t *testing.T) {
-	userID := "user-789"
+	userID := testUserID789
 	authCtx := security.NewSecurityContextForTest(userID, "", "", "", nil)
-	attrs := json.RawMessage(`{"password":"Secret123!"}`)
 
 	mockSvc := NewUserServiceInterfaceMock(t)
-	mockSvc.On("UpdateUserCredentials", userID, attrs).Return(nil)
+	credentialsJSON := json.RawMessage(`{"password":[{"value":"Secret123!"}]}`)
+	mockSvc.On("UpdateUserCredentials", userID, credentialsJSON).Return(nil)
 
 	handler := newUserHandler(mockSvc)
 	req := httptest.NewRequest(http.MethodPost, "/users/me/update-credentials",
-		bytes.NewBufferString(`{"attributes":{"password":"Secret123!"}}`))
+		bytes.NewBufferString(`{"attributes":{"password":[{"value":"Secret123!"}]}}`))
+	req = req.WithContext(security.WithSecurityContextTest(req.Context(), authCtx))
+	rr := httptest.NewRecorder()
+
+	handler.HandleSelfUserCredentialUpdateRequest(rr, req)
+
+	require.Equal(t, http.StatusNoContent, rr.Code)
+	require.Equal(t, 0, rr.Body.Len())
+}
+
+func TestHandleSelfUserCredentialUpdateRequest_StringValue(t *testing.T) {
+	userID := testUserID789
+	authCtx := security.NewSecurityContextForTest(userID, "", "", "", nil)
+
+	mockSvc := NewUserServiceInterfaceMock(t)
+	credentialsJSON := json.RawMessage(`{"password":"plaintext-password"}`)
+	mockSvc.On("UpdateUserCredentials", userID, credentialsJSON).Return(nil)
+
+	handler := newUserHandler(mockSvc)
+	req := httptest.NewRequest(http.MethodPost, "/users/me/update-credentials",
+		bytes.NewBufferString(`{"attributes":{"password":"plaintext-password"}}`))
 	req = req.WithContext(security.WithSecurityContextTest(req.Context(), authCtx))
 	rr := httptest.NewRecorder()
 
@@ -144,11 +167,10 @@ func TestHandleSelfUserCredentialUpdateRequest_Success(t *testing.T) {
 }
 
 func TestHandleSelfUserCredentialUpdateRequest_MissingCredentials(t *testing.T) {
-	userID := "user-789"
+	userID := testUserID789
 	authCtx := security.NewSecurityContextForTest(userID, "", "", "", nil)
 
 	mockSvc := NewUserServiceInterfaceMock(t)
-	mockSvc.On("UpdateUserCredentials", userID, mock.Anything).Return(&ErrorMissingCredentials)
 	handler := newUserHandler(mockSvc)
 
 	req := httptest.NewRequest(http.MethodPost, "/users/me/update-credentials",
@@ -163,4 +185,105 @@ func TestHandleSelfUserCredentialUpdateRequest_MissingCredentials(t *testing.T) 
 	var errResp apierror.ErrorResponse
 	require.NoError(t, json.NewDecoder(rr.Body).Decode(&errResp))
 	require.Equal(t, ErrorMissingCredentials.Code, errResp.Code)
+}
+
+func TestHandleSelfUserCredentialUpdateRequest_InvalidJSONInAttributes(t *testing.T) {
+	userID := testUserID789
+	authCtx := security.NewSecurityContextForTest(userID, "", "", "", nil)
+
+	mockSvc := NewUserServiceInterfaceMock(t)
+	// Service will be called and return error for invalid JSON
+	credentialsJSON := json.RawMessage(`["invalid","array"]`)
+	mockSvc.On("UpdateUserCredentials", userID, credentialsJSON).Return(&ErrorInvalidRequestFormat)
+
+	handler := newUserHandler(mockSvc)
+
+	// Send attributes with invalid JSON (array instead of map)
+	req := httptest.NewRequest(http.MethodPost, "/users/me/update-credentials",
+		bytes.NewBufferString(`{"attributes":["invalid","array"]}`))
+	req = req.WithContext(security.WithSecurityContextTest(req.Context(), authCtx))
+	rr := httptest.NewRecorder()
+
+	handler.HandleSelfUserCredentialUpdateRequest(rr, req)
+
+	require.Equal(t, http.StatusBadRequest, rr.Code)
+
+	var errResp apierror.ErrorResponse
+	require.NoError(t, json.NewDecoder(rr.Body).Decode(&errResp))
+	require.Equal(t, ErrorInvalidRequestFormat.Code, errResp.Code)
+}
+
+func TestHandleSelfUserCredentialUpdateRequest_InvalidCredentialType(t *testing.T) {
+	userID := testUserID789
+	authCtx := security.NewSecurityContextForTest(userID, "", "", "", nil)
+
+	mockSvc := NewUserServiceInterfaceMock(t)
+	// Service will be called and return error for invalid credential type
+	credentialsJSON := json.RawMessage(`{"unsupported_type":"some_value"}`)
+	mockSvc.On("UpdateUserCredentials", userID, credentialsJSON).Return(&ErrorInvalidCredential)
+
+	handler := newUserHandler(mockSvc)
+
+	// Send unsupported credential type
+	req := httptest.NewRequest(http.MethodPost, "/users/me/update-credentials",
+		bytes.NewBufferString(`{"attributes":{"unsupported_type":"some_value"}}`))
+	req = req.WithContext(security.WithSecurityContextTest(req.Context(), authCtx))
+	rr := httptest.NewRecorder()
+
+	handler.HandleSelfUserCredentialUpdateRequest(rr, req)
+
+	require.Equal(t, http.StatusBadRequest, rr.Code)
+
+	var errResp apierror.ErrorResponse
+	require.NoError(t, json.NewDecoder(rr.Body).Decode(&errResp))
+	require.Equal(t, ErrorInvalidCredential.Code, errResp.Code)
+}
+
+func TestHandleSelfUserCredentialUpdateRequest_ServiceError(t *testing.T) {
+	userID := testUserID789
+	authCtx := security.NewSecurityContextForTest(userID, "", "", "", nil)
+
+	mockSvc := NewUserServiceInterfaceMock(t)
+	credentialsJSON := json.RawMessage(`{"password":"test_password"}`)
+
+	// Mock service to return an error
+	mockSvc.On("UpdateUserCredentials", userID, credentialsJSON).
+		Return(&ErrorInvalidCredential)
+
+	handler := newUserHandler(mockSvc)
+	req := httptest.NewRequest(http.MethodPost, "/users/me/update-credentials",
+		bytes.NewBufferString(`{"attributes":{"password":"test_password"}}`))
+	req = req.WithContext(security.WithSecurityContextTest(req.Context(), authCtx))
+	rr := httptest.NewRecorder()
+
+	handler.HandleSelfUserCredentialUpdateRequest(rr, req)
+
+	require.Equal(t, http.StatusBadRequest, rr.Code)
+
+	var errResp apierror.ErrorResponse
+	require.NoError(t, json.NewDecoder(rr.Body).Decode(&errResp))
+	require.Equal(t, ErrorInvalidCredential.Code, errResp.Code)
+}
+
+func TestHandleSelfUserCredentialUpdateRequest_MultipleCredentialTypes(t *testing.T) {
+	userID := testUserID789
+	authCtx := security.NewSecurityContextForTest(userID, "", "", "", nil)
+
+	mockSvc := NewUserServiceInterfaceMock(t)
+	// Test that multiple credential types are updated in a single atomic call
+	credentialsJSON := json.RawMessage(`{"password":"new-password","pin":"1234"}`)
+	mockSvc.On("UpdateUserCredentials", userID, credentialsJSON).Return(nil)
+
+	handler := newUserHandler(mockSvc)
+	req := httptest.NewRequest(http.MethodPost, "/users/me/update-credentials",
+		bytes.NewBufferString(`{"attributes":{"password":"new-password","pin":"1234"}}`))
+	req = req.WithContext(security.WithSecurityContextTest(req.Context(), authCtx))
+	rr := httptest.NewRecorder()
+
+	handler.HandleSelfUserCredentialUpdateRequest(rr, req)
+
+	require.Equal(t, http.StatusNoContent, rr.Code)
+	require.Equal(t, 0, rr.Body.Len())
+	// Verify that UpdateUserCredentials was called exactly once with all credentials
+	mockSvc.AssertNumberOfCalls(t, "UpdateUserCredentials", 1)
 }

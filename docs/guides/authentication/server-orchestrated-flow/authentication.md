@@ -2,7 +2,8 @@
 
 Thunder supports app native authentication flows where the server orchestrates the entire authentication process. This allows users to execute login flows via REST APIs, making it suitable for native applications, mobile apps, and single-page applications (SPAs).
 
-> Note: Refer [Customizing Authentication Flows](./customize-auth-flow.md) for more details on customizing authentication flows.
+> [!TIP]
+> To customize authentication flows, see the [Flow Guides](/docs/guides/flows/) for creating and managing flows using the Visual Flow Builder or the Flow Management API.
 
 ## Login with Username and Password
 
@@ -50,7 +51,13 @@ Follow the steps below to configure and execute a login flow using username and 
     }'
     ```
 
-2. **Configure an Application with Username/Password Login**
+2. **Create or Update the Authentication Flow**
+
+    Use the Flow Management API or Visual Flow Builder to create a username/password authentication flow. See the [Flow Examples](/docs/guides/flows/flow-examples.md#username-and-password-authentication) for a complete example.
+
+    Note the `id` of the created authentication flow for the next step.
+
+3. **Configure an Application with Username/Password Login**
 
     Create an application to use the username/password login template. You can use the following cURL command to create a new application.
 
@@ -60,11 +67,11 @@ Follow the steps below to configure and execute a login flow using username and 
     -d '{
         "name": "App Native Login 1",
         "description": "Sample application for App native login",
-        "auth_flow_id": "auth_flow_config_basic"
+        "auth_flow_id": "<auth-flow-uuid>"
     }'
     ```
 
-3. **Start the Login Flow**
+4. **Start the Login Flow**
 
     Start login flow for the application with the following cURL command:
 
@@ -86,21 +93,29 @@ Follow the steps below to configure and execute a login flow using username and 
         "data": {
           "inputs": [
             {
-                "name": "username",
-                "type": "string",
+                "identifier": "username",
+                "type": "TEXT_INPUT",
                 "required": true
             },
             {
-                "name": "password",
-                "type": "string",
+                "identifier": "password",
+                "type": "PASSWORD_INPUT",
                 "required": true
+            }
+          ],
+          "actions": [
+            {
+                "ref": "action_001",
+                "nextNode": "basic_auth"
             }
           ]
         }
     }
     ```
 
-4. **Complete the Login Flow**
+    The `actions` array contains the available actions the user can select. Use the `ref` value from the selected action in subsequent requests.
+
+5. **Complete the Login Flow**
 
     Make the second cURL request to complete the login flow. Make sure to replace `<flow_id>` with the `flowId` received in the previous response. Also, replace the `username` and `password` with the credentials of the user you created in the first step.
 
@@ -108,6 +123,7 @@ Follow the steps below to configure and execute a login flow using username and 
     curl -kL -H 'Content-Type: application/json' https://localhost:8090/flow/execute \
     -d '{
         "flowId": "<flow_id>",
+        "action": "<action_ref>",
         "inputs": {
             "username": "thor",
             "password": "<password>"
@@ -153,9 +169,11 @@ Follow the steps below to configure and execute a login flow using username and 
 
     > Note: Refer [Configuring Message Senders](/../../notification-sender/configure-message-senders.md) for more details on configuring message senders.
 
-3. **Update the Authentication Flow Graph**
+3. **Create or Update the Authentication Flow**
 
-    Update the authentication flow graph to use the configured message sender. To do so, open the `auth_flow_config_sms.json` file in the `repository/resources/graph/` directory and update the `senderId` with the unique identifier of the message sender you configured in the previous step. Make sure to restart the server after making this change.
+    Use the Flow Management API or Visual Flow Builder to create an SMS OTP flow with your `senderId`. See the [Flow Examples](/docs/guides/flows/flow-examples.md#sms-otp-authentication) for a complete example.
+
+    Note the `id` of the created authentication flow for the next step.
 
 4. **Configure an Application with SMS OTP Login**
 
@@ -167,7 +185,7 @@ Follow the steps below to configure and execute a login flow using username and 
     -d '{
         "name": "App Native Login 1",
         "description": "Sample application for App native login",
-        "auth_flow_id": "auth_flow_config_sms"
+        "auth_flow_id": "<sms-auth-flow-uuid>"
     }'
     ```
 
@@ -226,8 +244,9 @@ Follow the steps below to configure and execute a login flow using username and 
     curl -kL -H 'Content-Type: application/json' https://localhost:8090/flow/execute \
     -d '{
         "flowId": "<flow_id>",
+        "action": "<action_ref>",
         "inputs": {
-            "username": "thor"
+            "mobileNumber": "+1234567890"
         }
     }'
     ```
@@ -242,6 +261,7 @@ Follow the steps below to configure and execute a login flow using username and 
     curl -kL -H 'Content-Type: application/json' https://localhost:8090/flow/execute \
     -d '{
         "flowId": "<flow_id>",
+        "action": "<action_ref>",
         "inputs": {
             "otp": "696546"
         }
@@ -298,9 +318,11 @@ Follow the steps below to configure and execute a login flow using Google OAuth 
 
     > Note: Refer [Configuring Identity Providers](/../../identity-provider/configure-identity-providers.md) for more details on configuring identity providers.
 
-3. **Update the Authentication Flow Graph**
+3. **Create or Update the Authentication Flow**
 
-    Update the authentication flow graph to use the configured identity provider. To do so, open the `auth_flow_config_github.json` file in the `repository/resources/graph/` directory and update the `idpId` with the unique identifier of the identity provider you configured in the previous step. Make sure to restart the server after making this change.
+    Use the Flow Management API or Visual Flow Builder to create a Google OIDC flow with your `idpId`. See the [Flow Examples](/docs/guides/flows/flow-examples.md#google-oidc-authentication) for a complete example.
+
+    Note the `id` of the created authentication flow for the next step.
 
 4. **Configure an Application with Google Login**
 
@@ -312,7 +334,7 @@ Follow the steps below to configure and execute a login flow using Google OAuth 
     -d '{
         "name": "App Native Login 1",
         "description": "Sample application for App native login",
-        "auth_flow_id": "auth_flow_config_google"
+        "auth_flow_id": "<google-auth-flow-uuid>"
     }'
     ```
 
@@ -430,9 +452,11 @@ Follow the steps below to configure and execute a login flow using GitHub OAuth 
 
     > Note: Refer [Configuring Identity Providers](/../../identity-provider/configure-identity-providers.md) for more details on configuring identity providers.
 
-3. **Update the Authentication Flow Graph**
+3. **Create or Update the Authentication Flow**
 
-    Update the authentication flow graph to use the configured identity provider. To do so, open the `auth_flow_config_github.json` file in the `repository/resources/graph/` directory and update the `idpId` with the unique identifier of the identity provider you configured in the previous step. Make sure to restart the server after making this change.
+    Use the Flow Management API or Visual Flow Builder to create a GitHub OAuth flow with your `idpId`. See the [Flow Examples](/docs/guides/flows/flow-examples.md#github-oauth-authentication) for a complete example.
+
+    Note the `id` of the created authentication flow for the next step.
 
 4. **Configure an Application with GitHub Login**
 
@@ -443,7 +467,7 @@ Follow the steps below to configure and execute a login flow using GitHub OAuth 
     -d '{
         "name": "App Native Login 1",
         "description": "Sample application for App native login",
-        "auth_flow_id": "auth_flow_config_github"
+        "auth_flow_id": "<github-auth-flow-uuid>"
     }'
     ```
 

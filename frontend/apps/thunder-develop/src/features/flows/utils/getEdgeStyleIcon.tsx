@@ -18,7 +18,7 @@
 
 import {type ReactElement} from 'react';
 import {EdgeStyleTypes, type EdgeStyleTypes as EdgeStyleTypesType} from '../models/steps';
-import {BezierEdgeIcon, SmoothStepEdgeIcon, StepEdgeIcon} from '../components/EdgeStyleIcons';
+import {BezierEdgeIcon, SmoothStepEdgeIcon, StepEdgeIcon} from '../components/visual-flow/EdgeStyleIcons';
 
 /**
  * Returns the appropriate icon component for the given edge style

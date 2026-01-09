@@ -28,6 +28,7 @@ import (
 
 	"github.com/asgardeo/thunder/internal/system/config"
 	"github.com/asgardeo/thunder/internal/system/crypto/hash"
+	"github.com/asgardeo/thunder/internal/system/http"
 )
 
 // SystemCertificateServiceInterface defines the interface for system certificate operations.
@@ -46,8 +47,8 @@ func NewSystemCertificateService() SystemCertificateServiceInterface {
 
 // GetTLSConfig loads the TLS configuration from the certificate and key files.
 func (c *systemCertificateService) GetTLSConfig(cfg *config.Config, currentDirectory string) (*tls.Config, error) {
-	certFilePath := path.Join(currentDirectory, cfg.Security.CertFile)
-	keyFilePath := path.Join(currentDirectory, cfg.Security.KeyFile)
+	certFilePath := path.Join(currentDirectory, cfg.TLS.CertFile)
+	keyFilePath := path.Join(currentDirectory, cfg.TLS.KeyFile)
 
 	// Check if the certificate and key files exist.
 	if _, err := os.Stat(certFilePath); os.IsNotExist(err) {
@@ -63,10 +64,10 @@ func (c *systemCertificateService) GetTLSConfig(cfg *config.Config, currentDirec
 		return nil, err
 	}
 
-	// Return the TLS configuration.
+	// #nosec G402 -- Min TLS version is TLS 1.2 or higher based on config
 	return &tls.Config{
 		Certificates: []tls.Certificate{cert},
-		MinVersion:   tls.VersionTLS12, // Enforce minimum TLS version 1.2
+		MinVersion:   http.GetTLSVersion(*cfg),
 	}, nil
 }
 

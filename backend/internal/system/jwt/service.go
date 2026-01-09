@@ -77,7 +77,7 @@ func GetJWTService() JWTServiceInterface {
 // Init loads the private key from the configured file path.
 func (js *JWTService) Init() error {
 	thunderRuntime := config.GetThunderRuntime()
-	keyFilePath := path.Join(thunderRuntime.ThunderHome, thunderRuntime.Config.Security.KeyFile)
+	keyFilePath := path.Join(thunderRuntime.ThunderHome, thunderRuntime.Config.TLS.KeyFile)
 	keyFilePath = filepath.Clean(keyFilePath)
 
 	// Check if the key file exists.

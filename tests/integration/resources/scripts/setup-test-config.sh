@@ -8,7 +8,7 @@ server:
   port: 8095
 
 
-security:
+tls:
   cert_file: "repository/resources/security/server.cert"
   key_file: "repository/resources/security/server.key"
 

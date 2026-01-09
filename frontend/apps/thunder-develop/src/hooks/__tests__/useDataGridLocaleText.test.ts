@@ -17,8 +17,7 @@
  */
 
 import {describe, it, expect, vi} from 'vitest';
-import {renderHook} from '@testing-library/react';
-
+import {renderHook} from '../../test/test-utils';
 import useDataGridLocaleText from '../useDataGridLocaleText';
 
 // Unmock the hook for testing the actual implementation

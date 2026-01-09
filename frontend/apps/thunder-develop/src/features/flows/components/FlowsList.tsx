@@ -18,6 +18,7 @@
 
 import {useMemo, useCallback, useState, type JSX} from 'react';
 import {useNavigate} from 'react-router';
+import {useLogger} from '@thunder/logger/react';
 import {
   Box,
   Avatar,
@@ -42,6 +43,7 @@ export default function FlowsList(): JSX.Element {
   const theme = useTheme();
   const navigate = useNavigate();
   const {t} = useTranslation();
+  const logger = useLogger('FlowsList');
   const dataGridLocaleText = useDataGridLocaleText();
   const {data, isLoading, error} = useGetFlows();
 
@@ -75,8 +77,8 @@ export default function FlowsList(): JSX.Element {
     if (selectedFlow?.flowType === 'AUTHENTICATION') {
       (async (): Promise<void> => {
         await navigate(`/flows/login/${selectedFlow.id}`);
-      })().catch(() => {
-        // TODO: Log the errors
+      })().catch((_error: unknown) => {
+        logger.error('Failed to navigate to flow editor', {error: _error, flowId: selectedFlow.id});
       });
     }
   };
@@ -222,8 +224,8 @@ export default function FlowsList(): JSX.Element {
             }
             (async (): Promise<void> => {
               await navigate(`/flows/login/${flow.id}`);
-            })().catch(() => {
-              // TODO: Log the errors
+            })().catch((_error: unknown) => {
+              logger.error('Failed to navigate to flow', {error: _error, flowId: flow.id});
             });
           }}
           initialState={{

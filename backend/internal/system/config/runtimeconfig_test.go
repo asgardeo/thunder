@@ -45,7 +45,7 @@ func (suite *RuntimeConfigTestSuite) TestInitializeThunderRuntime() {
 			Hostname: "testhost",
 			Port:     9000,
 		},
-		Security: SecurityConfig{
+		TLS: TLSConfig{
 			CertFile: "test-cert.pem",
 			KeyFile:  "test-key.pem",
 		},
@@ -60,7 +60,7 @@ func (suite *RuntimeConfigTestSuite) TestInitializeThunderRuntime() {
 	assert.Equal(suite.T(), "/test/thunder/home", runtime.ThunderHome)
 	assert.Equal(suite.T(), config.Server.Hostname, runtime.Config.Server.Hostname)
 	assert.Equal(suite.T(), config.Server.Port, runtime.Config.Server.Port)
-	assert.Equal(suite.T(), config.Security.CertFile, runtime.Config.Security.CertFile)
+	assert.Equal(suite.T(), config.TLS.CertFile, runtime.Config.TLS.CertFile)
 }
 
 func (suite *RuntimeConfigTestSuite) TestInitializeThunderRuntimeOnlyOnce() {

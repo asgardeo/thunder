@@ -17,7 +17,7 @@
  */
 
 import {describe, it, expect, beforeEach, afterEach, vi} from 'vitest';
-import {renderHook, waitFor} from '@testing-library/react';
+import {waitFor, renderHook} from '@testing-library/react';
 import {QueryClient, QueryClientProvider} from '@tanstack/react-query';
 import type {ReactNode} from 'react';
 import useUpdateApplication from '../useUpdateApplication';
@@ -30,9 +30,13 @@ vi.mock('@asgardeo/react', () => ({
   useAsgardeo: vi.fn(),
 }));
 
-vi.mock('@thunder/commons-contexts', () => ({
-  useConfig: vi.fn(),
-}));
+vi.mock('@thunder/commons-contexts', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@thunder/commons-contexts')>();
+  return {
+    ...actual,
+    useConfig: vi.fn(),
+  };
+});
 
 const {useAsgardeo} = await import('@asgardeo/react');
 const {useConfig} = await import('@thunder/commons-contexts');
