@@ -83,6 +83,9 @@ spec:
           image: {{ .Values.deployment.image.registry }}/{{ .Values.deployment.image.repository }}:{{ default "latest" .Values.deployment.image.tag }}
           {{- end }}
           imagePullPolicy: {{ .Values.deployment.image.pullPolicy }}
+          env:
+            - name: THUNDER_SKIP_SECURITY
+              value: {{ .Values.deployment.skipSecurity | quote }}
           startupProbe:
             exec:
               command:

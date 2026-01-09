@@ -61,6 +61,7 @@ deployment:
     requests:
       cpu: 1
       memory: 256Mi
+  skipSecurity: false
 
 hpa:
   enabled: true
@@ -242,7 +243,7 @@ setup:
   # Only applies when preserveJob=false. Successful jobs are deleted immediately via hook-delete-policy.
   ttlSecondsAfterFinished: 86400  # 24 hours
   # Enable debug mode for setup
-  debug: false
+  debug: true
   # Additional command-line arguments for setup.sh
   args: []
     # Example:
