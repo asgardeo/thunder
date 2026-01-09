@@ -29,6 +29,8 @@ type DBInterface interface {
 	Exec(query string, args ...any) (sql.Result, error)
 	Begin() (*sql.Tx, error)
 	Close() error
+	// GetSQLDB returns the underlying *sql.DB for advanced operations like transaction management.
+	GetSQLDB() *sql.DB
 }
 
 // DB is the implementation of DBInterface for managing database connections.
@@ -61,6 +63,12 @@ func (d *DB) Begin() (*sql.Tx, error) {
 // Close closes the database connection.
 func (d *DB) Close() error {
 	return d.internal.Close()
+}
+
+// GetSQLDB returns the underlying *sql.DB instance.
+// This is used for creating transactioners and other advanced database operations.
+func (d *DB) GetSQLDB() *sql.DB {
+	return d.internal
 }
 
 // TxInterface defines the wrapper interface for transaction management.

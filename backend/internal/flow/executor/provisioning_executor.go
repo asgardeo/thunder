@@ -19,6 +19,7 @@
 package executor
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"slices"
@@ -326,7 +327,13 @@ func (p *provisioningExecutor) createUserInStore(ctx *core.NodeContext,
 	}
 	newUser.Attributes = attributesJSON
 
-	retUser, svcErr := p.userService.CreateUser(&newUser)
+	// Use the context from the node context if available, otherwise use background context
+	createCtx := ctx.Context
+	if createCtx == nil {
+		createCtx = context.Background()
+	}
+
+	retUser, svcErr := p.userService.CreateUser(createCtx, &newUser)
 	if svcErr != nil {
 		return nil, fmt.Errorf("failed to create user in the store: %s", svcErr.Error)
 	}

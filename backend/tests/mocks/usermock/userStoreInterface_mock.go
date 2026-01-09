@@ -5,6 +5,8 @@
 package usermock
 
 import (
+	"context"
+
 	"github.com/asgardeo/thunder/internal/user"
 	mock "github.com/stretchr/testify/mock"
 )
@@ -37,16 +39,16 @@ func (_m *userStoreInterfaceMock) EXPECT() *userStoreInterfaceMock_Expecter {
 }
 
 // CreateUser provides a mock function for the type userStoreInterfaceMock
-func (_mock *userStoreInterfaceMock) CreateUser(user1 user.User, credentials user.Credentials) error {
-	ret := _mock.Called(user1, credentials)
+func (_mock *userStoreInterfaceMock) CreateUser(ctx context.Context, user1 user.User, credentials user.Credentials) error {
+	ret := _mock.Called(ctx, user1, credentials)
 
 	if len(ret) == 0 {
 		panic("no return value specified for CreateUser")
 	}
 
 	var r0 error
-	if returnFunc, ok := ret.Get(0).(func(user.User, user.Credentials) error); ok {
-		r0 = returnFunc(user1, credentials)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, user.User, user.Credentials) error); ok {
+		r0 = returnFunc(ctx, user1, credentials)
 	} else {
 		r0 = ret.Error(0)
 	}
@@ -59,25 +61,31 @@ type userStoreInterfaceMock_CreateUser_Call struct {
 }
 
 // CreateUser is a helper method to define mock.On call
+//   - ctx context.Context
 //   - user1 user.User
 //   - credentials user.Credentials
-func (_e *userStoreInterfaceMock_Expecter) CreateUser(user1 interface{}, credentials interface{}) *userStoreInterfaceMock_CreateUser_Call {
-	return &userStoreInterfaceMock_CreateUser_Call{Call: _e.mock.On("CreateUser", user1, credentials)}
+func (_e *userStoreInterfaceMock_Expecter) CreateUser(ctx interface{}, user1 interface{}, credentials interface{}) *userStoreInterfaceMock_CreateUser_Call {
+	return &userStoreInterfaceMock_CreateUser_Call{Call: _e.mock.On("CreateUser", ctx, user1, credentials)}
 }
 
-func (_c *userStoreInterfaceMock_CreateUser_Call) Run(run func(user1 user.User, credentials user.Credentials)) *userStoreInterfaceMock_CreateUser_Call {
+func (_c *userStoreInterfaceMock_CreateUser_Call) Run(run func(ctx context.Context, user1 user.User, credentials user.Credentials)) *userStoreInterfaceMock_CreateUser_Call {
 	_c.Call.Run(func(args mock.Arguments) {
-		var arg0 user.User
+		var arg0 context.Context
 		if args[0] != nil {
-			arg0 = args[0].(user.User)
+			arg0 = args[0].(context.Context)
 		}
-		var arg1 user.Credentials
+		var arg1 user.User
 		if args[1] != nil {
-			arg1 = args[1].(user.Credentials)
+			arg1 = args[1].(user.User)
+		}
+		var arg2 user.Credentials
+		if args[2] != nil {
+			arg2 = args[2].(user.Credentials)
 		}
 		run(
 			arg0,
 			arg1,
+			arg2,
 		)
 	})
 	return _c
@@ -88,7 +96,7 @@ func (_c *userStoreInterfaceMock_CreateUser_Call) Return(err error) *userStoreIn
 	return _c
 }
 
-func (_c *userStoreInterfaceMock_CreateUser_Call) RunAndReturn(run func(user1 user.User, credentials user.Credentials) error) *userStoreInterfaceMock_CreateUser_Call {
+func (_c *userStoreInterfaceMock_CreateUser_Call) RunAndReturn(run func(ctx context.Context, user1 user.User, credentials user.Credentials) error) *userStoreInterfaceMock_CreateUser_Call {
 	_c.Call.Return(run)
 	return _c
 }

@@ -6,6 +6,7 @@ package providermock
 
 import (
 	"github.com/asgardeo/thunder/internal/system/database/provider"
+	"github.com/asgardeo/thunder/internal/system/database/transaction"
 	mock "github.com/stretchr/testify/mock"
 )
 
@@ -91,6 +92,61 @@ func (_c *DBProviderInterfaceMock_GetConfigDBClient_Call) RunAndReturn(run func(
 	return _c
 }
 
+// GetConfigDBTransactioner provides a mock function for the type DBProviderInterfaceMock
+func (_mock *DBProviderInterfaceMock) GetConfigDBTransactioner() (transaction.Transactioner, error) {
+	ret := _mock.Called()
+
+	if len(ret) == 0 {
+		panic("no return value specified for GetConfigDBTransactioner")
+	}
+
+	var r0 transaction.Transactioner
+	var r1 error
+	if returnFunc, ok := ret.Get(0).(func() (transaction.Transactioner, error)); ok {
+		return returnFunc()
+	}
+	if returnFunc, ok := ret.Get(0).(func() transaction.Transactioner); ok {
+		r0 = returnFunc()
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(transaction.Transactioner)
+		}
+	}
+	if returnFunc, ok := ret.Get(1).(func() error); ok {
+		r1 = returnFunc()
+	} else {
+		r1 = ret.Error(1)
+	}
+	return r0, r1
+}
+
+// DBProviderInterfaceMock_GetConfigDBTransactioner_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'GetConfigDBTransactioner'
+type DBProviderInterfaceMock_GetConfigDBTransactioner_Call struct {
+	*mock.Call
+}
+
+// GetConfigDBTransactioner is a helper method to define mock.On call
+func (_e *DBProviderInterfaceMock_Expecter) GetConfigDBTransactioner() *DBProviderInterfaceMock_GetConfigDBTransactioner_Call {
+	return &DBProviderInterfaceMock_GetConfigDBTransactioner_Call{Call: _e.mock.On("GetConfigDBTransactioner")}
+}
+
+func (_c *DBProviderInterfaceMock_GetConfigDBTransactioner_Call) Run(run func()) *DBProviderInterfaceMock_GetConfigDBTransactioner_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		run()
+	})
+	return _c
+}
+
+func (_c *DBProviderInterfaceMock_GetConfigDBTransactioner_Call) Return(transactioner transaction.Transactioner, err error) *DBProviderInterfaceMock_GetConfigDBTransactioner_Call {
+	_c.Call.Return(transactioner, err)
+	return _c
+}
+
+func (_c *DBProviderInterfaceMock_GetConfigDBTransactioner_Call) RunAndReturn(run func() (transaction.Transactioner, error)) *DBProviderInterfaceMock_GetConfigDBTransactioner_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
 // GetRuntimeDBClient provides a mock function for the type DBProviderInterfaceMock
 func (_mock *DBProviderInterfaceMock) GetRuntimeDBClient() (provider.DBClientInterface, error) {
 	ret := _mock.Called()
@@ -146,6 +202,61 @@ func (_c *DBProviderInterfaceMock_GetRuntimeDBClient_Call) RunAndReturn(run func
 	return _c
 }
 
+// GetRuntimeDBTransactioner provides a mock function for the type DBProviderInterfaceMock
+func (_mock *DBProviderInterfaceMock) GetRuntimeDBTransactioner() (transaction.Transactioner, error) {
+	ret := _mock.Called()
+
+	if len(ret) == 0 {
+		panic("no return value specified for GetRuntimeDBTransactioner")
+	}
+
+	var r0 transaction.Transactioner
+	var r1 error
+	if returnFunc, ok := ret.Get(0).(func() (transaction.Transactioner, error)); ok {
+		return returnFunc()
+	}
+	if returnFunc, ok := ret.Get(0).(func() transaction.Transactioner); ok {
+		r0 = returnFunc()
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(transaction.Transactioner)
+		}
+	}
+	if returnFunc, ok := ret.Get(1).(func() error); ok {
+		r1 = returnFunc()
+	} else {
+		r1 = ret.Error(1)
+	}
+	return r0, r1
+}
+
+// DBProviderInterfaceMock_GetRuntimeDBTransactioner_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'GetRuntimeDBTransactioner'
+type DBProviderInterfaceMock_GetRuntimeDBTransactioner_Call struct {
+	*mock.Call
+}
+
+// GetRuntimeDBTransactioner is a helper method to define mock.On call
+func (_e *DBProviderInterfaceMock_Expecter) GetRuntimeDBTransactioner() *DBProviderInterfaceMock_GetRuntimeDBTransactioner_Call {
+	return &DBProviderInterfaceMock_GetRuntimeDBTransactioner_Call{Call: _e.mock.On("GetRuntimeDBTransactioner")}
+}
+
+func (_c *DBProviderInterfaceMock_GetRuntimeDBTransactioner_Call) Run(run func()) *DBProviderInterfaceMock_GetRuntimeDBTransactioner_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		run()
+	})
+	return _c
+}
+
+func (_c *DBProviderInterfaceMock_GetRuntimeDBTransactioner_Call) Return(transactioner transaction.Transactioner, err error) *DBProviderInterfaceMock_GetRuntimeDBTransactioner_Call {
+	_c.Call.Return(transactioner, err)
+	return _c
+}
+
+func (_c *DBProviderInterfaceMock_GetRuntimeDBTransactioner_Call) RunAndReturn(run func() (transaction.Transactioner, error)) *DBProviderInterfaceMock_GetRuntimeDBTransactioner_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
 // GetUserDBClient provides a mock function for the type DBProviderInterfaceMock
 func (_mock *DBProviderInterfaceMock) GetUserDBClient() (provider.DBClientInterface, error) {
 	ret := _mock.Called()
@@ -197,6 +308,61 @@ func (_c *DBProviderInterfaceMock_GetUserDBClient_Call) Return(dBClientInterface
 }
 
 func (_c *DBProviderInterfaceMock_GetUserDBClient_Call) RunAndReturn(run func() (provider.DBClientInterface, error)) *DBProviderInterfaceMock_GetUserDBClient_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
+// GetUserDBTransactioner provides a mock function for the type DBProviderInterfaceMock
+func (_mock *DBProviderInterfaceMock) GetUserDBTransactioner() (transaction.Transactioner, error) {
+	ret := _mock.Called()
+
+	if len(ret) == 0 {
+		panic("no return value specified for GetUserDBTransactioner")
+	}
+
+	var r0 transaction.Transactioner
+	var r1 error
+	if returnFunc, ok := ret.Get(0).(func() (transaction.Transactioner, error)); ok {
+		return returnFunc()
+	}
+	if returnFunc, ok := ret.Get(0).(func() transaction.Transactioner); ok {
+		r0 = returnFunc()
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(transaction.Transactioner)
+		}
+	}
+	if returnFunc, ok := ret.Get(1).(func() error); ok {
+		r1 = returnFunc()
+	} else {
+		r1 = ret.Error(1)
+	}
+	return r0, r1
+}
+
+// DBProviderInterfaceMock_GetUserDBTransactioner_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'GetUserDBTransactioner'
+type DBProviderInterfaceMock_GetUserDBTransactioner_Call struct {
+	*mock.Call
+}
+
+// GetUserDBTransactioner is a helper method to define mock.On call
+func (_e *DBProviderInterfaceMock_Expecter) GetUserDBTransactioner() *DBProviderInterfaceMock_GetUserDBTransactioner_Call {
+	return &DBProviderInterfaceMock_GetUserDBTransactioner_Call{Call: _e.mock.On("GetUserDBTransactioner")}
+}
+
+func (_c *DBProviderInterfaceMock_GetUserDBTransactioner_Call) Run(run func()) *DBProviderInterfaceMock_GetUserDBTransactioner_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		run()
+	})
+	return _c
+}
+
+func (_c *DBProviderInterfaceMock_GetUserDBTransactioner_Call) Return(transactioner transaction.Transactioner, err error) *DBProviderInterfaceMock_GetUserDBTransactioner_Call {
+	_c.Call.Return(transactioner, err)
+	return _c
+}
+
+func (_c *DBProviderInterfaceMock_GetUserDBTransactioner_Call) RunAndReturn(run func() (transaction.Transactioner, error)) *DBProviderInterfaceMock_GetUserDBTransactioner_Call {
 	_c.Call.Return(run)
 	return _c
 }

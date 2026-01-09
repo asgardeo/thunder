@@ -19,6 +19,8 @@
 package core
 
 import (
+	"context"
+
 	appmodel "github.com/asgardeo/thunder/internal/application/model"
 	authncm "github.com/asgardeo/thunder/internal/authn/common"
 	"github.com/asgardeo/thunder/internal/flow/common"
@@ -26,6 +28,8 @@ import (
 
 // NodeContext holds the context for a specific node in the flow execution.
 type NodeContext struct {
+	Context context.Context
+
 	FlowID        string
 	FlowType      common.FlowType
 	AppID         string
