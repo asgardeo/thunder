@@ -29,8 +29,8 @@ gate_client:
 
 tls:
   min_version: {{ .Values.configuration.tls.minVersion | quote }}
-  cert_file: {{ .Values.configuration.security.certFile | quote }}
-  key_file: {{ .Values.configuration.security.keyFile | quote }}
+  cert_file: {{ .Values.configuration.tls.certFile | quote }}
+  key_file: {{ .Values.configuration.tls.keyFile | quote }}
 
 crypto:
   encryption:

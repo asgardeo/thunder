@@ -24,7 +24,7 @@ metadata:
     {{- include "thunder.labels" . | nindent 4 }}
     app.kubernetes.io/component: setup
   annotations:
-    "helm.sh/hook": pre-install
+    "helm.sh/hook": pre-install,pre-upgrade
     "helm.sh/hook-weight": "-10"
 data:
   deployment.yaml: {{ tpl (.Files.Get "conf/deployment.yaml") . | quote }}
