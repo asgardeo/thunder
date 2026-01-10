@@ -123,6 +123,7 @@ SAMPLE_BASE_DIR=samples
 VANILLA_SAMPLE_APP_DIR=$SAMPLE_BASE_DIR/apps/react-vanilla-sample
 VANILLA_SAMPLE_APP_SERVER_DIR=$VANILLA_SAMPLE_APP_DIR/server
 REACT_SDK_SAMPLE_APP_DIR=$SAMPLE_BASE_DIR/apps/react-sdk-sample
+REACT_API_SAMPLE_APP_DIR=$SAMPLE_BASE_DIR/apps/react-api-based-sample
 
 # Integration test filters (optional)
 TEST_RUN="${4:-}"
@@ -230,6 +231,10 @@ function clean() {
     echo "Removing certificates in the $REACT_SDK_SAMPLE_APP_DIR"
     rm -f "$REACT_SDK_SAMPLE_APP_DIR/server.cert"
     rm -f "$REACT_SDK_SAMPLE_APP_DIR/server.key"
+
+    echo "Removing certificates in the $REACT_API_SAMPLE_APP_DIR"
+    rm -f "$REACT_API_SAMPLE_APP_DIR/server.cert"
+    rm -f "$REACT_API_SAMPLE_APP_DIR/server.key"
     echo "================================================================"
 }
 
@@ -939,6 +944,7 @@ function run_backend() {
 
     echo "=== Ensuring sample app certificates exist ==="
     ensure_certificates "$VANILLA_SAMPLE_APP_DIR"
+    ensure_certificates "$REACT_API_SAMPLE_APP_DIR"
 
     ensure_crypto_file "$BACKEND_DIR/$SECURITY_DIR"
 

@@ -1,0 +1,189 @@
+# Thunder API-Based Authentication Sample Application
+
+This sample application demonstrates how to integrate Thunder authentication into a React application using direct API calls instead of SDK-based OAuth redirects. It showcases API-based user registration (sign-up) and authentication (sign-in) flows.
+
+## Features
+
+- User registration via Thunder's User Management API
+- User authentication via Thunder's Credentials Authentication API
+- JWT assertion token handling and display
+- Dashboard with user list view
+- User profile modal with decoded token information
+
+
+## Prerequisites
+
+- A running Thunder server instance (default: `https://localhost:8090`)
+- Thunder server configured with appropriate CORS settings
+- SSL certificates (`server.key` and `server.cert`) in the project root
+- The "Customer" user schema and "customers" organization unit created (via `02-sample-resources.sh` bootstrap script)
+
+## Quick Start
+
+### 1. Configure the Application
+
+Edit `public/config.json` with your Thunder server settings:
+
+```json
+{
+  "baseUrl": "https://localhost:8090"
+}
+```
+
+| Property | Description |
+|----------|-------------|
+| `baseUrl` | The base URL of your Thunder server |
+
+### 2. Set Up SSL Certificates
+
+The application runs on HTTPS. Certificates are automatically generated when running `./build.sh run_backend` from the project root. Alternatively, copy them manually:
+
+```bash
+cp ../../target/out/.cert/server.key .
+cp ../../target/out/.cert/server.cert .
+```
+
+### 3. Set Up Sample Resources
+
+Run the bootstrap script to create the required "Customer" user schema and "customers" organization unit:
+
+```bash
+# From the project root
+./backend/cmd/server/bootstrap/02-sample-resources.sh
+```
+
+### 4. Install Dependencies
+
+```bash
+pnpm install
+```
+
+### 5. Start the Development Server
+
+```bash
+pnpm dev
+```
+
+The application will be available at [https://localhost:3000](https://localhost:3000)
+
+### 6. Run the Built Application
+
+To serve the production build:
+
+```bash
+pnpm build
+pnpm preview
+```
+
+## Important: Sign-Up Requirements
+
+To use the sign-up functionality, you need to temporarily disable Thunder security by setting the following environment variable before starting the Thunder server:
+
+```bash
+export THUNDER_SKIP_SECURITY=true
+```
+
+This is required because the sign-up API creates users without authentication. In a production environment, you would typically use a different approach such as:
+- OAuth-based registration flows
+- Admin-created user accounts
+- Custom registration endpoints with appropriate security controls
+
+## Application Structure
+
+```
+src/
+├── components/
+│   ├── Layout.tsx           # Main layout with navigation
+│   ├── ThemeSwitcher.tsx    # Dark/light theme toggle
+│   ├── UserProfileModal.tsx # User profile display dialog
+│   └── UserTable.tsx        # Registered users table
+├── pages/
+│   ├── HomePage.tsx         # Landing page with sign-in/sign-up options
+│   ├── SignInPage.tsx       # User authentication form
+│   ├── SignUpPage.tsx       # User registration form
+│   └── DashboardPage.tsx    # Authenticated user dashboard
+├── utils/
+│   ├── api.ts               # Thunder API utilities
+│   └── jwt.ts               # JWT decoding utilities
+├── config.ts                # Runtime configuration loader
+├── router.tsx               # Application routes
+└── main.tsx                 # Application entry point
+```
+
+## API Endpoints Used
+
+This sample interacts with the following Thunder APIs:
+
+### Authentication
+- `POST /auth/credentials/authenticate` - Authenticate user with username/password
+
+### User Management
+- `GET /users` - List registered users
+- `POST /users` - Register a new user
+
+### Organization Units
+- `GET /organization-units` - Get available organization units
+
+## How It Works
+
+### Sign-Up Flow
+1. User fills in the registration form (username, name, email, password)
+2. Application fetches the "customers" organization unit ID
+3. Sends a POST request to `/users` with user attributes and type "Customer"
+4. On success, displays confirmation message
+
+### Sign-In Flow
+1. User enters username and password
+2. Application sends credentials to `/auth/credentials/authenticate`
+3. On success, receives an assertion token (JWT)
+4. Token is stored in sessionStorage
+5. User is redirected to the dashboard
+
+### Dashboard
+- Displays the authenticated user's information
+- Shows a table of all registered users
+- Allows viewing detailed profile information in a modal
+
+## Troubleshooting
+
+### Common Issues
+
+**Issue**: "Failed to fetch" errors
+- Ensure Thunder server is running and accessible at the configured base URL
+- Check CORS configuration in Thunder's `deployment.yaml`
+
+**Issue**: "User schema not found" error during sign-up
+- Run the `02-sample-resources.sh` bootstrap script to create the "Customer" user schema
+
+**Issue**: "Organization unit not found" error during sign-up
+- Run the `02-sample-resources.sh` bootstrap script to create the "customers" organization unit
+
+**Issue**: Sign-up fails with authentication/authorization errors
+- Ensure `THUNDER_SKIP_SECURITY=true` is set when starting the Thunder server
+
+**Issue**: CORS errors
+- Add your application URL to "Allowed Origins" in Thunder's configuration:
+  ```yaml
+  cors:
+    allowed_origins:
+      - "https://localhost:3000"
+  ```
+
+**Issue**: SSL certificate errors
+- Ensure `server.key` and `server.cert` exist in the project root
+- Run `./build.sh run_backend` from the project root to auto-generate certificates
+
+## Building for Production
+
+```bash
+pnpm build
+```
+
+The built files will be in the `dist` directory.
+
+## License
+
+Licensed under the Apache License, Version 2.0. You may not use this file except in compliance with the License.
+
+---------------------------------------------------------------------------
+(c) Copyright 2026 WSO2 LLC.
