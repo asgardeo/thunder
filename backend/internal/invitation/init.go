@@ -23,6 +23,7 @@ import (
 
 	"github.com/asgardeo/thunder/internal/system/config"
 	"github.com/asgardeo/thunder/internal/system/middleware"
+	"github.com/asgardeo/thunder/internal/user"
 )
 
 var (
@@ -33,9 +34,10 @@ var (
 func Initialize(mux *http.ServeMux) error {
 	store := newInvitationStore()
 	runtime := config.GetThunderRuntime()
+	userService := user.GetUserService()
 
 	invitationService = NewInvitationService(store, &runtime.Config.Server)
-	handler := newInvitationHandler(invitationService)
+	handler := newInvitationHandler(invitationService, userService)
 
 	registerRoutes(mux, handler)
 
@@ -59,6 +61,9 @@ func registerRoutes(mux *http.ServeMux, handler *invitationHandler) {
 
 	// DELETE /invitations/{id}
 	mux.HandleFunc(middleware.WithCORS("DELETE /invitations/", handler.HandleDeleteInvitation, invitationOpts))
+
+	// POST /invitations/redeem
+	mux.HandleFunc(middleware.WithCORS("POST /invitations/redeem", handler.HandleRedeemInvitation, invitationOpts))
 
 	// OPTIONS /invitations
 	mux.HandleFunc(middleware.WithCORS("OPTIONS /invitations", func(w http.ResponseWriter, r *http.Request) {

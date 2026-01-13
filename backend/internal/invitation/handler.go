@@ -25,19 +25,29 @@ import (
 
 	"github.com/asgardeo/thunder/internal/system/error/serviceerror"
 	"github.com/asgardeo/thunder/internal/system/log"
+	"github.com/asgardeo/thunder/internal/user"
 )
+
+// RedeemInvitationRequest represents the request body for redeeming an invitation
+type RedeemInvitationRequest struct {
+	Token         string `json:"token"`
+	Password      string `json:"password"`
+	ApplicationID string `json:"applicationId"`
+}
 
 const handlerComponentName = "InvitationHandler"
 
 // invitationHandler handles HTTP requests for invitation operations.
 type invitationHandler struct {
-	service InvitationServiceInterface
+	service     InvitationServiceInterface
+	userService user.UserServiceInterface
 }
 
 // newInvitationHandler creates a new invitationHandler.
-func newInvitationHandler(service InvitationServiceInterface) *invitationHandler {
+func newInvitationHandler(service InvitationServiceInterface, userService user.UserServiceInterface) *invitationHandler {
 	return &invitationHandler{
-		service: service,
+		service:     service,
+		userService: userService,
 	}
 }
 
@@ -138,6 +148,79 @@ func (h *invitationHandler) HandleValidateToken(w http.ResponseWriter, r *http.R
 	}
 
 	writeJSONResponse(w, http.StatusOK, response)
+}
+
+// HandleRedeemInvitation handles POST /invitations/redeem
+func (h *invitationHandler) HandleRedeemInvitation(w http.ResponseWriter, r *http.Request) {
+	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, handlerComponentName))
+
+	var request RedeemInvitationRequest
+	if err := json.NewDecoder(r.Body).Decode(&request); err != nil {
+		logger.Debug("Failed to decode request body", log.Error(err))
+		handleError(w, &serviceerror.ServiceError{
+			Code:             "INV-40000",
+			Error:            "invalid_request",
+			ErrorDescription: "Invalid request body",
+			Type:             serviceerror.ClientErrorType,
+		})
+		return
+	}
+
+	if request.Token == "" || request.Password == "" {
+		handleError(w, &serviceerror.ServiceError{
+			Code:             "INV-40000",
+			Error:            "invalid_request",
+			ErrorDescription: "Token and password are required",
+			Type:             serviceerror.ClientErrorType,
+		})
+		return
+	}
+
+	// 1. Validate the token first
+	invitation, svcErr := h.service.ValidateToken(request.Token)
+	if svcErr != nil {
+		handleError(w, svcErr)
+		return
+	}
+
+	if !invitation.Valid {
+		handleError(w, &serviceerror.ServiceError{
+			Code:             "INV-40001",
+			Error:            "invalid_token",
+			ErrorDescription: invitation.Message,
+			Type:             serviceerror.ClientErrorType,
+		})
+		return
+	}
+
+	// 2. Set user credentials and activate
+	credentials := map[string]interface{}{
+		"password": request.Password,
+	}
+	credJSON, err := json.Marshal(credentials)
+	if err != nil {
+		logger.Error("Failed to marshal credentials", log.Error(err))
+		handleError(w, &serviceerror.ServiceError{
+			Code:             "INV-50000",
+			Error:            "server_error",
+			ErrorDescription: "Failed to process credentials",
+		})
+		return
+	}
+
+	if svcErr := h.userService.SetUserCredentialsAndActivate(invitation.UserID, credJSON); svcErr != nil {
+		handleError(w, svcErr)
+		return
+	}
+
+	// 3. Mark invitation as redeemed
+	if svcErr := h.service.RedeemInvitation(request.Token); svcErr != nil {
+		// Log error but don't fail the request since user is already activated
+		logger.Error("Failed to mark invitation as redeemed", log.String("error", svcErr.Error))
+	}
+
+	w.WriteHeader(http.StatusOK)
+	writeJSONResponse(w, http.StatusOK, map[string]string{"message": "Invitation redeemed successfully"})
 }
 
 // HandleDeleteInvitation handles DELETE /invitations/{invitationId}

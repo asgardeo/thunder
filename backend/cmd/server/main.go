@@ -214,6 +214,7 @@ func createHTTPServer(logger *log.Logger, cfg *config.Config, mux *http.ServeMux
 		handler = log.AccessLogHandler(logger, mux)
 	}
 	handler = middleware.CorrelationIDMiddleware(handler)
+	handler = middleware.APIPrefixMiddleware(handler)
 
 	// Build the server address using hostname and port from the configurations.
 	serverAddr := fmt.Sprintf("%s:%d", cfg.Server.Hostname, cfg.Server.Port)

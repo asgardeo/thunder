@@ -111,7 +111,7 @@ export default function InviteBox(): JSX.Element {
     }
 
     try {
-      const response = await fetch(`/api/invitations/validate?token=${encodeURIComponent(token)}`, {
+      const response = await fetch(`/api/invitations/${encodeURIComponent(token)}/validate`, {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',

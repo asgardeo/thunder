@@ -97,6 +97,16 @@ func (s *securityService) isPublicPath(path string) bool {
 		"/branding/resolve",
 	}
 
+	// Check for invitation redemption
+	if path == "/invitations/redeem" {
+		return true
+	}
+
+	// Check for invitation validation
+	if strings.HasPrefix(path, "/invitations/") && strings.HasSuffix(path, "/validate") {
+		return true
+	}
+
 	for _, publicPath := range publicPaths {
 		if strings.HasPrefix(path, publicPath) {
 			return true
