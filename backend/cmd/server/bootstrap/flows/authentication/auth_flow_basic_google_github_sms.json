@@ -1,6 +1,6 @@
 {
-    "name": "Basic + Google + GitHub + SMS Authentication Flow",
-    "handle": "basic-google-github-sms-flow",
+    "name": "Default Basic + Google + GitHub + SMS Authentication Flow",
+    "handle": "default-basic-google-github-sms-flow",
     "flowType": "AUTHENTICATION",
     "nodes": [
         {
@@ -36,7 +36,7 @@
             "executor": {
                 "name": "BasicAuthExecutor"
             },
-            "onSuccess": "sms_otp_auth"
+            "onSuccess": "send_sms"
         },
         {
             "id": "google_auth",
@@ -89,7 +89,7 @@
                 {
                     "ref": "input_004",
                     "identifier": "mobileNumber",
-                    "type": "TEXT_INPUT",
+                    "type": "PHONE_INPUT",
                     "required": true
                 }
             ],
@@ -119,7 +119,7 @@
                 {
                     "ref": "input_005",
                     "identifier": "otp",
-                    "type": "TEXT_INPUT",
+                    "type": "OTP_INPUT",
                     "required": true
                 }
             ],
@@ -133,6 +133,9 @@
         {
             "id": "verify_sms",
             "type": "TASK_EXECUTION",
+            "properties": {
+                "senderId": "<your-sender-id>"
+            },
             "executor": {
                 "name": "SMSOTPAuthExecutor",
                 "mode": "verify"
@@ -146,7 +149,7 @@
                 {
                     "ref": "input_005",
                     "identifier": "mobileNumber",
-                    "type": "TEXT_INPUT",
+                    "type": "PHONE_INPUT",
                     "required": false
                 }
             ],

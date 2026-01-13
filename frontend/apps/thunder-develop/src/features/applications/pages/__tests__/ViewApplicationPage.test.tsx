@@ -62,8 +62,8 @@ vi.mock('react-i18next', () => ({
         'applications:view.fields.tosUri': 'Terms of Service URI',
         'applications:view.fields.policyUri': 'Privacy Policy URI',
         'applications:view.fields.contacts': 'Contacts',
-        'applications:view.fields.authFlowGraphId': 'Authentication Flow Graph ID',
-        'applications:view.fields.registrationFlowGraphId': 'Registration Flow Graph ID',
+        'applications:view.fields.authFlowId': 'Authentication Flow ID',
+        'applications:view.fields.registrationFlowId': 'Registration Flow ID',
         'applications:view.fields.registrationFlowEnabled': 'Registration Flow Enabled',
         'applications:view.fields.clientId': 'Client ID',
         'applications:view.fields.redirectUris': 'Redirect URIs',
@@ -94,8 +94,8 @@ describe('ViewApplicationPage', () => {
     tos_uri: 'https://test-app.com/terms',
     policy_uri: 'https://test-app.com/privacy',
     contacts: ['admin@test-app.com', 'support@test-app.com'],
-    auth_flow_graph_id: 'auth_flow_config_basic',
-    registration_flow_graph_id: 'registration_flow_config_basic',
+    auth_flow_id: 'auth_flow_config_basic',
+    registration_flow_id: 'registration_flow_config_basic',
     is_registration_flow_enabled: true,
     user_attributes: ['email', 'username', 'given_name'],
     inbound_auth_config: [
@@ -317,9 +317,9 @@ describe('ViewApplicationPage', () => {
     renderComponent();
 
     expect(screen.getByText('Flow Configuration')).toBeInTheDocument();
-    expect(screen.getByText('Authentication Flow Graph ID')).toBeInTheDocument();
+    expect(screen.getByText('Authentication Flow ID')).toBeInTheDocument();
     expect(screen.getByText('auth_flow_config_basic')).toBeInTheDocument();
-    expect(screen.getByText('Registration Flow Graph ID')).toBeInTheDocument();
+    expect(screen.getByText('Registration Flow ID')).toBeInTheDocument();
     expect(screen.getByText('registration_flow_config_basic')).toBeInTheDocument();
     expect(screen.getByText('Registration Flow Enabled')).toBeInTheDocument();
     // "Yes" appears multiple times (registration flow enabled, public client), so use getAllByText
@@ -756,10 +756,10 @@ describe('ViewApplicationPage', () => {
       expect(screen.queryByText('Created At')).not.toBeInTheDocument();
     });
 
-    it('should handle application without auth_flow_graph_id', () => {
+    it('should handle application without auth_flow_id', () => {
       const appWithoutAuthFlow: Application = {
         ...mockApplication,
-        auth_flow_graph_id: undefined,
+        auth_flow_id: undefined,
       };
 
       mockUseGetApplication.mockReturnValue({
@@ -772,14 +772,14 @@ describe('ViewApplicationPage', () => {
       renderComponent();
 
       expect(screen.getByText('Flow Configuration')).toBeInTheDocument();
-      expect(screen.queryByText('Authentication Flow Graph ID')).not.toBeInTheDocument();
-      expect(screen.getByText('Registration Flow Graph ID')).toBeInTheDocument();
+      expect(screen.queryByText('Authentication Flow ID')).not.toBeInTheDocument();
+      expect(screen.getByText('Registration Flow ID')).toBeInTheDocument();
     });
 
-    it('should handle application without registration_flow_graph_id', () => {
+    it('should handle application without registration_flow_id', () => {
       const appWithoutRegFlow: Application = {
         ...mockApplication,
-        registration_flow_graph_id: undefined,
+        registration_flow_id: undefined,
       };
 
       mockUseGetApplication.mockReturnValue({
@@ -792,8 +792,8 @@ describe('ViewApplicationPage', () => {
       renderComponent();
 
       expect(screen.getByText('Flow Configuration')).toBeInTheDocument();
-      expect(screen.getByText('Authentication Flow Graph ID')).toBeInTheDocument();
-      expect(screen.queryByText('Registration Flow Graph ID')).not.toBeInTheDocument();
+      expect(screen.getByText('Authentication Flow ID')).toBeInTheDocument();
+      expect(screen.queryByText('Registration Flow ID')).not.toBeInTheDocument();
     });
 
     it('should handle application with single contact', () => {

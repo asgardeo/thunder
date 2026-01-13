@@ -19,9 +19,9 @@
 import {BaseEdge as XYFlowBaseEdge, EdgeLabelRenderer, useReactFlow, useNodes, type EdgeProps} from '@xyflow/react';
 import {useState, useContext, type ReactElement, type SyntheticEvent} from 'react';
 import {XIcon} from '@wso2/oxygen-ui-icons-react';
+import {Box} from '@wso2/oxygen-ui';
 import {calculateEdgePath, type EdgeStyle} from '../../utils/calculateEdgePath';
 import FlowBuilderCoreContext from '../../context/FlowBuilderCoreContext';
-import './BaseEdge.scss';
 
 /**
  * Props interface of {@link BaseEdge}
@@ -89,18 +89,9 @@ function BaseEdge({
   };
 
   return (
-    <g
-      onMouseEnter={() => setIsHovered(true)}
-      onMouseLeave={() => setIsHovered(false)}
-    >
+    <g onMouseEnter={() => setIsHovered(true)} onMouseLeave={() => setIsHovered(false)}>
       {/* Invisible wider path for hover detection */}
-      <path
-        d={edgePath}
-        fill="none"
-        stroke="transparent"
-        strokeWidth={20}
-        style={{cursor: 'pointer'}}
-      />
+      <path d={edgePath} fill="none" stroke="transparent" strokeWidth={20} style={{cursor: 'pointer'}} />
       <XYFlowBaseEdge
         id={id}
         path={edgePath}
@@ -115,28 +106,53 @@ function BaseEdge({
       />
       <EdgeLabelRenderer>
         {label && (
-          <div
-            style={{'--label-x': `${labelX}px`, '--label-y': `${labelY}px`} as React.CSSProperties}
-            className="edge-label-renderer__deletable-edge nodrag nopan"
+          <Box
+            className="nodrag nopan"
             onMouseEnter={() => setIsHovered(true)}
             onMouseLeave={() => setIsHovered(false)}
+            sx={{
+              pointerEvents: 'auto',
+              position: 'absolute',
+              transform: `translate(-50%, -50%) translate(${labelX}px, ${labelY}px)`,
+              zIndex: 1000,
+            }}
           >
             {label}
-          </div>
+          </Box>
         )}
         {isHovered && deletable !== false && (
-          <div
-            className="edge-delete-button nodrag nopan"
+          <Box
+            className="nodrag nopan"
             onClick={handleDelete}
             onKeyDown={handleDeleteKeyDown}
             role="button"
             tabIndex={0}
+            aria-label="Delete edge"
             onMouseEnter={() => setIsHovered(true)}
             onMouseLeave={() => setIsHovered(false)}
-            style={{'--label-x': `${labelX}px`, '--label-y': `${labelY}px`} as React.CSSProperties}
+            sx={{
+              position: 'absolute',
+              transform: `translate(-50%, -50%) translate(${labelX}px, ${labelY}px)`,
+              pointerEvents: 'auto',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              width: '24px',
+              height: '24px',
+              backgroundColor: 'error.main',
+              borderRadius: '50%',
+              cursor: 'pointer',
+              boxShadow: 2,
+              transition: 'all 0.2s ease',
+              zIndex: 10000,
+              '&:hover, &:focus': {
+                backgroundColor: 'error.dark',
+                transform: `translate(-50%, -50%) translate(${labelX}px, ${labelY}px) scale(1.1)`,
+              },
+            }}
           >
-            <XIcon size={16} className="edge-delete-button__icon" />
-          </div>
+            <XIcon size={16} style={{color: 'white'}} />
+          </Box>
         )}
       </EdgeLabelRenderer>
     </g>

@@ -19,14 +19,19 @@
 package jwks
 
 import (
+	"crypto/rand"
+	"crypto/rsa"
+	"crypto/x509"
 	"net/http"
 	"net/http/httptest"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/suite"
 
 	"github.com/asgardeo/thunder/internal/system/config"
+	"github.com/asgardeo/thunder/tests/mocks/crypto/pki/pkimock"
 )
 
 type InitTestSuite struct {
@@ -50,7 +55,10 @@ func (suite *InitTestSuite) TearDownTest() {
 func (suite *InitTestSuite) TestInitialize() {
 	mux := http.NewServeMux()
 
-	service := Initialize(mux)
+	// Prepare PKI mock with minimal expectations
+	pkiMock := pkimock.NewPKIServiceInterfaceMock(suite.T())
+
+	service := Initialize(mux, pkiMock)
 
 	assert.NotNil(suite.T(), service)
 	assert.Implements(suite.T(), (*JWKSServiceInterface)(nil), service)
@@ -58,8 +66,14 @@ func (suite *InitTestSuite) TestInitialize() {
 
 func (suite *InitTestSuite) TestInitialize_RegistersRoutes() {
 	mux := http.NewServeMux()
+	// Prepare PKI mock with minimal expectations for handler invocation
+	pkiMock := pkimock.NewPKIServiceInterfaceMock(suite.T())
+	key, _ := rsa.GenerateKey(rand.Reader, 2048)
+	cert := &x509.Certificate{Raw: []byte("raw-cert"), PublicKey: &key.PublicKey}
+	pkiMock.EXPECT().GetX509Certificate(mock.Anything).Return(cert, nil)
+	pkiMock.EXPECT().GetCertThumbprint(mock.Anything).Return("test-kid")
 
-	_ = Initialize(mux)
+	_ = Initialize(mux, pkiMock)
 
 	// Test that routes are registered by making requests
 	req := httptest.NewRequest("GET", "/oauth2/jwks", nil)

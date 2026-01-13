@@ -40,15 +40,35 @@ import ConfigContext, {ConfigContextType} from './ConfigContext';
  * import useConfig from './useConfig';
  *
  * function MyComponent() {
- *   const { config, getServerUrl, isHttpOnly } = useConfig();
+ *   const { config, getServerUrl, isHttpOnly, getClientUuid } = useConfig();
  *
  *   return (
  *     <div>
  *       <p>Server: {getServerUrl()}</p>
  *       <p>Protocol: {isHttpOnly() ? 'HTTP' : 'HTTPS'}</p>
  *       <p>Port: {config.server.port}</p>
+ *       <p>Client UUID: {getClientUuid() || 'Not available'}</p>
  *     </div>
  *   );
+ * }
+ * ```
+ *
+ * @example
+ * Getting client UUID for branding resolution:
+ * ```tsx
+ * import useConfig from './useConfig';
+ * import useGetBrandingResolve from './useGetBrandingResolve';
+ *
+ * function BrandedComponent() {
+ *   const { getClientUuid } = useConfig();
+ *   const clientUuid = getClientUuid();
+ *
+ *   const { data: branding } = useGetBrandingResolve({
+ *     type: 'APP',
+ *     id: clientUuid || ''
+ *   });
+ *
+ *   return <div>Component with branding...</div>;
  * }
  * ```
  *

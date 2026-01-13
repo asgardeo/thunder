@@ -60,6 +60,17 @@ For standards-based OAuth 2.0 authentication with redirect-based login:
 | `redirectUri` | Callback URL where Thunder redirects after authentication |
 | `scope` | OAuth scopes (e.g., `openid`, `profile`, `email`) |
 
+#### Expected Flow Node IDs
+
+When using Native Flow, the sample app UI renders based on `nextNode` values in the flow definition. Your flow should use these node IDs for proper UI rendering:
+
+| Node ID | Purpose |
+|---------|---------|
+| `basic_auth` | Username/password authentication |
+| `github_auth` | GitHub OAuth |
+| `google_auth` | Google OAuth |
+| `prompt_mobile` or `mobile_prompt_username` | SMS OTP authentication |
+
 ### 2. Start the Application
 
 **Linux/macOS:**

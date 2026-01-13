@@ -18,7 +18,7 @@ This approach is ideal for native mobile applications and single-page applicatio
 Before implementing flow-based authorization, ensure you have:
 
 1. **Organization Unit** - Created and noted the ID
-2. **Application** - Configured with `auth_flow_config_basic` or custom flow graph that includes authorization
+2. **Application** - Configured with a flow that includes authorization (see [Flow Guides](/docs/guides/flows/))
 3. **Roles and Permissions** - Defined roles with permissions
 4. **Users** - Created users with role assignments
 
@@ -89,7 +89,7 @@ curl -kL -X POST -H 'Content-Type: application/json' https://localhost:8090/appl
 -d '{
     "name": "Document Manager App",
     "description": "Application for managing documents",
-    "auth_flow_graph_id": "auth_flow_config_basic"
+    "auth_flow_id": "<auth-flow-uuid>"
 }'
 ```
 

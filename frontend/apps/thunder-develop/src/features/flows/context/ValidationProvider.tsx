@@ -16,9 +16,10 @@
  * under the License.
  */
 
-import {type PropsWithChildren, type ReactElement, useCallback, useMemo, useState} from 'react';
+import {type PropsWithChildren, type ReactElement, useCallback, useEffect, useMemo, useState} from 'react';
 import Notification, {NotificationType} from '../models/notification';
 import {ValidationContext, type ValidationConfig} from './ValidationContext';
+import useFlowBuilderCore from '../hooks/useFlowBuilderCore';
 
 export interface ValidationProviderProps {
   /**
@@ -40,10 +41,39 @@ function ValidationProvider({
     isRecoveryFactorValidationEnabled: false,
   },
 }: PropsWithChildren<ValidationProviderProps>): ReactElement {
+  const {setIsOpenResourcePropertiesPanel, registerCloseValidationPanel} = useFlowBuilderCore();
+
   const [notifications, setNotifications] = useState<Map<string, Notification>>(new Map());
   const [selectedNotification, setSelectedNotification] = useState<Notification | null>(null);
-  const [openValidationPanel, setOpenValidationPanel] = useState<boolean>(false);
+  const [openValidationPanel, setOpenValidationPanelInternal] = useState<boolean>(false);
   const [currentActiveTab, setCurrentActiveTab] = useState<number>(0);
+
+  /**
+   * Wrapper for setOpenValidationPanel that closes the resource properties panel
+   * when opening the validation panel (mutual exclusion).
+   */
+  const setOpenValidationPanel = useCallback(
+    (open: boolean): void => {
+      if (open) {
+        // Close resource properties panel when opening validation panel
+        setIsOpenResourcePropertiesPanel(false);
+      }
+      setOpenValidationPanelInternal(open);
+    },
+    [setIsOpenResourcePropertiesPanel],
+  );
+
+  // Register the close callback with FlowBuilderCoreContext for mutual exclusion
+  useEffect(() => {
+    registerCloseValidationPanel(() => {
+      setOpenValidationPanelInternal(false);
+    });
+
+    // Cleanup: clear the registration when unmounting
+    return () => {
+      registerCloseValidationPanel(() => {});
+    };
+  }, [registerCloseValidationPanel]);
 
   /**
    * Get the list of notifications.

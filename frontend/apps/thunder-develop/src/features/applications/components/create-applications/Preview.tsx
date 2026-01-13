@@ -46,11 +46,6 @@ import useIdentityProviders from '../../../integrations/api/useIdentityProviders
  */
 export interface PreviewProps {
   /**
-   * The name of the application to display in the preview
-   */
-  appName: string | null;
-
-  /**
    * URL of the application logo to display in the preview
    */
   appLogo: string | null;
@@ -112,7 +107,7 @@ export interface PreviewProps {
  *
  * @public
  */
-export default function Preview({appName, appLogo, selectedColor, integrations}: PreviewProps): JSX.Element {
+export default function Preview({appLogo, selectedColor, integrations}: PreviewProps): JSX.Element {
   const {t} = useTranslation();
   const {mode} = useColorScheme();
   const theme = useTheme();
@@ -122,6 +117,7 @@ export default function Preview({appName, appLogo, selectedColor, integrations}:
   const selectedProviders: IdentityProvider[] =
     identityProviders?.filter((idp: IdentityProvider): boolean => integrations[idp.id]) ?? [];
   const hasSocialLogins: boolean = selectedProviders.length > 0;
+  const hasSmsOtp: boolean = integrations['sms-otp'] ?? false;
 
   return (
     <Box
@@ -207,10 +203,9 @@ export default function Preview({appName, appLogo, selectedColor, integrations}:
                 {() => (
                   <Box sx={{display: 'flex', flexDirection: 'column', gap: 2, p: 4}}>
                     <Stack alignItems="center" spacing={1} sx={{mb: 2}}>
-                      <Typography component="h1" variant="h5" sx={{width: '100%', mb: 2, textAlign: 'center'}}>
-                        {t('applications:onboarding.preview.signInTo', {appName})}
+                      <Typography variant="h2" sx={{width: '100%', mb: 2, textAlign: 'center'}}>
+                        {t('applications:onboarding.preview.signin')}
                       </Typography>
-                      <Typography variant="caption">{t('applications:onboarding.preview.welcomeMessage')}</Typography>
                     </Stack>
 
                     {/* Username/Password form - Conditionally rendered */}
@@ -264,8 +259,53 @@ export default function Preview({appName, appLogo, selectedColor, integrations}:
                       </Box>
                     )}
 
-                    {/* Divider - Show only when both username/password and social logins exist */}
-                    {hasUsernamePassword && hasSocialLogins && (
+                    {/* SMS OTP option - Conditionally rendered */}
+                    {hasSmsOtp && (
+                      <Box
+                        component="form"
+                        onSubmit={(e) => e.preventDefault()}
+                        sx={{display: 'flex', flexDirection: 'column', gap: 2, mb: hasSocialLogins ? 2 : 0}}
+                      >
+                        <FormControl required>
+                          <FormLabel htmlFor="preview-mobile">
+                            {t('applications:onboarding.preview.mobileNumber', {
+                              defaultValue: 'Mobile Number',
+                            })}
+                          </FormLabel>
+                          <TextField
+                            id="preview-mobile"
+                            type="tel"
+                            placeholder={t('applications:onboarding.preview.mobileNumberPlaceholder', {
+                              defaultValue: 'Enter your mobile number',
+                            })}
+                            fullWidth
+                            variant="outlined"
+                            disabled
+                          />
+                        </FormControl>
+                        <Button
+                          type="submit"
+                          fullWidth
+                          variant="contained"
+                          color="secondary"
+                          sx={{
+                            color: '#fff',
+                            backgroundColor: selectedColor,
+                            '&:hover': {
+                              backgroundColor: selectedColor,
+                            },
+                          }}
+                        >
+                          {t('applications:onboarding.preview.sendOtpButton', {
+                            defaultValue: 'Send OTP',
+                          })}
+                        </Button>
+                      </Box>
+                    )}
+
+                    {/* Divider - Show when multiple auth methods exist */}
+                    {((hasUsernamePassword && hasSmsOtp) ||
+                      ((hasUsernamePassword || hasSmsOtp) && hasSocialLogins)) && (
                       <Divider>{t('applications:onboarding.preview.dividerText')}</Divider>
                     )}
 

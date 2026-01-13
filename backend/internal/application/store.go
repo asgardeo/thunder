@@ -105,7 +105,7 @@ func (st *applicationStore) CreateApplication(app model.ApplicationProcessedDTO)
 				brandingID = nil
 			}
 			_, err := tx.Exec(QueryCreateApplication, app.ID, app.Name, app.Description,
-				app.AuthFlowGraphID, app.RegistrationFlowGraphID, isRegistrationEnabledStr, brandingID,
+				app.AuthFlowID, app.RegistrationFlowID, isRegistrationEnabledStr, brandingID,
 				jsonDataBytes, st.deploymentID)
 			return err
 		},
@@ -342,7 +342,7 @@ func (st *applicationStore) UpdateApplication(existingApp, updatedApp *model.App
 				brandingID = nil
 			}
 			_, err := tx.Exec(QueryUpdateApplicationByAppID, updatedApp.ID, updatedApp.Name,
-				updatedApp.Description, updatedApp.AuthFlowGraphID, updatedApp.RegistrationFlowGraphID,
+				updatedApp.Description, updatedApp.AuthFlowID, updatedApp.RegistrationFlowID,
 				isRegistrationEnabledStr, brandingID, jsonDataBytes, st.deploymentID)
 			return err
 		},
@@ -515,14 +515,14 @@ func buildBasicApplicationFromResultRow(row map[string]interface{}) (model.Basic
 		return model.BasicApplicationDTO{}, fmt.Errorf("failed to parse description as string")
 	}
 
-	authFlowGraphID, ok := row["auth_flow_graph_id"].(string)
+	authFlowID, ok := row["auth_flow_id"].(string)
 	if !ok {
-		return model.BasicApplicationDTO{}, fmt.Errorf("failed to parse auth_flow_graph_id as string")
+		return model.BasicApplicationDTO{}, fmt.Errorf("failed to parse auth_flow_id as string")
 	}
 
-	regisFlowGraphID, ok := row["registration_flow_graph_id"].(string)
+	regisFlowID, ok := row["registration_flow_id"].(string)
 	if !ok {
-		return model.BasicApplicationDTO{}, fmt.Errorf("failed to parse registration_flow_graph_id as string")
+		return model.BasicApplicationDTO{}, fmt.Errorf("failed to parse registration_flow_id as string")
 	}
 
 	var isRegistrationFlowEnabledStr string
@@ -552,8 +552,8 @@ func buildBasicApplicationFromResultRow(row map[string]interface{}) (model.Basic
 		ID:                        appID,
 		Name:                      appName,
 		Description:               description,
-		AuthFlowGraphID:           authFlowGraphID,
-		RegistrationFlowGraphID:   regisFlowGraphID,
+		AuthFlowID:                authFlowID,
+		RegistrationFlowID:        regisFlowID,
 		IsRegistrationFlowEnabled: isRegistrationFlowEnabled,
 		BrandingID:                brandingID,
 	}
@@ -726,8 +726,8 @@ func buildApplicationFromResultRow(row map[string]interface{}) (model.Applicatio
 		ID:                        basicApp.ID,
 		Name:                      basicApp.Name,
 		Description:               basicApp.Description,
-		AuthFlowGraphID:           basicApp.AuthFlowGraphID,
-		RegistrationFlowGraphID:   basicApp.RegistrationFlowGraphID,
+		AuthFlowID:                basicApp.AuthFlowID,
+		RegistrationFlowID:        basicApp.RegistrationFlowID,
 		IsRegistrationFlowEnabled: basicApp.IsRegistrationFlowEnabled,
 		BrandingID:                basicApp.BrandingID,
 		Template:                  template,

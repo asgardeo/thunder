@@ -1,6 +1,6 @@
 {
-    "name": "Basic + Google + GitHub + SMS Registration Flow",
-    "handle": "basic-google-github-sms-flow",
+    "name": "Default Basic + Google + GitHub + SMS Registration Flow",
+    "handle": "default-basic-google-github-sms-flow",
     "flowType": "REGISTRATION",
     "nodes": [
         {
@@ -44,7 +44,7 @@
             "executor": {
                 "name": "BasicAuthExecutor"
             },
-            "onSuccess": "send_sms_for_basic"
+            "onSuccess": "prompt_mobile_for_basic"
         },
         {
             "id": "google_auth",
@@ -75,7 +75,7 @@
                 {
                     "ref": "input_001",
                     "identifier": "mobileNumber",
-                    "type": "TEXT_INPUT",
+                    "type": "PHONE_INPUT",
                     "required": true
                 }
             ],
@@ -105,7 +105,7 @@
                 {
                     "ref": "input_002",
                     "identifier": "otp",
-                    "type": "TEXT_INPUT",
+                    "type": "OTP_INPUT",
                     "required": true
                 }
             ],
@@ -119,11 +119,32 @@
         {
             "id": "verify_sms",
             "type": "TASK_EXECUTION",
+            "properties": {
+                "senderId": "<your-sender-id>"
+            },
             "executor": {
                 "name": "SMSOTPAuthExecutor",
                 "mode": "verify"
             },
             "onSuccess": "provisioning_local_sms"
+        },
+        {
+            "id": "prompt_mobile_for_basic",
+            "type": "PROMPT",
+            "inputs": [
+                {
+                    "ref": "input_001",
+                    "identifier": "mobileNumber",
+                    "type": "PHONE_INPUT",
+                    "required": true
+                }
+            ],
+            "actions": [
+                {
+                    "ref": "action_001",
+                    "nextNode": "send_sms_for_basic"
+                }
+            ]
         },
         {
             "id": "send_sms_for_basic",
@@ -144,7 +165,7 @@
                 {
                     "ref": "input_003",
                     "identifier": "otp",
-                    "type": "TEXT_INPUT",
+                    "type": "OTP_INPUT",
                     "required": true
                 }
             ],
@@ -158,6 +179,9 @@
         {
             "id": "verify_sms_for_basic",
             "type": "TASK_EXECUTION",
+            "properties": {
+                "senderId": "<your-sender-id>"
+            },
             "executor": {
                 "name": "SMSOTPAuthExecutor",
                 "mode": "verify"
@@ -195,7 +219,7 @@
                 {
                     "ref": "input_006",
                     "identifier": "mobileNumber",
-                    "type": "TEXT_INPUT",
+                    "type": "PHONE_INPUT",
                     "required": false
                 }
             ],
@@ -223,7 +247,7 @@
                 {
                     "ref": "input_009",
                     "identifier": "mobileNumber",
-                    "type": "TEXT_INPUT",
+                    "type": "PHONE_INPUT",
                     "required": true
                 }
             ],

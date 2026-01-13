@@ -16,10 +16,7 @@
  * under the License.
  */
 
-/**
- * Flow type enum matching the API specification.
- */
-export type FlowType = 'AUTHENTICATION' | 'REGISTRATION';
+import type {FlowNodeType, FlowType} from './flows';
 
 /**
  * Navigation link for pagination.
@@ -97,11 +94,6 @@ export interface FlowListResponse {
    */
   links?: Link[];
 }
-
-/**
- * Node types for flow nodes.
- */
-export type FlowNodeType = 'START' | 'PROMPT' | 'TASK_EXECUTION' | 'END';
 
 /**
  * Layout information for a flow node.

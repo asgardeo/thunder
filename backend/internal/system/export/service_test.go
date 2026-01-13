@@ -25,6 +25,8 @@ import (
 
 	"github.com/asgardeo/thunder/internal/application"
 	appmodel "github.com/asgardeo/thunder/internal/application/model"
+	flowcommon "github.com/asgardeo/thunder/internal/flow/common"
+	flowmgt "github.com/asgardeo/thunder/internal/flow/mgt"
 	"github.com/asgardeo/thunder/internal/idp"
 	"github.com/asgardeo/thunder/internal/notification"
 	"github.com/asgardeo/thunder/internal/notification/common"
@@ -35,6 +37,7 @@ import (
 	immutableresource "github.com/asgardeo/thunder/internal/system/immutable_resource"
 	"github.com/asgardeo/thunder/internal/userschema"
 	"github.com/asgardeo/thunder/tests/mocks/applicationmock"
+	"github.com/asgardeo/thunder/tests/mocks/flow/flowmgtmock"
 	"github.com/asgardeo/thunder/tests/mocks/idp/idpmock"
 	"github.com/asgardeo/thunder/tests/mocks/notification/notificationmock"
 	"github.com/asgardeo/thunder/tests/mocks/userschemamock"
@@ -50,6 +53,9 @@ const (
 	testApp2ID    = "app2"
 	testApp3ID    = "app3"
 	testAppTestID = "app-test-id"
+	testFlowID    = "test-flow-id"
+	testFlow1ID   = "flow1"
+	testFlow2ID   = "flow2"
 )
 
 // ExportServiceTestSuite defines the test suite for the export service.
@@ -59,6 +65,7 @@ type ExportServiceTestSuite struct {
 	idpServiceMock          *idpmock.IDPServiceInterfaceMock
 	mockNotificationService *notificationmock.NotificationSenderMgtSvcInterfaceMock
 	mockUserSchemaService   *userschemamock.UserSchemaServiceInterfaceMock
+	mockFlowService         *flowmgtmock.FlowMgtServiceInterfaceMock
 	exportService           ExportServiceInterface
 }
 
@@ -86,6 +93,7 @@ func (suite *ExportServiceTestSuite) SetupTest() {
 	suite.idpServiceMock = idpmock.NewIDPServiceInterfaceMock(suite.T())
 	suite.mockNotificationService = notificationmock.NewNotificationSenderMgtSvcInterfaceMock(suite.T())
 	suite.mockUserSchemaService = userschemamock.NewUserSchemaServiceInterfaceMock(suite.T())
+	suite.mockFlowService = flowmgtmock.NewFlowMgtServiceInterfaceMock(suite.T())
 
 	// Create exporters
 	exporters := []immutableresource.ResourceExporter{
@@ -93,6 +101,7 @@ func (suite *ExportServiceTestSuite) SetupTest() {
 		idp.NewIDPExporterForTest(suite.idpServiceMock),
 		notification.NewNotificationSenderExporterForTest(suite.mockNotificationService),
 		userschema.NewUserSchemaExporterForTest(suite.mockUserSchemaService),
+		flowmgt.NewFlowGraphExporterForTest(suite.mockFlowService),
 	}
 
 	// Create parameterizer instance
@@ -1045,12 +1054,12 @@ func (suite *ExportServiceTestSuite) TestExportResources_MixedResources_WithErro
 	var appErrorFound bool
 	var idpErrorFound bool
 	for _, e := range result.Summary.Errors {
-		if e.ResourceType == "application" {
+		if e.ResourceType == resourceTypeApplication {
 			appErrorFound = true
 			assert.Equal(suite.T(), "app2-not-found", e.ResourceID)
 			assert.Equal(suite.T(), "APP_NOT_FOUND", e.Code)
 		}
-		if e.ResourceType == "identity_provider" {
+		if e.ResourceType == resourceTypeIdentityProvider {
 			idpErrorFound = true
 			assert.Equal(suite.T(), "idp2-not-found", e.ResourceID)
 			assert.Equal(suite.T(), "IDP_NOT_FOUND", e.Code)
@@ -1579,7 +1588,7 @@ func (suite *ExportServiceTestSuite) TestExportUserSchemas_Wildcard() {
 		},
 	}
 
-	suite.mockUserSchemaService.EXPECT().GetUserSchemaList(0, 1000).Return(mockSchemaList, nil)
+	suite.mockUserSchemaService.EXPECT().GetUserSchemaList(100, 0).Return(mockSchemaList, nil)
 	suite.mockUserSchemaService.EXPECT().GetUserSchema("schema1").Return(mockSchema1, nil)
 	suite.mockUserSchemaService.EXPECT().GetUserSchema("schema2").Return(mockSchema2, nil)
 
@@ -1709,7 +1718,7 @@ func (suite *ExportServiceTestSuite) TestExportUserSchemas_WildcardPartialFailur
 		Error: "User schema not found",
 	}
 
-	suite.mockUserSchemaService.EXPECT().GetUserSchemaList(0, 1000).Return(mockSchemaList, nil)
+	suite.mockUserSchemaService.EXPECT().GetUserSchemaList(100, 0).Return(mockSchemaList, nil)
 	suite.mockUserSchemaService.EXPECT().GetUserSchema("schema1").Return(mockSchema1, nil)
 	suite.mockUserSchemaService.EXPECT().GetUserSchema("schema2").Return(nil, schemaError)
 	suite.mockUserSchemaService.EXPECT().GetUserSchema("schema3").Return(mockSchema3, nil)
@@ -2117,4 +2126,380 @@ func (suite *ExportServiceTestSuite) TestExportResourcesWithExporter_JSONFormatF
 	// Should fall back to YAML format
 	assert.Equal(suite.T(), "Test_App.yaml", files[0].FileName)
 	assert.Contains(suite.T(), files[0].Content, "name: Test App")
+}
+
+// TestExportResourcesWithExporter_Flow tests export with flow exporter.
+func (suite *ExportServiceTestSuite) TestExportResourcesWithExporter_Flow() {
+	flowID := testFlowID
+	mockFlow := &flowmgt.CompleteFlowDefinition{
+		ID:            flowID,
+		Handle:        "basic-auth-flow",
+		Name:          "Basic Authentication Flow",
+		FlowType:      flowcommon.FlowType("AUTHENTICATION"),
+		ActiveVersion: 1,
+		Nodes: []flowmgt.NodeDefinition{
+			{
+				ID:        "start",
+				Type:      "START",
+				OnSuccess: "login",
+			},
+			{
+				ID:   "login",
+				Type: "BASIC_AUTHENTICATION",
+			},
+			{
+				ID:   "end",
+				Type: "END",
+			},
+		},
+		CreatedAt: "2025-12-22 10:00:00",
+		UpdatedAt: "2025-12-22 10:00:00",
+	}
+
+	suite.mockFlowService.EXPECT().GetFlow(flowID).Return(mockFlow, nil)
+
+	exporter, exists := suite.exportService.(*exportService).registry.Get("flow")
+	assert.True(suite.T(), exists, "Flow exporter should be registered")
+
+	options := &ExportOptions{Format: formatYAML}
+
+	files, errors := suite.exportService.(*exportService).exportResourcesWithExporter(
+		exporter, []string{flowID}, options)
+
+	assert.Len(suite.T(), files, 1)
+	assert.Len(suite.T(), errors, 0)
+	assert.Equal(suite.T(), "Basic_Authentication_Flow.yaml", files[0].FileName)
+	assert.Equal(suite.T(), "flow", files[0].ResourceType)
+	assert.Equal(suite.T(), flowID, files[0].ResourceID)
+	assert.Contains(suite.T(), files[0].Content, "handle: basic-auth-flow")
+	assert.Contains(suite.T(), files[0].Content, "flowType: AUTHENTICATION")
+}
+
+// TestExportResourcesWithExporter_FlowWithComplexMeta tests export with flow containing complex meta.
+func (suite *ExportServiceTestSuite) TestExportResourcesWithExporter_FlowWithComplexMeta() {
+	flowID := "flow-with-meta"
+	complexMeta := map[string]interface{}{
+		"components": []interface{}{
+			map[string]interface{}{
+				"id":      "text_001",
+				"label":   "{{ t(signin:heading) }}",
+				"type":    "TEXT",
+				"variant": "HEADING_1",
+			},
+			map[string]interface{}{
+				"id":   "block_001",
+				"type": "BLOCK",
+				"components": []interface{}{
+					map[string]interface{}{
+						"id":          "input_001",
+						"label":       "Username",
+						"placeholder": "Enter username",
+						"ref":         "username",
+						"required":    true,
+						"type":        "TEXT_INPUT",
+					},
+					map[string]interface{}{
+						"id":          "input_002",
+						"label":       "Password",
+						"placeholder": "Enter password",
+						"ref":         "password",
+						"required":    true,
+						"type":        "PASSWORD_INPUT",
+					},
+				},
+			},
+		},
+		"theme": map[string]interface{}{
+			"primaryColor":   "#0066cc",
+			"secondaryColor": "#6c757d",
+		},
+	}
+
+	mockFlow := &flowmgt.CompleteFlowDefinition{
+		ID:            flowID,
+		Handle:        "prompt-flow",
+		Name:          "Flow with Complex Meta",
+		FlowType:      flowcommon.FlowType("AUTHENTICATION"),
+		ActiveVersion: 1,
+		Nodes: []flowmgt.NodeDefinition{
+			{
+				ID:        "start",
+				Type:      "START",
+				OnSuccess: "prompt",
+			},
+			{
+				ID:   "prompt",
+				Type: "PROMPT",
+				Meta: complexMeta,
+				Inputs: []flowmgt.InputDefinition{
+					{Ref: "input_001", Type: "TEXT_INPUT", Identifier: "username", Required: true},
+					{Ref: "input_002", Type: "PASSWORD_INPUT", Identifier: "password", Required: true},
+				},
+				Actions: []flowmgt.ActionDefinition{
+					{Ref: "action_001", NextNode: "end"},
+				},
+			},
+			{
+				ID:   "end",
+				Type: "END",
+			},
+		},
+		CreatedAt: "2025-12-22 10:00:00",
+		UpdatedAt: "2025-12-22 10:00:00",
+	}
+
+	suite.mockFlowService.EXPECT().GetFlow(flowID).Return(mockFlow, nil)
+
+	exporter, exists := suite.exportService.(*exportService).registry.Get("flow")
+	assert.True(suite.T(), exists)
+
+	options := &ExportOptions{Format: formatYAML}
+
+	files, errors := suite.exportService.(*exportService).exportResourcesWithExporter(
+		exporter, []string{flowID}, options)
+
+	assert.Len(suite.T(), files, 1)
+	assert.Len(suite.T(), errors, 0)
+	assert.Equal(suite.T(), "Flow_with_Complex_Meta.yaml", files[0].FileName)
+	assert.Contains(suite.T(), files[0].Content, "handle: prompt-flow")
+	assert.Contains(suite.T(), files[0].Content, "meta:")
+	// Meta should be present in some form (either as JSON string or YAML structure)
+	assert.Contains(suite.T(), files[0].Content, "prompt")
+}
+
+// TestExportResourcesWithExporter_MultipleFlows tests exporting multiple flows.
+func (suite *ExportServiceTestSuite) TestExportResourcesWithExporter_MultipleFlows() {
+	flow1 := &flowmgt.CompleteFlowDefinition{
+		ID:            testFlow1ID,
+		Handle:        "flow-1",
+		Name:          "Flow One",
+		FlowType:      flowcommon.FlowType("AUTHENTICATION"),
+		ActiveVersion: 1,
+		Nodes: []flowmgt.NodeDefinition{
+			{ID: "start", Type: "START"},
+			{ID: "end", Type: "END"},
+		},
+	}
+
+	flow2 := &flowmgt.CompleteFlowDefinition{
+		ID:            testFlow2ID,
+		Handle:        "flow-2",
+		Name:          "Flow Two",
+		FlowType:      flowcommon.FlowType("AUTHORIZATION"),
+		ActiveVersion: 2,
+		Nodes: []flowmgt.NodeDefinition{
+			{ID: "start", Type: "START"},
+			{ID: "check", Type: "AUTHORIZATION_CHECK"},
+			{ID: "end", Type: "END"},
+		},
+	}
+
+	suite.mockFlowService.EXPECT().GetFlow(testFlow1ID).Return(flow1, nil)
+	suite.mockFlowService.EXPECT().GetFlow(testFlow2ID).Return(flow2, nil)
+
+	exporter, _ := suite.exportService.(*exportService).registry.Get("flow")
+	options := &ExportOptions{Format: formatYAML}
+
+	files, errors := suite.exportService.(*exportService).exportResourcesWithExporter(
+		exporter, []string{testFlow1ID, testFlow2ID}, options)
+
+	assert.Len(suite.T(), files, 2)
+	assert.Len(suite.T(), errors, 0)
+	assert.Equal(suite.T(), "Flow_One.yaml", files[0].FileName)
+	assert.Equal(suite.T(), "Flow_Two.yaml", files[1].FileName)
+}
+
+// TestExportResourcesWithExporter_FlowNotFound tests export when flow is not found.
+func (suite *ExportServiceTestSuite) TestExportResourcesWithExporter_FlowNotFound() {
+	flowID := "non-existent-flow"
+	flowError := &serviceerror.ServiceError{
+		Code:  "FLOW_NOT_FOUND",
+		Error: "Flow not found",
+	}
+	suite.mockFlowService.EXPECT().GetFlow(flowID).Return(nil, flowError)
+
+	exporter, _ := suite.exportService.(*exportService).registry.Get("flow")
+	options := &ExportOptions{Format: formatYAML}
+
+	files, errors := suite.exportService.(*exportService).exportResourcesWithExporter(
+		exporter, []string{flowID}, options)
+
+	assert.Len(suite.T(), files, 0)
+	assert.Len(suite.T(), errors, 1)
+	assert.Equal(suite.T(), "flow", errors[0].ResourceType)
+	assert.Equal(suite.T(), flowID, errors[0].ResourceID)
+	assert.Contains(suite.T(), errors[0].Error, "Flow not found")
+}
+
+// TestExportResourcesWithExporter_WildcardFlows tests wildcard export for flows.
+func (suite *ExportServiceTestSuite) TestExportResourcesWithExporter_WildcardFlows() {
+	flowList := &flowmgt.FlowListResponse{
+		TotalResults: 2,
+		StartIndex:   0,
+		Count:        2,
+		Flows: []flowmgt.BasicFlowDefinition{
+			{
+				ID:            testFlow1ID,
+				Handle:        "flow-1",
+				Name:          "Flow One",
+				FlowType:      flowcommon.FlowType("AUTHENTICATION"),
+				ActiveVersion: 1,
+			},
+			{
+				ID:            testFlow2ID,
+				Handle:        "flow-2",
+				Name:          "Flow Two",
+				FlowType:      flowcommon.FlowType("AUTHORIZATION"),
+				ActiveVersion: 1,
+			},
+		},
+	}
+
+	flow1Complete := &flowmgt.CompleteFlowDefinition{
+		ID:            testFlow1ID,
+		Handle:        "flow-1",
+		Name:          "Flow One",
+		FlowType:      flowcommon.FlowType("AUTHENTICATION"),
+		ActiveVersion: 1,
+		Nodes: []flowmgt.NodeDefinition{
+			{ID: "start", Type: "START"},
+			{ID: "end", Type: "END"},
+		},
+	}
+
+	flow2Complete := &flowmgt.CompleteFlowDefinition{
+		ID:            testFlow2ID,
+		Handle:        "flow-2",
+		Name:          "Flow Two",
+		FlowType:      flowcommon.FlowType("AUTHORIZATION"),
+		ActiveVersion: 1,
+		Nodes: []flowmgt.NodeDefinition{
+			{ID: "start", Type: "START"},
+			{ID: "end", Type: "END"},
+		},
+	}
+
+	suite.mockFlowService.EXPECT().ListFlows(10000, 0, flowcommon.FlowType("")).Return(flowList, nil)
+	suite.mockFlowService.EXPECT().GetFlow(testFlow1ID).Return(flow1Complete, nil)
+	suite.mockFlowService.EXPECT().GetFlow(testFlow2ID).Return(flow2Complete, nil)
+
+	exporter, _ := suite.exportService.(*exportService).registry.Get("flow")
+	options := &ExportOptions{Format: formatYAML}
+
+	files, errors := suite.exportService.(*exportService).exportResourcesWithExporter(
+		exporter, []string{"*"}, options)
+
+	assert.Len(suite.T(), files, 2)
+	assert.Len(suite.T(), errors, 0)
+}
+
+// TestExportResourcesWithExporter_WildcardFlows_ListFailure tests wildcard when ListFlows fails.
+func (suite *ExportServiceTestSuite) TestExportResourcesWithExporter_WildcardFlows_ListFailure() {
+	dbError := &serviceerror.ServiceError{
+		Code:  "DB_ERROR",
+		Error: "Database error",
+	}
+	suite.mockFlowService.EXPECT().ListFlows(10000, 0, flowcommon.FlowType("")).Return(nil, dbError)
+
+	exporter, _ := suite.exportService.(*exportService).registry.Get("flow")
+	options := &ExportOptions{Format: formatYAML}
+
+	files, errors := suite.exportService.(*exportService).exportResourcesWithExporter(
+		exporter, []string{"*"}, options)
+
+	assert.Len(suite.T(), files, 0)
+	assert.Len(suite.T(), errors, 0) // Empty list on error
+}
+
+// TestExportResources_FlowOnly tests exporting only flows via main ExportResources method.
+func (suite *ExportServiceTestSuite) TestExportResources_FlowOnly() {
+	flowID := testFlowID
+	mockFlow := &flowmgt.CompleteFlowDefinition{
+		ID:            flowID,
+		Handle:        "test-flow",
+		Name:          "Test Flow",
+		FlowType:      flowcommon.FlowType("AUTHENTICATION"),
+		ActiveVersion: 1,
+		Nodes: []flowmgt.NodeDefinition{
+			{ID: "start", Type: "START"},
+			{ID: "end", Type: "END"},
+		},
+		CreatedAt: "2025-12-22 10:00:00",
+		UpdatedAt: "2025-12-22 10:00:00",
+	}
+
+	suite.mockFlowService.EXPECT().GetFlow(flowID).Return(mockFlow, nil)
+
+	request := &ExportRequest{
+		Flows: []string{flowID},
+		Options: &ExportOptions{
+			Format: "yaml",
+		},
+	}
+
+	response, err := suite.exportService.ExportResources(request)
+
+	assert.Nil(suite.T(), err)
+	assert.NotNil(suite.T(), response)
+	assert.Len(suite.T(), response.Files, 1)
+	assert.Equal(suite.T(), "Test_Flow.yaml", response.Files[0].FileName)
+	assert.Contains(suite.T(), response.Files[0].Content, "handle: test-flow")
+	assert.Equal(suite.T(), 1, response.Summary.TotalFiles)
+	assert.Len(suite.T(), response.Summary.Errors, 0)
+}
+
+// TestExportResources_MixedWithFlows tests exporting flows along with other resources.
+func (suite *ExportServiceTestSuite) TestExportResources_MixedWithFlows() {
+	appID := testAppID
+	flowID := testFlowID
+
+	mockApp := &appmodel.Application{
+		ID:          appID,
+		Name:        "Test App",
+		Description: "Test Description",
+	}
+
+	mockFlow := &flowmgt.CompleteFlowDefinition{
+		ID:            flowID,
+		Handle:        "test-flow",
+		Name:          "Test Flow",
+		FlowType:      flowcommon.FlowType("AUTHENTICATION"),
+		ActiveVersion: 1,
+		Nodes: []flowmgt.NodeDefinition{
+			{ID: "start", Type: "START"},
+			{ID: "end", Type: "END"},
+		},
+	}
+
+	suite.appServiceMock.EXPECT().GetApplication(appID).Return(mockApp, nil)
+	suite.mockFlowService.EXPECT().GetFlow(flowID).Return(mockFlow, nil)
+
+	request := &ExportRequest{
+		Applications: []string{appID},
+		Flows:        []string{flowID},
+		Options: &ExportOptions{
+			Format: "yaml",
+		},
+	}
+
+	response, err := suite.exportService.ExportResources(request)
+
+	assert.Nil(suite.T(), err)
+	assert.NotNil(suite.T(), response)
+	assert.Len(suite.T(), response.Files, 2)
+	assert.Equal(suite.T(), 2, response.Summary.TotalFiles)
+	assert.Len(suite.T(), response.Summary.Errors, 0)
+
+	// Verify we have both types
+	var hasApp, hasFlow bool
+	for _, file := range response.Files {
+		if file.ResourceType == resourceTypeApplication {
+			hasApp = true
+		}
+		if file.ResourceType == resourceTypeFlow {
+			hasFlow = true
+		}
+	}
+	assert.True(suite.T(), hasApp, "Should have application export")
+	assert.True(suite.T(), hasFlow, "Should have flow export")
 }

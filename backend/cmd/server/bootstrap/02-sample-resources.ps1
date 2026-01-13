@@ -145,48 +145,6 @@ else {
 Write-Host ""
 
 # ============================================================================
-# Retrieve Flow IDs
-# ============================================================================
-
-Log-Info "Retrieving flow IDs..."
-
-function Get-FlowIdByHandle {
-    param(
-        [string]$Handle,
-        [string]$Type
-    )
-    $response = Invoke-ThunderApi -Method GET -Endpoint "/flows?flowType=$Type&limit=200"
-    if ($response.StatusCode -eq 200) {
-        $body = $response.Body | ConvertFrom-Json
-        $flow = $body.flows | Where-Object { $_.handle -eq $Handle } | Select-Object -First 1
-        return $flow.id
-    }
-    else {
-        Log-Error "Failed to fetch flows (HTTP $($response.StatusCode))"
-        exit 1
-    }
-}
-
-$BASIC_AUTH_FLOW_ID = Get-FlowIdByHandle -Handle "default-basic-flow" -Type "AUTHENTICATION"
-$BASIC_REG_FLOW_ID = Get-FlowIdByHandle -Handle "default-basic-flow" -Type "REGISTRATION"
-
-if (-not $BASIC_AUTH_FLOW_ID) {
-    Log-Error "Could not find 'default-basic-flow'"
-    exit 1
-}
-
-if (-not $BASIC_REG_FLOW_ID) {
-    Log-Error "Could not find 'default-basic-flow'"
-    exit 1
-}
-
-Log-Info "Found Flow IDs:"
-Log-Info "  Basic Auth: $BASIC_AUTH_FLOW_ID"
-Log-Info "  Basic Registration: $BASIC_REG_FLOW_ID"
-
-Write-Host ""
-
-# ============================================================================
 # Create Sample Application
 # ============================================================================
 
@@ -200,8 +158,6 @@ $appData = @{
     tos_uri = "https://localhost:3000/terms"
     policy_uri = "https://localhost:3000/privacy"
     contacts = @("admin@example.com", "support@example.com")
-    auth_flow_graph_id = $BASIC_AUTH_FLOW_ID
-    registration_flow_graph_id = $BASIC_REG_FLOW_ID
     is_registration_flow_enabled = $true
     user_attributes = @("given_name","family_name","email","groups")
     allowed_user_types = @("Customer")

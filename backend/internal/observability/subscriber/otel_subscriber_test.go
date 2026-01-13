@@ -289,23 +289,50 @@ func (suite *OTelSubscriberTestSuite) TestOnEvent_WithSpanRecorder() {
 		span := spans[0]
 		assert.Equal(suite.T(), testEvent.Type, span.Name(), "Span name should match event type")
 
-		// Verify span attributes
+		// Verify span attributes include both metadata and event data
 		attrs := span.Attributes()
 		expectedAttrs := map[string]bool{
 			"event.id":     false,
 			"trace.id":     false,
 			"component":    false,
 			"event.status": false,
+			"test_key":     false, // Event data should now be in tags
 		}
 
 		for _, attr := range attrs {
 			if _, exists := expectedAttrs[string(attr.Key)]; exists {
 				expectedAttrs[string(attr.Key)] = true
 			}
+			// Verify test_key value
+			if string(attr.Key) == "test_key" {
+				assert.Equal(suite.T(), "test_value", attr.Value.AsString(),
+					"Event data 'test_key' should have correct value in span attributes")
+			}
 		}
 
 		for key, found := range expectedAttrs {
 			assert.True(suite.T(), found, "Expected attribute %s not found in span", key)
+		}
+
+		// Verify span events (logs) also contain the event data for backward compatibility
+		events := span.Events()
+		assert.Len(suite.T(), events, 1, "Expected 1 span event to be created")
+
+		if len(events) == 1 {
+			spanEvent := events[0]
+			assert.Equal(suite.T(), testEvent.Type, spanEvent.Name, "Span event name should match event type")
+
+			// Verify span event also has the test_key attribute
+			testKeyFound := false
+			for _, attr := range spanEvent.Attributes {
+				if string(attr.Key) == "test_key" {
+					testKeyFound = true
+					assert.Equal(suite.T(), "test_value", attr.Value.AsString(),
+						"Event data 'test_key' should have correct value in span event")
+				}
+			}
+			assert.True(suite.T(), testKeyFound,
+				"Span event should contain 'test_key' attribute for backward compatibility")
 		}
 	}
 

@@ -1,6 +1,6 @@
 {
-    "name": "Basic + Google + GitHub Registration Flow",
-    "handle": "basic-google-github-flow",
+    "name": "Default Basic + Google + GitHub Registration Flow",
+    "handle": "default-basic-google-github-flow",
     "flowType": "REGISTRATION",
     "nodes": [
         {

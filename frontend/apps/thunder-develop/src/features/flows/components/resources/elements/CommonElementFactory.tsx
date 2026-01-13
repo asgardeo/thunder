@@ -16,9 +16,10 @@
  * under the License.
  */
 
-import {BlockTypes, ElementTypes, InputVariants, type Element} from '@/features/flows/models/elements';
+import {BlockTypes, ElementCategories, ElementTypes, type Element} from '@/features/flows/models/elements';
 import type {ReactElement} from 'react';
 import FormAdapter from './adapters/FormAdapter';
+import BlockAdapter from './adapters/BlockAdapter';
 import CheckboxAdapter from './adapters/input/CheckboxAdapter';
 import PhoneNumberInputAdapter from './adapters/input/PhoneNumberInputAdapter';
 import OTPInputAdapter from './adapters/input/OTPInputAdapter';
@@ -78,37 +79,52 @@ function CommonElementFactory({
   onAddElementToForm = undefined,
 }: CommonElementFactoryPropsInterface): ReactElement | null {
   if (resource.type === BlockTypes.Form) {
+    // Use FormAdapter for blocks with category BLOCK (forms with fields)
+    // Use BlockAdapter for blocks with other categories (e.g., ACTION for social buttons)
+    if (resource.category === ElementCategories.Block) {
+      return (
+        <FormAdapter
+          stepId={stepId}
+          resource={resource}
+          availableElements={availableElements}
+          onAddElementToForm={onAddElementToForm}
+        />
+      );
+    }
+
     return (
-      <FormAdapter
-        stepId={stepId}
+      <BlockAdapter
         resource={resource}
         availableElements={availableElements}
         onAddElementToForm={onAddElementToForm}
       />
     );
   }
-  if (resource.type === ElementTypes.Input) {
-    if (resource.variant === InputVariants.Checkbox) {
-      return <CheckboxAdapter resource={resource} />;
-    }
-
-    if (resource.variant === InputVariants.Telephone) {
-      return <PhoneNumberInputAdapter resource={resource} />;
-    }
-
-    if (resource.variant === InputVariants.OTP) {
-      return <OTPInputAdapter resource={resource} />;
-    }
-
+  if (resource.type === ElementTypes.Checkbox) {
+    return <CheckboxAdapter resource={resource} />;
+  }
+  if (resource.type === ElementTypes.PhoneInput) {
+    return <PhoneNumberInputAdapter resource={resource} />;
+  }
+  if (resource.type === ElementTypes.OtpInput) {
+    return <OTPInputAdapter resource={resource} />;
+  }
+  if (
+    resource.type === ElementTypes.TextInput ||
+    resource.type === ElementTypes.PasswordInput ||
+    resource.type === ElementTypes.EmailInput ||
+    resource.type === ElementTypes.NumberInput ||
+    resource.type === ElementTypes.DateInput
+  ) {
     return <DefaultInputAdapter resource={resource} />;
   }
-  if (resource.type === ElementTypes.Choice) {
+  if (resource.type === ElementTypes.Dropdown) {
     return <ChoiceAdapter resource={resource} />;
   }
-  if (resource.type === ElementTypes.Button) {
+  if (resource.type === ElementTypes.Action) {
     return <ButtonAdapter resource={resource} elementIndex={elementIndex} />;
   }
-  if (resource.type === ElementTypes.Typography) {
+  if (resource.type === ElementTypes.Text) {
     return <TypographyAdapter stepId={stepId} resource={resource} />;
   }
   if (resource.type === ElementTypes.RichText) {

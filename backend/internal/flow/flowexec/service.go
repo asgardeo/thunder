@@ -339,7 +339,7 @@ func (s *flowExecService) storeContext(ctx *EngineContext, logger *log.Logger) e
 	return nil
 }
 
-// getFlowGraph checks if the provided application ID is valid and returns the associated flow graph.
+// getFlowGraph checks if the provided application ID is valid and returns the associated flow ID.
 func (s *flowExecService) getFlowGraph(appID string, flowType common.FlowType,
 	logger *log.Logger) (string, *serviceerror.ServiceError) {
 	if appID == "" {
@@ -366,22 +366,22 @@ func (s *flowExecService) getFlowGraph(appID string, flowType common.FlowType,
 	if flowType == common.FlowTypeRegistration {
 		if !app.IsRegistrationFlowEnabled {
 			return "", &ErrorRegistrationFlowDisabled
-		} else if app.RegistrationFlowGraphID == "" {
-			logger.Error("Registration flow graph is not configured for the application",
+		} else if app.RegistrationFlowID == "" {
+			logger.Error("Registration flow is not configured for the application",
 				log.String("appID", appID))
 			return "", &serviceerror.InternalServerError
 		}
-		return app.RegistrationFlowGraphID, nil
+		return app.RegistrationFlowID, nil
 	}
 
-	// Default to authentication flow graph ID
-	if app.AuthFlowGraphID == "" {
-		logger.Error("Authentication flow graph is not configured for the application",
+	// Default to authentication flow ID
+	if app.AuthFlowID == "" {
+		logger.Error("Authentication flow is not configured for the application",
 			log.String("appID", appID))
 		return "", &serviceerror.InternalServerError
 	}
 
-	return app.AuthFlowGraphID, nil
+	return app.AuthFlowID, nil
 }
 
 // validateFlowType validates the provided flow type string and returns the corresponding FlowType.

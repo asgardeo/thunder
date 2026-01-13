@@ -17,8 +17,8 @@
  */
 
 import {describe, it, expect, beforeEach, afterEach, vi} from 'vitest';
-import {renderHook, waitFor} from '@testing-library/react';
-
+import {waitFor} from '@testing-library/react';
+import {renderHook} from '../../../../test/test-utils';
 import useGetUserType from '../useGetUserType';
 import type {ApiUserSchema} from '../../types/user-types';
 
@@ -33,11 +33,15 @@ vi.mock('@asgardeo/react', () => ({
 }));
 
 // Mock useConfig
-vi.mock('@thunder/commons-contexts', () => ({
-  useConfig: () => ({
-    getServerUrl: () => 'https://localhost:8090',
-  }),
-}));
+vi.mock('@thunder/commons-contexts', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@thunder/commons-contexts')>();
+  return {
+    ...actual,
+    useConfig: () => ({
+      getServerUrl: () => 'https://localhost:8090',
+    }),
+  };
+});
 
 describe('useGetUserType', () => {
   const mockUserSchema: ApiUserSchema = {
@@ -85,7 +89,9 @@ describe('useGetUserType', () => {
       expect(result.current.loading).toBe(false);
     });
 
-    expect(mockHttpRequest).toHaveBeenCalledWith(expect.objectContaining({url: 'https://localhost:8090/user-schemas/123', method: 'GET'}));
+    expect(mockHttpRequest).toHaveBeenCalledWith(
+      expect.objectContaining({url: 'https://localhost:8090/user-schemas/123', method: 'GET'}),
+    );
   });
 
   it('should set loading state during fetch', async () => {

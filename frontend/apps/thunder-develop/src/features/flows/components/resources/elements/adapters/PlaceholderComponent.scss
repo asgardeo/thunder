@@ -19,11 +19,8 @@
 @use "../../../../styles/variables";
 
 .flow-builder-display-field-i18n-placeholder {
-    background-color: var(--mui-palette-background-paper);
 
     .flow-builder-display-field-i18n-placeholder-key {
-        background-color: rgb(from var(--mui-palette-primary-main) r g b / 0.1);
-        color: var(--mui-palette-primary-main);
         font-family: monospace;
         font-size: 13px;
         padding: 2px 4px;

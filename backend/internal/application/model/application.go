@@ -56,8 +56,8 @@ type ApplicationDTO struct {
 	ID                        string
 	Name                      string
 	Description               string
-	AuthFlowGraphID           string
-	RegistrationFlowGraphID   string
+	AuthFlowID                string
+	RegistrationFlowID        string
 	IsRegistrationFlowEnabled bool
 	BrandingID                string
 	Template                  string
@@ -79,8 +79,8 @@ type BasicApplicationDTO struct {
 	ID                        string
 	Name                      string
 	Description               string
-	AuthFlowGraphID           string
-	RegistrationFlowGraphID   string
+	AuthFlowID                string
+	RegistrationFlowID        string
 	IsRegistrationFlowEnabled bool
 	BrandingID                string
 	Template                  string
@@ -93,8 +93,8 @@ type Application struct {
 	ID                        string `yaml:"id,omitempty"`
 	Name                      string `yaml:"name,omitempty"`
 	Description               string `yaml:"description,omitempty"`
-	AuthFlowGraphID           string `yaml:"auth_flow_graph_id,omitempty"`
-	RegistrationFlowGraphID   string `yaml:"registration_flow_graph_id,omitempty"`
+	AuthFlowID                string `yaml:"auth_flow_id,omitempty"`
+	RegistrationFlowID        string `yaml:"registration_flow_id,omitempty"`
 	IsRegistrationFlowEnabled bool   `yaml:"is_registration_flow_enabled,omitempty"`
 	BrandingID                string `yaml:"branding_id,omitempty"`
 	Template                  string `yaml:"template,omitempty"`
@@ -116,8 +116,8 @@ type ApplicationProcessedDTO struct {
 	ID                        string `yaml:"id,omitempty"`
 	Name                      string `yaml:"name,omitempty"`
 	Description               string `yaml:"description,omitempty"`
-	AuthFlowGraphID           string `yaml:"auth_flow_graph_id,omitempty"`
-	RegistrationFlowGraphID   string `yaml:"registration_flow_graph_id,omitempty"`
+	AuthFlowID                string `yaml:"auth_flow_id,omitempty"`
+	RegistrationFlowID        string `yaml:"registration_flow_id,omitempty"`
 	IsRegistrationFlowEnabled bool   `yaml:"is_registration_flow_enabled,omitempty"`
 	BrandingID                string `yaml:"branding_id,omitempty"`
 	Template                  string `yaml:"template,omitempty"`
@@ -160,8 +160,8 @@ type ApplicationCertificate struct {
 type ApplicationRequest struct {
 	Name                      string                      `json:"name" yaml:"name"`
 	Description               string                      `json:"description" yaml:"description"`
-	AuthFlowGraphID           string                      `json:"auth_flow_graph_id,omitempty" yaml:"auth_flow_graph_id,omitempty"`
-	RegistrationFlowGraphID   string                      `json:"registration_flow_graph_id,omitempty" yaml:"registration_flow_graph_id,omitempty"`
+	AuthFlowID                string                      `json:"auth_flow_id,omitempty" yaml:"auth_flow_id,omitempty"`
+	RegistrationFlowID        string                      `json:"registration_flow_id,omitempty" yaml:"registration_flow_id,omitempty"`
 	IsRegistrationFlowEnabled bool                        `json:"is_registration_flow_enabled" yaml:"is_registration_flow_enabled"`
 	BrandingID                string                      `json:"branding_id,omitempty" yaml:"branding_id,omitempty"`
 	Template                  string                      `json:"template,omitempty" yaml:"template,omitempty"`
@@ -183,8 +183,8 @@ type ApplicationRequestWithID struct {
 	ID                        string                      `json:"id" yaml:"id"`
 	Name                      string                      `json:"name" yaml:"name"`
 	Description               string                      `json:"description" yaml:"description"`
-	AuthFlowGraphID           string                      `json:"auth_flow_graph_id,omitempty" yaml:"auth_flow_graph_id,omitempty"`
-	RegistrationFlowGraphID   string                      `json:"registration_flow_graph_id,omitempty" yaml:"registration_flow_graph_id,omitempty"`
+	AuthFlowID                string                      `json:"auth_flow_id,omitempty" yaml:"auth_flow_id,omitempty"`
+	RegistrationFlowID        string                      `json:"registration_flow_id,omitempty" yaml:"registration_flow_id,omitempty"`
 	IsRegistrationFlowEnabled bool                        `json:"is_registration_flow_enabled" yaml:"is_registration_flow_enabled"`
 	BrandingID                string                      `json:"branding_id,omitempty" yaml:"branding_id,omitempty"`
 	Template                  string                      `json:"template,omitempty" yaml:"template,omitempty"`
@@ -205,8 +205,8 @@ type ApplicationCompleteResponse struct {
 	Name                      string                      `json:"name"`
 	Description               string                      `json:"description,omitempty"`
 	ClientID                  string                      `json:"client_id,omitempty"`
-	AuthFlowGraphID           string                      `json:"auth_flow_graph_id,omitempty"`
-	RegistrationFlowGraphID   string                      `json:"registration_flow_graph_id,omitempty"`
+	AuthFlowID                string                      `json:"auth_flow_id,omitempty"`
+	RegistrationFlowID        string                      `json:"registration_flow_id,omitempty"`
 	IsRegistrationFlowEnabled bool                        `json:"is_registration_flow_enabled"`
 	BrandingID                string                      `json:"branding_id,omitempty"`
 	Template                  string                      `json:"template,omitempty"`
@@ -227,8 +227,8 @@ type ApplicationGetResponse struct {
 	Name                      string                  `json:"name"`
 	Description               string                  `json:"description,omitempty"`
 	ClientID                  string                  `json:"client_id,omitempty"`
-	AuthFlowGraphID           string                  `json:"auth_flow_graph_id,omitempty"`
-	RegistrationFlowGraphID   string                  `json:"registration_flow_graph_id,omitempty"`
+	AuthFlowID                string                  `json:"auth_flow_id,omitempty"`
+	RegistrationFlowID        string                  `json:"registration_flow_id,omitempty"`
 	IsRegistrationFlowEnabled bool                    `json:"is_registration_flow_enabled"`
 	BrandingID                string                  `json:"branding_id,omitempty"`
 	Template                  string                  `json:"template,omitempty"`
@@ -250,8 +250,8 @@ type BasicApplicationResponse struct {
 	Description               string `json:"description,omitempty"`
 	ClientID                  string `json:"client_id,omitempty"`
 	LogoURL                   string `json:"logo_url,omitempty"`
-	AuthFlowGraphID           string `json:"auth_flow_graph_id,omitempty"`
-	RegistrationFlowGraphID   string `json:"registration_flow_graph_id,omitempty"`
+	AuthFlowID                string `json:"auth_flow_id,omitempty"`
+	RegistrationFlowID        string `json:"registration_flow_id,omitempty"`
 	IsRegistrationFlowEnabled bool   `json:"is_registration_flow_enabled"`
 	BrandingID                string `json:"branding_id,omitempty"`
 	Template                  string `json:"template,omitempty"`

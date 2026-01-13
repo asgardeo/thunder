@@ -11,7 +11,8 @@
     "scheme": "https",
     "path": "/gate"
   },
-  "security": {
+  "tls": {
+    "min_version": "1.3",
     "cert_file": "repository/resources/security/server.cert",
     "key_file": "repository/resources/security/server.key"
   },
@@ -70,7 +71,8 @@
   },
   "jwt": {
     "validity_period": 3600,
-    "audience": "application"
+    "audience": "application",
+    "preferred_key_id": "default-key"
   },
   "oauth": {
     "refresh_token": {
@@ -116,6 +118,13 @@
         "key_size": 32,
         "salt_size": 16
       }
-    }
+    },
+    "keys": [
+      {
+        "id": "default-key",
+        "cert_file": "repository/resources/security/server.cert",
+        "key_file": "repository/resources/security/server.key"
+      }
+    ]
   }
 }

@@ -44,6 +44,11 @@ func newFlowGraphExporter(service FlowMgtServiceInterface) *FlowGraphExporter {
 	return &FlowGraphExporter{service: service}
 }
 
+// NewFlowGraphExporterForTest creates a new flow graph exporter for testing purposes.
+func NewFlowGraphExporterForTest(service FlowMgtServiceInterface) *FlowGraphExporter {
+	return newFlowGraphExporter(service)
+}
+
 // GetResourceType returns the resource type for flow graphs.
 func (e *FlowGraphExporter) GetResourceType() string {
 	return resourceTypeFlow

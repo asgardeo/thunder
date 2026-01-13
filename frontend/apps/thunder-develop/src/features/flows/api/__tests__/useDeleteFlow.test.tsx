@@ -1,0 +1,296 @@
+/**
+ * Copyright (c) 2025, WSO2 LLC. (https://www.wso2.com).
+ *
+ * WSO2 LLC. licenses this file to you under the Apache License,
+ * Version 2.0 (the "License"); you may not use this file except
+ * in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing,
+ * software distributed under the License is distributed on an
+ * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+ * KIND, either express or implied. See the License for the
+ * specific language governing permissions and limitations
+ * under the License.
+ */
+
+import {describe, it, expect, beforeEach, afterEach, vi} from 'vitest';
+import {renderHook, waitFor, act} from '@testing-library/react';
+import {QueryClient, QueryClientProvider} from '@tanstack/react-query';
+import type {ReactNode} from 'react';
+import {useAsgardeo} from '@asgardeo/react';
+import {useConfig} from '@thunder/commons-contexts';
+import useDeleteFlow from '../useDeleteFlow';
+import FlowQueryKeys from '../../constants/flow-query-keys';
+
+vi.mock('@asgardeo/react', () => ({
+  useAsgardeo: vi.fn(),
+}));
+
+vi.mock('@thunder/commons-contexts', () => ({
+  useConfig: vi.fn(),
+}));
+
+describe('useDeleteFlow', () => {
+  let queryClient: QueryClient;
+  let mockHttpRequest: ReturnType<typeof vi.fn>;
+
+  beforeEach(() => {
+    queryClient = new QueryClient({
+      defaultOptions: {
+        queries: {retry: false},
+        mutations: {retry: false},
+      },
+    });
+
+    mockHttpRequest = vi.fn();
+
+    vi.mocked(useAsgardeo).mockReturnValue({
+      http: {request: mockHttpRequest},
+    } as unknown as ReturnType<typeof useAsgardeo>);
+
+    vi.mocked(useConfig).mockReturnValue({
+      getServerUrl: () => 'https://localhost:8090',
+    } as ReturnType<typeof useConfig>);
+  });
+
+  afterEach(() => {
+    vi.clearAllMocks();
+    queryClient.clear();
+  });
+
+  const createWrapper = () => {
+    function Wrapper({children}: {children: ReactNode}) {
+      return <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>;
+    }
+    return Wrapper;
+  };
+
+  it('should initialize with idle state', () => {
+    const {result} = renderHook(() => useDeleteFlow(), {
+      wrapper: createWrapper(),
+    });
+
+    expect(result.current.data).toBeUndefined();
+    expect(result.current.error).toBeNull();
+    expect(result.current.isPending).toBe(false);
+    expect(result.current.isIdle).toBe(true);
+  });
+
+  it('should successfully delete a flow', async () => {
+    mockHttpRequest.mockResolvedValueOnce({});
+
+    const {result} = renderHook(() => useDeleteFlow(), {
+      wrapper: createWrapper(),
+    });
+
+    result.current.mutate('flow-123');
+
+    await waitFor(() => {
+      expect(result.current.isSuccess).toBe(true);
+    });
+
+    expect(mockHttpRequest).toHaveBeenCalledWith({
+      url: 'https://localhost:8090/flows/flow-123',
+      method: 'DELETE',
+      headers: {'Content-Type': 'application/json'},
+    });
+  });
+
+  it('should set pending state during deletion', async () => {
+    mockHttpRequest.mockImplementation(
+      () =>
+        new Promise((resolve) => {
+          setTimeout(() => resolve({}), 100);
+        }),
+    );
+
+    const {result} = renderHook(() => useDeleteFlow(), {
+      wrapper: createWrapper(),
+    });
+
+    result.current.mutate('flow-123');
+
+    await waitFor(() => {
+      expect(result.current.isPending).toBe(true);
+    });
+
+    await waitFor(() => {
+      expect(result.current.isPending).toBe(false);
+    });
+
+    expect(result.current.isSuccess).toBe(true);
+  });
+
+  it('should handle API error', async () => {
+    const apiError = new Error('Failed to delete flow');
+    mockHttpRequest.mockRejectedValueOnce(apiError);
+
+    const {result} = renderHook(() => useDeleteFlow(), {
+      wrapper: createWrapper(),
+    });
+
+    result.current.mutate('flow-123');
+
+    await waitFor(() => {
+      expect(result.current.isError).toBe(true);
+    });
+
+    expect(result.current.error).toEqual(apiError);
+  });
+
+  it('should remove specific flow from cache on success', async () => {
+    mockHttpRequest.mockResolvedValueOnce({});
+
+    const removeQueriesSpy = vi.spyOn(queryClient, 'removeQueries');
+
+    const {result} = renderHook(() => useDeleteFlow(), {
+      wrapper: createWrapper(),
+    });
+
+    result.current.mutate('flow-123');
+
+    await waitFor(() => {
+      expect(result.current.isSuccess).toBe(true);
+    });
+
+    expect(removeQueriesSpy).toHaveBeenCalledWith({
+      queryKey: [FlowQueryKeys.FLOW, 'flow-123'],
+    });
+  });
+
+  it('should invalidate flows list query on success', async () => {
+    mockHttpRequest.mockResolvedValueOnce({});
+
+    const invalidateQueriesSpy = vi.spyOn(queryClient, 'invalidateQueries');
+
+    const {result} = renderHook(() => useDeleteFlow(), {
+      wrapper: createWrapper(),
+    });
+
+    result.current.mutate('flow-123');
+
+    await waitFor(() => {
+      expect(result.current.isSuccess).toBe(true);
+    });
+
+    expect(invalidateQueriesSpy).toHaveBeenCalledWith({
+      queryKey: [FlowQueryKeys.FLOWS],
+    });
+  });
+
+  it('should support mutateAsync for promise-based workflows', async () => {
+    mockHttpRequest.mockResolvedValueOnce({});
+
+    const {result} = renderHook(() => useDeleteFlow(), {
+      wrapper: createWrapper(),
+    });
+
+    const promise = result.current.mutateAsync('flow-123');
+
+    await expect(promise).resolves.toBeUndefined();
+  });
+
+  it('should handle onSuccess callback', async () => {
+    mockHttpRequest.mockResolvedValueOnce({});
+
+    const onSuccess = vi.fn();
+
+    const {result} = renderHook(() => useDeleteFlow(), {
+      wrapper: createWrapper(),
+    });
+
+    result.current.mutate('flow-123', {onSuccess});
+
+    await waitFor(() => {
+      expect(onSuccess).toHaveBeenCalled();
+    });
+  });
+
+  it('should handle onError callback', async () => {
+    const apiError = new Error('Failed to delete flow');
+    mockHttpRequest.mockRejectedValueOnce(apiError);
+
+    const onError = vi.fn();
+
+    const {result} = renderHook(() => useDeleteFlow(), {
+      wrapper: createWrapper(),
+    });
+
+    result.current.mutate('flow-123', {onError});
+
+    await waitFor(() => {
+      expect(onError).toHaveBeenCalledWith(apiError, 'flow-123', undefined, expect.anything());
+    });
+  });
+
+  it('should reset mutation state', async () => {
+    mockHttpRequest.mockResolvedValueOnce({});
+
+    const {result} = renderHook(() => useDeleteFlow(), {
+      wrapper: createWrapper(),
+    });
+
+    result.current.mutate('flow-123');
+
+    await waitFor(() => {
+      expect(result.current.isSuccess).toBe(true);
+    });
+
+    act(() => {
+      result.current.reset();
+    });
+
+    await waitFor(() => {
+      expect(result.current.isIdle).toBe(true);
+    });
+  });
+
+  it('should use correct server URL from config', async () => {
+    const customServerUrl = 'https://custom-server.com:9090';
+
+    vi.mocked(useConfig).mockReturnValue({
+      getServerUrl: () => customServerUrl,
+    } as ReturnType<typeof useConfig>);
+
+    mockHttpRequest.mockResolvedValueOnce({});
+
+    const {result} = renderHook(() => useDeleteFlow(), {
+      wrapper: createWrapper(),
+    });
+
+    result.current.mutate('flow-456');
+
+    await waitFor(() => {
+      expect(result.current.isSuccess).toBe(true);
+    });
+
+    expect(mockHttpRequest).toHaveBeenCalledWith({
+      url: `${customServerUrl}/flows/flow-456`,
+      method: 'DELETE',
+      headers: {'Content-Type': 'application/json'},
+    });
+  });
+
+  it('should handle multiple sequential deletions', async () => {
+    mockHttpRequest.mockResolvedValue({});
+
+    const {result} = renderHook(() => useDeleteFlow(), {
+      wrapper: createWrapper(),
+    });
+
+    result.current.mutate('flow-1');
+
+    await waitFor(() => {
+      expect(result.current.isSuccess).toBe(true);
+    });
+
+    result.current.mutate('flow-2');
+
+    await waitFor(() => {
+      expect(mockHttpRequest).toHaveBeenCalledTimes(2);
+    });
+  });
+});

@@ -24,6 +24,7 @@ import (
 	"strings"
 
 	oupkg "github.com/asgardeo/thunder/internal/ou"
+	serverconst "github.com/asgardeo/thunder/internal/system/constants"
 	"github.com/asgardeo/thunder/internal/system/error/serviceerror"
 	immutableresource "github.com/asgardeo/thunder/internal/system/immutable_resource"
 	"github.com/asgardeo/thunder/internal/system/log"
@@ -63,7 +64,7 @@ func (e *UserSchemaExporter) GetParameterizerType() string {
 
 // GetAllResourceIDs retrieves all user schema IDs.
 func (e *UserSchemaExporter) GetAllResourceIDs() ([]string, *serviceerror.ServiceError) {
-	response, err := e.service.GetUserSchemaList(0, 1000)
+	response, err := e.service.GetUserSchemaList(serverconst.MaxPageSize, 0)
 	if err != nil {
 		return nil, err
 	}

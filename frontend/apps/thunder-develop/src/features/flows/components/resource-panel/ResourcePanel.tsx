@@ -17,32 +17,39 @@
  */
 
 import kebabCase from 'lodash-es/kebabCase';
-import {memo, useCallback, useMemo, type HTMLAttributes, type ReactElement} from 'react';
+import {memo, useCallback, useEffect, useMemo, useRef, useState, type HTMLAttributes, type ReactElement} from 'react';
 import {useTranslation} from 'react-i18next';
 import {
   Accordion,
   AccordionDetails,
   AccordionSummary,
   Box,
+  Button,
   Drawer,
   IconButton,
   Stack,
+  TextField,
   Tooltip,
   Typography,
 } from '@wso2/oxygen-ui';
 import {
+  ArrowLeft,
   BoxesIcon,
   BoxIcon,
+  Check,
   ChevronDownIcon,
   ChevronLeftIcon,
   ChevronRightIcon,
   CogIcon,
+  Edit,
   LayoutTemplate,
+  X,
   ZapIcon,
 } from '@wso2/oxygen-ui-icons-react';
+import {useNavigate} from 'react-router';
 import useFlowBuilderCore from '../../hooks/useFlowBuilderCore';
 import ResourcePanelStatic from './ResourcePanelStatic';
-import {type Element, ElementTypes} from '../../models/elements';
+import type {Element} from '../../models/elements';
 import type {Resource, Resources} from '../../models/resources';
 import type {Step} from '../../models/steps';
 import type {Template} from '../../models/templates';
@@ -72,6 +79,18 @@ export interface ResourcePanelPropsInterface extends HTMLAttributes<HTMLDivEleme
    * @defaultValue false
    */
   disabled?: boolean;
+  /**
+   * Flow title to display.
+   */
+  flowTitle?: string;
+  /**
+   * Flow handle (URL-friendly identifier).
+   */
+  flowHandle?: string;
+  /**
+   * Callback to be triggered when flow title changes.
+   */
+  onFlowTitleChange?: (newTitle: string) => void;
 }
 
 const PANEL_WIDTH = 350;
@@ -88,10 +107,71 @@ function ResourcePanel({
   resources,
   onAdd,
   disabled = false,
+  flowTitle = '',
+  flowHandle = '',
+  onFlowTitleChange = undefined,
   ...rest
 }: ResourcePanelPropsInterface): ReactElement {
   const {t} = useTranslation();
+  const navigate = useNavigate();
   const {setIsResourcePanelOpen} = useFlowBuilderCore();
+
+  // Flow title editing state
+  const [isEditingTitle, setIsEditingTitle] = useState(false);
+  const [editedTitle, setEditedTitle] = useState(flowTitle);
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  // Sync editedTitle when flowTitle prop changes
+  useEffect(() => {
+    setEditedTitle(flowTitle);
+  }, [flowTitle]);
+
+  // Focus input when entering edit mode
+  useEffect(() => {
+    if (isEditingTitle && inputRef.current) {
+      inputRef.current.focus();
+      inputRef.current.select();
+    }
+  }, [isEditingTitle]);
+
+  const handleEditClick = useCallback(() => {
+    setIsEditingTitle(true);
+  }, []);
+
+  const handleTitleSave = useCallback(() => {
+    const trimmedTitle = editedTitle.trim();
+
+    // Don't allow empty titles - keep edit mode open
+    if (!trimmedTitle) {
+      return;
+    }
+
+    if (trimmedTitle !== flowTitle) {
+      onFlowTitleChange?.(trimmedTitle);
+    }
+    setIsEditingTitle(false);
+  }, [editedTitle, flowTitle, onFlowTitleChange]);
+
+  const handleTitleCancel = useCallback(() => {
+    setEditedTitle(flowTitle);
+    setIsEditingTitle(false);
+  }, [flowTitle]);
+
+  const handleKeyDown = useCallback(
+    (event: React.KeyboardEvent) => {
+      if (event.key === 'Enter') {
+        handleTitleSave();
+      } else if (event.key === 'Escape') {
+        handleTitleCancel();
+      }
+    },
+    [handleTitleSave, handleTitleCancel],
+  );
+
+  const handleBackToFlows = useCallback((): void => {
+    // eslint-disable-next-line @typescript-eslint/no-floating-promises
+    navigate('/flows');
+  }, [navigate]);
 
   const {
     elements: unfilteredElements,
@@ -179,27 +259,82 @@ function ResourcePanel({
           },
         }}
       >
-        {/* Header with title and collapse button */}
+        {/* Flow title section */}
         <Box
-          display="flex"
-          alignItems="center"
-          justifyContent="space-between"
           sx={{
-            pb: 1,
+            pb: 1.5,
             borderBottom: '1px solid',
             borderColor: 'divider',
             mb: 1,
             flexShrink: 0,
           }}
         >
-          <Typography variant="subtitle1" fontWeight={600}>
-            {t('flows:core.resourcePanel.title')}
-          </Typography>
-          <Tooltip title={t('flows:core.resourcePanel.hideResources')} placement="right">
-            <IconButton onClick={handleTogglePanel} size="small">
-              <ChevronLeftIcon size={16} />
-            </IconButton>
-          </Tooltip>
+          {/* Back button and collapse row */}
+          <Box display="flex" alignItems="center" justifyContent="space-between" sx={{mb: 1}}>
+            <Tooltip title={t('flows:core.headerPanel.goBack')} placement="right">
+              <Button onClick={handleBackToFlows} size="small" startIcon={<ArrowLeft size={16} />}>
+                {t('flows:core.headerPanel.goBack')}
+              </Button>
+            </Tooltip>
+            <Tooltip title={t('flows:core.resourcePanel.hideResources')} placement="right">
+              <IconButton onClick={handleTogglePanel} size="small">
+                <ChevronLeftIcon size={16} />
+              </IconButton>
+            </Tooltip>
+          </Box>
+
+          {/* Flow title with edit capability */}
+          {flowTitle &&
+            (isEditingTitle ? (
+              <Stack direction="row" alignItems="center" spacing={0.5}>
+                <TextField
+                  inputRef={inputRef}
+                  value={editedTitle}
+                  onChange={(e) => setEditedTitle(e.target.value)}
+                  onKeyDown={handleKeyDown}
+                  size="small"
+                  variant="outlined"
+                  fullWidth
+                  sx={{
+                    '& .MuiInputBase-input': {
+                      py: 0.5,
+                      fontSize: '1rem',
+                      fontWeight: 600,
+                    },
+                  }}
+                />
+                <Tooltip title={t('flows:core.headerPanel.saveTitle')}>
+                  <IconButton size="small" onClick={handleTitleSave} color="primary">
+                    <Check size={16} />
+                  </IconButton>
+                </Tooltip>
+                <Tooltip title={t('flows:core.headerPanel.cancelEdit')}>
+                  <IconButton size="small" onClick={handleTitleCancel}>
+                    <X size={16} />
+                  </IconButton>
+                </Tooltip>
+              </Stack>
+            ) : (
+              <Stack direction="column" spacing={0}>
+                <Stack direction="row" alignItems="center" spacing={0.5}>
+                  <Typography variant="h6" sx={{fontWeight: 600}}>
+                    {flowTitle}
+                  </Typography>
+                  {onFlowTitleChange && (
+                    <Tooltip title={t('flows:core.headerPanel.editTitle')}>
+                      <IconButton size="small" onClick={handleEditClick} sx={{p: 0.25}}>
+                        <Edit size={14} />
+                      </IconButton>
+                    </Tooltip>
+                  )}
+                </Stack>
+                {flowHandle && (
+                  <Typography variant="caption" color="text.secondary">
+                    {flowHandle}
+                  </Typography>
+                )}
+              </Stack>
+            ))}
         </Box>
 
         {/* Starter Templates */}
@@ -448,11 +583,7 @@ function ResourcePanel({
               {elements?.map((element: Element, index: number) => (
                 <ResourcePanelDraggable
                   id={`${element.resourceType}-${element.type}-${index}`}
-                  key={
-                    element.type === ElementTypes.Input
-                      ? `${element.type}_${String(element.variant)}_${index}`
-                      : `${element.type}_${index}`
-                  }
+                  key={`${element.resourceType}-${element.category}-${element.type}`}
                   resource={element}
                   onAdd={onAdd}
                   disabled={false}

@@ -1,5 +1,5 @@
 {
-    "name": "Basic Registration Flow",
+    "name": "Default Basic Registration Flow",
     "handle": "default-basic-flow",
     "flowType": "REGISTRATION",
     "nodes": [
@@ -55,7 +55,7 @@
                 {
                     "ref": "input_005",
                     "identifier": "email",
-                    "type": "TEXT_INPUT",
+                    "type": "EMAIL_INPUT",
                     "required": true
                 }
             ],

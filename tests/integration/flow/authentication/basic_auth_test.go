@@ -35,8 +35,124 @@ var (
 		Parent:      nil,
 	}
 
-	// Application relies on the default flow set by the server. Hence no need
-	// to set the flow IDs here.
+	basicAuthTestFlow = testutils.Flow{
+		Name:     "Basic Auth Test Auth Flow",
+		FlowType: "AUTHENTICATION",
+		Handle:   "auth_flow_basic_auth_test",
+		Nodes: []map[string]interface{}{
+			{
+				"id":        "start",
+				"type":      "START",
+				"onSuccess": "prompt_credentials",
+			},
+			{
+				"id":   "prompt_credentials",
+				"type": "PROMPT",
+				"inputs": []map[string]interface{}{
+					{
+						"ref":        "input_001",
+						"identifier": "username",
+						"type":       "TEXT_INPUT",
+						"required":   true,
+					},
+					{
+						"ref":        "input_002",
+						"identifier": "password",
+						"type":       "PASSWORD_INPUT",
+						"required":   true,
+					},
+				},
+				"actions": []map[string]interface{}{
+					{
+						"ref":      "action_001",
+						"nextNode": "basic_auth",
+					},
+				},
+			},
+			{
+				"id":   "basic_auth",
+				"type": "TASK_EXECUTION",
+				"inputs": []map[string]interface{}{
+					{
+						"ref":        "input_001",
+						"identifier": "username",
+						"type":       "string",
+						"required":   true,
+					},
+					{
+						"ref":        "input_002",
+						"identifier": "password",
+						"type":       "string",
+						"required":   true,
+					},
+				},
+				"executor": map[string]interface{}{
+					"name": "BasicAuthExecutor",
+				},
+				"onSuccess": "auth_assert",
+			},
+			{
+				"id":   "auth_assert",
+				"type": "TASK_EXECUTION",
+				"executor": map[string]interface{}{
+					"name": "AuthAssertExecutor",
+				},
+				"onSuccess": "end",
+			},
+			{
+				"id":   "end",
+				"type": "END",
+			},
+		},
+	}
+
+	basicAuthWithoutPromptFlow = testutils.Flow{
+		Name:     "Basic Auth Without Prompt Flow",
+		FlowType: "AUTHENTICATION",
+		Handle:   "auth_flow_basic_auth_without_prompt",
+		Nodes: []map[string]interface{}{
+			{
+				"id":        "start",
+				"type":      "START",
+				"onSuccess": "basic_auth",
+			},
+			{
+				"id":   "basic_auth",
+				"type": "TASK_EXECUTION",
+				"inputs": []map[string]interface{}{
+					{
+						"ref":        "input_001",
+						"identifier": "username",
+						"type":       "string",
+						"required":   true,
+					},
+					{
+						"ref":        "input_002",
+						"identifier": "password",
+						"type":       "string",
+						"required":   true,
+					},
+				},
+				"executor": map[string]interface{}{
+					"name": "BasicAuthExecutor",
+				},
+				"onSuccess": "auth_assert",
+			},
+			{
+				"id":   "auth_assert",
+				"type": "TASK_EXECUTION",
+				"executor": map[string]interface{}{
+					"name": "AuthAssertExecutor",
+				},
+				"onSuccess": "end",
+			},
+			{
+				"id":   "end",
+				"type": "END",
+			},
+		},
+	}
+
 	testApp = testutils.Application{
 		Name:                      "Flow Test Application",
 		Description:               "Application for testing authentication flows",
@@ -112,6 +228,16 @@ func (ts *BasicAuthFlowTestSuite) SetupSuite() {
 	}
 	userSchemaID = schemaID
 
+	// Create flows
+	flowID, err := testutils.CreateFlow(basicAuthTestFlow)
+	ts.Require().NoError(err, "Failed to create basic auth test flow")
+	ts.config.CreatedFlowIDs = append(ts.config.CreatedFlowIDs, flowID)
+	testApp.AuthFlowID = flowID
+
+	withoutPromptFlow, err := testutils.CreateFlow(basicAuthWithoutPromptFlow)
+	ts.Require().NoError(err, "Failed to create basic auth without prompt flow")
+	ts.config.CreatedFlowIDs = append(ts.config.CreatedFlowIDs, withoutPromptFlow)
+
 	// Create test application
 	appID, err := testutils.CreateApplication(testApp)
 	if err != nil {
@@ -142,6 +268,13 @@ func (ts *BasicAuthFlowTestSuite) TearDownSuite() {
 		}
 	}
 
+	// Delete test flows
+	for _, flowID := range ts.config.CreatedFlowIDs {
+		if err := testutils.DeleteFlow(flowID); err != nil {
+			ts.T().Logf("Failed to delete test flow %s during teardown: %v", flowID, err)
+		}
+	}
+
 	if userSchemaID != "" {
 		if err := testutils.DeleteUserType(userSchemaID); err != nil {
 			ts.T().Logf("Failed to delete test user schema during teardown: %v", err)
@@ -159,6 +292,10 @@ func (ts *BasicAuthFlowTestSuite) TearDownSuite() {
 }
 
 func (ts *BasicAuthFlowTestSuite) TestBasicAuthFlowSuccess() {
+	// Update application
+	err := common.UpdateAppConfig(testAppID, ts.config.CreatedFlowIDs[0], "")
+	ts.NoError(err, "App config update should succeed")
+
 	// Step 1: Initialize the flow by calling the flow execution API
 	flowStep, err := common.InitiateAuthenticationFlow(testAppID, false, nil, "")
 	if err != nil {
@@ -189,7 +326,7 @@ func (ts *BasicAuthFlowTestSuite) TestBasicAuthFlowSuccess() {
 		"password": userAttrs["password"].(string),
 	}
 
-	completeFlowStep, err := common.CompleteFlow(flowStep.FlowID, inputs, "")
+	completeFlowStep, err := common.CompleteFlow(flowStep.FlowID, inputs, "action_001")
 	if err != nil {
 		ts.T().Fatalf("Failed to complete authentication flow: %v", err)
 	}
@@ -214,9 +351,13 @@ func (ts *BasicAuthFlowTestSuite) TestBasicAuthFlowSuccess() {
 }
 
 func (ts *BasicAuthFlowTestSuite) TestBasicAuthFlowSuccessWithSingleRequest() {
+	// Update application
+	err := common.UpdateAppConfig(testAppID, ts.config.CreatedFlowIDs[1], "")
+	ts.NoError(err, "App config update should succeed")
+
 	// Step 1: Initialize the flow by calling the flow execution API with user credentials
 	var userAttrs map[string]interface{}
-	err := json.Unmarshal(testUser.Attributes, &userAttrs)
+	err = json.Unmarshal(testUser.Attributes, &userAttrs)
 	ts.Require().NoError(err, "Failed to unmarshal user attributes")
 
 	inputs := map[string]string{
@@ -250,6 +391,10 @@ func (ts *BasicAuthFlowTestSuite) TestBasicAuthFlowSuccessWithSingleRequest() {
 }
 
 func (ts *BasicAuthFlowTestSuite) TestBasicAuthFlowWithTwoStepInput() {
+	// Update application
+	err := common.UpdateAppConfig(testAppID, ts.config.CreatedFlowIDs[0], "")
+	ts.NoError(err, "App config update should succeed")
+
 	// Step 1: Initialize the flow
 	flowStep, err := common.InitiateAuthenticationFlow(testAppID, false, nil, "")
 	if err != nil {
@@ -267,7 +412,7 @@ func (ts *BasicAuthFlowTestSuite) TestBasicAuthFlowWithTwoStepInput() {
 		"username": userAttrs["username"].(string),
 	}
 
-	intermediateFlowStep, err := common.CompleteFlow(flowStep.FlowID, inputs, "")
+	intermediateFlowStep, err := common.CompleteFlow(flowStep.FlowID, inputs, "action_001")
 	if err != nil {
 		ts.T().Fatalf("Failed to complete authentication flow with missing credentials: %v", err)
 	}
@@ -288,7 +433,7 @@ func (ts *BasicAuthFlowTestSuite) TestBasicAuthFlowWithTwoStepInput() {
 		"password": userAttrs["password"].(string),
 	}
 
-	completeFlowStep, err := common.CompleteFlow(flowStep.FlowID, inputs, "")
+	completeFlowStep, err := common.CompleteFlow(flowStep.FlowID, inputs, "action_001")
 	if err != nil {
 		ts.T().Fatalf("Failed to complete authentication flow: %v", err)
 	}
@@ -313,6 +458,10 @@ func (ts *BasicAuthFlowTestSuite) TestBasicAuthFlowWithTwoStepInput() {
 }
 
 func (ts *BasicAuthFlowTestSuite) TestBasicAuthFlowInvalidCredentials() {
+	// Update application
+	err := common.UpdateAppConfig(testAppID, ts.config.CreatedFlowIDs[0], "")
+	ts.NoError(err, "App config update should succeed")
+
 	// Step 1: Initialize the flow
 	flowStep, err := common.InitiateAuthenticationFlow(testAppID, false, nil, "")
 	if err != nil {
@@ -327,7 +476,7 @@ func (ts *BasicAuthFlowTestSuite) TestBasicAuthFlowInvalidCredentials() {
 		"password": "wrong_password",
 	}
 
-	completeFlowStep, err := common.CompleteFlow(flowStep.FlowID, inputs, "")
+	completeFlowStep, err := common.CompleteFlow(flowStep.FlowID, inputs, "action_001")
 	if err != nil {
 		ts.T().Fatalf("Failed to complete authentication flow with invalid credentials: %v", err)
 	}

@@ -206,11 +206,15 @@ export default function ConfigureApproach({
                     <Stack direction="row" spacing={1} alignItems="center" sx={{mb: 1}}>
                       <Code size={20} />
                       <Typography variant="h6">
-                        {t('applications:onboarding.configure.approach.native.title')}
+                        {t('applications:onboarding.configure.approach.native.title', {
+                          product: t('common:product.displayName'),
+                        })}
                       </Typography>
                     </Stack>
                     <Typography variant="body2" color="text.secondary">
-                      {t('applications:onboarding.configure.approach.native.description')}
+                      {t('applications:onboarding.configure.approach.native.description', {
+                        product: t('common:product.displayName'),
+                      })}
                     </Typography>
                   </Box>
                 </Stack>

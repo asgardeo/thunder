@@ -64,8 +64,16 @@
         border-color: var(--mui-palette-error-main);
         animation: error-pulse 1s infinite;
 
+        [data-color-scheme="light"] & {
+            border-color: rgba(var(--mui-palette-error-mainChannel) / 0.7);
+        }
+
         .circle-alert-icon {
             stroke: var(--mui-palette-error-main);
+
+            [data-color-scheme="light"] & {
+                stroke: rgba(var(--mui-palette-error-mainChannel) / 0.8);
+            }
         }
     }
 

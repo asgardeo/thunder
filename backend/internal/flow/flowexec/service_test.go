@@ -114,8 +114,8 @@ func TestInitiateFlowSuccessScenarios(t *testing.T) {
 
 	// Mock application and graph - shared across all test cases
 	mockApp := &appmodel.Application{
-		ID:              "app-id-123",
-		AuthFlowGraphID: "auth-graph-1",
+		ID:         "app-id-123",
+		AuthFlowID: "auth-graph-1",
 	}
 
 	tests := []struct {
@@ -287,8 +287,8 @@ func TestInitiateFlowErrorScenarios(t *testing.T) {
 			) {
 				// Mock application service to return valid app
 				mockApp := &appmodel.Application{
-					ID:              "app-id-123",
-					AuthFlowGraphID: "auth-graph-1",
+					ID:         "app-id-123",
+					AuthFlowID: "auth-graph-1",
 				}
 				mockAppService.EXPECT().GetApplication(appID).Return(mockApp, nil)
 
@@ -307,8 +307,8 @@ func TestInitiateFlowErrorScenarios(t *testing.T) {
 			) {
 				// Mock application service to return valid app
 				mockApp := &appmodel.Application{
-					ID:              "app-id-123",
-					AuthFlowGraphID: "auth-graph-1",
+					ID:         "app-id-123",
+					AuthFlowID: "auth-graph-1",
 				}
 				mockAppService.EXPECT().GetApplication(appID).Return(mockApp, nil)
 

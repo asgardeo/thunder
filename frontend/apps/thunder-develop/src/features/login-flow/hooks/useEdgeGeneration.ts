@@ -19,23 +19,21 @@
 import {useCallback} from 'react';
 import {MarkerType, type Edge, type Node} from '@xyflow/react';
 import VisualFlowConstants from '@/features/flows/constants/VisualFlowConstants';
-import {BlockTypes, ElementTypes, type Element} from '@/features/flows/models/elements';
+import {ElementTypes, type Element} from '@/features/flows/models/elements';
 import {StepTypes, type Step} from '@/features/flows/models/steps';
 import LoginFlowConstants from '../constants/LoginFlowConstants';
 
 // Use centralized constants
-const {START_STEP_ID: INITIAL_FLOW_START_STEP_ID, END_STEP_ID: INITIAL_FLOW_USER_ONBOARD_STEP_ID, DEFAULT_EDGE_TYPE} =
-  LoginFlowConstants;
+const {
+  START_STEP_ID: INITIAL_FLOW_START_STEP_ID,
+  END_STEP_ID: INITIAL_FLOW_USER_ONBOARD_STEP_ID,
+  DEFAULT_EDGE_TYPE,
+} = LoginFlowConstants;
 
 /**
  * Helper to create an edge with standard configuration.
  */
-const createEdge = (
-  id: string,
-  source: string,
-  sourceHandle: string,
-  target: string,
-): Edge => ({
+const createEdge = (id: string, source: string, sourceHandle: string, target: string): Edge => ({
   animated: false,
   id,
   markerEnd: {
@@ -112,6 +110,28 @@ const useEdgeGeneration = (props?: UseEdgeGenerationProps): UseEdgeGenerationRet
       let userOnboardEdgeCreated = false;
 
       /**
+       * Recursively find all ACTION and RESEND buttons within a component tree.
+       * This handles nested BLOCK structures where buttons may be deeply nested.
+       */
+      const findActionButtons = (component: Element): Element[] => {
+        const buttons: Element[] = [];
+
+        // Check if this component is an ACTION or RESEND button
+        if (component.type === ElementTypes.Action || component.type === ElementTypes.Resend) {
+          buttons.push(component);
+        }
+
+        // Recursively search nested components (handles BLOCK containers)
+        if (component.components) {
+          component.components.forEach((nestedComponent) => {
+            buttons.push(...findActionButtons(nestedComponent));
+          });
+        }
+
+        return buttons;
+      };
+
+      /**
        * Create edges for a button based on its action configuration.
        */
       const createEdgesForButton = (step: Step, button: Element): void => {
@@ -161,20 +181,12 @@ const useEdgeGeneration = (props?: UseEdgeGenerationProps): UseEdgeGenerationRet
       flowSteps
         .filter((step) => step.type !== StepTypes.End)
         .forEach((step) => {
-          // Process components with actions
+          // Process components with actions - recursively find all ACTION and RESEND buttons
+          // This handles nested BLOCK structures (e.g., social login buttons wrapped in ACTION BLOCK containers)
           if (step.data?.components) {
             step.data.components.forEach((component) => {
-              // Process buttons inside forms
-              if (component.type === BlockTypes.Form && component.components) {
-                component.components
-                  .filter((formComponent) => formComponent.type === ElementTypes.Button)
-                  .forEach((formComponent) => createEdgesForButton(step, formComponent));
-              }
-
-              // Process direct button components
-              if (component.type === ElementTypes.Button) {
-                createEdgesForButton(step, component);
-              }
+              const actionButtons = findActionButtons(component);
+              actionButtons.forEach((button) => createEdgesForButton(step, button));
             });
           }
 
@@ -206,17 +218,13 @@ const useEdgeGeneration = (props?: UseEdgeGenerationProps): UseEdgeGenerationRet
           const lastViewStep = viewSteps[viewSteps.length - 1];
           let buttonId: string | null = null;
 
-          // Try to find a button to use for the connection
+          // Try to find a button to use for the connection (recursively search nested structures)
           if (lastViewStep.data?.components) {
-            const formComponent = lastViewStep.data.components.find(
-              (component: Element) => component.type === BlockTypes.Form,
-            );
-
-            if (formComponent?.components) {
-              const button = formComponent.components.find((elem: Element) => elem.type === ElementTypes.Button);
-              if (button) {
-                buttonId = button.id;
-              }
+            const firstActionButton = lastViewStep.data.components
+              .flatMap((component) => findActionButtons(component))
+              .find((btn) => btn !== undefined);
+            if (firstActionButton) {
+              buttonId = firstActionButton.id;
             }
           }
 

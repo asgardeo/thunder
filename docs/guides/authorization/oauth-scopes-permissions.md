@@ -80,7 +80,7 @@ curl -kL -X POST -H 'Content-Type: application/json' https://localhost:8090/appl
 -d '{
     "name": "Document Manager OAuth App",
     "description": "OAuth application for document management",
-    "auth_flow_graph_id": "auth_flow_config_basic",
+    "auth_flow_id": "<auth-flow-uuid>",
     "inbound_auth_config": [
         {
             "type": "oauth2",

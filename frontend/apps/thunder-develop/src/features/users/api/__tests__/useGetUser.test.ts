@@ -17,8 +17,8 @@
  */
 
 import {describe, it, expect, vi, beforeEach, afterEach} from 'vitest';
-import {renderHook, waitFor} from '@testing-library/react';
-
+import {waitFor} from '@testing-library/react';
+import {renderHook} from '../../../../test/test-utils';
 import useGetUser from '../useGetUser';
 import type {ApiUser} from '../../types/users';
 
@@ -33,11 +33,15 @@ vi.mock('@asgardeo/react', () => ({
 }));
 
 // Mock useConfig
-vi.mock('@thunder/commons-contexts', () => ({
-  useConfig: () => ({
-    getServerUrl: () => 'https://localhost:8090',
-  }),
-}));
+vi.mock('@thunder/commons-contexts', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@thunder/commons-contexts')>();
+  return {
+    ...actual,
+    useConfig: () => ({
+      getServerUrl: () => 'https://localhost:8090',
+    }),
+  };
+});
 
 describe('useGetUser', () => {
   beforeEach(() => {

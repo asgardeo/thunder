@@ -65,6 +65,10 @@ func registerRoutes(mux *http.ServeMux, handler *messageNotificationSenderHandle
 		handler.HandleSenderListRequest, opts1))
 	mux.HandleFunc(middleware.WithCORS("POST /notification-senders/message",
 		handler.HandleSenderCreateRequest, opts1))
+	mux.HandleFunc(middleware.WithCORS("OPTIONS /notification-senders/message",
+		func(w http.ResponseWriter, r *http.Request) {
+			w.WriteHeader(http.StatusNoContent)
+		}, opts1))
 
 	opts2 := middleware.CORSOptions{
 		AllowedMethods:   "GET, PUT, DELETE",
@@ -77,6 +81,10 @@ func registerRoutes(mux *http.ServeMux, handler *messageNotificationSenderHandle
 		handler.HandleSenderUpdateRequest, opts2))
 	mux.HandleFunc(middleware.WithCORS("DELETE /notification-senders/message/{id}",
 		handler.HandleSenderDeleteRequest, opts2))
+	mux.HandleFunc(middleware.WithCORS("OPTIONS /notification-senders/message/{id}",
+		func(w http.ResponseWriter, r *http.Request) {
+			w.WriteHeader(http.StatusNoContent)
+		}, opts2))
 
 	opts3 := middleware.CORSOptions{
 		AllowedMethods:   "POST",
@@ -85,6 +93,14 @@ func registerRoutes(mux *http.ServeMux, handler *messageNotificationSenderHandle
 	}
 	mux.HandleFunc(middleware.WithCORS("POST /notification-senders/otp/send",
 		handler.HandleOTPSendRequest, opts3))
+	mux.HandleFunc(middleware.WithCORS("OPTIONS /notification-senders/otp/send",
+		func(w http.ResponseWriter, r *http.Request) {
+			w.WriteHeader(http.StatusNoContent)
+		}, opts3))
 	mux.HandleFunc(middleware.WithCORS("POST /notification-senders/otp/verify",
 		handler.HandleOTPVerifyRequest, opts3))
+	mux.HandleFunc(middleware.WithCORS("OPTIONS /notification-senders/otp/verify",
+		func(w http.ResponseWriter, r *http.Request) {
+			w.WriteHeader(http.StatusNoContent)
+		}, opts3))
 }

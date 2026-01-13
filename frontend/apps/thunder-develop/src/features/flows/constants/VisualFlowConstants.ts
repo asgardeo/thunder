@@ -57,7 +57,16 @@ class VisualFlowConstants {
     TemplateTypes.Blank,
     TemplateTypes.BasicPasskey,
     BlockTypes.Form, // Form is allowed for drop detection, but handled specially to show dialog
-    ElementTypes.Input, // Input is allowed for drop detection, but handled specially to show dialog
+    // Input types are allowed for drop detection, but handled specially to show dialog
+    ElementTypes.TextInput,
+    ElementTypes.PasswordInput,
+    ElementTypes.EmailInput,
+    ElementTypes.PhoneInput,
+    ElementTypes.NumberInput,
+    ElementTypes.DateInput,
+    ElementTypes.OtpInput,
+    ElementTypes.Checkbox,
+    ElementTypes.Dropdown,
     // Widgets are allowed for drop detection, but handled specially to show dialog
     WidgetTypes.EmailOTP,
     WidgetTypes.GoogleFederation,
@@ -73,13 +82,22 @@ class VisualFlowConstants {
 
   public static readonly FLOW_BUILDER_VIEW_ALLOWED_RESOURCE_TYPES: string[] = [
     BlockTypes.Form,
-    ElementTypes.Button,
-    ElementTypes.Typography,
+    ElementTypes.Action,
+    ElementTypes.Text,
     ElementTypes.RichText,
     ElementTypes.Divider,
     ElementTypes.Image,
     ElementTypes.Captcha,
-    ElementTypes.Input, // Input is allowed for drop detection, but handled specially to show dialog
+    // Input types are allowed for drop detection, but handled specially to show dialog
+    ElementTypes.TextInput,
+    ElementTypes.PasswordInput,
+    ElementTypes.EmailInput,
+    ElementTypes.PhoneInput,
+    ElementTypes.NumberInput,
+    ElementTypes.DateInput,
+    ElementTypes.OtpInput,
+    ElementTypes.Checkbox,
+    ElementTypes.Dropdown,
     WidgetTypes.EmailOTP,
     WidgetTypes.GoogleFederation,
     WidgetTypes.IdentifierPassword,
@@ -93,23 +111,31 @@ class VisualFlowConstants {
   ];
 
   public static readonly FLOW_BUILDER_FLOW_COMPLETION_VIEW_ALLOWED_RESOURCE_TYPES: string[] = [
-    ElementTypes.Typography,
+    ElementTypes.Text,
     ElementTypes.RichText,
     ElementTypes.Divider,
     ElementTypes.Image,
   ];
 
   public static readonly FLOW_BUILDER_FORM_ALLOWED_RESOURCE_TYPES: string[] = [
-    ElementTypes.Input,
-    ElementTypes.Button,
-    ElementTypes.Typography,
+    ElementTypes.TextInput,
+    ElementTypes.PasswordInput,
+    ElementTypes.EmailInput,
+    ElementTypes.PhoneInput,
+    ElementTypes.NumberInput,
+    ElementTypes.DateInput,
+    ElementTypes.OtpInput,
+    ElementTypes.Checkbox,
+    ElementTypes.Dropdown,
+    ElementTypes.Action,
+    ElementTypes.Text,
     ElementTypes.RichText,
     ElementTypes.Divider,
     ElementTypes.Image,
   ];
 
   public static readonly FLOW_BUILDER_STATIC_CONTENT_ALLOWED_RESOURCE_TYPES: string[] = [
-    ElementTypes.Typography,
+    ElementTypes.Text,
     ElementTypes.RichText,
     ElementTypes.Divider,
     ElementTypes.Image,

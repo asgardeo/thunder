@@ -29,11 +29,11 @@ vi.mock('../../../utils/generateAppLogoSuggestion');
 vi.mock('../../../utils/generateAppPrimaryColorSuggestions');
 
 // Mock the brandings API
-vi.mock('../../../../branding/api/useGetBrandings');
+vi.mock('@thunder/shared-branding');
 
 const {default: generateAppLogoSuggestions} = await import('../../../utils/generateAppLogoSuggestion');
 const {default: generateAppPrimaryColorSuggestions} = await import('../../../utils/generateAppPrimaryColorSuggestions');
-const {default: useGetBrandings} = await import('@/features/branding/api/useGetBrandings');
+const {useGetBrandings, useGetBranding} = await import('@thunder/shared-branding');
 
 describe('ConfigureDesign', () => {
   const mockOnLogoSelect = vi.fn();
@@ -69,6 +69,13 @@ describe('ConfigureDesign', () => {
       isLoading: false,
       error: null,
     } as ReturnType<typeof useGetBrandings>);
+
+    // Mock useGetBranding to return empty data
+    vi.mocked(useGetBranding).mockReturnValue({
+      data: undefined,
+      isLoading: false,
+      error: null,
+    } as ReturnType<typeof useGetBranding>);
 
     // Setup window.__THUNDER_RUNTIME_CONFIG__ for tests
     // eslint-disable-next-line no-underscore-dangle

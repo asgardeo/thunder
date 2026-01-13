@@ -19,11 +19,34 @@
 import {describe, expect, it, vi, beforeEach} from 'vitest';
 import {render, screen} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import {QueryClient, QueryClientProvider} from '@tanstack/react-query';
 import {AuthenticatorTypes} from '@/features/integrations/models/authenticators';
 import ApplicationCreateProvider from '../ApplicationCreateProvider';
 import useApplicationCreate from '../useApplicationCreate';
 import {ApplicationCreateFlowSignInApproach, ApplicationCreateFlowStep} from '../../../models/application-create-flow';
 import {TechnologyApplicationTemplate, PlatformApplicationTemplate} from '../../../models/application-templates';
+
+// Mock useGetApplications
+const mockUseGetApplications = vi.fn();
+vi.mock('../../api/useGetApplications', () => ({
+  __esModule: true,
+  default: mockUseGetApplications,
+}));
+
+// Mock generateAppPrimaryColorSuggestions
+vi.mock('../../utils/generateAppPrimaryColorSuggestions', () => ({
+  __esModule: true,
+  default: () => ['#3B82F6'],
+}));
+
+// Mock useConfig to avoid ConfigProvider requirement
+vi.mock('@thunder/commons-contexts', () => ({
+  useConfig: () => ({
+    endpoints: {
+      server: 'http://localhost:3001',
+    },
+  }),
+}));
 
 // Test component to consume the context
 function TestConsumer() {
@@ -84,12 +107,30 @@ function TestConsumer() {
 }
 
 describe('ApplicationCreateProvider', () => {
+  let queryClient: QueryClient;
+
   beforeEach(() => {
     vi.clearAllMocks();
+    queryClient = new QueryClient({
+      defaultOptions: {
+        queries: {
+          retry: false,
+        },
+      },
+    });
+    // Default mock: no applications
+    mockUseGetApplications.mockReturnValue({
+      data: {
+        applications: [],
+      },
+    });
   });
 
+  const renderWithQueryClient = (children: React.ReactNode) =>
+    render(<QueryClientProvider client={queryClient}>{children}</QueryClientProvider>);
+
   it('provides initial state values', () => {
-    render(
+    renderWithQueryClient(
       <ApplicationCreateProvider>
         <TestConsumer />
       </ApplicationCreateProvider>,
@@ -113,7 +154,7 @@ describe('ApplicationCreateProvider', () => {
   it('updates current step when setCurrentStep is called', async () => {
     const user = userEvent.setup();
 
-    render(
+    renderWithQueryClient(
       <ApplicationCreateProvider>
         <TestConsumer />
       </ApplicationCreateProvider>,
@@ -127,7 +168,7 @@ describe('ApplicationCreateProvider', () => {
   it('updates app name when setAppName is called', async () => {
     const user = userEvent.setup();
 
-    render(
+    renderWithQueryClient(
       <ApplicationCreateProvider>
         <TestConsumer />
       </ApplicationCreateProvider>,
@@ -141,7 +182,7 @@ describe('ApplicationCreateProvider', () => {
   it('updates selected color when setSelectedColor is called', async () => {
     const user = userEvent.setup();
 
-    render(
+    renderWithQueryClient(
       <ApplicationCreateProvider>
         <TestConsumer />
       </ApplicationCreateProvider>,
@@ -155,7 +196,7 @@ describe('ApplicationCreateProvider', () => {
   it('updates app logo when setAppLogo is called', async () => {
     const user = userEvent.setup();
 
-    render(
+    renderWithQueryClient(
       <ApplicationCreateProvider>
         <TestConsumer />
       </ApplicationCreateProvider>,
@@ -169,7 +210,7 @@ describe('ApplicationCreateProvider', () => {
   it('toggles integration state when toggleIntegration is called', async () => {
     const user = userEvent.setup();
 
-    render(
+    renderWithQueryClient(
       <ApplicationCreateProvider>
         <TestConsumer />
       </ApplicationCreateProvider>,
@@ -195,7 +236,7 @@ describe('ApplicationCreateProvider', () => {
   it('updates sign-in approach when setSignInApproach is called', async () => {
     const user = userEvent.setup();
 
-    render(
+    renderWithQueryClient(
       <ApplicationCreateProvider>
         <TestConsumer />
       </ApplicationCreateProvider>,
@@ -209,7 +250,7 @@ describe('ApplicationCreateProvider', () => {
   it('updates selected technology when setSelectedTechnology is called', async () => {
     const user = userEvent.setup();
 
-    render(
+    renderWithQueryClient(
       <ApplicationCreateProvider>
         <TestConsumer />
       </ApplicationCreateProvider>,
@@ -223,7 +264,7 @@ describe('ApplicationCreateProvider', () => {
   it('updates selected platform when setSelectedPlatform is called', async () => {
     const user = userEvent.setup();
 
-    render(
+    renderWithQueryClient(
       <ApplicationCreateProvider>
         <TestConsumer />
       </ApplicationCreateProvider>,
@@ -237,7 +278,7 @@ describe('ApplicationCreateProvider', () => {
   it('updates hosting URL when setHostingUrl is called', async () => {
     const user = userEvent.setup();
 
-    render(
+    renderWithQueryClient(
       <ApplicationCreateProvider>
         <TestConsumer />
       </ApplicationCreateProvider>,
@@ -251,7 +292,7 @@ describe('ApplicationCreateProvider', () => {
   it('updates callback URL when setCallbackUrlFromConfig is called', async () => {
     const user = userEvent.setup();
 
-    render(
+    renderWithQueryClient(
       <ApplicationCreateProvider>
         <TestConsumer />
       </ApplicationCreateProvider>,
@@ -265,7 +306,7 @@ describe('ApplicationCreateProvider', () => {
   it('updates error when setError is called', async () => {
     const user = userEvent.setup();
 
-    render(
+    renderWithQueryClient(
       <ApplicationCreateProvider>
         <TestConsumer />
       </ApplicationCreateProvider>,
@@ -279,7 +320,7 @@ describe('ApplicationCreateProvider', () => {
   it('resets all state when reset is called', async () => {
     const user = userEvent.setup();
 
-    render(
+    renderWithQueryClient(
       <ApplicationCreateProvider>
         <TestConsumer />
       </ApplicationCreateProvider>,
@@ -314,7 +355,7 @@ describe('ApplicationCreateProvider', () => {
       return <TestConsumer />;
     }
 
-    const {rerender} = render(
+    const {rerender} = renderWithQueryClient(
       <ApplicationCreateProvider>
         <TestRenderer />
       </ApplicationCreateProvider>,
@@ -324,9 +365,11 @@ describe('ApplicationCreateProvider', () => {
 
     // Re-render with same props
     rerender(
-      <ApplicationCreateProvider>
-        <TestRenderer />
-      </ApplicationCreateProvider>,
+      <QueryClientProvider client={queryClient}>
+        <ApplicationCreateProvider>
+          <TestRenderer />
+        </ApplicationCreateProvider>
+      </QueryClientProvider>,
     );
 
     // Should only render once more due to memoization
@@ -334,7 +377,7 @@ describe('ApplicationCreateProvider', () => {
   });
 
   it('provides default integrations with basic auth enabled', () => {
-    render(
+    renderWithQueryClient(
       <ApplicationCreateProvider>
         <TestConsumer />
       </ApplicationCreateProvider>,
@@ -345,7 +388,7 @@ describe('ApplicationCreateProvider', () => {
   });
 
   it('initializes with a default primary color', () => {
-    render(
+    renderWithQueryClient(
       <ApplicationCreateProvider>
         <TestConsumer />
       </ApplicationCreateProvider>,

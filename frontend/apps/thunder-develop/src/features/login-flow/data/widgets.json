@@ -22,50 +22,42 @@
               "components": [
                 {
                   "category": "BLOCK",
-                  "type": "FORM",
+                  "type": "BLOCK",
                   "config": {},
                   "id": "{{ID}}",
                   "components": [
                     {
                       "id": "{{ID}}",
                       "category": "FIELD",
-                      "type": "INPUT",
-                      "variant": "TEXT",
-                      "config": {
-                        "type": "text",
-                        "hint": "",
-                        "label": "Username",
-                        "required": true,
-                        "placeholder": "Enter your username",
-                        "identifier": "username"
-                      }
+                      "type": "TEXT_INPUT",
+                      "inputType": "text",
+                      "hint": "",
+                      "label": "Username",
+                      "required": true,
+                      "placeholder": "Enter your username",
+                      "ref": "username"
                     },
                     {
                       "id": "{{ID}}",
                       "category": "FIELD",
-                      "type": "INPUT",
-                      "variant": "PASSWORD",
-                      "config": {
-                        "identifier": "password",
-                        "type": "password",
-                        "hint": "",
-                        "label": "Password",
-                        "required": true,
-                        "placeholder": "Enter your password"
-                      }
+                      "type": "PASSWORD_INPUT",
+                      "inputType": "password",
+                      "ref": "password",
+                      "hint": "",
+                      "label": "Password",
+                      "required": true,
+                      "placeholder": "Enter your password"
                     },
                     {
                       "id": "{{ID}}",
                       "category": "ACTION",
-                      "type": "BUTTON",
+                      "type": "ACTION",
                       "variant": "PRIMARY",
                       "eventType": "SUBMIT",
-                      "label": "Continue",
+                      "label": "Sign In",
                       "action": {
-                        "type": "EXECUTOR",
-                        "executor": {
-                          "name": "BasicAuthExecutor"
-                        }
+                        "type": "NEXT",
+                        "next": "{{BASIC_AUTH_EXECUTION_STEP_ID}}"
                       }
                     }
                   ]
@@ -95,6 +87,10 @@
             {
               "key": "GOOGLE_EXECUTION_STEP_ID",
               "type": "ID"
+            },
+            {
+              "key": "AUTH_ASSERT_EXECUTOR_ID",
+              "type": "ID"
             }
           ]
         },
@@ -109,15 +105,22 @@
                 {
                   "id": "{{ID}}",
                   "category": "ACTION",
-                  "type": "BUTTON",
-                  "variant": "SOCIAL",
-                  "eventType": "TRIGGER",
-                  "label": "Continue with Google",
-                  "image": "assets/images/icons/google.svg",
-                  "action": {
-                    "type": "NEXT",
-                    "next": "{{GOOGLE_EXECUTION_STEP_ID}}"
-                  }
+                  "type": "BLOCK",
+                  "components": [
+                    {
+                      "id": "{{ID}}",
+                      "category": "ACTION",
+                      "type": "ACTION",
+                      "variant": "SOCIAL",
+                      "eventType": "TRIGGER",
+                      "label": "Continue with Google",
+                      "image": "assets/images/icons/google.svg",
+                      "action": {
+                        "type": "NEXT",
+                        "next": "{{GOOGLE_EXECUTION_STEP_ID}}"
+                      }
+                    }
+                  ]
                 }
               ]
             }
@@ -126,12 +129,12 @@
             "id": "{{GOOGLE_EXECUTION_STEP_ID}}",
             "type": "TASK_EXECUTION",
             "size": {
-              "width": 350,
-              "height": 291
+              "width": 200,
+              "height": 113
             },
             "position": {
-              "x": 690,
-              "y": 500
+              "x": 820,
+              "y": 350
             },
             "data": {
               "action": {
@@ -139,10 +142,31 @@
                 "executor": {
                   "name": "GoogleOIDCAuthExecutor"
                 },
-                "next": "END"
+                "next": "{{AUTH_ASSERT_EXECUTOR_ID}}"
               },
               "properties": {
                 "idpId": "{{IDP_ID}}"
+              }
+            }
+          },
+          {
+            "id": "{{AUTH_ASSERT_EXECUTOR_ID}}",
+            "type": "TASK_EXECUTION",
+            "size": {
+              "width": 244,
+              "height": 113
+            },
+            "position": {
+              "x": 1234,
+              "y": 230
+            },
+            "data": {
+              "action": {
+                "type": "EXECUTOR",
+                "executor": {
+                  "name": "AuthAssertExecutor"
+                },
+                "next": "END"
               }
             }
           }
@@ -168,6 +192,10 @@
             {
               "key": "GITHUB_EXECUTION_STEP_ID",
               "type": "ID"
+            },
+            {
+              "key": "AUTH_ASSERT_EXECUTOR_ID",
+              "type": "ID"
             }
           ]
         },
@@ -182,15 +210,22 @@
                 {
                   "id": "{{ID}}",
                   "category": "ACTION",
-                  "type": "BUTTON",
-                  "variant": "SOCIAL",
-                  "eventType": "TRIGGER",
-                  "label": "Continue with GitHub",
-                  "image": "assets/images/icons/github.svg",
-                  "action": {
-                    "type": "NEXT",
-                    "next": "{{GITHUB_EXECUTION_STEP_ID}}"
-                  }
+                  "type": "BLOCK",
+                  "components": [
+                    {
+                      "id": "{{ID}}",
+                      "category": "ACTION",
+                      "type": "ACTION",
+                      "variant": "SOCIAL",
+                      "eventType": "TRIGGER",
+                      "label": "Continue with GitHub",
+                      "image": "assets/images/icons/github.svg",
+                      "action": {
+                        "type": "NEXT",
+                        "next": "{{GITHUB_EXECUTION_STEP_ID}}"
+                      }
+                    }
+                  ]
                 }
               ]
             }
@@ -199,12 +234,12 @@
             "id": "{{GITHUB_EXECUTION_STEP_ID}}",
             "type": "TASK_EXECUTION",
             "size": {
-              "width": 350,
-              "height": 291
+              "width": 200,
+              "height": 113
             },
             "position": {
-              "x": 690,
-              "y": 500
+              "x": 820,
+              "y": 350
             },
             "data": {
               "action": {
@@ -212,10 +247,31 @@
                 "executor": {
                   "name": "GithubOAuthExecutor"
                 },
-                "next": "END"
+                "next": "{{AUTH_ASSERT_EXECUTOR_ID}}"
               },
               "properties": {
                 "idpId": "{{IDP_ID}}"
+              }
+            }
+          },
+          {
+            "id": "{{AUTH_ASSERT_EXECUTOR_ID}}",
+            "type": "TASK_EXECUTION",
+            "size": {
+              "width": 244,
+              "height": 113
+            },
+            "position": {
+              "x": 1234,
+              "y": 230
+            },
+            "data": {
+              "action": {
+                "type": "EXECUTOR",
+                "executor": {
+                  "name": "AuthAssertExecutor"
+                },
+                "next": "END"
               }
             }
           }
@@ -248,6 +304,10 @@
             {
               "key": "EMAIL_VERIFY_EXECUTOR_ID",
               "type": "ID"
+            },
+            {
+              "key": "AUTH_ASSERT_EXECUTOR_ID",
+              "type": "ID"
             }
           ]
         },
@@ -262,14 +322,21 @@
                 {
                   "id": "{{ID}}",
                   "category": "ACTION",
-                  "type": "BUTTON",
-                  "variant": "PRIMARY",
-                  "eventType": "TRIGGER",
-                  "label": "Continue with Email OTP",
-                  "action": {
-                    "next": "{{EMAIL_SEND_EXECUTOR_ID}}",
-                    "type": "NEXT"
-                  }
+                  "type": "BLOCK",
+                  "components": [
+                    {
+                      "id": "{{ID}}",
+                      "category": "ACTION",
+                      "type": "ACTION",
+                      "variant": "PRIMARY",
+                      "eventType": "TRIGGER",
+                      "label": "Continue with Email OTP",
+                      "action": {
+                        "next": "{{EMAIL_SEND_EXECUTOR_ID}}",
+                        "type": "NEXT"
+                      }
+                    }
+                  ]
                 }
               ]
             }
@@ -311,33 +378,29 @@
                 {
                   "id": "{{ID}}",
                   "category": "DISPLAY",
-                  "type": "TYPOGRAPHY",
-                  "variant": "H3",
+                  "type": "TEXT",
+                  "variant": "HEADING_3",
                   "label": "Verify OTP"
                 },
                 {
                   "id": "{{ID}}",
                   "category": "BLOCK",
-                  "type": "FORM",
+                  "type": "BLOCK",
                   "components": [
                     {
                       "id": "{{ID}}",
                       "category": "FIELD",
-                      "type": "INPUT",
-                      "variant": "OTP",
-                      "config": {
-                        "type": "text",
-                        "hint": "",
-                        "identifier": "otp",
-                        "label": "Enter the OTP code",
-                        "required": true,
-                        "placeholder": ""
-                      }
+                      "type": "OTP_INPUT",
+                      "hint": "",
+                      "ref": "otp",
+                      "label": "Enter the OTP code",
+                      "required": true,
+                      "placeholder": ""
                     },
                     {
                       "id": "{{ID}}",
                       "category": "ACTION",
-                      "type": "BUTTON",
+                      "type": "ACTION",
                       "variant": "PRIMARY",
                       "eventType": "SUBMIT",
                       "label": "Verify",
@@ -379,6 +442,27 @@
                 "executor": {
                   "name": "VerifyEmailOTPExecutor"
                 },
+                "next": "{{AUTH_ASSERT_EXECUTOR_ID}}"
+              }
+            }
+          },
+          {
+            "id": "{{AUTH_ASSERT_EXECUTOR_ID}}",
+            "type": "TASK_EXECUTION",
+            "size": {
+              "width": 200,
+              "height": 113
+            },
+            "position": {
+              "x": 690,
+              "y": 570
+            },
+            "data": {
+              "action": {
+                "type": "EXECUTOR",
+                "executor": {
+                  "name": "AuthAssertExecutor"
+                },
                 "next": "END"
               }
             }
@@ -412,6 +496,10 @@
             {
               "key": "SMS_VERIFY_EXECUTOR_ID",
               "type": "ID"
+            },
+            {
+              "key": "AUTH_ASSERT_EXECUTOR_ID",
+              "type": "ID"
             }
           ]
         },
@@ -426,14 +514,21 @@
                 {
                   "id": "{{ID}}",
                   "category": "ACTION",
-                  "type": "BUTTON",
-                  "variant": "PRIMARY",
-                  "eventType": "TRIGGER",
-                  "label": "Continue with SMS OTP",
-                  "action": {
-                    "next": "{{SMS_SEND_EXECUTOR_ID}}",
-                    "type": "NEXT"
-                  }
+                  "type": "BLOCK",
+                  "components": [
+                    {
+                      "id": "{{ID}}",
+                      "category": "ACTION",
+                      "type": "ACTION",
+                      "variant": "PRIMARY",
+                      "eventType": "TRIGGER",
+                      "label": "Continue with SMS OTP",
+                      "action": {
+                        "next": "{{SMS_SEND_EXECUTOR_ID}}",
+                        "type": "NEXT"
+                      }
+                    }
+                  ]
                 }
               ]
             }
@@ -476,33 +571,29 @@
                 {
                   "id": "{{ID}}",
                   "category": "DISPLAY",
-                  "type": "TYPOGRAPHY",
-                  "variant": "H3",
+                  "type": "TEXT",
+                  "variant": "HEADING_3",
                   "label": "Verify OTP"
                 },
                 {
                   "id": "{{ID}}",
                   "category": "BLOCK",
-                  "type": "FORM",
+                  "type": "BLOCK",
                   "components": [
                     {
                       "id": "{{ID}}",
                       "category": "FIELD",
-                      "type": "INPUT",
-                      "variant": "OTP",
-                      "config": {
-                        "type": "text",
-                        "hint": "",
-                        "identifier": "otp",
-                        "label": "Enter the OTP code",
-                        "required": true,
-                        "placeholder": ""
-                      }
+                      "type": "OTP_INPUT",
+                      "hint": "",
+                      "ref": "otp",
+                      "label": "Enter the OTP code",
+                      "required": true,
+                      "placeholder": ""
                     },
                     {
                       "id": "{{ID}}",
                       "category": "ACTION",
-                      "type": "BUTTON",
+                      "type": "ACTION",
                       "variant": "PRIMARY",
                       "eventType": "SUBMIT",
                       "label": "Verify",
@@ -545,6 +636,27 @@
                   "name": "SMSOTPAuthExecutor",
                   "mode": "verify"
                 },
+                "next": "{{AUTH_ASSERT_EXECUTOR_ID}}"
+              }
+            }
+          },
+          {
+            "id": "{{AUTH_ASSERT_EXECUTOR_ID}}",
+            "type": "TASK_EXECUTION",
+            "size": {
+              "width": 200,
+              "height": 113
+            },
+            "position": {
+              "x": 690,
+              "y": 900
+            },
+            "data": {
+              "action": {
+                "type": "EXECUTOR",
+                "executor": {
+                  "name": "AuthAssertExecutor"
+                },
                 "next": "END"
               }
             }
@@ -571,6 +683,10 @@
             {
               "key": "PASSKEY_EXECUTION_STEP_ID",
               "type": "ID"
+            },
+            {
+              "key": "AUTH_ASSERT_EXECUTOR_ID",
+              "type": "ID"
             }
           ]
         },
@@ -585,15 +701,22 @@
                 {
                   "id": "{{ID}}",
                   "category": "ACTION",
-                  "type": "BUTTON",
-                  "variant": "SOCIAL",
-                  "eventType": "TRIGGER",
-                  "label": "Continue with Passkey",
-                  "image": "assets/images/icons/fingerprint.svg",
-                  "action": {
-                    "type": "NEXT",
-                    "next": "{{PASSKEY_EXECUTION_STEP_ID}}"
-                  }
+                  "type": "BLOCK",
+                  "components": [
+                    {
+                      "id": "{{ID}}",
+                      "category": "ACTION",
+                      "type": "ACTION",
+                      "variant": "SOCIAL",
+                      "eventType": "TRIGGER",
+                      "label": "Continue with Passkey",
+                      "image": "assets/images/icons/fingerprint.svg",
+                      "action": {
+                        "type": "NEXT",
+                        "next": "{{PASSKEY_EXECUTION_STEP_ID}}"
+                      }
+                    }
+                  ]
                 }
               ]
             }
@@ -614,6 +737,27 @@
                 "type": "EXECUTOR",
                 "executor": {
                   "name": "FIDO2Executor"
+                },
+                "next": "{{AUTH_ASSERT_EXECUTOR_ID}}"
+              }
+            }
+          },
+          {
+            "id": "{{AUTH_ASSERT_EXECUTOR_ID}}",
+            "type": "TASK_EXECUTION",
+            "size": {
+              "width": 200,
+              "height": 113
+            },
+            "position": {
+              "x": 1080,
+              "y": 570
+            },
+            "data": {
+              "action": {
+                "type": "EXECUTOR",
+                "executor": {
+                  "name": "AuthAssertExecutor"
                 },
                 "next": "END"
               }

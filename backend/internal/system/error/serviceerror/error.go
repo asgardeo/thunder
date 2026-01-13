@@ -19,6 +19,10 @@
 // Package serviceerror defines the error structures for the service layer.
 package serviceerror
 
+import (
+	"github.com/asgardeo/thunder/internal/system/i18n/core"
+)
+
 // ServiceErrorType defines the type of service error.
 type ServiceErrorType string
 
@@ -49,6 +53,16 @@ func CustomServiceError(svcError ServiceError, errorDesc string) *ServiceError {
 		err.ErrorDescription = errorDesc
 	}
 	return err
+}
+
+// I18nServiceError defines a service error structure with i18n support.
+// This is the new error type that should be used for services being migrated to i18n.
+// Translatable fields use core.Message instead of plain strings.
+type I18nServiceError struct {
+	Code             string           `json:"code"`
+	Type             ServiceErrorType `json:"type"`
+	Error            core.I18nMessage `json:"error"`
+	ErrorDescription core.I18nMessage `json:"error_description,omitempty"`
 }
 
 // Server errors

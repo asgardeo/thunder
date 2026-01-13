@@ -1,6 +1,6 @@
 {
-    "name": "Basic Registration with Prompt Flow",
-    "handle": "basic-with-prompt-flow",
+    "name": "Default Basic Registration with Prompt Flow",
+    "handle": "default-basic-with-prompt-flow",
     "flowType": "REGISTRATION",
     "nodes": [
         {
@@ -110,7 +110,7 @@
                 {
                     "ref": "input_005",
                     "identifier": "email",
-                    "type": "TEXT_INPUT",
+                    "type": "EMAIL_INPUT",
                     "required": true
                 }
             ],
@@ -160,7 +160,7 @@
                 {
                     "ref": "input_005",
                     "identifier": "email",
-                    "type": "TEXT_INPUT",
+                    "type": "EMAIL_INPUT",
                     "required": true
                 }
             ],

@@ -17,7 +17,7 @@
  */
 
 import {describe, it, expect, beforeEach, afterEach, vi} from 'vitest';
-import {renderHook, waitFor} from '@testing-library/react';
+import {waitFor, renderHook} from '@testing-library/react';
 import {QueryClient, QueryClientProvider} from '@tanstack/react-query';
 import type {ReactNode} from 'react';
 import useGetApplications from '../useGetApplications';
@@ -29,9 +29,13 @@ vi.mock('@asgardeo/react', () => ({
   useAsgardeo: vi.fn(),
 }));
 
-vi.mock('@thunder/commons-contexts', () => ({
-  useConfig: vi.fn(),
-}));
+vi.mock('@thunder/commons-contexts', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@thunder/commons-contexts')>();
+  return {
+    ...actual,
+    useConfig: vi.fn(),
+  };
+});
 
 const {useAsgardeo} = await import('@asgardeo/react');
 const {useConfig} = await import('@thunder/commons-contexts');
@@ -50,8 +54,8 @@ describe('useGetApplications', () => {
         name: 'Test App 1',
         description: 'First test application',
         logo_url: 'https://test-app-1.com/logo.png',
-        auth_flow_graph_id: 'auth_flow_config_basic',
-        registration_flow_graph_id: 'registration_flow_config_basic',
+        auth_flow_id: 'edc013d0-e893-4dc0-990c-3e1d203e005b',
+        registration_flow_id: '80024fb3-29ed-4c33-aa48-8aee5e96d522',
         is_registration_flow_enabled: true,
       },
       {
@@ -59,8 +63,8 @@ describe('useGetApplications', () => {
         name: 'Test App 2',
         description: 'Second test application',
         logo_url: 'https://test-app-2.com/logo.png',
-        auth_flow_graph_id: 'auth_flow_config_advanced',
-        registration_flow_graph_id: 'registration_flow_config_advanced',
+        auth_flow_id: 'edc013d0-e893-4dc0-990c-3e1d203e005b',
+        registration_flow_id: '80024fb3-29ed-4c33-aa48-8aee5e96d522',
         is_registration_flow_enabled: false,
       },
     ],

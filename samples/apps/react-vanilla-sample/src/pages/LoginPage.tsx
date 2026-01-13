@@ -52,15 +52,16 @@ import useAuth from '../hooks/useAuth';
 
 // Define the interface for the authentication input
 interface AuthInput {
-    name: string;
+    identifier: string;
     type: string;
     required: boolean;
+    ref?: string;
     options?: string[];
 }
 
 interface ActionPrompt {
-    type: string;
-    id: string;
+    ref: string;
+    nextNode?: string;
 }
 
 // Define the interface for the authentication response
@@ -206,7 +207,7 @@ const LoginPage = () => {
 
     // Effect to focus on the first OTP input when available.
     useEffect(() => {
-        const hasOTPInput = inputs.some(input => input.type === "otp" || input.name === "otp");
+        const hasOTPInput = inputs.some(input => input.type === "otp" || input.type === "OTP_INPUT" || input.identifier === "otp");
         
         if (hasOTPInput && otpInputRefs.current && otpInputRefs.current.length > 0) {
             setTimeout(() => {
@@ -290,16 +291,37 @@ const LoginPage = () => {
             }
         } else if (data.type === "VIEW") {
             // Handle the VIEW response
-            if (data.data?.actions) {
-                // This is a decision screen
-                setNeedsDecision(true);
-                setAvailableActions(data.data.actions);
-            } else if (data.data?.inputs) {
-                // This is an input prompt
+            // Check if this is an input prompt (has inputs to collect)
+            if (data.data?.inputs && data.data.inputs.length > 0) {
+                // This is an input prompt - show input fields
                 setNeedsDecision(false);
                 data.data.inputs.forEach((input: AuthInput) => {
                     setInputs(prev => [...prev, input]);
                 });
+                // Also store actions for form submission
+                if (data.data?.actions) {
+                    setAvailableActions(data.data.actions);
+                }
+            } else if (data.data?.actions && data.data.actions.length > 1) {
+                // This is a decision screen - multiple actions to choose from
+                setNeedsDecision(true);
+                setAvailableActions(data.data.actions);
+            } else if (data.data?.actions && data.data.actions.length === 1) {
+                // Single action without inputs - auto-execute it to continue the flow
+                // This handles intermediate steps like "send_sms" that don't need user input
+                const singleAction = data.data.actions[0];
+                setLoading(true);
+                submitAuthDecision(flowId, singleAction.ref)
+                    .then((result) => {
+                        processAuthResponse(result.data, singleAction.ref);
+                    })
+                    .catch((error) => {
+                        console.error("Error auto-executing single action:", error);
+                        setError(true);
+                        setErrorMessage('An error occurred. Please try again.');
+                        setLoading(false);
+                    });
+                return; // Don't set loading to false yet
             }
         } else if (data.type === "REDIRECTION") {
             // Handle redirection for social logins
@@ -367,16 +389,35 @@ const LoginPage = () => {
                     setErrorMessage(data.failureReason || defaultMessage);
                 } else if (data.type === "VIEW") {
                     // Handle the VIEW response
-                    if (data.data?.actions) {
-                        // This is a decision screen
-                        setNeedsDecision(true);
-                        setAvailableActions(data.data.actions);
-                    } else if (data.data?.inputs) {
-                        // This is an input prompt
+                    // Check if this is an input prompt (has inputs to collect)
+                    if (data.data?.inputs && data.data.inputs.length > 0) {
+                        // This is an input prompt - show input fields
                         setNeedsDecision(false);
                         data.data.inputs.forEach((input: AuthInput) => {
                             setInputs(prev => [...prev, input]);
                         });
+                        // Also store actions for form submission
+                        if (data.data?.actions) {
+                            setAvailableActions(data.data.actions);
+                        }
+                    } else if (data.data?.actions && data.data.actions.length > 1) {
+                        // This is a decision screen - multiple actions to choose from
+                        setNeedsDecision(true);
+                        setAvailableActions(data.data.actions);
+                    } else if (data.data?.actions && data.data.actions.length === 1) {
+                        // Single action without inputs - auto-execute it
+                        const singleAction = data.data.actions[0];
+                        submitAuthDecision(data.flowId, singleAction.ref)
+                            .then((result) => {
+                                processAuthResponse(result.data, singleAction.ref);
+                            })
+                            .catch((error) => {
+                                console.error("Error auto-executing single action:", error);
+                                setError(true);
+                                setErrorMessage('An error occurred. Please try again.');
+                                setLoading(false);
+                            });
+                        return; // Don't set loading to false yet
                     }
                 } else if (data.type === "REDIRECTION") {
                     // Handle redirection for social logins
@@ -415,8 +456,8 @@ const LoginPage = () => {
         // Ensure all input fields are present in formData, even if empty
         const completeFormData = { ...formData };
         inputs.forEach(input => {
-            if (!(input.name in completeFormData)) {
-                completeFormData[input.name] = '';
+            if (!(input.identifier in completeFormData)) {
+                completeFormData[input.identifier] = '';
             }
         });
 
@@ -433,16 +474,35 @@ const LoginPage = () => {
                     setErrorMessage(data.failureReason || 'Registration failed. Please check your information.');
                 } else if (data.type === "VIEW") {
                     // Handle the VIEW response
-                    if (data.data?.actions) {
-                        // This is a decision screen
-                        setNeedsDecision(true);
-                        setAvailableActions(data.data.actions);
-                    } else if (data.data?.inputs) {
-                        // This is an input prompt
+                    // Check if this is an input prompt (has inputs to collect)
+                    if (data.data?.inputs && data.data.inputs.length > 0) {
+                        // This is an input prompt - show input fields
                         setNeedsDecision(false);
                         data.data.inputs.forEach((input: AuthInput) => {
                             setInputs(prev => [...prev, input]);
                         });
+                        // Also store actions for form submission
+                        if (data.data?.actions) {
+                            setAvailableActions(data.data.actions);
+                        }
+                    } else if (data.data?.actions && data.data.actions.length > 1) {
+                        // This is a decision screen - multiple actions to choose from
+                        setNeedsDecision(true);
+                        setAvailableActions(data.data.actions);
+                    } else if (data.data?.actions && data.data.actions.length === 1) {
+                        // Single action without inputs - auto-execute it
+                        const singleAction = data.data.actions[0];
+                        submitAuthDecision(data.flowId, singleAction.ref)
+                            .then((result) => {
+                                processAuthResponse(result.data, singleAction.ref);
+                            })
+                            .catch((error) => {
+                                console.error("Error auto-executing single action:", error);
+                                setError(true);
+                                setErrorMessage('An error occurred. Please try again.');
+                                setLoading(false);
+                            });
+                        return; // Don't set loading to false yet
                     }
                 } else if (data.type === "REDIRECTION") {
                     // Handle redirection for social logins
@@ -474,12 +534,12 @@ const LoginPage = () => {
         // Ensure all input fields are present in formData, even if empty
         const completeFormData = { ...formData };
         inputs.forEach(input => {
-            if (!(input.name in completeFormData)) {
-                completeFormData[input.name] = '';
+            if (!(input.identifier in completeFormData)) {
+                completeFormData[input.identifier] = '';
             }
         });
 
-        const isMobileInput = inputs.some(input => input.name === "mobileNumber");
+        const isMobileInput = inputs.some(input => input.identifier === "mobileNumber");
 
         if (needsDecision) {
             // This is a decision submission - identify the action from form data
@@ -496,8 +556,9 @@ const LoginPage = () => {
                     });
             }
         } else {
-            // This is a direct input submission
-            submitNativeAuth(flowId, completeFormData)
+            // This is a direct input submission - include action if available
+            const actionRef = availableActions.length > 0 ? availableActions[0].ref : undefined;
+            submitNativeAuth(flowId, completeFormData, actionRef)
                 .then((result) => {
                     if (isMobileInput) {
                         processAuthResponse(result.data, "mobile");
@@ -597,14 +658,14 @@ const LoginPage = () => {
     // Render input fields based on the current inputs array
     const renderInputFields = () => {
         return inputs.map((input, index) => {
-            const inputId = input.name || `input-${index}`;
-            const isPassword = input.type === "password" || input.name === "password";
-            const isOTP = input.type === "otp" || input.name === "otp";
-            const isDropdown = input.type === "dropdown";
+            const inputId = input.identifier || `input-${index}`;
+            const isPassword = input.type === "password" || input.type === "PASSWORD_INPUT" || input.identifier === "password";
+            const isOTP = input.type === "otp" || input.type === "OTP_INPUT" || input.identifier === "otp";
+            const isDropdown = input.type === "dropdown" || input.type === "DROPDOWN";
             const isRequired = input.required;
             
             // Determine appropriate label
-            let label = input.name;
+            let label = input.identifier;
             if (label) {
                 label = label.charAt(0).toUpperCase() + label.slice(1).replace(/_/g, ' ');
             }
@@ -623,10 +684,10 @@ const LoginPage = () => {
                         <InputLabel htmlFor={inputId} sx={{ mb: 1 }}>{label}</InputLabel>
                         <Select
                             id={inputId}
-                            name={input.name}
+                            name={input.identifier}
                             size="small"
-                            value={formData[input.name] || ''}
-                            onChange={(e) => handleSelectChange(input.name, e.target.value)}
+                            value={formData[input.identifier] || ''}
+                            onChange={(e) => handleSelectChange(input.identifier, e.target.value)}
                             required={isRequired}
                             displayEmpty
                         >
@@ -648,10 +709,10 @@ const LoginPage = () => {
                         <OutlinedInput
                             type={showPassword ? 'text' : 'password'}
                             id={inputId}
-                            name={input.name}
+                            name={input.identifier}
                             placeholder={placeholder}
                             size="small"
-                            value={formData[input.name] || ''}
+                            value={formData[input.identifier] || ''}
                             onChange={handleInputChange}
                             required={isRequired}
                             endAdornment={
@@ -709,10 +770,10 @@ const LoginPage = () => {
                         <OutlinedInput
                             type={input.type || "text"}
                             id={inputId}
-                            name={input.name}
+                            name={input.identifier}
                             placeholder={placeholder}
                             size="small"
-                            value={formData[input.name] || ''}
+                            value={formData[input.identifier] || ''}
                             onChange={handleInputChange}
                             required={isRequired}
                         />
@@ -724,18 +785,18 @@ const LoginPage = () => {
 
     // Render the login form with side-by-side layout based on the available actions
     const renderSideBySideLoginForm = () => {
-        const basicAuthAction = availableActions.find(action => action.id === "basic_auth");
+        const basicAuthAction = availableActions.find(action => action.nextNode === "basic_auth");
         const mobileAuthActions = availableActions.filter(action => 
-            action.id === "mobile_prompt_username" || action.id === "prompt_mobile"
+            action.nextNode === "mobile_prompt_username" || action.nextNode === "prompt_mobile"
         );
         
         const hasSocialAuth = availableActions.some(action => 
-            action.id.includes("google") || action.id.includes("github")
+            action.nextNode?.includes("google") || action.nextNode?.includes("github")
         );
         const hasMobileAuth = mobileAuthActions.length > 0;
         
         const socialAuthActions = availableActions.filter(action => 
-            action.id.includes("google") || action.id.includes("github")
+            action.nextNode?.includes("google") || action.nextNode?.includes("github")
         );
         
         return (
@@ -743,7 +804,7 @@ const LoginPage = () => {
                 <Box display="flex" gap={4}>
                     {/* Left: Basic Login */}
                     <Box sx={{ flex: 1 }}>
-                        <form onSubmit={handleSubmit} data-action-id={basicAuthAction?.id}>
+                        <form onSubmit={handleSubmit} data-action-id={basicAuthAction?.ref}>
                             <Box display="flex" flexDirection="column" gap={2}  sx={{ mb: 2, mt: 6.8 }}>
                             </Box>
                             <Box display="flex" flexDirection="column" gap={2} sx={{ mt: 3 }}>
@@ -825,11 +886,11 @@ const LoginPage = () => {
                                         fullWidth
                                         variant="contained"
                                         color="secondary"
-                                        onClick={() => handleAuthOptionSelection(action.id)}
+                                        onClick={() => handleAuthOptionSelection(action.ref)}
                                         sx={{ my: 1 }}
-                                        startIcon={getSocialLoginIcon(action.id)}
+                                        startIcon={getSocialLoginIcon(action.nextNode || '')}
                                     >
-                                        {getSocialLoginText(action.id)}
+                                        {getSocialLoginText(action.nextNode || '')}
                                     </Button>
                                 ))}
                             </Box>
@@ -844,20 +905,20 @@ const LoginPage = () => {
                         {hasMobileAuth && (
                             <form 
                                 onSubmit={handleSubmit}
-                                data-action-id={mobileAuthActions[0]?.id}
+                                data-action-id={mobileAuthActions[0]?.ref}
                             >
                                 <Box display="flex" flexDirection="column" gap={2}>
                                     <Box display="flex" flexDirection="column" gap={0.5}>
-                                        <InputLabel htmlFor={mobileAuthActions[0]?.id === "prompt_mobile" ? "mobileNumber" : "username"}>
-                                            {mobileAuthActions[0]?.id === "prompt_mobile" ? "Mobile Number" : "Username"}
+                                        <InputLabel htmlFor={mobileAuthActions[0]?.nextNode === "prompt_mobile" ? "mobileNumber" : "username"}>
+                                            {mobileAuthActions[0]?.nextNode === "prompt_mobile" ? "Mobile Number" : "Username"}
                                         </InputLabel>
                                         <OutlinedInput
                                             type="text"
-                                            id={mobileAuthActions[0]?.id === "prompt_mobile" ? "mobileNumber" : "username"}
-                                            name={mobileAuthActions[0]?.id === "prompt_mobile" ? "mobileNumber" : "username"}
-                                            placeholder={`Enter your ${mobileAuthActions[0]?.id === "prompt_mobile" ? "mobile number" : "username"}`}
+                                            id={mobileAuthActions[0]?.nextNode === "prompt_mobile" ? "mobileNumber" : "username"}
+                                            name={mobileAuthActions[0]?.nextNode === "prompt_mobile" ? "mobileNumber" : "username"}
+                                            placeholder={`Enter your ${mobileAuthActions[0]?.nextNode === "prompt_mobile" ? "mobile number" : "username"}`}
                                             size="small"
-                                            value={formData[mobileAuthActions[0]?.id === "prompt_mobile" ? "mobileNumber" : "username"] || ''}
+                                            value={formData[mobileAuthActions[0]?.nextNode === "prompt_mobile" ? "mobileNumber" : "username"] || ''}
                                             onChange={handleInputChange}
                                             required
                                         />
@@ -882,19 +943,19 @@ const LoginPage = () => {
 
     // Render the regular login form with options stacked vertically
     const renderRegularLoginForm = () => {
-        const basicAuthAction = availableActions.find(action => action.id === "basic_auth");
+        const basicAuthAction = availableActions.find(action => action.nextNode === "basic_auth");
         const mobileAuthActions = availableActions.filter(action => 
-            action.id === "mobile_prompt_username" || action.id === "prompt_mobile"
+            action.nextNode === "mobile_prompt_username" || action.nextNode === "prompt_mobile"
         );
         
         const hasBasicAuth = !!basicAuthAction;
         const hasSocialAuth = availableActions.some(action => 
-            action.id.includes("google") || action.id.includes("github")
+            action.nextNode?.includes("google") || action.nextNode?.includes("github")
         );
         const hasMobileAuth = mobileAuthActions.length > 0;
         
         const socialAuthActions = availableActions.filter(action => 
-            action.id.includes("google") || action.id.includes("github")
+            action.nextNode?.includes("google") || action.nextNode?.includes("github")
         );
 
         return (
@@ -908,11 +969,11 @@ const LoginPage = () => {
                                 fullWidth
                                 variant="contained"
                                 color="secondary"
-                                onClick={() => handleAuthOptionSelection(action.id)}
+                                onClick={() => handleAuthOptionSelection(action.ref)}
                                 sx={{ my: 1 }}
-                                startIcon={getSocialLoginIcon(action.id)}
+                                startIcon={getSocialLoginIcon(action.nextNode || '')}
                             >
-                                {getSocialLoginText(action.id)}
+                                {getSocialLoginText(action.nextNode || '')}
                             </Button>
                         ))}
                     </Box>
@@ -925,7 +986,7 @@ const LoginPage = () => {
                 
                 {/* Basic auth form */}
                 {hasBasicAuth && (
-                    <form onSubmit={handleSubmit} data-action-id={basicAuthAction?.id}>
+                    <form onSubmit={handleSubmit} data-action-id={basicAuthAction?.ref}>
                         <Box display="flex" flexDirection="column" gap={2}>
                             <Box display="flex" flexDirection="column" gap={0.5}>
                                 <InputLabel htmlFor="username">Username</InputLabel>
@@ -1007,20 +1068,20 @@ const LoginPage = () => {
                 {hasMobileAuth && (
                     <form 
                         onSubmit={handleSubmit} 
-                        data-action-id={mobileAuthActions[0]?.id}
+                        data-action-id={mobileAuthActions[0]?.ref}
                     >
                         <Box display="flex" flexDirection="column" gap={2}>
                             <Box display="flex" flexDirection="column" gap={0.5}>
-                                <InputLabel htmlFor={mobileAuthActions[0]?.id === "prompt_mobile" ? "mobileNumber" : "username"}>
-                                    {mobileAuthActions[0]?.id === "prompt_mobile" ? "Mobile Number" : "Username"}
+                                <InputLabel htmlFor={mobileAuthActions[0]?.nextNode === "prompt_mobile" ? "mobileNumber" : "username"}>
+                                    {mobileAuthActions[0]?.nextNode === "prompt_mobile" ? "Mobile Number" : "Username"}
                                 </InputLabel>
                                 <OutlinedInput
                                     type="text"
-                                    id={mobileAuthActions[0]?.id === "prompt_mobile" ? "mobileNumber" : "username"}
-                                    name={mobileAuthActions[0]?.id === "prompt_mobile" ? "mobileNumber" : "username"}
-                                    placeholder={`Enter your ${mobileAuthActions[0]?.id === "prompt_mobile" ? "mobile number" : "username"}`}
+                                    id={mobileAuthActions[0]?.nextNode === "prompt_mobile" ? "mobileNumber" : "username"}
+                                    name={mobileAuthActions[0]?.nextNode === "prompt_mobile" ? "mobileNumber" : "username"}
+                                    placeholder={`Enter your ${mobileAuthActions[0]?.nextNode === "prompt_mobile" ? "mobile number" : "username"}`}
                                     size="small"
-                                    value={formData[mobileAuthActions[0]?.id === "prompt_mobile" ? "mobileNumber" : "username"] || ''}
+                                    value={formData[mobileAuthActions[0]?.nextNode === "prompt_mobile" ? "mobileNumber" : "username"] || ''}
                                     onChange={handleInputChange}
                                     required
                                 />
@@ -1091,12 +1152,12 @@ const LoginPage = () => {
                             sx={{ mt: 2 }}
                         >
                             {
-                                inputs.some(input => input.name === 'password') ? 
+                                inputs.some(input => input.identifier === 'password') ? 
                                     (isSignupMode ? 
                                         'Create Account' 
                                         : 'Sign In'
                                     ) 
-                                    : inputs.some(input => input.name === 'otp') ? 
+                                    : inputs.some(input => input.identifier === 'otp') ? 
                                         'Verify OTP' 
                                         : 'Continue'
                             }
@@ -1136,14 +1197,14 @@ const LoginPage = () => {
     // Calculate appropriate grid size based on layout complexity
     const gridMdSize = needsDecision 
         && !promptRegistration
-        && availableActions.some(action => action.id === "basic_auth") 
-        && availableActions.some(action => action.id === "mobile_prompt_username" || action.id === "prompt_mobile") 
+        && availableActions.some(action => action.nextNode === "basic_auth") 
+        && availableActions.some(action => action.nextNode === "mobile_prompt_username" || action.nextNode === "prompt_mobile") 
         ? 10 : 6;
     const containerBoxMaxWidth = gridMdSize === 10 ? 1000 : 500;
 
-    const basicAuthAction = availableActions.find(action => action.id === "basic_auth");
+    const basicAuthAction = availableActions.find(action => action.nextNode === "basic_auth");
     const mobileAuthActions = availableActions.filter(action => 
-        action.id === "mobile_prompt_username" || action.id === "prompt_mobile"
+        action.nextNode === "mobile_prompt_username" || action.nextNode === "prompt_mobile"
     );
     
     const hasBasicAuth = !!basicAuthAction;

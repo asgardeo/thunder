@@ -57,8 +57,85 @@ var (
 		},
 	}
 
-	// Application relies on the default flow set by the server. Hence no need
-	// to set the flow IDs here.
+	authzTestFlow = testutils.Flow{
+		Name:     "Authorization Test Auth Flow",
+		FlowType: "AUTHENTICATION",
+		Handle:   "auth_flow_authz_test",
+		Nodes: []map[string]interface{}{
+			{
+				"id":        "start",
+				"type":      "START",
+				"onSuccess": "prompt_credentials",
+			},
+			{
+				"id":   "prompt_credentials",
+				"type": "PROMPT",
+				"inputs": []map[string]interface{}{
+					{
+						"ref":        "input_001",
+						"identifier": "username",
+						"type":       "TEXT_INPUT",
+						"required":   true,
+					},
+					{
+						"ref":        "input_002",
+						"identifier": "password",
+						"type":       "PASSWORD_INPUT",
+						"required":   true,
+					},
+				},
+				"actions": []map[string]interface{}{
+					{
+						"ref":      "action_001",
+						"nextNode": "basic_auth",
+					},
+				},
+			},
+			{
+				"id":   "basic_auth",
+				"type": "TASK_EXECUTION",
+				"inputs": []map[string]interface{}{
+					{
+						"ref":        "input_001",
+						"identifier": "username",
+						"type":       "string",
+						"required":   true,
+					},
+					{
+						"ref":        "input_002",
+						"identifier": "password",
+						"type":       "string",
+						"required":   true,
+					},
+				},
+				"executor": map[string]interface{}{
+					"name": "BasicAuthExecutor",
+				},
+				"onSuccess": "authorization_check",
+			},
+			{
+				"id":   "authorization_check",
+				"type": "TASK_EXECUTION",
+				"executor": map[string]interface{}{
+					"name": "AuthorizationExecutor",
+				},
+				"onSuccess": "auth_assert",
+			},
+			{
+				"id":   "auth_assert",
+				"type": "TASK_EXECUTION",
+				"executor": map[string]interface{}{
+					"name": "AuthAssertExecutor",
+				},
+				"onSuccess": "end",
+			},
+			{
+				"id":   "end",
+				"type": "END",
+			},
+		},
+	}
+
 	authzTestApp = testutils.Application{
 		Name:                      "Authz Flow Test Application",
 		Description:               "Application for testing authorization in flows",
@@ -109,6 +186,7 @@ var (
 
 type FlowAuthzTestSuite struct {
 	suite.Suite
+	config *common.TestSuiteConfig
 }
 
 func TestFlowAuthzTestSuite(t *testing.T) {
@@ -116,6 +194,8 @@ func TestFlowAuthzTestSuite(t *testing.T) {
 }
 
 func (ts *FlowAuthzTestSuite) SetupSuite() {
+	// Initialize config
+	ts.config = &common.TestSuiteConfig{}
 	var err error
 
 	// Create test organization unit
@@ -130,6 +210,12 @@ func (ts *FlowAuthzTestSuite) SetupSuite() {
 	if err != nil {
 		ts.T().Fatalf("Failed to create user schema during setup: %v", err)
 	}
+
+	// Create flow
+	flowID, err := testutils.CreateFlow(authzTestFlow)
+	ts.Require().NoError(err, "Failed to create authorization test flow")
+	ts.config.CreatedFlowIDs = append(ts.config.CreatedFlowIDs, flowID)
+	authzTestApp.AuthFlowID = flowID
 
 	// Create test application
 	authzTestAppID, err = testutils.CreateApplication(authzTestApp)
@@ -221,6 +307,14 @@ func (ts *FlowAuthzTestSuite) TearDownSuite() {
 		}
 	}
 
+	if len(ts.config.CreatedFlowIDs) > 0 {
+		for _, flowID := range ts.config.CreatedFlowIDs {
+			if err := testutils.DeleteFlow(flowID); err != nil {
+				ts.T().Logf("Failed to delete created flow (%s) during teardown: %v", flowID, err)
+			}
+		}
+	}
+
 	if authzTestAppID != "" {
 		if err := testutils.DeleteApplication(authzTestAppID); err != nil {
 			ts.T().Logf("Failed to delete test application during teardown: %v", err)
@@ -259,7 +353,7 @@ func (ts *FlowAuthzTestSuite) TestAuthorizationFlow_UserWithDirectRoleAssignment
 		"password": "SecurePass123!",
 	}
 
-	flowStep, err = common.CompleteFlow(flowStep.FlowID, authInputs, flowStep.Data.Inputs[0].Identifier)
+	flowStep, err = common.CompleteFlow(flowStep.FlowID, authInputs, "action_001")
 	ts.Require().NoError(err, "Failed to complete authentication")
 	ts.Require().NotNil(flowStep, "Flow step should not be nil")
 	ts.Require().Equal("COMPLETE", flowStep.FlowStatus, "Flow should be complete")
@@ -303,7 +397,7 @@ func (ts *FlowAuthzTestSuite) TestAuthorizationFlow_UserWithNoRole() {
 		"password": "SecurePass123!",
 	}
 
-	flowStep, err = common.CompleteFlow(flowStep.FlowID, authInputs, flowStep.Data.Inputs[0].Identifier)
+	flowStep, err = common.CompleteFlow(flowStep.FlowID, authInputs, "action_001")
 	ts.Require().NoError(err, "Failed to complete authentication")
 	ts.Require().NotNil(flowStep, "Flow step should not be nil")
 	ts.Require().Equal("COMPLETE", flowStep.FlowStatus, "Flow should be complete")
@@ -319,7 +413,8 @@ func (ts *FlowAuthzTestSuite) TestAuthorizationFlow_UserWithNoRole() {
 	ts.Require().False(ok, "authorized_permissions claim should not be present")
 }
 
-// TestAuthorizationFlow_UserWithPartialPermissions tests authorization when user has only subset of requested permissions
+// TestAuthorizationFlow_UserWithPartialPermissions tests authorization when user has
+// only subset of requested permissions
 func (ts *FlowAuthzTestSuite) TestAuthorizationFlow_UserWithPartialPermissions() {
 	// Initiate authentication flow requesting 3 permissions (user only has 2)
 	inputs := map[string]string{
@@ -338,7 +433,7 @@ func (ts *FlowAuthzTestSuite) TestAuthorizationFlow_UserWithPartialPermissions()
 		"password": "SecurePass123!",
 	}
 
-	flowStep, err = common.CompleteFlow(flowStep.FlowID, authInputs, flowStep.Data.Inputs[0].Identifier)
+	flowStep, err = common.CompleteFlow(flowStep.FlowID, authInputs, "action_001")
 	ts.Require().NoError(err, "Failed to complete authentication")
 	ts.Require().NotNil(flowStep, "Flow step should not be nil")
 	ts.Require().Equal("COMPLETE", flowStep.FlowStatus, "Flow should be complete")

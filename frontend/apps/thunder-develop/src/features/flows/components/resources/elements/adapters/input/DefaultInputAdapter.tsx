@@ -27,7 +27,7 @@ import PlaceholderComponent from '../PlaceholderComponent';
 
 const INPUT_VALIDATION_FIELD_NAMES = {
   label: 'label',
-  identifier: 'identifier',
+  ref: 'ref',
 } as const;
 
 /**
@@ -82,8 +82,8 @@ function DefaultInputAdapter({resource}: DefaultInputAdapterPropsInterface): Rea
         name: INPUT_VALIDATION_FIELD_NAMES.label,
       },
       {
-        errorMessage: t('flows:core.validation.fields.input.identifier'),
-        name: INPUT_VALIDATION_FIELD_NAMES.identifier,
+        errorMessage: t('flows:core.validation.fields.input.ref'),
+        name: INPUT_VALIDATION_FIELD_NAMES.ref,
       },
     ],
     [t],

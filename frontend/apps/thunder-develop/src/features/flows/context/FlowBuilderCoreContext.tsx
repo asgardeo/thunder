@@ -110,6 +110,13 @@ export interface FlowBuilderCoreContextProps {
    */
   setIsOpenResourcePropertiesPanel: (isOpen: boolean) => void;
   /**
+   * Registers a callback to close the validation panel.
+   * This is used for mutual exclusion between the resource properties panel and validation panel.
+   *
+   * @param callback - The callback function to close the validation panel.
+   */
+  registerCloseValidationPanel: (callback: () => void) => void;
+  /**
    * Function to set the state of the version history panel.
    */
   setIsVersionHistoryPanelOpen: Dispatch<SetStateAction<boolean>>;
@@ -263,6 +270,7 @@ const FlowBuilderCoreContext: Context<FlowBuilderCoreContextProps> = createConte
   setFlowEdgeTypes: () => {},
   setFlowNodeTypes: () => {},
   setIsOpenResourcePropertiesPanel: () => {},
+  registerCloseValidationPanel: () => {},
   setIsResourcePanelOpen: () => {},
   setIsVersionHistoryPanelOpen: () => {},
   setLanguage: () => {},

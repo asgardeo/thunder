@@ -351,6 +351,34 @@ func (suite *AuthAssertExecutorTestSuite) TestExtractAuthenticatorReferences_Unk
 	assert.Empty(suite.T(), refs)
 }
 
+func (suite *AuthAssertExecutorTestSuite) TestExtractAuthenticatorReferences_SMSOTPSendVerifyMode() {
+	history := map[string]*common.NodeExecutionRecord{
+		"sms_send_node": {
+			ExecutorName: ExecutorNameSMSAuth,
+			ExecutorType: common.ExecutorTypeAuthentication,
+			ExecutorMode: "send",
+			Status:       common.FlowStatusComplete,
+			Step:         1,
+			EndTime:      1000,
+		},
+		"sms_verify_node": {
+			ExecutorName: ExecutorNameSMSAuth,
+			ExecutorType: common.ExecutorTypeAuthentication,
+			ExecutorMode: "verify",
+			Status:       common.FlowStatusComplete,
+			Step:         2,
+			EndTime:      2000,
+		},
+	}
+
+	refs := suite.executor.extractAuthenticatorReferences(history)
+
+	// Should only have one SMS OTP authenticator, not two
+	assert.Len(suite.T(), refs, 1)
+	assert.Equal(suite.T(), authncm.AuthenticatorSMSOTP, refs[0].Authenticator)
+	assert.Equal(suite.T(), 1, refs[0].Step)
+}
+
 func (suite *AuthAssertExecutorTestSuite) TestGetUserAttributes_Success() {
 	attrs := map[string]interface{}{"email": "test@example.com", "name": "Test User"}
 	attrsJSON, _ := json.Marshal(attrs)

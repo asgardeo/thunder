@@ -34,7 +34,7 @@ class ResourcePropertyPanelConstants {
   // eslint-disable-next-line @typescript-eslint/no-empty-function
   private constructor() {}
 
-  public static readonly EXCLUDED_PROPERTIES: string[] = ['identifier', 'type'];
+  public static readonly EXCLUDED_PROPERTIES: string[] = ['ref', 'type'];
 }
 
 export default ResourcePropertyPanelConstants;

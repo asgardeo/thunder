@@ -36,6 +36,7 @@ import {useTranslation} from 'react-i18next';
 import {useForm, Controller, useWatch} from 'react-hook-form';
 import {zodResolver} from '@hookform/resolvers/zod';
 import {z} from 'zod';
+import {useLogger} from '@thunder/logger/react';
 import type {UserSchemaListItem} from '@/features/user-types/types/user-types';
 import getConfigurationTypeFromTemplate from '../../utils/getConfigurationTypeFromTemplate';
 import type {PlatformApplicationTemplate, TechnologyApplicationTemplate} from '../../models/application-templates';
@@ -258,6 +259,7 @@ export default function ConfigureDetails({
   onUserTypesChange = undefined,
 }: ConfigureDetailsProps): JSX.Element {
   const {t} = useTranslation();
+  const logger = useLogger('ConfigureDetails');
   const {selectedTemplateConfig} = useApplicationCreate();
   const {
     control,
@@ -296,10 +298,8 @@ export default function ConfigureDetails({
 
         try {
           await trigger('callbackUrl');
-          // eslint-disable-next-line @typescript-eslint/no-unused-vars
         } catch (error) {
-          // TODO: Log the errors
-          // Tracker: https://github.com/asgardeo/thunder/issues/618
+          logger.error('Failed to trigger callback URL validation', {error});
         }
       }
     };
@@ -307,7 +307,7 @@ export default function ConfigureDetails({
     syncCallbackUrl().catch((): void => {
       // optional: swallow/handle error
     });
-  }, [callbackMode, hostingUrl, setValue, onCallbackUrlChange, trigger]);
+  }, [callbackMode, hostingUrl, setValue, onCallbackUrlChange, trigger, logger]);
 
   /**
    * Notify parent of hosting URL changes.

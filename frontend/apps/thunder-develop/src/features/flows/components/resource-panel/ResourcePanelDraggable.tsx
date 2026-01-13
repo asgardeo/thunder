@@ -18,7 +18,7 @@
 
 import {type HTMLAttributes, type ReactElement} from 'react';
 import ResourcePanelItem, {type ResourcePanelItemProps} from './ResourcePanelItem';
-import Draggable from '../dnd/draggable';
+import Draggable from '../dnd/Draggable';
 
 /**
  * Props interface of {@link ResourcePanelDraggable}

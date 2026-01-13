@@ -250,7 +250,7 @@ func (ts *GoogleAuthFlowTestSuite) SetupSuite() {
 	flowID, err := testutils.CreateFlow(googleAuthFlow)
 	ts.Require().NoError(err, "Failed to create Google auth flow")
 	ts.config.CreatedFlowIDs = append(ts.config.CreatedFlowIDs, flowID)
-	googleAuthTestApp.AuthFlowGraphID = flowID
+	googleAuthTestApp.AuthFlowID = flowID
 
 	// Create test application for Google auth tests
 	appID, err := testutils.CreateApplication(googleAuthTestApp)

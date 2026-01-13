@@ -211,7 +211,7 @@ func (ts *HTTPRequestRegistrationFlowTestSuite) SetupSuite() {
 		ts.T().Fatalf("Failed to create registration flow during setup: %v", err)
 	}
 	ts.config.CreatedFlowIDs = append(ts.config.CreatedFlowIDs, flowID)
-	httpRequestRegTestApp.RegistrationFlowGraphID = flowID
+	httpRequestRegTestApp.RegistrationFlowID = flowID
 
 	// Create test application
 	appID, err := testutils.CreateApplication(httpRequestRegTestApp)

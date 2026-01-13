@@ -158,7 +158,7 @@ function ResourceProperties({
       return (
         <>
           {renderElementId()}
-          {resource.type === ElementTypes.Button && (
+          {resource.type === ElementTypes.Action && (
             <ButtonExtendedProperties resource={resource} onChange={handleChange} onVariantChange={onVariantChange} />
           )}
           {renderElementPropertyFactory()}
@@ -197,7 +197,7 @@ function ResourceProperties({
         </>
       );
     case ElementCategories.Display:
-      if (resource.type === ElementTypes.Typography) {
+      if (resource.type === ElementTypes.Text) {
         const hasVariants = !isEmpty(resource?.variants);
 
         return (

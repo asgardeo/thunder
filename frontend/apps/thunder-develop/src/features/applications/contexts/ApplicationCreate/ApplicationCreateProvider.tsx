@@ -17,8 +17,9 @@
  */
 
 import type {PropsWithChildren} from 'react';
-import {useState, useMemo, useCallback} from 'react';
-import {AuthenticatorTypes} from '@/features/integrations/models/authenticators';
+import {useState, useMemo, useCallback, useEffect} from 'react';
+import useGetApplications from '../../api/useGetApplications';
+import {AuthenticatorTypes} from '../../../integrations/models/authenticators';
 import ApplicationCreateContext, {type ApplicationCreateContextType} from './ApplicationCreateContext';
 import {ApplicationCreateFlowSignInApproach, ApplicationCreateFlowStep} from '../../models/application-create-flow';
 import type {
@@ -26,6 +27,7 @@ import type {
   PlatformApplicationTemplate,
   ApplicationTemplate,
 } from '../../models/application-templates';
+import type {BasicFlowDefinition} from '../../../flows/models/responses';
 import generateAppPrimaryColorSuggestions from '../../utils/generateAppPrimaryColorSuggestions';
 
 /**
@@ -46,11 +48,13 @@ const INITIAL_STATE: {
   selectedColor: string;
   appLogo: string | null;
   integrations: Record<string, boolean>;
+  selectedAuthFlow: BasicFlowDefinition | null;
   signInApproach: ApplicationCreateFlowSignInApproach;
   selectedTechnology: TechnologyApplicationTemplate | null;
   selectedPlatform: PlatformApplicationTemplate | null;
   hostingUrl: string;
   callbackUrlFromConfig: string;
+  hasCompletedOnboarding: boolean;
   error: string | null;
 } = {
   currentStep: ApplicationCreateFlowStep.NAME,
@@ -60,11 +64,13 @@ const INITIAL_STATE: {
   integrations: {
     [AuthenticatorTypes.BASIC_AUTH]: true,
   },
+  selectedAuthFlow: null,
   signInApproach: ApplicationCreateFlowSignInApproach.INBUILT as ApplicationCreateFlowSignInApproach,
   selectedTechnology: null,
   selectedPlatform: null,
   hostingUrl: '',
   callbackUrlFromConfig: '',
+  hasCompletedOnboarding: false,
   error: null,
 };
 
@@ -101,11 +107,13 @@ const INITIAL_STATE: {
  * @public
  */
 export default function ApplicationCreateProvider({children}: ApplicationCreateProviderProps) {
+  const {data: applicationsData} = useGetApplications({limit: 1, offset: 0});
   const [currentStep, setCurrentStep] = useState<ApplicationCreateFlowStep>(INITIAL_STATE.currentStep);
   const [appName, setAppName] = useState<string>(INITIAL_STATE.appName);
   const [selectedColor, setSelectedColor] = useState<string>(INITIAL_STATE.selectedColor);
   const [appLogo, setAppLogo] = useState<string | null>(INITIAL_STATE.appLogo);
   const [integrations, setIntegrations] = useState<Record<string, boolean>>(INITIAL_STATE.integrations);
+  const [selectedAuthFlow, setSelectedAuthFlow] = useState<BasicFlowDefinition | null>(INITIAL_STATE.selectedAuthFlow);
   const [signInApproach, setSignInApproach] = useState<ApplicationCreateFlowSignInApproach>(
     INITIAL_STATE.signInApproach,
   );
@@ -118,7 +126,17 @@ export default function ApplicationCreateProvider({children}: ApplicationCreateP
   const [selectedTemplateConfig, setSelectedTemplateConfig] = useState<ApplicationTemplate | null>(null);
   const [hostingUrl, setHostingUrl] = useState<string>(INITIAL_STATE.hostingUrl);
   const [callbackUrlFromConfig, setCallbackUrlFromConfig] = useState<string>(INITIAL_STATE.callbackUrlFromConfig);
+  const [hasCompletedOnboarding, setHasCompletedOnboarding] = useState<boolean>(INITIAL_STATE.hasCompletedOnboarding);
   const [error, setError] = useState<string | null>(INITIAL_STATE.error);
+
+  // Check if user has completed onboarding by checking if they have any applications
+  useEffect(() => {
+    if (applicationsData?.applications && applicationsData.totalResults > 1) {
+      setHasCompletedOnboarding(true);
+    } else if (applicationsData?.applications && applicationsData.totalResults === 0) {
+      setHasCompletedOnboarding(false);
+    }
+  }, [applicationsData?.applications, applicationsData?.totalResults]);
 
   const toggleIntegration = useCallback((integrationId: string): void => {
     setIntegrations((prev) => ({
@@ -133,11 +151,13 @@ export default function ApplicationCreateProvider({children}: ApplicationCreateP
     setSelectedColor(INITIAL_STATE.selectedColor);
     setAppLogo(INITIAL_STATE.appLogo);
     setIntegrations(INITIAL_STATE.integrations);
+    setSelectedAuthFlow(INITIAL_STATE.selectedAuthFlow);
     setSignInApproach(INITIAL_STATE.signInApproach);
     setSelectedTechnology(INITIAL_STATE.selectedTechnology);
     setSelectedPlatform(INITIAL_STATE.selectedPlatform);
     setHostingUrl(INITIAL_STATE.hostingUrl);
     setCallbackUrlFromConfig(INITIAL_STATE.callbackUrlFromConfig);
+    setHasCompletedOnboarding(INITIAL_STATE.hasCompletedOnboarding);
     setError(INITIAL_STATE.error);
   }, []);
 
@@ -154,6 +174,8 @@ export default function ApplicationCreateProvider({children}: ApplicationCreateP
       integrations,
       setIntegrations,
       toggleIntegration,
+      selectedAuthFlow,
+      setSelectedAuthFlow,
       signInApproach,
       setSignInApproach,
       selectedTechnology,
@@ -166,6 +188,8 @@ export default function ApplicationCreateProvider({children}: ApplicationCreateP
       setHostingUrl,
       callbackUrlFromConfig,
       setCallbackUrlFromConfig,
+      hasCompletedOnboarding,
+      setHasCompletedOnboarding,
       error,
       setError,
       reset,
@@ -177,12 +201,14 @@ export default function ApplicationCreateProvider({children}: ApplicationCreateP
       appLogo,
       integrations,
       toggleIntegration,
+      selectedAuthFlow,
       signInApproach,
       selectedTechnology,
       selectedPlatform,
       selectedTemplateConfig,
       hostingUrl,
       callbackUrlFromConfig,
+      hasCompletedOnboarding,
       error,
       reset,
     ],

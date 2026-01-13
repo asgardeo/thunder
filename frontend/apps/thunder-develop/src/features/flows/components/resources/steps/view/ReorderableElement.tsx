@@ -30,9 +30,9 @@ import useFlowBuilderCore from '@/features/flows/hooks/useFlowBuilderCore';
 import type {Resource} from '@/features/flows/models/resources';
 import {BlockTypes} from '@/features/flows/models/elements';
 import VisualFlowConstants from '@/features/flows/constants/VisualFlowConstants';
-import Handle from '../../../dnd/handle';
-import Sortable from '../../../dnd/sortable';
-import type {SortableProps} from '../../../dnd/sortable';
+import Handle from '../../../dnd/Handle';
+import Sortable from '../../../dnd/Sortable';
+import type {SortableProps} from '../../../dnd/Sortable';
 import ValidationErrorBoundary from '../../../validation-panel/ValidationErrorBoundary';
 
 /**

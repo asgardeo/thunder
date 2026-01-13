@@ -213,8 +213,8 @@ func CreateApplication(app Application) (string, error) {
 		"name":                         app.Name,
 		"description":                  app.Description,
 		"is_registration_flow_enabled": app.IsRegistrationFlowEnabled,
-		"auth_flow_graph_id":           app.AuthFlowGraphID,
-		"registration_flow_graph_id":   app.RegistrationFlowGraphID,
+		"auth_flow_id":                 app.AuthFlowID,
+		"registration_flow_id":         app.RegistrationFlowID,
 		"certificate": map[string]interface{}{
 			"type":  "NONE",
 			"value": "",

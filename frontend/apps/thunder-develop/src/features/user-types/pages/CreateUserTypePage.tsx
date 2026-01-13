@@ -37,6 +37,7 @@ import {
 } from '@wso2/oxygen-ui';
 import {ArrowLeft, Plus, Save, X} from '@wso2/oxygen-ui-icons-react';
 import {useTranslation} from 'react-i18next';
+import {useLogger} from '@thunder/logger/react';
 import useCreateUserType from '../api/useCreateUserType';
 import useGetOrganizationUnits from '../../organization-units/api/useGetOrganizationUnits';
 import type {
@@ -50,6 +51,7 @@ import type {
 export default function CreateUserTypePage() {
   const navigate = useNavigate();
   const {t} = useTranslation();
+  const logger = useLogger('CreateUserTypePage');
   const {createUserType, loading, error: createError} = useCreateUserType();
   const {
     data: organizationUnitsResponse,
@@ -247,9 +249,8 @@ export default function CreateUserTypePage() {
 
       // Navigate back to list on success
       await navigate('/user-types');
-    } catch {
-      // TODO: Log the errors
-      // Tracker: https://github.com/asgardeo/thunder/issues/618
+    } catch (error) {
+      logger.error('Failed to create user type or navigate', {error, userTypeName: name});
     }
   };
 

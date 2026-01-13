@@ -26,6 +26,21 @@ import {StepTypes, StaticStepTypes} from '../models/steps';
 import VisualFlowConstants from '../constants/VisualFlowConstants';
 
 /**
+ * Set of input element types for quick lookup
+ */
+const INPUT_ELEMENT_TYPES = new Set<string>([
+  ElementTypes.TextInput,
+  ElementTypes.PasswordInput,
+  ElementTypes.EmailInput,
+  ElementTypes.PhoneInput,
+  ElementTypes.NumberInput,
+  ElementTypes.DateInput,
+  ElementTypes.OtpInput,
+  ElementTypes.Checkbox,
+  ElementTypes.Dropdown,
+]);
+
+/**
  * Extended node type with custom properties used by the canvas
  */
 type CanvasNode = Node<StepData> & {
@@ -135,12 +150,12 @@ function restoreComponents(
     let restoredComponent: Record<string, unknown> = component;
 
     // Normalize INPUT element properties (ensure inputType is set)
-    if (component.type === ElementTypes.Input) {
+    if (INPUT_ELEMENT_TYPES.has(component.type as string)) {
       restoredComponent = normalizeInputProperties(component);
     }
 
-    // Restore action for BUTTON elements
-    if (component.type === ElementTypes.Button || component.type === ElementTypes.Resend) {
+    // Restore action for ACTION elements
+    if (component.type === ElementTypes.Action || component.type === ElementTypes.Resend) {
       restoredComponent = restoreButtonAction(restoredComponent, nodeActions);
     }
 

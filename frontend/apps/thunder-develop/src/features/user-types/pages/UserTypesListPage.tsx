@@ -20,11 +20,13 @@ import {useNavigate} from 'react-router';
 import {Box, Stack, Typography, Button} from '@wso2/oxygen-ui';
 import {Plus} from '@wso2/oxygen-ui-icons-react';
 import {useTranslation} from 'react-i18next';
+import {useLogger} from '@thunder/logger/react';
 import UserTypesList from '../components/UserTypesList';
 
 export default function UserTypesListPage() {
   const navigate = useNavigate();
   const {t} = useTranslation();
+  const logger = useLogger('UserTypesListPage');
 
   return (
     <Box>
@@ -46,9 +48,8 @@ export default function UserTypesListPage() {
                 await navigate('/user-types/create');
               };
 
-              handler().catch(() => {
-                // TODO: Log the errors
-                // Tracker: https://github.com/asgardeo/thunder/issues/618
+              handler().catch((error: unknown) => {
+                logger.error('Failed to navigate to create user type page', {error});
               });
             }}
           >

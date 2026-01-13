@@ -285,12 +285,21 @@ func (suite *InitTestSuite) TestRegisterRoutes_CORSPreflight() {
 	_, _, _, err := Initialize(suite.mux, suite.mockJWTService)
 	suite.NoError(err)
 
-	req := httptest.NewRequest(http.MethodOptions, "/notification-senders/message", nil)
-	w := httptest.NewRecorder()
+	paths := []string{
+		"/notification-senders/message",
+		"/notification-senders/message/test-id",
+		"/notification-senders/otp/send",
+		"/notification-senders/otp/verify",
+	}
 
-	suite.mux.ServeHTTP(w, req)
+	for _, path := range paths {
+		req := httptest.NewRequest(http.MethodOptions, path, nil)
+		w := httptest.NewRecorder()
 
-	suite.NotEqual(http.StatusNotFound, w.Code)
+		suite.mux.ServeHTTP(w, req)
+
+		suite.NotEqual(http.StatusNotFound, w.Code)
+	}
 }
 
 // TestParseToNotificationSenderDTO_ValidYAML tests parsing a valid YAML configuration.

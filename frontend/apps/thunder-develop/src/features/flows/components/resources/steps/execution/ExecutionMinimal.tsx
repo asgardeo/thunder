@@ -49,8 +49,8 @@ function ExecutionMinimal({resource}: ExecutionMinimalPropsInterface): ReactElem
 
   const {t} = useTranslation();
 
-  // Get the executor name from the action data (e.g., "BasicAuthExecutor")
-  const executorName = resource.data?.action?.executor?.name ?? 'Executor';
+  // Get the display label from resource.display.label, falling back to executor name
+  const displayLabel = resource.display?.label ?? resource.data?.action?.executor?.name ?? 'Executor';
 
   const handleConfigClick = (): void => {
     if (stepId !== null) {
@@ -88,7 +88,7 @@ function ExecutionMinimal({resource}: ExecutionMinimalPropsInterface): ReactElem
             fontWeight: 500,
           }}
         >
-          {executorName}
+          {displayLabel}
         </Typography>
         <Tooltip title={t('flows:core.executions.tooltip.configurationHint')}>
           <IconButton

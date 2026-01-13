@@ -203,9 +203,25 @@ curl -X POST https://localhost:8090/export \
   -d '{
     "identity_providers": ["<idp-id>"]
   }' > repository/resources/identity_providers/google-idp.yaml
+
+# Export specific organization units
+curl -X POST https://localhost:8090/export \
+  -H "Content-Type: application/json" \
+  -d '{
+    "organization_units": ["<ou-id-1>", "<ou-id-2>"]
+  }' > repository/resources/organization_units/my-ous.yaml
 ```
 
 See the [Export Configurations Guide](./export-configurations.md) for detailed export instructions.
+
+**⚠️ Organization Units Export Limitation:**
+
+When using wildcard export for organization units (`"organization_units": ["*"]`), only the first 100 organization units will be retrieved due to pagination limits. If you have more than 100 OUs at the root level, they will not be included in the export. 
+
+To export all organization units:
+- Export specific OUs by ID rather than using wildcards
+- Make multiple export requests with specific OU IDs
+- Consider implementing pagination loop logic in your export script to fetch all pages
 
 ### Manual Creation
 
@@ -219,8 +235,8 @@ name: My Application
 description: Production web application
 url: https://myapp.example.com
 logo_url: https://myapp.example.com/logo.png
-auth_flow_graph_id: auth_flow_config_basic
-registration_flow_graph_id: registration_flow_config_basic
+auth_flow_id: edc013d0-e893-4dc0-990c-3e1d203e005b
+registration_flow_id: 80024fb3-29ed-4c33-aa48-8aee5e96d522
 is_registration_flow_enabled: true
 inbound_auth_config:
   - type: oauth2

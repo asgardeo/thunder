@@ -332,7 +332,7 @@ func (ts *PromptActionsAndMFAFlowTestSuite) SetupSuite() {
 	flowID, err := testutils.CreateFlow(promptActionsFlow)
 	ts.Require().NoError(err, "Failed to create prompt actions flow")
 	ts.config.CreatedFlowIDs = append(ts.config.CreatedFlowIDs, flowID)
-	promptActionsTestApp.AuthFlowGraphID = flowID
+	promptActionsTestApp.AuthFlowID = flowID
 
 	// Create test application
 	appID, err := testutils.CreateApplication(promptActionsTestApp)

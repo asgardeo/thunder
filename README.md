@@ -109,7 +109,7 @@ Follow these steps to run WSO2 Thunder using Docker Compose.
     Download the `docker-compose.yml` file using the following command:
 
     ```bash
-    curl -o docker-compose.yml https://raw.githubusercontent.com/asgardeo/thunder/v0.15.0/install/quick-start/docker-compose.yml
+    curl -o docker-compose.yml https://raw.githubusercontent.com/asgardeo/thunder/v0.16.0/install/quick-start/docker-compose.yml
     ```
 
 2. **Start Thunder**
@@ -208,29 +208,46 @@ The React Vanilla sample supports user self-registration and login:
 
 1. Open [https://localhost:3000](https://localhost:3000) and click **"Sign up"** to register a new user.
 
-    ![Self Registration Username Password](resources/images/sample-app-self-registration-basic.png)
+    <p align="left">
+        <img src="resources/images/sample-app-self-registration-basic.png" alt="Self Registration Username Password" width="400">
+    </p>
 
 2. After registration, use the same credentials to **"Sign In"**.
 
-    ![Login to Sample App](resources/images/sample-app-login.png)
+    <p align="left">
+        <img src="resources/images/sample-app-login.png" alt="Login to Sample App" width="400">
+    </p>
 
 3. Upon successful login, you'll see the home page with your access token.
 
-#### Try Out Client Credentials Flow
 
-To try out the Client Credentials flow, you first need to obtain a token to access the System APIs of Thunder. Follow these steps:
+#### Obtain System API Token
 
-Replace `<application_id>` with the sample app ID generated during "Setup the product."
+To access the system APIs of Thunder, you need a token with system permissions. Follow the steps below to obtain a system API token.
+
+1. Run the following command, replacing `<application_id>` with the sample app ID generated during "Setup the product."
 
 ```bash
 curl -k -X POST 'https://localhost:8090/flow/execute' \
-  -d '{"applicationId":"<application_id>","flowType":"AUTHENTICATION", "inputs":{"username":"admin","password":"admin", "requested_permissions":"system"}}'
+  -d '{"applicationId":"<application_id>","flowType":"AUTHENTICATION"}'
+```
+2. Extract the `flowId` value from the response.
+```json
+{"flowId":"<flow_id>","flowStatus":"INCOMPLETE", ...}
 ```
 
-The response will contain an `assertion` field.
+3. Run the following command, replacing `<flow_id>` with the `flowId` value you extracted above.
+```bash
+curl -k -X POST 'https://localhost:8090/flow/execute' \
+  -d '{"flowId":"<flow_id>", "inputs":{"username":"admin","password":"admin", "requested_permissions":"system"},"action": "action_001"}'
+```
+
+4. Obtain the system API token by extracting the `assertion` value from the response.
 ```json
 {"flowId":"<flow_id>","flowStatus":"COMPLETE","data":{},"assertion":"<assertion>"}
 ```
+
+#### Try Out Client Credentials Flow
 
 The Client Credentials flow is used to obtain an access token for machine-to-machine communication. This flow does not require user interaction and is typically used for server-to-server communication.
 
@@ -238,7 +255,9 @@ To try out the Client Credentials flow, follow these steps:
 
 1. Create a Client Application
 
-   Create a client application in the system to use for the Client Credentials flow. You can use the following cURL command to create a new application. Replace `<assertion>` with the assertion value obtained from the previous step.
+   Application creation is secured functionality, so you first need to obtain a system API token as mentioned in the "Obtain System API Token" section above.
+
+   Run the following command, replacing `<assertion>` with the assertion value obtained from the previous step.
 
     ```bash
     curl -kL -X POST -H 'Content-Type: application/json' -H 'Accept: application/json' https://localhost:8090/applications \
@@ -246,7 +265,6 @@ To try out the Client Credentials flow, follow these steps:
     -d '{
         "name": "Test Sample App",
         "description": "Initial testing App",
-        "auth_flow_graph_id": "auth_flow_config_basic",
         "inbound_auth_config": [
             {
                 "type": "oauth2",

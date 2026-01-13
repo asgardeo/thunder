@@ -53,10 +53,11 @@ type GateClientConfig struct {
 	ErrorPath string `yaml:"error_path" json:"error_path"`
 }
 
-// SecurityConfig holds the security configuration details.
-type SecurityConfig struct {
-	CertFile string `yaml:"cert_file" json:"cert_file"`
-	KeyFile  string `yaml:"key_file" json:"key_file"`
+// TLSConfig holds the TLS configuration details.
+type TLSConfig struct {
+	MinVersion string `yaml:"min_version" json:"min_version"`
+	CertFile   string `yaml:"cert_file" json:"cert_file"`
+	KeyFile    string `yaml:"key_file" json:"key_file"`
 }
 
 // DataSource holds the individual database connection details.
@@ -107,6 +108,7 @@ type JWTConfig struct {
 	Issuer         string `yaml:"issuer" json:"issuer"`
 	ValidityPeriod int64  `yaml:"validity_period" json:"validity_period"`
 	Audience       string `yaml:"audience" json:"audience"`
+	PreferredKeyID string `yaml:"preferred_key_id" json:"preferred_key_id"`
 }
 
 // RefreshTokenConfig holds the refresh token configuration details.
@@ -137,6 +139,14 @@ type FlowConfig struct {
 type CryptoConfig struct {
 	Encryption      EncryptionConfig      `yaml:"encryption" json:"encryption"`
 	PasswordHashing PasswordHashingConfig `yaml:"password_hashing" json:"password_hashing"`
+	Keys            []KeyConfig           `yaml:"keys" json:"keys"`
+}
+
+// KeyConfig holds the key configuration details.
+type KeyConfig struct {
+	ID       string `yaml:"id" json:"id"`
+	CertFile string `yaml:"cert_file" json:"cert_file"`
+	KeyFile  string `yaml:"key_file" json:"key_file"`
 }
 
 // EncryptionConfig holds the encryption configuration details.
@@ -236,7 +246,7 @@ type OrganizationUnitConfig struct {
 type Config struct {
 	Server             ServerConfig           `yaml:"server" json:"server"`
 	GateClient         GateClientConfig       `yaml:"gate_client" json:"gate_client"`
-	Security           SecurityConfig         `yaml:"security" json:"security"`
+	TLS                TLSConfig              `yaml:"tls" json:"tls"`
 	Database           DatabaseConfig         `yaml:"database" json:"database"`
 	Cache              CacheConfig            `yaml:"cache" json:"cache"`
 	JWT                JWTConfig              `yaml:"jwt" json:"jwt"`

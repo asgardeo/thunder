@@ -19,6 +19,7 @@
 import {useNavigate, useParams} from 'react-router';
 import {useState, useEffect, useMemo} from 'react';
 import {useTranslation} from 'react-i18next';
+import {useLogger} from '@thunder/logger/react';
 import {
   Box,
   Stack,
@@ -59,6 +60,7 @@ import type {PropertyDefinition, UserSchemaDefinition, PropertyType, SchemaPrope
 export default function ViewUserTypePage() {
   const navigate = useNavigate();
   const {t} = useTranslation();
+  const logger = useLogger('ViewUserTypePage');
   const {id} = useParams<{id: string}>();
   const [isEditMode, setIsEditMode] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -80,7 +82,10 @@ export default function ViewUserTypePage() {
   const [enumInput, setEnumInput] = useState<Record<string, string>>({});
   const [validationError, setValidationError] = useState<string | null>(null);
   const [snackbarOpen, setSnackbarOpen] = useState(false);
-  const organizationUnits = useMemo(() => organizationUnitsResponse?.organizationUnits ?? [], [organizationUnitsResponse]);
+  const organizationUnits = useMemo(
+    () => organizationUnitsResponse?.organizationUnits ?? [],
+    [organizationUnitsResponse],
+  );
   const selectedOrganizationUnit = useMemo(
     () => organizationUnits.find((unit) => unit.id === ouId),
     [organizationUnits, ouId],
@@ -265,11 +270,8 @@ export default function ViewUserTypePage() {
       setDeleteDialogOpen(false);
       // Navigate back to user types list after successful deletion
       await navigate('/user-types');
-      // eslint-disable-next-line @typescript-eslint/no-unused-vars
     } catch (error) {
-      // TODO: Log the errors
-      // Tracker: https://github.com/asgardeo/thunder/issues/618
-
+      logger.error('Failed to delete user type', {error, userTypeId: id});
       setDeleteDialogOpen(false);
     }
   };
@@ -411,7 +413,7 @@ export default function ViewUserTypePage() {
                   size="small"
                   fullWidth
                   displayEmpty
-                  aria-label={t('userTypes:organizationUnit')} 
+                  aria-label={t('userTypes:organizationUnit')}
                   renderValue={(selected) => {
                     const value = typeof selected === 'string' ? selected : '';
                     if (!value) {

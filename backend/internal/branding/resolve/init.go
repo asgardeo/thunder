@@ -42,8 +42,8 @@ func Initialize(
 func registerRoutes(mux *http.ServeMux, resolveHandler *brandingResolveHandler) {
 	opts := middleware.CORSOptions{
 		AllowedMethods:   "GET",
-		AllowedHeaders:   "Content-Type",
-		AllowCredentials: false,
+		AllowedHeaders:   "Content-Type, Authorization",
+		AllowCredentials: true,
 	}
 	mux.HandleFunc(middleware.WithCORS("GET /branding/resolve", resolveHandler.HandleResolveRequest, opts))
 	mux.HandleFunc(middleware.WithCORS("OPTIONS /branding/resolve", func(w http.ResponseWriter, r *http.Request) {

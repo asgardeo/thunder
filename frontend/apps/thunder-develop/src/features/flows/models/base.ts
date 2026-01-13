@@ -82,6 +82,11 @@ export interface Base<T = unknown> extends StrictBase<T> {
 
 export interface BaseDisplay {
   /**
+   * Header text for the resource properties panel.
+   * Falls back to type if not provided.
+   */
+  header?: string;
+  /**
    * Fallback & i18n key value of the label.
    */
   label: string;

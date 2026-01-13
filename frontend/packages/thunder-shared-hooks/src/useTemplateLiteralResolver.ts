@@ -126,30 +126,31 @@ function parseTemplateLiteral(content: string): TemplateLiteralResult {
  * ```typescript
  * // For non-template strings
  * const { resolve } = useTemplateLiteralResolver();
- * const output = resolve('plain text'); // undefined
+ * const output = resolve('plain text'); // 'plain text'
  * ```
  */
 export default function useTemplateLiteralResolver(): TemplateLiteralResolverResult {
   const resolve = useMemo(
-    () => (value?: string): string | undefined => {
-      if (!value || typeof value !== 'string') {
-        return undefined;
-      }
+    () =>
+      (value?: string): string | undefined => {
+        if (!value || typeof value !== 'string') {
+          return undefined;
+        }
 
-      // Check if the string contains template literals
-      const templateLiteralRegex = /\{\{\s*([^}]+)\s*\}\}/;
-      const match: RegExpExecArray | null = templateLiteralRegex.exec(value);
+        // Check if the string contains template literals
+        const templateLiteralRegex = /\{\{\s*([^}]+)\s*\}\}/;
+        const match: RegExpExecArray | null = templateLiteralRegex.exec(value);
 
-      if (!match) {
-        return undefined;
-      }
+        if (!match) {
+          return value;
+        }
 
-      const parsed: TemplateLiteralResult = parseTemplateLiteral(match[1].trim());
+        const parsed: TemplateLiteralResult = parseTemplateLiteral(match[1].trim());
 
-      return parsed.key;
-    },
-    []
+        return parsed.key ?? value;
+      },
+    [],
   );
 
-  return { resolve };
+  return {resolve};
 }

@@ -22,6 +22,7 @@ import userEvent from '@testing-library/user-event';
 import {BrowserRouter} from 'react-router';
 import {QueryClient, QueryClientProvider} from '@tanstack/react-query';
 import {ConfigProvider} from '@thunder/commons-contexts';
+import {LoggerProvider, LogLevel} from '@thunder/logger';
 import type {ReactNode} from 'react';
 import type {ApplicationListResponse} from '../../models/responses';
 import ApplicationsList from '../ApplicationsList';
@@ -105,8 +106,8 @@ describe('ApplicationsList', () => {
         description: 'First test application',
         logo_url: 'https://example.com/logo1.png',
         client_id: 'client_id_1',
-        auth_flow_graph_id: 'auth_flow_basic',
-        registration_flow_graph_id: 'reg_flow_basic',
+        auth_flow_id: 'edc013d0-e893-4dc0-990c-3e1d203e005b',
+        registration_flow_id: '80024fb3-29ed-4c33-aa48-8aee5e96d522',
         is_registration_flow_enabled: true,
       },
       {
@@ -115,8 +116,8 @@ describe('ApplicationsList', () => {
         description: 'Second test application',
         logo_url: '',
         client_id: 'client_id_2',
-        auth_flow_graph_id: 'auth_flow_advanced',
-        registration_flow_graph_id: 'reg_flow_advanced',
+        auth_flow_id: 'edc013d0-e893-4dc0-990c-3e1d203e005b',
+        registration_flow_id: '80024fb3-29ed-4c33-aa48-8aee5e96d522',
         is_registration_flow_enabled: false,
       },
     ],
@@ -160,7 +161,14 @@ describe('ApplicationsList', () => {
       return (
         <QueryClientProvider client={queryClient}>
           <ConfigProvider>
-            <BrowserRouter>{children}</BrowserRouter>
+            <LoggerProvider
+              logger={{
+                level: LogLevel.ERROR,
+                transports: [],
+              }}
+            >
+              <BrowserRouter>{children}</BrowserRouter>
+            </LoggerProvider>
           </ConfigProvider>
         </QueryClientProvider>
       );

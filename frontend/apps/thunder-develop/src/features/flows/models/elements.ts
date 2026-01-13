@@ -41,19 +41,26 @@ export const ElementCategories = {
 } as const;
 
 export const ElementTypes = {
-  Input: 'INPUT',
-  Button: 'BUTTON',
+  TextInput: 'TEXT_INPUT',
+  PasswordInput: 'PASSWORD_INPUT',
+  EmailInput: 'EMAIL_INPUT',
+  PhoneInput: 'PHONE_INPUT',
+  NumberInput: 'NUMBER_INPUT',
+  DateInput: 'DATE_INPUT',
+  OtpInput: 'OTP_INPUT',
+  Checkbox: 'CHECKBOX',
+  Dropdown: 'DROPDOWN',
+  Action: 'ACTION',
   Captcha: 'CAPTCHA',
   Divider: 'DIVIDER',
-  Choice: 'CHOICE',
   Image: 'IMAGE',
   RichText: 'RICH_TEXT',
-  Typography: 'TYPOGRAPHY',
+  Text: 'TEXT',
   Resend: 'RESEND',
 } as const;
 
 export const BlockTypes = {
-  Form: 'FORM',
+  Form: 'BLOCK',
 } as const;
 
 export const InputVariants = {
@@ -79,14 +86,14 @@ export const ButtonTypes = {
 } as const;
 
 export const TypographyVariants = {
-  H1: 'H1',
-  H2: 'H2',
-  H3: 'H3',
-  H4: 'H4',
-  H5: 'H5',
-  H6: 'H6',
-  Body1: 'BODY1',
-  Body2: 'BODY2',
+  H1: 'HEADING_1',
+  H2: 'HEADING_2',
+  H3: 'HEADING_3',
+  H4: 'HEADING_4',
+  H5: 'HEADING_5',
+  H6: 'HEADING_6',
+  Body1: 'BODY_1',
+  Body2: 'BODY_2',
 } as const;
 
 export const DividerVariants = {

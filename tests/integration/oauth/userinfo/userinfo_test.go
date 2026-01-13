@@ -66,6 +66,7 @@ var (
 
 type UserInfoTestSuite struct {
 	suite.Suite
+	flowID        string
 	applicationID string
 	userSchemaID  string
 	userID        string
@@ -100,14 +101,24 @@ func (ts *UserInfoTestSuite) SetupSuite() {
 	// Create test user
 	ts.userID = ts.createTestUser()
 
+	// Create authentication flow
+	ts.flowID = ts.createTestAuthenticationFlow()
+
 	// Create OAuth application
-	ts.applicationID = ts.createTestApplication()
+	ts.applicationID = ts.createTestApplication(ts.flowID)
 }
 
 func (ts *UserInfoTestSuite) TearDownSuite() {
 	// Clean up application
 	if ts.applicationID != "" {
 		ts.deleteApplication(ts.applicationID)
+	}
+
+	// Clean up authentication flow
+	if ts.flowID != "" {
+		if err := testutils.DeleteFlow(ts.flowID); err != nil {
+			ts.T().Logf("Failed to delete authentication flow during teardown: %v", err)
+		}
 	}
 
 	// Clean up user
@@ -153,10 +164,90 @@ func (ts *UserInfoTestSuite) createTestUser() string {
 	return userID
 }
 
-func (ts *UserInfoTestSuite) createTestApplication() string {
+func (ts *UserInfoTestSuite) createTestAuthenticationFlow() string {
+	flow := testutils.Flow{
+		Name:     "Test Auth Flow",
+		FlowType: "AUTHENTICATION",
+		Handle:   "test_auth_flow",
+		Nodes: []map[string]interface{}{
+			{
+				"id":        "start",
+				"type":      "START",
+				"onSuccess": "prompt_credentials",
+			},
+			{
+				"id":   "prompt_credentials",
+				"type": "PROMPT",
+				"inputs": []map[string]interface{}{
+					{
+						"ref":        "input_001",
+						"identifier": "username",
+						"type":       "TEXT_INPUT",
+						"required":   true,
+					},
+					{
+						"ref":        "input_002",
+						"identifier": "password",
+						"type":       "PASSWORD_INPUT",
+						"required":   true,
+					},
+				},
+				"actions": []map[string]interface{}{
+					{
+						"ref":      "action_001",
+						"nextNode": "basic_auth",
+					},
+				},
+			},
+			{
+				"id":   "basic_auth",
+				"type": "TASK_EXECUTION",
+				"inputs": []map[string]interface{}{
+					{
+						"ref":        "input_001",
+						"identifier": "username",
+						"type":       "string",
+						"required":   true,
+					},
+					{
+						"ref":        "input_002",
+						"identifier": "password",
+						"type":       "string",
+						"required":   true,
+					},
+				},
+				"executor": map[string]interface{}{
+					"name": "BasicAuthExecutor",
+				},
+				"onSuccess": "auth_assert",
+			},
+			{
+				"id":   "auth_assert",
+				"type": "TASK_EXECUTION",
+				"executor": map[string]interface{}{
+					"name": "AuthAssertExecutor",
+				},
+				"onSuccess": "end",
+			},
+			{
+				"id":   "end",
+				"type": "END",
+			},
+		},
+	}
+
+	flowID, err := testutils.CreateFlow(flow)
+	ts.Require().NoError(err, "Failed to create test authentication flow")
+	ts.T().Logf("Created test authentication flow with ID: %s", flowID)
+
+	return flowID
+}
+
+func (ts *UserInfoTestSuite) createTestApplication(authFlowID string) string {
 	app := map[string]interface{}{
 		"name":                         appName,
 		"description":                  "Application for UserInfo integration tests",
+		"auth_flow_id":                 authFlowID,
 		"is_registration_flow_enabled": false,
 		"allowed_user_types":           []string{"userinfo-person"},
 		"inbound_auth_config": []map[string]interface{}{
@@ -287,12 +378,18 @@ func (ts *UserInfoTestSuite) getAuthorizationCodeToken(scope string) (string, er
 		return "", fmt.Errorf("failed to extract auth ID: %w", err)
 	}
 
-	// Step 3: Execute authentication flow
+	// Step 3: Initiate authentication flow
+	_, err = testutils.ExecuteAuthenticationFlow(flowID, nil, "")
+	if err != nil {
+		return "", fmt.Errorf("failed to initiate authentication flow: %w", err)
+	}
+
+	// Step 4: Execute authentication flow
 	authInputs := map[string]string{
 		"username": "userinfo_test_user",
 		"password": "SecurePass123!",
 	}
-	flowStep, err := testutils.ExecuteAuthenticationFlow(flowID, authInputs, "")
+	flowStep, err := testutils.ExecuteAuthenticationFlow(flowID, authInputs, "action_001")
 	if err != nil {
 		return "", fmt.Errorf("failed to execute authentication flow: %w", err)
 	}
@@ -301,19 +398,19 @@ func (ts *UserInfoTestSuite) getAuthorizationCodeToken(scope string) (string, er
 		return "", fmt.Errorf("assertion not found in flow step")
 	}
 
-	// Step 4: Complete authorization
+	// Step 5: Complete authorization
 	authzResponse, err := testutils.CompleteAuthorization(authId, flowStep.Assertion)
 	if err != nil {
 		return "", fmt.Errorf("failed to complete authorization: %w", err)
 	}
 
-	// Step 5: Extract authorization code
+	// Step 6: Extract authorization code
 	code, err := testutils.ExtractAuthorizationCode(authzResponse.RedirectURI)
 	if err != nil {
 		return "", fmt.Errorf("failed to extract authorization code: %w", err)
 	}
 
-	// Step 6: Exchange code for token
+	// Step 7: Exchange code for token
 	tokenResult, err := testutils.RequestToken(clientID, clientSecret, code, redirectURI, "authorization_code")
 	if err != nil {
 		return "", fmt.Errorf("failed to request token: %w", err)
@@ -351,12 +448,18 @@ func (ts *UserInfoTestSuite) getRefreshToken(scope string) (string, error) {
 		return "", fmt.Errorf("failed to extract auth ID: %w", err)
 	}
 
-	// Step 3: Execute authentication flow
+	// Step 3: Initiate authentication flow
+	_, err = testutils.ExecuteAuthenticationFlow(flowID, map[string]string{}, "")
+	if err != nil {
+		return "", fmt.Errorf("failed to initiate authentication flow: %w", err)
+	}
+
+	// Step 4: Execute authentication flow
 	authInputs := map[string]string{
 		"username": "userinfo_test_user",
 		"password": "SecurePass123!",
 	}
-	flowStep, err := testutils.ExecuteAuthenticationFlow(flowID, authInputs, "")
+	flowStep, err := testutils.ExecuteAuthenticationFlow(flowID, authInputs, "action_001")
 	if err != nil {
 		return "", fmt.Errorf("failed to execute authentication flow: %w", err)
 	}
@@ -365,19 +468,19 @@ func (ts *UserInfoTestSuite) getRefreshToken(scope string) (string, error) {
 		return "", fmt.Errorf("assertion not found in flow step")
 	}
 
-	// Step 4: Complete authorization
+	// Step 5: Complete authorization
 	authzResponse, err := testutils.CompleteAuthorization(authId, flowStep.Assertion)
 	if err != nil {
 		return "", fmt.Errorf("failed to complete authorization: %w", err)
 	}
 
-	// Step 5: Extract authorization code
+	// Step 6: Extract authorization code
 	code, err := testutils.ExtractAuthorizationCode(authzResponse.RedirectURI)
 	if err != nil {
 		return "", fmt.Errorf("failed to extract authorization code: %w", err)
 	}
 
-	// Step 6: Exchange code for token (this should include refresh_token)
+	// Step 7: Exchange code for token (this should include refresh_token)
 	tokenResult, err := testutils.RequestToken(clientID, clientSecret, code, redirectURI, "authorization_code")
 	if err != nil {
 		return "", fmt.Errorf("failed to request token: %w", err)
@@ -393,7 +496,7 @@ func (ts *UserInfoTestSuite) getRefreshToken(scope string) (string, error) {
 
 	refreshToken := tokenResult.Token.RefreshToken
 
-	// Step 7: Use refresh token to get a new access token
+	// Step 8: Use refresh token to get a new access token
 	tokenData := url.Values{}
 	tokenData.Set("grant_type", "refresh_token")
 	tokenData.Set("refresh_token", refreshToken)

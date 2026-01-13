@@ -17,10 +17,10 @@
  */
 
 import type {JSX} from 'react';
-import { OxygenUIThemeProvider, ColorSchemeToggle } from '@wso2/oxygen-ui';
 import {AsgardeoProvider} from '@asgardeo/react';
 import {useConfig} from '@thunder/commons-contexts';
-import App from './App';
+import {BrandingProvider} from '@thunder/shared-branding';
+import AppWithTheme from './AppWithTheme';
 
 export default function AppWithConfig(): JSX.Element {
   const {getServerUrl} = useConfig();
@@ -30,17 +30,9 @@ export default function AppWithConfig(): JSX.Element {
       baseUrl={getServerUrl() ?? (import.meta.env.VITE_ASGARDEO_BASE_URL as string)}
       platform="AsgardeoV2"
     >
-      <OxygenUIThemeProvider radialBackground>
-          <ColorSchemeToggle
-            sx={{
-              position: 'fixed',
-              top: '2.3rem',
-              right: '3rem',
-              zIndex: 2
-            }}
-          />
-          <App />
-      </OxygenUIThemeProvider>
+      <BrandingProvider>
+        <AppWithTheme />
+      </BrandingProvider>
     </AsgardeoProvider>
   );
 }

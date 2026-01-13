@@ -1,0 +1,167 @@
+/**
+ * Copyright (c) 2025, WSO2 LLC. (https://www.wso2.com).
+ *
+ * WSO2 LLC. licenses this file to you under the Apache License,
+ * Version 2.0 (the "License"); you may not use this file except
+ * in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing,
+ * software distributed under the License is distributed on an
+ * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+ * KIND, either express or implied. See the License for the
+ * specific language governing permissions and limitations
+ * under the License.
+ */
+
+import {describe, it, expect, vi, beforeEach} from 'vitest';
+import {render, screen, fireEvent, waitFor} from '@testing-library/react';
+import {MemoryRouter} from 'react-router';
+import FlowsListPage from '../FlowsListPage';
+
+// Mock @thunder/logger/react
+vi.mock('@thunder/logger/react', () => ({
+  useLogger: () => ({
+    debug: vi.fn(),
+    info: vi.fn(),
+    warn: vi.fn(),
+    error: vi.fn(),
+    withComponent: vi.fn(() => ({
+      debug: vi.fn(),
+      info: vi.fn(),
+      warn: vi.fn(),
+      error: vi.fn(),
+    })),
+  }),
+}));
+
+// Mock react-i18next
+vi.mock('react-i18next', () => ({
+  useTranslation: () => ({
+    t: (key: string) => {
+      const translations: Record<string, string> = {
+        'flows:listing.title': 'Flows',
+        'flows:listing.subtitle': 'Manage your authentication and registration flows',
+        'flows:listing.addFlow': 'Add Flow',
+      };
+      return translations[key] || key;
+    },
+  }),
+}));
+
+// Mock useNavigate
+const mockNavigate = vi.fn();
+vi.mock('react-router', async () => {
+  const actual = await vi.importActual('react-router');
+  return {
+    ...actual,
+    useNavigate: () => mockNavigate,
+  };
+});
+
+// Mock FlowsList component
+vi.mock('../../components/FlowsList', () => ({
+  default: () => <div data-testid="flows-list">FlowsList Component</div>,
+}));
+
+describe('FlowsListPage', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  describe('Rendering', () => {
+    it('should render the page title', () => {
+      render(
+        <MemoryRouter>
+          <FlowsListPage />
+        </MemoryRouter>,
+      );
+
+      expect(screen.getByText('Flows')).toBeInTheDocument();
+    });
+
+    it('should render the page subtitle', () => {
+      render(
+        <MemoryRouter>
+          <FlowsListPage />
+        </MemoryRouter>,
+      );
+
+      expect(screen.getByText('Manage your authentication and registration flows')).toBeInTheDocument();
+    });
+
+    it('should render the Add Flow button', () => {
+      render(
+        <MemoryRouter>
+          <FlowsListPage />
+        </MemoryRouter>,
+      );
+
+      expect(screen.getByRole('button', {name: /add flow/i})).toBeInTheDocument();
+    });
+
+    it('should render FlowsList component', () => {
+      render(
+        <MemoryRouter>
+          <FlowsListPage />
+        </MemoryRouter>,
+      );
+
+      expect(screen.getByTestId('flows-list')).toBeInTheDocument();
+    });
+  });
+
+  describe('Add Flow Button', () => {
+    it('should navigate to login-builder when Add Flow is clicked', async () => {
+      render(
+        <MemoryRouter>
+          <FlowsListPage />
+        </MemoryRouter>,
+      );
+
+      const addButton = screen.getByRole('button', {name: /add flow/i});
+      fireEvent.click(addButton);
+
+      await waitFor(() => {
+        expect(mockNavigate).toHaveBeenCalledWith('/flows/login-builder');
+      });
+    });
+
+    it('should render button with contained variant', () => {
+      render(
+        <MemoryRouter>
+          <FlowsListPage />
+        </MemoryRouter>,
+      );
+
+      const addButton = screen.getByRole('button', {name: /add flow/i});
+      expect(addButton).toHaveClass('MuiButton-contained');
+    });
+  });
+
+  describe('Layout', () => {
+    it('should render title as h1', () => {
+      render(
+        <MemoryRouter>
+          <FlowsListPage />
+        </MemoryRouter>,
+      );
+
+      const title = screen.getByRole('heading', {level: 1});
+      expect(title).toHaveTextContent('Flows');
+    });
+
+    it('should have proper structure with header and list', () => {
+      const {container} = render(
+        <MemoryRouter>
+          <FlowsListPage />
+        </MemoryRouter>,
+      );
+
+      // Check that the page has a box container
+      expect(container.querySelector('.MuiBox-root')).toBeInTheDocument();
+    });
+  });
+});

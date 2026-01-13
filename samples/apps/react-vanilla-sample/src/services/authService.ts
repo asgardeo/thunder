@@ -146,7 +146,7 @@ export const initiateNativeAuthFlowWithData = async (flowType: 'LOGIN' | 'REGIST
     };
 
     if (actionId) {
-        data.actionId = actionId;
+        data.action = actionId;
     }
 
     if (flowType === 'REGISTRATION') {
@@ -194,7 +194,7 @@ export const submitAuthDecision = async (flowId: string, actionId: string, input
 
     const data: Record<string, unknown> = {
         flowId: flowId,
-        actionId: actionId
+        action: actionId
     };
 
     // Include inputs if provided
@@ -225,11 +225,13 @@ export const submitAuthDecision = async (flowId: string, actionId: string, input
  * 
  * @param {string} flowId - The flow ID received from the initiateNativeAuth response.
  * @param {object} payload - The payload containing the form data or other required information.
+ * @param {string} action - Optional action ref to include in the request.
  * @returns {Promise<object>} - A promise that resolves to the response data from the server.
  */
 export const submitNativeAuth = async (
     flowId: string,
-    payload: Record<string, unknown> | NativeAuthSubmitPayload
+    payload: Record<string, unknown> | NativeAuthSubmitPayload,
+    action?: string
 ) => {
     const headers = {
         'Content-Type': 'application/json'
@@ -238,6 +240,11 @@ export const submitNativeAuth = async (
     const data: Record<string, unknown> = {
         flowId: flowId
     };
+
+    // Include action if provided
+    if (action) {
+        data.action = action;
+    }
 
     if ('type' in payload) {
         if (payload.type === NativeAuthSubmitType.INPUT) {

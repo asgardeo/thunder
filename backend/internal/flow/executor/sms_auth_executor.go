@@ -30,7 +30,6 @@ import (
 	"github.com/asgardeo/thunder/internal/notification"
 	notifcommon "github.com/asgardeo/thunder/internal/notification/common"
 	"github.com/asgardeo/thunder/internal/observability"
-	"github.com/asgardeo/thunder/internal/observability/event"
 	"github.com/asgardeo/thunder/internal/system/log"
 	"github.com/asgardeo/thunder/internal/user"
 )
@@ -100,20 +99,6 @@ func newSMSOTPAuthExecutor(
 func (s *smsOTPAuthExecutor) Execute(ctx *core.NodeContext) (*common.ExecutorResponse, error) {
 	logger := s.logger.With(log.String(log.LoggerKeyFlowID, ctx.FlowID))
 	logger.Debug("Executing SMS OTP authentication executor")
-
-	if s.observabilitySvc.IsEnabled() {
-		evt := event.NewEvent(
-			ctx.FlowID,
-			string(event.EventTypeFlowNodeExecutionStarted),
-			event.ComponentFlowEngine,
-		).
-			WithStatus(event.StatusInProgress).
-			WithData(event.DataKey.FlowID, ctx.FlowID).
-			WithData(event.DataKey.AppID, ctx.AppID).
-			WithData(event.DataKey.NodeID, ctx.CurrentNodeID)
-
-		s.observabilitySvc.PublishEvent(evt)
-	}
 
 	execResp := &common.ExecutorResponse{
 		AdditionalData: make(map[string]string),
@@ -240,24 +225,6 @@ func (s *smsOTPAuthExecutor) InitiateOTP(ctx *core.NodeContext,
 
 	logger.Debug("SMS OTP sent successfully")
 	execResp.Status = common.ExecComplete
-
-	if s.observabilitySvc.IsEnabled() {
-		evt := event.NewEvent(
-			ctx.FlowID,
-			string(event.EventTypeFlowNodeExecutionCompleted),
-			event.ComponentFlowEngine,
-		).
-			WithStatus(event.StatusPending).
-			WithData(event.DataKey.FlowID, ctx.FlowID).
-			WithData(event.DataKey.AppID, ctx.AppID).
-			WithData(event.DataKey.NodeID, ctx.CurrentNodeID)
-
-		if userID != nil {
-			evt.WithData(event.DataKey.UserID, *userID)
-		}
-
-		s.observabilitySvc.PublishEvent(evt)
-	}
 
 	return nil
 }
@@ -618,40 +585,9 @@ func (s *smsOTPAuthExecutor) validateOTP(ctx *core.NodeContext, execResp *common
 		logger.Debug("OTP verification failed", log.String("userID", userID),
 			log.String("status", string(verifyResult.Status)))
 
-		if s.observabilitySvc.IsEnabled() {
-			evt := event.NewEvent(
-				ctx.FlowID,
-				string(event.EventTypeFlowNodeExecutionFailed),
-				event.ComponentFlowEngine,
-			).
-				WithStatus(event.StatusFailure).
-				WithData(event.DataKey.FlowID, ctx.FlowID).
-				WithData(event.DataKey.AppID, ctx.AppID).
-				WithData(event.DataKey.NodeID, ctx.CurrentNodeID).
-				WithData(event.DataKey.UserID, userID).
-				WithData(event.DataKey.FailureReason, errorInvalidOTP)
-
-			s.observabilitySvc.PublishEvent(evt)
-		}
-
 		execResp.Status = common.ExecFailure
 		execResp.FailureReason = errorInvalidOTP
 		return nil
-	}
-
-	if s.observabilitySvc.IsEnabled() {
-		evt := event.NewEvent(
-			ctx.FlowID,
-			string(event.EventTypeFlowNodeExecutionCompleted),
-			event.ComponentFlowEngine,
-		).
-			WithStatus(event.StatusSuccess).
-			WithData(event.DataKey.FlowID, ctx.FlowID).
-			WithData(event.DataKey.AppID, ctx.AppID).
-			WithData(event.DataKey.NodeID, ctx.CurrentNodeID).
-			WithData(event.DataKey.UserID, userID)
-
-		s.observabilitySvc.PublishEvent(evt)
 	}
 
 	execResp.RuntimeData["otpSessionToken"] = ""

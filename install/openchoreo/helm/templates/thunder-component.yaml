@@ -56,9 +56,14 @@ spec:
             login_path: "/login"
             error_path: "/error"
 
-          security:
+          tls:
+            min_version: "1.3"
             cert_file: "repository/resources/security/server.cert"
             key_file: "repository/resources/security/server.key"
+
+          crypto:
+            encryption:
+              key: "${THUNDER_CRYPTO_ENCRYPTION_KEY}"
 
           database:
             identity:
@@ -155,6 +160,8 @@ spec:
           value: "{{ .Values.jwt.validity }}"
         - key: THUNDER_OAUTH_REFRESH_TOKEN_VALIDITY
           value: "{{ .Values.oauth.refresh_token_validity }}"
+        - key: THUNDER_CRYPTO_ENCRYPTION_KEY
+          value: "{{ .Values.crypto.encryption.key }}"
 
   endpoints:
     identity-api:

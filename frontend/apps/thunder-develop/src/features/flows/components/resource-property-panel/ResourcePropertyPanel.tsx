@@ -25,7 +25,6 @@ import useFlowBuilderCore from '../../hooks/useFlowBuilderCore';
 import ResourceProperties from './ResourceProperties';
 import {ResourceTypes} from '../../models/resources';
 import {type Element} from '../../models/elements';
-import './ResourcePropertyPanel.scss';
 
 /**
  * Props interface of {@link ResourcePropertyPanel}
@@ -115,28 +114,45 @@ function ResourcePropertyPanel({
           pointerEvents: 'none',
           '& .MuiDrawer-paper': {
             pointerEvents: 'auto',
+            display: 'flex',
+            flexDirection: 'column',
           },
         }}
         hideBackdrop
         className="flow-builder-right-panel"
         variant="temporary"
       >
-        <Box
-          display="flex"
-          justifyContent="space-between"
-          alignItems="center"
-          className="flow-builder-right-panel header"
-        >
+        <Box display="flex" justifyContent="space-between" alignItems="center" paddingBottom={2} flexShrink={0}>
           {resourcePropertiesPanelHeading}
           <IconButton onClick={handleClose}>
             <X height={16} width={16} />
           </IconButton>
         </Box>
-        <div className="flow-builder-right-panel content full-height">
+        <Box
+          sx={{
+            flex: 1,
+            minHeight: 0,
+            overflowY: 'auto',
+            overflowX: 'hidden',
+            '&::-webkit-scrollbar': {
+              width: '6px',
+            },
+            '&::-webkit-scrollbar-track': {
+              background: 'transparent',
+            },
+            '&::-webkit-scrollbar-thumb': {
+              background: 'rgba(0, 0, 0, 0.2)',
+              borderRadius: '3px',
+              '&:hover': {
+                background: 'rgba(0, 0, 0, 0.3)',
+              },
+            },
+          }}
+        >
           <ResourceProperties />
-        </div>
+        </Box>
         {lastInteractedResource?.deletable !== false && (
-          <Box display="flex" justifyContent="flex-end" alignItems="right" className="flow-builder-right-panel footer">
+          <Box display="flex" justifyContent="flex-end" alignItems="right" flexShrink={0}>
             <Button
               variant="outlined"
               onClick={handleDelete}

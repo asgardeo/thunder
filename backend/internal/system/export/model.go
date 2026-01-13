@@ -27,6 +27,8 @@ type ExportRequest struct {
 	NotificationSenders []string `json:"notification_senders,omitempty"`
 	UserSchemas         []string `json:"user_schemas,omitempty"`
 	OrganizationUnits   []string `json:"organization_units,omitempty"`
+	Flows               []string `json:"flows,omitempty"`
+	Translations        []string `json:"translations,omitempty"`
 
 	Options *ExportOptions `json:"options,omitempty"`
 }

@@ -212,3 +212,11 @@ packages:
       structname: '{{.InterfaceName}}Mock'
       pkgname: resource
       filename: "{{.InterfaceName}}_mock_test.go"
+
+  github.com/asgardeo/thunder/internal/system/i18n/mgt:
+    config:
+      all: true
+      dir: internal/system/i18n/mgt
+      structname: '{{.InterfaceName}}Mock'
+      pkgname: mgt
+      filename: "{{.InterfaceName}}_mock_test.go"

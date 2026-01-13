@@ -70,8 +70,8 @@ function PhoneNumberInputAdapter({resource}: PhoneNumberInputAdapterPropsInterfa
         name: 'label',
       },
       {
-        errorMessage: t('flows:core.validation.fields.phoneNumberInput.identifier'),
-        name: 'identifier',
+        errorMessage: t('flows:core.validation.fields.phoneNumberInput.ref'),
+        name: 'ref',
       },
     ],
     [t],

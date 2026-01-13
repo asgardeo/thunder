@@ -27,6 +27,7 @@ PROJECT_BIN_DIR := $(PROJECT_DIR)/bin
 TOOL_BIN ?= $(PROJECT_BIN_DIR)/tools
 GOLANGCI_LINT ?= $(TOOL_BIN)/golangci-lint
 MOCKERY ?= $(TOOL_BIN)/mockery
+I18N_EXTRACTOR ?= $(TOOL_BIN)/i18n-extractor
 
 # Tools versions
 GOLANGCI_LINT_VERSION ?= v1.64.8
@@ -66,7 +67,7 @@ test_unit:
 	./build.sh test_unit $(OS) $(ARCH)
 
 test_integration:
-	./build.sh test_integration $(OS) $(ARCH)
+	./build.sh test_integration "$(OS)" "$(ARCH)" "$(RUN)" "$(PACKAGE)"
 
 build_with_coverage:
 	@echo "================================================================"
@@ -75,7 +76,7 @@ build_with_coverage:
 	./build.sh test_unit $(OS) $(ARCH)
 	ENABLE_COVERAGE=true ./build.sh build_backend $(OS) $(ARCH)
 	./build.sh build_frontend
-	./build.sh test_integration $(OS) $(ARCH)
+	./build.sh test_integration $(OS) $(ARCH) "$(RUN)" "$(PACKAGE)"
 	./build.sh merge_coverage $(OS) $(ARCH)
 	@echo "================================================================"
 
@@ -113,11 +114,23 @@ docker-build-multiarch-push:
 
 lint: lint_backend lint_frontend
 
-lint_backend: golangci-lint
+lint_backend: check_i18n golangci-lint
 	cd backend && $(GOLANGCI_LINT) run ./...
 
 lint_frontend:
 	cd frontend && pnpm install && pnpm build && pnpm lint
+
+generate_i18n: install-i18n-extractor
+	@echo "Extracting i18n messages from backend source code..."
+	cd backend && $(I18N_EXTRACTOR) -source ./internal -output ./internal/system/i18n/core/defaults.go
+	@echo "i18n defaults generated successfully"
+
+check_i18n: install-i18n-extractor
+	@echo "Checking i18n messages..."
+	@cd backend && $(I18N_EXTRACTOR) -source ./internal -output ../defaults.check.go > /dev/null
+	@diff -u backend/internal/system/i18n/core/defaults.go defaults.check.go > /dev/null || (echo "i18n generated file is out of sync. Please run 'make generate_i18n'" && rm defaults.check.go && exit 1)
+	@rm defaults.check.go
+	@echo "i18n messages are up to date"
 
 mockery: install-mockery
 	cd backend && $(MOCKERY) --config .mockery.public.yml
@@ -134,7 +147,7 @@ help:
 	@echo "  package_samples               - Package sample applications."
 	@echo "  build_samples                 - Build sample applications."
 	@echo "  test_unit                     - Run unit tests."
-	@echo "  test_integration              - Run integration tests."
+	@echo "  test_integration              - Run integration tests. Use RUN= for test filter, PACKAGE= for package filter."
 	@echo "  build_with_coverage  		   - Build with coverage flags, run unit and integration tests, and generate combined coverage report."
 	@echo "  build_with_coverage_only      - Build with coverage instrumentation (unit tests only, no integration tests)."
 	@echo "  test                          - Run all tests (unit and integration)."
@@ -150,10 +163,11 @@ help:
 	@echo "  lint_backend                  - Run golangci-lint on the backend code."
 	@echo "  lint_frontend                 - Run ESLint on the frontend code."
 	@echo "  mockery                       - Generate mocks for unit tests using mockery."
+	@echo "  generate_i18n                 - Extract i18n messages and generate defaults.go."
 	@echo "  help                          - Show this help message."
 
 .PHONY: all prepare clean build build_backend build_frontend build_samples package_samples run
-.PHONY: docker-build docker-build-latest docker-build-multiarch 
+.PHONY: docker-build docker-build-latest docker-build-multiarch
 .PHONY: docker-build-multiarch-latest docker-build-multiarch-push
 .PHONY: test_unit test_integration build_with_coverage build_with_coverage_only test
 .PHONY: help go_install_tool
@@ -173,3 +187,11 @@ install-mockery: $(MOCKERY)
 
 $(MOCKERY): $(TOOL_BIN)
 	$(call go_install_tool,$(MOCKERY),github.com/vektra/mockery/v3,$(MOCKERY_VERSION))
+
+install-i18n-extractor: $(I18N_EXTRACTOR)
+
+$(I18N_EXTRACTOR): $(TOOL_BIN)
+	@echo "Running unit tests for i18n-extractor..."
+	cd tools/i18n-extractor && go test -v .
+	@echo "Building i18n-extractor..."
+	cd tools/i18n-extractor && go build -o $(I18N_EXTRACTOR) .

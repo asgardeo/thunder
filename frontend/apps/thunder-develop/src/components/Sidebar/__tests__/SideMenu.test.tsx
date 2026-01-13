@@ -124,7 +124,7 @@ describe('SideMenu', () => {
     });
 
     it('renders expand button when collapsed', () => {
-      render(<SideMenu expanded={false} />);
+      render(<SideMenu defaultExpanded={false} />);
 
       const expandButton = screen.getByLabelText('Expand/Collapse sidebar');
       expect(expandButton).toBeInTheDocument();
@@ -134,7 +134,7 @@ describe('SideMenu', () => {
       vi.useRealTimers(); // Use real timers for user events
       const user = userEvent.setup();
       const handleExpandedChange = vi.fn();
-      render(<SideMenu expanded onExpandedChange={handleExpandedChange} />);
+      render(<SideMenu defaultExpanded onExpandedChange={handleExpandedChange} />);
 
       const collapseButton = screen.getByLabelText('Expand/Collapse sidebar');
       await user.click(collapseButton);
@@ -147,7 +147,7 @@ describe('SideMenu', () => {
       vi.useRealTimers(); // Use real timers for user events
       const user = userEvent.setup();
       const handleExpandedChange = vi.fn();
-      render(<SideMenu expanded={false} onExpandedChange={handleExpandedChange} />);
+      render(<SideMenu defaultExpanded={false} onExpandedChange={handleExpandedChange} />);
 
       const expandButton = screen.getByLabelText('Expand/Collapse sidebar');
       await user.click(expandButton);
@@ -177,27 +177,27 @@ describe('SideMenu', () => {
     });
 
     it('hides logo and title when collapsed', () => {
-      render(<SideMenu expanded={false} />);
+      render(<SideMenu defaultExpanded={false} />);
 
       expect(screen.queryByText('Developer')).not.toBeInTheDocument();
       // Logo should not be rendered when collapsed (it's inside the same conditional block)
     });
 
     it('hides user information when collapsed', () => {
-      render(<SideMenu expanded={false} />);
+      render(<SideMenu defaultExpanded={false} />);
 
       expect(screen.queryByText('John Doe')).not.toBeInTheDocument();
       expect(screen.queryByText('john.doe@example.com')).not.toBeInTheDocument();
     });
 
     it('hides options menu when collapsed', () => {
-      render(<SideMenu expanded={false} />);
+      render(<SideMenu defaultExpanded={false} />);
 
       expect(screen.queryByTestId('options-menu')).not.toBeInTheDocument();
     });
 
     it('still shows user avatar when collapsed', () => {
-      const {container} = render(<SideMenu expanded={false} />);
+      const {container} = render(<SideMenu defaultExpanded={false} />);
 
       const avatar = container.querySelector('.MuiAvatar-root');
       expect(avatar).toBeInTheDocument();
@@ -211,23 +211,23 @@ describe('SideMenu', () => {
     });
 
     it('renders toggle button when disableCollapsible is true and collapsed', () => {
-      render(<SideMenu expanded={false} disableCollapsible />);
+      render(<SideMenu defaultExpanded={false} disableCollapsible />);
 
       // The toggle button is always rendered
       expect(screen.getByLabelText('Expand/Collapse sidebar')).toBeInTheDocument();
     });
 
     it('shows logo and title when disableCollapsible is true', () => {
-      render(<SideMenu expanded={false} disableCollapsible />);
+      render(<SideMenu defaultExpanded={false} disableCollapsible />);
 
-      // When collapsible is disabled, it should still show content even if expanded is false
+      // When collapsible is disabled, it should still show content even if defaultExpanded is false
       expect(screen.getByText('Developer')).toBeInTheDocument();
     });
   });
 
   describe('Drawer width', () => {
     it('has correct width when expanded', () => {
-      const {container} = render(<SideMenu expanded />);
+      const {container} = render(<SideMenu defaultExpanded />);
 
       const drawer = container.querySelector('.MuiDrawer-root');
       const style = window.getComputedStyle(drawer!);
@@ -235,7 +235,7 @@ describe('SideMenu', () => {
     });
 
     it('has correct width when collapsed', () => {
-      const {container} = render(<SideMenu expanded={false} />);
+      const {container} = render(<SideMenu defaultExpanded={false} />);
 
       const drawer = container.querySelector('.MuiDrawer-root');
       const style = window.getComputedStyle(drawer!);
@@ -244,11 +244,11 @@ describe('SideMenu', () => {
   });
 
   describe('Controlled vs Uncontrolled mode', () => {
-    it('works as controlled component when expanded prop is provided', async () => {
+    it('syncs state when defaultExpanded prop changes', async () => {
       vi.useRealTimers(); // Use real timers for user events
       const user = userEvent.setup();
       const handleExpandedChange = vi.fn();
-      const {rerender} = render(<SideMenu expanded onExpandedChange={handleExpandedChange} />);
+      const {rerender} = render(<SideMenu defaultExpanded onExpandedChange={handleExpandedChange} />);
 
       expect(screen.getByText('Developer')).toBeInTheDocument();
 
@@ -256,14 +256,18 @@ describe('SideMenu', () => {
       const collapseButton = screen.getByLabelText('Expand/Collapse sidebar');
       await user.click(collapseButton);
 
-      // Should call handler but not change state (controlled)
+      // Should call handler and change state
       expect(handleExpandedChange).toHaveBeenCalledWith(false);
-      expect(screen.getByText('Developer')).toBeInTheDocument();
 
-      // Parent updates the prop
-      rerender(<SideMenu expanded={false} onExpandedChange={handleExpandedChange} />);
+      // Wait for the state to update
+      await waitFor(() => {
+        expect(screen.queryByText('Developer')).not.toBeInTheDocument();
+      });
 
-      // Now it should be collapsed
+      // Parent updates the prop - should sync state
+      rerender(<SideMenu defaultExpanded={false} onExpandedChange={handleExpandedChange} />);
+
+      // Should remain collapsed
       expect(screen.queryByText('Developer')).not.toBeInTheDocument();
 
       vi.useFakeTimers(); // Restore fake timers
@@ -294,13 +298,13 @@ describe('SideMenu', () => {
     it('provides correct context values when expanded', () => {
       // We can verify context is provided by checking if MenuContent renders
       // (MenuContent depends on SidebarContext)
-      render(<SideMenu expanded />);
+      render(<SideMenu defaultExpanded />);
 
       expect(screen.getByTestId('menu-content')).toBeInTheDocument();
     });
 
     it('provides correct context values when collapsed', () => {
-      render(<SideMenu expanded={false} />);
+      render(<SideMenu defaultExpanded={false} />);
 
       expect(screen.getByTestId('menu-content')).toBeInTheDocument();
     });
@@ -308,10 +312,10 @@ describe('SideMenu', () => {
 
   describe('Transition timing', () => {
     it('sets isFullyExpanded to true after transition when expanding', () => {
-      const {rerender} = render(<SideMenu expanded={false} />);
+      const {rerender} = render(<SideMenu defaultExpanded={false} />);
 
       // Expand the sidebar
-      rerender(<SideMenu expanded />);
+      rerender(<SideMenu defaultExpanded />);
 
       // Fast-forward time to trigger the setTimeout
       vi.advanceTimersByTime(300); // Default enteringScreen duration
@@ -321,10 +325,10 @@ describe('SideMenu', () => {
     });
 
     it('sets isFullyCollapsed to true after transition when collapsing', () => {
-      const {rerender} = render(<SideMenu expanded />);
+      const {rerender} = render(<SideMenu defaultExpanded />);
 
       // Collapse the sidebar
-      rerender(<SideMenu expanded={false} />);
+      rerender(<SideMenu defaultExpanded={false} />);
 
       // Fast-forward time to trigger the setTimeout
       vi.advanceTimersByTime(300); // Default leavingScreen duration
@@ -334,10 +338,10 @@ describe('SideMenu', () => {
     });
 
     it('cleans up timeout when component unmounts during expansion', () => {
-      const {rerender, unmount} = render(<SideMenu expanded={false} />);
+      const {rerender, unmount} = render(<SideMenu defaultExpanded={false} />);
 
       // Start expanding
-      rerender(<SideMenu expanded />);
+      rerender(<SideMenu defaultExpanded />);
 
       // Unmount before timeout completes
       unmount();
@@ -347,10 +351,10 @@ describe('SideMenu', () => {
     });
 
     it('cleans up timeout when component unmounts during collapse', () => {
-      const {rerender, unmount} = render(<SideMenu expanded />);
+      const {rerender, unmount} = render(<SideMenu defaultExpanded />);
 
       // Start collapsing
-      rerender(<SideMenu expanded={false} />);
+      rerender(<SideMenu defaultExpanded={false} />);
 
       // Unmount before timeout completes
       unmount();

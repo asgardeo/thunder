@@ -1,5 +1,5 @@
 {
-    "name": "Google Authentication Flow",
+    "name": "Default Google Authentication Flow",
     "handle": "default-google-flow",
     "flowType": "AUTHENTICATION",
     "nodes": [

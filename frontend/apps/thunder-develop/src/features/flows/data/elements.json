@@ -2,7 +2,7 @@
   {
     "resourceType": "ELEMENT",
     "category": "BLOCK",
-    "type": "FORM",
+    "type": "BLOCK",
     "display": {
       "label": "Form",
       "image": "assets/images/icons/form.svg"
@@ -11,8 +11,7 @@
   {
     "resourceType": "ELEMENT",
     "category": "FIELD",
-    "type": "INPUT",
-    "variant": "TEXT",
+    "type": "TEXT_INPUT",
     "display": {
       "label": "Text Input",
       "image": "assets/images/icons/textbox.svg"
@@ -26,13 +25,12 @@
   {
     "resourceType": "ELEMENT",
     "category": "FIELD",
-    "type": "INPUT",
-    "variant": "PASSWORD",
+    "type": "PASSWORD_INPUT",
     "display": {
       "label": "Password Input",
       "image": "assets/images/icons/password-input.svg"
     },
-    "identifier": "password",
+    "ref": "password",
     "inputType": "password",
     "hint": "",
     "label": "Password",
@@ -42,8 +40,7 @@
   {
     "resourceType": "ELEMENT",
     "category": "FIELD",
-    "type": "INPUT",
-    "variant": "EMAIL",
+    "type": "EMAIL_INPUT",
     "display": {
       "label": "Email Input",
       "image": "assets/images/icons/at.svg"
@@ -57,8 +54,7 @@
   {
     "resourceType": "ELEMENT",
     "category": "FIELD",
-    "type": "INPUT",
-    "variant": "TELEPHONE",
+    "type": "PHONE_INPUT",
     "display": {
       "label": "Phone Input",
       "image": "assets/images/icons/phone.svg"
@@ -72,8 +68,7 @@
   {
     "resourceType": "ELEMENT",
     "category": "FIELD",
-    "type": "INPUT",
-    "variant": "NUMBER",
+    "type": "NUMBER_INPUT",
     "display": {
       "label": "Number Input",
       "image": "assets/images/icons/number-input.svg"
@@ -87,8 +82,7 @@
   {
     "resourceType": "ELEMENT",
     "category": "FIELD",
-    "type": "INPUT",
-    "variant": "DATE",
+    "type": "DATE_INPUT",
     "display": {
       "label": "Date Input",
       "image": "assets/images/icons/date.svg"
@@ -102,15 +96,14 @@
   {
     "resourceType": "ELEMENT",
     "category": "FIELD",
-    "type": "INPUT",
-    "variant": "OTP",
+    "type": "OTP_INPUT",
     "display": {
       "label": "OTP Input",
       "image": "assets/images/icons/transaction-password-otp-verification-code-security.svg"
     },
     "inputType": "text",
     "hint": "",
-    "identifier": "otp",
+    "ref": "otp",
     "label": "OTP",
     "required": false,
     "placeholder": ""
@@ -130,8 +123,7 @@
   {
     "resourceType": "ELEMENT",
     "category": "FIELD",
-    "type": "INPUT",
-    "variant": "CHECKBOX",
+    "type": "CHECKBOX",
     "display": {
       "label": "Checkbox",
       "image": "assets/images/icons/checkbox-check.svg"
@@ -143,13 +135,12 @@
   {
     "resourceType": "ELEMENT",
     "category": "FIELD",
-    "type": "INPUT",
+    "type": "DROPDOWN",
     "display": {
       "label": "Choice",
       "image": "assets/images/icons/boolean.svg",
       "showOnResourcePanel": false
     },
-    "variant": "DROPDOWN",
     "hint": "",
     "label": "Choice",
     "required": false,
@@ -175,7 +166,7 @@
   {
     "resourceType": "ELEMENT",
     "category": "ACTION",
-    "type": "BUTTON",
+    "type": "ACTION",
     "display": {
       "label": "Button",
       "image": "assets/images/icons/button.svg",
@@ -185,12 +176,10 @@
       {
         "resourceType": "ELEMENT",
         "category": "ACTION",
-        "type": "BUTTON",
-        "version": "0.1.0",
+        "type": "ACTION",
         "variant": "PRIMARY",
         "eventType": "TRIGGER",
         "label": "Button",
-        "deprecated": false,
         "display": {
           "label": "Primary Button",
           "image": "assets/images/icons/button.svg"
@@ -199,12 +188,10 @@
       {
         "resourceType": "ELEMENT",
         "category": "ACTION",
-        "type": "BUTTON",
-        "version": "0.1.0",
+        "type": "ACTION",
         "variant": "SECONDARY",
         "eventType": "TRIGGER",
         "label": "Secondary Button",
-        "deprecated": false,
         "display": {
           "label": "Secondary Button",
           "image": "assets/images/icons/button.svg"
@@ -213,12 +200,10 @@
       {
         "resourceType": "ELEMENT",
         "category": "ACTION",
-        "type": "BUTTON",
-        "version": "0.1.0",
+        "type": "ACTION",
         "variant": "TEXT",
         "eventType": "TRIGGER",
         "label": "Text Button",
-        "deprecated": false,
         "display": {
           "label": "Text Button",
           "image": "assets/images/icons/button.svg"
@@ -227,12 +212,10 @@
       {
         "resourceType": "ELEMENT",
         "category": "ACTION",
-        "type": "BUTTON",
-        "version": "0.1.0",
+        "type": "ACTION",
         "variant": "SOCIAL",
         "eventType": "TRIGGER",
         "label": "Social Button",
-        "deprecated": false,
         "display": {
           "label": "Social Button",
           "image": "assets/images/icons/button.svg"
@@ -254,114 +237,98 @@
   {
     "resourceType": "ELEMENT",
     "category": "DISPLAY",
-    "type": "TYPOGRAPHY",
+    "type": "TEXT",
     "display": {
       "label": "Text",
       "image": "assets/images/icons/text-size.svg",
-      "defaultVariant": "H3"
+      "defaultVariant": "HEADING_3"
     },
     "variants": [
       {
         "resourceType": "ELEMENT",
         "category": "DISPLAY",
-        "type": "TYPOGRAPHY",
-        "version": "0.1.0",
-        "variant": "H1",
-        "label": "Heading - H1",
-        "deprecated": false,
+        "type": "TEXT",
+        "variant": "HEADING_1",
+        "label": "Heading 1",
         "display": {
-          "label": "H1",
+          "label": "Heading 1",
           "image": null
         }
       },
       {
         "resourceType": "ELEMENT",
         "category": "DISPLAY",
-        "type": "TYPOGRAPHY",
-        "version": "0.1.0",
-        "variant": "H2",
-        "label": "Heading - H2",
-        "deprecated": false,
+        "type": "TEXT",
+        "variant": "HEADING_2",
+        "label": "Heading 2",
         "display": {
-          "label": "H2",
+          "label": "Heading 2",
           "image": null
         }
       },
       {
         "resourceType": "ELEMENT",
         "category": "DISPLAY",
-        "type": "TYPOGRAPHY",
-        "version": "0.1.0",
-        "variant": "H3",
-        "label": "Heading - H3",
-        "deprecated": false,
+        "type": "TEXT",
+        "variant": "HEADING_3",
+        "label": "Heading 3",
         "display": {
-          "label": "H3",
+          "label": "Heading 3",
           "image": null
         }
       },
       {
         "resourceType": "ELEMENT",
         "category": "DISPLAY",
-        "type": "TYPOGRAPHY",
-        "version": "0.1.0",
-        "variant": "H4",
-        "label": "Heading - H4",
-        "deprecated": false,
+        "type": "TEXT",
+        "variant": "HEADING_4",
+        "label": "Heading 4",
         "display": {
-          "label": "H4",
+          "label": "Heading 4",
           "image": null
         }
       },
       {
         "resourceType": "ELEMENT",
         "category": "DISPLAY",
-        "type": "TYPOGRAPHY",
-        "version": "0.1.0",
-        "variant": "H5",
-        "label": "Heading - H5",
-        "deprecated": false,
+        "type": "TEXT",
+        "variant": "HEADING_5",
+        "label": "Heading 5",
         "display": {
-          "label": "H5",
+          "label": "Heading 5",
           "image": null
         }
       },
       {
         "resourceType": "ELEMENT",
         "category": "DISPLAY",
-        "type": "TYPOGRAPHY",
-        "version": "0.1.0",
-        "variant": "H6",
-        "label": "Heading - H6",
-        "deprecated": false,
+        "type": "TEXT",
+        "variant": "HEADING_6",
+        "label": "Heading 6",
         "display": {
-          "label": "H6",
+          "label": "Heading 6",
           "image": null
         }
       },
       {
         "resourceType": "ELEMENT",
         "category": "DISPLAY",
-        "type": "TYPOGRAPHY",
-        "version": "0.1.0",
-        "variant": "BODY1",
+        "type": "TEXT",
+        "variant": "BODY_1",
         "label": "Body Text",
-        "deprecated": false,
         "display": {
-          "label": "Body1",
+          "label": "Body 1",
           "image": null
         }
       },
       {
         "resourceType": "ELEMENT",
         "category": "DISPLAY",
-        "type": "TYPOGRAPHY",
-        "version": "0.1.0",
-        "variant": "BODY2",
+        "type": "TEXT",
+        "variant": "BODY_2",
         "label": "Body Text - Muted",
-        "deprecated": false,
         "display": {
-          "label": "Body2",
+          "label": "Body 2",
           "image": null
         }
       }
@@ -392,8 +359,6 @@
         "resourceType": "ELEMENT",
         "category": "DISPLAY",
         "type": "DIVIDER",
-        "version": "0.1.0",
-        "deprecated": false,
         "variant": "HORIZONTAL",
         "label": "Or",
         "display": {
@@ -407,8 +372,6 @@
     "resourceType": "ELEMENT",
     "category": "DISPLAY",
     "type": "IMAGE",
-    "version": "0.1.0",
-    "deprecated": false,
     "display": {
       "label": "Image",
       "image": "assets/images/icons/image-square.svg"

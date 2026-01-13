@@ -115,6 +115,23 @@ export default function ConfigProvider({children}: ConfigProviderProps) {
         const origin: string = typeof window !== 'undefined' ? window.location.origin : '';
         return base ? `${origin}${base}` : origin;
       },
+      getClientUuid: () => {
+        // First, check if UUID is available in configuration
+        if (config.client.uuid) {
+          return config.client.uuid;
+        }
+
+        // If not in config, try to get applicationId from URL parameters
+        if (typeof window !== 'undefined') {
+          const urlParams = new URLSearchParams(window.location.search);
+          const applicationId = urlParams.get('applicationId');
+          if (applicationId) {
+            return applicationId;
+          }
+        }
+
+        return undefined;
+      },
     }),
     [config],
   );

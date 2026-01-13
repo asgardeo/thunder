@@ -30,7 +30,6 @@ import generateResourceId from '../utils/generateResourceId';
 import PluginRegistry from '../plugins/PluginRegistry';
 import FlowEventTypes from '../models/extension';
 import autoAssignConnections from '../utils/autoAssignConnections';
-import applyAutoLayout from '../utils/applyAutoLayout';
 import type {MetadataInterface} from '../models/metadata';
 import type {Base} from '../models/base';
 
@@ -130,32 +129,17 @@ const useResourceAdd = (props: UseResourceAddProps): ((resource: Resource) => vo
         });
       };
 
-      applyAutoLayout(newNodes, newEdges, {
-        direction: 'RIGHT',
-        nodeSpacing: 150,
-        rankSpacing: 300,
-        offsetX: 50,
-        offsetY: 50,
-      })
-        .then((layoutedNodes) => {
-          setNodes(layoutedNodes);
-          setEdges([...newEdges]);
-          requestAnimationFrame(() => {
-            updateAllNodeInternals(layoutedNodes);
-            requestAnimationFrame(() => {
-              fitView({padding: 0.2, duration: 300}).catch(() => {
-                // Ignore fitView errors
-              });
-            });
-          });
-        })
-        .catch(() => {
-          setNodes(newNodes);
-          setEdges([...newEdges]);
-          requestAnimationFrame(() => {
-            updateAllNodeInternals(newNodes);
+      // Skip auto-layout for starter templates - use positions from template directly
+      setNodes(newNodes);
+      setEdges([...newEdges]);
+      requestAnimationFrame(() => {
+        updateAllNodeInternals(newNodes);
+        requestAnimationFrame(() => {
+          fitView({padding: 0.2, duration: 300}).catch(() => {
+            // Ignore fitView errors
           });
         });
+      });
 
       // Don't open properties panel for templates - just track the resource without opening panel
       return;
@@ -217,32 +201,17 @@ const useResourceAdd = (props: UseResourceAddProps): ((resource: Resource) => vo
         });
       };
 
-      applyAutoLayout(newNodes, newEdges, {
-        direction: 'RIGHT',
-        nodeSpacing: 150,
-        rankSpacing: 300,
-        offsetX: 50,
-        offsetY: 50,
-      })
-        .then((layoutedNodes) => {
-          setNodes(layoutedNodes);
-          setEdges([...newEdges]);
-          requestAnimationFrame(() => {
-            updateAllNodeInternals(layoutedNodes);
-            requestAnimationFrame(() => {
-              fitView({padding: 0.2, duration: 300}).catch(() => {
-                // Ignore fitView errors
-              });
-            });
-          });
-        })
-        .catch(() => {
-          setNodes(newNodes);
-          setEdges([...newEdges]);
-          requestAnimationFrame(() => {
-            updateAllNodeInternals(newNodes);
+      // Skip auto-layout for widgets - use positions from widget definition directly
+      setNodes(newNodes);
+      setEdges([...newEdges]);
+      requestAnimationFrame(() => {
+        updateAllNodeInternals(newNodes);
+        requestAnimationFrame(() => {
+          fitView({padding: 0.2, duration: 300}).catch(() => {
+            // Ignore fitView errors
           });
         });
+      });
 
       // Don't open properties panel for widgets - just track the resource without opening panel
       return;

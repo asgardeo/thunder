@@ -1,5 +1,5 @@
 {
-    "name": "SMS OTP Registration Flow",
+    "name": "Default SMS OTP Registration Flow",
     "handle": "default-sms-otp-flow",
     "flowType": "REGISTRATION",
     "nodes": [
@@ -23,7 +23,7 @@
                 {
                     "ref": "input_001",
                     "identifier": "mobileNumber",
-                    "type": "TEXT_INPUT",
+                    "type": "PHONE_INPUT",
                     "required": true
                 }
             ],
@@ -53,7 +53,7 @@
                 {
                     "ref": "input_002",
                     "identifier": "otp",
-                    "type": "TEXT_INPUT",
+                    "type": "OTP_INPUT",
                     "required": true
                 }
             ],
@@ -67,6 +67,9 @@
         {
             "id": "verify_sms",
             "type": "TASK_EXECUTION",
+            "properties": {
+                "senderId": "<your-sender-id>"
+            },
             "executor": {
                 "name": "SMSOTPAuthExecutor",
                 "mode": "verify"
@@ -92,13 +95,13 @@
                 {
                     "ref": "input_004",
                     "identifier": "email",
-                    "type": "TEXT_INPUT",
+                    "type": "EMAIL_INPUT",
                     "required": true
                 },
                 {
                     "ref": "input_005",
                     "identifier": "mobileNumber",
-                    "type": "TEXT_INPUT",
+                    "type": "PHONE_INPUT",
                     "required": true
                 }
             ],

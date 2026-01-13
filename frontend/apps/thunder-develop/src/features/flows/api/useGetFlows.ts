@@ -19,7 +19,8 @@
 import {useQuery, type UseQueryResult} from '@tanstack/react-query';
 import {useConfig} from '@thunder/commons-contexts';
 import {useAsgardeo} from '@asgardeo/react';
-import type {FlowListResponse, FlowType} from '../models/responses';
+import type {FlowListResponse} from '../models/responses';
+import type {FlowType} from '../models/flows';
 import FlowQueryKeys from '../constants/flow-query-keys';
 
 /**
@@ -47,16 +48,17 @@ export interface UseGetFlowsParams {
  * caching, refetching, and background updates. The query is keyed by the pagination
  * and filter parameters to ensure proper cache management.
  *
- * @param params - Optional pagination and filter parameters
- * @param params.flowType - Filter by flow type (AUTHENTICATION or REGISTRATION)
- * @param params.limit - Maximum number of records to return (default: 30)
+ * @param params - Optional pagination and filtering parameters
+ * @param params.flowType - Filter flows by type (AUTHENTICATION or REGISTRATION)
+ * @param params.limit - Maximum number of records to return (default: 30, max: 100)
  * @param params.offset - Number of records to skip for pagination (default: 0)
  * @returns TanStack Query result object containing flows list data, loading state, and error information
  *
  * @example
  * ```tsx
+ * // Fetch all flows with default pagination
  * function FlowsList() {
- *   const { data, isLoading, error } = useGetFlows({ limit: 10, offset: 0 });
+ *   const { data, isLoading, error } = useGetFlows();
  *
  *   if (isLoading) return <div>Loading...</div>;
  *   if (error) return <div>Error: {error.message}</div>;
@@ -64,12 +66,42 @@ export interface UseGetFlowsParams {
  *   return (
  *     <ul>
  *       {data?.flows.map((flow) => (
- *         <li key={flow.id}>{flow.name}</li>
+ *         <li key={flow.id}>{flow.name} ({flow.flowType})</li>
  *       ))}
  *     </ul>
  *   );
  * }
  * ```
+ *
+ * @example
+ * ```tsx
+ * // Fetch only authentication flows with custom pagination
+ * function AuthFlowsList() {
+ *   const { data, isLoading, error } = useGetFlows({
+ *     flowType: FlowType.AUTHENTICATION,
+ *     limit: 10,
+ *     offset: 0
+ *   });
+ *
+ *   if (isLoading) return <div>Loading authentication flows...</div>;
+ *   if (error) return <div>Error: {error.message}</div>;
+ *
+ *   return (
+ *     <div>
+ *       <h2>Authentication Flows ({data?.totalResults} total)</h2>
+ *       <ul>
+ *         {data?.flows.map((flow) => (
+ *           <li key={flow.id}>
+ *             {flow.name} - Version {flow.activeVersion}
+ *           </li>
+ *         ))}
+ *       </ul>
+ *     </div>
+ *   );
+ * }
+ * ```
+ *
+ * @public
  */
 export default function useGetFlows(params?: UseGetFlowsParams): UseQueryResult<FlowListResponse> {
   const {http} = useAsgardeo();

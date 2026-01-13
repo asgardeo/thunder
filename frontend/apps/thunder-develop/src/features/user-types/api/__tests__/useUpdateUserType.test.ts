@@ -17,8 +17,8 @@
  */
 
 import {describe, it, expect, beforeEach, afterEach, vi} from 'vitest';
-import {renderHook, waitFor} from '@testing-library/react';
-
+import {waitFor} from '@testing-library/react';
+import {renderHook} from '../../../../test/test-utils';
 import useUpdateUserType from '../useUpdateUserType';
 import type {ApiUserSchema, UpdateUserSchemaRequest} from '../../types/user-types';
 
@@ -32,11 +32,15 @@ vi.mock('@asgardeo/react', () => ({
 }));
 
 // Mock useConfig
-vi.mock('@thunder/commons-contexts', () => ({
-  useConfig: () => ({
-    getServerUrl: () => 'https://localhost:8090',
-  }),
-}));
+vi.mock('@thunder/commons-contexts', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@thunder/commons-contexts')>();
+  return {
+    ...actual,
+    useConfig: () => ({
+      getServerUrl: () => 'https://localhost:8090',
+    }),
+  };
+});
 
 describe('useUpdateUserType', () => {
   const mockUserTypeId = '123';
@@ -186,9 +190,7 @@ describe('useUpdateUserType', () => {
   it('should support multiple sequential updates', async () => {
     const secondSchema = {...mockUserSchema, id: '456', name: 'Another'};
 
-    mockHttpRequest
-      .mockResolvedValueOnce({data: mockUserSchema})
-      .mockResolvedValueOnce({data: secondSchema});
+    mockHttpRequest.mockResolvedValueOnce({data: mockUserSchema}).mockResolvedValueOnce({data: secondSchema});
 
     const {result} = renderHook(() => useUpdateUserType());
 

@@ -217,7 +217,6 @@ func extractOTPFromMessage(message string) string {
 		score := calculateOTPScore(currentNumber)
 		if score > bestScore {
 			bestSequence = currentNumber
-			bestScore = score
 		}
 	}
 

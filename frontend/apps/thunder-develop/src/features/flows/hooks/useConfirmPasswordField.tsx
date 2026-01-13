@@ -23,7 +23,7 @@ import {useCallback, useEffect} from 'react';
 import PluginRegistry from '../plugins/PluginRegistry';
 import FlowEventTypes from '../models/extension';
 import VisualFlowConstants from '../constants/VisualFlowConstants';
-import {BlockTypes, ElementTypes, InputVariants} from '../models/elements';
+import {BlockTypes, ElementTypes} from '../models/elements';
 import FlowBuilderElementConstants from '../constants/FlowBuilderElementConstants';
 import type {Element} from '../models/elements';
 import type {Properties} from '../models/base';
@@ -73,7 +73,7 @@ const useConfirmPasswordField = (): void => {
     element: Element,
     stepId: string,
   ): Promise<boolean> => {
-    if (element.type === ElementTypes.Input && element.variant === InputVariants.Password) {
+    if (element.type === ElementTypes.PasswordInput) {
       if (propertyKey === 'requireConfirmation' && !newValue) {
         updateNodeData(stepId, (node: Node) => {
           if (!node.data.components) {
@@ -191,7 +191,7 @@ const useConfirmPasswordField = (): void => {
    * @returns return true.
    */
   const addConfirmPasswordFieldProperties = useCallback((resource: Element, properties: Properties, stepId: string): boolean => {
-    if (resource.type === ElementTypes.Input && resource.variant === InputVariants.Password) {
+    if (resource.type === ElementTypes.PasswordInput) {
       const resourceIdentifier = (resource as Element & {identifier?: string})?.identifier;
       if (resourceIdentifier === FlowBuilderElementConstants.PASSWORD_IDENTIFIER) {
         let passwordConfirmationField: Element | undefined;
@@ -282,7 +282,7 @@ const useConfirmPasswordField = (): void => {
     element: Element,
     stepId: string,
   ): Promise<boolean> => {
-    if (element.type === ElementTypes.Input && element.variant === InputVariants.Password) {
+    if (element.type === ElementTypes.PasswordInput) {
       if (
         propertyKey === 'confirmHint' ||
         propertyKey === 'confirmLabel' ||
@@ -356,8 +356,7 @@ const useConfirmPasswordField = (): void => {
   const deleteConfirmPasswordField = useCallback(async (stepId: string, resource: Element): Promise<boolean> => {
     const resourceIdentifier = (resource as Element & {identifier?: string})?.identifier;
     if (
-      resource.type === ElementTypes.Input &&
-      resource.variant === InputVariants.Password &&
+      resource.type === ElementTypes.PasswordInput &&
       resourceIdentifier === FlowBuilderElementConstants.PASSWORD_IDENTIFIER
     ) {
       updateNodeData(stepId, (node: Node) => {

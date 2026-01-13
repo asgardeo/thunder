@@ -32,7 +32,7 @@ export default function DashboardLayout({dense = false}: DashboardLayoutProps): 
     <NavigationProvider>
       <Layout sx={{minHeight: '100vh'}}>
         <Layout.Sidebar>
-          <SideMenu />
+          <SideMenu defaultExpanded={!dense} />
         </Layout.Sidebar>
         <Layout.Content>
           <Layout.Header>

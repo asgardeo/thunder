@@ -289,7 +289,7 @@ func (ts *HTTPRequestExecutorTestSuite) SetupSuite() {
 	ts.Require().NoError(err, "Failed to create HTTP request executor flow")
 	ts.config.CreatedFlowIDs = append(ts.config.CreatedFlowIDs, flowID)
 	ts.testFlowID = flowID
-	httpRequestExecutorTestApp.AuthFlowGraphID = flowID
+	httpRequestExecutorTestApp.AuthFlowID = flowID
 
 	// Create test application
 	appID, err := testutils.CreateApplication(httpRequestExecutorTestApp)

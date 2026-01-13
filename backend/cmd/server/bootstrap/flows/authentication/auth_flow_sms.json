@@ -1,5 +1,5 @@
 {
-    "name": "SMS OTP Authentication Flow",
+    "name": "Default SMS OTP Authentication Flow",
     "handle": "default-sms-otp-flow",
     "flowType": "AUTHENTICATION",
     "nodes": [
@@ -15,7 +15,7 @@
                 {
                     "ref": "input_001",
                     "identifier": "mobileNumber",
-                    "type": "TEXT_INPUT",
+                    "type": "PHONE_INPUT",
                     "required": true
                 }
             ],
@@ -45,7 +45,7 @@
                 {
                     "ref": "input_002",
                     "identifier": "otp",
-                    "type": "TEXT_INPUT",
+                    "type": "OTP_INPUT",
                     "required": true
                 }
             ],
@@ -59,6 +59,9 @@
         {
             "id": "verify_sms",
             "type": "TASK_EXECUTION",
+            "properties": {
+                "senderId": "<your-sender-id>"
+            },
             "executor": {
                 "name": "SMSOTPAuthExecutor",
                 "mode": "verify"

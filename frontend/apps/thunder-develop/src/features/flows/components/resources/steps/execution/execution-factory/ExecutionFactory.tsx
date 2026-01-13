@@ -24,6 +24,7 @@ import resolveStaticResourcePath from '@/features/flows/utils/resolveStaticResou
 import type {ExecutionMinimalPropsInterface} from '../ExecutionMinimal';
 import GoogleExecution from './GoogleExecution';
 import GithubExecution from './GithubExecution';
+import SmsOtpExecution from './SmsOtpExecution';
 
 /**
  * Props interface of {@link CommonStepFactory}
@@ -48,13 +49,17 @@ function ExecutionFactory({resource}: ExecutionFactoryPropsInterface): ReactElem
   const displayImage = resource.display?.image;
   const displayLabel = resource.display?.label;
 
-  // Google and GitHub executors have special validation logic
+  // Google, GitHub, and SMS OTP executors have special validation logic
   if (executorName === ExecutionTypes.GoogleFederation) {
     return <GoogleExecution resource={resource} />;
   }
 
   if (executorName === ExecutionTypes.GithubFederation) {
     return <GithubExecution resource={resource} />;
+  }
+
+  if (executorName === ExecutionTypes.SMSOTPAuth) {
+    return <SmsOtpExecution resource={resource} />;
   }
 
   // For all other executors, render with icon from display.image if available

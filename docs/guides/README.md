@@ -10,18 +10,34 @@ Thunder is a modern, open-source identity management service designed for teams 
 
 System APIs of Thunder are secured by default. You need to obtain an access token with `system` scope by authenticating as an admin user. Follow these steps:
 
-1. **Authenticate and obtain an access token:**
+1. **Initiate the authentication flow:**
 
-   Replace `<application_id>` with the sample app ID generated during "Setup the product."
+   Run the following command, replacing `<application_id>` with the sample app ID generated during "Setup the product."
 
    ```bash
    curl -k -X POST 'https://localhost:8090/flow/execute' \
-     -d '{"applicationId":"<application_id>","flowType":"AUTHENTICATION", "inputs":{"username":"admin","password":"admin", "requested_permissions":"system"}}'
+     -d '{"applicationId":"<application_id>","flowType":"AUTHENTICATION"}'
    ```
 
-2. **Extract the assertion from the response:**
+2. **Extract the flowId from the response:**
 
-   The response will contain an `assertion` field:
+   ```json
+   {"flowId":"<flow_id>","flowStatus":"INCOMPLETE", ...}
+   ```
+
+3. **Submit credentials:**
+
+   Run the following command, replacing `<flow_id>` with the `flowId` value you extracted above.
+
+   ```bash
+   curl -k -X POST 'https://localhost:8090/flow/execute' \
+     -d '{"flowId":"<flow_id>", "inputs":{"username":"admin","password":"admin","requested_permissions":"system"},"action":"action_001"}'
+   ```
+
+4. **Extract the assertion from the response:**
+
+   Obtain the system API token by extracting the `assertion` value from the response.
+
    ```json
    {"flowId":"<flow_id>","flowStatus":"COMPLETE","data":{},"assertion":"<assertion>"}
    ```
@@ -59,6 +75,15 @@ Learn how to implement authentication in your applications using Thunder:
 Implement user registration and self-service onboarding:
 
 - **[Server Orchestrated Flows](registration/server-orchestrated-flow/)** - Self-registration using server orchestrated flows
+
+### [Flows](flows/)
+
+Design and manage orchestrate identity flows:
+
+- **[Flow Creation Guide](flows/flow-creation-guide.md)** - Create flows using Visual Flow Builder or API
+- **[Flow Management](flows/flow-management.md)** - Update, version, and delete flows
+- **[Flow Examples](flows/flow-examples.md)** - Example flows
+- **[Flow Execution](flows/flow-execution.md)** - Execute flows with verbose/non-verbose modes
 
 ### [Identity Providers](identity-provider/)
 
@@ -101,7 +126,8 @@ Thunder provides comprehensive RESTful APIs for managing identity and access:
 - [User Management API](/api/user.yaml)
 - [Application Management API](/api/application.yaml)
 - [Authentication APIs](/api/authentication.yaml)
-- [Flow Execution API](/api/flow.yaml)
+- [Flow Management API](/api/flow-management.yaml)
+- [Flow Execution API](/api/flow-execution.yaml)
 - [Identity Provider Management API](/api/idp.yaml)
 - [Notification Sender Management API](/api/notification-sender.yaml)
 - [Group Management API](/api/group.yaml)
@@ -109,7 +135,35 @@ Thunder provides comprehensive RESTful APIs for managing identity and access:
 
 ## 🔧 Configuration
 
-Refer to the `backend/cmd/server/repository/conf/deployment.yaml` file for detailed configuration options.
+Thunder's configuration is managed through the `deployment.yaml` file located at `backend/cmd/server/repository/conf/deployment.yaml`. The configuration system supports three ways to provide values:
+
+### Configuration Value Types
+
+1. **Direct Values** - Static values specified directly in YAML:
+   ```yaml
+   server:
+     hostname: "localhost"
+     port: 8090
+   ```
+
+2. **Environment Variables** - Use Go template syntax `{{.VARIABLE_NAME}}` to reference environment variables:
+   ```yaml
+   database:
+     identity:
+       password: "{{.DB_PASSWORD}}"
+   ```
+
+3. **File References** - Use `file://` protocol to load content from files:
+   ```yaml
+   crypto:
+     encryption:
+       key: "file://repository/resources/security/crypto.key"
+   ```
+   Supports both quoted and unquoted paths:
+   - `file://path/to/file` - Unquoted path (no spaces)
+   - `file://"path/with spaces"` - Quoted path (with spaces allowed)
+   - `file:///absolute/path` - Absolute paths
+   - `file://relative/path` - Relative paths (resolved from the Thunder home directory)
 
 ## 💡 Need Help?
 

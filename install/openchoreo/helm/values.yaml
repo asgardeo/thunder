@@ -65,6 +65,11 @@ jwt:
 oauth:
   refresh_token_validity: 86400  # Refresh token validity in seconds (default: 24 hours)
 
+crypto:
+  encryption:
+    # WARNING: Replace the default key with a 32-byte (64 character) hex string in production deployments
+    key: "file://repository/resources/security/crypto.key"
+
 cache:
   type: "memory"      # Cache type: "memory" (in-memory cache)
   size: 10000        # Maximum number of cache entries

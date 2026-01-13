@@ -46,8 +46,8 @@ type Application struct {
 	Name                      string                   `json:"name"`
 	Description               string                   `json:"description"`
 	IsRegistrationFlowEnabled bool                     `json:"is_registration_flow_enabled"`
-	AuthFlowGraphID           string                   `json:"auth_flow_graph_id,omitempty"`
-	RegistrationFlowGraphID   string                   `json:"registration_flow_graph_id,omitempty"`
+	AuthFlowID                string                   `json:"auth_flow_id,omitempty"`
+	RegistrationFlowID        string                   `json:"registration_flow_id,omitempty"`
 	ClientID                  string                   `json:"client_id,omitempty"`
 	ClientSecret              string                   `json:"client_secret,omitempty"`
 	RedirectURIs              []string                 `json:"redirect_uris,omitempty"`

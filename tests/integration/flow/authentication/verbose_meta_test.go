@@ -248,7 +248,7 @@ func (ts *VerboseMetaTestSuite) SetupSuite() {
 	ts.Require().NoError(err, "Failed to create basic auth flow with prompt")
 	ts.config.CreatedFlowIDs = append(ts.config.CreatedFlowIDs, flowWithPromptID)
 	verboseFlowWithPromptID = flowWithPromptID
-	verboseTestApp.AuthFlowGraphID = flowWithPromptID
+	verboseTestApp.AuthFlowID = flowWithPromptID
 
 	basicFlowID, err := testutils.CreateFlow(basicAuthFlow)
 	ts.Require().NoError(err, "Failed to create basic auth flow")
@@ -373,7 +373,7 @@ func (ts *VerboseMetaTestSuite) TestVerboseModeWithGraphWithoutMeta() {
 		Name:                      "No Meta Test Application",
 		Description:               "Application for testing verbose mode without meta",
 		IsRegistrationFlowEnabled: false,
-		AuthFlowGraphID:           verboseBasicFlowID,
+		AuthFlowID:                verboseBasicFlowID,
 		ClientID:                  "no_meta_test_client",
 		ClientSecret:              "no_meta_test_secret",
 		RedirectURIs:              []string{"http://localhost:3000/callback"},

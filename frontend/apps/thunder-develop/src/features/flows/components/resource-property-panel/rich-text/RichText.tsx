@@ -23,8 +23,8 @@ import {AutoLinkNode, LinkNode} from '@lexical/link';
 import type {Resource} from '@/features/flows/models/resources';
 import {useMemo, type ReactElement} from 'react';
 import {useTranslation} from 'react-i18next';
-import {Paper} from '@wso2/oxygen-ui';
-import classNames from 'classnames';
+import {isI18nPattern as checkIsI18nPattern, resolveI18nValue as getResolvedI18nValue} from '@/features/flows/utils/i18nPatternUtils';
+import {Box, FormControl, FormLabel, Paper, TextField} from '@wso2/oxygen-ui';
 import {HistoryPlugin} from '@lexical/react/LexicalHistoryPlugin';
 import {LinkPlugin} from '@lexical/react/LexicalLinkPlugin';
 import {RichTextPlugin} from '@lexical/react/LexicalRichTextPlugin';
@@ -34,7 +34,6 @@ import {LexicalErrorBoundary} from '@lexical/react/LexicalErrorBoundary';
 import ToolbarPlugin from './helper-plugins/ToolbarPlugin';
 import type {ToolbarPluginProps} from './helper-plugins/ToolbarPlugin';
 import CustomLinkPlugin from './helper-plugins/CustomLinkPlugin';
-import './RichText.scss';
 import HTMLPlugin from './helper-plugins/HTMLPlugin';
 
 /**
@@ -96,10 +95,6 @@ export interface RichTextProps {
    * Whether the rich text editor is disabled. If true, the editor will not be editable.
    */
   disabled?: boolean;
-  /**
-   * Whether the rich text editor has an error state.
-   */
-  hasError?: boolean;
 }
 
 /**
@@ -111,59 +106,89 @@ function RichText({
   onChange,
   resource,
   disabled = false,
-  hasError = false,
 }: RichTextProps): ReactElement {
   const {t} = useTranslation();
 
-  const labelValue: string | undefined = useMemo(
-    () => (resource as Resource & {label?: string})?.label,
-    [resource],
-  );
+  const labelValue: string | undefined = useMemo(() => (resource as Resource & {label?: string})?.label, [resource]);
 
   /**
    * Check if the resource label matches the i18n pattern.
+   * Matches patterns like: {{t(hello.world)}}
+   * Extracts text content from HTML markup before checking.
    */
-  const isI18nPattern: boolean = useMemo(() => {
-    if (!labelValue) return false;
+  const isI18nPattern: boolean = useMemo(() => checkIsI18nPattern(labelValue, true), [labelValue]);
 
-    const i18nPattern = /^\{\{[^}]+\}\}$/;
-
-    return i18nPattern.test(labelValue.trim());
-  }, [labelValue]);
+  /**
+   * Extract and resolve the i18n key from the label value.
+   * Converts {{t(hello.world)}} to the translated string.
+   */
+  const resolvedI18nValue: string = useMemo(
+    () => getResolvedI18nValue(labelValue, t, true),
+    [labelValue, t],
+  );
 
   return (
     <LexicalComposer initialConfig={editorConfig}>
-      <div className={classNames('OxygenRichText-root', className)}>
-        <ToolbarPlugin {...ToolbarProps} disabled={isI18nPattern || disabled} />
-        <Paper className={classNames('OxygenRichText-editor-root', {error: hasError})} elevation={0} variant="outlined">
-          {isI18nPattern ? (
-            <div className="OxygenRichText-i18n-placeholder">
-              <div className="OxygenRichText-i18n-placeholder-key">{labelValue}</div>
-            </div>
-          ) : (
-            <>
-              <RichTextPlugin
-                contentEditable={
-                  <ContentEditable
-                    className="OxygenRichText-editor-input"
-                    aria-placeholder="Enter some rich text..."
-                    placeholder={
-                      <div className="OxygenRichText-editor-input-placeholder">
-                        {t('flows:core.elements.richText.placeholder')}
-                      </div>
-                    }
-                  />
+      <div className={className}>
+        <ToolbarPlugin {...ToolbarProps} disabled={disabled} />
+        <Paper
+          elevation={0}
+          variant="outlined"
+          sx={{
+            boxShadow: 'none !important',
+          }}
+        >
+          <RichTextPlugin
+            contentEditable={
+              <ContentEditable
+                style={{
+                  height: 200,
+                  padding: '28px 12px',
+                }}
+                aria-placeholder="Enter some rich text..."
+                placeholder={
+                  <Box
+                    sx={{
+                      position: 'absolute',
+                      top: 30,
+                      left: 5,
+                      padding: '10px',
+                      userSelect: 'none',
+                      color: 'grey.500',
+                      pointerEvents: 'none',
+                    }}
+                  >
+                    {t('flows:core.elements.richText.placeholder')}
+                  </Box>
                 }
-                ErrorBoundary={LexicalErrorBoundary}
               />
-              <HistoryPlugin />
-              <AutoFocusPlugin />
-              <LinkPlugin />
-              <CustomLinkPlugin />
-              <HTMLPlugin resource={resource} onChange={onChange} disabled={disabled} />
-            </>
-          )}
+            }
+            ErrorBoundary={LexicalErrorBoundary}
+          />
+          <HistoryPlugin />
+          <AutoFocusPlugin />
+          <LinkPlugin />
+          <CustomLinkPlugin />
+          <HTMLPlugin resource={resource} onChange={onChange} disabled={disabled} />
         </Paper>
+        {isI18nPattern && (
+          <FormControl
+            sx={{
+              mt: 2,
+            }}
+            fullWidth
+          >
+            <FormLabel>{t('flows:core.elements.richText.resolvedI18nValue')}</FormLabel>
+            <TextField
+              fullWidth
+              value={resolvedI18nValue}
+              inputProps={{
+                disabled: true,
+                readOnly: true,
+              }}
+            />
+          </FormControl>
+        )}
       </div>
     </LexicalComposer>
   );

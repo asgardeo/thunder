@@ -26,7 +26,6 @@ import set from 'lodash-es/set';
 import isEmpty from 'lodash-es/isEmpty';
 import type {Properties} from '../../models/base';
 import type {Resource} from '../../models/resources';
-import './ResourceProperties.scss';
 import useFlowBuilderCore from '../../hooks/useFlowBuilderCore';
 import ResourcePropertyPanelConstants from '../../constants/ResourcePropertyPanelConstants';
 import PluginRegistry from '../../plugins/PluginRegistry';
@@ -112,7 +111,9 @@ function ResourceProperties(): ReactElement {
     if (lastInteractedResource.config) {
       Object.keys(lastInteractedResource.config).forEach((key: string) => {
         if (!ResourcePropertyPanelConstants.EXCLUDED_PROPERTIES.includes(key)) {
-          (props as Record<string, unknown>)[key] = (lastInteractedResource.config as unknown as Record<string, unknown>)[key];
+          (props as Record<string, unknown>)[key] = (
+            lastInteractedResource.config as unknown as Record<string, unknown>
+          )[key];
         }
       });
     }
@@ -238,6 +239,9 @@ function ResourceProperties(): ReactElement {
 
         if (!isEmpty(node?.data?.components)) {
           data.components = updateComponent(cloneDeep(node?.data?.components) ?? []);
+        } else if (propertyKey === 'data') {
+          // When propertyKey is exactly 'data', replace the entire data object
+          return {...(newValue as StepData)};
         } else {
           // Strip 'data.' prefix if present since we're already setting on the data object
           const actualKey = propertyKey.startsWith('data.') ? propertyKey.slice(5) : propertyKey;
@@ -255,7 +259,10 @@ function ResourceProperties(): ReactElement {
 
         // Top-level editable properties are set directly on the resource
         const topLevelEditableProps = ['label', 'hint', 'placeholder', 'required', 'src', 'alt'];
-        if (topLevelEditableProps.includes(propertyKey)) {
+        if (propertyKey === 'data') {
+          // When propertyKey is exactly 'data', replace the entire data object
+          updatedResource.data = newValue as StepData;
+        } else if (topLevelEditableProps.includes(propertyKey)) {
           set(updatedResource as unknown as Record<string, unknown>, propertyKey, newValue);
         } else if (propertyKey.startsWith('config.') || propertyKey.startsWith('data.')) {
           // Properties starting with 'config.' or 'data.' should be set on the resource directly
@@ -276,25 +283,23 @@ function ResourceProperties(): ReactElement {
     [],
   );
 
+  if (!lastInteractedResource) {
+    return (
+      <Typography variant="body2" color="textSecondary" sx={{padding: 2}}>
+        No properties available.
+      </Typography>
+    );
+  }
+
   return (
-    <div className="flow-builder-element-properties">
-      {lastInteractedResource ? (
-        <Stack gap={2}>
-          {lastInteractedResource && (
-            <ResourcePropertiesComponent
-              resource={lastInteractedResource}
-              properties={filteredProperties as Record<string, unknown>}
-              onChange={handlePropertyChange}
-              onVariantChange={changeSelectedVariant}
-            />
-          )}
-        </Stack>
-      ) : (
-        <Typography variant="body2" color="textSecondary" sx={{padding: 2}}>
-          No properties available.
-        </Typography>
-      )}
-    </div>
+    <Stack gap={2}>
+      <ResourcePropertiesComponent
+        resource={lastInteractedResource}
+        properties={filteredProperties as Record<string, unknown>}
+        onChange={handlePropertyChange}
+        onVariantChange={changeSelectedVariant}
+      />
+    </Stack>
   );
 }
 

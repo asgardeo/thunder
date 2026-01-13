@@ -19,6 +19,10 @@
 package flowmgt
 
 import (
+	"encoding/json"
+
+	"gopkg.in/yaml.v3"
+
 	"github.com/asgardeo/thunder/internal/flow/common"
 )
 
@@ -156,4 +160,58 @@ type ConditionDefinition struct {
 	Key    string `json:"key" yaml:"key"`
 	Value  string `json:"value" yaml:"value"`
 	OnSkip string `json:"onSkip" yaml:"onSkip"`
+}
+
+// nodeDefinitionAlias is used to avoid infinite recursion during marshaling/unmarshaling.
+type nodeDefinitionAlias NodeDefinition
+
+// MarshalYAML implements custom YAML marshaling for NodeDefinition.
+// It converts the Meta interface{} field to a JSON-encoded string for proper serialization.
+func (nd *NodeDefinition) MarshalYAML() (interface{}, error) {
+	// Create an alias to avoid infinite recursion
+	alias := nodeDefinitionAlias(*nd)
+
+	// If Meta is nil or empty, marshal as-is
+	if alias.Meta == nil {
+		return alias, nil
+	}
+
+	// JSON-encode the Meta field to preserve its structure
+	metaJSON, err := json.Marshal(alias.Meta)
+	if err != nil {
+		return nil, err
+	}
+
+	// Replace Meta with the JSON string
+	alias.Meta = string(metaJSON)
+
+	return alias, nil
+}
+
+// UnmarshalYAML implements custom YAML unmarshaling for NodeDefinition.
+// It parses the Meta field from a JSON-encoded string back to interface{}.
+func (nd *NodeDefinition) UnmarshalYAML(value *yaml.Node) error {
+	// Create an alias to avoid infinite recursion
+	var alias nodeDefinitionAlias
+
+	// Unmarshal into the alias
+	if err := value.Decode(&alias); err != nil {
+		return err
+	}
+
+	// Copy all fields from alias to nd
+	*nd = NodeDefinition(alias)
+
+	// If Meta is a string, try to parse it as JSON
+	if metaStr, ok := nd.Meta.(string); ok && metaStr != "" {
+		var metaData interface{}
+		if err := json.Unmarshal([]byte(metaStr), &metaData); err != nil {
+			// If JSON parsing fails, keep the string value
+			// This allows backward compatibility with non-JSON Meta values
+			return nil
+		}
+		nd.Meta = metaData
+	}
+
+	return nil
 }

@@ -11,6 +11,40 @@ The chart creates the following OpenChoreo resources:
 - **Organization**: Creates or references an organization
 - **ServiceClass/APIClass**: Cluster-scoped resources for service management
 
+## Configuration Value Types
+
+Thunder's configuration system supports multiple value formats for **any parameter**:
+
+1. **Direct Values** - Static values specified directly in YAML:
+   ```yaml
+   database:
+     host: "postgres.default.svc.cluster.local"
+     port: 5432
+   cache:
+     size: 10000
+   ```
+
+2. **Environment Variables** - Use Go template syntax `{{.VARIABLE_NAME}}` to reference environment variables:
+   ```yaml
+   database:
+     identity:
+       password: "{{.DB_PASSWORD}}"
+   jwt:
+     issuer: "{{.JWT_ISSUER}}"
+   ```
+
+3. **File References** - Use `file://` protocol to load content from files:
+   ```yaml
+   crypto:
+     encryption:
+       key: "file://repository/resources/security/crypto.key"
+   ```
+   Supports both quoted and unquoted paths:
+   - `file://path/to/file` - Unquoted path (no spaces)
+   - `file://"path/with spaces"` - Quoted path (with spaces allowed)
+   - `file:///absolute/path` - Absolute paths
+   - `file://relative/path` - Relative paths (resolved from the Thunder container's home directory)
+
 ## Quick Start
 
 ### Prerequisites
@@ -83,11 +117,14 @@ The chart creates the following OpenChoreo resources:
 
 ### Authentication & Security
 
+**⚠️ Required**: For any non-test deployment, override `crypto.encryption.key` with a 32-byte (64 character) hex key. Do not use the default value in production.
+
 | Parameter | Description | Default |
 |-----------|-------------|---------|
 | `jwt.issuer` | JWT token issuer identifier (derived from server URL if not set) | derived |
 | `jwt.validity` | JWT token validity in seconds | `3600` (1 hour) |
 | `oauth.refresh_token_validity` | Refresh token validity in seconds | `86400` (24 hours) |
+| `crypto.encryption.key` | Crypto encryption key | `file://repository/resources/security/crypto.key` |
 | `cors.allowed_origins` | List of allowed CORS origins | See values.yaml |
 
 ### Cache Configuration

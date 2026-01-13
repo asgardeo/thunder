@@ -29,7 +29,8 @@ import type {Element} from '@/features/flows/models/elements';
  * @returns The ElementFactory component.
  */
 function ElementFactory({resource, stepId, ...rest}: ElementFactoryProps): ReactElement | null {
-  if (!resource || resource.resourceType !== ResourceTypes.Element) {
+  // Allow resources without resourceType (template/widget components) or with resourceType === 'ELEMENT'
+  if (!resource || (resource.resourceType && resource.resourceType !== ResourceTypes.Element)) {
     return null;
   }
 

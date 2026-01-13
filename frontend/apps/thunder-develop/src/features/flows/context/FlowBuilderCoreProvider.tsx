@@ -127,6 +127,9 @@ function FlowContextWrapper({
   const setIsOpenResourcePropertiesPanelRef = useRef<Dispatch<SetStateAction<boolean>>>(setIsOpenResourcePropertiesPanel);
   const setLastInteractedStepIdRef = useRef(setLastInteractedStepId);
 
+  // Ref to store the callback to close the validation panel (for mutual exclusion)
+  const closeValidationPanelRef = useRef<(() => void) | null>(null);
+
   // Keep refs in sync (this is cheap - just pointer assignment)
   setResourcePropertiesPanelHeadingRef.current = setResourcePropertiesPanelHeading;
   setLastInteractedElementInternalRef.current = setLastInteractedElementInternal;
@@ -181,11 +184,13 @@ function FlowContextWrapper({
   );
 
   const setLastInteractedResource = useCallback((resource: Resource, openPanel = true): void => {
-    // TODO: Internationalize this string and get from a mapping.
+    // Use display.header if available, otherwise fall back to the type
+    const headerText = resource?.display?.header ?? startCase(resource?.type?.toLowerCase());
+
     setResourcePropertiesPanelHeadingRef.current(
       <Stack direction="row" className="sub-title" gap={1} alignItems="center">
         <Settings />
-        <Typography variant="h5">{startCase(resource?.type?.toLowerCase())} Properties</Typography>
+        <Typography variant="h5">{headerText} Properties</Typography>
       </Stack>,
     );
     setLastInteractedElementInternalRef.current(resource);
@@ -215,7 +220,19 @@ function FlowContextWrapper({
   }, []);
 
   const setIsOpenResourcePropertiesPanelStable = useCallback((isOpen: boolean): void => {
+    if (isOpen) {
+      // Close validation panel when opening resource properties panel (mutual exclusion)
+      closeValidationPanelRef.current?.();
+    }
     setIsOpenResourcePropertiesPanelRef.current(isOpen);
+  }, []);
+
+  /**
+   * Registers a callback to close the validation panel.
+   * Called by ValidationProvider to enable mutual exclusion between panels.
+   */
+  const registerCloseValidationPanel = useCallback((callback: () => void): void => {
+    closeValidationPanelRef.current = callback;
   }, []);
 
   const onResourceDropOnCanvas = useCallback(
@@ -270,6 +287,7 @@ function FlowContextWrapper({
       setFlowEdgeTypes,
       setFlowNodeTypes,
       setIsOpenResourcePropertiesPanel: setIsOpenResourcePropertiesPanelStable,
+      registerCloseValidationPanel,
       setIsResourcePanelOpen,
       setIsVersionHistoryPanelOpen,
       setLanguage,
@@ -311,6 +329,7 @@ function FlowContextWrapper({
       setLastInteractedResource,
       setLastInteractedStepIdStable,
       setIsOpenResourcePropertiesPanelStable,
+      registerCloseValidationPanel,
       supportedLocales,
       textPreferenceLoading,
       updateI18nKey,

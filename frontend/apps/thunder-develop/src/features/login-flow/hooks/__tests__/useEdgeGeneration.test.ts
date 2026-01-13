@@ -1,0 +1,426 @@
+/**
+ * Copyright (c) 2025, WSO2 LLC. (https://www.wso2.com).
+ *
+ * WSO2 LLC. licenses this file to you under the Apache License,
+ * Version 2.0 (the "License"); you may not use this file except
+ * in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing,
+ * software distributed under the License is distributed on an
+ * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+ * KIND, either express or implied. See the License for the
+ * specific language governing permissions and limitations
+ * under the License.
+ */
+
+import {describe, it, expect} from 'vitest';
+import {renderHook} from '@testing-library/react';
+import {MarkerType, type Edge, type Node} from '@xyflow/react';
+import {StepTypes, type Step} from '@/features/flows/models/steps';
+import {ElementTypes} from '@/features/flows/models/elements';
+
+import type {Element} from '@/features/flows/models/elements';
+import useEdgeGeneration from '../useEdgeGeneration';
+
+const createMockElement = (overrides: Partial<Element> = {}): Element =>
+  ({
+    id: 'element-1',
+    type: ElementTypes.Action,
+    category: 'ACTION',
+    version: '1.0.0',
+    deprecated: false,
+    deletable: true,
+    resourceType: 'ELEMENT',
+    display: {
+      label: 'Element Label',
+      image: '',
+      showOnResourcePanel: true,
+    },
+    config: {
+      field: {name: '', type: 'ACTION'},
+      styles: {},
+    },
+    ...overrides,
+  }) as Element;
+
+const createMockStep = (overrides: Partial<Step> = {}): Step =>
+  ({
+    id: 'step-1',
+    type: StepTypes.View,
+    category: 'INTERFACE',
+    version: '1.0.0',
+    deprecated: false,
+    deletable: true,
+    resourceType: 'STEP',
+    display: {
+      label: 'Step Label',
+      image: '',
+      showOnResourcePanel: true,
+    },
+    config: {
+      field: {name: '', type: 'TEXT_INPUT'},
+      styles: {},
+    },
+    size: {width: 200, height: 100},
+    position: {x: 0, y: 0},
+    __generationMeta__: null,
+    data: {},
+    ...overrides,
+  }) as Step;
+
+describe('useEdgeGeneration', () => {
+  describe('generateEdges', () => {
+    it('should return empty array for empty steps', () => {
+      const {result} = renderHook(() => useEdgeGeneration());
+
+      const edges = result.current.generateEdges([]);
+
+      expect(edges).toEqual([]);
+    });
+
+    it('should create edge from START to first step', () => {
+      const {result} = renderHook(() => useEdgeGeneration());
+
+      const steps: Step[] = [
+        createMockStep({id: 'view-step-1', type: StepTypes.View}),
+        createMockStep({id: 'END', type: StepTypes.End}),
+      ];
+
+      const edges = result.current.generateEdges(steps);
+
+      // Should have edge from START to first step
+      const startEdge = edges.find((e) => e.source === 'start');
+      expect(startEdge).toBeDefined();
+      expect(startEdge?.target).toBe('view-step-1');
+    });
+
+    it('should skip START step when creating edge to first step', () => {
+      const {result} = renderHook(() => useEdgeGeneration());
+
+      const steps: Step[] = [
+        createMockStep({id: 'start', type: 'START' as typeof StepTypes.View}),
+        createMockStep({id: 'view-step-1', type: StepTypes.View}),
+        createMockStep({id: 'END', type: StepTypes.End}),
+      ];
+
+      const edges = result.current.generateEdges(steps);
+
+      const startEdge = edges.find((e) => e.source === 'start');
+      expect(startEdge?.target).toBe('view-step-1');
+    });
+
+    it('should create edges for buttons with action.next', () => {
+      const {result} = renderHook(() => useEdgeGeneration());
+
+      const steps: Step[] = [
+        createMockStep({
+          id: 'view-step-1',
+          type: StepTypes.View,
+          data: {
+            components: [
+              createMockElement({
+                id: 'button-1',
+                type: ElementTypes.Action,
+                action: {next: 'END'},
+              }),
+            ],
+          },
+        }),
+        createMockStep({id: 'END', type: StepTypes.End}),
+      ];
+
+      const edges = result.current.generateEdges(steps);
+
+      const buttonEdge = edges.find((e) => e.id === 'button-1');
+      expect(buttonEdge).toBeDefined();
+      expect(buttonEdge?.target).toBe('END');
+    });
+
+    it('should handle nested buttons in BLOCK containers', () => {
+      const {result} = renderHook(() => useEdgeGeneration());
+
+      const steps: Step[] = [
+        createMockStep({
+          id: 'view-step-1',
+          type: StepTypes.View,
+          data: {
+            components: [
+              createMockElement({
+                id: 'block-1',
+                type: 'BLOCK',
+                components: [
+                  createMockElement({
+                    id: 'nested-button',
+                    type: ElementTypes.Action,
+                    action: {next: 'END'},
+                  }),
+                ],
+              }),
+            ],
+          },
+        }),
+        createMockStep({id: 'END', type: StepTypes.End}),
+      ];
+
+      const edges = result.current.generateEdges(steps);
+
+      const nestedButtonEdge = edges.find((e) => e.id === 'nested-button');
+      expect(nestedButtonEdge).toBeDefined();
+    });
+
+    it('should create edges for RESEND buttons', () => {
+      const {result} = renderHook(() => useEdgeGeneration());
+
+      const steps: Step[] = [
+        createMockStep({
+          id: 'view-step-1',
+          type: StepTypes.View,
+          data: {
+            components: [
+              createMockElement({
+                id: 'resend-button',
+                type: ElementTypes.Resend,
+                action: {next: 'view-step-2'},
+              }),
+            ],
+          },
+        }),
+        createMockStep({id: 'view-step-2', type: StepTypes.View}),
+        createMockStep({id: 'END', type: StepTypes.End}),
+      ];
+
+      const edges = result.current.generateEdges(steps);
+
+      const resendEdge = edges.find((e) => e.id === 'resend-button');
+      expect(resendEdge).toBeDefined();
+      expect(resendEdge?.target).toBe('view-step-2');
+    });
+
+    it('should create edges from step-level actions', () => {
+      const {result} = renderHook(() => useEdgeGeneration());
+
+      const steps: Step[] = [
+        createMockStep({
+          id: 'view-step-1',
+          type: StepTypes.View,
+          data: {
+            action: {next: 'view-step-2'},
+          },
+        }),
+        createMockStep({id: 'view-step-2', type: StepTypes.View}),
+        createMockStep({id: 'END', type: StepTypes.End}),
+      ];
+
+      const edges = result.current.generateEdges(steps);
+
+      const stepActionEdge = edges.find((e) => e.id === 'view-step-1-to-view-step-2');
+      expect(stepActionEdge).toBeDefined();
+    });
+
+    it('should connect to END step when action.next is StepTypes.End', () => {
+      const {result} = renderHook(() => useEdgeGeneration());
+
+      const steps: Step[] = [
+        createMockStep({
+          id: 'view-step-1',
+          type: StepTypes.View,
+          data: {
+            action: {next: StepTypes.End},
+          },
+        }),
+        createMockStep({id: 'END', type: StepTypes.End}),
+      ];
+
+      const edges = result.current.generateEdges(steps);
+
+      const endEdge = edges.find((e) => e.target === 'END');
+      expect(endEdge).toBeDefined();
+    });
+
+    it('should use custom startStepId from props', () => {
+      const {result} = renderHook(() => useEdgeGeneration({startStepId: 'custom-start'}));
+
+      const steps: Step[] = [
+        createMockStep({id: 'view-step-1', type: StepTypes.View}),
+        createMockStep({id: 'END', type: StepTypes.End}),
+      ];
+
+      const edges = result.current.generateEdges(steps);
+
+      const startEdge = edges.find((e) => e.source === 'custom-start');
+      expect(startEdge).toBeDefined();
+    });
+
+    it('should use custom endStepId from props', () => {
+      const {result} = renderHook(() => useEdgeGeneration({endStepId: 'custom-end'}));
+
+      const steps: Step[] = [
+        createMockStep({
+          id: 'view-step-1',
+          type: StepTypes.View,
+          data: {
+            components: [
+              createMockElement({
+                id: 'button-1',
+                type: ElementTypes.Action,
+                // No explicit next - should default to end
+              }),
+            ],
+          },
+        }),
+        createMockStep({id: 'custom-end', type: StepTypes.End}),
+      ];
+
+      const edges = result.current.generateEdges(steps);
+
+      const buttonEdge = edges.find((e) => e.id === 'button-1');
+      expect(buttonEdge?.target).toBe('custom-end');
+    });
+
+    it('should create edges with correct marker type', () => {
+      const {result} = renderHook(() => useEdgeGeneration());
+
+      const steps: Step[] = [
+        createMockStep({id: 'view-step-1', type: StepTypes.View}),
+        createMockStep({id: 'END', type: StepTypes.End}),
+      ];
+
+      const edges = result.current.generateEdges(steps);
+
+      edges.forEach((edge) => {
+        expect(edge.markerEnd).toEqual({type: MarkerType.Arrow});
+      });
+    });
+  });
+
+  describe('validateEdges', () => {
+    it('should return edges with valid targets', () => {
+      const {result} = renderHook(() => useEdgeGeneration());
+
+      const edges: Edge[] = [
+        {
+          id: 'edge-1',
+          source: 'node-1',
+          target: 'node-2',
+          type: 'default',
+        },
+      ];
+
+      const nodes: Node[] = [
+        {id: 'node-1', position: {x: 0, y: 0}, data: {}},
+        {id: 'node-2', position: {x: 100, y: 0}, data: {}},
+      ];
+
+      const validEdges = result.current.validateEdges(edges, nodes);
+
+      expect(validEdges).toHaveLength(1);
+    });
+
+    it('should filter out edges with invalid targets', () => {
+      const {result} = renderHook(() => useEdgeGeneration());
+
+      const edges: Edge[] = [
+        {id: 'edge-1', source: 'node-1', target: 'node-2', type: 'default'},
+        {id: 'edge-2', source: 'node-1', target: 'invalid-node', type: 'default'},
+      ];
+
+      const nodes: Node[] = [
+        {id: 'node-1', position: {x: 0, y: 0}, data: {}},
+        {id: 'node-2', position: {x: 100, y: 0}, data: {}},
+      ];
+
+      const validEdges = result.current.validateEdges(edges, nodes);
+
+      expect(validEdges).toHaveLength(1);
+      expect(validEdges[0].id).toBe('edge-1');
+    });
+
+    it('should filter out edges with invalid sources', () => {
+      const {result} = renderHook(() => useEdgeGeneration());
+
+      const edges: Edge[] = [{id: 'edge-1', source: 'invalid-source', target: 'node-2', type: 'default'}];
+
+      const nodes: Node[] = [{id: 'node-2', position: {x: 0, y: 0}, data: {}}];
+
+      const validEdges = result.current.validateEdges(edges, nodes);
+
+      expect(validEdges).toHaveLength(0);
+    });
+
+    it('should always include START as valid target', () => {
+      const {result} = renderHook(() => useEdgeGeneration());
+
+      const edges: Edge[] = [{id: 'edge-1', source: 'node-1', target: 'start', type: 'default'}];
+
+      const nodes: Node[] = [{id: 'node-1', position: {x: 0, y: 0}, data: {}}];
+
+      const validEdges = result.current.validateEdges(edges, nodes);
+
+      expect(validEdges).toHaveLength(1);
+    });
+
+    it('should always include END as valid target', () => {
+      const {result} = renderHook(() => useEdgeGeneration());
+
+      const edges: Edge[] = [{id: 'edge-1', source: 'node-1', target: 'END', type: 'default'}];
+
+      const nodes: Node[] = [{id: 'node-1', position: {x: 0, y: 0}, data: {}}];
+
+      const validEdges = result.current.validateEdges(edges, nodes);
+
+      expect(validEdges).toHaveLength(1);
+    });
+
+    it('should return empty array when no edges are valid', () => {
+      const {result} = renderHook(() => useEdgeGeneration());
+
+      const edges: Edge[] = [
+        {id: 'edge-1', source: 'invalid-1', target: 'invalid-2', type: 'default'},
+        {id: 'edge-2', source: 'invalid-3', target: 'invalid-4', type: 'default'},
+      ];
+
+      const nodes: Node[] = [{id: 'node-1', position: {x: 0, y: 0}, data: {}}];
+
+      const validEdges = result.current.validateEdges(edges, nodes);
+
+      expect(validEdges).toHaveLength(0);
+    });
+
+    it('should handle empty edges array', () => {
+      const {result} = renderHook(() => useEdgeGeneration());
+
+      const validEdges = result.current.validateEdges([], []);
+
+      expect(validEdges).toEqual([]);
+    });
+  });
+
+  describe('Hook Interface', () => {
+    it('should return generateEdges function', () => {
+      const {result} = renderHook(() => useEdgeGeneration());
+
+      expect(typeof result.current.generateEdges).toBe('function');
+    });
+
+    it('should return validateEdges function', () => {
+      const {result} = renderHook(() => useEdgeGeneration());
+
+      expect(typeof result.current.validateEdges).toBe('function');
+    });
+
+    it('should maintain stable function references', () => {
+      const {result, rerender} = renderHook(() => useEdgeGeneration());
+
+      const initialGenerateEdges = result.current.generateEdges;
+      const initialValidateEdges = result.current.validateEdges;
+
+      rerender();
+
+      expect(result.current.generateEdges).toBe(initialGenerateEdges);
+      expect(result.current.validateEdges).toBe(initialValidateEdges);
+    });
+  });
+});

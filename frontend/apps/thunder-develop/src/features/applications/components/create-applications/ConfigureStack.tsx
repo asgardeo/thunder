@@ -27,6 +27,7 @@ import TechnologyBasedApplicationTemplateMetadata from '../../config/TechnologyB
 import PlatformBasedApplicationTemplateMetadata from '../../config/PlatformBasedApplicationTemplateMetadata';
 import inferApplicationTemplateTechnologyFromConfig from '../../utils/inferApplicationTemplateTechnologyFromConfig';
 import useApplicationCreate from '../../contexts/ApplicationCreate/useApplicationCreate';
+import {ApplicationCreateFlowSignInApproach} from '../../models/application-create-flow';
 
 const TechnologyBasedTemplates: Record<TechnologyApplicationTemplate, ApplicationTemplate> =
   TechnologyBasedApplicationTemplateMetadata.reduce(
@@ -129,8 +130,14 @@ export default function ConfigureStack({
 }: ConfigureStackProps): JSX.Element {
   const {t} = useTranslation();
 
-  const {selectedTechnology, setSelectedTechnology, selectedPlatform, setSelectedPlatform, setSelectedTemplateConfig} =
-    useApplicationCreate();
+  const {
+    selectedTechnology,
+    setSelectedTechnology,
+    selectedPlatform,
+    setSelectedPlatform,
+    setSelectedTemplateConfig,
+    signInApproach,
+  } = useApplicationCreate();
 
   const defaultTechnology: TechnologyApplicationTemplate =
     TechnologyBasedApplicationTemplateMetadata[0]?.value ?? TechnologyApplicationTemplate.REACT;
@@ -252,19 +259,50 @@ export default function ConfigureStack({
           >
             {TechnologyBasedApplicationTemplateMetadata.map((option) => {
               const isSelected: boolean = resolvedTechnology === option.value;
+              const isDisabled: boolean = option.disabled ?? false;
 
               return (
-                <Card key={option.value} variant="outlined" onClick={(): void => handleTechnologyChange(option.value)}>
+                <Card
+                  key={option.value}
+                  variant="outlined"
+                  onClick={isDisabled ? undefined : (): void => handleTechnologyChange(option.value)}
+                  sx={{position: 'relative'}}
+                >
+                  {isDisabled && (
+                    <Box
+                      sx={{
+                        position: 'absolute',
+                        top: 8,
+                        right: 8,
+                        bgcolor: 'warning.main',
+                        color: 'warning.contrastText',
+                        px: 1,
+                        py: 0.5,
+                        borderRadius: 1,
+                        fontSize: '0.75rem',
+                        fontWeight: 600,
+                        zIndex: 1,
+                      }}
+                    >
+                      Coming Soon
+                    </Box>
+                  )}
                   <CardActionArea
+                    disabled={isDisabled}
                     sx={{
                       height: '100%',
-                      cursor: 'pointer',
+                      cursor: isDisabled ? 'not-allowed' : 'pointer',
                       border: 1,
                       borderColor: isSelected ? 'primary.main' : 'divider',
                       transition: 'all 0.2s ease-in-out',
+                      opacity: isDisabled ? 0.5 : 1,
                       '&:hover': {
-                        borderColor: 'primary.main',
-                        bgcolor: isSelected ? 'action.selected' : 'action.hover',
+                        borderColor: isDisabled ? 'divider' : 'primary.main',
+                        bgcolor: (() => {
+                          if (isDisabled) return 'transparent';
+                          if (isSelected) return 'action.selected';
+                          return 'action.hover';
+                        })(),
                       },
                     }}
                   >
@@ -300,16 +338,18 @@ export default function ConfigureStack({
       )}
 
       {/* Divider between technology and platform sections */}
-      {stackTypes.technology && stackTypes.platform && (
-        <Divider sx={{my: 2}}>
-          <Typography variant="body2" color="text.secondary">
-            {t('applications:onboarding.configure.stack.dividerLabel')}
-          </Typography>
-        </Divider>
-      )}
+      {stackTypes.technology &&
+        stackTypes.platform &&
+        signInApproach !== ApplicationCreateFlowSignInApproach.CUSTOM && (
+          <Divider sx={{my: 2}}>
+            <Typography variant="body2" color="text.secondary">
+              {t('applications:onboarding.configure.stack.dividerLabel')}
+            </Typography>
+          </Divider>
+        )}
 
       {/* Platform Selection */}
-      {stackTypes.platform && (
+      {stackTypes.platform && signInApproach !== ApplicationCreateFlowSignInApproach.CUSTOM && (
         <>
           <Stack direction="column" spacing={1}>
             <Typography variant="h1">{t('applications:onboarding.configure.stack.platform.title')}</Typography>

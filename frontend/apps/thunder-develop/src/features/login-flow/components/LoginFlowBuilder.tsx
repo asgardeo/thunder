@@ -35,7 +35,6 @@ import {
   ButtonVariants,
   ElementCategories,
   ElementTypes,
-  InputVariants,
   type Element,
 } from '@/features/flows/models/elements';
 import {StaticStepTypes, StepTypes, type Step, type StepData} from '@/features/flows/models/steps';
@@ -65,6 +64,21 @@ import LoginFlowConstants from '../constants/LoginFlowConstants';
 const {ExecutorNames} = LoginFlowConstants;
 
 /**
+ * Set of input element types for quick lookup
+ */
+const INPUT_ELEMENT_TYPES = new Set<string>([
+  ElementTypes.TextInput,
+  ElementTypes.PasswordInput,
+  ElementTypes.EmailInput,
+  ElementTypes.PhoneInput,
+  ElementTypes.NumberInput,
+  ElementTypes.DateInput,
+  ElementTypes.OtpInput,
+  ElementTypes.Checkbox,
+  ElementTypes.Dropdown,
+]);
+
+/**
  * Process form components to set button types and auto-assign executors.
  * Optimized to use a single pass through the components.
  */
@@ -81,16 +95,14 @@ const processFormComponents = (formComponents: Element[] | undefined): Element[]
   // First pass: collect info and set PRIMARY buttons to submit
   const updatedComponents = formComponents.map((formComponent: Element) => {
     // Check for field types
-    if (formComponent.type === ElementTypes.Input) {
-      if (formComponent.variant === InputVariants.Password) {
-        hasPasswordField = true;
-      } else if (formComponent.variant === InputVariants.OTP) {
-        hasOtpField = true;
-      }
+    if (formComponent.type === ElementTypes.PasswordInput) {
+      hasPasswordField = true;
+    } else if (formComponent.type === ElementTypes.OtpInput) {
+      hasOtpField = true;
     }
 
     // Set PRIMARY buttons to submit type
-    if (formComponent.type === ElementTypes.Button && formComponent.variant === ButtonVariants.Primary) {
+    if (formComponent.type === ElementTypes.Action && formComponent.variant === ButtonVariants.Primary) {
       const updatedButton = {
         ...formComponent,
         config: {
@@ -104,7 +116,7 @@ const processFormComponents = (formComponents: Element[] | undefined): Element[]
 
     // Count existing submit buttons
     if (
-      formComponent.type === ElementTypes.Button &&
+      formComponent.type === ElementTypes.Action &&
       (formComponent.config as {type?: string})?.type === ButtonTypes.Submit
     ) {
       submitButtonCount += 1;
@@ -118,7 +130,7 @@ const processFormComponents = (formComponents: Element[] | undefined): Element[]
     const executorName = hasPasswordField ? ExecutorNames.PASSWORD_PROVISIONING : ExecutorNames.EMAIL_OTP;
 
     return updatedComponents.map((formComponent: Element) => {
-      if (formComponent.type === ElementTypes.Button) {
+      if (formComponent.type === ElementTypes.Action) {
         return {
           ...formComponent,
           action: {
@@ -157,8 +169,9 @@ const mutateComponents = (components: Element[]): Element[] => {
       return false;
     }
 
-    // Keep only the first form
-    if (component.type === BlockTypes.Form) {
+    // Keep only the first form (category: BLOCK, type: BLOCK)
+    // Note: Social login blocks have category: ACTION, type: BLOCK, so they should not be filtered
+    if (component.type === BlockTypes.Form && component.category === ElementCategories.Block) {
       if (firstFormFound) {
         return false;
       }
@@ -168,9 +181,9 @@ const mutateComponents = (components: Element[]): Element[] => {
     return true;
   });
 
-  // Process forms and their components
+  // Process forms and their components (only actual forms with category: BLOCK)
   return modifiedComponents.map((component: Element) => {
-    if (component.type === BlockTypes.Form) {
+    if (component.type === BlockTypes.Form && component.category === ElementCategories.Block) {
       return {
         ...component,
         components: processFormComponents(component.components),
@@ -216,6 +229,9 @@ function LoginFlowBuilder() {
   // Flow name state - initialize from existing flow data or use default
   const [flowName, setFlowName] = useState<string>('Login Flow');
   const [flowHandle, setFlowHandle] = useState<string>('login-flow');
+
+  // Track whether loaded flow needs auto-layout (when nodes lack layout data)
+  const [needsAutoLayout, setNeedsAutoLayout] = useState<boolean>(false);
 
   /**
    * Generate a URL-friendly handle from a name.
@@ -379,20 +395,27 @@ function LoginFlowBuilder() {
 
   const generateSteps = useCallback(
     (stepNodes: Node[]): Node[] => {
+      // Check if template already includes a START step with custom position
+      const existingStartStep = stepNodes.find((step) => step.type === StaticStepTypes.Start);
+      const startPosition = existingStartStep?.position ?? {x: -300, y: 330};
+
       const START_STEP: Node = {
         data: {
           displayOnly: true,
         },
         deletable: false,
         id: INITIAL_FLOW_START_STEP_ID,
-        position: {x: -300, y: 330},
+        position: startPosition,
         type: StaticStepTypes.Start,
       };
+
+      // Filter out START step from stepNodes if it exists (we'll add our own)
+      const nonStartSteps = stepNodes.filter((step) => step.type !== StaticStepTypes.Start);
 
       return generateIdsForResources<Node[]>(
         resolveStepMetadata(resources, [
           START_STEP,
-          ...stepNodes.map((step: Node) => ({
+          ...nonStartSteps.map((step: Node) => ({
             data: step.data?.components
               ? {
                   ...step.data,
@@ -732,6 +755,12 @@ function LoginFlowBuilder() {
     if (flowId && existingFlowData) {
       const canvasData = transformFlowToCanvas(existingFlowData);
 
+      // Check if any nodes lack layout data (position at origin indicates missing layout)
+      // When layout data is missing, transformFlowToCanvas defaults positions to {x: 0, y: 0}
+      const nodesWithoutLayout = existingFlowData.nodes.filter((node) => !node.layout?.position);
+      const flowNeedsAutoLayout = nodesWithoutLayout.length > 1;
+      setNeedsAutoLayout(flowNeedsAutoLayout);
+
       // Process nodes to resolve metadata without adding a new START node
       // (the transformed data already contains the START node from the API)
       const processedNodes = generateIdsForResources<Node[]>(
@@ -868,7 +897,7 @@ function LoginFlowBuilder() {
         viewStepId = existingViewStep.id;
 
         // For INPUT elements, add them to Form (create Form if needed)
-        if (element.type === ElementTypes.Input) {
+        if (INPUT_ELEMENT_TYPES.has(element.type)) {
           return prevNodes.map((node) => {
             if (node.id === existingViewStep.id) {
               const nodeData = node.data as {components?: Element[]} | undefined;
@@ -1257,6 +1286,7 @@ function LoginFlowBuilder() {
         flowTitle={flowName}
         flowHandle={flowHandle}
         onFlowTitleChange={handleFlowNameChange}
+        triggerAutoLayoutOnLoad={needsAutoLayout}
       />
       <Snackbar
         open={errorSnackbar.open}

@@ -1,18 +1,20 @@
-// Copyright (c) 2025, WSO2 LLC. (http://www.wso2.com).
-//
-// WSO2 LLC. licenses this file to you under the Apache License,
-// Version 2.0 (the "License"); you may not use this file except
-// in compliance with the License.
-// You may obtain a copy of the License at
-//
-// http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing,
-// software distributed under the License is distributed on an
-// "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
-// KIND, either express or implied.  See the License for the
-// specific language governing permissions and limitations
-// under the License.
+/*
+ * Copyright (c) 2025, WSO2 LLC. (http://www.wso2.com).
+ *
+ * WSO2 LLC. licenses this file to you under the Apache License,
+ * Version 2.0 (the "License"); you may not use this file except
+ * in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing,
+ * software distributed under the License is distributed on an
+ * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+ * KIND, either express or implied.  See the License for the
+ * specific language governing permissions and limitations
+ * under the License.
+ */
 
 // Package sign provides utilities for digital signature generation and verification.
 package sign
@@ -49,7 +51,7 @@ func Generate(data []byte, alg SignAlgorithm, privateKey crypto.PrivateKey) ([]b
 	switch alg {
 	case RSASHA256, RSASHA512:
 		return newRSASign(hashed, hashFunc, privateKey)
-	case ECDSASHA256, ECDSASHA512:
+	case ECDSASHA256, ECDSASHA384, ECDSASHA512:
 		return newECDSASign(hashed, privateKey)
 	case ED25519:
 		return newED25519Sign(data, privateKey)
@@ -68,7 +70,7 @@ func Verify(data []byte, signature []byte, alg SignAlgorithm, publicKey crypto.P
 	switch alg {
 	case RSASHA256, RSASHA512:
 		return verifyRSA(hashed, signature, hashFunc, publicKey)
-	case ECDSASHA256, ECDSASHA512:
+	case ECDSASHA256, ECDSASHA384, ECDSASHA512:
 		return verifyECDSA(hashed, signature, publicKey)
 	case ED25519:
 		return verifyED25519(data, signature, publicKey)
@@ -91,6 +93,9 @@ func hashData(data []byte, alg SignAlgorithm) ([]byte, crypto.Hash) {
 	case RSASHA512, ECDSASHA512:
 		h = sha512.New()
 		hashFunc = crypto.SHA512
+	case ECDSASHA384:
+		h = sha512.New384()
+		hashFunc = crypto.SHA384
 	case ED25519:
 		// ED25519 performs internal hashing, no pre-hash needed
 		return data, crypto.Hash(0)

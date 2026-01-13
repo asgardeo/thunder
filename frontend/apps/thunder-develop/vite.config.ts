@@ -38,13 +38,17 @@ export default defineConfig({
         plugins: [['babel-plugin-react-compiler']],
       },
     }),
-    // Add visualizer plugin for bundle analysis (only in build mode)
-    visualizer({
-      filename: resolve(currentDir, 'dist', 'stats.html'),
-      open: process.env.ANALYZE === 'true',
-      gzipSize: true,
-      brotliSize: true,
-    }),
+    // Add visualizer plugin for bundle analysis (only when ANALYZE=true)
+    ...(process.env.ANALYZE === 'true'
+      ? [
+          visualizer({
+            filename: resolve(currentDir, 'dist', 'stats.html'),
+            open: true,
+            gzipSize: true,
+            brotliSize: true,
+          }),
+        ]
+      : []),
   ],
   server: {
     port: PORT,

@@ -19,12 +19,15 @@
 package export
 
 import (
+	"encoding/json"
+	"reflect"
 	"testing"
-
-	immutableresource "github.com/asgardeo/thunder/internal/system/immutable_resource"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"gopkg.in/yaml.v3"
+
+	immutableresource "github.com/asgardeo/thunder/internal/system/immutable_resource"
 )
 
 // Helper to convert local resourceRules to immutableresource.ResourceRules for testing
@@ -1232,4 +1235,304 @@ func TestToParameterizedYAML_InvalidStruct(t *testing.T) {
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "failed to convert object to node")
 	assert.Contains(t, err.Error(), "expected struct")
+}
+
+// TestHandleInterfaceValue_WithComplexObject tests handleInterfaceValue with complex nested objects
+func TestHandleInterfaceValue_WithComplexObject(t *testing.T) {
+	p := newParameterizer(templatingRules{})
+
+	// Create a complex interface{} value
+	complexData := map[string]interface{}{
+		"title":       "Login Page",
+		"description": "Please enter your credentials",
+		"components": []interface{}{
+			map[string]interface{}{
+				"id":       "username_field",
+				"type":     "TEXT_INPUT",
+				"label":    "Username",
+				"required": true,
+			},
+			map[string]interface{}{
+				"id":       "password_field",
+				"type":     "PASSWORD_INPUT",
+				"label":    "Password",
+				"required": true,
+			},
+		},
+		"theme": map[string]interface{}{
+			"primaryColor":   "#0066cc",
+			"secondaryColor": "#6c757d",
+			"fonts": map[string]interface{}{
+				"heading": "Arial",
+				"body":    "Helvetica",
+			},
+		},
+	}
+
+	// Wrap in interface{} to get the right reflect type
+	var interfaceValue interface{} = complexData
+	reflectValue := reflect.ValueOf(&interfaceValue).Elem()
+
+	node := p.handleInterfaceValue(reflectValue)
+
+	require.NotNil(t, node)
+	assert.Equal(t, yaml.ScalarNode, node.Kind)
+	assert.Equal(t, "!!str", node.Tag)
+
+	// Verify it's valid JSON
+	var parsed interface{}
+	err := json.Unmarshal([]byte(node.Value), &parsed)
+	require.NoError(t, err)
+
+	// Verify structure is preserved
+	parsedMap, ok := parsed.(map[string]interface{})
+	require.True(t, ok)
+	assert.Equal(t, "Login Page", parsedMap["title"])
+	assert.Equal(t, "Please enter your credentials", parsedMap["description"])
+
+	components, ok := parsedMap["components"].([]interface{})
+	require.True(t, ok)
+	assert.Len(t, components, 2)
+
+	theme, ok := parsedMap["theme"].(map[string]interface{})
+	require.True(t, ok)
+	assert.Equal(t, "#0066cc", theme["primaryColor"])
+}
+
+// TestHandleInterfaceValue_WithNilInterface tests handleInterfaceValue with nil interface
+func TestHandleInterfaceValue_WithNilInterface(t *testing.T) {
+	p := newParameterizer(templatingRules{})
+
+	var nilInterface interface{}
+	reflectValue := reflect.ValueOf(&nilInterface).Elem()
+
+	node := p.handleInterfaceValue(reflectValue)
+
+	require.NotNil(t, node)
+	assert.Equal(t, yaml.ScalarNode, node.Kind)
+	assert.Equal(t, "!!null", node.Tag)
+	assert.Equal(t, "null", node.Value)
+}
+
+// TestHandleInterfaceValue_WithPrimitiveTypes tests handleInterfaceValue with various primitive types
+func TestHandleInterfaceValue_WithPrimitiveTypes(t *testing.T) {
+	p := newParameterizer(templatingRules{})
+
+	testCases := []struct {
+		name          string
+		value         interface{}
+		expectedValue string
+	}{
+		{
+			name:          "string value",
+			value:         "test string",
+			expectedValue: `"test string"`,
+		},
+		{
+			name:          "integer value",
+			value:         42,
+			expectedValue: "42",
+		},
+		{
+			name:          "float value",
+			value:         3.14,
+			expectedValue: "3.14",
+		},
+		{
+			name:          "boolean true",
+			value:         true,
+			expectedValue: "true",
+		},
+		{
+			name:          "boolean false",
+			value:         false,
+			expectedValue: "false",
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			// Wrap in interface{} to get the right reflect type
+			var interfaceValue interface{} = tc.value
+			reflectValue := reflect.ValueOf(&interfaceValue).Elem()
+
+			node := p.handleInterfaceValue(reflectValue)
+
+			require.NotNil(t, node)
+			assert.Equal(t, yaml.ScalarNode, node.Kind)
+			assert.Equal(t, "!!str", node.Tag)
+			assert.Equal(t, tc.expectedValue, node.Value)
+		})
+	}
+}
+
+// TestHandleInterfaceValue_WithArrays tests handleInterfaceValue with arrays
+func TestHandleInterfaceValue_WithArrays(t *testing.T) {
+	p := newParameterizer(templatingRules{})
+
+	testCases := []struct {
+		name  string
+		value interface{}
+	}{
+		{
+			name:  "string array",
+			value: []string{"one", "two", "three"},
+		},
+		{
+			name:  "integer array",
+			value: []int{1, 2, 3, 4, 5},
+		},
+		{
+			name: "mixed array",
+			value: []interface{}{
+				"string",
+				42,
+				true,
+				map[string]interface{}{"key": "value"},
+			},
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			// Wrap in interface{} to get the right reflect type
+			var interfaceValue interface{} = tc.value
+			reflectValue := reflect.ValueOf(&interfaceValue).Elem()
+
+			node := p.handleInterfaceValue(reflectValue)
+
+			require.NotNil(t, node)
+			assert.Equal(t, yaml.ScalarNode, node.Kind)
+			assert.Equal(t, "!!str", node.Tag)
+
+			// Verify it's valid JSON
+			var parsed interface{}
+			err := json.Unmarshal([]byte(node.Value), &parsed)
+			require.NoError(t, err, "Should produce valid JSON")
+		})
+	}
+}
+
+// TestHandleInterfaceValue_WithNestedStructures tests handleInterfaceValue with deeply nested structures
+func TestHandleInterfaceValue_WithNestedStructures(t *testing.T) {
+	p := newParameterizer(templatingRules{})
+
+	deeplyNested := map[string]interface{}{
+		"level1": map[string]interface{}{
+			"level2": map[string]interface{}{
+				"level3": map[string]interface{}{
+					"level4": map[string]interface{}{
+						"level5": "deep value",
+						"array": []interface{}{
+							map[string]interface{}{
+								"nested_key": "nested_value",
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+
+	// Wrap in interface{} to get the right reflect type
+	var interfaceValue interface{} = deeplyNested
+	reflectValue := reflect.ValueOf(&interfaceValue).Elem()
+
+	node := p.handleInterfaceValue(reflectValue)
+
+	require.NotNil(t, node)
+	assert.Equal(t, yaml.ScalarNode, node.Kind)
+	assert.Equal(t, "!!str", node.Tag)
+
+	// Verify it's valid JSON and structure is preserved
+	var parsed map[string]interface{}
+	err := json.Unmarshal([]byte(node.Value), &parsed)
+	require.NoError(t, err)
+
+	// Navigate to the deep value
+	level1, ok := parsed["level1"].(map[string]interface{})
+	require.True(t, ok)
+	level2, ok := level1["level2"].(map[string]interface{})
+	require.True(t, ok)
+	level3, ok := level2["level3"].(map[string]interface{})
+	require.True(t, ok)
+	level4, ok := level3["level4"].(map[string]interface{})
+	require.True(t, ok)
+	assert.Equal(t, "deep value", level4["level5"])
+}
+
+// TestHandleInterfaceValue_WithEmptyStructures tests handleInterfaceValue with empty containers
+func TestHandleInterfaceValue_WithEmptyStructures(t *testing.T) {
+	p := newParameterizer(templatingRules{})
+
+	testCases := []struct {
+		name  string
+		value interface{}
+	}{
+		{
+			name:  "empty map",
+			value: map[string]interface{}{},
+		},
+		{
+			name:  "empty slice",
+			value: []interface{}{},
+		},
+		{
+			name:  "empty string slice",
+			value: []string{},
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			// Wrap in interface{} to get the right reflect type
+			var interfaceValue interface{} = tc.value
+			reflectValue := reflect.ValueOf(&interfaceValue).Elem()
+
+			node := p.handleInterfaceValue(reflectValue)
+
+			require.NotNil(t, node)
+			assert.Equal(t, yaml.ScalarNode, node.Kind)
+			assert.Equal(t, "!!str", node.Tag)
+
+			// Verify it's valid JSON
+			var parsed interface{}
+			err := json.Unmarshal([]byte(node.Value), &parsed)
+			require.NoError(t, err)
+		})
+	}
+}
+
+// TestHandleInterfaceValue_WithUnmarshallableType tests fallback to fmt.Sprintf when JSON marshaling fails
+func TestHandleInterfaceValue_WithUnmarshallableType(t *testing.T) {
+	p := newParameterizer(templatingRules{})
+
+	// Create a type that json.Marshal cannot handle but doesn't panic
+	// Use a map with non-string keys (json.Marshal will fail for this)
+	type customKey struct {
+		ID int
+	}
+
+	problemMap := map[customKey]string{
+		{ID: 1}: "value1",
+		{ID: 2}: "value2",
+	}
+
+	// Wrap in interface{} to get the right reflect type
+	var interfaceValue interface{} = problemMap
+	reflectValue := reflect.ValueOf(&interfaceValue).Elem()
+
+	node := p.handleInterfaceValue(reflectValue)
+
+	require.NotNil(t, node)
+	assert.Equal(t, yaml.ScalarNode, node.Kind)
+	assert.Equal(t, "!!str", node.Tag)
+
+	// Verify it uses the fmt.Sprintf fallback (should contain "map[")
+	assert.Contains(t, node.Value, "map[")
+
+	// Verify it's NOT valid JSON (because it used the fallback)
+	var parsed interface{}
+	err := json.Unmarshal([]byte(node.Value), &parsed)
+	assert.Error(t, err, "Should not be valid JSON since it used fmt.Sprintf fallback")
 }

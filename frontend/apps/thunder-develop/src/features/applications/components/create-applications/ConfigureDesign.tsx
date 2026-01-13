@@ -21,11 +21,9 @@ import {Palette, Plus, Shuffle} from '@wso2/oxygen-ui-icons-react';
 import type {JSX} from 'react';
 import {useState, useMemo, useEffect} from 'react';
 import {useTranslation} from 'react-i18next';
-import type {BrandingListItem} from '@/features/branding/models/responses';
+import {useGetBrandings, useGetBranding, type BrandingListItem} from '@thunder/shared-branding';
 import generateAppLogoSuggestions from '../../utils/generateAppLogoSuggestion';
 import generateAppPrimaryColorSuggestions from '../../utils/generateAppPrimaryColorSuggestions';
-import useGetBrandings from '../../../branding/api/useGetBrandings';
-import useGetBranding from '../../../branding/api/useGetBranding';
 import BrandingConstants from '../../constants/branding-contants';
 
 /**
@@ -147,6 +145,7 @@ export default function ConfigureDesign({
   const [customColor, setCustomColor] = useState<string>('');
   const [showCustomColorInput, setShowCustomColorInput] = useState<boolean>(false);
   const [showColorOptions, setShowColorOptions] = useState<boolean>(false);
+  const [hasCustomLogo, setHasCustomLogo] = useState<boolean>(false);
 
   // logoSeed is intentionally used as a dependency to trigger logo regeneration on shuffle
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -177,15 +176,25 @@ export default function ConfigureDesign({
   }, [defaultBrandingDetails, onColorSelect]);
 
   /**
+   * Apply DEFAULT branding logo if it exists
+   */
+  useEffect((): void => {
+    if (defaultBrandingDetails?.preferences?.theme?.colorSchemes?.light?.images?.logo?.primary?.url) {
+      const defaultLogo: string = defaultBrandingDetails.preferences.theme.colorSchemes.light.images.logo.primary.url;
+      onLogoSelect(defaultLogo);
+    }
+  }, [defaultBrandingDetails, onLogoSelect]);
+
+  /**
    * Notify parent about branding selection
    */
   useEffect((): void => {
     if (onBrandingSelectionChange) {
-      // User is using DEFAULT branding if it exists and they haven't opted to pick a different color
-      const useDefaultBranding = Boolean(defaultBrandingDetails && !showColorOptions);
+      // User is using DEFAULT branding if it exists and they haven't opted to pick different color or logo
+      const useDefaultBranding = Boolean(defaultBrandingDetails && !showColorOptions && !hasCustomLogo);
       onBrandingSelectionChange(useDefaultBranding, defaultBranding?.id);
     }
-  }, [defaultBrandingDetails, showColorOptions, defaultBranding, onBrandingSelectionChange]);
+  }, [defaultBrandingDetails, showColorOptions, hasCustomLogo, defaultBranding, onBrandingSelectionChange]);
 
   /**
    * Broadcast readiness - Design step is always ready since it has default values
@@ -201,6 +210,9 @@ export default function ConfigureDesign({
   };
 
   const handleLogoSelect = (logoUrl: string): void => {
+    // Check if the selected logo is different from the default branding logo
+    const defaultLogo = defaultBrandingDetails?.preferences?.theme?.colorSchemes?.light?.images?.logo?.primary?.url;
+    setHasCustomLogo(Boolean(defaultLogo && logoUrl !== defaultLogo));
     onLogoSelect(logoUrl);
   };
 

@@ -45,16 +45,16 @@ paths:
                     description: "Customer portal application"
                     client_id: "myapp_client_id"
                     logo_url: "https://myapp.example.com/logo.png"
-                    auth_flow_graph_id: "edc013d0-e893-4dc0-990c-3e1d203e005b"
-                    registration_flow_graph_id: "80024fb3-29ed-4c33-aa48-8aee5e96d522"
+                    auth_flow_id: "edc013d0-e893-4dc0-990c-3e1d203e005b"
+                    registration_flow_id: "80024fb3-29ed-4c33-aa48-8aee5e96d522"
                     is_registration_flow_enabled: true
                   - id: "660e8400-e29b-41d4-a716-446655440001"
                     name: "Mobile App"
                     description: "Mobile application for customers"
                     client_id: "mobile_client_id"
                     logo_url: "https://mobileapp.example.com/logo.png"
-                    auth_flow_graph_id: "edc013d0-e893-4dc0-990c-3e1d203e005b"
-                    registration_flow_graph_id: "80024fb3-29ed-4c33-aa48-8aee5e96d522"
+                    auth_flow_id: "edc013d0-e893-4dc0-990c-3e1d203e005b"
+                    registration_flow_id: "80024fb3-29ed-4c33-aa48-8aee5e96d522"
                     is_registration_flow_enabled: false
         "400":
           description: Bad request
@@ -94,8 +94,8 @@ paths:
             example:
               name: "My Web Application"
               description: "Customer portal application"
-              auth_flow_graph_id: "edc013d0-e893-4dc0-990c-3e1d203e005b"
-              registration_flow_graph_id: "80024fb3-29ed-4c33-aa48-8aee5e96d522"
+              auth_flow_id: "edc013d0-e893-4dc0-990c-3e1d203e005b"
+              registration_flow_id: "80024fb3-29ed-4c33-aa48-8aee5e96d522"
               is_registration_flow_enabled: true
               url: "https://myapp.example.com"
               logo_url: "https://myapp.example.com/logo.png"
@@ -152,8 +152,8 @@ paths:
                 name: "My Web Application"
                 description: "Customer portal application"
                 client_id: "myapp_client_id"
-                auth_flow_graph_id: "edc013d0-e893-4dc0-990c-3e1d203e005b"
-                registration_flow_graph_id: "80024fb3-29ed-4c33-aa48-8aee5e96d522"
+                auth_flow_id: "edc013d0-e893-4dc0-990c-3e1d203e005b"
+                registration_flow_id: "80024fb3-29ed-4c33-aa48-8aee5e96d522"
                 is_registration_flow_enabled: true
                 url: "https://myapp.example.com"
                 logo_url: "https://myapp.example.com/logo.png"
@@ -261,8 +261,8 @@ paths:
                 name: "My Web Application"
                 description: "Customer portal application"
                 client_id: "myapp_client_id"
-                auth_flow_graph_id: "edc013d0-e893-4dc0-990c-3e1d203e005b"
-                registration_flow_graph_id: "80024fb3-29ed-4c33-aa48-8aee5e96d522"
+                auth_flow_id: "edc013d0-e893-4dc0-990c-3e1d203e005b"
+                registration_flow_id: "80024fb3-29ed-4c33-aa48-8aee5e96d522"
                 is_registration_flow_enabled: true
                 url: "https://myapp.example.com"
                 logo_url: "https://myapp.example.com/logo.png"
@@ -360,8 +360,8 @@ paths:
             example:
               name: "Updated Web Application"
               description: "Updated customer portal application"
-              auth_flow_graph_id: "edc013d0-e893-4dc0-990c-3e1d203e005b"
-              registration_flow_graph_id: "80024fb3-29ed-4c33-aa48-8aee5e96d522"
+              auth_flow_id: "edc013d0-e893-4dc0-990c-3e1d203e005b"
+              registration_flow_id: "80024fb3-29ed-4c33-aa48-8aee5e96d522"
               is_registration_flow_enabled: true
               url: "https://myapp.example.com"
               logo_url: "https://myapp.example.com/updated-logo.png"
@@ -421,8 +421,8 @@ paths:
                 name: "Updated Web Application"
                 description: "Updated customer portal application"
                 client_id: "myapp_client_id"
-                auth_flow_graph_id: "edc013d0-e893-4dc0-990c-3e1d203e005b"
-                registration_flow_graph_id: "80024fb3-29ed-4c33-aa48-8aee5e96d522"
+                auth_flow_id: "edc013d0-e893-4dc0-990c-3e1d203e005b"
+                registration_flow_id: "80024fb3-29ed-4c33-aa48-8aee5e96d522"
                 is_registration_flow_enabled: true
                 url: "https://myapp.example.com"
                 logo_url: "https://myapp.example.com/updated-logo.png"
@@ -592,13 +592,13 @@ components:
           type: string
           description: A brief description of the application.
           example: "Customer portal application"
-        auth_flow_graph_id:
+        auth_flow_id:
           type: string
-          description: The ID of the authentication flow graph.
+          description: The ID of the authentication flow.
           example: "edc013d0-e893-4dc0-990c-3e1d203e005b"
-        registration_flow_graph_id:
+        registration_flow_id:
           type: string
-          description: The ID of the registration flow graph.
+          description: The ID of the registration flow.
           example: "80024fb3-29ed-4c33-aa48-8aee5e96d522"
         is_registration_flow_enabled:
           type: boolean
@@ -677,13 +677,13 @@ components:
           type: string
           description: The client ID for the application.
           example: "myapp_client_id"
-        auth_flow_graph_id:
+        auth_flow_id:
           type: string
-          description: The ID of the authentication flow graph.
+          description: The ID of the authentication flow.
           example: "edc013d0-e893-4dc0-990c-3e1d203e005b"
-        registration_flow_graph_id:
+        registration_flow_id:
           type: string
-          description: The ID of the registration flow graph.
+          description: The ID of the registration flow.
           example: "80024fb3-29ed-4c33-aa48-8aee5e96d522"
         is_registration_flow_enabled:
           type: boolean
@@ -761,13 +761,13 @@ components:
           type: string
           description: The client ID for the application.
           example: "myapp_client_id"
-        auth_flow_graph_id:
+        auth_flow_id:
           type: string
-          description: The ID of the authentication flow graph.
+          description: The ID of the authentication flow.
           example: "edc013d0-e893-4dc0-990c-3e1d203e005b"
-        registration_flow_graph_id:
+        registration_flow_id:
           type: string
-          description: The ID of the registration flow graph.
+          description: The ID of the registration flow.
           example: "80024fb3-29ed-4c33-aa48-8aee5e96d522"
         is_registration_flow_enabled:
           type: boolean
@@ -850,13 +850,13 @@ components:
           format: uri
           description: The URL of the application's logo.
           example: "https://myapp.example.com/logo.png"
-        auth_flow_graph_id:
+        auth_flow_id:
           type: string
-          description: The ID of the authentication flow graph.
+          description: The ID of the authentication flow.
           example: "edc013d0-e893-4dc0-990c-3e1d203e005b"
-        registration_flow_graph_id:
+        registration_flow_id:
           type: string
-          description: The ID of the registration flow graph.
+          description: The ID of the registration flow.
           example: "80024fb3-29ed-4c33-aa48-8aee5e96d522"
         is_registration_flow_enabled:
           type: boolean

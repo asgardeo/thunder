@@ -303,7 +303,7 @@ func (ts *GoogleRegistrationFlowTestSuite) SetupSuite() {
 	flowID, err := testutils.CreateFlow(googleRegistrationFlow)
 	ts.Require().NoError(err, "Failed to create Google registration flow")
 	ts.config.CreatedFlowIDs = append(ts.config.CreatedFlowIDs, flowID)
-	googleRegTestApp.RegistrationFlowGraphID = flowID
+	googleRegTestApp.RegistrationFlowID = flowID
 
 	flowIDWithExisting, err := testutils.CreateFlow(googleRegistrationFlowWithExistingUser)
 	ts.Require().NoError(err, "Failed to create Google registration flow with existing user")

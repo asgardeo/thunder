@@ -84,6 +84,7 @@ const translations = {
     create: 'Create',
     update: 'Update',
     save: 'Save',
+    or: 'or',
 
     // Status messages
     status: {
@@ -543,13 +544,15 @@ const translations = {
     'delete.message': 'Are you sure you want to delete this application? This action cannot be undone.',
     'delete.disclaimer': 'Warning: All associated data, configurations, and access tokens will be permanently removed.',
     'onboarding.preview.title': 'Preview',
-    'onboarding.preview.signInTo': 'Sign in to {{appName}}',
-    'onboarding.preview.welcomeMessage': 'Welcome back! Please sign in to continue.',
+    'onboarding.preview.signin': 'Sign In',
     'onboarding.preview.username': 'Username',
     'onboarding.preview.usernamePlaceholder': 'Enter your Username',
     'onboarding.preview.password': 'Password',
     'onboarding.preview.passwordPlaceholder': 'Enter your Password',
     'onboarding.preview.signInButton': 'Sign In',
+    'onboarding.preview.mobileNumber': 'Mobile Number',
+    'onboarding.preview.mobileNumberPlaceholder': 'Enter your mobile number',
+    'onboarding.preview.sendOtpButton': 'Send OTP',
     'onboarding.preview.dividerText': 'or',
     'onboarding.preview.continueWith': 'Continue with {{providerName}}',
     'onboarding.steps.name': 'Create an Application',
@@ -578,22 +581,26 @@ const translations = {
     'onboarding.configure.SignInOptions.google': 'Google',
     'onboarding.configure.SignInOptions.github': 'GitHub',
     'onboarding.configure.SignInOptions.notConfigured': 'Not configured',
+    'onboarding.configure.SignInOptions.noFlowFound': 'No flow found for the selected sign-in options. Please try a different combination.',
     'onboarding.configure.SignInOptions.noSelectionWarning':
       'At least one sign-in option is required. Please select at least one authentication method.',
     'onboarding.configure.SignInOptions.noIntegrations':
       'No social sign-in integrations available. Please configure an integration first.',
     'onboarding.configure.SignInOptions.hint':
       'You can always change these settings later in the application settings.',
+    'onboarding.configure.SignInOptions.preConfiguredFlows.selectFlow': 'Select already configured flow',
+    'onboarding.configure.SignInOptions.preConfiguredFlows.searchFlows': 'Search flows...',
+    'onboarding.configure.SignInOptions.smsOtp': 'SMS OTP',
     'onboarding.configure.SignInOptions.loading': 'Loading...',
     'onboarding.configure.SignInOptions.error': 'Failed to load authentication methods: {{error}}',
     'onboarding.configure.approach.title': 'Sign-In Experience',
     'onboarding.configure.approach.subtitle': 'Select how users will authenticate in your application',
-    'onboarding.configure.approach.inbuilt.title': 'Redirect to {{product}} Default Pages',
+    'onboarding.configure.approach.inbuilt.title': 'Redirect to {{product}} sign-in/sign-up handling pages',
     'onboarding.configure.approach.inbuilt.description':
-      "Users are redirected to {{product}}'s default sign-in pages. Easy to set up and you can customize the look and feel.",
-    'onboarding.configure.approach.native.title': 'Bring Your Own Sign-In',
+      'Users will be redirected to system-hosted sign-in and sign-up pages, which can be customized and branded using the Flow Designer and easily integrated with SDKs in just a few steps.',
+    'onboarding.configure.approach.native.title': 'Embedded sign-in/sign-up components in your app',
     'onboarding.configure.approach.native.description':
-      'Build a fully custom authentication experience within your application. Gives you maximum flexibility over the user journey.',
+      'Users will sign in or sign up through your app using the UI components or APIs provided by {{product}}. You can customize and brand the flows using the designer or through code.',
     'onboarding.configure.stack.technology.title': 'Technology',
     'onboarding.configure.stack.technology.subtitle': 'What technology are you using to build your application?',
     'onboarding.configure.stack.technology.react.title': 'React',
@@ -716,6 +723,8 @@ const translations = {
     'onboarding.summary.appDetails': 'Application is ready to use',
     'onboarding.summary.viewApplication': 'View Application',
     'onboarding.summary.viewAppAriaLabel': 'View application details',
+    'onboarding.summary.guides.subtitle': 'Choose how you want to integrate sign-in to your application',
+    'onboarding.summary.guides.divider': 'or',
     'clientSecret.warning': 'Please copy your client credentials now. The client secret will not be shown again.',
     'clientSecret.clientIdLabel': 'Client ID',
     'clientSecret.clientSecretLabel': 'Client Secret',
@@ -736,8 +745,8 @@ const translations = {
     'view.fields.tosUri': 'Terms of Service URI',
     'view.fields.policyUri': 'Privacy Policy URI',
     'view.fields.contacts': 'Contacts',
-    'view.fields.authFlowGraphId': 'Authentication Flow Graph ID',
-    'view.fields.registrationFlowGraphId': 'Registration Flow Graph ID',
+    'view.fields.authFlowId': 'Authentication Flow ID',
+    'view.fields.registrationFlowId': 'Registration Flow ID',
     'view.fields.registrationFlowEnabled': 'Registration Flow Enabled',
     'view.fields.clientId': 'Client ID',
     'view.fields.redirectUris': 'Redirect URIs',
@@ -776,6 +785,8 @@ const translations = {
   // Elements - Low level reusable element translations
   // ============================================================================
   elements: {
+    'buttons.github.text': 'Continue with GitHub',
+    'buttons.google.text': 'Continue with Google',
     'buttons.submit.text': 'Continue',
     'display.divider.or_separator': 'OR',
     'fields.first_name.label': 'First Name',
@@ -856,7 +867,14 @@ const translations = {
     'core.executions.smsOtp.mode.verify': 'Verify OTP',
     'core.executions.smsOtp.mode.label': 'Mode',
     'core.executions.smsOtp.mode.placeholder': 'Select a mode',
-    'core.executions.smsOtp.description': 'Configure the SMS OTP executor mode.',
+    'core.executions.smsOtp.description': 'Configure the SMS OTP executor settings.',
+
+    // SMS OTP sender selection
+    'core.executions.smsOtp.sender.label': 'Notification Sender',
+    'core.executions.smsOtp.sender.placeholder': 'Select a notification sender',
+    'core.executions.smsOtp.sender.required': 'Notification sender is required and must be selected.',
+    'core.executions.smsOtp.sender.noSenders':
+      'No notification senders available. Please create a notification sender first.',
 
     // Execution steps - tooltips and messages
     'core.executions.tooltip.configurationHint': 'Click to configure this step',
@@ -870,8 +888,9 @@ const translations = {
       'Required fields are not properly configured for the input field with ID <code>{{id}}</code>.',
     'core.validation.fields.input.idpName': 'Identity provider name is required',
     'core.validation.fields.input.idpId': 'Connection is required',
+    'core.validation.fields.input.senderId': 'Notification sender is required',
     'core.validation.fields.input.label': 'Label is required',
-    'core.validation.fields.input.identifier': 'Identifier is required',
+    'core.validation.fields.input.ref': 'Attribute is required',
 
     // Validation messages - executor
     'core.validation.fields.executor.general': 'The executor <0>{{id}}</0> is not properly configured.',
@@ -888,7 +907,7 @@ const translations = {
     'core.validation.fields.checkbox.general':
       'Required fields are not properly configured for the checkbox with ID <code>{{id}}</code>.',
     'core.validation.fields.checkbox.label': 'Label is required',
-    'core.validation.fields.checkbox.identifier': 'Identifier is required',
+    'core.validation.fields.checkbox.ref': 'Attribute is required',
 
     // Validation messages - divider
     'core.validation.fields.divider.general':
@@ -922,12 +941,15 @@ const translations = {
 
     // Validation messages - phone number input
     'core.validation.fields.phoneNumberInput.label': 'Phone number label is required',
-    'core.validation.fields.phoneNumberInput.identifier': 'Phone number identifier is required',
+    'core.validation.fields.phoneNumberInput.ref': 'Phone number attribute is required',
 
     // Elements - rich text
     'core.elements.richText.placeholder': 'Enter text here...',
+    'core.elements.richText.resolvedI18nValue': 'Resolved i18n value',
     'core.elements.richText.linkEditor.urlTypeLabel': 'URL Type',
     'core.elements.richText.linkEditor.placeholder': 'Enter URL',
+    'core.elements.richText.linkEditor.editLink': 'Edit Link',
+    'core.elements.richText.linkEditor.viewLink': 'Link',
 
     // Elements - text property field
     'core.elements.textPropertyField.placeholder': 'Enter {{propertyName}}',
@@ -955,7 +977,8 @@ const translations = {
     'core.dialogs.formRequiresView.formOnCanvas.title': 'Form Requires a View',
     'core.dialogs.formRequiresView.formOnCanvas.description':
       'Form components cannot be placed directly on the canvas. They must be inside a View component.',
-    'core.dialogs.formRequiresView.formOnCanvas.alertMessage': 'Would you like to create a View and add the Form inside it?',
+    'core.dialogs.formRequiresView.formOnCanvas.alertMessage':
+      'Would you like to create a View and add the Form inside it?',
     'core.dialogs.formRequiresView.formOnCanvas.confirmButton': 'Add View with Form',
     'core.dialogs.formRequiresView.inputOnCanvas.title': 'Input Requires a Form and View',
     'core.dialogs.formRequiresView.inputOnCanvas.description':
@@ -966,7 +989,8 @@ const translations = {
     'core.dialogs.formRequiresView.inputOnView.title': 'Input Requires a Form',
     'core.dialogs.formRequiresView.inputOnView.description':
       'Input components cannot be placed directly inside a View. They must be inside a Form component.',
-    'core.dialogs.formRequiresView.inputOnView.alertMessage': 'Would you like to create a Form and add the Input inside it?',
+    'core.dialogs.formRequiresView.inputOnView.alertMessage':
+      'Would you like to create a Form and add the Input inside it?',
     'core.dialogs.formRequiresView.inputOnView.confirmButton': 'Add Form with Input',
     'core.dialogs.formRequiresView.widgetOnCanvas.title': 'Widget Requires a View',
     'core.dialogs.formRequiresView.widgetOnCanvas.description':
@@ -997,7 +1021,8 @@ const translations = {
     'core.resourcePanel.showResources': 'Show Resources',
     'core.resourcePanel.hideResources': 'Hide Resources',
     'core.resourcePanel.starterTemplates.title': 'Starter Templates',
-    'core.resourcePanel.starterTemplates.description': 'Choose one of these templates to start building registration experience',
+    'core.resourcePanel.starterTemplates.description':
+      'Choose one of these templates to start building registration experience',
     'core.resourcePanel.widgets.title': 'Widgets',
     'core.resourcePanel.widgets.description': 'Use these widgets to build up the flow using pre-created flow blocks',
     'core.resourcePanel.steps.title': 'Steps',

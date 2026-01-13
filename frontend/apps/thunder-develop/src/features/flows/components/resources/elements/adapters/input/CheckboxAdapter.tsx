@@ -27,7 +27,7 @@ import PlaceholderComponent from '../PlaceholderComponent';
 
 const CHECKBOX_VALIDATION_FIELD_NAMES = {
   label: 'label',
-  identifier: 'identifier',
+  ref: 'ref',
 } as const;
 
 /**
@@ -77,8 +77,8 @@ function CheckboxAdapter({resource}: CheckboxAdapterPropsInterface): ReactElemen
         name: CHECKBOX_VALIDATION_FIELD_NAMES.label,
       },
       {
-        errorMessage: t('flows:core.validation.fields.checkbox.identifier'),
-        name: CHECKBOX_VALIDATION_FIELD_NAMES.identifier,
+        errorMessage: t('flows:core.validation.fields.checkbox.ref'),
+        name: CHECKBOX_VALIDATION_FIELD_NAMES.ref,
       },
     ],
     [t],

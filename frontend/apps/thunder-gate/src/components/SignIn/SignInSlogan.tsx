@@ -16,6 +16,7 @@
  * under the License.
  */
 
+import {useBranding} from '@thunder/shared-branding';
 import {ColorSchemeImage, Stack, Typography} from '@wso2/oxygen-ui';
 import {Cloud, ShieldCheck, Zap, TerminalSquare} from '@wso2/oxygen-ui-icons-react';
 import type {JSX} from 'react';
@@ -48,17 +49,20 @@ const items: {
 ];
 
 export default function SignInSlogan(): JSX.Element {
+  const {images} = useBranding();
+
+  // Get branded logos if available, otherwise use default
+  const brandedLogoLight = images?.logo?.primary?.url;
+  const brandedLogoDark = images?.logo?.primary?.url; // For now, use the same logo for both themes
+
+  const logoSrc = {
+    light: brandedLogoLight ?? `${import.meta.env.BASE_URL}/assets/images/logo.svg`,
+    dark: brandedLogoDark ?? `${import.meta.env.BASE_URL}/assets/images/logo-inverted.svg`,
+  };
+
   return (
     <Stack direction="column" alignItems="start" gap={5} maxWidth={450} display={{xs: 'none', md: 'flex'}}>
-      <ColorSchemeImage
-        src={{
-          light: `${import.meta.env.BASE_URL}/assets/images/logo.svg`,
-          dark: `${import.meta.env.BASE_URL}/assets/images/logo-inverted.svg`,
-        }}
-        alt={{light: 'Logo (Light)', dark: 'Logo (Dark)'}}
-        height={30}
-        width="auto"
-      />
+      <ColorSchemeImage src={logoSrc} alt={{light: 'Logo (Light)', dark: 'Logo (Dark)'}} height={30} width="auto" />
       <Stack sx={{flexDirection: 'column', alignSelf: 'center', gap: 4}}>
         {items.map((item) => (
           <Stack key={item.title} direction="row" sx={{gap: 2}}>

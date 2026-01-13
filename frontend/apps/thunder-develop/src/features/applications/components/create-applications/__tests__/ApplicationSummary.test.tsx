@@ -27,10 +27,12 @@ vi.mock('react-i18next', () => ({
     t: (key: string) => {
       const translations: Record<string, string> = {
         'applications:onboarding.summary.title': 'Application Created!',
-        'applications:onboarding.summary.subtitle': 'Your application has been successfully created and is ready to use.',
+        'applications:onboarding.summary.subtitle':
+          'Your application has been successfully created and is ready to use.',
         'applications:onboarding.summary.appDetails': 'Application is ready to use',
         'applications:onboarding.summary.viewAppAriaLabel': 'View application details',
-        'applications:clientSecret.warning': 'Please copy your client credentials now. The client secret will not be shown again.',
+        'applications:clientSecret.warning':
+          'Please copy your client credentials now. The client secret will not be shown again.',
         'applications:clientSecret.clientIdLabel': 'Client ID',
         'applications:clientSecret.clientSecretLabel': 'Client Secret',
         'applications:clientSecret.copied': 'Copied!',
@@ -44,6 +46,18 @@ vi.mock('react-i18next', () => ({
 const mockNavigate = vi.fn();
 vi.mock('react-router', () => ({
   useNavigate: () => mockNavigate,
+}));
+
+// Mock useApplicationCreate hook
+vi.mock('../../../contexts/ApplicationCreate/useApplicationCreate', () => ({
+  default: () => ({
+    selectedTemplateConfig: null,
+  }),
+}));
+
+// Mock TechnologyGuide component
+vi.mock('../TechnologyGuide', () => ({
+  default: () => null,
 }));
 
 // Mock clipboard API
@@ -154,7 +168,9 @@ describe('ApplicationSummary', () => {
       clientSecret: 'test-client-secret',
     });
 
-    expect(screen.getByText('Please copy your client credentials now. The client secret will not be shown again.')).toBeInTheDocument();
+    expect(
+      screen.getByText('Please copy your client credentials now. The client secret will not be shown again.'),
+    ).toBeInTheDocument();
   });
 
   it('should hide client secret by default', () => {
@@ -222,7 +238,7 @@ describe('ApplicationSummary', () => {
     // Verify the component structure allows for copy functionality
     const clientIdInput = screen.getByDisplayValue('test-client-id');
     expect(clientIdInput).toBeInTheDocument();
-    
+
     // The copy functionality is tested through the component structure
     // Actual clipboard operations are tested at integration level
   });
@@ -291,11 +307,11 @@ describe('ApplicationSummary', () => {
     const clientIdInput = screen.getByDisplayValue('test-client-id');
     const inputContainer = clientIdInput.closest('.MuiInputBase-root');
     expect(inputContainer).toBeInTheDocument();
-    
+
     // The copy button should be present in the endAdornment
     const buttons = inputContainer?.querySelectorAll('button') ?? [];
     expect(buttons.length).toBeGreaterThan(0);
-    
+
     // Verify the button has an onClick handler (component structure)
     expect(buttons[0]).toHaveProperty('onclick');
   });
@@ -310,11 +326,11 @@ describe('ApplicationSummary', () => {
     const clientSecretInput = screen.getByDisplayValue('test-client-secret');
     const inputContainer = clientSecretInput.closest('.MuiInputBase-root');
     expect(inputContainer).toBeInTheDocument();
-    
+
     // Should have at least 2 buttons (visibility toggle and copy)
     const buttons = inputContainer?.querySelectorAll('button') ?? [];
     expect(buttons.length).toBeGreaterThanOrEqual(2);
-    
+
     // Verify the copy button (second button) has an onClick handler
     expect(buttons[1]).toHaveProperty('onclick');
   });
@@ -332,7 +348,7 @@ describe('ApplicationSummary', () => {
 
     const buttons = clientSecretInput.closest('.MuiInputBase-root')?.querySelectorAll('button') ?? [];
     const visibilityButton = buttons[0] as HTMLElement;
-    
+
     if (visibilityButton) {
       await user.click(visibilityButton);
       // After toggle, type should be 'text'
@@ -386,7 +402,7 @@ describe('ApplicationSummary', () => {
 
   it('should handle clipboard API failure and use execCommand fallback', () => {
     mockWriteText.mockRejectedValue(new Error('Clipboard API not available'));
-    
+
     // Mock execCommand
     const mockExecCommand = vi.fn().mockReturnValue(true);
     // eslint-disable-next-line @typescript-eslint/unbound-method
@@ -406,7 +422,7 @@ describe('ApplicationSummary', () => {
     // Component should render successfully even with clipboard API failure
     expect(screen.getByDisplayValue('test-client-id')).toBeInTheDocument();
     expect(screen.getByDisplayValue('test-client-secret')).toBeInTheDocument();
-    
+
     // Restore
     if (originalExecCommand) {
       Object.defineProperty(document, 'execCommand', {
@@ -419,7 +435,7 @@ describe('ApplicationSummary', () => {
 
   it('should show copied message after copying', async () => {
     const user = userEvent.setup({delay: null});
-    
+
     renderComponent({
       hasOAuthConfig: true,
       clientId: 'test-client-id',
@@ -430,10 +446,10 @@ describe('ApplicationSummary', () => {
     const inputContainer = clientIdInput.closest('.MuiInputBase-root');
     const buttons = inputContainer?.querySelectorAll('button') ?? [];
     const copyButton = buttons[0] as HTMLElement;
-    
+
     expect(copyButton).toBeInTheDocument();
     await user.click(copyButton);
-    
+
     // Should show copied message immediately
     expect(screen.getByText('Copied!')).toBeInTheDocument();
   });
@@ -442,7 +458,7 @@ describe('ApplicationSummary', () => {
     renderComponent({applicationId: 'app-123'});
 
     const card = screen.getByRole('button', {name: /view application details/i});
-    
+
     // Simulate keydown with a non-Enter/Space key
     const keyDownEvent = new KeyboardEvent('keydown', {key: 'a', bubbles: true});
     card.dispatchEvent(keyDownEvent);
@@ -451,4 +467,3 @@ describe('ApplicationSummary', () => {
     expect(mockNavigate).not.toHaveBeenCalled();
   });
 });
-

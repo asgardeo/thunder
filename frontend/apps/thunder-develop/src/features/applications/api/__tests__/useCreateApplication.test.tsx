@@ -17,7 +17,7 @@
  */
 
 import {describe, it, expect, beforeEach, afterEach, vi} from 'vitest';
-import {renderHook, waitFor, act} from '@testing-library/react';
+import {waitFor, act, renderHook} from '@testing-library/react';
 import {QueryClient, QueryClientProvider} from '@tanstack/react-query';
 import type {ReactNode} from 'react';
 import {useAsgardeo} from '@asgardeo/react';
@@ -34,9 +34,13 @@ vi.mock('@asgardeo/react', () => ({
   useAsgardeo: vi.fn(),
 }));
 
-vi.mock('@thunder/commons-contexts', () => ({
-  useConfig: vi.fn(),
-}));
+vi.mock('@thunder/commons-contexts', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@thunder/commons-contexts')>();
+  return {
+    ...actual,
+    useConfig: vi.fn(),
+  };
+});
 
 describe('useCreateApplication', () => {
   const mockApplication: Application = {
@@ -48,8 +52,8 @@ describe('useCreateApplication', () => {
     tos_uri: 'https://test-app.com/terms',
     policy_uri: 'https://test-app.com/privacy',
     contacts: ['admin@test-app.com'],
-    auth_flow_graph_id: 'auth_flow_config_basic',
-    registration_flow_graph_id: 'registration_flow_config_basic',
+    auth_flow_id: 'edc013d0-e893-4dc0-990c-3e1d203e005b',
+    registration_flow_id: '80024fb3-29ed-4c33-aa48-8aee5e96d522',
     is_registration_flow_enabled: true,
     inbound_auth_config: [
       {
@@ -96,8 +100,8 @@ describe('useCreateApplication', () => {
     tos_uri: 'https://test-app.com/terms',
     policy_uri: 'https://test-app.com/privacy',
     contacts: ['admin@test-app.com'],
-    auth_flow_graph_id: 'auth_flow_config_basic',
-    registration_flow_graph_id: 'registration_flow_config_basic',
+    auth_flow_id: 'edc013d0-e893-4dc0-990c-3e1d203e005b',
+    registration_flow_id: '80024fb3-29ed-4c33-aa48-8aee5e96d522',
     is_registration_flow_enabled: true,
     inbound_auth_config: [
       {

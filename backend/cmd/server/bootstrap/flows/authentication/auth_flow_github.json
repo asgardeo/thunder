@@ -1,5 +1,5 @@
 {
-    "name": "GitHub Authentication Flow",
+    "name": "Default GitHub Authentication Flow",
     "handle": "default-github-flow",
     "flowType": "AUTHENTICATION",
     "nodes": [

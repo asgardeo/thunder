@@ -18,10 +18,15 @@
 
 import type {JSX} from 'react';
 import {Stack} from '@wso2/oxygen-ui';
+import {LayoutType, useBranding} from '@thunder/shared-branding';
 import SignInBox from './SignInBox';
 import SignInSlogan from './SignInSlogan';
 
 export default function SignIn(): JSX.Element {
+  const {isBrandingEnabled, layout} = useBranding();
+
+  const showSlogan: boolean = !isBrandingEnabled || layout?.type === LayoutType.LEFT_ALIGNED;
+
   return (
     <Stack
       direction="column"
@@ -52,7 +57,7 @@ export default function SignIn(): JSX.Element {
             m: 'auto',
           }}
         >
-          <SignInSlogan />
+          {showSlogan && <SignInSlogan />}
           <SignInBox />
         </Stack>
       </Stack>

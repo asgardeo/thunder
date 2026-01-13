@@ -382,7 +382,7 @@ func (uh *userHandler) HandleSelfUserCredentialUpdateRequest(w http.ResponseWrit
 		return
 	}
 
-	if updateRequest == nil || len(updateRequest.Attributes) == 0 {
+	if updateRequest == nil || len(updateRequest.Attributes) == 0 || string(updateRequest.Attributes) == "{}" {
 		handleError(w, &ErrorMissingCredentials)
 		return
 	}

@@ -20,6 +20,87 @@ import type {FlowTypes} from './metadata';
 import type {BaseConfig} from './base';
 
 /**
+ * Enumeration of available flow types in the Thunder identity management system.
+ *
+ * @public
+ * @remarks
+ * These flow types define the category of user journey being handled:
+ * - AUTHENTICATION: For user login and sign-in processes
+ * - REGISTRATION: For user signup and account creation processes
+ *
+ * @example
+ * ```typescript
+ * // Filter flows by type
+ * const authFlows = flows.filter(flow => flow.flowType === FlowType.AUTHENTICATION);
+ * const regFlows = flows.filter(flow => flow.flowType === FlowType.REGISTRATION);
+ * ```
+ */
+export const FlowType = {
+  /**
+   * Authentication flows handle user login and sign-in processes
+   */
+  AUTHENTICATION: 'AUTHENTICATION',
+
+  /**
+   * Registration flows handle user signup and account creation processes
+   */
+  REGISTRATION: 'REGISTRATION',
+} as const;
+
+/**
+ * Type representing the keys of FlowType enumeration.
+ * @public
+ */
+export type FlowType = (typeof FlowType)[keyof typeof FlowType];
+
+/**
+ * Enumeration of node types available in flow definitions.
+ *
+ * @public
+ * @remarks
+ * Each flow is composed of connected nodes that define the user journey:
+ * - START: Entry point of the flow
+ * - PROMPT: Interactive UI components for user input
+ * - TASK_EXECUTION: Background server operations
+ * - END: Terminal point of the flow
+ *
+ * @example
+ * ```typescript
+ * const startNode = {
+ *   id: 'node_001',
+ *   type: NodeType.START,
+ *   onSuccess: 'node_002'
+ * };
+ * ```
+ */
+export const FlowNodeType = {
+  /**
+   * Initial node indicating the starting point of the flow
+   */
+  START: 'START',
+  /**
+   * Interactive UI node that displays components and collects user input
+   */
+  PROMPT: 'PROMPT',
+
+  /**
+   * Background executor node that performs server-side operations
+   */
+  TASK_EXECUTION: 'TASK_EXECUTION',
+
+  /**
+   * Terminal node indicating the end of the flow
+   */
+  END: 'END',
+} as const;
+
+/**
+ * Type representing the keys of NodeType enumeration.
+ * @public
+ */
+export type FlowNodeType = (typeof FlowNodeType)[keyof typeof FlowNodeType];
+
+/**
  * Interface for Flow completion configurations.
  * Flow completion configs originate from end-step resources, which expose `BaseConfig`
  * metadata in addition to arbitrary backend data.

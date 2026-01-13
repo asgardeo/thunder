@@ -37,19 +37,23 @@ import SidebarContext from './context/SidebarContext';
 import {DRAWER_WIDTH, MINI_DRAWER_WIDTH} from './constants';
 
 export interface SideMenuProps {
-  expanded?: boolean;
+  defaultExpanded?: boolean;
   onExpandedChange?: (expanded: boolean) => void;
   disableCollapsible?: boolean;
 }
 
 export default function SideMenu({
-  expanded: controlledExpanded,
+  defaultExpanded = true,
   onExpandedChange,
   disableCollapsible = false,
 }: SideMenuProps = {}): JSX.Element {
   const theme = useTheme();
-  const [internalExpanded, setInternalExpanded] = useState(true);
-  const expanded = controlledExpanded ?? internalExpanded;
+  const [expanded, setExpanded] = useState(defaultExpanded);
+
+  // Sync expanded state when defaultExpanded changes (e.g., navigating between routes)
+  useEffect(() => {
+    setExpanded(defaultExpanded);
+  }, [defaultExpanded]);
 
   const [isFullyExpanded, setIsFullyExpanded] = useState(expanded);
   const [isFullyCollapsed, setIsFullyCollapsed] = useState(!expanded);
@@ -86,11 +90,8 @@ export default function SideMenu({
 
   const handleToggle = () => {
     const newExpanded = !expanded;
-    if (onExpandedChange) {
-      onExpandedChange(newExpanded);
-    } else {
-      setInternalExpanded(newExpanded);
-    }
+    setExpanded(newExpanded);
+    onExpandedChange?.(newExpanded);
   };
 
   const sidebarContextValue = useMemo(

@@ -27,7 +27,7 @@ import FlowEventTypes from '@/features/flows/models/extension';
 import PluginRegistry from '@/features/flows/plugins/PluginRegistry';
 import generateResourceId from '@/features/flows/utils/generateResourceId';
 import ReorderableFlowElement from '../../steps/view/ReorderableElement';
-import Droppable from '../../../dnd/droppable';
+import Droppable from '../../../dnd/Droppable';
 import './FormAdapter.scss';
 
 /**
@@ -80,7 +80,7 @@ function FormAdapter({
   const filteredComponents = useMemo(() => {
     if (!resource?.components) return [];
     return resource.components.filter((component: FlowElement) =>
-      PluginRegistry.getInstance().executeSync(FlowEventTypes.ON_NODE_ELEMENT_FILTER, component)
+      PluginRegistry.getInstance().executeSync(FlowEventTypes.ON_NODE_ELEMENT_FILTER, component),
     );
   }, [resource?.components]);
 
@@ -106,9 +106,7 @@ function FormAdapter({
         >
           {shouldShowFormFieldsPlaceholder && (
             <Box className="form-adapter-placeholder">
-              <Typography variant="body2" sx={{color: 'black'}}>
-                {t('flows:core.adapters.form.placeholder')}
-              </Typography>
+              <Typography variant="body2">{t('flows:core.adapters.form.placeholder')}</Typography>
             </Box>
           )}
           {filteredComponents.map((component: FlowElement, index: number) => (

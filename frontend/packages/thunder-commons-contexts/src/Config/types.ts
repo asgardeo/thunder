@@ -69,6 +69,13 @@ export interface ClientConfig {
   client_id: string;
 
   /**
+   * UUID of the client application. If not provided in configuration,
+   * it will be extracted from the applicationId URL parameter.
+   * @example "e7db0b52-06a7-45e4-977b-6914b81a2069"
+   */
+  uuid?: string;
+
+  /**
    * OAuth2/OIDC scopes requested during authentication.
    * @example ["openid", "profile", "email", "system"]
    */

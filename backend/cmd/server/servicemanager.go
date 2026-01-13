@@ -42,7 +42,9 @@ import (
 	"github.com/asgardeo/thunder/internal/resource"
 	"github.com/asgardeo/thunder/internal/role"
 	"github.com/asgardeo/thunder/internal/system/crypto/hash"
+	"github.com/asgardeo/thunder/internal/system/crypto/pki"
 	"github.com/asgardeo/thunder/internal/system/export"
+	i18nmgt "github.com/asgardeo/thunder/internal/system/i18n/mgt"
 	immutableresource "github.com/asgardeo/thunder/internal/system/immutable_resource"
 	"github.com/asgardeo/thunder/internal/system/jwt"
 	"github.com/asgardeo/thunder/internal/system/log"
@@ -58,6 +60,7 @@ var observabilitySvc observability.ObservabilityServiceInterface
 func registerServices(
 	mux *http.ServeMux,
 	jwtService jwt.JWTServiceInterface,
+	pkiService pki.PKIServiceInterface,
 ) {
 	logger := log.GetLogger()
 
@@ -65,6 +68,14 @@ func registerServices(
 
 	// List to collect exporters from each package
 	var exporters []immutableresource.ResourceExporter
+
+	// Initialize i18n service for internationalization support.
+	_, i18nExporter, err := i18nmgt.Initialize(mux)
+	if err != nil {
+		logger.Fatal("Failed to initialize i18n service", log.Error(err))
+	}
+	// Add to exporters list (must be done after initializing list)
+	exporters = append(exporters, i18nExporter)
 
 	ouService, ouExporter, err := ou.Initialize(mux)
 	if err != nil {
@@ -141,7 +152,7 @@ func registerServices(
 	flowExecService := flowexec.Initialize(mux, flowMgtService, applicationService, execRegistry, observabilitySvc)
 
 	// Initialize OAuth services.
-	oauth.Initialize(mux, applicationService, userService, jwtService, flowExecService, observabilitySvc)
+	oauth.Initialize(mux, applicationService, userService, jwtService, flowExecService, observabilitySvc, pkiService)
 
 	// TODO: Legacy way of initializing services. These need to be refactored in the future aligning to the
 	// dependency injection pattern used above.

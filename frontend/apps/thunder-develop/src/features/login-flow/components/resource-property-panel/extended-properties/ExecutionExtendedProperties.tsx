@@ -21,7 +21,6 @@ import {useMemo, type ReactNode} from 'react';
 import {useTranslation} from 'react-i18next';
 import {
   Alert,
-  CircularProgress,
   FormHelperText,
   FormLabel,
   MenuItem,
@@ -34,6 +33,7 @@ import {ExecutionTypes} from '@/features/flows/models/steps';
 import useValidationStatus from '@/features/flows/hooks/useValidationStatus';
 import useIdentityProviders from '@/features/integrations/api/useIdentityProviders';
 import {IdentityProviderTypes, type IdentityProviderType} from '@/features/integrations/models/identity-provider';
+import useNotificationSenders from '@/features/notification-senders/api/useNotificationSenders';
 
 /**
  * Maps executor names to their corresponding identity provider types.
@@ -47,8 +47,8 @@ const EXECUTOR_TO_IDP_TYPE_MAP: Record<string, IdentityProviderType> = {
  * Available modes for SMS OTP executor.
  */
 const SMS_OTP_MODES = [
-  {value: 'send', translationKey: 'flows:core.executions.smsOtp.mode.send'},
-  {value: 'verify', translationKey: 'flows:core.executions.smsOtp.mode.verify'},
+  {value: 'send', translationKey: 'flows:core.executions.smsOtp.mode.send', displayLabel: 'Send SMS OTP'},
+  {value: 'verify', translationKey: 'flows:core.executions.smsOtp.mode.verify', displayLabel: 'Verify SMS OTP'},
 ] as const;
 
 /**
@@ -67,6 +67,7 @@ function ExecutionExtendedProperties({resource, onChange}: ExecutionExtendedProp
   const {t} = useTranslation();
   const {selectedNotification} = useValidationStatus();
   const {data: identityProviders, isLoading: isLoadingIdps} = useIdentityProviders();
+  const {data: notificationSenders, isLoading: isLoadingSenders} = useNotificationSenders();
 
   // Get the executor name from the resource
   const executorName = useMemo(() => {
@@ -84,6 +85,12 @@ function ExecutionExtendedProperties({resource, onChange}: ExecutionExtendedProp
   const currentMode = useMemo(() => {
     const stepData = resource?.data as StepData | undefined;
     return (stepData?.action?.executor as {mode?: string})?.mode ?? '';
+  }, [resource]);
+
+  // Get the current sender ID for SMS OTP executor
+  const currentSenderId = useMemo(() => {
+    const stepData = resource?.data as StepData | undefined;
+    return (stepData?.properties as {senderId?: string})?.senderId ?? '';
   }, [resource]);
 
   // Check if this is an SMS OTP executor
@@ -122,6 +129,19 @@ function ExecutionExtendedProperties({resource, onChange}: ExecutionExtendedProp
     return '';
   }, [resource, selectedNotification]);
 
+  /**
+   * Get the error message for the sender field.
+   */
+  const senderErrorMessage: string = useMemo(() => {
+    const key = `${resource?.id}_data.properties.senderId`;
+
+    if (selectedNotification?.hasResourceFieldNotification(key)) {
+      return selectedNotification?.getResourceFieldNotification(key);
+    }
+
+    return '';
+  }, [resource, selectedNotification]);
+
   // Handle connection selection - store the IDP ID in properties.idpId
   const handleConnectionChange = (selectedIdpId: string): void => {
     onChange('data.properties.idpId', selectedIdpId, resource);
@@ -129,11 +149,41 @@ function ExecutionExtendedProperties({resource, onChange}: ExecutionExtendedProp
 
   // Handle mode selection for SMS OTP executor
   const handleModeChange = (selectedMode: string): void => {
-    onChange('data.action.executor.mode', selectedMode, resource);
+    // Update the display label based on the selected mode
+    const modeConfig = SMS_OTP_MODES.find((mode) => mode.value === selectedMode);
+
+    // Build the updated data object with both mode and display label
+    // This avoids the debounce issue where multiple rapid onChange calls would drop intermediate values
+    const updatedData = {
+      ...((resource?.data as StepData) ?? {}),
+      action: {
+        ...((resource?.data as StepData)?.action ?? {}),
+        executor: {
+          ...((resource?.data as StepData)?.action?.executor ?? {}),
+          mode: selectedMode,
+        },
+      },
+      display: {
+        ...((resource?.data as StepData)?.display ?? {}),
+        label: modeConfig?.displayLabel ?? 'SMS OTP',
+      },
+    };
+
+    // Single update call with the complete data object
+    onChange('data', updatedData, resource);
   };
 
-  // Render SMS OTP mode selector
+  // Handle sender selection for SMS OTP executor
+  const handleSenderChange = (selectedSenderId: string): void => {
+    onChange('data.properties.senderId', selectedSenderId, resource);
+  };
+
+  // Render SMS OTP mode and sender selector
   if (isSmsOtpExecutor) {
+    const hasSenders = (notificationSenders?.length ?? 0) > 0;
+    const isSenderPlaceholder = currentSenderId === '{{SENDER_ID}}' || currentSenderId === '';
+    const showSenderError = isSenderPlaceholder || !!senderErrorMessage;
+
     return (
       <Stack gap={2}>
         <Typography variant="body2" color="text.secondary">
@@ -159,6 +209,37 @@ function ExecutionExtendedProperties({resource, onChange}: ExecutionExtendedProp
             ))}
           </Select>
         </div>
+
+        <div>
+          <FormLabel htmlFor="sender-select">{t('flows:core.executions.smsOtp.sender.label')}</FormLabel>
+          <Select
+            id="sender-select"
+            value={isSenderPlaceholder ? '' : currentSenderId}
+            onChange={(e) => handleSenderChange(e.target.value)}
+            displayEmpty
+            fullWidth
+            error={showSenderError}
+            disabled={isLoadingSenders || !hasSenders}
+          >
+            <MenuItem value="" disabled>
+              {isLoadingSenders ? t('common:loading') : t('flows:core.executions.smsOtp.sender.placeholder')}
+            </MenuItem>
+            {notificationSenders?.map((sender) => (
+              <MenuItem key={sender.id} value={sender.id}>
+                {sender.name}
+              </MenuItem>
+            ))}
+          </Select>
+          {showSenderError && (
+            <FormHelperText error>{senderErrorMessage || t('flows:core.executions.smsOtp.sender.required')}</FormHelperText>
+          )}
+        </div>
+
+        {!isLoadingSenders && !hasSenders && (
+          <Alert severity="warning">
+            {t('flows:core.executions.smsOtp.sender.noSenders')}
+          </Alert>
+        )}
       </Stack>
     );
   }
@@ -179,28 +260,24 @@ function ExecutionExtendedProperties({resource, onChange}: ExecutionExtendedProp
 
       <div>
         <FormLabel htmlFor="connection-select">Connection</FormLabel>
-        {isLoadingIdps ? (
-          <CircularProgress size={20} />
-        ) : (
-          <Select
-            id="connection-select"
-            value={isPlaceholder ? '' : currentIdpId}
-            onChange={(e) => handleConnectionChange(e.target.value)}
-            displayEmpty
-            fullWidth
-            error={showError}
-            disabled={!hasConnections}
-          >
-            <MenuItem value="" disabled>
-              Select a connection
+        <Select
+          id="connection-select"
+          value={isPlaceholder ? '' : currentIdpId}
+          onChange={(e) => handleConnectionChange(e.target.value)}
+          displayEmpty
+          fullWidth
+          error={showError}
+          disabled={isLoadingIdps || !hasConnections}
+        >
+          <MenuItem value="" disabled>
+            {isLoadingIdps ? t('common:loading') : 'Select a connection'}
+          </MenuItem>
+          {availableConnections.map((idp) => (
+            <MenuItem key={idp.id} value={idp.id}>
+              {idp.name}
             </MenuItem>
-            {availableConnections.map((idp) => (
-              <MenuItem key={idp.id} value={idp.id}>
-                {idp.name}
-              </MenuItem>
-            ))}
-          </Select>
-        )}
+          ))}
+        </Select>
         {showError && (
           <FormHelperText error>{errorMessage || 'Connection is required and must be selected.'}</FormHelperText>
         )}

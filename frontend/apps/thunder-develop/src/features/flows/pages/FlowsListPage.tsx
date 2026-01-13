@@ -21,12 +21,13 @@ import {useNavigate} from 'react-router';
 import {Box, Stack, Typography, Button} from '@wso2/oxygen-ui';
 import {Plus} from '@wso2/oxygen-ui-icons-react';
 import {useTranslation} from 'react-i18next';
+import {useLogger} from '@thunder/logger/react';
 import FlowsList from '../components/FlowsList';
 
 export default function FlowsListPage(): JSX.Element {
   const navigate = useNavigate();
   const {t} = useTranslation();
-
+  const logger = useLogger('FlowsListPage');
   return (
     <Box>
       <Stack direction="row" justifyContent="space-between" alignItems="center" mb={4} flexWrap="wrap" gap={2}>
@@ -47,8 +48,8 @@ export default function FlowsListPage(): JSX.Element {
                 await navigate('/flows/login-builder');
               };
 
-              handler().catch(() => {
-                // TODO: Log the errors
+              handler().catch((error: unknown) => {
+                logger.error('Failed to navigate to flow builder page', {error});
               });
             }}
           >

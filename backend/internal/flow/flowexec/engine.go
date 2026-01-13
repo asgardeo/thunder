@@ -607,6 +607,7 @@ func createExecutionRecord(node core.NodeInterface, step int) common.NodeExecuti
 				record.ExecutorName = executor.GetName()
 				record.ExecutorType = executor.GetType()
 			}
+			record.ExecutorMode = executableNode.GetMode()
 		}
 	}
 
@@ -674,17 +675,6 @@ func publishNodeExecutionStartedEvent(
 		WithData(event.DataKey.StepNumber, fmt.Sprintf("%d", stepNumber)).
 		WithData(event.DataKey.AttemptNumber, fmt.Sprintf("%d", attemptNumber)).
 		WithData(event.DataKey.AppID, ctx.AppID)
-
-	// Set executor details if applicable (only for executor-backed nodes)
-	if node.GetType() == common.NodeTypeTaskExecution {
-		if executableNode, ok := node.(core.ExecutorBackedNodeInterface); ok {
-			executor := executableNode.GetExecutor()
-			if executor != nil && record != nil {
-				record.ExecutorName = executor.GetName()
-				record.ExecutorType = executor.GetType()
-			}
-		}
-	}
 
 	obsSvc.PublishEvent(evt)
 }

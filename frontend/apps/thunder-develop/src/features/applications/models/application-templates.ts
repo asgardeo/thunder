@@ -44,10 +44,124 @@ export const PlatformApplicationTemplate = {
   SERVER: 'SERVER',
 } as const;
 
+/**
+ * Integration guide types.
+ * Defines the different types of integration guides available for application templates.
+ *
+ * @public
+ */
+export interface IntegrationGuide {
+  /**
+   * Unique identifier for the guide
+   */
+  id: string;
+  /**
+   * Display title of the guide
+   */
+  title: string;
+  /**
+   * Brief description of what the guide offers
+   */
+  description: string;
+  /**
+   * Type of guide (llm for AI-assisted, manual for step-by-step)
+   */
+  type: 'llm' | 'manual';
+  /**
+   * Icon identifier for the guide
+   */
+  icon: string;
+  /**
+   * Markdown content for LLM prompts
+   */
+  content?: string;
+}
+
+/**
+ * Integration step code block.
+ *
+ * @public
+ */
+export interface IntegrationStepCode {
+  /**
+   * Programming language for syntax highlighting
+   */
+  language: string;
+  /**
+   * Optional filename to display
+   */
+  filename?: string;
+  /**
+   * Code content
+   */
+  content: string;
+  /**
+   * Optional tabs for different package managers
+   */
+  tabs?: string[];
+}
+
+/**
+ * Integration step for manual integration guide.
+ *
+ * @public
+ */
+export interface IntegrationStep {
+  /**
+   * Step number
+   */
+  step: number;
+  /**
+   * Step title
+   */
+  title: string;
+  /**
+   * Main description
+   */
+  description: string;
+  /**
+   * Optional sub-description
+   */
+  subDescription?: string;
+  /**
+   * Optional bullet points
+   */
+  bullets?: string[];
+  /**
+   * Optional code block
+   */
+  code?: IntegrationStepCode;
+}
+
+/**
+ * Integration guides structure containing LLM prompt and manual steps.
+ * Keys represent different integration approaches (e.g., 'inbuilt', 'custom').
+ *
+ * @public
+ */
+export type IntegrationGuides = Record<
+  string,
+  {
+    /**
+     * LLM prompt guide option
+     */
+    llm_prompt: IntegrationGuide;
+    /**
+     * Manual step-by-step integration guide
+     */
+    manual_steps: IntegrationStep[];
+  }
+>;
+
 export type ApplicationTemplate = Pick<
   Application,
   'name' | 'description' | 'inbound_auth_config' | 'allowed_user_types'
->;
+> & {
+  /**
+   * Optional integration guides for this template
+   */
+  integration_guides?: IntegrationGuides;
+};
 
 export interface ApplicationTemplateMetadata<T = TechnologyApplicationTemplate | PlatformApplicationTemplate> {
   value: T;
@@ -55,6 +169,7 @@ export interface ApplicationTemplateMetadata<T = TechnologyApplicationTemplate |
   titleKey: string;
   descriptionKey: string;
   template: ApplicationTemplate;
+  disabled?: boolean;
 }
 
 export type TechnologyApplicationTemplate = keyof typeof TechnologyApplicationTemplate;

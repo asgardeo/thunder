@@ -256,7 +256,7 @@ func (ts *GithubAuthFlowTestSuite) SetupSuite() {
 	flowID, err := testutils.CreateFlow(githubAuthFlow)
 	ts.Require().NoError(err, "Failed to create GitHub auth flow")
 	ts.config.CreatedFlowIDs = append(ts.config.CreatedFlowIDs, flowID)
-	githubAuthTestApp.AuthFlowGraphID = flowID
+	githubAuthTestApp.AuthFlowID = flowID
 
 	// Create test application for GitHub auth tests
 	appID, err := testutils.CreateApplication(githubAuthTestApp)

@@ -19,7 +19,7 @@
 import {useEffect, useRef, useState, useMemo} from 'react';
 import {useAsgardeo} from '@asgardeo/react';
 import {useConfig} from '@thunder/commons-contexts';
-
+import {useLogger} from '@thunder/logger/react';
 import type {ApiError, ApiUserSchema} from '../types/user-types';
 
 /**
@@ -31,6 +31,7 @@ import type {ApiError, ApiUserSchema} from '../types/user-types';
 export default function useGetUserType(id?: string) {
   const {http} = useAsgardeo();
   const {getServerUrl} = useConfig();
+  const logger = useLogger();
   const [data, setData] = useState<ApiUserSchema | null>(null);
   const [error, setError] = useState<ApiError | null>(null);
   const [loading, setLoading] = useState(false);
@@ -86,9 +87,8 @@ export default function useGetUserType(id?: string) {
       }
     };
 
-    fetchUserType().catch(() => {
-      // TODO: Log the errors
-      // Tracker: https://github.com/asgardeo/thunder/issues/618
+    fetchUserType().catch((_error: unknown) => {
+      logger.error('Failed to fetch user type', {error: _error, userTypeId: id});
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id]);

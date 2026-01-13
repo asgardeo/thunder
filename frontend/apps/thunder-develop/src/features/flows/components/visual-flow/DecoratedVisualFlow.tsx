@@ -29,17 +29,28 @@ import {
   useUpdateNodeInternals,
 } from '@xyflow/react';
 import type {UpdateNodeInternals} from '@xyflow/system';
-import {type Dispatch, useCallback, useRef, useState, type ReactElement, type SetStateAction} from 'react';
+import {
+  type Dispatch,
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type ReactElement,
+  type SetStateAction,
+} from 'react';
 import {Box} from '@wso2/oxygen-ui';
 import classNames from 'classnames';
+import useIdentityProviders from '@/features/integrations/api/useIdentityProviders';
+import useNotificationSenders from '@/features/notification-senders/api/useNotificationSenders';
 import VisualFlow, {type VisualFlowPropsInterface} from './VisualFlow';
-import Droppable from '../dnd/droppable';
+import Droppable from '../dnd/Droppable';
 import VisualFlowConstants from '../../constants/VisualFlowConstants';
 import generateResourceId from '../../utils/generateResourceId';
-import {BlockTypes, ElementTypes, type Element} from '../../models/elements';
+import {BlockTypes, type Element} from '../../models/elements';
 import type {DragSourceData, DragTargetData, DragEventWithNative} from '../../models/drag-drop';
 import {ResourceTypes, type Resource, type Resources} from '../../models/resources';
-import FormRequiresViewDialog from '../form-requires-view-dialog/FormRequiresViewDialog';
+import FormRequiresViewDialog from './FormRequiresViewDialog';
 import {type Step, type StepData} from '../../models/steps';
 import {type Template} from '../../models/templates';
 import type {Widget} from '../../models/widget';
@@ -56,14 +67,15 @@ import useDragDropHandlers from '../../hooks/useDragDropHandlers';
 import applyAutoLayout from '../../utils/applyAutoLayout';
 import {resolveCollisions} from '../../utils/resolveCollisions';
 import ResourcePanel from '../resource-panel/ResourcePanel';
-import HeaderPanel from '../header-panel/HeaderPanel';
 import ResourcePropertyPanel from '../resource-property-panel/ResourcePropertyPanel';
 import ValidationPanel from '../validation-panel/ValidationPanel';
+import computeExecutorConnections from '../../utils/computeExecutorConnections';
+import type {MetadataInterface} from '../../models/metadata';
 
 /**
  * Props interface of {@link DecoratedVisualFlow}
  */
-export interface DecoratedVisualFlowPropsInterface extends Omit<VisualFlowPropsInterface, 'edgeTypes'> {
+export interface DecoratedVisualFlowPropsInterface extends Omit<VisualFlowPropsInterface, 'edgeTypes' | 'onSave'> {
   resources: Resources;
   edgeTypes?: VisualFlowPropsInterface['edgeTypes'];
   onEdgeResolve?: (connection: Connection, nodes: Node[]) => Edge;
@@ -88,10 +100,12 @@ export interface DecoratedVisualFlowPropsInterface extends Omit<VisualFlowPropsI
   flowTitle: string;
   flowHandle: string;
   onFlowTitleChange: (newTitle: string) => void;
-  isHeaderPanelOpen?: boolean;
-  headerPanelContent?: ReactElement | null;
-  onBack?: () => void;
   onSave?: (canvasData: {nodes: Node[]; edges: Edge[]; viewport: {x: number; y: number; zoom: number}}) => void;
+  /**
+   * When true, triggers auto-layout on initial render if nodes lack proper layout data.
+   * This is useful when loading flows that don't have saved canvas positions.
+   */
+  triggerAutoLayoutOnLoad?: boolean;
 }
 
 /**
@@ -118,6 +132,7 @@ function DecoratedVisualFlow({
   flowTitle,
   flowHandle,
   onFlowTitleChange,
+  triggerAutoLayoutOnLoad = false,
   ...rest
 }: DecoratedVisualFlowPropsInterface): ReactElement {
   useDeleteExecutionResource();
@@ -130,6 +145,22 @@ function DecoratedVisualFlow({
   const {isResourcePanelOpen, isResourcePropertiesPanelOpen, isFlowMetadataLoading, metadata, onResourceDropOnCanvas} =
     useFlowBuilderCore();
   const {generateStepElement} = useGenerateStepElement();
+
+  // Fetch identity providers and notification senders to compute executor connections
+  const {data: identityProviders} = useIdentityProviders();
+  const {data: notificationSenders} = useNotificationSenders();
+  const computedMetadata: MetadataInterface | undefined = useMemo(() => {
+    const executorConnections = computeExecutorConnections({identityProviders, notificationSenders});
+
+    if (executorConnections.length === 0 && !metadata) {
+      return undefined;
+    }
+
+    return {
+      ...metadata,
+      executorConnections: executorConnections.length > 0 ? executorConnections : (metadata?.executorConnections ?? []),
+    } as MetadataInterface;
+  }, [identityProviders, notificationSenders, metadata]);
 
   const [isContainerDialogOpen, setIsContainerDialogOpen] = useState<boolean>(false);
   const [dropScenario, setDropScenario] = useState<
@@ -156,7 +187,7 @@ function DecoratedVisualFlow({
     setEdges,
     onResourceDropOnCanvas,
     onWidgetLoad,
-    metadata,
+    metadata: computedMetadata,
     pendingDropRef,
   });
 
@@ -167,7 +198,7 @@ function DecoratedVisualFlow({
     setNodes,
     setEdges,
     generateStepElement,
-    metadata,
+    metadata: computedMetadata,
     onResourceDropOnCanvas,
   });
 
@@ -184,7 +215,7 @@ function DecoratedVisualFlow({
     generateStepElement,
     mutateComponents,
     onWidgetLoad,
-    metadata,
+    metadata: computedMetadata,
   });
 
   // Memoized handleSave
@@ -221,6 +252,38 @@ function DecoratedVisualFlow({
       });
   }, [getNodes, getEdges, setNodes, fitView]);
 
+  // Track whether auto-layout has been triggered to prevent multiple triggers
+  const autoLayoutTriggeredRef = useRef<boolean>(false);
+
+  // Effect to trigger auto-layout on initial load when nodes lack proper layout data
+  useEffect(() => {
+    if (!triggerAutoLayoutOnLoad || autoLayoutTriggeredRef.current) {
+      return;
+    }
+
+    const currentNodes = getNodes();
+
+    // Skip if no nodes or only one node (nothing to layout)
+    if (currentNodes.length <= 1) {
+      return;
+    }
+
+    // Check if nodes need auto-layout by detecting if multiple nodes are at the same position
+    // (which happens when layout data is missing and all default to {x: 0, y: 0})
+    const nodesAtOrigin = currentNodes.filter((node) => node.position.x === 0 && node.position.y === 0);
+
+    // If more than one node is at the origin, we need auto-layout
+    const needsAutoLayout = nodesAtOrigin.length > 1;
+
+    if (needsAutoLayout) {
+      autoLayoutTriggeredRef.current = true;
+      // Delay slightly to ensure nodes are fully rendered with their measured dimensions
+      requestAnimationFrame(() => {
+        handleAutoLayout();
+      });
+    }
+  }, [triggerAutoLayoutOnLoad, getNodes, handleAutoLayout]);
+
   const handleNodeDragStop = useCallback((): void => {
     const currentNodes = getNodes();
     const resolvedNodes = resolveCollisions(currentNodes, {
@@ -254,7 +317,7 @@ function DecoratedVisualFlow({
 
       // Check for components that need containers
       const isFormDrop = sourceData.dragged?.type === BlockTypes.Form;
-      const isInputDrop = sourceData.dragged?.type === ElementTypes.Input;
+      const isInputDrop = sourceData.dragged?.category === 'FIELD';
       const isWidgetDrop = sourceData.dragged?.resourceType === ResourceTypes.Widget;
       const isCanvasTarget =
         typeof target?.id === 'string' && target.id.startsWith(VisualFlowConstants.FLOW_BUILDER_CANVAS_ID);
@@ -442,14 +505,6 @@ function DecoratedVisualFlow({
         }),
       })}
     >
-      <HeaderPanel
-        title={flowTitle}
-        handle={flowHandle}
-        onTitleChange={onFlowTitleChange}
-        onSave={handleSave}
-        onAutoLayout={handleAutoLayout}
-      />
-
       <Box sx={{flexGrow: 1, minHeight: 0}}>
         <DragDropProvider onDragEnd={handleDragEnd} onDragOver={handleDragOver}>
           <ResourcePanel
@@ -457,6 +512,9 @@ function DecoratedVisualFlow({
             open={isResourcePanelOpen}
             onAdd={handleOnAdd}
             disabled={isFlowMetadataLoading}
+            flowTitle={flowTitle}
+            flowHandle={flowHandle}
+            onFlowTitleChange={onFlowTitleChange}
           >
             <ResourcePropertyPanel open={isResourcePropertiesPanelOpen} onComponentDelete={deleteComponent}>
               <Droppable
@@ -475,6 +533,8 @@ function DecoratedVisualFlow({
                   onNodesDelete={handleNodesDelete}
                   onEdgesDelete={handleEdgesDelete}
                   onNodeDragStop={handleNodeDragStop}
+                  handleAutoLayout={handleAutoLayout}
+                  onSave={handleSave}
                   {...rest}
                 />
               </Droppable>

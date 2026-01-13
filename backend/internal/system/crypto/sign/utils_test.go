@@ -1,19 +1,20 @@
-// Copyright (c) 2025, WSO2 LLC. (http://www.wso2.com).
-//
-// WSO2 LLC. licenses this file to you under the Apache License,
-// Version 2.0 (the "License"); you may not use this file except
-// in compliance with the License.
-// You may obtain a copy of the License at
-//
-// http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing,
-// software distributed under the License is distributed on an
-// "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
-// KIND, either express or implied.  See the License for the
-// specific language governing permissions and limitations
-// under the License.
-
+/*
+ * Copyright (c) 2025, WSO2 LLC. (http://www.wso2.com).
+ *
+ * WSO2 LLC. licenses this file to you under the Apache License,
+ * Version 2.0 (the "License"); you may not use this file except
+ * in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing,
+ * software distributed under the License is distributed on an
+ * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+ * KIND, either express or implied.  See the License for the
+ * specific language governing permissions and limitations
+ * under the License.
+ */
 package sign
 
 import (
@@ -96,6 +97,21 @@ func (suite *SignUtilsTestSuite) TestSignECDSASHA256() {
 
 	// Verify the signature
 	err = Verify(suite.testData, signature, ECDSASHA256, &suite.ecdsaPrivateKey.PublicKey)
+	assert.NoError(suite.T(), err)
+}
+
+func (suite *SignUtilsTestSuite) TestSignECDSASHA384() {
+	// Generate ECDSA P-384 key pair for SHA-384
+	ecdsaKey, err := ecdsa.GenerateKey(elliptic.P384(), rand.Reader)
+	assert.NoError(suite.T(), err)
+
+	signature, err := Generate(suite.testData, ECDSASHA384, ecdsaKey)
+
+	assert.NoError(suite.T(), err)
+	assert.NotEmpty(suite.T(), signature)
+
+	// Verify the signature
+	err = Verify(suite.testData, signature, ECDSASHA384, &ecdsaKey.PublicKey)
 	assert.NoError(suite.T(), err)
 }
 

@@ -22,8 +22,9 @@ import type {JSX} from 'react';
 import {useNavigate} from 'react-router';
 import {useState, useCallback, useMemo, useEffect} from 'react';
 import {useTranslation} from 'react-i18next';
-import {AuthenticatorTypes} from '@/features/integrations/models/authenticators';
-import ConfigureSignInOptions from '../components/create-applications/ConfigureSignInOptions';
+import {useLogger} from '@thunder/logger/react';
+import {useCreateBranding, type CreateBrandingRequest, type Branding, LayoutType} from '@thunder/shared-branding';
+import ConfigureSignInOptions from '../components/create-applications/configure-signin-options/ConfigureSignInOptions';
 import ConfigureDesign from '../components/create-applications/ConfigureDesign';
 import ConfigureName from '../components/create-applications/ConfigureName';
 import ConfigureApproach from '../components/create-applications/ConfigureApproach';
@@ -33,13 +34,8 @@ import {getDefaultOAuthConfig} from '../models/oauth';
 import Preview from '../components/create-applications/Preview';
 import ApplicationSummary from '../components/create-applications/ApplicationSummary';
 import useCreateApplication from '../api/useCreateApplication';
-import resolveAuthFlowGraphId from '../utils/resolveAuthFlowGraphId';
-import useIdentityProviders from '../../integrations/api/useIdentityProviders';
 import type {CreateApplicationRequest} from '../models/requests';
 import type {OAuth2Config} from '../models/oauth';
-import useCreateBranding from '../../branding/api/useCreateBranding';
-import type {CreateBrandingRequest} from '../../branding/models/requests';
-import type {Branding} from '../../branding/models/branding';
 import BrandingConstants from '../constants/branding-contants';
 import type {Application} from '../models/application';
 import useApplicationCreate from '../contexts/ApplicationCreate/useApplicationCreate';
@@ -65,6 +61,7 @@ export default function ApplicationCreatePage(): JSX.Element {
     setAppLogo,
     integrations,
     toggleIntegration,
+    selectedAuthFlow,
     signInApproach,
     setSignInApproach,
     selectedTechnology,
@@ -90,9 +87,9 @@ export default function ApplicationCreatePage(): JSX.Element {
     [t],
   );
   const navigate = useNavigate();
+  const logger = useLogger('ApplicationCreatePage');
   const createApplication = useCreateApplication();
   const createBranding = useCreateBranding();
-  const {data: identityProviders} = useIdentityProviders();
   const {data: userTypesData} = useGetUserTypes();
 
   const [selectedUserTypes, setSelectedUserTypes] = useState<string[]>([]);
@@ -133,9 +130,8 @@ export default function ApplicationCreatePage(): JSX.Element {
   const handleClose = (): void => {
     (async () => {
       await navigate('/applications');
-    })().catch(() => {
-      // TODO: Log the errors
-      // Tracker: https://github.com/asgardeo/thunder/issues/618
+    })().catch((_error: unknown) => {
+      logger.error('Failed to navigate to applications page', {error: _error});
     });
   };
 
@@ -158,12 +154,15 @@ export default function ApplicationCreatePage(): JSX.Element {
     const oauthConfigSelected = !skipOAuthConfig && oauthConfig !== null;
     setHasOAuthConfig(oauthConfigSelected);
 
-    const hasUsernamePassword = integrations[AuthenticatorTypes.BASIC_AUTH] ?? false;
-    const selectedIdentityProviders = identityProviders?.filter((idp) => integrations[idp.id]) ?? [];
-    const authFlowGraphId = resolveAuthFlowGraphId({
-      hasUsernamePassword,
-      identityProviders: selectedIdentityProviders,
-    });
+    const authFlowId: string | undefined = selectedAuthFlow?.id;
+
+    // Validate that we have a valid flow selected
+    if (!authFlowId) {
+      setError(t('onboarding.configure.SignInOptions.noFlowFound'));
+
+      return;
+    }
+
     const createApplicationWithBranding = (brandingId: string): void => {
       const userTypes = userTypesData?.schemas ?? [];
       const allowedUserTypes = (() => {
@@ -184,9 +183,10 @@ export default function ApplicationCreatePage(): JSX.Element {
       const applicationData: CreateApplicationRequest = {
         name: appName,
         logo_url: appLogo ?? undefined,
-        auth_flow_graph_id: authFlowGraphId,
+        auth_flow_id: authFlowId,
         user_attributes: ['given_name', 'family_name', 'email', 'groups'],
         branding_id: brandingId,
+        is_registration_flow_enabled: true,
         ...(allowedUserTypes && {allowed_user_types: allowedUserTypes}),
         // Only include OAuth config if not skipping
         ...(!skipOAuthConfig && {
@@ -208,7 +208,7 @@ export default function ApplicationCreatePage(): JSX.Element {
 
           // Always store client_id if available (public clients still have client_id)
           if (oauthConfigFromResponse?.config?.client_id) {
-            setClientId(oauthConfigFromResponse?.config?.client_id);
+            setClientId(oauthConfigFromResponse.config.client_id);
           }
 
           // Only store client_secret for confidential clients (public clients don't have secrets)
@@ -238,6 +238,9 @@ export default function ApplicationCreatePage(): JSX.Element {
     const brandingData: CreateBrandingRequest = {
       displayName: brandingName,
       preferences: {
+        layout: {
+          type: LayoutType.CENTERED,
+        },
         theme: {
           activeColorScheme: 'light',
           colorSchemes: {
@@ -254,6 +257,52 @@ export default function ApplicationCreatePage(): JSX.Element {
                   contrastText: '#ffffff',
                 },
               },
+              ...(appLogo && {
+                images: {
+                  logo: {
+                    primary: {
+                      url: appLogo,
+                      alt: `${appName} Logo`,
+                      width: 128,
+                      height: 64,
+                    },
+                    favicon: {
+                      url: appLogo,
+                      type: 'image/png',
+                    },
+                  },
+                },
+              }),
+            },
+            dark: {
+              colors: {
+                primary: {
+                  main: selectedColor,
+                  dark: selectedColor,
+                  contrastText: '#ffffff',
+                },
+                secondary: {
+                  main: selectedColor,
+                  dark: selectedColor,
+                  contrastText: '#ffffff',
+                },
+              },
+              ...(appLogo && {
+                images: {
+                  logo: {
+                    primary: {
+                      url: appLogo,
+                      alt: `${appName} Logo`,
+                      width: 128,
+                      height: 64,
+                    },
+                    favicon: {
+                      url: appLogo,
+                      type: 'image/png',
+                    },
+                  },
+                },
+              }),
             },
           },
         },
@@ -282,15 +331,17 @@ export default function ApplicationCreatePage(): JSX.Element {
         setCurrentStep(ApplicationCreateFlowStep.APPROACH);
         break;
       case ApplicationCreateFlowStep.APPROACH:
-        // If inbuilt, go to technology selection, otherwise create app
-        if (signInApproach === ApplicationCreateFlowSignInApproach.INBUILT) {
-          setCurrentStep(ApplicationCreateFlowStep.STACK);
-        } else {
-          handleCreateApplication(true); // Skip OAuth for native
-        }
+        // Always go to technology selection to set selectedTemplateConfig
+        setCurrentStep(ApplicationCreateFlowStep.STACK);
         break;
       case ApplicationCreateFlowStep.STACK: {
-        // Technology selected, check if configuration is needed based on template
+        // For CUSTOM approach, create app immediately after technology selection
+        if (signInApproach === ApplicationCreateFlowSignInApproach.CUSTOM) {
+          handleCreateApplication(true); // Skip OAuth for custom
+          break;
+        }
+
+        // For INBUILT approach, check if configuration is needed based on template
         const needsConfiguration: boolean =
           getConfigurationTypeFromTemplate(selectedTemplateConfig) !== ApplicationCreateFlowConfiguration.NONE;
 
@@ -431,7 +482,7 @@ export default function ApplicationCreatePage(): JSX.Element {
             oauthConfig={oauthConfig}
             onOAuthConfigChange={setOAuthConfig}
             onReadyChange={handleTechnologyStepReadyChange}
-            stackTypes={{technology: false, platform: true}}
+            stackTypes={{technology: true, platform: true}}
           />
         );
 
@@ -574,8 +625,7 @@ export default function ApplicationCreatePage(): JSX.Element {
               <Box
                 sx={{
                   width: '100%',
-                  maxWidth: currentStep === ApplicationCreateFlowStep.SUMMARY ? 600 : 800,
-                  textAlign: currentStep === ApplicationCreateFlowStep.SUMMARY ? 'center' : 'left',
+                  maxWidth: currentStep === ApplicationCreateFlowStep.SUMMARY ? 900 : 800,
                   display: 'flex',
                   flexDirection: 'column',
                 }}
@@ -659,7 +709,7 @@ export default function ApplicationCreatePage(): JSX.Element {
         {/* Right side - Preview (show from design step onwards, but not on summary) */}
         {currentStep !== ApplicationCreateFlowStep.NAME && currentStep !== ApplicationCreateFlowStep.SUMMARY && (
           <Box sx={{flex: '0 0 50%', display: 'flex', flexDirection: 'column', p: 5}}>
-            <Preview appName={appName} appLogo={appLogo} selectedColor={selectedColor} integrations={integrations} />
+            <Preview appLogo={appLogo} selectedColor={selectedColor} integrations={integrations} />
           </Box>
         )}
       </Box>

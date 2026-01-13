@@ -20,6 +20,7 @@ package export
 
 import (
 	"bytes"
+	"encoding/json"
 	"fmt"
 	"reflect"
 	"strings"
@@ -356,6 +357,39 @@ func (p *parameterizer) generatePropertyVarName(resourceName, propertyName strin
 	return resourcePrefix + "_" + propName
 }
 
+// handleInterfaceValue handles interface{} types by JSON-encoding them.
+func (p *parameterizer) handleInterfaceValue(v reflect.Value) *yaml.Node {
+	// Get the actual value from the interface
+	actualValue := v.Elem()
+
+	// If the actual value is nil, return null
+	if !actualValue.IsValid() {
+		return &yaml.Node{
+			Kind:  yaml.ScalarNode,
+			Tag:   "!!null",
+			Value: "null",
+		}
+	}
+
+	// JSON-encode the interface value to preserve its structure
+	jsonBytes, err := json.Marshal(actualValue.Interface())
+	if err != nil {
+		// If JSON encoding fails, fall back to string representation
+		return &yaml.Node{
+			Kind:  yaml.ScalarNode,
+			Tag:   "!!str",
+			Value: fmt.Sprintf("%v", actualValue.Interface()),
+		}
+	}
+
+	// Return the JSON string as a YAML scalar
+	return &yaml.Node{
+		Kind:  yaml.ScalarNode,
+		Tag:   "!!str",
+		Value: string(jsonBytes),
+	}
+}
+
 // fieldToNode converts a reflect.Value to yaml.Node
 func (p *parameterizer) fieldToNode(
 	v reflect.Value, rules *resourceRules, currentPath string, resourceName string) *yaml.Node {
@@ -371,6 +405,11 @@ func (p *parameterizer) fieldToNode(
 	// Dereference pointers
 	if v.Kind() == reflect.Ptr {
 		v = v.Elem()
+	}
+
+	// Handle interface{} types by JSON-encoding them
+	if v.Kind() == reflect.Interface && !v.IsNil() {
+		return p.handleInterfaceValue(v)
 	}
 
 	switch v.Kind() {

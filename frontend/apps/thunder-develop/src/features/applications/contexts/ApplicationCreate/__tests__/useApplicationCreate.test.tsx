@@ -16,10 +16,45 @@
  * under the License.
  */
 
-import {describe, expect, it, vi} from 'vitest';
+import {beforeEach, describe, expect, it, vi} from 'vitest';
 import {render, screen} from '@testing-library/react';
+import React from 'react';
+import {QueryClient, QueryClientProvider} from '@tanstack/react-query';
 import useApplicationCreate from '../useApplicationCreate';
 import ApplicationCreateProvider from '../ApplicationCreateProvider';
+
+// Mock useGetApplications
+const mockUseGetApplications = vi.fn().mockReturnValue({
+  data: {
+    applications: [],
+  },
+});
+
+vi.mock('../../api/useGetApplications', () => ({
+  __esModule: true,
+  default: mockUseGetApplications,
+}));
+
+// Mock generateAppPrimaryColorSuggestions
+vi.mock('../../utils/generateAppPrimaryColorSuggestions', () => ({
+  __esModule: true,
+  default: () => ['#3B82F6'],
+}));
+
+// Mock useConfig to avoid ConfigProvider requirement
+vi.mock('@thunder/commons-contexts', async (importOriginal) => {
+  // eslint-disable-next-line @typescript-eslint/no-unnecessary-type-assertion
+  const actual = (await importOriginal()) as Record<string, unknown>;
+
+  return {
+    ...actual,
+    useConfig: () => ({
+      endpoints: {
+        server: 'http://localhost:3001',
+      },
+    }),
+  };
+});
 
 // Test component to consume the hook
 function TestConsumer() {
@@ -35,12 +70,36 @@ function TestConsumerWithoutProvider() {
   return <div data-testid="context">{JSON.stringify(context)}</div>;
 }
 
+// Simple test wrapper that provides QueryClient
+function TestWrapper({children}: {children: React.ReactNode}) {
+  const queryClient = new QueryClient({
+    defaultOptions: {
+      queries: {
+        retry: false,
+      },
+    },
+  });
+
+  return <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>;
+}
+
 describe('useApplicationCreate', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    // Default mock: no applications
+    mockUseGetApplications.mockReturnValue({
+      data: {
+        applications: [],
+      },
+    });
+  });
   it('returns context when used within ApplicationCreateProvider', () => {
     render(
-      <ApplicationCreateProvider>
-        <TestConsumer />
-      </ApplicationCreateProvider>,
+      <TestWrapper>
+        <ApplicationCreateProvider>
+          <TestConsumer />
+        </ApplicationCreateProvider>
+      </TestWrapper>,
     );
 
     expect(screen.getByTestId('context-available')).toHaveTextContent('object');
@@ -74,6 +133,8 @@ describe('useApplicationCreate', () => {
         'integrations',
         'setIntegrations',
         'toggleIntegration',
+        'selectedAuthFlow',
+        'setSelectedAuthFlow',
         'signInApproach',
         'setSignInApproach',
         'selectedTechnology',
@@ -86,6 +147,8 @@ describe('useApplicationCreate', () => {
         'setHostingUrl',
         'callbackUrlFromConfig',
         'setCallbackUrlFromConfig',
+        'hasCompletedOnboarding',
+        'setHasCompletedOnboarding',
         'error',
         'setError',
         'reset',
@@ -102,12 +165,147 @@ describe('useApplicationCreate', () => {
     }
 
     render(
-      <ApplicationCreateProvider>
-        <TestContextProperties />
-      </ApplicationCreateProvider>,
+      <TestWrapper>
+        <ApplicationCreateProvider>
+          <TestContextProperties />
+        </ApplicationCreateProvider>
+      </TestWrapper>,
     );
 
     expect(screen.getByTestId('has-all-properties')).toHaveTextContent('true');
     expect(screen.getByTestId('missing-properties')).toHaveTextContent('[]');
+  });
+
+  it('returns same context reference across multiple hook calls', () => {
+    function TestMultipleHookCalls() {
+      const context1 = useApplicationCreate();
+      const context2 = useApplicationCreate();
+
+      return (
+        <div>
+          <div data-testid="same-reference">{(context1 === context2).toString()}</div>
+        </div>
+      );
+    }
+
+    render(
+      <TestWrapper>
+        <ApplicationCreateProvider>
+          <TestMultipleHookCalls />
+        </ApplicationCreateProvider>
+      </TestWrapper>,
+    );
+
+    expect(screen.getByTestId('same-reference')).toHaveTextContent('true');
+  });
+
+  it('provides functions that are properly typed', () => {
+    function TestFunctionTypes() {
+      const {
+        setCurrentStep,
+        setAppName,
+        toggleIntegration,
+        reset,
+        setSelectedColor,
+        setAppLogo,
+        setIntegrations,
+        setSelectedAuthFlow,
+        setSignInApproach,
+        setSelectedTechnology,
+        setSelectedPlatform,
+        setSelectedTemplateConfig,
+        setHostingUrl,
+        setCallbackUrlFromConfig,
+        setHasCompletedOnboarding,
+        setError,
+      } = useApplicationCreate();
+
+      return (
+        <div>
+          <div data-testid="setCurrentStep-type">{typeof setCurrentStep}</div>
+          <div data-testid="setAppName-type">{typeof setAppName}</div>
+          <div data-testid="toggleIntegration-type">{typeof toggleIntegration}</div>
+          <div data-testid="reset-type">{typeof reset}</div>
+          <div data-testid="setSelectedColor-type">{typeof setSelectedColor}</div>
+          <div data-testid="setAppLogo-type">{typeof setAppLogo}</div>
+          <div data-testid="setIntegrations-type">{typeof setIntegrations}</div>
+          <div data-testid="setSelectedAuthFlow-type">{typeof setSelectedAuthFlow}</div>
+          <div data-testid="setSignInApproach-type">{typeof setSignInApproach}</div>
+          <div data-testid="setSelectedTechnology-type">{typeof setSelectedTechnology}</div>
+          <div data-testid="setSelectedPlatform-type">{typeof setSelectedPlatform}</div>
+          <div data-testid="setSelectedTemplateConfig-type">{typeof setSelectedTemplateConfig}</div>
+          <div data-testid="setHostingUrl-type">{typeof setHostingUrl}</div>
+          <div data-testid="setCallbackUrlFromConfig-type">{typeof setCallbackUrlFromConfig}</div>
+          <div data-testid="setHasCompletedOnboarding-type">{typeof setHasCompletedOnboarding}</div>
+          <div data-testid="setError-type">{typeof setError}</div>
+        </div>
+      );
+    }
+
+    render(
+      <TestWrapper>
+        <ApplicationCreateProvider>
+          <TestFunctionTypes />
+        </ApplicationCreateProvider>
+      </TestWrapper>,
+    );
+
+    expect(screen.getByTestId('setCurrentStep-type')).toHaveTextContent('function');
+    expect(screen.getByTestId('setAppName-type')).toHaveTextContent('function');
+    expect(screen.getByTestId('toggleIntegration-type')).toHaveTextContent('function');
+    expect(screen.getByTestId('reset-type')).toHaveTextContent('function');
+    expect(screen.getByTestId('setSelectedColor-type')).toHaveTextContent('function');
+    expect(screen.getByTestId('setAppLogo-type')).toHaveTextContent('function');
+    expect(screen.getByTestId('setIntegrations-type')).toHaveTextContent('function');
+    expect(screen.getByTestId('setSelectedAuthFlow-type')).toHaveTextContent('function');
+    expect(screen.getByTestId('setSignInApproach-type')).toHaveTextContent('function');
+    expect(screen.getByTestId('setSelectedTechnology-type')).toHaveTextContent('function');
+    expect(screen.getByTestId('setSelectedPlatform-type')).toHaveTextContent('function');
+    expect(screen.getByTestId('setSelectedTemplateConfig-type')).toHaveTextContent('function');
+    expect(screen.getByTestId('setHostingUrl-type')).toHaveTextContent('function');
+    expect(screen.getByTestId('setCallbackUrlFromConfig-type')).toHaveTextContent('function');
+    expect(screen.getByTestId('setHasCompletedOnboarding-type')).toHaveTextContent('function');
+    expect(screen.getByTestId('setError-type')).toHaveTextContent('function');
+  });
+
+  it('throws descriptive error message when used outside provider', () => {
+    // Suppress error output in tests
+    const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+
+    let thrownError: Error | null = null;
+
+    try {
+      render(<TestConsumerWithoutProvider />);
+    } catch (error) {
+      thrownError = error as Error;
+    }
+
+    expect(thrownError).toBeInstanceOf(Error);
+    expect(thrownError?.message).toBe('useApplicationCreate must be used within ApplicationCreateProvider');
+
+    // Restore console.error
+    errorSpy.mockRestore();
+  });
+
+  it('has exactly 30 properties in the context interface', () => {
+    function TestContextProperties() {
+      const context = useApplicationCreate();
+
+      return (
+        <div>
+          <div data-testid="property-count">{Object.keys(context).length}</div>
+        </div>
+      );
+    }
+
+    render(
+      <TestWrapper>
+        <ApplicationCreateProvider>
+          <TestContextProperties />
+        </ApplicationCreateProvider>
+      </TestWrapper>,
+    );
+
+    expect(screen.getByTestId('property-count')).toHaveTextContent('30');
   });
 });

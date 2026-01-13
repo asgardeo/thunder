@@ -27,6 +27,7 @@ import type {
   PlatformApplicationTemplate,
   ApplicationTemplate,
 } from '../../models/application-templates';
+import type {BasicFlowDefinition} from '../../../flows/models/responses';
 
 /**
  * Application creation context state interface
@@ -103,6 +104,18 @@ export interface ApplicationCreateContextType {
   toggleIntegration: (integrationId: string) => void;
 
   /**
+   * The selected authentication flow from available flows
+   * @remark Needed for step 03: Sign-in Options.
+   */
+  selectedAuthFlow: BasicFlowDefinition | null;
+
+  /**
+   * Sets the selected authentication flow
+   * @remark Needed for step 03: Sign-in Options.
+   */
+  setSelectedAuthFlow: (flow: BasicFlowDefinition | null) => void;
+
+  /**
    * The selected sign-in approach (INBUILT or CUSTOM).
    * @remark Needed for step 04: Configure Approach.
    */
@@ -173,6 +186,17 @@ export interface ApplicationCreateContextType {
    * @remark Needed for step 06: Configuration step.
    */
   setCallbackUrlFromConfig: (url: string) => void;
+
+  /**
+   * Whether the user has completed the onboarding process.
+   * Determined by checking if they have any existing applications.
+   */
+  hasCompletedOnboarding: boolean;
+
+  /**
+   * Sets the onboarding completion status
+   */
+  setHasCompletedOnboarding: (completed: boolean) => void;
 
   /**
    * Current error message, if any

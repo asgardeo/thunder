@@ -22,6 +22,8 @@ import type {JSX} from 'react';
 import {useState, useEffect, useRef} from 'react';
 import {useTranslation} from 'react-i18next';
 import {useNavigate} from 'react-router';
+import TechnologyGuide from './TechnologyGuide';
+import useApplicationCreate from '../../contexts/ApplicationCreate/useApplicationCreate';
 
 /**
  * Props for the {@link ApplicationSummary} component.
@@ -121,6 +123,7 @@ export default function ApplicationSummary({
 }: ApplicationSummaryProps): JSX.Element {
   const {t} = useTranslation();
   const navigate = useNavigate();
+  const {selectedTemplateConfig, signInApproach} = useApplicationCreate();
 
   const [showSecret, setShowSecret] = useState(false);
   const [copied, setCopied] = useState<{clientId: boolean; clientSecret: boolean}>({
@@ -196,9 +199,9 @@ export default function ApplicationSummary({
   };
 
   return (
-    <Stack direction="column" spacing={4} sx={{maxWidth: 600, width: '100%'}}>
+    <Stack direction="column" spacing={4} sx={{maxWidth: 900, width: '100%', alignItems: 'center'}}>
       {/* Success Header */}
-      <Stack direction="column" spacing={2} alignItems="center" sx={{textAlign: 'center', width: '100%'}}>
+      <Stack direction="column" spacing={2} alignItems="center" sx={{width: '100%'}}>
         <Box
           role="img"
           aria-label="Success"
@@ -218,155 +221,172 @@ export default function ApplicationSummary({
         <Typography variant="h3" component="h1" gutterBottom>
           {t('applications:onboarding.summary.title')}
         </Typography>
-        <Typography variant="subtitle1">{t('applications:onboarding.summary.subtitle')}</Typography>
+        {selectedTemplateConfig?.integration_guides ? (
+          <Typography variant="subtitle1">{t('applications:onboarding.summary.guides.subtitle')}</Typography>
+        ) : (
+          <Typography variant="subtitle1">{t('applications:onboarding.summary.subtitle')}</Typography>
+        )}
       </Stack>
 
-      {/* Application Details Card */}
-      <Paper
-        sx={{
-          p: 3,
-          bgcolor: 'background.paper',
-          width: '100%',
-          cursor: applicationId ? 'pointer' : 'default',
-          '&:hover': applicationId
-            ? {
-                boxShadow: 2,
-                transition: 'box-shadow 0.2s ease-in-out',
+      {!selectedTemplateConfig?.integration_guides && (
+        <>
+          <Paper
+            sx={{
+              p: 3,
+              bgcolor: 'background.paper',
+              width: '100%',
+              cursor: applicationId ? 'pointer' : 'default',
+              '&:hover': applicationId
+                ? {
+                    boxShadow: 2,
+                    transition: 'box-shadow 0.2s ease-in-out',
+                  }
+                : {},
+            }}
+            role={applicationId ? 'button' : undefined}
+            tabIndex={applicationId ? 0 : -1}
+            aria-label={applicationId ? t('applications:onboarding.summary.viewAppAriaLabel') : undefined}
+            onClick={(): void => {
+              if (applicationId) {
+                (async () => {
+                  await navigate(`/applications/${applicationId}`);
+                })().catch(() => {
+                  // Ignore navigation errors
+                });
               }
-            : {},
-        }}
-        role={applicationId ? 'button' : undefined}
-        tabIndex={applicationId ? 0 : -1}
-        aria-label={applicationId ? t('applications:onboarding.summary.viewAppAriaLabel') : undefined}
-        onClick={(): void => {
-          if (applicationId) {
-            (async () => {
-              await navigate(`/applications/${applicationId}`);
-            })().catch(() => {
-              // Ignore navigation errors
-            });
-          }
-        }}
-        onKeyDown={
-          applicationId
-            ? (e) => {
-                if (e.key === 'Enter' || e.key === ' ') {
-                  e.preventDefault();
-                  (async () => {
-                    await navigate(`/applications/${applicationId}`);
-                  })().catch(() => {
-                    // Ignore navigation errors
-                  });
-                }
-              }
-            : undefined
-        }
-      >
-        <Stack direction="row" spacing={3} alignItems="center">
-          {appLogo ? (
-            <Avatar src={appLogo} alt={`${appName} logo`} sx={{width: 64, height: 64, bgcolor: selectedColor}} />
-          ) : (
-            <Avatar sx={{width: 64, height: 64, bgcolor: selectedColor, fontSize: '1.5rem'}}>
-              {appName.charAt(0).toUpperCase()}
-            </Avatar>
-          )}
-          <Box sx={{flex: 1}}>
-            <Typography variant="h5" component="h2" gutterBottom>
-              {appName}
-            </Typography>
-            <Typography variant="body2" color="text.secondary">
-              {t('applications:onboarding.summary.appDetails')}
-            </Typography>
-          </Box>
-        </Stack>
-      </Paper>
-
-      {/* OAuth Credentials Section */}
-      {hasOAuthConfig && clientId && (
-        <Box sx={{width: '100%', textAlign: 'left'}}>
-          {/* Only show warning if client secret exists (confidential clients) */}
-          {clientSecret && (
-            <Alert severity="warning" sx={{mb: 3}}>
-              {t('applications:clientSecret.warning')}
-            </Alert>
-          )}
-
-          <Stack direction="column" spacing={2}>
-            <Box>
-              <Typography variant="body2" color="text.secondary" sx={{mb: 1, textAlign: 'left'}}>
-                {t('applications:clientSecret.clientIdLabel')}
-              </Typography>
-              <TextField
-                fullWidth
-                value={clientId}
-                InputProps={{
-                  readOnly: true,
-                  endAdornment: (
-                    <InputAdornment position="end">
-                      <IconButton
-                        onClick={() => {
-                          handleCopy(clientId, 'clientId').catch(() => {
-                            // Error already handled in handleCopy
-                          });
-                        }}
-                        edge="end"
-                        size="small"
-                      >
-                        <Copy size={16} />
-                      </IconButton>
-                    </InputAdornment>
-                  ),
-                }}
-              />
-              {copied.clientId && (
-                <Typography variant="caption" color="success.main" sx={{mt: 0.5, display: 'block'}}>
-                  {t('applications:clientSecret.copied')}
-                </Typography>
+            }}
+            onKeyDown={
+              applicationId
+                ? (e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                      e.preventDefault();
+                      (async () => {
+                        await navigate(`/applications/${applicationId}`);
+                      })().catch(() => {
+                        // Ignore navigation errors
+                      });
+                    }
+                  }
+                : undefined
+            }
+          >
+            <Stack direction="row" spacing={3} alignItems="center">
+              {appLogo ? (
+                <Avatar src={appLogo} alt={`${appName} logo`} sx={{width: 64, height: 64, bgcolor: selectedColor}} />
+              ) : (
+                <Avatar sx={{width: 64, height: 64, bgcolor: selectedColor, fontSize: '1.5rem'}}>
+                  {appName.charAt(0).toUpperCase()}
+                </Avatar>
               )}
-            </Box>
-
-            {/* Only show client secret for confidential clients (public clients don't have secrets) */}
-            {clientSecret && (
-              <Box>
-                <Typography variant="body2" color="text.secondary" sx={{mb: 1, textAlign: 'left'}}>
-                  {t('applications:clientSecret.clientSecretLabel')}
+              <Box sx={{flex: 1}}>
+                <Typography variant="h5" component="h2" gutterBottom>
+                  {appName}
                 </Typography>
-                <TextField
-                  fullWidth
-                  type={showSecret ? 'text' : 'password'}
-                  value={clientSecret}
-                  InputProps={{
-                    readOnly: true,
-                    endAdornment: (
-                      <InputAdornment position="end">
-                        <IconButton onClick={handleToggleVisibility} edge="end" size="small">
-                          {showSecret ? <EyeOff size={16} /> : <Eye size={16} />}
-                        </IconButton>
-                        <IconButton
-                          onClick={() => {
-                            handleCopy(clientSecret, 'clientSecret').catch(() => {
-                              // Error already handled in handleCopy
-                            });
-                          }}
-                          edge="end"
-                          size="small"
-                          sx={{ml: 0.5}}
-                        >
-                          <Copy size={16} />
-                        </IconButton>
-                      </InputAdornment>
-                    ),
-                  }}
-                />
-                {copied.clientSecret && (
-                  <Typography variant="caption" color="success.main" sx={{mt: 0.5, display: 'block'}}>
-                    {t('applications:clientSecret.copied')}
-                  </Typography>
-                )}
+                <Typography variant="body2" color="text.secondary">
+                  {t('applications:onboarding.summary.appDetails')}
+                </Typography>
               </Box>
-            )}
-          </Stack>
-        </Box>
+            </Stack>
+          </Paper>
+
+          {/* OAuth Credentials Section */}
+          {hasOAuthConfig && clientId && (
+            <Box sx={{width: '100%', textAlign: 'left'}}>
+              {/* Only show warning if client secret exists (confidential clients) */}
+              {clientSecret && (
+                <Alert severity="warning" sx={{mb: 3}}>
+                  {t('applications:clientSecret.warning')}
+                </Alert>
+              )}
+
+              <Stack direction="column" spacing={2}>
+                <Box>
+                  <Typography variant="body2" color="text.secondary" sx={{mb: 1, textAlign: 'left'}}>
+                    {t('applications:clientSecret.clientIdLabel')}
+                  </Typography>
+                  <TextField
+                    fullWidth
+                    value={clientId}
+                    InputProps={{
+                      readOnly: true,
+                      endAdornment: (
+                        <InputAdornment position="end">
+                          <IconButton
+                            onClick={() => {
+                              handleCopy(clientId, 'clientId').catch(() => {
+                                // Error already handled in handleCopy
+                              });
+                            }}
+                            edge="end"
+                            size="small"
+                          >
+                            <Copy size={16} />
+                          </IconButton>
+                        </InputAdornment>
+                      ),
+                    }}
+                  />
+                  {copied.clientId && (
+                    <Typography variant="caption" color="success.main" sx={{mt: 0.5, display: 'block'}}>
+                      {t('applications:clientSecret.copied')}
+                    </Typography>
+                  )}
+                </Box>
+
+                {/* Only show client secret for confidential clients (public clients don't have secrets) */}
+                {clientSecret && (
+                  <Box>
+                    <Typography variant="body2" color="text.secondary" sx={{mb: 1, textAlign: 'left'}}>
+                      {t('applications:clientSecret.clientSecretLabel')}
+                    </Typography>
+                    <TextField
+                      fullWidth
+                      type={showSecret ? 'text' : 'password'}
+                      value={clientSecret}
+                      InputProps={{
+                        readOnly: true,
+                        endAdornment: (
+                          <InputAdornment position="end">
+                            <IconButton onClick={handleToggleVisibility} edge="end" size="small">
+                              {showSecret ? <EyeOff size={16} /> : <Eye size={16} />}
+                            </IconButton>
+                            <IconButton
+                              onClick={() => {
+                                handleCopy(clientSecret, 'clientSecret').catch(() => {
+                                  // Error already handled in handleCopy
+                                });
+                              }}
+                              edge="end"
+                              size="small"
+                              sx={{ml: 0.5}}
+                            >
+                              <Copy size={16} />
+                            </IconButton>
+                          </InputAdornment>
+                        ),
+                      }}
+                    />
+                    {copied.clientSecret && (
+                      <Typography variant="caption" color="success.main" sx={{mt: 0.5, display: 'block'}}>
+                        {t('applications:clientSecret.copied')}
+                      </Typography>
+                    )}
+                  </Box>
+                )}
+              </Stack>
+            </Box>
+          )}
+        </>
+      )}
+
+      {/* Technology Integration Guides */}
+      {selectedTemplateConfig?.integration_guides && (
+        <TechnologyGuide
+          guides={selectedTemplateConfig.integration_guides}
+          signInApproach={signInApproach}
+          clientId={clientId}
+          applicationId={applicationId!}
+        />
       )}
     </Stack>
   );

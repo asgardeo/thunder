@@ -32,10 +32,13 @@
 package http
 
 import (
+	"crypto/tls"
 	"io"
 	"net/http"
 	"net/url"
 	"time"
+
+	"github.com/asgardeo/thunder/internal/system/config"
 )
 
 // HTTPClientInterface defines the interface for HTTP client operations.
@@ -60,11 +63,7 @@ type HTTPClient struct {
 // NewHTTPClient creates a new HTTPClient with default 30-second timeout.
 // This method provides complete abstraction over http.Client references.
 func NewHTTPClient() HTTPClientInterface {
-	return &HTTPClient{
-		client: &http.Client{
-			Timeout: 30 * time.Second,
-		},
-	}
+	return NewHTTPClientWithTimeout(30 * time.Second)
 }
 
 // NewHTTPClientWithTimeout creates a new HTTPClient with a custom timeout.
@@ -73,6 +72,12 @@ func NewHTTPClientWithTimeout(timeout time.Duration) HTTPClientInterface {
 	return &HTTPClient{
 		client: &http.Client{
 			Timeout: timeout,
+			Transport: &http.Transport{
+				// #nosec G402 -- Min TLS version is TLS 1.2 or higher based on config
+				TLSClientConfig: &tls.Config{
+					MinVersion: GetTLSVersion(config.GetThunderRuntime().Config),
+				},
+			},
 		},
 	}
 }

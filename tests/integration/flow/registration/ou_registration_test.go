@@ -415,7 +415,7 @@ func (ts *OURegistrationFlowTestSuite) SetupSuite() {
 	basicFlowID, err := testutils.CreateFlow(basicRegistrationFlowWithOU)
 	ts.Require().NoError(err, "Failed to create basic registration flow with OU")
 	ts.config.CreatedFlowIDs = append(ts.config.CreatedFlowIDs, basicFlowID)
-	ouRegTestApp.RegistrationFlowGraphID = basicFlowID
+	ouRegTestApp.RegistrationFlowID = basicFlowID
 
 	// Update SMS flow definition with created sender ID
 	smsNodes := smsRegistrationFlowWithOU.Nodes.([]map[string]interface{})
@@ -426,7 +426,7 @@ func (ts *OURegistrationFlowTestSuite) SetupSuite() {
 	smsFlowID, err := testutils.CreateFlow(smsRegistrationFlowWithOU)
 	ts.Require().NoError(err, "Failed to create SMS registration flow with OU")
 	ts.config.CreatedFlowIDs = append(ts.config.CreatedFlowIDs, smsFlowID)
-	smsApp.RegistrationFlowGraphID = smsFlowID
+	smsApp.RegistrationFlowID = smsFlowID
 
 	// Create test applications with allowed user types
 	appID, err := testutils.CreateApplication(ouRegTestApp)

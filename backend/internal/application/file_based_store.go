@@ -85,8 +85,8 @@ func (f *fileBasedStore) GetApplicationList() ([]model.BasicApplicationDTO, erro
 				ID:                        app.ID,
 				Name:                      app.Name,
 				Description:               app.Description,
-				AuthFlowGraphID:           app.AuthFlowGraphID,
-				RegistrationFlowGraphID:   app.RegistrationFlowGraphID,
+				AuthFlowID:                app.AuthFlowID,
+				RegistrationFlowID:        app.RegistrationFlowID,
 				IsRegistrationFlowEnabled: app.IsRegistrationFlowEnabled,
 			}
 			appList = append(appList, basicApp)

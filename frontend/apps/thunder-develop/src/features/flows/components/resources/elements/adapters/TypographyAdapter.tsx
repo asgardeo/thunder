@@ -30,6 +30,20 @@ const TYPOGRAPHY_VALIDATION_FIELD_NAMES = {
 } as const;
 
 /**
+ * Maps our typography variant names to Material UI typography variant names.
+ */
+const VARIANT_TO_MUI_MAP: Record<string, TypographyProps['variant']> = {
+  [TypographyVariants.H1]: 'h1',
+  [TypographyVariants.H2]: 'h2',
+  [TypographyVariants.H3]: 'h3',
+  [TypographyVariants.H4]: 'h4',
+  [TypographyVariants.H5]: 'h5',
+  [TypographyVariants.H6]: 'h6',
+  [TypographyVariants.Body1]: 'body1',
+  [TypographyVariants.Body2]: 'body2',
+};
+
+/**
  * Configuration interface for Typography element.
  */
 interface TypographyConfig {
@@ -111,9 +125,11 @@ function TypographyAdapter({resource}: TypographyAdapterPropsInterface): ReactEl
     return {};
   }, [variantStr]);
 
+  const muiVariant = variantStr ? VARIANT_TO_MUI_MAP[variantStr] : undefined;
+
   return (
     <Typography
-      variant={variantStr?.toLowerCase() as TypographyProps['variant']}
+      variant={muiVariant}
       style={typographyConfig?.styles}
       {...config}
     >

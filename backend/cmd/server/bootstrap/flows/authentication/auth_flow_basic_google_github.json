@@ -1,6 +1,6 @@
 {
-    "name": "Basic + Google + GitHub Authentication Flow",
-    "handle": "basic-google-github-flow",
+    "name": "Default Basic + Google + GitHub Authentication Flow",
+    "handle": "default-basic-google-github-flow",
     "flowType": "AUTHENTICATION",
     "nodes": [
         {

@@ -33,6 +33,7 @@ import (
 	"github.com/asgardeo/thunder/internal/oauth/oauth2/userinfo"
 	"github.com/asgardeo/thunder/internal/oauth/scope"
 	"github.com/asgardeo/thunder/internal/observability"
+	"github.com/asgardeo/thunder/internal/system/crypto/pki"
 	"github.com/asgardeo/thunder/internal/system/jwt"
 	"github.com/asgardeo/thunder/internal/user"
 )
@@ -45,8 +46,9 @@ func Initialize(
 	jwtService jwt.JWTServiceInterface,
 	flowExecService flowexec.FlowExecServiceInterface,
 	observabilitySvc observability.ObservabilityServiceInterface,
+	pkiService pki.PKIServiceInterface,
 ) {
-	jwks.Initialize(mux)
+	jwks.Initialize(mux, pkiService)
 	grantHandlerProvider := granthandlers.Initialize(
 		mux, jwtService, userService, applicationService, flowExecService)
 	scopeValidator := scope.Initialize()

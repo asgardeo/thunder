@@ -41,11 +41,27 @@ const resolveStepMetadata = (resources: Resources, steps: Step[]): Step[] => {
     // For EXECUTION type steps, also check executors for metadata based on executor name
     const stepData = step.data as StepData | undefined;
     const executorName = stepData?.action?.executor?.name;
+    const executorMode = (stepData?.action?.executor as {mode?: string} | undefined)?.mode;
 
     if (executorName && resources?.executors) {
-      const executorWithMeta = resources.executors.find(
-        (executor) => (executor.data as StepData | undefined)?.action?.executor?.name === executorName,
-      );
+      // For executors with modes (like SMSOTPAuthExecutor), match on both name and mode
+      const executorWithMeta = resources.executors.find((executor) => {
+        const executorData = executor.data as StepData | undefined;
+        const metaExecutorName = executorData?.action?.executor?.name;
+        const metaExecutorMode = (executorData?.action?.executor as {mode?: string} | undefined)?.mode;
+
+        // Match by name first
+        if (metaExecutorName !== executorName) {
+          return false;
+        }
+
+        // If the step has a mode, try to match it; otherwise, use the first matching executor
+        if (executorMode && metaExecutorMode) {
+          return metaExecutorMode === executorMode;
+        }
+
+        return true;
+      });
 
       if (executorWithMeta) {
         // Merge executor display metadata into the step (at root level and in data for React Flow access)

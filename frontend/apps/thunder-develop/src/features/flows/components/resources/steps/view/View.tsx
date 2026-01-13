@@ -28,7 +28,7 @@ import FlowEventTypes from '@/features/flows/models/extension';
 import type {Element} from '@/features/flows/models/elements';
 import type {StepData} from '@/features/flows/models/steps';
 import generateResourceId from '@/features/flows/utils/generateResourceId';
-import Droppable from '../../../dnd/droppable';
+import Droppable from '../../../dnd/Droppable';
 import ReorderableViewElement from './ReorderableElement';
 import './View.scss';
 
@@ -341,7 +341,6 @@ function View({
         >
           <Box className="flow-builder-step-content-form">
             <FormGroup>
-              {/* TEST 12l: Droppable + ReorderableViewElement with memoization fixes */}
               <Droppable
                 id={generateResourceId(VisualFlowConstants.FLOW_BUILDER_VIEW_ID)}
                 type={VisualFlowConstants.FLOW_BUILDER_DROPPABLE_VIEW_ID}
@@ -355,6 +354,7 @@ function View({
                     index={index}
                     element={component}
                     className={classNames('flow-builder-step-content-form-field')}
+                    accept={droppableAllowedTypes ?? VisualFlowConstants.FLOW_BUILDER_VIEW_ALLOWED_RESOURCE_TYPES}
                     availableElements={availableElements}
                     onAddElementToForm={onAddElementToForm}
                   />

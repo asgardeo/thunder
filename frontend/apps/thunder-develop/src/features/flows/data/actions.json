@@ -18,54 +18,5 @@
         }
       }
     ]
-  },
-  {
-    "resourceType": "ELEMENT",
-    "category": "ONBOARDING",
-    "display": {
-      "label": "Actions",
-      "image": ""
-    },
-    "types": [
-      {
-        "action": {
-          "type": "EXECUTOR",
-          "executor": {
-            "name": "EmailOTPExecutor"
-          }
-        },
-        "display": {
-          "label": "Verify Email OTP Code",
-          "image": "assets/images/icons/email.svg",
-          "defaultVariant": "PRIMARY"
-        }
-      },
-      {
-        "action": {
-          "type": "EXECUTOR",
-          "executor": {
-            "name": "SMSOTPExecutor"
-          }
-        },
-        "display": {
-          "label": "Verify SMS OTP Code",
-          "image": "assets/images/icons/message-text.svg",
-          "defaultVariant": "PRIMARY"
-        }
-      },
-      {
-        "action": {
-          "type": "EXECUTOR",
-          "executor": {
-            "name": "BasicAuthExecutor"
-          }
-        },
-        "display": {
-          "label": "Authenticate with Password",
-          "image": "assets/images/icons/password.svg",
-          "defaultVariant": "PRIMARY"
-        }
-      }
-    ]
   }
 ]

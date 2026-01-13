@@ -73,6 +73,12 @@ export interface ConfigContextType {
    * @returns The full client URL (e.g., "https://localhost:8090/develop")
    */
   getClientUrl: () => string;
+
+  /**
+   * Gets the client UUID from configuration or URL parameters
+   * @returns The client UUID string or undefined if not available
+   */
+  getClientUuid: () => string | undefined;
 }
 
 /**

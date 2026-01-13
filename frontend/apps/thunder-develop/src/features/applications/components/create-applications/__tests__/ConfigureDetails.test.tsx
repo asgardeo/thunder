@@ -19,6 +19,7 @@
 import {beforeEach, describe, expect, it, vi} from 'vitest';
 import {render, screen, waitFor} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import {LoggerProvider, LogLevel} from '@thunder/logger';
 import ConfigureDetails from '../ConfigureDetails';
 import type {ApplicationTemplate} from '../../../models/application-templates';
 import ApplicationCreateContext, {
@@ -64,6 +65,8 @@ const renderWithContext = (
     integrations: {},
     setIntegrations: vi.fn(),
     toggleIntegration: vi.fn(),
+    selectedAuthFlow: null,
+    setSelectedAuthFlow: vi.fn(),
     signInApproach: null as unknown as ApplicationCreateContextType['signInApproach'],
     setSignInApproach: vi.fn(),
     selectedTechnology: null,
@@ -76,6 +79,8 @@ const renderWithContext = (
     setHostingUrl: vi.fn(),
     callbackUrlFromConfig: '',
     setCallbackUrlFromConfig: vi.fn(),
+    hasCompletedOnboarding: false,
+    setHasCompletedOnboarding: vi.fn(),
     error: null,
     setError: vi.fn(),
     reset: vi.fn(),
@@ -83,9 +88,16 @@ const renderWithContext = (
   };
 
   return render(
-    <ApplicationCreateContext.Provider value={baseContext}>
-      <ConfigureDetails {...props} />
-    </ApplicationCreateContext.Provider>,
+    <LoggerProvider
+      logger={{
+        level: LogLevel.ERROR,
+        transports: [],
+      }}
+    >
+      <ApplicationCreateContext.Provider value={baseContext}>
+        <ConfigureDetails {...props} />
+      </ApplicationCreateContext.Provider>
+    </LoggerProvider>,
   );
 };
 
