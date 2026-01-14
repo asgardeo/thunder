@@ -26,7 +26,7 @@ import (
 
 const testDeploymentIDForConstants = "test-deployment-id"
 
-// StoreConstantsTestSuite is the test suite for storeconstants.go functions.
+// StoreConstantsTestSuite is the test suite for store_constants.go functions.
 type StoreConstantsTestSuite struct {
 	suite.Suite
 }
