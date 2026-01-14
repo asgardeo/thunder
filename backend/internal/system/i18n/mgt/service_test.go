@@ -29,6 +29,11 @@ import (
 	immutableresource "github.com/asgardeo/thunder/internal/system/immutable_resource"
 )
 
+const (
+	testErrKey = "error.i18nservice.internal_server_error"
+	testErrVal = "Internal server error"
+)
+
 type I18nMgtServiceTestSuite struct {
 	suite.Suite
 	mockStore *i18nStoreInterfaceMock
@@ -152,6 +157,77 @@ func (suite *I18nMgtServiceTestSuite) TestResolveTranslationsForKey_StoreError()
 	suite.Equal(ErrorInternalServerError.Code, err.Code)
 }
 
+func (suite *I18nMgtServiceTestSuite) TestResolveTranslationsForKey_UsesSystemDefault_WhenKeyMissingInDB() {
+	key := testErrKey
+	expectedValue := testErrVal
+
+	suite.mockStore.On("GetTranslationsByKey", key, SystemNamespace).Return(make(map[string]Translation), nil)
+
+	// Request en-US, expecting fallback to system default (en)
+	result, err := suite.service.ResolveTranslationsForKey("en-US", SystemNamespace, key)
+
+	suite.Nil(err)
+	suite.NotNil(result)
+	// The resolved translation should be the system default
+	suite.Equal(expectedValue, result.Value)
+	// The returned language should match the requested language
+	suite.Equal("en-US", result.Language)
+	suite.Equal(SystemNamespace, result.Namespace)
+	suite.Equal(key, result.Key)
+}
+
+func (suite *I18nMgtServiceTestSuite) TestResolveTranslationsForKey_SystemDefault_WhenOnlyDiffLangsInDB() {
+	key := testErrKey
+	expectedDefaultValue := testErrVal
+
+	// Mock: DB has translation for "fr-FR", but not for "en" (SystemLanguage)
+	frTranslation := Translation{
+		Key:       key,
+		Namespace: SystemNamespace,
+		Language:  "fr-FR",
+		Value:     "Erreur interne du serveur",
+	}
+	dbTranslations := map[string]Translation{"fr-FR": frTranslation}
+
+	suite.mockStore.On("GetTranslationsByKey", key, SystemNamespace).Return(dbTranslations, nil)
+
+	// Request en-US, expecting fallback to system default (en)
+	result, err := suite.service.ResolveTranslationsForKey("en-US", SystemNamespace, key)
+
+	suite.Nil(err)
+	suite.NotNil(result)
+	// The resolved translation should be the system default
+	suite.Equal(expectedDefaultValue, result.Value)
+	// The returned language should match the requested language
+	suite.Equal("en-US", result.Language)
+}
+
+func (suite *I18nMgtServiceTestSuite) TestResolveTranslationsForKey_UsesDBValue_WithSystemLangOverride() {
+	key := testErrKey
+
+	// Mock: DB has translation for "en" (SystemLanguage) with an override value
+	overrideValue := "Custom Internal Error"
+	dbTranslation := Translation{
+		Key:       key,
+		Namespace: SystemNamespace,
+		Language:  SystemLanguage,
+		Value:     overrideValue,
+	}
+	dbTranslations := map[string]Translation{SystemLanguage: dbTranslation}
+
+	suite.mockStore.On("GetTranslationsByKey", key, SystemNamespace).Return(dbTranslations, nil)
+
+	// Request en-US, expecting fallback to system default (en)
+	result, err := suite.service.ResolveTranslationsForKey("en-US", SystemNamespace, key)
+
+	suite.Nil(err)
+	suite.NotNil(result)
+	// Should use the DB override, not the hardcoded default "Internal server error"
+	suite.Equal(overrideValue, result.Value)
+	// The returned language should match the requested language
+	suite.Equal("en-US", result.Language)
+}
+
 // SetTranslationOverrideForKey Tests
 func (suite *I18nMgtServiceTestSuite) TestSetTranslationOverrideForKey_Success() {
 	suite.mockStore.On("UpsertTranslation", mock.AnythingOfType("mgt.Translation")).Return(nil)
@@ -268,23 +344,6 @@ func (suite *I18nMgtServiceTestSuite) TestClearTranslationOverrideForKey_Immutab
 }
 
 // ResolveTranslations Tests
-func (suite *I18nMgtServiceTestSuite) TestResolveTranslations_SystemNamespace_Success() {
-	// Mock store responding with empty custom translations
-	suite.mockStore.On("GetTranslationsByNamespace", "system").
-		Return((map[string]map[string]Translation)(nil), nil)
-
-	// Since we can't easily mock sysi18n (it's likely a package level call or variable),
-	// we rely on what's available or empty defaults.
-	// Assuming test environment has some defaults or none.
-	// If real sysi18n is used, this test might be flaky if environment changes.
-
-	result, err := suite.service.ResolveTranslations("en-US", "system")
-
-	suite.Nil(err)
-	suite.NotNil(result)
-	suite.Equal("en-US", result.Language)
-}
-
 func (suite *I18nMgtServiceTestSuite) TestResolveTranslations_CustomNamespace_Success() {
 	translation := Translation{
 		Key:       "btn_ok",
@@ -328,10 +387,77 @@ func (suite *I18nMgtServiceTestSuite) TestResolveTranslations_StoreError() {
 	suite.Equal(ErrorInternalServerError.Code, err.Code)
 }
 
+func (suite *I18nMgtServiceTestSuite) TestResolveTranslations_UsesSystemDefaults_WhenKeyMissingInDB() {
+	// Mock: no custom translations in DB
+	suite.mockStore.On("GetTranslationsByNamespace", "system").
+		Return(make(map[string]map[string]Translation), nil)
+
+	key := testErrKey
+	expectedDefaultValue := testErrVal
+
+	result, err := suite.service.ResolveTranslations("en-US", "system")
+
+	suite.Nil(err)
+	suite.NotNil(result)
+	suite.Contains(result.Translations[SystemNamespace], key)
+	suite.Equal(expectedDefaultValue, result.Translations[SystemNamespace][key])
+}
+
+func (suite *I18nMgtServiceTestSuite) TestResolveTranslations_UsesSystemDefaults_WhenDBHasOnlyDifferentLanguages() {
+	// Key known to be in defaults
+	key := testErrKey
+	expectedDefaultValue := testErrVal
+
+	// Mock: DB has translation for "fr-FR", but not for "en" (SystemLanguage)
+	frTranslation := Translation{
+		Key:       key,
+		Namespace: SystemNamespace,
+		Language:  "fr-FR",
+		Value:     "Erreur interne du serveur",
+	}
+	dbTranslations := map[string]map[string]Translation{
+		key: {"fr-FR": frTranslation},
+	}
+
+	suite.mockStore.On("GetTranslationsByNamespace", "system").Return(dbTranslations, nil)
+
+	result, err := suite.service.ResolveTranslations("en-US", "system")
+
+	suite.Nil(err)
+	suite.NotNil(result)
+	suite.Contains(result.Translations[SystemNamespace], key)
+	suite.Equal(expectedDefaultValue, result.Translations[SystemNamespace][key])
+}
+
+func (suite *I18nMgtServiceTestSuite) TestResolveTranslations_UsesDBValue_WhenDBOverrideExistsForSystemLanguage() {
+	key := testErrKey
+	overrideValue := "Custom Internal Error"
+
+	// Mock: DB has an override for the system language
+	translationDB := Translation{
+		Key:       key,
+		Namespace: SystemNamespace,
+		Language:  SystemLanguage,
+		Value:     overrideValue,
+	}
+	dbTranslations := map[string]map[string]Translation{
+		key: {SystemLanguage: translationDB},
+	}
+
+	suite.mockStore.On("GetTranslationsByNamespace", "system").Return(dbTranslations, nil)
+
+	result, err := suite.service.ResolveTranslations("en-US", "system")
+
+	suite.Nil(err)
+	suite.NotNil(result)
+	suite.Contains(result.Translations[SystemNamespace], key)
+	suite.Equal(overrideValue, result.Translations[SystemNamespace][key])
+}
+
 func (suite *I18nMgtServiceTestSuite) TestResolveTranslations_DefaultsFallback() {
 	// Mock: no custom translations in DB
 	suite.mockStore.On("GetTranslationsByNamespace", "system").
-		Return((map[string]map[string]Translation)(nil), nil)
+		Return(make(map[string]map[string]Translation), nil)
 
 	result, err := suite.service.ResolveTranslations("fr-FR", "system")
 

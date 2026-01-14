@@ -201,12 +201,14 @@ func (s *FileBasedStoreTestSuite) TestGetTranslationsByKey_NotFound() {
 	// Wrong key
 	translations, err := s.store.GetTranslationsByKey("key2", "ns1")
 	assert.NoError(s.T(), err)
-	assert.Nil(s.T(), translations)
+	assert.NotNil(s.T(), translations)
+	assert.Empty(s.T(), translations)
 
 	// Wrong namespace
 	translations, err = s.store.GetTranslationsByKey("key1", "ns2")
 	assert.NoError(s.T(), err)
-	assert.Nil(s.T(), translations)
+	assert.NotNil(s.T(), translations)
+	assert.Empty(s.T(), translations)
 }
 
 func (s *FileBasedStoreTestSuite) TestIsTranslationExists() {

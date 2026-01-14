@@ -130,10 +130,6 @@ func (s *i18nStore) GetTranslationsByKey(key string, namespace string) (map[stri
 		return nil, fmt.Errorf("failed to get translation: %w", err)
 	}
 
-	if len(results) == 0 {
-		return nil, nil
-	}
-
 	return buildTranslationsMap(results)
 }
 

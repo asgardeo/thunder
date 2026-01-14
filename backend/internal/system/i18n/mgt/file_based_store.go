@@ -147,10 +147,6 @@ func (f *fileBasedStore) GetTranslationsByKey(key string, namespace string) (map
 		}
 	}
 
-	if len(translations) == 0 {
-		return nil, nil // Return nil map if no translations found, matching db store behavior
-	}
-
 	return translations, nil
 }
 

@@ -150,9 +150,9 @@ func (suite *I18nStoreTestSuite) TestGetTranslationsByKey_NotFound() {
 		Return([]map[string]interface{}{}, nil)
 
 	trans, err := suite.store.GetTranslationsByKey("k1", "ns1")
-
 	suite.NoError(err)
-	suite.Nil(trans)
+	suite.NotNil(trans)
+	suite.Empty(trans)
 }
 
 // UpsertTranslation Tests
