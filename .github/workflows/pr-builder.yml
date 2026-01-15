@@ -474,6 +474,7 @@ jobs:
           cd frontend
           pnpm install --frozen-lockfile
 
+      - name: 🎭 Install Playwright Browsers
         run: |
           cd tests/e2e
           npx playwright install --with-deps
@@ -482,7 +483,6 @@ jobs:
         run: |
           cd tests/e2e
           npx playwright test
-        working-directory: tests/e2e
         env:
           # Configuration Priority: Secret > Variable > Hardcoded Default
           BASE_URL: ${{ secrets.PLAYWRIGHT_BASE_URL || vars.PLAYWRIGHT_BASE_URL || 'https://localhost:8090' }}
