@@ -304,6 +304,25 @@ jobs:
         with:
           node-version: 'lts/*'
 
+      - name: 📦 Install pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: '9.x'
+          run_install: false
+
+      - name: 🗄️ Get pnpm store directory
+        shell: bash
+        run: |
+          echo "STORE_PATH=$(pnpm store path --silent)" >> $GITHUB_ENV
+
+      - name: 🗄️ Setup pnpm cache
+        uses: actions/cache@v4
+        with:
+          path: ${{ env.STORE_PATH }}
+          key: ${{ runner.os }}-pnpm-store-${{ hashFiles('**/pnpm-lock.yaml') }}
+          restore-keys: |
+            ${{ runner.os }}-pnpm-store-
+
       - name: 📥 Download Built Distribution
         uses: actions/download-artifact@v4
         with:
@@ -321,7 +340,7 @@ jobs:
           mkdir -p tests/e2e/thunder-server
           unzip target/dist/thunder-*.zip -d tests/e2e/thunder-server
           cd tests/e2e/thunder-server
-          # Find the extracted folder (name includes version and arch) and move its contents to the root of tests/e2e/thunder-server
+          # Find the extracted folder (name includes version and arch) and move its contents to the root
           EXTRACTED_DIR=$(find . -maxdepth 1 -type d -name "thunder-*" | head -n 1)
           if [ -n "$EXTRACTED_DIR" ]; then
             mv "$EXTRACTED_DIR"/* .
@@ -329,31 +348,33 @@ jobs:
           fi
           chmod +x setup.sh start.sh
 
-      - name: 🚀 Start Thunder Server
+      - name: 🚀 Start Thunder Server (Security Disabled)
         run: |
           cd tests/e2e/thunder-server
           ./setup.sh
           THUNDER_SKIP_SECURITY=true ./start.sh &
           THUNDER_PID=$!
           echo "THUNDER_PID=$THUNDER_PID" >> $GITHUB_ENV
+          
           # Wait for server to be ready
           echo "Waiting for server to be ready on https://localhost:8090..."
           for i in {1..60}; do
             if curl -s -k https://localhost:8090/health/liveness > /dev/null; then
-              echo "Server is UP!"
+              echo "✓ Server is UP!"
               break
             fi
-            echo "Still waiting ($i/60)..."
+            echo "  Still waiting ($i/60)..."
             sleep 2
           done
           
-          # Verify server is actually running
+          # Verify server is running
           if ! curl -s -k https://localhost:8090/health/liveness > /dev/null; then
-            echo "Server failed to start within 2 minutes"
+            echo "❌ Server failed to start within 2 minutes"
+            cat logs/thunder.log 2>/dev/null || echo "No log file available"
             exit 1
           fi
           
-          echo "Server started successfully!"
+          echo "✓ Server started successfully!"
       
       - name: 🔍 Extract Sample App ID
         id: extract-app-id
@@ -396,31 +417,32 @@ jobs:
           echo "Waiting for server to be ready on https://localhost:8090..."
           for i in {1..60}; do
             if curl -s -k https://localhost:8090/health/liveness > /dev/null; then
-              echo "Server is UP with security enabled!"
+              echo "✓ Server is UP with security enabled!"
               break
             fi
-            echo "Still waiting ($i/60)..."
+            echo "  Still waiting ($i/60)..."
             sleep 2
           done
           
-          # Verify server is actually running
+          # Verify server is running
           if ! curl -s -k https://localhost:8090/health/liveness > /dev/null; then
-            echo "Server failed to restart within 2 minutes"
+            echo "❌ Server failed to restart within 2 minutes"
+            cat logs/thunder.log 2>/dev/null || echo "No log file available"
             exit 1
           fi
           
-          echo "Server restarted successfully with security enabled!"
+          echo "✓ Server restarted successfully with security enabled!"
       
       - name: 📱 Extract and Start Sample App
         run: |
           echo "Extracting Sample App..."
           mkdir -p tests/e2e/sample-app
           
-          # Find the sample app zip file (platform-specific)
+          # Find the sample app zip file
           SAMPLE_APP_ZIP=$(find target/dist -name "sample-app-react-sdk-*.zip" | head -n 1)
           
           if [ -z "$SAMPLE_APP_ZIP" ]; then
-            echo "⚠️  Warning: Sample app zip not found in target/dist"
+            echo "❌ Sample app zip not found in target/dist"
             echo "Available files:"
             ls -la target/dist/
             exit 1
@@ -443,61 +465,85 @@ jobs:
           
           echo "Starting Sample App..."
           ./start.sh &
+          SAMPLE_APP_PID=$!
+          echo "SAMPLE_APP_PID=$SAMPLE_APP_PID" >> $GITHUB_ENV
           
           # Wait for sample app to be ready
           echo "Waiting for sample app to be ready on https://localhost:3000..."
           for i in {1..60}; do
             if curl -s -k https://localhost:3000 > /dev/null 2>&1; then
-              echo "Sample App is UP!"
+              echo "✓ Sample App is UP!"
               break
             fi
-            echo "Still waiting ($i/60)..."
+            echo "  Still waiting ($i/60)..."
             sleep 2
           done
           
           # Verify sample app is running
           if ! curl -s -k https://localhost:3000 > /dev/null 2>&1; then
-            echo "Sample app failed to start within 2 minutes"
+            echo "❌ Sample app failed to start within 2 minutes"
             exit 1
           fi
           
-          echo "Sample App started successfully!"
+          echo "✓ Sample App started successfully!"
+      
+      - name: 📦 Install Workspace Dependencies
+        run: |
+          cd frontend
+          pnpm install --frozen-lockfile
 
-      - name: Install E2E dependencies
-        run: npm ci
-        working-directory: tests/e2e
+      - name: 🎭 Install Playwright Browsers
+        run: |
+          cd frontend
+          pnpm --filter e2e-tests-thunder exec playwright install --with-deps
 
-      - name: Install Playwright Browsers
-        run: npx playwright install --with-deps
-        working-directory: tests/e2e
-
-      - name: Run Playwright tests
-        run: npx playwright test
-        working-directory: tests/e2e
+      - name: 🎭 Run Playwright Tests
+        run: |
+          cd frontend
+          pnpm --filter e2e-tests-thunder test
         env:
           # Configuration Priority: Secret > Variable > Hardcoded Default
           BASE_URL: ${{ secrets.PLAYWRIGHT_BASE_URL || vars.PLAYWRIGHT_BASE_URL || 'https://localhost:8090' }}
-          ADMIN_USERNAME: ${{ secrets.PLAYWRIGHT_ADMIN_USERNAME || 'admin' }}
+          ADMIN_USERNAME: ${{ secrets.PLAYWRIGHT_ADMIN_USERNAME || vars.PLAYWRIGHT_ADMIN_USERNAME || 'admin' }}
           ADMIN_PASSWORD: ${{ secrets.PLAYWRIGHT_ADMIN_PASSWORD || 'admin' }}
-          TEST_USER_USERNAME: ${{ secrets.PLAYWRIGHT_TEST_USER_USERNAME || 'testuser' }}
+          TEST_USER_USERNAME: ${{ secrets.PLAYWRIGHT_TEST_USER_USERNAME || vars.PLAYWRIGHT_TEST_USER_USERNAME || 'testuser' }}
           TEST_USER_PASSWORD: ${{ secrets.PLAYWRIGHT_TEST_USER_PASSWORD || 'admin' }}
-          PLAYWRIGHT_WORKERS: ${{ vars.PLAYWRIGHT_WORKERS || 1 }}
+          PLAYWRIGHT_WORKERS: ${{ vars.PLAYWRIGHT_WORKERS || '1' }}
           DEBUG_AUTH: ${{ vars.PLAYWRIGHT_DEBUG_AUTH || 'false' }}
           # MFA Test Configuration
           SAMPLE_APP_ID: ${{ steps.extract-app-id.outputs.sample_app_id }}
-          SAMPLE_APP_URL: 'https://localhost:3000'
-          THUNDER_URL: 'https://localhost:8090'
+          SAMPLE_APP_URL: ${{ vars.SAMPLE_APP_URL || 'https://localhost:3000' }}
+          THUNDER_URL: ${{ vars.THUNDER_URL || 'https://localhost:8090' }}
           AUTO_SETUP_MFA: ${{ vars.AUTO_SETUP_MFA || 'true' }}
-          MOCK_SMS_SERVER_PORT: ${{ vars.MOCK_SMS_SERVER_PORT || 8098 }}
-          SAMPLE_APP_USERNAME: ${{ secrets.SAMPLE_APP_USERNAME || 'e2e-test-user' }}
+          MOCK_SMS_SERVER_PORT: ${{ vars.MOCK_SMS_SERVER_PORT || '8098' }}
+          SAMPLE_APP_USERNAME: ${{ secrets.SAMPLE_APP_USERNAME || vars.SAMPLE_APP_USERNAME || 'e2e-test-user' }}
           SAMPLE_APP_PASSWORD: ${{ secrets.SAMPLE_APP_PASSWORD || 'e2e-test-password' }}
+          NODE_TLS_REJECT_UNAUTHORIZED: '0'
 
-      - uses: actions/upload-artifact@v4
+      - name: 📊 Upload Playwright Report
+        uses: actions/upload-artifact@v4
         if: ${{ !cancelled() }}
         with:
           name: playwright-report
           path: tests/e2e/playwright-report/
           retention-days: 30
+
+      - name: 📊 Upload Playwright Test Results
+        uses: actions/upload-artifact@v4
+        if: ${{ !cancelled() }}
+        with:
+          name: playwright-test-results
+          path: tests/e2e/test-results/
+          retention-days: 7
+
+      - name: 🧹 Cleanup Processes
+        if: always()
+        run: |
+          echo "Cleaning up Thunder server and Sample app..."
+          kill $THUNDER_PID 2>/dev/null || true
+          kill $SAMPLE_APP_PID 2>/dev/null || true
+          sleep 2
+          echo "✓ Cleanup complete"
 
 
   detect-powershell-changes:
@@ -527,4 +573,3 @@ jobs:
     needs: detect-powershell-changes
     if: needs.detect-powershell-changes.outputs.should-run == 'true'
     uses: ./.github/workflows/windows-powershell-validation.yml
-  
