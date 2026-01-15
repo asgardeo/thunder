@@ -1,6 +1,7 @@
 packages:
   - apps/*
   - packages/*
+  - ../../tests/e2e
 
 catalog:
   '@asgardeo/react': 0.6.27
