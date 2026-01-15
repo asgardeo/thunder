@@ -476,13 +476,13 @@ jobs:
 
       - name: 🎭 Install Playwright Browsers
         run: |
-          cd tests/e2e
-          npx playwright install --with-deps
+          cd frontend
+          pnpm --filter e2e-tests-thunder exec playwright install --with-deps
 
       - name: 🎭 Run Playwright Tests
         run: |
-          cd tests/e2e
-          npx playwright test
+          cd frontend
+          pnpm --filter e2e-tests-thunder exec playwright test
         env:
           # Configuration Priority: Secret > Variable > Hardcoded Default
           BASE_URL: ${{ secrets.PLAYWRIGHT_BASE_URL || vars.PLAYWRIGHT_BASE_URL || 'https://localhost:8090' }}
