@@ -1,9 +1,8 @@
 import thunderPlugin from "@thunder/eslint-plugin-thunder";
 import playwright from "eslint-plugin-playwright";
-import tsParser from "@typescript-eslint/parser";
 
 export default [
-  ...thunderPlugin.configs.typescript,
+  ...thunderPlugin.configs.base,
   {
     ignores: ["node_modules/**", "playwright-report/**", "test-results/**", "blob-report/**", "playwright/.auth/**"],
   },
@@ -11,14 +10,6 @@ export default [
     files: ["**/*.ts"],
     plugins: {
       playwright: playwright,
-    },
-    languageOptions: {
-      parser: tsParser,
-      parserOptions: {
-        ecmaVersion: 2020,
-        sourceType: "module",
-        project: "./tsconfig.json",
-      },
     },
     rules: {
       "playwright/no-conditional-in-test": "error",

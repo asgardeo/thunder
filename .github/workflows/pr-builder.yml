@@ -304,7 +304,13 @@ jobs:
         with:
           node-version: 'lts/*'
 
-      - name: 📥 Download Built Distribution
+      - name: � Install pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: '9.x'
+          run_install: false
+
+      - name: �📥 Download Built Distribution
         uses: actions/download-artifact@v4
         with:
           name: thunder-distribution
@@ -463,16 +469,19 @@ jobs:
           
           echo "Sample App started successfully!"
 
-      - name: Install E2E dependencies
-        run: npm ci
-        working-directory: tests/e2e
+      - name: 📦 Install E2E Dependencies
+        run: |
+          cd frontend
+          pnpm install --frozen-lockfile
 
-      - name: Install Playwright Browsers
-        run: npx playwright install --with-deps
-        working-directory: tests/e2e
+        run: |
+          cd tests/e2e
+          npx playwright install --with-deps
 
-      - name: Run Playwright tests
-        run: npx playwright test
+      - name: 🎭 Run Playwright Tests
+        run: |
+          cd tests/e2e
+          npx playwright test
         working-directory: tests/e2e
         env:
           # Configuration Priority: Secret > Variable > Hardcoded Default
