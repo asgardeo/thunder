@@ -471,18 +471,17 @@ jobs:
 
       - name: 📦 Install E2E Dependencies
         run: |
-          cd frontend
+          cd tests/e2e
           pnpm install --frozen-lockfile
 
       - name: 🎭 Install Playwright Browsers
-        run: node ../../node_modules/@playwright/test/cli.js install --with-deps
+        run: npx playwright install --with-deps
         working-directory: tests/e2e
 
       - name: 🎭 Run Playwright Tests
-        run: node ../../node_modules/@playwright/test/cli.js test
+        run: npx playwright test
         working-directory: tests/e2e
         env:
-          NODE_PATH: ../../node_modules
           # Configuration Priority: Secret > Variable > Hardcoded Default
           BASE_URL: ${{ secrets.PLAYWRIGHT_BASE_URL || vars.PLAYWRIGHT_BASE_URL || 'https://localhost:8090' }}
           ADMIN_USERNAME: ${{ secrets.PLAYWRIGHT_ADMIN_USERNAME || 'admin' }}

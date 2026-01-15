@@ -35,17 +35,15 @@
   "type": "commonjs",
   "devDependencies": {
     "@playwright/test": "1.57.0",
-    "@thunder/eslint-plugin-thunder": "workspace:^",
-    "@thunder/prettier-config": "workspace:^",
     "@types/express": "^5.0.6",
-    "@types/node": "catalog:",
+    "@types/node": "24.7.2",
     "@typescript-eslint/eslint-plugin": "8.0.0",
     "@typescript-eslint/parser": "8.0.0",
-    "eslint": "catalog:",
+    "eslint": "8.57.1",
     "eslint-plugin-playwright": "2.1.0",
     "express": "^5.2.1",
-    "prettier": "catalog:",
-    "typescript": "catalog:"
+    "prettier": "3.6.2",
+    "typescript": "5.9.3"
   },
   "dependencies": {
     "dotenv": "17.2.3"
