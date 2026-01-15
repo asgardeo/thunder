@@ -304,13 +304,13 @@ jobs:
         with:
           node-version: 'lts/*'
 
-      - name: � Install pnpm
+      - name: 📦 Install pnpm
         uses: pnpm/action-setup@v4
         with:
           version: '9.x'
           run_install: false
 
-      - name: �📥 Download Built Distribution
+      - name: 📥 Download Built Distribution
         uses: actions/download-artifact@v4
         with:
           name: thunder-distribution
