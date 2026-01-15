@@ -469,6 +469,11 @@ jobs:
           
           echo "Sample App started successfully!"
 
+      - name: ⚙️ Set up Node.js 24.x
+        uses: actions/setup-node@v4
+        with:
+          node-version: '24.x'
+
       - name: 📦 Install E2E Dependencies
         run: |
           cd tests/e2e
