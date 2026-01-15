@@ -36,7 +36,6 @@
   "devDependencies": {
     "@playwright/test": "1.57.0",
     "@types/express": "^5.0.6",
-    "@thunder/eslint-plugin-thunder": "workspace:^",
     "eslint": "8.57.1",
     "eslint-plugin-playwright": "2.1.0",
     "express": "^5.2.1",
