@@ -22,20 +22,23 @@ import "github.com/asgardeo/thunder/internal/flow/common"
 
 // Executor name constants
 const (
-	ExecutorNameBasicAuth        = "BasicAuthExecutor"
-	ExecutorNameSMSAuth          = "SMSOTPAuthExecutor"
-	ExecutorNameOAuth            = "OAuthExecutor"
-	ExecutorNameOIDCAuth         = "OIDCAuthExecutor"
-	ExecutorNameGitHubAuth       = "GithubOAuthExecutor"
-	ExecutorNameGoogleAuth       = "GoogleOIDCAuthExecutor"
-	ExecutorNameIdentifying      = "IdentifyingExecutor"
-	ExecutorNameAuthAssert       = "AuthAssertExecutor"
-	ExecutorNameProvisioning     = "ProvisioningExecutor"
-	ExecutorNameAttributeCollect = "AttributeCollector"
-	ExecutorNameAuthorization    = "AuthorizationExecutor"
-	ExecutorNameOUCreation       = "OUExecutor"
-	ExecutorNameHTTPRequest      = "HTTPRequestExecutor"
-	ExecutorNameUserTypeResolver = "UserTypeResolver"
+	ExecutorNameBasicAuth           = "BasicAuthExecutor"
+	ExecutorNameSMSAuth             = "SMSOTPAuthExecutor"
+	ExecutorNameOAuth               = "OAuthExecutor"
+	ExecutorNameOIDCAuth            = "OIDCAuthExecutor"
+	ExecutorNameGitHubAuth          = "GithubOAuthExecutor"
+	ExecutorNameGoogleAuth          = "GoogleOIDCAuthExecutor"
+	ExecutorNameIdentifying         = "IdentifyingExecutor"
+	ExecutorNameAuthAssert          = "AuthAssertExecutor"
+	ExecutorNameProvisioning        = "ProvisioningExecutor"
+	ExecutorNameAttributeCollect    = "AttributeCollector"
+	ExecutorNameAuthorization       = "AuthorizationExecutor"
+	ExecutorNamePermissionValidator = "PermissionValidator"
+	ExecutorNameOUCreation          = "OUExecutor"
+	ExecutorNameHTTPRequest         = "HTTPRequestExecutor"
+	ExecutorNameUserTypeResolver    = "UserTypeResolver"
+	ExecutorNameInviteExecutor      = "InviteExecutor"
+	ExecutorNameCredentialSetter    = "CredentialSetter"
 )
 
 // User attribute and input constants
@@ -48,11 +51,12 @@ const (
 	userAttributeGroups       = "groups"
 	userAttributeSub          = "sub"
 
-	userInputCode     = "code"
-	userInputNonce    = "nonce"
-	userInputOuName   = "ouName"
-	userInputOuHandle = "ouHandle"
-	userInputOuDesc   = "ouDescription"
+	userInputCode        = "code"
+	userInputNonce       = "nonce"
+	userInputOuName      = "ouName"
+	userInputOuHandle    = "ouHandle"
+	userInputOuDesc      = "ouDescription"
+	userInputInviteToken = "inviteToken"
 
 	ouIDKey        = "ouId"
 	defaultOUIDKey = "defaultOUID"
@@ -63,8 +67,9 @@ const (
 
 // Executor property keys
 const (
-	propertyKeyAssignGroup = "assignGroup"
-	propertyKeyAssignRole  = "assignRole"
+	propertyKeyAssignGroup    = "assignGroup"
+	propertyKeyAssignRole     = "assignRole"
+	propertyKeyRequiredScopes = "requiredScopes"
 )
 
 // nonSearchableInputs contains the list of user inputs/ attributes that are non-searchable.
@@ -74,9 +79,11 @@ var nonSearchableInputs = []string{"password", "code", "nonce", "otp"}
 var nonUserAttributes = []string{"userID", "code", "nonce", "state", "flowID",
 	"otp", "attemptCount", "expiryTimeInMillis", "otpSessionToken", "value",
 	"authorized_permissions", "requested_permissions",
-	userTypeKey, ouIDKey, defaultOUIDKey, userInputOuName, userInputOuHandle, userInputOuDesc,
+	userTypeKey, ouIDKey, defaultOUIDKey, userInputOuName, userInputOuHandle, userInputOuDesc, userInputInviteToken,
 	common.RuntimeKeyUserEligibleForProvisioning, common.RuntimeKeySkipProvisioning,
-	common.RuntimeKeyUserAutoProvisioned}
+	common.RuntimeKeyUserAutoProvisioned, runtimeKeyStoredInviteToken}
+
+const runtimeKeyStoredInviteToken = "storedInviteToken"
 
 // Failure reason constants
 const (

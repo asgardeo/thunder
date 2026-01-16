@@ -29,6 +29,8 @@ const (
 	FlowTypeAuthentication FlowType = "AUTHENTICATION"
 	// FlowTypeRegistration represents a flow execution for user registration.
 	FlowTypeRegistration FlowType = "REGISTRATION"
+	// FlowTypeInviteRegistration represents an admin-initiated user invitation flow.
+	FlowTypeInviteRegistration FlowType = "INVITE_REGISTRATION"
 )
 
 // FlowStatus defines the status of a flow execution.

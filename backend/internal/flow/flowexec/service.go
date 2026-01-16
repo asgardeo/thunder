@@ -27,6 +27,7 @@ import (
 	"github.com/asgardeo/thunder/internal/flow/common"
 	flowmgt "github.com/asgardeo/thunder/internal/flow/mgt"
 
+	"github.com/asgardeo/thunder/internal/system/config"
 	sysContext "github.com/asgardeo/thunder/internal/system/context"
 
 	"github.com/asgardeo/thunder/internal/observability"
@@ -116,8 +117,9 @@ func (s *flowExecService) Execute(ctx context.Context,
 		}
 	}
 
-	// Set trace ID to context
+	// Set trace ID and HTTP context to context
 	context.TraceID = traceID
+	context.HTTPContext = ctx
 
 	flowStep, flowErr := s.flowEngine.Execute(context)
 
@@ -201,9 +203,12 @@ func (s *flowExecService) initContext(appID string, flowType common.FlowType,
 	ctx.AppID = appID
 	ctx.Verbose = verbose
 
-	svcErr = s.setApplicationToContext(&ctx, logger)
-	if svcErr != nil {
-		return nil, svcErr
+	// Skip application loading for app-independent flows
+	if flowType != common.FlowTypeInviteRegistration {
+		svcErr = s.setApplicationToContext(&ctx, logger)
+		if svcErr != nil {
+			return nil, svcErr
+		}
 	}
 
 	return &ctx, nil
@@ -253,9 +258,12 @@ func (s *flowExecService) loadContextFromStore(flowID string, logger *log.Logger
 		return nil, &serviceerror.InternalServerError
 	}
 
-	svcErr = s.setApplicationToContext(&engineContext, logger)
-	if svcErr != nil {
-		return nil, svcErr
+	// Skip application loading for app-independent flows
+	if engineContext.FlowType != common.FlowTypeInviteRegistration {
+		svcErr = s.setApplicationToContext(&engineContext, logger)
+		if svcErr != nil {
+			return nil, svcErr
+		}
 	}
 
 	return &engineContext, nil
@@ -342,6 +350,11 @@ func (s *flowExecService) storeContext(ctx *EngineContext, logger *log.Logger) e
 // getFlowGraph checks if the provided application ID is valid and returns the associated flow ID.
 func (s *flowExecService) getFlowGraph(appID string, flowType common.FlowType,
 	logger *log.Logger) (string, *serviceerror.ServiceError) {
+	// Handle app-independent system flows
+	if flowType == common.FlowTypeInviteRegistration {
+		return s.getSystemFlowGraph(flowType, logger)
+	}
+
 	if appID == "" {
 		return "", &ErrorInvalidAppID
 	}
@@ -387,7 +400,7 @@ func (s *flowExecService) getFlowGraph(appID string, flowType common.FlowType,
 // validateFlowType validates the provided flow type string and returns the corresponding FlowType.
 func validateFlowType(flowTypeStr string) (common.FlowType, *serviceerror.ServiceError) {
 	switch common.FlowType(flowTypeStr) {
-	case common.FlowTypeAuthentication, common.FlowTypeRegistration:
+	case common.FlowTypeAuthentication, common.FlowTypeRegistration, common.FlowTypeInviteRegistration:
 		return common.FlowType(flowTypeStr), nil
 	default:
 		return "", &ErrorInvalidFlowType
@@ -397,6 +410,26 @@ func validateFlowType(flowTypeStr string) (common.FlowType, *serviceerror.Servic
 // isNewFlow checks if the flow is a new flow based on the provided input.
 func isNewFlow(flowID string) bool {
 	return flowID == ""
+}
+
+// getSystemFlowGraph retrieves the flow graph for system flows by handle.
+func (s *flowExecService) getSystemFlowGraph(flowType common.FlowType,
+	logger *log.Logger) (string, *serviceerror.ServiceError) {
+	handle := ""
+	switch flowType {
+	case common.FlowTypeInviteRegistration:
+		handle = config.GetThunderRuntime().Config.Flow.InviteRegistrationFlowHandle
+	default:
+		return "", &ErrorInvalidFlowType
+	}
+
+	flow, err := s.flowMgtService.GetFlowByHandle(handle, flowType)
+	if err != nil {
+		logger.Error("Failed to get system flow by handle",
+			log.String("handle", handle), log.String("flowType", string(flowType)))
+		return "", err
+	}
+	return flow.ID, nil
 }
 
 // isComplete checks if the flow step status indicates completion.

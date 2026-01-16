@@ -149,9 +149,6 @@ func (e *executor) GetUserIDFromContext(ctx *NodeContext) string {
 	if userID == "" {
 		userID = ctx.RuntimeData[userAttributeUserID]
 	}
-	if userID == "" {
-		userID = ctx.UserInputs[userAttributeUserID]
-	}
 
 	return userID
 }

@@ -68,10 +68,7 @@ func NewSecurityService(authenticators []AuthenticatorInterface, publicPaths []s
 // Process handles the complete security flow: authentication and authorization.
 // Returns an enriched context on success, or an error if authentication or authorization fails.
 func (s *securityService) Process(r *http.Request) (context.Context, error) {
-	// Check if the path is public (skip authentication)
-	if s.isPublicPath(r.URL.Path) {
-		return r.Context(), nil
-	}
+	isPublic := s.isPublicPath(r.URL.Path)
 
 	// Check if the request is options (CORS preflight)
 	if r.Method == http.MethodOptions {
@@ -87,15 +84,15 @@ func (s *securityService) Process(r *http.Request) (context.Context, error) {
 		}
 	}
 
-	// If no authenticator found, request is unauthorized
+	// If no authenticator found
 	if authenticator == nil {
-		return nil, errNoHandlerFound
+		return s.handleAuthError(r, errNoHandlerFound, isPublic)
 	}
 
 	// Authenticate the request
 	securityCtx, err := authenticator.Authenticate(r)
 	if err != nil {
-		return nil, err
+		return s.handleAuthError(r, err, isPublic)
 	}
 
 	// Add authentication context to request context if available
@@ -106,7 +103,7 @@ func (s *securityService) Process(r *http.Request) (context.Context, error) {
 
 	// Authorize the authenticated principal
 	if err := authenticator.Authorize(r.WithContext(ctx), securityCtx); err != nil {
-		return nil, err
+		return s.handleAuthError(r, err, isPublic)
 	}
 
 	return ctx, nil
@@ -171,4 +168,12 @@ func compilePathPatterns(patterns []string) ([]*regexp.Regexp, error) {
 	}
 
 	return compiled, nil
+}
+
+// handleAuthError handles authentication/authorization errors based on whether the path is public.
+func (s *securityService) handleAuthError(r *http.Request, err error, isPublic bool) (context.Context, error) {
+	if isPublic {
+		return r.Context(), nil
+	}
+	return nil, err
 }

@@ -85,6 +85,7 @@
   },
   "flow": {
     "default_auth_flow_handle": "default-basic-flow",
+    "invite_registration_flow_handle": "default-invite-registration",
     "max_version_history": 10,
     "auto_infer_registration": true
   },

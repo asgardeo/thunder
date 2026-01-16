@@ -283,13 +283,6 @@ func (s *ExecutorTestSuite) TestGetUserIDFromContext() {
 			"user-456",
 		},
 		{
-			"UserID from user inputs",
-			authncm.AuthenticatedUser{},
-			map[string]string{},
-			map[string]string{userAttributeUserID: "user-789"},
-			"user-789",
-		},
-		{
 			"Priority: authenticated user over runtime data",
 			authncm.AuthenticatedUser{UserID: "user-auth"},
 			map[string]string{userAttributeUserID: "user-runtime"},
