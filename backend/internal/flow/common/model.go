@@ -69,6 +69,7 @@ type ExecutorResponse struct {
 	AuthenticatedUser authncm.AuthenticatedUser `json:"authenticated_user,omitempty"`
 	Assertion         string                    `json:"assertion,omitempty"`
 	FailureReason     string                    `json:"failure_reason,omitempty"`
+	Meta              interface{}               `json:"meta,omitempty"`
 }
 
 // NodeExecutionRecord represents a record of a node execution in the flow.

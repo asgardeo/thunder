@@ -175,8 +175,13 @@ func (n *taskExecutionNode) buildNodeResponse(execResp *common.ExecutorResponse,
 		nodeResp.Type = common.NodeResponseTypeView
 
 		// Include meta in the response if verbose mode is enabled
-		if ctx.Verbose && n.GetMeta() != nil {
-			nodeResp.Meta = n.GetMeta()
+		// Prefer executor-returned meta over node's configured meta
+		if ctx.Verbose {
+			if execResp.Meta != nil {
+				nodeResp.Meta = execResp.Meta
+			} else if n.GetMeta() != nil {
+				nodeResp.Meta = n.GetMeta()
+			}
 		}
 	case common.ExecExternalRedirection:
 		nodeResp.Status = common.NodeStatusIncomplete

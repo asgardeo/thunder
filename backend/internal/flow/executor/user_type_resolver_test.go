@@ -485,9 +485,16 @@ func (suite *UserTypeResolverTestSuite) TestExecute_MultipleAllowedUserTypes_Pro
 
 	requiredInput := result.Inputs[0]
 	assert.Equal(suite.T(), userTypeKey, requiredInput.Identifier)
-	assert.Equal(suite.T(), "dropdown", requiredInput.Type)
+	assert.Equal(suite.T(), "SELECT", requiredInput.Type)
+	assert.Equal(suite.T(), "usertype_input", requiredInput.Ref)
 	assert.True(suite.T(), requiredInput.Required)
 	assert.ElementsMatch(suite.T(), []string{"employee", "customer", "partner"}, requiredInput.Options)
+
+	// Verify Meta is returned with proper structure
+	assert.NotNil(suite.T(), result.Meta)
+	meta, ok := result.Meta.(core.MetaStructure)
+	assert.True(suite.T(), ok, "Meta should be of type core.MetaStructure")
+	assert.NotEmpty(suite.T(), meta.Components, "Meta should contain components")
 
 	suite.mockUserSchemaService.AssertExpectations(suite.T())
 }
@@ -529,7 +536,7 @@ func (suite *UserTypeResolverTestSuite) TestExecute_EmptyUserTypeInput() {
 
 	requiredInput := result.Inputs[0]
 	assert.Equal(suite.T(), userTypeKey, requiredInput.Identifier)
-	assert.Equal(suite.T(), "dropdown", requiredInput.Type)
+	assert.Equal(suite.T(), "SELECT", requiredInput.Type)
 
 	suite.mockUserSchemaService.AssertExpectations(suite.T())
 }
