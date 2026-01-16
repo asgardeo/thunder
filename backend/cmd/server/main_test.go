@@ -19,13 +19,29 @@
 package main
 
 import (
+	"crypto/rand"
+	"crypto/rsa"
+	"crypto/tls"
+	"crypto/x509"
+	"crypto/x509/pkix"
+	"encoding/pem"
+	"errors"
+	"flag"
+	"io"
+	"math/big"
+	"net"
 	"net/http"
+	"net/http/httptest"
 	"os"
+	"os/exec"
+	"path/filepath"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
 
+	"github.com/asgardeo/thunder/internal/system/config"
 	"github.com/asgardeo/thunder/internal/system/log"
 	"github.com/asgardeo/thunder/tests/mocks/jwtmock"
 )
@@ -132,75 +148,6 @@ func (suite *CreateSecurityMiddlewareTestSuite) TestCreateSecurityMiddleware_Wit
 	}
 }
 
-// TestCreateSecurityMiddleware_WithNilLogger tests behavior with nil logger (edge case)
-// Note: This test documents current behavior - the function will panic if logger is nil when security is disabled
-func (suite *CreateSecurityMiddlewareTestSuite) TestCreateSecurityMiddleware_WithNilLogger() {
-	// This test documents that passing nil logger will cause a panic when trying to log warnings
-	// In production code, this should never happen as logger is initialized at startup
-
-	suite.Run("NilLogger_SecurityDisabled", func() {
-		// Setup
-		_ = os.Setenv("THUNDER_SKIP_SECURITY", "true")
-
-		// Execute and Assert - will panic because logger.Warn is called when security is disabled
-		assert.Panics(suite.T(), func() {
-			createSecurityMiddleware(nil, suite.mux, suite.mockJWTService)
-		}, "Should panic when logger is nil and security is disabled")
-	})
-}
-
-// TestCreateSecurityMiddleware_WithNilJWTService tests behavior with nil JWT service (edge case)
-func (suite *CreateSecurityMiddlewareTestSuite) TestCreateSecurityMiddleware_WithNilJWTService() {
-	suite.Run("NilJWTService_SecurityDisabled", func() {
-		// Setup
-		_ = os.Setenv("THUNDER_SKIP_SECURITY", "true")
-
-		// Execute - should not panic since security.Initialize is not called
-		handler := createSecurityMiddleware(suite.logger, suite.mux, nil)
-
-		// Assert
-		assert.Nil(suite.T(), handler)
-	})
-
-	suite.Run("NilJWTService_SecurityEnabled", func() {
-		// Setup
-		_ = os.Unsetenv("THUNDER_SKIP_SECURITY")
-
-		// Execute - security.Initialize should succeed with nil JWT service
-		// The function will create a JWT authenticator but it may fail later during actual authentication
-		handler := createSecurityMiddleware(suite.logger, suite.mux, nil)
-
-		// Assert - handler is created successfully
-		assert.NotNil(suite.T(), handler)
-	})
-}
-
-// TestCreateSecurityMiddleware_WithNilMux tests behavior with nil mux (edge case)
-func (suite *CreateSecurityMiddlewareTestSuite) TestCreateSecurityMiddleware_WithNilMux() {
-	suite.Run("NilMux_SecurityDisabled", func() {
-		// Setup
-		_ = os.Setenv("THUNDER_SKIP_SECURITY", "true")
-
-		// Execute - should not panic since mux is not used when security is disabled
-		handler := createSecurityMiddleware(suite.logger, nil, suite.mockJWTService)
-
-		// Assert
-		assert.Nil(suite.T(), handler)
-	})
-
-	suite.Run("NilMux_SecurityEnabled", func() {
-		// Setup
-		_ = os.Unsetenv("THUNDER_SKIP_SECURITY")
-
-		// Execute - security.Initialize should succeed even with nil mux
-		// The middleware function wraps the handler, not the mux
-		handler := createSecurityMiddleware(suite.logger, nil, suite.mockJWTService)
-
-		// Assert
-		assert.NotNil(suite.T(), handler)
-	})
-}
-
 // TestCreateSecurityMiddleware_MultipleInvocations tests that multiple calls work correctly
 func (suite *CreateSecurityMiddlewareTestSuite) TestCreateSecurityMiddleware_MultipleInvocations() {
 	// Execute multiple times
@@ -229,4 +176,322 @@ func (suite *CreateSecurityMiddlewareTestSuite) TestCreateSecurityMiddleware_Run
 	_ = os.Unsetenv("THUNDER_SKIP_SECURITY")
 	handler3 := createSecurityMiddleware(suite.logger, suite.mux, suite.mockJWTService)
 	assert.NotNil(suite.T(), handler3, "Third handler should not be nil after re-enabling security")
+}
+
+func TestCreateHTTPServer_WithHTTPOnly(t *testing.T) {
+	logger := log.GetLogger()
+	if err := os.Setenv("THUNDER_SKIP_SECURITY", "true"); err != nil {
+		t.Fatalf("failed to set THUNDER_SKIP_SECURITY: %v", err)
+	}
+	defer func() {
+		if err := os.Unsetenv("THUNDER_SKIP_SECURITY"); err != nil {
+			t.Fatalf("failed to unset THUNDER_SKIP_SECURITY: %v", err)
+		}
+	}()
+
+	cfg := &config.Config{
+		Server: config.ServerConfig{
+			Hostname: "localhost",
+			Port:     0,
+			HTTPOnly: true,
+		},
+	}
+
+	mux := http.NewServeMux()
+	server := createHTTPServer(logger, cfg, mux, nil)
+
+	assert.Equal(t, "localhost:0", server.Addr)
+	assert.NotNil(t, server.Handler)
+	assert.NotZero(t, server.ReadHeaderTimeout)
+	assert.NotZero(t, server.WriteTimeout)
+	assert.NotZero(t, server.IdleTimeout)
+}
+
+func TestCreateListener_Success(t *testing.T) {
+	logger := log.GetLogger()
+	server := &http.Server{
+		Addr:              "127.0.0.1:8080",
+		ReadHeaderTimeout: time.Second,
+	}
+
+	stubListener := &stubNetListener{
+		addr: &net.TCPAddr{IP: net.ParseIP("127.0.0.1"), Port: 8080},
+	}
+
+	callCount := 0
+	originalListen := netListen
+	netListen = func(network, address string) (net.Listener, error) {
+		callCount++
+		assert.Equal(t, "tcp", network)
+		assert.Equal(t, server.Addr, address)
+		return stubListener, nil
+	}
+	t.Cleanup(func() {
+		netListen = originalListen
+	})
+
+	ln := createListener(logger, server)
+
+	assert.Equal(t, 1, callCount)
+	assert.Equal(t, stubListener, ln)
+}
+
+func TestCreateListener_ExitsOnError(t *testing.T) {
+	const helperEnv = "TEST_CREATE_LISTENER_EXIT"
+	if os.Getenv(helperEnv) == "1" {
+		originalListen := netListen
+		netListen = func(_ string, _ string) (net.Listener, error) {
+			return nil, errors.New("listen failure")
+		}
+		defer func() {
+			netListen = originalListen
+		}()
+
+		logger := log.GetLogger()
+		server := &http.Server{
+			Addr:              "invalid-address",
+			ReadHeaderTimeout: time.Second,
+		}
+		createListener(logger, server)
+		return
+	}
+
+	runExitHelper(t, helperEnv, "TestCreateListener_ExitsOnError")
+}
+
+func TestCreateTLSListener_Success(t *testing.T) {
+	logger := log.GetLogger()
+	server := &http.Server{
+		Addr:              "127.0.0.1:8443",
+		ReadHeaderTimeout: time.Second,
+	}
+	tlsConfig := generateTestTLSConfig(t)
+
+	stubListener := &stubNetListener{
+		addr: &net.TCPAddr{IP: net.ParseIP("127.0.0.1"), Port: 8443},
+	}
+
+	callCount := 0
+	originalTLSListen := tlsListen
+	tlsListen = func(network, address string, config *tls.Config) (net.Listener, error) {
+		callCount++
+		assert.Equal(t, "tcp", network)
+		assert.Equal(t, server.Addr, address)
+		assert.Equal(t, tlsConfig, config)
+		return stubListener, nil
+	}
+	t.Cleanup(func() {
+		tlsListen = originalTLSListen
+	})
+
+	ln := createTLSListener(logger, server, tlsConfig)
+
+	assert.Equal(t, 1, callCount)
+	assert.Equal(t, stubListener, ln)
+}
+
+func TestCreateTLSListener_ExitsOnError(t *testing.T) {
+	const helperEnv = "TEST_CREATE_TLS_LISTENER_EXIT"
+	if os.Getenv(helperEnv) == "1" {
+		originalTLSListen := tlsListen
+		tlsListen = func(_ string, _ string, _ *tls.Config) (net.Listener, error) {
+			return nil, errors.New("tls listen failure")
+		}
+		defer func() {
+			tlsListen = originalTLSListen
+		}()
+
+		logger := log.GetLogger()
+		server := &http.Server{
+			Addr:              "invalid-address",
+			ReadHeaderTimeout: time.Second,
+		}
+		createTLSListener(logger, server, &tls.Config{MinVersion: tls.VersionTLS12})
+		return
+	}
+
+	runExitHelper(t, helperEnv, "TestCreateTLSListener_ExitsOnError")
+}
+
+func TestGetThunderHome_UsesFlagValue(t *testing.T) {
+	origArgs := os.Args
+	origCommandLine := flag.CommandLine
+	defer func() {
+		os.Args = origArgs
+		flag.CommandLine = origCommandLine
+	}()
+
+	tmpDir := t.TempDir()
+	flag.CommandLine = flag.NewFlagSet(os.Args[0], flag.ExitOnError)
+	os.Args = []string{origArgs[0], "-thunderHome", tmpDir}
+
+	got := getThunderHome(log.GetLogger())
+	assert.Equal(t, tmpDir, got)
+}
+
+func TestGetThunderHome_DefaultsToCWD(t *testing.T) {
+	origArgs := os.Args
+	origCommandLine := flag.CommandLine
+	origWD, _ := os.Getwd()
+	defer func() {
+		os.Args = origArgs
+		flag.CommandLine = origCommandLine
+		_ = os.Chdir(origWD)
+	}()
+
+	tmpDir := t.TempDir()
+	flag.CommandLine = flag.NewFlagSet(os.Args[0], flag.ExitOnError)
+	os.Args = []string{origArgs[0]}
+	_ = os.Chdir(tmpDir)
+
+	got := getThunderHome(log.GetLogger())
+	expectedResolved, err := filepath.EvalSymlinks(tmpDir)
+	assert.NoError(t, err)
+	gotResolved, err := filepath.EvalSymlinks(got)
+	assert.NoError(t, err)
+	assert.Equal(t, expectedResolved, gotResolved)
+}
+
+func TestCreateStaticFileHandler(t *testing.T) {
+	logger := log.GetLogger()
+	tmpDir := t.TempDir()
+
+	indexContent := []byte("index content")
+	fileContent := []byte("hello file")
+
+	requireWriteFile(t, filepath.Join(tmpDir, "index.html"), indexContent)
+	requireWriteFile(t, filepath.Join(tmpDir, "hello.txt"), fileContent)
+
+	handler := createStaticFileHandler("/app/", tmpDir, logger)
+
+	t.Run("serves existing file", func(t *testing.T) {
+		req := httptest.NewRequest(http.MethodGet, "/app/hello.txt", nil)
+		rr := httptest.NewRecorder()
+
+		handler.ServeHTTP(rr, req)
+
+		assert.Equal(t, http.StatusOK, rr.Code)
+		assert.Equal(t, string(fileContent), rr.Body.String())
+	})
+
+	t.Run("falls back to index.html", func(t *testing.T) {
+		req := httptest.NewRequest(http.MethodGet, "/app/unknown", nil)
+		rr := httptest.NewRecorder()
+
+		handler.ServeHTTP(rr, req)
+
+		assert.Equal(t, http.StatusOK, rr.Code)
+		assert.Equal(t, string(indexContent), rr.Body.String())
+	})
+}
+
+func requireWriteFile(t *testing.T, path string, content []byte) {
+	t.Helper()
+	cleanPath := filepath.Clean(path)
+
+	err := os.WriteFile(cleanPath, content, 0o600)
+	if err != nil {
+		t.Fatalf("failed to write file %s: %v", path, err)
+	}
+
+	f, err := os.Open(cleanPath)
+	if err != nil {
+		t.Fatalf("failed to open file %s: %v", path, err)
+	}
+	defer func() {
+		if closeErr := f.Close(); closeErr != nil {
+			t.Fatalf("failed to close file %s: %v", path, closeErr)
+		}
+	}()
+
+	if _, err := io.ReadAll(f); err != nil {
+		t.Fatalf("failed to read back file %s: %v", path, err)
+	}
+}
+
+type stubNetListener struct {
+	addr net.Addr
+}
+
+func (s *stubNetListener) Accept() (net.Conn, error) {
+	return nil, nil
+}
+
+func (s *stubNetListener) Close() error {
+	return nil
+}
+
+func (s *stubNetListener) Addr() net.Addr {
+	return s.addr
+}
+
+func generateTestTLSConfig(t *testing.T) *tls.Config {
+	t.Helper()
+	cert := generateSelfSignedCertificate(t)
+
+	return &tls.Config{
+		MinVersion:   tls.VersionTLS12,
+		Certificates: []tls.Certificate{cert},
+	}
+}
+
+func generateSelfSignedCertificate(t *testing.T) tls.Certificate {
+	t.Helper()
+
+	privateKey, err := rsa.GenerateKey(rand.Reader, 2048)
+	if err != nil {
+		t.Fatalf("failed to generate private key: %v", err)
+	}
+
+	serialNumberLimit := new(big.Int).Lsh(big.NewInt(1), 128)
+	serialNumber, err := rand.Int(rand.Reader, serialNumberLimit)
+	if err != nil {
+		t.Fatalf("failed to generate serial number: %v", err)
+	}
+
+	template := x509.Certificate{
+		SerialNumber: serialNumber,
+		Subject: pkix.Name{
+			CommonName: "localhost",
+		},
+		NotBefore:             time.Now().Add(-time.Hour),
+		NotAfter:              time.Now().Add(time.Hour),
+		KeyUsage:              x509.KeyUsageDigitalSignature | x509.KeyUsageKeyEncipherment,
+		ExtKeyUsage:           []x509.ExtKeyUsage{x509.ExtKeyUsageServerAuth},
+		BasicConstraintsValid: true,
+		DNSNames:              []string{"localhost"},
+	}
+
+	certDER, err := x509.CreateCertificate(rand.Reader, &template, &template, &privateKey.PublicKey, privateKey)
+	if err != nil {
+		t.Fatalf("failed to create certificate: %v", err)
+	}
+
+	certPEM := pem.EncodeToMemory(&pem.Block{Type: "CERTIFICATE", Bytes: certDER})
+	keyPEM := pem.EncodeToMemory(&pem.Block{
+		Type:  "RSA PRIVATE KEY",
+		Bytes: x509.MarshalPKCS1PrivateKey(privateKey),
+	})
+
+	cert, err := tls.X509KeyPair(certPEM, keyPEM)
+	if err != nil {
+		t.Fatalf("failed to parse x509 key pair: %v", err)
+	}
+
+	return cert
+}
+
+func runExitHelper(t *testing.T, envKey, testName string) {
+	t.Helper()
+
+	cmd := exec.Command(os.Args[0], "-test.run="+testName, "--") //nolint:gosec // test helper uses controlled args
+	cmd.Env = append(os.Environ(), envKey+"=1")
+	err := cmd.Run()
+
+	var exitErr *exec.ExitError
+	if assert.ErrorAs(t, err, &exitErr) {
+		assert.Equal(t, 1, exitErr.ExitCode())
+	} else {
+		t.Fatalf("expected process to exit with code 1, got %v", err)
+	}
 }
