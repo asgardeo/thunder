@@ -285,6 +285,14 @@ func (fe *flowEngine) updateContextWithNodeResponse(engineCtx *EngineContext, no
 		engineCtx.RuntimeData = sysutils.MergeStringMaps(engineCtx.RuntimeData, nodeResp.RuntimeData)
 	}
 
+	// Handle additional data from the node response (e.g., passkeyCreationOptions, passkeyChallenge)
+	if len(nodeResp.AdditionalData) > 0 {
+		if engineCtx.AdditionalData == nil {
+			engineCtx.AdditionalData = make(map[string]string)
+		}
+		engineCtx.AdditionalData = sysutils.MergeStringMaps(engineCtx.AdditionalData, nodeResp.AdditionalData)
+	}
+
 	// Handle authenticated user from the node response
 	if fe.shouldUpdateAuthenticatedUser(engineCtx) {
 		prevAuthnUserAttrs := engineCtx.AuthenticatedUser.Attributes
@@ -385,7 +393,7 @@ func (fe *flowEngine) processNodeResponse(ctx *EngineContext, nodeResp *common.N
 		}
 		return nextNode, true, nil
 	case common.NodeStatusIncomplete:
-		svcErr := fe.handleIncompleteResponse(nodeResp, flowStep, logger)
+		svcErr := fe.handleIncompleteResponse(ctx, nodeResp, flowStep, logger)
 		if svcErr != nil {
 			return nil, false, svcErr
 		}
@@ -423,18 +431,18 @@ func (fe *flowEngine) handleCompletedResponse(ctx *EngineContext,
 // handleIncompleteResponse handles the node response when the status is incomplete.
 // It resolves the flow step details based on the type of node response. The same node will be executed again
 // in the next request with the required data.
-func (fe *flowEngine) handleIncompleteResponse(nodeResp *common.NodeResponse, flowStep *FlowStep,
-	logger *log.Logger) *serviceerror.ServiceError {
+func (fe *flowEngine) handleIncompleteResponse(ctx *EngineContext, nodeResp *common.NodeResponse,
+	flowStep *FlowStep, logger *log.Logger) *serviceerror.ServiceError {
 	switch nodeResp.Type {
 	case common.NodeResponseTypeRedirection:
-		err := fe.resolveStepForRedirection(nodeResp, flowStep)
+		err := fe.resolveStepForRedirection(ctx, nodeResp, flowStep)
 		if err != nil {
 			logger.Error("Error while resolving step for redirection", log.Error(err))
 			return &serviceerror.InternalServerError
 		}
 		return nil
 	case common.NodeResponseTypeView:
-		err := fe.resolveStepDetailsForPrompt(nodeResp, flowStep)
+		err := fe.resolveStepDetailsForPrompt(ctx, nodeResp, flowStep)
 		if err != nil {
 			logger.Error("Error while resolving step details for prompt", log.Error(err))
 			return &serviceerror.InternalServerError
@@ -513,7 +521,8 @@ func (fe *flowEngine) resolveToNextNode(graph core.GraphInterface, nodeResp *com
 }
 
 // resolveStepForRedirection resolves the flow step details for a redirection response.
-func (fe *flowEngine) resolveStepForRedirection(nodeResp *common.NodeResponse, flowStep *FlowStep) error {
+func (fe *flowEngine) resolveStepForRedirection(ctx *EngineContext, nodeResp *common.NodeResponse,
+	flowStep *FlowStep) error {
 	if nodeResp == nil {
 		return errors.New("node response is nil")
 	}
@@ -521,14 +530,9 @@ func (fe *flowEngine) resolveStepForRedirection(nodeResp *common.NodeResponse, f
 		return errors.New("redirect URL not found in the node response")
 	}
 
-	if flowStep.Data.AdditionalData == nil {
-		flowStep.Data.AdditionalData = make(map[string]string)
-		flowStep.Data.AdditionalData = nodeResp.AdditionalData
-	} else {
-		// Append to the existing additional info
-		for key, value := range nodeResp.AdditionalData {
-			flowStep.Data.AdditionalData[key] = value
-		}
+	// Copy additional data from context (accumulated from all node responses)
+	if len(ctx.AdditionalData) > 0 {
+		flowStep.Data.AdditionalData = ctx.AdditionalData
 	}
 
 	flowStep.Data.RedirectURL = nodeResp.RedirectURL
@@ -547,7 +551,8 @@ func (fe *flowEngine) resolveStepForRedirection(nodeResp *common.NodeResponse, f
 }
 
 // resolveStepDetailsForPrompt resolves the step details for a user prompt response.
-func (fe *flowEngine) resolveStepDetailsForPrompt(nodeResp *common.NodeResponse, flowStep *FlowStep) error {
+func (fe *flowEngine) resolveStepDetailsForPrompt(ctx *EngineContext, nodeResp *common.NodeResponse,
+	flowStep *FlowStep) error {
 	if nodeResp == nil {
 		return errors.New("node response is nil")
 	}
@@ -570,6 +575,11 @@ func (fe *flowEngine) resolveStepDetailsForPrompt(nodeResp *common.NodeResponse,
 			flowStep.Data.Actions = make([]common.Action, 0)
 		}
 		flowStep.Data.Actions = nodeResp.Actions
+	}
+
+	// Copy additional data from context (accumulated from all node responses)
+	if len(ctx.AdditionalData) > 0 {
+		flowStep.Data.AdditionalData = ctx.AdditionalData
 	}
 
 	// Include meta in the flow step if present
