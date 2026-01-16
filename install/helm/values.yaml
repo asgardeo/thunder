@@ -61,6 +61,9 @@ deployment:
     requests:
       cpu: 1
       memory: 256Mi
+  # Controls the THUNDER_SKIP_SECURITY environment variable. Set this to true only
+  # in non-production environments for testing purposes to bypass REST API security checks.
+  skipSecurity: false
 
 hpa:
   enabled: true
