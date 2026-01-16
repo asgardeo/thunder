@@ -132,7 +132,7 @@ func (suite *SessionStoreTestSuite) TestNewSessionStore() {
 func (suite *SessionStoreTestSuite) TestStoreSession_Success() {
 	expiryTime := time.Now().Add(5 * time.Minute)
 
-	sessionData := &SessionData{
+	sessionData := &sessionData{
 		Challenge:        "challenge123",
 		UserID:           []byte(testUserID),
 		RelyingPartyID:   testRelyingPartyID,
@@ -154,7 +154,7 @@ func (suite *SessionStoreTestSuite) TestStoreSession_Success() {
 func (suite *SessionStoreTestSuite) TestStoreSession_DBClientError() {
 	expiryTime := time.Now().Add(5 * time.Minute)
 
-	sessionData := &SessionData{
+	sessionData := &sessionData{
 		Challenge: "challenge123",
 	}
 
@@ -169,7 +169,7 @@ func (suite *SessionStoreTestSuite) TestStoreSession_DBClientError() {
 func (suite *SessionStoreTestSuite) TestStoreSession_ExecuteError() {
 	expiryTime := time.Now().Add(5 * time.Minute)
 
-	sessionData := &SessionData{
+	sessionData := &sessionData{
 		Challenge: "challenge123",
 	}
 
@@ -354,7 +354,7 @@ func (suite *SessionStoreTestSuite) TestDeleteExpiredSessions_ExecuteError() {
 }
 
 func (suite *SessionStoreTestSuite) TestSerializeSessionData_MinimalData() {
-	sessionData := &SessionData{
+	sessionData := &sessionData{
 		Challenge:        "challenge123",
 		UserVerification: "preferred",
 	}
@@ -373,7 +373,7 @@ func (suite *SessionStoreTestSuite) TestSerializeSessionData_MinimalData() {
 
 func (suite *SessionStoreTestSuite) TestSerializeSessionData_FullData() {
 	expiryTime := time.Now().Add(5 * time.Minute)
-	sessionData := &SessionData{
+	sessionData := &sessionData{
 		Challenge:            "challenge123",
 		UserID:               []byte("user123"),
 		RelyingPartyID:       "example.com",
@@ -405,7 +405,7 @@ func (suite *SessionStoreTestSuite) TestSerializeSessionData_FullData() {
 }
 
 func (suite *SessionStoreTestSuite) TestSerializeSessionData_WithEmptyFields() {
-	sessionData := &SessionData{
+	sessionData := &sessionData{
 		Challenge:        "challenge123",
 		UserVerification: "preferred",
 		RelyingPartyID:   "",       // Empty

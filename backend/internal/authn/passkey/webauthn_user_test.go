@@ -39,7 +39,7 @@ func (suite *WebAuthnUserTestSuite) TestNewWebAuthnUser() {
 	userID := testUserID
 	userName := "johndoe"
 	displayName := "John Doe"
-	credentials := []WebauthnCredential{}
+	credentials := []webauthnCredential{}
 
 	webAuthnUser := newWebAuthnUser(userID, userName, displayName, credentials)
 
@@ -54,7 +54,7 @@ func (suite *WebAuthnUserTestSuite) TestWebAuthnUser_Methods() {
 	userID := testUserID
 	userName := "johndoe"
 	displayName := "John Doe"
-	credentials := []WebauthnCredential{
+	credentials := []webauthnCredential{
 		{
 			ID: []byte("credential1"),
 		},
@@ -82,7 +82,7 @@ func (suite *WebAuthnUserTestSuite) TestNewWebAuthnUserFromCoreUser_WithFullAttr
 		OrganizationUnit: "org123",
 		Attributes:       attrs,
 	}
-	credentials := []WebauthnCredential{}
+	credentials := []webauthnCredential{}
 
 	webAuthnUser := newWebAuthnUserFromCoreUser(coreUser, credentials)
 
@@ -99,7 +99,7 @@ func (suite *WebAuthnUserTestSuite) TestNewWebAuthnUserFromCoreUser_WithEmailOnl
 		ID:         "user123",
 		Attributes: attrs,
 	}
-	credentials := []WebauthnCredential{}
+	credentials := []webauthnCredential{}
 
 	webAuthnUser := newWebAuthnUserFromCoreUser(coreUser, credentials)
 
@@ -113,7 +113,7 @@ func (suite *WebAuthnUserTestSuite) TestNewWebAuthnUserFromCoreUser_NoAttributes
 	coreUser := &user.User{
 		ID: "user123",
 	}
-	credentials := []WebauthnCredential{}
+	credentials := []webauthnCredential{}
 
 	webAuthnUser := newWebAuthnUserFromCoreUser(coreUser, credentials)
 

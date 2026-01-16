@@ -53,6 +53,14 @@ packages:
       pkgname: authn
       filename: "{{.InterfaceName}}_mock_test.go"
 
+  github.com/asgardeo/thunder/internal/authn/passkey:
+    config:
+      all: true
+      dir: internal/authn/passkey
+      structname: '{{.InterfaceName}}Mock'
+      pkgname: passkey
+      filename: "{{.InterfaceName}}_mock_test.go"
+
   github.com/asgardeo/thunder/internal/idp:
     config:
       all: true

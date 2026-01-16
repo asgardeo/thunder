@@ -77,7 +77,7 @@ func TestSessionServiceTestSuite(t *testing.T) {
 }
 
 func (suite *SessionServiceTestSuite) SetupTest() {
-	suite.mockSessionStore = &sessionStoreInterfaceMock{}
+	suite.mockSessionStore = newSessionStoreInterfaceMock(suite.T())
 	suite.service = &passkeyService{
 		sessionStore: suite.mockSessionStore,
 	}
@@ -85,7 +85,7 @@ func (suite *SessionServiceTestSuite) SetupTest() {
 
 func (suite *SessionServiceTestSuite) TestStoreSessionData_Success() {
 	// Tests the happy path of storeSessionData
-	sessionData := &SessionData{
+	sessionData := &sessionData{
 		Challenge: "dGVzdC1jaGFsbGVuZ2U", // base64 encoded "test-challenge"
 	}
 
@@ -107,7 +107,7 @@ func (suite *SessionServiceTestSuite) TestStoreSessionData_Success() {
 }
 
 func (suite *SessionServiceTestSuite) TestStoreSessionData_StoreSessionError() {
-	sessionData := &SessionData{
+	sessionData := &sessionData{
 		Challenge: "dGVzdC1jaGFsbGVuZ2U",
 	}
 
@@ -131,7 +131,7 @@ func (suite *SessionServiceTestSuite) TestStoreSessionData_StoreSessionError() {
 
 func (suite *SessionServiceTestSuite) TestStoreSessionData_ExpiryCalculation() {
 	// Verify that expiry time is calculated correctly
-	sessionData := &SessionData{
+	sessionData := &sessionData{
 		Challenge: "dGVzdC1jaGFsbGVuZ2U",
 	}
 
@@ -157,7 +157,7 @@ func (suite *SessionServiceTestSuite) TestStoreSessionData_ExpiryCalculation() {
 }
 
 func (suite *SessionServiceTestSuite) TestRetrieveSessionData_Success() {
-	expectedSessionData := &SessionData{
+	expectedSessionData := &sessionData{
 		Challenge: "dGVzdC1jaGFsbGVuZ2U",
 	}
 
@@ -259,7 +259,7 @@ func (suite *SessionServiceTestSuite) TestClearSessionData_EmptyKey() {
 }
 
 func (suite *SessionServiceTestSuite) TestSessionRoundTrip() {
-	sessionData := &SessionData{
+	sessionData := &sessionData{
 		Challenge:      "dGVzdC1jaGFsbGVuZ2U",
 		RelyingPartyID: testRelyingPartyID,
 		UserID:         []byte(testUserID),

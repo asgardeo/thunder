@@ -25,53 +25,53 @@ import (
 
 // Wrapper types to abstract the underlying WebAuthn library. .
 
-// RegistrationOption wraps library-specific registration options.
-type RegistrationOption = webauthn.RegistrationOption
+// registrationOption wraps library-specific registration options.
+type registrationOption = webauthn.RegistrationOption
 
-// SessionData wraps library-specific session data.
-type SessionData = webauthn.SessionData
+// sessionData wraps library-specific session data.
+type sessionData = webauthn.SessionData
 
-// CredentialCreation wraps library-specific credential creation options.
-type CredentialCreation = protocol.CredentialCreation
+// credentialCreation wraps library-specific credential creation options.
+type credentialCreation = protocol.CredentialCreation
 
-// CredentialAssertion wraps library-specific credential assertion options.
-type CredentialAssertion = protocol.CredentialAssertion
+// credentialAssertion wraps library-specific credential assertion options.
+type credentialAssertion = protocol.CredentialAssertion
 
-// ParsedCredentialCreationData wraps library-specific parsed credential creation data.
-type ParsedCredentialCreationData = protocol.ParsedCredentialCreationData
+// parsedCredentialCreationData wraps library-specific parsed credential creation data.
+type parsedCredentialCreationData = protocol.ParsedCredentialCreationData
 
-// ParsedCredentialAssertionData wraps library-specific parsed credential assertion data.
-type ParsedCredentialAssertionData = protocol.ParsedCredentialAssertionData
+// parsedCredentialAssertionData wraps library-specific parsed credential assertion data.
+type parsedCredentialAssertionData = protocol.ParsedCredentialAssertionData
 
-// WebauthnCredential wraps library-specific credential data.
-type WebauthnCredential = webauthn.Credential
+// webauthnCredential wraps library-specific credential data.
+type webauthnCredential = webauthn.Credential
 
 // webAuthnService provides an abstraction layer over the WebAuthn library.
 type webAuthnService interface {
 	// BeginRegistration initiates the registration ceremony and returns credential creation options.
 	BeginRegistration(
 		user webauthnUserInterface,
-		options []RegistrationOption,
-	) (*CredentialCreation, *SessionData, error)
+		options []registrationOption,
+	) (*credentialCreation, *sessionData, error)
 
 	// CreateCredential validates the registration response and creates a credential.
 	CreateCredential(
 		user webauthnUserInterface,
-		session SessionData,
-		response *ParsedCredentialCreationData,
-	) (*WebauthnCredential, error)
+		session sessionData,
+		response *parsedCredentialCreationData,
+	) (*webauthnCredential, error)
 
 	// BeginLogin initiates the authentication ceremony and returns credential request options.
 	BeginLogin(
 		user webauthnUserInterface,
-	) (*CredentialAssertion, *SessionData, error)
+	) (*credentialAssertion, *sessionData, error)
 
 	// ValidateLogin validates the authentication response and returns the verified credential.
 	ValidateLogin(
 		user webauthnUserInterface,
-		session SessionData,
-		response *ParsedCredentialAssertionData,
-	) (*WebauthnCredential, error)
+		session sessionData,
+		response *parsedCredentialAssertionData,
+	) (*webauthnCredential, error)
 }
 
 // defaultWebAuthnService is the default implementation using the GO-WebAuthn library.
@@ -103,32 +103,32 @@ func newDefaultWebAuthnService(
 // BeginRegistration wraps the WebAuthn library's BeginRegistration method.
 func (a *defaultWebAuthnService) BeginRegistration(
 	user webauthnUserInterface,
-	options []RegistrationOption,
-) (*CredentialCreation, *SessionData, error) {
+	options []registrationOption,
+) (*credentialCreation, *sessionData, error) {
 	return a.webAuthnLib.BeginRegistration(user, options...)
 }
 
 // CreateCredential wraps the WebAuthn library's CreateCredential method.
 func (a *defaultWebAuthnService) CreateCredential(
 	user webauthnUserInterface,
-	session SessionData,
-	response *ParsedCredentialCreationData,
-) (*WebauthnCredential, error) {
+	session sessionData,
+	response *parsedCredentialCreationData,
+) (*webauthnCredential, error) {
 	return a.webAuthnLib.CreateCredential(user, session, response)
 }
 
 // BeginLogin wraps the WebAuthn library's BeginLogin method.
 func (a *defaultWebAuthnService) BeginLogin(
 	user webauthnUserInterface,
-) (*CredentialAssertion, *SessionData, error) {
+) (*credentialAssertion, *sessionData, error) {
 	return a.webAuthnLib.BeginLogin(user)
 }
 
 // ValidateLogin wraps the WebAuthn library's ValidateLogin method.
 func (a *defaultWebAuthnService) ValidateLogin(
 	user webauthnUserInterface,
-	session SessionData,
-	response *ParsedCredentialAssertionData,
-) (*WebauthnCredential, error) {
+	session sessionData,
+	response *parsedCredentialAssertionData,
+) (*webauthnCredential, error) {
 	return a.webAuthnLib.ValidateLogin(user, session, response)
 }

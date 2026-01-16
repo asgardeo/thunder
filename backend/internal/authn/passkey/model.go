@@ -115,7 +115,7 @@ type PasskeyAuthenticationFinishRequest struct {
 
 // PasskeyFinishRequest represents the request to complete passkey authentication.
 type PasskeyFinishRequest struct {
-	PublicKeyCredential *ParsedCredentialAssertionData
+	PublicKeyCredential *parsedCredentialAssertionData
 	SessionToken        string
 	SkipAssertion       bool
 	Assertion           string
@@ -126,5 +126,5 @@ type webauthnUserInterface interface {
 	WebAuthnID() []byte
 	WebAuthnName() string
 	WebAuthnDisplayName() string
-	WebAuthnCredentials() []WebauthnCredential
+	WebAuthnCredentials() []webauthnCredential
 }
