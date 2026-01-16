@@ -126,7 +126,7 @@ func (g *googleOIDCAuthnService) ValidateIDToken(idpID, idToken string) *service
 	if oAuthClientConfig.OAuthEndpoints.JwksEndpoint != "" {
 		err := g.jwtService.VerifyJWTSignatureWithJWKS(idToken, oAuthClientConfig.OAuthEndpoints.JwksEndpoint)
 		if err != nil {
-			logger.Debug("ID token signature validation failed", log.Error(err))
+			logger.Debug("ID token signature validation failed", log.String("error", err.Error))
 			return &authnoidc.ErrorInvalidIDTokenSignature
 		}
 	} else {

@@ -2,7 +2,7 @@ openapi: 3.0.3
 
 info:
   title: Registration API
-  description: This API is used for user registration operations including WebAuthn/Passkey registration.
+  description: This API is used for user registration operations including Passkey registration.
   version: "1.0"
   license:
     name: Apache 2.0
@@ -17,26 +17,26 @@ servers:
         default: "8090"
 
 paths:
-  /register/webauthn/start:
+  /register/passkey/start:
     post:
-      summary: Start WebAuthn credential registration
-      description: Initiate WebAuthn/Passkey credential creation for a user.
+      summary: Start Passkey credential registration
+      description: Initiate Passkey credential creation for a user.
       tags:
-        - WebAuthn / Passkey Registration
+        - Passkey / WebAuthn / FIDO2 Registration
       requestBody:
-        description: WebAuthn credential creation initiation data
+        description: Passkey credential creation initiation data
         required: true
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/WebAuthnRegistrationStartRequest'
+              $ref: '#/components/schemas/PasskeyRegistrationStartRequest'
       responses:
         "200":
           description: OK
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/WebAuthnRegistrationStartResponse'
+                $ref: '#/components/schemas/PasskeyRegistrationStartResponse'
         "400":
           description: 'Bad Request: The request body is malformed or contains invalid data'
           content:
@@ -46,7 +46,7 @@ paths:
               example:
                 code: "AUTHN-1011"
                 message: "Empty user ID"
-                description: "The user ID is required to start WebAuthn registration"
+                description: "The user ID is required to start registration"
         "404":
           description: 'Not Found: The user could not be found'
           content:
@@ -68,26 +68,26 @@ paths:
                 message: "Internal server error"
                 description: "An unexpected error occurred while processing the request"
 
-  /register/webauthn/finish:
+  /register/passkey/finish:
     post:
-      summary: Finish WebAuthn credential registration
-      description: Complete WebAuthn/Passkey credential creation for a user.
+      summary: Finish Passkey credential registration
+      description: Complete Passkey credential creation for a user.
       tags:
-        - WebAuthn / Passkey Registration
+        - Passkey / WebAuthn / FIDO2 Registration
       requestBody:
-        description: WebAuthn credential creation completion data
+        description: Passkey credential creation completion data
         required: true
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/WebAuthnRegistrationFinishRequest'
+              $ref: '#/components/schemas/PasskeyRegistrationFinishRequest'
       responses:
         "200":
           description: OK
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/WebAuthnRegistrationFinishResponse'
+                $ref: '#/components/schemas/PasskeyRegistrationFinishResponse'
         "400":
           description: 'Bad Request: The request body is malformed or contains invalid data'
           content:
@@ -99,12 +99,12 @@ paths:
                   value:
                     code: "AUTHN-1012"
                     message: "Empty credential ID"
-                    description: "The credential ID is required to complete WebAuthn registration"
+                    description: "The credential ID is required to complete registration"
                 emptyCredentialType:
                   value:
                     code: "AUTHN-1013"
                     message: "Empty credential type"
-                    description: "The credential type is required to complete WebAuthn registration"
+                    description: "The credential type is required to complete registration"
                 invalidAttestationResponse:
                   value:
                     code: "AUTHN-1015"
@@ -116,15 +116,15 @@ paths:
                     message: "Empty session token"
                     description: "The provided session token is empty"
         "401":
-          description: 'Unauthorized: WebAuthn registration verification failed'
+          description: 'Unauthorized: Passkey registration verification failed'
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ClientErrorResponse'
               example:
-                code: "WEBAUTHN-1009"
+                code: "PASS-1009"
                 message: "Invalid attestation"
-                description: "The WebAuthn attestation verification failed"
+                description: "The Passkey attestation verification failed"
         "404":
           description: 'Not Found: The user could not be found'
           content:
@@ -148,7 +148,7 @@ paths:
 
 components:
   schemas:
-    WebAuthnRegistrationStartRequest:
+    PasskeyRegistrationStartRequest:
       type: object
       properties:
         userId:
@@ -195,7 +195,7 @@ components:
         - userId
         - relyingPartyId
 
-    WebAuthnRegistrationStartResponse:
+    PasskeyRegistrationStartResponse:
       type: object
       properties:
         publicKeyCredentialCreationOptions:
@@ -342,12 +342,12 @@ components:
         - publicKeyCredentialCreationOptions
         - sessionToken
 
-    WebAuthnRegistrationFinishRequest:
+    PasskeyRegistrationFinishRequest:
       type: object
       properties:
         publicKeyCredential:
           type: object
-          description: PublicKeyCredential as per WebAuthn standard
+          description: PublicKeyCredential as per Passkey standard
           properties:
             id:
               type: string
@@ -404,7 +404,7 @@ components:
             authenticatorAttachment: "platform"
         sessionToken:
           type: string
-          description: JWT token for the WebAuthn registration session
+          description: JWT token for the Passkey registration session
           example: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
         credentialName:
           type: string
@@ -414,7 +414,7 @@ components:
         - publicKeyCredential
         - sessionToken
 
-    WebAuthnRegistrationFinishResponse:
+    PasskeyRegistrationFinishResponse:
       type: object
       properties:
         credentialId:

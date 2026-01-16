@@ -42,6 +42,7 @@ import (
 	oauth2model "github.com/asgardeo/thunder/internal/oauth/oauth2/model"
 	"github.com/asgardeo/thunder/internal/system/config"
 	"github.com/asgardeo/thunder/internal/system/error/serviceerror"
+	"github.com/asgardeo/thunder/internal/system/jwt"
 )
 
 const (
@@ -642,7 +643,7 @@ func (suite *AuthorizeHandlerTestSuite) TestHandleAuthorizationResponseFromEngin
 	suite.mockAuthReqStore.EXPECT().ClearRequest(authID)
 
 	assertion := "invalid.jwt.token"
-	suite.mockJWTService.EXPECT().VerifyJWT(assertion, "", "").Return(errors.New("invalid signature"))
+	suite.mockJWTService.EXPECT().VerifyJWT(assertion, "", "").Return(&jwt.ErrorInvalidTokenSignature)
 
 	msg := &OAuthMessage{
 		RequestType: oauth2const.TypeAuthorizationResponseFromEngine,

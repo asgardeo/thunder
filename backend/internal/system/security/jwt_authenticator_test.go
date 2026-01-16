@@ -27,6 +27,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
 
+	"github.com/asgardeo/thunder/internal/system/error/serviceerror"
 	"github.com/asgardeo/thunder/tests/mocks/jwtmock"
 )
 
@@ -146,7 +147,12 @@ func (suite *JWTAuthenticatorTestSuite) TestAuthenticate() {
 			name:       "Invalid JWT signature",
 			authHeader: "Bearer invalid.jwt.token",
 			setupMock: func(m *jwtmock.JWTServiceInterfaceMock) {
-				m.On("VerifyJWTSignature", "invalid.jwt.token").Return(assert.AnError)
+				m.On("VerifyJWTSignature", "invalid.jwt.token").Return(&serviceerror.ServiceError{
+					Type:             serviceerror.ServerErrorType,
+					Code:             "INVALID_SIGNATURE",
+					Error:            "Invalid signature",
+					ErrorDescription: "The JWT signature is invalid",
+				})
 			},
 			expectedError: errInvalidToken,
 		},
@@ -451,6 +457,26 @@ func (suite *JWTAuthenticatorTestSuite) TestGetRequiredScopes() {
 			name:     "Any other path",
 			path:     "/some/other/path",
 			expected: []string{"system"},
+		},
+		{
+			name:     "User self-service endpoint - /users/me",
+			path:     "/users/me",
+			expected: []string{},
+		},
+		{
+			name:     "User self-service endpoint - /users/me/update-credentials",
+			path:     "/users/me/update-credentials",
+			expected: []string{},
+		},
+		{
+			name:     "Passkey registration start endpoint",
+			path:     "/register/passkey/start",
+			expected: []string{},
+		},
+		{
+			name:     "Passkey registration finish endpoint",
+			path:     "/register/passkey/finish",
+			expected: []string{},
 		},
 	}
 

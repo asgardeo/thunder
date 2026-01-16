@@ -215,7 +215,7 @@ func (suite *OTPServiceTestSuite) TestVerifyOTP_InvalidSessionToken() {
 
 	// Expect VerifyJWT to be called; issuer can vary in tests so use Any
 	suite.mockJWTService.EXPECT().VerifyJWT("invalid-token", "otp-svc", mock.Anything).
-		Return(errors.New("invalid token")).Once()
+		Return(&ErrorInvalidSessionToken).Once()
 
 	result, err := suite.service.VerifyOTP(request)
 
@@ -364,7 +364,7 @@ func (suite *OTPServiceTestSuite) TestSendOTP_GenerateJWTError() {
 	suite.service.clientProvider = cp
 
 	suite.mockJWTService.EXPECT().GenerateJWT(mock.Anything, mock.Anything, mock.Anything,
-		mock.Anything, mock.Anything).Return("", int64(0), errors.New("jwt error")).Once()
+		mock.Anything, mock.Anything).Return("", int64(0), &ErrorInternalServerError).Once()
 
 	res, err := suite.service.SendOTP(req)
 	suite.Nil(res)

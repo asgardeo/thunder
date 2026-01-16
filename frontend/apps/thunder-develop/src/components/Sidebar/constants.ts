@@ -16,5 +16,5 @@
  * under the License.
  */
 
-export const DRAWER_WIDTH = 250;
+export const DRAWER_WIDTH = 300;
 export const MINI_DRAWER_WIDTH = 64;

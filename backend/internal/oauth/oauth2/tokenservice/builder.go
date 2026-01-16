@@ -78,7 +78,7 @@ func (tb *tokenBuilder) BuildAccessToken(ctx *AccessTokenBuildContext) (*model.T
 		jwtClaims,
 	)
 	if err != nil {
-		return nil, fmt.Errorf("failed to generate access token: %w", err)
+		return nil, fmt.Errorf("failed to generate access token: %v", err)
 	}
 
 	// Assign generated token and issued at time
@@ -205,7 +205,7 @@ func (tb *tokenBuilder) BuildRefreshToken(ctx *RefreshTokenBuildContext) (*model
 		claims,
 	)
 	if err != nil {
-		return nil, fmt.Errorf("failed to generate refresh token: %w", err)
+		return nil, fmt.Errorf("failed to generate refresh token: %v", err)
 	}
 
 	// Assign generated token and issued at time
@@ -266,7 +266,7 @@ func (tb *tokenBuilder) BuildIDToken(ctx *IDTokenBuildContext) (*model.TokenDTO,
 		jwtClaims,
 	)
 	if err != nil {
-		return nil, fmt.Errorf("failed to generate ID token: %w", err)
+		return nil, fmt.Errorf("failed to generate ID token: %v", err)
 	}
 
 	// Assign generated token and issued at time

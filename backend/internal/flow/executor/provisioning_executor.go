@@ -19,6 +19,7 @@
 package executor
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"slices"
@@ -300,16 +301,16 @@ func (p *provisioningExecutor) appendNonIdentifyingAttributes(ctx *core.NodeCont
 }
 
 // createUserInStore creates a new user in the user store with the provided attributes.
-func (p *provisioningExecutor) createUserInStore(ctx *core.NodeContext,
+func (p *provisioningExecutor) createUserInStore(nodeCtx *core.NodeContext,
 	userAttributes map[string]interface{}) (*user.User, error) {
-	logger := p.logger.With(log.String(log.LoggerKeyFlowID, ctx.FlowID))
+	logger := p.logger.With(log.String(log.LoggerKeyFlowID, nodeCtx.FlowID))
 	logger.Debug("Creating the user account")
 
-	ouID := p.getOuID(ctx)
+	ouID := p.getOuID(nodeCtx)
 	if ouID == "" {
 		return nil, fmt.Errorf("organization unit ID not found")
 	}
-	userType := p.getUserType(ctx)
+	userType := p.getUserType(nodeCtx)
 	if userType == "" {
 		return nil, fmt.Errorf("user type not found")
 	}
@@ -326,7 +327,13 @@ func (p *provisioningExecutor) createUserInStore(ctx *core.NodeContext,
 	}
 	newUser.Attributes = attributesJSON
 
-	retUser, svcErr := p.userService.CreateUser(&newUser)
+	// Use the context from the node context if available, otherwise use background context
+	execCtx := nodeCtx.Context
+	if execCtx == nil {
+		execCtx = context.Background()
+	}
+
+	retUser, svcErr := p.userService.CreateUser(execCtx, &newUser)
 	if svcErr != nil {
 		return nil, fmt.Errorf("failed to create user in the store: %s", svcErr.Error)
 	}

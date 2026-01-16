@@ -695,7 +695,7 @@ RESPONSE=$(thunder_api_call POST "/applications" "{
   \"name\": \"Develop\",
   \"description\": \"Developer application for Thunder\",
   \"url\": \"${PUBLIC_URL}/develop\",
-  \"logo_url\": \"${PUBLIC_URL}/develop/assets/images/trifacta.svg\",
+  \"logo_url\": \"${PUBLIC_URL}/develop/assets/images/logo-mini.svg\",
   \"auth_flow_id\": \"${DEVELOP_AUTH_FLOW_ID}\",
   \"registration_flow_id\": \"${DEVELOP_REG_FLOW_ID}\",
   \"is_registration_flow_enabled\": true,

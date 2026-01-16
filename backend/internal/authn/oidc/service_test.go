@@ -19,7 +19,6 @@
 package oidc
 
 import (
-	"errors"
 	"testing"
 
 	"github.com/stretchr/testify/suite"
@@ -401,7 +400,12 @@ func (suite *OIDCAuthnServiceTestSuite) TestValidateTokenResponseValidateIDToken
 
 	// jwt service fails verification
 	suite.mockJWTService.On("VerifyJWTWithJWKS", "id_token", "https://example.com/jwks", "", "").
-		Return(errors.New("signature invalid"))
+		Return(&serviceerror.ServiceError{
+			Type:             serviceerror.ServerErrorType,
+			Code:             "SIGNATURE_INVALID",
+			Error:            "Signature invalid",
+			ErrorDescription: "signature invalid",
+		})
 
 	tokenResp := &oauth.TokenResponse{AccessToken: "access", IDToken: "id_token"}
 	err := suite.service.ValidateTokenResponse(testOIDCIDPID, tokenResp, true)

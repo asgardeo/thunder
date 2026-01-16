@@ -24,6 +24,7 @@ import (
 
 	oupkg "github.com/asgardeo/thunder/internal/ou"
 	"github.com/asgardeo/thunder/internal/system/crypto/hash"
+	"github.com/asgardeo/thunder/internal/system/database/provider"
 	"github.com/asgardeo/thunder/internal/system/middleware"
 	"github.com/asgardeo/thunder/internal/userschema"
 )
@@ -39,7 +40,14 @@ func Initialize(
 	if err != nil {
 		return nil, err
 	}
-	userService := newUserService(userStore, ouService, userSchemaService, hashService)
+
+	// Get transactioner from DB provider
+	transactioner, err := provider.GetDBProvider().GetUserDBTransactioner()
+	if err != nil {
+		return nil, err
+	}
+
+	userService := newUserService(userStore, ouService, userSchemaService, hashService, transactioner)
 	setUserService(userService) // Set the provider for backward compatibility
 	userHandler := newUserHandler(userService)
 	registerRoutes(mux, userHandler)

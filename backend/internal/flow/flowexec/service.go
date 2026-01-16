@@ -116,8 +116,9 @@ func (s *flowExecService) Execute(ctx context.Context,
 		}
 	}
 
-	// Set trace ID to context
+	// Set trace ID and context to engine context
 	context.TraceID = traceID
+	context.Context = ctx
 
 	flowStep, flowErr := s.flowEngine.Execute(context)
 

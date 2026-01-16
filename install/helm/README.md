@@ -204,63 +204,64 @@ The following table lists the configurable parameters of the Thunder chart and t
 
 ### Thunder Configuration Parameters
 
-| Name                                   | Description                                                     | Default                      |
-| -------------------------------------- | --------------------------------------------------------------- | ---------------------------- |
-| `configuration.server.port`            | Thunder server port                                             | `8090`                       |
-| `configuration.server.httpOnly`        | Whether the server should run in HTTP-only mode                 | `false`                      |
-| `configuration.server.publicURL`       | Public URL of the Thunder server                                | `https://thunder.local`      |
-| `configuration.gateClient.hostname`    | Gate client hostname                                            | `thunder.local`              |
-| `configuration.gateClient.port`        | Gate client port                                                | `443`                       |
-| `configuration.gateClient.scheme`      | Gate client scheme                                              | `https`                      |
-| `configuration.gateClient.path`        | Gate client base path                                           | `/gate`                      |
-| `configuration.developerClient.path`    | Developer client base path                                     | `/develop`                 |
-| `configuration.developerClient.clientId` | Developer client ID                                           | `DEVELOP`   |
-| `configuration.developerClient.scopes`   | Developer client scopes                                       | `['openid', 'profile', 'email', 'system']` |
-| `configuration.security.certFile`      | Server certificate file path                                    | `repository/resources/security/server.cert` |
-| `configuration.security.keyFile`       | Server key file path                                            | `repository/resources/security/server.key`  |
-| `configuration.crypto.encryption.key` | Crypto encryption key (change the default key with a 32-byte (64 character) hex string in production)   | `file://repository/resources/security/crypto.key` |
-| `configuration.database.identity.type` | Identity database type (postgres or sqlite)                     | `postgres`                   |
-| `configuration.database.identity.sqlitePath` | SQLite database path (for sqlite only)                    | `repository/database/thunderdb.db` |
-| `configuration.database.identity.sqliteOptions` | SQLite options (for sqlite only)                       | `_journal_mode=WAL&_busy_timeout=5000` |
-| `configuration.database.identity.name` | Postgres database name (for postgres only)                      | `thunderdb`                  |
-| `configuration.database.identity.host` | Postgres host (for postgres only)                               | `localhost` |
-| `configuration.database.identity.port` | Postgres port (for postgres only)                               | `5432`                       |
-| `configuration.database.identity.username` | Postgres username (for postgres only)                       | `asgthunder`                   |
-| `configuration.database.identity.password` | Postgres password (for postgres only)                       | `asgthunder`              |
-| `configuration.database.identity.sslmode` | Postgres SSL mode (for postgres only)                        | `require`                    |
-| `configuration.database.runtime.type`  | Runtime database type (postgres or sqlite)                      | `postgres`                   |
-| `configuration.database.runtime.sqlitePath` | SQLite database path (for sqlite only)                     | `repository/database/runtimedb.db` |
-| `configuration.database.runtime.sqliteOptions` | SQLite options (for sqlite only)                        | `_journal_mode=WAL&_busy_timeout=5000` |
-| `configuration.database.runtime.name`  | Postgres database name (for postgres only)                      | `runtimedb`                  |
-| `configuration.database.runtime.host`  | Postgres host (for postgres only)                               | `localhost` |
-| `configuration.database.runtime.port`  | Postgres port (for postgres only)                               | `5432`                       |
-| `configuration.database.runtime.username` | Postgres username (for postgres only)                        | `asgthunder`                   |
-| `configuration.database.runtime.password` | Postgres password (for postgres only)                        | `asgthunder`              |
-| `configuration.database.runtime.sslmode` | Postgres SSL mode (for postgres only)                         | `require`                    |
-| `configuration.database.user.type`  | User database type (postgres or sqlite)                            | `postgres`                   |
-| `configuration.database.user.sqlitePath` | SQLite database path (for sqlite only)                        | `repository/database/userdb.db` |
-| `configuration.database.user.sqliteOptions` | SQLite options (for sqlite only)                           | `_journal_mode=WAL&_busy_timeout=5000` |
-| `configuration.database.user.name`  | Postgres database name (for postgres only)                         | `userdb`                  |
-| `configuration.database.user.host`  | Postgres host (for postgres only)                                  | `localhost` |
-| `configuration.database.user.port`  | Postgres port (for postgres only)                                  | `5432`                       |
-| `configuration.database.user.username` | Postgres username (for postgres only)                           | `asgthunder`                   |
-| `configuration.database.user.password` | Postgres password (for postgres only)                           | `asgthunder`              |
-| `configuration.database.user.sslmode` | Postgres SSL mode (for postgres only)                            | `require`                    |
-| `configuration.cache.disabled`         | Disable cache                                                   | `false`                      |
-| `configuration.cache.type`             | Cache type                                                      | `inmemory`                   |
-| `configuration.cache.size`             | Cache size                                                      | `1000`                       |
-| `configuration.cache.ttl`              | Cache TTL in seconds                                            | `3600`                       |
-| `configuration.cache.evictionPolicy`   | Cache eviction policy                                           | `LRU`                        |
-| `configuration.cache.cleanupInterval`  | Cache cleanup interval in seconds                               | `300`                        |
-| `configuration.jwt.issuer`             | JWT issuer (derived from server.publicUrl if not set)           | derived                      |
-| `configuration.jwt.validityPeriod`     | JWT validity period in seconds                                  | `3600`                       |
-| `configuration.jwt.audience`           | Default audience for auth assertions                            | `application`                |
-| `configuration.oauth.refreshToken.renewOnGrant` | Renew refresh token on grant                           | `false`                      |
-| `configuration.oauth.refreshToken.validityPeriod` | Refresh token validity period in seconds             | `86400`                      |
-| `configuration.flow.defaultAuthFlowHandle` | Default authentication flow handle                          | `default-basic-flow`         |
-| `configuration.flow.maxVersionHistory` | Maximum flow version history to retain                          | `3`                          |
-| `configuration.flow.autoInferRegistration` | Enable auto-infer registration flow                         | `true`                       |
-| `configuration.cors.allowedOrigins`    | CORS allowed origins                                            | See values.yaml              |
+| Name                                              | Description                                                                                           | Default                      |
+|---------------------------------------------------|-------------------------------------------------------------------------------------------------------| ---------------------------- |
+| `configuration.server.port`                       | Thunder server port                                                                                   | `8090`                       |
+| `configuration.server.httpOnly`                   | Whether the server should run in HTTP-only mode                                                       | `false`                      |
+| `configuration.server.publicURL`                  | Public URL of the Thunder server                                                                      | `https://thunder.local`      |
+| `configuration.gateClient.hostname`               | Gate client hostname                                                                                  | `thunder.local`              |
+| `configuration.gateClient.port`                   | Gate client port                                                                                      | `443`                       |
+| `configuration.gateClient.scheme`                 | Gate client scheme                                                                                    | `https`                      |
+| `configuration.gateClient.path`                   | Gate client base path                                                                                 | `/gate`                      |
+| `configuration.developerClient.path`              | Developer client base path                                                                            | `/develop`                 |
+| `configuration.developerClient.clientId`          | Developer client ID                                                                                   | `DEVELOP`   |
+| `configuration.developerClient.scopes`            | Developer client scopes                                                                               | `['openid', 'profile', 'email', 'system']` |
+| `configuration.security.certFile`                 | Server certificate file path                                                                          | `repository/resources/security/server.cert` |
+| `configuration.security.keyFile`                  | Server key file path                                                                                  | `repository/resources/security/server.key`  |
+| `configuration.crypto.encryption.key`             | Crypto encryption key (change the default key with a 32-byte (64 character) hex string in production) | `file://repository/resources/security/crypto.key` |
+| `configuration.database.identity.type`            | Identity database type (postgres or sqlite)                                                           | `postgres`                   |
+| `configuration.database.identity.sqlitePath`      | SQLite database path (for sqlite only)                                                                | `repository/database/thunderdb.db` |
+| `configuration.database.identity.sqliteOptions`   | SQLite options (for sqlite only)                                                                      | `_journal_mode=WAL&_busy_timeout=5000` |
+| `configuration.database.identity.name`            | Postgres database name (for postgres only)                                                            | `thunderdb`                  |
+| `configuration.database.identity.host`            | Postgres host (for postgres only)                                                                     | `localhost` |
+| `configuration.database.identity.port`            | Postgres port (for postgres only)                                                                     | `5432`                       |
+| `configuration.database.identity.username`        | Postgres username (for postgres only)                                                                 | `asgthunder`                   |
+| `configuration.database.identity.password`        | Postgres password (for postgres only)                                                                 | `asgthunder`              |
+| `configuration.database.identity.sslmode`         | Postgres SSL mode (for postgres only)                                                                 | `require`                    |
+| `configuration.database.runtime.type`             | Runtime database type (postgres or sqlite)                                                            | `postgres`                   |
+| `configuration.database.runtime.sqlitePath`       | SQLite database path (for sqlite only)                                                                | `repository/database/runtimedb.db` |
+| `configuration.database.runtime.sqliteOptions`    | SQLite options (for sqlite only)                                                                      | `_journal_mode=WAL&_busy_timeout=5000` |
+| `configuration.database.runtime.name`             | Postgres database name (for postgres only)                                                            | `runtimedb`                  |
+| `configuration.database.runtime.host`             | Postgres host (for postgres only)                                                                     | `localhost` |
+| `configuration.database.runtime.port`             | Postgres port (for postgres only)                                                                     | `5432`                       |
+| `configuration.database.runtime.username`         | Postgres username (for postgres only)                                                                 | `asgthunder`                   |
+| `configuration.database.runtime.password`         | Postgres password (for postgres only)                                                                 | `asgthunder`              |
+| `configuration.database.runtime.sslmode`          | Postgres SSL mode (for postgres only)                                                                 | `require`                    |
+| `configuration.database.user.type`                | User database type (postgres or sqlite)                                                               | `postgres`                   |
+| `configuration.database.user.sqlitePath`          | SQLite database path (for sqlite only)                                                                | `repository/database/userdb.db` |
+| `configuration.database.user.sqliteOptions`       | SQLite options (for sqlite only)                                                                      | `_journal_mode=WAL&_busy_timeout=5000` |
+| `configuration.database.user.name`                | Postgres database name (for postgres only)                                                            | `userdb`                  |
+| `configuration.database.user.host`                | Postgres host (for postgres only)                                                                     | `localhost` |
+| `configuration.database.user.port`                | Postgres port (for postgres only)                                                                     | `5432`                       |
+| `configuration.database.user.username`            | Postgres username (for postgres only)                                                                 | `asgthunder`                   |
+| `configuration.database.user.password`            | Postgres password (for postgres only)                                                                 | `asgthunder`              |
+| `configuration.database.user.sslmode`             | Postgres SSL mode (for postgres only)                                                                 | `require`                    |
+| `configuration.cache.disabled`                    | Disable cache                                                                                         | `false`                      |
+| `configuration.cache.type`                        | Cache type                                                                                            | `inmemory`                   |
+| `configuration.cache.size`                        | Cache size                                                                                            | `1000`                       |
+| `configuration.cache.ttl`                         | Cache TTL in seconds                                                                                  | `3600`                       |
+| `configuration.cache.evictionPolicy`              | Cache eviction policy                                                                                 | `LRU`                        |
+| `configuration.cache.cleanupInterval`             | Cache cleanup interval in seconds                                                                     | `300`                        |
+| `configuration.jwt.issuer`                        | JWT issuer (derived from server.publicUrl if not set)                                                 | derived                      |
+| `configuration.jwt.validityPeriod`                | JWT validity period in seconds                                                                        | `3600`                       |
+| `configuration.jwt.audience`                      | Default audience for auth assertions                                                                  | `application`                |
+| `configuration.oauth.refreshToken.renewOnGrant`   | Renew refresh token on grant                                                                          | `false`                      |
+| `configuration.oauth.refreshToken.validityPeriod` | Refresh token validity period in seconds                                                              | `86400`                      |
+| `configuration.flow.defaultAuthFlowHandle`        | Default authentication flow handle                                                                    | `default-basic-flow`         |
+| `configuration.flow.maxVersionHistory`            | Maximum flow version history to retain                                                                | `3`                          |
+| `configuration.flow.autoInferRegistration`        | Enable auto-infer registration flow                                                                   | `true`                       |
+| `configuration.cors.allowedOrigins`               | CORS allowed origins                                                                                  | See values.yaml              |
+| `configuration.passkey.allowedOrigins`            | Passkey allowed origins                                                                               | `[]`                         |
 
 ### Persistence Parameters
 

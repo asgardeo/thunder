@@ -167,6 +167,11 @@ func (h *jwtAuthenticator) getRequiredScopes(r *http.Request) []string {
 		return []string{}
 	}
 
+	// Passkey registration endpoints don't require scopes
+	if strings.HasPrefix(r.URL.Path, "/register/passkey/") {
+		return []string{}
+	}
+
 	// Default required scope for other endpoints
 	return []string{"system"}
 }

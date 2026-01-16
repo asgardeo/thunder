@@ -49,7 +49,7 @@ func newTokenValidator(jwtService jwt.JWTServiceInterface) TokenValidatorInterfa
 // ValidateRefreshToken validates a refresh token and extracts the claims.
 func (tv *tokenValidator) ValidateRefreshToken(token string, clientID string) (*RefreshTokenClaims, error) {
 	if err := tv.jwtService.VerifyJWT(token, "", ""); err != nil {
-		return nil, fmt.Errorf("invalid refresh token: %w", err)
+		return nil, fmt.Errorf("invalid refresh token: %v", err)
 	}
 
 	claims, err := jwt.DecodeJWTPayload(token)
@@ -179,7 +179,11 @@ func (tv *tokenValidator) verifyTokenSignatureByIssuer(
 ) error {
 	issuers := getValidIssuers(oauthApp)
 	if issuers[issuer] {
-		return tv.jwtService.VerifyJWTSignature(token)
+		svcErr := tv.jwtService.VerifyJWTSignature(token)
+		if svcErr != nil {
+			return fmt.Errorf("failed to verify token signature: %v", svcErr)
+		}
+		return nil
 	}
 
 	// TODO: Implement JWKS-based verification for external federated issuers

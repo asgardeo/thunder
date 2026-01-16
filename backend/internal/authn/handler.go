@@ -227,6 +227,95 @@ func (ah *authenticationHandler) HandleStandardOAuthFinishRequest(w http.Respons
 	sysutils.WriteSuccessResponse(w, http.StatusOK, responseDTO)
 }
 
+// HandlePasskeyRegisterStartRequest handles the passkey start registration request.
+func (ah *authenticationHandler) HandlePasskeyRegisterStartRequest(w http.ResponseWriter, r *http.Request) {
+	regRequest, err := sysutils.DecodeJSONBody[PasskeyRegisterStartRequestDTO](r)
+	if err != nil {
+		sysutils.WriteErrorResponse(w, http.StatusBadRequest, common.APIErrorInvalidRequestFormat)
+		return
+	}
+
+	regResponse, svcErr := ah.authService.StartPasskeyRegistration(
+		regRequest.UserID,
+		regRequest.RelyingPartyID,
+		regRequest.RelyingPartyName,
+		regRequest.AuthenticatorSelection,
+		regRequest.Attestation,
+	)
+	if svcErr != nil {
+		ah.handleServiceError(w, svcErr)
+		return
+	}
+
+	sysutils.WriteSuccessResponse(w, http.StatusOK, regResponse)
+}
+
+// HandlePasskeyRegisterFinishRequest handles the passkey finish registration request.
+func (ah *authenticationHandler) HandlePasskeyRegisterFinishRequest(w http.ResponseWriter, r *http.Request) {
+	regRequest, err := sysutils.DecodeJSONBody[PasskeyRegisterFinishRequestDTO](r)
+	if err != nil {
+		sysutils.WriteErrorResponse(w, http.StatusBadRequest, common.APIErrorInvalidRequestFormat)
+		return
+	}
+
+	regResponse, svcErr := ah.authService.FinishPasskeyRegistration(
+		regRequest.PublicKeyCredential,
+		regRequest.SessionToken,
+		regRequest.CredentialName,
+	)
+	if svcErr != nil {
+		ah.handleServiceError(w, svcErr)
+		return
+	}
+
+	sysutils.WriteSuccessResponse(w, http.StatusOK, regResponse)
+}
+
+// HandlePasskeyStartRequest handles the passkey start authentication request.
+func (ah *authenticationHandler) HandlePasskeyStartRequest(w http.ResponseWriter, r *http.Request) {
+	authRequest, err := sysutils.DecodeJSONBody[PasskeyStartRequestDTO](r)
+	if err != nil {
+		sysutils.WriteErrorResponse(w, http.StatusBadRequest, common.APIErrorInvalidRequestFormat)
+		return
+	}
+
+	authResponse, svcErr := ah.authService.StartPasskeyAuthentication(
+		authRequest.UserID,
+		authRequest.RelyingPartyID,
+	)
+	if svcErr != nil {
+		ah.handleServiceError(w, svcErr)
+		return
+	}
+
+	sysutils.WriteSuccessResponse(w, http.StatusOK, authResponse)
+}
+
+// HandlePasskeyFinishRequest handles the passkey finish authentication request.
+func (ah *authenticationHandler) HandlePasskeyFinishRequest(w http.ResponseWriter, r *http.Request) {
+	authRequest, err := sysutils.DecodeJSONBody[PasskeyFinishRequestDTO](r)
+	if err != nil {
+		sysutils.WriteErrorResponse(w, http.StatusBadRequest, common.APIErrorInvalidRequestFormat)
+		return
+	}
+
+	authResponse, svcErr := ah.authService.FinishPasskeyAuthentication(
+		authRequest.PublicKeyCredential.ID,
+		authRequest.PublicKeyCredential.Type,
+		authRequest.PublicKeyCredential.Response,
+		authRequest.SessionToken,
+		authRequest.SkipAssertion,
+		authRequest.Assertion,
+	)
+	if svcErr != nil {
+		ah.handleServiceError(w, svcErr)
+		return
+	}
+
+	responseDTO := AuthenticationResponseDTO(*authResponse)
+	sysutils.WriteSuccessResponse(w, http.StatusOK, responseDTO)
+}
+
 // handleServiceError converts service errors to appropriate HTTP responses.
 func (ah *authenticationHandler) handleServiceError(w http.ResponseWriter, svcErr *serviceerror.ServiceError) {
 	status := http.StatusInternalServerError

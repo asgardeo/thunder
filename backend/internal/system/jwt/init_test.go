@@ -31,6 +31,7 @@ import (
 	"github.com/stretchr/testify/suite"
 
 	"github.com/asgardeo/thunder/internal/system/config"
+	"github.com/asgardeo/thunder/internal/system/error/serviceerror"
 	"github.com/asgardeo/thunder/tests/mocks/crypto/pki/pkimock"
 )
 
@@ -147,7 +148,8 @@ func (suite *InitTestSuite) TestInitialize_PrivateKeyRetrievalError() {
 
 	// Create mock PKI service that returns error
 	pkiMock := pkimock.NewPKIServiceInterfaceMock(suite.T())
-	pkiMock.EXPECT().GetPrivateKey(mock.Anything).Return(nil, assert.AnError)
+	testErr := serviceerror.CustomServiceError(serviceerror.InternalServerError, "test error")
+	pkiMock.EXPECT().GetPrivateKey(mock.Anything).Return(nil, testErr)
 
 	// Initialize JWT service should fail
 	jwtService, err := Initialize(pkiMock)

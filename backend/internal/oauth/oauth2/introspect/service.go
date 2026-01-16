@@ -76,7 +76,7 @@ func (s *tokenIntrospectionService) IntrospectToken(token, tokenTypeHint string)
 // validateToken verifies the signature and validity of the token.
 func (s *tokenIntrospectionService) validateToken(logger *log.Logger, token string) bool {
 	if err := s.jwtService.VerifyJWT(token, "", ""); err != nil {
-		logger.Debug("Failed to verify refresh token", log.Error(err))
+		logger.Debug("Failed to verify refresh token", log.String("error", err.Error))
 		return false
 	}
 	return true

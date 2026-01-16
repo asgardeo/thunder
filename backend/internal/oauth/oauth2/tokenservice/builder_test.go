@@ -19,7 +19,6 @@
 package tokenservice
 
 import (
-	"errors"
 	"testing"
 	"time"
 
@@ -30,6 +29,7 @@ import (
 	appmodel "github.com/asgardeo/thunder/internal/application/model"
 	"github.com/asgardeo/thunder/internal/oauth/oauth2/constants"
 	"github.com/asgardeo/thunder/internal/system/config"
+	"github.com/asgardeo/thunder/internal/system/error/serviceerror"
 	"github.com/asgardeo/thunder/tests/mocks/jwtmock"
 )
 
@@ -372,7 +372,12 @@ func (suite *TokenBuilderTestSuite) TestBuildAccessToken_Error_JWTGenerationFail
 		"https://thunder.io",
 		int64(3600),
 		mock.Anything,
-	).Return("", int64(0), errors.New("JWT generation failed"))
+	).Return("", int64(0), &serviceerror.ServiceError{
+		Type:             serviceerror.ServerErrorType,
+		Code:             "JWT_GENERATION_FAILED",
+		Error:            "JWT generation failed",
+		ErrorDescription: "Failed to generate JWT token",
+	})
 
 	result, err := suite.builder.BuildAccessToken(ctx)
 
@@ -635,7 +640,12 @@ func (suite *TokenBuilderTestSuite) TestBuildRefreshToken_Error_JWTGenerationFai
 		"https://thunder.io",
 		int64(3600),
 		mock.Anything,
-	).Return("", int64(0), errors.New("JWT generation failed"))
+	).Return("", int64(0), &serviceerror.ServiceError{
+		Type:             serviceerror.ServerErrorType,
+		Code:             "JWT_GENERATION_FAILED",
+		Error:            "JWT generation failed",
+		ErrorDescription: "Failed to generate JWT token",
+	})
 
 	result, err := suite.builder.BuildRefreshToken(ctx)
 
@@ -934,7 +944,12 @@ func (suite *TokenBuilderTestSuite) TestBuildIDToken_Error_JWTGenerationFailed()
 		"https://thunder.io",
 		int64(3600),
 		mock.Anything,
-	).Return("", int64(0), errors.New("JWT generation failed"))
+	).Return("", int64(0), &serviceerror.ServiceError{
+		Type:             serviceerror.ServerErrorType,
+		Code:             "JWT_GENERATION_FAILED",
+		Error:            "JWT generation failed",
+		ErrorDescription: "Failed to generate JWT token",
+	})
 
 	result, err := suite.builder.BuildIDToken(ctx)
 

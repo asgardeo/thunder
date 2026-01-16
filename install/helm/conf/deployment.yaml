@@ -107,3 +107,9 @@ cors:
   {{- range .Values.configuration.cors.allowedOrigins }}
     - {{ . | quote }}
   {{- end }}
+
+passkey:
+  allowed_origins:
+  {{- range .Values.configuration.passkey.allowedOrigins }}
+    - {{ . | quote }}
+  {{- end }}

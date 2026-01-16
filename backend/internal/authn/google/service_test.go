@@ -21,7 +21,6 @@ package google
 import (
 	"encoding/base64"
 	"encoding/json"
-	"errors"
 	"testing"
 	"time"
 
@@ -445,7 +444,12 @@ func (suite *GoogleOIDCAuthnServiceTestSuite) TestValidateIDTokenWithFailure() {
 			setupMocks: func(idToken string, config *oauth.OAuthClientConfig) {
 				suite.mockOIDCService.On("GetOAuthClientConfig", testGoogleIDPID).Return(config, nil).Once()
 				suite.mockJWTService.On("VerifyJWTSignatureWithJWKS", idToken, config.OAuthEndpoints.JwksEndpoint).
-					Return(errors.New("signature verification failed")).Once()
+					Return(&serviceerror.ServiceError{
+						Type:             serviceerror.ServerErrorType,
+						Code:             "SIGNATURE_VERIFICATION_FAILED",
+						Error:            "Signature verification failed",
+						ErrorDescription: "signature verification failed",
+					}).Once()
 			},
 		},
 		{

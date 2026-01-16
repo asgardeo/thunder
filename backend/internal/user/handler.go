@@ -100,7 +100,7 @@ func (uh *userHandler) HandleUserPostRequest(w http.ResponseWriter, r *http.Requ
 	}
 
 	// Create the user using the user service.
-	createdUser, svcErr := uh.userService.CreateUser(createRequest)
+	createdUser, svcErr := uh.userService.CreateUser(r.Context(), createRequest)
 	if svcErr != nil {
 		handleError(w, svcErr)
 		return
@@ -302,7 +302,7 @@ func (uh *userHandler) HandleUserPostByPathRequest(w http.ResponseWriter, r *htt
 		return
 	}
 
-	user, svcErr := uh.userService.CreateUserByPath(path, *createRequest)
+	user, svcErr := uh.userService.CreateUserByPath(r.Context(), path, *createRequest)
 	if svcErr != nil {
 		handleError(w, svcErr)
 		return

@@ -204,6 +204,15 @@ packages:
       pkgname: githubmock
       filename: "{{.InterfaceName}}_mock.go"
 
+  github.com/asgardeo/thunder/internal/authn/passkey:
+    interfaces:
+      PasskeyServiceInterface:
+        config:
+          dir: tests/mocks/authn/passkeymock
+          structname: 'WebAuthnAuthnServiceInterfaceMock'
+          pkgname: passkeymock
+          filename: "WebAuthnAuthnServiceInterface_mock.go"
+
   github.com/asgardeo/thunder/internal/idp:
     config:
       all: true

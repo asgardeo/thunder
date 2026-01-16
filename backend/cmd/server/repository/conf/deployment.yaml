@@ -39,3 +39,7 @@ crypto:
 cors:
   allowed_origins:
     - "https://localhost:3000"
+
+passkey:
+  allowed_origins:
+    - "https://localhost:8090"

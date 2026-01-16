@@ -23,12 +23,12 @@ import (
 	"crypto/rsa"
 	"encoding/base64"
 	"encoding/json"
-	"errors"
 	"testing"
 	"time"
 
 	"github.com/asgardeo/thunder/internal/oauth/oauth2/constants"
 	"github.com/asgardeo/thunder/internal/system/crypto/sign"
+	"github.com/asgardeo/thunder/internal/system/error/serviceerror"
 	"github.com/asgardeo/thunder/tests/mocks/jwtmock"
 
 	"github.com/stretchr/testify/assert"
@@ -79,7 +79,12 @@ func (s *TokenIntrospectionServiceTestSuite) TestIntrospectToken_EmptyToken() {
 func (s *TokenIntrospectionServiceTestSuite) TestIntrospectToken_PublicKeyNotAvailable() {
 	s.jwtServiceMock.On("GetPublicKey").Return(nil).Maybe()
 	s.jwtServiceMock.On("VerifyJWT", mock.Anything, "", "").Return(
-		errors.New("public key not available"))
+		&serviceerror.ServiceError{
+			Type:             serviceerror.ServerErrorType,
+			Code:             "PUBLIC_KEY_NOT_AVAILABLE",
+			Error:            "Public key not available",
+			ErrorDescription: "The public key is not available for verification",
+		})
 
 	response, err := s.introspectService.IntrospectToken(s.validToken, "")
 	assert.NoError(s.T(), err)
@@ -111,7 +116,12 @@ func (s *TokenIntrospectionServiceTestSuite) TestIntrospectToken_InvalidSignatur
 	invalidToken := signingInput + "." + signatureEncoded
 
 	s.jwtServiceMock.On("VerifyJWT", invalidToken, "", "").Return(
-		errors.New("invalid signature"))
+		&serviceerror.ServiceError{
+			Type:             serviceerror.ServerErrorType,
+			Code:             "INVALID_SIGNATURE",
+			Error:            "Invalid signature",
+			ErrorDescription: "The JWT signature is invalid",
+		})
 
 	// Test with a token having invalid signature
 	response, err := s.introspectService.IntrospectToken(invalidToken, "")
@@ -236,19 +246,44 @@ func (s *TokenIntrospectionServiceTestSuite) TestIntrospectToken() {
 			switch tc.name {
 			case "InvalidTokenFormat":
 				s.jwtServiceMock.On("VerifyJWT", token, "", "").Return(
-					errors.New("invalid token format"))
+					&serviceerror.ServiceError{
+						Type:             serviceerror.ServerErrorType,
+						Code:             "INVALID_TOKEN_FORMAT",
+						Error:            "Invalid token format",
+						ErrorDescription: "The token format is invalid",
+					})
 			case "ExpiredToken":
 				s.jwtServiceMock.On("VerifyJWT", token, "", "").Return(
-					errors.New("token has expired"))
+					&serviceerror.ServiceError{
+						Type:             serviceerror.ClientErrorType,
+						Code:             "TOKEN_EXPIRED",
+						Error:            "Token has expired",
+						ErrorDescription: "The token has expired",
+					})
 			case "FutureToken":
 				s.jwtServiceMock.On("VerifyJWT", token, "", "").Return(
-					errors.New("token not valid yet (nbf)"))
+					&serviceerror.ServiceError{
+						Type:             serviceerror.ClientErrorType,
+						Code:             "TOKEN_NOT_VALID_YET",
+						Error:            "Token not valid yet",
+						ErrorDescription: "The token is not valid yet (nbf)",
+					})
 			case "TokenWithMissingExpClaim":
 				s.jwtServiceMock.On("VerifyJWT", token, "", "").Return(
-					errors.New("missing or invalid 'exp' claim"))
+					&serviceerror.ServiceError{
+						Type:             serviceerror.ClientErrorType,
+						Code:             "MISSING_EXP_CLAIM",
+						Error:            "Missing exp claim",
+						ErrorDescription: "Missing or invalid 'exp' claim",
+					})
 			case "TokenWithMissingNbfClaim":
 				s.jwtServiceMock.On("VerifyJWT", token, "", "").Return(
-					errors.New("missing or invalid 'nbf' claim"))
+					&serviceerror.ServiceError{
+						Type:             serviceerror.ClientErrorType,
+						Code:             "MISSING_NBF_CLAIM",
+						Error:            "Missing nbf claim",
+						ErrorDescription: "Missing or invalid 'nbf' claim",
+					})
 			case "ValidToken", "TokenWithMissingOptionalClaims":
 				s.jwtServiceMock.On("VerifyJWT", token, "", "").Return(nil)
 			default:

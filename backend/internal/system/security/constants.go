@@ -29,6 +29,7 @@ const maxPublicPathLength = 4096
 var publicPaths = []string{
 	"/health/**",
 	"/auth/**",
+	"/register/passkey/**",
 	"/flow/execute/**",
 	"/oauth2/**",
 	"/.well-known/openid-configuration/**",

@@ -20,6 +20,7 @@
 package user
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -29,6 +30,7 @@ import (
 	oupkg "github.com/asgardeo/thunder/internal/ou"
 	serverconst "github.com/asgardeo/thunder/internal/system/constants"
 	"github.com/asgardeo/thunder/internal/system/crypto/hash"
+	"github.com/asgardeo/thunder/internal/system/database/transaction"
 	"github.com/asgardeo/thunder/internal/system/error/serviceerror"
 	"github.com/asgardeo/thunder/internal/system/log"
 	"github.com/asgardeo/thunder/internal/system/utils"
@@ -42,8 +44,9 @@ type UserServiceInterface interface {
 	GetUserList(limit, offset int, filters map[string]interface{}) (*UserListResponse, *serviceerror.ServiceError)
 	GetUsersByPath(handlePath string, limit, offset int,
 		filters map[string]interface{}) (*UserListResponse, *serviceerror.ServiceError)
-	CreateUser(user *User) (*User, *serviceerror.ServiceError)
-	CreateUserByPath(handlePath string, request CreateUserByPathRequest) (*User, *serviceerror.ServiceError)
+	CreateUser(ctx context.Context, user *User) (*User, *serviceerror.ServiceError)
+	CreateUserByPath(ctx context.Context, handlePath string,
+		request CreateUserByPathRequest) (*User, *serviceerror.ServiceError)
 	GetUser(userID string) (*User, *serviceerror.ServiceError)
 	GetUserGroups(userID string, limit, offset int) (*UserGroupListResponse, *serviceerror.ServiceError)
 	UpdateUser(userID string, user *User) (*User, *serviceerror.ServiceError)
@@ -63,6 +66,7 @@ type userService struct {
 	ouService         oupkg.OrganizationUnitServiceInterface
 	userSchemaService userschema.UserSchemaServiceInterface
 	hashService       hash.HashServiceInterface
+	transactioner     transaction.Transactioner
 }
 
 // newUserService creates a new instance of userService with injected dependencies.
@@ -71,12 +75,14 @@ func newUserService(
 	ouService oupkg.OrganizationUnitServiceInterface,
 	userSchemaService userschema.UserSchemaServiceInterface,
 	hashService hash.HashServiceInterface,
+	transactioner transaction.Transactioner,
 ) UserServiceInterface {
 	return &userService{
 		userStore:         userStore,
 		ouService:         ouService,
 		userSchemaService: userSchemaService,
 		hashService:       hashService,
+		transactioner:     transactioner,
 	}
 }
 
@@ -177,7 +183,7 @@ func (us *userService) GetUsersByPath(
 }
 
 // CreateUser creates the user.
-func (us *userService) CreateUser(user *User) (*User, *serviceerror.ServiceError) {
+func (us *userService) CreateUser(ctx context.Context, user *User) (*User, *serviceerror.ServiceError) {
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, loggerComponentName))
 
 	if user == nil {
@@ -199,7 +205,10 @@ func (us *userService) CreateUser(user *User) (*User, *serviceerror.ServiceError
 		return nil, logErrorAndReturnServerError(logger, "Failed to create user DTO", err)
 	}
 
-	err = us.userStore.CreateUser(*user, credentials)
+	// Use transaction to ensure atomic user creation with indexed attributes
+	err = us.transactioner.Transact(ctx, func(txCtx context.Context) error {
+		return us.userStore.CreateUser(txCtx, *user, credentials)
+	})
 	if err != nil {
 		return nil, logErrorAndReturnServerError(logger, "Failed to create user", err)
 	}
@@ -210,7 +219,7 @@ func (us *userService) CreateUser(user *User) (*User, *serviceerror.ServiceError
 
 // CreateUserByPath creates a new user under the organization unit specified by the handle path.
 func (us *userService) CreateUserByPath(
-	handlePath string, request CreateUserByPathRequest,
+	ctx context.Context, handlePath string, request CreateUserByPathRequest,
 ) (*User, *serviceerror.ServiceError) {
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, loggerComponentName))
 	logger.Debug("Creating user by path", log.String("path", handlePath), log.String("type", request.Type))
@@ -240,7 +249,7 @@ func (us *userService) CreateUserByPath(
 		Attributes:       request.Attributes,
 	}
 
-	return us.CreateUser(user)
+	return us.CreateUser(ctx, user)
 }
 
 // extractCredentials extracts the credentials from the user attributes and returns Credentials struct.

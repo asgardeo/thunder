@@ -21,7 +21,6 @@ package tokenservice
 import (
 	"encoding/base64"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"testing"
 	"time"
@@ -31,6 +30,7 @@ import (
 
 	appmodel "github.com/asgardeo/thunder/internal/application/model"
 	"github.com/asgardeo/thunder/internal/system/config"
+	"github.com/asgardeo/thunder/internal/system/error/serviceerror"
 	"github.com/asgardeo/thunder/tests/mocks/jwtmock"
 )
 
@@ -287,7 +287,12 @@ func (suite *TokenValidatorTestSuite) TestValidateSubjectToken_Error_InvalidSign
 	token := suite.createTestJWT(claims)
 
 	suite.mockJWTService.On("VerifyJWTSignature", token).
-		Return(errors.New("signature verification failed"))
+		Return(&serviceerror.ServiceError{
+			Type:             serviceerror.ServerErrorType,
+			Code:             "SIGNATURE_VERIFICATION_FAILED",
+			Error:            "Signature verification failed",
+			ErrorDescription: "The JWT signature verification failed",
+		})
 
 	result, err := suite.validator.ValidateSubjectToken(token, suite.oauthApp)
 
@@ -412,12 +417,17 @@ func (suite *TokenValidatorTestSuite) TestVerifyTokenSignatureByIssuer_Error_Sig
 	token := testJWTTokenString
 
 	suite.mockJWTService.On("VerifyJWTSignature", token).
-		Return(errors.New("signature mismatch"))
+		Return(&serviceerror.ServiceError{
+			Type:             serviceerror.ServerErrorType,
+			Code:             "SIGNATURE_MISMATCH",
+			Error:            "Signature mismatch",
+			ErrorDescription: "The JWT signature does not match",
+		})
 
 	err := suite.validator.verifyTokenSignatureByIssuer(token, "https://thunder.io", suite.oauthApp)
 
 	assert.Error(suite.T(), err)
-	assert.Contains(suite.T(), err.Error(), "signature mismatch")
+	assert.Contains(suite.T(), err.Error(), "failed to verify token signature")
 	suite.mockJWTService.AssertExpectations(suite.T())
 }
 
@@ -674,7 +684,12 @@ func (suite *TokenValidatorTestSuite) TestValidateRefreshToken_Error_InvalidSign
 	token := "invalid.token.signature"
 
 	suite.mockJWTService.On("VerifyJWT", token, "", "").
-		Return(errors.New("signature verification failed"))
+		Return(&serviceerror.ServiceError{
+			Type:             serviceerror.ServerErrorType,
+			Code:             "SIGNATURE_VERIFICATION_FAILED",
+			Error:            "Signature verification failed",
+			ErrorDescription: "The JWT signature verification failed",
+		})
 
 	result, err := suite.validator.ValidateRefreshToken(token, "test-client")
 
@@ -689,7 +704,12 @@ func (suite *TokenValidatorTestSuite) TestValidateRefreshToken_Error_InvalidJWTF
 
 	// VerifyJWT is called first and should fail for invalid format
 	suite.mockJWTService.On("VerifyJWT", token, "", "").
-		Return(errors.New("invalid JWT format"))
+		Return(&serviceerror.ServiceError{
+			Type:             serviceerror.ClientErrorType,
+			Code:             "INVALID_JWT_FORMAT",
+			Error:            "Invalid JWT format",
+			ErrorDescription: "The JWT format is invalid",
+		})
 
 	result, err := suite.validator.ValidateRefreshToken(token, "test-client")
 
@@ -706,7 +726,12 @@ func (suite *TokenValidatorTestSuite) TestValidateRefreshToken_Error_DecodeFailu
 
 	// VerifyJWT is called first and should fail for invalid base64
 	suite.mockJWTService.On("VerifyJWT", token, "", "").
-		Return(errors.New("invalid JWT signature"))
+		Return(&serviceerror.ServiceError{
+			Type:             serviceerror.ServerErrorType,
+			Code:             "INVALID_JWT_SIGNATURE",
+			Error:            "Invalid JWT signature",
+			ErrorDescription: "The JWT signature is invalid",
+		})
 
 	result, err := suite.validator.ValidateRefreshToken(token, "test-client")
 
@@ -760,7 +785,12 @@ func (suite *TokenValidatorTestSuite) TestValidateRefreshToken_Error_ExpiredToke
 
 	// VerifyJWT should catch expired tokens
 	suite.mockJWTService.On("VerifyJWT", token, "", "").
-		Return(errors.New("token has expired"))
+		Return(&serviceerror.ServiceError{
+			Type:             serviceerror.ClientErrorType,
+			Code:             "TOKEN_EXPIRED",
+			Error:            "Token has expired",
+			ErrorDescription: "The token has expired",
+		})
 
 	result, err := suite.validator.ValidateRefreshToken(token, "test-client")
 
@@ -788,7 +818,12 @@ func (suite *TokenValidatorTestSuite) TestValidateRefreshToken_Error_NotYetValid
 
 	// VerifyJWT should catch not yet valid tokens
 	suite.mockJWTService.On("VerifyJWT", token, "", "").
-		Return(errors.New("token not valid yet (nbf)"))
+		Return(&serviceerror.ServiceError{
+			Type:             serviceerror.ClientErrorType,
+			Code:             "TOKEN_NOT_VALID_YET",
+			Error:            "Token not valid yet",
+			ErrorDescription: "Token not valid yet (nbf)",
+		})
 
 	result, err := suite.validator.ValidateRefreshToken(token, "test-client")
 
@@ -1202,7 +1237,12 @@ func (suite *TokenValidatorTestSuite) TestValidateAuthAssertion_Error_InvalidSig
 
 	suite.oauthApp.AppID = testAppID
 
-	suite.mockJWTService.On("VerifyJWTSignature", token).Return(errors.New("invalid signature"))
+	suite.mockJWTService.On("VerifyJWTSignature", token).Return(&serviceerror.ServiceError{
+		Type:             serviceerror.ServerErrorType,
+		Code:             "INVALID_SIGNATURE",
+		Error:            "Invalid signature",
+		ErrorDescription: "The JWT signature is invalid",
+	})
 
 	result, err := suite.validator.ValidateSubjectToken(token, suite.oauthApp)
 

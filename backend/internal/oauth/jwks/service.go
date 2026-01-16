@@ -58,9 +58,7 @@ func (s *jwksService) GetJWKS() (*JWKSResponse, *serviceerror.ServiceError) {
 	// Parse certificate
 	parsedCert, err := s.pkiService.GetX509Certificate(preferredKeyID)
 	if err != nil {
-		svcErr := ErrorWhileParsingCertificate
-		svcErr.ErrorDescription = err.Error()
-		return nil, svcErr
+		return nil, err
 	}
 
 	// Generate KID from certificate thumbprint

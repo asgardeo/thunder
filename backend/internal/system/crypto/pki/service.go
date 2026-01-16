@@ -32,23 +32,21 @@ import (
 
 	"github.com/asgardeo/thunder/internal/system/config"
 	"github.com/asgardeo/thunder/internal/system/crypto/hash"
+	"github.com/asgardeo/thunder/internal/system/error/serviceerror"
 	"github.com/asgardeo/thunder/internal/system/log"
-)
-
-var (
-	logger = log.GetLogger().With(log.String(log.LoggerKeyComponentName, "PKIService"))
 )
 
 // PKIServiceInterface defines the interface for certificate services.
 type PKIServiceInterface interface {
-	GetPrivateKey(id string) (crypto.PrivateKey, error)
+	GetPrivateKey(id string) (crypto.PrivateKey, *serviceerror.ServiceError)
 	GetCertThumbprint(id string) string
-	GetX509Certificate(id string) (*x509.Certificate, error)
+	GetX509Certificate(id string) (*x509.Certificate, *serviceerror.ServiceError)
 }
 
 // pkiService stores loaded certificates indexed by their ID
 type pkiService struct {
 	certificates map[string]PKI
+	logger       *log.Logger
 }
 
 // newPKIService initializes and returns the cert service
@@ -96,10 +94,6 @@ func newPKIService() (PKIServiceInterface, error) {
 			Certificate: tlsCert,
 			ThumbPrint:  thumbprint,
 		}
-		logger.Debug("Loaded certificate",
-			log.String("certFile", certFilePath),
-			log.String("keyFile", keyFilePath),
-			log.String("keyID", keyConfig.ID))
 	}
 
 	if len(certificates) == 0 {
@@ -108,17 +102,16 @@ func newPKIService() (PKIServiceInterface, error) {
 
 	return &pkiService{
 		certificates: certificates,
+		logger:       log.GetLogger().With(log.String(log.LoggerKeyComponentName, "PKIService")),
 	}, nil
 }
 
 // GetPrivateKey retrieves the private key associated with the given ID.
-func (s *pkiService) GetPrivateKey(id string) (crypto.PrivateKey, error) {
+func (s *pkiService) GetPrivateKey(id string) (crypto.PrivateKey, *serviceerror.ServiceError) {
 	cert, exists := s.certificates[id]
-	if !exists {
-		return nil, errors.New("certificate with ID " + id + " not found")
-	}
-	if cert.PrivateKey == nil {
-		return nil, errors.New("no private key found for certificate with ID " + id)
+	if !exists || cert.PrivateKey == nil {
+		s.logger.Error("Private key not found for certificate ID: " + id)
+		return nil, &serviceerror.InternalServerError
 	}
 	return cert.PrivateKey, nil
 }
@@ -133,17 +126,20 @@ func (s *pkiService) GetCertThumbprint(id string) string {
 }
 
 // GetX509Certificate retrieves the x509 certificate associated with the given ID.
-func (s *pkiService) GetX509Certificate(id string) (*x509.Certificate, error) {
+func (s *pkiService) GetX509Certificate(id string) (*x509.Certificate, *serviceerror.ServiceError) {
 	cert, exists := s.certificates[id]
 	if !exists {
-		return nil, errors.New("certificate with ID " + id + " not found")
+		s.logger.Error("Certificate not found for certificate ID: " + id)
+		return nil, &serviceerror.InternalServerError
 	}
 	if len(cert.Certificate.Certificate) == 0 {
-		return nil, errors.New("no certificate data found for certificate with ID " + id)
+		s.logger.Error("Certificate data is empty for certificate ID: " + id)
+		return nil, &serviceerror.InternalServerError
 	}
 	parsedCert, err := x509.ParseCertificate(cert.Certificate.Certificate[0])
 	if err != nil {
-		return nil, err
+		s.logger.Error("Failed to parse x509 certificate for ID: " + id + " Error: " + err.Error())
+		return nil, &serviceerror.InternalServerError
 	}
 	return parsedCert, nil
 }

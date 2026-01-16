@@ -165,7 +165,7 @@ func (s *oidcAuthnService) ValidateIDToken(idpID, idToken string) *serviceerror.
 	if oAuthClientConfig.OAuthEndpoints.JwksEndpoint != "" {
 		err := s.jwtService.VerifyJWTWithJWKS(idToken, oAuthClientConfig.OAuthEndpoints.JwksEndpoint, "", "")
 		if err != nil {
-			logger.Debug("ID token signature validation failed", log.Error(err))
+			logger.Debug("ID token signature validation failed", log.String("error", err.Error))
 			return &ErrorInvalidIDTokenSignature
 		}
 	} else {

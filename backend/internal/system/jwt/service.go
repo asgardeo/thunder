@@ -36,6 +36,7 @@ import (
 	"github.com/asgardeo/thunder/internal/system/config"
 	"github.com/asgardeo/thunder/internal/system/crypto/pki"
 	"github.com/asgardeo/thunder/internal/system/crypto/sign"
+	"github.com/asgardeo/thunder/internal/system/error/serviceerror"
 	httpservice "github.com/asgardeo/thunder/internal/system/http"
 	"github.com/asgardeo/thunder/internal/system/log"
 	"github.com/asgardeo/thunder/internal/system/utils"
@@ -44,13 +45,15 @@ import (
 // JWTServiceInterface defines the interface for JWT operations.
 type JWTServiceInterface interface {
 	GetPublicKey() crypto.PublicKey
-	GenerateJWT(sub, aud, iss string, validityPeriod int64, claims map[string]interface{}) (string, int64, error)
-	VerifyJWT(jwtToken string, expectedAud, expectedIss string) error
-	VerifyJWTWithPublicKey(jwtToken string, jwtPublicKey crypto.PublicKey, expectedAud, expectedIss string) error
-	VerifyJWTWithJWKS(jwtToken, jwksURL, expectedAud, expectedIss string) error
-	VerifyJWTSignature(jwtToken string) error
-	VerifyJWTSignatureWithPublicKey(jwtToken string, jwtPublicKey crypto.PublicKey) error
-	VerifyJWTSignatureWithJWKS(jwtToken string, jwksURL string) error
+	GenerateJWT(sub, aud, iss string, validityPeriod int64, claims map[string]interface{}) (
+		string, int64, *serviceerror.ServiceError)
+	VerifyJWT(jwtToken string, expectedAud, expectedIss string) *serviceerror.ServiceError
+	VerifyJWTWithPublicKey(jwtToken string, jwtPublicKey crypto.PublicKey, expectedAud,
+		expectedIss string) *serviceerror.ServiceError
+	VerifyJWTWithJWKS(jwtToken, jwksURL, expectedAud, expectedIss string) *serviceerror.ServiceError
+	VerifyJWTSignature(jwtToken string) *serviceerror.ServiceError
+	VerifyJWTSignatureWithPublicKey(jwtToken string, jwtPublicKey crypto.PublicKey) *serviceerror.ServiceError
+	VerifyJWTSignatureWithJWKS(jwtToken string, jwksURL string) *serviceerror.ServiceError
 }
 
 // jwtService implements the JWTServiceInterface for generating and managing JWT tokens.
@@ -59,6 +62,7 @@ type jwtService struct {
 	signAlg    sign.SignAlgorithm
 	jwsAlg     JWSAlgorithm
 	kid        string
+	logger     *log.Logger
 }
 
 // GetJWTService returns a singleton instance of JWTService.
@@ -67,10 +71,11 @@ func newJWTService(pkiService pki.PKIServiceInterface) (JWTServiceInterface, err
 
 	privateKey, err := pkiService.GetPrivateKey(preferredKid)
 	if err != nil {
-		return nil, err
+		return nil, errors.New("failed to retrieve private key for the key id: " + preferredKid)
 	}
 
 	kid := pkiService.GetCertThumbprint(preferredKid)
+	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, "JWTService"))
 
 	// Get algorithm based on the type of private key
 	switch k := privateKey.(type) {
@@ -80,6 +85,7 @@ func newJWTService(pkiService pki.PKIServiceInterface) (JWTServiceInterface, err
 			signAlg:    sign.RSASHA256,
 			jwsAlg:     RS256,
 			kid:        kid,
+			logger:     logger,
 		}, nil
 	case *ecdsa.PrivateKey:
 		// Determine ECDSA algorithm based on curve
@@ -91,6 +97,7 @@ func newJWTService(pkiService pki.PKIServiceInterface) (JWTServiceInterface, err
 				signAlg:    sign.ECDSASHA256,
 				jwsAlg:     ES256,
 				kid:        kid,
+				logger:     logger,
 			}, nil
 		case "P-384":
 			return &jwtService{
@@ -98,6 +105,7 @@ func newJWTService(pkiService pki.PKIServiceInterface) (JWTServiceInterface, err
 				signAlg:    sign.ECDSASHA384,
 				jwsAlg:     ES384,
 				kid:        kid,
+				logger:     logger,
 			}, nil
 		case "P-521":
 			return &jwtService{
@@ -105,6 +113,7 @@ func newJWTService(pkiService pki.PKIServiceInterface) (JWTServiceInterface, err
 				signAlg:    sign.ECDSASHA512,
 				jwsAlg:     ES512,
 				kid:        kid,
+				logger:     logger,
 			}, nil
 		default:
 			return nil, errors.New("unsupported EC curve: " + crvName + " only P-256, P-384 and P-521 are supported")
@@ -115,6 +124,7 @@ func newJWTService(pkiService pki.PKIServiceInterface) (JWTServiceInterface, err
 			signAlg:    sign.ED25519,
 			jwsAlg:     EdDSA,
 			kid:        kid,
+			logger:     logger,
 		}, nil
 	default:
 		return nil, errors.New("unsupported private key type")
@@ -140,9 +150,10 @@ func (js *jwtService) GetPublicKey() crypto.PublicKey {
 
 // GenerateJWT generates a standard JWT signed with the server's private key.
 func (js *jwtService) GenerateJWT(sub, aud, iss string, validityPeriod int64, claims map[string]interface{}) (
-	string, int64, error) {
+	string, int64, *serviceerror.ServiceError) {
 	if js.privateKey == nil {
-		return "", 0, errors.New("private key not loaded")
+		js.logger.Error("Private key not found for JWT generation")
+		return "", 0, &serviceerror.InternalServerError
 	}
 	thunderRuntime := config.GetThunderRuntime()
 
@@ -155,7 +166,8 @@ func (js *jwtService) GenerateJWT(sub, aud, iss string, validityPeriod int64, cl
 
 	headerJSON, err := json.Marshal(header)
 	if err != nil {
-		return "", 0, err
+		js.logger.Error("Failed to marshal JWT header: " + err.Error())
+		return "", 0, &serviceerror.InternalServerError
 	}
 
 	tokenIssuer := iss
@@ -190,7 +202,8 @@ func (js *jwtService) GenerateJWT(sub, aud, iss string, validityPeriod int64, cl
 
 	payloadJSON, err := json.Marshal(payload)
 	if err != nil {
-		return "", 0, err
+		js.logger.Error("Failed to marshal JWT payload: " + err.Error())
+		return "", 0, &serviceerror.InternalServerError
 	}
 
 	// Encode the header and payload in base64 URL format.
@@ -201,7 +214,8 @@ func (js *jwtService) GenerateJWT(sub, aud, iss string, validityPeriod int64, cl
 	signingInput := headerBase64 + "." + payloadBase64
 	signature, err := sign.Generate([]byte(signingInput), js.signAlg, js.privateKey)
 	if err != nil {
-		return "", 0, err
+		js.logger.Error("Failed to sign JWT: " + err.Error())
+		return "", 0, &serviceerror.InternalServerError
 	}
 
 	// Encode the signature in base64 URL format.
@@ -211,14 +225,15 @@ func (js *jwtService) GenerateJWT(sub, aud, iss string, validityPeriod int64, cl
 }
 
 // VerifyJWT verifies the JWT token using the server's public key.
-func (js *jwtService) VerifyJWT(jwtToken string, expectedAud, expectedIss string) error {
+func (js *jwtService) VerifyJWT(jwtToken string, expectedAud, expectedIss string) *serviceerror.ServiceError {
 	if js.privateKey == nil {
-		return errors.New("private key not loaded")
+		js.logger.Error("Private key not found for JWT verification")
+		return &serviceerror.InternalServerError
 	}
 
 	// First verify signature using the configured server key and algorithm
 	if err := js.VerifyJWTSignature(jwtToken); err != nil {
-		return fmt.Errorf("invalid token signature: %w", err)
+		return &ErrorInvalidTokenSignature
 	}
 
 	// Then verify claims
@@ -227,44 +242,44 @@ func (js *jwtService) VerifyJWT(jwtToken string, expectedAud, expectedIss string
 
 // VerifyJWTWithPublicKey verifies the JWT token using the provided public key.
 func (js *jwtService) VerifyJWTWithPublicKey(jwtToken string, jwtPublicKey crypto.PublicKey,
-	expectedAud, expectedIss string) error {
+	expectedAud, expectedIss string) *serviceerror.ServiceError {
 	parts := strings.Split(jwtToken, ".")
 	if len(parts) != 3 {
-		return errors.New("invalid JWT token format")
+		return &ErrorInvalidJWTFormat
 	}
 
 	if err := js.VerifyJWTSignatureWithPublicKey(jwtToken, jwtPublicKey); err != nil {
-		return fmt.Errorf("invalid token signature: %w", err)
+		return err
 	}
 
 	return js.verifyJWTClaims(jwtToken, expectedAud, expectedIss)
 }
 
 // VerifyJWTWithJWKS verifies the JWT token using a JWK Set (JWKS) endpoint.
-func (js *jwtService) VerifyJWTWithJWKS(jwtToken, jwksURL, expectedAud, expectedIss string) error {
+func (js *jwtService) VerifyJWTWithJWKS(jwtToken, jwksURL, expectedAud, expectedIss string) *serviceerror.ServiceError {
 	parts := strings.Split(jwtToken, ".")
 	if len(parts) != 3 {
-		return errors.New("invalid JWT token format")
+		return &ErrorInvalidJWTFormat
 	}
 
 	if err := js.VerifyJWTSignatureWithJWKS(jwtToken, jwksURL); err != nil {
-		return fmt.Errorf("invalid token signature: %w", err)
+		return &ErrorInvalidTokenSignature
 	}
 
 	return js.verifyJWTClaims(jwtToken, expectedAud, expectedIss)
 }
 
 // VerifyJWTSignature verifies the signature of a JWT token using the server's public key.
-func (js *jwtService) VerifyJWTSignature(jwtToken string) error {
+func (js *jwtService) VerifyJWTSignature(jwtToken string) *serviceerror.ServiceError {
 	parts := strings.Split(jwtToken, ".")
 	if len(parts) != 3 {
-		return errors.New("invalid JWT token format")
+		return &ErrorInvalidJWTFormat
 	}
 
 	// Decode the signature
 	signature, err := base64.RawURLEncoding.DecodeString(parts[2])
 	if err != nil {
-		return fmt.Errorf("failed to decode JWT signature: %w", err)
+		return &ErrorInvalidTokenSignature
 	}
 
 	// Create the signing input
@@ -280,24 +295,29 @@ func (js *jwtService) VerifyJWTSignature(jwtToken string) error {
 	case ed25519.PrivateKey:
 		pubKey = k.Public()
 	default:
-		return errors.New("unsupported private key type for verification")
+		return &ErrorUnsupportedJWSAlgorithm
 	}
 
 	// Verify the signature using the configured algorithm
-	return sign.Verify([]byte(signingInput), signature, js.signAlg, pubKey)
+	err = sign.Verify([]byte(signingInput), signature, js.signAlg, pubKey)
+	if err != nil {
+		return &ErrorInvalidTokenSignature
+	}
+	return nil
 }
 
 // VerifyJWTSignatureWithPublicKey verifies the signature of a JWT token using the provided public key.
-func (js *jwtService) VerifyJWTSignatureWithPublicKey(jwtToken string, jwtPublicKey crypto.PublicKey) error {
+func (js *jwtService) VerifyJWTSignatureWithPublicKey(jwtToken string,
+	jwtPublicKey crypto.PublicKey) *serviceerror.ServiceError {
 	parts := strings.Split(jwtToken, ".")
 	if len(parts) != 3 {
-		return errors.New("invalid JWT token format")
+		return &ErrorInvalidJWTFormat
 	}
 
 	// Decode the signature
 	signature, err := base64.RawURLEncoding.DecodeString(parts[2])
 	if err != nil {
-		return fmt.Errorf("failed to decode JWT signature: %w", err)
+		return &ErrorInvalidTokenSignature
 	}
 
 	// Create the signing input
@@ -306,16 +326,20 @@ func (js *jwtService) VerifyJWTSignatureWithPublicKey(jwtToken string, jwtPublic
 	// Determine algorithm from JWT header
 	header, err := DecodeJWTHeader(jwtToken)
 	if err != nil {
-		return fmt.Errorf("failed to parse JWT header: %w", err)
+		return &ErrorDecodingJWTHeader
 	}
 	algStr, _ := header["alg"].(string)
 	alg, err := mapJWSAlgToSignAlg(JWSAlgorithm(algStr))
 	if err != nil {
-		return err
+		return &ErrorUnsupportedJWSAlgorithm
 	}
 
 	// Verify the signature
-	return sign.Verify([]byte(signingInput), signature, alg, jwtPublicKey)
+	err = sign.Verify([]byte(signingInput), signature, alg, jwtPublicKey)
+	if err != nil {
+		return &ErrorInvalidTokenSignature
+	}
+	return nil
 }
 
 // mapJWSAlgToSignAlg maps JWS alg header values to internal SignAlgorithm.
@@ -339,46 +363,48 @@ func mapJWSAlgToSignAlg(jwsAlg JWSAlgorithm) (sign.SignAlgorithm, error) {
 }
 
 // VerifyJWTSignatureWithJWKS verifies the signature of a JWT token using a JWK Set (JWKS) endpoint.
-func (js *jwtService) VerifyJWTSignatureWithJWKS(jwtToken string, jwksURL string) error {
-	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, "JWTService"))
-
+func (js *jwtService) VerifyJWTSignatureWithJWKS(jwtToken string, jwksURL string) *serviceerror.ServiceError {
 	// Get the key ID from the JWT header
 	header, err := DecodeJWTHeader(jwtToken)
 	if err != nil {
-		return fmt.Errorf("failed to parse JWT header: %w", err)
+		return &ErrorDecodingJWTHeader
 	}
 
 	kid, ok := header["kid"].(string)
 	if !ok {
-		return fmt.Errorf("JWT header missing 'kid' claim")
+		return &ErrorDecodingJWTHeader
 	}
 
 	// Fetch the JWK Set from the JWKS endpoint
 	client := httpservice.NewHTTPClientWithTimeout(10 * time.Second)
 	resp, err := client.Get(jwksURL)
 	if err != nil {
-		return fmt.Errorf("failed to fetch JWKS: %w", err)
+		js.logger.Debug("Failed to fetch JWKS from URL: " + err.Error())
+		return &ErrorFailedToGetJWKS
 	}
 	defer func() {
 		if closeErr := resp.Body.Close(); closeErr != nil {
-			logger.Error("Failed to close response body", log.Error(closeErr))
+			js.logger.Error("Failed to close response body", log.Error(closeErr))
 		}
 	}()
 
 	if resp.StatusCode != http.StatusOK {
-		return fmt.Errorf("failed to fetch JWKS, status code: %d", resp.StatusCode)
+		js.logger.Debug("Failed to fetch JWKS, HTTP status: " + resp.Status)
+		return &ErrorFailedToGetJWKS
 	}
 
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
-		return fmt.Errorf("failed to read JWKS response: %w", err)
+		js.logger.Debug("Failed to read JWKS response body: " + err.Error())
+		return &ErrorFailedToParseJWKS
 	}
 
 	var jwks struct {
 		Keys []map[string]interface{} `json:"keys"`
 	}
 	if err := json.Unmarshal(body, &jwks); err != nil {
-		return fmt.Errorf("failed to parse JWKS: %w", err)
+		js.logger.Debug("Failed to parse JWKS JSON: " + err.Error())
+		return &ErrorFailedToParseJWKS
 	}
 
 	// Find the key with matching kid
@@ -390,29 +416,31 @@ func (js *jwtService) VerifyJWTSignatureWithJWKS(jwtToken string, jwksURL string
 		}
 	}
 	if jwk == nil {
-		return fmt.Errorf("no matching key found in JWKS")
+		return &ErrorNoMatchingJWKFound
 	}
 
 	// Convert JWK to public key
 	pubKey, err := jwkToPublicKey(jwk)
 	if err != nil {
-		return fmt.Errorf("failed to convert JWK to public key: %w", err)
+		js.logger.Debug("Failed to convert JWK to public key: " + err.Error())
+		return &ErrorFailedToParseJWKS
 	}
 
 	// Verify JWT signature
 	if err := js.VerifyJWTSignatureWithPublicKey(jwtToken, pubKey); err != nil {
-		return fmt.Errorf("invalid token signature: %w", err)
+		return err
 	}
 
 	return nil
 }
 
 // verifyJWTClaims verifies the standard claims of a JWT token.
-func (js *jwtService) verifyJWTClaims(jwtToken string, expectedAud, expectedIss string) error {
+func (js *jwtService) verifyJWTClaims(jwtToken string, expectedAud, expectedIss string) *serviceerror.ServiceError {
 	// Decode the JWT payload
 	payload, err := DecodeJWTPayload(jwtToken)
 	if err != nil {
-		return fmt.Errorf("failed to decode JWT payload: %w", err)
+		js.logger.Debug("Failed to decode JWT payload: " + err.Error())
+		return &ErrorDecodingJWTPayload
 	}
 
 	// Validate standard claims (exp, nbf, aud, iss)
@@ -420,37 +448,45 @@ func (js *jwtService) verifyJWTClaims(jwtToken string, expectedAud, expectedIss 
 
 	if exp, ok := payload["exp"].(float64); ok {
 		if now > int64(exp) {
-			return errors.New("token has expired")
+			js.logger.Debug("JWT token has expired")
+			return &ErrorTokenExpired
 		}
 	} else {
-		return errors.New("missing or invalid 'exp' claim")
+		js.logger.Debug("JWT token missing 'exp' claim or it is not a number")
+		return &ErrorInvalidJWTFormat
 	}
 
 	if nbf, ok := payload["nbf"].(float64); ok {
 		if now < int64(nbf) {
-			return errors.New("token not valid yet (nbf)")
+			js.logger.Debug("JWT token is not valid yet (nbf claim)")
+			return &ErrorInvalidJWTFormat
 		}
 	} else {
-		return errors.New("missing or invalid 'nbf' claim")
+		js.logger.Debug("JWT token missing 'nbf' claim or it is not a number")
+		return &ErrorInvalidJWTFormat
 	}
 
 	if expectedAud != "" {
 		if aud, ok := payload["aud"].(string); ok {
 			if aud != expectedAud {
-				return fmt.Errorf("invalid audience: expected %s, got %s", expectedAud, aud)
+				js.logger.Debug("Invalid audience: expected " + expectedAud + ", got " + aud)
+				return &ErrorInvalidJWTFormat
 			}
 		} else {
-			return errors.New("missing or invalid 'aud' claim")
+			js.logger.Debug("Missing 'aud' claim or it is not a string")
+			return &ErrorInvalidJWTFormat
 		}
 	}
 
 	if expectedIss != "" {
 		if iss, ok := payload["iss"].(string); ok {
 			if iss != expectedIss {
-				return fmt.Errorf("invalid issuer: expected %s, got %s", expectedIss, iss)
+				js.logger.Debug("Invalid issuer: expected " + expectedIss + ", got " + iss)
+				return &ErrorInvalidJWTFormat
 			}
 		} else {
-			return errors.New("missing or invalid 'iss' claim")
+			js.logger.Debug("Missing 'iss' claim or it is not a string")
+			return &ErrorInvalidJWTFormat
 		}
 	}
 

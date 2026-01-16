@@ -43,6 +43,8 @@ import (
 
 	"github.com/asgardeo/thunder/internal/system/config"
 	"github.com/asgardeo/thunder/internal/system/crypto/sign"
+	"github.com/asgardeo/thunder/internal/system/error/serviceerror"
+	"github.com/asgardeo/thunder/internal/system/log"
 	"github.com/asgardeo/thunder/tests/mocks/crypto/pki/pkimock"
 )
 
@@ -123,6 +125,7 @@ func (suite *JWTServiceTestSuite) SetupTest() {
 		signAlg:    sign.RSASHA256,
 		jwsAlg:     RS256,
 		kid:        "test-kid",
+		logger:     log.GetLogger().With(log.String(log.LoggerKeyComponentName, "JWTService")),
 	}
 
 	testConfig := &config.Config{
@@ -208,7 +211,7 @@ func (suite *JWTServiceTestSuite) TestInitScenarios() {
 				return suite.testKeyPath, suite.testPrivateKey
 			},
 			expectSuccess:  false,
-			expectedErrMsg: "test error",
+			expectedErrMsg: "failed to retrieve private key",
 		},
 	}
 
@@ -220,7 +223,8 @@ func (suite *JWTServiceTestSuite) TestInitScenarios() {
 			pkiMock := pkimock.NewPKIServiceInterfaceMock(t)
 
 			if tc.name == "PrivateKeyRetrievalError" {
-				pkiMock.EXPECT().GetPrivateKey(mock.Anything).Return(nil, fmt.Errorf("test error"))
+				testErr := serviceerror.CustomServiceError(serviceerror.InternalServerError, "test error")
+				pkiMock.EXPECT().GetPrivateKey(mock.Anything).Return(nil, testErr)
 			} else {
 				pkiMock.EXPECT().GetPrivateKey(mock.Anything).Return(privateKey, nil)
 				pkiMock.EXPECT().GetCertThumbprint(mock.Anything).Return("test-kid")
@@ -296,7 +300,7 @@ func (suite *JWTServiceTestSuite) TestGenerateJWTScenarios() {
 		setupMock          func() func() // Returns cleanup function
 		setupService       func() *jwtService
 		expectError        bool
-		errorContains      string
+		errorCode          string
 		validateSuccess    func(t *testing.T, token string, iat int64)
 		useDefaultValidity bool
 	}{
@@ -394,10 +398,11 @@ func (suite *JWTServiceTestSuite) TestGenerateJWTScenarios() {
 			setupService: func() *jwtService {
 				return &jwtService{
 					privateKey: nil,
+					logger:     log.GetLogger().With(log.String(log.LoggerKeyComponentName, "JWTService")),
 				}
 			},
-			expectError:   true,
-			errorContains: "private key not loaded",
+			expectError: true,
+			errorCode:   "SSE-5000",
 		},
 		{
 			name:     "WithEmptyClaims",
@@ -427,9 +432,133 @@ func (suite *JWTServiceTestSuite) TestGenerateJWTScenarios() {
 			setupService: func() *jwtService {
 				return &jwtService{
 					privateKey: &rsa.PrivateKey{}, // Invalid private key
+					logger:     log.GetLogger().With(log.String(log.LoggerKeyComponentName, "JWTService")),
 				}
 			},
 			expectError: true,
+		},
+		{
+			name:     "LongValidityPeriod",
+			sub:      "test-subject",
+			aud:      testAudience,
+			iss:      testIssuer,
+			validity: 86400, // 24 hours
+			claims:   map[string]interface{}{},
+			setupMock: func() func() {
+				return func() {}
+			},
+			setupService: func() *jwtService {
+				return suite.jwtService
+			},
+			expectError: false,
+			validateSuccess: func(t *testing.T, token string, iat int64) {
+				parts := strings.Split(token, ".")
+				payloadBytes, err := base64.RawURLEncoding.DecodeString(parts[1])
+				assert.NoError(t, err)
+
+				var payload map[string]interface{}
+				err = json.Unmarshal(payloadBytes, &payload)
+				assert.NoError(t, err)
+
+				exp := int64(payload["exp"].(float64))
+				assert.True(t, exp-iat >= 86400-5) // Allow 5 second tolerance
+			},
+		},
+		{
+			name:     "ComplexClaims",
+			sub:      "test-subject",
+			aud:      testAudience,
+			iss:      testIssuer,
+			validity: 3600,
+			claims: map[string]interface{}{
+				"roles":  []string{"admin", "user"},
+				"nested": map[string]interface{}{"key": "value"},
+				"number": 42,
+				"bool":   true,
+			},
+			setupMock: func() func() {
+				return func() {}
+			},
+			setupService: func() *jwtService {
+				return suite.jwtService
+			},
+			expectError: false,
+			validateSuccess: func(t *testing.T, token string, iat int64) {
+				parts := strings.Split(token, ".")
+				payloadBytes, err := base64.RawURLEncoding.DecodeString(parts[1])
+				assert.NoError(t, err)
+
+				var payload map[string]interface{}
+				err = json.Unmarshal(payloadBytes, &payload)
+				assert.NoError(t, err)
+
+				roles := payload["roles"].([]interface{})
+				assert.Len(t, roles, 2)
+				assert.Equal(t, "admin", roles[0])
+				assert.Equal(t, "user", roles[1])
+
+				nested := payload["nested"].(map[string]interface{})
+				assert.Equal(t, "value", nested["key"])
+
+				assert.Equal(t, float64(42), payload["number"])
+				assert.Equal(t, true, payload["bool"])
+			},
+		},
+		{
+			name:     "EmptySubject",
+			sub:      "",
+			aud:      testAudience,
+			iss:      testIssuer,
+			validity: 3600,
+			claims:   nil,
+			setupMock: func() func() {
+				return func() {}
+			},
+			setupService: func() *jwtService {
+				return suite.jwtService
+			},
+			expectError: false,
+			validateSuccess: func(t *testing.T, token string, iat int64) {
+				parts := strings.Split(token, ".")
+				payloadBytes, err := base64.RawURLEncoding.DecodeString(parts[1])
+				assert.NoError(t, err)
+
+				var payload map[string]interface{}
+				err = json.Unmarshal(payloadBytes, &payload)
+				assert.NoError(t, err)
+
+				assert.Equal(t, "", payload["sub"])
+			},
+		},
+		{
+			name:     "SpecialCharactersInClaims",
+			sub:      "test-subject",
+			aud:      testAudience,
+			iss:      testIssuer,
+			validity: 3600,
+			claims: map[string]interface{}{
+				"email": "test+special@example.com",
+				"name":  "Test User / Admin",
+			},
+			setupMock: func() func() {
+				return func() {}
+			},
+			setupService: func() *jwtService {
+				return suite.jwtService
+			},
+			expectError: false,
+			validateSuccess: func(t *testing.T, token string, iat int64) {
+				parts := strings.Split(token, ".")
+				payloadBytes, err := base64.RawURLEncoding.DecodeString(parts[1])
+				assert.NoError(t, err)
+
+				var payload map[string]interface{}
+				err = json.Unmarshal(payloadBytes, &payload)
+				assert.NoError(t, err)
+
+				assert.Equal(t, "test+special@example.com", payload["email"])
+				assert.Equal(t, "Test User / Admin", payload["name"])
+			},
 		},
 	}
 
@@ -443,16 +572,16 @@ func (suite *JWTServiceTestSuite) TestGenerateJWTScenarios() {
 			token, iat, err := jwtService.GenerateJWT(tc.sub, tc.aud, tc.iss, tc.validity, tc.claims)
 
 			if tc.expectError {
-				assert.Error(t, err)
-				if tc.errorContains != "" {
-					assert.Contains(t, err.Error(), tc.errorContains)
+				assert.NotNil(t, err)
+				if tc.errorCode != "" {
+					assert.Equal(t, tc.errorCode, err.Code)
 				}
 				assert.Empty(t, token)
 				assert.Equal(t, int64(0), iat)
 				return
 			}
 
-			assert.NoError(t, err)
+			assert.Nil(t, err)
 			assert.NotEmpty(t, token)
 			assert.True(t, iat > 0)
 
@@ -484,7 +613,7 @@ func (suite *JWTServiceTestSuite) TestVerifyJWT() {
 		name          string
 		setupFunc     func() (string, string, string)
 		expectError   bool
-		errorContains string
+		expectedError serviceerror.ServiceError
 	}{
 		{
 			name: "ValidJWT",
@@ -523,7 +652,7 @@ func (suite *JWTServiceTestSuite) TestVerifyJWT() {
 				return suite.createMalformedJWT(), testAud, testIss
 			},
 			expectError:   true,
-			errorContains: "invalid JWT token format",
+			expectedError: ErrorInvalidTokenSignature,
 		},
 		{
 			name: "InvalidSignature",
@@ -536,7 +665,7 @@ func (suite *JWTServiceTestSuite) TestVerifyJWT() {
 				return token, testAud, testIss
 			},
 			expectError:   true,
-			errorContains: "invalid token signature",
+			expectedError: ErrorInvalidTokenSignature,
 		},
 		{
 			name: "ExpiredToken",
@@ -549,7 +678,7 @@ func (suite *JWTServiceTestSuite) TestVerifyJWT() {
 				return token, aud, iss
 			},
 			expectError:   true,
-			errorContains: "token has expired",
+			expectedError: ErrorTokenExpired,
 		},
 		{
 			name: "TokenNotValidYet",
@@ -562,7 +691,7 @@ func (suite *JWTServiceTestSuite) TestVerifyJWT() {
 				return token, aud, iss
 			},
 			expectError:   true,
-			errorContains: "token not valid yet (nbf)",
+			expectedError: ErrorInvalidJWTFormat,
 		},
 		{
 			name: "InvalidAudience",
@@ -574,7 +703,7 @@ func (suite *JWTServiceTestSuite) TestVerifyJWT() {
 				return token, expectedAudience, iss
 			},
 			expectError:   true,
-			errorContains: "invalid audience",
+			expectedError: ErrorInvalidJWTFormat,
 		},
 		{
 			name: "InvalidIssuer",
@@ -586,7 +715,7 @@ func (suite *JWTServiceTestSuite) TestVerifyJWT() {
 				return token, aud, expectedIssuer
 			},
 			expectError:   true,
-			errorContains: "invalid issuer",
+			expectedError: ErrorInvalidJWTFormat,
 		},
 		{
 			name: "PublicKeyNotAvailable",
@@ -596,7 +725,54 @@ func (suite *JWTServiceTestSuite) TestVerifyJWT() {
 				return token, testAudience, testIssuer
 			},
 			expectError:   true,
-			errorContains: "private key not loaded",
+			expectedError: serviceerror.InternalServerError,
+		},
+		{
+			name: "BothAudienceAndIssuerEmpty",
+			setupFunc: func() (string, string, string) {
+				token := suite.createBasicJWT("any-aud", "any-iss",
+					time.Now().Add(time.Hour).Unix(), time.Now().Unix())
+				return token, "", ""
+			},
+			expectError: false,
+		},
+		{
+			name: "TokenExpiringInOneSecond",
+			setupFunc: func() (string, string, string) {
+				aud := testAudience
+				iss := testIssuer
+				token := suite.createBasicJWT(aud, iss,
+					time.Now().Add(time.Second).Unix(), time.Now().Unix())
+				return token, aud, iss
+			},
+			expectError: false,
+		},
+		{
+			name: "TokenValidFromOneSecondAgo",
+			setupFunc: func() (string, string, string) {
+				aud := testAudience
+				iss := testIssuer
+				token := suite.createBasicJWT(aud, iss,
+					time.Now().Add(time.Hour).Unix(), time.Now().Add(-time.Second).Unix())
+				return token, aud, iss
+			},
+			expectError: false,
+		},
+		{
+			name: "EmptyToken",
+			setupFunc: func() (string, string, string) {
+				return "", testAudience, testIssuer
+			},
+			expectError:   true,
+			expectedError: ErrorInvalidTokenSignature,
+		},
+		{
+			name: "TokenWithOnlyTwoParts",
+			setupFunc: func() (string, string, string) {
+				return "header.payload", testAudience, testIssuer
+			},
+			expectError:   true,
+			expectedError: ErrorInvalidTokenSignature,
 		},
 	}
 
@@ -608,18 +784,17 @@ func (suite *JWTServiceTestSuite) TestVerifyJWT() {
 			if tc.name == "PublicKeyNotAvailable" {
 				jwtSvc = &jwtService{
 					privateKey: nil,
+					logger:     log.GetLogger().With(log.String(log.LoggerKeyComponentName, "JWTService")),
 				}
 			}
 
 			err := jwtSvc.VerifyJWT(token, expectedAud, expectedIss)
 
 			if tc.expectError {
-				assert.Error(t, err)
-				if tc.errorContains != "" {
-					assert.Contains(t, err.Error(), tc.errorContains)
-				}
+				assert.NotNil(t, err)
+				assert.Equal(t, tc.expectedError, *err)
 			} else {
-				assert.NoError(t, err)
+				assert.Nil(t, err)
 			}
 		})
 	}
@@ -630,7 +805,7 @@ func (suite *JWTServiceTestSuite) TestVerifyJWTWithPublicKey() {
 		name          string
 		setupFunc     func() (string, crypto.PublicKey, string, string)
 		expectError   bool
-		errorContains string
+		expectedError serviceerror.ServiceError
 	}{
 		{
 			name: "ValidJWT",
@@ -669,7 +844,7 @@ func (suite *JWTServiceTestSuite) TestVerifyJWTWithPublicKey() {
 				return suite.createMalformedJWT(), &suite.testPrivateKey.PublicKey, testAud, testIss
 			},
 			expectError:   true,
-			errorContains: "invalid JWT token format",
+			expectedError: ErrorInvalidJWTFormat,
 		},
 		{
 			name: "InvalidSignature",
@@ -682,7 +857,7 @@ func (suite *JWTServiceTestSuite) TestVerifyJWTWithPublicKey() {
 				return token, &suite.testPrivateKey.PublicKey, testAud, testIss
 			},
 			expectError:   true,
-			errorContains: "invalid token signature",
+			expectedError: ErrorInvalidTokenSignature,
 		},
 		{
 			name: "ExpiredToken",
@@ -695,7 +870,7 @@ func (suite *JWTServiceTestSuite) TestVerifyJWTWithPublicKey() {
 				return token, &suite.testPrivateKey.PublicKey, aud, iss
 			},
 			expectError:   true,
-			errorContains: "token has expired",
+			expectedError: ErrorTokenExpired,
 		},
 		{
 			name: "TokenNotValidYet",
@@ -708,7 +883,7 @@ func (suite *JWTServiceTestSuite) TestVerifyJWTWithPublicKey() {
 				return token, &suite.testPrivateKey.PublicKey, aud, iss
 			},
 			expectError:   true,
-			errorContains: "token not valid yet (nbf)",
+			expectedError: ErrorInvalidJWTFormat,
 		},
 		{
 			name: "InvalidAudience",
@@ -720,7 +895,7 @@ func (suite *JWTServiceTestSuite) TestVerifyJWTWithPublicKey() {
 				return token, &suite.testPrivateKey.PublicKey, "expected-audience", iss
 			},
 			expectError:   true,
-			errorContains: "invalid audience",
+			expectedError: ErrorInvalidJWTFormat,
 		},
 		{
 			name: "InvalidIssuer",
@@ -732,7 +907,7 @@ func (suite *JWTServiceTestSuite) TestVerifyJWTWithPublicKey() {
 				return token, &suite.testPrivateKey.PublicKey, aud, "expected-issuer"
 			},
 			expectError:   true,
-			errorContains: "invalid issuer",
+			expectedError: ErrorInvalidJWTFormat,
 		},
 	}
 
@@ -743,12 +918,10 @@ func (suite *JWTServiceTestSuite) TestVerifyJWTWithPublicKey() {
 			err := suite.jwtService.VerifyJWTWithPublicKey(token, pubKey, expectedAud, expectedIss)
 
 			if tc.expectError {
-				assert.Error(t, err)
-				if tc.errorContains != "" {
-					assert.Contains(t, err.Error(), tc.errorContains)
-				}
+				assert.NotNil(t, err)
+				assert.Equal(t, tc.expectedError, *err)
 			} else {
-				assert.NoError(t, err)
+				assert.Nil(t, err)
 			}
 		})
 	}
@@ -759,7 +932,7 @@ func (suite *JWTServiceTestSuite) TestVerifyJWTWithJWKS() {
 		name          string
 		setupFunc     func() (string, string, string, string)
 		expectError   bool
-		errorContains string
+		expectedError serviceerror.ServiceError
 	}{
 		{
 			name: "ValidJWTWithJWKS",
@@ -798,7 +971,7 @@ func (suite *JWTServiceTestSuite) TestVerifyJWTWithJWKS() {
 				return suite.createMalformedJWT(), mockServer.URL, testAud, testIss
 			},
 			expectError:   true,
-			errorContains: "invalid JWT token format",
+			expectedError: ErrorInvalidJWTFormat,
 		},
 		{
 			name: "InvalidSignatureWithJWKS",
@@ -818,7 +991,7 @@ func (suite *JWTServiceTestSuite) TestVerifyJWTWithJWKS() {
 				return token, mockServer.URL, testAud, testIss
 			},
 			expectError:   true,
-			errorContains: "invalid token signature",
+			expectedError: ErrorInvalidTokenSignature,
 		},
 		{
 			name: "ExpiredTokenWithJWKS",
@@ -835,7 +1008,7 @@ func (suite *JWTServiceTestSuite) TestVerifyJWTWithJWKS() {
 				return token, mockServer.URL, aud, iss
 			},
 			expectError:   true,
-			errorContains: "token has expired",
+			expectedError: ErrorTokenExpired,
 		},
 		{
 			name: "TokenNotValidYetWithJWKS",
@@ -852,7 +1025,7 @@ func (suite *JWTServiceTestSuite) TestVerifyJWTWithJWKS() {
 				return token, mockServer.URL, aud, iss
 			},
 			expectError:   true,
-			errorContains: "token not valid yet (nbf)",
+			expectedError: ErrorInvalidJWTFormat,
 		},
 		{
 			name: "InvalidAudienceWithJWKS",
@@ -868,7 +1041,7 @@ func (suite *JWTServiceTestSuite) TestVerifyJWTWithJWKS() {
 				return token, mockServer.URL, "expected-audience", iss
 			},
 			expectError:   true,
-			errorContains: "invalid audience",
+			expectedError: ErrorInvalidJWTFormat,
 		},
 		{
 			name: "InvalidIssuerWithJWKS",
@@ -884,7 +1057,7 @@ func (suite *JWTServiceTestSuite) TestVerifyJWTWithJWKS() {
 				return token, mockServer.URL, aud, "expected-issuer"
 			},
 			expectError:   true,
-			errorContains: "invalid issuer",
+			expectedError: ErrorInvalidJWTFormat,
 		},
 		{
 			name: "JWKSNetworkError",
@@ -895,7 +1068,7 @@ func (suite *JWTServiceTestSuite) TestVerifyJWTWithJWKS() {
 				return token, "http://localhost:99999/invalid", testAud, testIss
 			},
 			expectError:   true,
-			errorContains: "invalid token signature",
+			expectedError: ErrorInvalidTokenSignature,
 		},
 		{
 			name: "JWKSHTTPError",
@@ -912,7 +1085,7 @@ func (suite *JWTServiceTestSuite) TestVerifyJWTWithJWKS() {
 				return token, errorServer.URL, testAud, testIss
 			},
 			expectError:   true,
-			errorContains: "invalid token signature",
+			expectedError: ErrorInvalidTokenSignature,
 		},
 	}
 
@@ -923,12 +1096,10 @@ func (suite *JWTServiceTestSuite) TestVerifyJWTWithJWKS() {
 			err := suite.jwtService.VerifyJWTWithJWKS(token, jwksURL, expectedAud, expectedIss)
 
 			if tc.expectError {
-				assert.Error(t, err)
-				if tc.errorContains != "" {
-					assert.Contains(t, err.Error(), tc.errorContains)
-				}
+				assert.NotNil(t, err)
+				assert.Equal(t, tc.expectedError, *err)
 			} else {
-				assert.NoError(t, err)
+				assert.Nil(t, err)
 			}
 		})
 	}
@@ -941,7 +1112,7 @@ func (suite *JWTServiceTestSuite) TestVerifyJWTClaimsEdgeCases() {
 		expectedAud   string
 		expectedIss   string
 		expectError   bool
-		errorContains string
+		expectedError serviceerror.ServiceError
 	}{
 		{
 			name: "MissingExpClaim",
@@ -976,7 +1147,7 @@ func (suite *JWTServiceTestSuite) TestVerifyJWTClaimsEdgeCases() {
 			expectedAud:   testAudience,
 			expectedIss:   testIssuer,
 			expectError:   true,
-			errorContains: "missing or invalid 'exp' claim",
+			expectedError: ErrorInvalidJWTFormat,
 		},
 		{
 			name: "MissingNbfClaim",
@@ -1011,7 +1182,7 @@ func (suite *JWTServiceTestSuite) TestVerifyJWTClaimsEdgeCases() {
 			expectedAud:   testAudience,
 			expectedIss:   testIssuer,
 			expectError:   true,
-			errorContains: "missing or invalid 'nbf' claim",
+			expectedError: ErrorInvalidJWTFormat,
 		},
 		{
 			name: "MissingAudClaim",
@@ -1029,7 +1200,7 @@ func (suite *JWTServiceTestSuite) TestVerifyJWTClaimsEdgeCases() {
 			expectedAud:   testAudience,
 			expectedIss:   testIssuer,
 			expectError:   true,
-			errorContains: "missing or invalid 'aud' claim",
+			expectedError: ErrorInvalidJWTFormat,
 		},
 		{
 			name: "MissingIssClaim",
@@ -1047,7 +1218,7 @@ func (suite *JWTServiceTestSuite) TestVerifyJWTClaimsEdgeCases() {
 			expectedAud:   testAudience,
 			expectedIss:   testIssuer,
 			expectError:   true,
-			errorContains: "missing or invalid 'iss' claim",
+			expectedError: ErrorInvalidJWTFormat,
 		},
 		{
 			name: "InvalidExpClaimType",
@@ -1082,7 +1253,7 @@ func (suite *JWTServiceTestSuite) TestVerifyJWTClaimsEdgeCases() {
 			expectedAud:   testAudience,
 			expectedIss:   testIssuer,
 			expectError:   true,
-			errorContains: "missing or invalid 'exp' claim",
+			expectedError: ErrorInvalidJWTFormat,
 		},
 		{
 			name: "InvalidNbfClaimType",
@@ -1117,7 +1288,7 @@ func (suite *JWTServiceTestSuite) TestVerifyJWTClaimsEdgeCases() {
 			expectedAud:   testAudience,
 			expectedIss:   testIssuer,
 			expectError:   true,
-			errorContains: "missing or invalid 'nbf' claim",
+			expectedError: ErrorInvalidJWTFormat,
 		},
 		{
 			name: "InvalidAudClaimType",
@@ -1135,7 +1306,7 @@ func (suite *JWTServiceTestSuite) TestVerifyJWTClaimsEdgeCases() {
 			expectedAud:   testAudience,
 			expectedIss:   testIssuer,
 			expectError:   true,
-			errorContains: "missing or invalid 'aud' claim",
+			expectedError: ErrorInvalidJWTFormat,
 		},
 		{
 			name: "InvalidIssClaimType",
@@ -1153,7 +1324,7 @@ func (suite *JWTServiceTestSuite) TestVerifyJWTClaimsEdgeCases() {
 			expectedAud:   testAudience,
 			expectedIss:   testIssuer,
 			expectError:   true,
-			errorContains: "missing or invalid 'iss' claim",
+			expectedError: ErrorInvalidJWTFormat,
 		},
 	}
 
@@ -1165,12 +1336,10 @@ func (suite *JWTServiceTestSuite) TestVerifyJWTClaimsEdgeCases() {
 			err := suite.jwtService.VerifyJWTWithPublicKey(token, publicKey, tc.expectedAud, tc.expectedIss)
 
 			if tc.expectError {
-				assert.Error(t, err)
-				if tc.errorContains != "" {
-					assert.Contains(t, err.Error(), tc.errorContains)
-				}
+				assert.NotNil(t, err)
+				assert.Equal(t, tc.expectedError, *err)
 			} else {
-				assert.NoError(t, err)
+				assert.Nil(t, err)
 			}
 		})
 	}
@@ -1186,7 +1355,7 @@ func (suite *JWTServiceTestSuite) TestVerifyJWTSignature() {
 			name: "ValidToken",
 			setupFunc: func() string {
 				token, _, err := suite.jwtService.GenerateJWT("test-subject", testAudience, testIssuer, 3600, nil)
-				assert.NoError(suite.T(), err)
+				assert.Nil(suite.T(), err)
 				return token
 			},
 			expectError: false,
@@ -1214,7 +1383,7 @@ func (suite *JWTServiceTestSuite) TestVerifyJWTSignature() {
 			name: "PublicKeyNotAvailable",
 			setupFunc: func() string {
 				token, _, err := suite.jwtService.GenerateJWT("test-subject", testAudience, testIssuer, 3600, nil)
-				assert.NoError(suite.T(), err)
+				assert.Nil(suite.T(), err)
 				return token
 			},
 			expectError: true,
@@ -1234,9 +1403,9 @@ func (suite *JWTServiceTestSuite) TestVerifyJWTSignature() {
 
 			err := jwtSvc.VerifyJWTSignature(token)
 			if tc.expectError {
-				assert.Error(t, err)
+				assert.NotNil(t, err)
 			} else {
-				assert.NoError(t, err)
+				assert.Nil(t, err)
 			}
 		})
 	}
@@ -1244,7 +1413,7 @@ func (suite *JWTServiceTestSuite) TestVerifyJWTSignature() {
 
 func (suite *JWTServiceTestSuite) TestVerifyJWTSignatureWithPublicKey() {
 	validToken, _, err := suite.jwtService.GenerateJWT("test-subject", testAudience, testIssuer, 3600, nil)
-	assert.NoError(suite.T(), err)
+	assert.Nil(suite.T(), err)
 
 	wrongKey, _ := rsa.GenerateKey(rand.Reader, 2048)
 
@@ -1271,9 +1440,9 @@ func (suite *JWTServiceTestSuite) TestVerifyJWTSignatureWithPublicKey() {
 		suite.T().Run(tc.name, func(t *testing.T) {
 			err := suite.jwtService.VerifyJWTSignatureWithPublicKey(tc.token, tc.publicKey)
 			if tc.expectError {
-				assert.Error(t, err)
+				assert.NotNil(t, err)
 			} else {
-				assert.NoError(t, err)
+				assert.Nil(t, err)
 			}
 		})
 	}
@@ -1281,13 +1450,13 @@ func (suite *JWTServiceTestSuite) TestVerifyJWTSignatureWithPublicKey() {
 
 func (suite *JWTServiceTestSuite) TestVerifyJWTSignatureWithJWKS() {
 	token, _, err := suite.jwtService.GenerateJWT("test-subject", testAudience, testIssuer, 3600, nil)
-	assert.NoError(suite.T(), err)
+	assert.Nil(suite.T(), err)
 
 	testServer := suite.mockJWKSServer()
 	defer testServer.Close()
 
 	err = suite.jwtService.VerifyJWTSignatureWithJWKS(token, testServer.URL)
-	assert.NoError(suite.T(), err)
+	assert.Nil(suite.T(), err)
 }
 
 func (suite *JWTServiceTestSuite) TestVerifyJWTSignatureWithJWKSInvalidToken() {
@@ -1307,7 +1476,7 @@ func (suite *JWTServiceTestSuite) TestVerifyJWTSignatureWithJWKSInvalidToken() {
 	for _, tc := range testCases {
 		suite.T().Run(tc.name, func(t *testing.T) {
 			err := suite.jwtService.VerifyJWTSignatureWithJWKS(tc.token, testServer.URL)
-			assert.Error(t, err)
+			assert.NotNil(t, err)
 		})
 	}
 }
@@ -1323,8 +1492,8 @@ func (suite *JWTServiceTestSuite) TestVerifyJWTSignatureWithJWKSKeyIDNotFound() 
 	})
 
 	err := suite.jwtService.VerifyJWTSignatureWithJWKS(nonExistentKidJWT, testServer.URL)
-	assert.Error(suite.T(), err)
-	assert.Contains(suite.T(), err.Error(), "no matching key found")
+	assert.NotNil(suite.T(), err)
+	assert.Equal(suite.T(), ErrorNoMatchingJWKFound, *err)
 }
 
 func (suite *JWTServiceTestSuite) TestVerifyJWTSignatureWithJWKSNoKeyID() {
@@ -1338,8 +1507,8 @@ func (suite *JWTServiceTestSuite) TestVerifyJWTSignatureWithJWKSNoKeyID() {
 	})
 
 	err := suite.jwtService.VerifyJWTSignatureWithJWKS(noKidJWT, testServer.URL)
-	assert.Error(suite.T(), err)
-	assert.Contains(suite.T(), err.Error(), "missing 'kid' claim")
+	assert.NotNil(suite.T(), err)
+	assert.Equal(suite.T(), ErrorDecodingJWTHeader, *err)
 }
 
 func (suite *JWTServiceTestSuite) TestVerifyJWTSignatureWithJWKSHTTPErrors() {
@@ -1347,7 +1516,7 @@ func (suite *JWTServiceTestSuite) TestVerifyJWTSignatureWithJWKSHTTPErrors() {
 		name          string
 		setupServer   func() *httptest.Server
 		setupToken    func() string
-		expectedError string
+		expectedError serviceerror.ServiceError
 	}{
 		{
 			name: "HTTPError404",
@@ -1360,7 +1529,7 @@ func (suite *JWTServiceTestSuite) TestVerifyJWTSignatureWithJWKSHTTPErrors() {
 				token, _, _ := suite.jwtService.GenerateJWT("test-subject", testAudience, testIssuer, 3600, nil)
 				return token
 			},
-			expectedError: "failed to fetch JWKS, status code: 404",
+			expectedError: ErrorFailedToGetJWKS,
 		},
 		{
 			name: "InvalidJSONResponse",
@@ -1377,7 +1546,7 @@ func (suite *JWTServiceTestSuite) TestVerifyJWTSignatureWithJWKSHTTPErrors() {
 				token, _, _ := suite.jwtService.GenerateJWT("test-subject", testAudience, testIssuer, 3600, nil)
 				return token
 			},
-			expectedError: "failed to parse JWKS",
+			expectedError: ErrorFailedToParseJWKS,
 		},
 		{
 			name: "JWKSWithoutMatchingKid",
@@ -1406,7 +1575,7 @@ func (suite *JWTServiceTestSuite) TestVerifyJWTSignatureWithJWKSHTTPErrors() {
 				token, _, _ := suite.jwtService.GenerateJWT("test-subject", testAudience, testIssuer, 3600, nil)
 				return token
 			},
-			expectedError: "no matching key found",
+			expectedError: ErrorNoMatchingJWKFound,
 		},
 		{
 			name: "InvalidJWKFormat",
@@ -1434,7 +1603,7 @@ func (suite *JWTServiceTestSuite) TestVerifyJWTSignatureWithJWKSHTTPErrors() {
 				token, _, _ := suite.jwtService.GenerateJWT("test-subject", testAudience, testIssuer, 3600, nil)
 				return token
 			},
-			expectedError: "failed to convert JWK to public key",
+			expectedError: ErrorFailedToParseJWKS,
 		},
 		{
 			name: "InvalidTokenSignature",
@@ -1453,7 +1622,7 @@ func (suite *JWTServiceTestSuite) TestVerifyJWTSignatureWithJWKSHTTPErrors() {
 				parts[2] = "invalid-signature"
 				return strings.Join(parts, ".")
 			},
-			expectedError: "invalid token signature",
+			expectedError: ErrorInvalidTokenSignature,
 		},
 	}
 
@@ -1465,8 +1634,8 @@ func (suite *JWTServiceTestSuite) TestVerifyJWTSignatureWithJWKSHTTPErrors() {
 			token := tc.setupToken()
 
 			err := suite.jwtService.VerifyJWTSignatureWithJWKS(token, testServer.URL)
-			assert.Error(t, err)
-			assert.Contains(t, err.Error(), tc.expectedError)
+			assert.NotNil(t, err)
+			assert.Equal(t, tc.expectedError, *err)
 		})
 	}
 }
@@ -1474,11 +1643,11 @@ func (suite *JWTServiceTestSuite) TestVerifyJWTSignatureWithJWKSHTTPErrors() {
 func (suite *JWTServiceTestSuite) TestVerifyJWTSignatureWithJWKSNetworkError() {
 	// Test with invalid URL to trigger network error
 	token, _, err := suite.jwtService.GenerateJWT("test-subject", testAudience, testIssuer, 3600, nil)
-	assert.NoError(suite.T(), err)
+	assert.Nil(suite.T(), err)
 
 	err = suite.jwtService.VerifyJWTSignatureWithJWKS(token, "http://localhost:99999/invalid")
-	assert.Error(suite.T(), err)
-	assert.Contains(suite.T(), err.Error(), "failed to fetch JWKS")
+	assert.NotNil(suite.T(), err)
+	assert.Equal(suite.T(), ErrorFailedToGetJWKS, *err)
 }
 
 // Helper method to create a JWT with a custom header
@@ -1708,8 +1877,8 @@ func (suite *JWTServiceTestSuite) TestInitWithECDSAKeys() {
 			assert.Equal(t, tc.expectedAlg, jwtSvc.jwsAlg)
 
 			// Test JWT generation with ECDSA key
-			token, _, err := service.GenerateJWT("test-subject", "test-aud", "test-iss", 3600, nil)
-			assert.NoError(t, err)
+			token, _, svcErr := service.GenerateJWT("test-subject", "test-aud", "test-iss", 3600, nil)
+			assert.Nil(t, svcErr)
 			assert.NotEmpty(t, token)
 
 			// Verify token header has correct alg
@@ -1718,8 +1887,8 @@ func (suite *JWTServiceTestSuite) TestInitWithECDSAKeys() {
 			assert.Equal(t, string(tc.expectedAlg), header["alg"])
 
 			// Verify signature
-			err = service.VerifyJWTSignature(token)
-			assert.NoError(t, err)
+			svcErr = service.VerifyJWTSignature(token)
+			assert.Nil(t, svcErr)
 		})
 	}
 }
@@ -1770,8 +1939,8 @@ func (suite *JWTServiceTestSuite) TestInitWithEd25519Key() {
 	assert.Equal(suite.T(), EdDSA, jwtSvc.jwsAlg)
 
 	// Test JWT generation with Ed25519 key
-	token, _, err := service.GenerateJWT("test-subject", "test-aud", "test-iss", 3600, nil)
-	assert.NoError(suite.T(), err)
+	token, _, svcErr := service.GenerateJWT("test-subject", "test-aud", "test-iss", 3600, nil)
+	assert.Nil(suite.T(), svcErr)
 	assert.NotEmpty(suite.T(), token)
 
 	// Verify token header has correct alg
@@ -1780,8 +1949,8 @@ func (suite *JWTServiceTestSuite) TestInitWithEd25519Key() {
 	assert.Equal(suite.T(), "EdDSA", header["alg"])
 
 	// Verify signature
-	err = service.VerifyJWTSignature(token)
-	assert.NoError(suite.T(), err)
+	svcErr = service.VerifyJWTSignature(token)
+	assert.Nil(suite.T(), svcErr)
 }
 
 func (suite *JWTServiceTestSuite) TestGetPublicKeyForAllKeyTypes() {
@@ -1907,11 +2076,12 @@ func (suite *JWTServiceTestSuite) TestInitWithUnsupportedECCurve() {
 	_, err = tempFile.Write(keyPEM)
 	assert.NoError(suite.T(), err)
 	pkiMock := pkimock.NewPKIServiceInterfaceMock(suite.T())
-	pkiMock.EXPECT().GetPrivateKey(mock.Anything).Return(nil, fmt.Errorf("unsupported EC curve"))
+	testErr := serviceerror.CustomServiceError(serviceerror.InternalServerError, "unsupported EC curve")
+	pkiMock.EXPECT().GetPrivateKey(mock.Anything).Return(nil, testErr)
 	_, err = Initialize(pkiMock)
 
 	assert.Error(suite.T(), err)
-	assert.Contains(suite.T(), err.Error(), "unsupported EC curve")
+	assert.Contains(suite.T(), err.Error(), "failed to retrieve private key")
 }
 
 func (suite *JWTServiceTestSuite) TestMapJWSAlgToSignAlg() {
@@ -2074,7 +2244,7 @@ func (suite *JWTServiceTestSuite) TestJWKToPublicKeyErrorCases() {
 	for _, tc := range testCases {
 		suite.T().Run(tc.name, func(t *testing.T) {
 			_, err := jwkToPublicKey(tc.jwk)
-			assert.Error(t, err)
+			assert.NotNil(t, err)
 			assert.Contains(t, err.Error(), tc.errorContains)
 		})
 	}
@@ -2124,7 +2294,7 @@ func (suite *JWTServiceTestSuite) TestVerifyJWTSignatureWithPublicKeyAlgorithmDe
 
 			// Generate token
 			token, _, err := jwtService.GenerateJWT("test-sub", "test-aud", "test-iss", 3600, nil)
-			assert.NoError(t, err)
+			assert.Nil(t, err)
 
 			// Get public key
 			pubKey := jwtService.GetPublicKey()
@@ -2133,9 +2303,9 @@ func (suite *JWTServiceTestSuite) TestVerifyJWTSignatureWithPublicKeyAlgorithmDe
 			// Verify with public key (should detect algorithm from header)
 			err = jwtService.VerifyJWTSignatureWithPublicKey(token, pubKey)
 			if tc.expectError {
-				assert.Error(t, err)
+				assert.NotNil(t, err)
 			} else {
-				assert.NoError(t, err)
+				assert.Nil(t, err)
 			}
 		})
 	}

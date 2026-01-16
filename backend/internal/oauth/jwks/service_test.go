@@ -31,6 +31,7 @@ import (
 	"github.com/stretchr/testify/suite"
 
 	"github.com/asgardeo/thunder/internal/system/config"
+	"github.com/asgardeo/thunder/internal/system/error/serviceerror"
 	"github.com/asgardeo/thunder/tests/mocks/crypto/pki/pkimock"
 )
 
@@ -100,14 +101,15 @@ func (suite *JWKSServiceTestSuite) TestGetJWKS_ECDSA_P256_Success() {
 
 func (suite *JWKSServiceTestSuite) TestGetJWKS_CertParseError() {
 	// Mock parse error
-	parseErr := assert.AnError
+	parseErr := serviceerror.CustomServiceError(serviceerror.InternalServerError, "parse error")
 	suite.pkiMock.EXPECT().GetX509Certificate("kid-1").Return(nil, parseErr)
 
 	resp, svcErr := suite.jwksService.GetJWKS()
 	assert.Nil(suite.T(), resp)
 	assert.NotNil(suite.T(), svcErr)
-	assert.Equal(suite.T(), ErrorWhileParsingCertificate.Code, svcErr.Code)
-	assert.Equal(suite.T(), parseErr.Error(), svcErr.ErrorDescription)
+	// The error is passed through from PKI service, so we expect the PKI error code
+	assert.Equal(suite.T(), parseErr.Code, svcErr.Code)
+	assert.Equal(suite.T(), parseErr.ErrorDescription, svcErr.ErrorDescription)
 }
 
 func (suite *JWKSServiceTestSuite) TestGetJWKS_KidNotFoundError() {

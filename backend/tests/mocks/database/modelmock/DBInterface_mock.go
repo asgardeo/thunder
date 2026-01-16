@@ -212,6 +212,52 @@ func (_c *DBInterfaceMock_Exec_Call) RunAndReturn(run func(query string, args ..
 	return _c
 }
 
+// GetSQLDB provides a mock function for the type DBInterfaceMock
+func (_mock *DBInterfaceMock) GetSQLDB() *sql.DB {
+	ret := _mock.Called()
+
+	if len(ret) == 0 {
+		panic("no return value specified for GetSQLDB")
+	}
+
+	var r0 *sql.DB
+	if returnFunc, ok := ret.Get(0).(func() *sql.DB); ok {
+		r0 = returnFunc()
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(*sql.DB)
+		}
+	}
+	return r0
+}
+
+// DBInterfaceMock_GetSQLDB_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'GetSQLDB'
+type DBInterfaceMock_GetSQLDB_Call struct {
+	*mock.Call
+}
+
+// GetSQLDB is a helper method to define mock.On call
+func (_e *DBInterfaceMock_Expecter) GetSQLDB() *DBInterfaceMock_GetSQLDB_Call {
+	return &DBInterfaceMock_GetSQLDB_Call{Call: _e.mock.On("GetSQLDB")}
+}
+
+func (_c *DBInterfaceMock_GetSQLDB_Call) Run(run func()) *DBInterfaceMock_GetSQLDB_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		run()
+	})
+	return _c
+}
+
+func (_c *DBInterfaceMock_GetSQLDB_Call) Return(dB *sql.DB) *DBInterfaceMock_GetSQLDB_Call {
+	_c.Call.Return(dB)
+	return _c
+}
+
+func (_c *DBInterfaceMock_GetSQLDB_Call) RunAndReturn(run func() *sql.DB) *DBInterfaceMock_GetSQLDB_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
 // Query provides a mock function for the type DBInterfaceMock
 func (_mock *DBInterfaceMock) Query(query string, args ...any) (*sql.Rows, error) {
 	var _ca []interface{}

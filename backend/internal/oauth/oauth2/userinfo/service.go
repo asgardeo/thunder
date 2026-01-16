@@ -114,7 +114,7 @@ func (s *userInfoService) GetUserInfo(accessToken string) (map[string]interface{
 func (s *userInfoService) validateAndDecodeToken(accessToken string) (
 	map[string]interface{}, *serviceerror.ServiceError) {
 	if err := s.jwtService.VerifyJWT(accessToken, "", ""); err != nil {
-		s.logger.Debug("Failed to verify access token", log.Error(err))
+		s.logger.Debug("Failed to verify access token", log.String("error", err.Error))
 		return nil, &errorInvalidAccessToken
 	}
 

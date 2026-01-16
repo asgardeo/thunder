@@ -711,3 +711,339 @@ func (suite *AuthenticationHandlerTestSuite) TestHandleStandardOAuthFinishReques
 
 	suite.Equal(http.StatusBadRequest, w.Code)
 }
+
+func (suite *AuthenticationHandlerTestSuite) TestHandlePasskeyRegisterStartRequestSuccess() {
+	regRequest := PasskeyRegisterStartRequestDTO{
+		UserID:           "user123",
+		RelyingPartyID:   "example.com",
+		RelyingPartyName: "Example Corp",
+		Attestation:      "direct",
+	}
+	regResponse := map[string]interface{}{
+		"publicKeyCredentialCreationOptions": map[string]interface{}{
+			"challenge": "base64-challenge",
+			"rp": map[string]interface{}{
+				"name": "Example Corp",
+				"id":   "example.com",
+			},
+			"user": map[string]interface{}{
+				"id":          "user123",
+				"name":        "testuser",
+				"displayName": "Test User",
+			},
+		},
+		"sessionToken": testSessionTkn,
+	}
+
+	suite.mockService.On("StartPasskeyRegistration",
+		regRequest.UserID,
+		regRequest.RelyingPartyID,
+		regRequest.RelyingPartyName,
+		regRequest.AuthenticatorSelection,
+		regRequest.Attestation).Return(regResponse, nil)
+
+	body, _ := json.Marshal(regRequest)
+	req := httptest.NewRequest(http.MethodPost, "/authenticate/passkey/register/start", bytes.NewReader(body))
+	w := httptest.NewRecorder()
+
+	suite.handler.HandlePasskeyRegisterStartRequest(w, req)
+
+	suite.Equal(http.StatusOK, w.Code)
+	var response map[string]interface{}
+	err := json.Unmarshal(w.Body.Bytes(), &response)
+	suite.NoError(err)
+	suite.Equal(testSessionTkn, response["sessionToken"])
+	suite.NotNil(response["publicKeyCredentialCreationOptions"])
+}
+
+func (suite *AuthenticationHandlerTestSuite) TestHandlePasskeyRegisterStartRequestInvalidJSON() {
+	req := httptest.NewRequest(http.MethodPost, "/authenticate/passkey/register/start",
+		bytes.NewReader([]byte("invalid-json")))
+	w := httptest.NewRecorder()
+
+	suite.handler.HandlePasskeyRegisterStartRequest(w, req)
+
+	suite.Equal(http.StatusBadRequest, w.Code)
+	var errResp apierror.ErrorResponse
+	err := json.Unmarshal(w.Body.Bytes(), &errResp)
+	suite.NoError(err)
+	suite.Equal(common.APIErrorInvalidRequestFormat.Code, errResp.Code)
+}
+
+func (suite *AuthenticationHandlerTestSuite) TestHandlePasskeyRegisterStartRequestServiceError() {
+	regRequest := PasskeyRegisterStartRequestDTO{
+		UserID:         "user123",
+		RelyingPartyID: "example.com",
+	}
+	serviceError := &common.ErrorUserNotFound
+
+	suite.mockService.On("StartPasskeyRegistration",
+		mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).
+		Return(nil, serviceError)
+
+	body, _ := json.Marshal(regRequest)
+	req := httptest.NewRequest(http.MethodPost, "/authenticate/passkey/register/start", bytes.NewReader(body))
+	w := httptest.NewRecorder()
+
+	suite.handler.HandlePasskeyRegisterStartRequest(w, req)
+
+	suite.Equal(http.StatusNotFound, w.Code)
+	var errResp apierror.ErrorResponse
+	err := json.Unmarshal(w.Body.Bytes(), &errResp)
+	suite.NoError(err)
+	suite.Equal(common.ErrorUserNotFound.Code, errResp.Code)
+}
+
+func (suite *AuthenticationHandlerTestSuite) TestHandlePasskeyRegisterFinishRequestSuccess() {
+	regRequest := PasskeyRegisterFinishRequestDTO{
+		PublicKeyCredential: PasskeyPublicKeyCredentialDTO{
+			ID:   "credential-id-123",
+			Type: "public-key",
+			Response: PasskeyCredentialResponseDTO{
+				ClientDataJSON:    "base64-client-data",
+				AttestationObject: "base64-attestation",
+			},
+		},
+		SessionToken:   testSessionTkn,
+		CredentialName: "My Passkey",
+	}
+	regResponse := map[string]interface{}{
+		"credentialId":   "credential-id-123",
+		"credentialName": "My Passkey",
+		"createdAt":      "2025-01-01T00:00:00Z",
+	}
+
+	suite.mockService.On("FinishPasskeyRegistration",
+		regRequest.PublicKeyCredential,
+		testSessionTkn,
+		"My Passkey").Return(regResponse, nil)
+
+	body, _ := json.Marshal(regRequest)
+	req := httptest.NewRequest(http.MethodPost, "/authenticate/passkey/register/finish", bytes.NewReader(body))
+	w := httptest.NewRecorder()
+
+	suite.handler.HandlePasskeyRegisterFinishRequest(w, req)
+
+	suite.Equal(http.StatusOK, w.Code)
+	var response map[string]interface{}
+	err := json.Unmarshal(w.Body.Bytes(), &response)
+	suite.NoError(err)
+	suite.Equal("credential-id-123", response["credentialId"])
+	suite.Equal("My Passkey", response["credentialName"])
+}
+
+func (suite *AuthenticationHandlerTestSuite) TestHandlePasskeyRegisterFinishRequestInvalidJSON() {
+	req := httptest.NewRequest(http.MethodPost, "/authenticate/passkey/register/finish",
+		bytes.NewReader([]byte("invalid-json")))
+	w := httptest.NewRecorder()
+
+	suite.handler.HandlePasskeyRegisterFinishRequest(w, req)
+
+	suite.Equal(http.StatusBadRequest, w.Code)
+	var errResp apierror.ErrorResponse
+	err := json.Unmarshal(w.Body.Bytes(), &errResp)
+	suite.NoError(err)
+	suite.Equal(common.APIErrorInvalidRequestFormat.Code, errResp.Code)
+}
+
+func (suite *AuthenticationHandlerTestSuite) TestHandlePasskeyRegisterFinishRequestServiceError() {
+	regRequest := PasskeyRegisterFinishRequestDTO{
+		PublicKeyCredential: PasskeyPublicKeyCredentialDTO{
+			ID:   "credential-id-123",
+			Type: "public-key",
+			Response: PasskeyCredentialResponseDTO{
+				ClientDataJSON:    "base64-client-data",
+				AttestationObject: "base64-attestation",
+			},
+		},
+		SessionToken: testSessionTkn,
+	}
+	serviceError := &serviceerror.ServiceError{
+		Type:             serviceerror.ClientErrorType,
+		Code:             "INVALID_ATTESTATION",
+		Error:            "Invalid attestation",
+		ErrorDescription: "Failed to verify attestation",
+	}
+
+	suite.mockService.On("FinishPasskeyRegistration",
+		mock.Anything, mock.Anything, mock.Anything).Return(nil, serviceError)
+
+	body, _ := json.Marshal(regRequest)
+	req := httptest.NewRequest(http.MethodPost, "/authenticate/passkey/register/finish", bytes.NewReader(body))
+	w := httptest.NewRecorder()
+
+	suite.handler.HandlePasskeyRegisterFinishRequest(w, req)
+
+	suite.Equal(http.StatusBadRequest, w.Code)
+	var errResp apierror.ErrorResponse
+	err := json.Unmarshal(w.Body.Bytes(), &errResp)
+	suite.NoError(err)
+	suite.Equal("INVALID_ATTESTATION", errResp.Code)
+}
+
+func (suite *AuthenticationHandlerTestSuite) TestHandlePasskeyStartRequestSuccess() {
+	authRequest := PasskeyStartRequestDTO{
+		UserID:         "user123",
+		RelyingPartyID: "example.com",
+	}
+	authResponse := map[string]interface{}{
+		"publicKeyCredentialRequestOptions": map[string]interface{}{
+			"challenge": "base64-challenge",
+			"rpId":      "example.com",
+			"allowCredentials": []map[string]interface{}{
+				{
+					"type": "public-key",
+					"id":   "credential-id-123",
+				},
+			},
+		},
+		"sessionToken": testSessionTkn,
+	}
+
+	suite.mockService.On("StartPasskeyAuthentication",
+		authRequest.UserID,
+		authRequest.RelyingPartyID).Return(authResponse, nil)
+
+	body, _ := json.Marshal(authRequest)
+	req := httptest.NewRequest(http.MethodPost, "/authenticate/passkey/start", bytes.NewReader(body))
+	w := httptest.NewRecorder()
+
+	suite.handler.HandlePasskeyStartRequest(w, req)
+
+	suite.Equal(http.StatusOK, w.Code)
+	var response map[string]interface{}
+	err := json.Unmarshal(w.Body.Bytes(), &response)
+	suite.NoError(err)
+	suite.Equal(testSessionTkn, response["sessionToken"])
+	suite.NotNil(response["publicKeyCredentialRequestOptions"])
+}
+
+func (suite *AuthenticationHandlerTestSuite) TestHandlePasskeyStartRequestInvalidJSON() {
+	req := httptest.NewRequest(http.MethodPost, "/authenticate/passkey/start",
+		bytes.NewReader([]byte("invalid-json")))
+	w := httptest.NewRecorder()
+
+	suite.handler.HandlePasskeyStartRequest(w, req)
+
+	suite.Equal(http.StatusBadRequest, w.Code)
+	var errResp apierror.ErrorResponse
+	err := json.Unmarshal(w.Body.Bytes(), &errResp)
+	suite.NoError(err)
+	suite.Equal(common.APIErrorInvalidRequestFormat.Code, errResp.Code)
+}
+
+func (suite *AuthenticationHandlerTestSuite) TestHandlePasskeyStartRequestServiceError() {
+	authRequest := PasskeyStartRequestDTO{
+		UserID:         "nonexistent",
+		RelyingPartyID: "example.com",
+	}
+	serviceError := &common.ErrorUserNotFound
+
+	suite.mockService.On("StartPasskeyAuthentication",
+		mock.Anything, mock.Anything).Return(nil, serviceError)
+
+	body, _ := json.Marshal(authRequest)
+	req := httptest.NewRequest(http.MethodPost, "/authenticate/passkey/start", bytes.NewReader(body))
+	w := httptest.NewRecorder()
+
+	suite.handler.HandlePasskeyStartRequest(w, req)
+
+	suite.Equal(http.StatusNotFound, w.Code)
+	var errResp apierror.ErrorResponse
+	err := json.Unmarshal(w.Body.Bytes(), &errResp)
+	suite.NoError(err)
+	suite.Equal(common.ErrorUserNotFound.Code, errResp.Code)
+}
+
+func (suite *AuthenticationHandlerTestSuite) TestHandlePasskeyFinishRequestSuccess() {
+	authRequest := PasskeyFinishRequestDTO{
+		PublicKeyCredential: PasskeyPublicKeyCredentialDTO{
+			ID:   "credential-id-123",
+			Type: "public-key",
+			Response: PasskeyCredentialResponseDTO{
+				ClientDataJSON:    "base64-client-data",
+				AuthenticatorData: "base64-auth-data",
+				Signature:         "base64-signature",
+			},
+		},
+		SessionToken:  testSessionTkn,
+		SkipAssertion: false,
+		Assertion:     "",
+	}
+	authResponse := &common.AuthenticationResponse{
+		ID:               "user123",
+		Type:             "person",
+		OrganizationUnit: "test-ou",
+		Assertion:        "jwt-token",
+	}
+
+	suite.mockService.On("FinishPasskeyAuthentication",
+		authRequest.PublicKeyCredential.ID,
+		authRequest.PublicKeyCredential.Type,
+		authRequest.PublicKeyCredential.Response,
+		testSessionTkn,
+		false,
+		"").Return(authResponse, nil)
+
+	body, _ := json.Marshal(authRequest)
+	req := httptest.NewRequest(http.MethodPost, "/authenticate/passkey/finish", bytes.NewReader(body))
+	w := httptest.NewRecorder()
+
+	suite.handler.HandlePasskeyFinishRequest(w, req)
+
+	suite.Equal(http.StatusOK, w.Code)
+	var response AuthenticationResponseDTO
+	err := json.Unmarshal(w.Body.Bytes(), &response)
+	suite.NoError(err)
+	suite.Equal(authResponse.ID, response.ID)
+	suite.Equal(authResponse.Assertion, response.Assertion)
+}
+
+func (suite *AuthenticationHandlerTestSuite) TestHandlePasskeyFinishRequestInvalidJSON() {
+	req := httptest.NewRequest(http.MethodPost, "/authenticate/passkey/finish",
+		bytes.NewReader([]byte("invalid-json")))
+	w := httptest.NewRecorder()
+
+	suite.handler.HandlePasskeyFinishRequest(w, req)
+
+	suite.Equal(http.StatusBadRequest, w.Code)
+	var errResp apierror.ErrorResponse
+	err := json.Unmarshal(w.Body.Bytes(), &errResp)
+	suite.NoError(err)
+	suite.Equal(common.APIErrorInvalidRequestFormat.Code, errResp.Code)
+}
+
+func (suite *AuthenticationHandlerTestSuite) TestHandlePasskeyFinishRequestServiceError() {
+	authRequest := PasskeyFinishRequestDTO{
+		PublicKeyCredential: PasskeyPublicKeyCredentialDTO{
+			ID:   "credential-id-123",
+			Type: "public-key",
+			Response: PasskeyCredentialResponseDTO{
+				ClientDataJSON: "base64-client-data",
+			},
+		},
+		SessionToken: testSessionTkn,
+	}
+	serviceError := &serviceerror.ServiceError{
+		Type:             serviceerror.ClientErrorType,
+		Code:             "INVALID_SIGNATURE",
+		Error:            "Invalid signature",
+		ErrorDescription: "Failed to verify signature",
+	}
+
+	suite.mockService.On("FinishPasskeyAuthentication",
+		mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).
+		Return(nil, serviceError)
+
+	body, _ := json.Marshal(authRequest)
+	req := httptest.NewRequest(http.MethodPost, "/authenticate/passkey/finish", bytes.NewReader(body))
+	w := httptest.NewRecorder()
+
+	suite.handler.HandlePasskeyFinishRequest(w, req)
+
+	suite.Equal(http.StatusBadRequest, w.Code)
+	var errResp apierror.ErrorResponse
+	err := json.Unmarshal(w.Body.Bytes(), &errResp)
+	suite.NoError(err)
+	suite.Equal("INVALID_SIGNATURE", errResp.Code)
+}

@@ -36,6 +36,8 @@ import (
 	"github.com/stretchr/testify/suite"
 
 	"github.com/asgardeo/thunder/internal/system/config"
+	"github.com/asgardeo/thunder/internal/system/error/serviceerror"
+	"github.com/asgardeo/thunder/internal/system/log"
 )
 
 type PKIServiceTestSuite struct {
@@ -116,41 +118,51 @@ func (suite *PKIServiceTestSuite) TestGetX509Certificate_Success() {
 		},
 	}}
 
-	parsed, err := pkiSvc.GetX509Certificate("id-1")
-	assert.NoError(suite.T(), err)
+	parsed, svcErr := pkiSvc.GetX509Certificate("id-1")
+	assert.Nil(suite.T(), svcErr)
 	assert.Equal(suite.T(), cert.Raw, parsed.Raw)
 }
 
 func (suite *PKIServiceTestSuite) TestGetX509Certificate_NoData() {
-	pkiSvc := &pkiService{certificates: map[string]PKI{
-		"id-1": {
-			Certificate: tls.Certificate{Certificate: [][]byte{}},
+	pkiSvc := &pkiService{
+		logger: log.GetLogger().With(log.String(log.LoggerKeyComponentName, "PKIService")),
+		certificates: map[string]PKI{
+			"id-1": {
+				Certificate: tls.Certificate{Certificate: [][]byte{}},
+			},
 		},
-	}}
+	}
 
-	parsed, err := pkiSvc.GetX509Certificate("id-1")
-	assert.Error(suite.T(), err)
+	parsed, svcErr := pkiSvc.GetX509Certificate("id-1")
+	assert.NotNil(suite.T(), svcErr)
 	assert.Nil(suite.T(), parsed)
-	assert.Contains(suite.T(), err.Error(), "no certificate data")
+	assert.Equal(suite.T(), &serviceerror.InternalServerError, svcErr)
 }
 
 func (suite *PKIServiceTestSuite) TestGetX509Certificate_ParseError() {
-	pkiSvc := &pkiService{certificates: map[string]PKI{
-		"id-1": {
-			Certificate: tls.Certificate{Certificate: [][]byte{[]byte("bad-cert-bytes")}},
+	pkiSvc := &pkiService{
+		logger: log.GetLogger().With(log.String(log.LoggerKeyComponentName, "PKIService")),
+		certificates: map[string]PKI{
+			"id-1": {
+				Certificate: tls.Certificate{Certificate: [][]byte{[]byte("bad-cert-bytes")}},
+			},
 		},
-	}}
+	}
 
-	parsed, err := pkiSvc.GetX509Certificate("id-1")
-	assert.Error(suite.T(), err)
+	parsed, svcErr := pkiSvc.GetX509Certificate("id-1")
+	assert.NotNil(suite.T(), svcErr)
 	assert.Nil(suite.T(), parsed)
+	assert.Equal(suite.T(), &serviceerror.InternalServerError, svcErr)
 }
 
 func (suite *PKIServiceTestSuite) TestGetX509Certificate_NotFound() {
-	pkiSvc := &pkiService{certificates: map[string]PKI{}}
-	parsed, err := pkiSvc.GetX509Certificate("missing")
-	assert.Error(suite.T(), err)
-	assert.Contains(suite.T(), err.Error(), "not found")
+	pkiSvc := &pkiService{
+		logger:       log.GetLogger().With(log.String(log.LoggerKeyComponentName, "PKIService")),
+		certificates: map[string]PKI{},
+	}
+	parsed, svcErr := pkiSvc.GetX509Certificate("missing")
+	assert.NotNil(suite.T(), svcErr)
+	assert.Equal(suite.T(), &serviceerror.InternalServerError, svcErr)
 	assert.Nil(suite.T(), parsed)
 }
 
@@ -250,8 +262,8 @@ func (suite *PKIServiceTestSuite) TestGetPrivateKey_Success() {
 	pkiService, err := Initialize()
 	assert.NoError(suite.T(), err)
 
-	privateKey, err := pkiService.GetPrivateKey("test-key")
-	assert.NoError(suite.T(), err)
+	privateKey, svcErr := pkiService.GetPrivateKey("test-key")
+	assert.Nil(suite.T(), svcErr)
 	assert.NotNil(suite.T(), privateKey)
 	assert.IsType(suite.T(), &rsa.PrivateKey{}, privateKey)
 }
@@ -274,10 +286,10 @@ func (suite *PKIServiceTestSuite) TestGetPrivateKey_NotFound() {
 	pkiService, err := Initialize()
 	assert.NoError(suite.T(), err)
 
-	privateKey, err := pkiService.GetPrivateKey("non-existent-key")
-	assert.Error(suite.T(), err)
+	privateKey, svcErr := pkiService.GetPrivateKey("non-existent-key")
+	assert.NotNil(suite.T(), svcErr)
+	assert.Equal(suite.T(), &serviceerror.InternalServerError, svcErr)
 	assert.Nil(suite.T(), privateKey)
-	assert.Contains(suite.T(), err.Error(), "not found")
 }
 
 func (suite *PKIServiceTestSuite) TestGetCertThumbprint_Success() {
@@ -389,8 +401,8 @@ func (suite *PKIServiceTestSuite) TestInitialize_WithECDSAKey() {
 	assert.NoError(suite.T(), err)
 	assert.NotNil(suite.T(), pkiService)
 
-	privKey, err := pkiService.GetPrivateKey("ec-key")
-	assert.NoError(suite.T(), err)
+	privKey, svcErr := pkiService.GetPrivateKey("ec-key")
+	assert.Nil(suite.T(), svcErr)
 	assert.IsType(suite.T(), &ecdsa.PrivateKey{}, privKey)
 }
 
@@ -476,8 +488,8 @@ func (suite *PKIServiceTestSuite) TestInitialize_WithEd25519Key() {
 	assert.NoError(suite.T(), err)
 	assert.NotNil(suite.T(), pkiService)
 
-	privKeyRetrieved, err := pkiService.GetPrivateKey("ed-key")
-	assert.NoError(suite.T(), err)
+	privKeyRetrieved, svcErr := pkiService.GetPrivateKey("ed-key")
+	assert.Nil(suite.T(), svcErr)
 	assert.IsType(suite.T(), ed25519.PrivateKey{}, privKeyRetrieved)
 
 	_ = pubKey // silence unused

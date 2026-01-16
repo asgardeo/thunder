@@ -34,6 +34,7 @@ import (
 	"github.com/asgardeo/thunder/internal/authn/oauth"
 	"github.com/asgardeo/thunder/internal/authn/oidc"
 	"github.com/asgardeo/thunder/internal/authn/otp"
+	"github.com/asgardeo/thunder/internal/authn/passkey"
 	"github.com/asgardeo/thunder/internal/idp"
 	notifcommon "github.com/asgardeo/thunder/internal/notification/common"
 	"github.com/asgardeo/thunder/internal/system/config"
@@ -61,6 +62,19 @@ type AuthenticationServiceInterface interface {
 		*IDPAuthInitData, *serviceerror.ServiceError)
 	FinishIDPAuthentication(requestedType idp.IDPType, sessionToken string, skipAssertion bool,
 		existingAssertion, code string) (*common.AuthenticationResponse, *serviceerror.ServiceError)
+	// Passkey methods
+	StartPasskeyRegistration(userID, relyingPartyID, relyingPartyName string,
+		authSelection *PasskeyAuthenticatorSelectionDTO, attestation string) (interface{}, *serviceerror.ServiceError)
+	FinishPasskeyRegistration(credential PasskeyPublicKeyCredentialDTO, sessionToken,
+		credentialName string) (interface{}, *serviceerror.ServiceError)
+	StartPasskeyAuthentication(userID, relyingPartyID string) (interface{}, *serviceerror.ServiceError)
+	FinishPasskeyAuthentication(
+		credentialID, credentialType string,
+		response PasskeyCredentialResponseDTO,
+		sessionToken string,
+		skipAssertion bool,
+		existingAssertion string,
+	) (*common.AuthenticationResponse, *serviceerror.ServiceError)
 }
 
 // authenticationService is the default implementation of the AuthenticationServiceInterface.
@@ -74,6 +88,7 @@ type authenticationService struct {
 	oidcService            oidc.OIDCAuthnServiceInterface
 	googleService          google.GoogleOIDCAuthnServiceInterface
 	githubService          github.GithubOAuthAuthnServiceInterface
+	passkeyService         passkey.PasskeyServiceInterface
 }
 
 // newAuthenticationService creates a new instance of AuthenticationService.
@@ -87,6 +102,7 @@ func newAuthenticationService(
 	oidcAuthnSvc oidc.OIDCAuthnServiceInterface,
 	googleAuthnSvc google.GoogleOIDCAuthnServiceInterface,
 	githubAuthnSvc github.GithubOAuthAuthnServiceInterface,
+	passkeySvc passkey.PasskeyServiceInterface,
 ) AuthenticationServiceInterface {
 	return &authenticationService{
 		idpService:             idpSvc,
@@ -98,6 +114,7 @@ func newAuthenticationService(
 		oidcService:            oidcAuthnSvc,
 		googleService:          googleAuthnSvc,
 		githubService:          githubAuthnSvc,
+		passkeyService:         passkeySvc,
 	}
 }
 
@@ -209,7 +226,7 @@ func (as *authenticationService) StartIDPAuthentication(requestedType idp.IDPTyp
 	// Generate session token
 	sessionToken, err := as.createSessionToken(idpID, identityProvider.Type)
 	if err != nil {
-		logger.Error("Failed to create session token", log.String("idpId", idpID), log.Error(err))
+		logger.Error("Failed to create session token", log.String("idpId", idpID), log.String("error", err.Error))
 		return nil, &serviceerror.InternalServerError
 	}
 
@@ -349,7 +366,7 @@ func (as *authenticationService) validateAndAppendAuthAssertion(authResponse *co
 	token, _, err := as.jwtService.GenerateJWT(user.ID, jwtConfig.Audience, jwtConfig.Issuer,
 		jwtConfig.ValidityPeriod, jwtClaims)
 	if err != nil {
-		logger.Error("Failed to generate auth assertion", log.Error(err))
+		logger.Error("Failed to generate auth assertion", log.String("error", err.Error))
 		return &serviceerror.InternalServerError
 	}
 
@@ -382,7 +399,7 @@ func (as *authenticationService) extractClaimsFromAssertion(assertion string,
 	jwtConfig := config.GetThunderRuntime().Config.JWT
 
 	if err := as.jwtService.VerifyJWT(assertion, "", jwtConfig.Issuer); err != nil {
-		logger.Debug("Failed to verify JWT signature of the assertion", log.Error(err))
+		logger.Debug("Failed to verify JWT signature of the assertion", log.String("error", err.Error))
 		return nil, "", &common.ErrorInvalidAssertion
 	}
 
@@ -569,7 +586,8 @@ func (as *authenticationService) validateIDPType(requestedType, actualType idp.I
 }
 
 // createSessionToken creates a JWT session token with authentication session data.
-func (as *authenticationService) createSessionToken(idpID string, idpType idp.IDPType) (string, error) {
+func (as *authenticationService) createSessionToken(idpID string, idpType idp.IDPType) (
+	string, *serviceerror.ServiceError) {
 	sessionData := AuthSessionData{
 		IDPID:   idpID,
 		IDPType: idpType,
@@ -592,9 +610,9 @@ func (as *authenticationService) verifyAndDecodeSessionToken(token string, logge
 	*AuthSessionData, *serviceerror.ServiceError) {
 	// Verify JWT signature and claims
 	jwtConfig := config.GetThunderRuntime().Config.JWT
-	err := as.jwtService.VerifyJWT(token, "auth-svc", jwtConfig.Issuer)
-	if err != nil {
-		logger.Debug("Error verifying session token", log.Error(err))
+	svcErr := as.jwtService.VerifyJWT(token, "auth-svc", jwtConfig.Issuer)
+	if svcErr != nil {
+		logger.Debug("Error verifying session token", log.String("error", svcErr.Error))
 		return nil, &common.ErrorInvalidSessionToken
 	}
 
@@ -647,4 +665,103 @@ func (as *authenticationService) getSubClaim(userClaims map[string]interface{}, 
 
 	logger.Debug("sub claim not found in user info claims")
 	return "", &common.ErrorSubClaimNotFound
+}
+
+// StartPasskeyRegistration starts the passkey registration process.
+func (as *authenticationService) StartPasskeyRegistration(userID, relyingPartyID, relyingPartyName string,
+	authSelection *PasskeyAuthenticatorSelectionDTO, attestation string) (interface{}, *serviceerror.ServiceError) {
+	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, svcLoggerComponentName))
+	logger.Debug("Starting Passkey registration")
+
+	var passkeyAuthSelection *passkey.AuthenticatorSelection
+	if authSelection != nil {
+		passkeyAuthSelection = &passkey.AuthenticatorSelection{
+			AuthenticatorAttachment: authSelection.AuthenticatorAttachment,
+			RequireResidentKey:      authSelection.RequireResidentKey,
+			ResidentKey:             authSelection.ResidentKey,
+			UserVerification:        authSelection.UserVerification,
+		}
+	}
+
+	req := &passkey.PasskeyRegistrationStartRequest{
+		UserID:                 userID,
+		RelyingPartyID:         relyingPartyID,
+		RelyingPartyName:       relyingPartyName,
+		AuthenticatorSelection: passkeyAuthSelection,
+		Attestation:            attestation,
+	}
+
+	return as.passkeyService.StartRegistration(req)
+}
+
+// FinishPasskeyRegistration completes the passkey registration process.
+func (as *authenticationService) FinishPasskeyRegistration(credential PasskeyPublicKeyCredentialDTO,
+	sessionToken, credentialName string) (interface{}, *serviceerror.ServiceError) {
+	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, svcLoggerComponentName))
+	logger.Debug("Finishing Passkey registration")
+
+	req := &passkey.PasskeyRegistrationFinishRequest{
+		CredentialID:      credential.ID,
+		CredentialType:    credential.Type,
+		ClientDataJSON:    credential.Response.ClientDataJSON,
+		AttestationObject: credential.Response.AttestationObject,
+		SessionToken:      sessionToken,
+		CredentialName:    credentialName,
+	}
+
+	return as.passkeyService.FinishRegistration(req)
+}
+
+// StartPasskeyAuthentication starts the passkey authentication process.
+func (as *authenticationService) StartPasskeyAuthentication(userID, relyingPartyID string) (
+	interface{}, *serviceerror.ServiceError) {
+	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, svcLoggerComponentName))
+	logger.Debug("Starting Passkey authentication")
+
+	req := &passkey.PasskeyAuthenticationStartRequest{
+		UserID:         userID,
+		RelyingPartyID: relyingPartyID,
+	}
+	return as.passkeyService.StartAuthentication(req)
+}
+
+// FinishPasskeyAuthentication completes the passkey authentication process.
+func (as *authenticationService) FinishPasskeyAuthentication(credentialID, credentialType string,
+	response PasskeyCredentialResponseDTO, sessionToken string, skipAssertion bool,
+	existingAssertion string) (*common.AuthenticationResponse, *serviceerror.ServiceError) {
+	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, svcLoggerComponentName))
+	logger.Debug("Finishing Passkey authentication")
+
+	// Get authentication response from passkey service
+	req := &passkey.PasskeyAuthenticationFinishRequest{
+		CredentialID:      credentialID,
+		CredentialType:    credentialType,
+		ClientDataJSON:    response.ClientDataJSON,
+		AuthenticatorData: response.AuthenticatorData,
+		Signature:         response.Signature,
+		UserHandle:        response.UserHandle,
+		SessionToken:      sessionToken,
+	}
+	authResponse, svcErr := as.passkeyService.FinishAuthentication(req)
+	if svcErr != nil {
+		return nil, svcErr
+	}
+
+	// Generate assertion if not skipped
+	if !skipAssertion {
+		// Create user object from authResponse for assertion generation
+		userForAssertion := &user.User{
+			ID:               authResponse.ID,
+			Type:             authResponse.Type,
+			OrganizationUnit: authResponse.OrganizationUnit,
+		}
+
+		svcErr = as.validateAndAppendAuthAssertion(authResponse, userForAssertion, common.AuthenticatorPasskey,
+			existingAssertion, logger)
+		if svcErr != nil {
+			return nil, svcErr
+		}
+	}
+
+	return authResponse, nil
 }

@@ -19,6 +19,7 @@
 package user
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"testing"
@@ -29,6 +30,9 @@ import (
 	oupkg "github.com/asgardeo/thunder/internal/ou"
 	"github.com/asgardeo/thunder/internal/system/config"
 	"github.com/asgardeo/thunder/internal/system/crypto/hash"
+	dbmodel "github.com/asgardeo/thunder/internal/system/database/model"
+	"github.com/asgardeo/thunder/internal/system/database/provider"
+	"github.com/asgardeo/thunder/internal/system/database/transaction"
 	"github.com/asgardeo/thunder/internal/system/error/serviceerror"
 	"github.com/asgardeo/thunder/internal/system/log"
 	"github.com/asgardeo/thunder/internal/userschema"
@@ -38,6 +42,7 @@ import (
 )
 
 const testUserType = "employee"
+const testOrgID = "11111111-1111-1111-1111-111111111111"
 
 func TestOUStore_ValidateUserAndUniqueness(t *testing.T) {
 	type testMocks struct {
@@ -668,12 +673,152 @@ func TestUserService_CreateUserByPath_HandlesOUServiceErrors(t *testing.T) {
 		ouService: ouServiceMock,
 	}
 
-	resp, err := service.CreateUserByPath("root/engineering", CreateUserByPathRequest{
+	resp, err := service.CreateUserByPath(context.Background(), "root/engineering", CreateUserByPathRequest{
 		Type: testUserType,
 	})
 	require.Nil(t, resp)
 	require.NotNil(t, err)
 	require.Equal(t, ErrorInvalidHandlePath, *err)
+}
+
+func TestUserService_CreateUser_UsesTransactionAndStore(t *testing.T) {
+	ouServiceMock := oumock.NewOrganizationUnitServiceInterfaceMock(t)
+	ouServiceMock.On("IsOrganizationUnitExists", testOrgID).Return(true, (*serviceerror.ServiceError)(nil)).Once()
+
+	userSchemaMock := userschemamock.NewUserSchemaServiceInterfaceMock(t)
+	userSchemaMock.On("GetUserSchemaByName", testUserType).
+		Return(&userschema.UserSchema{OrganizationUnitID: testOrgID}, (*serviceerror.ServiceError)(nil)).
+		Once()
+	userSchemaMock.On("ValidateUser", testUserType, mock.Anything).
+		Return(true, (*serviceerror.ServiceError)(nil)).
+		Once()
+	userSchemaMock.On("ValidateUserUniqueness", testUserType, mock.Anything, mock.Anything).
+		Return(true, (*serviceerror.ServiceError)(nil)).
+		Once()
+
+	storeMock := newUserStoreInterfaceMock(t)
+	var capturedCtx context.Context
+	storeMock.
+		On("CreateUser", mock.Anything, mock.MatchedBy(func(u User) bool {
+			return u.OrganizationUnit == testOrgID && u.Type == testUserType && u.ID != ""
+		}), mock.Anything).
+		Run(func(args mock.Arguments) {
+			capturedCtx = args[0].(context.Context)
+		}).
+		Return(nil).
+		Once()
+
+	txMock := &fakeTransactioner{}
+
+	service := &userService{
+		userStore:         storeMock,
+		ouService:         ouServiceMock,
+		userSchemaService: userSchemaMock,
+		hashService:       hashmock.NewHashServiceInterfaceMock(t),
+		transactioner:     txMock,
+	}
+
+	user := &User{
+		Type:             testUserType,
+		OrganizationUnit: testOrgID,
+		Attributes:       json.RawMessage(`{}`),
+	}
+
+	created, err := service.CreateUser(context.Background(), user)
+	require.Nil(t, err)
+	require.NotNil(t, created)
+	require.Equal(t, testOrgID, created.OrganizationUnit)
+	require.NotEmpty(t, created.ID)
+	require.Equal(t, 1, txMock.transactCalls)
+	require.NotNil(t, capturedCtx)
+}
+
+func TestUserService_CreateUser_PropagatesStoreError(t *testing.T) {
+	storeErr := errors.New("store failure")
+
+	ouServiceMock := oumock.NewOrganizationUnitServiceInterfaceMock(t)
+	ouServiceMock.On("IsOrganizationUnitExists", testOrgID).Return(true, (*serviceerror.ServiceError)(nil)).Once()
+
+	userSchemaMock := userschemamock.NewUserSchemaServiceInterfaceMock(t)
+	userSchemaMock.On("GetUserSchemaByName", testUserType).
+		Return(&userschema.UserSchema{OrganizationUnitID: testOrgID}, (*serviceerror.ServiceError)(nil)).
+		Once()
+	userSchemaMock.On("ValidateUser", testUserType, mock.Anything).
+		Return(true, (*serviceerror.ServiceError)(nil)).
+		Once()
+	userSchemaMock.On("ValidateUserUniqueness", testUserType, mock.Anything, mock.Anything).
+		Return(true, (*serviceerror.ServiceError)(nil)).
+		Once()
+
+	storeMock := newUserStoreInterfaceMock(t)
+	storeMock.
+		On("CreateUser", mock.Anything, mock.Anything, mock.Anything).
+		Return(storeErr).
+		Once()
+
+	txMock := &fakeTransactioner{}
+
+	service := &userService{
+		userStore:         storeMock,
+		ouService:         ouServiceMock,
+		userSchemaService: userSchemaMock,
+		hashService:       hashmock.NewHashServiceInterfaceMock(t),
+		transactioner:     txMock,
+	}
+
+	user := &User{
+		Type:             testUserType,
+		OrganizationUnit: testOrgID,
+		Attributes:       json.RawMessage(`{}`),
+	}
+
+	created, svcErr := service.CreateUser(context.Background(), user)
+	require.Nil(t, created)
+	require.NotNil(t, svcErr)
+	require.Equal(t, ErrorInternalServerError, *svcErr)
+	require.Equal(t, 1, txMock.transactCalls)
+}
+
+func TestUserService_CreateUser_TransactionerError(t *testing.T) {
+	ouServiceMock := oumock.NewOrganizationUnitServiceInterfaceMock(t)
+	ouServiceMock.On("IsOrganizationUnitExists", testOrgID).Return(true, (*serviceerror.ServiceError)(nil)).Once()
+
+	userSchemaMock := userschemamock.NewUserSchemaServiceInterfaceMock(t)
+	userSchemaMock.On("GetUserSchemaByName", testUserType).
+		Return(&userschema.UserSchema{OrganizationUnitID: testOrgID}, (*serviceerror.ServiceError)(nil)).
+		Once()
+	userSchemaMock.On("ValidateUser", testUserType, mock.Anything).
+		Return(true, (*serviceerror.ServiceError)(nil)).
+		Once()
+	userSchemaMock.On("ValidateUserUniqueness", testUserType, mock.Anything, mock.Anything).
+		Return(true, (*serviceerror.ServiceError)(nil)).
+		Once()
+
+	storeMock := newUserStoreInterfaceMock(t)
+	storeMock.AssertNotCalled(t, "CreateUser", mock.Anything, mock.Anything, mock.Anything)
+
+	txMock := &fakeTransactioner{err: errors.New("tx failed")}
+
+	service := &userService{
+		userStore:         storeMock,
+		ouService:         ouServiceMock,
+		userSchemaService: userSchemaMock,
+		hashService:       hashmock.NewHashServiceInterfaceMock(t),
+		transactioner:     txMock,
+	}
+
+	user := &User{
+		Type:             testUserType,
+		OrganizationUnit: testOrgID,
+		Attributes:       json.RawMessage(`{}`),
+	}
+
+	created, svcErr := service.CreateUser(context.Background(), user)
+	require.Nil(t, created)
+	require.NotNil(t, svcErr)
+	require.Equal(t, ErrorInternalServerError, *svcErr)
+	require.Equal(t, 1, txMock.transactCalls)
+	storeMock.AssertNotCalled(t, "CreateUser", mock.Anything, mock.Anything, mock.Anything)
 }
 
 func TestUserService_ContainsCredentialFields(t *testing.T) {
@@ -712,6 +857,105 @@ func TestUserService_ContainsCredentialFields(t *testing.T) {
 		}
 	})
 }
+
+func TestUserStore_SyncIndexedAttributes_BuildsBatchInsert(t *testing.T) {
+	client := &fakeDBClient{}
+	us := &userStore{
+		deploymentID:      "dep",
+		indexedAttributes: map[string]bool{"email": true, "nickname": false, "profile": true},
+	}
+
+	attrs := json.RawMessage(`{"email":"a@b.com","nickname":"nick","profile":{"city":"ny"}}`)
+	err := us.syncIndexedAttributes(context.Background(), client, "user-1", attrs)
+	require.NoError(t, err)
+	require.True(t, client.called)
+	require.Equal(t, QueryBatchInsertIndexedAttributes.ID, client.query.ID)
+	require.Equal(t, 4, len(client.args))
+	require.Equal(t, "user-1", client.args[0])
+	require.Equal(t, "email", client.args[1])
+	require.Equal(t, "a@b.com", client.args[2])
+	require.Equal(t, "dep", client.args[3])
+}
+
+func TestUserStore_SyncIndexedAttributes_NoIndexedAttributes(t *testing.T) {
+	client := &fakeDBClient{}
+	us := &userStore{
+		deploymentID:      "dep",
+		indexedAttributes: map[string]bool{},
+	}
+
+	attrs := json.RawMessage(`{"nickname":"nick"}`)
+	err := us.syncIndexedAttributes(context.Background(), client, "user-1", attrs)
+	require.NoError(t, err)
+	require.False(t, client.called)
+}
+
+func TestUserStore_SyncIndexedAttributes_ExecuteError(t *testing.T) {
+	client := &fakeDBClient{retErr: errors.New("db error")}
+	us := &userStore{
+		deploymentID:      "dep",
+		indexedAttributes: map[string]bool{"email": true},
+	}
+
+	attrs := json.RawMessage(`{"email":"a@b.com"}`)
+	err := us.syncIndexedAttributes(context.Background(), client, "user-1", attrs)
+	require.Error(t, err)
+	require.Contains(t, err.Error(), QueryBatchInsertIndexedAttributes.ID)
+	require.True(t, client.called)
+}
+
+// fakeTransactioner is a light-weight test double to capture transaction usage without sql mock plumbing.
+type fakeTransactioner struct {
+	transactCalls int
+	err           error
+}
+
+func (f *fakeTransactioner) Transact(ctx context.Context, txFunc func(context.Context) error) error {
+	f.transactCalls++
+	if f.err != nil {
+		return f.err
+	}
+	return txFunc(ctx)
+}
+
+// fakeDBClient captures ExecuteContext calls for syncIndexedAttributes.
+type fakeDBClient struct {
+	called bool
+	query  dbmodel.DBQuery
+	args   []interface{}
+	retErr error
+}
+
+func (f *fakeDBClient) Query(dbmodel.DBQuery, ...interface{}) ([]map[string]interface{}, error) {
+	return nil, nil
+}
+
+func (f *fakeDBClient) QueryContext(
+	context.Context, dbmodel.DBQuery, ...interface{},
+) ([]map[string]interface{}, error) {
+	return nil, nil
+}
+
+func (f *fakeDBClient) Execute(dbmodel.DBQuery, ...interface{}) (int64, error) {
+	return 0, nil
+}
+
+func (f *fakeDBClient) ExecuteContext(_ context.Context, q dbmodel.DBQuery, args ...interface{}) (int64, error) {
+	f.called = true
+	f.query = q
+	f.args = args
+	return 1, f.retErr
+}
+
+func (f *fakeDBClient) BeginTx() (dbmodel.TxInterface, error) {
+	return nil, nil
+}
+
+func (f *fakeDBClient) GetTransactioner() (transaction.Transactioner, error) {
+	return nil, nil
+}
+
+var _ provider.DBClientInterface = (*fakeDBClient)(nil)
 
 func TestUserService_UpdateUserCredentials_Validation(t *testing.T) {
 	t.Run("ReturnsAuthErrorWhenUserIDMissing", func(t *testing.T) {

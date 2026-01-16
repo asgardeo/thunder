@@ -26,7 +26,7 @@ const translations = {
   // ============================================================================
   common: {
     product: {
-      displayName: 'Asgardeo',
+      displayName: 'Thunder',
     },
 
     // Actions
@@ -322,6 +322,7 @@ const translations = {
   // ============================================================================
   navigation: {
     pages: {
+      home: 'Home',
       users: 'Users',
       userTypes: 'User Types',
       integrations: 'Integrations',
@@ -581,7 +582,8 @@ const translations = {
     'onboarding.configure.SignInOptions.google': 'Google',
     'onboarding.configure.SignInOptions.github': 'GitHub',
     'onboarding.configure.SignInOptions.notConfigured': 'Not configured',
-    'onboarding.configure.SignInOptions.noFlowFound': 'No flow found for the selected sign-in options. Please try a different combination.',
+    'onboarding.configure.SignInOptions.noFlowFound':
+      'No flow found for the selected sign-in options. Please try a different combination.',
     'onboarding.configure.SignInOptions.noSelectionWarning':
       'At least one sign-in option is required. Please select at least one authentication method.',
     'onboarding.configure.SignInOptions.noIntegrations':

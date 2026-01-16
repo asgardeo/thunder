@@ -546,7 +546,7 @@ func createAuthorizationCode(
 // verifyAssertion verifies the JWT assertion.
 func (ah *authorizeHandler) verifyAssertion(assertion string, logger *log.Logger) error {
 	if err := ah.jwtService.VerifyJWT(assertion, "", ""); err != nil {
-		logger.Debug("Invalid assertion signature", log.Error(err))
+		logger.Debug("Invalid assertion signature", log.String("error", err.Error))
 		return errors.New("invalid assertion signature")
 	}
 

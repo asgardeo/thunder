@@ -33,6 +33,7 @@ const (
 	AuthenticatorGithub      = "GithubOAuthAuthenticator"
 	AuthenticatorOAuth       = "OAuthAuthenticator"
 	AuthenticatorOIDC        = "OIDCAuthenticator"
+	AuthenticatorPasskey     = "Passkey"
 )
 
 // AuthenticationFactor represents the type of authentication factor.

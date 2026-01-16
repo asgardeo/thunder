@@ -22,3 +22,9 @@ database:
 
 flow:
   max_version_history: 3
+
+passkey:
+  allowed_origins:
+    - "https://localhost:8095"
+    - "http://localhost:8095"
+

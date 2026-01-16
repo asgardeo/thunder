@@ -171,8 +171,8 @@ func (a *authAssertExecutor) generateAuthAssertion(ctx *core.NodeContext, logger
 
 	token, _, err := a.jwtService.GenerateJWT(tokenSub, ctx.AppID, iss, validityPeriod, jwtClaims)
 	if err != nil {
-		logger.Error("Failed to generate JWT token", log.Error(err))
-		return "", errors.New("failed to generate JWT token: " + err.Error())
+		logger.Error("Failed to generate JWT token", log.String("error", err.Error))
+		return "", errors.New("failed to generate JWT token: " + err.Error)
 	}
 
 	return token, nil

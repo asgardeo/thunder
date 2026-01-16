@@ -231,7 +231,7 @@ describe('SideMenu', () => {
 
       const drawer = container.querySelector('.MuiDrawer-root');
       const style = window.getComputedStyle(drawer!);
-      expect(style.width).toBe('250px');
+      expect(style.width).toBe('300px');
     });
 
     it('has correct width when collapsed', () => {

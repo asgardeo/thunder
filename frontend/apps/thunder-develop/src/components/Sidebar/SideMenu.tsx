@@ -140,9 +140,10 @@ export default function SideMenu({
             display: 'flex',
             height: 55,
             px: 2,
-            justifyContent: mini ? 'center' : 'space-between',
+            justifyContent: mini ? 'center' : 'flex-start',
             alignItems: 'center',
             overflow: 'hidden',
+            gap: 2,
           }}
         >
           <IconButton onClick={handleToggle} size="small" aria-label="Expand/Collapse sidebar">
@@ -161,7 +162,7 @@ export default function SideMenu({
                   dark: `${import.meta.env.BASE_URL}/assets/images/logo-inverted.svg`,
                 }}
                 alt={{light: 'Logo (Light)', dark: 'Logo (Dark)'}}
-                height={14}
+                height={20}
                 width="auto"
                 alignItems="center"
                 marginBottom="3px"
@@ -205,10 +206,10 @@ export default function SideMenu({
                 {!mini && (
                   <>
                     <Box sx={{mr: 'auto', minWidth: 0, flex: 1, overflow: 'hidden'}}>
-                      <Typography 
-                        variant="body2" 
+                      <Typography
+                        variant="body2"
                         sx={{
-                          fontWeight: 500, 
+                          fontWeight: 500,
                           lineHeight: '16px',
                           overflow: 'hidden',
                           textOverflow: 'ellipsis',
@@ -217,8 +218,8 @@ export default function SideMenu({
                       >
                         {user?.name}
                       </Typography>
-                      <Typography 
-                        variant="caption" 
+                      <Typography
+                        variant="caption"
                         sx={{
                           color: 'text.secondary',
                           overflow: 'hidden',
@@ -230,7 +231,7 @@ export default function SideMenu({
                       </Typography>
                     </Box>
                     <Box sx={{flexShrink: 0}}>
-                    <OptionsMenu />
+                      <OptionsMenu />
                     </Box>
                   </>
                 )}

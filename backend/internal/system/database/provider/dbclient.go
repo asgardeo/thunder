@@ -20,9 +20,12 @@
 package provider
 
 import (
+	"context"
+	"database/sql"
 	"strings"
 
 	"github.com/asgardeo/thunder/internal/system/database/model"
+	"github.com/asgardeo/thunder/internal/system/database/transaction"
 	"github.com/asgardeo/thunder/internal/system/log"
 
 	_ "github.com/lib/pq"
@@ -33,10 +36,16 @@ import (
 type DBClientInterface interface {
 	// Query executes a sql query that returns rows, typically a SELECT, and returns the result as a slice of maps.
 	Query(query model.DBQuery, args ...interface{}) ([]map[string]interface{}, error)
+	// QueryContext executes a sql query that returns rows with context support for transactions.
+	QueryContext(ctx context.Context, query model.DBQuery, args ...interface{}) ([]map[string]interface{}, error)
 	// Execute executes a sql query without returning data in any rows, and returns number of rows affected.
 	Execute(query model.DBQuery, args ...interface{}) (int64, error)
+	// ExecuteContext executes a sql query without returning data with context support for transactions.
+	ExecuteContext(ctx context.Context, query model.DBQuery, args ...interface{}) (int64, error)
 	// BeginTx starts a new database transaction.
 	BeginTx() (model.TxInterface, error)
+	// GetTransactioner returns the transactioner for this client.
+	GetTransactioner() (transaction.Transactioner, error)
 }
 
 // DBClient is the implementation of DBClientInterface.
@@ -55,11 +64,30 @@ func NewDBClient(db model.DBInterface, dbType string) DBClientInterface {
 
 // Query executes a sql query that returns rows, typically a SELECT, and returns the result as a slice of maps.
 func (client *DBClient) Query(query model.DBQuery, args ...interface{}) ([]map[string]interface{}, error) {
+	return client.QueryContext(context.Background(), query, args...)
+}
+
+// QueryContext executes a sql query that returns rows with context support for transactions.
+// If a transaction exists in the context, it will be used automatically.
+func (client *DBClient) QueryContext(
+	ctx context.Context,
+	query model.DBQuery,
+	args ...interface{},
+) ([]map[string]interface{}, error) {
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, "DBClient"))
 	logger.Info("Executing query", log.String("queryID", query.GetID()))
 
 	sqlQuery := query.GetQuery(client.dbType)
-	rows, err := client.db.Query(sqlQuery, args...)
+
+	// Check if there's a transaction in the context
+	var rows *sql.Rows
+	var err error
+	if tx := transaction.TxFromContext(ctx); tx != nil {
+		rows, err = tx.QueryContext(ctx, sqlQuery, args...)
+	} else {
+		rows, err = client.db.Query(sqlQuery, args...)
+	}
+
 	if err != nil {
 		return nil, err
 	}
@@ -103,11 +131,26 @@ func (client *DBClient) Query(query model.DBQuery, args ...interface{}) ([]map[s
 
 // Execute executes a sql query without returning data in any rows, and returns number of rows affected.
 func (client *DBClient) Execute(query model.DBQuery, args ...interface{}) (int64, error) {
+	return client.ExecuteContext(context.Background(), query, args...)
+}
+
+// ExecuteContext executes a sql query without returning data with context support for transactions.
+// If a transaction exists in the context, it will be used automatically.
+func (client *DBClient) ExecuteContext(ctx context.Context, query model.DBQuery, args ...interface{}) (int64, error) {
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, "DBClient"))
 	logger.Info("Executing query", log.String("queryID", query.GetID()))
 
 	sqlQuery := query.GetQuery(client.dbType)
-	res, err := client.db.Exec(sqlQuery, args...)
+
+	// Check if there's a transaction in the context
+	var res sql.Result
+	var err error
+	if tx := transaction.TxFromContext(ctx); tx != nil {
+		res, err = tx.ExecContext(ctx, sqlQuery, args...)
+	} else {
+		res, err = client.db.Exec(sqlQuery, args...)
+	}
+
 	if err != nil {
 		return 0, err
 	}
@@ -127,6 +170,11 @@ func (client *DBClient) BeginTx() (model.TxInterface, error) {
 		return nil, err
 	}
 	return model.NewTx(tx, client.dbType), nil
+}
+
+// GetTransactioner returns the transactioner for this client.
+func (client *DBClient) GetTransactioner() (transaction.Transactioner, error) {
+	return transaction.NewTransactioner(client.db.GetSQLDB()), nil
 }
 
 // Close closes the database connection.

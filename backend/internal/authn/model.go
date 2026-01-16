@@ -78,3 +78,58 @@ type VerifyOTPAuthRequestDTO struct {
 	Assertion     string `json:"assertion,omitempty"`
 	OTP           string `json:"otp"`
 }
+
+// PasskeyAuthenticatorSelectionDTO represents the authenticator selection criteria for passkey.
+type PasskeyAuthenticatorSelectionDTO struct {
+	AuthenticatorAttachment string `json:"authenticatorAttachment,omitempty"`
+	RequireResidentKey      bool   `json:"requireResidentKey,omitempty"`
+	ResidentKey             string `json:"residentKey,omitempty"`
+	UserVerification        string `json:"userVerification,omitempty"`
+}
+
+// PasskeyRegisterStartRequestDTO is the request to start passkey registration.
+type PasskeyRegisterStartRequestDTO struct {
+	UserID                 string                            `json:"userId"`
+	RelyingPartyID         string                            `json:"relyingPartyId"`
+	RelyingPartyName       string                            `json:"relyingPartyName"`
+	AuthenticatorSelection *PasskeyAuthenticatorSelectionDTO `json:"authenticatorSelection,omitempty"`
+	Attestation            string                            `json:"attestation,omitempty"`
+}
+
+// PasskeyPublicKeyCredentialDTO represents a WebAuthn public key credential.
+type PasskeyPublicKeyCredentialDTO struct {
+	ID       string                       `json:"id"`
+	RawID    string                       `json:"rawId,omitempty"`
+	Type     string                       `json:"type"`
+	Response PasskeyCredentialResponseDTO `json:"response"`
+}
+
+// PasskeyCredentialResponseDTO represents the response from a WebAuthn credential.
+type PasskeyCredentialResponseDTO struct {
+	ClientDataJSON    string `json:"clientDataJSON"`
+	AttestationObject string `json:"attestationObject,omitempty"`
+	AuthenticatorData string `json:"authenticatorData,omitempty"`
+	Signature         string `json:"signature,omitempty"`
+	UserHandle        string `json:"userHandle,omitempty"`
+}
+
+// PasskeyRegisterFinishRequestDTO is the request to finish passkey registration.
+type PasskeyRegisterFinishRequestDTO struct {
+	PublicKeyCredential PasskeyPublicKeyCredentialDTO `json:"publicKeyCredential"`
+	SessionToken        string                        `json:"sessionToken"`
+	CredentialName      string                        `json:"credentialName,omitempty"`
+}
+
+// PasskeyStartRequestDTO is the request to start passkey authentication.
+type PasskeyStartRequestDTO struct {
+	UserID         string `json:"userId"`
+	RelyingPartyID string `json:"relyingPartyId"`
+}
+
+// PasskeyFinishRequestDTO is the request to finish passkey authentication.
+type PasskeyFinishRequestDTO struct {
+	PublicKeyCredential PasskeyPublicKeyCredentialDTO `json:"publicKeyCredential"`
+	SessionToken        string                        `json:"sessionToken"`
+	SkipAssertion       bool                          `json:"skip_assertion"`
+	Assertion           string                        `json:"assertion,omitempty"`
+}

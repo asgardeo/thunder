@@ -399,6 +399,127 @@ paths:
               schema:
                 $ref: '#/components/schemas/ServerErrorResponse'
 
+  /auth/webauthn/start:
+    post:
+      summary: Start WebAuthn authentication
+      description: Initiate WebAuthn/Passkey authentication for a user.
+      tags:
+        - WebAuthn / Passkey
+      requestBody:
+        description: WebAuthn authentication initiation data
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/WebAuthnStartRequest'
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WebAuthnStartResponse'
+        "400":
+          description: 'Bad Request: The request body is malformed or contains invalid data'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ClientErrorResponse'
+              example:
+                code: "AUTHN-1011"
+                message: "Empty username"
+                description: "The username is required to start WebAuthn authentication"
+        "404":
+          description: 'Not Found: The user could not be found'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ClientErrorResponse'
+              example:
+                code: "AUTHN-1008"
+                message: "User not found"
+                description: "No user found with the provided User ID"
+        "500":
+          description: 'Internal Server Error: An unexpected error occurred while processing the request'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ServerErrorResponse'
+
+  /auth/webauthn/finish:
+    post:
+      summary: Finish WebAuthn authentication
+      description: Complete WebAuthn/Passkey authentication for a user.
+      tags:
+        - WebAuthn / Passkey
+      requestBody:
+        description: WebAuthn authentication completion data
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/WebAuthnFinishRequest'
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthenticationResponse'
+        "400":
+          description: 'Bad Request: The request body is malformed or contains invalid data'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ClientErrorResponse'
+              examples:
+                emptyCredentialId:
+                  value:
+                    code: "AUTHN-1012"
+                    message: "Empty credential ID"
+                    description: "The credential ID is required to complete WebAuthn authentication"
+                emptyCredentialType:
+                  value:
+                    code: "AUTHN-1013"
+                    message: "Empty credential type"
+                    description: "The credential type is required to complete WebAuthn authentication"
+                invalidAuthenticatorResponse:
+                  value:
+                    code: "AUTHN-1014"
+                    message: "Invalid authenticator response"
+                    description: "The authenticator response is missing required fields (clientDataJSON, authenticatorData, or signature)"
+                emptySessionToken:
+                  value:
+                    code: "AUTHN-1004"
+                    message: "Empty session token"
+                    description: "The provided session token is empty"
+        "401":
+          description: 'Unauthorized: WebAuthn authentication failed'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ClientErrorResponse'
+              example:
+                code: "WEBAUTHN-1008"
+                message: "Invalid signature"
+                description: "The WebAuthn signature verification failed"
+        "404":
+          description: 'Not Found: The user or credential could not be found'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ClientErrorResponse'
+              example:
+                code: "AUTHN-1008"
+                message: "User not found"
+                description: "No user found for the provided credential"
+        "500":
+          description: 'Internal Server Error: An unexpected error occurred while processing the request'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ServerErrorResponse'
+
 components:
   schemas:
     CredentialAuthRequest:
@@ -533,6 +654,168 @@ components:
           type: string
           description: Optional existing JWT assertion token to enrich with new authentication
           example: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+
+    WebAuthnStartRequest:
+      type: object
+      properties:
+        user_id:
+          type: string
+          description: User ID of the user to authenticate
+          example: "550e8400-e29b-41d4-a716-446655440000"
+        relying_party_id:
+          type: string
+          description: Relying Party ID (typically the domain)
+          example: "example.com"
+      required:
+        - user_id
+        - relying_party_id
+
+    WebAuthnStartResponse:
+      type: object
+      properties:
+        publicKeyCredentialRequestOptions:
+          type: object
+          description: PublicKeyCredentialRequestOptions as per WebAuthn standard
+          properties:
+            challenge:
+              type: string
+              description: Base64url-encoded challenge for the authentication ceremony
+              example: "Z29yZG9uQGV4YW1wbGUuY29tMjAyMS0wMy0xMlQxMjo0NTowMFo"
+            timeout:
+              type: integer
+              description: Time in milliseconds that the user has to respond to the prompt
+              example: 60000
+            rpId:
+              type: string
+              description: Relying Party identifier
+              example: "example.com"
+            allowCredentials:
+              type: array
+              description: List of credentials the server would like the user to authenticate with
+              items:
+                type: object
+                properties:
+                  type:
+                    type: string
+                    description: Type of the credential
+                    example: "public-key"
+                  id:
+                    type: string
+                    description: Base64url-encoded credential ID
+                    example: "AdC-ff_z-Z1gY2s6e_2A-g"
+                  transports:
+                    type: array
+                    description: Hints about where the credential might be stored
+                    items:
+                      type: string
+                      enum: ["usb", "nfc", "ble", "internal", "hybrid"]
+                    example: ["internal", "hybrid"]
+            userVerification:
+              type: string
+              description: User verification requirement
+              enum:
+                - required
+                - preferred
+                - discouraged
+              example: "preferred"
+          required:
+            - challenge
+          example:
+            challenge: "Z29yZG9uQGV4YW1wbGUuY29tMjAyMS0wMy0xMlQxMjo0NTowMFo"
+            timeout: 60000
+            rpId: "example.com"
+            allowCredentials:
+              - type: "public-key"
+                id: "AdC-ff_z-Z1gY2s6e_2A-g"
+                transports: ["internal", "hybrid"]
+            userVerification: "preferred"
+        session_token:
+          type: string
+          description: JWT token for the WebAuthn authentication session
+          example: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+      required:
+        - publicKeyCredentialRequestOptions
+        - session_token
+
+    WebAuthnFinishRequest:
+      type: object
+      properties:
+        publicKeyCredential:
+          type: object
+          description: PublicKeyCredential as per WebAuthn standard
+          properties:
+            id:
+              type: string
+              description: Base64url-encoded credential ID
+              example: "AdC-ff_z-Z1gY2s6e_2A-g"
+            rawId:
+              type: string
+              description: Base64url-encoded raw credential ID
+              example: "AdC-ff_z-Z1gY2s6e_2A-g"
+            type:
+              type: string
+              description: Type of the credential
+              example: "public-key"
+            response:
+              type: object
+              description: AuthenticatorAssertionResponse
+              properties:
+                clientDataJSON:
+                  type: string
+                  description: Base64url-encoded client data JSON
+                  example: "eyJjaGFsbGVuZ2UiOiJaMm95Wm05eVpHOXVRR1Y0WVcxd2JHVXVZMjl0TWpBeU1TMHdNeTB4TWxReE1qbzBOVG93TUZvIiwidHlwZSI6IndlYmF1dGhuLmdldCIsIm9yaWdpbiI6Imh0dHBzOi8vZXhhbXBsZS5jb20ifQ"
+                authenticatorData:
+                  type: string
+                  description: Base64url-encoded authenticator data
+                  example: "SZYN5YgOjGh0NBcPZHZgW4_krrmihjLHmVzzuoMdl2MFAAAAAQ"
+                signature:
+                  type: string
+                  description: Base64url-encoded signature
+                  example: "MEUCIQCHLpP8Z8AsiWEnMLHLmVzzuoMdl2MFAAAAAQCHLpP8Z8AsiWEnMLHLmVzzuoMdl2MFAAAAAQ"
+                userHandle:
+                  type: string
+                  description: Base64url-encoded user handle (optional)
+                  example: "aWQxMjM0NQ"
+              required:
+                - clientDataJSON
+                - authenticatorData
+                - signature
+            authenticatorAttachment:
+              type: string
+              description: Authenticator attachment modality
+              enum: ["platform", "cross-platform"]
+              example: "platform"
+          required:
+            - id
+            - rawId
+            - type
+            - response
+          example:
+            id: "AdC-ff_z-Z1gY2s6e_2A-g"
+            rawId: "AdC-ff_z-Z1gY2s6e_2A-g"
+            type: "public-key"
+            response:
+              clientDataJSON: "eyJjaGFsbGVuZ2UiOiJaMm95Wm05eVpHOXVRR1Y0WVcxd2JHVXVZMjl0TWpBeU1TMHdNeTB4TWxReE1qbzBOVG93TUZvIiwidHlwZSI6IndlYmF1dGhuLmdldCIsIm9yaWdpbiI6Imh0dHBzOi8vZXhhbXBsZS5jb20ifQ"
+              authenticatorData: "SZYN5YgOjGh0NBcPZHZgW4_krrmihjLHmVzzuoMdl2MFAAAAAQ"
+              signature: "MEUCIQCHLpP8Z8AsiWEnMLHLmVzzuoMdl2MFAAAAAQ"
+              userHandle: "aWQxMjM0NQ"
+            authenticatorAttachment: "platform"
+        session_token:
+          type: string
+          description: JWT token for the WebAuthn authentication session
+          example: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+        skip_assertion:
+          type: boolean
+          description: Skip generating assertion token in the response
+          default: false
+          example: false
+        assertion:
+          type: string
+          description: Optional existing JWT assertion token to enrich with new authentication
+          example: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+      required:
+        - publicKeyCredential
+        - session_token
 
     ErrorResponse:
       type: object

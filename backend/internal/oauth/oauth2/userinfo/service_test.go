@@ -25,7 +25,6 @@ import (
 	"crypto/sha256"
 	"encoding/base64"
 	"encoding/json"
-	"errors"
 	"testing"
 	"time"
 
@@ -80,7 +79,12 @@ func (s *UserInfoServiceTestSuite) TestGetUserInfo_EmptyToken() {
 // TestGetUserInfo_InvalidTokenSignature tests that invalid token signature returns an error
 func (s *UserInfoServiceTestSuite) TestGetUserInfo_InvalidTokenSignature() {
 	token := "invalid.token.signature"
-	s.mockJWTService.On("VerifyJWT", token, "", "").Return(errors.New("invalid signature"))
+	s.mockJWTService.On("VerifyJWT", token, "", "").Return(&serviceerror.ServiceError{
+		Type:             serviceerror.ServerErrorType,
+		Code:             "INVALID_SIGNATURE",
+		Error:            "Invalid signature",
+		ErrorDescription: "invalid signature",
+	})
 
 	response, svcErr := s.userInfoService.GetUserInfo(token)
 	assert.NotNil(s.T(), svcErr)

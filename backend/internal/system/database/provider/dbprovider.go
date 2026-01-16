@@ -28,6 +28,8 @@ import (
 	"time"
 
 	"github.com/asgardeo/thunder/internal/system/config"
+	"github.com/asgardeo/thunder/internal/system/database/model"
+	"github.com/asgardeo/thunder/internal/system/database/transaction"
 	"github.com/asgardeo/thunder/internal/system/log"
 )
 
@@ -42,11 +44,14 @@ type dbConfig struct {
 	driverName string
 }
 
-// DBProviderInterface defines the interface for getting database clients.
+// DBProviderInterface defines the interface for getting database clients and transactioners.
 type DBProviderInterface interface {
 	GetConfigDBClient() (DBClientInterface, error)
 	GetRuntimeDBClient() (DBClientInterface, error)
 	GetUserDBClient() (DBClientInterface, error)
+	GetConfigDBTransactioner() (transaction.Transactioner, error)
+	GetUserDBTransactioner() (transaction.Transactioner, error)
+	GetRuntimeDBTransactioner() (transaction.Transactioner, error)
 }
 
 // DBProviderCloser is a separate interface for closing the provider.
@@ -112,6 +117,37 @@ func (d *dbProvider) GetUserDBClient() (DBClientInterface, error) {
 	return d.getOrInitClient(&d.userClient, &d.userMutex, userDBConfig)
 }
 
+// GetConfigDBTransactioner returns a transactioner for the config database.
+// The transactioner manages database transactions with automatic nesting detection.
+func (d *dbProvider) GetConfigDBTransactioner() (transaction.Transactioner, error) {
+	return d.getTransactioner(d.GetConfigDBClient, "config")
+}
+
+// GetUserDBTransactioner returns a transactioner for the user database.
+// The transactioner manages database transactions with automatic nesting detection.
+func (d *dbProvider) GetUserDBTransactioner() (transaction.Transactioner, error) {
+	return d.getTransactioner(d.GetUserDBClient, "user")
+}
+
+// GetRuntimeDBTransactioner returns a transactioner for the runtime database.
+// The transactioner manages database transactions with automatic nesting detection.
+func (d *dbProvider) GetRuntimeDBTransactioner() (transaction.Transactioner, error) {
+	return d.getTransactioner(d.GetRuntimeDBClient, "runtime")
+}
+
+// getTransactioner is a helper method that creates a transactioner for a given database client.
+func (d *dbProvider) getTransactioner(
+	clientGetter func() (DBClientInterface, error),
+	dbName string,
+) (transaction.Transactioner, error) {
+	client, err := clientGetter()
+	if err != nil {
+		return nil, fmt.Errorf("failed to get %s database client: %w", dbName, err)
+	}
+
+	return client.GetTransactioner()
+}
+
 // initializeAllClients initializes both identity and runtime clients at startup.
 func (d *dbProvider) initializeAllClients() {
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, "DBProvider"))
@@ -141,6 +177,11 @@ func (d *dbProvider) getOrInitClient(
 	mutex *sync.RWMutex,
 	dataSource config.DataSource,
 ) (DBClientInterface, error) {
+	// Return error if database type is not configured
+	if dataSource.Type == "" {
+		return nil, fmt.Errorf("database type is not configured")
+	}
+
 	mutex.RLock()
 	if *clientPtr != nil {
 		client := *clientPtr
@@ -198,7 +239,7 @@ func (d *dbProvider) initializeClient(clientPtr *DBClientInterface, dataSource c
 		}
 	}
 
-	*clientPtr = NewDBClient(db, dbConfig.driverName)
+	*clientPtr = NewDBClient(model.NewDB(db), dbConfig.driverName)
 	return nil
 }
 

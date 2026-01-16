@@ -248,7 +248,12 @@ func (suite *AuthAssertExecutorTestSuite) TestExecute_JWTGenerationFails() {
 	}
 
 	suite.mockJWTService.On("GenerateJWT", mock.Anything, mock.Anything, mock.Anything,
-		mock.Anything, mock.Anything).Return("", int64(0), assert.AnError)
+		mock.Anything, mock.Anything).Return("", int64(0), &serviceerror.ServiceError{
+		Type:             serviceerror.ServerErrorType,
+		Code:             "JWT_GENERATION_FAILED",
+		Error:            "JWT generation failed",
+		ErrorDescription: "Failed to generate JWT token",
+	})
 
 	_, err := suite.executor.Execute(ctx)
 

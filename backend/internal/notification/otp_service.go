@@ -286,7 +286,7 @@ func (s *otpService) createSessionToken(sessionData common.OTPSessionData) (stri
 
 	token, _, err := s.jwtService.GenerateJWT("otp-svc", "otp-svc", jwtConfig.Issuer, validityPeriod, claims)
 	if err != nil {
-		return "", fmt.Errorf("failed to generate JWT token: %w", err)
+		return "", fmt.Errorf("failed to generate JWT token: %v", err)
 	}
 
 	return token, nil
@@ -297,9 +297,9 @@ func (s *otpService) verifyAndDecodeSessionToken(token string, logger *log.Logge
 	*common.OTPSessionData, *serviceerror.ServiceError) {
 	// Verify JWT signature
 	jwtConfig := config.GetThunderRuntime().Config.JWT
-	err := s.jwtService.VerifyJWT(token, "otp-svc", jwtConfig.Issuer)
-	if err != nil {
-		logger.Debug("Invalid session token", log.Error(err))
+	svcErr := s.jwtService.VerifyJWT(token, "otp-svc", jwtConfig.Issuer)
+	if svcErr != nil {
+		logger.Debug("Invalid session token", log.String("error", svcErr.Error))
 		return nil, &ErrorInvalidSessionToken
 	}
 

@@ -28,6 +28,7 @@ import (
 	"github.com/asgardeo/thunder/internal/authn/oauth"
 	"github.com/asgardeo/thunder/internal/authn/oidc"
 	"github.com/asgardeo/thunder/internal/authn/otp"
+	"github.com/asgardeo/thunder/internal/authn/passkey"
 	"github.com/asgardeo/thunder/internal/idp"
 	"github.com/asgardeo/thunder/internal/notification"
 	"github.com/asgardeo/thunder/internal/system/jwt"
@@ -44,6 +45,7 @@ type AuthServiceRegistry struct {
 	GithubOAuthAuthnService github.GithubOAuthAuthnServiceInterface
 	GoogleOIDCAuthnService  google.GoogleOIDCAuthnServiceInterface
 	AuthAssertGenerator     assert.AuthAssertGeneratorInterface
+	PasskeyService          passkey.PasskeyServiceInterface
 }
 
 // Initialize initializes the authentication service and registers its routes.
@@ -65,6 +67,7 @@ func Initialize(
 		authServiceRegistry.OIDCAuthnService,
 		authServiceRegistry.GoogleOIDCAuthnService,
 		authServiceRegistry.GithubOAuthAuthnService,
+		authServiceRegistry.PasskeyService,
 	)
 
 	authnHandler := newAuthenticationHandler(authnService)
@@ -87,6 +90,7 @@ func createAuthServiceRegistry(
 		OIDCAuthnService:        oidc.Initialize(idpSvc, userSvc, jwtSvc),
 		GithubOAuthAuthnService: github.Initialize(idpSvc, userSvc),
 		GoogleOIDCAuthnService:  google.Initialize(idpSvc, userSvc, jwtSvc),
+		PasskeyService:          passkey.Initialize(userSvc),
 		AuthAssertGenerator:     assert.Initialize(),
 	}
 }
@@ -149,6 +153,24 @@ func registerRoutes(mux *http.ServeMux, authnHandler *authenticationHandler) {
 			w.WriteHeader(http.StatusNoContent)
 		}, opts))
 	mux.HandleFunc(middleware.WithCORS("OPTIONS /auth/oauth/standard/finish",
+		optionsNoContentHandler, opts))
+
+	// Passkey routes
+	mux.HandleFunc(middleware.WithCORS("POST /register/passkey/start",
+		authnHandler.HandlePasskeyRegisterStartRequest, opts))
+	mux.HandleFunc(middleware.WithCORS("POST /register/passkey/finish",
+		authnHandler.HandlePasskeyRegisterFinishRequest, opts))
+	mux.HandleFunc(middleware.WithCORS("POST /auth/passkey/start",
+		authnHandler.HandlePasskeyStartRequest, opts))
+	mux.HandleFunc(middleware.WithCORS("POST /auth/passkey/finish",
+		authnHandler.HandlePasskeyFinishRequest, opts))
+	mux.HandleFunc(middleware.WithCORS("OPTIONS /register/passkey/start",
+		optionsNoContentHandler, opts))
+	mux.HandleFunc(middleware.WithCORS("OPTIONS /register/passkey/finish",
+		optionsNoContentHandler, opts))
+	mux.HandleFunc(middleware.WithCORS("OPTIONS /auth/passkey/start",
+		optionsNoContentHandler, opts))
+	mux.HandleFunc(middleware.WithCORS("OPTIONS /auth/passkey/finish",
 		optionsNoContentHandler, opts))
 }
 
