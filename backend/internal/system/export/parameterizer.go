@@ -390,6 +390,132 @@ func (p *parameterizer) handleInterfaceValue(v reflect.Value) *yaml.Node {
 	}
 }
 
+// handleStructNode converts a struct reflect.Value to a YAML mapping node.
+func (p *parameterizer) handleStructNode(
+	v reflect.Value, rules *resourceRules, currentPath string, resourceName string) *yaml.Node {
+	node := &yaml.Node{Kind: yaml.MappingNode}
+	t := v.Type()
+
+	for i := 0; i < v.NumField(); i++ {
+		field := t.Field(i)
+		if !field.IsExported() {
+			continue
+		}
+
+		yamlTag := field.Tag.Get("yaml")
+		if yamlTag == "" || yamlTag == "-" {
+			continue
+		}
+
+		tagParts := strings.Split(yamlTag, ",")
+		yamlFieldName := tagParts[0]
+
+		// Check if this field has omitempty
+		hasOmitEmpty := false
+		for _, part := range tagParts[1:] {
+			if part == "omitempty" {
+				hasOmitEmpty = true
+				break
+			}
+		}
+
+		// Build the nested field path
+		nestedFieldPath := field.Name
+		if currentPath != "" {
+			nestedFieldPath = currentPath + "." + field.Name
+		}
+
+		// Skip empty fields if omitempty is set AND field is NOT in parameterization rules
+		fieldValue := v.Field(i)
+		if hasOmitEmpty && p.isEmptyValue(fieldValue) && !p.isFieldInRules(rules, nestedFieldPath) {
+			continue
+		}
+
+		keyNode := &yaml.Node{
+			Kind:  yaml.ScalarNode,
+			Tag:   "!!str",
+			Value: yamlFieldName,
+		}
+		valueNode := p.fieldToNode(fieldValue, rules, nestedFieldPath, resourceName)
+		node.Content = append(node.Content, keyNode, valueNode)
+	}
+	return node
+}
+
+// handleSliceOrArrayNode converts a slice or array reflect.Value to a YAML node.
+func (p *parameterizer) handleSliceOrArrayNode(
+	v reflect.Value, rules *resourceRules, currentPath string, resourceName string) *yaml.Node {
+	// Check if this is json.RawMessage ([]byte) and handle it specially
+	if v.Type() == reflect.TypeOf(json.RawMessage{}) {
+		return p.handleJSONRawMessage(v)
+	}
+
+	// Check if this is a Property slice that should be dynamically parameterized
+	if p.isPropertySlice(v.Type()) && p.isFieldDynamicProperty(rules, currentPath) {
+		// Handle Property slices with dynamic parameterization
+		node := &yaml.Node{Kind: yaml.SequenceNode}
+		for i := 0; i < v.Len(); i++ {
+			propValue := v.Index(i)
+			// If the property value is addressable, get its address for method calls
+			if propValue.CanAddr() {
+				propValue = propValue.Addr()
+			}
+			propNode := p.propertyToYAMLNode(propValue, resourceName)
+			node.Content = append(node.Content, propNode)
+		}
+		return node
+	}
+
+	// Convert regular slices/arrays
+	node := &yaml.Node{Kind: yaml.SequenceNode}
+	for i := 0; i < v.Len(); i++ {
+		itemNode := p.fieldToNode(v.Index(i), rules, currentPath, resourceName)
+		node.Content = append(node.Content, itemNode)
+	}
+	return node
+}
+
+// handleJSONRawMessage converts a json.RawMessage to a YAML scalar node containing the JSON string.
+func (p *parameterizer) handleJSONRawMessage(v reflect.Value) *yaml.Node {
+	// For json.RawMessage, export as a JSON string (not parsed YAML structure)
+	// This ensures import/export symmetry with UserSchemaRequestWithID.Schema (string type)
+	if v.Len() > 0 {
+		rawBytes := v.Bytes()
+		// Validate it's valid JSON
+		if json.Valid(rawBytes) {
+			// Return as a string containing the JSON
+			return &yaml.Node{
+				Kind:  yaml.ScalarNode,
+				Tag:   "!!str",
+				Value: string(rawBytes),
+			}
+		}
+	}
+	// If not valid JSON or empty, treat as empty string
+	return &yaml.Node{
+		Kind:  yaml.ScalarNode,
+		Tag:   "!!str",
+		Value: "",
+	}
+}
+
+// handleMapNode converts a map reflect.Value to a YAML mapping node.
+func (p *parameterizer) handleMapNode(
+	v reflect.Value, rules *resourceRules, currentPath string, resourceName string) *yaml.Node {
+	node := &yaml.Node{Kind: yaml.MappingNode}
+	iter := v.MapRange()
+	for iter.Next() {
+		keyNode := &yaml.Node{
+			Kind:  yaml.ScalarNode,
+			Tag:   "!!str",
+			Value: fmt.Sprintf("%v", iter.Key().Interface()),
+		}
+		valueNode := p.fieldToNode(iter.Value(), rules, currentPath, resourceName)
+		node.Content = append(node.Content, keyNode, valueNode)
+	}
+	return node
+}
+
 // fieldToNode converts a reflect.Value to yaml.Node
 func (p *parameterizer) fieldToNode(
 	v reflect.Value, rules *resourceRules, currentPath string, resourceName string) *yaml.Node {
@@ -414,94 +540,13 @@ func (p *parameterizer) fieldToNode(
 
 	switch v.Kind() {
 	case reflect.Struct:
-		// Recursively convert nested structs
-		node := &yaml.Node{Kind: yaml.MappingNode}
-		t := v.Type()
-
-		for i := 0; i < v.NumField(); i++ {
-			field := t.Field(i)
-			if !field.IsExported() {
-				continue
-			}
-
-			yamlTag := field.Tag.Get("yaml")
-			if yamlTag == "" || yamlTag == "-" {
-				continue
-			}
-
-			tagParts := strings.Split(yamlTag, ",")
-			yamlFieldName := tagParts[0]
-
-			// Check if this field has omitempty
-			hasOmitEmpty := false
-			for _, part := range tagParts[1:] {
-				if part == "omitempty" {
-					hasOmitEmpty = true
-					break
-				}
-			}
-
-			// Build the nested field path
-			nestedFieldPath := field.Name
-			if currentPath != "" {
-				nestedFieldPath = currentPath + "." + field.Name
-			}
-
-			// Skip empty fields if omitempty is set AND field is NOT in parameterization rules
-			fieldValue := v.Field(i)
-			if hasOmitEmpty && p.isEmptyValue(fieldValue) && !p.isFieldInRules(rules, nestedFieldPath) {
-				continue
-			}
-
-			keyNode := &yaml.Node{
-				Kind:  yaml.ScalarNode,
-				Tag:   "!!str",
-				Value: yamlFieldName,
-			}
-			valueNode := p.fieldToNode(fieldValue, rules, nestedFieldPath, resourceName)
-			node.Content = append(node.Content, keyNode, valueNode)
-		}
-		return node
+		return p.handleStructNode(v, rules, currentPath, resourceName)
 
 	case reflect.Slice, reflect.Array:
-		// Check if this is a Property slice that should be dynamically parameterized
-		if p.isPropertySlice(v.Type()) && p.isFieldDynamicProperty(rules, currentPath) {
-			// Handle Property slices with dynamic parameterization
-			node := &yaml.Node{Kind: yaml.SequenceNode}
-			for i := 0; i < v.Len(); i++ {
-				propValue := v.Index(i)
-				// If the property value is addressable, get its address for method calls
-				if propValue.CanAddr() {
-					propValue = propValue.Addr()
-				}
-				propNode := p.propertyToYAMLNode(propValue, resourceName)
-				node.Content = append(node.Content, propNode)
-			}
-			return node
-		}
-
-		// Convert regular slices/arrays
-		node := &yaml.Node{Kind: yaml.SequenceNode}
-		for i := 0; i < v.Len(); i++ {
-			itemNode := p.fieldToNode(v.Index(i), rules, currentPath, resourceName)
-			node.Content = append(node.Content, itemNode)
-		}
-		return node
+		return p.handleSliceOrArrayNode(v, rules, currentPath, resourceName)
 
 	case reflect.Map:
-		// Convert maps
-		node := &yaml.Node{Kind: yaml.MappingNode}
-		iter := v.MapRange()
-		for iter.Next() {
-			keyNode := &yaml.Node{
-				Kind:  yaml.ScalarNode,
-				Tag:   "!!str",
-				Value: fmt.Sprintf("%v", iter.Key().Interface()),
-			}
-			valueNode := p.fieldToNode(iter.Value(), rules, currentPath, resourceName)
-			node.Content = append(node.Content, keyNode, valueNode)
-		}
-		return node
+		return p.handleMapNode(v, rules, currentPath, resourceName)
 
 	case reflect.String:
 		return &yaml.Node{
