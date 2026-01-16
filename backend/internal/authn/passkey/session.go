@@ -68,7 +68,7 @@ func startSessionCleanup(store sessionStoreInterface) {
 
 // storeSessionData stores session data in the database and returns a session key.
 func (w *passkeyService) storeSessionData(
-	userID, relyingPartyID string, sessionData *SessionData,
+	userID, relyingPartyID string, sessionData *sessionData,
 ) (string, *serviceerror.ServiceError) {
 	// Generate a random session key
 	sessionKey, err := generateSessionKey()
@@ -90,7 +90,7 @@ func (w *passkeyService) storeSessionData(
 // retrieveSessionData retrieves the session data from the database using the session key.
 func (w *passkeyService) retrieveSessionData(
 	sessionKey string,
-) (*SessionData, string, string, *serviceerror.ServiceError) {
+) (*sessionData, string, string, *serviceerror.ServiceError) {
 	// Retrieve session data from database
 	sessionData, userID, relyingPartyID, err := w.sessionStore.retrieveSession(sessionKey)
 	if err != nil {

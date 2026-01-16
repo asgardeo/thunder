@@ -153,9 +153,9 @@ func decodeBase64(s string) ([]byte, error) {
 	return base64.StdEncoding.DecodeString(s)
 }
 
-// parseAssertionResponse converts raw string parameters to ParsedCredentialAssertionData.
+// parseAssertionResponse converts raw string parameters to parsedCredentialAssertionData.
 func parseAssertionResponse(credentialID, credentialType, clientDataJSON,
-	authenticatorData, signature, userHandle string) (*ParsedCredentialAssertionData, error) {
+	authenticatorData, signature, userHandle string) (*parsedCredentialAssertionData, error) {
 	// Decode all base64url encoded parameters
 	rawID, err := decodeBase64(credentialID)
 	if err != nil {
@@ -199,7 +199,7 @@ func parseAssertionResponse(credentialID, credentialType, clientDataJSON,
 	}
 
 	// Create the parsed credential assertion data structure
-	parsed := &ParsedCredentialAssertionData{
+	parsed := &parsedCredentialAssertionData{
 		ParsedPublicKeyCredential: protocol.ParsedPublicKeyCredential{
 			RawID: rawID,
 			ParsedCredential: protocol.ParsedCredential{
@@ -235,12 +235,12 @@ func parseAssertionResponse(credentialID, credentialType, clientDataJSON,
 	return parsed, nil
 }
 
-// parseAttestationResponse converts raw credential data to ParsedCredentialCreationData.
+// parseAttestationResponse converts raw credential data to parsedCredentialCreationData.
 // This function uses the protocol package's ParseCredentialCreationResponseBytes to properly
 // parse the credential data with all required fields populated.
 func parseAttestationResponse(
 	credentialID, credentialType, clientDataJSON, attestationObject string,
-) (*ParsedCredentialCreationData, error) {
+) (*parsedCredentialCreationData, error) {
 	// Decode inputs to ensure we have valid bytes, regardless of input encoding
 	clientDataBytes, err := decodeBase64(clientDataJSON)
 	if err != nil {
@@ -364,8 +364,8 @@ func handleUserRetrievalError(
 }
 
 // buildRegistrationOptions builds registration options from the request.
-func buildRegistrationOptions(req *PasskeyRegistrationStartRequest) []RegistrationOption {
-	var registrationOptions []RegistrationOption
+func buildRegistrationOptions(req *PasskeyRegistrationStartRequest) []registrationOption {
+	var registrationOptions []registrationOption
 
 	// Set authenticator selection if provided
 	if req.AuthenticatorSelection != nil {

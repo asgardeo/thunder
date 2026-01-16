@@ -29,7 +29,7 @@ type webAuthnUser struct {
 	id          []byte
 	name        string
 	displayName string
-	credentials []WebauthnCredential
+	credentials []webauthnCredential
 }
 
 var _ webauthn.User = (*webAuthnUser)(nil)
@@ -50,12 +50,12 @@ func (u *webAuthnUser) WebAuthnDisplayName() string {
 }
 
 // WebAuthnCredentials returns the user's credentials as required by webauthn.User interface.
-func (u *webAuthnUser) WebAuthnCredentials() []WebauthnCredential {
+func (u *webAuthnUser) WebAuthnCredentials() []webauthnCredential {
 	return u.credentials
 }
 
 // newWebAuthnUser creates a new WebAuthn user.
-func newWebAuthnUser(userID string, userName, displayName string, credentials []WebauthnCredential) *webAuthnUser {
+func newWebAuthnUser(userID string, userName, displayName string, credentials []webauthnCredential) *webAuthnUser {
 	return &webAuthnUser{
 		id:          []byte(userID),
 		name:        userName,
@@ -65,7 +65,7 @@ func newWebAuthnUser(userID string, userName, displayName string, credentials []
 }
 
 // newWebAuthnUserFromCoreUser creates a WebAuthn user from core user
-func newWebAuthnUserFromCoreUser(user *user.User, credentials []WebauthnCredential) *webAuthnUser {
+func newWebAuthnUserFromCoreUser(user *user.User, credentials []webauthnCredential) *webAuthnUser {
 	displayName, userName := extractCoreUser(user)
 	return newWebAuthnUser(user.ID, userName, displayName, credentials)
 }

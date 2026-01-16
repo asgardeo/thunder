@@ -36,10 +36,10 @@ import (
 type sessionStoreInterface interface {
 	storeSession(
 		sessionKey, userID, relyingPartyID string,
-		sessionData *SessionData,
+		sessionData *sessionData,
 		expiryTime time.Time,
 	) error
-	retrieveSession(sessionKey string) (*SessionData, string, string, error)
+	retrieveSession(sessionKey string) (*sessionData, string, string, error)
 	deleteSession(sessionKey string) error
 	deleteExpiredSessions() error
 }
@@ -62,7 +62,7 @@ func newSessionStore() sessionStoreInterface {
 
 // storeSession stores a WebAuthn session in the database.
 func (s *sessionStore) storeSession(sessionKey, userID, relyingPartyID string,
-	sessionData *SessionData, expiryTime time.Time) error {
+	sessionData *sessionData, expiryTime time.Time) error {
 	dbClient, err := s.dbProvider.GetRuntimeDBClient()
 	if err != nil {
 		s.logger.Error("Failed to get database client", log.Error(err))
@@ -98,7 +98,7 @@ func (s *sessionStore) storeSession(sessionKey, userID, relyingPartyID string,
 }
 
 // retrieveSession retrieves a WebAuthn session from the database.
-func (s *sessionStore) retrieveSession(sessionKey string) (*SessionData, string, string, error) {
+func (s *sessionStore) retrieveSession(sessionKey string) (*sessionData, string, string, error) {
 	if sessionKey == "" {
 		return nil, "", "", nil
 	}
@@ -189,7 +189,7 @@ func (s *sessionStore) deleteExpiredSessions() error {
 }
 
 // serializeSessionData converts WebAuthn session data to JSON bytes.
-func (s *sessionStore) serializeSessionData(sessionData *SessionData) ([]byte, error) {
+func (s *sessionStore) serializeSessionData(sessionData *sessionData) ([]byte, error) {
 	jsonData := map[string]interface{}{
 		jsonKeyChallenge:        sessionData.Challenge,
 		jsonKeyUserVerification: string(sessionData.UserVerification),
@@ -240,7 +240,7 @@ func (s *sessionStore) serializeSessionData(sessionData *SessionData) ([]byte, e
 // buildSessionDataFromResultRow builds WebAuthn session data from database result row.
 func (s *sessionStore) buildSessionDataFromResultRow(
 	row map[string]interface{},
-) (*SessionData, string, string, error) {
+) (*sessionData, string, string, error) {
 	userID, _ := row[dbColumnUserID].(string)
 	relyingPartyID, _ := row[dbColumnRelyingPartyID].(string)
 
@@ -267,7 +267,7 @@ func (s *sessionStore) buildSessionDataFromResultRow(
 	// Extract challenge
 	challengeStr, _ := jsonData[jsonKeyChallenge].(string)
 
-	sessionData := &SessionData{
+	sessionData := &sessionData{
 		Challenge: challengeStr,
 	}
 

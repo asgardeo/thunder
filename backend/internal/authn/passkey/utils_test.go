@@ -396,7 +396,7 @@ func (suite *UtilsTestSuite) TestParseAssertionResponse() {
 			wantErr:        false, // The code explicitly swallows this error
 		},
 		{
-			name:         "Error - Invalid WebauthnCredential ID Base64",
+			name:         "Error - Invalid webauthnCredential ID Base64",
 			credentialID: "!!!",
 			wantErr:      true,
 			errContains:  "failed to decode credential ID",

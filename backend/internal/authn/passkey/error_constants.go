@@ -91,7 +91,7 @@ var (
 	ErrorCredentialNotFound = serviceerror.ServiceError{
 		Type:             serviceerror.ClientErrorType,
 		Code:             "PSK-1010",
-		Error:            "WebauthnCredential not found",
+		Error:            "webauthnCredential not found",
 		ErrorDescription: "The specified credential was not found for the user",
 	}
 	// ErrorInvalidAttestationResponse is returned when the attestation response is invalid.
