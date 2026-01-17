@@ -1,19 +1,19 @@
-# **Design Guide - Creating Design Proposals**
+# **Design Guide - Creating Design Discussions**
 
-This guide explains how to design technical solutions for approved Thunder features.
+This guide explains how to create design discussions for approved Thunder features. The design discussion serves as your proposal for how to solve the problem.
 
 ---
 
 ## **🎯 When to Use This Guide**
 
-Create a design proposal when:
+Create a design discussion when:
 
 * ✅ You've been **assigned** to a feature request  
 * ✅ The feature requires **architectural changes** or **new capabilities**  
 * ✅ Community consensus exists on **what** to build  
 * ✅ You need to specify **how** it will be built
 
-**Don't create a design proposal for**:
+**Don't create a design discussion for**:
 
 * ❌ Bug reports → Use [bug report](README.md#-reporting-bugs)
 * ❌ Minor improvements → Use [fast track](README.md#-making-improvements)
@@ -24,7 +24,7 @@ Create a design proposal when:
 
 ## **Step 1: Create a Design Discussion**
 
-Before writing the formal proposal, start a discussion to explore approaches.
+Start a design discussion to explore **how** to solve the problem and gather community feedback on your approach.
 
 ### **Prerequisites**
 
@@ -99,7 +99,7 @@ Once posted, collaborate with the community to refine the design.
 
 ## **Step 3: Design Review**
 
-The maintainers will formally review your design proposal.
+Maintainers will formally review your design proposal.
 
 
 ### **Review Outcomes**
@@ -171,7 +171,7 @@ The maintainers will formally review your design proposal.
 **Track progress**:
 
 * Feature issue stays open until implemented  
-* Implementation PRs reference the design proposal  
+* Implementation PRs reference the design discussion  
 * You're credited as the design author
 
 ---
@@ -182,12 +182,12 @@ The maintainers will formally review your design proposal.
 
 * Expected and normal  
 * Document in implementation PRs  
-* No need to update design proposal
+* No need to update design discussion
 
 **Major changes during implementation**:
 
 * Bring back to design discussion  
-* Update design proposal if significant  
+* Update design discussion if significant  
 * Get maintainer approval for major pivots
 
 ---

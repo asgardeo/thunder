@@ -1,52 +1,34 @@
-title: "[Design Discussion] "
-labels: ["Type/Design", "Status/Discussion"]
+title: "[Design Discussion]"
+labels: ["Type/Design"]
 body:
-  - type: markdown
-    attributes:
-      value: |
-        ## Feature Issue
-        
   - type: input
     id: feature_issue
     attributes:
       label: Related Feature Issue
-      description: Link to the feature issue this design addresses
+      description: Link to the approved feature issue this design addresses
       placeholder: "#123 or https://github.com/asgardeo/thunder/issues/<>"
     validations:
       required: true
-      
-  - type: markdown
-    attributes:
-      value: |
-        ---
-        ## Problem Recap
-        
+
   - type: textarea
     id: problem_recap
     attributes:
       label: Problem Summary
-      description: Brief summary of the problem we're solving (2-3 sentences)
+      description: Brief summary of the problem we're solving (2-3 sentences). This helps readers understand context without navigating to the feature issue.
       placeholder: |
-        Example:
         Enterprise customers with existing LDAP directories (1000+ users) cannot efficiently 
         onboard users into Thunder. This design proposes an LDAP synchronization system that 
         automatically provisions users from LDAP directories.
     validations:
       required: true
       
-  - type: markdown
-    attributes:
-      value: |
-        ---
-        ## High-Level Approach
-        
   - type: textarea
     id: high_level_approach
     attributes:
-      label: Proposed Approach
-      description: Describe your proposed approach at a high level
+      label: High-Level Approach
+      description: |
+        Describe HOW you plan to solve the problem. Focus on the technical approach, not the problem itself (that's already in the feature issue).
       placeholder: |
-        Example:
         - Add LDAP connector service that queries LDAP servers
         - Create scheduled sync job (configurable interval)
         - Map LDAP attributes to Thunder user fields
@@ -54,41 +36,55 @@ body:
         - Support read-only sync initially (LDAP → Thunder)
     validations:
       required: true
-      
-  - type: markdown
-    attributes:
-      value: |
-        ---
-        ## Key Design Questions
         
   - type: textarea
-    id: design_questions
+    id: architecture
     attributes:
-      label: Technical Questions for Discussion
-      description: List the main technical questions that need community input
+      label: Architecture Overview
+      description: Describe new components, services, and how they integrate with existing Thunder architecture
       placeholder: |
-        Example:
-        1. Should we support multiple LDAP servers per organization?
-        2. How do we handle users who exist in both LDAP and Thunder?
-        3. What's the right sync frequency? (Hourly? Daily? Configurable?)
-        4. Which LDAP attributes should we map by default?
-        5. How do we handle deleted users in LDAP?
+        Components:
+        - LDAP Connector Service: Queries LDAP, transforms data
+        - Sync Scheduler: Triggers periodic synchronization
+        - User Provisioning Service: Creates/updates Thunder users
+        - Admin UI: Configuration interface
+
+        [Optional: Include diagrams or links to diagrams]
     validations:
       required: true
-      
-  - type: markdown
-    attributes:
-      value: |
-        ---
-        ## Alternative Approaches Considered
         
+  - type: textarea
+    id: security
+    attributes:
+      label: Security Considerations
+      description: Security implications and how you plan to address them
+      placeholder: |
+        - LDAP credentials stored encrypted at rest
+        - Support for LDAPS (LDAP over TLS)
+        - Rate limiting on sync operations
+        - Audit logging of all provisioning events
+    validations:
+      required: true
+
+  - type: textarea
+    id: impact_areas
+    attributes:
+      label: Impacted Areas
+      description: List Thunder components or areas that will be affected
+      placeholder: |
+        - User Management
+        - Authentication
+        - Admin Dashboard
+        - API Layer
+    validations:
+      required: true
+
   - type: textarea
     id: alternatives
     attributes:
-      label: Alternative Approaches
-      description: List alternatives you considered and why you chose this approach
+      label: Alternatives Considered
+      description: Other approaches you considered and why you chose this one
       placeholder: |
-        Example:
         **Alternative 1**: Real-time sync via webhooks
         - Pros: Immediate synchronization
         - Cons: Not supported by all LDAP servers, complex to implement
@@ -100,99 +96,17 @@ body:
         - Decision: Read-only for v1, bidirectional as separate feature
     validations:
       required: true
-      
-  - type: markdown
-    attributes:
-      value: |
-        ---
-        ## Architecture Overview
-        
-  - type: textarea
-    id: architecture
-    attributes:
-      label: Architecture and Components
-      description: High-level architecture description or component overview
-      placeholder: |
-        Example:
-        Components:
-        - LDAP Connector Service: Queries LDAP, transforms data
-        - Sync Scheduler: Triggers periodic synchronization
-        - User Provisioning Service: Creates/updates Thunder users
-        - Admin UI: Configuration interface
 
-        [Optional: Include diagrams or links to diagrams]
-    validations:
-      required: false
-      
-  - type: markdown
-    attributes:
-      value: |
-        ---
-        ## Security Considerations
-        
   - type: textarea
-    id: security
-    attributes:
-      label: Security Considerations
-      description: Initial thoughts on security implications (will be detailed in formal proposal)
-      placeholder: |
-        Example:
-        - LDAP credentials stored encrypted at rest
-        - Support for LDAPS (LDAP over TLS)
-        - Rate limiting on sync operations
-        - Audit logging of all provisioning events
-    validations:
-      required: true
-      
-  - type: markdown
-    attributes:
-      value: |
-        ---
-        ## Implementation Considerations
-        
-  - type: dropdown
-    id: complexity
-    attributes:
-      label: Implementation Complexity
-      description: How complex do you estimate this implementation to be?
-      options:
-        - Low (1-2 weeks)
-        - Medium (3-6 weeks)
-        - High (2-3 months)
-        - Very High (3+ months)
-    validations:
-      required: true
-      
-  - type: textarea
-    id: impact_areas
-    attributes:
-      label: Areas of Thunder that will be impacted
-      description: List all areas that this design will affect
-      placeholder: |
-        Example:
-        - User Management
-        - Authentication
-        - Admin Dashboard
-        - API Layer
-    validations:
-      required: true
-        
-  - type: markdown
-    attributes:
-      value: |
-        ---
-        ## Open Questions
-        
-  - type: textarea
-    id: open_questions
+    id: discussion_points
     attributes:
       label: Questions for Community Input
-      description: What specific aspects do you need community feedback on?
+      description: Technical questions, trade-offs, or areas where you need community feedback
       placeholder: |
-        Example:
-        - Should we support LDAP groups mapping to Thunder roles?
-        - How do we handle schema differences across LDAP implementations?
-        - What's the rollback strategy if sync fails midway?
-        - Should this be a core feature or an optional plugin?
+        1. Should we support multiple LDAP servers per organization?
+        2. How do we handle users who exist in both LDAP and Thunder?
+        3. What's the right sync frequency? (Hourly? Daily? Configurable?)
+        4. Should this be a core feature or an optional plugin?
+        5. How do we handle deleted users in LDAP?
     validations:
       required: false
