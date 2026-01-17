@@ -6,16 +6,16 @@
   "scripts": {
     "pretest": "npm run clean-reports",
     "clean-reports": "rm -rf blob-report playwright-report test-results",
-    "test": "npx playwright test",
-    "test:chromium": "npx playwright test --project=chromium",
-    "test:firefox": "npx playwright test --project=firefox",
-    "test:webkit": "npx playwright test --project=webkit",
-    "test:headed": "npx playwright test --headed",
-    "test:debug": "npx playwright test --debug",
-    "test:trace": "npx playwright test --trace on",
-    "posttest": "npx playwright merge-reports --reporter html ./blob-report",
-    "ui": "npx playwright test --ui",
-    "report": "npx playwright show-report",
+    "test": "playwright test",
+    "test:chromium": "playwright test --project=chromium",
+    "test:firefox": "playwright test --project=firefox",
+    "test:webkit": "playwright test --project=webkit",
+    "test:headed": "playwright test --headed",
+    "test:debug": "playwright test --debug",
+    "test:trace": "playwright test --trace on",
+    "posttest": "playwright merge-reports --reporter html ./blob-report",
+    "ui": "playwright test --ui",
+    "report": "playwright show-report",
     "lint": "eslint . --ext .ts",
     "lint:fix": "eslint . --ext .ts --fix",
     "format": "prettier --write \"**/*.{ts,json,md}\"",
@@ -28,24 +28,187 @@
     "playwright",
     "automation",
     "wso2",
-    "thunder"
+    "thunder",
+    "asgardeo"
   ],
   "author": "WSO2 LLC",
   "license": "Apache-2.0",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/asgardeo/thunder.git",
+    "directory": "tests/e2e"
+  },
   "type": "commonjs",
   "devDependencies": {
     "@playwright/test": "1.57.0",
     "@types/express": "^5.0.6",
-    "@types/node": "25.0.2",
-    "@typescript-eslint/eslint-plugin": "8.0.0",
-    "@typescript-eslint/parser": "8.0.0",
-    "eslint": "9.0.0",
+    "eslint": "8.57.1",
     "eslint-plugin-playwright": "2.1.0",
     "express": "^5.2.1",
-    "prettier": "3.4.2",
-    "typescript": "5.7.3"
+    "prettier": "3.6.2",
+    "typescript": "5.9.3"
   },
   "dependencies": {
     "dotenv": "17.2.3"
+  },
+  "nx": {
+    "targets": {
+      "test": {
+        "executor": "nx:run-commands",
+        "options": {
+          "command": "playwright test",
+          "cwd": "tests/e2e"
+        },
+        "dependsOn": ["^build"],
+        "inputs": [
+          "{projectRoot}/**/*.ts",
+          "{projectRoot}/**/*.spec.ts",
+          "{projectRoot}/playwright.config.ts",
+          "{projectRoot}/.env",
+          "!{projectRoot}/node_modules/**",
+          "!{projectRoot}/playwright-report/**",
+          "!{projectRoot}/test-results/**",
+          "!{projectRoot}/blob-report/**"
+        ],
+        "outputs": [
+          "{projectRoot}/playwright-report",
+          "{projectRoot}/test-results",
+          "{projectRoot}/blob-report"
+        ],
+        "cache": true
+      },
+      "test:chromium": {
+        "executor": "nx:run-commands",
+        "options": {
+          "command": "playwright test --project=chromium",
+          "cwd": "tests/e2e"
+        },
+        "dependsOn": ["^build"],
+        "cache": true
+      },
+      "test:firefox": {
+        "executor": "nx:run-commands",
+        "options": {
+          "command": "playwright test --project=firefox",
+          "cwd": "tests/e2e"
+        },
+        "dependsOn": ["^build"],
+        "cache": true
+      },
+      "test:webkit": {
+        "executor": "nx:run-commands",
+        "options": {
+          "command": "playwright test --project=webkit",
+          "cwd": "tests/e2e"
+        },
+        "dependsOn": ["^build"],
+        "cache": true
+      },
+      "test:headed": {
+        "executor": "nx:run-commands",
+        "options": {
+          "command": "playwright test --headed",
+          "cwd": "tests/e2e"
+        },
+        "dependsOn": ["^build"],
+        "cache": false
+      },
+      "test:debug": {
+        "executor": "nx:run-commands",
+        "options": {
+          "command": "playwright test --debug",
+          "cwd": "tests/e2e"
+        },
+        "cache": false
+      },
+      "test:trace": {
+        "executor": "nx:run-commands",
+        "options": {
+          "command": "playwright test --trace on",
+          "cwd": "tests/e2e"
+        },
+        "dependsOn": ["^build"],
+        "cache": false
+      },
+      "ui": {
+        "executor": "nx:run-commands",
+        "options": {
+          "command": "playwright test --ui",
+          "cwd": "tests/e2e"
+        },
+        "cache": false
+      },
+      "report": {
+        "executor": "nx:run-commands",
+        "options": {
+          "command": "playwright show-report",
+          "cwd": "tests/e2e"
+        },
+        "cache": false
+      },
+      "lint": {
+        "executor": "nx:run-commands",
+        "options": {
+          "command": "eslint . --ext .ts",
+          "cwd": "tests/e2e"
+        },
+        "inputs": [
+          "{projectRoot}/**/*.ts",
+          "{projectRoot}/.eslintrc*",
+          "{projectRoot}/.eslintignore"
+        ],
+        "cache": true
+      },
+      "lint:fix": {
+        "executor": "nx:run-commands",
+        "options": {
+          "command": "eslint . --ext .ts --fix",
+          "cwd": "tests/e2e"
+        },
+        "cache": false
+      },
+      "format": {
+        "executor": "nx:run-commands",
+        "options": {
+          "command": "prettier --write \"**/*.{ts,json,md}\"",
+          "cwd": "tests/e2e"
+        },
+        "cache": false
+      },
+      "format:check": {
+        "executor": "nx:run-commands",
+        "options": {
+          "command": "prettier --check \"**/*.{ts,json,md}\"",
+          "cwd": "tests/e2e"
+        },
+        "inputs": [
+          "{projectRoot}/**/*.{ts,json,md}",
+          "{projectRoot}/.prettierrc*"
+        ],
+        "cache": true
+      },
+      "type-check": {
+        "executor": "nx:run-commands",
+        "options": {
+          "command": "tsc --noEmit",
+          "cwd": "tests/e2e"
+        },
+        "inputs": [
+          "{projectRoot}/**/*.ts",
+          "{projectRoot}/tsconfig.json"
+        ],
+        "cache": true
+      },
+      "clean-reports": {
+        "executor": "nx:run-commands",
+        "options": {
+          "command": "rm -rf blob-report playwright-report test-results",
+          "cwd": "tests/e2e"
+        },
+        "cache": false
+      }
+    },
+    "tags": ["type:e2e", "scope:tests"],
+    "implicitDependencies": ["thunder-develop"]
   }
 }
