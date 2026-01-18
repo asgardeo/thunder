@@ -33,13 +33,14 @@ import (
 type EngineContext struct {
 	Context context.Context
 
-	FlowID      string
-	FlowType    common.FlowType
-	AppID       string
-	Verbose     bool
-	UserInputs  map[string]string
-	RuntimeData map[string]string
-	TraceID     string
+	FlowID         string
+	FlowType       common.FlowType
+	AppID          string
+	Verbose        bool
+	UserInputs     map[string]string
+	RuntimeData    map[string]string
+	AdditionalData map[string]string
+	TraceID        string
 
 	CurrentNode         core.NodeInterface
 	CurrentNodeResponse *common.NodeResponse

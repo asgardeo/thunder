@@ -114,7 +114,7 @@ func (p *provisioningExecutor) Execute(ctx *core.NodeContext) (*common.ExecutorR
 	if err != nil {
 		logger.Error("Failed to identify user", log.Error(err))
 		execResp.Status = common.ExecFailure
-		execResp.FailureReason = "Failed to identify user"
+		execResp.FailureReason = failureReasonFailedToIdentifyUser
 		return execResp, nil
 	}
 	if execResp.Status == common.ExecFailure && execResp.FailureReason != failureReasonUserNotFound {

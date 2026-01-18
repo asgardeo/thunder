@@ -94,7 +94,7 @@ func (i *identifyingExecutor) IdentifyUser(filters map[string]interface{},
 		} else {
 			logger.Debug("Failed to identify user due to error: " + svcErr.Error)
 			execResp.Status = common.ExecFailure
-			execResp.FailureReason = "Failed to identify user"
+			execResp.FailureReason = failureReasonFailedToIdentifyUser
 			return nil, nil
 		}
 	}
