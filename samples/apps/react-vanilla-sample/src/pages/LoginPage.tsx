@@ -41,6 +41,8 @@ import AccountCircleIcon from '@mui/icons-material/AccountCircle';
 import { useEffect, useRef, useState, useCallback } from 'react';
 import Layout from '../components/Layout';
 import ConnectionErrorModal from '../components/ConnectionErrorModal';
+import PasskeyRegPrompt from '../components/PasskeyRegPrompt';
+import PasskeyAuthPrompt from '../components/PasskeyAuthPrompt';
 import { 
     NativeAuthSubmitType, 
     initiateNativeAuthFlow,
@@ -48,6 +50,7 @@ import {
     submitNativeAuth, 
     submitAuthDecision 
 } from '../services/authService';
+import type { PasskeyCredentialResponse, PasskeyAssertionResponse } from '../services/authService';
 import useAuth from '../hooks/useAuth';
 
 // Define the interface for the authentication input
@@ -76,6 +79,8 @@ interface AuthResponse {
         redirectURL?: string;
         additionalData?: {
             idpName?: string;
+            passkeyCreationOptions?: string;
+            passkeyChallenge?: string;
         };
     };
     flowId?: string;
@@ -128,6 +133,12 @@ const LoginPage = () => {
     const [isSignupMode, setIsSignupMode] = useState<boolean>(false);
     const [regOnlySuccess, setRegOnlySuccess] = useState<boolean>(false);
     const [promptRegistration, setPromptRegistration] = useState<boolean>(false);
+    
+    // Passkey registration state
+    const [passkeyCreationOptions, setPasskeyCreationOptions] = useState<string | null>(null);
+    
+    // Passkey authentication state
+    const [passkeyChallenge, setPasskeyChallenge] = useState<string | null>(null);
     
     const GradientCircularProgress = () => {
         return (
@@ -281,6 +292,8 @@ const LoginPage = () => {
         setRedirectURL(null);
         setSocialIdpName('');
         setRegOnlySuccess(false);
+        setPasskeyCreationOptions(null);
+        setPasskeyChallenge(null);
 
         if (data.flowStatus && data.flowStatus === 'COMPLETE') {
             setError(false);
@@ -301,6 +314,14 @@ const LoginPage = () => {
                 // Also store actions for form submission
                 if (data.data?.actions) {
                     setAvailableActions(data.data.actions);
+                }
+                // Check for passkey creation options in additionalData
+                if (data.data?.additionalData?.passkeyCreationOptions) {
+                    setPasskeyCreationOptions(data.data.additionalData.passkeyCreationOptions);
+                }
+                // Check for passkey authentication challenge in additionalData
+                if (data.data?.additionalData?.passkeyChallenge) {
+                    setPasskeyChallenge(data.data.additionalData.passkeyChallenge);
                 }
             } else if (data.data?.actions && data.data.actions.length > 1) {
                 // This is a decision screen - multiple actions to choose from
@@ -582,6 +603,61 @@ const LoginPage = () => {
             setErrorMessage(error.message || 'Error during authentication');
         }
         setLoading(false);
+    };
+
+    // Handler for passkey credential creation
+    const handlePasskeyCredentialCreated = (credential: PasskeyCredentialResponse) => {
+        setLoading(true);
+        setPasskeyCreationOptions(null);
+
+        // Submit passkey credential to complete the flow
+        const passkeyInputs = {
+            credentialId: credential.credentialId,
+            clientDataJSON: credential.clientDataJSON,
+            attestationObject: credential.attestationObject,
+        };
+
+        const actionRef = availableActions.length > 0 ? availableActions[0].ref : undefined;
+        submitNativeAuth(flowId, passkeyInputs, actionRef)
+            .then((result) => {
+                processAuthResponse(result.data);
+            })
+            .catch((error) => {
+                console.error("Error submitting passkey credential:", error);
+                handleSubmissionError(error);
+            });
+    };
+
+    // Handler for passkey creation error
+    const handlePasskeyError = (errorMessage: string) => {
+        setError(true);
+        setErrorMessage(errorMessage);
+        setLoading(false);
+    };
+
+    // Handler for passkey authentication (assertion) completion
+    const handlePasskeyAssertionCompleted = (assertion: PasskeyAssertionResponse) => {
+        setLoading(true);
+        setPasskeyChallenge(null);
+
+        // Submit passkey assertion to complete the authentication flow
+        const passkeyInputs = {
+            credentialId: assertion.credentialId,
+            clientDataJSON: assertion.clientDataJSON,
+            authenticatorData: assertion.authenticatorData,
+            signature: assertion.signature,
+            userHandle: assertion.userHandle,
+        };
+
+        // For passkey auth, there's no action ref - just submit the inputs
+        submitNativeAuth(flowId, passkeyInputs)
+            .then((result) => {
+                processAuthResponse(result.data);
+            })
+            .catch((error) => {
+                console.error("Error submitting passkey assertion:", error);
+                handleSubmissionError(error);
+            });
     };
 
     const handleRetry = () => {
@@ -1354,6 +1430,22 @@ const LoginPage = () => {
                                         {/* First check if we have a redirect URL */}
                                         {redirectURL ? (
                                             renderRedirectLoginButton()
+                                        ) : passkeyCreationOptions ? (
+                                            /* Show passkey creation prompt */
+                                            <PasskeyRegPrompt
+                                                passkeyCreationOptionsJson={passkeyCreationOptions}
+                                                onCredentialCreated={handlePasskeyCredentialCreated}
+                                                onError={handlePasskeyError}
+                                                isLoading={loading}
+                                            />
+                                        ) : passkeyChallenge ? (
+                                            /* Show passkey authentication prompt */
+                                            <PasskeyAuthPrompt
+                                                passkeyRequestOptionsJson={passkeyChallenge}
+                                                onAuthenticated={handlePasskeyAssertionCompleted}
+                                                onError={handlePasskeyError}
+                                                isLoading={loading}
+                                            />
                                         ) : needsDecision ? (
                                             /* If not redirect but needs decision */
                                             <>
