@@ -414,13 +414,31 @@ export default function SignUpBox(): JSX.Element {
                                                   onChange={(e) => handleInputChange(fieldName, e.target.value)}
                                                 >
                                                   <MenuItem value="" disabled>
-                                                    {subComponent.placeholder ?? 'Select an option'}
+                                                    {t(resolve(subComponent.placeholder)!)}
                                                   </MenuItem>
-                                                  {subComponent.options.map((option: string) => (
-                                                    <MenuItem key={option} value={option}>
-                                                      {option}
-                                                    </MenuItem>
-                                                  ))}
+                                                  {subComponent.options.map((option: string | { value: string; label: string }) => {
+                                                    // Handle both string options and object options {value, label}
+                                                    let optValue: string;
+                                                    let optLabel: string;
+
+                                                    if (typeof option === 'string') {
+                                                      optValue = option;
+                                                      optLabel = option;
+                                                    } else {
+                                                      optValue = typeof option.value === 'object' 
+                                                        ? JSON.stringify(option.value) 
+                                                        : String(option.value);
+                                                      optLabel = typeof option.label === 'object' 
+                                                        ? JSON.stringify(option.label) 
+                                                        : String(option.label);
+                                                    }
+
+                                                    return (
+                                                      <MenuItem key={optValue} value={optValue}>
+                                                        {optLabel}
+                                                      </MenuItem>
+                                                    );
+                                                  })}
                                                 </Select>
                                                 {hasError && fieldErrors?.[fieldName] && (
                                                   <Typography variant="caption" color="error.main" sx={{mt: 0.5}}>

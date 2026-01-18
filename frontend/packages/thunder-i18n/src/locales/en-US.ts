@@ -801,6 +801,8 @@ const translations = {
     'fields.password.placeholder': 'Enter your password',
     'fields.username.label': 'Username',
     'fields.username.placeholder': 'Enter your username',
+    'fields.usertype.label': 'User Type',
+    'fields.usertype.placeholder': 'Select User Type',
   },
 
   // ============================================================================

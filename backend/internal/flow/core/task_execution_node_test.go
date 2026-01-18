@@ -717,3 +717,125 @@ func (s *TaskExecutionNodeTestSuite) TestExecuteVerboseModeMetaNotIncludedForNon
 	s.Equal(common.NodeStatusComplete, resp.Status)
 	s.Nil(resp.Meta, "Meta should not be included for complete responses even in verbose mode")
 }
+
+func (s *TaskExecutionNodeTestSuite) TestExecuteVerboseModeExecutorMetaTakesPrecedence() {
+	mockExec := NewExecutorInterfaceMock(s.T())
+	node := newTaskExecutionNode("task-1", map[string]interface{}{}, false, false)
+	nodeMetaData := map[string]interface{}{"title": "Node Meta", "source": "node"}
+	node.SetMeta(nodeMetaData)
+
+	execNode, _ := node.(ExecutorBackedNodeInterface)
+
+	// Executor returns its own meta
+	executorMetaData := MetaStructure{
+		Components: []MetaComponent{
+			{Type: "SELECT", ID: "usertype_input", Ref: "userType"},
+		},
+	}
+
+	mockExec.On("GetName").Return("test-executor").Once()
+	mockExec.On("Execute", mock.Anything).Return(
+		&common.ExecutorResponse{
+			Status: common.ExecUserInputRequired,
+			Inputs: []common.Input{{Identifier: "userType", Type: "SELECT", Required: true}},
+			Meta:   executorMetaData,
+		}, nil,
+	).Once()
+
+	execNode.SetExecutor(mockExec)
+
+	ctx := &NodeContext{FlowID: "test-flow", Verbose: true}
+	resp, err := node.Execute(ctx)
+
+	s.Nil(err)
+	s.NotNil(resp)
+	s.Equal(common.NodeStatusIncomplete, resp.Status)
+	s.Equal(common.NodeResponseTypeView, resp.Type)
+
+	// Executor meta should take precedence over node meta
+	s.Equal(executorMetaData, resp.Meta, "Executor meta should take precedence over node meta")
+}
+
+func (s *TaskExecutionNodeTestSuite) TestExecuteVerboseModeExecutorMetaUsedWhenNodeMetaNil() {
+	mockExec := NewExecutorInterfaceMock(s.T())
+	node := newTaskExecutionNode("task-1", map[string]interface{}{}, false, false)
+	// No node meta set
+
+	execNode, _ := node.(ExecutorBackedNodeInterface)
+
+	// Executor returns its own meta
+	executorMetaData := map[string]interface{}{"title": "Dynamic Meta", "source": "executor"}
+
+	mockExec.On("GetName").Return("test-executor").Once()
+	mockExec.On("Execute", mock.Anything).Return(
+		&common.ExecutorResponse{
+			Status: common.ExecUserInputRequired,
+			Inputs: []common.Input{{Identifier: "field1", Required: true}},
+			Meta:   executorMetaData,
+		}, nil,
+	).Once()
+
+	execNode.SetExecutor(mockExec)
+
+	ctx := &NodeContext{FlowID: "test-flow", Verbose: true}
+	resp, err := node.Execute(ctx)
+
+	s.Nil(err)
+	s.NotNil(resp)
+	s.Equal(executorMetaData, resp.Meta, "Executor meta should be used when node meta is nil")
+}
+
+func (s *TaskExecutionNodeTestSuite) TestExecuteVerboseModeNodeMetaUsedWhenExecutorMetaNil() {
+	mockExec := NewExecutorInterfaceMock(s.T())
+	node := newTaskExecutionNode("task-1", map[string]interface{}{}, false, false)
+	nodeMetaData := map[string]interface{}{"title": "Static Node Meta"}
+	node.SetMeta(nodeMetaData)
+
+	execNode, _ := node.(ExecutorBackedNodeInterface)
+
+	mockExec.On("GetName").Return("test-executor").Once()
+	mockExec.On("Execute", mock.Anything).Return(
+		&common.ExecutorResponse{
+			Status: common.ExecUserInputRequired,
+			Inputs: []common.Input{{Identifier: "field1", Required: true}},
+			Meta:   nil, // Executor does not return meta
+		}, nil,
+	).Once()
+
+	execNode.SetExecutor(mockExec)
+
+	ctx := &NodeContext{FlowID: "test-flow", Verbose: true}
+	resp, err := node.Execute(ctx)
+
+	s.Nil(err)
+	s.NotNil(resp)
+	s.Equal(nodeMetaData, resp.Meta, "Node meta should be used when executor meta is nil")
+}
+
+func (s *TaskExecutionNodeTestSuite) TestExecuteNonVerboseModeExecutorMetaNotIncluded() {
+	mockExec := NewExecutorInterfaceMock(s.T())
+	node := newTaskExecutionNode("task-1", map[string]interface{}{}, false, false)
+
+	execNode, _ := node.(ExecutorBackedNodeInterface)
+
+	// Executor returns its own meta
+	executorMetaData := map[string]interface{}{"title": "Dynamic Meta"}
+
+	mockExec.On("GetName").Return("test-executor").Once()
+	mockExec.On("Execute", mock.Anything).Return(
+		&common.ExecutorResponse{
+			Status: common.ExecUserInputRequired,
+			Inputs: []common.Input{{Identifier: "field1", Required: true}},
+			Meta:   executorMetaData,
+		}, nil,
+	).Once()
+
+	execNode.SetExecutor(mockExec)
+
+	ctx := &NodeContext{FlowID: "test-flow", Verbose: false} // Non-verbose mode
+	resp, err := node.Execute(ctx)
+
+	s.Nil(err)
+	s.NotNil(resp)
+	s.Nil(resp.Meta, "Meta should not be included in non-verbose mode even when executor provides meta")
+}

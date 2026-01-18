@@ -228,15 +228,8 @@ func (u *userTypeResolver) resolveUserTypeFromMultipleAllowed(execResp *common.E
 	logger.Debug("Prompting for user type selection as multiple user types are available for self registration",
 		log.Any("userTypes", selfRegUserTypes))
 
-	execResp.Status = common.ExecUserInputRequired
-	execResp.Inputs = []common.Input{
-		{
-			Identifier: userTypeKey,
-			Type:       "dropdown",
-			Required:   true,
-			Options:    selfRegUserTypes,
-		},
-	}
+	u.prepareUserTypeSelectionResponse(execResp, selfRegUserTypes)
+
 	return nil
 }
 
@@ -259,4 +252,31 @@ func (u *userTypeResolver) getUserSchemaAndOU(userType string) (*userschema.User
 	logger.Debug("User schema resolved for user type", log.String(userTypeKey, userType),
 		log.String(ouIDKey, userSchema.OrganizationUnitID))
 	return userSchema, userSchema.OrganizationUnitID, nil
+}
+
+// prepareUserTypeSelectionResponse prepares the executor response to prompt user type selection
+func (u *userTypeResolver) prepareUserTypeSelectionResponse(execResp *common.ExecutorResponse,
+	selfRegUserTypes []string) {
+	// Define input for user type selection
+	input := common.Input{
+		Ref:        "usertype_input",
+		Identifier: userTypeKey,
+		Type:       "SELECT",
+		Required:   true,
+		Options:    selfRegUserTypes,
+	}
+
+	execResp.Status = common.ExecUserInputRequired
+	execResp.Inputs = []common.Input{input}
+
+	// Generate dynamic meta
+	execResp.Meta = core.NewMetaBuilder().
+		WithIDPrefix("usertype").
+		WithHeading("{{ t(signup:heading) }}").
+		WithInput(input, core.MetaInputConfig{
+			Label:       "{{ t(elements:fields.usertype.label) }}",
+			Placeholder: "{{ t(elements:fields.usertype.placeholder) }}",
+		}).
+		WithSubmitButton("{{ t(elements:buttons.submit.text) }}").
+		Build()
 }

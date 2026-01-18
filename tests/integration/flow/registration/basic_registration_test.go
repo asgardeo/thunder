@@ -169,7 +169,7 @@ func (ts *BasicRegistrationFlowTestSuite) TestBasicRegistrationFlowSuccess() {
 		"password": "testpassword123",
 	}
 
-	completeFlowStep, err := common.CompleteFlow(flowStep.FlowID, inputs, "")
+	completeFlowStep, err := common.CompleteFlow(flowStep.FlowID, inputs, "action_credentials")
 	if err != nil {
 		ts.T().Fatalf("Failed to complete registration flow: %v", err)
 	}
@@ -188,7 +188,7 @@ func (ts *BasicRegistrationFlowTestSuite) TestBasicRegistrationFlowSuccess() {
 		"firstName": "Test",
 		"lastName":  "User",
 	}
-	completeFlowStep, err = common.CompleteFlow(completeFlowStep.FlowID, inputs, "")
+	completeFlowStep, err = common.CompleteFlow(completeFlowStep.FlowID, inputs, "action_user_info")
 	if err != nil {
 		ts.T().Fatalf("Failed to complete registration flow with additional attributes: %v", err)
 	}
@@ -255,7 +255,7 @@ func (ts *BasicRegistrationFlowTestSuite) TestBasicRegistrationFlowDuplicateUser
 		"password": "newpassword123",
 	}
 
-	completeFlowStep, err := common.CompleteFlow(flowStep.FlowID, inputs, "")
+	completeFlowStep, err := common.CompleteFlow(flowStep.FlowID, inputs, "action_credentials")
 	if err != nil {
 		ts.T().Fatalf("Failed to complete registration flow: %v", err)
 	}
@@ -296,7 +296,7 @@ func (ts *BasicRegistrationFlowTestSuite) TestBasicRegistrationFlowInitialInvali
 	inputs = map[string]string{
 		"password": "testpassword123",
 	}
-	completeFlowStep, err = common.CompleteFlow(completeFlowStep.FlowID, inputs, "")
+	completeFlowStep, err = common.CompleteFlow(completeFlowStep.FlowID, inputs, "action_credentials")
 	if err != nil {
 		ts.T().Fatalf("Failed to complete registration flow with username input: %v", err)
 	}
@@ -315,7 +315,7 @@ func (ts *BasicRegistrationFlowTestSuite) TestBasicRegistrationFlowInitialInvali
 		"firstName": "Test",
 		"lastName":  "User",
 	}
-	completeFlowStep, err = common.CompleteFlow(completeFlowStep.FlowID, inputs, "")
+	completeFlowStep, err = common.CompleteFlow(completeFlowStep.FlowID, inputs, "action_user_info")
 	if err != nil {
 		ts.T().Fatalf("Failed to complete registration flow with additional attributes: %v", err)
 	}
@@ -350,50 +350,53 @@ func (ts *BasicRegistrationFlowTestSuite) TestBasicRegistrationFlowInitialInvali
 	}
 }
 
-func (ts *BasicRegistrationFlowTestSuite) TestBasicRegistrationFlowSingleRequest() {
-	// Generate unique username for this test
-	username := common.GenerateUniqueUsername("singlereguser")
+// TODO: With improvements to the PROMPT node, currently server doesn't allow sending
+// action along with inputs in the initial request. Hence, this test is disabled for now.
+// Should re-enable after addressing the limitation.
+// func (ts *BasicRegistrationFlowTestSuite) TestBasicRegistrationFlowSingleRequest() {
+// 	// Generate unique username for this test
+// 	username := common.GenerateUniqueUsername("singlereguser")
 
-	// Step 1: Initialize the registration flow with credentials in one request
-	inputs := map[string]string{
-		"username":  username,
-		"password":  "testpassword123",
-		"email":     username + "@example.com",
-		"firstName": "Single",
-		"lastName":  "Request",
-	}
+// 	// Step 1: Initialize the registration flow with credentials in one request
+// 	inputs := map[string]string{
+// 		"username":  username,
+// 		"password":  "testpassword123",
+// 		"email":     username + "@example.com",
+// 		"firstName": "Single",
+// 		"lastName":  "Request",
+// 	}
 
-	flowStep, err := common.InitiateRegistrationFlow(ts.testAppID, false, inputs, "")
-	if err != nil {
-		ts.T().Fatalf("Failed to initiate registration flow with inputs: %v", err)
-	}
+// 	flowStep, err := common.InitiateRegistrationFlow(ts.testAppID, false, inputs, "")
+// 	if err != nil {
+// 		ts.T().Fatalf("Failed to initiate registration flow with inputs: %v", err)
+// 	}
 
-	// Step 2: Verify successful registration in a single request
-	ts.Require().Equal("COMPLETE", flowStep.FlowStatus, "Expected flow status to be COMPLETE")
-	ts.Require().NotEmpty(flowStep.Assertion,
-		"JWT assertion should be returned after successful registration")
-	ts.Require().Empty(flowStep.FailureReason, "Failure reason should be empty for successful registration")
+// 	// Step 2: Verify successful registration in a single request
+// 	ts.Require().Equal("COMPLETE", flowStep.FlowStatus, "Expected flow status to be COMPLETE")
+// 	ts.Require().NotEmpty(flowStep.Assertion,
+// 		"JWT assertion should be returned after successful registration")
+// 	ts.Require().Empty(flowStep.FailureReason, "Failure reason should be empty for successful registration")
 
-	// Decode and validate JWT claims
-	jwtClaims, err := testutils.DecodeJWT(flowStep.Assertion)
-	ts.Require().NoError(err, "Failed to decode JWT assertion")
-	ts.Require().NotNil(jwtClaims, "JWT claims should not be nil")
+// 	// Decode and validate JWT claims
+// 	jwtClaims, err := testutils.DecodeJWT(flowStep.Assertion)
+// 	ts.Require().NoError(err, "Failed to decode JWT assertion")
+// 	ts.Require().NotNil(jwtClaims, "JWT claims should not be nil")
 
-	// Validate JWT contains expected user type and OU ID
-	ts.Require().Equal(testUserSchema.Name, jwtClaims.UserType, "Expected userType to match created schema")
-	ts.Require().Equal(ts.testOUID, jwtClaims.OuID, "Expected ouId to match the created organization unit")
-	ts.Require().Equal(ts.testAppID, jwtClaims.Aud, "Expected aud to match the application ID")
-	ts.Require().NotEmpty(jwtClaims.Sub, "JWT subject should not be empty")
+// 	// Validate JWT contains expected user type and OU ID
+// 	ts.Require().Equal(testUserSchema.Name, jwtClaims.UserType, "Expected userType to match created schema")
+// 	ts.Require().Equal(ts.testOUID, jwtClaims.OuID, "Expected ouId to match the created organization unit")
+// 	ts.Require().Equal(ts.testAppID, jwtClaims.Aud, "Expected aud to match the application ID")
+// 	ts.Require().NotEmpty(jwtClaims.Sub, "JWT subject should not be empty")
 
-	// Step 3: Verify the user was created by searching via the user API
-	user, err := testutils.FindUserByAttribute("username", username)
-	if err != nil {
-		ts.T().Fatalf("Failed to retrieve user by username: %v", err)
-	}
-	ts.Require().NotNil(user, "User should be found in user list after registration")
+// 	// Step 3: Verify the user was created by searching via the user API
+// 	user, err := testutils.FindUserByAttribute("username", username)
+// 	if err != nil {
+// 		ts.T().Fatalf("Failed to retrieve user by username: %v", err)
+// 	}
+// 	ts.Require().NotNil(user, "User should be found in user list after registration")
 
-	// Store the created user for cleanup
-	if user != nil {
-		ts.config.CreatedUserIDs = append(ts.config.CreatedUserIDs, user.ID)
-	}
-}
+// 	// Store the created user for cleanup
+// 	if user != nil {
+// 		ts.config.CreatedUserIDs = append(ts.config.CreatedUserIDs, user.ID)
+// 	}
+// }

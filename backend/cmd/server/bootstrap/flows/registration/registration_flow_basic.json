@@ -14,7 +14,72 @@
             "executor": {
                 "name": "UserTypeResolver"
             },
-            "onSuccess": "basic_auth"
+            "onSuccess": "prompt_credentials"
+        },
+        {
+            "id": "prompt_credentials",
+            "type": "PROMPT",
+            "meta": {
+                "components": [
+                    {
+                        "type": "TEXT",
+                        "id": "heading_credentials",
+                        "label": "{{ t(signup:heading) }}",
+                        "variant": "HEADING_2"
+                    },
+                    {
+                        "type": "BLOCK",
+                        "id": "block_credentials",
+                        "components": [
+                            {
+                                "type": "TEXT_INPUT",
+                                "id": "input_username",
+                                "ref": "username",
+                                "label": "{{ t(elements:fields.username.label) }}",
+                                "placeholder": "{{ t(elements:fields.username.placeholder) }}",
+                                "required": true
+                            },
+                            {
+                                "type": "PASSWORD_INPUT",
+                                "id": "input_password",
+                                "ref": "password",
+                                "label": "{{ t(elements:fields.password.label) }}",
+                                "placeholder": "{{ t(elements:fields.password.placeholder) }}",
+                                "required": true
+                            },
+                            {
+                                "type": "ACTION",
+                                "id": "action_credentials",
+                                "label": "{{ t(elements:buttons.submit.text) }}",
+                                "variant": "PRIMARY",
+                                "eventType": "SUBMIT"
+                            }
+                        ]
+                    }
+                ]
+            },
+            "prompts": [
+                {
+                    "inputs": [
+                        {
+                            "ref": "input_username",
+                            "identifier": "username",
+                            "type": "TEXT_INPUT",
+                            "required": true
+                        },
+                        {
+                            "ref": "input_password",
+                            "identifier": "password",
+                            "type": "PASSWORD_INPUT",
+                            "required": true
+                        }
+                    ],
+                    "action": {
+                        "ref": "action_credentials",
+                        "nextNode": "basic_auth"
+                    }
+                }
+            ]
         },
         {
             "id": "basic_auth",
@@ -22,7 +87,86 @@
             "executor": {
                 "name": "BasicAuthExecutor"
             },
-            "onSuccess": "provisioning"
+            "onSuccess": "prompt_user_info"
+        },
+        {
+            "id": "prompt_user_info",
+            "type": "PROMPT",
+            "meta": {
+                "components": [
+                    {
+                        "type": "TEXT",
+                        "id": "heading_user_info",
+                        "label": "{{ t(signup:heading) }}",
+                        "variant": "HEADING_2"
+                    },
+                    {
+                        "type": "BLOCK",
+                        "id": "block_user_info",
+                        "components": [
+                            {
+                                "type": "TEXT_INPUT",
+                                "id": "input_firstName",
+                                "ref": "firstName",
+                                "label": "{{ t(elements:fields.first_name.label) }}",
+                                "placeholder": "{{ t(elements:fields.first_name.placeholder) }}",
+                                "required": true
+                            },
+                            {
+                                "type": "TEXT_INPUT",
+                                "id": "input_lastName",
+                                "ref": "lastName",
+                                "label": "{{ t(elements:fields.last_name.label) }}",
+                                "placeholder": "{{ t(elements:fields.last_name.placeholder) }}",
+                                "required": true
+                            },
+                            {
+                                "type": "EMAIL_INPUT",
+                                "id": "input_email",
+                                "ref": "email",
+                                "label": "{{ t(elements:fields.email.label) }}",
+                                "placeholder": "{{ t(elements:fields.email.placeholder) }}",
+                                "required": true
+                            },
+                            {
+                                "type": "ACTION",
+                                "id": "action_user_info",
+                                "label": "{{ t(elements:buttons.submit.text) }}",
+                                "variant": "PRIMARY",
+                                "eventType": "SUBMIT"
+                            }
+                        ]
+                    }
+                ]
+            },
+            "prompts": [
+                {
+                    "inputs": [
+                        {
+                            "ref": "input_firstName",
+                            "identifier": "firstName",
+                            "type": "TEXT_INPUT",
+                            "required": true
+                        },
+                        {
+                            "ref": "input_lastName",
+                            "identifier": "lastName",
+                            "type": "TEXT_INPUT",
+                            "required": true
+                        },
+                        {
+                            "ref": "input_email",
+                            "identifier": "email",
+                            "type": "EMAIL_INPUT",
+                            "required": true
+                        }
+                    ],
+                    "action": {
+                        "ref": "action_user_info",
+                        "nextNode": "provisioning"
+                    }
+                }
+            ]
         },
         {
             "id": "provisioning",
