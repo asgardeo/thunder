@@ -162,9 +162,11 @@ type PasswordHashingConfig struct {
 
 // PasswordHashingParamsConfig holds the parameters for password hashing.
 type PasswordHashingParamsConfig struct {
-	Iterations int `yaml:"iterations,omitempty" json:"iterations,omitempty"`
-	KeySize    int `yaml:"key_size,omitempty" json:"key_size,omitempty"`
-	SaltSize   int `yaml:"salt_size,omitempty" json:"salt_size,omitempty"`
+	Iterations  int `yaml:"iterations,omitempty" json:"iterations,omitempty"`
+	KeySize     int `yaml:"key_size,omitempty" json:"key_size,omitempty"`
+	SaltSize    int `yaml:"salt_size,omitempty" json:"salt_size,omitempty"`
+	Memory      int `yaml:"memory,omitempty" json:"memory,omitempty"`
+	Parallelism int `yaml:"parallelism,omitempty" json:"parallelism,omitempty"`
 }
 
 // CORSConfig holds the configuration details for the CORS.

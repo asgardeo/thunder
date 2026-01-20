@@ -28,12 +28,18 @@ import (
 
 	"github.com/asgardeo/thunder/internal/system/config"
 	"github.com/asgardeo/thunder/internal/system/log"
+
+	"golang.org/x/crypto/argon2"
 )
 
 const (
-	defaultSaltSize         = 16
-	defaultPBKDF2Iterations = 600000
-	defaultPBKDF2KeySize    = 32
+	defaultSaltSize            = 16
+	defaultPBKDF2Iterations    = 600000
+	defaultPBKDF2KeySize       = 32
+	defaultArgon2idMemory      = 19456 // 19 MB
+	defaultArgon2idIterations  = 2
+	defaultArgon2idParallelism = 1
+	defaultArgon2idKeySize     = 32
 )
 
 var (
@@ -56,6 +62,14 @@ type pbkdf2HashProvider struct {
 	KeySize    int
 }
 
+type argon2idHashProvider struct {
+	SaltSize    int
+	Memory      int
+	Iterations  int
+	Parallelism int
+	KeySize     int
+}
+
 // newHashService initializes and returns the appropriate hash provider based on configuration
 func newHashService() HashServiceInterface {
 	cfg := config.GetThunderRuntime().Config.Crypto.PasswordHashing
@@ -69,6 +83,9 @@ func newHashService() HashServiceInterface {
 	case PBKDF2:
 		logger.Debug("Using PBKDF2 hash algorithm for password hashing")
 		return newPBKDF2Provider(params.SaltSize, params.Iterations, params.KeySize)
+	case ARGON2ID:
+		logger.Debug("Using Argon2id hash algorithm for password hashing")
+		return newArgon2idProvider(params.SaltSize, params.Memory, params.Iterations, params.Parallelism, params.KeySize)
 	default:
 		panic(fmt.Sprintf("unsupported hash algorithm configured: %s", algorithm))
 	}
@@ -176,6 +193,80 @@ func (a *pbkdf2HashProvider) Verify(credentialValueToVerify []byte, referenceCre
 		logger.Error("Error hashing data with PBKDF2: %v", log.Error(err))
 		return false, err
 	}
+	return hex.EncodeToString(hash) == referenceCredential.Hash, nil
+}
+
+func newArgon2idProvider(saltSize, memory, iterations, parallelism, keySize int) *argon2idHashProvider {
+	if saltSize <= 0 {
+		saltSize = defaultSaltSize
+	}
+	if memory <= 0 {
+		memory = defaultArgon2idMemory
+	}
+	if iterations <= 0 {
+		iterations = defaultArgon2idIterations
+	}
+	if parallelism <= 0 {
+		parallelism = defaultArgon2idParallelism
+	}
+	if keySize <= 0 {
+		keySize = defaultArgon2idKeySize
+	}
+	return &argon2idHashProvider{
+		SaltSize:    saltSize,
+		Memory:      memory,
+		Iterations:  iterations,
+		Parallelism: parallelism,
+		KeySize:     keySize,
+	}
+}
+
+// Generate Argon2idCredential generates an Argon2id hash of the input data using the provided salt.
+func (a *argon2idHashProvider) Generate(credentialValue []byte) (Credential, error) {
+	credSalt, err := generateSalt(a.SaltSize)
+	if err != nil {
+		return Credential{}, err
+	}
+
+	hash := argon2.IDKey(credentialValue, credSalt, uint32(a.Iterations), uint32(a.Memory), uint8(a.Parallelism), uint32(a.KeySize))
+
+	return Credential{
+		Algorithm: ARGON2ID,
+		Hash:      hex.EncodeToString(hash),
+		Parameters: CredParameters{
+			Memory:      a.Memory,
+			Iterations:  a.Iterations,
+			Parallelism: a.Parallelism,
+			KeySize:     a.KeySize,
+			Salt:        hex.EncodeToString(credSalt),
+		},
+	}, nil
+}
+
+// Verify Argon2idCredential checks if the Argon2id hash of the input data and salt matches the expected hash.
+func (a *argon2idHashProvider) Verify(credentialValueToVerify []byte, referenceCredential Credential) (bool, error) {
+	memory := referenceCredential.Parameters.Memory
+	if memory <= 0 {
+		memory = defaultArgon2idMemory
+	}
+	iterations := referenceCredential.Parameters.Iterations
+	if iterations <= 0 {
+		iterations = defaultArgon2idIterations
+	}
+	parallelism := referenceCredential.Parameters.Parallelism
+	if parallelism <= 0 {
+		parallelism = defaultArgon2idParallelism
+	}
+	keySize := referenceCredential.Parameters.KeySize
+	if keySize <= 0 {
+		keySize = defaultArgon2idKeySize
+	}
+	saltBytes, err := hex.DecodeString(referenceCredential.Parameters.Salt)
+	if err != nil {
+		logger.Error("Error decoding salt: %v", log.Error(err))
+		return false, err
+	}
+	hash := argon2.IDKey(credentialValueToVerify, saltBytes, uint32(iterations), uint32(memory), uint8(parallelism), uint32(keySize))
 	return hex.EncodeToString(hash) == referenceCredential.Hash, nil
 }
 

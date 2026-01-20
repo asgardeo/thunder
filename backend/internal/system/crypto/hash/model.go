@@ -26,13 +26,17 @@ const (
 	SHA256 CredAlgorithm = "SHA256"
 	// PBKDF2 represents PBKDF2 key derivation function
 	PBKDF2 CredAlgorithm = "PBKDF2"
+	// ARGON2ID represents Argon2id key derivation function
+	ARGON2ID CredAlgorithm = "ARGON2ID"
 )
 
 // CredParameters holds the parameters for credential hashing algorithms
 type CredParameters struct {
-	Iterations int
-	KeySize    int
-	Salt       string
+	Iterations  int
+	KeySize     int
+	Salt        string
+	Memory      int
+	Parallelism int
 }
 
 // Credential represents the credentials of a hashed value.
