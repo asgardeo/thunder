@@ -4,7 +4,7 @@
 
 This repository is a lightweight user and identity management product written in Go. The primary focus is to provide authentication and authorization capabilities for applications and also to allow managing users, roles, and permissions. The server allows three different approaches to authenticate users: by using standard protocols such as OAuth2, OIDC, by defining a flexible orchestration flow, or by using individual authentication mechanisms such as password, passwordless, and social login.
 
-The project is structured as a monorepo to manage the backend, frontend, and sample applications in a single repository. The backend code is located in the `/backend` directory. There is an optional Next.js frontend in `/frontend` and a sample React Vite app in `/samples/apps`.
+The project is structured as a monorepo to manage the backend, frontend, and sample applications in a single repository. The backend code is located in the `/backend` directory. There are optional frontend apps in `/frontend` and sample React Vite apps in `/samples/apps`.
 
 ## Tech Stack
 
@@ -15,8 +15,10 @@ The project is structured as a monorepo to manage the backend, frontend, and sam
 
 ### Frontend
 
-- Next.js with TypeScript is used for the frontend.
-- React with Vite and TypeScript is used for the sample app.
+- React with Vite and TypeScript is used for the frontend.
+- Frontend consists of two parts: 
+  - `thunder-gate`: The login, registration and recovery UI.
+  - `thunder-develop`: The main console application.
 
 ### Testing
 
@@ -31,10 +33,7 @@ The project is structured as a monorepo to manage the backend, frontend, and sam
     - repository/: Configurations and other resource files.
   - dbscripts/: Database scripts.
   - internal/: Internal packages for various functionalities.
-    - authn/: Individual authentication-related code.
-    - oauth/: OAuth related codes such as OAuth, OAuth2, AuthZ, OIDC, etc.
-    - flow/: Flow orchestration engine and related code.
-    - executor/: Individual flow executor implementations.
+    - {package-name}/: Code for the {package-name}.
     - system/: Common utilities, services, and configurations.
   - scripts/: Utility scripts such as init scripts.
   - tests/: Common unit tests related files.
@@ -43,15 +42,16 @@ The project is structured as a monorepo to manage the backend, frontend, and sam
   - .mockery.private.yml: Mockery configurations for private interfaces.
   - .mockery.public.yml: Mockery configurations for public interfaces.
 - frontend/: Individual frontend application code.
-  - apps/gate/: Gate app implementation which serves UIs for login, registration and recovery. 
+  - apps/thunder-gate/: UIs for login, registration and recovery. 
+  - apps/thunder-develop/: UIs for the console application.
   - packages/: Common frontend packages such as UI components, services, and contexts.
 - install/helm/: Helm charts for deployment.
 - samples/apps/: Sample applications demonstrating the usage of the product.
-  - oauth/: Sample React Vite app implementing authentication with OAuth2 and flow execution APIs.
 - tests/integration/: Integration tests for the backend.
+- tests/e2e/: End-to-end tests for the product.
 - docs/: Documentation related files.
-  - apis/: Swagger definitions for APIs.
-  - content/: Other documentation files.
+  - contributing/: Contribution guidelines.
+  - guides/: Product documentation files.
 
 ## General Guidelines
 
@@ -62,6 +62,10 @@ The project is structured as a monorepo to manage the backend, frontend, and sam
 - Promote code reusability and define constants where applicable.
 - Ensure proper error handling and logging.
 - Write unit tests to achieve at least 80% coverage and integration tests where applicable.
+- Go source file names must follow snake_case (for example, `error_constants.go`)
+- Pure typescript source file names (i.e with the extension .ts) must follow camelCase (for example, `useCreateApplication.ts`)
+- React component source file names (i.e with the extension .tsx) must follow PascalCase (for example, `MenuButton.tsx`)
+
 - Refer project README for other general instructions such as build the product, run the server, run tests, etc.
 
 ## Backend Specific Guidelines
@@ -79,13 +83,17 @@ The project is structured as a monorepo to manage the backend, frontend, and sam
   - `store.go`: Data access layer (persistence) - only if the package needs database operations
   - `model.go`: Domain models and DTOs - only if the package has domain-specific models
   - `constants.go`: Package-specific constants (e.g., default values, configuration constants, business logic constants)
-  - `errorconstants.go`: Define service and API error messages, error codes, and error-related constants
-  - `storeconstants.go`: Define database queries, table names, column names, and database-related constants
+  - `error_constants.go`: Define service and API error messages, error codes, and error-related constants
+  - `store_constants.go`: Define database queries, table names, column names, and database-related constants
   - `utils.go`: Define package-specific utility functions in this file
-  - `init.go`: Package initialization and route registration - only for packages with HTTP endpoints
+  - `init.go`: Package initialization and route registration. Route registration is only required if the package exposes HTTP endpoints.
+  - `file_based_store.go`: File-based storage implementation - only if the package needs to support immutable configs
+  - `composite_store.go`: Composite storage implementation - only if the package needs to support both database and immutable configs simultaneously
+  - `immutable_resource.go`: Immutable resource implementation - only if the package needs to support immutable configs
 - Adjust the file structure based on actual requirements. For example:
-  - No HTTP layer? Skip `handler.go` and `init.go`
-  - File-based or cache-backed storage? Add additional storage implementation files
+  - No HTTP layer? Skip `handler.go`
+  - Need cache-backed storage? Add additional storage implementation files
+  - Immutable resource support not required? Skip `file_based_store.go` and `composite_store.go` and `immutable_resource.go`
   - Complex domain? Use subdirectories for further organize related functionality (e.g., `internal/oauth/oauth2/`, `internal/oauth/jwks/`).
 
 ### Package Exports
@@ -157,9 +165,9 @@ The project is structured as a monorepo to manage the backend, frontend, and sam
 - Define service interfaces (e.g., `XServiceInterface`) and implementations (e.g., `xService` struct) in `service.go`.
 - Use private constructor functions (e.g., `newXService()`) to create service instances.
 - If the service needs to interact with the database, accept the store interface as a parameter in the constructor.
-- Constructor functions should accept all dependencies as parameters when the service needs external dependencies.
+- Constructor functions should accept all dependencies as parameters when the service needs external dependencies. The parameter should be in the following order: service dependencies, store, transactioner.
   - Example without dependencies: `func newIDPService() IDPServiceInterface`
-  - Example with dependencies: `func newGroupService(ouService OrganizationUnitServiceInterface) GroupServiceInterface`
+  - Example with dependencies: `func newGroupService(ouService OrganizationUnitServiceInterface, store GroupStoreInterface, transactioner Transactioner) GroupServiceInterface`
 - Services should depend on interfaces, not concrete implementations, to enable testing with mocks.
 - Keep constructors private (unexported) - external packages should only interact through the `Initialize()` function.
 
@@ -168,29 +176,74 @@ The project is structured as a monorepo to manage the backend, frontend, and sam
 - The `Initialize(mux, deps)` function in `init.go` should:
   1. Create the store instances using the constructor functions (Only if the package requires database operations)
   2. Create the service instances using the constructor functions, passing created store and required dependencies which are passed in as parameters(`deps`). If there are multiple services in the package, initialize all services according to their dependency requirements.
+     - **Note**: If a service supports immutable configs, it should return a `ResourceExporter` during initialization.
   3. Create handlers and inject the service instance into them
   4. Register routes with the mux
-  5. Return the created service interfaces to be used as dependencies by other packages
+  5. Return the created service interfaces (and `ResourceExporter` if applicable) to be used as dependencies by other packages
 - Keep all initialized service instances and pass them to dependent services during their initialization.
 - Example initialization flow:
   ```go
   // In internal/user/init.go
-  func Initialize(mux *http.ServeMux, ouService ou.OrganizationUnitServiceInterface) UserServiceInterface {
-      userStore := newUserStore() // No dependencies
-      userService := newUserService(ouService, userStore) // Inject dependency via private constructor
+  func Initialize(mux *http.ServeMux, ouService ou.OrganizationUnitServiceInterface) (UserServiceInterface, error) {
+      userStore, err := newUserStore() // No dependencies
+      if err != nil {
+          return nil, err
+      }
+      // Obtain transactioner from the provider
+      transactioner, err := provider.GetDBProvider().GetUserDBTransactioner()
+      if err != nil {
+          return nil, err
+      }
+
+      userService := newUserService(ouService, userStore, transactioner) // Inject dependency via private constructor
       userHandler := newUserHandler(userService)
       registerRoutes(mux, userHandler)
-      return userService // Return the created service interfaces for dependency injection
+      return userService, nil // Return the created service interfaces for dependency injection
   }
   ```
 - The main service manager in `cmd/server/servicemanager.go` should orchestrate all initializations in the correct order, passing dependencies as needed.
+  - It should also collect `ResourceExporter` interfaces from packages that support immutable configs and register them with the `export` service.
   ```go
   // In cmd/server/servicemanager.go
+  // Note: Error handling is not shown for brevity.
   func registerServices(mux *http.ServeMux) {
-      ouService := ou.Initialize(mux) // No dependencies
-      userService := user.Initialize(mux, ouService) // Pass dependencies
-      groupService := group.Initialize(mux, ouService, groupService) // Pass dependency
-      ...
+      var exporters []immutableresource.ResourceExporter
+
+      ouService, ouExporter, err := ou.Initialize(mux) // Returns service and exporter
+
+      exporters = append(exporters, ouExporter)
+      
+      userService, err := user.Initialize(mux, ouService) // Pass dependencies
+      
+      // ... initialize other services ...
+
+      // Initialize export service with collected exporters
+      _ = export.Initialize(mux, exporters)
+  }
+  ```
+
+### Transaction Management
+- Use `transaction.Transactioner` from `internal/system/database/transaction` to handle database transactions within the service layer.
+- Inject the `transactioner` into the service struct.
+- Use `transactioner.Transact` to execute operations that require atomicity.
+  - `Transact` accepts a context and a function. The function receives a new context `txCtx` which **must** be passed to all store operations within the closure to ensure they participate in the transaction.
+  - If the closure returns an error, the transaction is automatically rolled back. If it returns `nil`, the transaction is committed.
+- Example usage:
+  ```go
+  // In internal/user/service.go
+  func (us *userService) CreateUser(ctx context.Context, user *User) (*User, *serviceerror.ServiceError) {
+      // ... validation logic ...
+  
+      // Use transaction to ensure atomic user creation
+      err = us.transactioner.Transact(ctx, func(txCtx context.Context) error {
+          // IMPORTANT: Pass txCtx to store methods, not the original ctx
+          return us.userStore.CreateUser(txCtx, *user, credentials)
+      })
+      if err != nil {
+          return nil, logErrorAndReturnServerError(logger, "Failed to create user", err)
+      }
+      
+      return user, nil
   }
   ```
 
