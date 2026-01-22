@@ -213,7 +213,7 @@ export default function ViewUserPage() {
   }
 
   return (
-    <Box sx={{maxWidth: 1000, mx: 'auto', px: 2, position: 'relative'}}>
+    <Box>
       <Button
         onClick={() => {
           handleBack().catch(() => {

@@ -340,7 +340,7 @@ export default function ConfigureStack({
       {/* Divider between technology and platform sections */}
       {stackTypes.technology &&
         stackTypes.platform &&
-        signInApproach !== ApplicationCreateFlowSignInApproach.CUSTOM && (
+        signInApproach !== ApplicationCreateFlowSignInApproach.EMBEDDED && (
           <Divider sx={{my: 2}}>
             <Typography variant="body2" color="text.secondary">
               {t('applications:onboarding.configure.stack.dividerLabel')}
@@ -349,7 +349,7 @@ export default function ConfigureStack({
         )}
 
       {/* Platform Selection */}
-      {stackTypes.platform && signInApproach !== ApplicationCreateFlowSignInApproach.CUSTOM && (
+      {stackTypes.platform && signInApproach !== ApplicationCreateFlowSignInApproach.EMBEDDED && (
         <>
           <Stack direction="column" spacing={1}>
             <Typography variant="h1">{t('applications:onboarding.configure.stack.platform.title')}</Typography>

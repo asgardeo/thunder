@@ -64,7 +64,7 @@ describe('application-create-flow models', () => {
     });
 
     it('should have CUSTOM approach', () => {
-      expect(ApplicationCreateFlowSignInApproach.CUSTOM).toBe('CUSTOM');
+      expect(ApplicationCreateFlowSignInApproach.EMBEDDED).toBe('CUSTOM');
     });
 
     it('should have exactly 2 approaches', () => {

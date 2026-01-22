@@ -135,7 +135,7 @@ export interface IntegrationStep {
 
 /**
  * Integration guides structure containing LLM prompt and manual steps.
- * Keys represent different integration approaches (e.g., 'inbuilt', 'custom').
+ * Keys represent different integration approaches (e.g., 'inbuilt', 'embedded').
  *
  * @public
  */
@@ -157,6 +157,16 @@ export type ApplicationTemplate = Pick<
   Application,
   'name' | 'description' | 'inbound_auth_config' | 'allowed_user_types'
 > & {
+  /**
+   * Unique identifier for the template
+   * @example 'react', 'nextjs', 'browser'
+   */
+  id?: string;
+  /**
+   * User-friendly display name for the template
+   * @example 'React', 'Next.js', 'Browser'
+   */
+  displayName?: string;
   /**
    * Optional integration guides for this template
    */

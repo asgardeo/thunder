@@ -58,6 +58,7 @@ export type BasicApplication = Pick<
   | 'auth_flow_id'
   | 'registration_flow_id'
   | 'is_registration_flow_enabled'
+  | 'template'
 > & {
   /**
    * OAuth2 client identifier
@@ -216,6 +217,13 @@ export interface Application {
   allowed_user_types?: string[];
 
   /**
+   * Application template identifier
+   * Indicates which template was used to create this application
+   * @example 'react', 'nextjs', 'browser', 'mobile'
+   */
+  template?: string;
+
+  /**
    * Inbound authentication configuration
    * Contains OAuth2/OIDC settings
    * Note: client_secret is masked in GET responses
@@ -242,4 +250,10 @@ export interface Application {
    * Allows for extension fields not explicitly defined in the interface
    */
   [key: string]: unknown;
+
+  /**
+   * Token configuration
+   * Defines how access tokens and ID tokens are generated.
+   */
+  token?: any;
 }

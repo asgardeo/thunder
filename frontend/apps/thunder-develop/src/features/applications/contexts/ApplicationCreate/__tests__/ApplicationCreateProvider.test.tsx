@@ -81,7 +81,7 @@ function TestConsumer() {
       <button type="button" onClick={() => context.toggleIntegration('test-integration')}>
         Toggle Integration
       </button>
-      <button type="button" onClick={() => context.setSignInApproach(ApplicationCreateFlowSignInApproach.CUSTOM)}>
+      <button type="button" onClick={() => context.setSignInApproach(ApplicationCreateFlowSignInApproach.EMBEDDED)}>
         Set Custom Approach
       </button>
       <button type="button" onClick={() => context.setSelectedTechnology(TechnologyApplicationTemplate.REACT)}>
@@ -244,7 +244,7 @@ describe('ApplicationCreateProvider', () => {
 
     await user.click(screen.getByText('Set Custom Approach'));
 
-    expect(screen.getByTestId('sign-in-approach')).toHaveTextContent(ApplicationCreateFlowSignInApproach.CUSTOM);
+    expect(screen.getByTestId('sign-in-approach')).toHaveTextContent(ApplicationCreateFlowSignInApproach.EMBEDDED);
   });
 
   it('updates selected technology when setSelectedTechnology is called', async () => {

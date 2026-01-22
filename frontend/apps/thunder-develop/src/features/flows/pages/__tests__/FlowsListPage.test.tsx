@@ -125,7 +125,7 @@ describe('FlowsListPage', () => {
       fireEvent.click(addButton);
 
       await waitFor(() => {
-        expect(mockNavigate).toHaveBeenCalledWith('/flows/login-builder');
+        expect(mockNavigate).toHaveBeenCalledWith('/flows/signin');
       });
     });
 

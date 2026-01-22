@@ -1,4 +1,6 @@
 {
+  "id": "nextjs",
+  "displayName": "Next.js",
   "name": "Next.js Application",
   "description": "Server-side rendered application built with Next.js",
   "inbound_auth_config": [

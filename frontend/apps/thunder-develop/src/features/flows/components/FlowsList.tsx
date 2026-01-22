@@ -76,9 +76,9 @@ export default function FlowsList(): JSX.Element {
     // Only authentication flows are editable for now
     if (selectedFlow?.flowType === 'AUTHENTICATION') {
       (async (): Promise<void> => {
-        await navigate(`/flows/login/${selectedFlow.id}`);
+        await navigate(`/flows/signin/${selectedFlow.id}`);
       })().catch((_error: unknown) => {
-        logger.error('Failed to navigate to flow editor', {error: _error, flowId: selectedFlow.id});
+        logger.error('Failed to navigate to flow builder', {error: _error, flowId: selectedFlow.id});
       });
     }
   };
@@ -223,7 +223,7 @@ export default function FlowsList(): JSX.Element {
               return;
             }
             (async (): Promise<void> => {
-              await navigate(`/flows/login/${flow.id}`);
+              await navigate(`/flows/signin/${flow.id}`);
             })().catch((_error: unknown) => {
               logger.error('Failed to navigate to flow', {error: _error, flowId: flow.id});
             });

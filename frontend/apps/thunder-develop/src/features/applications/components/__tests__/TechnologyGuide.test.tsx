@@ -18,9 +18,9 @@
 
 import {describe, it, expect, vi, beforeEach} from 'vitest';
 import {render, screen} from '@testing-library/react';
-import TechnologyGuide, {type TechnologyGuideProps} from '../TechnologyGuide';
-import type {IntegrationGuides} from '../../../models/application-templates';
-import {ApplicationCreateFlowSignInApproach} from '../../../models/application-create-flow';
+import TechnologyGuide, {type TechnologyGuideProps} from '../integrate-application/TechnologyGuide';
+import type {IntegrationGuides} from '../../models/application-templates';
+import {ApplicationCreateFlowSignInApproach} from '../../models/application-create-flow';
 
 // Mock react-i18next
 vi.mock('react-i18next', () => ({
@@ -236,7 +236,7 @@ describe('TechnologyGuide', () => {
     });
 
     it('should render custom guide when signInApproach is CUSTOM', () => {
-      renderComponent({signInApproach: ApplicationCreateFlowSignInApproach.CUSTOM});
+      renderComponent({signInApproach: ApplicationCreateFlowSignInApproach.EMBEDDED});
 
       expect(screen.getByText('Custom Integration Prompt')).toBeInTheDocument();
       expect(screen.getByText('Custom Step 1')).toBeInTheDocument();

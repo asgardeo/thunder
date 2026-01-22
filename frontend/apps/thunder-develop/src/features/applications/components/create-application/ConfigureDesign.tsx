@@ -136,10 +136,10 @@ export default function ConfigureDesign({
   const {t} = useTranslation();
   const theme = useTheme();
   const {data: brandingsData} = useGetBrandings({limit: 100});
-  const defaultBranding: BrandingListItem | undefined = brandingsData?.brandings.find(
-    (b) => b.displayName === BrandingConstants.DEFAULT_BRANDING_NAME,
-  );
-  const {data: defaultBrandingDetails} = useGetBranding(defaultBranding?.id ?? '');
+
+  // Use the first branding as the default if any exist
+  const firstBranding = brandingsData?.brandings?.[0];
+  const {data: firstBrandingDetails} = useGetBranding(firstBranding?.id ?? '');
 
   const [logoSeed, setLogoSeed] = useState<number>(0);
   const [customColor, setCustomColor] = useState<string>('');
@@ -166,35 +166,36 @@ export default function ConfigureDesign({
   }, [logoSuggestions, onInitialLogoLoad, appLogo]);
 
   /**
-   * Apply DEFAULT branding color if it exists
+   * Apply first branding color if it exists
    */
   useEffect((): void => {
-    if (defaultBrandingDetails?.preferences?.theme?.colorSchemes?.light?.colors?.primary?.main) {
-      const defaultColor: string = defaultBrandingDetails.preferences.theme.colorSchemes.light.colors.primary.main;
-      onColorSelect(defaultColor);
+    if (firstBrandingDetails?.preferences?.theme?.colorSchemes?.light?.colors?.primary?.main) {
+      const firstBrandingColor: string = firstBrandingDetails.preferences.theme.colorSchemes.light.colors.primary.main;
+      onColorSelect(firstBrandingColor);
     }
-  }, [defaultBrandingDetails, onColorSelect]);
+  }, [firstBrandingDetails, onColorSelect]);
 
   /**
-   * Apply DEFAULT branding logo if it exists
+   * Apply first branding logo if it exists
    */
   useEffect((): void => {
-    if (defaultBrandingDetails?.preferences?.theme?.colorSchemes?.light?.images?.logo?.primary?.url) {
-      const defaultLogo: string = defaultBrandingDetails.preferences.theme.colorSchemes.light.images.logo.primary.url;
-      onLogoSelect(defaultLogo);
+    if (firstBrandingDetails?.preferences?.theme?.colorSchemes?.light?.images?.logo?.primary?.url) {
+      const firstBrandingLogo: string =
+        firstBrandingDetails.preferences.theme.colorSchemes.light.images.logo.primary.url;
+      onLogoSelect(firstBrandingLogo);
     }
-  }, [defaultBrandingDetails, onLogoSelect]);
+  }, [firstBrandingDetails, onLogoSelect]);
 
   /**
    * Notify parent about branding selection
    */
   useEffect((): void => {
     if (onBrandingSelectionChange) {
-      // User is using DEFAULT branding if it exists and they haven't opted to pick different color or logo
-      const useDefaultBranding = Boolean(defaultBrandingDetails && !showColorOptions && !hasCustomLogo);
-      onBrandingSelectionChange(useDefaultBranding, defaultBranding?.id);
+      // User is using first branding if it exists and they haven't opted to pick different color or logo
+      const useDefaultBranding = Boolean(firstBrandingDetails && !showColorOptions && !hasCustomLogo);
+      onBrandingSelectionChange(useDefaultBranding, firstBranding?.id);
     }
-  }, [defaultBrandingDetails, showColorOptions, hasCustomLogo, defaultBranding, onBrandingSelectionChange]);
+  }, [firstBrandingDetails, showColorOptions, hasCustomLogo, firstBranding, onBrandingSelectionChange]);
 
   /**
    * Broadcast readiness - Design step is always ready since it has default values
@@ -210,9 +211,9 @@ export default function ConfigureDesign({
   };
 
   const handleLogoSelect = (logoUrl: string): void => {
-    // Check if the selected logo is different from the default branding logo
-    const defaultLogo = defaultBrandingDetails?.preferences?.theme?.colorSchemes?.light?.images?.logo?.primary?.url;
-    setHasCustomLogo(Boolean(defaultLogo && logoUrl !== defaultLogo));
+    // Check if the selected logo is different from the first branding logo
+    const firstBrandingLogo = firstBrandingDetails?.preferences?.theme?.colorSchemes?.light?.images?.logo?.primary?.url;
+    setHasCustomLogo(Boolean(firstBrandingLogo && logoUrl !== firstBrandingLogo));
     onLogoSelect(logoUrl);
   };
 
@@ -304,8 +305,8 @@ export default function ConfigureDesign({
           <Typography variant="h6">{t('applications:onboarding.configure.design.color.title')}</Typography>
         </Stack>
 
-        {/* Show DEFAULT branding color or empty state */}
-        {defaultBrandingDetails && !showColorOptions ? (
+        {/* Show first branding color or empty state */}
+        {firstBrandingDetails && !showColorOptions ? (
           <Stack direction="column" spacing={2}>
             <Stack direction="row" alignItems="center" spacing={2}>
               <Box

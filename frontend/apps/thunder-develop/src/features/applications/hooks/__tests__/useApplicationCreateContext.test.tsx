@@ -191,7 +191,7 @@ describe('useApplicationCreateContext', () => {
   });
 
   it('should return sign-in approach values', () => {
-    const approaches = [ApplicationCreateFlowSignInApproach.INBUILT, ApplicationCreateFlowSignInApproach.CUSTOM];
+    const approaches = [ApplicationCreateFlowSignInApproach.INBUILT, ApplicationCreateFlowSignInApproach.EMBEDDED];
 
     approaches.forEach((approach) => {
       const contextWithApproach: ApplicationCreateContextType = {

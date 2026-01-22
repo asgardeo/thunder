@@ -22,7 +22,7 @@ import userEvent from '@testing-library/user-event';
 import {BrowserRouter} from 'react-router';
 import {QueryClient, QueryClientProvider} from '@tanstack/react-query';
 import {ConfigProvider} from '@thunder/commons-contexts';
-import ViewApplicationPage from '../ViewApplicationPage';
+import ApplicationEditPage from '../ApplicationEditPage';
 import type {Application} from '../../models/application';
 
 // Mock react-router
@@ -82,7 +82,7 @@ vi.mock('react-i18next', () => ({
   }),
 }));
 
-describe('ViewApplicationPage', () => {
+describe('ApplicationEditPage', () => {
   let queryClient: QueryClient;
 
   const mockApplication: Application = {
@@ -1389,7 +1389,7 @@ describe('ViewApplicationPage', () => {
     });
 
     it('should handle application with undefined applicationId in params', () => {
-      // Note: This test verifies that when applicationId is undefined, 
+      // Note: This test verifies that when applicationId is undefined,
       // useGetApplication is called with empty string (handled by ?? operator in component)
       // The actual useParams mock is set up at the module level, so we verify the behavior
       // by checking that useGetApplication was called with the value from useParams
@@ -1497,4 +1497,3 @@ describe('ViewApplicationPage', () => {
     });
   });
 });
-

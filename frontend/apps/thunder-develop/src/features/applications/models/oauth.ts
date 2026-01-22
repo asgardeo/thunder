@@ -434,7 +434,7 @@ export interface OAuth2Config {
    * Token configuration
    * Defines how access tokens and ID tokens are generated
    */
-  token?: OAuth2Token;
+  token?: OAuth2Token & TokenConfig;
 }
 
 /**

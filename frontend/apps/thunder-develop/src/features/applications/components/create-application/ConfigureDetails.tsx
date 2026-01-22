@@ -27,7 +27,6 @@ import {
   Alert,
   FormControl,
   FormLabel,
-  Autocomplete,
 } from '@wso2/oxygen-ui';
 import {Globe} from '@wso2/oxygen-ui-icons-react';
 import type {JSX} from 'react';
@@ -37,7 +36,6 @@ import {useForm, Controller, useWatch} from 'react-hook-form';
 import {zodResolver} from '@hookform/resolvers/zod';
 import {z} from 'zod';
 import {useLogger} from '@thunder/logger/react';
-import type {UserSchemaListItem} from '@/features/user-types/types/user-types';
 import getConfigurationTypeFromTemplate from '../../utils/getConfigurationTypeFromTemplate';
 import type {PlatformApplicationTemplate, TechnologyApplicationTemplate} from '../../models/application-templates';
 import useApplicationCreate from '../../contexts/ApplicationCreate/useApplicationCreate';
@@ -91,7 +89,6 @@ const formSchema = z
     callbackUrl: z.string().optional(),
     callbackMode: z.enum(['same', 'custom']),
     deeplink: z.string().optional(),
-    userTypes: z.array(z.string()).optional(),
   })
   .superRefine((data, ctx) => {
     // Validate hostingUrl for URL-based platforms
@@ -168,21 +165,6 @@ export interface ConfigureDetailsProps {
    * Callback function to notify parent component whether this step is ready to proceed
    */
   onReadyChange: (isReady: boolean) => void;
-
-  /**
-   * Optional array of available user types for selection
-   */
-  userTypes?: UserSchemaListItem[];
-
-  /**
-   * Optional array of currently selected user type names
-   */
-  selectedUserTypes?: string[];
-
-  /**
-   * Optional callback function invoked when user type selection changes
-   */
-  onUserTypesChange?: (userTypes: string[]) => void;
 }
 
 /**
@@ -254,9 +236,6 @@ export default function ConfigureDetails({
   onHostingUrlChange,
   onCallbackUrlChange,
   onReadyChange,
-  userTypes = [],
-  selectedUserTypes = [],
-  onUserTypesChange = undefined,
 }: ConfigureDetailsProps): JSX.Element {
   const {t} = useTranslation();
   const logger = useLogger('ConfigureDetails');
@@ -274,7 +253,6 @@ export default function ConfigureDetails({
       callbackUrl: '',
       callbackMode: 'same',
       deeplink: '',
-      userTypes: selectedUserTypes,
     },
   });
 
@@ -343,30 +321,21 @@ export default function ConfigureDetails({
       return;
     }
 
-    // Check if user type selection is required and valid
-    const requiresUserTypes: boolean =
-      selectedTemplateConfig?.allowed_user_types !== undefined &&
-      Array.isArray(selectedTemplateConfig.allowed_user_types) &&
-      selectedTemplateConfig.allowed_user_types.length === 0;
-    const hasMultipleUserTypes: boolean = userTypes.length > 1;
-    const isUserTypeSelectionValid: boolean =
-      !requiresUserTypes || !hasMultipleUserTypes || selectedUserTypes.length > 0;
-
     // For URL-based config, need valid hosting URL
     if (configurationType === ApplicationCreateFlowConfiguration.URL) {
       const hasValidHostingUrl: boolean = !!hostingUrl && !errors.hostingUrl;
       const hasValidCallbackUrl: boolean = callbackMode === 'same' || (!!callbackUrl && !errors.callbackUrl);
-      onReadyChange(!!hasValidHostingUrl && !!hasValidCallbackUrl && isUserTypeSelectionValid);
+      onReadyChange(!!hasValidHostingUrl && !!hasValidCallbackUrl);
       return;
     }
 
     // For deeplink config, need valid deeplink
     if (configurationType === ApplicationCreateFlowConfiguration.DEEPLINK) {
-      onReadyChange(!!deeplink && !errors.deeplink && isUserTypeSelectionValid);
+      onReadyChange(!!deeplink && !errors.deeplink);
       return;
     }
 
-    onReadyChange(isValid && isUserTypeSelectionValid);
+    onReadyChange(isValid);
   }, [
     isValid,
     configurationType,
@@ -376,8 +345,6 @@ export default function ConfigureDetails({
     deeplink,
     errors,
     onReadyChange,
-    userTypes.length,
-    selectedUserTypes.length,
     selectedTemplateConfig,
   ]);
 
@@ -532,58 +499,6 @@ export default function ConfigureDetails({
           </Stack>
         </>
       )}
-
-      {/* User Type Selection - Only show if template requires it (has empty allowed_user_types array) and there are multiple user types */}
-      {selectedTemplateConfig?.allowed_user_types !== undefined &&
-        Array.isArray(selectedTemplateConfig.allowed_user_types) &&
-        selectedTemplateConfig.allowed_user_types.length === 0 &&
-        userTypes.length > 1 &&
-        onUserTypesChange && (
-          <FormControl fullWidth required>
-            <FormLabel htmlFor="user-types-autocomplete">
-              {t('applications:onboarding.configure.details.userTypes.label')}
-            </FormLabel>
-            <Controller
-              name="userTypes"
-              control={control}
-              rules={{
-                validate: (value: string[] | undefined): string | boolean => {
-                  if (userTypes.length > 1 && (!value || value.length === 0)) {
-                    return t('applications:onboarding.configure.details.userTypes.error');
-                  }
-                  return true;
-                },
-              }}
-              render={({field, fieldState}) => (
-                <Autocomplete
-                  multiple
-                  id="user-types-autocomplete"
-                  size="small"
-                  options={userTypes}
-                  getOptionLabel={(option) => option.name}
-                  value={userTypes.filter((ut: UserSchemaListItem) => field.value?.includes(ut.name)) || []}
-                  onChange={(_event, newValue: UserSchemaListItem[]): void => {
-                    const userTypeNames: string[] = newValue.map((item: UserSchemaListItem): string => item.name);
-                    field.onChange(userTypeNames);
-                    onUserTypesChange(userTypeNames);
-                  }}
-                  onBlur={field.onBlur}
-                  renderInput={(params) => (
-                    <TextField
-                      {...params}
-                      placeholder={t('applications:onboarding.configure.details.userTypes.description')}
-                      error={fieldState.isTouched && !!fieldState.error}
-                      helperText={fieldState.isTouched && fieldState.error?.message}
-                    />
-                  )}
-                  isOptionEqualToValue={(option: UserSchemaListItem, value: UserSchemaListItem): boolean =>
-                    option.name === value.name
-                  }
-                />
-              )}
-            />
-          </FormControl>
-        )}
     </Stack>
   );
 }

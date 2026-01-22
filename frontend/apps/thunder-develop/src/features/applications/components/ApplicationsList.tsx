@@ -38,6 +38,7 @@ import useDataGridLocaleText from '../../../hooks/useDataGridLocaleText';
 import useGetApplications from '../api/useGetApplications';
 import type {BasicApplication} from '../models/application';
 import ApplicationDeleteDialog from './ApplicationDeleteDialog';
+import getTemplateMetadata from '../utils/getTemplateMetadata';
 
 export default function ApplicationsList(): JSX.Element {
   const theme = useTheme();
@@ -136,6 +137,32 @@ export default function ApplicationsList(): JSX.Element {
         flex: 1.5,
         minWidth: 250,
         valueGetter: (_value, row): string => row.description ?? '-',
+      },
+      {
+        field: 'template',
+        headerName: t('applications:listing.columns.template'),
+        flex: 0.8,
+        minWidth: 120,
+        renderCell: (params: DataGrid.GridRenderCellParams<BasicApplication>): JSX.Element => {
+          const templateMetadata = getTemplateMetadata(params.row.template);
+          return templateMetadata ? (
+            <Chip
+              icon={
+                <Box sx={{display: 'flex', alignItems: 'center', '& > *': {width: 16, height: 16}}}>
+                  {templateMetadata.icon}
+                </Box>
+              }
+              label={templateMetadata.displayName}
+              size="small"
+              variant="outlined"
+              sx={{
+                fontSize: '0.75rem',
+              }}
+            />
+          ) : (
+            <>-</>
+          );
+        },
       },
       {
         field: 'client_id',

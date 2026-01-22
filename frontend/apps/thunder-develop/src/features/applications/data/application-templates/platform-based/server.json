@@ -1,4 +1,6 @@
 {
+  "id": "server",
+  "displayName": "Server",
   "name": "Server Application",
   "description": "Server-side application with confidential client",
   "inbound_auth_config": [

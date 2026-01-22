@@ -1,4 +1,6 @@
 {
+  "id": "backend",
+  "displayName": "Backend",
   "name": "Backend Application",
   "description": "Machine-to-machine backend service",
   "inbound_auth_config": [

@@ -1,4 +1,6 @@
 {
+  "id": "react",
+  "displayName": "React",
   "name": "React Application",
   "description": "Single Page Application built with React",
   "inbound_auth_config": [
@@ -23,7 +25,7 @@
   ],
   "allowed_user_types": [],
   "integration_guides": {
-    "inbuilt": {
+    "INBUILT": {
       "llm_prompt": {
         "id": "llm-prompt",
         "title": "Integrate with an LLM Prompt",
@@ -93,7 +95,7 @@
         }
       ]
     },
-    "custom": {
+    "EMBEDDED": {
       "llm_prompt": {
         "id": "llm-prompt",
         "title": "Integrate with an LLM Prompt",

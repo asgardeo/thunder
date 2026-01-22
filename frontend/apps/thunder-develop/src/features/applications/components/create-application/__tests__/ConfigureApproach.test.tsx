@@ -61,7 +61,7 @@ describe('ConfigureApproach', () => {
 
     await user.click(screen.getByText('applications:onboarding.configure.approach.native.title'));
 
-    expect(mockOnApproachChange).toHaveBeenCalledWith(ApplicationCreateFlowSignInApproach.CUSTOM);
+    expect(mockOnApproachChange).toHaveBeenCalledWith(ApplicationCreateFlowSignInApproach.EMBEDDED);
   });
 
   it('switches to the inbuilt approach when the inbuilt card is clicked', async () => {
@@ -69,7 +69,7 @@ describe('ConfigureApproach', () => {
 
     render(
       <ConfigureApproach
-        selectedApproach={ApplicationCreateFlowSignInApproach.CUSTOM}
+        selectedApproach={ApplicationCreateFlowSignInApproach.EMBEDDED}
         onApproachChange={mockOnApproachChange}
         onReadyChange={mockOnReadyChange}
       />,
@@ -117,7 +117,7 @@ describe('ConfigureApproach', () => {
   it('shows custom approach as selected when provided', () => {
     render(
       <ConfigureApproach
-        selectedApproach={ApplicationCreateFlowSignInApproach.CUSTOM}
+        selectedApproach={ApplicationCreateFlowSignInApproach.EMBEDDED}
         onApproachChange={mockOnApproachChange}
         onReadyChange={mockOnReadyChange}
       />,
@@ -145,7 +145,7 @@ describe('ConfigureApproach', () => {
     const customRadio = screen.getAllByRole('radio')[1];
     await user.click(customRadio);
 
-    expect(mockOnApproachChange).toHaveBeenCalledWith(ApplicationCreateFlowSignInApproach.CUSTOM);
+    expect(mockOnApproachChange).toHaveBeenCalledWith(ApplicationCreateFlowSignInApproach.EMBEDDED);
   });
 
   it('handles card click events for inbuilt approach', async () => {
@@ -153,7 +153,7 @@ describe('ConfigureApproach', () => {
 
     render(
       <ConfigureApproach
-        selectedApproach={ApplicationCreateFlowSignInApproach.CUSTOM}
+        selectedApproach={ApplicationCreateFlowSignInApproach.EMBEDDED}
         onApproachChange={mockOnApproachChange}
         onReadyChange={mockOnReadyChange}
       />,
@@ -183,7 +183,7 @@ describe('ConfigureApproach', () => {
     const customRadio = radios.find((radio) => radio.getAttribute('value') === 'CUSTOM');
     await user.click(customRadio!);
 
-    expect(mockOnApproachChange).toHaveBeenCalledWith(ApplicationCreateFlowSignInApproach.CUSTOM);
+    expect(mockOnApproachChange).toHaveBeenCalledWith(ApplicationCreateFlowSignInApproach.EMBEDDED);
   });
 
   it('does not call onReadyChange when not provided', () => {

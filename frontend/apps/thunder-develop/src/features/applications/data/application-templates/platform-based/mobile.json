@@ -1,4 +1,6 @@
 {
+  "id": "mobile",
+  "displayName": "Mobile",
   "name": "Mobile Application",
   "description": "Native mobile application",
   "inbound_auth_config": [

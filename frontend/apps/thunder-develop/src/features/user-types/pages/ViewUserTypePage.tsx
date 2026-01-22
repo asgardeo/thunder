@@ -328,7 +328,7 @@ export default function ViewUserTypePage() {
   }
 
   return (
-    <Box sx={{maxWidth: 1000, mx: 'auto', position: 'relative'}}>
+    <Box>
       <Button
         onClick={() => {
           handleBack().catch(() => {

@@ -1,4 +1,6 @@
 {
+  "id": "browser",
+  "displayName": "Browser",
   "name": "Browser Application",
   "description": "Web application running in browser",
   "inbound_auth_config": [

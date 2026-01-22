@@ -1,4 +1,6 @@
 {
+  "id": "other",
+  "displayName": "Other",
   "name": "Custom Application",
   "description": "Custom application with standard OAuth2 configuration",
   "inbound_auth_config": [

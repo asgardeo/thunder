@@ -19,7 +19,7 @@
 import {describe, it, expect, beforeEach, vi} from 'vitest';
 import {render, screen} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import ApplicationSummary, {type ApplicationSummaryProps} from '../ApplicationSummary';
+import IntegrationGuide, {type IntegrationGuideProps} from '../integrate-application/IntegrationGuide';
 
 // Mock react-i18next
 vi.mock('react-i18next', () => ({
@@ -68,8 +68,8 @@ Object.assign(navigator, {
   },
 });
 
-describe('ApplicationSummary', () => {
-  const defaultProps: ApplicationSummaryProps = {
+describe('IntegrationGuide', () => {
+  const defaultProps: IntegrationGuideProps = {
     appName: 'Test App',
     appLogo: null,
     selectedColor: '#1976d2',
@@ -82,8 +82,8 @@ describe('ApplicationSummary', () => {
     mockWriteText.mockResolvedValue(undefined);
   });
 
-  const renderComponent = (props: Partial<ApplicationSummaryProps> = {}) =>
-    render(<ApplicationSummary {...defaultProps} {...props} />);
+  const renderComponent = (props: Partial<IntegrationGuideProps> = {}) =>
+    render(<IntegrationGuide {...defaultProps} {...props} />);
 
   it('should render success message and title', () => {
     renderComponent();

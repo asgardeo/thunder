@@ -23,7 +23,7 @@ const BrandingConstants = {
   /**
    * Default branding display name
    */
-  DEFAULT_BRANDING_NAME: 'Default',
+  DEFAULT_BRANDING_NAME: 'Default Theme',
 } as const;
 
 export default BrandingConstants;
