@@ -34,6 +34,7 @@ import FullScreenLayout from './layouts/FullScreenLayout';
 import ApplicationCreateProvider from './features/applications/contexts/ApplicationCreate/ApplicationCreateProvider';
 import FlowsListPage from './features/flows/pages/FlowsListPage';
 import LoginFlowBuilderPage from './features/login-flow/pages/LoginFlowPage';
+import HomePage from './features/home/pages/HomePage';
 
 export default function App(): JSX.Element {
   return (
@@ -47,7 +48,7 @@ export default function App(): JSX.Element {
             </ProtectedRoute>
           }
         >
-          <Route index element={<UsersListPage />} />
+          <Route index element={<HomePage />} />
           <Route path="users" element={<UsersListPage />} />
           <Route path="users/create" element={<CreateUserPage />} />
           <Route path="users/:userId" element={<ViewUserPage />} />
