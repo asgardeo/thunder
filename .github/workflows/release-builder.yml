@@ -64,7 +64,7 @@ jobs:
             fi
             VERSION=$(tr -d '[:space:]' < version.txt)
             PRERELEASE="false"
-            RUN_PERF_TEST="false"
+            RUN_PERF_TEST="true"
           fi
           echo "version=$VERSION" >> $GITHUB_OUTPUT
           echo "prerelease=$PRERELEASE" >> $GITHUB_OUTPUT
