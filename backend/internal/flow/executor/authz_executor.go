@@ -72,7 +72,7 @@ func (a *authorizationExecutor) Execute(ctx *core.NodeContext) (*common.Executor
 		RuntimeData: make(map[string]string),
 	}
 
-	if !ctx.AuthenticatedUser.IsAuthenticated {
+	if ctx.FlowType != common.FlowTypeRegistration && !ctx.AuthenticatedUser.IsAuthenticated {
 		execResp.Status = common.ExecFailure
 		execResp.FailureReason = failureReasonUserNotAuthenticated
 		return execResp, nil

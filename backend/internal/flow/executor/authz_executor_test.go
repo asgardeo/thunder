@@ -492,3 +492,157 @@ func TestSetAuthorizedPermissions(t *testing.T) {
 		})
 	}
 }
+
+func TestAuthorizationExecutor_Execute_RegistrationFlow_UnauthenticatedWithoutPermissions(t *testing.T) {
+	// Setup - registration flow with unauthenticated user and no requested permissions
+	mockAuthzService := new(authzmock.AuthorizationServiceInterfaceMock)
+	executor := createTestAuthzExecutor(t, mockAuthzService)
+
+	ctx := &core.NodeContext{
+		FlowID:   "test-registration-flow",
+		FlowType: common.FlowTypeRegistration,
+		AuthenticatedUser: authncm.AuthenticatedUser{
+			IsAuthenticated: false,
+		},
+		RuntimeData: make(map[string]string),
+	}
+
+	// Execute
+	resp, err := executor.Execute(ctx)
+
+	// Assert - should succeed (bypass authentication check for registration)
+	assert.NoError(t, err)
+	assert.Equal(t, common.ExecComplete, resp.Status)
+	assert.Empty(t, resp.RuntimeData[authorizedPermissionsKey])
+
+	// Service should NOT be called since there are no requested permissions
+	mockAuthzService.AssertNotCalled(t, "GetAuthorizedPermissions")
+}
+
+func TestAuthorizationExecutor_Execute_RegistrationFlow_UnauthenticatedWithPermissions(t *testing.T) {
+	// Setup - registration flow with unauthenticated user but WITH requested permissions
+	mockAuthzService := new(authzmock.AuthorizationServiceInterfaceMock)
+	executor := createTestAuthzExecutor(t, mockAuthzService)
+
+	ctx := &core.NodeContext{
+		FlowID:   "test-registration-flow",
+		FlowType: common.FlowTypeRegistration,
+		AuthenticatedUser: authncm.AuthenticatedUser{
+			IsAuthenticated: false,
+			UserID:          "", // No user ID yet in registration
+		},
+		RuntimeData: map[string]string{
+			requestedPermissionsKey: "read:documents write:documents",
+		},
+	}
+
+	// Mock service call - even though user is not authenticated, registration flow allows it
+	mockAuthzService.On("GetAuthorizedPermissions",
+		mock.MatchedBy(func(req authzsvc.GetAuthorizedPermissionsRequest) bool {
+			return req.UserID == "" &&
+				len(req.GroupIDs) == 0 &&
+				len(req.RequestedPermissions) == 2 &&
+				req.RequestedPermissions[0] == "read:documents" &&
+				req.RequestedPermissions[1] == "write:documents"
+		})).Return(&authzsvc.GetAuthorizedPermissionsResponse{
+		AuthorizedPermissions: []string{}, // New user typically has no permissions yet
+	}, nil)
+
+	// Execute
+	resp, err := executor.Execute(ctx)
+
+	// Assert - should succeed and call service (registration flow bypasses auth check)
+	assert.NoError(t, err)
+	assert.Equal(t, common.ExecComplete, resp.Status)
+	assert.Equal(t, "", resp.RuntimeData[authorizedPermissionsKey])
+
+	mockAuthzService.AssertExpectations(t)
+}
+
+func TestAuthorizationExecutor_Execute_RegistrationFlow_AuthenticatedWithPermissions(t *testing.T) {
+	// Setup - registration flow with authenticated user (edge case but possible)
+	mockAuthzService := new(authzmock.AuthorizationServiceInterfaceMock)
+	executor := createTestAuthzExecutor(t, mockAuthzService)
+
+	ctx := &core.NodeContext{
+		FlowID:   "test-registration-flow",
+		FlowType: common.FlowTypeRegistration,
+		AuthenticatedUser: authncm.AuthenticatedUser{
+			IsAuthenticated: true,
+			UserID:          "existing-user-123",
+			Attributes: map[string]interface{}{
+				"groups": []string{"new-users"},
+			},
+		},
+		RuntimeData: map[string]string{
+			requestedPermissionsKey: "read:profile write:profile",
+		},
+	}
+
+	expectedAuthorizedPerms := []string{"read:profile"}
+	mockAuthzService.On("GetAuthorizedPermissions",
+		mock.MatchedBy(func(req authzsvc.GetAuthorizedPermissionsRequest) bool {
+			return req.UserID == "existing-user-123" &&
+				len(req.GroupIDs) == 1 &&
+				req.GroupIDs[0] == "new-users" &&
+				len(req.RequestedPermissions) == 2
+		})).Return(&authzsvc.GetAuthorizedPermissionsResponse{
+		AuthorizedPermissions: expectedAuthorizedPerms,
+	}, nil)
+
+	// Execute
+	resp, err := executor.Execute(ctx)
+
+	// Assert - should succeed and call service
+	assert.NoError(t, err)
+	assert.Equal(t, common.ExecComplete, resp.Status)
+	assert.Equal(t, "read:profile", resp.RuntimeData[authorizedPermissionsKey])
+
+	mockAuthzService.AssertExpectations(t)
+}
+
+func TestAuthorizationExecutor_Execute_NonRegistrationFlow_UnauthenticatedShouldFail(t *testing.T) {
+	// Setup - non-registration flow types should fail if unauthenticated
+	mockAuthzService := new(authzmock.AuthorizationServiceInterfaceMock)
+	executor := createTestAuthzExecutor(t, mockAuthzService)
+
+	testCases := []struct {
+		name     string
+		flowType common.FlowType
+	}{
+		{
+			name:     "Authentication flow",
+			flowType: common.FlowTypeAuthentication,
+		},
+		{
+			name:     "User onboarding flow",
+			flowType: common.FlowTypeUserOnboarding,
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			ctx := &core.NodeContext{
+				FlowID:   "test-flow",
+				FlowType: tc.flowType,
+				AuthenticatedUser: authncm.AuthenticatedUser{
+					IsAuthenticated: false,
+				},
+				RuntimeData: map[string]string{
+					requestedPermissionsKey: "read:documents",
+				},
+			}
+
+			// Execute
+			resp, err := executor.Execute(ctx)
+
+			// Assert - should fail
+			assert.NoError(t, err)
+			assert.Equal(t, common.ExecFailure, resp.Status)
+			assert.Equal(t, failureReasonUserNotAuthenticated, resp.FailureReason)
+
+			// Service should NOT be called
+			mockAuthzService.AssertNotCalled(t, "GetAuthorizedPermissions")
+		})
+	}
+}
