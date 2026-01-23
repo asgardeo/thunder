@@ -85,7 +85,13 @@ func newHashService() HashServiceInterface {
 		return newPBKDF2Provider(params.SaltSize, params.Iterations, params.KeySize)
 	case ARGON2ID:
 		logger.Debug("Using Argon2id hash algorithm for password hashing")
-		return newArgon2idProvider(params.SaltSize, params.Memory, params.Iterations, params.Parallelism, params.KeySize)
+		return newArgon2idProvider(
+			params.SaltSize,
+			params.Memory,
+			params.Iterations,
+			params.Parallelism,
+			params.KeySize,
+		)
 	default:
 		panic(fmt.Sprintf("unsupported hash algorithm configured: %s", algorithm))
 	}
@@ -228,7 +234,15 @@ func (a *argon2idHashProvider) Generate(credentialValue []byte) (Credential, err
 		return Credential{}, err
 	}
 
-	hash := argon2.IDKey(credentialValue, credSalt, uint32(a.Iterations), uint32(a.Memory), uint8(a.Parallelism), uint32(a.KeySize))
+	//nolint:gosec // G115 - Conversion is safe
+	hash := argon2.IDKey(
+		credentialValue,
+		credSalt,
+		uint32(a.Iterations),
+		uint32(a.Memory),
+		uint8(a.Parallelism),
+		uint32(a.KeySize),
+	)
 
 	return Credential{
 		Algorithm: ARGON2ID,
@@ -266,7 +280,15 @@ func (a *argon2idHashProvider) Verify(credentialValueToVerify []byte, referenceC
 		logger.Error("Error decoding salt: %v", log.Error(err))
 		return false, err
 	}
-	hash := argon2.IDKey(credentialValueToVerify, saltBytes, uint32(iterations), uint32(memory), uint8(parallelism), uint32(keySize))
+	//nolint:gosec // G115 - Conversion is safe
+	hash := argon2.IDKey(
+		credentialValueToVerify,
+		saltBytes,
+		uint32(iterations),
+		uint32(memory),
+		uint8(parallelism),
+		uint32(keySize),
+	)
 	return hex.EncodeToString(hash) == referenceCredential.Hash, nil
 }
 
