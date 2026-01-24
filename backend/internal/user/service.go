@@ -398,7 +398,12 @@ func (us *userService) UpdateUser(userID string, user *User) (*User, *serviceerr
 		return nil, svcErr
 	}
 
-	err := us.userStore.UpdateUser(user)
+	credentials, err := us.extractCredentials(user)
+    if err != nil {
+        return nil, logErrorAndReturnServerError(logger, "Failed to extract credentials", err, log.String("id", userID))
+    }
+
+	err = us.userStore.UpdateUser(user)
 	if err != nil {
 		if errors.Is(err, ErrUserNotFound) {
 			logger.Debug("User not found", log.String("id", userID))
@@ -406,6 +411,13 @@ func (us *userService) UpdateUser(userID string, user *User) (*User, *serviceerr
 		}
 		return nil, logErrorAndReturnServerError(logger, "Failed to update user", err, log.String("id", userID))
 	}
+
+	if len(credentials) > 0 {
+        svcErr := us.mergeAndUpdateCredentials(userID, credentials, logger)
+        if svcErr != nil {
+            return nil, svcErr
+        }
+    }
 
 	logger.Debug("Successfully updated user", log.String("id", userID))
 	return user, nil
@@ -582,6 +594,53 @@ func (us *userService) batchUpdateUserCredentials(
 		log.String("userID", userID),
 		log.Int("credentialTypesCount", len(credentialsMap)))
 	return nil
+}
+
+// mergeAndUpdateCredentials merges new credentials with existing ones and updates the database.
+// This preserves credentials that are not being updated while replacing those that are provided.
+func (us *userService) mergeAndUpdateCredentials(
+    userID string,
+    newCredentials Credentials,
+    logger *log.Logger,
+) *serviceerror.ServiceError {
+    // Get existing credentials
+    _, existingCredentials, err := us.userStore.GetCredentials(userID)
+    if err != nil {
+        if errors.Is(err, ErrUserNotFound) {
+            logger.Debug("User not found while updating credentials", log.String("userID", userID))
+            return &ErrorUserNotFound
+        }
+        return logErrorAndReturnServerError(
+            logger,
+            "Failed to retrieve existing credentials for merge",
+            err,
+            log.String("userID", userID),
+        )
+    }
+
+    // Merge: new credentials replace existing ones for their types, others are preserved
+    mergedCredentials := us.mergeCredentials(existingCredentials, newCredentials)
+
+    // Update credentials in database
+    err = us.userStore.UpdateUserCredentials(userID, mergedCredentials)
+    if err != nil {
+        if errors.Is(err, ErrUserNotFound) {
+            logger.Debug("User not found while updating credentials", log.String("userID", userID))
+            return &ErrorUserNotFound
+        }
+        return logErrorAndReturnServerError(
+            logger,
+            "Failed to update user credentials",
+            err,
+            log.String("userID", userID),
+        )
+    }
+
+    logger.Debug("Successfully merged and updated credentials",
+        log.String("userID", userID),
+        log.Int("credentialTypesUpdated", len(newCredentials)))
+
+    return nil
 }
 
 // processCredentialType processes and validates credentials for a single credential type.
