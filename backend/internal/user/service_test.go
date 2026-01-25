@@ -43,6 +43,9 @@ import (
 
 const testUserType = "employee"
 const testOrgID = "11111111-1111-1111-1111-111111111111"
+const testUserID = "user-1"
+const testCustomerOUID = "550e8400-e29b-41d4-a716-446655440000"
+const testCustomerType = "customer"
 
 func TestOUStore_ValidateUserAndUniqueness(t *testing.T) {
 	type testMocks struct {
@@ -1493,4 +1496,810 @@ func TestUserService_UpdateUserAttributes_Succeeds(t *testing.T) {
 	require.NotNil(t, savedUser)
 	require.Equal(t, "user-1", savedUser.ID)
 	require.JSONEq(t, string(newAttrs), string(savedUser.Attributes))
+}
+
+// TestUserService_UpdateUser_WithCredentials tests updating user with password credentials
+func TestUserService_UpdateUser_WithCredentials(t *testing.T) {
+	userID := testUserID
+	ouID := testCustomerOUID
+	userType := testCustomerType
+
+	existingCredentials := Credentials{
+		CredentialTypePassword: {{
+			StorageType: "hash",
+			StorageAlgo: hash.PBKDF2,
+			Value:       "old-hashed-password",
+			StorageAlgoParams: hash.CredParameters{
+				Salt:       "old-salt",
+				Iterations: 10000,
+				KeySize:    32,
+			},
+		}},
+	}
+
+	userStoreMock := newUserStoreInterfaceMock(t)
+	userStoreMock.
+		On("UpdateUser", mock.MatchedBy(func(u *User) bool {
+			// Verify password is NOT in attributes
+			var attrs map[string]interface{}
+			if err := json.Unmarshal(u.Attributes, &attrs); err != nil {
+				return false
+			}
+			_, hasPassword := attrs["password"]
+			return !hasPassword && u.ID == userID
+		})).
+		Return(nil).
+		Once()
+	userStoreMock.
+		On("GetCredentials", userID).
+		Return(User{ID: userID}, existingCredentials, nil).
+		Once()
+
+	var capturedCreds Credentials
+	userStoreMock.
+		On("UpdateUserCredentials", userID, mock.Anything).
+		Run(func(args mock.Arguments) {
+			if creds, ok := args[1].(Credentials); ok {
+				capturedCreds = creds
+			}
+		}).
+		Return(nil).
+		Once()
+
+	hashServiceMock := hashmock.NewHashServiceInterfaceMock(t)
+	hashServiceMock.
+		On("Generate", []byte("NewP@ssword123")).
+		Return(hash.Credential{
+			Algorithm: hash.PBKDF2,
+			Hash:      "new-hashed-password",
+			Parameters: hash.CredParameters{
+				Salt:       "new-salt",
+				Iterations: 10000,
+				KeySize:    32,
+			},
+		}, nil).
+		Once()
+
+	ouServiceMock := oumock.NewOrganizationUnitServiceInterfaceMock(t)
+	ouServiceMock.
+		On("IsOrganizationUnitExists", ouID).
+		Return(true, (*serviceerror.ServiceError)(nil)).
+		Once()
+
+	schemaServiceMock := userschemamock.NewUserSchemaServiceInterfaceMock(t)
+	schemaServiceMock.
+		On("GetUserSchemaByName", userType).
+		Return(&userschema.UserSchema{OrganizationUnitID: ouID}, (*serviceerror.ServiceError)(nil)).
+		Once()
+	schemaServiceMock.
+		On("ValidateUser", userType, mock.Anything).
+		Return(true, (*serviceerror.ServiceError)(nil)).
+		Once()
+	schemaServiceMock.
+		On("ValidateUserUniqueness", userType, mock.Anything, mock.Anything).
+		Return(true, (*serviceerror.ServiceError)(nil)).
+		Once()
+
+	service := &userService{
+		userStore:         userStoreMock,
+		hashService:       hashServiceMock,
+		ouService:         ouServiceMock,
+		userSchemaService: schemaServiceMock,
+	}
+
+	config.ResetThunderRuntime()
+	initErr := config.InitializeThunderRuntime("", &config.Config{
+		Crypto: config.CryptoConfig{
+			PasswordHashing: config.PasswordHashingConfig{
+				Algorithm: string(hash.PBKDF2),
+			},
+		},
+	})
+	require.NoError(t, initErr)
+	t.Cleanup(config.ResetThunderRuntime)
+
+	user := &User{
+		ID:               userID,
+		OrganizationUnit: ouID,
+		Type:             userType,
+		Attributes:       json.RawMessage(`{"email":"test@example.com","password":"NewP@ssword123"}`),
+	}
+
+	result, svcErr := service.UpdateUser(userID, user)
+
+	require.Nil(t, svcErr)
+	require.NotNil(t, result)
+	require.Equal(t, userID, result.ID)
+
+	// Verify password is not in returned attributes
+	var attrs map[string]interface{}
+	err := json.Unmarshal(result.Attributes, &attrs)
+	require.NoError(t, err)
+	_, hasPassword := attrs["password"]
+	require.False(t, hasPassword, "Password should not be in response attributes")
+
+	// Verify new password credentials were stored
+	require.NotNil(t, capturedCreds)
+	passCreds, ok := capturedCreds[CredentialTypePassword]
+	require.True(t, ok, "Password credentials should be present")
+	require.Len(t, passCreds, 1)
+	require.Equal(t, "new-hashed-password", passCreds[0].Value)
+}
+
+// TestUserService_UpdateUser_MergesCredentials tests that existing credentials are preserved
+func TestUserService_UpdateUser_MergesCredentials(t *testing.T) {
+	userID := testUserID
+	ouID := testCustomerOUID
+	userType := testCustomerType
+
+	existingCredentials := Credentials{
+		CredentialTypePasskey: {{
+			StorageType: "raw",
+			Value:       "existing-passkey-data",
+		}},
+	}
+
+	userStoreMock := newUserStoreInterfaceMock(t)
+	userStoreMock.
+		On("UpdateUser", mock.Anything).
+		Return(nil).
+		Once()
+	userStoreMock.
+		On("GetCredentials", userID).
+		Return(User{ID: userID}, existingCredentials, nil).
+		Once()
+
+	var capturedCreds Credentials
+	userStoreMock.
+		On("UpdateUserCredentials", userID, mock.Anything).
+		Run(func(args mock.Arguments) {
+			if creds, ok := args[1].(Credentials); ok {
+				capturedCreds = creds
+			}
+		}).
+		Return(nil).
+		Once()
+
+	hashServiceMock := hashmock.NewHashServiceInterfaceMock(t)
+	hashServiceMock.
+		On("Generate", []byte("NewP@ss123")).
+		Return(hash.Credential{
+			Algorithm: hash.PBKDF2,
+			Hash:      "hashed-password",
+			Parameters: hash.CredParameters{
+				Salt:       "salt",
+				Iterations: 10000,
+				KeySize:    32,
+			},
+		}, nil).
+		Once()
+
+	ouServiceMock := oumock.NewOrganizationUnitServiceInterfaceMock(t)
+	ouServiceMock.
+		On("IsOrganizationUnitExists", ouID).
+		Return(true, (*serviceerror.ServiceError)(nil)).
+		Once()
+
+	schemaServiceMock := userschemamock.NewUserSchemaServiceInterfaceMock(t)
+	schemaServiceMock.
+		On("GetUserSchemaByName", userType).
+		Return(&userschema.UserSchema{OrganizationUnitID: ouID}, (*serviceerror.ServiceError)(nil)).
+		Once()
+	schemaServiceMock.
+		On("ValidateUser", userType, mock.Anything).
+		Return(true, (*serviceerror.ServiceError)(nil)).
+		Once()
+	schemaServiceMock.
+		On("ValidateUserUniqueness", userType, mock.Anything, mock.Anything).
+		Return(true, (*serviceerror.ServiceError)(nil)).
+		Once()
+
+	service := &userService{
+		userStore:         userStoreMock,
+		hashService:       hashServiceMock,
+		ouService:         ouServiceMock,
+		userSchemaService: schemaServiceMock,
+	}
+
+	config.ResetThunderRuntime()
+	initErr := config.InitializeThunderRuntime("", &config.Config{
+		Crypto: config.CryptoConfig{
+			PasswordHashing: config.PasswordHashingConfig{
+				Algorithm: string(hash.PBKDF2),
+			},
+		},
+	})
+	require.NoError(t, initErr)
+	t.Cleanup(config.ResetThunderRuntime)
+
+	user := &User{
+		ID:               userID,
+		OrganizationUnit: ouID,
+		Type:             userType,
+		Attributes:       json.RawMessage(`{"email":"test@example.com","password":"NewP@ss123"}`),
+	}
+
+	result, svcErr := service.UpdateUser(userID, user)
+
+	require.Nil(t, svcErr)
+	require.NotNil(t, result)
+
+	// Verify BOTH passkey and password credentials are present (merged)
+	require.NotNil(t, capturedCreds)
+	require.Len(t, capturedCreds[CredentialTypePasskey], 1, "Passkey should be preserved")
+	require.Len(t, capturedCreds[CredentialTypePassword], 1, "Password should be added")
+}
+
+// TestUserService_UpdateUser_WithoutCredentials tests updating without credential changes
+func TestUserService_UpdateUser_WithoutCredentials(t *testing.T) {
+	userID := testUserID
+	ouID := testCustomerOUID
+	userType := testCustomerType
+
+	userStoreMock := newUserStoreInterfaceMock(t)
+	userStoreMock.
+		On("UpdateUser", mock.Anything).
+		Return(nil).
+		Once()
+
+	ouServiceMock := oumock.NewOrganizationUnitServiceInterfaceMock(t)
+	ouServiceMock.
+		On("IsOrganizationUnitExists", ouID).
+		Return(true, (*serviceerror.ServiceError)(nil)).
+		Once()
+
+	schemaServiceMock := userschemamock.NewUserSchemaServiceInterfaceMock(t)
+	schemaServiceMock.
+		On("GetUserSchemaByName", userType).
+		Return(&userschema.UserSchema{OrganizationUnitID: ouID}, (*serviceerror.ServiceError)(nil)).
+		Once()
+	schemaServiceMock.
+		On("ValidateUser", userType, mock.Anything).
+		Return(true, (*serviceerror.ServiceError)(nil)).
+		Once()
+	schemaServiceMock.
+		On("ValidateUserUniqueness", userType, mock.Anything, mock.Anything).
+		Return(true, (*serviceerror.ServiceError)(nil)).
+		Once()
+
+	service := &userService{
+		userStore:         userStoreMock,
+		ouService:         ouServiceMock,
+		userSchemaService: schemaServiceMock,
+	}
+
+	user := &User{
+		ID:               userID,
+		OrganizationUnit: ouID,
+		Type:             userType,
+		Attributes:       json.RawMessage(`{"email":"newemail@example.com"}`),
+	}
+
+	result, svcErr := service.UpdateUser(userID, user)
+
+	require.Nil(t, svcErr)
+	require.NotNil(t, result)
+
+	// Verify credential methods were NOT called
+	userStoreMock.AssertNotCalled(t, "GetCredentials", mock.Anything)
+	userStoreMock.AssertNotCalled(t, "UpdateUserCredentials", mock.Anything, mock.Anything)
+}
+
+// Test: UpdateUser with credentials when user not found during credential retrieval
+func TestUserService_UpdateUser_WithCredentials_UserNotFoundDuringCredentialRetrieval(t *testing.T) {
+	userID := testUserID
+	ouID := testCustomerOUID
+	userType := testCustomerType
+
+	userStoreMock := newUserStoreInterfaceMock(t)
+
+	// UpdateUser succeeds
+	userStoreMock.
+		On("UpdateUser", mock.MatchedBy(func(u *User) bool {
+			return u.ID == userID
+		})).
+		Return(nil).
+		Once()
+
+	// GetCredentials fails with user not found
+	userStoreMock.
+		On("GetCredentials", userID).
+		Return(User{}, Credentials{}, ErrUserNotFound).
+		Once()
+
+	hashServiceMock := hashmock.NewHashServiceInterfaceMock(t)
+	hashServiceMock.
+		On("Generate", []byte("NewP@ssword123")).
+		Return(hash.Credential{
+			Hash: "hashed-password",
+		}, nil).
+		Once()
+
+	ouServiceMock := oumock.NewOrganizationUnitServiceInterfaceMock(t)
+	ouServiceMock.
+		On("IsOrganizationUnitExists", ouID).
+		Return(true, (*serviceerror.ServiceError)(nil)).
+		Once()
+
+	schemaServiceMock := userschemamock.NewUserSchemaServiceInterfaceMock(t)
+	schemaServiceMock.
+		On("GetUserSchemaByName", userType).
+		Return(&userschema.UserSchema{OrganizationUnitID: ouID}, (*serviceerror.ServiceError)(nil)).
+		Once()
+	schemaServiceMock.
+		On("ValidateUser", userType, mock.Anything).
+		Return(true, (*serviceerror.ServiceError)(nil)).
+		Once()
+	schemaServiceMock.
+		On("ValidateUserUniqueness", userType, mock.Anything, mock.Anything).
+		Return(true, (*serviceerror.ServiceError)(nil)).
+		Once()
+
+	service := &userService{
+		userStore:         userStoreMock,
+		hashService:       hashServiceMock,
+		ouService:         ouServiceMock,
+		userSchemaService: schemaServiceMock,
+	}
+
+	initErr := config.InitializeThunderRuntime("", &config.Config{
+		Crypto: config.CryptoConfig{
+			PasswordHashing: config.PasswordHashingConfig{
+				Algorithm: string(hash.PBKDF2),
+			},
+		},
+	})
+	require.NoError(t, initErr)
+
+	user := &User{
+		ID:               userID,
+		OrganizationUnit: ouID,
+		Type:             userType,
+		Attributes:       json.RawMessage(`{"email":"test@example.com","password":"NewP@ssword123"}`),
+	}
+
+	result, svcErr := service.UpdateUser(userID, user)
+
+	require.NotNil(t, svcErr, "Should return error")
+	require.Nil(t, result, "Should not return user")
+	require.Equal(t, ErrorUserNotFound.Code, svcErr.Code, "Should return user not found error")
+}
+
+// Test: UpdateUser with credentials when credential retrieval fails with server error
+func TestUserService_UpdateUser_WithCredentials_CredentialRetrievalServerError(t *testing.T) {
+	userID := testUserID
+	ouID := testCustomerOUID
+	userType := testCustomerType
+
+	userStoreMock := newUserStoreInterfaceMock(t)
+
+	// UpdateUser succeeds
+	userStoreMock.
+		On("UpdateUser", mock.MatchedBy(func(u *User) bool {
+			return u.ID == userID
+		})).
+		Return(nil).
+		Once()
+
+	// GetCredentials fails with database error
+	userStoreMock.
+		On("GetCredentials", userID).
+		Return(User{}, Credentials{}, errors.New("database connection failed")).
+		Once()
+
+	hashServiceMock := hashmock.NewHashServiceInterfaceMock(t)
+	hashServiceMock.
+		On("Generate", []byte("NewP@ssword123")).
+		Return(hash.Credential{
+			Hash: "hashed-password",
+		}, nil).
+		Once()
+
+	ouServiceMock := oumock.NewOrganizationUnitServiceInterfaceMock(t)
+	ouServiceMock.
+		On("IsOrganizationUnitExists", ouID).
+		Return(true, (*serviceerror.ServiceError)(nil)).
+		Once()
+
+	schemaServiceMock := userschemamock.NewUserSchemaServiceInterfaceMock(t)
+	schemaServiceMock.
+		On("GetUserSchemaByName", userType).
+		Return(&userschema.UserSchema{OrganizationUnitID: ouID}, (*serviceerror.ServiceError)(nil)).
+		Once()
+	schemaServiceMock.
+		On("ValidateUser", userType, mock.Anything).
+		Return(true, (*serviceerror.ServiceError)(nil)).
+		Once()
+	schemaServiceMock.
+		On("ValidateUserUniqueness", userType, mock.Anything, mock.Anything).
+		Return(true, (*serviceerror.ServiceError)(nil)).
+		Once()
+
+	service := &userService{
+		userStore:         userStoreMock,
+		hashService:       hashServiceMock,
+		ouService:         ouServiceMock,
+		userSchemaService: schemaServiceMock,
+	}
+
+	initErr := config.InitializeThunderRuntime("", &config.Config{
+		Crypto: config.CryptoConfig{
+			PasswordHashing: config.PasswordHashingConfig{
+				Algorithm: string(hash.PBKDF2),
+			},
+		},
+	})
+	require.NoError(t, initErr)
+
+	user := &User{
+		ID:               userID,
+		OrganizationUnit: ouID,
+		Type:             userType,
+		Attributes:       json.RawMessage(`{"email":"test@example.com","password":"NewP@ssword123"}`),
+	}
+
+	result, svcErr := service.UpdateUser(userID, user)
+
+	require.NotNil(t, svcErr, "Should return error")
+	require.Nil(t, result, "Should not return user")
+	require.Equal(t, ErrorInternalServerError.Code, svcErr.Code, "Should return server error")
+}
+
+// Test: UpdateUser with credentials when UpdateUserCredentials fails with user not found
+func TestUserService_UpdateUser_WithCredentials_UpdateCredentialsUserNotFound(t *testing.T) {
+	userID := testUserID
+	ouID := testCustomerOUID
+	userType := testCustomerType
+
+	existingCredentials := Credentials{
+		CredentialTypePassword: {{
+			Value: "old-hashed-password",
+		}},
+	}
+
+	userStoreMock := newUserStoreInterfaceMock(t)
+
+	userStoreMock.
+		On("UpdateUser", mock.MatchedBy(func(u *User) bool {
+			return u.ID == userID
+		})).
+		Return(nil).
+		Once()
+
+	userStoreMock.
+		On("GetCredentials", userID).
+		Return(User{ID: userID}, existingCredentials, nil).
+		Once()
+
+	// UpdateUserCredentials fails with user not found
+	userStoreMock.
+		On("UpdateUserCredentials", userID, mock.Anything).
+		Return(ErrUserNotFound).
+		Once()
+
+	hashServiceMock := hashmock.NewHashServiceInterfaceMock(t)
+	hashServiceMock.
+		On("Generate", []byte("NewP@ssword123")).
+		Return(hash.Credential{
+			Hash: "new-hashed-password",
+		}, nil).
+		Once()
+
+	ouServiceMock := oumock.NewOrganizationUnitServiceInterfaceMock(t)
+	ouServiceMock.
+		On("IsOrganizationUnitExists", ouID).
+		Return(true, (*serviceerror.ServiceError)(nil)).
+		Once()
+
+	schemaServiceMock := userschemamock.NewUserSchemaServiceInterfaceMock(t)
+	schemaServiceMock.
+		On("GetUserSchemaByName", userType).
+		Return(&userschema.UserSchema{OrganizationUnitID: ouID}, (*serviceerror.ServiceError)(nil)).
+		Once()
+	schemaServiceMock.
+		On("ValidateUser", userType, mock.Anything).
+		Return(true, (*serviceerror.ServiceError)(nil)).
+		Once()
+	schemaServiceMock.
+		On("ValidateUserUniqueness", userType, mock.Anything, mock.Anything).
+		Return(true, (*serviceerror.ServiceError)(nil)).
+		Once()
+
+	service := &userService{
+		userStore:         userStoreMock,
+		hashService:       hashServiceMock,
+		ouService:         ouServiceMock,
+		userSchemaService: schemaServiceMock,
+	}
+
+	initErr := config.InitializeThunderRuntime("", &config.Config{
+		Crypto: config.CryptoConfig{
+			PasswordHashing: config.PasswordHashingConfig{
+				Algorithm: string(hash.PBKDF2),
+			},
+		},
+	})
+	require.NoError(t, initErr)
+
+	user := &User{
+		ID:               userID,
+		OrganizationUnit: ouID,
+		Type:             userType,
+		Attributes:       json.RawMessage(`{"email":"test@example.com","password":"NewP@ssword123"}`),
+	}
+
+	result, svcErr := service.UpdateUser(userID, user)
+
+	require.NotNil(t, svcErr, "Should return error")
+	require.Nil(t, result, "Should not return user")
+	require.Equal(t, ErrorUserNotFound.Code, svcErr.Code, "Should return user not found error")
+}
+
+// Test: UpdateUser with credentials when UpdateUserCredentials fails with server error
+func TestUserService_UpdateUser_WithCredentials_UpdateCredentialsServerError(t *testing.T) {
+	userID := testUserID
+	ouID := testCustomerOUID
+	userType := testCustomerType
+
+	existingCredentials := Credentials{
+		CredentialTypePassword: {{
+			Value: "old-hashed-password",
+		}},
+	}
+
+	userStoreMock := newUserStoreInterfaceMock(t)
+
+	userStoreMock.
+		On("UpdateUser", mock.MatchedBy(func(u *User) bool {
+			return u.ID == userID
+		})).
+		Return(nil).
+		Once()
+
+	userStoreMock.
+		On("GetCredentials", userID).
+		Return(User{ID: userID}, existingCredentials, nil).
+		Once()
+
+	// UpdateUserCredentials fails with database error
+	userStoreMock.
+		On("UpdateUserCredentials", userID, mock.Anything).
+		Return(errors.New("database write failed")).
+		Once()
+
+	hashServiceMock := hashmock.NewHashServiceInterfaceMock(t)
+	hashServiceMock.
+		On("Generate", []byte("NewP@ssword123")).
+		Return(hash.Credential{
+			Hash: "new-hashed-password",
+		}, nil).
+		Once()
+
+	ouServiceMock := oumock.NewOrganizationUnitServiceInterfaceMock(t)
+	ouServiceMock.
+		On("IsOrganizationUnitExists", ouID).
+		Return(true, (*serviceerror.ServiceError)(nil)).
+		Once()
+
+	schemaServiceMock := userschemamock.NewUserSchemaServiceInterfaceMock(t)
+	schemaServiceMock.
+		On("GetUserSchemaByName", userType).
+		Return(&userschema.UserSchema{OrganizationUnitID: ouID}, (*serviceerror.ServiceError)(nil)).
+		Once()
+	schemaServiceMock.
+		On("ValidateUser", userType, mock.Anything).
+		Return(true, (*serviceerror.ServiceError)(nil)).
+		Once()
+	schemaServiceMock.
+		On("ValidateUserUniqueness", userType, mock.Anything, mock.Anything).
+		Return(true, (*serviceerror.ServiceError)(nil)).
+		Once()
+
+	service := &userService{
+		userStore:         userStoreMock,
+		hashService:       hashServiceMock,
+		ouService:         ouServiceMock,
+		userSchemaService: schemaServiceMock,
+	}
+
+	initErr := config.InitializeThunderRuntime("", &config.Config{
+		Crypto: config.CryptoConfig{
+			PasswordHashing: config.PasswordHashingConfig{
+				Algorithm: string(hash.PBKDF2),
+			},
+		},
+	})
+	require.NoError(t, initErr)
+
+	user := &User{
+		ID:               userID,
+		OrganizationUnit: ouID,
+		Type:             userType,
+		Attributes:       json.RawMessage(`{"email":"test@example.com","password":"NewP@ssword123"}`),
+	}
+
+	result, svcErr := service.UpdateUser(userID, user)
+
+	require.NotNil(t, svcErr, "Should return error")
+	require.Nil(t, result, "Should not return user")
+	require.Equal(t, ErrorInternalServerError.Code, svcErr.Code, "Should return server error")
+}
+
+// Test: UpdateUser with credentials - merges multiple credential types
+func TestUserService_UpdateUser_WithMultipleCredentialTypes(t *testing.T) {
+	userID := testUserID
+	ouID := testCustomerOUID
+	userType := testCustomerType
+
+	existingCredentials := Credentials{
+		CredentialTypePassword: {{
+			Value: "old-password-hash",
+		}},
+		CredentialTypePasskey: {{
+			Value: "existing-passkey-data",
+		}},
+	}
+
+	userStoreMock := newUserStoreInterfaceMock(t)
+
+	userStoreMock.
+		On("UpdateUser", mock.MatchedBy(func(u *User) bool {
+			var attrs map[string]interface{}
+			if err := json.Unmarshal(u.Attributes, &attrs); err != nil {
+				return false
+			}
+			_, hasPassword := attrs["password"]
+			return !hasPassword && u.ID == userID
+		})).
+		Return(nil).
+		Once()
+
+	userStoreMock.
+		On("GetCredentials", userID).
+		Return(User{ID: userID}, existingCredentials, nil).
+		Once()
+
+	var capturedCreds Credentials
+	userStoreMock.
+		On("UpdateUserCredentials", userID, mock.Anything).
+		Run(func(args mock.Arguments) {
+			capturedCreds = args[1].(Credentials)
+		}).
+		Return(nil).
+		Once()
+
+	hashServiceMock := hashmock.NewHashServiceInterfaceMock(t)
+	// Hash new password
+	hashServiceMock.
+		On("Generate", []byte("NewPassword123")).
+		Return(hash.Credential{
+			Hash: "new-password-hash",
+		}, nil).
+		Once()
+
+	ouServiceMock := oumock.NewOrganizationUnitServiceInterfaceMock(t)
+	ouServiceMock.
+		On("IsOrganizationUnitExists", ouID).
+		Return(true, (*serviceerror.ServiceError)(nil)).
+		Once()
+
+	schemaServiceMock := userschemamock.NewUserSchemaServiceInterfaceMock(t)
+	schemaServiceMock.
+		On("GetUserSchemaByName", userType).
+		Return(&userschema.UserSchema{OrganizationUnitID: ouID}, (*serviceerror.ServiceError)(nil)).
+		Once()
+	schemaServiceMock.
+		On("ValidateUser", userType, mock.Anything).
+		Return(true, (*serviceerror.ServiceError)(nil)).
+		Once()
+	schemaServiceMock.
+		On("ValidateUserUniqueness", userType, mock.Anything, mock.Anything).
+		Return(true, (*serviceerror.ServiceError)(nil)).
+		Once()
+
+	service := &userService{
+		userStore:         userStoreMock,
+		hashService:       hashServiceMock,
+		ouService:         ouServiceMock,
+		userSchemaService: schemaServiceMock,
+	}
+
+	initErr := config.InitializeThunderRuntime("", &config.Config{
+		Crypto: config.CryptoConfig{
+			PasswordHashing: config.PasswordHashingConfig{
+				Algorithm: string(hash.PBKDF2),
+			},
+		},
+	})
+	require.NoError(t, initErr)
+
+	// Update password while preserving existing passkey
+	user := &User{
+		ID:               userID,
+		OrganizationUnit: ouID,
+		Type:             userType,
+		Attributes:       json.RawMessage(`{"email":"test@example.com","password":"NewPassword123"}`),
+	}
+
+	result, svcErr := service.UpdateUser(userID, user)
+
+	require.Nil(t, svcErr, "Should not return error")
+	require.NotNil(t, result, "Should return user")
+	require.Equal(t, userID, result.ID)
+
+	// Verify merged credentials contain both types
+	require.Len(t, capturedCreds, 2, "Should have 2 credential types")
+	require.Contains(t, capturedCreds, CredentialTypePassword, "Should contain password")
+	require.Contains(t, capturedCreds, CredentialTypePasskey, "Should preserve existing passkey")
+
+	// Verify password was updated
+	require.Len(t, capturedCreds[CredentialTypePassword], 1)
+	require.Equal(t, "new-password-hash", capturedCreds[CredentialTypePassword][0].Value)
+
+	// Verify passkey was preserved
+	require.Len(t, capturedCreds[CredentialTypePasskey], 1)
+	require.Equal(t, "existing-passkey-data", capturedCreds[CredentialTypePasskey][0].Value)
+}
+
+// Test: UpdateUser with empty credentials map (edge case)
+func TestUserService_UpdateUser_WithEmptyCredentialsAfterExtraction(t *testing.T) {
+	userID := testUserID
+	ouID := testCustomerOUID
+	userType := testCustomerType
+
+	userStoreMock := newUserStoreInterfaceMock(t)
+
+	// Only UpdateUser should be called, not credential operations
+	userStoreMock.
+		On("UpdateUser", mock.MatchedBy(func(u *User) bool {
+			return u.ID == userID
+		})).
+		Return(nil).
+		Once()
+
+	hashServiceMock := hashmock.NewHashServiceInterfaceMock(t)
+
+	ouServiceMock := oumock.NewOrganizationUnitServiceInterfaceMock(t)
+	ouServiceMock.
+		On("IsOrganizationUnitExists", ouID).
+		Return(true, (*serviceerror.ServiceError)(nil)).
+		Once()
+
+	schemaServiceMock := userschemamock.NewUserSchemaServiceInterfaceMock(t)
+	schemaServiceMock.
+		On("GetUserSchemaByName", userType).
+		Return(&userschema.UserSchema{OrganizationUnitID: ouID}, (*serviceerror.ServiceError)(nil)).
+		Once()
+	schemaServiceMock.
+		On("ValidateUser", userType, mock.Anything).
+		Return(true, (*serviceerror.ServiceError)(nil)).
+		Once()
+	schemaServiceMock.
+		On("ValidateUserUniqueness", userType, mock.Anything, mock.Anything).
+		Return(true, (*serviceerror.ServiceError)(nil)).
+		Once()
+
+	service := &userService{
+		userStore:         userStoreMock,
+		hashService:       hashServiceMock,
+		ouService:         ouServiceMock,
+		userSchemaService: schemaServiceMock,
+	}
+
+	// User with only non-credential attributes
+	user := &User{
+		ID:               userID,
+		OrganizationUnit: ouID,
+		Type:             userType,
+		Attributes:       json.RawMessage(`{"email":"newemail@example.com","name":"John Doe"}`),
+	}
+
+	result, svcErr := service.UpdateUser(userID, user)
+
+	require.Nil(t, svcErr, "Should not return error")
+	require.NotNil(t, result, "Should return user")
+
+	// Verify credential operations were NOT called
+	userStoreMock.AssertNotCalled(t, "GetCredentials", mock.Anything)
+	userStoreMock.AssertNotCalled(t, "UpdateUserCredentials", mock.Anything, mock.Anything)
 }
