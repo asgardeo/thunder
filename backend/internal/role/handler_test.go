@@ -61,7 +61,7 @@ func (suite *RoleHandlerTestSuite) TestHandleRoleListRequest_Success() {
 		Links: []Link{},
 	}
 
-	suite.mockService.On("GetRoleList", 10, 0).Return(expectedResponse, nil)
+	suite.mockService.On("GetRoleList", mock.Anything, 10, 0).Return(expectedResponse, nil)
 
 	req := httptest.NewRequest(http.MethodGet, "/roles?limit=10&offset=0", nil)
 	w := httptest.NewRecorder()
@@ -86,7 +86,7 @@ func (suite *RoleHandlerTestSuite) TestHandleRoleListRequest_DefaultPagination()
 		Links:        []Link{},
 	}
 
-	suite.mockService.On("GetRoleList", 30, 0).Return(expectedResponse, nil)
+	suite.mockService.On("GetRoleList", mock.Anything, 30, 0).Return(expectedResponse, nil)
 
 	req := httptest.NewRequest(http.MethodGet, "/roles", nil)
 	w := httptest.NewRecorder()
@@ -97,7 +97,7 @@ func (suite *RoleHandlerTestSuite) TestHandleRoleListRequest_DefaultPagination()
 }
 
 func (suite *RoleHandlerTestSuite) TestHandleRoleListRequest_ServiceError() {
-	suite.mockService.On("GetRoleList", 10, 0).Return(nil, &ErrorInvalidLimit)
+	suite.mockService.On("GetRoleList", mock.Anything, 10, 0).Return(nil, &ErrorInvalidLimit)
 
 	req := httptest.NewRequest(http.MethodGet, "/roles?limit=10&offset=0", nil)
 	w := httptest.NewRecorder()
@@ -124,7 +124,7 @@ func (suite *RoleHandlerTestSuite) TestHandleRolePostRequest_Success() {
 		Permissions:        []ResourcePermissions{{ResourceServerID: "rs1", Permissions: []string{"perm1"}}},
 	}
 
-	suite.mockService.On("CreateRole", mock.AnythingOfType("RoleCreationDetail")).Return(expectedRole, nil)
+	suite.mockService.On("CreateRole", mock.Anything, mock.AnythingOfType("RoleCreationDetail")).Return(expectedRole, nil)
 
 	body, _ := json.Marshal(request)
 	req := httptest.NewRequest(http.MethodPost, "/roles", bytes.NewBuffer(body))
@@ -159,7 +159,7 @@ func (suite *RoleHandlerTestSuite) TestHandleRolePostRequest_ServiceError() {
 		Permissions:        []ResourcePermissions{{ResourceServerID: "rs1", Permissions: []string{"perm1"}}},
 	}
 
-	suite.mockService.On("CreateRole", mock.AnythingOfType("RoleCreationDetail")).
+	suite.mockService.On("CreateRole", mock.Anything, mock.AnythingOfType("RoleCreationDetail")).
 		Return(nil, &ErrorOrganizationUnitNotFound)
 
 	body, _ := json.Marshal(request)
@@ -182,7 +182,7 @@ func (suite *RoleHandlerTestSuite) TestHandleRoleGetRequest_Success() {
 		Permissions:        []ResourcePermissions{{ResourceServerID: "rs1", Permissions: []string{"perm1"}}},
 	}
 
-	suite.mockService.On("GetRoleWithPermissions", "role1").Return(expectedRole, nil)
+	suite.mockService.On("GetRoleWithPermissions", mock.Anything, "role1").Return(expectedRole, nil)
 
 	req := httptest.NewRequest(http.MethodGet, "/roles/role1", nil)
 	req.SetPathValue("id", "role1")
@@ -200,7 +200,7 @@ func (suite *RoleHandlerTestSuite) TestHandleRoleGetRequest_Success() {
 }
 
 func (suite *RoleHandlerTestSuite) TestHandleRoleGetRequest_MissingID() {
-	suite.mockService.On("GetRoleWithPermissions", "").Return(nil, &ErrorMissingRoleID)
+	suite.mockService.On("GetRoleWithPermissions", mock.Anything, "").Return(nil, &ErrorMissingRoleID)
 
 	req := httptest.NewRequest(http.MethodGet, "/roles/", nil)
 	w := httptest.NewRecorder()
@@ -211,7 +211,7 @@ func (suite *RoleHandlerTestSuite) TestHandleRoleGetRequest_MissingID() {
 }
 
 func (suite *RoleHandlerTestSuite) TestHandleRoleGetRequest_NotFound() {
-	suite.mockService.On("GetRoleWithPermissions", "nonexistent").Return(nil, &ErrorRoleNotFound)
+	suite.mockService.On("GetRoleWithPermissions", mock.Anything, "nonexistent").Return(nil, &ErrorRoleNotFound)
 
 	req := httptest.NewRequest(http.MethodGet, "/roles/nonexistent", nil)
 	req.SetPathValue("id", "nonexistent")
@@ -237,7 +237,7 @@ func (suite *RoleHandlerTestSuite) TestHandleRolePutRequest_Success() {
 		Permissions:        []ResourcePermissions{{ResourceServerID: "rs1", Permissions: []string{"perm1", "perm2"}}},
 	}
 
-	suite.mockService.On("UpdateRoleWithPermissions", "role1",
+	suite.mockService.On("UpdateRoleWithPermissions", mock.Anything, "role1",
 		mock.AnythingOfType("RoleUpdateDetail")).Return(updatedRole, nil)
 
 	body, _ := json.Marshal(request)
@@ -269,7 +269,7 @@ func (suite *RoleHandlerTestSuite) TestHandleRolePutRequest_InvalidJSON() {
 
 // HandleRoleDeleteRequest Tests
 func (suite *RoleHandlerTestSuite) TestHandleRoleDeleteRequest_Success() {
-	suite.mockService.On("DeleteRole", "role1").Return(nil)
+	suite.mockService.On("DeleteRole", mock.Anything, "role1").Return(nil)
 
 	req := httptest.NewRequest(http.MethodDelete, "/roles/role1", nil)
 	req.SetPathValue("id", "role1")
@@ -281,7 +281,7 @@ func (suite *RoleHandlerTestSuite) TestHandleRoleDeleteRequest_Success() {
 }
 
 func (suite *RoleHandlerTestSuite) TestHandleRoleDeleteRequest_RoleHasAssignments() {
-	suite.mockService.On("DeleteRole", "role1").Return(&ErrorCannotDeleteRole)
+	suite.mockService.On("DeleteRole", mock.Anything, "role1").Return(&ErrorCannotDeleteRole)
 
 	req := httptest.NewRequest(http.MethodDelete, "/roles/role1", nil)
 	req.SetPathValue("id", "role1")
@@ -305,7 +305,7 @@ func (suite *RoleHandlerTestSuite) TestHandleRoleAssignmentsGetRequest_Success()
 		Links: []Link{},
 	}
 
-	suite.mockService.On("GetRoleAssignments", "role1", 10, 0, false).Return(expectedResponse, nil)
+	suite.mockService.On("GetRoleAssignments", mock.Anything, "role1", 10, 0, false).Return(expectedResponse, nil)
 
 	req := httptest.NewRequest(http.MethodGet, "/roles/role1/assignments?limit=10&offset=0", nil)
 	req.SetPathValue("id", "role1")
@@ -323,7 +323,7 @@ func (suite *RoleHandlerTestSuite) TestHandleRoleAssignmentsGetRequest_Success()
 }
 
 func (suite *RoleHandlerTestSuite) TestHandleRoleAssignmentsGetRequest_RoleNotFound() {
-	suite.mockService.On("GetRoleAssignments", "nonexistent", 30, 0, false).Return(nil, &ErrorRoleNotFound)
+	suite.mockService.On("GetRoleAssignments", mock.Anything, "nonexistent", 30, 0, false).Return(nil, &ErrorRoleNotFound)
 
 	req := httptest.NewRequest(http.MethodGet, "/roles/nonexistent/assignments", nil)
 	req.SetPathValue("id", "nonexistent")
@@ -342,7 +342,8 @@ func (suite *RoleHandlerTestSuite) TestHandleRoleAddAssignmentsRequest_Success()
 		},
 	}
 
-	suite.mockService.On("AddAssignments", "role1", mock.AnythingOfType("[]role.RoleAssignment")).Return(nil)
+	suite.mockService.On("AddAssignments", mock.Anything, "role1", mock.AnythingOfType("[]role.RoleAssignment")).
+		Return(nil)
 
 	body, _ := json.Marshal(request)
 	req := httptest.NewRequest(http.MethodPost, "/roles/role1/add-assignments", bytes.NewBuffer(body))
@@ -373,7 +374,7 @@ func (suite *RoleHandlerTestSuite) TestHandleRoleAddAssignmentsRequest_ServiceEr
 		},
 	}
 
-	suite.mockService.On("AddAssignments", "role1", mock.AnythingOfType("[]role.RoleAssignment")).
+	suite.mockService.On("AddAssignments", mock.Anything, "role1", mock.AnythingOfType("[]role.RoleAssignment")).
 		Return(&ErrorInvalidAssignmentID)
 
 	body, _ := json.Marshal(request)
@@ -395,7 +396,8 @@ func (suite *RoleHandlerTestSuite) TestHandleRoleRemoveAssignmentsRequest_Succes
 		},
 	}
 
-	suite.mockService.On("RemoveAssignments", "role1", mock.AnythingOfType("[]role.RoleAssignment")).Return(nil)
+	suite.mockService.On("RemoveAssignments", mock.Anything, "role1", mock.AnythingOfType("[]role.RoleAssignment")).
+		Return(nil)
 
 	body, _ := json.Marshal(request)
 	req := httptest.NewRequest(http.MethodPost, "/roles/role1/remove-assignments", bytes.NewBuffer(body))
@@ -478,7 +480,7 @@ func (suite *RoleHandlerTestSuite) TestHandleRolePutRequest_MissingID() {
 		Permissions:        []ResourcePermissions{{ResourceServerID: "rs1", Permissions: []string{"perm1"}}},
 	}
 
-	suite.mockService.On("UpdateRoleWithPermissions", "", mock.AnythingOfType("RoleUpdateDetail")).
+	suite.mockService.On("UpdateRoleWithPermissions", mock.Anything, "", mock.AnythingOfType("RoleUpdateDetail")).
 		Return(nil, &ErrorMissingRoleID)
 
 	body, _ := json.Marshal(request)
@@ -498,7 +500,8 @@ func (suite *RoleHandlerTestSuite) TestHandleRolePutRequest_RoleNotFound() {
 		Permissions:        []ResourcePermissions{{ResourceServerID: "rs1", Permissions: []string{"perm1"}}},
 	}
 
-	suite.mockService.On("UpdateRoleWithPermissions", "nonexistent", mock.AnythingOfType("RoleUpdateDetail")).
+	suite.mockService.On("UpdateRoleWithPermissions", mock.Anything, "nonexistent",
+		mock.AnythingOfType("RoleUpdateDetail")).
 		Return(nil, &ErrorRoleNotFound)
 
 	body, _ := json.Marshal(request)
@@ -514,7 +517,7 @@ func (suite *RoleHandlerTestSuite) TestHandleRolePutRequest_RoleNotFound() {
 
 // HandleRoleDeleteRequest additional tests
 func (suite *RoleHandlerTestSuite) TestHandleRoleDeleteRequest_MissingID() {
-	suite.mockService.On("DeleteRole", "").Return(&ErrorMissingRoleID)
+	suite.mockService.On("DeleteRole", mock.Anything, "").Return(&ErrorMissingRoleID)
 
 	req := httptest.NewRequest(http.MethodDelete, "/roles/", nil)
 	w := httptest.NewRecorder()
@@ -525,7 +528,7 @@ func (suite *RoleHandlerTestSuite) TestHandleRoleDeleteRequest_MissingID() {
 }
 
 func (suite *RoleHandlerTestSuite) TestHandleRoleDeleteRequest_RoleNotFound() {
-	suite.mockService.On("DeleteRole", "nonexistent").Return(&ErrorRoleNotFound)
+	suite.mockService.On("DeleteRole", mock.Anything, "nonexistent").Return(&ErrorRoleNotFound)
 
 	req := httptest.NewRequest(http.MethodDelete, "/roles/nonexistent", nil)
 	req.SetPathValue("id", "nonexistent")
@@ -538,7 +541,7 @@ func (suite *RoleHandlerTestSuite) TestHandleRoleDeleteRequest_RoleNotFound() {
 
 // HandleRoleAssignmentsGetRequest additional tests
 func (suite *RoleHandlerTestSuite) TestHandleRoleAssignmentsGetRequest_MissingID() {
-	suite.mockService.On("GetRoleAssignments", "", 30, 0, false).Return(nil, &ErrorMissingRoleID)
+	suite.mockService.On("GetRoleAssignments", mock.Anything, "", 30, 0, false).Return(nil, &ErrorMissingRoleID)
 
 	req := httptest.NewRequest(http.MethodGet, "/roles//assignments", nil)
 	w := httptest.NewRecorder()
@@ -566,7 +569,7 @@ func (suite *RoleHandlerTestSuite) TestHandleRoleAddAssignmentsRequest_MissingID
 		},
 	}
 
-	suite.mockService.On("AddAssignments", "", mock.AnythingOfType("[]role.RoleAssignment")).
+	suite.mockService.On("AddAssignments", mock.Anything, "", mock.AnythingOfType("[]role.RoleAssignment")).
 		Return(&ErrorMissingRoleID)
 
 	body, _ := json.Marshal(request)
@@ -586,7 +589,7 @@ func (suite *RoleHandlerTestSuite) TestHandleRoleAddAssignmentsRequest_RoleNotFo
 		},
 	}
 
-	suite.mockService.On("AddAssignments", "nonexistent", mock.AnythingOfType("[]role.RoleAssignment")).
+	suite.mockService.On("AddAssignments", mock.Anything, "nonexistent", mock.AnythingOfType("[]role.RoleAssignment")).
 		Return(&ErrorRoleNotFound)
 
 	body, _ := json.Marshal(request)
@@ -608,7 +611,7 @@ func (suite *RoleHandlerTestSuite) TestHandleRoleRemoveAssignmentsRequest_Missin
 		},
 	}
 
-	suite.mockService.On("RemoveAssignments", "", mock.AnythingOfType("[]role.RoleAssignment")).
+	suite.mockService.On("RemoveAssignments", mock.Anything, "", mock.AnythingOfType("[]role.RoleAssignment")).
 		Return(&ErrorMissingRoleID)
 
 	body, _ := json.Marshal(request)
@@ -639,7 +642,7 @@ func (suite *RoleHandlerTestSuite) TestHandleRoleRemoveAssignmentsRequest_RoleNo
 		},
 	}
 
-	suite.mockService.On("RemoveAssignments", "nonexistent", mock.AnythingOfType("[]role.RoleAssignment")).
+	suite.mockService.On("RemoveAssignments", mock.Anything, "nonexistent", mock.AnythingOfType("[]role.RoleAssignment")).
 		Return(&ErrorRoleNotFound)
 
 	body, _ := json.Marshal(request)
@@ -660,7 +663,7 @@ func (suite *RoleHandlerTestSuite) TestHandleRoleRemoveAssignmentsRequest_Servic
 		},
 	}
 
-	suite.mockService.On("RemoveAssignments", "role1", mock.AnythingOfType("[]role.RoleAssignment")).
+	suite.mockService.On("RemoveAssignments", mock.Anything, "role1", mock.AnythingOfType("[]role.RoleAssignment")).
 		Return(&ErrorInvalidAssignmentID)
 
 	body, _ := json.Marshal(request)

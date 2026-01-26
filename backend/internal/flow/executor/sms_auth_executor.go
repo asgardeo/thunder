@@ -189,7 +189,7 @@ func (s *smsOTPAuthExecutor) InitiateOTP(ctx *core.NodeContext,
 		}
 
 		filter := map[string]interface{}{userAttributeMobileNumber: mobileNumber}
-		userID, err = s.IdentifyUser(filter, execResp)
+		userID, err = s.IdentifyUser(ctx.Context, filter, execResp)
 		if err != nil {
 			logger.Error("Failed to identify user", log.Error(err))
 			return fmt.Errorf("failed to identify user: %w", err)
@@ -409,7 +409,7 @@ func (s *smsOTPAuthExecutor) resolveUserIDFromAttribute(ctx *core.NodeContext,
 	}
 	if attributeValue != "" {
 		filters := map[string]interface{}{attributeName: attributeValue}
-		userID, svcErr := s.userService.IdentifyUser(filters)
+		userID, svcErr := s.userService.IdentifyUser(ctx.Context, filters)
 		if svcErr != nil {
 			return false, fmt.Errorf("failed to identify user by %s: %s", attributeName, svcErr.Error)
 		}
@@ -434,7 +434,7 @@ func (s *smsOTPAuthExecutor) getUserMobileNumber(userID string, ctx *core.NodeCo
 	logger.Debug("Retrieving user mobile number")
 
 	var err error
-	user, svcErr := s.userService.GetUser(userID)
+	user, svcErr := s.userService.GetUser(ctx.Context, userID)
 	if svcErr != nil {
 		return "", fmt.Errorf("failed to retrieve user details: %s", svcErr.Error)
 	}
@@ -507,7 +507,7 @@ func (s *smsOTPAuthExecutor) generateAndSendOTP(mobileNumber string, ctx *core.N
 		Channel:   string(notifcommon.ChannelTypeSMS),
 	}
 
-	sendResult, svcErr := s.otpService.SendOTP(sendOTPRequest)
+	sendResult, svcErr := s.otpService.SendOTP(ctx.Context, sendOTPRequest)
 	if svcErr != nil {
 		return fmt.Errorf("failed to send OTP: %s", svcErr.ErrorDescription)
 	}
@@ -582,7 +582,7 @@ func (s *smsOTPAuthExecutor) validateOTP(ctx *core.NodeContext, execResp *common
 		OTPCode:      providedOTP,
 	}
 
-	verifyResult, svcErr := s.otpService.VerifyOTP(verifyOTPRequest)
+	verifyResult, svcErr := s.otpService.VerifyOTP(ctx.Context, verifyOTPRequest)
 	if svcErr != nil {
 		logger.Error("Failed to verify OTP", log.String("userID", userID), log.Any("serviceError", svcErr))
 		return fmt.Errorf("failed to verify OTP: %s", svcErr.ErrorDescription)
@@ -628,7 +628,7 @@ func (s *smsOTPAuthExecutor) getAuthenticatedUser(ctx *core.NodeContext,
 		return nil, errors.New("user ID is empty")
 	}
 
-	user, svcErr := s.userService.GetUser(userID)
+	user, svcErr := s.userService.GetUser(ctx.Context, userID)
 	if svcErr != nil {
 		return nil, fmt.Errorf("failed to get user details: %s", svcErr.Error)
 	}

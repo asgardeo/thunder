@@ -110,7 +110,7 @@ func (p *provisioningExecutor) Execute(ctx *core.NodeContext) (*common.ExecutorR
 		return execResp, nil
 	}
 
-	userID, err := p.IdentifyUser(userAttributes, execResp)
+	userID, err := p.IdentifyUser(ctx.Context, userAttributes, execResp)
 	if err != nil {
 		logger.Error("Failed to identify user", log.Error(err))
 		execResp.Status = common.ExecFailure
@@ -246,7 +246,7 @@ func (p *provisioningExecutor) HasRequiredInputs(ctx *core.NodeContext,
 	return false
 }
 
-// getAttributesForProvisioning retrieves the input attributes from the context to be stored in user profile.
+// getAttributesForProvisioning retrieves the input attributes from the context.
 func (p *provisioningExecutor) getAttributesForProvisioning(ctx *core.NodeContext) map[string]interface{} {
 	attributesMap := make(map[string]interface{})
 	requiredInputAttrs := p.GetRequiredInputs(ctx)
@@ -323,7 +323,7 @@ func (p *provisioningExecutor) createUserInStore(nodeCtx *core.NodeContext,
 	// Convert the user attributes to JSON.
 	attributesJSON, err := json.Marshal(userAttributes)
 	if err != nil {
-		return nil, fmt.Errorf("failed to marshal user attributes: %w", err)
+		return nil, fmt.Errorf("failed to marshal attributes: %w", err)
 	}
 	newUser.Attributes = attributesJSON
 
@@ -397,13 +397,13 @@ func (p *provisioningExecutor) assignGroupsAndRoles(
 	var groupErr, roleErr error
 	// Assign to group
 	if groupID != "" {
-		if err := p.assignToGroup(userID, groupID, logger); err != nil {
+		if err := p.assignToGroup(ctx.Context, userID, groupID, logger); err != nil {
 			groupErr = fmt.Errorf("failed to assign user to group %s: %w", groupID, err)
 		}
 	}
 	// Assign to role
 	if roleID != "" {
-		if err := p.assignToRole(userID, roleID, logger); err != nil {
+		if err := p.assignToRole(ctx.Context, userID, roleID, logger); err != nil {
 			roleErr = fmt.Errorf("failed to assign user to role %s: %w", roleID, err)
 		}
 	}
@@ -460,13 +460,14 @@ func (p *provisioningExecutor) getRoleToAssign(ctx *core.NodeContext) string {
 }
 
 // assignToGroup adds the user to the specified group.
-func (p *provisioningExecutor) assignToGroup(userID string, groupID string, logger *log.Logger) error {
+func (p *provisioningExecutor) assignToGroup(ctx context.Context, userID string,
+	groupID string, logger *log.Logger) error {
 	logger.Debug("Adding user to group",
 		log.String("userID", userID),
 		log.String("groupID", groupID))
 
 	// Get existing group to retrieve current members
-	existingGroup, svcErr := p.groupService.GetGroup(groupID)
+	existingGroup, svcErr := p.groupService.GetGroup(ctx, groupID)
 	if svcErr != nil {
 		logger.Error("Failed to retrieve group for assignment",
 			log.String("groupID", groupID),
@@ -490,7 +491,7 @@ func (p *provisioningExecutor) assignToGroup(userID string, groupID string, logg
 		Members:            updatedMembers,
 	}
 
-	_, svcErr = p.groupService.UpdateGroup(groupID, updateRequest)
+	_, svcErr = p.groupService.UpdateGroup(ctx, groupID, updateRequest)
 	if svcErr != nil {
 		logger.Error("Failed to update group with new member",
 			log.String("groupID", groupID),
@@ -506,7 +507,8 @@ func (p *provisioningExecutor) assignToGroup(userID string, groupID string, logg
 }
 
 // assignToRole adds the user to the specified role.
-func (p *provisioningExecutor) assignToRole(userID string, roleID string, logger *log.Logger) error {
+func (p *provisioningExecutor) assignToRole(ctx context.Context, userID string,
+	roleID string, logger *log.Logger) error {
 	logger.Debug("Adding user to role",
 		log.String("userID", userID),
 		log.String("roleID", roleID))
@@ -519,7 +521,7 @@ func (p *provisioningExecutor) assignToRole(userID string, roleID string, logger
 		},
 	}
 
-	svcErr := p.roleService.AddAssignments(roleID, assignments)
+	svcErr := p.roleService.AddAssignments(ctx, roleID, assignments)
 	if svcErr != nil {
 		logger.Error("Failed to add role assignment",
 			log.String("roleID", roleID),

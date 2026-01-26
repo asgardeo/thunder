@@ -5,6 +5,8 @@
 package introspect
 
 import (
+	"context"
+
 	mock "github.com/stretchr/testify/mock"
 )
 
@@ -36,8 +38,8 @@ func (_m *TokenIntrospectionServiceInterfaceMock) EXPECT() *TokenIntrospectionSe
 }
 
 // IntrospectToken provides a mock function for the type TokenIntrospectionServiceInterfaceMock
-func (_mock *TokenIntrospectionServiceInterfaceMock) IntrospectToken(token string, tokenTypeHint string) (*IntrospectResponse, error) {
-	ret := _mock.Called(token, tokenTypeHint)
+func (_mock *TokenIntrospectionServiceInterfaceMock) IntrospectToken(ctx context.Context, token string, tokenTypeHint string) (*IntrospectResponse, error) {
+	ret := _mock.Called(ctx, token, tokenTypeHint)
 
 	if len(ret) == 0 {
 		panic("no return value specified for IntrospectToken")
@@ -45,18 +47,18 @@ func (_mock *TokenIntrospectionServiceInterfaceMock) IntrospectToken(token strin
 
 	var r0 *IntrospectResponse
 	var r1 error
-	if returnFunc, ok := ret.Get(0).(func(string, string) (*IntrospectResponse, error)); ok {
-		return returnFunc(token, tokenTypeHint)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string, string) (*IntrospectResponse, error)); ok {
+		return returnFunc(ctx, token, tokenTypeHint)
 	}
-	if returnFunc, ok := ret.Get(0).(func(string, string) *IntrospectResponse); ok {
-		r0 = returnFunc(token, tokenTypeHint)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string, string) *IntrospectResponse); ok {
+		r0 = returnFunc(ctx, token, tokenTypeHint)
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).(*IntrospectResponse)
 		}
 	}
-	if returnFunc, ok := ret.Get(1).(func(string, string) error); ok {
-		r1 = returnFunc(token, tokenTypeHint)
+	if returnFunc, ok := ret.Get(1).(func(context.Context, string, string) error); ok {
+		r1 = returnFunc(ctx, token, tokenTypeHint)
 	} else {
 		r1 = ret.Error(1)
 	}
@@ -69,25 +71,31 @@ type TokenIntrospectionServiceInterfaceMock_IntrospectToken_Call struct {
 }
 
 // IntrospectToken is a helper method to define mock.On call
+//   - ctx context.Context
 //   - token string
 //   - tokenTypeHint string
-func (_e *TokenIntrospectionServiceInterfaceMock_Expecter) IntrospectToken(token interface{}, tokenTypeHint interface{}) *TokenIntrospectionServiceInterfaceMock_IntrospectToken_Call {
-	return &TokenIntrospectionServiceInterfaceMock_IntrospectToken_Call{Call: _e.mock.On("IntrospectToken", token, tokenTypeHint)}
+func (_e *TokenIntrospectionServiceInterfaceMock_Expecter) IntrospectToken(ctx interface{}, token interface{}, tokenTypeHint interface{}) *TokenIntrospectionServiceInterfaceMock_IntrospectToken_Call {
+	return &TokenIntrospectionServiceInterfaceMock_IntrospectToken_Call{Call: _e.mock.On("IntrospectToken", ctx, token, tokenTypeHint)}
 }
 
-func (_c *TokenIntrospectionServiceInterfaceMock_IntrospectToken_Call) Run(run func(token string, tokenTypeHint string)) *TokenIntrospectionServiceInterfaceMock_IntrospectToken_Call {
+func (_c *TokenIntrospectionServiceInterfaceMock_IntrospectToken_Call) Run(run func(ctx context.Context, token string, tokenTypeHint string)) *TokenIntrospectionServiceInterfaceMock_IntrospectToken_Call {
 	_c.Call.Run(func(args mock.Arguments) {
-		var arg0 string
+		var arg0 context.Context
 		if args[0] != nil {
-			arg0 = args[0].(string)
+			arg0 = args[0].(context.Context)
 		}
 		var arg1 string
 		if args[1] != nil {
 			arg1 = args[1].(string)
 		}
+		var arg2 string
+		if args[2] != nil {
+			arg2 = args[2].(string)
+		}
 		run(
 			arg0,
 			arg1,
+			arg2,
 		)
 	})
 	return _c
@@ -98,7 +106,7 @@ func (_c *TokenIntrospectionServiceInterfaceMock_IntrospectToken_Call) Return(in
 	return _c
 }
 
-func (_c *TokenIntrospectionServiceInterfaceMock_IntrospectToken_Call) RunAndReturn(run func(token string, tokenTypeHint string) (*IntrospectResponse, error)) *TokenIntrospectionServiceInterfaceMock_IntrospectToken_Call {
+func (_c *TokenIntrospectionServiceInterfaceMock_IntrospectToken_Call) RunAndReturn(run func(ctx context.Context, token string, tokenTypeHint string) (*IntrospectResponse, error)) *TokenIntrospectionServiceInterfaceMock_IntrospectToken_Call {
 	_c.Call.Return(run)
 	return _c
 }

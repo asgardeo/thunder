@@ -19,6 +19,7 @@
 package userschema
 
 import (
+	"context"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -30,6 +31,7 @@ import (
 	"github.com/asgardeo/thunder/tests/mocks/oumock"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/suite"
 )
 
@@ -63,6 +65,11 @@ func (suite *InitTestSuite) TestInitialize() {
 		ImmutableResources: config.ImmutableResources{
 			Enabled: false,
 		},
+		Database: config.DatabaseConfig{
+			Identity: config.DataSource{Type: "sqlite"},
+			Runtime:  config.DataSource{Type: "sqlite"},
+			User:     config.DataSource{Type: "sqlite"},
+		},
 	}
 	err := config.InitializeThunderRuntime("", testConfig)
 	assert.NoError(suite.T(), err)
@@ -79,6 +86,11 @@ func (suite *InitTestSuite) TestRegisterRoutes_ListEndpoint() {
 	testConfig := &config.Config{
 		ImmutableResources: config.ImmutableResources{
 			Enabled: false,
+		},
+		Database: config.DatabaseConfig{
+			Identity: config.DataSource{Type: "sqlite"},
+			Runtime:  config.DataSource{Type: "sqlite"},
+			User:     config.DataSource{Type: "sqlite"},
 		},
 	}
 	err := config.InitializeThunderRuntime("", testConfig)
@@ -101,6 +113,11 @@ func (suite *InitTestSuite) TestRegisterRoutes_CreateEndpoint() {
 		ImmutableResources: config.ImmutableResources{
 			Enabled: false,
 		},
+		Database: config.DatabaseConfig{
+			Identity: config.DataSource{Type: "sqlite"},
+			Runtime:  config.DataSource{Type: "sqlite"},
+			User:     config.DataSource{Type: "sqlite"},
+		},
 	}
 	err := config.InitializeThunderRuntime("", testConfig)
 	assert.NoError(suite.T(), err)
@@ -121,6 +138,11 @@ func (suite *InitTestSuite) TestRegisterRoutes_GetByIDEndpoint() {
 	testConfig := &config.Config{
 		ImmutableResources: config.ImmutableResources{
 			Enabled: false,
+		},
+		Database: config.DatabaseConfig{
+			Identity: config.DataSource{Type: "sqlite"},
+			Runtime:  config.DataSource{Type: "sqlite"},
+			User:     config.DataSource{Type: "sqlite"},
 		},
 	}
 	err := config.InitializeThunderRuntime("", testConfig)
@@ -143,6 +165,11 @@ func (suite *InitTestSuite) TestRegisterRoutes_UpdateEndpoint() {
 		ImmutableResources: config.ImmutableResources{
 			Enabled: false,
 		},
+		Database: config.DatabaseConfig{
+			Identity: config.DataSource{Type: "sqlite"},
+			Runtime:  config.DataSource{Type: "sqlite"},
+			User:     config.DataSource{Type: "sqlite"},
+		},
 	}
 	err := config.InitializeThunderRuntime("", testConfig)
 	assert.NoError(suite.T(), err)
@@ -163,6 +190,11 @@ func (suite *InitTestSuite) TestRegisterRoutes_DeleteEndpoint() {
 	testConfig := &config.Config{
 		ImmutableResources: config.ImmutableResources{
 			Enabled: false,
+		},
+		Database: config.DatabaseConfig{
+			Identity: config.DataSource{Type: "sqlite"},
+			Runtime:  config.DataSource{Type: "sqlite"},
+			User:     config.DataSource{Type: "sqlite"},
 		},
 	}
 	err := config.InitializeThunderRuntime("", testConfig)
@@ -185,6 +217,11 @@ func (suite *InitTestSuite) TestRegisterRoutes_CORSPreflight() {
 		ImmutableResources: config.ImmutableResources{
 			Enabled: false,
 		},
+		Database: config.DatabaseConfig{
+			Identity: config.DataSource{Type: "sqlite"},
+			Runtime:  config.DataSource{Type: "sqlite"},
+			User:     config.DataSource{Type: "sqlite"},
+		},
 	}
 	err := config.InitializeThunderRuntime("", testConfig)
 	assert.NoError(suite.T(), err)
@@ -205,6 +242,11 @@ func (suite *InitTestSuite) TestRegisterRoutes_CORSPreflightByID() {
 	testConfig := &config.Config{
 		ImmutableResources: config.ImmutableResources{
 			Enabled: false,
+		},
+		Database: config.DatabaseConfig{
+			Identity: config.DataSource{Type: "sqlite"},
+			Runtime:  config.DataSource{Type: "sqlite"},
+			User:     config.DataSource{Type: "sqlite"},
 		},
 	}
 	err := config.InitializeThunderRuntime("", testConfig)
@@ -401,6 +443,11 @@ func TestInitialize_Standalone(t *testing.T) {
 		ImmutableResources: config.ImmutableResources{
 			Enabled: false,
 		},
+		Database: config.DatabaseConfig{
+			Identity: config.DataSource{Type: "sqlite"},
+			Runtime:  config.DataSource{Type: "sqlite"},
+			User:     config.DataSource{Type: "sqlite"},
+		},
 	}
 
 	config.ResetThunderRuntime()
@@ -590,13 +637,13 @@ func TestOUServiceInteractionDuringValidation(t *testing.T) {
 
 			// Mock the GetOrganizationUnit call that happens in Initialize()
 			if tc.ouServiceError != nil {
-				mockOUService.On("GetOrganizationUnit", tc.ouID).
+				mockOUService.On("GetOrganizationUnit", mock.Anything, tc.ouID).
 					Return(oupkg.OrganizationUnit{}, tc.ouServiceError).Once()
 			} else if tc.ouExists {
-				mockOUService.On("GetOrganizationUnit", tc.ouID).
+				mockOUService.On("GetOrganizationUnit", mock.Anything, tc.ouID).
 					Return(oupkg.OrganizationUnit{ID: tc.ouID}, (*serviceerror.ServiceError)(nil)).Once()
 			} else {
-				mockOUService.On("GetOrganizationUnit", tc.ouID).
+				mockOUService.On("GetOrganizationUnit", mock.Anything, tc.ouID).
 					Return(oupkg.OrganizationUnit{}, &serviceerror.ServiceError{
 						Code:             "OUS-1002",
 						Type:             serviceerror.ClientErrorType,
@@ -606,7 +653,7 @@ func TestOUServiceInteractionDuringValidation(t *testing.T) {
 			}
 
 			// Simulate the OU validation logic from Initialize()
-			_, svcErr := mockOUService.GetOrganizationUnit(tc.ouID)
+			_, svcErr := mockOUService.GetOrganizationUnit(context.TODO(), tc.ouID)
 
 			switch tc.expectedResult {
 			case "success":
@@ -739,6 +786,11 @@ func TestInitialize_WithImmutableResourcesEnabled_InvalidYAML(t *testing.T) {
 		ImmutableResources: config.ImmutableResources{
 			Enabled: true,
 		},
+		Database: config.DatabaseConfig{
+			Identity: config.DataSource{Type: "sqlite"},
+			Runtime:  config.DataSource{Type: "sqlite"},
+			User:     config.DataSource{Type: "sqlite"},
+		},
 		Crypto: config.CryptoConfig{
 			Encryption: config.EncryptionConfig{
 				Key: testCryptoKey,
@@ -860,7 +912,7 @@ schema: |
 	mockOUService := oumock.NewOrganizationUnitServiceInterfaceMock(t)
 
 	// Mock OU service to return an error
-	mockOUService.On("GetOrganizationUnit", "550e8400-e29b-41d4-a716-446655440000").
+	mockOUService.On("GetOrganizationUnit", mock.Anything, "550e8400-e29b-41d4-a716-446655440000").
 		Return(oupkg.OrganizationUnit{}, &serviceerror.ServiceError{
 			Code:             "OUS-1002",
 			Type:             serviceerror.ClientErrorType,

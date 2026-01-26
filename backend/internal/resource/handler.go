@@ -51,7 +51,7 @@ func (h *resourceHandler) HandleResourceServerListRequest(w http.ResponseWriter,
 		return
 	}
 
-	result, svcErr := h.resourceService.GetResourceServerList(limit, offset)
+	result, svcErr := h.resourceService.GetResourceServerList(r.Context(), limit, offset)
 	if svcErr != nil {
 		handleError(w, svcErr)
 		return
@@ -78,7 +78,7 @@ func (h *resourceHandler) HandleResourceServerPostRequest(w http.ResponseWriter,
 		Delimiter:          sanitized.Delimiter,
 	}
 
-	result, svcErr := h.resourceService.CreateResourceServer(serviceReq)
+	result, svcErr := h.resourceService.CreateResourceServer(r.Context(), serviceReq)
 	if svcErr != nil {
 		handleError(w, svcErr)
 		return
@@ -91,7 +91,7 @@ func (h *resourceHandler) HandleResourceServerPostRequest(w http.ResponseWriter,
 // HandleResourceServerGetRequest handles getting a resource server.
 func (h *resourceHandler) HandleResourceServerGetRequest(w http.ResponseWriter, r *http.Request) {
 	id := r.PathValue("id")
-	result, svcErr := h.resourceService.GetResourceServer(id)
+	result, svcErr := h.resourceService.GetResourceServer(r.Context(), id)
 	if svcErr != nil {
 		handleError(w, svcErr)
 		return
@@ -118,7 +118,7 @@ func (h *resourceHandler) HandleResourceServerPutRequest(w http.ResponseWriter, 
 		OrganizationUnitID: sanitized.OrganizationUnitID,
 	}
 
-	result, svcErr := h.resourceService.UpdateResourceServer(id, serviceReq)
+	result, svcErr := h.resourceService.UpdateResourceServer(r.Context(), id, serviceReq)
 	if svcErr != nil {
 		handleError(w, svcErr)
 		return
@@ -131,7 +131,7 @@ func (h *resourceHandler) HandleResourceServerPutRequest(w http.ResponseWriter, 
 // HandleResourceServerDeleteRequest handles deleting a resource server.
 func (h *resourceHandler) HandleResourceServerDeleteRequest(w http.ResponseWriter, r *http.Request) {
 	id := r.PathValue("id")
-	svcErr := h.resourceService.DeleteResourceServer(id)
+	svcErr := h.resourceService.DeleteResourceServer(r.Context(), id)
 	if svcErr != nil {
 		handleError(w, svcErr)
 		return
@@ -159,7 +159,7 @@ func (h *resourceHandler) HandleResourceListRequest(w http.ResponseWriter, r *ht
 		parentID = &parentParam
 	}
 
-	result, svcErr := h.resourceService.GetResourceList(rsID, parentID, limit, offset)
+	result, svcErr := h.resourceService.GetResourceList(r.Context(), rsID, parentID, limit, offset)
 	if svcErr != nil {
 		handleError(w, svcErr)
 		return
@@ -186,7 +186,7 @@ func (h *resourceHandler) HandleResourcePostRequest(w http.ResponseWriter, r *ht
 		Parent:      sanitized.Parent,
 	}
 
-	result, svcErr := h.resourceService.CreateResource(rsID, serviceReq)
+	result, svcErr := h.resourceService.CreateResource(r.Context(), rsID, serviceReq)
 	if svcErr != nil {
 		handleError(w, svcErr)
 		return
@@ -201,7 +201,7 @@ func (h *resourceHandler) HandleResourceGetRequest(w http.ResponseWriter, r *htt
 	rsID := r.PathValue("rsId")
 	id := r.PathValue("id")
 
-	result, svcErr := h.resourceService.GetResource(rsID, id)
+	result, svcErr := h.resourceService.GetResource(r.Context(), rsID, id)
 	if svcErr != nil {
 		handleError(w, svcErr)
 		return
@@ -228,7 +228,7 @@ func (h *resourceHandler) HandleResourcePutRequest(w http.ResponseWriter, r *htt
 		Description: sanitized.Description,
 	}
 
-	result, svcErr := h.resourceService.UpdateResource(rsID, id, serviceReq)
+	result, svcErr := h.resourceService.UpdateResource(r.Context(), rsID, id, serviceReq)
 	if svcErr != nil {
 		handleError(w, svcErr)
 		return
@@ -243,7 +243,7 @@ func (h *resourceHandler) HandleResourceDeleteRequest(w http.ResponseWriter, r *
 	rsID := r.PathValue("rsId")
 	id := r.PathValue("id")
 
-	svcErr := h.resourceService.DeleteResource(rsID, id)
+	svcErr := h.resourceService.DeleteResource(r.Context(), rsID, id)
 	if svcErr != nil {
 		handleError(w, svcErr)
 		return
@@ -263,7 +263,7 @@ func (h *resourceHandler) HandleActionListAtResourceServerRequest(w http.Respons
 		return
 	}
 
-	result, svcErr := h.resourceService.GetActionList(rsID, nil, limit, offset)
+	result, svcErr := h.resourceService.GetActionList(r.Context(), rsID, nil, limit, offset)
 	if svcErr != nil {
 		handleError(w, svcErr)
 		return
@@ -289,7 +289,7 @@ func (h *resourceHandler) HandleActionPostAtResourceServerRequest(w http.Respons
 		Description: sanitized.Description,
 	}
 
-	result, svcErr := h.resourceService.CreateAction(rsID, nil, serviceReq)
+	result, svcErr := h.resourceService.CreateAction(r.Context(), rsID, nil, serviceReq)
 	if svcErr != nil {
 		handleError(w, svcErr)
 		return
@@ -304,7 +304,7 @@ func (h *resourceHandler) HandleActionGetAtResourceServerRequest(w http.Response
 	rsID := r.PathValue("rsId")
 	id := r.PathValue("id")
 
-	result, svcErr := h.resourceService.GetAction(rsID, nil, id)
+	result, svcErr := h.resourceService.GetAction(r.Context(), rsID, nil, id)
 	if svcErr != nil {
 		handleError(w, svcErr)
 		return
@@ -331,7 +331,7 @@ func (h *resourceHandler) HandleActionPutAtResourceServerRequest(w http.Response
 		Description: sanitized.Description,
 	}
 
-	result, svcErr := h.resourceService.UpdateAction(rsID, nil, id, serviceReq)
+	result, svcErr := h.resourceService.UpdateAction(r.Context(), rsID, nil, id, serviceReq)
 	if svcErr != nil {
 		handleError(w, svcErr)
 		return
@@ -346,7 +346,7 @@ func (h *resourceHandler) HandleActionDeleteAtResourceServerRequest(w http.Respo
 	rsID := r.PathValue("rsId")
 	id := r.PathValue("id")
 
-	svcErr := h.resourceService.DeleteAction(rsID, nil, id)
+	svcErr := h.resourceService.DeleteAction(r.Context(), rsID, nil, id)
 	if svcErr != nil {
 		handleError(w, svcErr)
 		return
@@ -367,7 +367,7 @@ func (h *resourceHandler) HandleActionListAtResourceRequest(w http.ResponseWrite
 		return
 	}
 
-	result, svcErr := h.resourceService.GetActionList(rsID, &resourceID, limit, offset)
+	result, svcErr := h.resourceService.GetActionList(r.Context(), rsID, &resourceID, limit, offset)
 	if svcErr != nil {
 		handleError(w, svcErr)
 		return
@@ -395,7 +395,7 @@ func (h *resourceHandler) HandleActionPostAtResourceRequest(w http.ResponseWrite
 		Description: sanitized.Description,
 	}
 
-	result, svcErr := h.resourceService.CreateAction(rsID, &resourceID, serviceReq)
+	result, svcErr := h.resourceService.CreateAction(r.Context(), rsID, &resourceID, serviceReq)
 	if svcErr != nil {
 		handleError(w, svcErr)
 		return
@@ -411,7 +411,7 @@ func (h *resourceHandler) HandleActionGetAtResourceRequest(w http.ResponseWriter
 	resourceID := r.PathValue("resourceId")
 	id := r.PathValue("id")
 
-	result, svcErr := h.resourceService.GetAction(rsID, &resourceID, id)
+	result, svcErr := h.resourceService.GetAction(r.Context(), rsID, &resourceID, id)
 	if svcErr != nil {
 		handleError(w, svcErr)
 		return
@@ -439,7 +439,7 @@ func (h *resourceHandler) HandleActionPutAtResourceRequest(w http.ResponseWriter
 		Description: sanitized.Description,
 	}
 
-	result, svcErr := h.resourceService.UpdateAction(rsID, &resourceID, id, serviceReq)
+	result, svcErr := h.resourceService.UpdateAction(r.Context(), rsID, &resourceID, id, serviceReq)
 	if svcErr != nil {
 		handleError(w, svcErr)
 		return
@@ -455,7 +455,7 @@ func (h *resourceHandler) HandleActionDeleteAtResourceRequest(w http.ResponseWri
 	resourceID := r.PathValue("resourceId")
 	id := r.PathValue("id")
 
-	svcErr := h.resourceService.DeleteAction(rsID, &resourceID, id)
+	svcErr := h.resourceService.DeleteAction(r.Context(), rsID, &resourceID, id)
 	if svcErr != nil {
 		handleError(w, svcErr)
 		return

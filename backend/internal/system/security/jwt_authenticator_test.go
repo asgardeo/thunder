@@ -25,6 +25,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/suite"
 
 	"github.com/asgardeo/thunder/internal/system/error/serviceerror"
@@ -115,7 +116,7 @@ func (suite *JWTAuthenticatorTestSuite) TestAuthenticate() {
 			name:       "Successful authentication with system scope",
 			authHeader: "Bearer " + validToken,
 			setupMock: func(m *jwtmock.JWTServiceInterfaceMock) {
-				m.On("VerifyJWTSignature", validToken).Return(nil)
+				m.On("VerifyJWTSignature", mock.Anything, validToken).Return(nil)
 			},
 			expectedError: nil,
 			validateResult: func(t *testing.T, ctx *SecurityContext) {
@@ -147,7 +148,7 @@ func (suite *JWTAuthenticatorTestSuite) TestAuthenticate() {
 			name:       "Invalid JWT signature",
 			authHeader: "Bearer invalid.jwt.token",
 			setupMock: func(m *jwtmock.JWTServiceInterfaceMock) {
-				m.On("VerifyJWTSignature", "invalid.jwt.token").Return(&serviceerror.ServiceError{
+				m.On("VerifyJWTSignature", mock.Anything, "invalid.jwt.token").Return(&serviceerror.ServiceError{
 					Type:             serviceerror.ServerErrorType,
 					Code:             "INVALID_SIGNATURE",
 					Error:            "Invalid signature",
@@ -160,7 +161,7 @@ func (suite *JWTAuthenticatorTestSuite) TestAuthenticate() {
 			name:       "Invalid JWT format - decoding error",
 			authHeader: "Bearer invalidjwtformat", // Not 3 parts separated by dots
 			setupMock: func(m *jwtmock.JWTServiceInterfaceMock) {
-				m.On("VerifyJWTSignature", "invalidjwtformat").Return(nil)
+				m.On("VerifyJWTSignature", mock.Anything, "invalidjwtformat").Return(nil)
 			},
 			expectedError: errInvalidToken,
 		},
@@ -168,7 +169,8 @@ func (suite *JWTAuthenticatorTestSuite) TestAuthenticate() {
 			name:       "Invalid JWT payload - malformed base64",
 			authHeader: "Bearer eyJhbGciOiJIUzI1NiJ9.invalid!base64!payload.signature",
 			setupMock: func(m *jwtmock.JWTServiceInterfaceMock) {
-				m.On("VerifyJWTSignature", "eyJhbGciOiJIUzI1NiJ9.invalid!base64!payload.signature").Return(nil)
+				m.On("VerifyJWTSignature", mock.Anything,
+					"eyJhbGciOiJIUzI1NiJ9.invalid!base64!payload.signature").Return(nil)
 			},
 			expectedError: errInvalidToken,
 		},
@@ -176,7 +178,8 @@ func (suite *JWTAuthenticatorTestSuite) TestAuthenticate() {
 			name:       "Invalid JWT payload - malformed JSON",
 			authHeader: "Bearer eyJhbGciOiJIUzI1NiJ9.bm90X3ZhbGlkX2pzb24.signature", // "not_valid_json" base64 encoded
 			setupMock: func(m *jwtmock.JWTServiceInterfaceMock) {
-				m.On("VerifyJWTSignature", "eyJhbGciOiJIUzI1NiJ9.bm90X3ZhbGlkX2pzb24.signature").Return(nil)
+				m.On("VerifyJWTSignature", mock.Anything,
+					"eyJhbGciOiJIUzI1NiJ9.bm90X3ZhbGlkX2pzb24.signature").Return(nil)
 			},
 			expectedError: errInvalidToken,
 		},

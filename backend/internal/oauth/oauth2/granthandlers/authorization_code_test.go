@@ -19,6 +19,7 @@
 package granthandlers
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"slices"
@@ -128,7 +129,7 @@ func (suite *AuthorizationCodeGrantHandlerTestSuite) TestNewAuthorizationCodeGra
 }
 
 func (suite *AuthorizationCodeGrantHandlerTestSuite) TestValidateGrant_Success() {
-	err := suite.handler.ValidateGrant(suite.testTokenReq, suite.oauthApp)
+	err := suite.handler.ValidateGrant(context.TODO(), suite.testTokenReq, suite.oauthApp)
 	assert.Nil(suite.T(), err)
 }
 
@@ -139,7 +140,7 @@ func (suite *AuthorizationCodeGrantHandlerTestSuite) TestValidateGrant_MissingGr
 		Code:      "test-code",
 	}
 
-	err := suite.handler.ValidateGrant(tokenReq, suite.oauthApp)
+	err := suite.handler.ValidateGrant(context.TODO(), tokenReq, suite.oauthApp)
 	assert.NotNil(suite.T(), err)
 	assert.Equal(suite.T(), constants.ErrorInvalidRequest, err.Error)
 	assert.Equal(suite.T(), "Missing grant type", err.ErrorDescription)
@@ -152,7 +153,7 @@ func (suite *AuthorizationCodeGrantHandlerTestSuite) TestValidateGrant_Unsupport
 		Code:      "test-code",
 	}
 
-	err := suite.handler.ValidateGrant(tokenReq, suite.oauthApp)
+	err := suite.handler.ValidateGrant(context.TODO(), tokenReq, suite.oauthApp)
 	assert.NotNil(suite.T(), err)
 	assert.Equal(suite.T(), constants.ErrorUnsupportedGrantType, err.Error)
 	assert.Equal(suite.T(), "Unsupported grant type", err.ErrorDescription)
@@ -165,7 +166,7 @@ func (suite *AuthorizationCodeGrantHandlerTestSuite) TestValidateGrant_MissingAu
 		Code:      "", // Missing authorization code
 	}
 
-	err := suite.handler.ValidateGrant(tokenReq, suite.oauthApp)
+	err := suite.handler.ValidateGrant(context.TODO(), tokenReq, suite.oauthApp)
 	assert.NotNil(suite.T(), err)
 	assert.Equal(suite.T(), constants.ErrorInvalidGrant, err.Error)
 	assert.Equal(suite.T(), "Authorization code is required", err.ErrorDescription)
@@ -178,7 +179,7 @@ func (suite *AuthorizationCodeGrantHandlerTestSuite) TestValidateGrant_MissingCl
 		Code:      "test-code",
 	}
 
-	err := suite.handler.ValidateGrant(tokenReq, suite.oauthApp)
+	err := suite.handler.ValidateGrant(context.TODO(), tokenReq, suite.oauthApp)
 	assert.NotNil(suite.T(), err)
 	assert.Equal(suite.T(), constants.ErrorInvalidClient, err.Error)
 	assert.Equal(suite.T(), "Client Id is required", err.ErrorDescription)
@@ -192,7 +193,7 @@ func (suite *AuthorizationCodeGrantHandlerTestSuite) TestValidateGrant_MissingRe
 		RedirectURI: "", // Missing redirect URI
 	}
 
-	err := suite.handler.ValidateGrant(tokenReq, suite.oauthApp)
+	err := suite.handler.ValidateGrant(context.TODO(), tokenReq, suite.oauthApp)
 	assert.NotNil(suite.T(), err)
 	assert.Equal(suite.T(), constants.ErrorInvalidRequest, err.Error)
 	assert.Equal(suite.T(), "Redirect URI is required", err.ErrorDescription)
@@ -212,15 +213,16 @@ func (suite *AuthorizationCodeGrantHandlerTestSuite) TestHandleGrant_Success() {
 		ID:         testUserID,
 		Attributes: json.RawMessage(`{"email":"test@example.com","username":"testuser"}`),
 	}
-	suite.mockUserService.On("GetUser", testUserID).Return(mockUser, nil)
+	suite.mockUserService.On("GetUser", mock.Anything, testUserID).Return(mockUser, nil)
 
 	// Mock token builder to generate access token
-	suite.mockTokenBuilder.On("BuildAccessToken", mock.MatchedBy(func(ctx *tokenservice.AccessTokenBuildContext) bool {
-		return ctx.Subject == testUserID &&
-			ctx.Audience == testResourceURL &&
-			ctx.ClientID == testClientID &&
-			ctx.GrantType == string(constants.GrantTypeAuthorizationCode)
-	})).Return(&model.TokenDTO{
+	suite.mockTokenBuilder.On("BuildAccessToken", mock.Anything,
+		mock.MatchedBy(func(ctx *tokenservice.AccessTokenBuildContext) bool {
+			return ctx.Subject == testUserID &&
+				ctx.Audience == testResourceURL &&
+				ctx.ClientID == testClientID &&
+				ctx.GrantType == string(constants.GrantTypeAuthorizationCode)
+		})).Return(&model.TokenDTO{
 		Token:     "test-jwt-token",
 		TokenType: constants.TokenTypeBearer,
 		IssuedAt:  time.Now().Unix(),
@@ -235,7 +237,7 @@ func (suite *AuthorizationCodeGrantHandlerTestSuite) TestHandleGrant_Success() {
 	tokenReqWithResource := *suite.testTokenReq
 	tokenReqWithResource.Resource = testResourceURL
 
-	result, err := suite.handler.HandleGrant(&tokenReqWithResource, suite.oauthApp)
+	result, err := suite.handler.HandleGrant(context.TODO(), &tokenReqWithResource, suite.oauthApp)
 
 	assert.Nil(suite.T(), err)
 	assert.NotNil(suite.T(), result)
@@ -262,7 +264,7 @@ func (suite *AuthorizationCodeGrantHandlerTestSuite) TestHandleGrant_InvalidAuth
 	tokenReqWithResource := *suite.testTokenReq
 	tokenReqWithResource.Resource = testResourceURL
 
-	result, err := suite.handler.HandleGrant(&tokenReqWithResource, suite.oauthApp)
+	result, err := suite.handler.HandleGrant(context.TODO(), &tokenReqWithResource, suite.oauthApp)
 
 	assert.Nil(suite.T(), result)
 	assert.NotNil(suite.T(), err)
@@ -282,16 +284,17 @@ func (suite *AuthorizationCodeGrantHandlerTestSuite) TestHandleGrant_JWTGenerati
 		ID:         testUserID,
 		Attributes: json.RawMessage(`{"email":"test@example.com","username":"testuser"}`),
 	}
-	suite.mockUserService.On("GetUser", testUserID).Return(mockUser, nil)
+	suite.mockUserService.On("GetUser", mock.Anything, testUserID).Return(mockUser, nil)
 
 	// Mock token builder to fail token generation
-	suite.mockTokenBuilder.On("BuildAccessToken", mock.Anything).Return(nil, errors.New("jwt generation failed"))
+	suite.mockTokenBuilder.On("BuildAccessToken", mock.Anything, mock.Anything).
+		Return(nil, errors.New("jwt generation failed"))
 
 	// Create token request with matching resource
 	tokenReqWithResource := *suite.testTokenReq
 	tokenReqWithResource.Resource = testResourceURL
 
-	result, err := suite.handler.HandleGrant(&tokenReqWithResource, suite.oauthApp)
+	result, err := suite.handler.HandleGrant(context.TODO(), &tokenReqWithResource, suite.oauthApp)
 
 	assert.Nil(suite.T(), result)
 	assert.NotNil(suite.T(), err)
@@ -315,9 +318,9 @@ func (suite *AuthorizationCodeGrantHandlerTestSuite) TestHandleGrant_EmptyScopes
 		ID:         testUserID,
 		Attributes: json.RawMessage(`{"email":"test@example.com","username":"testuser"}`),
 	}
-	suite.mockUserService.On("GetUser", testUserID).Return(mockUser, nil)
+	suite.mockUserService.On("GetUser", mock.Anything, testUserID).Return(mockUser, nil)
 
-	suite.mockTokenBuilder.On("BuildAccessToken", mock.Anything).Return(&model.TokenDTO{
+	suite.mockTokenBuilder.On("BuildAccessToken", mock.Anything, mock.Anything).Return(&model.TokenDTO{
 		Token:     "test-jwt-token",
 		TokenType: constants.TokenTypeBearer,
 		IssuedAt:  time.Now().Unix(),
@@ -330,7 +333,7 @@ func (suite *AuthorizationCodeGrantHandlerTestSuite) TestHandleGrant_EmptyScopes
 	tokenReqWithResource := *suite.testTokenReq
 	tokenReqWithResource.Resource = testResourceURL
 
-	result, err := suite.handler.HandleGrant(&tokenReqWithResource, suite.oauthApp)
+	result, err := suite.handler.HandleGrant(context.TODO(), &tokenReqWithResource, suite.oauthApp)
 
 	assert.Nil(suite.T(), err)
 	assert.NotNil(suite.T(), result)
@@ -350,9 +353,9 @@ func (suite *AuthorizationCodeGrantHandlerTestSuite) TestHandleGrant_NilTokenAtt
 		ID:         testUserID,
 		Attributes: json.RawMessage(`{"email":"test@example.com","username":"testuser"}`),
 	}
-	suite.mockUserService.On("GetUser", testUserID).Return(mockUser, nil)
+	suite.mockUserService.On("GetUser", mock.Anything, testUserID).Return(mockUser, nil)
 
-	suite.mockTokenBuilder.On("BuildAccessToken", mock.Anything).Return(&model.TokenDTO{
+	suite.mockTokenBuilder.On("BuildAccessToken", mock.Anything, mock.Anything).Return(&model.TokenDTO{
 		Token:     "test-jwt-token",
 		TokenType: constants.TokenTypeBearer,
 		IssuedAt:  time.Now().Unix(),
@@ -367,7 +370,7 @@ func (suite *AuthorizationCodeGrantHandlerTestSuite) TestHandleGrant_NilTokenAtt
 	tokenReqWithResource := *suite.testTokenReq
 	tokenReqWithResource.Resource = testResourceURL
 
-	result, err := suite.handler.HandleGrant(&tokenReqWithResource, suite.oauthApp)
+	result, err := suite.handler.HandleGrant(context.TODO(), &tokenReqWithResource, suite.oauthApp)
 
 	assert.Nil(suite.T(), err)
 	assert.NotNil(suite.T(), result)
@@ -552,7 +555,7 @@ func (suite *AuthorizationCodeGrantHandlerTestSuite) TestHandleGrant_WithGroups(
 				ID:         testUserID,
 				Attributes: json.RawMessage(`{"email":"test@example.com","username":"testuser"}`),
 			}
-			suite.mockUserService.On("GetUser", testUserID).Return(mockUser, nil)
+			suite.mockUserService.On("GetUser", mock.Anything, testUserID).Return(mockUser, nil)
 
 			mockGroups := &user.UserGroupListResponse{
 				TotalResults: len(tc.mockGroups),
@@ -560,14 +563,14 @@ func (suite *AuthorizationCodeGrantHandlerTestSuite) TestHandleGrant_WithGroups(
 				Count:        len(tc.mockGroups),
 				Groups:       tc.mockGroups,
 			}
-			suite.mockUserService.On("GetUserGroups", testUserID, constants.DefaultGroupListLimit, 0).
+			suite.mockUserService.On("GetUserGroups", mock.Anything, testUserID, constants.DefaultGroupListLimit, 0).
 				Return(mockGroups, nil)
 
 			var capturedAccessTokenClaims map[string]interface{}
 			var capturedIDTokenClaims map[string]interface{}
 
 			// Mock access token generation - use function return to access context at call time
-			suite.mockTokenBuilder.On("BuildAccessToken",
+			suite.mockTokenBuilder.On("BuildAccessToken", mock.Anything,
 				mock.MatchedBy(func(ctx *tokenservice.AccessTokenBuildContext) bool {
 					// Capture user attributes and groups (simulate filtering that happens in BuildAccessToken)
 					capturedAccessTokenClaims = make(map[string]interface{})
@@ -581,7 +584,7 @@ func (suite *AuthorizationCodeGrantHandlerTestSuite) TestHandleGrant_WithGroups(
 					}
 					// Verify GrantType is authorization_code
 					return ctx.GrantType == string(constants.GrantTypeAuthorizationCode)
-				})).Return(func(ctx *tokenservice.AccessTokenBuildContext) (*model.TokenDTO, error) {
+				})).Return(func(c context.Context, ctx *tokenservice.AccessTokenBuildContext) (*model.TokenDTO, error) {
 				// Simulate filtering that happens in BuildAccessToken
 				userAttrs := make(map[string]interface{})
 				for k, v := range ctx.UserAttributes {
@@ -605,7 +608,7 @@ func (suite *AuthorizationCodeGrantHandlerTestSuite) TestHandleGrant_WithGroups(
 
 			// Mock ID token generation if openid scope is present
 			if tc.includeOpenIDScope {
-				suite.mockTokenBuilder.On("BuildIDToken",
+				suite.mockTokenBuilder.On("BuildIDToken", mock.Anything,
 					mock.MatchedBy(func(ctx *tokenservice.IDTokenBuildContext) bool {
 						// Capture ID token claims
 						capturedIDTokenClaims = make(map[string]interface{})
@@ -631,7 +634,7 @@ func (suite *AuthorizationCodeGrantHandlerTestSuite) TestHandleGrant_WithGroups(
 				}, nil).Once()
 			}
 
-			result, err := suite.handler.HandleGrant(suite.testTokenReq, oauthAppWithGroups)
+			result, err := suite.handler.HandleGrant(context.TODO(), suite.testTokenReq, oauthAppWithGroups)
 
 			assert.Nil(suite.T(), err, tc.description)
 			assert.NotNil(suite.T(), result, tc.description)
@@ -759,7 +762,7 @@ func (suite *AuthorizationCodeGrantHandlerTestSuite) TestHandleGrant_WithEmptyGr
 				ID:         testUserID,
 				Attributes: json.RawMessage(`{"email":"test@example.com","username":"testuser"}`),
 			}
-			suite.mockUserService.On("GetUser", testUserID).Return(mockUser, nil)
+			suite.mockUserService.On("GetUser", mock.Anything, testUserID).Return(mockUser, nil)
 
 			mockGroups := &user.UserGroupListResponse{
 				TotalResults: 0,
@@ -767,14 +770,14 @@ func (suite *AuthorizationCodeGrantHandlerTestSuite) TestHandleGrant_WithEmptyGr
 				Count:        0,
 				Groups:       []user.UserGroup{}, // Empty groups
 			}
-			suite.mockUserService.On("GetUserGroups", testUserID, constants.DefaultGroupListLimit, 0).
+			suite.mockUserService.On("GetUserGroups", mock.Anything, testUserID, constants.DefaultGroupListLimit, 0).
 				Return(mockGroups, nil)
 
 			var capturedAccessTokenClaims map[string]interface{}
 			var capturedIDTokenClaims map[string]interface{}
 
 			// Mock access token generation - use function return to access context at call time
-			suite.mockTokenBuilder.On("BuildAccessToken",
+			suite.mockTokenBuilder.On("BuildAccessToken", mock.Anything,
 				mock.MatchedBy(func(ctx *tokenservice.AccessTokenBuildContext) bool {
 					// Capture user attributes which contain groups
 					capturedAccessTokenClaims = make(map[string]interface{})
@@ -783,7 +786,7 @@ func (suite *AuthorizationCodeGrantHandlerTestSuite) TestHandleGrant_WithEmptyGr
 					}
 					// Verify GrantType is authorization_code
 					return ctx.GrantType == string(constants.GrantTypeAuthorizationCode)
-				})).Return(func(ctx *tokenservice.AccessTokenBuildContext) (*model.TokenDTO, error) {
+				})).Return(func(c context.Context, ctx *tokenservice.AccessTokenBuildContext) (*model.TokenDTO, error) {
 				// Return user attributes from the actual call context
 				userAttrs := make(map[string]interface{})
 				for k, v := range ctx.UserAttributes {
@@ -802,12 +805,11 @@ func (suite *AuthorizationCodeGrantHandlerTestSuite) TestHandleGrant_WithEmptyGr
 
 			// Mock ID token generation if openid scope is present
 			if tc.includeOpenIDScope {
-				suite.mockTokenBuilder.On("BuildIDToken",
-					mock.MatchedBy(func(ctx *tokenservice.IDTokenBuildContext) bool {
-						// Capture ID token claims from user attributes
-						capturedIDTokenClaims = ctx.UserAttributes
-						return true
-					})).Return(&model.TokenDTO{
+				suite.mockTokenBuilder.On("BuildIDToken", mock.Anything, mock.MatchedBy(func(ctx *tokenservice.IDTokenBuildContext) bool {
+					// Capture ID token claims from user attributes
+					capturedIDTokenClaims = ctx.UserAttributes
+					return true
+				})).Return(&model.TokenDTO{
 					Token:     "test-id-token",
 					TokenType: "",
 					IssuedAt:  time.Now().Unix(),
@@ -817,7 +819,7 @@ func (suite *AuthorizationCodeGrantHandlerTestSuite) TestHandleGrant_WithEmptyGr
 				}, nil).Once()
 			}
 
-			result, err := suite.handler.HandleGrant(suite.testTokenReq, oauthAppWithGroups)
+			result, err := suite.handler.HandleGrant(context.TODO(), suite.testTokenReq, oauthAppWithGroups)
 
 			assert.Nil(suite.T(), err, tc.description)
 			assert.NotNil(suite.T(), result, tc.description)
@@ -854,7 +856,7 @@ func (suite *AuthorizationCodeGrantHandlerTestSuite) TestHandleGrant_ResourcePar
 	tokenReqWithResource := *suite.testTokenReq
 	tokenReqWithResource.Resource = testResourceURL
 
-	result, err := suite.handler.HandleGrant(&tokenReqWithResource, suite.oauthApp)
+	result, err := suite.handler.HandleGrant(context.TODO(), &tokenReqWithResource, suite.oauthApp)
 
 	assert.NotNil(suite.T(), err)
 	assert.Nil(suite.T(), result)
@@ -875,13 +877,14 @@ func (suite *AuthorizationCodeGrantHandlerTestSuite) TestHandleGrant_ResourcePar
 		ID:         testUserID,
 		Attributes: json.RawMessage(`{"email":"test@example.com","username":"testuser"}`),
 	}
-	suite.mockUserService.On("GetUser", testUserID).Return(mockUser, nil)
+	suite.mockUserService.On("GetUser", mock.Anything, testUserID).Return(mockUser, nil)
 
 	var capturedAudience string
-	suite.mockTokenBuilder.On("BuildAccessToken", mock.MatchedBy(func(ctx *tokenservice.AccessTokenBuildContext) bool {
-		capturedAudience = ctx.Audience
-		return true
-	})).Return(&model.TokenDTO{
+	suite.mockTokenBuilder.On("BuildAccessToken", mock.Anything,
+		mock.MatchedBy(func(ctx *tokenservice.AccessTokenBuildContext) bool {
+			capturedAudience = ctx.Audience
+			return true
+		})).Return(&model.TokenDTO{
 		Token:     "mock-jwt-token",
 		TokenType: constants.TokenTypeBearer,
 		IssuedAt:  time.Now().Unix(),
@@ -894,7 +897,7 @@ func (suite *AuthorizationCodeGrantHandlerTestSuite) TestHandleGrant_ResourcePar
 	tokenReqWithResource := *suite.testTokenReq
 	tokenReqWithResource.Resource = testResourceURL
 
-	result, err := suite.handler.HandleGrant(&tokenReqWithResource, suite.oauthApp)
+	result, err := suite.handler.HandleGrant(context.TODO(), &tokenReqWithResource, suite.oauthApp)
 
 	assert.Nil(suite.T(), err)
 	assert.NotNil(suite.T(), result)
@@ -911,13 +914,14 @@ func (suite *AuthorizationCodeGrantHandlerTestSuite) TestHandleGrant_NoResourceP
 		ID:         testUserID,
 		Attributes: json.RawMessage(`{"email":"test@example.com","username":"testuser"}`),
 	}
-	suite.mockUserService.On("GetUser", testUserID).Return(mockUser, nil)
+	suite.mockUserService.On("GetUser", mock.Anything, testUserID).Return(mockUser, nil)
 
 	var capturedAudience string
-	suite.mockTokenBuilder.On("BuildAccessToken", mock.MatchedBy(func(ctx *tokenservice.AccessTokenBuildContext) bool {
-		capturedAudience = ctx.Audience
-		return true
-	})).Return(&model.TokenDTO{
+	suite.mockTokenBuilder.On("BuildAccessToken", mock.Anything,
+		mock.MatchedBy(func(ctx *tokenservice.AccessTokenBuildContext) bool {
+			capturedAudience = ctx.Audience
+			return true
+		})).Return(&model.TokenDTO{
 		Token:     "mock-jwt-token",
 		TokenType: constants.TokenTypeBearer,
 		IssuedAt:  time.Now().Unix(),
@@ -930,7 +934,7 @@ func (suite *AuthorizationCodeGrantHandlerTestSuite) TestHandleGrant_NoResourceP
 	tokenReqWithResource := *suite.testTokenReq
 	tokenReqWithResource.Resource = testResourceURL
 
-	result, err := suite.handler.HandleGrant(&tokenReqWithResource, suite.oauthApp)
+	result, err := suite.handler.HandleGrant(context.TODO(), &tokenReqWithResource, suite.oauthApp)
 
 	assert.Nil(suite.T(), err)
 	assert.NotNil(suite.T(), result)
@@ -957,10 +961,10 @@ func (suite *AuthorizationCodeGrantHandlerTestSuite) TestHandleGrant_IDTokenGene
 		ID:         testUserID,
 		Attributes: json.RawMessage(`{"email":"test@example.com","username":"testuser"}`),
 	}
-	suite.mockUserService.On("GetUser", testUserID).Return(mockUser, nil)
+	suite.mockUserService.On("GetUser", mock.Anything, testUserID).Return(mockUser, nil)
 
 	// Mock access token generation succeeds
-	suite.mockTokenBuilder.On("BuildAccessToken", mock.Anything).Return(&model.TokenDTO{
+	suite.mockTokenBuilder.On("BuildAccessToken", mock.Anything, mock.Anything).Return(&model.TokenDTO{
 		Token:     "test-jwt-token",
 		TokenType: constants.TokenTypeBearer,
 		IssuedAt:  time.Now().Unix(),
@@ -970,10 +974,10 @@ func (suite *AuthorizationCodeGrantHandlerTestSuite) TestHandleGrant_IDTokenGene
 	}, nil)
 
 	// Mock ID token generation fails
-	suite.mockTokenBuilder.On("BuildIDToken", mock.Anything).
+	suite.mockTokenBuilder.On("BuildIDToken", mock.Anything, mock.Anything, mock.Anything).
 		Return(nil, errors.New("failed to generate ID token"))
 
-	result, err := suite.handler.HandleGrant(suite.testTokenReq, suite.oauthApp)
+	result, err := suite.handler.HandleGrant(context.TODO(), suite.testTokenReq, suite.oauthApp)
 
 	assert.Nil(suite.T(), result)
 	assert.NotNil(suite.T(), err)
@@ -995,7 +999,7 @@ func (suite *AuthorizationCodeGrantHandlerTestSuite) TestValidateGrant_ResourceW
 		Resource:    "https://api.example.com/resource#fragment", // Fragment not allowed
 	}
 
-	err := suite.handler.ValidateGrant(tokenReq, suite.oauthApp)
+	err := suite.handler.ValidateGrant(context.TODO(), tokenReq, suite.oauthApp)
 	assert.NotNil(suite.T(), err)
 	assert.Equal(suite.T(), constants.ErrorInvalidRequest, err.Error)
 	assert.Contains(suite.T(), err.ErrorDescription, "fragment component")
@@ -1011,7 +1015,7 @@ func (suite *AuthorizationCodeGrantHandlerTestSuite) TestValidateGrant_ResourceP
 		Resource:    "://invalid-uri", // Invalid URI format
 	}
 
-	err := suite.handler.ValidateGrant(tokenReq, suite.oauthApp)
+	err := suite.handler.ValidateGrant(context.TODO(), tokenReq, suite.oauthApp)
 	assert.NotNil(suite.T(), err)
 	assert.Equal(suite.T(), constants.ErrorInvalidRequest, err.Error)
 }
@@ -1027,9 +1031,9 @@ func (suite *AuthorizationCodeGrantHandlerTestSuite) TestHandleGrant_FetchUserAt
 		Code:             "INTERNAL_ERROR",
 		ErrorDescription: "user not found",
 	}
-	suite.mockUserService.On("GetUser", testUserID).Return(nil, serverErr)
+	suite.mockUserService.On("GetUser", mock.Anything, testUserID).Return(nil, serverErr)
 
-	result, err := suite.handler.HandleGrant(suite.testTokenReq, suite.oauthApp)
+	result, err := suite.handler.HandleGrant(context.TODO(), suite.testTokenReq, suite.oauthApp)
 
 	assert.Nil(suite.T(), result)
 	assert.NotNil(suite.T(), err)
@@ -1072,7 +1076,7 @@ func (suite *AuthorizationCodeGrantHandlerTestSuite) TestRetrieveAndValidateAuth
 	tokenReq := *suite.testTokenReq
 	tokenReq.CodeVerifier = "" // Missing code verifier
 
-	result, err := suite.handler.HandleGrant(&tokenReq, pkceApp)
+	result, err := suite.handler.HandleGrant(context.TODO(), &tokenReq, pkceApp)
 
 	assert.Nil(suite.T(), result)
 	assert.NotNil(suite.T(), err)
@@ -1093,7 +1097,7 @@ func (suite *AuthorizationCodeGrantHandlerTestSuite) TestRetrieveAndValidateAuth
 	tokenReq := *suite.testTokenReq
 	tokenReq.CodeVerifier = "wrong-verifier-dBjftJeZ4CVP-mB92K27uhbUJU1p1r_wW1gFWFOEjXk" // Wrong verifier
 
-	result, err := suite.handler.HandleGrant(&tokenReq, pkceApp)
+	result, err := suite.handler.HandleGrant(context.TODO(), &tokenReq, pkceApp)
 
 	assert.Nil(suite.T(), result)
 	assert.NotNil(suite.T(), err)
@@ -1116,10 +1120,10 @@ func (suite *AuthorizationCodeGrantHandlerTestSuite) TestRetrieveAndValidateAuth
 		ID:         testUserID,
 		Attributes: json.RawMessage(`{"email":"test@example.com","username":"testuser"}`),
 	}
-	suite.mockUserService.On("GetUser", testUserID).Return(mockUser, nil)
+	suite.mockUserService.On("GetUser", mock.Anything, testUserID).Return(mockUser, nil)
 
 	// Mock token builder
-	suite.mockTokenBuilder.On("BuildAccessToken", mock.Anything).Return(&model.TokenDTO{
+	suite.mockTokenBuilder.On("BuildAccessToken", mock.Anything, mock.Anything).Return(&model.TokenDTO{
 		Token:     "test-jwt-token",
 		TokenType: constants.TokenTypeBearer,
 		IssuedAt:  time.Now().Unix(),
@@ -1131,7 +1135,7 @@ func (suite *AuthorizationCodeGrantHandlerTestSuite) TestRetrieveAndValidateAuth
 	tokenReq := *suite.testTokenReq
 	tokenReq.CodeVerifier = "dBjftJeZ4CVP-mB92K27uhbUJU1p1r_wW1gFWFOEjXk" // Valid verifier
 
-	result, err := suite.handler.HandleGrant(&tokenReq, suite.oauthApp)
+	result, err := suite.handler.HandleGrant(context.TODO(), &tokenReq, suite.oauthApp)
 
 	// Should succeed even though PKCE is not required, because code challenge was provided
 	assert.Nil(suite.T(), err)

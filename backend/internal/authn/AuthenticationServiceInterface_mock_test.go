@@ -5,6 +5,8 @@
 package authn
 
 import (
+	"context"
+
 	"github.com/asgardeo/thunder/internal/authn/common"
 	"github.com/asgardeo/thunder/internal/idp"
 	common0 "github.com/asgardeo/thunder/internal/notification/common"
@@ -40,8 +42,8 @@ func (_m *AuthenticationServiceInterfaceMock) EXPECT() *AuthenticationServiceInt
 }
 
 // AuthenticateWithCredentials provides a mock function for the type AuthenticationServiceInterfaceMock
-func (_mock *AuthenticationServiceInterfaceMock) AuthenticateWithCredentials(attributes map[string]interface{}, skipAssertion bool, existingAssertion string) (*common.AuthenticationResponse, *serviceerror.ServiceError) {
-	ret := _mock.Called(attributes, skipAssertion, existingAssertion)
+func (_mock *AuthenticationServiceInterfaceMock) AuthenticateWithCredentials(ctx context.Context, attributes map[string]interface{}, skipAssertion bool, existingAssertion string) (*common.AuthenticationResponse, *serviceerror.ServiceError) {
+	ret := _mock.Called(ctx, attributes, skipAssertion, existingAssertion)
 
 	if len(ret) == 0 {
 		panic("no return value specified for AuthenticateWithCredentials")
@@ -49,18 +51,18 @@ func (_mock *AuthenticationServiceInterfaceMock) AuthenticateWithCredentials(att
 
 	var r0 *common.AuthenticationResponse
 	var r1 *serviceerror.ServiceError
-	if returnFunc, ok := ret.Get(0).(func(map[string]interface{}, bool, string) (*common.AuthenticationResponse, *serviceerror.ServiceError)); ok {
-		return returnFunc(attributes, skipAssertion, existingAssertion)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, map[string]interface{}, bool, string) (*common.AuthenticationResponse, *serviceerror.ServiceError)); ok {
+		return returnFunc(ctx, attributes, skipAssertion, existingAssertion)
 	}
-	if returnFunc, ok := ret.Get(0).(func(map[string]interface{}, bool, string) *common.AuthenticationResponse); ok {
-		r0 = returnFunc(attributes, skipAssertion, existingAssertion)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, map[string]interface{}, bool, string) *common.AuthenticationResponse); ok {
+		r0 = returnFunc(ctx, attributes, skipAssertion, existingAssertion)
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).(*common.AuthenticationResponse)
 		}
 	}
-	if returnFunc, ok := ret.Get(1).(func(map[string]interface{}, bool, string) *serviceerror.ServiceError); ok {
-		r1 = returnFunc(attributes, skipAssertion, existingAssertion)
+	if returnFunc, ok := ret.Get(1).(func(context.Context, map[string]interface{}, bool, string) *serviceerror.ServiceError); ok {
+		r1 = returnFunc(ctx, attributes, skipAssertion, existingAssertion)
 	} else {
 		if ret.Get(1) != nil {
 			r1 = ret.Get(1).(*serviceerror.ServiceError)
@@ -75,31 +77,37 @@ type AuthenticationServiceInterfaceMock_AuthenticateWithCredentials_Call struct 
 }
 
 // AuthenticateWithCredentials is a helper method to define mock.On call
+//   - ctx context.Context
 //   - attributes map[string]interface{}
 //   - skipAssertion bool
 //   - existingAssertion string
-func (_e *AuthenticationServiceInterfaceMock_Expecter) AuthenticateWithCredentials(attributes interface{}, skipAssertion interface{}, existingAssertion interface{}) *AuthenticationServiceInterfaceMock_AuthenticateWithCredentials_Call {
-	return &AuthenticationServiceInterfaceMock_AuthenticateWithCredentials_Call{Call: _e.mock.On("AuthenticateWithCredentials", attributes, skipAssertion, existingAssertion)}
+func (_e *AuthenticationServiceInterfaceMock_Expecter) AuthenticateWithCredentials(ctx interface{}, attributes interface{}, skipAssertion interface{}, existingAssertion interface{}) *AuthenticationServiceInterfaceMock_AuthenticateWithCredentials_Call {
+	return &AuthenticationServiceInterfaceMock_AuthenticateWithCredentials_Call{Call: _e.mock.On("AuthenticateWithCredentials", ctx, attributes, skipAssertion, existingAssertion)}
 }
 
-func (_c *AuthenticationServiceInterfaceMock_AuthenticateWithCredentials_Call) Run(run func(attributes map[string]interface{}, skipAssertion bool, existingAssertion string)) *AuthenticationServiceInterfaceMock_AuthenticateWithCredentials_Call {
+func (_c *AuthenticationServiceInterfaceMock_AuthenticateWithCredentials_Call) Run(run func(ctx context.Context, attributes map[string]interface{}, skipAssertion bool, existingAssertion string)) *AuthenticationServiceInterfaceMock_AuthenticateWithCredentials_Call {
 	_c.Call.Run(func(args mock.Arguments) {
-		var arg0 map[string]interface{}
+		var arg0 context.Context
 		if args[0] != nil {
-			arg0 = args[0].(map[string]interface{})
+			arg0 = args[0].(context.Context)
 		}
-		var arg1 bool
+		var arg1 map[string]interface{}
 		if args[1] != nil {
-			arg1 = args[1].(bool)
+			arg1 = args[1].(map[string]interface{})
 		}
-		var arg2 string
+		var arg2 bool
 		if args[2] != nil {
-			arg2 = args[2].(string)
+			arg2 = args[2].(bool)
+		}
+		var arg3 string
+		if args[3] != nil {
+			arg3 = args[3].(string)
 		}
 		run(
 			arg0,
 			arg1,
 			arg2,
+			arg3,
 		)
 	})
 	return _c
@@ -110,14 +118,14 @@ func (_c *AuthenticationServiceInterfaceMock_AuthenticateWithCredentials_Call) R
 	return _c
 }
 
-func (_c *AuthenticationServiceInterfaceMock_AuthenticateWithCredentials_Call) RunAndReturn(run func(attributes map[string]interface{}, skipAssertion bool, existingAssertion string) (*common.AuthenticationResponse, *serviceerror.ServiceError)) *AuthenticationServiceInterfaceMock_AuthenticateWithCredentials_Call {
+func (_c *AuthenticationServiceInterfaceMock_AuthenticateWithCredentials_Call) RunAndReturn(run func(ctx context.Context, attributes map[string]interface{}, skipAssertion bool, existingAssertion string) (*common.AuthenticationResponse, *serviceerror.ServiceError)) *AuthenticationServiceInterfaceMock_AuthenticateWithCredentials_Call {
 	_c.Call.Return(run)
 	return _c
 }
 
 // FinishIDPAuthentication provides a mock function for the type AuthenticationServiceInterfaceMock
-func (_mock *AuthenticationServiceInterfaceMock) FinishIDPAuthentication(requestedType idp.IDPType, sessionToken string, skipAssertion bool, existingAssertion string, code string) (*common.AuthenticationResponse, *serviceerror.ServiceError) {
-	ret := _mock.Called(requestedType, sessionToken, skipAssertion, existingAssertion, code)
+func (_mock *AuthenticationServiceInterfaceMock) FinishIDPAuthentication(ctx context.Context, requestedType idp.IDPType, sessionToken string, skipAssertion bool, existingAssertion string, code string) (*common.AuthenticationResponse, *serviceerror.ServiceError) {
+	ret := _mock.Called(ctx, requestedType, sessionToken, skipAssertion, existingAssertion, code)
 
 	if len(ret) == 0 {
 		panic("no return value specified for FinishIDPAuthentication")
@@ -125,18 +133,18 @@ func (_mock *AuthenticationServiceInterfaceMock) FinishIDPAuthentication(request
 
 	var r0 *common.AuthenticationResponse
 	var r1 *serviceerror.ServiceError
-	if returnFunc, ok := ret.Get(0).(func(idp.IDPType, string, bool, string, string) (*common.AuthenticationResponse, *serviceerror.ServiceError)); ok {
-		return returnFunc(requestedType, sessionToken, skipAssertion, existingAssertion, code)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, idp.IDPType, string, bool, string, string) (*common.AuthenticationResponse, *serviceerror.ServiceError)); ok {
+		return returnFunc(ctx, requestedType, sessionToken, skipAssertion, existingAssertion, code)
 	}
-	if returnFunc, ok := ret.Get(0).(func(idp.IDPType, string, bool, string, string) *common.AuthenticationResponse); ok {
-		r0 = returnFunc(requestedType, sessionToken, skipAssertion, existingAssertion, code)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, idp.IDPType, string, bool, string, string) *common.AuthenticationResponse); ok {
+		r0 = returnFunc(ctx, requestedType, sessionToken, skipAssertion, existingAssertion, code)
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).(*common.AuthenticationResponse)
 		}
 	}
-	if returnFunc, ok := ret.Get(1).(func(idp.IDPType, string, bool, string, string) *serviceerror.ServiceError); ok {
-		r1 = returnFunc(requestedType, sessionToken, skipAssertion, existingAssertion, code)
+	if returnFunc, ok := ret.Get(1).(func(context.Context, idp.IDPType, string, bool, string, string) *serviceerror.ServiceError); ok {
+		r1 = returnFunc(ctx, requestedType, sessionToken, skipAssertion, existingAssertion, code)
 	} else {
 		if ret.Get(1) != nil {
 			r1 = ret.Get(1).(*serviceerror.ServiceError)
@@ -151,20 +159,622 @@ type AuthenticationServiceInterfaceMock_FinishIDPAuthentication_Call struct {
 }
 
 // FinishIDPAuthentication is a helper method to define mock.On call
+//   - ctx context.Context
 //   - requestedType idp.IDPType
 //   - sessionToken string
 //   - skipAssertion bool
 //   - existingAssertion string
 //   - code string
-func (_e *AuthenticationServiceInterfaceMock_Expecter) FinishIDPAuthentication(requestedType interface{}, sessionToken interface{}, skipAssertion interface{}, existingAssertion interface{}, code interface{}) *AuthenticationServiceInterfaceMock_FinishIDPAuthentication_Call {
-	return &AuthenticationServiceInterfaceMock_FinishIDPAuthentication_Call{Call: _e.mock.On("FinishIDPAuthentication", requestedType, sessionToken, skipAssertion, existingAssertion, code)}
+func (_e *AuthenticationServiceInterfaceMock_Expecter) FinishIDPAuthentication(ctx interface{}, requestedType interface{}, sessionToken interface{}, skipAssertion interface{}, existingAssertion interface{}, code interface{}) *AuthenticationServiceInterfaceMock_FinishIDPAuthentication_Call {
+	return &AuthenticationServiceInterfaceMock_FinishIDPAuthentication_Call{Call: _e.mock.On("FinishIDPAuthentication", ctx, requestedType, sessionToken, skipAssertion, existingAssertion, code)}
 }
 
-func (_c *AuthenticationServiceInterfaceMock_FinishIDPAuthentication_Call) Run(run func(requestedType idp.IDPType, sessionToken string, skipAssertion bool, existingAssertion string, code string)) *AuthenticationServiceInterfaceMock_FinishIDPAuthentication_Call {
+func (_c *AuthenticationServiceInterfaceMock_FinishIDPAuthentication_Call) Run(run func(ctx context.Context, requestedType idp.IDPType, sessionToken string, skipAssertion bool, existingAssertion string, code string)) *AuthenticationServiceInterfaceMock_FinishIDPAuthentication_Call {
 	_c.Call.Run(func(args mock.Arguments) {
-		var arg0 idp.IDPType
+		var arg0 context.Context
 		if args[0] != nil {
-			arg0 = args[0].(idp.IDPType)
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 idp.IDPType
+		if args[1] != nil {
+			arg1 = args[1].(idp.IDPType)
+		}
+		var arg2 string
+		if args[2] != nil {
+			arg2 = args[2].(string)
+		}
+		var arg3 bool
+		if args[3] != nil {
+			arg3 = args[3].(bool)
+		}
+		var arg4 string
+		if args[4] != nil {
+			arg4 = args[4].(string)
+		}
+		var arg5 string
+		if args[5] != nil {
+			arg5 = args[5].(string)
+		}
+		run(
+			arg0,
+			arg1,
+			arg2,
+			arg3,
+			arg4,
+			arg5,
+		)
+	})
+	return _c
+}
+
+func (_c *AuthenticationServiceInterfaceMock_FinishIDPAuthentication_Call) Return(authenticationResponse *common.AuthenticationResponse, serviceError *serviceerror.ServiceError) *AuthenticationServiceInterfaceMock_FinishIDPAuthentication_Call {
+	_c.Call.Return(authenticationResponse, serviceError)
+	return _c
+}
+
+func (_c *AuthenticationServiceInterfaceMock_FinishIDPAuthentication_Call) RunAndReturn(run func(ctx context.Context, requestedType idp.IDPType, sessionToken string, skipAssertion bool, existingAssertion string, code string) (*common.AuthenticationResponse, *serviceerror.ServiceError)) *AuthenticationServiceInterfaceMock_FinishIDPAuthentication_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
+// FinishPasskeyAuthentication provides a mock function for the type AuthenticationServiceInterfaceMock
+func (_mock *AuthenticationServiceInterfaceMock) FinishPasskeyAuthentication(ctx context.Context, credentialID string, credentialType string, response PasskeyCredentialResponseDTO, sessionToken string, skipAssertion bool, existingAssertion string) (*common.AuthenticationResponse, *serviceerror.ServiceError) {
+	ret := _mock.Called(ctx, credentialID, credentialType, response, sessionToken, skipAssertion, existingAssertion)
+
+	if len(ret) == 0 {
+		panic("no return value specified for FinishPasskeyAuthentication")
+	}
+
+	var r0 *common.AuthenticationResponse
+	var r1 *serviceerror.ServiceError
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string, string, PasskeyCredentialResponseDTO, string, bool, string) (*common.AuthenticationResponse, *serviceerror.ServiceError)); ok {
+		return returnFunc(ctx, credentialID, credentialType, response, sessionToken, skipAssertion, existingAssertion)
+	}
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string, string, PasskeyCredentialResponseDTO, string, bool, string) *common.AuthenticationResponse); ok {
+		r0 = returnFunc(ctx, credentialID, credentialType, response, sessionToken, skipAssertion, existingAssertion)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(*common.AuthenticationResponse)
+		}
+	}
+	if returnFunc, ok := ret.Get(1).(func(context.Context, string, string, PasskeyCredentialResponseDTO, string, bool, string) *serviceerror.ServiceError); ok {
+		r1 = returnFunc(ctx, credentialID, credentialType, response, sessionToken, skipAssertion, existingAssertion)
+	} else {
+		if ret.Get(1) != nil {
+			r1 = ret.Get(1).(*serviceerror.ServiceError)
+		}
+	}
+	return r0, r1
+}
+
+// AuthenticationServiceInterfaceMock_FinishPasskeyAuthentication_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'FinishPasskeyAuthentication'
+type AuthenticationServiceInterfaceMock_FinishPasskeyAuthentication_Call struct {
+	*mock.Call
+}
+
+// FinishPasskeyAuthentication is a helper method to define mock.On call
+//   - ctx context.Context
+//   - credentialID string
+//   - credentialType string
+//   - response PasskeyCredentialResponseDTO
+//   - sessionToken string
+//   - skipAssertion bool
+//   - existingAssertion string
+func (_e *AuthenticationServiceInterfaceMock_Expecter) FinishPasskeyAuthentication(ctx interface{}, credentialID interface{}, credentialType interface{}, response interface{}, sessionToken interface{}, skipAssertion interface{}, existingAssertion interface{}) *AuthenticationServiceInterfaceMock_FinishPasskeyAuthentication_Call {
+	return &AuthenticationServiceInterfaceMock_FinishPasskeyAuthentication_Call{Call: _e.mock.On("FinishPasskeyAuthentication", ctx, credentialID, credentialType, response, sessionToken, skipAssertion, existingAssertion)}
+}
+
+func (_c *AuthenticationServiceInterfaceMock_FinishPasskeyAuthentication_Call) Run(run func(ctx context.Context, credentialID string, credentialType string, response PasskeyCredentialResponseDTO, sessionToken string, skipAssertion bool, existingAssertion string)) *AuthenticationServiceInterfaceMock_FinishPasskeyAuthentication_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 context.Context
+		if args[0] != nil {
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 string
+		if args[1] != nil {
+			arg1 = args[1].(string)
+		}
+		var arg2 string
+		if args[2] != nil {
+			arg2 = args[2].(string)
+		}
+		var arg3 PasskeyCredentialResponseDTO
+		if args[3] != nil {
+			arg3 = args[3].(PasskeyCredentialResponseDTO)
+		}
+		var arg4 string
+		if args[4] != nil {
+			arg4 = args[4].(string)
+		}
+		var arg5 bool
+		if args[5] != nil {
+			arg5 = args[5].(bool)
+		}
+		var arg6 string
+		if args[6] != nil {
+			arg6 = args[6].(string)
+		}
+		run(
+			arg0,
+			arg1,
+			arg2,
+			arg3,
+			arg4,
+			arg5,
+			arg6,
+		)
+	})
+	return _c
+}
+
+func (_c *AuthenticationServiceInterfaceMock_FinishPasskeyAuthentication_Call) Return(authenticationResponse *common.AuthenticationResponse, serviceError *serviceerror.ServiceError) *AuthenticationServiceInterfaceMock_FinishPasskeyAuthentication_Call {
+	_c.Call.Return(authenticationResponse, serviceError)
+	return _c
+}
+
+func (_c *AuthenticationServiceInterfaceMock_FinishPasskeyAuthentication_Call) RunAndReturn(run func(ctx context.Context, credentialID string, credentialType string, response PasskeyCredentialResponseDTO, sessionToken string, skipAssertion bool, existingAssertion string) (*common.AuthenticationResponse, *serviceerror.ServiceError)) *AuthenticationServiceInterfaceMock_FinishPasskeyAuthentication_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
+// FinishPasskeyRegistration provides a mock function for the type AuthenticationServiceInterfaceMock
+func (_mock *AuthenticationServiceInterfaceMock) FinishPasskeyRegistration(ctx context.Context, credential PasskeyPublicKeyCredentialDTO, sessionToken string, credentialName string) (interface{}, *serviceerror.ServiceError) {
+	ret := _mock.Called(ctx, credential, sessionToken, credentialName)
+
+	if len(ret) == 0 {
+		panic("no return value specified for FinishPasskeyRegistration")
+	}
+
+	var r0 interface{}
+	var r1 *serviceerror.ServiceError
+	if returnFunc, ok := ret.Get(0).(func(context.Context, PasskeyPublicKeyCredentialDTO, string, string) (interface{}, *serviceerror.ServiceError)); ok {
+		return returnFunc(ctx, credential, sessionToken, credentialName)
+	}
+	if returnFunc, ok := ret.Get(0).(func(context.Context, PasskeyPublicKeyCredentialDTO, string, string) interface{}); ok {
+		r0 = returnFunc(ctx, credential, sessionToken, credentialName)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(interface{})
+		}
+	}
+	if returnFunc, ok := ret.Get(1).(func(context.Context, PasskeyPublicKeyCredentialDTO, string, string) *serviceerror.ServiceError); ok {
+		r1 = returnFunc(ctx, credential, sessionToken, credentialName)
+	} else {
+		if ret.Get(1) != nil {
+			r1 = ret.Get(1).(*serviceerror.ServiceError)
+		}
+	}
+	return r0, r1
+}
+
+// AuthenticationServiceInterfaceMock_FinishPasskeyRegistration_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'FinishPasskeyRegistration'
+type AuthenticationServiceInterfaceMock_FinishPasskeyRegistration_Call struct {
+	*mock.Call
+}
+
+// FinishPasskeyRegistration is a helper method to define mock.On call
+//   - ctx context.Context
+//   - credential PasskeyPublicKeyCredentialDTO
+//   - sessionToken string
+//   - credentialName string
+func (_e *AuthenticationServiceInterfaceMock_Expecter) FinishPasskeyRegistration(ctx interface{}, credential interface{}, sessionToken interface{}, credentialName interface{}) *AuthenticationServiceInterfaceMock_FinishPasskeyRegistration_Call {
+	return &AuthenticationServiceInterfaceMock_FinishPasskeyRegistration_Call{Call: _e.mock.On("FinishPasskeyRegistration", ctx, credential, sessionToken, credentialName)}
+}
+
+func (_c *AuthenticationServiceInterfaceMock_FinishPasskeyRegistration_Call) Run(run func(ctx context.Context, credential PasskeyPublicKeyCredentialDTO, sessionToken string, credentialName string)) *AuthenticationServiceInterfaceMock_FinishPasskeyRegistration_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 context.Context
+		if args[0] != nil {
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 PasskeyPublicKeyCredentialDTO
+		if args[1] != nil {
+			arg1 = args[1].(PasskeyPublicKeyCredentialDTO)
+		}
+		var arg2 string
+		if args[2] != nil {
+			arg2 = args[2].(string)
+		}
+		var arg3 string
+		if args[3] != nil {
+			arg3 = args[3].(string)
+		}
+		run(
+			arg0,
+			arg1,
+			arg2,
+			arg3,
+		)
+	})
+	return _c
+}
+
+func (_c *AuthenticationServiceInterfaceMock_FinishPasskeyRegistration_Call) Return(ifaceVal interface{}, serviceError *serviceerror.ServiceError) *AuthenticationServiceInterfaceMock_FinishPasskeyRegistration_Call {
+	_c.Call.Return(ifaceVal, serviceError)
+	return _c
+}
+
+func (_c *AuthenticationServiceInterfaceMock_FinishPasskeyRegistration_Call) RunAndReturn(run func(ctx context.Context, credential PasskeyPublicKeyCredentialDTO, sessionToken string, credentialName string) (interface{}, *serviceerror.ServiceError)) *AuthenticationServiceInterfaceMock_FinishPasskeyRegistration_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
+// SendOTP provides a mock function for the type AuthenticationServiceInterfaceMock
+func (_mock *AuthenticationServiceInterfaceMock) SendOTP(ctx context.Context, senderID string, channel common0.ChannelType, recipient string) (string, *serviceerror.ServiceError) {
+	ret := _mock.Called(ctx, senderID, channel, recipient)
+
+	if len(ret) == 0 {
+		panic("no return value specified for SendOTP")
+	}
+
+	var r0 string
+	var r1 *serviceerror.ServiceError
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string, common0.ChannelType, string) (string, *serviceerror.ServiceError)); ok {
+		return returnFunc(ctx, senderID, channel, recipient)
+	}
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string, common0.ChannelType, string) string); ok {
+		r0 = returnFunc(ctx, senderID, channel, recipient)
+	} else {
+		r0 = ret.Get(0).(string)
+	}
+	if returnFunc, ok := ret.Get(1).(func(context.Context, string, common0.ChannelType, string) *serviceerror.ServiceError); ok {
+		r1 = returnFunc(ctx, senderID, channel, recipient)
+	} else {
+		if ret.Get(1) != nil {
+			r1 = ret.Get(1).(*serviceerror.ServiceError)
+		}
+	}
+	return r0, r1
+}
+
+// AuthenticationServiceInterfaceMock_SendOTP_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'SendOTP'
+type AuthenticationServiceInterfaceMock_SendOTP_Call struct {
+	*mock.Call
+}
+
+// SendOTP is a helper method to define mock.On call
+//   - ctx context.Context
+//   - senderID string
+//   - channel common0.ChannelType
+//   - recipient string
+func (_e *AuthenticationServiceInterfaceMock_Expecter) SendOTP(ctx interface{}, senderID interface{}, channel interface{}, recipient interface{}) *AuthenticationServiceInterfaceMock_SendOTP_Call {
+	return &AuthenticationServiceInterfaceMock_SendOTP_Call{Call: _e.mock.On("SendOTP", ctx, senderID, channel, recipient)}
+}
+
+func (_c *AuthenticationServiceInterfaceMock_SendOTP_Call) Run(run func(ctx context.Context, senderID string, channel common0.ChannelType, recipient string)) *AuthenticationServiceInterfaceMock_SendOTP_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 context.Context
+		if args[0] != nil {
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 string
+		if args[1] != nil {
+			arg1 = args[1].(string)
+		}
+		var arg2 common0.ChannelType
+		if args[2] != nil {
+			arg2 = args[2].(common0.ChannelType)
+		}
+		var arg3 string
+		if args[3] != nil {
+			arg3 = args[3].(string)
+		}
+		run(
+			arg0,
+			arg1,
+			arg2,
+			arg3,
+		)
+	})
+	return _c
+}
+
+func (_c *AuthenticationServiceInterfaceMock_SendOTP_Call) Return(s string, serviceError *serviceerror.ServiceError) *AuthenticationServiceInterfaceMock_SendOTP_Call {
+	_c.Call.Return(s, serviceError)
+	return _c
+}
+
+func (_c *AuthenticationServiceInterfaceMock_SendOTP_Call) RunAndReturn(run func(ctx context.Context, senderID string, channel common0.ChannelType, recipient string) (string, *serviceerror.ServiceError)) *AuthenticationServiceInterfaceMock_SendOTP_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
+// StartIDPAuthentication provides a mock function for the type AuthenticationServiceInterfaceMock
+func (_mock *AuthenticationServiceInterfaceMock) StartIDPAuthentication(ctx context.Context, requestedType idp.IDPType, idpID string) (*IDPAuthInitData, *serviceerror.ServiceError) {
+	ret := _mock.Called(ctx, requestedType, idpID)
+
+	if len(ret) == 0 {
+		panic("no return value specified for StartIDPAuthentication")
+	}
+
+	var r0 *IDPAuthInitData
+	var r1 *serviceerror.ServiceError
+	if returnFunc, ok := ret.Get(0).(func(context.Context, idp.IDPType, string) (*IDPAuthInitData, *serviceerror.ServiceError)); ok {
+		return returnFunc(ctx, requestedType, idpID)
+	}
+	if returnFunc, ok := ret.Get(0).(func(context.Context, idp.IDPType, string) *IDPAuthInitData); ok {
+		r0 = returnFunc(ctx, requestedType, idpID)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(*IDPAuthInitData)
+		}
+	}
+	if returnFunc, ok := ret.Get(1).(func(context.Context, idp.IDPType, string) *serviceerror.ServiceError); ok {
+		r1 = returnFunc(ctx, requestedType, idpID)
+	} else {
+		if ret.Get(1) != nil {
+			r1 = ret.Get(1).(*serviceerror.ServiceError)
+		}
+	}
+	return r0, r1
+}
+
+// AuthenticationServiceInterfaceMock_StartIDPAuthentication_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'StartIDPAuthentication'
+type AuthenticationServiceInterfaceMock_StartIDPAuthentication_Call struct {
+	*mock.Call
+}
+
+// StartIDPAuthentication is a helper method to define mock.On call
+//   - ctx context.Context
+//   - requestedType idp.IDPType
+//   - idpID string
+func (_e *AuthenticationServiceInterfaceMock_Expecter) StartIDPAuthentication(ctx interface{}, requestedType interface{}, idpID interface{}) *AuthenticationServiceInterfaceMock_StartIDPAuthentication_Call {
+	return &AuthenticationServiceInterfaceMock_StartIDPAuthentication_Call{Call: _e.mock.On("StartIDPAuthentication", ctx, requestedType, idpID)}
+}
+
+func (_c *AuthenticationServiceInterfaceMock_StartIDPAuthentication_Call) Run(run func(ctx context.Context, requestedType idp.IDPType, idpID string)) *AuthenticationServiceInterfaceMock_StartIDPAuthentication_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 context.Context
+		if args[0] != nil {
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 idp.IDPType
+		if args[1] != nil {
+			arg1 = args[1].(idp.IDPType)
+		}
+		var arg2 string
+		if args[2] != nil {
+			arg2 = args[2].(string)
+		}
+		run(
+			arg0,
+			arg1,
+			arg2,
+		)
+	})
+	return _c
+}
+
+func (_c *AuthenticationServiceInterfaceMock_StartIDPAuthentication_Call) Return(iDPAuthInitData *IDPAuthInitData, serviceError *serviceerror.ServiceError) *AuthenticationServiceInterfaceMock_StartIDPAuthentication_Call {
+	_c.Call.Return(iDPAuthInitData, serviceError)
+	return _c
+}
+
+func (_c *AuthenticationServiceInterfaceMock_StartIDPAuthentication_Call) RunAndReturn(run func(ctx context.Context, requestedType idp.IDPType, idpID string) (*IDPAuthInitData, *serviceerror.ServiceError)) *AuthenticationServiceInterfaceMock_StartIDPAuthentication_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
+// StartPasskeyAuthentication provides a mock function for the type AuthenticationServiceInterfaceMock
+func (_mock *AuthenticationServiceInterfaceMock) StartPasskeyAuthentication(ctx context.Context, userID string, relyingPartyID string) (interface{}, *serviceerror.ServiceError) {
+	ret := _mock.Called(ctx, userID, relyingPartyID)
+
+	if len(ret) == 0 {
+		panic("no return value specified for StartPasskeyAuthentication")
+	}
+
+	var r0 interface{}
+	var r1 *serviceerror.ServiceError
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string, string) (interface{}, *serviceerror.ServiceError)); ok {
+		return returnFunc(ctx, userID, relyingPartyID)
+	}
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string, string) interface{}); ok {
+		r0 = returnFunc(ctx, userID, relyingPartyID)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(interface{})
+		}
+	}
+	if returnFunc, ok := ret.Get(1).(func(context.Context, string, string) *serviceerror.ServiceError); ok {
+		r1 = returnFunc(ctx, userID, relyingPartyID)
+	} else {
+		if ret.Get(1) != nil {
+			r1 = ret.Get(1).(*serviceerror.ServiceError)
+		}
+	}
+	return r0, r1
+}
+
+// AuthenticationServiceInterfaceMock_StartPasskeyAuthentication_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'StartPasskeyAuthentication'
+type AuthenticationServiceInterfaceMock_StartPasskeyAuthentication_Call struct {
+	*mock.Call
+}
+
+// StartPasskeyAuthentication is a helper method to define mock.On call
+//   - ctx context.Context
+//   - userID string
+//   - relyingPartyID string
+func (_e *AuthenticationServiceInterfaceMock_Expecter) StartPasskeyAuthentication(ctx interface{}, userID interface{}, relyingPartyID interface{}) *AuthenticationServiceInterfaceMock_StartPasskeyAuthentication_Call {
+	return &AuthenticationServiceInterfaceMock_StartPasskeyAuthentication_Call{Call: _e.mock.On("StartPasskeyAuthentication", ctx, userID, relyingPartyID)}
+}
+
+func (_c *AuthenticationServiceInterfaceMock_StartPasskeyAuthentication_Call) Run(run func(ctx context.Context, userID string, relyingPartyID string)) *AuthenticationServiceInterfaceMock_StartPasskeyAuthentication_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 context.Context
+		if args[0] != nil {
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 string
+		if args[1] != nil {
+			arg1 = args[1].(string)
+		}
+		var arg2 string
+		if args[2] != nil {
+			arg2 = args[2].(string)
+		}
+		run(
+			arg0,
+			arg1,
+			arg2,
+		)
+	})
+	return _c
+}
+
+func (_c *AuthenticationServiceInterfaceMock_StartPasskeyAuthentication_Call) Return(ifaceVal interface{}, serviceError *serviceerror.ServiceError) *AuthenticationServiceInterfaceMock_StartPasskeyAuthentication_Call {
+	_c.Call.Return(ifaceVal, serviceError)
+	return _c
+}
+
+func (_c *AuthenticationServiceInterfaceMock_StartPasskeyAuthentication_Call) RunAndReturn(run func(ctx context.Context, userID string, relyingPartyID string) (interface{}, *serviceerror.ServiceError)) *AuthenticationServiceInterfaceMock_StartPasskeyAuthentication_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
+// StartPasskeyRegistration provides a mock function for the type AuthenticationServiceInterfaceMock
+func (_mock *AuthenticationServiceInterfaceMock) StartPasskeyRegistration(ctx context.Context, userID string, relyingPartyID string, relyingPartyName string, authSelection *PasskeyAuthenticatorSelectionDTO, attestation string) (interface{}, *serviceerror.ServiceError) {
+	ret := _mock.Called(ctx, userID, relyingPartyID, relyingPartyName, authSelection, attestation)
+
+	if len(ret) == 0 {
+		panic("no return value specified for StartPasskeyRegistration")
+	}
+
+	var r0 interface{}
+	var r1 *serviceerror.ServiceError
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string, string, string, *PasskeyAuthenticatorSelectionDTO, string) (interface{}, *serviceerror.ServiceError)); ok {
+		return returnFunc(ctx, userID, relyingPartyID, relyingPartyName, authSelection, attestation)
+	}
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string, string, string, *PasskeyAuthenticatorSelectionDTO, string) interface{}); ok {
+		r0 = returnFunc(ctx, userID, relyingPartyID, relyingPartyName, authSelection, attestation)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(interface{})
+		}
+	}
+	if returnFunc, ok := ret.Get(1).(func(context.Context, string, string, string, *PasskeyAuthenticatorSelectionDTO, string) *serviceerror.ServiceError); ok {
+		r1 = returnFunc(ctx, userID, relyingPartyID, relyingPartyName, authSelection, attestation)
+	} else {
+		if ret.Get(1) != nil {
+			r1 = ret.Get(1).(*serviceerror.ServiceError)
+		}
+	}
+	return r0, r1
+}
+
+// AuthenticationServiceInterfaceMock_StartPasskeyRegistration_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'StartPasskeyRegistration'
+type AuthenticationServiceInterfaceMock_StartPasskeyRegistration_Call struct {
+	*mock.Call
+}
+
+// StartPasskeyRegistration is a helper method to define mock.On call
+//   - ctx context.Context
+//   - userID string
+//   - relyingPartyID string
+//   - relyingPartyName string
+//   - authSelection *PasskeyAuthenticatorSelectionDTO
+//   - attestation string
+func (_e *AuthenticationServiceInterfaceMock_Expecter) StartPasskeyRegistration(ctx interface{}, userID interface{}, relyingPartyID interface{}, relyingPartyName interface{}, authSelection interface{}, attestation interface{}) *AuthenticationServiceInterfaceMock_StartPasskeyRegistration_Call {
+	return &AuthenticationServiceInterfaceMock_StartPasskeyRegistration_Call{Call: _e.mock.On("StartPasskeyRegistration", ctx, userID, relyingPartyID, relyingPartyName, authSelection, attestation)}
+}
+
+func (_c *AuthenticationServiceInterfaceMock_StartPasskeyRegistration_Call) Run(run func(ctx context.Context, userID string, relyingPartyID string, relyingPartyName string, authSelection *PasskeyAuthenticatorSelectionDTO, attestation string)) *AuthenticationServiceInterfaceMock_StartPasskeyRegistration_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 context.Context
+		if args[0] != nil {
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 string
+		if args[1] != nil {
+			arg1 = args[1].(string)
+		}
+		var arg2 string
+		if args[2] != nil {
+			arg2 = args[2].(string)
+		}
+		var arg3 string
+		if args[3] != nil {
+			arg3 = args[3].(string)
+		}
+		var arg4 *PasskeyAuthenticatorSelectionDTO
+		if args[4] != nil {
+			arg4 = args[4].(*PasskeyAuthenticatorSelectionDTO)
+		}
+		var arg5 string
+		if args[5] != nil {
+			arg5 = args[5].(string)
+		}
+		run(
+			arg0,
+			arg1,
+			arg2,
+			arg3,
+			arg4,
+			arg5,
+		)
+	})
+	return _c
+}
+
+func (_c *AuthenticationServiceInterfaceMock_StartPasskeyRegistration_Call) Return(ifaceVal interface{}, serviceError *serviceerror.ServiceError) *AuthenticationServiceInterfaceMock_StartPasskeyRegistration_Call {
+	_c.Call.Return(ifaceVal, serviceError)
+	return _c
+}
+
+func (_c *AuthenticationServiceInterfaceMock_StartPasskeyRegistration_Call) RunAndReturn(run func(ctx context.Context, userID string, relyingPartyID string, relyingPartyName string, authSelection *PasskeyAuthenticatorSelectionDTO, attestation string) (interface{}, *serviceerror.ServiceError)) *AuthenticationServiceInterfaceMock_StartPasskeyRegistration_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
+// VerifyOTP provides a mock function for the type AuthenticationServiceInterfaceMock
+func (_mock *AuthenticationServiceInterfaceMock) VerifyOTP(ctx context.Context, sessionToken string, skipAssertion bool, existingAssertion string, otp string) (*common.AuthenticationResponse, *serviceerror.ServiceError) {
+	ret := _mock.Called(ctx, sessionToken, skipAssertion, existingAssertion, otp)
+
+	if len(ret) == 0 {
+		panic("no return value specified for VerifyOTP")
+	}
+
+	var r0 *common.AuthenticationResponse
+	var r1 *serviceerror.ServiceError
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string, bool, string, string) (*common.AuthenticationResponse, *serviceerror.ServiceError)); ok {
+		return returnFunc(ctx, sessionToken, skipAssertion, existingAssertion, otp)
+	}
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string, bool, string, string) *common.AuthenticationResponse); ok {
+		r0 = returnFunc(ctx, sessionToken, skipAssertion, existingAssertion, otp)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(*common.AuthenticationResponse)
+		}
+	}
+	if returnFunc, ok := ret.Get(1).(func(context.Context, string, bool, string, string) *serviceerror.ServiceError); ok {
+		r1 = returnFunc(ctx, sessionToken, skipAssertion, existingAssertion, otp)
+	} else {
+		if ret.Get(1) != nil {
+			r1 = ret.Get(1).(*serviceerror.ServiceError)
+		}
+	}
+	return r0, r1
+}
+
+// AuthenticationServiceInterfaceMock_VerifyOTP_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'VerifyOTP'
+type AuthenticationServiceInterfaceMock_VerifyOTP_Call struct {
+	*mock.Call
+}
+
+// VerifyOTP is a helper method to define mock.On call
+//   - ctx context.Context
+//   - sessionToken string
+//   - skipAssertion bool
+//   - existingAssertion string
+//   - otp string
+func (_e *AuthenticationServiceInterfaceMock_Expecter) VerifyOTP(ctx interface{}, sessionToken interface{}, skipAssertion interface{}, existingAssertion interface{}, otp interface{}) *AuthenticationServiceInterfaceMock_VerifyOTP_Call {
+	return &AuthenticationServiceInterfaceMock_VerifyOTP_Call{Call: _e.mock.On("VerifyOTP", ctx, sessionToken, skipAssertion, existingAssertion, otp)}
+}
+
+func (_c *AuthenticationServiceInterfaceMock_VerifyOTP_Call) Run(run func(ctx context.Context, sessionToken string, skipAssertion bool, existingAssertion string, otp string)) *AuthenticationServiceInterfaceMock_VerifyOTP_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 context.Context
+		if args[0] != nil {
+			arg0 = args[0].(context.Context)
 		}
 		var arg1 string
 		if args[1] != nil {
@@ -193,566 +803,12 @@ func (_c *AuthenticationServiceInterfaceMock_FinishIDPAuthentication_Call) Run(r
 	return _c
 }
 
-func (_c *AuthenticationServiceInterfaceMock_FinishIDPAuthentication_Call) Return(authenticationResponse *common.AuthenticationResponse, serviceError *serviceerror.ServiceError) *AuthenticationServiceInterfaceMock_FinishIDPAuthentication_Call {
-	_c.Call.Return(authenticationResponse, serviceError)
-	return _c
-}
-
-func (_c *AuthenticationServiceInterfaceMock_FinishIDPAuthentication_Call) RunAndReturn(run func(requestedType idp.IDPType, sessionToken string, skipAssertion bool, existingAssertion string, code string) (*common.AuthenticationResponse, *serviceerror.ServiceError)) *AuthenticationServiceInterfaceMock_FinishIDPAuthentication_Call {
-	_c.Call.Return(run)
-	return _c
-}
-
-// FinishPasskeyAuthentication provides a mock function for the type AuthenticationServiceInterfaceMock
-func (_mock *AuthenticationServiceInterfaceMock) FinishPasskeyAuthentication(credentialID string, credentialType string, response PasskeyCredentialResponseDTO, sessionToken string, skipAssertion bool, existingAssertion string) (*common.AuthenticationResponse, *serviceerror.ServiceError) {
-	ret := _mock.Called(credentialID, credentialType, response, sessionToken, skipAssertion, existingAssertion)
-
-	if len(ret) == 0 {
-		panic("no return value specified for FinishPasskeyAuthentication")
-	}
-
-	var r0 *common.AuthenticationResponse
-	var r1 *serviceerror.ServiceError
-	if returnFunc, ok := ret.Get(0).(func(string, string, PasskeyCredentialResponseDTO, string, bool, string) (*common.AuthenticationResponse, *serviceerror.ServiceError)); ok {
-		return returnFunc(credentialID, credentialType, response, sessionToken, skipAssertion, existingAssertion)
-	}
-	if returnFunc, ok := ret.Get(0).(func(string, string, PasskeyCredentialResponseDTO, string, bool, string) *common.AuthenticationResponse); ok {
-		r0 = returnFunc(credentialID, credentialType, response, sessionToken, skipAssertion, existingAssertion)
-	} else {
-		if ret.Get(0) != nil {
-			r0 = ret.Get(0).(*common.AuthenticationResponse)
-		}
-	}
-	if returnFunc, ok := ret.Get(1).(func(string, string, PasskeyCredentialResponseDTO, string, bool, string) *serviceerror.ServiceError); ok {
-		r1 = returnFunc(credentialID, credentialType, response, sessionToken, skipAssertion, existingAssertion)
-	} else {
-		if ret.Get(1) != nil {
-			r1 = ret.Get(1).(*serviceerror.ServiceError)
-		}
-	}
-	return r0, r1
-}
-
-// AuthenticationServiceInterfaceMock_FinishPasskeyAuthentication_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'FinishPasskeyAuthentication'
-type AuthenticationServiceInterfaceMock_FinishPasskeyAuthentication_Call struct {
-	*mock.Call
-}
-
-// FinishPasskeyAuthentication is a helper method to define mock.On call
-//   - credentialID string
-//   - credentialType string
-//   - response PasskeyCredentialResponseDTO
-//   - sessionToken string
-//   - skipAssertion bool
-//   - existingAssertion string
-func (_e *AuthenticationServiceInterfaceMock_Expecter) FinishPasskeyAuthentication(credentialID interface{}, credentialType interface{}, response interface{}, sessionToken interface{}, skipAssertion interface{}, existingAssertion interface{}) *AuthenticationServiceInterfaceMock_FinishPasskeyAuthentication_Call {
-	return &AuthenticationServiceInterfaceMock_FinishPasskeyAuthentication_Call{Call: _e.mock.On("FinishPasskeyAuthentication", credentialID, credentialType, response, sessionToken, skipAssertion, existingAssertion)}
-}
-
-func (_c *AuthenticationServiceInterfaceMock_FinishPasskeyAuthentication_Call) Run(run func(credentialID string, credentialType string, response PasskeyCredentialResponseDTO, sessionToken string, skipAssertion bool, existingAssertion string)) *AuthenticationServiceInterfaceMock_FinishPasskeyAuthentication_Call {
-	_c.Call.Run(func(args mock.Arguments) {
-		var arg0 string
-		if args[0] != nil {
-			arg0 = args[0].(string)
-		}
-		var arg1 string
-		if args[1] != nil {
-			arg1 = args[1].(string)
-		}
-		var arg2 PasskeyCredentialResponseDTO
-		if args[2] != nil {
-			arg2 = args[2].(PasskeyCredentialResponseDTO)
-		}
-		var arg3 string
-		if args[3] != nil {
-			arg3 = args[3].(string)
-		}
-		var arg4 bool
-		if args[4] != nil {
-			arg4 = args[4].(bool)
-		}
-		var arg5 string
-		if args[5] != nil {
-			arg5 = args[5].(string)
-		}
-		run(
-			arg0,
-			arg1,
-			arg2,
-			arg3,
-			arg4,
-			arg5,
-		)
-	})
-	return _c
-}
-
-func (_c *AuthenticationServiceInterfaceMock_FinishPasskeyAuthentication_Call) Return(authenticationResponse *common.AuthenticationResponse, serviceError *serviceerror.ServiceError) *AuthenticationServiceInterfaceMock_FinishPasskeyAuthentication_Call {
-	_c.Call.Return(authenticationResponse, serviceError)
-	return _c
-}
-
-func (_c *AuthenticationServiceInterfaceMock_FinishPasskeyAuthentication_Call) RunAndReturn(run func(credentialID string, credentialType string, response PasskeyCredentialResponseDTO, sessionToken string, skipAssertion bool, existingAssertion string) (*common.AuthenticationResponse, *serviceerror.ServiceError)) *AuthenticationServiceInterfaceMock_FinishPasskeyAuthentication_Call {
-	_c.Call.Return(run)
-	return _c
-}
-
-// FinishPasskeyRegistration provides a mock function for the type AuthenticationServiceInterfaceMock
-func (_mock *AuthenticationServiceInterfaceMock) FinishPasskeyRegistration(credential PasskeyPublicKeyCredentialDTO, sessionToken string, credentialName string) (interface{}, *serviceerror.ServiceError) {
-	ret := _mock.Called(credential, sessionToken, credentialName)
-
-	if len(ret) == 0 {
-		panic("no return value specified for FinishPasskeyRegistration")
-	}
-
-	var r0 interface{}
-	var r1 *serviceerror.ServiceError
-	if returnFunc, ok := ret.Get(0).(func(PasskeyPublicKeyCredentialDTO, string, string) (interface{}, *serviceerror.ServiceError)); ok {
-		return returnFunc(credential, sessionToken, credentialName)
-	}
-	if returnFunc, ok := ret.Get(0).(func(PasskeyPublicKeyCredentialDTO, string, string) interface{}); ok {
-		r0 = returnFunc(credential, sessionToken, credentialName)
-	} else {
-		if ret.Get(0) != nil {
-			r0 = ret.Get(0).(interface{})
-		}
-	}
-	if returnFunc, ok := ret.Get(1).(func(PasskeyPublicKeyCredentialDTO, string, string) *serviceerror.ServiceError); ok {
-		r1 = returnFunc(credential, sessionToken, credentialName)
-	} else {
-		if ret.Get(1) != nil {
-			r1 = ret.Get(1).(*serviceerror.ServiceError)
-		}
-	}
-	return r0, r1
-}
-
-// AuthenticationServiceInterfaceMock_FinishPasskeyRegistration_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'FinishPasskeyRegistration'
-type AuthenticationServiceInterfaceMock_FinishPasskeyRegistration_Call struct {
-	*mock.Call
-}
-
-// FinishPasskeyRegistration is a helper method to define mock.On call
-//   - credential PasskeyPublicKeyCredentialDTO
-//   - sessionToken string
-//   - credentialName string
-func (_e *AuthenticationServiceInterfaceMock_Expecter) FinishPasskeyRegistration(credential interface{}, sessionToken interface{}, credentialName interface{}) *AuthenticationServiceInterfaceMock_FinishPasskeyRegistration_Call {
-	return &AuthenticationServiceInterfaceMock_FinishPasskeyRegistration_Call{Call: _e.mock.On("FinishPasskeyRegistration", credential, sessionToken, credentialName)}
-}
-
-func (_c *AuthenticationServiceInterfaceMock_FinishPasskeyRegistration_Call) Run(run func(credential PasskeyPublicKeyCredentialDTO, sessionToken string, credentialName string)) *AuthenticationServiceInterfaceMock_FinishPasskeyRegistration_Call {
-	_c.Call.Run(func(args mock.Arguments) {
-		var arg0 PasskeyPublicKeyCredentialDTO
-		if args[0] != nil {
-			arg0 = args[0].(PasskeyPublicKeyCredentialDTO)
-		}
-		var arg1 string
-		if args[1] != nil {
-			arg1 = args[1].(string)
-		}
-		var arg2 string
-		if args[2] != nil {
-			arg2 = args[2].(string)
-		}
-		run(
-			arg0,
-			arg1,
-			arg2,
-		)
-	})
-	return _c
-}
-
-func (_c *AuthenticationServiceInterfaceMock_FinishPasskeyRegistration_Call) Return(ifaceVal interface{}, serviceError *serviceerror.ServiceError) *AuthenticationServiceInterfaceMock_FinishPasskeyRegistration_Call {
-	_c.Call.Return(ifaceVal, serviceError)
-	return _c
-}
-
-func (_c *AuthenticationServiceInterfaceMock_FinishPasskeyRegistration_Call) RunAndReturn(run func(credential PasskeyPublicKeyCredentialDTO, sessionToken string, credentialName string) (interface{}, *serviceerror.ServiceError)) *AuthenticationServiceInterfaceMock_FinishPasskeyRegistration_Call {
-	_c.Call.Return(run)
-	return _c
-}
-
-// SendOTP provides a mock function for the type AuthenticationServiceInterfaceMock
-func (_mock *AuthenticationServiceInterfaceMock) SendOTP(senderID string, channel common0.ChannelType, recipient string) (string, *serviceerror.ServiceError) {
-	ret := _mock.Called(senderID, channel, recipient)
-
-	if len(ret) == 0 {
-		panic("no return value specified for SendOTP")
-	}
-
-	var r0 string
-	var r1 *serviceerror.ServiceError
-	if returnFunc, ok := ret.Get(0).(func(string, common0.ChannelType, string) (string, *serviceerror.ServiceError)); ok {
-		return returnFunc(senderID, channel, recipient)
-	}
-	if returnFunc, ok := ret.Get(0).(func(string, common0.ChannelType, string) string); ok {
-		r0 = returnFunc(senderID, channel, recipient)
-	} else {
-		r0 = ret.Get(0).(string)
-	}
-	if returnFunc, ok := ret.Get(1).(func(string, common0.ChannelType, string) *serviceerror.ServiceError); ok {
-		r1 = returnFunc(senderID, channel, recipient)
-	} else {
-		if ret.Get(1) != nil {
-			r1 = ret.Get(1).(*serviceerror.ServiceError)
-		}
-	}
-	return r0, r1
-}
-
-// AuthenticationServiceInterfaceMock_SendOTP_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'SendOTP'
-type AuthenticationServiceInterfaceMock_SendOTP_Call struct {
-	*mock.Call
-}
-
-// SendOTP is a helper method to define mock.On call
-//   - senderID string
-//   - channel common0.ChannelType
-//   - recipient string
-func (_e *AuthenticationServiceInterfaceMock_Expecter) SendOTP(senderID interface{}, channel interface{}, recipient interface{}) *AuthenticationServiceInterfaceMock_SendOTP_Call {
-	return &AuthenticationServiceInterfaceMock_SendOTP_Call{Call: _e.mock.On("SendOTP", senderID, channel, recipient)}
-}
-
-func (_c *AuthenticationServiceInterfaceMock_SendOTP_Call) Run(run func(senderID string, channel common0.ChannelType, recipient string)) *AuthenticationServiceInterfaceMock_SendOTP_Call {
-	_c.Call.Run(func(args mock.Arguments) {
-		var arg0 string
-		if args[0] != nil {
-			arg0 = args[0].(string)
-		}
-		var arg1 common0.ChannelType
-		if args[1] != nil {
-			arg1 = args[1].(common0.ChannelType)
-		}
-		var arg2 string
-		if args[2] != nil {
-			arg2 = args[2].(string)
-		}
-		run(
-			arg0,
-			arg1,
-			arg2,
-		)
-	})
-	return _c
-}
-
-func (_c *AuthenticationServiceInterfaceMock_SendOTP_Call) Return(s string, serviceError *serviceerror.ServiceError) *AuthenticationServiceInterfaceMock_SendOTP_Call {
-	_c.Call.Return(s, serviceError)
-	return _c
-}
-
-func (_c *AuthenticationServiceInterfaceMock_SendOTP_Call) RunAndReturn(run func(senderID string, channel common0.ChannelType, recipient string) (string, *serviceerror.ServiceError)) *AuthenticationServiceInterfaceMock_SendOTP_Call {
-	_c.Call.Return(run)
-	return _c
-}
-
-// StartIDPAuthentication provides a mock function for the type AuthenticationServiceInterfaceMock
-func (_mock *AuthenticationServiceInterfaceMock) StartIDPAuthentication(requestedType idp.IDPType, idpID string) (*IDPAuthInitData, *serviceerror.ServiceError) {
-	ret := _mock.Called(requestedType, idpID)
-
-	if len(ret) == 0 {
-		panic("no return value specified for StartIDPAuthentication")
-	}
-
-	var r0 *IDPAuthInitData
-	var r1 *serviceerror.ServiceError
-	if returnFunc, ok := ret.Get(0).(func(idp.IDPType, string) (*IDPAuthInitData, *serviceerror.ServiceError)); ok {
-		return returnFunc(requestedType, idpID)
-	}
-	if returnFunc, ok := ret.Get(0).(func(idp.IDPType, string) *IDPAuthInitData); ok {
-		r0 = returnFunc(requestedType, idpID)
-	} else {
-		if ret.Get(0) != nil {
-			r0 = ret.Get(0).(*IDPAuthInitData)
-		}
-	}
-	if returnFunc, ok := ret.Get(1).(func(idp.IDPType, string) *serviceerror.ServiceError); ok {
-		r1 = returnFunc(requestedType, idpID)
-	} else {
-		if ret.Get(1) != nil {
-			r1 = ret.Get(1).(*serviceerror.ServiceError)
-		}
-	}
-	return r0, r1
-}
-
-// AuthenticationServiceInterfaceMock_StartIDPAuthentication_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'StartIDPAuthentication'
-type AuthenticationServiceInterfaceMock_StartIDPAuthentication_Call struct {
-	*mock.Call
-}
-
-// StartIDPAuthentication is a helper method to define mock.On call
-//   - requestedType idp.IDPType
-//   - idpID string
-func (_e *AuthenticationServiceInterfaceMock_Expecter) StartIDPAuthentication(requestedType interface{}, idpID interface{}) *AuthenticationServiceInterfaceMock_StartIDPAuthentication_Call {
-	return &AuthenticationServiceInterfaceMock_StartIDPAuthentication_Call{Call: _e.mock.On("StartIDPAuthentication", requestedType, idpID)}
-}
-
-func (_c *AuthenticationServiceInterfaceMock_StartIDPAuthentication_Call) Run(run func(requestedType idp.IDPType, idpID string)) *AuthenticationServiceInterfaceMock_StartIDPAuthentication_Call {
-	_c.Call.Run(func(args mock.Arguments) {
-		var arg0 idp.IDPType
-		if args[0] != nil {
-			arg0 = args[0].(idp.IDPType)
-		}
-		var arg1 string
-		if args[1] != nil {
-			arg1 = args[1].(string)
-		}
-		run(
-			arg0,
-			arg1,
-		)
-	})
-	return _c
-}
-
-func (_c *AuthenticationServiceInterfaceMock_StartIDPAuthentication_Call) Return(iDPAuthInitData *IDPAuthInitData, serviceError *serviceerror.ServiceError) *AuthenticationServiceInterfaceMock_StartIDPAuthentication_Call {
-	_c.Call.Return(iDPAuthInitData, serviceError)
-	return _c
-}
-
-func (_c *AuthenticationServiceInterfaceMock_StartIDPAuthentication_Call) RunAndReturn(run func(requestedType idp.IDPType, idpID string) (*IDPAuthInitData, *serviceerror.ServiceError)) *AuthenticationServiceInterfaceMock_StartIDPAuthentication_Call {
-	_c.Call.Return(run)
-	return _c
-}
-
-// StartPasskeyAuthentication provides a mock function for the type AuthenticationServiceInterfaceMock
-func (_mock *AuthenticationServiceInterfaceMock) StartPasskeyAuthentication(userID string, relyingPartyID string) (interface{}, *serviceerror.ServiceError) {
-	ret := _mock.Called(userID, relyingPartyID)
-
-	if len(ret) == 0 {
-		panic("no return value specified for StartPasskeyAuthentication")
-	}
-
-	var r0 interface{}
-	var r1 *serviceerror.ServiceError
-	if returnFunc, ok := ret.Get(0).(func(string, string) (interface{}, *serviceerror.ServiceError)); ok {
-		return returnFunc(userID, relyingPartyID)
-	}
-	if returnFunc, ok := ret.Get(0).(func(string, string) interface{}); ok {
-		r0 = returnFunc(userID, relyingPartyID)
-	} else {
-		if ret.Get(0) != nil {
-			r0 = ret.Get(0).(interface{})
-		}
-	}
-	if returnFunc, ok := ret.Get(1).(func(string, string) *serviceerror.ServiceError); ok {
-		r1 = returnFunc(userID, relyingPartyID)
-	} else {
-		if ret.Get(1) != nil {
-			r1 = ret.Get(1).(*serviceerror.ServiceError)
-		}
-	}
-	return r0, r1
-}
-
-// AuthenticationServiceInterfaceMock_StartPasskeyAuthentication_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'StartPasskeyAuthentication'
-type AuthenticationServiceInterfaceMock_StartPasskeyAuthentication_Call struct {
-	*mock.Call
-}
-
-// StartPasskeyAuthentication is a helper method to define mock.On call
-//   - userID string
-//   - relyingPartyID string
-func (_e *AuthenticationServiceInterfaceMock_Expecter) StartPasskeyAuthentication(userID interface{}, relyingPartyID interface{}) *AuthenticationServiceInterfaceMock_StartPasskeyAuthentication_Call {
-	return &AuthenticationServiceInterfaceMock_StartPasskeyAuthentication_Call{Call: _e.mock.On("StartPasskeyAuthentication", userID, relyingPartyID)}
-}
-
-func (_c *AuthenticationServiceInterfaceMock_StartPasskeyAuthentication_Call) Run(run func(userID string, relyingPartyID string)) *AuthenticationServiceInterfaceMock_StartPasskeyAuthentication_Call {
-	_c.Call.Run(func(args mock.Arguments) {
-		var arg0 string
-		if args[0] != nil {
-			arg0 = args[0].(string)
-		}
-		var arg1 string
-		if args[1] != nil {
-			arg1 = args[1].(string)
-		}
-		run(
-			arg0,
-			arg1,
-		)
-	})
-	return _c
-}
-
-func (_c *AuthenticationServiceInterfaceMock_StartPasskeyAuthentication_Call) Return(ifaceVal interface{}, serviceError *serviceerror.ServiceError) *AuthenticationServiceInterfaceMock_StartPasskeyAuthentication_Call {
-	_c.Call.Return(ifaceVal, serviceError)
-	return _c
-}
-
-func (_c *AuthenticationServiceInterfaceMock_StartPasskeyAuthentication_Call) RunAndReturn(run func(userID string, relyingPartyID string) (interface{}, *serviceerror.ServiceError)) *AuthenticationServiceInterfaceMock_StartPasskeyAuthentication_Call {
-	_c.Call.Return(run)
-	return _c
-}
-
-// StartPasskeyRegistration provides a mock function for the type AuthenticationServiceInterfaceMock
-func (_mock *AuthenticationServiceInterfaceMock) StartPasskeyRegistration(userID string, relyingPartyID string, relyingPartyName string, authSelection *PasskeyAuthenticatorSelectionDTO, attestation string) (interface{}, *serviceerror.ServiceError) {
-	ret := _mock.Called(userID, relyingPartyID, relyingPartyName, authSelection, attestation)
-
-	if len(ret) == 0 {
-		panic("no return value specified for StartPasskeyRegistration")
-	}
-
-	var r0 interface{}
-	var r1 *serviceerror.ServiceError
-	if returnFunc, ok := ret.Get(0).(func(string, string, string, *PasskeyAuthenticatorSelectionDTO, string) (interface{}, *serviceerror.ServiceError)); ok {
-		return returnFunc(userID, relyingPartyID, relyingPartyName, authSelection, attestation)
-	}
-	if returnFunc, ok := ret.Get(0).(func(string, string, string, *PasskeyAuthenticatorSelectionDTO, string) interface{}); ok {
-		r0 = returnFunc(userID, relyingPartyID, relyingPartyName, authSelection, attestation)
-	} else {
-		if ret.Get(0) != nil {
-			r0 = ret.Get(0).(interface{})
-		}
-	}
-	if returnFunc, ok := ret.Get(1).(func(string, string, string, *PasskeyAuthenticatorSelectionDTO, string) *serviceerror.ServiceError); ok {
-		r1 = returnFunc(userID, relyingPartyID, relyingPartyName, authSelection, attestation)
-	} else {
-		if ret.Get(1) != nil {
-			r1 = ret.Get(1).(*serviceerror.ServiceError)
-		}
-	}
-	return r0, r1
-}
-
-// AuthenticationServiceInterfaceMock_StartPasskeyRegistration_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'StartPasskeyRegistration'
-type AuthenticationServiceInterfaceMock_StartPasskeyRegistration_Call struct {
-	*mock.Call
-}
-
-// StartPasskeyRegistration is a helper method to define mock.On call
-//   - userID string
-//   - relyingPartyID string
-//   - relyingPartyName string
-//   - authSelection *PasskeyAuthenticatorSelectionDTO
-//   - attestation string
-func (_e *AuthenticationServiceInterfaceMock_Expecter) StartPasskeyRegistration(userID interface{}, relyingPartyID interface{}, relyingPartyName interface{}, authSelection interface{}, attestation interface{}) *AuthenticationServiceInterfaceMock_StartPasskeyRegistration_Call {
-	return &AuthenticationServiceInterfaceMock_StartPasskeyRegistration_Call{Call: _e.mock.On("StartPasskeyRegistration", userID, relyingPartyID, relyingPartyName, authSelection, attestation)}
-}
-
-func (_c *AuthenticationServiceInterfaceMock_StartPasskeyRegistration_Call) Run(run func(userID string, relyingPartyID string, relyingPartyName string, authSelection *PasskeyAuthenticatorSelectionDTO, attestation string)) *AuthenticationServiceInterfaceMock_StartPasskeyRegistration_Call {
-	_c.Call.Run(func(args mock.Arguments) {
-		var arg0 string
-		if args[0] != nil {
-			arg0 = args[0].(string)
-		}
-		var arg1 string
-		if args[1] != nil {
-			arg1 = args[1].(string)
-		}
-		var arg2 string
-		if args[2] != nil {
-			arg2 = args[2].(string)
-		}
-		var arg3 *PasskeyAuthenticatorSelectionDTO
-		if args[3] != nil {
-			arg3 = args[3].(*PasskeyAuthenticatorSelectionDTO)
-		}
-		var arg4 string
-		if args[4] != nil {
-			arg4 = args[4].(string)
-		}
-		run(
-			arg0,
-			arg1,
-			arg2,
-			arg3,
-			arg4,
-		)
-	})
-	return _c
-}
-
-func (_c *AuthenticationServiceInterfaceMock_StartPasskeyRegistration_Call) Return(ifaceVal interface{}, serviceError *serviceerror.ServiceError) *AuthenticationServiceInterfaceMock_StartPasskeyRegistration_Call {
-	_c.Call.Return(ifaceVal, serviceError)
-	return _c
-}
-
-func (_c *AuthenticationServiceInterfaceMock_StartPasskeyRegistration_Call) RunAndReturn(run func(userID string, relyingPartyID string, relyingPartyName string, authSelection *PasskeyAuthenticatorSelectionDTO, attestation string) (interface{}, *serviceerror.ServiceError)) *AuthenticationServiceInterfaceMock_StartPasskeyRegistration_Call {
-	_c.Call.Return(run)
-	return _c
-}
-
-// VerifyOTP provides a mock function for the type AuthenticationServiceInterfaceMock
-func (_mock *AuthenticationServiceInterfaceMock) VerifyOTP(sessionToken string, skipAssertion bool, existingAssertion string, otp string) (*common.AuthenticationResponse, *serviceerror.ServiceError) {
-	ret := _mock.Called(sessionToken, skipAssertion, existingAssertion, otp)
-
-	if len(ret) == 0 {
-		panic("no return value specified for VerifyOTP")
-	}
-
-	var r0 *common.AuthenticationResponse
-	var r1 *serviceerror.ServiceError
-	if returnFunc, ok := ret.Get(0).(func(string, bool, string, string) (*common.AuthenticationResponse, *serviceerror.ServiceError)); ok {
-		return returnFunc(sessionToken, skipAssertion, existingAssertion, otp)
-	}
-	if returnFunc, ok := ret.Get(0).(func(string, bool, string, string) *common.AuthenticationResponse); ok {
-		r0 = returnFunc(sessionToken, skipAssertion, existingAssertion, otp)
-	} else {
-		if ret.Get(0) != nil {
-			r0 = ret.Get(0).(*common.AuthenticationResponse)
-		}
-	}
-	if returnFunc, ok := ret.Get(1).(func(string, bool, string, string) *serviceerror.ServiceError); ok {
-		r1 = returnFunc(sessionToken, skipAssertion, existingAssertion, otp)
-	} else {
-		if ret.Get(1) != nil {
-			r1 = ret.Get(1).(*serviceerror.ServiceError)
-		}
-	}
-	return r0, r1
-}
-
-// AuthenticationServiceInterfaceMock_VerifyOTP_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'VerifyOTP'
-type AuthenticationServiceInterfaceMock_VerifyOTP_Call struct {
-	*mock.Call
-}
-
-// VerifyOTP is a helper method to define mock.On call
-//   - sessionToken string
-//   - skipAssertion bool
-//   - existingAssertion string
-//   - otp string
-func (_e *AuthenticationServiceInterfaceMock_Expecter) VerifyOTP(sessionToken interface{}, skipAssertion interface{}, existingAssertion interface{}, otp interface{}) *AuthenticationServiceInterfaceMock_VerifyOTP_Call {
-	return &AuthenticationServiceInterfaceMock_VerifyOTP_Call{Call: _e.mock.On("VerifyOTP", sessionToken, skipAssertion, existingAssertion, otp)}
-}
-
-func (_c *AuthenticationServiceInterfaceMock_VerifyOTP_Call) Run(run func(sessionToken string, skipAssertion bool, existingAssertion string, otp string)) *AuthenticationServiceInterfaceMock_VerifyOTP_Call {
-	_c.Call.Run(func(args mock.Arguments) {
-		var arg0 string
-		if args[0] != nil {
-			arg0 = args[0].(string)
-		}
-		var arg1 bool
-		if args[1] != nil {
-			arg1 = args[1].(bool)
-		}
-		var arg2 string
-		if args[2] != nil {
-			arg2 = args[2].(string)
-		}
-		var arg3 string
-		if args[3] != nil {
-			arg3 = args[3].(string)
-		}
-		run(
-			arg0,
-			arg1,
-			arg2,
-			arg3,
-		)
-	})
-	return _c
-}
-
 func (_c *AuthenticationServiceInterfaceMock_VerifyOTP_Call) Return(authenticationResponse *common.AuthenticationResponse, serviceError *serviceerror.ServiceError) *AuthenticationServiceInterfaceMock_VerifyOTP_Call {
 	_c.Call.Return(authenticationResponse, serviceError)
 	return _c
 }
 
-func (_c *AuthenticationServiceInterfaceMock_VerifyOTP_Call) RunAndReturn(run func(sessionToken string, skipAssertion bool, existingAssertion string, otp string) (*common.AuthenticationResponse, *serviceerror.ServiceError)) *AuthenticationServiceInterfaceMock_VerifyOTP_Call {
+func (_c *AuthenticationServiceInterfaceMock_VerifyOTP_Call) RunAndReturn(run func(ctx context.Context, sessionToken string, skipAssertion bool, existingAssertion string, otp string) (*common.AuthenticationResponse, *serviceerror.ServiceError)) *AuthenticationServiceInterfaceMock_VerifyOTP_Call {
 	_c.Call.Return(run)
 	return _c
 }

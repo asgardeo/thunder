@@ -19,6 +19,7 @@
 package granthandlers
 
 import (
+	"context"
 	"errors"
 	"testing"
 	"time"
@@ -137,7 +138,7 @@ func (suite *RefreshTokenGrantHandlerTestSuite) TestNewRefreshTokenGrantHandler(
 }
 
 func (suite *RefreshTokenGrantHandlerTestSuite) TestValidateGrant_Success() {
-	err := suite.handler.ValidateGrant(suite.testTokenReq, suite.oauthApp)
+	err := suite.handler.ValidateGrant(context.TODO(), suite.testTokenReq, suite.oauthApp)
 	assert.Nil(suite.T(), err)
 }
 
@@ -148,7 +149,7 @@ func (suite *RefreshTokenGrantHandlerTestSuite) TestValidateGrant_InvalidGrantTy
 		RefreshToken: "token",
 	}
 
-	err := suite.handler.ValidateGrant(tokenReq, suite.oauthApp)
+	err := suite.handler.ValidateGrant(context.TODO(), tokenReq, suite.oauthApp)
 	assert.NotNil(suite.T(), err)
 	assert.Equal(suite.T(), constants.ErrorUnsupportedGrantType, err.Error)
 	assert.Equal(suite.T(), "Unsupported grant type", err.ErrorDescription)
@@ -160,7 +161,7 @@ func (suite *RefreshTokenGrantHandlerTestSuite) TestValidateGrant_MissingRefresh
 		ClientID:  "test-client-id",
 	}
 
-	err := suite.handler.ValidateGrant(tokenReq, suite.oauthApp)
+	err := suite.handler.ValidateGrant(context.TODO(), tokenReq, suite.oauthApp)
 	assert.NotNil(suite.T(), err)
 	assert.Equal(suite.T(), constants.ErrorInvalidRequest, err.Error)
 	assert.Equal(suite.T(), "Refresh token is required", err.ErrorDescription)
@@ -172,7 +173,7 @@ func (suite *RefreshTokenGrantHandlerTestSuite) TestValidateGrant_MissingClientI
 		RefreshToken: "token",
 	}
 
-	err := suite.handler.ValidateGrant(tokenReq, suite.oauthApp)
+	err := suite.handler.ValidateGrant(context.TODO(), tokenReq, suite.oauthApp)
 	assert.NotNil(suite.T(), err)
 	assert.Equal(suite.T(), constants.ErrorInvalidRequest, err.Error)
 	assert.Equal(suite.T(), "Client ID is required", err.ErrorDescription)
@@ -180,10 +181,10 @@ func (suite *RefreshTokenGrantHandlerTestSuite) TestValidateGrant_MissingClientI
 
 func (suite *RefreshTokenGrantHandlerTestSuite) TestHandleGrant_InvalidSignature() {
 	// Mock token validator to return error (simulating signature verification failure)
-	suite.mockTokenValidator.On("ValidateRefreshToken", suite.validRefreshToken, "test-client-id").
+	suite.mockTokenValidator.On("ValidateRefreshToken", mock.Anything, suite.validRefreshToken, "test-client-id").
 		Return(nil, errors.New("public key not available"))
 
-	response, err := suite.handler.HandleGrant(suite.testTokenReq, suite.oauthApp)
+	response, err := suite.handler.HandleGrant(context.TODO(), suite.testTokenReq, suite.oauthApp)
 
 	assert.Nil(suite.T(), response)
 	assert.NotNil(suite.T(), err)
@@ -193,7 +194,7 @@ func (suite *RefreshTokenGrantHandlerTestSuite) TestHandleGrant_InvalidSignature
 
 func (suite *RefreshTokenGrantHandlerTestSuite) TestIssueRefreshToken_Success() {
 	// Mock token builder for refresh token generation
-	suite.mockTokenBuilder.On("BuildRefreshToken", mock.MatchedBy(
+	suite.mockTokenBuilder.On("BuildRefreshToken", mock.Anything, mock.MatchedBy(
 		func(ctx *tokenservice.RefreshTokenBuildContext) bool {
 			return ctx.ClientID == "test-client-id" &&
 				ctx.GrantType == "authorization_code" &&
@@ -210,7 +211,7 @@ func (suite *RefreshTokenGrantHandlerTestSuite) TestIssueRefreshToken_Success() 
 
 	tokenResponse := &model.TokenResponseDTO{}
 
-	err := suite.handler.IssueRefreshToken(tokenResponse, suite.oauthApp,
+	err := suite.handler.IssueRefreshToken(context.TODO(), tokenResponse, suite.oauthApp,
 		testRefreshTokenUserID, testRefreshTokenAudience,
 		"authorization_code", []string{"read", "write"}, "", "", "", "")
 
@@ -226,12 +227,12 @@ func (suite *RefreshTokenGrantHandlerTestSuite) TestIssueRefreshToken_Success() 
 
 func (suite *RefreshTokenGrantHandlerTestSuite) TestIssueRefreshToken_JWTGenerationError() {
 	// Mock token builder to return error
-	suite.mockTokenBuilder.On("BuildRefreshToken", mock.Anything).
+	suite.mockTokenBuilder.On("BuildRefreshToken", mock.Anything, mock.Anything).
 		Return(nil, errors.New("JWT generation failed"))
 
 	tokenResponse := &model.TokenResponseDTO{}
 
-	err := suite.handler.IssueRefreshToken(tokenResponse, suite.oauthApp, "", "",
+	err := suite.handler.IssueRefreshToken(context.TODO(), tokenResponse, suite.oauthApp, "", "",
 		"authorization_code", []string{"read"}, "", "", "", "")
 
 	assert.NotNil(suite.T(), err)
@@ -241,7 +242,7 @@ func (suite *RefreshTokenGrantHandlerTestSuite) TestIssueRefreshToken_JWTGenerat
 
 func (suite *RefreshTokenGrantHandlerTestSuite) TestIssueRefreshToken_WithEmptyTokenAttributes() {
 	// Mock token builder with matcher that checks for empty sub and aud
-	suite.mockTokenBuilder.On("BuildRefreshToken", mock.MatchedBy(
+	suite.mockTokenBuilder.On("BuildRefreshToken", mock.Anything, mock.MatchedBy(
 		func(ctx *tokenservice.RefreshTokenBuildContext) bool {
 			return ctx.AccessTokenSubject == "" && ctx.AccessTokenAudience == ""
 		})).Return(&model.TokenDTO{
@@ -251,7 +252,7 @@ func (suite *RefreshTokenGrantHandlerTestSuite) TestIssueRefreshToken_WithEmptyT
 
 	tokenResponse := &model.TokenResponseDTO{}
 
-	err := suite.handler.IssueRefreshToken(tokenResponse, suite.oauthApp, "", "",
+	err := suite.handler.IssueRefreshToken(context.TODO(), tokenResponse, suite.oauthApp, "", "",
 		"authorization_code", []string{"read"}, "", "", "", "")
 
 	assert.Nil(suite.T(), err)
@@ -259,7 +260,7 @@ func (suite *RefreshTokenGrantHandlerTestSuite) TestIssueRefreshToken_WithEmptyT
 
 func (suite *RefreshTokenGrantHandlerTestSuite) TestHandleGrant_Success_WithRenewOnGrantDisabled() {
 	// Mock successful refresh token validation
-	suite.mockTokenValidator.On("ValidateRefreshToken", suite.validRefreshToken, "test-client-id").
+	suite.mockTokenValidator.On("ValidateRefreshToken", mock.Anything, suite.validRefreshToken, "test-client-id").
 		Return(&tokenservice.RefreshTokenClaims{
 			Sub:            testRefreshTokenUserID,
 			Aud:            testRefreshTokenAudience,
@@ -270,7 +271,7 @@ func (suite *RefreshTokenGrantHandlerTestSuite) TestHandleGrant_Success_WithRene
 		}, nil)
 
 	// Mock successful access token generation
-	suite.mockTokenBuilder.On("BuildAccessToken", mock.MatchedBy(
+	suite.mockTokenBuilder.On("BuildAccessToken", mock.Anything, mock.MatchedBy(
 		func(ctx *tokenservice.AccessTokenBuildContext) bool {
 			return ctx.Subject == testRefreshTokenUserID &&
 				ctx.ClientID == "test-client-id" &&
@@ -282,7 +283,7 @@ func (suite *RefreshTokenGrantHandlerTestSuite) TestHandleGrant_Success_WithRene
 		Scopes:    []string{"read"},
 	}, nil)
 
-	response, err := suite.handler.HandleGrant(suite.testTokenReq, suite.oauthApp)
+	response, err := suite.handler.HandleGrant(context.TODO(), suite.testTokenReq, suite.oauthApp)
 
 	assert.Nil(suite.T(), err)
 	assert.NotNil(suite.T(), response)
@@ -296,7 +297,7 @@ func (suite *RefreshTokenGrantHandlerTestSuite) TestHandleGrant_Success_WithRene
 	config.GetThunderRuntime().Config.OAuth.RefreshToken.RenewOnGrant = true
 
 	// Mock successful refresh token validation
-	suite.mockTokenValidator.On("ValidateRefreshToken", suite.validRefreshToken, "test-client-id").
+	suite.mockTokenValidator.On("ValidateRefreshToken", mock.Anything, suite.validRefreshToken, "test-client-id").
 		Return(&tokenservice.RefreshTokenClaims{
 			Sub:            testRefreshTokenUserID,
 			Aud:            testRefreshTokenAudience,
@@ -307,7 +308,7 @@ func (suite *RefreshTokenGrantHandlerTestSuite) TestHandleGrant_Success_WithRene
 		}, nil)
 
 	// Mock successful access token generation
-	suite.mockTokenBuilder.On("BuildAccessToken", mock.Anything).Return(&model.TokenDTO{
+	suite.mockTokenBuilder.On("BuildAccessToken", mock.Anything, mock.Anything).Return(&model.TokenDTO{
 		Token:          "new.access.token",
 		IssuedAt:       time.Now().Unix(),
 		ExpiresIn:      3600,
@@ -316,7 +317,7 @@ func (suite *RefreshTokenGrantHandlerTestSuite) TestHandleGrant_Success_WithRene
 	}, nil)
 
 	// Mock successful refresh token generation
-	suite.mockTokenBuilder.On("BuildRefreshToken", mock.MatchedBy(
+	suite.mockTokenBuilder.On("BuildRefreshToken", mock.Anything, mock.MatchedBy(
 		func(ctx *tokenservice.RefreshTokenBuildContext) bool {
 			return ctx.AccessTokenSubject == testRefreshTokenUserID &&
 				ctx.AccessTokenAudience == testRefreshTokenAudience
@@ -327,7 +328,7 @@ func (suite *RefreshTokenGrantHandlerTestSuite) TestHandleGrant_Success_WithRene
 		Scopes:    []string{"read"},
 	}, nil)
 
-	response, err := suite.handler.HandleGrant(suite.testTokenReq, suite.oauthApp)
+	response, err := suite.handler.HandleGrant(context.TODO(), suite.testTokenReq, suite.oauthApp)
 
 	assert.Nil(suite.T(), err)
 	assert.NotNil(suite.T(), response)
@@ -337,7 +338,7 @@ func (suite *RefreshTokenGrantHandlerTestSuite) TestHandleGrant_Success_WithRene
 
 func (suite *RefreshTokenGrantHandlerTestSuite) TestHandleGrant_BuildAccessTokenError() {
 	// Mock successful refresh token validation
-	suite.mockTokenValidator.On("ValidateRefreshToken", suite.validRefreshToken, "test-client-id").
+	suite.mockTokenValidator.On("ValidateRefreshToken", mock.Anything, suite.validRefreshToken, "test-client-id").
 		Return(&tokenservice.RefreshTokenClaims{
 			Sub:            testRefreshTokenUserID,
 			Aud:            testRefreshTokenAudience,
@@ -348,10 +349,10 @@ func (suite *RefreshTokenGrantHandlerTestSuite) TestHandleGrant_BuildAccessToken
 		}, nil)
 
 	// Mock failed access token generation
-	suite.mockTokenBuilder.On("BuildAccessToken", mock.Anything).
+	suite.mockTokenBuilder.On("BuildAccessToken", mock.Anything, mock.Anything).
 		Return(nil, errors.New("failed to sign JWT"))
 
-	response, err := suite.handler.HandleGrant(suite.testTokenReq, suite.oauthApp)
+	response, err := suite.handler.HandleGrant(context.TODO(), suite.testTokenReq, suite.oauthApp)
 
 	assert.Nil(suite.T(), response)
 	assert.NotNil(suite.T(), err)
@@ -364,7 +365,7 @@ func (suite *RefreshTokenGrantHandlerTestSuite) TestHandleGrant_IssueRefreshToke
 	config.GetThunderRuntime().Config.OAuth.RefreshToken.RenewOnGrant = true
 
 	// Mock successful refresh token validation
-	suite.mockTokenValidator.On("ValidateRefreshToken", suite.validRefreshToken, "test-client-id").
+	suite.mockTokenValidator.On("ValidateRefreshToken", mock.Anything, suite.validRefreshToken, "test-client-id").
 		Return(&tokenservice.RefreshTokenClaims{
 			Sub:            testRefreshTokenUserID,
 			Aud:            testRefreshTokenAudience,
@@ -375,7 +376,7 @@ func (suite *RefreshTokenGrantHandlerTestSuite) TestHandleGrant_IssueRefreshToke
 		}, nil)
 
 	// Mock successful access token generation
-	suite.mockTokenBuilder.On("BuildAccessToken", mock.Anything).Return(&model.TokenDTO{
+	suite.mockTokenBuilder.On("BuildAccessToken", mock.Anything, mock.Anything).Return(&model.TokenDTO{
 		Token:          "new.access.token",
 		IssuedAt:       time.Now().Unix(),
 		ExpiresIn:      3600,
@@ -384,10 +385,10 @@ func (suite *RefreshTokenGrantHandlerTestSuite) TestHandleGrant_IssueRefreshToke
 	}, nil)
 
 	// Mock failed refresh token generation
-	suite.mockTokenBuilder.On("BuildRefreshToken", mock.Anything).
+	suite.mockTokenBuilder.On("BuildRefreshToken", mock.Anything, mock.Anything).
 		Return(nil, errors.New("refresh token generation failed"))
 
-	response, err := suite.handler.HandleGrant(suite.testTokenReq, suite.oauthApp)
+	response, err := suite.handler.HandleGrant(context.TODO(), suite.testTokenReq, suite.oauthApp)
 
 	assert.Nil(suite.T(), response)
 	assert.NotNil(suite.T(), err)
@@ -399,10 +400,10 @@ func (suite *RefreshTokenGrantHandlerTestSuite) TestHandleGrant_ExtractIatClaimE
 	// RenewOnGrant is disabled by default in SetupTest
 
 	// Mock validator to return error when iat is missing (validation fails)
-	suite.mockTokenValidator.On("ValidateRefreshToken", suite.validRefreshToken, "test-client-id").
+	suite.mockTokenValidator.On("ValidateRefreshToken", mock.Anything, suite.validRefreshToken, "test-client-id").
 		Return(nil, errors.New("missing or invalid 'iat' claim"))
 
-	response, err := suite.handler.HandleGrant(suite.testTokenReq, suite.oauthApp)
+	response, err := suite.handler.HandleGrant(context.TODO(), suite.testTokenReq, suite.oauthApp)
 
 	assert.Nil(suite.T(), response)
 	assert.NotNil(suite.T(), err)

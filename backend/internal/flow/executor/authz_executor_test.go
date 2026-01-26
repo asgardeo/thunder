@@ -87,7 +87,7 @@ func TestAuthorizationExecutor_Execute_Success(t *testing.T) {
 	}
 
 	expectedAuthorizedPerms := []string{"read:documents", "write:documents"}
-	mockAuthzService.On("GetAuthorizedPermissions",
+	mockAuthzService.On("GetAuthorizedPermissions", mock.Anything,
 		mock.MatchedBy(func(req authzsvc.GetAuthorizedPermissionsRequest) bool {
 			return req.UserID == "user123" &&
 				len(req.GroupIDs) == 2 &&
@@ -131,7 +131,7 @@ func TestAuthorizationExecutor_Execute_PartialPermissions(t *testing.T) {
 	}
 
 	// User only has read permission
-	mockAuthzService.On("GetAuthorizedPermissions", mock.Anything).Return(
+	mockAuthzService.On("GetAuthorizedPermissions", mock.Anything, mock.Anything).Return(
 		&authzsvc.GetAuthorizedPermissionsResponse{
 			AuthorizedPermissions: []string{"read:documents"},
 		}, nil)
@@ -164,7 +164,7 @@ func TestAuthorizationExecutor_Execute_NoPermissions(t *testing.T) {
 		},
 	}
 
-	mockAuthzService.On("GetAuthorizedPermissions", mock.Anything).Return(
+	mockAuthzService.On("GetAuthorizedPermissions", mock.Anything, mock.Anything).Return(
 		&authzsvc.GetAuthorizedPermissionsResponse{
 			AuthorizedPermissions: []string{},
 		}, nil)
@@ -223,7 +223,7 @@ func TestAuthorizationExecutor_Execute_ServiceError(t *testing.T) {
 		},
 	}
 
-	mockAuthzService.On("GetAuthorizedPermissions", mock.Anything).Return(
+	mockAuthzService.On("GetAuthorizedPermissions", mock.Anything, mock.Anything).Return(
 		nil, &serviceerror.ServiceError{Error: "service error"})
 
 	// Execute
@@ -436,7 +436,7 @@ func TestAuthorizationExecutor_Execute_WithMultipleGroups(t *testing.T) {
 		},
 	}
 
-	mockAuthzService.On("GetAuthorizedPermissions",
+	mockAuthzService.On("GetAuthorizedPermissions", mock.Anything,
 		mock.MatchedBy(func(req authzsvc.GetAuthorizedPermissionsRequest) bool {
 			return req.UserID == "user123" &&
 				len(req.GroupIDs) == 3 &&

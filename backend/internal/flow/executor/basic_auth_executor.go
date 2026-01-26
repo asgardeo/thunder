@@ -156,7 +156,7 @@ func (b *basicAuthExecutor) getAuthenticatedUser(ctx *core.NodeContext,
 	}
 
 	// Identify the user based on the provided attributes.
-	userID, err := b.IdentifyUser(userSearchAttributes, execResp)
+	userID, err := b.IdentifyUser(ctx.Context, userSearchAttributes, execResp)
 	if err != nil {
 		return nil, err
 	}
@@ -187,7 +187,7 @@ func (b *basicAuthExecutor) getAuthenticatedUser(ctx *core.NodeContext,
 	}
 
 	// Authenticate the user based on all the provided attributes including credentials.
-	user, svcErr := b.credsAuthSvc.Authenticate(userAuthenticateAttributes)
+	user, svcErr := b.credsAuthSvc.Authenticate(ctx.Context, userAuthenticateAttributes)
 	if svcErr != nil {
 		if svcErr.Type == serviceerror.ClientErrorType {
 			execResp.Status = common.ExecFailure

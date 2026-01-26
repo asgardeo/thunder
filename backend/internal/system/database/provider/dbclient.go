@@ -82,7 +82,7 @@ func (client *DBClient) QueryContext(
 	// Check if there's a transaction in the context
 	var rows *sql.Rows
 	var err error
-	if tx := transaction.TxFromContext(ctx); tx != nil {
+	if tx, _ := transaction.TxFromContext(ctx); tx != nil {
 		rows, err = tx.QueryContext(ctx, sqlQuery, args...)
 	} else {
 		rows, err = client.db.Query(sqlQuery, args...)
@@ -145,7 +145,7 @@ func (client *DBClient) ExecuteContext(ctx context.Context, query model.DBQuery,
 	// Check if there's a transaction in the context
 	var res sql.Result
 	var err error
-	if tx := transaction.TxFromContext(ctx); tx != nil {
+	if tx, _ := transaction.TxFromContext(ctx); tx != nil {
 		res, err = tx.ExecContext(ctx, sqlQuery, args...)
 	} else {
 		res, err = client.db.Exec(sqlQuery, args...)

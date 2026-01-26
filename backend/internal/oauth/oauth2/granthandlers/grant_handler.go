@@ -20,14 +20,17 @@
 package granthandlers
 
 import (
+	"context"
+
 	appmodel "github.com/asgardeo/thunder/internal/application/model"
 	"github.com/asgardeo/thunder/internal/oauth/oauth2/model"
 )
 
 // GrantHandlerInterface defines the interface for handling OAuth 2.0 grants.
 type GrantHandlerInterface interface {
-	ValidateGrant(tokenRequest *model.TokenRequest, oauthApp *appmodel.OAuthAppConfigProcessedDTO) *model.ErrorResponse
-	HandleGrant(tokenRequest *model.TokenRequest, oauthApp *appmodel.OAuthAppConfigProcessedDTO) (
+	ValidateGrant(ctx context.Context, tokenRequest *model.TokenRequest,
+		oauthApp *appmodel.OAuthAppConfigProcessedDTO) *model.ErrorResponse
+	HandleGrant(ctx context.Context, tokenRequest *model.TokenRequest, oauthApp *appmodel.OAuthAppConfigProcessedDTO) (
 		*model.TokenResponseDTO, *model.ErrorResponse)
 }
 
@@ -35,6 +38,7 @@ type GrantHandlerInterface interface {
 type RefreshTokenGrantHandlerInterface interface {
 	GrantHandlerInterface
 	IssueRefreshToken(
+		ctx context.Context,
 		tokenResponse *model.TokenResponseDTO,
 		oauthApp *appmodel.OAuthAppConfigProcessedDTO,
 		subject, audience, grantType string,

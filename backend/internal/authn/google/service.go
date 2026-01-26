@@ -20,6 +20,7 @@
 package google
 
 import (
+	"context"
 	"strings"
 	"time"
 
@@ -67,21 +68,23 @@ func newGoogleOIDCAuthnService(idpSvc idp.IDPServiceInterface, userSvc user.User
 }
 
 // BuildAuthorizeURL constructs the authorization request URL for Google OIDC authentication.
-func (g *googleOIDCAuthnService) BuildAuthorizeURL(idpID string) (string, *serviceerror.ServiceError) {
-	return g.internal.BuildAuthorizeURL(idpID)
+// BuildAuthorizeURL constructs the authorization request URL for Google OIDC authentication.
+func (g *googleOIDCAuthnService) BuildAuthorizeURL(ctx context.Context, idpID string) (
+	string, *serviceerror.ServiceError) {
+	return g.internal.BuildAuthorizeURL(ctx, idpID)
 }
 
 // ExchangeCodeForToken exchanges the authorization code for a token with Google
 // and validates the token response if validateResponse is true.
-func (g *googleOIDCAuthnService) ExchangeCodeForToken(idpID, code string, validateResponse bool) (
-	*authnoauth.TokenResponse, *serviceerror.ServiceError) {
-	tokenResp, svcErr := g.internal.ExchangeCodeForToken(idpID, code, false)
+func (g *googleOIDCAuthnService) ExchangeCodeForToken(ctx context.Context, idpID, code string,
+	validateResponse bool) (*authnoauth.TokenResponse, *serviceerror.ServiceError) {
+	tokenResp, svcErr := g.internal.ExchangeCodeForToken(ctx, idpID, code, false)
 	if svcErr != nil {
 		return nil, svcErr
 	}
 
 	if validateResponse {
-		svcErr = g.ValidateTokenResponse(idpID, tokenResp)
+		svcErr = g.ValidateTokenResponse(ctx, idpID, tokenResp)
 		if svcErr != nil {
 			return nil, svcErr
 		}
@@ -93,21 +96,22 @@ func (g *googleOIDCAuthnService) ExchangeCodeForToken(idpID, code string, valida
 // ValidateTokenResponse validates the token response returned from Google.
 // ExchangeCodeForToken method calls this method to validate the token response if validateResponse is set
 // to true. Hence generally you may not need to call this method explicitly.
-func (g *googleOIDCAuthnService) ValidateTokenResponse(idpID string,
+func (g *googleOIDCAuthnService) ValidateTokenResponse(ctx context.Context, idpID string,
 	tokenResp *authnoauth.TokenResponse) *serviceerror.ServiceError {
-	svcErr := g.internal.ValidateTokenResponse(idpID, tokenResp, false)
+	svcErr := g.internal.ValidateTokenResponse(ctx, idpID, tokenResp, false)
 	if svcErr != nil {
 		return svcErr
 	}
 
-	return g.ValidateIDToken(idpID, tokenResp.IDToken)
+	return g.ValidateIDToken(ctx, idpID, tokenResp.IDToken)
 }
 
 // ValidateIDToken validates the ID token from Google with additional Google-specific validations.
 // ValidateTokenResponse method calls this method to validate the token response if validateIDToken is set
 // to true. Hence generally you may not need to call this method explicitly if ExchangeCodeForToken method
 // is called with validateResponse set to true.
-func (g *googleOIDCAuthnService) ValidateIDToken(idpID, idToken string) *serviceerror.ServiceError {
+func (g *googleOIDCAuthnService) ValidateIDToken(ctx context.Context,
+	idpID, idToken string) *serviceerror.ServiceError {
 	logger := g.logger.With(log.String("idpId", idpID))
 	logger.Debug("Validating ID token")
 
@@ -117,14 +121,14 @@ func (g *googleOIDCAuthnService) ValidateIDToken(idpID, idToken string) *service
 	}
 
 	// Get the OAuth client config for token validations
-	oAuthClientConfig, svcErr := g.internal.GetOAuthClientConfig(idpID)
+	oAuthClientConfig, svcErr := g.internal.GetOAuthClientConfig(ctx, idpID)
 	if svcErr != nil {
 		return svcErr
 	}
 
 	// Validate ID token signature using JWKS endpoint if available
 	if oAuthClientConfig.OAuthEndpoints.JwksEndpoint != "" {
-		err := g.jwtService.VerifyJWTSignatureWithJWKS(idToken, oAuthClientConfig.OAuthEndpoints.JwksEndpoint)
+		err := g.jwtService.VerifyJWTSignatureWithJWKS(ctx, idToken, oAuthClientConfig.OAuthEndpoints.JwksEndpoint)
 		if err != nil {
 			logger.Debug("ID token signature validation failed", log.String("error", err.Error))
 			return &authnoidc.ErrorInvalidIDTokenSignature
@@ -201,26 +205,27 @@ func (g *googleOIDCAuthnService) ValidateIDToken(idpID, idToken string) *service
 }
 
 // GetIDTokenClaims extracts and returns the claims from the Google ID token.
-func (g *googleOIDCAuthnService) GetIDTokenClaims(idToken string) (
+func (g *googleOIDCAuthnService) GetIDTokenClaims(ctx context.Context, idToken string) (
 	map[string]interface{}, *serviceerror.ServiceError) {
-	return g.internal.GetIDTokenClaims(idToken)
+	return g.internal.GetIDTokenClaims(ctx, idToken)
 }
 
 // FetchUserInfo retrieves user information from Google, ensuring email resolution if necessary.
-func (g *googleOIDCAuthnService) FetchUserInfo(idpID, accessToken string) (
+func (g *googleOIDCAuthnService) FetchUserInfo(ctx context.Context, idpID, accessToken string) (
 	map[string]interface{}, *serviceerror.ServiceError) {
-	return g.internal.FetchUserInfo(idpID, accessToken)
+	return g.internal.FetchUserInfo(ctx, idpID, accessToken)
 }
 
 // GetInternalUser retrieves the internal user based on the external subject identifier.
-func (g *googleOIDCAuthnService) GetInternalUser(sub string) (*user.User, *serviceerror.ServiceError) {
-	return g.internal.GetInternalUser(sub)
+func (g *googleOIDCAuthnService) GetInternalUser(ctx context.Context, sub string) (
+	*user.User, *serviceerror.ServiceError) {
+	return g.internal.GetInternalUser(ctx, sub)
 }
 
 // GetOAuthClientConfig retrieves and validates the OAuth client configuration for the given identity provider ID.
-func (g *googleOIDCAuthnService) GetOAuthClientConfig(idpID string) (
+func (g *googleOIDCAuthnService) GetOAuthClientConfig(ctx context.Context, idpID string) (
 	*authnoauth.OAuthClientConfig, *serviceerror.ServiceError) {
-	return g.internal.GetOAuthClientConfig(idpID)
+	return g.internal.GetOAuthClientConfig(ctx, idpID)
 }
 
 // getMetadata returns the authenticator metadata for Google OIDC authenticator.

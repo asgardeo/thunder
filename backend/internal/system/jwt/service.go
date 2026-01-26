@@ -20,6 +20,7 @@
 package jwt
 
 import (
+	"context"
 	"crypto"
 	"crypto/ecdsa"
 	"crypto/ed25519"
@@ -45,15 +46,18 @@ import (
 // JWTServiceInterface defines the interface for JWT operations.
 type JWTServiceInterface interface {
 	GetPublicKey() crypto.PublicKey
-	GenerateJWT(sub, aud, iss string, validityPeriod int64, claims map[string]interface{}) (
-		string, int64, *serviceerror.ServiceError)
-	VerifyJWT(jwtToken string, expectedAud, expectedIss string) *serviceerror.ServiceError
-	VerifyJWTWithPublicKey(jwtToken string, jwtPublicKey crypto.PublicKey, expectedAud,
+	GenerateJWT(ctx context.Context, sub, aud, iss string, validityPeriod int64,
+		claims map[string]interface{}) (string, int64, *serviceerror.ServiceError)
+	VerifyJWT(ctx context.Context, jwtToken string, expectedAud, expectedIss string) *serviceerror.ServiceError
+	VerifyJWTWithPublicKey(ctx context.Context, jwtToken string, jwtPublicKey crypto.PublicKey, expectedAud,
 		expectedIss string) *serviceerror.ServiceError
-	VerifyJWTWithJWKS(jwtToken, jwksURL, expectedAud, expectedIss string) *serviceerror.ServiceError
-	VerifyJWTSignature(jwtToken string) *serviceerror.ServiceError
-	VerifyJWTSignatureWithPublicKey(jwtToken string, jwtPublicKey crypto.PublicKey) *serviceerror.ServiceError
-	VerifyJWTSignatureWithJWKS(jwtToken string, jwksURL string) *serviceerror.ServiceError
+	VerifyJWTWithJWKS(ctx context.Context, jwtToken, jwksURL, expectedAud,
+		expectedIss string) *serviceerror.ServiceError
+	VerifyJWTSignature(ctx context.Context, jwtToken string) *serviceerror.ServiceError
+	VerifyJWTSignatureWithPublicKey(ctx context.Context, jwtToken string,
+		jwtPublicKey crypto.PublicKey) *serviceerror.ServiceError
+	VerifyJWTSignatureWithJWKS(ctx context.Context, jwtToken string,
+		jwksURL string) *serviceerror.ServiceError
 }
 
 // jwtService implements the JWTServiceInterface for generating and managing JWT tokens.
@@ -149,8 +153,8 @@ func (js *jwtService) GetPublicKey() crypto.PublicKey {
 }
 
 // GenerateJWT generates a standard JWT signed with the server's private key.
-func (js *jwtService) GenerateJWT(sub, aud, iss string, validityPeriod int64, claims map[string]interface{}) (
-	string, int64, *serviceerror.ServiceError) {
+func (js *jwtService) GenerateJWT(ctx context.Context, sub, aud, iss string,
+	validityPeriod int64, claims map[string]interface{}) (string, int64, *serviceerror.ServiceError) {
 	if js.privateKey == nil {
 		js.logger.Error("Private key not found for JWT generation")
 		return "", 0, &serviceerror.InternalServerError
@@ -225,14 +229,15 @@ func (js *jwtService) GenerateJWT(sub, aud, iss string, validityPeriod int64, cl
 }
 
 // VerifyJWT verifies the JWT token using the server's public key.
-func (js *jwtService) VerifyJWT(jwtToken string, expectedAud, expectedIss string) *serviceerror.ServiceError {
+func (js *jwtService) VerifyJWT(ctx context.Context, jwtToken string,
+	expectedAud, expectedIss string) *serviceerror.ServiceError {
 	if js.privateKey == nil {
 		js.logger.Error("Private key not found for JWT verification")
 		return &serviceerror.InternalServerError
 	}
 
 	// First verify signature using the configured server key and algorithm
-	if err := js.VerifyJWTSignature(jwtToken); err != nil {
+	if err := js.VerifyJWTSignature(ctx, jwtToken); err != nil {
 		return &ErrorInvalidTokenSignature
 	}
 
@@ -241,14 +246,14 @@ func (js *jwtService) VerifyJWT(jwtToken string, expectedAud, expectedIss string
 }
 
 // VerifyJWTWithPublicKey verifies the JWT token using the provided public key.
-func (js *jwtService) VerifyJWTWithPublicKey(jwtToken string, jwtPublicKey crypto.PublicKey,
+func (js *jwtService) VerifyJWTWithPublicKey(ctx context.Context, jwtToken string, jwtPublicKey crypto.PublicKey,
 	expectedAud, expectedIss string) *serviceerror.ServiceError {
 	parts := strings.Split(jwtToken, ".")
 	if len(parts) != 3 {
 		return &ErrorInvalidJWTFormat
 	}
 
-	if err := js.VerifyJWTSignatureWithPublicKey(jwtToken, jwtPublicKey); err != nil {
+	if err := js.VerifyJWTSignatureWithPublicKey(ctx, jwtToken, jwtPublicKey); err != nil {
 		return err
 	}
 
@@ -256,13 +261,14 @@ func (js *jwtService) VerifyJWTWithPublicKey(jwtToken string, jwtPublicKey crypt
 }
 
 // VerifyJWTWithJWKS verifies the JWT token using a JWK Set (JWKS) endpoint.
-func (js *jwtService) VerifyJWTWithJWKS(jwtToken, jwksURL, expectedAud, expectedIss string) *serviceerror.ServiceError {
+func (js *jwtService) VerifyJWTWithJWKS(ctx context.Context, jwtToken, jwksURL,
+	expectedAud, expectedIss string) *serviceerror.ServiceError {
 	parts := strings.Split(jwtToken, ".")
 	if len(parts) != 3 {
 		return &ErrorInvalidJWTFormat
 	}
 
-	if err := js.VerifyJWTSignatureWithJWKS(jwtToken, jwksURL); err != nil {
+	if err := js.VerifyJWTSignatureWithJWKS(ctx, jwtToken, jwksURL); err != nil {
 		return &ErrorInvalidTokenSignature
 	}
 
@@ -270,7 +276,7 @@ func (js *jwtService) VerifyJWTWithJWKS(jwtToken, jwksURL, expectedAud, expected
 }
 
 // VerifyJWTSignature verifies the signature of a JWT token using the server's public key.
-func (js *jwtService) VerifyJWTSignature(jwtToken string) *serviceerror.ServiceError {
+func (js *jwtService) VerifyJWTSignature(ctx context.Context, jwtToken string) *serviceerror.ServiceError {
 	parts := strings.Split(jwtToken, ".")
 	if len(parts) != 3 {
 		return &ErrorInvalidJWTFormat
@@ -307,7 +313,7 @@ func (js *jwtService) VerifyJWTSignature(jwtToken string) *serviceerror.ServiceE
 }
 
 // VerifyJWTSignatureWithPublicKey verifies the signature of a JWT token using the provided public key.
-func (js *jwtService) VerifyJWTSignatureWithPublicKey(jwtToken string,
+func (js *jwtService) VerifyJWTSignatureWithPublicKey(ctx context.Context, jwtToken string,
 	jwtPublicKey crypto.PublicKey) *serviceerror.ServiceError {
 	parts := strings.Split(jwtToken, ".")
 	if len(parts) != 3 {
@@ -363,7 +369,8 @@ func mapJWSAlgToSignAlg(jwsAlg JWSAlgorithm) (sign.SignAlgorithm, error) {
 }
 
 // VerifyJWTSignatureWithJWKS verifies the signature of a JWT token using a JWK Set (JWKS) endpoint.
-func (js *jwtService) VerifyJWTSignatureWithJWKS(jwtToken string, jwksURL string) *serviceerror.ServiceError {
+func (js *jwtService) VerifyJWTSignatureWithJWKS(ctx context.Context, jwtToken string,
+	jwksURL string) *serviceerror.ServiceError {
 	// Get the key ID from the JWT header
 	header, err := DecodeJWTHeader(jwtToken)
 	if err != nil {
@@ -427,7 +434,7 @@ func (js *jwtService) VerifyJWTSignatureWithJWKS(jwtToken string, jwksURL string
 	}
 
 	// Verify JWT signature
-	if err := js.VerifyJWTSignatureWithPublicKey(jwtToken, pubKey); err != nil {
+	if err := js.VerifyJWTSignatureWithPublicKey(ctx, jwtToken, pubKey); err != nil {
 		return err
 	}
 

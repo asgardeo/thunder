@@ -19,6 +19,7 @@
 package resource
 
 import (
+	"context"
 	"errors"
 	"testing"
 
@@ -173,7 +174,7 @@ func (suite *ResourceServiceTestSuite) TestCreateResourceServer_Success() {
 		OrganizationUnitID: "ou-123",
 	}
 
-	suite.mockOU.On("GetOrganizationUnit", "ou-123").
+	suite.mockOU.On("GetOrganizationUnit", mock.Anything, "ou-123").
 		Return(oupkg.OrganizationUnit{ID: "ou-123"}, nil)
 	suite.mockStore.On("CheckResourceServerNameExists", "test-rs").
 		Return(false, nil)
@@ -182,7 +183,7 @@ func (suite *ResourceServiceTestSuite) TestCreateResourceServer_Success() {
 	suite.mockStore.On("CreateResourceServer", mock.AnythingOfType("string"), matchResourceServer(rs)).
 		Return(nil)
 
-	result, err := suite.service.CreateResourceServer(rs)
+	result, err := suite.service.CreateResourceServer(context.TODO(), rs)
 
 	suite.Nil(err)
 	suite.NotNil(result)
@@ -218,7 +219,7 @@ func (suite *ResourceServiceTestSuite) TestCreateResourceServer_ValidationErrors
 
 	for _, tc := range testCases {
 		suite.Run(tc.name, func() {
-			result, err := suite.service.CreateResourceServer(tc.resourceServer)
+			result, err := suite.service.CreateResourceServer(context.TODO(), tc.resourceServer)
 
 			suite.Nil(result)
 			suite.NotNil(err)
@@ -233,10 +234,10 @@ func (suite *ResourceServiceTestSuite) TestCreateResourceServer_OUNotFound() {
 		OrganizationUnitID: "ou-123",
 	}
 
-	suite.mockOU.On("GetOrganizationUnit", "ou-123").
+	suite.mockOU.On("GetOrganizationUnit", mock.Anything, "ou-123").
 		Return(oupkg.OrganizationUnit{}, &oupkg.ErrorOrganizationUnitNotFound)
 
-	result, err := suite.service.CreateResourceServer(rs)
+	result, err := suite.service.CreateResourceServer(context.TODO(), rs)
 
 	suite.Nil(result)
 	suite.NotNil(err)
@@ -250,10 +251,10 @@ func (suite *ResourceServiceTestSuite) TestCreateResourceServer_OUServiceError()
 		OrganizationUnitID: "ou-123",
 	}
 
-	suite.mockOU.On("GetOrganizationUnit", "ou-123").
+	suite.mockOU.On("GetOrganizationUnit", mock.Anything, "ou-123").
 		Return(oupkg.OrganizationUnit{}, &serviceerror.InternalServerError)
 
-	result, err := suite.service.CreateResourceServer(rs)
+	result, err := suite.service.CreateResourceServer(context.TODO(), rs)
 
 	suite.Nil(result)
 	suite.NotNil(err)
@@ -266,12 +267,12 @@ func (suite *ResourceServiceTestSuite) TestCreateResourceServer_NameConflict() {
 		OrganizationUnitID: "ou-123",
 	}
 
-	suite.mockOU.On("GetOrganizationUnit", "ou-123").
+	suite.mockOU.On("GetOrganizationUnit", mock.Anything, "ou-123").
 		Return(oupkg.OrganizationUnit{ID: "ou-123"}, nil)
 	suite.mockStore.On("CheckResourceServerNameExists", "test-rs").
 		Return(true, nil)
 
-	result, err := suite.service.CreateResourceServer(rs)
+	result, err := suite.service.CreateResourceServer(context.TODO(), rs)
 
 	suite.Nil(result)
 	suite.NotNil(err)
@@ -285,7 +286,7 @@ func (suite *ResourceServiceTestSuite) TestCreateResourceServer_StoreError() {
 		Identifier:         "", // Empty identifier - no need to check
 	}
 
-	suite.mockOU.On("GetOrganizationUnit", "ou-123").
+	suite.mockOU.On("GetOrganizationUnit", mock.Anything, "ou-123").
 		Return(oupkg.OrganizationUnit{ID: "ou-123"}, nil)
 	suite.mockStore.On("CheckResourceServerNameExists", "test-rs").
 		Return(false, nil)
@@ -293,7 +294,7 @@ func (suite *ResourceServiceTestSuite) TestCreateResourceServer_StoreError() {
 	suite.mockStore.On("CreateResourceServer", mock.AnythingOfType("string"), matchResourceServer(rs)).
 		Return(errors.New("database error"))
 
-	result, err := suite.service.CreateResourceServer(rs)
+	result, err := suite.service.CreateResourceServer(context.TODO(), rs)
 
 	suite.Nil(result)
 	suite.NotNil(err)
@@ -307,14 +308,14 @@ func (suite *ResourceServiceTestSuite) TestCreateResourceServer_IdentifierConfli
 		OrganizationUnitID: "ou-123",
 	}
 
-	suite.mockOU.On("GetOrganizationUnit", "ou-123").
+	suite.mockOU.On("GetOrganizationUnit", mock.Anything, "ou-123").
 		Return(oupkg.OrganizationUnit{ID: "ou-123"}, nil)
 	suite.mockStore.On("CheckResourceServerNameExists", "test-rs").
 		Return(false, nil)
 	suite.mockStore.On("CheckResourceServerIdentifierExists", "test-identifier").
 		Return(true, nil)
 
-	result, err := suite.service.CreateResourceServer(rs)
+	result, err := suite.service.CreateResourceServer(context.TODO(), rs)
 
 	suite.Nil(result)
 	suite.NotNil(err)
@@ -327,12 +328,12 @@ func (suite *ResourceServiceTestSuite) TestCreateResourceServer_CheckNameError()
 		OrganizationUnitID: "ou-123",
 	}
 
-	suite.mockOU.On("GetOrganizationUnit", "ou-123").
+	suite.mockOU.On("GetOrganizationUnit", mock.Anything, "ou-123").
 		Return(oupkg.OrganizationUnit{ID: "ou-123"}, nil)
 	suite.mockStore.On("CheckResourceServerNameExists", "test-rs").
 		Return(false, errors.New("database error"))
 
-	result, err := suite.service.CreateResourceServer(rs)
+	result, err := suite.service.CreateResourceServer(context.TODO(), rs)
 
 	suite.Nil(result)
 	suite.NotNil(err)
@@ -346,14 +347,14 @@ func (suite *ResourceServiceTestSuite) TestCreateResourceServer_CheckIdentifierE
 		OrganizationUnitID: "ou-123",
 	}
 
-	suite.mockOU.On("GetOrganizationUnit", "ou-123").
+	suite.mockOU.On("GetOrganizationUnit", mock.Anything, "ou-123").
 		Return(oupkg.OrganizationUnit{ID: "ou-123"}, nil)
 	suite.mockStore.On("CheckResourceServerNameExists", "test-rs").
 		Return(false, nil)
 	suite.mockStore.On("CheckResourceServerIdentifierExists", "test-identifier").
 		Return(false, errors.New("database error"))
 
-	result, err := suite.service.CreateResourceServer(rs)
+	result, err := suite.service.CreateResourceServer(context.TODO(), rs)
 
 	suite.Nil(result)
 	suite.NotNil(err)
@@ -371,7 +372,7 @@ func (suite *ResourceServiceTestSuite) TestGetResourceServer_Success() {
 	suite.mockStore.On("GetResourceServer", "rs-123").
 		Return(123, expectedRS, nil)
 
-	result, err := suite.service.GetResourceServer("rs-123")
+	result, err := suite.service.GetResourceServer(context.TODO(), "rs-123")
 
 	suite.Nil(err)
 	suite.NotNil(result)
@@ -380,7 +381,7 @@ func (suite *ResourceServiceTestSuite) TestGetResourceServer_Success() {
 }
 
 func (suite *ResourceServiceTestSuite) TestGetResourceServer_MissingID() {
-	result, err := suite.service.GetResourceServer("")
+	result, err := suite.service.GetResourceServer(context.TODO(), "")
 
 	suite.Nil(result)
 	suite.NotNil(err)
@@ -391,7 +392,7 @@ func (suite *ResourceServiceTestSuite) TestGetResourceServer_NotFound() {
 	suite.mockStore.On("GetResourceServer", "rs-123").
 		Return(0, ResourceServer{}, errResourceServerNotFound)
 
-	result, err := suite.service.GetResourceServer("rs-123")
+	result, err := suite.service.GetResourceServer(context.TODO(), "rs-123")
 
 	suite.Nil(result)
 	suite.NotNil(err)
@@ -402,7 +403,7 @@ func (suite *ResourceServiceTestSuite) TestGetResourceServer_StoreError() {
 	suite.mockStore.On("GetResourceServer", "rs-123").
 		Return(0, ResourceServer{}, errors.New("database error"))
 
-	result, err := suite.service.GetResourceServer("rs-123")
+	result, err := suite.service.GetResourceServer(context.TODO(), "rs-123")
 
 	suite.Nil(result)
 	suite.NotNil(err)
@@ -418,7 +419,7 @@ func (suite *ResourceServiceTestSuite) TestGetResourceServerList_Success() {
 	suite.mockStore.On("GetResourceServerListCount").Return(2, nil)
 	suite.mockStore.On("GetResourceServerList", 30, 0).Return(resourceServers, nil)
 
-	result, err := suite.service.GetResourceServerList(30, 0)
+	result, err := suite.service.GetResourceServerList(context.TODO(), 30, 0)
 
 	suite.Nil(err)
 	suite.NotNil(result)
@@ -444,7 +445,7 @@ func (suite *ResourceServiceTestSuite) TestUpdateResourceServer_Success() {
 	}
 
 	suite.mockStore.On("GetResourceServer", "rs-123").Return(123, existingRS, nil)
-	suite.mockOU.On("GetOrganizationUnit", "ou-123").
+	suite.mockOU.On("GetOrganizationUnit", mock.Anything, "ou-123").
 		Return(oupkg.OrganizationUnit{ID: "ou-123"}, nil)
 	suite.mockStore.On("CheckResourceServerNameExists", "updated-rs").
 		Return(false, nil)
@@ -453,7 +454,7 @@ func (suite *ResourceServiceTestSuite) TestUpdateResourceServer_Success() {
 			r.Delimiter == existingRS.Delimiter
 	})).Return(nil)
 
-	result, err := suite.service.UpdateResourceServer("rs-123", rs)
+	result, err := suite.service.UpdateResourceServer(context.TODO(), "rs-123", rs)
 
 	suite.Nil(err)
 	suite.NotNil(result)
@@ -469,7 +470,7 @@ func (suite *ResourceServiceTestSuite) TestUpdateResourceServer_NotFound() {
 
 	suite.mockStore.On("GetResourceServer", "rs-123").Return(0, ResourceServer{}, errResourceServerNotFound)
 
-	result, err := suite.service.UpdateResourceServer("rs-123", rs)
+	result, err := suite.service.UpdateResourceServer(context.TODO(), "rs-123", rs)
 
 	suite.Nil(result)
 	suite.NotNil(err)
@@ -505,7 +506,7 @@ func (suite *ResourceServiceTestSuite) TestUpdateResourceServer_ValidationErrors
 
 	for _, tc := range testCases {
 		suite.Run(tc.name, func() {
-			result, err := suite.service.UpdateResourceServer(tc.id, tc.resourceServer)
+			result, err := suite.service.UpdateResourceServer(context.TODO(), tc.id, tc.resourceServer)
 
 			suite.Nil(result)
 			suite.NotNil(err)
@@ -527,10 +528,10 @@ func (suite *ResourceServiceTestSuite) TestUpdateResourceServer_OUNotFound() {
 	}
 
 	suite.mockStore.On("GetResourceServer", "rs-123").Return(123, existingRS, nil)
-	suite.mockOU.On("GetOrganizationUnit", "ou-123").
+	suite.mockOU.On("GetOrganizationUnit", mock.Anything, "ou-123").
 		Return(oupkg.OrganizationUnit{}, &oupkg.ErrorOrganizationUnitNotFound)
 
-	result, err := suite.service.UpdateResourceServer("rs-123", rs)
+	result, err := suite.service.UpdateResourceServer(context.TODO(), "rs-123", rs)
 
 	suite.Nil(result)
 	suite.NotNil(err)
@@ -550,10 +551,10 @@ func (suite *ResourceServiceTestSuite) TestUpdateResourceServer_OUServiceError()
 	}
 
 	suite.mockStore.On("GetResourceServer", "rs-123").Return(123, existingRS, nil)
-	suite.mockOU.On("GetOrganizationUnit", "ou-123").
+	suite.mockOU.On("GetOrganizationUnit", mock.Anything, "ou-123").
 		Return(oupkg.OrganizationUnit{}, &serviceerror.InternalServerError)
 
-	result, err := suite.service.UpdateResourceServer("rs-123", rs)
+	result, err := suite.service.UpdateResourceServer(context.TODO(), "rs-123", rs)
 
 	suite.Nil(result)
 	suite.NotNil(err)
@@ -573,12 +574,12 @@ func (suite *ResourceServiceTestSuite) TestUpdateResourceServer_NameConflict() {
 	}
 
 	suite.mockStore.On("GetResourceServer", "rs-123").Return(123, existingRS, nil)
-	suite.mockOU.On("GetOrganizationUnit", "ou-123").
+	suite.mockOU.On("GetOrganizationUnit", mock.Anything, "ou-123").
 		Return(oupkg.OrganizationUnit{ID: "ou-123"}, nil)
 	suite.mockStore.On("CheckResourceServerNameExists", "test-rs").
 		Return(true, nil)
 
-	result, err := suite.service.UpdateResourceServer("rs-123", rs)
+	result, err := suite.service.UpdateResourceServer(context.TODO(), "rs-123", rs)
 
 	suite.Nil(result)
 	suite.NotNil(err)
@@ -600,12 +601,12 @@ func (suite *ResourceServiceTestSuite) TestUpdateResourceServer_IdentifierConfli
 	}
 
 	suite.mockStore.On("GetResourceServer", "rs-123").Return(123, existingRS, nil)
-	suite.mockOU.On("GetOrganizationUnit", "ou-123").
+	suite.mockOU.On("GetOrganizationUnit", mock.Anything, "ou-123").
 		Return(oupkg.OrganizationUnit{ID: "ou-123"}, nil)
 	suite.mockStore.On("CheckResourceServerIdentifierExists", "test-identifier").
 		Return(true, nil)
 
-	result, err := suite.service.UpdateResourceServer("rs-123", rs)
+	result, err := suite.service.UpdateResourceServer(context.TODO(), "rs-123", rs)
 
 	suite.Nil(result)
 	suite.NotNil(err)
@@ -627,12 +628,12 @@ func (suite *ResourceServiceTestSuite) TestUpdateResourceServer_CheckIdentifierE
 	}
 
 	suite.mockStore.On("GetResourceServer", "rs-123").Return(123, existingRS, nil)
-	suite.mockOU.On("GetOrganizationUnit", "ou-123").
+	suite.mockOU.On("GetOrganizationUnit", mock.Anything, "ou-123").
 		Return(oupkg.OrganizationUnit{ID: "ou-123"}, nil)
 	suite.mockStore.On("CheckResourceServerIdentifierExists", "test-identifier").
 		Return(false, errors.New("database error"))
 
-	result, err := suite.service.UpdateResourceServer("rs-123", rs)
+	result, err := suite.service.UpdateResourceServer(context.TODO(), "rs-123", rs)
 
 	suite.Nil(result)
 	suite.NotNil(err)
@@ -652,12 +653,12 @@ func (suite *ResourceServiceTestSuite) TestUpdateResourceServer_StoreError() {
 	}
 
 	suite.mockStore.On("GetResourceServer", "rs-123").Return(123, existingRS, nil)
-	suite.mockOU.On("GetOrganizationUnit", "ou-123").
+	suite.mockOU.On("GetOrganizationUnit", mock.Anything, "ou-123").
 		Return(oupkg.OrganizationUnit{ID: "ou-123"}, nil)
 	suite.mockStore.On("UpdateResourceServer", "rs-123", mock.Anything).
 		Return(errors.New("database error"))
 
-	result, err := suite.service.UpdateResourceServer("rs-123", rs)
+	result, err := suite.service.UpdateResourceServer(context.TODO(), "rs-123", rs)
 
 	suite.Nil(result)
 	suite.NotNil(err)
@@ -674,7 +675,7 @@ func (suite *ResourceServiceTestSuite) TestUpdateResourceServer_GetResourceServe
 	suite.mockStore.On("GetResourceServer", "rs-123").
 		Return(0, ResourceServer{}, errors.New("database connection failed"))
 
-	result, err := suite.service.UpdateResourceServer("rs-123", rs)
+	result, err := suite.service.UpdateResourceServer(context.TODO(), "rs-123", rs)
 
 	suite.Nil(result)
 	suite.NotNil(err)
@@ -687,7 +688,7 @@ func (suite *ResourceServiceTestSuite) TestDeleteResourceServer_Success() {
 	suite.mockStore.On("CheckResourceServerHasDependencies", 123).Return(false, nil)
 	suite.mockStore.On("DeleteResourceServer", "rs-123").Return(nil)
 
-	err := suite.service.DeleteResourceServer("rs-123")
+	err := suite.service.DeleteResourceServer(context.TODO(), "rs-123")
 
 	suite.Nil(err)
 }
@@ -695,13 +696,13 @@ func (suite *ResourceServiceTestSuite) TestDeleteResourceServer_Success() {
 func (suite *ResourceServiceTestSuite) TestDeleteResourceServer_IdempotentWhenNotExists() {
 	suite.mockStore.On("GetResourceServer", "rs-123").Return(0, ResourceServer{}, errResourceServerNotFound)
 
-	err := suite.service.DeleteResourceServer("rs-123")
+	err := suite.service.DeleteResourceServer(context.TODO(), "rs-123")
 
 	suite.Nil(err)
 }
 
 func (suite *ResourceServiceTestSuite) TestDeleteResourceServer_MissingID() {
-	err := suite.service.DeleteResourceServer("")
+	err := suite.service.DeleteResourceServer(context.TODO(), "")
 
 	suite.NotNil(err)
 	suite.Equal(ErrorMissingID.Code, err.Code)
@@ -710,7 +711,7 @@ func (suite *ResourceServiceTestSuite) TestDeleteResourceServer_MissingID() {
 func (suite *ResourceServiceTestSuite) TestDeleteResourceServer_CheckExistenceError() {
 	suite.mockStore.On("GetResourceServer", "rs-123").Return(0, ResourceServer{}, errors.New("database error"))
 
-	err := suite.service.DeleteResourceServer("rs-123")
+	err := suite.service.DeleteResourceServer(context.TODO(), "rs-123")
 
 	suite.NotNil(err)
 	suite.Equal(serviceerror.InternalServerError.Code, err.Code)
@@ -720,7 +721,7 @@ func (suite *ResourceServiceTestSuite) TestDeleteResourceServer_CheckDependencie
 	suite.mockStore.On("GetResourceServer", "rs-123").Return(123, ResourceServer{}, nil)
 	suite.mockStore.On("CheckResourceServerHasDependencies", 123).Return(false, errors.New("database error"))
 
-	err := suite.service.DeleteResourceServer("rs-123")
+	err := suite.service.DeleteResourceServer(context.TODO(), "rs-123")
 
 	suite.NotNil(err)
 	suite.Equal(serviceerror.InternalServerError.Code, err.Code)
@@ -731,7 +732,7 @@ func (suite *ResourceServiceTestSuite) TestDeleteResourceServer_DeleteError() {
 	suite.mockStore.On("CheckResourceServerHasDependencies", 123).Return(false, nil)
 	suite.mockStore.On("DeleteResourceServer", "rs-123").Return(errors.New("database error"))
 
-	err := suite.service.DeleteResourceServer("rs-123")
+	err := suite.service.DeleteResourceServer(context.TODO(), "rs-123")
 
 	suite.NotNil(err)
 	suite.Equal(serviceerror.InternalServerError.Code, err.Code)
@@ -741,7 +742,7 @@ func (suite *ResourceServiceTestSuite) TestDeleteResourceServer_HasDependencies(
 	suite.mockStore.On("GetResourceServer", "rs-123").Return(123, ResourceServer{}, nil)
 	suite.mockStore.On("CheckResourceServerHasDependencies", 123).Return(true, nil)
 
-	err := suite.service.DeleteResourceServer("rs-123")
+	err := suite.service.DeleteResourceServer(context.TODO(), "rs-123")
 
 	suite.NotNil(err)
 	suite.Equal(ErrorCannotDelete.Code, err.Code)
@@ -751,7 +752,7 @@ func (suite *ResourceServiceTestSuite) TestDeleteResourceServer_WithOnlyResource
 	suite.mockStore.On("GetResourceServer", "rs-123").Return(123, ResourceServer{}, nil)
 	suite.mockStore.On("CheckResourceServerHasDependencies", 123).Return(true, nil)
 
-	err := suite.service.DeleteResourceServer("rs-123")
+	err := suite.service.DeleteResourceServer(context.TODO(), "rs-123")
 
 	suite.NotNil(err)
 	suite.Equal(ErrorCannotDelete.Code, err.Code)
@@ -762,7 +763,7 @@ func (suite *ResourceServiceTestSuite) TestDeleteResourceServer_WithOnlyActions(
 	suite.mockStore.On("GetResourceServer", "rs-123").Return(123, ResourceServer{}, nil)
 	suite.mockStore.On("CheckResourceServerHasDependencies", 123).Return(true, nil)
 
-	err := suite.service.DeleteResourceServer("rs-123")
+	err := suite.service.DeleteResourceServer(context.TODO(), "rs-123")
 
 	suite.NotNil(err)
 	suite.Equal(ErrorCannotDelete.Code, err.Code)
@@ -773,7 +774,7 @@ func (suite *ResourceServiceTestSuite) TestDeleteResourceServer_WithResourcesAnd
 	suite.mockStore.On("GetResourceServer", "rs-123").Return(123, ResourceServer{}, nil)
 	suite.mockStore.On("CheckResourceServerHasDependencies", 123).Return(true, nil)
 
-	err := suite.service.DeleteResourceServer("rs-123")
+	err := suite.service.DeleteResourceServer(context.TODO(), "rs-123")
 
 	suite.NotNil(err)
 	suite.Equal(ErrorCannotDelete.Code, err.Code)
@@ -784,7 +785,7 @@ func (suite *ResourceServiceTestSuite) TestDeleteResourceServer_WithNestedResour
 	suite.mockStore.On("GetResourceServer", "rs-123").Return(123, ResourceServer{}, nil)
 	suite.mockStore.On("CheckResourceServerHasDependencies", 123).Return(true, nil)
 
-	err := suite.service.DeleteResourceServer("rs-123")
+	err := suite.service.DeleteResourceServer(context.TODO(), "rs-123")
 
 	suite.NotNil(err)
 	suite.Equal(ErrorCannotDelete.Code, err.Code)
@@ -806,7 +807,7 @@ func (suite *ResourceServiceTestSuite) TestCreateResource_Success() {
 	suite.mockStore.On("CreateResource", mock.AnythingOfType("string"), 123, (*int)(nil), matchResource(res)).
 		Return(nil)
 
-	result, err := suite.service.CreateResource("rs-123", res)
+	result, err := suite.service.CreateResource(context.TODO(), "rs-123", res)
 
 	suite.Nil(err)
 	suite.NotNil(result)
@@ -842,7 +843,7 @@ func (suite *ResourceServiceTestSuite) TestCreateResource_ValidationErrors() {
 		suite.Run(tc.name, func() {
 			suite.mockStore.On("GetResourceServer", "rs-123").Return(123, ResourceServer{}, nil).Once()
 
-			result, err := suite.service.CreateResource("rs-123", tc.resource)
+			result, err := suite.service.CreateResource(context.TODO(), "rs-123", tc.resource)
 
 			suite.Nil(result)
 			suite.NotNil(err)
@@ -865,7 +866,7 @@ func (suite *ResourceServiceTestSuite) TestCreateResource_MultiLevelHierarchy() 
 	suite.mockStore.On("CreateResource", mock.AnythingOfType("string"), 123,
 		(*int)(nil), matchResource(rootRes)).Return(nil).Once()
 
-	result1, err1 := suite.service.CreateResource("rs-123", rootRes)
+	result1, err1 := suite.service.CreateResource(context.TODO(), "rs-123", rootRes)
 	suite.Nil(err1)
 	suite.NotNil(result1)
 
@@ -883,7 +884,7 @@ func (suite *ResourceServiceTestSuite) TestCreateResource_MultiLevelHierarchy() 
 	suite.mockStore.On("CreateResource", mock.AnythingOfType("string"), 123, &rootInternalID, matchResource(childRes)).
 		Return(nil).Once()
 
-	result2, err2 := suite.service.CreateResource("rs-123", childRes)
+	result2, err2 := suite.service.CreateResource(context.TODO(), "rs-123", childRes)
 	suite.Nil(err2)
 	suite.NotNil(result2)
 
@@ -902,7 +903,7 @@ func (suite *ResourceServiceTestSuite) TestCreateResource_MultiLevelHierarchy() 
 		"CreateResource", mock.AnythingOfType("string"), 123, &childInternalID, matchResource(grandchildRes),
 	).Return(nil).Once()
 
-	result3, err3 := suite.service.CreateResource("rs-123", grandchildRes)
+	result3, err3 := suite.service.CreateResource(context.TODO(), "rs-123", grandchildRes)
 	suite.Nil(err3)
 	suite.NotNil(result3)
 
@@ -916,7 +917,7 @@ func (suite *ResourceServiceTestSuite) TestDeleteResource_ChainDeletion() {
 	suite.mockStore.On("CheckResourceHasDependencies", 200).Return(false, nil).Once()
 	suite.mockStore.On("DeleteResource", "child-res", 123).Return(nil).Once()
 
-	err1 := suite.service.DeleteResource("rs-123", "child-res")
+	err1 := suite.service.DeleteResource(context.TODO(), "rs-123", "child-res")
 	suite.Nil(err1)
 
 	// Now delete parent (should succeed since child is gone)
@@ -925,7 +926,7 @@ func (suite *ResourceServiceTestSuite) TestDeleteResource_ChainDeletion() {
 	suite.mockStore.On("CheckResourceHasDependencies", 100).Return(false, nil).Once()
 	suite.mockStore.On("DeleteResource", "parent-res", 123).Return(nil).Once()
 
-	err2 := suite.service.DeleteResource("rs-123", "parent-res")
+	err2 := suite.service.DeleteResource(context.TODO(), "rs-123", "parent-res")
 	suite.Nil(err2)
 
 	suite.mockStore.AssertExpectations(suite.T())
@@ -947,7 +948,7 @@ func (suite *ResourceServiceTestSuite) TestCreateResource_WithParent_Success() {
 	suite.mockStore.On("CreateResource", mock.AnythingOfType("string"), 123, &parentInternalID, matchResource(res)).
 		Return(nil)
 
-	result, err := suite.service.CreateResource("rs-123", res)
+	result, err := suite.service.CreateResource(context.TODO(), "rs-123", res)
 
 	suite.Nil(err)
 	suite.NotNil(result)
@@ -967,7 +968,7 @@ func (suite *ResourceServiceTestSuite) TestCreateResource_ParentNotFound() {
 	suite.mockStore.On("GetResourceServer", "rs-123").Return(123, ResourceServer{}, nil)
 	suite.mockStore.On("GetResource", testParentResourceID, 123).Return(0, Resource{}, errResourceNotFound)
 
-	result, err := suite.service.CreateResource("rs-123", res)
+	result, err := suite.service.CreateResource(context.TODO(), "rs-123", res)
 
 	suite.Nil(result)
 	suite.NotNil(err)
@@ -989,7 +990,7 @@ func (suite *ResourceServiceTestSuite) TestCreateResource_ParentFromDifferentSer
 	suite.mockStore.On("GetResource", parentID, 123).
 		Return(0, Resource{}, errResourceNotFound)
 
-	result, err := suite.service.CreateResource("rs-server-a", res)
+	result, err := suite.service.CreateResource(context.TODO(), "rs-server-a", res)
 
 	suite.Nil(result)
 	suite.NotNil(err)
@@ -1009,7 +1010,7 @@ func (suite *ResourceServiceTestSuite) TestCreateActionAtResource_ResourceFromDi
 		Return(0, Resource{}, errResourceNotFound)
 
 	resourceID := "res-from-server-b"
-	result, err := suite.service.CreateAction("rs-server-a", &resourceID, action)
+	result, err := suite.service.CreateAction(context.TODO(), "rs-server-a", &resourceID, action)
 
 	suite.Nil(result)
 	suite.NotNil(err)
@@ -1030,7 +1031,7 @@ func (suite *ResourceServiceTestSuite) TestCreateResource_ComplexCrossReference(
 	suite.mockStore.On("GetResource", parentBFromServer2, 100).
 		Return(0, Resource{}, errResourceNotFound)
 
-	result, err := suite.service.CreateResource("rs-server-1", res)
+	result, err := suite.service.CreateResource(context.TODO(), "rs-server-1", res)
 
 	suite.Nil(result)
 	suite.NotNil(err)
@@ -1046,7 +1047,7 @@ func (suite *ResourceServiceTestSuite) TestCreateResource_ResourceServerNotFound
 
 	suite.mockStore.On("GetResourceServer", "rs-123").Return(0, ResourceServer{}, errResourceServerNotFound)
 
-	result, err := suite.service.CreateResource("rs-123", res)
+	result, err := suite.service.CreateResource(context.TODO(), "rs-123", res)
 
 	suite.Nil(result)
 	suite.NotNil(err)
@@ -1063,7 +1064,7 @@ func (suite *ResourceServiceTestSuite) TestCreateResource_HandleConflict() {
 	suite.mockStore.On("CheckResourceHandleExists", 123, "test-handle", (*int)(nil)).
 		Return(true, nil)
 
-	result, err := suite.service.CreateResource("rs-123", res)
+	result, err := suite.service.CreateResource(context.TODO(), "rs-123", res)
 
 	suite.Nil(result)
 	suite.NotNil(err)
@@ -1082,7 +1083,7 @@ func (suite *ResourceServiceTestSuite) TestCreateResource_StoreError() {
 	suite.mockStore.On("CreateResource", mock.AnythingOfType("string"), 123, (*int)(nil), matchResource(res)).
 		Return(errors.New("database error"))
 
-	result, err := suite.service.CreateResource("rs-123", res)
+	result, err := suite.service.CreateResource(context.TODO(), "rs-123", res)
 
 	suite.Nil(result)
 	suite.NotNil(err)
@@ -1113,7 +1114,7 @@ func (suite *ResourceServiceTestSuite) TestCreateResource_SameHandleDifferentPar
 	suite.mockStore.On("CreateResource", mock.AnythingOfType("string"), 123, &parentAInternalID, matchResource(res1)).
 		Return(nil).Once()
 
-	result1, err1 := suite.service.CreateResource("rs-123", res1)
+	result1, err1 := suite.service.CreateResource(context.TODO(), "rs-123", res1)
 
 	suite.Nil(err1)
 	suite.NotNil(result1)
@@ -1126,7 +1127,7 @@ func (suite *ResourceServiceTestSuite) TestCreateResource_SameHandleDifferentPar
 	suite.mockStore.On("CreateResource", mock.AnythingOfType("string"), 123, &parentBInternalID, matchResource(res2)).
 		Return(nil).Once()
 
-	result2, err2 := suite.service.CreateResource("rs-123", res2)
+	result2, err2 := suite.service.CreateResource(context.TODO(), "rs-123", res2)
 
 	suite.Nil(err2)
 	suite.NotNil(result2)
@@ -1152,7 +1153,7 @@ func (suite *ResourceServiceTestSuite) TestCreateResource_SameHandleRootAndChild
 	suite.mockStore.On("CreateResource", mock.AnythingOfType("string"), 123,
 		(*int)(nil), matchResource(rootRes)).Return(nil).Once()
 
-	result1, err1 := suite.service.CreateResource("rs-123", rootRes)
+	result1, err1 := suite.service.CreateResource(context.TODO(), "rs-123", rootRes)
 
 	suite.Nil(err1)
 	suite.NotNil(result1)
@@ -1166,7 +1167,7 @@ func (suite *ResourceServiceTestSuite) TestCreateResource_SameHandleRootAndChild
 		"CreateResource", mock.AnythingOfType("string"), 123, &parentXInternalID, matchResource(childRes),
 	).Return(nil).Once()
 
-	result2, err2 := suite.service.CreateResource("rs-123", childRes)
+	result2, err2 := suite.service.CreateResource(context.TODO(), "rs-123", childRes)
 
 	suite.Nil(err2)
 	suite.NotNil(result2)
@@ -1189,7 +1190,7 @@ func (suite *ResourceServiceTestSuite) TestCreateAction_SameHandleDifferentScope
 	suite.mockStore.On("CreateAction", mock.AnythingOfType("string"), 123,
 		(*int)(nil), matchAction(serverAction)).Return(nil).Once()
 
-	result1, err1 := suite.service.CreateAction("rs-123", nil, serverAction)
+	result1, err1 := suite.service.CreateAction(context.TODO(), "rs-123", nil, serverAction)
 
 	suite.Nil(err1)
 	suite.NotNil(result1)
@@ -1204,7 +1205,7 @@ func (suite *ResourceServiceTestSuite) TestCreateAction_SameHandleDifferentScope
 	).Return(nil).Once()
 
 	resourceID := "res-456"
-	result2, err2 := suite.service.CreateAction("rs-123", &resourceID, resourceAction)
+	result2, err2 := suite.service.CreateAction(context.TODO(), "rs-123", &resourceID, resourceAction)
 
 	suite.Nil(err2)
 	suite.NotNil(result2)
@@ -1230,7 +1231,7 @@ func (suite *ResourceServiceTestSuite) TestCreateAction_SameHandleDifferentResou
 		&resAInternalID, matchAction(action1)).Return(nil).Once()
 
 	resourceA := "res-a"
-	result1, err1 := suite.service.CreateAction("rs-123", &resourceA, action1)
+	result1, err1 := suite.service.CreateAction(context.TODO(), "rs-123", &resourceA, action1)
 
 	suite.Nil(err1)
 	suite.NotNil(result1)
@@ -1244,7 +1245,7 @@ func (suite *ResourceServiceTestSuite) TestCreateAction_SameHandleDifferentResou
 		&resBInternalID, matchAction(action2)).Return(nil).Once()
 
 	resourceB := "res-b"
-	result2, err2 := suite.service.CreateAction("rs-123", &resourceB, action2)
+	result2, err2 := suite.service.CreateAction(context.TODO(), "rs-123", &resourceB, action2)
 
 	suite.Nil(err2)
 	suite.NotNil(result2)
@@ -1261,7 +1262,7 @@ func (suite *ResourceServiceTestSuite) TestCreateResource_CheckHandleError() {
 	suite.mockStore.On("CheckResourceHandleExists", 123, "test-handle", (*int)(nil)).
 		Return(false, errors.New("database error"))
 
-	result, err := suite.service.CreateResource("rs-123", res)
+	result, err := suite.service.CreateResource(context.TODO(), "rs-123", res)
 
 	suite.Nil(result)
 	suite.NotNil(err)
@@ -1280,7 +1281,7 @@ func (suite *ResourceServiceTestSuite) TestCreateResource_ParentCheckError() {
 	suite.mockStore.On("GetResource", parentID, 123).
 		Return(0, Resource{}, errors.New("database error"))
 
-	result, err := suite.service.CreateResource("rs-123", res)
+	result, err := suite.service.CreateResource(context.TODO(), "rs-123", res)
 
 	suite.Nil(result)
 	suite.NotNil(err)
@@ -1301,7 +1302,7 @@ func (suite *ResourceServiceTestSuite) TestCreateResource_CircularDependency_Sel
 	suite.mockStore.On("CreateResource", mock.AnythingOfType("string"), 123, (*int)(nil), matchResource(res)).
 		Return(nil)
 
-	result, err := suite.service.CreateResource("rs-123", res)
+	result, err := suite.service.CreateResource(context.TODO(), "rs-123", res)
 
 	// Should succeed initially - circular check would need to be in update
 	suite.Nil(err)
@@ -1327,7 +1328,7 @@ func (suite *ResourceServiceTestSuite) TestUpdateResource_Success() {
 		return r.Name == testUpdatedName && r.Handle == testOriginalHandle && r.Description == testNewDescription
 	})).Return(nil)
 
-	result, err := suite.service.UpdateResource("rs-123", "res-123", updateReq)
+	result, err := suite.service.UpdateResource(context.TODO(), "rs-123", "res-123", updateReq)
 
 	suite.Nil(err)
 	suite.NotNil(result)
@@ -1364,7 +1365,7 @@ func (suite *ResourceServiceTestSuite) TestUpdateResource_ParentIsImmutable() {
 			r.Description == testNewDescription
 	})).Return(nil)
 
-	result, err := suite.service.UpdateResource("rs-123", "res-123", updateReq)
+	result, err := suite.service.UpdateResource(context.TODO(), "rs-123", "res-123", updateReq)
 
 	suite.Nil(err)
 	suite.NotNil(result)
@@ -1383,12 +1384,12 @@ func (suite *ResourceServiceTestSuite) TestUpdateResource_MissingID() {
 		Description: testNewDescription,
 	}
 
-	result, err := suite.service.UpdateResource("", "res-123", updateReq)
+	result, err := suite.service.UpdateResource(context.TODO(), "", "res-123", updateReq)
 	suite.Nil(result)
 	suite.NotNil(err)
 	suite.Equal(ErrorMissingID.Code, err.Code)
 
-	result, err = suite.service.UpdateResource("rs-123", "", updateReq)
+	result, err = suite.service.UpdateResource(context.TODO(), "rs-123", "", updateReq)
 	suite.Nil(result)
 	suite.NotNil(err)
 	suite.Equal(ErrorMissingID.Code, err.Code)
@@ -1402,7 +1403,7 @@ func (suite *ResourceServiceTestSuite) TestUpdateResource_ResourceNotFound() {
 	suite.mockStore.On("GetResourceServer", "rs-123").Return(123, ResourceServer{}, nil)
 	suite.mockStore.On("GetResource", "res-123", 123).Return(0, Resource{}, errResourceNotFound)
 
-	result, err := suite.service.UpdateResource("rs-123", "res-123", updateReq)
+	result, err := suite.service.UpdateResource(context.TODO(), "rs-123", "res-123", updateReq)
 
 	suite.Nil(result)
 	suite.NotNil(err)
@@ -1431,7 +1432,7 @@ func (suite *ResourceServiceTestSuite) TestUpdateResource_HandleIsImmutable() {
 		return r.Handle == testOriginalHandle && r.Name == testUpdatedName
 	})).Return(nil)
 
-	result, err := suite.service.UpdateResource("rs-123", "res-123", updateReq)
+	result, err := suite.service.UpdateResource(context.TODO(), "rs-123", "res-123", updateReq)
 
 	suite.Nil(err)
 	suite.NotNil(result)
@@ -1455,7 +1456,7 @@ func (suite *ResourceServiceTestSuite) TestUpdateResource_StoreError() {
 	suite.mockStore.On("GetResource", "res-123", 123).Return(456, currentResource, nil).Once()
 	suite.mockStore.On("UpdateResource", "res-123", 123, mock.Anything).Return(errors.New("database error"))
 
-	result, err := suite.service.UpdateResource("rs-123", "res-123", updateReq)
+	result, err := suite.service.UpdateResource(context.TODO(), "rs-123", "res-123", updateReq)
 
 	suite.Nil(result)
 	suite.NotNil(err)
@@ -1470,7 +1471,7 @@ func (suite *ResourceServiceTestSuite) TestUpdateResource_GetResourceError() {
 	suite.mockStore.On("GetResourceServer", "rs-123").Return(123, ResourceServer{}, nil)
 	suite.mockStore.On("GetResource", "res-123", 123).Return(0, Resource{}, errors.New("database error"))
 
-	result, err := suite.service.UpdateResource("rs-123", "res-123", updateReq)
+	result, err := suite.service.UpdateResource(context.TODO(), "rs-123", "res-123", updateReq)
 
 	suite.Nil(result)
 	suite.NotNil(err)
@@ -1485,7 +1486,7 @@ func (suite *ResourceServiceTestSuite) TestUpdateResource_ResourceServerNotFound
 
 	suite.mockStore.On("GetResourceServer", "rs-123").Return(0, ResourceServer{}, errResourceServerNotFound)
 
-	result, err := suite.service.UpdateResource("rs-123", "res-123", updateReq)
+	result, err := suite.service.UpdateResource(context.TODO(), "rs-123", "res-123", updateReq)
 
 	suite.Nil(result)
 	suite.NotNil(err)
@@ -1500,7 +1501,7 @@ func (suite *ResourceServiceTestSuite) TestUpdateResource_CheckServerError() {
 
 	suite.mockStore.On("GetResourceServer", "rs-123").Return(0, ResourceServer{}, errors.New("database error"))
 
-	result, err := suite.service.UpdateResource("rs-123", "res-123", updateReq)
+	result, err := suite.service.UpdateResource(context.TODO(), "rs-123", "res-123", updateReq)
 
 	suite.Nil(result)
 	suite.NotNil(err)
@@ -1513,7 +1514,7 @@ func (suite *ResourceServiceTestSuite) TestDeleteResource_Success() {
 	suite.mockStore.On("CheckResourceHasDependencies", 456).Return(false, nil)
 	suite.mockStore.On("DeleteResource", "res-123", 123).Return(nil)
 
-	err := suite.service.DeleteResource("rs-123", "res-123")
+	err := suite.service.DeleteResource(context.TODO(), "rs-123", "res-123")
 
 	suite.Nil(err)
 }
@@ -1523,7 +1524,7 @@ func (suite *ResourceServiceTestSuite) TestDeleteResource_HasDependencies() {
 	suite.mockStore.On("GetResource", "res-123", 123).Return(456, Resource{}, nil)
 	suite.mockStore.On("CheckResourceHasDependencies", 456).Return(true, nil)
 
-	err := suite.service.DeleteResource("rs-123", "res-123")
+	err := suite.service.DeleteResource(context.TODO(), "rs-123", "res-123")
 
 	suite.NotNil(err)
 	suite.Equal(ErrorCannotDelete.Code, err.Code)
@@ -1536,7 +1537,7 @@ func (suite *ResourceServiceTestSuite) TestDeleteResource_WithOnlyChildResources
 	suite.mockStore.On("GetResource", "res-parent", 123).Return(456, Resource{}, nil)
 	suite.mockStore.On("CheckResourceHasDependencies", 456).Return(true, nil)
 
-	err := suite.service.DeleteResource("rs-123", "res-parent")
+	err := suite.service.DeleteResource(context.TODO(), "rs-123", "res-parent")
 
 	suite.NotNil(err)
 	suite.Equal(ErrorCannotDelete.Code, err.Code)
@@ -1548,7 +1549,7 @@ func (suite *ResourceServiceTestSuite) TestDeleteResource_WithOnlyActions() {
 	suite.mockStore.On("GetResource", "res-with-actions", 123).Return(789, Resource{}, nil)
 	suite.mockStore.On("CheckResourceHasDependencies", 789).Return(true, nil)
 
-	err := suite.service.DeleteResource("rs-123", "res-with-actions")
+	err := suite.service.DeleteResource(context.TODO(), "rs-123", "res-with-actions")
 
 	suite.NotNil(err)
 	suite.Equal(ErrorCannotDelete.Code, err.Code)
@@ -1560,7 +1561,7 @@ func (suite *ResourceServiceTestSuite) TestDeleteResource_WithChildrenAndActions
 	suite.mockStore.On("GetResource", "res-complex", 123).Return(999, Resource{}, nil)
 	suite.mockStore.On("CheckResourceHasDependencies", 999).Return(true, nil)
 
-	err := suite.service.DeleteResource("rs-123", "res-complex")
+	err := suite.service.DeleteResource(context.TODO(), "rs-123", "res-complex")
 
 	suite.NotNil(err)
 	suite.Equal(ErrorCannotDelete.Code, err.Code)
@@ -1568,11 +1569,11 @@ func (suite *ResourceServiceTestSuite) TestDeleteResource_WithChildrenAndActions
 }
 
 func (suite *ResourceServiceTestSuite) TestDeleteResource_MissingID() {
-	err := suite.service.DeleteResource("", "res-123")
+	err := suite.service.DeleteResource(context.TODO(), "", "res-123")
 	suite.NotNil(err)
 	suite.Equal(ErrorMissingID.Code, err.Code)
 
-	err = suite.service.DeleteResource("rs-123", "")
+	err = suite.service.DeleteResource(context.TODO(), "rs-123", "")
 	suite.NotNil(err)
 	suite.Equal(ErrorMissingID.Code, err.Code)
 }
@@ -1581,7 +1582,7 @@ func (suite *ResourceServiceTestSuite) TestDeleteResource_Idempotent() {
 	suite.mockStore.On("GetResourceServer", "rs-123").Return(123, ResourceServer{}, nil)
 	suite.mockStore.On("GetResource", "res-123", 123).Return(0, Resource{}, errResourceNotFound)
 
-	err := suite.service.DeleteResource("rs-123", "res-123")
+	err := suite.service.DeleteResource(context.TODO(), "rs-123", "res-123")
 
 	suite.Nil(err)
 }
@@ -1592,7 +1593,7 @@ func (suite *ResourceServiceTestSuite) TestDeleteResource_DeleteError() {
 	suite.mockStore.On("CheckResourceHasDependencies", 456).Return(false, nil)
 	suite.mockStore.On("DeleteResource", "res-123", 123).Return(errors.New("database error"))
 
-	err := suite.service.DeleteResource("rs-123", "res-123")
+	err := suite.service.DeleteResource(context.TODO(), "rs-123", "res-123")
 
 	suite.NotNil(err)
 	suite.Equal(serviceerror.InternalServerError.Code, err.Code)
@@ -1602,7 +1603,7 @@ func (suite *ResourceServiceTestSuite) TestDeleteResource_CheckExistenceError() 
 	suite.mockStore.On("GetResourceServer", "rs-123").Return(123, ResourceServer{}, nil)
 	suite.mockStore.On("GetResource", "res-123", 123).Return(0, Resource{}, errors.New("database error"))
 
-	err := suite.service.DeleteResource("rs-123", "res-123")
+	err := suite.service.DeleteResource(context.TODO(), "rs-123", "res-123")
 
 	suite.NotNil(err)
 	suite.Equal(serviceerror.InternalServerError.Code, err.Code)
@@ -1612,7 +1613,7 @@ func (suite *ResourceServiceTestSuite) TestDeleteResource_CheckResourceServerErr
 	suite.mockStore.On("GetResourceServer", "rs-123").
 		Return(0, ResourceServer{}, errors.New("database error"))
 
-	err := suite.service.DeleteResource("rs-123", "res-123")
+	err := suite.service.DeleteResource(context.TODO(), "rs-123", "res-123")
 
 	suite.NotNil(err)
 	suite.Equal(serviceerror.InternalServerError.Code, err.Code)
@@ -1624,7 +1625,7 @@ func (suite *ResourceServiceTestSuite) TestDeleteResource_CheckDependenciesError
 	suite.mockStore.On("GetResource", "res-123", 123).Return(456, Resource{}, nil)
 	suite.mockStore.On("CheckResourceHasDependencies", 456).Return(false, errors.New("database error"))
 
-	err := suite.service.DeleteResource("rs-123", "res-123")
+	err := suite.service.DeleteResource(context.TODO(), "rs-123", "res-123")
 
 	suite.NotNil(err)
 	suite.Equal(serviceerror.InternalServerError.Code, err.Code)
@@ -1643,7 +1644,7 @@ func (suite *ResourceServiceTestSuite) TestGetResource_Success() {
 	suite.mockStore.On("GetResourceServer", "rs-123").Return(123, ResourceServer{}, nil)
 	suite.mockStore.On("GetResource", "res-123", 123).Return(456, expectedRes, nil)
 
-	result, err := suite.service.GetResource("rs-123", "res-123")
+	result, err := suite.service.GetResource(context.TODO(), "rs-123", "res-123")
 
 	suite.Nil(err)
 	suite.NotNil(result)
@@ -1652,12 +1653,12 @@ func (suite *ResourceServiceTestSuite) TestGetResource_Success() {
 }
 
 func (suite *ResourceServiceTestSuite) TestGetResource_MissingID() {
-	result, err := suite.service.GetResource("", "res-123")
+	result, err := suite.service.GetResource(context.TODO(), "", "res-123")
 	suite.Nil(result)
 	suite.NotNil(err)
 	suite.Equal(ErrorMissingID.Code, err.Code)
 
-	result, err = suite.service.GetResource("rs-123", "")
+	result, err = suite.service.GetResource(context.TODO(), "rs-123", "")
 	suite.Nil(result)
 	suite.NotNil(err)
 	suite.Equal(ErrorMissingID.Code, err.Code)
@@ -1666,7 +1667,7 @@ func (suite *ResourceServiceTestSuite) TestGetResource_MissingID() {
 func (suite *ResourceServiceTestSuite) TestGetResource_ResourceServerNotFound() {
 	suite.mockStore.On("GetResourceServer", "rs-123").Return(0, ResourceServer{}, errResourceServerNotFound)
 
-	result, err := suite.service.GetResource("rs-123", "res-123")
+	result, err := suite.service.GetResource(context.TODO(), "rs-123", "res-123")
 
 	suite.Nil(result)
 	suite.NotNil(err)
@@ -1677,7 +1678,7 @@ func (suite *ResourceServiceTestSuite) TestGetResource_NotFound() {
 	suite.mockStore.On("GetResourceServer", "rs-123").Return(123, ResourceServer{}, nil)
 	suite.mockStore.On("GetResource", "res-123", 123).Return(0, Resource{}, errResourceNotFound)
 
-	result, err := suite.service.GetResource("rs-123", "res-123")
+	result, err := suite.service.GetResource(context.TODO(), "rs-123", "res-123")
 
 	suite.Nil(result)
 	suite.NotNil(err)
@@ -1688,7 +1689,7 @@ func (suite *ResourceServiceTestSuite) TestGetResource_StoreError() {
 	suite.mockStore.On("GetResourceServer", "rs-123").Return(123, ResourceServer{}, nil)
 	suite.mockStore.On("GetResource", "res-123", 123).Return(0, Resource{}, errors.New("database error"))
 
-	result, err := suite.service.GetResource("rs-123", "res-123")
+	result, err := suite.service.GetResource(context.TODO(), "rs-123", "res-123")
 
 	suite.Nil(result)
 	suite.NotNil(err)
@@ -1698,7 +1699,7 @@ func (suite *ResourceServiceTestSuite) TestGetResource_StoreError() {
 func (suite *ResourceServiceTestSuite) TestGetResource_CheckServerError() {
 	suite.mockStore.On("GetResourceServer", "rs-123").Return(0, ResourceServer{}, errors.New("database error"))
 
-	result, err := suite.service.GetResource("rs-123", "res-123")
+	result, err := suite.service.GetResource(context.TODO(), "rs-123", "res-123")
 
 	suite.Nil(result)
 	suite.NotNil(err)
@@ -1711,7 +1712,7 @@ func (suite *ResourceServiceTestSuite) TestGetResource_WrongServerID() {
 	suite.mockStore.On("GetResourceServer", "rs-server-b").Return(456, ResourceServer{}, nil)
 	suite.mockStore.On("GetResource", "res-123", 456).Return(0, Resource{}, errResourceNotFound)
 
-	result, err := suite.service.GetResource("rs-server-b", "res-123")
+	result, err := suite.service.GetResource(context.TODO(), "rs-server-b", "res-123")
 
 	suite.Nil(result)
 	suite.NotNil(err)
@@ -1729,7 +1730,7 @@ func (suite *ResourceServiceTestSuite) TestUpdateResource_WrongServerID() {
 	suite.mockStore.On("GetResourceServer", "rs-wrong-server").Return(999, ResourceServer{}, nil)
 	suite.mockStore.On("GetResource", "res-123", 999).Return(0, Resource{}, errResourceNotFound)
 
-	result, err := suite.service.UpdateResource("rs-wrong-server", "res-123", updateReq)
+	result, err := suite.service.UpdateResource(context.TODO(), "rs-wrong-server", "res-123", updateReq)
 
 	suite.Nil(result)
 	suite.NotNil(err)
@@ -1742,7 +1743,7 @@ func (suite *ResourceServiceTestSuite) TestDeleteResource_WrongServerID() {
 	suite.mockStore.On("GetResource", "res-123", 888).
 		Return(0, Resource{}, errResourceNotFound)
 
-	err := suite.service.DeleteResource("rs-wrong-server", "res-123")
+	err := suite.service.DeleteResource(context.TODO(), "rs-wrong-server", "res-123")
 
 	suite.Nil(err) // Idempotent delete
 	suite.mockStore.AssertExpectations(suite.T())
@@ -1918,7 +1919,7 @@ func (suite *ResourceServiceTestSuite) TestGetResourceList() {
 			suite.SetupTest()
 			tc.setupMocks()
 
-			result, err := suite.service.GetResourceList(tc.resourceServerID, tc.parentID, tc.limit, tc.offset)
+			result, err := suite.service.GetResourceList(context.TODO(), tc.resourceServerID, tc.parentID, tc.limit, tc.offset)
 
 			if tc.expectedError != nil {
 				suite.Nil(result)
@@ -1951,7 +1952,7 @@ func (suite *ResourceServiceTestSuite) TestCreateActionAtResourceServer_Success(
 		mock.MatchedBy(func(a Action) bool { return a.Handle != "" })).
 		Return(nil)
 
-	result, err := suite.service.CreateAction("rs-123", nil, action)
+	result, err := suite.service.CreateAction(context.TODO(), "rs-123", nil, action)
 
 	suite.Nil(err)
 	suite.NotNil(result)
@@ -1987,7 +1988,7 @@ func (suite *ResourceServiceTestSuite) TestCreateActionAtResourceServer_Validati
 		suite.Run(tc.name, func() {
 			suite.mockStore.On("GetResourceServer", "rs-123").Return(123, ResourceServer{}, nil).Once()
 
-			result, err := suite.service.CreateAction("rs-123", nil, tc.action)
+			result, err := suite.service.CreateAction(context.TODO(), "rs-123", nil, tc.action)
 
 			suite.Nil(result)
 			suite.NotNil(err)
@@ -2004,7 +2005,7 @@ func (suite *ResourceServiceTestSuite) TestCreateActionAtResourceServer_Resource
 
 	suite.mockStore.On("GetResourceServer", "rs-123").Return(0, ResourceServer{}, errResourceServerNotFound)
 
-	result, err := suite.service.CreateAction("rs-123", nil, action)
+	result, err := suite.service.CreateAction(context.TODO(), "rs-123", nil, action)
 
 	suite.Nil(result)
 	suite.NotNil(err)
@@ -2021,7 +2022,7 @@ func (suite *ResourceServiceTestSuite) TestCreateActionAtResourceServer_HandleCo
 	suite.mockStore.On("CheckActionHandleExists", 123, (*int)(nil), "test-handle").
 		Return(true, nil)
 
-	result, err := suite.service.CreateAction("rs-123", nil, action)
+	result, err := suite.service.CreateAction(context.TODO(), "rs-123", nil, action)
 
 	suite.Nil(result)
 	suite.NotNil(err)
@@ -2041,7 +2042,7 @@ func (suite *ResourceServiceTestSuite) TestCreateActionAtResourceServer_StoreErr
 		mock.MatchedBy(func(a Action) bool { return a.Handle != "" })).
 		Return(errors.New("database error"))
 
-	result, err := suite.service.CreateAction("rs-123", nil, action)
+	result, err := suite.service.CreateAction(context.TODO(), "rs-123", nil, action)
 
 	suite.Nil(result)
 	suite.NotNil(err)
@@ -2058,7 +2059,7 @@ func (suite *ResourceServiceTestSuite) TestCreateActionAtResourceServer_CheckHan
 	suite.mockStore.On("CheckActionHandleExists", 123, (*int)(nil), "test-handle").
 		Return(false, errors.New("database error"))
 
-	result, err := suite.service.CreateAction("rs-123", nil, action)
+	result, err := suite.service.CreateAction(context.TODO(), "rs-123", nil, action)
 
 	suite.Nil(result)
 	suite.NotNil(err)
@@ -2089,7 +2090,7 @@ func (suite *ResourceServiceTestSuite) TestCreateActionAtResource_ValidationErro
 			suite.mockStore.On("GetResource", "res-123", 123).Return(789, Resource{}, nil).Once()
 
 			resourceID := "res-123"
-			result, err := suite.service.CreateAction("rs-123", &resourceID, tc.action)
+			result, err := suite.service.CreateAction(context.TODO(), "rs-123", &resourceID, tc.action)
 
 			suite.Nil(result)
 			suite.NotNil(err)
@@ -2112,7 +2113,7 @@ func (suite *ResourceServiceTestSuite) TestCreateActionAtResource_Success() {
 		&resInternalID, matchAction(action)).Return(nil)
 
 	resourceID := "res-123"
-	result, err := suite.service.CreateAction("rs-123", &resourceID, action)
+	result, err := suite.service.CreateAction(context.TODO(), "rs-123", &resourceID, action)
 
 	suite.Nil(err)
 	suite.NotNil(result)
@@ -2129,7 +2130,7 @@ func (suite *ResourceServiceTestSuite) TestCreateActionAtResource_ResourceServer
 	suite.mockStore.On("GetResourceServer", "rs-123").Return(0, ResourceServer{}, errResourceServerNotFound)
 
 	resID := testResourceID
-	result, err := suite.service.CreateAction("rs-123", &resID, action)
+	result, err := suite.service.CreateAction(context.TODO(), "rs-123", &resID, action)
 
 	suite.Nil(result)
 	suite.NotNil(err)
@@ -2146,7 +2147,7 @@ func (suite *ResourceServiceTestSuite) TestCreateActionAtResource_ResourceNotFou
 	suite.mockStore.On("GetResource", testResourceID, 123).Return(0, Resource{}, errResourceNotFound)
 
 	resID := testResourceID
-	result, err := suite.service.CreateAction("rs-123", &resID, action)
+	result, err := suite.service.CreateAction(context.TODO(), "rs-123", &resID, action)
 
 	suite.Nil(result)
 	suite.NotNil(err)
@@ -2165,7 +2166,7 @@ func (suite *ResourceServiceTestSuite) TestCreateActionAtResource_HandleConflict
 	suite.mockStore.On("CheckActionHandleExists", 123, &resourceInternalID, "test-handle").Return(true, nil)
 
 	resID := testResourceID
-	result, err := suite.service.CreateAction("rs-123", &resID, action)
+	result, err := suite.service.CreateAction(context.TODO(), "rs-123", &resID, action)
 
 	suite.Nil(result)
 	suite.NotNil(err)
@@ -2186,7 +2187,7 @@ func (suite *ResourceServiceTestSuite) TestCreateActionAtResource_StoreError() {
 		Return(errors.New("database error"))
 
 	resID := testResourceID
-	result, err := suite.service.CreateAction("rs-123", &resID, action)
+	result, err := suite.service.CreateAction(context.TODO(), "rs-123", &resID, action)
 
 	suite.Nil(result)
 	suite.NotNil(err)
@@ -2207,7 +2208,7 @@ func (suite *ResourceServiceTestSuite) TestCreateActionAtResource_CheckHandleErr
 	).Return(false, errors.New("database error"))
 
 	resID := testResourceID
-	result, err := suite.service.CreateAction("rs-123", &resID, action)
+	result, err := suite.service.CreateAction(context.TODO(), "rs-123", &resID, action)
 
 	suite.Nil(result)
 	suite.NotNil(err)
@@ -2225,7 +2226,7 @@ func (suite *ResourceServiceTestSuite) TestCreateActionAtResource_CheckResourceE
 		Return(0, Resource{}, errors.New("database error"))
 
 	resID := testResourceID
-	result, err := suite.service.CreateAction("rs-123", &resID, action)
+	result, err := suite.service.CreateAction(context.TODO(), "rs-123", &resID, action)
 
 	suite.Nil(result)
 	suite.NotNil(err)
@@ -2242,7 +2243,7 @@ func (suite *ResourceServiceTestSuite) TestGetActionAtResourceServer_Success() {
 	suite.mockStore.On("GetAction", "action-123", 123, (*int)(nil)).
 		Return(expectedAction, nil)
 
-	result, err := suite.service.GetAction("rs-123", nil, "action-123")
+	result, err := suite.service.GetAction(context.TODO(), "rs-123", nil, "action-123")
 
 	suite.Nil(err)
 	suite.NotNil(result)
@@ -2250,12 +2251,12 @@ func (suite *ResourceServiceTestSuite) TestGetActionAtResourceServer_Success() {
 }
 
 func (suite *ResourceServiceTestSuite) TestGetActionAtResourceServer_MissingID() {
-	result, err := suite.service.GetAction("", nil, "action-123")
+	result, err := suite.service.GetAction(context.TODO(), "", nil, "action-123")
 	suite.Nil(result)
 	suite.NotNil(err)
 	suite.Equal(ErrorMissingID.Code, err.Code)
 
-	result, err = suite.service.GetAction("rs-123", nil, "")
+	result, err = suite.service.GetAction(context.TODO(), "rs-123", nil, "")
 	suite.Nil(result)
 	suite.NotNil(err)
 	suite.Equal(ErrorMissingID.Code, err.Code)
@@ -2266,7 +2267,7 @@ func (suite *ResourceServiceTestSuite) TestGetActionAtResourceServer_NotFound() 
 	suite.mockStore.On("GetAction", "action-123", 123, (*int)(nil)).
 		Return(Action{}, errActionNotFound)
 
-	result, err := suite.service.GetAction("rs-123", nil, "action-123")
+	result, err := suite.service.GetAction(context.TODO(), "rs-123", nil, "action-123")
 
 	suite.Nil(result)
 	suite.NotNil(err)
@@ -2371,7 +2372,7 @@ func (suite *ResourceServiceTestSuite) TestGetActionListAtResourceServer() {
 			suite.SetupTest()
 			tc.setupMocks()
 
-			result, err := suite.service.GetActionList(tc.resourceServerID, tc.resourceID, tc.limit, tc.offset)
+			result, err := suite.service.GetActionList(context.TODO(), tc.resourceServerID, tc.resourceID, tc.limit, tc.offset)
 
 			if tc.expectedError != nil {
 				suite.Nil(result)
@@ -2392,7 +2393,7 @@ func (suite *ResourceServiceTestSuite) TestGetActionListAtResourceServer() {
 func (suite *ResourceServiceTestSuite) TestGetResourceServerList_CountError() {
 	suite.mockStore.On("GetResourceServerListCount").Return(0, errors.New("database error"))
 
-	result, err := suite.service.GetResourceServerList(30, 0)
+	result, err := suite.service.GetResourceServerList(context.TODO(), 30, 0)
 
 	suite.Nil(result)
 	suite.NotNil(err)
@@ -2403,7 +2404,7 @@ func (suite *ResourceServiceTestSuite) TestGetResourceServerList_ListError() {
 	suite.mockStore.On("GetResourceServerListCount").Return(2, nil)
 	suite.mockStore.On("GetResourceServerList", 30, 0).Return(nil, errors.New("database error"))
 
-	result, err := suite.service.GetResourceServerList(30, 0)
+	result, err := suite.service.GetResourceServerList(context.TODO(), 30, 0)
 
 	suite.Nil(result)
 	suite.NotNil(err)
@@ -2413,7 +2414,7 @@ func (suite *ResourceServiceTestSuite) TestGetResourceServerList_ListError() {
 func (suite *ResourceServiceTestSuite) TestGetActionAtResourceServer_ResourceServerNotFound() {
 	suite.mockStore.On("GetResourceServer", "rs-123").Return(0, ResourceServer{}, errResourceServerNotFound)
 
-	result, err := suite.service.GetAction("rs-123", nil, "action-123")
+	result, err := suite.service.GetAction(context.TODO(), "rs-123", nil, "action-123")
 
 	suite.Nil(result)
 	suite.NotNil(err)
@@ -2425,7 +2426,7 @@ func (suite *ResourceServiceTestSuite) TestGetActionAtResourceServer_StoreError(
 	suite.mockStore.On("GetAction", "action-123", 123, (*int)(nil)).
 		Return(Action{}, errors.New("database error"))
 
-	result, err := suite.service.GetAction("rs-123", nil, "action-123")
+	result, err := suite.service.GetAction(context.TODO(), "rs-123", nil, "action-123")
 
 	suite.Nil(result)
 	suite.NotNil(err)
@@ -2667,7 +2668,7 @@ func (suite *ResourceServiceTestSuite) TestUpdateAction() {
 			suite.SetupTest()
 			tc.setupMocks()
 
-			result, err := suite.service.UpdateAction(tc.resourceServerID, tc.resourceID, tc.actionID, tc.action)
+			result, err := suite.service.UpdateAction(context.TODO(), tc.resourceServerID, tc.resourceID, tc.actionID, tc.action)
 
 			if tc.expectedError != nil {
 				suite.Nil(result)
@@ -2690,17 +2691,17 @@ func (suite *ResourceServiceTestSuite) TestDeleteActionAtResourceServer_Success(
 	suite.mockStore.On("IsActionExist", "action-123", 123, (*int)(nil)).Return(true, nil)
 	suite.mockStore.On("DeleteAction", "action-123", 123, (*int)(nil)).Return(nil)
 
-	err := suite.service.DeleteAction("rs-123", nil, "action-123")
+	err := suite.service.DeleteAction(context.TODO(), "rs-123", nil, "action-123")
 
 	suite.Nil(err)
 }
 
 func (suite *ResourceServiceTestSuite) TestDeleteActionAtResourceServer_MissingID() {
-	err := suite.service.DeleteAction("", nil, "action-123")
+	err := suite.service.DeleteAction(context.TODO(), "", nil, "action-123")
 	suite.NotNil(err)
 	suite.Equal(ErrorMissingID.Code, err.Code)
 
-	err = suite.service.DeleteAction("rs-123", nil, "")
+	err = suite.service.DeleteAction(context.TODO(), "rs-123", nil, "")
 	suite.NotNil(err)
 	suite.Equal(ErrorMissingID.Code, err.Code)
 }
@@ -2708,7 +2709,7 @@ func (suite *ResourceServiceTestSuite) TestDeleteActionAtResourceServer_MissingI
 func (suite *ResourceServiceTestSuite) TestDeleteActionAtResourceServer_ResourceServerNotFound() {
 	suite.mockStore.On("GetResourceServer", "rs-123").Return(0, ResourceServer{}, errResourceServerNotFound)
 
-	err := suite.service.DeleteAction("rs-123", nil, "action-123")
+	err := suite.service.DeleteAction(context.TODO(), "rs-123", nil, "action-123")
 
 	suite.Nil(err) // Idempotent delete
 }
@@ -2718,7 +2719,7 @@ func (suite *ResourceServiceTestSuite) TestDeleteActionAtResourceServer_StoreErr
 	suite.mockStore.On("IsActionExist", "action-123", 123, (*int)(nil)).Return(true, nil)
 	suite.mockStore.On("DeleteAction", "action-123", 123, (*int)(nil)).Return(errors.New("database error"))
 
-	err := suite.service.DeleteAction("rs-123", nil, "action-123")
+	err := suite.service.DeleteAction(context.TODO(), "rs-123", nil, "action-123")
 
 	suite.NotNil(err)
 	suite.Equal(serviceerror.InternalServerError.Code, err.Code)
@@ -2727,7 +2728,7 @@ func (suite *ResourceServiceTestSuite) TestDeleteActionAtResourceServer_StoreErr
 func (suite *ResourceServiceTestSuite) TestDeleteActionAtResourceServer_CheckServerError() {
 	suite.mockStore.On("GetResourceServer", "rs-123").Return(0, ResourceServer{}, errors.New("database error"))
 
-	err := suite.service.DeleteAction("rs-123", nil, "action-123")
+	err := suite.service.DeleteAction(context.TODO(), "rs-123", nil, "action-123")
 
 	suite.NotNil(err)
 	suite.Equal(serviceerror.InternalServerError.Code, err.Code)
@@ -2737,7 +2738,7 @@ func (suite *ResourceServiceTestSuite) TestDeleteActionAtResourceServer_ActionNo
 	suite.mockStore.On("GetResourceServer", "rs-123").Return(123, ResourceServer{}, nil)
 	suite.mockStore.On("IsActionExist", "action-123", 123, (*int)(nil)).Return(false, nil)
 
-	err := suite.service.DeleteAction("rs-123", nil, "action-123")
+	err := suite.service.DeleteAction(context.TODO(), "rs-123", nil, "action-123")
 
 	suite.Nil(err) // Idempotent delete
 }
@@ -2746,7 +2747,7 @@ func (suite *ResourceServiceTestSuite) TestDeleteActionAtResourceServer_CheckAct
 	suite.mockStore.On("GetResourceServer", "rs-123").Return(123, ResourceServer{}, nil)
 	suite.mockStore.On("IsActionExist", "action-123", 123, (*int)(nil)).Return(false, errors.New("database error"))
 
-	err := suite.service.DeleteAction("rs-123", nil, "action-123")
+	err := suite.service.DeleteAction(context.TODO(), "rs-123", nil, "action-123")
 
 	suite.NotNil(err)
 	suite.Equal(serviceerror.InternalServerError.Code, err.Code)
@@ -2760,23 +2761,23 @@ func (suite *ResourceServiceTestSuite) TestDeleteActionAtResource_Success() {
 	suite.mockStore.On("DeleteAction", "action-123", 123, &resInternalID).Return(nil)
 
 	resID := testResourceID
-	err := suite.service.DeleteAction("rs-123", &resID, "action-123")
+	err := suite.service.DeleteAction(context.TODO(), "rs-123", &resID, "action-123")
 
 	suite.Nil(err)
 }
 
 func (suite *ResourceServiceTestSuite) TestDeleteActionAtResource_MissingID() {
 	resID := testResourceID
-	err := suite.service.DeleteAction("", &resID, "action-123")
+	err := suite.service.DeleteAction(context.TODO(), "", &resID, "action-123")
 	suite.NotNil(err)
 	suite.Equal(ErrorMissingID.Code, err.Code)
 
 	emptyResID := ""
-	err = suite.service.DeleteAction("rs-123", &emptyResID, "action-123")
+	err = suite.service.DeleteAction(context.TODO(), "rs-123", &emptyResID, "action-123")
 	suite.NotNil(err)
 	suite.Equal(ErrorMissingID.Code, err.Code)
 
-	err = suite.service.DeleteAction("rs-123", &resID, "")
+	err = suite.service.DeleteAction(context.TODO(), "rs-123", &resID, "")
 	suite.NotNil(err)
 	suite.Equal(ErrorMissingID.Code, err.Code)
 }
@@ -2785,7 +2786,7 @@ func (suite *ResourceServiceTestSuite) TestDeleteActionAtResource_ResourceServer
 	suite.mockStore.On("GetResourceServer", "rs-123").Return(0, ResourceServer{}, errResourceServerNotFound)
 
 	resID := testResourceID
-	err := suite.service.DeleteAction("rs-123", &resID, "action-123")
+	err := suite.service.DeleteAction(context.TODO(), "rs-123", &resID, "action-123")
 
 	suite.Nil(err) // Idempotent delete
 }
@@ -2795,7 +2796,7 @@ func (suite *ResourceServiceTestSuite) TestDeleteActionAtResource_ResourceNotFou
 	suite.mockStore.On("GetResource", testResourceID, 123).Return(0, Resource{}, errResourceNotFound)
 
 	resID := testResourceID
-	err := suite.service.DeleteAction("rs-123", &resID, "action-123")
+	err := suite.service.DeleteAction(context.TODO(), "rs-123", &resID, "action-123")
 
 	suite.Nil(err) // Idempotent delete
 }
@@ -2808,7 +2809,7 @@ func (suite *ResourceServiceTestSuite) TestDeleteActionAtResource_StoreError() {
 	suite.mockStore.On("DeleteAction", "action-123", 123, &resInternalID).Return(errors.New("database error"))
 
 	resID := testResourceID
-	err := suite.service.DeleteAction("rs-123", &resID, "action-123")
+	err := suite.service.DeleteAction(context.TODO(), "rs-123", &resID, "action-123")
 
 	suite.NotNil(err)
 	suite.Equal(serviceerror.InternalServerError.Code, err.Code)
@@ -2819,7 +2820,7 @@ func (suite *ResourceServiceTestSuite) TestDeleteActionAtResource_CheckServerErr
 		Return(0, ResourceServer{}, errors.New("database error"))
 
 	resID := testResourceID
-	err := suite.service.DeleteAction("rs-123", &resID, "action-123")
+	err := suite.service.DeleteAction(context.TODO(), "rs-123", &resID, "action-123")
 
 	suite.NotNil(err)
 	suite.Equal(serviceerror.InternalServerError.Code, err.Code)
@@ -2831,7 +2832,7 @@ func (suite *ResourceServiceTestSuite) TestDeleteActionAtResource_CheckResourceE
 		Return(0, Resource{}, errors.New("database error"))
 
 	resID := testResourceID
-	err := suite.service.DeleteAction("rs-123", &resID, "action-123")
+	err := suite.service.DeleteAction(context.TODO(), "rs-123", &resID, "action-123")
 
 	suite.NotNil(err)
 	suite.Equal(serviceerror.InternalServerError.Code, err.Code)
@@ -2844,7 +2845,7 @@ func (suite *ResourceServiceTestSuite) TestDeleteActionAtResource_ActionNotFound
 	suite.mockStore.On("IsActionExist", "action-123", 123, &resInternalID).Return(false, nil)
 
 	resID := testResourceID
-	err := suite.service.DeleteAction("rs-123", &resID, "action-123")
+	err := suite.service.DeleteAction(context.TODO(), "rs-123", &resID, "action-123")
 
 	suite.Nil(err) // Idempotent delete
 }
@@ -2856,7 +2857,7 @@ func (suite *ResourceServiceTestSuite) TestDeleteActionAtResource_CheckActionExi
 	suite.mockStore.On("IsActionExist", "action-123", 123, &resInternalID).Return(false, errors.New("database error"))
 
 	resID := testResourceID
-	err := suite.service.DeleteAction("rs-123", &resID, "action-123")
+	err := suite.service.DeleteAction(context.TODO(), "rs-123", &resID, "action-123")
 
 	suite.NotNil(err)
 	suite.Equal(serviceerror.InternalServerError.Code, err.Code)
@@ -2877,7 +2878,7 @@ func (suite *ResourceServiceTestSuite) TestGetActionAtResource_Success() {
 		Return(expectedAction, nil)
 
 	resID := testResourceID
-	result, err := suite.service.GetAction("rs-123", &resID, "action-123")
+	result, err := suite.service.GetAction(context.TODO(), "rs-123", &resID, "action-123")
 
 	suite.Nil(err)
 	suite.NotNil(result)
@@ -2886,18 +2887,18 @@ func (suite *ResourceServiceTestSuite) TestGetActionAtResource_Success() {
 
 func (suite *ResourceServiceTestSuite) TestGetActionAtResource_MissingID() {
 	resID := testResourceID
-	result, err := suite.service.GetAction("", &resID, "action-123")
+	result, err := suite.service.GetAction(context.TODO(), "", &resID, "action-123")
 	suite.Nil(result)
 	suite.NotNil(err)
 	suite.Equal(ErrorMissingID.Code, err.Code)
 
 	emptyResID := ""
-	result, err = suite.service.GetAction("rs-123", &emptyResID, "action-123")
+	result, err = suite.service.GetAction(context.TODO(), "rs-123", &emptyResID, "action-123")
 	suite.Nil(result)
 	suite.NotNil(err)
 	suite.Equal(ErrorMissingID.Code, err.Code)
 
-	result, err = suite.service.GetAction("rs-123", &resID, "")
+	result, err = suite.service.GetAction(context.TODO(), "rs-123", &resID, "")
 	suite.Nil(result)
 	suite.NotNil(err)
 	suite.Equal(ErrorMissingID.Code, err.Code)
@@ -2907,7 +2908,7 @@ func (suite *ResourceServiceTestSuite) TestGetActionAtResource_ResourceServerNot
 	suite.mockStore.On("GetResourceServer", "rs-123").Return(0, ResourceServer{}, errResourceServerNotFound)
 
 	resID := testResourceID
-	result, err := suite.service.GetAction("rs-123", &resID, "action-123")
+	result, err := suite.service.GetAction(context.TODO(), "rs-123", &resID, "action-123")
 
 	suite.Nil(result)
 	suite.NotNil(err)
@@ -2919,7 +2920,7 @@ func (suite *ResourceServiceTestSuite) TestGetActionAtResource_ResourceNotFound(
 	suite.mockStore.On("GetResource", testResourceID, 123).Return(0, Resource{}, errResourceNotFound)
 
 	resID := testResourceID
-	result, err := suite.service.GetAction("rs-123", &resID, "action-123")
+	result, err := suite.service.GetAction(context.TODO(), "rs-123", &resID, "action-123")
 
 	suite.Nil(result)
 	suite.NotNil(err)
@@ -2934,7 +2935,7 @@ func (suite *ResourceServiceTestSuite) TestGetActionAtResource_ActionNotFound() 
 		Return(Action{}, errActionNotFound)
 
 	resID := testResourceID
-	result, err := suite.service.GetAction("rs-123", &resID, "action-123")
+	result, err := suite.service.GetAction(context.TODO(), "rs-123", &resID, "action-123")
 
 	suite.Nil(result)
 	suite.NotNil(err)
@@ -2949,7 +2950,7 @@ func (suite *ResourceServiceTestSuite) TestGetActionAtResource_StoreError() {
 		Return(Action{}, errors.New("database error"))
 
 	resID := testResourceID
-	result, err := suite.service.GetAction("rs-123", &resID, "action-123")
+	result, err := suite.service.GetAction(context.TODO(), "rs-123", &resID, "action-123")
 
 	suite.Nil(result)
 	suite.NotNil(err)
@@ -2961,7 +2962,7 @@ func (suite *ResourceServiceTestSuite) TestGetActionAtResource_CheckServerError(
 		Return(0, ResourceServer{}, errors.New("database error"))
 
 	resID := testResourceID
-	result, err := suite.service.GetAction("rs-123", &resID, "action-123")
+	result, err := suite.service.GetAction(context.TODO(), "rs-123", &resID, "action-123")
 
 	suite.Nil(result)
 	suite.NotNil(err)
@@ -2974,7 +2975,7 @@ func (suite *ResourceServiceTestSuite) TestGetActionAtResource_CheckResourceErro
 		Return(0, Resource{}, errors.New("database error"))
 
 	resID := testResourceID
-	result, err := suite.service.GetAction("rs-123", &resID, "action-123")
+	result, err := suite.service.GetAction(context.TODO(), "rs-123", &resID, "action-123")
 
 	suite.Nil(result)
 	suite.NotNil(err)
@@ -2991,7 +2992,7 @@ func (suite *ResourceServiceTestSuite) TestGetActionAtResource_WrongResourceID()
 		Return(Action{}, errActionNotFound)
 
 	wrongResID := testWrongResourceID
-	result, err := suite.service.GetAction("rs-123", &wrongResID, "action-123")
+	result, err := suite.service.GetAction(context.TODO(), "rs-123", &wrongResID, "action-123")
 
 	suite.Nil(result)
 	suite.NotNil(err)
@@ -3013,7 +3014,7 @@ func (suite *ResourceServiceTestSuite) TestUpdateActionAtResource_WrongResourceI
 		Return(Action{}, errActionNotFound)
 
 	wrongResID := testWrongResourceID
-	result, err := suite.service.UpdateAction("rs-123", &wrongResID, "action-123", updateReq)
+	result, err := suite.service.UpdateAction(context.TODO(), "rs-123", &wrongResID, "action-123", updateReq)
 
 	suite.Nil(result)
 	suite.NotNil(err)
@@ -3028,7 +3029,7 @@ func (suite *ResourceServiceTestSuite) TestDeleteActionAtResource_WrongResourceI
 	suite.mockStore.On("IsActionExist", "action-123", 123, &wrongResInternalID).Return(false, nil)
 
 	wrongResID := testWrongResourceID
-	err := suite.service.DeleteAction("rs-123", &wrongResID, "action-123")
+	err := suite.service.DeleteAction(context.TODO(), "rs-123", &wrongResID, "action-123")
 
 	suite.Nil(err) // Idempotent delete
 	suite.mockStore.AssertExpectations(suite.T())
@@ -3039,7 +3040,7 @@ func (suite *ResourceServiceTestSuite) TestGetActionAtResourceServer_WhenActionB
 	suite.mockStore.On("GetAction", "action-123", 123, (*int)(nil)).
 		Return(Action{}, errActionNotFound)
 
-	result, err := suite.service.GetAction("rs-123", nil, "action-123")
+	result, err := suite.service.GetAction(context.TODO(), "rs-123", nil, "action-123")
 
 	suite.Nil(result)
 	suite.NotNil(err)
@@ -3055,7 +3056,7 @@ func (suite *ResourceServiceTestSuite) TestGetActionAtResource_WhenActionBelongs
 		Return(Action{}, errActionNotFound)
 
 	resID := testResourceID
-	result, err := suite.service.GetAction("rs-123", &resID, "action-123")
+	result, err := suite.service.GetAction(context.TODO(), "rs-123", &resID, "action-123")
 
 	suite.Nil(result)
 	suite.NotNil(err)
@@ -3221,7 +3222,7 @@ func (suite *ResourceServiceTestSuite) TestGetActionListAtResource() {
 			suite.SetupTest()
 			tc.setupMocks()
 
-			result, err := suite.service.GetActionList(tc.resourceServerID, tc.resourceID, tc.limit, tc.offset)
+			result, err := suite.service.GetActionList(context.TODO(), tc.resourceServerID, tc.resourceID, tc.limit, tc.offset)
 
 			if tc.expectedError != nil {
 				suite.Nil(result)
@@ -3448,7 +3449,7 @@ func (suite *ResourceServiceTestSuite) TestListMethods_PaginationValidationError
 		suite.Run("GetResourceServerList_"+tc.name, func() {
 			suite.SetupTest()
 
-			result, err := suite.service.GetResourceServerList(tc.limit, tc.offset)
+			result, err := suite.service.GetResourceServerList(context.TODO(), tc.limit, tc.offset)
 
 			suite.Nil(result)
 			suite.NotNil(err)
@@ -3462,7 +3463,7 @@ func (suite *ResourceServiceTestSuite) TestListMethods_PaginationValidationError
 		suite.Run("GetResourceList_"+tc.name, func() {
 			suite.SetupTest()
 
-			result, err := suite.service.GetResourceList("rs-123", nil, tc.limit, tc.offset)
+			result, err := suite.service.GetResourceList(context.TODO(), "rs-123", nil, tc.limit, tc.offset)
 
 			suite.Nil(result)
 			suite.NotNil(err)
@@ -3476,7 +3477,7 @@ func (suite *ResourceServiceTestSuite) TestListMethods_PaginationValidationError
 		suite.Run("GetActionList_"+tc.name, func() {
 			suite.SetupTest()
 
-			result, err := suite.service.GetActionList("rs-123", nil, tc.limit, tc.offset)
+			result, err := suite.service.GetActionList(context.TODO(), "rs-123", nil, tc.limit, tc.offset)
 
 			suite.Nil(result)
 			suite.NotNil(err)
@@ -3891,7 +3892,7 @@ func (suite *ResourceServiceTestSuite) TestValidatePermissions() {
 			tc.setupMocks(mockStore)
 
 			// Execute the test
-			invalidPerms, svcErr := svc.ValidatePermissions(tc.resourceServerID, tc.permissions)
+			invalidPerms, svcErr := svc.ValidatePermissions(context.TODO(), tc.resourceServerID, tc.permissions)
 
 			// Assert results
 			if tc.expectedError != nil {

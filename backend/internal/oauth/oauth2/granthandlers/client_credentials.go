@@ -19,6 +19,8 @@
 package granthandlers
 
 import (
+	"context"
+
 	appmodel "github.com/asgardeo/thunder/internal/application/model"
 	"github.com/asgardeo/thunder/internal/oauth/oauth2/constants"
 	"github.com/asgardeo/thunder/internal/oauth/oauth2/model"
@@ -40,7 +42,7 @@ func newClientCredentialsGrantHandler(
 }
 
 // ValidateGrant validates the client credentials grant type.
-func (h *clientCredentialsGrantHandler) ValidateGrant(tokenRequest *model.TokenRequest,
+func (h *clientCredentialsGrantHandler) ValidateGrant(ctx context.Context, tokenRequest *model.TokenRequest,
 	oauthApp *appmodel.OAuthAppConfigProcessedDTO) *model.ErrorResponse {
 	if constants.GrantType(tokenRequest.GrantType) != constants.GrantTypeClientCredentials {
 		return &model.ErrorResponse{
@@ -61,14 +63,14 @@ func (h *clientCredentialsGrantHandler) ValidateGrant(tokenRequest *model.TokenR
 }
 
 // HandleGrant handles the client credentials grant type.
-func (h *clientCredentialsGrantHandler) HandleGrant(tokenRequest *model.TokenRequest,
+func (h *clientCredentialsGrantHandler) HandleGrant(ctx context.Context, tokenRequest *model.TokenRequest,
 	oauthApp *appmodel.OAuthAppConfigProcessedDTO) (
 	*model.TokenResponseDTO, *model.ErrorResponse) {
 	scopes := tokenservice.ParseScopes(tokenRequest.Scope)
 
 	finalAudience := tokenservice.DetermineAudience("", tokenRequest.Resource, "", tokenRequest.ClientID)
 
-	accessToken, err := h.tokenBuilder.BuildAccessToken(&tokenservice.AccessTokenBuildContext{
+	accessToken, err := h.tokenBuilder.BuildAccessToken(ctx, &tokenservice.AccessTokenBuildContext{
 		Subject:        tokenRequest.ClientID,
 		Audience:       finalAudience,
 		ClientID:       tokenRequest.ClientID,

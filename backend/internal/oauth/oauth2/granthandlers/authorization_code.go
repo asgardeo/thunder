@@ -19,6 +19,7 @@
 package granthandlers
 
 import (
+	"context"
 	"net/url"
 	"slices"
 	"time"
@@ -55,7 +56,7 @@ func newAuthorizationCodeGrantHandler(
 }
 
 // ValidateGrant validates the authorization code grant request.
-func (h *authorizationCodeGrantHandler) ValidateGrant(tokenRequest *model.TokenRequest,
+func (h *authorizationCodeGrantHandler) ValidateGrant(ctx context.Context, tokenRequest *model.TokenRequest,
 	oauthApp *appmodel.OAuthAppConfigProcessedDTO) *model.ErrorResponse {
 	if tokenRequest.GrantType == "" {
 		return &model.ErrorResponse{
@@ -112,7 +113,7 @@ func (h *authorizationCodeGrantHandler) ValidateGrant(tokenRequest *model.TokenR
 }
 
 // HandleGrant processes the authorization code grant request and generates a token response.
-func (h *authorizationCodeGrantHandler) HandleGrant(tokenRequest *model.TokenRequest,
+func (h *authorizationCodeGrantHandler) HandleGrant(ctx context.Context, tokenRequest *model.TokenRequest,
 	oauthApp *appmodel.OAuthAppConfigProcessedDTO) (
 	*model.TokenResponseDTO, *model.ErrorResponse) {
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, "AuthorizationCodeGrantHandler"))
@@ -135,7 +136,7 @@ func (h *authorizationCodeGrantHandler) HandleGrant(tokenRequest *model.TokenReq
 				slices.Contains(oauthApp.Token.IDToken.UserAttributes, constants.UserAttributeGroups))))
 
 	// Fetch user attributes and groups
-	attrs, userGroups, err := tokenservice.FetchUserAttributesAndGroups(h.userService,
+	attrs, userGroups, err := tokenservice.FetchUserAttributesAndGroups(ctx, h.userService,
 		authCode.AuthorizedUserID, includeGroups)
 	if err != nil {
 		logger.Error("Failed to fetch user attributes and groups",
@@ -149,7 +150,7 @@ func (h *authorizationCodeGrantHandler) HandleGrant(tokenRequest *model.TokenReq
 	audience := tokenservice.DetermineAudience("", authCode.Resource, "", authCode.ClientID)
 
 	// Generate access token using tokenBuilder (attributes will be filtered in BuildAccessToken)
-	accessToken, err := h.tokenBuilder.BuildAccessToken(&tokenservice.AccessTokenBuildContext{
+	accessToken, err := h.tokenBuilder.BuildAccessToken(ctx, &tokenservice.AccessTokenBuildContext{
 		Subject:        authCode.AuthorizedUserID,
 		Audience:       audience,
 		ClientID:       tokenRequest.ClientID,
@@ -177,7 +178,7 @@ func (h *authorizationCodeGrantHandler) HandleGrant(tokenRequest *model.TokenReq
 
 	// Generate ID token if 'openid' scope is present
 	if slices.Contains(authorizedScopes, "openid") {
-		idToken, err := h.tokenBuilder.BuildIDToken(&tokenservice.IDTokenBuildContext{
+		idToken, err := h.tokenBuilder.BuildIDToken(ctx, &tokenservice.IDTokenBuildContext{
 			Subject:        authCode.AuthorizedUserID,
 			Audience:       tokenRequest.ClientID,
 			Scopes:         authorizedScopes,

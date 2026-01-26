@@ -20,6 +20,7 @@
 package ou
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"strings"
@@ -39,8 +40,8 @@ type OrganizationUnitServiceInterface interface {
 	CreateOrganizationUnit(
 		request OrganizationUnitRequest,
 	) (OrganizationUnit, *serviceerror.ServiceError)
-	GetOrganizationUnit(id string) (OrganizationUnit, *serviceerror.ServiceError)
-	GetOrganizationUnitByPath(handlePath string) (OrganizationUnit, *serviceerror.ServiceError)
+	GetOrganizationUnit(ctx context.Context, id string) (OrganizationUnit, *serviceerror.ServiceError)
+	GetOrganizationUnitByPath(ctx context.Context, handlePath string) (OrganizationUnit, *serviceerror.ServiceError)
 	IsOrganizationUnitExists(id string) (bool, *serviceerror.ServiceError)
 	IsOrganizationUnitImmutable(id string) bool
 	IsParent(parentID, childID string) (bool, *serviceerror.ServiceError)
@@ -53,10 +54,10 @@ type OrganizationUnitServiceInterface interface {
 	DeleteOrganizationUnit(id string) *serviceerror.ServiceError
 	DeleteOrganizationUnitByPath(handlePath string) *serviceerror.ServiceError
 	GetOrganizationUnitChildren(
-		id string, limit, offset int,
+		ctx context.Context, id string, limit, offset int,
 	) (*OrganizationUnitListResponse, *serviceerror.ServiceError)
 	GetOrganizationUnitChildrenByPath(
-		handlePath string, limit, offset int,
+		ctx context.Context, handlePath string, limit, offset int,
 	) (*OrganizationUnitListResponse, *serviceerror.ServiceError)
 	GetOrganizationUnitUsers(id string, limit, offset int) (*UserListResponse, *serviceerror.ServiceError)
 	GetOrganizationUnitUsersByPath(
@@ -185,7 +186,7 @@ func (ous *organizationUnitService) CreateOrganizationUnit(
 
 // GetOrganizationUnit retrieves an organization unit by ID.
 func (ous *organizationUnitService) GetOrganizationUnit(
-	id string,
+	ctx context.Context, id string,
 ) (OrganizationUnit, *serviceerror.ServiceError) {
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, loggerComponentNameService))
 	logger.Debug("Getting organization unit", log.String("ouID", id))
@@ -204,7 +205,7 @@ func (ous *organizationUnitService) GetOrganizationUnit(
 
 // GetOrganizationUnitByPath retrieves an organization unit by hierarchical handle path.
 func (ous *organizationUnitService) GetOrganizationUnitByPath(
-	handlePath string,
+	ctx context.Context, handlePath string,
 ) (OrganizationUnit, *serviceerror.ServiceError) {
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, loggerComponentNameService))
 	logger.Debug("Getting organization unit by path", log.String("path", handlePath))
@@ -555,7 +556,7 @@ func (ous *organizationUnitService) GetOrganizationUnitGroups(
 
 // GetOrganizationUnitChildren retrieves a list of child organization units for a given organization unit ID.
 func (ous *organizationUnitService) GetOrganizationUnitChildren(
-	id string, limit, offset int,
+	ctx context.Context, id string, limit, offset int,
 ) (*OrganizationUnitListResponse, *serviceerror.ServiceError) {
 	items, totalCount, svcErr := ous.getResourceListWithExistenceCheck(
 		id, limit, offset, "child organization units",
@@ -572,7 +573,7 @@ func (ous *organizationUnitService) GetOrganizationUnitChildren(
 
 // GetOrganizationUnitChildrenByPath retrieves a list of child organization units by hierarchical handle path.
 func (ous *organizationUnitService) GetOrganizationUnitChildrenByPath(
-	handlePath string, limit, offset int,
+	ctx context.Context, handlePath string, limit, offset int,
 ) (*OrganizationUnitListResponse, *serviceerror.ServiceError) {
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, loggerComponentNameService))
 	logger.Debug("Getting organization unit children by path", log.String("path", handlePath))
@@ -591,7 +592,7 @@ func (ous *organizationUnitService) GetOrganizationUnitChildrenByPath(
 		return nil, &ErrorInternalServerError
 	}
 
-	return ous.GetOrganizationUnitChildren(ou.ID, limit, offset)
+	return ous.GetOrganizationUnitChildren(ctx, ou.ID, limit, offset)
 }
 
 // GetOrganizationUnitUsersByPath retrieves a list of users by hierarchical handle path.

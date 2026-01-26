@@ -58,7 +58,7 @@ func (h *jwtAuthenticator) Authenticate(r *http.Request) (*SecurityContext, erro
 	}
 
 	// Step 2: Verify JWT signature
-	if err := h.jwtService.VerifyJWTSignature(token); err != nil {
+	if err := h.jwtService.VerifyJWTSignature(r.Context(), token); err != nil {
 		return nil, errInvalidToken
 	}
 

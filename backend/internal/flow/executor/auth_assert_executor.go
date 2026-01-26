@@ -19,6 +19,7 @@
 package executor
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"sort"
@@ -164,12 +165,12 @@ func (a *authAssertExecutor) generateAuthAssertion(ctx *core.NodeContext, logger
 	}
 
 	if ctx.AuthenticatedUser.OrganizationUnitID != "" {
-		if err := a.appendOUDetailsToClaims(ctx.AuthenticatedUser.OrganizationUnitID, jwtClaims); err != nil {
+		if err := a.appendOUDetailsToClaims(ctx.Context, ctx.AuthenticatedUser.OrganizationUnitID, jwtClaims); err != nil {
 			return "", err
 		}
 	}
 
-	token, _, err := a.jwtService.GenerateJWT(tokenSub, ctx.AppID, iss, validityPeriod, jwtClaims)
+	token, _, err := a.jwtService.GenerateJWT(ctx.Context, tokenSub, ctx.AppID, iss, validityPeriod, jwtClaims)
 	if err != nil {
 		logger.Error("Failed to generate JWT token", log.String("error", err.Error))
 		return "", errors.New("failed to generate JWT token: " + err.Error)
@@ -242,7 +243,7 @@ func (a *authAssertExecutor) appendUserDetailsToClaims(ctx *core.NodeContext,
 			// fetch user details only once
 			if user == nil {
 				var err error
-				user, attrs, err = a.getUserAttributes(ctx.AuthenticatedUser.UserID)
+				user, attrs, err = a.getUserAttributes(ctx.Context, ctx.AuthenticatedUser.UserID)
 				if err != nil {
 					return err
 				}
@@ -259,11 +260,12 @@ func (a *authAssertExecutor) appendUserDetailsToClaims(ctx *core.NodeContext,
 }
 
 // getUserAttributes retrieves user details and unmarshal the attributes.
-func (a *authAssertExecutor) getUserAttributes(userID string) (*user.User, map[string]interface{}, error) {
+func (a *authAssertExecutor) getUserAttributes(ctx context.Context,
+	userID string) (*user.User, map[string]interface{}, error) {
 	logger := a.logger.With(log.String("userID", userID))
 
 	var svcErr *serviceerror.ServiceError
-	user, svcErr := a.userService.GetUser(userID)
+	user, svcErr := a.userService.GetUser(ctx, userID)
 	if svcErr != nil {
 		logger.Error("Failed to fetch user attributes",
 			log.String("userID", userID), log.Any("error", svcErr))
@@ -282,10 +284,11 @@ func (a *authAssertExecutor) getUserAttributes(userID string) (*user.User, map[s
 }
 
 // appendOUDetailsToClaims appends organization unit details to the JWT claims.
-func (a *authAssertExecutor) appendOUDetailsToClaims(ouID string, jwtClaims map[string]interface{}) error {
+func (a *authAssertExecutor) appendOUDetailsToClaims(ctx context.Context, ouID string,
+	jwtClaims map[string]interface{}) error {
 	logger := a.logger.With(log.String(ouIDKey, ouID))
 
-	organizationUnit, svcErr := a.ouService.GetOrganizationUnit(ouID)
+	organizationUnit, svcErr := a.ouService.GetOrganizationUnit(ctx, ouID)
 	if svcErr != nil {
 		logger.Error("Failed to fetch organization unit details",
 			log.String(ouIDKey, ouID), log.Any("error", svcErr))

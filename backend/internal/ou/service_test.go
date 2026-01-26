@@ -19,6 +19,7 @@
 package ou
 
 import (
+	"context"
 	"errors"
 	"testing"
 
@@ -186,7 +187,7 @@ func invokeChildrenByPath(
 	path string,
 	limit, offset int,
 ) (*OrganizationUnitListResponse, *serviceerror.ServiceError) {
-	return service.GetOrganizationUnitChildrenByPath(path, limit, offset)
+	return service.GetOrganizationUnitChildrenByPath(context.Background(), path, limit, offset)
 }
 
 func invokeUsersByPath(
@@ -535,7 +536,7 @@ func (suite *OrganizationUnitServiceTestSuite) TestOUService_GetOrganizationUnit
 			tc.setup(store)
 
 			service := suite.newService(store)
-			result, err := service.GetOrganizationUnit("ou-1")
+			result, err := service.GetOrganizationUnit(context.TODO(), "ou-1")
 
 			if tc.wantErr != nil {
 				suite.Require().NotNil(err)
@@ -601,7 +602,7 @@ func (suite *OrganizationUnitServiceTestSuite) TestOUService_GetOrganizationUnit
 			}
 
 			service := suite.newService(store)
-			result, err := service.GetOrganizationUnitByPath(tc.path)
+			result, err := service.GetOrganizationUnitByPath(context.Background(), tc.path)
 
 			if tc.wantErr != nil {
 				suite.Require().NotNil(err)
@@ -1426,7 +1427,7 @@ func (suite *OrganizationUnitServiceTestSuite) TestOUService_GetOrganizationUnit
 			}
 
 			service := suite.newService(store)
-			resp, err := service.GetOrganizationUnitChildren("ou-1", tc.limit, tc.offset)
+			resp, err := service.GetOrganizationUnitChildren(context.Background(), "ou-1", tc.limit, tc.offset)
 
 			if tc.wantErr != nil {
 				suite.Require().NotNil(err)

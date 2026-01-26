@@ -208,7 +208,7 @@ func (h *messageNotificationSenderHandler) HandleOTPSendRequest(w http.ResponseW
 	}
 
 	otpDTO := common.SendOTPDTO(*request)
-	resultDTO, svcErr := h.otpService.SendOTP(otpDTO)
+	resultDTO, svcErr := h.otpService.SendOTP(r.Context(), otpDTO)
 	if svcErr != nil {
 		h.handleError(w, svcErr, "")
 		return
@@ -231,7 +231,7 @@ func (h *messageNotificationSenderHandler) HandleOTPVerifyRequest(w http.Respons
 	}
 
 	verifyDTO := common.VerifyOTPDTO(*request)
-	resultDTO, svcErr := h.otpService.VerifyOTP(verifyDTO)
+	resultDTO, svcErr := h.otpService.VerifyOTP(r.Context(), verifyDTO)
 	if svcErr != nil {
 		h.handleError(w, svcErr, "")
 		return

@@ -19,6 +19,7 @@
 package tokenservice
 
 import (
+	"context"
 	"fmt"
 	"time"
 
@@ -30,8 +31,9 @@ import (
 
 // TokenValidatorInterface defines the interface for validating tokens.
 type TokenValidatorInterface interface {
-	ValidateRefreshToken(token string, clientID string) (*RefreshTokenClaims, error)
-	ValidateSubjectToken(token string, oauthApp *appmodel.OAuthAppConfigProcessedDTO) (*SubjectTokenClaims, error)
+	ValidateRefreshToken(ctx context.Context, token string, clientID string) (*RefreshTokenClaims, error)
+	ValidateSubjectToken(ctx context.Context, token string,
+		oauthApp *appmodel.OAuthAppConfigProcessedDTO) (*SubjectTokenClaims, error)
 }
 
 // TokenValidator implements TokenValidatorInterface.
@@ -47,8 +49,9 @@ func newTokenValidator(jwtService jwt.JWTServiceInterface) TokenValidatorInterfa
 }
 
 // ValidateRefreshToken validates a refresh token and extracts the claims.
-func (tv *tokenValidator) ValidateRefreshToken(token string, clientID string) (*RefreshTokenClaims, error) {
-	if err := tv.jwtService.VerifyJWT(token, "", ""); err != nil {
+func (tv *tokenValidator) ValidateRefreshToken(ctx context.Context, token string,
+	clientID string) (*RefreshTokenClaims, error) {
+	if err := tv.jwtService.VerifyJWT(ctx, token, "", ""); err != nil {
 		return nil, fmt.Errorf("invalid refresh token: %v", err)
 	}
 
@@ -96,6 +99,7 @@ func (tv *tokenValidator) ValidateRefreshToken(token string, clientID string) (*
 
 // ValidateSubjectToken validates a subject token for token exchange.
 func (tv *tokenValidator) ValidateSubjectToken(
+	ctx context.Context,
 	token string,
 	oauthApp *appmodel.OAuthAppConfigProcessedDTO,
 ) (*SubjectTokenClaims, error) {
@@ -113,7 +117,7 @@ func (tv *tokenValidator) ValidateSubjectToken(
 		return nil, err
 	}
 
-	if err := tv.verifyTokenSignatureByIssuer(token, iss, oauthApp); err != nil {
+	if err := tv.verifyTokenSignatureByIssuer(ctx, token, iss, oauthApp); err != nil {
 		return nil, fmt.Errorf("invalid subject token signature: %w", err)
 	}
 
@@ -173,13 +177,14 @@ func (tv *tokenValidator) ValidateSubjectToken(
 
 // verifyTokenSignatureByIssuer verifies JWT signature using issuer-specific verification method.
 func (tv *tokenValidator) verifyTokenSignatureByIssuer(
+	ctx context.Context,
 	token string,
 	issuer string,
 	oauthApp *appmodel.OAuthAppConfigProcessedDTO,
 ) error {
 	issuers := getValidIssuers(oauthApp)
 	if issuers[issuer] {
-		svcErr := tv.jwtService.VerifyJWTSignature(token)
+		svcErr := tv.jwtService.VerifyJWTSignature(ctx, token)
 		if svcErr != nil {
 			return fmt.Errorf("failed to verify token signature: %v", svcErr)
 		}

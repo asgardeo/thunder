@@ -71,9 +71,10 @@ func (s *SecurityContextTestSuite) TestNewSecurityContext() {
 }
 
 func (s *SecurityContextTestSuite) TestWithSecurityContext_NilContext() {
-	authCtx := newSecurityContext("user123", "ou456", "app789", "token", map[string]interface{}{
-		"sub": "user123",
-	})
+	authCtx := newSecurityContext("user123", "ou456", "app789", "token",
+		map[string]interface{}{
+			"sub": "user123",
+		})
 
 	ctx := withSecurityContext(nil, authCtx) //nolint:staticcheck // Testing nil context handling
 
@@ -108,7 +109,8 @@ func (s *SecurityContextTestSuite) TestGetUserID() {
 		{
 			name: "Valid security context",
 			setup: func() context.Context {
-				authCtx := newSecurityContext("user123", "ou456", "app789", "token", nil)
+				authCtx := newSecurityContext("user123", "ou456", "app789", "token",
+					nil)
 				return withSecurityContext(context.Background(), authCtx)
 			},
 			expected: "user123",
@@ -164,7 +166,8 @@ func (s *SecurityContextTestSuite) testContextGetter(fieldName, expectedValue st
 		{
 			name: "Valid security context",
 			setup: func() context.Context {
-				authCtx := newSecurityContext("user123", "ou456", "app789", "token", nil)
+				authCtx := newSecurityContext("user123", "ou456", "app789", "token",
+					nil)
 				return withSecurityContext(context.Background(), authCtx)
 			},
 			expected: expectedValue,
@@ -383,7 +386,8 @@ func (s *SecurityContextTestSuite) TestGetSecurityContext() {
 	})
 
 	s.T().Run("Context with wrong type", func(t *testing.T) {
-		ctx := context.WithValue(context.Background(), securityContextKey, "not_auth_context")
+		ctx := context.WithValue(context.Background(), securityContextKey,
+			"not_auth_context")
 		retrievedCtx := getSecurityContext(ctx)
 		if retrievedCtx != nil {
 			t.Error("Expected nil security context for context with wrong type")

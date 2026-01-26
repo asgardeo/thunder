@@ -19,10 +19,12 @@
 package tokenservice
 
 import (
+	"context"
 	"encoding/json"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/suite"
 
 	appmodel "github.com/asgardeo/thunder/internal/application/model"
@@ -631,13 +633,13 @@ func (suite *UtilsTestSuite) TestFetchUserAttributesAndGroups_UnmarshalError() {
 	mockUserService := usermock.NewUserServiceInterfaceMock(suite.T())
 
 	// Mock GetUser to return user with invalid JSON in attributes
-	mockUserService.On("GetUser", "test-user").Return(&user.User{
+	mockUserService.On("GetUser", mock.Anything, "test-user").Return(&user.User{
 		ID:         "test-user",
 		Attributes: json.RawMessage(`{invalid json}`), // Invalid JSON
 		Type:       "local",
 	}, nil)
 
-	_, _, err := FetchUserAttributesAndGroups(mockUserService, "test-user", false)
+	_, _, err := FetchUserAttributesAndGroups(context.Background(), mockUserService, "test-user", false)
 
 	assert.Error(suite.T(), err)
 	assert.Contains(suite.T(), err.Error(), "failed to unmarshal user attributes")
@@ -649,7 +651,7 @@ func (suite *UtilsTestSuite) TestFetchUserAttributesAndGroups_GetUserGroupsError
 	mockUserService := usermock.NewUserServiceInterfaceMock(suite.T())
 
 	// Mock GetUser to return valid user
-	mockUserService.On("GetUser", "test-user").Return(&user.User{
+	mockUserService.On("GetUser", mock.Anything, "test-user").Return(&user.User{
 		ID:         "test-user",
 		Attributes: json.RawMessage(`{"email":"test@example.com"}`),
 		Type:       "local",
@@ -661,10 +663,10 @@ func (suite *UtilsTestSuite) TestFetchUserAttributesAndGroups_GetUserGroupsError
 		Code:             "INTERNAL_ERROR",
 		ErrorDescription: "failed to fetch groups",
 	}
-	mockUserService.On("GetUserGroups", "test-user", constants.DefaultGroupListLimit, 0).
+	mockUserService.On("GetUserGroups", mock.Anything, "test-user", constants.DefaultGroupListLimit, 0).
 		Return(nil, serverErr)
 
-	_, _, err := FetchUserAttributesAndGroups(mockUserService, "test-user", true)
+	_, _, err := FetchUserAttributesAndGroups(context.Background(), mockUserService, "test-user", true)
 
 	assert.Error(suite.T(), err)
 	assert.Contains(suite.T(), err.Error(), "failed to fetch user groups")
@@ -676,7 +678,7 @@ func (suite *UtilsTestSuite) TestFetchUserAttributesAndGroups_WithGroups() {
 	mockUserService := usermock.NewUserServiceInterfaceMock(suite.T())
 
 	// Mock GetUser to return valid user
-	mockUserService.On("GetUser", "test-user").Return(&user.User{
+	mockUserService.On("GetUser", mock.Anything, "test-user").Return(&user.User{
 		ID:         "test-user",
 		Attributes: json.RawMessage(`{"email":"test@example.com","username":"testuser"}`),
 		Type:       "local",
@@ -692,10 +694,10 @@ func (suite *UtilsTestSuite) TestFetchUserAttributesAndGroups_WithGroups() {
 			{ID: "group2", Name: "Users"},
 		},
 	}
-	mockUserService.On("GetUserGroups", "test-user", constants.DefaultGroupListLimit, 0).
+	mockUserService.On("GetUserGroups", mock.Anything, "test-user", constants.DefaultGroupListLimit, 0).
 		Return(mockGroups, nil)
 
-	attrs, groups, err := FetchUserAttributesAndGroups(mockUserService, "test-user", true)
+	attrs, groups, err := FetchUserAttributesAndGroups(context.Background(), mockUserService, "test-user", true)
 
 	assert.NoError(suite.T(), err)
 	assert.NotNil(suite.T(), attrs)
@@ -710,13 +712,13 @@ func (suite *UtilsTestSuite) TestFetchUserAttributesAndGroups_WithoutGroups() {
 	mockUserService := usermock.NewUserServiceInterfaceMock(suite.T())
 
 	// Mock GetUser to return valid user
-	mockUserService.On("GetUser", "test-user").Return(&user.User{
+	mockUserService.On("GetUser", mock.Anything, "test-user").Return(&user.User{
 		ID:         "test-user",
 		Attributes: json.RawMessage(`{"email":"test@example.com"}`),
 		Type:       "local",
 	}, nil)
 
-	attrs, groups, err := FetchUserAttributesAndGroups(mockUserService, "test-user", false)
+	attrs, groups, err := FetchUserAttributesAndGroups(context.Background(), mockUserService, "test-user", false)
 
 	assert.NoError(suite.T(), err)
 	assert.NotNil(suite.T(), attrs)

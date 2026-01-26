@@ -65,7 +65,8 @@ func (ah *authenticationHandler) HandleCredentialsAuthRequest(w http.ResponseWri
 		delete(authRequest, "assertion")
 	}
 
-	authResponse, svcErr := ah.authService.AuthenticateWithCredentials(authRequest, skipAssertion, assertion)
+	authResponse, svcErr := ah.authService.AuthenticateWithCredentials(r.Context(),
+		authRequest, skipAssertion, assertion)
 	if svcErr != nil {
 		ah.handleServiceError(w, svcErr)
 		return
@@ -83,7 +84,7 @@ func (ah *authenticationHandler) HandleSendSMSOTPRequest(w http.ResponseWriter, 
 		return
 	}
 
-	sessionToken, svcErr := ah.authService.SendOTP(otpRequest.SenderID, notifcommon.ChannelTypeSMS,
+	sessionToken, svcErr := ah.authService.SendOTP(r.Context(), otpRequest.SenderID, notifcommon.ChannelTypeSMS,
 		otpRequest.Recipient)
 	if svcErr != nil {
 		ah.handleServiceError(w, svcErr)
@@ -105,7 +106,7 @@ func (ah *authenticationHandler) HandleVerifySMSOTPRequest(w http.ResponseWriter
 		return
 	}
 
-	authResponse, svcErr := ah.authService.VerifyOTP(otpRequest.SessionToken, otpRequest.SkipAssertion,
+	authResponse, svcErr := ah.authService.VerifyOTP(r.Context(), otpRequest.SessionToken, otpRequest.SkipAssertion,
 		otpRequest.Assertion, otpRequest.OTP)
 	if svcErr != nil {
 		ah.handleServiceError(w, svcErr)
@@ -124,7 +125,7 @@ func (ah *authenticationHandler) HandleGoogleAuthStartRequest(w http.ResponseWri
 		return
 	}
 
-	authResponse, svcErr := ah.authService.StartIDPAuthentication(idp.IDPTypeGoogle, authRequest.IDPID)
+	authResponse, svcErr := ah.authService.StartIDPAuthentication(r.Context(), idp.IDPTypeGoogle, authRequest.IDPID)
 	if svcErr != nil {
 		ah.handleServiceError(w, svcErr)
 		return
@@ -142,8 +143,9 @@ func (ah *authenticationHandler) HandleGoogleAuthFinishRequest(w http.ResponseWr
 		return
 	}
 
-	authResponse, svcErr := ah.authService.FinishIDPAuthentication(idp.IDPTypeGoogle, authRequest.SessionToken,
-		authRequest.SkipAssertion, authRequest.Assertion, authRequest.Code)
+	authResponse, svcErr := ah.authService.FinishIDPAuthentication(r.Context(),
+		idp.IDPTypeGoogle, authRequest.SessionToken, authRequest.SkipAssertion,
+		authRequest.Assertion, authRequest.Code)
 	if svcErr != nil {
 		ah.handleServiceError(w, svcErr)
 		return
@@ -161,7 +163,7 @@ func (ah *authenticationHandler) HandleGithubAuthStartRequest(w http.ResponseWri
 		return
 	}
 
-	authResponse, svcErr := ah.authService.StartIDPAuthentication(idp.IDPTypeGitHub, authRequest.IDPID)
+	authResponse, svcErr := ah.authService.StartIDPAuthentication(r.Context(), idp.IDPTypeGitHub, authRequest.IDPID)
 	if svcErr != nil {
 		ah.handleServiceError(w, svcErr)
 		return
@@ -179,8 +181,9 @@ func (ah *authenticationHandler) HandleGithubAuthFinishRequest(w http.ResponseWr
 		return
 	}
 
-	authResponse, svcErr := ah.authService.FinishIDPAuthentication(idp.IDPTypeGitHub, authRequest.SessionToken,
-		authRequest.SkipAssertion, authRequest.Assertion, authRequest.Code)
+	authResponse, svcErr := ah.authService.FinishIDPAuthentication(r.Context(),
+		idp.IDPTypeGitHub, authRequest.SessionToken, authRequest.SkipAssertion,
+		authRequest.Assertion, authRequest.Code)
 	if svcErr != nil {
 		ah.handleServiceError(w, svcErr)
 		return
@@ -198,7 +201,7 @@ func (ah *authenticationHandler) HandleStandardOAuthStartRequest(w http.Response
 		return
 	}
 
-	authResponse, svcErr := ah.authService.StartIDPAuthentication(idp.IDPTypeOAuth, authRequest.IDPID)
+	authResponse, svcErr := ah.authService.StartIDPAuthentication(r.Context(), idp.IDPTypeOAuth, authRequest.IDPID)
 	if svcErr != nil {
 		ah.handleServiceError(w, svcErr)
 		return
@@ -216,8 +219,9 @@ func (ah *authenticationHandler) HandleStandardOAuthFinishRequest(w http.Respons
 		return
 	}
 
-	authResponse, svcErr := ah.authService.FinishIDPAuthentication(idp.IDPTypeOAuth, authRequest.SessionToken,
-		authRequest.SkipAssertion, authRequest.Assertion, authRequest.Code)
+	authResponse, svcErr := ah.authService.FinishIDPAuthentication(r.Context(),
+		idp.IDPTypeOAuth, authRequest.SessionToken, authRequest.SkipAssertion,
+		authRequest.Assertion, authRequest.Code)
 	if svcErr != nil {
 		ah.handleServiceError(w, svcErr)
 		return
@@ -236,6 +240,7 @@ func (ah *authenticationHandler) HandlePasskeyRegisterStartRequest(w http.Respon
 	}
 
 	regResponse, svcErr := ah.authService.StartPasskeyRegistration(
+		r.Context(),
 		regRequest.UserID,
 		regRequest.RelyingPartyID,
 		regRequest.RelyingPartyName,
@@ -259,6 +264,7 @@ func (ah *authenticationHandler) HandlePasskeyRegisterFinishRequest(w http.Respo
 	}
 
 	regResponse, svcErr := ah.authService.FinishPasskeyRegistration(
+		r.Context(),
 		regRequest.PublicKeyCredential,
 		regRequest.SessionToken,
 		regRequest.CredentialName,
@@ -280,6 +286,7 @@ func (ah *authenticationHandler) HandlePasskeyStartRequest(w http.ResponseWriter
 	}
 
 	authResponse, svcErr := ah.authService.StartPasskeyAuthentication(
+		r.Context(),
 		authRequest.UserID,
 		authRequest.RelyingPartyID,
 	)
@@ -300,6 +307,7 @@ func (ah *authenticationHandler) HandlePasskeyFinishRequest(w http.ResponseWrite
 	}
 
 	authResponse, svcErr := ah.authService.FinishPasskeyAuthentication(
+		r.Context(),
 		authRequest.PublicKeyCredential.ID,
 		authRequest.PublicKeyCredential.Type,
 		authRequest.PublicKeyCredential.Response,

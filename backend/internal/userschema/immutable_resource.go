@@ -19,6 +19,7 @@
 package userschema
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"strings"
@@ -194,7 +195,8 @@ func validateUserSchema(schemaDTO *UserSchema, ouService oupkg.OrganizationUnitS
 	}
 
 	// Validate organization unit exists
-	_, err := ouService.GetOrganizationUnit(schemaDTO.OrganizationUnitID)
+	// TODO: pass context from the caller
+	_, err := ouService.GetOrganizationUnit(context.TODO(), schemaDTO.OrganizationUnitID)
 	if err != nil {
 		return fmt.Errorf("organization unit '%s' not found for user schema '%s'",
 			schemaDTO.OrganizationUnitID, schemaDTO.Name)

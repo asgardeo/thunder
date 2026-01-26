@@ -24,6 +24,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/suite"
 
 	"github.com/asgardeo/thunder/internal/oauth/oauth2/constants"
@@ -32,7 +33,7 @@ import (
 
 type UserInfoHandlerTestSuite struct {
 	suite.Suite
-	mockService *userInfoServiceInterfaceMock
+	mockService *UserInfoServiceInterfaceMock
 	handler     *userInfoHandler
 }
 
@@ -41,7 +42,7 @@ func TestUserInfoHandlerTestSuite(t *testing.T) {
 }
 
 func (s *UserInfoHandlerTestSuite) SetupTest() {
-	s.mockService = new(userInfoServiceInterfaceMock)
+	s.mockService = new(UserInfoServiceInterfaceMock)
 	s.handler = newUserInfoHandler(s.mockService)
 }
 
@@ -89,7 +90,7 @@ func (s *UserInfoHandlerTestSuite) TestHandleUserInfo_InvalidToken() {
 	req.Header.Set("Authorization", "Bearer invalid-token")
 	rr := httptest.NewRecorder()
 
-	s.mockService.On("GetUserInfo", "invalid-token").Return(nil, &errorInvalidAccessToken)
+	s.mockService.On("GetUserInfo", mock.Anything, "invalid-token").Return(nil, &errorInvalidAccessToken)
 
 	s.handler.HandleUserInfo(rr, req)
 
@@ -105,7 +106,7 @@ func (s *UserInfoHandlerTestSuite) TestHandleUserInfo_MissingSubClaim() {
 	req.Header.Set("Authorization", "Bearer token123")
 	rr := httptest.NewRecorder()
 
-	s.mockService.On("GetUserInfo", "token123").Return(nil, &errorMissingSubClaim)
+	s.mockService.On("GetUserInfo", mock.Anything, "token123").Return(nil, &errorMissingSubClaim)
 
 	s.handler.HandleUserInfo(rr, req)
 
@@ -123,7 +124,7 @@ func (s *UserInfoHandlerTestSuite) TestHandleUserInfo_ServerError() {
 
 	expectedError := serviceerror.CustomServiceError(serviceerror.InternalServerError,
 		"An error occurred while fetching user attributes or groups")
-	s.mockService.On("GetUserInfo", "token123").Return(nil, expectedError)
+	s.mockService.On("GetUserInfo", mock.Anything, "token123").Return(nil, expectedError)
 
 	s.handler.HandleUserInfo(rr, req)
 
@@ -145,7 +146,7 @@ func (s *UserInfoHandlerTestSuite) TestHandleUserInfo_Success() {
 		"email": "john@example.com",
 	}
 
-	s.mockService.On("GetUserInfo", "valid-token").Return(userInfo, nil)
+	s.mockService.On("GetUserInfo", mock.Anything, "valid-token").Return(userInfo, nil)
 
 	s.handler.HandleUserInfo(rr, req)
 
@@ -169,7 +170,7 @@ func (s *UserInfoHandlerTestSuite) TestHandleUserInfo_Success_POST() {
 		"sub": "user123",
 	}
 
-	s.mockService.On("GetUserInfo", "valid-token").Return(userInfo, nil)
+	s.mockService.On("GetUserInfo", mock.Anything, "valid-token").Return(userInfo, nil)
 
 	s.handler.HandleUserInfo(rr, req)
 
@@ -190,7 +191,7 @@ func (s *UserInfoHandlerTestSuite) TestHandleUserInfo_Success_WithGroups() {
 		"groups": []interface{}{"admin", "users"},
 	}
 
-	s.mockService.On("GetUserInfo", "valid-token").Return(userInfo, nil)
+	s.mockService.On("GetUserInfo", mock.Anything, "valid-token").Return(userInfo, nil)
 
 	s.handler.HandleUserInfo(rr, req)
 
@@ -211,7 +212,7 @@ func (s *UserInfoHandlerTestSuite) TestHandleUserInfo_CaseInsensitiveBearer() {
 		"sub": "user123",
 	}
 
-	s.mockService.On("GetUserInfo", "valid-token").Return(userInfo, nil)
+	s.mockService.On("GetUserInfo", mock.Anything, "valid-token").Return(userInfo, nil)
 
 	s.handler.HandleUserInfo(rr, req)
 
@@ -229,7 +230,7 @@ func (s *UserInfoHandlerTestSuite) TestHandleUserInfo_BEARERUpperCase() {
 		"sub": "user123",
 	}
 
-	s.mockService.On("GetUserInfo", "valid-token").Return(userInfo, nil)
+	s.mockService.On("GetUserInfo", mock.Anything, "valid-token").Return(userInfo, nil)
 
 	s.handler.HandleUserInfo(rr, req)
 
@@ -247,7 +248,7 @@ func (s *UserInfoHandlerTestSuite) TestHandleUserInfo_EmptyResponse() {
 		"sub": "user123",
 	}
 
-	s.mockService.On("GetUserInfo", "valid-token").Return(userInfo, nil)
+	s.mockService.On("GetUserInfo", mock.Anything, "valid-token").Return(userInfo, nil)
 
 	s.handler.HandleUserInfo(rr, req)
 
@@ -282,7 +283,7 @@ func (s *UserInfoHandlerTestSuite) TestHandleUserInfo_EncodingError() {
 		"func": func() {}, // Function cannot be JSON encoded and will cause an error
 	}
 
-	s.mockService.On("GetUserInfo", "valid-token").Return(userInfo, nil)
+	s.mockService.On("GetUserInfo", mock.Anything, "valid-token").Return(userInfo, nil)
 
 	s.handler.HandleUserInfo(rr, req)
 
@@ -305,7 +306,7 @@ func (s *UserInfoHandlerTestSuite) TestWriteServiceErrorResponse_DefaultCase() {
 		Code:             "unknown_error",
 		ErrorDescription: "An unknown error occurred",
 	}
-	s.mockService.On("GetUserInfo", "token123").Return(nil, unknownError)
+	s.mockService.On("GetUserInfo", mock.Anything, "token123").Return(nil, unknownError)
 
 	s.handler.HandleUserInfo(rr, req)
 

@@ -19,6 +19,7 @@
 package executor
 
 import (
+	"context"
 	"slices"
 
 	"github.com/asgardeo/thunder/internal/flow/common"
@@ -34,7 +35,7 @@ const (
 
 // identifyingExecutorInterface defines the interface for identifying executors.
 type identifyingExecutorInterface interface {
-	IdentifyUser(filters map[string]interface{},
+	IdentifyUser(ctx context.Context, filters map[string]interface{},
 		execResp *common.ExecutorResponse) (*string, error)
 }
 
@@ -71,7 +72,7 @@ func newIdentifyingExecutor(
 }
 
 // IdentifyUser identifies a user based on the provided attributes.
-func (i *identifyingExecutor) IdentifyUser(filters map[string]interface{},
+func (i *identifyingExecutor) IdentifyUser(ctx context.Context, filters map[string]interface{},
 	execResp *common.ExecutorResponse) (*string, error) {
 	logger := i.logger
 	logger.Debug("Identifying user with filters")
@@ -84,7 +85,7 @@ func (i *identifyingExecutor) IdentifyUser(filters map[string]interface{},
 		}
 	}
 
-	userID, svcErr := i.userService.IdentifyUser(searchableFilter)
+	userID, svcErr := i.userService.IdentifyUser(ctx, searchableFilter)
 	if svcErr != nil {
 		if svcErr.Code == user.ErrorUserNotFound.Code {
 			logger.Debug("User not found for the provided filters")

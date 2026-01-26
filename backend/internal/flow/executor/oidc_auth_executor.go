@@ -42,9 +42,11 @@ const (
 var idTokenNonUserAttributes = []string{"aud", "exp", "iat", "iss", "at_hash", "azp", "nonce", "sub"}
 
 // oidcAuthExecutorInterface defines the interface for OIDC authentication executors.
+// TODO: Revisit the usage of NodeContext.
 type oidcAuthExecutorInterface interface {
 	oAuthExecutorInterface
-	GetIDTokenClaims(execResp *common.ExecutorResponse, idToken string) (map[string]interface{}, error)
+	GetIDTokenClaims(ctx *core.NodeContext, execResp *common.ExecutorResponse,
+		idToken string) (map[string]interface{}, error)
 }
 
 // oidcAuthExecutor implements the OIDCAuthExecutorInterface for handling generic OIDC authentication flows.
@@ -138,7 +140,7 @@ func (o *oidcAuthExecutor) ProcessAuthFlowResponse(ctx *core.NodeContext,
 		return nil
 	}
 
-	idTokenClaims, err := o.GetIDTokenClaims(execResp, tokenResp.IDToken)
+	idTokenClaims, err := o.GetIDTokenClaims(ctx, execResp, tokenResp.IDToken)
 	if err != nil {
 		return err
 	}
@@ -169,7 +171,7 @@ func (o *oidcAuthExecutor) ProcessAuthFlowResponse(ctx *core.NodeContext,
 		return nil
 	}
 
-	internalUser, err := o.GetInternalUser(parsedSub, execResp)
+	internalUser, err := o.GetInternalUser(ctx, parsedSub, execResp)
 	if err != nil {
 		return err
 	}
@@ -204,12 +206,12 @@ func (o *oidcAuthExecutor) ProcessAuthFlowResponse(ctx *core.NodeContext,
 }
 
 // GetIDTokenClaims extracts the ID token claims from the provided ID token.
-func (o *oidcAuthExecutor) GetIDTokenClaims(execResp *common.ExecutorResponse,
+func (o *oidcAuthExecutor) GetIDTokenClaims(ctx *core.NodeContext, execResp *common.ExecutorResponse,
 	idToken string) (map[string]interface{}, error) {
 	logger := o.logger
 	logger.Debug("Extracting claims from the ID token")
 
-	claims, svcErr := o.authService.GetIDTokenClaims(idToken)
+	claims, svcErr := o.authService.GetIDTokenClaims(ctx.Context, idToken)
 	if svcErr != nil {
 		if svcErr.Type == serviceerror.ClientErrorType {
 			execResp.Status = common.ExecFailure
@@ -248,7 +250,7 @@ func (o *oidcAuthExecutor) getContextUserAttributes(ctx *core.NodeContext, execR
 		return nil, err
 	}
 
-	oauthConfigs, svcErr := o.authService.GetOAuthClientConfig(idpID)
+	oauthConfigs, svcErr := o.authService.GetOAuthClientConfig(ctx.Context, idpID)
 	if svcErr != nil {
 		if svcErr.Type == serviceerror.ClientErrorType {
 			execResp.Status = common.ExecFailure

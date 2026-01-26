@@ -5,6 +5,8 @@
 package oidcmock
 
 import (
+	"context"
+
 	"github.com/asgardeo/thunder/internal/authn/oauth"
 	"github.com/asgardeo/thunder/internal/system/error/serviceerror"
 	"github.com/asgardeo/thunder/internal/user"
@@ -39,8 +41,8 @@ func (_m *OIDCAuthnServiceInterfaceMock) EXPECT() *OIDCAuthnServiceInterfaceMock
 }
 
 // BuildAuthorizeURL provides a mock function for the type OIDCAuthnServiceInterfaceMock
-func (_mock *OIDCAuthnServiceInterfaceMock) BuildAuthorizeURL(idpID string) (string, *serviceerror.ServiceError) {
-	ret := _mock.Called(idpID)
+func (_mock *OIDCAuthnServiceInterfaceMock) BuildAuthorizeURL(ctx context.Context, idpID string) (string, *serviceerror.ServiceError) {
+	ret := _mock.Called(ctx, idpID)
 
 	if len(ret) == 0 {
 		panic("no return value specified for BuildAuthorizeURL")
@@ -48,16 +50,16 @@ func (_mock *OIDCAuthnServiceInterfaceMock) BuildAuthorizeURL(idpID string) (str
 
 	var r0 string
 	var r1 *serviceerror.ServiceError
-	if returnFunc, ok := ret.Get(0).(func(string) (string, *serviceerror.ServiceError)); ok {
-		return returnFunc(idpID)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string) (string, *serviceerror.ServiceError)); ok {
+		return returnFunc(ctx, idpID)
 	}
-	if returnFunc, ok := ret.Get(0).(func(string) string); ok {
-		r0 = returnFunc(idpID)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string) string); ok {
+		r0 = returnFunc(ctx, idpID)
 	} else {
 		r0 = ret.Get(0).(string)
 	}
-	if returnFunc, ok := ret.Get(1).(func(string) *serviceerror.ServiceError); ok {
-		r1 = returnFunc(idpID)
+	if returnFunc, ok := ret.Get(1).(func(context.Context, string) *serviceerror.ServiceError); ok {
+		r1 = returnFunc(ctx, idpID)
 	} else {
 		if ret.Get(1) != nil {
 			r1 = ret.Get(1).(*serviceerror.ServiceError)
@@ -72,19 +74,25 @@ type OIDCAuthnServiceInterfaceMock_BuildAuthorizeURL_Call struct {
 }
 
 // BuildAuthorizeURL is a helper method to define mock.On call
+//   - ctx context.Context
 //   - idpID string
-func (_e *OIDCAuthnServiceInterfaceMock_Expecter) BuildAuthorizeURL(idpID interface{}) *OIDCAuthnServiceInterfaceMock_BuildAuthorizeURL_Call {
-	return &OIDCAuthnServiceInterfaceMock_BuildAuthorizeURL_Call{Call: _e.mock.On("BuildAuthorizeURL", idpID)}
+func (_e *OIDCAuthnServiceInterfaceMock_Expecter) BuildAuthorizeURL(ctx interface{}, idpID interface{}) *OIDCAuthnServiceInterfaceMock_BuildAuthorizeURL_Call {
+	return &OIDCAuthnServiceInterfaceMock_BuildAuthorizeURL_Call{Call: _e.mock.On("BuildAuthorizeURL", ctx, idpID)}
 }
 
-func (_c *OIDCAuthnServiceInterfaceMock_BuildAuthorizeURL_Call) Run(run func(idpID string)) *OIDCAuthnServiceInterfaceMock_BuildAuthorizeURL_Call {
+func (_c *OIDCAuthnServiceInterfaceMock_BuildAuthorizeURL_Call) Run(run func(ctx context.Context, idpID string)) *OIDCAuthnServiceInterfaceMock_BuildAuthorizeURL_Call {
 	_c.Call.Run(func(args mock.Arguments) {
-		var arg0 string
+		var arg0 context.Context
 		if args[0] != nil {
-			arg0 = args[0].(string)
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 string
+		if args[1] != nil {
+			arg1 = args[1].(string)
 		}
 		run(
 			arg0,
+			arg1,
 		)
 	})
 	return _c
@@ -95,14 +103,14 @@ func (_c *OIDCAuthnServiceInterfaceMock_BuildAuthorizeURL_Call) Return(s string,
 	return _c
 }
 
-func (_c *OIDCAuthnServiceInterfaceMock_BuildAuthorizeURL_Call) RunAndReturn(run func(idpID string) (string, *serviceerror.ServiceError)) *OIDCAuthnServiceInterfaceMock_BuildAuthorizeURL_Call {
+func (_c *OIDCAuthnServiceInterfaceMock_BuildAuthorizeURL_Call) RunAndReturn(run func(ctx context.Context, idpID string) (string, *serviceerror.ServiceError)) *OIDCAuthnServiceInterfaceMock_BuildAuthorizeURL_Call {
 	_c.Call.Return(run)
 	return _c
 }
 
 // ExchangeCodeForToken provides a mock function for the type OIDCAuthnServiceInterfaceMock
-func (_mock *OIDCAuthnServiceInterfaceMock) ExchangeCodeForToken(idpID string, code string, validateResponse bool) (*oauth.TokenResponse, *serviceerror.ServiceError) {
-	ret := _mock.Called(idpID, code, validateResponse)
+func (_mock *OIDCAuthnServiceInterfaceMock) ExchangeCodeForToken(ctx context.Context, idpID string, code string, validateResponse bool) (*oauth.TokenResponse, *serviceerror.ServiceError) {
+	ret := _mock.Called(ctx, idpID, code, validateResponse)
 
 	if len(ret) == 0 {
 		panic("no return value specified for ExchangeCodeForToken")
@@ -110,18 +118,18 @@ func (_mock *OIDCAuthnServiceInterfaceMock) ExchangeCodeForToken(idpID string, c
 
 	var r0 *oauth.TokenResponse
 	var r1 *serviceerror.ServiceError
-	if returnFunc, ok := ret.Get(0).(func(string, string, bool) (*oauth.TokenResponse, *serviceerror.ServiceError)); ok {
-		return returnFunc(idpID, code, validateResponse)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string, string, bool) (*oauth.TokenResponse, *serviceerror.ServiceError)); ok {
+		return returnFunc(ctx, idpID, code, validateResponse)
 	}
-	if returnFunc, ok := ret.Get(0).(func(string, string, bool) *oauth.TokenResponse); ok {
-		r0 = returnFunc(idpID, code, validateResponse)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string, string, bool) *oauth.TokenResponse); ok {
+		r0 = returnFunc(ctx, idpID, code, validateResponse)
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).(*oauth.TokenResponse)
 		}
 	}
-	if returnFunc, ok := ret.Get(1).(func(string, string, bool) *serviceerror.ServiceError); ok {
-		r1 = returnFunc(idpID, code, validateResponse)
+	if returnFunc, ok := ret.Get(1).(func(context.Context, string, string, bool) *serviceerror.ServiceError); ok {
+		r1 = returnFunc(ctx, idpID, code, validateResponse)
 	} else {
 		if ret.Get(1) != nil {
 			r1 = ret.Get(1).(*serviceerror.ServiceError)
@@ -136,31 +144,37 @@ type OIDCAuthnServiceInterfaceMock_ExchangeCodeForToken_Call struct {
 }
 
 // ExchangeCodeForToken is a helper method to define mock.On call
+//   - ctx context.Context
 //   - idpID string
 //   - code string
 //   - validateResponse bool
-func (_e *OIDCAuthnServiceInterfaceMock_Expecter) ExchangeCodeForToken(idpID interface{}, code interface{}, validateResponse interface{}) *OIDCAuthnServiceInterfaceMock_ExchangeCodeForToken_Call {
-	return &OIDCAuthnServiceInterfaceMock_ExchangeCodeForToken_Call{Call: _e.mock.On("ExchangeCodeForToken", idpID, code, validateResponse)}
+func (_e *OIDCAuthnServiceInterfaceMock_Expecter) ExchangeCodeForToken(ctx interface{}, idpID interface{}, code interface{}, validateResponse interface{}) *OIDCAuthnServiceInterfaceMock_ExchangeCodeForToken_Call {
+	return &OIDCAuthnServiceInterfaceMock_ExchangeCodeForToken_Call{Call: _e.mock.On("ExchangeCodeForToken", ctx, idpID, code, validateResponse)}
 }
 
-func (_c *OIDCAuthnServiceInterfaceMock_ExchangeCodeForToken_Call) Run(run func(idpID string, code string, validateResponse bool)) *OIDCAuthnServiceInterfaceMock_ExchangeCodeForToken_Call {
+func (_c *OIDCAuthnServiceInterfaceMock_ExchangeCodeForToken_Call) Run(run func(ctx context.Context, idpID string, code string, validateResponse bool)) *OIDCAuthnServiceInterfaceMock_ExchangeCodeForToken_Call {
 	_c.Call.Run(func(args mock.Arguments) {
-		var arg0 string
+		var arg0 context.Context
 		if args[0] != nil {
-			arg0 = args[0].(string)
+			arg0 = args[0].(context.Context)
 		}
 		var arg1 string
 		if args[1] != nil {
 			arg1 = args[1].(string)
 		}
-		var arg2 bool
+		var arg2 string
 		if args[2] != nil {
-			arg2 = args[2].(bool)
+			arg2 = args[2].(string)
+		}
+		var arg3 bool
+		if args[3] != nil {
+			arg3 = args[3].(bool)
 		}
 		run(
 			arg0,
 			arg1,
 			arg2,
+			arg3,
 		)
 	})
 	return _c
@@ -171,14 +185,14 @@ func (_c *OIDCAuthnServiceInterfaceMock_ExchangeCodeForToken_Call) Return(tokenR
 	return _c
 }
 
-func (_c *OIDCAuthnServiceInterfaceMock_ExchangeCodeForToken_Call) RunAndReturn(run func(idpID string, code string, validateResponse bool) (*oauth.TokenResponse, *serviceerror.ServiceError)) *OIDCAuthnServiceInterfaceMock_ExchangeCodeForToken_Call {
+func (_c *OIDCAuthnServiceInterfaceMock_ExchangeCodeForToken_Call) RunAndReturn(run func(ctx context.Context, idpID string, code string, validateResponse bool) (*oauth.TokenResponse, *serviceerror.ServiceError)) *OIDCAuthnServiceInterfaceMock_ExchangeCodeForToken_Call {
 	_c.Call.Return(run)
 	return _c
 }
 
 // FetchUserInfo provides a mock function for the type OIDCAuthnServiceInterfaceMock
-func (_mock *OIDCAuthnServiceInterfaceMock) FetchUserInfo(idpID string, accessToken string) (map[string]interface{}, *serviceerror.ServiceError) {
-	ret := _mock.Called(idpID, accessToken)
+func (_mock *OIDCAuthnServiceInterfaceMock) FetchUserInfo(ctx context.Context, idpID string, accessToken string) (map[string]interface{}, *serviceerror.ServiceError) {
+	ret := _mock.Called(ctx, idpID, accessToken)
 
 	if len(ret) == 0 {
 		panic("no return value specified for FetchUserInfo")
@@ -186,18 +200,18 @@ func (_mock *OIDCAuthnServiceInterfaceMock) FetchUserInfo(idpID string, accessTo
 
 	var r0 map[string]interface{}
 	var r1 *serviceerror.ServiceError
-	if returnFunc, ok := ret.Get(0).(func(string, string) (map[string]interface{}, *serviceerror.ServiceError)); ok {
-		return returnFunc(idpID, accessToken)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string, string) (map[string]interface{}, *serviceerror.ServiceError)); ok {
+		return returnFunc(ctx, idpID, accessToken)
 	}
-	if returnFunc, ok := ret.Get(0).(func(string, string) map[string]interface{}); ok {
-		r0 = returnFunc(idpID, accessToken)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string, string) map[string]interface{}); ok {
+		r0 = returnFunc(ctx, idpID, accessToken)
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).(map[string]interface{})
 		}
 	}
-	if returnFunc, ok := ret.Get(1).(func(string, string) *serviceerror.ServiceError); ok {
-		r1 = returnFunc(idpID, accessToken)
+	if returnFunc, ok := ret.Get(1).(func(context.Context, string, string) *serviceerror.ServiceError); ok {
+		r1 = returnFunc(ctx, idpID, accessToken)
 	} else {
 		if ret.Get(1) != nil {
 			r1 = ret.Get(1).(*serviceerror.ServiceError)
@@ -212,25 +226,31 @@ type OIDCAuthnServiceInterfaceMock_FetchUserInfo_Call struct {
 }
 
 // FetchUserInfo is a helper method to define mock.On call
+//   - ctx context.Context
 //   - idpID string
 //   - accessToken string
-func (_e *OIDCAuthnServiceInterfaceMock_Expecter) FetchUserInfo(idpID interface{}, accessToken interface{}) *OIDCAuthnServiceInterfaceMock_FetchUserInfo_Call {
-	return &OIDCAuthnServiceInterfaceMock_FetchUserInfo_Call{Call: _e.mock.On("FetchUserInfo", idpID, accessToken)}
+func (_e *OIDCAuthnServiceInterfaceMock_Expecter) FetchUserInfo(ctx interface{}, idpID interface{}, accessToken interface{}) *OIDCAuthnServiceInterfaceMock_FetchUserInfo_Call {
+	return &OIDCAuthnServiceInterfaceMock_FetchUserInfo_Call{Call: _e.mock.On("FetchUserInfo", ctx, idpID, accessToken)}
 }
 
-func (_c *OIDCAuthnServiceInterfaceMock_FetchUserInfo_Call) Run(run func(idpID string, accessToken string)) *OIDCAuthnServiceInterfaceMock_FetchUserInfo_Call {
+func (_c *OIDCAuthnServiceInterfaceMock_FetchUserInfo_Call) Run(run func(ctx context.Context, idpID string, accessToken string)) *OIDCAuthnServiceInterfaceMock_FetchUserInfo_Call {
 	_c.Call.Run(func(args mock.Arguments) {
-		var arg0 string
+		var arg0 context.Context
 		if args[0] != nil {
-			arg0 = args[0].(string)
+			arg0 = args[0].(context.Context)
 		}
 		var arg1 string
 		if args[1] != nil {
 			arg1 = args[1].(string)
 		}
+		var arg2 string
+		if args[2] != nil {
+			arg2 = args[2].(string)
+		}
 		run(
 			arg0,
 			arg1,
+			arg2,
 		)
 	})
 	return _c
@@ -241,14 +261,14 @@ func (_c *OIDCAuthnServiceInterfaceMock_FetchUserInfo_Call) Return(stringToIface
 	return _c
 }
 
-func (_c *OIDCAuthnServiceInterfaceMock_FetchUserInfo_Call) RunAndReturn(run func(idpID string, accessToken string) (map[string]interface{}, *serviceerror.ServiceError)) *OIDCAuthnServiceInterfaceMock_FetchUserInfo_Call {
+func (_c *OIDCAuthnServiceInterfaceMock_FetchUserInfo_Call) RunAndReturn(run func(ctx context.Context, idpID string, accessToken string) (map[string]interface{}, *serviceerror.ServiceError)) *OIDCAuthnServiceInterfaceMock_FetchUserInfo_Call {
 	_c.Call.Return(run)
 	return _c
 }
 
 // GetIDTokenClaims provides a mock function for the type OIDCAuthnServiceInterfaceMock
-func (_mock *OIDCAuthnServiceInterfaceMock) GetIDTokenClaims(idToken string) (map[string]interface{}, *serviceerror.ServiceError) {
-	ret := _mock.Called(idToken)
+func (_mock *OIDCAuthnServiceInterfaceMock) GetIDTokenClaims(ctx context.Context, idToken string) (map[string]interface{}, *serviceerror.ServiceError) {
+	ret := _mock.Called(ctx, idToken)
 
 	if len(ret) == 0 {
 		panic("no return value specified for GetIDTokenClaims")
@@ -256,18 +276,18 @@ func (_mock *OIDCAuthnServiceInterfaceMock) GetIDTokenClaims(idToken string) (ma
 
 	var r0 map[string]interface{}
 	var r1 *serviceerror.ServiceError
-	if returnFunc, ok := ret.Get(0).(func(string) (map[string]interface{}, *serviceerror.ServiceError)); ok {
-		return returnFunc(idToken)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string) (map[string]interface{}, *serviceerror.ServiceError)); ok {
+		return returnFunc(ctx, idToken)
 	}
-	if returnFunc, ok := ret.Get(0).(func(string) map[string]interface{}); ok {
-		r0 = returnFunc(idToken)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string) map[string]interface{}); ok {
+		r0 = returnFunc(ctx, idToken)
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).(map[string]interface{})
 		}
 	}
-	if returnFunc, ok := ret.Get(1).(func(string) *serviceerror.ServiceError); ok {
-		r1 = returnFunc(idToken)
+	if returnFunc, ok := ret.Get(1).(func(context.Context, string) *serviceerror.ServiceError); ok {
+		r1 = returnFunc(ctx, idToken)
 	} else {
 		if ret.Get(1) != nil {
 			r1 = ret.Get(1).(*serviceerror.ServiceError)
@@ -282,19 +302,25 @@ type OIDCAuthnServiceInterfaceMock_GetIDTokenClaims_Call struct {
 }
 
 // GetIDTokenClaims is a helper method to define mock.On call
+//   - ctx context.Context
 //   - idToken string
-func (_e *OIDCAuthnServiceInterfaceMock_Expecter) GetIDTokenClaims(idToken interface{}) *OIDCAuthnServiceInterfaceMock_GetIDTokenClaims_Call {
-	return &OIDCAuthnServiceInterfaceMock_GetIDTokenClaims_Call{Call: _e.mock.On("GetIDTokenClaims", idToken)}
+func (_e *OIDCAuthnServiceInterfaceMock_Expecter) GetIDTokenClaims(ctx interface{}, idToken interface{}) *OIDCAuthnServiceInterfaceMock_GetIDTokenClaims_Call {
+	return &OIDCAuthnServiceInterfaceMock_GetIDTokenClaims_Call{Call: _e.mock.On("GetIDTokenClaims", ctx, idToken)}
 }
 
-func (_c *OIDCAuthnServiceInterfaceMock_GetIDTokenClaims_Call) Run(run func(idToken string)) *OIDCAuthnServiceInterfaceMock_GetIDTokenClaims_Call {
+func (_c *OIDCAuthnServiceInterfaceMock_GetIDTokenClaims_Call) Run(run func(ctx context.Context, idToken string)) *OIDCAuthnServiceInterfaceMock_GetIDTokenClaims_Call {
 	_c.Call.Run(func(args mock.Arguments) {
-		var arg0 string
+		var arg0 context.Context
 		if args[0] != nil {
-			arg0 = args[0].(string)
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 string
+		if args[1] != nil {
+			arg1 = args[1].(string)
 		}
 		run(
 			arg0,
+			arg1,
 		)
 	})
 	return _c
@@ -305,14 +331,14 @@ func (_c *OIDCAuthnServiceInterfaceMock_GetIDTokenClaims_Call) Return(stringToIf
 	return _c
 }
 
-func (_c *OIDCAuthnServiceInterfaceMock_GetIDTokenClaims_Call) RunAndReturn(run func(idToken string) (map[string]interface{}, *serviceerror.ServiceError)) *OIDCAuthnServiceInterfaceMock_GetIDTokenClaims_Call {
+func (_c *OIDCAuthnServiceInterfaceMock_GetIDTokenClaims_Call) RunAndReturn(run func(ctx context.Context, idToken string) (map[string]interface{}, *serviceerror.ServiceError)) *OIDCAuthnServiceInterfaceMock_GetIDTokenClaims_Call {
 	_c.Call.Return(run)
 	return _c
 }
 
 // GetInternalUser provides a mock function for the type OIDCAuthnServiceInterfaceMock
-func (_mock *OIDCAuthnServiceInterfaceMock) GetInternalUser(sub string) (*user.User, *serviceerror.ServiceError) {
-	ret := _mock.Called(sub)
+func (_mock *OIDCAuthnServiceInterfaceMock) GetInternalUser(ctx context.Context, sub string) (*user.User, *serviceerror.ServiceError) {
+	ret := _mock.Called(ctx, sub)
 
 	if len(ret) == 0 {
 		panic("no return value specified for GetInternalUser")
@@ -320,18 +346,18 @@ func (_mock *OIDCAuthnServiceInterfaceMock) GetInternalUser(sub string) (*user.U
 
 	var r0 *user.User
 	var r1 *serviceerror.ServiceError
-	if returnFunc, ok := ret.Get(0).(func(string) (*user.User, *serviceerror.ServiceError)); ok {
-		return returnFunc(sub)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string) (*user.User, *serviceerror.ServiceError)); ok {
+		return returnFunc(ctx, sub)
 	}
-	if returnFunc, ok := ret.Get(0).(func(string) *user.User); ok {
-		r0 = returnFunc(sub)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string) *user.User); ok {
+		r0 = returnFunc(ctx, sub)
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).(*user.User)
 		}
 	}
-	if returnFunc, ok := ret.Get(1).(func(string) *serviceerror.ServiceError); ok {
-		r1 = returnFunc(sub)
+	if returnFunc, ok := ret.Get(1).(func(context.Context, string) *serviceerror.ServiceError); ok {
+		r1 = returnFunc(ctx, sub)
 	} else {
 		if ret.Get(1) != nil {
 			r1 = ret.Get(1).(*serviceerror.ServiceError)
@@ -346,19 +372,25 @@ type OIDCAuthnServiceInterfaceMock_GetInternalUser_Call struct {
 }
 
 // GetInternalUser is a helper method to define mock.On call
+//   - ctx context.Context
 //   - sub string
-func (_e *OIDCAuthnServiceInterfaceMock_Expecter) GetInternalUser(sub interface{}) *OIDCAuthnServiceInterfaceMock_GetInternalUser_Call {
-	return &OIDCAuthnServiceInterfaceMock_GetInternalUser_Call{Call: _e.mock.On("GetInternalUser", sub)}
+func (_e *OIDCAuthnServiceInterfaceMock_Expecter) GetInternalUser(ctx interface{}, sub interface{}) *OIDCAuthnServiceInterfaceMock_GetInternalUser_Call {
+	return &OIDCAuthnServiceInterfaceMock_GetInternalUser_Call{Call: _e.mock.On("GetInternalUser", ctx, sub)}
 }
 
-func (_c *OIDCAuthnServiceInterfaceMock_GetInternalUser_Call) Run(run func(sub string)) *OIDCAuthnServiceInterfaceMock_GetInternalUser_Call {
+func (_c *OIDCAuthnServiceInterfaceMock_GetInternalUser_Call) Run(run func(ctx context.Context, sub string)) *OIDCAuthnServiceInterfaceMock_GetInternalUser_Call {
 	_c.Call.Run(func(args mock.Arguments) {
-		var arg0 string
+		var arg0 context.Context
 		if args[0] != nil {
-			arg0 = args[0].(string)
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 string
+		if args[1] != nil {
+			arg1 = args[1].(string)
 		}
 		run(
 			arg0,
+			arg1,
 		)
 	})
 	return _c
@@ -369,14 +401,14 @@ func (_c *OIDCAuthnServiceInterfaceMock_GetInternalUser_Call) Return(user1 *user
 	return _c
 }
 
-func (_c *OIDCAuthnServiceInterfaceMock_GetInternalUser_Call) RunAndReturn(run func(sub string) (*user.User, *serviceerror.ServiceError)) *OIDCAuthnServiceInterfaceMock_GetInternalUser_Call {
+func (_c *OIDCAuthnServiceInterfaceMock_GetInternalUser_Call) RunAndReturn(run func(ctx context.Context, sub string) (*user.User, *serviceerror.ServiceError)) *OIDCAuthnServiceInterfaceMock_GetInternalUser_Call {
 	_c.Call.Return(run)
 	return _c
 }
 
 // GetOAuthClientConfig provides a mock function for the type OIDCAuthnServiceInterfaceMock
-func (_mock *OIDCAuthnServiceInterfaceMock) GetOAuthClientConfig(idpID string) (*oauth.OAuthClientConfig, *serviceerror.ServiceError) {
-	ret := _mock.Called(idpID)
+func (_mock *OIDCAuthnServiceInterfaceMock) GetOAuthClientConfig(ctx context.Context, idpID string) (*oauth.OAuthClientConfig, *serviceerror.ServiceError) {
+	ret := _mock.Called(ctx, idpID)
 
 	if len(ret) == 0 {
 		panic("no return value specified for GetOAuthClientConfig")
@@ -384,18 +416,18 @@ func (_mock *OIDCAuthnServiceInterfaceMock) GetOAuthClientConfig(idpID string) (
 
 	var r0 *oauth.OAuthClientConfig
 	var r1 *serviceerror.ServiceError
-	if returnFunc, ok := ret.Get(0).(func(string) (*oauth.OAuthClientConfig, *serviceerror.ServiceError)); ok {
-		return returnFunc(idpID)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string) (*oauth.OAuthClientConfig, *serviceerror.ServiceError)); ok {
+		return returnFunc(ctx, idpID)
 	}
-	if returnFunc, ok := ret.Get(0).(func(string) *oauth.OAuthClientConfig); ok {
-		r0 = returnFunc(idpID)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string) *oauth.OAuthClientConfig); ok {
+		r0 = returnFunc(ctx, idpID)
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).(*oauth.OAuthClientConfig)
 		}
 	}
-	if returnFunc, ok := ret.Get(1).(func(string) *serviceerror.ServiceError); ok {
-		r1 = returnFunc(idpID)
+	if returnFunc, ok := ret.Get(1).(func(context.Context, string) *serviceerror.ServiceError); ok {
+		r1 = returnFunc(ctx, idpID)
 	} else {
 		if ret.Get(1) != nil {
 			r1 = ret.Get(1).(*serviceerror.ServiceError)
@@ -410,19 +442,25 @@ type OIDCAuthnServiceInterfaceMock_GetOAuthClientConfig_Call struct {
 }
 
 // GetOAuthClientConfig is a helper method to define mock.On call
+//   - ctx context.Context
 //   - idpID string
-func (_e *OIDCAuthnServiceInterfaceMock_Expecter) GetOAuthClientConfig(idpID interface{}) *OIDCAuthnServiceInterfaceMock_GetOAuthClientConfig_Call {
-	return &OIDCAuthnServiceInterfaceMock_GetOAuthClientConfig_Call{Call: _e.mock.On("GetOAuthClientConfig", idpID)}
+func (_e *OIDCAuthnServiceInterfaceMock_Expecter) GetOAuthClientConfig(ctx interface{}, idpID interface{}) *OIDCAuthnServiceInterfaceMock_GetOAuthClientConfig_Call {
+	return &OIDCAuthnServiceInterfaceMock_GetOAuthClientConfig_Call{Call: _e.mock.On("GetOAuthClientConfig", ctx, idpID)}
 }
 
-func (_c *OIDCAuthnServiceInterfaceMock_GetOAuthClientConfig_Call) Run(run func(idpID string)) *OIDCAuthnServiceInterfaceMock_GetOAuthClientConfig_Call {
+func (_c *OIDCAuthnServiceInterfaceMock_GetOAuthClientConfig_Call) Run(run func(ctx context.Context, idpID string)) *OIDCAuthnServiceInterfaceMock_GetOAuthClientConfig_Call {
 	_c.Call.Run(func(args mock.Arguments) {
-		var arg0 string
+		var arg0 context.Context
 		if args[0] != nil {
-			arg0 = args[0].(string)
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 string
+		if args[1] != nil {
+			arg1 = args[1].(string)
 		}
 		run(
 			arg0,
+			arg1,
 		)
 	})
 	return _c
@@ -433,22 +471,22 @@ func (_c *OIDCAuthnServiceInterfaceMock_GetOAuthClientConfig_Call) Return(oAuthC
 	return _c
 }
 
-func (_c *OIDCAuthnServiceInterfaceMock_GetOAuthClientConfig_Call) RunAndReturn(run func(idpID string) (*oauth.OAuthClientConfig, *serviceerror.ServiceError)) *OIDCAuthnServiceInterfaceMock_GetOAuthClientConfig_Call {
+func (_c *OIDCAuthnServiceInterfaceMock_GetOAuthClientConfig_Call) RunAndReturn(run func(ctx context.Context, idpID string) (*oauth.OAuthClientConfig, *serviceerror.ServiceError)) *OIDCAuthnServiceInterfaceMock_GetOAuthClientConfig_Call {
 	_c.Call.Return(run)
 	return _c
 }
 
 // ValidateIDToken provides a mock function for the type OIDCAuthnServiceInterfaceMock
-func (_mock *OIDCAuthnServiceInterfaceMock) ValidateIDToken(idpID string, idToken string) *serviceerror.ServiceError {
-	ret := _mock.Called(idpID, idToken)
+func (_mock *OIDCAuthnServiceInterfaceMock) ValidateIDToken(ctx context.Context, idpID string, idToken string) *serviceerror.ServiceError {
+	ret := _mock.Called(ctx, idpID, idToken)
 
 	if len(ret) == 0 {
 		panic("no return value specified for ValidateIDToken")
 	}
 
 	var r0 *serviceerror.ServiceError
-	if returnFunc, ok := ret.Get(0).(func(string, string) *serviceerror.ServiceError); ok {
-		r0 = returnFunc(idpID, idToken)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string, string) *serviceerror.ServiceError); ok {
+		r0 = returnFunc(ctx, idpID, idToken)
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).(*serviceerror.ServiceError)
@@ -463,25 +501,31 @@ type OIDCAuthnServiceInterfaceMock_ValidateIDToken_Call struct {
 }
 
 // ValidateIDToken is a helper method to define mock.On call
+//   - ctx context.Context
 //   - idpID string
 //   - idToken string
-func (_e *OIDCAuthnServiceInterfaceMock_Expecter) ValidateIDToken(idpID interface{}, idToken interface{}) *OIDCAuthnServiceInterfaceMock_ValidateIDToken_Call {
-	return &OIDCAuthnServiceInterfaceMock_ValidateIDToken_Call{Call: _e.mock.On("ValidateIDToken", idpID, idToken)}
+func (_e *OIDCAuthnServiceInterfaceMock_Expecter) ValidateIDToken(ctx interface{}, idpID interface{}, idToken interface{}) *OIDCAuthnServiceInterfaceMock_ValidateIDToken_Call {
+	return &OIDCAuthnServiceInterfaceMock_ValidateIDToken_Call{Call: _e.mock.On("ValidateIDToken", ctx, idpID, idToken)}
 }
 
-func (_c *OIDCAuthnServiceInterfaceMock_ValidateIDToken_Call) Run(run func(idpID string, idToken string)) *OIDCAuthnServiceInterfaceMock_ValidateIDToken_Call {
+func (_c *OIDCAuthnServiceInterfaceMock_ValidateIDToken_Call) Run(run func(ctx context.Context, idpID string, idToken string)) *OIDCAuthnServiceInterfaceMock_ValidateIDToken_Call {
 	_c.Call.Run(func(args mock.Arguments) {
-		var arg0 string
+		var arg0 context.Context
 		if args[0] != nil {
-			arg0 = args[0].(string)
+			arg0 = args[0].(context.Context)
 		}
 		var arg1 string
 		if args[1] != nil {
 			arg1 = args[1].(string)
 		}
+		var arg2 string
+		if args[2] != nil {
+			arg2 = args[2].(string)
+		}
 		run(
 			arg0,
 			arg1,
+			arg2,
 		)
 	})
 	return _c
@@ -492,22 +536,22 @@ func (_c *OIDCAuthnServiceInterfaceMock_ValidateIDToken_Call) Return(serviceErro
 	return _c
 }
 
-func (_c *OIDCAuthnServiceInterfaceMock_ValidateIDToken_Call) RunAndReturn(run func(idpID string, idToken string) *serviceerror.ServiceError) *OIDCAuthnServiceInterfaceMock_ValidateIDToken_Call {
+func (_c *OIDCAuthnServiceInterfaceMock_ValidateIDToken_Call) RunAndReturn(run func(ctx context.Context, idpID string, idToken string) *serviceerror.ServiceError) *OIDCAuthnServiceInterfaceMock_ValidateIDToken_Call {
 	_c.Call.Return(run)
 	return _c
 }
 
 // ValidateTokenResponse provides a mock function for the type OIDCAuthnServiceInterfaceMock
-func (_mock *OIDCAuthnServiceInterfaceMock) ValidateTokenResponse(idpID string, tokenResp *oauth.TokenResponse, validateIDToken bool) *serviceerror.ServiceError {
-	ret := _mock.Called(idpID, tokenResp, validateIDToken)
+func (_mock *OIDCAuthnServiceInterfaceMock) ValidateTokenResponse(ctx context.Context, idpID string, tokenResp *oauth.TokenResponse, validateIDToken bool) *serviceerror.ServiceError {
+	ret := _mock.Called(ctx, idpID, tokenResp, validateIDToken)
 
 	if len(ret) == 0 {
 		panic("no return value specified for ValidateTokenResponse")
 	}
 
 	var r0 *serviceerror.ServiceError
-	if returnFunc, ok := ret.Get(0).(func(string, *oauth.TokenResponse, bool) *serviceerror.ServiceError); ok {
-		r0 = returnFunc(idpID, tokenResp, validateIDToken)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string, *oauth.TokenResponse, bool) *serviceerror.ServiceError); ok {
+		r0 = returnFunc(ctx, idpID, tokenResp, validateIDToken)
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).(*serviceerror.ServiceError)
@@ -522,31 +566,37 @@ type OIDCAuthnServiceInterfaceMock_ValidateTokenResponse_Call struct {
 }
 
 // ValidateTokenResponse is a helper method to define mock.On call
+//   - ctx context.Context
 //   - idpID string
 //   - tokenResp *oauth.TokenResponse
 //   - validateIDToken bool
-func (_e *OIDCAuthnServiceInterfaceMock_Expecter) ValidateTokenResponse(idpID interface{}, tokenResp interface{}, validateIDToken interface{}) *OIDCAuthnServiceInterfaceMock_ValidateTokenResponse_Call {
-	return &OIDCAuthnServiceInterfaceMock_ValidateTokenResponse_Call{Call: _e.mock.On("ValidateTokenResponse", idpID, tokenResp, validateIDToken)}
+func (_e *OIDCAuthnServiceInterfaceMock_Expecter) ValidateTokenResponse(ctx interface{}, idpID interface{}, tokenResp interface{}, validateIDToken interface{}) *OIDCAuthnServiceInterfaceMock_ValidateTokenResponse_Call {
+	return &OIDCAuthnServiceInterfaceMock_ValidateTokenResponse_Call{Call: _e.mock.On("ValidateTokenResponse", ctx, idpID, tokenResp, validateIDToken)}
 }
 
-func (_c *OIDCAuthnServiceInterfaceMock_ValidateTokenResponse_Call) Run(run func(idpID string, tokenResp *oauth.TokenResponse, validateIDToken bool)) *OIDCAuthnServiceInterfaceMock_ValidateTokenResponse_Call {
+func (_c *OIDCAuthnServiceInterfaceMock_ValidateTokenResponse_Call) Run(run func(ctx context.Context, idpID string, tokenResp *oauth.TokenResponse, validateIDToken bool)) *OIDCAuthnServiceInterfaceMock_ValidateTokenResponse_Call {
 	_c.Call.Run(func(args mock.Arguments) {
-		var arg0 string
+		var arg0 context.Context
 		if args[0] != nil {
-			arg0 = args[0].(string)
+			arg0 = args[0].(context.Context)
 		}
-		var arg1 *oauth.TokenResponse
+		var arg1 string
 		if args[1] != nil {
-			arg1 = args[1].(*oauth.TokenResponse)
+			arg1 = args[1].(string)
 		}
-		var arg2 bool
+		var arg2 *oauth.TokenResponse
 		if args[2] != nil {
-			arg2 = args[2].(bool)
+			arg2 = args[2].(*oauth.TokenResponse)
+		}
+		var arg3 bool
+		if args[3] != nil {
+			arg3 = args[3].(bool)
 		}
 		run(
 			arg0,
 			arg1,
 			arg2,
+			arg3,
 		)
 	})
 	return _c
@@ -557,7 +607,7 @@ func (_c *OIDCAuthnServiceInterfaceMock_ValidateTokenResponse_Call) Return(servi
 	return _c
 }
 
-func (_c *OIDCAuthnServiceInterfaceMock_ValidateTokenResponse_Call) RunAndReturn(run func(idpID string, tokenResp *oauth.TokenResponse, validateIDToken bool) *serviceerror.ServiceError) *OIDCAuthnServiceInterfaceMock_ValidateTokenResponse_Call {
+func (_c *OIDCAuthnServiceInterfaceMock_ValidateTokenResponse_Call) RunAndReturn(run func(ctx context.Context, idpID string, tokenResp *oauth.TokenResponse, validateIDToken bool) *serviceerror.ServiceError) *OIDCAuthnServiceInterfaceMock_ValidateTokenResponse_Call {
 	_c.Call.Return(run)
 	return _c
 }

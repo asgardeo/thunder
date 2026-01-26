@@ -54,7 +54,7 @@ func (rh *roleHandler) HandleRoleListRequest(w http.ResponseWriter, r *http.Requ
 		return
 	}
 
-	roleList, svcErr := rh.roleService.GetRoleList(limit, offset)
+	roleList, svcErr := rh.roleService.GetRoleList(r.Context(), limit, offset)
 	if svcErr != nil {
 		handleError(w, svcErr)
 		return
@@ -97,7 +97,7 @@ func (rh *roleHandler) HandleRolePostRequest(w http.ResponseWriter, r *http.Requ
 	// Convert HTTP request to service request
 	serviceRequest := rh.toRoleCreationDetail(sanitizedRequest)
 
-	serviceRole, svcErr := rh.roleService.CreateRole(serviceRequest)
+	serviceRole, svcErr := rh.roleService.CreateRole(r.Context(), serviceRequest)
 	if svcErr != nil {
 		handleError(w, svcErr)
 		return
@@ -116,7 +116,7 @@ func (rh *roleHandler) HandleRoleGetRequest(w http.ResponseWriter, r *http.Reque
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, handlerLoggerComponentName))
 
 	id := r.PathValue("id")
-	serviceRole, svcErr := rh.roleService.GetRoleWithPermissions(id)
+	serviceRole, svcErr := rh.roleService.GetRoleWithPermissions(r.Context(), id)
 	if svcErr != nil {
 		handleError(w, svcErr)
 		return
@@ -146,7 +146,7 @@ func (rh *roleHandler) HandleRolePutRequest(w http.ResponseWriter, r *http.Reque
 	// Convert HTTP request to service request
 	serviceRequest := RoleUpdateDetail(sanitizedRequest)
 
-	serviceRole, svcErr := rh.roleService.UpdateRoleWithPermissions(id, serviceRequest)
+	serviceRole, svcErr := rh.roleService.UpdateRoleWithPermissions(r.Context(), id, serviceRequest)
 	if svcErr != nil {
 		handleError(w, svcErr)
 		return
@@ -165,7 +165,7 @@ func (rh *roleHandler) HandleRoleDeleteRequest(w http.ResponseWriter, r *http.Re
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, handlerLoggerComponentName))
 
 	id := r.PathValue("id")
-	svcErr := rh.roleService.DeleteRole(id)
+	svcErr := rh.roleService.DeleteRole(r.Context(), id)
 	if svcErr != nil {
 		handleError(w, svcErr)
 		return
@@ -189,7 +189,7 @@ func (rh *roleHandler) HandleRoleAssignmentsGetRequest(w http.ResponseWriter, r 
 	// Parse include parameter to check if display names should be included
 	includeDisplay := r.URL.Query().Get("include") == "display"
 
-	serviceResponse, svcErr := rh.roleService.GetRoleAssignments(id, limit, offset, includeDisplay)
+	serviceResponse, svcErr := rh.roleService.GetRoleAssignments(r.Context(), id, limit, offset, includeDisplay)
 	if svcErr != nil {
 		handleError(w, svcErr)
 		return
@@ -234,7 +234,7 @@ func (rh *roleHandler) HandleRoleAddAssignmentsRequest(w http.ResponseWriter, r 
 	// Convert HTTP request to service request
 	serviceRequest := rh.toRoleAssignments(sanitizedRequest)
 
-	svcErr := rh.roleService.AddAssignments(id, serviceRequest)
+	svcErr := rh.roleService.AddAssignments(r.Context(), id, serviceRequest)
 	if svcErr != nil {
 		handleError(w, svcErr)
 		return
@@ -260,7 +260,7 @@ func (rh *roleHandler) HandleRoleRemoveAssignmentsRequest(w http.ResponseWriter,
 	// Convert HTTP request to service request
 	serviceRequest := rh.toRoleAssignments(sanitizedRequest)
 
-	svcErr := rh.roleService.RemoveAssignments(id, serviceRequest)
+	svcErr := rh.roleService.RemoveAssignments(r.Context(), id, serviceRequest)
 	if svcErr != nil {
 		handleError(w, svcErr)
 		return

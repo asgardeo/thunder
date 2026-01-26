@@ -19,6 +19,7 @@
 package granthandlers
 
 import (
+	"context"
 	"fmt"
 	"net/url"
 
@@ -48,7 +49,7 @@ func newTokenExchangeGrantHandler(
 }
 
 // ValidateGrant validates the token exchange grant type request.
-func (h *tokenExchangeGrantHandler) ValidateGrant(tokenRequest *model.TokenRequest,
+func (h *tokenExchangeGrantHandler) ValidateGrant(ctx context.Context, tokenRequest *model.TokenRequest,
 	oauthApp *appmodel.OAuthAppConfigProcessedDTO) *model.ErrorResponse {
 	if constants.GrantType(tokenRequest.GrantType) != constants.GrantTypeTokenExchange {
 		return &model.ErrorResponse{
@@ -142,13 +143,13 @@ func (h *tokenExchangeGrantHandler) ValidateGrant(tokenRequest *model.TokenReque
 }
 
 // HandleGrant handles the token exchange grant type.
-func (h *tokenExchangeGrantHandler) HandleGrant(tokenRequest *model.TokenRequest,
+func (h *tokenExchangeGrantHandler) HandleGrant(ctx context.Context, tokenRequest *model.TokenRequest,
 	oauthApp *appmodel.OAuthAppConfigProcessedDTO) (
 	*model.TokenResponseDTO, *model.ErrorResponse) {
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, "TokenExchangeGrantHandler"))
 
 	// Validate and extract subject token claims
-	subjectClaims, err := h.tokenValidator.ValidateSubjectToken(tokenRequest.SubjectToken, oauthApp)
+	subjectClaims, err := h.tokenValidator.ValidateSubjectToken(ctx, tokenRequest.SubjectToken, oauthApp)
 	if err != nil {
 		logger.Error("Failed to validate subject token", log.Error(err))
 		return nil, &model.ErrorResponse{
@@ -160,7 +161,7 @@ func (h *tokenExchangeGrantHandler) HandleGrant(tokenRequest *model.TokenRequest
 	// Validate and extract actor token claims if present
 	var actorClaims *tokenservice.SubjectTokenClaims
 	if tokenRequest.ActorToken != "" {
-		actorClaims, err = h.tokenValidator.ValidateSubjectToken(tokenRequest.ActorToken, oauthApp)
+		actorClaims, err = h.tokenValidator.ValidateSubjectToken(ctx, tokenRequest.ActorToken, oauthApp)
 		if err != nil {
 			logger.Error("Failed to validate actor token", log.Error(err))
 			return nil, &model.ErrorResponse{
@@ -185,7 +186,7 @@ func (h *tokenExchangeGrantHandler) HandleGrant(tokenRequest *model.TokenRequest
 	)
 
 	// Build access token using token builder
-	accessToken, err := h.tokenBuilder.BuildAccessToken(&tokenservice.AccessTokenBuildContext{
+	accessToken, err := h.tokenBuilder.BuildAccessToken(ctx, &tokenservice.AccessTokenBuildContext{
 		Subject:        subjectClaims.Sub,
 		Audience:       finalAudience,
 		ClientID:       tokenRequest.ClientID,

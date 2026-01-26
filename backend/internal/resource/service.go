@@ -20,6 +20,7 @@
 package resource
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"strings"
@@ -48,32 +49,35 @@ const (
 // ResourceServiceInterface defines the interface for the resource service.
 type ResourceServiceInterface interface {
 	// Resource Server operations
-	CreateResourceServer(rs ResourceServer) (*ResourceServer, *serviceerror.ServiceError)
-	GetResourceServer(id string) (*ResourceServer, *serviceerror.ServiceError)
-	GetResourceServerList(limit, offset int) (*ResourceServerList, *serviceerror.ServiceError)
-	UpdateResourceServer(id string, rs ResourceServer) (*ResourceServer, *serviceerror.ServiceError)
-	DeleteResourceServer(id string) *serviceerror.ServiceError
+	CreateResourceServer(ctx context.Context, rs ResourceServer) (*ResourceServer, *serviceerror.ServiceError)
+	GetResourceServer(ctx context.Context, id string) (*ResourceServer, *serviceerror.ServiceError)
+	GetResourceServerList(ctx context.Context, limit, offset int) (*ResourceServerList, *serviceerror.ServiceError)
+	UpdateResourceServer(ctx context.Context, id string, rs ResourceServer) (*ResourceServer, *serviceerror.ServiceError)
+	DeleteResourceServer(ctx context.Context, id string) *serviceerror.ServiceError
 
 	// Resource operations
-	CreateResource(resourceServerID string, res Resource) (*Resource, *serviceerror.ServiceError)
-	GetResource(resourceServerID, id string) (*Resource, *serviceerror.ServiceError)
+	CreateResource(ctx context.Context, resourceServerID string, res Resource) (*Resource, *serviceerror.ServiceError)
+	GetResource(ctx context.Context, resourceServerID, id string) (*Resource, *serviceerror.ServiceError)
 	GetResourceList(
-		resourceServerID string, parentID *string, limit, offset int,
+		ctx context.Context, resourceServerID string, parentID *string, limit, offset int,
 	) (*ResourceList, *serviceerror.ServiceError)
-	UpdateResource(resourceServerID, id string, res Resource) (*Resource, *serviceerror.ServiceError)
-	DeleteResource(resourceServerID, id string) *serviceerror.ServiceError
+	UpdateResource(ctx context.Context, resourceServerID, id string, res Resource) (*Resource, *serviceerror.ServiceError)
+	DeleteResource(ctx context.Context, resourceServerID, id string) *serviceerror.ServiceError
 
 	// Action operations
-	CreateAction(resourceServerID string, resourceID *string, action Action) (*Action, *serviceerror.ServiceError)
-	GetAction(resourceServerID string, resourceID *string, id string) (*Action, *serviceerror.ServiceError)
+	CreateAction(ctx context.Context, resourceServerID string, resourceID *string,
+		action Action) (*Action, *serviceerror.ServiceError)
+	GetAction(ctx context.Context, resourceServerID string, resourceID *string,
+		id string) (*Action, *serviceerror.ServiceError)
 	GetActionList(
-		resourceServerID string, resourceID *string, limit, offset int,
+		ctx context.Context, resourceServerID string, resourceID *string, limit, offset int,
 	) (*ActionList, *serviceerror.ServiceError)
 	UpdateAction(
-		resourceServerID string, resourceID *string, id string, action Action,
+		ctx context.Context, resourceServerID string, resourceID *string, id string, action Action,
 	) (*Action, *serviceerror.ServiceError)
-	DeleteAction(resourceServerID string, resourceID *string, id string) *serviceerror.ServiceError
-	ValidatePermissions(resourceServerID string, permissions []string) ([]string, *serviceerror.ServiceError)
+	DeleteAction(ctx context.Context, resourceServerID string, resourceID *string, id string) *serviceerror.ServiceError
+	ValidatePermissions(ctx context.Context, resourceServerID string,
+		permissions []string) ([]string, *serviceerror.ServiceError)
 }
 
 // resourceService is the default implementation of ResourceServiceInterface.
@@ -107,7 +111,7 @@ func newResourceService(
 
 // CreateResourceServer creates a new resource server.
 func (rs *resourceService) CreateResourceServer(
-	resourceServer ResourceServer,
+	ctx context.Context, resourceServer ResourceServer,
 ) (*ResourceServer, *serviceerror.ServiceError) {
 	rs.logger.Debug("Creating resource server", log.String("name", resourceServer.Name))
 
@@ -116,7 +120,7 @@ func (rs *resourceService) CreateResourceServer(
 	}
 
 	// Validate organization unit exists
-	_, svcErr := rs.ouService.GetOrganizationUnit(resourceServer.OrganizationUnitID)
+	_, svcErr := rs.ouService.GetOrganizationUnit(ctx, resourceServer.OrganizationUnitID)
 	if svcErr != nil {
 		if svcErr.Code == oupkg.ErrorOrganizationUnitNotFound.Code {
 			rs.logger.Debug("Organization unit not found", log.String("ouID", resourceServer.OrganizationUnitID))
@@ -179,7 +183,8 @@ func (rs *resourceService) CreateResourceServer(
 }
 
 // GetResourceServer retrieves a resource server by ID.
-func (rs *resourceService) GetResourceServer(id string) (*ResourceServer, *serviceerror.ServiceError) {
+func (rs *resourceService) GetResourceServer(ctx context.Context,
+	id string) (*ResourceServer, *serviceerror.ServiceError) {
 	if id == "" {
 		return nil, &ErrorMissingID
 	}
@@ -198,7 +203,8 @@ func (rs *resourceService) GetResourceServer(id string) (*ResourceServer, *servi
 }
 
 // GetResourceServerList retrieves a paginated list of resource servers.
-func (rs *resourceService) GetResourceServerList(limit, offset int) (*ResourceServerList, *serviceerror.ServiceError) {
+func (rs *resourceService) GetResourceServerList(ctx context.Context,
+	limit, offset int) (*ResourceServerList, *serviceerror.ServiceError) {
 	if err := validatePaginationParams(limit, offset); err != nil {
 		return nil, err
 	}
@@ -228,7 +234,7 @@ func (rs *resourceService) GetResourceServerList(limit, offset int) (*ResourceSe
 
 // UpdateResourceServer updates a resource server.
 func (rs *resourceService) UpdateResourceServer(
-	id string, resourceServer ResourceServer,
+	ctx context.Context, id string, resourceServer ResourceServer,
 ) (*ResourceServer, *serviceerror.ServiceError) {
 	if id == "" {
 		return nil, &ErrorMissingID
@@ -252,7 +258,7 @@ func (rs *resourceService) UpdateResourceServer(
 	resourceServer.Delimiter = existingResServer.Delimiter
 
 	// Validate organization unit
-	_, svcErr := rs.ouService.GetOrganizationUnit(resourceServer.OrganizationUnitID)
+	_, svcErr := rs.ouService.GetOrganizationUnit(ctx, resourceServer.OrganizationUnitID)
 	if svcErr != nil {
 		if svcErr.Code == oupkg.ErrorOrganizationUnitNotFound.Code {
 			return nil, &ErrorOrganizationUnitNotFound
@@ -304,7 +310,7 @@ func (rs *resourceService) UpdateResourceServer(
 }
 
 // DeleteResourceServer deletes a resource server.
-func (rs *resourceService) DeleteResourceServer(id string) *serviceerror.ServiceError {
+func (rs *resourceService) DeleteResourceServer(ctx context.Context, id string) *serviceerror.ServiceError {
 	if id == "" {
 		return &ErrorMissingID
 	}
@@ -340,7 +346,7 @@ func (rs *resourceService) DeleteResourceServer(id string) *serviceerror.Service
 
 // CreateResource creates a new resource.
 func (rs *resourceService) CreateResource(
-	resourceServerID string, resource Resource,
+	ctx context.Context, resourceServerID string, resource Resource,
 ) (*Resource, *serviceerror.ServiceError) {
 	// Validate resource server exists and get internal ID
 	resServerInternalID, resourceServer, svcErr := rs.validateAndGetResourceServerInternalID(resourceServerID)
@@ -406,7 +412,8 @@ func (rs *resourceService) CreateResource(
 }
 
 // GetResource retrieves a resource by ID.
-func (rs *resourceService) GetResource(resourceServerID, id string) (*Resource, *serviceerror.ServiceError) {
+func (rs *resourceService) GetResource(ctx context.Context,
+	resourceServerID, id string) (*Resource, *serviceerror.ServiceError) {
 	if id == "" || resourceServerID == "" {
 		return nil, &ErrorMissingID
 	}
@@ -431,7 +438,7 @@ func (rs *resourceService) GetResource(resourceServerID, id string) (*Resource, 
 
 // GetResourceList retrieves a paginated list of resources.
 func (rs *resourceService) GetResourceList(
-	resourceServerID string, parentID *string, limit, offset int,
+	ctx context.Context, resourceServerID string, parentID *string, limit, offset int,
 ) (*ResourceList, *serviceerror.ServiceError) {
 	if err := validatePaginationParams(limit, offset); err != nil {
 		return nil, err
@@ -485,7 +492,7 @@ func (rs *resourceService) GetResourceList(
 
 // UpdateResource updates a resource.
 func (rs *resourceService) UpdateResource(
-	resourceServerID, id string, resource Resource,
+	ctx context.Context, resourceServerID, id string, resource Resource,
 ) (*Resource, *serviceerror.ServiceError) {
 	if id == "" || resourceServerID == "" {
 		return nil, &ErrorMissingID
@@ -533,7 +540,7 @@ func (rs *resourceService) UpdateResource(
 }
 
 // DeleteResource deletes a resource.
-func (rs *resourceService) DeleteResource(resourceServerID, id string) *serviceerror.ServiceError {
+func (rs *resourceService) DeleteResource(ctx context.Context, resourceServerID, id string) *serviceerror.ServiceError {
 	if id == "" || resourceServerID == "" {
 		return &ErrorMissingID
 	}
@@ -582,7 +589,7 @@ func (rs *resourceService) DeleteResource(resourceServerID, id string) *servicee
 // If resourceID is nil, creates action at resource server level.
 // If resourceID is provided, creates action at resource level.
 func (rs *resourceService) CreateAction(
-	resourceServerID string, resourceID *string, action Action,
+	ctx context.Context, resourceServerID string, resourceID *string, action Action,
 ) (*Action, *serviceerror.ServiceError) {
 	// Validate resource server exists and get internal ID
 	resServerInternalID, resourceServer, svcErr := rs.validateAndGetResourceServerInternalID(resourceServerID)
@@ -643,7 +650,7 @@ func (rs *resourceService) CreateAction(
 // If resourceID is nil, retrieves action at resource server level.
 // If resourceID is provided, retrieves action at resource level.
 func (rs *resourceService) GetAction(
-	resourceServerID string, resourceID *string, id string,
+	ctx context.Context, resourceServerID string, resourceID *string, id string,
 ) (*Action, *serviceerror.ServiceError) {
 	if id == "" || resourceServerID == "" {
 		return nil, &ErrorMissingID
@@ -684,7 +691,7 @@ func (rs *resourceService) GetAction(
 // If resourceID is nil, retrieves actions at resource server level.
 // If resourceID is provided, retrieves actions at resource level.
 func (rs *resourceService) GetActionList(
-	resourceServerID string, resourceID *string, limit, offset int,
+	ctx context.Context, resourceServerID string, resourceID *string, limit, offset int,
 ) (*ActionList, *serviceerror.ServiceError) {
 	if err := validatePaginationParams(limit, offset); err != nil {
 		return nil, err
@@ -749,7 +756,7 @@ func (rs *resourceService) GetActionList(
 // If resourceID is nil, updates action at resource server level.
 // If resourceID is provided, updates action at resource level.
 func (rs *resourceService) UpdateAction(
-	resourceServerID string, resourceID *string, id string, action Action,
+	ctx context.Context, resourceServerID string, resourceID *string, id string, action Action,
 ) (*Action, *serviceerror.ServiceError) {
 	if id == "" || resourceServerID == "" {
 		return nil, &ErrorMissingID
@@ -811,7 +818,7 @@ func (rs *resourceService) UpdateAction(
 // If resourceID is nil, deletes action at resource server level.
 // If resourceID is provided, deletes action at resource level.
 func (rs *resourceService) DeleteAction(
-	resourceServerID string, resourceID *string, id string,
+	ctx context.Context, resourceServerID string, resourceID *string, id string,
 ) *serviceerror.ServiceError {
 	if id == "" || resourceServerID == "" {
 		return &ErrorMissingID
@@ -864,6 +871,7 @@ func (rs *resourceService) DeleteAction(
 // ValidatePermissions checks if permissions exist for a given resource server.
 // Returns array of invalid permissions (empty if all valid).
 func (rs *resourceService) ValidatePermissions(
+	ctx context.Context,
 	resourceServerID string,
 	permissions []string,
 ) ([]string, *serviceerror.ServiceError) {

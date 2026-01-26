@@ -19,6 +19,7 @@
 package introspect
 
 import (
+	"context"
 	"crypto/rand"
 	"crypto/rsa"
 	"encoding/base64"
@@ -70,7 +71,7 @@ func (s *TokenIntrospectionServiceTestSuite) SetupTest() {
 }
 
 func (s *TokenIntrospectionServiceTestSuite) TestIntrospectToken_EmptyToken() {
-	response, err := s.introspectService.IntrospectToken("", "")
+	response, err := s.introspectService.IntrospectToken(context.TODO(), "", "")
 	assert.Error(s.T(), err)
 	assert.Contains(s.T(), err.Error(), "token is required")
 	assert.Nil(s.T(), response)
@@ -78,7 +79,7 @@ func (s *TokenIntrospectionServiceTestSuite) TestIntrospectToken_EmptyToken() {
 
 func (s *TokenIntrospectionServiceTestSuite) TestIntrospectToken_PublicKeyNotAvailable() {
 	s.jwtServiceMock.On("GetPublicKey").Return(nil).Maybe()
-	s.jwtServiceMock.On("VerifyJWT", mock.Anything, "", "").Return(
+	s.jwtServiceMock.On("VerifyJWT", mock.Anything, mock.Anything, "", "").Return(
 		&serviceerror.ServiceError{
 			Type:             serviceerror.ServerErrorType,
 			Code:             "PUBLIC_KEY_NOT_AVAILABLE",
@@ -86,7 +87,7 @@ func (s *TokenIntrospectionServiceTestSuite) TestIntrospectToken_PublicKeyNotAva
 			ErrorDescription: "The public key is not available for verification",
 		})
 
-	response, err := s.introspectService.IntrospectToken(s.validToken, "")
+	response, err := s.introspectService.IntrospectToken(context.TODO(), s.validToken, "")
 	assert.NoError(s.T(), err)
 	assert.NotNil(s.T(), response)
 	assert.False(s.T(), response.Active)
@@ -115,7 +116,7 @@ func (s *TokenIntrospectionServiceTestSuite) TestIntrospectToken_InvalidSignatur
 
 	invalidToken := signingInput + "." + signatureEncoded
 
-	s.jwtServiceMock.On("VerifyJWT", invalidToken, "", "").Return(
+	s.jwtServiceMock.On("VerifyJWT", mock.Anything, invalidToken, "", "").Return(
 		&serviceerror.ServiceError{
 			Type:             serviceerror.ServerErrorType,
 			Code:             "INVALID_SIGNATURE",
@@ -124,7 +125,7 @@ func (s *TokenIntrospectionServiceTestSuite) TestIntrospectToken_InvalidSignatur
 		})
 
 	// Test with a token having invalid signature
-	response, err := s.introspectService.IntrospectToken(invalidToken, "")
+	response, err := s.introspectService.IntrospectToken(context.TODO(), invalidToken, "")
 	assert.NoError(s.T(), err)
 	assert.NotNil(s.T(), response)
 	assert.False(s.T(), response.Active)
@@ -136,9 +137,9 @@ func (s *TokenIntrospectionServiceTestSuite) TestIntrospectToken_DecodeFailsAfte
 	// This can happen with a malformed JWT structure (e.g., missing dots or invalid base64)
 	malformedToken := "header.payload" // Missing signature part
 
-	s.jwtServiceMock.On("VerifyJWT", malformedToken, "", "").Return(nil)
+	s.jwtServiceMock.On("VerifyJWT", mock.Anything, malformedToken, "", "").Return(nil)
 
-	response, err := s.introspectService.IntrospectToken(malformedToken, "")
+	response, err := s.introspectService.IntrospectToken(context.TODO(), malformedToken, "")
 	assert.NoError(s.T(), err)
 	assert.NotNil(s.T(), response)
 	assert.False(s.T(), response.Active)
@@ -245,7 +246,7 @@ func (s *TokenIntrospectionServiceTestSuite) TestIntrospectToken() {
 			// Mock VerifyJWT based on test case
 			switch tc.name {
 			case "InvalidTokenFormat":
-				s.jwtServiceMock.On("VerifyJWT", token, "", "").Return(
+				s.jwtServiceMock.On("VerifyJWT", mock.Anything, token, "", "").Return(
 					&serviceerror.ServiceError{
 						Type:             serviceerror.ServerErrorType,
 						Code:             "INVALID_TOKEN_FORMAT",
@@ -253,7 +254,7 @@ func (s *TokenIntrospectionServiceTestSuite) TestIntrospectToken() {
 						ErrorDescription: "The token format is invalid",
 					})
 			case "ExpiredToken":
-				s.jwtServiceMock.On("VerifyJWT", token, "", "").Return(
+				s.jwtServiceMock.On("VerifyJWT", mock.Anything, token, "", "").Return(
 					&serviceerror.ServiceError{
 						Type:             serviceerror.ClientErrorType,
 						Code:             "TOKEN_EXPIRED",
@@ -261,7 +262,7 @@ func (s *TokenIntrospectionServiceTestSuite) TestIntrospectToken() {
 						ErrorDescription: "The token has expired",
 					})
 			case "FutureToken":
-				s.jwtServiceMock.On("VerifyJWT", token, "", "").Return(
+				s.jwtServiceMock.On("VerifyJWT", mock.Anything, token, "", "").Return(
 					&serviceerror.ServiceError{
 						Type:             serviceerror.ClientErrorType,
 						Code:             "TOKEN_NOT_VALID_YET",
@@ -269,7 +270,7 @@ func (s *TokenIntrospectionServiceTestSuite) TestIntrospectToken() {
 						ErrorDescription: "The token is not valid yet (nbf)",
 					})
 			case "TokenWithMissingExpClaim":
-				s.jwtServiceMock.On("VerifyJWT", token, "", "").Return(
+				s.jwtServiceMock.On("VerifyJWT", mock.Anything, token, "", "").Return(
 					&serviceerror.ServiceError{
 						Type:             serviceerror.ClientErrorType,
 						Code:             "MISSING_EXP_CLAIM",
@@ -277,7 +278,7 @@ func (s *TokenIntrospectionServiceTestSuite) TestIntrospectToken() {
 						ErrorDescription: "Missing or invalid 'exp' claim",
 					})
 			case "TokenWithMissingNbfClaim":
-				s.jwtServiceMock.On("VerifyJWT", token, "", "").Return(
+				s.jwtServiceMock.On("VerifyJWT", mock.Anything, token, "", "").Return(
 					&serviceerror.ServiceError{
 						Type:             serviceerror.ClientErrorType,
 						Code:             "MISSING_NBF_CLAIM",
@@ -285,12 +286,12 @@ func (s *TokenIntrospectionServiceTestSuite) TestIntrospectToken() {
 						ErrorDescription: "Missing or invalid 'nbf' claim",
 					})
 			case "ValidToken", "TokenWithMissingOptionalClaims":
-				s.jwtServiceMock.On("VerifyJWT", token, "", "").Return(nil)
+				s.jwtServiceMock.On("VerifyJWT", mock.Anything, token, "", "").Return(nil)
 			default:
-				s.jwtServiceMock.On("VerifyJWT", token, "", "").Return(nil)
+				s.jwtServiceMock.On("VerifyJWT", mock.Anything, token, "", "").Return(nil)
 			}
 
-			response, err := s.introspectService.IntrospectToken(token, "")
+			response, err := s.introspectService.IntrospectToken(context.TODO(), token, "")
 
 			if tc.expectError {
 				assert.Error(s.T(), err)

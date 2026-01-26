@@ -51,7 +51,8 @@ func newSecurityContext(userID, ouID, appID, token string,
 }
 
 // WithSecurityContext adds security context to the request context.
-func withSecurityContext(ctx context.Context, authCtx *SecurityContext) context.Context {
+func withSecurityContext(ctx context.Context,
+	authCtx *SecurityContext) context.Context {
 	if ctx == nil {
 		ctx = context.Background()
 	}

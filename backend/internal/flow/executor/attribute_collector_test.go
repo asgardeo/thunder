@@ -155,7 +155,7 @@ func (suite *AttributeCollectorTestSuite) TestExecute_UserInputRequired() {
 		Attributes: attrsJSON,
 	}
 
-	suite.mockUserService.On("GetUser", testUserID).Return(existingUser, nil)
+	suite.mockUserService.On("GetUser", mock.Anything, testUserID).Return(existingUser, nil)
 
 	ctx := &core.NodeContext{
 		FlowID:            "flow-123",
@@ -201,8 +201,8 @@ func (suite *AttributeCollectorTestSuite) TestExecute_Success() {
 		Attributes:       updatedAttrsJSON,
 	}
 
-	suite.mockUserService.On("GetUser", testUserID).Return(existingUser, nil)
-	suite.mockUserService.On("UpdateUser", testUserID, mock.MatchedBy(func(u *user.User) bool {
+	suite.mockUserService.On("GetUser", mock.Anything, testUserID).Return(existingUser, nil)
+	suite.mockUserService.On("UpdateUser", mock.Anything, testUserID, mock.MatchedBy(func(u *user.User) bool {
 		return u.ID == testUserID && u.Attributes != nil
 	})).Return(updatedUser, nil)
 
@@ -231,8 +231,8 @@ func (suite *AttributeCollectorTestSuite) TestExecute_UpdateUserFails() {
 		Attributes:       json.RawMessage(`{}`),
 	}
 
-	suite.mockUserService.On("GetUser", testUserID).Return(existingUser, nil)
-	suite.mockUserService.On("UpdateUser", testUserID, mock.Anything).
+	suite.mockUserService.On("GetUser", mock.Anything, testUserID).Return(existingUser, nil)
+	suite.mockUserService.On("UpdateUser", mock.Anything, testUserID, mock.Anything).
 		Return(nil, &serviceerror.ServiceError{Error: "update failed"})
 
 	resp, err := suite.executor.Execute(ctx)
@@ -290,7 +290,7 @@ func (suite *AttributeCollectorTestSuite) TestHasRequiredInputs_AttributesInUser
 		Attributes: attrsJSON,
 	}
 
-	suite.mockUserService.On("GetUser", testUserID).Return(existingUser, nil)
+	suite.mockUserService.On("GetUser", mock.Anything, testUserID).Return(existingUser, nil)
 
 	result := suite.executor.HasRequiredInputs(ctx, execResp)
 
@@ -313,7 +313,7 @@ func (suite *AttributeCollectorTestSuite) TestGetUserAttributes_Success() {
 		Attributes: attrsJSON,
 	}
 
-	suite.mockUserService.On("GetUser", testUserID).Return(existingUser, nil)
+	suite.mockUserService.On("GetUser", mock.Anything, testUserID).Return(existingUser, nil)
 
 	result, err := suite.executor.getUserAttributes(ctx)
 
@@ -329,7 +329,7 @@ func (suite *AttributeCollectorTestSuite) TestGetUserAttributes_UserNotFound() {
 		RuntimeData: map[string]string{userAttributeUserID: testUserID},
 	}
 
-	suite.mockUserService.On("GetUser", testUserID).
+	suite.mockUserService.On("GetUser", mock.Anything, testUserID).
 		Return(nil, &serviceerror.ServiceError{Error: "user not found"})
 
 	result, err := suite.executor.getUserAttributes(ctx)
@@ -349,7 +349,7 @@ func (suite *AttributeCollectorTestSuite) TestGetUserAttributes_InvalidJSON() {
 		Attributes: json.RawMessage(`invalid json`),
 	}
 
-	suite.mockUserService.On("GetUser", testUserID).Return(existingUser, nil)
+	suite.mockUserService.On("GetUser", mock.Anything, testUserID).Return(existingUser, nil)
 
 	result, err := suite.executor.getUserAttributes(ctx)
 

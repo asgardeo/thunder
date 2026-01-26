@@ -76,8 +76,9 @@ func (suite *AuthenticationHandlerTestSuite) testIDPAuthFinishSuccess(
 		Assertion:        "jwt-token",
 	}
 
-	suite.mockService.On("FinishIDPAuthentication", idpType, authRequest.SessionToken,
-		authRequest.SkipAssertion, authRequest.Assertion, authRequest.Code).Return(authResponse, nil)
+	suite.mockService.On("FinishIDPAuthentication", mock.Anything, idpType,
+		authRequest.SessionToken, authRequest.SkipAssertion, authRequest.Assertion,
+		authRequest.Code).Return(authResponse, nil)
 
 	body, _ := json.Marshal(authRequest)
 	req := httptest.NewRequest(http.MethodPost, endpoint, bytes.NewReader(body))
@@ -105,7 +106,7 @@ func (suite *AuthenticationHandlerTestSuite) TestHandleCredentialsAuthRequestSuc
 		Assertion:        "jwt-token",
 	}
 
-	suite.mockService.On("AuthenticateWithCredentials", authRequest, false, "").Return(authResponse, nil)
+	suite.mockService.On("AuthenticateWithCredentials", mock.Anything, authRequest, false, "").Return(authResponse, nil)
 
 	body, _ := json.Marshal(authRequest)
 	req := httptest.NewRequest(http.MethodPost, "/authenticate/credentials", bytes.NewReader(body))
@@ -137,7 +138,8 @@ func (suite *AuthenticationHandlerTestSuite) TestHandleCredentialsAuthRequestWit
 		OrganizationUnit: "test-ou",
 	}
 
-	suite.mockService.On("AuthenticateWithCredentials", expectedRequest, true, "").Return(authResponse, nil)
+	suite.mockService.On("AuthenticateWithCredentials", mock.Anything,
+		expectedRequest, true, "").Return(authResponse, nil)
 
 	body, _ := json.Marshal(authRequest)
 	req := httptest.NewRequest(http.MethodPost, "/authenticate/credentials", bytes.NewReader(body))
@@ -171,8 +173,8 @@ func (suite *AuthenticationHandlerTestSuite) TestHandleCredentialsAuthRequestWit
 		Assertion:        "updated.jwt.token",
 	}
 
-	suite.mockService.On("AuthenticateWithCredentials", expectedRequest, false, existingAssertion).
-		Return(authResponse, nil)
+	suite.mockService.On("AuthenticateWithCredentials", mock.Anything,
+		expectedRequest, false, existingAssertion).Return(authResponse, nil)
 
 	body, _ := json.Marshal(authRequest)
 	req := httptest.NewRequest(http.MethodPost, "/authenticate/credentials", bytes.NewReader(body))
@@ -265,8 +267,8 @@ func (suite *AuthenticationHandlerTestSuite) TestHandleCredentialsAuthRequestSer
 	for _, tc := range cases {
 		suite.T().Run(tc.name, func(t *testing.T) {
 			m := NewAuthenticationServiceInterfaceMock(t)
-			m.On("AuthenticateWithCredentials", mock.Anything, mock.Anything, mock.Anything).
-				Return(nil, tc.serviceError)
+			m.On("AuthenticateWithCredentials", mock.Anything, mock.Anything,
+				mock.Anything, mock.Anything).Return(nil, tc.serviceError)
 			h := &authenticationHandler{authService: m}
 
 			body, _ := json.Marshal(tc.authRequest)
@@ -292,8 +294,8 @@ func (suite *AuthenticationHandlerTestSuite) TestHandleSendSMSOTPRequestSuccess(
 	}
 	sessionToken := testSessionTkn
 
-	suite.mockService.On("SendOTP", otpRequest.SenderID, mock.Anything, otpRequest.Recipient).
-		Return(sessionToken, nil)
+	suite.mockService.On("SendOTP", mock.Anything, otpRequest.SenderID,
+		mock.Anything, otpRequest.Recipient).Return(sessionToken, nil)
 
 	body, _ := json.Marshal(otpRequest)
 	req := httptest.NewRequest(http.MethodPost, "/authenticate/otp/send", bytes.NewReader(body))
@@ -334,7 +336,7 @@ func (suite *AuthenticationHandlerTestSuite) TestHandleSendSMSOTPRequestServiceE
 		ErrorDescription: "Failed to send OTP",
 	}
 
-	suite.mockService.On("SendOTP", mock.Anything, mock.Anything, mock.Anything).Return("", serviceError)
+	suite.mockService.On("SendOTP", mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return("", serviceError)
 
 	body, _ := json.Marshal(otpRequest)
 	req := httptest.NewRequest(http.MethodPost, "/authenticate/otp/send", bytes.NewReader(body))
@@ -362,8 +364,8 @@ func (suite *AuthenticationHandlerTestSuite) TestHandleVerifySMSOTPRequestSucces
 		Assertion:        "jwt-token",
 	}
 
-	suite.mockService.On("VerifyOTP", otpRequest.SessionToken, otpRequest.SkipAssertion, "", otpRequest.OTP).
-		Return(authResponse, nil)
+	suite.mockService.On("VerifyOTP", mock.Anything, otpRequest.SessionToken,
+		otpRequest.SkipAssertion, "", otpRequest.OTP).Return(authResponse, nil)
 
 	body, _ := json.Marshal(otpRequest)
 	req := httptest.NewRequest(http.MethodPost, "/authenticate/otp/verify", bytes.NewReader(body))
@@ -400,8 +402,8 @@ func (suite *AuthenticationHandlerTestSuite) TestHandleVerifySMSOTPRequestServic
 	}
 	serviceError := &otp.ErrorIncorrectOTP
 
-	suite.mockService.On("VerifyOTP", mock.Anything, mock.Anything, mock.Anything, mock.Anything).
-		Return(nil, serviceError)
+	suite.mockService.On("VerifyOTP", mock.Anything, mock.Anything, mock.Anything,
+		mock.Anything, mock.Anything).Return(nil, serviceError)
 
 	body, _ := json.Marshal(otpRequest)
 	req := httptest.NewRequest(http.MethodPost, "/authenticate/otp/verify", bytes.NewReader(body))
@@ -425,8 +427,8 @@ func (suite *AuthenticationHandlerTestSuite) TestHandleGoogleAuthStartRequestSuc
 		SessionToken: testSessionTkn,
 	}
 
-	suite.mockService.On("StartIDPAuthentication", idp.IDPTypeGoogle, authRequest.IDPID).
-		Return(authResponse, nil)
+	suite.mockService.On("StartIDPAuthentication", mock.Anything, idp.IDPTypeGoogle,
+		authRequest.IDPID).Return(authResponse, nil)
 
 	body, _ := json.Marshal(authRequest)
 	req := httptest.NewRequest(http.MethodPost, "/authenticate/google/start", bytes.NewReader(body))
@@ -457,7 +459,7 @@ func (suite *AuthenticationHandlerTestSuite) TestHandleGoogleAuthStartRequestSer
 	}
 	serviceError := &common.ErrorInvalidIDPID
 
-	suite.mockService.On("StartIDPAuthentication", idp.IDPTypeGoogle, authRequest.IDPID).
+	suite.mockService.On("StartIDPAuthentication", mock.Anything, idp.IDPTypeGoogle, authRequest.IDPID).
 		Return(nil, serviceError)
 
 	body, _ := json.Marshal(authRequest)
@@ -495,8 +497,9 @@ func (suite *AuthenticationHandlerTestSuite) TestHandleGoogleAuthFinishRequestSe
 	}
 	serviceError := &common.ErrorInvalidSessionToken
 
-	suite.mockService.On("FinishIDPAuthentication", idp.IDPTypeGoogle, mock.Anything, mock.Anything,
-		mock.Anything, mock.Anything).Return(nil, serviceError)
+	suite.mockService.On("FinishIDPAuthentication", mock.Anything, idp.IDPTypeGoogle,
+		mock.Anything, mock.Anything, mock.Anything, mock.Anything).
+		Return(nil, serviceError)
 
 	body, _ := json.Marshal(authRequest)
 	req := httptest.NewRequest(http.MethodPost, "/authenticate/google/finish", bytes.NewReader(body))
@@ -520,8 +523,8 @@ func (suite *AuthenticationHandlerTestSuite) TestHandleGithubAuthStartRequestSuc
 		SessionToken: testSessionTkn,
 	}
 
-	suite.mockService.On("StartIDPAuthentication", idp.IDPTypeGitHub, authRequest.IDPID).
-		Return(authResponse, nil)
+	suite.mockService.On("StartIDPAuthentication", mock.Anything, idp.IDPTypeGitHub,
+		authRequest.IDPID).Return(authResponse, nil)
 
 	body, _ := json.Marshal(authRequest)
 	req := httptest.NewRequest(http.MethodPost, "/authenticate/github/start", bytes.NewReader(body))
@@ -551,7 +554,7 @@ func (suite *AuthenticationHandlerTestSuite) TestHandleGithubAuthStartRequestSer
 	}
 	serviceError := &common.ErrorClientErrorWhileRetrievingIDP
 
-	suite.mockService.On("StartIDPAuthentication", idp.IDPTypeGitHub, authRequest.IDPID).
+	suite.mockService.On("StartIDPAuthentication", mock.Anything, idp.IDPTypeGitHub, authRequest.IDPID).
 		Return(nil, serviceError)
 
 	body, _ := json.Marshal(authRequest)
@@ -575,8 +578,9 @@ func (suite *AuthenticationHandlerTestSuite) TestHandleGithubAuthFinishRequestSu
 		OrganizationUnit: "test-ou",
 	}
 
-	suite.mockService.On("FinishIDPAuthentication", idp.IDPTypeGitHub, authRequest.SessionToken,
-		authRequest.SkipAssertion, authRequest.Assertion, authRequest.Code).Return(authResponse, nil)
+	suite.mockService.On("FinishIDPAuthentication", mock.Anything, idp.IDPTypeGitHub,
+		authRequest.SessionToken, authRequest.SkipAssertion, authRequest.Assertion,
+		authRequest.Code).Return(authResponse, nil)
 
 	body, _ := json.Marshal(authRequest)
 	req := httptest.NewRequest(http.MethodPost, "/authenticate/github/finish", bytes.NewReader(body))
@@ -614,8 +618,9 @@ func (suite *AuthenticationHandlerTestSuite) TestHandleGithubAuthFinishRequestSe
 		ErrorDescription: "Internal error description",
 	}
 
-	suite.mockService.On("FinishIDPAuthentication", idp.IDPTypeGitHub, mock.Anything, mock.Anything,
-		mock.Anything, mock.Anything).Return(nil, serviceError)
+	suite.mockService.On("FinishIDPAuthentication", mock.Anything, idp.IDPTypeGitHub,
+		mock.Anything, mock.Anything, mock.Anything, mock.Anything).
+		Return(nil, serviceError)
 
 	body, _ := json.Marshal(authRequest)
 	req := httptest.NewRequest(http.MethodPost, "/authenticate/github/finish", bytes.NewReader(body))
@@ -635,8 +640,8 @@ func (suite *AuthenticationHandlerTestSuite) TestHandleStandardOAuthStartRequest
 		SessionToken: testSessionTkn,
 	}
 
-	suite.mockService.On("StartIDPAuthentication", idp.IDPTypeOAuth, authRequest.IDPID).
-		Return(authResponse, nil)
+	suite.mockService.On("StartIDPAuthentication", mock.Anything, idp.IDPTypeOAuth,
+		authRequest.IDPID).Return(authResponse, nil)
 
 	body, _ := json.Marshal(authRequest)
 	req := httptest.NewRequest(http.MethodPost, "/authenticate/oauth/start", bytes.NewReader(body))
@@ -666,7 +671,7 @@ func (suite *AuthenticationHandlerTestSuite) TestHandleStandardOAuthStartRequest
 	}
 	serviceError := &common.ErrorInvalidIDPType
 
-	suite.mockService.On("StartIDPAuthentication", idp.IDPTypeOAuth, authRequest.IDPID).
+	suite.mockService.On("StartIDPAuthentication", mock.Anything, idp.IDPTypeOAuth, authRequest.IDPID).
 		Return(nil, serviceError)
 
 	body, _ := json.Marshal(authRequest)
@@ -700,8 +705,9 @@ func (suite *AuthenticationHandlerTestSuite) TestHandleStandardOAuthFinishReques
 	}
 	serviceError := &common.ErrorEmptyAuthCode
 
-	suite.mockService.On("FinishIDPAuthentication", idp.IDPTypeOAuth, mock.Anything, mock.Anything,
-		mock.Anything, mock.Anything).Return(nil, serviceError)
+	suite.mockService.On("FinishIDPAuthentication", mock.Anything, idp.IDPTypeOAuth,
+		mock.Anything, mock.Anything, mock.Anything, mock.Anything).
+		Return(nil, serviceError)
 
 	body, _ := json.Marshal(authRequest)
 	req := httptest.NewRequest(http.MethodPost, "/authenticate/oauth/finish", bytes.NewReader(body))
@@ -735,12 +741,10 @@ func (suite *AuthenticationHandlerTestSuite) TestHandlePasskeyRegisterStartReque
 		"sessionToken": testSessionTkn,
 	}
 
-	suite.mockService.On("StartPasskeyRegistration",
-		regRequest.UserID,
-		regRequest.RelyingPartyID,
-		regRequest.RelyingPartyName,
-		regRequest.AuthenticatorSelection,
-		regRequest.Attestation).Return(regResponse, nil)
+	suite.mockService.On("StartPasskeyRegistration", mock.Anything,
+		regRequest.UserID, regRequest.RelyingPartyID, regRequest.RelyingPartyName,
+		regRequest.AuthenticatorSelection, regRequest.Attestation).
+		Return(regResponse, nil)
 
 	body, _ := json.Marshal(regRequest)
 	req := httptest.NewRequest(http.MethodPost, "/authenticate/passkey/register/start", bytes.NewReader(body))
@@ -777,9 +781,9 @@ func (suite *AuthenticationHandlerTestSuite) TestHandlePasskeyRegisterStartReque
 	}
 	serviceError := &common.ErrorUserNotFound
 
-	suite.mockService.On("StartPasskeyRegistration",
-		mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).
-		Return(nil, serviceError)
+	suite.mockService.On("StartPasskeyRegistration", mock.Anything,
+		mock.Anything, mock.Anything, mock.Anything, mock.Anything,
+		mock.Anything).Return(nil, serviceError)
 
 	body, _ := json.Marshal(regRequest)
 	req := httptest.NewRequest(http.MethodPost, "/authenticate/passkey/register/start", bytes.NewReader(body))
@@ -814,6 +818,7 @@ func (suite *AuthenticationHandlerTestSuite) TestHandlePasskeyRegisterFinishRequ
 	}
 
 	suite.mockService.On("FinishPasskeyRegistration",
+		mock.Anything,
 		regRequest.PublicKeyCredential,
 		testSessionTkn,
 		"My Passkey").Return(regResponse, nil)
@@ -866,7 +871,7 @@ func (suite *AuthenticationHandlerTestSuite) TestHandlePasskeyRegisterFinishRequ
 	}
 
 	suite.mockService.On("FinishPasskeyRegistration",
-		mock.Anything, mock.Anything, mock.Anything).Return(nil, serviceError)
+		mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(nil, serviceError)
 
 	body, _ := json.Marshal(regRequest)
 	req := httptest.NewRequest(http.MethodPost, "/authenticate/passkey/register/finish", bytes.NewReader(body))
@@ -901,6 +906,7 @@ func (suite *AuthenticationHandlerTestSuite) TestHandlePasskeyStartRequestSucces
 	}
 
 	suite.mockService.On("StartPasskeyAuthentication",
+		mock.Anything,
 		authRequest.UserID,
 		authRequest.RelyingPartyID).Return(authResponse, nil)
 
@@ -940,7 +946,7 @@ func (suite *AuthenticationHandlerTestSuite) TestHandlePasskeyStartRequestServic
 	serviceError := &common.ErrorUserNotFound
 
 	suite.mockService.On("StartPasskeyAuthentication",
-		mock.Anything, mock.Anything).Return(nil, serviceError)
+		mock.Anything, mock.Anything, mock.Anything).Return(nil, serviceError)
 
 	body, _ := json.Marshal(authRequest)
 	req := httptest.NewRequest(http.MethodPost, "/authenticate/passkey/start", bytes.NewReader(body))
@@ -978,6 +984,7 @@ func (suite *AuthenticationHandlerTestSuite) TestHandlePasskeyFinishRequestSucce
 	}
 
 	suite.mockService.On("FinishPasskeyAuthentication",
+		mock.Anything,
 		authRequest.PublicKeyCredential.ID,
 		authRequest.PublicKeyCredential.Type,
 		authRequest.PublicKeyCredential.Response,
@@ -1032,7 +1039,7 @@ func (suite *AuthenticationHandlerTestSuite) TestHandlePasskeyFinishRequestServi
 	}
 
 	suite.mockService.On("FinishPasskeyAuthentication",
-		mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).
+		mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).
 		Return(nil, serviceError)
 
 	body, _ := json.Marshal(authRequest)

@@ -69,7 +69,7 @@ func (uh *userHandler) HandleUserListRequest(w http.ResponseWriter, r *http.Requ
 	}
 
 	// Get the user list using the user service.
-	userListResponse, svcErr := uh.userService.GetUserList(limit, offset, filters)
+	userListResponse, svcErr := uh.userService.GetUserList(r.Context(), limit, offset, filters)
 	if svcErr != nil {
 		handleError(w, svcErr)
 		return
@@ -128,7 +128,7 @@ func (uh *userHandler) HandleUserGetRequest(w http.ResponseWriter, r *http.Reque
 	}
 
 	// Get the user using the user service.
-	user, svcErr := uh.userService.GetUser(id)
+	user, svcErr := uh.userService.GetUser(r.Context(), id)
 	if svcErr != nil {
 		handleError(w, svcErr)
 		return
@@ -160,7 +160,7 @@ func (ah *userHandler) HandleUserGroupsGetRequest(w http.ResponseWriter, r *http
 		limit = serverconst.DefaultPageSize
 	}
 
-	groupListResponse, svcErr := ah.userService.GetUserGroups(id, limit, offset)
+	groupListResponse, svcErr := ah.userService.GetUserGroups(r.Context(), id, limit, offset)
 	if svcErr != nil {
 		handleError(w, svcErr)
 		return
@@ -202,7 +202,7 @@ func (uh *userHandler) HandleUserPutRequest(w http.ResponseWriter, r *http.Reque
 	updateRequest.ID = id
 
 	// Update the user using the user service.
-	user, svcErr := uh.userService.UpdateUser(id, updateRequest)
+	user, svcErr := uh.userService.UpdateUser(r.Context(), id, updateRequest)
 	if svcErr != nil {
 		handleError(w, svcErr)
 		return
@@ -230,7 +230,7 @@ func (uh *userHandler) HandleUserDeleteRequest(w http.ResponseWriter, r *http.Re
 	}
 
 	// Delete the user using the user service.
-	svcErr := uh.userService.DeleteUser(id)
+	svcErr := uh.userService.DeleteUser(r.Context(), id)
 	if svcErr != nil {
 		handleError(w, svcErr)
 		return
@@ -267,7 +267,7 @@ func (uh *userHandler) HandleUserListByPathRequest(w http.ResponseWriter, r *htt
 		return
 	}
 
-	userListResponse, svcErr := uh.userService.GetUsersByPath(path, limit, offset, filters)
+	userListResponse, svcErr := uh.userService.GetUsersByPath(r.Context(), path, limit, offset, filters)
 	if svcErr != nil {
 		handleError(w, svcErr)
 		return
@@ -323,7 +323,7 @@ func (uh *userHandler) HandleSelfUserGetRequest(w http.ResponseWriter, r *http.R
 		return
 	}
 
-	user, svcErr := uh.userService.GetUser(userID)
+	user, svcErr := uh.userService.GetUser(r.Context(), userID)
 	if svcErr != nil {
 		handleError(w, svcErr)
 		return
@@ -355,7 +355,7 @@ func (uh *userHandler) HandleSelfUserPutRequest(w http.ResponseWriter, r *http.R
 		return
 	}
 
-	updatedUser, svcErr := uh.userService.UpdateUserAttributes(userID, updateRequest.Attributes)
+	updatedUser, svcErr := uh.userService.UpdateUserAttributes(r.Context(), userID, updateRequest.Attributes)
 	if svcErr != nil {
 		handleError(w, svcErr)
 		return
@@ -387,7 +387,7 @@ func (uh *userHandler) HandleSelfUserCredentialUpdateRequest(w http.ResponseWrit
 		return
 	}
 
-	if svcErr := uh.userService.UpdateUserCredentials(userID, updateRequest.Attributes); svcErr != nil {
+	if svcErr := uh.userService.UpdateUserCredentials(r.Context(), userID, updateRequest.Attributes); svcErr != nil {
 		handleError(w, svcErr)
 		return
 	}

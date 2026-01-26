@@ -19,6 +19,7 @@
 package tokenservice
 
 import (
+	"context"
 	"testing"
 	"time"
 
@@ -100,7 +101,7 @@ func (suite *TokenBuilderTestSuite) TestBuildAccessToken_Success_Basic() {
 	expectedToken := testAccessToken
 	expectedIat := time.Now().Unix()
 
-	suite.mockJWTService.On("GenerateJWT",
+	suite.mockJWTService.On("GenerateJWT", mock.Anything,
 		"user123",
 		"app123",
 		"https://thunder.io",
@@ -113,7 +114,7 @@ func (suite *TokenBuilderTestSuite) TestBuildAccessToken_Success_Basic() {
 		}),
 	).Return(expectedToken, expectedIat, nil)
 
-	result, err := suite.builder.BuildAccessToken(ctx)
+	result, err := suite.builder.BuildAccessToken(context.TODO(), ctx)
 
 	assert.NoError(suite.T(), err)
 	assert.NotNil(suite.T(), result)
@@ -150,7 +151,7 @@ func (suite *TokenBuilderTestSuite) TestBuildAccessToken_Success_WithActorClaim(
 	expectedToken := testAccessToken
 	expectedIat := time.Now().Unix()
 
-	suite.mockJWTService.On("GenerateJWT",
+	suite.mockJWTService.On("GenerateJWT", mock.Anything,
 		"user123",
 		"app123",
 		"https://thunder.io",
@@ -161,7 +162,7 @@ func (suite *TokenBuilderTestSuite) TestBuildAccessToken_Success_WithActorClaim(
 		}),
 	).Return(expectedToken, expectedIat, nil)
 
-	result, err := suite.builder.BuildAccessToken(ctx)
+	result, err := suite.builder.BuildAccessToken(context.TODO(), ctx)
 
 	assert.NoError(suite.T(), err)
 	assert.NotNil(suite.T(), result)
@@ -193,7 +194,7 @@ func (suite *TokenBuilderTestSuite) TestBuildAccessToken_Success_WithNestedActor
 	expectedToken := testAccessToken
 	expectedIat := time.Now().Unix()
 
-	suite.mockJWTService.On("GenerateJWT",
+	suite.mockJWTService.On("GenerateJWT", mock.Anything,
 		"user123",
 		"app123",
 		"https://thunder.io",
@@ -204,7 +205,7 @@ func (suite *TokenBuilderTestSuite) TestBuildAccessToken_Success_WithNestedActor
 		}),
 	).Return(expectedToken, expectedIat, nil)
 
-	result, err := suite.builder.BuildAccessToken(ctx)
+	result, err := suite.builder.BuildAccessToken(context.TODO(), ctx)
 
 	assert.NoError(suite.T(), err)
 	assert.NotNil(suite.T(), result)
@@ -225,7 +226,7 @@ func (suite *TokenBuilderTestSuite) TestBuildAccessToken_Success_EmptyScopes() {
 	expectedToken := testAccessToken
 	expectedIat := time.Now().Unix()
 
-	suite.mockJWTService.On("GenerateJWT",
+	suite.mockJWTService.On("GenerateJWT", mock.Anything,
 		"user123",
 		"app123",
 		"https://thunder.io",
@@ -236,7 +237,7 @@ func (suite *TokenBuilderTestSuite) TestBuildAccessToken_Success_EmptyScopes() {
 		}),
 	).Return(expectedToken, expectedIat, nil)
 
-	result, err := suite.builder.BuildAccessToken(ctx)
+	result, err := suite.builder.BuildAccessToken(context.TODO(), ctx)
 
 	assert.NoError(suite.T(), err)
 	assert.NotNil(suite.T(), result)
@@ -257,7 +258,7 @@ func (suite *TokenBuilderTestSuite) TestBuildAccessToken_Success_EmptyClientID()
 	expectedToken := testAccessToken
 	expectedIat := time.Now().Unix()
 
-	suite.mockJWTService.On("GenerateJWT",
+	suite.mockJWTService.On("GenerateJWT", mock.Anything,
 		"user123",
 		"app123",
 		"https://thunder.io",
@@ -268,7 +269,7 @@ func (suite *TokenBuilderTestSuite) TestBuildAccessToken_Success_EmptyClientID()
 		}),
 	).Return(expectedToken, expectedIat, nil)
 
-	result, err := suite.builder.BuildAccessToken(ctx)
+	result, err := suite.builder.BuildAccessToken(context.TODO(), ctx)
 
 	assert.NoError(suite.T(), err)
 	assert.NotNil(suite.T(), result)
@@ -289,7 +290,7 @@ func (suite *TokenBuilderTestSuite) TestBuildAccessToken_Success_EmptyGrantType(
 	expectedToken := testAccessToken
 	expectedIat := time.Now().Unix()
 
-	suite.mockJWTService.On("GenerateJWT",
+	suite.mockJWTService.On("GenerateJWT", mock.Anything,
 		"user123",
 		"app123",
 		"https://thunder.io",
@@ -300,7 +301,7 @@ func (suite *TokenBuilderTestSuite) TestBuildAccessToken_Success_EmptyGrantType(
 		}),
 	).Return(expectedToken, expectedIat, nil)
 
-	result, err := suite.builder.BuildAccessToken(ctx)
+	result, err := suite.builder.BuildAccessToken(context.TODO(), ctx)
 
 	assert.NoError(suite.T(), err)
 	assert.NotNil(suite.T(), result)
@@ -331,7 +332,7 @@ func (suite *TokenBuilderTestSuite) TestBuildAccessToken_Success_CustomIssuer() 
 	expectedToken := testAccessToken
 	expectedIat := time.Now().Unix()
 
-	suite.mockJWTService.On("GenerateJWT",
+	suite.mockJWTService.On("GenerateJWT", mock.Anything,
 		"user123",
 		"app123",
 		"https://custom.thunder.io", // OAuth-level issuer
@@ -339,7 +340,7 @@ func (suite *TokenBuilderTestSuite) TestBuildAccessToken_Success_CustomIssuer() 
 		mock.Anything,
 	).Return(expectedToken, expectedIat, nil)
 
-	result, err := suite.builder.BuildAccessToken(ctx)
+	result, err := suite.builder.BuildAccessToken(context.TODO(), ctx)
 
 	assert.NoError(suite.T(), err)
 	assert.NotNil(suite.T(), result)
@@ -348,7 +349,7 @@ func (suite *TokenBuilderTestSuite) TestBuildAccessToken_Success_CustomIssuer() 
 }
 
 func (suite *TokenBuilderTestSuite) TestBuildAccessToken_Error_NilContext() {
-	result, err := suite.builder.BuildAccessToken(nil)
+	result, err := suite.builder.BuildAccessToken(context.TODO(), nil)
 
 	assert.Error(suite.T(), err)
 	assert.Nil(suite.T(), result)
@@ -366,7 +367,7 @@ func (suite *TokenBuilderTestSuite) TestBuildAccessToken_Error_JWTGenerationFail
 		OAuthApp:       suite.oauthApp,
 	}
 
-	suite.mockJWTService.On("GenerateJWT",
+	suite.mockJWTService.On("GenerateJWT", mock.Anything,
 		"user123",
 		"app123",
 		"https://thunder.io",
@@ -379,7 +380,7 @@ func (suite *TokenBuilderTestSuite) TestBuildAccessToken_Error_JWTGenerationFail
 		ErrorDescription: "Failed to generate JWT token",
 	})
 
-	result, err := suite.builder.BuildAccessToken(ctx)
+	result, err := suite.builder.BuildAccessToken(context.TODO(), ctx)
 
 	assert.Error(suite.T(), err)
 	assert.Nil(suite.T(), result)
@@ -413,7 +414,7 @@ func (suite *TokenBuilderTestSuite) TestBuildRefreshToken_Success_Basic() {
 	expectedToken := testRefreshToken
 	expectedIat := time.Now().Unix()
 
-	suite.mockJWTService.On("GenerateJWT",
+	suite.mockJWTService.On("GenerateJWT", mock.Anything,
 		"test-client",
 		"https://thunder.io",
 		"https://thunder.io",
@@ -427,7 +428,7 @@ func (suite *TokenBuilderTestSuite) TestBuildRefreshToken_Success_Basic() {
 		}),
 	).Return(expectedToken, expectedIat, nil)
 
-	result, err := suite.builder.BuildRefreshToken(ctx)
+	result, err := suite.builder.BuildRefreshToken(context.TODO(), ctx)
 
 	assert.NoError(suite.T(), err)
 	assert.NotNil(suite.T(), result)
@@ -454,7 +455,7 @@ func (suite *TokenBuilderTestSuite) TestBuildRefreshToken_Success_WithoutUserAtt
 	expectedToken := testRefreshToken
 	expectedIat := time.Now().Unix()
 
-	suite.mockJWTService.On("GenerateJWT",
+	suite.mockJWTService.On("GenerateJWT", mock.Anything,
 		"test-client",
 		"https://thunder.io",
 		"https://thunder.io",
@@ -465,7 +466,7 @@ func (suite *TokenBuilderTestSuite) TestBuildRefreshToken_Success_WithoutUserAtt
 		}),
 	).Return(expectedToken, expectedIat, nil)
 
-	result, err := suite.builder.BuildRefreshToken(ctx)
+	result, err := suite.builder.BuildRefreshToken(context.TODO(), ctx)
 
 	assert.NoError(suite.T(), err)
 	assert.NotNil(suite.T(), result)
@@ -486,7 +487,7 @@ func (suite *TokenBuilderTestSuite) TestBuildRefreshToken_Success_WithNilOAuthAp
 	expectedToken := testRefreshToken
 	expectedIat := time.Now().Unix()
 
-	suite.mockJWTService.On("GenerateJWT",
+	suite.mockJWTService.On("GenerateJWT", mock.Anything,
 		"test-client",
 		"https://thunder.io",
 		"https://thunder.io",
@@ -497,7 +498,7 @@ func (suite *TokenBuilderTestSuite) TestBuildRefreshToken_Success_WithNilOAuthAp
 		}),
 	).Return(expectedToken, expectedIat, nil)
 
-	result, err := suite.builder.BuildRefreshToken(ctx)
+	result, err := suite.builder.BuildRefreshToken(context.TODO(), ctx)
 
 	assert.NoError(suite.T(), err)
 	assert.NotNil(suite.T(), result)
@@ -518,7 +519,7 @@ func (suite *TokenBuilderTestSuite) TestBuildRefreshToken_Success_EmptyScopes() 
 	expectedToken := testRefreshToken
 	expectedIat := time.Now().Unix()
 
-	suite.mockJWTService.On("GenerateJWT",
+	suite.mockJWTService.On("GenerateJWT", mock.Anything,
 		"test-client",
 		"https://thunder.io",
 		"https://thunder.io",
@@ -529,7 +530,7 @@ func (suite *TokenBuilderTestSuite) TestBuildRefreshToken_Success_EmptyScopes() 
 		}),
 	).Return(expectedToken, expectedIat, nil)
 
-	result, err := suite.builder.BuildRefreshToken(ctx)
+	result, err := suite.builder.BuildRefreshToken(context.TODO(), ctx)
 
 	assert.NoError(suite.T(), err)
 	assert.NotNil(suite.T(), result)
@@ -560,7 +561,7 @@ func (suite *TokenBuilderTestSuite) TestBuildRefreshToken_Success_CustomIssuer()
 	expectedToken := testRefreshToken
 	expectedIat := time.Now().Unix()
 
-	suite.mockJWTService.On("GenerateJWT",
+	suite.mockJWTService.On("GenerateJWT", mock.Anything,
 		"test-client",
 		"https://custom.thunder.io",
 		"https://custom.thunder.io",
@@ -568,7 +569,7 @@ func (suite *TokenBuilderTestSuite) TestBuildRefreshToken_Success_CustomIssuer()
 		mock.Anything,
 	).Return(expectedToken, expectedIat, nil)
 
-	result, err := suite.builder.BuildRefreshToken(ctx)
+	result, err := suite.builder.BuildRefreshToken(context.TODO(), ctx)
 
 	assert.NoError(suite.T(), err)
 	assert.NotNil(suite.T(), result)
@@ -597,7 +598,7 @@ func (suite *TokenBuilderTestSuite) TestBuildRefreshToken_Success_WithNilAccessT
 	expectedToken := testRefreshToken
 	expectedIat := time.Now().Unix()
 
-	suite.mockJWTService.On("GenerateJWT",
+	suite.mockJWTService.On("GenerateJWT", mock.Anything,
 		"test-client",
 		"https://thunder.io",
 		"https://thunder.io",
@@ -608,7 +609,7 @@ func (suite *TokenBuilderTestSuite) TestBuildRefreshToken_Success_WithNilAccessT
 		}),
 	).Return(expectedToken, expectedIat, nil)
 
-	result, err := suite.builder.BuildRefreshToken(ctx)
+	result, err := suite.builder.BuildRefreshToken(context.TODO(), ctx)
 
 	assert.NoError(suite.T(), err)
 	assert.NotNil(suite.T(), result)
@@ -616,7 +617,7 @@ func (suite *TokenBuilderTestSuite) TestBuildRefreshToken_Success_WithNilAccessT
 }
 
 func (suite *TokenBuilderTestSuite) TestBuildRefreshToken_Error_NilContext() {
-	result, err := suite.builder.BuildRefreshToken(nil)
+	result, err := suite.builder.BuildRefreshToken(context.TODO(), nil)
 
 	assert.Error(suite.T(), err)
 	assert.Nil(suite.T(), result)
@@ -634,7 +635,7 @@ func (suite *TokenBuilderTestSuite) TestBuildRefreshToken_Error_JWTGenerationFai
 		OAuthApp:             suite.oauthApp,
 	}
 
-	suite.mockJWTService.On("GenerateJWT",
+	suite.mockJWTService.On("GenerateJWT", mock.Anything,
 		"test-client",
 		"https://thunder.io",
 		"https://thunder.io",
@@ -647,7 +648,7 @@ func (suite *TokenBuilderTestSuite) TestBuildRefreshToken_Error_JWTGenerationFai
 		ErrorDescription: "Failed to generate JWT token",
 	})
 
-	result, err := suite.builder.BuildRefreshToken(ctx)
+	result, err := suite.builder.BuildRefreshToken(context.TODO(), ctx)
 
 	assert.Error(suite.T(), err)
 	assert.Nil(suite.T(), result)
@@ -672,7 +673,7 @@ func (suite *TokenBuilderTestSuite) TestBuildIDToken_Success_Basic() {
 	expectedToken := testIDToken
 	expectedIat := time.Now().Unix()
 
-	suite.mockJWTService.On("GenerateJWT",
+	suite.mockJWTService.On("GenerateJWT", mock.Anything,
 		"user123",
 		"app123",
 		"https://thunder.io",
@@ -683,7 +684,7 @@ func (suite *TokenBuilderTestSuite) TestBuildIDToken_Success_Basic() {
 		}),
 	).Return(expectedToken, expectedIat, nil)
 
-	result, err := suite.builder.BuildIDToken(ctx)
+	result, err := suite.builder.BuildIDToken(context.TODO(), ctx)
 
 	assert.NoError(suite.T(), err)
 	assert.NotNil(suite.T(), result)
@@ -709,7 +710,7 @@ func (suite *TokenBuilderTestSuite) TestBuildIDToken_Success_NoAuthTime() {
 	expectedToken := testIDToken
 	expectedIat := time.Now().Unix()
 
-	suite.mockJWTService.On("GenerateJWT",
+	suite.mockJWTService.On("GenerateJWT", mock.Anything,
 		"user123",
 		"app123",
 		"https://thunder.io",
@@ -720,7 +721,7 @@ func (suite *TokenBuilderTestSuite) TestBuildIDToken_Success_NoAuthTime() {
 		}),
 	).Return(expectedToken, expectedIat, nil)
 
-	result, err := suite.builder.BuildIDToken(ctx)
+	result, err := suite.builder.BuildIDToken(context.TODO(), ctx)
 
 	assert.NoError(suite.T(), err)
 	assert.NotNil(suite.T(), result)
@@ -753,7 +754,7 @@ func (suite *TokenBuilderTestSuite) TestBuildIDToken_Success_WithScopeClaims() {
 	expectedToken := testIDToken
 	expectedIat := time.Now().Unix()
 
-	suite.mockJWTService.On("GenerateJWT",
+	suite.mockJWTService.On("GenerateJWT", mock.Anything,
 		"user123",
 		"app123",
 		"https://thunder.io",
@@ -763,7 +764,7 @@ func (suite *TokenBuilderTestSuite) TestBuildIDToken_Success_WithScopeClaims() {
 		}),
 	).Return(expectedToken, expectedIat, nil)
 
-	result, err := suite.builder.BuildIDToken(ctx)
+	result, err := suite.builder.BuildIDToken(context.TODO(), ctx)
 
 	assert.NoError(suite.T(), err)
 	assert.NotNil(suite.T(), result)
@@ -793,7 +794,7 @@ func (suite *TokenBuilderTestSuite) TestBuildIDToken_Success_WithStandardOIDCSco
 	expectedToken := testIDToken
 	expectedIat := time.Now().Unix()
 
-	suite.mockJWTService.On("GenerateJWT",
+	suite.mockJWTService.On("GenerateJWT", mock.Anything,
 		"user123",
 		"app123",
 		"https://thunder.io",
@@ -804,7 +805,7 @@ func (suite *TokenBuilderTestSuite) TestBuildIDToken_Success_WithStandardOIDCSco
 		}),
 	).Return(expectedToken, expectedIat, nil)
 
-	result, err := suite.builder.BuildIDToken(ctx)
+	result, err := suite.builder.BuildIDToken(context.TODO(), ctx)
 
 	assert.NoError(suite.T(), err)
 	assert.NotNil(suite.T(), result)
@@ -824,7 +825,7 @@ func (suite *TokenBuilderTestSuite) TestBuildIDToken_Success_NoUserAttributes() 
 	expectedToken := testIDToken
 	expectedIat := time.Now().Unix()
 
-	suite.mockJWTService.On("GenerateJWT",
+	suite.mockJWTService.On("GenerateJWT", mock.Anything,
 		"user123",
 		"app123",
 		"https://thunder.io",
@@ -834,7 +835,7 @@ func (suite *TokenBuilderTestSuite) TestBuildIDToken_Success_NoUserAttributes() 
 		}),
 	).Return(expectedToken, expectedIat, nil)
 
-	result, err := suite.builder.BuildIDToken(ctx)
+	result, err := suite.builder.BuildIDToken(context.TODO(), ctx)
 
 	assert.NoError(suite.T(), err)
 	assert.NotNil(suite.T(), result)
@@ -863,7 +864,7 @@ func (suite *TokenBuilderTestSuite) TestBuildIDToken_Success_EmptyUserAttributes
 	expectedToken := testIDToken
 	expectedIat := time.Now().Unix()
 
-	suite.mockJWTService.On("GenerateJWT",
+	suite.mockJWTService.On("GenerateJWT", mock.Anything,
 		"user123",
 		"app123",
 		"https://thunder.io",
@@ -875,7 +876,7 @@ func (suite *TokenBuilderTestSuite) TestBuildIDToken_Success_EmptyUserAttributes
 		}),
 	).Return(expectedToken, expectedIat, nil)
 
-	result, err := suite.builder.BuildIDToken(ctx)
+	result, err := suite.builder.BuildIDToken(context.TODO(), ctx)
 
 	assert.NoError(suite.T(), err)
 	assert.NotNil(suite.T(), result)
@@ -904,7 +905,7 @@ func (suite *TokenBuilderTestSuite) TestBuildIDToken_Success_CustomValidityPerio
 	expectedToken := testIDToken
 	expectedIat := time.Now().Unix()
 
-	suite.mockJWTService.On("GenerateJWT",
+	suite.mockJWTService.On("GenerateJWT", mock.Anything,
 		"user123",
 		"app123",
 		"https://thunder.io",
@@ -912,7 +913,7 @@ func (suite *TokenBuilderTestSuite) TestBuildIDToken_Success_CustomValidityPerio
 		mock.Anything,
 	).Return(expectedToken, expectedIat, nil)
 
-	result, err := suite.builder.BuildIDToken(ctx)
+	result, err := suite.builder.BuildIDToken(context.TODO(), ctx)
 
 	assert.NoError(suite.T(), err)
 	assert.NotNil(suite.T(), result)
@@ -921,7 +922,7 @@ func (suite *TokenBuilderTestSuite) TestBuildIDToken_Success_CustomValidityPerio
 }
 
 func (suite *TokenBuilderTestSuite) TestBuildIDToken_Error_NilContext() {
-	result, err := suite.builder.BuildIDToken(nil)
+	result, err := suite.builder.BuildIDToken(context.TODO(), nil)
 
 	assert.Error(suite.T(), err)
 	assert.Nil(suite.T(), result)
@@ -938,7 +939,7 @@ func (suite *TokenBuilderTestSuite) TestBuildIDToken_Error_JWTGenerationFailed()
 		OAuthApp:       suite.oauthApp,
 	}
 
-	suite.mockJWTService.On("GenerateJWT",
+	suite.mockJWTService.On("GenerateJWT", mock.Anything,
 		"user123",
 		"app123",
 		"https://thunder.io",
@@ -951,7 +952,7 @@ func (suite *TokenBuilderTestSuite) TestBuildIDToken_Error_JWTGenerationFailed()
 		ErrorDescription: "Failed to generate JWT token",
 	})
 
-	result, err := suite.builder.BuildIDToken(ctx)
+	result, err := suite.builder.BuildIDToken(context.TODO(), ctx)
 
 	assert.Error(suite.T(), err)
 	assert.Nil(suite.T(), result)

@@ -5,6 +5,7 @@
 package modelmock
 
 import (
+	"context"
 	"database/sql"
 
 	"github.com/asgardeo/thunder/internal/system/database/model"
@@ -158,6 +159,88 @@ func (_c *TxInterfaceMock_Exec_Call) RunAndReturn(run func(query model.DBQuery, 
 	return _c
 }
 
+// ExecContext provides a mock function for the type TxInterfaceMock
+func (_mock *TxInterfaceMock) ExecContext(ctx context.Context, query model.DBQuery, args ...any) (sql.Result, error) {
+	var _ca []interface{}
+	_ca = append(_ca, ctx, query)
+	_ca = append(_ca, args...)
+	ret := _mock.Called(_ca...)
+
+	if len(ret) == 0 {
+		panic("no return value specified for ExecContext")
+	}
+
+	var r0 sql.Result
+	var r1 error
+	if returnFunc, ok := ret.Get(0).(func(context.Context, model.DBQuery, ...any) (sql.Result, error)); ok {
+		return returnFunc(ctx, query, args...)
+	}
+	if returnFunc, ok := ret.Get(0).(func(context.Context, model.DBQuery, ...any) sql.Result); ok {
+		r0 = returnFunc(ctx, query, args...)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(sql.Result)
+		}
+	}
+	if returnFunc, ok := ret.Get(1).(func(context.Context, model.DBQuery, ...any) error); ok {
+		r1 = returnFunc(ctx, query, args...)
+	} else {
+		r1 = ret.Error(1)
+	}
+	return r0, r1
+}
+
+// TxInterfaceMock_ExecContext_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'ExecContext'
+type TxInterfaceMock_ExecContext_Call struct {
+	*mock.Call
+}
+
+// ExecContext is a helper method to define mock.On call
+//   - ctx context.Context
+//   - query model.DBQuery
+//   - args ...any
+func (_e *TxInterfaceMock_Expecter) ExecContext(ctx interface{}, query interface{}, args ...interface{}) *TxInterfaceMock_ExecContext_Call {
+	return &TxInterfaceMock_ExecContext_Call{Call: _e.mock.On("ExecContext",
+		append([]interface{}{ctx, query}, args...)...)}
+}
+
+func (_c *TxInterfaceMock_ExecContext_Call) Run(run func(ctx context.Context, query model.DBQuery, args ...any)) *TxInterfaceMock_ExecContext_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 context.Context
+		if args[0] != nil {
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 model.DBQuery
+		if args[1] != nil {
+			arg1 = args[1].(model.DBQuery)
+		}
+		var arg2 []any
+		variadicArgs := make([]any, len(args)-2)
+		for i, a := range args[2:] {
+			if a != nil {
+				variadicArgs[i] = a.(any)
+			}
+		}
+		arg2 = variadicArgs
+		run(
+			arg0,
+			arg1,
+			arg2...,
+		)
+	})
+	return _c
+}
+
+func (_c *TxInterfaceMock_ExecContext_Call) Return(result sql.Result, err error) *TxInterfaceMock_ExecContext_Call {
+	_c.Call.Return(result, err)
+	return _c
+}
+
+func (_c *TxInterfaceMock_ExecContext_Call) RunAndReturn(run func(ctx context.Context, query model.DBQuery, args ...any) (sql.Result, error)) *TxInterfaceMock_ExecContext_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
 // Query provides a mock function for the type TxInterfaceMock
 func (_mock *TxInterfaceMock) Query(query model.DBQuery, args ...any) (*sql.Rows, error) {
 	var _ca []interface{}
@@ -230,6 +313,88 @@ func (_c *TxInterfaceMock_Query_Call) Return(rows *sql.Rows, err error) *TxInter
 }
 
 func (_c *TxInterfaceMock_Query_Call) RunAndReturn(run func(query model.DBQuery, args ...any) (*sql.Rows, error)) *TxInterfaceMock_Query_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
+// QueryContext provides a mock function for the type TxInterfaceMock
+func (_mock *TxInterfaceMock) QueryContext(ctx context.Context, query model.DBQuery, args ...any) (*sql.Rows, error) {
+	var _ca []interface{}
+	_ca = append(_ca, ctx, query)
+	_ca = append(_ca, args...)
+	ret := _mock.Called(_ca...)
+
+	if len(ret) == 0 {
+		panic("no return value specified for QueryContext")
+	}
+
+	var r0 *sql.Rows
+	var r1 error
+	if returnFunc, ok := ret.Get(0).(func(context.Context, model.DBQuery, ...any) (*sql.Rows, error)); ok {
+		return returnFunc(ctx, query, args...)
+	}
+	if returnFunc, ok := ret.Get(0).(func(context.Context, model.DBQuery, ...any) *sql.Rows); ok {
+		r0 = returnFunc(ctx, query, args...)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(*sql.Rows)
+		}
+	}
+	if returnFunc, ok := ret.Get(1).(func(context.Context, model.DBQuery, ...any) error); ok {
+		r1 = returnFunc(ctx, query, args...)
+	} else {
+		r1 = ret.Error(1)
+	}
+	return r0, r1
+}
+
+// TxInterfaceMock_QueryContext_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'QueryContext'
+type TxInterfaceMock_QueryContext_Call struct {
+	*mock.Call
+}
+
+// QueryContext is a helper method to define mock.On call
+//   - ctx context.Context
+//   - query model.DBQuery
+//   - args ...any
+func (_e *TxInterfaceMock_Expecter) QueryContext(ctx interface{}, query interface{}, args ...interface{}) *TxInterfaceMock_QueryContext_Call {
+	return &TxInterfaceMock_QueryContext_Call{Call: _e.mock.On("QueryContext",
+		append([]interface{}{ctx, query}, args...)...)}
+}
+
+func (_c *TxInterfaceMock_QueryContext_Call) Run(run func(ctx context.Context, query model.DBQuery, args ...any)) *TxInterfaceMock_QueryContext_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 context.Context
+		if args[0] != nil {
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 model.DBQuery
+		if args[1] != nil {
+			arg1 = args[1].(model.DBQuery)
+		}
+		var arg2 []any
+		variadicArgs := make([]any, len(args)-2)
+		for i, a := range args[2:] {
+			if a != nil {
+				variadicArgs[i] = a.(any)
+			}
+		}
+		arg2 = variadicArgs
+		run(
+			arg0,
+			arg1,
+			arg2...,
+		)
+	})
+	return _c
+}
+
+func (_c *TxInterfaceMock_QueryContext_Call) Return(rows *sql.Rows, err error) *TxInterfaceMock_QueryContext_Call {
+	_c.Call.Return(rows, err)
+	return _c
+}
+
+func (_c *TxInterfaceMock_QueryContext_Call) RunAndReturn(run func(ctx context.Context, query model.DBQuery, args ...any) (*sql.Rows, error)) *TxInterfaceMock_QueryContext_Call {
 	_c.Call.Return(run)
 	return _c
 }

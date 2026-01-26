@@ -64,7 +64,9 @@ func (suite *TransactionerTestSuite) TestTransact_Success() {
 		executed = true
 		// Verify transaction is in context
 		suite.True(HasTx(txCtx))
-		suite.NotNil(TxFromContext(txCtx))
+		tx, err := TxFromContext(txCtx)
+		suite.NoError(err)
+		suite.NotNil(tx)
 		return nil
 	})
 
@@ -126,14 +128,16 @@ func (suite *TransactionerTestSuite) TestTransact_NestedTransaction() {
 	err := suite.transactioner.Transact(ctx, func(txCtx1 context.Context) error {
 		outerExecuted = true
 		suite.True(HasTx(txCtx1))
-		tx1 := TxFromContext(txCtx1)
+		tx1, err := TxFromContext(txCtx1)
+		suite.NoError(err)
 		suite.NotNil(tx1)
 
 		// Nested call - should reuse the same transaction
-		err := suite.transactioner.Transact(txCtx1, func(txCtx2 context.Context) error {
+		err = suite.transactioner.Transact(txCtx1, func(txCtx2 context.Context) error {
 			innerExecuted = true
 			suite.True(HasTx(txCtx2))
-			tx2 := TxFromContext(txCtx2)
+			tx2, err := TxFromContext(txCtx2)
+			suite.NoError(err)
 			suite.NotNil(tx2)
 
 			// Should be the same transaction

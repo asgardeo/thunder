@@ -116,7 +116,7 @@ func (suite *IdentityResolverExecutorTestSuite) TestExecute_Success_UsernameInUs
 	ctx.UserInputs[userAttributeUsername] = testIdentityResolverUsername
 
 	userID := testIdentityResolverUserID
-	suite.mockUserService.On("IdentifyUser", map[string]interface{}{
+	suite.mockUserService.On("IdentifyUser", mock.Anything, map[string]interface{}{
 		userAttributeUsername: testIdentityResolverUsername,
 	}).Return(&userID, nil)
 
@@ -133,7 +133,7 @@ func (suite *IdentityResolverExecutorTestSuite) TestExecute_Success_UsernameInRu
 	ctx.RuntimeData[userAttributeUsername] = testIdentityResolverUsername
 
 	userID := testIdentityResolverUserID
-	suite.mockUserService.On("IdentifyUser", map[string]interface{}{
+	suite.mockUserService.On("IdentifyUser", mock.Anything, map[string]interface{}{
 		userAttributeUsername: testIdentityResolverUsername,
 	}).Return(&userID, nil)
 
@@ -171,7 +171,7 @@ func (suite *IdentityResolverExecutorTestSuite) TestExecute_Failure_UserNotFound
 	ctx := createIdentityResolverNodeContext()
 	ctx.UserInputs[userAttributeUsername] = "nonexistent_user"
 
-	suite.mockUserService.On("IdentifyUser", map[string]interface{}{
+	suite.mockUserService.On("IdentifyUser", mock.Anything, map[string]interface{}{
 		userAttributeUsername: "nonexistent_user",
 	}).Return(nil, &user.ErrorUserNotFound)
 
@@ -188,7 +188,7 @@ func (suite *IdentityResolverExecutorTestSuite) TestExecute_Failure_NilUserID() 
 	ctx.UserInputs[userAttributeUsername] = testIdentityResolverUsername
 
 	// Return nil userID (edge case)
-	suite.mockUserService.On("IdentifyUser", map[string]interface{}{
+	suite.mockUserService.On("IdentifyUser", mock.Anything, map[string]interface{}{
 		userAttributeUsername: testIdentityResolverUsername,
 	}).Return(nil, nil)
 
@@ -206,7 +206,7 @@ func (suite *IdentityResolverExecutorTestSuite) TestExecute_Failure_EmptyUserID(
 
 	// Return empty userID
 	emptyUserID := ""
-	suite.mockUserService.On("IdentifyUser", map[string]interface{}{
+	suite.mockUserService.On("IdentifyUser", mock.Anything, map[string]interface{}{
 		userAttributeUsername: testIdentityResolverUsername,
 	}).Return(&emptyUserID, nil)
 
@@ -222,7 +222,7 @@ func (suite *IdentityResolverExecutorTestSuite) TestExecute_Failure_ServiceError
 	ctx := createIdentityResolverNodeContext()
 	ctx.UserInputs[userAttributeUsername] = testIdentityResolverUsername
 
-	suite.mockUserService.On("IdentifyUser", map[string]interface{}{
+	suite.mockUserService.On("IdentifyUser", mock.Anything, map[string]interface{}{
 		userAttributeUsername: testIdentityResolverUsername,
 	}).Return(nil, &user.ErrorInternalServerError)
 
@@ -239,7 +239,7 @@ func (suite *IdentityResolverExecutorTestSuite) TestExecute_PreservesExistingRun
 	ctx.RuntimeData["existingKey"] = "existingValue"
 
 	userID := testIdentityResolverUserID
-	suite.mockUserService.On("IdentifyUser", map[string]interface{}{
+	suite.mockUserService.On("IdentifyUser", mock.Anything, map[string]interface{}{
 		userAttributeUsername: testIdentityResolverUsername,
 	}).Return(&userID, nil)
 
@@ -259,7 +259,7 @@ func (suite *IdentityResolverExecutorTestSuite) TestExecute_UserInputsPrioritize
 	ctx.RuntimeData[userAttributeUsername] = "user_from_runtime"
 
 	userID := testIdentityResolverUserID
-	suite.mockUserService.On("IdentifyUser", map[string]interface{}{
+	suite.mockUserService.On("IdentifyUser", mock.Anything, map[string]interface{}{
 		userAttributeUsername: "user_from_inputs",
 	}).Return(&userID, nil)
 

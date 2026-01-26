@@ -19,9 +19,11 @@
 package executor
 
 import (
+	"context"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/suite"
 
 	appmodel "github.com/asgardeo/thunder/internal/application/model"
@@ -82,7 +84,7 @@ func (suite *OAuthExecutorTestSuite) TestExecute_CodeNotProvided_BuildsAuthorize
 		},
 	}
 
-	suite.mockOAuthService.On("BuildAuthorizeURL", "idp-123").
+	suite.mockOAuthService.On("BuildAuthorizeURL", mock.Anything, "idp-123").
 		Return("https://oauth.provider.com/authorize?client_id=abc", nil)
 
 	suite.mockIDPService.On("GetIdentityProvider", "idp-123").
@@ -130,11 +132,11 @@ func (suite *OAuthExecutorTestSuite) TestExecute_CodeProvided_AuthenticatesUser(
 		Type:             "INTERNAL",
 	}
 
-	suite.mockOAuthService.On("ExchangeCodeForToken", "idp-123", "auth_code_123", true).
+	suite.mockOAuthService.On("ExchangeCodeForToken", mock.Anything, "idp-123", "auth_code_123", true).
 		Return(tokenResp, nil)
-	suite.mockOAuthService.On("FetchUserInfo", "idp-123", "access_token_123").
+	suite.mockOAuthService.On("FetchUserInfo", mock.Anything, "idp-123", "access_token_123").
 		Return(userInfo, nil)
-	suite.mockOAuthService.On("GetInternalUser", "user-sub-123").
+	suite.mockOAuthService.On("GetInternalUser", mock.Anything, "user-sub-123").
 		Return(existingUser, nil)
 
 	resp, err := suite.executor.Execute(ctx)
@@ -163,7 +165,7 @@ func (suite *OAuthExecutorTestSuite) TestBuildAuthorizeFlow_Success() {
 		RuntimeData:    make(map[string]string),
 	}
 
-	suite.mockOAuthService.On("BuildAuthorizeURL", "idp-123").
+	suite.mockOAuthService.On("BuildAuthorizeURL", mock.Anything, "idp-123").
 		Return("https://oauth.provider.com/authorize", nil)
 	suite.mockIDPService.On("GetIdentityProvider", "idp-123").
 		Return(&idp.IDPDTO{ID: "idp-123", Name: "GoogleIDP"}, nil)
@@ -210,7 +212,7 @@ func (suite *OAuthExecutorTestSuite) TestBuildAuthorizeFlow_BuildURLClientError(
 		RuntimeData:    make(map[string]string),
 	}
 
-	suite.mockOAuthService.On("BuildAuthorizeURL", "idp-123").
+	suite.mockOAuthService.On("BuildAuthorizeURL", mock.Anything, "idp-123").
 		Return("", &serviceerror.ServiceError{
 			Type:             serviceerror.ClientErrorType,
 			ErrorDescription: "Invalid IDP configuration",
@@ -238,7 +240,7 @@ func (suite *OAuthExecutorTestSuite) TestBuildAuthorizeFlow_BuildURLServerError(
 		RuntimeData:    make(map[string]string),
 	}
 
-	suite.mockOAuthService.On("BuildAuthorizeURL", "idp-123").
+	suite.mockOAuthService.On("BuildAuthorizeURL", mock.Anything, "idp-123").
 		Return("", &serviceerror.ServiceError{
 			Type:             serviceerror.ServerErrorType,
 			Code:             "OAUTH-5000",
@@ -275,7 +277,7 @@ func (suite *OAuthExecutorTestSuite) TestExchangeCodeForToken_Success() {
 		ExpiresIn:    3600,
 	}
 
-	suite.mockOAuthService.On("ExchangeCodeForToken", "idp-123", "auth_code", true).
+	suite.mockOAuthService.On("ExchangeCodeForToken", mock.Anything, "idp-123", "auth_code", true).
 		Return(tokenResp, nil)
 
 	result, err := suite.executor.ExchangeCodeForToken(ctx, execResp, "auth_code")
@@ -303,7 +305,7 @@ func (suite *OAuthExecutorTestSuite) TestExchangeCodeForToken_ClientError() {
 		RuntimeData:    make(map[string]string),
 	}
 
-	suite.mockOAuthService.On("ExchangeCodeForToken", "idp-123", "invalid_code", true).
+	suite.mockOAuthService.On("ExchangeCodeForToken", mock.Anything, "idp-123", "invalid_code", true).
 		Return(nil, &serviceerror.ServiceError{
 			Type:             serviceerror.ClientErrorType,
 			ErrorDescription: "Invalid authorization code",
@@ -332,7 +334,7 @@ func (suite *OAuthExecutorTestSuite) TestExchangeCodeForToken_ServerError() {
 		RuntimeData:    make(map[string]string),
 	}
 
-	suite.mockOAuthService.On("ExchangeCodeForToken", "idp-123", "auth_code", true).
+	suite.mockOAuthService.On("ExchangeCodeForToken", mock.Anything, "idp-123", "auth_code", true).
 		Return(nil, &serviceerror.ServiceError{
 			Type:             serviceerror.ServerErrorType,
 			Code:             "OAUTH-5000",
@@ -367,7 +369,7 @@ func (suite *OAuthExecutorTestSuite) TestGetUserInfo_Success() {
 		"name":  "Test User",
 	}
 
-	suite.mockOAuthService.On("FetchUserInfo", "idp-123", "access_token").
+	suite.mockOAuthService.On("FetchUserInfo", mock.Anything, "idp-123", "access_token").
 		Return(userInfo, nil)
 
 	result, err := suite.executor.GetUserInfo(ctx, execResp, "access_token")
@@ -394,7 +396,7 @@ func (suite *OAuthExecutorTestSuite) TestGetUserInfo_ClientError() {
 		RuntimeData:    make(map[string]string),
 	}
 
-	suite.mockOAuthService.On("FetchUserInfo", "idp-123", "invalid_token").
+	suite.mockOAuthService.On("FetchUserInfo", mock.Anything, "idp-123", "invalid_token").
 		Return(nil, &serviceerror.ServiceError{
 			Type:             serviceerror.ClientErrorType,
 			ErrorDescription: "Invalid access token",
@@ -423,7 +425,7 @@ func (suite *OAuthExecutorTestSuite) TestGetUserInfo_ServerError() {
 		RuntimeData:    make(map[string]string),
 	}
 
-	suite.mockOAuthService.On("FetchUserInfo", "idp-123", "access_token").
+	suite.mockOAuthService.On("FetchUserInfo", mock.Anything, "idp-123", "access_token").
 		Return(nil, &serviceerror.ServiceError{
 			Type:             serviceerror.ServerErrorType,
 			Code:             "OAUTH-5000",
@@ -497,11 +499,11 @@ func (suite *OAuthExecutorTestSuite) TestProcessAuthFlowResponse_RegistrationFlo
 		"name":  "New User",
 	}
 
-	suite.mockOAuthService.On("ExchangeCodeForToken", "idp-123", "auth_code_123", true).
+	suite.mockOAuthService.On("ExchangeCodeForToken", mock.Anything, "idp-123", "auth_code_123", true).
 		Return(tokenResp, nil)
-	suite.mockOAuthService.On("FetchUserInfo", "idp-123", "access_token_123").
+	suite.mockOAuthService.On("FetchUserInfo", mock.Anything, "idp-123", "access_token_123").
 		Return(userInfo, nil)
-	suite.mockOAuthService.On("GetInternalUser", "new-user-sub").
+	suite.mockOAuthService.On("GetInternalUser", mock.Anything, "new-user-sub").
 		Return(nil, &serviceerror.ServiceError{
 			Code: authncm.ErrorUserNotFound.Code,
 			Type: serviceerror.ClientErrorType,
@@ -546,11 +548,11 @@ func (suite *OAuthExecutorTestSuite) TestProcessAuthFlowResponse_AuthFlow_UserNo
 		"email": "unknown@example.com",
 	}
 
-	suite.mockOAuthService.On("ExchangeCodeForToken", "idp-123", "auth_code_123", true).
+	suite.mockOAuthService.On("ExchangeCodeForToken", mock.Anything, "idp-123", "auth_code_123", true).
 		Return(tokenResp, nil)
-	suite.mockOAuthService.On("FetchUserInfo", "idp-123", "access_token_123").
+	suite.mockOAuthService.On("FetchUserInfo", mock.Anything, "idp-123", "access_token_123").
 		Return(userInfo, nil)
-	suite.mockOAuthService.On("GetInternalUser", "unknown-user").
+	suite.mockOAuthService.On("GetInternalUser", mock.Anything, "unknown-user").
 		Return(nil, &serviceerror.ServiceError{
 			Code: authncm.ErrorUserNotFound.Code,
 			Type: serviceerror.ClientErrorType,
@@ -598,11 +600,11 @@ func (suite *OAuthExecutorTestSuite) TestProcessAuthFlowResponse_UserAlreadyExis
 		OrganizationUnit: "ou-456",
 	}
 
-	suite.mockOAuthService.On("ExchangeCodeForToken", "idp-123", "auth_code_123", true).
+	suite.mockOAuthService.On("ExchangeCodeForToken", mock.Anything, "idp-123", "auth_code_123", true).
 		Return(tokenResp, nil)
-	suite.mockOAuthService.On("FetchUserInfo", "idp-123", "access_token_123").
+	suite.mockOAuthService.On("FetchUserInfo", mock.Anything, "idp-123", "access_token_123").
 		Return(userInfo, nil)
-	suite.mockOAuthService.On("GetInternalUser", "existing-user-sub").
+	suite.mockOAuthService.On("GetInternalUser", mock.Anything, "existing-user-sub").
 		Return(existingUser, nil)
 
 	err := suite.executor.ProcessAuthFlowResponse(ctx, execResp)
@@ -658,7 +660,7 @@ func (suite *OAuthExecutorTestSuite) TestProcessAuthFlowResponse_EmptyScope() {
 		ExpiresIn:   3600,
 	}
 
-	suite.mockOAuthService.On("ExchangeCodeForToken", "idp-123", "auth_code_123", true).
+	suite.mockOAuthService.On("ExchangeCodeForToken", mock.Anything, "idp-123", "auth_code_123", true).
 		Return(tokenResp, nil)
 
 	err := suite.executor.ProcessAuthFlowResponse(ctx, execResp)
@@ -698,9 +700,9 @@ func (suite *OAuthExecutorTestSuite) TestProcessAuthFlowResponse_NoSubClaim() {
 		"name":  "Test User",
 	}
 
-	suite.mockOAuthService.On("ExchangeCodeForToken", "idp-123", "auth_code_123", true).
+	suite.mockOAuthService.On("ExchangeCodeForToken", mock.Anything, "idp-123", "auth_code_123", true).
 		Return(tokenResp, nil)
-	suite.mockOAuthService.On("FetchUserInfo", "idp-123", "access_token_123").
+	suite.mockOAuthService.On("FetchUserInfo", mock.Anything, "idp-123", "access_token_123").
 		Return(userInfo, nil)
 
 	err := suite.executor.ProcessAuthFlowResponse(ctx, execResp)
@@ -859,11 +861,11 @@ func (suite *OAuthExecutorTestSuite) TestProcessAuthFlowResponse_RegistrationFlo
 		"name":  "New User",
 	}
 
-	suite.mockOAuthService.On("ExchangeCodeForToken", "idp-123", "auth_code_123", true).
+	suite.mockOAuthService.On("ExchangeCodeForToken", mock.Anything, "idp-123", "auth_code_123", true).
 		Return(tokenResp, nil)
-	suite.mockOAuthService.On("FetchUserInfo", "idp-123", "access_token_123").
+	suite.mockOAuthService.On("FetchUserInfo", mock.Anything, "idp-123", "access_token_123").
 		Return(userInfo, nil)
-	suite.mockOAuthService.On("GetInternalUser", "new-user-sub").
+	suite.mockOAuthService.On("GetInternalUser", mock.Anything, "new-user-sub").
 		Return(nil, &serviceerror.ServiceError{
 			Code: authncm.ErrorUserNotFound.Code,
 			Type: serviceerror.ClientErrorType,
@@ -934,11 +936,11 @@ func (suite *OAuthExecutorTestSuite) TestProcessAuthFlowResponse_AllowAuthWithou
 		"name":  "New User",
 	}
 
-	suite.mockOAuthService.On("ExchangeCodeForToken", "idp-123", "auth_code_123", true).
+	suite.mockOAuthService.On("ExchangeCodeForToken", mock.Anything, "idp-123", "auth_code_123", true).
 		Return(tokenResp, nil)
-	suite.mockOAuthService.On("FetchUserInfo", "idp-123", "access_token_123").
+	suite.mockOAuthService.On("FetchUserInfo", mock.Anything, "idp-123", "access_token_123").
 		Return(userInfo, nil)
-	suite.mockOAuthService.On("GetInternalUser", "new-user-sub").
+	suite.mockOAuthService.On("GetInternalUser", mock.Anything, "new-user-sub").
 		Return(nil, &serviceerror.ServiceError{
 			Code: authncm.ErrorUserNotFound.Code,
 			Type: serviceerror.ClientErrorType,
@@ -992,11 +994,11 @@ func (suite *OAuthExecutorTestSuite) TestProcessAuthFlowResponse_PreventAuthWith
 		"email": "newuser@example.com",
 	}
 
-	suite.mockOAuthService.On("ExchangeCodeForToken", "idp-123", "auth_code_123", true).
+	suite.mockOAuthService.On("ExchangeCodeForToken", mock.Anything, "idp-123", "auth_code_123", true).
 		Return(tokenResp, nil)
-	suite.mockOAuthService.On("FetchUserInfo", "idp-123", "access_token_123").
+	suite.mockOAuthService.On("FetchUserInfo", mock.Anything, "idp-123", "access_token_123").
 		Return(userInfo, nil)
-	suite.mockOAuthService.On("GetInternalUser", "new-user-sub").
+	suite.mockOAuthService.On("GetInternalUser", mock.Anything, "new-user-sub").
 		Return(nil, &serviceerror.ServiceError{
 			Code: authncm.ErrorUserNotFound.Code,
 			Type: serviceerror.ClientErrorType,
@@ -1047,11 +1049,11 @@ func (suite *OAuthExecutorTestSuite) TestProcessAuthFlowResponse_AllowRegistrati
 		Type:             "INTERNAL",
 	}
 
-	suite.mockOAuthService.On("ExchangeCodeForToken", "idp-123", "auth_code_123", true).
+	suite.mockOAuthService.On("ExchangeCodeForToken", mock.Anything, "idp-123", "auth_code_123", true).
 		Return(tokenResp, nil)
-	suite.mockOAuthService.On("FetchUserInfo", "idp-123", "access_token_123").
+	suite.mockOAuthService.On("FetchUserInfo", mock.Anything, "idp-123", "access_token_123").
 		Return(userInfo, nil)
-	suite.mockOAuthService.On("GetInternalUser", "existing-user-sub").
+	suite.mockOAuthService.On("GetInternalUser", mock.Anything, "existing-user-sub").
 		Return(existingUser, nil)
 
 	err := suite.executor.ProcessAuthFlowResponse(ctx, execResp)
@@ -1100,11 +1102,11 @@ func (suite *OAuthExecutorTestSuite) TestProcessAuthFlowResponse_PreventRegistra
 		Type:             "INTERNAL",
 	}
 
-	suite.mockOAuthService.On("ExchangeCodeForToken", "idp-123", "auth_code_123", true).
+	suite.mockOAuthService.On("ExchangeCodeForToken", mock.Anything, "idp-123", "auth_code_123", true).
 		Return(tokenResp, nil)
-	suite.mockOAuthService.On("FetchUserInfo", "idp-123", "access_token_123").
+	suite.mockOAuthService.On("FetchUserInfo", mock.Anything, "idp-123", "access_token_123").
 		Return(userInfo, nil)
-	suite.mockOAuthService.On("GetInternalUser", "existing-user-sub").
+	suite.mockOAuthService.On("GetInternalUser", mock.Anything, "existing-user-sub").
 		Return(existingUser, nil)
 
 	err := suite.executor.ProcessAuthFlowResponse(ctx, execResp)
@@ -1294,10 +1296,10 @@ func (suite *OAuthExecutorTestSuite) TestGetInternalUser_Errors() {
 				RuntimeData:    make(map[string]string),
 			}
 
-			suite.mockOAuthService.On("GetInternalUser", tt.sub).
+			suite.mockOAuthService.On("GetInternalUser", mock.Anything, tt.sub).
 				Return(nil, tt.serviceError).Once()
 
-			result, err := suite.executor.GetInternalUser(tt.sub, execResp)
+			result, err := suite.executor.GetInternalUser(&core.NodeContext{Context: context.TODO()}, tt.sub, execResp)
 
 			assert.Nil(suite.T(), result)
 			if tt.expectError {
@@ -1329,14 +1331,15 @@ func (suite *OAuthExecutorTestSuite) TestGetInternalUser_Success() {
 		Type:             "INTERNAL",
 	}
 
-	suite.mockOAuthService.On("GetInternalUser", "user-sub-123").
+	suite.mockOAuthService.On("GetInternalUser", mock.Anything, "user-sub-123").
 		Return(existingUser, nil)
 
-	result, err := suite.executor.GetInternalUser("user-sub-123", execResp)
+	existingUser, err := suite.executor.GetInternalUser(&core.NodeContext{Context: context.TODO()},
+		"user-sub-123", execResp)
 
 	assert.NoError(suite.T(), err)
-	assert.NotNil(suite.T(), result)
-	assert.Equal(suite.T(), "user-123", result.ID)
+	assert.NotNil(suite.T(), existingUser)
+	assert.Equal(suite.T(), "user-123", existingUser.ID)
 	suite.mockOAuthService.AssertExpectations(suite.T())
 }
 
