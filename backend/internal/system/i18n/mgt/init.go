@@ -52,34 +52,27 @@ func Initialize(mux *http.ServeMux) (I18nServiceInterface, immutableresource.Res
 // registerRoutes registers the routes for i18n management operations.
 func registerRoutes(mux *http.ServeMux, handler *i18nHandler) {
 	// List languages (public API)
-	opts1 := middleware.CORSOptions{
+	corsOptsForRead := middleware.CORSOptions{
 		AllowedMethods:   "GET",
-		AllowedHeaders:   "Content-Type",
-		AllowCredentials: false,
+		AllowedHeaders:   "Content-Type, Authorization",
+		AllowCredentials: true,
 	}
 
 	mux.HandleFunc(middleware.WithCORS("GET /i18n/languages",
-		handler.HandleListLanguages, opts1))
+		handler.HandleListLanguages, corsOptsForRead))
 	mux.HandleFunc(middleware.WithCORS("OPTIONS /i18n/languages",
 		func(w http.ResponseWriter, r *http.Request) {
 			w.WriteHeader(http.StatusNoContent)
-		}, opts1))
-
-	// Bulk translation operations
-	bulkResolveOpts := middleware.CORSOptions{
-		AllowedMethods:   "GET",
-		AllowedHeaders:   "Content-Type, Authorization",
-		AllowCredentials: false,
-	}
+		}, corsOptsForRead))
 
 	mux.HandleFunc(middleware.WithCORS("GET /i18n/languages/{language}/translations/resolve",
-		handler.HandleResolveTranslationsByLanguage, bulkResolveOpts))
+		handler.HandleResolveTranslationsByLanguage, corsOptsForRead))
 	mux.HandleFunc(middleware.WithCORS("OPTIONS /i18n/languages/{language}/translations/resolve",
 		func(w http.ResponseWriter, r *http.Request) {
 			w.WriteHeader(http.StatusNoContent)
-		}, bulkResolveOpts))
+		}, corsOptsForRead))
 
-	bulkEditOpts := middleware.CORSOptions{
+	corsOptsForModify := middleware.CORSOptions{
 		AllowedMethods:   "POST, DELETE",
 		AllowedHeaders:   "Content-Type, Authorization",
 		AllowCredentials: true,
@@ -87,50 +80,37 @@ func registerRoutes(mux *http.ServeMux, handler *i18nHandler) {
 
 	// Shared path for POST and DELETE
 	mux.HandleFunc(middleware.WithCORS("POST /i18n/languages/{language}/translations",
-		handler.HandleSetOverrideTranslationsByLanguage, bulkEditOpts))
+		handler.HandleSetOverrideTranslationsByLanguage, corsOptsForModify))
 	mux.HandleFunc(middleware.WithCORS("DELETE /i18n/languages/{language}/translations",
-		handler.HandleClearOverrideTranslationsByLanguage, bulkEditOpts))
+		handler.HandleClearOverrideTranslationsByLanguage, corsOptsForModify))
 
 	// Single OPTIONS handler for the shared path
 	mux.HandleFunc(middleware.WithCORS("OPTIONS /i18n/languages/{language}/translations",
 		func(w http.ResponseWriter, r *http.Request) {
 			w.WriteHeader(http.StatusNoContent)
-		}, bulkEditOpts))
-
-	// Individual translation operations
-	singleResolveOpts := middleware.CORSOptions{
-		AllowedMethods:   "GET",
-		AllowedHeaders:   "Content-Type, Authorization",
-		AllowCredentials: false,
-	}
+		}, corsOptsForModify))
 
 	mux.HandleFunc(middleware.WithCORS(
 		"GET /i18n/languages/{language}/translations/ns/{namespace}/keys/{key}/resolve",
-		handler.HandleResolveTranslation, singleResolveOpts))
+		handler.HandleResolveTranslation, corsOptsForRead))
 	mux.HandleFunc(middleware.WithCORS(
 		"OPTIONS /i18n/languages/{language}/translations/ns/{namespace}/keys/{key}/resolve",
 		func(w http.ResponseWriter, r *http.Request) {
 			w.WriteHeader(http.StatusNoContent)
-		}, singleResolveOpts))
-
-	singleEditOpts := middleware.CORSOptions{
-		AllowedMethods:   "POST, DELETE",
-		AllowedHeaders:   "Content-Type, Authorization",
-		AllowCredentials: true,
-	}
+		}, corsOptsForRead))
 
 	// Shared path for POST and DELETE
 	mux.HandleFunc(middleware.WithCORS(
 		"POST /i18n/languages/{language}/translations/ns/{namespace}/keys/{key}",
-		handler.HandleSetOverrideTranslation, singleEditOpts))
+		handler.HandleSetOverrideTranslation, corsOptsForModify))
 	mux.HandleFunc(middleware.WithCORS(
 		"DELETE /i18n/languages/{language}/translations/ns/{namespace}/keys/{key}",
-		handler.HandleClearOverrideTranslation, singleEditOpts))
+		handler.HandleClearOverrideTranslation, corsOptsForModify))
 
 	// Single OPTIONS handler for the shared path
 	mux.HandleFunc(middleware.WithCORS(
 		"OPTIONS /i18n/languages/{language}/translations/ns/{namespace}/keys/{key}",
 		func(w http.ResponseWriter, r *http.Request) {
 			w.WriteHeader(http.StatusNoContent)
-		}, singleEditOpts))
+		}, corsOptsForModify))
 }
