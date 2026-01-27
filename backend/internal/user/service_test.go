@@ -2303,3 +2303,183 @@ func TestUserService_UpdateUser_WithEmptyCredentialsAfterExtraction(t *testing.T
 	userStoreMock.AssertNotCalled(t, "GetCredentials", mock.Anything)
 	userStoreMock.AssertNotCalled(t, "UpdateUserCredentials", mock.Anything, mock.Anything)
 }
+
+// Test: UpdateUser with invalid credentials format during extraction
+func TestUserService_UpdateUser_InvalidCredentialsFormat(t *testing.T) {
+    userID := testUserID
+    ouID := testCustomerOUID
+    userType := testCustomerType
+
+    userStoreMock := newUserStoreInterfaceMock(t)
+
+    // Mock hash service to return error during credential extraction
+    hashServiceMock := hashmock.NewHashServiceInterfaceMock(t)
+    hashServiceMock.
+        On("Generate", mock.Anything).
+        Return(hash.Credential{}, errors.New("hash generation failed")).
+        Once()
+
+    ouServiceMock := oumock.NewOrganizationUnitServiceInterfaceMock(t)
+    ouServiceMock.
+        On("IsOrganizationUnitExists", ouID).
+        Return(true, nil).
+        Once()
+
+    schemaServiceMock := userschemamock.NewUserSchemaServiceInterfaceMock(t)
+    schemaServiceMock.
+        On("GetUserSchemaByName", userType).
+        Return(&userschema.UserSchema{OrganizationUnitID: ouID}, nil).
+        Once()
+    schemaServiceMock.
+        On("ValidateUser", userType, mock.Anything).
+        Return(true, nil).
+        Once()
+    schemaServiceMock.
+        On("ValidateUserUniqueness", userType, mock.Anything, mock.Anything).
+        Return(true, nil).
+        Once()
+
+    service := &userService{
+        userStore:         userStoreMock,
+        hashService:       hashServiceMock,
+        ouService:         ouServiceMock,
+        userSchemaService: schemaServiceMock,
+    }
+
+    err := config.InitializeThunderRuntime("", &config.Config{
+        Crypto: config.CryptoConfig{
+            PasswordHashing: config.PasswordHashingConfig{
+                Algorithm: string(hash.PBKDF2),
+            },
+        },
+    })
+    require.NoError(t, err)
+
+    user := &User{
+        ID:               userID,
+        OrganizationUnit: ouID,
+        Type:             userType,
+        Attributes:       json.RawMessage(`{"email":"test@example.com","password":"TestPassword123"}`),
+    }
+
+    result, svcErr := service.UpdateUser(userID, user)
+
+    require.NotNil(t, svcErr, "Should return error")
+    require.Nil(t, result, "Should not return user")
+    require.Equal(t, ErrorInternalServerError.Code, svcErr.Code, "Should return server error")
+}
+
+// Test: UpdateUser when UpdateUser store operation fails
+func TestUserService_UpdateUser_StoreUpdateFails(t *testing.T) {
+    userID := testUserID
+    ouID := testCustomerOUID
+    userType := testCustomerType
+
+    userStoreMock := newUserStoreInterfaceMock(t)
+
+    // UpdateUser fails with generic database error
+    userStoreMock.
+        On("UpdateUser", mock.Anything).
+        Return(errors.New("database connection failed")).
+        Once()
+
+    hashServiceMock := hashmock.NewHashServiceInterfaceMock(t)
+
+    ouServiceMock := oumock.NewOrganizationUnitServiceInterfaceMock(t)
+    ouServiceMock.
+        On("IsOrganizationUnitExists", ouID).
+        Return(true, nil).
+        Once()
+
+    schemaServiceMock := userschemamock.NewUserSchemaServiceInterfaceMock(t)
+    schemaServiceMock.
+        On("GetUserSchemaByName", userType).
+        Return(&userschema.UserSchema{OrganizationUnitID: ouID}, nil).
+        Once()
+    schemaServiceMock.
+        On("ValidateUser", userType, mock.Anything).
+        Return(true, nil).
+        Once()
+    schemaServiceMock.
+        On("ValidateUserUniqueness", userType, mock.Anything, mock.Anything).
+        Return(true, nil).
+        Once()
+
+    service := &userService{
+        userStore:         userStoreMock,
+        hashService:       hashServiceMock,
+        ouService:         ouServiceMock,
+        userSchemaService: schemaServiceMock,
+    }
+
+    // Update without credentials to avoid extractCredentials call
+    user := &User{
+        ID:               userID,
+        OrganizationUnit: ouID,
+        Type:             userType,
+        Attributes:       json.RawMessage(`{"email":"test@example.com","name":"Test User"}`),
+    }
+
+    result, svcErr := service.UpdateUser(userID, user)
+
+    require.NotNil(t, svcErr, "Should return error")
+    require.Nil(t, result, "Should not return user")
+    require.Equal(t, ErrorInternalServerError.Code, svcErr.Code, "Should return server error")
+}
+
+// Test: UpdateUser when UpdateUser returns ErrUserNotFound
+func TestUserService_UpdateUser_UserNotFoundDuringUpdate(t *testing.T) {
+    userID := testUserID
+    ouID := testCustomerOUID
+    userType := testCustomerType
+
+    userStoreMock := newUserStoreInterfaceMock(t)
+
+    // UpdateUser fails with user not found
+    userStoreMock.
+        On("UpdateUser", mock.Anything).
+        Return(ErrUserNotFound).
+        Once()
+
+    hashServiceMock := hashmock.NewHashServiceInterfaceMock(t)
+
+    ouServiceMock := oumock.NewOrganizationUnitServiceInterfaceMock(t)
+    ouServiceMock.
+        On("IsOrganizationUnitExists", ouID).
+        Return(true, nil).
+        Once()
+
+    schemaServiceMock := userschemamock.NewUserSchemaServiceInterfaceMock(t)
+    schemaServiceMock.
+        On("GetUserSchemaByName", userType).
+        Return(&userschema.UserSchema{OrganizationUnitID: ouID}, nil).
+        Once()
+    schemaServiceMock.
+        On("ValidateUser", userType, mock.Anything).
+        Return(true, nil).
+        Once()
+    schemaServiceMock.
+        On("ValidateUserUniqueness", userType, mock.Anything, mock.Anything).
+        Return(true, nil).
+        Once()
+
+    service := &userService{
+        userStore:         userStoreMock,
+        hashService:       hashServiceMock,
+        ouService:         ouServiceMock,
+        userSchemaService: schemaServiceMock,
+    }
+
+    user := &User{
+        ID:               userID,
+        OrganizationUnit: ouID,
+        Type:             userType,
+        Attributes:       json.RawMessage(`{"email":"test@example.com","name":"Test User"}`),
+    }
+
+    result, svcErr := service.UpdateUser(userID, user)
+
+    require.NotNil(t, svcErr, "Should return error")
+    require.Nil(t, result, "Should not return user")
+    require.Equal(t, ErrorUserNotFound.Code, svcErr.Code, "Should return user not found error")
+}
