@@ -23,9 +23,21 @@ import {MemoryRouter} from 'react-router';
 import {OxygenUIThemeProvider} from '@wso2/oxygen-ui';
 import {ConfigProvider} from '@thunder/commons-contexts';
 import {LoggerProvider, LogLevel} from '@thunder/logger';
+import {QueryClient, QueryClientProvider} from '@tanstack/react-query';
 
 interface ProvidersProps {
   children: ReactNode;
+}
+
+// Create a new QueryClient for each test to avoid shared state
+function createTestQueryClient() {
+  return new QueryClient({
+    defaultOptions: {
+      queries: {
+        retry: false,
+      },
+    },
+  });
 }
 
 // Wrapper component with common providers
@@ -47,18 +59,22 @@ function Providers({children}: ProvidersProps) {
     };
   }
 
+  const queryClient = createTestQueryClient();
+
   return (
     <MemoryRouter>
-      <ConfigProvider>
-        <LoggerProvider
-          logger={{
-            level: LogLevel.ERROR,
-            transports: [],
-          }}
-        >
-          <OxygenUIThemeProvider>{children}</OxygenUIThemeProvider>
-        </LoggerProvider>
-      </ConfigProvider>
+      <QueryClientProvider client={queryClient}>
+        <ConfigProvider>
+          <LoggerProvider
+            logger={{
+              level: LogLevel.ERROR,
+              transports: [],
+            }}
+          >
+            <OxygenUIThemeProvider>{children}</OxygenUIThemeProvider>
+          </LoggerProvider>
+        </ConfigProvider>
+      </QueryClientProvider>
     </MemoryRouter>
   );
 }

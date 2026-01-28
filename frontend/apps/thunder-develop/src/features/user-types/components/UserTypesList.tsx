@@ -63,7 +63,7 @@ export default function UserTypesList() {
   const {deleteUserType, loading: isDeleting, error: deleteUserTypeError} = useDeleteUserType();
   const {
     data: organizationUnitsResponse,
-    loading: organizationUnitsLoading,
+    isLoading: organizationUnitsLoading,
     error: organizationUnitsError,
   } = useGetOrganizationUnits();
 

@@ -144,6 +144,10 @@ func registerRoutes(mux *http.ServeMux, ouHandler *organizationUnitHandler) {
 				http.NotFound(w, r)
 			}
 		}, corsOptions2))
+	mux.HandleFunc(middleware.WithCORS("OPTIONS /organization-units/",
+		func(w http.ResponseWriter, r *http.Request) {
+			w.WriteHeader(http.StatusNoContent)
+		}, corsOptions2))
 	mux.HandleFunc(middleware.WithCORS("PUT /organization-units/{id}",
 		ouHandler.HandleOUPutRequest, corsOptions2))
 	mux.HandleFunc(middleware.WithCORS("DELETE /organization-units/{id}",

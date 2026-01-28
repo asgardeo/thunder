@@ -73,7 +73,7 @@ interface UseGetOrganizationUnitsReturn {
       parent?: string | null;
     }[];
   } | null;
-  loading: boolean;
+  isLoading: boolean;
   error: ApiError | null;
   refetch: (newParams?: OrganizationUnitListParams) => Promise<void>;
 }
@@ -157,7 +157,7 @@ describe('ViewUserTypePage', () => {
     });
     mockUseGetOrganizationUnits.mockReturnValue({
       data: mockOrganizationUnitsResponse,
-      loading: false,
+      isLoading: false,
       error: null,
       refetch: mockRefetchOrganizationUnits,
     });
@@ -258,7 +258,7 @@ describe('ViewUserTypePage', () => {
     it('falls back to organization unit id when lookup data is missing', () => {
       mockUseGetOrganizationUnits.mockReturnValue({
         data: {...mockOrganizationUnitsResponse, organizationUnits: []},
-        loading: false,
+        isLoading: false,
         error: null,
         refetch: mockRefetchOrganizationUnits,
       });
@@ -1353,7 +1353,7 @@ describe('ViewUserTypePage', () => {
 
       mockUseGetOrganizationUnits.mockReturnValue({
         data: null,
-        loading: true,
+        isLoading: true,
         error: null,
         refetch: mockRefetchOrganizationUnits,
       });
@@ -1380,7 +1380,7 @@ describe('ViewUserTypePage', () => {
 
       mockUseGetOrganizationUnits.mockReturnValue({
         data: null,
-        loading: false,
+        isLoading: false,
         error: orgError,
         refetch: mockRefetchOrganizationUnits,
       });
@@ -1402,7 +1402,7 @@ describe('ViewUserTypePage', () => {
 
       mockUseGetOrganizationUnits.mockReturnValue({
         data: {...mockOrganizationUnitsResponse, organizationUnits: []},
-        loading: false,
+        isLoading: false,
         error: null,
         refetch: mockRefetchOrganizationUnits,
       });

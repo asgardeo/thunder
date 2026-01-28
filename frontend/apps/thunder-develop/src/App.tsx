@@ -34,6 +34,9 @@ import FullScreenLayout from './layouts/FullScreenLayout';
 import ApplicationCreateProvider from './features/applications/contexts/ApplicationCreate/ApplicationCreateProvider';
 import FlowsListPage from './features/flows/pages/FlowsListPage';
 import LoginFlowBuilderPage from './features/login-flow/pages/LoginFlowPage';
+import OrganizationUnitsListPage from './features/organization-units/pages/OrganizationUnitsListPage';
+import CreateOrganizationUnitPage from './features/organization-units/pages/CreateOrganizationUnitPage';
+import OrganizationUnitEditPage from './features/organization-units/pages/OrganizationUnitEditPage';
 
 export default function App(): JSX.Element {
   return (
@@ -58,6 +61,18 @@ export default function App(): JSX.Element {
           <Route path="applications" element={<ApplicationsListPage />} />
           <Route path="applications/:applicationId" element={<ApplicationEditPage />} />
           <Route path="flows" element={<FlowsListPage />} />
+          <Route path="organization-units" element={<OrganizationUnitsListPage />} />
+          <Route path="organization-units/:id" element={<OrganizationUnitEditPage />} />
+        </Route>
+        <Route
+          path="/organization-units/create"
+          element={
+            <ProtectedRoute>
+              <FullScreenLayout />
+            </ProtectedRoute>
+          }
+        >
+          <Route index element={<CreateOrganizationUnitPage />} />
         </Route>
         <Route
           path="/applications/create"

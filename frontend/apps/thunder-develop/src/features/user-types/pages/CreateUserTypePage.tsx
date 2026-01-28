@@ -55,7 +55,7 @@ export default function CreateUserTypePage() {
   const {createUserType, loading, error: createError} = useCreateUserType();
   const {
     data: organizationUnitsResponse,
-    loading: organizationUnitsLoading,
+    isLoading: organizationUnitsLoading,
     error: organizationUnitsError,
   } = useGetOrganizationUnits();
 
