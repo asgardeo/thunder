@@ -34,6 +34,7 @@ var publicPaths = []string{
 	"/oauth2/**",
 	"/.well-known/openid-configuration/**",
 	"/.well-known/oauth-authorization-server/**",
+	"/.well-known/oauth-protected-resource",
 	"/gate/**",
 	"/develop/**",
 	"/error/**",
@@ -41,6 +42,5 @@ var publicPaths = []string{
 	"/i18n/languages",
 	"/i18n/languages/*/translations/resolve",
 	"/i18n/languages/*/translations/ns/*/keys/*/resolve",
-	"/mcp",
-	"/mcp/**",
+	"/mcp/**", // MCP authorization is handled at MCP server handler.
 }

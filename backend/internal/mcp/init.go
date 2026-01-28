@@ -22,10 +22,15 @@ package mcp
 import (
 	"net/http"
 
+	"github.com/modelcontextprotocol/go-sdk/auth"
 	mcpsdk "github.com/modelcontextprotocol/go-sdk/mcp"
+	"github.com/modelcontextprotocol/go-sdk/oauthex"
 
 	"github.com/asgardeo/thunder/internal/application"
 	flowmgt "github.com/asgardeo/thunder/internal/flow/mgt"
+	mcpauth "github.com/asgardeo/thunder/internal/mcp/auth"
+	"github.com/asgardeo/thunder/internal/system/config"
+	"github.com/asgardeo/thunder/internal/system/jwt"
 )
 
 // Initialize initializes the MCP server and registers its routes with the provided mux.
@@ -33,16 +38,35 @@ func Initialize(
 	mux *http.ServeMux,
 	appService application.ApplicationServiceInterface,
 	flowService flowmgt.FlowMgtServiceInterface,
+	jwtService jwt.JWTServiceInterface,
 ) {
-	// Create the MCP server with application tools.
-	mcpServer := newServer(appService, flowService)
+	cfg := config.GetThunderRuntime().Config
+	baseURL := config.GetServerURL(&cfg.Server)
 
-	// Create HTTP handler for MCP using Streamable HTTP transport.
+	mcpURL := baseURL + MCPEndpointPath
+	resourceMetadataURL := baseURL + OAuthProtectedResourceMetadataPath
+
+	mcpServer := newServer(appService, flowService)
+	tokenVerifier := mcpauth.NewTokenVerifier(jwtService, cfg.JWT.Issuer, mcpURL)
 	httpHandler := mcpsdk.NewStreamableHTTPHandler(func(*http.Request) *mcpsdk.Server {
 		return mcpServer.getMCPServer()
 	}, nil)
 
-	// Register MCP routes.
-	mux.Handle("/mcp", httpHandler)
-	mux.Handle("/mcp/", httpHandler)
+	// Secure MCP handler with bearer token authentication
+	securedHandler := auth.RequireBearerToken(tokenVerifier, &auth.RequireBearerTokenOptions{
+		ResourceMetadataURL: resourceMetadataURL,
+		Scopes:              []string{"system"},
+	})(httpHandler)
+
+	// Register protected resource metadata endpoint
+	metadata := &oauthex.ProtectedResourceMetadata{
+		Resource:             mcpURL,
+		AuthorizationServers: []string{cfg.JWT.Issuer},
+		ScopesSupported:      []string{"system"},
+	}
+	mux.Handle(OAuthProtectedResourceMetadataPath, auth.ProtectedResourceMetadataHandler(metadata))
+
+	// Register MCP routes
+	mux.Handle(MCPEndpointPath, securedHandler)
+	mux.Handle(MCPEndpointPath+"/", securedHandler)
 }
