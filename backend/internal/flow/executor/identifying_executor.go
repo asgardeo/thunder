@@ -19,6 +19,7 @@
 package executor
 
 import (
+	"context"
 	"slices"
 
 	"github.com/asgardeo/thunder/internal/flow/common"
@@ -84,7 +85,7 @@ func (i *identifyingExecutor) IdentifyUser(filters map[string]interface{},
 		}
 	}
 
-	userID, svcErr := i.userService.IdentifyUser(searchableFilter)
+	userID, svcErr := i.userService.IdentifyUser(context.TODO(), searchableFilter)
 	if svcErr != nil {
 		if svcErr.Code == user.ErrorUserNotFound.Code {
 			logger.Debug("User not found for the provided filters")

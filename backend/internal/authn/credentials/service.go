@@ -20,6 +20,8 @@
 package credentials
 
 import (
+	"context"
+
 	"github.com/asgardeo/thunder/internal/authn/common"
 	"github.com/asgardeo/thunder/internal/system/error/serviceerror"
 	"github.com/asgardeo/thunder/internal/system/log"
@@ -61,7 +63,7 @@ func (c *credentialsAuthnService) Authenticate(attributes map[string]interface{}
 	}
 
 	authRequest := user.AuthenticateUserRequest(attributes)
-	authResponse, svcErr := c.userService.AuthenticateUser(authRequest)
+	authResponse, svcErr := c.userService.AuthenticateUser(context.TODO(), authRequest)
 	if svcErr != nil {
 		if svcErr.Type == serviceerror.ClientErrorType {
 			switch svcErr.Code {
@@ -81,7 +83,7 @@ func (c *credentialsAuthnService) Authenticate(attributes map[string]interface{}
 	}
 
 	// Fetch the user details
-	user, svcErr := c.userService.GetUser(authResponse.ID)
+	user, svcErr := c.userService.GetUser(context.TODO(), authResponse.ID)
 	if svcErr != nil {
 		if svcErr.Type == serviceerror.ClientErrorType {
 			return nil, serviceerror.CustomServiceError(

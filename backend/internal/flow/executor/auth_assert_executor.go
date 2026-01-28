@@ -19,6 +19,7 @@
 package executor
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"sort"
@@ -263,7 +264,7 @@ func (a *authAssertExecutor) getUserAttributes(userID string) (*user.User, map[s
 	logger := a.logger.With(log.String("userID", userID))
 
 	var svcErr *serviceerror.ServiceError
-	user, svcErr := a.userService.GetUser(userID)
+	user, svcErr := a.userService.GetUser(context.TODO(), userID)
 	if svcErr != nil {
 		logger.Error("Failed to fetch user attributes",
 			log.String("userID", userID), log.Any("error", svcErr))

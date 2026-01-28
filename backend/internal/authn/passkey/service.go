@@ -20,6 +20,7 @@
 package passkey
 
 import (
+	"context"
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
@@ -93,7 +94,7 @@ func (w *passkeyService) StartRegistration(
 	}
 
 	// Retrieve core user
-	coreUser, svcErr := w.userService.GetUser(req.UserID)
+	coreUser, svcErr := w.userService.GetUser(context.TODO(), req.UserID)
 	if svcErr != nil {
 		return nil, handleUserRetrievalError(svcErr, req.UserID, logger)
 	}
@@ -219,7 +220,7 @@ func (w *passkeyService) FinishRegistration(req *PasskeyRegistrationFinishReques
 	}
 
 	// Get core user
-	coreUser, svcErr := w.userService.GetUser(userID)
+	coreUser, svcErr := w.userService.GetUser(context.TODO(), userID)
 	if svcErr != nil {
 		logger.Error("Failed to retrieve user", log.String("error", svcErr.Error))
 		return nil, &serviceerror.InternalServerError
@@ -297,7 +298,7 @@ func (w *passkeyService) StartAuthentication(req *PasskeyAuthenticationStartRequ
 	}
 
 	// Retrieve user by userID to verify user exists
-	coreUser, svcErr := w.userService.GetUser(req.UserID)
+	coreUser, svcErr := w.userService.GetUser(context.TODO(), req.UserID)
 	if svcErr != nil {
 		return nil, handleUserRetrievalError(svcErr, req.UserID, logger)
 	}
@@ -383,7 +384,7 @@ func (w *passkeyService) FinishAuthentication(req *PasskeyAuthenticationFinishRe
 		log.String("relyingPartyID", relyingPartyID))
 
 	// Get core user
-	coreUser, svcErr := w.userService.GetUser(userID)
+	coreUser, svcErr := w.userService.GetUser(context.TODO(), userID)
 	if svcErr != nil {
 		logger.Error("Failed to retrieve user", log.String("error", svcErr.Error))
 		return nil, &serviceerror.InternalServerError
@@ -475,7 +476,8 @@ func (w *passkeyService) getStoredPasskeyCredentials(userID string) ([]webauthnC
 	logger := w.logger.With(log.String(log.LoggerKeyComponentName, loggerComponentName))
 
 	// Get passkey credentials from user service
-	passkeyCredentials, svcErr := w.userService.GetUserCredentialsByType(userID, user.CredentialTypePasskey.String())
+	passkeyCredentials, svcErr := w.userService.GetUserCredentialsByType(
+		context.TODO(), userID, user.CredentialTypePasskey.String())
 	if svcErr != nil {
 		logger.Error("Failed to get passkey credentials",
 			log.String("userID", userID),
@@ -537,7 +539,8 @@ func (w *passkeyService) storePasskeyCredential(userID string, credential *webau
 	}
 
 	// Get existing passkey credentials to append to
-	existingCredentials, svcErr := w.userService.GetUserCredentialsByType(userID, user.CredentialTypePasskey.String())
+	existingCredentials, svcErr := w.userService.GetUserCredentialsByType(
+		context.TODO(), userID, user.CredentialTypePasskey.String())
 	if svcErr != nil {
 		logger.Error("Failed to get existing passkey credentials",
 			log.String("userID", userID),
@@ -566,7 +569,7 @@ func (w *passkeyService) storePasskeyCredential(userID string, credential *webau
 	}
 
 	// Update credentials in the database
-	svcErr = w.userService.UpdateUserCredentials(userID, credentialsJSON)
+	svcErr = w.userService.UpdateUserCredentials(context.TODO(), userID, credentialsJSON)
 	if svcErr != nil {
 		logger.Error("Failed to update passkey credentials",
 			log.String("userID", userID),
@@ -588,7 +591,8 @@ func (w *passkeyService) updatePasskeyCredential(
 	logger := w.logger.With(log.String(log.LoggerKeyComponentName, loggerComponentName))
 
 	// Get all existing passkey credentials
-	existingCredentials, svcErr := w.userService.GetUserCredentialsByType(userID, user.CredentialTypePasskey.String())
+	existingCredentials, svcErr := w.userService.GetUserCredentialsByType(
+		context.TODO(), userID, user.CredentialTypePasskey.String())
 	if svcErr != nil {
 		logger.Error("Failed to get existing credentials",
 			log.String("userID", userID),
@@ -662,7 +666,7 @@ func (w *passkeyService) updatePasskeyCredential(
 	}
 
 	// Update all passkey credentials in the database
-	svcErr = w.userService.UpdateUserCredentials(userID, credentialsJSON)
+	svcErr = w.userService.UpdateUserCredentials(context.TODO(), userID, credentialsJSON)
 	if svcErr != nil {
 		logger.Error("Failed to update credentials",
 			log.String("userID", userID),

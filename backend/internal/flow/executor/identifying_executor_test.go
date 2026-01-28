@@ -22,6 +22,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/suite"
 
 	"github.com/asgardeo/thunder/internal/flow/common"
@@ -66,7 +67,7 @@ func (suite *IdentifyingExecutorTestSuite) TestIdentifyUser_Success() {
 	}
 	userID := "user-123"
 
-	suite.mockUserService.On("IdentifyUser", filters).Return(&userID, nil)
+	suite.mockUserService.On("IdentifyUser", mock.Anything, filters).Return(&userID, nil)
 
 	result, err := suite.executor.IdentifyUser(filters, execResp)
 
@@ -82,7 +83,7 @@ func (suite *IdentifyingExecutorTestSuite) TestIdentifyUser_UserNotFound() {
 		RuntimeData: make(map[string]string),
 	}
 
-	suite.mockUserService.On("IdentifyUser", filters).
+	suite.mockUserService.On("IdentifyUser", mock.Anything, filters).
 		Return(nil, &user.ErrorUserNotFound)
 
 	result, err := suite.executor.IdentifyUser(filters, execResp)
@@ -100,7 +101,7 @@ func (suite *IdentifyingExecutorTestSuite) TestIdentifyUser_ServiceError() {
 		RuntimeData: make(map[string]string),
 	}
 
-	suite.mockUserService.On("IdentifyUser", filters).
+	suite.mockUserService.On("IdentifyUser", mock.Anything, filters).
 		Return(nil, &serviceerror.ServiceError{Error: "service error"})
 
 	result, err := suite.executor.IdentifyUser(filters, execResp)
@@ -119,7 +120,7 @@ func (suite *IdentifyingExecutorTestSuite) TestIdentifyUser_EmptyUserID() {
 	}
 	emptyID := ""
 
-	suite.mockUserService.On("IdentifyUser", filters).Return(&emptyID, nil)
+	suite.mockUserService.On("IdentifyUser", mock.Anything, filters).Return(&emptyID, nil)
 
 	result, err := suite.executor.IdentifyUser(filters, execResp)
 
@@ -143,7 +144,7 @@ func (suite *IdentifyingExecutorTestSuite) TestIdentifyUser_FilterNonSearchableA
 	}
 	userID := "user-123"
 
-	suite.mockUserService.On("IdentifyUser", map[string]interface{}{
+	suite.mockUserService.On("IdentifyUser", mock.Anything, map[string]interface{}{
 		"username": "testuser",
 	}).Return(&userID, nil)
 
@@ -162,7 +163,7 @@ func (suite *IdentifyingExecutorTestSuite) TestIdentifyUser_WithEmail() {
 	}
 	userID := "user-456"
 
-	suite.mockUserService.On("IdentifyUser", filters).Return(&userID, nil)
+	suite.mockUserService.On("IdentifyUser", mock.Anything, filters).Return(&userID, nil)
 
 	result, err := suite.executor.IdentifyUser(filters, execResp)
 
@@ -179,7 +180,7 @@ func (suite *IdentifyingExecutorTestSuite) TestIdentifyUser_WithMobileNumber() {
 	}
 	userID := "user-789"
 
-	suite.mockUserService.On("IdentifyUser", filters).Return(&userID, nil)
+	suite.mockUserService.On("IdentifyUser", mock.Anything, filters).Return(&userID, nil)
 
 	result, err := suite.executor.IdentifyUser(filters, execResp)
 

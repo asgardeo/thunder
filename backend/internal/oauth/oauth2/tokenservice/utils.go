@@ -19,6 +19,7 @@
 package tokenservice
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"slices"
@@ -270,7 +271,7 @@ func BuildOIDCClaimsFromScopes(
 // Callers should log errors with their own context.
 func FetchUserAttributesAndGroups(userService user.UserServiceInterface, userID string,
 	includeGroups bool) (map[string]interface{}, []string, error) {
-	user, svcErr := userService.GetUser(userID)
+	user, svcErr := userService.GetUser(context.TODO(), userID)
 	if svcErr != nil {
 		return nil, nil, fmt.Errorf("failed to fetch user: %s", svcErr.Error)
 	}
@@ -286,7 +287,7 @@ func FetchUserAttributesAndGroups(userService user.UserServiceInterface, userID 
 		return attrs, []string{}, nil
 	}
 
-	groups, svcErr := userService.GetUserGroups(userID, constants.DefaultGroupListLimit, 0)
+	groups, svcErr := userService.GetUserGroups(context.TODO(), userID, constants.DefaultGroupListLimit, 0)
 	if svcErr != nil {
 		return nil, nil, fmt.Errorf("failed to fetch user groups: %s", svcErr.Error)
 	}
