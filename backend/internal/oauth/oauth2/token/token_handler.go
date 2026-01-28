@@ -172,7 +172,7 @@ func (th *tokenHandler) HandleTokenRequest(w http.ResponseWriter, r *http.Reques
 	}
 
 	// Validate the token request.
-	tokenError := grantHandler.ValidateGrant(tokenRequest, oauthApp)
+	tokenError := grantHandler.ValidateGrant(r.Context(), tokenRequest, oauthApp)
 	if tokenError != nil && tokenError.Error != "" {
 		th.publishTokenIssuanceFailedEvent(r.Context(), clientID, grantTypeStr, scopeStr, http.StatusBadRequest,
 			tokenError.ErrorDescription, startTime)
@@ -191,7 +191,7 @@ func (th *tokenHandler) HandleTokenRequest(w http.ResponseWriter, r *http.Reques
 	tokenRequest.Scope = validScopes
 
 	// Delegate to the grant handler.
-	tokenRespDTO, tokenError := grantHandler.HandleGrant(tokenRequest, oauthApp)
+	tokenRespDTO, tokenError := grantHandler.HandleGrant(r.Context(), tokenRequest, oauthApp)
 	if tokenError != nil && tokenError.Error != "" {
 		code := http.StatusBadRequest
 		if tokenError.Error == constants.ErrorServerError {
@@ -229,7 +229,7 @@ func (th *tokenHandler) HandleTokenRequest(w http.ResponseWriter, r *http.Reques
 			return
 		}
 
-		refreshTokenError := refreshGrantHandlerTyped.IssueRefreshToken(tokenRespDTO, oauthApp,
+		refreshTokenError := refreshGrantHandlerTyped.IssueRefreshToken(r.Context(), tokenRespDTO, oauthApp,
 			tokenRespDTO.AccessToken.Subject, tokenRespDTO.AccessToken.Audience,
 			grantTypeStr, tokenRespDTO.AccessToken.Scopes,
 			tokenRespDTO.AccessToken.UserType, tokenRespDTO.AccessToken.OuID,

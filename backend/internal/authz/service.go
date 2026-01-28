@@ -20,6 +20,8 @@
 package authz
 
 import (
+	"context"
+
 	"github.com/asgardeo/thunder/internal/authz/engine"
 	"github.com/asgardeo/thunder/internal/system/error/serviceerror"
 	"github.com/asgardeo/thunder/internal/system/log"
@@ -33,6 +35,7 @@ type AuthorizationServiceInterface interface {
 	// GetAuthorizedPermissions returns the subset of requested permissions
 	// that the user (directly or through groups) is authorized for.
 	GetAuthorizedPermissions(
+		ctx context.Context,
 		request GetAuthorizedPermissionsRequest,
 	) (*GetAuthorizedPermissionsResponse, *serviceerror.ServiceError)
 }
@@ -51,6 +54,7 @@ func newAuthorizationService(engine engine.AuthorizationEngine) AuthorizationSer
 
 // GetAuthorizedPermissions returns the subset of requested permissions that the user is authorized for.
 func (s *authorizationService) GetAuthorizedPermissions(
+	ctx context.Context,
 	request GetAuthorizedPermissionsRequest,
 ) (*GetAuthorizedPermissionsResponse, *serviceerror.ServiceError) {
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, loggerComponentName))
@@ -73,6 +77,7 @@ func (s *authorizationService) GetAuthorizedPermissions(
 
 	// Delegate to engine (engine/underlying service handles validation)
 	authorizedPerms, err := s.engine.GetAuthorizedPermissions(
+		ctx,
 		request.UserID,
 		request.GroupIDs,
 		request.RequestedPermissions,

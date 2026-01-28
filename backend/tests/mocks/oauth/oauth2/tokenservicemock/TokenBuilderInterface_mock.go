@@ -5,6 +5,8 @@
 package tokenservicemock
 
 import (
+	"context"
+
 	"github.com/asgardeo/thunder/internal/oauth/oauth2/model"
 	"github.com/asgardeo/thunder/internal/oauth/oauth2/tokenservice"
 	mock "github.com/stretchr/testify/mock"
@@ -38,8 +40,8 @@ func (_m *TokenBuilderInterfaceMock) EXPECT() *TokenBuilderInterfaceMock_Expecte
 }
 
 // BuildAccessToken provides a mock function for the type TokenBuilderInterfaceMock
-func (_mock *TokenBuilderInterfaceMock) BuildAccessToken(ctx *tokenservice.AccessTokenBuildContext) (*model.TokenDTO, error) {
-	ret := _mock.Called(ctx)
+func (_mock *TokenBuilderInterfaceMock) BuildAccessToken(ctx context.Context, buildCtx *tokenservice.AccessTokenBuildContext) (*model.TokenDTO, error) {
+	ret := _mock.Called(ctx, buildCtx)
 
 	if len(ret) == 0 {
 		panic("no return value specified for BuildAccessToken")
@@ -47,18 +49,18 @@ func (_mock *TokenBuilderInterfaceMock) BuildAccessToken(ctx *tokenservice.Acces
 
 	var r0 *model.TokenDTO
 	var r1 error
-	if returnFunc, ok := ret.Get(0).(func(*tokenservice.AccessTokenBuildContext) (*model.TokenDTO, error)); ok {
-		return returnFunc(ctx)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, *tokenservice.AccessTokenBuildContext) (*model.TokenDTO, error)); ok {
+		return returnFunc(ctx, buildCtx)
 	}
-	if returnFunc, ok := ret.Get(0).(func(*tokenservice.AccessTokenBuildContext) *model.TokenDTO); ok {
-		r0 = returnFunc(ctx)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, *tokenservice.AccessTokenBuildContext) *model.TokenDTO); ok {
+		r0 = returnFunc(ctx, buildCtx)
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).(*model.TokenDTO)
 		}
 	}
-	if returnFunc, ok := ret.Get(1).(func(*tokenservice.AccessTokenBuildContext) error); ok {
-		r1 = returnFunc(ctx)
+	if returnFunc, ok := ret.Get(1).(func(context.Context, *tokenservice.AccessTokenBuildContext) error); ok {
+		r1 = returnFunc(ctx, buildCtx)
 	} else {
 		r1 = ret.Error(1)
 	}
@@ -71,19 +73,25 @@ type TokenBuilderInterfaceMock_BuildAccessToken_Call struct {
 }
 
 // BuildAccessToken is a helper method to define mock.On call
-//   - ctx *tokenservice.AccessTokenBuildContext
-func (_e *TokenBuilderInterfaceMock_Expecter) BuildAccessToken(ctx interface{}) *TokenBuilderInterfaceMock_BuildAccessToken_Call {
-	return &TokenBuilderInterfaceMock_BuildAccessToken_Call{Call: _e.mock.On("BuildAccessToken", ctx)}
+//   - ctx context.Context
+//   - buildCtx *tokenservice.AccessTokenBuildContext
+func (_e *TokenBuilderInterfaceMock_Expecter) BuildAccessToken(ctx interface{}, buildCtx interface{}) *TokenBuilderInterfaceMock_BuildAccessToken_Call {
+	return &TokenBuilderInterfaceMock_BuildAccessToken_Call{Call: _e.mock.On("BuildAccessToken", ctx, buildCtx)}
 }
 
-func (_c *TokenBuilderInterfaceMock_BuildAccessToken_Call) Run(run func(ctx *tokenservice.AccessTokenBuildContext)) *TokenBuilderInterfaceMock_BuildAccessToken_Call {
+func (_c *TokenBuilderInterfaceMock_BuildAccessToken_Call) Run(run func(ctx context.Context, buildCtx *tokenservice.AccessTokenBuildContext)) *TokenBuilderInterfaceMock_BuildAccessToken_Call {
 	_c.Call.Run(func(args mock.Arguments) {
-		var arg0 *tokenservice.AccessTokenBuildContext
+		var arg0 context.Context
 		if args[0] != nil {
-			arg0 = args[0].(*tokenservice.AccessTokenBuildContext)
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 *tokenservice.AccessTokenBuildContext
+		if args[1] != nil {
+			arg1 = args[1].(*tokenservice.AccessTokenBuildContext)
 		}
 		run(
 			arg0,
+			arg1,
 		)
 	})
 	return _c
@@ -94,14 +102,14 @@ func (_c *TokenBuilderInterfaceMock_BuildAccessToken_Call) Return(tokenDTO *mode
 	return _c
 }
 
-func (_c *TokenBuilderInterfaceMock_BuildAccessToken_Call) RunAndReturn(run func(ctx *tokenservice.AccessTokenBuildContext) (*model.TokenDTO, error)) *TokenBuilderInterfaceMock_BuildAccessToken_Call {
+func (_c *TokenBuilderInterfaceMock_BuildAccessToken_Call) RunAndReturn(run func(ctx context.Context, buildCtx *tokenservice.AccessTokenBuildContext) (*model.TokenDTO, error)) *TokenBuilderInterfaceMock_BuildAccessToken_Call {
 	_c.Call.Return(run)
 	return _c
 }
 
 // BuildIDToken provides a mock function for the type TokenBuilderInterfaceMock
-func (_mock *TokenBuilderInterfaceMock) BuildIDToken(ctx *tokenservice.IDTokenBuildContext) (*model.TokenDTO, error) {
-	ret := _mock.Called(ctx)
+func (_mock *TokenBuilderInterfaceMock) BuildIDToken(ctx context.Context, buildCtx *tokenservice.IDTokenBuildContext) (*model.TokenDTO, error) {
+	ret := _mock.Called(ctx, buildCtx)
 
 	if len(ret) == 0 {
 		panic("no return value specified for BuildIDToken")
@@ -109,18 +117,18 @@ func (_mock *TokenBuilderInterfaceMock) BuildIDToken(ctx *tokenservice.IDTokenBu
 
 	var r0 *model.TokenDTO
 	var r1 error
-	if returnFunc, ok := ret.Get(0).(func(*tokenservice.IDTokenBuildContext) (*model.TokenDTO, error)); ok {
-		return returnFunc(ctx)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, *tokenservice.IDTokenBuildContext) (*model.TokenDTO, error)); ok {
+		return returnFunc(ctx, buildCtx)
 	}
-	if returnFunc, ok := ret.Get(0).(func(*tokenservice.IDTokenBuildContext) *model.TokenDTO); ok {
-		r0 = returnFunc(ctx)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, *tokenservice.IDTokenBuildContext) *model.TokenDTO); ok {
+		r0 = returnFunc(ctx, buildCtx)
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).(*model.TokenDTO)
 		}
 	}
-	if returnFunc, ok := ret.Get(1).(func(*tokenservice.IDTokenBuildContext) error); ok {
-		r1 = returnFunc(ctx)
+	if returnFunc, ok := ret.Get(1).(func(context.Context, *tokenservice.IDTokenBuildContext) error); ok {
+		r1 = returnFunc(ctx, buildCtx)
 	} else {
 		r1 = ret.Error(1)
 	}
@@ -133,19 +141,25 @@ type TokenBuilderInterfaceMock_BuildIDToken_Call struct {
 }
 
 // BuildIDToken is a helper method to define mock.On call
-//   - ctx *tokenservice.IDTokenBuildContext
-func (_e *TokenBuilderInterfaceMock_Expecter) BuildIDToken(ctx interface{}) *TokenBuilderInterfaceMock_BuildIDToken_Call {
-	return &TokenBuilderInterfaceMock_BuildIDToken_Call{Call: _e.mock.On("BuildIDToken", ctx)}
+//   - ctx context.Context
+//   - buildCtx *tokenservice.IDTokenBuildContext
+func (_e *TokenBuilderInterfaceMock_Expecter) BuildIDToken(ctx interface{}, buildCtx interface{}) *TokenBuilderInterfaceMock_BuildIDToken_Call {
+	return &TokenBuilderInterfaceMock_BuildIDToken_Call{Call: _e.mock.On("BuildIDToken", ctx, buildCtx)}
 }
 
-func (_c *TokenBuilderInterfaceMock_BuildIDToken_Call) Run(run func(ctx *tokenservice.IDTokenBuildContext)) *TokenBuilderInterfaceMock_BuildIDToken_Call {
+func (_c *TokenBuilderInterfaceMock_BuildIDToken_Call) Run(run func(ctx context.Context, buildCtx *tokenservice.IDTokenBuildContext)) *TokenBuilderInterfaceMock_BuildIDToken_Call {
 	_c.Call.Run(func(args mock.Arguments) {
-		var arg0 *tokenservice.IDTokenBuildContext
+		var arg0 context.Context
 		if args[0] != nil {
-			arg0 = args[0].(*tokenservice.IDTokenBuildContext)
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 *tokenservice.IDTokenBuildContext
+		if args[1] != nil {
+			arg1 = args[1].(*tokenservice.IDTokenBuildContext)
 		}
 		run(
 			arg0,
+			arg1,
 		)
 	})
 	return _c
@@ -156,14 +170,14 @@ func (_c *TokenBuilderInterfaceMock_BuildIDToken_Call) Return(tokenDTO *model.To
 	return _c
 }
 
-func (_c *TokenBuilderInterfaceMock_BuildIDToken_Call) RunAndReturn(run func(ctx *tokenservice.IDTokenBuildContext) (*model.TokenDTO, error)) *TokenBuilderInterfaceMock_BuildIDToken_Call {
+func (_c *TokenBuilderInterfaceMock_BuildIDToken_Call) RunAndReturn(run func(ctx context.Context, buildCtx *tokenservice.IDTokenBuildContext) (*model.TokenDTO, error)) *TokenBuilderInterfaceMock_BuildIDToken_Call {
 	_c.Call.Return(run)
 	return _c
 }
 
 // BuildRefreshToken provides a mock function for the type TokenBuilderInterfaceMock
-func (_mock *TokenBuilderInterfaceMock) BuildRefreshToken(ctx *tokenservice.RefreshTokenBuildContext) (*model.TokenDTO, error) {
-	ret := _mock.Called(ctx)
+func (_mock *TokenBuilderInterfaceMock) BuildRefreshToken(ctx context.Context, buildCtx *tokenservice.RefreshTokenBuildContext) (*model.TokenDTO, error) {
+	ret := _mock.Called(ctx, buildCtx)
 
 	if len(ret) == 0 {
 		panic("no return value specified for BuildRefreshToken")
@@ -171,18 +185,18 @@ func (_mock *TokenBuilderInterfaceMock) BuildRefreshToken(ctx *tokenservice.Refr
 
 	var r0 *model.TokenDTO
 	var r1 error
-	if returnFunc, ok := ret.Get(0).(func(*tokenservice.RefreshTokenBuildContext) (*model.TokenDTO, error)); ok {
-		return returnFunc(ctx)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, *tokenservice.RefreshTokenBuildContext) (*model.TokenDTO, error)); ok {
+		return returnFunc(ctx, buildCtx)
 	}
-	if returnFunc, ok := ret.Get(0).(func(*tokenservice.RefreshTokenBuildContext) *model.TokenDTO); ok {
-		r0 = returnFunc(ctx)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, *tokenservice.RefreshTokenBuildContext) *model.TokenDTO); ok {
+		r0 = returnFunc(ctx, buildCtx)
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).(*model.TokenDTO)
 		}
 	}
-	if returnFunc, ok := ret.Get(1).(func(*tokenservice.RefreshTokenBuildContext) error); ok {
-		r1 = returnFunc(ctx)
+	if returnFunc, ok := ret.Get(1).(func(context.Context, *tokenservice.RefreshTokenBuildContext) error); ok {
+		r1 = returnFunc(ctx, buildCtx)
 	} else {
 		r1 = ret.Error(1)
 	}
@@ -195,19 +209,25 @@ type TokenBuilderInterfaceMock_BuildRefreshToken_Call struct {
 }
 
 // BuildRefreshToken is a helper method to define mock.On call
-//   - ctx *tokenservice.RefreshTokenBuildContext
-func (_e *TokenBuilderInterfaceMock_Expecter) BuildRefreshToken(ctx interface{}) *TokenBuilderInterfaceMock_BuildRefreshToken_Call {
-	return &TokenBuilderInterfaceMock_BuildRefreshToken_Call{Call: _e.mock.On("BuildRefreshToken", ctx)}
+//   - ctx context.Context
+//   - buildCtx *tokenservice.RefreshTokenBuildContext
+func (_e *TokenBuilderInterfaceMock_Expecter) BuildRefreshToken(ctx interface{}, buildCtx interface{}) *TokenBuilderInterfaceMock_BuildRefreshToken_Call {
+	return &TokenBuilderInterfaceMock_BuildRefreshToken_Call{Call: _e.mock.On("BuildRefreshToken", ctx, buildCtx)}
 }
 
-func (_c *TokenBuilderInterfaceMock_BuildRefreshToken_Call) Run(run func(ctx *tokenservice.RefreshTokenBuildContext)) *TokenBuilderInterfaceMock_BuildRefreshToken_Call {
+func (_c *TokenBuilderInterfaceMock_BuildRefreshToken_Call) Run(run func(ctx context.Context, buildCtx *tokenservice.RefreshTokenBuildContext)) *TokenBuilderInterfaceMock_BuildRefreshToken_Call {
 	_c.Call.Run(func(args mock.Arguments) {
-		var arg0 *tokenservice.RefreshTokenBuildContext
+		var arg0 context.Context
 		if args[0] != nil {
-			arg0 = args[0].(*tokenservice.RefreshTokenBuildContext)
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 *tokenservice.RefreshTokenBuildContext
+		if args[1] != nil {
+			arg1 = args[1].(*tokenservice.RefreshTokenBuildContext)
 		}
 		run(
 			arg0,
+			arg1,
 		)
 	})
 	return _c
@@ -218,7 +238,7 @@ func (_c *TokenBuilderInterfaceMock_BuildRefreshToken_Call) Return(tokenDTO *mod
 	return _c
 }
 
-func (_c *TokenBuilderInterfaceMock_BuildRefreshToken_Call) RunAndReturn(run func(ctx *tokenservice.RefreshTokenBuildContext) (*model.TokenDTO, error)) *TokenBuilderInterfaceMock_BuildRefreshToken_Call {
+func (_c *TokenBuilderInterfaceMock_BuildRefreshToken_Call) RunAndReturn(run func(ctx context.Context, buildCtx *tokenservice.RefreshTokenBuildContext) (*model.TokenDTO, error)) *TokenBuilderInterfaceMock_BuildRefreshToken_Call {
 	_c.Call.Return(run)
 	return _c
 }

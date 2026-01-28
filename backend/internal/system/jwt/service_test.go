@@ -19,6 +19,7 @@
 package jwt
 
 import (
+	"context"
 	"crypto"
 	"crypto/ecdsa"
 	"crypto/ed25519"
@@ -570,7 +571,7 @@ func (suite *JWTServiceTestSuite) TestGenerateJWTScenarios() {
 
 			jwtService := tc.setupService()
 
-			token, iat, err := jwtService.GenerateJWT(tc.sub, tc.aud, tc.iss, tc.validity, tc.claims)
+			token, iat, err := jwtService.GenerateJWT(context.TODO(), tc.sub, tc.aud, tc.iss, tc.validity, tc.claims)
 
 			if tc.expectError {
 				assert.NotNil(t, err)
@@ -789,7 +790,7 @@ func (suite *JWTServiceTestSuite) TestVerifyJWT() {
 				}
 			}
 
-			err := jwtSvc.VerifyJWT(token, expectedAud, expectedIss)
+			err := jwtSvc.VerifyJWT(context.TODO(), token, expectedAud, expectedIss)
 
 			if tc.expectError {
 				assert.NotNil(t, err)
@@ -916,7 +917,7 @@ func (suite *JWTServiceTestSuite) TestVerifyJWTWithPublicKey() {
 		suite.T().Run(tc.name, func(t *testing.T) {
 			token, pubKey, expectedAud, expectedIss := tc.setupFunc()
 
-			err := suite.jwtService.VerifyJWTWithPublicKey(token, pubKey, expectedAud, expectedIss)
+			err := suite.jwtService.VerifyJWTWithPublicKey(context.TODO(), token, pubKey, expectedAud, expectedIss)
 
 			if tc.expectError {
 				assert.NotNil(t, err)
@@ -1094,7 +1095,7 @@ func (suite *JWTServiceTestSuite) TestVerifyJWTWithJWKS() {
 		suite.T().Run(tc.name, func(t *testing.T) {
 			token, jwksURL, expectedAud, expectedIss := tc.setupFunc()
 
-			err := suite.jwtService.VerifyJWTWithJWKS(token, jwksURL, expectedAud, expectedIss)
+			err := suite.jwtService.VerifyJWTWithJWKS(context.TODO(), token, jwksURL, expectedAud, expectedIss)
 
 			if tc.expectError {
 				assert.NotNil(t, err)
@@ -1334,7 +1335,8 @@ func (suite *JWTServiceTestSuite) TestVerifyJWTClaimsEdgeCases() {
 			token := tc.setupFunc()
 			publicKey := &suite.testPrivateKey.PublicKey
 
-			err := suite.jwtService.VerifyJWTWithPublicKey(token, publicKey, tc.expectedAud, tc.expectedIss)
+			err := suite.jwtService.VerifyJWTWithPublicKey(context.TODO(), token,
+				publicKey, tc.expectedAud, tc.expectedIss)
 
 			if tc.expectError {
 				assert.NotNil(t, err)
@@ -1355,7 +1357,8 @@ func (suite *JWTServiceTestSuite) TestVerifyJWTSignature() {
 		{
 			name: "ValidToken",
 			setupFunc: func() string {
-				token, _, err := suite.jwtService.GenerateJWT("test-subject", testAudience, testIssuer, 3600, nil)
+				token, _, err := suite.jwtService.GenerateJWT(context.TODO(),
+					"test-subject", testAudience, testIssuer, 3600, nil)
 				assert.Nil(suite.T(), err)
 				return token
 			},
@@ -1383,7 +1386,8 @@ func (suite *JWTServiceTestSuite) TestVerifyJWTSignature() {
 		{
 			name: "PublicKeyNotAvailable",
 			setupFunc: func() string {
-				token, _, err := suite.jwtService.GenerateJWT("test-subject", testAudience, testIssuer, 3600, nil)
+				token, _, err := suite.jwtService.GenerateJWT(context.TODO(),
+					"test-subject", testAudience, testIssuer, 3600, nil)
 				assert.Nil(suite.T(), err)
 				return token
 			},
@@ -1402,7 +1406,7 @@ func (suite *JWTServiceTestSuite) TestVerifyJWTSignature() {
 				}
 			}
 
-			err := jwtSvc.VerifyJWTSignature(token)
+			err := jwtSvc.VerifyJWTSignature(context.TODO(), token)
 			if tc.expectError {
 				assert.NotNil(t, err)
 			} else {
@@ -1413,7 +1417,8 @@ func (suite *JWTServiceTestSuite) TestVerifyJWTSignature() {
 }
 
 func (suite *JWTServiceTestSuite) TestVerifyJWTSignatureWithPublicKey() {
-	validToken, _, err := suite.jwtService.GenerateJWT("test-subject", testAudience, testIssuer, 3600, nil)
+	validToken, _, err := suite.jwtService.GenerateJWT(context.TODO(), "test-subject",
+		testAudience, testIssuer, 3600, nil)
 	assert.Nil(suite.T(), err)
 
 	wrongKey, _ := rsa.GenerateKey(rand.Reader, 2048)
@@ -1439,7 +1444,7 @@ func (suite *JWTServiceTestSuite) TestVerifyJWTSignatureWithPublicKey() {
 
 	for _, tc := range testCases {
 		suite.T().Run(tc.name, func(t *testing.T) {
-			err := suite.jwtService.VerifyJWTSignatureWithPublicKey(tc.token, tc.publicKey)
+			err := suite.jwtService.VerifyJWTSignatureWithPublicKey(context.TODO(), tc.token, tc.publicKey)
 			if tc.expectError {
 				assert.NotNil(t, err)
 			} else {
@@ -1450,13 +1455,14 @@ func (suite *JWTServiceTestSuite) TestVerifyJWTSignatureWithPublicKey() {
 }
 
 func (suite *JWTServiceTestSuite) TestVerifyJWTSignatureWithJWKS() {
-	token, _, err := suite.jwtService.GenerateJWT("test-subject", testAudience, testIssuer, 3600, nil)
+	token, _, err := suite.jwtService.GenerateJWT(context.TODO(), "test-subject",
+		testAudience, testIssuer, 3600, nil)
 	assert.Nil(suite.T(), err)
 
 	testServer := suite.mockJWKSServer()
 	defer testServer.Close()
 
-	err = suite.jwtService.VerifyJWTSignatureWithJWKS(token, testServer.URL)
+	err = suite.jwtService.VerifyJWTSignatureWithJWKS(context.TODO(), token, testServer.URL)
 	assert.Nil(suite.T(), err)
 }
 
@@ -1476,7 +1482,7 @@ func (suite *JWTServiceTestSuite) TestVerifyJWTSignatureWithJWKSInvalidToken() {
 
 	for _, tc := range testCases {
 		suite.T().Run(tc.name, func(t *testing.T) {
-			err := suite.jwtService.VerifyJWTSignatureWithJWKS(tc.token, testServer.URL)
+			err := suite.jwtService.VerifyJWTSignatureWithJWKS(context.TODO(), tc.token, testServer.URL)
 			assert.NotNil(t, err)
 		})
 	}
@@ -1492,7 +1498,7 @@ func (suite *JWTServiceTestSuite) TestVerifyJWTSignatureWithJWKSKeyIDNotFound() 
 		"kid": "non-existent-key-id",
 	})
 
-	err := suite.jwtService.VerifyJWTSignatureWithJWKS(nonExistentKidJWT, testServer.URL)
+	err := suite.jwtService.VerifyJWTSignatureWithJWKS(context.TODO(), nonExistentKidJWT, testServer.URL)
 	assert.NotNil(suite.T(), err)
 	assert.Equal(suite.T(), ErrorNoMatchingJWKFound, *err)
 }
@@ -1507,7 +1513,7 @@ func (suite *JWTServiceTestSuite) TestVerifyJWTSignatureWithJWKSNoKeyID() {
 		// No kid field
 	})
 
-	err := suite.jwtService.VerifyJWTSignatureWithJWKS(noKidJWT, testServer.URL)
+	err := suite.jwtService.VerifyJWTSignatureWithJWKS(context.TODO(), noKidJWT, testServer.URL)
 	assert.NotNil(suite.T(), err)
 	assert.Equal(suite.T(), ErrorDecodingJWTHeader, *err)
 }
@@ -1527,7 +1533,8 @@ func (suite *JWTServiceTestSuite) TestVerifyJWTSignatureWithJWKSHTTPErrors() {
 				}))
 			},
 			setupToken: func() string {
-				token, _, _ := suite.jwtService.GenerateJWT("test-subject", testAudience, testIssuer, 3600, nil)
+				token, _, _ := suite.jwtService.GenerateJWT(context.TODO(),
+					"test-subject", testAudience, testIssuer, 3600, nil)
 				return token
 			},
 			expectedError: ErrorFailedToGetJWKS,
@@ -1544,7 +1551,8 @@ func (suite *JWTServiceTestSuite) TestVerifyJWTSignatureWithJWKSHTTPErrors() {
 				}))
 			},
 			setupToken: func() string {
-				token, _, _ := suite.jwtService.GenerateJWT("test-subject", testAudience, testIssuer, 3600, nil)
+				token, _, _ := suite.jwtService.GenerateJWT(context.TODO(),
+					"test-subject", testAudience, testIssuer, 3600, nil)
 				return token
 			},
 			expectedError: ErrorFailedToParseJWKS,
@@ -1573,7 +1581,8 @@ func (suite *JWTServiceTestSuite) TestVerifyJWTSignatureWithJWKSHTTPErrors() {
 				}))
 			},
 			setupToken: func() string {
-				token, _, _ := suite.jwtService.GenerateJWT("test-subject", testAudience, testIssuer, 3600, nil)
+				token, _, _ := suite.jwtService.GenerateJWT(context.TODO(),
+					"test-subject", testAudience, testIssuer, 3600, nil)
 				return token
 			},
 			expectedError: ErrorNoMatchingJWKFound,
@@ -1601,7 +1610,8 @@ func (suite *JWTServiceTestSuite) TestVerifyJWTSignatureWithJWKSHTTPErrors() {
 				}))
 			},
 			setupToken: func() string {
-				token, _, _ := suite.jwtService.GenerateJWT("test-subject", testAudience, testIssuer, 3600, nil)
+				token, _, _ := suite.jwtService.GenerateJWT(context.TODO(),
+					"test-subject", testAudience, testIssuer, 3600, nil)
 				return token
 			},
 			expectedError: ErrorFailedToParseJWKS,
@@ -1634,7 +1644,7 @@ func (suite *JWTServiceTestSuite) TestVerifyJWTSignatureWithJWKSHTTPErrors() {
 
 			token := tc.setupToken()
 
-			err := suite.jwtService.VerifyJWTSignatureWithJWKS(token, testServer.URL)
+			err := suite.jwtService.VerifyJWTSignatureWithJWKS(context.TODO(), token, testServer.URL)
 			assert.NotNil(t, err)
 			assert.Equal(t, tc.expectedError, *err)
 		})
@@ -1643,10 +1653,11 @@ func (suite *JWTServiceTestSuite) TestVerifyJWTSignatureWithJWKSHTTPErrors() {
 
 func (suite *JWTServiceTestSuite) TestVerifyJWTSignatureWithJWKSNetworkError() {
 	// Test with invalid URL to trigger network error
-	token, _, err := suite.jwtService.GenerateJWT("test-subject", testAudience, testIssuer, 3600, nil)
+	token, _, err := suite.jwtService.GenerateJWT(context.TODO(), "test-subject",
+		testAudience, testIssuer, 3600, nil)
 	assert.Nil(suite.T(), err)
 
-	err = suite.jwtService.VerifyJWTSignatureWithJWKS(token, "http://localhost:99999/invalid")
+	err = suite.jwtService.VerifyJWTSignatureWithJWKS(context.TODO(), token, "http://localhost:99999/invalid")
 	assert.NotNil(suite.T(), err)
 	assert.Equal(suite.T(), ErrorFailedToGetJWKS, *err)
 }
@@ -1878,7 +1889,7 @@ func (suite *JWTServiceTestSuite) TestInitWithECDSAKeys() {
 			assert.Equal(t, tc.expectedAlg, jwtSvc.jwsAlg)
 
 			// Test JWT generation with ECDSA key
-			token, _, svcErr := service.GenerateJWT("test-subject", "test-aud", "test-iss", 3600, nil)
+			token, _, svcErr := service.GenerateJWT(context.TODO(), "test-subject", "test-aud", "test-iss", 3600, nil)
 			assert.Nil(t, svcErr)
 			assert.NotEmpty(t, token)
 
@@ -1888,7 +1899,7 @@ func (suite *JWTServiceTestSuite) TestInitWithECDSAKeys() {
 			assert.Equal(t, string(tc.expectedAlg), header["alg"])
 
 			// Verify signature
-			svcErr = service.VerifyJWTSignature(token)
+			svcErr = service.VerifyJWTSignature(context.TODO(), token)
 			assert.Nil(t, svcErr)
 		})
 	}
@@ -1940,7 +1951,7 @@ func (suite *JWTServiceTestSuite) TestInitWithEd25519Key() {
 	assert.Equal(suite.T(), EdDSA, jwtSvc.jwsAlg)
 
 	// Test JWT generation with Ed25519 key
-	token, _, svcErr := service.GenerateJWT("test-subject", "test-aud", "test-iss", 3600, nil)
+	token, _, svcErr := service.GenerateJWT(context.TODO(), "test-subject", "test-aud", "test-iss", 3600, nil)
 	assert.Nil(suite.T(), svcErr)
 	assert.NotEmpty(suite.T(), token)
 
@@ -1950,7 +1961,7 @@ func (suite *JWTServiceTestSuite) TestInitWithEd25519Key() {
 	assert.Equal(suite.T(), "EdDSA", header["alg"])
 
 	// Verify signature
-	svcErr = service.VerifyJWTSignature(token)
+	svcErr = service.VerifyJWTSignature(context.TODO(), token)
 	assert.Nil(suite.T(), svcErr)
 }
 
@@ -2294,7 +2305,7 @@ func (suite *JWTServiceTestSuite) TestVerifyJWTSignatureWithPublicKeyAlgorithmDe
 			}
 
 			// Generate token
-			token, _, err := jwtService.GenerateJWT("test-sub", "test-aud", "test-iss", 3600, nil)
+			token, _, err := jwtService.GenerateJWT(context.TODO(), "test-sub", "test-aud", "test-iss", 3600, nil)
 			assert.Nil(t, err)
 
 			// Get public key
@@ -2302,7 +2313,7 @@ func (suite *JWTServiceTestSuite) TestVerifyJWTSignatureWithPublicKeyAlgorithmDe
 			assert.NotNil(t, pubKey)
 
 			// Verify with public key (should detect algorithm from header)
-			err = jwtService.VerifyJWTSignatureWithPublicKey(token, pubKey)
+			err = jwtService.VerifyJWTSignatureWithPublicKey(context.TODO(), token, pubKey)
 			if tc.expectError {
 				assert.NotNil(t, err)
 			} else {

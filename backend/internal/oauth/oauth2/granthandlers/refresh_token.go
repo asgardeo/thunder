@@ -19,6 +19,7 @@
 package granthandlers
 
 import (
+	"context"
 	"slices"
 
 	appmodel "github.com/asgardeo/thunder/internal/application/model"
@@ -55,7 +56,7 @@ func newRefreshTokenGrantHandler(
 }
 
 // ValidateGrant validates the refresh token grant request.
-func (h *refreshTokenGrantHandler) ValidateGrant(tokenRequest *model.TokenRequest,
+func (h *refreshTokenGrantHandler) ValidateGrant(ctx context.Context, tokenRequest *model.TokenRequest,
 	oauthApp *appmodel.OAuthAppConfigProcessedDTO) *model.ErrorResponse {
 	if constants.GrantType(tokenRequest.GrantType) != constants.GrantTypeRefreshToken {
 		return &model.ErrorResponse{
@@ -80,13 +81,13 @@ func (h *refreshTokenGrantHandler) ValidateGrant(tokenRequest *model.TokenReques
 }
 
 // HandleGrant processes the refresh token grant request and generates a new token response.
-func (h *refreshTokenGrantHandler) HandleGrant(tokenRequest *model.TokenRequest,
+func (h *refreshTokenGrantHandler) HandleGrant(ctx context.Context, tokenRequest *model.TokenRequest,
 	oauthApp *appmodel.OAuthAppConfigProcessedDTO) (
 	*model.TokenResponseDTO, *model.ErrorResponse) {
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, "RefreshTokenGrantHandler"))
 
 	// Validate refresh token using token validator
-	refreshTokenClaims, err := h.tokenValidator.ValidateRefreshToken(tokenRequest.RefreshToken, tokenRequest.ClientID)
+	refreshTokenClaims, err := h.tokenValidator.ValidateRefreshToken(ctx, tokenRequest.RefreshToken, tokenRequest.ClientID)
 	if err != nil {
 		logger.Error("Failed to validate refresh token", log.Error(err))
 		return nil, &model.ErrorResponse{
@@ -97,7 +98,7 @@ func (h *refreshTokenGrantHandler) HandleGrant(tokenRequest *model.TokenRequest,
 
 	newTokenScopes := h.applyScopeDownscoping(tokenRequest.Scope, refreshTokenClaims.Scopes, logger)
 
-	accessToken, err := h.tokenBuilder.BuildAccessToken(&tokenservice.AccessTokenBuildContext{
+	accessToken, err := h.tokenBuilder.BuildAccessToken(ctx, &tokenservice.AccessTokenBuildContext{
 		Subject:        refreshTokenClaims.Sub,
 		Audience:       refreshTokenClaims.Aud,
 		ClientID:       tokenRequest.ClientID,
@@ -130,7 +131,7 @@ func (h *refreshTokenGrantHandler) HandleGrant(tokenRequest *model.TokenRequest,
 	// Issue a new refresh token if renew_on_grant is enabled
 	if renewRefreshToken {
 		logger.Debug("Renewing refresh token", log.String("client_id", tokenRequest.ClientID))
-		errResp := h.IssueRefreshToken(tokenResponse, oauthApp, refreshTokenClaims.Sub, refreshTokenClaims.Aud,
+		errResp := h.IssueRefreshToken(ctx, tokenResponse, oauthApp, refreshTokenClaims.Sub, refreshTokenClaims.Aud,
 			refreshTokenClaims.GrantType, newTokenScopes,
 			refreshTokenClaims.UserType, refreshTokenClaims.OuID,
 			refreshTokenClaims.OuName, refreshTokenClaims.OuHandle)
@@ -154,6 +155,7 @@ func (h *refreshTokenGrantHandler) HandleGrant(tokenRequest *model.TokenRequest,
 
 // IssueRefreshToken generates a new refresh token for the given OAuth application and scopes.
 func (h *refreshTokenGrantHandler) IssueRefreshToken(
+	ctx context.Context,
 	tokenResponse *model.TokenResponseDTO,
 	oauthApp *appmodel.OAuthAppConfigProcessedDTO,
 	subject, audience, grantType string,
@@ -185,7 +187,7 @@ func (h *refreshTokenGrantHandler) IssueRefreshToken(
 	}
 
 	// Build refresh token using token builder
-	refreshToken, err := h.tokenBuilder.BuildRefreshToken(tokenCtx)
+	refreshToken, err := h.tokenBuilder.BuildRefreshToken(ctx, tokenCtx)
 	if err != nil {
 		return &model.ErrorResponse{
 			Error:            constants.ErrorServerError,

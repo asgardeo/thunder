@@ -338,7 +338,7 @@ func (suite *TokenHandlerTestSuite) TestHandleTokenRequest_ValidateGrantError() 
 		Error:            "invalid_grant",
 		ErrorDescription: "Invalid authorization code",
 	}
-	suite.mockGrantHandler.On("ValidateGrant", mock.Anything, mockApp).
+	suite.mockGrantHandler.On("ValidateGrant", mock.Anything, mock.Anything, mockApp).
 		Return(errorResponse)
 
 	rr := httptest.NewRecorder()
@@ -381,7 +381,7 @@ func (suite *TokenHandlerTestSuite) TestHandleTokenRequest_ScopeValidationError(
 	suite.mockGrantProvider.On("GetGrantHandler", constants.GrantTypeAuthorizationCode).
 		Return(suite.mockGrantHandler, nil)
 
-	suite.mockGrantHandler.On("ValidateGrant", mock.Anything, mockApp).
+	suite.mockGrantHandler.On("ValidateGrant", mock.Anything, mock.Anything, mockApp).
 		Return(nil)
 
 	scopeError := &scope.ScopeError{
@@ -430,7 +430,7 @@ func (suite *TokenHandlerTestSuite) TestHandleTokenRequest_Success() {
 	suite.mockGrantProvider.On("GetGrantHandler", constants.GrantTypeAuthorizationCode).
 		Return(suite.mockGrantHandler, nil)
 
-	suite.mockGrantHandler.On("ValidateGrant", mock.Anything, mockApp).
+	suite.mockGrantHandler.On("ValidateGrant", mock.Anything, mock.Anything, mockApp).
 		Return(nil)
 
 	suite.mockScopeValidator.On("ValidateScopes", "openid profile", "test-client-id").
@@ -450,7 +450,7 @@ func (suite *TokenHandlerTestSuite) TestHandleTokenRequest_Success() {
 			Token: "",
 		},
 	}
-	suite.mockGrantHandler.On("HandleGrant", mock.Anything, mockApp).
+	suite.mockGrantHandler.On("HandleGrant", mock.Anything, mock.Anything, mockApp).
 		Return(tokenResponse, nil)
 
 	rr := httptest.NewRecorder()
@@ -499,7 +499,7 @@ func (suite *TokenHandlerTestSuite) TestHandleTokenRequest_HandleGrantError() {
 	suite.mockGrantProvider.On("GetGrantHandler", constants.GrantTypeAuthorizationCode).
 		Return(suite.mockGrantHandler, nil)
 
-	suite.mockGrantHandler.On("ValidateGrant", mock.Anything, mockApp).
+	suite.mockGrantHandler.On("ValidateGrant", mock.Anything, mock.Anything, mockApp).
 		Return(nil)
 
 	suite.mockScopeValidator.On("ValidateScopes", "openid", "test-client-id").
@@ -509,7 +509,7 @@ func (suite *TokenHandlerTestSuite) TestHandleTokenRequest_HandleGrantError() {
 		Error:            "invalid_grant",
 		ErrorDescription: "Authorization code expired",
 	}
-	suite.mockGrantHandler.On("HandleGrant", mock.Anything, mockApp).
+	suite.mockGrantHandler.On("HandleGrant", mock.Anything, mock.Anything, mockApp).
 		Return(nil, errorResponse)
 
 	rr := httptest.NewRecorder()
@@ -559,7 +559,7 @@ func (suite *TokenHandlerTestSuite) TestHandleTokenRequest_WithRefreshToken() {
 	suite.mockGrantProvider.On("GetGrantHandler", constants.GrantTypeRefreshToken).
 		Return(mockRefreshHandler, nil)
 
-	suite.mockGrantHandler.On("ValidateGrant", mock.Anything, mockApp).
+	suite.mockGrantHandler.On("ValidateGrant", mock.Anything, mock.Anything, mockApp).
 		Return(nil)
 
 	suite.mockScopeValidator.On("ValidateScopes", "openid", "test-client-id").
@@ -581,10 +581,10 @@ func (suite *TokenHandlerTestSuite) TestHandleTokenRequest_WithRefreshToken() {
 			Token: "",
 		},
 	}
-	suite.mockGrantHandler.On("HandleGrant", mock.Anything, mockApp).
+	suite.mockGrantHandler.On("HandleGrant", mock.Anything, mock.Anything, mockApp).
 		Return(tokenResponse, nil)
 
-	mockRefreshHandler.On("IssueRefreshToken", tokenResponse, mockApp, "user123", "test-audience",
+	mockRefreshHandler.On("IssueRefreshToken", mock.Anything, tokenResponse, mockApp, "user123", "test-audience",
 		"authorization_code", []string{"openid"}, "", "", "", "").
 		Return(nil)
 
@@ -634,7 +634,7 @@ func (suite *TokenHandlerTestSuite) TestHandleTokenRequest_RefreshTokenIssuanceE
 	suite.mockGrantProvider.On("GetGrantHandler", constants.GrantTypeRefreshToken).
 		Return(mockRefreshHandler, nil)
 
-	suite.mockGrantHandler.On("ValidateGrant", mock.Anything, mockApp).
+	suite.mockGrantHandler.On("ValidateGrant", mock.Anything, mock.Anything, mockApp).
 		Return(nil)
 
 	suite.mockScopeValidator.On("ValidateScopes", "openid", "test-client-id").
@@ -656,14 +656,14 @@ func (suite *TokenHandlerTestSuite) TestHandleTokenRequest_RefreshTokenIssuanceE
 			Token: "",
 		},
 	}
-	suite.mockGrantHandler.On("HandleGrant", mock.Anything, mockApp).
+	suite.mockGrantHandler.On("HandleGrant", mock.Anything, mock.Anything, mockApp).
 		Return(tokenResponse, nil)
 
 	refreshError := &model.ErrorResponse{
 		Error:            "server_error",
 		ErrorDescription: "Failed to issue refresh token",
 	}
-	mockRefreshHandler.On("IssueRefreshToken", tokenResponse, mockApp, "user123", "test-audience",
+	mockRefreshHandler.On("IssueRefreshToken", mock.Anything, tokenResponse, mockApp, "user123", "test-audience",
 		"authorization_code", []string{"openid"}, "", "", "", "").
 		Return(refreshError)
 
@@ -713,7 +713,7 @@ func (suite *TokenHandlerTestSuite) TestHandleTokenRequest_RefreshTokenHandlerNo
 	suite.mockGrantProvider.On("GetGrantHandler", constants.GrantTypeRefreshToken).
 		Return(nil, errors.New("refresh handler not found"))
 
-	suite.mockGrantHandler.On("ValidateGrant", mock.Anything, mockApp).
+	suite.mockGrantHandler.On("ValidateGrant", mock.Anything, mock.Anything, mockApp).
 		Return(nil)
 
 	suite.mockScopeValidator.On("ValidateScopes", "openid", "test-client-id").
@@ -735,7 +735,7 @@ func (suite *TokenHandlerTestSuite) TestHandleTokenRequest_RefreshTokenHandlerNo
 			Token: "",
 		},
 	}
-	suite.mockGrantHandler.On("HandleGrant", mock.Anything, mockApp).
+	suite.mockGrantHandler.On("HandleGrant", mock.Anything, mock.Anything, mockApp).
 		Return(tokenResponse, nil)
 
 	rr := httptest.NewRecorder()
@@ -784,7 +784,7 @@ func (suite *TokenHandlerTestSuite) TestHandleTokenRequest_RefreshTokenHandlerCa
 	suite.mockGrantProvider.On("GetGrantHandler", constants.GrantTypeRefreshToken).
 		Return(suite.mockGrantHandler, nil)
 
-	suite.mockGrantHandler.On("ValidateGrant", mock.Anything, mockApp).
+	suite.mockGrantHandler.On("ValidateGrant", mock.Anything, mock.Anything, mockApp).
 		Return(nil)
 
 	suite.mockScopeValidator.On("ValidateScopes", "openid", "test-client-id").
@@ -806,7 +806,7 @@ func (suite *TokenHandlerTestSuite) TestHandleTokenRequest_RefreshTokenHandlerCa
 			Token: "",
 		},
 	}
-	suite.mockGrantHandler.On("HandleGrant", mock.Anything, mockApp).
+	suite.mockGrantHandler.On("HandleGrant", mock.Anything, mock.Anything, mockApp).
 		Return(tokenResponse, nil)
 
 	rr := httptest.NewRecorder()
@@ -849,7 +849,7 @@ func (suite *TokenHandlerTestSuite) TestHandleTokenRequest_TokenExchange() {
 	suite.mockGrantProvider.On("GetGrantHandler", constants.GrantTypeTokenExchange).
 		Return(mockTokenExchangeHandler, nil)
 
-	mockTokenExchangeHandler.On("ValidateGrant", mock.Anything, mockApp).
+	mockTokenExchangeHandler.On("ValidateGrant", mock.Anything, mock.Anything, mockApp).
 		Return(nil)
 
 	suite.mockScopeValidator.On("ValidateScopes", "", "test-client-id").
@@ -869,7 +869,7 @@ func (suite *TokenHandlerTestSuite) TestHandleTokenRequest_TokenExchange() {
 			Token: "",
 		},
 	}
-	mockTokenExchangeHandler.On("HandleGrant", mock.Anything, mockApp).
+	mockTokenExchangeHandler.On("HandleGrant", mock.Anything, mock.Anything, mockApp).
 		Return(tokenResponse, nil)
 
 	rr := httptest.NewRecorder()
@@ -913,7 +913,7 @@ func (suite *TokenHandlerTestSuite) TestHandleTokenRequest_TokenExchangeWithJWTT
 	suite.mockGrantProvider.On("GetGrantHandler", constants.GrantTypeTokenExchange).
 		Return(mockTokenExchangeHandler, nil)
 
-	mockTokenExchangeHandler.On("ValidateGrant", mock.Anything, mockApp).
+	mockTokenExchangeHandler.On("ValidateGrant", mock.Anything, mock.Anything, mockApp).
 		Return(nil)
 
 	suite.mockScopeValidator.On("ValidateScopes", "", "test-client-id").
@@ -933,7 +933,7 @@ func (suite *TokenHandlerTestSuite) TestHandleTokenRequest_TokenExchangeWithJWTT
 			Token: "",
 		},
 	}
-	mockTokenExchangeHandler.On("HandleGrant", mock.Anything, mockApp).
+	mockTokenExchangeHandler.On("HandleGrant", mock.Anything, mock.Anything, mockApp).
 		Return(tokenResponse, nil)
 
 	rr := httptest.NewRecorder()

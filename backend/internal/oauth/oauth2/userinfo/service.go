@@ -20,6 +20,7 @@
 package userinfo
 
 import (
+	"context"
 	"slices"
 
 	"github.com/asgardeo/thunder/internal/application"
@@ -36,7 +37,7 @@ const serviceLoggerComponentName = "UserInfoService"
 
 // userInfoServiceInterface defines the interface for OIDC UserInfo endpoint.
 type userInfoServiceInterface interface {
-	GetUserInfo(accessToken string) (map[string]interface{}, *serviceerror.ServiceError)
+	GetUserInfo(ctx context.Context, accessToken string) (map[string]interface{}, *serviceerror.ServiceError)
 }
 
 // userInfoService implements the userInfoServiceInterface.
@@ -62,12 +63,13 @@ func newUserInfoService(
 }
 
 // GetUserInfo validates the access token and returns user information based on authorized scopes.
-func (s *userInfoService) GetUserInfo(accessToken string) (map[string]interface{}, *serviceerror.ServiceError) {
+func (s *userInfoService) GetUserInfo(ctx context.Context,
+	accessToken string) (map[string]interface{}, *serviceerror.ServiceError) {
 	if accessToken == "" {
 		return nil, &errorInvalidAccessToken
 	}
 
-	claims, svcErr := s.validateAndDecodeToken(accessToken)
+	claims, svcErr := s.validateAndDecodeToken(ctx, accessToken)
 	if svcErr != nil {
 		return nil, svcErr
 	}
@@ -93,7 +95,7 @@ func (s *userInfoService) GetUserInfo(accessToken string) (map[string]interface{
 		oauthApp.Token.IDToken != nil &&
 		slices.Contains(oauthApp.Token.IDToken.UserAttributes, constants.UserAttributeGroups)
 
-	userAttributes, userGroups, err := tokenservice.FetchUserAttributesAndGroups(s.userService,
+	userAttributes, userGroups, err := tokenservice.FetchUserAttributesAndGroups(ctx, s.userService,
 		sub, includeGroups)
 	if err != nil {
 		s.logger.Error("Failed to fetch user attributes", log.String("userID", sub), log.Error(err))
@@ -111,9 +113,9 @@ func (s *userInfoService) GetUserInfo(accessToken string) (map[string]interface{
 }
 
 // validateAndDecodeToken validates the JWT signature and decodes the payload.
-func (s *userInfoService) validateAndDecodeToken(accessToken string) (
+func (s *userInfoService) validateAndDecodeToken(ctx context.Context, accessToken string) (
 	map[string]interface{}, *serviceerror.ServiceError) {
-	if err := s.jwtService.VerifyJWT(accessToken, "", ""); err != nil {
+	if err := s.jwtService.VerifyJWT(ctx, accessToken, "", ""); err != nil {
 		s.logger.Debug("Failed to verify access token", log.String("error", err.Error))
 		return nil, &errorInvalidAccessToken
 	}

@@ -108,7 +108,7 @@ func (ouh *organizationUnitHandler) HandleOUGetRequest(w http.ResponseWriter, r 
 		return
 	}
 
-	ou, svcErr := ouh.service.GetOrganizationUnit(id)
+	ou, svcErr := ouh.service.GetOrganizationUnit(r.Context(), id)
 	if svcErr != nil {
 		ouh.handleError(w, svcErr)
 		return
@@ -167,7 +167,7 @@ func (ouh *organizationUnitHandler) HandleOUDeleteRequest(w http.ResponseWriter,
 func (ouh *organizationUnitHandler) HandleOUChildrenListRequest(w http.ResponseWriter, r *http.Request) {
 	ouh.handleResourceListRequest(w, r, "child organization units",
 		func(id string, limit, offset int) (interface{}, *serviceerror.ServiceError) {
-			return ouh.service.GetOrganizationUnitChildren(id, limit, offset)
+			return ouh.service.GetOrganizationUnitChildren(r.Context(), id, limit, offset)
 		})
 }
 
@@ -339,7 +339,7 @@ func (ouh *organizationUnitHandler) HandleOUGetByPathRequest(w http.ResponseWrit
 		return
 	}
 
-	ou, svcErr := ouh.service.GetOrganizationUnitByPath(path)
+	ou, svcErr := ouh.service.GetOrganizationUnitByPath(r.Context(), path)
 	if svcErr != nil {
 		ouh.handleError(w, svcErr)
 		return
@@ -449,7 +449,7 @@ func (ouh *organizationUnitHandler) handleResourceListByPathRequest(
 func (ouh *organizationUnitHandler) HandleOUChildrenListByPathRequest(w http.ResponseWriter, r *http.Request) {
 	ouh.handleResourceListByPathRequest(w, r, "child organization units",
 		func(path string, limit, offset int) (interface{}, *serviceerror.ServiceError) {
-			return ouh.service.GetOrganizationUnitChildrenByPath(path, limit, offset)
+			return ouh.service.GetOrganizationUnitChildrenByPath(r.Context(), path, limit, offset)
 		})
 }
 

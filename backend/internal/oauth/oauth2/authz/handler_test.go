@@ -20,6 +20,7 @@ package authz
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"errors"
 	"net/http"
@@ -599,7 +600,7 @@ func (suite *AuthorizeHandlerTestSuite) TestHandleAuthorizationResponseFromEngin
 	}
 
 	rr := httptest.NewRecorder()
-	suite.handler.handleAuthorizationResponseFromEngine(msg, rr)
+	suite.handler.handleAuthorizationResponseFromEngine(context.TODO(), msg, rr)
 
 	assert.Equal(suite.T(), http.StatusOK, rr.Code)
 	var resp AuthZPostResponse
@@ -626,7 +627,7 @@ func (suite *AuthorizeHandlerTestSuite) TestHandleAuthorizationResponseFromEngin
 	}
 
 	rr := httptest.NewRecorder()
-	suite.handler.handleAuthorizationResponseFromEngine(msg, rr)
+	suite.handler.handleAuthorizationResponseFromEngine(context.TODO(), msg, rr)
 
 	assert.Equal(suite.T(), http.StatusOK, rr.Code)
 }
@@ -643,7 +644,7 @@ func (suite *AuthorizeHandlerTestSuite) TestHandleAuthorizationResponseFromEngin
 	suite.mockAuthReqStore.EXPECT().ClearRequest(authID)
 
 	assertion := "invalid.jwt.token"
-	suite.mockJWTService.EXPECT().VerifyJWT(assertion, "", "").Return(&jwt.ErrorInvalidTokenSignature)
+	suite.mockJWTService.EXPECT().VerifyJWT(mock.Anything, assertion, "", "").Return(&jwt.ErrorInvalidTokenSignature)
 
 	msg := &OAuthMessage{
 		RequestType: oauth2const.TypeAuthorizationResponseFromEngine,
@@ -654,7 +655,7 @@ func (suite *AuthorizeHandlerTestSuite) TestHandleAuthorizationResponseFromEngin
 	}
 
 	rr := httptest.NewRecorder()
-	suite.handler.handleAuthorizationResponseFromEngine(msg, rr)
+	suite.handler.handleAuthorizationResponseFromEngine(context.TODO(), msg, rr)
 
 	assert.Equal(suite.T(), http.StatusOK, rr.Code)
 }
@@ -671,7 +672,7 @@ func (suite *AuthorizeHandlerTestSuite) TestHandleAuthorizationResponseFromEngin
 	suite.mockAuthReqStore.EXPECT().ClearRequest(authID)
 
 	assertion := "invalid-jwt-format"
-	suite.mockJWTService.EXPECT().VerifyJWT(assertion, "", "").Return(nil)
+	suite.mockJWTService.EXPECT().VerifyJWT(mock.Anything, assertion, "", "").Return(nil)
 
 	msg := &OAuthMessage{
 		RequestType: oauth2const.TypeAuthorizationResponseFromEngine,
@@ -682,7 +683,7 @@ func (suite *AuthorizeHandlerTestSuite) TestHandleAuthorizationResponseFromEngin
 	}
 
 	rr := httptest.NewRecorder()
-	suite.handler.handleAuthorizationResponseFromEngine(msg, rr)
+	suite.handler.handleAuthorizationResponseFromEngine(context.TODO(), msg, rr)
 
 	assert.Equal(suite.T(), http.StatusOK, rr.Code)
 }
@@ -700,7 +701,7 @@ func (suite *AuthorizeHandlerTestSuite) TestHandleAuthorizationResponseFromEngin
 
 	// This will fail during decode since it's not a valid JWT
 	assertion := "not.a.valid.jwt"
-	suite.mockJWTService.EXPECT().VerifyJWT(assertion, "", "").Return(nil)
+	suite.mockJWTService.EXPECT().VerifyJWT(mock.Anything, assertion, "", "").Return(nil)
 
 	msg := &OAuthMessage{
 		RequestType: oauth2const.TypeAuthorizationResponseFromEngine,
@@ -711,7 +712,7 @@ func (suite *AuthorizeHandlerTestSuite) TestHandleAuthorizationResponseFromEngin
 	}
 
 	rr := httptest.NewRecorder()
-	suite.handler.handleAuthorizationResponseFromEngine(msg, rr)
+	suite.handler.handleAuthorizationResponseFromEngine(context.TODO(), msg, rr)
 
 	assert.Equal(suite.T(), http.StatusOK, rr.Code)
 	var resp AuthZPostResponse
@@ -925,7 +926,7 @@ func (suite *AuthorizeHandlerTestSuite) TestHandleAuthorizationResponseFromEngin
 	// Header: {"alg":"none","typ":"JWT"}
 	// Payload: {"sub":"test-user","iat":1701421200}
 	assertion := testJWTWithIat
-	suite.mockJWTService.EXPECT().VerifyJWT(assertion, "", "").Return(nil)
+	suite.mockJWTService.EXPECT().VerifyJWT(mock.Anything, assertion, "", "").Return(nil)
 
 	// Mock the store to return an error when inserting
 	storeError := errors.New("database error")
@@ -940,7 +941,7 @@ func (suite *AuthorizeHandlerTestSuite) TestHandleAuthorizationResponseFromEngin
 	}
 
 	rr := httptest.NewRecorder()
-	suite.handler.handleAuthorizationResponseFromEngine(msg, rr)
+	suite.handler.handleAuthorizationResponseFromEngine(context.TODO(), msg, rr)
 
 	assert.Equal(suite.T(), http.StatusOK, rr.Code)
 	var resp AuthZPostResponse
@@ -1170,7 +1171,7 @@ func (suite *AuthorizeHandlerTestSuite) TestHandleAuthorizationResponseFromEngin
 
 	// JWT with sub but no authorized_permissions (with iat claim)
 	assertion := testJWTWithIat
-	suite.mockJWTService.EXPECT().VerifyJWT(assertion, "", "").Return(nil)
+	suite.mockJWTService.EXPECT().VerifyJWT(mock.Anything, assertion, "", "").Return(nil)
 
 	suite.mockAuthzCodeStore.EXPECT().InsertAuthorizationCode(mock.Anything).Return(nil)
 
@@ -1183,7 +1184,7 @@ func (suite *AuthorizeHandlerTestSuite) TestHandleAuthorizationResponseFromEngin
 	}
 
 	rr := httptest.NewRecorder()
-	suite.handler.handleAuthorizationResponseFromEngine(msg, rr)
+	suite.handler.handleAuthorizationResponseFromEngine(context.TODO(), msg, rr)
 
 	assert.Equal(suite.T(), http.StatusOK, rr.Code)
 }
@@ -1201,7 +1202,7 @@ func (suite *AuthorizeHandlerTestSuite) TestHandleAuthorizationResponseFromEngin
 	suite.mockAuthReqStore.EXPECT().ClearRequest(authID)
 
 	assertion := testJWTWithIat
-	suite.mockJWTService.EXPECT().VerifyJWT(assertion, "", "").Return(nil)
+	suite.mockJWTService.EXPECT().VerifyJWT(mock.Anything, assertion, "", "").Return(nil)
 
 	suite.mockAuthzCodeStore.EXPECT().InsertAuthorizationCode(mock.Anything).Return(nil)
 
@@ -1214,7 +1215,7 @@ func (suite *AuthorizeHandlerTestSuite) TestHandleAuthorizationResponseFromEngin
 	}
 
 	rr := httptest.NewRecorder()
-	suite.handler.handleAuthorizationResponseFromEngine(msg, rr)
+	suite.handler.handleAuthorizationResponseFromEngine(context.TODO(), msg, rr)
 
 	assert.Equal(suite.T(), http.StatusOK, rr.Code)
 	var resp AuthZPostResponse
@@ -1238,7 +1239,7 @@ func (suite *AuthorizeHandlerTestSuite) TestHandleAuthorizationResponseFromEngin
 	suite.mockAuthReqStore.EXPECT().ClearRequest(authID)
 
 	assertion := testMinimalJWT
-	suite.mockJWTService.EXPECT().VerifyJWT(assertion, "", "").Return(nil)
+	suite.mockJWTService.EXPECT().VerifyJWT(mock.Anything, assertion, "", "").Return(nil)
 
 	msg := &OAuthMessage{
 		RequestType: oauth2const.TypeAuthorizationResponseFromEngine,
@@ -1249,7 +1250,7 @@ func (suite *AuthorizeHandlerTestSuite) TestHandleAuthorizationResponseFromEngin
 	}
 
 	rr := httptest.NewRecorder()
-	suite.handler.handleAuthorizationResponseFromEngine(msg, rr)
+	suite.handler.handleAuthorizationResponseFromEngine(context.TODO(), msg, rr)
 
 	assert.Equal(suite.T(), http.StatusOK, rr.Code)
 	var resp AuthZPostResponse

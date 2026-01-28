@@ -66,7 +66,8 @@ func (suite *ContextTestSuite) TestTxFromContext_WithTransaction() {
 	txCtx := WithTx(ctx, tx)
 
 	// Retrieve it
-	retrievedTx := TxFromContext(txCtx)
+	retrievedTx, err := TxFromContext(txCtx)
+	suite.NoError(err)
 	suite.NotNil(retrievedTx)
 	suite.Equal(tx, retrievedTx)
 }
@@ -75,7 +76,8 @@ func (suite *ContextTestSuite) TestTxFromContext_WithoutTransaction() {
 	ctx := context.Background()
 
 	// Try to retrieve transaction from empty context
-	tx := TxFromContext(ctx)
+	tx, err := TxFromContext(ctx)
+	suite.Error(err)
 	suite.Nil(tx)
 }
 
@@ -85,8 +87,9 @@ func (suite *ContextTestSuite) TestTxFromContext_WrongType() {
 	// Store something other than *sql.Tx in the context
 	ctx = context.WithValue(ctx, txContextKey, "not a transaction")
 
-	// Should return nil
-	tx := TxFromContext(ctx)
+	// Should return nil and error
+	tx, err := TxFromContext(ctx)
+	suite.Error(err)
 	suite.Nil(tx)
 }
 

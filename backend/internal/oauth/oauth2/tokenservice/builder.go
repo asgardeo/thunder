@@ -19,6 +19,7 @@
 package tokenservice
 
 import (
+	"context"
 	"fmt"
 	"slices"
 
@@ -30,9 +31,9 @@ import (
 
 // TokenBuilderInterface defines the interface for building OAuth2 tokens.
 type TokenBuilderInterface interface {
-	BuildAccessToken(ctx *AccessTokenBuildContext) (*model.TokenDTO, error)
-	BuildRefreshToken(ctx *RefreshTokenBuildContext) (*model.TokenDTO, error)
-	BuildIDToken(ctx *IDTokenBuildContext) (*model.TokenDTO, error)
+	BuildAccessToken(ctx context.Context, buildCtx *AccessTokenBuildContext) (*model.TokenDTO, error)
+	BuildRefreshToken(ctx context.Context, buildCtx *RefreshTokenBuildContext) (*model.TokenDTO, error)
+	BuildIDToken(ctx context.Context, buildCtx *IDTokenBuildContext) (*model.TokenDTO, error)
 }
 
 // TokenBuilder implements TokenBuilderInterface.
@@ -48,31 +49,34 @@ func newTokenBuilder(jwtService jwt.JWTServiceInterface) TokenBuilderInterface {
 }
 
 // BuildAccessToken builds an access token with all necessary claims.
-func (tb *tokenBuilder) BuildAccessToken(ctx *AccessTokenBuildContext) (*model.TokenDTO, error) {
-	if ctx == nil {
+func (tb *tokenBuilder) BuildAccessToken(ctx context.Context, buildCtx *AccessTokenBuildContext) (
+	*model.TokenDTO, error) {
+	if buildCtx == nil {
 		return nil, fmt.Errorf("build context cannot be nil")
 	}
 
-	tokenConfig := resolveTokenConfig(ctx.OAuthApp, TokenTypeAccess)
+	tokenConfig := resolveTokenConfig(buildCtx.OAuthApp, TokenTypeAccess)
 
-	userAttributes := tb.buildAccessTokenUserAttributes(ctx.UserAttributes, ctx.UserGroups, ctx.OAuthApp)
-	jwtClaims := tb.buildAccessTokenClaims(ctx, userAttributes)
+	userAttributes := tb.buildAccessTokenUserAttributes(buildCtx.UserAttributes, buildCtx.UserGroups, buildCtx.OAuthApp)
+	jwtClaims := tb.buildAccessTokenClaims(buildCtx, userAttributes)
 
 	tokenDTO := &model.TokenDTO{
 		TokenType:      constants.TokenTypeBearer,
 		ExpiresIn:      tokenConfig.ValidityPeriod,
-		Scopes:         ctx.Scopes,
-		ClientID:       ctx.ClientID,
+		Scopes:         buildCtx.Scopes,
+		ClientID:       buildCtx.ClientID,
 		UserAttributes: userAttributes,
-		Subject:        ctx.Subject,
-		Audience:       ctx.Audience,
+		Subject:        buildCtx.Subject,
+		Audience:       buildCtx.Audience,
 	}
 
-	tb.appendUserTypeAndOU(tokenDTO, jwtClaims, ctx.UserType, ctx.OuID, ctx.OuName, ctx.OuHandle)
+	tb.appendUserTypeAndOU(tokenDTO, jwtClaims, buildCtx.UserType, buildCtx.OuID,
+		buildCtx.OuName, buildCtx.OuHandle)
 
 	token, iat, err := tb.jwtService.GenerateJWT(
-		ctx.Subject,
-		ctx.Audience,
+		ctx,
+		buildCtx.Subject,
+		buildCtx.Audience,
 		tokenConfig.Issuer,
 		tokenConfig.ValidityPeriod,
 		jwtClaims,
@@ -178,27 +182,30 @@ func (tb *tokenBuilder) buildActorClaim(actorClaims *SubjectTokenClaims) map[str
 }
 
 // BuildRefreshToken builds a refresh token with all necessary claims.
-func (tb *tokenBuilder) BuildRefreshToken(ctx *RefreshTokenBuildContext) (*model.TokenDTO, error) {
-	if ctx == nil {
+func (tb *tokenBuilder) BuildRefreshToken(ctx context.Context, buildCtx *RefreshTokenBuildContext) (
+	*model.TokenDTO, error) {
+	if buildCtx == nil {
 		return nil, fmt.Errorf("build context cannot be nil")
 	}
 
-	tokenConfig := resolveTokenConfig(ctx.OAuthApp, TokenTypeRefresh)
+	tokenConfig := resolveTokenConfig(buildCtx.OAuthApp, TokenTypeRefresh)
 
-	claims := tb.buildRefreshTokenClaims(ctx)
+	claims := tb.buildRefreshTokenClaims(buildCtx)
 
 	tokenDTO := &model.TokenDTO{
 		ExpiresIn: tokenConfig.ValidityPeriod,
-		Scopes:    ctx.Scopes,
-		ClientID:  ctx.ClientID,
-		Subject:   ctx.AccessTokenSubject,
+		Scopes:    buildCtx.Scopes,
+		ClientID:  buildCtx.ClientID,
+		Subject:   buildCtx.AccessTokenSubject,
 		Audience:  tokenConfig.Issuer,
 	}
 
-	tb.appendUserTypeAndOU(tokenDTO, claims, ctx.UserType, ctx.OuID, ctx.OuName, ctx.OuHandle)
+	tb.appendUserTypeAndOU(tokenDTO, claims, buildCtx.UserType, buildCtx.OuID,
+		buildCtx.OuName, buildCtx.OuHandle)
 
 	token, iat, err := tb.jwtService.GenerateJWT(
-		ctx.ClientID,
+		ctx,
+		buildCtx.ClientID,
 		tokenConfig.Issuer,
 		tokenConfig.Issuer,
 		tokenConfig.ValidityPeriod,
@@ -239,28 +246,31 @@ func (tb *tokenBuilder) buildRefreshTokenClaims(ctx *RefreshTokenBuildContext) m
 }
 
 // BuildIDToken builds an OIDC ID token with all necessary claims.
-func (tb *tokenBuilder) BuildIDToken(ctx *IDTokenBuildContext) (*model.TokenDTO, error) {
-	if ctx == nil {
+func (tb *tokenBuilder) BuildIDToken(ctx context.Context, buildCtx *IDTokenBuildContext) (
+	*model.TokenDTO, error) {
+	if buildCtx == nil {
 		return nil, fmt.Errorf("build context cannot be nil")
 	}
 
-	tokenConfig := resolveTokenConfig(ctx.OAuthApp, TokenTypeID)
+	tokenConfig := resolveTokenConfig(buildCtx.OAuthApp, TokenTypeID)
 
-	jwtClaims := tb.buildIDTokenClaims(ctx)
+	jwtClaims := tb.buildIDTokenClaims(buildCtx)
 
 	tokenDTO := &model.TokenDTO{
 		ExpiresIn: tokenConfig.ValidityPeriod,
-		Scopes:    ctx.Scopes,
-		ClientID:  ctx.Audience,
-		Subject:   ctx.Subject,
-		Audience:  ctx.Audience,
+		Scopes:    buildCtx.Scopes,
+		ClientID:  buildCtx.Audience,
+		Subject:   buildCtx.Subject,
+		Audience:  buildCtx.Audience,
 	}
 
-	tb.appendUserTypeAndOU(tokenDTO, jwtClaims, ctx.UserType, ctx.OuID, ctx.OuName, ctx.OuHandle)
+	tb.appendUserTypeAndOU(tokenDTO, jwtClaims, buildCtx.UserType, buildCtx.OuID,
+		buildCtx.OuName, buildCtx.OuHandle)
 
 	token, iat, err := tb.jwtService.GenerateJWT(
-		ctx.Subject,
-		ctx.Audience,
+		ctx,
+		buildCtx.Subject,
+		buildCtx.Audience,
 		tokenConfig.Issuer,
 		tokenConfig.ValidityPeriod,
 		jwtClaims,

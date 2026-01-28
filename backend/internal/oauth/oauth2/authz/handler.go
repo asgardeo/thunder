@@ -19,6 +19,7 @@
 package authz
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"net/http"
@@ -91,7 +92,7 @@ func (ah *authorizeHandler) HandleAuthorizePostRequest(w http.ResponseWriter, r 
 
 	switch oAuthMessage.RequestType {
 	case oauth2const.TypeAuthorizationResponseFromEngine:
-		ah.handleAuthorizationResponseFromEngine(oAuthMessage, w)
+		ah.handleAuthorizationResponseFromEngine(r.Context(), oAuthMessage, w)
 	case oauth2const.TypeConsentResponseFromUser:
 	// TODO: Handle the consent response from the user.
 	//  Verify whether we need separate session data key for consent flow.
@@ -225,7 +226,7 @@ func (ah *authorizeHandler) handleInitialAuthorizationRequest(msg *OAuthMessage,
 }
 
 // handleAuthorizationResponseFromEngine handles the authorization response from the engine.
-func (ah *authorizeHandler) handleAuthorizationResponseFromEngine(msg *OAuthMessage,
+func (ah *authorizeHandler) handleAuthorizationResponseFromEngine(ctx context.Context, msg *OAuthMessage,
 	w http.ResponseWriter) {
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, loggerComponentName))
 
@@ -245,7 +246,7 @@ func (ah *authorizeHandler) handleAuthorizationResponseFromEngine(msg *OAuthMess
 	}
 
 	// Verify the assertion.
-	err = ah.verifyAssertion(assertion, logger)
+	err = ah.verifyAssertion(ctx, assertion, logger)
 	if err != nil {
 		ah.writeAuthZResponseToErrorPage(w, oauth2const.ErrorInvalidRequest, err.Error(), authRequestCtx)
 		return
@@ -544,8 +545,8 @@ func createAuthorizationCode(
 }
 
 // verifyAssertion verifies the JWT assertion.
-func (ah *authorizeHandler) verifyAssertion(assertion string, logger *log.Logger) error {
-	if err := ah.jwtService.VerifyJWT(assertion, "", ""); err != nil {
+func (ah *authorizeHandler) verifyAssertion(ctx context.Context, assertion string, logger *log.Logger) error {
+	if err := ah.jwtService.VerifyJWT(ctx, assertion, "", ""); err != nil {
 		logger.Debug("Invalid assertion signature", log.String("error", err.Error))
 		return errors.New("invalid assertion signature")
 	}

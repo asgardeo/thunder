@@ -20,6 +20,7 @@
 package oauth
 
 import (
+	"context"
 	"strings"
 
 	"github.com/asgardeo/thunder/internal/authn/common"
@@ -38,18 +39,19 @@ const (
 
 // OAuthAuthnCoreServiceInterface defines the core contract for OAuth based authenticator services.
 type OAuthAuthnCoreServiceInterface interface {
-	BuildAuthorizeURL(idpID string) (string, *serviceerror.ServiceError)
-	ExchangeCodeForToken(idpID, code string, validateResponse bool) (*TokenResponse, *serviceerror.ServiceError)
-	FetchUserInfo(idpID, accessToken string) (map[string]interface{}, *serviceerror.ServiceError)
-	GetInternalUser(sub string) (*user.User, *serviceerror.ServiceError)
-	GetOAuthClientConfig(idpID string) (*OAuthClientConfig, *serviceerror.ServiceError)
+	BuildAuthorizeURL(ctx context.Context, idpID string) (string, *serviceerror.ServiceError)
+	ExchangeCodeForToken(ctx context.Context, idpID, code string,
+		validateResponse bool) (*TokenResponse, *serviceerror.ServiceError)
+	FetchUserInfo(ctx context.Context, idpID, accessToken string) (map[string]interface{}, *serviceerror.ServiceError)
+	GetInternalUser(ctx context.Context, sub string) (*user.User, *serviceerror.ServiceError)
+	GetOAuthClientConfig(ctx context.Context, idpID string) (*OAuthClientConfig, *serviceerror.ServiceError)
 }
 
 // OAuthAuthnServiceInterface defines the contract for OAuth based authenticator services.
 type OAuthAuthnServiceInterface interface {
 	OAuthAuthnCoreServiceInterface
-	ValidateTokenResponse(idpID string, tokenResp *TokenResponse) *serviceerror.ServiceError
-	FetchUserInfoWithClientConfig(oAuthClientConfig *OAuthClientConfig, accessToken string) (
+	ValidateTokenResponse(ctx context.Context, idpID string, tokenResp *TokenResponse) *serviceerror.ServiceError
+	FetchUserInfoWithClientConfig(ctx context.Context, oAuthClientConfig *OAuthClientConfig, accessToken string) (
 		map[string]interface{}, *serviceerror.ServiceError)
 }
 
@@ -85,7 +87,7 @@ func NewOAuthAuthnService(httpClient syshttp.HTTPClientInterface,
 }
 
 // GetOAuthClientConfig retrieves the OAuth client configuration for the given identity provider ID.
-func (s *oAuthAuthnService) GetOAuthClientConfig(idpID string) (
+func (s *oAuthAuthnService) GetOAuthClientConfig(ctx context.Context, idpID string) (
 	*OAuthClientConfig, *serviceerror.ServiceError) {
 	logger := s.logger.With(log.String("idpId", idpID))
 	if strings.TrimSpace(idpID) == "" {
@@ -116,11 +118,11 @@ func (s *oAuthAuthnService) GetOAuthClientConfig(idpID string) (
 }
 
 // BuildAuthorizeURL constructs the authorization request URL for the external identity provider.
-func (s *oAuthAuthnService) BuildAuthorizeURL(idpID string) (string, *serviceerror.ServiceError) {
+func (s *oAuthAuthnService) BuildAuthorizeURL(ctx context.Context, idpID string) (string, *serviceerror.ServiceError) {
 	logger := s.logger.With(log.String("idpId", idpID))
 	logger.Debug("Building authorize URL")
 
-	oAuthClientConfig, svcErr := s.GetOAuthClientConfig(idpID)
+	oAuthClientConfig, svcErr := s.GetOAuthClientConfig(ctx, idpID)
 	if svcErr != nil {
 		return "", svcErr
 	}
@@ -157,7 +159,7 @@ func (s *oAuthAuthnService) BuildAuthorizeURL(idpID string) (string, *serviceerr
 
 // ExchangeCodeForToken exchanges the authorization code for a token with the external identity provider
 // and validates the token response if validateResponse is true.
-func (s *oAuthAuthnService) ExchangeCodeForToken(idpID, code string, validateResponse bool) (
+func (s *oAuthAuthnService) ExchangeCodeForToken(ctx context.Context, idpID, code string, validateResponse bool) (
 	*TokenResponse, *serviceerror.ServiceError) {
 	logger := s.logger.With(log.String("idpId", idpID))
 	logger.Debug("Exchanging authorization code for token")
@@ -166,7 +168,7 @@ func (s *oAuthAuthnService) ExchangeCodeForToken(idpID, code string, validateRes
 		return nil, &ErrorEmptyAuthorizationCode
 	}
 
-	oAuthClientConfig, svcErr := s.GetOAuthClientConfig(idpID)
+	oAuthClientConfig, svcErr := s.GetOAuthClientConfig(ctx, idpID)
 	if svcErr != nil {
 		return nil, svcErr
 	}
@@ -186,7 +188,7 @@ func (s *oAuthAuthnService) ExchangeCodeForToken(idpID, code string, validateRes
 	}
 
 	if validateResponse {
-		svcErr = s.ValidateTokenResponse(idpID, tokenResp)
+		svcErr = s.ValidateTokenResponse(ctx, idpID, tokenResp)
 		if svcErr != nil {
 			return nil, svcErr
 		}
@@ -198,7 +200,8 @@ func (s *oAuthAuthnService) ExchangeCodeForToken(idpID, code string, validateRes
 // ValidateTokenResponse validates the token response returned by the identity provider.
 // ExchangeCodeForToken method calls this method to validate the token response if validateResponse is set
 // to true. Hence generally you may not need to call this method explicitly.
-func (s *oAuthAuthnService) ValidateTokenResponse(idpID string, tokenResp *TokenResponse) *serviceerror.ServiceError {
+func (s *oAuthAuthnService) ValidateTokenResponse(ctx context.Context, idpID string,
+	tokenResp *TokenResponse) *serviceerror.ServiceError {
 	logger := s.logger.With(log.String("idpId", idpID))
 	logger.Debug("Validating token response")
 
@@ -215,18 +218,18 @@ func (s *oAuthAuthnService) ValidateTokenResponse(idpID string, tokenResp *Token
 }
 
 // FetchUserInfo retrieves user information from the external identity provider.
-func (s *oAuthAuthnService) FetchUserInfo(idpID, accessToken string) (
+func (s *oAuthAuthnService) FetchUserInfo(ctx context.Context, idpID, accessToken string) (
 	map[string]interface{}, *serviceerror.ServiceError) {
-	oAuthClientConfig, svcErr := s.GetOAuthClientConfig(idpID)
+	oAuthClientConfig, svcErr := s.GetOAuthClientConfig(ctx, idpID)
 	if svcErr != nil {
 		return nil, svcErr
 	}
 
-	return s.FetchUserInfoWithClientConfig(oAuthClientConfig, accessToken)
+	return s.FetchUserInfoWithClientConfig(ctx, oAuthClientConfig, accessToken)
 }
 
 // FetchUserInfoWithClientConfig retrieves user information using the provided OAuth client configuration.
-func (s *oAuthAuthnService) FetchUserInfoWithClientConfig(oAuthClientConfig *OAuthClientConfig,
+func (s *oAuthAuthnService) FetchUserInfoWithClientConfig(ctx context.Context, oAuthClientConfig *OAuthClientConfig,
 	accessToken string) (map[string]interface{}, *serviceerror.ServiceError) {
 	logger := s.logger
 	logger.Debug("Fetching user info")
@@ -256,7 +259,7 @@ func (s *oAuthAuthnService) FetchUserInfoWithClientConfig(oAuthClientConfig *OAu
 }
 
 // GetInternalUser retrieves the internal user based on the external subject identifier.
-func (s *oAuthAuthnService) GetInternalUser(sub string) (*user.User, *serviceerror.ServiceError) {
+func (s *oAuthAuthnService) GetInternalUser(ctx context.Context, sub string) (*user.User, *serviceerror.ServiceError) {
 	logger := s.logger.With(log.String("sub", log.MaskString(sub)))
 	logger.Debug("Retrieving internal user for the given sub claim")
 
@@ -267,7 +270,7 @@ func (s *oAuthAuthnService) GetInternalUser(sub string) (*user.User, *serviceerr
 	filters := map[string]interface{}{
 		"sub": sub,
 	}
-	userID, svcErr := s.userService.IdentifyUser(filters)
+	userID, svcErr := s.userService.IdentifyUser(ctx, filters)
 	if svcErr != nil {
 		if svcErr.Code == user.ErrorUserNotFound.Code {
 			logger.Debug("No user found for the provided sub claim")
@@ -286,7 +289,7 @@ func (s *oAuthAuthnService) GetInternalUser(sub string) (*user.User, *serviceerr
 		return nil, &common.ErrorUserNotFound
 	}
 
-	user, svcErr := s.userService.GetUser(*userID)
+	user, svcErr := s.userService.GetUser(ctx, *userID)
 	if svcErr != nil {
 		if svcErr.Type == serviceerror.ClientErrorType {
 			return nil, &ErrorClientErrorWhileRetrievingUser

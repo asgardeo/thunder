@@ -20,6 +20,7 @@
 package passkey
 
 import (
+	"context"
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
@@ -40,14 +41,15 @@ const (
 // PasskeyServiceInterface defines the interface for passkey authentication and registration operations.
 type PasskeyServiceInterface interface {
 	// Registration methods
-	StartRegistration(req *PasskeyRegistrationStartRequest) (*PasskeyRegistrationStartData, *serviceerror.ServiceError)
-	FinishRegistration(
+	StartRegistration(ctx context.Context,
+		req *PasskeyRegistrationStartRequest) (*PasskeyRegistrationStartData, *serviceerror.ServiceError)
+	FinishRegistration(ctx context.Context,
 		req *PasskeyRegistrationFinishRequest) (*PasskeyRegistrationFinishData, *serviceerror.ServiceError)
 
 	// Authentication methods
-	StartAuthentication(
+	StartAuthentication(ctx context.Context,
 		req *PasskeyAuthenticationStartRequest) (*PasskeyAuthenticationStartData, *serviceerror.ServiceError)
-	FinishAuthentication(
+	FinishAuthentication(ctx context.Context,
 		req *PasskeyAuthenticationFinishRequest) (*common.AuthenticationResponse, *serviceerror.ServiceError)
 }
 
@@ -59,7 +61,8 @@ type passkeyService struct {
 }
 
 // newPasskeyService creates a new instance of passkey service.
-func newPasskeyService(userSvc user.UserServiceInterface, sessionStore sessionStoreInterface) PasskeyServiceInterface {
+func newPasskeyService(userSvc user.UserServiceInterface,
+	sessionStore sessionStoreInterface) PasskeyServiceInterface {
 	if userSvc == nil {
 		userSvc = user.GetUserService()
 	}
@@ -75,7 +78,7 @@ func newPasskeyService(userSvc user.UserServiceInterface, sessionStore sessionSt
 }
 
 // StartRegistration initiates passkey credential registration for a user.
-func (w *passkeyService) StartRegistration(
+func (w *passkeyService) StartRegistration(ctx context.Context,
 	req *PasskeyRegistrationStartRequest,
 ) (*PasskeyRegistrationStartData, *serviceerror.ServiceError) {
 	if req == nil {
@@ -93,7 +96,7 @@ func (w *passkeyService) StartRegistration(
 	}
 
 	// Retrieve core user
-	coreUser, svcErr := w.userService.GetUser(req.UserID)
+	coreUser, svcErr := w.userService.GetUser(ctx, req.UserID)
 	if svcErr != nil {
 		return nil, handleUserRetrievalError(svcErr, req.UserID, logger)
 	}
@@ -105,7 +108,7 @@ func (w *passkeyService) StartRegistration(
 	}
 
 	// Retrieve user's existing passkey credentials from database
-	credentials, err := w.getStoredPasskeyCredentials(req.UserID)
+	credentials, err := w.getStoredPasskeyCredentials(ctx, req.UserID)
 	if err != nil {
 		logger.Error("Failed to retrieve credentials from database", log.Error(err))
 		return nil, &serviceerror.InternalServerError
@@ -168,7 +171,8 @@ func (w *passkeyService) StartRegistration(
 }
 
 // FinishRegistration completes passkey credential registration.
-func (w *passkeyService) FinishRegistration(req *PasskeyRegistrationFinishRequest) (
+func (w *passkeyService) FinishRegistration(ctx context.Context,
+	req *PasskeyRegistrationFinishRequest) (
 	*PasskeyRegistrationFinishData, *serviceerror.ServiceError) {
 	logger := w.logger.With(log.String(log.LoggerKeyComponentName, loggerComponentName))
 	logger.Debug("Finishing passkey credential registration")
@@ -219,14 +223,14 @@ func (w *passkeyService) FinishRegistration(req *PasskeyRegistrationFinishReques
 	}
 
 	// Get core user
-	coreUser, svcErr := w.userService.GetUser(userID)
+	coreUser, svcErr := w.userService.GetUser(ctx, userID)
 	if svcErr != nil {
 		logger.Error("Failed to retrieve user", log.String("error", svcErr.Error))
 		return nil, &serviceerror.InternalServerError
 	}
 
 	// Retrieve existing credentials from database
-	credentials, err := w.getStoredPasskeyCredentials(userID)
+	credentials, err := w.getStoredPasskeyCredentials(ctx, userID)
 	if err != nil {
 		logger.Error("Failed to retrieve credentials from database", log.Error(err))
 		return nil, &serviceerror.InternalServerError
@@ -264,7 +268,7 @@ func (w *passkeyService) FinishRegistration(req *PasskeyRegistrationFinishReques
 	credentialID := base64.StdEncoding.EncodeToString(credential.ID)
 
 	// Store credential in database using user service
-	if err := w.storePasskeyCredential(userID, credential); err != nil {
+	if err := w.storePasskeyCredential(ctx, userID, credential); err != nil {
 		logger.Error("Failed to store credential in database", log.Error(err))
 		return nil, &serviceerror.InternalServerError
 	}
@@ -280,7 +284,8 @@ func (w *passkeyService) FinishRegistration(req *PasskeyRegistrationFinishReques
 }
 
 // StartAuthentication initiates passkey authentication for a user.
-func (w *passkeyService) StartAuthentication(req *PasskeyAuthenticationStartRequest) (
+func (w *passkeyService) StartAuthentication(ctx context.Context,
+	req *PasskeyAuthenticationStartRequest) (
 	*PasskeyAuthenticationStartData, *serviceerror.ServiceError) {
 	if req == nil {
 		return nil, &ErrorInvalidFinishData
@@ -297,13 +302,13 @@ func (w *passkeyService) StartAuthentication(req *PasskeyAuthenticationStartRequ
 	}
 
 	// Retrieve user by userID to verify user exists
-	coreUser, svcErr := w.userService.GetUser(req.UserID)
+	coreUser, svcErr := w.userService.GetUser(ctx, req.UserID)
 	if svcErr != nil {
 		return nil, handleUserRetrievalError(svcErr, req.UserID, logger)
 	}
 
 	// Retrieve user's registered passkey credentials from database
-	credentials, err := w.getStoredPasskeyCredentials(req.UserID)
+	credentials, err := w.getStoredPasskeyCredentials(ctx, req.UserID)
 	if err != nil {
 		logger.Error("Failed to retrieve credentials from database", log.Error(err))
 		return nil, &serviceerror.InternalServerError
@@ -361,7 +366,8 @@ func (w *passkeyService) StartAuthentication(req *PasskeyAuthenticationStartRequ
 }
 
 // FinishAuthentication completes passkey authentication.
-func (w *passkeyService) FinishAuthentication(req *PasskeyAuthenticationFinishRequest) (
+func (w *passkeyService) FinishAuthentication(ctx context.Context,
+	req *PasskeyAuthenticationFinishRequest) (
 	*common.AuthenticationResponse, *serviceerror.ServiceError) {
 	logger := w.logger.With(log.String(log.LoggerKeyComponentName, loggerComponentName))
 	logger.Debug("Finishing passkey authentication")
@@ -383,14 +389,14 @@ func (w *passkeyService) FinishAuthentication(req *PasskeyAuthenticationFinishRe
 		log.String("relyingPartyID", relyingPartyID))
 
 	// Get core user
-	coreUser, svcErr := w.userService.GetUser(userID)
+	coreUser, svcErr := w.userService.GetUser(ctx, userID)
 	if svcErr != nil {
 		logger.Error("Failed to retrieve user", log.String("error", svcErr.Error))
 		return nil, &serviceerror.InternalServerError
 	}
 
 	// Retrieve user's credentials from database
-	credentials, err := w.getStoredPasskeyCredentials(userID)
+	credentials, err := w.getStoredPasskeyCredentials(ctx, userID)
 	if err != nil {
 		logger.Error("Failed to retrieve credentials from database", log.Error(err))
 		return nil, &serviceerror.InternalServerError
@@ -436,7 +442,7 @@ func (w *passkeyService) FinishAuthentication(req *PasskeyAuthenticationFinishRe
 		log.Any("signCount", credential.Authenticator.SignCount))
 
 	// Update credential in database to prevent replay attacks
-	if err := w.updatePasskeyCredential(userID, credential); err != nil {
+	if err := w.updatePasskeyCredential(ctx, userID, credential); err != nil {
 		logger.Error("Failed to update credential sign count in database", log.Error(err))
 		return nil, &serviceerror.InternalServerError
 	}
@@ -471,11 +477,13 @@ func (w *passkeyService) getMetadata() common.AuthenticatorMeta {
 }
 
 // getStoredPasskeyCredentials retrieves passkey credentials for a user from the database.
-func (w *passkeyService) getStoredPasskeyCredentials(userID string) ([]webauthnCredential, error) {
+func (w *passkeyService) getStoredPasskeyCredentials(ctx context.Context,
+	userID string) ([]webauthnCredential, error) {
 	logger := w.logger.With(log.String(log.LoggerKeyComponentName, loggerComponentName))
 
 	// Get passkey credentials from user service
-	passkeyCredentials, svcErr := w.userService.GetUserCredentialsByType(userID, user.CredentialTypePasskey.String())
+	passkeyCredentials, svcErr := w.userService.GetUserCredentialsByType(ctx,
+		userID, user.CredentialTypePasskey.String())
 	if svcErr != nil {
 		logger.Error("Failed to get passkey credentials",
 			log.String("userID", userID),
@@ -524,7 +532,8 @@ func (w *passkeyService) getStoredPasskeyCredentials(userID string) ([]webauthnC
 }
 
 // storePasskeyCredential stores a passkey credential in the database.
-func (w *passkeyService) storePasskeyCredential(userID string, credential *webauthnCredential) error {
+func (w *passkeyService) storePasskeyCredential(ctx context.Context,
+	userID string, credential *webauthnCredential) error {
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, loggerComponentName))
 
 	// Serialize the passkey credential to JSON for storage in the Value field
@@ -537,7 +546,8 @@ func (w *passkeyService) storePasskeyCredential(userID string, credential *webau
 	}
 
 	// Get existing passkey credentials to append to
-	existingCredentials, svcErr := w.userService.GetUserCredentialsByType(userID, user.CredentialTypePasskey.String())
+	existingCredentials, svcErr := w.userService.GetUserCredentialsByType(ctx,
+		userID, user.CredentialTypePasskey.String())
 	if svcErr != nil {
 		logger.Error("Failed to get existing passkey credentials",
 			log.String("userID", userID),
@@ -566,7 +576,7 @@ func (w *passkeyService) storePasskeyCredential(userID string, credential *webau
 	}
 
 	// Update credentials in the database
-	svcErr = w.userService.UpdateUserCredentials(userID, credentialsJSON)
+	svcErr = w.userService.UpdateUserCredentials(ctx, userID, credentialsJSON)
 	if svcErr != nil {
 		logger.Error("Failed to update passkey credentials",
 			log.String("userID", userID),
@@ -583,12 +593,13 @@ func (w *passkeyService) storePasskeyCredential(userID string, credential *webau
 
 // updatePasskeyCredential updates an existing passkey credential in the database.
 func (w *passkeyService) updatePasskeyCredential(
-	userID string, updatedCredential *webauthnCredential,
+	ctx context.Context, userID string, updatedCredential *webauthnCredential,
 ) error {
 	logger := w.logger.With(log.String(log.LoggerKeyComponentName, loggerComponentName))
 
 	// Get all existing passkey credentials
-	existingCredentials, svcErr := w.userService.GetUserCredentialsByType(userID, user.CredentialTypePasskey.String())
+	existingCredentials, svcErr := w.userService.GetUserCredentialsByType(ctx,
+		userID, user.CredentialTypePasskey.String())
 	if svcErr != nil {
 		logger.Error("Failed to get existing credentials",
 			log.String("userID", userID),
@@ -662,7 +673,7 @@ func (w *passkeyService) updatePasskeyCredential(
 	}
 
 	// Update all passkey credentials in the database
-	svcErr = w.userService.UpdateUserCredentials(userID, credentialsJSON)
+	svcErr = w.userService.UpdateUserCredentials(ctx, userID, credentialsJSON)
 	if svcErr != nil {
 		logger.Error("Failed to update credentials",
 			log.String("userID", userID),

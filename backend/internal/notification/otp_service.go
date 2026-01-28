@@ -19,6 +19,7 @@
 package notification
 
 import (
+	"context"
 	"crypto/rand"
 	"encoding/json"
 	"fmt"
@@ -38,8 +39,8 @@ var otpUseOnlyNumericChars = true
 
 // OTPServiceInterface defines the interface for OTP operations.
 type OTPServiceInterface interface {
-	SendOTP(request common.SendOTPDTO) (*common.SendOTPResultDTO, *serviceerror.ServiceError)
-	VerifyOTP(request common.VerifyOTPDTO) (*common.VerifyOTPResultDTO, *serviceerror.ServiceError)
+	SendOTP(ctx context.Context, request common.SendOTPDTO) (*common.SendOTPResultDTO, *serviceerror.ServiceError)
+	VerifyOTP(ctx context.Context, request common.VerifyOTPDTO) (*common.VerifyOTPResultDTO, *serviceerror.ServiceError)
 }
 
 // otpService implements the OTPServiceInterface.
@@ -60,7 +61,8 @@ func newOTPService(notifSenderSvc NotificationSenderMgtSvcInterface,
 }
 
 // SendOTP sends an OTP to the specified recipient using the provided sender.
-func (s *otpService) SendOTP(otpDTO common.SendOTPDTO) (*common.SendOTPResultDTO, *serviceerror.ServiceError) {
+func (s *otpService) SendOTP(ctx context.Context,
+	otpDTO common.SendOTPDTO) (*common.SendOTPResultDTO, *serviceerror.ServiceError) {
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, "OTPService"))
 	logger.Debug("Sending OTP", log.String("recipient", log.MaskString(otpDTO.Recipient)),
 		log.String("channel", otpDTO.Channel), log.String("senderId", otpDTO.SenderID))
@@ -108,7 +110,7 @@ func (s *otpService) SendOTP(otpDTO common.SendOTPDTO) (*common.SendOTPResultDTO
 		ExpiryTime: otp.ExpiryTimeInMillis,
 	}
 
-	sessionToken, err := s.createSessionToken(sessionData)
+	sessionToken, err := s.createSessionToken(ctx, sessionData)
 	if err != nil {
 		logger.Error("Failed to create session token", log.Error(err))
 		return nil, &ErrorInternalServerError
@@ -122,7 +124,8 @@ func (s *otpService) SendOTP(otpDTO common.SendOTPDTO) (*common.SendOTPResultDTO
 }
 
 // VerifyOTP verifies the provided OTP against the session token.
-func (s *otpService) VerifyOTP(otpDTO common.VerifyOTPDTO) (*common.VerifyOTPResultDTO, *serviceerror.ServiceError) {
+func (s *otpService) VerifyOTP(ctx context.Context,
+	otpDTO common.VerifyOTPDTO) (*common.VerifyOTPResultDTO, *serviceerror.ServiceError) {
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, "OTPService"))
 	logger.Debug("Verifying OTP")
 
@@ -130,7 +133,7 @@ func (s *otpService) VerifyOTP(otpDTO common.VerifyOTPDTO) (*common.VerifyOTPRes
 		return nil, err
 	}
 
-	sessionData, svcErr := s.verifyAndDecodeSessionToken(otpDTO.SessionToken, logger)
+	sessionData, svcErr := s.verifyAndDecodeSessionToken(ctx, otpDTO.SessionToken, logger)
 	if svcErr != nil {
 		return nil, svcErr
 	}
@@ -275,7 +278,7 @@ func (s *otpService) sendSMSOTP(recipient, otp string, sender common.Notificatio
 }
 
 // createSessionToken creates a JWT session token with OTP session data.
-func (s *otpService) createSessionToken(sessionData common.OTPSessionData) (string, error) {
+func (s *otpService) createSessionToken(ctx context.Context, sessionData common.OTPSessionData) (string, error) {
 	claims := map[string]interface{}{
 		"otp_data": sessionData,
 	}
@@ -284,7 +287,7 @@ func (s *otpService) createSessionToken(sessionData common.OTPSessionData) (stri
 	validityPeriod := (sessionData.ExpiryTime - time.Now().UnixMilli()) / 1000
 	jwtConfig := config.GetThunderRuntime().Config.JWT
 
-	token, _, err := s.jwtService.GenerateJWT("otp-svc", "otp-svc", jwtConfig.Issuer, validityPeriod, claims)
+	token, _, err := s.jwtService.GenerateJWT(ctx, "otp-svc", "otp-svc", jwtConfig.Issuer, validityPeriod, claims)
 	if err != nil {
 		return "", fmt.Errorf("failed to generate JWT token: %v", err)
 	}
@@ -293,11 +296,11 @@ func (s *otpService) createSessionToken(sessionData common.OTPSessionData) (stri
 }
 
 // verifyAndDecodeSessionToken verifies the JWT signature and decodes the session data.
-func (s *otpService) verifyAndDecodeSessionToken(token string, logger *log.Logger) (
+func (s *otpService) verifyAndDecodeSessionToken(ctx context.Context, token string, logger *log.Logger) (
 	*common.OTPSessionData, *serviceerror.ServiceError) {
 	// Verify JWT signature
 	jwtConfig := config.GetThunderRuntime().Config.JWT
-	svcErr := s.jwtService.VerifyJWT(token, "otp-svc", jwtConfig.Issuer)
+	svcErr := s.jwtService.VerifyJWT(ctx, token, "otp-svc", jwtConfig.Issuer)
 	if svcErr != nil {
 		logger.Debug("Invalid session token", log.String("error", svcErr.Error))
 		return nil, &ErrorInvalidSessionToken

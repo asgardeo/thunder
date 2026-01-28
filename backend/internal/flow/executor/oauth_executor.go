@@ -54,6 +54,7 @@ type OAuthTokenResponse struct {
 var userInfoSkipAttributes = []string{"username", "sub", "id"}
 
 // oAuthExecutorInterface defines the interface for OAuth authentication executors.
+// TODO: Revisit the usage of NodeContext.
 type oAuthExecutorInterface interface {
 	core.ExecutorInterface
 	BuildAuthorizeFlow(ctx *core.NodeContext, execResp *common.ExecutorResponse) error
@@ -62,7 +63,7 @@ type oAuthExecutorInterface interface {
 		code string) (*OAuthTokenResponse, error)
 	GetUserInfo(ctx *core.NodeContext, execResp *common.ExecutorResponse,
 		accessToken string) (map[string]string, error)
-	GetInternalUser(sub string, execResp *common.ExecutorResponse) (*user.User, error)
+	GetInternalUser(ctx *core.NodeContext, sub string, execResp *common.ExecutorResponse) (*user.User, error)
 	ResolveContextUser(ctx *core.NodeContext, execResp *common.ExecutorResponse,
 		sub string, internalUser *user.User) (*authncm.AuthenticatedUser, error)
 	GetIdpID(ctx *core.NodeContext) (string, error)
@@ -161,7 +162,7 @@ func (o *oAuthExecutor) BuildAuthorizeFlow(ctx *core.NodeContext, execResp *comm
 		return err
 	}
 
-	authorizeURL, svcErr := o.authService.BuildAuthorizeURL(idpID)
+	authorizeURL, svcErr := o.authService.BuildAuthorizeURL(ctx.Context, idpID)
 	if svcErr != nil {
 		if svcErr.Type == serviceerror.ClientErrorType {
 			execResp.Status = common.ExecFailure
@@ -237,7 +238,7 @@ func (o *oAuthExecutor) ProcessAuthFlowResponse(ctx *core.NodeContext,
 		return nil
 	}
 
-	internalUser, err := o.GetInternalUser(sub, execResp)
+	internalUser, err := o.GetInternalUser(ctx, sub, execResp)
 	if err != nil {
 		return err
 	}
@@ -284,7 +285,7 @@ func (o *oAuthExecutor) ExchangeCodeForToken(ctx *core.NodeContext, execResp *co
 		return nil, err
 	}
 
-	tokenResp, svcErr := o.authService.ExchangeCodeForToken(idpID, code, true)
+	tokenResp, svcErr := o.authService.ExchangeCodeForToken(ctx.Context, idpID, code, true)
 	if svcErr != nil {
 		if svcErr.Type == serviceerror.ClientErrorType {
 			execResp.Status = common.ExecFailure
@@ -318,7 +319,7 @@ func (o *oAuthExecutor) GetUserInfo(ctx *core.NodeContext, execResp *common.Exec
 		return nil, err
 	}
 
-	userInfo, svcErr := o.authService.FetchUserInfo(idpID, accessToken)
+	userInfo, svcErr := o.authService.FetchUserInfo(ctx.Context, idpID, accessToken)
 	if svcErr != nil {
 		if svcErr.Type == serviceerror.ClientErrorType {
 			execResp.Status = common.ExecFailure
@@ -365,11 +366,12 @@ func (o *oAuthExecutor) getIDPName(idpID string) (string, error) {
 	return idp.Name, nil
 }
 
-func (o *oAuthExecutor) GetInternalUser(sub string, execResp *common.ExecutorResponse) (*user.User, error) {
+func (o *oAuthExecutor) GetInternalUser(ctx *core.NodeContext, sub string,
+	execResp *common.ExecutorResponse) (*user.User, error) {
 	logger := o.logger
 	logger.Debug("Resolving internal user with the given sub claim")
 
-	user, svcErr := o.authService.GetInternalUser(sub)
+	user, svcErr := o.authService.GetInternalUser(ctx.Context, sub)
 	if svcErr != nil {
 		if svcErr.Code == authncm.ErrorUserNotFound.Code {
 			return nil, nil

@@ -19,6 +19,7 @@
 package executor
 
 import (
+	"context"
 	"encoding/json"
 	"testing"
 
@@ -130,10 +131,10 @@ func (suite *AuthAssertExecutorTestSuite) TestExecute_UserAuthenticated_Success(
 		Context: &authnassert.AssuranceContext{},
 	}, nil)
 
-	suite.mockJWTService.On("GenerateJWT", "user-123", "app-123", mock.Anything, mock.Anything,
+	suite.mockJWTService.On("GenerateJWT", mock.Anything, "user-123", "app-123", mock.Anything, mock.Anything,
 		mock.Anything).Return("jwt-token", int64(3600), nil)
 
-	suite.mockOUService.On("GetOrganizationUnit", "ou-123").Return(ou.OrganizationUnit{ID: "ou-123"}, nil)
+	suite.mockOUService.On("GetOrganizationUnit", mock.Anything, "ou-123").Return(ou.OrganizationUnit{ID: "ou-123"}, nil)
 
 	resp, err := suite.executor.Execute(ctx)
 
@@ -178,7 +179,7 @@ func (suite *AuthAssertExecutorTestSuite) TestExecute_WithAuthorizedPermissions(
 		Application:      appmodel.Application{},
 	}
 
-	suite.mockJWTService.On("GenerateJWT", "user-123", "app-123", mock.Anything, mock.Anything,
+	suite.mockJWTService.On("GenerateJWT", mock.Anything, "user-123", "app-123", mock.Anything, mock.Anything,
 		mock.MatchedBy(func(claims map[string]interface{}) bool {
 			perms, ok := claims["authorized_permissions"]
 			return ok && perms == "read:documents write:documents"
@@ -219,8 +220,8 @@ func (suite *AuthAssertExecutorTestSuite) TestExecute_WithUserAttributes() {
 		Attributes: attrsJSON,
 	}
 
-	suite.mockUserService.On("GetUser", "user-123").Return(existingUser, nil)
-	suite.mockJWTService.On("GenerateJWT", "user-123", "app-123", mock.Anything, mock.Anything,
+	suite.mockUserService.On("GetUser", mock.Anything, "user-123").Return(existingUser, nil)
+	suite.mockJWTService.On("GenerateJWT", mock.Anything, "user-123", "app-123", mock.Anything, mock.Anything,
 		mock.MatchedBy(func(claims map[string]interface{}) bool {
 			return claims["email"] == "test@example.com" && claims["phone"] == "1234567890"
 		})).Return("jwt-token", int64(3600), nil)
@@ -247,8 +248,8 @@ func (suite *AuthAssertExecutorTestSuite) TestExecute_JWTGenerationFails() {
 		Application:      appmodel.Application{},
 	}
 
-	suite.mockJWTService.On("GenerateJWT", mock.Anything, mock.Anything, mock.Anything,
-		mock.Anything, mock.Anything).Return("", int64(0), &serviceerror.ServiceError{
+	suite.mockJWTService.On("GenerateJWT", mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything,
+		mock.Anything).Return("", int64(0), &serviceerror.ServiceError{
 		Type:             serviceerror.ServerErrorType,
 		Code:             "JWT_GENERATION_FAILED",
 		Error:            "JWT generation failed",
@@ -393,9 +394,9 @@ func (suite *AuthAssertExecutorTestSuite) TestGetUserAttributes_Success() {
 		Attributes: attrsJSON,
 	}
 
-	suite.mockUserService.On("GetUser", "user-123").Return(existingUser, nil)
+	suite.mockUserService.On("GetUser", mock.Anything, "user-123").Return(existingUser, nil)
 
-	resultUser, resultAttrs, err := suite.executor.getUserAttributes("user-123")
+	resultUser, resultAttrs, err := suite.executor.getUserAttributes(context.Background(), "user-123")
 
 	assert.NoError(suite.T(), err)
 	assert.NotNil(suite.T(), resultUser)
@@ -406,10 +407,10 @@ func (suite *AuthAssertExecutorTestSuite) TestGetUserAttributes_Success() {
 }
 
 func (suite *AuthAssertExecutorTestSuite) TestGetUserAttributes_ServiceError() {
-	suite.mockUserService.On("GetUser", "user-123").
+	suite.mockUserService.On("GetUser", mock.Anything, "user-123").
 		Return(nil, &serviceerror.ServiceError{Error: "user not found"})
 
-	resultUser, resultAttrs, err := suite.executor.getUserAttributes("user-123")
+	resultUser, resultAttrs, err := suite.executor.getUserAttributes(context.Background(), "user-123")
 
 	assert.Error(suite.T(), err)
 	assert.Nil(suite.T(), resultUser)
@@ -423,9 +424,9 @@ func (suite *AuthAssertExecutorTestSuite) TestGetUserAttributes_InvalidJSON() {
 		Attributes: json.RawMessage(`invalid json`),
 	}
 
-	suite.mockUserService.On("GetUser", "user-123").Return(existingUser, nil)
+	suite.mockUserService.On("GetUser", mock.Anything, "user-123").Return(existingUser, nil)
 
-	resultUser, resultAttrs, err := suite.executor.getUserAttributes("user-123")
+	resultUser, resultAttrs, err := suite.executor.getUserAttributes(context.Background(), "user-123")
 
 	assert.Error(suite.T(), err)
 	assert.Nil(suite.T(), resultUser)
@@ -448,12 +449,12 @@ func (suite *AuthAssertExecutorTestSuite) TestExecute_WithUserTypeAndOU() {
 		Application:      appmodel.Application{},
 	}
 
-	suite.mockJWTService.On("GenerateJWT", "user-123", "app-123", mock.Anything, mock.Anything,
+	suite.mockJWTService.On("GenerateJWT", mock.Anything, "user-123", "app-123", mock.Anything, mock.Anything,
 		mock.MatchedBy(func(claims map[string]interface{}) bool {
 			return claims[userTypeKey] == "EXTERNAL" && claims[ouIDKey] == "ou-456"
 		})).Return("jwt-token", int64(3600), nil)
 
-	suite.mockOUService.On("GetOrganizationUnit", "ou-456").Return(ou.OrganizationUnit{ID: "ou-456"}, nil)
+	suite.mockOUService.On("GetOrganizationUnit", mock.Anything, "ou-456").Return(ou.OrganizationUnit{ID: "ou-456"}, nil)
 
 	resp, err := suite.executor.Execute(ctx)
 
@@ -481,7 +482,7 @@ func (suite *AuthAssertExecutorTestSuite) TestExecute_WithCustomTokenConfig() {
 		},
 	}
 
-	suite.mockJWTService.On("GenerateJWT", "user-123", "app-123", "custom-issuer", int64(7200),
+	suite.mockJWTService.On("GenerateJWT", mock.Anything, "user-123", "app-123", "custom-issuer", int64(7200),
 		mock.Anything).Return("jwt-token", int64(7200), nil)
 
 	resp, err := suite.executor.Execute(ctx)
@@ -506,13 +507,13 @@ func (suite *AuthAssertExecutorTestSuite) TestExecute_WithOUNameAndHandle() {
 		Application:      appmodel.Application{},
 	}
 
-	suite.mockOUService.On("GetOrganizationUnit", "ou-789").Return(ou.OrganizationUnit{
+	suite.mockOUService.On("GetOrganizationUnit", mock.Anything, "ou-789").Return(ou.OrganizationUnit{
 		ID:     "ou-789",
 		Name:   "Engineering",
 		Handle: "eng",
 	}, nil)
 
-	suite.mockJWTService.On("GenerateJWT", "user-123", "app-123", mock.Anything, mock.Anything,
+	suite.mockJWTService.On("GenerateJWT", mock.Anything, "user-123", "app-123", mock.Anything, mock.Anything,
 		mock.MatchedBy(func(claims map[string]interface{}) bool {
 			return claims[ouIDKey] == "ou-789" &&
 				claims[userInputOuName] == "Engineering" &&
@@ -550,7 +551,7 @@ func (suite *AuthAssertExecutorTestSuite) TestExecute_AppendUserDetailsToClaimsF
 	}
 
 	// Test case 1: GetUser returns service error
-	suite.mockUserService.On("GetUser", "user-123").
+	suite.mockUserService.On("GetUser", mock.Anything, "user-123").
 		Return(nil, &serviceerror.ServiceError{
 			Error:            "user_not_found",
 			ErrorDescription: "user not found",
@@ -572,7 +573,7 @@ func (suite *AuthAssertExecutorTestSuite) TestExecute_AppendUserDetailsToClaimsF
 		Attributes: json.RawMessage(`{invalid json}`),
 	}
 
-	suite.mockUserService.On("GetUser", "user-123").Return(existingUser, nil)
+	suite.mockUserService.On("GetUser", mock.Anything, "user-123").Return(existingUser, nil)
 
 	_, err = suite.executor.Execute(ctx)
 
@@ -585,9 +586,9 @@ func (suite *AuthAssertExecutorTestSuite) TestExecute_AppendUserDetailsToClaimsF
 	suite.executor.userService = suite.mockUserService
 
 	existingUser.Attributes = attrsJSON
-	suite.mockUserService.On("GetUser", "user-123").Return(existingUser, nil)
-	suite.mockJWTService.On("GenerateJWT", mock.Anything, mock.Anything, mock.Anything,
-		mock.Anything, mock.Anything).Return("jwt-token", int64(3600), nil)
+	suite.mockUserService.On("GetUser", mock.Anything, "user-123").Return(existingUser, nil)
+	suite.mockJWTService.On("GenerateJWT", mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything,
+		mock.Anything).Return("jwt-token", int64(3600), nil)
 
 	resp, err := suite.executor.Execute(ctx)
 
@@ -610,7 +611,7 @@ func (suite *AuthAssertExecutorTestSuite) TestExecute_AppendOUDetailsToClaimsFai
 		Application:      appmodel.Application{},
 	}
 
-	suite.mockOUService.On("GetOrganizationUnit", "ou-123").
+	suite.mockOUService.On("GetOrganizationUnit", mock.Anything, "ou-123").
 		Return(ou.OrganizationUnit{}, &serviceerror.ServiceError{
 			Error:            "ou_not_found",
 			ErrorDescription: "organization unit not found",
@@ -641,7 +642,7 @@ func (suite *AuthAssertExecutorTestSuite) TestAppendUserDetailsToClaims_GetUserA
 		},
 	}
 
-	suite.mockUserService.On("GetUser", "user-123").
+	suite.mockUserService.On("GetUser", mock.Anything, "user-123").
 		Return(nil, &serviceerror.ServiceError{
 			Error:            "database_error",
 			ErrorDescription: "failed to fetch user",
@@ -668,7 +669,7 @@ func (suite *AuthAssertExecutorTestSuite) TestAppendOUDetailsToClaims_GetOrganiz
 		Application:      appmodel.Application{},
 	}
 
-	suite.mockOUService.On("GetOrganizationUnit", "ou-invalid").
+	suite.mockOUService.On("GetOrganizationUnit", mock.Anything, "ou-invalid").
 		Return(ou.OrganizationUnit{}, &serviceerror.ServiceError{
 			Error:            "ou_not_found",
 			ErrorDescription: "organization unit does not exist",

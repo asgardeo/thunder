@@ -5,6 +5,7 @@
 package jwtmock
 
 import (
+	"context"
 	"crypto"
 
 	"github.com/asgardeo/thunder/internal/system/error/serviceerror"
@@ -39,8 +40,8 @@ func (_m *JWTServiceInterfaceMock) EXPECT() *JWTServiceInterfaceMock_Expecter {
 }
 
 // GenerateJWT provides a mock function for the type JWTServiceInterfaceMock
-func (_mock *JWTServiceInterfaceMock) GenerateJWT(sub string, aud string, iss string, validityPeriod int64, claims map[string]interface{}) (string, int64, *serviceerror.ServiceError) {
-	ret := _mock.Called(sub, aud, iss, validityPeriod, claims)
+func (_mock *JWTServiceInterfaceMock) GenerateJWT(ctx context.Context, sub string, aud string, iss string, validityPeriod int64, claims map[string]interface{}) (string, int64, *serviceerror.ServiceError) {
+	ret := _mock.Called(ctx, sub, aud, iss, validityPeriod, claims)
 
 	if len(ret) == 0 {
 		panic("no return value specified for GenerateJWT")
@@ -49,21 +50,21 @@ func (_mock *JWTServiceInterfaceMock) GenerateJWT(sub string, aud string, iss st
 	var r0 string
 	var r1 int64
 	var r2 *serviceerror.ServiceError
-	if returnFunc, ok := ret.Get(0).(func(string, string, string, int64, map[string]interface{}) (string, int64, *serviceerror.ServiceError)); ok {
-		return returnFunc(sub, aud, iss, validityPeriod, claims)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string, string, string, int64, map[string]interface{}) (string, int64, *serviceerror.ServiceError)); ok {
+		return returnFunc(ctx, sub, aud, iss, validityPeriod, claims)
 	}
-	if returnFunc, ok := ret.Get(0).(func(string, string, string, int64, map[string]interface{}) string); ok {
-		r0 = returnFunc(sub, aud, iss, validityPeriod, claims)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string, string, string, int64, map[string]interface{}) string); ok {
+		r0 = returnFunc(ctx, sub, aud, iss, validityPeriod, claims)
 	} else {
 		r0 = ret.Get(0).(string)
 	}
-	if returnFunc, ok := ret.Get(1).(func(string, string, string, int64, map[string]interface{}) int64); ok {
-		r1 = returnFunc(sub, aud, iss, validityPeriod, claims)
+	if returnFunc, ok := ret.Get(1).(func(context.Context, string, string, string, int64, map[string]interface{}) int64); ok {
+		r1 = returnFunc(ctx, sub, aud, iss, validityPeriod, claims)
 	} else {
 		r1 = ret.Get(1).(int64)
 	}
-	if returnFunc, ok := ret.Get(2).(func(string, string, string, int64, map[string]interface{}) *serviceerror.ServiceError); ok {
-		r2 = returnFunc(sub, aud, iss, validityPeriod, claims)
+	if returnFunc, ok := ret.Get(2).(func(context.Context, string, string, string, int64, map[string]interface{}) *serviceerror.ServiceError); ok {
+		r2 = returnFunc(ctx, sub, aud, iss, validityPeriod, claims)
 	} else {
 		if ret.Get(2) != nil {
 			r2 = ret.Get(2).(*serviceerror.ServiceError)
@@ -78,20 +79,21 @@ type JWTServiceInterfaceMock_GenerateJWT_Call struct {
 }
 
 // GenerateJWT is a helper method to define mock.On call
+//   - ctx context.Context
 //   - sub string
 //   - aud string
 //   - iss string
 //   - validityPeriod int64
 //   - claims map[string]interface{}
-func (_e *JWTServiceInterfaceMock_Expecter) GenerateJWT(sub interface{}, aud interface{}, iss interface{}, validityPeriod interface{}, claims interface{}) *JWTServiceInterfaceMock_GenerateJWT_Call {
-	return &JWTServiceInterfaceMock_GenerateJWT_Call{Call: _e.mock.On("GenerateJWT", sub, aud, iss, validityPeriod, claims)}
+func (_e *JWTServiceInterfaceMock_Expecter) GenerateJWT(ctx interface{}, sub interface{}, aud interface{}, iss interface{}, validityPeriod interface{}, claims interface{}) *JWTServiceInterfaceMock_GenerateJWT_Call {
+	return &JWTServiceInterfaceMock_GenerateJWT_Call{Call: _e.mock.On("GenerateJWT", ctx, sub, aud, iss, validityPeriod, claims)}
 }
 
-func (_c *JWTServiceInterfaceMock_GenerateJWT_Call) Run(run func(sub string, aud string, iss string, validityPeriod int64, claims map[string]interface{})) *JWTServiceInterfaceMock_GenerateJWT_Call {
+func (_c *JWTServiceInterfaceMock_GenerateJWT_Call) Run(run func(ctx context.Context, sub string, aud string, iss string, validityPeriod int64, claims map[string]interface{})) *JWTServiceInterfaceMock_GenerateJWT_Call {
 	_c.Call.Run(func(args mock.Arguments) {
-		var arg0 string
+		var arg0 context.Context
 		if args[0] != nil {
-			arg0 = args[0].(string)
+			arg0 = args[0].(context.Context)
 		}
 		var arg1 string
 		if args[1] != nil {
@@ -101,13 +103,17 @@ func (_c *JWTServiceInterfaceMock_GenerateJWT_Call) Run(run func(sub string, aud
 		if args[2] != nil {
 			arg2 = args[2].(string)
 		}
-		var arg3 int64
+		var arg3 string
 		if args[3] != nil {
-			arg3 = args[3].(int64)
+			arg3 = args[3].(string)
 		}
-		var arg4 map[string]interface{}
+		var arg4 int64
 		if args[4] != nil {
-			arg4 = args[4].(map[string]interface{})
+			arg4 = args[4].(int64)
+		}
+		var arg5 map[string]interface{}
+		if args[5] != nil {
+			arg5 = args[5].(map[string]interface{})
 		}
 		run(
 			arg0,
@@ -115,6 +121,7 @@ func (_c *JWTServiceInterfaceMock_GenerateJWT_Call) Run(run func(sub string, aud
 			arg2,
 			arg3,
 			arg4,
+			arg5,
 		)
 	})
 	return _c
@@ -125,7 +132,7 @@ func (_c *JWTServiceInterfaceMock_GenerateJWT_Call) Return(s string, n int64, se
 	return _c
 }
 
-func (_c *JWTServiceInterfaceMock_GenerateJWT_Call) RunAndReturn(run func(sub string, aud string, iss string, validityPeriod int64, claims map[string]interface{}) (string, int64, *serviceerror.ServiceError)) *JWTServiceInterfaceMock_GenerateJWT_Call {
+func (_c *JWTServiceInterfaceMock_GenerateJWT_Call) RunAndReturn(run func(ctx context.Context, sub string, aud string, iss string, validityPeriod int64, claims map[string]interface{}) (string, int64, *serviceerror.ServiceError)) *JWTServiceInterfaceMock_GenerateJWT_Call {
 	_c.Call.Return(run)
 	return _c
 }
@@ -177,16 +184,16 @@ func (_c *JWTServiceInterfaceMock_GetPublicKey_Call) RunAndReturn(run func() cry
 }
 
 // VerifyJWT provides a mock function for the type JWTServiceInterfaceMock
-func (_mock *JWTServiceInterfaceMock) VerifyJWT(jwtToken string, expectedAud string, expectedIss string) *serviceerror.ServiceError {
-	ret := _mock.Called(jwtToken, expectedAud, expectedIss)
+func (_mock *JWTServiceInterfaceMock) VerifyJWT(ctx context.Context, jwtToken string, expectedAud string, expectedIss string) *serviceerror.ServiceError {
+	ret := _mock.Called(ctx, jwtToken, expectedAud, expectedIss)
 
 	if len(ret) == 0 {
 		panic("no return value specified for VerifyJWT")
 	}
 
 	var r0 *serviceerror.ServiceError
-	if returnFunc, ok := ret.Get(0).(func(string, string, string) *serviceerror.ServiceError); ok {
-		r0 = returnFunc(jwtToken, expectedAud, expectedIss)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string, string, string) *serviceerror.ServiceError); ok {
+		r0 = returnFunc(ctx, jwtToken, expectedAud, expectedIss)
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).(*serviceerror.ServiceError)
@@ -201,18 +208,19 @@ type JWTServiceInterfaceMock_VerifyJWT_Call struct {
 }
 
 // VerifyJWT is a helper method to define mock.On call
+//   - ctx context.Context
 //   - jwtToken string
 //   - expectedAud string
 //   - expectedIss string
-func (_e *JWTServiceInterfaceMock_Expecter) VerifyJWT(jwtToken interface{}, expectedAud interface{}, expectedIss interface{}) *JWTServiceInterfaceMock_VerifyJWT_Call {
-	return &JWTServiceInterfaceMock_VerifyJWT_Call{Call: _e.mock.On("VerifyJWT", jwtToken, expectedAud, expectedIss)}
+func (_e *JWTServiceInterfaceMock_Expecter) VerifyJWT(ctx interface{}, jwtToken interface{}, expectedAud interface{}, expectedIss interface{}) *JWTServiceInterfaceMock_VerifyJWT_Call {
+	return &JWTServiceInterfaceMock_VerifyJWT_Call{Call: _e.mock.On("VerifyJWT", ctx, jwtToken, expectedAud, expectedIss)}
 }
 
-func (_c *JWTServiceInterfaceMock_VerifyJWT_Call) Run(run func(jwtToken string, expectedAud string, expectedIss string)) *JWTServiceInterfaceMock_VerifyJWT_Call {
+func (_c *JWTServiceInterfaceMock_VerifyJWT_Call) Run(run func(ctx context.Context, jwtToken string, expectedAud string, expectedIss string)) *JWTServiceInterfaceMock_VerifyJWT_Call {
 	_c.Call.Run(func(args mock.Arguments) {
-		var arg0 string
+		var arg0 context.Context
 		if args[0] != nil {
-			arg0 = args[0].(string)
+			arg0 = args[0].(context.Context)
 		}
 		var arg1 string
 		if args[1] != nil {
@@ -222,10 +230,15 @@ func (_c *JWTServiceInterfaceMock_VerifyJWT_Call) Run(run func(jwtToken string, 
 		if args[2] != nil {
 			arg2 = args[2].(string)
 		}
+		var arg3 string
+		if args[3] != nil {
+			arg3 = args[3].(string)
+		}
 		run(
 			arg0,
 			arg1,
 			arg2,
+			arg3,
 		)
 	})
 	return _c
@@ -236,22 +249,22 @@ func (_c *JWTServiceInterfaceMock_VerifyJWT_Call) Return(serviceError *serviceer
 	return _c
 }
 
-func (_c *JWTServiceInterfaceMock_VerifyJWT_Call) RunAndReturn(run func(jwtToken string, expectedAud string, expectedIss string) *serviceerror.ServiceError) *JWTServiceInterfaceMock_VerifyJWT_Call {
+func (_c *JWTServiceInterfaceMock_VerifyJWT_Call) RunAndReturn(run func(ctx context.Context, jwtToken string, expectedAud string, expectedIss string) *serviceerror.ServiceError) *JWTServiceInterfaceMock_VerifyJWT_Call {
 	_c.Call.Return(run)
 	return _c
 }
 
 // VerifyJWTSignature provides a mock function for the type JWTServiceInterfaceMock
-func (_mock *JWTServiceInterfaceMock) VerifyJWTSignature(jwtToken string) *serviceerror.ServiceError {
-	ret := _mock.Called(jwtToken)
+func (_mock *JWTServiceInterfaceMock) VerifyJWTSignature(ctx context.Context, jwtToken string) *serviceerror.ServiceError {
+	ret := _mock.Called(ctx, jwtToken)
 
 	if len(ret) == 0 {
 		panic("no return value specified for VerifyJWTSignature")
 	}
 
 	var r0 *serviceerror.ServiceError
-	if returnFunc, ok := ret.Get(0).(func(string) *serviceerror.ServiceError); ok {
-		r0 = returnFunc(jwtToken)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string) *serviceerror.ServiceError); ok {
+		r0 = returnFunc(ctx, jwtToken)
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).(*serviceerror.ServiceError)
@@ -266,19 +279,25 @@ type JWTServiceInterfaceMock_VerifyJWTSignature_Call struct {
 }
 
 // VerifyJWTSignature is a helper method to define mock.On call
+//   - ctx context.Context
 //   - jwtToken string
-func (_e *JWTServiceInterfaceMock_Expecter) VerifyJWTSignature(jwtToken interface{}) *JWTServiceInterfaceMock_VerifyJWTSignature_Call {
-	return &JWTServiceInterfaceMock_VerifyJWTSignature_Call{Call: _e.mock.On("VerifyJWTSignature", jwtToken)}
+func (_e *JWTServiceInterfaceMock_Expecter) VerifyJWTSignature(ctx interface{}, jwtToken interface{}) *JWTServiceInterfaceMock_VerifyJWTSignature_Call {
+	return &JWTServiceInterfaceMock_VerifyJWTSignature_Call{Call: _e.mock.On("VerifyJWTSignature", ctx, jwtToken)}
 }
 
-func (_c *JWTServiceInterfaceMock_VerifyJWTSignature_Call) Run(run func(jwtToken string)) *JWTServiceInterfaceMock_VerifyJWTSignature_Call {
+func (_c *JWTServiceInterfaceMock_VerifyJWTSignature_Call) Run(run func(ctx context.Context, jwtToken string)) *JWTServiceInterfaceMock_VerifyJWTSignature_Call {
 	_c.Call.Run(func(args mock.Arguments) {
-		var arg0 string
+		var arg0 context.Context
 		if args[0] != nil {
-			arg0 = args[0].(string)
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 string
+		if args[1] != nil {
+			arg1 = args[1].(string)
 		}
 		run(
 			arg0,
+			arg1,
 		)
 	})
 	return _c
@@ -289,22 +308,22 @@ func (_c *JWTServiceInterfaceMock_VerifyJWTSignature_Call) Return(serviceError *
 	return _c
 }
 
-func (_c *JWTServiceInterfaceMock_VerifyJWTSignature_Call) RunAndReturn(run func(jwtToken string) *serviceerror.ServiceError) *JWTServiceInterfaceMock_VerifyJWTSignature_Call {
+func (_c *JWTServiceInterfaceMock_VerifyJWTSignature_Call) RunAndReturn(run func(ctx context.Context, jwtToken string) *serviceerror.ServiceError) *JWTServiceInterfaceMock_VerifyJWTSignature_Call {
 	_c.Call.Return(run)
 	return _c
 }
 
 // VerifyJWTSignatureWithJWKS provides a mock function for the type JWTServiceInterfaceMock
-func (_mock *JWTServiceInterfaceMock) VerifyJWTSignatureWithJWKS(jwtToken string, jwksURL string) *serviceerror.ServiceError {
-	ret := _mock.Called(jwtToken, jwksURL)
+func (_mock *JWTServiceInterfaceMock) VerifyJWTSignatureWithJWKS(ctx context.Context, jwtToken string, jwksURL string) *serviceerror.ServiceError {
+	ret := _mock.Called(ctx, jwtToken, jwksURL)
 
 	if len(ret) == 0 {
 		panic("no return value specified for VerifyJWTSignatureWithJWKS")
 	}
 
 	var r0 *serviceerror.ServiceError
-	if returnFunc, ok := ret.Get(0).(func(string, string) *serviceerror.ServiceError); ok {
-		r0 = returnFunc(jwtToken, jwksURL)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string, string) *serviceerror.ServiceError); ok {
+		r0 = returnFunc(ctx, jwtToken, jwksURL)
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).(*serviceerror.ServiceError)
@@ -319,25 +338,31 @@ type JWTServiceInterfaceMock_VerifyJWTSignatureWithJWKS_Call struct {
 }
 
 // VerifyJWTSignatureWithJWKS is a helper method to define mock.On call
+//   - ctx context.Context
 //   - jwtToken string
 //   - jwksURL string
-func (_e *JWTServiceInterfaceMock_Expecter) VerifyJWTSignatureWithJWKS(jwtToken interface{}, jwksURL interface{}) *JWTServiceInterfaceMock_VerifyJWTSignatureWithJWKS_Call {
-	return &JWTServiceInterfaceMock_VerifyJWTSignatureWithJWKS_Call{Call: _e.mock.On("VerifyJWTSignatureWithJWKS", jwtToken, jwksURL)}
+func (_e *JWTServiceInterfaceMock_Expecter) VerifyJWTSignatureWithJWKS(ctx interface{}, jwtToken interface{}, jwksURL interface{}) *JWTServiceInterfaceMock_VerifyJWTSignatureWithJWKS_Call {
+	return &JWTServiceInterfaceMock_VerifyJWTSignatureWithJWKS_Call{Call: _e.mock.On("VerifyJWTSignatureWithJWKS", ctx, jwtToken, jwksURL)}
 }
 
-func (_c *JWTServiceInterfaceMock_VerifyJWTSignatureWithJWKS_Call) Run(run func(jwtToken string, jwksURL string)) *JWTServiceInterfaceMock_VerifyJWTSignatureWithJWKS_Call {
+func (_c *JWTServiceInterfaceMock_VerifyJWTSignatureWithJWKS_Call) Run(run func(ctx context.Context, jwtToken string, jwksURL string)) *JWTServiceInterfaceMock_VerifyJWTSignatureWithJWKS_Call {
 	_c.Call.Run(func(args mock.Arguments) {
-		var arg0 string
+		var arg0 context.Context
 		if args[0] != nil {
-			arg0 = args[0].(string)
+			arg0 = args[0].(context.Context)
 		}
 		var arg1 string
 		if args[1] != nil {
 			arg1 = args[1].(string)
 		}
+		var arg2 string
+		if args[2] != nil {
+			arg2 = args[2].(string)
+		}
 		run(
 			arg0,
 			arg1,
+			arg2,
 		)
 	})
 	return _c
@@ -348,22 +373,22 @@ func (_c *JWTServiceInterfaceMock_VerifyJWTSignatureWithJWKS_Call) Return(servic
 	return _c
 }
 
-func (_c *JWTServiceInterfaceMock_VerifyJWTSignatureWithJWKS_Call) RunAndReturn(run func(jwtToken string, jwksURL string) *serviceerror.ServiceError) *JWTServiceInterfaceMock_VerifyJWTSignatureWithJWKS_Call {
+func (_c *JWTServiceInterfaceMock_VerifyJWTSignatureWithJWKS_Call) RunAndReturn(run func(ctx context.Context, jwtToken string, jwksURL string) *serviceerror.ServiceError) *JWTServiceInterfaceMock_VerifyJWTSignatureWithJWKS_Call {
 	_c.Call.Return(run)
 	return _c
 }
 
 // VerifyJWTSignatureWithPublicKey provides a mock function for the type JWTServiceInterfaceMock
-func (_mock *JWTServiceInterfaceMock) VerifyJWTSignatureWithPublicKey(jwtToken string, jwtPublicKey crypto.PublicKey) *serviceerror.ServiceError {
-	ret := _mock.Called(jwtToken, jwtPublicKey)
+func (_mock *JWTServiceInterfaceMock) VerifyJWTSignatureWithPublicKey(ctx context.Context, jwtToken string, jwtPublicKey crypto.PublicKey) *serviceerror.ServiceError {
+	ret := _mock.Called(ctx, jwtToken, jwtPublicKey)
 
 	if len(ret) == 0 {
 		panic("no return value specified for VerifyJWTSignatureWithPublicKey")
 	}
 
 	var r0 *serviceerror.ServiceError
-	if returnFunc, ok := ret.Get(0).(func(string, crypto.PublicKey) *serviceerror.ServiceError); ok {
-		r0 = returnFunc(jwtToken, jwtPublicKey)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string, crypto.PublicKey) *serviceerror.ServiceError); ok {
+		r0 = returnFunc(ctx, jwtToken, jwtPublicKey)
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).(*serviceerror.ServiceError)
@@ -378,25 +403,31 @@ type JWTServiceInterfaceMock_VerifyJWTSignatureWithPublicKey_Call struct {
 }
 
 // VerifyJWTSignatureWithPublicKey is a helper method to define mock.On call
+//   - ctx context.Context
 //   - jwtToken string
 //   - jwtPublicKey crypto.PublicKey
-func (_e *JWTServiceInterfaceMock_Expecter) VerifyJWTSignatureWithPublicKey(jwtToken interface{}, jwtPublicKey interface{}) *JWTServiceInterfaceMock_VerifyJWTSignatureWithPublicKey_Call {
-	return &JWTServiceInterfaceMock_VerifyJWTSignatureWithPublicKey_Call{Call: _e.mock.On("VerifyJWTSignatureWithPublicKey", jwtToken, jwtPublicKey)}
+func (_e *JWTServiceInterfaceMock_Expecter) VerifyJWTSignatureWithPublicKey(ctx interface{}, jwtToken interface{}, jwtPublicKey interface{}) *JWTServiceInterfaceMock_VerifyJWTSignatureWithPublicKey_Call {
+	return &JWTServiceInterfaceMock_VerifyJWTSignatureWithPublicKey_Call{Call: _e.mock.On("VerifyJWTSignatureWithPublicKey", ctx, jwtToken, jwtPublicKey)}
 }
 
-func (_c *JWTServiceInterfaceMock_VerifyJWTSignatureWithPublicKey_Call) Run(run func(jwtToken string, jwtPublicKey crypto.PublicKey)) *JWTServiceInterfaceMock_VerifyJWTSignatureWithPublicKey_Call {
+func (_c *JWTServiceInterfaceMock_VerifyJWTSignatureWithPublicKey_Call) Run(run func(ctx context.Context, jwtToken string, jwtPublicKey crypto.PublicKey)) *JWTServiceInterfaceMock_VerifyJWTSignatureWithPublicKey_Call {
 	_c.Call.Run(func(args mock.Arguments) {
-		var arg0 string
+		var arg0 context.Context
 		if args[0] != nil {
-			arg0 = args[0].(string)
+			arg0 = args[0].(context.Context)
 		}
-		var arg1 crypto.PublicKey
+		var arg1 string
 		if args[1] != nil {
-			arg1 = args[1].(crypto.PublicKey)
+			arg1 = args[1].(string)
+		}
+		var arg2 crypto.PublicKey
+		if args[2] != nil {
+			arg2 = args[2].(crypto.PublicKey)
 		}
 		run(
 			arg0,
 			arg1,
+			arg2,
 		)
 	})
 	return _c
@@ -407,22 +438,22 @@ func (_c *JWTServiceInterfaceMock_VerifyJWTSignatureWithPublicKey_Call) Return(s
 	return _c
 }
 
-func (_c *JWTServiceInterfaceMock_VerifyJWTSignatureWithPublicKey_Call) RunAndReturn(run func(jwtToken string, jwtPublicKey crypto.PublicKey) *serviceerror.ServiceError) *JWTServiceInterfaceMock_VerifyJWTSignatureWithPublicKey_Call {
+func (_c *JWTServiceInterfaceMock_VerifyJWTSignatureWithPublicKey_Call) RunAndReturn(run func(ctx context.Context, jwtToken string, jwtPublicKey crypto.PublicKey) *serviceerror.ServiceError) *JWTServiceInterfaceMock_VerifyJWTSignatureWithPublicKey_Call {
 	_c.Call.Return(run)
 	return _c
 }
 
 // VerifyJWTWithJWKS provides a mock function for the type JWTServiceInterfaceMock
-func (_mock *JWTServiceInterfaceMock) VerifyJWTWithJWKS(jwtToken string, jwksURL string, expectedAud string, expectedIss string) *serviceerror.ServiceError {
-	ret := _mock.Called(jwtToken, jwksURL, expectedAud, expectedIss)
+func (_mock *JWTServiceInterfaceMock) VerifyJWTWithJWKS(ctx context.Context, jwtToken string, jwksURL string, expectedAud string, expectedIss string) *serviceerror.ServiceError {
+	ret := _mock.Called(ctx, jwtToken, jwksURL, expectedAud, expectedIss)
 
 	if len(ret) == 0 {
 		panic("no return value specified for VerifyJWTWithJWKS")
 	}
 
 	var r0 *serviceerror.ServiceError
-	if returnFunc, ok := ret.Get(0).(func(string, string, string, string) *serviceerror.ServiceError); ok {
-		r0 = returnFunc(jwtToken, jwksURL, expectedAud, expectedIss)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string, string, string, string) *serviceerror.ServiceError); ok {
+		r0 = returnFunc(ctx, jwtToken, jwksURL, expectedAud, expectedIss)
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).(*serviceerror.ServiceError)
@@ -437,19 +468,20 @@ type JWTServiceInterfaceMock_VerifyJWTWithJWKS_Call struct {
 }
 
 // VerifyJWTWithJWKS is a helper method to define mock.On call
+//   - ctx context.Context
 //   - jwtToken string
 //   - jwksURL string
 //   - expectedAud string
 //   - expectedIss string
-func (_e *JWTServiceInterfaceMock_Expecter) VerifyJWTWithJWKS(jwtToken interface{}, jwksURL interface{}, expectedAud interface{}, expectedIss interface{}) *JWTServiceInterfaceMock_VerifyJWTWithJWKS_Call {
-	return &JWTServiceInterfaceMock_VerifyJWTWithJWKS_Call{Call: _e.mock.On("VerifyJWTWithJWKS", jwtToken, jwksURL, expectedAud, expectedIss)}
+func (_e *JWTServiceInterfaceMock_Expecter) VerifyJWTWithJWKS(ctx interface{}, jwtToken interface{}, jwksURL interface{}, expectedAud interface{}, expectedIss interface{}) *JWTServiceInterfaceMock_VerifyJWTWithJWKS_Call {
+	return &JWTServiceInterfaceMock_VerifyJWTWithJWKS_Call{Call: _e.mock.On("VerifyJWTWithJWKS", ctx, jwtToken, jwksURL, expectedAud, expectedIss)}
 }
 
-func (_c *JWTServiceInterfaceMock_VerifyJWTWithJWKS_Call) Run(run func(jwtToken string, jwksURL string, expectedAud string, expectedIss string)) *JWTServiceInterfaceMock_VerifyJWTWithJWKS_Call {
+func (_c *JWTServiceInterfaceMock_VerifyJWTWithJWKS_Call) Run(run func(ctx context.Context, jwtToken string, jwksURL string, expectedAud string, expectedIss string)) *JWTServiceInterfaceMock_VerifyJWTWithJWKS_Call {
 	_c.Call.Run(func(args mock.Arguments) {
-		var arg0 string
+		var arg0 context.Context
 		if args[0] != nil {
-			arg0 = args[0].(string)
+			arg0 = args[0].(context.Context)
 		}
 		var arg1 string
 		if args[1] != nil {
@@ -463,11 +495,16 @@ func (_c *JWTServiceInterfaceMock_VerifyJWTWithJWKS_Call) Run(run func(jwtToken 
 		if args[3] != nil {
 			arg3 = args[3].(string)
 		}
+		var arg4 string
+		if args[4] != nil {
+			arg4 = args[4].(string)
+		}
 		run(
 			arg0,
 			arg1,
 			arg2,
 			arg3,
+			arg4,
 		)
 	})
 	return _c
@@ -478,22 +515,22 @@ func (_c *JWTServiceInterfaceMock_VerifyJWTWithJWKS_Call) Return(serviceError *s
 	return _c
 }
 
-func (_c *JWTServiceInterfaceMock_VerifyJWTWithJWKS_Call) RunAndReturn(run func(jwtToken string, jwksURL string, expectedAud string, expectedIss string) *serviceerror.ServiceError) *JWTServiceInterfaceMock_VerifyJWTWithJWKS_Call {
+func (_c *JWTServiceInterfaceMock_VerifyJWTWithJWKS_Call) RunAndReturn(run func(ctx context.Context, jwtToken string, jwksURL string, expectedAud string, expectedIss string) *serviceerror.ServiceError) *JWTServiceInterfaceMock_VerifyJWTWithJWKS_Call {
 	_c.Call.Return(run)
 	return _c
 }
 
 // VerifyJWTWithPublicKey provides a mock function for the type JWTServiceInterfaceMock
-func (_mock *JWTServiceInterfaceMock) VerifyJWTWithPublicKey(jwtToken string, jwtPublicKey crypto.PublicKey, expectedAud string, expectedIss string) *serviceerror.ServiceError {
-	ret := _mock.Called(jwtToken, jwtPublicKey, expectedAud, expectedIss)
+func (_mock *JWTServiceInterfaceMock) VerifyJWTWithPublicKey(ctx context.Context, jwtToken string, jwtPublicKey crypto.PublicKey, expectedAud string, expectedIss string) *serviceerror.ServiceError {
+	ret := _mock.Called(ctx, jwtToken, jwtPublicKey, expectedAud, expectedIss)
 
 	if len(ret) == 0 {
 		panic("no return value specified for VerifyJWTWithPublicKey")
 	}
 
 	var r0 *serviceerror.ServiceError
-	if returnFunc, ok := ret.Get(0).(func(string, crypto.PublicKey, string, string) *serviceerror.ServiceError); ok {
-		r0 = returnFunc(jwtToken, jwtPublicKey, expectedAud, expectedIss)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string, crypto.PublicKey, string, string) *serviceerror.ServiceError); ok {
+		r0 = returnFunc(ctx, jwtToken, jwtPublicKey, expectedAud, expectedIss)
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).(*serviceerror.ServiceError)
@@ -508,37 +545,43 @@ type JWTServiceInterfaceMock_VerifyJWTWithPublicKey_Call struct {
 }
 
 // VerifyJWTWithPublicKey is a helper method to define mock.On call
+//   - ctx context.Context
 //   - jwtToken string
 //   - jwtPublicKey crypto.PublicKey
 //   - expectedAud string
 //   - expectedIss string
-func (_e *JWTServiceInterfaceMock_Expecter) VerifyJWTWithPublicKey(jwtToken interface{}, jwtPublicKey interface{}, expectedAud interface{}, expectedIss interface{}) *JWTServiceInterfaceMock_VerifyJWTWithPublicKey_Call {
-	return &JWTServiceInterfaceMock_VerifyJWTWithPublicKey_Call{Call: _e.mock.On("VerifyJWTWithPublicKey", jwtToken, jwtPublicKey, expectedAud, expectedIss)}
+func (_e *JWTServiceInterfaceMock_Expecter) VerifyJWTWithPublicKey(ctx interface{}, jwtToken interface{}, jwtPublicKey interface{}, expectedAud interface{}, expectedIss interface{}) *JWTServiceInterfaceMock_VerifyJWTWithPublicKey_Call {
+	return &JWTServiceInterfaceMock_VerifyJWTWithPublicKey_Call{Call: _e.mock.On("VerifyJWTWithPublicKey", ctx, jwtToken, jwtPublicKey, expectedAud, expectedIss)}
 }
 
-func (_c *JWTServiceInterfaceMock_VerifyJWTWithPublicKey_Call) Run(run func(jwtToken string, jwtPublicKey crypto.PublicKey, expectedAud string, expectedIss string)) *JWTServiceInterfaceMock_VerifyJWTWithPublicKey_Call {
+func (_c *JWTServiceInterfaceMock_VerifyJWTWithPublicKey_Call) Run(run func(ctx context.Context, jwtToken string, jwtPublicKey crypto.PublicKey, expectedAud string, expectedIss string)) *JWTServiceInterfaceMock_VerifyJWTWithPublicKey_Call {
 	_c.Call.Run(func(args mock.Arguments) {
-		var arg0 string
+		var arg0 context.Context
 		if args[0] != nil {
-			arg0 = args[0].(string)
+			arg0 = args[0].(context.Context)
 		}
-		var arg1 crypto.PublicKey
+		var arg1 string
 		if args[1] != nil {
-			arg1 = args[1].(crypto.PublicKey)
+			arg1 = args[1].(string)
 		}
-		var arg2 string
+		var arg2 crypto.PublicKey
 		if args[2] != nil {
-			arg2 = args[2].(string)
+			arg2 = args[2].(crypto.PublicKey)
 		}
 		var arg3 string
 		if args[3] != nil {
 			arg3 = args[3].(string)
+		}
+		var arg4 string
+		if args[4] != nil {
+			arg4 = args[4].(string)
 		}
 		run(
 			arg0,
 			arg1,
 			arg2,
 			arg3,
+			arg4,
 		)
 	})
 	return _c
@@ -549,7 +592,7 @@ func (_c *JWTServiceInterfaceMock_VerifyJWTWithPublicKey_Call) Return(serviceErr
 	return _c
 }
 
-func (_c *JWTServiceInterfaceMock_VerifyJWTWithPublicKey_Call) RunAndReturn(run func(jwtToken string, jwtPublicKey crypto.PublicKey, expectedAud string, expectedIss string) *serviceerror.ServiceError) *JWTServiceInterfaceMock_VerifyJWTWithPublicKey_Call {
+func (_c *JWTServiceInterfaceMock_VerifyJWTWithPublicKey_Call) RunAndReturn(run func(ctx context.Context, jwtToken string, jwtPublicKey crypto.PublicKey, expectedAud string, expectedIss string) *serviceerror.ServiceError) *JWTServiceInterfaceMock_VerifyJWTWithPublicKey_Call {
 	_c.Call.Return(run)
 	return _c
 }

@@ -19,6 +19,7 @@
 package executor
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -192,11 +193,12 @@ func (p *passkeyAuthExecutor) executeChallenge(ctx *core.NodeContext,
 	}
 
 	// Start passkey authentication
+	// TODO: Remove context.TODO() when context is available
 	startReq := &passkey.PasskeyAuthenticationStartRequest{
 		UserID:         userID,
 		RelyingPartyID: relyingPartyID,
 	}
-	startData, svcErr := p.passkeyService.StartAuthentication(startReq)
+	startData, svcErr := p.passkeyService.StartAuthentication(context.TODO(), startReq)
 	if svcErr != nil {
 		if svcErr.Type == serviceerror.ClientErrorType {
 			logger.Debug("Failed to start passkey authentication",
@@ -299,7 +301,7 @@ func (p *passkeyAuthExecutor) validatePasskey(ctx *core.NodeContext, execResp *c
 		UserHandle:        userHandle,
 		SessionToken:      sessionToken,
 	}
-	authResp, svcErr := p.passkeyService.FinishAuthentication(finishReq)
+	authResp, svcErr := p.passkeyService.FinishAuthentication(context.TODO(), finishReq)
 	if svcErr != nil {
 		if svcErr.Type == serviceerror.ClientErrorType {
 			logger.Debug("Passkey verification failed", log.String("userID", userID),
@@ -338,7 +340,7 @@ func (p *passkeyAuthExecutor) getAuthenticatedUser(ctx *core.NodeContext,
 	}
 
 	// Get user details from user service
-	user, svcErr := p.userService.GetUser(userID)
+	user, svcErr := p.userService.GetUser(context.TODO(), userID)
 	if svcErr != nil {
 		return nil, fmt.Errorf("failed to get user details: %s", svcErr.Error)
 	}
@@ -395,7 +397,7 @@ func (p *passkeyAuthExecutor) executeRegisterStart(ctx *core.NodeContext,
 	}
 
 	// Start passkey registration
-	startData, svcErr := p.passkeyService.StartRegistration(regReq)
+	startData, svcErr := p.passkeyService.StartRegistration(context.TODO(), regReq)
 	if svcErr != nil {
 		if svcErr.Type == serviceerror.ClientErrorType {
 			logger.Debug("Failed to start passkey registration",
@@ -485,7 +487,7 @@ func (p *passkeyAuthExecutor) executeRegisterFinish(ctx *core.NodeContext,
 	}
 
 	// Call passkey service to finish registration
-	finishData, svcErr := p.passkeyService.FinishRegistration(finishReq)
+	finishData, svcErr := p.passkeyService.FinishRegistration(context.TODO(), finishReq)
 	if svcErr != nil {
 		if svcErr.Type == serviceerror.ClientErrorType {
 			logger.Debug("Passkey registration failed", log.String("error", svcErr.ErrorDescription))

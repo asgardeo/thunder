@@ -5,6 +5,8 @@
 package credentialsmock
 
 import (
+	"context"
+
 	"github.com/asgardeo/thunder/internal/system/error/serviceerror"
 	"github.com/asgardeo/thunder/internal/user"
 	mock "github.com/stretchr/testify/mock"
@@ -38,8 +40,8 @@ func (_m *CredentialsAuthnServiceInterfaceMock) EXPECT() *CredentialsAuthnServic
 }
 
 // Authenticate provides a mock function for the type CredentialsAuthnServiceInterfaceMock
-func (_mock *CredentialsAuthnServiceInterfaceMock) Authenticate(attributes map[string]interface{}) (*user.User, *serviceerror.ServiceError) {
-	ret := _mock.Called(attributes)
+func (_mock *CredentialsAuthnServiceInterfaceMock) Authenticate(ctx context.Context, attributes map[string]interface{}) (*user.User, *serviceerror.ServiceError) {
+	ret := _mock.Called(ctx, attributes)
 
 	if len(ret) == 0 {
 		panic("no return value specified for Authenticate")
@@ -47,18 +49,18 @@ func (_mock *CredentialsAuthnServiceInterfaceMock) Authenticate(attributes map[s
 
 	var r0 *user.User
 	var r1 *serviceerror.ServiceError
-	if returnFunc, ok := ret.Get(0).(func(map[string]interface{}) (*user.User, *serviceerror.ServiceError)); ok {
-		return returnFunc(attributes)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, map[string]interface{}) (*user.User, *serviceerror.ServiceError)); ok {
+		return returnFunc(ctx, attributes)
 	}
-	if returnFunc, ok := ret.Get(0).(func(map[string]interface{}) *user.User); ok {
-		r0 = returnFunc(attributes)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, map[string]interface{}) *user.User); ok {
+		r0 = returnFunc(ctx, attributes)
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).(*user.User)
 		}
 	}
-	if returnFunc, ok := ret.Get(1).(func(map[string]interface{}) *serviceerror.ServiceError); ok {
-		r1 = returnFunc(attributes)
+	if returnFunc, ok := ret.Get(1).(func(context.Context, map[string]interface{}) *serviceerror.ServiceError); ok {
+		r1 = returnFunc(ctx, attributes)
 	} else {
 		if ret.Get(1) != nil {
 			r1 = ret.Get(1).(*serviceerror.ServiceError)
@@ -73,19 +75,25 @@ type CredentialsAuthnServiceInterfaceMock_Authenticate_Call struct {
 }
 
 // Authenticate is a helper method to define mock.On call
+//   - ctx context.Context
 //   - attributes map[string]interface{}
-func (_e *CredentialsAuthnServiceInterfaceMock_Expecter) Authenticate(attributes interface{}) *CredentialsAuthnServiceInterfaceMock_Authenticate_Call {
-	return &CredentialsAuthnServiceInterfaceMock_Authenticate_Call{Call: _e.mock.On("Authenticate", attributes)}
+func (_e *CredentialsAuthnServiceInterfaceMock_Expecter) Authenticate(ctx interface{}, attributes interface{}) *CredentialsAuthnServiceInterfaceMock_Authenticate_Call {
+	return &CredentialsAuthnServiceInterfaceMock_Authenticate_Call{Call: _e.mock.On("Authenticate", ctx, attributes)}
 }
 
-func (_c *CredentialsAuthnServiceInterfaceMock_Authenticate_Call) Run(run func(attributes map[string]interface{})) *CredentialsAuthnServiceInterfaceMock_Authenticate_Call {
+func (_c *CredentialsAuthnServiceInterfaceMock_Authenticate_Call) Run(run func(ctx context.Context, attributes map[string]interface{})) *CredentialsAuthnServiceInterfaceMock_Authenticate_Call {
 	_c.Call.Run(func(args mock.Arguments) {
-		var arg0 map[string]interface{}
+		var arg0 context.Context
 		if args[0] != nil {
-			arg0 = args[0].(map[string]interface{})
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 map[string]interface{}
+		if args[1] != nil {
+			arg1 = args[1].(map[string]interface{})
 		}
 		run(
 			arg0,
+			arg1,
 		)
 	})
 	return _c
@@ -96,7 +104,7 @@ func (_c *CredentialsAuthnServiceInterfaceMock_Authenticate_Call) Return(user1 *
 	return _c
 }
 
-func (_c *CredentialsAuthnServiceInterfaceMock_Authenticate_Call) RunAndReturn(run func(attributes map[string]interface{}) (*user.User, *serviceerror.ServiceError)) *CredentialsAuthnServiceInterfaceMock_Authenticate_Call {
+func (_c *CredentialsAuthnServiceInterfaceMock_Authenticate_Call) RunAndReturn(run func(ctx context.Context, attributes map[string]interface{}) (*user.User, *serviceerror.ServiceError)) *CredentialsAuthnServiceInterfaceMock_Authenticate_Call {
 	_c.Call.Return(run)
 	return _c
 }

@@ -18,6 +18,8 @@
 
 package engine
 
+import "context"
+
 // AuthorizationEngine is the internal interface for authorization engines.
 // This interface is NOT exported and is used internally by the authorization service.
 // Different engines can be plugged in (RBAC, ABAC, ReBAC, Custom) by implementing this interface.
@@ -25,6 +27,7 @@ type AuthorizationEngine interface {
 	// GetAuthorizedPermissions returns the subset of requested permissions
 	// that the user (directly or through groups) is authorized for.
 	GetAuthorizedPermissions(
+		ctx context.Context,
 		userID string,
 		groupIDs []string,
 		requestedPermissions []string,

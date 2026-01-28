@@ -25,6 +25,7 @@ import (
 	"net/http/httptest"
 	"testing"
 
+	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 
 	"github.com/asgardeo/thunder/internal/system/error/apierror"
@@ -44,7 +45,7 @@ func TestHandleSelfUserGetRequest_Success(t *testing.T) {
 		ID:         userID,
 		Attributes: json.RawMessage(`{"username":"alice"}`),
 	}
-	mockSvc.On("GetUser", userID).Return(expectedUser, nil)
+	mockSvc.On("GetUser", mock.Anything, userID).Return(expectedUser, nil)
 
 	handler := newUserHandler(mockSvc)
 	req := httptest.NewRequest(http.MethodGet, "/users/me", nil)
@@ -88,7 +89,7 @@ func TestHandleSelfUserPutRequest_Success(t *testing.T) {
 		Type:       "employee",
 		Attributes: attributes,
 	}
-	mockSvc.On("UpdateUserAttributes", userID, attributes).Return(updatedUser, nil)
+	mockSvc.On("UpdateUserAttributes", mock.Anything, userID, attributes).Return(updatedUser, nil)
 
 	handler := newUserHandler(mockSvc)
 	body := bytes.NewBufferString(`{"attributes":{"email":"alice@example.com"}}`)
@@ -132,7 +133,7 @@ func TestHandleSelfUserCredentialUpdateRequest_Success(t *testing.T) {
 
 	mockSvc := NewUserServiceInterfaceMock(t)
 	credentialsJSON := json.RawMessage(`{"password":[{"value":"Secret123!"}]}`)
-	mockSvc.On("UpdateUserCredentials", userID, credentialsJSON).Return(nil)
+	mockSvc.On("UpdateUserCredentials", mock.Anything, userID, credentialsJSON).Return(nil)
 
 	handler := newUserHandler(mockSvc)
 	req := httptest.NewRequest(http.MethodPost, "/users/me/update-credentials",
@@ -152,7 +153,7 @@ func TestHandleSelfUserCredentialUpdateRequest_StringValue(t *testing.T) {
 
 	mockSvc := NewUserServiceInterfaceMock(t)
 	credentialsJSON := json.RawMessage(`{"password":"plaintext-password"}`)
-	mockSvc.On("UpdateUserCredentials", userID, credentialsJSON).Return(nil)
+	mockSvc.On("UpdateUserCredentials", mock.Anything, userID, credentialsJSON).Return(nil)
 
 	handler := newUserHandler(mockSvc)
 	req := httptest.NewRequest(http.MethodPost, "/users/me/update-credentials",
@@ -194,7 +195,7 @@ func TestHandleSelfUserCredentialUpdateRequest_InvalidJSONInAttributes(t *testin
 	mockSvc := NewUserServiceInterfaceMock(t)
 	// Service will be called and return error for invalid JSON
 	credentialsJSON := json.RawMessage(`["invalid","array"]`)
-	mockSvc.On("UpdateUserCredentials", userID, credentialsJSON).Return(&ErrorInvalidRequestFormat)
+	mockSvc.On("UpdateUserCredentials", mock.Anything, userID, credentialsJSON).Return(&ErrorInvalidRequestFormat)
 
 	handler := newUserHandler(mockSvc)
 
@@ -220,7 +221,7 @@ func TestHandleSelfUserCredentialUpdateRequest_InvalidCredentialType(t *testing.
 	mockSvc := NewUserServiceInterfaceMock(t)
 	// Service will be called and return error for invalid credential type
 	credentialsJSON := json.RawMessage(`{"unsupported_type":"some_value"}`)
-	mockSvc.On("UpdateUserCredentials", userID, credentialsJSON).Return(&ErrorInvalidCredential)
+	mockSvc.On("UpdateUserCredentials", mock.Anything, userID, credentialsJSON).Return(&ErrorInvalidCredential)
 
 	handler := newUserHandler(mockSvc)
 
@@ -247,7 +248,7 @@ func TestHandleSelfUserCredentialUpdateRequest_ServiceError(t *testing.T) {
 	credentialsJSON := json.RawMessage(`{"password":"test_password"}`)
 
 	// Mock service to return an error
-	mockSvc.On("UpdateUserCredentials", userID, credentialsJSON).
+	mockSvc.On("UpdateUserCredentials", mock.Anything, userID, credentialsJSON).
 		Return(&ErrorInvalidCredential)
 
 	handler := newUserHandler(mockSvc)
@@ -272,7 +273,7 @@ func TestHandleSelfUserCredentialUpdateRequest_MultipleCredentialTypes(t *testin
 	mockSvc := NewUserServiceInterfaceMock(t)
 	// Test that multiple credential types are updated in a single atomic call
 	credentialsJSON := json.RawMessage(`{"password":"new-password","pin":"1234"}`)
-	mockSvc.On("UpdateUserCredentials", userID, credentialsJSON).Return(nil)
+	mockSvc.On("UpdateUserCredentials", mock.Anything, userID, credentialsJSON).Return(nil)
 
 	handler := newUserHandler(mockSvc)
 	req := httptest.NewRequest(http.MethodPost, "/users/me/update-credentials",

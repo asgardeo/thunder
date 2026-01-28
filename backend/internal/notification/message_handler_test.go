@@ -209,7 +209,7 @@ func (suite *MessageHandlerTestSuite) TestHandleOTPSendRequest() {
 
 	sendReq := common.SendOTPRequest{Recipient: "+123", SenderID: "s-1", Channel: "sms"}
 	body, _ := json.Marshal(sendReq)
-	mOtp.On("SendOTP", mock.Anything).Return(&common.SendOTPResultDTO{SessionToken: "tok-1"}, nil).Once()
+	mOtp.On("SendOTP", mock.Anything, mock.Anything).Return(&common.SendOTPResultDTO{SessionToken: "tok-1"}, nil).Once()
 	req := httptest.NewRequest(http.MethodPost, "/otp/send", bytes.NewBuffer(body))
 	rr := httptest.NewRecorder()
 	handler.HandleOTPSendRequest(rr, req)
@@ -225,7 +225,7 @@ func (suite *MessageHandlerTestSuite) TestHandleOTPVerifyRequest() {
 
 	verifyReq := common.VerifyOTPRequest{SessionToken: "tok-1", OTPCode: "1234"}
 	vbody, _ := json.Marshal(verifyReq)
-	mOtp.On("VerifyOTP", mock.Anything).Return(
+	mOtp.On("VerifyOTP", mock.Anything, mock.Anything).Return(
 		&common.VerifyOTPResultDTO{Status: common.OTPVerifyStatus("SUCCESS")}, nil).Once()
 	req2 := httptest.NewRequest(http.MethodPost, "/otp/verify", bytes.NewBuffer(vbody))
 	rr2 := httptest.NewRecorder()
@@ -312,7 +312,7 @@ func (suite *MessageHandlerTestSuite) TestHandleOTPSendRequest_InvalidRecipient(
 	handler := newMessageNotificationSenderHandler(nil, mOtp)
 	sendReq := common.SendOTPRequest{Recipient: "+1", SenderID: "s1", Channel: "sms"}
 	b, _ := json.Marshal(sendReq)
-	mOtp.On("SendOTP", mock.Anything).Return(nil, &ErrorInvalidRecipient).Once()
+	mOtp.On("SendOTP", mock.Anything, mock.Anything).Return(nil, &ErrorInvalidRecipient).Once()
 	req2 := httptest.NewRequest(http.MethodPost, "/otp/send", bytes.NewBuffer(b))
 	rr2 := httptest.NewRecorder()
 	handler.HandleOTPSendRequest(rr2, req2)
@@ -332,7 +332,7 @@ func (suite *MessageHandlerTestSuite) TestHandleOTPVerifyRequest_InvalidOTP() {
 	handler := newMessageNotificationSenderHandler(nil, mOtp)
 	vreq := common.VerifyOTPRequest{SessionToken: "t", OTPCode: "c"}
 	vb, _ := json.Marshal(vreq)
-	mOtp.On("VerifyOTP", mock.Anything).Return(nil, &ErrorInvalidOTP).Once()
+	mOtp.On("VerifyOTP", mock.Anything, mock.Anything).Return(nil, &ErrorInvalidOTP).Once()
 	req4 := httptest.NewRequest(http.MethodPost, "/otp/verify", bytes.NewBuffer(vb))
 	rr4 := httptest.NewRecorder()
 	handler.HandleOTPVerifyRequest(rr4, req4)

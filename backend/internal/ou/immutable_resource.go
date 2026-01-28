@@ -19,6 +19,7 @@
 package ou
 
 import (
+	"context"
 	"fmt"
 	"testing"
 
@@ -106,8 +107,9 @@ func (e *OUExporter) GetAllResourceIDs() ([]string, *serviceerror.ServiceError) 
 }
 
 // getAllChildIDs recursively retrieves all child OU IDs (excluding immutable ones).
+// TODO: Verify the usage of context.Background()
 func (e *OUExporter) getAllChildIDs(parentID string) ([]string, *serviceerror.ServiceError) {
-	children, err := e.service.GetOrganizationUnitChildren(parentID, serverconst.MaxPageSize, 0)
+	children, err := e.service.GetOrganizationUnitChildren(context.Background(), parentID, serverconst.MaxPageSize, 0)
 	if err != nil {
 		return nil, err
 	}
@@ -130,7 +132,7 @@ func (e *OUExporter) getAllChildIDs(parentID string) ([]string, *serviceerror.Se
 
 // GetResourceByID retrieves an organization unit by its ID.
 func (e *OUExporter) GetResourceByID(id string) (interface{}, string, *serviceerror.ServiceError) {
-	ou, err := e.service.GetOrganizationUnit(id)
+	ou, err := e.service.GetOrganizationUnit(context.Background(), id)
 	if err != nil {
 		return nil, "", err
 	}

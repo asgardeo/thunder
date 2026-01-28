@@ -19,6 +19,8 @@
 package executor
 
 import (
+	"context"
+
 	"github.com/asgardeo/thunder/internal/flow/common"
 	"github.com/asgardeo/thunder/internal/flow/core"
 	"github.com/asgardeo/thunder/internal/system/log"
@@ -95,8 +97,9 @@ func (i *identityResolverExecutor) Execute(ctx *core.NodeContext) (*common.Execu
 	}
 
 	// Try to identify the user
+	// TODO: Remove context.TODO() when context is available
 	filters := map[string]interface{}{userAttributeUsername: username}
-	userID, err := i.IdentifyUser(filters, execResp)
+	userID, err := i.IdentifyUser(context.TODO(), filters, execResp)
 	if err != nil {
 		logger.Error("Failed to identify user", log.Error(err))
 		execResp.Status = common.ExecFailure

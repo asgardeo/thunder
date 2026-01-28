@@ -77,7 +77,7 @@ func (h *tokenIntrospectionHandler) HandleIntrospect(w http.ResponseWriter, r *h
 	// token_type_hint parameter is not supported due to non persistent tokens in the server
 	tokenTypeHint := r.FormValue(constants.RequestParamTokenTypeHint)
 
-	response, err := h.service.IntrospectToken(token, tokenTypeHint)
+	response, err := h.service.IntrospectToken(r.Context(), token, tokenTypeHint)
 	if err != nil {
 		w.Header().Set(serverconst.ContentTypeHeaderName, serverconst.ContentTypeJSON)
 		w.WriteHeader(http.StatusInternalServerError)

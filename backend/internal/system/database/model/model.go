@@ -20,6 +20,7 @@
 package model
 
 import (
+	"context"
 	"database/sql"
 )
 
@@ -76,7 +77,9 @@ type TxInterface interface {
 	Commit() error
 	Rollback() error
 	Exec(query DBQuery, args ...any) (sql.Result, error)
+	ExecContext(ctx context.Context, query DBQuery, args ...any) (sql.Result, error)
 	Query(query DBQuery, args ...any) (*sql.Rows, error)
+	QueryContext(ctx context.Context, query DBQuery, args ...any) (*sql.Rows, error)
 }
 
 // Tx is the implementation of TxInterface for managing database transactions.
@@ -105,12 +108,22 @@ func (t *Tx) Rollback() error {
 
 // Exec executes a query with the given arguments.
 func (t *Tx) Exec(query DBQuery, args ...any) (sql.Result, error) {
+	return t.ExecContext(context.Background(), query, args...)
+}
+
+// ExecContext executes a query with the given arguments and context.
+func (t *Tx) ExecContext(ctx context.Context, query DBQuery, args ...any) (sql.Result, error) {
 	sqlQuery := query.GetQuery(t.dbType)
-	return t.internal.Exec(sqlQuery, args...)
+	return t.internal.ExecContext(ctx, sqlQuery, args...)
 }
 
 // Query executes a query that returns rows, typically a SELECT, and returns the result as *sql.Rows.
 func (t *Tx) Query(query DBQuery, args ...any) (*sql.Rows, error) {
+	return t.QueryContext(context.Background(), query, args...)
+}
+
+// QueryContext executes a query that returns rows with the given context.
+func (t *Tx) QueryContext(ctx context.Context, query DBQuery, args ...any) (*sql.Rows, error) {
 	sqlQuery := query.GetQuery(t.dbType)
-	return t.internal.Query(sqlQuery, args...)
+	return t.internal.QueryContext(ctx, sqlQuery, args...)
 }

@@ -19,6 +19,7 @@
 package tokenservice
 
 import (
+	"context"
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
@@ -26,6 +27,7 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/suite"
 
 	appmodel "github.com/asgardeo/thunder/internal/application/model"
@@ -126,9 +128,9 @@ func (suite *TokenValidatorTestSuite) TestValidateSubjectToken_Success_BasicToke
 	}
 	token := suite.createTestJWT(claims)
 
-	suite.mockJWTService.On("VerifyJWTSignature", token).Return(nil)
+	suite.mockJWTService.On("VerifyJWTSignature", mock.Anything, token).Return(nil)
 
-	result, err := suite.validator.ValidateSubjectToken(token, suite.oauthApp)
+	result, err := suite.validator.ValidateSubjectToken(context.TODO(), token, suite.oauthApp)
 
 	assert.NoError(suite.T(), err)
 	assert.NotNil(suite.T(), result)
@@ -155,9 +157,9 @@ func (suite *TokenValidatorTestSuite) TestValidateSubjectToken_Success_WithCusto
 	}
 	token := suite.createTestJWT(claims)
 
-	suite.mockJWTService.On("VerifyJWTSignature", token).Return(nil)
+	suite.mockJWTService.On("VerifyJWTSignature", mock.Anything, token).Return(nil)
 
-	result, err := suite.validator.ValidateSubjectToken(token, customOAuthApp)
+	result, err := suite.validator.ValidateSubjectToken(context.TODO(), token, customOAuthApp)
 
 	assert.NoError(suite.T(), err)
 	assert.NotNil(suite.T(), result)
@@ -178,9 +180,9 @@ func (suite *TokenValidatorTestSuite) TestValidateSubjectToken_Success_WithoutNb
 	}
 	token := suite.createTestJWT(claims)
 
-	suite.mockJWTService.On("VerifyJWTSignature", token).Return(nil)
+	suite.mockJWTService.On("VerifyJWTSignature", mock.Anything, token).Return(nil)
 
-	result, err := suite.validator.ValidateSubjectToken(token, suite.oauthApp)
+	result, err := suite.validator.ValidateSubjectToken(context.TODO(), token, suite.oauthApp)
 
 	assert.NoError(suite.T(), err)
 	assert.NotNil(suite.T(), result)
@@ -200,9 +202,9 @@ func (suite *TokenValidatorTestSuite) TestValidateSubjectToken_Success_WithEmpty
 	}
 	token := suite.createTestJWT(claims)
 
-	suite.mockJWTService.On("VerifyJWTSignature", token).Return(nil)
+	suite.mockJWTService.On("VerifyJWTSignature", mock.Anything, token).Return(nil)
 
-	result, err := suite.validator.ValidateSubjectToken(token, suite.oauthApp)
+	result, err := suite.validator.ValidateSubjectToken(context.TODO(), token, suite.oauthApp)
 
 	assert.NoError(suite.T(), err)
 	assert.NotNil(suite.T(), result)
@@ -213,7 +215,7 @@ func (suite *TokenValidatorTestSuite) TestValidateSubjectToken_Success_WithEmpty
 func (suite *TokenValidatorTestSuite) TestValidateSubjectToken_Error_InvalidJWTFormat() {
 	token := invalidJWTFormat
 
-	result, err := suite.validator.ValidateSubjectToken(token, suite.oauthApp)
+	result, err := suite.validator.ValidateSubjectToken(context.TODO(), token, suite.oauthApp)
 
 	assert.Error(suite.T(), err)
 	assert.Nil(suite.T(), result)
@@ -223,7 +225,7 @@ func (suite *TokenValidatorTestSuite) TestValidateSubjectToken_Error_InvalidJWTF
 func (suite *TokenValidatorTestSuite) TestValidateSubjectToken_Error_MalformedJWT() {
 	token := "not-a-jwt-at-all" //nolint:gosec // Test token, not a real credential
 
-	result, err := suite.validator.ValidateSubjectToken(token, suite.oauthApp)
+	result, err := suite.validator.ValidateSubjectToken(context.TODO(), token, suite.oauthApp)
 
 	assert.Error(suite.T(), err)
 	assert.Nil(suite.T(), result)
@@ -241,7 +243,7 @@ func (suite *TokenValidatorTestSuite) TestValidateSubjectToken_Error_MissingIssu
 	}
 	token := suite.createTestJWT(claims)
 
-	result, err := suite.validator.ValidateSubjectToken(token, suite.oauthApp)
+	result, err := suite.validator.ValidateSubjectToken(context.TODO(), token, suite.oauthApp)
 
 	assert.Error(suite.T(), err)
 	assert.Nil(suite.T(), result)
@@ -255,7 +257,7 @@ func (suite *TokenValidatorTestSuite) TestValidateSubjectToken_Error_InvalidIssu
 	}
 	token := suite.createTestJWT(claims)
 
-	result, err := suite.validator.ValidateSubjectToken(token, suite.oauthApp)
+	result, err := suite.validator.ValidateSubjectToken(context.TODO(), token, suite.oauthApp)
 
 	assert.Error(suite.T(), err)
 	assert.Nil(suite.T(), result)
@@ -271,7 +273,7 @@ func (suite *TokenValidatorTestSuite) TestValidateSubjectToken_Error_UntrustedIs
 	}
 	token := suite.createTestJWT(claims)
 
-	result, err := suite.validator.ValidateSubjectToken(token, suite.oauthApp)
+	result, err := suite.validator.ValidateSubjectToken(context.TODO(), token, suite.oauthApp)
 
 	assert.Error(suite.T(), err)
 	assert.Nil(suite.T(), result)
@@ -287,7 +289,7 @@ func (suite *TokenValidatorTestSuite) TestValidateSubjectToken_Error_InvalidSign
 	}
 	token := suite.createTestJWT(claims)
 
-	suite.mockJWTService.On("VerifyJWTSignature", token).
+	suite.mockJWTService.On("VerifyJWTSignature", mock.Anything, token).
 		Return(&serviceerror.ServiceError{
 			Type:             serviceerror.ServerErrorType,
 			Code:             "SIGNATURE_VERIFICATION_FAILED",
@@ -295,7 +297,7 @@ func (suite *TokenValidatorTestSuite) TestValidateSubjectToken_Error_InvalidSign
 			ErrorDescription: "The JWT signature verification failed",
 		})
 
-	result, err := suite.validator.ValidateSubjectToken(token, suite.oauthApp)
+	result, err := suite.validator.ValidateSubjectToken(context.TODO(), token, suite.oauthApp)
 
 	assert.Error(suite.T(), err)
 	assert.Nil(suite.T(), result)
@@ -316,9 +318,9 @@ func (suite *TokenValidatorTestSuite) TestValidateSubjectToken_Error_MissingSubC
 	}
 	token := suite.createTestJWT(claims)
 
-	suite.mockJWTService.On("VerifyJWTSignature", token).Return(nil)
+	suite.mockJWTService.On("VerifyJWTSignature", mock.Anything, token).Return(nil)
 
-	result, err := suite.validator.ValidateSubjectToken(token, suite.oauthApp)
+	result, err := suite.validator.ValidateSubjectToken(context.TODO(), token, suite.oauthApp)
 
 	assert.Error(suite.T(), err)
 	assert.Nil(suite.T(), result)
@@ -335,9 +337,9 @@ func (suite *TokenValidatorTestSuite) TestValidateSubjectToken_Error_InvalidSubT
 	}
 	token := suite.createTestJWT(claims)
 
-	suite.mockJWTService.On("VerifyJWTSignature", token).Return(nil)
+	suite.mockJWTService.On("VerifyJWTSignature", mock.Anything, token).Return(nil)
 
-	result, err := suite.validator.ValidateSubjectToken(token, suite.oauthApp)
+	result, err := suite.validator.ValidateSubjectToken(context.TODO(), token, suite.oauthApp)
 
 	assert.Error(suite.T(), err)
 	assert.Nil(suite.T(), result)
@@ -355,9 +357,9 @@ func (suite *TokenValidatorTestSuite) TestValidateSubjectToken_Error_ExpiredToke
 	}
 	token := suite.createTestJWT(claims)
 
-	suite.mockJWTService.On("VerifyJWTSignature", token).Return(nil)
+	suite.mockJWTService.On("VerifyJWTSignature", mock.Anything, token).Return(nil)
 
-	result, err := suite.validator.ValidateSubjectToken(token, suite.oauthApp)
+	result, err := suite.validator.ValidateSubjectToken(context.TODO(), token, suite.oauthApp)
 
 	assert.Error(suite.T(), err)
 	assert.Nil(suite.T(), result)
@@ -375,9 +377,9 @@ func (suite *TokenValidatorTestSuite) TestValidateSubjectToken_Error_NotYetValid
 	}
 	token := suite.createTestJWT(claims)
 
-	suite.mockJWTService.On("VerifyJWTSignature", token).Return(nil)
+	suite.mockJWTService.On("VerifyJWTSignature", mock.Anything, token).Return(nil)
 
-	result, err := suite.validator.ValidateSubjectToken(token, suite.oauthApp)
+	result, err := suite.validator.ValidateSubjectToken(context.TODO(), token, suite.oauthApp)
 
 	assert.Error(suite.T(), err)
 	assert.Nil(suite.T(), result)
@@ -388,9 +390,9 @@ func (suite *TokenValidatorTestSuite) TestValidateSubjectToken_Error_NotYetValid
 func (suite *TokenValidatorTestSuite) TestVerifyTokenSignatureByIssuer_Success_ThunderIssuer() {
 	token := testJWTTokenString
 
-	suite.mockJWTService.On("VerifyJWTSignature", token).Return(nil)
+	suite.mockJWTService.On("VerifyJWTSignature", mock.Anything, token).Return(nil)
 
-	err := suite.validator.verifyTokenSignatureByIssuer(token, "https://thunder.io", suite.oauthApp)
+	err := suite.validator.verifyTokenSignatureByIssuer(context.TODO(), token, "https://thunder.io", suite.oauthApp)
 
 	assert.NoError(suite.T(), err)
 	suite.mockJWTService.AssertExpectations(suite.T())
@@ -406,9 +408,9 @@ func (suite *TokenValidatorTestSuite) TestVerifyTokenSignatureByIssuer_Success_C
 	}
 	token := testJWTTokenString
 
-	suite.mockJWTService.On("VerifyJWTSignature", token).Return(nil)
+	suite.mockJWTService.On("VerifyJWTSignature", mock.Anything, token).Return(nil)
 
-	err := suite.validator.verifyTokenSignatureByIssuer(token, "https://custom-thunder.io", customApp)
+	err := suite.validator.verifyTokenSignatureByIssuer(context.TODO(), token, "https://custom-thunder.io", customApp)
 
 	assert.NoError(suite.T(), err)
 	suite.mockJWTService.AssertExpectations(suite.T())
@@ -417,7 +419,7 @@ func (suite *TokenValidatorTestSuite) TestVerifyTokenSignatureByIssuer_Success_C
 func (suite *TokenValidatorTestSuite) TestVerifyTokenSignatureByIssuer_Error_SignatureFailure() {
 	token := testJWTTokenString
 
-	suite.mockJWTService.On("VerifyJWTSignature", token).
+	suite.mockJWTService.On("VerifyJWTSignature", mock.Anything, token).
 		Return(&serviceerror.ServiceError{
 			Type:             serviceerror.ServerErrorType,
 			Code:             "SIGNATURE_MISMATCH",
@@ -425,7 +427,7 @@ func (suite *TokenValidatorTestSuite) TestVerifyTokenSignatureByIssuer_Error_Sig
 			ErrorDescription: "The JWT signature does not match",
 		})
 
-	err := suite.validator.verifyTokenSignatureByIssuer(token, "https://thunder.io", suite.oauthApp)
+	err := suite.validator.verifyTokenSignatureByIssuer(context.TODO(), token, "https://thunder.io", suite.oauthApp)
 
 	assert.Error(suite.T(), err)
 	assert.Contains(suite.T(), err.Error(), "failed to verify token signature")
@@ -436,7 +438,7 @@ func (suite *TokenValidatorTestSuite) TestVerifyTokenSignatureByIssuer_Error_Ext
 	// External issuer (not in trusted Thunder issuers)
 	token := testJWTTokenString
 
-	err := suite.validator.verifyTokenSignatureByIssuer(token, "https://external-idp.com", suite.oauthApp)
+	err := suite.validator.verifyTokenSignatureByIssuer(context.TODO(), token, "https://external-idp.com", suite.oauthApp)
 
 	assert.Error(suite.T(), err)
 	assert.Contains(suite.T(), err.Error(), "no verification method configured for issuer")
@@ -457,9 +459,9 @@ func (suite *TokenValidatorTestSuite) TestFederationScenario_DecodeBeforeVerify(
 	}
 	token := suite.createTestJWT(claims)
 
-	suite.mockJWTService.On("VerifyJWTSignature", token).Return(nil)
+	suite.mockJWTService.On("VerifyJWTSignature", mock.Anything, token).Return(nil)
 
-	result, err := suite.validator.ValidateSubjectToken(token, suite.oauthApp)
+	result, err := suite.validator.ValidateSubjectToken(context.TODO(), token, suite.oauthApp)
 
 	assert.NoError(suite.T(), err)
 	assert.NotNil(suite.T(), result)
@@ -478,7 +480,7 @@ func (suite *TokenValidatorTestSuite) TestFederationScenario_FailFastOnUntrusted
 	token := suite.createTestJWT(claims)
 
 	// Should not call VerifyJWTSignature because issuer check fails first
-	result, err := suite.validator.ValidateSubjectToken(token, suite.oauthApp)
+	result, err := suite.validator.ValidateSubjectToken(context.TODO(), token, suite.oauthApp)
 
 	assert.Error(suite.T(), err)
 	assert.Nil(suite.T(), result)
@@ -506,9 +508,9 @@ func (suite *TokenValidatorTestSuite) TestFederationScenario_MultipleThunderIssu
 		"exp": float64(now + 3600),
 	}
 	tokenProd := suite.createTestJWT(claimsProd)
-	suite.mockJWTService.On("VerifyJWTSignature", tokenProd).Return(nil)
+	suite.mockJWTService.On("VerifyJWTSignature", mock.Anything, tokenProd).Return(nil)
 
-	resultProd, errProd := suite.validator.ValidateSubjectToken(
+	resultProd, errProd := suite.validator.ValidateSubjectToken(context.TODO(),
 		tokenProd, multiIssuerApp)
 	assert.NoError(suite.T(), errProd)
 	assert.NotNil(suite.T(), resultProd)
@@ -521,7 +523,7 @@ func (suite *TokenValidatorTestSuite) TestFederationScenario_MultipleThunderIssu
 	}
 	tokenStaging := suite.createTestJWT(claimsStaging)
 
-	resultStaging, errStaging := suite.validator.ValidateSubjectToken(
+	resultStaging, errStaging := suite.validator.ValidateSubjectToken(context.TODO(),
 		tokenStaging, multiIssuerApp)
 	assert.Error(suite.T(), errStaging)
 	assert.Nil(suite.T(), resultStaging)
@@ -540,7 +542,7 @@ func (suite *TokenValidatorTestSuite) TestFederationScenario_FutureExternalIssue
 	externalIssuer := "https://external-idp.com"
 
 	// Currently returns error because no JWKS support yet
-	err := suite.validator.verifyTokenSignatureByIssuer(token, externalIssuer, suite.oauthApp)
+	err := suite.validator.verifyTokenSignatureByIssuer(context.TODO(), token, externalIssuer, suite.oauthApp)
 
 	assert.Error(suite.T(), err)
 	assert.Contains(suite.T(), err.Error(), "no verification method configured")
@@ -559,9 +561,9 @@ func (suite *TokenValidatorTestSuite) TestValidateSubjectToken_Security_RejectsT
 	}
 	token := suite.createTestJWT(claims)
 
-	suite.mockJWTService.On("VerifyJWTSignature", token).Return(nil)
+	suite.mockJWTService.On("VerifyJWTSignature", mock.Anything, token).Return(nil)
 
-	result, err := suite.validator.ValidateSubjectToken(token, suite.oauthApp)
+	result, err := suite.validator.ValidateSubjectToken(context.TODO(), token, suite.oauthApp)
 
 	assert.Error(suite.T(), err)
 	assert.Nil(suite.T(), result)
@@ -593,9 +595,9 @@ func (suite *TokenValidatorTestSuite) TestValidateSubjectToken_EdgeCase_VeryLong
 	}
 	token := suite.createTestJWT(largeClaims)
 
-	suite.mockJWTService.On("VerifyJWTSignature", token).Return(nil)
+	suite.mockJWTService.On("VerifyJWTSignature", mock.Anything, token).Return(nil)
 
-	result, err := suite.validator.ValidateSubjectToken(token, suite.oauthApp)
+	result, err := suite.validator.ValidateSubjectToken(context.TODO(), token, suite.oauthApp)
 
 	assert.NoError(suite.T(), err)
 	assert.NotNil(suite.T(), result)
@@ -618,9 +620,9 @@ func (suite *TokenValidatorTestSuite) TestValidateRefreshToken_Success_Basic() {
 	}
 	token := suite.createTestJWT(claims)
 
-	suite.mockJWTService.On("VerifyJWT", token, "", "").Return(nil)
+	suite.mockJWTService.On("VerifyJWT", mock.Anything, token, "", "").Return(nil)
 
-	result, err := suite.validator.ValidateRefreshToken(token, "test-client")
+	result, err := suite.validator.ValidateRefreshToken(context.TODO(), token, "test-client")
 
 	assert.NoError(suite.T(), err)
 	assert.NotNil(suite.T(), result)
@@ -647,9 +649,9 @@ func (suite *TokenValidatorTestSuite) TestValidateRefreshToken_Success_WithoutUs
 	}
 	token := suite.createTestJWT(claims)
 
-	suite.mockJWTService.On("VerifyJWT", token, "", "").Return(nil)
+	suite.mockJWTService.On("VerifyJWT", mock.Anything, token, "", "").Return(nil)
 
-	result, err := suite.validator.ValidateRefreshToken(token, "test-client")
+	result, err := suite.validator.ValidateRefreshToken(context.TODO(), token, "test-client")
 
 	assert.NoError(suite.T(), err)
 	assert.NotNil(suite.T(), result)
@@ -671,9 +673,9 @@ func (suite *TokenValidatorTestSuite) TestValidateRefreshToken_Success_EmptyScop
 	}
 	token := suite.createTestJWT(claims)
 
-	suite.mockJWTService.On("VerifyJWT", token, "", "").Return(nil)
+	suite.mockJWTService.On("VerifyJWT", mock.Anything, token, "", "").Return(nil)
 
-	result, err := suite.validator.ValidateRefreshToken(token, "test-client")
+	result, err := suite.validator.ValidateRefreshToken(context.TODO(), token, "test-client")
 
 	assert.NoError(suite.T(), err)
 	assert.NotNil(suite.T(), result)
@@ -684,7 +686,7 @@ func (suite *TokenValidatorTestSuite) TestValidateRefreshToken_Success_EmptyScop
 func (suite *TokenValidatorTestSuite) TestValidateRefreshToken_Error_InvalidSignature() {
 	token := "invalid.token.signature"
 
-	suite.mockJWTService.On("VerifyJWT", token, "", "").
+	suite.mockJWTService.On("VerifyJWT", mock.Anything, token, "", "").
 		Return(&serviceerror.ServiceError{
 			Type:             serviceerror.ServerErrorType,
 			Code:             "SIGNATURE_VERIFICATION_FAILED",
@@ -692,7 +694,7 @@ func (suite *TokenValidatorTestSuite) TestValidateRefreshToken_Error_InvalidSign
 			ErrorDescription: "The JWT signature verification failed",
 		})
 
-	result, err := suite.validator.ValidateRefreshToken(token, "test-client")
+	result, err := suite.validator.ValidateRefreshToken(context.TODO(), token, "test-client")
 
 	assert.Error(suite.T(), err)
 	assert.Nil(suite.T(), result)
@@ -704,7 +706,7 @@ func (suite *TokenValidatorTestSuite) TestValidateRefreshToken_Error_InvalidJWTF
 	token := invalidJWTFormat
 
 	// VerifyJWT is called first and should fail for invalid format
-	suite.mockJWTService.On("VerifyJWT", token, "", "").
+	suite.mockJWTService.On("VerifyJWT", mock.Anything, token, "", "").
 		Return(&serviceerror.ServiceError{
 			Type:             serviceerror.ClientErrorType,
 			Code:             "INVALID_JWT_FORMAT",
@@ -712,7 +714,7 @@ func (suite *TokenValidatorTestSuite) TestValidateRefreshToken_Error_InvalidJWTF
 			ErrorDescription: "The JWT format is invalid",
 		})
 
-	result, err := suite.validator.ValidateRefreshToken(token, "test-client")
+	result, err := suite.validator.ValidateRefreshToken(context.TODO(), token, "test-client")
 
 	assert.Error(suite.T(), err)
 	assert.Nil(suite.T(), result)
@@ -726,7 +728,7 @@ func (suite *TokenValidatorTestSuite) TestValidateRefreshToken_Error_DecodeFailu
 	token := "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.invalid-base64.signature"
 
 	// VerifyJWT is called first and should fail for invalid base64
-	suite.mockJWTService.On("VerifyJWT", token, "", "").
+	suite.mockJWTService.On("VerifyJWT", mock.Anything, token, "", "").
 		Return(&serviceerror.ServiceError{
 			Type:             serviceerror.ServerErrorType,
 			Code:             "INVALID_JWT_SIGNATURE",
@@ -734,7 +736,7 @@ func (suite *TokenValidatorTestSuite) TestValidateRefreshToken_Error_DecodeFailu
 			ErrorDescription: "The JWT signature is invalid",
 		})
 
-	result, err := suite.validator.ValidateRefreshToken(token, "test-client")
+	result, err := suite.validator.ValidateRefreshToken(context.TODO(), token, "test-client")
 
 	assert.Error(suite.T(), err)
 	assert.Nil(suite.T(), result)
@@ -757,9 +759,9 @@ func (suite *TokenValidatorTestSuite) TestValidateRefreshToken_Success_MissingIa
 	}
 	token := suite.createTestJWT(claims)
 
-	suite.mockJWTService.On("VerifyJWT", token, "", "").Return(nil)
+	suite.mockJWTService.On("VerifyJWT", mock.Anything, token, "", "").Return(nil)
 
-	result, err := suite.validator.ValidateRefreshToken(token, "test-client")
+	result, err := suite.validator.ValidateRefreshToken(context.TODO(), token, "test-client")
 
 	assert.NoError(suite.T(), err)
 	assert.NotNil(suite.T(), result)
@@ -785,7 +787,7 @@ func (suite *TokenValidatorTestSuite) TestValidateRefreshToken_Error_ExpiredToke
 	token := suite.createTestJWT(claims)
 
 	// VerifyJWT should catch expired tokens
-	suite.mockJWTService.On("VerifyJWT", token, "", "").
+	suite.mockJWTService.On("VerifyJWT", mock.Anything, token, "", "").
 		Return(&serviceerror.ServiceError{
 			Type:             serviceerror.ClientErrorType,
 			Code:             "TOKEN_EXPIRED",
@@ -793,7 +795,7 @@ func (suite *TokenValidatorTestSuite) TestValidateRefreshToken_Error_ExpiredToke
 			ErrorDescription: "The token has expired",
 		})
 
-	result, err := suite.validator.ValidateRefreshToken(token, "test-client")
+	result, err := suite.validator.ValidateRefreshToken(context.TODO(), token, "test-client")
 
 	assert.Error(suite.T(), err)
 	assert.Nil(suite.T(), result)
@@ -818,7 +820,7 @@ func (suite *TokenValidatorTestSuite) TestValidateRefreshToken_Error_NotYetValid
 	token := suite.createTestJWT(claims)
 
 	// VerifyJWT should catch not yet valid tokens
-	suite.mockJWTService.On("VerifyJWT", token, "", "").
+	suite.mockJWTService.On("VerifyJWT", mock.Anything, token, "", "").
 		Return(&serviceerror.ServiceError{
 			Type:             serviceerror.ClientErrorType,
 			Code:             "TOKEN_NOT_VALID_YET",
@@ -826,7 +828,7 @@ func (suite *TokenValidatorTestSuite) TestValidateRefreshToken_Error_NotYetValid
 			ErrorDescription: "Token not valid yet (nbf)",
 		})
 
-	result, err := suite.validator.ValidateRefreshToken(token, "test-client")
+	result, err := suite.validator.ValidateRefreshToken(context.TODO(), token, "test-client")
 
 	assert.Error(suite.T(), err)
 	assert.Nil(suite.T(), result)
@@ -848,9 +850,9 @@ func (suite *TokenValidatorTestSuite) TestValidateRefreshToken_Error_MissingSub(
 	}
 	token := suite.createTestJWT(claims)
 
-	suite.mockJWTService.On("VerifyJWT", token, "", "").Return(nil)
+	suite.mockJWTService.On("VerifyJWT", mock.Anything, token, "", "").Return(nil)
 
-	result, err := suite.validator.ValidateRefreshToken(token, "test-client")
+	result, err := suite.validator.ValidateRefreshToken(context.TODO(), token, "test-client")
 
 	assert.Error(suite.T(), err)
 	assert.Nil(suite.T(), result)
@@ -872,9 +874,9 @@ func (suite *TokenValidatorTestSuite) TestValidateRefreshToken_Error_WrongClient
 	}
 	token := suite.createTestJWT(claims)
 
-	suite.mockJWTService.On("VerifyJWT", token, "", "").Return(nil)
+	suite.mockJWTService.On("VerifyJWT", mock.Anything, token, "", "").Return(nil)
 
-	result, err := suite.validator.ValidateRefreshToken(token, "test-client")
+	result, err := suite.validator.ValidateRefreshToken(context.TODO(), token, "test-client")
 
 	assert.Error(suite.T(), err)
 	assert.Nil(suite.T(), result)
@@ -896,9 +898,9 @@ func (suite *TokenValidatorTestSuite) TestValidateRefreshToken_Error_MissingAcce
 	}
 	token := suite.createTestJWT(claims)
 
-	suite.mockJWTService.On("VerifyJWT", token, "", "").Return(nil)
+	suite.mockJWTService.On("VerifyJWT", mock.Anything, token, "", "").Return(nil)
 
-	result, err := suite.validator.ValidateRefreshToken(token, "test-client")
+	result, err := suite.validator.ValidateRefreshToken(context.TODO(), token, "test-client")
 
 	assert.Error(suite.T(), err)
 	assert.Nil(suite.T(), result)
@@ -920,9 +922,9 @@ func (suite *TokenValidatorTestSuite) TestValidateRefreshToken_Error_MissingAcce
 	}
 	token := suite.createTestJWT(claims)
 
-	suite.mockJWTService.On("VerifyJWT", token, "", "").Return(nil)
+	suite.mockJWTService.On("VerifyJWT", mock.Anything, token, "", "").Return(nil)
 
-	result, err := suite.validator.ValidateRefreshToken(token, "test-client")
+	result, err := suite.validator.ValidateRefreshToken(context.TODO(), token, "test-client")
 
 	assert.Error(suite.T(), err)
 	assert.Nil(suite.T(), result)
@@ -944,9 +946,9 @@ func (suite *TokenValidatorTestSuite) TestValidateRefreshToken_Error_MissingGran
 	}
 	token := suite.createTestJWT(claims)
 
-	suite.mockJWTService.On("VerifyJWT", token, "", "").Return(nil)
+	suite.mockJWTService.On("VerifyJWT", mock.Anything, token, "", "").Return(nil)
 
-	result, err := suite.validator.ValidateRefreshToken(token, "test-client")
+	result, err := suite.validator.ValidateRefreshToken(context.TODO(), token, "test-client")
 
 	assert.Error(suite.T(), err)
 	assert.Nil(suite.T(), result)
@@ -975,9 +977,9 @@ func (suite *TokenValidatorTestSuite) TestValidateAuthAssertion_Success_WithAppI
 	suite.oauthApp.AppID = testAppID
 	suite.oauthApp.ClientID = testClientID
 
-	suite.mockJWTService.On("VerifyJWTSignature", token).Return(nil)
+	suite.mockJWTService.On("VerifyJWTSignature", mock.Anything, token).Return(nil)
 
-	result, err := suite.validator.ValidateSubjectToken(token, suite.oauthApp)
+	result, err := suite.validator.ValidateSubjectToken(context.TODO(), token, suite.oauthApp)
 
 	assert.NoError(suite.T(), err)
 	assert.NotNil(suite.T(), result)
@@ -1005,9 +1007,9 @@ func (suite *TokenValidatorTestSuite) TestValidateAuthAssertion_Success_WithEmpt
 
 	suite.oauthApp.AppID = testAppID
 
-	suite.mockJWTService.On("VerifyJWTSignature", token).Return(nil)
+	suite.mockJWTService.On("VerifyJWTSignature", mock.Anything, token).Return(nil)
 
-	result, err := suite.validator.ValidateSubjectToken(token, suite.oauthApp)
+	result, err := suite.validator.ValidateSubjectToken(context.TODO(), token, suite.oauthApp)
 
 	assert.NoError(suite.T(), err)
 	assert.NotNil(suite.T(), result)
@@ -1033,9 +1035,9 @@ func (suite *TokenValidatorTestSuite) TestValidateAuthAssertion_Success_WithScop
 
 	suite.oauthApp.AppID = testAppID
 
-	suite.mockJWTService.On("VerifyJWTSignature", token).Return(nil)
+	suite.mockJWTService.On("VerifyJWTSignature", mock.Anything, token).Return(nil)
 
-	result, err := suite.validator.ValidateSubjectToken(token, suite.oauthApp)
+	result, err := suite.validator.ValidateSubjectToken(context.TODO(), token, suite.oauthApp)
 
 	assert.NoError(suite.T(), err)
 	assert.NotNil(suite.T(), result)
@@ -1062,9 +1064,9 @@ func (suite *TokenValidatorTestSuite) TestValidateAuthAssertion_Success_WithUser
 
 	suite.oauthApp.AppID = testAppID
 
-	suite.mockJWTService.On("VerifyJWTSignature", token).Return(nil)
+	suite.mockJWTService.On("VerifyJWTSignature", mock.Anything, token).Return(nil)
 
-	result, err := suite.validator.ValidateSubjectToken(token, suite.oauthApp)
+	result, err := suite.validator.ValidateSubjectToken(context.TODO(), token, suite.oauthApp)
 
 	assert.NoError(suite.T(), err)
 	assert.NotNil(suite.T(), result)
@@ -1092,9 +1094,9 @@ func (suite *TokenValidatorTestSuite) TestValidateAuthAssertion_Error_MissingAud
 
 	suite.oauthApp.AppID = testAppID
 
-	suite.mockJWTService.On("VerifyJWTSignature", token).Return(nil)
+	suite.mockJWTService.On("VerifyJWTSignature", mock.Anything, token).Return(nil)
 
-	result, err := suite.validator.ValidateSubjectToken(token, suite.oauthApp)
+	result, err := suite.validator.ValidateSubjectToken(context.TODO(), token, suite.oauthApp)
 
 	assert.Error(suite.T(), err)
 	assert.Nil(suite.T(), result)
@@ -1117,9 +1119,9 @@ func (suite *TokenValidatorTestSuite) TestValidateAuthAssertion_Error_AudienceMi
 	suite.oauthApp.AppID = testAppID
 	suite.oauthApp.ClientID = testClientID
 
-	suite.mockJWTService.On("VerifyJWTSignature", token).Return(nil)
+	suite.mockJWTService.On("VerifyJWTSignature", mock.Anything, token).Return(nil)
 
-	result, err := suite.validator.ValidateSubjectToken(token, suite.oauthApp)
+	result, err := suite.validator.ValidateSubjectToken(context.TODO(), token, suite.oauthApp)
 
 	assert.Error(suite.T(), err)
 	assert.Nil(suite.T(), result)
@@ -1143,9 +1145,9 @@ func (suite *TokenValidatorTestSuite) TestValidateAuthAssertion_Success_WithDefa
 	suite.oauthApp.AppID = testAppID // Different from audience
 	suite.oauthApp.ClientID = testClientID
 
-	suite.mockJWTService.On("VerifyJWTSignature", token).Return(nil)
+	suite.mockJWTService.On("VerifyJWTSignature", mock.Anything, token).Return(nil)
 
-	result, err := suite.validator.ValidateSubjectToken(token, suite.oauthApp)
+	result, err := suite.validator.ValidateSubjectToken(context.TODO(), token, suite.oauthApp)
 
 	assert.NoError(suite.T(), err)
 	assert.NotNil(suite.T(), result)
@@ -1158,7 +1160,7 @@ func (suite *TokenValidatorTestSuite) TestValidateAuthAssertion_Success_WithDefa
 func (suite *TokenValidatorTestSuite) TestValidateAuthAssertion_Error_InvalidJWTFormat() {
 	token := invalidJWTFormat
 
-	result, err := suite.validator.ValidateSubjectToken(token, suite.oauthApp)
+	result, err := suite.validator.ValidateSubjectToken(context.TODO(), token, suite.oauthApp)
 
 	assert.Error(suite.T(), err)
 	assert.Nil(suite.T(), result)
@@ -1175,7 +1177,7 @@ func (suite *TokenValidatorTestSuite) TestValidateAuthAssertion_Error_MissingIss
 	}
 	token := suite.createTestJWT(claims)
 
-	result, err := suite.validator.ValidateSubjectToken(token, suite.oauthApp)
+	result, err := suite.validator.ValidateSubjectToken(context.TODO(), token, suite.oauthApp)
 
 	assert.Error(suite.T(), err)
 	assert.Nil(suite.T(), result)
@@ -1195,9 +1197,9 @@ func (suite *TokenValidatorTestSuite) TestValidateAuthAssertion_Error_ExpiredTok
 
 	suite.oauthApp.AppID = testAppID
 
-	suite.mockJWTService.On("VerifyJWTSignature", token).Return(nil)
+	suite.mockJWTService.On("VerifyJWTSignature", mock.Anything, token).Return(nil)
 
-	result, err := suite.validator.ValidateSubjectToken(token, suite.oauthApp)
+	result, err := suite.validator.ValidateSubjectToken(context.TODO(), token, suite.oauthApp)
 
 	assert.Error(suite.T(), err)
 	assert.Nil(suite.T(), result)
@@ -1218,7 +1220,7 @@ func (suite *TokenValidatorTestSuite) TestValidateAuthAssertion_Error_InvalidIss
 
 	suite.oauthApp.AppID = testAppID
 
-	result, err := suite.validator.ValidateSubjectToken(token, suite.oauthApp)
+	result, err := suite.validator.ValidateSubjectToken(context.TODO(), token, suite.oauthApp)
 
 	assert.Error(suite.T(), err)
 	assert.Nil(suite.T(), result)
@@ -1238,14 +1240,14 @@ func (suite *TokenValidatorTestSuite) TestValidateAuthAssertion_Error_InvalidSig
 
 	suite.oauthApp.AppID = testAppID
 
-	suite.mockJWTService.On("VerifyJWTSignature", token).Return(&serviceerror.ServiceError{
+	suite.mockJWTService.On("VerifyJWTSignature", mock.Anything, token).Return(&serviceerror.ServiceError{
 		Type:             serviceerror.ServerErrorType,
 		Code:             "INVALID_SIGNATURE",
 		Error:            "Invalid signature",
 		ErrorDescription: "The JWT signature is invalid",
 	})
 
-	result, err := suite.validator.ValidateSubjectToken(token, suite.oauthApp)
+	result, err := suite.validator.ValidateSubjectToken(context.TODO(), token, suite.oauthApp)
 
 	assert.Error(suite.T(), err)
 	assert.Nil(suite.T(), result)
@@ -1266,9 +1268,9 @@ func (suite *TokenValidatorTestSuite) TestValidateAuthAssertion_Error_InvalidSub
 
 	suite.oauthApp.AppID = testAppID
 
-	suite.mockJWTService.On("VerifyJWTSignature", token).Return(nil)
+	suite.mockJWTService.On("VerifyJWTSignature", mock.Anything, token).Return(nil)
 
-	result, err := suite.validator.ValidateSubjectToken(token, suite.oauthApp)
+	result, err := suite.validator.ValidateSubjectToken(context.TODO(), token, suite.oauthApp)
 
 	assert.Error(suite.T(), err)
 	assert.Nil(suite.T(), result)
@@ -1289,9 +1291,9 @@ func (suite *TokenValidatorTestSuite) TestValidateAuthAssertion_Error_TokenNotYe
 
 	suite.oauthApp.AppID = testAppID
 
-	suite.mockJWTService.On("VerifyJWTSignature", token).Return(nil)
+	suite.mockJWTService.On("VerifyJWTSignature", mock.Anything, token).Return(nil)
 
-	result, err := suite.validator.ValidateSubjectToken(token, suite.oauthApp)
+	result, err := suite.validator.ValidateSubjectToken(context.TODO(), token, suite.oauthApp)
 
 	assert.Error(suite.T(), err)
 	assert.Nil(suite.T(), result)
@@ -1312,9 +1314,9 @@ func (suite *TokenValidatorTestSuite) TestValidateAuthAssertion_Error_MissingExp
 
 	suite.oauthApp.AppID = testAppID
 
-	suite.mockJWTService.On("VerifyJWTSignature", token).Return(nil)
+	suite.mockJWTService.On("VerifyJWTSignature", mock.Anything, token).Return(nil)
 
-	result, err := suite.validator.ValidateSubjectToken(token, suite.oauthApp)
+	result, err := suite.validator.ValidateSubjectToken(context.TODO(), token, suite.oauthApp)
 
 	assert.Error(suite.T(), err)
 	assert.Nil(suite.T(), result)
@@ -1336,9 +1338,9 @@ func (suite *TokenValidatorTestSuite) TestValidateAuthAssertion_Error_InvalidAud
 
 	suite.oauthApp.AppID = testAppID
 
-	suite.mockJWTService.On("VerifyJWTSignature", token).Return(nil)
+	suite.mockJWTService.On("VerifyJWTSignature", mock.Anything, token).Return(nil)
 
-	result, err := suite.validator.ValidateSubjectToken(token, suite.oauthApp)
+	result, err := suite.validator.ValidateSubjectToken(context.TODO(), token, suite.oauthApp)
 
 	assert.Error(suite.T(), err)
 	assert.Nil(suite.T(), result)
@@ -1362,9 +1364,9 @@ func (suite *TokenValidatorTestSuite) TestValidateAuthAssertion_Success_WithEmpt
 
 	suite.oauthApp.AppID = testAppID
 
-	suite.mockJWTService.On("VerifyJWTSignature", token).Return(nil)
+	suite.mockJWTService.On("VerifyJWTSignature", mock.Anything, token).Return(nil)
 
-	result, err := suite.validator.ValidateSubjectToken(token, suite.oauthApp)
+	result, err := suite.validator.ValidateSubjectToken(context.TODO(), token, suite.oauthApp)
 
 	assert.NoError(suite.T(), err)
 	assert.NotNil(suite.T(), result)

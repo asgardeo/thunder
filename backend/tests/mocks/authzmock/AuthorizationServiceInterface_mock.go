@@ -5,6 +5,8 @@
 package authzmock
 
 import (
+	"context"
+
 	"github.com/asgardeo/thunder/internal/authz"
 	"github.com/asgardeo/thunder/internal/system/error/serviceerror"
 	mock "github.com/stretchr/testify/mock"
@@ -38,8 +40,8 @@ func (_m *AuthorizationServiceInterfaceMock) EXPECT() *AuthorizationServiceInter
 }
 
 // GetAuthorizedPermissions provides a mock function for the type AuthorizationServiceInterfaceMock
-func (_mock *AuthorizationServiceInterfaceMock) GetAuthorizedPermissions(request authz.GetAuthorizedPermissionsRequest) (*authz.GetAuthorizedPermissionsResponse, *serviceerror.ServiceError) {
-	ret := _mock.Called(request)
+func (_mock *AuthorizationServiceInterfaceMock) GetAuthorizedPermissions(ctx context.Context, request authz.GetAuthorizedPermissionsRequest) (*authz.GetAuthorizedPermissionsResponse, *serviceerror.ServiceError) {
+	ret := _mock.Called(ctx, request)
 
 	if len(ret) == 0 {
 		panic("no return value specified for GetAuthorizedPermissions")
@@ -47,18 +49,18 @@ func (_mock *AuthorizationServiceInterfaceMock) GetAuthorizedPermissions(request
 
 	var r0 *authz.GetAuthorizedPermissionsResponse
 	var r1 *serviceerror.ServiceError
-	if returnFunc, ok := ret.Get(0).(func(authz.GetAuthorizedPermissionsRequest) (*authz.GetAuthorizedPermissionsResponse, *serviceerror.ServiceError)); ok {
-		return returnFunc(request)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, authz.GetAuthorizedPermissionsRequest) (*authz.GetAuthorizedPermissionsResponse, *serviceerror.ServiceError)); ok {
+		return returnFunc(ctx, request)
 	}
-	if returnFunc, ok := ret.Get(0).(func(authz.GetAuthorizedPermissionsRequest) *authz.GetAuthorizedPermissionsResponse); ok {
-		r0 = returnFunc(request)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, authz.GetAuthorizedPermissionsRequest) *authz.GetAuthorizedPermissionsResponse); ok {
+		r0 = returnFunc(ctx, request)
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).(*authz.GetAuthorizedPermissionsResponse)
 		}
 	}
-	if returnFunc, ok := ret.Get(1).(func(authz.GetAuthorizedPermissionsRequest) *serviceerror.ServiceError); ok {
-		r1 = returnFunc(request)
+	if returnFunc, ok := ret.Get(1).(func(context.Context, authz.GetAuthorizedPermissionsRequest) *serviceerror.ServiceError); ok {
+		r1 = returnFunc(ctx, request)
 	} else {
 		if ret.Get(1) != nil {
 			r1 = ret.Get(1).(*serviceerror.ServiceError)
@@ -73,19 +75,25 @@ type AuthorizationServiceInterfaceMock_GetAuthorizedPermissions_Call struct {
 }
 
 // GetAuthorizedPermissions is a helper method to define mock.On call
+//   - ctx context.Context
 //   - request authz.GetAuthorizedPermissionsRequest
-func (_e *AuthorizationServiceInterfaceMock_Expecter) GetAuthorizedPermissions(request interface{}) *AuthorizationServiceInterfaceMock_GetAuthorizedPermissions_Call {
-	return &AuthorizationServiceInterfaceMock_GetAuthorizedPermissions_Call{Call: _e.mock.On("GetAuthorizedPermissions", request)}
+func (_e *AuthorizationServiceInterfaceMock_Expecter) GetAuthorizedPermissions(ctx interface{}, request interface{}) *AuthorizationServiceInterfaceMock_GetAuthorizedPermissions_Call {
+	return &AuthorizationServiceInterfaceMock_GetAuthorizedPermissions_Call{Call: _e.mock.On("GetAuthorizedPermissions", ctx, request)}
 }
 
-func (_c *AuthorizationServiceInterfaceMock_GetAuthorizedPermissions_Call) Run(run func(request authz.GetAuthorizedPermissionsRequest)) *AuthorizationServiceInterfaceMock_GetAuthorizedPermissions_Call {
+func (_c *AuthorizationServiceInterfaceMock_GetAuthorizedPermissions_Call) Run(run func(ctx context.Context, request authz.GetAuthorizedPermissionsRequest)) *AuthorizationServiceInterfaceMock_GetAuthorizedPermissions_Call {
 	_c.Call.Run(func(args mock.Arguments) {
-		var arg0 authz.GetAuthorizedPermissionsRequest
+		var arg0 context.Context
 		if args[0] != nil {
-			arg0 = args[0].(authz.GetAuthorizedPermissionsRequest)
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 authz.GetAuthorizedPermissionsRequest
+		if args[1] != nil {
+			arg1 = args[1].(authz.GetAuthorizedPermissionsRequest)
 		}
 		run(
 			arg0,
+			arg1,
 		)
 	})
 	return _c
@@ -96,7 +104,7 @@ func (_c *AuthorizationServiceInterfaceMock_GetAuthorizedPermissions_Call) Retur
 	return _c
 }
 
-func (_c *AuthorizationServiceInterfaceMock_GetAuthorizedPermissions_Call) RunAndReturn(run func(request authz.GetAuthorizedPermissionsRequest) (*authz.GetAuthorizedPermissionsResponse, *serviceerror.ServiceError)) *AuthorizationServiceInterfaceMock_GetAuthorizedPermissions_Call {
+func (_c *AuthorizationServiceInterfaceMock_GetAuthorizedPermissions_Call) RunAndReturn(run func(ctx context.Context, request authz.GetAuthorizedPermissionsRequest) (*authz.GetAuthorizedPermissionsResponse, *serviceerror.ServiceError)) *AuthorizationServiceInterfaceMock_GetAuthorizedPermissions_Call {
 	_c.Call.Return(run)
 	return _c
 }

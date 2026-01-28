@@ -22,6 +22,7 @@ package transaction
 import (
 	"context"
 	"database/sql"
+	"errors"
 )
 
 type contextKey struct{}
@@ -34,15 +35,19 @@ func WithTx(ctx context.Context, tx *sql.Tx) context.Context {
 }
 
 // TxFromContext retrieves a transaction from the context.
-// Returns nil if no transaction is present.
-func TxFromContext(ctx context.Context) *sql.Tx {
-	if tx, ok := ctx.Value(txContextKey).(*sql.Tx); ok {
-		return tx
+// Returns nil and an error if no transaction is present or context is nil.
+func TxFromContext(ctx context.Context) (*sql.Tx, error) {
+	if ctx == nil {
+		return nil, errors.New("nil context")
 	}
-	return nil
+	if tx, ok := ctx.Value(txContextKey).(*sql.Tx); ok {
+		return tx, nil
+	}
+	return nil, errors.New("no transaction in context")
 }
 
 // HasTx checks if the context contains a transaction.
 func HasTx(ctx context.Context) bool {
-	return TxFromContext(ctx) != nil
+	tx, _ := TxFromContext(ctx)
+	return tx != nil
 }
