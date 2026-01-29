@@ -1,0 +1,85 @@
+---
+title: <Loading />
+description: Display loading state during authentication
+---
+
+# `<Loading />`
+
+The `<Loading />` component renders a loading indicator while the authentication state is being determined. It's useful for providing feedback during the initial authentication check.
+
+## Usage
+
+### Basic Usage
+
+```jsx
+import { Loading, SignedIn, SignedOut } from '@thunder/react';
+
+function App() {
+  return (
+    <div>
+      <Loading>
+        <div>Checking authentication...</div>
+      </Loading>
+      <SignedIn>
+        <Dashboard />
+      </SignedIn>
+      <SignedOut>
+        <LandingPage />
+      </SignedOut>
+    </div>
+  );
+}
+```
+
+### Custom Loading Component
+
+```jsx
+import { Loading } from '@thunder/react';
+import { Spinner } from './components/Spinner';
+
+function App() {
+  return (
+    <Loading>
+      <Spinner size="large" />
+    </Loading>
+  );
+}
+```
+
+### Full Page Loading
+
+```jsx
+import { Loading } from '@thunder/react';
+
+function App() {
+  return (
+    <>
+      <Loading>
+        <div className="loading-screen">
+          <div className="spinner" />
+          <p>Loading...</p>
+        </div>
+      </Loading>
+      {/* Rest of your app */}
+    </>
+  );
+}
+```
+
+## Props
+
+| Prop | Type | Default | Description |
+|------|------|---------|-------------|
+| `children` | `ReactNode` | Default spinner | Content to render during loading |
+
+## Notes
+
+- Only renders during the initial authentication state check
+- Automatically hides once authentication state is determined
+- Can be customized with any React component
+
+## Related
+
+- [`<SignedIn />`](/sdks/react/components/signed-in)
+- [`<SignedOut />`](/sdks/react/components/signed-out)
+- [`useAuth()`](/sdks/react/hooks/use-auth)

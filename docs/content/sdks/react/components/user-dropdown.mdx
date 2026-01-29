@@ -1,0 +1,56 @@
+---
+title: <UserDropdown />
+description: User menu with profile and settings
+---
+
+# `<UserDropdown />`
+
+The `<UserDropdown />` component renders a dropdown menu with user information and common actions like viewing profile, settings, and signing out.
+
+## Usage
+
+### Basic Usage
+
+```jsx
+import { UserDropdown } from '@thunder/react';
+
+function Header() {
+  return (
+    <header>
+      <UserDropdown />
+    </header>
+  );
+}
+```
+
+### Custom Menu Items
+
+```jsx
+import { UserDropdown } from '@thunder/react';
+
+function Header() {
+  return (
+    <UserDropdown>
+      <UserDropdown.Item href="/profile">Profile</UserDropdown.Item>
+      <UserDropdown.Item href="/settings">Settings</UserDropdown.Item>
+      <UserDropdown.Item href="/billing">Billing</UserDropdown.Item>
+      <UserDropdown.Divider />
+      <UserDropdown.SignOut />
+    </UserDropdown>
+  );
+}
+```
+
+## Props
+
+| Prop | Type | Default | Description |
+|------|------|---------|-------------|
+| `children` | `ReactNode` | Default items | Custom menu items |
+| `showAvatar` | `boolean` | `true` | Show user avatar |
+| `showName` | `boolean` | `true` | Show user name |
+| `showEmail` | `boolean` | `true` | Show user email |
+
+## Related
+
+- [`<UserProfile />`](/sdks/react/components/user-profile)
+- [`<User />`](/sdks/react/components/user)

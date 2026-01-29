@@ -1,0 +1,49 @@
+---
+title: <OrganizationProfile />
+description: Manage organization settings
+---
+
+# `<OrganizationProfile />`
+
+The `<OrganizationProfile />` component renders a complete organization management interface where admins can manage organization settings, members, billing, and more.
+
+## Usage
+
+### Basic Usage
+
+```jsx
+import { OrganizationProfile } from '@thunder/react';
+
+function OrgSettingsPage() {
+  return (
+    <div>
+      <h1>Organization Settings</h1>
+      <OrganizationProfile />
+    </div>
+  );
+}
+```
+
+### Specific Organization
+
+```jsx
+import { OrganizationProfile } from '@thunder/react';
+
+function OrgSettingsPage({ orgId }) {
+  return (
+    <OrganizationProfile organizationId={orgId} />
+  );
+}
+```
+
+## Props
+
+| Prop | Type | Default | Description |
+|------|------|---------|-------------|
+| `organizationId` | `string` | Current org | Organization ID to manage |
+| `appearance` | `Appearance` | `{}` | Customize appearance |
+
+## Related
+
+- [`<Organization />`](/sdks/react/components/organization)
+- [`useOrganization()`](/sdks/react/hooks/use-organization)

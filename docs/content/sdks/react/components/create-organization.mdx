@@ -1,0 +1,56 @@
+---
+title: <CreateOrganization />
+description: Create new organizations
+---
+
+# `<CreateOrganization />`
+
+The `<CreateOrganization />` component renders a form that allows users to create new organizations in B2B applications.
+
+## Usage
+
+### Basic Usage
+
+```jsx
+import { CreateOrganization } from '@thunder/react';
+
+function CreateOrgPage() {
+  return (
+    <div>
+      <h1>Create Organization</h1>
+      <CreateOrganization />
+    </div>
+  );
+}
+```
+
+### With Callback
+
+```jsx
+import { CreateOrganization } from '@thunder/react';
+import { useNavigate } from 'react-router-dom';
+
+function CreateOrgPage() {
+  const navigate = useNavigate();
+
+  return (
+    <CreateOrganization 
+      onSuccess={(org) => {
+        navigate(`/organizations/${org.id}`);
+      }}
+    />
+  );
+}
+```
+
+## Props
+
+| Prop | Type | Default | Description |
+|------|------|---------|-------------|
+| `onSuccess` | `(org) => void` | `undefined` | Callback after organization creation |
+| `appearance` | `Appearance` | `{}` | Customize appearance |
+
+## Related
+
+- [`<OrganizationProfile />`](/sdks/react/components/organization-profile)
+- [`useOrganization()`](/sdks/react/hooks/use-organization)

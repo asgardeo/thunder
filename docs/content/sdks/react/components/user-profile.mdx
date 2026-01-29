@@ -1,0 +1,55 @@
+---
+title: <UserProfile />
+description: Complete user profile management interface
+---
+
+# `<UserProfile />`
+
+The `<UserProfile />` component renders a complete user profile management interface where users can view and edit their personal information, change passwords, manage sessions, and more.
+
+## Usage
+
+### Basic Usage
+
+```jsx
+import { UserProfile } from '@thunder/react';
+
+function ProfilePage() {
+  return (
+    <div>
+      <h1>My Profile</h1>
+      <UserProfile />
+    </div>
+  );
+}
+```
+
+### Custom Appearance
+
+```jsx
+import { UserProfile } from '@thunder/react';
+
+function ProfilePage() {
+  return (
+    <UserProfile 
+      appearance={{
+        elements: {
+          card: { boxShadow: 'none' },
+        },
+      }}
+    />
+  );
+}
+```
+
+## Props
+
+| Prop | Type | Default | Description |
+|------|------|---------|-------------|
+| `appearance` | `Appearance` | `{}` | Customize component appearance |
+| `sections` | `string[]` | All sections | Which sections to show |
+
+## Related
+
+- [`<User />`](/sdks/react/components/user)
+- [`useUser()`](/sdks/react/hooks/use-user)

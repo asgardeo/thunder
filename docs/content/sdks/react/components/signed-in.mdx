@@ -1,0 +1,85 @@
+---
+title: <SignedIn />
+description: Conditionally render content for authenticated users
+---
+
+# `<SignedIn />`
+
+The `<SignedIn />` component conditionally renders its children only when a user is authenticated. It's useful for showing content that should only be visible to signed-in users.
+
+## Usage
+
+### Basic Usage
+
+```jsx
+import { SignedIn } from '@thunder/react';
+
+function App() {
+  return (
+    <div>
+      <SignedIn>
+        <Dashboard />
+      </SignedIn>
+    </div>
+  );
+}
+```
+
+### With SignedOut
+
+Combine with `<SignedOut />` for complete conditional rendering:
+
+```jsx
+import { SignedIn, SignedOut, SignInButton } from '@thunder/react';
+
+function App() {
+  return (
+    <div>
+      <SignedIn>
+        <Dashboard />
+      </SignedIn>
+      <SignedOut>
+        <SignInButton />
+      </SignedOut>
+    </div>
+  );
+}
+```
+
+### Protecting Routes
+
+```jsx
+import { SignedIn, SignedOut } from '@thunder/react';
+import { Navigate } from 'react-router-dom';
+
+function ProtectedPage() {
+  return (
+    <>
+      <SignedIn>
+        <div>Protected Content</div>
+      </SignedIn>
+      <SignedOut>
+        <Navigate to="/sign-in" replace />
+      </SignedOut>
+    </>
+  );
+}
+```
+
+## Props
+
+| Prop | Type | Description |
+|------|------|-------------|
+| `children` | `ReactNode` | Content to render when user is signed in |
+
+## Notes
+
+- Children are only rendered when authentication state is confirmed
+- Use with `<Loading />` to handle the initial authentication check
+- No props are passed to children components
+
+## Related
+
+- [`<SignedOut />`](/sdks/react/components/signed-out)
+- [`<Loading />`](/sdks/react/components/loading)
+- [`useAuth()`](/sdks/react/hooks/use-auth)

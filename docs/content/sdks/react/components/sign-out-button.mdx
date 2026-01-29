@@ -1,0 +1,138 @@
+---
+title: <SignOutButton />
+description: Sign out the current user
+---
+
+# `<SignOutButton />`
+
+The `<SignOutButton />` component renders a button that signs out the current user and clears their session when clicked.
+
+## Overview
+
+This component provides a simple way to add sign-out functionality to your application. When clicked, it clears the user's session, revokes tokens, and optionally redirects to a specified URL.
+
+## Usage
+
+### Basic Usage
+
+```jsx
+import { SignOutButton } from '@thunder/react';
+
+function UserMenu() {
+  return (
+    <div>
+      <SignOutButton />
+    </div>
+  );
+}
+```
+
+### Custom Children
+
+```jsx
+import { SignOutButton } from '@thunder/react';
+
+function UserMenu() {
+  return (
+    <SignOutButton>
+      <span>Logout</span>
+    </SignOutButton>
+  );
+}
+```
+
+### With Redirect URL
+
+```jsx
+import { SignOutButton } from '@thunder/react';
+
+function UserMenu() {
+  return (
+    <SignOutButton redirectUrl="/">
+      Sign Out
+    </SignOutButton>
+  );
+}
+```
+
+### With Callback
+
+Execute custom logic after sign-out:
+
+```jsx
+import { SignOutButton } from '@thunder/react';
+
+function UserMenu() {
+  const handleSignOut = () => {
+    // Clear local storage, analytics, etc.
+    localStorage.clear();
+    console.log('User signed out');
+  };
+
+  return (
+    <SignOutButton onSignOut={handleSignOut}>
+      Sign Out
+    </SignOutButton>
+  );
+}
+```
+
+## Props
+
+| Prop | Type | Default | Description |
+|------|------|---------|-------------|
+| `children` | `ReactNode` | `'Sign Out'` | Button content |
+| `redirectUrl` | `string` | `'/'` | URL to redirect to after sign-out |
+| `onSignOut` | `() => void` | `undefined` | Callback function called after sign-out |
+| `className` | `string` | `undefined` | CSS class name |
+| `style` | `CSSProperties` | `undefined` | Inline styles |
+| `disabled` | `boolean` | `false` | Disable the button |
+
+## Examples
+
+### In User Dropdown
+
+```jsx
+import { SignOutButton, UserDropdown } from '@thunder/react';
+
+function Header() {
+  return (
+    <UserDropdown>
+      <UserDropdown.Item>Profile</UserDropdown.Item>
+      <UserDropdown.Item>Settings</UserDropdown.Item>
+      <UserDropdown.Divider />
+      <SignOutButton>Sign Out</SignOutButton>
+    </UserDropdown>
+  );
+}
+```
+
+### Custom Styled Button
+
+```jsx
+import { SignOutButton } from '@thunder/react';
+import { LogOut } from 'lucide-react';
+
+function UserMenu() {
+  return (
+    <SignOutButton 
+      className="danger-button"
+      style={{ color: '#ef4444' }}
+    >
+      <LogOut size={16} />
+      <span>Sign Out</span>
+    </SignOutButton>
+  );
+}
+```
+
+## Notes
+
+- The component automatically clears the user's session and tokens
+- Use the `onSignOut` callback for cleanup operations
+- The button is only visible when a user is signed in
+
+## Related
+
+- [`<SignInButton />`](/sdks/react/components/sign-in-button) - Sign in component
+- [`useAuth()`](/sdks/react/hooks/use-auth) - Programmatic sign-out

@@ -1,0 +1,52 @@
+---
+title: <OrganizationSwitcher />
+description: Switch between organizations
+---
+
+# `<OrganizationSwitcher />`
+
+The `<OrganizationSwitcher />` component renders a dropdown that allows users to switch between their organizations in multi-tenant B2B applications.
+
+## Usage
+
+### Basic Usage
+
+```jsx
+import { OrganizationSwitcher } from '@thunder/react';
+
+function Header() {
+  return (
+    <header>
+      <OrganizationSwitcher />
+    </header>
+  );
+}
+```
+
+### With Create Option
+
+```jsx
+import { OrganizationSwitcher } from '@thunder/react';
+
+function Header() {
+  return (
+    <OrganizationSwitcher 
+      showCreateOrganization={true}
+      createOrganizationUrl="/create-org"
+    />
+  );
+}
+```
+
+## Props
+
+| Prop | Type | Default | Description |
+|------|------|---------|-------------|
+| `showCreateOrganization` | `boolean` | `false` | Show create organization option |
+| `createOrganizationUrl` | `string` | `undefined` | URL for creating organizations |
+| `appearance` | `Appearance` | `{}` | Customize appearance |
+
+## Related
+
+- [`<OrganizationList />`](/sdks/react/components/organization-list)
+- [`useOrganization()`](/sdks/react/hooks/use-organization)
