@@ -161,11 +161,6 @@ func (suite *BasicAuthExecutorTestSuite) TestExecute_Success_AuthenticationFlow(
 		RuntimeData: make(map[string]string),
 	}
 
-	userID := testUserID
-	suite.mockUserService.On("IdentifyUser", map[string]interface{}{
-		userAttributeUsername: "testuser",
-	}).Return(&userID, nil)
-
 	authenticatedUser := &user.User{
 		ID:               testUserID,
 		OrganizationUnit: "ou-123",
@@ -185,7 +180,6 @@ func (suite *BasicAuthExecutorTestSuite) TestExecute_Success_AuthenticationFlow(
 	assert.Equal(suite.T(), common.ExecComplete, resp.Status)
 	assert.True(suite.T(), resp.AuthenticatedUser.IsAuthenticated)
 	assert.Equal(suite.T(), testUserID, resp.AuthenticatedUser.UserID)
-	suite.mockUserService.AssertExpectations(suite.T())
 	suite.mockCredsService.AssertExpectations(suite.T())
 }
 
@@ -211,11 +205,6 @@ func (suite *BasicAuthExecutorTestSuite) TestExecute_Success_WithEmailAttribute(
 	suite.executor.ExecutorInterface = createMockExecutorWithCustomInputs(
 		suite.T(), ExecutorNameBasicAuth, originalInputs)
 
-	userID := testUserID
-	suite.mockUserService.On("IdentifyUser", map[string]interface{}{
-		"email": "test@example.com",
-	}).Return(&userID, nil)
-
 	authenticatedUser := &user.User{
 		ID:               testUserID,
 		OrganizationUnit: "ou-123",
@@ -235,7 +224,6 @@ func (suite *BasicAuthExecutorTestSuite) TestExecute_Success_WithEmailAttribute(
 	assert.Equal(suite.T(), common.ExecComplete, resp.Status)
 	assert.True(suite.T(), resp.AuthenticatedUser.IsAuthenticated)
 	assert.Equal(suite.T(), testUserID, resp.AuthenticatedUser.UserID)
-	suite.mockUserService.AssertExpectations(suite.T())
 	suite.mockCredsService.AssertExpectations(suite.T())
 }
 
@@ -288,12 +276,6 @@ func (suite *BasicAuthExecutorTestSuite) TestExecute_Success_WithMultipleAttribu
 	suite.executor.ExecutorInterface = createMockExecutorWithCustomInputs(
 		suite.T(), ExecutorNameBasicAuth, customInputs)
 
-	userID := testUserID
-	suite.mockUserService.On("IdentifyUser", map[string]interface{}{
-		"email": "test@example.com",
-		"phone": "+1234567890",
-	}).Return(&userID, nil)
-
 	authenticatedUser := &user.User{
 		ID:               testUserID,
 		OrganizationUnit: "ou-123",
@@ -314,7 +296,6 @@ func (suite *BasicAuthExecutorTestSuite) TestExecute_Success_WithMultipleAttribu
 	assert.Equal(suite.T(), common.ExecComplete, resp.Status)
 	assert.True(suite.T(), resp.AuthenticatedUser.IsAuthenticated)
 	assert.Equal(suite.T(), testUserID, resp.AuthenticatedUser.UserID)
-	suite.mockUserService.AssertExpectations(suite.T())
 	suite.mockCredsService.AssertExpectations(suite.T())
 }
 
@@ -345,11 +326,6 @@ func (suite *BasicAuthExecutorTestSuite) TestExecute_AuthenticationFailed() {
 		RuntimeData: make(map[string]string),
 	}
 
-	userID := testUserID
-	suite.mockUserService.On("IdentifyUser", map[string]interface{}{
-		userAttributeUsername: "testuser",
-	}).Return(&userID, nil)
-
 	suite.mockCredsService.On("Authenticate", map[string]interface{}{
 		userAttributeUsername: "testuser",
 		userAttributePassword: "wrongpassword",
@@ -364,7 +340,6 @@ func (suite *BasicAuthExecutorTestSuite) TestExecute_AuthenticationFailed() {
 	assert.NotNil(suite.T(), resp)
 	assert.Equal(suite.T(), common.ExecFailure, resp.Status)
 	assert.Contains(suite.T(), resp.FailureReason, "Failed to authenticate user")
-	suite.mockUserService.AssertExpectations(suite.T())
 	suite.mockCredsService.AssertExpectations(suite.T())
 }
 
@@ -379,16 +354,21 @@ func (suite *BasicAuthExecutorTestSuite) TestExecute_UserNotFound_Authentication
 		RuntimeData: make(map[string]string),
 	}
 
-	suite.mockUserService.On("IdentifyUser", map[string]interface{}{
+	// Authenticate internally calls IdentifyUser and returns user not found error
+	suite.mockCredsService.On("Authenticate", map[string]interface{}{
 		userAttributeUsername: "nonexistent",
-	}).Return(nil, &user.ErrorUserNotFound)
+		userAttributePassword: "password123",
+	}).Return(nil, &serviceerror.ServiceError{
+		Type:             serviceerror.ClientErrorType,
+		ErrorDescription: "User not found",
+	})
 
 	resp, err := suite.executor.Execute(ctx)
 
 	assert.NoError(suite.T(), err)
 	assert.NotNil(suite.T(), resp)
 	assert.Equal(suite.T(), common.ExecFailure, resp.Status)
-	suite.mockUserService.AssertExpectations(suite.T())
+	suite.mockCredsService.AssertExpectations(suite.T())
 }
 
 func (suite *BasicAuthExecutorTestSuite) TestExecute_UserAlreadyExists_RegistrationFlow() {
@@ -427,16 +407,21 @@ func (suite *BasicAuthExecutorTestSuite) TestExecute_ServiceError() {
 		RuntimeData: make(map[string]string),
 	}
 
-	suite.mockUserService.On("IdentifyUser", map[string]interface{}{
+	// Authenticate returns a server error (e.g., database error)
+	suite.mockCredsService.On("Authenticate", map[string]interface{}{
 		userAttributeUsername: "testuser",
-	}).Return(nil, &serviceerror.ServiceError{Error: "database error"})
+		userAttributePassword: "password123",
+	}).Return(nil, &serviceerror.ServiceError{
+		Type:  serviceerror.ServerErrorType,
+		Error: "database error",
+	})
 
 	resp, err := suite.executor.Execute(ctx)
 
 	assert.NoError(suite.T(), err)
 	assert.NotNil(suite.T(), resp)
 	assert.Equal(suite.T(), common.ExecFailure, resp.Status)
-	suite.mockUserService.AssertExpectations(suite.T())
+	suite.mockCredsService.AssertExpectations(suite.T())
 }
 
 func (suite *BasicAuthExecutorTestSuite) TestExecute_AuthenticationServiceError() {
@@ -450,11 +435,6 @@ func (suite *BasicAuthExecutorTestSuite) TestExecute_AuthenticationServiceError(
 		RuntimeData: make(map[string]string),
 	}
 
-	userID := testUserID
-	suite.mockUserService.On("IdentifyUser", map[string]interface{}{
-		userAttributeUsername: "testuser",
-	}).Return(&userID, nil)
-
 	suite.mockCredsService.On("Authenticate", mock.Anything).
 		Return(nil, &serviceerror.ServiceError{
 			Type:  serviceerror.ServerErrorType,
@@ -467,7 +447,6 @@ func (suite *BasicAuthExecutorTestSuite) TestExecute_AuthenticationServiceError(
 	assert.NotNil(suite.T(), resp)
 	assert.Equal(suite.T(), common.ExecFailure, resp.Status)
 	assert.Contains(suite.T(), resp.FailureReason, "Failed to authenticate user")
-	suite.mockUserService.AssertExpectations(suite.T())
 	suite.mockCredsService.AssertExpectations(suite.T())
 }
 
@@ -487,11 +466,6 @@ func (suite *BasicAuthExecutorTestSuite) TestGetAuthenticatedUser_SuccessfulAuth
 	execResp := &common.ExecutorResponse{
 		RuntimeData: make(map[string]string),
 	}
-
-	userID := testUserID
-	suite.mockUserService.On("IdentifyUser", map[string]interface{}{
-		userAttributeUsername: "testuser",
-	}).Return(&userID, nil)
 
 	authenticatedUser := &user.User{
 		ID:               testUserID,
@@ -514,7 +488,6 @@ func (suite *BasicAuthExecutorTestSuite) TestGetAuthenticatedUser_SuccessfulAuth
 	assert.Equal(suite.T(), "ou-123", result.OrganizationUnitID)
 	assert.Equal(suite.T(), "INTERNAL", result.UserType)
 	assert.Equal(suite.T(), "test@example.com", result.Attributes["email"])
-	suite.mockUserService.AssertExpectations(suite.T())
 	suite.mockCredsService.AssertExpectations(suite.T())
 }
 
@@ -532,11 +505,6 @@ func (suite *BasicAuthExecutorTestSuite) TestGetAuthenticatedUser_InvalidJSONAtt
 		RuntimeData: make(map[string]string),
 	}
 
-	userID := testUserID
-	suite.mockUserService.On("IdentifyUser", map[string]interface{}{
-		userAttributeUsername: "testuser",
-	}).Return(&userID, nil)
-
 	authenticatedUser := &user.User{
 		ID:               testUserID,
 		OrganizationUnit: "ou-123",
@@ -550,6 +518,76 @@ func (suite *BasicAuthExecutorTestSuite) TestGetAuthenticatedUser_InvalidJSONAtt
 
 	assert.Error(suite.T(), err)
 	assert.Nil(suite.T(), resp)
-	suite.mockUserService.AssertExpectations(suite.T())
 	suite.mockCredsService.AssertExpectations(suite.T())
+}
+
+func (suite *BasicAuthExecutorTestSuite) TestGetAuthenticatedUser_AuthenticationFlow_NoRedundantIdentifyUser() {
+	attrs := map[string]interface{}{"email": "test@example.com"}
+	attrsJSON, _ := json.Marshal(attrs)
+
+	ctx := &core.NodeContext{
+		FlowID:   "flow-123",
+		FlowType: common.FlowTypeAuthentication,
+		UserInputs: map[string]string{
+			userAttributeUsername: "testuser",
+			userAttributePassword: "password123",
+		},
+	}
+
+	execResp := &common.ExecutorResponse{
+		RuntimeData: make(map[string]string),
+	}
+
+	authenticatedUser := &user.User{
+		ID:               testUserID,
+		OrganizationUnit: "ou-123",
+		Type:             "INTERNAL",
+		Attributes:       attrsJSON,
+	}
+
+	suite.mockCredsService.On("Authenticate", map[string]interface{}{
+		userAttributeUsername: "testuser",
+		userAttributePassword: "password123",
+	}).Return(authenticatedUser, nil)
+
+	result, err := suite.executor.getAuthenticatedUser(ctx, execResp)
+
+	assert.NoError(suite.T(), err)
+	assert.NotNil(suite.T(), result)
+	assert.True(suite.T(), result.IsAuthenticated)
+	assert.Equal(suite.T(), testUserID, result.UserID)
+	// Verify Authenticate was called (which handles IdentifyUser + VerifyUser internally)
+	// This test verifies the optimization: no explicit IdentifyUser call for auth flows
+	suite.mockCredsService.AssertExpectations(suite.T())
+}
+
+func (suite *BasicAuthExecutorTestSuite) TestGetAuthenticatedUser_RegistrationFlow_CallsIdentifyUser() {
+	ctx := &core.NodeContext{
+		FlowID:   "flow-123",
+		FlowType: common.FlowTypeRegistration,
+		UserInputs: map[string]string{
+			userAttributeUsername: "newuser",
+			userAttributePassword: "password123",
+		},
+	}
+
+	execResp := &common.ExecutorResponse{
+		RuntimeData: make(map[string]string),
+	}
+
+	// For registration flows, IdentifyUser should be called to check if user exists
+	suite.mockUserService.On("IdentifyUser", map[string]interface{}{
+		userAttributeUsername: "newuser",
+	}).Return(nil, &user.ErrorUserNotFound)
+
+	result, err := suite.executor.getAuthenticatedUser(ctx, execResp)
+
+	assert.NoError(suite.T(), err)
+	assert.NotNil(suite.T(), result)
+	assert.False(suite.T(), result.IsAuthenticated)
+	assert.Equal(suite.T(), "newuser", result.Attributes[userAttributeUsername])
+	// Verify IdentifyUser was called for registration flow
+	suite.mockUserService.AssertExpectations(suite.T())
+	// Verify Authenticate was NOT called for registration flow
+	suite.mockCredsService.AssertNotCalled(suite.T(), "Authenticate")
 }
