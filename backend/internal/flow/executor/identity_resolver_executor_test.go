@@ -75,10 +75,10 @@ func (suite *IdentityResolverExecutorTestSuite) SetupTest() {
 	}).Maybe()
 	mockExec.On("HasRequiredInputs", mock.Anything, mock.Anything).Return(
 		func(ctx *core.NodeContext, execResp *common.ExecutorResponse) bool {
-			if _, exists := ctx.UserInputs[userAttributeUsername]; exists {
+			if val, exists := ctx.UserInputs[userAttributeUsername]; exists && val != "" {
 				return true
 			}
-			if _, exists := ctx.RuntimeData[userAttributeUsername]; exists {
+			if val, exists := ctx.RuntimeData[userAttributeUsername]; exists && val != "" {
 				return true
 			}
 			execResp.Status = common.ExecUserInputRequired

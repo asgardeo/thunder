@@ -83,20 +83,23 @@ func (i *identityResolverExecutor) Execute(ctx *core.NodeContext) (*common.Execu
 		return execResp, nil
 	}
 
-	// Get username from inputs
-	username := ctx.UserInputs[userAttributeUsername]
-	if username == "" {
-		username = ctx.RuntimeData[userAttributeUsername]
-	}
-	if username == "" {
-		logger.Debug("Username not provided")
-		execResp.Status = common.ExecUserInputRequired
-		return execResp, nil
+	userSearchAttributes := map[string]interface{}{}
+
+	for _, inputData := range i.GetRequiredInputs(ctx) {
+		if value, ok := ctx.UserInputs[inputData.Identifier]; ok {
+			if inputData.Type != inputDataTypePassword {
+				userSearchAttributes[inputData.Identifier] = value
+			}
+		} else if value, ok := ctx.RuntimeData[inputData.Identifier]; ok {
+			// Fallback to RuntimeData if not in UserInputs
+			if inputData.Type != inputDataTypePassword {
+				userSearchAttributes[inputData.Identifier] = value
+			}
+		}
 	}
 
 	// Try to identify the user
-	filters := map[string]interface{}{userAttributeUsername: username}
-	userID, err := i.IdentifyUser(filters, execResp)
+	userID, err := i.IdentifyUser(userSearchAttributes, execResp)
 	if err != nil {
 		logger.Error("Failed to identify user", log.Error(err))
 		execResp.Status = common.ExecFailure
@@ -105,7 +108,7 @@ func (i *identityResolverExecutor) Execute(ctx *core.NodeContext) (*common.Execu
 	}
 
 	if userID == nil || *userID == "" {
-		logger.Debug("User not found for the provided username")
+		logger.Debug("User not found for the provided attributes")
 		execResp.Status = common.ExecFailure
 		execResp.FailureReason = failureReasonUserNotFound
 		return execResp, nil
@@ -116,7 +119,6 @@ func (i *identityResolverExecutor) Execute(ctx *core.NodeContext) (*common.Execu
 	execResp.Status = common.ExecComplete
 
 	logger.Debug("Identity resolver executor completed successfully",
-		log.String("username", username),
 		log.String("userID", *userID))
 
 	return execResp, nil
