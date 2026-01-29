@@ -219,7 +219,7 @@ func (suite *AuthAssertExecutorTestSuite) TestExecute_WithUserAttributes() {
 		Attributes: attrsJSON,
 	}
 
-	suite.mockUserService.On("GetUser", "user-123").Return(existingUser, nil)
+	suite.mockUserService.On("GetUser", mock.Anything, "user-123").Return(existingUser, nil)
 	suite.mockJWTService.On("GenerateJWT", "user-123", "app-123", mock.Anything, mock.Anything,
 		mock.MatchedBy(func(claims map[string]interface{}) bool {
 			return claims["email"] == "test@example.com" && claims["phone"] == "1234567890"
@@ -393,7 +393,7 @@ func (suite *AuthAssertExecutorTestSuite) TestGetUserAttributes_Success() {
 		Attributes: attrsJSON,
 	}
 
-	suite.mockUserService.On("GetUser", "user-123").Return(existingUser, nil)
+	suite.mockUserService.On("GetUser", mock.Anything, "user-123").Return(existingUser, nil)
 
 	resultUser, resultAttrs, err := suite.executor.getUserAttributes("user-123")
 
@@ -406,7 +406,7 @@ func (suite *AuthAssertExecutorTestSuite) TestGetUserAttributes_Success() {
 }
 
 func (suite *AuthAssertExecutorTestSuite) TestGetUserAttributes_ServiceError() {
-	suite.mockUserService.On("GetUser", "user-123").
+	suite.mockUserService.On("GetUser", mock.Anything, "user-123").
 		Return(nil, &serviceerror.ServiceError{Error: "user not found"})
 
 	resultUser, resultAttrs, err := suite.executor.getUserAttributes("user-123")
@@ -423,7 +423,7 @@ func (suite *AuthAssertExecutorTestSuite) TestGetUserAttributes_InvalidJSON() {
 		Attributes: json.RawMessage(`invalid json`),
 	}
 
-	suite.mockUserService.On("GetUser", "user-123").Return(existingUser, nil)
+	suite.mockUserService.On("GetUser", mock.Anything, "user-123").Return(existingUser, nil)
 
 	resultUser, resultAttrs, err := suite.executor.getUserAttributes("user-123")
 
@@ -550,7 +550,7 @@ func (suite *AuthAssertExecutorTestSuite) TestExecute_AppendUserDetailsToClaimsF
 	}
 
 	// Test case 1: GetUser returns service error
-	suite.mockUserService.On("GetUser", "user-123").
+	suite.mockUserService.On("GetUser", mock.Anything, "user-123").
 		Return(nil, &serviceerror.ServiceError{
 			Error:            "user_not_found",
 			ErrorDescription: "user not found",
@@ -572,7 +572,7 @@ func (suite *AuthAssertExecutorTestSuite) TestExecute_AppendUserDetailsToClaimsF
 		Attributes: json.RawMessage(`{invalid json}`),
 	}
 
-	suite.mockUserService.On("GetUser", "user-123").Return(existingUser, nil)
+	suite.mockUserService.On("GetUser", mock.Anything, "user-123").Return(existingUser, nil)
 
 	_, err = suite.executor.Execute(ctx)
 
@@ -585,7 +585,7 @@ func (suite *AuthAssertExecutorTestSuite) TestExecute_AppendUserDetailsToClaimsF
 	suite.executor.userService = suite.mockUserService
 
 	existingUser.Attributes = attrsJSON
-	suite.mockUserService.On("GetUser", "user-123").Return(existingUser, nil)
+	suite.mockUserService.On("GetUser", mock.Anything, "user-123").Return(existingUser, nil)
 	suite.mockJWTService.On("GenerateJWT", mock.Anything, mock.Anything, mock.Anything,
 		mock.Anything, mock.Anything).Return("jwt-token", int64(3600), nil)
 
@@ -641,7 +641,7 @@ func (suite *AuthAssertExecutorTestSuite) TestAppendUserDetailsToClaims_GetUserA
 		},
 	}
 
-	suite.mockUserService.On("GetUser", "user-123").
+	suite.mockUserService.On("GetUser", mock.Anything, "user-123").
 		Return(nil, &serviceerror.ServiceError{
 			Error:            "database_error",
 			ErrorDescription: "failed to fetch user",

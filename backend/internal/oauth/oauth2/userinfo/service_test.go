@@ -217,7 +217,7 @@ func (s *UserInfoServiceTestSuite) TestGetUserInfo_ErrorFetchingUserAttributes()
 	token := s.createToken(claims)
 
 	s.mockJWTService.On("VerifyJWT", token, "", "").Return(nil)
-	s.mockUserService.On("GetUser", "user123").Return(nil, &serviceerror.ServiceError{
+	s.mockUserService.On("GetUser", mock.Anything, "user123").Return(nil, &serviceerror.ServiceError{
 		Code:  "USER_NOT_FOUND",
 		Error: "User not found",
 	})
@@ -248,7 +248,7 @@ func (s *UserInfoServiceTestSuite) TestGetUserInfo_ErrorFetchingGroups() {
 	userAttrsJSON, _ := json.Marshal(userAttrs)
 
 	s.mockJWTService.On("VerifyJWT", token, "", "").Return(nil)
-	s.mockUserService.On("GetUser", "user123").Return(&user.User{
+	s.mockUserService.On("GetUser", mock.Anything, "user123").Return(&user.User{
 		ID:         "user123",
 		Attributes: userAttrsJSON,
 	}, nil)
@@ -262,7 +262,7 @@ func (s *UserInfoServiceTestSuite) TestGetUserInfo_ErrorFetchingGroups() {
 		},
 	}
 	s.mockAppService.On("GetOAuthApplication", "client123").Return(oauthApp, nil)
-	s.mockUserService.On("GetUserGroups", "user123",
+	s.mockUserService.On("GetUserGroups", mock.Anything, "user123",
 		constants.DefaultGroupListLimit, 0).Return(nil, &serviceerror.ServiceError{
 		Code:  "INTERNAL_ERROR",
 		Error: "Failed to fetch groups",
@@ -302,7 +302,7 @@ func (s *UserInfoServiceTestSuite) TestGetUserInfo_Success_StandardScopes() {
 	}
 
 	s.mockJWTService.On("VerifyJWT", token, "", "").Return(nil)
-	s.mockUserService.On("GetUser", "user123").Return(&user.User{
+	s.mockUserService.On("GetUser", mock.Anything, "user123").Return(&user.User{
 		ID:         "user123",
 		Attributes: userAttrsJSON,
 	}, nil)
@@ -347,11 +347,11 @@ func (s *UserInfoServiceTestSuite) TestGetUserInfo_Success_WithGroups() {
 	}
 
 	s.mockJWTService.On("VerifyJWT", token, "", "").Return(nil)
-	s.mockUserService.On("GetUser", "user123").Return(&user.User{
+	s.mockUserService.On("GetUser", mock.Anything, "user123").Return(&user.User{
 		ID:         "user123",
 		Attributes: userAttrsJSON,
 	}, nil)
-	s.mockUserService.On("GetUserGroups", "user123",
+	s.mockUserService.On("GetUserGroups", mock.Anything, "user123",
 		constants.DefaultGroupListLimit, 0).Return(&user.UserGroupListResponse{
 		Groups: []user.UserGroup{
 			{Name: "admin"},
@@ -403,7 +403,7 @@ func (s *UserInfoServiceTestSuite) TestGetUserInfo_Success_WithScopeClaimsMappin
 	}
 
 	s.mockJWTService.On("VerifyJWT", token, "", "").Return(nil)
-	s.mockUserService.On("GetUser", "user123").Return(&user.User{
+	s.mockUserService.On("GetUser", mock.Anything, "user123").Return(&user.User{
 		ID:         "user123",
 		Attributes: userAttrsJSON,
 	}, nil)
@@ -439,7 +439,7 @@ func (s *UserInfoServiceTestSuite) TestGetUserInfo_Success_NoAppConfig() {
 	userAttrsJSON, _ := json.Marshal(userAttrs)
 
 	s.mockJWTService.On("VerifyJWT", token, "", "").Return(nil)
-	s.mockUserService.On("GetUser", "user123").Return(&user.User{
+	s.mockUserService.On("GetUser", mock.Anything, "user123").Return(&user.User{
 		ID:         "user123",
 		Attributes: userAttrsJSON,
 	}, nil)
@@ -472,7 +472,7 @@ func (s *UserInfoServiceTestSuite) TestGetUserInfo_Success_AppNotFound() {
 	userAttrsJSON, _ := json.Marshal(userAttrs)
 
 	s.mockJWTService.On("VerifyJWT", token, "", "").Return(nil)
-	s.mockUserService.On("GetUser", "user123").Return(&user.User{
+	s.mockUserService.On("GetUser", mock.Anything, "user123").Return(&user.User{
 		ID:         "user123",
 		Attributes: userAttrsJSON,
 	}, nil)
@@ -518,7 +518,7 @@ func (s *UserInfoServiceTestSuite) TestGetUserInfo_Success_GroupsNotInAllowedAtt
 	}
 
 	s.mockJWTService.On("VerifyJWT", token, "", "").Return(nil)
-	s.mockUserService.On("GetUser", "user123").Return(&user.User{
+	s.mockUserService.On("GetUser", mock.Anything, "user123").Return(&user.User{
 		ID:         "user123",
 		Attributes: userAttrsJSON,
 	}, nil)
@@ -555,7 +555,7 @@ func (s *UserInfoServiceTestSuite) TestGetUserInfo_Success_EmptyUserAttributes()
 	}
 
 	s.mockJWTService.On("VerifyJWT", token, "", "").Return(nil)
-	s.mockUserService.On("GetUser", "user123").Return(&user.User{
+	s.mockUserService.On("GetUser", mock.Anything, "user123").Return(&user.User{
 		ID:         "user123",
 		Attributes: nil, // No attributes
 	}, nil)
@@ -650,7 +650,7 @@ func (s *UserInfoServiceTestSuite) testGetUserInfoInvalidClientID(clientIDValue 
 	userAttrsJSON, _ := json.Marshal(userAttrs)
 
 	s.mockJWTService.On("VerifyJWT", token, "", "").Return(nil)
-	s.mockUserService.On("GetUser", "user123").Return(&user.User{
+	s.mockUserService.On("GetUser", mock.Anything, "user123").Return(&user.User{
 		ID:         "user123",
 		Attributes: userAttrsJSON,
 	}, nil)
@@ -693,7 +693,7 @@ func (s *UserInfoServiceTestSuite) TestGetUserInfo_GroupsWithNilOAuthApp() {
 	userAttrsJSON, _ := json.Marshal(userAttrs)
 
 	s.mockJWTService.On("VerifyJWT", token, "", "").Return(nil)
-	s.mockUserService.On("GetUser", "user123").Return(&user.User{
+	s.mockUserService.On("GetUser", mock.Anything, "user123").Return(&user.User{
 		ID:         "user123",
 		Attributes: userAttrsJSON,
 	}, nil)
@@ -728,7 +728,7 @@ func (s *UserInfoServiceTestSuite) TestGetUserInfo_GroupsWithNilToken() {
 	}
 
 	s.mockJWTService.On("VerifyJWT", token, "", "").Return(nil)
-	s.mockUserService.On("GetUser", "user123").Return(&user.User{
+	s.mockUserService.On("GetUser", mock.Anything, "user123").Return(&user.User{
 		ID:         "user123",
 		Attributes: userAttrsJSON,
 	}, nil)
@@ -769,7 +769,7 @@ func (s *UserInfoServiceTestSuite) TestGetUserInfo_GroupsWithNilIDToken() {
 	}
 
 	s.mockJWTService.On("VerifyJWT", token, "", "").Return(nil)
-	s.mockUserService.On("GetUser", "user123").Return(&user.User{
+	s.mockUserService.On("GetUser", mock.Anything, "user123").Return(&user.User{
 		ID:         "user123",
 		Attributes: userAttrsJSON,
 	}, nil)
@@ -815,11 +815,11 @@ func (s *UserInfoServiceTestSuite) TestGetUserInfo_GroupsWithEmptyGroups() {
 	}
 
 	s.mockJWTService.On("VerifyJWT", token, "", "").Return(nil)
-	s.mockUserService.On("GetUser", "user123").Return(&user.User{
+	s.mockUserService.On("GetUser", mock.Anything, "user123").Return(&user.User{
 		ID:         "user123",
 		Attributes: userAttrsJSON,
 	}, nil)
-	s.mockUserService.On("GetUserGroups", "user123",
+	s.mockUserService.On("GetUserGroups", mock.Anything, "user123",
 		constants.DefaultGroupListLimit, 0).Return(&user.UserGroupListResponse{
 		Groups: []user.UserGroup{}, // Empty groups
 	}, nil)
@@ -890,7 +890,7 @@ func (s *UserInfoServiceTestSuite) testGetUserInfoAllowedGrantType(grantTypeValu
 	}
 
 	s.mockJWTService.On("VerifyJWT", token, "", "").Return(nil)
-	s.mockUserService.On("GetUser", "user123").Return(&user.User{
+	s.mockUserService.On("GetUser", mock.Anything, "user123").Return(&user.User{
 		ID:         "user123",
 		Attributes: userAttrsJSON,
 	}, nil)

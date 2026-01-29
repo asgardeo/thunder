@@ -162,7 +162,7 @@ func (suite *BasicAuthExecutorTestSuite) TestExecute_Success_AuthenticationFlow(
 	}
 
 	userID := testUserID
-	suite.mockUserService.On("IdentifyUser", map[string]interface{}{
+	suite.mockUserService.On("IdentifyUser", mock.Anything, map[string]interface{}{
 		userAttributeUsername: "testuser",
 	}).Return(&userID, nil)
 
@@ -212,7 +212,7 @@ func (suite *BasicAuthExecutorTestSuite) TestExecute_Success_WithEmailAttribute(
 		suite.T(), ExecutorNameBasicAuth, originalInputs)
 
 	userID := testUserID
-	suite.mockUserService.On("IdentifyUser", map[string]interface{}{
+	suite.mockUserService.On("IdentifyUser", mock.Anything, map[string]interface{}{
 		"email": "test@example.com",
 	}).Return(&userID, nil)
 
@@ -250,7 +250,7 @@ func (suite *BasicAuthExecutorTestSuite) TestExecute_Success_RegistrationFlow() 
 		RuntimeData: make(map[string]string),
 	}
 
-	suite.mockUserService.On("IdentifyUser", map[string]interface{}{
+	suite.mockUserService.On("IdentifyUser", mock.Anything, map[string]interface{}{
 		userAttributeUsername: "newuser",
 	}).Return(nil, &user.ErrorUserNotFound)
 
@@ -289,7 +289,7 @@ func (suite *BasicAuthExecutorTestSuite) TestExecute_Success_WithMultipleAttribu
 		suite.T(), ExecutorNameBasicAuth, customInputs)
 
 	userID := testUserID
-	suite.mockUserService.On("IdentifyUser", map[string]interface{}{
+	suite.mockUserService.On("IdentifyUser", mock.Anything, map[string]interface{}{
 		"email": "test@example.com",
 		"phone": "+1234567890",
 	}).Return(&userID, nil)
@@ -346,7 +346,7 @@ func (suite *BasicAuthExecutorTestSuite) TestExecute_AuthenticationFailed() {
 	}
 
 	userID := testUserID
-	suite.mockUserService.On("IdentifyUser", map[string]interface{}{
+	suite.mockUserService.On("IdentifyUser", mock.Anything, map[string]interface{}{
 		userAttributeUsername: "testuser",
 	}).Return(&userID, nil)
 
@@ -379,7 +379,7 @@ func (suite *BasicAuthExecutorTestSuite) TestExecute_UserNotFound_Authentication
 		RuntimeData: make(map[string]string),
 	}
 
-	suite.mockUserService.On("IdentifyUser", map[string]interface{}{
+	suite.mockUserService.On("IdentifyUser", mock.Anything, map[string]interface{}{
 		userAttributeUsername: "nonexistent",
 	}).Return(nil, &user.ErrorUserNotFound)
 
@@ -403,7 +403,7 @@ func (suite *BasicAuthExecutorTestSuite) TestExecute_UserAlreadyExists_Registrat
 	}
 
 	userID := testUserID
-	suite.mockUserService.On("IdentifyUser", map[string]interface{}{
+	suite.mockUserService.On("IdentifyUser", mock.Anything, map[string]interface{}{
 		userAttributeUsername: "existinguser",
 	}).Return(&userID, nil)
 
@@ -427,7 +427,7 @@ func (suite *BasicAuthExecutorTestSuite) TestExecute_ServiceError() {
 		RuntimeData: make(map[string]string),
 	}
 
-	suite.mockUserService.On("IdentifyUser", map[string]interface{}{
+	suite.mockUserService.On("IdentifyUser", mock.Anything, map[string]interface{}{
 		userAttributeUsername: "testuser",
 	}).Return(nil, &serviceerror.ServiceError{Error: "database error"})
 
@@ -451,7 +451,7 @@ func (suite *BasicAuthExecutorTestSuite) TestExecute_AuthenticationServiceError(
 	}
 
 	userID := testUserID
-	suite.mockUserService.On("IdentifyUser", map[string]interface{}{
+	suite.mockUserService.On("IdentifyUser", mock.Anything, map[string]interface{}{
 		userAttributeUsername: "testuser",
 	}).Return(&userID, nil)
 
@@ -489,7 +489,7 @@ func (suite *BasicAuthExecutorTestSuite) TestGetAuthenticatedUser_SuccessfulAuth
 	}
 
 	userID := testUserID
-	suite.mockUserService.On("IdentifyUser", map[string]interface{}{
+	suite.mockUserService.On("IdentifyUser", mock.Anything, map[string]interface{}{
 		userAttributeUsername: "testuser",
 	}).Return(&userID, nil)
 
@@ -533,7 +533,7 @@ func (suite *BasicAuthExecutorTestSuite) TestGetAuthenticatedUser_InvalidJSONAtt
 	}
 
 	userID := testUserID
-	suite.mockUserService.On("IdentifyUser", map[string]interface{}{
+	suite.mockUserService.On("IdentifyUser", mock.Anything, map[string]interface{}{
 		userAttributeUsername: "testuser",
 	}).Return(&userID, nil)
 
