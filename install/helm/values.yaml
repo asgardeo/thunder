@@ -41,7 +41,7 @@ deployment:
     # -- Container image digest
     digest: ""
     # -- Container image tag. Either "tag" or "digest" should be defined
-    tag: "0.19.0"
+    tag: "latest"
     pullPolicy: "Always"
   startupProbe:
     initialDelaySeconds: 1
