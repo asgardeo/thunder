@@ -172,6 +172,7 @@ describe('useGetOrganizationUnits', () => {
 
     await waitFor(() => {
       expect(mockHttpRequest.mock.calls.length).toBeGreaterThan(callsBeforeRefetch);
+      expect(result.current.data).toEqual(updatedList);
     });
   });
 
@@ -185,6 +186,48 @@ describe('useGetOrganizationUnits', () => {
         expect.objectContaining({
           url: expect.stringContaining('/organization-units'),
           method: 'GET',
+        }),
+      );
+    });
+  });
+
+  it('should use default values when params object is empty', async () => {
+    mockHttpRequest.mockResolvedValue({data: mockOrganizationUnitList});
+
+    renderHook(() => useGetOrganizationUnits({}));
+
+    await waitFor(() => {
+      expect(mockHttpRequest).toHaveBeenCalledWith(
+        expect.objectContaining({
+          url: expect.stringContaining('limit=30'),
+        }),
+      );
+    });
+  });
+
+  it('should use default offset when only limit provided', async () => {
+    mockHttpRequest.mockResolvedValue({data: mockOrganizationUnitList});
+
+    renderHook(() => useGetOrganizationUnits({limit: 50}));
+
+    await waitFor(() => {
+      expect(mockHttpRequest).toHaveBeenCalledWith(
+        expect.objectContaining({
+          url: expect.stringContaining('offset=0'),
+        }),
+      );
+    });
+  });
+
+  it('should use default limit when only offset provided', async () => {
+    mockHttpRequest.mockResolvedValue({data: mockOrganizationUnitList});
+
+    renderHook(() => useGetOrganizationUnits({offset: 10}));
+
+    await waitFor(() => {
+      expect(mockHttpRequest).toHaveBeenCalledWith(
+        expect.objectContaining({
+          url: expect.stringContaining('limit=30'),
         }),
       );
     });

@@ -153,7 +153,9 @@ export default function OrganizationUnitEditPage(): JSX.Element {
         </Alert>
         <Button
           onClick={() => {
-            handleBack().catch(() => {});
+            handleBack().catch((error: unknown) => {
+              logger.error('Failed to navigate back', {error});
+            });
           }}
           startIcon={<ArrowLeft size={16} />}
         >
@@ -171,7 +173,9 @@ export default function OrganizationUnitEditPage(): JSX.Element {
         </Alert>
         <Button
           onClick={() => {
-            handleBack().catch(() => {});
+            handleBack().catch((error: unknown) => {
+              logger.error('Failed to navigate back', {error});
+            });
           }}
           startIcon={<ArrowLeft size={16} />}
         >
@@ -187,7 +191,9 @@ export default function OrganizationUnitEditPage(): JSX.Element {
       <Stack direction="row" alignItems="center" justifyContent="space-between" mb={3}>
         <Button
           onClick={() => {
-            handleBack().catch(() => {});
+            handleBack().catch((error: unknown) => {
+              logger.error('Failed to navigate back', {error});
+            });
           }}
           variant="text"
           startIcon={<ArrowLeft size={16} />}
@@ -232,6 +238,7 @@ export default function OrganizationUnitEditPage(): JSX.Element {
                       }
                       setIsEditingName(false);
                     } else if (e.key === 'Escape') {
+                      setTempName(editedOU.name ?? organizationUnit.name);
                       setIsEditingName(false);
                     }
                   }}
@@ -280,6 +287,7 @@ export default function OrganizationUnitEditPage(): JSX.Element {
                       }
                       setIsEditingDescription(false);
                     } else if (e.key === 'Escape') {
+                      setTempDescription(editedOU.description ?? organizationUnit.description ?? '');
                       setIsEditingDescription(false);
                     }
                   }}
@@ -434,6 +442,7 @@ export default function OrganizationUnitEditPage(): JSX.Element {
             <Button
               variant="contained"
               onClick={() => {
+                // Errors are handled in handleSave
                 handleSave().catch(() => {});
               }}
               disabled={updateOrganizationUnit.isPending}
