@@ -18,32 +18,32 @@
 
 package export
 
-import immutableresource "github.com/asgardeo/thunder/internal/system/immutable_resource"
+import declarativeresource "github.com/asgardeo/thunder/internal/system/declarative_resource"
 
 // ResourceExporterRegistry holds all registered resource exporters.
 type ResourceExporterRegistry struct {
-	exporters map[string]immutableresource.ResourceExporter
+	exporters map[string]declarativeresource.ResourceExporter
 }
 
 // NewResourceExporterRegistry creates a new registry for resource exporters.
 func newResourceExporterRegistry() *ResourceExporterRegistry {
 	return &ResourceExporterRegistry{
-		exporters: make(map[string]immutableresource.ResourceExporter),
+		exporters: make(map[string]declarativeresource.ResourceExporter),
 	}
 }
 
 // Register adds a new resource exporter to the registry.
-func (r *ResourceExporterRegistry) Register(exporter immutableresource.ResourceExporter) {
+func (r *ResourceExporterRegistry) Register(exporter declarativeresource.ResourceExporter) {
 	r.exporters[exporter.GetResourceType()] = exporter
 }
 
 // Get retrieves a resource exporter by type.
-func (r *ResourceExporterRegistry) Get(resourceType string) (immutableresource.ResourceExporter, bool) {
+func (r *ResourceExporterRegistry) Get(resourceType string) (declarativeresource.ResourceExporter, bool) {
 	exporter, exists := r.exporters[resourceType]
 	return exporter, exists
 }
 
 // GetAll returns all registered exporters.
-func (r *ResourceExporterRegistry) GetAll() map[string]immutableresource.ResourceExporter {
+func (r *ResourceExporterRegistry) GetAll() map[string]declarativeresource.ResourceExporter {
 	return r.exporters
 }

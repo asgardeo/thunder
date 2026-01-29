@@ -23,12 +23,12 @@ import (
 	"strings"
 
 	"github.com/asgardeo/thunder/internal/system/config"
-	immutableresource "github.com/asgardeo/thunder/internal/system/immutable_resource"
+	declarativeresource "github.com/asgardeo/thunder/internal/system/declarative_resource"
 	"github.com/asgardeo/thunder/internal/system/middleware"
 )
 
 // Initialize initializes the organization unit service and registers its routes.
-func Initialize(mux *http.ServeMux) (OrganizationUnitServiceInterface, immutableresource.ResourceExporter, error) {
+func Initialize(mux *http.ServeMux) (OrganizationUnitServiceInterface, declarativeresource.ResourceExporter, error) {
 	ouStore, err := initializeStore()
 	if err != nil {
 		return nil, nil, err
@@ -52,7 +52,7 @@ func Initialize(mux *http.ServeMux) (OrganizationUnitServiceInterface, immutable
 //   - All OUs are mutable
 //   - Export functionality exports DB-backed OUs
 //
-// 2. IMMUTABLE mode (store: "immutable"):
+// 2. IMMUTABLE mode (store: "declarative"):
 //   - Uses file-based store only (from YAML resources)
 //   - All OUs are immutable (read-only)
 //   - No create/update/delete operations allowed
@@ -64,7 +64,7 @@ func Initialize(mux *http.ServeMux) (OrganizationUnitServiceInterface, immutable
 //   - Database store handles runtime OUs (mutable)
 //   - Reads check both stores (merged results)
 //   - Writes only go to database store
-//   - Immutable OUs cannot be updated or deleted
+//   - Declarative OUs cannot be updated or deleted
 //   - Export only exports DB-backed OUs (not YAML)
 //
 // Configuration Fallback:
@@ -81,15 +81,15 @@ func initializeStore() (organizationUnitStoreInterface, error) {
 		fileStore := newFileBasedStore()
 		dbStore := newOrganizationUnitStore()
 		ouStore = newCompositeOUStore(fileStore, dbStore)
-		if err := loadImmutableResources(fileStore, dbStore); err != nil {
+		if err := loadDeclarativeResources(fileStore, dbStore); err != nil {
 			return nil, err
 		}
 
-	case config.StoreModeImmutable:
+	case config.StoreModeDeclarative:
 		fileStore := newFileBasedStore()
 		ouStore = fileStore
 
-		if err := loadImmutableResources(fileStore, nil); err != nil {
+		if err := loadDeclarativeResources(fileStore, nil); err != nil {
 			return nil, err
 		}
 

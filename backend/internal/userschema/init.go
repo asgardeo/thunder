@@ -23,7 +23,7 @@ import (
 
 	oupkg "github.com/asgardeo/thunder/internal/ou"
 	"github.com/asgardeo/thunder/internal/system/config"
-	immutableresource "github.com/asgardeo/thunder/internal/system/immutable_resource"
+	declarativeresource "github.com/asgardeo/thunder/internal/system/declarative_resource"
 	"github.com/asgardeo/thunder/internal/system/middleware"
 )
 
@@ -31,9 +31,9 @@ import (
 func Initialize(
 	mux *http.ServeMux,
 	ouService oupkg.OrganizationUnitServiceInterface,
-) (UserSchemaServiceInterface, immutableresource.ResourceExporter, error) {
+) (UserSchemaServiceInterface, declarativeresource.ResourceExporter, error) {
 	var userSchemaStore userSchemaStoreInterface
-	if config.GetThunderRuntime().Config.ImmutableResources.Enabled {
+	if config.GetThunderRuntime().Config.DeclarativeResources.Enabled {
 		userSchemaStore = newUserSchemaFileBasedStore()
 	} else {
 		userSchemaStore = newUserSchemaStore()
@@ -41,8 +41,8 @@ func Initialize(
 
 	userSchemaService := newUserSchemaService(ouService, userSchemaStore)
 
-	if config.GetThunderRuntime().Config.ImmutableResources.Enabled {
-		if err := loadImmutableResources(userSchemaStore, ouService); err != nil {
+	if config.GetThunderRuntime().Config.DeclarativeResources.Enabled {
+		if err := loadDeclarativeResources(userSchemaStore, ouService); err != nil {
 			return nil, nil, err
 		}
 	}

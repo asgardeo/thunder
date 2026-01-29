@@ -93,7 +93,7 @@
   "user": {
     "indexed_attributes": ["username", "email", "mobileNumber", "sub"]
   },
-  "immutable_resources": {
+  "declarative_resources": {
     "enabled": false
   },
   "resource": {

@@ -545,59 +545,59 @@ func (suite *NotificationSenderMgtServiceTestSuite) TestDeleteSender_StoreError(
 	suite.Equal(ErrorInternalServerError.Code, err.Code)
 }
 
-// TestCreateSender_ImmutableResourcesEnabled tests that CreateSender returns error when immutable resources enabled
-func (suite *NotificationSenderMgtServiceTestSuite) TestCreateSender_ImmutableResourcesEnabled() {
+// TestCreateSender_DeclarativeResourcesEnabled tests that CreateSender returns error when declarative resources enabled
+func (suite *NotificationSenderMgtServiceTestSuite) TestCreateSender_DeclarativeResourcesEnabled() {
 	// Save original config
 	originalConfig := config.GetThunderRuntime().Config
 	defer func() {
 		config.GetThunderRuntime().Config = originalConfig
 	}()
 
-	// Enable immutable resources
-	config.GetThunderRuntime().Config.ImmutableResources.Enabled = true
+	// Enable declarative resources
+	config.GetThunderRuntime().Config.DeclarativeResources.Enabled = true
 
 	sender := suite.getValidTwilioSender()
 	result, err := suite.service.CreateSender(sender)
 
 	suite.Nil(result)
 	suite.NotNil(err)
-	suite.Equal("FBR-1001", err.Code)
+	suite.Equal("DCR-1001", err.Code)
 }
 
-// TestUpdateSender_ImmutableResourcesEnabled tests that UpdateSender returns error when immutable resources enabled
-func (suite *NotificationSenderMgtServiceTestSuite) TestUpdateSender_ImmutableResourcesEnabled() {
+// TestUpdateSender_DeclarativeResourcesEnabled tests that UpdateSender returns error when declarative resources enabled
+func (suite *NotificationSenderMgtServiceTestSuite) TestUpdateSender_DeclarativeResourcesEnabled() {
 	// Save original config
 	originalConfig := config.GetThunderRuntime().Config
 	defer func() {
 		config.GetThunderRuntime().Config = originalConfig
 	}()
 
-	// Enable immutable resources
-	config.GetThunderRuntime().Config.ImmutableResources.Enabled = true
+	// Enable declarative resources
+	config.GetThunderRuntime().Config.DeclarativeResources.Enabled = true
 
 	sender := suite.getValidTwilioSender()
 	result, err := suite.service.UpdateSender(testSenderID, sender)
 
 	suite.Nil(result)
 	suite.NotNil(err)
-	suite.Equal("FBR-1002", err.Code)
+	suite.Equal("DCR-1002", err.Code)
 }
 
-// TestDeleteSender_ImmutableResourcesEnabled tests that DeleteSender returns error when immutable resources enabled
-func (suite *NotificationSenderMgtServiceTestSuite) TestDeleteSender_ImmutableResourcesEnabled() {
+// TestDeleteSender_DeclarativeResourcesEnabled tests that DeleteSender returns error when declarative resources enabled
+func (suite *NotificationSenderMgtServiceTestSuite) TestDeleteSender_DeclarativeResourcesEnabled() {
 	// Save original config
 	originalConfig := config.GetThunderRuntime().Config
 	defer func() {
 		config.GetThunderRuntime().Config = originalConfig
 	}()
 
-	// Enable immutable resources
-	config.GetThunderRuntime().Config.ImmutableResources.Enabled = true
+	// Enable declarative resources
+	config.GetThunderRuntime().Config.DeclarativeResources.Enabled = true
 
 	err := suite.service.DeleteSender(testSenderID)
 
 	suite.NotNil(err)
-	suite.Equal("FBR-1003", err.Code)
+	suite.Equal("DCR-1003", err.Code)
 }
 
 func createTestProperty(name, value string, isSecret bool) cmodels.Property {

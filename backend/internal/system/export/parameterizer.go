@@ -27,7 +27,7 @@ import (
 
 	"gopkg.in/yaml.v3"
 
-	immutableresource "github.com/asgardeo/thunder/internal/system/immutable_resource"
+	declarativeresource "github.com/asgardeo/thunder/internal/system/declarative_resource"
 	"github.com/asgardeo/thunder/internal/system/log"
 )
 
@@ -58,7 +58,7 @@ func newParameterizer(rules templatingRules) *parameterizer {
 // ToParameterizedYAML converts an object directly to parameterized YAML
 // This is the easiest method when you already have the object
 func (p *parameterizer) ToParameterizedYAML(obj interface{},
-	resourceType string, resourceName string, rules *immutableresource.ResourceRules) (string, error) {
+	resourceType string, resourceName string, rules *declarativeresource.ResourceRules) (string, error) {
 	// Convert imported type to local type for compatibility
 	var localRules *resourceRules
 	if rules != nil {

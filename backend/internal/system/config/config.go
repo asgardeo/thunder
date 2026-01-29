@@ -174,8 +174,8 @@ type CORSConfig struct {
 	AllowedOrigins []string `yaml:"allowed_origins" json:"allowed_origins"`
 }
 
-// ImmutableResources holds the configuration details for the immutable resources.
-type ImmutableResources struct {
+// DeclarativeResources holds the configuration details for the declarative resources.
+type DeclarativeResources struct {
 	Enabled bool `yaml:"enabled" json:"enabled" default:"false"`
 }
 
@@ -237,10 +237,10 @@ type ResourceConfig struct {
 // OrganizationUnitConfig holds the organization unit service configuration.
 type OrganizationUnitConfig struct {
 	// Store defines the storage mode for organization units.
-	// Valid values: "mutable", "immutable", "composite" (hybrid mode)
-	// If not specified, falls back to global ImmutableResources.Enabled setting:
-	//   - If ImmutableResources.Enabled = true: behaves as "immutable"
-	//   - If ImmutableResources.Enabled = false: behaves as "mutable"
+	// Valid values: "mutable", "declarative", "composite" (hybrid mode)
+	// If not specified, falls back to global DeclarativeResources.Enabled setting:
+	//   - If DeclarativeResources.Enabled = true: behaves as "declarative"
+	//   - If DeclarativeResources.Enabled = false: behaves as "mutable"
 	Store string `yaml:"store" json:"store"`
 }
 
@@ -251,22 +251,22 @@ type PasskeyConfig struct {
 
 // Config holds the complete configuration details of the server.
 type Config struct {
-	Server             ServerConfig           `yaml:"server" json:"server"`
-	GateClient         GateClientConfig       `yaml:"gate_client" json:"gate_client"`
-	TLS                TLSConfig              `yaml:"tls" json:"tls"`
-	Database           DatabaseConfig         `yaml:"database" json:"database"`
-	Cache              CacheConfig            `yaml:"cache" json:"cache"`
-	JWT                JWTConfig              `yaml:"jwt" json:"jwt"`
-	OAuth              OAuthConfig            `yaml:"oauth" json:"oauth"`
-	Flow               FlowConfig             `yaml:"flow" json:"flow"`
-	Crypto             CryptoConfig           `yaml:"crypto" json:"crypto"`
-	CORS               CORSConfig             `yaml:"cors" json:"cors"`
-	User               UserConfig             `yaml:"user" json:"user"`
-	ImmutableResources ImmutableResources     `yaml:"immutable_resources" json:"immutable_resources"`
-	Resource           ResourceConfig         `yaml:"resource" json:"resource"`
-	OrganizationUnit   OrganizationUnitConfig `yaml:"organization_unit" json:"organization_unit"`
-	Observability      ObservabilityConfig    `yaml:"observability" json:"observability"`
-	Passkey            PasskeyConfig          `yaml:"passkey" json:"passkey"`
+	Server               ServerConfig           `yaml:"server" json:"server"`
+	GateClient           GateClientConfig       `yaml:"gate_client" json:"gate_client"`
+	TLS                  TLSConfig              `yaml:"tls" json:"tls"`
+	Database             DatabaseConfig         `yaml:"database" json:"database"`
+	Cache                CacheConfig            `yaml:"cache" json:"cache"`
+	JWT                  JWTConfig              `yaml:"jwt" json:"jwt"`
+	OAuth                OAuthConfig            `yaml:"oauth" json:"oauth"`
+	Flow                 FlowConfig             `yaml:"flow" json:"flow"`
+	Crypto               CryptoConfig           `yaml:"crypto" json:"crypto"`
+	CORS                 CORSConfig             `yaml:"cors" json:"cors"`
+	User                 UserConfig             `yaml:"user" json:"user"`
+	DeclarativeResources DeclarativeResources   `yaml:"declarative_resources" json:"declarative_resources"`
+	Resource             ResourceConfig         `yaml:"resource" json:"resource"`
+	OrganizationUnit     OrganizationUnitConfig `yaml:"organization_unit" json:"organization_unit"`
+	Observability        ObservabilityConfig    `yaml:"observability" json:"observability"`
+	Passkey              PasskeyConfig          `yaml:"passkey" json:"passkey"`
 }
 
 // LoadConfig loads the configurations from the specified YAML file and applies defaults.
@@ -444,15 +444,15 @@ func isZeroValue(v reflect.Value) bool {
 	}
 }
 
-// Store modes for Immutable configurations.
+// Store modes for Declarative configurations.
 const (
 	// StoreModeMutable uses only the database store. All OUs are mutable and support full CRUD.
 	StoreModeMutable = "mutable"
 
-	// StoreModeImmutable uses only the file-based store. All OUs are immutable (read-only from YAML).
-	StoreModeImmutable = "immutable"
+	// StoreModeDeclarative uses only the file-based store. All OUs are declarative (read-only from YAML).
+	StoreModeDeclarative = "declarative"
 
-	// StoreModeComposite (hybrid) uses both file-based (immutable) and database (mutable) stores.
+	// StoreModeComposite (hybrid) uses both file-based (declarative) and database (mutable) stores.
 	// Reads merge both stores, writes only go to database store.
 	StoreModeComposite = "composite"
 )

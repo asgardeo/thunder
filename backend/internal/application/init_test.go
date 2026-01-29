@@ -38,7 +38,7 @@ import (
 
 // InitTestSuite contains comprehensive tests for the init.go file.
 // The test suite covers:
-// - Initialize function with immutable resources enabled/disabled
+// - Initialize function with declarative resources enabled/disabled
 // - parseToApplicationDTO function with various YAML configurations
 // - registerRoutes function with proper CORS setup
 // - Error handling scenarios for configuration parsing and validation
@@ -66,12 +66,12 @@ func TestInitTestSuite(t *testing.T) {
 	suite.Run(t, new(InitTestSuite))
 }
 
-// TestInitialize_WithImmutableResourcesDisabled tests the Initialize function when immutable resources are disabled
-func (suite *InitTestSuite) TestInitialize_WithImmutableResourcesDisabled() {
+// TestInitialize_WithDeclarativeResourcesDisabled tests the Initialize function when declarative resources are disabled
+func (suite *InitTestSuite) TestInitialize_WithDeclarativeResourcesDisabled() {
 	// Setup - ensure config is reset and initialized for this test
 	config.ResetThunderRuntime()
 	testConfig := &config.Config{
-		ImmutableResources: config.ImmutableResources{
+		DeclarativeResources: config.DeclarativeResources{
 			Enabled: false,
 		},
 	}
@@ -461,7 +461,7 @@ func TestRegisterRoutes_Standalone(t *testing.T) {
 func TestInitialize_Standalone(t *testing.T) {
 	// Setup minimal config for testing
 	testConfig := &config.Config{
-		ImmutableResources: config.ImmutableResources{
+		DeclarativeResources: config.DeclarativeResources{
 			Enabled: false,
 		},
 	}
@@ -488,11 +488,11 @@ func TestInitialize_Standalone(t *testing.T) {
 	assert.Implements(t, (*ApplicationServiceInterface)(nil), service)
 }
 
-// TestInitialize_WithImmutableResources_Standalone tests Initialize function with immutable resources
-func TestInitialize_WithImmutableResources_Standalone(t *testing.T) {
+// TestInitialize_WithDeclarativeResources_Standalone tests Initialize function with declarative resources
+func TestInitialize_WithDeclarativeResources_Standalone(t *testing.T) {
 	// Setup minimal config for testing
 	testConfig := &config.Config{
-		ImmutableResources: config.ImmutableResources{
+		DeclarativeResources: config.DeclarativeResources{
 			Enabled: true,
 		},
 	}

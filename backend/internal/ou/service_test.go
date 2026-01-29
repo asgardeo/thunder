@@ -42,10 +42,10 @@ func TestOUService_OrganizationUnitServiceTestSuite_Run(t *testing.T) {
 }
 
 func (suite *OrganizationUnitServiceTestSuite) SetupTest() {
-	// Initialize ThunderRuntime with immutable mode disabled by default
+	// Initialize ThunderRuntime with declarative mode disabled by default
 	config.ResetThunderRuntime()
 	testConfig := &config.Config{
-		ImmutableResources: config.ImmutableResources{
+		DeclarativeResources: config.DeclarativeResources{
 			Enabled: false,
 		},
 	}
@@ -783,7 +783,7 @@ func (suite *OrganizationUnitServiceTestSuite) TestOUService_UpdateOrganizationU
 				store.On("GetOrganizationUnit", "ou-1").
 					Return(existing, nil).
 					Once()
-				store.On("IsOrganizationUnitImmutable", "ou-1").
+				store.On("IsOrganizationUnitDeclarative", "ou-1").
 					Return(false).
 					Once()
 				store.On("UpdateOrganizationUnit", OrganizationUnit{
@@ -840,7 +840,7 @@ func (suite *OrganizationUnitServiceTestSuite) TestOUService_UpdateOrganizationU
 				store.On("GetOrganizationUnit", "ou-1").
 					Return(existing, nil).
 					Once()
-				store.On("IsOrganizationUnitImmutable", "ou-1").
+				store.On("IsOrganizationUnitDeclarative", "ou-1").
 					Return(false).
 					Once()
 			},
@@ -859,7 +859,7 @@ func (suite *OrganizationUnitServiceTestSuite) TestOUService_UpdateOrganizationU
 				store.On("GetOrganizationUnit", "ou-1").
 					Return(existing, nil).
 					Once()
-				store.On("IsOrganizationUnitImmutable", "ou-1").
+				store.On("IsOrganizationUnitDeclarative", "ou-1").
 					Return(false).
 					Once()
 				store.On("IsOrganizationUnitExists", parentID).
@@ -881,7 +881,7 @@ func (suite *OrganizationUnitServiceTestSuite) TestOUService_UpdateOrganizationU
 				store.On("GetOrganizationUnit", "ou-1").
 					Return(existing, nil).
 					Once()
-				store.On("IsOrganizationUnitImmutable", "ou-1").
+				store.On("IsOrganizationUnitDeclarative", "ou-1").
 					Return(false).
 					Once()
 				store.On("IsOrganizationUnitExists", parentID).
@@ -903,7 +903,7 @@ func (suite *OrganizationUnitServiceTestSuite) TestOUService_UpdateOrganizationU
 				store.On("GetOrganizationUnit", "ou-1").
 					Return(existing, nil).
 					Once()
-				store.On("IsOrganizationUnitImmutable", "ou-1").
+				store.On("IsOrganizationUnitDeclarative", "ou-1").
 					Return(false).
 					Once()
 				store.On("IsOrganizationUnitExists", "ou-1").
@@ -924,7 +924,7 @@ func (suite *OrganizationUnitServiceTestSuite) TestOUService_UpdateOrganizationU
 				store.On("GetOrganizationUnit", "ou-1").
 					Return(existing, nil).
 					Once()
-				store.On("IsOrganizationUnitImmutable", "ou-1").
+				store.On("IsOrganizationUnitDeclarative", "ou-1").
 					Return(false).
 					Once()
 				store.On("CheckOrganizationUnitNameConflict", "Finance", (*string)(nil)).
@@ -945,7 +945,7 @@ func (suite *OrganizationUnitServiceTestSuite) TestOUService_UpdateOrganizationU
 				store.On("GetOrganizationUnit", "ou-1").
 					Return(existing, nil).
 					Once()
-				store.On("IsOrganizationUnitImmutable", "ou-1").
+				store.On("IsOrganizationUnitDeclarative", "ou-1").
 					Return(false).
 					Once()
 				store.On("CheckOrganizationUnitNameConflict", "Finance", (*string)(nil)).
@@ -966,7 +966,7 @@ func (suite *OrganizationUnitServiceTestSuite) TestOUService_UpdateOrganizationU
 				store.On("GetOrganizationUnit", "ou-1").
 					Return(existing, nil).
 					Once()
-				store.On("IsOrganizationUnitImmutable", "ou-1").
+				store.On("IsOrganizationUnitDeclarative", "ou-1").
 					Return(false).
 					Once()
 				store.On("CheckOrganizationUnitHandleConflict", "finance", (*string)(nil)).
@@ -987,7 +987,7 @@ func (suite *OrganizationUnitServiceTestSuite) TestOUService_UpdateOrganizationU
 				store.On("GetOrganizationUnit", "ou-1").
 					Return(existing, nil).
 					Once()
-				store.On("IsOrganizationUnitImmutable", "ou-1").
+				store.On("IsOrganizationUnitDeclarative", "ou-1").
 					Return(false).
 					Once()
 				store.On("CheckOrganizationUnitHandleConflict", "finance", (*string)(nil)).
@@ -1008,7 +1008,7 @@ func (suite *OrganizationUnitServiceTestSuite) TestOUService_UpdateOrganizationU
 				store.On("GetOrganizationUnit", "ou-1").
 					Return(existing, nil).
 					Once()
-				store.On("IsOrganizationUnitImmutable", "ou-1").
+				store.On("IsOrganizationUnitDeclarative", "ou-1").
 					Return(false).
 					Once()
 				store.On("UpdateOrganizationUnit", mock.AnythingOfType("ou.OrganizationUnit")).
@@ -1029,7 +1029,7 @@ func (suite *OrganizationUnitServiceTestSuite) TestOUService_UpdateOrganizationU
 				store.On("GetOrganizationUnit", "ou-1").
 					Return(existing, nil).
 					Once()
-				store.On("IsOrganizationUnitImmutable", "ou-1").
+				store.On("IsOrganizationUnitDeclarative", "ou-1").
 					Return(false).
 					Once()
 				store.On("UpdateOrganizationUnit", mock.AnythingOfType("ou.OrganizationUnit")).
@@ -1109,7 +1109,7 @@ func (suite *OrganizationUnitServiceTestSuite) TestOUService_UpdateOrganizationU
 		store.On("GetOrganizationUnitByPath", []string{"root"}).
 			Return(existing, nil).
 			Once()
-		store.On("IsOrganizationUnitImmutable", "ou-1").
+		store.On("IsOrganizationUnitDeclarative", "ou-1").
 			Return(false).
 			Once()
 		store.On("UpdateOrganizationUnit", mock.AnythingOfType("ou.OrganizationUnit")).
@@ -1154,7 +1154,7 @@ func (suite *OrganizationUnitServiceTestSuite) TestOUService_DeleteOrganizationU
 				store.On("IsOrganizationUnitExists", "ou-1").
 					Return(true, nil).
 					Once()
-				store.On("IsOrganizationUnitImmutable", "ou-1").
+				store.On("IsOrganizationUnitDeclarative", "ou-1").
 					Return(false).
 					Once()
 				store.On("CheckOrganizationUnitHasChildResources", "ou-1").
@@ -1169,7 +1169,7 @@ func (suite *OrganizationUnitServiceTestSuite) TestOUService_DeleteOrganizationU
 				store.On("IsOrganizationUnitExists", "ou-1").
 					Return(true, nil).
 					Once()
-				store.On("IsOrganizationUnitImmutable", "ou-1").
+				store.On("IsOrganizationUnitDeclarative", "ou-1").
 					Return(false).
 					Once()
 				store.On("CheckOrganizationUnitHasChildResources", "ou-1").
@@ -1184,7 +1184,7 @@ func (suite *OrganizationUnitServiceTestSuite) TestOUService_DeleteOrganizationU
 				store.On("IsOrganizationUnitExists", "ou-1").
 					Return(true, nil).
 					Once()
-				store.On("IsOrganizationUnitImmutable", "ou-1").
+				store.On("IsOrganizationUnitDeclarative", "ou-1").
 					Return(false).
 					Once()
 				store.On("CheckOrganizationUnitHasChildResources", "ou-1").
@@ -1202,7 +1202,7 @@ func (suite *OrganizationUnitServiceTestSuite) TestOUService_DeleteOrganizationU
 				store.On("IsOrganizationUnitExists", "ou-1").
 					Return(true, nil).
 					Once()
-				store.On("IsOrganizationUnitImmutable", "ou-1").
+				store.On("IsOrganizationUnitDeclarative", "ou-1").
 					Return(false).
 					Once()
 				store.On("CheckOrganizationUnitHasChildResources", "ou-1").
@@ -1220,7 +1220,7 @@ func (suite *OrganizationUnitServiceTestSuite) TestOUService_DeleteOrganizationU
 				store.On("IsOrganizationUnitExists", "ou-1").
 					Return(true, nil).
 					Once()
-				store.On("IsOrganizationUnitImmutable", "ou-1").
+				store.On("IsOrganizationUnitDeclarative", "ou-1").
 					Return(false).
 					Once()
 				store.On("CheckOrganizationUnitHasChildResources", "ou-1").
@@ -1291,7 +1291,7 @@ func (suite *OrganizationUnitServiceTestSuite) TestOUService_DeleteOrganizationU
 		store.On("GetOrganizationUnitByPath", []string{"root"}).
 			Return(OrganizationUnit{ID: "ou-1"}, nil).
 			Once()
-		store.On("IsOrganizationUnitImmutable", "ou-1").
+		store.On("IsOrganizationUnitDeclarative", "ou-1").
 			Return(false).
 			Once()
 		store.On("CheckOrganizationUnitHasChildResources", "ou-1").
@@ -1309,7 +1309,7 @@ func (suite *OrganizationUnitServiceTestSuite) TestOUService_DeleteOrganizationU
 		store.On("GetOrganizationUnitByPath", []string{"root"}).
 			Return(OrganizationUnit{ID: "ou-1"}, nil).
 			Once()
-		store.On("IsOrganizationUnitImmutable", "ou-1").
+		store.On("IsOrganizationUnitDeclarative", "ou-1").
 			Return(false).
 			Once()
 		store.On("CheckOrganizationUnitHasChildResources", "ou-1").

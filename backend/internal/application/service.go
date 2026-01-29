@@ -32,8 +32,8 @@ import (
 	"github.com/asgardeo/thunder/internal/system/config"
 	serverconst "github.com/asgardeo/thunder/internal/system/constants"
 	"github.com/asgardeo/thunder/internal/system/crypto/hash"
+	declarativeresource "github.com/asgardeo/thunder/internal/system/declarative_resource"
 	"github.com/asgardeo/thunder/internal/system/error/serviceerror"
-	immutableresource "github.com/asgardeo/thunder/internal/system/immutable_resource"
 	"github.com/asgardeo/thunder/internal/system/log"
 	sysutils "github.com/asgardeo/thunder/internal/system/utils"
 	"github.com/asgardeo/thunder/internal/userschema"
@@ -81,7 +81,7 @@ func newApplicationService(
 func (as *applicationService) CreateApplication(app *model.ApplicationDTO) (*model.ApplicationDTO,
 	*serviceerror.ServiceError) {
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, "ApplicationService"))
-	if err := immutableresource.CheckImmutableCreate(); err != nil {
+	if err := declarativeresource.CheckDeclarativeCreate(); err != nil {
 		return nil, err
 	}
 
@@ -418,7 +418,7 @@ func (as *applicationService) enrichApplicationWithCertificate(application *mode
 func (as *applicationService) UpdateApplication(appID string, app *model.ApplicationDTO) (
 	*model.ApplicationDTO, *serviceerror.ServiceError) {
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, "ApplicationService"))
-	if err := immutableresource.CheckImmutableUpdate(); err != nil {
+	if err := declarativeresource.CheckDeclarativeUpdate(); err != nil {
 		return nil, err
 	}
 
@@ -599,7 +599,7 @@ func (as *applicationService) UpdateApplication(appID string, app *model.Applica
 
 // DeleteApplication delete the application for given app id.
 func (as *applicationService) DeleteApplication(appID string) *serviceerror.ServiceError {
-	if err := immutableresource.CheckImmutableDelete(); err != nil {
+	if err := declarativeresource.CheckDeclarativeDelete(); err != nil {
 		return err
 	}
 	if appID == "" {

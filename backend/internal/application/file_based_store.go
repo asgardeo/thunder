@@ -22,15 +22,15 @@ import (
 	"errors"
 
 	"github.com/asgardeo/thunder/internal/application/model"
-	immutableresource "github.com/asgardeo/thunder/internal/system/immutable_resource"
-	"github.com/asgardeo/thunder/internal/system/immutable_resource/entity"
+	declarativeresource "github.com/asgardeo/thunder/internal/system/declarative_resource"
+	"github.com/asgardeo/thunder/internal/system/declarative_resource/entity"
 )
 
 type fileBasedStore struct {
-	*immutableresource.GenericFileBasedStore
+	*declarativeresource.GenericFileBasedStore
 }
 
-// Create implements immutableresource.Storer interface for resource loader
+// Create implements declarativeresource.Storer interface for resource loader
 func (f *fileBasedStore) Create(id string, data interface{}) error {
 	app := data.(*model.ApplicationProcessedDTO)
 	return f.CreateApplication(*app)
@@ -54,7 +54,7 @@ func (f *fileBasedStore) GetApplicationByID(id string) (*model.ApplicationProces
 	}
 	app, ok := data.(*model.ApplicationProcessedDTO)
 	if !ok {
-		immutableresource.LogTypeAssertionError("application", id)
+		declarativeresource.LogTypeAssertionError("application", id)
 		return nil, model.ApplicationDataCorruptedError
 	}
 	return app, nil
@@ -132,7 +132,7 @@ func (f *fileBasedStore) UpdateApplication(existingApp *model.ApplicationProcess
 
 // newFileBasedStore creates a new instance of a file-based store.
 func newFileBasedStore() applicationStoreInterface {
-	genericStore := immutableresource.NewGenericFileBasedStore(entity.KeyTypeApplication)
+	genericStore := declarativeresource.NewGenericFileBasedStore(entity.KeyTypeApplication)
 	return &fileBasedStore{
 		GenericFileBasedStore: genericStore,
 	}

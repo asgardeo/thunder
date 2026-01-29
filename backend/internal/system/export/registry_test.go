@@ -24,8 +24,8 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
 
+	declarativeresource "github.com/asgardeo/thunder/internal/system/declarative_resource"
 	"github.com/asgardeo/thunder/internal/system/error/serviceerror"
-	immutableresource "github.com/asgardeo/thunder/internal/system/immutable_resource"
 	"github.com/asgardeo/thunder/internal/system/log"
 )
 
@@ -134,6 +134,6 @@ func (m *mockResourceExporter) ValidateResource(
 	return m.validateName, m.validateExportErr
 }
 
-func (m *mockResourceExporter) GetResourceRules() *immutableresource.ResourceRules {
-	return &immutableresource.ResourceRules{}
+func (m *mockResourceExporter) GetResourceRules() *declarativeresource.ResourceRules {
+	return &declarativeresource.ResourceRules{}
 }

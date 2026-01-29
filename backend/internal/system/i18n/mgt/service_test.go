@@ -26,7 +26,7 @@ import (
 	"github.com/stretchr/testify/suite"
 
 	"github.com/asgardeo/thunder/internal/system/config"
-	immutableresource "github.com/asgardeo/thunder/internal/system/immutable_resource"
+	declarativeresource "github.com/asgardeo/thunder/internal/system/declarative_resource"
 )
 
 const (
@@ -47,7 +47,7 @@ func TestI18nMgtServiceTestSuite(t *testing.T) {
 func (suite *I18nMgtServiceTestSuite) SetupTest() {
 	config.ResetThunderRuntime()
 	testConfig := &config.Config{
-		ImmutableResources: config.ImmutableResources{
+		DeclarativeResources: config.DeclarativeResources{
 			Enabled: false,
 		},
 	}
@@ -280,18 +280,18 @@ func (suite *I18nMgtServiceTestSuite) TestSetTranslationOverrideForKey_StoreErro
 	suite.Equal(ErrorInternalServerError.Code, err.Code)
 }
 
-func (suite *I18nMgtServiceTestSuite) TestSetTranslationOverrideForKey_Immutable() {
-	// Enable immutable mode
-	config.GetThunderRuntime().Config.ImmutableResources.Enabled = true
+func (suite *I18nMgtServiceTestSuite) TestSetTranslationOverrideForKey_Declarative() {
+	// Enable declarative mode
+	config.GetThunderRuntime().Config.DeclarativeResources.Enabled = true
 	defer func() {
-		config.GetThunderRuntime().Config.ImmutableResources.Enabled = false
+		config.GetThunderRuntime().Config.DeclarativeResources.Enabled = false
 	}()
 
 	result, err := suite.service.SetTranslationOverrideForKey("en-US", "common", "welcome", "Hello")
 
 	suite.Nil(result)
 	suite.NotNil(err)
-	suite.Equal(immutableresource.I18nErrorImmutableResourceUpdateOperation.Code, err.Code)
+	suite.Equal(declarativeresource.I18nErrorDeclarativeResourceUpdateOperation.Code, err.Code)
 }
 
 // ClearTranslationOverrideForKey Tests
@@ -330,17 +330,17 @@ func (suite *I18nMgtServiceTestSuite) TestClearTranslationOverrideForKey_StoreEr
 	suite.Equal(ErrorInternalServerError.Code, err.Code)
 }
 
-func (suite *I18nMgtServiceTestSuite) TestClearTranslationOverrideForKey_Immutable() {
-	// Enable immutable mode
-	config.GetThunderRuntime().Config.ImmutableResources.Enabled = true
+func (suite *I18nMgtServiceTestSuite) TestClearTranslationOverrideForKey_Declarative() {
+	// Enable declarative mode
+	config.GetThunderRuntime().Config.DeclarativeResources.Enabled = true
 	defer func() {
-		config.GetThunderRuntime().Config.ImmutableResources.Enabled = false
+		config.GetThunderRuntime().Config.DeclarativeResources.Enabled = false
 	}()
 
 	err := suite.service.ClearTranslationOverrideForKey("en-US", "common", "welcome")
 
 	suite.NotNil(err)
-	suite.Equal(immutableresource.I18nErrorImmutableResourceDeleteOperation.Code, err.Code)
+	suite.Equal(declarativeresource.I18nErrorDeclarativeResourceDeleteOperation.Code, err.Code)
 }
 
 // ResolveTranslations Tests
@@ -606,11 +606,11 @@ func (suite *I18nMgtServiceTestSuite) TestSetTranslationOverrides_StoreError() {
 	suite.Equal(ErrorInternalServerError.Code, err.Code)
 }
 
-func (suite *I18nMgtServiceTestSuite) TestSetTranslationOverrides_Immutable() {
-	// Enable immutable mode
-	config.GetThunderRuntime().Config.ImmutableResources.Enabled = true
+func (suite *I18nMgtServiceTestSuite) TestSetTranslationOverrides_Declarative() {
+	// Enable declarative mode
+	config.GetThunderRuntime().Config.DeclarativeResources.Enabled = true
 	defer func() {
-		config.GetThunderRuntime().Config.ImmutableResources.Enabled = false
+		config.GetThunderRuntime().Config.DeclarativeResources.Enabled = false
 	}()
 
 	translations := map[string]map[string]string{
@@ -621,7 +621,7 @@ func (suite *I18nMgtServiceTestSuite) TestSetTranslationOverrides_Immutable() {
 
 	suite.Nil(result)
 	suite.NotNil(err)
-	suite.Equal(immutableresource.I18nErrorImmutableResourceUpdateOperation.Code, err.Code)
+	suite.Equal(declarativeresource.I18nErrorDeclarativeResourceUpdateOperation.Code, err.Code)
 }
 
 // ClearTranslationOverrides Tests
@@ -652,15 +652,15 @@ func (suite *I18nMgtServiceTestSuite) TestClearTranslationOverrides_ValidationEr
 	suite.Equal(ErrorInvalidLanguage.Code, err.Code)
 }
 
-func (suite *I18nMgtServiceTestSuite) TestClearTranslationOverrides_Immutable() {
-	// Enable immutable mode
-	config.GetThunderRuntime().Config.ImmutableResources.Enabled = true
+func (suite *I18nMgtServiceTestSuite) TestClearTranslationOverrides_Declarative() {
+	// Enable declarative mode
+	config.GetThunderRuntime().Config.DeclarativeResources.Enabled = true
 	defer func() {
-		config.GetThunderRuntime().Config.ImmutableResources.Enabled = false
+		config.GetThunderRuntime().Config.DeclarativeResources.Enabled = false
 	}()
 
 	err := suite.service.ClearTranslationOverrides("en-US")
 
 	suite.NotNil(err)
-	suite.Equal(immutableresource.I18nErrorImmutableResourceDeleteOperation.Code, err.Code)
+	suite.Equal(declarativeresource.I18nErrorDeclarativeResourceDeleteOperation.Code, err.Code)
 }

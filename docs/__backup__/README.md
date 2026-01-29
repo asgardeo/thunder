@@ -97,12 +97,12 @@ Configure message senders for OTP and notifications:
 
 - **[Configure Message Senders](notification-sender/configure-message-senders.md)** - Set up message notification senders
 
-### [Immutable Configurations](immutable-configurations/)
+### [Declarative Configurations](declarative-configurations/)
 
 Manage Thunder configurations and deployments:
 
-- **[Export Configurations](immutable-configurations/export-configurations.md)** - Export applications and other resources as YAML files for version control and backup
-- **[Immutable Configuration Mode](immutable-configurations/immutable-configuration.md)** - Run Thunder with file-based configurations for GitOps workflows
+- **[Export Configurations](declarative-configurations/export-configurations.md)** - Export applications and other resources as YAML files for version control and backup
+- **[Declarative Configuration Mode](declarative-configurations/declarative-configuration.md)** - Run Thunder with file-based configurations for GitOps workflows
 
 ### [Deployment Patterns](./deployment-patterns/)
 

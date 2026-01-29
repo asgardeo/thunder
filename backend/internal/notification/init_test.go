@@ -28,7 +28,7 @@ import (
 	"github.com/stretchr/testify/suite"
 
 	"github.com/asgardeo/thunder/internal/system/config"
-	immutableresource "github.com/asgardeo/thunder/internal/system/immutable_resource"
+	declarativeresource "github.com/asgardeo/thunder/internal/system/declarative_resource"
 	"github.com/asgardeo/thunder/tests/mocks/jwtmock"
 )
 
@@ -79,11 +79,11 @@ func (suite *InitTestSuite) TestInitialize() {
 	suite.Implements((*OTPServiceInterface)(nil), otpService)
 }
 
-// TestInitialize_WithImmutableResourcesEnabled_FileLoading tests that notification senders can be
-// loaded from YAML files when immutable resources are enabled. This test verifies the file parsing
+// TestInitialize_WithDeclarativeResourcesEnabled_FileLoading tests that notification senders can be
+// loaded from YAML files when declarative resources are enabled. This test verifies the file parsing
 // and loading logic without triggering the service create operation which would cause os.Exit.
-func (suite *InitTestSuite) TestInitialize_WithImmutableResourcesEnabled_FileLoading() {
-	// Create a temporary directory for immutable resources
+func (suite *InitTestSuite) TestInitialize_WithDeclarativeResourcesEnabled_FileLoading() {
+	// Create a temporary directory for declarative resources
 	tmpDir := suite.T().TempDir()
 	confDir := tmpDir + "/repository/resources"
 	senderDir := confDir + "/notification_senders"
@@ -134,7 +134,7 @@ properties:
 	err = os.MkdirAll(testsResourcesDir, 0750)
 	suite.NoError(err)
 
-	// Reset and initialize config with immutable resources enabled
+	// Reset and initialize config with declarative resources enabled
 	config.ResetThunderRuntime()
 	testConfig := &config.Config{
 		JWT: config.JWTConfig{
@@ -146,7 +146,7 @@ properties:
 				Key: testCryptoKey,
 			},
 		},
-		ImmutableResources: config.ImmutableResources{
+		DeclarativeResources: config.DeclarativeResources{
 			Enabled: true,
 		},
 	}
@@ -154,7 +154,7 @@ properties:
 	suite.NoError(err)
 
 	// Verify files can be loaded using the file-based runtime
-	configs, err := immutableresource.GetConfigs("notification_senders")
+	configs, err := declarativeresource.GetConfigs("notification_senders")
 	suite.NoError(err)
 	suite.Len(configs, 2, "Expected 2 notification sender configs to be loaded")
 
@@ -449,11 +449,11 @@ func (suite *InitTestSuite) TestParseProviderType_CaseSensitivity() {
 	}
 }
 
-// TestInitialize_WithImmutableResourcesEnabled_InvalidYAML tests Initialize with immutable resources
+// TestInitialize_WithDeclarativeResourcesEnabled_InvalidYAML tests Initialize with declarative resources
 // enabled but with invalid YAML files
 //
 //nolint:dupl // Similar test setup required for different error scenarios
-func (suite *InitTestSuite) TestInitialize_WithImmutableResourcesEnabled_InvalidYAML() {
+func (suite *InitTestSuite) TestInitialize_WithDeclarativeResourcesEnabled_InvalidYAML() {
 	tmpDir := suite.T().TempDir()
 	confDir := tmpDir + "/repository/resources"
 	senderDir := confDir + "/notification_senders"
@@ -479,7 +479,7 @@ func (suite *InitTestSuite) TestInitialize_WithImmutableResourcesEnabled_Invalid
 				Key: testCryptoKey,
 			},
 		},
-		ImmutableResources: config.ImmutableResources{
+		DeclarativeResources: config.DeclarativeResources{
 			Enabled: true,
 		},
 	}
@@ -510,11 +510,11 @@ func (suite *InitTestSuite) TestInitialize_WithImmutableResourcesEnabled_Invalid
 	suite.NoError(err)
 }
 
-// TestInitialize_WithImmutableResourcesEnabled_ValidationFailure tests Initialize when
+// TestInitialize_WithDeclarativeResourcesEnabled_ValidationFailure tests Initialize when
 // validation fails for loaded resources
 //
 //nolint:dupl // Similar test setup required for different error scenarios
-func (suite *InitTestSuite) TestInitialize_WithImmutableResourcesEnabled_ValidationFailure() {
+func (suite *InitTestSuite) TestInitialize_WithDeclarativeResourcesEnabled_ValidationFailure() {
 	tmpDir := suite.T().TempDir()
 	confDir := tmpDir + "/repository/resources"
 	senderDir := confDir + "/notification_senders"
@@ -545,7 +545,7 @@ properties:
 				Key: testCryptoKey,
 			},
 		},
-		ImmutableResources: config.ImmutableResources{
+		DeclarativeResources: config.DeclarativeResources{
 			Enabled: true,
 		},
 	}

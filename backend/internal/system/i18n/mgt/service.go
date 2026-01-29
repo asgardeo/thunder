@@ -24,9 +24,9 @@ import (
 
 	goi18n "golang.org/x/text/language"
 
+	declarativeresource "github.com/asgardeo/thunder/internal/system/declarative_resource"
 	"github.com/asgardeo/thunder/internal/system/error/serviceerror"
 	sysi18n "github.com/asgardeo/thunder/internal/system/i18n/core"
-	immutableresource "github.com/asgardeo/thunder/internal/system/immutable_resource"
 	"github.com/asgardeo/thunder/internal/system/log"
 )
 
@@ -135,7 +135,7 @@ func (s *i18nService) ResolveTranslationsForKey(
 func (s *i18nService) SetTranslationOverrideForKey(
 	language string, namespace string, key string, value string) (
 	*TranslationResponse, *serviceerror.I18nServiceError) {
-	if err := immutableresource.CheckImmutableUpdateI18n(); err != nil {
+	if err := declarativeresource.CheckDeclarativeUpdateI18n(); err != nil {
 		return nil, err
 	}
 	if err := validate(language, namespace, key); err != nil {
@@ -169,7 +169,7 @@ func (s *i18nService) SetTranslationOverrideForKey(
 // ClearTranslationOverrideForKey removes the custom override for a single translation.
 func (s *i18nService) ClearTranslationOverrideForKey(
 	language string, namespace string, key string) *serviceerror.I18nServiceError {
-	if err := immutableresource.CheckImmutableDeleteI18n(); err != nil {
+	if err := declarativeresource.CheckDeclarativeDeleteI18n(); err != nil {
 		return err
 	}
 	if err := validate(language, namespace, key); err != nil {
@@ -259,7 +259,7 @@ func (s *i18nService) ResolveTranslations(
 func (s *i18nService) SetTranslationOverrides(
 	language string, translations map[string]map[string]string) (
 	*LanguageTranslationsResponse, *serviceerror.I18nServiceError) {
-	if err := immutableresource.CheckImmutableUpdateI18n(); err != nil {
+	if err := declarativeresource.CheckDeclarativeUpdateI18n(); err != nil {
 		return nil, err
 	}
 	if language == "" {
@@ -314,7 +314,7 @@ func (s *i18nService) SetTranslationOverrides(
 
 // ClearTranslationOverrides removes all custom overrides for a language.
 func (s *i18nService) ClearTranslationOverrides(language string) *serviceerror.I18nServiceError {
-	if err := immutableresource.CheckImmutableDeleteI18n(); err != nil {
+	if err := declarativeresource.CheckDeclarativeDeleteI18n(); err != nil {
 		return err
 	}
 	if language == "" {

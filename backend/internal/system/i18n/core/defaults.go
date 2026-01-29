@@ -25,6 +25,12 @@ package core
 // This map is populated by the i18n extraction script at build time.
 // Helper functions for accessing these messages are in helpers.go.
 var defaultMessages = map[string]string{
+	"error.declarative_resource.create_operation_not_allowed": "Declarative resource create operation is not allowed",
+	"error.declarative_resource.create_operation_not_allowed_description": "Creating declarative resources is not permitted",
+	"error.declarative_resource.delete_operation_not_allowed": "Declarative resource delete operation is not allowed",
+	"error.declarative_resource.delete_operation_not_allowed_description": "Deleting declarative resources is not permitted",
+	"error.declarative_resource.update_operation_not_allowed": "Declarative resource update operation is not allowed",
+	"error.declarative_resource.update_operation_not_allowed_description": "Updating declarative resources is not permitted",
 	"error.i18nservice.empty_translations": "Empty translations",
 	"error.i18nservice.empty_translations_description": "At least one translation must be provided",
 	"error.i18nservice.internal_server_error": "Internal server error",
@@ -43,10 +49,4 @@ var defaultMessages = map[string]string{
 	"error.i18nservice.missing_value_description": "Translation value is required",
 	"error.i18nservice.translation_not_found": "Translation not found",
 	"error.i18nservice.translation_not_found_description": "The requested translation does not exist for the specified language, namespace, and key",
-	"error.immutable_resource.create_operation_not_allowed": "Immutable resource create operation is not allowed",
-	"error.immutable_resource.create_operation_not_allowed_description": "Creating immutable resources is not permitted",
-	"error.immutable_resource.delete_operation_not_allowed": "Immutable resource delete operation is not allowed",
-	"error.immutable_resource.delete_operation_not_allowed_description": "Deleting immutable resources is not permitted",
-	"error.immutable_resource.update_operation_not_allowed": "Immutable resource update operation is not allowed",
-	"error.immutable_resource.update_operation_not_allowed_description": "Updating immutable resources is not permitted",
 }

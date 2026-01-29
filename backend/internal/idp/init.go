@@ -22,15 +22,15 @@ package idp
 import (
 	"net/http"
 
-	immutableresource "github.com/asgardeo/thunder/internal/system/immutable_resource"
+	declarativeresource "github.com/asgardeo/thunder/internal/system/declarative_resource"
 	"github.com/asgardeo/thunder/internal/system/middleware"
 )
 
 // Initialize initializes the IDP service and registers its routes.
-func Initialize(mux *http.ServeMux) (IDPServiceInterface, immutableresource.ResourceExporter, error) {
+func Initialize(mux *http.ServeMux) (IDPServiceInterface, declarativeresource.ResourceExporter, error) {
 	// Create store based on configuration
 	var idpStore idpStoreInterface
-	if immutableresource.IsImmutableModeEnabled() {
+	if declarativeresource.IsDeclarativeModeEnabled() {
 		idpStore = newIDPFileBasedStore()
 	} else {
 		idpStore = newIDPStore()
@@ -38,9 +38,9 @@ func Initialize(mux *http.ServeMux) (IDPServiceInterface, immutableresource.Reso
 
 	idpService := newIDPService(idpStore)
 
-	// Load immutable resources if enabled
-	if immutableresource.IsImmutableModeEnabled() {
-		if err := loadImmutableResources(idpStore); err != nil {
+	// Load declarative resources if enabled
+	if declarativeresource.IsDeclarativeModeEnabled() {
+		if err := loadDeclarativeResources(idpStore); err != nil {
 			return nil, nil, err
 		}
 	}
