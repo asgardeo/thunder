@@ -142,6 +142,16 @@ configuration:
     encryption:
       # WARNING: Replace the default key with a 32-byte (64 character) hex string in production deployments
       key: "file://repository/resources/security/crypto.key"
+    passwordHashing:
+      algorithm: "PBKDF2"
+      parameters:
+        iterations: 600000
+        keySize: 32
+        saltSize: 16
+    keys:
+      - id: "default-key"
+        certFile: "repository/resources/security/signing.cert"
+        keyFile: "repository/resources/security/signing.key"
 
   # Database configuration
   database:
@@ -208,6 +218,8 @@ configuration:
   jwt:
     validityPeriod: 3600
     audience: "application"
+    # This must match the key ID defined in the crypto.keys section
+    preferredKeyId: "default-key"
 
   # OAuth configuration
   oauth:

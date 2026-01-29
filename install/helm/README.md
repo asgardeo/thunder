@@ -216,9 +216,17 @@ The following table lists the configurable parameters of the Thunder chart and t
 | `configuration.developerClient.path`              | Developer client base path                                                                            | `/develop`                 |
 | `configuration.developerClient.clientId`          | Developer client ID                                                                                   | `DEVELOP`   |
 | `configuration.developerClient.scopes`            | Developer client scopes                                                                               | `['openid', 'profile', 'email', 'system']` |
-| `configuration.security.certFile`                 | Server certificate file path                                                                          | `repository/resources/security/server.cert` |
-| `configuration.security.keyFile`                  | Server key file path                                                                                  | `repository/resources/security/server.key`  |
+| `configuration.tls.minVersion`                    | Minimum TLS version                                                                                   | `1.3`                        |
+| `configuration.tls.certFile`                      | Server TLS certificate file path                                                                          | `repository/resources/security/server.cert` |
+| `configuration.tls.keyFile`                       | Server TLS key file path                                                                                  | `repository/resources/security/server.key`  |
 | `configuration.crypto.encryption.key`             | Crypto encryption key (change the default key with a 32-byte (64 character) hex string in production) | `file://repository/resources/security/crypto.key` |
+| `configuration.crypto.passwordHashing.algorithm`  | Password hashing algorithm                                                                            | `PBKDF2`                     |
+| `configuration.crypto.passwordHashing.parameters.iterations` | Password hashing iterations                                                                | `600000`                     |
+| `configuration.crypto.passwordHashing.parameters.keySize`    | Password hashing key size                                                                  | `32`                         |
+| `configuration.crypto.passwordHashing.parameters.saltSize`   | Password hashing salt size                                                                 | `16`                         |
+| `configuration.crypto.keys[].id`                  | Signing key identifier                                                                                | `default-key`                |
+| `configuration.crypto.keys[].certFile`            | Signing certificate file path                                                                         | `repository/resources/security/signing.cert` |
+| `configuration.crypto.keys[].keyFile`             | Signing key file path                                                                                 | `repository/resources/security/signing.key`  |
 | `configuration.database.identity.type`            | Identity database type (postgres or sqlite)                                                           | `postgres`                   |
 | `configuration.database.identity.sqlitePath`      | SQLite database path (for sqlite only)                                                                | `repository/database/thunderdb.db` |
 | `configuration.database.identity.sqliteOptions`   | SQLite options (for sqlite only)                                                                      | `_journal_mode=WAL&_busy_timeout=5000` |
@@ -255,6 +263,7 @@ The following table lists the configurable parameters of the Thunder chart and t
 | `configuration.jwt.issuer`                        | JWT issuer (derived from server.publicUrl if not set)                                                 | derived                      |
 | `configuration.jwt.validityPeriod`                | JWT validity period in seconds                                                                        | `3600`                       |
 | `configuration.jwt.audience`                      | Default audience for auth assertions                                                                  | `application`                |
+| `configuration.jwt.preferredKeyId`                | Preferred key ID for signing JWTs (must match a key in configuration.crypto.keys)                     | `default-key`                |
 | `configuration.oauth.refreshToken.renewOnGrant`   | Renew refresh token on grant                                                                          | `false`                      |
 | `configuration.oauth.refreshToken.validityPeriod` | Refresh token validity period in seconds                                                              | `86400`                      |
 | `configuration.flow.defaultAuthFlowHandle`        | Default authentication flow handle                                                                    | `default-basic-flow`         |

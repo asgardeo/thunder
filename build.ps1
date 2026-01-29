@@ -515,7 +515,8 @@ function Prepare-Backend-For-Packaging {
     Copy-Item -Path (Join-Path $BACKEND_DIR "bootstrap") -Destination $package_folder -Recurse -Force
 
     Write-Host "=== Ensuring server certificates exist in the distribution ==="
-    Ensure-Certificates -cert_dir $security_dir
+    Ensure-Certificates -cert_dir $security_dir -cert_name_prefix "server"
+    Ensure-Certificates -cert_dir $security_dir -cert_name_prefix "signing"
     Write-Host "================================================================"
 
     Write-Host "=== Ensuring crypto file exists in the distribution ==="
@@ -601,7 +602,7 @@ function Build-Sample-App {
     # Build React Vanilla sample
     Write-Host "=== Building React Vanilla sample app ==="
     Write-Host "=== Ensuring React Vanilla sample app certificates exist ==="
-    Ensure-Certificates -cert_dir $VANILLA_SAMPLE_APP_DIR
+    Ensure-Certificates -cert_dir $VANILLA_SAMPLE_APP_DIR -cert_name_prefix "server"
 
     Push-Location $VANILLA_SAMPLE_APP_DIR
     try {
@@ -668,7 +669,7 @@ function Build-Sample-App {
 
     # Ensure certificates exist for React SDK sample
     Write-Host "=== Ensuring React SDK sample app certificates exist ==="
-    Ensure-Certificates -cert_dir $REACT_SDK_SAMPLE_APP_DIR
+    Ensure-Certificates -cert_dir $REACT_SDK_SAMPLE_APP_DIR -cert_name_prefix "server"
 
     Push-Location $REACT_SDK_SAMPLE_APP_DIR
     try {
@@ -794,7 +795,7 @@ function Package-Vanilla-Sample {
 
     # Ensure the certificates exist in the sample app directory
     Write-Host "=== Ensuring certificates exist in the React Vanilla sample distribution ==="
-    Ensure-Certificates -cert_dir $vanilla_sample_app_folder
+    Ensure-Certificates -cert_dir $vanilla_sample_app_folder -cert_name_prefix "server"
 
     # Copy the appropriate startup script based on the target OS
     if ($SAMPLE_DIST_OS -eq "win") {
@@ -1215,10 +1216,10 @@ function Export-CertificateAndKeyToPem {
 
 function Ensure-Certificates {
     param(
-        [string]$cert_dir
+        [string]$cert_dir,
+        [string]$cert_name_prefix = "server"  # Default to "server" if not specified
     )
     
-    $cert_name_prefix = "server"
     $cert_file_name = "${cert_name_prefix}.cert"
     $key_file_name = "${cert_name_prefix}.key"
 
@@ -1229,7 +1230,8 @@ function Ensure-Certificates {
     if (-not (Test-Path $local_cert_file) -or -not (Test-Path $local_key_file)) {
         New-Item -Path $LOCAL_CERT_DIR -ItemType Directory -Force | Out-Null
         
-        Write-Host "Generating SSL certificates in $LOCAL_CERT_DIR..."
+        Write-Host "Generating certificates ($cert_name_prefix) in $LOCAL_CERT_DIR..."
+        
         try {
             $openssl = Get-Command openssl -ErrorAction SilentlyContinue
             if ($openssl) {
@@ -1238,12 +1240,12 @@ function Ensure-Certificates {
                     -out $local_cert_file `
                     -subj "/O=WSO2/OU=Thunder/CN=localhost" 2>$null
                 if ($LASTEXITCODE -ne 0) {
-                    throw "Error generating SSL certificates: OpenSSL failed with exit code $LASTEXITCODE"
+                    throw "Error generating certificates: OpenSSL failed with exit code $LASTEXITCODE"
                 }
                 Write-Host "Certificates generated successfully in $LOCAL_CERT_DIR using OpenSSL."
             }
             else {
-                Write-Host "OpenSSL not found - generating self-signed cert using .NET CertificateRequest (no UI)."
+                Write-Host "OpenSSL not found - generating certificates using .NET CertificateRequest (no UI)."
                 # Use .NET CertificateRequest to avoid CertEnroll / smartcard enrollment UI issues.
                 try {
                     $rsa = [System.Security.Cryptography.RSA]::Create(2048)
@@ -1302,17 +1304,17 @@ function Ensure-Certificates {
                     Write-Host "Certificates generated successfully in $LOCAL_CERT_DIR using .NET CertificateRequest." 
                 }
                 catch {
-                    throw "Error creating self-signed certificate using .NET APIs: $_"
+                    throw "Error creating certificates using .NET APIs: $_"
                 }
             }
         }
         catch {
-            Write-Error "Error generating SSL certificates: $_"
+            Write-Error "Error generating certificates: $_"
             exit 1
         }
     }
     else {
-        Write-Host "Certificates already exist in $LOCAL_CERT_DIR."
+        Write-Host "Certificates ($cert_name_prefix) already exist in $LOCAL_CERT_DIR."
     }
 
     # Copy the generated certificates to the specified directory
@@ -1322,13 +1324,13 @@ function Ensure-Certificates {
     if (-not (Test-Path $cert_file) -or -not (Test-Path $key_file)) {
         New-Item -Path $cert_dir -ItemType Directory -Force | Out-Null
         
-        Write-Host "Copying certificates to $cert_dir..."
+        Write-Host "Copying certificates ($cert_name_prefix) to $cert_dir..."
         Copy-Item -Path $local_cert_file -Destination $cert_file -Force
         Copy-Item -Path $local_key_file -Destination $key_file -Force
         Write-Host "Certificates copied successfully to $cert_dir."
     }
     else {
-        Write-Host "Certificates already exist in $cert_dir."
+        Write-Host "Certificates ($cert_name_prefix) already exist in $cert_dir."
     }
 }
 
@@ -1523,10 +1525,11 @@ function Run-Backend {
     )
 
     Write-Host "=== Ensuring server certificates exist ==="
-    Ensure-Certificates -cert_dir (Join-Path $BACKEND_DIR $SECURITY_DIR)
+    Ensure-Certificates -cert_dir (Join-Path $BACKEND_DIR $SECURITY_DIR) -cert_name_prefix "server"
+    Ensure-Certificates -cert_dir (Join-Path $BACKEND_DIR $SECURITY_DIR) -cert_name_prefix "signing"
 
     Write-Host "=== Ensuring React Vanilla sample app certificates exist ==="
-    Ensure-Certificates -cert_dir $VANILLA_SAMPLE_APP_DIR
+    Ensure-Certificates -cert_dir $VANILLA_SAMPLE_APP_DIR -cert_name_prefix "server"
 
     Write-Host "=== Ensuring crypto file exists for run ==="
     Ensure-Crypto-File -conf_dir (Join-Path $BACKEND_DIR "repository/conf")

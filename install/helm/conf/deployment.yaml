@@ -35,6 +35,18 @@ tls:
 crypto:
   encryption:
     key: {{ .Values.configuration.crypto.encryption.key | quote }}
+  password_hashing:
+    algorithm: {{ .Values.configuration.crypto.passwordHashing.algorithm | quote }}
+    parameters:
+      iterations: {{ .Values.configuration.crypto.passwordHashing.parameters.iterations }}
+      key_size: {{ .Values.configuration.crypto.passwordHashing.parameters.keySize }}
+      salt_size: {{ .Values.configuration.crypto.passwordHashing.parameters.saltSize }}
+  keys:
+  {{- range .Values.configuration.crypto.keys }}
+    - id: {{ .id | quote }}
+      cert_file: {{ .certFile | quote }}
+      key_file: {{ .keyFile | quote }}
+  {{- end }}
 
 database:
   identity:
@@ -89,6 +101,7 @@ jwt:
   issuer: {{ .Values.configuration.jwt.issuer | quote }}
   validity_period: {{ .Values.configuration.jwt.validityPeriod }}
   audience: {{ .Values.configuration.jwt.audience | quote }}
+  preferred_key_id: {{ .Values.configuration.jwt.preferredKeyId | quote }}
 
 oauth:
   refresh_token:

@@ -124,8 +124,8 @@
     "keys": [
       {
         "id": "default-key",
-        "cert_file": "repository/resources/security/server.cert",
-        "key_file": "repository/resources/security/server.key"
+        "cert_file": "repository/resources/security/signing.cert",
+        "key_file": "repository/resources/security/signing.key"
       }
     ]
   }
