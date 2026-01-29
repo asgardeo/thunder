@@ -19,49 +19,50 @@
 import {useQuery, type UseQueryResult} from '@tanstack/react-query';
 import {useConfig} from '@thunder/commons-contexts';
 import {useAsgardeo} from '@asgardeo/react';
-import type {OrganizationUnitListParams, OrganizationUnitListResponse} from '../types/organization-units';
+import type {UserListResponse, UserListParams} from '../../users/types/users';
 import OrganizationUnitQueryKeys from '../constants/organization-unit-query-keys';
 
 /**
- * Custom React hook to fetch a paginated list of organization units from the Thunder server.
+ * Custom React hook to fetch users belonging to a specific organization unit.
  *
  * This hook uses TanStack Query to manage the server state and provides automatic
- * caching, refetching, and background updates. The query is keyed by the pagination
- * parameters to ensure proper cache management.
+ * caching, refetching, and background updates.
  *
+ * @param organizationUnitId - The ID of the organization unit
  * @param params - Optional pagination parameters
  * @param params.limit - Maximum number of records to return (default: 30)
  * @param params.offset - Number of records to skip for pagination (default: 0)
- * @returns TanStack Query result object containing organization units list data, loading state, and error information
+ * @returns TanStack Query result object containing users list data
  *
  * @example
  * ```tsx
- * function OrganizationUnitsList() {
- *   const { data, isLoading, error } = useGetOrganizationUnits();
+ * function OUUsersList({ ouId }: { ouId: string }) {
+ *   const { data, isLoading, error } = useGetOrganizationUnitUsers(ouId);
  *
  *   if (isLoading) return <div>Loading...</div>;
  *   if (error) return <div>Error: {error.message}</div>;
  *
  *   return (
  *     <ul>
- *       {data?.organizationUnits.map((ou) => (
- *         <li key={ou.id}>{ou.name}</li>
+ *       {data?.users.map((user) => (
+ *         <li key={user.id}>{user.id}</li>
  *       ))}
  *     </ul>
  *   );
  * }
  * ```
  */
-export default function useGetOrganizationUnits(
-  params?: OrganizationUnitListParams,
-): UseQueryResult<OrganizationUnitListResponse> {
+export default function useGetOrganizationUnitUsers(
+  organizationUnitId: string | undefined,
+  params?: UserListParams,
+): UseQueryResult<UserListResponse> {
   const {http} = useAsgardeo();
   const {getServerUrl} = useConfig();
   const {limit = 30, offset = 0} = params ?? {};
 
-  return useQuery<OrganizationUnitListResponse>({
-    queryKey: [OrganizationUnitQueryKeys.ORGANIZATION_UNITS, {limit, offset}],
-    queryFn: async (): Promise<OrganizationUnitListResponse> => {
+  return useQuery<UserListResponse>({
+    queryKey: [OrganizationUnitQueryKeys.ORGANIZATION_UNIT_USERS, organizationUnitId, {limit, offset}],
+    queryFn: async (): Promise<UserListResponse> => {
       const serverUrl: string = getServerUrl();
       const queryParams: URLSearchParams = new URLSearchParams({
         limit: limit.toString(),
@@ -69,9 +70,9 @@ export default function useGetOrganizationUnits(
       });
 
       const response: {
-        data: OrganizationUnitListResponse;
+        data: UserListResponse;
       } = await http.request({
-        url: `${serverUrl}/organization-units?${queryParams.toString()}`,
+        url: `${serverUrl}/organization-units/${organizationUnitId}/users?${queryParams.toString()}`,
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
@@ -80,5 +81,6 @@ export default function useGetOrganizationUnits(
 
       return response.data;
     },
+    enabled: Boolean(organizationUnitId),
   });
 }

@@ -16,6 +16,7 @@
  * under the License.
  */
 
+/* eslint-disable @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-return, no-underscore-dangle */
 import {describe, it, expect, vi, beforeEach} from 'vitest';
 import {screen, waitFor} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
@@ -25,7 +26,6 @@ import render from '@/test/test-utils';
 import UserTypesList from '../UserTypesList';
 import type useGetUserTypesHook from '../../api/useGetUserTypes';
 import type useDeleteUserTypeHook from '../../api/useDeleteUserType';
-import type useGetOrganizationUnitsHook from '../../../organization-units/api/useGetOrganizationUnits';
 import type {UserSchemaListResponse, ApiError, UserSchemaListItem} from '../../types/user-types';
 
 const mockNavigate = vi.fn();
@@ -110,7 +110,7 @@ vi.mock('@wso2/oxygen-ui', async () => {
     },
   };
 });
-/* eslint-enable @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-return, react/destructuring-assignment */
+/* eslint-enable @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-call, react/destructuring-assignment */
 
 // Mock react-router
 vi.mock('react-router', async () => {
@@ -125,12 +125,12 @@ vi.mock('react-router', async () => {
 type UseGetUserTypesReturn = ReturnType<typeof useGetUserTypesHook>;
 type UseDeleteUserTypeReturn = ReturnType<typeof useDeleteUserTypeHook>;
 
-type UseGetOrganizationUnitsReturn = ReturnType<typeof useGetOrganizationUnitsHook>;
-
 const mockUseGetUserTypes = vi.fn<() => UseGetUserTypesReturn>();
 const mockUseDeleteUserType = vi.fn<() => UseDeleteUserTypeReturn>();
-const mockUseGetOrganizationUnits = vi.fn<() => UseGetOrganizationUnitsReturn>();
-const mockRefetchOrganizationUnits = vi.fn<() => Promise<void>>();
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const mockUseGetOrganizationUnits = vi.fn<() => any>();
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const mockRefetchOrganizationUnits = vi.fn() as any;
 
 vi.mock('../../api/useGetUserTypes', () => ({
   default: () => mockUseGetUserTypes(),
@@ -141,6 +141,7 @@ vi.mock('../../api/useDeleteUserType', () => ({
 }));
 
 vi.mock('../../../organization-units/api/useGetOrganizationUnits', () => ({
+  // eslint-disable-next-line @typescript-eslint/no-unsafe-return
   default: () => mockUseGetOrganizationUnits(),
 }));
 
@@ -181,7 +182,7 @@ describe('UserTypesList', () => {
     });
     mockUseGetOrganizationUnits.mockReturnValue({
       data: mockOrganizationUnitsResponse,
-      loading: false,
+      isLoading: false,
       error: null,
       refetch: mockRefetchOrganizationUnits,
     });
@@ -204,7 +205,7 @@ describe('UserTypesList', () => {
   it('falls back to organization unit id when lookup is missing', () => {
     mockUseGetOrganizationUnits.mockReturnValueOnce({
       data: {...mockOrganizationUnitsResponse, organizationUnits: []},
-      loading: false,
+      isLoading: false,
       error: null,
       refetch: mockRefetchOrganizationUnits,
     });
@@ -511,9 +512,9 @@ describe('UserTypesList', () => {
     };
 
     mockUseGetOrganizationUnits.mockReturnValue({
-      data: null,
-      loading: false,
-      error: orgError,
+      data: undefined,
+      isLoading: false,
+      error: new Error(orgError.message),
       refetch: mockRefetchOrganizationUnits,
     });
 

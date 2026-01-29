@@ -58,7 +58,7 @@ interface UseGetOrganizationUnitsReturn {
       parent?: string | null;
     }[];
   } | null;
-  loading: boolean;
+  isLoading: boolean;
   error: ApiError | null;
   refetch: (newParams?: OrganizationUnitListParams) => Promise<void>;
 }
@@ -97,7 +97,7 @@ describe('CreateUserTypePage', () => {
     });
     mockUseGetOrganizationUnits.mockReturnValue({
       data: mockOrganizationUnitsResponse,
-      loading: false,
+      isLoading: false,
       error: null,
       refetch: mockRefetchOrganizationUnits,
     });
@@ -264,7 +264,7 @@ describe('CreateUserTypePage', () => {
     const user = userEvent.setup();
     mockUseGetOrganizationUnits.mockReturnValue({
       data: {...mockOrganizationUnitsResponse, organizationUnits: []},
-      loading: false,
+      isLoading: false,
       error: null,
       refetch: mockRefetchOrganizationUnits,
     });
@@ -788,7 +788,7 @@ describe('CreateUserTypePage', () => {
 
     mockUseGetOrganizationUnits.mockReturnValue({
       data: null,
-      loading: false,
+      isLoading: false,
       error: orgError,
       refetch: mockRefetchOrganizationUnits,
     });
@@ -805,7 +805,7 @@ describe('CreateUserTypePage', () => {
 
     mockUseGetOrganizationUnits.mockReturnValue({
       data: null,
-      loading: true,
+      isLoading: true,
       error: null,
       refetch: mockRefetchOrganizationUnits,
     });
@@ -825,7 +825,7 @@ describe('CreateUserTypePage', () => {
 
     mockUseGetOrganizationUnits.mockReturnValue({
       data: {...mockOrganizationUnitsResponse, organizationUnits: []},
-      loading: false,
+      isLoading: false,
       error: null,
       refetch: mockRefetchOrganizationUnits,
     });
@@ -850,7 +850,7 @@ describe('CreateUserTypePage', () => {
 
     mockUseGetOrganizationUnits.mockReturnValue({
       data: null,
-      loading: false,
+      isLoading: false,
       error: orgError,
       refetch: mockRefetchOrganizationUnits,
     });
@@ -870,7 +870,7 @@ describe('CreateUserTypePage', () => {
   it('displays organization unit placeholder when no value is selected', async () => {
     mockUseGetOrganizationUnits.mockReturnValue({
       data: {...mockOrganizationUnitsResponse, organizationUnits: []},
-      loading: false,
+      isLoading: false,
       error: null,
       refetch: mockRefetchOrganizationUnits,
     });

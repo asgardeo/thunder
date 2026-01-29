@@ -331,6 +331,7 @@ const translations = {
       home: 'Home',
       users: 'Users',
       userTypes: 'User Types',
+      organizationUnits: 'Organization Units',
       integrations: 'Integrations',
       applications: 'Applications',
       dashboard: 'Dashboard',
@@ -434,6 +435,126 @@ const translations = {
     noUserTypes: 'No user types found',
     noOrganizationUnits: 'No organization units available',
     confirmDeleteUserType: 'Are you sure you want to delete this user type?',
+  },
+
+  // ============================================================================
+  // Organization Units namespace - Organization unit management feature translations
+  // ============================================================================
+  organizationUnits: {
+    // Listing page
+    listing: {
+      title: 'Organization Units',
+      subtitle: 'Manage organization units and hierarchies',
+      addOrganizationUnit: 'Add Organization Unit',
+      columns: {
+        name: 'Name',
+        handle: 'Handle',
+        description: 'Description',
+        actions: 'Actions',
+      },
+      error: {
+        title: 'Failed to load organization units',
+        unknown: 'An unknown error occurred',
+      },
+    },
+
+    // Create page
+    create: {
+      title: 'Create Organization Unit',
+      heading: "Let's set up your organization unit",
+      subtitle: 'Define a new organization unit',
+      error: 'Failed to create organization unit. Please try again.',
+      suggestions: {
+        label: 'In a hurry? Pick a random name:',
+      },
+    },
+
+    // View/Edit page
+    view: {
+      title: 'Organization Unit Details',
+      error: 'Failed to load organization unit',
+      notFound: 'Organization unit not found',
+      back: 'Back to Organization Units',
+      backToOU: 'Back to {{name}}',
+      description: {
+        empty: 'No description',
+        placeholder: 'Enter a description...',
+      },
+      tabs: {
+        general: 'General',
+        childOUs: 'Child OUs',
+        users: 'Users',
+        groups: 'Groups',
+        advanced: 'Advanced Settings',
+      },
+      childOUs: {
+        title: 'Child Organization Units',
+        subtitle: 'View and manage child organization units under this OU',
+      },
+      users: {
+        title: 'Users',
+        subtitle: 'View users belonging to this organization unit',
+        columns: {
+          id: 'User ID',
+          type: 'User Type',
+        },
+      },
+      groups: {
+        title: 'Groups',
+        subtitle: 'View groups belonging to this organization unit',
+        columns: {
+          name: 'Group Name',
+          id: 'Group ID',
+        },
+      },
+      general: {
+        title: 'Organization Unit Details',
+        subtitle: 'View the details of this organization unit',
+        id: 'Organization Unit ID',
+        parent: 'Parent Organization Unit',
+        noParent: 'Root Organization Unit',
+      },
+      advanced: {
+        dangerZone: 'Danger Zone',
+        dangerZoneDescription: 'Deleting this organization unit is permanent and cannot be undone.',
+        deleteButton: 'Delete Organization Unit',
+      },
+      unsavedChanges: 'You have unsaved changes',
+      reset: 'Reset',
+      save: 'Save Changes',
+      saving: 'Saving...',
+    },
+
+    edit: {
+      error: 'Failed to update organization unit. Please try again.',
+    },
+
+    // Delete dialog
+    delete: {
+      title: 'Delete Organization Unit',
+      message: 'Are you sure you want to delete this organization unit? This action cannot be undone.',
+      disclaimer: 'Warning: All associated data will be permanently removed.',
+      error: 'Failed to delete organization unit. Please try again.',
+    },
+
+    // Form fields
+    form: {
+      handle: 'Handle',
+      handlePlaceholder: 'e.g., engineering, sales, hr',
+      handleHelperText: 'A unique identifier for this organization unit',
+      name: 'Name',
+      namePlaceholder: 'e.g., Engineering Department',
+      description: 'Description',
+      descriptionPlaceholder: 'Enter a description for this organization unit',
+      parent: 'Parent Organization Unit',
+      parentPlaceholder: 'Select a parent organization unit (optional)',
+      parentHelperText: 'Choose a parent to create a hierarchical structure',
+      validation: {
+        nameRequired: 'Name is required',
+        handleRequired: 'Handle is required',
+        handleFormat: 'Handle must be lowercase alphanumeric with hyphens only',
+      },
+    },
   },
 
   // ============================================================================

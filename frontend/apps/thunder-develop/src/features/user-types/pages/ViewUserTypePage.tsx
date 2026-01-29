@@ -71,7 +71,7 @@ export default function ViewUserTypePage() {
   const {deleteUserType, loading: isDeleting, error: deleteUserTypeError} = useDeleteUserType();
   const {
     data: organizationUnitsResponse,
-    loading: organizationUnitsLoading,
+    isLoading: organizationUnitsLoading,
     error: organizationUnitsError,
   } = useGetOrganizationUnits();
 

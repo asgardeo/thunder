@@ -23,21 +23,21 @@ import type {OrganizationUnitListParams, OrganizationUnitListResponse} from '../
 import OrganizationUnitQueryKeys from '../constants/organization-unit-query-keys';
 
 /**
- * Custom React hook to fetch a paginated list of organization units from the Thunder server.
+ * Custom React hook to fetch child organization units of a specific organization unit.
  *
  * This hook uses TanStack Query to manage the server state and provides automatic
- * caching, refetching, and background updates. The query is keyed by the pagination
- * parameters to ensure proper cache management.
+ * caching, refetching, and background updates.
  *
+ * @param parentId - The ID of the parent organization unit
  * @param params - Optional pagination parameters
  * @param params.limit - Maximum number of records to return (default: 30)
  * @param params.offset - Number of records to skip for pagination (default: 0)
- * @returns TanStack Query result object containing organization units list data, loading state, and error information
+ * @returns TanStack Query result object containing child organization units list data
  *
  * @example
  * ```tsx
- * function OrganizationUnitsList() {
- *   const { data, isLoading, error } = useGetOrganizationUnits();
+ * function ChildOUsList({ parentId }: { parentId: string }) {
+ *   const { data, isLoading, error } = useGetChildOrganizationUnits(parentId);
  *
  *   if (isLoading) return <div>Loading...</div>;
  *   if (error) return <div>Error: {error.message}</div>;
@@ -52,7 +52,8 @@ import OrganizationUnitQueryKeys from '../constants/organization-unit-query-keys
  * }
  * ```
  */
-export default function useGetOrganizationUnits(
+export default function useGetChildOrganizationUnits(
+  parentId: string | undefined,
   params?: OrganizationUnitListParams,
 ): UseQueryResult<OrganizationUnitListResponse> {
   const {http} = useAsgardeo();
@@ -60,7 +61,7 @@ export default function useGetOrganizationUnits(
   const {limit = 30, offset = 0} = params ?? {};
 
   return useQuery<OrganizationUnitListResponse>({
-    queryKey: [OrganizationUnitQueryKeys.ORGANIZATION_UNITS, {limit, offset}],
+    queryKey: [OrganizationUnitQueryKeys.CHILD_ORGANIZATION_UNITS, parentId, {limit, offset}],
     queryFn: async (): Promise<OrganizationUnitListResponse> => {
       const serverUrl: string = getServerUrl();
       const queryParams: URLSearchParams = new URLSearchParams({
@@ -71,7 +72,7 @@ export default function useGetOrganizationUnits(
       const response: {
         data: OrganizationUnitListResponse;
       } = await http.request({
-        url: `${serverUrl}/organization-units?${queryParams.toString()}`,
+        url: `${serverUrl}/organization-units/${parentId}/ous?${queryParams.toString()}`,
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
@@ -80,5 +81,6 @@ export default function useGetOrganizationUnits(
 
       return response.data;
     },
+    enabled: Boolean(parentId),
   });
 }
