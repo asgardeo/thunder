@@ -330,6 +330,39 @@ jobs:
           echo "📦 Image available at: ${IMAGE_NAME}:${DOCKER_VERSION}"
           echo "📦 Image available at: ${IMAGE_NAME}:latest"
 
+      - name: 🏷️ Update Helm Values Image Tag
+        run: |
+          # Get version without 'v' prefix
+          CHART_VERSION="${{ needs.build-thunder.outputs.version }}"
+          if [[ $CHART_VERSION == v* ]]; then
+            CHART_VERSION="${CHART_VERSION#v}"
+          fi
+          
+          echo "📝 Updating Helm values.yaml with image tag ${CHART_VERSION}"
+          
+          # Check if the file exists and has the expected pattern
+          if ! grep -q "tag: \"" install/helm/values.yaml; then
+            echo "❌ Error: Could not find 'tag: \"' pattern in install/helm/values.yaml"
+            echo "File may have been modified or corrupted"
+            exit 1
+          fi
+          
+          # Update values.yaml with the new image tag
+          sed -i "s/tag: \"[^\"]*\"/tag: \"${CHART_VERSION}\"/" install/helm/values.yaml
+          
+          # Verify the replacement was successful
+          if ! grep -q "tag: \"${CHART_VERSION}\"" install/helm/values.yaml; then
+            echo "❌ Error: Failed to update image tag in values.yaml"
+            echo "Expected to find: tag: \"${CHART_VERSION}\""
+            echo "Current content:"
+            grep "tag:" install/helm/values.yaml
+            exit 1
+          fi
+          
+          echo "✅ Successfully updated values.yaml with image tag: ${CHART_VERSION}"
+          echo "✅ Verification passed - new tag is present in file"
+          grep "tag:" install/helm/values.yaml | head -1
+
       - name: ⚙️ Set up Helm
         uses: azure/setup-helm@v3
         with:
