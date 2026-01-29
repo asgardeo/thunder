@@ -1,0 +1,61 @@
+---
+title: <SignedOut />
+description: Conditionally render content for unauthenticated users
+---
+
+# `<SignedOut />`
+
+The `<SignedOut />` component conditionally renders its children only when a user is not authenticated. It's useful for showing content like sign-in prompts or public landing pages.
+
+## Usage
+
+### Basic Usage
+
+```jsx
+import { SignedOut, SignInButton } from '@thunder/react';
+
+function App() {
+  return (
+    <div>
+      <SignedOut>
+        <div>
+          <h1>Welcome!</h1>
+          <SignInButton />
+        </div>
+      </SignedOut>
+    </div>
+  );
+}
+```
+
+### Landing Page
+
+```jsx
+import { SignedOut, SignInButton, SignUpButton } from '@thunder/react';
+
+function LandingPage() {
+  return (
+    <SignedOut>
+      <div className="hero">
+        <h1>Welcome to Thunder</h1>
+        <p>Get started with authentication</p>
+        <div className="actions">
+          <SignUpButton />
+          <SignInButton />
+        </div>
+      </div>
+    </SignedOut>
+  );
+}
+```
+
+## Props
+
+| Prop | Type | Description |
+|------|------|-------------|
+| `children` | `ReactNode` | Content to render when user is signed out |
+
+## Related
+
+- [`<SignedIn />`](/sdks/react/components/signed-in)
+- [`<SignInButton />`](/sdks/react/components/sign-in-button)

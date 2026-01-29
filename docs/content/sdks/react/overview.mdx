@@ -1,0 +1,101 @@
+---
+title: React SDK Overview
+sidebar_position: 1
+description: Asgardeo React SDK for seamless authentication integration
+---
+
+import Tabs from '@theme/Tabs';
+import TabItem from '@theme/TabItem';
+
+# React SDK
+
+The Asgardeo React SDK (`@asgardeo/react`) provides a comprehensive set of components, hooks, and utilities to integrate Asgardeo authentication and user management into your React applications.
+
+## Installation
+
+Install the Asgardeo React SDK using your preferred package manager:
+
+<Tabs groupId="package-manager">
+  <TabItem value="npm" label="npm" default>
+    ```bash
+    npm install @asgardeo/react
+    ```
+  </TabItem>
+  <TabItem value="yarn" label="yarn">
+    ```bash
+    yarn add @asgardeo/react
+    ```
+  </TabItem>
+  <TabItem value="pnpm" label="pnpm">
+    ```bash
+    pnpm add @asgardeo/react
+    ```
+  </TabItem>
+</Tabs>
+
+## Getting Started
+
+To get started quickly, check out our [React Quickstart Guide](/guides/quickstart/react) for step-by-step instructions.
+
+## Features
+
+### Contexts
+
+The SDK provides a powerful context provider that manages authentication state across your application.
+
+- **[`<AsgardeoProvider />`](/sdks/react/contexts/asgardeo-provider)** - Root provider component that wraps your application and manages authentication state
+
+### Components
+
+Pre-built, customizable components for common authentication flows and user management.
+
+#### Action Components
+- **[`<SignInButton />`](/sdks/react/components/sign-in-button)** - Trigger sign-in flow
+- **[`<SignOutButton />`](/sdks/react/components/sign-out-button)** - Sign out the current user
+- **[`<SignUpButton />`](/sdks/react/components/sign-up-button)** - Trigger sign-up flow
+
+#### Control Components
+- **[`<SignedIn />`](/sdks/react/components/signed-in)** - Conditionally render content for authenticated users
+- **[`<SignedOut />`](/sdks/react/components/signed-out)** - Conditionally render content for unauthenticated users
+- **[`<Loading />`](/sdks/react/components/loading)** - Display loading state during authentication
+
+#### User Self-care Components
+- **[`<UserDropdown />`](/sdks/react/components/user-dropdown)** - User menu with profile and settings
+- **[`<UserProfile />`](/sdks/react/components/user-profile)** - Complete user profile management interface
+- **[`<User />`](/sdks/react/components/user)** - Display user information
+
+#### Organization Components (B2B)
+- **[`<CreateOrganization />`](/sdks/react/components/create-organization)** - Create new organizations
+- **[`<OrganizationProfile />`](/sdks/react/components/organization-profile)** - Manage organization settings
+- **[`<OrganizationSwitcher />`](/sdks/react/components/organization-switcher)** - Switch between organizations
+- **[`<OrganizationList />`](/sdks/react/components/organization-list)** - List user's organizations
+- **[`<Organization />`](/sdks/react/components/organization)** - Display organization information
+
+### Hooks
+
+React hooks for programmatic access to authentication and user data.
+
+- **[`useAsgardeo()`](/sdks/react/hooks/use-asgardeo)** - Access the main Asgardeo SDK instance
+- **[`useAuth()`](/sdks/react/hooks/use-auth)** - Manage authentication state and methods
+- **[`useUser()`](/sdks/react/hooks/use-user)** - Access current user data
+- **[`useOrganization()`](/sdks/react/hooks/use-organization)** - Access organization data and methods
+
+## Customization
+
+All components in the Asgardeo React SDK are fully customizable. You can:
+
+- Override default styles using CSS classes or inline styles
+- Customize component behavior through props
+- Build custom components using the provided hooks
+- Extend functionality with middleware and plugins
+
+## Next Steps
+
+- Explore the [API Reference](/sdks/react/contexts/asgardeo-provider) to learn about all available components and hooks
+- Join our [Discord community](https://discord.com/invite/wso2) for support and discussions
+- Check out [example applications](https://github.com/asgardeo/asgardeo-react-sdk/tree/master/samples) built with Asgardeo React SDK
+
+## Requirements
+
+- React 16.8.0 or higher
+- Node.js 14.0 or higher

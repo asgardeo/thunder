@@ -1,0 +1,55 @@
+---
+title: <Organization />
+description: Display organization information
+---
+
+# `<Organization />`
+
+The `<Organization />` component displays information about the current or specified organization.
+
+## Usage
+
+### Basic Usage
+
+```jsx
+import { Organization } from '@thunder/react';
+
+function Header() {
+  return (
+    <div>
+      <Organization />
+    </div>
+  );
+}
+```
+
+### Custom Fields
+
+```jsx
+import { Organization } from '@thunder/react';
+
+function OrgCard() {
+  return (
+    <Organization>
+      {(org) => (
+        <div>
+          <img src={org.logo} alt={org.name} />
+          <h3>{org.name}</h3>
+          <p>{org.memberCount} members</p>
+        </div>
+      )}
+    </Organization>
+  );
+}
+```
+
+## Props
+
+| Prop | Type | Default | Description |
+|------|------|---------|-------------|
+| `organizationId` | `string` | Current org | Organization ID to display |
+| `children` | `Function` | Default display | Render function |
+
+## Related
+
+- [`useOrganization()`](/sdks/react/hooks/use-organization)

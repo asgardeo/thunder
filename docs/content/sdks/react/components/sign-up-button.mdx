@@ -1,0 +1,66 @@
+---
+title: <SignUpButton />
+description: Trigger the sign-up registration flow
+---
+
+# `<SignUpButton />`
+
+The `<SignUpButton />` component renders a button that triggers the Thunder sign-up flow when clicked, allowing new users to create an account.
+
+## Usage
+
+### Basic Usage
+
+```jsx
+import { SignUpButton } from '@thunder/react';
+
+function LandingPage() {
+  return (
+    <SignUpButton />
+  );
+}
+```
+
+### Custom Children
+
+```jsx
+import { SignUpButton } from '@thunder/react';
+
+function LandingPage() {
+  return (
+    <SignUpButton>
+      Create Account
+    </SignUpButton>
+  );
+}
+```
+
+### With Redirect URL
+
+```jsx
+import { SignUpButton } from '@thunder/react';
+
+function LandingPage() {
+  return (
+    <SignUpButton redirectUrl="/onboarding">
+      Get Started
+    </SignUpButton>
+  );
+}
+```
+
+## Props
+
+| Prop | Type | Default | Description |
+|------|------|---------|-------------|
+| `children` | `ReactNode` | `'Sign Up'` | Button content |
+| `redirectUrl` | `string` | `undefined` | URL to redirect to after sign-up |
+| `mode` | `'redirect' \| 'modal'` | `'redirect'` | Sign-up mode |
+| `className` | `string` | `undefined` | CSS class name |
+| `style` | `CSSProperties` | `undefined` | Inline styles |
+| `disabled` | `boolean` | `false` | Disable the button |
+
+## Related
+
+- [`<SignInButton />`](/sdks/react/components/sign-in-button)
+- [`useAuth()`](/sdks/react/hooks/use-auth)
