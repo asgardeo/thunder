@@ -1,0 +1,30 @@
+{
+  "title": {
+    "message": "Thunder",
+    "description": "The title in the navbar"
+  },
+  "item.label.Docs": {
+    "message": "Docs",
+    "description": "Navbar item for documentation"
+  },
+  "item.label.APIs": {
+    "message": "APIs",
+    "description": "Navbar item for API documentation"
+  },
+  "item.label.SDKs": {
+    "message": "SDKs",
+    "description": "Navbar item for SDK documentation"
+  },
+  "item.label.Resources": {
+    "message": "Resources",
+    "description": "Navbar item for resources dropdown"
+  },
+  "item.label.Community": {
+    "message": "Community",
+    "description": "Navbar item for community section"
+  },
+  "item.label.🌍 Help translate": {
+    "message": "🌍 Help translate",
+    "description": "Link to contribute translations"
+  }
+}
