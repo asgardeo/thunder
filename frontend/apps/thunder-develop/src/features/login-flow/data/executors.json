@@ -15,7 +15,8 @@
         "executor": {
           "name": "BasicAuthExecutor"
         },
-        "next": ""
+        "onSuccess": "",
+        "onFailure": ""
       }
     }
   },
@@ -36,7 +37,8 @@
           "name": "SMSOTPAuthExecutor",
           "mode": "send"
         },
-        "next": ""
+        "onSuccess": "",
+        "onFailure": ""
       }
     }
   },
@@ -57,7 +59,8 @@
           "name": "SMSOTPAuthExecutor",
           "mode": "verify"
         },
-        "next": ""
+        "onSuccess": "",
+        "onFailure": ""
       }
     }
   },
@@ -77,7 +80,8 @@
         "executor": {
           "name": "OAuthExecutor"
         },
-        "next": ""
+        "onSuccess": "",
+        "onFailure": ""
       },
       "properties": {
         "idpId": "{{IDP_ID}}"
@@ -100,7 +104,8 @@
         "executor": {
           "name": "OIDCAuthExecutor"
         },
-        "next": ""
+        "onSuccess": "",
+        "onFailure": ""
       },
       "properties": {
         "idpId": "{{IDP_ID}}"
@@ -123,7 +128,8 @@
         "executor": {
           "name": "GithubOAuthExecutor"
         },
-        "next": ""
+        "onSuccess": "",
+        "onFailure": ""
       },
       "properties": {
         "idpId": "{{IDP_ID}}"
@@ -146,10 +152,107 @@
         "executor": {
           "name": "GoogleOIDCAuthExecutor"
         },
-        "next": ""
+        "onSuccess": "",
+        "onFailure": ""
       },
       "properties": {
         "idpId": "{{IDP_ID}}"
+      }
+    }
+  },
+  {
+    "resourceType": "STEP",
+    "category": "EXECUTOR",
+    "type": "TASK_EXECUTION",
+    "display": {
+      "header": "Passkey Executor",
+      "label": "Request Passkey",
+      "image": "assets/images/icons/fingerprint.svg",
+      "showOnResourcePanel": true
+    },
+    "data": {
+      "action": {
+        "type": "EXECUTOR",
+        "executor": {
+          "name": "PasskeyAuthExecutor",
+          "mode": "challenge"
+        },
+        "onSuccess": "",
+        "onFailure": ""
+      },
+      "properties": {
+        "relyingPartyId": "localhost",
+        "relyingPartyName": "Thunder"
+      }
+    }
+  },
+  {
+    "resourceType": "STEP",
+    "category": "EXECUTOR",
+    "type": "TASK_EXECUTION",
+    "display": {
+      "header": "Passkey Executor",
+      "label": "Verify Passkey",
+      "image": "assets/images/icons/fingerprint.svg",
+      "showOnResourcePanel": true
+    },
+    "data": {
+      "action": {
+        "type": "EXECUTOR",
+        "executor": {
+          "name": "PasskeyAuthExecutor",
+          "mode": "verify"
+        },
+        "onSuccess": "",
+        "onFailure": ""
+      }
+    }
+  },
+  {
+    "resourceType": "STEP",
+    "category": "EXECUTOR",
+    "type": "TASK_EXECUTION",
+    "display": {
+      "header": "Passkey Executor",
+      "label": "Start Passkey Registration",
+      "image": "assets/images/icons/fingerprint.svg",
+      "showOnResourcePanel": true
+    },
+    "data": {
+      "action": {
+        "type": "EXECUTOR",
+        "executor": {
+          "name": "PasskeyAuthExecutor",
+          "mode": "register_start"
+        },
+        "onSuccess": "",
+        "onFailure": ""
+      },
+      "properties": {
+        "relyingPartyId": "localhost",
+        "relyingPartyName": "Thunder"
+      }
+    }
+  },
+  {
+    "resourceType": "STEP",
+    "category": "EXECUTOR",
+    "type": "TASK_EXECUTION",
+    "display": {
+      "header": "Passkey Executor",
+      "label": "Finish Passkey Registration",
+      "image": "assets/images/icons/fingerprint.svg",
+      "showOnResourcePanel": true
+    },
+    "data": {
+      "action": {
+        "type": "EXECUTOR",
+        "executor": {
+          "name": "PasskeyAuthExecutor",
+          "mode": "register_finish"
+        },
+        "onSuccess": "",
+        "onFailure": ""
       }
     }
   },
@@ -169,7 +272,8 @@
         "executor": {
           "name": "IdentifyingExecutor"
         },
-        "next": ""
+        "onSuccess": "",
+        "onFailure": ""
       }
     }
   },
@@ -189,7 +293,8 @@
         "executor": {
           "name": "AuthAssertExecutor"
         },
-        "next": ""
+        "onSuccess": "",
+        "onFailure": ""
       }
     }
   },
@@ -209,7 +314,8 @@
         "executor": {
           "name": "ProvisioningExecutor"
         },
-        "next": ""
+        "onSuccess": "",
+        "onFailure": ""
       }
     }
   },
@@ -229,7 +335,8 @@
         "executor": {
           "name": "AttributeCollector"
         },
-        "next": ""
+        "onSuccess": "",
+        "onFailure": ""
       }
     }
   },
@@ -249,7 +356,8 @@
         "executor": {
           "name": "AuthorizationExecutor"
         },
-        "next": ""
+        "onSuccess": "",
+        "onFailure": ""
       }
     }
   },
@@ -269,7 +377,8 @@
         "executor": {
           "name": "OUExecutor"
         },
-        "next": ""
+        "onSuccess": "",
+        "onFailure": ""
       }
     }
   },
@@ -289,7 +398,8 @@
         "executor": {
           "name": "HTTPRequestExecutor"
         },
-        "next": ""
+        "onSuccess": "",
+        "onFailure": ""
       }
     }
   },
@@ -309,7 +419,8 @@
         "executor": {
           "name": "UserTypeResolver"
         },
-        "next": ""
+        "onSuccess": "",
+        "onFailure": ""
       }
     }
   },
@@ -329,7 +440,8 @@
         "executor": {
           "name": "AppleExecutor"
         },
-        "next": ""
+        "onSuccess": "",
+        "onFailure": ""
       },
       "properties": {
         "idpId": "{{IDP_ID}}"
@@ -352,7 +464,8 @@
         "executor": {
           "name": "FacebookExecutor"
         },
-        "next": ""
+        "onSuccess": "",
+        "onFailure": ""
       },
       "properties": {
         "idpId": "{{IDP_ID}}"
@@ -375,30 +488,11 @@
         "executor": {
           "name": "Office365Executor"
         },
-        "next": ""
+        "onSuccess": "",
+        "onFailure": ""
       },
       "properties": {
         "idpId": "{{IDP_ID}}"
-      }
-    }
-  },
-  {
-    "resourceType": "STEP",
-    "category": "EXECUTOR",
-    "type": "TASK_EXECUTION",
-    "display": {
-      "header": "Passkey Executor",
-      "label": "Passkey",
-      "image": "assets/images/icons/fingerprint.svg",
-      "showOnResourcePanel": false
-    },
-    "data": {
-      "action": {
-        "type": "EXECUTOR",
-        "executor": {
-          "name": "FIDO2Executor"
-        },
-        "next": ""
       }
     }
   },
@@ -418,7 +512,8 @@
         "executor": {
           "name": "MagicLinkExecutor"
         },
-        "next": ""
+        "onSuccess": "",
+        "onFailure": ""
       }
     }
   },
@@ -438,7 +533,8 @@
         "executor": {
           "name": "ConfirmationCodeValidationExecutor"
         },
-        "next": ""
+        "onSuccess": "",
+        "onFailure": ""
       }
     }
   },
@@ -458,7 +554,8 @@
         "executor": {
           "name": "SendEmailOTPExecutor"
         },
-        "next": ""
+        "onSuccess": "",
+        "onFailure": ""
       }
     }
   },
@@ -478,7 +575,29 @@
         "executor": {
           "name": "VerifyEmailOTPExecutor"
         },
-        "next": ""
+        "onSuccess": "",
+        "onFailure": ""
+      }
+    }
+  },
+  {
+    "resourceType": "STEP",
+    "category": "EXECUTOR",
+    "type": "TASK_EXECUTION",
+    "display": {
+      "header": "Identity Resolver",
+      "label": "Identity Resolver",
+      "image": "assets/images/icons/magnifying-glass.svg",
+      "showOnResourcePanel": true
+    },
+    "data": {
+      "action": {
+        "type": "EXECUTOR",
+        "executor": {
+          "name": "IdentifyingExecutor"
+        },
+        "onSuccess": "",
+        "onFailure": ""
       }
     }
   }

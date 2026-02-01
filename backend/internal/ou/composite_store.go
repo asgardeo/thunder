@@ -19,13 +19,13 @@
 package ou
 
 import (
-	immutableresource "github.com/asgardeo/thunder/internal/system/immutable_resource"
+	declarativeresource "github.com/asgardeo/thunder/internal/system/declarative_resource"
 )
 
 // compositeOUStore implements a composite store that combines file-based (immutable) and database (mutable) stores.
 // - Read operations query both stores and merge results
 // - Write operations (Create/Update/Delete) only affect the database store
-// - Immutable OUs (from YAML files) cannot be modified or deleted
+// - Declarative OUs (from YAML files) cannot be modified or deleted
 type compositeOUStore struct {
 	fileStore organizationUnitStoreInterface
 	dbStore   organizationUnitStoreInterface
@@ -41,7 +41,7 @@ func newCompositeOUStore(fileStore, dbStore organizationUnitStoreInterface) *com
 
 // GetOrganizationUnitListCount retrieves the total count of organization units from both stores.
 func (c *compositeOUStore) GetOrganizationUnitListCount() (int, error) {
-	return immutableresource.CompositeMergeCountHelper(
+	return declarativeresource.CompositeMergeCountHelper(
 		func() (int, error) { return c.dbStore.GetOrganizationUnitListCount() },
 		func() (int, error) { return c.fileStore.GetOrganizationUnitListCount() },
 	)
@@ -49,7 +49,7 @@ func (c *compositeOUStore) GetOrganizationUnitListCount() (int, error) {
 
 // GetOrganizationUnitList retrieves organization units from both stores with pagination.
 func (c *compositeOUStore) GetOrganizationUnitList(limit, offset int) ([]OrganizationUnitBasic, error) {
-	return immutableresource.CompositeMergeListHelper(
+	return declarativeresource.CompositeMergeListHelper(
 		func() (int, error) { return c.fileStore.GetOrganizationUnitListCount() },
 		func() (int, error) { return c.dbStore.GetOrganizationUnitListCount() },
 		func(count int) ([]OrganizationUnitBasic, error) { return c.fileStore.GetOrganizationUnitList(count, 0) },
@@ -69,7 +69,7 @@ func (c *compositeOUStore) CreateOrganizationUnit(ou OrganizationUnit) error {
 // GetOrganizationUnit retrieves an organization unit by ID from either store.
 // Checks database store first, then falls back to file store.
 func (c *compositeOUStore) GetOrganizationUnit(id string) (OrganizationUnit, error) {
-	return immutableresource.CompositeGetHelper(
+	return declarativeresource.CompositeGetHelper(
 		func() (OrganizationUnit, error) { return c.dbStore.GetOrganizationUnit(id) },
 		func() (OrganizationUnit, error) { return c.fileStore.GetOrganizationUnit(id) },
 		ErrOrganizationUnitNotFound,
@@ -78,7 +78,7 @@ func (c *compositeOUStore) GetOrganizationUnit(id string) (OrganizationUnit, err
 
 // GetOrganizationUnitByPath retrieves an organization unit by hierarchical path from either store.
 func (c *compositeOUStore) GetOrganizationUnitByPath(handles []string) (OrganizationUnit, error) {
-	return immutableresource.CompositeGetHelper(
+	return declarativeresource.CompositeGetHelper(
 		func() (OrganizationUnit, error) { return c.dbStore.GetOrganizationUnitByPath(handles) },
 		func() (OrganizationUnit, error) { return c.fileStore.GetOrganizationUnitByPath(handles) },
 		ErrOrganizationUnitNotFound,
@@ -87,15 +87,15 @@ func (c *compositeOUStore) GetOrganizationUnitByPath(handles []string) (Organiza
 
 // IsOrganizationUnitExists checks if an organization unit exists in either store.
 func (c *compositeOUStore) IsOrganizationUnitExists(id string) (bool, error) {
-	return immutableresource.CompositeBooleanCheckHelper(
+	return declarativeresource.CompositeBooleanCheckHelper(
 		func() (bool, error) { return c.fileStore.IsOrganizationUnitExists(id) },
 		func() (bool, error) { return c.dbStore.IsOrganizationUnitExists(id) },
 	)
 }
 
-// IsOrganizationUnitImmutable checks if an organization unit is immutable (exists in file store).
-func (c *compositeOUStore) IsOrganizationUnitImmutable(id string) bool {
-	return immutableresource.CompositeIsImmutableHelper(
+// IsOrganizationUnitDeclarative checks if an organization unit is immutable (exists in file store).
+func (c *compositeOUStore) IsOrganizationUnitDeclarative(id string) bool {
+	return declarativeresource.CompositeIsDeclarativeHelper(
 		id,
 		func(id string) (bool, error) { return c.fileStore.IsOrganizationUnitExists(id) },
 	)
@@ -103,7 +103,7 @@ func (c *compositeOUStore) IsOrganizationUnitImmutable(id string) bool {
 
 // CheckOrganizationUnitNameConflict checks for name conflicts in both stores.
 func (c *compositeOUStore) CheckOrganizationUnitNameConflict(name string, parent *string) (bool, error) {
-	return immutableresource.CompositeBooleanCheckHelper(
+	return declarativeresource.CompositeBooleanCheckHelper(
 		func() (bool, error) { return c.fileStore.CheckOrganizationUnitNameConflict(name, parent) },
 		func() (bool, error) { return c.dbStore.CheckOrganizationUnitNameConflict(name, parent) },
 	)
@@ -111,7 +111,7 @@ func (c *compositeOUStore) CheckOrganizationUnitNameConflict(name string, parent
 
 // CheckOrganizationUnitHandleConflict checks for handle conflicts in both stores.
 func (c *compositeOUStore) CheckOrganizationUnitHandleConflict(handle string, parent *string) (bool, error) {
-	return immutableresource.CompositeBooleanCheckHelper(
+	return declarativeresource.CompositeBooleanCheckHelper(
 		func() (bool, error) { return c.fileStore.CheckOrganizationUnitHandleConflict(handle, parent) },
 		func() (bool, error) { return c.dbStore.CheckOrganizationUnitHandleConflict(handle, parent) },
 	)
@@ -131,7 +131,7 @@ func (c *compositeOUStore) DeleteOrganizationUnit(id string) error {
 
 // CheckOrganizationUnitHasChildResources checks if an OU has child resources in either store.
 func (c *compositeOUStore) CheckOrganizationUnitHasChildResources(id string) (bool, error) {
-	return immutableresource.CompositeBooleanCheckHelper(
+	return declarativeresource.CompositeBooleanCheckHelper(
 		func() (bool, error) { return c.fileStore.CheckOrganizationUnitHasChildResources(id) },
 		func() (bool, error) { return c.dbStore.CheckOrganizationUnitHasChildResources(id) },
 	)
@@ -139,7 +139,7 @@ func (c *compositeOUStore) CheckOrganizationUnitHasChildResources(id string) (bo
 
 // GetOrganizationUnitChildrenCount retrieves the count of child OUs from both stores.
 func (c *compositeOUStore) GetOrganizationUnitChildrenCount(id string) (int, error) {
-	return immutableresource.CompositeMergeCountHelper(
+	return declarativeresource.CompositeMergeCountHelper(
 		func() (int, error) { return c.dbStore.GetOrganizationUnitChildrenCount(id) },
 		func() (int, error) { return c.fileStore.GetOrganizationUnitChildrenCount(id) },
 	)

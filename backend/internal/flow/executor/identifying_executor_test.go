@@ -22,9 +22,11 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/suite"
 
 	"github.com/asgardeo/thunder/internal/flow/common"
+	"github.com/asgardeo/thunder/internal/flow/core"
 	"github.com/asgardeo/thunder/internal/system/error/serviceerror"
 	"github.com/asgardeo/thunder/internal/user"
 	"github.com/asgardeo/thunder/tests/mocks/flow/coremock"
@@ -57,6 +59,10 @@ func (suite *IdentifyingExecutorTestSuite) SetupTest() {
 func (suite *IdentifyingExecutorTestSuite) TestNewIdentifyingExecutor() {
 	assert.NotNil(suite.T(), suite.executor)
 	assert.NotNil(suite.T(), suite.executor.userService)
+
+	// Test default name
+	exec := newIdentifyingExecutor("", []common.Input{}, []common.Input{}, suite.mockFlowFactory, suite.mockUserService)
+	assert.NotNil(suite.T(), exec)
 }
 
 func (suite *IdentifyingExecutorTestSuite) TestIdentifyUser_Success() {
@@ -64,15 +70,14 @@ func (suite *IdentifyingExecutorTestSuite) TestIdentifyUser_Success() {
 	execResp := &common.ExecutorResponse{
 		RuntimeData: make(map[string]string),
 	}
-	userID := "user-123"
-
-	suite.mockUserService.On("IdentifyUser", filters).Return(&userID, nil)
+	// Use package-level testUserID constant
+	suite.mockUserService.On("IdentifyUser", mock.Anything, filters).Return(stringPtr(testUserID), nil)
 
 	result, err := suite.executor.IdentifyUser(filters, execResp)
 
 	assert.NoError(suite.T(), err)
 	assert.NotNil(suite.T(), result)
-	assert.Equal(suite.T(), "user-123", *result)
+	assert.Equal(suite.T(), testUserID, *result)
 	suite.mockUserService.AssertExpectations(suite.T())
 }
 
@@ -82,7 +87,7 @@ func (suite *IdentifyingExecutorTestSuite) TestIdentifyUser_UserNotFound() {
 		RuntimeData: make(map[string]string),
 	}
 
-	suite.mockUserService.On("IdentifyUser", filters).
+	suite.mockUserService.On("IdentifyUser", mock.Anything, filters).
 		Return(nil, &user.ErrorUserNotFound)
 
 	result, err := suite.executor.IdentifyUser(filters, execResp)
@@ -100,7 +105,7 @@ func (suite *IdentifyingExecutorTestSuite) TestIdentifyUser_ServiceError() {
 		RuntimeData: make(map[string]string),
 	}
 
-	suite.mockUserService.On("IdentifyUser", filters).
+	suite.mockUserService.On("IdentifyUser", mock.Anything, filters).
 		Return(nil, &serviceerror.ServiceError{Error: "service error"})
 
 	result, err := suite.executor.IdentifyUser(filters, execResp)
@@ -119,7 +124,7 @@ func (suite *IdentifyingExecutorTestSuite) TestIdentifyUser_EmptyUserID() {
 	}
 	emptyID := ""
 
-	suite.mockUserService.On("IdentifyUser", filters).Return(&emptyID, nil)
+	suite.mockUserService.On("IdentifyUser", mock.Anything, filters).Return(&emptyID, nil)
 
 	result, err := suite.executor.IdentifyUser(filters, execResp)
 
@@ -141,17 +146,16 @@ func (suite *IdentifyingExecutorTestSuite) TestIdentifyUser_FilterNonSearchableA
 	execResp := &common.ExecutorResponse{
 		RuntimeData: make(map[string]string),
 	}
-	userID := "user-123"
-
-	suite.mockUserService.On("IdentifyUser", map[string]interface{}{
+	// Use package-level testUserID constant
+	suite.mockUserService.On("IdentifyUser", mock.Anything, map[string]interface{}{
 		"username": "testuser",
-	}).Return(&userID, nil)
+	}).Return(stringPtr(testUserID), nil)
 
 	result, err := suite.executor.IdentifyUser(filters, execResp)
 
 	assert.NoError(suite.T(), err)
 	assert.NotNil(suite.T(), result)
-	assert.Equal(suite.T(), "user-123", *result)
+	assert.Equal(suite.T(), testUserID, *result)
 	suite.mockUserService.AssertExpectations(suite.T())
 }
 
@@ -160,9 +164,9 @@ func (suite *IdentifyingExecutorTestSuite) TestIdentifyUser_WithEmail() {
 	execResp := &common.ExecutorResponse{
 		RuntimeData: make(map[string]string),
 	}
-	userID := "user-456"
+	emailUserID := "user-456"
 
-	suite.mockUserService.On("IdentifyUser", filters).Return(&userID, nil)
+	suite.mockUserService.On("IdentifyUser", mock.Anything, filters).Return(&emailUserID, nil)
 
 	result, err := suite.executor.IdentifyUser(filters, execResp)
 
@@ -177,9 +181,9 @@ func (suite *IdentifyingExecutorTestSuite) TestIdentifyUser_WithMobileNumber() {
 	execResp := &common.ExecutorResponse{
 		RuntimeData: make(map[string]string),
 	}
-	userID := "user-789"
+	mobileUserID := "user-789"
 
-	suite.mockUserService.On("IdentifyUser", filters).Return(&userID, nil)
+	suite.mockUserService.On("IdentifyUser", mock.Anything, filters).Return(&mobileUserID, nil)
 
 	result, err := suite.executor.IdentifyUser(filters, execResp)
 
@@ -187,4 +191,366 @@ func (suite *IdentifyingExecutorTestSuite) TestIdentifyUser_WithMobileNumber() {
 	assert.NotNil(suite.T(), result)
 	assert.Equal(suite.T(), "user-789", *result)
 	suite.mockUserService.AssertExpectations(suite.T())
+}
+
+func (suite *IdentifyingExecutorTestSuite) TestExecute_Success_UserInputs() {
+	ctx := &core.NodeContext{
+		FlowID:     "flow-123",
+		UserInputs: map[string]string{"username": "testuser"},
+	}
+	// Use package-level testUserID constant
+	// Configure mock base executor
+	mockBase := suite.executor.ExecutorInterface.(*coremock.ExecutorInterfaceMock)
+	mockBase.On("HasRequiredInputs", mock.Anything, mock.Anything).Return(true)
+	mockBase.On("GetRequiredInputs", mock.Anything).Return([]common.Input{
+		{Identifier: "username", Type: "string", Required: true},
+	})
+
+	suite.mockUserService.On("IdentifyUser", mock.Anything, map[string]interface{}{
+		"username": "testuser",
+	}).Return(stringPtr(testUserID), nil)
+
+	resp, err := suite.executor.Execute(ctx)
+
+	assert.NoError(suite.T(), err)
+	assert.NotNil(suite.T(), resp)
+	assert.Equal(suite.T(), common.ExecComplete, resp.Status)
+	assert.Equal(suite.T(), testUserID, resp.RuntimeData[userAttributeUserID])
+}
+
+func (suite *IdentifyingExecutorTestSuite) TestExecute_Success_RuntimeData() {
+	ctx := &core.NodeContext{
+		FlowID:      "flow-123",
+		UserInputs:  make(map[string]string),
+		RuntimeData: map[string]string{"username": "testuser"},
+	}
+	// Use package-level testUserID constant
+	mockBase := suite.executor.ExecutorInterface.(*coremock.ExecutorInterfaceMock)
+	mockBase.On("HasRequiredInputs", mock.Anything, mock.Anything).Return(true)
+	mockBase.On("GetRequiredInputs", mock.Anything).Return([]common.Input{
+		{Identifier: "username", Type: "string", Required: true},
+	})
+
+	suite.mockUserService.On("IdentifyUser", mock.Anything, map[string]interface{}{
+		"username": "testuser",
+	}).Return(stringPtr(testUserID), nil)
+
+	resp, err := suite.executor.Execute(ctx)
+
+	assert.NoError(suite.T(), err)
+	assert.NotNil(suite.T(), resp)
+	assert.Equal(suite.T(), common.ExecComplete, resp.Status)
+	assert.Equal(suite.T(), testUserID, resp.RuntimeData[userAttributeUserID])
+}
+
+func (suite *IdentifyingExecutorTestSuite) TestExecute_UserInputRequired() {
+	ctx := &core.NodeContext{
+		FlowID:     "flow-123",
+		UserInputs: map[string]string{},
+	}
+
+	mockBase := suite.executor.ExecutorInterface.(*coremock.ExecutorInterfaceMock)
+	mockBase.On("HasRequiredInputs", mock.Anything, mock.Anything).Return(false)
+
+	resp, err := suite.executor.Execute(ctx)
+
+	assert.NoError(suite.T(), err)
+	assert.NotNil(suite.T(), resp)
+	assert.Equal(suite.T(), common.ExecUserInputRequired, resp.Status)
+}
+
+func (suite *IdentifyingExecutorTestSuite) TestExecute_Failure_IdentifyUserError() {
+	ctx := &core.NodeContext{
+		FlowID:     "flow-123",
+		UserInputs: map[string]string{"username": "testuser"},
+	}
+
+	mockBase := suite.executor.ExecutorInterface.(*coremock.ExecutorInterfaceMock)
+	mockBase.On("HasRequiredInputs", mock.Anything, mock.Anything).Return(true)
+	mockBase.On("GetRequiredInputs", mock.Anything).Return([]common.Input{
+		{Identifier: "username", Type: "string", Required: true},
+	})
+
+	suite.mockUserService.On("IdentifyUser", mock.Anything, map[string]interface{}{
+		"username": "testuser",
+	}).Return(nil, &serviceerror.ServiceError{Code: "INTERNAL_ERROR", Error: "service error"})
+
+	resp, err := suite.executor.Execute(ctx)
+
+	assert.NoError(suite.T(), err)
+	assert.NotNil(suite.T(), resp)
+	// IdentifyUser method in implementation swallows the error and returns nil, nil.
+	// Then Execute checks for nil userID and returns UserNotFound.
+	// So we should expect failureReasonUserNotFound
+	assert.Equal(suite.T(), common.ExecFailure, resp.Status)
+	assert.Equal(suite.T(), failureReasonUserNotFound, resp.FailureReason)
+}
+
+func (suite *IdentifyingExecutorTestSuite) TestExecute_Failure_UserNotFound() {
+	ctx := &core.NodeContext{
+		FlowID:     "flow-123",
+		UserInputs: map[string]string{"username": "nonexistent"},
+	}
+
+	mockBase := suite.executor.ExecutorInterface.(*coremock.ExecutorInterfaceMock)
+	mockBase.On("HasRequiredInputs", mock.Anything, mock.Anything).Return(true)
+	mockBase.On("GetRequiredInputs", mock.Anything).Return([]common.Input{
+		{Identifier: "username", Type: "string", Required: true},
+	})
+
+	emptyID := ""
+	suite.mockUserService.On("IdentifyUser", mock.Anything, map[string]interface{}{
+		"username": "nonexistent",
+	}).Return(&emptyID, nil)
+
+	resp, err := suite.executor.Execute(ctx)
+
+	assert.NoError(suite.T(), err)
+	assert.NotNil(suite.T(), resp)
+	assert.Equal(suite.T(), common.ExecFailure, resp.Status)
+	assert.Equal(suite.T(), failureReasonUserNotFound, resp.FailureReason)
+}
+
+// TestExecute_Success_WithVariousAttributes tests successful user identification with different attributes.
+func (suite *IdentifyingExecutorTestSuite) TestExecute_Success_WithVariousAttributes() {
+	testCases := []struct {
+		name       string
+		attribute  string
+		value      string
+		expectedID string
+	}{
+		{"email", "email", "test@example.com", "user-email-456"},
+		{"mobileNumber", "mobileNumber", "+1234567890", "user-mobile-789"},
+	}
+
+	for _, tc := range testCases {
+		suite.Run(tc.name, func() {
+			suite.SetupTest()
+			ctx := &core.NodeContext{
+				FlowID:     "flow-123",
+				UserInputs: map[string]string{tc.attribute: tc.value},
+			}
+
+			mockBase := suite.executor.ExecutorInterface.(*coremock.ExecutorInterfaceMock)
+			mockBase.On("HasRequiredInputs", mock.Anything, mock.Anything).Return(true)
+			mockBase.On("GetRequiredInputs", mock.Anything).Return([]common.Input{
+				{Identifier: tc.attribute, Type: "string", Required: true},
+			})
+
+			suite.mockUserService.On("IdentifyUser", mock.Anything, map[string]interface{}{
+				tc.attribute: tc.value,
+			}).Return(&tc.expectedID, nil)
+
+			resp, err := suite.executor.Execute(ctx)
+
+			assert.NoError(suite.T(), err)
+			assert.NotNil(suite.T(), resp)
+			assert.Equal(suite.T(), common.ExecComplete, resp.Status)
+			assert.Equal(suite.T(), tc.expectedID, resp.RuntimeData[userAttributeUserID])
+			suite.mockUserService.AssertExpectations(suite.T())
+		})
+	}
+}
+
+func (suite *IdentifyingExecutorTestSuite) TestExecute_Success_WithMultipleAttributes() {
+	ctx := &core.NodeContext{
+		FlowID: "flow-123",
+		UserInputs: map[string]string{
+			"username": "testuser",
+			"email":    "test@example.com",
+		},
+	}
+	multiAttrUserID := "user-multi-123"
+
+	mockBase := suite.executor.ExecutorInterface.(*coremock.ExecutorInterfaceMock)
+	mockBase.On("HasRequiredInputs", mock.Anything, mock.Anything).Return(true)
+	mockBase.On("GetRequiredInputs", mock.Anything).Return([]common.Input{
+		{Identifier: "username", Type: "string", Required: true},
+		{Identifier: "email", Type: "string", Required: true},
+	})
+
+	suite.mockUserService.On("IdentifyUser", mock.Anything, map[string]interface{}{
+		"username": "testuser",
+		"email":    "test@example.com",
+	}).Return(&multiAttrUserID, nil)
+
+	resp, err := suite.executor.Execute(ctx)
+
+	assert.NoError(suite.T(), err)
+	assert.NotNil(suite.T(), resp)
+	assert.Equal(suite.T(), common.ExecComplete, resp.Status)
+	assert.Equal(suite.T(), multiAttrUserID, resp.RuntimeData[userAttributeUserID])
+	suite.mockUserService.AssertExpectations(suite.T())
+}
+
+// TestExecute_Failure_UserNotFoundByAttribute tests failure handling when user is not found by different attributes.
+func (suite *IdentifyingExecutorTestSuite) TestExecute_Failure_UserNotFoundByAttribute() {
+	testCases := []struct {
+		name      string
+		attribute string
+		value     string
+	}{
+		{"email", "email", "nonexistent@example.com"},
+		{"mobileNumber", "mobileNumber", "+0000000000"},
+	}
+
+	for _, tc := range testCases {
+		suite.Run(tc.name, func() {
+			suite.SetupTest()
+			ctx := &core.NodeContext{
+				FlowID:     "flow-123",
+				UserInputs: map[string]string{tc.attribute: tc.value},
+			}
+
+			mockBase := suite.executor.ExecutorInterface.(*coremock.ExecutorInterfaceMock)
+			mockBase.On("HasRequiredInputs", mock.Anything, mock.Anything).Return(true)
+			mockBase.On("GetRequiredInputs", mock.Anything).Return([]common.Input{
+				{Identifier: tc.attribute, Type: "string", Required: true},
+			})
+
+			suite.mockUserService.On("IdentifyUser", mock.Anything, map[string]interface{}{
+				tc.attribute: tc.value,
+			}).Return(nil, &user.ErrorUserNotFound)
+
+			resp, err := suite.executor.Execute(ctx)
+
+			assert.NoError(suite.T(), err)
+			assert.NotNil(suite.T(), resp)
+			assert.Equal(suite.T(), common.ExecFailure, resp.Status)
+			assert.Equal(suite.T(), failureReasonUserNotFound, resp.FailureReason)
+			suite.mockUserService.AssertExpectations(suite.T())
+		})
+	}
+}
+
+// TestExecute_Success_FromRuntimeData tests successful identification when attributes come from RuntimeData.
+func (suite *IdentifyingExecutorTestSuite) TestExecute_Success_FromRuntimeData() {
+	testCases := []struct {
+		name       string
+		attribute  string
+		value      string
+		expectedID string
+	}{
+		{"email", "email", "runtime@example.com", "user-runtime-email-456"},
+		{"mobileNumber", "mobileNumber", "+9876543210", "user-runtime-mobile-789"},
+	}
+
+	for _, tc := range testCases {
+		suite.Run(tc.name, func() {
+			suite.SetupTest()
+			ctx := &core.NodeContext{
+				FlowID:      "flow-123",
+				UserInputs:  make(map[string]string),
+				RuntimeData: map[string]string{tc.attribute: tc.value},
+			}
+
+			mockBase := suite.executor.ExecutorInterface.(*coremock.ExecutorInterfaceMock)
+			mockBase.On("HasRequiredInputs", mock.Anything, mock.Anything).Return(true)
+			mockBase.On("GetRequiredInputs", mock.Anything).Return([]common.Input{
+				{Identifier: tc.attribute, Type: "string", Required: true},
+			})
+
+			suite.mockUserService.On("IdentifyUser", mock.Anything, map[string]interface{}{
+				tc.attribute: tc.value,
+			}).Return(&tc.expectedID, nil)
+
+			resp, err := suite.executor.Execute(ctx)
+
+			assert.NoError(suite.T(), err)
+			assert.NotNil(suite.T(), resp)
+			assert.Equal(suite.T(), common.ExecComplete, resp.Status)
+			assert.Equal(suite.T(), tc.expectedID, resp.RuntimeData[userAttributeUserID])
+			suite.mockUserService.AssertExpectations(suite.T())
+		})
+	}
+}
+
+// TestExecute_Failure_EmptyInput tests failure handling when input value is an empty string.
+func (suite *IdentifyingExecutorTestSuite) TestExecute_Failure_EmptyInput() {
+	testCases := []struct {
+		name      string
+		attribute string
+	}{
+		{"username", "username"},
+		{"email", "email"},
+	}
+
+	for _, tc := range testCases {
+		suite.Run(tc.name, func() {
+			suite.SetupTest()
+			ctx := &core.NodeContext{
+				FlowID:     "flow-123",
+				UserInputs: map[string]string{tc.attribute: ""},
+			}
+
+			mockBase := suite.executor.ExecutorInterface.(*coremock.ExecutorInterfaceMock)
+			mockBase.On("HasRequiredInputs", mock.Anything, mock.Anything).Return(true)
+			mockBase.On("GetRequiredInputs", mock.Anything).Return([]common.Input{
+				{Identifier: tc.attribute, Type: "string", Required: true},
+			})
+
+			emptyID := ""
+			suite.mockUserService.On("IdentifyUser", mock.Anything, map[string]interface{}{
+				tc.attribute: "",
+			}).Return(&emptyID, nil)
+
+			resp, err := suite.executor.Execute(ctx)
+
+			assert.NoError(suite.T(), err)
+			assert.NotNil(suite.T(), resp)
+			assert.Equal(suite.T(), common.ExecFailure, resp.Status)
+			assert.Equal(suite.T(), failureReasonUserNotFound, resp.FailureReason)
+			suite.mockUserService.AssertExpectations(suite.T())
+		})
+	}
+}
+
+// TestExecute_UserInputsPriorityOverRuntimeData tests that UserInputs takes priority over RuntimeData.
+func (suite *IdentifyingExecutorTestSuite) TestExecute_UserInputsPriorityOverRuntimeData() {
+	testCases := []struct {
+		name           string
+		attribute      string
+		userInputValue string
+		runtimeValue   string
+		expectedID     string
+	}{
+		{"username", "username", "userinput-user", "runtime-user", "user-from-userinput-123"},
+		{"email", "email", "userinput@example.com", "runtime@example.com", "user-from-email-userinput-456"},
+	}
+
+	for _, tc := range testCases {
+		suite.Run(tc.name, func() {
+			suite.SetupTest()
+			// Both UserInputs and RuntimeData have the same key
+			// UserInputs should take priority
+			ctx := &core.NodeContext{
+				FlowID:      "flow-123",
+				UserInputs:  map[string]string{tc.attribute: tc.userInputValue},
+				RuntimeData: map[string]string{tc.attribute: tc.runtimeValue},
+			}
+
+			mockBase := suite.executor.ExecutorInterface.(*coremock.ExecutorInterfaceMock)
+			mockBase.On("HasRequiredInputs", mock.Anything, mock.Anything).Return(true)
+			mockBase.On("GetRequiredInputs", mock.Anything).Return([]common.Input{
+				{Identifier: tc.attribute, Type: "string", Required: true},
+			})
+
+			// The mock should be called with the UserInputs value, not the RuntimeData value
+			suite.mockUserService.On("IdentifyUser", mock.Anything, map[string]interface{}{
+				tc.attribute: tc.userInputValue,
+			}).Return(&tc.expectedID, nil)
+
+			resp, err := suite.executor.Execute(ctx)
+
+			assert.NoError(suite.T(), err)
+			assert.NotNil(suite.T(), resp)
+			assert.Equal(suite.T(), common.ExecComplete, resp.Status)
+			assert.Equal(suite.T(), tc.expectedID, resp.RuntimeData[userAttributeUserID])
+			suite.mockUserService.AssertExpectations(suite.T())
+		})
+	}
+}
+
+func stringPtr(s string) *string {
+	return &s
 }

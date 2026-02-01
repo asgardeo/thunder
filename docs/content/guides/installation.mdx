@@ -1,0 +1,156 @@
+---
+title: Installation
+sidebar_position: 2
+description: Download and run Thunder using the release artifact or Docker Compose
+---
+
+import Tabs from '@theme/Tabs';
+import TabItem from '@theme/TabItem';
+
+# Get Thunder
+
+Thunder is available in multiple formats to suit your deployment needs. Choose the option that works best for you.
+
+<Tabs>
+<TabItem value="release" label="📦 Release Artifact" default>
+
+## Download from Release
+
+Get the latest release of Thunder and run it locally on your machine.
+
+### Prerequisites
+
+- Your operating system and architecture (macOS, Linux, or Windows)
+- Terminal or command prompt access
+
+### Step 1: Download the Distribution
+
+Download `thunder-<version>-<os>-<arch>.zip` from the [latest release](https://github.com/asgardeo/thunder/releases/latest) for your operating system and architecture.
+
+:::info Example
+If you're using a MacOS machine with Apple Silicon (ARM64) processor, download `thunder-<version>-macos-arm64.zip`
+:::
+
+### Step 2: Extract the Archive
+
+Unzip the downloaded file:
+
+```bash
+unzip thunder-<version>-<os>-<arch>.zip
+```
+
+Navigate to the extracted directory:
+
+```bash
+cd thunder-<version>-<os>-<arch>/
+```
+
+### Step 3: Setup Thunder
+
+Initialize Thunder with the default configurations and data before starting the server for the first time.
+
+<Tabs groupId="os">
+<TabItem value="unix" label="Linux / macOS">
+
+```bash
+./setup.sh
+```
+
+</TabItem>
+<TabItem value="windows" label="Windows">
+
+```powershell
+.\setup.ps1
+```
+
+</TabItem>
+</Tabs>
+
+:::warning Important
+Note the sample app ID from the log line: `[INFO] Sample App ID: <id>`. You'll need this for configuring the sample application.
+:::
+
+### Step 4: Start Thunder
+
+Launch the Thunder server:
+
+<Tabs groupId="os">
+<TabItem value="unix" label="Linux / macOS">
+
+```bash
+./start.sh
+```
+
+</TabItem>
+<TabItem value="windows" label="Windows">
+
+```powershell
+.\start.ps1
+```
+
+</TabItem>
+</Tabs>
+
+:::tip Success
+Thunder will start on **https://localhost:8090**
+:::
+
+</TabItem>
+
+<TabItem value="docker" label="🐳 Docker Compose">
+
+## Run with Docker Compose
+
+The quickest way to get Thunder up and running with all dependencies configured.
+
+### Prerequisites
+
+- Docker and Docker Compose installed on your machine
+- Terminal or command prompt access
+
+### Step 1: Download Docker Compose File
+
+Download the `docker-compose.yml` file from the Thunder repository:
+
+{/* TODO: Fix the version in the URL below */}
+```bash
+curl -o docker-compose.yml https://raw.githubusercontent.com/asgardeo/thunder/v0.16.0/install/quick-start/docker-compose.yml
+```
+
+### Step 2: Start Thunder
+
+Run the following command in the directory where you downloaded the `docker-compose.yml` file:
+
+```bash
+docker compose up
+```
+
+:::note
+This command will automatically:
+- Initialize the database
+- Run the setup process
+- Start the Thunder server
+:::
+
+:::warning Important
+Note the sample app ID from the setup logs: `[INFO] Sample App ID: <id>`. You'll need this for configuring the sample application.
+:::
+
+:::tip Success
+Thunder will start on **https://localhost:8090**
+:::
+
+</TabItem>
+</Tabs>
+
+## Next Steps
+
+Now that Thunder is running, you can:
+
+- **[Access the Developer Console](https://localhost:8090/develop)** - Log in with the default admin credentials (`admin` / `admin`)
+- **Try the Sample Apps** - Test Thunder's authentication flows with our pre-built React samples
+- **[Explore the APIs](/apis)** - Learn about Thunder's RESTful APIs for user management, authentication, and more
+
+:::info Need Help?
+Check out our [troubleshooting guide](/guides/troubleshooting) or [join our community](/community).
+:::

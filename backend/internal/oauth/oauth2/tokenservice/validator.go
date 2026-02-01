@@ -23,7 +23,6 @@ import (
 	"time"
 
 	appmodel "github.com/asgardeo/thunder/internal/application/model"
-	"github.com/asgardeo/thunder/internal/oauth/oauth2/constants"
 	"github.com/asgardeo/thunder/internal/system/config"
 	"github.com/asgardeo/thunder/internal/system/jwt"
 )
@@ -75,11 +74,6 @@ func (tv *tokenValidator) ValidateRefreshToken(token string, clientID string) (*
 	}
 
 	// Extract user type and organizational unit details if present
-	userType, _ := extractStringClaim(claims, constants.ClaimUserType)
-	ouID, _ := extractStringClaim(claims, constants.ClaimOUID)
-	ouName, _ := extractStringClaim(claims, constants.ClaimOUName)
-	ouHandle, _ := extractStringClaim(claims, constants.ClaimOUHandle)
-
 	return &RefreshTokenClaims{
 		Sub:            sub,
 		Aud:            aud,
@@ -87,10 +81,6 @@ func (tv *tokenValidator) ValidateRefreshToken(token string, clientID string) (*
 		Scopes:         scopes,
 		UserAttributes: userAttributes,
 		Iat:            iat,
-		UserType:       userType,
-		OuID:           ouID,
-		OuName:         ouName,
-		OuHandle:       ouHandle,
 	}, nil
 }
 
@@ -192,19 +182,21 @@ func (tv *tokenValidator) verifyTokenSignatureByIssuer(
 
 // validateTimeClaims validates time-based claims (exp, nbf).
 func (tv *tokenValidator) validateTimeClaims(claims map[string]interface{}) error {
+	// Get leeway from config to account for clock skew
+	leeway := config.GetThunderRuntime().Config.JWT.Leeway
 	now := time.Now().Unix()
 
 	exp, err := extractInt64Claim(claims, "exp")
 	if err != nil {
 		return fmt.Errorf("missing or invalid 'exp' claim: %w", err)
 	}
-	if now >= exp {
+	if now >= exp+leeway {
 		return fmt.Errorf("token has expired")
 	}
 
 	nbf, err := extractInt64Claim(claims, "nbf")
 	if err == nil {
-		if now < nbf {
+		if now < nbf-leeway {
 			return fmt.Errorf("token not yet valid")
 		}
 	}

@@ -21,23 +21,23 @@ package ou
 import (
 	"errors"
 
-	immutableresource "github.com/asgardeo/thunder/internal/system/immutable_resource"
-	"github.com/asgardeo/thunder/internal/system/immutable_resource/entity"
+	declarativeresource "github.com/asgardeo/thunder/internal/system/declarative_resource"
+	"github.com/asgardeo/thunder/internal/system/declarative_resource/entity"
 )
 
 type fileBasedStore struct {
-	*immutableresource.GenericFileBasedStore
+	*declarativeresource.GenericFileBasedStore
 }
 
 // newFileBasedStore creates a new instance of a file-based store.
 func newFileBasedStore() organizationUnitStoreInterface {
-	genericStore := immutableresource.NewGenericFileBasedStore(entity.KeyTypeOU)
+	genericStore := declarativeresource.NewGenericFileBasedStore(entity.KeyTypeOU)
 	return &fileBasedStore{
 		GenericFileBasedStore: genericStore,
 	}
 }
 
-// Create implements immutableresource.Storer interface for resource loader
+// Create implements declarativeresource.Storer interface for resource loader
 func (f *fileBasedStore) Create(id string, data interface{}) error {
 	ou := data.(*OrganizationUnit)
 	return f.CreateOrganizationUnit(*ou)
@@ -61,7 +61,7 @@ func (f *fileBasedStore) GetOrganizationUnit(id string) (OrganizationUnit, error
 	}
 	ou, ok := data.(*OrganizationUnit)
 	if !ok {
-		immutableresource.LogTypeAssertionError("organization unit", id)
+		declarativeresource.LogTypeAssertionError("organization unit", id)
 		return OrganizationUnit{}, errors.New("organization unit data corrupted")
 	}
 	return *ou, nil
@@ -174,9 +174,9 @@ func (f *fileBasedStore) IsOrganizationUnitExists(id string) (bool, error) {
 	return true, nil
 }
 
-// IsOrganizationUnitImmutable checks if an organization unit is immutable.
+// IsOrganizationUnitDeclarative checks if an organization unit is immutable.
 // File-based resources are always immutable, returns true if exists.
-func (f *fileBasedStore) IsOrganizationUnitImmutable(id string) bool {
+func (f *fileBasedStore) IsOrganizationUnitDeclarative(id string) bool {
 	exists, err := f.IsOrganizationUnitExists(id)
 	return err == nil && exists
 }

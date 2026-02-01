@@ -257,4 +257,50 @@ describe('ValidationPanel', () => {
       expect(tabPanel0).toHaveAttribute('aria-labelledby', 'validation-tab-0');
     });
   });
+
+  describe('Notification with Multiple Resources', () => {
+    it('should not set last interacted resource when notification has multiple resources', () => {
+      mockCurrentActiveTab = 0;
+      const notification = createNotification('1', 'Error', NotificationType.ERROR);
+      const resource1 = {id: 'resource-1', type: 'TEST', category: 'TEST'} as any;
+      const resource2 = {id: 'resource-2', type: 'TEST', category: 'TEST'} as any;
+      notification.addResource(resource1);
+      notification.addResource(resource2);
+      mockNotifications = [notification];
+
+      render(<ValidationPanel />);
+
+      const notificationButton = screen.getByTestId('notification-1');
+      fireEvent.click(notificationButton);
+
+      expect(mockSetLastInteractedResource).not.toHaveBeenCalled();
+    });
+
+    it('should not set last interacted resource when notification has no resources', () => {
+      mockCurrentActiveTab = 0;
+      const notification = createNotification('1', 'Error', NotificationType.ERROR);
+      mockNotifications = [notification];
+
+      render(<ValidationPanel />);
+
+      const notificationButton = screen.getByTestId('notification-1');
+      fireEvent.click(notificationButton);
+
+      expect(mockSetLastInteractedResource).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('Tab Content Display', () => {
+    it('should display info notifications in info tab', () => {
+      mockCurrentActiveTab = 2;
+      mockNotifications = [
+        createNotification('1', 'Info message', NotificationType.INFO),
+      ];
+
+      render(<ValidationPanel />);
+
+      const infoTabPanel = document.getElementById('validation-tabpanel-2');
+      expect(infoTabPanel).not.toHaveAttribute('hidden');
+    });
+  });
 });

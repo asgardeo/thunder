@@ -17,8 +17,7 @@
  */
 
 import {describe, it, expect, vi, beforeEach} from 'vitest';
-import {screen} from '@testing-library/react';
-import render from '@/test/test-utils';
+import {render, screen} from '@thunder/test-utils';
 import NavbarBreadcrumbs from '../NavbarBreadcrumbs';
 
 // Mock the useNavigation hook

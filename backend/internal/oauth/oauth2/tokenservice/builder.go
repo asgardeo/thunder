@@ -20,7 +20,6 @@ package tokenservice
 
 import (
 	"fmt"
-	"slices"
 
 	appmodel "github.com/asgardeo/thunder/internal/application/model"
 	"github.com/asgardeo/thunder/internal/oauth/oauth2/constants"
@@ -55,7 +54,7 @@ func (tb *tokenBuilder) BuildAccessToken(ctx *AccessTokenBuildContext) (*model.T
 
 	tokenConfig := resolveTokenConfig(ctx.OAuthApp, TokenTypeAccess)
 
-	userAttributes := tb.buildAccessTokenUserAttributes(ctx.UserAttributes, ctx.UserGroups, ctx.OAuthApp)
+	userAttributes := tb.buildAccessTokenUserAttributes(ctx.UserAttributes, ctx.OAuthApp)
 	jwtClaims := tb.buildAccessTokenClaims(ctx, userAttributes)
 
 	tokenDTO := &model.TokenDTO{
@@ -67,8 +66,6 @@ func (tb *tokenBuilder) BuildAccessToken(ctx *AccessTokenBuildContext) (*model.T
 		Subject:        ctx.Subject,
 		Audience:       ctx.Audience,
 	}
-
-	tb.appendUserTypeAndOU(tokenDTO, jwtClaims, ctx.UserType, ctx.OuID, ctx.OuName, ctx.OuHandle)
 
 	token, iat, err := tb.jwtService.GenerateJWT(
 		ctx.Subject,
@@ -123,7 +120,6 @@ func (tb *tokenBuilder) buildAccessTokenClaims(
 // buildAccessTokenUserAttributes builds user attributes for the access token based on app configuration.
 func (tb *tokenBuilder) buildAccessTokenUserAttributes(
 	attrs map[string]interface{},
-	userGroups []string,
 	oauthApp *appmodel.OAuthAppConfigProcessedDTO,
 ) map[string]interface{} {
 	accessTokenAttributes := make(map[string]interface{})
@@ -145,17 +141,8 @@ func (tb *tokenBuilder) buildAccessTokenUserAttributes(
 				accessTokenAttributes[attr] = val
 			}
 		}
-	} else {
-		// If no filtering configured, include all attributes
-		for key, value := range attrs {
-			accessTokenAttributes[key] = value
-		}
 	}
-
-	// Handle user groups
-	if len(userGroups) > 0 && slices.Contains(accessTokenUserAttributes, constants.UserAttributeGroups) {
-		accessTokenAttributes[constants.UserAttributeGroups] = userGroups
-	}
+	// If no filtering configured, return empty attributes
 
 	return accessTokenAttributes
 }
@@ -194,8 +181,6 @@ func (tb *tokenBuilder) BuildRefreshToken(ctx *RefreshTokenBuildContext) (*model
 		Subject:   ctx.AccessTokenSubject,
 		Audience:  tokenConfig.Issuer,
 	}
-
-	tb.appendUserTypeAndOU(tokenDTO, claims, ctx.UserType, ctx.OuID, ctx.OuName, ctx.OuHandle)
 
 	token, iat, err := tb.jwtService.GenerateJWT(
 		ctx.ClientID,
@@ -256,8 +241,6 @@ func (tb *tokenBuilder) BuildIDToken(ctx *IDTokenBuildContext) (*model.TokenDTO,
 		Audience:  ctx.Audience,
 	}
 
-	tb.appendUserTypeAndOU(tokenDTO, jwtClaims, ctx.UserType, ctx.OuID, ctx.OuName, ctx.OuHandle)
-
 	token, iat, err := tb.jwtService.GenerateJWT(
 		ctx.Subject,
 		ctx.Audience,
@@ -284,19 +267,9 @@ func (tb *tokenBuilder) buildIDTokenClaims(ctx *IDTokenBuildContext) map[string]
 		claims["auth_time"] = ctx.AuthTime
 	}
 
-	var idTokenUserAttributes []string
-	if ctx.OAuthApp != nil && ctx.OAuthApp.Token != nil && ctx.OAuthApp.Token.IDToken != nil {
-		idTokenUserAttributes = ctx.OAuthApp.Token.IDToken.UserAttributes
-	}
-
 	userAttributes := ctx.UserAttributes
 	if userAttributes == nil {
 		userAttributes = make(map[string]interface{})
-	}
-
-	// Add groups to user attributes if needed
-	if len(ctx.UserGroups) > 0 && slices.Contains(idTokenUserAttributes, constants.UserAttributeGroups) {
-		userAttributes[constants.UserAttributeGroups] = ctx.UserGroups
 	}
 
 	scopeClaims := BuildOIDCClaimsFromScopes(
@@ -310,28 +283,4 @@ func (tb *tokenBuilder) buildIDTokenClaims(ctx *IDTokenBuildContext) map[string]
 	}
 
 	return claims
-}
-
-// appendUserTypeAndOU appends userType and OU details to the token DTO and claims.
-func (tb *tokenBuilder) appendUserTypeAndOU(tokenDTO *model.TokenDTO,
-	claims map[string]interface{},
-	userType, ouID, ouName, ouHandle string,
-) {
-	if userType != "" {
-		claims[constants.ClaimUserType] = userType
-		tokenDTO.UserType = userType
-	}
-
-	if ouID != "" {
-		claims[constants.ClaimOUID] = ouID
-		tokenDTO.OuID = ouID
-	}
-	if ouName != "" {
-		claims[constants.ClaimOUName] = ouName
-		tokenDTO.OuName = ouName
-	}
-	if ouHandle != "" {
-		claims[constants.ClaimOUHandle] = ouHandle
-		tokenDTO.OuHandle = ouHandle
-	}
 }

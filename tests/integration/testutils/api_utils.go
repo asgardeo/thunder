@@ -236,6 +236,11 @@ func CreateApplication(app Application) (string, error) {
 		appData["allowed_user_types"] = app.AllowedUserTypes
 	}
 
+	// Add token if provided
+	if app.TokenConfig != nil {
+		appData["token"] = app.TokenConfig
+	}
+
 	appJSON, err := json.Marshal(appData)
 	if err != nil {
 		return "", fmt.Errorf("failed to marshal application: %w", err)

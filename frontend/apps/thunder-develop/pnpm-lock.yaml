@@ -11,7 +11,7 @@ importers:
       '@dnd-kit/react':
         specifier: ^0.1.21
         version: 0.1.21(react-dom@19.2.0(react@19.2.0))(react@19.2.0)
-      '@thunder/commons-contexts':
+      '@thunder/shared-contexts':
         specifier: workspace:^
         version: link:../../packages/thunder-commons-contexts
       '@thunder/i18n':

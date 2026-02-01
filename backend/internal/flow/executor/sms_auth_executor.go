@@ -19,6 +19,7 @@
 package executor
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -292,9 +293,19 @@ func (s *smsOTPAuthExecutor) ValidatePrerequisites(ctx *core.NodeContext,
 // getUserMobileFromContext retrieves the user's mobile number from the context.
 func (s *smsOTPAuthExecutor) getUserMobileFromContext(ctx *core.NodeContext) (string, error) {
 	mobileNumber := ctx.RuntimeData[userAttributeMobileNumber]
+
 	if mobileNumber == "" {
 		mobileNumber = ctx.UserInputs[userAttributeMobileNumber]
 	}
+
+	if mobileNumber == "" && ctx.AuthenticatedUser.Attributes != nil {
+		if mobile, ok := ctx.AuthenticatedUser.Attributes[userAttributeMobileNumber]; ok {
+			if mobileStr, valid := mobile.(string); valid && mobileStr != "" {
+				mobileNumber = mobileStr
+			}
+		}
+	}
+
 	if mobileNumber == "" {
 		return "", errors.New("mobile number not found in context")
 	}
@@ -409,7 +420,7 @@ func (s *smsOTPAuthExecutor) resolveUserIDFromAttribute(ctx *core.NodeContext,
 	}
 	if attributeValue != "" {
 		filters := map[string]interface{}{attributeName: attributeValue}
-		userID, svcErr := s.userService.IdentifyUser(filters)
+		userID, svcErr := s.userService.IdentifyUser(context.TODO(), filters)
 		if svcErr != nil {
 			return false, fmt.Errorf("failed to identify user by %s: %s", attributeName, svcErr.Error)
 		}
@@ -433,8 +444,16 @@ func (s *smsOTPAuthExecutor) getUserMobileNumber(userID string, ctx *core.NodeCo
 	logger := s.logger.With(log.String(log.LoggerKeyFlowID, ctx.FlowID), log.String("userID", userID))
 	logger.Debug("Retrieving user mobile number")
 
-	var err error
-	user, svcErr := s.userService.GetUser(userID)
+	// Try to get mobile number from context
+	mobileNumber, err := s.getUserMobileFromContext(ctx)
+	if err == nil && mobileNumber != "" {
+		logger.Debug("Mobile number found in context, skipping user store call")
+		return mobileNumber, nil
+	}
+
+	// Mobile number not in context, fetch from user store
+	logger.Debug("Mobile number not in context, fetching from user store")
+	user, svcErr := s.userService.GetUser(context.TODO(), userID)
 	if svcErr != nil {
 		return "", fmt.Errorf("failed to retrieve user details: %s", svcErr.Error)
 	}
@@ -445,30 +464,17 @@ func (s *smsOTPAuthExecutor) getUserMobileNumber(userID string, ctx *core.NodeCo
 		return "", fmt.Errorf("failed to unmarshal user attributes: %w", err)
 	}
 
-	mobileNumber := ""
+	mobileNumber = ""
 	mobileNumberAttr := attrs[userAttributeMobileNumber]
 	if mobileNumberAttr != nil && mobileNumberAttr != "" {
 		mobileNumber = mobileNumberAttr.(string)
 	}
 
 	if mobileNumber == "" {
-		// If the user is not authenticated, return an error.
-		// TODO: Revisit this logic when implementing registration flows/ JIT provisioning.
-		if !ctx.AuthenticatedUser.IsAuthenticated {
-			logger.Debug("Mobile number not found in user attributes")
-			execResp.Status = common.ExecFailure
-			execResp.FailureReason = "Mobile number not found in user attributes"
-			return "", nil
-		}
-
-		// If the user is authenticated, try to retrieve the mobile number from context.
-		mobileNumber, err = s.getUserMobileFromContext(ctx)
-		if err != nil {
-			logger.Debug("Mobile number not found in user attributes or context")
-			execResp.Status = common.ExecFailure
-			execResp.FailureReason = "Mobile number not found in user attributes or context"
-			return "", nil
-		}
+		logger.Debug("Mobile number not found in user attributes or context")
+		execResp.Status = common.ExecFailure
+		execResp.FailureReason = "Mobile number not found in user attributes or context"
+		return "", nil
 	}
 
 	return mobileNumber, nil
@@ -606,6 +612,8 @@ func (s *smsOTPAuthExecutor) validateOTP(ctx *core.NodeContext, execResp *common
 // getAuthenticatedUser returns the authenticated user details for the given user ID.
 func (s *smsOTPAuthExecutor) getAuthenticatedUser(ctx *core.NodeContext,
 	execResp *common.ExecutorResponse) (*authncm.AuthenticatedUser, error) {
+	logger := s.logger.With(log.String(log.LoggerKeyFlowID, ctx.FlowID))
+
 	mobileNumber, err := s.getUserMobileFromContext(ctx)
 	if err != nil {
 		return nil, err
@@ -623,12 +631,23 @@ func (s *smsOTPAuthExecutor) getAuthenticatedUser(ctx *core.NodeContext,
 		}, nil
 	}
 
+	// Check if user is already authenticated
+	if ctx.AuthenticatedUser.IsAuthenticated && ctx.AuthenticatedUser.UserID != "" {
+		if ctx.AuthenticatedUser.Attributes == nil {
+			ctx.AuthenticatedUser.Attributes = make(map[string]interface{})
+		}
+		ctx.AuthenticatedUser.Attributes[userAttributeMobileNumber] = mobileNumber
+		return &ctx.AuthenticatedUser, nil
+	}
+
 	userID := ctx.RuntimeData[userAttributeUserID]
 	if userID == "" {
 		return nil, errors.New("user ID is empty")
 	}
 
-	user, svcErr := s.userService.GetUser(userID)
+	// User not available in context, fetch from user store
+	logger.Debug("Fetching user details from user store", log.String("userID", userID))
+	user, svcErr := s.userService.GetUser(context.TODO(), userID)
 	if svcErr != nil {
 		return nil, fmt.Errorf("failed to get user details: %s", svcErr.Error)
 	}
@@ -637,6 +656,14 @@ func (s *smsOTPAuthExecutor) getAuthenticatedUser(ctx *core.NodeContext,
 	var attrs map[string]interface{}
 	if err := json.Unmarshal(user.Attributes, &attrs); err != nil {
 		return nil, fmt.Errorf("failed to unmarshal user attributes: %w", err)
+	}
+
+	// Ensure mobile number is in attributes
+	if attrs == nil {
+		attrs = make(map[string]interface{})
+	}
+	if _, exists := attrs[userAttributeMobileNumber]; !exists {
+		attrs[userAttributeMobileNumber] = mobileNumber
 	}
 
 	authenticatedUser := &authncm.AuthenticatedUser{

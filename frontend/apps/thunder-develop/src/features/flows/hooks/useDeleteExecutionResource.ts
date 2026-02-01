@@ -105,11 +105,11 @@ const useDeleteExecutionResource = (): void => {
    * @returns Returns true if the deletion was successful.
    */
   async function deleteExecutionNode(_stepId: string, element: Element): Promise<boolean> {
-    const action = element.action as {type?: string; next?: string} | undefined;
+    const action = element.action as {type?: string; onSuccess?: string} | undefined;
 
     if (element.category === ElementCategories.Action && action?.type === ActionTypes.Next) {
       setNodes((nodes: Node[]) =>
-        nodes?.filter((node: Node) => node.id !== action?.next || node.type !== StepTypes.Execution),
+        nodes?.filter((node: Node) => node.id !== action?.onSuccess || node.type !== StepTypes.Execution),
       );
     }
 

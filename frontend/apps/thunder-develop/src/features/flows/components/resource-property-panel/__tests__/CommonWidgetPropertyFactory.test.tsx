@@ -121,10 +121,10 @@ describe('CommonWidgetPropertyFactory', () => {
       expect(container.firstChild).toBeNull();
     });
 
-    it('should return null for PasskeyEnrollment widget', () => {
+    it('should return null for PasskeyAuthentication widget', () => {
       const resource: Resource = {
         id: 'widget-9',
-        type: WidgetTypes.PasskeyEnrollment,
+        type: WidgetTypes.PasskeyAuthentication,
         config: {},
       } as Resource;
 

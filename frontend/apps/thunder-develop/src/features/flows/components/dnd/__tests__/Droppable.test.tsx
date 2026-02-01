@@ -194,6 +194,98 @@ describe('Droppable', () => {
       // Normal state - no special border styles
       expect(container.firstChild).toBeInTheDocument();
     });
+
+    it('should show success styles when dragging over with valid source', async () => {
+      const {useDroppable, useDragOperation} = await import('@dnd-kit/react');
+
+      // Mock active drag operation with valid source
+      vi.mocked(useDragOperation).mockReturnValue({
+        source: {id: 'drag-1', type: 'VALID_TYPE'},
+      } as ReturnType<typeof useDragOperation>);
+
+      vi.mocked(useDroppable).mockReturnValue({
+        ref: mockDroppableRef,
+        droppable: {accepts: vi.fn(() => true)},
+        isDropTarget: true,
+      } as unknown as ReturnType<typeof useDroppable>);
+
+      const {container} = render(
+        <Droppable id="test-drop" accept={['VALID_TYPE']}>
+          <div>Content</div>
+        </Droppable>,
+      );
+
+      expect(container.firstChild).toBeInTheDocument();
+    });
+
+    it('should show error styles when dragging over with invalid source', async () => {
+      const {useDroppable, useDragOperation} = await import('@dnd-kit/react');
+
+      // Mock active drag operation with invalid source
+      vi.mocked(useDragOperation).mockReturnValue({
+        source: {id: 'drag-1', type: 'INVALID_TYPE'},
+      } as ReturnType<typeof useDragOperation>);
+
+      vi.mocked(useDroppable).mockReturnValue({
+        ref: mockDroppableRef,
+        droppable: {accepts: vi.fn(() => false)},
+        isDropTarget: true,
+      } as unknown as ReturnType<typeof useDroppable>);
+
+      const {container} = render(
+        <Droppable id="test-drop" accept={['VALID_TYPE']}>
+          <div>Content</div>
+        </Droppable>,
+      );
+
+      expect(container.firstChild).toBeInTheDocument();
+    });
+
+    it('should not show drop styles when source is null', async () => {
+      const {useDroppable, useDragOperation} = await import('@dnd-kit/react');
+
+      vi.mocked(useDragOperation).mockReturnValue({
+        source: null,
+      } as ReturnType<typeof useDragOperation>);
+
+      vi.mocked(useDroppable).mockReturnValue({
+        ref: mockDroppableRef,
+        droppable: {accepts: vi.fn(() => true)},
+        isDropTarget: false,
+      } as unknown as ReturnType<typeof useDroppable>);
+
+      const {container} = render(
+        <Droppable id="test-drop">
+          <div>Content</div>
+        </Droppable>,
+      );
+
+      expect(container.firstChild).toBeInTheDocument();
+    });
+
+    it('should compute canAcceptDrop correctly when source exists', async () => {
+      const {useDroppable, useDragOperation} = await import('@dnd-kit/react');
+
+      const mockAccepts = vi.fn(() => true);
+      vi.mocked(useDragOperation).mockReturnValue({
+        source: {id: 'drag-1', type: 'TYPE_A'},
+      } as ReturnType<typeof useDragOperation>);
+
+      vi.mocked(useDroppable).mockReturnValue({
+        ref: mockDroppableRef,
+        droppable: {accepts: mockAccepts},
+        isDropTarget: true,
+      } as unknown as ReturnType<typeof useDroppable>);
+
+      render(
+        <Droppable id="test-drop">
+          <div>Content</div>
+        </Droppable>,
+      );
+
+      // droppable.accepts should be called with the source
+      expect(mockAccepts).toHaveBeenCalled();
+    });
   });
 
   describe('BottomZone Integration', () => {

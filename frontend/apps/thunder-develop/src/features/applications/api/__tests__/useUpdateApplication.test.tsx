@@ -17,9 +17,7 @@
  */
 
 import {describe, it, expect, beforeEach, afterEach, vi} from 'vitest';
-import {waitFor, renderHook} from '@testing-library/react';
-import {QueryClient, QueryClientProvider} from '@tanstack/react-query';
-import type {ReactNode} from 'react';
+import {waitFor, renderHook} from '@thunder/test-utils';
 import useUpdateApplication from '../useUpdateApplication';
 import type {Application} from '../../models/application';
 import type {CreateApplicationRequest} from '../../models/requests';
@@ -30,8 +28,8 @@ vi.mock('@asgardeo/react', () => ({
   useAsgardeo: vi.fn(),
 }));
 
-vi.mock('@thunder/commons-contexts', async (importOriginal) => {
-  const actual = await importOriginal<typeof import('@thunder/commons-contexts')>();
+vi.mock('@thunder/shared-contexts', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@thunder/shared-contexts')>();
   return {
     ...actual,
     useConfig: vi.fn(),
@@ -39,10 +37,9 @@ vi.mock('@thunder/commons-contexts', async (importOriginal) => {
 });
 
 const {useAsgardeo} = await import('@asgardeo/react');
-const {useConfig} = await import('@thunder/commons-contexts');
+const {useConfig} = await import('@thunder/shared-contexts');
 
 describe('useUpdateApplication', () => {
-  let queryClient: QueryClient;
   let mockHttpRequest: ReturnType<typeof vi.fn>;
   let mockGetServerUrl: ReturnType<typeof vi.fn>;
 
@@ -120,17 +117,6 @@ describe('useUpdateApplication', () => {
   };
 
   beforeEach(() => {
-    queryClient = new QueryClient({
-      defaultOptions: {
-        queries: {
-          retry: false,
-        },
-        mutations: {
-          retry: false,
-        },
-      },
-    });
-
     mockHttpRequest = vi.fn();
     mockGetServerUrl = vi.fn().mockReturnValue('https://api.test.com');
 
@@ -146,19 +132,11 @@ describe('useUpdateApplication', () => {
   });
 
   afterEach(() => {
-    queryClient.clear();
     vi.clearAllMocks();
   });
 
-  const createWrapper = () =>
-    function Wrapper({children}: {children: ReactNode}) {
-      return <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>;
-    };
-
   it('should initialize with idle state', () => {
-    const {result} = renderHook(() => useUpdateApplication(), {
-      wrapper: createWrapper(),
-    });
+    const {result} = renderHook(() => useUpdateApplication());
 
     expect(result.current.data).toBeUndefined();
     expect(result.current.error).toBeNull();
@@ -176,9 +154,7 @@ describe('useUpdateApplication', () => {
     });
 
     const applicationId = '550e8400-e29b-41d4-a716-446655440000';
-    const {result} = renderHook(() => useUpdateApplication(), {
-      wrapper: createWrapper(),
-    });
+    const {result} = renderHook(() => useUpdateApplication());
 
     result.current.mutate({applicationId, data: mockUpdateRequest});
 
@@ -198,9 +174,7 @@ describe('useUpdateApplication', () => {
     });
 
     const applicationId = '550e8400-e29b-41d4-a716-446655440000';
-    const {result} = renderHook(() => useUpdateApplication(), {
-      wrapper: createWrapper(),
-    });
+    const {result} = renderHook(() => useUpdateApplication());
 
     result.current.mutate({applicationId, data: mockUpdateRequest});
 
@@ -235,9 +209,7 @@ describe('useUpdateApplication', () => {
     );
 
     const applicationId = '550e8400-e29b-41d4-a716-446655440000';
-    const {result} = renderHook(() => useUpdateApplication(), {
-      wrapper: createWrapper(),
-    });
+    const {result} = renderHook(() => useUpdateApplication());
 
     result.current.mutate({applicationId, data: mockUpdateRequest});
 
@@ -260,9 +232,7 @@ describe('useUpdateApplication', () => {
     mockHttpRequest.mockRejectedValueOnce(apiError);
 
     const applicationId = '550e8400-e29b-41d4-a716-446655440000';
-    const {result} = renderHook(() => useUpdateApplication(), {
-      wrapper: createWrapper(),
-    });
+    const {result} = renderHook(() => useUpdateApplication());
 
     result.current.mutate({applicationId, data: mockUpdateRequest});
 
@@ -280,9 +250,7 @@ describe('useUpdateApplication', () => {
     mockHttpRequest.mockRejectedValueOnce(networkError);
 
     const applicationId = '550e8400-e29b-41d4-a716-446655440000';
-    const {result} = renderHook(() => useUpdateApplication(), {
-      wrapper: createWrapper(),
-    });
+    const {result} = renderHook(() => useUpdateApplication());
 
     result.current.mutate({applicationId, data: mockUpdateRequest});
 
@@ -299,9 +267,7 @@ describe('useUpdateApplication', () => {
     mockHttpRequest.mockRejectedValueOnce(validationError);
 
     const applicationId = '550e8400-e29b-41d4-a716-446655440000';
-    const {result} = renderHook(() => useUpdateApplication(), {
-      wrapper: createWrapper(),
-    });
+    const {result} = renderHook(() => useUpdateApplication());
 
     result.current.mutate({applicationId, data: mockUpdateRequest});
 
@@ -318,6 +284,7 @@ describe('useUpdateApplication', () => {
     });
 
     const applicationId = '550e8400-e29b-41d4-a716-446655440000';
+    const {result, queryClient} = renderHook(() => useUpdateApplication());
 
     // Pre-populate cache with original application
     const originalApp = {...mockApplication, name: 'Original Name'};
@@ -329,10 +296,6 @@ describe('useUpdateApplication', () => {
     });
 
     const invalidateQueriesSpy = vi.spyOn(queryClient, 'invalidateQueries');
-
-    const {result} = renderHook(() => useUpdateApplication(), {
-      wrapper: createWrapper(),
-    });
 
     result.current.mutate({applicationId, data: mockUpdateRequest});
 
@@ -359,13 +322,10 @@ describe('useUpdateApplication', () => {
     });
 
     const applicationId = '550e8400-e29b-41d4-a716-446655440000';
+    const {result, queryClient} = renderHook(() => useUpdateApplication());
 
     // Mock invalidateQueries to reject
     vi.spyOn(queryClient, 'invalidateQueries').mockRejectedValue(new Error('Invalidation failed'));
-
-    const {result} = renderHook(() => useUpdateApplication(), {
-      wrapper: createWrapper(),
-    });
 
     result.current.mutate({applicationId, data: mockUpdateRequest});
 
@@ -382,9 +342,7 @@ describe('useUpdateApplication', () => {
     mockHttpRequest.mockRejectedValueOnce(notFoundError);
 
     const applicationId = 'non-existent-id';
-    const {result} = renderHook(() => useUpdateApplication(), {
-      wrapper: createWrapper(),
-    });
+    const {result} = renderHook(() => useUpdateApplication());
 
     result.current.mutate({applicationId, data: mockUpdateRequest});
 
@@ -411,9 +369,7 @@ describe('useUpdateApplication', () => {
     });
 
     const applicationId = '550e8400-e29b-41d4-a716-446655440000';
-    const {result} = renderHook(() => useUpdateApplication(), {
-      wrapper: createWrapper(),
-    });
+    const {result} = renderHook(() => useUpdateApplication());
 
     result.current.mutate({applicationId, data: partialUpdateRequest});
 
@@ -436,9 +392,7 @@ describe('useUpdateApplication', () => {
     mockHttpRequest.mockResolvedValueOnce({data: app1}).mockResolvedValueOnce({data: app2});
 
     const applicationId = '550e8400-e29b-41d4-a716-446655440000';
-    const {result} = renderHook(() => useUpdateApplication(), {
-      wrapper: createWrapper(),
-    });
+    const {result} = renderHook(() => useUpdateApplication());
 
     // First update
     result.current.mutate({
@@ -471,9 +425,7 @@ describe('useUpdateApplication', () => {
 
     mockHttpRequest.mockResolvedValueOnce({data: app1}).mockResolvedValueOnce({data: app2});
 
-    const {result} = renderHook(() => useUpdateApplication(), {
-      wrapper: createWrapper(),
-    });
+    const {result} = renderHook(() => useUpdateApplication());
 
     // Update first application
     result.current.mutate({
@@ -520,9 +472,7 @@ describe('useUpdateApplication', () => {
     });
 
     const applicationId = '550e8400-e29b-41d4-a716-446655440000';
-    const {result} = renderHook(() => useUpdateApplication(), {
-      wrapper: createWrapper(),
-    });
+    const {result} = renderHook(() => useUpdateApplication());
 
     result.current.mutate({applicationId, data: minimalUpdateRequest});
 
@@ -541,9 +491,7 @@ describe('useUpdateApplication', () => {
     });
 
     const applicationId = '550e8400-e29b-41d4-a716-446655440000';
-    const {result} = renderHook(() => useUpdateApplication(), {
-      wrapper: createWrapper(),
-    });
+    const {result} = renderHook(() => useUpdateApplication());
 
     const updatePromise = result.current.mutateAsync({applicationId, data: mockUpdateRequest});
 
@@ -559,9 +507,7 @@ describe('useUpdateApplication', () => {
     mockHttpRequest.mockRejectedValueOnce(apiError);
 
     const applicationId = '550e8400-e29b-41d4-a716-446655440000';
-    const {result} = renderHook(() => useUpdateApplication(), {
-      wrapper: createWrapper(),
-    });
+    const {result} = renderHook(() => useUpdateApplication());
 
     const updatePromise = result.current.mutateAsync({applicationId, data: mockUpdateRequest});
 
@@ -583,9 +529,7 @@ describe('useUpdateApplication', () => {
     });
 
     const applicationId = '550e8400-e29b-41d4-a716-446655440000';
-    const {result} = renderHook(() => useUpdateApplication(), {
-      wrapper: createWrapper(),
-    });
+    const {result} = renderHook(() => useUpdateApplication());
 
     result.current.mutate({applicationId, data: mockUpdateRequest});
 

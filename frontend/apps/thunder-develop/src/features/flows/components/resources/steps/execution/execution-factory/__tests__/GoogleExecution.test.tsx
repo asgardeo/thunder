@@ -78,7 +78,8 @@ describe('GoogleExecution', () => {
       const resource = createMockResource();
       render(<GoogleExecution resource={resource} />);
 
-      expect(screen.getByText('flows:core.executions.names.google')).toBeInTheDocument();
+      // Resource has display.label = 'Google', so it shows that instead of the translation key
+      expect(screen.getByText('Google')).toBeInTheDocument();
     });
 
     it('should render Google icon', () => {
@@ -95,7 +96,8 @@ describe('GoogleExecution', () => {
       const resource = createMockResource();
       render(<GoogleExecution resource={resource} />);
 
-      const container = screen.getByText('flows:core.executions.names.google').parentElement;
+      // Resource has display.label = 'Google'
+      const container = screen.getByText('Google').parentElement;
       expect(container).toBeInTheDocument();
     });
   });
@@ -163,7 +165,8 @@ describe('GoogleExecution', () => {
       });
       render(<GoogleExecution resource={resource} />);
 
-      expect(screen.getByText('flows:core.executions.names.google')).toBeInTheDocument();
+      // Resource has display.label = 'Google'
+      expect(screen.getByText('Google')).toBeInTheDocument();
     });
 
     it('should handle resource without idpId', () => {
@@ -179,7 +182,8 @@ describe('GoogleExecution', () => {
       });
       render(<GoogleExecution resource={resource} />);
 
-      expect(screen.getByText('flows:core.executions.names.google')).toBeInTheDocument();
+      // Resource has display.label = 'Google'
+      expect(screen.getByText('Google')).toBeInTheDocument();
     });
 
     it('should handle resource with undefined properties', () => {
@@ -194,7 +198,8 @@ describe('GoogleExecution', () => {
       });
       render(<GoogleExecution resource={resource} />);
 
-      expect(screen.getByText('flows:core.executions.names.google')).toBeInTheDocument();
+      // Resource has display.label = 'Google'
+      expect(screen.getByText('Google')).toBeInTheDocument();
     });
   });
 

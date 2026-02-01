@@ -50,6 +50,7 @@ func newUserHandler(userService UserServiceInterface) *userHandler {
 
 // HandleUserListRequest handles the user list request.
 func (uh *userHandler) HandleUserListRequest(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, handlerLoggerComponentName))
 
 	limit, offset, svcErr := parsePaginationParams(r.URL.Query())
@@ -69,7 +70,7 @@ func (uh *userHandler) HandleUserListRequest(w http.ResponseWriter, r *http.Requ
 	}
 
 	// Get the user list using the user service.
-	userListResponse, svcErr := uh.userService.GetUserList(limit, offset, filters)
+	userListResponse, svcErr := uh.userService.GetUserList(ctx, limit, offset, filters)
 	if svcErr != nil {
 		handleError(w, svcErr)
 		return
@@ -86,6 +87,7 @@ func (uh *userHandler) HandleUserListRequest(w http.ResponseWriter, r *http.Requ
 
 // HandleUserPostRequest handles the user request.
 func (uh *userHandler) HandleUserPostRequest(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, handlerLoggerComponentName))
 
 	createRequest, err := sysutils.DecodeJSONBody[User](r)
@@ -100,7 +102,7 @@ func (uh *userHandler) HandleUserPostRequest(w http.ResponseWriter, r *http.Requ
 	}
 
 	// Create the user using the user service.
-	createdUser, svcErr := uh.userService.CreateUser(r.Context(), createRequest)
+	createdUser, svcErr := uh.userService.CreateUser(ctx, createRequest)
 	if svcErr != nil {
 		handleError(w, svcErr)
 		return
@@ -114,6 +116,7 @@ func (uh *userHandler) HandleUserPostRequest(w http.ResponseWriter, r *http.Requ
 
 // HandleUserGetRequest handles the user request.
 func (uh *userHandler) HandleUserGetRequest(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, handlerLoggerComponentName))
 
 	id := r.PathValue("id")
@@ -128,7 +131,7 @@ func (uh *userHandler) HandleUserGetRequest(w http.ResponseWriter, r *http.Reque
 	}
 
 	// Get the user using the user service.
-	user, svcErr := uh.userService.GetUser(id)
+	user, svcErr := uh.userService.GetUser(ctx, id)
 	if svcErr != nil {
 		handleError(w, svcErr)
 		return
@@ -142,6 +145,7 @@ func (uh *userHandler) HandleUserGetRequest(w http.ResponseWriter, r *http.Reque
 
 // HandleUserGroupsGetRequest handles the get user groups request.
 func (ah *userHandler) HandleUserGroupsGetRequest(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, loggerComponentName))
 
 	id := r.PathValue("id")
@@ -160,7 +164,7 @@ func (ah *userHandler) HandleUserGroupsGetRequest(w http.ResponseWriter, r *http
 		limit = serverconst.DefaultPageSize
 	}
 
-	groupListResponse, svcErr := ah.userService.GetUserGroups(id, limit, offset)
+	groupListResponse, svcErr := ah.userService.GetUserGroups(ctx, id, limit, offset)
 	if svcErr != nil {
 		handleError(w, svcErr)
 		return
@@ -176,6 +180,7 @@ func (ah *userHandler) HandleUserGroupsGetRequest(w http.ResponseWriter, r *http
 
 // HandleUserPutRequest handles the user request.
 func (uh *userHandler) HandleUserPutRequest(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, handlerLoggerComponentName))
 
 	id := strings.TrimPrefix(r.URL.Path, "/users/")
@@ -202,7 +207,7 @@ func (uh *userHandler) HandleUserPutRequest(w http.ResponseWriter, r *http.Reque
 	updateRequest.ID = id
 
 	// Update the user using the user service.
-	user, svcErr := uh.userService.UpdateUser(id, updateRequest)
+	user, svcErr := uh.userService.UpdateUser(ctx, id, updateRequest)
 	if svcErr != nil {
 		handleError(w, svcErr)
 		return
@@ -216,6 +221,7 @@ func (uh *userHandler) HandleUserPutRequest(w http.ResponseWriter, r *http.Reque
 
 // HandleUserDeleteRequest handles the delete user request.
 func (uh *userHandler) HandleUserDeleteRequest(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, handlerLoggerComponentName))
 
 	id := strings.TrimPrefix(r.URL.Path, "/users/")
@@ -230,7 +236,7 @@ func (uh *userHandler) HandleUserDeleteRequest(w http.ResponseWriter, r *http.Re
 	}
 
 	// Delete the user using the user service.
-	svcErr := uh.userService.DeleteUser(id)
+	svcErr := uh.userService.DeleteUser(ctx, id)
 	if svcErr != nil {
 		handleError(w, svcErr)
 		return
@@ -244,6 +250,7 @@ func (uh *userHandler) HandleUserDeleteRequest(w http.ResponseWriter, r *http.Re
 
 // HandleUserListByPathRequest handles the list users by OU path request.
 func (uh *userHandler) HandleUserListByPathRequest(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, handlerLoggerComponentName))
 
 	path, pathValidationFailed := extractAndValidatePath(w, r)
@@ -267,7 +274,7 @@ func (uh *userHandler) HandleUserListByPathRequest(w http.ResponseWriter, r *htt
 		return
 	}
 
-	userListResponse, svcErr := uh.userService.GetUsersByPath(path, limit, offset, filters)
+	userListResponse, svcErr := uh.userService.GetUsersByPath(ctx, path, limit, offset, filters)
 	if svcErr != nil {
 		handleError(w, svcErr)
 		return
@@ -284,6 +291,7 @@ func (uh *userHandler) HandleUserListByPathRequest(w http.ResponseWriter, r *htt
 
 // HandleUserPostByPathRequest handles the create user by OU path request.
 func (uh *userHandler) HandleUserPostByPathRequest(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, handlerLoggerComponentName))
 
 	path, pathValidationFailed := extractAndValidatePath(w, r)
@@ -302,7 +310,7 @@ func (uh *userHandler) HandleUserPostByPathRequest(w http.ResponseWriter, r *htt
 		return
 	}
 
-	user, svcErr := uh.userService.CreateUserByPath(r.Context(), path, *createRequest)
+	user, svcErr := uh.userService.CreateUserByPath(ctx, path, *createRequest)
 	if svcErr != nil {
 		handleError(w, svcErr)
 		return
@@ -315,15 +323,16 @@ func (uh *userHandler) HandleUserPostByPathRequest(w http.ResponseWriter, r *htt
 
 // HandleSelfUserGetRequest handles the self user retrieval.
 func (uh *userHandler) HandleSelfUserGetRequest(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, handlerLoggerComponentName))
 
-	userID := security.GetUserID(r.Context())
+	userID := security.GetUserID(ctx)
 	if strings.TrimSpace(userID) == "" {
 		handleError(w, &ErrorAuthenticationFailed)
 		return
 	}
 
-	user, svcErr := uh.userService.GetUser(userID)
+	user, svcErr := uh.userService.GetUser(ctx, userID)
 	if svcErr != nil {
 		handleError(w, svcErr)
 		return
@@ -336,9 +345,10 @@ func (uh *userHandler) HandleSelfUserGetRequest(w http.ResponseWriter, r *http.R
 
 // HandleSelfUserPutRequest handles the self user update.
 func (uh *userHandler) HandleSelfUserPutRequest(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, handlerLoggerComponentName))
 
-	userID := security.GetUserID(r.Context())
+	userID := security.GetUserID(ctx)
 	if strings.TrimSpace(userID) == "" {
 		handleError(w, &ErrorAuthenticationFailed)
 		return
@@ -355,7 +365,7 @@ func (uh *userHandler) HandleSelfUserPutRequest(w http.ResponseWriter, r *http.R
 		return
 	}
 
-	updatedUser, svcErr := uh.userService.UpdateUserAttributes(userID, updateRequest.Attributes)
+	updatedUser, svcErr := uh.userService.UpdateUserAttributes(ctx, userID, updateRequest.Attributes)
 	if svcErr != nil {
 		handleError(w, svcErr)
 		return
@@ -368,9 +378,10 @@ func (uh *userHandler) HandleSelfUserPutRequest(w http.ResponseWriter, r *http.R
 
 // HandleSelfUserCredentialUpdateRequest handles the credential update for the authenticated user.
 func (uh *userHandler) HandleSelfUserCredentialUpdateRequest(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, handlerLoggerComponentName))
 
-	userID := security.GetUserID(r.Context())
+	userID := security.GetUserID(ctx)
 	if strings.TrimSpace(userID) == "" {
 		handleError(w, &ErrorAuthenticationFailed)
 		return
@@ -387,7 +398,7 @@ func (uh *userHandler) HandleSelfUserCredentialUpdateRequest(w http.ResponseWrit
 		return
 	}
 
-	if svcErr := uh.userService.UpdateUserCredentials(userID, updateRequest.Attributes); svcErr != nil {
+	if svcErr := uh.userService.UpdateUserCredentials(ctx, userID, updateRequest.Attributes); svcErr != nil {
 		handleError(w, svcErr)
 		return
 	}

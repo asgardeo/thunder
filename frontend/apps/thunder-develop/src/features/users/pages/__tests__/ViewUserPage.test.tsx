@@ -17,9 +17,7 @@
  */
 
 import {describe, it, expect, vi, beforeEach} from 'vitest';
-import {screen, waitFor, within} from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
-import render from '@/test/test-utils';
+import {render, screen, waitFor, within, userEvent} from '@thunder/test-utils';
 import ViewUserPage from '../ViewUserPage';
 import type {ApiError, ApiUser, ApiUserSchema, UserSchemaListResponse} from '../../types/users';
 
@@ -1150,6 +1148,60 @@ describe('ViewUserPage', () => {
 
       const unknownTypeSection = screen.getByText('unknownType').parentElement;
       expect(unknownTypeSection).toHaveTextContent('-');
+    });
+  });
+
+  describe('Edge Cases', () => {
+    it('displays fallback error message when error messages are undefined', () => {
+      // Create errors with undefined message to trigger the fallback
+      const userError: ApiError = {
+        code: 'USER_ERROR',
+        message: undefined as unknown as string,
+        description: '',
+      };
+
+      mockUseGetUser.mockReturnValue({
+        data: null,
+        loading: false,
+        error: userError,
+        refetch: mockRefetchUser,
+      });
+
+      mockUseGetUserSchema.mockReturnValue({
+        data: null,
+        loading: false,
+        error: null,
+        refetch: mockRefetchSchema,
+      });
+
+      render(<ViewUserPage />);
+
+      const alert = screen.getByRole('alert');
+      expect(alert).toBeInTheDocument();
+      // Should show fallback message when error message is undefined
+      expect(alert).toHaveTextContent('Failed to load user information');
+    });
+
+    it('displays "No schema available for editing" when schema is null in edit mode', async () => {
+      const user = userEvent.setup();
+      mockUseGetUserSchema.mockReturnValue({
+        data: {
+          id: 'employee',
+          name: 'Employee',
+          schema: null as unknown as ApiUserSchema['schema'],
+        },
+        loading: false,
+        error: null,
+        refetch: mockRefetchSchema,
+      });
+
+      render(<ViewUserPage />);
+
+      await user.click(screen.getByRole('button', {name: /edit/i}));
+
+      await waitFor(() => {
+        expect(screen.getByText('No schema available for editing')).toBeInTheDocument();
+      });
     });
   });
 });

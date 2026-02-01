@@ -21,15 +21,15 @@ package userschema
 import (
 	"errors"
 
-	immutableresource "github.com/asgardeo/thunder/internal/system/immutable_resource"
-	"github.com/asgardeo/thunder/internal/system/immutable_resource/entity"
+	declarativeresource "github.com/asgardeo/thunder/internal/system/declarative_resource"
+	"github.com/asgardeo/thunder/internal/system/declarative_resource/entity"
 )
 
 type userSchemaFileBasedStore struct {
-	*immutableresource.GenericFileBasedStore
+	*declarativeresource.GenericFileBasedStore
 }
 
-// Create implements immutable_resource.Storer interface for resource loader
+// Create implements declarative_resource.Storer interface for resource loader
 func (f *userSchemaFileBasedStore) Create(id string, data interface{}) error {
 	schema := data.(*UserSchema)
 	return f.CreateUserSchema(*schema)
@@ -53,7 +53,7 @@ func (f *userSchemaFileBasedStore) GetUserSchemaByID(schemaID string) (UserSchem
 	}
 	schema, ok := data.(*UserSchema)
 	if !ok {
-		immutableresource.LogTypeAssertionError("user schema", schemaID)
+		declarativeresource.LogTypeAssertionError("user schema", schemaID)
 		return UserSchema{}, errors.New("user schema data corrupted")
 	}
 	return *schema, nil
@@ -115,7 +115,7 @@ func (f *userSchemaFileBasedStore) UpdateUserSchemaByID(schemaID string, schema 
 
 // newUserSchemaFileBasedStore creates a new instance of a file-based store.
 func newUserSchemaFileBasedStore() userSchemaStoreInterface {
-	genericStore := immutableresource.NewGenericFileBasedStore(entity.KeyTypeUserSchema)
+	genericStore := declarativeresource.NewGenericFileBasedStore(entity.KeyTypeUserSchema)
 	return &userSchemaFileBasedStore{
 		GenericFileBasedStore: genericStore,
 	}

@@ -106,10 +106,6 @@ describe('steps models', () => {
       expect(ExecutionTypes.GithubFederation).toBe('GithubOAuthExecutor');
     });
 
-    it('should have PasskeyEnrollment type', () => {
-      expect(ExecutionTypes.PasskeyEnrollment).toBe('FIDO2Executor');
-    });
-
     it('should have ConfirmationCode type', () => {
       expect(ExecutionTypes.ConfirmationCode).toBe('ConfirmationCodeValidationExecutor');
     });

@@ -1,0 +1,72 @@
+---
+id: resolve-translation
+title: "Resolve a single translation"
+description: "Resolves the final value for a translation by merging custom and default values; returns 200 even when only a default exists (404 only if neither custom nor default exists)."
+sidebar_label: "Resolve a single translation"
+hide_title: true
+hide_table_of_contents: true
+api: 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
+sidebar_class_name: "get api-method"
+info_path: docs/apis/i18n/thunder-i-18-n-api
+custom_edit_url: null
+---
+
+import MethodEndpoint from "@theme/ApiExplorer/MethodEndpoint";
+import ParamsDetails from "@theme/ParamsDetails";
+import RequestSchema from "@theme/RequestSchema";
+import StatusCodes from "@theme/StatusCodes";
+import OperationTabs from "@theme/OperationTabs";
+import TabItem from "@theme/TabItem";
+import Heading from "@theme/Heading";
+import Translate from "@docusaurus/Translate";
+
+<Heading
+  as={"h1"}
+  className={"openapi__heading"}
+  children={"Resolve a single translation"}
+>
+</Heading>
+
+<MethodEndpoint
+  method={"get"}
+  path={"/i18n/languages/{language}/translations/ns/{namespace}/keys/{key}/resolve"}
+  context={"endpoint"}
+>
+  
+</MethodEndpoint>
+
+
+
+Resolves the final value for a translation by merging custom and default values; returns 200 even when only a default exists (404 only if neither custom nor default exists).
+
+<Heading
+  id={"request"}
+  as={"h2"}
+  className={"openapi-tabs__heading"}
+>
+  <Translate id="theme.openapi.request.title">Request</Translate>
+</Heading>
+
+<ParamsDetails
+  parameters={[{"name":"language","in":"path","required":true,"description":"Language tag in BCP 47 format (e.g., `en`, `es`, `fr-CA`).","schema":{"type":"string","pattern":"^[a-z]{2}(-[A-Z]{2})?(-[A-Za-z]+)?$","example":"es"}},{"name":"namespace","in":"path","required":true,"description":"Namespace for grouping translations (e.g., `auth`, `errors`, `common`).","schema":{"type":"string","pattern":"^[a-zA-Z0-9_-]+$","minLength":1,"maxLength":64,"example":"errors"}},{"name":"key","in":"path","required":true,"description":"Translation key within the namespace (e.g., `login.button`, `user.not_found`).","schema":{"type":"string","pattern":"^[a-zA-Z0-9._-]+$","minLength":1,"maxLength":256,"example":"user.not_found"}}]}
+>
+  
+</ParamsDetails>
+
+<RequestSchema
+  title={"Body"}
+  body={undefined}
+>
+  
+</RequestSchema>
+
+<StatusCodes
+  id={undefined}
+  label={undefined}
+  responses={{"200":{"description":"Translation resolved successfully","content":{"application/json":{"schema":{"type":"object","description":"Single translation response.","required":["language","namespace","key","value"],"properties":{"language":{"type":"string","description":"Language tag.","example":"es"},"namespace":{"type":"string","description":"Namespace of the translation.","example":"errors"},"key":{"type":"string","description":"Translation key.","example":"user.not_found"},"value":{"type":"string","description":"Translated value.","example":"Usuario no encontrado"}},"title":"TranslationResponse"},"example":{"language":"es","namespace":"errors","key":"user.not_found","value":"Usuario no encontrado"}}}},"400":{"description":"Bad request - Invalid input","content":{"application/json":{"schema":{"type":"object","required":["code","message"],"properties":{"code":{"type":"string","description":"Error code for programmatic handling.","example":"I18N-1003"},"message":{"type":"object","description":"Internationalized message with translation key and default value.","required":["key","defaultValue"],"properties":{"key":{"type":"string","description":"Translation key for fetching localized message.","example":"error.i18nservice.missing_language"},"defaultValue":{"type":"string","description":"Default message in English (fallback).","example":"Missing language code"}},"title":"I18nMessage"},"description":{"type":"object","description":"Internationalized message with translation key and default value.","required":["key","defaultValue"],"properties":{"key":{"type":"string","description":"Translation key for fetching localized message.","example":"error.i18nservice.missing_language"},"defaultValue":{"type":"string","description":"Default message in English (fallback).","example":"Missing language code"}},"title":"I18nMessage"}},"title":"ErrorResponse"},"examples":{"invalid-language":{"summary":"Invalid language tag format","value":{"code":"I18N-1001","message":{"key":"error.i18nservice.invalid_language","defaultValue":"Invalid language tag format"},"description":{"key":"error.i18nservice.invalid_language_description","defaultValue":"The language tag must follow BCP 47 format (e.g., 'en', 'es', 'fr-CA')"}}},"invalid-namespace":{"summary":"Invalid namespace format","value":{"code":"I18N-1002","message":{"key":"error.i18nservice.invalid_namespace","defaultValue":"Invalid namespace format"},"description":{"key":"error.i18nservice.invalid_namespace_description","defaultValue":"The namespace can only contain alphanumeric characters, underscores, and hyphens"}}},"invalid-key":{"summary":"Invalid key format","value":{"code":"I18N-1003","message":{"key":"error.i18nservice.invalid_key","defaultValue":"Invalid key format"},"description":{"key":"error.i18nservice.invalid_key_description","defaultValue":"The key can only contain alphanumeric characters, dots, underscores, and hyphens"}}}}}}},"404":{"description":"Resource not found","content":{"application/json":{"schema":{"type":"object","required":["code","message"],"properties":{"code":{"type":"string","description":"Error code for programmatic handling.","example":"I18N-1003"},"message":{"type":"object","description":"Internationalized message with translation key and default value.","required":["key","defaultValue"],"properties":{"key":{"type":"string","description":"Translation key for fetching localized message.","example":"error.i18nservice.missing_language"},"defaultValue":{"type":"string","description":"Default message in English (fallback).","example":"Missing language code"}},"title":"I18nMessage"},"description":{"type":"object","description":"Internationalized message with translation key and default value.","required":["key","defaultValue"],"properties":{"key":{"type":"string","description":"Translation key for fetching localized message.","example":"error.i18nservice.missing_language"},"defaultValue":{"type":"string","description":"Default message in English (fallback).","example":"Missing language code"}},"title":"I18nMessage"}},"title":"ErrorResponse"},"example":{"code":"I18N-1006","message":{"key":"error.i18nservice.translation_not_found","defaultValue":"Translation not found"},"description":{"key":"error.i18nservice.translation_not_found_description","defaultValue":"The requested translation does not exist for the specified language, namespace, and key"}}}}},"500":{"description":"Internal server error","content":{"application/json":{"schema":{"type":"object","required":["code","message"],"properties":{"code":{"type":"string","description":"Error code for programmatic handling.","example":"I18N-1003"},"message":{"type":"object","description":"Internationalized message with translation key and default value.","required":["key","defaultValue"],"properties":{"key":{"type":"string","description":"Translation key for fetching localized message.","example":"error.i18nservice.missing_language"},"defaultValue":{"type":"string","description":"Default message in English (fallback).","example":"Missing language code"}},"title":"I18nMessage"},"description":{"type":"object","description":"Internationalized message with translation key and default value.","required":["key","defaultValue"],"properties":{"key":{"type":"string","description":"Translation key for fetching localized message.","example":"error.i18nservice.missing_language"},"defaultValue":{"type":"string","description":"Default message in English (fallback).","example":"Missing language code"}},"title":"I18nMessage"}},"title":"ErrorResponse"},"example":{"code":"I18N-5000","message":{"key":"error.i18nservice.internal_server_error","defaultValue":"Internal server error"},"description":{"key":"error.i18nservice.internal_server_error_description","defaultValue":"An unexpected error occurred while processing the request"}}}}}}}
+>
+  
+</StatusCodes>
+
+
+      

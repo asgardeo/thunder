@@ -221,6 +221,9 @@ var (
 		ClientSecret:              "sms_auth_flow_test_secret",
 		RedirectURIs:              []string{"http://localhost:3000/callback"},
 		AllowedUserTypes:          []string{"sms_auth_user"},
+		TokenConfig: map[string]interface{}{
+			"user_attributes": []string{"userType", "ouId", "ouName", "ouHandle"},
+		},
 	}
 
 	smsAuthUserSchema = testutils.UserSchema{
@@ -658,71 +661,63 @@ func (ts *SMSAuthFlowTestSuite) TestSMSAuthFlowInvalidOTP() {
 	ts.Require().NotEmpty(completeFlowStep.FailureReason, "Failure reason should be provided for invalid OTP")
 }
 
-// TODO: With improvements to the PROMPT node, currently server doesn't allow sending
-// action along with inputs in the initial request. Hence, this test is disabled for now.
-// Should re-enable after addressing the limitation.
-// func (ts *SMSAuthFlowTestSuite) TestSMSAuthFlowSingleRequestWithMobileNumber() {
-// 	// Update app to use SMS flow
-// 	err := common.UpdateAppConfig(smsAuthTestAppID, "auth_flow_sms")
-// 	if err != nil {
-// 		ts.T().Fatalf("Failed to update app config for SMS flow: %v", err)
-// 	}
+func (ts *SMSAuthFlowTestSuite) TestSMSAuthFlowSingleRequestWithMobileNumber() {
+	// Clear any previous messages
+	ts.mockServer.ClearMessages()
 
-// 	// Clear any previous messages
-// 	ts.mockServer.ClearMessages()
+	// Get user attributes
+	var userAttrs map[string]interface{}
+	err := json.Unmarshal(testUserWithMobile.Attributes, &userAttrs)
+	ts.Require().NoError(err, "Failed to unmarshal user attributes")
 
-// 	// Get user attributes
-// 	var userAttrs map[string]interface{}
-// 	err = json.Unmarshal(testUserWithMobile.Attributes, &userAttrs)
-// 	ts.Require().NoError(err, "Failed to unmarshal user attributes")
+	// Step 1: Initialize the flow with mobile number - single action should auto-select
+	inputs := map[string]string{
+		"mobileNumber": userAttrs["mobileNumber"].(string),
+	}
 
-// 	// Step 1: Initialize the flow with mobile number
-// 	inputs := map[string]string{
-// 		"mobileNumber": userAttrs["mobileNumber"].(string),
-// 	}
+	flowStep, err := common.InitiateAuthenticationFlow(smsAuthTestAppID, false, inputs, "")
+	if err != nil {
+		ts.T().Fatalf("Failed to initiate authentication flow: %v", err)
+	}
 
-// 	flowStep, err := common.InitiateAuthenticationFlow(smsAuthTestAppID, inputs, "action_001")
-// 	if err != nil {
-// 		ts.T().Fatalf("Failed to initiate authentication flow: %v", err)
-// 	}
+	// Should require OTP input now (single action was auto-selected)
+	ts.Require().Equal("INCOMPLETE", flowStep.FlowStatus, "Expected flow status to be INCOMPLETE")
+	ts.Require().Equal("VIEW", flowStep.Type, "Expected flow type to be VIEW")
+	ts.Require().True(common.HasInput(flowStep.Data.Inputs, "otp"), "OTP input should be required")
 
-// 	// Should require OTP input now
-// 	ts.Require().Equal("INCOMPLETE", flowStep.FlowStatus, "Expected flow status to be INCOMPLETE")
-// 	ts.Require().Equal("VIEW", flowStep.Type, "Expected flow type to be VIEW")
+	// Wait for SMS to be sent
+	time.Sleep(500 * time.Millisecond)
 
-// 	// Wait for SMS to be sent
-// 	time.Sleep(500 * time.Millisecond)
+	// Get the OTP from mock server
+	lastMessage := ts.mockServer.GetLastMessage()
+	ts.Require().NotNil(lastMessage, "SMS should have been sent")
+	ts.Require().NotEmpty(lastMessage.OTP, "OTP should be available")
 
-// 	// Get the OTP from mock server
-// 	lastMessage := ts.mockServer.GetLastMessage()
-// 	ts.Require().NotNil(lastMessage, "SMS should have been sent")
-// 	ts.Require().NotEmpty(lastMessage.OTP, "OTP should be available")
+	// Step 2: Complete with OTP - single action should auto-select
+	otpInputs := map[string]string{
+		"otp": lastMessage.OTP,
+	}
 
-// 	// Step 2: Complete with OTP
-// 	otpInputs := map[string]string{
-// 		"otp": lastMessage.OTP,
-// 	}
+	completeFlowStep, err := common.CompleteFlow(flowStep.FlowID, otpInputs, "")
+	if err != nil {
+		ts.T().Fatalf("Failed to complete authentication flow with OTP: %v", err)
+	}
 
-// 	completeFlowStep, err := common.CompleteFlow(flowStep.FlowID, "", otpInputs)
-// 	if err != nil {
-// 		ts.T().Fatalf("Failed to complete authentication flow with OTP: %v", err)
-// 	}
+	// Verify successful authentication
+	ts.Require().Equal("COMPLETE", completeFlowStep.FlowStatus, "Expected flow status to be COMPLETE")
+	ts.Require().NotEmpty(completeFlowStep.Assertion,
+		"JWT assertion should be returned after successful authentication")
+	ts.Require().Empty(completeFlowStep.FailureReason, "Failure reason should be empty for successful authentication")
 
-// 	// Verify successful authentication
-// 	ts.Require().Equal("COMPLETE", completeFlowStep.FlowStatus, "Expected flow status to be COMPLETE")
-// 	ts.Require().NotEmpty(completeFlowStep.Assertion,
-// 		"JWT assertion should be returned after successful authentication")
-// 	ts.Require().Empty(completeFlowStep.FailureReason, "Failure reason should be empty for successful authentication")
-
-// 	// Validate JWT assertion fields using common utility
-// 	jwtClaims, err := testutils.ValidateJWTAssertionFields(
-// 		completeFlowStep.Assertion,
-// 		smsAuthTestAppID,
-// 		smsAuthUserSchema.Name,
-// 		smsAuthTestOU.ID,
-// 		smsAuthTestOU.Name,
-// 		smsAuthTestOU.Handle,
-// 	)
-// 	ts.Require().NoError(err, "Failed to validate JWT assertion fields")
-// 	ts.Require().NotNil(jwtClaims, "JWT claims should not be nil")
-// }
+	// Validate JWT assertion fields using common utility
+	jwtClaims, err := testutils.ValidateJWTAssertionFields(
+		completeFlowStep.Assertion,
+		smsAuthTestAppID,
+		smsAuthUserSchema.Name,
+		smsAuthTestOU.ID,
+		smsAuthTestOU.Name,
+		smsAuthTestOU.Handle,
+	)
+	ts.Require().NoError(err, "Failed to validate JWT assertion fields")
+	ts.Require().NotNil(jwtClaims, "JWT claims should not be nil")
+}

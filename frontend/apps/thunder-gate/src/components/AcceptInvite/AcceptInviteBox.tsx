@@ -41,13 +41,18 @@ import {
   Avatar,
   useTheme,
 } from '@wso2/oxygen-ui';
-import {EmbeddedFlowComponentType, EmbeddedFlowEventType, AcceptInvite, type EmbeddedFlowComponent} from '@asgardeo/react';
+import {
+  EmbeddedFlowComponentType,
+  EmbeddedFlowEventType,
+  AcceptInvite,
+  type EmbeddedFlowComponent,
+} from '@asgardeo/react';
 import {Eye, EyeClosed} from '@wso2/oxygen-ui-icons-react';
 import {useNavigate} from 'react-router';
 import {useState} from 'react';
 import {useTranslation} from 'react-i18next';
 import {mapEmbeddedFlowTextVariant, useBranding} from '@thunder/shared-branding';
-import {useConfig} from '@thunder/commons-contexts';
+import {useConfig} from '@thunder/shared-contexts';
 import {useTemplateLiteralResolver} from '@thunder/shared-hooks';
 import ROUTES from '../../constants/routes';
 
@@ -306,7 +311,20 @@ export default function AcceptInviteBox(): JSX.Element {
             console.error('Invite acceptance error:', error);
           }}
         >
-          {({values, fieldErrors, error, touched, isLoading, components, handleInputChange, handleSubmit, isComplete, isValidatingToken, isTokenInvalid, isValid}) => {
+          {({
+            values,
+            fieldErrors,
+            error,
+            touched,
+            isLoading,
+            components,
+            handleInputChange,
+            handleSubmit,
+            isComplete,
+            isValidatingToken,
+            isTokenInvalid,
+            isValid,
+          }) => {
             // Validating token
             if (isValidatingToken) {
               return (
@@ -359,7 +377,10 @@ export default function AcceptInviteBox(): JSX.Element {
                   <Box sx={{display: 'flex', flexDirection: 'column', gap: 2}}>
                     {components.map((component: EmbeddedFlowComponent, index: number) => {
                       // TEXT
-                      if (String(component.type) === String(EmbeddedFlowComponentType.Text) || component.type === 'TEXT') {
+                      if (
+                        String(component.type) === String(EmbeddedFlowComponentType.Text) ||
+                        component.type === 'TEXT'
+                      ) {
                         const variant = typeof component.variant === 'string' ? component.variant : undefined;
                         const labelText = typeof component.label === 'string' ? component.label : '';
                         return (
@@ -374,7 +395,10 @@ export default function AcceptInviteBox(): JSX.Element {
                       }
 
                       // BLOCK
-                      if (String(component.type) === String(EmbeddedFlowComponentType.Block) || component.type === 'BLOCK') {
+                      if (
+                        String(component.type) === String(EmbeddedFlowComponentType.Block) ||
+                        component.type === 'BLOCK'
+                      ) {
                         const blockComponents = (component.components ?? []) as FlowSubComponent[];
                         const submitAction = blockComponents.find(
                           (c) =>
@@ -397,13 +421,23 @@ export default function AcceptInviteBox(): JSX.Element {
                           >
                             {blockComponents.map((subComponent, compIndex) => {
                               // Form fields
-                              const field = renderFormField(subComponent, compIndex, values, touched, fieldErrors, isLoading, handleInputChange);
+                              const field = renderFormField(
+                                subComponent,
+                                compIndex,
+                                values,
+                                touched,
+                                fieldErrors,
+                                isLoading,
+                                handleInputChange,
+                              );
                               if (field) return field;
 
                               // Submit button
                               if (
-                                (String(subComponent.type) === String(EmbeddedFlowComponentType.Action) || subComponent.type === 'ACTION') &&
-                                (String(subComponent.eventType) === String(EmbeddedFlowEventType.Submit) || subComponent.eventType === 'SUBMIT')
+                                (String(subComponent.type) === String(EmbeddedFlowComponentType.Action) ||
+                                  subComponent.type === 'ACTION') &&
+                                (String(subComponent.eventType) === String(EmbeddedFlowEventType.Submit) ||
+                                  subComponent.eventType === 'SUBMIT')
                               ) {
                                 return (
                                   <Button

@@ -144,10 +144,12 @@ func (suite *AuthorizationCodeStoreTestSuite) TestGetAuthorizationCode_Success()
 		"code_challenge":        "abc123",
 		"code_challenge_method": "s256",
 		"resource":              "",
-		"authorized_user_type":  "person",
-		"user_ou_id":            "550e8400-e29b-41d4-a716-446655440000",
-		"user_ou_name":          "Default OU",
-		"user_ou_handle":        "default",
+		"user_attributes": map[string]interface{}{
+			"userType": "person",
+			"ouId":     "550e8400-e29b-41d4-a716-446655440000",
+			"ouName":   "Default OU",
+			"ouHandle": "default",
+		},
 	}
 	authzDataJSON, _ := json.Marshal(authzData)
 
@@ -173,10 +175,11 @@ func (suite *AuthorizationCodeStoreTestSuite) TestGetAuthorizationCode_Success()
 	assert.Equal(suite.T(), "test-user-id", result.AuthorizedUserID)
 	assert.Equal(suite.T(), "abc123", result.CodeChallenge)
 	assert.Equal(suite.T(), "s256", result.CodeChallengeMethod)
-	assert.Equal(suite.T(), "person", result.AuthorizedUserType)
-	assert.Equal(suite.T(), "550e8400-e29b-41d4-a716-446655440000", result.UserOUID)
-	assert.Equal(suite.T(), "Default OU", result.UserOUName)
-	assert.Equal(suite.T(), "default", result.UserOUHandle)
+	assert.NotNil(suite.T(), result.UserAttributes)
+	assert.Equal(suite.T(), "person", result.UserAttributes["userType"])
+	assert.Equal(suite.T(), "550e8400-e29b-41d4-a716-446655440000", result.UserAttributes["ouId"])
+	assert.Equal(suite.T(), "Default OU", result.UserAttributes["ouName"])
+	assert.Equal(suite.T(), "default", result.UserAttributes["ouHandle"])
 	assert.NotZero(suite.T(), result.TimeCreated)
 	assert.NotZero(suite.T(), result.ExpiryTime)
 	assert.Equal(suite.T(), "read write", result.Scopes)

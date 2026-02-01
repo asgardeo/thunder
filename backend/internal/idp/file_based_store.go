@@ -21,15 +21,15 @@ package idp
 import (
 	"errors"
 
-	immutableresource "github.com/asgardeo/thunder/internal/system/immutable_resource"
-	"github.com/asgardeo/thunder/internal/system/immutable_resource/entity"
+	declarativeresource "github.com/asgardeo/thunder/internal/system/declarative_resource"
+	"github.com/asgardeo/thunder/internal/system/declarative_resource/entity"
 )
 
 type idpFileBasedStore struct {
-	*immutableresource.GenericFileBasedStore
+	*declarativeresource.GenericFileBasedStore
 }
 
-// Create implements immutableresource.Storer interface for resource loader
+// Create implements declarativeresource.Storer interface for resource loader
 func (f *idpFileBasedStore) Create(id string, data interface{}) error {
 	idp := data.(*IDPDTO)
 	return f.CreateIdentityProvider(*idp)
@@ -53,7 +53,7 @@ func (f *idpFileBasedStore) GetIdentityProvider(idpID string) (*IDPDTO, error) {
 	}
 	idp, ok := data.(*IDPDTO)
 	if !ok {
-		immutableresource.LogTypeAssertionError("identity provider", idpID)
+		declarativeresource.LogTypeAssertionError("identity provider", idpID)
 		return nil, errors.New("identity provider data corrupted")
 	}
 	return idp, nil
@@ -99,7 +99,7 @@ func (f *idpFileBasedStore) UpdateIdentityProvider(idp *IDPDTO) error {
 
 // newIDPFileBasedStore creates a new instance of a file-based store.
 func newIDPFileBasedStore() idpStoreInterface {
-	genericStore := immutableresource.NewGenericFileBasedStore(entity.KeyTypeIDP)
+	genericStore := declarativeresource.NewGenericFileBasedStore(entity.KeyTypeIDP)
 	return &idpFileBasedStore{
 		GenericFileBasedStore: genericStore,
 	}

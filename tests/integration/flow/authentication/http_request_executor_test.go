@@ -191,6 +191,9 @@ var (
 		ClientSecret:              "http_request_executor_test_secret",
 		RedirectURIs:              []string{"http://localhost:3000/callback"},
 		AllowedUserTypes:          []string{"http_request_test_person"},
+		TokenConfig: map[string]interface{}{
+			"user_attributes": []string{"userType", "ouId", "ouName", "ouHandle"},
+		},
 	}
 
 	httpRequestTestOU = testutils.OrganizationUnit{

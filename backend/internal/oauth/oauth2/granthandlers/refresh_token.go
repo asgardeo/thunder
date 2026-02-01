@@ -105,10 +105,6 @@ func (h *refreshTokenGrantHandler) HandleGrant(tokenRequest *model.TokenRequest,
 		UserAttributes: refreshTokenClaims.UserAttributes,
 		GrantType:      refreshTokenClaims.GrantType,
 		OAuthApp:       oauthApp,
-		UserType:       refreshTokenClaims.UserType,
-		OuID:           refreshTokenClaims.OuID,
-		OuName:         refreshTokenClaims.OuName,
-		OuHandle:       refreshTokenClaims.OuHandle,
 	})
 	if err != nil {
 		logger.Error("Failed to generate access token", log.Error(err))
@@ -131,9 +127,7 @@ func (h *refreshTokenGrantHandler) HandleGrant(tokenRequest *model.TokenRequest,
 	if renewRefreshToken {
 		logger.Debug("Renewing refresh token", log.String("client_id", tokenRequest.ClientID))
 		errResp := h.IssueRefreshToken(tokenResponse, oauthApp, refreshTokenClaims.Sub, refreshTokenClaims.Aud,
-			refreshTokenClaims.GrantType, newTokenScopes,
-			refreshTokenClaims.UserType, refreshTokenClaims.OuID,
-			refreshTokenClaims.OuName, refreshTokenClaims.OuHandle)
+			refreshTokenClaims.GrantType, newTokenScopes)
 		if errResp != nil && errResp.Error != "" {
 			errResp.ErrorDescription = "Error while issuing refresh token: " + errResp.ErrorDescription
 			logger.Error("Failed to issue refresh token", log.String("error", errResp.Error))
@@ -158,7 +152,6 @@ func (h *refreshTokenGrantHandler) IssueRefreshToken(
 	oauthApp *appmodel.OAuthAppConfigProcessedDTO,
 	subject, audience, grantType string,
 	scopes []string,
-	userType, ouID, ouName, ouHandle string,
 ) *model.ErrorResponse {
 	tokenCtx := &tokenservice.RefreshTokenBuildContext{
 		ClientID:             oauthApp.ClientID,
@@ -168,20 +161,6 @@ func (h *refreshTokenGrantHandler) IssueRefreshToken(
 		AccessTokenAudience:  audience,
 		AccessTokenUserAttrs: tokenResponse.AccessToken.UserAttributes,
 		OAuthApp:             oauthApp,
-	}
-
-	// Set user type and organizational unit details if provided
-	if userType != "" {
-		tokenCtx.UserType = userType
-	}
-	if ouID != "" {
-		tokenCtx.OuID = ouID
-	}
-	if ouName != "" {
-		tokenCtx.OuName = ouName
-	}
-	if ouHandle != "" {
-		tokenCtx.OuHandle = ouHandle
 	}
 
 	// Build refresh token using token builder

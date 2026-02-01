@@ -1,0 +1,72 @@
+---
+id: start-github-authentication
+title: "Start Github authentication"
+description: "Start OAuth authentication flow with a Github identity provider."
+sidebar_label: "Start Github authentication"
+hide_title: true
+hide_table_of_contents: true
+api: eJztVm1v2zgM/isCge2Tk7hB0lsNFIeuK3buDW3Rl7sDiqJQZCbWKkueJDfNAv/3gZK7vLRbt919vH5IE1OkyOd5SHMJBTphZe2l0ZDBhefWs9ODxpeMN75E7aXgZGRTZeZsLsnA3ktfNhMmC7L7BautuZcF2j4k4PnMQXYN8QzcJGDxU4POvzXFArLl1o1dqK3LpJZexq8F9xxiEGmxgMzbBhMQRnvUngLyulad4+Cjo6hLcKLEitM3v6gRMjCTjyj8RqBrkEV9KwvKsbamRuslOvLpnq+8nbdSzyDZSj7fBoDl7yABfOBVrchvPE7xzShNezjcm/RGO8Wox3/b2e2NRru74/FolKZpCm2bgJc+OOTvzgj8XEt/HmGDtqUDFl1ttIv5DdP0KZKnf8K/gGUTAIuFtCj8bWPVyzBcnX9g3rBHJ+ZLZI1Dy6bGbjG7gU7pfe2ywYALYRrtXX9mzExhX5hqYAaGPIcD+vxdKIna38pif2Ea24s/e7J4/QjLLWW4L0yBr50wNe6bGrUsXg1TrLhUr4Zpbc1UKny9Vprcf8yAovK6DjcLrtSEiztoE3DonDT61ps71C8Dcfz3JQtHQ+UEw5auu3gbKODiuJy8F/JUHudXn/OdE5m7XJ+PxWG+m9/V//x1eLzX7/e/LZOIAKX7Neg2g1+hnoV2C3UqM5M6ohxANlZ+xu8h/YO4dQSQAOAJgj9RLdU7ek7ob3nBuubI2GWJrBswbGKKBZOOVVxNja2wYMYy6ggutWNS33MlizBQ+j/TKlyp0ylk1y81DanvZY0cWRuyKgJjFTrHZz/s9ni83TK/5P0OPZcKC4YhzLpxXVbhkjVBbVfc3qzOHgZlbHusSzDiAQdXl3+c9HbSdAfW6oW8o+PJSyTO0M38ieXO/rwH0f5IsLEMq9ovOg2Nn9NQrj1azRW7QHuPloU6MnagWaPxoUbhv4JlhGisxYLNS6lCGoI0rWehwTvt/S+oXxbUtxQzpnfjpmI6zlzkLFz9JLNfphDW8o6q2Mo+yqlCX5oCMqiNC5RxX0IGYYR20zQO2YGjZSqMQArmAuGb03hZGufbbFkb61tI4J5byScqsk+2KNwpb5SHDJQRXIXHbQLks2l+k+7RMkGYkubOV2vX0Qrix9XmB1eTBKSemqCHDpqDzTfawVn+TLdKRwZqysZhQcvB2oswLgeOWoZwiT47fSJbSYGEdbYEzatwXc1FiWwYzCv0ssFgPp/3ebD2jZ0NOlc3+JAfHp1cHPWG/bRf+koFQRJZFddrgeOq++z6uV3QctXa/8mGHFvA44Mf1IpLTTB3i1ZU0zVQaEjAdP+jokhLQVM3SaeOa1guJ9zhlVVtS48/NWgXkF3frMREv9oESuQF2iDCO1zQAI819S4pHTquGkrryeiiro0eB0Jg7b979matQc5OLy4hgUm391exuS2f0xbO55ABVRgwjksnPVuC4nrWxI6PMenvC4pwaFU=
+sidebar_class_name: "post api-method"
+info_path: docs/apis/authentication/authentication-api
+custom_edit_url: null
+---
+
+import MethodEndpoint from "@theme/ApiExplorer/MethodEndpoint";
+import ParamsDetails from "@theme/ParamsDetails";
+import RequestSchema from "@theme/RequestSchema";
+import StatusCodes from "@theme/StatusCodes";
+import OperationTabs from "@theme/OperationTabs";
+import TabItem from "@theme/TabItem";
+import Heading from "@theme/Heading";
+import Translate from "@docusaurus/Translate";
+
+<Heading
+  as={"h1"}
+  className={"openapi__heading"}
+  children={"Start Github authentication"}
+>
+</Heading>
+
+<MethodEndpoint
+  method={"post"}
+  path={"/auth/oauth/github/start"}
+  context={"endpoint"}
+>
+  
+</MethodEndpoint>
+
+
+
+Start OAuth authentication flow with a Github identity provider.
+
+<Heading
+  id={"request"}
+  as={"h2"}
+  className={"openapi-tabs__heading"}
+>
+  <Translate id="theme.openapi.request.title">Request</Translate>
+</Heading>
+
+<ParamsDetails
+  parameters={undefined}
+>
+  
+</ParamsDetails>
+
+<RequestSchema
+  title={"Body"}
+  body={{"description":"Github authentication initiation data","required":true,"content":{"application/json":{"schema":{"type":"object","required":["idp_id"],"properties":{"idp_id":{"type":"string","description":"Identity provider ID","example":"550e8400-e29b-41d4-a716-446655440000"}},"title":"IDPAuthInitRequest"}}}}}
+>
+  
+</RequestSchema>
+
+<StatusCodes
+  id={undefined}
+  label={undefined}
+  responses={{"200":{"description":"OK","content":{"application/json":{"schema":{"type":"object","properties":{"redirect_url":{"type":"string","description":"URL to redirect the user for authentication","example":"https://accounts.google.com/o/oauth2/auth?client_id=your-client-id&response_type=code&scope=openid%20email%20profile&redirect_uri=https://yourapp.com/callback"},"session_token":{"type":"string","description":"JWT token for the authentication session","example":"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."}},"title":"IDPAuthInitResponse"},"example":{"redirect_url":"https://github.com/login/oauth/authorize?client_id=your-client-id&redirect_uri=https://yourapp.com/callback&scope=user","session_token":"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."}}}},"400":{"description":"Bad Request: The request body is malformed or contains invalid data.","content":{"application/json":{"schema":{"allOf":[{"type":"object","properties":{"code":{"type":"string","description":"Error code"},"message":{"type":"string","description":"Error message"},"description":{"type":"string","description":"Detailed error description"}},"title":"ErrorResponse"},{"type":"object"}],"title":"ClientErrorResponse"},"example":{"code":"AUTHN-1001","message":"Invalid identity provider ID","description":"The provided identity provider ID is invalid or empty"}}}},"500":{"description":"Internal Server Error: An unexpected error occurred while processing the request.","content":{"application/json":{"schema":{"allOf":[{"type":"object","properties":{"code":{"type":"string","description":"Error code"},"message":{"type":"string","description":"Error message"},"description":{"type":"string","description":"Detailed error description"}},"title":"ErrorResponse"},{"type":"object"}],"example":{"code":"AUTHN-5000","message":"Internal server error","description":"An unexpected error occurred while processing the request"},"title":"ServerErrorResponse"}}}}}}
+>
+  
+</StatusCodes>
+
+
+      

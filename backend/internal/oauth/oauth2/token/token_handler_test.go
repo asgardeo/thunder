@@ -585,7 +585,9 @@ func (suite *TokenHandlerTestSuite) TestHandleTokenRequest_WithRefreshToken() {
 		Return(tokenResponse, nil)
 
 	mockRefreshHandler.On("IssueRefreshToken", tokenResponse, mockApp, "user123", "test-audience",
-		"authorization_code", []string{"openid"}, "", "", "", "").
+		"authorization_code", mock.MatchedBy(func(scopes []string) bool {
+			return len(scopes) == 1 && scopes[0] == "openid"
+		})).
 		Return(nil)
 
 	rr := httptest.NewRecorder()
@@ -664,7 +666,9 @@ func (suite *TokenHandlerTestSuite) TestHandleTokenRequest_RefreshTokenIssuanceE
 		ErrorDescription: "Failed to issue refresh token",
 	}
 	mockRefreshHandler.On("IssueRefreshToken", tokenResponse, mockApp, "user123", "test-audience",
-		"authorization_code", []string{"openid"}, "", "", "", "").
+		"authorization_code", mock.MatchedBy(func(scopes []string) bool {
+			return len(scopes) == 1 && scopes[0] == "openid"
+		})).
 		Return(refreshError)
 
 	rr := httptest.NewRecorder()

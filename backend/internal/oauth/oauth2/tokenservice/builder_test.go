@@ -73,6 +73,7 @@ func (suite *TokenBuilderTestSuite) SetupTest() {
 			Issuer: "https://thunder.io",
 			AccessToken: &appmodel.AccessTokenConfig{
 				ValidityPeriod: 3600,
+				UserAttributes: []string{"name"}, // Configure user attributes for tests
 			},
 		},
 	}

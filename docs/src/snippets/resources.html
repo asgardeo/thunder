@@ -1,0 +1,49 @@
+<div class="oxygen-menu-list" style="display: flex; flex-direction: column; border-radius: 16px; min-width: 220px;">
+  <ul style="display: flex; flex-direction: column; gap: 8px; list-style: none; padding: 0; margin: 0; color: var(--oxygen-palette-text-primary);">
+    <li>
+      <a href="{{RELEASES_URL}}" style="display: flex; align-items: center; gap: 8px; color: inherit; text-decoration: none; padding: 8px 12px; border-radius: 8px; transition: background-color 0.2s;" target="_blank" rel="noopener noreferrer" class="oxygen-menu-item">
+        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink: 0;">
+          <path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1 0-5H20"/>
+        </svg>
+        <span style="font-size: 14px; font-weight: 400;">Releases</span>
+      </a>
+    </li>
+    <li>
+      <a href="{{DISCUSSIONS_URL}}" style="display: flex; align-items: center; gap: 8px; color: inherit; text-decoration: none; padding: 8px 12px; border-radius: 8px; transition: background-color 0.2s;" target="_blank" rel="noopener noreferrer" class="oxygen-menu-item">
+        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink: 0;">
+          <path d="M7.9 20A9 9 0 1 0 4 16.1L2 22Z"/>
+        </svg>
+        <span style="font-size: 14px; font-weight: 400;">Discussions</span>
+      </a>
+    </li>
+    <li>
+      <a href="{{ISSUES_URL}}" style="display: flex; align-items: center; gap: 8px; color: inherit; text-decoration: none; padding: 8px 12px; border-radius: 8px; transition: background-color 0.2s;" target="_blank" rel="noopener noreferrer" class="oxygen-menu-item">
+        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink: 0;">
+          <circle cx="12" cy="12" r="10"/>
+          <path d="M12 16v-4"/>
+          <path d="M12 8h.01"/>
+        </svg>
+        <span style="font-size: 14px; font-weight: 400;">Report an Issue</span>
+      </a>
+    </li>
+  </ul>
+</div>
+
+<style>
+.oxygen-menu-item:hover {
+  color: var(--oxygen-palette-color-primary) !important;
+  background-color: var(--oxygen-palette-action-hover, rgba(0, 0, 0, 0.04));
+}
+
+html[data-theme='dark'] .oxygen-menu-item:hover {
+  background-color: var(--oxygen-palette-action-hover, rgba(255, 255, 255, 0.08));
+}
+
+.oxygen-menu-item:active {
+  background-color: var(--oxygen-palette-action-selected, rgba(0, 0, 0, 0.08));
+}
+
+html[data-theme='dark'] .oxygen-menu-item:active {
+  background-color: var(--oxygen-palette-action-selected, rgba(255, 255, 255, 0.16));
+}
+</style>

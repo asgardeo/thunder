@@ -46,14 +46,18 @@ SAMPLE_APPS=("react-vanilla" "react-sdk" "react-api-based")
 MISSING_COUNT=0
 
 for app in "${SAMPLE_APPS[@]}"; do
-  EXPECTED_FILE="target/dist/sample-app-${app}-*-$OS-$ARCH.zip"
+  EXPECTED_PATTERN="target/dist/sample-app-${app}-*-$OS-$ARCH.zip"
 
-  if ! ls "$EXPECTED_FILE" 1> /dev/null 2>&1; then
-    echo "❌ Sample artifact not found: $EXPECTED_FILE"
+  # Expand glob once into an array (nullglob ensures empty array if no match)
+  shopt -s nullglob
+  MATCHED_FILES=($EXPECTED_PATTERN)
+  shopt -u nullglob
+
+  if [ ${#MATCHED_FILES[@]} -eq 0 ]; then
+    echo "❌ Sample artifact not found: $EXPECTED_PATTERN"
     MISSING_COUNT=$((MISSING_COUNT + 1))
   else
-    FOUND_FILE=$(ls "$EXPECTED_FILE")
-    echo "✅ Found sample artifact: $(basename $FOUND_FILE)"
+    echo "✅ Found sample artifact: $(basename "${MATCHED_FILES[0]}")"
   fi
 done
 

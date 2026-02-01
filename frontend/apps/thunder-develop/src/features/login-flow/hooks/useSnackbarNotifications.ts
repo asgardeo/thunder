@@ -36,14 +36,20 @@ export interface UseSnackbarNotificationsReturn {
   errorSnackbar: SnackbarState;
   /** Success snackbar state. */
   successSnackbar: SnackbarState;
+  /** Info/hint snackbar state. */
+  infoSnackbar: SnackbarState;
   /** Show an error notification. */
   showError: (message: string) => void;
   /** Show a success notification. */
   showSuccess: (message: string) => void;
+  /** Show an info/hint notification. */
+  showInfo: (message: string) => void;
   /** Close the error snackbar. */
   handleCloseErrorSnackbar: () => void;
   /** Close the success snackbar. */
   handleCloseSuccessSnackbar: () => void;
+  /** Close the info snackbar. */
+  handleCloseInfoSnackbar: () => void;
 }
 
 /**
@@ -76,6 +82,11 @@ const useSnackbarNotifications = (): UseSnackbarNotificationsReturn => {
     message: '',
   });
 
+  const [infoSnackbar, setInfoSnackbar] = useState<SnackbarState>({
+    open: false,
+    message: '',
+  });
+
   /**
    * Show an error notification.
    */
@@ -88,6 +99,13 @@ const useSnackbarNotifications = (): UseSnackbarNotificationsReturn => {
    */
   const showSuccess = useCallback((message: string) => {
     setSuccessSnackbar({open: true, message});
+  }, []);
+
+  /**
+   * Show an info/hint notification.
+   */
+  const showInfo = useCallback((message: string) => {
+    setInfoSnackbar({open: true, message});
   }, []);
 
   /**
@@ -104,13 +122,23 @@ const useSnackbarNotifications = (): UseSnackbarNotificationsReturn => {
     setSuccessSnackbar((prev) => ({...prev, open: false}));
   }, []);
 
+  /**
+   * Close the info snackbar.
+   */
+  const handleCloseInfoSnackbar = useCallback(() => {
+    setInfoSnackbar((prev) => ({...prev, open: false}));
+  }, []);
+
   return {
     errorSnackbar,
     successSnackbar,
+    infoSnackbar,
     showError,
     showSuccess,
+    showInfo,
     handleCloseErrorSnackbar,
     handleCloseSuccessSnackbar,
+    handleCloseInfoSnackbar,
   };
 };
 

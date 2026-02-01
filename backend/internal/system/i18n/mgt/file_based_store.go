@@ -21,23 +21,23 @@ package mgt
 import (
 	"errors"
 
-	immutableresource "github.com/asgardeo/thunder/internal/system/immutable_resource"
-	"github.com/asgardeo/thunder/internal/system/immutable_resource/entity"
+	declarativeresource "github.com/asgardeo/thunder/internal/system/declarative_resource"
+	"github.com/asgardeo/thunder/internal/system/declarative_resource/entity"
 )
 
 type fileBasedStore struct {
-	*immutableresource.GenericFileBasedStore
+	*declarativeresource.GenericFileBasedStore
 }
 
 // newFileBasedStore creates a new instance of a file-based store.
 func newFileBasedStore() i18nStoreInterface {
-	genericStore := immutableresource.NewGenericFileBasedStore(entity.KeyTypeTranslation)
+	genericStore := declarativeresource.NewGenericFileBasedStore(entity.KeyTypeTranslation)
 	return &fileBasedStore{
 		GenericFileBasedStore: genericStore,
 	}
 }
 
-// Create implements immutableresource.Storer interface for resource loader
+// Create implements declarativeresource.Storer interface for resource loader
 func (f *fileBasedStore) Create(id string, data interface{}) error {
 	trans := data.(*LanguageTranslations)
 	return f.GenericFileBasedStore.Create(id, trans)
@@ -170,9 +170,9 @@ func (f *fileBasedStore) DeleteTranslation(language string, key string, namespac
 	return errors.New("DeleteTranslation is not supported in file-based store")
 }
 
-// IsTranslationImmutable checks if a translation is immutable (exists in file store).
+// IsTranslationDeclarative checks if a translation is immutable (exists in file store).
 // Helper method for composite store.
-func (f *fileBasedStore) IsTranslationImmutable(id string) bool {
+func (f *fileBasedStore) IsTranslationDeclarative(id string) bool {
 	item, err := f.GenericFileBasedStore.Get(id)
 	return err == nil && item != nil
 }

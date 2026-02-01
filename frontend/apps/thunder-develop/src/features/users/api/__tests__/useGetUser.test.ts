@@ -17,8 +17,7 @@
  */
 
 import {describe, it, expect, vi, beforeEach, afterEach} from 'vitest';
-import {waitFor} from '@testing-library/react';
-import {renderHook} from '../../../../test/test-utils';
+import {waitFor, renderHook} from '@thunder/test-utils';
 import useGetUser from '../useGetUser';
 import type {ApiUser} from '../../types/users';
 
@@ -33,8 +32,8 @@ vi.mock('@asgardeo/react', () => ({
 }));
 
 // Mock useConfig
-vi.mock('@thunder/commons-contexts', async (importOriginal) => {
-  const actual = await importOriginal<typeof import('@thunder/commons-contexts')>();
+vi.mock('@thunder/shared-contexts', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@thunder/shared-contexts')>();
   return {
     ...actual,
     useConfig: () => ({
@@ -366,5 +365,22 @@ describe('useGetUser', () => {
     });
 
     expect(result.current.loading).toBe(false);
+  });
+
+  it('should handle non-Error object during initial fetch', async () => {
+    mockHttpRequest.mockRejectedValue('String error during initial fetch');
+
+    const {result} = renderHook(() => useGetUser('user-123'));
+
+    await waitFor(() => {
+      expect(result.current.loading).toBe(false);
+    });
+
+    expect(result.current.error).toEqual({
+      code: 'FETCH_ERROR',
+      message: 'An unknown error occurred',
+      description: 'Failed to fetch user',
+    });
+    expect(result.current.data).toBeNull();
   });
 });

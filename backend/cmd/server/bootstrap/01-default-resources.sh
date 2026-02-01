@@ -772,7 +772,7 @@ RESPONSE=$(thunder_api_call POST "/applications" "{
       \"token_endpoint_auth_method\": \"none\",
       \"public_client\": true,
       \"token\": {
-        \"issuer\": \"${PUBLIC_URL}/oauth2/token\",
+        \"issuer\": \"${PUBLIC_URL}\",
         \"access_token\": {
           \"validity_period\": 3600,
           \"user_attributes\": [\"given_name\",\"family_name\",\"email\",\"groups\", \"name\"]

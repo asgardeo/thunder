@@ -265,9 +265,15 @@ func (ah *authorizeHandler) handleAuthorizationResponseFromEngine(msg *OAuthMess
 		return
 	}
 
-	authorizedScopes := assertionClaims.userAttributes["authorized_permissions"]
+	// Extract authorized permissions for permission scopes
 	// Overwrite the non oidc scopes in auth request context with the authorized scopes from the assertion.
-	authRequestCtx.OAuthParameters.PermissionScopes = utils.ParseStringArray(authorizedScopes, " ")
+	if assertionClaims.authorizedPermissions != "" {
+		authRequestCtx.OAuthParameters.PermissionScopes = utils.ParseStringArray(
+			assertionClaims.authorizedPermissions, " ")
+	} else {
+		// Clear permission scopes if no authorized permissions in assertion
+		authRequestCtx.OAuthParameters.PermissionScopes = []string{}
+	}
 
 	// Generate the authorization code.
 	authzCode, err := createAuthorizationCode(authRequestCtx, &assertionClaims, authTime)
@@ -529,10 +535,7 @@ func createAuthorizationCode(
 		ClientID:            clientID,
 		RedirectURI:         redirectURI,
 		AuthorizedUserID:    assertionClaims.userID,
-		AuthorizedUserType:  assertionClaims.userType,
-		UserOUID:            assertionClaims.ouID,
-		UserOUName:          assertionClaims.ouName,
-		UserOUHandle:        assertionClaims.ouHandle,
+		UserAttributes:      assertionClaims.userAttributes,
 		TimeCreated:         authTime,
 		ExpiryTime:          expiryTime,
 		Scopes:              utils.StringifyStringArray(allScopes, " "),
@@ -556,7 +559,7 @@ func (ah *authorizeHandler) verifyAssertion(assertion string, logger *log.Logger
 // decodeAttributesFromAssertion decodes user attributes from the flow assertion JWT.
 func decodeAttributesFromAssertion(assertion string) (assertionClaims, time.Time, error) {
 	assertionClaims := assertionClaims{
-		userAttributes: make(map[string]string),
+		userAttributes: make(map[string]interface{}),
 	}
 
 	_, jwtPayload, err := jwt.DecodeJWT(assertion)
@@ -579,70 +582,40 @@ func decodeAttributesFromAssertion(assertion string) (assertionClaims, time.Time
 		}
 	}
 
-	userAttributes := make(map[string]string)
+	// Standard JWT claims that should not be treated as user attributes.
+	standardClaims := map[string]bool{
+		"iss": true, "sub": true, "aud": true, "exp": true, "nbf": true, "iat": true, "jti": true,
+		"assurance":              true,
+		"authorized_permissions": true,
+	}
+
+	userAttributes := make(map[string]interface{})
 	for key, value := range jwtPayload {
-		switch key {
-		case oauth2const.ClaimSub:
+		// Extract sub claim
+		if key == oauth2const.ClaimSub {
 			if strValue, ok := value.(string); ok {
 				assertionClaims.userID = strValue
 			} else {
 				return assertionClaims, time.Time{}, errors.New("JWT 'sub' claim is not a string")
 			}
-		case "username":
-			if strValue, ok := value.(string); ok {
-				userAttributes["username"] = strValue
-			} else {
-				return assertionClaims, time.Time{}, errors.New("JWT 'username' claim is not a string")
-			}
-		case "email":
-			if strValue, ok := value.(string); ok {
-				userAttributes["email"] = strValue
-			} else {
-				return assertionClaims, time.Time{}, errors.New("JWT 'email' claim is not a string")
-			}
-		case "firstName":
-			if strValue, ok := value.(string); ok {
-				userAttributes["firstName"] = strValue
-			} else {
-				return assertionClaims, time.Time{}, errors.New("JWT 'firstName' claim is not a string")
-			}
-		case "lastName":
-			if strValue, ok := value.(string); ok {
-				userAttributes["lastName"] = strValue
-			} else {
-				return assertionClaims, time.Time{}, errors.New("JWT 'lastName' claim is not a string")
-			}
-		case "authorized_permissions":
-			if strValue, ok := value.(string); ok {
-				userAttributes["authorized_permissions"] = strValue
-			} else {
-				return assertionClaims, time.Time{}, errors.New("JWT 'authorized_permissions' claim is not a string")
-			}
-		case oauth2const.ClaimUserType:
-			if strValue, ok := value.(string); ok {
-				assertionClaims.userType = strValue
-			} else {
-				return assertionClaims, time.Time{}, errors.New("JWT 'userType' claim is not a string")
-			}
-		case oauth2const.ClaimOUID:
-			if strValue, ok := value.(string); ok {
-				assertionClaims.ouID = strValue
-			} else {
-				return assertionClaims, time.Time{}, errors.New("JWT 'ouId' claim is not a string")
-			}
-		case oauth2const.ClaimOUName:
-			if strValue, ok := value.(string); ok {
-				assertionClaims.ouName = strValue
-			} else {
-				return assertionClaims, time.Time{}, errors.New("JWT 'ouName' claim is not a string")
-			}
-		case oauth2const.ClaimOUHandle:
-			if strValue, ok := value.(string); ok {
-				assertionClaims.ouHandle = strValue
-			} else {
-				return assertionClaims, time.Time{}, errors.New("JWT 'ouHandle' claim is not a string")
-			}
+			continue
 		}
+
+		// Extract authorized_permissions claim
+		if key == "authorized_permissions" {
+			if strValue, ok := value.(string); ok {
+				assertionClaims.authorizedPermissions = strValue
+			}
+			continue
+		}
+
+		// Skip standard JWT claims
+		if standardClaims[key] {
+			continue
+		}
+
+		// All other claims are treated as user attributes
+		userAttributes[key] = value
 	}
 	assertionClaims.userAttributes = userAttributes
 

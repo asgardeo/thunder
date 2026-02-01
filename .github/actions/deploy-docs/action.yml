@@ -1,0 +1,68 @@
+name: '📚 Deploy Documentation to GitHub Pages'
+description: 'Deploy Thunder documentation to GitHub Pages'
+author: 'WSO2'
+inputs:
+  docs-artifact-name:
+    description: 'Name of the artifact containing built docs (optional if docs need to be built)'
+    required: false
+    default: ''
+  build-docs:
+    description: 'Whether to build the docs from source'
+    required: false
+    default: 'false'
+  github-token:
+    description: 'GitHub token for deployment'
+    required: true
+  commit-message:
+    description: 'Commit message for the deployment'
+    required: false
+    default: '📚 Deploy documentation'
+
+runs:
+  using: 'composite'
+  steps:
+    - name: ⚙️ Set up Node.js
+      if: inputs.build-docs == 'true'
+      uses: actions/setup-node@v4
+      with:
+        node-version: 'lts/*'
+
+    - name: 📦 Install pnpm
+      if: inputs.build-docs == 'true'
+      uses: pnpm/action-setup@v4
+      with:
+        version: 'latest'
+        run_install: false
+
+    - name: 📦 Build Frontend
+      if: inputs.build-docs == 'true'
+      shell: bash
+      run: |
+        make build_frontend
+
+    - name: 📥 Download Docs Artifact
+      if: inputs.docs-artifact-name != ''
+      uses: actions/download-artifact@v4
+      with:
+        name: ${{ inputs.docs-artifact-name }}
+        path: docs/build
+
+    - name: 📋 Verify Build Output
+      shell: bash
+      run: |
+        if [ ! -d "docs/build" ]; then
+          echo "❌ Error: docs/build directory not found"
+          exit 1
+        fi
+        echo "✅ Documentation build directory found"
+        echo "📂 Contents:"
+        ls -la docs/build
+
+    - name: � Upload artifact
+      uses: actions/upload-pages-artifact@v3
+      with:
+        path: ./docs/build
+
+    - name: 🔥 Deploy to GitHub Pages
+      id: deploy-gh-pages
+      uses: actions/deploy-pages@v4

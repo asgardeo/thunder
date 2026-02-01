@@ -20,6 +20,7 @@
 package group
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"strings"
@@ -501,7 +502,7 @@ func (gs *groupService) validateOU(ouID string) *serviceerror.ServiceError {
 func (gs *groupService) validateUserIDs(userIDs []string) *serviceerror.ServiceError {
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, loggerComponentName))
 
-	invalidUserIDs, svcErr := gs.userService.ValidateUserIDs(userIDs)
+	invalidUserIDs, svcErr := gs.userService.ValidateUserIDs(context.TODO(), userIDs)
 	if svcErr != nil {
 		logger.Error("Failed to validate user IDs", log.String("error", svcErr.Error), log.String("code", svcErr.Code))
 		return &ErrorInternalServerError

@@ -27,6 +27,7 @@ import (
 	authnoauth "github.com/asgardeo/thunder/internal/authn/oauth"
 	authnoidc "github.com/asgardeo/thunder/internal/authn/oidc"
 	"github.com/asgardeo/thunder/internal/idp"
+	"github.com/asgardeo/thunder/internal/system/config"
 	"github.com/asgardeo/thunder/internal/system/error/serviceerror"
 	syshttp "github.com/asgardeo/thunder/internal/system/http"
 	"github.com/asgardeo/thunder/internal/system/jwt"
@@ -158,6 +159,9 @@ func (g *googleOIDCAuthnService) ValidateIDToken(idpID, idToken string) *service
 			"The ID token audience does not match the expected client ID")
 	}
 
+	// Get leeway from config to account for clock skew
+	leeway := config.GetThunderRuntime().Config.JWT.Leeway
+
 	// Validate expiration time
 	exp, ok := claims["exp"].(float64)
 	if !ok {
@@ -165,19 +169,19 @@ func (g *googleOIDCAuthnService) ValidateIDToken(idpID, idToken string) *service
 		return serviceerror.CustomServiceError(authnoidc.ErrorInvalidIDToken,
 			"The ID token expiration claim is missing or invalid")
 	}
-	if time.Now().Unix() >= int64(exp) {
+	if time.Now().Unix() >= int64(exp)+leeway {
 		logger.Debug("ID token has expired", log.Int("exp", int(exp)))
 		return serviceerror.CustomServiceError(authnoidc.ErrorInvalidIDToken, "The ID token has expired")
 	}
 
-	// Check if token was issued in the future (to prevent clock skew issues)
+	// Check if token was issued in the future (with leeway for clock skew)
 	iat, ok := claims["iat"].(float64)
 	if !ok {
 		logger.Debug("Invalid ID token issued-at claim", log.Any("iat", claims["iat"]))
 		return serviceerror.CustomServiceError(authnoidc.ErrorInvalidIDToken,
 			"The ID token issued-at (iat) claim is missing or invalid")
 	}
-	if time.Now().Unix() < int64(iat) {
+	if time.Now().Unix() < int64(iat)-leeway {
 		logger.Debug("ID token was issued in the future", log.Int("iat", int(iat)))
 		return serviceerror.CustomServiceError(authnoidc.ErrorInvalidIDToken,
 			"The ID token was issued in the future")

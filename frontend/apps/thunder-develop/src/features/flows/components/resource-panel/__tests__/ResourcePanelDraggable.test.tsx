@@ -212,4 +212,26 @@ describe('ResourcePanelDraggable', () => {
       expect(screen.getByTestId('draggable-wrapper')).toBeInTheDocument();
     });
   });
+
+  describe('Type Prop', () => {
+    it('should accept custom type prop', () => {
+      const resource = createMockResource();
+      const {container} = render(
+        <ResourcePanelDraggable id="step-1" resource={resource} onAdd={vi.fn()} type="static" />,
+      );
+
+      // Component renders with custom type
+      const card = container.querySelector('.MuiCard-root');
+      expect(card).toBeInTheDocument();
+    });
+
+    it('should use draggable type by default when type is not provided', () => {
+      const resource = createMockResource();
+      const {container} = render(<ResourcePanelDraggable id="step-1" resource={resource} onAdd={vi.fn()} />);
+
+      // Component renders with default draggable type
+      const card = container.querySelector('.MuiCard-root');
+      expect(card).toBeInTheDocument();
+    });
+  });
 });

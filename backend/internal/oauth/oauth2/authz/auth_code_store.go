@@ -41,10 +41,7 @@ const (
 	jsonDataKeyCodeChallenge       = "code_challenge"
 	jsonDataKeyCodeChallengeMethod = "code_challenge_method"
 	jsonDataKeyResource            = "resource"
-	jsonDataKeyAuthorizedUserType  = "authorized_user_type"
-	jsonDataKeyUserOUID            = "user_ou_id"
-	jsonDataKeyUserOUName          = "user_ou_name"
-	jsonDataKeyUserOUHandle        = "user_ou_handle"
+	jsonDataKeyUserAttributes      = "user_attributes"
 )
 
 // AuthorizationCodeStoreInterface defines the interface for managing authorization codes.
@@ -147,10 +144,11 @@ func (acs *authorizationCodeStore) getJSONDataBytes(authzCode AuthorizationCode)
 		jsonDataKeyCodeChallenge:       authzCode.CodeChallenge,
 		jsonDataKeyCodeChallengeMethod: authzCode.CodeChallengeMethod,
 		jsonDataKeyResource:            authzCode.Resource,
-		jsonDataKeyAuthorizedUserType:  authzCode.AuthorizedUserType,
-		jsonDataKeyUserOUID:            authzCode.UserOUID,
-		jsonDataKeyUserOUName:          authzCode.UserOUName,
-		jsonDataKeyUserOUHandle:        authzCode.UserOUHandle,
+	}
+
+	// Include user attributes if present
+	if len(authzCode.UserAttributes) > 0 {
+		jsonData[jsonDataKeyUserAttributes] = authzCode.UserAttributes
 	}
 
 	jsonDataBytes, err := json.Marshal(jsonData)
@@ -253,17 +251,8 @@ func appendAuthzDataJSON(row map[string]interface{}, authzCode *AuthorizationCod
 		authzCode.Resource = resource
 	}
 
-	if authorizedUserType, ok := authzData[jsonDataKeyAuthorizedUserType].(string); ok {
-		authzCode.AuthorizedUserType = authorizedUserType
-	}
-	if userOUID, ok := authzData[jsonDataKeyUserOUID].(string); ok {
-		authzCode.UserOUID = userOUID
-	}
-	if userOUName, ok := authzData[jsonDataKeyUserOUName].(string); ok {
-		authzCode.UserOUName = userOUName
-	}
-	if userOUHandle, ok := authzData[jsonDataKeyUserOUHandle].(string); ok {
-		authzCode.UserOUHandle = userOUHandle
+	if userAttrs, ok := authzData[jsonDataKeyUserAttributes].(map[string]interface{}); ok && userAttrs != nil {
+		authzCode.UserAttributes = userAttrs
 	}
 
 	return authzCode, nil

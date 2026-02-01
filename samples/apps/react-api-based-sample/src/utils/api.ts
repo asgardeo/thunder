@@ -123,3 +123,135 @@ export async function fetchUsers(filter?: string): Promise<User[]> {
   const data: UserListResponse = await response.json();
   return data.users;
 }
+
+/**
+ * Fetches a single user by ID
+ * @param userId - The user ID to fetch
+ * @returns Promise with user data
+ */
+export async function fetchUserById(userId: string): Promise<User> {
+  const { baseUrl } = getConfig();
+
+  const response = await fetch(`${baseUrl}/users/${userId}`, {
+    method: "GET",
+    headers: {
+      "Content-Type": "application/json",
+    },
+  });
+
+  if (!response.ok) {
+    if (response.status === 404) {
+      throw new Error("User not found");
+    }
+    throw new Error("Failed to fetch user");
+  }
+
+  return await response.json();
+}
+
+// SMS OTP Step-up Authentication APIs
+
+export interface SendOTPResponse {
+  status: string;
+  session_token: string;
+}
+
+export interface VerifyOTPResponse {
+  id: string;
+  type: string;
+  organization_unit?: string;
+  assertion: string;
+}
+
+export interface ApiError {
+  code: string;
+  message: string;
+  description?: string;
+}
+
+/**
+ * Sends an SMS OTP to the user's mobile number
+ * @param senderId - The notification sender ID configured in Thunder
+ * @param recipient - The mobile number to send OTP to (e.g., +1234567890)
+ * @returns Promise with session token for OTP verification
+ */
+export async function sendSMSOTP(
+  senderId: string,
+  recipient: string
+): Promise<SendOTPResponse> {
+  const { baseUrl } = getConfig();
+
+  const response = await fetch(`${baseUrl}/auth/otp/sms/send`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      sender_id: senderId,
+      recipient: recipient,
+    }),
+  });
+
+  if (!response.ok) {
+    let errorMessage = "Failed to send OTP";
+    try {
+      const contentType = response.headers.get("content-type");
+      if (contentType && contentType.includes("application/json")) {
+        const errorData: ApiError = await response.json();
+        errorMessage = errorData.message || errorMessage;
+      } else {
+        errorMessage = `HTTP ${response.status}: ${response.statusText}`;
+      }
+    } catch {
+      errorMessage = `HTTP ${response.status}: ${response.statusText}`;
+    }
+    throw new Error(errorMessage);
+  }
+
+  return await response.json();
+}
+
+/**
+ * Verifies the SMS OTP and enriches the assertion token with step-up authentication
+ * @param sessionToken - Session token received from sendSMSOTP
+ * @param otp - The OTP code entered by the user
+ * @param existingAssertion - The existing assertion token to enrich
+ * @returns Promise with enriched assertion token
+ */
+export async function verifySMSOTP(
+  sessionToken: string,
+  otp: string,
+  existingAssertion: string
+): Promise<VerifyOTPResponse> {
+  const { baseUrl } = getConfig();
+
+  const response = await fetch(`${baseUrl}/auth/otp/sms/verify`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      session_token: sessionToken,
+      otp: otp,
+      assertion: existingAssertion,
+    }),
+  });
+
+  if (!response.ok) {
+    let errorMessage = "OTP verification failed";
+    try {
+      const contentType = response.headers.get("content-type");
+      if (contentType && contentType.includes("application/json")) {
+        const errorData: ApiError = await response.json();
+        errorMessage = errorData.message || errorMessage;
+      } else {
+        errorMessage = `HTTP ${response.status}: ${response.statusText}`;
+      }
+    } catch {
+      errorMessage = `HTTP ${response.status}: ${response.statusText}`;
+    }
+    throw new Error(errorMessage);
+  }
+
+  return await response.json();
+}

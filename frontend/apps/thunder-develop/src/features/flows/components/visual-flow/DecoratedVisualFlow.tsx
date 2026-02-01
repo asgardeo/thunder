@@ -255,6 +255,19 @@ function DecoratedVisualFlow({
   // Track whether auto-layout has been triggered to prevent multiple triggers
   const autoLayoutTriggeredRef = useRef<boolean>(false);
 
+  // Listen for auto-layout trigger events from parent components
+  useEffect(() => {
+    const handleTriggerAutoLayout = () => {
+      handleAutoLayout();
+    };
+
+    window.addEventListener('triggerAutoLayout', handleTriggerAutoLayout);
+
+    return () => {
+      window.removeEventListener('triggerAutoLayout', handleTriggerAutoLayout);
+    };
+  }, [handleAutoLayout]);
+
   // Effect to trigger auto-layout on initial load when nodes lack proper layout data
   useEffect(() => {
     if (!triggerAutoLayoutOnLoad || autoLayoutTriggeredRef.current) {
@@ -354,6 +367,13 @@ function DecoratedVisualFlow({
         setDropScenario('widget-on-canvas');
         setIsContainerDialogOpen(true);
         return;
+      }
+
+      // Check if this is a step being added to canvas (not reordering)
+      const isStepDrop = sourceData.dragged?.resourceType === ResourceTypes.Step;
+      if (isStepDrop && isCanvasTarget && !sourceData.isReordering) {
+        // Dispatch custom event to notify about element addition (for auto-layout hint)
+        window.dispatchEvent(new CustomEvent('flowElementAdded', {detail: {type: 'step'}}));
       }
 
       // For canceled events or missing target, return early

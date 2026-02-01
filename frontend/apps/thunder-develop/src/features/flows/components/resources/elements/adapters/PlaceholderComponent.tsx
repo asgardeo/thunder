@@ -16,7 +16,7 @@
  * under the License.
  */
 
-import {useMemo, type PropsWithChildren, type ReactElement} from 'react';
+import {type PropsWithChildren, type ReactElement} from 'react';
 import {useTranslation} from 'react-i18next';
 import {isI18nPattern as checkIsI18nPattern, resolveI18nValue} from '@/features/flows/utils/i18nPatternUtils';
 import './PlaceholderComponent.scss';
@@ -37,27 +37,15 @@ export interface PlaceholderComponentProps {
  * @returns The PlaceholderComponent component.
  */
 function PlaceholderComponent({value, children = null}: PropsWithChildren<PlaceholderComponentProps>): ReactElement {
-  const {t} = useTranslation();
+  // Use bindI18n to ensure component re-renders when translations are added/changed
+  const {t} = useTranslation('flowI18n', {bindI18n: 'languageChanged loaded added'});
 
   /**
    * Check if the value matches the i18n pattern and resolve it if so.
-   * Returns an object with isI18nPattern flag and the resolved/original value.
+   * Computed on every render to ensure translations are always up-to-date.
    */
-  const {isI18nPattern, displayValue} = useMemo(() => {
-    const isPattern = checkIsI18nPattern(value);
-
-    if (isPattern) {
-      return {
-        isI18nPattern: true,
-        displayValue: resolveI18nValue(value, t),
-      };
-    }
-
-    return {
-      isI18nPattern: false,
-      displayValue: value,
-    };
-  }, [value, t]);
+  const isI18nPattern = checkIsI18nPattern(value);
+  const displayValue = isI18nPattern ? resolveI18nValue(value, t) : value;
 
   if (isI18nPattern) {
     return <span>{displayValue}</span>;

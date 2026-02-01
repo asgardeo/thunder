@@ -59,7 +59,7 @@ describe('generateUnconnectedEdges', () => {
       expect(result).toEqual([]);
     });
 
-    it('should return empty array when no actions have next property', () => {
+    it('should return empty array when no actions have onSuccess property', () => {
       const nodes: Node[] = [
         createMockNode({
           id: 'node-1',
@@ -84,7 +84,7 @@ describe('generateUnconnectedEdges', () => {
   });
 
   describe('Component actions', () => {
-    it('should generate edge for component with action.next', () => {
+    it('should generate edge for component with action.onSuccess', () => {
       const nodes: Node[] = [
         createMockNode({
           id: 'step-1',
@@ -92,7 +92,7 @@ describe('generateUnconnectedEdges', () => {
             components: [
               createMockElement({
                 id: 'button-1',
-                action: {next: 'step-2'},
+                action: {onSuccess: 'step-2'},
               }),
             ],
           },
@@ -122,7 +122,7 @@ describe('generateUnconnectedEdges', () => {
             components: [
               createMockElement({
                 id: 'button-1',
-                action: {next: 'non-existent-step'},
+                action: {onSuccess: 'non-existent-step'},
               }),
             ],
           },
@@ -141,7 +141,7 @@ describe('generateUnconnectedEdges', () => {
             components: [
               createMockElement({
                 id: 'button-1',
-                action: {next: 'step-2'},
+                action: {onSuccess: 'step-2'},
               }),
             ],
           },
@@ -170,7 +170,7 @@ describe('generateUnconnectedEdges', () => {
             components: [
               createMockElement({
                 id: 'button-1',
-                action: {next: 'step-2'},
+                action: {onSuccess: 'step-2'},
               }),
             ],
           },
@@ -208,7 +208,7 @@ describe('generateUnconnectedEdges', () => {
                 components: [
                   createMockElement({
                     id: 'nested-button-1',
-                    action: {next: 'step-2'},
+                    action: {onSuccess: 'step-2'},
                   }),
                 ],
               }),
@@ -237,11 +237,11 @@ describe('generateUnconnectedEdges', () => {
                 components: [
                   createMockElement({
                     id: 'nested-button-1',
-                    action: {next: 'step-2'},
+                    action: {onSuccess: 'step-2'},
                   }),
                   createMockElement({
                     id: 'nested-button-2',
-                    action: {next: 'step-3'},
+                    action: {onSuccess: 'step-3'},
                   }),
                 ],
               }),
@@ -266,7 +266,7 @@ describe('generateUnconnectedEdges', () => {
         createMockNode({
           id: 'step-1',
           data: {
-            action: {next: 'step-2'},
+            action: {onSuccess: 'step-2'},
           },
         }),
         createMockNode({id: 'step-2'}),
@@ -286,7 +286,7 @@ describe('generateUnconnectedEdges', () => {
         createMockNode({
           id: 'step-1',
           data: {
-            action: {next: 'step-2'},
+            action: {onSuccess: 'step-2'},
           },
         }),
         createMockNode({id: 'step-2'}),
@@ -315,10 +315,10 @@ describe('generateUnconnectedEdges', () => {
             components: [
               createMockElement({
                 id: 'button-1',
-                action: {next: 'step-2'},
+                action: {onSuccess: 'step-2'},
               }),
             ],
-            action: {next: 'step-3'},
+            action: {onSuccess: 'step-3'},
           },
         }),
         createMockNode({id: 'step-2'}),
@@ -338,8 +338,8 @@ describe('generateUnconnectedEdges', () => {
           id: 'step-1',
           data: {
             components: [
-              createMockElement({id: 'button-1', action: {next: 'step-2'}}),
-              createMockElement({id: 'button-2', action: {next: 'step-3'}}),
+              createMockElement({id: 'button-1', action: {onSuccess: 'step-2'}}),
+              createMockElement({id: 'button-2', action: {onSuccess: 'step-3'}}),
             ],
           },
         }),
@@ -347,7 +347,7 @@ describe('generateUnconnectedEdges', () => {
           id: 'step-2',
           data: {
             components: [
-              createMockElement({id: 'button-3', action: {next: 'step-3'}}),
+              createMockElement({id: 'button-3', action: {onSuccess: 'step-3'}}),
             ],
           },
         }),
@@ -366,7 +366,7 @@ describe('generateUnconnectedEdges', () => {
           id: 'step-1',
           data: {
             components: [
-              createMockElement({id: 'button-1', action: {next: 'step-2'}}),
+              createMockElement({id: 'button-1', action: {onSuccess: 'step-2'}}),
             ],
           },
         }),
@@ -380,15 +380,136 @@ describe('generateUnconnectedEdges', () => {
     });
   });
 
+  describe('onFailure edges', () => {
+    it('should generate edge for step-level action with onFailure', () => {
+      const nodes: Node[] = [
+        createMockNode({
+          id: 'step-1',
+          data: {
+            action: {onSuccess: 'step-2', onFailure: 'step-3'},
+          },
+        }),
+        createMockNode({id: 'step-2'}),
+        createMockNode({id: 'step-3'}),
+      ];
+
+      const result = generateUnconnectedEdges([], nodes, 'smoothstep');
+
+      expect(result).toHaveLength(2);
+      // Check success edge
+      expect(result.find((e) => e.id === 'step-1_MISSING_EDGE')).toBeDefined();
+      // Check failure edge
+      const failureEdge = result.find((e) => e.id === 'step-1_FAILURE_MISSING_EDGE');
+      expect(failureEdge).toBeDefined();
+      expect(failureEdge?.sourceHandle).toBe('failure');
+      expect(failureEdge?.target).toBe('step-3');
+    });
+
+    it('should not generate failure edge when onFailure target does not exist', () => {
+      const nodes: Node[] = [
+        createMockNode({
+          id: 'step-1',
+          data: {
+            action: {onSuccess: 'step-2', onFailure: 'non-existent'},
+          },
+        }),
+        createMockNode({id: 'step-2'}),
+      ];
+
+      const result = generateUnconnectedEdges([], nodes, 'default');
+
+      expect(result).toHaveLength(1);
+      expect(result[0].id).toBe('step-1_MISSING_EDGE');
+    });
+
+    it('should not generate failure edge when edge already exists with correct target', () => {
+      const nodes: Node[] = [
+        createMockNode({
+          id: 'step-1',
+          data: {
+            action: {onSuccess: 'step-2', onFailure: 'step-3'},
+          },
+        }),
+        createMockNode({id: 'step-2'}),
+        createMockNode({id: 'step-3'}),
+      ];
+
+      const existingEdges: Edge[] = [
+        createMockEdge({
+          id: 'existing-success',
+          source: 'step-1',
+          sourceHandle: 'step-1_NEXT',
+          target: 'step-2',
+        }),
+        createMockEdge({
+          id: 'existing-failure',
+          source: 'step-1',
+          sourceHandle: 'failure',
+          target: 'step-3',
+        }),
+      ];
+
+      const result = generateUnconnectedEdges(existingEdges, nodes, 'default');
+      expect(result).toEqual([]);
+    });
+
+    it('should generate failure edge when existing failure edge has wrong target', () => {
+      const nodes: Node[] = [
+        createMockNode({
+          id: 'step-1',
+          data: {
+            action: {onSuccess: 'step-2', onFailure: 'step-3'},
+          },
+        }),
+        createMockNode({id: 'step-2'}),
+        createMockNode({id: 'step-3'}),
+        createMockNode({id: 'step-4'}),
+      ];
+
+      const existingEdges: Edge[] = [
+        createMockEdge({
+          id: 'existing-failure',
+          source: 'step-1',
+          sourceHandle: 'failure',
+          target: 'step-4', // Wrong target
+        }),
+      ];
+
+      const result = generateUnconnectedEdges(existingEdges, nodes, 'default');
+
+      const failureEdge = result.find((e) => e.id === 'step-1_FAILURE_MISSING_EDGE');
+      expect(failureEdge).toBeDefined();
+      expect(failureEdge?.target).toBe('step-3');
+    });
+
+    it('should handle falsy onFailure value', () => {
+      const nodes: Node[] = [
+        createMockNode({
+          id: 'step-1',
+          data: {
+            action: {onSuccess: 'step-2', onFailure: ''},
+          },
+        }),
+        createMockNode({id: 'step-2'}),
+      ];
+
+      const result = generateUnconnectedEdges([], nodes, 'default');
+
+      // Should only generate success edge, not failure edge
+      expect(result).toHaveLength(1);
+      expect(result[0].id).toBe('step-1_MISSING_EDGE');
+    });
+  });
+
   describe('Edge cases', () => {
-    it('should handle action with falsy next value', () => {
+    it('should handle action with falsy onSuccess value', () => {
       const nodes: Node[] = [
         createMockNode({
           id: 'step-1',
           data: {
             components: [
-              createMockElement({id: 'button-1', action: {next: ''}}),
-              createMockElement({id: 'button-2', action: {next: undefined}}),
+              createMockElement({id: 'button-1', action: {onSuccess: ''}}),
+              createMockElement({id: 'button-2', action: {onSuccess: undefined}}),
             ],
           },
         }),

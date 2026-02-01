@@ -25,49 +25,46 @@ const translations = {
   // Common namespace - Shared translations across all Thunder applications
   // ============================================================================
   common: {
-    product: {
-      displayName: 'Thunder',
-    },
+    // Product
+    'product.displayName': 'Thunder',
 
     // Actions
-    actions: {
-      add: 'Add',
-      edit: 'Edit',
-      delete: 'Delete',
-      cancel: 'Cancel',
-      save: 'Save',
-      create: 'Create',
-      update: 'Update',
-      remove: 'Remove',
-      search: 'Search',
-      filter: 'Filter',
-      reset: 'Reset',
-      submit: 'Submit',
-      close: 'Close',
-      back: 'Back',
-      next: 'Next',
-      previous: 'Previous',
-      confirm: 'Confirm',
-      ok: 'OK',
-      yes: 'Yes',
-      no: 'No',
-      continue: 'Continue',
-      skip: 'Skip',
-      finish: 'Finish',
-      done: 'Done',
-      refresh: 'Refresh',
-      copy: 'Copy',
-      copied: 'Copied!',
-      download: 'Download',
-      upload: 'Upload',
-      export: 'Export',
-      import: 'Import',
-      view: 'View',
-      details: 'Details',
-      settings: 'Settings',
-      logout: 'Logout',
-      login: 'Login',
-    },
+    'actions.add': 'Add',
+    'actions.edit': 'Edit',
+    'actions.delete': 'Delete',
+    'actions.cancel': 'Cancel',
+    'actions.save': 'Save',
+    'actions.create': 'Create',
+    'actions.update': 'Update',
+    'actions.remove': 'Remove',
+    'actions.search': 'Search',
+    'actions.filter': 'Filter',
+    'actions.reset': 'Reset',
+    'actions.submit': 'Submit',
+    'actions.close': 'Close',
+    'actions.back': 'Back',
+    'actions.next': 'Next',
+    'actions.previous': 'Previous',
+    'actions.confirm': 'Confirm',
+    'actions.ok': 'OK',
+    'actions.yes': 'Yes',
+    'actions.no': 'No',
+    'actions.continue': 'Continue',
+    'actions.skip': 'Skip',
+    'actions.finish': 'Finish',
+    'actions.done': 'Done',
+    'actions.refresh': 'Refresh',
+    'actions.copy': 'Copy',
+    'actions.copied': 'Copied!',
+    'actions.download': 'Download',
+    'actions.upload': 'Upload',
+    'actions.export': 'Export',
+    'actions.import': 'Import',
+    'actions.view': 'View',
+    'actions.details': 'Details',
+    'actions.settings': 'Settings',
+    'actions.logout': 'Logout',
+    'actions.login': 'Login',
 
     // Dictionary
     'dictionary.unknown': 'Unknown',
@@ -85,255 +82,243 @@ const translations = {
     create: 'Create',
     update: 'Update',
     save: 'Save',
+    cancel: 'Cancel',
     or: 'or',
 
+    // Page names (for breadcrumbs and navigation)
+    home: 'Home',
+    flows: 'Flows',
+
     // Status messages
-    status: {
-      loading: 'Loading...',
-      saving: 'Saving...',
-      deleting: 'Deleting...',
-      success: 'Success',
-      error: 'Error',
-      warning: 'Warning',
-      info: 'Info',
-      pending: 'Pending',
-      active: 'Active',
-      inactive: 'Inactive',
-      enabled: 'Enabled',
-      disabled: 'Disabled',
-      completed: 'Completed',
-      failed: 'Failed',
-    },
+    'status.loading': 'Loading...',
+    'status.saving': 'Saving...',
+    'status.deleting': 'Deleting...',
+    'status.success': 'Success',
+    'status.error': 'Error',
+    'status.warning': 'Warning',
+    'status.info': 'Info',
+    'status.pending': 'Pending',
+    'status.active': 'Active',
+    'status.inactive': 'Inactive',
+    'status.enabled': 'Enabled',
+    'status.disabled': 'Disabled',
+    'status.completed': 'Completed',
+    'status.failed': 'Failed',
 
     // Form labels
-    form: {
-      name: 'Name',
-      description: 'Description',
-      email: 'Email',
-      password: 'Password',
-      username: 'Username',
-      required: 'Required',
-      optional: 'Optional',
-      requiredField: 'This field is required',
-      invalidEmail: 'Invalid email address',
-      invalidFormat: 'Invalid format',
-      searchPlaceholder: 'Search...',
-    },
+    'form.name': 'Name',
+    'form.description': 'Description',
+    'form.email': 'Email',
+    'form.password': 'Password',
+    'form.username': 'Username',
+    'form.required': 'Required',
+    'form.optional': 'Optional',
+    'form.requiredField': 'This field is required',
+    'form.invalidEmail': 'Invalid email address',
+    'form.invalidFormat': 'Invalid format',
+    'form.searchPlaceholder': 'Search...',
 
     // Messages
-    messages: {
-      confirmDelete: 'Are you sure you want to delete this item?',
-      deleteSuccess: 'Item deleted successfully',
-      deleteError: 'Failed to delete item',
-      saveSuccess: 'Saved successfully',
-      saveError: 'Failed to save',
-      updateSuccess: 'Updated successfully',
-      updateError: 'Failed to update',
-      createSuccess: 'Created successfully',
-      createError: 'Failed to create',
-      noData: 'No data available',
-      noResults: 'No results found',
-      somethingWentWrong: 'Something went wrong',
-      tryAgain: 'Please try again',
-    },
+    'messages.confirmDelete': 'Are you sure you want to delete this item?',
+    'messages.deleteSuccess': 'Item deleted successfully',
+    'messages.deleteError': 'Failed to delete item',
+    'messages.saveSuccess': 'Saved successfully',
+    'messages.saveError': 'Failed to save',
+    'messages.updateSuccess': 'Updated successfully',
+    'messages.updateError': 'Failed to update',
+    'messages.createSuccess': 'Created successfully',
+    'messages.createError': 'Failed to create',
+    'messages.noData': 'No data available',
+    'messages.noResults': 'No results found',
+    'messages.somethingWentWrong': 'Something went wrong',
+    'messages.tryAgain': 'Please try again',
 
     // Navigation
-    navigation: {
-      home: 'Home',
-      dashboard: 'Dashboard',
-      profile: 'Profile',
-      help: 'Help',
-      documentation: 'Documentation',
-    },
+    'navigation.home': 'Home',
+    'navigation.dashboard': 'Dashboard',
+    'navigation.profile': 'Profile',
+    'navigation.help': 'Help',
+    'navigation.documentation': 'Documentation',
 
     // User menu
-    userMenu: {
-      profile: 'Profile',
-      myAccount: 'My account',
-      addAnotherAccount: 'Add another account',
-      settings: 'Settings',
-      signOut: 'Sign Out',
-    },
+    'userMenu.profile': 'Profile',
+    'userMenu.myAccount': 'My account',
+    'userMenu.addAnotherAccount': 'Add another account',
+    'userMenu.settings': 'Settings',
+    'userMenu.signOut': 'Sign Out',
 
     // Header
-    header: {
-      notifications: 'Coming soon',
-      openNotifications: 'Open notifications',
-    },
+    'header.notifications': 'Coming soon',
+    'header.openNotifications': 'Open notifications',
 
     // Data table - MUI DataGrid locale text
-    dataTable: {
-      // Root
-      noRowsLabel: 'No rows',
-      noResultsOverlayLabel: 'No results found.',
-      noColumnsOverlayLabel: 'No columns',
-      noColumnsOverlayManageColumns: 'Manage columns',
+    // Root
+    'dataTable.noRowsLabel': 'No rows',
+    'dataTable.noResultsOverlayLabel': 'No results found.',
+    'dataTable.noColumnsOverlayLabel': 'No columns',
+    'dataTable.noColumnsOverlayManageColumns': 'Manage columns',
 
-      // Density selector toolbar button text
-      toolbarDensity: 'Density',
-      toolbarDensityLabel: 'Density',
-      toolbarDensityCompact: 'Compact',
-      toolbarDensityStandard: 'Standard',
-      toolbarDensityComfortable: 'Comfortable',
+    // Density selector toolbar button text
+    'dataTable.toolbarDensity': 'Density',
+    'dataTable.toolbarDensityLabel': 'Density',
+    'dataTable.toolbarDensityCompact': 'Compact',
+    'dataTable.toolbarDensityStandard': 'Standard',
+    'dataTable.toolbarDensityComfortable': 'Comfortable',
 
-      // Columns selector toolbar button text
-      toolbarColumns: 'Columns',
-      toolbarColumnsLabel: 'Select columns',
+    // Columns selector toolbar button text
+    'dataTable.toolbarColumns': 'Columns',
+    'dataTable.toolbarColumnsLabel': 'Select columns',
 
-      // Filters toolbar button text
-      toolbarFilters: 'Filters',
-      toolbarFiltersLabel: 'Show filters',
-      toolbarFiltersTooltipHide: 'Hide filters',
-      toolbarFiltersTooltipShow: 'Show filters',
-      toolbarFiltersTooltipActive: (count: number) =>
-        count !== 1 ? `${count} active filters` : `${count} active filter`,
+    // Filters toolbar button text
+    'dataTable.toolbarFilters': 'Filters',
+    'dataTable.toolbarFiltersLabel': 'Show filters',
+    'dataTable.toolbarFiltersTooltipHide': 'Hide filters',
+    'dataTable.toolbarFiltersTooltipShow': 'Show filters',
+    'dataTable.toolbarFiltersTooltipActive': (count: number) =>
+      count !== 1 ? `${count} active filters` : `${count} active filter`,
 
-      // Quick filter toolbar field
-      toolbarQuickFilterPlaceholder: 'Search…',
-      toolbarQuickFilterLabel: 'Search',
-      toolbarQuickFilterDeleteIconLabel: 'Clear',
+    // Quick filter toolbar field
+    'dataTable.toolbarQuickFilterPlaceholder': 'Search…',
+    'dataTable.toolbarQuickFilterLabel': 'Search',
+    'dataTable.toolbarQuickFilterDeleteIconLabel': 'Clear',
 
-      // Export selector toolbar button text
-      toolbarExport: 'Export',
-      toolbarExportLabel: 'Export',
-      toolbarExportCSV: 'Download as CSV',
-      toolbarExportPrint: 'Print',
+    // Export selector toolbar button text
+    'dataTable.toolbarExport': 'Export',
+    'dataTable.toolbarExportLabel': 'Export',
+    'dataTable.toolbarExportCSV': 'Download as CSV',
+    'dataTable.toolbarExportPrint': 'Print',
 
-      // Columns management text
-      columnsManagementSearchTitle: 'Search',
-      columnsManagementNoColumns: 'No columns',
-      columnsManagementShowHideAllText: 'Show/Hide All',
-      columnsManagementReset: 'Reset',
+    // Columns management text
+    'dataTable.columnsManagementSearchTitle': 'Search',
+    'dataTable.columnsManagementNoColumns': 'No columns',
+    'dataTable.columnsManagementShowHideAllText': 'Show/Hide All',
+    'dataTable.columnsManagementReset': 'Reset',
 
-      // Filter panel text
-      filterPanelAddFilter: 'Add filter',
-      filterPanelRemoveAll: 'Remove all',
-      filterPanelDeleteIconLabel: 'Delete',
-      filterPanelLogicOperator: 'Logic operator',
-      filterPanelOperator: 'Operator',
-      filterPanelOperatorAnd: 'And',
-      filterPanelOperatorOr: 'Or',
-      filterPanelColumns: 'Columns',
-      filterPanelInputLabel: 'Value',
-      filterPanelInputPlaceholder: 'Filter value',
+    // Filter panel text
+    'dataTable.filterPanelAddFilter': 'Add filter',
+    'dataTable.filterPanelRemoveAll': 'Remove all',
+    'dataTable.filterPanelDeleteIconLabel': 'Delete',
+    'dataTable.filterPanelLogicOperator': 'Logic operator',
+    'dataTable.filterPanelOperator': 'Operator',
+    'dataTable.filterPanelOperatorAnd': 'And',
+    'dataTable.filterPanelOperatorOr': 'Or',
+    'dataTable.filterPanelColumns': 'Columns',
+    'dataTable.filterPanelInputLabel': 'Value',
+    'dataTable.filterPanelInputPlaceholder': 'Filter value',
 
-      // Filter operators text
-      filterOperatorContains: 'contains',
-      filterOperatorDoesNotContain: 'does not contain',
-      filterOperatorEquals: 'equals',
-      filterOperatorDoesNotEqual: 'does not equal',
-      filterOperatorStartsWith: 'starts with',
-      filterOperatorEndsWith: 'ends with',
-      filterOperatorIs: 'is',
-      filterOperatorNot: 'is not',
-      filterOperatorAfter: 'is after',
-      filterOperatorOnOrAfter: 'is on or after',
-      filterOperatorBefore: 'is before',
-      filterOperatorOnOrBefore: 'is on or before',
-      filterOperatorIsEmpty: 'is empty',
-      filterOperatorIsNotEmpty: 'is not empty',
-      filterOperatorIsAnyOf: 'is any of',
+    // Filter operators text
+    'dataTable.filterOperatorContains': 'contains',
+    'dataTable.filterOperatorDoesNotContain': 'does not contain',
+    'dataTable.filterOperatorEquals': 'equals',
+    'dataTable.filterOperatorDoesNotEqual': 'does not equal',
+    'dataTable.filterOperatorStartsWith': 'starts with',
+    'dataTable.filterOperatorEndsWith': 'ends with',
+    'dataTable.filterOperatorIs': 'is',
+    'dataTable.filterOperatorNot': 'is not',
+    'dataTable.filterOperatorAfter': 'is after',
+    'dataTable.filterOperatorOnOrAfter': 'is on or after',
+    'dataTable.filterOperatorBefore': 'is before',
+    'dataTable.filterOperatorOnOrBefore': 'is on or before',
+    'dataTable.filterOperatorIsEmpty': 'is empty',
+    'dataTable.filterOperatorIsNotEmpty': 'is not empty',
+    'dataTable.filterOperatorIsAnyOf': 'is any of',
 
-      // Filter values text
-      filterValueAny: 'any',
-      filterValueTrue: 'true',
-      filterValueFalse: 'false',
+    // Filter values text
+    'dataTable.filterValueAny': 'any',
+    'dataTable.filterValueTrue': 'true',
+    'dataTable.filterValueFalse': 'false',
 
-      // Column menu text
-      columnMenuLabel: 'Menu',
-      columnMenuShowColumns: 'Show columns',
-      columnMenuManageColumns: 'Manage columns',
-      columnMenuFilter: 'Filter',
-      columnMenuHideColumn: 'Hide column',
-      columnMenuUnsort: 'Unsort',
-      columnMenuSortAsc: 'Sort by ASC',
-      columnMenuSortDesc: 'Sort by DESC',
+    // Column menu text
+    'dataTable.columnMenuLabel': 'Menu',
+    'dataTable.columnMenuShowColumns': 'Show columns',
+    'dataTable.columnMenuManageColumns': 'Manage columns',
+    'dataTable.columnMenuFilter': 'Filter',
+    'dataTable.columnMenuHideColumn': 'Hide column',
+    'dataTable.columnMenuUnsort': 'Unsort',
+    'dataTable.columnMenuSortAsc': 'Sort by ASC',
+    'dataTable.columnMenuSortDesc': 'Sort by DESC',
 
-      // Column header text
-      columnHeaderFiltersTooltipActive: (count: number) =>
-        count !== 1 ? `${count} active filters` : `${count} active filter`,
-      columnHeaderFiltersLabel: 'Show filters',
-      columnHeaderSortIconLabel: 'Sort',
+    // Column header text
+    'dataTable.columnHeaderFiltersTooltipActive': (count: number) =>
+      count !== 1 ? `${count} active filters` : `${count} active filter`,
+    'dataTable.columnHeaderFiltersLabel': 'Show filters',
+    'dataTable.columnHeaderSortIconLabel': 'Sort',
 
-      // Rows selected footer text
-      footerRowSelected: (count: number) =>
-        count !== 1 ? `${count.toLocaleString()} rows selected` : `${count.toLocaleString()} row selected`,
+    // Rows selected footer text
+    'dataTable.footerRowSelected': (count: number) =>
+      count !== 1 ? `${count.toLocaleString()} rows selected` : `${count.toLocaleString()} row selected`,
 
-      // Total row amount footer text
-      footerTotalRows: 'Total Rows:',
+    // Total row amount footer text
+    'dataTable.footerTotalRows': 'Total Rows:',
 
-      // Total visible row amount footer text
-      footerTotalVisibleRows: (visibleCount: number, totalCount: number) =>
-        `${visibleCount.toLocaleString()} of ${totalCount.toLocaleString()}`,
+    // Total visible row amount footer text
+    'dataTable.footerTotalVisibleRows': (visibleCount: number, totalCount: number) =>
+      `${visibleCount.toLocaleString()} of ${totalCount.toLocaleString()}`,
 
-      // Checkbox selection text
-      checkboxSelectionHeaderName: 'Checkbox selection',
-      checkboxSelectionSelectAllRows: 'Select all rows',
-      checkboxSelectionUnselectAllRows: 'Unselect all rows',
-      checkboxSelectionSelectRow: 'Select row',
-      checkboxSelectionUnselectRow: 'Unselect row',
+    // Checkbox selection text
+    'dataTable.checkboxSelectionHeaderName': 'Checkbox selection',
+    'dataTable.checkboxSelectionSelectAllRows': 'Select all rows',
+    'dataTable.checkboxSelectionUnselectAllRows': 'Unselect all rows',
+    'dataTable.checkboxSelectionSelectRow': 'Select row',
+    'dataTable.checkboxSelectionUnselectRow': 'Unselect row',
 
-      // Boolean cell text
-      booleanCellTrueLabel: 'yes',
-      booleanCellFalseLabel: 'no',
+    // Boolean cell text
+    'dataTable.booleanCellTrueLabel': 'yes',
+    'dataTable.booleanCellFalseLabel': 'no',
 
-      // Actions cell more text
-      actionsCellMore: 'more',
+    // Actions cell more text
+    'dataTable.actionsCellMore': 'more',
 
-      // Column pinning text
-      pinToLeft: 'Pin to left',
-      pinToRight: 'Pin to right',
-      unpin: 'Unpin',
+    // Column pinning text
+    'dataTable.pinToLeft': 'Pin to left',
+    'dataTable.pinToRight': 'Pin to right',
+    'dataTable.unpin': 'Unpin',
 
-      // Tree Data
-      treeDataGroupingHeaderName: 'Group',
-      treeDataExpand: 'see children',
-      treeDataCollapse: 'hide children',
+    // Tree Data
+    'dataTable.treeDataGroupingHeaderName': 'Group',
+    'dataTable.treeDataExpand': 'see children',
+    'dataTable.treeDataCollapse': 'hide children',
 
-      // Grouping columns
-      groupingColumnHeaderName: 'Group',
-      groupColumn: (name: string) => `Group by ${name}`,
-      unGroupColumn: (name: string) => `Stop grouping by ${name}`,
+    // Grouping columns
+    'dataTable.groupingColumnHeaderName': 'Group',
+    'dataTable.groupColumn': (name: string) => `Group by ${name}`,
+    'dataTable.unGroupColumn': (name: string) => `Stop grouping by ${name}`,
 
-      // Master/detail
-      detailPanelToggle: 'Detail panel toggle',
-      expandDetailPanel: 'Expand',
-      collapseDetailPanel: 'Collapse',
+    // Master/detail
+    'dataTable.detailPanelToggle': 'Detail panel toggle',
+    'dataTable.expandDetailPanel': 'Expand',
+    'dataTable.collapseDetailPanel': 'Collapse',
 
-      // Pagination
-      paginationRowsPerPage: 'Rows per page:',
-      paginationDisplayedRows: ({from, to, count}: {from: number; to: number; count: number}) =>
-        `${from}–${to} of ${count !== -1 ? count : `more than ${to}`}`,
+    // Pagination
+    'dataTable.paginationRowsPerPage': 'Rows per page:',
+    'dataTable.paginationDisplayedRows': ({from, to, count}: {from: number; to: number; count: number}) =>
+      `${from}–${to} of ${count !== -1 ? count : `more than ${to}`}`,
 
-      // Row reordering text
-      rowReorderingHeaderName: 'Row reordering',
+    // Row reordering text
+    'dataTable.rowReorderingHeaderName': 'Row reordering',
 
-      // Aggregation
-      aggregationMenuItemHeader: 'Aggregation',
-      aggregationFunctionLabelSum: 'sum',
-      aggregationFunctionLabelAvg: 'avg',
-      aggregationFunctionLabelMin: 'min',
-      aggregationFunctionLabelMax: 'max',
-      aggregationFunctionLabelSize: 'size',
-    },
+    // Aggregation
+    'dataTable.aggregationMenuItemHeader': 'Aggregation',
+    'dataTable.aggregationFunctionLabelSum': 'sum',
+    'dataTable.aggregationFunctionLabelAvg': 'avg',
+    'dataTable.aggregationFunctionLabelMin': 'min',
+    'dataTable.aggregationFunctionLabelMax': 'max',
+    'dataTable.aggregationFunctionLabelSize': 'size',
   },
 
   // ============================================================================
   // Navigation namespace - Navigation related translations
   // ============================================================================
   navigation: {
-    pages: {
-      home: 'Home',
-      users: 'Users',
-      userTypes: 'User Types',
-      integrations: 'Integrations',
-      applications: 'Applications',
-      dashboard: 'Dashboard',
-      flows: 'Flows',
-    },
-    breadcrumb: {
-      develop: 'Develop',
-    },
+    'pages.home': 'Home',
+    'pages.users': 'Users',
+    'pages.userTypes': 'User Types',
+    'pages.organizationUnits': 'Organization Units',
+    'pages.integrations': 'Integrations',
+    'pages.applications': 'Applications',
+    'pages.dashboard': 'Dashboard',
+    'pages.flows': 'Flows',
+    'breadcrumb.develop': 'Develop',
   },
 
   // ============================================================================
@@ -349,12 +334,8 @@ const translations = {
     inviteLinkDescription: 'Share this link with the user to complete their registration.',
     inviteLink: 'Invite Link',
     inviteAnother: 'Invite Another User',
-    invite: {
-      steps: {
-        userdetails: 'User Details',
-        invitelink: 'Invite Link',
-      },
-    },
+    'invite.steps.userdetails': 'User Details',
+    'invite.steps.invitelink': 'Invite Link',
     editUser: 'Edit User',
     deleteUser: 'Delete User',
     userDetails: 'User Details',
@@ -373,12 +354,8 @@ const translations = {
     userCreatedSuccess: 'User created successfully',
     userUpdatedSuccess: 'User updated successfully',
     userDeletedSuccess: 'User deleted successfully',
-    errors: {
-      failed: {
-        title: 'Error',
-        description: 'An error occurred. Please try again.',
-      },
-    },
+    'errors.failed.title': 'Error',
+    'errors.failed.description': 'An error occurred. Please try again.',
   },
 
   // ============================================================================
@@ -409,26 +386,102 @@ const translations = {
     regexPlaceholder: 'e.g., ^[a-zA-Z0-9]+$',
     enumValues: 'Allowed Values (Enum) - Optional',
     enumPlaceholder: 'Add value and press Enter',
-    types: {
-      string: 'String',
-      number: 'Number',
-      boolean: 'Boolean',
-      enum: 'Enum',
-      array: 'Array',
-      object: 'Object',
-    },
-    validationErrors: {
-      nameRequired: 'Please enter a user type name',
-      ouIdRequired: 'Please provide an organization unit ID',
-      propertiesRequired: 'Please add at least one property',
-      duplicateProperties: 'Duplicate property names found: {{duplicates}}',
-    },
-    errors: {
-      organizationUnitsFailedTitle: 'Failed to load organization units',
-    },
+    'types.string': 'String',
+    'types.number': 'Number',
+    'types.boolean': 'Boolean',
+    'types.enum': 'Enum',
+    'types.array': 'Array',
+    'types.object': 'Object',
+    'validationErrors.nameRequired': 'Please enter a user type name',
+    'validationErrors.ouIdRequired': 'Please provide an organization unit ID',
+    'validationErrors.propertiesRequired': 'Please add at least one property',
+    'validationErrors.duplicateProperties': 'Duplicate property names found: {{duplicates}}',
+    'errors.organizationUnitsFailedTitle': 'Failed to load organization units',
     noUserTypes: 'No user types found',
     noOrganizationUnits: 'No organization units available',
     confirmDeleteUserType: 'Are you sure you want to delete this user type?',
+  },
+
+  // ============================================================================
+  // Organization Units namespace - Organization unit management feature translations
+  // ============================================================================
+  organizationUnits: {
+    // Listing page
+    'listing.title': 'Organization Units',
+    'listing.subtitle': 'Manage organization units and hierarchies',
+    'listing.addOrganizationUnit': 'Add Organization Unit',
+    'listing.columns.name': 'Name',
+    'listing.columns.handle': 'Handle',
+    'listing.columns.description': 'Description',
+    'listing.columns.actions': 'Actions',
+    'listing.error.title': 'Failed to load organization units',
+    'listing.error.unknown': 'An unknown error occurred',
+
+    // Create page
+    'create.title': 'Create Organization Unit',
+    'create.heading': "Let's set up your organization unit",
+    'create.subtitle': 'Define a new organization unit',
+    'create.error': 'Failed to create organization unit. Please try again.',
+    'create.suggestions.label': 'In a hurry? Pick a random name:',
+
+    // View/Edit page
+    'view.title': 'Organization Unit Details',
+    'view.error': 'Failed to load organization unit',
+    'view.notFound': 'Organization unit not found',
+    'view.back': 'Back to Organization Units',
+    'view.backToOU': 'Back to {{name}}',
+    'view.description.empty': 'No description',
+    'view.description.placeholder': 'Enter a description...',
+    'view.tabs.general': 'General',
+    'view.tabs.childOUs': 'Child OUs',
+    'view.tabs.users': 'Users',
+    'view.tabs.groups': 'Groups',
+    'view.tabs.advanced': 'Advanced Settings',
+    'view.childOUs.title': 'Child Organization Units',
+    'view.childOUs.subtitle': 'View and manage child organization units under this OU',
+    'view.users.title': 'Users',
+    'view.users.subtitle': 'View users belonging to this organization unit',
+    'view.users.columns.id': 'User ID',
+    'view.users.columns.type': 'User Type',
+    'view.groups.title': 'Groups',
+    'view.groups.subtitle': 'View groups belonging to this organization unit',
+    'view.groups.columns.name': 'Group Name',
+    'view.groups.columns.id': 'Group ID',
+    'view.general.title': 'Organization Unit Details',
+    'view.general.subtitle': 'View the details of this organization unit',
+    'view.general.id': 'Organization Unit ID',
+    'view.general.parent': 'Parent Organization Unit',
+    'view.general.noParent': 'Root Organization Unit',
+    'view.advanced.dangerZone': 'Danger Zone',
+    'view.advanced.dangerZoneDescription': 'Deleting this organization unit is permanent and cannot be undone.',
+    'view.advanced.deleteButton': 'Delete Organization Unit',
+    'view.unsavedChanges': 'You have unsaved changes',
+    'view.reset': 'Reset',
+    'view.save': 'Save Changes',
+    'view.saving': 'Saving...',
+
+    'edit.error': 'Failed to update organization unit. Please try again.',
+
+    // Delete dialog
+    'delete.title': 'Delete Organization Unit',
+    'delete.message': 'Are you sure you want to delete this organization unit? This action cannot be undone.',
+    'delete.disclaimer': 'Warning: All associated data will be permanently removed.',
+    'delete.error': 'Failed to delete organization unit. Please try again.',
+
+    // Form fields
+    'form.handle': 'Handle',
+    'form.handlePlaceholder': 'e.g., engineering, sales, hr',
+    'form.handleHelperText': 'A unique identifier for this organization unit',
+    'form.name': 'Name',
+    'form.namePlaceholder': 'e.g., Engineering Department',
+    'form.description': 'Description',
+    'form.descriptionPlaceholder': 'Enter a description for this organization unit',
+    'form.parent': 'Parent Organization Unit',
+    'form.parentPlaceholder': 'Select a parent organization unit (optional)',
+    'form.parentHelperText': 'Choose a parent to create a hierarchical structure',
+    'form.validation.nameRequired': 'Name is required',
+    'form.validation.handleRequired': 'Handle is required',
+    'form.validation.handleFormat': 'Handle must be lowercase alphanumeric with hyphens only',
   },
 
   // ============================================================================
@@ -1029,26 +1082,10 @@ const translations = {
   // Components namespace - SDK component error translations
   // ============================================================================
   components: {
-    signIn: {
-      errors: {
-        generic: 'An error occurred during sign in. Please try again.',
-      },
-    },
-    signUp: {
-      errors: {
-        generic: 'An error occurred during sign up. Please try again.',
-      },
-    },
-    inviteUser: {
-      errors: {
-        generic: 'An error occurred while inviting the user. Please try again.',
-      },
-    },
-    acceptInvite: {
-      errors: {
-        generic: 'An error occurred while accepting the invite. Please try again.',
-      },
-    },
+    'signIn.errors.generic': 'An error occurred during sign in. Please try again.',
+    'signUp.errors.generic': 'An error occurred during sign up. Please try again.',
+    'inviteUser.errors.generic': 'An error occurred while inviting the user. Please try again.',
+    'acceptInvite.errors.generic': 'An error occurred while accepting the invite. Please try again.',
   },
 
   // ============================================================================
@@ -1127,7 +1164,7 @@ const translations = {
     'core.executions.names.github': 'GitHub',
     'core.executions.names.facebook': 'Facebook',
     'core.executions.names.microsoft': 'Microsoft',
-    'core.executions.names.passkeyEnrollment': 'Passkey Enrollment',
+    'core.executions.names.PasskeyAuthentication': 'Passkey Authentication',
     'core.executions.names.confirmationCode': 'Confirmation Code',
     'core.executions.names.magicLink': 'Magic Link',
     'core.executions.names.sendEmailOTP': 'Send Email OTP',
@@ -1150,9 +1187,35 @@ const translations = {
     'core.executions.smsOtp.sender.noSenders':
       'No notification senders available. Please create a notification sender first.',
 
+    // Passkey executor modes
+    'core.executions.passkey.mode.challenge': 'Challenge',
+    'core.executions.passkey.mode.verify': 'Verify',
+    'core.executions.passkey.mode.registerStart': 'Start Registration',
+    'core.executions.passkey.mode.registerFinish': 'Finish Registration',
+    'core.executions.passkey.mode.label': 'Mode',
+    'core.executions.passkey.mode.placeholder': 'Select a mode',
+    'core.executions.passkey.description': 'Configure the Passkey executor settings.',
+
+    // Passkey relying party configuration
+    'core.executions.passkey.relyingPartyId.label': 'Relying Party ID',
+    'core.executions.passkey.relyingPartyId.placeholder': 'e.g., localhost or example.com',
+    'core.executions.passkey.relyingPartyId.hint':
+      'The domain identifier for passkey registration (typically your domain name)',
+    'core.executions.passkey.relyingPartyName.label': 'Relying Party Name',
+    'core.executions.passkey.relyingPartyName.placeholder': 'e.g., My Application',
+    'core.executions.passkey.relyingPartyName.hint': 'A human-readable name shown to users during passkey registration',
+
     // Execution steps - tooltips and messages
     'core.executions.tooltip.configurationHint': 'Click to configure this step',
     'core.executions.landing.message': 'This {{executor}} step will redirect users to a landing page.',
+
+    // Execution steps - branching handles
+    'core.executions.handles.success': 'onSuccess',
+    'core.executions.handles.failure': 'onFailure',
+
+    // Canvas hints and tips
+    'core.canvas.hints.autoLayout': 'Tip: Use auto-layout to organize your flow',
+    'core.canvas.buttons.autoLayout': 'Auto Layout',
 
     // Steps - end
     'core.steps.end.flowCompletionProperties': 'Flow Completion Properties',
@@ -1248,6 +1311,8 @@ const translations = {
     'core.elements.textPropertyField.i18nCard.tooltip.commonKeyTooltip': 'This key is shared across multiple screens',
     'core.elements.textPropertyField.i18nCard.tooltip.editExistingTranslation': 'Edit existing translation',
     'core.elements.textPropertyField.i18nCard.tooltip.addNewTranslation': 'Add new translation',
+    'core.elements.textPropertyField.i18nCard.invalidKeyFormat':
+      'Invalid key format. Use only letters, numbers, dots, underscores, and hyphens.',
 
     // Form requires view dialog
     'core.dialogs.formRequiresView.formOnCanvas.title': 'Form Requires a View',
@@ -1324,6 +1389,12 @@ const translations = {
 
     // Button extended properties
     'core.buttonExtendedProperties.type': 'Type',
+    'core.buttonExtendedProperties.startIcon.label': 'Start Icon',
+    'core.buttonExtendedProperties.startIcon.placeholder': 'Enter icon path (e.g., assets/images/icons/icon.svg)',
+    'core.buttonExtendedProperties.startIcon.hint': 'Optional icon displayed before the button label',
+    'core.buttonExtendedProperties.endIcon.label': 'End Icon',
+    'core.buttonExtendedProperties.endIcon.placeholder': 'Enter icon path (e.g., assets/images/icons/icon.svg)',
+    'core.buttonExtendedProperties.endIcon.hint': 'Optional icon displayed after the button label',
 
     // Rules properties
     'core.rulesProperties.description': 'Define a rule to how conditionally proceed to next steps in the flow',

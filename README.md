@@ -574,7 +574,7 @@ The product will now use the PostgreSQL database for its operations.
 
 ## 🤝 Contributing
 
-Please refer to the [CONTRIBUTING.md](docs/contributing/README.md) for guidelines on how to contribute to this project.
+Please refer to the [CONTRIBUTING.md](docs/content/community/contributing/README.md) for guidelines on how to contribute to this project.
 
 ## License
 

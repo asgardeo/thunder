@@ -17,11 +17,9 @@
  */
 
 import {describe, it, expect, beforeEach, afterEach, vi} from 'vitest';
-import {renderHook, waitFor, act} from '@testing-library/react';
-import {QueryClient, QueryClientProvider} from '@tanstack/react-query';
-import type {ReactNode} from 'react';
+import {renderHook, waitFor, act} from '@thunder/test-utils';
 import {useAsgardeo} from '@asgardeo/react';
-import {useConfig} from '@thunder/commons-contexts';
+import {useConfig} from '@thunder/shared-contexts';
 import useDeleteFlow from '../useDeleteFlow';
 import FlowQueryKeys from '../../constants/flow-query-keys';
 
@@ -29,22 +27,18 @@ vi.mock('@asgardeo/react', () => ({
   useAsgardeo: vi.fn(),
 }));
 
-vi.mock('@thunder/commons-contexts', () => ({
-  useConfig: vi.fn(),
-}));
+vi.mock('@thunder/shared-contexts', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@thunder/shared-contexts')>();
+  return {
+    ...actual,
+    useConfig: vi.fn(),
+  };
+});
 
 describe('useDeleteFlow', () => {
-  let queryClient: QueryClient;
   let mockHttpRequest: ReturnType<typeof vi.fn>;
 
   beforeEach(() => {
-    queryClient = new QueryClient({
-      defaultOptions: {
-        queries: {retry: false},
-        mutations: {retry: false},
-      },
-    });
-
     mockHttpRequest = vi.fn();
 
     vi.mocked(useAsgardeo).mockReturnValue({
@@ -58,20 +52,10 @@ describe('useDeleteFlow', () => {
 
   afterEach(() => {
     vi.clearAllMocks();
-    queryClient.clear();
   });
 
-  const createWrapper = () => {
-    function Wrapper({children}: {children: ReactNode}) {
-      return <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>;
-    }
-    return Wrapper;
-  };
-
   it('should initialize with idle state', () => {
-    const {result} = renderHook(() => useDeleteFlow(), {
-      wrapper: createWrapper(),
-    });
+    const {result} = renderHook(() => useDeleteFlow());
 
     expect(result.current.data).toBeUndefined();
     expect(result.current.error).toBeNull();
@@ -82,9 +66,7 @@ describe('useDeleteFlow', () => {
   it('should successfully delete a flow', async () => {
     mockHttpRequest.mockResolvedValueOnce({});
 
-    const {result} = renderHook(() => useDeleteFlow(), {
-      wrapper: createWrapper(),
-    });
+    const {result} = renderHook(() => useDeleteFlow());
 
     result.current.mutate('flow-123');
 
@@ -107,9 +89,7 @@ describe('useDeleteFlow', () => {
         }),
     );
 
-    const {result} = renderHook(() => useDeleteFlow(), {
-      wrapper: createWrapper(),
-    });
+    const {result} = renderHook(() => useDeleteFlow());
 
     result.current.mutate('flow-123');
 
@@ -128,9 +108,7 @@ describe('useDeleteFlow', () => {
     const apiError = new Error('Failed to delete flow');
     mockHttpRequest.mockRejectedValueOnce(apiError);
 
-    const {result} = renderHook(() => useDeleteFlow(), {
-      wrapper: createWrapper(),
-    });
+    const {result} = renderHook(() => useDeleteFlow());
 
     result.current.mutate('flow-123');
 
@@ -144,11 +122,8 @@ describe('useDeleteFlow', () => {
   it('should remove specific flow from cache on success', async () => {
     mockHttpRequest.mockResolvedValueOnce({});
 
+    const {result, queryClient} = renderHook(() => useDeleteFlow());
     const removeQueriesSpy = vi.spyOn(queryClient, 'removeQueries');
-
-    const {result} = renderHook(() => useDeleteFlow(), {
-      wrapper: createWrapper(),
-    });
 
     result.current.mutate('flow-123');
 
@@ -164,11 +139,8 @@ describe('useDeleteFlow', () => {
   it('should invalidate flows list query on success', async () => {
     mockHttpRequest.mockResolvedValueOnce({});
 
+    const {result, queryClient} = renderHook(() => useDeleteFlow());
     const invalidateQueriesSpy = vi.spyOn(queryClient, 'invalidateQueries');
-
-    const {result} = renderHook(() => useDeleteFlow(), {
-      wrapper: createWrapper(),
-    });
 
     result.current.mutate('flow-123');
 
@@ -184,9 +156,7 @@ describe('useDeleteFlow', () => {
   it('should support mutateAsync for promise-based workflows', async () => {
     mockHttpRequest.mockResolvedValueOnce({});
 
-    const {result} = renderHook(() => useDeleteFlow(), {
-      wrapper: createWrapper(),
-    });
+    const {result} = renderHook(() => useDeleteFlow());
 
     const promise = result.current.mutateAsync('flow-123');
 
@@ -198,9 +168,7 @@ describe('useDeleteFlow', () => {
 
     const onSuccess = vi.fn();
 
-    const {result} = renderHook(() => useDeleteFlow(), {
-      wrapper: createWrapper(),
-    });
+    const {result} = renderHook(() => useDeleteFlow());
 
     result.current.mutate('flow-123', {onSuccess});
 
@@ -215,9 +183,7 @@ describe('useDeleteFlow', () => {
 
     const onError = vi.fn();
 
-    const {result} = renderHook(() => useDeleteFlow(), {
-      wrapper: createWrapper(),
-    });
+    const {result} = renderHook(() => useDeleteFlow());
 
     result.current.mutate('flow-123', {onError});
 
@@ -229,9 +195,7 @@ describe('useDeleteFlow', () => {
   it('should reset mutation state', async () => {
     mockHttpRequest.mockResolvedValueOnce({});
 
-    const {result} = renderHook(() => useDeleteFlow(), {
-      wrapper: createWrapper(),
-    });
+    const {result} = renderHook(() => useDeleteFlow());
 
     result.current.mutate('flow-123');
 
@@ -257,9 +221,7 @@ describe('useDeleteFlow', () => {
 
     mockHttpRequest.mockResolvedValueOnce({});
 
-    const {result} = renderHook(() => useDeleteFlow(), {
-      wrapper: createWrapper(),
-    });
+    const {result} = renderHook(() => useDeleteFlow());
 
     result.current.mutate('flow-456');
 
@@ -277,9 +239,7 @@ describe('useDeleteFlow', () => {
   it('should handle multiple sequential deletions', async () => {
     mockHttpRequest.mockResolvedValue({});
 
-    const {result} = renderHook(() => useDeleteFlow(), {
-      wrapper: createWrapper(),
-    });
+    const {result} = renderHook(() => useDeleteFlow());
 
     result.current.mutate('flow-1');
 

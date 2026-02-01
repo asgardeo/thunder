@@ -128,6 +128,10 @@ describe('ConfigureExperience', () => {
     ];
     const mockOnUserTypesChange = vi.fn();
 
+    beforeEach(() => {
+      mockOnUserTypesChange.mockClear();
+    });
+
     it('should render user types selection when userTypes prop is provided', () => {
       render(
         <ConfigureExperience
@@ -154,6 +158,217 @@ describe('ConfigureExperience', () => {
       expect(
         screen.queryByText('applications:onboarding.configure.experience.access.userTypes.title'),
       ).not.toBeInTheDocument();
+    });
+
+    it('should not render user types selection when only one user type exists', () => {
+      const singleUserType = [{id: '1', name: 'Internal', ouId: 'INTERNAL', allowSelfRegistration: true}];
+
+      render(
+        <ConfigureExperience
+          selectedApproach={ApplicationCreateFlowSignInApproach.INBUILT}
+          onApproachChange={mockOnApproachChange}
+          userTypes={singleUserType}
+          onUserTypesChange={mockOnUserTypesChange}
+        />,
+      );
+
+      expect(
+        screen.queryByText('applications:onboarding.configure.experience.access.userTypes.title'),
+      ).not.toBeInTheDocument();
+    });
+
+    it('should render user type cards and allow selection', async () => {
+      const user = userEvent.setup();
+      render(
+        <ConfigureExperience
+          selectedApproach={ApplicationCreateFlowSignInApproach.INBUILT}
+          onApproachChange={mockOnApproachChange}
+          userTypes={mockUserTypes}
+          selectedUserTypes={['Internal']}
+          onUserTypesChange={mockOnUserTypesChange}
+        />,
+      );
+
+      // Should render user type cards
+      expect(screen.getByText('Internal')).toBeInTheDocument();
+      expect(screen.getByText('External')).toBeInTheDocument();
+
+      // Click External card to add it to selection
+      const externalCard = screen.getByText('External').closest('[class*="MuiCard"]');
+      expect(externalCard).toBeInTheDocument();
+      await user.click(externalCard!);
+
+      expect(mockOnUserTypesChange).toHaveBeenCalledWith(['Internal', 'External']);
+    });
+
+    it('should remove user type from selection when clicking selected card', async () => {
+      const user = userEvent.setup();
+      render(
+        <ConfigureExperience
+          selectedApproach={ApplicationCreateFlowSignInApproach.INBUILT}
+          onApproachChange={mockOnApproachChange}
+          userTypes={mockUserTypes}
+          selectedUserTypes={['Internal', 'External']}
+          onUserTypesChange={mockOnUserTypesChange}
+        />,
+      );
+
+      // Click Internal card to remove it from selection
+      const internalCard = screen.getByText('Internal').closest('[class*="MuiCard"]');
+      await user.click(internalCard!);
+
+      expect(mockOnUserTypesChange).toHaveBeenCalledWith(['External']);
+    });
+
+    it('should auto-select first user type when none selected', () => {
+      render(
+        <ConfigureExperience
+          selectedApproach={ApplicationCreateFlowSignInApproach.INBUILT}
+          onApproachChange={mockOnApproachChange}
+          userTypes={mockUserTypes}
+          selectedUserTypes={[]}
+          onUserTypesChange={mockOnUserTypesChange}
+        />,
+      );
+
+      expect(mockOnUserTypesChange).toHaveBeenCalledWith(['Internal']);
+    });
+
+    it('should call onReadyChange with false when no user types selected (with multiple available)', () => {
+      const mockOnReadyChangeLocal = vi.fn();
+      render(
+        <ConfigureExperience
+          selectedApproach={ApplicationCreateFlowSignInApproach.INBUILT}
+          onApproachChange={mockOnApproachChange}
+          onReadyChange={mockOnReadyChangeLocal}
+          userTypes={mockUserTypes}
+          selectedUserTypes={[]}
+          onUserTypesChange={mockOnUserTypesChange}
+        />,
+      );
+
+      // Initially false because no user types selected
+      expect(mockOnReadyChangeLocal).toHaveBeenCalledWith(false);
+    });
+
+    it('should call onReadyChange with true when user types are selected', () => {
+      const mockOnReadyChangeLocal = vi.fn();
+      render(
+        <ConfigureExperience
+          selectedApproach={ApplicationCreateFlowSignInApproach.INBUILT}
+          onApproachChange={mockOnApproachChange}
+          onReadyChange={mockOnReadyChangeLocal}
+          userTypes={mockUserTypes}
+          selectedUserTypes={['Internal']}
+          onUserTypesChange={mockOnUserTypesChange}
+        />,
+      );
+
+      expect(mockOnReadyChangeLocal).toHaveBeenCalledWith(true);
+    });
+  });
+
+  describe('User Types Autocomplete (5+ user types)', () => {
+    const manyUserTypes = [
+      {id: '1', name: 'Type1', ouId: 'TYPE1', allowSelfRegistration: true},
+      {id: '2', name: 'Type2', ouId: 'TYPE2', allowSelfRegistration: false},
+      {id: '3', name: 'Type3', ouId: 'TYPE3', allowSelfRegistration: true},
+      {id: '4', name: 'Type4', ouId: 'TYPE4', allowSelfRegistration: false},
+      {id: '5', name: 'Type5', ouId: 'TYPE5', allowSelfRegistration: true},
+    ];
+    const mockOnUserTypesChange = vi.fn();
+
+    beforeEach(() => {
+      mockOnUserTypesChange.mockClear();
+    });
+
+    it('should render autocomplete when 5 or more user types exist', () => {
+      render(
+        <ConfigureExperience
+          selectedApproach={ApplicationCreateFlowSignInApproach.INBUILT}
+          onApproachChange={mockOnApproachChange}
+          userTypes={manyUserTypes}
+          selectedUserTypes={['Type1']}
+          onUserTypesChange={mockOnUserTypesChange}
+        />,
+      );
+
+      // Should have an autocomplete input
+      expect(screen.getByRole('combobox')).toBeInTheDocument();
+    });
+
+    it('should allow selecting user types from autocomplete', async () => {
+      const user = userEvent.setup();
+      render(
+        <ConfigureExperience
+          selectedApproach={ApplicationCreateFlowSignInApproach.INBUILT}
+          onApproachChange={mockOnApproachChange}
+          userTypes={manyUserTypes}
+          selectedUserTypes={['Type1']}
+          onUserTypesChange={mockOnUserTypesChange}
+        />,
+      );
+
+      const autocomplete = screen.getByRole('combobox');
+      await user.click(autocomplete);
+
+      // Should show options
+      const type2Option = await screen.findByText('Type2');
+      await user.click(type2Option);
+
+      expect(mockOnUserTypesChange).toHaveBeenCalledWith(['Type1', 'Type2']);
+    });
+
+    it('should show error state when no user types selected with autocomplete', () => {
+      render(
+        <ConfigureExperience
+          selectedApproach={ApplicationCreateFlowSignInApproach.INBUILT}
+          onApproachChange={mockOnApproachChange}
+          userTypes={manyUserTypes}
+          selectedUserTypes={[]}
+          onUserTypesChange={mockOnUserTypesChange}
+        />,
+      );
+
+      // The TextField should have error state
+      const textField = screen.getByRole('combobox');
+      expect(textField.closest('.MuiAutocomplete-root')?.querySelector('.Mui-error')).toBeInTheDocument();
+    });
+  });
+
+  describe('Card Click Handlers', () => {
+    it('should call onApproachChange when clicking INBUILT card', async () => {
+      const user = userEvent.setup();
+      render(
+        <ConfigureExperience
+          selectedApproach={ApplicationCreateFlowSignInApproach.EMBEDDED}
+          onApproachChange={mockOnApproachChange}
+        />,
+      );
+
+      // Find the INBUILT card by its title text and click the card itself
+      const inbuiltTitle = screen.getByText('applications:onboarding.configure.approach.inbuilt.title');
+      const inbuiltCard = inbuiltTitle.closest('[class*="MuiCard"]');
+      await user.click(inbuiltCard!);
+
+      expect(mockOnApproachChange).toHaveBeenCalledWith(ApplicationCreateFlowSignInApproach.INBUILT);
+    });
+
+    it('should call onApproachChange when clicking EMBEDDED card', async () => {
+      const user = userEvent.setup();
+      render(
+        <ConfigureExperience
+          selectedApproach={ApplicationCreateFlowSignInApproach.INBUILT}
+          onApproachChange={mockOnApproachChange}
+        />,
+      );
+
+      // Find the EMBEDDED card by its title text and click the card itself
+      const embeddedTitle = screen.getByText('applications:onboarding.configure.approach.native.title');
+      const embeddedCard = embeddedTitle.closest('[class*="MuiCard"]');
+      await user.click(embeddedCard!);
+
+      expect(mockOnApproachChange).toHaveBeenCalledWith(ApplicationCreateFlowSignInApproach.EMBEDDED);
     });
   });
 });

@@ -27,7 +27,7 @@ const mockGetClientUrl = vi.fn();
 const mockGetScopes = vi.fn();
 
 // Mock the useConfig hook
-vi.mock('@thunder/commons-contexts', () => ({
+vi.mock('@thunder/shared-contexts', () => ({
   useConfig: () => ({
     getClientId: mockGetClientId,
     getServerUrl: mockGetServerUrl,
@@ -46,7 +46,13 @@ interface MockAsgardeoProviderProps {
 }
 
 vi.mock('@asgardeo/react', () => ({
-  AsgardeoProvider: ({children, baseUrl = null, clientId = null, afterSignInUrl = null, scopes = undefined}: MockAsgardeoProviderProps) => (
+  AsgardeoProvider: ({
+    children,
+    baseUrl = null,
+    clientId = null,
+    afterSignInUrl = null,
+    scopes = undefined,
+  }: MockAsgardeoProviderProps) => (
     <div
       data-testid="asgardeo-provider"
       data-base-url={baseUrl}
@@ -57,6 +63,11 @@ vi.mock('@asgardeo/react', () => ({
       {children}
     </div>
   ),
+  useAsgardeo: () => ({
+    http: {
+      request: vi.fn().mockResolvedValue({data: {language: 'en-US', translations: {}}}),
+    },
+  }),
 }));
 
 // Mock App component

@@ -414,4 +414,73 @@ describe('ValidationStatusLabels', () => {
       expect(screen.getByRole('button')).toBeInTheDocument();
     });
   });
+
+  describe('Badge Color Priority', () => {
+    it('should set info badge color when only info notifications exist (no errors, no warnings)', () => {
+      const infoNotification1 = new Notification('info-1', 'Info 1', NotificationType.INFO);
+      const infoNotification2 = new Notification('info-2', 'Info 2', NotificationType.INFO);
+
+      const contextWithOnlyInfo: ValidationContextProps = {
+        ...defaultValidationContext,
+        notifications: [infoNotification1, infoNotification2],
+      };
+
+      render(<ValidationStatusLabels />, {wrapper: createWrapper(contextWithOnlyInfo)});
+
+      const badge = document.querySelector('.MuiBadge-badge');
+      expect(badge?.textContent).toBe('2');
+      expect(document.querySelector('.MuiBadge-colorInfo')).toBeInTheDocument();
+    });
+
+    it('should set error tab (0) when errors exist along with info', () => {
+      const errorNotification = new Notification('error-1', 'Error 1', NotificationType.ERROR);
+      const infoNotification = new Notification('info-1', 'Info 1', NotificationType.INFO);
+
+      const contextWithErrorAndInfo: ValidationContextProps = {
+        ...defaultValidationContext,
+        notifications: [errorNotification, infoNotification],
+      };
+
+      render(<ValidationStatusLabels />, {wrapper: createWrapper(contextWithErrorAndInfo)});
+
+      const button = screen.getByRole('button');
+      fireEvent.click(button);
+
+      expect(mockSetCurrentActiveTab).toHaveBeenCalledWith(0);
+    });
+
+    it('should set warning tab (1) when only warnings and info exist', () => {
+      const warningNotification = new Notification('warning-1', 'Warning 1', NotificationType.WARNING);
+      const infoNotification = new Notification('info-1', 'Info 1', NotificationType.INFO);
+
+      const contextWithWarningAndInfo: ValidationContextProps = {
+        ...defaultValidationContext,
+        notifications: [warningNotification, infoNotification],
+      };
+
+      render(<ValidationStatusLabels />, {wrapper: createWrapper(contextWithWarningAndInfo)});
+
+      const button = screen.getByRole('button');
+      fireEvent.click(button);
+
+      expect(mockSetCurrentActiveTab).toHaveBeenCalledWith(1);
+    });
+
+    it('should set default tab (0) when only info notifications exist (no errors, no warnings)', () => {
+      const infoNotification = new Notification('info-1', 'Info 1', NotificationType.INFO);
+
+      const contextWithOnlyInfo: ValidationContextProps = {
+        ...defaultValidationContext,
+        notifications: [infoNotification],
+      };
+
+      render(<ValidationStatusLabels />, {wrapper: createWrapper(contextWithOnlyInfo)});
+
+      const button = screen.getByRole('button');
+      fireEvent.click(button);
+
+      // Default activeTab is 0, and since no errors/warnings, it stays at 0
+      expect(mockSetCurrentActiveTab).toHaveBeenCalledWith(0);
+    });
+  });
 });

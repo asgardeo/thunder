@@ -28,7 +28,7 @@ export interface Element<T = unknown> extends Base<T> {
    */
   components?: Element[];
   action?: {
-    next?: string;
+    onSuccess?: string;
     [key: string]: unknown;
   };
 }

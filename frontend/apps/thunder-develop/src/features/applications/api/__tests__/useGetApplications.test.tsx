@@ -17,9 +17,7 @@
  */
 
 import {describe, it, expect, beforeEach, afterEach, vi} from 'vitest';
-import {waitFor, renderHook} from '@testing-library/react';
-import {QueryClient, QueryClientProvider} from '@tanstack/react-query';
-import type {ReactNode} from 'react';
+import {waitFor, renderHook} from '@thunder/test-utils';
 import useGetApplications from '../useGetApplications';
 import type {ApplicationListResponse} from '../../models/responses';
 import ApplicationQueryKeys from '../../constants/application-query-keys';
@@ -29,8 +27,8 @@ vi.mock('@asgardeo/react', () => ({
   useAsgardeo: vi.fn(),
 }));
 
-vi.mock('@thunder/commons-contexts', async (importOriginal) => {
-  const actual = await importOriginal<typeof import('@thunder/commons-contexts')>();
+vi.mock('@thunder/shared-contexts', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@thunder/shared-contexts')>();
   return {
     ...actual,
     useConfig: vi.fn(),
@@ -38,10 +36,9 @@ vi.mock('@thunder/commons-contexts', async (importOriginal) => {
 });
 
 const {useAsgardeo} = await import('@asgardeo/react');
-const {useConfig} = await import('@thunder/commons-contexts');
+const {useConfig} = await import('@thunder/shared-contexts');
 
 describe('useGetApplications', () => {
-  let queryClient: QueryClient;
   let mockHttpRequest: ReturnType<typeof vi.fn>;
   let mockGetServerUrl: ReturnType<typeof vi.fn>;
 
@@ -71,14 +68,6 @@ describe('useGetApplications', () => {
   };
 
   beforeEach(() => {
-    queryClient = new QueryClient({
-      defaultOptions: {
-        queries: {
-          retry: false,
-        },
-      },
-    });
-
     mockHttpRequest = vi.fn();
     mockGetServerUrl = vi.fn().mockReturnValue('https://api.test.com');
 
@@ -94,21 +83,13 @@ describe('useGetApplications', () => {
   });
 
   afterEach(() => {
-    queryClient.clear();
     vi.clearAllMocks();
   });
-
-  const createWrapper = () =>
-    function Wrapper({children}: {children: ReactNode}) {
-      return <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>;
-    };
 
   it('should initialize with loading state', () => {
     mockHttpRequest.mockImplementation(() => new Promise(() => {})); // Never resolves
 
-    const {result} = renderHook(() => useGetApplications(), {
-      wrapper: createWrapper(),
-    });
+    const {result} = renderHook(() => useGetApplications());
 
     expect(result.current.isLoading).toBe(true);
     expect(result.current.data).toBeUndefined();
@@ -120,9 +101,7 @@ describe('useGetApplications', () => {
       data: mockApplicationListResponse,
     });
 
-    const {result} = renderHook(() => useGetApplications(), {
-      wrapper: createWrapper(),
-    });
+    const {result} = renderHook(() => useGetApplications());
 
     await waitFor(() => {
       expect(result.current.isSuccess).toBe(true);
@@ -139,9 +118,7 @@ describe('useGetApplications', () => {
       data: mockApplicationListResponse,
     });
 
-    renderHook(() => useGetApplications(), {
-      wrapper: createWrapper(),
-    });
+    renderHook(() => useGetApplications());
 
     await waitFor(() => {
       expect(mockHttpRequest).toHaveBeenCalledTimes(1);
@@ -160,9 +137,7 @@ describe('useGetApplications', () => {
       data: mockApplicationListResponse,
     });
 
-    renderHook(() => useGetApplications({limit: 10, offset: 5}), {
-      wrapper: createWrapper(),
-    });
+    renderHook(() => useGetApplications({limit: 10, offset: 5}));
 
     await waitFor(() => {
       expect(mockHttpRequest).toHaveBeenCalledTimes(1);
@@ -180,9 +155,7 @@ describe('useGetApplications', () => {
     const apiError = new Error('Failed to fetch applications');
     mockHttpRequest.mockRejectedValueOnce(apiError);
 
-    const {result} = renderHook(() => useGetApplications(), {
-      wrapper: createWrapper(),
-    });
+    const {result} = renderHook(() => useGetApplications());
 
     await waitFor(() => {
       expect(result.current.isError).toBe(true);
@@ -196,9 +169,7 @@ describe('useGetApplications', () => {
     const networkError = new Error('Network request failed');
     mockHttpRequest.mockRejectedValueOnce(networkError);
 
-    const {result} = renderHook(() => useGetApplications(), {
-      wrapper: createWrapper(),
-    });
+    const {result} = renderHook(() => useGetApplications());
 
     await waitFor(() => {
       expect(result.current.isError).toBe(true);
@@ -212,9 +183,7 @@ describe('useGetApplications', () => {
       data: mockApplicationListResponse,
     });
 
-    renderHook(() => useGetApplications(), {
-      wrapper: createWrapper(),
-    });
+    renderHook(() => useGetApplications());
 
     await waitFor(() => {
       expect(mockGetServerUrl).toHaveBeenCalledTimes(1);
@@ -231,9 +200,7 @@ describe('useGetApplications', () => {
       data: mockApplicationListResponse,
     });
 
-    renderHook(() => useGetApplications(), {
-      wrapper: createWrapper(),
-    });
+    renderHook(() => useGetApplications());
 
     await waitFor(() => {
       expect(mockHttpRequest).toHaveBeenCalledTimes(1);
@@ -252,9 +219,7 @@ describe('useGetApplications', () => {
       data: mockApplicationListResponse,
     });
 
-    const {result} = renderHook(() => useGetApplications({limit: 20, offset: 10}), {
-      wrapper: createWrapper(),
-    });
+    const {result, queryClient} = renderHook(() => useGetApplications({limit: 20, offset: 10}));
 
     await waitFor(() => {
       expect(result.current.isSuccess).toBe(true);
@@ -269,36 +234,25 @@ describe('useGetApplications', () => {
   });
 
   it('should cache results for same parameters', async () => {
-    // Create a QueryClient with staleTime to prevent refetch on mount
-    const cacheTestQueryClient = new QueryClient({
-      defaultOptions: {
-        queries: {
-          retry: false,
-          staleTime: Infinity, // Keep data fresh indefinitely for this test
-        },
-      },
-    });
-
-    const createCacheTestWrapper = () =>
-      function Wrapper({children}: {children: ReactNode}) {
-        return <QueryClientProvider client={cacheTestQueryClient}>{children}</QueryClientProvider>;
-      };
-
     mockHttpRequest.mockResolvedValueOnce({
       data: mockApplicationListResponse,
     });
 
-    const {result: result1} = renderHook(() => useGetApplications({limit: 10, offset: 0}), {
-      wrapper: createCacheTestWrapper(),
-    });
+    // First call - get the queryClient from the render result
+    const {result: result1, queryClient} = renderHook(() => useGetApplications({limit: 10, offset: 0}));
 
     await waitFor(() => {
       expect(result1.current.isSuccess).toBe(true);
     });
 
-    // Second call with same parameters should use cache
+    // Set the data as fresh to prevent refetch
+    queryClient.setQueryDefaults([ApplicationQueryKeys.APPLICATIONS, {limit: 10, offset: 0}], {
+      staleTime: Infinity,
+    });
+
+    // Second call with same queryClient should use cache
     const {result: result2} = renderHook(() => useGetApplications({limit: 10, offset: 0}), {
-      wrapper: createCacheTestWrapper(),
+      queryClient,
     });
 
     await waitFor(() => {
@@ -312,18 +266,14 @@ describe('useGetApplications', () => {
       data: mockApplicationListResponse,
     });
 
-    const {result: result1} = renderHook(() => useGetApplications({limit: 10, offset: 0}), {
-      wrapper: createWrapper(),
-    });
+    const {result: result1} = renderHook(() => useGetApplications({limit: 10, offset: 0}));
 
     await waitFor(() => {
       expect(result1.current.isSuccess).toBe(true);
     });
 
     // Second call with different parameters should make new request
-    const {result: result2} = renderHook(() => useGetApplications({limit: 20, offset: 5}), {
-      wrapper: createWrapper(),
-    });
+    const {result: result2} = renderHook(() => useGetApplications({limit: 20, offset: 5}));
 
     await waitFor(() => {
       expect(result2.current.isSuccess).toBe(true);
@@ -337,9 +287,7 @@ describe('useGetApplications', () => {
       data: mockApplicationListResponse,
     });
 
-    const {result} = renderHook(() => useGetApplications(), {
-      wrapper: createWrapper(),
-    });
+    const {result} = renderHook(() => useGetApplications());
 
     await waitFor(() => {
       expect(result.current.isSuccess).toBe(true);
@@ -364,9 +312,7 @@ describe('useGetApplications', () => {
       data: emptyResponse,
     });
 
-    const {result} = renderHook(() => useGetApplications(), {
-      wrapper: createWrapper(),
-    });
+    const {result} = renderHook(() => useGetApplications());
 
     await waitFor(() => {
       expect(result.current.isSuccess).toBe(true);
@@ -386,9 +332,7 @@ describe('useGetApplications', () => {
       },
     });
 
-    const {result} = renderHook(() => useGetApplications({limit: 10, offset: 0}), {
-      wrapper: createWrapper(),
-    });
+    const {result} = renderHook(() => useGetApplications({limit: 10, offset: 0}));
 
     await waitFor(() => {
       expect(result.current.isSuccess).toBe(true);
@@ -404,9 +348,7 @@ describe('useGetApplications', () => {
       data: mockApplicationListResponse,
     });
 
-    renderHook(() => useGetApplications({limit: 15, offset: 30}), {
-      wrapper: createWrapper(),
-    });
+    renderHook(() => useGetApplications({limit: 15, offset: 30}));
 
     await waitFor(() => {
       expect(mockHttpRequest).toHaveBeenCalledTimes(1);
@@ -429,9 +371,7 @@ describe('useGetApplications', () => {
 
     mockHttpRequest.mockReturnValueOnce(requestPromise);
 
-    const {result} = renderHook(() => useGetApplications(), {
-      wrapper: createWrapper(),
-    });
+    const {result} = renderHook(() => useGetApplications());
 
     expect(result.current.isLoading).toBe(true);
     expect(result.current.isFetching).toBe(true);

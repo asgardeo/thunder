@@ -243,7 +243,7 @@ read -r -d '' REACT_SDK_APP_PAYLOAD <<JSON || true
       "pkce_required": true,
       "public_client": true,
       "token": {
-        "issuer": "https://localhost:8090/oauth2/token",
+        "issuer": "https://localhost:8090",
         "access_token": {
           "validity_period": 3600,
           "user_attributes": ["given_name","family_name","email","groups","name"]

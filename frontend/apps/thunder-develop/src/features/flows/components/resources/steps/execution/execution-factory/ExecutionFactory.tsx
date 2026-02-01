@@ -37,7 +37,7 @@ export type ExecutionFactoryPropsInterface = ExecutionMinimalPropsInterface;
  * @param props - Props injected to the component.
  * @returns The ExecutionFactory component.
  */
-function ExecutionFactory({resource}: ExecutionFactoryPropsInterface): ReactElement {
+function ExecutionFactory({resource}: ExecutionFactoryPropsInterface): ReactElement | null {
   const {t} = useTranslation();
   const {mode, systemMode} = useColorScheme();
 
@@ -47,6 +47,7 @@ function ExecutionFactory({resource}: ExecutionFactoryPropsInterface): ReactElem
   const action = resource.data?.action;
   const executorName = action?.executor?.name;
   const displayImage = resource.display?.image;
+  // display.label contains the action/mode (e.g., "Passkey Challenge", "Send SMS OTP")
   const displayLabel = resource.display?.label;
 
   // Google, GitHub, and SMS OTP executors have special validation logic
@@ -62,7 +63,8 @@ function ExecutionFactory({resource}: ExecutionFactoryPropsInterface): ReactElem
     return <SmsOtpExecution resource={resource} />;
   }
 
-  // For all other executors, render with icon from display.image if available
+  // For all other executors, render icon and action/mode label
+  // The header shows the executor name, the content shows the action/mode
   if (displayImage) {
     return (
       <Box display="flex" gap={1} alignItems="center" className="flow-builder-execution">
@@ -77,7 +79,7 @@ function ExecutionFactory({resource}: ExecutionFactoryPropsInterface): ReactElem
     );
   }
 
-  // Fallback for executors without display metadata
+  // Fallback for executors without display image
   return (
     <Box display="flex" gap={1}>
       <Typography variant="body1">{displayLabel ?? t('flows:core.executions.names.default')}</Typography>

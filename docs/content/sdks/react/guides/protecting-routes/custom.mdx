@@ -1,0 +1,91 @@
+---
+title: Custom Implementation
+description: Build custom route protection using Asgardeo SDK primitives
+---
+
+# Custom Implementation
+
+If you prefer to have full control over how the app routes should be secured—for example, if you want to run custom application logic before enabling or disabling a route—you can build a completely custom solution using the primitives provided by the Asgardeo React SDK.
+
+## Basic Custom Route Guard
+
+```tsx title="src/App.tsx" showLineNumbers
+import React, { ReactNode } from 'react'
+import { Routes, Route } from 'react-router-dom'
+import { useAsgardeo } from '@asgardeo/react'
+
+const ProtectedRoute = ({ children }: { children: ReactNode }) => {
+  const { isSignedIn } = useAsgardeo()
+
+  if (!isSignedIn) {
+    return <Unauthenticated />
+  }
+
+  return children
+}
+
+const App = () => {
+  return (
+    <Routes>
+      <Route
+        path="/contact"
+        element={
+          <ProtectedRoute>
+            <Contact />
+          </ProtectedRoute>
+        }
+      />
+      <Route path="/" element={<Home />} />
+      <Route path="*" element={<PageNotFound />} />
+    </Routes>
+  )
+}
+
+export default App
+```
+
+## Advanced Custom Implementation
+
+You can extend the basic pattern to include loading states, redirects, and custom logic:
+
+```tsx title="src/components/ProtectedRoute.tsx" showLineNumbers
+import React, { ReactNode } from 'react'
+import { Navigate } from 'react-router-dom'
+import { useAsgardeo } from '@asgardeo/react'
+
+interface ProtectedRouteProps {
+  children: ReactNode
+  redirectTo?: string
+  fallback?: ReactNode
+  requireRole?: string
+}
+
+export const ProtectedRoute = ({
+  children,
+  redirectTo = '/signin',
+  fallback,
+  requireRole,
+}: ProtectedRouteProps) => {
+  const { isSignedIn, user, loading } = useAsgardeo()
+
+  // Show loading state while authentication is being checked
+  if (loading) {
+    return <div>Loading...</div>
+  }
+
+  // Redirect to sign-in if not authenticated
+  if (!isSignedIn) {
+    if (fallback) {
+      return <>{fallback}</>
+    }
+    return <Navigate to={redirectTo} replace />
+  }
+
+  // Check for required role if specified
+  if (requireRole && user?.roles && !user.roles.includes(requireRole)) {
+    return <div>You don't have permission to access this page</div>
+  }
+
+  return <>{children}</>
+}
+```

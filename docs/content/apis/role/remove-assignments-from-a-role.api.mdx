@@ -1,0 +1,72 @@
+---
+id: remove-assignments-from-a-role
+title: "Remove assignments from a role"
+description: "Removes one or more user or group assignments from the specified role"
+sidebar_label: "Remove assignments from a role"
+hide_title: true
+hide_table_of_contents: true
+api: eJztV01v2zgQ/SvEnFpAimXHdhLd0jaHAN3tIm1PgQ+UNLLYSqRKUnG0hv77YkjZlmynLRa9FGguSUjOx5uZN5rZguVrA/EjaFWigVUAGZpUi9oKJSGGB6zUExqmJDKlWaU0ssagpn/WWjU148aItaxQWsNyrSpmC2SmxlTkAjNGeiGAmmteoUVNxrYgSHfNbQEBSF4hxCAyCEDjt0ZozCC2usEATFpgxSHegm1remWsFnINAeRKV9xCDE0jMui6lRdGY9+orCWJY12pkhalpSte16VIOWGcfDEEdHtqSiVfMLUjpx5hgJaCVWtVo7YCjVM7uDzo4VrzFgIQFivzI/0uCu7BiXaR/TgOx+m7f8dU7jIyTlqCQq771GEGXW/zjH6UTUWOkTwE4MRPy+RTWyNZQmmFbY/Us1cj46+hI3vClmTodh+ze1k3llwZq34vjCXVTgeX2WnZvaDPPPh6IJX4zKu6xJMkPe4B9/goyHDF58k0v8ZwkS5vwnmyjMKb2eUsnCUR5/lygfllCl2wl/VB6YWXyRSvkussvMLpTTifYhJe53wWphHiIkmWV/xmDt2q68hrjaZW0vgEz6I5/RrDH+Bh2pExY6ZJUzQmb8qyJXTzKDoVfMMz1jMCflHxpyojLldoDF+fqVB3f6aGxo7daa0063XtEwMPH96H0yiaEqCdhZ/UtXs+VHcvn3gp9iFgPU+Oy+tHBt6h5aLEjKGzNLwcWvtU4N5SorKWCcMqXpJRzJiDKy0X0jDR+5Vxy0eF66AMatVz3r8Oe93hju1bME1Vcd2+jDSAJ142eMjLIcKDAL8sfUTw/w8Qq9q24VFvPLh/R9cjOr/k+XQ+8vxEkJXCnHp+a1mJnHqIxMFrVjUEBVmt1ZPIqAl2npPzczR8UCUyqSg+jcz+EOo3JNQpEy5H9XSS4jMMoCcbYYujIYfMKzROGp+pCn0pLc415ntpUUteMoP6CbUPxJ+K+v0rahFF0VFvPZ/powYlWSPxucbU7kGoNG20xoxtClG6HkUffBqq7AEG9A2rQlsoGj1q5fqfm6tjmLiRfrIVWTcZdMmJnyIgAO+Vn4IaXUIMhbW1iSeTbaGM7eJtrbTtXD/Wgif9N4nufFXnvClp9CxVykt33AVAMuPr6+gmIl9XZDJttLCts/nhtrHFjKrWtMZiBavhk49U797i7uGh9Lk7CCAv1caP3o0tlBb/Os687Yt8dPh5hHDvckzeTbzCyU6AomPVV/wpIfeQwpmq2vvbw4nh1s1pzCrmj1jFJV+j+/7c/nNvdhkkjj8ctpe7l6dVN2Je5vx6kS/n4eJqehXOF8tZmFzmaThLb5aX+XLJc77crRH9ZNutugCEzJWLYl/PruP9NXKJko3a+MqcXkRn2qAw9JDo0xjMCJxH5bqj8e2xRl0JQ2rChNMr7iNBHNOqvIAASpGiNA5kvwHe1jwtkM2c1XFBbjabC+6uL5ReT3pZM3l///bu74934ewiuihsVTq6Eg0qLgea/RZ7uqry3Xp61HD2rfiX7b99Liw+20ldciGJKg7jtufrbgUPIHaL3Hgi6km7Cnr6PcJ2S5H9rMuuo+NvDdI49bg6sNUVTCYM/Z1BnPPS4HegvnrovyOv2UsO7zZa2R6GNIAAvmLrN3hXZgXyDLWz7i/eehshbYkDwZOvHK1UXoKIU9vvvl0NGt8/Hz5+ggCSfvOvfE/WfEOR4xvvpHKYHUHd2RZKLteNb9VeJ/38ByKX4xU=
+sidebar_class_name: "post api-method"
+info_path: docs/apis/role/role-management-api
+custom_edit_url: null
+---
+
+import MethodEndpoint from "@theme/ApiExplorer/MethodEndpoint";
+import ParamsDetails from "@theme/ParamsDetails";
+import RequestSchema from "@theme/RequestSchema";
+import StatusCodes from "@theme/StatusCodes";
+import OperationTabs from "@theme/OperationTabs";
+import TabItem from "@theme/TabItem";
+import Heading from "@theme/Heading";
+import Translate from "@docusaurus/Translate";
+
+<Heading
+  as={"h1"}
+  className={"openapi__heading"}
+  children={"Remove assignments from a role"}
+>
+</Heading>
+
+<MethodEndpoint
+  method={"post"}
+  path={"/roles/{id}/assignments/remove"}
+  context={"endpoint"}
+>
+  
+</MethodEndpoint>
+
+
+
+Removes one or more user or group assignments from the specified role
+
+<Heading
+  id={"request"}
+  as={"h2"}
+  className={"openapi-tabs__heading"}
+>
+  <Translate id="theme.openapi.request.title">Request</Translate>
+</Heading>
+
+<ParamsDetails
+  parameters={[{"in":"path","name":"id","required":true,"schema":{"type":"string","format":"uuid"}}]}
+>
+  
+</ParamsDetails>
+
+<RequestSchema
+  title={"Body"}
+  body={{"required":true,"content":{"application/json":{"schema":{"type":"object","required":["assignments"],"properties":{"assignments":{"type":"array","items":{"type":"object","required":["id","type"],"properties":{"id":{"type":"string","format":"uuid","description":"ID of the user or group being assigned"},"type":{"type":"string","enum":["user","group"],"description":"Type of entity being assigned (user or group)"}},"title":"AssignmentInput"},"description":"List of user and group assignments"}},"title":"AssignmentsRequest"},"example":{"assignments":[{"type":"user","id":"7a4b1f8e-5c69-4b60-9232-2b0aaf65ef3c"},{"type":"group","id":"6b1e7b8d-7e19-41eb-8fa2-c0ee5bb67a94"}]}}}}}
+>
+  
+</RequestSchema>
+
+<StatusCodes
+  id={undefined}
+  label={undefined}
+  responses={{"204":{"description":"Assignments removed successfully"},"400":{"description":"Bad request","content":{"application/json":{"schema":{"type":"object","required":["code","message"],"properties":{"code":{"type":"string","description":"Error code","example":"ROL-1001"},"message":{"type":"string","description":"Error message","example":"Invalid request format"},"description":{"type":"string","description":"Detailed error description","example":"The request body is malformed or contains invalid data"}},"title":"Error"},"examples":{"invalid-request-format":{"summary":"Invalid request format","value":{"code":"ROL-1001","message":"Invalid request format","description":"The request body is malformed or contains invalid data"}},"empty-assignments":{"summary":"Empty assignments","value":{"code":"ROL-1014","message":"Empty assignments list","description":"At least one assignment must be provided"}}}}}},"404":{"description":"Role not found","content":{"application/json":{"schema":{"type":"object","required":["code","message"],"properties":{"code":{"type":"string","description":"Error code","example":"ROL-1001"},"message":{"type":"string","description":"Error message","example":"Invalid request format"},"description":{"type":"string","description":"Detailed error description","example":"The request body is malformed or contains invalid data"}},"title":"Error"},"example":{"code":"ROL-1003","message":"Role not found","description":"The role with the specified id does not exist"}}}},"500":{"description":"Internal server error","content":{"application/json":{"schema":{"type":"object","required":["code","message"],"properties":{"code":{"type":"string","description":"Error code","example":"ROL-1001"},"message":{"type":"string","description":"Error message","example":"Invalid request format"},"description":{"type":"string","description":"Detailed error description","example":"The request body is malformed or contains invalid data"}},"title":"Error"},"example":{"code":"ROL-5000","message":"Internal server error","description":"An unexpected error occurred while processing the request"}}}}}}
+>
+  
+</StatusCodes>
+
+
+      

@@ -25,6 +25,7 @@ import {dirname, join, parse, resolve} from 'path';
 export interface ParserOptions {
   projectService: {
     allowDefaultProject: string[];
+    defaultProject?: string;
   };
   tsconfigRootDir?: string;
 }
@@ -77,10 +78,26 @@ function resolveTsconfigRootDir(startDir: string = process.cwd()): string | unde
 /**
  * Creates parser options with dynamic tsconfig resolution and appropriate allowDefaultProject patterns.
  *
- * @param additionalPatterns - Additional patterns to include in allowDefaultProject
+ * @param options - Configuration options
+ * @param options.additionalPatterns - Additional patterns to include in allowDefaultProject
+ * @param options.tsconfigRootDir - Manually specify the tsconfig root directory (overrides auto-detection)
+ * @param options.project - Path to tsconfig file to use (e.g., './tsconfig.eslint.json')
  * @returns Parser options object for ESLint TypeScript configuration
  */
-export default function createParserOptions(additionalPatterns: string[] = []): ParserOptions {
+export default function createParserOptions(
+  options:
+    | {
+        additionalPatterns?: string[];
+        tsconfigRootDir?: string;
+        project?: string;
+      }
+    | string[] = [],
+): ParserOptions {
+  // Support both old array syntax and new options object for backward compatibility
+  const normalizedOptions = Array.isArray(options) ? {additionalPatterns: options} : options;
+
+  const {additionalPatterns = [], tsconfigRootDir: manualTsconfigRootDir, project} = normalizedOptions;
+
   const defaultPatterns: string[] = [
     'public/*.js',
     '.*.js',
@@ -96,12 +113,21 @@ export default function createParserOptions(additionalPatterns: string[] = []): 
     'rolldown.config.js',
   ];
 
-  const tsconfigRootDir: string | undefined = resolveTsconfigRootDir();
+  const tsconfigRootDir: string | undefined = manualTsconfigRootDir
+    ? resolve(manualTsconfigRootDir)
+    : resolveTsconfigRootDir();
+
+  const projectService: ParserOptions['projectService'] = {
+    allowDefaultProject: [...defaultPatterns, ...additionalPatterns],
+  };
+
+  // If a specific project is specified, use it as the default project
+  if (project) {
+    projectService.defaultProject = project;
+  }
 
   return {
-    projectService: {
-      allowDefaultProject: [...defaultPatterns, ...additionalPatterns],
-    },
+    projectService,
     ...(tsconfigRootDir && {tsconfigRootDir}),
   };
 }

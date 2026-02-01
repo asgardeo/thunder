@@ -18,7 +18,7 @@
 
 import * as ReactDOM from 'react-dom/client';
 import {StrictMode} from 'react';
-import {ConfigProvider} from '@thunder/commons-contexts';
+import {ConfigProvider} from '@thunder/shared-contexts';
 import {LoggerProvider, LogLevel} from '@thunder/logger/react';
 import i18n from 'i18next';
 import {initReactI18next} from 'react-i18next';

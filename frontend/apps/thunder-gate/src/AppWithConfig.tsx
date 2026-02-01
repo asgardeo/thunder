@@ -18,7 +18,7 @@
 
 import type {JSX} from 'react';
 import {AsgardeoProvider} from '@asgardeo/react';
-import {useConfig} from '@thunder/commons-contexts';
+import {useConfig} from '@thunder/shared-contexts';
 import {BrandingProvider} from '@thunder/shared-branding';
 import AppWithTheme from './AppWithTheme';
 

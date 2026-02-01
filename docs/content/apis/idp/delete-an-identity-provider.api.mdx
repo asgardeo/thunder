@@ -1,0 +1,72 @@
+---
+id: delete-an-identity-provider
+title: "Delete an identity provider"
+description: "Delete an identity provider using its ID."
+sidebar_label: "Delete an identity provider"
+hide_title: true
+hide_table_of_contents: true
+api: eJztVktv3DYQ/ivEnFpAXslGArS8Od49LJAmRpycDB9ocXbFhCJlcmR7K+i/F0NJ3mdct0BvPe1q3t/MNyQ70BjLYBoy3oGEOVokFMoJo9GRoY1ogn80GoNoo3FrYSiK5XwGGZBaR5C3sJwsr0fLCHcZNCqoGom/5G0HTtUIEoyGDAxnahRVkB2kXx4lXc4hg4APrQmoQVJoMYNYVlgrkB3QpuGwkYJxa+j7OzaOjXcRI+svinf8s5/lkxdX3hE6gj6Dd0VxbPJBafEFH1qMJMXXCkUYPsS91xthoqiVXflQoxY+iNI7UsZFYdyjskYLrUhxi8oxjexANY01peL4+ffISbodHMraz6vUqBGRv/+OJUEGTfANBjIDntJrPMZ92MZFCKkqjQywxhjV+s1uk3l/oP477zmSMha1wBRmV9n3GZAhi1OSL+OMoM/eihifVd2kCMv59dl5UZwfYNsxOGKR8yRWvnX6BKqt386cUZ9YgNK3VqdY9ziFS5SbsF1Zg44OEW4zTGgmCBewgwCWI3mOE6cl2O821zrqT3swSSc6+iCwbmjD5fYZvD/F+KUjDE5ZcYPhEYNIKKS4dKJ1+NxgSS+j9WXZhoBaPFXGpjJKjOlwoG0H/6f/f0T/m5vF2fuiKH5O/2mScZhkKuhV4v/rIR/wf6DOAcSBczVS5TVI0OmGYZx8AUjIJ/KeTeSNeWd0DxkM9Q/3RxssSKiImijzvKt8pF52jQ/Elo8qGHVvh5axbuD3SrWWQIL1pbJJ3GfAPvvq34rfixFJxLINhjYp5+fLlqoLvuLiJhLWcLdrcsPsHTJOhtthqiTIYGX9UzJhgQ/mz7QBV+NQ94Tf9hC+lCy5unwImE8O3D/yP/BNTsmQ21n6Zqh3hCPhsuShCvJiEIlaObXGGh2Jy+tlnKZn3MoneOOgj6588cee44njykRW8KnURtSccsh1fHhFPjp48IPr+ayADKwpkekkX54Sl40qKxQXSb2lh8zzp6enmUramQ/rfHSN+cfl1eLTzeLsYlbMKqptWszGR6qV2wn8yhvoEFe3PeL+2dNpoAnhM+WNVcYxMROGbtyLWzjeC8hAGs2Pq4Hit9B19yrit2D7nsUPLQam7t12IxKRtYn8X4NcKRvxFRC/fBmfWr+Kn7zFTpY+CpXbpGW0LX9BBj9wMzz6+rs+gwoV95ArGhRMv4Z2XI5uCV64l6Njvvi4+LqAvv8LfFS7Bg==
+sidebar_class_name: "delete api-method"
+info_path: docs/apis/idp/identity-provider-management-api
+custom_edit_url: null
+---
+
+import MethodEndpoint from "@theme/ApiExplorer/MethodEndpoint";
+import ParamsDetails from "@theme/ParamsDetails";
+import RequestSchema from "@theme/RequestSchema";
+import StatusCodes from "@theme/StatusCodes";
+import OperationTabs from "@theme/OperationTabs";
+import TabItem from "@theme/TabItem";
+import Heading from "@theme/Heading";
+import Translate from "@docusaurus/Translate";
+
+<Heading
+  as={"h1"}
+  className={"openapi__heading"}
+  children={"Delete an identity provider"}
+>
+</Heading>
+
+<MethodEndpoint
+  method={"delete"}
+  path={"/identity-providers/{id}"}
+  context={"endpoint"}
+>
+  
+</MethodEndpoint>
+
+
+
+Delete an identity provider using its ID.
+
+<Heading
+  id={"request"}
+  as={"h2"}
+  className={"openapi-tabs__heading"}
+>
+  <Translate id="theme.openapi.request.title">Request</Translate>
+</Heading>
+
+<ParamsDetails
+  parameters={[{"name":"id","in":"path","description":"Identity provider ID","required":true,"schema":{"type":"string"}}]}
+>
+  
+</ParamsDetails>
+
+<RequestSchema
+  title={"Body"}
+  body={undefined}
+>
+  
+</RequestSchema>
+
+<StatusCodes
+  id={undefined}
+  label={undefined}
+  responses={{"204":{"description":"No Content"},"400":{"description":"Bad Request: The request body is malformed or contains invalid data.","content":{"application/json":{"schema":{"allOf":[{"type":"object","properties":{"code":{"type":"string","description":"Error code"},"message":{"type":"string","description":"Error message"},"description":{"type":"string","description":"Detailed error description"}},"title":"ErrorResponse"},{"type":"object","properties":{"code":{"example":"IDP-1001"},"message":{"example":"Identity provider not found"},"description":{"example":"The requested identity provider could not be found"}}}],"title":"ClientErrorResponse"},"example":{"code":"IDP-1002","message":"Invalid identity provider ID","description":"The provided identity provider ID is invalid or empty"}}}},"500":{"description":"Internal Server Error: An unexpected error occurred while processing the request.","content":{"application/json":{"schema":{"allOf":[{"type":"object","properties":{"code":{"type":"string","description":"Error code"},"message":{"type":"string","description":"Error message"},"description":{"type":"string","description":"Detailed error description"}},"title":"ErrorResponse"},{"type":"object","properties":{"code":{"example":"SSE-5000"},"message":{"example":"Internal server error"},"description":{"example":"An unexpected error occurred while processing the request"}}}],"title":"ServerErrorResponse"}}}}}}
+>
+  
+</StatusCodes>
+
+
+      

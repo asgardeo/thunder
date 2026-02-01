@@ -1,0 +1,72 @@
+---
+id: verify-a-sms-otp
+title: "Verify a SMS OTP"
+description: "Verify a One Time Password (OTP) sent to a user's mobile number via SMS for authentication."
+sidebar_label: "Verify a SMS OTP"
+hide_title: true
+hide_table_of_contents: true
+api: eJztmN1v2zYQwP+Vw71sAxTbyZqi1VuaZpuzNTYSpxsQBAUtnS02EqmSlB3X0P8+HCkniuw2abCPl/pJFnnfPx5JrTElmxhZOqkVxviejJytQMBIEUxkQTAW1i61SeHH0WT8E1hSDpwGAZUl84OFQk9lTqCqYkoGFlLAxbsLmGkDonIZKScTwcp7GKETc4vxFfKM0WSM1xEa+lSRdW90usJ43fFmNBnDInjUzINUOIFBTBpKMXamoggTrRwpxypEWeaNzf5Hy3rWaJOMCsFPblUSxqinHylxGGFpdEnGSbJ+Hlkrtfrg9A2p1nTrjFRzjDr+nf45AT/Vx+sy4qigUYIR0q0oypwV0Oo0m/6ayJE8HV5+Hu6fyaEdqvPD5Hj4cnhT/vX++PR1r9fDOkLtysctTxpbiU4JDCUkF5TCdOWd4Mo8sL5/8POLw5es3N7I8oOwlkPW7QinWuck1JahixtZwpwUGeGkmsOdbBO4VN6kIVtqZcnLz0SVO4xnIrfUcsP/ryPcZf4LYY78g8iBbqX19jnlXR+cBlJGJhkspctA0bLD3vNKUbcxu+qwEep0HaGTzqsNK2fkyqPKZeeBVqzroCUkxyN2MBjsAP13/McYlumuvM60KYTDGKtKpjtxqpT8VBHIlPM2k2RAz3xtW7mkNMBVR42Bp3DKM76uS5u5UPKzj/dDpaR7XgRtNRyOg+Hbrxv+BhR3gbdZ9TuUP5e4DU5HDwA+3yyvANSLXQy9ESk03MUw8WsytMypTlcgLRQi5xxSCtoAwyaksiDVQuQy3TTWJ0Mo8nw0w/jqMRy5Qz2e3RNjvFMpcVkKslbMnyy2mV53hh+TfktOyJxSIK+mPdguhTdyX4GoG3Hd6gLHuSTluhL3LGzygUeXk9/O9kaT8d7+YHCIrZhx2FSEd8hdmJdGL2RKfgLXdVNBbYCK0q3uINnfhuRSMavayM+UxnC3vzZlhpnPx3cM/h8MXnYwSLQxlLhvAGEjoQ1kwgLdln732gDxYhuIM+3gF12pNPQM7l2Q6CpPQWkHU4IZD34n4j8mYn8wePWAhksuDJdkU49uGUPp/Gg4Brk2IcI5I6eVI9vAcLhrCxkqR4aPWxdkFmTAuxvDEe+mdFtS4u5yopOkMoZSWGZ8/C+NTvh8pObNcTCcf75j80xsvsTF4WAw6HSJpmQ2lMyb3vLs+RVs+R2g6HgfaCrIZTrFGEvtq14Kl2GMfd5s+tqVfVvYfrjJYYTBVeuLXZkcY8ycK23c768zbV0dr0ttXI0RLoSRYpqHyvNYYLa5YGCuE5H713WELPNw+NXg9YA9vI6QeTu/v2qe3Ke3c+V78mGtuaht7lbbV6vm+tN68y23QKlm2hO38zwIR+Phji1BWh7graCylPpreutk6juEZc85+0Fmv8c45TIhrma8RiUKb64USUZw4IfvaxT3+8vlsif8aE+beb8Rtf0/hscnZxcnewe9QS9zRe6RZxwKoVqK7z4wbL4BbK2xu47xb3+MCIvO0a3rl7mQitPuQ103/F4hSzWVjtAWNuSOKb6OGh6vcL2eCkuXJq9rfv2pIrPC+Or6Hl/+V0eYkUjJeOxvaMWbQgh1b8Ku8PS8Ype2GiX3iCBxlCRUuq/OvW4tx/HoYoIRTpuvK0VoJUYs+ROKWGKMHJ1PvV9i/t0ac6HmVegvQSf//ga/HUt+
+sidebar_class_name: "post api-method"
+info_path: docs/apis/authentication/authentication-api
+custom_edit_url: null
+---
+
+import MethodEndpoint from "@theme/ApiExplorer/MethodEndpoint";
+import ParamsDetails from "@theme/ParamsDetails";
+import RequestSchema from "@theme/RequestSchema";
+import StatusCodes from "@theme/StatusCodes";
+import OperationTabs from "@theme/OperationTabs";
+import TabItem from "@theme/TabItem";
+import Heading from "@theme/Heading";
+import Translate from "@docusaurus/Translate";
+
+<Heading
+  as={"h1"}
+  className={"openapi__heading"}
+  children={"Verify a SMS OTP"}
+>
+</Heading>
+
+<MethodEndpoint
+  method={"post"}
+  path={"/auth/otp/sms/verify"}
+  context={"endpoint"}
+>
+  
+</MethodEndpoint>
+
+
+
+Verify a One Time Password (OTP) sent to a user's mobile number via SMS for authentication.
+
+<Heading
+  id={"request"}
+  as={"h2"}
+  className={"openapi-tabs__heading"}
+>
+  <Translate id="theme.openapi.request.title">Request</Translate>
+</Heading>
+
+<ParamsDetails
+  parameters={undefined}
+>
+  
+</ParamsDetails>
+
+<RequestSchema
+  title={"Body"}
+  body={{"description":"OTP verify request data","required":true,"content":{"application/json":{"schema":{"type":"object","properties":{"session_token":{"type":"string","description":"JWT token for the OTP session","example":"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."},"otp":{"type":"string","description":"The OTP code received by the user","example":"123456"},"skip_assertion":{"type":"boolean","description":"Skip generating assertion token in the response","default":false,"example":false},"assertion":{"type":"string","description":"Optional existing JWT assertion token to enrich with new authentication","example":"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."}},"required":["session_token","otp"],"title":"VerifyOtpAuthRequest"}}}}}
+>
+  
+</RequestSchema>
+
+<StatusCodes
+  id={undefined}
+  label={undefined}
+  responses={{"200":{"description":"OK","content":{"application/json":{"schema":{"type":"object","properties":{"id":{"type":"string","format":"uuid","description":"The unique identifier of the authenticated user"},"type":{"type":"string","description":"The type of the authenticated user"},"organization_unit":{"type":"string","format":"uuid","description":"The organization unit ID of the authenticated user"},"assertion":{"type":"string","description":"JWT assertion token for the authenticated user","example":"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."}},"title":"AuthenticationResponse"}}}},"400":{"description":"Bad Request: The request body is malformed or contains invalid data","content":{"application/json":{"schema":{"allOf":[{"type":"object","properties":{"code":{"type":"string","description":"Error code"},"message":{"type":"string","description":"Error message"},"description":{"type":"string","description":"Detailed error description"}},"title":"ErrorResponse"},{"type":"object"}],"title":"ClientErrorResponse"},"example":{"code":"AUTHN-OTP-1005","message":"Invalid OTP","description":"The provided OTP is invalid or empty"}}}},"401":{"description":"Unauthorized: OTP verification failed","content":{"application/json":{"schema":{"allOf":[{"type":"object","properties":{"code":{"type":"string","description":"Error code"},"message":{"type":"string","description":"Error message"},"description":{"type":"string","description":"Detailed error description"}},"title":"ErrorResponse"},{"type":"object"}],"title":"ClientErrorResponse"},"example":{"code":"AUTHN-OTP-1006","message":"Incorrect OTP","description":"The provided OTP is incorrect or has expired"}}}},"404":{"description":"Not Found: The user could not be found","content":{"application/json":{"schema":{"allOf":[{"type":"object","properties":{"code":{"type":"string","description":"Error code"},"message":{"type":"string","description":"Error message"},"description":{"type":"string","description":"Detailed error description"}},"title":"ErrorResponse"},{"type":"object"}],"title":"ClientErrorResponse"},"example":{"code":"AUTHN-1008","message":"User not found","description":"No user found with the provided attributes"}}}},"500":{"description":"Internal Server Error: An unexpected error occurred while processing the request","content":{"application/json":{"schema":{"allOf":[{"type":"object","properties":{"code":{"type":"string","description":"Error code"},"message":{"type":"string","description":"Error message"},"description":{"type":"string","description":"Detailed error description"}},"title":"ErrorResponse"},{"type":"object"}],"example":{"code":"AUTHN-5000","message":"Internal server error","description":"An unexpected error occurred while processing the request"},"title":"ServerErrorResponse"}}}}}}
+>
+  
+</StatusCodes>
+
+
+      

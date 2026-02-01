@@ -443,11 +443,14 @@ func (js *jwtService) verifyJWTClaims(jwtToken string, expectedAud, expectedIss 
 		return &ErrorDecodingJWTPayload
 	}
 
+	// Get leeway from config to account for clock skew
+	leeway := config.GetThunderRuntime().Config.JWT.Leeway
+
 	// Validate standard claims (exp, nbf, aud, iss)
 	now := time.Now().Unix()
 
 	if exp, ok := payload["exp"].(float64); ok {
-		if now > int64(exp) {
+		if now >= int64(exp)+leeway {
 			js.logger.Debug("JWT token has expired")
 			return &ErrorTokenExpired
 		}
@@ -457,7 +460,7 @@ func (js *jwtService) verifyJWTClaims(jwtToken string, expectedAud, expectedIss 
 	}
 
 	if nbf, ok := payload["nbf"].(float64); ok {
-		if now < int64(nbf) {
+		if now < int64(nbf)-leeway {
 			js.logger.Debug("JWT token is not valid yet (nbf claim)")
 			return &ErrorInvalidJWTFormat
 		}

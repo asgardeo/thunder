@@ -1,0 +1,72 @@
+---
+id: delete-an-organization-unit-by-id
+title: "Delete an organization unit by id"
+description: "Delete an organization unit by id"
+sidebar_label: "Delete an organization unit by id"
+hide_title: true
+hide_table_of_contents: true
+api: eJyNlU2P0zwQx7+KNSeQvE1YAYLclqWHlYBFwJ5WPbjJtDEkdvBMKH2ifPdHY2f7QopEL63G8/Kf8c/TAdhsCYpH8GFrnP3PsPXuqneWCVYaOhNMi4xBfAawDgroDNegwZkWoQBbgYaAP3sbsIKCQ48aqKyxNVAMwPtOvIiDdVvQsPGhNQwF9L2tYBxXEkydd4Qk/tf5S/mqkMpgOxEDBdyfaFOiTVXYIGMFo4aXeT6PeGcqJaKQGDSU3jE6FjfTdY0tY6bsO4nvMFfr19+x5LO+HqH0FYKGFonMFuNwgu8wsE3K4/ms4/EYcensTPXsfNTAlhsxLUPwQSLwt2m7JpWsDV2VtW2qgKmRvm1N2F+cWG1IHXw1/DJNj0fZcP9w9SLPX580+Lck1K9VQPJ9KJHgjxbg1jjnn+5H+VmGneX6oEP5oHrCQPJjG3zfEYzxo+HVpWu9c4zBmUYRhl8YFKap/DlIeJ/KG3dBwXqvIrMtcu0rKCBpBZ3ALiCbP4VssNUIGlLZ9Bb60EABNXNHRZYNtScei6Hzgcc432DN+umePHFqZmP6RuhvfGmaaB41SMz58Zv8bS6TWEnJsg+W97Hm/U3P9bXQSHtibGF16vJVOE4VnxyPSJto0LBp/C66iMGHqc3bCd4z48NZhwfJhajLUsLsKUDmx/4H/lNQdJRxlr5Leqd2CrgpSyRS7FUyqdY4s8UWHaubz3cTHxqs2/jY3vQ+Tll9kGv+eBYnN4KBEh0vFvmM22+1JXFUlgTJShSk0nOEaAEaGluiozi0aRPedKasUV3H7Od07Ha7hYnHCx+22RRL2Ye72+Wnr8ur60W+qLltIsqdJ26NO8n8Lzhf3iSMvznrGmOdgBZFDRPnF1e+hsJWstsSso8wDGtD+BCacRTzzx5lvzyujoRHMCtL8ruCYmMawpmcwwaGZ1+mnfpcCTKXZE5G4/bHRQWg4Qfu0x/OuBo11GgqDLF6OhB0Oj4Jme16eSyHZ/9++WH5bQnj+D9bpmx3
+sidebar_class_name: "delete api-method"
+info_path: docs/apis/ou/organizationunit-management-api
+custom_edit_url: null
+---
+
+import MethodEndpoint from "@theme/ApiExplorer/MethodEndpoint";
+import ParamsDetails from "@theme/ParamsDetails";
+import RequestSchema from "@theme/RequestSchema";
+import StatusCodes from "@theme/StatusCodes";
+import OperationTabs from "@theme/OperationTabs";
+import TabItem from "@theme/TabItem";
+import Heading from "@theme/Heading";
+import Translate from "@docusaurus/Translate";
+
+<Heading
+  as={"h1"}
+  className={"openapi__heading"}
+  children={"Delete an organization unit by id"}
+>
+</Heading>
+
+<MethodEndpoint
+  method={"delete"}
+  path={"/organization-units/{id}"}
+  context={"endpoint"}
+>
+  
+</MethodEndpoint>
+
+
+
+Delete an organization unit by id
+
+<Heading
+  id={"request"}
+  as={"h2"}
+  className={"openapi-tabs__heading"}
+>
+  <Translate id="theme.openapi.request.title">Request</Translate>
+</Heading>
+
+<ParamsDetails
+  parameters={[{"in":"path","name":"id","required":true,"schema":{"type":"string","format":"uuid"}}]}
+>
+  
+</ParamsDetails>
+
+<RequestSchema
+  title={"Body"}
+  body={undefined}
+>
+  
+</RequestSchema>
+
+<StatusCodes
+  id={undefined}
+  label={undefined}
+  responses={{"204":{"description":"Organization unit deleted"},"400":{"description":"Bad request","content":{"application/json":{"schema":{"type":"object","required":["code","message"],"properties":{"code":{"type":"string"},"message":{"type":"string"},"description":{"type":"string"}},"title":"Error"},"examples":{"has-children":{"summary":"Organization unit has children","value":{"code":"OU-1006","message":"Organization unit has sub resources","description":"Cannot delete organization unit with children or users or groups"}}}}}},"500":{"description":"Internal server error"}}}
+>
+  
+</StatusCodes>
+
+
+      

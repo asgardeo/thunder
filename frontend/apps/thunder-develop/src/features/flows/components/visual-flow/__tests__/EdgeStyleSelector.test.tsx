@@ -304,4 +304,83 @@ describe('EdgeStyleMenu', () => {
       document.body.removeChild(anchorEl);
     });
   });
+
+  describe('Selected State', () => {
+    let anchorEl: HTMLButtonElement;
+
+    beforeEach(() => {
+      anchorEl = document.createElement('button');
+      document.body.appendChild(anchorEl);
+    });
+
+    afterEach(() => {
+      if (document.body.contains(anchorEl)) {
+        document.body.removeChild(anchorEl);
+      }
+    });
+
+    it('should mark Bezier as selected when edgeStyle is Bezier', () => {
+      render(<EdgeStyleMenu anchorEl={anchorEl} onClose={mockOnClose} />, {
+        wrapper: createWrapper({
+          ...defaultContextValue,
+          edgeStyle: EdgeStyleTypes.Bezier,
+        }),
+      });
+
+      const menuItems = screen.getAllByRole('menuitem');
+      // First item (Bezier) should be selected
+      expect(menuItems[0]).toHaveClass('Mui-selected');
+    });
+
+    it('should mark SmoothStep as selected when edgeStyle is SmoothStep', () => {
+      render(<EdgeStyleMenu anchorEl={anchorEl} onClose={mockOnClose} />, {
+        wrapper: createWrapper({
+          ...defaultContextValue,
+          edgeStyle: EdgeStyleTypes.SmoothStep,
+        }),
+      });
+
+      const menuItems = screen.getAllByRole('menuitem');
+      // Second item (SmoothStep) should be selected
+      expect(menuItems[1]).toHaveClass('Mui-selected');
+    });
+
+    it('should mark Step as selected when edgeStyle is Step', () => {
+      render(<EdgeStyleMenu anchorEl={anchorEl} onClose={mockOnClose} />, {
+        wrapper: createWrapper({
+          ...defaultContextValue,
+          edgeStyle: EdgeStyleTypes.Step,
+        }),
+      });
+
+      const menuItems = screen.getAllByRole('menuitem');
+      // Third item (Step) should be selected
+      expect(menuItems[2]).toHaveClass('Mui-selected');
+    });
+  });
+
+  describe('Boolean Conversion', () => {
+    it('should convert null anchorEl to false for open state', () => {
+      render(<EdgeStyleMenu anchorEl={null} onClose={mockOnClose} />, {
+        wrapper: createWrapper(),
+      });
+
+      // Menu should not be visible when anchorEl is null
+      expect(screen.queryByRole('menu')).not.toBeInTheDocument();
+    });
+
+    it('should convert valid anchorEl to true for open state', () => {
+      const anchorEl = document.createElement('button');
+      document.body.appendChild(anchorEl);
+
+      render(<EdgeStyleMenu anchorEl={anchorEl} onClose={mockOnClose} />, {
+        wrapper: createWrapper(),
+      });
+
+      // Menu should be visible when anchorEl is provided
+      expect(screen.getByRole('menu')).toBeInTheDocument();
+
+      document.body.removeChild(anchorEl);
+    });
+  });
 });

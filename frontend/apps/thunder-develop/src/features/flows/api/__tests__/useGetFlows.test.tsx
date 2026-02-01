@@ -17,11 +17,9 @@
  */
 
 import {describe, it, expect, beforeEach, afterEach, vi} from 'vitest';
-import {renderHook, waitFor} from '@testing-library/react';
-import {QueryClient, QueryClientProvider} from '@tanstack/react-query';
-import type {ReactNode} from 'react';
+import {renderHook, waitFor} from '@thunder/test-utils';
 import {useAsgardeo} from '@asgardeo/react';
-import {useConfig} from '@thunder/commons-contexts';
+import {useConfig} from '@thunder/shared-contexts';
 import useGetFlows from '../useGetFlows';
 import type {FlowListResponse} from '../../models/responses';
 import {FlowType} from '../../models/flows';
@@ -31,9 +29,13 @@ vi.mock('@asgardeo/react', () => ({
   useAsgardeo: vi.fn(),
 }));
 
-vi.mock('@thunder/commons-contexts', () => ({
-  useConfig: vi.fn(),
-}));
+vi.mock('@thunder/shared-contexts', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@thunder/shared-contexts')>();
+  return {
+    ...actual,
+    useConfig: vi.fn(),
+  };
+});
 
 describe('useGetFlows', () => {
   const mockFlowListResponse: FlowListResponse = {
@@ -66,18 +68,9 @@ describe('useGetFlows', () => {
     ],
   };
 
-  let queryClient: QueryClient;
   let mockHttpRequest: ReturnType<typeof vi.fn>;
 
   beforeEach(() => {
-    queryClient = new QueryClient({
-      defaultOptions: {
-        queries: {
-          retry: false,
-        },
-      },
-    });
-
     mockHttpRequest = vi.fn();
 
     vi.mocked(useAsgardeo).mockReturnValue({
@@ -93,24 +86,14 @@ describe('useGetFlows', () => {
 
   afterEach(() => {
     vi.clearAllMocks();
-    queryClient.clear();
   });
-
-  const createWrapper = () => {
-    function Wrapper({children}: {children: ReactNode}) {
-      return <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>;
-    }
-    return Wrapper;
-  };
 
   it('should fetch flows with default parameters', async () => {
     mockHttpRequest.mockResolvedValueOnce({
       data: mockFlowListResponse,
     });
 
-    const {result} = renderHook(() => useGetFlows(), {
-      wrapper: createWrapper(),
-    });
+    const {result} = renderHook(() => useGetFlows());
 
     await waitFor(() => {
       expect(result.current.isSuccess).toBe(true);
@@ -131,9 +114,7 @@ describe('useGetFlows', () => {
       data: mockFlowListResponse,
     });
 
-    const {result} = renderHook(() => useGetFlows({limit: 10, offset: 20}), {
-      wrapper: createWrapper(),
-    });
+    const {result} = renderHook(() => useGetFlows({limit: 10, offset: 20}));
 
     await waitFor(() => {
       expect(result.current.isSuccess).toBe(true);
@@ -153,9 +134,7 @@ describe('useGetFlows', () => {
       data: mockFlowListResponse,
     });
 
-    const {result} = renderHook(() => useGetFlows({flowType: FlowType.AUTHENTICATION}), {
-      wrapper: createWrapper(),
-    });
+    const {result} = renderHook(() => useGetFlows({flowType: FlowType.AUTHENTICATION}));
 
     await waitFor(() => {
       expect(result.current.isSuccess).toBe(true);
@@ -178,9 +157,7 @@ describe('useGetFlows', () => {
         }),
     );
 
-    const {result} = renderHook(() => useGetFlows(), {
-      wrapper: createWrapper(),
-    });
+    const {result} = renderHook(() => useGetFlows());
 
     expect(result.current.isLoading).toBe(true);
     expect(result.current.data).toBeUndefined();
@@ -194,9 +171,7 @@ describe('useGetFlows', () => {
     const apiError = new Error('Failed to fetch flows');
     mockHttpRequest.mockRejectedValueOnce(apiError);
 
-    const {result} = renderHook(() => useGetFlows(), {
-      wrapper: createWrapper(),
-    });
+    const {result} = renderHook(() => useGetFlows());
 
     await waitFor(() => {
       expect(result.current.isError).toBe(true);
@@ -213,9 +188,7 @@ describe('useGetFlows', () => {
 
     const params = {flowType: FlowType.REGISTRATION, limit: 15, offset: 5};
 
-    renderHook(() => useGetFlows(params), {
-      wrapper: createWrapper(),
-    });
+    const {queryClient} = renderHook(() => useGetFlows(params));
 
     await waitFor(() => {
       expect(mockHttpRequest).toHaveBeenCalled();
@@ -231,18 +204,14 @@ describe('useGetFlows', () => {
     });
 
     // First render with no params
-    const {result: result1} = renderHook(() => useGetFlows(), {
-      wrapper: createWrapper(),
-    });
+    const {result: result1} = renderHook(() => useGetFlows());
 
     await waitFor(() => {
       expect(result1.current.isSuccess).toBe(true);
     });
 
     // Second render with params
-    const {result: result2} = renderHook(() => useGetFlows({flowType: FlowType.AUTHENTICATION}), {
-      wrapper: createWrapper(),
-    });
+    const {result: result2} = renderHook(() => useGetFlows({flowType: FlowType.AUTHENTICATION}));
 
     await waitFor(() => {
       expect(result2.current.isSuccess).toBe(true);
@@ -263,9 +232,7 @@ describe('useGetFlows', () => {
       data: mockFlowListResponse,
     });
 
-    const {result} = renderHook(() => useGetFlows(), {
-      wrapper: createWrapper(),
-    });
+    const {result} = renderHook(() => useGetFlows());
 
     await waitFor(() => {
       expect(result.current.isSuccess).toBe(true);
@@ -290,9 +257,7 @@ describe('useGetFlows', () => {
       data: emptyResponse,
     });
 
-    const {result} = renderHook(() => useGetFlows(), {
-      wrapper: createWrapper(),
-    });
+    const {result} = renderHook(() => useGetFlows());
 
     await waitFor(() => {
       expect(result.current.isSuccess).toBe(true);

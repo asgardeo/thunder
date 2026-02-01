@@ -17,11 +17,9 @@
  */
 
 import {describe, it, expect, beforeEach, afterEach, vi} from 'vitest';
-import {renderHook, waitFor, act} from '@testing-library/react';
-import {QueryClient, QueryClientProvider} from '@tanstack/react-query';
-import type {ReactNode} from 'react';
+import {renderHook, waitFor, act} from '@thunder/test-utils';
 import {useAsgardeo} from '@asgardeo/react';
-import {useConfig} from '@thunder/commons-contexts';
+import {useConfig} from '@thunder/shared-contexts';
 import useUpdateFlow from '../useUpdateFlow';
 import type {UpdateFlowRequest, FlowDefinitionResponse} from '../../models/responses';
 import {FlowType, FlowNodeType} from '../../models/flows';
@@ -31,9 +29,13 @@ vi.mock('@asgardeo/react', () => ({
   useAsgardeo: vi.fn(),
 }));
 
-vi.mock('@thunder/commons-contexts', () => ({
-  useConfig: vi.fn(),
-}));
+vi.mock('@thunder/shared-contexts', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@thunder/shared-contexts')>();
+  return {
+    ...actual,
+    useConfig: vi.fn(),
+  };
+});
 
 describe('useUpdateFlow', () => {
   const mockFlowResponse: FlowDefinitionResponse = {
@@ -62,17 +64,9 @@ describe('useUpdateFlow', () => {
     ],
   };
 
-  let queryClient: QueryClient;
   let mockHttpRequest: ReturnType<typeof vi.fn>;
 
   beforeEach(() => {
-    queryClient = new QueryClient({
-      defaultOptions: {
-        queries: {retry: false},
-        mutations: {retry: false},
-      },
-    });
-
     mockHttpRequest = vi.fn();
 
     vi.mocked(useAsgardeo).mockReturnValue({
@@ -86,20 +80,10 @@ describe('useUpdateFlow', () => {
 
   afterEach(() => {
     vi.clearAllMocks();
-    queryClient.clear();
   });
 
-  const createWrapper = () => {
-    function Wrapper({children}: {children: ReactNode}) {
-      return <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>;
-    }
-    return Wrapper;
-  };
-
   it('should initialize with idle state', () => {
-    const {result} = renderHook(() => useUpdateFlow(), {
-      wrapper: createWrapper(),
-    });
+    const {result} = renderHook(() => useUpdateFlow());
 
     expect(result.current.data).toBeUndefined();
     expect(result.current.error).toBeNull();
@@ -110,9 +94,7 @@ describe('useUpdateFlow', () => {
   it('should successfully update a flow', async () => {
     mockHttpRequest.mockResolvedValueOnce({data: mockFlowResponse});
 
-    const {result} = renderHook(() => useUpdateFlow(), {
-      wrapper: createWrapper(),
-    });
+    const {result} = renderHook(() => useUpdateFlow());
 
     result.current.mutate({flowId: 'flow-123', flowData: mockUpdateRequest});
 
@@ -137,9 +119,7 @@ describe('useUpdateFlow', () => {
         }),
     );
 
-    const {result} = renderHook(() => useUpdateFlow(), {
-      wrapper: createWrapper(),
-    });
+    const {result} = renderHook(() => useUpdateFlow());
 
     result.current.mutate({flowId: 'flow-123', flowData: mockUpdateRequest});
 
@@ -158,9 +138,7 @@ describe('useUpdateFlow', () => {
     const apiError = new Error('Failed to update flow');
     mockHttpRequest.mockRejectedValueOnce(apiError);
 
-    const {result} = renderHook(() => useUpdateFlow(), {
-      wrapper: createWrapper(),
-    });
+    const {result} = renderHook(() => useUpdateFlow());
 
     result.current.mutate({flowId: 'flow-123', flowData: mockUpdateRequest});
 
@@ -174,11 +152,8 @@ describe('useUpdateFlow', () => {
   it('should invalidate flows list query on success', async () => {
     mockHttpRequest.mockResolvedValueOnce({data: mockFlowResponse});
 
+    const {result, queryClient} = renderHook(() => useUpdateFlow());
     const invalidateQueriesSpy = vi.spyOn(queryClient, 'invalidateQueries');
-
-    const {result} = renderHook(() => useUpdateFlow(), {
-      wrapper: createWrapper(),
-    });
 
     result.current.mutate({flowId: 'flow-123', flowData: mockUpdateRequest});
 
@@ -194,11 +169,8 @@ describe('useUpdateFlow', () => {
   it('should invalidate specific flow query on success', async () => {
     mockHttpRequest.mockResolvedValueOnce({data: mockFlowResponse});
 
+    const {result, queryClient} = renderHook(() => useUpdateFlow());
     const invalidateQueriesSpy = vi.spyOn(queryClient, 'invalidateQueries');
-
-    const {result} = renderHook(() => useUpdateFlow(), {
-      wrapper: createWrapper(),
-    });
 
     result.current.mutate({flowId: 'flow-123', flowData: mockUpdateRequest});
 
@@ -214,9 +186,7 @@ describe('useUpdateFlow', () => {
   it('should support mutateAsync for promise-based workflows', async () => {
     mockHttpRequest.mockResolvedValueOnce({data: mockFlowResponse});
 
-    const {result} = renderHook(() => useUpdateFlow(), {
-      wrapper: createWrapper(),
-    });
+    const {result} = renderHook(() => useUpdateFlow());
 
     const promise = result.current.mutateAsync({flowId: 'flow-123', flowData: mockUpdateRequest});
 
@@ -228,9 +198,7 @@ describe('useUpdateFlow', () => {
 
     const onSuccess = vi.fn();
 
-    const {result} = renderHook(() => useUpdateFlow(), {
-      wrapper: createWrapper(),
-    });
+    const {result} = renderHook(() => useUpdateFlow());
 
     result.current.mutate({flowId: 'flow-123', flowData: mockUpdateRequest}, {onSuccess});
 
@@ -245,9 +213,7 @@ describe('useUpdateFlow', () => {
 
     const onError = vi.fn();
 
-    const {result} = renderHook(() => useUpdateFlow(), {
-      wrapper: createWrapper(),
-    });
+    const {result} = renderHook(() => useUpdateFlow());
 
     result.current.mutate({flowId: 'flow-123', flowData: mockUpdateRequest}, {onError});
 
@@ -259,9 +225,7 @@ describe('useUpdateFlow', () => {
   it('should reset mutation state', async () => {
     mockHttpRequest.mockResolvedValueOnce({data: mockFlowResponse});
 
-    const {result} = renderHook(() => useUpdateFlow(), {
-      wrapper: createWrapper(),
-    });
+    const {result} = renderHook(() => useUpdateFlow());
 
     result.current.mutate({flowId: 'flow-123', flowData: mockUpdateRequest});
 
@@ -288,9 +252,7 @@ describe('useUpdateFlow', () => {
 
     mockHttpRequest.mockResolvedValueOnce({data: mockFlowResponse});
 
-    const {result} = renderHook(() => useUpdateFlow(), {
-      wrapper: createWrapper(),
-    });
+    const {result} = renderHook(() => useUpdateFlow());
 
     result.current.mutate({flowId: 'flow-123', flowData: mockUpdateRequest});
 

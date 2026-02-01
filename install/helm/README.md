@@ -202,6 +202,101 @@ The following table lists the configurable parameters of the Thunder chart and t
 | `ingress.commonAnnotations`           | Common annotations for ingress                                  | See values.yaml              |
 | `ingress.customAnnotations`           | Custom annotations for ingress                                  | `{}`                         |
 
+### Database Password Management
+
+Thunder provides flexible password management for database connections with automatic Kubernetes Secret integration.
+
+#### Security Warning
+
+⚠️ **Storing passwords as plaintext in values.yaml is NOT recommended for production.** Use Kubernetes Secrets or `--set` flags to store sensitive credentials securely.
+
+#### How Password Management Works
+
+Thunder uses intelligent password detection based on the `password` and `passwordRef` fields:
+
+1. **If `passwordRef.key` is set** → Uses external Secret (production pattern)
+2. **If `password` has a value but `passwordRef.key` is empty** → Auto-converts to Helm-managed Secret (dev/test pattern)
+3. **If both are empty** → No password (SQLite-only deployments)
+
+The auto-created Secret is created as a Helm pre-install/pre-upgrade hook to ensure it exists before the main deployment and setup job run.
+
+#### Pattern 1: Auto-Convert to Helm-Managed Secret (For Development/Testing)
+
+Provide passwords directly in the `password` field. Helm automatically creates a Secret named `<release-name>-db-credentials`:
+
+```yaml
+configuration:
+  database:
+    identity:
+      password: "my-secret-password-1"  # Auto-converted to Secret!
+    runtime:
+      password: "my-secret-password-2"
+    user:
+      password: "my-secret-password-3"
+```
+
+**Best Practice:** Use `--set` flags to avoid committing passwords:
+```bash
+helm install my-thunder oci://ghcr.io/asgardeo/helm-charts/thunder \
+  --set configuration.database.identity.password=mypass1 \
+  --set configuration.database.runtime.password=mypass2 \
+  --set configuration.database.user.password=mypass3
+```
+
+Helm automatically:
+- Creates `<release-name>-db-credentials` Secret as a pre-install/pre-upgrade hook
+- Injects environment variables (`DB_IDENTITY_PASSWORD`, `DB_RUNTIME_PASSWORD`, `DB_USER_PASSWORD`) into pods
+- Updates pods when passwords change (via checksum annotations)
+
+#### Pattern 2: External Secret (For Production - Recommended)
+
+Reference a pre-existing Kubernetes Secret (created manually or by external-secrets-operator):
+
+**Step 1:** Create your Secret:
+```bash
+kubectl create secret generic my-db-secrets \
+  --from-literal=identity-password=secret1 \
+  --from-literal=runtime-password=secret2 \
+  --from-literal=user-password=secret3
+```
+
+**Step 2:** Configure Helm to reference the external Secret:
+```yaml
+configuration:
+  database:
+    identity:
+      passwordRef:
+        name: "my-db-secrets"      # Your Secret name
+        key: "identity-password"    # Key within Secret
+    runtime:
+      passwordRef:
+        name: "my-db-secrets"
+        key: "runtime-password"
+    user:
+      passwordRef:
+        name: "my-db-secrets"
+        key: "user-password"
+```
+
+When `passwordRef.key` is set, the `password` field is ignored and Helm uses your external Secret.
+
+**Important:** The checksum annotation used to trigger pod rollouts is only computed for auto-generated Secrets. When you use an external Secret via `passwordRef` (Pattern 2), changes to that Secret will **not** automatically restart pods. You must either manually restart the pods or use a tool to watch for Secret changes and trigger rollouts.
+
+**Important:** When you *do not* use `passwordRef.key` (i.e., you rely on the auto-generated Secret), the Helm chart will
+base64-encode the `password` value directly into a Kubernetes Secret. In this mode, values like `"{{.DB_PASSWORD}}"` or
+`"file:///secrets/pass"` are stored as literal strings in the Secret and **are not** resolved as environment variables or
+file references by Helm. Environment variable placeholders (`{{.VAR}}`) and `file://` references are only resolved when
+Thunder reads configuration directly via its application config loader (e.g., from a ConfigMap or file), not when the
+value is first converted into a Kubernetes Secret by this chart.
+
+#### Password Field Options
+Each database section (`identity`, `runtime`, `user`) supports these fields:
+| Field                  | Description                                                                                                                                    | Example                      |
+| ---------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------- |
+| `password`             | Direct password value. When Thunder reads config directly, this may also be an env var placeholder (`{{.VAR}}`) or file reference (`file://path`). When using the auto-generated Secret, the value is stored **as-is** in the Secret and such placeholders are **not** resolved. | `"mypassword"` or `"{{.DB_PASSWORD}}"` or `"file:///secrets/pass"` |
+| `passwordRef.name`     | Kubernetes Secret name (optional, defaults to `<release-name>-db-credentials` for auto-convert)                                               | `"my-db-secrets"`            |
+| `passwordRef.key`      | Secret key name. When set, `password` field is ignored and external Secret is used                                                            | `"identity-password"`        |
+
 ### Thunder Configuration Parameters
 
 | Name                                              | Description                                                                                           | Default                      |
@@ -226,26 +321,41 @@ The following table lists the configurable parameters of the Thunder chart and t
 | `configuration.database.identity.host`            | Postgres host (for postgres only)                                                                     | `localhost` |
 | `configuration.database.identity.port`            | Postgres port (for postgres only)                                                                     | `5432`                       |
 | `configuration.database.identity.username`        | Postgres username (for postgres only)                                                                 | `asgthunder`                   |
-| `configuration.database.identity.password`        | Postgres password (for postgres only)                                                                 | `asgthunder`              |
+| `configuration.database.identity.password`        | Database password - supports plaintext. When `passwordRef.key` is set, this field is ignored and the external Secret is used instead. | `asgthunder`    |
+| `configuration.database.identity.passwordRef.name` | Kubernetes Secret name for identity database password. Leave empty to use auto-created `<release-name>-db-credentials` Secret when password field is set | `""`    |
+| `configuration.database.identity.passwordRef.key`  | Kubernetes Secret key for identity database password. When set, overrides `password` field and uses external Secret | `""`    |
 | `configuration.database.identity.sslmode`         | Postgres SSL mode (for postgres only)                                                                 | `require`                    |
+| `configuration.database.identity.max_open_conns`  | Maximum number of open connections to the database                                                    | `500`                        |
+| `configuration.database.identity.max_idle_conns`  | Maximum number of idle connections in the pool                                                        | `100`                        |
+| `configuration.database.identity.conn_max_lifetime` | Maximum lifetime of a connection in seconds                                                         | `3600`                       |
 | `configuration.database.runtime.type`             | Runtime database type (postgres or sqlite)                                                            | `postgres`                   |
 | `configuration.database.runtime.sqlitePath`       | SQLite database path (for sqlite only)                                                                | `repository/database/runtimedb.db` |
 | `configuration.database.runtime.sqliteOptions`    | SQLite options (for sqlite only)                                                                      | `_journal_mode=WAL&_busy_timeout=5000` |
 | `configuration.database.runtime.name`             | Postgres database name (for postgres only)                                                            | `runtimedb`                  |
 | `configuration.database.runtime.host`             | Postgres host (for postgres only)                                                                     | `localhost` |
-| `configuration.database.runtime.port`             | Postgres port (for postgres only)                                                                     | `5432`                       |
+| `configuration.database.runtime.port`             | Postgres port (for postgres only)                                                                     | `5432`                      |
 | `configuration.database.runtime.username`         | Postgres username (for postgres only)                                                                 | `asgthunder`                   |
-| `configuration.database.runtime.password`         | Postgres password (for postgres only)                                                                 | `asgthunder`              |
+| `configuration.database.runtime.password`         | Database password - supports plaintext. When `passwordRef.key` is set, this field is ignored and the external Secret is used instead. | `asgthunder`     |
+| `configuration.database.runtime.passwordRef.name`  | Kubernetes Secret name for runtime database password. Leave empty to use auto-created `<release-name>-db-credentials` Secret when password field is set | `""`    |
+| `configuration.database.runtime.passwordRef.key`   | Kubernetes Secret key for runtime database password. When set, overrides `password` field and uses external Secret | `""`    |
 | `configuration.database.runtime.sslmode`          | Postgres SSL mode (for postgres only)                                                                 | `require`                    |
+| `configuration.database.runtime.max_open_conns`   | Maximum number of open connections to the database                                                    | `500`                        |
+| `configuration.database.runtime.max_idle_conns`   | Maximum number of idle connections in the pool                                                        | `100`                        |
+| `configuration.database.runtime.conn_max_lifetime` | Maximum lifetime of a connection in seconds                                                          | `3600`                       |
 | `configuration.database.user.type`                | User database type (postgres or sqlite)                                                               | `postgres`                   |
 | `configuration.database.user.sqlitePath`          | SQLite database path (for sqlite only)                                                                | `repository/database/userdb.db` |
 | `configuration.database.user.sqliteOptions`       | SQLite options (for sqlite only)                                                                      | `_journal_mode=WAL&_busy_timeout=5000` |
-| `configuration.database.user.name`                | Postgres database name (for postgres only)                                                            | `userdb`                  |
+| `configuration.database.user.name`                | Postgres database name (for postgres only)                                                            | `userdb`                     |
 | `configuration.database.user.host`                | Postgres host (for postgres only)                                                                     | `localhost` |
 | `configuration.database.user.port`                | Postgres port (for postgres only)                                                                     | `5432`                       |
 | `configuration.database.user.username`            | Postgres username (for postgres only)                                                                 | `asgthunder`                   |
-| `configuration.database.user.password`            | Postgres password (for postgres only)                                                                 | `asgthunder`              |
+| `configuration.database.user.password`            | Database password - supports plaintext. When `passwordRef.key` is set, this field is ignored and the external Secret is used instead. | `asgthunder`        |
+| `configuration.database.user.passwordRef.name`     | Kubernetes Secret name for user database password. Leave empty to use auto-created `<release-name>-db-credentials` Secret when password field is set | `""`    |
+| `configuration.database.user.passwordRef.key`      | Kubernetes Secret key for user database password. When set, overrides `password` field and uses external Secret | `""`    |
 | `configuration.database.user.sslmode`             | Postgres SSL mode (for postgres only)                                                                 | `require`                    |
+| `configuration.database.user.max_open_conns`      | Maximum number of open connections to the database                                                    | `500`                        |
+| `configuration.database.user.max_idle_conns`      | Maximum number of idle connections in the pool                                                        | `100`                        |
+| `configuration.database.user.conn_max_lifetime`   | Maximum lifetime of a connection in seconds                                                           | `3600`                       |
 | `configuration.cache.disabled`                    | Disable cache                                                                                         | `false`                      |
 | `configuration.cache.type`                        | Cache type                                                                                            | `inmemory`                   |
 | `configuration.cache.size`                        | Cache size                                                                                            | `1000`                       |

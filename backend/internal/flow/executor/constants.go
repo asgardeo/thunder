@@ -41,7 +41,6 @@ const (
 	ExecutorNameUserTypeResolver    = "UserTypeResolver"
 	ExecutorNameInviteExecutor      = "InviteExecutor"
 	ExecutorNameCredentialSetter    = "CredentialSetter"
-	ExecutorNameIdentityResolver    = "IdentityResolver"
 )
 
 // User attribute and input constants

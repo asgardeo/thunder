@@ -1,0 +1,72 @@
+---
+id: send-a-sms-otp
+title: "Send a SMS OTP"
+description: "Send a One Time Password (OTP) to a user's mobile number via SMS for authentication."
+sidebar_label: "Send a SMS OTP"
+hide_title: true
+hide_table_of_contents: true
+api: eJztVt9z4jYQ/lc0+9J2asBQyCV+47hMS3oNTCBtZ5jMjbAXrIst6SQ5hDL+3zsrm2BIesnctG/NE7H2l77v29XuIEEbG6GdUBIimKFMGGcTiWwucmRTbu1GmYR9P5lPf2BOMc4Ki+Y7y3K1FBkyWeRLNOxBcDb7bcZWyjBeuBSlEzGnqG0IwPG1hWgBZDGZT+EuAINfCrTuvUq2EO1OypjMp8xSKbUVS7jjUDkJgwlEzhQYQKykQ+koANc6qzN2PluKsgMbp5hz+uW2GiECtfyMsYMAtFEajRNovR3KBM0nkTRMrTNCriE4qWz8gakVcymyHK3la2RSObGqM7MqEuFUWIQA8JHnOqN4g0GI5/0wbGHvYtnqd5N+i7/rnrX6/bOzwaDfD8MwhJKuGAst6kt9vZabvekpG0eJf+z2fuoPzt6dX4RQlk0MF42LNxPfBeCE886kh4nTw8KlNxUVUJZVFKuVtBV+vTB8gcNf4d8jyHFX2NcRmXm7PUOnKjqCZXY7Gl3OZgS5RWuFkp+cukf5epKrP+bMm3qxU6JjwbM63lE63F6ly59jMRFX49u/xt1rMbZjeTOIR+Oz8b3+8/fR1UW73fYMvQh+BXeNfv8lwN/zhNUkRWye4lPzLFWyZcKynGcrZXJMmDKMmOFCWibkA89Esm+xNzPGs2yygmjxGnexSvB1UC+N8UUlSIzUvfVWt715eXL8mvcHdFxkmDD0YZqHTR58kgMDwemNy0bDjDJqoVOPgxD2eMDwdv7LdWsyn7a6YdiDxp1hXDNy6MjTwoldbdSDSLBhRhzv2VSGYa7dthbM4CXBjKVDI3nGZmge0DBfdcSGkhUSHzXG7gkaFceFMZiwTUpjRhsVk8jl2uv/0F//q+eb1PNP8hjQo3AsjZoyW1HmUz+r7NsZPJo+lOGk+kpNObpUJRCBVp51zV0KEXRoDnaU0x2b2w5NXqDhSmGsp7owGUSQOqdt1OnsUmVdGe20Mq6EAB64EXyZVbzTWaXYFS8yBxFkKuaZ/1wGQD7Hx+ehf98ITVLbzWG9uDyA23jo3/YgH73Hx09pAEKulJdJjdjw+BkYTscvNK6wdECtWlhM/EZ1cEO/XFlamQi0yqfbpjoyESNREO1A8tyn0zxOkfX88QHaqNPZbDZt7k/byqw7tavtfByPLq9nl61eO2ynLs+8TonDnMtG4HoJ3C9rz9riqcn/s3WxahCHj66jMy4koe1vuKu1tgDyggCU0ySy3HqpyYSWl0o7C9jtltzircnKkj5/KdBsIVrcHaRG/5UBpMgTNF6i97ilKV7dsDWnQsg8K6igZyONurnyGMYxavdV27tG40wnszkEsKy337xqesM3pDi+gQjobh5x3w7+2w4yLtdFNQmqmPT3Nw5FBSE=
+sidebar_class_name: "post api-method"
+info_path: docs/apis/authentication/authentication-api
+custom_edit_url: null
+---
+
+import MethodEndpoint from "@theme/ApiExplorer/MethodEndpoint";
+import ParamsDetails from "@theme/ParamsDetails";
+import RequestSchema from "@theme/RequestSchema";
+import StatusCodes from "@theme/StatusCodes";
+import OperationTabs from "@theme/OperationTabs";
+import TabItem from "@theme/TabItem";
+import Heading from "@theme/Heading";
+import Translate from "@docusaurus/Translate";
+
+<Heading
+  as={"h1"}
+  className={"openapi__heading"}
+  children={"Send a SMS OTP"}
+>
+</Heading>
+
+<MethodEndpoint
+  method={"post"}
+  path={"/auth/otp/sms/send"}
+  context={"endpoint"}
+>
+  
+</MethodEndpoint>
+
+
+
+Send a One Time Password (OTP) to a user's mobile number via SMS for authentication.
+
+<Heading
+  id={"request"}
+  as={"h2"}
+  className={"openapi-tabs__heading"}
+>
+  <Translate id="theme.openapi.request.title">Request</Translate>
+</Heading>
+
+<ParamsDetails
+  parameters={undefined}
+>
+  
+</ParamsDetails>
+
+<RequestSchema
+  title={"Body"}
+  body={{"description":"OTP send request data","required":true,"content":{"application/json":{"schema":{"type":"object","properties":{"sender_id":{"type":"string","description":"ID of the message notification sender to use","example":"550e8400-e29b-41d4-a716-446655440000"},"recipient":{"type":"string","description":"Recipient's mobile number","example":"+1234567890"}},"required":["sender_id","recipient"],"title":"SendOtpAuthRequest"}}}}}
+>
+  
+</RequestSchema>
+
+<StatusCodes
+  id={undefined}
+  label={undefined}
+  responses={{"200":{"description":"OK","content":{"application/json":{"schema":{"type":"object","properties":{"status":{"type":"string","description":"Status of the OTP send request","example":"SUCCESS"},"session_token":{"type":"string","description":"JWT token for the authentication session","example":"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."}},"title":"SendOtpAuthResponse"}}}},"400":{"description":"Bad Request: The request body is malformed or contains invalid data","content":{"application/json":{"schema":{"allOf":[{"type":"object","properties":{"code":{"type":"string","description":"Error code"},"message":{"type":"string","description":"Error message"},"description":{"type":"string","description":"Detailed error description"}},"title":"ErrorResponse"},{"type":"object"}],"title":"ClientErrorResponse"},"example":{"code":"AUTHN-OTP-1002","message":"Invalid recipient","description":"The provided recipient is invalid or empty"}}}},"500":{"description":"Internal Server Error: An unexpected error occurred while processing the request","content":{"application/json":{"schema":{"allOf":[{"type":"object","properties":{"code":{"type":"string","description":"Error code"},"message":{"type":"string","description":"Error message"},"description":{"type":"string","description":"Detailed error description"}},"title":"ErrorResponse"},{"type":"object"}],"example":{"code":"AUTHN-5000","message":"Internal server error","description":"An unexpected error occurred while processing the request"},"title":"ServerErrorResponse"}}}}}}
+>
+  
+</StatusCodes>
+
+
+      

@@ -17,9 +17,7 @@
  */
 
 import {describe, it, expect, vi, beforeEach} from 'vitest';
-import {screen, waitFor} from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
-import render from '@/test/test-utils';
+import {render, screen, waitFor, userEvent} from '@thunder/test-utils';
 import ArrayFieldInput from '../ArrayFieldInput';
 
 describe('ArrayFieldInput', () => {

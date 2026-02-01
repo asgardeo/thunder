@@ -1,0 +1,64 @@
+---
+id: list-message-notification-senders
+title: "List message notification senders"
+description: "Retrieve a list of message notification senders."
+sidebar_label: "List message notification senders"
+hide_title: true
+hide_table_of_contents: true
+api: eJydVlFv2zgM/isCn24HJ3aLpLf5LeiKQ3FrVywtcEARDIrNxFptyZXoprkg//1AyUmcdlvS+iUxSZEfyY+0VpCjy6yqSRkNKXxDsgqfUEhRKkfCzESFzsk5Cm1IzVQm2VI41Dla14cISM4dpPdw1dqNgwomEVh0tdEOHaQrOE0S/tmP9/UfiCAzmlATa2Vdl22M+IdjkxW4rMBK8j9a1ggpSGvlEqIXrr4cgRciUISV6zgz0x+YEURQW1OjJRXQqrxj48gqPX8V8U6rxwaFylFzKLQcngr8HQSIAJ9lVZfsdzhM8OMgSXp4+mnaG5zkg5786+SsNxicnQ2Hg0GSJAmsI9CywsNwrmWFb0Vwu1ClMmJ8NW77xuH23B6K+nn39tbgIaKYGeu1Ss89kPa4E41jUYDIuGprnhQ7OQjqprU8EpFuKmYwhUgRPBkt58jMbByZiqm8Q01dPB3G/JacN1vT4yAdydLjiNEGXwpv3s1FZplpNH13KueEnmTZvMWftxd/VNI9YC4Wigrxp3/anmYWSewQf9iLPTr/98DDkJT7Hvx0YE2NKVHqV7gudc6FRCdUqHG9AaqckC2eLgayDa75iYAUeVTtFrvudCXQ9Fu7y+AYY95FEBwPf7b2LjWh1bIUY7RPaMWFtcamYqRFo/G5xowwF8hCYbKssZbLW6jSp5Sh84PBGVp8bNDRO5boLxiVmfwIBni8wtt2W3p1Pe4Nk+SEa9Ty+1hfG/Ouu22VXKiSL8g7FhRJVW7r2VXu0fHdte/SJ/TTp7QjTCBChVSYHFKYexLWkgpIIe7Of6/9TMW7aoTU+QO7gsaWkEJBVLs0jleFcbROV7WxtOalJa2S0zK0kXWBdjPZlAQplCaTpRfz5jL2hfpj8ilhpBMOmTVW0dLH/DpqqDjl7eiWjrCCSddkzKwKETeGO4JJL4hgVpqFN2GBseo/n+t5S7Q94d1ehlvIKaOLg8N4c4CrQ+YBjzrkDbmcmakD3jadFEYZN1WQEUEkKsnbv0JNYnRz6Tb9U3pmfHptq7tT33482f4V/24L5VjBS6hxmHOkQuq8/PWVijseDp/0E4igVBkyk7YbH0a1zAoUp16940Uax4vFoi+9tm/sPG6PuvjL5fnF9fiid9pP+gVVpadtbRxVUncc+1vUgSvUi/Hbbp533R4DWQifKa5LqTTT0ye0akfkHn42IrDbMJOopfs9rFZT6fDOlus1ix8btEzjyW46+G0dQYHSXyTuV/CAy5YFNcH2G/h6iTLvtzP898UtrNf/A6Il7aY=
+sidebar_class_name: "get api-method"
+info_path: docs/apis/notification-sender/notification-sender-api
+custom_edit_url: null
+---
+
+import MethodEndpoint from "@theme/ApiExplorer/MethodEndpoint";
+import ParamsDetails from "@theme/ParamsDetails";
+import RequestSchema from "@theme/RequestSchema";
+import StatusCodes from "@theme/StatusCodes";
+import OperationTabs from "@theme/OperationTabs";
+import TabItem from "@theme/TabItem";
+import Heading from "@theme/Heading";
+import Translate from "@docusaurus/Translate";
+
+<Heading
+  as={"h1"}
+  className={"openapi__heading"}
+  children={"List message notification senders"}
+>
+</Heading>
+
+<MethodEndpoint
+  method={"get"}
+  path={"/notification-senders/message"}
+  context={"endpoint"}
+>
+  
+</MethodEndpoint>
+
+
+
+Retrieve a list of message notification senders.
+
+<ParamsDetails
+  parameters={undefined}
+>
+  
+</ParamsDetails>
+
+<RequestSchema
+  title={"Body"}
+  body={undefined}
+>
+  
+</RequestSchema>
+
+<StatusCodes
+  id={undefined}
+  label={undefined}
+  responses={{"200":{"description":"OK","content":{"application/json":{"schema":{"type":"array","description":"List of message notification senders","items":{"type":"object","properties":{"id":{"type":"string","description":"Unique identifier of the message notification sender","example":"550e8400-e29b-41d4-a716-446655440000"},"name":{"type":"string","description":"Name of the message notification sender","example":"Twilio SMS Sender"},"description":{"type":"string","description":"Description of the message notification sender","example":"Sender for sending SMS messages using Twilio"},"provider":{"type":"string","description":"Provider of the message notification sender","enum":["twilio","vonage","custom"],"example":"twilio"},"properties":{"type":"array","description":"Properties of the message notification sender","items":{"type":"object","properties":{"name":{"type":"string","description":"Property name","example":"account_sid"},"value":{"type":"string","description":"Property value (masked with ****** for secret properties)","example":"ACXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"},"is_secret":{"type":"boolean","description":"Indicates if the property is a secret","example":true}}}}},"title":"MessageNotificationSenderResponse"},"title":"MessageNotificationSenderList"}}}},"500":{"description":"Internal Server Error: An unexpected error occurred while processing the request","content":{"application/json":{"schema":{"type":"object","properties":{"code":{"type":"string","description":"Error code","example":"MNS-5001"},"message":{"type":"string","description":"Error message","example":"Internal server error"},"description":{"type":"string","description":"Detailed error description","example":"An unexpected error occurred while processing the request"}},"title":"ServerErrorResponse"}}}}}}
+>
+  
+</StatusCodes>
+
+
+      

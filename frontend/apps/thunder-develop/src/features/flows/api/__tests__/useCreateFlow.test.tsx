@@ -17,11 +17,9 @@
  */
 
 import {describe, it, expect, beforeEach, afterEach, vi} from 'vitest';
-import {renderHook, waitFor, act} from '@testing-library/react';
-import {QueryClient, QueryClientProvider} from '@tanstack/react-query';
-import type {ReactNode} from 'react';
+import {renderHook, waitFor, act} from '@thunder/test-utils';
 import {useAsgardeo} from '@asgardeo/react';
-import {useConfig} from '@thunder/commons-contexts';
+import {useConfig} from '@thunder/shared-contexts';
 import useCreateFlow from '../useCreateFlow';
 import type {CreateFlowRequest, FlowDefinitionResponse} from '../../models/responses';
 import {FlowType, FlowNodeType} from '../../models/flows';
@@ -31,9 +29,13 @@ vi.mock('@asgardeo/react', () => ({
   useAsgardeo: vi.fn(),
 }));
 
-vi.mock('@thunder/commons-contexts', () => ({
-  useConfig: vi.fn(),
-}));
+vi.mock('@thunder/shared-contexts', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@thunder/shared-contexts')>();
+  return {
+    ...actual,
+    useConfig: vi.fn(),
+  };
+});
 
 describe('useCreateFlow', () => {
   const mockFlowResponse: FlowDefinitionResponse = {
@@ -60,17 +62,9 @@ describe('useCreateFlow', () => {
     ],
   };
 
-  let queryClient: QueryClient;
   let mockHttpRequest: ReturnType<typeof vi.fn>;
 
   beforeEach(() => {
-    queryClient = new QueryClient({
-      defaultOptions: {
-        queries: {retry: false},
-        mutations: {retry: false},
-      },
-    });
-
     mockHttpRequest = vi.fn();
 
     vi.mocked(useAsgardeo).mockReturnValue({
@@ -84,20 +78,10 @@ describe('useCreateFlow', () => {
 
   afterEach(() => {
     vi.clearAllMocks();
-    queryClient.clear();
   });
 
-  const createWrapper = () => {
-    function Wrapper({children}: {children: ReactNode}) {
-      return <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>;
-    }
-    return Wrapper;
-  };
-
   it('should initialize with idle state', () => {
-    const {result} = renderHook(() => useCreateFlow(), {
-      wrapper: createWrapper(),
-    });
+    const {result} = renderHook(() => useCreateFlow());
 
     expect(result.current.data).toBeUndefined();
     expect(result.current.error).toBeNull();
@@ -110,9 +94,7 @@ describe('useCreateFlow', () => {
   it('should successfully create a flow', async () => {
     mockHttpRequest.mockResolvedValueOnce({data: mockFlowResponse});
 
-    const {result} = renderHook(() => useCreateFlow(), {
-      wrapper: createWrapper(),
-    });
+    const {result} = renderHook(() => useCreateFlow());
 
     result.current.mutate(mockCreateRequest);
 
@@ -137,9 +119,7 @@ describe('useCreateFlow', () => {
         }),
     );
 
-    const {result} = renderHook(() => useCreateFlow(), {
-      wrapper: createWrapper(),
-    });
+    const {result} = renderHook(() => useCreateFlow());
 
     result.current.mutate(mockCreateRequest);
 
@@ -158,9 +138,7 @@ describe('useCreateFlow', () => {
     const apiError = new Error('Failed to create flow');
     mockHttpRequest.mockRejectedValueOnce(apiError);
 
-    const {result} = renderHook(() => useCreateFlow(), {
-      wrapper: createWrapper(),
-    });
+    const {result} = renderHook(() => useCreateFlow());
 
     result.current.mutate(mockCreateRequest);
 
@@ -175,11 +153,8 @@ describe('useCreateFlow', () => {
   it('should invalidate flows query on success', async () => {
     mockHttpRequest.mockResolvedValueOnce({data: mockFlowResponse});
 
+    const {result, queryClient} = renderHook(() => useCreateFlow());
     const invalidateQueriesSpy = vi.spyOn(queryClient, 'invalidateQueries');
-
-    const {result} = renderHook(() => useCreateFlow(), {
-      wrapper: createWrapper(),
-    });
 
     result.current.mutate(mockCreateRequest);
 
@@ -195,9 +170,7 @@ describe('useCreateFlow', () => {
   it('should support mutateAsync for promise-based workflows', async () => {
     mockHttpRequest.mockResolvedValueOnce({data: mockFlowResponse});
 
-    const {result} = renderHook(() => useCreateFlow(), {
-      wrapper: createWrapper(),
-    });
+    const {result} = renderHook(() => useCreateFlow());
 
     const promise = result.current.mutateAsync(mockCreateRequest);
 
@@ -209,9 +182,7 @@ describe('useCreateFlow', () => {
 
     const onSuccess = vi.fn();
 
-    const {result} = renderHook(() => useCreateFlow(), {
-      wrapper: createWrapper(),
-    });
+    const {result} = renderHook(() => useCreateFlow());
 
     result.current.mutate(mockCreateRequest, {onSuccess});
 
@@ -226,9 +197,7 @@ describe('useCreateFlow', () => {
 
     const onError = vi.fn();
 
-    const {result} = renderHook(() => useCreateFlow(), {
-      wrapper: createWrapper(),
-    });
+    const {result} = renderHook(() => useCreateFlow());
 
     result.current.mutate(mockCreateRequest, {onError});
 
@@ -240,9 +209,7 @@ describe('useCreateFlow', () => {
   it('should reset mutation state', async () => {
     mockHttpRequest.mockResolvedValueOnce({data: mockFlowResponse});
 
-    const {result} = renderHook(() => useCreateFlow(), {
-      wrapper: createWrapper(),
-    });
+    const {result} = renderHook(() => useCreateFlow());
 
     result.current.mutate(mockCreateRequest);
 
@@ -269,9 +236,7 @@ describe('useCreateFlow', () => {
 
     mockHttpRequest.mockResolvedValueOnce({data: mockFlowResponse});
 
-    const {result} = renderHook(() => useCreateFlow(), {
-      wrapper: createWrapper(),
-    });
+    const {result} = renderHook(() => useCreateFlow());
 
     result.current.mutate(mockCreateRequest);
 
@@ -289,9 +254,7 @@ describe('useCreateFlow', () => {
   it('should properly serialize request data as JSON', async () => {
     mockHttpRequest.mockResolvedValueOnce({data: mockFlowResponse});
 
-    const {result} = renderHook(() => useCreateFlow(), {
-      wrapper: createWrapper(),
-    });
+    const {result} = renderHook(() => useCreateFlow());
 
     result.current.mutate(mockCreateRequest);
 

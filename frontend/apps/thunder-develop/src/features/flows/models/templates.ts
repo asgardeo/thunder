@@ -76,7 +76,7 @@ export const TemplateTypes = {
   Basic: 'BASIC',
   BasicFederated: 'BASIC_FEDERATED',
   GeneratedWithAI: 'GENERATE_WITH_AI',
-  BasicPasskey: 'BASIC_PASSKEY',
+  PasskeyLogin: 'PASSKEY_LOGIN',
   Default: 'DEFAULT',
 } as const;
 

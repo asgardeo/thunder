@@ -16,10 +16,9 @@
  * under the License.
  */
 
-import {render, screen, waitFor} from '@testing-library/react';
+import {render, screen, waitFor} from '@thunder/test-utils';
 import {describe, it, expect, vi, beforeEach, afterEach} from 'vitest';
 import userEvent from '@testing-library/user-event';
-import {QueryClient, QueryClientProvider} from '@tanstack/react-query';
 import ApplicationDeleteDialog from '../ApplicationDeleteDialog';
 import * as useDeleteApplicationModule from '../../api/useDeleteApplication';
 
@@ -45,7 +44,6 @@ vi.mock('react-i18next', () => ({
 }));
 
 describe('ApplicationDeleteDialog', () => {
-  let queryClient: QueryClient;
   const mockOnClose = vi.fn();
   const mockOnSuccess = vi.fn();
   const mockMutate = vi.fn();
@@ -57,21 +55,9 @@ describe('ApplicationDeleteDialog', () => {
     onSuccess: mockOnSuccess,
   };
 
-  const renderWithProviders = (props = defaultProps) =>
-    render(
-      <QueryClientProvider client={queryClient}>
-        <ApplicationDeleteDialog {...props} />
-      </QueryClientProvider>,
-    );
+  const renderWithProviders = (props = defaultProps) => render(<ApplicationDeleteDialog {...props} />);
 
   beforeEach(() => {
-    queryClient = new QueryClient({
-      defaultOptions: {
-        queries: {
-          retry: false,
-        },
-      },
-    });
 
     // Default mock implementation
     vi.mocked(useDeleteApplicationModule.default).mockReturnValue({
@@ -235,11 +221,7 @@ describe('ApplicationDeleteDialog', () => {
         options?.onSuccess?.();
       });
 
-      rerender(
-        <QueryClientProvider client={queryClient}>
-          <ApplicationDeleteDialog {...defaultProps} />
-        </QueryClientProvider>,
-      );
+      rerender(<ApplicationDeleteDialog {...defaultProps} />);
 
       deleteButton = screen.getByRole('button', {name: 'Delete'});
       await user.click(deleteButton);
@@ -312,11 +294,7 @@ describe('ApplicationDeleteDialog', () => {
       });
 
       // Re-render with same props
-      rerender(
-        <QueryClientProvider client={queryClient}>
-          <ApplicationDeleteDialog {...defaultProps} />
-        </QueryClientProvider>,
-      );
+      rerender(<ApplicationDeleteDialog {...defaultProps} />);
 
       expect(screen.getByText('Delete failed')).toBeInTheDocument();
     });
@@ -427,11 +405,7 @@ describe('ApplicationDeleteDialog', () => {
       expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
 
       // Open dialog
-      rerender(
-        <QueryClientProvider client={queryClient}>
-          <ApplicationDeleteDialog {...defaultProps} open />
-        </QueryClientProvider>,
-      );
+      rerender(<ApplicationDeleteDialog {...defaultProps} open />);
 
       expect(screen.getByRole('dialog')).toBeInTheDocument();
 
@@ -442,11 +416,7 @@ describe('ApplicationDeleteDialog', () => {
       expect(mockOnClose).toHaveBeenCalledTimes(1);
 
       // Close dialog (simulate parent closing it)
-      rerender(
-        <QueryClientProvider client={queryClient}>
-          <ApplicationDeleteDialog {...defaultProps} open={false} />
-        </QueryClientProvider>,
-      );
+      rerender(<ApplicationDeleteDialog {...defaultProps} open={false} />);
 
       // Wait for dialog to close
       await waitFor(() => {
@@ -454,11 +424,7 @@ describe('ApplicationDeleteDialog', () => {
       });
 
       // Open again
-      rerender(
-        <QueryClientProvider client={queryClient}>
-          <ApplicationDeleteDialog {...defaultProps} open />
-        </QueryClientProvider>,
-      );
+      rerender(<ApplicationDeleteDialog {...defaultProps} open />);
 
       expect(screen.getByRole('dialog')).toBeInTheDocument();
     });
@@ -473,11 +439,7 @@ describe('ApplicationDeleteDialog', () => {
       expect(mockMutate).toHaveBeenCalledWith('test-app-id', expect.any(Object));
 
       // Change applicationId
-      rerender(
-        <QueryClientProvider client={queryClient}>
-          <ApplicationDeleteDialog {...defaultProps} applicationId="new-app-id" />
-        </QueryClientProvider>,
-      );
+      rerender(<ApplicationDeleteDialog {...defaultProps} applicationId="new-app-id" />);
 
       mockMutate.mockClear();
 

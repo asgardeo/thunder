@@ -78,7 +78,7 @@ This project intentionally avoids custom logic, hooks, or advanced configuration
 
 ## CRITICAL: Provider Configuration Rules (MUST FOLLOW EXACTLY)
 
-The ~AsgardeoProvider~ **MUST** be configured using **ONLY** the following four props.
+The ~AsgardeoProvider~ **MUST** be configured using **ONLY** the following three props.
 Always create a NEW public SPA application with token endpoint method as none and use the 
 client id. Use the application's URL as the redirect URL.
 Use the thunder_get_application_templates tool to get the template and defaults(e.g. user attributes and scopes)
@@ -93,7 +93,6 @@ import { AsgardeoProvider } from '@asgardeo/react'
   clientId="<client-id>"
   baseUrl="https://localhost:8090"
   platform="AsgardeoV2"
-  tokenValidation={{ idToken: { validate: false } }}
 >
   <App />
 </AsgardeoProvider>
@@ -103,7 +102,7 @@ import { AsgardeoProvider } from '@asgardeo/react'
 **NEVER** do any of the following:
 - ❌ ~const config = { ... }; <AsgardeoProvider {...config} />~
 - ❌ Extract props to variables
-- ❌ Add any other props beyond the four required ones
+- ❌ Add any other props beyond the three required ones
 - ❌ Use different prop names or aliases
 
 ---
@@ -124,7 +123,6 @@ createRoot(document.getElementById('root')).render(
       clientId="<client-id>"
       baseUrl="https://localhost:8090"
       platform="AsgardeoV2"
-      tokenValidation={{ idToken: { validate: false } }}
     >
       <App />
     </AsgardeoProvider>
@@ -397,7 +395,6 @@ createRoot(document.getElementById('root')).render(
       clientId="<client-id>"
       baseUrl="https://localhost:8090"
       platform="AsgardeoV2"
-      tokenValidation={{ idToken: { validate: false } }}
     >
       <App />
     </AsgardeoProvider>
@@ -562,7 +559,6 @@ import { AsgardeoProvider } from '@asgardeo/react';
   clientId="<client-id>"
   baseUrl="https://localhost:8090"
   platform="AsgardeoV2"
-  tokenValidation={{ idToken: { validate: false } }}
 >
   <App />
 </AsgardeoProvider>

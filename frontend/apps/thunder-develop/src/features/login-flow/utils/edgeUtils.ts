@@ -19,9 +19,10 @@
 import type {Edge, Node} from '@xyflow/react';
 import {MarkerType} from '@xyflow/react';
 import type {Element} from '@/features/flows/models/elements';
+import VisualFlowConstants from '@/features/flows/constants/VisualFlowConstants';
 
 /**
- * Generates edges for components that have actions with 'next' references
+ * Generates edges for components that have actions with 'onSuccess' references
  * but don't have corresponding edges in the current edge set.
  *
  * @param currentEdges - The current set of edges in the flow.
@@ -34,33 +35,62 @@ const generateUnconnectedEdges = (currentEdges: Edge[], currentNodes: Node[], ed
   const missingEdges: Edge[] = [];
 
   const processAction = (stepId: string, resourceId: string, action: unknown): void => {
-    if (action && typeof action === 'object' && 'next' in action && action.next) {
-      const buttonId: string = resourceId;
-      const expectedTarget: string = action.next as string;
+    if (action && typeof action === 'object') {
+      // Process onSuccess edges
+      if ('onSuccess' in action && action.onSuccess) {
+        const buttonId: string = resourceId;
+        const expectedTarget: string = action.onSuccess as string;
 
-      // Ensure expected target exists in nodes
-      if (!nodeIds.has(expectedTarget)) {
-        // Target node doesn't exist, skip this edge
-        return;
+        // Ensure expected target exists in nodes
+        if (nodeIds.has(expectedTarget)) {
+          const existingEdge: Edge | undefined = currentEdges.find(
+            (edge: Edge) =>
+              edge.source === stepId &&
+              edge.sourceHandle === `${buttonId}${VisualFlowConstants.FLOW_BUILDER_NEXT_HANDLE_SUFFIX}`,
+          );
+
+          // If no edge exists or it's pointing to the wrong node, add a missing edge
+          if (!existingEdge || existingEdge.target !== expectedTarget) {
+            missingEdges.push({
+              animated: false,
+              id: `${buttonId}_MISSING_EDGE`,
+              markerEnd: {
+                type: MarkerType.Arrow,
+              },
+              source: stepId,
+              sourceHandle: `${buttonId}${VisualFlowConstants.FLOW_BUILDER_NEXT_HANDLE_SUFFIX}`,
+              target: expectedTarget,
+              type: edgeStyle,
+            });
+          }
+        }
       }
 
-      const existingEdge: Edge | undefined = currentEdges.find(
-        (edge: Edge) => edge.source === stepId && edge.sourceHandle === `${buttonId}_NEXT`,
-      );
+      // Process onFailure edges
+      if ('onFailure' in action && action.onFailure) {
+        const expectedFailureTarget: string = action.onFailure as string;
 
-      // If no edge exists or it's pointing to the wrong node, add a missing edge
-      if (!existingEdge || existingEdge.target !== expectedTarget) {
-        missingEdges.push({
-          animated: false,
-          id: `${buttonId}_MISSING_EDGE`,
-          markerEnd: {
-            type: MarkerType.Arrow,
-          },
-          source: stepId,
-          sourceHandle: `${buttonId}_NEXT`,
-          target: expectedTarget,
-          type: edgeStyle,
-        });
+        // Ensure expected target exists in nodes
+        if (nodeIds.has(expectedFailureTarget)) {
+          const existingFailureEdge: Edge | undefined = currentEdges.find(
+            (edge: Edge) => edge.source === stepId && edge.sourceHandle === 'failure',
+          );
+
+          // If no edge exists or it's pointing to the wrong node, add a missing edge
+          if (!existingFailureEdge || existingFailureEdge.target !== expectedFailureTarget) {
+            missingEdges.push({
+              animated: false,
+              id: `${stepId}_FAILURE_MISSING_EDGE`,
+              markerEnd: {
+                type: MarkerType.Arrow,
+              },
+              source: stepId,
+              sourceHandle: 'failure',
+              target: expectedFailureTarget,
+              type: edgeStyle,
+            });
+          }
+        }
       }
     }
   };

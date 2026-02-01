@@ -106,6 +106,8 @@ function VisualFlow({
       onNodeDragStop={onNodeDragStop}
       proOptions={{hideAttribution: true}}
       colorMode={colorMode}
+      minZoom={0.2}
+      maxZoom={4}
     >
       {/* Center controls - auto-layout and edge style */}
       <Controls position="top-center" orientation="horizontal">

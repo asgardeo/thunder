@@ -48,7 +48,7 @@ export const WidgetTypes = {
   FacebookFederation: 'FACEBOOK_FEDERATION',
   MicrosoftFederation: 'MICROSOFT_FEDERATION',
   GithubFederation: 'GITHUB_FEDERATION',
-  PasskeyEnrollment: 'PASSKEY_ENROLLMENT',
+  PasskeyAuthentication: 'PASSKEY_AUTHENTICATION',
   MagicLink: 'MAGIC_LINK',
 } as const;
 

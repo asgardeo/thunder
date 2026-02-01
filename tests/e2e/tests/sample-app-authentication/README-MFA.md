@@ -951,10 +951,10 @@ The tests use a TypeScript-based mock SMS server that:
 
 ## Additional Resources
 
-- [Thunder MFA Setup Guide](../../../docs/guides/authentication/GUIDE-SMS-OTP-MFA-LOGIN.md)
+- [Thunder MFA Setup Guide](../../../../docs/guides/authentication/GUIDE-SMS-OTP-MFA-LOGIN.md)
 - [Sample App Documentation](../../../samples/apps/README.md)
 - [Playwright Documentation](https://playwright.dev/docs/intro)
-- [Thunder Flow Management API](../../../docs/guides/flows/)
+- [Thunder Flow Management API](../../../../docs/guides/flows/)
 
 ## Support
 

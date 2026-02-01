@@ -1,0 +1,76 @@
+{
+  "private": true,
+  "name": "@thunder/docs",
+  "version": "0.0.0",
+  "description": "Documentation for ⚡️ Thunder",
+  "author": "WSO2",
+  "license": "Apache-2.0",
+  "homepage": "https://github.com/asgardeo/thunder/tree/main/docs#readme",
+  "bugs": {
+    "url": "https://github.com/asgardeo/thunder/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/asgardeo/thunder"
+  },
+  "keywords": [
+    "asgardeo",
+    "thunder",
+    "docs",
+    "documentation",
+    "wso2"
+  ],
+  "scripts": {
+    "build": "docusaurus build",
+    "clear": "docusaurus clear",
+    "deploy": "docusaurus deploy",
+    "dev": "docusaurus start",
+    "docusaurus": "docusaurus",
+    "lint": "eslint .",
+    "lint:fix": "eslint . --fix",
+    "serve": "docusaurus serve",
+    "swizzle": "docusaurus swizzle",
+    "typecheck": "tsc",
+    "write-translations": "docusaurus write-translations",
+    "write-heading-ids": "docusaurus write-heading-ids"
+  },
+  "dependencies": {
+    "@docusaurus/core": "3.9.2",
+    "@docusaurus/preset-classic": "3.9.2",
+    "@mdx-js/react": "^3.0.0",
+    "@thunder/eslint-plugin-thunder": "workspace:^",
+    "@thunder/logger": "workspace:^",
+    "@thunder/prettier-config": "workspace:^",
+    "@wso2/oxygen-ui": "^0.3.0",
+    "@wso2/oxygen-ui-icons-react": "^0.3.0",
+    "clsx": "^2.0.0",
+    "docusaurus-plugin-openapi-docs": "^4.6.0",
+    "docusaurus-theme-openapi-docs": "^4.6.0",
+    "eslint": "catalog:",
+    "prettier": "catalog:",
+    "prism-react-renderer": "^2.3.0",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0"
+  },
+  "devDependencies": {
+    "@docusaurus/module-type-aliases": "3.9.2",
+    "@docusaurus/tsconfig": "3.9.2",
+    "@docusaurus/types": "3.9.2",
+    "typescript": "~5.6.2"
+  },
+  "browserslist": {
+    "production": [
+      ">0.5%",
+      "not dead",
+      "not op_mini all"
+    ],
+    "development": [
+      "last 3 chrome version",
+      "last 3 firefox version",
+      "last 5 safari version"
+    ]
+  },
+  "engines": {
+    "node": ">=20.0"
+  }
+}

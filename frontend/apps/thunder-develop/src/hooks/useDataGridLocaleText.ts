@@ -24,8 +24,8 @@ import {useTranslation} from 'react-i18next';
  * Helper function to safely extract and cast function values from translation resources
  *
  * @template T - The function type to cast to
- * @param dataTable - The dataTable resource bundle
- * @param key - The key of the function in the resource bundle
+ * @param commonBundle - The common namespace resource bundle
+ * @param key - The key of the function in the resource bundle (e.g., 'dataTable.toolbarFiltersTooltipActive')
  * @returns The function cast to type T, or undefined if not found or invalid
  *
  * @remarks
@@ -34,7 +34,7 @@ import {useTranslation} from 'react-i18next';
  * to ensure the value is actually a function before casting, preventing runtime errors
  * if the translation resource structure changes.
  *
- * Expected dataTable structure:
+ * Expected common bundle structure (flat with dot notation keys):
  * - Keys should map to either string values (handled by i18next t() function)
  * - Or function values that accept parameters and return strings
  *
@@ -42,12 +42,12 @@ import {useTranslation} from 'react-i18next';
  * ```typescript
  * // Valid function in translation resource
  * {
- *   toolbarFiltersTooltipActive: (count: number) => `${count} active filter${count !== 1 ? 's' : ''}`
+ *   'dataTable.toolbarFiltersTooltipActive': (count: number) => `${count} active filter${count !== 1 ? 's' : ''}`
  * }
  * ```
  */
-function getTranslationFunction<T>(dataTable: Record<string, unknown>, key: string): T | undefined {
-  const value = dataTable[key];
+function getTranslationFunction<T>(commonBundle: Record<string, unknown>, key: string): T | undefined {
+  const value = commonBundle[key];
 
   // Runtime validation: ensure the value is actually a function
   if (typeof value === 'function') {
@@ -71,10 +71,10 @@ export default function useDataGridLocaleText(): Partial<DataGrid.GridLocaleText
   const {t, i18n} = useTranslation();
 
   return useMemo(() => {
-    // Get the dataTable translations directly from the resource store
+    // Get the common namespace translations directly from the resource store
     // This is necessary because i18next's t() function doesn't execute function values
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-    const dataTable = (i18n.getResourceBundle(i18n.language, 'common')?.dataTable ?? {}) as Record<string, unknown>;
+    // With flat structure, function keys are like 'dataTable.toolbarFiltersTooltipActive'
+    const commonBundle = (i18n.getResourceBundle(i18n.language, 'common') ?? {}) as Record<string, unknown>;
 
     return {
       // Root
@@ -100,8 +100,8 @@ export default function useDataGridLocaleText(): Partial<DataGrid.GridLocaleText
       toolbarFiltersTooltipHide: t('common:dataTable.toolbarFiltersTooltipHide'),
       toolbarFiltersTooltipShow: t('common:dataTable.toolbarFiltersTooltipShow'),
       toolbarFiltersTooltipActive: getTranslationFunction<(count: number) => string>(
-        dataTable,
-        'toolbarFiltersTooltipActive',
+        commonBundle,
+        'dataTable.toolbarFiltersTooltipActive',
       ),
 
       // Quick filter toolbar field
@@ -167,22 +167,25 @@ export default function useDataGridLocaleText(): Partial<DataGrid.GridLocaleText
 
       // Column header text
       columnHeaderFiltersTooltipActive: getTranslationFunction<(count: number) => string>(
-        dataTable,
-        'columnHeaderFiltersTooltipActive',
+        commonBundle,
+        'dataTable.columnHeaderFiltersTooltipActive',
       ),
       columnHeaderFiltersLabel: t('common:dataTable.columnHeaderFiltersLabel'),
       columnHeaderSortIconLabel: t('common:dataTable.columnHeaderSortIconLabel'),
 
       // Rows selected footer text
-      footerRowSelected: getTranslationFunction<(count: number) => string>(dataTable, 'footerRowSelected'),
+      footerRowSelected: getTranslationFunction<(count: number) => string>(
+        commonBundle,
+        'dataTable.footerRowSelected',
+      ),
 
       // Total row amount footer text
       footerTotalRows: t('common:dataTable.footerTotalRows'),
 
       // Total visible row amount footer text
       footerTotalVisibleRows: getTranslationFunction<(visibleCount: number, totalCount: number) => string>(
-        dataTable,
-        'footerTotalVisibleRows',
+        commonBundle,
+        'dataTable.footerTotalVisibleRows',
       ),
 
       // Checkbox selection text
@@ -211,8 +214,8 @@ export default function useDataGridLocaleText(): Partial<DataGrid.GridLocaleText
 
       // Grouping columns
       groupingColumnHeaderName: t('common:dataTable.groupingColumnHeaderName'),
-      groupColumn: getTranslationFunction<(name: string) => string>(dataTable, 'groupColumn'),
-      unGroupColumn: getTranslationFunction<(name: string) => string>(dataTable, 'unGroupColumn'),
+      groupColumn: getTranslationFunction<(name: string) => string>(commonBundle, 'dataTable.groupColumn'),
+      unGroupColumn: getTranslationFunction<(name: string) => string>(commonBundle, 'dataTable.unGroupColumn'),
 
       // Master/detail
       detailPanelToggle: t('common:dataTable.detailPanelToggle'),
@@ -223,7 +226,7 @@ export default function useDataGridLocaleText(): Partial<DataGrid.GridLocaleText
       paginationRowsPerPage: t('common:dataTable.paginationRowsPerPage'),
       paginationDisplayedRows: getTranslationFunction<
         ({from, to, count}: {from: number; to: number; count: number}) => string
-      >(dataTable, 'paginationDisplayedRows'),
+      >(commonBundle, 'dataTable.paginationDisplayedRows'),
 
       // Row reordering text
       rowReorderingHeaderName: t('common:dataTable.rowReorderingHeaderName'),

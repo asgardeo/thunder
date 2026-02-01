@@ -16,17 +16,19 @@
  * under the License.
  */
 
-import {Alert, Box, Snackbar} from '@wso2/oxygen-ui';
+import {Alert, Box, Snackbar, Stack} from '@wso2/oxygen-ui';
 import {useParams} from 'react-router';
 import type {Edge, Node} from '@xyflow/react';
 import {useEdgesState, useNodesState, useUpdateNodeInternals} from '@xyflow/react';
-import {useEffect, useMemo} from 'react';
+import {useCallback, useEffect, useMemo} from 'react';
+import {useTranslation} from 'react-i18next';
 import '@xyflow/react/dist/style.css';
 import FlowBuilder from '@/features/flows/components/FlowBuilder';
 import {StepTypes} from '@/features/flows/models/steps';
 import useFlowBuilderCore from '@/features/flows/hooks/useFlowBuilderCore';
 import useValidationStatus from '@/features/flows/hooks/useValidationStatus';
 import useGetFlowById from '@/features/flows/api/useGetFlowById';
+import GradientBorderButton from '@/features/applications/components/GradientBorderButton';
 import useGetLoginFlowBuilderResources from '../api/useGetLoginFlowBuilderResources';
 import useEdgeGeneration from '../hooks/useEdgeGeneration';
 import useFlowNaming from '../hooks/useFlowNaming';
@@ -43,6 +45,7 @@ function LoginFlowBuilder() {
   const {flowId} = useParams<{flowId: string}>();
   const [nodes, setNodes, defaultOnNodesChange] = useNodesState<Node>([]);
   const [edges, setEdges, onEdgesChange] = useEdgesState<Edge>([]);
+  const {t} = useTranslation();
 
   const {data: resources} = useGetLoginFlowBuilderResources();
   const {edgeStyle, isVerboseMode} = useFlowBuilderCore();
@@ -61,8 +64,23 @@ function LoginFlowBuilder() {
   });
 
   // Snackbar notifications hook
-  const {errorSnackbar, successSnackbar, showError, showSuccess, handleCloseErrorSnackbar, handleCloseSuccessSnackbar} =
-    useSnackbarNotifications();
+  const {
+    errorSnackbar,
+    successSnackbar,
+    infoSnackbar,
+    showError,
+    showSuccess,
+    showInfo,
+    handleCloseErrorSnackbar,
+    handleCloseSuccessSnackbar,
+    handleCloseInfoSnackbar,
+  } = useSnackbarNotifications();
+
+  // Callback to trigger auto-layout from the snackbar via custom event
+  const handleAutoLayoutClick = useCallback(() => {
+    window.dispatchEvent(new CustomEvent('triggerAutoLayout'));
+    handleCloseInfoSnackbar();
+  }, [handleCloseInfoSnackbar]);
 
   // Edge generation hook
   const {generateEdges, validateEdges} = useEdgeGeneration({
@@ -142,6 +160,23 @@ function LoginFlowBuilder() {
     };
   }, [setNodes, setEdges]);
 
+  // Listen for element added events to show auto-layout hint
+  useEffect(() => {
+    const handleElementAdded = (event: CustomEvent<{type: string}>) => {
+      const {type} = event.detail;
+      // Only show hint for steps, widgets, and templates (not individual components)
+      if (type === 'step' || type === 'widget' || type === 'template') {
+        showInfo(t('flows:core.canvas.hints.autoLayout'));
+      }
+    };
+
+    window.addEventListener('flowElementAdded', handleElementAdded as EventListener);
+
+    return () => {
+      window.removeEventListener('flowElementAdded', handleElementAdded as EventListener);
+    };
+  }, [showInfo, t]);
+
   // Update edge types when edge style changes
   useEffect(() => {
     setEdges((currentEdges) =>
@@ -216,6 +251,28 @@ function LoginFlowBuilder() {
       >
         <Alert onClose={handleCloseSuccessSnackbar} severity="success" sx={{width: '100%'}}>
           {successSnackbar.message}
+        </Alert>
+      </Snackbar>
+      <Snackbar
+        open={infoSnackbar.open}
+        autoHideDuration={8000}
+        onClose={handleCloseInfoSnackbar}
+        anchorOrigin={{vertical: 'top', horizontal: 'center'}}
+      >
+        <Alert
+          onClose={handleCloseInfoSnackbar}
+          severity="info"
+          sx={{
+            width: '100%',
+            alignItems: 'center',
+          }}
+        >
+          <Stack direction="row" spacing={2} alignItems="center">
+            <span>{infoSnackbar.message}</span>
+            <GradientBorderButton size="small" onClick={handleAutoLayoutClick}>
+              {t('flows:core.canvas.buttons.autoLayout')}
+            </GradientBorderButton>
+          </Stack>
         </Alert>
       </Snackbar>
     </Box>

@@ -1,0 +1,72 @@
+---
+id: list-root-organization-units
+title: "List root organization units"
+description: "List root organization units"
+sidebar_label: "List root organization units"
+hide_title: true
+hide_table_of_contents: true
+api: eJylV9tu2zgQ/RViHvZl5Vh247oRUCzSIlgE6GXRNk9ZP9DUSGJDkSo5ymUN/fuCpHxRolyKPBkmOXPOcM7MUBsgXjrILsHYkmv5Hydp9KTVkhysEmi45TUSWn9mA1JDBr9atHeQgOY1QgZK1pIgAYu/Wmkxh6zgymECOTphZeMdQgaf+a2s25rptl6jZaZgFoWxuWNkmEVqrT76V0MCTlRYc8g2QHeNB5CasEQLCdRSex+Qzbz3greKIHuTdl0yTs0UhcMXcPsyxsldyYYVxrKGl1KHe3mW4I5U2nUrD+saox06f3iepv5niPxJOgq4xhA7TAGLKUhAGE2oyZvyplFShO3pT+ftNw/JmPVPFD7mxpoGLcmIToa4+oauVeQeof7YjQQbRhUnVnMSFaMKmZKOpC6Zx4h3AwngLa8bhZDNFl0Cjrilc53j7QsAwzmP550X0jpiqLBGTdvFhpeYsJtKiordSKXYGhn+arnyyYqZZn+y2ZBH5y+wjdf34pB7YMekDshRnZgHCkP/aZcMKuciZG0Pxq3lXpCSsHZjWdor8xJkDglUXOcKtxpe3c+jzA+8OLJSl5BAYWzNCTJoW5lDt/Py4Gi3rY2RjcF1PNjvEiBJ3id8vRfwB+6kCCeU1Fe/Ff4wuMpiMRbe7r5HutRfMfXv5+kfoRO9n6U+GIvqaU8ab2kQ1Sepr6B7Kk5frN/6kvYYO2f3y2sxFP9sJ8L5qFouY1qBF2K5FEU+eTtP15NjUaQT/mYmJss3y+U6Rf7uJJ3vFZIB6lJqxD60vuedDRaHEj/YYx4bQuP00OulOE5zfDs5WYh8ciyOF5N3y/liciKWYr1Ynwhe5IfQjit0e9Dv/d8hXFjtgVY7cVxu8/xUMvtczqHPZJ+uVRcSdDzWSj/wnPlqQkevaZuHBSlM7iuxRud4OVKMYX+slLYWryqzM2uNPdBZrH99zZXMJ3Hq+kjauub2LrTQsMXCFttNbkjgmqsW94Th68Vkls5mB6HtrffTbuBieNc/wgQYwLC6deR7MmeNcZLkNbJtq/VRbYn3M3mUed/Fn6c+fx31+zgH3LXRE40lv8c/6m4xprtzTWg1V8yhvUbLMKbtfqbjqH98ztdIlfGlWIYXS8OpggymI8+yBCJSrKXW+vKoiBqXTaebyjjqsk1jLHXh+qzk6147fi/y718poIzgKix3CXib4fa79CT1wa88pGitpLuA+fW0pWruK8TdOcIaVodHvvvaiojbg/sy42EhgUKZm3DELxjbR/ixL6jB4sUgwh3lzLObRofTrYEvVzJX+CKjcDA86EwT+fbhZHAqBLr4DAxLrOaal/E9cvrPuYNeEVIXJoT3yMhgnwd2PiNoXRTE7CgdUad0/iCTjrUOc88gQo+oxj9FlBTox1G22fbi04aLCtk8eB+q4+bm5oiH7SNjy2lv66afzj+effl+NpkfpUcV1SqotzGOaq4PPD+j4PHGRnhL00Zxqb3GAp9Nr+7HPjqiTi9hs1lzhxdWdZ1fjo97r79cOi/qR57zm33zf/lXxyjbK7w7+MDpWxGEqflyCr/3cfEEj93XzJ7Ial/hkF2u/MMPeY423FK08kpuDq0ejEPvZdd9/j77AV33P3L43Hc=
+sidebar_class_name: "get api-method"
+info_path: docs/apis/ou/organizationunit-management-api
+custom_edit_url: null
+---
+
+import MethodEndpoint from "@theme/ApiExplorer/MethodEndpoint";
+import ParamsDetails from "@theme/ParamsDetails";
+import RequestSchema from "@theme/RequestSchema";
+import StatusCodes from "@theme/StatusCodes";
+import OperationTabs from "@theme/OperationTabs";
+import TabItem from "@theme/TabItem";
+import Heading from "@theme/Heading";
+import Translate from "@docusaurus/Translate";
+
+<Heading
+  as={"h1"}
+  className={"openapi__heading"}
+  children={"List root organization units"}
+>
+</Heading>
+
+<MethodEndpoint
+  method={"get"}
+  path={"/organization-units"}
+  context={"endpoint"}
+>
+  
+</MethodEndpoint>
+
+
+
+List root organization units
+
+<Heading
+  id={"request"}
+  as={"h2"}
+  className={"openapi-tabs__heading"}
+>
+  <Translate id="theme.openapi.request.title">Request</Translate>
+</Heading>
+
+<ParamsDetails
+  parameters={[{"in":"query","name":"limit","required":false,"description":"Maximum number of records to return.\n","schema":{"type":"integer","minimum":1,"default":30}},{"in":"query","name":"offset","required":false,"description":"Number of records to skip for pagination.\n","schema":{"type":"integer","default":0}}]}
+>
+  
+</ParamsDetails>
+
+<RequestSchema
+  title={"Body"}
+  body={undefined}
+>
+  
+</RequestSchema>
+
+<StatusCodes
+  id={undefined}
+  label={undefined}
+  responses={{"200":{"description":"List of root organization units","content":{"application/json":{"schema":{"type":"object","properties":{"totalResults":{"type":"integer","description":"Number of results that match the listing operation.","example":15},"startIndex":{"type":"integer","description":"Index of the first element of the page, which will be equal to offset + 1.","example":1},"count":{"type":"integer","description":"Number of elements in the returned page.","example":10},"organizationUnits":{"type":"array","items":{"type":"object","required":["id","handle","name"],"properties":{"id":{"type":"string","format":"uuid"},"handle":{"type":"string"},"name":{"type":"string"},"description":{"type":"string"}},"title":"OrganizationUnitBasic"}},"links":{"type":"array","items":{"type":"object","properties":{"href":{"type":"string","example":"organization-units?offset=20&limit=10"},"rel":{"type":"string","example":"next"}},"title":"Link"}}},"title":"OrganizationUnitListResponse"},"example":{"totalResults":5,"startIndex":1,"count":2,"organizationUnits":[{"id":"afc77cfd-620b-4cf0-a31c-7377b0ea8902","handle":"engineering","name":"Engineering","description":"Engineering Unit"},{"id":"b7c40de6-95cd-4c45-8725-9c7cb5b9cafd","handle":"sales","name":"Sales","description":"Sales Unit"}],"links":[{"href":"organization-units?offset=2&limit=2","rel":"next"}]}}}},"400":{"description":"Bad request","content":{"application/json":{"schema":{"type":"object","required":["code","message"],"properties":{"code":{"type":"string"},"message":{"type":"string"},"description":{"type":"string"}},"title":"Error"},"examples":{"invalid-limit":{"summary":"Invalid limit parameter","value":{"code":"OU-1011","message":"Invalid pagination parameter","description":"The limit parameter must be a positive integer"}},"invalid-offset":{"summary":"Invalid offset parameter","value":{"code":"OU-1012","message":"Invalid pagination parameter","description":"The offset parameter must be a non-negative integer"}}}}}},"500":{"description":"Internal server error"}}}
+>
+  
+</StatusCodes>
+
+
+      

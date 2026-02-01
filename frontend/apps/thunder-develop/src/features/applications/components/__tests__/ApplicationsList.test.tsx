@@ -17,13 +17,8 @@
  */
 
 import {describe, it, expect, beforeEach, vi} from 'vitest';
-import {render, screen, waitFor} from '@testing-library/react';
+import {render, screen, waitFor} from '@thunder/test-utils';
 import userEvent from '@testing-library/user-event';
-import {BrowserRouter} from 'react-router';
-import {QueryClient, QueryClientProvider} from '@tanstack/react-query';
-import {ConfigProvider} from '@thunder/commons-contexts';
-import {LoggerProvider, LogLevel} from '@thunder/logger';
-import type {ReactNode} from 'react';
 import type {ApplicationListResponse} from '../../models/responses';
 import ApplicationsList from '../ApplicationsList';
 
@@ -37,6 +32,28 @@ vi.mock('react-router', async () => {
   };
 });
 vi.mock('../../../../hooks/useDataGridLocaleText');
+
+// Mock @wso2/oxygen-ui to avoid cssstyle issues with CSS variables
+vi.mock('@wso2/oxygen-ui', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@wso2/oxygen-ui')>();
+  return {
+    ...actual,
+    OxygenUIThemeProvider: ({children}: {children: React.ReactNode}) => children,
+  };
+});
+
+// Mock ApplicationDeleteDialog to avoid cssstyle issues with MUI dialogs
+vi.mock('../ApplicationDeleteDialog', () => ({
+  default: ({open, onClose}: {open: boolean; onClose: () => void}) =>
+    open ? (
+      <div role="dialog" data-testid="delete-dialog">
+        <button type="button" onClick={onClose}>
+          Cancel
+        </button>
+        <button type="button">Delete</button>
+      </div>
+    ) : null,
+}));
 
 // Mock MUI DataGrid to avoid CSS import issues
 vi.mock('@mui/x-data-grid', () => ({
@@ -123,59 +140,13 @@ describe('ApplicationsList', () => {
     ],
   };
 
-  let queryClient: QueryClient;
-
   beforeEach(() => {
     mockNavigate = vi.fn();
     vi.mocked(useNavigate).mockReturnValue(mockNavigate);
     vi.mocked(useDataGridLocaleText).mockReturnValue({});
-
-    // Setup window.__THUNDER_RUNTIME_CONFIG__ for tests
-    // eslint-disable-next-line no-underscore-dangle
-    if (typeof window !== 'undefined') {
-      // eslint-disable-next-line no-underscore-dangle
-      window.__THUNDER_RUNTIME_CONFIG__ = {
-        client: {
-          base: '/develop',
-          client_id: 'DEVELOP',
-        },
-        server: {
-          hostname: 'localhost',
-          port: 8090,
-          http_only: false,
-        },
-      };
-    }
-
-    queryClient = new QueryClient({
-      defaultOptions: {
-        queries: {
-          retry: false,
-        },
-      },
-    });
   });
 
-  const renderComponent = () => {
-    function Wrapper({children}: {children: ReactNode}) {
-      return (
-        <QueryClientProvider client={queryClient}>
-          <ConfigProvider>
-            <LoggerProvider
-              logger={{
-                level: LogLevel.ERROR,
-                transports: [],
-              }}
-            >
-              <BrowserRouter>{children}</BrowserRouter>
-            </LoggerProvider>
-          </ConfigProvider>
-        </QueryClientProvider>
-      );
-    }
-
-    return render(<ApplicationsList />, {wrapper: Wrapper});
-  };
+  const renderComponent = () => render(<ApplicationsList />);
 
   it('should render loading state', () => {
     vi.mocked(useGetApplications).mockReturnValue({

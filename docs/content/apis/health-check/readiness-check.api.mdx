@@ -1,0 +1,64 @@
+---
+id: readiness-check
+title: "Readiness check"
+description: "Returns OK if the service is ready to accept traffic."
+sidebar_label: "Readiness check"
+hide_title: true
+hide_table_of_contents: true
+api: eJztVU1r3DAQ/StizuraTSm0vjUftCFlE5IsPSxLUeTZtRJZcqXxJovRfy+S3f1wIC2BQg/dy9rWzOi9N0+jDkisPBRzqFBoqmDBoUQvnWpIWQMFXCO1znh2ecHUklGFzKNbK4lMeeZQlBtGlgkpsSFGTiyXSk6Ag0PfWOPRQ9HBUZ7Hv8PKN6M6wEFaQ2goxoqm0UqKGJvd+5jQgZcV1iI+0aZBKMDe3aMk4NA426Aj1W/nSVDr9+I8OWVWwAFNW0e2syvgcHr5bQocZtOLaXxaBA4Dt+/PKgjnRESoCGv/BwiGOkbU+BKO8xINKdqcHgOH69aQqjE9zzy60+Me0yvZxB8HUqRj0pfU35u+VuCAT6JuNO7L1dcZSzAfszkEvZ8c+LPYfU6/CR0oj+IWPY33+bsXHWQs/XfRv+GiocRrfZTS/5qTAocaqbIlFLDCJLmgCgrI+gGYRRMpg94PFND12FunoYCKqPFFlnWV9RSKrrGOAnBYC6fEne7bFtd6sy5FqwkK0FYKnT4HDjHncPlD/jGHEMKCgzJLm5p0IDg7qVA+sE9X53EvdL73fz55O8lhPLFvK+VjaDwWrccyzmeH5BSukfUsWS8Ms7uJjo4pI3VbKrNiWxGYMCXTao3pRUYUPk53rSQan/o+aP6pEbJCdpQA7cQqsuzx8XEi0urEulU2pPrs6/nJ2fTm7M3RJJ9UVGsISRxPtTB7ha+3WNL2Y7rd7ri/+q4aTgThE2WNFsrENiUO3WCP7f0YL7ZfBlnwodVz6Lo74XHmdAjx848W3QaK+WLnjPgWeCxTokuOesBN1C2hSRbSbZoR45EVbbH17OezWwjhJ4jGnAA=
+sidebar_class_name: "get api-method"
+info_path: docs/apis/health-check/health-check-api
+custom_edit_url: null
+---
+
+import MethodEndpoint from "@theme/ApiExplorer/MethodEndpoint";
+import ParamsDetails from "@theme/ParamsDetails";
+import RequestSchema from "@theme/RequestSchema";
+import StatusCodes from "@theme/StatusCodes";
+import OperationTabs from "@theme/OperationTabs";
+import TabItem from "@theme/TabItem";
+import Heading from "@theme/Heading";
+import Translate from "@docusaurus/Translate";
+
+<Heading
+  as={"h1"}
+  className={"openapi__heading"}
+  children={"Readiness check"}
+>
+</Heading>
+
+<MethodEndpoint
+  method={"get"}
+  path={"/health/readiness"}
+  context={"endpoint"}
+>
+  
+</MethodEndpoint>
+
+
+
+Returns OK if the service is ready to accept traffic.
+
+<ParamsDetails
+  parameters={undefined}
+>
+  
+</ParamsDetails>
+
+<RequestSchema
+  title={"Body"}
+  body={undefined}
+>
+  
+</RequestSchema>
+
+<StatusCodes
+  id={undefined}
+  label={undefined}
+  responses={{"200":{"description":"Service is ready","content":{"application/json":{"schema":{"type":"object","properties":{"status":{"type":"string","enum":["UP","DOWN","UNKNOWN"]},"service_status":{"type":"array","items":{"type":"object","properties":{"service_name":{"type":"string","enum":["IdentityDB","RuntimeDB","UserDB"]},"status":{"type":"string","enum":["UP","DOWN","UNKNOWN"]}}}}},"title":"HealthStatus"},"example":{"status":"UP","service_status":[{"service_name":"IdentityDB","status":"UP"},{"service_name":"RuntimeDB","status":"UP"},{"service_name":"UserDB","status":"UP"}]}}}},"503":{"description":"Service is not ready","content":{"application/json":{"schema":{"type":"object","properties":{"status":{"type":"string","enum":["UP","DOWN","UNKNOWN"]},"service_status":{"type":"array","items":{"type":"object","properties":{"service_name":{"type":"string","enum":["IdentityDB","RuntimeDB","UserDB"]},"status":{"type":"string","enum":["UP","DOWN","UNKNOWN"]}}}}},"title":"HealthStatus"},"example":{"status":"DOWN","service_status":[{"service_name":"IdentityDB","status":"DOWN"},{"service_name":"RuntimeDB","status":"UP"},{"service_name":"UserDB","status":"UP"}]}}}}}}
+>
+  
+</StatusCodes>
+
+
+      

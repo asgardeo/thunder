@@ -17,9 +17,7 @@
  */
 
 import {describe, it, expect, beforeEach, afterEach, vi} from 'vitest';
-import {waitFor, renderHook} from '@testing-library/react';
-import {QueryClient, QueryClientProvider} from '@tanstack/react-query';
-import type {ReactNode} from 'react';
+import {waitFor, renderHook} from '@thunder/test-utils';
 import useDeleteApplication from '../useDeleteApplication';
 import type {ApplicationListResponse} from '../../models/responses';
 import ApplicationQueryKeys from '../../constants/application-query-keys';
@@ -29,8 +27,8 @@ vi.mock('@asgardeo/react', () => ({
   useAsgardeo: vi.fn(),
 }));
 
-vi.mock('@thunder/commons-contexts', async (importOriginal) => {
-  const actual = await importOriginal<typeof import('@thunder/commons-contexts')>();
+vi.mock('@thunder/shared-contexts', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@thunder/shared-contexts')>();
   return {
     ...actual,
     useConfig: vi.fn(),
@@ -38,25 +36,13 @@ vi.mock('@thunder/commons-contexts', async (importOriginal) => {
 });
 
 const {useAsgardeo} = await import('@asgardeo/react');
-const {useConfig} = await import('@thunder/commons-contexts');
+const {useConfig} = await import('@thunder/shared-contexts');
 
 describe('useDeleteApplication', () => {
-  let queryClient: QueryClient;
   let mockHttpRequest: ReturnType<typeof vi.fn>;
   let mockGetServerUrl: ReturnType<typeof vi.fn>;
 
   beforeEach(() => {
-    queryClient = new QueryClient({
-      defaultOptions: {
-        queries: {
-          retry: false,
-        },
-        mutations: {
-          retry: false,
-        },
-      },
-    });
-
     mockHttpRequest = vi.fn();
     mockGetServerUrl = vi.fn().mockReturnValue('https://api.test.com');
 
@@ -72,19 +58,11 @@ describe('useDeleteApplication', () => {
   });
 
   afterEach(() => {
-    queryClient.clear();
     vi.clearAllMocks();
   });
 
-  const createWrapper = () =>
-    function Wrapper({children}: {children: ReactNode}) {
-      return <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>;
-    };
-
   it('should initialize with idle state', () => {
-    const {result} = renderHook(() => useDeleteApplication(), {
-      wrapper: createWrapper(),
-    });
+    const {result} = renderHook(() => useDeleteApplication());
 
     expect(result.current.data).toBeUndefined();
     expect(result.current.error).toBeNull();
@@ -100,9 +78,7 @@ describe('useDeleteApplication', () => {
     mockHttpRequest.mockResolvedValueOnce(undefined);
 
     const applicationId = '550e8400-e29b-41d4-a716-446655440000';
-    const {result} = renderHook(() => useDeleteApplication(), {
-      wrapper: createWrapper(),
-    });
+    const {result} = renderHook(() => useDeleteApplication());
 
     result.current.mutate(applicationId);
 
@@ -119,9 +95,7 @@ describe('useDeleteApplication', () => {
     mockHttpRequest.mockResolvedValueOnce(undefined);
 
     const applicationId = '550e8400-e29b-41d4-a716-446655440000';
-    const {result} = renderHook(() => useDeleteApplication(), {
-      wrapper: createWrapper(),
-    });
+    const {result} = renderHook(() => useDeleteApplication());
 
     result.current.mutate(applicationId);
 
@@ -149,9 +123,7 @@ describe('useDeleteApplication', () => {
     );
 
     const applicationId = '550e8400-e29b-41d4-a716-446655440000';
-    const {result} = renderHook(() => useDeleteApplication(), {
-      wrapper: createWrapper(),
-    });
+    const {result} = renderHook(() => useDeleteApplication());
 
     result.current.mutate(applicationId);
 
@@ -174,9 +146,7 @@ describe('useDeleteApplication', () => {
     mockHttpRequest.mockRejectedValueOnce(apiError);
 
     const applicationId = '550e8400-e29b-41d4-a716-446655440000';
-    const {result} = renderHook(() => useDeleteApplication(), {
-      wrapper: createWrapper(),
-    });
+    const {result} = renderHook(() => useDeleteApplication());
 
     result.current.mutate(applicationId);
 
@@ -194,9 +164,7 @@ describe('useDeleteApplication', () => {
     mockHttpRequest.mockRejectedValueOnce(networkError);
 
     const applicationId = '550e8400-e29b-41d4-a716-446655440000';
-    const {result} = renderHook(() => useDeleteApplication(), {
-      wrapper: createWrapper(),
-    });
+    const {result} = renderHook(() => useDeleteApplication());
 
     result.current.mutate(applicationId);
 
@@ -213,9 +181,7 @@ describe('useDeleteApplication', () => {
     mockHttpRequest.mockRejectedValueOnce(notFoundError);
 
     const applicationId = 'non-existent-id';
-    const {result} = renderHook(() => useDeleteApplication(), {
-      wrapper: createWrapper(),
-    });
+    const {result} = renderHook(() => useDeleteApplication());
 
     result.current.mutate(applicationId);
 
@@ -230,6 +196,7 @@ describe('useDeleteApplication', () => {
     mockHttpRequest.mockResolvedValueOnce(undefined);
 
     const applicationId = '550e8400-e29b-41d4-a716-446655440000';
+    const {result, queryClient} = renderHook(() => useDeleteApplication());
 
     // Pre-populate cache with application
     queryClient.setQueryData([ApplicationQueryKeys.APPLICATION, applicationId], {
@@ -238,10 +205,6 @@ describe('useDeleteApplication', () => {
     });
 
     const removeQueriesSpy = vi.spyOn(queryClient, 'removeQueries');
-
-    const {result} = renderHook(() => useDeleteApplication(), {
-      wrapper: createWrapper(),
-    });
 
     result.current.mutate(applicationId);
 
@@ -261,6 +224,7 @@ describe('useDeleteApplication', () => {
     mockHttpRequest.mockResolvedValueOnce(undefined);
 
     const applicationId = '550e8400-e29b-41d4-a716-446655440000';
+    const {result, queryClient} = renderHook(() => useDeleteApplication());
 
     // Pre-populate cache with applications list
     const mockApplicationsList: ApplicationListResponse = {
@@ -283,10 +247,6 @@ describe('useDeleteApplication', () => {
 
     const invalidateQueriesSpy = vi.spyOn(queryClient, 'invalidateQueries');
 
-    const {result} = renderHook(() => useDeleteApplication(), {
-      wrapper: createWrapper(),
-    });
-
     result.current.mutate(applicationId);
 
     await waitFor(() => {
@@ -305,13 +265,10 @@ describe('useDeleteApplication', () => {
     mockHttpRequest.mockResolvedValueOnce(undefined);
 
     const applicationId = '550e8400-e29b-41d4-a716-446655440000';
+    const {result, queryClient} = renderHook(() => useDeleteApplication());
 
     // Mock invalidateQueries to reject
     vi.spyOn(queryClient, 'invalidateQueries').mockRejectedValueOnce(new Error('Invalidation failed'));
-
-    const {result} = renderHook(() => useDeleteApplication(), {
-      wrapper: createWrapper(),
-    });
 
     result.current.mutate(applicationId);
 
@@ -327,9 +284,7 @@ describe('useDeleteApplication', () => {
     const app1Id = 'app-1';
     const app2Id = 'app-2';
 
-    const {result} = renderHook(() => useDeleteApplication(), {
-      wrapper: createWrapper(),
-    });
+    const {result} = renderHook(() => useDeleteApplication());
 
     // Delete first application
     result.current.mutate(app1Id);
@@ -365,9 +320,7 @@ describe('useDeleteApplication', () => {
     mockHttpRequest.mockRejectedValueOnce(forbiddenError);
 
     const applicationId = '550e8400-e29b-41d4-a716-446655440000';
-    const {result} = renderHook(() => useDeleteApplication(), {
-      wrapper: createWrapper(),
-    });
+    const {result} = renderHook(() => useDeleteApplication());
 
     result.current.mutate(applicationId);
 
@@ -382,9 +335,7 @@ describe('useDeleteApplication', () => {
     mockHttpRequest.mockResolvedValueOnce(undefined);
 
     const applicationId = '550e8400-e29b-41d4-a716-446655440000';
-    const {result} = renderHook(() => useDeleteApplication(), {
-      wrapper: createWrapper(),
-    });
+    const {result} = renderHook(() => useDeleteApplication());
 
     const deletePromise = result.current.mutateAsync(applicationId);
 
@@ -400,9 +351,7 @@ describe('useDeleteApplication', () => {
     mockHttpRequest.mockRejectedValueOnce(apiError);
 
     const applicationId = '550e8400-e29b-41d4-a716-446655440000';
-    const {result} = renderHook(() => useDeleteApplication(), {
-      wrapper: createWrapper(),
-    });
+    const {result} = renderHook(() => useDeleteApplication());
 
     const deletePromise = result.current.mutateAsync(applicationId);
 
@@ -423,12 +372,10 @@ describe('useDeleteApplication', () => {
     const app1Data = {id: app1Id, name: 'App 1'};
     const app2Data = {id: app2Id, name: 'App 2'};
 
+    const {result, queryClient} = renderHook(() => useDeleteApplication());
+
     queryClient.setQueryData([ApplicationQueryKeys.APPLICATION, app1Id], app1Data);
     queryClient.setQueryData([ApplicationQueryKeys.APPLICATION, app2Id], app2Data);
-
-    const {result} = renderHook(() => useDeleteApplication(), {
-      wrapper: createWrapper(),
-    });
 
     // Delete first application
     result.current.mutate(app1Id);
@@ -446,9 +393,7 @@ describe('useDeleteApplication', () => {
     mockHttpRequest.mockResolvedValue(undefined);
 
     const applicationId = '550e8400-e29b-41d4-a716-446655440000';
-    const {result} = renderHook(() => useDeleteApplication(), {
-      wrapper: createWrapper(),
-    });
+    const {result} = renderHook(() => useDeleteApplication());
 
     // Trigger multiple deletions concurrently
     result.current.mutate(applicationId);
@@ -468,9 +413,7 @@ describe('useDeleteApplication', () => {
     mockHttpRequest.mockRejectedValueOnce(apiError).mockResolvedValueOnce(undefined);
 
     const applicationId = '550e8400-e29b-41d4-a716-446655440000';
-    const {result} = renderHook(() => useDeleteApplication(), {
-      wrapper: createWrapper(),
-    });
+    const {result} = renderHook(() => useDeleteApplication());
 
     // First attempt - should fail
     result.current.mutate(applicationId);
@@ -497,9 +440,7 @@ describe('useDeleteApplication', () => {
     mockHttpRequest.mockResolvedValueOnce(undefined);
 
     const applicationId = '550e8400-e29b-41d4-a716-446655440000';
-    const {result} = renderHook(() => useDeleteApplication(), {
-      wrapper: createWrapper(),
-    });
+    const {result} = renderHook(() => useDeleteApplication());
 
     result.current.mutate(applicationId);
 
@@ -515,9 +456,7 @@ describe('useDeleteApplication', () => {
     mockHttpRequest.mockRejectedValueOnce(serverError);
 
     const applicationId = '550e8400-e29b-41d4-a716-446655440000';
-    const {result} = renderHook(() => useDeleteApplication(), {
-      wrapper: createWrapper(),
-    });
+    const {result} = renderHook(() => useDeleteApplication());
 
     result.current.mutate(applicationId);
 

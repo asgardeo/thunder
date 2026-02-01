@@ -964,15 +964,16 @@ func (suite *AuthorizeHandlerTestSuite) TestDecodeAttributesFromAssertion_Succes
 
 	assert.NoError(suite.T(), err)
 	assert.Equal(suite.T(), "test-user", claims.userID)
-	assert.Equal(suite.T(), "local", claims.userType)
-	assert.Equal(suite.T(), "ou123", claims.ouID)
-	assert.Equal(suite.T(), "Organization", claims.ouName)
-	assert.Equal(suite.T(), "org-handle", claims.ouHandle)
+	assert.Equal(suite.T(), "local", claims.userAttributes["userType"])
+	assert.Equal(suite.T(), "ou123", claims.userAttributes["ouId"])
+	assert.Equal(suite.T(), "Organization", claims.userAttributes["ouName"])
+	assert.Equal(suite.T(), "org-handle", claims.userAttributes["ouHandle"])
 	assert.Equal(suite.T(), "testuser", claims.userAttributes["username"])
 	assert.Equal(suite.T(), "test@example.com", claims.userAttributes["email"])
 	assert.Equal(suite.T(), "Test", claims.userAttributes["firstName"])
 	assert.Equal(suite.T(), "User", claims.userAttributes["lastName"])
-	assert.Equal(suite.T(), "read write", claims.userAttributes["authorized_permissions"])
+	// authorized_permissions is extracted separately, not in userAttributes
+	assert.Equal(suite.T(), "read write", claims.authorizedPermissions)
 }
 
 func (suite *AuthorizeHandlerTestSuite) TestDecodeAttributesFromAssertion_DecodeError() {
@@ -996,94 +997,55 @@ func (suite *AuthorizeHandlerTestSuite) TestDecodeAttributesFromAssertion_Invali
 	assert.Equal(suite.T(), "", claims.userID)
 }
 
-func (suite *AuthorizeHandlerTestSuite) TestDecodeAttributesFromAssertion_InvalidUsernameClaim() {
-	// JWT with invalid username claim type
-	// Payload: {"sub":"test-user","username":12345}
-	invalidUsernameJWT := "eyJhbGciOiJub25lIiwidHlwIjoiSldUIn0.eyJzdWIiOiJ0ZXN0LXVzZXIiLCJ1c2VybmFtZSI6MTIzNDV9."
+func (suite *AuthorizeHandlerTestSuite) TestDecodeAttributesFromAssertion_NonStringAttributes() {
+	// User attributes are now stored as-is without type validation
+	// Payload: {"sub":"test-user","username":12345,"email":12345,"firstName":12345,
+	// "lastName":12345,"authorized_permissions":12345}
+	nonStringAttrsJWT := "eyJhbGciOiJub25lIiwidHlwIjoiSldUIn0." +
+		"eyJzdWIiOiJ0ZXN0LXVzZXIiLCJ1c2VybmFtZSI6MTIzNDUsImVtYWlsIjoxMjM0NSwi" +
+		"Zmlyc3ROYW1lIjoxMjM0NSwibGFzdE5hbWUiOjEyMzQ1LCJhdXRob3JpemVkX3Blcm1p" +
+		"c3Npb25zIjoxMjM0NX0."
 
-	_, _, err := decodeAttributesFromAssertion(invalidUsernameJWT)
+	claims, _, err := decodeAttributesFromAssertion(nonStringAttrsJWT)
 
-	assert.Error(suite.T(), err)
-	assert.Contains(suite.T(), err.Error(), "JWT 'username' claim is not a string")
+	assert.NoError(suite.T(), err)
+	assert.Equal(suite.T(), "test-user", claims.userID)
+	// Attributes are stored as-is without type validation
+	assert.Equal(suite.T(), float64(12345), claims.userAttributes["username"])
+	assert.Equal(suite.T(), float64(12345), claims.userAttributes["email"])
+	assert.Equal(suite.T(), float64(12345), claims.userAttributes["firstName"])
+	assert.Equal(suite.T(), float64(12345), claims.userAttributes["lastName"])
+	// authorized_permissions is extracted separately, not in userAttributes
+	// If it's not a string, it's ignored (should be empty string)
+	assert.Equal(suite.T(), "", claims.authorizedPermissions)
 }
 
-func (suite *AuthorizeHandlerTestSuite) TestDecodeAttributesFromAssertion_InvalidEmailClaim() {
-	// JWT with invalid email claim type
-	// Payload: {"sub":"test-user","email":12345}
-	invalidEmailJWT := "eyJhbGciOiJub25lIiwidHlwIjoiSldUIn0.eyJzdWIiOiJ0ZXN0LXVzZXIiLCJlbWFpbCI6MTIzNDV9."
-
-	_, _, err := decodeAttributesFromAssertion(invalidEmailJWT)
-
-	assert.Error(suite.T(), err)
-	assert.Contains(suite.T(), err.Error(), "JWT 'email' claim is not a string")
-}
-
-func (suite *AuthorizeHandlerTestSuite) TestDecodeAttributesFromAssertion_InvalidFirstNameClaim() {
-	// JWT with invalid firstName claim type
-	// Payload: {"sub":"test-user","firstName":12345}
-	invalidFirstNameJWT := "eyJhbGciOiJub25lIiwidHlwIjoiSldUIn0.eyJzdWIiOiJ0ZXN0LXVzZXIiLCJmaXJzdE5hbWUiOjEyMzQ1fQ."
-
-	_, _, err := decodeAttributesFromAssertion(invalidFirstNameJWT)
-
-	assert.Error(suite.T(), err)
-	assert.Contains(suite.T(), err.Error(), "JWT 'firstName' claim is not a string")
-}
-
-func (suite *AuthorizeHandlerTestSuite) TestDecodeAttributesFromAssertion_InvalidLastNameClaim() {
-	// JWT with invalid lastName claim type
-	// Payload: {"sub":"test-user","lastName":12345}
-	invalidLastNameJWT := "eyJhbGciOiJub25lIiwidHlwIjoiSldUIn0.eyJzdWIiOiJ0ZXN0LXVzZXIiLCJsYXN0TmFtZSI6MTIzNDV9."
-
-	_, _, err := decodeAttributesFromAssertion(invalidLastNameJWT)
-
-	assert.Error(suite.T(), err)
-	assert.Contains(suite.T(), err.Error(), "JWT 'lastName' claim is not a string")
-}
-
-func (suite *AuthorizeHandlerTestSuite) TestDecodeAttributesFromAssertion_InvalidAuthorizedPermissionsClaim() {
-	// JWT with invalid authorized_permissions claim type
-	// Payload: {"sub":"test-user","authorized_permissions":12345}
-	invalidPermsJWT := "eyJhbGciOiJub25lIiwidHlwIjoiSldUIn0." +
-		"eyJzdWIiOiJ0ZXN0LXVzZXIiLCJhdXRob3JpemVkX3Blcm1pc3Npb25zIjoxMjM0NX0."
-
-	_, _, err := decodeAttributesFromAssertion(invalidPermsJWT)
-
-	assert.Error(suite.T(), err)
-	assert.Contains(suite.T(), err.Error(), "JWT 'authorized_permissions' claim is not a string")
-}
-
-func (suite *AuthorizeHandlerTestSuite) TestDecodeAttributesFromAssertion_InvalidUserTypeClaim() {
-	// JWT with invalid userType claim type
+func (suite *AuthorizeHandlerTestSuite) TestDecodeAttributesFromAssertion_UserTypeInUserAttributes() {
+	// userType is now stored as a regular user attribute without special validation
 	// Payload: {"sub":"test-user","userType":12345}
-	invalidUserTypeJWT := "eyJhbGciOiJub25lIiwidHlwIjoiSldUIn0.eyJzdWIiOiJ0ZXN0LXVzZXIiLCJ1c2VyVHlwZSI6MTIzNDV9."
+	userTypeJWT := "eyJhbGciOiJub25lIiwidHlwIjoiSldUIn0.eyJzdWIiOiJ0ZXN0LXVzZXIiLCJ1c2VyVHlwZSI6MTIzNDV9."
 
-	_, _, err := decodeAttributesFromAssertion(invalidUserTypeJWT)
+	claims, _, err := decodeAttributesFromAssertion(userTypeJWT)
 
-	assert.Error(suite.T(), err)
-	assert.Contains(suite.T(), err.Error(), "JWT 'userType' claim is not a string")
+	assert.NoError(suite.T(), err)
+	assert.Equal(suite.T(), "test-user", claims.userID)
+	// userType is now in userAttributes without type validation
+	assert.Equal(suite.T(), float64(12345), claims.userAttributes["userType"])
 }
 
-func (suite *AuthorizeHandlerTestSuite) TestDecodeAttributesFromAssertion_InvalidOUClaims() {
-	testCases := []struct {
-		name  string
-		claim string
-		jwt   string
-	}{
-		{"InvalidOUID", "ouId", "eyJhbGciOiJub25lIiwidHlwIjoiSldUIn0.eyJzdWIiOiJ0ZXN0LXVzZXIiLCJvdUlkIjoxMjM0NX0."},
-		{"InvalidOUName", "ouName",
-			"eyJhbGciOiJub25lIiwidHlwIjoiSldUIn0.eyJzdWIiOiJ0ZXN0LXVzZXIiLCJvdU5hbWUiOjEyMzQ1fQ."},
-		{"InvalidOUHandle", "ouHandle",
-			"eyJhbGciOiJub25lIiwidHlwIjoiSldUIn0.eyJzdWIiOiJ0ZXN0LXVzZXIiLCJvdUhhbmRsZSI6MTIzNDV9."},
-	}
+func (suite *AuthorizeHandlerTestSuite) TestDecodeAttributesFromAssertion_OUClaimsInUserAttributes() {
+	// OU claims are now stored as regular user attributes without special validation
+	jwt := "eyJhbGciOiJub25lIiwidHlwIjoiSldUIn0." +
+		"eyJzdWIiOiJ0ZXN0LXVzZXIiLCJvdUlkIjoxMjM0NSwib3VOYW1lIjoxMjM0NSwib3VIYW5kbGUiOjEyMzQ1fQ."
 
-	for _, tc := range testCases {
-		suite.T().Run(tc.name, func(t *testing.T) {
-			_, _, err := decodeAttributesFromAssertion(tc.jwt)
+	claims, _, err := decodeAttributesFromAssertion(jwt)
 
-			assert.Error(t, err)
-			assert.Contains(t, err.Error(), "claim is not a string")
-		})
-	}
+	assert.NoError(suite.T(), err)
+	assert.Equal(suite.T(), "test-user", claims.userID)
+	// OU claims are now in userAttributes without type validation
+	assert.Equal(suite.T(), float64(12345), claims.userAttributes["ouId"])
+	assert.Equal(suite.T(), float64(12345), claims.userAttributes["ouName"])
+	assert.Equal(suite.T(), float64(12345), claims.userAttributes["ouHandle"])
 }
 
 func (suite *AuthorizeHandlerTestSuite) TestHandleAuthorizeGetRequest_GetOAuthMessageReturnsNil() {

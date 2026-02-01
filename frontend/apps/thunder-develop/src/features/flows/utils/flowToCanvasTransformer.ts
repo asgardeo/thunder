@@ -124,7 +124,7 @@ function restoreButtonAction(
       ...component,
       action: {
         type: matchingAction.executor ? 'EXECUTOR' : 'NEXT',
-        next: matchingAction.nextNode,
+        onSuccess: matchingAction.nextNode,
         ...(matchingAction.executor && {executor: matchingAction.executor}),
       },
     };
@@ -254,7 +254,8 @@ function transformNodeToCanvas(apiNode: FlowNode): CanvasNode {
       action: {
         type: 'EXECUTOR',
         executor: apiNode.executor,
-        next: apiNode.onSuccess,
+        onSuccess: apiNode.onSuccess,
+        onFailure: apiNode.onFailure,
       },
     };
 
@@ -359,6 +360,21 @@ function generateEdgesFromNodes(apiNodes: FlowNode[]): Edge[] {
           type: MarkerType.Arrow,
         },
       });
+
+      // Handle onFailure for TASK_EXECUTION nodes (branching support)
+      if (node.onFailure && nodeIds.has(node.onFailure)) {
+        edges.push({
+          id: `${node.id}-failure-to-${node.onFailure}`,
+          source: node.id,
+          sourceHandle: 'failure',
+          target: node.onFailure,
+          type: 'smoothstep',
+          animated: false,
+          markerEnd: {
+            type: MarkerType.Arrow,
+          },
+        });
+      }
     }
 
     // Handle DECISION/RULE node connections

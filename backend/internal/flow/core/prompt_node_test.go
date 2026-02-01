@@ -422,3 +422,122 @@ func (s *PromptOnlyNodeTestSuite) TestExecuteWithInvalidAction() {
 	s.Len(resp.Actions, 1, "Should return actions when invalid action is provided")
 	s.Equal("login", resp.Actions[0].Ref)
 }
+
+func (s *PromptOnlyNodeTestSuite) TestAutoSelectSingleAction_NoInputs() {
+	node := newPromptNode("prompt-1", map[string]interface{}{}, false, false)
+	promptNode := node.(PromptNodeInterface)
+
+	// Single action with no inputs - should auto-complete
+	promptNode.SetPrompts([]common.Prompt{
+		{
+			Action: &common.Action{Ref: "continue", NextNode: "next_node"},
+		},
+	})
+
+	ctx := &NodeContext{
+		FlowID:        "test-flow",
+		CurrentAction: "", // No action selected
+		UserInputs:    map[string]string{},
+	}
+	resp, err := node.Execute(ctx)
+
+	s.Nil(err)
+	s.NotNil(resp)
+	s.Equal(common.NodeStatusComplete, resp.Status, "Single action should be auto-selected")
+	s.Equal("next_node", resp.NextNodeID, "Should route to the next node for auto-selected action")
+	s.Empty(resp.Actions, "No actions should be returned when auto-selected")
+	s.Equal("continue", ctx.CurrentAction, "Context should have the auto-selected action")
+}
+
+func (s *PromptOnlyNodeTestSuite) TestAutoSelectSingleAction_WithInputsProvided() {
+	node := newPromptNode("prompt-1", map[string]interface{}{}, false, false)
+	promptNode := node.(PromptNodeInterface)
+
+	// Single action with inputs - should auto-select and validate inputs
+	promptNode.SetPrompts([]common.Prompt{
+		{
+			Inputs: []common.Input{
+				{Identifier: "username", Required: true},
+				{Identifier: "password", Required: true},
+			},
+			Action: &common.Action{Ref: "submit", NextNode: "auth_node"},
+		},
+	})
+
+	ctx := &NodeContext{
+		FlowID:        "test-flow",
+		CurrentAction: "", // No action selected
+		UserInputs: map[string]string{
+			"username": "testuser",
+			"password": "testpass",
+		},
+	}
+	resp, err := node.Execute(ctx)
+
+	s.Nil(err)
+	s.NotNil(resp)
+	s.Equal(common.NodeStatusComplete, resp.Status,
+		"Should complete when single action auto-selected and inputs provided")
+	s.Equal("auth_node", resp.NextNodeID)
+	s.Equal("submit", ctx.CurrentAction, "Context should have the auto-selected action")
+}
+
+func (s *PromptOnlyNodeTestSuite) TestAutoSelectSingleAction_WithMissingInputs() {
+	node := newPromptNode("prompt-1", map[string]interface{}{}, false, false)
+	promptNode := node.(PromptNodeInterface)
+
+	// Single action with required inputs missing - should NOT auto-select
+	promptNode.SetPrompts([]common.Prompt{
+		{
+			Inputs: []common.Input{
+				{Identifier: "username", Required: true},
+				{Identifier: "password", Required: true},
+			},
+			Action: &common.Action{Ref: "submit", NextNode: "auth_node"},
+		},
+	})
+
+	ctx := &NodeContext{
+		FlowID:        "test-flow",
+		CurrentAction: "",                  // No action selected
+		UserInputs:    map[string]string{}, // No inputs
+	}
+	resp, err := node.Execute(ctx)
+
+	s.Nil(err)
+	s.NotNil(resp)
+	s.Equal(common.NodeStatusIncomplete, resp.Status, "Should be incomplete when inputs are missing")
+	s.Len(resp.Inputs, 2, "Should return missing inputs")
+	s.Len(resp.Actions, 1, "Actions should be returned when inputs are missing (no auto-select)")
+	s.Equal("submit", resp.Actions[0].Ref, "Action should be in the response")
+	s.Equal("", ctx.CurrentAction, "Context should NOT have auto-selected action when inputs missing")
+}
+
+func (s *PromptOnlyNodeTestSuite) TestAutoSelectSingleAction_MultipleActionsNoAutoSelect() {
+	node := newPromptNode("prompt-1", map[string]interface{}{}, false, false)
+	promptNode := node.(PromptNodeInterface)
+
+	// Multiple actions - should not auto-select
+	promptNode.SetPrompts([]common.Prompt{
+		{
+			Inputs: []common.Input{{Identifier: "username", Required: true}},
+			Action: &common.Action{Ref: "basic_auth", NextNode: "basic_node"},
+		},
+		{
+			Action: &common.Action{Ref: "social_auth", NextNode: "social_node"},
+		},
+	})
+
+	ctx := &NodeContext{
+		FlowID:        "test-flow",
+		CurrentAction: "", // No action selected
+		UserInputs:    map[string]string{},
+	}
+	resp, err := node.Execute(ctx)
+
+	s.Nil(err)
+	s.NotNil(resp)
+	s.Equal(common.NodeStatusIncomplete, resp.Status, "Should be incomplete when multiple actions exist")
+	s.Len(resp.Actions, 2, "Should return all actions when multiple exist")
+	s.Equal("", ctx.CurrentAction, "Context should NOT have an auto-selected action with multiple actions")
+}

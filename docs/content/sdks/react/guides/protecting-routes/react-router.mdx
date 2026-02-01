@@ -1,0 +1,172 @@
+---
+title: React Router
+description: Protect routes in React Router v6 applications with Asgardeo authentication
+---
+
+import CodeGroup from '@site/src/components/CodeGroup';
+import CodeBlock from '@site/src/components/CodeBlock';
+
+# React Router
+
+`@asgardeo/react-router` is a supplementary package that provides seamless integration between Asgardeo authentication and React Router. It offers components to easily protect routes and handle authentication flows in your React applications.
+
+## Installation
+
+<CodeGroup>
+<CodeBlock icon="npm" label="npm">
+```bash
+npm install @asgardeo/react-router
+```
+</CodeBlock>
+<CodeBlock icon="yarn" label="yarn">
+```bash
+yarn add @asgardeo/react-router
+```
+</CodeBlock>
+<CodeBlock icon="pnpm" label="pnpm">
+```bash
+pnpm add @asgardeo/react-router
+```
+</CodeBlock>
+</CodeGroup>
+
+## Basic Setup with ProtectedRoute
+
+```tsx title="src/App.tsx" showLineNumbers
+import React from 'react'
+import { BrowserRouter, Routes, Route } from 'react-router-dom'
+import { AsgardeoProvider } from '@asgardeo/react'
+import { ProtectedRoute } from '@asgardeo/react-router'
+import Dashboard from './components/Dashboard'
+import Profile from './components/Profile'
+import SignIn from './components/SignIn'
+
+function App() {
+  return (
+    <AsgardeoProvider
+      baseUrl="https://api.asgardeo.io/t/your-org"
+      clientId="your-client-id"
+      platform="AsgardeoV2"
+    >
+      <BrowserRouter>
+        <Routes>
+          <Route path="/" element={<div>Public Home Page</div>} />
+          <Route path="/signin" element={<SignIn />} />
+          <Route
+            path="/dashboard"
+            element={
+              <ProtectedRoute redirectTo="/signin">
+                <Dashboard />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/profile"
+            element={
+              <ProtectedRoute redirectTo="/signin">
+                <Profile />
+              </ProtectedRoute>
+            }
+          />
+        </Routes>
+      </BrowserRouter>
+    </AsgardeoProvider>
+  )
+}
+
+export default App
+```
+
+## Custom Fallback and Loading States
+
+You can customize the behavior of `ProtectedRoute` with custom fallback components and loading states:
+
+```tsx title="src/App.tsx" showLineNumbers
+import { ProtectedRoute } from '@asgardeo/react-router'
+
+// Redirect to custom login page
+<Route
+  path="/dashboard"
+  element={
+    <ProtectedRoute redirectTo="/login">
+      <Dashboard />
+    </ProtectedRoute>
+  }
+/>
+
+// Custom fallback component
+<Route
+  path="/dashboard"
+  element={
+    <ProtectedRoute
+      fallback={
+        <div className="auth-required">
+          <h2>Please sign in</h2>
+          <p>You need to be signed in to access this page.</p>
+        </div>
+      }
+    >
+      <Dashboard />
+    </ProtectedRoute>
+  }
+/>
+
+// Custom loading state
+<Route
+  path="/dashboard"
+  element={
+    <ProtectedRoute redirectTo="/signin" loader={<div className="spinner">Loading...</div>}>
+      <Dashboard />
+    </ProtectedRoute>
+  }
+/>
+```
+
+## Integration with Layouts
+
+Protect multiple routes using a shared layout:
+
+```tsx title="src/App.tsx" showLineNumbers
+import { ProtectedRoute } from '@asgardeo/react-router'
+
+function App() {
+  return (
+    <BrowserRouter>
+      <Routes>
+        {/* Public routes */}
+        <Route path="/" element={<Home />} />
+        <Route path="/about" element={<About />} />
+        <Route path="/signin" element={<SignIn />} />
+
+        {/* Protected routes with layout */}
+        <Route path="/app" element={<AppLayout />}>
+          <Route
+            path="dashboard"
+            element={
+              <ProtectedRoute redirectTo="/signin">
+                <Dashboard />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="profile"
+            element={
+              <ProtectedRoute redirectTo="/signin">
+                <Profile />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="settings"
+            element={
+              <ProtectedRoute redirectTo="/signin">
+                <Settings />
+              </ProtectedRoute>
+            }
+          />
+        </Route>
+      </Routes>
+    </BrowserRouter>
+  )
+}
+```

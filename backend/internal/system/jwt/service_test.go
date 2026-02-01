@@ -136,6 +136,7 @@ func (suite *JWTServiceTestSuite) SetupTest() {
 			Issuer:         "https://test.thunder.io",
 			ValidityPeriod: 3600, // Default validity period
 			PreferredKeyID: "test-kid",
+			Leeway:         30, // 30 seconds leeway for clock skew
 		},
 		Crypto: config.CryptoConfig{
 			Keys: []config.KeyConfig{
@@ -2309,4 +2310,145 @@ func (suite *JWTServiceTestSuite) TestVerifyJWTSignatureWithPublicKeyAlgorithmDe
 			}
 		})
 	}
+}
+
+func (suite *JWTServiceTestSuite) TestVerifyJWTWithLeeway() {
+	// Test that leeway is applied correctly to time-based claims
+	testCases := []struct {
+		name          string
+		setupFunc     func() (string, string, string)
+		setupConfig   func()
+		expectError   bool
+		expectedError serviceerror.ServiceError
+	}{
+		{
+			name: "TokenExpiredWithinLeeway_ShouldPass",
+			setupFunc: func() (string, string, string) {
+				aud := testAudience
+				iss := testIssuer
+				// Token expired 10 seconds ago, but leeway is 30 seconds
+				expiredTime := time.Now().Add(-10 * time.Second).Unix()
+				token := suite.createBasicJWT(aud, iss, expiredTime, time.Now().Add(-time.Hour).Unix())
+				return token, aud, iss
+			},
+			setupConfig: func() {
+				// Leeway of 30 seconds is already configured in SetupTest
+			},
+			expectError: false,
+		},
+		{
+			name: "TokenExpiredBeyondLeeway_ShouldFail",
+			setupFunc: func() (string, string, string) {
+				aud := testAudience
+				iss := testIssuer
+				// Token expired 60 seconds ago, leeway is 30 seconds
+				expiredTime := time.Now().Add(-60 * time.Second).Unix()
+				token := suite.createBasicJWT(aud, iss, expiredTime, time.Now().Add(-time.Hour).Unix())
+				return token, aud, iss
+			},
+			setupConfig: func() {
+				// Leeway of 30 seconds is already configured in SetupTest
+			},
+			expectError:   true,
+			expectedError: ErrorTokenExpired,
+		},
+		{
+			name: "TokenNbfInFutureWithinLeeway_ShouldPass",
+			setupFunc: func() (string, string, string) {
+				aud := testAudience
+				iss := testIssuer
+				// Token nbf is 10 seconds in the future, but leeway is 30 seconds
+				nbfTime := time.Now().Add(10 * time.Second).Unix()
+				token := suite.createBasicJWT(aud, iss, time.Now().Add(time.Hour).Unix(), nbfTime)
+				return token, aud, iss
+			},
+			setupConfig: func() {
+				// Leeway of 30 seconds is already configured in SetupTest
+			},
+			expectError: false,
+		},
+		{
+			name: "TokenNbfInFutureBeyondLeeway_ShouldFail",
+			setupFunc: func() (string, string, string) {
+				aud := testAudience
+				iss := testIssuer
+				// Token nbf is 60 seconds in the future, leeway is 30 seconds
+				nbfTime := time.Now().Add(60 * time.Second).Unix()
+				token := suite.createBasicJWT(aud, iss, time.Now().Add(time.Hour).Unix(), nbfTime)
+				return token, aud, iss
+			},
+			setupConfig: func() {
+				// Leeway of 30 seconds is already configured in SetupTest
+			},
+			expectError:   true,
+			expectedError: ErrorInvalidJWTFormat,
+		},
+		{
+			name: "TokenExpiredExactlyAtLeewayBoundary_ShouldFail",
+			setupFunc: func() (string, string, string) {
+				aud := testAudience
+				iss := testIssuer
+				// Token expired exactly 31 seconds ago (just beyond 30s leeway)
+				expiredTime := time.Now().Add(-31 * time.Second).Unix()
+				token := suite.createBasicJWT(aud, iss, expiredTime, time.Now().Add(-time.Hour).Unix())
+				return token, aud, iss
+			},
+			setupConfig: func() {
+				// Leeway of 30 seconds is already configured in SetupTest
+			},
+			expectError:   true,
+			expectedError: ErrorTokenExpired,
+		},
+	}
+
+	for _, tc := range testCases {
+		suite.T().Run(tc.name, func(t *testing.T) {
+			tc.setupConfig()
+			token, expectedAud, expectedIss := tc.setupFunc()
+
+			err := suite.jwtService.VerifyJWT(token, expectedAud, expectedIss)
+
+			if tc.expectError {
+				assert.NotNil(t, err)
+				assert.Equal(t, tc.expectedError, *err)
+			} else {
+				assert.Nil(t, err)
+			}
+		})
+	}
+}
+
+func (suite *JWTServiceTestSuite) TestVerifyJWTWithZeroLeeway() {
+	// Test behavior when leeway is set to 0
+	config.ResetThunderRuntime()
+	testConfig := &config.Config{
+		TLS: config.TLSConfig{
+			KeyFile: suite.testKeyPath,
+		},
+		JWT: config.JWTConfig{
+			Issuer:         "https://test.thunder.io",
+			ValidityPeriod: 3600,
+			PreferredKeyID: "test-kid",
+			Leeway:         0, // No leeway
+		},
+		Crypto: config.CryptoConfig{
+			Keys: []config.KeyConfig{
+				{
+					ID:       "test-kid",
+					CertFile: suite.testKeyPath,
+					KeyFile:  suite.testKeyPath,
+				},
+			},
+		},
+	}
+	err := config.InitializeThunderRuntime("", testConfig)
+	assert.NoError(suite.T(), err)
+
+	// Token expired 1 second ago should fail with zero leeway
+	expiredTime := time.Now().Add(-1 * time.Second).Unix()
+	token := suite.createBasicJWT(testAudience, testIssuer, expiredTime, time.Now().Add(-time.Hour).Unix())
+
+	svcErr := suite.jwtService.VerifyJWT(token, testAudience, testIssuer)
+	assert.NotNil(suite.T(), svcErr)
+	assert.Equal(suite.T(), ErrorTokenExpired, *svcErr)
 }

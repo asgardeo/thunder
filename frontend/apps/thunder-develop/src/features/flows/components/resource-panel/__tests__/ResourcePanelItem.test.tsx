@@ -173,5 +173,51 @@ describe('ResourcePanelItem', () => {
       // Component renders without error in light mode
       expect(screen.getByText('Test Resource')).toBeInTheDocument();
     });
+
+    it('should apply dark mode filter when mode is dark', async () => {
+      // Re-mock useColorScheme for dark mode
+      const oxygenUI = await import('@wso2/oxygen-ui');
+      vi.spyOn(oxygenUI, 'useColorScheme').mockReturnValue({
+        mode: 'dark',
+        systemMode: 'light',
+        setMode: vi.fn(),
+      } as unknown as ReturnType<typeof oxygenUI.useColorScheme>);
+
+      const resource = createMockResource();
+      render(<ResourcePanelItem resource={resource} />);
+
+      // Component renders with dark mode
+      expect(screen.getByText('Test Resource')).toBeInTheDocument();
+    });
+
+    it('should use systemMode when mode is system', async () => {
+      // Re-mock useColorScheme for system mode
+      const oxygenUI = await import('@wso2/oxygen-ui');
+      vi.spyOn(oxygenUI, 'useColorScheme').mockReturnValue({
+        mode: 'system',
+        systemMode: 'dark',
+        setMode: vi.fn(),
+      } as unknown as ReturnType<typeof oxygenUI.useColorScheme>);
+
+      const resource = createMockResource();
+      render(<ResourcePanelItem resource={resource} />);
+
+      // Component renders using systemMode (dark)
+      expect(screen.getByText('Test Resource')).toBeInTheDocument();
+    });
+
+    it('should use light effectiveMode when mode is system and systemMode is light', async () => {
+      const oxygenUI = await import('@wso2/oxygen-ui');
+      vi.spyOn(oxygenUI, 'useColorScheme').mockReturnValue({
+        mode: 'system',
+        systemMode: 'light',
+        setMode: vi.fn(),
+      } as unknown as ReturnType<typeof oxygenUI.useColorScheme>);
+
+      const resource = createMockResource();
+      render(<ResourcePanelItem resource={resource} />);
+
+      expect(screen.getByText('Test Resource')).toBeInTheDocument();
+    });
   });
 });

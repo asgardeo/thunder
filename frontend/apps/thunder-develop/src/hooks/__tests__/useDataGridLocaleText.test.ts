@@ -17,7 +17,7 @@
  */
 
 import {describe, it, expect, vi} from 'vitest';
-import {renderHook} from '../../test/test-utils';
+import {renderHook} from '@thunder/test-utils';
 import useDataGridLocaleText from '../useDataGridLocaleText';
 
 // Unmock the hook for testing the actual implementation

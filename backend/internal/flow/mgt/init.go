@@ -24,7 +24,7 @@ import (
 	"github.com/asgardeo/thunder/internal/flow/core"
 	"github.com/asgardeo/thunder/internal/flow/executor"
 	"github.com/asgardeo/thunder/internal/system/config"
-	immutableresource "github.com/asgardeo/thunder/internal/system/immutable_resource"
+	declarativeresource "github.com/asgardeo/thunder/internal/system/declarative_resource"
 	"github.com/asgardeo/thunder/internal/system/middleware"
 )
 
@@ -34,9 +34,9 @@ func Initialize(
 	flowFactory core.FlowFactoryInterface,
 	executorRegistry executor.ExecutorRegistryInterface,
 	graphCache core.GraphCacheInterface,
-) (FlowMgtServiceInterface, immutableresource.ResourceExporter, error) {
+) (FlowMgtServiceInterface, declarativeresource.ResourceExporter, error) {
 	var store flowStoreInterface
-	if config.GetThunderRuntime().Config.ImmutableResources.Enabled {
+	if config.GetThunderRuntime().Config.DeclarativeResources.Enabled {
 		store = newFileBasedStore()
 	} else {
 		store = newCacheBackedFlowStore()
@@ -46,8 +46,8 @@ func Initialize(
 	graphBuilder := newGraphBuilder(flowFactory, executorRegistry, graphCache)
 	service := newFlowMgtService(store, inferenceService, graphBuilder, executorRegistry)
 
-	if config.GetThunderRuntime().Config.ImmutableResources.Enabled {
-		if err := loadImmutableResources(store); err != nil {
+	if config.GetThunderRuntime().Config.DeclarativeResources.Enabled {
+		if err := loadDeclarativeResources(store); err != nil {
 			return nil, nil, err
 		}
 	}

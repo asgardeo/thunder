@@ -144,13 +144,7 @@ export default function SignUpBox(): JSX.Element {
         </Box>
       )}
       <StyledPaper variant="outlined">
-        <SignUp
-          shouldRedirectAfterSignUp={false}
-          onComplete={() => {
-            // eslint-disable-next-line @typescript-eslint/no-floating-promises
-            navigate(signInUrl);
-          }}
-        >
+        <SignUp afterSignUpUrl={signInUrl}>
           {({values, fieldErrors, error, touched, handleInputChange, handleSubmit, isLoading, components}: any) => (
             <>
               {!components ? (

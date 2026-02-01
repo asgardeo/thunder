@@ -21,14 +21,28 @@ import {styled, keyframes} from '@mui/material/styles';
 import {Button} from '@wso2/oxygen-ui';
 import type {ButtonProps} from '@wso2/oxygen-ui';
 
-const rainbow = keyframes`
+const spin = keyframes`
   0% {
-    background-position: 0% 50%;
+    --gradient-angle: 0deg;
   }
   100% {
-    background-position: 200% 50%;
+    --gradient-angle: 360deg;
   }
 `;
+
+// Register CSS @property for animatable custom property
+if (typeof window !== 'undefined' && 'CSS' in window && 'registerProperty' in CSS) {
+  try {
+    CSS.registerProperty({
+      name: '--gradient-angle',
+      syntax: '<angle>',
+      initialValue: '0deg',
+      inherits: false,
+    });
+  } catch {
+    // Property already registered
+  }
+}
 
 const StyledGradientButton = styled(Button)(() => ({
   position: 'relative',
@@ -47,12 +61,11 @@ const StyledGradientButton = styled(Button)(() => ({
     inset: 0,
     borderRadius: '8px',
     padding: '2px',
-    background: 'linear-gradient(135deg, #667eea, #764ba2, #f093fb, #4facfe, #00f2fe, #667eea)',
-    backgroundSize: '300% 300%',
+    background: 'conic-gradient(from var(--gradient-angle), #667eea, #764ba2, #f093fb, #4facfe, #00f2fe, #667eea)',
     WebkitMask: 'linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0)',
     WebkitMaskComposite: 'xor',
     maskComposite: 'exclude',
-    animation: `${rainbow} 4s linear infinite`,
+    animation: `${spin} 4s linear infinite`,
     zIndex: -1,
   },
   '&:hover': {

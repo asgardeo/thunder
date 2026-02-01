@@ -78,7 +78,8 @@ describe('GithubExecution', () => {
       const resource = createMockResource();
       render(<GithubExecution resource={resource} />);
 
-      expect(screen.getByText('flows:core.executions.names.github')).toBeInTheDocument();
+      // Resource has display.label = 'GitHub', so it shows that instead of the translation key
+      expect(screen.getByText('GitHub')).toBeInTheDocument();
     });
 
     it('should render GitHub icon', () => {
@@ -95,7 +96,8 @@ describe('GithubExecution', () => {
       const resource = createMockResource();
       render(<GithubExecution resource={resource} />);
 
-      const container = screen.getByText('flows:core.executions.names.github').parentElement;
+      // Resource has display.label = 'GitHub'
+      const container = screen.getByText('GitHub').parentElement;
       expect(container).toHaveClass('flow-builder-execution');
       expect(container).toHaveClass('github');
     });
@@ -164,7 +166,8 @@ describe('GithubExecution', () => {
       });
       render(<GithubExecution resource={resource} />);
 
-      expect(screen.getByText('flows:core.executions.names.github')).toBeInTheDocument();
+      // Resource has display.label = 'GitHub'
+      expect(screen.getByText('GitHub')).toBeInTheDocument();
     });
 
     it('should handle resource without idpId', () => {
@@ -180,7 +183,8 @@ describe('GithubExecution', () => {
       });
       render(<GithubExecution resource={resource} />);
 
-      expect(screen.getByText('flows:core.executions.names.github')).toBeInTheDocument();
+      // Resource has display.label = 'GitHub'
+      expect(screen.getByText('GitHub')).toBeInTheDocument();
     });
 
     it('should handle resource with undefined properties', () => {
@@ -195,7 +199,8 @@ describe('GithubExecution', () => {
       });
       render(<GithubExecution resource={resource} />);
 
-      expect(screen.getByText('flows:core.executions.names.github')).toBeInTheDocument();
+      // Resource has display.label = 'GitHub'
+      expect(screen.getByText('GitHub')).toBeInTheDocument();
     });
   });
 

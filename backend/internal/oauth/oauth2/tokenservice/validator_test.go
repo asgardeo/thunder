@@ -58,6 +58,7 @@ func (suite *TokenValidatorTestSuite) SetupTest() {
 			Issuer:         "https://thunder.io",
 			ValidityPeriod: 3600,
 			Audience:       "application", // Default audience for tests
+			Leeway:         30,            // 30 seconds leeway for clock skew
 		},
 	}
 	_ = config.InitializeThunderRuntime("test", testConfig)
@@ -1368,5 +1369,191 @@ func (suite *TokenValidatorTestSuite) TestValidateAuthAssertion_Success_WithEmpt
 	assert.NoError(suite.T(), err)
 	assert.NotNil(suite.T(), result)
 	assert.Equal(suite.T(), []string{}, result.Scopes)
+	suite.mockJWTService.AssertExpectations(suite.T())
+}
+
+// ============================================================================
+// Leeway Tests - Time-based claim validation with clock skew tolerance
+// ============================================================================
+
+func (suite *TokenValidatorTestSuite) TestValidateSubjectToken_Leeway_ExpiredWithinLeeway_ShouldPass() {
+	defaultAudience := suite.getDefaultAudience()
+
+	now := time.Now().Unix()
+	// Token expired 10 seconds ago, but leeway is 30 seconds - should pass
+	claims := map[string]interface{}{
+		"sub": "user123",
+		"iss": "https://thunder.io",
+		"aud": defaultAudience,
+		"exp": float64(now - 10), // Expired 10 seconds ago
+		"nbf": float64(now - 3600),
+	}
+	token := suite.createTestJWT(claims)
+
+	suite.mockJWTService.On("VerifyJWTSignature", token).Return(nil)
+
+	result, err := suite.validator.ValidateSubjectToken(token, suite.oauthApp)
+
+	assert.NoError(suite.T(), err)
+	assert.NotNil(suite.T(), result)
+	assert.Equal(suite.T(), "user123", result.Sub)
+	suite.mockJWTService.AssertExpectations(suite.T())
+}
+
+func (suite *TokenValidatorTestSuite) TestValidateSubjectToken_Leeway_ExpiredBeyondLeeway_ShouldFail() {
+	now := time.Now().Unix()
+	// Token expired 60 seconds ago, leeway is 30 seconds - should fail
+	claims := map[string]interface{}{
+		"sub": "user123",
+		"iss": "https://thunder.io",
+		"exp": float64(now - 60), // Expired 60 seconds ago
+		"nbf": float64(now - 3600),
+	}
+	token := suite.createTestJWT(claims)
+
+	suite.mockJWTService.On("VerifyJWTSignature", token).Return(nil)
+
+	result, err := suite.validator.ValidateSubjectToken(token, suite.oauthApp)
+
+	assert.Error(suite.T(), err)
+	assert.Nil(suite.T(), result)
+	assert.Contains(suite.T(), err.Error(), "token has expired")
+	suite.mockJWTService.AssertExpectations(suite.T())
+}
+
+func (suite *TokenValidatorTestSuite) TestValidateSubjectToken_Leeway_NbfInFutureWithinLeeway_ShouldPass() {
+	defaultAudience := suite.getDefaultAudience()
+
+	now := time.Now().Unix()
+	// Token nbf is 10 seconds in future, but leeway is 30 seconds - should pass
+	claims := map[string]interface{}{
+		"sub": "user123",
+		"iss": "https://thunder.io",
+		"aud": defaultAudience,
+		"exp": float64(now + 3600),
+		"nbf": float64(now + 10), // Not valid for another 10 seconds
+	}
+	token := suite.createTestJWT(claims)
+
+	suite.mockJWTService.On("VerifyJWTSignature", token).Return(nil)
+
+	result, err := suite.validator.ValidateSubjectToken(token, suite.oauthApp)
+
+	assert.NoError(suite.T(), err)
+	assert.NotNil(suite.T(), result)
+	assert.Equal(suite.T(), "user123", result.Sub)
+	suite.mockJWTService.AssertExpectations(suite.T())
+}
+
+func (suite *TokenValidatorTestSuite) TestValidateSubjectToken_Leeway_NbfInFutureBeyondLeeway_ShouldFail() {
+	now := time.Now().Unix()
+	// Token nbf is 60 seconds in future, leeway is 30 seconds - should fail
+	claims := map[string]interface{}{
+		"sub": "user123",
+		"iss": "https://thunder.io",
+		"exp": float64(now + 3600),
+		"nbf": float64(now + 60), // Not valid for another 60 seconds
+	}
+	token := suite.createTestJWT(claims)
+
+	suite.mockJWTService.On("VerifyJWTSignature", token).Return(nil)
+
+	result, err := suite.validator.ValidateSubjectToken(token, suite.oauthApp)
+
+	assert.Error(suite.T(), err)
+	assert.Nil(suite.T(), result)
+	assert.Contains(suite.T(), err.Error(), "token not yet valid")
+	suite.mockJWTService.AssertExpectations(suite.T())
+}
+
+func (suite *TokenValidatorTestSuite) TestValidateSubjectToken_Leeway_ExpirationBoundary_ShouldFail() {
+	testCases := []struct {
+		name      string
+		leeway    int64
+		expOffset int64 // offset from now in seconds (negative = expired)
+		desc      string
+	}{
+		{
+			name:      "ZeroLeeway_ExpiredOneSecondAgo",
+			leeway:    0,
+			expOffset: -1,
+			desc:      "Token expired 1 second ago with zero leeway should fail",
+		},
+		{
+			name:      "ExactlyAtBoundary",
+			leeway:    30,
+			expOffset: -30,
+			desc:      "Token exp exactly at leeway boundary (now >= exp + leeway) should fail",
+		},
+	}
+
+	for _, tc := range testCases {
+		suite.Run(tc.name, func() {
+			config.ResetThunderRuntime()
+			testConfig := &config.Config{
+				JWT: config.JWTConfig{
+					Issuer:         "https://thunder.io",
+					ValidityPeriod: 3600,
+					Audience:       "application",
+					Leeway:         tc.leeway,
+				},
+			}
+			_ = config.InitializeThunderRuntime("test", testConfig)
+
+			now := time.Now().Unix()
+			claims := map[string]interface{}{
+				"sub": "user123",
+				"iss": "https://thunder.io",
+				"exp": float64(now + tc.expOffset),
+				"nbf": float64(now - 3600),
+			}
+			token := suite.createTestJWT(claims)
+
+			suite.mockJWTService.On("VerifyJWTSignature", token).Return(nil).Once()
+
+			result, err := suite.validator.ValidateSubjectToken(token, suite.oauthApp)
+
+			assert.Error(suite.T(), err, tc.desc)
+			assert.Nil(suite.T(), result)
+			assert.Contains(suite.T(), err.Error(), "token has expired")
+		})
+	}
+}
+
+func (suite *TokenValidatorTestSuite) TestValidateSubjectToken_Leeway_ExpJustInsideBoundary_ShouldPass() {
+	// Reset and test with 30 second leeway
+	config.ResetThunderRuntime()
+	testConfig := &config.Config{
+		JWT: config.JWTConfig{
+			Issuer:         "https://thunder.io",
+			ValidityPeriod: 3600,
+			Audience:       "application",
+			Leeway:         30, // 30 seconds leeway
+		},
+	}
+	_ = config.InitializeThunderRuntime("test", testConfig)
+
+	defaultAudience := suite.getDefaultAudience()
+
+	now := time.Now().Unix()
+	// Token exp is just inside leeway boundary (now - 29 seconds)
+	// Condition: now >= exp + leeway
+	// = now >= (now - 29) + 30 = now >= now + 1 = FALSE (should pass)
+	claims := map[string]interface{}{
+		"sub": "user123",
+		"iss": "https://thunder.io",
+		"aud": defaultAudience,
+		"exp": float64(now - 29), // Just inside boundary
+		"nbf": float64(now - 3600),
+	}
+	token := suite.createTestJWT(claims)
+
+	suite.mockJWTService.On("VerifyJWTSignature", token).Return(nil)
+
+	result, err := suite.validator.ValidateSubjectToken(token, suite.oauthApp)
+
+	assert.NoError(suite.T(), err)
+	assert.NotNil(suite.T(), result)
+	assert.Equal(suite.T(), "user123", result.Sub)
 	suite.mockJWTService.AssertExpectations(suite.T())
 }

@@ -19,11 +19,10 @@
 /* eslint-disable @typescript-eslint/no-unsafe-assignment */
 
 import {describe, it, expect, beforeEach, afterEach, vi} from 'vitest';
-import {waitFor, act, renderHook} from '@testing-library/react';
-import {QueryClient, QueryClientProvider} from '@tanstack/react-query';
-import type {ReactNode} from 'react';
+import {waitFor, act, renderHook} from '@thunder/test-utils';
+import {QueryClient} from '@tanstack/react-query';
 import {useAsgardeo} from '@asgardeo/react';
-import {useConfig} from '@thunder/commons-contexts';
+import {useConfig} from '@thunder/shared-contexts';
 import useIdentityProviders from '../useIdentityProviders';
 import type {IdentityProviderListResponse} from '../../models/responses';
 import {IdentityProviderTypes} from '../../models/identity-provider';
@@ -34,9 +33,13 @@ vi.mock('@asgardeo/react', () => ({
   useAsgardeo: vi.fn(),
 }));
 
-vi.mock('@thunder/commons-contexts', () => ({
-  useConfig: vi.fn(),
-}));
+vi.mock('@thunder/shared-contexts', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@thunder/shared-contexts')>();
+  return {
+    ...actual,
+    useConfig: vi.fn(),
+  };
+});
 
 describe('useIdentityProviders', () => {
   const mockIdentityProviders: IdentityProviderListResponse = [
@@ -60,20 +63,9 @@ describe('useIdentityProviders', () => {
     },
   ];
 
-  let queryClient: QueryClient;
   let mockHttpRequest: ReturnType<typeof vi.fn>;
 
   beforeEach(() => {
-    queryClient = new QueryClient({
-      defaultOptions: {
-        queries: {
-          retry: false,
-          gcTime: Infinity,
-          staleTime: Infinity,
-        },
-      },
-    });
-
     mockHttpRequest = vi.fn().mockResolvedValue({data: mockIdentityProviders});
 
     vi.mocked(useAsgardeo).mockReturnValue({
@@ -88,22 +80,12 @@ describe('useIdentityProviders', () => {
   });
 
   afterEach(() => {
-    queryClient.clear();
     vi.clearAllMocks();
   });
 
-  const createWrapper = () => {
-    function Wrapper({children}: {children: ReactNode}) {
-      return <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>;
-    }
-    return Wrapper;
-  };
-
   describe('Initialization', () => {
     it('should initialize with loading state', () => {
-      const {result} = renderHook(() => useIdentityProviders(), {
-        wrapper: createWrapper(),
-      });
+      const {result} = renderHook(() => useIdentityProviders());
 
       expect(result.current.isLoading).toBe(true);
       expect(result.current.data).toBeUndefined();
@@ -113,9 +95,7 @@ describe('useIdentityProviders', () => {
 
   describe('Successful Fetch', () => {
     it('should fetch identity providers successfully', async () => {
-      const {result} = renderHook(() => useIdentityProviders(), {
-        wrapper: createWrapper(),
-      });
+      const {result} = renderHook(() => useIdentityProviders());
 
       await waitFor(() => {
         expect(result.current.isSuccess).toBe(true);
@@ -126,9 +106,7 @@ describe('useIdentityProviders', () => {
     });
 
     it('should call API with correct parameters', async () => {
-      const {result} = renderHook(() => useIdentityProviders(), {
-        wrapper: createWrapper(),
-      });
+      const {result} = renderHook(() => useIdentityProviders());
 
       await waitFor(() => {
         expect(result.current.isSuccess).toBe(true);
@@ -146,9 +124,7 @@ describe('useIdentityProviders', () => {
     });
 
     it('should return array of identity providers', async () => {
-      const {result} = renderHook(() => useIdentityProviders(), {
-        wrapper: createWrapper(),
-      });
+      const {result} = renderHook(() => useIdentityProviders());
 
       await waitFor(() => {
         expect(result.current.isSuccess).toBe(true);
@@ -159,9 +135,7 @@ describe('useIdentityProviders', () => {
     });
 
     it('should return identity providers with correct structure', async () => {
-      const {result} = renderHook(() => useIdentityProviders(), {
-        wrapper: createWrapper(),
-      });
+      const {result} = renderHook(() => useIdentityProviders());
 
       await waitFor(() => {
         expect(result.current.isSuccess).toBe(true);
@@ -176,9 +150,7 @@ describe('useIdentityProviders', () => {
     it('should handle empty list response', async () => {
       mockHttpRequest.mockResolvedValue({data: []});
 
-      const {result} = renderHook(() => useIdentityProviders(), {
-        wrapper: createWrapper(),
-      });
+      const {result} = renderHook(() => useIdentityProviders());
 
       await waitFor(() => {
         expect(result.current.isSuccess).toBe(true);
@@ -194,9 +166,7 @@ describe('useIdentityProviders', () => {
       const mockError = new Error('Failed to fetch identity providers');
       mockHttpRequest.mockRejectedValue(mockError);
 
-      const {result} = renderHook(() => useIdentityProviders(), {
-        wrapper: createWrapper(),
-      });
+      const {result} = renderHook(() => useIdentityProviders());
 
       await waitFor(() => {
         expect(result.current.isError).toBe(true);
@@ -210,9 +180,7 @@ describe('useIdentityProviders', () => {
       const notFoundError = new Error('Not found');
       mockHttpRequest.mockRejectedValue(notFoundError);
 
-      const {result} = renderHook(() => useIdentityProviders(), {
-        wrapper: createWrapper(),
-      });
+      const {result} = renderHook(() => useIdentityProviders());
 
       await waitFor(() => {
         expect(result.current.isError).toBe(true);
@@ -225,9 +193,7 @@ describe('useIdentityProviders', () => {
       const networkError = new Error('Network error');
       mockHttpRequest.mockRejectedValue(networkError);
 
-      const {result} = renderHook(() => useIdentityProviders(), {
-        wrapper: createWrapper(),
-      });
+      const {result} = renderHook(() => useIdentityProviders());
 
       await waitFor(() => {
         expect(result.current.isError).toBe(true);
@@ -241,9 +207,7 @@ describe('useIdentityProviders', () => {
       const mockError = new Error('Server error');
       mockHttpRequest.mockRejectedValue(mockError);
 
-      const {result} = renderHook(() => useIdentityProviders(), {
-        wrapper: createWrapper(),
-      });
+      const {result} = renderHook(() => useIdentityProviders());
 
       await waitFor(() => {
         expect(result.current.isError).toBe(true);
@@ -264,9 +228,7 @@ describe('useIdentityProviders', () => {
           }),
       );
 
-      const {result} = renderHook(() => useIdentityProviders(), {
-        wrapper: createWrapper(),
-      });
+      const {result} = renderHook(() => useIdentityProviders());
 
       expect(result.current.isLoading).toBe(true);
       expect(result.current.data).toBeUndefined();
@@ -282,9 +244,7 @@ describe('useIdentityProviders', () => {
 
   describe('Refetching', () => {
     it('should refetch identity providers on demand', async () => {
-      const {result} = renderHook(() => useIdentityProviders(), {
-        wrapper: createWrapper(),
-      });
+      const {result} = renderHook(() => useIdentityProviders());
 
       await waitFor(() => {
         expect(result.current.isSuccess).toBe(true);
@@ -300,9 +260,7 @@ describe('useIdentityProviders', () => {
     });
 
     it('should fetch fresh data on refetch', async () => {
-      const {result} = renderHook(() => useIdentityProviders(), {
-        wrapper: createWrapper(),
-      });
+      const {result} = renderHook(() => useIdentityProviders());
 
       await waitFor(() => {
         expect(result.current.isSuccess).toBe(true);
@@ -335,9 +293,7 @@ describe('useIdentityProviders', () => {
 
   describe('Query Keys', () => {
     it('should use correct query key structure', async () => {
-      const {result} = renderHook(() => useIdentityProviders(), {
-        wrapper: createWrapper(),
-      });
+      const {result, queryClient} = renderHook(() => useIdentityProviders());
 
       await waitFor(() => {
         expect(result.current.isSuccess).toBe(true);
@@ -356,10 +312,19 @@ describe('useIdentityProviders', () => {
 
   describe('Caching', () => {
     it('should use cached results on subsequent renders', async () => {
-      const wrapper = createWrapper();
+      // This test needs a shared QueryClient to test caching behavior
+      const cacheQueryClient = new QueryClient({
+        defaultOptions: {
+          queries: {
+            retry: false,
+            gcTime: Infinity,
+            staleTime: Infinity,
+          },
+        },
+      });
 
       const {result: result1, unmount: unmount1} = renderHook(() => useIdentityProviders(), {
-        wrapper,
+        queryClient: cacheQueryClient,
       });
 
       await waitFor(() => {
@@ -372,7 +337,7 @@ describe('useIdentityProviders', () => {
       unmount1();
 
       const {result: result2} = renderHook(() => useIdentityProviders(), {
-        wrapper,
+        queryClient: cacheQueryClient,
       });
 
       await waitFor(() => {
@@ -387,9 +352,7 @@ describe('useIdentityProviders', () => {
 
   describe('Multiple Provider Types', () => {
     it('should handle different identity provider types', async () => {
-      const {result} = renderHook(() => useIdentityProviders(), {
-        wrapper: createWrapper(),
-      });
+      const {result} = renderHook(() => useIdentityProviders());
 
       await waitFor(() => {
         expect(result.current.isSuccess).toBe(true);
@@ -402,9 +365,7 @@ describe('useIdentityProviders', () => {
     });
 
     it('should include provider with optional description', async () => {
-      const {result} = renderHook(() => useIdentityProviders(), {
-        wrapper: createWrapper(),
-      });
+      const {result} = renderHook(() => useIdentityProviders());
 
       await waitFor(() => {
         expect(result.current.isSuccess).toBe(true);
@@ -425,9 +386,7 @@ describe('useIdentityProviders', () => {
 
       mockHttpRequest.mockResolvedValue({data: providersWithoutDesc});
 
-      const {result} = renderHook(() => useIdentityProviders(), {
-        wrapper: createWrapper(),
-      });
+      const {result} = renderHook(() => useIdentityProviders());
 
       await waitFor(() => {
         expect(result.current.isSuccess).toBe(true);
@@ -441,9 +400,7 @@ describe('useIdentityProviders', () => {
     it('should handle malformed response gracefully', async () => {
       mockHttpRequest.mockResolvedValue({data: null});
 
-      const {result} = renderHook(() => useIdentityProviders(), {
-        wrapper: createWrapper(),
-      });
+      const {result} = renderHook(() => useIdentityProviders());
 
       await waitFor(() => {
         expect(result.current.isSuccess).toBe(true);
@@ -463,9 +420,7 @@ describe('useIdentityProviders', () => {
 
       mockHttpRequest.mockResolvedValue({data: singleProvider});
 
-      const {result} = renderHook(() => useIdentityProviders(), {
-        wrapper: createWrapper(),
-      });
+      const {result} = renderHook(() => useIdentityProviders());
 
       await waitFor(() => {
         expect(result.current.isSuccess).toBe(true);
@@ -484,9 +439,7 @@ describe('useIdentityProviders', () => {
 
       mockHttpRequest.mockResolvedValue({data: largeList});
 
-      const {result} = renderHook(() => useIdentityProviders(), {
-        wrapper: createWrapper(),
-      });
+      const {result} = renderHook(() => useIdentityProviders());
 
       await waitFor(() => {
         expect(result.current.isSuccess).toBe(true);
@@ -505,9 +458,7 @@ describe('useIdentityProviders', () => {
           }),
       );
 
-      const {result} = renderHook(() => useIdentityProviders(), {
-        wrapper: createWrapper(),
-      });
+      const {result} = renderHook(() => useIdentityProviders());
 
       expect(result.current.isLoading).toBe(true);
 
@@ -517,9 +468,7 @@ describe('useIdentityProviders', () => {
     });
 
     it('should support isFetching flag', async () => {
-      const {result} = renderHook(() => useIdentityProviders(), {
-        wrapper: createWrapper(),
-      });
+      const {result} = renderHook(() => useIdentityProviders());
 
       await waitFor(() => {
         expect(result.current.isSuccess).toBe(true);
@@ -535,9 +484,7 @@ describe('useIdentityProviders', () => {
     });
 
     it('should complete refetch successfully', async () => {
-      const {result} = renderHook(() => useIdentityProviders(), {
-        wrapper: createWrapper(),
-      });
+      const {result} = renderHook(() => useIdentityProviders());
 
       await waitFor(() => {
         expect(result.current.isSuccess).toBe(true);

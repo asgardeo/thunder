@@ -439,33 +439,28 @@ describeOrSkip("Sample App - MFA Authentication with SMS OTP", () => {
     await signUpButton.click();
     console.log("✓ Registration form submitted");
 
-    // Step 10: Verify redirect to login page after successful registration
-    console.log("\n[REGISTRATION] Step 10: Verifying redirect to login page...");
-    await page.waitForTimeout(2000); // Wait for registration to complete
+    // Step 10: Verify user is auto-logged in after successful registration
+    console.log("\n[REGISTRATION] Step 10: Verifying auto-login after registration...");
+    await page.waitForLoadState("networkidle");
+    
+    // Wait for OAuth redirect to complete and page to fully render
+    // The app redirects with ?code=...&state=... and then processes the token
+    await page.waitForURL((url: URL) => !url.searchParams.has("code"), { timeout: 15000 }).catch(() => {
+      console.log("  Note: URL still contains code parameter, continuing...");
+    });
+    await page.waitForLoadState("networkidle");
+    
+    // Wait for the avatar/logout button to be visible (indicates logged-in UI is ready)
+    const avatarOrLogout = page.locator(
+      'button[aria-haspopup="true"], button[aria-controls="account-menu"], button:has(> div[class*="MuiAvatar"]), button:has-text("Logout"), button:has-text("Sign Out")'
+    ).first();
+    await avatarOrLogout.waitFor({ state: "visible", timeout: 15000 });
+    console.log("✓ User auto-logged in after registration");
 
-    // Check if redirected to login page or home page
-    const isLoginPage = await page
-      .locator('input[name="username"]')
-      .isVisible()
-      .catch(() => false);
-    const isHomePage = await page
-      .locator('button:has-text("Sign In")')
-      .isVisible()
-      .catch(() => false);
-
-    if (isLoginPage) {
-      console.log("✓ Redirected to login page - user can now login");
-    } else if (isHomePage) {
-      console.log("✓ User auto-logged in and redirected to home page");
-      // Logout to test the login flow
-      console.log("\n[REGISTRATION] Logging out to test MFA login...");
-      const logoutButton = page.locator('button:has-text("Logout"), button:has-text("Sign Out")');
-      if (await logoutButton.isVisible().catch(() => false)) {
-        await logoutButton.click();
-        await page.waitForTimeout(1000);
-        console.log("✓ User logged out");
-      }
-    }
+    // Step 11: Logout to test the MFA login flow
+    console.log("\n[REGISTRATION] Step 11: Logging out to test MFA login flow...");
+    await sampleAppLoginPage.logout();
+    console.log("✓ User logged out");
 
     console.log("✓ Registration completed successfully");
 
@@ -473,27 +468,27 @@ describeOrSkip("Sample App - MFA Authentication with SMS OTP", () => {
 
     console.log("\n[LOGIN] Starting MFA login flow with newly registered user...");
 
-    // Step 11: Navigate to login page
-    console.log("\n[LOGIN] Step 11: Navigating to login page...");
+    // Step 12: Navigate to login page
+    console.log("\n[LOGIN] Step 12: Navigating to login page...");
     await sampleAppLoginPage.goto(sampleAppUrl!);
     await sampleAppLoginPage.verifyHomePageLoaded();
     await sampleAppLoginPage.clickSignInButton();
     await sampleAppLoginPage.verifyLoginPageLoaded();
     console.log("✓ Login page displayed");
 
-    // Step 12: Enter registered user credentials
-    console.log("\n[LOGIN] Step 12: Entering registered user credentials...");
+    // Step 13: Enter registered user credentials
+    console.log("\n[LOGIN] Step 13: Entering registered user credentials...");
     await sampleAppLoginPage.fillLoginForm(regUsername, regPassword);
     console.log(`  Username: ${regUsername}`);
     console.log("  Password: ********");
 
-    // Step 13: Submit login form
-    console.log("\n[LOGIN] Step 13: Submitting login form...");
+    // Step 14: Submit login form
+    console.log("\n[LOGIN] Step 14: Submitting login form...");
     await sampleAppLoginPage.clickLogin();
     console.log("✓ Login form submitted");
 
-    // Step 14: Wait for OTP page
-    console.log("\n[LOGIN] Step 14: Waiting for OTP verification page...");
+    // Step 15: Wait for OTP page
+    console.log("\n[LOGIN] Step 15: Waiting for OTP verification page...");
     try {
       await sampleAppLoginPage.verifyOTPPageLoaded();
       console.log("✓ OTP verification page displayed");
@@ -503,8 +498,8 @@ describeOrSkip("Sample App - MFA Authentication with SMS OTP", () => {
       return;
     }
 
-    // Step 15: Retrieve OTP from mock SMS server
-    console.log("\n[LOGIN] Step 15: Retrieving OTP from mock SMS server...");
+    // Step 16: Retrieve OTP from mock SMS server
+    console.log("\n[LOGIN] Step 16: Retrieving OTP from mock SMS server...");
     await page.waitForTimeout(2000);
 
     const lastMessage = mockSMSServer.getLastMessage();
@@ -515,23 +510,23 @@ describeOrSkip("Sample App - MFA Authentication with SMS OTP", () => {
     console.log(`✓ SMS received for mobile: ${regMobile}`);
     console.log(`✓ OTP extracted: ${lastMessage!.otp}`);
 
-    // Step 16: Enter OTP
-    console.log("\n[LOGIN] Step 16: Entering OTP...");
+    // Step 17: Enter OTP
+    console.log("\n[LOGIN] Step 17: Entering OTP...");
     await sampleAppLoginPage.fillOTP(lastMessage!.otp);
     console.log(`  OTP: ${lastMessage!.otp}`);
 
-    // Step 17: Submit OTP verification
-    console.log("\n[LOGIN] Step 17: Submitting OTP verification...");
+    // Step 18: Submit OTP verification
+    console.log("\n[LOGIN] Step 18: Submitting OTP verification...");
     await sampleAppLoginPage.clickVerifyOTP();
     console.log("✓ OTP verification submitted");
 
-    // Step 18: Verify successful MFA authentication
-    console.log("\n[LOGIN] Step 18: Verifying successful MFA authentication...");
+    // Step 19: Verify successful MFA authentication
+    console.log("\n[LOGIN] Step 19: Verifying successful MFA authentication...");
     await sampleAppLoginPage.verifyLoggedIn();
     console.log("✓ MFA authentication successful - Newly registered user logged in");
 
-    // Step 19: Retrieve created user ID for cleanup
-    console.log("\n[CLEANUP] Step 19: Retrieving created user ID for cleanup...");
+    // Step 20: Retrieve created user ID for cleanup
+    console.log("\n[CLEANUP] Step 20: Retrieving created user ID for cleanup...");
     try {
       const tokenResponse = await request.post(`${thunderUrl}/oauth2/token`, {
         form: {

@@ -1,0 +1,72 @@
+---
+id: list-groups-in-organization-unit
+title: "List groups in organization unit"
+description: "List groups in organization unit"
+sidebar_label: "List groups in organization unit"
+hide_title: true
+hide_table_of_contents: true
+api: eJzdV99v2zYQ/leIexg2TIplxYkdAcWQdUERoG2GtnnK/EBLJ4uNRKokFccz9L8PR8mWZSupi77tSQB5vPvu7rsf2oDlSwPRAyi95FL8y61Q0q+ksAbmHpRc8wItapLZgJAQQcltBh5IXiBEIBLwQOO3SmhMILK6Qg9MnGHBIdqAXZckZawWcgkepEoX3EIEVSUSqGuvVfqtQr3utOaiELanOOW5QQ8SNLEWJaGECD7wZ1FUBZNVsUDNVMo0xkonhlnFNNpKy7N/JAwAEtLiEjV4UAhJOiAak/aUV7mF6Dx4EZpKU4MnYPs4hMk8ipKlSrOSL4V0wf4uwB2ooK7nZNaUSho0JBwGAX36lt8LY8nuUquqNExIZjNk+wlmlGDwIFbSorSkgpdlLmJ3O/pqSM/mGJRafMWYHpZalaitaFBYZXn+CU2VW/OCCy9Fxr1hNuOWFdzGmYOaC2OFXDKy0cQIPMBnXpQ5QjSrPTCWa3srE3w+wZ6TI3OkOxXaWIY5Fijt9rDkS/TYKhNxxlYiz9kCGX6reE45axLOfmfjHoxxTfGrmuid7HFreJeVhqSYOAg9/Re1B00G9wxwrTlxUVgszFBiOlI+NKXpWDs/zJhITijOLeUPBevaAyssgYR3hNCd5EI+/hDUPqJMYzqEaRePgQ71R5OaN2Hwi2sYb8YBodaYv65J4rPtefFeyEeoj/yiQvrUlhsp3mk4pPxFn5HjHTPCLocPTdQhDvkkvQwTfxpPr/zJZRr6izBBf4azeDFJx/Hk4rLrNn/hE+YUJwOuIZGGGZ/hJOWhH+LFhT+ZzhJ/kQapP+FhkvD0CnGadBqudZwJi7E1QO2jTdPDNuIDYR3xNJ5O4zTxL8Ng4U/iNPD5+Tj2p+fT6SJAPrsKwlHj1y4FbQZCaOPfBnleu7BOhvrUnzxhxFc0P9WL9ikfqwSpp6MxfDnAe3d/TOjuxdBdD/VrxXCjtdJ7RGlKTT7xXCR+M9LIk6oouF67xuSumLtiu1kLHjzxvMIOMNzd++NgPN5zrXvdjZKein6sv7i22jPDispY6nSclcoIK56QbRsYebUF3g68QeRtb/w+9PDnoB/a2cMulfQlLvkB/i3vJse8uzuchEwqy1JVyeT/ycPDbATnvWy8Ho+BZBzJr4RtJrcpMRapwISJhCUKjVOFz8JYaDJyMdQJbqVFLXnODOon1AwbBw59bjabbq0ZWmkKtJmiLrl0S5pbViMYDXS5jUjqtovRAuYsN52x0tTAMmtLE41Gm0wZW0ebUmlbO4JrwRdtddNd40+7pEGuYp6749oDetO/ngVXAYViTibjSgu7djbvriubhcQdszYWC5jvi3wm1jUWt4IdAbk78CDN1cqJ0IHSrbdvW6r1Du97Hu4gR4Ru1CgcbR8Qka16xJMeOUG3z6qywdu6E8F1HKNptmB3xAou+bLZw67/vjXQ1qyQqXLutWzep+c9se1D7x1lBLVpCDI+CwYoKwwJMmFYZTAhBI3pYwIZWsFyESNN/Gizm6EljzNkodPeZ8dqtTrj7vpM6eWofWtG72/f3nz8fOOHZ8FZZovcsblUxhZc7mk+gdHDZW/x2Y7KnAtJPHOYNi3bB3/mPIjcPtgSfu611H2AzWbBDd7rvK7puPndIUomwhDPX/jB2XSd8vT/sEHwj7je++Vr5we4fed0CD/2u/UKjt3/XQdk3hX9Dwbm10/tUPiNvWR1uy7L9b7NLRraw+e1BxnyBLWz3lxQNZX7MI+GFcHedcN3N1+grv8Dgmx5JQ==
+sidebar_class_name: "get api-method"
+info_path: docs/apis/ou/organizationunit-management-api
+custom_edit_url: null
+---
+
+import MethodEndpoint from "@theme/ApiExplorer/MethodEndpoint";
+import ParamsDetails from "@theme/ParamsDetails";
+import RequestSchema from "@theme/RequestSchema";
+import StatusCodes from "@theme/StatusCodes";
+import OperationTabs from "@theme/OperationTabs";
+import TabItem from "@theme/TabItem";
+import Heading from "@theme/Heading";
+import Translate from "@docusaurus/Translate";
+
+<Heading
+  as={"h1"}
+  className={"openapi__heading"}
+  children={"List groups in organization unit"}
+>
+</Heading>
+
+<MethodEndpoint
+  method={"get"}
+  path={"/organization-units/{id}/groups"}
+  context={"endpoint"}
+>
+  
+</MethodEndpoint>
+
+
+
+List groups in organization unit
+
+<Heading
+  id={"request"}
+  as={"h2"}
+  className={"openapi-tabs__heading"}
+>
+  <Translate id="theme.openapi.request.title">Request</Translate>
+</Heading>
+
+<ParamsDetails
+  parameters={[{"in":"path","name":"id","required":true,"schema":{"type":"string","format":"uuid"}},{"in":"query","name":"limit","required":false,"description":"Maximum number of records to return.\n","schema":{"type":"integer","minimum":1,"default":30}},{"in":"query","name":"offset","required":false,"description":"Number of records to skip for pagination.\n","schema":{"type":"integer","default":0}}]}
+>
+  
+</ParamsDetails>
+
+<RequestSchema
+  title={"Body"}
+  body={undefined}
+>
+  
+</RequestSchema>
+
+<StatusCodes
+  id={undefined}
+  label={undefined}
+  responses={{"200":{"description":"List of groups in the organization unit","content":{"application/json":{"schema":{"type":"object","properties":{"totalResults":{"type":"integer","description":"Number of results that match the listing operation.","example":8},"startIndex":{"type":"integer","description":"Index of the first element of the page, which will be equal to offset + 1.","example":1},"count":{"type":"integer","description":"Number of elements in the returned page.","example":5},"groups":{"type":"array","items":{"type":"object","required":["id","name"],"properties":{"id":{"type":"string","format":"uuid"},"name":{"type":"string"}},"title":"Group"}},"links":{"type":"array","items":{"type":"object","properties":{"href":{"type":"string","example":"organization-units?offset=20&limit=10"},"rel":{"type":"string","example":"next"}},"title":"Link"}}},"title":"GroupListResponse"},"example":{"totalResults":5,"startIndex":1,"count":2,"groups":[{"id":"c2a4f62d-7c79-46f2-b2de-8e8cb4f1c456","name":"Developers"},{"id":"8a8e4fa2-2e55-478d-bf0f-4a2ddaf9ee7d","name":"Architects"}],"links":[{"href":"organization-units/afc77cfd-620b-4cf0-a31c-7377b0ea8902/groups?offset=2&limit=2","rel":"next"}]}}}},"400":{"description":"Bad request","content":{"application/json":{"schema":{"type":"object","required":["code","message"],"properties":{"code":{"type":"string"},"message":{"type":"string"},"description":{"type":"string"}},"title":"Error"},"examples":{"invalid-limit":{"summary":"Invalid limit parameter","value":{"code":"OU-1011","message":"Invalid pagination parameter","description":"The limit parameter must be a positive integer"}},"invalid-offset":{"summary":"Invalid offset parameter","value":{"code":"OU-1012","message":"Invalid pagination parameter","description":"The offset parameter must be a non-negative integer"}}}}}},"404":{"description":"Organization unit not found","content":{"application/json":{"schema":{"type":"object","required":["code","message"],"properties":{"code":{"type":"string"},"message":{"type":"string"},"description":{"type":"string"}},"title":"Error"},"example":{"code":"OU-1003","message":"Organization unit not found","description":"The organization unit with the specified id does not exist"}}}},"500":{"description":"Internal server error"}}}
+>
+  
+</StatusCodes>
+
+
+      

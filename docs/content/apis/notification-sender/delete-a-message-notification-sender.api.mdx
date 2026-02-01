@@ -1,0 +1,72 @@
+---
+id: delete-a-message-notification-sender
+title: "Delete a message notification sender"
+description: "Delete a message notification sender using its unique identifier."
+sidebar_label: "Delete a message notification sender"
+hide_title: true
+hide_table_of_contents: true
+api: eJzNVlFv2zYQ/ivEPa2AYilGO6x6SxM/GGizIW6eAj8w4tliS5EKeYrjCfrvw1GyLdvBGmwdsCdbvOPd9x0/3rEFhaHwuibtLORwgwYJhRQVhiDXKKwjvdKFZLsIaBV60QRt10JTEI3VTw0KrdCyG/oJJEByHSB/gC9DiEXcFWCZQC29rJD4K39owcoKIQetIAHN6WtJJSTg8anRHhXk5BtMTjDenyYVbiWoxL/FTE6oyA0SCEWJlYS8BdrWDCCQ13YNXbfk3KF2NmBg+zR7zz/H+W+duHaW0JK4EIumKDCEVWPMdsigfgQGugTeZ9l55E9SiTt8ajBQLub2WRqtdgTmN6L27lkr5GoVPQAOIevaDPHTb4HjtOcM3eM3LAgSqL2r0ZPu+RVO4XkdTgs+8955EX0TwBdZ1Ya9v9wuLi6z7FemM7B9a6yd+zjcjq/vCyBWzleSOPhRhB8luEGS2qASGDONjeNsX0vcZ3p0ait0EJU0nBSViHQtSW2D0AMuJUlC1yVAmmKIa6PRUiR0N4iG0e5z7Mq7K9QURnWCs+M9Y8IQd0c+UoHeQ4KuYzwfXpPS3BJ6K41YoH9GLyLMXFxZ0Vh8qbGgfYlcUTTeoxKbUpuYkhXNV5wORfofae5Dll3+NM0NVQp9lWJB/ivJ/fPaj1XXn+eJ6nohVEilU5DDvtPFfppDOm5CF72UQjoUJG216rgrxsB9Y268gRxKojrkadqWLlCXt7XzxJ7P0mv5aPrjZFsvv5VsDEEOxhXSxOUuAd5zbP4t+5gx4iWnLBqvaRtz/n7VUDnlwRG2gbCC5dhlwerqM+4cD0KTcSGBlXGb6MILzus/I+HrQXBHi/dHDPeQc0aX9gHT3QauJLnv+KZN0TEOGVf3eAc6OVzFUcGjqF8SlbRyjRVPkqs/5mF3jtquXKQ3HPnteIT005T9X2kYOrCBW0QTeA45UUqrzKtTKPCs5hPvN19OMkjA6AJZUfl+OF/VsihRTKP5oIs8TTebzURG68T5dTpsDenn+fXsdjG7mE6ySUmVifKtXaBK2lHgtzw1Tim2hyb0c54qvYAIXyitjdSWJRtJtsPdeYDX7s6okyeQa8Vvm/4iPEDbPsqA9950HS8/NehZ4MvDvYlyVzrwfwX5Sppw+sgZE/3lbngOvRP/+unzKuFhUdptvNym4S9I4Dtu+9dZt+wSKFHyiTD23sByrmm05Wwq8AXeN6Wb2efZ1xl03V++2qYW
+sidebar_class_name: "delete api-method"
+info_path: docs/apis/notification-sender/notification-sender-api
+custom_edit_url: null
+---
+
+import MethodEndpoint from "@theme/ApiExplorer/MethodEndpoint";
+import ParamsDetails from "@theme/ParamsDetails";
+import RequestSchema from "@theme/RequestSchema";
+import StatusCodes from "@theme/StatusCodes";
+import OperationTabs from "@theme/OperationTabs";
+import TabItem from "@theme/TabItem";
+import Heading from "@theme/Heading";
+import Translate from "@docusaurus/Translate";
+
+<Heading
+  as={"h1"}
+  className={"openapi__heading"}
+  children={"Delete a message notification sender"}
+>
+</Heading>
+
+<MethodEndpoint
+  method={"delete"}
+  path={"/notification-senders/message/{id}"}
+  context={"endpoint"}
+>
+  
+</MethodEndpoint>
+
+
+
+Delete a message notification sender using its unique identifier.
+
+<Heading
+  id={"request"}
+  as={"h2"}
+  className={"openapi-tabs__heading"}
+>
+  <Translate id="theme.openapi.request.title">Request</Translate>
+</Heading>
+
+<ParamsDetails
+  parameters={[{"name":"id","in":"path","required":true,"description":"Unique identifier of the message notification sender to delete","schema":{"type":"string"}}]}
+>
+  
+</ParamsDetails>
+
+<RequestSchema
+  title={"Body"}
+  body={undefined}
+>
+  
+</RequestSchema>
+
+<StatusCodes
+  id={undefined}
+  label={undefined}
+  responses={{"204":{"description":"No Content - Successfully deleted the message notification sender"},"400":{"description":"Bad Request: Invalid sender ID provided","content":{"application/json":{"schema":{"type":"object","properties":{"code":{"type":"string","description":"Error code","example":"MNS-1006"},"message":{"type":"string","description":"Error message","example":"Invalid request format"},"description":{"type":"string","description":"Detailed error description","example":"The request body is malformed or contains invalid data"}},"title":"ClientErrorResponse"},"example":{"code":"MNS-1002","message":"Invalid sender ID","description":"The provided sender ID is invalid"}}}},"500":{"description":"Internal Server Error: An unexpected error occurred while processing the request","content":{"application/json":{"schema":{"type":"object","properties":{"code":{"type":"string","description":"Error code","example":"MNS-5001"},"message":{"type":"string","description":"Error message","example":"Internal server error"},"description":{"type":"string","description":"Detailed error description","example":"An unexpected error occurred while processing the request"}},"title":"ServerErrorResponse"}}}}}}
+>
+  
+</StatusCodes>
+
+
+      

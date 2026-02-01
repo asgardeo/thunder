@@ -17,11 +17,8 @@
  */
 
 import {describe, it, expect, beforeEach, vi} from 'vitest';
-import {render, screen, fireEvent} from '@testing-library/react';
+import {render, screen, fireEvent} from '@thunder/test-utils';
 import userEvent from '@testing-library/user-event';
-import {QueryClient, QueryClientProvider} from '@tanstack/react-query';
-import {ConfigProvider} from '@thunder/commons-contexts';
-import type {ReactNode} from 'react';
 import ConfigureDesign, {type ConfigureDesignProps} from '../ConfigureDesign';
 
 // Mock the utility functions
@@ -56,8 +53,6 @@ describe('ConfigureDesign', () => {
     onColorSelect: mockOnColorSelect,
   };
 
-  let queryClient: QueryClient;
-
   beforeEach(() => {
     vi.clearAllMocks();
     vi.mocked(generateAppLogoSuggestions).mockReturnValue(mockLogoSuggestions);
@@ -76,44 +71,10 @@ describe('ConfigureDesign', () => {
       isLoading: false,
       error: null,
     } as ReturnType<typeof useGetBranding>);
-
-    // Setup window.__THUNDER_RUNTIME_CONFIG__ for tests
-    // eslint-disable-next-line no-underscore-dangle
-    if (typeof window !== 'undefined') {
-      // eslint-disable-next-line no-underscore-dangle
-      window.__THUNDER_RUNTIME_CONFIG__ = {
-        client: {
-          base: '/develop',
-          client_id: 'DEVELOP',
-        },
-        server: {
-          hostname: 'localhost',
-          port: 8090,
-          http_only: false,
-        },
-      };
-    }
-
-    queryClient = new QueryClient({
-      defaultOptions: {
-        queries: {
-          retry: false,
-        },
-      },
-    });
   });
 
-  const renderComponent = (props: Partial<ConfigureDesignProps> = {}) => {
-    function Wrapper({children}: {children: ReactNode}) {
-      return (
-        <QueryClientProvider client={queryClient}>
-          <ConfigProvider>{children}</ConfigProvider>
-        </QueryClientProvider>
-      );
-    }
-
-    return render(<ConfigureDesign {...defaultProps} {...props} />, {wrapper: Wrapper});
-  };
+  const renderComponent = (props: Partial<ConfigureDesignProps> = {}) =>
+    render(<ConfigureDesign {...defaultProps} {...props} />);
 
   it('should render the component with title', () => {
     renderComponent();

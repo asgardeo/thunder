@@ -1,0 +1,328 @@
+{
+	"id": "ec72ce9d-77b9-403c-9737-c85fc831741c",
+	"name": "Thunder",
+	"values": [
+		{
+			"key": "scheme",
+			"value": "",
+			"type": "default",
+			"enabled": true
+		},
+		{
+			"key": "host",
+			"value": "",
+			"type": "default",
+			"enabled": true
+		},
+		{
+			"key": "port",
+			"value": "",
+			"type": "default",
+			"enabled": true
+		},
+		{
+			"key": "baseUrl",
+			"value": "",
+			"type": "default",
+			"enabled": true
+		},
+		{
+			"key": "accessToken",
+			"value": "",
+			"type": "secret",
+			"enabled": true
+		},
+		{
+			"key": "refreshToken",
+			"value": "",
+			"type": "secret",
+			"enabled": true
+		},
+		{
+			"key": "expiresAt",
+			"value": "",
+			"type": "default",
+			"enabled": true
+		},
+		{
+			"key": "codeVerifier",
+			"value": "",
+			"type": "secret",
+			"enabled": true
+		},
+		{
+			"key": "codeChallenge",
+			"value": "",
+			"type": "secret",
+			"enabled": true
+		},
+		{
+			"key": "authId",
+			"value": "",
+			"type": "default",
+			"enabled": true
+		},
+		{
+			"key": "flowId",
+			"value": "",
+			"type": "default",
+			"enabled": true
+		},
+		{
+			"key": "assertion",
+			"value": "",
+			"type": "secret",
+			"enabled": true
+		},
+		{
+			"key": "authCode",
+			"value": "",
+			"type": "secret",
+			"enabled": true
+		},
+		{
+			"key": "MGT_TOKEN_APP_CLIENT_ID",
+			"value": "",
+			"type": "default",
+			"enabled": true
+		},
+		{
+			"key": "MGT_TOKEN_APP_REDIRECT_URI",
+			"value": "",
+			"type": "default",
+			"enabled": true
+		},
+		{
+			"key": "MGT_TOKEN_SCOPE",
+			"value": "",
+			"type": "default",
+			"enabled": true
+		},
+		{
+			"key": "ADMIN_USERNAME",
+			"value": "",
+			"type": "default",
+			"enabled": true
+		},
+		{
+			"key": "ADMIN_PASSWORD",
+			"value": "",
+			"type": "secret",
+			"enabled": true
+		},
+		{
+			"key": "demoOuId",
+			"value": "",
+			"type": "default",
+			"enabled": true
+		},
+		{
+			"key": "demoOuHandle",
+			"value": "",
+			"type": "default",
+			"enabled": true
+		},
+		{
+			"key": "demoSchemaId",
+			"value": "",
+			"type": "default",
+			"enabled": true
+		},
+		{
+			"key": "demoSchemaName",
+			"value": "",
+			"type": "default",
+			"enabled": true
+		},
+		{
+			"key": "demoLoginUser1Username",
+			"value": "",
+			"type": "default",
+			"enabled": true
+		},
+		{
+			"key": "demoLoginUser1Password",
+			"value": "",
+			"type": "secret",
+			"enabled": true
+		},
+		{
+			"key": "demoLoginUser1Email",
+			"value": "",
+			"type": "default",
+			"enabled": true
+		},
+		{
+			"key": "demoLoginUser1Mobile",
+			"value": "",
+			"type": "default",
+			"enabled": true
+		},
+		{
+			"key": "MESSAGE_NOTIFICATION_SENDER_URL",
+			"value": "",
+			"type": "default",
+			"enabled": true
+		},
+		{
+			"key": "messageNotificationSenderId",
+			"value": "",
+			"type": "default",
+			"enabled": true
+		},
+		{
+			"key": "GOOGLE_CLIENT_ID",
+			"value": "",
+			"type": "secret",
+			"enabled": true
+		},
+		{
+			"key": "GOOGLE_CLIENT_SECRET",
+			"value": "",
+			"type": "secret",
+			"enabled": true
+		},
+		{
+			"key": "FED_IDP_REDIRECT_URI",
+			"value": "",
+			"type": "default",
+			"enabled": true
+		},
+		{
+			"key": "googleIDPId",
+			"value": "",
+			"type": "default",
+			"enabled": true
+		},
+		{
+			"key": "GITHUB_CLIENT_ID",
+			"value": "",
+			"type": "secret",
+			"enabled": true
+		},
+		{
+			"key": "GITHUB_CLIENT_SECRET",
+			"value": "",
+			"type": "secret",
+			"enabled": true
+		},
+		{
+			"key": "githubIDPId",
+			"value": "",
+			"type": "default",
+			"enabled": true
+		},
+		{
+			"key": "ASGARDEO_CLIENT_ID",
+			"value": "",
+			"type": "secret",
+			"enabled": true
+		},
+		{
+			"key": "ASGARDEO_CLIENT_SECRET",
+			"value": "",
+			"type": "secret",
+			"enabled": true
+		},
+		{
+			"key": "ASGARDEO_BASE_URI",
+			"value": "",
+			"type": "default",
+			"enabled": true
+		},
+		{
+			"key": "asgardeoIDPId",
+			"value": "",
+			"type": "default",
+			"enabled": true
+		},
+		{
+			"key": "demoGoogleUserSub",
+			"value": "",
+			"type": "secret",
+			"enabled": true
+		},
+		{
+			"key": "demoGoogleUserEmail",
+			"value": "",
+			"type": "default",
+			"enabled": true
+		},
+		{
+			"key": "demoGithubUserSub",
+			"value": "",
+			"type": "secret",
+			"enabled": true
+		},
+		{
+			"key": "demoGithubUserEmail",
+			"value": "",
+			"type": "default",
+			"enabled": true
+		},
+		{
+			"key": "demoAsgardeoUserSub",
+			"value": "",
+			"type": "secret",
+			"enabled": true
+		},
+		{
+			"key": "demoAsgardeoUserEmail",
+			"value": "",
+			"type": "default",
+			"enabled": true
+		},
+		{
+			"key": "LOGIN_APPLICATION_CLIENT_ID",
+			"value": "",
+			"type": "default",
+			"enabled": true
+		},
+		{
+			"key": "LOGIN_APPLICATION_REDIRECT_URI",
+			"value": "",
+			"type": "default",
+			"enabled": true
+		},
+		{
+			"key": "loginApplicationId",
+			"value": "",
+			"type": "default",
+			"enabled": true
+		},
+		{
+			"key": "basicAuthFlowGraphId",
+			"value": "",
+			"type": "default",
+			"enabled": true
+		},
+		{
+			"key": "smsAuthFlowGraphId",
+			"value": "",
+			"type": "default",
+			"enabled": true
+		},
+		{
+			"key": "mfaAuthFlowGraphId",
+			"value": "",
+			"type": "default",
+			"enabled": true
+		},
+		{
+			"key": "multiOptionAuthFlowGraphId",
+			"value": "",
+			"type": "default",
+			"enabled": true
+		},
+		{
+			"key": "basicRegistrationFlowGraphId",
+			"value": "",
+			"type": "default",
+			"enabled": true
+		}
+	],
+	"color": 62,
+	"_postman_variable_scope": "environment",
+	"_postman_exported_at": "2026-01-26T05:39:44.821Z",
+	"_postman_exported_using": "Postman/11.81.4"
+}

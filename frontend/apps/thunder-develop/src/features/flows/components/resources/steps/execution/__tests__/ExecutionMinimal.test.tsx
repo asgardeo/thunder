@@ -26,8 +26,8 @@ const mockUseNodeId = vi.fn((): string | null => 'execution-node-id');
 
 vi.mock('@xyflow/react', () => ({
   useNodeId: () => mockUseNodeId(),
-  Handle: ({type, position, id = ''}: {type: string; position: string; id?: string}) => (
-    <div data-testid={`handle-${type}`} data-position={position} data-id={id} />
+  Handle: ({type, position, id = '', className = ''}: {type: string; position: string; id?: string; className?: string}) => (
+    <div data-testid={`handle-${type}${className ? `-${className}` : ''}`} data-position={position} data-id={id} data-classname={className} />
   ),
   Position: {
     Left: 'left',
@@ -132,9 +132,111 @@ describe('ExecutionMinimal', () => {
       const resource = createMockResource({id: 'test-execution'});
       render(<ExecutionMinimal resource={resource} />);
 
+      // When no branching support, the handle doesn't have a className
       const sourceHandle = screen.getByTestId('handle-source');
       expect(sourceHandle).toHaveAttribute('data-position', 'right');
       expect(sourceHandle).toHaveAttribute('data-id', 'test-execution-next');
+    });
+  });
+
+  describe('Branching Handles', () => {
+    it('should render only success handle when onFailure is not present', () => {
+      const resource = createMockResource({
+        data: {
+          action: {
+            executor: {name: 'TestExecutor'},
+            onSuccess: '',
+          },
+        },
+      });
+      render(<ExecutionMinimal resource={resource} />);
+
+      // Success handle should be present (no className when no branching)
+      expect(screen.getByTestId('handle-source')).toBeInTheDocument();
+      // Failure handle should NOT be present
+      expect(screen.queryByTestId('handle-source-execution-handle-failure')).not.toBeInTheDocument();
+    });
+
+    it('should render both success and failure handles when onFailure property exists (even if empty)', () => {
+      const resource = createMockResource({
+        data: {
+          action: {
+            executor: {name: 'TestExecutor'},
+            onSuccess: '',
+            onFailure: '',
+          },
+        },
+      });
+      render(<ExecutionMinimal resource={resource} />);
+
+      // Both handles should be present
+      expect(screen.getByTestId('handle-source-execution-handle-success')).toBeInTheDocument();
+      expect(screen.getByTestId('handle-source-execution-handle-failure')).toBeInTheDocument();
+    });
+
+    it('should render both handles when onFailure has a value', () => {
+      const resource = createMockResource({
+        data: {
+          action: {
+            executor: {name: 'TestExecutor'},
+            onSuccess: 'step-2',
+            onFailure: 'step-3',
+          },
+        },
+      });
+      render(<ExecutionMinimal resource={resource} />);
+
+      // Both handles should be present
+      expect(screen.getByTestId('handle-source-execution-handle-success')).toBeInTheDocument();
+      expect(screen.getByTestId('handle-source-execution-handle-failure')).toBeInTheDocument();
+    });
+
+    it('should wrap handles in tooltips when both handles are present', () => {
+      const resource = createMockResource({
+        data: {
+          action: {
+            executor: {name: 'TestExecutor'},
+            onSuccess: '',
+            onFailure: '',
+          },
+        },
+      });
+      render(<ExecutionMinimal resource={resource} />);
+
+      // Both handles should be present (tooltips are shown on hover, not as visible text)
+      expect(screen.getByTestId('handle-source-execution-handle-success')).toBeInTheDocument();
+      expect(screen.getByTestId('handle-source-execution-handle-failure')).toBeInTheDocument();
+    });
+
+    it('should add has-branching class when onFailure exists', () => {
+      const resource = createMockResource({
+        data: {
+          action: {
+            executor: {name: 'TestExecutor'},
+            onSuccess: '',
+            onFailure: '',
+          },
+        },
+      });
+      const {container} = render(<ExecutionMinimal resource={resource} />);
+
+      const stepElement = container.querySelector('.execution-minimal-step');
+      expect(stepElement).toHaveClass('has-branching');
+    });
+
+    it('should not add has-branching class when onFailure does not exist', () => {
+      const resource = createMockResource({
+        data: {
+          action: {
+            executor: {name: 'TestExecutor'},
+            onSuccess: '',
+          },
+        },
+      });
+      const {container} = render(<ExecutionMinimal resource={resource} />);
+
+      const stepElement = container.querySelector('.execution-minimal-step');
+      expect(stepElement).not.toHaveClass('has-branching');
     });
   });
 

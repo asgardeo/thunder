@@ -53,10 +53,13 @@ function GithubExecution({resource}: GithubExecutionPropsInterface): ReactElemen
 
   useRequiredFields(resource, generalMessage, fields);
 
+  // display.label contains the action/mode (e.g., "GitHub")
+  const displayLabel = resource.display?.label;
+
   return (
     <Box display="flex" gap={1} className="flow-builder-execution github">
       <img src={resolveStaticResourcePath('assets/images/icons/github.svg')} alt="github-icon" height="20" />
-      <Typography variant="body1">{t('flows:core.executions.names.github')}</Typography>
+      <Typography variant="body1">{displayLabel ?? t('flows:core.executions.names.github')}</Typography>
     </Box>
   );
 }

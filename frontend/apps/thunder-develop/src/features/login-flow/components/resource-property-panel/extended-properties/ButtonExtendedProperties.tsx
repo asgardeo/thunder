@@ -16,113 +16,95 @@
  * under the License.
  */
 
-import {useMemo, type ReactNode} from 'react';
+import {useState, useEffect, type ReactNode, type ChangeEvent} from 'react';
 import {useTranslation} from 'react-i18next';
-import classNames from 'classnames';
-import isEqual from 'lodash-es/isEqual';
-import omit from 'lodash-es/omit';
-import {Avatar, Box, Card, Divider, FormHelperText, Grid, Stack, Typography, useColorScheme} from '@wso2/oxygen-ui';
+import {Divider, FormHelperText, FormLabel, Stack, TextField} from '@wso2/oxygen-ui';
 import type {CommonResourcePropertiesPropsInterface} from '@/features/flows/components/resource-property-panel/ResourceProperties';
-import useFlowBuilderCore from '@/features/flows/hooks/useFlowBuilderCore';
-import useValidationStatus from '@/features/flows/hooks/useValidationStatus';
-import {type Element} from '@/features/flows/models/elements';
-import resolveStaticResourcePath from '@/features/flows/utils/resolveStaticResourcePath';
-import useGetLoginFlowBuilderActions from '@/features/login-flow/api/useGetLoginFlowBuilderActions';
-import './ButtonExtendedProperties.scss';
+import type {Element} from '@/features/flows/models/elements';
 
 /**
  * Props interface of {@link ButtonExtendedProperties}
  */
 export type ButtonExtendedPropertiesPropsInterface = CommonResourcePropertiesPropsInterface;
+
 /**
- * Extended properties for the field elements.
+ * Extended properties for the button elements.
+ * Provides optional start icon and end icon configuration.
  *
  * @param props - Props injected to the component.
  * @returns The ButtonExtendedProperties component.
  */
 function ButtonExtendedProperties({resource, onChange}: ButtonExtendedPropertiesPropsInterface): ReactNode {
   const {t} = useTranslation();
-  const {data: actions} = useGetLoginFlowBuilderActions();
-  const {lastInteractedResource, setLastInteractedResource} = useFlowBuilderCore();
-  const {selectedNotification} = useValidationStatus();
-  const {mode, systemMode} = useColorScheme();
 
-  // Determine the effective mode - if mode is 'system', use systemMode
-  const effectiveMode = mode === 'system' ? systemMode : mode;
+  // Use local state for immediate input feedback
+  const [startIconValue, setStartIconValue] = useState(() => {
+    const element = resource as Element & {startIcon?: string};
+    return element?.startIcon ?? '';
+  });
 
-  /**
-   * Get the error message for the identifier field.
-   */
-  const errorMessage: string = useMemo(() => {
-    const key = `${resource?.id}_action`;
+  const [endIconValue, setEndIconValue] = useState(() => {
+    const element = resource as Element & {endIcon?: string};
+    return element?.endIcon ?? '';
+  });
 
-    if (selectedNotification?.hasResourceFieldNotification(key)) {
-      return selectedNotification?.getResourceFieldNotification(key);
-    }
+  // Sync local state when resource changes (e.g., switching to a different button)
+  useEffect(() => {
+    const element = resource as Element & {startIcon?: string; endIcon?: string};
+    setStartIconValue(element?.startIcon ?? '');
+    setEndIconValue(element?.endIcon ?? '');
+  }, [resource]);
 
-    return '';
-  }, [resource, selectedNotification]);
+  // Handle startIcon change - update local state immediately, propagate via onChange
+  const handleStartIconChange = (value: string): void => {
+    setStartIconValue(value);
+    onChange('startIcon', value, resource);
+  };
+
+  // Handle endIcon change - update local state immediately, propagate via onChange
+  const handleEndIconChange = (value: string): void => {
+    setEndIconValue(value);
+    onChange('endIcon', value, resource);
+  };
 
   return (
-    <Stack className="button-extended-properties" gap={2}>
+    <Stack gap={2}>
       <Divider sx={{marginY: 2}} />
-      <div>
-        <Typography className="button-extended-properties-heading">{t('flows:core.buttonExtendedProperties.type')}</Typography>
-        {actions?.map((action: Partial<Element> & {types?: Element[]}) => (
-          <Box key={`${action.type ?? 'action'}-${action.id ?? action.display?.label ?? ''}`}>
-            <Typography className="button-extended-properties-sub-heading" variant="body1">
-              {action?.display?.label}
-            </Typography>
-            <Grid container spacing={1}>
-              {action.types?.map((actionType: Element) => (
-                <Grid
-                  key={`${actionType.type}-${actionType.id}`}
-                  size={{xs: 12}}
-                  onClick={() => {
-                    onChange(
-                      'action',
-                      {
-                        ...actionType.action,
-                        ...((resource as Element)?.action?.next ? {next: (resource as Element)?.action?.next} : {}),
-                      },
-                      resource,
-                    );
 
-                    setLastInteractedResource({
-                      ...lastInteractedResource,
-                      action: actionType.action,
-                    });
-                  }}
-                >
-                  <Card
-                    className={classNames('extended-property action-type', {
-                      error: !!errorMessage,
-                      selected: isEqual(omit((lastInteractedResource as Element)?.action, 'next'), actionType.action),
-                    })}
-                  >
-                    <Box display="flex" flexDirection="row" gap={1} padding={1} alignItems="center">
-                      <Avatar
-                        className="action-type-icon"
-                        src={resolveStaticResourcePath(actionType?.display?.image)}
-                        variant="rounded"
-                        sx={{
-                          '& .MuiAvatar-img': {
-                            filter: effectiveMode === 'dark' ? 'brightness(0.9) invert(1)' : 'none',
-                          },
-                        }}
-                      />
-                      <Typography variant="body2" className="action-type-name">
-                        {actionType?.display?.label}
-                      </Typography>
-                    </Box>
-                  </Card>
-                </Grid>
-              ))}
-            </Grid>
-          </Box>
-        ))}
-        {errorMessage && <FormHelperText error>{errorMessage}</FormHelperText>}
+      <div>
+        <FormLabel htmlFor="start-icon-input">
+          {t('flows:core.buttonExtendedProperties.startIcon.label')}
+        </FormLabel>
+        <TextField
+          id="start-icon-input"
+          value={startIconValue}
+          onChange={(e: ChangeEvent<HTMLInputElement>) => handleStartIconChange(e.target.value)}
+          placeholder={t('flows:core.buttonExtendedProperties.startIcon.placeholder')}
+          fullWidth
+          size="small"
+        />
+        <FormHelperText>
+          {t('flows:core.buttonExtendedProperties.startIcon.hint')}
+        </FormHelperText>
       </div>
+
+      <div>
+        <FormLabel htmlFor="end-icon-input">
+          {t('flows:core.buttonExtendedProperties.endIcon.label')}
+        </FormLabel>
+        <TextField
+          id="end-icon-input"
+          value={endIconValue}
+          onChange={(e: ChangeEvent<HTMLInputElement>) => handleEndIconChange(e.target.value)}
+          placeholder={t('flows:core.buttonExtendedProperties.endIcon.placeholder')}
+          fullWidth
+          size="small"
+        />
+        <FormHelperText>
+          {t('flows:core.buttonExtendedProperties.endIcon.hint')}
+        </FormHelperText>
+      </div>
+
       <Divider sx={{marginY: 2}} />
     </Stack>
   );

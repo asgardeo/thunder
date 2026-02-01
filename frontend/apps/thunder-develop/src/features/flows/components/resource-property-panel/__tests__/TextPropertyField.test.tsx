@@ -17,7 +17,7 @@
  */
 
 import {describe, it, expect, vi, beforeEach} from 'vitest';
-import {render, screen, fireEvent} from '@testing-library/react';
+import {render, screen, fireEvent, waitFor} from '@testing-library/react';
 import type {ReactNode} from 'react';
 import TextPropertyField from '../TextPropertyField';
 import {ValidationContext, type ValidationContextProps} from '../../../context/ValidationContext';
@@ -29,6 +29,39 @@ vi.mock('react-i18next', () => ({
   useTranslation: () => ({
     t: (key: string, options?: {propertyName?: string}) =>
       options?.propertyName ? `Enter ${options.propertyName}` : key,
+  }),
+}));
+
+// Mock @thunder/shared-contexts
+vi.mock('@thunder/shared-contexts', () => ({
+  useConfig: () => ({
+    getServerUrl: () => 'https://localhost:8090',
+  }),
+}));
+
+// Mock the API hooks used by I18nConfigurationCard from @thunder/i18n
+vi.mock('@thunder/i18n', () => ({
+  useUpdateTranslation: () => ({
+    mutate: vi.fn(),
+    isPending: false,
+  }),
+  useGetLanguages: () => ({
+    data: {languages: ['en-US', 'es', 'fr']},
+  }),
+  useGetTranslations: () => ({
+    data: {
+      language: 'en-US',
+      translations: {
+        flowI18n: {
+          'common.submit': 'Submit',
+          'common.button': 'Button',
+          'common.label': 'Label',
+          'common.test': 'Test',
+          'login.submit': 'Log In',
+        },
+      },
+    },
+    isLoading: false,
   }),
 }));
 
@@ -536,6 +569,128 @@ describe('TextPropertyField', () => {
       // The I18nConfigurationCard should not be rendered as isI18nCardOpen is false by default
       // and there's no UI element to toggle it (toggle is commented out)
       expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+    });
+
+    it('should open i18n card when language button is clicked', () => {
+      render(
+        <TextPropertyField
+          resource={mockResource}
+          propertyKey="label"
+          propertyValue=""
+          onChange={mockOnChange}
+        />,
+        {wrapper: createWrapper()},
+      );
+
+      // Find and click the language icon button
+      const languageButton = screen.getByRole('button');
+      fireEvent.click(languageButton);
+
+      // The I18nConfigurationCard should now be open
+      expect(screen.getByRole('presentation')).toBeInTheDocument();
+    });
+
+    it('should close i18n card when close button is clicked', () => {
+      render(
+        <TextPropertyField
+          resource={mockResource}
+          propertyKey="label"
+          propertyValue=""
+          onChange={mockOnChange}
+        />,
+        {wrapper: createWrapper()},
+      );
+
+      // Open the card
+      const languageButton = screen.getByRole('button');
+      fireEvent.click(languageButton);
+
+      // Verify card is open
+      expect(screen.getByRole('presentation')).toBeInTheDocument();
+
+      // Find and click the close button in the card
+      const closeButton = screen.getByLabelText('common:close');
+      fireEvent.click(closeButton);
+
+      // The card should be closed
+      expect(screen.queryByRole('presentation')).not.toBeInTheDocument();
+    });
+
+    it('should toggle i18n card open and closed', () => {
+      render(
+        <TextPropertyField
+          resource={mockResource}
+          propertyKey="label"
+          propertyValue=""
+          onChange={mockOnChange}
+        />,
+        {wrapper: createWrapper()},
+      );
+
+      // Get the language button
+      const languageButtons = screen.getAllByRole('button');
+      const languageButton = languageButtons[0];
+
+      // Open the card
+      fireEvent.click(languageButton);
+      expect(screen.getByRole('presentation')).toBeInTheDocument();
+
+      // Click again to toggle close (via close button since popover blocks the toggle button)
+      const closeButton = screen.getByLabelText('common:close');
+      fireEvent.click(closeButton);
+      expect(screen.queryByRole('presentation')).not.toBeInTheDocument();
+    });
+
+    it('should call onChange with formatted i18n value when i18n key is selected', async () => {
+      render(
+        <TextPropertyField
+          resource={mockResource}
+          propertyKey="label"
+          propertyValue=""
+          onChange={mockOnChange}
+        />,
+        {wrapper: createWrapper()},
+      );
+
+      // Open the card
+      const languageButton = screen.getByRole('button');
+      fireEvent.click(languageButton);
+
+      // Open the autocomplete dropdown
+      const openButton = screen.getByTitle('Open');
+      fireEvent.click(openButton);
+
+      // Wait for options and select one
+      await waitFor(() => {
+        expect(screen.getByText('flowI18n:common.submit')).toBeInTheDocument();
+      });
+      fireEvent.click(screen.getByText('flowI18n:common.submit'));
+
+      // Verify onChange was called with the formatted i18n pattern
+      expect(mockOnChange).toHaveBeenCalledWith('label', '{{t(flowI18n:common.submit)}}', mockResource);
+    });
+
+    it('should call onChange with empty string when i18n key is cleared', async () => {
+      render(
+        <TextPropertyField
+          resource={mockResource}
+          propertyKey="label"
+          propertyValue="{{t(common.test)}}"
+          onChange={mockOnChange}
+        />,
+        {wrapper: createWrapper()},
+      );
+
+      // Open the card
+      const languageButton = screen.getAllByRole('button')[0];
+      fireEvent.click(languageButton);
+
+      // Clear the selection
+      const clearButton = screen.getByLabelText('Clear');
+      fireEvent.click(clearButton);
+
+      // Verify onChange was called with empty string
+      expect(mockOnChange).toHaveBeenCalledWith('label', '', mockResource);
     });
   });
 

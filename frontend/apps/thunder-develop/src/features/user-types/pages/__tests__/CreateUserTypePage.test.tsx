@@ -17,9 +17,7 @@
  */
 
 import {describe, it, expect, vi, beforeEach} from 'vitest';
-import {screen, waitFor} from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
-import render from '@/test/test-utils';
+import {render, screen, waitFor, userEvent} from '@thunder/test-utils';
 import type {OrganizationUnitListParams} from '@/features/organization-units/types/organization-units';
 import CreateUserTypePage from '../CreateUserTypePage';
 import type {ApiError, CreateUserSchemaRequest} from '../../types/user-types';
@@ -58,7 +56,7 @@ interface UseGetOrganizationUnitsReturn {
       parent?: string | null;
     }[];
   } | null;
-  loading: boolean;
+  isLoading: boolean;
   error: ApiError | null;
   refetch: (newParams?: OrganizationUnitListParams) => Promise<void>;
 }
@@ -97,7 +95,7 @@ describe('CreateUserTypePage', () => {
     });
     mockUseGetOrganizationUnits.mockReturnValue({
       data: mockOrganizationUnitsResponse,
-      loading: false,
+      isLoading: false,
       error: null,
       refetch: mockRefetchOrganizationUnits,
     });
@@ -264,7 +262,7 @@ describe('CreateUserTypePage', () => {
     const user = userEvent.setup();
     mockUseGetOrganizationUnits.mockReturnValue({
       data: {...mockOrganizationUnitsResponse, organizationUnits: []},
-      loading: false,
+      isLoading: false,
       error: null,
       refetch: mockRefetchOrganizationUnits,
     });
@@ -788,7 +786,7 @@ describe('CreateUserTypePage', () => {
 
     mockUseGetOrganizationUnits.mockReturnValue({
       data: null,
-      loading: false,
+      isLoading: false,
       error: orgError,
       refetch: mockRefetchOrganizationUnits,
     });
@@ -805,7 +803,7 @@ describe('CreateUserTypePage', () => {
 
     mockUseGetOrganizationUnits.mockReturnValue({
       data: null,
-      loading: true,
+      isLoading: true,
       error: null,
       refetch: mockRefetchOrganizationUnits,
     });
@@ -825,7 +823,7 @@ describe('CreateUserTypePage', () => {
 
     mockUseGetOrganizationUnits.mockReturnValue({
       data: {...mockOrganizationUnitsResponse, organizationUnits: []},
-      loading: false,
+      isLoading: false,
       error: null,
       refetch: mockRefetchOrganizationUnits,
     });
@@ -850,7 +848,7 @@ describe('CreateUserTypePage', () => {
 
     mockUseGetOrganizationUnits.mockReturnValue({
       data: null,
-      loading: false,
+      isLoading: false,
       error: orgError,
       refetch: mockRefetchOrganizationUnits,
     });
@@ -870,7 +868,7 @@ describe('CreateUserTypePage', () => {
   it('displays organization unit placeholder when no value is selected', async () => {
     mockUseGetOrganizationUnits.mockReturnValue({
       data: {...mockOrganizationUnitsResponse, organizationUnits: []},
-      loading: false,
+      isLoading: false,
       error: null,
       refetch: mockRefetchOrganizationUnits,
     });

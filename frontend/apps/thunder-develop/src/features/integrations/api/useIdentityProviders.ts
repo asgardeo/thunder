@@ -17,7 +17,7 @@
  */
 
 import {useQuery, type UseQueryResult} from '@tanstack/react-query';
-import {useConfig} from '@thunder/commons-contexts';
+import {useConfig} from '@thunder/shared-contexts';
 import {useAsgardeo} from '@asgardeo/react';
 import type {IdentityProviderListResponse} from '../models/responses';
 import IntegrationQueryKeys from '../constants/query-keys';

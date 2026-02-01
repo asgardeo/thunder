@@ -72,7 +72,8 @@
   "jwt": {
     "validity_period": 3600,
     "audience": "application",
-    "preferred_key_id": "default-key"
+    "preferred_key_id": "default-key",
+    "leeway": 30
   },
   "oauth": {
     "refresh_token": {
@@ -92,7 +93,7 @@
   "user": {
     "indexed_attributes": ["username", "email", "mobileNumber", "sub"]
   },
-  "immutable_resources": {
+  "declarative_resources": {
     "enabled": false
   },
   "resource": {

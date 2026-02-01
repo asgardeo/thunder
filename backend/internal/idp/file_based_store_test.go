@@ -22,8 +22,8 @@ import (
 	"testing"
 
 	"github.com/asgardeo/thunder/internal/system/cmodels"
-	immutableresource "github.com/asgardeo/thunder/internal/system/immutable_resource"
-	"github.com/asgardeo/thunder/internal/system/immutable_resource/entity"
+	declarativeresource "github.com/asgardeo/thunder/internal/system/declarative_resource"
+	"github.com/asgardeo/thunder/internal/system/declarative_resource/entity"
 
 	"github.com/stretchr/testify/suite"
 )
@@ -36,7 +36,7 @@ type FileBasedStoreTestSuite struct {
 func (suite *FileBasedStoreTestSuite) SetupTest() {
 	// Create a new store instance for each test to ensure isolation
 	suite.store = &idpFileBasedStore{
-		GenericFileBasedStore: immutableresource.NewGenericFileBasedStoreForTest(entity.KeyTypeIDP),
+		GenericFileBasedStore: declarativeresource.NewGenericFileBasedStoreForTest(entity.KeyTypeIDP),
 	}
 }
 

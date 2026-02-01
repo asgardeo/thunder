@@ -34,7 +34,7 @@ vi.mock('react-dom/client', () => ({
 }));
 
 // Mock ConfigProvider
-vi.mock('@thunder/commons-contexts', () => ({
+vi.mock('@thunder/shared-contexts', () => ({
   ConfigProvider: ({children}: {children: React.ReactNode}) => <div data-testid="config-provider">{children}</div>,
 }));
 

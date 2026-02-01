@@ -29,10 +29,14 @@ vi.mock('../adapters/PlaceholderComponent', () => ({
   ),
 }));
 
-// Mock the InfoIcon
-vi.mock('@wso2/oxygen-ui-icons-react', () => ({
-  InfoIcon: () => <svg data-testid="info-icon" />,
-}));
+// Mock the icons - use importOriginal to preserve all exports while mocking specific ones
+vi.mock('@wso2/oxygen-ui-icons-react', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@wso2/oxygen-ui-icons-react')>();
+  return {
+    ...actual,
+    InfoIcon: () => <svg data-testid="info-icon" />,
+  };
+});
 
 describe('Hint', () => {
   it('should render hint text', () => {
@@ -53,13 +57,6 @@ describe('Hint', () => {
     const placeholder = screen.getByTestId('placeholder-component');
     expect(placeholder).toBeInTheDocument();
     expect(placeholder).toHaveAttribute('data-value', 'Placeholder hint');
-  });
-
-  it('should render the hint container with correct class', () => {
-    const {container} = render(<Hint hint="Styled hint" />);
-
-    const hintContainer = container.querySelector('.composer-input-field-hint-container');
-    expect(hintContainer).toBeInTheDocument();
   });
 
   it('should render empty hint when hint prop is empty string', () => {

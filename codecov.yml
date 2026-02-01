@@ -46,6 +46,10 @@ flags:
     carryforward: false
     paths:
       - frontend/apps/thunder-develop/
+  frontend-apps-gate-unit:
+    carryforward: false
+    paths:
+      - frontend/apps/thunder-gate/
 
 coverage:
   status:
@@ -78,6 +82,12 @@ coverage:
       frontend-apps-develop-unit:
         flags:
           - frontend-apps-develop-unit
+        target: auto
+        threshold: 1%
+        informational: false
+      frontend-apps-gate-unit:
+        flags:
+          - frontend-apps-gate-unit
         target: auto
         threshold: 1%
         informational: false

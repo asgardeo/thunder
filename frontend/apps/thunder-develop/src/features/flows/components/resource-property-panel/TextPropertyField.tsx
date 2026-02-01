@@ -16,9 +16,20 @@
  * under the License.
  */
 
-import {useMemo, useRef, useState, type ChangeEvent, type ReactElement} from 'react';
+import {useEffect, useMemo, useRef, useState, type ChangeEvent, type ReactElement} from 'react';
 import {useTranslation} from 'react-i18next';
-import {Box, FormControl, FormHelperText, FormLabel, TextField, Typography} from '@wso2/oxygen-ui';
+import {
+  Box,
+  FormControl,
+  FormHelperText,
+  FormLabel,
+  IconButton,
+  InputAdornment,
+  TextField,
+  Tooltip,
+  Typography,
+} from '@wso2/oxygen-ui';
+import {Languages} from '@wso2/oxygen-ui-icons-react';
 import startCase from 'lodash-es/startCase';
 import useValidationStatus from '../../hooks/useValidationStatus';
 import type {Resource} from '../../models/resources';
@@ -69,8 +80,16 @@ function TextPropertyField({
 }: TextPropertyFieldPropsInterface): ReactElement {
   const {t} = useTranslation();
   const [isI18nCardOpen, setIsI18nCardOpen] = useState<boolean>(false);
+  const [localValue, setLocalValue] = useState<string>(propertyValue);
   const iconButtonRef = useRef<HTMLButtonElement>(null);
   const {selectedNotification} = useValidationStatus();
+
+  /**
+   * Sync local state when propertyValue changes from external sources (e.g., i18n card).
+   */
+  useEffect(() => {
+    setLocalValue(propertyValue);
+  }, [propertyValue]);
 
   /**
    * Check if the property value matches the i18n pattern.
@@ -104,9 +123,9 @@ function TextPropertyField({
   /**
    * Handles the toggle of the i18n configuration card.
    */
-  // const handleI18nToggle = () => {
-  //   setIsI18nCardOpen(!isI18nCardOpen);
-  // };
+  const handleI18nToggle = () => {
+    setIsI18nCardOpen(!isI18nCardOpen);
+  };
 
   /**
    * Handles the closing of the i18n configuration card.
@@ -121,10 +140,48 @@ function TextPropertyField({
         <FormLabel htmlFor={`${resource.id}-${propertyKey}`}>{startCase(propertyKey)}</FormLabel>
         <TextField
           fullWidth
-          defaultValue={propertyValue}
+          value={localValue}
           error={!!errorMessage}
-          onChange={(e: ChangeEvent<HTMLInputElement>) => onChange(propertyKey, e.target.value, resource)}
+          onChange={(e: ChangeEvent<HTMLInputElement>) => {
+            setLocalValue(e.target.value);
+            onChange(propertyKey, e.target.value, resource);
+          }}
           placeholder={t('flows:core.elements.textPropertyField.placeholder', {propertyName: startCase(propertyKey)})}
+          sx={
+            isI18nPattern
+              ? {
+                  '& .MuiOutlinedInput-root': {
+                    backgroundColor: 'rgba(var(--mui-palette-primary-mainChannel) / 0.1)',
+                    '& fieldset': {
+                      borderColor: 'primary.main',
+                    },
+                    '&:hover fieldset': {
+                      borderColor: 'primary.dark',
+                    },
+                    '&.Mui-focused fieldset': {
+                      borderColor: 'primary.main',
+                    },
+                  },
+                }
+              : undefined
+          }
+          InputProps={{
+            endAdornment: (
+              <InputAdornment position="end">
+                <Tooltip title={t('flows:core.elements.textPropertyField.tooltip.configureTranslation')}>
+                  <IconButton
+                    ref={iconButtonRef}
+                    onClick={handleI18nToggle}
+                    size="small"
+                    edge="end"
+                    color={isI18nPattern ? 'primary' : 'default'}
+                  >
+                    <Languages size={16} />
+                  </IconButton>
+                </Tooltip>
+              </InputAdornment>
+            ),
+          }}
           {...rest}
         />
       </FormControl>
@@ -148,16 +205,14 @@ function TextPropertyField({
           </Typography>
         </Box>
       )}
-      {isI18nCardOpen && (
-        <I18nConfigurationCard
-          open={isI18nCardOpen}
-          anchorEl={iconButtonRef.current}
-          propertyKey={propertyKey}
-          onClose={handleI18nClose}
-          i18nKey={extractI18nKey(propertyValue) ?? ''}
-          onChange={(i18nKey: string) => onChange(propertyKey, i18nKey ? `{{t(${i18nKey})}}` : '', resource)}
-        />
-      )}
+      <I18nConfigurationCard
+        open={isI18nCardOpen}
+        anchorEl={iconButtonRef.current}
+        propertyKey={propertyKey}
+        onClose={handleI18nClose}
+        i18nKey={extractI18nKey(propertyValue) ?? ''}
+        onChange={(i18nKey: string) => onChange(propertyKey, i18nKey ? `{{t(${i18nKey})}}` : '', resource)}
+      />
     </Box>
   );
 }

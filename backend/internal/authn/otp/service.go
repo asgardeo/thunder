@@ -20,6 +20,7 @@
 package otp
 
 import (
+	"context"
 	"fmt"
 	"slices"
 	"strings"
@@ -192,7 +193,7 @@ func (s *otpAuthnService) resolveUser(recipient string, channel notifcommon.Chan
 		return nil, &ErrorUnsupportedChannel
 	}
 
-	userID, svcErr := s.userService.IdentifyUser(filters)
+	userID, svcErr := s.userService.IdentifyUser(context.TODO(), filters)
 	if svcErr != nil {
 		return nil, s.handleUserServiceError(svcErr, logger)
 	}
@@ -201,7 +202,7 @@ func (s *otpAuthnService) resolveUser(recipient string, channel notifcommon.Chan
 		return nil, &common.ErrorUserNotFound
 	}
 
-	user, svcErr := s.userService.GetUser(*userID)
+	user, svcErr := s.userService.GetUser(context.TODO(), *userID)
 	if svcErr != nil {
 		return nil, s.handleUserServiceError(svcErr, logger)
 	}

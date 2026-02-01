@@ -137,14 +137,14 @@ const useEdgeGeneration = (props?: UseEdgeGenerationProps): UseEdgeGenerationRet
       const createEdgesForButton = (step: Step, button: Element): void => {
         const sourceHandle = `${button.id}${VisualFlowConstants.FLOW_BUILDER_NEXT_HANDLE_SUFFIX}`;
 
-        if (button.action?.next) {
-          if (stepIds.has(button.action.next)) {
+        if (button.action?.onSuccess) {
+          if (stepIds.has(button.action.onSuccess)) {
             // Valid step reference
-            generatedEdges.push(createEdge(button.id, step.id, sourceHandle, button.action.next));
-            if (button.action.next === userOnboardStepId) {
+            generatedEdges.push(createEdge(button.id, step.id, sourceHandle, button.action.onSuccess));
+            if (button.action.onSuccess === userOnboardStepId) {
               userOnboardEdgeCreated = true;
             }
-          } else if (button.action.next === StepTypes.End) {
+          } else if (button.action.onSuccess === StepTypes.End) {
             // Reference to END type - connect to actual end step
             generatedEdges.push(createEdge(button.id, step.id, sourceHandle, userOnboardStepId));
             userOnboardEdgeCreated = true;
@@ -191,22 +191,29 @@ const useEdgeGeneration = (props?: UseEdgeGenerationProps): UseEdgeGenerationRet
           }
 
           // Process step-level actions
-          if (step.data?.action?.next) {
+          if (step.data?.action?.onSuccess) {
             const sourceHandle = `${step.id}${VisualFlowConstants.FLOW_BUILDER_NEXT_HANDLE_SUFFIX}`;
 
-            if (stepIds.has(step.data.action.next)) {
+            if (stepIds.has(step.data.action.onSuccess)) {
               generatedEdges.push(
-                createEdge(`${step.id}-to-${step.data.action.next}`, step.id, sourceHandle, step.data.action.next),
+                createEdge(`${step.id}-to-${step.data.action.onSuccess}`, step.id, sourceHandle, step.data.action.onSuccess),
               );
-              if (step.data.action.next === userOnboardStepId) {
+              if (step.data.action.onSuccess === userOnboardStepId) {
                 userOnboardEdgeCreated = true;
               }
-            } else if (step.data.action.next === StepTypes.End) {
+            } else if (step.data.action.onSuccess === StepTypes.End) {
               generatedEdges.push(
                 createEdge(`${step.id}-to-${userOnboardStepId}`, step.id, sourceHandle, userOnboardStepId),
               );
               userOnboardEdgeCreated = true;
             }
+          }
+
+          // Process step-level onFailure actions
+          if (step.data?.action?.onFailure && stepIds.has(step.data.action.onFailure)) {
+            generatedEdges.push(
+              createEdge(`${step.id}-failure-to-${step.data.action.onFailure}`, step.id, 'failure', step.data.action.onFailure),
+            );
           }
         });
 

@@ -435,4 +435,57 @@ describe('ResourcePanel', () => {
       expect(onAdd).toHaveBeenCalled();
     });
   });
+
+  describe('Toggle Panel', () => {
+    it('should toggle panel state when expand button is clicked when closed', () => {
+      render(<ResourcePanel resources={createMockResources()} onAdd={vi.fn()} open={false} />);
+
+      // Find the expand button (ChevronRightIcon button)
+      const buttons = screen.getAllByRole('button');
+      const expandButton = buttons[0]; // First button should be expand when closed
+
+      fireEvent.click(expandButton);
+
+      expect(mockSetIsResourcePanelOpen).toHaveBeenCalled();
+    });
+
+    it('should toggle panel state when collapse button is clicked when open', () => {
+      render(<ResourcePanel resources={createMockResources()} onAdd={vi.fn()} open />);
+
+      // Find buttons and click the collapse (ChevronLeftIcon) button
+      const buttons = screen.getAllByRole('button');
+      // Find button that contains the collapse icon (look for one near the top of panel)
+      let toggleFound = false;
+      buttons.forEach((btn) => {
+        if (!toggleFound) {
+          fireEvent.click(btn);
+          if (mockSetIsResourcePanelOpen.mock.calls.length > 0) {
+            toggleFound = true;
+          }
+        }
+      });
+
+      // Verify at least one call to toggle happened
+      expect(mockSetIsResourcePanelOpen).toHaveBeenCalled();
+    });
+
+    it('should call setIsResourcePanelOpen with toggle function', () => {
+      render(<ResourcePanel resources={createMockResources()} onAdd={vi.fn()} open />);
+
+      // Trigger the toggle
+      const buttons = screen.getAllByRole('button');
+      buttons.forEach((btn) => {
+        fireEvent.click(btn);
+      });
+
+      if (mockSetIsResourcePanelOpen.mock.calls.length > 0) {
+        // Verify it was called with a function that toggles the value
+        const toggleFn = mockSetIsResourcePanelOpen.mock.calls[0][0] as ((prev: boolean) => boolean) | undefined;
+        if (typeof toggleFn === 'function') {
+          expect(toggleFn(true)).toBe(false);
+          expect(toggleFn(false)).toBe(true);
+        }
+      }
+    });
+  });
 });

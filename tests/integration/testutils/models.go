@@ -54,6 +54,7 @@ type Application struct {
 	AllowedUserTypes          []string                 `json:"allowed_user_types,omitempty"`
 	Certificate               map[string]interface{}   `json:"certificate,omitempty"`
 	InboundAuthConfig         []map[string]interface{} `json:"inbound_auth_config,omitempty"`
+	TokenConfig               map[string]interface{}   `json:"token_config,omitempty"`
 }
 
 // OrganizationUnit represents an organization unit in the system

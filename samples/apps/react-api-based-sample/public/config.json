@@ -1,3 +1,4 @@
 {
-  "baseUrl": "https://localhost:8090"
+  "baseUrl": "https://localhost:8090",
+  "notificationSenderId": "YOUR_NOTIFICATION_SENDER_ID_HERE"
 }

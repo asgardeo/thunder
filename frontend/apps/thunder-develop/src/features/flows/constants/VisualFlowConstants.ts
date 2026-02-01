@@ -55,7 +55,7 @@ class VisualFlowConstants {
     TemplateTypes.Basic,
     TemplateTypes.BasicFederated,
     TemplateTypes.Blank,
-    TemplateTypes.BasicPasskey,
+    TemplateTypes.PasskeyLogin,
     BlockTypes.Form, // Form is allowed for drop detection, but handled specially to show dialog
     // Input types are allowed for drop detection, but handled specially to show dialog
     ElementTypes.TextInput,
@@ -76,7 +76,7 @@ class VisualFlowConstants {
     WidgetTypes.FacebookFederation,
     WidgetTypes.MicrosoftFederation,
     WidgetTypes.GithubFederation,
-    WidgetTypes.PasskeyEnrollment,
+    WidgetTypes.PasskeyAuthentication,
     WidgetTypes.MagicLink,
   ];
 
@@ -106,7 +106,7 @@ class VisualFlowConstants {
     WidgetTypes.FacebookFederation,
     WidgetTypes.MicrosoftFederation,
     WidgetTypes.GithubFederation,
-    WidgetTypes.PasskeyEnrollment,
+    WidgetTypes.PasskeyAuthentication,
     WidgetTypes.MagicLink,
   ];
 

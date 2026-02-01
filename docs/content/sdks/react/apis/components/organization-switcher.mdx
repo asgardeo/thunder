@@ -1,0 +1,53 @@
+---
+title: <OrganizationSwitcher />
+description: Switch between organizations
+---
+
+# `<OrganizationSwitcher />`
+
+The `OrganizationSwitcher` component renders a dropdown that allows users to switch between their organizations in multi-tenant B2B applications.
+
+## Usage
+
+### Basic Usage
+
+```jsx title="src/Header.jsx" showLineNumbers
+import { OrganizationSwitcher } from '@asgardeo/react'
+
+function Header() {
+  return (
+    <header>
+      <OrganizationSwitcher />
+    </header>
+  )
+}
+
+export default Header
+```
+
+### With Create Option
+
+Allow users to create new organizations from the switcher:
+
+```jsx title="src/Header.jsx" showLineNumbers
+import { OrganizationSwitcher } from '@asgardeo/react'
+
+function Header() {
+  return (
+    <OrganizationSwitcher 
+      showCreateOrganization={true}
+      createOrganizationUrl="/create-org"
+    />
+  )
+}
+
+export default Header
+```
+
+## Props
+
+| Prop | Type | Required | Description |
+| :--- | :--- | :---: | :--- |
+| `showCreateOrganization` | `boolean` | ❌ | Show create organization option (defaults to `false`) |
+| `createOrganizationUrl` | `string` | ❌ | URL for creating organizations |
+| `appearance` | `Appearance` | ❌ | Customize component appearance |

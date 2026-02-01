@@ -39,6 +39,11 @@ vi.mock('react-i18next', () => ({
         'flows:core.executions.smsOtp.sender.placeholder': 'Select sender',
         'flows:core.executions.smsOtp.sender.required': 'Sender is required',
         'flows:core.executions.smsOtp.sender.noSenders': 'No SMS senders configured',
+        'flows:core.executions.passkey.description': 'Configure Passkey settings',
+        'flows:core.executions.passkey.mode.label': 'Mode',
+        'flows:core.executions.passkey.mode.placeholder': 'Select mode',
+        'flows:core.executions.passkey.mode.challenge': 'Passkey Challenge',
+        'flows:core.executions.passkey.mode.verify': 'Passkey Verify',
       };
       return translations[key] || key;
     },
@@ -650,6 +655,141 @@ describe('ExecutionExtendedProperties', () => {
       render(<ExecutionExtendedProperties resource={smsOtpResource} onChange={mockOnChange} />);
 
       expect(screen.queryByText('No SMS senders configured')).not.toBeInTheDocument();
+    });
+  });
+
+  describe('Passkey Executor', () => {
+    const passkeyResource = {
+      id: 'passkey-executor-1',
+      data: {
+        action: {
+          executor: {
+            name: ExecutionTypes.PasskeyAuth,
+            mode: '',
+          },
+        },
+        display: {
+          label: 'Passkey',
+        },
+      },
+    } as unknown as Resource;
+
+    it('should render Passkey configuration UI', () => {
+      render(<ExecutionExtendedProperties resource={passkeyResource} onChange={mockOnChange} />);
+
+      expect(screen.getByText('Configure Passkey settings')).toBeInTheDocument();
+      expect(screen.getByText('Mode')).toBeInTheDocument();
+    });
+
+    it('should show mode options', async () => {
+      const user = userEvent.setup();
+
+      render(<ExecutionExtendedProperties resource={passkeyResource} onChange={mockOnChange} />);
+
+      const modeSelect = screen.getByRole('combobox');
+      await user.click(modeSelect);
+
+      expect(screen.getByText('Passkey Challenge')).toBeInTheDocument();
+      expect(screen.getByText('Passkey Verify')).toBeInTheDocument();
+    });
+
+    it('should call onChange with updated data when mode is selected', async () => {
+      const user = userEvent.setup();
+
+      render(<ExecutionExtendedProperties resource={passkeyResource} onChange={mockOnChange} />);
+
+      const modeSelect = screen.getByRole('combobox');
+      await user.click(modeSelect);
+      await user.click(screen.getByText('Passkey Challenge'));
+
+      expect(mockOnChange).toHaveBeenCalledWith(
+        'data',
+        expect.objectContaining({
+          action: expect.objectContaining({
+            executor: expect.objectContaining({
+              mode: 'challenge',
+            }) as unknown,
+          }) as unknown,
+          display: expect.objectContaining({
+            label: 'Request Passkey',
+          }) as unknown,
+        }),
+        passkeyResource,
+      );
+    });
+
+    it('should show selected mode value', () => {
+      const resourceWithMode = {
+        ...passkeyResource,
+        data: {
+          ...(passkeyResource as unknown as {data: object}).data,
+          action: {
+            executor: {
+              name: ExecutionTypes.PasskeyAuth,
+              mode: 'verify',
+            },
+          },
+        },
+      } as unknown as Resource;
+
+      render(<ExecutionExtendedProperties resource={resourceWithMode} onChange={mockOnChange} />);
+
+      const modeSelect = screen.getByRole('combobox');
+      expect(modeSelect).toHaveTextContent('Passkey Verify');
+    });
+
+    it('should update display label when mode changes to verify', async () => {
+      const user = userEvent.setup();
+
+      render(<ExecutionExtendedProperties resource={passkeyResource} onChange={mockOnChange} />);
+
+      const modeSelect = screen.getByRole('combobox');
+      await user.click(modeSelect);
+      await user.click(screen.getByText('Passkey Verify'));
+
+      expect(mockOnChange).toHaveBeenCalledWith(
+        'data',
+        expect.objectContaining({
+          display: expect.objectContaining({
+            label: 'Verify Passkey',
+          }) as unknown,
+        }),
+        passkeyResource,
+      );
+    });
+
+    it('should preserve existing data properties when mode changes', async () => {
+      const user = userEvent.setup();
+
+      const resourceWithExistingData = {
+        ...passkeyResource,
+        data: {
+          ...(passkeyResource as unknown as {data: object}).data,
+          properties: {relyingPartyId: 'localhost', relyingPartyName: 'Thunder'},
+          display: {label: 'Old Label', icon: 'passkey-icon.png'},
+        },
+      } as unknown as Resource;
+
+      render(<ExecutionExtendedProperties resource={resourceWithExistingData} onChange={mockOnChange} />);
+
+      const modeSelect = screen.getByRole('combobox');
+      await user.click(modeSelect);
+      await user.click(screen.getByText('Passkey Challenge'));
+
+      expect(mockOnChange).toHaveBeenCalledWith(
+        'data',
+        expect.objectContaining({
+          properties: expect.objectContaining({
+            relyingPartyId: 'localhost',
+            relyingPartyName: 'Thunder',
+          }) as unknown,
+          display: expect.objectContaining({
+            label: 'Request Passkey',
+            icon: 'passkey-icon.png',
+          }) as unknown,
+        }),
+        resourceWithExistingData,
+      );
     });
   });
 

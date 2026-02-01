@@ -112,7 +112,7 @@ describe('useEdgeGeneration', () => {
       expect(startEdge?.target).toBe('view-step-1');
     });
 
-    it('should create edges for buttons with action.next', () => {
+    it('should create edges for buttons with action.onSuccess', () => {
       const {result} = renderHook(() => useEdgeGeneration());
 
       const steps: Step[] = [
@@ -124,7 +124,7 @@ describe('useEdgeGeneration', () => {
               createMockElement({
                 id: 'button-1',
                 type: ElementTypes.Action,
-                action: {next: 'END'},
+                action: {onSuccess: 'END'},
               }),
             ],
           },
@@ -155,7 +155,7 @@ describe('useEdgeGeneration', () => {
                   createMockElement({
                     id: 'nested-button',
                     type: ElementTypes.Action,
-                    action: {next: 'END'},
+                    action: {onSuccess: 'END'},
                   }),
                 ],
               }),
@@ -183,7 +183,7 @@ describe('useEdgeGeneration', () => {
               createMockElement({
                 id: 'resend-button',
                 type: ElementTypes.Resend,
-                action: {next: 'view-step-2'},
+                action: {onSuccess: 'view-step-2'},
               }),
             ],
           },
@@ -207,7 +207,7 @@ describe('useEdgeGeneration', () => {
           id: 'view-step-1',
           type: StepTypes.View,
           data: {
-            action: {next: 'view-step-2'},
+            action: {onSuccess: 'view-step-2'},
           },
         }),
         createMockStep({id: 'view-step-2', type: StepTypes.View}),
@@ -220,7 +220,7 @@ describe('useEdgeGeneration', () => {
       expect(stepActionEdge).toBeDefined();
     });
 
-    it('should connect to END step when action.next is StepTypes.End', () => {
+    it('should connect to END step when action.onSuccess is StepTypes.End', () => {
       const {result} = renderHook(() => useEdgeGeneration());
 
       const steps: Step[] = [
@@ -228,7 +228,7 @@ describe('useEdgeGeneration', () => {
           id: 'view-step-1',
           type: StepTypes.View,
           data: {
-            action: {next: StepTypes.End},
+            action: {onSuccess: StepTypes.End},
           },
         }),
         createMockStep({id: 'END', type: StepTypes.End}),
@@ -240,7 +240,7 @@ describe('useEdgeGeneration', () => {
       expect(endEdge).toBeDefined();
     });
 
-    it('should connect button to END step when button action.next is StepTypes.End', () => {
+    it('should connect button to END step when button action.onSuccess is StepTypes.End', () => {
       const {result} = renderHook(() => useEdgeGeneration());
 
       const steps: Step[] = [
@@ -252,7 +252,7 @@ describe('useEdgeGeneration', () => {
               createMockElement({
                 id: 'button-1',
                 type: ElementTypes.Action,
-                action: {next: StepTypes.End},
+                action: {onSuccess: StepTypes.End},
               }),
             ],
           },
@@ -329,7 +329,7 @@ describe('useEdgeGeneration', () => {
       expect(buttonEdge?.target).toBe('END');
     });
 
-    it('should create step-level edge to END when step.data.action.next is StepTypes.End', () => {
+    it('should create step-level edge to END when step.data.action.onSuccess is StepTypes.End', () => {
       const {result} = renderHook(() => useEdgeGeneration());
 
       const steps: Step[] = [
@@ -338,7 +338,7 @@ describe('useEdgeGeneration', () => {
           type: StepTypes.View,
           data: {
             components: [],
-            action: {next: StepTypes.End},
+            action: {onSuccess: StepTypes.End},
           },
         }),
         createMockStep({id: 'END', type: StepTypes.End}),
@@ -536,9 +536,127 @@ describe('useEdgeGeneration', () => {
     });
   });
 
+  describe('onFailure edge generation', () => {
+    it('should create edge for step-level onFailure action', () => {
+      const {result} = renderHook(() => useEdgeGeneration());
+
+      const steps: Step[] = [
+        createMockStep({
+          id: 'execution-step-1',
+          type: StepTypes.View,
+          data: {
+            action: {onSuccess: 'view-step-2', onFailure: 'view-step-3'},
+          },
+        }),
+        createMockStep({id: 'view-step-2', type: StepTypes.View}),
+        createMockStep({id: 'view-step-3', type: StepTypes.View}),
+        createMockStep({id: 'END', type: StepTypes.End}),
+      ];
+
+      const edges = result.current.generateEdges(steps);
+
+      // Should have both success and failure edges
+      const successEdge = edges.find((e) => e.id === 'execution-step-1-to-view-step-2');
+      const failureEdge = edges.find((e) => e.id === 'execution-step-1-failure-to-view-step-3');
+
+      expect(successEdge).toBeDefined();
+      expect(successEdge?.sourceHandle).toBe('execution-step-1_NEXT');
+
+      expect(failureEdge).toBeDefined();
+      expect(failureEdge?.source).toBe('execution-step-1');
+      expect(failureEdge?.sourceHandle).toBe('failure');
+      expect(failureEdge?.target).toBe('view-step-3');
+    });
+
+    it('should not create failure edge when onFailure target does not exist', () => {
+      const {result} = renderHook(() => useEdgeGeneration());
+
+      const steps: Step[] = [
+        createMockStep({
+          id: 'execution-step-1',
+          type: StepTypes.View,
+          data: {
+            action: {onSuccess: 'view-step-2', onFailure: 'non-existent-step'},
+          },
+        }),
+        createMockStep({id: 'view-step-2', type: StepTypes.View}),
+        createMockStep({id: 'END', type: StepTypes.End}),
+      ];
+
+      const edges = result.current.generateEdges(steps);
+
+      // Should only have success edge, not failure edge
+      const successEdge = edges.find((e) => e.id === 'execution-step-1-to-view-step-2');
+      const failureEdge = edges.find((e) => e.sourceHandle === 'failure');
+
+      expect(successEdge).toBeDefined();
+      expect(failureEdge).toBeUndefined();
+    });
+
+    it('should create failure edge without success edge when only onFailure is defined', () => {
+      const {result} = renderHook(() => useEdgeGeneration());
+
+      const steps: Step[] = [
+        createMockStep({
+          id: 'execution-step-1',
+          type: StepTypes.View,
+          data: {
+            action: {onFailure: 'view-step-2'},
+          },
+        }),
+        createMockStep({id: 'view-step-2', type: StepTypes.View}),
+        createMockStep({id: 'END', type: StepTypes.End}),
+      ];
+
+      const edges = result.current.generateEdges(steps);
+
+      const failureEdge = edges.find((e) => e.id === 'execution-step-1-failure-to-view-step-2');
+      expect(failureEdge).toBeDefined();
+      expect(failureEdge?.sourceHandle).toBe('failure');
+      expect(failureEdge?.target).toBe('view-step-2');
+    });
+
+    it('should handle step with both component actions and step-level onFailure', () => {
+      const {result} = renderHook(() => useEdgeGeneration());
+
+      const steps: Step[] = [
+        createMockStep({
+          id: 'view-step-1',
+          type: StepTypes.View,
+          data: {
+            components: [
+              createMockElement({
+                id: 'button-1',
+                type: ElementTypes.Action,
+                action: {onSuccess: 'view-step-2'},
+              }),
+            ],
+            action: {onSuccess: 'view-step-3', onFailure: 'error-step'},
+          },
+        }),
+        createMockStep({id: 'view-step-2', type: StepTypes.View}),
+        createMockStep({id: 'view-step-3', type: StepTypes.View}),
+        createMockStep({id: 'error-step', type: StepTypes.View}),
+        createMockStep({id: 'END', type: StepTypes.End}),
+      ];
+
+      const edges = result.current.generateEdges(steps);
+
+      // Should have button edge, step-level success edge, and step-level failure edge
+      const buttonEdge = edges.find((e) => e.id === 'button-1');
+      const stepSuccessEdge = edges.find((e) => e.id === 'view-step-1-to-view-step-3');
+      const stepFailureEdge = edges.find((e) => e.id === 'view-step-1-failure-to-error-step');
+
+      expect(buttonEdge).toBeDefined();
+      expect(stepSuccessEdge).toBeDefined();
+      expect(stepFailureEdge).toBeDefined();
+      expect(stepFailureEdge?.sourceHandle).toBe('failure');
+    });
+  });
+
   describe('Edge cases for branch coverage', () => {
-    it('should connect button to actual END step when button action.next equals StepTypes.End string and END step has different id', () => {
-      // This test covers lines 147-150: when button.action.next === StepTypes.End (the string 'END')
+    it('should connect button to actual END step when button action.onSuccess equals StepTypes.End string and END step has different id', () => {
+      // This test covers lines 147-150: when button.action.onSuccess === StepTypes.End (the string 'END')
       // but there's no step with id 'END' in the flow (the end step has a different id like 'user-onboard')
       const {result} = renderHook(() => useEdgeGeneration());
 
@@ -551,9 +669,9 @@ describe('useEdgeGeneration', () => {
               createMockElement({
                 id: 'submit-button',
                 type: ElementTypes.Action,
-                // action.next is 'END' string (StepTypes.End value)
+                // action.onSuccess is 'END' string (StepTypes.End value)
                 // but there's no step with id 'END' - the end step has id 'user-onboard'
-                action: {next: 'END'},
+                action: {onSuccess: 'END'},
               }),
             ],
           },
@@ -570,8 +688,8 @@ describe('useEdgeGeneration', () => {
       expect(buttonEdge?.target).toBe('user-onboard');
     });
 
-    it('should connect step-level action to actual END step when action.next equals StepTypes.End string and END step has different id', () => {
-      // This test covers lines 204-208: when step.data.action.next === StepTypes.End (the string 'END')
+    it('should connect step-level action to actual END step when action.onSuccess equals StepTypes.End string and END step has different id', () => {
+      // This test covers lines 204-208: when step.data.action.onSuccess === StepTypes.End (the string 'END')
       // but there's no step with id 'END' in the flow
       const {result} = renderHook(() => useEdgeGeneration());
 
@@ -581,8 +699,8 @@ describe('useEdgeGeneration', () => {
           type: StepTypes.View,
           data: {
             components: [],
-            // action.next is 'END' string but there's no step with that id
-            action: {next: 'END'},
+            // action.onSuccess is 'END' string but there's no step with that id
+            action: {onSuccess: 'END'},
           },
         }),
         // End step has a DIFFERENT id than 'END'
@@ -615,7 +733,7 @@ describe('useEdgeGeneration', () => {
                 id: 'continue-btn',
                 type: ElementTypes.Action,
                 // This points to view-step-2, NOT to END
-                action: {next: 'view-step-2'},
+                action: {onSuccess: 'view-step-2'},
               }),
             ],
           },
@@ -630,7 +748,7 @@ describe('useEdgeGeneration', () => {
                 id: 'final-btn',
                 type: ElementTypes.Action,
                 // Also points away from END
-                action: {next: 'view-step-1'},
+                action: {onSuccess: 'view-step-1'},
               }),
             ],
           },

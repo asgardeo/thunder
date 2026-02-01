@@ -1,0 +1,48 @@
+---
+title: <OrganizationProfile />
+description: Manage organization settings
+---
+
+# `<OrganizationProfile />`
+
+The `OrganizationProfile` component renders a complete organization management interface where admins can manage organization settings, members, billing, and more.
+
+## Usage
+
+### Basic Usage
+
+```jsx title="src/OrgSettingsPage.jsx" showLineNumbers
+import { OrganizationProfile } from '@asgardeo/react'
+
+function OrgSettingsPage() {
+  return (
+    <div>
+      <h1>Organization Settings</h1>
+      <OrganizationProfile />
+    </div>
+  )
+}
+
+export default OrgSettingsPage
+```
+
+### Specific Organization
+
+Manage a specific organization by ID:
+
+```jsx title="src/OrgSettingsPage.jsx" showLineNumbers
+import { OrganizationProfile } from '@asgardeo/react'
+
+function OrgSettingsPage({ orgId }) {
+  return <OrganizationProfile organizationId={orgId} />
+}
+
+export default OrgSettingsPage
+```
+
+## Props
+
+| Prop | Type | Required | Description |
+| :--- | :--- | :---: | :--- |
+| `organizationId` | `string` | ❌ | Organization ID to manage (defaults to current organization) |
+| `appearance` | `Appearance` | ❌ | Customize component appearance |

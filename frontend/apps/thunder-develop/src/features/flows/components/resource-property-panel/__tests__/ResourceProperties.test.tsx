@@ -44,12 +44,18 @@ vi.mock('@xyflow/react', async () => {
   };
 });
 
+// Use vi.hoisted for plugin mock functions
+const {mockExecuteSync, mockExecuteAsync} = vi.hoisted(() => ({
+  mockExecuteSync: vi.fn().mockReturnValue(true),
+  mockExecuteAsync: vi.fn().mockResolvedValue(true),
+}));
+
 // Mock PluginRegistry
 vi.mock('../../../plugins/PluginRegistry', () => ({
   default: {
     getInstance: () => ({
-      executeSync: vi.fn().mockReturnValue(true),
-      executeAsync: vi.fn().mockResolvedValue(true),
+      executeSync: mockExecuteSync,
+      executeAsync: mockExecuteAsync,
     }),
   },
 }));
@@ -147,6 +153,8 @@ describe('ResourceProperties', () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
+    mockExecuteSync.mockReturnValue(true);
+    mockExecuteAsync.mockResolvedValue(true);
   });
 
   describe('Rendering', () => {
@@ -1511,6 +1519,540 @@ describe('ResourceProperties', () => {
       render(<ResourceProperties />, {wrapper: createWrapper(context)});
 
       expect(screen.getByText('Set Custom Property')).toBeInTheDocument();
+    });
+  });
+
+  describe('handlePropertyChange when plugin returns false', () => {
+    it('should update resource and return early when plugin handles the change (lines 208-214)', async () => {
+      // Make plugin return false to indicate it handled the change
+      mockExecuteAsync.mockResolvedValue(false);
+
+      const MockComponentWithChange = vi.fn(
+        ({
+          resource,
+          onChange,
+        }: {
+          resource: Resource;
+          properties?: Record<string, unknown>;
+          onChange: (propertyKey: string, newValue: string | boolean | object, resource: Resource) => void;
+          onVariantChange?: (variant: string, resource?: Partial<Resource>) => void;
+        }) => (
+          <div data-testid="mock-resource-properties">
+            <div data-testid="resource-id">{resource?.id}</div>
+            <button type="button" onClick={() => onChange('label', 'Plugin Handled Label', resource)}>
+              Change Label (Plugin Handles)
+            </button>
+          </div>
+        ),
+      );
+
+      const context = createContextValue({
+        ResourceProperties: MockComponentWithChange,
+      });
+
+      render(<ResourceProperties />, {wrapper: createWrapper(context)});
+
+      const changeButton = screen.getByText('Change Label (Plugin Handles)');
+      changeButton.click();
+
+      // Wait for debounced function to execute
+      await new Promise(resolve => {
+        setTimeout(resolve, 400);
+      });
+
+      // When plugin returns false, setLastInteractedResource should be called to update the resource
+      expect(mockSetLastInteractedResource).toHaveBeenCalled();
+      // updateNodeData should NOT be called since we return early
+      expect(mockUpdateNodeData).not.toHaveBeenCalled();
+    });
+
+    it('should not update resource when element.id differs from lastInteractedResourceId and plugin returns false', async () => {
+      mockExecuteAsync.mockResolvedValue(false);
+
+      const differentResource: Base = {
+        ...mockBaseResource,
+        id: 'different-resource-id',
+      };
+
+      const MockComponentWithDifferentElement = vi.fn(
+        ({
+          resource,
+          onChange,
+        }: {
+          resource: Resource;
+          properties?: Record<string, unknown>;
+          onChange: (propertyKey: string, newValue: string | boolean | object, resource: Resource) => void;
+          onVariantChange?: (variant: string, resource?: Partial<Resource>) => void;
+        }) => (
+          <div data-testid="mock-resource-properties">
+            <div data-testid="resource-id">{resource?.id}</div>
+            <button type="button" onClick={() => onChange('label', 'Different Label', differentResource)}>
+              Change Different Element
+            </button>
+          </div>
+        ),
+      );
+
+      const context = createContextValue({
+        ResourceProperties: MockComponentWithDifferentElement,
+      });
+
+      render(<ResourceProperties />, {wrapper: createWrapper(context)});
+
+      const changeButton = screen.getByText('Change Different Element');
+      changeButton.click();
+
+      await new Promise(resolve => {
+        setTimeout(resolve, 400);
+      });
+
+      // setLastInteractedResource should NOT be called because element.id !== lastInteractedResourceIdRef.current
+      expect(mockSetLastInteractedResource).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('handlePropertyChange updateComponent recursive function (lines 217-235)', () => {
+    it('should update matching component in updateComponent function', async () => {
+      mockExecuteAsync.mockResolvedValue(true);
+
+      // Mock updateNodeData to capture the callback and execute it
+      mockUpdateNodeData.mockImplementation((_stepId: string, callback: (node: {data: {components?: unknown[]}}) => unknown) => {
+        const node = {
+          data: {
+            components: [
+              {id: 'resource-1', label: 'Old Label'},
+              {id: 'other-component', label: 'Other Label'},
+            ],
+          },
+        };
+        const result = callback(node);
+        return result;
+      });
+
+      const MockComponentWithLabelChange = vi.fn(
+        ({
+          resource,
+          onChange,
+        }: {
+          resource: Resource;
+          properties?: Record<string, unknown>;
+          onChange: (propertyKey: string, newValue: string | boolean | object, resource: Resource) => void;
+          onVariantChange?: (variant: string, resource?: Partial<Resource>) => void;
+        }) => (
+          <div data-testid="mock-resource-properties">
+            <div data-testid="resource-id">{resource?.id}</div>
+            <button type="button" onClick={() => onChange('label', 'Updated Label', resource)}>
+              Update Component Label
+            </button>
+          </div>
+        ),
+      );
+
+      const context = createContextValue({
+        ResourceProperties: MockComponentWithLabelChange,
+      });
+
+      render(<ResourceProperties />, {wrapper: createWrapper(context)});
+
+      const changeButton = screen.getByText('Update Component Label');
+      changeButton.click();
+
+      await new Promise(resolve => {
+        setTimeout(resolve, 400);
+      });
+
+      expect(mockUpdateNodeData).toHaveBeenCalled();
+    });
+
+    it('should recursively update nested components when component has nested components (lines 227-231)', async () => {
+      mockExecuteAsync.mockResolvedValue(true);
+
+      mockUpdateNodeData.mockImplementation((_stepId: string, callback: (node: {data: {components?: unknown[]}}) => unknown) => {
+        const node = {
+          data: {
+            components: [
+              {
+                id: 'parent-component',
+                label: 'Parent',
+                components: [
+                  {id: 'resource-1', label: 'Nested Child'},
+                ],
+              },
+            ],
+          },
+        };
+        const result = callback(node);
+        return result;
+      });
+
+      const MockComponentWithNestedUpdate = vi.fn(
+        ({
+          resource,
+          onChange,
+        }: {
+          resource: Resource;
+          properties?: Record<string, unknown>;
+          onChange: (propertyKey: string, newValue: string | boolean | object, resource: Resource) => void;
+          onVariantChange?: (variant: string, resource?: Partial<Resource>) => void;
+        }) => (
+          <div data-testid="mock-resource-properties">
+            <div data-testid="resource-id">{resource?.id}</div>
+            <button type="button" onClick={() => onChange('label', 'Updated Nested Label', resource)}>
+              Update Nested Component
+            </button>
+          </div>
+        ),
+      );
+
+      const context = createContextValue({
+        ResourceProperties: MockComponentWithNestedUpdate,
+      });
+
+      render(<ResourceProperties />, {wrapper: createWrapper(context)});
+
+      const changeButton = screen.getByText('Update Nested Component');
+      changeButton.click();
+
+      await new Promise(resolve => {
+        setTimeout(resolve, 400);
+      });
+
+      expect(mockUpdateNodeData).toHaveBeenCalled();
+    });
+
+    it('should return component unchanged when id does not match and no nested components (line 234)', async () => {
+      mockExecuteAsync.mockResolvedValue(true);
+
+      mockUpdateNodeData.mockImplementation((_stepId: string, callback: (node: {data: {components?: unknown[]}}) => unknown) => {
+        const node = {
+          data: {
+            components: [
+              {id: 'unrelated-component', label: 'Unrelated'},
+            ],
+          },
+        };
+        const result = callback(node);
+        return result;
+      });
+
+      const MockComponentNoMatch = vi.fn(
+        ({
+          resource,
+          onChange,
+        }: {
+          resource: Resource;
+          properties?: Record<string, unknown>;
+          onChange: (propertyKey: string, newValue: string | boolean | object, resource: Resource) => void;
+          onVariantChange?: (variant: string, resource?: Partial<Resource>) => void;
+        }) => (
+          <div data-testid="mock-resource-properties">
+            <div data-testid="resource-id">{resource?.id}</div>
+            <button type="button" onClick={() => onChange('label', 'No Match Label', resource)}>
+              Update No Match
+            </button>
+          </div>
+        ),
+      );
+
+      const context = createContextValue({
+        ResourceProperties: MockComponentNoMatch,
+      });
+
+      render(<ResourceProperties />, {wrapper: createWrapper(context)});
+
+      const changeButton = screen.getByText('Update No Match');
+      changeButton.click();
+
+      await new Promise(resolve => {
+        setTimeout(resolve, 400);
+      });
+
+      expect(mockUpdateNodeData).toHaveBeenCalled();
+    });
+  });
+
+  describe('changeSelectedVariant early return when no resource', () => {
+    it('should return early when currentResource is null (line 135)', () => {
+      // Create a mock that triggers variant change after the resource becomes null
+      const MockComponentWithVariantChange = vi.fn(
+        ({
+          onVariantChange,
+        }: {
+          resource: Resource;
+          properties?: Record<string, unknown>;
+          onChange: (propertyKey: string, newValue: string | boolean | object, resource: Resource) => void;
+          onVariantChange?: (variant: string, resource?: Partial<Resource>) => void;
+        }) => (
+          <div data-testid="mock-resource-properties">
+            <button type="button" onClick={() => onVariantChange?.('variant-1')}>
+              Change Variant When No Resource
+            </button>
+          </div>
+        ),
+      );
+
+      // Start with null resource
+      const contextWithNullResource = createContextValue({
+        lastInteractedResource: null as unknown as Base,
+        ResourceProperties: MockComponentWithVariantChange,
+      });
+
+      // This will render the "No properties available" message instead of the component
+      render(<ResourceProperties />, {wrapper: createWrapper(contextWithNullResource)});
+
+      // Since lastInteractedResource is null, the component renders the fallback message
+      expect(screen.getByText('No properties available.')).toBeInTheDocument();
+      // updateNodeData should not be called
+      expect(mockUpdateNodeData).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('handlePropertyChange updateNodeData callback paths (lines 240-251)', () => {
+    it('should replace entire data object when propertyKey is exactly data and no components (lines 242-244)', async () => {
+      mockExecuteAsync.mockResolvedValue(true);
+
+      let capturedResult: unknown;
+      mockUpdateNodeData.mockImplementation((_stepId: string, callback: (node: {data: {components?: unknown[]}}) => unknown) => {
+        // Simulate node with no components (empty)
+        const node = {
+          data: {},
+        };
+        capturedResult = callback(node);
+        return capturedResult;
+      });
+
+      const MockComponentWithDataReplace = vi.fn(
+        ({
+          resource,
+          onChange,
+        }: {
+          resource: Resource;
+          properties?: Record<string, unknown>;
+          onChange: (propertyKey: string, newValue: string | boolean | object, resource: Resource) => void;
+          onVariantChange?: (variant: string, resource?: Partial<Resource>) => void;
+        }) => (
+          <div data-testid="mock-resource-properties">
+            <div data-testid="resource-id">{resource?.id}</div>
+            <button type="button" onClick={() => onChange('data', {entireNewData: 'value', anotherField: 123}, resource)}>
+              Replace Entire Data
+            </button>
+          </div>
+        ),
+      );
+
+      const context = createContextValue({
+        ResourceProperties: MockComponentWithDataReplace,
+      });
+
+      render(<ResourceProperties />, {wrapper: createWrapper(context)});
+
+      const changeButton = screen.getByText('Replace Entire Data');
+      changeButton.click();
+
+      await new Promise(resolve => {
+        setTimeout(resolve, 400);
+      });
+
+      expect(mockUpdateNodeData).toHaveBeenCalled();
+      // Verify the result contains the new data object spread
+      expect(capturedResult).toEqual({entireNewData: 'value', anotherField: 123});
+    });
+
+    it('should strip data. prefix and set on data object when no components (lines 246-248)', async () => {
+      mockExecuteAsync.mockResolvedValue(true);
+
+      let capturedResult: unknown;
+      mockUpdateNodeData.mockImplementation((_stepId: string, callback: (node: {data: {components?: unknown[]; existingField?: string}}) => unknown) => {
+        const node = {
+          data: {existingField: 'existingValue'},
+        };
+        capturedResult = callback(node);
+        return capturedResult;
+      });
+
+      const MockComponentWithDataPrefix = vi.fn(
+        ({
+          resource,
+          onChange,
+        }: {
+          resource: Resource;
+          properties?: Record<string, unknown>;
+          onChange: (propertyKey: string, newValue: string | boolean | object, resource: Resource) => void;
+          onVariantChange?: (variant: string, resource?: Partial<Resource>) => void;
+        }) => (
+          <div data-testid="mock-resource-properties">
+            <div data-testid="resource-id">{resource?.id}</div>
+            <button type="button" onClick={() => onChange('data.newField', 'newValue', resource)}>
+              Set Data Prefixed Property
+            </button>
+          </div>
+        ),
+      );
+
+      const context = createContextValue({
+        ResourceProperties: MockComponentWithDataPrefix,
+      });
+
+      render(<ResourceProperties />, {wrapper: createWrapper(context)});
+
+      const changeButton = screen.getByText('Set Data Prefixed Property');
+      changeButton.click();
+
+      await new Promise(resolve => {
+        setTimeout(resolve, 400);
+      });
+
+      expect(mockUpdateNodeData).toHaveBeenCalled();
+      // Verify the prefix was stripped and newField was set
+      expect(capturedResult).toEqual(expect.objectContaining({newField: 'newValue'}));
+    });
+
+    it('should set property directly on data object when no prefix and no components', async () => {
+      mockExecuteAsync.mockResolvedValue(true);
+
+      let capturedResult: unknown;
+      mockUpdateNodeData.mockImplementation((_stepId: string, callback: (node: {data: {components?: unknown[]; existingField?: string}}) => unknown) => {
+        const node = {
+          data: {existingField: 'existingValue'},
+        };
+        capturedResult = callback(node);
+        return capturedResult;
+      });
+
+      const MockComponentWithDirectProperty = vi.fn(
+        ({
+          resource,
+          onChange,
+        }: {
+          resource: Resource;
+          properties?: Record<string, unknown>;
+          onChange: (propertyKey: string, newValue: string | boolean | object, resource: Resource) => void;
+          onVariantChange?: (variant: string, resource?: Partial<Resource>) => void;
+        }) => (
+          <div data-testid="mock-resource-properties">
+            <div data-testid="resource-id">{resource?.id}</div>
+            <button type="button" onClick={() => onChange('directField', 'directValue', resource)}>
+              Set Direct Property
+            </button>
+          </div>
+        ),
+      );
+
+      const context = createContextValue({
+        ResourceProperties: MockComponentWithDirectProperty,
+      });
+
+      render(<ResourceProperties />, {wrapper: createWrapper(context)});
+
+      const changeButton = screen.getByText('Set Direct Property');
+      changeButton.click();
+
+      await new Promise(resolve => {
+        setTimeout(resolve, 400);
+      });
+
+      expect(mockUpdateNodeData).toHaveBeenCalled();
+      expect(capturedResult).toEqual(expect.objectContaining({directField: 'directValue'}));
+    });
+
+    it('should handle node with non-empty components array (line 240 true branch)', async () => {
+      mockExecuteAsync.mockResolvedValue(true);
+
+      let capturedResult: unknown;
+      mockUpdateNodeData.mockImplementation((_stepId: string, callback: (node: {data: {components?: unknown[]}}) => unknown) => {
+        const node = {
+          data: {
+            components: [
+              {id: 'resource-1', label: 'Component Label'},
+            ],
+          },
+        };
+        capturedResult = callback(node);
+        return capturedResult;
+      });
+
+      const MockComponentWithComponents = vi.fn(
+        ({
+          resource,
+          onChange,
+        }: {
+          resource: Resource;
+          properties?: Record<string, unknown>;
+          onChange: (propertyKey: string, newValue: string | boolean | object, resource: Resource) => void;
+          onVariantChange?: (variant: string, resource?: Partial<Resource>) => void;
+        }) => (
+          <div data-testid="mock-resource-properties">
+            <div data-testid="resource-id">{resource?.id}</div>
+            <button type="button" onClick={() => onChange('label', 'Updated Label', resource)}>
+              Update With Components
+            </button>
+          </div>
+        ),
+      );
+
+      const context = createContextValue({
+        ResourceProperties: MockComponentWithComponents,
+      });
+
+      render(<ResourceProperties />, {wrapper: createWrapper(context)});
+
+      const changeButton = screen.getByText('Update With Components');
+      changeButton.click();
+
+      await new Promise(resolve => {
+        setTimeout(resolve, 400);
+      });
+
+      expect(mockUpdateNodeData).toHaveBeenCalled();
+      // Result should have components array updated
+      expect(capturedResult).toHaveProperty('components');
+    });
+
+    it('should handle node with undefined data (lines 238-241)', async () => {
+      mockExecuteAsync.mockResolvedValue(true);
+
+      let capturedResult: unknown;
+      mockUpdateNodeData.mockImplementation((_stepId: string, callback: (node: {data?: {components?: unknown[]}}) => unknown) => {
+        const node = {
+          data: undefined,
+        };
+        capturedResult = callback(node as unknown as {data: {components?: unknown[]}});
+        return capturedResult;
+      });
+
+      const MockComponentWithUndefinedData = vi.fn(
+        ({
+          resource,
+          onChange,
+        }: {
+          resource: Resource;
+          properties?: Record<string, unknown>;
+          onChange: (propertyKey: string, newValue: string | boolean | object, resource: Resource) => void;
+          onVariantChange?: (variant: string, resource?: Partial<Resource>) => void;
+        }) => (
+          <div data-testid="mock-resource-properties">
+            <div data-testid="resource-id">{resource?.id}</div>
+            <button type="button" onClick={() => onChange('someField', 'someValue', resource)}>
+              Update With Undefined Data
+            </button>
+          </div>
+        ),
+      );
+
+      const context = createContextValue({
+        ResourceProperties: MockComponentWithUndefinedData,
+      });
+
+      render(<ResourceProperties />, {wrapper: createWrapper(context)});
+
+      const changeButton = screen.getByText('Update With Undefined Data');
+      changeButton.click();
+
+      await new Promise(resolve => {
+        setTimeout(resolve, 400);
+      });
+
+      expect(mockUpdateNodeData).toHaveBeenCalled();
     });
   });
 

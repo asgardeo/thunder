@@ -45,6 +45,58 @@ html[data-color-scheme='dark'] {
 
 .execution-minimal-step {
   border-radius: 8px;
+  position: relative;
+
+  // Handle wrapper for tooltip functionality
+  .handle-wrapper {
+    position: absolute;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    &.success-wrapper {
+      right: -6px;
+      top: 50%;
+      transform: translateY(-50%);
+    }
+
+    &.failure-wrapper {
+      bottom: -6px;
+      left: 50%;
+      transform: translateX(-50%);
+    }
+  }
+
+  // Success handle styling (green)
+  .execution-handle-success {
+    background-color: #22c55e !important;
+    width: 12px !important;
+    height: 12px !important;
+    border: 2px solid #16a34a !important;
+    position: relative !important;
+    top: auto !important;
+    right: auto !important;
+    transform: none !important;
+  }
+
+  // Failure handle styling (red)
+  .execution-handle-failure {
+    background-color: #ef4444 !important;
+    width: 12px !important;
+    height: 12px !important;
+    border: 2px solid #dc2626 !important;
+    position: relative !important;
+    bottom: auto !important;
+    left: auto !important;
+    transform: none !important;
+  }
+
+  // When branching is active, ensure proper spacing
+  &.has-branching {
+    .execution-minimal-step-content {
+      min-height: 60px;
+    }
+  }
 
   .execution-minimal-step-action-panel {
     border-radius: 8px 8px 0 0;

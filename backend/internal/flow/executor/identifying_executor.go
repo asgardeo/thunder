@@ -19,6 +19,7 @@
 package executor
 
 import (
+	"context"
 	"slices"
 
 	"github.com/asgardeo/thunder/internal/flow/common"
@@ -84,7 +85,7 @@ func (i *identifyingExecutor) IdentifyUser(filters map[string]interface{},
 		}
 	}
 
-	userID, svcErr := i.userService.IdentifyUser(searchableFilter)
+	userID, svcErr := i.userService.IdentifyUser(context.TODO(), searchableFilter)
 	if svcErr != nil {
 		if svcErr.Code == user.ErrorUserNotFound.Code {
 			logger.Debug("User not found for the provided filters")
@@ -107,4 +108,59 @@ func (i *identifyingExecutor) IdentifyUser(filters map[string]interface{},
 	}
 
 	return userID, nil
+}
+
+// Execute executes the identifying executor logic.
+func (i *identifyingExecutor) Execute(ctx *core.NodeContext) (*common.ExecutorResponse, error) {
+	logger := i.logger.With(log.String(log.LoggerKeyFlowID, ctx.FlowID))
+	logger.Debug("Executing identifying executor")
+
+	execResp := &common.ExecutorResponse{
+		AdditionalData: make(map[string]string),
+		RuntimeData:    make(map[string]string),
+	}
+
+	// Check if required inputs are provided
+	if !i.HasRequiredInputs(ctx, execResp) {
+		logger.Debug("Required inputs for identifying executor are not provided")
+		execResp.Status = common.ExecUserInputRequired
+		return execResp, nil
+	}
+
+	userSearchAttributes := map[string]interface{}{}
+
+	for _, inputData := range i.GetRequiredInputs(ctx) {
+		if value, ok := ctx.UserInputs[inputData.Identifier]; ok {
+			userSearchAttributes[inputData.Identifier] = value
+		} else if value, ok := ctx.RuntimeData[inputData.Identifier]; ok {
+			// Fallback to RuntimeData if not in UserInputs
+			userSearchAttributes[inputData.Identifier] = value
+		}
+	}
+
+	// Try to identify the user
+	userID, err := i.IdentifyUser(userSearchAttributes, execResp)
+
+	if err != nil {
+		logger.Debug("Failed to identify user due to error: " + err.Error())
+		execResp.Status = common.ExecFailure
+		execResp.FailureReason = failureReasonFailedToIdentifyUser
+		return execResp, nil
+	}
+
+	if userID == nil || *userID == "" {
+		logger.Debug("User not found for the provided attributes")
+		execResp.Status = common.ExecFailure
+		execResp.FailureReason = failureReasonUserNotFound
+		return execResp, nil
+	}
+
+	// Store the resolved userID in RuntimeData for subsequent executors
+	execResp.RuntimeData[userAttributeUserID] = *userID
+	execResp.Status = common.ExecComplete
+
+	logger.Debug("Identifying executor completed successfully",
+		log.String("userID", log.MaskString(*userID)))
+
+	return execResp, nil
 }

@@ -16,106 +16,69 @@
  * under the License.
  */
 
-import {useCallback, useEffect, useMemo, useRef, useState} from 'react';
+import {useQuery, type UseQueryResult} from '@tanstack/react-query';
+import {useConfig} from '@thunder/shared-contexts';
 import {useAsgardeo} from '@asgardeo/react';
-import {useConfig} from '@thunder/commons-contexts';
-import type {
-  ApiError,
-  OrganizationUnitListParams,
-  OrganizationUnitListResponse,
-} from '../types/organization-units';
+import type {OrganizationUnitListParams, OrganizationUnitListResponse} from '../types/organization-units';
+import OrganizationUnitQueryKeys from '../constants/organization-unit-query-keys';
 
 /**
- * Fetches organization units list with optional pagination.
+ * Custom React hook to fetch a paginated list of organization units from the Thunder server.
+ *
+ * This hook uses TanStack Query to manage the server state and provides automatic
+ * caching, refetching, and background updates. The query is keyed by the pagination
+ * parameters to ensure proper cache management.
+ *
+ * @param params - Optional pagination parameters
+ * @param params.limit - Maximum number of records to return (default: 30)
+ * @param params.offset - Number of records to skip for pagination (default: 0)
+ * @returns TanStack Query result object containing organization units list data, loading state, and error information
+ *
+ * @example
+ * ```tsx
+ * function OrganizationUnitsList() {
+ *   const { data, isLoading, error } = useGetOrganizationUnits();
+ *
+ *   if (isLoading) return <div>Loading...</div>;
+ *   if (error) return <div>Error: {error.message}</div>;
+ *
+ *   return (
+ *     <ul>
+ *       {data?.organizationUnits.map((ou) => (
+ *         <li key={ou.id}>{ou.name}</li>
+ *       ))}
+ *     </ul>
+ *   );
+ * }
+ * ```
  */
-export default function useGetOrganizationUnits(params?: OrganizationUnitListParams) {
+export default function useGetOrganizationUnits(
+  params?: OrganizationUnitListParams,
+): UseQueryResult<OrganizationUnitListResponse> {
   const {http} = useAsgardeo();
   const {getServerUrl} = useConfig();
-  const [data, setData] = useState<OrganizationUnitListResponse | null>(null);
-  const [error, setError] = useState<ApiError | null>(null);
-  const [loading, setLoading] = useState(false);
-  const abortControllerRef = useRef<AbortController | null>(null);
+  const {limit = 30, offset = 0} = params ?? {};
 
-  const API_BASE_URL: string = useMemo(
-    () => getServerUrl() ?? (import.meta.env.VITE_ASGARDEO_BASE_URL as string),
-    [getServerUrl],
-  );
-  const paramsKey = useMemo(() => JSON.stringify(params ?? {}), [params]);
+  return useQuery<OrganizationUnitListResponse>({
+    queryKey: [OrganizationUnitQueryKeys.ORGANIZATION_UNITS, {limit, offset}],
+    queryFn: async (): Promise<OrganizationUnitListResponse> => {
+      const serverUrl: string = getServerUrl();
+      const queryParams: URLSearchParams = new URLSearchParams({
+        limit: limit.toString(),
+        offset: offset.toString(),
+      });
 
-  const executeFetch = useCallback(
-    async (finalParams?: OrganizationUnitListParams): Promise<void> => {
-      abortControllerRef.current?.abort();
-      abortControllerRef.current = new AbortController();
+      const response: {
+        data: OrganizationUnitListResponse;
+      } = await http.request({
+        url: `${serverUrl}/organization-units?${queryParams.toString()}`,
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      } as unknown as Parameters<typeof http.request>[0]);
 
-      try {
-        setLoading(true);
-        setError(null);
-
-        const searchParams = new URLSearchParams();
-        const resolvedParams = finalParams ?? params;
-
-        if (resolvedParams?.limit !== undefined) {
-          searchParams.append('limit', String(resolvedParams.limit));
-        }
-        if (resolvedParams?.offset !== undefined) {
-          searchParams.append('offset', String(resolvedParams.offset));
-        }
-
-        const queryString = searchParams.toString();
-
-        const response = await http.request({
-          url: `${API_BASE_URL}/organization-units${queryString ? `?${queryString}` : ''}`,
-          method: 'GET',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          signal: abortControllerRef.current?.signal,
-        } as unknown as Parameters<typeof http.request>[0]);
-
-        setData(response.data as OrganizationUnitListResponse);
-        setError(null);
-      } catch (err) {
-        if (err instanceof Error && err.name === 'AbortError') {
-          return;
-        }
-
-        const apiError: ApiError = {
-          code: 'FETCH_ERROR',
-          message: err instanceof Error ? err.message : 'An unknown error occurred',
-          description: 'Failed to fetch organization units',
-        };
-        setError(apiError);
-        throw err;
-      } finally {
-        setLoading(false);
-      }
+      return response.data;
     },
-    [API_BASE_URL, http, params],
-  );
-
-  useEffect(() => {
-    executeFetch().catch(() => {
-      // Error already handled
-    });
-
-    return () => {
-      abortControllerRef.current?.abort();
-    };
-  }, [executeFetch, paramsKey]);
-
-  const refetch = async (newParams?: OrganizationUnitListParams): Promise<void> => {
-    await executeFetch(newParams).catch((err) => {
-      // propagate errors except abort to match previous behavior
-      if (!(err instanceof Error && err.name === 'AbortError')) {
-        throw err;
-      }
-    });
-  };
-
-  return {
-    data,
-    loading,
-    error,
-    refetch,
-  };
+  });
 }

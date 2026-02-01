@@ -18,6 +18,7 @@
 
 export interface AppConfig {
   baseUrl: string;
+  notificationSenderId?: string;
 }
 
 let config: AppConfig | null = null;

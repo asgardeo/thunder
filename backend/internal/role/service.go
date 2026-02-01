@@ -20,6 +20,7 @@
 package role
 
 import (
+	"context"
 	"errors"
 	"fmt"
 
@@ -556,7 +557,7 @@ func (rs *roleService) validateAssignmentIDs(assignments []RoleAssignment) *serv
 
 	// Validate user IDs using user service
 	if len(userIDs) > 0 {
-		invalidUserIDs, svcErr := rs.userService.ValidateUserIDs(userIDs)
+		invalidUserIDs, svcErr := rs.userService.ValidateUserIDs(context.TODO(), userIDs)
 		if svcErr != nil {
 			logger.Error("Failed to validate user IDs", log.String("error", svcErr.Error),
 				log.String("code", svcErr.Code))
@@ -638,7 +639,7 @@ func buildPaginationLinks(base string, limit, offset, totalCount int) []Link {
 func (rs *roleService) getDisplayNameForAssignment(assignment *RoleAssignment) (string, error) {
 	switch assignment.Type {
 	case AssigneeTypeUser:
-		userResp, svcErr := rs.userService.GetUser(assignment.ID)
+		userResp, svcErr := rs.userService.GetUser(context.TODO(), assignment.ID)
 		if svcErr != nil {
 			return "", fmt.Errorf("failed to get user: %w", errors.New(svcErr.Error))
 		}
