@@ -401,46 +401,37 @@ func (us *userService) UpdateUser(ctx context.Context, userID string, user *User
 	// Ensure the user object has the correct ID
 	user.ID = userID
 
-	// Validate organization unit before transaction (read-only validation)
 	if svcErr := us.validateOrganizationUnitForUserType(user.Type, user.OrganizationUnit, logger); svcErr != nil {
 		return nil, svcErr
 	}
 
 	var capturedSvcErr *serviceerror.ServiceError
 
-	// Wrap ALL data modifications in a single transaction
 	err := us.transactioner.Transact(ctx, func(txCtx context.Context) error {
-		// Validate uniqueness inside transaction to prevent race conditions
 		if svcErr := us.validateUserAndUniqueness(txCtx, user.Type, user.Attributes, logger); svcErr != nil {
 			capturedSvcErr = svcErr
 			return errors.New("rollback for validation error")
 		}
 
-		// Extract credentials (modifies user.Attributes by removing credential fields)
 		credentials, err := us.extractCredentials(user)
 		if err != nil {
 			capturedSvcErr = logErrorAndReturnServerError(logger, "Failed to extract credentials", err, log.String("id", userID))
 			return errors.New("rollback for credential extraction error")
 		}
 
-		// Update user attributes (without credentials)
 		err = us.userStore.UpdateUser(txCtx, user)
 		if err != nil {
 			return err
 		}
 
-		// Update credentials if any (still inside same transaction)
 		if len(credentials) > 0 {
-			// Get existing credentials
 			_, existingCredentials, err := us.userStore.GetCredentials(txCtx, userID)
 			if err != nil {
 				return err
 			}
 
-			// Merge credentials
 			mergedCredentials := us.mergeCredentials(existingCredentials, credentials)
 
-			// Update credentials
 			err = us.userStore.UpdateUserCredentials(txCtx, userID, mergedCredentials)
 			if err != nil {
 				return err
