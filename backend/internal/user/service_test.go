@@ -43,6 +43,11 @@ import (
 
 const testUserType = "employee"
 const testOrgID = "11111111-1111-1111-1111-111111111111"
+const svcTestUserID1 = "user-1"
+const svcTestUserID123 = "user-123"
+const testUserID = "user-1"
+const testCustomerOUID = "550e8400-e29b-41d4-a716-446655440000"
+const testCustomerType = "customer"
 
 func TestOUStore_ValidateUserAndUniqueness(t *testing.T) {
 	type testMocks struct {
@@ -209,7 +214,7 @@ func TestOUStore_ValidateUserAndUniqueness(t *testing.T) {
 				schemaMock := userschemamock.NewUserSchemaServiceInterfaceMock(t)
 				userStoreMock := newUserStoreInterfaceMock(t)
 				userStoreMock.
-					On("IdentifyUser", mock.AnythingOfType("map[string]interface {}")).
+					On("IdentifyUser", mock.Anything, mock.AnythingOfType("map[string]interface {}")).
 					Return(&existingUserID, nil).
 					Once()
 				schemaMock.
@@ -249,7 +254,7 @@ func TestOUStore_ValidateUserAndUniqueness(t *testing.T) {
 				schemaMock := userschemamock.NewUserSchemaServiceInterfaceMock(t)
 				userStoreMock := newUserStoreInterfaceMock(t)
 				userStoreMock.
-					On("IdentifyUser", mock.AnythingOfType("map[string]interface {}")).
+					On("IdentifyUser", mock.Anything, mock.AnythingOfType("map[string]interface {}")).
 					Return((*string)(nil), nil).
 					Once()
 				schemaMock.
@@ -287,7 +292,7 @@ func TestOUStore_ValidateUserAndUniqueness(t *testing.T) {
 				schemaMock := userschemamock.NewUserSchemaServiceInterfaceMock(t)
 				userStoreMock := newUserStoreInterfaceMock(t)
 				userStoreMock.
-					On("IdentifyUser", mock.AnythingOfType("map[string]interface {}")).
+					On("IdentifyUser", mock.Anything, mock.AnythingOfType("map[string]interface {}")).
 					Return((*string)(nil), errors.New("store failure")).
 					Once()
 				schemaMock.
@@ -331,7 +336,7 @@ func TestOUStore_ValidateUserAndUniqueness(t *testing.T) {
 			service, mocks := tc.setup(t)
 			logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, "UserServiceTest"))
 
-			err := service.validateUserAndUniqueness(testUserType, tc.payload, logger)
+			err := service.validateUserAndUniqueness(context.Background(), testUserType, tc.payload, logger)
 			tc.assert(t, err, mocks)
 		})
 	}
@@ -651,7 +656,7 @@ func TestUserService_GetUsersByPath_HandlesOUServiceErrors(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			service := tc.setup(t)
 
-			resp, err := service.GetUsersByPath("root", 10, 0, nil)
+			resp, err := service.GetUsersByPath(context.Background(), "root", 10, 0, nil)
 			require.Nil(t, resp)
 			require.NotNil(t, err)
 			require.Equal(t, *tc.expectedErr, *err)
@@ -961,7 +966,7 @@ func TestUserService_UpdateUserCredentials_Validation(t *testing.T) {
 	t.Run("ReturnsAuthErrorWhenUserIDMissing", func(t *testing.T) {
 		service := &userService{}
 
-		err := service.UpdateUserCredentials("", json.RawMessage(`{"password":"newpass"}`))
+		err := service.UpdateUserCredentials(context.Background(), "", json.RawMessage(`{"password":"newpass"}`))
 		require.NotNil(t, err)
 		require.Equal(t, ErrorAuthenticationFailed, *err)
 	})
@@ -969,7 +974,7 @@ func TestUserService_UpdateUserCredentials_Validation(t *testing.T) {
 	t.Run("ReturnsMissingCredentialsWhenPayloadEmpty", func(t *testing.T) {
 		service := &userService{}
 
-		err := service.UpdateUserCredentials("user-1", json.RawMessage(``))
+		err := service.UpdateUserCredentials(context.Background(), "user-1", json.RawMessage(``))
 		require.NotNil(t, err)
 		require.Equal(t, ErrorMissingCredentials, *err)
 	})
@@ -977,7 +982,7 @@ func TestUserService_UpdateUserCredentials_Validation(t *testing.T) {
 	t.Run("ReturnsInvalidRequestFormatWhenInvalidJSON", func(t *testing.T) {
 		service := &userService{}
 
-		err := service.UpdateUserCredentials("user-1", json.RawMessage(`invalid json`))
+		err := service.UpdateUserCredentials(context.Background(), "user-1", json.RawMessage(`invalid json`))
 		require.NotNil(t, err)
 		require.Equal(t, ErrorInvalidRequestFormat, *err)
 	})
@@ -985,15 +990,18 @@ func TestUserService_UpdateUserCredentials_Validation(t *testing.T) {
 	t.Run("ReturnsInvalidCredentialForUnsupportedType", func(t *testing.T) {
 		userStoreMock := newUserStoreInterfaceMock(t)
 		userStoreMock.
-			On("GetCredentials", "user-1").
+			On("GetCredentials", mock.Anything, "user-1").
 			Return(User{ID: "user-1"}, Credentials{}, nil).
 			Once()
 
+		txMock := &fakeTransactioner{}
+
 		service := &userService{
-			userStore: userStoreMock,
+			userStore:     userStoreMock,
+			transactioner: txMock,
 		}
 
-		err := service.UpdateUserCredentials("user-1", json.RawMessage(`{"invalidtype":"value"}`))
+		err := service.UpdateUserCredentials(context.Background(), "user-1", json.RawMessage(`{"invalidtype":"value"}`))
 		require.NotNil(t, err)
 		require.Equal(t, ErrorInvalidCredential.Code, err.Code)
 	})
@@ -1001,7 +1009,7 @@ func TestUserService_UpdateUserCredentials_Validation(t *testing.T) {
 	t.Run("ReturnsMissingCredentialsWhenMapEmpty", func(t *testing.T) {
 		service := &userService{}
 
-		err := service.UpdateUserCredentials("user-1", json.RawMessage(`{}`))
+		err := service.UpdateUserCredentials(context.Background(), "user-1", json.RawMessage(`{}`))
 		require.NotNil(t, err)
 		require.Equal(t, ErrorMissingCredentials, *err)
 	})
@@ -1010,19 +1018,22 @@ func TestUserService_UpdateUserCredentials_Validation(t *testing.T) {
 func TestUserService_UpdateUserCredentials_UserNotFound(t *testing.T) {
 	userStoreMock := newUserStoreInterfaceMock(t)
 	userStoreMock.
-		On("GetCredentials", "user-1").
+		On("GetCredentials", mock.Anything, "user-1").
 		Return(User{}, Credentials{}, ErrUserNotFound).
 		Once()
 
+	txMock := &fakeTransactioner{}
+
 	service := &userService{
-		userStore: userStoreMock,
+		userStore:     userStoreMock,
+		transactioner: txMock,
 	}
 
 	credentialsJSON := json.RawMessage(`{"password":"newpassword"}`)
-	svcErr := service.UpdateUserCredentials("user-1", credentialsJSON)
+	svcErr := service.UpdateUserCredentials(context.Background(), "user-1", credentialsJSON)
 	require.NotNil(t, svcErr)
 	require.Equal(t, ErrorUserNotFound, *svcErr)
-	userStoreMock.AssertNotCalled(t, "UpdateUserCredentials", mock.Anything, mock.Anything)
+	userStoreMock.AssertNotCalled(t, "UpdateUserCredentials", mock.Anything, mock.Anything, mock.Anything)
 }
 
 func TestUserService_UpdateUserCredentials_Succeeds(t *testing.T) {
@@ -1050,14 +1061,14 @@ func TestUserService_UpdateUserCredentials_Succeeds(t *testing.T) {
 		},
 	}
 	userStoreMock.
-		On("GetCredentials", "user-1").
+		On("GetCredentials", mock.Anything, "user-1").
 		Return(User{ID: "user-1"}, existingCredentials, nil).
 		Once()
 	var captured Credentials
 	userStoreMock.
-		On("UpdateUserCredentials", "user-1", mock.Anything).
+		On("UpdateUserCredentials", mock.Anything, "user-1", mock.Anything).
 		Run(func(args mock.Arguments) {
-			if creds, ok := args[1].(Credentials); ok {
+			if creds, ok := args[2].(Credentials); ok {
 				captured = creds
 			}
 		}).
@@ -1078,9 +1089,12 @@ func TestUserService_UpdateUserCredentials_Succeeds(t *testing.T) {
 		}, nil).
 		Once()
 
+	txMock := &fakeTransactioner{}
+
 	service := &userService{
-		userStore:   userStoreMock,
-		hashService: hashServiceMock,
+		userStore:     userStoreMock,
+		hashService:   hashServiceMock,
+		transactioner: txMock,
 	}
 
 	config.ResetThunderRuntime()
@@ -1096,7 +1110,7 @@ func TestUserService_UpdateUserCredentials_Succeeds(t *testing.T) {
 
 	// Send plain text password - service will hash it
 	credentialsJSON := json.RawMessage(`{"password":"newpassword"}`)
-	svcErr := service.UpdateUserCredentials("user-1", credentialsJSON)
+	svcErr := service.UpdateUserCredentials(context.Background(), "user-1", credentialsJSON)
 	require.Nil(t, svcErr)
 
 	// Verify password credential was hashed and stored
@@ -1123,15 +1137,15 @@ func TestUserService_UpdateUserCredentials_MultiplePasskeys(t *testing.T) {
 	existingCredentials := Credentials{}
 
 	userStoreMock.
-		On("GetCredentials", "user-1").
+		On("GetCredentials", mock.Anything, "user-1").
 		Return(User{ID: "user-1"}, existingCredentials, nil).
 		Once()
 
 	var captured Credentials
 	userStoreMock.
-		On("UpdateUserCredentials", "user-1", mock.Anything).
+		On("UpdateUserCredentials", mock.Anything, "user-1", mock.Anything).
 		Run(func(args mock.Arguments) {
-			if creds, ok := args[1].(Credentials); ok {
+			if creds, ok := args[2].(Credentials); ok {
 				captured = creds
 			}
 		}).
@@ -1140,9 +1154,12 @@ func TestUserService_UpdateUserCredentials_MultiplePasskeys(t *testing.T) {
 
 	hashServiceMock := hashmock.NewHashServiceInterfaceMock(t)
 
+	txMock := &fakeTransactioner{}
+
 	service := &userService{
-		userStore:   userStoreMock,
-		hashService: hashServiceMock,
+		userStore:     userStoreMock,
+		hashService:   hashServiceMock,
+		transactioner: txMock,
 	}
 
 	config.ResetThunderRuntime()
@@ -1159,7 +1176,7 @@ func TestUserService_UpdateUserCredentials_MultiplePasskeys(t *testing.T) {
 	// Send multiple passkeys as an array - passkey supports multiple credentials
 	credentialsJSON := json.RawMessage(
 		`{"passkey":[{"value":"passkey-credential-1"}, {"value":"passkey-credential-2"}]}`)
-	svcErr := service.UpdateUserCredentials("user-1", credentialsJSON)
+	svcErr := service.UpdateUserCredentials(context.Background(), "user-1", credentialsJSON)
 	require.Nil(t, svcErr)
 
 	// Verify both passkeys were stored (not hashed)
@@ -1179,15 +1196,18 @@ func TestUserService_UpdateUserCredentials_RejectsMultiplePasswords(t *testing.T
 	existingCredentials := Credentials{}
 
 	userStoreMock.
-		On("GetCredentials", "user-1").
+		On("GetCredentials", mock.Anything, "user-1").
 		Return(User{ID: "user-1"}, existingCredentials, nil).
 		Once()
 
 	hashServiceMock := hashmock.NewHashServiceInterfaceMock(t)
 
+	txMock := &fakeTransactioner{}
+
 	service := &userService{
-		userStore:   userStoreMock,
-		hashService: hashServiceMock,
+		userStore:     userStoreMock,
+		hashService:   hashServiceMock,
+		transactioner: txMock,
 	}
 
 	config.ResetThunderRuntime()
@@ -1203,7 +1223,7 @@ func TestUserService_UpdateUserCredentials_RejectsMultiplePasswords(t *testing.T
 
 	// Attempt to send multiple passwords - should be rejected
 	credentialsJSON := json.RawMessage(`{"password":[{"value":"password1"}, {"value":"password2"}]}`)
-	svcErr := service.UpdateUserCredentials("user-1", credentialsJSON)
+	svcErr := service.UpdateUserCredentials(context.Background(), "user-1", credentialsJSON)
 
 	// Should return error
 	require.NotNil(t, svcErr)
@@ -1211,20 +1231,20 @@ func TestUserService_UpdateUserCredentials_RejectsMultiplePasswords(t *testing.T
 	require.Contains(t, svcErr.ErrorDescription, "does not support multiple credentials")
 
 	// Store should not be called
-	userStoreMock.AssertNotCalled(t, "UpdateUserCredentials", mock.Anything, mock.Anything)
+	userStoreMock.AssertNotCalled(t, "UpdateUserCredentials", mock.Anything, mock.Anything, mock.Anything)
 }
 
 func TestUserService_GetUserCredentialsByType_Validation(t *testing.T) {
 	service := &userService{}
 
 	// Test missing user ID
-	creds, err := service.GetUserCredentialsByType("", "password")
+	creds, err := service.GetUserCredentialsByType(context.Background(), "", "password")
 	require.Nil(t, creds)
 	require.NotNil(t, err)
 	require.Equal(t, ErrorMissingUserID, *err)
 
 	// Test missing credential type
-	creds, err = service.GetUserCredentialsByType("user-1", "")
+	creds, err = service.GetUserCredentialsByType(context.Background(), "user-1", "")
 	require.Nil(t, creds)
 	require.NotNil(t, err)
 	require.Equal(t, ErrorInvalidRequestFormat, *err)
@@ -1233,7 +1253,7 @@ func TestUserService_GetUserCredentialsByType_Validation(t *testing.T) {
 func TestUserService_GetUserCredentialsByType_UserNotFound(t *testing.T) {
 	userStoreMock := newUserStoreInterfaceMock(t)
 	userStoreMock.
-		On("GetCredentials", "user-1").
+		On("GetCredentials", mock.Anything, "user-1").
 		Return(User{}, Credentials{}, ErrUserNotFound).
 		Once()
 
@@ -1241,7 +1261,7 @@ func TestUserService_GetUserCredentialsByType_UserNotFound(t *testing.T) {
 		userStore: userStoreMock,
 	}
 
-	creds, err := service.GetUserCredentialsByType("user-1", "password")
+	creds, err := service.GetUserCredentialsByType(context.Background(), "user-1", "password")
 	require.Nil(t, creds)
 	require.NotNil(t, err)
 	require.Equal(t, ErrorUserNotFound, *err)
@@ -1250,7 +1270,7 @@ func TestUserService_GetUserCredentialsByType_UserNotFound(t *testing.T) {
 func TestUserService_GetUserCredentialsByType_StoreError(t *testing.T) {
 	userStoreMock := newUserStoreInterfaceMock(t)
 	userStoreMock.
-		On("GetCredentials", "user-1").
+		On("GetCredentials", mock.Anything, "user-1").
 		Return(User{}, Credentials{}, errors.New("database error")).
 		Once()
 
@@ -1258,7 +1278,7 @@ func TestUserService_GetUserCredentialsByType_StoreError(t *testing.T) {
 		userStore: userStoreMock,
 	}
 
-	creds, err := service.GetUserCredentialsByType("user-1", "password")
+	creds, err := service.GetUserCredentialsByType(context.Background(), "user-1", "password")
 	require.Nil(t, creds)
 	require.NotNil(t, err)
 	require.Equal(t, ErrorInternalServerError.Code, err.Code)
@@ -1275,7 +1295,7 @@ func TestUserService_GetUserCredentialsByType_CredentialTypeNotFound(t *testing.
 		},
 	}
 	userStoreMock.
-		On("GetCredentials", "user-1").
+		On("GetCredentials", mock.Anything, "user-1").
 		Return(User{ID: "user-1"}, existingCredentials, nil).
 		Once()
 
@@ -1284,7 +1304,7 @@ func TestUserService_GetUserCredentialsByType_CredentialTypeNotFound(t *testing.
 	}
 
 	// Request password credentials when only pin exists
-	creds, err := service.GetUserCredentialsByType("user-1", "password")
+	creds, err := service.GetUserCredentialsByType(context.Background(), "user-1", "password")
 	require.Nil(t, err)
 	require.NotNil(t, creds)
 	require.Empty(t, creds) // Should return empty array, not nil
@@ -1302,7 +1322,7 @@ func TestUserService_GetUserCredentialsByType_EmptyCredentialArray(t *testing.T)
 		},
 	}
 	userStoreMock.
-		On("GetCredentials", "user-1").
+		On("GetCredentials", mock.Anything, "user-1").
 		Return(User{ID: "user-1"}, existingCredentials, nil).
 		Once()
 
@@ -1311,7 +1331,7 @@ func TestUserService_GetUserCredentialsByType_EmptyCredentialArray(t *testing.T)
 	}
 
 	// Request password credentials when array is empty
-	creds, err := service.GetUserCredentialsByType("user-1", "password")
+	creds, err := service.GetUserCredentialsByType(context.Background(), "user-1", "password")
 	require.Nil(t, err)
 	require.NotNil(t, creds)
 	require.Empty(t, creds) // Should return empty array
@@ -1342,7 +1362,7 @@ func TestUserService_GetUserCredentialsByType_Succeeds(t *testing.T) {
 		},
 	}
 	userStoreMock.
-		On("GetCredentials", "user-1").
+		On("GetCredentials", mock.Anything, "user-1").
 		Return(User{ID: "user-1"}, existingCredentials, nil).
 		Once()
 
@@ -1351,7 +1371,7 @@ func TestUserService_GetUserCredentialsByType_Succeeds(t *testing.T) {
 	}
 
 	// Get password credentials
-	creds, err := service.GetUserCredentialsByType("user-1", "password")
+	creds, err := service.GetUserCredentialsByType(context.Background(), "user-1", "password")
 	require.Nil(t, err)
 	require.NotNil(t, creds)
 	require.Len(t, creds, 1)
@@ -1373,7 +1393,7 @@ func TestUserService_GetUserCredentialsByType_MultipleCredentials(t *testing.T) 
 		},
 	}
 	userStoreMock.
-		On("GetCredentials", "user-1").
+		On("GetCredentials", mock.Anything, "user-1").
 		Return(User{ID: "user-1"}, existingCredentials, nil).
 		Once()
 
@@ -1382,7 +1402,7 @@ func TestUserService_GetUserCredentialsByType_MultipleCredentials(t *testing.T) 
 	}
 
 	// Get passkey credentials
-	creds, err := service.GetUserCredentialsByType("user-1", "passkey")
+	creds, err := service.GetUserCredentialsByType(context.Background(), "user-1", "passkey")
 	require.Nil(t, err)
 	require.NotNil(t, creds)
 	require.Len(t, creds, 3)
@@ -1394,17 +1414,17 @@ func TestUserService_GetUserCredentialsByType_MultipleCredentials(t *testing.T) 
 func TestUserService_UpdateUserAttributes_Validation(t *testing.T) {
 	service := &userService{}
 
-	resp, err := service.UpdateUserAttributes("", json.RawMessage(`{"email":"a@b.com"}`))
+	resp, err := service.UpdateUserAttributes(context.Background(), "", json.RawMessage(`{"email":"a@b.com"}`))
 	require.Nil(t, resp)
 	require.NotNil(t, err)
 	require.Equal(t, ErrorMissingUserID, *err)
 
-	resp, err = service.UpdateUserAttributes("user-1", json.RawMessage{})
+	resp, err = service.UpdateUserAttributes(context.Background(), "user-1", json.RawMessage{})
 	require.Nil(t, resp)
 	require.NotNil(t, err)
 	require.Equal(t, ErrorInvalidRequestFormat, *err)
 
-	resp, err = service.UpdateUserAttributes("user-1", json.RawMessage(`{"password":"Secret123"}`))
+	resp, err = service.UpdateUserAttributes(context.Background(), "user-1", json.RawMessage(`{"password":"Secret123"}`))
 	require.Nil(t, resp)
 	require.NotNil(t, err)
 	require.Equal(t, ErrorInvalidRequestFormat, *err)
@@ -1412,23 +1432,26 @@ func TestUserService_UpdateUserAttributes_Validation(t *testing.T) {
 
 func TestUserService_UpdateUserAttributes_UserNotFound(t *testing.T) {
 	storeMock := newUserStoreInterfaceMock(t)
-	storeMock.On("GetUser", "user-1").Return(User{}, ErrUserNotFound).Once()
+	storeMock.On("GetUser", mock.Anything, "user-1").Return(User{}, ErrUserNotFound).Once()
+
+	txMock := &fakeTransactioner{}
 
 	service := &userService{
-		userStore: storeMock,
+		userStore:     storeMock,
+		transactioner: txMock,
 	}
 
-	resp, err := service.UpdateUserAttributes("user-1", json.RawMessage(`{"email":"a@b.com"}`))
+	resp, err := service.UpdateUserAttributes(context.Background(), "user-1", json.RawMessage(`{"email":"a@b.com"}`))
 	require.Nil(t, resp)
 	require.NotNil(t, err)
 	require.Equal(t, ErrorUserNotFound, *err)
-	storeMock.AssertNotCalled(t, "UpdateUser", mock.Anything)
+	storeMock.AssertNotCalled(t, "UpdateUser", mock.Anything, mock.Anything)
 }
 
 func TestUserService_UpdateUserAttributes_SchemaValidationFails(t *testing.T) {
 	storeMock := newUserStoreInterfaceMock(t)
 	storeMock.
-		On("GetUser", "user-1").
+		On("GetUser", mock.Anything, "user-1").
 		Return(User{ID: "user-1", Type: testUserType, Attributes: json.RawMessage(`{"email":"old"}`)}, nil).
 		Once()
 
@@ -1438,22 +1461,25 @@ func TestUserService_UpdateUserAttributes_SchemaValidationFails(t *testing.T) {
 		Return(false, &userschema.ErrorUserSchemaNotFound).
 		Once()
 
+	txMock := &fakeTransactioner{}
+
 	service := &userService{
 		userStore:         storeMock,
 		userSchemaService: schemaMock,
+		transactioner:     txMock,
 	}
 
-	resp, err := service.UpdateUserAttributes("user-1", json.RawMessage(`{"email":"new@example.com"}`))
+	resp, err := service.UpdateUserAttributes(context.Background(), "user-1", json.RawMessage(`{"email":"new@example.com"}`))
 	require.Nil(t, resp)
 	require.NotNil(t, err)
 	require.Equal(t, ErrorUserSchemaNotFound, *err)
-	storeMock.AssertNotCalled(t, "UpdateUser", mock.Anything)
+	storeMock.AssertNotCalled(t, "UpdateUser", mock.Anything, mock.Anything)
 }
 
 func TestUserService_UpdateUserAttributes_Succeeds(t *testing.T) {
 	storeMock := newUserStoreInterfaceMock(t)
 	storeMock.
-		On("GetUser", "user-1").
+		On("GetUser", mock.Anything, "user-1").
 		Return(User{ID: "user-1", Type: testUserType, Attributes: json.RawMessage(`{"email":"old@example.com"}`)}, nil).
 		Once()
 
@@ -1469,22 +1495,25 @@ func TestUserService_UpdateUserAttributes_Succeeds(t *testing.T) {
 
 	var savedUser *User
 	storeMock.
-		On("UpdateUser", mock.Anything).
+		On("UpdateUser", mock.Anything, mock.Anything).
 		Run(func(args mock.Arguments) {
-			if u, ok := args[0].(*User); ok {
+			if u, ok := args[1].(*User); ok {
 				savedUser = u
 			}
 		}).
 		Return(nil).
 		Once()
 
+	txMock := &fakeTransactioner{}
+
 	service := &userService{
 		userStore:         storeMock,
 		userSchemaService: schemaMock,
+		transactioner:     txMock,
 	}
 
 	newAttrs := json.RawMessage(`{"email":"new@example.com"}`)
-	resp, err := service.UpdateUserAttributes("user-1", newAttrs)
+	resp, err := service.UpdateUserAttributes(context.Background(), "user-1", newAttrs)
 	require.Nil(t, err)
 	require.NotNil(t, resp)
 	require.Equal(t, "user-1", resp.ID)
@@ -2110,7 +2139,7 @@ func TestUserService_UpdateUser_WithCredentials(t *testing.T) {
 
 	userStoreMock := newUserStoreInterfaceMock(t)
 	userStoreMock.
-		On("UpdateUser", mock.MatchedBy(func(u *User) bool {
+		On("UpdateUser", mock.Anything, mock.MatchedBy(func(u *User) bool {
 			// Verify password is NOT in attributes
 			var attrs map[string]interface{}
 			if err := json.Unmarshal(u.Attributes, &attrs); err != nil {
@@ -2122,15 +2151,15 @@ func TestUserService_UpdateUser_WithCredentials(t *testing.T) {
 		Return(nil).
 		Once()
 	userStoreMock.
-		On("GetCredentials", userID).
+		On("GetCredentials", mock.Anything, userID).
 		Return(User{ID: userID}, existingCredentials, nil).
 		Once()
 
 	var capturedCreds Credentials
 	userStoreMock.
-		On("UpdateUserCredentials", userID, mock.Anything).
+		On("UpdateUserCredentials", mock.Anything, userID, mock.Anything).
 		Run(func(args mock.Arguments) {
-			if creds, ok := args[1].(Credentials); ok {
+			if creds, ok := args[2].(Credentials); ok {
 				capturedCreds = creds
 			}
 		}).
@@ -2171,11 +2200,14 @@ func TestUserService_UpdateUser_WithCredentials(t *testing.T) {
 		Return(true, (*serviceerror.ServiceError)(nil)).
 		Once()
 
+	txMock := &fakeTransactioner{}
+
 	service := &userService{
 		userStore:         userStoreMock,
 		hashService:       hashServiceMock,
 		ouService:         ouServiceMock,
 		userSchemaService: schemaServiceMock,
+		transactioner:     txMock,
 	}
 
 	config.ResetThunderRuntime()
@@ -2196,7 +2228,7 @@ func TestUserService_UpdateUser_WithCredentials(t *testing.T) {
 		Attributes:       json.RawMessage(`{"email":"test@example.com","password":"NewP@ssword123"}`),
 	}
 
-	result, svcErr := service.UpdateUser(userID, user)
+	result, svcErr := service.UpdateUser(context.Background(), userID, user)
 
 	require.Nil(t, svcErr)
 	require.NotNil(t, result)
@@ -2232,19 +2264,19 @@ func TestUserService_UpdateUser_MergesCredentials(t *testing.T) {
 
 	userStoreMock := newUserStoreInterfaceMock(t)
 	userStoreMock.
-		On("UpdateUser", mock.Anything).
+		On("UpdateUser", mock.Anything, mock.Anything).
 		Return(nil).
 		Once()
 	userStoreMock.
-		On("GetCredentials", userID).
+		On("GetCredentials", mock.Anything, userID).
 		Return(User{ID: userID}, existingCredentials, nil).
 		Once()
 
 	var capturedCreds Credentials
 	userStoreMock.
-		On("UpdateUserCredentials", userID, mock.Anything).
+		On("UpdateUserCredentials", mock.Anything, userID, mock.Anything).
 		Run(func(args mock.Arguments) {
-			if creds, ok := args[1].(Credentials); ok {
+			if creds, ok := args[2].(Credentials); ok {
 				capturedCreds = creds
 			}
 		}).
@@ -2285,11 +2317,14 @@ func TestUserService_UpdateUser_MergesCredentials(t *testing.T) {
 		Return(true, (*serviceerror.ServiceError)(nil)).
 		Once()
 
+	txMock := &fakeTransactioner{}
+
 	service := &userService{
 		userStore:         userStoreMock,
 		hashService:       hashServiceMock,
 		ouService:         ouServiceMock,
 		userSchemaService: schemaServiceMock,
+		transactioner:     txMock,
 	}
 
 	config.ResetThunderRuntime()
@@ -2310,7 +2345,7 @@ func TestUserService_UpdateUser_MergesCredentials(t *testing.T) {
 		Attributes:       json.RawMessage(`{"email":"test@example.com","password":"NewP@ss123"}`),
 	}
 
-	result, svcErr := service.UpdateUser(userID, user)
+	result, svcErr := service.UpdateUser(context.Background(), userID, user)
 
 	require.Nil(t, svcErr)
 	require.NotNil(t, result)
@@ -2329,7 +2364,7 @@ func TestUserService_UpdateUser_WithoutCredentials(t *testing.T) {
 
 	userStoreMock := newUserStoreInterfaceMock(t)
 	userStoreMock.
-		On("UpdateUser", mock.Anything).
+		On("UpdateUser", mock.Anything, mock.Anything).
 		Return(nil).
 		Once()
 
@@ -2353,10 +2388,13 @@ func TestUserService_UpdateUser_WithoutCredentials(t *testing.T) {
 		Return(true, (*serviceerror.ServiceError)(nil)).
 		Once()
 
+	txMock := &fakeTransactioner{}
+
 	service := &userService{
 		userStore:         userStoreMock,
 		ouService:         ouServiceMock,
 		userSchemaService: schemaServiceMock,
+		transactioner:     txMock,
 	}
 
 	user := &User{
@@ -2366,14 +2404,14 @@ func TestUserService_UpdateUser_WithoutCredentials(t *testing.T) {
 		Attributes:       json.RawMessage(`{"email":"newemail@example.com"}`),
 	}
 
-	result, svcErr := service.UpdateUser(userID, user)
+	result, svcErr := service.UpdateUser(context.Background(), userID, user)
 
 	require.Nil(t, svcErr)
 	require.NotNil(t, result)
 
 	// Verify credential methods were NOT called
-	userStoreMock.AssertNotCalled(t, "GetCredentials", mock.Anything)
-	userStoreMock.AssertNotCalled(t, "UpdateUserCredentials", mock.Anything, mock.Anything)
+	userStoreMock.AssertNotCalled(t, "GetCredentials", mock.Anything, mock.Anything)
+	userStoreMock.AssertNotCalled(t, "UpdateUserCredentials", mock.Anything, mock.Anything, mock.Anything)
 }
 
 // Test: UpdateUser with credentials when user not found during credential retrieval
@@ -2386,7 +2424,7 @@ func TestUserService_UpdateUser_WithCredentials_UserNotFoundDuringCredentialRetr
 
 	// UpdateUser succeeds
 	userStoreMock.
-		On("UpdateUser", mock.MatchedBy(func(u *User) bool {
+		On("UpdateUser", mock.Anything, mock.MatchedBy(func(u *User) bool {
 			return u.ID == userID
 		})).
 		Return(nil).
@@ -2394,7 +2432,7 @@ func TestUserService_UpdateUser_WithCredentials_UserNotFoundDuringCredentialRetr
 
 	// GetCredentials fails with user not found
 	userStoreMock.
-		On("GetCredentials", userID).
+		On("GetCredentials", mock.Anything, userID).
 		Return(User{}, Credentials{}, ErrUserNotFound).
 		Once()
 
@@ -2426,11 +2464,14 @@ func TestUserService_UpdateUser_WithCredentials_UserNotFoundDuringCredentialRetr
 		Return(true, (*serviceerror.ServiceError)(nil)).
 		Once()
 
+	txMock := &fakeTransactioner{}
+
 	service := &userService{
 		userStore:         userStoreMock,
 		hashService:       hashServiceMock,
 		ouService:         ouServiceMock,
 		userSchemaService: schemaServiceMock,
+		transactioner:     txMock,
 	}
 
 	initErr := config.InitializeThunderRuntime("", &config.Config{
@@ -2449,7 +2490,7 @@ func TestUserService_UpdateUser_WithCredentials_UserNotFoundDuringCredentialRetr
 		Attributes:       json.RawMessage(`{"email":"test@example.com","password":"NewP@ssword123"}`),
 	}
 
-	result, svcErr := service.UpdateUser(userID, user)
+	result, svcErr := service.UpdateUser(context.Background(), userID, user)
 
 	require.NotNil(t, svcErr, "Should return error")
 	require.Nil(t, result, "Should not return user")
@@ -2466,7 +2507,7 @@ func TestUserService_UpdateUser_WithCredentials_CredentialRetrievalServerError(t
 
 	// UpdateUser succeeds
 	userStoreMock.
-		On("UpdateUser", mock.MatchedBy(func(u *User) bool {
+		On("UpdateUser", mock.Anything, mock.MatchedBy(func(u *User) bool {
 			return u.ID == userID
 		})).
 		Return(nil).
@@ -2474,7 +2515,7 @@ func TestUserService_UpdateUser_WithCredentials_CredentialRetrievalServerError(t
 
 	// GetCredentials fails with database error
 	userStoreMock.
-		On("GetCredentials", userID).
+		On("GetCredentials", mock.Anything, userID).
 		Return(User{}, Credentials{}, errors.New("database connection failed")).
 		Once()
 
@@ -2506,11 +2547,14 @@ func TestUserService_UpdateUser_WithCredentials_CredentialRetrievalServerError(t
 		Return(true, (*serviceerror.ServiceError)(nil)).
 		Once()
 
+	txMock := &fakeTransactioner{}
+
 	service := &userService{
 		userStore:         userStoreMock,
 		hashService:       hashServiceMock,
 		ouService:         ouServiceMock,
 		userSchemaService: schemaServiceMock,
+		transactioner:     txMock,
 	}
 
 	initErr := config.InitializeThunderRuntime("", &config.Config{
@@ -2529,7 +2573,7 @@ func TestUserService_UpdateUser_WithCredentials_CredentialRetrievalServerError(t
 		Attributes:       json.RawMessage(`{"email":"test@example.com","password":"NewP@ssword123"}`),
 	}
 
-	result, svcErr := service.UpdateUser(userID, user)
+	result, svcErr := service.UpdateUser(context.Background(), userID, user)
 
 	require.NotNil(t, svcErr, "Should return error")
 	require.Nil(t, result, "Should not return user")
@@ -2551,20 +2595,20 @@ func TestUserService_UpdateUser_WithCredentials_UpdateCredentialsUserNotFound(t 
 	userStoreMock := newUserStoreInterfaceMock(t)
 
 	userStoreMock.
-		On("UpdateUser", mock.MatchedBy(func(u *User) bool {
+		On("UpdateUser", mock.Anything, mock.MatchedBy(func(u *User) bool {
 			return u.ID == userID
 		})).
 		Return(nil).
 		Once()
 
 	userStoreMock.
-		On("GetCredentials", userID).
+		On("GetCredentials", mock.Anything, userID).
 		Return(User{ID: userID}, existingCredentials, nil).
 		Once()
 
 	// UpdateUserCredentials fails with user not found
 	userStoreMock.
-		On("UpdateUserCredentials", userID, mock.Anything).
+		On("UpdateUserCredentials", mock.Anything, userID, mock.Anything).
 		Return(ErrUserNotFound).
 		Once()
 
@@ -2596,11 +2640,14 @@ func TestUserService_UpdateUser_WithCredentials_UpdateCredentialsUserNotFound(t 
 		Return(true, (*serviceerror.ServiceError)(nil)).
 		Once()
 
+	txMock := &fakeTransactioner{}
+
 	service := &userService{
 		userStore:         userStoreMock,
 		hashService:       hashServiceMock,
 		ouService:         ouServiceMock,
 		userSchemaService: schemaServiceMock,
+		transactioner:     txMock,
 	}
 
 	initErr := config.InitializeThunderRuntime("", &config.Config{
@@ -2619,7 +2666,7 @@ func TestUserService_UpdateUser_WithCredentials_UpdateCredentialsUserNotFound(t 
 		Attributes:       json.RawMessage(`{"email":"test@example.com","password":"NewP@ssword123"}`),
 	}
 
-	result, svcErr := service.UpdateUser(userID, user)
+	result, svcErr := service.UpdateUser(context.Background(), userID, user)
 
 	require.NotNil(t, svcErr, "Should return error")
 	require.Nil(t, result, "Should not return user")
@@ -2641,20 +2688,20 @@ func TestUserService_UpdateUser_WithCredentials_UpdateCredentialsServerError(t *
 	userStoreMock := newUserStoreInterfaceMock(t)
 
 	userStoreMock.
-		On("UpdateUser", mock.MatchedBy(func(u *User) bool {
+		On("UpdateUser", mock.Anything, mock.MatchedBy(func(u *User) bool {
 			return u.ID == userID
 		})).
 		Return(nil).
 		Once()
 
 	userStoreMock.
-		On("GetCredentials", userID).
+		On("GetCredentials", mock.Anything, userID).
 		Return(User{ID: userID}, existingCredentials, nil).
 		Once()
 
 	// UpdateUserCredentials fails with database error
 	userStoreMock.
-		On("UpdateUserCredentials", userID, mock.Anything).
+		On("UpdateUserCredentials", mock.Anything, userID, mock.Anything).
 		Return(errors.New("database write failed")).
 		Once()
 
@@ -2686,11 +2733,14 @@ func TestUserService_UpdateUser_WithCredentials_UpdateCredentialsServerError(t *
 		Return(true, (*serviceerror.ServiceError)(nil)).
 		Once()
 
+	txMock := &fakeTransactioner{}
+
 	service := &userService{
 		userStore:         userStoreMock,
 		hashService:       hashServiceMock,
 		ouService:         ouServiceMock,
 		userSchemaService: schemaServiceMock,
+		transactioner:     txMock,
 	}
 
 	initErr := config.InitializeThunderRuntime("", &config.Config{
@@ -2709,7 +2759,7 @@ func TestUserService_UpdateUser_WithCredentials_UpdateCredentialsServerError(t *
 		Attributes:       json.RawMessage(`{"email":"test@example.com","password":"NewP@ssword123"}`),
 	}
 
-	result, svcErr := service.UpdateUser(userID, user)
+	result, svcErr := service.UpdateUser(context.Background(), userID, user)
 
 	require.NotNil(t, svcErr, "Should return error")
 	require.Nil(t, result, "Should not return user")
@@ -2734,7 +2784,7 @@ func TestUserService_UpdateUser_WithMultipleCredentialTypes(t *testing.T) {
 	userStoreMock := newUserStoreInterfaceMock(t)
 
 	userStoreMock.
-		On("UpdateUser", mock.MatchedBy(func(u *User) bool {
+		On("UpdateUser", mock.Anything, mock.MatchedBy(func(u *User) bool {
 			var attrs map[string]interface{}
 			if err := json.Unmarshal(u.Attributes, &attrs); err != nil {
 				return false
@@ -2746,15 +2796,15 @@ func TestUserService_UpdateUser_WithMultipleCredentialTypes(t *testing.T) {
 		Once()
 
 	userStoreMock.
-		On("GetCredentials", userID).
+		On("GetCredentials", mock.Anything, userID).
 		Return(User{ID: userID}, existingCredentials, nil).
 		Once()
 
 	var capturedCreds Credentials
 	userStoreMock.
-		On("UpdateUserCredentials", userID, mock.Anything).
+		On("UpdateUserCredentials", mock.Anything, userID, mock.Anything).
 		Run(func(args mock.Arguments) {
-			capturedCreds = args[1].(Credentials)
+			capturedCreds = args[2].(Credentials)
 		}).
 		Return(nil).
 		Once()
@@ -2788,11 +2838,14 @@ func TestUserService_UpdateUser_WithMultipleCredentialTypes(t *testing.T) {
 		Return(true, (*serviceerror.ServiceError)(nil)).
 		Once()
 
+	txMock := &fakeTransactioner{}
+
 	service := &userService{
 		userStore:         userStoreMock,
 		hashService:       hashServiceMock,
 		ouService:         ouServiceMock,
 		userSchemaService: schemaServiceMock,
+		transactioner:     txMock,
 	}
 
 	initErr := config.InitializeThunderRuntime("", &config.Config{
@@ -2812,7 +2865,7 @@ func TestUserService_UpdateUser_WithMultipleCredentialTypes(t *testing.T) {
 		Attributes:       json.RawMessage(`{"email":"test@example.com","password":"NewPassword123"}`),
 	}
 
-	result, svcErr := service.UpdateUser(userID, user)
+	result, svcErr := service.UpdateUser(context.Background(), userID, user)
 
 	require.Nil(t, svcErr, "Should not return error")
 	require.NotNil(t, result, "Should return user")
@@ -2842,7 +2895,7 @@ func TestUserService_UpdateUser_WithEmptyCredentialsAfterExtraction(t *testing.T
 
 	// Only UpdateUser should be called, not credential operations
 	userStoreMock.
-		On("UpdateUser", mock.MatchedBy(func(u *User) bool {
+		On("UpdateUser", mock.Anything, mock.MatchedBy(func(u *User) bool {
 			return u.ID == userID
 		})).
 		Return(nil).
@@ -2870,11 +2923,14 @@ func TestUserService_UpdateUser_WithEmptyCredentialsAfterExtraction(t *testing.T
 		Return(true, (*serviceerror.ServiceError)(nil)).
 		Once()
 
+	txMock := &fakeTransactioner{}
+
 	service := &userService{
 		userStore:         userStoreMock,
 		hashService:       hashServiceMock,
 		ouService:         ouServiceMock,
 		userSchemaService: schemaServiceMock,
+		transactioner:     txMock,
 	}
 
 	// User with only non-credential attributes
@@ -2885,192 +2941,201 @@ func TestUserService_UpdateUser_WithEmptyCredentialsAfterExtraction(t *testing.T
 		Attributes:       json.RawMessage(`{"email":"newemail@example.com","name":"John Doe"}`),
 	}
 
-	result, svcErr := service.UpdateUser(userID, user)
+	result, svcErr := service.UpdateUser(context.Background(), userID, user)
 
 	require.Nil(t, svcErr, "Should not return error")
 	require.NotNil(t, result, "Should return user")
 
 	// Verify credential operations were NOT called
-	userStoreMock.AssertNotCalled(t, "GetCredentials", mock.Anything)
-	userStoreMock.AssertNotCalled(t, "UpdateUserCredentials", mock.Anything, mock.Anything)
+	userStoreMock.AssertNotCalled(t, "GetCredentials", mock.Anything, mock.Anything)
+	userStoreMock.AssertNotCalled(t, "UpdateUserCredentials", mock.Anything, mock.Anything, mock.Anything)
 }
 
 // Test: UpdateUser with invalid credentials format during extraction
 func TestUserService_UpdateUser_InvalidCredentialsFormat(t *testing.T) {
-    userID := testUserID
-    ouID := testCustomerOUID
-    userType := testCustomerType
+	userID := testUserID
+	ouID := testCustomerOUID
+	userType := testCustomerType
 
-    userStoreMock := newUserStoreInterfaceMock(t)
+	userStoreMock := newUserStoreInterfaceMock(t)
 
-    // Mock hash service to return error during credential extraction
-    hashServiceMock := hashmock.NewHashServiceInterfaceMock(t)
-    hashServiceMock.
-        On("Generate", mock.Anything).
-        Return(hash.Credential{}, errors.New("hash generation failed")).
-        Once()
+	// Mock hash service to return error during credential extraction
+	hashServiceMock := hashmock.NewHashServiceInterfaceMock(t)
+	hashServiceMock.
+		On("Generate", mock.Anything).
+		Return(hash.Credential{}, errors.New("hash generation failed")).
+		Once()
 
-    ouServiceMock := oumock.NewOrganizationUnitServiceInterfaceMock(t)
-    ouServiceMock.
-        On("IsOrganizationUnitExists", ouID).
-        Return(true, nil).
-        Once()
+	ouServiceMock := oumock.NewOrganizationUnitServiceInterfaceMock(t)
+	ouServiceMock.
+		On("IsOrganizationUnitExists", ouID).
+		Return(true, nil).
+		Once()
 
-    schemaServiceMock := userschemamock.NewUserSchemaServiceInterfaceMock(t)
-    schemaServiceMock.
-        On("GetUserSchemaByName", userType).
-        Return(&userschema.UserSchema{OrganizationUnitID: ouID}, nil).
-        Once()
-    schemaServiceMock.
-        On("ValidateUser", userType, mock.Anything).
-        Return(true, nil).
-        Once()
-    schemaServiceMock.
-        On("ValidateUserUniqueness", userType, mock.Anything, mock.Anything).
-        Return(true, nil).
-        Once()
+	schemaServiceMock := userschemamock.NewUserSchemaServiceInterfaceMock(t)
+	schemaServiceMock.
+		On("GetUserSchemaByName", userType).
+		Return(&userschema.UserSchema{OrganizationUnitID: ouID}, nil).
+		Once()
+	schemaServiceMock.
+		On("ValidateUser", userType, mock.Anything).
+		Return(true, nil).
+		Once()
+	schemaServiceMock.
+		On("ValidateUserUniqueness", userType, mock.Anything, mock.Anything).
+		Return(true, nil).
+		Once()
 
-    service := &userService{
-        userStore:         userStoreMock,
-        hashService:       hashServiceMock,
-        ouService:         ouServiceMock,
-        userSchemaService: schemaServiceMock,
-    }
+	txMock := &fakeTransactioner{}
 
-    err := config.InitializeThunderRuntime("", &config.Config{
-        Crypto: config.CryptoConfig{
-            PasswordHashing: config.PasswordHashingConfig{
-                Algorithm: string(hash.PBKDF2),
-            },
-        },
-    })
-    require.NoError(t, err)
+	service := &userService{
+		userStore:         userStoreMock,
+		hashService:       hashServiceMock,
+		ouService:         ouServiceMock,
+		userSchemaService: schemaServiceMock,
+		transactioner:     txMock,
+	}
 
-    user := &User{
-        ID:               userID,
-        OrganizationUnit: ouID,
-        Type:             userType,
-        Attributes:       json.RawMessage(`{"email":"test@example.com","password":"TestPassword123"}`),
-    }
+	err := config.InitializeThunderRuntime("", &config.Config{
+		Crypto: config.CryptoConfig{
+			PasswordHashing: config.PasswordHashingConfig{
+				Algorithm: string(hash.PBKDF2),
+			},
+		},
+	})
+	require.NoError(t, err)
 
-    result, svcErr := service.UpdateUser(userID, user)
+	user := &User{
+		ID:               userID,
+		OrganizationUnit: ouID,
+		Type:             userType,
+		Attributes:       json.RawMessage(`{"email":"test@example.com","password":"TestPassword123"}`),
+	}
 
-    require.NotNil(t, svcErr, "Should return error")
-    require.Nil(t, result, "Should not return user")
-    require.Equal(t, ErrorInternalServerError.Code, svcErr.Code, "Should return server error")
+	result, svcErr := service.UpdateUser(context.Background(), userID, user)
+
+	require.NotNil(t, svcErr, "Should return error")
+	require.Nil(t, result, "Should not return user")
+	require.Equal(t, ErrorInternalServerError.Code, svcErr.Code, "Should return server error")
 }
 
 // Test: UpdateUser when UpdateUser store operation fails
 func TestUserService_UpdateUser_StoreUpdateFails(t *testing.T) {
-    userID := testUserID
-    ouID := testCustomerOUID
-    userType := testCustomerType
+	userID := testUserID
+	ouID := testCustomerOUID
+	userType := testCustomerType
 
-    userStoreMock := newUserStoreInterfaceMock(t)
+	userStoreMock := newUserStoreInterfaceMock(t)
 
-    // UpdateUser fails with generic database error
-    userStoreMock.
-        On("UpdateUser", mock.Anything).
-        Return(errors.New("database connection failed")).
-        Once()
+	// UpdateUser fails with generic database error
+	userStoreMock.
+		On("UpdateUser", mock.Anything, mock.Anything).
+		Return(errors.New("database connection failed")).
+		Once()
 
-    hashServiceMock := hashmock.NewHashServiceInterfaceMock(t)
+	hashServiceMock := hashmock.NewHashServiceInterfaceMock(t)
 
-    ouServiceMock := oumock.NewOrganizationUnitServiceInterfaceMock(t)
-    ouServiceMock.
-        On("IsOrganizationUnitExists", ouID).
-        Return(true, nil).
-        Once()
+	ouServiceMock := oumock.NewOrganizationUnitServiceInterfaceMock(t)
+	ouServiceMock.
+		On("IsOrganizationUnitExists", ouID).
+		Return(true, nil).
+		Once()
 
-    schemaServiceMock := userschemamock.NewUserSchemaServiceInterfaceMock(t)
-    schemaServiceMock.
-        On("GetUserSchemaByName", userType).
-        Return(&userschema.UserSchema{OrganizationUnitID: ouID}, nil).
-        Once()
-    schemaServiceMock.
-        On("ValidateUser", userType, mock.Anything).
-        Return(true, nil).
-        Once()
-    schemaServiceMock.
-        On("ValidateUserUniqueness", userType, mock.Anything, mock.Anything).
-        Return(true, nil).
-        Once()
+	schemaServiceMock := userschemamock.NewUserSchemaServiceInterfaceMock(t)
+	schemaServiceMock.
+		On("GetUserSchemaByName", userType).
+		Return(&userschema.UserSchema{OrganizationUnitID: ouID}, nil).
+		Once()
+	schemaServiceMock.
+		On("ValidateUser", userType, mock.Anything).
+		Return(true, nil).
+		Once()
+	schemaServiceMock.
+		On("ValidateUserUniqueness", userType, mock.Anything, mock.Anything).
+		Return(true, nil).
+		Once()
 
-    service := &userService{
-        userStore:         userStoreMock,
-        hashService:       hashServiceMock,
-        ouService:         ouServiceMock,
-        userSchemaService: schemaServiceMock,
-    }
+	txMock := &fakeTransactioner{}
 
-    // Update without credentials to avoid extractCredentials call
-    user := &User{
-        ID:               userID,
-        OrganizationUnit: ouID,
-        Type:             userType,
-        Attributes:       json.RawMessage(`{"email":"test@example.com","name":"Test User"}`),
-    }
+	service := &userService{
+		userStore:         userStoreMock,
+		hashService:       hashServiceMock,
+		ouService:         ouServiceMock,
+		userSchemaService: schemaServiceMock,
+		transactioner:     txMock,
+	}
 
-    result, svcErr := service.UpdateUser(userID, user)
+	// Update without credentials to avoid extractCredentials call
+	user := &User{
+		ID:               userID,
+		OrganizationUnit: ouID,
+		Type:             userType,
+		Attributes:       json.RawMessage(`{"email":"test@example.com","name":"Test User"}`),
+	}
 
-    require.NotNil(t, svcErr, "Should return error")
-    require.Nil(t, result, "Should not return user")
-    require.Equal(t, ErrorInternalServerError.Code, svcErr.Code, "Should return server error")
+	result, svcErr := service.UpdateUser(context.Background(), userID, user)
+
+	require.NotNil(t, svcErr, "Should return error")
+	require.Nil(t, result, "Should not return user")
+	require.Equal(t, ErrorInternalServerError.Code, svcErr.Code, "Should return server error")
 }
 
 // Test: UpdateUser when UpdateUser returns ErrUserNotFound
 func TestUserService_UpdateUser_UserNotFoundDuringUpdate(t *testing.T) {
-    userID := testUserID
-    ouID := testCustomerOUID
-    userType := testCustomerType
+	userID := testUserID
+	ouID := testCustomerOUID
+	userType := testCustomerType
 
-    userStoreMock := newUserStoreInterfaceMock(t)
+	userStoreMock := newUserStoreInterfaceMock(t)
 
-    // UpdateUser fails with user not found
-    userStoreMock.
-        On("UpdateUser", mock.Anything).
-        Return(ErrUserNotFound).
-        Once()
+	// UpdateUser fails with user not found
+	userStoreMock.
+		On("UpdateUser", mock.Anything, mock.Anything).
+		Return(ErrUserNotFound).
+		Once()
 
-    hashServiceMock := hashmock.NewHashServiceInterfaceMock(t)
+	hashServiceMock := hashmock.NewHashServiceInterfaceMock(t)
 
-    ouServiceMock := oumock.NewOrganizationUnitServiceInterfaceMock(t)
-    ouServiceMock.
-        On("IsOrganizationUnitExists", ouID).
-        Return(true, nil).
-        Once()
+	ouServiceMock := oumock.NewOrganizationUnitServiceInterfaceMock(t)
+	ouServiceMock.
+		On("IsOrganizationUnitExists", ouID).
+		Return(true, nil).
+		Once()
 
-    schemaServiceMock := userschemamock.NewUserSchemaServiceInterfaceMock(t)
-    schemaServiceMock.
-        On("GetUserSchemaByName", userType).
-        Return(&userschema.UserSchema{OrganizationUnitID: ouID}, nil).
-        Once()
-    schemaServiceMock.
-        On("ValidateUser", userType, mock.Anything).
-        Return(true, nil).
-        Once()
-    schemaServiceMock.
-        On("ValidateUserUniqueness", userType, mock.Anything, mock.Anything).
-        Return(true, nil).
-        Once()
+	schemaServiceMock := userschemamock.NewUserSchemaServiceInterfaceMock(t)
+	schemaServiceMock.
+		On("GetUserSchemaByName", userType).
+		Return(&userschema.UserSchema{OrganizationUnitID: ouID}, nil).
+		Once()
+	schemaServiceMock.
+		On("ValidateUser", userType, mock.Anything).
+		Return(true, nil).
+		Once()
+	schemaServiceMock.
+		On("ValidateUserUniqueness", userType, mock.Anything, mock.Anything).
+		Return(true, nil).
+		Once()
 
-    service := &userService{
-        userStore:         userStoreMock,
-        hashService:       hashServiceMock,
-        ouService:         ouServiceMock,
-        userSchemaService: schemaServiceMock,
-    }
+	txMock := &fakeTransactioner{}
 
-    user := &User{
-        ID:               userID,
-        OrganizationUnit: ouID,
-        Type:             userType,
-        Attributes:       json.RawMessage(`{"email":"test@example.com","name":"Test User"}`),
-    }
+	service := &userService{
+		userStore:         userStoreMock,
+		hashService:       hashServiceMock,
+		ouService:         ouServiceMock,
+		userSchemaService: schemaServiceMock,
+		transactioner:     txMock,
+	}
 
-    result, svcErr := service.UpdateUser(userID, user)
+	user := &User{
+		ID:               userID,
+		OrganizationUnit: ouID,
+		Type:             userType,
+		Attributes:       json.RawMessage(`{"email":"test@example.com","name":"Test User"}`),
+	}
 
-    require.NotNil(t, svcErr, "Should return error")
-    require.Nil(t, result, "Should not return user")
-    require.Equal(t, ErrorUserNotFound.Code, svcErr.Code, "Should return user not found error")
+	result, svcErr := service.UpdateUser(context.Background(), userID, user)
+
+	require.NotNil(t, svcErr, "Should return error")
+	require.Nil(t, result, "Should not return user")
+	require.Equal(t, ErrorUserNotFound.Code, svcErr.Code, "Should return user not found error")
 }
