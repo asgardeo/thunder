@@ -16,7 +16,7 @@
  * under the License.
  */
 
-import {describe, it, expect, vi, beforeEach, afterEach} from 'vitest';
+import {describe, it, expect, vi, beforeEach, afterEach, type Mock} from 'vitest';
 import {renderHook, act} from '@testing-library/react';
 import type {CanvasData} from '../useFlowSave';
 import useFlowSave from '../useFlowSave';
@@ -74,9 +74,9 @@ const createMockCanvasData = (): CanvasData => ({
 });
 
 describe('useFlowSave', () => {
-  let mockShowError: ReturnType<typeof vi.fn>;
-  let mockShowSuccess: ReturnType<typeof vi.fn>;
-  let mockSetOpenValidationPanel: ReturnType<typeof vi.fn>;
+  let mockShowError: Mock;
+  let mockShowSuccess: Mock;
+  let mockSetOpenValidationPanel: Mock;
 
   beforeEach(() => {
     vi.clearAllMocks();
@@ -148,7 +148,7 @@ describe('useFlowSave', () => {
 
     it('should show error when flow graph validation fails', async () => {
       const {validateFlowGraph} = await import('@/features/flows/utils/reactFlowTransformer');
-      (validateFlowGraph as ReturnType<typeof vi.fn>).mockReturnValueOnce(['Disconnected node found']);
+      (validateFlowGraph as Mock).mockReturnValueOnce(['Disconnected node found']);
 
       const {result} = renderUseFlowSave({isFlowValid: true});
 

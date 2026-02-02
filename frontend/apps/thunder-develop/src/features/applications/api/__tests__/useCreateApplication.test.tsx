@@ -16,7 +16,7 @@
  * under the License.
  */
 
-import {describe, it, expect, beforeEach, afterEach, vi} from 'vitest';
+import {describe, it, expect, beforeEach, afterEach, vi, type Mock} from 'vitest';
 import {waitFor, act, renderHook} from '@thunder/test-utils';
 import {useAsgardeo} from '@asgardeo/react';
 import {useConfig} from '@thunder/shared-contexts';
@@ -136,7 +136,7 @@ describe('useCreateApplication', () => {
     user_attributes: ['email', 'username'],
   };
 
-  let mockHttpRequest: ReturnType<typeof vi.fn>;
+  let mockHttpRequest: Mock;
 
   beforeEach(() => {
     // Mock HTTP request function

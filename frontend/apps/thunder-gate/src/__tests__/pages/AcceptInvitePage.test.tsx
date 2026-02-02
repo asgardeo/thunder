@@ -17,7 +17,8 @@
  */
 
 import {describe, it, expect, vi} from 'vitest';
-import {render, screen} from '@thunder/test-utils';
+import {render} from '@thunder/test-utils/browser';
+import {page} from 'vitest/browser';
 import AcceptInvitePage from '../../pages/AcceptInvitePage';
 
 // Mock the AcceptInviteBox component
@@ -26,19 +27,13 @@ vi.mock('../../components/AcceptInvite/AcceptInviteBox', () => ({
 }));
 
 describe('AcceptInvitePage', () => {
-  it('renders without crashing', () => {
-    const {container} = render(<AcceptInvitePage />);
-    expect(container).toBeInTheDocument();
+  it('renders AcceptInviteBox component', async () => {
+    await render(<AcceptInvitePage />);
+    await expect.element(page.getByTestId('accept-invite-box')).toBeInTheDocument();
   });
 
-  it('renders AcceptInviteBox component', () => {
-    render(<AcceptInvitePage />);
-    expect(screen.getByTestId('accept-invite-box')).toBeInTheDocument();
-  });
-
-  it('renders main element', () => {
-    render(<AcceptInvitePage />);
-    const main = screen.getByRole('main');
-    expect(main).toBeInTheDocument();
+  it('renders main element', async () => {
+    await render(<AcceptInvitePage />);
+    await expect.element(page.getByRole('main')).toBeInTheDocument();
   });
 });

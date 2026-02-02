@@ -17,7 +17,8 @@
  */
 
 import {describe, it, expect, vi, beforeEach} from 'vitest';
-import {render, screen} from '@thunder/test-utils';
+import {render} from '@thunder/test-utils/browser';
+import {page} from 'vitest/browser';
 import SignInSlogan from '../../../components/SignIn/SignInSlogan';
 
 // Mock useBranding
@@ -35,36 +36,31 @@ describe('SignInSlogan', () => {
     });
   });
 
-  it('renders without crashing', () => {
-    const {container} = render(<SignInSlogan />);
-    expect(container).toBeInTheDocument();
+  it('renders all slogan items', async () => {
+    await render(<SignInSlogan />);
+    await expect.element(page.getByText('Flexible Identity Platform')).toBeInTheDocument();
+    await expect.element(page.getByText('Zero-trust Security')).toBeInTheDocument();
+    await expect.element(page.getByText('Developer-first Experience')).toBeInTheDocument();
+    await expect.element(page.getByText('Extensible & Enterprise-ready')).toBeInTheDocument();
   });
 
-  it('renders all slogan items', () => {
-    render(<SignInSlogan />);
-    expect(screen.getByText('Flexible Identity Platform')).toBeInTheDocument();
-    expect(screen.getByText('Zero-trust Security')).toBeInTheDocument();
-    expect(screen.getByText('Developer-first Experience')).toBeInTheDocument();
-    expect(screen.getByText('Extensible & Enterprise-ready')).toBeInTheDocument();
-  });
-
-  it('renders item descriptions', () => {
-    render(<SignInSlogan />);
-    expect(
-      screen.getByText(/Centralizes identity management/),
+  it('renders item descriptions', async () => {
+    await render(<SignInSlogan />);
+    await expect.element(
+      page.getByText(/Centralizes identity management/),
     ).toBeInTheDocument();
-    expect(
-      screen.getByText(/Leverage adaptive authentication/),
+    await expect.element(
+      page.getByText(/Leverage adaptive authentication/),
     ).toBeInTheDocument();
-    expect(
-      screen.getByText(/Configure auth flows and manage organizations/),
+    await expect.element(
+      page.getByText(/Configure auth flows and manage organizations/),
     ).toBeInTheDocument();
-    expect(
-      screen.getByText(/Built for scale/),
+    await expect.element(
+      page.getByText(/Built for scale/),
     ).toBeInTheDocument();
   });
 
-  it('uses branded logo when available', () => {
+  it('uses branded logo when available', async () => {
     mockUseBranding.mockReturnValue({
       images: {
         logo: {
@@ -74,39 +70,39 @@ describe('SignInSlogan', () => {
         },
       },
     });
-    render(<SignInSlogan />);
+    await render(<SignInSlogan />);
     // Component should render with branded logo
-    expect(screen.getByText('Flexible Identity Platform')).toBeInTheDocument();
+    await expect.element(page.getByText('Flexible Identity Platform')).toBeInTheDocument();
   });
 
-  it('uses default logo when no branded logo', () => {
+  it('uses default logo when no branded logo', async () => {
     mockUseBranding.mockReturnValue({
       images: null,
     });
-    render(<SignInSlogan />);
+    await render(<SignInSlogan />);
     // Component should render with default logo
-    expect(screen.getByText('Flexible Identity Platform')).toBeInTheDocument();
+    await expect.element(page.getByText('Flexible Identity Platform')).toBeInTheDocument();
   });
 
-  it('uses default logo when images object exists but no logo', () => {
+  it('uses default logo when images object exists but no logo', async () => {
     mockUseBranding.mockReturnValue({
       images: {},
     });
-    render(<SignInSlogan />);
-    expect(screen.getByText('Flexible Identity Platform')).toBeInTheDocument();
+    await render(<SignInSlogan />);
+    await expect.element(page.getByText('Flexible Identity Platform')).toBeInTheDocument();
   });
 
-  it('uses default logo when logo object exists but no primary', () => {
+  it('uses default logo when logo object exists but no primary', async () => {
     mockUseBranding.mockReturnValue({
       images: {
         logo: {},
       },
     });
-    render(<SignInSlogan />);
-    expect(screen.getByText('Flexible Identity Platform')).toBeInTheDocument();
+    await render(<SignInSlogan />);
+    await expect.element(page.getByText('Flexible Identity Platform')).toBeInTheDocument();
   });
 
-  it('uses default logo when primary object exists but no url', () => {
+  it('uses default logo when primary object exists but no url', async () => {
     mockUseBranding.mockReturnValue({
       images: {
         logo: {
@@ -114,7 +110,7 @@ describe('SignInSlogan', () => {
         },
       },
     });
-    render(<SignInSlogan />);
-    expect(screen.getByText('Flexible Identity Platform')).toBeInTheDocument();
+    await render(<SignInSlogan />);
+    await expect.element(page.getByText('Flexible Identity Platform')).toBeInTheDocument();
   });
 });

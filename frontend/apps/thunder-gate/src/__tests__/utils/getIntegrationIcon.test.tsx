@@ -17,7 +17,8 @@
  */
 
 import {describe, it, expect, vi} from 'vitest';
-import {render, screen} from '@testing-library/react';
+import {render} from '@thunder/test-utils/browser';
+import {page} from 'vitest/browser';
 import getIntegrationIcon from '../../utils/getIntegrationIcon';
 
 // Mock the icons
@@ -27,36 +28,36 @@ vi.mock('@wso2/oxygen-ui-icons-react', () => ({
 }));
 
 describe('getIntegrationIcon', () => {
-  it('returns Google icon when label contains google', () => {
+  it('returns Google icon when label contains google', async () => {
     const icon = getIntegrationIcon('Continue with google', '');
     expect(icon).not.toBeNull();
 
-    render(<div>{icon}</div>);
-    expect(screen.getByTestId('google-icon')).toBeInTheDocument();
+    await render(<div>{icon}</div>);
+    await expect.element(page.getByTestId('google-icon')).toBeInTheDocument();
   });
 
-  it('returns Google icon when image contains google', () => {
+  it('returns Google icon when image contains google', async () => {
     const icon = getIntegrationIcon('', 'assets/images/google.svg');
     expect(icon).not.toBeNull();
 
-    render(<div>{icon}</div>);
-    expect(screen.getByTestId('google-icon')).toBeInTheDocument();
+    await render(<div>{icon}</div>);
+    await expect.element(page.getByTestId('google-icon')).toBeInTheDocument();
   });
 
-  it('returns GitHub icon when label contains github', () => {
+  it('returns GitHub icon when label contains github', async () => {
     const icon = getIntegrationIcon('Sign in with github', '');
     expect(icon).not.toBeNull();
 
-    render(<div>{icon}</div>);
-    expect(screen.getByTestId('github-icon')).toBeInTheDocument();
+    await render(<div>{icon}</div>);
+    await expect.element(page.getByTestId('github-icon')).toBeInTheDocument();
   });
 
-  it('returns GitHub icon when image contains github', () => {
+  it('returns GitHub icon when image contains github', async () => {
     const icon = getIntegrationIcon('', 'icons/github-icon.png');
     expect(icon).not.toBeNull();
 
-    render(<div>{icon}</div>);
-    expect(screen.getByTestId('github-icon')).toBeInTheDocument();
+    await render(<div>{icon}</div>);
+    await expect.element(page.getByTestId('github-icon')).toBeInTheDocument();
   });
 
   it('returns null for unknown provider', () => {
@@ -76,32 +77,32 @@ describe('getIntegrationIcon', () => {
     expect(icon).toBeNull();
   });
 
-  it('returns Google icon when label matches google even if image contains github', () => {
+  it('returns Google icon when label matches google even if image contains github', async () => {
     // Due to short-circuit evaluation in OR logic (label.includes() || image.includes()),
     // when label contains 'google', the image is never checked
     const icon = getIntegrationIcon('google login', 'github.svg');
     expect(icon).not.toBeNull();
 
-    render(<div>{icon}</div>);
-    expect(screen.getByTestId('google-icon')).toBeInTheDocument();
+    await render(<div>{icon}</div>);
+    await expect.element(page.getByTestId('google-icon')).toBeInTheDocument();
   });
 
-  it('checks Google before GitHub regardless of source', () => {
+  it('checks Google before GitHub regardless of source', async () => {
     // The function checks for 'google' first (in both label and image)
     // before checking for 'github', so image containing 'google' wins
     const icon = getIntegrationIcon('github login', 'google.svg');
     expect(icon).not.toBeNull();
 
-    render(<div>{icon}</div>);
+    await render(<div>{icon}</div>);
     // Google check happens first, and image contains 'google'
-    expect(screen.getByTestId('google-icon')).toBeInTheDocument();
+    await expect.element(page.getByTestId('google-icon')).toBeInTheDocument();
   });
 
-  it('falls back to image when label does not match', () => {
+  it('falls back to image when label does not match', async () => {
     const icon = getIntegrationIcon('Sign in', 'github-logo.png');
     expect(icon).not.toBeNull();
 
-    render(<div>{icon}</div>);
-    expect(screen.getByTestId('github-icon')).toBeInTheDocument();
+    await render(<div>{icon}</div>);
+    await expect.element(page.getByTestId('github-icon')).toBeInTheDocument();
   });
 });

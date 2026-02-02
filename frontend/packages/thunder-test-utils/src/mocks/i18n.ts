@@ -16,12 +16,12 @@
  * under the License.
  */
 
-import {vi} from 'vitest';
+import {type Mock, vi} from 'vitest';
 
 /**
  * Mock implementation of useTranslation hook for testing
  */
-export const mockUseTranslation = () => ({
+export const mockUseTranslation = (): {t: (key: string) => string; i18n: {changeLanguage: Mock; language: string}} => ({
   t: (key: string) => key,
   i18n: {
     changeLanguage: vi.fn(),
@@ -32,7 +32,7 @@ export const mockUseTranslation = () => ({
 /**
  * Mock implementation of useLanguage hook for testing
  */
-export const mockUseLanguage = () => ({
+export const mockUseLanguage = (): {currentLanguage: string; setLanguage: Mock; availableLanguages: string[]} => ({
   currentLanguage: 'en',
   setLanguage: vi.fn(),
   availableLanguages: ['en', 'si'],

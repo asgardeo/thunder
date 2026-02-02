@@ -25,10 +25,18 @@
       "import": "./dist/index.js",
       "require": "./dist/cjs/index.cjs"
     },
+    "./browser": {
+      "types": "./dist/browser.d.ts",
+      "import": "./dist/browser.js"
+    },
     "./setup": {
       "types": "./dist/setup.d.ts",
       "import": "./dist/setup.js",
       "require": "./dist/cjs/setup.cjs"
+    },
+    "./setup-browser": {
+      "types": "./dist/setup-browser.d.ts",
+      "import": "./dist/setup-browser.js"
     },
     "./mocks": {
       "types": "./dist/mocks/index.d.ts",
@@ -63,7 +71,8 @@
     "@testing-library/jest-dom": "catalog:",
     "@testing-library/react": "catalog:",
     "@testing-library/user-event": "catalog:",
-    "tslib": "catalog:"
+    "tslib": "catalog:",
+    "vitest-browser-react": "catalog:"
   },
   "devDependencies": {
     "@tanstack/react-query": "catalog:",
@@ -101,6 +110,7 @@
     "react-router": "catalog:",
     "vitest": "catalog:"
   },
+  "peerDependenciesMeta": {},
   "publishConfig": {
     "access": "public"
   }

@@ -17,7 +17,7 @@
  */
 
 import type React from 'react';
-import {describe, it, expect, vi, beforeEach, afterEach} from 'vitest';
+import {describe, it, expect, vi, beforeEach, afterEach, type Mock} from 'vitest';
 import {renderHook, act} from '@testing-library/react';
 import type {Edge, Node} from '@xyflow/react';
 import {StaticStepTypes, StepTypes} from '@/features/flows/models/steps';
@@ -153,12 +153,12 @@ const createMockExistingFlowData = (): FlowDefinitionResponse =>
   }) as FlowDefinitionResponse;
 
 describe('useFlowInitialization', () => {
-  let mockSetNodes: ReturnType<typeof vi.fn>;
-  let mockSetEdges: ReturnType<typeof vi.fn>;
-  let mockUpdateNodeInternals: ReturnType<typeof vi.fn>;
-  let mockGenerateEdges: ReturnType<typeof vi.fn>;
-  let mockValidateEdges: ReturnType<typeof vi.fn>;
-  let mockOnNeedsAutoLayout: ReturnType<typeof vi.fn>;
+  let mockSetNodes: Mock;
+  let mockSetEdges: Mock;
+  let mockUpdateNodeInternals: Mock;
+  let mockGenerateEdges: Mock;
+  let mockValidateEdges: Mock;
+  let mockOnNeedsAutoLayout: Mock;
 
   beforeEach(() => {
     vi.clearAllMocks();

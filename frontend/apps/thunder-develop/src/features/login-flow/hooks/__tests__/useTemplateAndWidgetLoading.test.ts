@@ -17,7 +17,7 @@
  */
 
 import type React from 'react';
-import {describe, it, expect, vi, beforeEach} from 'vitest';
+import {describe, it, expect, vi, type Mock, beforeEach} from 'vitest';
 import {renderHook, act} from '@testing-library/react';
 import type {Edge, Node} from '@xyflow/react';
 import {BlockTypes, ElementCategories, ElementTypes, type Element} from '@/features/flows/models/elements';
@@ -167,12 +167,12 @@ const createMockEdge = (overrides: Partial<Edge> = {}): Edge => ({
 type SetNodesFn = React.Dispatch<React.SetStateAction<Node[]>>;
 
 describe('useTemplateAndWidgetLoading', () => {
-  let mockSetNodes: ReturnType<typeof vi.fn> & SetNodesFn;
-  let mockUpdateNodeInternals: ReturnType<typeof vi.fn>;
-  let mockGenerateSteps: ReturnType<typeof vi.fn>;
-  let mockGenerateEdges: ReturnType<typeof vi.fn>;
-  let mockValidateEdges: ReturnType<typeof vi.fn>;
-  let mockGetBlankTemplateComponents: ReturnType<typeof vi.fn>;
+  let mockSetNodes: Mock & SetNodesFn;
+  let mockUpdateNodeInternals: Mock;
+  let mockGenerateSteps: Mock;
+  let mockGenerateEdges: Mock;
+  let mockValidateEdges: Mock;
+  let mockGetBlankTemplateComponents: Mock;
 
   beforeEach(() => {
     vi.clearAllMocks();
@@ -181,7 +181,7 @@ describe('useTemplateAndWidgetLoading', () => {
         return updater([]);
       }
       return updater;
-    }) as ReturnType<typeof vi.fn> & SetNodesFn;
+    }) as Mock & SetNodesFn;
     mockUpdateNodeInternals = vi.fn();
     mockGenerateSteps = vi.fn((steps: Node[]) => steps);
     mockGenerateEdges = vi.fn().mockReturnValue([]);
@@ -830,7 +830,7 @@ describe('useTemplateAndWidgetLoading', () => {
           const nodes = [createMockNode({id: 'view-1', type: StepTypes.View, data: {components: []}})];
           updater(nodes);
         }
-      }) as ReturnType<typeof vi.fn> & SetNodesFn;
+      }) as Mock & SetNodesFn;
 
       const {result} = renderUseTemplateAndWidgetLoading({setNodes: mockSetNodes});
 
@@ -867,7 +867,7 @@ describe('useTemplateAndWidgetLoading', () => {
           ];
           capturedNodes = updater(nodes);
         }
-      }) as ReturnType<typeof vi.fn> & SetNodesFn;
+      }) as Mock & SetNodesFn;
 
       mockGenerateStepElement.mockReturnValue(createMockElement({
         id: 'generated-new-form',
@@ -905,7 +905,7 @@ describe('useTemplateAndWidgetLoading', () => {
           const nodes = [createMockNode({id: 'end-1', type: StepTypes.End})]; // No View
           resultNodes = updater(nodes);
         }
-      }) as ReturnType<typeof vi.fn> & SetNodesFn;
+      }) as Mock & SetNodesFn;
 
       const {result} = renderUseTemplateAndWidgetLoading({setNodes: mockSetNodes});
 
@@ -937,7 +937,7 @@ describe('useTemplateAndWidgetLoading', () => {
           return updater(nodes);
         }
         return undefined;
-      }) as ReturnType<typeof vi.fn> & SetNodesFn;
+      }) as Mock & SetNodesFn;
 
       const {result} = renderUseTemplateAndWidgetLoading({setNodes: mockSetNodes});
 
@@ -970,7 +970,7 @@ describe('useTemplateAndWidgetLoading', () => {
           ];
           capturedNodes = updater(nodes);
         }
-      }) as ReturnType<typeof vi.fn> & SetNodesFn;
+      }) as Mock & SetNodesFn;
 
       const {result} = renderUseTemplateAndWidgetLoading({setNodes: mockSetNodes});
 

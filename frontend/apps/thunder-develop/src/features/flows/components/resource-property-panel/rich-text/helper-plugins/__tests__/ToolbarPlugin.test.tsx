@@ -16,7 +16,7 @@
  * under the License.
  */
 
-import {describe, it, expect, vi, beforeEach} from 'vitest';
+import {describe, it, expect, vi, beforeEach, type Mock} from 'vitest';
 import {render, screen, fireEvent, waitFor} from '@testing-library/react';
 import ToolbarPlugin from '../ToolbarPlugin';
 
@@ -610,8 +610,8 @@ describe('ToolbarPlugin', () => {
     it('should update toolbar state on selection change', async () => {
       // Mock $isRangeSelection to return true and provide selection
       const lexical = await vi.importMock<typeof import('lexical')>('lexical');
-      (lexical.$isRangeSelection as ReturnType<typeof vi.fn>).mockReturnValue(true);
-      (lexical.$getSelection as ReturnType<typeof vi.fn>).mockReturnValue({
+      (lexical.$isRangeSelection as Mock).mockReturnValue(true);
+      (lexical.$getSelection as Mock).mockReturnValue({
         hasFormat: vi.fn().mockReturnValue(false),
         anchor: {
           getNode: () => ({
@@ -632,8 +632,8 @@ describe('ToolbarPlugin', () => {
 
     it('should update bold state when selection has bold format', async () => {
       const lexical = await vi.importMock<typeof import('lexical')>('lexical');
-      (lexical.$isRangeSelection as ReturnType<typeof vi.fn>).mockReturnValue(true);
-      (lexical.$getSelection as ReturnType<typeof vi.fn>).mockReturnValue({
+      (lexical.$isRangeSelection as Mock).mockReturnValue(true);
+      (lexical.$getSelection as Mock).mockReturnValue({
         hasFormat: (format: string) => format === 'bold',
         anchor: {
           getNode: () => ({
@@ -654,8 +654,8 @@ describe('ToolbarPlugin', () => {
 
     it('should update italic state when selection has italic format', async () => {
       const lexical = await vi.importMock<typeof import('lexical')>('lexical');
-      (lexical.$isRangeSelection as ReturnType<typeof vi.fn>).mockReturnValue(true);
-      (lexical.$getSelection as ReturnType<typeof vi.fn>).mockReturnValue({
+      (lexical.$isRangeSelection as Mock).mockReturnValue(true);
+      (lexical.$getSelection as Mock).mockReturnValue({
         hasFormat: (format: string) => format === 'italic',
         anchor: {
           getNode: () => ({
@@ -676,8 +676,8 @@ describe('ToolbarPlugin', () => {
 
     it('should update underline state when selection has underline format', async () => {
       const lexical = await vi.importMock<typeof import('lexical')>('lexical');
-      (lexical.$isRangeSelection as ReturnType<typeof vi.fn>).mockReturnValue(true);
-      (lexical.$getSelection as ReturnType<typeof vi.fn>).mockReturnValue({
+      (lexical.$isRangeSelection as Mock).mockReturnValue(true);
+      (lexical.$getSelection as Mock).mockReturnValue({
         hasFormat: (format: string) => format === 'underline',
         anchor: {
           getNode: () => ({
@@ -732,7 +732,7 @@ describe('ToolbarPlugin', () => {
   describe('Block Type Detection', () => {
     it('should detect heading block type', async () => {
       const {$isHeadingNode} = await vi.importMock<typeof import('@lexical/rich-text')>('@lexical/rich-text');
-      ($isHeadingNode as ReturnType<typeof vi.fn>).mockReturnValue(true);
+      ($isHeadingNode as Mock).mockReturnValue(true);
 
       render(<ToolbarPlugin typography />);
 
@@ -757,7 +757,7 @@ describe('ToolbarPlugin', () => {
   describe('Link State Detection', () => {
     it('should detect when parent node is a link', async () => {
       const {$isLinkNode} = await vi.importMock<typeof import('@lexical/link')>('@lexical/link');
-      ($isLinkNode as ReturnType<typeof vi.fn>).mockReturnValue(true);
+      ($isLinkNode as Mock).mockReturnValue(true);
 
       render(<ToolbarPlugin link />);
 
@@ -766,7 +766,7 @@ describe('ToolbarPlugin', () => {
 
     it('should detect when current node is a link', async () => {
       const {$isLinkNode} = await vi.importMock<typeof import('@lexical/link')>('@lexical/link');
-      ($isLinkNode as ReturnType<typeof vi.fn>).mockReturnValue(true);
+      ($isLinkNode as Mock).mockReturnValue(true);
 
       render(<ToolbarPlugin link />);
 
@@ -784,8 +784,8 @@ describe('ToolbarPlugin', () => {
 
     it('should apply active class to bold button when bold is active and not disabled', async () => {
       const lexical = await vi.importMock<typeof import('lexical')>('lexical');
-      (lexical.$isRangeSelection as ReturnType<typeof vi.fn>).mockReturnValue(true);
-      (lexical.$getSelection as ReturnType<typeof vi.fn>).mockReturnValue({
+      (lexical.$isRangeSelection as Mock).mockReturnValue(true);
+      (lexical.$getSelection as Mock).mockReturnValue({
         hasFormat: (format: string) => format === 'bold',
         anchor: {
           getNode: () => ({
@@ -994,8 +994,8 @@ describe('ToolbarPlugin', () => {
       const lexicalSelection = await vi.importMock<typeof import('@lexical/selection')>('@lexical/selection');
 
       // Mock $isRangeSelection to return true
-      (lexical.$isRangeSelection as ReturnType<typeof vi.fn>).mockReturnValue(true);
-      (lexical.$getSelection as ReturnType<typeof vi.fn>).mockReturnValue({
+      (lexical.$isRangeSelection as Mock).mockReturnValue(true);
+      (lexical.$getSelection as Mock).mockReturnValue({
         hasFormat: vi.fn().mockReturnValue(false),
         anchor: {
           getNode: () => ({
@@ -1034,8 +1034,8 @@ describe('ToolbarPlugin', () => {
       const lexicalLink = await vi.importMock<typeof import('@lexical/link')>('@lexical/link');
 
       // Setup mock to make isLink true
-      (lexical.$isRangeSelection as ReturnType<typeof vi.fn>).mockReturnValue(true);
-      (lexical.$getSelection as ReturnType<typeof vi.fn>).mockReturnValue({
+      (lexical.$isRangeSelection as Mock).mockReturnValue(true);
+      (lexical.$getSelection as Mock).mockReturnValue({
         hasFormat: vi.fn().mockReturnValue(false),
         anchor: {
           getNode: () => ({
@@ -1050,7 +1050,7 @@ describe('ToolbarPlugin', () => {
       });
 
       // Make $isLinkNode return true to set isLink state
-      (lexicalLink.$isLinkNode as ReturnType<typeof vi.fn>).mockReturnValue(true);
+      (lexicalLink.$isLinkNode as Mock).mockReturnValue(true);
 
       // Capture the update listener to trigger $updateToolbar
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -1173,14 +1173,14 @@ describe('ToolbarPlugin', () => {
       const richText = await vi.importMock<typeof import('@lexical/rich-text')>('@lexical/rich-text');
 
       // Make $isRangeSelection return true
-      (lexical.$isRangeSelection as ReturnType<typeof vi.fn>).mockReturnValue(true);
+      (lexical.$isRangeSelection as Mock).mockReturnValue(true);
 
       // Make blockType be 'h1' initially (not paragraph)
-      (richText.$isHeadingNode as ReturnType<typeof vi.fn>).mockReturnValue(true);
+      (richText.$isHeadingNode as Mock).mockReturnValue(true);
 
       // Mock getSelectedNode to set up proper node structure
       const getSelectedNode = await vi.importMock<typeof import('../../utils/getSelectedNode')>('../../utils/getSelectedNode');
-      (getSelectedNode.default as ReturnType<typeof vi.fn>).mockReturnValue({
+      (getSelectedNode.default as Mock).mockReturnValue({
         getParent: () => null,
         getKey: () => 'test-key',
         getTopLevelElementOrThrow: () => ({
@@ -1192,7 +1192,7 @@ describe('ToolbarPlugin', () => {
       });
 
       // Mock selection
-      (lexical.$getSelection as ReturnType<typeof vi.fn>).mockReturnValue({
+      (lexical.$getSelection as Mock).mockReturnValue({
         hasFormat: vi.fn().mockReturnValue(false),
         anchor: {
           getNode: () => ({
@@ -1235,10 +1235,10 @@ describe('ToolbarPlugin', () => {
       const getSelectedNode = await vi.importMock<typeof import('../../utils/getSelectedNode')>('../../utils/getSelectedNode');
 
       // Setup for isLink to become true
-      (lexical.$isRangeSelection as ReturnType<typeof vi.fn>).mockReturnValue(true);
-      (lexicalLink.$isLinkNode as ReturnType<typeof vi.fn>).mockReturnValue(true);
-      (richText.$isHeadingNode as ReturnType<typeof vi.fn>).mockReturnValue(false);
-      (getSelectedNode.default as ReturnType<typeof vi.fn>).mockReturnValue({
+      (lexical.$isRangeSelection as Mock).mockReturnValue(true);
+      (lexicalLink.$isLinkNode as Mock).mockReturnValue(true);
+      (richText.$isHeadingNode as Mock).mockReturnValue(false);
+      (getSelectedNode.default as Mock).mockReturnValue({
         getParent: () => ({type: 'link'}),
         getKey: () => 'test-key',
         getTopLevelElementOrThrow: () => ({
@@ -1248,7 +1248,7 @@ describe('ToolbarPlugin', () => {
           getTag: () => 'p',
         }),
       });
-      (lexical.$getSelection as ReturnType<typeof vi.fn>).mockReturnValue({
+      (lexical.$getSelection as Mock).mockReturnValue({
         hasFormat: vi.fn().mockReturnValue(false),
         anchor: {
           getNode: () => ({
@@ -1295,10 +1295,10 @@ describe('ToolbarPlugin', () => {
       const getSelectedNode = await vi.importMock<typeof import('../../utils/getSelectedNode')>('../../utils/getSelectedNode');
 
       // Setup for isLink to be false
-      (lexical.$isRangeSelection as ReturnType<typeof vi.fn>).mockReturnValue(true);
-      (lexicalLink.$isLinkNode as ReturnType<typeof vi.fn>).mockReturnValue(false);
-      (richText.$isHeadingNode as ReturnType<typeof vi.fn>).mockReturnValue(false);
-      (getSelectedNode.default as ReturnType<typeof vi.fn>).mockReturnValue({
+      (lexical.$isRangeSelection as Mock).mockReturnValue(true);
+      (lexicalLink.$isLinkNode as Mock).mockReturnValue(false);
+      (richText.$isHeadingNode as Mock).mockReturnValue(false);
+      (getSelectedNode.default as Mock).mockReturnValue({
         getParent: () => ({type: 'paragraph'}),
         getKey: () => 'test-key',
         getTopLevelElementOrThrow: () => ({
@@ -1308,7 +1308,7 @@ describe('ToolbarPlugin', () => {
           getTag: () => 'p',
         }),
       });
-      (lexical.$getSelection as ReturnType<typeof vi.fn>).mockReturnValue({
+      (lexical.$getSelection as Mock).mockReturnValue({
         hasFormat: vi.fn().mockReturnValue(false),
         anchor: {
           getNode: () => ({
@@ -1356,9 +1356,9 @@ describe('ToolbarPlugin', () => {
       const richText = await vi.importMock<typeof import('@lexical/rich-text')>('@lexical/rich-text');
       const getSelectedNode = await vi.importMock<typeof import('../../utils/getSelectedNode')>('../../utils/getSelectedNode');
 
-      (lexical.$isRangeSelection as ReturnType<typeof vi.fn>).mockReturnValue(true);
-      (richText.$isHeadingNode as ReturnType<typeof vi.fn>).mockReturnValue(true);
-      (getSelectedNode.default as ReturnType<typeof vi.fn>).mockReturnValue({
+      (lexical.$isRangeSelection as Mock).mockReturnValue(true);
+      (richText.$isHeadingNode as Mock).mockReturnValue(true);
+      (getSelectedNode.default as Mock).mockReturnValue({
         getParent: () => null,
         getKey: () => 'test-key',
         getTopLevelElementOrThrow: () => ({
@@ -1368,7 +1368,7 @@ describe('ToolbarPlugin', () => {
           getTag: () => 'h2',
         }),
       });
-      (lexical.$getSelection as ReturnType<typeof vi.fn>).mockReturnValue({
+      (lexical.$getSelection as Mock).mockReturnValue({
         hasFormat: vi.fn().mockReturnValue(false),
         anchor: {
           getNode: () => ({
@@ -1410,9 +1410,9 @@ describe('ToolbarPlugin', () => {
       const richText = await vi.importMock<typeof import('@lexical/rich-text')>('@lexical/rich-text');
       const getSelectedNode = await vi.importMock<typeof import('../../utils/getSelectedNode')>('../../utils/getSelectedNode');
 
-      (lexical.$isRangeSelection as ReturnType<typeof vi.fn>).mockReturnValue(true);
-      (richText.$isHeadingNode as ReturnType<typeof vi.fn>).mockReturnValue(false);
-      (getSelectedNode.default as ReturnType<typeof vi.fn>).mockReturnValue({
+      (lexical.$isRangeSelection as Mock).mockReturnValue(true);
+      (richText.$isHeadingNode as Mock).mockReturnValue(false);
+      (getSelectedNode.default as Mock).mockReturnValue({
         getParent: () => null,
         getKey: () => 'test-key',
         getTopLevelElementOrThrow: () => ({
@@ -1421,7 +1421,7 @@ describe('ToolbarPlugin', () => {
           getType: () => 'unknown-type', // Not in blockTypeToBlockName
         }),
       });
-      (lexical.$getSelection as ReturnType<typeof vi.fn>).mockReturnValue({
+      (lexical.$getSelection as Mock).mockReturnValue({
         hasFormat: vi.fn().mockReturnValue(false),
         anchor: {
           getNode: () => ({

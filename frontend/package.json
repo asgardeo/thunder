@@ -40,6 +40,7 @@
     "@thunder/prettier-config": "workspace:^",
     "eslint": "catalog:",
     "nx": "21.6.4",
+    "playwright": "catalog:",
     "prettier": "catalog:",
     "rimraf": "catalog:",
     "tslib": "catalog:",

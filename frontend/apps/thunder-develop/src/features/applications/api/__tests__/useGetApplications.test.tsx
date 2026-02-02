@@ -16,7 +16,7 @@
  * under the License.
  */
 
-import {describe, it, expect, beforeEach, afterEach, vi} from 'vitest';
+import {describe, it, expect, beforeEach, afterEach, vi, type Mock} from 'vitest';
 import {waitFor, renderHook} from '@thunder/test-utils';
 import useGetApplications from '../useGetApplications';
 import type {ApplicationListResponse} from '../../models/responses';
@@ -39,8 +39,8 @@ const {useAsgardeo} = await import('@asgardeo/react');
 const {useConfig} = await import('@thunder/shared-contexts');
 
 describe('useGetApplications', () => {
-  let mockHttpRequest: ReturnType<typeof vi.fn>;
-  let mockGetServerUrl: ReturnType<typeof vi.fn>;
+  let mockHttpRequest: Mock;
+  let mockGetServerUrl: Mock;
 
   const mockApplicationListResponse: ApplicationListResponse = {
     totalResults: 2,

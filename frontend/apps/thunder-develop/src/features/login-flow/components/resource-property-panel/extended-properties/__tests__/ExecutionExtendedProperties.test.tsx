@@ -16,7 +16,7 @@
  * under the License.
  */
 
-import {describe, it, expect, vi, beforeEach} from 'vitest';
+import {describe, it, expect, vi, beforeEach, type Mock} from 'vitest';
 import {render, screen} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {ExecutionTypes} from '@/features/flows/models/steps';
@@ -629,10 +629,10 @@ describe('ExecutionExtendedProperties', () => {
     });
 
     it('should show validation error for sender field', () => {
-      (mockSelectedNotification.hasResourceFieldNotification as unknown as ReturnType<typeof vi.fn>).mockImplementation((key: string) =>
+      (mockSelectedNotification.hasResourceFieldNotification as unknown as Mock).mockImplementation((key: string) =>
         key === 'sms-otp-executor-1_data.properties.senderId'
       );
-      (mockSelectedNotification.getResourceFieldNotification as unknown as ReturnType<typeof vi.fn>).mockImplementation((key: string) =>
+      (mockSelectedNotification.getResourceFieldNotification as unknown as Mock).mockImplementation((key: string) =>
         key === 'sms-otp-executor-1_data.properties.senderId' ? 'Sender ID is invalid' : ''
       );
       mockNotificationSenders.mockReturnValue({

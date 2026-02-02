@@ -17,7 +17,7 @@
  */
 
 import type React from 'react';
-import {describe, it, expect, vi, beforeEach} from 'vitest';
+import {describe, it, expect, vi, beforeEach, type Mock} from 'vitest';
 import {renderHook, act} from '@testing-library/react';
 import type {Node} from '@xyflow/react';
 import {BlockTypes, ElementCategories, ElementTypes, type Element} from '@/features/flows/models/elements';
@@ -83,8 +83,8 @@ const createMockViewNode = (overrides: Partial<Node> = {}): Node => ({
 type SetNodesFn = React.Dispatch<React.SetStateAction<Node[]>>;
 
 describe('useElementAddition', () => {
-  let mockSetNodes: ReturnType<typeof vi.fn> & SetNodesFn;
-  let mockUpdateNodeInternals: ReturnType<typeof vi.fn>;
+  let mockSetNodes: Mock & SetNodesFn;
+  let mockUpdateNodeInternals: Mock;
 
   beforeEach(() => {
     vi.clearAllMocks();
@@ -93,7 +93,7 @@ describe('useElementAddition', () => {
         return updater([]);
       }
       return updater;
-    }) as ReturnType<typeof vi.fn> & SetNodesFn;
+    }) as Mock & SetNodesFn;
     mockUpdateNodeInternals = vi.fn();
   });
 
@@ -180,7 +180,7 @@ describe('useElementAddition', () => {
           return updater(nodes);
         }
         return updater;
-      }) as ReturnType<typeof vi.fn> & SetNodesFn;
+      }) as Mock & SetNodesFn;
 
       const {result} = renderHook(() =>
         useElementAddition({
@@ -210,7 +210,7 @@ describe('useElementAddition', () => {
           const nodes: Node[] = [createMockViewNode({id: 'view-1', data: {components: []}})];
           capturedNodes = updater(nodes);
         }
-      }) as ReturnType<typeof vi.fn> & SetNodesFn;
+      }) as Mock & SetNodesFn;
 
       const {result} = renderHook(() =>
         useElementAddition({
@@ -245,7 +245,7 @@ describe('useElementAddition', () => {
           const nodes: Node[] = [createMockViewNode({id: 'view-1', data: {components: [existingForm]}})];
           capturedNodes = updater(nodes);
         }
-      }) as ReturnType<typeof vi.fn> & SetNodesFn;
+      }) as Mock & SetNodesFn;
 
       const {result} = renderHook(() =>
         useElementAddition({
@@ -277,7 +277,7 @@ describe('useElementAddition', () => {
           const nodes: Node[] = [createMockViewNode({id: 'view-1', data: {components: []}})];
           capturedNodes = updater(nodes);
         }
-      }) as ReturnType<typeof vi.fn> & SetNodesFn;
+      }) as Mock & SetNodesFn;
 
       const {result} = renderHook(() =>
         useElementAddition({
@@ -308,7 +308,7 @@ describe('useElementAddition', () => {
           return updater(nodes);
         }
         return undefined;
-      }) as ReturnType<typeof vi.fn> & SetNodesFn;
+      }) as Mock & SetNodesFn;
 
       const {result} = renderHook(() =>
         useElementAddition({
@@ -338,7 +338,7 @@ describe('useElementAddition', () => {
           const nodes: Node[] = [createMockViewNode({id: 'view-1', data: {}})];
           capturedNodes = updater(nodes);
         }
-      }) as ReturnType<typeof vi.fn> & SetNodesFn;
+      }) as Mock & SetNodesFn;
 
       const {result} = renderHook(() =>
         useElementAddition({
@@ -400,7 +400,7 @@ describe('useElementAddition', () => {
           return updater(nodes);
         }
         return updater;
-      }) as ReturnType<typeof vi.fn> & SetNodesFn;
+      }) as Mock & SetNodesFn;
 
       const {result} = renderHook(() =>
         useElementAddition({
@@ -438,7 +438,7 @@ describe('useElementAddition', () => {
           const nodes: Node[] = [createMockViewNode({id: 'view-1', data: {components: [existingForm]}})];
           capturedNodes = updater(nodes);
         }
-      }) as ReturnType<typeof vi.fn> & SetNodesFn;
+      }) as Mock & SetNodesFn;
 
       const {result} = renderHook(() =>
         useElementAddition({
@@ -482,7 +482,7 @@ describe('useElementAddition', () => {
           const nodes: Node[] = [createMockViewNode({id: 'view-1', data: {components: [existingForm]}})];
           capturedNodes = updater(nodes);
         }
-      }) as ReturnType<typeof vi.fn> & SetNodesFn;
+      }) as Mock & SetNodesFn;
 
       const {result} = renderHook(() =>
         useElementAddition({
@@ -519,7 +519,7 @@ describe('useElementAddition', () => {
           return updater(nodes);
         }
         return undefined;
-      }) as ReturnType<typeof vi.fn> & SetNodesFn;
+      }) as Mock & SetNodesFn;
 
       const {result} = renderHook(() =>
         useElementAddition({
@@ -562,7 +562,7 @@ describe('useElementAddition', () => {
           ];
           capturedNodes = updater(nodes);
         }
-      }) as ReturnType<typeof vi.fn> & SetNodesFn;
+      }) as Mock & SetNodesFn;
 
       const {result} = renderHook(() =>
         useElementAddition({
@@ -605,7 +605,7 @@ describe('useElementAddition', () => {
           ];
           capturedNodes = updater(nodes);
         }
-      }) as ReturnType<typeof vi.fn> & SetNodesFn;
+      }) as Mock & SetNodesFn;
 
       const {result} = renderHook(() =>
         useElementAddition({
@@ -642,7 +642,7 @@ describe('useElementAddition', () => {
           const nodes: Node[] = [createMockViewNode({id: 'view-1', data: {components: [existingForm]}})];
           capturedNodes = updater(nodes);
         }
-      }) as ReturnType<typeof vi.fn> & SetNodesFn;
+      }) as Mock & SetNodesFn;
 
       const {result} = renderHook(() =>
         useElementAddition({
@@ -672,7 +672,7 @@ describe('useElementAddition', () => {
           const nodes: Node[] = [createMockViewNode({id: 'view-1', data: {components: []}})];
           capturedNodes = updater(nodes);
         }
-      }) as ReturnType<typeof vi.fn> & SetNodesFn;
+      }) as Mock & SetNodesFn;
 
       const {result} = renderHook(() =>
         useElementAddition({
@@ -703,7 +703,7 @@ describe('useElementAddition', () => {
           const nodes: Node[] = [createMockViewNode({id: 'view-1', data: {components: []}})];
           capturedNodes = updater(nodes);
         }
-      }) as ReturnType<typeof vi.fn> & SetNodesFn;
+      }) as Mock & SetNodesFn;
 
       const {result} = renderHook(() =>
         useElementAddition({
@@ -730,7 +730,7 @@ describe('useElementAddition', () => {
           const nodes: Node[] = [createMockViewNode({id: 'view-1', data: {components: []}})];
           capturedNodes = updater(nodes);
         }
-      }) as ReturnType<typeof vi.fn> & SetNodesFn;
+      }) as Mock & SetNodesFn;
 
       const {result} = renderHook(() =>
         useElementAddition({
@@ -760,7 +760,7 @@ describe('useElementAddition', () => {
           const nodes: Node[] = [createMockViewNode({id: 'view-1', data: {components: []}})];
           capturedNodes = updater(nodes);
         }
-      }) as ReturnType<typeof vi.fn> & SetNodesFn;
+      }) as Mock & SetNodesFn;
 
       const {result} = renderHook(() =>
         useElementAddition({
@@ -789,7 +789,7 @@ describe('useElementAddition', () => {
           const nodes: Node[] = [createMockViewNode({id: 'view-1', data: {components: []}})];
           capturedNodes = updater(nodes);
         }
-      }) as ReturnType<typeof vi.fn> & SetNodesFn;
+      }) as Mock & SetNodesFn;
 
       const {result} = renderHook(() =>
         useElementAddition({
