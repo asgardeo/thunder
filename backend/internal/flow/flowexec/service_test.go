@@ -212,12 +212,12 @@ func TestInitiateFlowSuccessScenarios(t *testing.T) {
 
 				// Mock flow management service to return flow by handle
 				mockFlow := &flowmgt.CompleteFlowDefinition{ID: "onboarding-flow-123"}
-				mockFlowMgtSvc.EXPECT().GetFlowByHandle(mock.Anything,
+				mockFlowMgtSvc.EXPECT().GetFlowByHandle(mock.Anything, mock.Anything,
 					common.FlowTypeUserOnboarding).Return(mockFlow, nil)
 
 				// Mock GetGraph call which is made during initContext
 				inviteGraph := flowFactory.CreateGraph("onboarding-flow-123", common.FlowTypeUserOnboarding)
-				mockFlowMgtSvc.EXPECT().GetGraph("onboarding-flow-123").Return(inviteGraph, nil)
+				mockFlowMgtSvc.EXPECT().GetGraph(mock.Anything, "onboarding-flow-123").Return(inviteGraph, nil)
 
 				// For system flows, StoreFlowContext is called with empty AppID
 				mockStore.EXPECT().StoreFlowContext(mock.MatchedBy(func(ctx EngineContext) bool {
@@ -240,7 +240,7 @@ func TestInitiateFlowSuccessScenarios(t *testing.T) {
 				})).Return(nil)
 			} else {
 				mockAppService.EXPECT().GetApplication(appID).Return(mockApp, nil)
-				mockFlowMgtSvc.EXPECT().GetGraph("auth-graph-1").Return(testGraph, nil)
+				mockFlowMgtSvc.EXPECT().GetGraph(mock.Anything, "auth-graph-1").Return(testGraph, nil)
 				mockStore.EXPECT().StoreFlowContext(mock.MatchedBy(func(ctx EngineContext) bool {
 					// Verify flowID is generated
 					if ctx.FlowID == "" {
@@ -338,7 +338,8 @@ func TestInitiateFlowErrorScenarios(t *testing.T) {
 				mockAppService.EXPECT().GetApplication(appID).Return(mockApp, nil)
 
 				// Mock flow management service to return error (graph not found)
-				mockFlowMgtSvc.EXPECT().GetGraph("auth-graph-1").Return(nil, &serviceerror.InternalServerError)
+				mockFlowMgtSvc.EXPECT().GetGraph(mock.Anything, "auth-graph-1").
+					Return(nil, &serviceerror.InternalServerError)
 				// No store mock needed as it fails before storing
 			},
 			expectedErrorCode: serviceerror.InternalServerError.Code,
@@ -359,7 +360,7 @@ func TestInitiateFlowErrorScenarios(t *testing.T) {
 
 				// Mock flow management service to return valid graph
 				testGraph := flowFactory.CreateGraph("auth-graph-1", common.FlowTypeAuthentication)
-				mockFlowMgtSvc.EXPECT().GetGraph("auth-graph-1").Return(testGraph, nil)
+				mockFlowMgtSvc.EXPECT().GetGraph(mock.Anything, "auth-graph-1").Return(testGraph, nil)
 
 				// Mock store to return error
 				mockStore.EXPECT().StoreFlowContext(mock.AnythingOfType("EngineContext")).Return(assert.AnError)

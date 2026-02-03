@@ -19,6 +19,7 @@
 package flowmgt
 
 import (
+	"context"
 	"errors"
 	"testing"
 
@@ -160,9 +161,9 @@ func (s *CacheBackedFlowStoreTestSuite) TestListFlows() {
 		},
 	}
 
-	s.mockStore.EXPECT().ListFlows(10, 0, "").Return(flows, 2, nil)
+	s.mockStore.EXPECT().ListFlows(mock.Anything, 10, 0, "").Return(flows, 2, nil)
 
-	result, count, err := s.cachedStore.ListFlows(10, 0, "")
+	result, count, err := s.cachedStore.ListFlows(context.Background(), 10, 0, "")
 
 	s.NoError(err)
 	s.Len(result, 2)
@@ -171,9 +172,9 @@ func (s *CacheBackedFlowStoreTestSuite) TestListFlows() {
 }
 
 func (s *CacheBackedFlowStoreTestSuite) TestListFlowsError() {
-	s.mockStore.EXPECT().ListFlows(10, 0, "").Return(nil, 0, errors.New("list error"))
+	s.mockStore.EXPECT().ListFlows(mock.Anything, 10, 0, "").Return(nil, 0, errors.New("list error"))
 
-	result, count, err := s.cachedStore.ListFlows(10, 0, "")
+	result, count, err := s.cachedStore.ListFlows(context.Background(), 10, 0, "")
 
 	s.Error(err)
 	s.Nil(result)
@@ -191,9 +192,9 @@ func (s *CacheBackedFlowStoreTestSuite) TestCreateFlowSuccess() {
 	}
 
 	expected := s.createTestFlow()
-	s.mockStore.EXPECT().CreateFlow("flow-1", flowDef).Return(expected, nil)
+	s.mockStore.EXPECT().CreateFlow(mock.Anything, "flow-1", flowDef).Return(expected, nil)
 
-	result, err := s.cachedStore.CreateFlow("flow-1", flowDef)
+	result, err := s.cachedStore.CreateFlow(context.Background(), "flow-1", flowDef)
 
 	s.NoError(err)
 	s.NotNil(result)
@@ -212,9 +213,9 @@ func (s *CacheBackedFlowStoreTestSuite) TestCreateFlowError() {
 		Nodes:    []NodeDefinition{{ID: "node-1", Type: "basic-auth"}},
 	}
 
-	s.mockStore.EXPECT().CreateFlow("flow-1", flowDef).Return(nil, errors.New("create error"))
+	s.mockStore.EXPECT().CreateFlow(mock.Anything, "flow-1", flowDef).Return(nil, errors.New("create error"))
 
-	result, err := s.cachedStore.CreateFlow("flow-1", flowDef)
+	result, err := s.cachedStore.CreateFlow(context.Background(), "flow-1", flowDef)
 
 	s.Error(err)
 	s.Nil(result)
@@ -227,7 +228,7 @@ func (s *CacheBackedFlowStoreTestSuite) TestGetFlowByIDFromCache() {
 	expected := s.createTestFlow()
 	s.cacheData["flow-1"] = expected
 
-	result, err := s.cachedStore.GetFlowByID("flow-1")
+	result, err := s.cachedStore.GetFlowByID(context.Background(), "flow-1")
 
 	s.NoError(err)
 	s.NotNil(result)
@@ -236,9 +237,9 @@ func (s *CacheBackedFlowStoreTestSuite) TestGetFlowByIDFromCache() {
 
 func (s *CacheBackedFlowStoreTestSuite) TestGetFlowByIDFromStoreAndCache() {
 	expected := s.createTestFlow()
-	s.mockStore.EXPECT().GetFlowByID("flow-1").Return(expected, nil)
+	s.mockStore.EXPECT().GetFlowByID(mock.Anything, "flow-1").Return(expected, nil)
 
-	result, err := s.cachedStore.GetFlowByID("flow-1")
+	result, err := s.cachedStore.GetFlowByID(context.Background(), "flow-1")
 
 	s.NoError(err)
 	s.NotNil(result)
@@ -250,9 +251,9 @@ func (s *CacheBackedFlowStoreTestSuite) TestGetFlowByIDFromStoreAndCache() {
 }
 
 func (s *CacheBackedFlowStoreTestSuite) TestGetFlowByIDNotFound() {
-	s.mockStore.EXPECT().GetFlowByID("nonexistent").Return(nil, errFlowNotFound)
+	s.mockStore.EXPECT().GetFlowByID(mock.Anything, "nonexistent").Return(nil, errFlowNotFound)
 
-	result, err := s.cachedStore.GetFlowByID("nonexistent")
+	result, err := s.cachedStore.GetFlowByID(context.Background(), "nonexistent")
 
 	s.Error(err)
 	s.Nil(result)
@@ -263,9 +264,9 @@ func (s *CacheBackedFlowStoreTestSuite) TestGetFlowByIDNotFound() {
 }
 
 func (s *CacheBackedFlowStoreTestSuite) TestGetFlowByIDNilFlow() {
-	s.mockStore.EXPECT().GetFlowByID("flow-1").Return(nil, nil)
+	s.mockStore.EXPECT().GetFlowByID(mock.Anything, "flow-1").Return(nil, nil)
 
-	result, err := s.cachedStore.GetFlowByID("flow-1")
+	result, err := s.cachedStore.GetFlowByID(context.Background(), "flow-1")
 
 	s.NoError(err)
 	s.Nil(result)
@@ -280,7 +281,7 @@ func (s *CacheBackedFlowStoreTestSuite) TestGetFlowByHandleFromCache() {
 	flow := s.createTestFlow()
 	s.handleCacheData[testAuthenticationHandleCacheKey] = flow
 
-	result, err := s.cachedStore.GetFlowByHandle("test-handle", common.FlowTypeAuthentication)
+	result, err := s.cachedStore.GetFlowByHandle(context.Background(), "test-handle", common.FlowTypeAuthentication)
 
 	s.NoError(err)
 	s.NotNil(result)
@@ -290,9 +291,9 @@ func (s *CacheBackedFlowStoreTestSuite) TestGetFlowByHandleFromCache() {
 
 func (s *CacheBackedFlowStoreTestSuite) TestGetFlowByHandleFromStoreAndCache() {
 	flow := s.createTestFlow()
-	s.mockStore.EXPECT().GetFlowByHandle("test-handle", common.FlowTypeAuthentication).Return(flow, nil)
+	s.mockStore.EXPECT().GetFlowByHandle(mock.Anything, "test-handle", common.FlowTypeAuthentication).Return(flow, nil)
 
-	result, err := s.cachedStore.GetFlowByHandle("test-handle", common.FlowTypeAuthentication)
+	result, err := s.cachedStore.GetFlowByHandle(context.Background(), "test-handle", common.FlowTypeAuthentication)
 
 	s.NoError(err)
 	s.NotNil(result)
@@ -305,10 +306,10 @@ func (s *CacheBackedFlowStoreTestSuite) TestGetFlowByHandleFromStoreAndCache() {
 }
 
 func (s *CacheBackedFlowStoreTestSuite) TestGetFlowByHandleNotFound() {
-	s.mockStore.EXPECT().GetFlowByHandle("non-existent", common.FlowTypeAuthentication).
+	s.mockStore.EXPECT().GetFlowByHandle(mock.Anything, "non-existent", common.FlowTypeAuthentication).
 		Return(nil, errFlowNotFound)
 
-	result, err := s.cachedStore.GetFlowByHandle("non-existent", common.FlowTypeAuthentication)
+	result, err := s.cachedStore.GetFlowByHandle(context.Background(), "non-existent", common.FlowTypeAuthentication)
 
 	s.Error(err)
 	s.ErrorIs(err, errFlowNotFound)
@@ -320,9 +321,9 @@ func (s *CacheBackedFlowStoreTestSuite) TestGetFlowByHandleNotFound() {
 }
 
 func (s *CacheBackedFlowStoreTestSuite) TestGetFlowByHandleNilFlow() {
-	s.mockStore.EXPECT().GetFlowByHandle("test-handle", common.FlowTypeAuthentication).Return(nil, nil)
+	s.mockStore.EXPECT().GetFlowByHandle(mock.Anything, "test-handle", common.FlowTypeAuthentication).Return(nil, nil)
 
-	result, err := s.cachedStore.GetFlowByHandle("test-handle", common.FlowTypeAuthentication)
+	result, err := s.cachedStore.GetFlowByHandle(context.Background(), "test-handle", common.FlowTypeAuthentication)
 
 	s.NoError(err)
 	s.Nil(result)
@@ -343,9 +344,9 @@ func (s *CacheBackedFlowStoreTestSuite) TestUpdateFlowSuccess() {
 	updated.Name = "Updated Flow"
 	updated.ActiveVersion = 2
 
-	s.mockStore.EXPECT().UpdateFlow("flow-1", flowDef).Return(updated, nil)
+	s.mockStore.EXPECT().UpdateFlow(mock.Anything, "flow-1", flowDef).Return(updated, nil)
 
-	result, err := s.cachedStore.UpdateFlow("flow-1", flowDef)
+	result, err := s.cachedStore.UpdateFlow(context.Background(), "flow-1", flowDef)
 
 	s.NoError(err)
 	s.NotNil(result)
@@ -365,9 +366,9 @@ func (s *CacheBackedFlowStoreTestSuite) TestUpdateFlowError() {
 		Nodes:    []NodeDefinition{{ID: "node-1", Type: "basic-auth"}},
 	}
 
-	s.mockStore.EXPECT().UpdateFlow("flow-1", flowDef).Return(nil, errors.New("update error"))
+	s.mockStore.EXPECT().UpdateFlow(mock.Anything, "flow-1", flowDef).Return(nil, errors.New("update error"))
 
-	result, err := s.cachedStore.UpdateFlow("flow-1", flowDef)
+	result, err := s.cachedStore.UpdateFlow(context.Background(), "flow-1", flowDef)
 
 	s.Error(err)
 	s.Nil(result)
@@ -377,9 +378,9 @@ func (s *CacheBackedFlowStoreTestSuite) TestDeleteFlowFromCache() {
 	flow := s.createTestFlow()
 	s.cacheData["flow-1"] = flow
 
-	s.mockStore.EXPECT().DeleteFlow("flow-1").Return(nil)
+	s.mockStore.EXPECT().DeleteFlow(mock.Anything, "flow-1").Return(nil)
 
-	err := s.cachedStore.DeleteFlow("flow-1")
+	err := s.cachedStore.DeleteFlow(context.Background(), "flow-1")
 
 	s.NoError(err)
 
@@ -390,10 +391,10 @@ func (s *CacheBackedFlowStoreTestSuite) TestDeleteFlowFromCache() {
 func (s *CacheBackedFlowStoreTestSuite) TestDeleteFlowFromStore() {
 	flow := s.createTestFlow()
 
-	s.mockStore.EXPECT().GetFlowByID("flow-1").Return(flow, nil)
-	s.mockStore.EXPECT().DeleteFlow("flow-1").Return(nil)
+	s.mockStore.EXPECT().GetFlowByID(mock.Anything, "flow-1").Return(flow, nil)
+	s.mockStore.EXPECT().DeleteFlow(mock.Anything, "flow-1").Return(nil)
 
-	err := s.cachedStore.DeleteFlow("flow-1")
+	err := s.cachedStore.DeleteFlow(context.Background(), "flow-1")
 
 	s.NoError(err)
 
@@ -402,17 +403,17 @@ func (s *CacheBackedFlowStoreTestSuite) TestDeleteFlowFromStore() {
 }
 
 func (s *CacheBackedFlowStoreTestSuite) TestDeleteFlowNotFound() {
-	s.mockStore.EXPECT().GetFlowByID("nonexistent").Return(nil, errFlowNotFound)
+	s.mockStore.EXPECT().GetFlowByID(mock.Anything, "nonexistent").Return(nil, errFlowNotFound)
 
-	err := s.cachedStore.DeleteFlow("nonexistent")
+	err := s.cachedStore.DeleteFlow(context.Background(), "nonexistent")
 
 	s.NoError(err)
 }
 
 func (s *CacheBackedFlowStoreTestSuite) TestDeleteFlowGetError() {
-	s.mockStore.EXPECT().GetFlowByID("flow-1").Return(nil, errors.New("get error"))
+	s.mockStore.EXPECT().GetFlowByID(mock.Anything, "flow-1").Return(nil, errors.New("get error"))
 
-	err := s.cachedStore.DeleteFlow("flow-1")
+	err := s.cachedStore.DeleteFlow(context.Background(), "flow-1")
 
 	s.Error(err)
 	s.Contains(err.Error(), "get error")
@@ -422,18 +423,18 @@ func (s *CacheBackedFlowStoreTestSuite) TestDeleteFlowDeleteError() {
 	flow := s.createTestFlow()
 	s.cacheData["flow-1"] = flow
 
-	s.mockStore.EXPECT().DeleteFlow("flow-1").Return(errors.New("delete error"))
+	s.mockStore.EXPECT().DeleteFlow(mock.Anything, "flow-1").Return(errors.New("delete error"))
 
-	err := s.cachedStore.DeleteFlow("flow-1")
+	err := s.cachedStore.DeleteFlow(context.Background(), "flow-1")
 
 	s.Error(err)
 	s.Contains(err.Error(), "delete error")
 }
 
 func (s *CacheBackedFlowStoreTestSuite) TestDeleteFlowNilFromStore() {
-	s.mockStore.EXPECT().GetFlowByID("flow-1").Return(nil, nil)
+	s.mockStore.EXPECT().GetFlowByID(mock.Anything, "flow-1").Return(nil, nil)
 
-	err := s.cachedStore.DeleteFlow("flow-1")
+	err := s.cachedStore.DeleteFlow(context.Background(), "flow-1")
 
 	s.NoError(err)
 }
@@ -445,7 +446,7 @@ func (s *CacheBackedFlowStoreTestSuite) TestIsFlowExistsFromCache() {
 	flow := s.createTestFlow()
 	s.cacheData["flow-1"] = flow
 
-	exists, err := s.cachedStore.IsFlowExists("flow-1")
+	exists, err := s.cachedStore.IsFlowExists(context.Background(), "flow-1")
 
 	s.NoError(err)
 	s.True(exists)
@@ -455,9 +456,9 @@ func (s *CacheBackedFlowStoreTestSuite) TestIsFlowExistsFromCache() {
 
 func (s *CacheBackedFlowStoreTestSuite) TestIsFlowExistsFromStore() {
 	// Not in cache, should query store
-	s.mockStore.EXPECT().IsFlowExists("flow-2").Return(true, nil)
+	s.mockStore.EXPECT().IsFlowExists(mock.Anything, "flow-2").Return(true, nil)
 
-	exists, err := s.cachedStore.IsFlowExists("flow-2")
+	exists, err := s.cachedStore.IsFlowExists(context.Background(), "flow-2")
 
 	s.NoError(err)
 	s.True(exists)
@@ -465,9 +466,9 @@ func (s *CacheBackedFlowStoreTestSuite) TestIsFlowExistsFromStore() {
 
 func (s *CacheBackedFlowStoreTestSuite) TestIsFlowExistsNotFound() {
 	// Not in cache, store returns false
-	s.mockStore.EXPECT().IsFlowExists("non-existent").Return(false, nil)
+	s.mockStore.EXPECT().IsFlowExists(mock.Anything, "non-existent").Return(false, nil)
 
-	exists, err := s.cachedStore.IsFlowExists("non-existent")
+	exists, err := s.cachedStore.IsFlowExists(context.Background(), "non-existent")
 
 	s.NoError(err)
 	s.False(exists)
@@ -476,9 +477,9 @@ func (s *CacheBackedFlowStoreTestSuite) TestIsFlowExistsNotFound() {
 func (s *CacheBackedFlowStoreTestSuite) TestIsFlowExistsCacheNil() {
 	// Nil value in cache should query store
 	s.cacheData["flow-3"] = nil
-	s.mockStore.EXPECT().IsFlowExists("flow-3").Return(true, nil)
+	s.mockStore.EXPECT().IsFlowExists(mock.Anything, "flow-3").Return(true, nil)
 
-	exists, err := s.cachedStore.IsFlowExists("flow-3")
+	exists, err := s.cachedStore.IsFlowExists(context.Background(), "flow-3")
 
 	s.NoError(err)
 	s.True(exists)
@@ -486,9 +487,9 @@ func (s *CacheBackedFlowStoreTestSuite) TestIsFlowExistsCacheNil() {
 
 func (s *CacheBackedFlowStoreTestSuite) TestIsFlowExistsStoreError() {
 	// Not in cache, store returns error
-	s.mockStore.EXPECT().IsFlowExists("flow-error").Return(false, errors.New("db connection error"))
+	s.mockStore.EXPECT().IsFlowExists(mock.Anything, "flow-error").Return(false, errors.New("db connection error"))
 
-	exists, err := s.cachedStore.IsFlowExists("flow-error")
+	exists, err := s.cachedStore.IsFlowExists(context.Background(), "flow-error")
 
 	s.Error(err)
 	s.Contains(err.Error(), "db connection error")
@@ -505,7 +506,8 @@ func (s *CacheBackedFlowStoreTestSuite) TestIsFlowExistsByHandleFromCache() {
 		FlowType: common.FlowTypeAuthentication,
 	}
 
-	exists, err := s.cachedStore.IsFlowExistsByHandle("test-handle", common.FlowTypeAuthentication)
+	exists, err := s.cachedStore.IsFlowExistsByHandle(context.Background(), "test-handle",
+		common.FlowTypeAuthentication)
 
 	s.NoError(err)
 	s.True(exists)
@@ -515,9 +517,10 @@ func (s *CacheBackedFlowStoreTestSuite) TestIsFlowExistsByHandleFromCache() {
 
 func (s *CacheBackedFlowStoreTestSuite) TestIsFlowExistsByHandleFromStore() {
 	// Not in cache, should query store
-	s.mockStore.EXPECT().IsFlowExistsByHandle("new-handle", common.FlowTypeAuthentication).Return(true, nil)
+	s.mockStore.EXPECT().IsFlowExistsByHandle(mock.Anything, "new-handle", common.FlowTypeAuthentication).
+		Return(true, nil)
 
-	exists, err := s.cachedStore.IsFlowExistsByHandle("new-handle", common.FlowTypeAuthentication)
+	exists, err := s.cachedStore.IsFlowExistsByHandle(context.Background(), "new-handle", common.FlowTypeAuthentication)
 
 	s.NoError(err)
 	s.True(exists)
@@ -525,9 +528,10 @@ func (s *CacheBackedFlowStoreTestSuite) TestIsFlowExistsByHandleFromStore() {
 
 func (s *CacheBackedFlowStoreTestSuite) TestIsFlowExistsByHandleNotFound() {
 	// Not in cache, store returns false
-	s.mockStore.EXPECT().IsFlowExistsByHandle("non-existent", common.FlowTypeRegistration).Return(false, nil)
+	s.mockStore.EXPECT().IsFlowExistsByHandle(mock.Anything, "non-existent", common.FlowTypeRegistration).
+		Return(false, nil)
 
-	exists, err := s.cachedStore.IsFlowExistsByHandle("non-existent", common.FlowTypeRegistration)
+	exists, err := s.cachedStore.IsFlowExistsByHandle(context.Background(), "non-existent", common.FlowTypeRegistration)
 
 	s.NoError(err)
 	s.False(exists)
@@ -535,10 +539,11 @@ func (s *CacheBackedFlowStoreTestSuite) TestIsFlowExistsByHandleNotFound() {
 
 func (s *CacheBackedFlowStoreTestSuite) TestIsFlowExistsByHandleStoreError() {
 	// Not in cache, store returns error
-	s.mockStore.EXPECT().IsFlowExistsByHandle("error-handle", common.FlowTypeAuthentication).
+	s.mockStore.EXPECT().IsFlowExistsByHandle(mock.Anything, "error-handle", common.FlowTypeAuthentication).
 		Return(false, errors.New("db connection error"))
 
-	exists, err := s.cachedStore.IsFlowExistsByHandle("error-handle", common.FlowTypeAuthentication)
+	exists, err := s.cachedStore.IsFlowExistsByHandle(context.Background(), "error-handle",
+		common.FlowTypeAuthentication)
 
 	s.Error(err)
 	s.Contains(err.Error(), "db connection error")
@@ -555,15 +560,18 @@ func (s *CacheBackedFlowStoreTestSuite) TestIsFlowExistsByHandleCompositeKey() {
 	// Cache the auth flow
 	s.handleCacheData["common-handle:AUTHENTICATION"] = authFlow
 	// Registration not in cache, should query store
-	s.mockStore.EXPECT().IsFlowExistsByHandle("common-handle", common.FlowTypeRegistration).Return(false, nil)
+	s.mockStore.EXPECT().IsFlowExistsByHandle(mock.Anything, "common-handle", common.FlowTypeRegistration).
+		Return(false, nil)
 
 	// First call - authentication exists (from cache)
-	exists1, err1 := s.cachedStore.IsFlowExistsByHandle("common-handle", common.FlowTypeAuthentication)
+	exists1, err1 := s.cachedStore.IsFlowExistsByHandle(context.Background(), "common-handle",
+		common.FlowTypeAuthentication)
 	s.NoError(err1)
 	s.True(exists1)
 
 	// Second call - registration doesn't exist
-	exists2, err2 := s.cachedStore.IsFlowExistsByHandle("common-handle", common.FlowTypeRegistration)
+	exists2, err2 := s.cachedStore.IsFlowExistsByHandle(context.Background(), "common-handle",
+		common.FlowTypeRegistration)
 	s.NoError(err2)
 	s.False(exists2)
 
@@ -583,9 +591,9 @@ func (s *CacheBackedFlowStoreTestSuite) TestListFlowVersions() {
 		{Version: 1, CreatedAt: "2025-01-01T00:00:00Z", IsActive: false},
 	}
 
-	s.mockStore.EXPECT().ListFlowVersions("flow-1").Return(versions, nil)
+	s.mockStore.EXPECT().ListFlowVersions(mock.Anything, "flow-1").Return(versions, nil)
 
-	result, err := s.cachedStore.ListFlowVersions("flow-1")
+	result, err := s.cachedStore.ListFlowVersions(context.Background(), "flow-1")
 
 	s.NoError(err)
 	s.Len(result, 3)
@@ -594,9 +602,9 @@ func (s *CacheBackedFlowStoreTestSuite) TestListFlowVersions() {
 }
 
 func (s *CacheBackedFlowStoreTestSuite) TestListFlowVersionsError() {
-	s.mockStore.EXPECT().ListFlowVersions("flow-1").Return(nil, errors.New("list versions error"))
+	s.mockStore.EXPECT().ListFlowVersions(mock.Anything, "flow-1").Return(nil, errors.New("list versions error"))
 
-	result, err := s.cachedStore.ListFlowVersions("flow-1")
+	result, err := s.cachedStore.ListFlowVersions(context.Background(), "flow-1")
 
 	s.Error(err)
 	s.Nil(result)
@@ -614,9 +622,9 @@ func (s *CacheBackedFlowStoreTestSuite) TestGetFlowVersion() {
 		CreatedAt: "2025-01-02T00:00:00Z",
 	}
 
-	s.mockStore.EXPECT().GetFlowVersion("flow-1", 2).Return(version, nil)
+	s.mockStore.EXPECT().GetFlowVersion(mock.Anything, "flow-1", 2).Return(version, nil)
 
-	result, err := s.cachedStore.GetFlowVersion("flow-1", 2)
+	result, err := s.cachedStore.GetFlowVersion(context.Background(), "flow-1", 2)
 
 	s.NoError(err)
 	s.NotNil(result)
@@ -625,9 +633,9 @@ func (s *CacheBackedFlowStoreTestSuite) TestGetFlowVersion() {
 }
 
 func (s *CacheBackedFlowStoreTestSuite) TestGetFlowVersionError() {
-	s.mockStore.EXPECT().GetFlowVersion("flow-1", 999).Return(nil, errVersionNotFound)
+	s.mockStore.EXPECT().GetFlowVersion(mock.Anything, "flow-1", 999).Return(nil, errVersionNotFound)
 
-	result, err := s.cachedStore.GetFlowVersion("flow-1", 999)
+	result, err := s.cachedStore.GetFlowVersion(context.Background(), "flow-1", 999)
 
 	s.Error(err)
 	s.Nil(result)
@@ -637,9 +645,9 @@ func (s *CacheBackedFlowStoreTestSuite) TestRestoreFlowVersionSuccess() {
 	restored := s.createTestFlow()
 	restored.ActiveVersion = 4
 
-	s.mockStore.EXPECT().RestoreFlowVersion("flow-1", 1).Return(restored, nil)
+	s.mockStore.EXPECT().RestoreFlowVersion(mock.Anything, "flow-1", 1).Return(restored, nil)
 
-	result, err := s.cachedStore.RestoreFlowVersion("flow-1", 1)
+	result, err := s.cachedStore.RestoreFlowVersion(context.Background(), "flow-1", 1)
 
 	s.NoError(err)
 	s.NotNil(result)
@@ -651,9 +659,9 @@ func (s *CacheBackedFlowStoreTestSuite) TestRestoreFlowVersionSuccess() {
 }
 
 func (s *CacheBackedFlowStoreTestSuite) TestRestoreFlowVersionError() {
-	s.mockStore.EXPECT().RestoreFlowVersion("flow-1", 1).Return(nil, errors.New("restore error"))
+	s.mockStore.EXPECT().RestoreFlowVersion(mock.Anything, "flow-1", 1).Return(nil, errors.New("restore error"))
 
-	result, err := s.cachedStore.RestoreFlowVersion("flow-1", 1)
+	result, err := s.cachedStore.RestoreFlowVersion(context.Background(), "flow-1", 1)
 
 	s.Error(err)
 	s.Nil(result)

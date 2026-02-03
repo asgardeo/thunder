@@ -5,6 +5,8 @@
 package flowmgt
 
 import (
+	"context"
+
 	"github.com/asgardeo/thunder/internal/flow/common"
 	"github.com/asgardeo/thunder/internal/flow/core"
 	"github.com/asgardeo/thunder/internal/system/error/serviceerror"
@@ -39,8 +41,8 @@ func (_m *FlowMgtServiceInterfaceMock) EXPECT() *FlowMgtServiceInterfaceMock_Exp
 }
 
 // CreateFlow provides a mock function for the type FlowMgtServiceInterfaceMock
-func (_mock *FlowMgtServiceInterfaceMock) CreateFlow(flowDef *FlowDefinition) (*CompleteFlowDefinition, *serviceerror.ServiceError) {
-	ret := _mock.Called(flowDef)
+func (_mock *FlowMgtServiceInterfaceMock) CreateFlow(ctx context.Context, flowDef *FlowDefinition) (*CompleteFlowDefinition, *serviceerror.ServiceError) {
+	ret := _mock.Called(ctx, flowDef)
 
 	if len(ret) == 0 {
 		panic("no return value specified for CreateFlow")
@@ -48,18 +50,18 @@ func (_mock *FlowMgtServiceInterfaceMock) CreateFlow(flowDef *FlowDefinition) (*
 
 	var r0 *CompleteFlowDefinition
 	var r1 *serviceerror.ServiceError
-	if returnFunc, ok := ret.Get(0).(func(*FlowDefinition) (*CompleteFlowDefinition, *serviceerror.ServiceError)); ok {
-		return returnFunc(flowDef)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, *FlowDefinition) (*CompleteFlowDefinition, *serviceerror.ServiceError)); ok {
+		return returnFunc(ctx, flowDef)
 	}
-	if returnFunc, ok := ret.Get(0).(func(*FlowDefinition) *CompleteFlowDefinition); ok {
-		r0 = returnFunc(flowDef)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, *FlowDefinition) *CompleteFlowDefinition); ok {
+		r0 = returnFunc(ctx, flowDef)
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).(*CompleteFlowDefinition)
 		}
 	}
-	if returnFunc, ok := ret.Get(1).(func(*FlowDefinition) *serviceerror.ServiceError); ok {
-		r1 = returnFunc(flowDef)
+	if returnFunc, ok := ret.Get(1).(func(context.Context, *FlowDefinition) *serviceerror.ServiceError); ok {
+		r1 = returnFunc(ctx, flowDef)
 	} else {
 		if ret.Get(1) != nil {
 			r1 = ret.Get(1).(*serviceerror.ServiceError)
@@ -74,19 +76,25 @@ type FlowMgtServiceInterfaceMock_CreateFlow_Call struct {
 }
 
 // CreateFlow is a helper method to define mock.On call
+//   - ctx context.Context
 //   - flowDef *FlowDefinition
-func (_e *FlowMgtServiceInterfaceMock_Expecter) CreateFlow(flowDef interface{}) *FlowMgtServiceInterfaceMock_CreateFlow_Call {
-	return &FlowMgtServiceInterfaceMock_CreateFlow_Call{Call: _e.mock.On("CreateFlow", flowDef)}
+func (_e *FlowMgtServiceInterfaceMock_Expecter) CreateFlow(ctx interface{}, flowDef interface{}) *FlowMgtServiceInterfaceMock_CreateFlow_Call {
+	return &FlowMgtServiceInterfaceMock_CreateFlow_Call{Call: _e.mock.On("CreateFlow", ctx, flowDef)}
 }
 
-func (_c *FlowMgtServiceInterfaceMock_CreateFlow_Call) Run(run func(flowDef *FlowDefinition)) *FlowMgtServiceInterfaceMock_CreateFlow_Call {
+func (_c *FlowMgtServiceInterfaceMock_CreateFlow_Call) Run(run func(ctx context.Context, flowDef *FlowDefinition)) *FlowMgtServiceInterfaceMock_CreateFlow_Call {
 	_c.Call.Run(func(args mock.Arguments) {
-		var arg0 *FlowDefinition
+		var arg0 context.Context
 		if args[0] != nil {
-			arg0 = args[0].(*FlowDefinition)
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 *FlowDefinition
+		if args[1] != nil {
+			arg1 = args[1].(*FlowDefinition)
 		}
 		run(
 			arg0,
+			arg1,
 		)
 	})
 	return _c
@@ -97,22 +105,23 @@ func (_c *FlowMgtServiceInterfaceMock_CreateFlow_Call) Return(completeFlowDefini
 	return _c
 }
 
-func (_c *FlowMgtServiceInterfaceMock_CreateFlow_Call) RunAndReturn(run func(flowDef *FlowDefinition) (*CompleteFlowDefinition, *serviceerror.ServiceError)) *FlowMgtServiceInterfaceMock_CreateFlow_Call {
+func (_c *FlowMgtServiceInterfaceMock_CreateFlow_Call) RunAndReturn(run func(ctx context.Context, flowDef *FlowDefinition) (*CompleteFlowDefinition, *serviceerror.ServiceError)) *FlowMgtServiceInterfaceMock_CreateFlow_Call {
 	_c.Call.Return(run)
 	return _c
 }
 
 // DeleteFlow provides a mock function for the type FlowMgtServiceInterfaceMock
-func (_mock *FlowMgtServiceInterfaceMock) DeleteFlow(flowID string) *serviceerror.ServiceError {
-	ret := _mock.Called(flowID)
+// DeleteFlow provides a mock function for the type FlowMgtServiceInterfaceMock
+func (_mock *FlowMgtServiceInterfaceMock) DeleteFlow(ctx context.Context, flowID string) *serviceerror.ServiceError {
+	ret := _mock.Called(ctx, flowID)
 
 	if len(ret) == 0 {
 		panic("no return value specified for DeleteFlow")
 	}
 
 	var r0 *serviceerror.ServiceError
-	if returnFunc, ok := ret.Get(0).(func(string) *serviceerror.ServiceError); ok {
-		r0 = returnFunc(flowID)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string) *serviceerror.ServiceError); ok {
+		r0 = returnFunc(ctx, flowID)
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).(*serviceerror.ServiceError)
@@ -127,19 +136,25 @@ type FlowMgtServiceInterfaceMock_DeleteFlow_Call struct {
 }
 
 // DeleteFlow is a helper method to define mock.On call
+//   - ctx context.Context
 //   - flowID string
-func (_e *FlowMgtServiceInterfaceMock_Expecter) DeleteFlow(flowID interface{}) *FlowMgtServiceInterfaceMock_DeleteFlow_Call {
-	return &FlowMgtServiceInterfaceMock_DeleteFlow_Call{Call: _e.mock.On("DeleteFlow", flowID)}
+func (_e *FlowMgtServiceInterfaceMock_Expecter) DeleteFlow(ctx interface{}, flowID interface{}) *FlowMgtServiceInterfaceMock_DeleteFlow_Call {
+	return &FlowMgtServiceInterfaceMock_DeleteFlow_Call{Call: _e.mock.On("DeleteFlow", ctx, flowID)}
 }
 
-func (_c *FlowMgtServiceInterfaceMock_DeleteFlow_Call) Run(run func(flowID string)) *FlowMgtServiceInterfaceMock_DeleteFlow_Call {
+func (_c *FlowMgtServiceInterfaceMock_DeleteFlow_Call) Run(run func(ctx context.Context, flowID string)) *FlowMgtServiceInterfaceMock_DeleteFlow_Call {
 	_c.Call.Run(func(args mock.Arguments) {
-		var arg0 string
+		var arg0 context.Context
 		if args[0] != nil {
-			arg0 = args[0].(string)
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 string
+		if args[1] != nil {
+			arg1 = args[1].(string)
 		}
 		run(
 			arg0,
+			arg1,
 		)
 	})
 	return _c
@@ -150,14 +165,14 @@ func (_c *FlowMgtServiceInterfaceMock_DeleteFlow_Call) Return(serviceError *serv
 	return _c
 }
 
-func (_c *FlowMgtServiceInterfaceMock_DeleteFlow_Call) RunAndReturn(run func(flowID string) *serviceerror.ServiceError) *FlowMgtServiceInterfaceMock_DeleteFlow_Call {
+func (_c *FlowMgtServiceInterfaceMock_DeleteFlow_Call) RunAndReturn(run func(ctx context.Context, flowID string) *serviceerror.ServiceError) *FlowMgtServiceInterfaceMock_DeleteFlow_Call {
 	_c.Call.Return(run)
 	return _c
 }
 
 // GetFlow provides a mock function for the type FlowMgtServiceInterfaceMock
-func (_mock *FlowMgtServiceInterfaceMock) GetFlow(flowID string) (*CompleteFlowDefinition, *serviceerror.ServiceError) {
-	ret := _mock.Called(flowID)
+func (_mock *FlowMgtServiceInterfaceMock) GetFlow(ctx context.Context, flowID string) (*CompleteFlowDefinition, *serviceerror.ServiceError) {
+	ret := _mock.Called(ctx, flowID)
 
 	if len(ret) == 0 {
 		panic("no return value specified for GetFlow")
@@ -165,18 +180,18 @@ func (_mock *FlowMgtServiceInterfaceMock) GetFlow(flowID string) (*CompleteFlowD
 
 	var r0 *CompleteFlowDefinition
 	var r1 *serviceerror.ServiceError
-	if returnFunc, ok := ret.Get(0).(func(string) (*CompleteFlowDefinition, *serviceerror.ServiceError)); ok {
-		return returnFunc(flowID)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string) (*CompleteFlowDefinition, *serviceerror.ServiceError)); ok {
+		return returnFunc(ctx, flowID)
 	}
-	if returnFunc, ok := ret.Get(0).(func(string) *CompleteFlowDefinition); ok {
-		r0 = returnFunc(flowID)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string) *CompleteFlowDefinition); ok {
+		r0 = returnFunc(ctx, flowID)
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).(*CompleteFlowDefinition)
 		}
 	}
-	if returnFunc, ok := ret.Get(1).(func(string) *serviceerror.ServiceError); ok {
-		r1 = returnFunc(flowID)
+	if returnFunc, ok := ret.Get(1).(func(context.Context, string) *serviceerror.ServiceError); ok {
+		r1 = returnFunc(ctx, flowID)
 	} else {
 		if ret.Get(1) != nil {
 			r1 = ret.Get(1).(*serviceerror.ServiceError)
@@ -191,19 +206,25 @@ type FlowMgtServiceInterfaceMock_GetFlow_Call struct {
 }
 
 // GetFlow is a helper method to define mock.On call
+//   - ctx context.Context
 //   - flowID string
-func (_e *FlowMgtServiceInterfaceMock_Expecter) GetFlow(flowID interface{}) *FlowMgtServiceInterfaceMock_GetFlow_Call {
-	return &FlowMgtServiceInterfaceMock_GetFlow_Call{Call: _e.mock.On("GetFlow", flowID)}
+func (_e *FlowMgtServiceInterfaceMock_Expecter) GetFlow(ctx interface{}, flowID interface{}) *FlowMgtServiceInterfaceMock_GetFlow_Call {
+	return &FlowMgtServiceInterfaceMock_GetFlow_Call{Call: _e.mock.On("GetFlow", ctx, flowID)}
 }
 
-func (_c *FlowMgtServiceInterfaceMock_GetFlow_Call) Run(run func(flowID string)) *FlowMgtServiceInterfaceMock_GetFlow_Call {
+func (_c *FlowMgtServiceInterfaceMock_GetFlow_Call) Run(run func(ctx context.Context, flowID string)) *FlowMgtServiceInterfaceMock_GetFlow_Call {
 	_c.Call.Run(func(args mock.Arguments) {
-		var arg0 string
+		var arg0 context.Context
 		if args[0] != nil {
-			arg0 = args[0].(string)
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 string
+		if args[1] != nil {
+			arg1 = args[1].(string)
 		}
 		run(
 			arg0,
+			arg1,
 		)
 	})
 	return _c
@@ -214,14 +235,14 @@ func (_c *FlowMgtServiceInterfaceMock_GetFlow_Call) Return(completeFlowDefinitio
 	return _c
 }
 
-func (_c *FlowMgtServiceInterfaceMock_GetFlow_Call) RunAndReturn(run func(flowID string) (*CompleteFlowDefinition, *serviceerror.ServiceError)) *FlowMgtServiceInterfaceMock_GetFlow_Call {
+func (_c *FlowMgtServiceInterfaceMock_GetFlow_Call) RunAndReturn(run func(ctx context.Context, flowID string) (*CompleteFlowDefinition, *serviceerror.ServiceError)) *FlowMgtServiceInterfaceMock_GetFlow_Call {
 	_c.Call.Return(run)
 	return _c
 }
 
 // GetFlowByHandle provides a mock function for the type FlowMgtServiceInterfaceMock
-func (_mock *FlowMgtServiceInterfaceMock) GetFlowByHandle(handle string, flowType common.FlowType) (*CompleteFlowDefinition, *serviceerror.ServiceError) {
-	ret := _mock.Called(handle, flowType)
+func (_mock *FlowMgtServiceInterfaceMock) GetFlowByHandle(ctx context.Context, handle string, flowType common.FlowType) (*CompleteFlowDefinition, *serviceerror.ServiceError) {
+	ret := _mock.Called(ctx, handle, flowType)
 
 	if len(ret) == 0 {
 		panic("no return value specified for GetFlowByHandle")
@@ -229,18 +250,18 @@ func (_mock *FlowMgtServiceInterfaceMock) GetFlowByHandle(handle string, flowTyp
 
 	var r0 *CompleteFlowDefinition
 	var r1 *serviceerror.ServiceError
-	if returnFunc, ok := ret.Get(0).(func(string, common.FlowType) (*CompleteFlowDefinition, *serviceerror.ServiceError)); ok {
-		return returnFunc(handle, flowType)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string, common.FlowType) (*CompleteFlowDefinition, *serviceerror.ServiceError)); ok {
+		return returnFunc(ctx, handle, flowType)
 	}
-	if returnFunc, ok := ret.Get(0).(func(string, common.FlowType) *CompleteFlowDefinition); ok {
-		r0 = returnFunc(handle, flowType)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string, common.FlowType) *CompleteFlowDefinition); ok {
+		r0 = returnFunc(ctx, handle, flowType)
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).(*CompleteFlowDefinition)
 		}
 	}
-	if returnFunc, ok := ret.Get(1).(func(string, common.FlowType) *serviceerror.ServiceError); ok {
-		r1 = returnFunc(handle, flowType)
+	if returnFunc, ok := ret.Get(1).(func(context.Context, string, common.FlowType) *serviceerror.ServiceError); ok {
+		r1 = returnFunc(ctx, handle, flowType)
 	} else {
 		if ret.Get(1) != nil {
 			r1 = ret.Get(1).(*serviceerror.ServiceError)
@@ -255,341 +276,22 @@ type FlowMgtServiceInterfaceMock_GetFlowByHandle_Call struct {
 }
 
 // GetFlowByHandle is a helper method to define mock.On call
+//   - ctx context.Context
 //   - handle string
 //   - flowType common.FlowType
-func (_e *FlowMgtServiceInterfaceMock_Expecter) GetFlowByHandle(handle interface{}, flowType interface{}) *FlowMgtServiceInterfaceMock_GetFlowByHandle_Call {
-	return &FlowMgtServiceInterfaceMock_GetFlowByHandle_Call{Call: _e.mock.On("GetFlowByHandle", handle, flowType)}
+func (_e *FlowMgtServiceInterfaceMock_Expecter) GetFlowByHandle(ctx interface{}, handle interface{}, flowType interface{}) *FlowMgtServiceInterfaceMock_GetFlowByHandle_Call {
+	return &FlowMgtServiceInterfaceMock_GetFlowByHandle_Call{Call: _e.mock.On("GetFlowByHandle", ctx, handle, flowType)}
 }
 
-func (_c *FlowMgtServiceInterfaceMock_GetFlowByHandle_Call) Run(run func(handle string, flowType common.FlowType)) *FlowMgtServiceInterfaceMock_GetFlowByHandle_Call {
+func (_c *FlowMgtServiceInterfaceMock_GetFlowByHandle_Call) Run(run func(ctx context.Context, handle string, flowType common.FlowType)) *FlowMgtServiceInterfaceMock_GetFlowByHandle_Call {
 	_c.Call.Run(func(args mock.Arguments) {
-		var arg0 string
+		var arg0 context.Context
 		if args[0] != nil {
-			arg0 = args[0].(string)
+			arg0 = args[0].(context.Context)
 		}
-		var arg1 common.FlowType
+		var arg1 string
 		if args[1] != nil {
-			arg1 = args[1].(common.FlowType)
-		}
-		run(
-			arg0,
-			arg1,
-		)
-	})
-	return _c
-}
-
-func (_c *FlowMgtServiceInterfaceMock_GetFlowByHandle_Call) Return(completeFlowDefinition *CompleteFlowDefinition, serviceError *serviceerror.ServiceError) *FlowMgtServiceInterfaceMock_GetFlowByHandle_Call {
-	_c.Call.Return(completeFlowDefinition, serviceError)
-	return _c
-}
-
-func (_c *FlowMgtServiceInterfaceMock_GetFlowByHandle_Call) RunAndReturn(run func(handle string, flowType common.FlowType) (*CompleteFlowDefinition, *serviceerror.ServiceError)) *FlowMgtServiceInterfaceMock_GetFlowByHandle_Call {
-	_c.Call.Return(run)
-	return _c
-}
-
-// GetFlowVersion provides a mock function for the type FlowMgtServiceInterfaceMock
-func (_mock *FlowMgtServiceInterfaceMock) GetFlowVersion(flowID string, version int) (*FlowVersion, *serviceerror.ServiceError) {
-	ret := _mock.Called(flowID, version)
-
-	if len(ret) == 0 {
-		panic("no return value specified for GetFlowVersion")
-	}
-
-	var r0 *FlowVersion
-	var r1 *serviceerror.ServiceError
-	if returnFunc, ok := ret.Get(0).(func(string, int) (*FlowVersion, *serviceerror.ServiceError)); ok {
-		return returnFunc(flowID, version)
-	}
-	if returnFunc, ok := ret.Get(0).(func(string, int) *FlowVersion); ok {
-		r0 = returnFunc(flowID, version)
-	} else {
-		if ret.Get(0) != nil {
-			r0 = ret.Get(0).(*FlowVersion)
-		}
-	}
-	if returnFunc, ok := ret.Get(1).(func(string, int) *serviceerror.ServiceError); ok {
-		r1 = returnFunc(flowID, version)
-	} else {
-		if ret.Get(1) != nil {
-			r1 = ret.Get(1).(*serviceerror.ServiceError)
-		}
-	}
-	return r0, r1
-}
-
-// FlowMgtServiceInterfaceMock_GetFlowVersion_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'GetFlowVersion'
-type FlowMgtServiceInterfaceMock_GetFlowVersion_Call struct {
-	*mock.Call
-}
-
-// GetFlowVersion is a helper method to define mock.On call
-//   - flowID string
-//   - version int
-func (_e *FlowMgtServiceInterfaceMock_Expecter) GetFlowVersion(flowID interface{}, version interface{}) *FlowMgtServiceInterfaceMock_GetFlowVersion_Call {
-	return &FlowMgtServiceInterfaceMock_GetFlowVersion_Call{Call: _e.mock.On("GetFlowVersion", flowID, version)}
-}
-
-func (_c *FlowMgtServiceInterfaceMock_GetFlowVersion_Call) Run(run func(flowID string, version int)) *FlowMgtServiceInterfaceMock_GetFlowVersion_Call {
-	_c.Call.Run(func(args mock.Arguments) {
-		var arg0 string
-		if args[0] != nil {
-			arg0 = args[0].(string)
-		}
-		var arg1 int
-		if args[1] != nil {
-			arg1 = args[1].(int)
-		}
-		run(
-			arg0,
-			arg1,
-		)
-	})
-	return _c
-}
-
-func (_c *FlowMgtServiceInterfaceMock_GetFlowVersion_Call) Return(flowVersion *FlowVersion, serviceError *serviceerror.ServiceError) *FlowMgtServiceInterfaceMock_GetFlowVersion_Call {
-	_c.Call.Return(flowVersion, serviceError)
-	return _c
-}
-
-func (_c *FlowMgtServiceInterfaceMock_GetFlowVersion_Call) RunAndReturn(run func(flowID string, version int) (*FlowVersion, *serviceerror.ServiceError)) *FlowMgtServiceInterfaceMock_GetFlowVersion_Call {
-	_c.Call.Return(run)
-	return _c
-}
-
-// GetGraph provides a mock function for the type FlowMgtServiceInterfaceMock
-func (_mock *FlowMgtServiceInterfaceMock) GetGraph(flowID string) (core.GraphInterface, *serviceerror.ServiceError) {
-	ret := _mock.Called(flowID)
-
-	if len(ret) == 0 {
-		panic("no return value specified for GetGraph")
-	}
-
-	var r0 core.GraphInterface
-	var r1 *serviceerror.ServiceError
-	if returnFunc, ok := ret.Get(0).(func(string) (core.GraphInterface, *serviceerror.ServiceError)); ok {
-		return returnFunc(flowID)
-	}
-	if returnFunc, ok := ret.Get(0).(func(string) core.GraphInterface); ok {
-		r0 = returnFunc(flowID)
-	} else {
-		if ret.Get(0) != nil {
-			r0 = ret.Get(0).(core.GraphInterface)
-		}
-	}
-	if returnFunc, ok := ret.Get(1).(func(string) *serviceerror.ServiceError); ok {
-		r1 = returnFunc(flowID)
-	} else {
-		if ret.Get(1) != nil {
-			r1 = ret.Get(1).(*serviceerror.ServiceError)
-		}
-	}
-	return r0, r1
-}
-
-// FlowMgtServiceInterfaceMock_GetGraph_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'GetGraph'
-type FlowMgtServiceInterfaceMock_GetGraph_Call struct {
-	*mock.Call
-}
-
-// GetGraph is a helper method to define mock.On call
-//   - flowID string
-func (_e *FlowMgtServiceInterfaceMock_Expecter) GetGraph(flowID interface{}) *FlowMgtServiceInterfaceMock_GetGraph_Call {
-	return &FlowMgtServiceInterfaceMock_GetGraph_Call{Call: _e.mock.On("GetGraph", flowID)}
-}
-
-func (_c *FlowMgtServiceInterfaceMock_GetGraph_Call) Run(run func(flowID string)) *FlowMgtServiceInterfaceMock_GetGraph_Call {
-	_c.Call.Run(func(args mock.Arguments) {
-		var arg0 string
-		if args[0] != nil {
-			arg0 = args[0].(string)
-		}
-		run(
-			arg0,
-		)
-	})
-	return _c
-}
-
-func (_c *FlowMgtServiceInterfaceMock_GetGraph_Call) Return(graphInterface core.GraphInterface, serviceError *serviceerror.ServiceError) *FlowMgtServiceInterfaceMock_GetGraph_Call {
-	_c.Call.Return(graphInterface, serviceError)
-	return _c
-}
-
-func (_c *FlowMgtServiceInterfaceMock_GetGraph_Call) RunAndReturn(run func(flowID string) (core.GraphInterface, *serviceerror.ServiceError)) *FlowMgtServiceInterfaceMock_GetGraph_Call {
-	_c.Call.Return(run)
-	return _c
-}
-
-// IsValidFlow provides a mock function for the type FlowMgtServiceInterfaceMock
-func (_mock *FlowMgtServiceInterfaceMock) IsValidFlow(flowID string) bool {
-	ret := _mock.Called(flowID)
-
-	if len(ret) == 0 {
-		panic("no return value specified for IsValidFlow")
-	}
-
-	var r0 bool
-	if returnFunc, ok := ret.Get(0).(func(string) bool); ok {
-		r0 = returnFunc(flowID)
-	} else {
-		r0 = ret.Get(0).(bool)
-	}
-	return r0
-}
-
-// FlowMgtServiceInterfaceMock_IsValidFlow_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'IsValidFlow'
-type FlowMgtServiceInterfaceMock_IsValidFlow_Call struct {
-	*mock.Call
-}
-
-// IsValidFlow is a helper method to define mock.On call
-//   - flowID string
-func (_e *FlowMgtServiceInterfaceMock_Expecter) IsValidFlow(flowID interface{}) *FlowMgtServiceInterfaceMock_IsValidFlow_Call {
-	return &FlowMgtServiceInterfaceMock_IsValidFlow_Call{Call: _e.mock.On("IsValidFlow", flowID)}
-}
-
-func (_c *FlowMgtServiceInterfaceMock_IsValidFlow_Call) Run(run func(flowID string)) *FlowMgtServiceInterfaceMock_IsValidFlow_Call {
-	_c.Call.Run(func(args mock.Arguments) {
-		var arg0 string
-		if args[0] != nil {
-			arg0 = args[0].(string)
-		}
-		run(
-			arg0,
-		)
-	})
-	return _c
-}
-
-func (_c *FlowMgtServiceInterfaceMock_IsValidFlow_Call) Return(b bool) *FlowMgtServiceInterfaceMock_IsValidFlow_Call {
-	_c.Call.Return(b)
-	return _c
-}
-
-func (_c *FlowMgtServiceInterfaceMock_IsValidFlow_Call) RunAndReturn(run func(flowID string) bool) *FlowMgtServiceInterfaceMock_IsValidFlow_Call {
-	_c.Call.Return(run)
-	return _c
-}
-
-// ListFlowVersions provides a mock function for the type FlowMgtServiceInterfaceMock
-func (_mock *FlowMgtServiceInterfaceMock) ListFlowVersions(flowID string) (*FlowVersionListResponse, *serviceerror.ServiceError) {
-	ret := _mock.Called(flowID)
-
-	if len(ret) == 0 {
-		panic("no return value specified for ListFlowVersions")
-	}
-
-	var r0 *FlowVersionListResponse
-	var r1 *serviceerror.ServiceError
-	if returnFunc, ok := ret.Get(0).(func(string) (*FlowVersionListResponse, *serviceerror.ServiceError)); ok {
-		return returnFunc(flowID)
-	}
-	if returnFunc, ok := ret.Get(0).(func(string) *FlowVersionListResponse); ok {
-		r0 = returnFunc(flowID)
-	} else {
-		if ret.Get(0) != nil {
-			r0 = ret.Get(0).(*FlowVersionListResponse)
-		}
-	}
-	if returnFunc, ok := ret.Get(1).(func(string) *serviceerror.ServiceError); ok {
-		r1 = returnFunc(flowID)
-	} else {
-		if ret.Get(1) != nil {
-			r1 = ret.Get(1).(*serviceerror.ServiceError)
-		}
-	}
-	return r0, r1
-}
-
-// FlowMgtServiceInterfaceMock_ListFlowVersions_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'ListFlowVersions'
-type FlowMgtServiceInterfaceMock_ListFlowVersions_Call struct {
-	*mock.Call
-}
-
-// ListFlowVersions is a helper method to define mock.On call
-//   - flowID string
-func (_e *FlowMgtServiceInterfaceMock_Expecter) ListFlowVersions(flowID interface{}) *FlowMgtServiceInterfaceMock_ListFlowVersions_Call {
-	return &FlowMgtServiceInterfaceMock_ListFlowVersions_Call{Call: _e.mock.On("ListFlowVersions", flowID)}
-}
-
-func (_c *FlowMgtServiceInterfaceMock_ListFlowVersions_Call) Run(run func(flowID string)) *FlowMgtServiceInterfaceMock_ListFlowVersions_Call {
-	_c.Call.Run(func(args mock.Arguments) {
-		var arg0 string
-		if args[0] != nil {
-			arg0 = args[0].(string)
-		}
-		run(
-			arg0,
-		)
-	})
-	return _c
-}
-
-func (_c *FlowMgtServiceInterfaceMock_ListFlowVersions_Call) Return(flowVersionListResponse *FlowVersionListResponse, serviceError *serviceerror.ServiceError) *FlowMgtServiceInterfaceMock_ListFlowVersions_Call {
-	_c.Call.Return(flowVersionListResponse, serviceError)
-	return _c
-}
-
-func (_c *FlowMgtServiceInterfaceMock_ListFlowVersions_Call) RunAndReturn(run func(flowID string) (*FlowVersionListResponse, *serviceerror.ServiceError)) *FlowMgtServiceInterfaceMock_ListFlowVersions_Call {
-	_c.Call.Return(run)
-	return _c
-}
-
-// ListFlows provides a mock function for the type FlowMgtServiceInterfaceMock
-func (_mock *FlowMgtServiceInterfaceMock) ListFlows(limit int, offset int, flowType common.FlowType) (*FlowListResponse, *serviceerror.ServiceError) {
-	ret := _mock.Called(limit, offset, flowType)
-
-	if len(ret) == 0 {
-		panic("no return value specified for ListFlows")
-	}
-
-	var r0 *FlowListResponse
-	var r1 *serviceerror.ServiceError
-	if returnFunc, ok := ret.Get(0).(func(int, int, common.FlowType) (*FlowListResponse, *serviceerror.ServiceError)); ok {
-		return returnFunc(limit, offset, flowType)
-	}
-	if returnFunc, ok := ret.Get(0).(func(int, int, common.FlowType) *FlowListResponse); ok {
-		r0 = returnFunc(limit, offset, flowType)
-	} else {
-		if ret.Get(0) != nil {
-			r0 = ret.Get(0).(*FlowListResponse)
-		}
-	}
-	if returnFunc, ok := ret.Get(1).(func(int, int, common.FlowType) *serviceerror.ServiceError); ok {
-		r1 = returnFunc(limit, offset, flowType)
-	} else {
-		if ret.Get(1) != nil {
-			r1 = ret.Get(1).(*serviceerror.ServiceError)
-		}
-	}
-	return r0, r1
-}
-
-// FlowMgtServiceInterfaceMock_ListFlows_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'ListFlows'
-type FlowMgtServiceInterfaceMock_ListFlows_Call struct {
-	*mock.Call
-}
-
-// ListFlows is a helper method to define mock.On call
-//   - limit int
-//   - offset int
-//   - flowType common.FlowType
-func (_e *FlowMgtServiceInterfaceMock_Expecter) ListFlows(limit interface{}, offset interface{}, flowType interface{}) *FlowMgtServiceInterfaceMock_ListFlows_Call {
-	return &FlowMgtServiceInterfaceMock_ListFlows_Call{Call: _e.mock.On("ListFlows", limit, offset, flowType)}
-}
-
-func (_c *FlowMgtServiceInterfaceMock_ListFlows_Call) Run(run func(limit int, offset int, flowType common.FlowType)) *FlowMgtServiceInterfaceMock_ListFlows_Call {
-	_c.Call.Run(func(args mock.Arguments) {
-		var arg0 int
-		if args[0] != nil {
-			arg0 = args[0].(int)
-		}
-		var arg1 int
-		if args[1] != nil {
-			arg1 = args[1].(int)
+			arg1 = args[1].(string)
 		}
 		var arg2 common.FlowType
 		if args[2] != nil {
@@ -604,19 +306,374 @@ func (_c *FlowMgtServiceInterfaceMock_ListFlows_Call) Run(run func(limit int, of
 	return _c
 }
 
+func (_c *FlowMgtServiceInterfaceMock_GetFlowByHandle_Call) Return(completeFlowDefinition *CompleteFlowDefinition, serviceError *serviceerror.ServiceError) *FlowMgtServiceInterfaceMock_GetFlowByHandle_Call {
+	_c.Call.Return(completeFlowDefinition, serviceError)
+	return _c
+}
+
+func (_c *FlowMgtServiceInterfaceMock_GetFlowByHandle_Call) RunAndReturn(run func(ctx context.Context, handle string, flowType common.FlowType) (*CompleteFlowDefinition, *serviceerror.ServiceError)) *FlowMgtServiceInterfaceMock_GetFlowByHandle_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
+// GetFlowVersion provides a mock function for the type FlowMgtServiceInterfaceMock
+func (_mock *FlowMgtServiceInterfaceMock) GetFlowVersion(ctx context.Context, flowID string, version int) (*FlowVersion, *serviceerror.ServiceError) {
+	ret := _mock.Called(ctx, flowID, version)
+
+	if len(ret) == 0 {
+		panic("no return value specified for GetFlowVersion")
+	}
+
+	var r0 *FlowVersion
+	var r1 *serviceerror.ServiceError
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string, int) (*FlowVersion, *serviceerror.ServiceError)); ok {
+		return returnFunc(ctx, flowID, version)
+	}
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string, int) *FlowVersion); ok {
+		r0 = returnFunc(ctx, flowID, version)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(*FlowVersion)
+		}
+	}
+	if returnFunc, ok := ret.Get(1).(func(context.Context, string, int) *serviceerror.ServiceError); ok {
+		r1 = returnFunc(ctx, flowID, version)
+	} else {
+		if ret.Get(1) != nil {
+			r1 = ret.Get(1).(*serviceerror.ServiceError)
+		}
+	}
+	return r0, r1
+}
+
+// FlowMgtServiceInterfaceMock_GetFlowVersion_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'GetFlowVersion'
+type FlowMgtServiceInterfaceMock_GetFlowVersion_Call struct {
+	*mock.Call
+}
+
+// GetFlowVersion is a helper method to define mock.On call
+//   - ctx context.Context
+//   - flowID string
+//   - version int
+func (_e *FlowMgtServiceInterfaceMock_Expecter) GetFlowVersion(ctx interface{}, flowID interface{}, version interface{}) *FlowMgtServiceInterfaceMock_GetFlowVersion_Call {
+	return &FlowMgtServiceInterfaceMock_GetFlowVersion_Call{Call: _e.mock.On("GetFlowVersion", ctx, flowID, version)}
+}
+
+func (_c *FlowMgtServiceInterfaceMock_GetFlowVersion_Call) Run(run func(ctx context.Context, flowID string, version int)) *FlowMgtServiceInterfaceMock_GetFlowVersion_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 context.Context
+		if args[0] != nil {
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 string
+		if args[1] != nil {
+			arg1 = args[1].(string)
+		}
+		var arg2 int
+		if args[2] != nil {
+			arg2 = args[2].(int)
+		}
+		run(
+			arg0,
+			arg1,
+			arg2,
+		)
+	})
+	return _c
+}
+
+func (_c *FlowMgtServiceInterfaceMock_GetFlowVersion_Call) Return(flowVersion *FlowVersion, serviceError *serviceerror.ServiceError) *FlowMgtServiceInterfaceMock_GetFlowVersion_Call {
+	_c.Call.Return(flowVersion, serviceError)
+	return _c
+}
+
+func (_c *FlowMgtServiceInterfaceMock_GetFlowVersion_Call) RunAndReturn(run func(ctx context.Context, flowID string, version int) (*FlowVersion, *serviceerror.ServiceError)) *FlowMgtServiceInterfaceMock_GetFlowVersion_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
+// GetGraph provides a mock function for the type FlowMgtServiceInterfaceMock
+func (_mock *FlowMgtServiceInterfaceMock) GetGraph(ctx context.Context, flowID string) (core.GraphInterface, *serviceerror.ServiceError) {
+	ret := _mock.Called(ctx, flowID)
+
+	if len(ret) == 0 {
+		panic("no return value specified for GetGraph")
+	}
+
+	var r0 core.GraphInterface
+	var r1 *serviceerror.ServiceError
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string) (core.GraphInterface, *serviceerror.ServiceError)); ok {
+		return returnFunc(ctx, flowID)
+	}
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string) core.GraphInterface); ok {
+		r0 = returnFunc(ctx, flowID)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(core.GraphInterface)
+		}
+	}
+	if returnFunc, ok := ret.Get(1).(func(context.Context, string) *serviceerror.ServiceError); ok {
+		r1 = returnFunc(ctx, flowID)
+	} else {
+		if ret.Get(1) != nil {
+			r1 = ret.Get(1).(*serviceerror.ServiceError)
+		}
+	}
+	return r0, r1
+}
+
+// FlowMgtServiceInterfaceMock_GetGraph_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'GetGraph'
+type FlowMgtServiceInterfaceMock_GetGraph_Call struct {
+	*mock.Call
+}
+
+// GetGraph is a helper method to define mock.On call
+//   - ctx context.Context
+//   - flowID string
+func (_e *FlowMgtServiceInterfaceMock_Expecter) GetGraph(ctx interface{}, flowID interface{}) *FlowMgtServiceInterfaceMock_GetGraph_Call {
+	return &FlowMgtServiceInterfaceMock_GetGraph_Call{Call: _e.mock.On("GetGraph", ctx, flowID)}
+}
+
+func (_c *FlowMgtServiceInterfaceMock_GetGraph_Call) Run(run func(ctx context.Context, flowID string)) *FlowMgtServiceInterfaceMock_GetGraph_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 context.Context
+		if args[0] != nil {
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 string
+		if args[1] != nil {
+			arg1 = args[1].(string)
+		}
+		run(
+			arg0,
+			arg1,
+		)
+	})
+	return _c
+}
+
+func (_c *FlowMgtServiceInterfaceMock_GetGraph_Call) Return(graphInterface core.GraphInterface, serviceError *serviceerror.ServiceError) *FlowMgtServiceInterfaceMock_GetGraph_Call {
+	_c.Call.Return(graphInterface, serviceError)
+	return _c
+}
+
+func (_c *FlowMgtServiceInterfaceMock_GetGraph_Call) RunAndReturn(run func(ctx context.Context, flowID string) (core.GraphInterface, *serviceerror.ServiceError)) *FlowMgtServiceInterfaceMock_GetGraph_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
+// IsValidFlow provides a mock function for the type FlowMgtServiceInterfaceMock
+func (_mock *FlowMgtServiceInterfaceMock) IsValidFlow(ctx context.Context, flowID string) bool {
+	ret := _mock.Called(ctx, flowID)
+
+	if len(ret) == 0 {
+		panic("no return value specified for IsValidFlow")
+	}
+
+	var r0 bool
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string) bool); ok {
+		r0 = returnFunc(ctx, flowID)
+	} else {
+		r0 = ret.Get(0).(bool)
+	}
+	return r0
+}
+
+// FlowMgtServiceInterfaceMock_IsValidFlow_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'IsValidFlow'
+type FlowMgtServiceInterfaceMock_IsValidFlow_Call struct {
+	*mock.Call
+}
+
+// IsValidFlow is a helper method to define mock.On call
+//   - ctx context.Context
+//   - flowID string
+func (_e *FlowMgtServiceInterfaceMock_Expecter) IsValidFlow(ctx interface{}, flowID interface{}) *FlowMgtServiceInterfaceMock_IsValidFlow_Call {
+	return &FlowMgtServiceInterfaceMock_IsValidFlow_Call{Call: _e.mock.On("IsValidFlow", ctx, flowID)}
+}
+
+func (_c *FlowMgtServiceInterfaceMock_IsValidFlow_Call) Run(run func(ctx context.Context, flowID string)) *FlowMgtServiceInterfaceMock_IsValidFlow_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 context.Context
+		if args[0] != nil {
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 string
+		if args[1] != nil {
+			arg1 = args[1].(string)
+		}
+		run(
+			arg0,
+			arg1,
+		)
+	})
+	return _c
+}
+
+func (_c *FlowMgtServiceInterfaceMock_IsValidFlow_Call) Return(b bool) *FlowMgtServiceInterfaceMock_IsValidFlow_Call {
+	_c.Call.Return(b)
+	return _c
+}
+
+func (_c *FlowMgtServiceInterfaceMock_IsValidFlow_Call) RunAndReturn(run func(ctx context.Context, flowID string) bool) *FlowMgtServiceInterfaceMock_IsValidFlow_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
+// ListFlowVersions provides a mock function for the type FlowMgtServiceInterfaceMock
+func (_mock *FlowMgtServiceInterfaceMock) ListFlowVersions(ctx context.Context, flowID string) (*FlowVersionListResponse, *serviceerror.ServiceError) {
+	ret := _mock.Called(ctx, flowID)
+
+	if len(ret) == 0 {
+		panic("no return value specified for ListFlowVersions")
+	}
+
+	var r0 *FlowVersionListResponse
+	var r1 *serviceerror.ServiceError
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string) (*FlowVersionListResponse, *serviceerror.ServiceError)); ok {
+		return returnFunc(ctx, flowID)
+	}
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string) *FlowVersionListResponse); ok {
+		r0 = returnFunc(ctx, flowID)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(*FlowVersionListResponse)
+		}
+	}
+	if returnFunc, ok := ret.Get(1).(func(context.Context, string) *serviceerror.ServiceError); ok {
+		r1 = returnFunc(ctx, flowID)
+	} else {
+		if ret.Get(1) != nil {
+			r1 = ret.Get(1).(*serviceerror.ServiceError)
+		}
+	}
+	return r0, r1
+}
+
+// FlowMgtServiceInterfaceMock_ListFlowVersions_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'ListFlowVersions'
+type FlowMgtServiceInterfaceMock_ListFlowVersions_Call struct {
+	*mock.Call
+}
+
+// ListFlowVersions is a helper method to define mock.On call
+//   - ctx context.Context
+//   - flowID string
+func (_e *FlowMgtServiceInterfaceMock_Expecter) ListFlowVersions(ctx interface{}, flowID interface{}) *FlowMgtServiceInterfaceMock_ListFlowVersions_Call {
+	return &FlowMgtServiceInterfaceMock_ListFlowVersions_Call{Call: _e.mock.On("ListFlowVersions", ctx, flowID)}
+}
+
+func (_c *FlowMgtServiceInterfaceMock_ListFlowVersions_Call) Run(run func(ctx context.Context, flowID string)) *FlowMgtServiceInterfaceMock_ListFlowVersions_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 context.Context
+		if args[0] != nil {
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 string
+		if args[1] != nil {
+			arg1 = args[1].(string)
+		}
+		run(
+			arg0,
+			arg1,
+		)
+	})
+	return _c
+}
+
+func (_c *FlowMgtServiceInterfaceMock_ListFlowVersions_Call) Return(flowVersionListResponse *FlowVersionListResponse, serviceError *serviceerror.ServiceError) *FlowMgtServiceInterfaceMock_ListFlowVersions_Call {
+	_c.Call.Return(flowVersionListResponse, serviceError)
+	return _c
+}
+
+func (_c *FlowMgtServiceInterfaceMock_ListFlowVersions_Call) RunAndReturn(run func(ctx context.Context, flowID string) (*FlowVersionListResponse, *serviceerror.ServiceError)) *FlowMgtServiceInterfaceMock_ListFlowVersions_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
+// ListFlows provides a mock function for the type FlowMgtServiceInterfaceMock
+func (_mock *FlowMgtServiceInterfaceMock) ListFlows(ctx context.Context, limit int, offset int, flowType common.FlowType) (*FlowListResponse, *serviceerror.ServiceError) {
+	ret := _mock.Called(ctx, limit, offset, flowType)
+
+	if len(ret) == 0 {
+		panic("no return value specified for ListFlows")
+	}
+
+	var r0 *FlowListResponse
+	var r1 *serviceerror.ServiceError
+	if returnFunc, ok := ret.Get(0).(func(context.Context, int, int, common.FlowType) (*FlowListResponse, *serviceerror.ServiceError)); ok {
+		return returnFunc(ctx, limit, offset, flowType)
+	}
+	if returnFunc, ok := ret.Get(0).(func(context.Context, int, int, common.FlowType) *FlowListResponse); ok {
+		r0 = returnFunc(ctx, limit, offset, flowType)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(*FlowListResponse)
+		}
+	}
+	if returnFunc, ok := ret.Get(1).(func(context.Context, int, int, common.FlowType) *serviceerror.ServiceError); ok {
+		r1 = returnFunc(ctx, limit, offset, flowType)
+	} else {
+		if ret.Get(1) != nil {
+			r1 = ret.Get(1).(*serviceerror.ServiceError)
+		}
+	}
+	return r0, r1
+}
+
+// FlowMgtServiceInterfaceMock_ListFlows_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'ListFlows'
+type FlowMgtServiceInterfaceMock_ListFlows_Call struct {
+	*mock.Call
+}
+
+// ListFlows is a helper method to define mock.On call
+//   - ctx context.Context
+//   - limit int
+//   - offset int
+//   - flowType common.FlowType
+func (_e *FlowMgtServiceInterfaceMock_Expecter) ListFlows(ctx interface{}, limit interface{}, offset interface{}, flowType interface{}) *FlowMgtServiceInterfaceMock_ListFlows_Call {
+	return &FlowMgtServiceInterfaceMock_ListFlows_Call{Call: _e.mock.On("ListFlows", ctx, limit, offset, flowType)}
+}
+
+func (_c *FlowMgtServiceInterfaceMock_ListFlows_Call) Run(run func(ctx context.Context, limit int, offset int, flowType common.FlowType)) *FlowMgtServiceInterfaceMock_ListFlows_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 context.Context
+		if args[0] != nil {
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 int
+		if args[1] != nil {
+			arg1 = args[1].(int)
+		}
+		var arg2 int
+		if args[2] != nil {
+			arg2 = args[2].(int)
+		}
+		var arg3 common.FlowType
+		if args[3] != nil {
+			arg3 = args[3].(common.FlowType)
+		}
+		run(
+			arg0,
+			arg1,
+			arg2,
+			arg3,
+		)
+	})
+	return _c
+}
+
 func (_c *FlowMgtServiceInterfaceMock_ListFlows_Call) Return(flowListResponse *FlowListResponse, serviceError *serviceerror.ServiceError) *FlowMgtServiceInterfaceMock_ListFlows_Call {
 	_c.Call.Return(flowListResponse, serviceError)
 	return _c
 }
 
-func (_c *FlowMgtServiceInterfaceMock_ListFlows_Call) RunAndReturn(run func(limit int, offset int, flowType common.FlowType) (*FlowListResponse, *serviceerror.ServiceError)) *FlowMgtServiceInterfaceMock_ListFlows_Call {
+func (_c *FlowMgtServiceInterfaceMock_ListFlows_Call) RunAndReturn(run func(ctx context.Context, limit int, offset int, flowType common.FlowType) (*FlowListResponse, *serviceerror.ServiceError)) *FlowMgtServiceInterfaceMock_ListFlows_Call {
 	_c.Call.Return(run)
 	return _c
 }
 
 // RestoreFlowVersion provides a mock function for the type FlowMgtServiceInterfaceMock
-func (_mock *FlowMgtServiceInterfaceMock) RestoreFlowVersion(flowID string, version int) (*CompleteFlowDefinition, *serviceerror.ServiceError) {
-	ret := _mock.Called(flowID, version)
+func (_mock *FlowMgtServiceInterfaceMock) RestoreFlowVersion(ctx context.Context, flowID string, version int) (*CompleteFlowDefinition, *serviceerror.ServiceError) {
+	ret := _mock.Called(ctx, flowID, version)
 
 	if len(ret) == 0 {
 		panic("no return value specified for RestoreFlowVersion")
@@ -624,18 +681,18 @@ func (_mock *FlowMgtServiceInterfaceMock) RestoreFlowVersion(flowID string, vers
 
 	var r0 *CompleteFlowDefinition
 	var r1 *serviceerror.ServiceError
-	if returnFunc, ok := ret.Get(0).(func(string, int) (*CompleteFlowDefinition, *serviceerror.ServiceError)); ok {
-		return returnFunc(flowID, version)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string, int) (*CompleteFlowDefinition, *serviceerror.ServiceError)); ok {
+		return returnFunc(ctx, flowID, version)
 	}
-	if returnFunc, ok := ret.Get(0).(func(string, int) *CompleteFlowDefinition); ok {
-		r0 = returnFunc(flowID, version)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string, int) *CompleteFlowDefinition); ok {
+		r0 = returnFunc(ctx, flowID, version)
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).(*CompleteFlowDefinition)
 		}
 	}
-	if returnFunc, ok := ret.Get(1).(func(string, int) *serviceerror.ServiceError); ok {
-		r1 = returnFunc(flowID, version)
+	if returnFunc, ok := ret.Get(1).(func(context.Context, string, int) *serviceerror.ServiceError); ok {
+		r1 = returnFunc(ctx, flowID, version)
 	} else {
 		if ret.Get(1) != nil {
 			r1 = ret.Get(1).(*serviceerror.ServiceError)
@@ -650,25 +707,31 @@ type FlowMgtServiceInterfaceMock_RestoreFlowVersion_Call struct {
 }
 
 // RestoreFlowVersion is a helper method to define mock.On call
+//   - ctx context.Context
 //   - flowID string
 //   - version int
-func (_e *FlowMgtServiceInterfaceMock_Expecter) RestoreFlowVersion(flowID interface{}, version interface{}) *FlowMgtServiceInterfaceMock_RestoreFlowVersion_Call {
-	return &FlowMgtServiceInterfaceMock_RestoreFlowVersion_Call{Call: _e.mock.On("RestoreFlowVersion", flowID, version)}
+func (_e *FlowMgtServiceInterfaceMock_Expecter) RestoreFlowVersion(ctx interface{}, flowID interface{}, version interface{}) *FlowMgtServiceInterfaceMock_RestoreFlowVersion_Call {
+	return &FlowMgtServiceInterfaceMock_RestoreFlowVersion_Call{Call: _e.mock.On("RestoreFlowVersion", ctx, flowID, version)}
 }
 
-func (_c *FlowMgtServiceInterfaceMock_RestoreFlowVersion_Call) Run(run func(flowID string, version int)) *FlowMgtServiceInterfaceMock_RestoreFlowVersion_Call {
+func (_c *FlowMgtServiceInterfaceMock_RestoreFlowVersion_Call) Run(run func(ctx context.Context, flowID string, version int)) *FlowMgtServiceInterfaceMock_RestoreFlowVersion_Call {
 	_c.Call.Run(func(args mock.Arguments) {
-		var arg0 string
+		var arg0 context.Context
 		if args[0] != nil {
-			arg0 = args[0].(string)
+			arg0 = args[0].(context.Context)
 		}
-		var arg1 int
+		var arg1 string
 		if args[1] != nil {
-			arg1 = args[1].(int)
+			arg1 = args[1].(string)
+		}
+		var arg2 int
+		if args[2] != nil {
+			arg2 = args[2].(int)
 		}
 		run(
 			arg0,
 			arg1,
+			arg2,
 		)
 	})
 	return _c
@@ -679,14 +742,14 @@ func (_c *FlowMgtServiceInterfaceMock_RestoreFlowVersion_Call) Return(completeFl
 	return _c
 }
 
-func (_c *FlowMgtServiceInterfaceMock_RestoreFlowVersion_Call) RunAndReturn(run func(flowID string, version int) (*CompleteFlowDefinition, *serviceerror.ServiceError)) *FlowMgtServiceInterfaceMock_RestoreFlowVersion_Call {
+func (_c *FlowMgtServiceInterfaceMock_RestoreFlowVersion_Call) RunAndReturn(run func(ctx context.Context, flowID string, version int) (*CompleteFlowDefinition, *serviceerror.ServiceError)) *FlowMgtServiceInterfaceMock_RestoreFlowVersion_Call {
 	_c.Call.Return(run)
 	return _c
 }
 
 // UpdateFlow provides a mock function for the type FlowMgtServiceInterfaceMock
-func (_mock *FlowMgtServiceInterfaceMock) UpdateFlow(flowID string, flowDef *FlowDefinition) (*CompleteFlowDefinition, *serviceerror.ServiceError) {
-	ret := _mock.Called(flowID, flowDef)
+func (_mock *FlowMgtServiceInterfaceMock) UpdateFlow(ctx context.Context, flowID string, flowDef *FlowDefinition) (*CompleteFlowDefinition, *serviceerror.ServiceError) {
+	ret := _mock.Called(ctx, flowID, flowDef)
 
 	if len(ret) == 0 {
 		panic("no return value specified for UpdateFlow")
@@ -694,18 +757,18 @@ func (_mock *FlowMgtServiceInterfaceMock) UpdateFlow(flowID string, flowDef *Flo
 
 	var r0 *CompleteFlowDefinition
 	var r1 *serviceerror.ServiceError
-	if returnFunc, ok := ret.Get(0).(func(string, *FlowDefinition) (*CompleteFlowDefinition, *serviceerror.ServiceError)); ok {
-		return returnFunc(flowID, flowDef)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string, *FlowDefinition) (*CompleteFlowDefinition, *serviceerror.ServiceError)); ok {
+		return returnFunc(ctx, flowID, flowDef)
 	}
-	if returnFunc, ok := ret.Get(0).(func(string, *FlowDefinition) *CompleteFlowDefinition); ok {
-		r0 = returnFunc(flowID, flowDef)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string, *FlowDefinition) *CompleteFlowDefinition); ok {
+		r0 = returnFunc(ctx, flowID, flowDef)
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).(*CompleteFlowDefinition)
 		}
 	}
-	if returnFunc, ok := ret.Get(1).(func(string, *FlowDefinition) *serviceerror.ServiceError); ok {
-		r1 = returnFunc(flowID, flowDef)
+	if returnFunc, ok := ret.Get(1).(func(context.Context, string, *FlowDefinition) *serviceerror.ServiceError); ok {
+		r1 = returnFunc(ctx, flowID, flowDef)
 	} else {
 		if ret.Get(1) != nil {
 			r1 = ret.Get(1).(*serviceerror.ServiceError)
@@ -720,25 +783,31 @@ type FlowMgtServiceInterfaceMock_UpdateFlow_Call struct {
 }
 
 // UpdateFlow is a helper method to define mock.On call
+//   - ctx context.Context
 //   - flowID string
 //   - flowDef *FlowDefinition
-func (_e *FlowMgtServiceInterfaceMock_Expecter) UpdateFlow(flowID interface{}, flowDef interface{}) *FlowMgtServiceInterfaceMock_UpdateFlow_Call {
-	return &FlowMgtServiceInterfaceMock_UpdateFlow_Call{Call: _e.mock.On("UpdateFlow", flowID, flowDef)}
+func (_e *FlowMgtServiceInterfaceMock_Expecter) UpdateFlow(ctx interface{}, flowID interface{}, flowDef interface{}) *FlowMgtServiceInterfaceMock_UpdateFlow_Call {
+	return &FlowMgtServiceInterfaceMock_UpdateFlow_Call{Call: _e.mock.On("UpdateFlow", ctx, flowID, flowDef)}
 }
 
-func (_c *FlowMgtServiceInterfaceMock_UpdateFlow_Call) Run(run func(flowID string, flowDef *FlowDefinition)) *FlowMgtServiceInterfaceMock_UpdateFlow_Call {
+func (_c *FlowMgtServiceInterfaceMock_UpdateFlow_Call) Run(run func(ctx context.Context, flowID string, flowDef *FlowDefinition)) *FlowMgtServiceInterfaceMock_UpdateFlow_Call {
 	_c.Call.Run(func(args mock.Arguments) {
-		var arg0 string
+		var arg0 context.Context
 		if args[0] != nil {
-			arg0 = args[0].(string)
+			arg0 = args[0].(context.Context)
 		}
-		var arg1 *FlowDefinition
+		var arg1 string
 		if args[1] != nil {
-			arg1 = args[1].(*FlowDefinition)
+			arg1 = args[1].(string)
+		}
+		var arg2 *FlowDefinition
+		if args[2] != nil {
+			arg2 = args[2].(*FlowDefinition)
 		}
 		run(
 			arg0,
 			arg1,
+			arg2,
 		)
 	})
 	return _c
@@ -749,7 +818,7 @@ func (_c *FlowMgtServiceInterfaceMock_UpdateFlow_Call) Return(completeFlowDefini
 	return _c
 }
 
-func (_c *FlowMgtServiceInterfaceMock_UpdateFlow_Call) RunAndReturn(run func(flowID string, flowDef *FlowDefinition) (*CompleteFlowDefinition, *serviceerror.ServiceError)) *FlowMgtServiceInterfaceMock_UpdateFlow_Call {
+func (_c *FlowMgtServiceInterfaceMock_UpdateFlow_Call) RunAndReturn(run func(ctx context.Context, flowID string, flowDef *FlowDefinition) (*CompleteFlowDefinition, *serviceerror.ServiceError)) *FlowMgtServiceInterfaceMock_UpdateFlow_Call {
 	_c.Call.Return(run)
 	return _c
 }

@@ -19,6 +19,7 @@
 package flowmgt
 
 import (
+	"context"
 	"errors"
 
 	"github.com/asgardeo/thunder/internal/flow/common"
@@ -49,15 +50,15 @@ func newCacheBackedFlowStore() flowStoreInterface {
 
 // ListFlows retrieves a paginated list of flow definitions.
 // Note: List operations are not cached as they can vary by parameters and change frequently.
-func (s *cacheBackedFlowStore) ListFlows(limit, offset int, flowType string) (
+func (s *cacheBackedFlowStore) ListFlows(ctx context.Context, limit, offset int, flowType string) (
 	[]BasicFlowDefinition, int, error) {
-	return s.store.ListFlows(limit, offset, flowType)
+	return s.store.ListFlows(ctx, limit, offset, flowType)
 }
 
 // CreateFlow creates a new flow definition and caches it.
-func (s *cacheBackedFlowStore) CreateFlow(flowID string, flow *FlowDefinition) (
+func (s *cacheBackedFlowStore) CreateFlow(ctx context.Context, flowID string, flow *FlowDefinition) (
 	*CompleteFlowDefinition, error) {
-	createdFlow, err := s.store.CreateFlow(flowID, flow)
+	createdFlow, err := s.store.CreateFlow(ctx, flowID, flow)
 	if err != nil {
 		return nil, err
 	}
@@ -67,7 +68,7 @@ func (s *cacheBackedFlowStore) CreateFlow(flowID string, flow *FlowDefinition) (
 }
 
 // GetFlowByID retrieves a flow definition by its ID, using cache if available.
-func (s *cacheBackedFlowStore) GetFlowByID(flowID string) (*CompleteFlowDefinition, error) {
+func (s *cacheBackedFlowStore) GetFlowByID(ctx context.Context, flowID string) (*CompleteFlowDefinition, error) {
 	cacheKey := cache.CacheKey{
 		Key: flowID,
 	}
@@ -76,7 +77,7 @@ func (s *cacheBackedFlowStore) GetFlowByID(flowID string) (*CompleteFlowDefiniti
 		return cachedFlow, nil
 	}
 
-	flow, err := s.store.GetFlowByID(flowID)
+	flow, err := s.store.GetFlowByID(ctx, flowID)
 	if err != nil || flow == nil {
 		return flow, err
 	}
@@ -86,7 +87,7 @@ func (s *cacheBackedFlowStore) GetFlowByID(flowID string) (*CompleteFlowDefiniti
 }
 
 // GetFlowByHandle retrieves a flow definition by handle and flow type, using cache if available.
-func (s *cacheBackedFlowStore) GetFlowByHandle(handle string, flowType common.FlowType) (
+func (s *cacheBackedFlowStore) GetFlowByHandle(ctx context.Context, handle string, flowType common.FlowType) (
 	*CompleteFlowDefinition, error) {
 	cacheKey := getFlowByHandleCacheKey(handle, flowType)
 	cachedFlow, ok := s.flowByHandleCache.Get(cacheKey)
@@ -94,7 +95,7 @@ func (s *cacheBackedFlowStore) GetFlowByHandle(handle string, flowType common.Fl
 		return cachedFlow, nil
 	}
 
-	flow, err := s.store.GetFlowByHandle(handle, flowType)
+	flow, err := s.store.GetFlowByHandle(ctx, handle, flowType)
 	if err != nil || flow == nil {
 		return flow, err
 	}
@@ -105,9 +106,9 @@ func (s *cacheBackedFlowStore) GetFlowByHandle(handle string, flowType common.Fl
 }
 
 // UpdateFlow updates an existing flow definition and refreshes the cache.
-func (s *cacheBackedFlowStore) UpdateFlow(flowID string, flow *FlowDefinition) (
+func (s *cacheBackedFlowStore) UpdateFlow(ctx context.Context, flowID string, flow *FlowDefinition) (
 	*CompleteFlowDefinition, error) {
-	updatedFlow, err := s.store.UpdateFlow(flowID, flow)
+	updatedFlow, err := s.store.UpdateFlow(ctx, flowID, flow)
 	if err != nil {
 		return nil, err
 	}
@@ -117,14 +118,14 @@ func (s *cacheBackedFlowStore) UpdateFlow(flowID string, flow *FlowDefinition) (
 }
 
 // DeleteFlow deletes a flow definition by its ID and invalidates the cache.
-func (s *cacheBackedFlowStore) DeleteFlow(flowID string) error {
+func (s *cacheBackedFlowStore) DeleteFlow(ctx context.Context, flowID string) error {
 	cacheKey := cache.CacheKey{
 		Key: flowID,
 	}
 	existingFlow, ok := s.flowByIDCache.Get(cacheKey)
 	if !ok {
 		var err error
-		existingFlow, err = s.store.GetFlowByID(flowID)
+		existingFlow, err = s.store.GetFlowByID(ctx, flowID)
 		if err != nil {
 			if errors.Is(err, errFlowNotFound) {
 				return nil
@@ -136,7 +137,7 @@ func (s *cacheBackedFlowStore) DeleteFlow(flowID string) error {
 		return nil
 	}
 
-	if err := s.store.DeleteFlow(flowID); err != nil {
+	if err := s.store.DeleteFlow(ctx, flowID); err != nil {
 		return err
 	}
 	s.invalidateFlowCache(flowID)
@@ -146,7 +147,7 @@ func (s *cacheBackedFlowStore) DeleteFlow(flowID string) error {
 }
 
 // IsFlowExists checks if a flow exists with a given flow ID, using cache if available.
-func (s *cacheBackedFlowStore) IsFlowExists(flowID string) (bool, error) {
+func (s *cacheBackedFlowStore) IsFlowExists(ctx context.Context, flowID string) (bool, error) {
 	cacheKey := cache.CacheKey{
 		Key: flowID,
 	}
@@ -155,36 +156,37 @@ func (s *cacheBackedFlowStore) IsFlowExists(flowID string) (bool, error) {
 		return true, nil
 	}
 
-	return s.store.IsFlowExists(flowID)
+	return s.store.IsFlowExists(ctx, flowID)
 }
 
 // IsFlowExistsByHandle checks if a flow exists with a given handle and flow type, using cache if available.
-func (s *cacheBackedFlowStore) IsFlowExistsByHandle(handle string, flowType common.FlowType) (bool, error) {
+func (s *cacheBackedFlowStore) IsFlowExistsByHandle(ctx context.Context, handle string, flowType common.FlowType) (bool,
+	error) {
 	cacheKey := getFlowByHandleCacheKey(handle, flowType)
 	cachedFlow, ok := s.flowByHandleCache.Get(cacheKey)
 	if ok && cachedFlow != nil {
 		return true, nil
 	}
 
-	return s.store.IsFlowExistsByHandle(handle, flowType)
+	return s.store.IsFlowExistsByHandle(ctx, handle, flowType)
 }
 
 // ListFlowVersions retrieves all versions of a flow.
 // Note: Version operations are not cached as they are less frequently accessed.
-func (s *cacheBackedFlowStore) ListFlowVersions(flowID string) ([]BasicFlowVersion, error) {
-	return s.store.ListFlowVersions(flowID)
+func (s *cacheBackedFlowStore) ListFlowVersions(ctx context.Context, flowID string) ([]BasicFlowVersion, error) {
+	return s.store.ListFlowVersions(ctx, flowID)
 }
 
 // GetFlowVersion retrieves a specific version of a flow.
 // Note: Version operations are not cached as they are less frequently accessed.
-func (s *cacheBackedFlowStore) GetFlowVersion(flowID string, version int) (*FlowVersion, error) {
-	return s.store.GetFlowVersion(flowID, version)
+func (s *cacheBackedFlowStore) GetFlowVersion(ctx context.Context, flowID string, version int) (*FlowVersion, error) {
+	return s.store.GetFlowVersion(ctx, flowID, version)
 }
 
 // RestoreFlowVersion restores a flow to a specific version and invalidates the cache.
-func (s *cacheBackedFlowStore) RestoreFlowVersion(flowID string, version int) (
+func (s *cacheBackedFlowStore) RestoreFlowVersion(ctx context.Context, flowID string, version int) (
 	*CompleteFlowDefinition, error) {
-	restoredFlow, err := s.store.RestoreFlowVersion(flowID, version)
+	restoredFlow, err := s.store.RestoreFlowVersion(ctx, flowID, version)
 	if err != nil {
 		return nil, err
 	}

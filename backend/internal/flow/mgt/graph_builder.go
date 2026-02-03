@@ -100,7 +100,7 @@ func (b *graphBuilder) InvalidateCache(flowID string) {
 	b.logger.Debug("Graph cache invalidated", log.String("flowID", flowID))
 }
 
-// buildGraph converts a CompleteFlowDefinition to a core.GraphInterface for execution.
+// buildGraph s a CompleteFlowDefinition to a core.GraphInterface for execution.
 func (b *graphBuilder) buildGraph(flow *CompleteFlowDefinition) (core.GraphInterface, error) {
 	if flow == nil || len(flow.Nodes) == 0 {
 		return nil, fmt.Errorf("flow definition is nil or has no nodes")
