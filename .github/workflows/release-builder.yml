@@ -24,7 +24,7 @@ on:
         description: 'Run performance tests after release'
         required: false
         type: boolean
-        default: false
+        default: true
 
 # Add permissions to allow pushing tags and packages
 permissions:
@@ -64,7 +64,7 @@ jobs:
             fi
             VERSION=$(tr -d '[:space:]' < version.txt)
             PRERELEASE="true"
-            RUN_PERF_TEST="false"
+            RUN_PERF_TEST="true"
           fi
           echo "version=$VERSION" >> $GITHUB_OUTPUT
           echo "prerelease=$PRERELEASE" >> $GITHUB_OUTPUT
