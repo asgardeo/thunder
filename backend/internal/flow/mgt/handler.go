@@ -65,6 +65,7 @@ func newFlowMgtHandler(
 
 // listFlows handles GET requests to list flow definitions with pagination and optional filtering.
 func (h *flowMgtHandler) listFlows(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
 	limit, offset, svcErr := parsePaginationParams(r)
 	if svcErr != nil {
 		handleError(w, svcErr)
@@ -74,7 +75,7 @@ func (h *flowMgtHandler) listFlows(w http.ResponseWriter, r *http.Request) {
 	flowTypeStr := r.URL.Query().Get(queryParamFlowType)
 	flowType := common.FlowType(flowTypeStr)
 
-	flowList, svcErr := h.service.ListFlows(limit, offset, flowType)
+	flowList, svcErr := h.service.ListFlows(ctx, limit, offset, flowType)
 	if svcErr != nil {
 		handleError(w, svcErr)
 		return
@@ -86,6 +87,7 @@ func (h *flowMgtHandler) listFlows(w http.ResponseWriter, r *http.Request) {
 
 // createFlow handles POST requests to create a new flow definition.
 func (h *flowMgtHandler) createFlow(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
 	flowDefRequest, err := utils.DecodeJSONBody[FlowDefinition](r)
 	if err != nil {
 		handleInvalidRequestError(w)
@@ -93,7 +95,7 @@ func (h *flowMgtHandler) createFlow(w http.ResponseWriter, r *http.Request) {
 	}
 
 	sanitized := sanitizeFlowDefinitionRequest(flowDefRequest)
-	createdFlow, svcErr := h.service.CreateFlow(sanitized)
+	createdFlow, svcErr := h.service.CreateFlow(ctx, sanitized)
 	if svcErr != nil {
 		handleError(w, svcErr)
 		return
@@ -105,13 +107,14 @@ func (h *flowMgtHandler) createFlow(w http.ResponseWriter, r *http.Request) {
 
 // getFlow handles GET requests to retrieve a flow definition by its ID.
 func (h *flowMgtHandler) getFlow(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
 	flowID := r.PathValue(pathParamFlowID)
 	if flowID == "" {
 		handleError(w, &ErrorMissingFlowID)
 		return
 	}
 
-	flow, svcErr := h.service.GetFlow(flowID)
+	flow, svcErr := h.service.GetFlow(ctx, flowID)
 	if svcErr != nil {
 		handleError(w, svcErr)
 		return
@@ -123,6 +126,7 @@ func (h *flowMgtHandler) getFlow(w http.ResponseWriter, r *http.Request) {
 
 // updateFlow handles PUT requests to update an existing flow definition.
 func (h *flowMgtHandler) updateFlow(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
 	flowID := r.PathValue(pathParamFlowID)
 	if flowID == "" {
 		handleError(w, &ErrorMissingFlowID)
@@ -136,7 +140,7 @@ func (h *flowMgtHandler) updateFlow(w http.ResponseWriter, r *http.Request) {
 	}
 
 	sanitized := sanitizeFlowDefinitionRequest(flowDefRequest)
-	updatedFlow, svcErr := h.service.UpdateFlow(flowID, sanitized)
+	updatedFlow, svcErr := h.service.UpdateFlow(ctx, flowID, sanitized)
 	if svcErr != nil {
 		handleError(w, svcErr)
 		return
@@ -148,13 +152,14 @@ func (h *flowMgtHandler) updateFlow(w http.ResponseWriter, r *http.Request) {
 
 // deleteFlow handles DELETE requests to remove a flow definition by its ID.
 func (h *flowMgtHandler) deleteFlow(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
 	flowID := r.PathValue(pathParamFlowID)
 	if flowID == "" {
 		handleError(w, &ErrorMissingFlowID)
 		return
 	}
 
-	svcErr := h.service.DeleteFlow(flowID)
+	svcErr := h.service.DeleteFlow(ctx, flowID)
 	if svcErr != nil {
 		handleError(w, svcErr)
 		return
@@ -168,13 +173,14 @@ func (h *flowMgtHandler) deleteFlow(w http.ResponseWriter, r *http.Request) {
 
 // listFlowVersions handles GET requests to list all versions of a specific flow definition.
 func (h *flowMgtHandler) listFlowVersions(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
 	flowID := r.PathValue(pathParamFlowID)
 	if flowID == "" {
 		handleError(w, &ErrorMissingFlowID)
 		return
 	}
 
-	versionList, svcErr := h.service.ListFlowVersions(flowID)
+	versionList, svcErr := h.service.ListFlowVersions(ctx, flowID)
 	if svcErr != nil {
 		handleError(w, svcErr)
 		return
@@ -186,6 +192,7 @@ func (h *flowMgtHandler) listFlowVersions(w http.ResponseWriter, r *http.Request
 
 // getFlowVersion handles GET requests to retrieve a specific version of a flow definition.
 func (h *flowMgtHandler) getFlowVersion(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
 	flowID := r.PathValue(pathParamFlowID)
 	versionStr := r.PathValue(pathParamVersion)
 
@@ -200,7 +207,7 @@ func (h *flowMgtHandler) getFlowVersion(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	flowVersion, svcErr := h.service.GetFlowVersion(flowID, version)
+	flowVersion, svcErr := h.service.GetFlowVersion(ctx, flowID, version)
 	if svcErr != nil {
 		handleError(w, svcErr)
 		return
@@ -213,6 +220,7 @@ func (h *flowMgtHandler) getFlowVersion(w http.ResponseWriter, r *http.Request) 
 
 // restoreFlowVersion handles POST requests to restore a specific version of a flow definition.
 func (h *flowMgtHandler) restoreFlowVersion(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
 	flowID := r.PathValue(pathParamFlowID)
 	if flowID == "" {
 		handleError(w, &ErrorMissingFlowID)
@@ -225,7 +233,7 @@ func (h *flowMgtHandler) restoreFlowVersion(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
-	flow, svcErr := h.service.RestoreFlowVersion(flowID, request.Version)
+	flow, svcErr := h.service.RestoreFlowVersion(ctx, flowID, request.Version)
 	if svcErr != nil {
 		handleError(w, svcErr)
 		return

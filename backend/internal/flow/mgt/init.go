@@ -24,7 +24,9 @@ import (
 	"github.com/asgardeo/thunder/internal/flow/core"
 	"github.com/asgardeo/thunder/internal/flow/executor"
 	"github.com/asgardeo/thunder/internal/system/config"
+	"github.com/asgardeo/thunder/internal/system/database/provider"
 	declarativeresource "github.com/asgardeo/thunder/internal/system/declarative_resource"
+	"github.com/asgardeo/thunder/internal/system/log"
 	"github.com/asgardeo/thunder/internal/system/middleware"
 )
 
@@ -44,7 +46,11 @@ func Initialize(
 
 	inferenceService := newFlowInferenceService()
 	graphBuilder := newGraphBuilder(flowFactory, executorRegistry, graphCache)
-	service := newFlowMgtService(store, inferenceService, graphBuilder, executorRegistry)
+	txer, err := provider.GetDBProvider().GetConfigDBTransactioner()
+	if err != nil {
+		log.GetLogger().Fatal("Failed to get config DB transactioner", log.Error(err))
+	}
+	service := newFlowMgtService(store, inferenceService, graphBuilder, executorRegistry, txer)
 
 	if config.GetThunderRuntime().Config.DeclarativeResources.Enabled {
 		if err := loadDeclarativeResources(store); err != nil {

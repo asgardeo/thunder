@@ -19,6 +19,7 @@
 package application
 
 import (
+	"context"
 	"errors"
 	"slices"
 
@@ -636,7 +637,7 @@ func (as *applicationService) DeleteApplication(appID string) *serviceerror.Serv
 // If the flow ID is not provided, it sets the default authentication flow ID.
 func (as *applicationService) validateAuthFlowID(app *model.ApplicationDTO) *serviceerror.ServiceError {
 	if app.AuthFlowID != "" {
-		isValidFlow := as.flowMgtService.IsValidFlow(app.AuthFlowID)
+		isValidFlow := as.flowMgtService.IsValidFlow(context.TODO(), app.AuthFlowID)
 		if !isValidFlow {
 			return &ErrorInvalidAuthFlowID
 		}
@@ -657,13 +658,13 @@ func (as *applicationService) validateRegistrationFlowID(app *model.ApplicationD
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, "ApplicationService"))
 
 	if app.RegistrationFlowID != "" {
-		isValidFlow := as.flowMgtService.IsValidFlow(app.RegistrationFlowID)
+		isValidFlow := as.flowMgtService.IsValidFlow(context.TODO(), app.RegistrationFlowID)
 		if !isValidFlow {
 			return &ErrorInvalidRegistrationFlowID
 		}
 	} else {
 		// Try to get the equivalent registration flow for the auth flow
-		authFlow, svcErr := as.flowMgtService.GetFlow(app.AuthFlowID)
+		authFlow, svcErr := as.flowMgtService.GetFlow(context.TODO(), app.AuthFlowID)
 		if svcErr != nil {
 			if svcErr.Type == serviceerror.ServerErrorType {
 				logger.Error("Error while retrieving auth flow definition",
@@ -674,7 +675,7 @@ func (as *applicationService) validateRegistrationFlowID(app *model.ApplicationD
 		}
 
 		registrationFlow, svcErr := as.flowMgtService.GetFlowByHandle(
-			authFlow.Handle, flowcommon.FlowTypeRegistration)
+			context.TODO(), authFlow.Handle, flowcommon.FlowTypeRegistration)
 		if svcErr != nil {
 			if svcErr.Type == serviceerror.ServerErrorType {
 				logger.Error("Error while retrieving registration flow definition by handle",
@@ -899,7 +900,7 @@ func (as *applicationService) getDefaultAuthFlowID() (string, *serviceerror.Serv
 
 	defaultAuthFlowHandle := config.GetThunderRuntime().Config.Flow.DefaultAuthFlowHandle
 	defaultAuthFlow, svcErr := as.flowMgtService.GetFlowByHandle(
-		defaultAuthFlowHandle, flowcommon.FlowTypeAuthentication)
+		context.TODO(), defaultAuthFlowHandle, flowcommon.FlowTypeAuthentication)
 
 	if svcErr != nil {
 		if svcErr.Type == serviceerror.ServerErrorType {

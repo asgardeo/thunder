@@ -96,7 +96,7 @@ func (_c *graphBuilderInterfaceMock_GetGraph_Call) Return(graphInterface core.Gr
 	return _c
 }
 
-func (_c *graphBuilderInterfaceMock_GetGraph_Call) RunAndReturn(run func(flow *CompleteFlowDefinition) (core.GraphInterface, *serviceerror.ServiceError)) *graphBuilderInterfaceMock_GetGraph_Call {
+func (_c *graphBuilderInterfaceMock_GetGraph_Call) RunAndReturn(run func(*CompleteFlowDefinition) (core.GraphInterface, *serviceerror.ServiceError)) *graphBuilderInterfaceMock_GetGraph_Call {
 	_c.Call.Return(run)
 	return _c
 }
@@ -136,7 +136,7 @@ func (_c *graphBuilderInterfaceMock_InvalidateCache_Call) Return() *graphBuilder
 	return _c
 }
 
-func (_c *graphBuilderInterfaceMock_InvalidateCache_Call) RunAndReturn(run func(flowID string)) *graphBuilderInterfaceMock_InvalidateCache_Call {
+func (_c *graphBuilderInterfaceMock_InvalidateCache_Call) RunAndReturn(run func(string)) *graphBuilderInterfaceMock_InvalidateCache_Call {
 	_c.Run(run)
 	return _c
 }

@@ -43,6 +43,7 @@ import (
 	"github.com/asgardeo/thunder/tests/mocks/userschemamock"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/suite"
 )
 
@@ -2156,7 +2157,7 @@ func (suite *ExportServiceTestSuite) TestExportResourcesWithExporter_Flow() {
 		UpdatedAt: "2025-12-22 10:00:00",
 	}
 
-	suite.mockFlowService.EXPECT().GetFlow(flowID).Return(mockFlow, nil)
+	suite.mockFlowService.EXPECT().GetFlow(mock.Anything, flowID).Return(mockFlow, nil)
 
 	exporter, exists := suite.exportService.(*exportService).registry.Get("flow")
 	assert.True(suite.T(), exists, "Flow exporter should be registered")
@@ -2250,7 +2251,7 @@ func (suite *ExportServiceTestSuite) TestExportResourcesWithExporter_FlowWithCom
 		UpdatedAt: "2025-12-22 10:00:00",
 	}
 
-	suite.mockFlowService.EXPECT().GetFlow(flowID).Return(mockFlow, nil)
+	suite.mockFlowService.EXPECT().GetFlow(mock.Anything, flowID).Return(mockFlow, nil)
 
 	exporter, exists := suite.exportService.(*exportService).registry.Get("flow")
 	assert.True(suite.T(), exists)
@@ -2296,8 +2297,8 @@ func (suite *ExportServiceTestSuite) TestExportResourcesWithExporter_MultipleFlo
 		},
 	}
 
-	suite.mockFlowService.EXPECT().GetFlow(testFlow1ID).Return(flow1, nil)
-	suite.mockFlowService.EXPECT().GetFlow(testFlow2ID).Return(flow2, nil)
+	suite.mockFlowService.EXPECT().GetFlow(mock.Anything, testFlow1ID).Return(flow1, nil)
+	suite.mockFlowService.EXPECT().GetFlow(mock.Anything, testFlow2ID).Return(flow2, nil)
 
 	exporter, _ := suite.exportService.(*exportService).registry.Get("flow")
 	options := &ExportOptions{Format: formatYAML}
@@ -2318,7 +2319,7 @@ func (suite *ExportServiceTestSuite) TestExportResourcesWithExporter_FlowNotFoun
 		Code:  "FLOW_NOT_FOUND",
 		Error: "Flow not found",
 	}
-	suite.mockFlowService.EXPECT().GetFlow(flowID).Return(nil, flowError)
+	suite.mockFlowService.EXPECT().GetFlow(mock.Anything, flowID).Return(nil, flowError)
 
 	exporter, _ := suite.exportService.(*exportService).registry.Get("flow")
 	options := &ExportOptions{Format: formatYAML}
@@ -2381,9 +2382,9 @@ func (suite *ExportServiceTestSuite) TestExportResourcesWithExporter_WildcardFlo
 		},
 	}
 
-	suite.mockFlowService.EXPECT().ListFlows(10000, 0, flowcommon.FlowType("")).Return(flowList, nil)
-	suite.mockFlowService.EXPECT().GetFlow(testFlow1ID).Return(flow1Complete, nil)
-	suite.mockFlowService.EXPECT().GetFlow(testFlow2ID).Return(flow2Complete, nil)
+	suite.mockFlowService.EXPECT().ListFlows(mock.Anything, 10000, 0, flowcommon.FlowType("")).Return(flowList, nil)
+	suite.mockFlowService.EXPECT().GetFlow(mock.Anything, testFlow1ID).Return(flow1Complete, nil)
+	suite.mockFlowService.EXPECT().GetFlow(mock.Anything, testFlow2ID).Return(flow2Complete, nil)
 
 	exporter, _ := suite.exportService.(*exportService).registry.Get("flow")
 	options := &ExportOptions{Format: formatYAML}
@@ -2401,7 +2402,7 @@ func (suite *ExportServiceTestSuite) TestExportResourcesWithExporter_WildcardFlo
 		Code:  "DB_ERROR",
 		Error: "Database error",
 	}
-	suite.mockFlowService.EXPECT().ListFlows(10000, 0, flowcommon.FlowType("")).Return(nil, dbError)
+	suite.mockFlowService.EXPECT().ListFlows(mock.Anything, 10000, 0, flowcommon.FlowType("")).Return(nil, dbError)
 
 	exporter, _ := suite.exportService.(*exportService).registry.Get("flow")
 	options := &ExportOptions{Format: formatYAML}
@@ -2430,7 +2431,7 @@ func (suite *ExportServiceTestSuite) TestExportResources_FlowOnly() {
 		UpdatedAt: "2025-12-22 10:00:00",
 	}
 
-	suite.mockFlowService.EXPECT().GetFlow(flowID).Return(mockFlow, nil)
+	suite.mockFlowService.EXPECT().GetFlow(mock.Anything, flowID).Return(mockFlow, nil)
 
 	request := &ExportRequest{
 		Flows: []string{flowID},
@@ -2474,7 +2475,7 @@ func (suite *ExportServiceTestSuite) TestExportResources_MixedWithFlows() {
 	}
 
 	suite.appServiceMock.EXPECT().GetApplication(appID).Return(mockApp, nil)
-	suite.mockFlowService.EXPECT().GetFlow(flowID).Return(mockFlow, nil)
+	suite.mockFlowService.EXPECT().GetFlow(mock.Anything, flowID).Return(mockFlow, nil)
 
 	request := &ExportRequest{
 		Applications: []string{appID},
