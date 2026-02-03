@@ -605,11 +605,16 @@ components:
           description: Indicates if the registration flow is enabled for the application.
           example: true
           default: false
-        branding_id:
+        theme_id:
           type: string
           format: uuid
-          description: The ID of the branding configuration associated with this application.
+          description: The ID of the theme configuration associated with this application.
           example: "660e8400-e29b-41d4-a716-446655440001"
+        layout_id:
+          type: string
+          format: uuid
+          description: The ID of the layout configuration associated with this application.
+          example: "770e8400-e29b-41d4-a716-446655440002"
         template:
           type: string
           description: The template type of the application.
@@ -689,10 +694,15 @@ components:
           type: boolean
           description: Indicates if the registration flow is enabled for the application.
           example: true
-        branding_id:
+        theme_id:
           type: string
           format: uuid
-          description: The ID of the branding configuration associated with this application.
+          description: The ID of the theme configuration associated with this application.
+        layout_id:
+          type: string
+          format: uuid
+          description: The ID of the layout configuration associated with this application.
+          example: "770e8400-e29b-41d4-a716-446655440002"
           example: "660e8400-e29b-41d4-a716-446655440001"
         template:
           type: string
@@ -773,10 +783,15 @@ components:
           type: boolean
           description: Indicates if the registration flow is enabled for the application.
           example: true
-        branding_id:
+        theme_id:
           type: string
           format: uuid
-          description: The ID of the branding configuration associated with this application.
+          description: The ID of the theme configuration associated with this application.
+        layout_id:
+          type: string
+          format: uuid
+          description: The ID of the layout configuration associated with this application.
+          example: "770e8400-e29b-41d4-a716-446655440002"
           example: "660e8400-e29b-41d4-a716-446655440001"
         template:
           type: string
@@ -862,10 +877,15 @@ components:
           type: boolean
           description: Indicates if the registration flow is enabled for the application.
           example: true
-        branding_id:
+        theme_id:
           type: string
           format: uuid
-          description: The ID of the branding configuration associated with this application.
+          description: The ID of the theme configuration associated with this application.
+        layout_id:
+          type: string
+          format: uuid
+          description: The ID of the layout configuration associated with this application.
+          example: "770e8400-e29b-41d4-a716-446655440002"
           example: "660e8400-e29b-41d4-a716-446655440001"
         template:
           type: string

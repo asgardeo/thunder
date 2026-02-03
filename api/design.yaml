@@ -1,0 +1,750 @@
+openapi: 3.0.3
+info:
+  title: Design Management API
+  version: "1.0"
+  description: This API is used to manage design configurations including themes and layouts that can be associated with applications.
+  license:
+    name: Apache 2.0
+    url: https://www.apache.org/licenses/LICENSE-2.0.html
+
+servers:
+  - url: https://{host}:{port}
+    variables:
+      host:
+        default: "localhost"
+      port:
+        default: "8090"
+
+tags:
+  - name: themes
+    description: Operations related to theme management
+  - name: layouts
+    description: Operations related to layout management
+  - name: design-resolve
+    description: Operations for resolving design configurations
+
+security:
+  - OAuth2: [system]
+
+paths:
+  /design/themes:
+    get:
+      tags:
+        - themes
+      summary: List themes
+      description: Retrieve a list of all theme configurations.
+      parameters:
+        - $ref: '#/components/parameters/limitQueryParam'
+        - $ref: '#/components/parameters/offsetQueryParam'
+      responses:
+        "200":
+          description: List of theme configurations
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ThemeListResponse'
+              example:
+                totalResults: 3
+                startIndex: 1
+                count: 3
+                links:
+                  self:
+                    href: "/design/themes?limit=10&offset=0"
+                themes:
+                  - id: "3fa85f64-5717-4562-b3fc-2c963f66afa6"
+                    displayName: "Dark Theme"
+                  - id: "4fa85f64-5717-4562-b3fc-2c963f66afa7"
+                    displayName: "Light Theme"
+                  - id: "5fa85f64-5717-4562-b3fc-2c963f66afa8"
+                    displayName: "Blue Theme"
+        "400":
+          $ref: '#/components/responses/BadRequest'
+        "401":
+          $ref: '#/components/responses/Unauthorized'
+        "500":
+          $ref: '#/components/responses/InternalServerError'
+
+    post:
+      tags:
+        - themes
+      summary: Create theme
+      description: Create a new theme configuration.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ThemeRequest'
+            example:
+              displayName: "Corporate Theme"
+              preferences:
+                primaryColor: "#1976d2"
+                secondaryColor: "#dc004e"
+                fontFamily: "Roboto"
+                borderRadius: "4px"
+      responses:
+        "201":
+          description: Theme created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ThemeResponse'
+              example:
+                id: "3fa85f64-5717-4562-b3fc-2c963f66afa6"
+                displayName: "Corporate Theme"
+                preferences:
+                  primaryColor: "#1976d2"
+                  secondaryColor: "#dc004e"
+                  fontFamily: "Roboto"
+                  borderRadius: "4px"
+        "400":
+          $ref: '#/components/responses/BadRequest'
+        "401":
+          $ref: '#/components/responses/Unauthorized'
+        "500":
+          $ref: '#/components/responses/InternalServerError'
+
+  /design/themes/{id}:
+    get:
+      tags:
+        - themes
+      summary: Get theme
+      description: Retrieve a specific theme configuration by ID.
+      parameters:
+        - $ref: '#/components/parameters/idPathParam'
+      responses:
+        "200":
+          description: Theme configuration
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ThemeResponse'
+              example:
+                id: "3fa85f64-5717-4562-b3fc-2c963f66afa6"
+                displayName: "Corporate Theme"
+                preferences:
+                  primaryColor: "#1976d2"
+                  secondaryColor: "#dc004e"
+                  fontFamily: "Roboto"
+                  borderRadius: "4px"
+        "400":
+          $ref: '#/components/responses/BadRequest'
+        "401":
+          $ref: '#/components/responses/Unauthorized'
+        "404":
+          $ref: '#/components/responses/NotFound'
+        "500":
+          $ref: '#/components/responses/InternalServerError'
+
+    put:
+      tags:
+        - themes
+      summary: Update theme
+      description: Update an existing theme configuration.
+      parameters:
+        - $ref: '#/components/parameters/idPathParam'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ThemeRequest'
+            example:
+              displayName: "Updated Corporate Theme"
+              preferences:
+                primaryColor: "#1976d2"
+                secondaryColor: "#dc004e"
+                fontFamily: "Inter"
+                borderRadius: "8px"
+      responses:
+        "200":
+          description: Theme updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ThemeResponse'
+        "400":
+          $ref: '#/components/responses/BadRequest'
+        "401":
+          $ref: '#/components/responses/Unauthorized'
+        "404":
+          $ref: '#/components/responses/NotFound'
+        "500":
+          $ref: '#/components/responses/InternalServerError'
+
+    delete:
+      tags:
+        - themes
+      summary: Delete theme
+      description: Delete a theme configuration.
+      parameters:
+        - $ref: '#/components/parameters/idPathParam'
+      responses:
+        "204":
+          description: Theme deleted successfully
+        "400":
+          $ref: '#/components/responses/BadRequest'
+        "401":
+          $ref: '#/components/responses/Unauthorized'
+        "404":
+          $ref: '#/components/responses/NotFound'
+        "409":
+          $ref: '#/components/responses/Conflict'
+        "500":
+          $ref: '#/components/responses/InternalServerError'
+
+  /design/layouts:
+    get:
+      tags:
+        - layouts
+      summary: List layouts
+      description: Retrieve a list of all layout configurations.
+      parameters:
+        - $ref: '#/components/parameters/limitQueryParam'
+        - $ref: '#/components/parameters/offsetQueryParam'
+      responses:
+        "200":
+          description: List of layout configurations
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LayoutListResponse'
+              example:
+                totalResults: 2
+                startIndex: 1
+                count: 2
+                links:
+                  self:
+                    href: "/design/layouts?limit=10&offset=0"
+                layouts:
+                  - id: "3fa85f64-5717-4562-b3fc-2c963f66afa6"
+                    displayName: "Centered Layout"
+                  - id: "4fa85f64-5717-4562-b3fc-2c963f66afa7"
+                    displayName: "Split Screen Layout"
+        "400":
+          $ref: '#/components/responses/BadRequest'
+        "401":
+          $ref: '#/components/responses/Unauthorized'
+        "500":
+          $ref: '#/components/responses/InternalServerError'
+
+    post:
+      tags:
+        - layouts
+      summary: Create layout
+      description: Create a new layout configuration.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LayoutRequest'
+            example:
+              displayName: "Modern Layout"
+              preferences:
+                contentAlignment: "center"
+                maxWidth: "1200px"
+                showLogo: true
+                logoPosition: "top"
+      responses:
+        "201":
+          description: Layout created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LayoutResponse'
+              example:
+                id: "3fa85f64-5717-4562-b3fc-2c963f66afa6"
+                displayName: "Modern Layout"
+                preferences:
+                  contentAlignment: "center"
+                  maxWidth: "1200px"
+                  showLogo: true
+                  logoPosition: "top"
+        "400":
+          $ref: '#/components/responses/BadRequest'
+        "401":
+          $ref: '#/components/responses/Unauthorized'
+        "500":
+          $ref: '#/components/responses/InternalServerError'
+
+  /design/layouts/{id}:
+    get:
+      tags:
+        - layouts
+      summary: Get layout
+      description: Retrieve a specific layout configuration by ID.
+      parameters:
+        - $ref: '#/components/parameters/idPathParam'
+      responses:
+        "200":
+          description: Layout configuration
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LayoutResponse'
+              example:
+                id: "3fa85f64-5717-4562-b3fc-2c963f66afa6"
+                displayName: "Modern Layout"
+                preferences:
+                  contentAlignment: "center"
+                  maxWidth: "1200px"
+                  showLogo: true
+                  logoPosition: "top"
+        "400":
+          $ref: '#/components/responses/BadRequest'
+        "401":
+          $ref: '#/components/responses/Unauthorized'
+        "404":
+          $ref: '#/components/responses/NotFound'
+        "500":
+          $ref: '#/components/responses/InternalServerError'
+
+    put:
+      tags:
+        - layouts
+      summary: Update layout
+      description: Update an existing layout configuration.
+      parameters:
+        - $ref: '#/components/parameters/idPathParam'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LayoutRequest'
+            example:
+              displayName: "Updated Modern Layout"
+              preferences:
+                contentAlignment: "left"
+                maxWidth: "1400px"
+                showLogo: true
+                logoPosition: "left"
+      responses:
+        "200":
+          description: Layout updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LayoutResponse'
+        "400":
+          $ref: '#/components/responses/BadRequest'
+        "401":
+          $ref: '#/components/responses/Unauthorized'
+        "404":
+          $ref: '#/components/responses/NotFound'
+        "500":
+          $ref: '#/components/responses/InternalServerError'
+
+    delete:
+      tags:
+        - layouts
+      summary: Delete layout
+      description: Delete a layout configuration.
+      parameters:
+        - $ref: '#/components/parameters/idPathParam'
+      responses:
+        "204":
+          description: Layout deleted successfully
+        "400":
+          $ref: '#/components/responses/BadRequest'
+        "401":
+          $ref: '#/components/responses/Unauthorized'
+        "404":
+          $ref: '#/components/responses/NotFound'
+        "409":
+          $ref: '#/components/responses/Conflict'
+        "500":
+          $ref: '#/components/responses/InternalServerError'
+
+  /design/resolve:
+    get:
+      tags:
+        - design-resolve
+      summary: Resolve design configuration
+      description: |
+        Resolves and retrieves the complete design configuration (theme + layout) for a given entity.
+        This endpoint merges theme and layout preferences, with layout preferences taking precedence over theme preferences when there are conflicts.
+      parameters:
+        - name: type
+          in: query
+          description: The type of entity to resolve design for
+          required: true
+          schema:
+            type: string
+            enum: [APP, OU]
+          example: APP
+        - name: id
+          in: query
+          description: The ID of the entity (application ID or organization unit ID)
+          required: true
+          schema:
+            type: string
+            format: uuid
+          example: "3fa85f64-5717-4562-b3fc-2c963f66afa6"
+      responses:
+        "200":
+          description: Resolved design configuration
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DesignResolveResponse'
+              example:
+                id: "theme-id|layout-id"
+                displayName: "Corporate Theme / Modern Layout"
+                preferences:
+                  primaryColor: "#1976d2"
+                  secondaryColor: "#dc004e"
+                  fontFamily: "Inter"
+                  borderRadius: "8px"
+                  contentAlignment: "center"
+                  maxWidth: "1200px"
+                  showLogo: true
+                  logoPosition: "top"
+        "400":
+          $ref: '#/components/responses/BadRequest'
+        "401":
+          $ref: '#/components/responses/Unauthorized'
+        "404":
+          description: Entity not found or has no design configuration
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                code: "DSR-1004"
+                message: "Application not found"
+                description: "The application with the specified id does not exist"
+        "500":
+          $ref: '#/components/responses/InternalServerError'
+
+components:
+  securitySchemes:
+    OAuth2:
+      type: oauth2
+      flows:
+        clientCredentials:
+          tokenUrl: /oauth2/token
+          scopes:
+            system: System level access
+
+  parameters:
+    idPathParam:
+      name: id
+      in: path
+      description: The unique identifier
+      required: true
+      schema:
+        type: string
+        format: uuid
+
+    limitQueryParam:
+      name: limit
+      in: query
+      description: Maximum number of results to return
+      required: false
+      schema:
+        type: integer
+        minimum: 1
+        maximum: 100
+        default: 10
+
+    offsetQueryParam:
+      name: offset
+      in: query
+      description: Number of results to skip
+      required: false
+      schema:
+        type: integer
+        minimum: 0
+        default: 0
+
+  schemas:
+    ThemeRequest:
+      type: object
+      required:
+        - displayName
+        - preferences
+      properties:
+        displayName:
+          type: string
+          description: Display name for the theme
+          example: "Corporate Theme"
+        preferences:
+          type: object
+          description: Theme preferences as a JSON object
+          additionalProperties: true
+          example:
+            primaryColor: "#1976d2"
+            secondaryColor: "#dc004e"
+            fontFamily: "Roboto"
+            borderRadius: "4px"
+
+    ThemeResponse:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: Unique identifier for the theme
+          example: "3fa85f64-5717-4562-b3fc-2c963f66afa6"
+        displayName:
+          type: string
+          description: Display name for the theme
+          example: "Corporate Theme"
+        preferences:
+          type: object
+          description: Theme preferences as a JSON object
+          additionalProperties: true
+          example:
+            primaryColor: "#1976d2"
+            secondaryColor: "#dc004e"
+            fontFamily: "Roboto"
+            borderRadius: "4px"
+
+    ThemeListItem:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: Unique identifier for the theme
+          example: "3fa85f64-5717-4562-b3fc-2c963f66afa6"
+        displayName:
+          type: string
+          description: Display name for the theme
+          example: "Corporate Theme"
+
+    ThemeListResponse:
+      type: object
+      properties:
+        totalResults:
+          type: integer
+          description: Total number of themes
+          example: 10
+        startIndex:
+          type: integer
+          description: Index of the first result
+          example: 1
+        count:
+          type: integer
+          description: Number of results in this response
+          example: 10
+        links:
+          type: object
+          properties:
+            self:
+              type: object
+              properties:
+                href:
+                  type: string
+                  example: "/design/themes?limit=10&offset=0"
+            next:
+              type: object
+              properties:
+                href:
+                  type: string
+                  example: "/design/themes?limit=10&offset=10"
+            previous:
+              type: object
+              properties:
+                href:
+                  type: string
+                  example: "/design/themes?limit=10&offset=0"
+        themes:
+          type: array
+          items:
+            $ref: '#/components/schemas/ThemeListItem'
+
+    LayoutRequest:
+      type: object
+      required:
+        - displayName
+        - preferences
+      properties:
+        displayName:
+          type: string
+          description: Display name for the layout
+          example: "Modern Layout"
+        preferences:
+          type: object
+          description: Layout preferences as a JSON object
+          additionalProperties: true
+          example:
+            contentAlignment: "center"
+            maxWidth: "1200px"
+            showLogo: true
+            logoPosition: "top"
+
+    LayoutResponse:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: Unique identifier for the layout
+          example: "3fa85f64-5717-4562-b3fc-2c963f66afa6"
+        displayName:
+          type: string
+          description: Display name for the layout
+          example: "Modern Layout"
+        preferences:
+          type: object
+          description: Layout preferences as a JSON object
+          additionalProperties: true
+          example:
+            contentAlignment: "center"
+            maxWidth: "1200px"
+            showLogo: true
+            logoPosition: "top"
+
+    LayoutListItem:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: Unique identifier for the layout
+          example: "3fa85f64-5717-4562-b3fc-2c963f66afa6"
+        displayName:
+          type: string
+          description: Display name for the layout
+          example: "Modern Layout"
+
+    LayoutListResponse:
+      type: object
+      properties:
+        totalResults:
+          type: integer
+          description: Total number of layouts
+          example: 5
+        startIndex:
+          type: integer
+          description: Index of the first result
+          example: 1
+        count:
+          type: integer
+          description: Number of results in this response
+          example: 5
+        links:
+          type: object
+          properties:
+            self:
+              type: object
+              properties:
+                href:
+                  type: string
+                  example: "/design/layouts?limit=10&offset=0"
+            next:
+              type: object
+              properties:
+                href:
+                  type: string
+                  example: "/design/layouts?limit=10&offset=10"
+            previous:
+              type: object
+              properties:
+                href:
+                  type: string
+                  example: "/design/layouts?limit=10&offset=0"
+        layouts:
+          type: array
+          items:
+            $ref: '#/components/schemas/LayoutListItem'
+
+    DesignResolveResponse:
+      type: object
+      properties:
+        id:
+          type: string
+          description: Combined identifier (theme-id|layout-id) or single ID if only one is configured
+          example: "theme-id|layout-id"
+        displayName:
+          type: string
+          description: Combined display name or single display name
+          example: "Corporate Theme / Modern Layout"
+        preferences:
+          type: object
+          description: Merged preferences from theme and layout (layout preferences take precedence)
+          additionalProperties: true
+          example:
+            primaryColor: "#1976d2"
+            secondaryColor: "#dc004e"
+            fontFamily: "Inter"
+            borderRadius: "8px"
+            contentAlignment: "center"
+            maxWidth: "1200px"
+            showLogo: true
+            logoPosition: "top"
+
+    ErrorResponse:
+      type: object
+      properties:
+        code:
+          type: string
+          description: Error code
+          example: "DSR-1001"
+        message:
+          type: string
+          description: Error message
+          example: "Invalid request format"
+        description:
+          type: string
+          description: Detailed error description
+          example: "The 'type' query parameter is required and must be either 'APP' or 'OU'"
+
+  responses:
+    BadRequest:
+      description: Bad request
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            code: "DSR-1001"
+            message: "Invalid request format"
+            description: "The request contains invalid parameters"
+
+    Unauthorized:
+      description: Unauthorized
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            code: "AUTH-4001"
+            message: "Unauthorized"
+            description: "Authentication is required to access this resource"
+
+    NotFound:
+      description: Resource not found
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            code: "DSR-1004"
+            message: "Resource not found"
+            description: "The requested resource does not exist"
+
+    Conflict:
+      description: Conflict - resource cannot be deleted as it's in use
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            code: "THM-1004"
+            message: "Cannot delete theme"
+            description: "Cannot delete theme configuration that is currently associated with one or more applications"
+
+    InternalServerError:
+      description: Internal server error
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            code: "SYS-5000"
+            message: "Internal server error"
+            description: "An unexpected error occurred while processing the request"

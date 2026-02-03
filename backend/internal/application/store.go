@@ -98,14 +98,20 @@ func (st *applicationStore) CreateApplication(app model.ApplicationProcessedDTO)
 	queries := []func(tx dbmodel.TxInterface) error{
 		func(tx dbmodel.TxInterface) error {
 			isRegistrationEnabledStr := utils.BoolToNumString(app.IsRegistrationFlowEnabled)
-			var brandingID interface{}
-			if app.BrandingID != "" {
-				brandingID = app.BrandingID
+			var themeID interface{}
+			if app.ThemeID != "" {
+				themeID = app.ThemeID
 			} else {
-				brandingID = nil
+				themeID = nil
+			}
+			var layoutID interface{}
+			if app.LayoutID != "" {
+				layoutID = app.LayoutID
+			} else {
+				layoutID = nil
 			}
 			_, err := tx.Exec(QueryCreateApplication, app.ID, app.Name, app.Description,
-				app.AuthFlowID, app.RegistrationFlowID, isRegistrationEnabledStr, brandingID,
+				app.AuthFlowID, app.RegistrationFlowID, isRegistrationEnabledStr, themeID, layoutID,
 				jsonDataBytes, st.deploymentID)
 			return err
 		},
@@ -335,15 +341,21 @@ func (st *applicationStore) UpdateApplication(existingApp, updatedApp *model.App
 	queries := []func(tx dbmodel.TxInterface) error{
 		func(tx dbmodel.TxInterface) error {
 			isRegistrationEnabledStr := utils.BoolToNumString(updatedApp.IsRegistrationFlowEnabled)
-			var brandingID interface{}
-			if updatedApp.BrandingID != "" {
-				brandingID = updatedApp.BrandingID
+			var themeID interface{}
+			if updatedApp.ThemeID != "" {
+				themeID = updatedApp.ThemeID
 			} else {
-				brandingID = nil
+				themeID = nil
+			}
+			var layoutID interface{}
+			if updatedApp.LayoutID != "" {
+				layoutID = updatedApp.LayoutID
+			} else {
+				layoutID = nil
 			}
 			_, err := tx.Exec(QueryUpdateApplicationByAppID, updatedApp.ID, updatedApp.Name,
 				updatedApp.Description, updatedApp.AuthFlowID, updatedApp.RegistrationFlowID,
-				isRegistrationEnabledStr, brandingID, jsonDataBytes, st.deploymentID)
+				isRegistrationEnabledStr, themeID, layoutID, jsonDataBytes, st.deploymentID)
 			return err
 		},
 	}
@@ -541,10 +553,17 @@ func buildBasicApplicationFromResultRow(row map[string]interface{}) (model.Basic
 	}
 	isRegistrationFlowEnabled := utils.NumStringToBool(isRegistrationFlowEnabledStr)
 
-	var brandingID string
-	if row["branding_id"] != nil {
-		if bid, ok := row["branding_id"].(string); ok {
-			brandingID = bid
+	var themeID string
+	if row["theme_id"] != nil {
+		if tid, ok := row["theme_id"].(string); ok {
+			themeID = tid
+		}
+	}
+
+	var layoutID string
+	if row["layout_id"] != nil {
+		if lid, ok := row["layout_id"].(string); ok {
+			layoutID = lid
 		}
 	}
 
@@ -555,7 +574,8 @@ func buildBasicApplicationFromResultRow(row map[string]interface{}) (model.Basic
 		AuthFlowID:                authFlowID,
 		RegistrationFlowID:        regisFlowID,
 		IsRegistrationFlowEnabled: isRegistrationFlowEnabled,
-		BrandingID:                brandingID,
+		ThemeID:                   themeID,
+		LayoutID:                  layoutID,
 	}
 
 	if row["consumer_key"] != nil {
@@ -729,7 +749,8 @@ func buildApplicationFromResultRow(row map[string]interface{}) (model.Applicatio
 		AuthFlowID:                basicApp.AuthFlowID,
 		RegistrationFlowID:        basicApp.RegistrationFlowID,
 		IsRegistrationFlowEnabled: basicApp.IsRegistrationFlowEnabled,
-		BrandingID:                basicApp.BrandingID,
+		ThemeID:                   basicApp.ThemeID,
+		LayoutID:                  basicApp.LayoutID,
 		Template:                  template,
 		URL:                       url,
 		LogoURL:                   logoURL,

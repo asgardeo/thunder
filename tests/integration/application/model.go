@@ -28,7 +28,8 @@ type Application struct {
 	AuthFlowID                string              `json:"auth_flow_id,omitempty"`
 	RegistrationFlowID        string              `json:"registration_flow_id,omitempty"`
 	IsRegistrationFlowEnabled bool                `json:"is_registration_flow_enabled"`
-	BrandingID                string              `json:"branding_id,omitempty"`
+	ThemeID                   string              `json:"theme_id,omitempty"`
+	LayoutID                  string              `json:"layout_id,omitempty"`
 	Template                  string              `json:"template,omitempty"`
 	URL                       string              `json:"url,omitempty"`
 	LogoURL                   string              `json:"logo_url,omitempty"`
@@ -133,8 +134,8 @@ func (app *Application) equals(expectedApp Application) bool {
 		return false
 	}
 
-	// Branding ID
-	if app.BrandingID != expectedApp.BrandingID {
+	// Theme and Layout IDs
+	if app.ThemeID != expectedApp.ThemeID || app.LayoutID != expectedApp.LayoutID {
 		return false
 	}
 

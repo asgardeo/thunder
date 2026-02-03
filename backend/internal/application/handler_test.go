@@ -509,7 +509,8 @@ func (suite *HandlerTestSuite) TestHandleApplicationGetRequest_WithTemplate() {
 		ID:          "test-app-id",
 		Name:        "TestApp",
 		Description: "Test Description",
-		BrandingID:  "brand-123",
+		ThemeID:     "theme-123",
+		LayoutID:    "layout-456",
 		Template:    "spa",
 	}
 
@@ -527,7 +528,8 @@ func (suite *HandlerTestSuite) TestHandleApplicationGetRequest_WithTemplate() {
 	err := json.Unmarshal(w.Body.Bytes(), &response)
 	assert.NoError(suite.T(), err)
 	assert.Equal(suite.T(), "test-app-id", response.ID)
-	assert.Equal(suite.T(), "brand-123", response.BrandingID)
+	assert.Equal(suite.T(), "theme-123", response.ThemeID)
+	assert.Equal(suite.T(), "layout-456", response.LayoutID)
 	assert.Equal(suite.T(), "spa", response.Template)
 
 	mockService.AssertExpectations(suite.T())

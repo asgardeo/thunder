@@ -202,16 +202,31 @@ var (
 		ErrorDescription: "One or more user types in allowed_user_types do not exist in the system",
 	}
 	// ErrorBrandingNotFound is the error returned when branding is not found.
+	// DEPRECATED: Use ErrorThemeNotFound and ErrorLayoutNotFound instead
 	ErrorBrandingNotFound = serviceerror.ServiceError{
 		Type:             serviceerror.ClientErrorType,
 		Code:             "APP-1026",
 		Error:            "Branding not found",
 		ErrorDescription: "The specified branding configuration does not exist",
 	}
+	// ErrorThemeNotFound is the error returned when theme is not found.
+	ErrorThemeNotFound = serviceerror.ServiceError{
+		Type:             serviceerror.ClientErrorType,
+		Code:             "APP-1027",
+		Error:            "Theme not found",
+		ErrorDescription: "The specified theme configuration does not exist",
+	}
+	// ErrorLayoutNotFound is the error returned when layout is not found.
+	ErrorLayoutNotFound = serviceerror.ServiceError{
+		Type:             serviceerror.ClientErrorType,
+		Code:             "APP-1028",
+		Error:            "Layout not found",
+		ErrorDescription: "The specified layout configuration does not exist",
+	}
 	// ErrorWhileRetrievingFlowDefinition is the error returned when there is an issue retrieving flow definition.
 	ErrorWhileRetrievingFlowDefinition = serviceerror.ServiceError{
 		Type:             serviceerror.ClientErrorType,
-		Code:             "APP-1027",
+		Code:             "APP-1029",
 		Error:            "Error retrieving flow definition",
 		ErrorDescription: "An error occurred while retrieving the flow definition",
 	}

@@ -80,7 +80,8 @@ func (suite *ServiceTestSuite) TestBuildBasicApplicationResponse_WithTemplate() 
 		AuthFlowID:                "auth_flow_1",
 		RegistrationFlowID:        "reg_flow_1",
 		IsRegistrationFlowEnabled: true,
-		BrandingID:                "brand-123",
+		ThemeID:                   "theme-123",
+		LayoutID:                  "layout-456",
 		Template:                  "spa",
 		ClientID:                  "client-123",
 		LogoURL:                   "https://example.com/logo.png",
@@ -90,7 +91,8 @@ func (suite *ServiceTestSuite) TestBuildBasicApplicationResponse_WithTemplate() 
 
 	assert.Equal(suite.T(), "app-123", result.ID)
 	assert.Equal(suite.T(), "Test App", result.Name)
-	assert.Equal(suite.T(), "brand-123", result.BrandingID)
+	assert.Equal(suite.T(), "theme-123", result.ThemeID)
+	assert.Equal(suite.T(), "layout-456", result.LayoutID)
 	assert.Equal(suite.T(), "spa", result.Template)
 	assert.Equal(suite.T(), "client-123", result.ClientID)
 	assert.Equal(suite.T(), "https://example.com/logo.png", result.LogoURL)

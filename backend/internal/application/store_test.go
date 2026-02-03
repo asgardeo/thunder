@@ -453,7 +453,8 @@ func (suite *ApplicationStoreTestSuite) TestBuildBasicApplicationFromResultRow_W
 		"auth_flow_id":                 "auth_flow_1",
 		"registration_flow_id":         "reg_flow_1",
 		"is_registration_flow_enabled": "1",
-		"branding_id":                  "brand-123",
+		"theme_id":                     "theme-123",
+		"layout_id":                    "layout-456",
 		"app_json":                     string(appJSONBytes),
 		"consumer_key":                 "client_app1",
 	}
@@ -462,7 +463,8 @@ func (suite *ApplicationStoreTestSuite) TestBuildBasicApplicationFromResultRow_W
 
 	suite.NoError(err)
 	suite.Equal("app1", result.ID)
-	suite.Equal("brand-123", result.BrandingID)
+	suite.Equal("theme-123", result.ThemeID)
+	suite.Equal("layout-456", result.LayoutID)
 	suite.Equal("spa", result.Template)
 }
 
@@ -657,7 +659,8 @@ func (suite *ApplicationStoreTestSuite) TestBuildApplicationFromResultRow_WithTe
 		"auth_flow_id":                 "auth_flow_1",
 		"registration_flow_id":         "reg_flow_1",
 		"is_registration_flow_enabled": "1",
-		"branding_id":                  "brand-123",
+		"theme_id":                     "theme-123",
+		"layout_id":                    "layout-456",
 		"app_json":                     string(appJSONBytes),
 	}
 
@@ -665,7 +668,8 @@ func (suite *ApplicationStoreTestSuite) TestBuildApplicationFromResultRow_WithTe
 
 	suite.NoError(err)
 	suite.Equal("app1", result.ID)
-	suite.Equal("brand-123", result.BrandingID)
+	suite.Equal("theme-123", result.ThemeID)
+	suite.Equal("layout-456", result.LayoutID)
 	suite.Equal("mobile", result.Template)
 	suite.Equal("https://example.com", result.URL)
 }

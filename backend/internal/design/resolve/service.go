@@ -16,49 +16,45 @@
  * under the License.
  */
 
-// Package brandingresolve provides functionality for resolving branding configurations.
-package brandingresolve
+// Package resolve provides functionality for resolving design configurations.
+package resolve
 
 import (
 	"encoding/json"
 
 	"github.com/asgardeo/thunder/internal/application"
-	"github.com/asgardeo/thunder/internal/branding/common"
-	brandingmgt "github.com/asgardeo/thunder/internal/branding/mgt"
+	"github.com/asgardeo/thunder/internal/design/common"
 	layoutmgt "github.com/asgardeo/thunder/internal/design/layout/mgt"
 	thememgt "github.com/asgardeo/thunder/internal/design/theme/mgt"
 	"github.com/asgardeo/thunder/internal/system/error/serviceerror"
 	"github.com/asgardeo/thunder/internal/system/log"
 )
 
-const serviceLogger = "BrandingResolveService"
+const serviceLogger = "DesignResolveService"
 
-// BrandingResolveServiceInterface defines the interface for the branding resolve service.
-type BrandingResolveServiceInterface interface {
-	ResolveBranding(
-		resolveType common.BrandingResolveType, id string,
-	) (*common.BrandingResponse, *serviceerror.ServiceError)
+// DesignResolveServiceInterface defines the interface for the design resolve service.
+type DesignResolveServiceInterface interface {
+	ResolveDesign(
+		resolveType common.DesignResolveType, id string,
+	) (*common.DesignResponse, *serviceerror.ServiceError)
 }
 
-// brandingResolveService is the default implementation of the BrandingResolveServiceInterface.
-type brandingResolveService struct {
-	brandingMgtService brandingmgt.BrandingMgtServiceInterface
+// designResolveService is the default implementation of the DesignResolveServiceInterface.
+type designResolveService struct {
 	themeMgtService    thememgt.ThemeMgtServiceInterface
 	layoutMgtService   layoutmgt.LayoutMgtServiceInterface
 	applicationService application.ApplicationServiceInterface
 	logger             *log.Logger
 }
 
-// newBrandingResolveService creates a new instance of BrandingResolveService with injected dependencies.
-func newBrandingResolveService(
-	brandingMgtService brandingmgt.BrandingMgtServiceInterface,
+// newDesignResolveService creates a new instance of DesignResolveService with injected dependencies.
+func newDesignResolveService(
 	themeMgtService thememgt.ThemeMgtServiceInterface,
 	layoutMgtService layoutmgt.LayoutMgtServiceInterface,
 	applicationService application.ApplicationServiceInterface,
-) BrandingResolveServiceInterface {
+) DesignResolveServiceInterface {
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, serviceLogger))
-	return &brandingResolveService{
-		brandingMgtService: brandingMgtService,
+	return &designResolveService{
 		themeMgtService:    themeMgtService,
 		layoutMgtService:   layoutMgtService,
 		applicationService: applicationService,
@@ -66,11 +62,11 @@ func newBrandingResolveService(
 	}
 }
 
-// ResolveBranding resolves a branding configuration by type and ID.
+// ResolveDesign resolves a design configuration by type and ID.
 // TODO: Add support for OU type and fallback logic.
-func (brs *brandingResolveService) ResolveBranding(
-	resolveType common.BrandingResolveType, id string,
-) (*common.BrandingResponse, *serviceerror.ServiceError) {
+func (drs *designResolveService) ResolveDesign(
+	resolveType common.DesignResolveType, id string,
+) (*common.DesignResponse, *serviceerror.ServiceError) {
 	if resolveType == "" {
 		return nil, &common.ErrorInvalidResolveType
 	}
@@ -80,19 +76,19 @@ func (brs *brandingResolveService) ResolveBranding(
 	}
 
 	// Currently only APP type is supported
-	if resolveType != common.BrandingResolveTypeAPP {
+	if resolveType != common.DesignResolveTypeAPP {
 		return nil, &common.ErrorUnsupportedResolveType
 	}
 
 	// Get the application by ID
-	if brs.applicationService == nil {
-		brs.logger.Error("Application service is not available")
+	if drs.applicationService == nil {
+		drs.logger.Error("Application service is not available")
 		return nil, &serviceerror.InternalServerError
 	}
 
-	app, svcErr := brs.applicationService.GetApplication(id)
+	app, svcErr := drs.applicationService.GetApplication(id)
 	if svcErr != nil {
-		// Convert application service errors to branding resolve errors
+		// Convert application service errors to design resolve errors
 		if svcErr.Code == application.ErrorApplicationNotFound.Code ||
 			svcErr.Code == application.ErrorInvalidApplicationID.Code {
 			return nil, &common.ErrorApplicationNotFound
@@ -102,7 +98,7 @@ func (brs *brandingResolveService) ResolveBranding(
 
 	// Check if the application has theme or layout configured
 	if app.ThemeID == "" && app.LayoutID == "" {
-		return nil, &common.ErrorApplicationHasNoBranding
+		return nil, &common.ErrorApplicationHasNoDesign
 	}
 
 	// Prepare merged preferences
@@ -112,10 +108,10 @@ func (brs *brandingResolveService) ResolveBranding(
 
 	// Get theme configuration if available
 	if app.ThemeID != "" {
-		themeConfig, svcErr := brs.themeMgtService.GetTheme(app.ThemeID)
+		themeConfig, svcErr := drs.themeMgtService.GetTheme(app.ThemeID)
 		if svcErr != nil {
 			if svcErr.Code == thememgt.ErrorThemeNotFound.Code {
-				brs.logger.Error("Data integrity issue: application references non-existent theme",
+				drs.logger.Error("Data integrity issue: application references non-existent theme",
 					log.String("applicationId", id),
 					log.String("themeId", app.ThemeID))
 				return nil, &serviceerror.InternalServerError
@@ -131,7 +127,7 @@ func (brs *brandingResolveService) ResolveBranding(
 		var themePrefs map[string]interface{}
 		if len(themeConfig.Preferences) > 0 {
 			if err := json.Unmarshal(themeConfig.Preferences, &themePrefs); err != nil {
-				brs.logger.Error("Failed to parse theme preferences",
+				drs.logger.Error("Failed to parse theme preferences",
 					log.String("themeId", app.ThemeID),
 					log.Error(err))
 				return nil, &serviceerror.InternalServerError
@@ -145,10 +141,10 @@ func (brs *brandingResolveService) ResolveBranding(
 
 	// Get layout configuration if available
 	if app.LayoutID != "" {
-		layoutConfig, svcErr := brs.layoutMgtService.GetLayout(app.LayoutID)
+		layoutConfig, svcErr := drs.layoutMgtService.GetLayout(app.LayoutID)
 		if svcErr != nil {
 			if svcErr.Code == layoutmgt.ErrorLayoutNotFound.Code {
-				brs.logger.Error("Data integrity issue: application references non-existent layout",
+				drs.logger.Error("Data integrity issue: application references non-existent layout",
 					log.String("applicationId", id),
 					log.String("layoutId", app.LayoutID))
 				return nil, &serviceerror.InternalServerError
@@ -170,7 +166,7 @@ func (brs *brandingResolveService) ResolveBranding(
 		var layoutPrefs map[string]interface{}
 		if len(layoutConfig.Preferences) > 0 {
 			if err := json.Unmarshal(layoutConfig.Preferences, &layoutPrefs); err != nil {
-				brs.logger.Error("Failed to parse layout preferences",
+				drs.logger.Error("Failed to parse layout preferences",
 					log.String("layoutId", app.LayoutID),
 					log.Error(err))
 				return nil, &serviceerror.InternalServerError
@@ -185,21 +181,21 @@ func (brs *brandingResolveService) ResolveBranding(
 	// Convert merged preferences back to JSON
 	mergedPrefsJSON, err := json.Marshal(mergedPrefs)
 	if err != nil {
-		brs.logger.Error("Failed to marshal merged preferences", log.Error(err))
+		drs.logger.Error("Failed to marshal merged preferences", log.Error(err))
 		return nil, &serviceerror.InternalServerError
 	}
 
-	brandingResponse := &common.BrandingResponse{
+	designResponse := &common.DesignResponse{
 		ID:          responseID,
 		DisplayName: displayName,
 		Preferences: mergedPrefsJSON,
 	}
 
-	brs.logger.Debug("Successfully resolved branding configuration",
+	drs.logger.Debug("Successfully resolved design configuration",
 		log.String("type", string(resolveType)),
 		log.String("id", id),
 		log.String("themeId", app.ThemeID),
 		log.String("layoutId", app.LayoutID))
 
-	return brandingResponse, nil
+	return designResponse, nil
 }

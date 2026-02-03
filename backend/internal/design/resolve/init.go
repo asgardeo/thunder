@@ -16,41 +16,39 @@
  * under the License.
  */
 
-package brandingresolve
+package resolve
 
 import (
 	"net/http"
 
 	"github.com/asgardeo/thunder/internal/application"
-	brandingmgt "github.com/asgardeo/thunder/internal/branding/mgt"
 	layoutmgt "github.com/asgardeo/thunder/internal/design/layout/mgt"
 	thememgt "github.com/asgardeo/thunder/internal/design/theme/mgt"
 	"github.com/asgardeo/thunder/internal/system/middleware"
 )
 
-// Initialize initializes the branding resolve service and registers its routes.
+// Initialize initializes the design resolve service and registers its routes.
 func Initialize(
 	mux *http.ServeMux,
-	brandingMgtService brandingmgt.BrandingMgtServiceInterface,
 	themeMgtService thememgt.ThemeMgtServiceInterface,
 	layoutMgtService layoutmgt.LayoutMgtServiceInterface,
 	applicationService application.ApplicationServiceInterface,
-) BrandingResolveServiceInterface {
-	brandingResolveService := newBrandingResolveService(brandingMgtService, themeMgtService, layoutMgtService, applicationService)
-	brandingResolveHandler := newBrandingResolveHandler(brandingResolveService)
-	registerRoutes(mux, brandingResolveHandler)
-	return brandingResolveService
+) DesignResolveServiceInterface {
+	designResolveService := newDesignResolveService(themeMgtService, layoutMgtService, applicationService)
+	designResolveHandler := newDesignResolveHandler(designResolveService)
+	registerRoutes(mux, designResolveHandler)
+	return designResolveService
 }
 
-// registerRoutes registers the routes for branding resolve operations.
-func registerRoutes(mux *http.ServeMux, resolveHandler *brandingResolveHandler) {
+// registerRoutes registers the routes for design resolve operations.
+func registerRoutes(mux *http.ServeMux, resolveHandler *designResolveHandler) {
 	opts := middleware.CORSOptions{
 		AllowedMethods:   "GET",
 		AllowedHeaders:   "Content-Type, Authorization",
 		AllowCredentials: true,
 	}
-	mux.HandleFunc(middleware.WithCORS("GET /branding/resolve", resolveHandler.HandleResolveRequest, opts))
-	mux.HandleFunc(middleware.WithCORS("OPTIONS /branding/resolve", func(w http.ResponseWriter, r *http.Request) {
+	mux.HandleFunc(middleware.WithCORS("GET /design/resolve", resolveHandler.HandleResolveRequest, opts))
+	mux.HandleFunc(middleware.WithCORS("OPTIONS /design/resolve", func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusNoContent)
 	}, opts))
 }

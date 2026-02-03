@@ -22,8 +22,9 @@ package application
 import (
 	"net/http"
 
-	brandingmgt "github.com/asgardeo/thunder/internal/branding/mgt"
 	"github.com/asgardeo/thunder/internal/cert"
+	layoutmgt "github.com/asgardeo/thunder/internal/design/layout/mgt"
+	thememgt "github.com/asgardeo/thunder/internal/design/theme/mgt"
 	flowmgt "github.com/asgardeo/thunder/internal/flow/mgt"
 	"github.com/asgardeo/thunder/internal/system/config"
 	declarativeresource "github.com/asgardeo/thunder/internal/system/declarative_resource"
@@ -36,7 +37,8 @@ func Initialize(
 	mux *http.ServeMux,
 	certService cert.CertificateServiceInterface,
 	flowMgtService flowmgt.FlowMgtServiceInterface,
-	brandingService brandingmgt.BrandingMgtServiceInterface,
+	themeMgtService thememgt.ThemeMgtServiceInterface,
+	layoutMgtService layoutmgt.LayoutMgtServiceInterface,
 	userSchemaService userschema.UserSchemaServiceInterface,
 ) (ApplicationServiceInterface, declarativeresource.ResourceExporter, error) {
 	var appStore applicationStoreInterface
@@ -47,7 +49,7 @@ func Initialize(
 		appStore = newCachedBackedApplicationStore(store)
 	}
 
-	appService := newApplicationService(appStore, certService, flowMgtService, brandingService, userSchemaService)
+	appService := newApplicationService(appStore, certService, flowMgtService, themeMgtService, layoutMgtService, userSchemaService)
 
 	if config.GetThunderRuntime().Config.DeclarativeResources.Enabled {
 		if err := loadDeclarativeResources(appStore, appService); err != nil {
