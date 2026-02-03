@@ -172,6 +172,12 @@ func (s *flowStore) executeTransaction(queries []func(tx dbmodel.TxInterface) er
 
 // buildFlowContextFromResultRow builds a FlowContextWithUserDataDB from a database result row.
 func (s *flowStore) buildFlowContextFromResultRow(row map[string]interface{}) (*FlowContextWithUserDataDB, error) {
+	// Parse ID field
+	flowContextID, err := s.parseInt64(row["id"])
+	if err != nil {
+		return nil, err
+	}
+
 	// Parse required fields
 	flowID, ok := row["flow_id"].(string)
 	if !ok {
@@ -204,6 +210,7 @@ func (s *flowStore) buildFlowContextFromResultRow(row map[string]interface{}) (*
 	verbose := s.parseBoolean(row["verbose"])
 
 	return &FlowContextWithUserDataDB{
+		FlowContextID:      flowContextID,
 		FlowID:             flowID,
 		AppID:              appID,
 		CurrentNodeID:      currentNodeID,
@@ -252,4 +259,21 @@ func (s *flowStore) parseBoolean(value interface{}) bool {
 	}
 
 	return false
+}
+
+// parseInt64 safely parses an int64 field from the database row with type conversion support
+func (s *flowStore) parseInt64(value interface{}) (int64, error) {
+	if value == nil {
+		return 0, errors.New("value is nil")
+	}
+
+	if intVal, ok := value.(int64); ok {
+		return intVal, nil
+	}
+
+	if intVal, ok := value.(int); ok {
+		return int64(intVal), nil
+	}
+
+	return 0, errors.New("failed to parse value as int64")
 }

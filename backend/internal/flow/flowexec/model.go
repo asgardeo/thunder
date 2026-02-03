@@ -105,6 +105,7 @@ type FlowInitContext struct {
 
 // FlowContextWithUserDataDB represents the combined flow context and user data.
 type FlowContextWithUserDataDB struct {
+	FlowContextID      int64
 	FlowID             string
 	AppID              string
 	Verbose            bool
