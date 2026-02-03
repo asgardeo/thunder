@@ -85,8 +85,8 @@ var (
 	// QueryAddMemberToGroup is the query to assign member to a group.
 	QueryAddMemberToGroup = dbmodel.DBQuery{
 		ID: "GRQ-GROUP_MGT-10",
-		Query: `INSERT INTO GROUP_MEMBER_REFERENCE (GROUP_ID, MEMBER_TYPE, MEMBER_ID, DEPLOYMENT_ID) ` +
-			`VALUES ($1, $2, $3, $4)`,
+		Query: `INSERT INTO GROUP_MEMBER_REFERENCE (GROUP_REF_ID, GROUP_ID, MEMBER_TYPE, MEMBER_ID, DEPLOYMENT_ID) ` +
+			`SELECT ID, $1, $2, $3, $4 FROM "GROUP" WHERE GROUP_ID = $1 AND DEPLOYMENT_ID = $4`,
 	}
 
 	// QueryCheckGroupNameConflict is the query to check if a group name conflicts within the same organization unit.
