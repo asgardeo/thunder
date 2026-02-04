@@ -79,6 +79,12 @@ export interface ConfigContextType {
    * @returns The client UUID string or undefined if not available
    */
   getClientUuid: () => string | undefined;
+
+  /**
+   * Indicates whether the configuration is still being loaded
+   * @returns True if configuration is loading, false if ready
+   */
+  isLoading: boolean;
 }
 
 /**

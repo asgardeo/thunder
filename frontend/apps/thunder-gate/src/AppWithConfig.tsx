@@ -22,8 +22,12 @@ import {useConfig} from '@thunder/shared-contexts';
 import {BrandingProvider} from '@thunder/shared-branding';
 import AppWithTheme from './AppWithTheme';
 
-export default function AppWithConfig(): JSX.Element {
-  const {getServerUrl} = useConfig();
+export default function AppWithConfig(): JSX.Element | null {
+  const {getServerUrl, isLoading} = useConfig();
+
+  if (isLoading) {
+    return null;
+  }
 
   return (
     <AsgardeoProvider

@@ -27,8 +27,12 @@ import App from './App';
 
 const queryClient: QueryClient = new QueryClient();
 
-export default function AppWithConfig(): JSX.Element {
-  const {getClientId, getServerUrl, getClientUrl, getScopes} = useConfig();
+export default function AppWithConfig(): JSX.Element | null {
+  const {getClientId, getServerUrl, getClientUrl, getScopes, isLoading} = useConfig();
+
+  if (isLoading) {
+    return null;
+  }
 
   return (
     <AsgardeoProvider
