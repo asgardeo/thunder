@@ -16,7 +16,7 @@
  * under the License.
  */
 
-import {describe, it, expect, vi, beforeEach} from 'vitest';
+import {describe, it, expect, vi, type Mock, beforeEach} from 'vitest';
 import {renderHook, render, fireEvent} from '@testing-library/react';
 import type {NodeProps} from '@xyflow/react';
 import {StaticStepTypes, StepTypes, type Step} from '@/features/flows/models/steps';
@@ -91,8 +91,8 @@ const createMockResources = (): Resources =>
   }) as unknown as Resources;
 
 describe('useNodeTypes', () => {
-  let mockOnAddElementToView: ReturnType<typeof vi.fn>;
-  let mockOnAddElementToForm: ReturnType<typeof vi.fn>;
+  let mockOnAddElementToView: Mock;
+  let mockOnAddElementToForm: Mock;
 
   beforeEach(() => {
     vi.clearAllMocks();

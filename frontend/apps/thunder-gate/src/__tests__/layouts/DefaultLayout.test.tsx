@@ -17,48 +17,33 @@
  */
 
 import {describe, it, expect} from 'vitest';
-import {render, screen} from '@testing-library/react';
-import {MemoryRouter, Routes, Route} from 'react-router';
+import {render} from '@thunder/test-utils/browser';
+import {page} from 'vitest/browser';
+import {Routes, Route} from 'react-router';
 import DefaultLayout from '../../layouts/DefaultLayout';
 
 describe('DefaultLayout', () => {
-  it('renders without crashing', () => {
-    const {container} = render(
-      <MemoryRouter>
-        <Routes>
-          <Route element={<DefaultLayout />}>
-            <Route path="*" element={<div>Child Content</div>} />
-          </Route>
-        </Routes>
-      </MemoryRouter>,
+  it('renders child routes through Outlet', async () => {
+    await render(
+      <Routes>
+        <Route element={<DefaultLayout />}>
+          <Route path="/" element={<div data-testid="child-content">Child Content</div>} />
+        </Route>
+      </Routes>,
+      {initialEntries: ['/']},
     );
-    expect(container).toBeInTheDocument();
+    await expect.element(page.getByTestId('child-content')).toBeInTheDocument();
   });
 
-  it('renders child routes through Outlet', () => {
-    render(
-      <MemoryRouter initialEntries={['/']}>
-        <Routes>
-          <Route element={<DefaultLayout />}>
-            <Route path="/" element={<div data-testid="child-content">Child Content</div>} />
-          </Route>
-        </Routes>
-      </MemoryRouter>,
-    );
-    expect(screen.getByTestId('child-content')).toBeInTheDocument();
-  });
-
-  it('renders Box with correct height styling', () => {
-    render(
-      <MemoryRouter>
-        <Routes>
-          <Route element={<DefaultLayout />}>
-            <Route path="*" element={<div>Child</div>} />
-          </Route>
-        </Routes>
-      </MemoryRouter>,
+  it('renders Box with correct height styling', async () => {
+    await render(
+      <Routes>
+        <Route element={<DefaultLayout />}>
+          <Route path="*" element={<div>Child</div>} />
+        </Route>
+      </Routes>,
     );
     // The layout should contain the child content
-    expect(screen.getByText('Child')).toBeInTheDocument();
+    await expect.element(page.getByText('Child')).toBeInTheDocument();
   });
 });

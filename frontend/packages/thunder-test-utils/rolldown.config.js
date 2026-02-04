@@ -32,41 +32,63 @@ const external = [
   /^@wso2\//,
   /^@tanstack\//,
   /^@testing-library\//,
-  'vitest',
+  /^@vitest\//,
+  /^vitest/,
   'i18next',
   'react-i18next',
   'react-router',
 ];
 
+// Common input files for jsdom mode (existing)
+const jsdomInput = {
+  index: join('src', 'index.ts'),
+  setup: join('src', 'setup.ts'),
+  'mocks/index': join('src', 'mocks', 'index.ts'),
+};
+
+// Browser mode input files (new)
+const browserInput = {
+  browser: join('src', 'browser.ts'),
+  'setup-browser': join('src', 'setup-browser.ts'),
+};
+
 const commonOptions = {
-  input: {
-    index: join('src', 'index.ts'),
-    setup: join('src', 'setup.ts'),
-    'mocks/index': join('src', 'mocks', 'index.ts'),
-  },
   external,
   target: 'es2020',
   sourcemap: true,
 };
 
 export default defineConfig([
-  // ESM build (for browsers/bundlers)
+  // ESM build for jsdom mode (existing)
   {
     ...commonOptions,
+    input: jsdomInput,
     platform: 'browser',
     output: {
       dir: 'dist',
       format: 'esm',
     },
   },
-  // CommonJS build (for Node/SSR/testing)
+  // CommonJS build for jsdom mode (existing)
   {
     ...commonOptions,
+    input: jsdomInput,
     platform: 'node',
     output: {
       dir: join('dist', 'cjs'),
       entryFileNames: '[name].cjs',
       format: 'cjs',
+    },
+  },
+  // ESM build for browser mode - Vitest Browser Mode runs tests in real browsers
+  // which natively support ES modules, so CJS is not needed for this build target
+  {
+    ...commonOptions,
+    input: browserInput,
+    platform: 'browser',
+    output: {
+      dir: 'dist',
+      format: 'esm',
     },
   },
 ]);

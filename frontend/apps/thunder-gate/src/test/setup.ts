@@ -16,9 +16,9 @@
  * under the License.
  */
 
-// Import shared test setup from @thunder/test-utils
-import '@thunder/test-utils/setup';
-import {configureTestUtils} from '@thunder/test-utils';
+// Import shared test setup for Vitest Browser Mode from @thunder/test-utils
+import '@thunder/test-utils/setup-browser';
+import {configureTestUtils} from '@thunder/test-utils/browser';
 
 configureTestUtils({
   base: '/gate',

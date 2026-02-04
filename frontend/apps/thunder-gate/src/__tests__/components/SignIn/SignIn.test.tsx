@@ -17,7 +17,8 @@
  */
 
 import {describe, it, expect, vi, beforeEach} from 'vitest';
-import {render, screen} from '@thunder/test-utils';
+import {render} from '@thunder/test-utils/browser';
+import {page} from 'vitest/browser';
 import SignIn from '../../../components/SignIn/SignIn';
 
 // Mock child components
@@ -49,40 +50,35 @@ describe('SignIn', () => {
     });
   });
 
-  it('renders without crashing', () => {
-    const {container} = render(<SignIn />);
-    expect(container).toBeInTheDocument();
+  it('renders SignInBox component', async () => {
+    await render(<SignIn />);
+    await expect.element(page.getByTestId('signin-box')).toBeInTheDocument();
   });
 
-  it('renders SignInBox component', () => {
-    render(<SignIn />);
-    expect(screen.getByTestId('signin-box')).toBeInTheDocument();
-  });
-
-  it('shows SignInSlogan when branding is not enabled', () => {
+  it('shows SignInSlogan when branding is not enabled', async () => {
     mockUseBranding.mockReturnValue({
       isBrandingEnabled: false,
       layout: null,
     });
-    render(<SignIn />);
-    expect(screen.getByTestId('signin-slogan')).toBeInTheDocument();
+    await render(<SignIn />);
+    await expect.element(page.getByTestId('signin-slogan')).toBeInTheDocument();
   });
 
-  it('shows SignInSlogan when branding is enabled with LEFT_ALIGNED layout', () => {
+  it('shows SignInSlogan when branding is enabled with LEFT_ALIGNED layout', async () => {
     mockUseBranding.mockReturnValue({
       isBrandingEnabled: true,
       layout: {type: 'LEFT_ALIGNED'},
     });
-    render(<SignIn />);
-    expect(screen.getByTestId('signin-slogan')).toBeInTheDocument();
+    await render(<SignIn />);
+    await expect.element(page.getByTestId('signin-slogan')).toBeInTheDocument();
   });
 
-  it('hides SignInSlogan when branding is enabled with non-LEFT_ALIGNED layout', () => {
+  it('hides SignInSlogan when branding is enabled with non-LEFT_ALIGNED layout', async () => {
     mockUseBranding.mockReturnValue({
       isBrandingEnabled: true,
       layout: {type: 'CENTERED'},
     });
-    render(<SignIn />);
-    expect(screen.queryByTestId('signin-slogan')).not.toBeInTheDocument();
+    await render(<SignIn />);
+    await expect.element(page.getByTestId('signin-slogan')).not.toBeInTheDocument();
   });
 });

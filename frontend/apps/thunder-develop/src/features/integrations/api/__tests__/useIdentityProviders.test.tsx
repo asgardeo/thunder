@@ -18,7 +18,7 @@
 
 /* eslint-disable @typescript-eslint/no-unsafe-assignment */
 
-import {describe, it, expect, beforeEach, afterEach, vi} from 'vitest';
+import {describe, it, expect, beforeEach, afterEach, vi, type Mock} from 'vitest';
 import {waitFor, act, renderHook} from '@thunder/test-utils';
 import {QueryClient} from '@tanstack/react-query';
 import {useAsgardeo} from '@asgardeo/react';
@@ -63,7 +63,7 @@ describe('useIdentityProviders', () => {
     },
   ];
 
-  let mockHttpRequest: ReturnType<typeof vi.fn>;
+  let mockHttpRequest: Mock;
 
   beforeEach(() => {
     mockHttpRequest = vi.fn().mockResolvedValue({data: mockIdentityProviders});

@@ -195,6 +195,11 @@ jobs:
           cd frontend/apps/thunder-develop
           pnpm test:coverage
 
+      - name: 🎭 Install Playwright System Dependencies for Thunder-Gate Tests
+        run: |
+          cd frontend
+          pnpm exec playwright install-deps chromium
+
       - name: 🧪 Run Thunder-Gate Tests with Coverage
         run: |
           cd frontend/apps/thunder-gate

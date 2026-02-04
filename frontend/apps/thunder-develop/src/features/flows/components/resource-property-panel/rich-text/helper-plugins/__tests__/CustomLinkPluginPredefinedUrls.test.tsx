@@ -24,7 +24,7 @@
  */
 
 import {describe, it, expect, vi, beforeEach, afterEach} from 'vitest';
-import {render, screen, fireEvent, waitFor, act} from '@testing-library/react';
+import {render, screen, fireEvent, waitFor, act, cleanup} from '@testing-library/react';
 import type React from 'react';
 
 // Use vi.hoisted for mock functions
@@ -116,15 +116,36 @@ import CustomLinkPlugin from '../CustomLinkPlugin';
 
 describe('CustomLinkPlugin - URL Type Detection Functions', () => {
   beforeEach(() => {
-    vi.clearAllMocks();
+    vi.resetAllMocks();
 
-    // Mock window methods
-    vi.spyOn(window, 'addEventListener').mockImplementation(vi.fn());
-    vi.spyOn(window, 'removeEventListener').mockImplementation(vi.fn());
+    // Restore default implementations for hoisted mocks after resetAllMocks
+    // In Vitest 4, vi.restoreAllMocks() no longer resets vi.fn() mocks,
+    // so mockReturnValue calls from previous tests persist unless explicitly reset
+    mockRegisterUpdateListener.mockImplementation(() => vi.fn());
+    mockRegisterCommand.mockImplementation(() => vi.fn());
+    mockGetRootElement.mockReturnValue(document.createElement('div'));
+    mockGetEditorState.mockReturnValue({
+      read: vi.fn((callback: () => void) => callback()),
+    });
+    mockGetSelection.mockReturnValue({type: 'range'});
+    mockIsRangeSelection.mockReturnValue(true);
+    mockIsLinkNode.mockReturnValue(false);
+    mockGetSelectedNode.mockReturnValue({
+      getParent: () => null,
+      getURL: () => 'https://example.com',
+      setTarget: vi.fn(),
+      setRel: vi.fn(),
+      type: 'text',
+    });
+
+    // Spy on window methods (passthrough to allow normal event handling)
+    vi.spyOn(window, 'addEventListener');
+    vi.spyOn(window, 'removeEventListener');
     vi.spyOn(window, 'open').mockImplementation(vi.fn());
   });
 
   afterEach(() => {
+    cleanup();
     vi.restoreAllMocks();
   });
 

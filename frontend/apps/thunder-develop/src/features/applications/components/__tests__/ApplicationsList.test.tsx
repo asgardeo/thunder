@@ -16,7 +16,7 @@
  * under the License.
  */
 
-import {describe, it, expect, beforeEach, vi} from 'vitest';
+import {describe, it, expect, beforeEach, vi, type Mock} from 'vitest';
 import {render, screen, waitFor} from '@thunder/test-utils';
 import userEvent from '@testing-library/user-event';
 import type {ApplicationListResponse} from '../../models/responses';
@@ -111,7 +111,7 @@ const {useNavigate} = await import('react-router');
 const {default: useDataGridLocaleText} = await import('../../../../hooks/useDataGridLocaleText');
 
 describe('ApplicationsList', () => {
-  let mockNavigate: ReturnType<typeof vi.fn>;
+  let mockNavigate: Mock;
 
   const mockApplicationsData: ApplicationListResponse = {
     totalResults: 2,

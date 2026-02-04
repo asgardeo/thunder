@@ -19,6 +19,7 @@
 import {defineConfig} from 'vitest/config';
 import react from '@vitejs/plugin-react';
 import basicSsl from '@vitejs/plugin-basic-ssl';
+import {playwright} from '@vitest/browser-playwright';
 import {resolve, dirname} from 'path';
 import {fileURLToPath} from 'url';
 
@@ -54,7 +55,14 @@ export default defineConfig({
   ],
   test: {
     globals: true,
-    environment: 'jsdom',
+    browser: {
+      provider: playwright(),
+      enabled: true,
+      instances: [
+        {browser: 'chromium'},
+      ],
+      headless: true,
+    },
     setupFiles: resolve(currentDir, 'src', 'test', 'setup.ts'),
     css: {
       modules: {

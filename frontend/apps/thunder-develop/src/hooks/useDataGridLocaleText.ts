@@ -54,12 +54,6 @@ function getTranslationFunction<T>(commonBundle: Record<string, unknown>, key: s
     return value as T;
   }
 
-  // Log a warning in development if the key exists but is not a function
-  if (process.env.NODE_ENV === 'development' && value !== undefined) {
-    // eslint-disable-next-line no-console
-    console.warn(`Translation key '${key}' exists but is not a function. Expected a function, got ${typeof value}.`);
-  }
-
   return undefined;
 }
 
@@ -174,10 +168,7 @@ export default function useDataGridLocaleText(): Partial<DataGrid.GridLocaleText
       columnHeaderSortIconLabel: t('common:dataTable.columnHeaderSortIconLabel'),
 
       // Rows selected footer text
-      footerRowSelected: getTranslationFunction<(count: number) => string>(
-        commonBundle,
-        'dataTable.footerRowSelected',
-      ),
+      footerRowSelected: getTranslationFunction<(count: number) => string>(commonBundle, 'dataTable.footerRowSelected'),
 
       // Total row amount footer text
       footerTotalRows: t('common:dataTable.footerTotalRows'),

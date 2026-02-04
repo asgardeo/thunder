@@ -16,7 +16,7 @@
  * under the License.
  */
 
-import {describe, it, expect, vi, beforeEach} from 'vitest';
+import {describe, it, expect, vi, beforeEach, type Mock} from 'vitest';
 import {render, screen} from '@testing-library/react';
 import Sortable from '../Sortable';
 
@@ -436,7 +436,7 @@ describe('Sortable', () => {
     // Create a fresh manager for each test in this block to avoid WeakMap caching
     let freshManager: {
       monitor: {
-        addEventListener: ReturnType<typeof vi.fn>;
+        addEventListener: Mock;
       };
     };
 

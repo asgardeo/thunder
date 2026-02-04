@@ -16,8 +16,8 @@
  * under the License.
  */
 
-import {describe, it, expect, vi, beforeEach, afterEach} from 'vitest';
-import {render, screen, fireEvent, waitFor, act} from '@testing-library/react';
+import {describe, it, expect, vi, beforeEach, afterEach, type Mock} from 'vitest';
+import {render, screen, fireEvent, waitFor, act, cleanup} from '@testing-library/react';
 import CustomLinkPlugin from '../CustomLinkPlugin';
 
 // Use vi.hoisted for mock functions
@@ -106,15 +106,34 @@ vi.mock('react-dom', () => ({
 
 describe('CustomLinkPlugin', () => {
   beforeEach(() => {
-    vi.clearAllMocks();
+    vi.resetAllMocks();
 
-    // Mock window methods
-    vi.spyOn(window, 'addEventListener').mockImplementation(vi.fn());
-    vi.spyOn(window, 'removeEventListener').mockImplementation(vi.fn());
+    // Restore default implementations for hoisted mocks after resetAllMocks
+    mockRegisterUpdateListener.mockImplementation(() => vi.fn());
+    mockRegisterCommand.mockImplementation(() => vi.fn());
+    mockGetRootElement.mockReturnValue(document.createElement('div'));
+    mockGetEditorState.mockReturnValue({
+      read: vi.fn((callback: () => void) => callback()),
+    });
+    mockGetSelection.mockReturnValue({type: 'range'});
+    mockIsRangeSelection.mockReturnValue(true);
+    mockIsLinkNode.mockReturnValue(false);
+    mockGetSelectedNode.mockReturnValue({
+      getParent: () => null,
+      getURL: () => 'https://example.com',
+      setTarget: vi.fn(),
+      setRel: vi.fn(),
+      type: 'text',
+    });
+
+    // Spy on window methods (passthrough to allow normal event handling)
+    vi.spyOn(window, 'addEventListener');
+    vi.spyOn(window, 'removeEventListener');
     vi.spyOn(window, 'open').mockImplementation(vi.fn());
   });
 
   afterEach(() => {
+    cleanup();
     vi.restoreAllMocks();
   });
 
@@ -450,7 +469,7 @@ describe('CustomLinkPlugin', () => {
       // Mock to return a link node parent
       const {$isLinkNode} = await vi.importMock<typeof import('@lexical/link')>('@lexical/link');
       (
-        $isLinkNode as ReturnType<typeof vi.fn>
+        $isLinkNode as Mock
       ).mockImplementation((node: {type?: string} | null) => node && node.type === 'link');
 
       render(<CustomLinkPlugin />);
@@ -461,7 +480,7 @@ describe('CustomLinkPlugin', () => {
     it('should detect when node itself is a link node', async () => {
       const {$isLinkNode} = await vi.importMock<typeof import('@lexical/link')>('@lexical/link');
       (
-        $isLinkNode as ReturnType<typeof vi.fn>
+        $isLinkNode as Mock
       ).mockImplementation((node: {type?: string} | null) => node && node.type === 'link');
 
       render(<CustomLinkPlugin />);
@@ -763,7 +782,7 @@ describe('CustomLinkPlugin', () => {
 
       // Capture the command callback
       const callbacks: Record<string, unknown> = {};
-      (mockRegisterCommand as ReturnType<typeof vi.fn>).mockImplementation(
+      (mockRegisterCommand as Mock).mockImplementation(
         (command: unknown, callback: unknown) => {
           callbacks[command as string] = callback;
           return vi.fn();
@@ -799,7 +818,7 @@ describe('CustomLinkPlugin', () => {
       mockIsRangeSelection.mockReturnValue(true);
 
       const callbacks: Record<string, unknown> = {};
-      (mockRegisterCommand as ReturnType<typeof vi.fn>).mockImplementation(
+      (mockRegisterCommand as Mock).mockImplementation(
         (command: unknown, callback: unknown) => {
           callbacks[command as string] = callback;
           return vi.fn();
@@ -834,7 +853,7 @@ describe('CustomLinkPlugin', () => {
       mockIsRangeSelection.mockReturnValue(true);
 
       const callbacks: Record<string, unknown> = {};
-      (mockRegisterCommand as ReturnType<typeof vi.fn>).mockImplementation(
+      (mockRegisterCommand as Mock).mockImplementation(
         (command: unknown, callback: unknown) => {
           callbacks[command as string] = callback;
           return vi.fn();
@@ -864,7 +883,7 @@ describe('CustomLinkPlugin', () => {
       mockIsRangeSelection.mockReturnValue(true);
 
       const callbacks: Record<string, unknown> = {};
-      (mockRegisterCommand as ReturnType<typeof vi.fn>).mockImplementation(
+      (mockRegisterCommand as Mock).mockImplementation(
         (command: unknown, callback: unknown) => {
           callbacks[command as string] = callback;
           return vi.fn();
@@ -894,7 +913,7 @@ describe('CustomLinkPlugin', () => {
       mockIsRangeSelection.mockReturnValue(true);
 
       const callbacks: Record<string, unknown> = {};
-      (mockRegisterCommand as ReturnType<typeof vi.fn>).mockImplementation(
+      (mockRegisterCommand as Mock).mockImplementation(
         (command: unknown, callback: unknown) => {
           callbacks[command as string] = callback;
           return vi.fn();
@@ -926,7 +945,7 @@ describe('CustomLinkPlugin', () => {
       mockIsRangeSelection.mockReturnValue(true);
 
       const callbacks: Record<string, unknown> = {};
-      (mockRegisterCommand as ReturnType<typeof vi.fn>).mockImplementation(
+      (mockRegisterCommand as Mock).mockImplementation(
         (command: unknown, callback: unknown) => {
           callbacks[command as string] = callback;
           return vi.fn();
@@ -949,7 +968,7 @@ describe('CustomLinkPlugin', () => {
       mockIsRangeSelection.mockReturnValue(true);
 
       const callbacks: Record<string, unknown> = {};
-      (mockRegisterCommand as ReturnType<typeof vi.fn>).mockImplementation(
+      (mockRegisterCommand as Mock).mockImplementation(
         (command: unknown, callback: unknown) => {
           callbacks[command as string] = callback;
           return vi.fn();
@@ -979,7 +998,7 @@ describe('CustomLinkPlugin', () => {
       mockIsRangeSelection.mockReturnValue(true);
 
       const callbacks: Record<string, unknown> = {};
-      (mockRegisterCommand as ReturnType<typeof vi.fn>).mockImplementation(
+      (mockRegisterCommand as Mock).mockImplementation(
         (command: unknown, callback: unknown) => {
           callbacks[command as string] = callback;
           return vi.fn();
@@ -997,7 +1016,7 @@ describe('CustomLinkPlugin', () => {
 
     it('should execute KEY_ESCAPE_COMMAND in edit mode', async () => {
       const callbacks: Record<string, unknown> = {};
-      (mockRegisterCommand as ReturnType<typeof vi.fn>).mockImplementation(
+      (mockRegisterCommand as Mock).mockImplementation(
         (command: unknown, callback: unknown) => {
           callbacks[command as string] = callback;
           return vi.fn();
@@ -1022,7 +1041,7 @@ describe('CustomLinkPlugin', () => {
 
     it('should execute KEY_ESCAPE_COMMAND in view mode and return false', () => {
       const callbacks: Record<string, unknown> = {};
-      (mockRegisterCommand as ReturnType<typeof vi.fn>).mockImplementation(
+      (mockRegisterCommand as Mock).mockImplementation(
         (command: unknown, callback: unknown) => {
           callbacks[command as string] = callback;
           return vi.fn();
@@ -1041,7 +1060,7 @@ describe('CustomLinkPlugin', () => {
 
     it('should execute SELECTION_CHANGE_COMMAND callback', () => {
       const callbacks: Record<string, unknown> = {};
-      (mockRegisterCommand as ReturnType<typeof vi.fn>).mockImplementation(
+      (mockRegisterCommand as Mock).mockImplementation(
         (command: unknown, callback: unknown) => {
           callbacks[command as string] = callback;
           return vi.fn();
@@ -1370,7 +1389,7 @@ describe('CustomLinkPlugin', () => {
   describe('handleUrlTypeChange', () => {
     it('should handle URL type change to CUSTOM and set URL to https://', async () => {
       const callbacks: Record<string, unknown> = {};
-      (mockRegisterCommand as ReturnType<typeof vi.fn>).mockImplementation(
+      (mockRegisterCommand as Mock).mockImplementation(
         (command: unknown, callback: unknown) => {
           callbacks[command as string] = callback;
           return vi.fn();
@@ -1491,7 +1510,7 @@ describe('CustomLinkPlugin', () => {
     it('should execute update listener callback', () => {
       type UpdateCallback = (state: {editorState: {read: (cb: () => void) => void}}) => void;
       const capturedCallbacks: UpdateCallback[] = [];
-      (mockRegisterUpdateListener as ReturnType<typeof vi.fn>).mockImplementation(
+      (mockRegisterUpdateListener as Mock).mockImplementation(
         (callback: unknown) => {
           capturedCallbacks.push(callback as UpdateCallback);
           return vi.fn();
@@ -2115,7 +2134,7 @@ describe('CustomLinkPlugin', () => {
       render(<CustomLinkPlugin />);
 
       // Get the resize handler that was registered
-      const resizeCall = (window.addEventListener as ReturnType<typeof vi.fn>).mock.calls.find(
+      const resizeCall = (window.addEventListener as Mock).mock.calls.find(
         (call: unknown[]) => call[0] === 'resize',
       );
       expect(resizeCall).toBeDefined();
@@ -2175,7 +2194,7 @@ describe('CustomLinkPlugin', () => {
       mockIsRangeSelection.mockReturnValue(true);
 
       const callbacks: Record<string, unknown> = {};
-      (mockRegisterCommand as ReturnType<typeof vi.fn>).mockImplementation(
+      (mockRegisterCommand as Mock).mockImplementation(
         (command: unknown, callback: unknown) => {
           callbacks[command as string] = callback;
           return vi.fn();
@@ -2467,7 +2486,7 @@ describe('CustomLinkPlugin', () => {
       mockIsRangeSelection.mockReturnValue(true);
 
       const callbacks: Record<string, unknown> = {};
-      (mockRegisterCommand as ReturnType<typeof vi.fn>).mockImplementation(
+      (mockRegisterCommand as Mock).mockImplementation(
         (command: unknown, callback: unknown) => {
           callbacks[command as string] = callback;
           return vi.fn();

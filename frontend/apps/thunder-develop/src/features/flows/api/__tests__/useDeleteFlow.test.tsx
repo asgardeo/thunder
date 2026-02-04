@@ -16,7 +16,7 @@
  * under the License.
  */
 
-import {describe, it, expect, beforeEach, afterEach, vi} from 'vitest';
+import {describe, it, expect, beforeEach, afterEach, vi, type Mock} from 'vitest';
 import {renderHook, waitFor, act} from '@thunder/test-utils';
 import {useAsgardeo} from '@asgardeo/react';
 import {useConfig} from '@thunder/shared-contexts';
@@ -36,7 +36,7 @@ vi.mock('@thunder/shared-contexts', async (importOriginal) => {
 });
 
 describe('useDeleteFlow', () => {
-  let mockHttpRequest: ReturnType<typeof vi.fn>;
+  let mockHttpRequest: Mock;
 
   beforeEach(() => {
     mockHttpRequest = vi.fn();

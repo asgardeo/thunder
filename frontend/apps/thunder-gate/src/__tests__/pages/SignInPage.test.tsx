@@ -17,7 +17,8 @@
  */
 
 import {describe, it, expect, vi} from 'vitest';
-import {render, screen} from '@thunder/test-utils';
+import {render} from '@thunder/test-utils/browser';
+import {page} from 'vitest/browser';
 import SignInPage from '../../pages/SignInPage';
 
 // Mock the SignIn component
@@ -26,13 +27,8 @@ vi.mock('../../components/SignIn/SignIn', () => ({
 }));
 
 describe('SignInPage', () => {
-  it('renders without crashing', () => {
-    const {container} = render(<SignInPage />);
-    expect(container).toBeInTheDocument();
-  });
-
-  it('renders SignIn component', () => {
-    render(<SignInPage />);
-    expect(screen.getByTestId('signin-component')).toBeInTheDocument();
+  it('renders SignIn component', async () => {
+    await render(<SignInPage />);
+    await expect.element(page.getByTestId('signin-component')).toBeInTheDocument();
   });
 });

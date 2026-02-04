@@ -18,7 +18,7 @@
 
 import {render, screen, waitFor} from '@thunder/test-utils';
 import userEvent from '@testing-library/user-event';
-import {describe, it, expect, vi, beforeEach} from 'vitest';
+import {describe, it, expect, vi, beforeEach, type Mock} from 'vitest';
 import type {UseQueryResult, UseMutationResult} from '@tanstack/react-query';
 import type {Application} from '../../models/application';
 import ApplicationEditPage from '../ApplicationEditPage';
@@ -119,10 +119,10 @@ vi.mock('../../components/LogoUpdateModal', () => ({
   ),
 }));
 
-const mockUseGetApplication = useGetApplication as ReturnType<typeof vi.fn>;
-const mockUseUpdateApplication = useUpdateApplication as ReturnType<typeof vi.fn>;
-const mockGetTemplateMetadata = getTemplateMetadata as ReturnType<typeof vi.fn>;
-const mockGetIntegrationGuidesForTemplate = getIntegrationGuidesForTemplate as ReturnType<typeof vi.fn>;
+const mockUseGetApplication = useGetApplication as Mock;
+const mockUseUpdateApplication = useUpdateApplication as Mock;
+const mockGetTemplateMetadata = getTemplateMetadata as Mock;
+const mockGetIntegrationGuidesForTemplate = getIntegrationGuidesForTemplate as Mock;
 
 describe('ApplicationEditPage', () => {
   const mockApplication: Application = {
@@ -875,7 +875,7 @@ describe('ApplicationEditPage', () => {
     it('should not save when application or applicationId is missing', async () => {
       // Mock useParams to return undefined applicationId
       const {useParams} = await import('react-router');
-      (useParams as ReturnType<typeof vi.fn>).mockReturnValue({applicationId: undefined});
+      (useParams as Mock).mockReturnValue({applicationId: undefined});
 
       const mockMutateAsync = vi.fn().mockResolvedValue(mockApplication);
       mockUseUpdateApplication.mockReturnValue({
@@ -892,7 +892,7 @@ describe('ApplicationEditPage', () => {
       expect(mockMutateAsync).not.toHaveBeenCalled();
 
       // Restore original mock
-      (useParams as ReturnType<typeof vi.fn>).mockReturnValue({applicationId: 'test-app-id'});
+      (useParams as Mock).mockReturnValue({applicationId: 'test-app-id'});
     });
   });
 

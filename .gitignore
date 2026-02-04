@@ -110,6 +110,9 @@ samples/apps/*/server/app
 backend/coverage_unit.out
 backend/coverage_unit.html
 
+# Vitest browser mode screenshots
+**/__screenshots__/
+
 # IDE settings
 .cursor/rules/nx-rules.mdc
 .github/instructions/nx.instructions.md

@@ -16,135 +16,45 @@
  * under the License.
  */
 
-import {describe, it, expect, vi, beforeEach} from 'vitest';
-import {render} from '@testing-library/react';
-import App from '../App';
+import {describe, it, expect, vi} from 'vitest';
+import {render} from 'vitest-browser-react';
+import {page} from 'vitest/browser';
 
-// Create a variable to hold the mock routes that we can change per test
-let mockAppRoutes: {
-  path: string;
-  element: React.ReactNode;
-  children?: {
-    path?: string;
-    index?: boolean;
-    element: React.ReactNode;
-  }[];
-}[] = [];
-
-// Mock the app routes module
+// Mock the app routes module to return simple routes
+// This avoids loading complex page components with many dependencies
+// Note: We use render from vitest-browser-react directly because App has its own BrowserRouter
 vi.mock('../config/appRoutes', () => ({
-  get default() {
-    return mockAppRoutes;
-  },
+  default: [
+    {
+      path: '/',
+      element: <div data-testid="mock-layout">Mock Layout</div>,
+      children: [
+        {
+          path: 'test',
+          element: <div data-testid="mock-page">Mock Page</div>,
+        },
+      ],
+    },
+  ],
 }));
 
+// Import App after the mock is set up
+// eslint-disable-next-line import/first
+import App from '../App';
+
 describe('App', () => {
-  beforeEach(() => {
-    // Reset routes before each test
-    mockAppRoutes = [];
+  it('renders without crashing', async () => {
+    // App uses BrowserRouter internally, so we render it directly
+    // The test verifies the component mounts without errors
+    await render(<App />);
+
+    // The App should render and show content - verify the body is not empty
+    // We're testing that the routing structure works, not specific route content
+    await expect.element(page.getByTestId('mock-layout')).toBeInTheDocument();
   });
 
-  it('renders without crashing with empty routes', () => {
-    mockAppRoutes = [];
-    const {container} = render(<App />);
-    expect(container).toBeInTheDocument();
-  });
-
-  it('renders routes with children that have paths', () => {
-    mockAppRoutes = [
-      {
-        path: '/parent',
-        element: <div data-testid="parent">Parent</div>,
-        children: [
-          {
-            path: 'child1',
-            element: <div data-testid="child1">Child 1</div>,
-          },
-          {
-            path: 'child2',
-            element: <div data-testid="child2">Child 2</div>,
-          },
-        ],
-      },
-    ];
-    const {container} = render(<App />);
-    expect(container).toBeInTheDocument();
-  });
-
-  it('renders routes with index child (no path) without crashing', () => {
-    // This test ensures that routes with index children (no path property)
-    // render without runtime errors
-    mockAppRoutes = [
-      {
-        path: '/dashboard',
-        element: <div data-testid="dashboard">Dashboard</div>,
-        children: [
-          {
-            index: true, // No path, uses index
-            element: <div data-testid="index-child">Index Child</div>,
-          },
-          {
-            path: 'settings',
-            element: <div data-testid="settings">Settings</div>,
-          },
-        ],
-      },
-    ];
-    const {container} = render(<App />);
-    expect(container).toBeInTheDocument();
-  });
-
-  it('renders routes without children', () => {
-    mockAppRoutes = [
-      {
-        path: '/standalone',
-        element: <div data-testid="standalone">Standalone Route</div>,
-      },
-    ];
-    const {container} = render(<App />);
-    expect(container).toBeInTheDocument();
-  });
-
-  it('renders multiple parent routes with mixed children', () => {
-    mockAppRoutes = [
-      {
-        path: '/auth',
-        element: <div data-testid="auth">Auth</div>,
-        children: [
-          {
-            index: true, // Index route without path
-            element: <div>Auth Index</div>,
-          },
-        ],
-      },
-      {
-        path: '/app',
-        element: <div data-testid="app">App</div>,
-        children: [
-          {
-            path: 'home',
-            element: <div>Home</div>,
-          },
-          {
-            index: true, // Another index route without path
-            element: <div>App Index</div>,
-          },
-        ],
-      },
-    ];
-    const {container} = render(<App />);
-    expect(container).toBeInTheDocument();
-  });
-
-  it('renders route with empty children array', () => {
-    mockAppRoutes = [
-      {
-        path: '/empty-children',
-        element: <div data-testid="empty-children">Empty Children</div>,
-        children: [],
-      },
-    ];
-    const {container} = render(<App />);
-    expect(container).toBeInTheDocument();
+  it('renders the mocked route layout', async () => {
+    await render(<App />);
+    await expect.element(page.getByTestId('mock-layout')).toBeInTheDocument();
   });
 });

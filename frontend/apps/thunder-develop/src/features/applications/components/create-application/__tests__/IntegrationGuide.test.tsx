@@ -16,7 +16,7 @@
  * under the License.
  */
 
-import {describe, it, expect, vi, beforeEach, afterEach} from 'vitest';
+import {describe, it, expect, vi, beforeEach, afterEach, type Mock} from 'vitest';
 import {render, screen, fireEvent, waitFor, act} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {BrowserRouter} from 'react-router';
@@ -56,7 +56,7 @@ describe('IntegrationGuide', () => {
   const renderWithRouter = (ui: React.ReactElement) => render(<BrowserRouter>{ui}</BrowserRouter>);
 
   // Store mock at module level so tests can access it
-  let clipboardWriteTextMock: ReturnType<typeof vi.fn>;
+  let clipboardWriteTextMock: Mock;
   // Store original document.execCommand to restore after tests
   let originalExecCommand: typeof document.execCommand;
 
