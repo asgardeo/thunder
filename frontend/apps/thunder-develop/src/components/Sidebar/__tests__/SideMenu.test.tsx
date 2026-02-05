@@ -306,6 +306,16 @@ describe('SideMenu', () => {
 
       expect(screen.getByTestId('menu-content')).toBeInTheDocument();
     });
+
+    it('sets mini to false when disableCollapsible is true even if not expanded', () => {
+      render(<SideMenu defaultExpanded={false} disableCollapsible />);
+
+      // When disableCollapsible is true, mini should be false
+      // so user info should still be visible
+      expect(screen.getByText('John Doe')).toBeInTheDocument();
+      expect(screen.getByText('john.doe@example.com')).toBeInTheDocument();
+      expect(screen.getByTestId('options-menu')).toBeInTheDocument();
+    });
   });
 
   describe('Transition timing', () => {

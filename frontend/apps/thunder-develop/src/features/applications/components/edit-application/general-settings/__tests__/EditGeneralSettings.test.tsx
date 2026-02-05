@@ -247,4 +247,22 @@ describe('EditGeneralSettings', () => {
       expect(sections[1]).toHaveAttribute('data-testid', 'access-section');
     });
   });
+
+  describe('Optional Props', () => {
+    it('should render correctly when oauth2Config is explicitly undefined', () => {
+      render(
+        <EditGeneralSettings
+          application={mockApplication}
+          editedApp={{}}
+          onFieldChange={mockOnFieldChange}
+          oauth2Config={undefined}
+          copiedField={null}
+          onCopyToClipboard={mockOnCopyToClipboard}
+        />,
+      );
+
+      expect(screen.getByTestId('quick-copy-section')).toHaveTextContent('OAuth: None');
+      expect(screen.getByTestId('access-section')).toHaveTextContent('OAuth: None');
+    });
+  });
 });

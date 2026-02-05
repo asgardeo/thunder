@@ -502,4 +502,89 @@ describe('RegistrationFlowSection', () => {
       expect(createLink).toHaveAttribute('href', '/flows');
     });
   });
+
+  describe('Edge Cases', () => {
+    it('should handle registration_flow_id not found in flows list', () => {
+      vi.mocked(useGetFlows).mockReturnValue({
+        data: {flows: mockRegFlows},
+        isLoading: false,
+      } as MockedUseGetFlows);
+
+      const appWithInvalidFlow = {...mockApplication, registration_flow_id: 'non-existent-flow'};
+
+      render(
+        <MemoryRouter>
+          <RegistrationFlowSection application={appWithInvalidFlow} editedApp={{}} onFieldChange={mockOnFieldChange} />
+        </MemoryRouter>,
+      );
+
+      const input = screen.getByPlaceholderText('Select a registration flow');
+      expect(input).toHaveValue('');
+    });
+
+    it('should use editedApp registration_flow_id when application has no registration_flow_id', () => {
+      vi.mocked(useGetFlows).mockReturnValue({
+        data: {flows: mockRegFlows},
+        isLoading: false,
+      } as MockedUseGetFlows);
+
+      const appWithoutFlow = {...mockApplication, registration_flow_id: undefined};
+
+      render(
+        <MemoryRouter>
+          <RegistrationFlowSection
+            application={appWithoutFlow}
+            editedApp={{registration_flow_id: 'reg-flow-3'}}
+            onFieldChange={mockOnFieldChange}
+          />
+        </MemoryRouter>,
+      );
+
+      const input = screen.getByPlaceholderText('Select a registration flow');
+      expect(input).toHaveValue('SSO Registration Flow');
+    });
+
+    it('should handle both application and editedApp having registration_flow_id', () => {
+      vi.mocked(useGetFlows).mockReturnValue({
+        data: {flows: mockRegFlows},
+        isLoading: false,
+      } as MockedUseGetFlows);
+
+      render(
+        <MemoryRouter>
+          <RegistrationFlowSection
+            application={{...mockApplication, registration_flow_id: 'reg-flow-1'}}
+            editedApp={{registration_flow_id: 'reg-flow-3'}}
+            onFieldChange={mockOnFieldChange}
+          />
+        </MemoryRouter>,
+      );
+
+      const input = screen.getByPlaceholderText('Select a registration flow');
+      // editedApp should take precedence
+      expect(input).toHaveValue('SSO Registration Flow');
+    });
+
+    it('should handle typing to filter options', async () => {
+      const user = userEvent.setup();
+      vi.mocked(useGetFlows).mockReturnValue({
+        data: {flows: mockRegFlows},
+        isLoading: false,
+      } as MockedUseGetFlows);
+
+      render(
+        <MemoryRouter>
+          <RegistrationFlowSection application={mockApplication} editedApp={{}} onFieldChange={mockOnFieldChange} />
+        </MemoryRouter>,
+      );
+
+      const input = screen.getByPlaceholderText('Select a registration flow');
+      await user.clear(input);
+      await user.type(input, 'Custom');
+
+      await waitFor(() => {
+        expect(screen.getByText('Custom Registration Flow')).toBeInTheDocument();
+      });
+    });
+  });
 });

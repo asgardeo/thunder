@@ -258,4 +258,177 @@ describe('EditGeneralSettings', () => {
     // Should show the raw parent ID in a text field
     expect(screen.getByDisplayValue('parent-ou-id')).toBeInTheDocument();
   });
+
+  it('should clear previous timeout when copying a second field quickly', async () => {
+    renderWithProviders(<EditGeneralSettings organizationUnit={mockOrganizationUnit} />);
+
+    const copyButtons = screen.getAllByRole('button');
+    const handleCopyButton = copyButtons[0];
+    const idCopyButton = copyButtons[1];
+
+    // Copy handle first
+    await act(async () => {
+      fireEvent.click(handleCopyButton);
+    });
+
+    expect(mockClipboard.writeText).toHaveBeenCalledWith('test-handle');
+
+    // Copy OU ID before the first timeout fires - this exercises the clearTimeout branch
+    await act(async () => {
+      fireEvent.click(idCopyButton);
+    });
+
+    expect(mockClipboard.writeText).toHaveBeenCalledWith('ou-123');
+
+    // Advance timers to trigger the reset
+    await act(async () => {
+      vi.advanceTimersByTime(2000);
+    });
+
+    // Both copies should have been triggered
+    expect(mockClipboard.writeText).toHaveBeenCalledTimes(2);
+  });
+
+  it('should call useGetOrganizationUnit with parent id and enabled=true when parent exists', () => {
+    const ouWithParent: OrganizationUnit = {
+      ...mockOrganizationUnit,
+      parent: 'parent-ou-id',
+    };
+
+    mockUseGetOrganizationUnit.mockReturnValue({
+      data: undefined,
+      isLoading: false,
+    });
+
+    renderWithProviders(<EditGeneralSettings organizationUnit={ouWithParent} />);
+
+    expect(mockUseGetOrganizationUnit).toHaveBeenCalledWith('parent-ou-id', true);
+  });
+
+  it('should call useGetOrganizationUnit with undefined and enabled=false when parent is null', () => {
+    renderWithProviders(<EditGeneralSettings organizationUnit={mockOrganizationUnit} />);
+
+    expect(mockUseGetOrganizationUnit).toHaveBeenCalledWith(undefined, false);
+  });
+
+  it('should show copy icon initially and check icon after copying', async () => {
+    renderWithProviders(<EditGeneralSettings organizationUnit={mockOrganizationUnit} />);
+
+    // Initially should show "Copy" aria-label
+    const copyButtons = screen.getAllByRole('button');
+    expect(copyButtons[0]).toHaveAttribute('aria-label', 'Copy');
+
+    // Click to copy
+    await act(async () => {
+      fireEvent.click(copyButtons[0]);
+    });
+
+    // After copying, should show "Copied" aria-label
+    expect(copyButtons[0]).toHaveAttribute('aria-label', 'Copied');
+
+    // After timeout, should reset back to "Copy"
+    await act(async () => {
+      vi.advanceTimersByTime(2000);
+    });
+
+    expect(copyButtons[0]).toHaveAttribute('aria-label', 'Copy');
+  });
+
+  it('should clean up timeout on unmount', async () => {
+    const {unmount} = renderWithProviders(<EditGeneralSettings organizationUnit={mockOrganizationUnit} />);
+
+    const copyButtons = screen.getAllByRole('button');
+
+    // Trigger a copy to set a timeout
+    await act(async () => {
+      fireEvent.click(copyButtons[0]);
+    });
+
+    // Unmount the component - should clean up the timeout
+    unmount();
+
+    // Advance timers - should not throw
+    await act(async () => {
+      vi.advanceTimersByTime(2000);
+    });
+  });
+
+  it('should re-render correctly when organizationUnit prop changes', () => {
+    const {rerender} = renderWithProviders(<EditGeneralSettings organizationUnit={mockOrganizationUnit} />);
+
+    expect(screen.getByDisplayValue('test-handle')).toBeInTheDocument();
+    expect(screen.getByDisplayValue('ou-123')).toBeInTheDocument();
+
+    // Re-render with different organization unit
+    const differentOU: OrganizationUnit = {
+      id: 'ou-789',
+      handle: 'updated-handle',
+      name: 'Updated OU',
+      description: 'Updated description',
+      parent: null,
+    };
+
+    rerender(<EditGeneralSettings organizationUnit={differentOU} />);
+
+    expect(screen.getByDisplayValue('updated-handle')).toBeInTheDocument();
+    expect(screen.getByDisplayValue('ou-789')).toBeInTheDocument();
+  });
+
+  it('should re-render when switching from no parent to parent', () => {
+    vi.useRealTimers();
+
+    const {rerender} = renderWithProviders(<EditGeneralSettings organizationUnit={mockOrganizationUnit} />);
+
+    expect(screen.getByDisplayValue('No Parent')).toBeInTheDocument();
+
+    // Switch to OU with parent
+    const ouWithParent: OrganizationUnit = {
+      ...mockOrganizationUnit,
+      parent: 'parent-ou-id',
+    };
+
+    mockUseGetOrganizationUnit.mockReturnValue({
+      data: {
+        id: 'parent-ou-id',
+        handle: 'parent-handle',
+        name: 'Parent OU',
+        description: null,
+        parent: null,
+      },
+      isLoading: false,
+    });
+
+    rerender(<EditGeneralSettings organizationUnit={ouWithParent} />);
+
+    expect(screen.getByText('Parent OU')).toBeInTheDocument();
+
+    vi.useFakeTimers();
+  });
+
+  it('should re-render when parent loading state changes', () => {
+    const ouWithParent: OrganizationUnit = {
+      ...mockOrganizationUnit,
+      parent: 'parent-ou-id',
+    };
+
+    mockUseGetOrganizationUnit.mockReturnValue({
+      data: undefined,
+      isLoading: true,
+    });
+
+    const {rerender} = renderWithProviders(<EditGeneralSettings organizationUnit={ouWithParent} />);
+
+    expect(screen.getByRole('progressbar')).toBeInTheDocument();
+
+    // Transition to loaded
+    mockUseGetOrganizationUnit.mockReturnValue({
+      data: undefined,
+      isLoading: false,
+    });
+
+    rerender(<EditGeneralSettings organizationUnit={ouWithParent} />);
+
+    // Should show raw parent ID since data is undefined
+    expect(screen.getByDisplayValue('parent-ou-id')).toBeInTheDocument();
+  });
 });

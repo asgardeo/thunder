@@ -142,7 +142,7 @@ describe('ApplicationsList', () => {
 
   beforeEach(() => {
     mockNavigate = vi.fn();
-    vi.mocked(useNavigate).mockReturnValue(mockNavigate);
+    vi.mocked(useNavigate).mockReturnValue(mockNavigate as unknown as ReturnType<typeof useNavigate>);
     vi.mocked(useDataGridLocaleText).mockReturnValue({});
   });
 

@@ -136,11 +136,11 @@ describe('useCreateApplication', () => {
     user_attributes: ['email', 'username'],
   };
 
-  let mockHttpRequest: ReturnType<typeof vi.fn>;
+  let mockHttpRequest: ReturnType<typeof vi.fn<(...args: unknown[]) => Promise<unknown>>>;
 
   beforeEach(() => {
     // Mock HTTP request function
-    mockHttpRequest = vi.fn();
+    mockHttpRequest = vi.fn<(...args: unknown[]) => Promise<unknown>>();
 
     // Mock useAsgardeo hook
     vi.mocked(useAsgardeo).mockReturnValue({
@@ -465,11 +465,8 @@ describe('useCreateApplication', () => {
       expect(result.current.isSuccess).toBe(true);
     });
 
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-    const callArgs = mockHttpRequest.mock.calls[0][0];
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+    const callArgs = mockHttpRequest.mock.calls[0][0] as Record<string, unknown>;
     expect(callArgs.data).toBe(JSON.stringify(mockRequest));
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-    expect(callArgs.headers['Content-Type']).toBe('application/json');
+    expect((callArgs.headers as Record<string, string>)['Content-Type']).toBe('application/json');
   });
 });

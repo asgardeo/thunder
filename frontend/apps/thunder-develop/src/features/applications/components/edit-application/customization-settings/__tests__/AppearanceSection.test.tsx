@@ -215,5 +215,65 @@ describe('AppearanceSection', () => {
       const input = screen.getByRole('combobox');
       expect(input).toHaveValue('');
     });
+
+    it('should use editedApp branding_id when application has no branding_id', () => {
+      const appWithoutBranding: Partial<Application> = {...mockApplication};
+      delete appWithoutBranding.branding_id;
+
+      render(
+        <AppearanceSection
+          application={appWithoutBranding as Application}
+          editedApp={{branding_id: 'branding-2'}}
+          onFieldChange={mockOnFieldChange}
+        />,
+      );
+
+      const input = screen.getByRole('combobox');
+      expect(input).toHaveValue('Dark Theme');
+    });
+
+    it('should handle selecting null option', async () => {
+      const user = userEvent.setup();
+
+      render(<AppearanceSection application={mockApplication} editedApp={{}} onFieldChange={mockOnFieldChange} />);
+
+      const autocomplete = screen.getByRole('combobox');
+      await user.click(autocomplete);
+      await user.clear(autocomplete);
+
+      // Simulate pressing escape to deselect
+      await user.keyboard('{Escape}');
+
+      // The autocomplete should still be functional
+      expect(autocomplete).toBeInTheDocument();
+    });
+
+    it('should handle string option in getOptionLabel', async () => {
+      const user = userEvent.setup();
+
+      render(<AppearanceSection application={mockApplication} editedApp={{}} onFieldChange={mockOnFieldChange} />);
+
+      const autocomplete = screen.getByRole('combobox');
+      await user.click(autocomplete);
+      await user.clear(autocomplete);
+      await user.type(autocomplete, 'Default Theme');
+
+      // Should find the matching option
+      const listbox = screen.getByRole('listbox');
+      expect(within(listbox).getByText('Default Theme')).toBeInTheDocument();
+    });
+
+    it('should handle both application and editedApp having branding_id', () => {
+      render(
+        <AppearanceSection
+          application={{...mockApplication, branding_id: 'branding-1'}}
+          editedApp={{branding_id: 'branding-3'}}
+          onFieldChange={mockOnFieldChange}
+        />,
+      );
+
+      const input = screen.getByRole('combobox');
+      expect(input).toHaveValue('Light Theme');
+    });
   });
 });

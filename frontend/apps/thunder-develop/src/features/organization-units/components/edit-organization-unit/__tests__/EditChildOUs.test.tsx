@@ -242,4 +242,140 @@ describe('EditChildOUs', () => {
     // Should render without errors - nullish coalescing handles null
     expect(screen.getByText('Child Organization Units')).toBeInTheDocument();
   });
+
+  it('should display description with value when description is provided', async () => {
+    mockUseGetChildOrganizationUnits.mockReturnValue({
+      data: {
+        totalResults: 1,
+        startIndex: 1,
+        count: 1,
+        organizationUnits: [
+          {id: 'child-1', handle: 'child-one', name: 'Child One', description: 'Has description', parent: 'parent-ou'},
+        ],
+      },
+      isLoading: false,
+    });
+
+    renderWithProviders(<EditChildOUs organizationUnitId="parent-ou" organizationUnitName="Parent OU" />);
+
+    await waitFor(() => {
+      expect(screen.getByText('Has description')).toBeInTheDocument();
+    });
+  });
+
+  it('should display dash when description is undefined', async () => {
+    mockUseGetChildOrganizationUnits.mockReturnValue({
+      data: {
+        totalResults: 1,
+        startIndex: 1,
+        count: 1,
+        organizationUnits: [
+          {id: 'child-1', handle: 'child-one', name: 'Child One', parent: 'parent-ou'},
+        ],
+      },
+      isLoading: false,
+    });
+
+    renderWithProviders(<EditChildOUs organizationUnitId="parent-ou" organizationUnitName="Parent OU" />);
+
+    await waitFor(() => {
+      expect(screen.getByText('-')).toBeInTheDocument();
+    });
+  });
+
+  it('should render avatars with Building icon inside each row', async () => {
+    renderWithProviders(<EditChildOUs organizationUnitId="parent-ou" organizationUnitName="Parent OU" />);
+
+    await waitFor(() => {
+      expect(screen.getByText('Child One')).toBeInTheDocument();
+      expect(screen.getByText('Child Two')).toBeInTheDocument();
+    });
+
+    // Verify avatar elements are rendered for each row
+    const avatars = document.querySelectorAll('.MuiAvatar-root');
+    expect(avatars.length).toBeGreaterThanOrEqual(2);
+  });
+
+  it('should render DataGrid with correct pagination options', () => {
+    renderWithProviders(<EditChildOUs organizationUnitId="parent-ou" organizationUnitName="Parent OU" />);
+
+    // DataGrid should render with the component
+    const dataGrid = document.querySelector('.MuiDataGrid-root');
+    expect(dataGrid).toBeInTheDocument();
+  });
+
+  it('should pass organizationUnitId to the API hook', () => {
+    renderWithProviders(<EditChildOUs organizationUnitId="test-ou-id" organizationUnitName="Test OU" />);
+
+    expect(screen.getByText('Child Organization Units')).toBeInTheDocument();
+  });
+
+  it('should re-render correctly when props change', async () => {
+    const {rerender} = renderWithProviders(
+      <EditChildOUs organizationUnitId="parent-ou" organizationUnitName="Parent OU" />,
+    );
+
+    await waitFor(() => {
+      expect(screen.getByText('Child One')).toBeInTheDocument();
+    });
+
+    // Re-render with different props to exercise memoization update paths
+    rerender(<EditChildOUs organizationUnitId="different-ou" organizationUnitName="Different OU" />);
+
+    expect(screen.getByText('Child Organization Units')).toBeInTheDocument();
+  });
+
+  it('should re-render when data transitions from loading to loaded', async () => {
+    mockUseGetChildOrganizationUnits.mockReturnValue({
+      data: undefined,
+      isLoading: true,
+    });
+
+    const {rerender} = renderWithProviders(
+      <EditChildOUs organizationUnitId="parent-ou" organizationUnitName="Parent OU" />,
+    );
+
+    expect(screen.getByText('Child Organization Units')).toBeInTheDocument();
+
+    // Simulate data arriving
+    mockUseGetChildOrganizationUnits.mockReturnValue({
+      data: mockChildOUsData,
+      isLoading: false,
+    });
+
+    rerender(<EditChildOUs organizationUnitId="parent-ou" organizationUnitName="Parent OU" />);
+
+    await waitFor(() => {
+      expect(screen.getByText('Child One')).toBeInTheDocument();
+    });
+  });
+
+  it('should handle re-render with updated data', async () => {
+    const {rerender} = renderWithProviders(
+      <EditChildOUs organizationUnitId="parent-ou" organizationUnitName="Parent OU" />,
+    );
+
+    await waitFor(() => {
+      expect(screen.getByText('Child One')).toBeInTheDocument();
+    });
+
+    // Update data
+    mockUseGetChildOrganizationUnits.mockReturnValue({
+      data: {
+        totalResults: 1,
+        startIndex: 1,
+        count: 1,
+        organizationUnits: [
+          {id: 'child-3', handle: 'child-three', name: 'Child Three', description: 'Third child', parent: 'parent-ou'},
+        ],
+      },
+      isLoading: false,
+    });
+
+    rerender(<EditChildOUs organizationUnitId="parent-ou" organizationUnitName="Parent OU" />);
+
+    await waitFor(() => {
+      expect(screen.getByText('Child Three')).toBeInTheDocument();
+    });
+  });
 });

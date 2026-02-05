@@ -67,10 +67,10 @@ describe('useGetFlowById', () => {
     updatedAt: '2025-01-01T00:00:00Z',
   };
 
-  let mockHttpRequest: ReturnType<typeof vi.fn>;
+  let mockHttpRequest: ReturnType<typeof vi.fn<(...args: unknown[]) => Promise<unknown>>>;
 
   beforeEach(() => {
-    mockHttpRequest = vi.fn();
+    mockHttpRequest = vi.fn<(...args: unknown[]) => Promise<unknown>>();
 
     vi.mocked(useAsgardeo).mockReturnValue({
       http: {

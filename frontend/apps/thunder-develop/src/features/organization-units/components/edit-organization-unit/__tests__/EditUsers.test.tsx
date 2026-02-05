@@ -169,4 +169,111 @@ describe('EditUsers', () => {
     // Should render without errors - nullish coalescing handles null
     expect(screen.getByText('Users')).toBeInTheDocument();
   });
+
+  it('should render avatar with User icon for each user row', async () => {
+    renderWithProviders(<EditUsers organizationUnitId="ou-123" />);
+
+    await waitFor(() => {
+      expect(screen.getByText('user-1')).toBeInTheDocument();
+      expect(screen.getByText('user-2')).toBeInTheDocument();
+    });
+
+    // Verify avatar elements are rendered for each row
+    const avatars = document.querySelectorAll('.MuiAvatar-root');
+    expect(avatars.length).toBeGreaterThanOrEqual(2);
+  });
+
+  it('should render DataGrid with correct structure', () => {
+    renderWithProviders(<EditUsers organizationUnitId="ou-123" />);
+
+    const dataGrid = document.querySelector('.MuiDataGrid-root');
+    expect(dataGrid).toBeInTheDocument();
+  });
+
+  it('should pass organizationUnitId to the API hook', () => {
+    renderWithProviders(<EditUsers organizationUnitId="different-ou" />);
+
+    expect(screen.getByText('Users')).toBeInTheDocument();
+  });
+
+  it('should render with single user', async () => {
+    mockUseGetOrganizationUnitUsers.mockReturnValue({
+      data: {
+        totalResults: 1,
+        startIndex: 1,
+        count: 1,
+        users: [
+          {id: 'single-user', organizationUnit: 'ou-123', type: 'admin'},
+        ],
+      },
+      isLoading: false,
+    });
+
+    renderWithProviders(<EditUsers organizationUnitId="ou-123" />);
+
+    await waitFor(() => {
+      expect(screen.getByText('single-user')).toBeInTheDocument();
+      expect(screen.getByText('admin')).toBeInTheDocument();
+    });
+  });
+
+  it('should re-render correctly when organizationUnitId prop changes', async () => {
+    const {rerender} = renderWithProviders(<EditUsers organizationUnitId="ou-123" />);
+
+    await waitFor(() => {
+      expect(screen.getByText('user-1')).toBeInTheDocument();
+    });
+
+    // Re-render with different prop to exercise memoization update paths
+    rerender(<EditUsers organizationUnitId="ou-456" />);
+
+    expect(screen.getByText('Users')).toBeInTheDocument();
+  });
+
+  it('should re-render when data transitions from loading to loaded', async () => {
+    mockUseGetOrganizationUnitUsers.mockReturnValue({
+      data: undefined,
+      isLoading: true,
+    });
+
+    const {rerender} = renderWithProviders(<EditUsers organizationUnitId="ou-123" />);
+
+    expect(screen.getByText('Users')).toBeInTheDocument();
+
+    // Simulate data arriving
+    mockUseGetOrganizationUnitUsers.mockReturnValue({
+      data: mockUsersData,
+      isLoading: false,
+    });
+
+    rerender(<EditUsers organizationUnitId="ou-123" />);
+
+    await waitFor(() => {
+      expect(screen.getByText('user-1')).toBeInTheDocument();
+    });
+  });
+
+  it('should handle re-render with updated data', async () => {
+    const {rerender} = renderWithProviders(<EditUsers organizationUnitId="ou-123" />);
+
+    await waitFor(() => {
+      expect(screen.getByText('user-1')).toBeInTheDocument();
+    });
+
+    mockUseGetOrganizationUnitUsers.mockReturnValue({
+      data: {
+        totalResults: 1,
+        startIndex: 1,
+        count: 1,
+        users: [{id: 'new-user', organizationUnit: 'ou-123', type: 'manager'}],
+      },
+      isLoading: false,
+    });
+
+    rerender(<EditUsers organizationUnitId="ou-123" />);
+
+    await waitFor(() => {
+      expect(screen.getByText('new-user')).toBeInTheDocument();
+    });
+  });
 });

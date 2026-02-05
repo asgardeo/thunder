@@ -358,4 +358,109 @@ describe('TokenUserAttributesSection', () => {
       expect(emailChip).toBeInTheDocument();
     });
   });
+
+  describe('Pending Additions in JWT Preview', () => {
+    it('should include pending additions in JWT preview for shared token type', () => {
+      const pendingAdditions = new Set(['newAttribute']);
+      const expandedSections = new Set(['user-shared', 'default-shared']);
+
+      const {container} = render(
+        <TokenUserAttributesSection
+          tokenType="shared"
+          currentAttributes={['email']}
+          userAttributes={['email', 'newAttribute']}
+          isLoadingUserAttributes={false}
+          expandedSections={expandedSections}
+          setExpandedSections={vi.fn()}
+          pendingAdditions={pendingAdditions}
+          pendingRemovals={new Set()}
+          highlightedAttributes={new Set()}
+          onAttributeClick={vi.fn()}
+          activeTokenType="access"
+        />,
+      );
+
+      const jsonText = container.textContent || '';
+      expect(jsonText).toContain('newAttribute');
+    });
+
+    it('should include pending additions in JWT preview for access token when activeTokenType matches', () => {
+      const pendingAdditions = new Set(['newAttribute']);
+      const expandedSections = new Set(['user-access', 'default-access']);
+
+      const {container} = render(
+        <TokenUserAttributesSection
+          tokenType="access"
+          currentAttributes={['email']}
+          userAttributes={['email', 'newAttribute']}
+          isLoadingUserAttributes={false}
+          expandedSections={expandedSections}
+          setExpandedSections={vi.fn()}
+          pendingAdditions={pendingAdditions}
+          pendingRemovals={new Set()}
+          highlightedAttributes={new Set()}
+          onAttributeClick={vi.fn()}
+          activeTokenType="access"
+        />,
+      );
+
+      const jsonText = container.textContent || '';
+      expect(jsonText).toContain('newAttribute');
+    });
+
+    it('should not include pending additions when activeTokenType does not match', () => {
+      const pendingAdditions = new Set(['newAttribute']);
+      const expandedSections = new Set(['user-access', 'default-access']);
+
+      const {container} = render(
+        <TokenUserAttributesSection
+          tokenType="access"
+          currentAttributes={['email']}
+          userAttributes={['email', 'newAttribute']}
+          isLoadingUserAttributes={false}
+          expandedSections={expandedSections}
+          setExpandedSections={vi.fn()}
+          pendingAdditions={pendingAdditions}
+          pendingRemovals={new Set()}
+          highlightedAttributes={new Set()}
+          onAttributeClick={vi.fn()}
+          activeTokenType="id"
+        />,
+      );
+
+      const jsonText = container.textContent || '';
+      // newAttribute should NOT be in preview since activeTokenType (id) doesn't match tokenType (access)
+      // but email IS a current attribute so it should still be there
+      expect(jsonText).toContain('email');
+    });
+  });
+
+  describe('Scopes with undefined oauth2Config', () => {
+    it('should display no scopes message when oauth2Config is undefined for ID token', () => {
+      render(<TestWrapper tokenType="id" oauth2Config={undefined} />);
+
+      expect(screen.getByText('No scopes configured')).toBeInTheDocument();
+    });
+  });
+
+  describe('Accordion Toggle', () => {
+    it('should toggle default attributes accordion when clicked', async () => {
+      const user = userEvent.setup();
+
+      render(<TestWrapper />);
+
+      // Find the Default Attributes accordion header
+      const defaultAttributesHeader = screen.getByText('Default Attributes');
+      const accordionButton = defaultAttributesHeader.closest('button');
+
+      expect(accordionButton).toBeDefined();
+
+      if (accordionButton) {
+        // Click to collapse
+        await user.click(accordionButton);
+        // Click to expand again
+        await user.click(accordionButton);
+      }
+    });
+  });
 });

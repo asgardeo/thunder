@@ -20,6 +20,7 @@ import type React from 'react';
 import {describe, it, expect, vi, beforeEach} from 'vitest';
 import {renderHook, act} from '@testing-library/react';
 import type {Node} from '@xyflow/react';
+import type {UpdateNodeInternals} from '@xyflow/system';
 import {BlockTypes, ElementCategories, ElementTypes, type Element} from '@/features/flows/models/elements';
 import {StepTypes} from '@/features/flows/models/steps';
 import useElementAddition from '../useElementAddition';
@@ -84,7 +85,7 @@ type SetNodesFn = React.Dispatch<React.SetStateAction<Node[]>>;
 
 describe('useElementAddition', () => {
   let mockSetNodes: ReturnType<typeof vi.fn> & SetNodesFn;
-  let mockUpdateNodeInternals: ReturnType<typeof vi.fn>;
+  let mockUpdateNodeInternals: ReturnType<typeof vi.fn> & UpdateNodeInternals;
 
   beforeEach(() => {
     vi.clearAllMocks();
@@ -94,7 +95,7 @@ describe('useElementAddition', () => {
       }
       return updater;
     }) as ReturnType<typeof vi.fn> & SetNodesFn;
-    mockUpdateNodeInternals = vi.fn();
+    mockUpdateNodeInternals = vi.fn() as ReturnType<typeof vi.fn> & UpdateNodeInternals;
   });
 
   describe('Hook Interface', () => {

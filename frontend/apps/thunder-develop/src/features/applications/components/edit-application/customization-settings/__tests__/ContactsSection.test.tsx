@@ -17,7 +17,7 @@
  */
 
 import {describe, it, expect, vi, beforeEach} from 'vitest';
-import {render, screen} from '@testing-library/react';
+import {render, screen, waitFor} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import ContactsSection from '../ContactsSection';
 import type {Application} from '../../../../models/application';
@@ -194,6 +194,36 @@ describe('ContactsSection', () => {
 
       const textField = screen.getByPlaceholderText('applications:edit.general.contacts.placeholder');
       expect(textField).toHaveValue('');
+    });
+
+    it('should call onFieldChange when contacts differ after rerender with new editedApp', async () => {
+      // Render with initial contacts that match the form default value
+      const {rerender} = render(
+        <ContactsSection
+          application={mockApplication}
+          editedApp={{contacts: ['contact1@example.com', 'contact2@example.com']}}
+          onFieldChange={mockOnFieldChange}
+        />,
+      );
+
+      // onFieldChange should not have been called since form value matches current contacts
+      expect(mockOnFieldChange).not.toHaveBeenCalled();
+
+      // Rerender with different editedApp contacts - now form value differs from currentContacts
+      rerender(
+        <ContactsSection
+          application={mockApplication}
+          editedApp={{contacts: ['changed@example.com']}}
+          onFieldChange={mockOnFieldChange}
+        />,
+      );
+
+      // The useEffect compares the watched form value against currentContacts.
+      // Since editedApp changed but the form still has the old default value,
+      // contacts !== currentContacts, so onFieldChange should be called
+      await waitFor(() => {
+        expect(mockOnFieldChange).toHaveBeenCalledWith('contacts', ['contact1@example.com', 'contact2@example.com']);
+      });
     });
   });
 

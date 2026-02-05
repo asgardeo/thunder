@@ -63,10 +63,10 @@ describe('useIdentityProviders', () => {
     },
   ];
 
-  let mockHttpRequest: ReturnType<typeof vi.fn>;
+  let mockHttpRequest: ReturnType<typeof vi.fn<(...args: unknown[]) => Promise<unknown>>>;
 
   beforeEach(() => {
-    mockHttpRequest = vi.fn().mockResolvedValue({data: mockIdentityProviders});
+    mockHttpRequest = vi.fn<(...args: unknown[]) => Promise<unknown>>().mockResolvedValue({data: mockIdentityProviders});
 
     vi.mocked(useAsgardeo).mockReturnValue({
       http: {

@@ -20,7 +20,8 @@ import type React from 'react';
 import {describe, it, expect, vi, beforeEach, afterEach} from 'vitest';
 import {renderHook, act} from '@testing-library/react';
 import type {Edge, Node} from '@xyflow/react';
-import {StaticStepTypes, StepTypes} from '@/features/flows/models/steps';
+import type {UpdateNodeInternals} from '@xyflow/system';
+import {StaticStepTypes, StepTypes, type Step} from '@/features/flows/models/steps';
 import {TemplateTypes} from '@/features/flows/models/templates';
 import type {Resources} from '@/features/flows/models/resources';
 import type {FlowDefinitionResponse} from '@/features/flows/models/responses';
@@ -153,12 +154,12 @@ const createMockExistingFlowData = (): FlowDefinitionResponse =>
   }) as FlowDefinitionResponse;
 
 describe('useFlowInitialization', () => {
-  let mockSetNodes: ReturnType<typeof vi.fn>;
-  let mockSetEdges: ReturnType<typeof vi.fn>;
-  let mockUpdateNodeInternals: ReturnType<typeof vi.fn>;
-  let mockGenerateEdges: ReturnType<typeof vi.fn>;
-  let mockValidateEdges: ReturnType<typeof vi.fn>;
-  let mockOnNeedsAutoLayout: ReturnType<typeof vi.fn>;
+  let mockSetNodes: ReturnType<typeof vi.fn> & React.Dispatch<React.SetStateAction<Node[]>>;
+  let mockSetEdges: ReturnType<typeof vi.fn> & React.Dispatch<React.SetStateAction<Edge[]>>;
+  let mockUpdateNodeInternals: ReturnType<typeof vi.fn> & UpdateNodeInternals;
+  let mockGenerateEdges: ReturnType<typeof vi.fn> & ((flowSteps: Step[]) => Edge[]);
+  let mockValidateEdges: ReturnType<typeof vi.fn> & ((edges: Edge[], nodes: Node[]) => Edge[]);
+  let mockOnNeedsAutoLayout: ReturnType<typeof vi.fn> & ((needsLayout: boolean) => void);
 
   beforeEach(() => {
     vi.clearAllMocks();
@@ -168,17 +169,17 @@ describe('useFlowInitialization', () => {
       if (typeof updater === 'function') {
         updater([]);
       }
-    });
+    }) as ReturnType<typeof vi.fn> & React.Dispatch<React.SetStateAction<Node[]>>;
     // Mock setEdges to execute the callback if it's a function
     mockSetEdges = vi.fn((updater: React.SetStateAction<Edge[]>) => {
       if (typeof updater === 'function') {
         updater([]);
       }
-    });
-    mockUpdateNodeInternals = vi.fn();
-    mockGenerateEdges = vi.fn().mockReturnValue([]);
-    mockValidateEdges = vi.fn((edges: Edge[]) => edges);
-    mockOnNeedsAutoLayout = vi.fn();
+    }) as ReturnType<typeof vi.fn> & React.Dispatch<React.SetStateAction<Edge[]>>;
+    mockUpdateNodeInternals = vi.fn() as ReturnType<typeof vi.fn> & UpdateNodeInternals;
+    mockGenerateEdges = vi.fn().mockReturnValue([]) as ReturnType<typeof vi.fn> & ((flowSteps: Step[]) => Edge[]);
+    mockValidateEdges = vi.fn((edges: Edge[]) => edges) as ReturnType<typeof vi.fn> & ((edges: Edge[], nodes: Node[]) => Edge[]);
+    mockOnNeedsAutoLayout = vi.fn() as ReturnType<typeof vi.fn> & ((needsLayout: boolean) => void);
   });
 
   afterEach(() => {

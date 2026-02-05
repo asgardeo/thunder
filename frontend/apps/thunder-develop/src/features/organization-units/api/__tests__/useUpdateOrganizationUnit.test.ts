@@ -237,4 +237,24 @@ describe('useUpdateOrganizationUnit', () => {
       }),
     );
   });
+
+  it('should handle invalidateQueries rejection gracefully', async () => {
+    mockHttpRequest.mockResolvedValue({data: mockUpdatedOU});
+
+    const {result, queryClient} = renderHook(() => useUpdateOrganizationUnit());
+
+    // Spy on invalidateQueries to make it reject (covers both .catch() branches in onSuccess)
+    const invalidateSpy = vi.spyOn(queryClient, 'invalidateQueries').mockRejectedValue(new Error('Invalidation failed'));
+
+    result.current.mutate({id: 'ou-123', data: updateRequest});
+
+    await waitFor(() => {
+      expect(result.current.isSuccess).toBe(true);
+    });
+
+    // Mutation should still succeed despite invalidation failures
+    expect(result.current.data).toEqual(mockUpdatedOU);
+    // Both invalidateQueries calls should have been made (list + specific unit)
+    expect(invalidateSpy).toHaveBeenCalledTimes(2);
+  });
 });

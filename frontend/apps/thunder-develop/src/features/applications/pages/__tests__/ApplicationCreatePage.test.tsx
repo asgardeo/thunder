@@ -493,6 +493,24 @@ describe('ApplicationCreatePage', () => {
         });
       }
     });
+
+    it('should handle navigation failure gracefully when close is clicked', async () => {
+      mockNavigate.mockRejectedValueOnce(new Error('Navigation failed'));
+
+      const {container} = renderWithProviders();
+
+      const closeButton = container.querySelector('button');
+      expect(closeButton).toBeInTheDocument();
+
+      if (closeButton) {
+        // Should not throw even when navigate rejects
+        await user.click(closeButton);
+
+        await waitFor(() => {
+          expect(mockNavigate).toHaveBeenCalledWith('/applications');
+        });
+      }
+    });
   });
 
   describe('Form State Management', () => {
@@ -577,6 +595,52 @@ describe('ApplicationCreatePage', () => {
       expect(createAppCall.inbound_auth_config).toBeDefined();
       expect(createAppCall.inbound_auth_config?.[0]).toBeDefined();
       expect(createAppCall.inbound_auth_config?.[0]?.type).toBe('oauth2');
+    });
+
+    it('should handle navigation failure after application creation gracefully', async () => {
+      mockNavigate.mockRejectedValue(new Error('Navigation failed'));
+
+      mockCreateBranding.mockImplementation((_data, {onSuccess}: {onSuccess: (branding: Branding) => void}) => {
+        onSuccess({id: 'branding-123', displayName: 'Test Branding', preferences: {}} as Branding);
+      });
+
+      mockCreateApplication.mockImplementation((_data, {onSuccess}: {onSuccess: (app: Application) => void}) => {
+        onSuccess({id: 'app-123', name: 'My App'} as Application);
+      });
+
+      renderWithProviders();
+
+      await user.type(screen.getByTestId('app-name-input'), 'My App');
+      await user.click(screen.getByRole('button', {name: /continue/i}));
+      await user.click(screen.getByRole('button', {name: /continue/i}));
+
+      await waitFor(() => {
+        expect(screen.getByTestId('configure-sign-in')).toBeInTheDocument();
+      });
+      await user.click(screen.getByRole('button', {name: /continue/i}));
+
+      await waitFor(() => {
+        expect(screen.getByTestId('configure-experience')).toBeInTheDocument();
+      });
+      await user.click(screen.getByRole('button', {name: /continue/i}));
+
+      await waitFor(() => {
+        expect(screen.getByTestId('configure-stack')).toBeInTheDocument();
+      });
+      await user.click(screen.getByRole('button', {name: /continue/i}));
+
+      await waitFor(() => {
+        expect(screen.getByTestId('configure-details')).toBeInTheDocument();
+      });
+      await user.click(screen.getByRole('button', {name: /continue/i}));
+
+      // Should have attempted navigation even if it failed
+      await waitFor(() => {
+        expect(mockNavigate).toHaveBeenCalledWith('/applications/app-123');
+      });
+
+      // Reset navigate mock for other tests
+      mockNavigate.mockResolvedValue(undefined);
     });
 
     it('should navigate to application details page after creation', async () => {
@@ -940,6 +1004,151 @@ describe('ApplicationCreatePage', () => {
       await user.click(toggleButton);
 
       expect(screen.getByTestId('configure-sign-in')).toBeInTheDocument();
+    });
+  });
+
+  describe('Back Navigation from Later Steps', () => {
+    it('should navigate back from experience to options step', async () => {
+      renderWithProviders();
+
+      // Navigate to experience step
+      await user.type(screen.getByTestId('app-name-input'), 'My App');
+      await user.click(screen.getByRole('button', {name: /continue/i}));
+      await user.click(screen.getByRole('button', {name: /continue/i}));
+
+      await waitFor(() => {
+        expect(screen.getByTestId('configure-sign-in')).toBeInTheDocument();
+      });
+      await user.click(screen.getByRole('button', {name: /continue/i}));
+
+      await waitFor(() => {
+        expect(screen.getByTestId('configure-experience')).toBeInTheDocument();
+      });
+
+      // Go back
+      await user.click(screen.getByRole('button', {name: /back/i}));
+
+      await waitFor(() => {
+        expect(screen.getByTestId('configure-sign-in')).toBeInTheDocument();
+      });
+    });
+
+    it('should navigate back from stack to experience step', async () => {
+      renderWithProviders();
+
+      // Navigate to stack step
+      await user.type(screen.getByTestId('app-name-input'), 'My App');
+      await user.click(screen.getByRole('button', {name: /continue/i}));
+      await user.click(screen.getByRole('button', {name: /continue/i}));
+
+      await waitFor(() => {
+        expect(screen.getByTestId('configure-sign-in')).toBeInTheDocument();
+      });
+      await user.click(screen.getByRole('button', {name: /continue/i}));
+
+      await waitFor(() => {
+        expect(screen.getByTestId('configure-experience')).toBeInTheDocument();
+      });
+      await user.click(screen.getByRole('button', {name: /continue/i}));
+
+      await waitFor(() => {
+        expect(screen.getByTestId('configure-stack')).toBeInTheDocument();
+      });
+
+      // Go back
+      await user.click(screen.getByRole('button', {name: /back/i}));
+
+      await waitFor(() => {
+        expect(screen.getByTestId('configure-experience')).toBeInTheDocument();
+      });
+    });
+
+    it('should navigate back from configure to stack step', async () => {
+      renderWithProviders();
+
+      // Navigate to configure step
+      await user.type(screen.getByTestId('app-name-input'), 'My App');
+      await user.click(screen.getByRole('button', {name: /continue/i}));
+      await user.click(screen.getByRole('button', {name: /continue/i}));
+
+      await waitFor(() => {
+        expect(screen.getByTestId('configure-sign-in')).toBeInTheDocument();
+      });
+      await user.click(screen.getByRole('button', {name: /continue/i}));
+
+      await waitFor(() => {
+        expect(screen.getByTestId('configure-experience')).toBeInTheDocument();
+      });
+      await user.click(screen.getByRole('button', {name: /continue/i}));
+
+      await waitFor(() => {
+        expect(screen.getByTestId('configure-stack')).toBeInTheDocument();
+      });
+      await user.click(screen.getByRole('button', {name: /continue/i}));
+
+      await waitFor(() => {
+        expect(screen.getByTestId('configure-details')).toBeInTheDocument();
+      });
+
+      // Go back
+      await user.click(screen.getByRole('button', {name: /back/i}));
+
+      await waitFor(() => {
+        expect(screen.getByTestId('configure-stack')).toBeInTheDocument();
+      });
+    });
+  });
+
+  describe('Single User Type Handling', () => {
+    it('should automatically include single user type when only one exists', async () => {
+      // Re-mock useGetUserTypes to return a single user type
+      vi.doMock('../../../user-types/api/useGetUserTypes', () => ({
+        default: () => ({
+          data: {
+            schemas: [{name: 'customer', displayName: 'Customer'}],
+          },
+          isLoading: false,
+          error: null,
+        }),
+      }));
+
+      mockCreateBranding.mockImplementation((_data, {onSuccess}: {onSuccess: (branding: Branding) => void}) => {
+        onSuccess({id: 'branding-123', displayName: 'Test Branding', preferences: {}} as Branding);
+      });
+
+      mockCreateApplication.mockImplementation((_data, {onSuccess}: {onSuccess: (app: Application) => void}) => {
+        onSuccess({id: 'app-123', name: 'My App'} as Application);
+      });
+
+      renderWithProviders();
+
+      await user.type(screen.getByTestId('app-name-input'), 'My App');
+      await user.click(screen.getByRole('button', {name: /continue/i}));
+      await user.click(screen.getByRole('button', {name: /continue/i}));
+
+      await waitFor(() => {
+        expect(screen.getByTestId('configure-sign-in')).toBeInTheDocument();
+      });
+      await user.click(screen.getByRole('button', {name: /continue/i}));
+
+      await waitFor(() => {
+        expect(screen.getByTestId('configure-experience')).toBeInTheDocument();
+      });
+      await user.click(screen.getByRole('button', {name: /continue/i}));
+
+      await waitFor(() => {
+        expect(screen.getByTestId('configure-stack')).toBeInTheDocument();
+      });
+      await user.click(screen.getByRole('button', {name: /continue/i}));
+
+      await waitFor(() => {
+        expect(screen.getByTestId('configure-details')).toBeInTheDocument();
+      });
+      await user.click(screen.getByRole('button', {name: /continue/i}));
+
+      await waitFor(() => {
+        expect(mockCreateApplication).toHaveBeenCalled();
+      });
     });
   });
 

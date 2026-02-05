@@ -16,8 +16,8 @@
  * under the License.
  */
 
-import {render, screen, fireEvent, waitFor} from '@testing-library/react';
 import {describe, it, expect, vi, beforeEach} from 'vitest';
+import {render, screen, fireEvent, waitFor} from '@thunder/test-utils';
 import LanguageSwitcher from '../LanguageSwitcher';
 
 // Use vi.hoisted to create the mock function before vi.mock is hoisted
@@ -170,7 +170,9 @@ describe('LanguageSwitcher', () => {
     await waitFor(() => {
       const menuItems = screen.getAllByRole('menuitem');
       expect(menuItems[0]).toHaveTextContent('English (US)');
-      // Should not have secondary text when name equals nativeName
+      // Secondary text should not be present since name equals nativeName
+      const secondaryText = menuItems[0].querySelector('.MuiListItemText-secondary');
+      expect(secondaryText).not.toBeInTheDocument();
     });
   });
 
@@ -247,5 +249,155 @@ describe('LanguageSwitcher', () => {
       expect(button).toHaveAttribute('aria-haspopup', 'true');
       expect(button).toHaveAttribute('aria-expanded', 'true');
     });
+  });
+
+  it('should not mark non-current language as selected', async () => {
+    const mockSetLanguage = vi.fn().mockResolvedValue(undefined);
+    mockUseLanguage.mockReturnValue({
+      currentLanguage: 'en-US' as const,
+      availableLanguages: [
+        {code: 'en-US' as const, name: 'English (United States)', nativeName: 'English (US)', direction: 'ltr' as const},
+        {code: 'es-ES' as unknown as 'en-US', name: 'Spanish (Spain)', nativeName: 'Español (España)', direction: 'ltr' as const},
+      ],
+      setLanguage: mockSetLanguage,
+    });
+
+    render(<LanguageSwitcher />);
+
+    const button = screen.getByRole('button', {name: /change language/i});
+    fireEvent.click(button);
+
+    await waitFor(() => {
+      const menuItems = screen.getAllByRole('menuitem');
+      const englishOption = menuItems.find((item) => item.textContent?.includes('English'));
+      const spanishOption = menuItems.find((item) => item.textContent?.includes('Español'));
+      expect(englishOption).toHaveClass('Mui-selected');
+      expect(spanishOption).not.toHaveClass('Mui-selected');
+    });
+  });
+
+  it('should show secondary text for language with different name and nativeName in multi-language list', async () => {
+    const mockSetLanguage = vi.fn().mockResolvedValue(undefined);
+    mockUseLanguage.mockReturnValue({
+      currentLanguage: 'en-US' as const,
+      availableLanguages: [
+        {code: 'en-US' as const, name: 'English (US)', nativeName: 'English (US)', direction: 'ltr' as const},
+        {code: 'es-ES' as unknown as 'en-US', name: 'Spanish (Spain)', nativeName: 'Español (España)', direction: 'ltr' as const},
+      ],
+      setLanguage: mockSetLanguage,
+    });
+
+    render(<LanguageSwitcher />);
+
+    const button = screen.getByRole('button', {name: /change language/i});
+    fireEvent.click(button);
+
+    await waitFor(() => {
+      const menuItems = screen.getAllByRole('menuitem');
+      // English (US) should NOT have secondary text since name === nativeName
+      const englishSecondary = menuItems[0].querySelector('.MuiListItemText-secondary');
+      expect(englishSecondary).not.toBeInTheDocument();
+
+      // Spanish should have secondary text since name !== nativeName
+      const spanishSecondary = menuItems[1].querySelector('.MuiListItemText-secondary');
+      expect(spanishSecondary).toBeInTheDocument();
+      expect(spanishSecondary).toHaveTextContent('Spanish (Spain)');
+    });
+  });
+
+  it('should select a different language from the menu', async () => {
+    const mockSetLanguage = vi.fn().mockResolvedValue(undefined);
+    mockUseLanguage.mockReturnValue({
+      currentLanguage: 'en-US' as const,
+      availableLanguages: [
+        {code: 'en-US' as const, name: 'English (United States)', nativeName: 'English (US)', direction: 'ltr' as const},
+        {code: 'fr-FR' as unknown as 'en-US', name: 'French (France)', nativeName: 'Français (France)', direction: 'ltr' as const},
+      ],
+      setLanguage: mockSetLanguage,
+    });
+
+    render(<LanguageSwitcher />);
+
+    const button = screen.getByRole('button', {name: /change language/i});
+    fireEvent.click(button);
+
+    await waitFor(() => {
+      const frenchOption = screen.getByText('Français (France)');
+      fireEvent.click(frenchOption);
+    });
+
+    expect(mockSetLanguage).toHaveBeenCalledWith('fr-FR');
+  });
+
+  it('should render Languages icon inside the button', () => {
+    const {container} = render(<LanguageSwitcher />);
+
+    const languagesIcon = container.querySelector('svg.lucide-languages');
+    expect(languagesIcon).toBeInTheDocument();
+  });
+
+  it('should render menu with correct id when open', async () => {
+    render(<LanguageSwitcher />);
+
+    const button = screen.getByRole('button', {name: /change language/i});
+    fireEvent.click(button);
+
+    await waitFor(() => {
+      const menu = document.getElementById('language-menu');
+      expect(menu).toBeInTheDocument();
+    });
+  });
+
+  it('should render menu items with ListItemText', async () => {
+    const mockSetLanguage = vi.fn().mockResolvedValue(undefined);
+    mockUseLanguage.mockReturnValue({
+      currentLanguage: 'en-US' as const,
+      availableLanguages: [
+        {code: 'en-US' as const, name: 'English (United States)', nativeName: 'English (US)', direction: 'ltr' as const},
+        {code: 'es-ES' as unknown as 'en-US', name: 'Spanish (Spain)', nativeName: 'Español (España)', direction: 'ltr' as const},
+      ],
+      setLanguage: mockSetLanguage,
+    });
+
+    render(<LanguageSwitcher />);
+
+    const button = screen.getByRole('button', {name: /change language/i});
+    fireEvent.click(button);
+
+    await waitFor(() => {
+      const menuItems = screen.getAllByRole('menuitem');
+      expect(menuItems).toHaveLength(2);
+
+      // Each menu item should have a ListItemText with primary text
+      const primaryTexts = document.querySelectorAll('.MuiListItemText-primary');
+      expect(primaryTexts.length).toBe(2);
+    });
+  });
+
+  it('should render with empty available languages', async () => {
+    mockUseLanguage.mockReturnValue({
+      currentLanguage: 'en-US' as const,
+      availableLanguages: [],
+      setLanguage: vi.fn().mockResolvedValue(undefined),
+    });
+
+    render(<LanguageSwitcher />);
+
+    const button = screen.getByRole('button', {name: /change language/i});
+    fireEvent.click(button);
+
+    await waitFor(() => {
+      const menuItems = screen.queryAllByRole('menuitem');
+      expect(menuItems).toHaveLength(0);
+    });
+  });
+
+  it('should preserve button after re-render', () => {
+    const {rerender} = render(<LanguageSwitcher />);
+
+    rerender(<LanguageSwitcher />);
+
+    const button = screen.getByRole('button', {name: /change language/i});
+    expect(button).toBeInTheDocument();
   });
 });

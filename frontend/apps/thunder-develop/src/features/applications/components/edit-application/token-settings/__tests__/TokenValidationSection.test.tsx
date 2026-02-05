@@ -260,4 +260,67 @@ describe('TokenValidationSection', () => {
       expect(input).toHaveValue(1200);
     });
   });
+
+  describe('Error States', () => {
+    it('should display error message for shared token type when error exists', () => {
+      const mockErrors: FieldErrors<FormValues> = {
+        validityPeriod: {
+          type: 'min',
+          message: 'Value must be at least 1',
+        },
+      };
+
+      render(
+        <TestWrapper>
+          {({control}) => <TokenValidationSection control={control} errors={mockErrors} tokenType="shared" />}
+        </TestWrapper>,
+      );
+
+      expect(screen.getByText('Value must be at least 1')).toBeInTheDocument();
+    });
+
+    it('should display error message for access token type when error exists', () => {
+      const mockErrors: FieldErrors<FormValues> = {
+        accessTokenValidity: {
+          type: 'min',
+          message: 'Access token validity must be at least 1',
+        },
+      };
+
+      render(
+        <TestWrapper>
+          {({control}) => <TokenValidationSection control={control} errors={mockErrors} tokenType="access" />}
+        </TestWrapper>,
+      );
+
+      expect(screen.getByText('Access token validity must be at least 1')).toBeInTheDocument();
+    });
+
+    it('should display error message for ID token type when error exists', () => {
+      const mockErrors: FieldErrors<FormValues> = {
+        idTokenValidity: {
+          type: 'min',
+          message: 'ID token validity must be at least 1',
+        },
+      };
+
+      render(
+        <TestWrapper>
+          {({control}) => <TokenValidationSection control={control} errors={mockErrors} tokenType="id" />}
+        </TestWrapper>,
+      );
+
+      expect(screen.getByText('ID token validity must be at least 1')).toBeInTheDocument();
+    });
+
+    it('should display default hint when no error', () => {
+      render(
+        <TestWrapper>
+          {({control, errors}) => <TokenValidationSection control={control} errors={errors} tokenType="shared" />}
+        </TestWrapper>,
+      );
+
+      expect(screen.getByText('Token validity period in seconds (e.g., 3600 for 1 hour)')).toBeInTheDocument();
+    });
+  });
 });

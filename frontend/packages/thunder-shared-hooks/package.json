@@ -60,6 +60,7 @@
     "rimraf": "catalog:",
     "rolldown": "catalog:",
     "typescript": "catalog:",
+    "@vitest/browser-playwright": "catalog:",
     "vitest": "catalog:"
   },
   "publishConfig": {

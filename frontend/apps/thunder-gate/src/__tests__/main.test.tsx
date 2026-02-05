@@ -76,7 +76,8 @@ vi.mock('@thunder/logger/react', () => ({
 
 // Mock @tanstack/react-query
 vi.mock('@tanstack/react-query', () => ({
-  QueryClient: vi.fn().mockImplementation(() => ({})),
+  // eslint-disable-next-line prefer-arrow-callback, func-names
+  QueryClient: vi.fn().mockImplementation(function () {}),
   QueryClientProvider: ({children}: {children: React.ReactNode}) => children,
 }));
 

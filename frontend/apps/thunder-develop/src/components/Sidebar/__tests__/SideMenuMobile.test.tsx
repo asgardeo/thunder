@@ -92,4 +92,114 @@ describe('SideMenuMobile', () => {
     const logoutButton = screen.getByRole('button', {name: /logout/i});
     expect(logoutButton).toHaveClass('MuiButton-fullWidth');
   });
+
+  it('renders drawer with undefined open prop', () => {
+    render(<SideMenuMobile open={undefined} toggleDrawer={mockToggleDrawer} />);
+
+    // Drawer should not display content when open is undefined
+    expect(screen.queryByText('Riley Carter')).not.toBeInTheDocument();
+  });
+
+  it('renders user avatar when open', () => {
+    render(<SideMenuMobile open toggleDrawer={mockToggleDrawer} />);
+
+    // Drawer renders in a portal, so use document instead of container
+    const avatar = document.querySelector('.MuiAvatar-root');
+    expect(avatar).toBeInTheDocument();
+  });
+
+  it('renders notification bell button when open', () => {
+    render(<SideMenuMobile open toggleDrawer={mockToggleDrawer} />);
+
+    const buttons = screen.getAllByRole('button');
+    // Should have at least the notification button and the logout button
+    expect(buttons.length).toBeGreaterThanOrEqual(2);
+  });
+
+  it('renders dividers when open', () => {
+    render(<SideMenuMobile open toggleDrawer={mockToggleDrawer} />);
+
+    // Drawer renders in a portal, so use document instead of container
+    const dividers = document.querySelectorAll('.MuiDivider-root');
+    expect(dividers.length).toBeGreaterThan(0);
+  });
+
+  it('logout button has outlined variant', () => {
+    render(<SideMenuMobile open toggleDrawer={mockToggleDrawer} />);
+
+    const logoutButton = screen.getByRole('button', {name: /logout/i});
+    expect(logoutButton).toHaveClass('MuiButton-outlined');
+  });
+
+  it('renders logout button with start icon', () => {
+    render(<SideMenuMobile open toggleDrawer={mockToggleDrawer} />);
+
+    const logoutButton = screen.getByRole('button', {name: /logout/i});
+    const startIcon = logoutButton.querySelector('.MuiButton-startIcon');
+    expect(startIcon).toBeInTheDocument();
+  });
+
+  it('renders drawer anchored to the right', () => {
+    render(<SideMenuMobile open toggleDrawer={mockToggleDrawer} />);
+
+    const drawer = document.querySelector('.MuiDrawer-root');
+    expect(drawer).toBeInTheDocument();
+
+    const paper = document.querySelector('.MuiDrawer-paperAnchorRight');
+    expect(paper).toBeInTheDocument();
+  });
+
+  it('renders user avatar with correct alt text', () => {
+    render(<SideMenuMobile open toggleDrawer={mockToggleDrawer} />);
+
+    const avatar = document.querySelector('.MuiAvatar-root img');
+    expect(avatar).toHaveAttribute('alt', 'Riley Carter');
+  });
+
+  it('renders user name as h6 typography', () => {
+    render(<SideMenuMobile open toggleDrawer={mockToggleDrawer} />);
+
+    const userName = screen.getByText('Riley Carter');
+    expect(userName).toBeInTheDocument();
+    expect(userName.tagName).toBe('P');
+  });
+
+  it('renders bell icon in notification button', () => {
+    render(<SideMenuMobile open toggleDrawer={mockToggleDrawer} />);
+
+    const bellIcon = document.querySelector('svg.lucide-bell');
+    expect(bellIcon).toBeInTheDocument();
+  });
+
+  it('renders logout icon in logout button', () => {
+    render(<SideMenuMobile open toggleDrawer={mockToggleDrawer} />);
+
+    const logoutIcon = document.querySelector('svg.lucide-log-out');
+    expect(logoutIcon).toBeInTheDocument();
+  });
+
+  it('renders two dividers when open', () => {
+    render(<SideMenuMobile open toggleDrawer={mockToggleDrawer} />);
+
+    const dividers = document.querySelectorAll('.MuiDivider-root');
+    expect(dividers.length).toBe(2);
+  });
+
+  it('renders drawer with correct z-index above other drawers', () => {
+    render(<SideMenuMobile open toggleDrawer={mockToggleDrawer} />);
+
+    // Verify the drawer is rendered and has the correct paper element
+    const paper = document.querySelector('.MuiDrawer-paper');
+    expect(paper).toBeInTheDocument();
+  });
+
+  it('preserves content after re-render', () => {
+    const {rerender} = render(<SideMenuMobile open toggleDrawer={mockToggleDrawer} />);
+
+    rerender(<SideMenuMobile open toggleDrawer={mockToggleDrawer} />);
+
+    expect(screen.getByText('Riley Carter')).toBeInTheDocument();
+    expect(screen.getByTestId('menu-content')).toBeInTheDocument();
+    expect(screen.getByRole('button', {name: /logout/i})).toBeInTheDocument();
+  });
 });

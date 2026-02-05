@@ -77,4 +77,44 @@ describe('Search', () => {
     await user.clear(searchInput);
     expect(searchInput).toHaveValue('');
   });
+
+  it('renders with outlined variant', () => {
+    const {container} = render(<Search />);
+
+    const outlinedInput = container.querySelector('.MuiOutlinedInput-root');
+    expect(outlinedInput).toBeInTheDocument();
+  });
+
+  it('renders search icon as start adornment', () => {
+    const {container} = render(<Search />);
+
+    const adornment = container.querySelector('.MuiInputAdornment-positionStart');
+    expect(adornment).toBeInTheDocument();
+  });
+
+  it('renders input with small size', () => {
+    const {container} = render(<Search />);
+
+    const input = container.querySelector('.MuiInputBase-sizeSmall');
+    expect(input).toBeInTheDocument();
+  });
+
+  it('renders FormControl with correct structure', () => {
+    const {container} = render(<Search />);
+
+    const formControl = container.querySelector('.MuiFormControl-root');
+    expect(formControl).toBeInTheDocument();
+
+    const outlinedInput = formControl?.querySelector('.MuiOutlinedInput-root');
+    expect(outlinedInput).toBeInTheDocument();
+  });
+
+  it('preserves content after re-render', () => {
+    const {rerender} = render(<Search />);
+
+    rerender(<Search />);
+
+    expect(screen.getByPlaceholderText('Search...')).toBeInTheDocument();
+    expect(screen.getByLabelText('Search')).toBeInTheDocument();
+  });
 });

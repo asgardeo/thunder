@@ -128,6 +128,38 @@ describe('AppNavbar', () => {
     const heading = screen.getByRole('heading', {level: 1, name: /dashboard/i});
     expect(heading).toBeInTheDocument();
   });
+
+  it('renders SideMenuMobile component', () => {
+    render(<AppNavbar />);
+
+    expect(screen.getByTestId('side-menu-mobile')).toBeInTheDocument();
+  });
+
+  it('initially renders with drawer closed', () => {
+    render(<AppNavbar />);
+
+    const sideMenu = screen.getByTestId('side-menu-mobile');
+    expect(sideMenu).toHaveAttribute('data-open', 'false');
+  });
+
+  it('renders app bar with no box shadow', () => {
+    const {container} = render(<AppNavbar />);
+
+    const appBar = container.querySelector('.MuiAppBar-root');
+    expect(appBar).toBeInTheDocument();
+    // AppBar should not have elevation classes since boxShadow: 0
+    expect(appBar).toHaveClass('MuiAppBar-root');
+  });
+
+  it('preserves content after re-render', () => {
+    const {rerender} = render(<AppNavbar />);
+
+    rerender(<AppNavbar />);
+
+    expect(screen.getByText('Dashboard')).toBeInTheDocument();
+    expect(screen.getByTestId('side-menu-mobile')).toBeInTheDocument();
+    expect(screen.getByTestId('theme-toggle')).toBeInTheDocument();
+  });
 });
 
 describe('CustomIcon', () => {
@@ -143,5 +175,13 @@ describe('CustomIcon', () => {
 
     const dashboardIcon = container.querySelector('svg.lucide-layout-dashboard');
     expect(dashboardIcon).toBeInTheDocument();
+  });
+
+  it('renders with gradient background styling', () => {
+    const {container} = render(<CustomIcon />);
+
+    const box = container.querySelector('.MuiBox-root');
+    expect(box).toBeInTheDocument();
+    expect(box).toHaveStyle({borderRadius: '999px'});
   });
 });

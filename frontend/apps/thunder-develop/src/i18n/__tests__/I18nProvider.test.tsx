@@ -16,8 +16,10 @@
  * under the License.
  */
 
+import {useState} from 'react';
 import {describe, it, expect, vi, beforeEach, afterEach} from 'vitest';
 import {render, cleanup} from '@testing-library/react';
+import {userEvent} from '@thunder/test-utils';
 import I18nProvider from '../I18nProvider';
 import {invalidateI18nCache} from '../invalidate-i18n-cache';
 
@@ -111,6 +113,20 @@ describe('I18nProvider', () => {
 
   it('should not add translations when apiTranslations is undefined', () => {
     mockQueryData = undefined;
+
+    render(
+      <I18nProvider>
+        <div>Test</div>
+      </I18nProvider>,
+    );
+
+    expect(mockAddResourceBundle).not.toHaveBeenCalled();
+    expect(mockEmit).not.toHaveBeenCalled();
+  });
+
+  it('should not add translations when apiTranslations has no translations property', () => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-assignment
+    mockQueryData = {language: 'en-US'} as any;
 
     render(
       <I18nProvider>
@@ -402,5 +418,86 @@ describe('I18nProvider', () => {
 
       expect(result).toEqual(translationsData);
     });
+  });
+
+  it('should produce stable output across re-renders when dependencies do not change', async () => {
+    mockQueryData = {
+      language: 'en-US',
+      translations: {
+        common: {greeting: 'Hello'},
+      },
+    };
+
+    // Use a wrapper component that forces re-renders via state updates
+    // to exercise the React Compiler memoization skip paths
+    function Wrapper() {
+      const [count, setCount] = useState(0);
+      return (
+        <I18nProvider>
+          <span data-testid="count">{count}</span>
+          <button type="button" onClick={() => setCount((c) => c + 1)}>
+            rerender
+          </button>
+        </I18nProvider>
+      );
+    }
+
+    const user = userEvent.setup();
+    const {getByTestId, getByText} = render(<Wrapper />);
+
+    expect(getByTestId('count')).toHaveTextContent('0');
+
+    // Trigger multiple re-renders to exercise memoization cache paths
+    await user.click(getByText('rerender'));
+    expect(getByTestId('count')).toHaveTextContent('1');
+
+    await user.click(getByText('rerender'));
+    expect(getByTestId('count')).toHaveTextContent('2');
+
+    // Translations should still be merged correctly after re-renders
+    expect(mockAddResourceBundle).toHaveBeenCalledWith(
+      'en-US',
+      'common',
+      expect.objectContaining({greeting: 'Hello'}),
+      true,
+      true,
+    );
+  });
+
+  it('should handle re-renders with same props using testing-library rerender', () => {
+    mockQueryData = {
+      language: 'en-US',
+      translations: {
+        common: {greeting: 'Hello'},
+      },
+    };
+
+    // Use testing-library's rerender to preserve component identity
+    // so the React Compiler's internal cache ($) is maintained across renders
+    const {rerender, getByText} = render(
+      <I18nProvider>
+        <div>Test</div>
+      </I18nProvider>,
+    );
+
+    expect(getByText('Test')).toBeInTheDocument();
+
+    // Rerender with same props — the compiler should take the cached memoization path
+    rerender(
+      <I18nProvider>
+        <div>Test</div>
+      </I18nProvider>,
+    );
+
+    expect(getByText('Test')).toBeInTheDocument();
+
+    // Rerender again to further exercise cached paths
+    rerender(
+      <I18nProvider>
+        <div>Test</div>
+      </I18nProvider>,
+    );
+
+    expect(getByText('Test')).toBeInTheDocument();
   });
 });

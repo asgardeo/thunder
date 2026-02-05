@@ -39,7 +39,7 @@ const {useAsgardeo} = await import('@asgardeo/react');
 const {useConfig} = await import('@thunder/shared-contexts');
 
 describe('useGetApplications', () => {
-  let mockHttpRequest: ReturnType<typeof vi.fn>;
+  let mockHttpRequest: ReturnType<typeof vi.fn<(...args: unknown[]) => Promise<unknown>>>;
   let mockGetServerUrl: ReturnType<typeof vi.fn>;
 
   const mockApplicationListResponse: ApplicationListResponse = {
@@ -68,7 +68,7 @@ describe('useGetApplications', () => {
   };
 
   beforeEach(() => {
-    mockHttpRequest = vi.fn();
+    mockHttpRequest = vi.fn<(...args: unknown[]) => Promise<unknown>>();
     mockGetServerUrl = vi.fn().mockReturnValue('https://api.test.com');
 
     vi.mocked(useAsgardeo).mockReturnValue({
@@ -124,11 +124,8 @@ describe('useGetApplications', () => {
       expect(mockHttpRequest).toHaveBeenCalledTimes(1);
     });
 
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-    const callArgs = mockHttpRequest.mock.calls[0][0];
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+    const callArgs = mockHttpRequest.mock.calls[0][0] as Record<string, unknown>;
     expect(callArgs.url).toContain('limit=30');
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
     expect(callArgs.url).toContain('offset=0');
   });
 
@@ -143,11 +140,8 @@ describe('useGetApplications', () => {
       expect(mockHttpRequest).toHaveBeenCalledTimes(1);
     });
 
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-    const callArgs = mockHttpRequest.mock.calls[0][0];
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+    const callArgs = mockHttpRequest.mock.calls[0][0] as Record<string, unknown>;
     expect(callArgs.url).toContain('limit=10');
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
     expect(callArgs.url).toContain('offset=5');
   });
 
@@ -189,9 +183,7 @@ describe('useGetApplications', () => {
       expect(mockGetServerUrl).toHaveBeenCalledTimes(1);
     });
 
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-    const callArgs = mockHttpRequest.mock.calls[0][0];
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+    const callArgs = mockHttpRequest.mock.calls[0][0] as Record<string, unknown>;
     expect(callArgs.url).toContain('https://api.test.com/applications');
   });
 
@@ -206,12 +198,9 @@ describe('useGetApplications', () => {
       expect(mockHttpRequest).toHaveBeenCalledTimes(1);
     });
 
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-    const callArgs = mockHttpRequest.mock.calls[0][0];
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+    const callArgs = mockHttpRequest.mock.calls[0][0] as Record<string, unknown>;
     expect(callArgs.method).toBe('GET');
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-    expect(callArgs.headers['Content-Type']).toBe('application/json');
+    expect((callArgs.headers as Record<string, string>)['Content-Type']).toBe('application/json');
   });
 
   it('should use correct query key with pagination params', async () => {
@@ -354,9 +343,7 @@ describe('useGetApplications', () => {
       expect(mockHttpRequest).toHaveBeenCalledTimes(1);
     });
 
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-    const callArgs = mockHttpRequest.mock.calls[0][0];
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+    const callArgs = mockHttpRequest.mock.calls[0][0] as Record<string, unknown>;
     const url = callArgs.url as string;
     expect(url).toContain('applications?');
     expect(url).toContain('limit=15');

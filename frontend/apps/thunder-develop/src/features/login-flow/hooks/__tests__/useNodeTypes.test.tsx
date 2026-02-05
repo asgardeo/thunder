@@ -21,6 +21,7 @@ import {renderHook, render, fireEvent} from '@testing-library/react';
 import type {NodeProps} from '@xyflow/react';
 import {StaticStepTypes, StepTypes, type Step} from '@/features/flows/models/steps';
 import type {Resources} from '@/features/flows/models/resources';
+import type {Element} from '@/features/flows/models/elements';
 import useNodeTypes from '../useNodeTypes';
 
 // Mock StepFactory component
@@ -91,13 +92,13 @@ const createMockResources = (): Resources =>
   }) as unknown as Resources;
 
 describe('useNodeTypes', () => {
-  let mockOnAddElementToView: ReturnType<typeof vi.fn>;
-  let mockOnAddElementToForm: ReturnType<typeof vi.fn>;
+  let mockOnAddElementToView: ReturnType<typeof vi.fn> & ((element: Element, viewId: string) => void);
+  let mockOnAddElementToForm: ReturnType<typeof vi.fn> & ((element: Element, formId: string) => void);
 
   beforeEach(() => {
     vi.clearAllMocks();
-    mockOnAddElementToView = vi.fn();
-    mockOnAddElementToForm = vi.fn();
+    mockOnAddElementToView = vi.fn() as ReturnType<typeof vi.fn> & ((element: Element, viewId: string) => void);
+    mockOnAddElementToForm = vi.fn() as ReturnType<typeof vi.fn> & ((element: Element, formId: string) => void);
   });
 
   const renderUseNodeTypes = (overrides = {}) => {

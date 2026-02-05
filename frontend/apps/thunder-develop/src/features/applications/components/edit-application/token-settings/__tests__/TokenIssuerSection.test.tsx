@@ -167,4 +167,54 @@ describe('TokenIssuerSection', () => {
       expect(input).toHaveValue('https://new.com');
     });
   });
+
+  describe('Error State', () => {
+    it('should render error message when errors.issuer has message', () => {
+      const mockErrors: FieldErrors<FormValues> = {
+        issuer: {
+          type: 'pattern',
+          message: 'Please enter a valid URL',
+        },
+      };
+
+      render(
+        <TestWrapper>
+          {({control}) => <TokenIssuerSection control={control} errors={mockErrors} />}
+        </TestWrapper>,
+      );
+
+      expect(screen.getByText('Please enter a valid URL')).toBeInTheDocument();
+    });
+
+    it('should show error styling when error exists', () => {
+      const mockErrors: FieldErrors<FormValues> = {
+        issuer: {
+          type: 'pattern',
+          message: 'Invalid URL format',
+        },
+      };
+
+      render(
+        <TestWrapper>
+          {({control}) => <TokenIssuerSection control={control} errors={mockErrors} />}
+        </TestWrapper>,
+      );
+
+      // The error message should be displayed instead of the hint
+      expect(screen.getByText('Invalid URL format')).toBeInTheDocument();
+      expect(
+        screen.queryByText('The issuer URL will be included in the "iss" attribute of issued tokens'),
+      ).not.toBeInTheDocument();
+    });
+
+    it('should show default hint when no error message', () => {
+      render(
+        <TestWrapper>{({control, errors}) => <TokenIssuerSection control={control} errors={errors} />}</TestWrapper>,
+      );
+
+      expect(
+        screen.getByText('The issuer URL will be included in the "iss" attribute of issued tokens'),
+      ).toBeInTheDocument();
+    });
+  });
 });

@@ -62,10 +62,10 @@ describe('useCreateFlow', () => {
     ],
   };
 
-  let mockHttpRequest: ReturnType<typeof vi.fn>;
+  let mockHttpRequest: ReturnType<typeof vi.fn<(...args: unknown[]) => Promise<unknown>>>;
 
   beforeEach(() => {
-    mockHttpRequest = vi.fn();
+    mockHttpRequest = vi.fn<(...args: unknown[]) => Promise<unknown>>();
 
     vi.mocked(useAsgardeo).mockReturnValue({
       http: {request: mockHttpRequest},

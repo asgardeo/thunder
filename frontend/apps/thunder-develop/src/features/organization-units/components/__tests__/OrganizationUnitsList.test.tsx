@@ -529,4 +529,177 @@ describe('OrganizationUnitsList', () => {
     // Should render empty grid without errors
     expect(screen.getByRole('grid')).toBeInTheDocument();
   });
+
+  it('should handle null organizationUnits array via nullish coalescing', async () => {
+    mockUseGetOrganizationUnits.mockReturnValue({
+      data: {
+        totalResults: 0,
+        startIndex: 1,
+        count: 0,
+        organizationUnits: null as unknown as [],
+      },
+      isLoading: false,
+      error: null,
+    });
+
+    renderWithProviders(<OrganizationUnitsList />);
+
+    // Should render empty grid without errors
+    expect(screen.getByRole('grid')).toBeInTheDocument();
+  });
+
+  it('should display description value when present', async () => {
+    mockUseGetOrganizationUnits.mockReturnValue({
+      data: {
+        totalResults: 1,
+        startIndex: 1,
+        count: 1,
+        organizationUnits: [
+          {id: 'ou-1', handle: 'test', name: 'Test OU', description: 'A description', parent: null},
+        ],
+      },
+      isLoading: false,
+      error: null,
+    });
+
+    renderWithProviders(<OrganizationUnitsList />);
+
+    await waitFor(() => {
+      expect(screen.getByText('A description')).toBeInTheDocument();
+    });
+  });
+
+  it('should display dash for undefined description', async () => {
+    mockUseGetOrganizationUnits.mockReturnValue({
+      data: {
+        totalResults: 1,
+        startIndex: 1,
+        count: 1,
+        organizationUnits: [
+          {id: 'ou-1', handle: 'test', name: 'Test OU', parent: null},
+        ],
+      },
+      isLoading: false,
+      error: null,
+    });
+
+    renderWithProviders(<OrganizationUnitsList />);
+
+    await waitFor(() => {
+      expect(screen.getByText('-')).toBeInTheDocument();
+    });
+  });
+
+  it('should open delete dialog for second row organization unit', async () => {
+    renderWithProviders(<OrganizationUnitsList />);
+
+    await waitFor(() => {
+      expect(screen.getByText('Child Organization')).toBeInTheDocument();
+    });
+
+    // Open menu for second row
+    const actionButtons = screen.getAllByLabelText('Open actions menu');
+    fireEvent.click(actionButtons[1]);
+
+    await waitFor(() => {
+      expect(screen.getByText('Delete')).toBeInTheDocument();
+    });
+
+    fireEvent.click(screen.getByText('Delete'));
+
+    await waitFor(() => {
+      expect(screen.getByText('Delete Organization Unit')).toBeInTheDocument();
+    });
+  });
+
+  it('should render avatars with correct styling for each row', async () => {
+    renderWithProviders(<OrganizationUnitsList />);
+
+    await waitFor(() => {
+      expect(screen.getByText('Root Organization')).toBeInTheDocument();
+    });
+
+    const avatars = document.querySelectorAll('.MuiAvatar-root');
+    expect(avatars.length).toBeGreaterThanOrEqual(2);
+  });
+
+  it('should re-render when data changes from loading to loaded', async () => {
+    mockUseGetOrganizationUnits.mockReturnValue({
+      data: undefined,
+      isLoading: true,
+      error: null,
+    });
+
+    const {rerender} = renderWithProviders(<OrganizationUnitsList />);
+
+    expect(screen.getByText('Name')).toBeInTheDocument();
+
+    // Transition to loaded with data
+    mockUseGetOrganizationUnits.mockReturnValue({
+      data: mockOUData,
+      isLoading: false,
+      error: null,
+    });
+
+    rerender(<OrganizationUnitsList />);
+
+    await waitFor(() => {
+      expect(screen.getByText('Root Organization')).toBeInTheDocument();
+    });
+  });
+
+  it('should re-render when data updates', async () => {
+    const {rerender} = renderWithProviders(<OrganizationUnitsList />);
+
+    await waitFor(() => {
+      expect(screen.getByText('Root Organization')).toBeInTheDocument();
+    });
+
+    // Update data
+    mockUseGetOrganizationUnits.mockReturnValue({
+      data: {
+        totalResults: 1,
+        startIndex: 1,
+        count: 1,
+        organizationUnits: [
+          {id: 'ou-new', handle: 'new-ou', name: 'New Organization', description: 'New OU', parent: null},
+        ],
+      },
+      isLoading: false,
+      error: null,
+    });
+
+    rerender(<OrganizationUnitsList />);
+
+    await waitFor(() => {
+      expect(screen.getByText('New Organization')).toBeInTheDocument();
+    });
+  });
+
+  it('should re-render when transitioning from error to success', async () => {
+    mockUseGetOrganizationUnits.mockReturnValue({
+      data: undefined,
+      isLoading: false,
+      error: new Error('Temporary error'),
+    });
+
+    const {rerender} = renderWithProviders(<OrganizationUnitsList />);
+
+    await waitFor(() => {
+      expect(screen.getByText('Error loading organization units')).toBeInTheDocument();
+    });
+
+    // Resolve error
+    mockUseGetOrganizationUnits.mockReturnValue({
+      data: mockOUData,
+      isLoading: false,
+      error: null,
+    });
+
+    rerender(<OrganizationUnitsList />);
+
+    await waitFor(() => {
+      expect(screen.getByText('Root Organization')).toBeInTheDocument();
+    });
+  });
 });

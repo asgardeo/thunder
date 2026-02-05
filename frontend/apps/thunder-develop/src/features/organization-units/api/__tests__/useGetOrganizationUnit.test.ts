@@ -183,4 +183,30 @@ describe('useGetOrganizationUnit', () => {
       expect(mockHttpRequest.mock.calls.length).toBeGreaterThan(callsBeforeRefetch);
     });
   });
+
+  it('should not fetch when enabled is false even with valid id', async () => {
+    const {result} = renderHook(() => useGetOrganizationUnit('ou-valid-id', false));
+
+    // Wait a bit to ensure query doesn't execute
+    await new Promise((resolve) => {
+      setTimeout(resolve, 100);
+    });
+
+    expect(result.current.isFetching).toBe(false);
+    expect(result.current.data).toBeUndefined();
+    expect(mockHttpRequest).not.toHaveBeenCalled();
+  });
+
+  it('should not fetch when id is empty string', async () => {
+    const {result} = renderHook(() => useGetOrganizationUnit(''));
+
+    // Wait a bit to ensure query doesn't execute
+    await new Promise((resolve) => {
+      setTimeout(resolve, 100);
+    });
+
+    expect(result.current.isFetching).toBe(false);
+    expect(result.current.data).toBeUndefined();
+    expect(mockHttpRequest).not.toHaveBeenCalled();
+  });
 });

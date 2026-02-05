@@ -168,11 +168,11 @@ type SetNodesFn = React.Dispatch<React.SetStateAction<Node[]>>;
 
 describe('useTemplateAndWidgetLoading', () => {
   let mockSetNodes: ReturnType<typeof vi.fn> & SetNodesFn;
-  let mockUpdateNodeInternals: ReturnType<typeof vi.fn>;
-  let mockGenerateSteps: ReturnType<typeof vi.fn>;
-  let mockGenerateEdges: ReturnType<typeof vi.fn>;
-  let mockValidateEdges: ReturnType<typeof vi.fn>;
-  let mockGetBlankTemplateComponents: ReturnType<typeof vi.fn>;
+  let mockUpdateNodeInternals: ReturnType<typeof vi.fn> & ((nodeId: string) => void);
+  let mockGenerateSteps: ReturnType<typeof vi.fn> & ((stepNodes: Node[]) => Node[]);
+  let mockGenerateEdges: ReturnType<typeof vi.fn> & ((flowSteps: Step[]) => Edge[]);
+  let mockValidateEdges: ReturnType<typeof vi.fn> & ((edges: Edge[], nodes: Node[]) => Edge[]);
+  let mockGetBlankTemplateComponents: ReturnType<typeof vi.fn> & (() => Element[]);
 
   beforeEach(() => {
     vi.clearAllMocks();
@@ -182,11 +182,15 @@ describe('useTemplateAndWidgetLoading', () => {
       }
       return updater;
     }) as ReturnType<typeof vi.fn> & SetNodesFn;
-    mockUpdateNodeInternals = vi.fn();
-    mockGenerateSteps = vi.fn((steps: Node[]) => steps);
-    mockGenerateEdges = vi.fn().mockReturnValue([]);
-    mockValidateEdges = vi.fn((edges: Edge[]) => edges);
-    mockGetBlankTemplateComponents = vi.fn().mockReturnValue([{id: 'blank-comp', type: 'TEXT'}]);
+    mockUpdateNodeInternals = vi.fn() as ReturnType<typeof vi.fn> & ((nodeId: string) => void);
+    mockGenerateSteps = vi.fn((steps: Node[]) => steps) as ReturnType<typeof vi.fn> & ((stepNodes: Node[]) => Node[]);
+    mockGenerateEdges = vi.fn().mockReturnValue([]) as ReturnType<typeof vi.fn> & ((flowSteps: Step[]) => Edge[]);
+    mockValidateEdges = vi.fn((edges: Edge[]) => edges) as ReturnType<typeof vi.fn> &
+      ((edges: Edge[], nodes: Node[]) => Edge[]);
+    mockGetBlankTemplateComponents = vi.fn().mockReturnValue([{id: 'blank-comp', type: 'TEXT'}]) as ReturnType<
+      typeof vi.fn
+    > &
+      (() => Element[]);
   });
 
   const renderUseTemplateAndWidgetLoading = (overrides = {}) => {
@@ -427,9 +431,7 @@ describe('useTemplateAndWidgetLoading', () => {
       } as unknown as Widget;
 
       const targetResource = {id: 'target-node', resourceType: ResourceTypes.Step} as Resource;
-      const currentNodes = [
-        createMockNode({id: 'target-node', data: {components: [{id: 'existing-comp'}]}}),
-      ];
+      const currentNodes = [createMockNode({id: 'target-node', data: {components: [{id: 'existing-comp'}]}})];
       const currentEdges: Edge[] = [];
 
       const [nodes] = result.current.handleWidgetLoad(widget, targetResource, currentNodes, currentEdges);
@@ -458,12 +460,7 @@ describe('useTemplateAndWidgetLoading', () => {
       const currentNodes = [createMockNode({id: 'existing-node'})];
       const currentEdges: Edge[] = [];
 
-      const [nodes] = result.current.handleWidgetLoad(
-        widget,
-        {} as Resource,
-        currentNodes,
-        currentEdges,
-      );
+      const [nodes] = result.current.handleWidgetLoad(widget, {} as Resource, currentNodes, currentEdges);
 
       expect(nodes.length).toBeGreaterThanOrEqual(1);
     });
@@ -515,9 +512,7 @@ describe('useTemplateAndWidgetLoading', () => {
                 type: StepTypes.View,
                 position: {x: 0, y: 0},
                 data: {
-                  components: [
-                    {id: 'selector-comp', type: 'TEXT'},
-                  ],
+                  components: [{id: 'selector-comp', type: 'TEXT'}],
                 },
               },
             ],
@@ -559,9 +554,7 @@ describe('useTemplateAndWidgetLoading', () => {
                     {
                       id: 'form-1',
                       type: 'BLOCK',
-                      components: [
-                        {id: 'nested-selector', type: 'TEXT_INPUT'},
-                      ],
+                      components: [{id: 'nested-selector', type: 'TEXT_INPUT'}],
                     },
                   ],
                 },
@@ -577,12 +570,7 @@ describe('useTemplateAndWidgetLoading', () => {
       const currentNodes: Node[] = [];
       const currentEdges: Edge[] = [];
 
-      const [, , selector] = result.current.handleWidgetLoad(
-        widget,
-        {} as Resource,
-        currentNodes,
-        currentEdges,
-      );
+      const [, , selector] = result.current.handleWidgetLoad(widget, {} as Resource, currentNodes, currentEdges);
 
       expect(selector).toBeDefined();
     });
@@ -607,9 +595,7 @@ describe('useTemplateAndWidgetLoading', () => {
                       id: 'form-with-children',
                       type: 'FORM',
                       // This component has nested components AND its id matches defaultPropertySelectorId
-                      components: [
-                        {id: 'input-1', type: 'TEXT_INPUT'},
-                      ],
+                      components: [{id: 'input-1', type: 'TEXT_INPUT'}],
                     },
                   ],
                 },
@@ -673,12 +659,7 @@ describe('useTemplateAndWidgetLoading', () => {
         },
       } as unknown as Widget;
 
-      const [nodes, edges] = result.current.handleWidgetLoad(
-        widget,
-        {} as Resource,
-        [],
-        [],
-      );
+      const [nodes, edges] = result.current.handleWidgetLoad(widget, {} as Resource, [], []);
 
       // The widget should be processed
       expect(nodes).toBeDefined();
@@ -704,9 +685,7 @@ describe('useTemplateAndWidgetLoading', () => {
                       id: 'parent-block',
                       type: 'BLOCK',
                       // This component HAS nested components
-                      components: [
-                        {id: 'nested-form', type: 'FORM'},
-                      ],
+                      components: [{id: 'nested-form', type: 'FORM'}],
                     },
                   ],
                 },
@@ -720,12 +699,7 @@ describe('useTemplateAndWidgetLoading', () => {
         },
       } as unknown as Widget;
 
-      const [nodes, , selector] = result.current.handleWidgetLoad(
-        widget,
-        {} as Resource,
-        [],
-        [],
-      );
+      const [nodes, , selector] = result.current.handleWidgetLoad(widget, {} as Resource, [], []);
 
       // Widget should be processed successfully
       expect(nodes).toBeDefined();
@@ -766,12 +740,7 @@ describe('useTemplateAndWidgetLoading', () => {
       const currentNodes: Node[] = [];
       const currentEdges: Edge[] = [];
 
-      const [nodes] = result.current.handleWidgetLoad(
-        widget,
-        {} as Resource,
-        currentNodes,
-        currentEdges,
-      );
+      const [nodes] = result.current.handleWidgetLoad(widget, {} as Resource, currentNodes, currentEdges);
 
       expect(nodes).toBeDefined();
     });
@@ -869,11 +838,13 @@ describe('useTemplateAndWidgetLoading', () => {
         }
       }) as ReturnType<typeof vi.fn> & SetNodesFn;
 
-      mockGenerateStepElement.mockReturnValue(createMockElement({
-        id: 'generated-new-form',
-        type: BlockTypes.Form,
-        category: ElementCategories.Block,
-      }));
+      mockGenerateStepElement.mockReturnValue(
+        createMockElement({
+          id: 'generated-new-form',
+          type: BlockTypes.Form,
+          category: ElementCategories.Block,
+        }),
+      );
 
       const {result} = renderUseTemplateAndWidgetLoading({setNodes: mockSetNodes});
 
@@ -890,9 +861,7 @@ describe('useTemplateAndWidgetLoading', () => {
 
       expect(capturedNodes).toHaveLength(1);
       const viewNode = capturedNodes[0];
-      const forms = (viewNode.data?.components as Element[])?.filter(
-        (c) => c.type === BlockTypes.Form,
-      );
+      const forms = (viewNode.data?.components as Element[])?.filter((c) => c.type === BlockTypes.Form);
       // Should only have one form (the new one replaced the old)
       expect(forms).toHaveLength(1);
       expect(forms[0].id).toBe('generated-new-form');

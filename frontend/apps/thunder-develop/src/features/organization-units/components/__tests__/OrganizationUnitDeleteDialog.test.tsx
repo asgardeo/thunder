@@ -22,10 +22,13 @@ import OrganizationUnitDeleteDialog from '../OrganizationUnitDeleteDialog';
 
 // Mock the delete hook
 const mockMutate = vi.fn();
+let mockIsPending = false;
 vi.mock('../../api/useDeleteOrganizationUnit', () => ({
   default: () => ({
     mutate: mockMutate,
-    isPending: false,
+    get isPending() {
+      return mockIsPending;
+    },
   }),
 }));
 
@@ -58,6 +61,7 @@ describe('OrganizationUnitDeleteDialog', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mockMutate.mockReset();
+    mockIsPending = false;
   });
 
   it('should render dialog when open is true', () => {
@@ -193,22 +197,135 @@ describe('OrganizationUnitDeleteDialog', () => {
     expect(screen.getByText('Cancel')).toBeInTheDocument();
     expect(screen.getByText('Delete')).toBeInTheDocument();
   });
-});
 
-describe('OrganizationUnitDeleteDialog - pending state', () => {
-  beforeEach(() => {
-    vi.clearAllMocks();
+  it('should render error alert only when error is present', async () => {
+    renderWithProviders(<OrganizationUnitDeleteDialog {...defaultProps} />);
+
+    // Initially no error alert (only the warning alert should be present)
+    const alerts = screen.getAllByRole('alert');
+    expect(alerts.length).toBe(1); // Only warning alert
+
+    // Trigger error
+    mockMutate.mockImplementation((_id: string, options: {onError: (err: Error) => void}) => {
+      options.onError(new Error('Delete error'));
+    });
+
+    fireEvent.click(screen.getByText('Delete'));
+
+    await waitFor(() => {
+      const allAlerts = screen.getAllByRole('alert');
+      expect(allAlerts.length).toBe(2); // Warning + error alert
+      expect(screen.getByText('Delete error')).toBeInTheDocument();
+    });
   });
 
-  it('should show deleting text and disable buttons when pending', () => {
-    vi.doMock('../../api/useDeleteOrganizationUnit', () => ({
-      default: () => ({
-        mutate: vi.fn(),
-        isPending: true,
-      }),
-    }));
+  it('should call onSuccess when provided on successful deletion', async () => {
+    const onSuccess = vi.fn();
+    const onClose = vi.fn();
+    mockMutate.mockImplementation((_id: string, options: {onSuccess: () => void}) => {
+      options.onSuccess();
+    });
 
-    // Since we can't easily change the mock mid-test, this is a placeholder
-    // The component should show "Deleting..." when isPending is true
+    renderWithProviders(
+      <OrganizationUnitDeleteDialog {...defaultProps} onClose={onClose} onSuccess={onSuccess} />,
+    );
+
+    fireEvent.click(screen.getByText('Delete'));
+
+    await waitFor(() => {
+      expect(onSuccess).toHaveBeenCalledTimes(1);
+      expect(onClose).toHaveBeenCalledTimes(1);
+    });
+  });
+
+  it('should handle error with null message using fallback', async () => {
+    mockMutate.mockImplementation((_id: string, options: {onError: (err: Error) => void}) => {
+      options.onError({message: null} as unknown as Error);
+    });
+
+    renderWithProviders(<OrganizationUnitDeleteDialog {...defaultProps} />);
+
+    fireEvent.click(screen.getByText('Delete'));
+
+    await waitFor(() => {
+      expect(screen.getByText('Failed to delete')).toBeInTheDocument();
+    });
+  });
+
+  it('should show deleting state and disable buttons when isPending is true', () => {
+    mockIsPending = true;
+
+    renderWithProviders(<OrganizationUnitDeleteDialog {...defaultProps} />);
+
+    // Delete button should show "Deleting..." text
+    expect(screen.getByText('Deleting...')).toBeInTheDocument();
+
+    // Both buttons should be disabled
+    const cancelButton = screen.getByText('Cancel').closest('button');
+    const deletingButton = screen.getByText('Deleting...').closest('button');
+    expect(cancelButton).toBeDisabled();
+    expect(deletingButton).toBeDisabled();
+  });
+
+  it('should re-render correctly when props change', () => {
+    const onClose = vi.fn();
+    const {rerender} = renderWithProviders(
+      <OrganizationUnitDeleteDialog {...defaultProps} onClose={onClose} organizationUnitId="ou-123" />,
+    );
+
+    expect(screen.getByText('Delete Organization Unit')).toBeInTheDocument();
+
+    // Re-render with different organizationUnitId
+    rerender(
+      <OrganizationUnitDeleteDialog {...defaultProps} onClose={onClose} organizationUnitId="ou-456" />,
+    );
+
+    expect(screen.getByText('Delete Organization Unit')).toBeInTheDocument();
+
+    // Click delete should call mutate with new ID
+    fireEvent.click(screen.getByText('Delete'));
+    expect(mockMutate).toHaveBeenCalledWith('ou-456', expect.any(Object));
+  });
+
+  it('should re-render when transitioning between open and closed', async () => {
+    const {rerender} = renderWithProviders(
+      <OrganizationUnitDeleteDialog {...defaultProps} open />,
+    );
+
+    expect(screen.getByText('Delete Organization Unit')).toBeInTheDocument();
+
+    // Close dialog - MUI Dialog animates, so content may linger briefly
+    rerender(<OrganizationUnitDeleteDialog {...defaultProps} open={false} />);
+
+    await waitFor(() => {
+      expect(screen.queryByText('Are you sure you want to delete this organization unit?')).not.toBeVisible();
+    });
+
+    // Reopen dialog
+    rerender(<OrganizationUnitDeleteDialog {...defaultProps} open />);
+
+    expect(screen.getByText('Delete Organization Unit')).toBeInTheDocument();
+  });
+
+  it('should re-render when isPending transitions', () => {
+    mockIsPending = false;
+
+    const {rerender} = renderWithProviders(
+      <OrganizationUnitDeleteDialog {...defaultProps} />,
+    );
+
+    expect(screen.getByText('Delete')).toBeInTheDocument();
+
+    // Transition to pending
+    mockIsPending = true;
+    rerender(<OrganizationUnitDeleteDialog {...defaultProps} />);
+
+    expect(screen.getByText('Deleting...')).toBeInTheDocument();
+
+    // Transition back
+    mockIsPending = false;
+    rerender(<OrganizationUnitDeleteDialog {...defaultProps} />);
+
+    expect(screen.getByText('Delete')).toBeInTheDocument();
   });
 });

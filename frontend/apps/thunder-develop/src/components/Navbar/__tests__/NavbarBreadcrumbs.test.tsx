@@ -175,4 +175,127 @@ describe('NavbarBreadcrumbs', () => {
     const breadcrumbs = container.querySelector('.MuiBreadcrumbs-root');
     expect(breadcrumbs).toBeInTheDocument();
   });
+
+  it('renders breadcrumbs for organization-units page', async () => {
+    const mockUseNavigation = await import('@/layouts/contexts/useNavigation');
+    vi.mocked(mockUseNavigation.default).mockReturnValue({
+      currentPage: 'organization-units',
+      setCurrentPage: vi.fn(),
+      sidebarOpen: false,
+      setSidebarOpen: vi.fn(),
+      toggleSidebar: vi.fn(),
+    });
+
+    render(<NavbarBreadcrumbs />);
+
+    expect(screen.getByText('Develop')).toBeInTheDocument();
+    expect(screen.getByText('Organization Units')).toBeInTheDocument();
+  });
+
+  it('renders breadcrumbs for flows page', async () => {
+    const mockUseNavigation = await import('@/layouts/contexts/useNavigation');
+    vi.mocked(mockUseNavigation.default).mockReturnValue({
+      currentPage: 'flows',
+      setCurrentPage: vi.fn(),
+      sidebarOpen: false,
+      setSidebarOpen: vi.fn(),
+      toggleSidebar: vi.fn(),
+    });
+
+    render(<NavbarBreadcrumbs />);
+
+    expect(screen.getByText('Develop')).toBeInTheDocument();
+    expect(screen.getByText('Flows')).toBeInTheDocument();
+  });
+
+  it('renders both breadcrumb segments', async () => {
+    const mockUseNavigation = await import('@/layouts/contexts/useNavigation');
+    vi.mocked(mockUseNavigation.default).mockReturnValue({
+      currentPage: 'users',
+      setCurrentPage: vi.fn(),
+      sidebarOpen: false,
+      setSidebarOpen: vi.fn(),
+      toggleSidebar: vi.fn(),
+    });
+
+    const {container} = render(<NavbarBreadcrumbs />);
+
+    const typographyElements = container.querySelectorAll('.MuiTypography-root');
+    expect(typographyElements.length).toBeGreaterThanOrEqual(2);
+  });
+
+  it('renders current page text with body1 Typography variant', async () => {
+    const mockUseNavigation = await import('@/layouts/contexts/useNavigation');
+    vi.mocked(mockUseNavigation.default).mockReturnValue({
+      currentPage: 'users',
+      setCurrentPage: vi.fn(),
+      sidebarOpen: false,
+      setSidebarOpen: vi.fn(),
+      toggleSidebar: vi.fn(),
+    });
+
+    render(<NavbarBreadcrumbs />);
+
+    const usersElement = screen.getByText('Users');
+    expect(usersElement).toBeInTheDocument();
+    expect(usersElement).toHaveClass('MuiTypography-body1');
+  });
+
+  it('renders separator with ChevronRight icon wrapped in Box', async () => {
+    const mockUseNavigation = await import('@/layouts/contexts/useNavigation');
+    vi.mocked(mockUseNavigation.default).mockReturnValue({
+      currentPage: 'dashboard',
+      setCurrentPage: vi.fn(),
+      sidebarOpen: false,
+      setSidebarOpen: vi.fn(),
+      toggleSidebar: vi.fn(),
+    });
+
+    const {container} = render(<NavbarBreadcrumbs />);
+
+    const separators = container.querySelectorAll('.MuiBreadcrumbs-separator');
+    expect(separators.length).toBeGreaterThan(0);
+
+    // Separator should contain a Box with an SVG icon
+    const separatorBox = separators[0].querySelector('.MuiBox-root');
+    expect(separatorBox).toBeInTheDocument();
+    const svgIcon = separatorBox?.querySelector('svg');
+    expect(svgIcon).toBeInTheDocument();
+  });
+
+  it('renders styled breadcrumbs with separator alignment', async () => {
+    const mockUseNavigation = await import('@/layouts/contexts/useNavigation');
+    vi.mocked(mockUseNavigation.default).mockReturnValue({
+      currentPage: 'users',
+      setCurrentPage: vi.fn(),
+      sidebarOpen: false,
+      setSidebarOpen: vi.fn(),
+      toggleSidebar: vi.fn(),
+    });
+
+    const {container} = render(<NavbarBreadcrumbs />);
+
+    // Verify the breadcrumbs ol has aligned items
+    const breadcrumbOl = container.querySelector('.MuiBreadcrumbs-ol');
+    expect(breadcrumbOl).toBeInTheDocument();
+    expect(breadcrumbOl).toHaveStyle({alignItems: 'center'});
+  });
+
+  it('preserves content after re-render', async () => {
+    const mockUseNavigation = await import('@/layouts/contexts/useNavigation');
+    vi.mocked(mockUseNavigation.default).mockReturnValue({
+      currentPage: 'users',
+      setCurrentPage: vi.fn(),
+      sidebarOpen: false,
+      setSidebarOpen: vi.fn(),
+      toggleSidebar: vi.fn(),
+    });
+
+    const {rerender} = render(<NavbarBreadcrumbs />);
+
+    rerender(<NavbarBreadcrumbs />);
+
+    expect(screen.getByText('Develop')).toBeInTheDocument();
+    expect(screen.getByText('Users')).toBeInTheDocument();
+  });
 });
