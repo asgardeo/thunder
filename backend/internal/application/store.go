@@ -34,14 +34,16 @@ import (
 
 // oAuthConfig is the structure for unmarshaling OAuth configuration JSON.
 type oAuthConfig struct {
-	RedirectURIs            []string          `json:"redirect_uris"`
-	GrantTypes              []string          `json:"grant_types"`
-	ResponseTypes           []string          `json:"response_types"`
-	TokenEndpointAuthMethod string            `json:"token_endpoint_auth_method"`
-	PKCERequired            bool              `json:"pkce_required"`
-	PublicClient            bool              `json:"public_client"`
-	Token                   *oAuthTokenConfig `json:"token,omitempty"`
-	Scopes                  []string          `json:"scopes,omitempty"`
+	RedirectURIs            []string            `json:"redirect_uris"`
+	GrantTypes              []string            `json:"grant_types"`
+	ResponseTypes           []string            `json:"response_types"`
+	TokenEndpointAuthMethod string              `json:"token_endpoint_auth_method"`
+	PKCERequired            bool                `json:"pkce_required"`
+	PublicClient            bool                `json:"public_client"`
+	Token                   *oAuthTokenConfig   `json:"token,omitempty"`
+	Scopes                  []string            `json:"scopes,omitempty"`
+	UserInfo                *userInfoConfig     `json:"user_info,omitempty"`
+	ScopeClaims             map[string][]string `json:"scope_claims,omitempty"`
 }
 
 // oAuthTokenConfig represents the OAuth token configuration structure for JSON marshaling/unmarshaling.
@@ -59,9 +61,13 @@ type accessTokenConfig struct {
 
 // idTokenConfig represents the ID token configuration structure for JSON marshaling/unmarshaling.
 type idTokenConfig struct {
-	ValidityPeriod int64               `json:"validity_period,omitempty"`
-	UserAttributes []string            `json:"user_attributes,omitempty"`
-	ScopeClaims    map[string][]string `json:"scope_claims,omitempty"`
+	ValidityPeriod int64    `json:"validity_period,omitempty"`
+	UserAttributes []string `json:"user_attributes,omitempty"`
+}
+
+// userInfoConfig represents the user info endpoint configuration structure for JSON marshaling/unmarshaling.
+type userInfoConfig struct {
+	UserAttributes []string `json:"user_attributes,omitempty"`
 }
 
 // ApplicationStoreInterface defines the interface for application data persistence operations.
@@ -253,16 +259,29 @@ func (st *applicationStore) GetOAuthApplication(clientID string) (*model.OAuthAp
 			if userAttributes == nil {
 				userAttributes = make([]string, 0)
 			}
-			scopeClaims := oAuthConfig.Token.IDToken.ScopeClaims
-			if scopeClaims == nil {
-				scopeClaims = make(map[string][]string)
-			}
 			oauthTokenConfig.IDToken = &model.IDTokenConfig{
 				ValidityPeriod: oAuthConfig.Token.IDToken.ValidityPeriod,
 				UserAttributes: userAttributes,
-				ScopeClaims:    scopeClaims,
 			}
 		}
+	}
+
+	// Handle UserInfo config
+	var userInfoConfig *model.UserInfoConfig
+	if oAuthConfig.UserInfo != nil {
+		userAttributes := oAuthConfig.UserInfo.UserAttributes
+		if userAttributes == nil {
+			userAttributes = make([]string, 0)
+		}
+		userInfoConfig = &model.UserInfoConfig{
+			UserAttributes: userAttributes,
+		}
+	}
+
+	// Handle ScopeClaims config
+	scopeClaims := oAuthConfig.ScopeClaims
+	if scopeClaims == nil {
+		scopeClaims = make(map[string][]string)
 	}
 
 	return &model.OAuthAppConfigProcessedDTO{
@@ -277,6 +296,8 @@ func (st *applicationStore) GetOAuthApplication(clientID string) (*model.OAuthAp
 		PublicClient:            oAuthConfig.PublicClient,
 		Token:                   oauthTokenConfig,
 		Scopes:                  oAuthConfig.Scopes,
+		UserInfo:                userInfoConfig,
+		ScopeClaims:             scopeClaims,
 	}, nil
 }
 
@@ -453,10 +474,19 @@ func getOAuthConfigJSONBytes(inboundAuthConfig model.InboundAuthConfigProcessedD
 			oauthConfig.Token.IDToken = &idTokenConfig{
 				ValidityPeriod: inboundAuthConfig.OAuthAppConfig.Token.IDToken.ValidityPeriod,
 				UserAttributes: inboundAuthConfig.OAuthAppConfig.Token.IDToken.UserAttributes,
-				ScopeClaims:    inboundAuthConfig.OAuthAppConfig.Token.IDToken.ScopeClaims,
 			}
 		}
 	}
+
+	// Handle UserInfo config
+	if inboundAuthConfig.OAuthAppConfig.UserInfo != nil {
+		oauthConfig.UserInfo = &userInfoConfig{
+			UserAttributes: inboundAuthConfig.OAuthAppConfig.UserInfo.UserAttributes,
+		}
+	}
+
+	// Handle ScopeClaims config
+	oauthConfig.ScopeClaims = inboundAuthConfig.OAuthAppConfig.ScopeClaims
 
 	oauthConfigJSONBytes, err := json.Marshal(oauthConfig)
 	if err != nil {
@@ -811,16 +841,29 @@ func buildOAuthInboundAuthConfig(row map[string]interface{}, basicApp model.Basi
 			if userAttributes == nil {
 				userAttributes = make([]string, 0)
 			}
-			scopeClaims := oauthConfig.Token.IDToken.ScopeClaims
-			if scopeClaims == nil {
-				scopeClaims = make(map[string][]string)
-			}
 			oauthTokenConfig.IDToken = &model.IDTokenConfig{
 				ValidityPeriod: oauthConfig.Token.IDToken.ValidityPeriod,
 				UserAttributes: userAttributes,
-				ScopeClaims:    scopeClaims,
 			}
 		}
+	}
+
+	// Handle UserInfo config
+	var userInfoConfig *model.UserInfoConfig
+	if oauthConfig.UserInfo != nil {
+		userAttributes := oauthConfig.UserInfo.UserAttributes
+		if userAttributes == nil {
+			userAttributes = make([]string, 0)
+		}
+		userInfoConfig = &model.UserInfoConfig{
+			UserAttributes: userAttributes,
+		}
+	}
+
+	// Handle ScopeClaims config
+	scopeClaims := oauthConfig.ScopeClaims
+	if scopeClaims == nil {
+		scopeClaims = make(map[string][]string)
 	}
 
 	// TODO: Need to refactor when supporting other/multiple inbound auth types.
@@ -838,6 +881,8 @@ func buildOAuthInboundAuthConfig(row map[string]interface{}, basicApp model.Basi
 			PublicClient:            oauthConfig.PublicClient,
 			Token:                   oauthTokenConfig,
 			Scopes:                  oauthConfig.Scopes,
+			UserInfo:                userInfoConfig,
+			ScopeClaims:             scopeClaims,
 		},
 	}
 	return inboundAuthConfig, nil

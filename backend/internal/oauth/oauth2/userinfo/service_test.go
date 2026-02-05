@@ -299,6 +299,9 @@ func (s *UserInfoServiceTestSuite) TestGetUserInfo_Success_StandardScopes() {
 				UserAttributes: []string{"name", "email"},
 			},
 		},
+		UserInfo: &appmodel.UserInfoConfig{
+			UserAttributes: []string{"name", "email"},
+		},
 	}
 
 	s.mockJWTService.On("VerifyJWT", token, "", "").Return(nil)
@@ -339,10 +342,13 @@ func (s *UserInfoServiceTestSuite) TestGetUserInfo_Success_WithGroups() {
 		Token: &appmodel.OAuthTokenConfig{
 			IDToken: &appmodel.IDTokenConfig{
 				UserAttributes: []string{"name", constants.UserAttributeGroups},
-				ScopeClaims: map[string][]string{
-					"profile": {"name", constants.UserAttributeGroups}, // Add groups to profile scope
-				},
 			},
+		},
+		UserInfo: &appmodel.UserInfoConfig{
+			UserAttributes: []string{"name", constants.UserAttributeGroups},
+		},
+		ScopeClaims: map[string][]string{
+			"profile": {"name", constants.UserAttributeGroups}, // Add groups to profile scope
 		},
 	}
 
@@ -413,10 +419,13 @@ func (s *UserInfoServiceTestSuite) TestGetUserInfo_Success_WithScopeClaimsMappin
 		Token: &appmodel.OAuthTokenConfig{
 			IDToken: &appmodel.IDTokenConfig{
 				UserAttributes: []string{"name", "email", "phone"},
-				ScopeClaims: map[string][]string{
-					"custom_scope": {"name", "phone"},
-				},
 			},
+		},
+		UserInfo: &appmodel.UserInfoConfig{
+			UserAttributes: []string{"name", "email", "phone"},
+		},
+		ScopeClaims: map[string][]string{
+			"custom_scope": {"name", "phone"},
 		},
 	}
 
@@ -533,6 +542,9 @@ func (s *UserInfoServiceTestSuite) TestGetUserInfo_Success_GroupsNotInAllowedAtt
 				UserAttributes: []string{"name"}, // groups not in allowed attributes
 			},
 		},
+		UserInfo: &appmodel.UserInfoConfig{
+			UserAttributes: []string{"name"},
+		},
 	}
 
 	s.mockJWTService.On("VerifyJWT", token, "", "").Return(nil)
@@ -569,6 +581,9 @@ func (s *UserInfoServiceTestSuite) TestGetUserInfo_Success_EmptyUserAttributes()
 			IDToken: &appmodel.IDTokenConfig{
 				UserAttributes: []string{"name", "email"},
 			},
+		},
+		UserInfo: &appmodel.UserInfoConfig{
+			UserAttributes: []string{"name", "email"},
 		},
 	}
 
@@ -825,10 +840,13 @@ func (s *UserInfoServiceTestSuite) TestGetUserInfo_GroupsWithEmptyGroups() {
 		Token: &appmodel.OAuthTokenConfig{
 			IDToken: &appmodel.IDTokenConfig{
 				UserAttributes: []string{"name", constants.UserAttributeGroups},
-				ScopeClaims: map[string][]string{
-					"profile": {"name", constants.UserAttributeGroups},
-				},
 			},
+		},
+		UserInfo: &appmodel.UserInfoConfig{
+			UserAttributes: []string{"name", constants.UserAttributeGroups},
+		},
+		ScopeClaims: map[string][]string{
+			"profile": {"name", constants.UserAttributeGroups},
 		},
 	}
 
@@ -904,6 +922,9 @@ func (s *UserInfoServiceTestSuite) testGetUserInfoAllowedGrantType(grantTypeValu
 			IDToken: &appmodel.IDTokenConfig{
 				UserAttributes: []string{"name"},
 			},
+		},
+		UserInfo: &appmodel.UserInfoConfig{
+			UserAttributes: []string{"name"},
 		},
 	}
 

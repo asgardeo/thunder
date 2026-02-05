@@ -156,6 +156,8 @@ func (as *applicationService) CreateApplication(app *model.ApplicationDTO) (*mod
 				PublicClient:            inboundAuthConfig.OAuthAppConfig.PublicClient,
 				Token:                   processedTokenConfig,
 				Scopes:                  inboundAuthConfig.OAuthAppConfig.Scopes,
+				UserInfo:                processedDTO.InboundAuthConfig[0].OAuthAppConfig.UserInfo,
+				ScopeClaims:             processedDTO.InboundAuthConfig[0].OAuthAppConfig.ScopeClaims,
 			},
 		}
 		returnApp.InboundAuthConfig = []model.InboundAuthConfigDTO{returnInboundAuthConfig}
@@ -222,6 +224,8 @@ func (as *applicationService) ValidateApplication(app *model.ApplicationDTO) (
 		}
 	}
 	assertion, finalOAuthAccessToken, finalOAuthIDToken, finalOAuthTokenIssuer := processTokenConfiguration(app)
+	userInfo := processUserInfoConfiguration(app, finalOAuthIDToken)
+	scopeClaims := processScopeClaimsConfiguration(app)
 
 	processedDTO := &model.ApplicationProcessedDTO{
 		ID:                        appID,
@@ -262,6 +266,8 @@ func (as *applicationService) ValidateApplication(app *model.ApplicationDTO) (
 				PublicClient:            inboundAuthConfig.OAuthAppConfig.PublicClient,
 				Token:                   returnTokenConfig,
 				Scopes:                  inboundAuthConfig.OAuthAppConfig.Scopes,
+				UserInfo:                userInfo,
+				ScopeClaims:             scopeClaims,
 			},
 		}
 		processedDTO.InboundAuthConfig = []model.InboundAuthConfigProcessedDTO{processedInboundAuthConfig}
@@ -388,6 +394,8 @@ func (as *applicationService) GetApplication(appID string) (*model.Application,
 						PublicClient:            oauthAppConfig.PublicClient,
 						Token:                   oauthAppConfig.Token,
 						Scopes:                  oauthAppConfig.Scopes,
+						UserInfo:                oauthAppConfig.UserInfo,
+						ScopeClaims:             oauthAppConfig.ScopeClaims,
 					},
 				})
 			}
@@ -497,6 +505,8 @@ func (as *applicationService) UpdateApplication(appID string, app *model.Applica
 
 	// Process token configuration
 	assertion, finalOAuthAccessToken, finalOAuthIDToken, finalOAuthTokenIssuer := processTokenConfiguration(app)
+	userInfo := processUserInfoConfiguration(app, finalOAuthIDToken)
+	scopeClaims := processScopeClaimsConfiguration(app)
 
 	processedDTO := &model.ApplicationProcessedDTO{
 		ID:                        appID,
@@ -537,6 +547,8 @@ func (as *applicationService) UpdateApplication(appID string, app *model.Applica
 				PublicClient:            inboundAuthConfig.OAuthAppConfig.PublicClient,
 				Token:                   oAuthTokenConfig,
 				Scopes:                  inboundAuthConfig.OAuthAppConfig.Scopes,
+				UserInfo:                userInfo,
+				ScopeClaims:             scopeClaims,
 			},
 		}
 		processedDTO.InboundAuthConfig = []model.InboundAuthConfigProcessedDTO{processedInboundAuthConfig}
@@ -594,6 +606,8 @@ func (as *applicationService) UpdateApplication(appID string, app *model.Applica
 				PublicClient:            inboundAuthConfig.OAuthAppConfig.PublicClient,
 				Token:                   returnTokenConfig,
 				Scopes:                  inboundAuthConfig.OAuthAppConfig.Scopes,
+				UserInfo:                userInfo,
+				ScopeClaims:             scopeClaims,
 			},
 		}
 		returnApp.InboundAuthConfig = []model.InboundAuthConfigDTO{returnInboundAuthConfig}
@@ -1284,7 +1298,6 @@ func processTokenConfiguration(app *model.ApplicationDTO) (
 		oauthIDToken = &model.IDTokenConfig{
 			ValidityPeriod: app.InboundAuthConfig[0].OAuthAppConfig.Token.IDToken.ValidityPeriod,
 			UserAttributes: app.InboundAuthConfig[0].OAuthAppConfig.Token.IDToken.UserAttributes,
-			ScopeClaims:    app.InboundAuthConfig[0].OAuthAppConfig.Token.IDToken.ScopeClaims,
 		}
 	}
 
@@ -1295,14 +1308,10 @@ func processTokenConfiguration(app *model.ApplicationDTO) (
 		if oauthIDToken.UserAttributes == nil {
 			oauthIDToken.UserAttributes = make([]string, 0)
 		}
-		if oauthIDToken.ScopeClaims == nil {
-			oauthIDToken.ScopeClaims = make(map[string][]string)
-		}
 	} else {
 		oauthIDToken = &model.IDTokenConfig{
 			ValidityPeriod: assertion.ValidityPeriod,
 			UserAttributes: assertion.UserAttributes,
-			ScopeClaims:    make(map[string][]string),
 		}
 	}
 
@@ -1316,6 +1325,36 @@ func processTokenConfiguration(app *model.ApplicationDTO) (
 	}
 
 	return assertion, oauthAccessToken, oauthIDToken, tokenIssuer
+}
+
+// processUserInfoConfiguration processes user info configuration for an application.
+func processUserInfoConfiguration(app *model.ApplicationDTO,
+	idTokenConfig *model.IDTokenConfig) *model.UserInfoConfig {
+	oauthUserInfo := &model.UserInfoConfig{}
+
+	if len(app.InboundAuthConfig) > 0 && app.InboundAuthConfig[0].OAuthAppConfig != nil &&
+		app.InboundAuthConfig[0].OAuthAppConfig.UserInfo != nil {
+		oauthUserInfo.UserAttributes = app.InboundAuthConfig[0].OAuthAppConfig.UserInfo.UserAttributes
+	}
+	if oauthUserInfo.UserAttributes == nil {
+		oauthUserInfo.UserAttributes = idTokenConfig.UserAttributes
+	}
+
+	return oauthUserInfo
+}
+
+// processScopeClaimsConfiguration processes scope claims configuration for an application.
+func processScopeClaimsConfiguration(app *model.ApplicationDTO) map[string][]string {
+	var scopeClaims map[string][]string
+	if len(app.InboundAuthConfig) > 0 && app.InboundAuthConfig[0].OAuthAppConfig != nil &&
+		app.InboundAuthConfig[0].OAuthAppConfig.ScopeClaims != nil {
+		scopeClaims = app.InboundAuthConfig[0].OAuthAppConfig.ScopeClaims
+	}
+	if scopeClaims == nil {
+		scopeClaims = make(map[string][]string)
+	}
+
+	return scopeClaims
 }
 
 // validateRedirectURIs validates redirect URIs format and requirements.

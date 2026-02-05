@@ -36,12 +36,10 @@ import (
 
 const serviceLoggerComponentName = "UserInfoService"
 
-// userInfoServiceInterface defines the interface for OIDC UserInfo endpoint.
 type userInfoServiceInterface interface {
 	GetUserInfo(accessToken string) (map[string]interface{}, *serviceerror.ServiceError)
 }
 
-// userInfoService implements the userInfoServiceInterface.
 type userInfoService struct {
 	jwtService         jwt.JWTServiceInterface
 	applicationService application.ApplicationServiceInterface
@@ -49,7 +47,6 @@ type userInfoService struct {
 	logger             *log.Logger
 }
 
-// newUserInfoService creates a new userInfoService instance.
 func newUserInfoService(
 	jwtService jwt.JWTServiceInterface,
 	applicationService application.ApplicationServiceInterface,
@@ -63,78 +60,59 @@ func newUserInfoService(
 	}
 }
 
-// GetUserInfo validates the access token and returns user information based on authorized scopes.
 func (s *userInfoService) GetUserInfo(accessToken string) (map[string]interface{}, *serviceerror.ServiceError) {
 	if accessToken == "" {
 		return nil, &errorInvalidAccessToken
 	}
-
 	tokenClaims, svcErr := s.validateAndDecodeToken(accessToken)
 	if svcErr != nil {
 		return nil, svcErr
 	}
-
 	sub, svcErr := s.extractSubClaim(tokenClaims)
 	if svcErr != nil {
 		return nil, svcErr
 	}
-
 	if svcErr := s.validateGrantType(tokenClaims); svcErr != nil {
 		return nil, svcErr
 	}
-
 	scopes := s.extractScopes(tokenClaims)
 	if len(scopes) == 0 {
 		return map[string]interface{}{"sub": sub}, nil
 	}
-
 	oauthApp := s.getOAuthApp(tokenClaims)
-
-	includeGroups := oauthApp != nil &&
-		oauthApp.Token != nil &&
-		oauthApp.Token.IDToken != nil &&
+	includeGroups := oauthApp != nil && oauthApp.Token != nil && oauthApp.Token.IDToken != nil &&
 		slices.Contains(oauthApp.Token.IDToken.UserAttributes, constants.UserAttributeGroups)
-
-	userAttributes, userGroups, err := tokenservice.FetchUserAttributesAndGroups(s.userService,
-		sub, includeGroups)
+	userAttributes, userGroups, err := tokenservice.FetchUserAttributesAndGroups(s.userService, sub, includeGroups)
 	if err != nil {
 		s.logger.Error("Failed to fetch user attributes", log.String("userID", sub), log.Error(err))
 		return nil, &serviceerror.InternalServerError
 	}
-
 	if len(userGroups) > 0 && includeGroups {
 		if userAttributes == nil {
 			userAttributes = make(map[string]interface{})
 		}
 		userAttributes[constants.UserAttributeGroups] = userGroups
 	}
-
 	response, svcErr := s.buildUserInfoResponse(sub, scopes, userAttributes, oauthApp, tokenClaims)
 	if svcErr != nil {
 		return nil, svcErr
 	}
-
 	return response, nil
 }
 
-// validateAndDecodeToken validates the JWT signature and decodes the payload.
-func (s *userInfoService) validateAndDecodeToken(accessToken string) (
-	map[string]interface{}, *serviceerror.ServiceError) {
+func (s *userInfoService) validateAndDecodeToken(accessToken string) (map[string]interface{}, *serviceerror.ServiceError) {
 	if err := s.jwtService.VerifyJWT(accessToken, "", ""); err != nil {
 		s.logger.Debug("Failed to verify access token", log.String("error", err.Error))
 		return nil, &errorInvalidAccessToken
 	}
-
 	claims, err := jwt.DecodeJWTPayload(accessToken)
 	if err != nil {
 		s.logger.Debug("Failed to decode access token", log.Error(err))
 		return nil, &errorInvalidAccessToken
 	}
-
 	return claims, nil
 }
 
-// extractSubClaim extracts and validates the sub claim from the token claims.
 func (s *userInfoService) extractSubClaim(claims map[string]interface{}) (string, *serviceerror.ServiceError) {
 	sub, ok := claims[constants.ClaimSub].(string)
 	if !ok || sub == "" {
@@ -143,72 +121,49 @@ func (s *userInfoService) extractSubClaim(claims map[string]interface{}) (string
 	return sub, nil
 }
 
-// validateGrantType validates that the token was not issued using client_credentials grant.
 func (s *userInfoService) validateGrantType(claims map[string]interface{}) *serviceerror.ServiceError {
 	grantTypeValue, ok := claims["grant_type"]
 	if !ok {
 		return nil
 	}
-
 	grantTypeString, ok := grantTypeValue.(string)
 	if !ok {
 		return nil
 	}
-
 	if constants.GrantType(grantTypeString) == constants.GrantTypeClientCredentials {
-		s.logger.Debug("UserInfo endpoint called with client_credentials grant token",
-			log.String("grant_type", grantTypeString))
+		s.logger.Debug("UserInfo endpoint called with client_credentials grant token", log.String("grant_type", grantTypeString))
 		return &errorClientCredentialsNotSupported
 	}
-
 	return nil
 }
 
-// extractScopes extracts scopes from the token claims.
 func (s *userInfoService) extractScopes(claims map[string]interface{}) []string {
 	scopeValue, ok := claims["scope"]
 	if !ok {
 		return nil
 	}
-
 	scopeString, ok := scopeValue.(string)
 	if !ok {
 		return nil
 	}
-
 	return tokenservice.ParseScopes(scopeString)
 }
 
-// getOAuthApp retrieves the OAuth application configuration if client_id is present in claims.
 func (s *userInfoService) getOAuthApp(claims map[string]interface{}) *appmodel.OAuthAppConfigProcessedDTO {
 	clientID, ok := claims["client_id"].(string)
 	if !ok || clientID == "" {
 		return nil
 	}
-
 	app, err := s.applicationService.GetOAuthApplication(clientID)
 	if err != nil || app == nil {
 		return nil
 	}
-
 	return app
 }
 
-// buildUserInfoResponse builds the final UserInfo response from sub, scopes, and user attributes.
-// It also processes any explicit claims request embedded in the access token.
-func (s *userInfoService) buildUserInfoResponse(
-	sub string,
-	scopes []string,
-	userAttributes map[string]interface{},
-	oauthApp *appmodel.OAuthAppConfigProcessedDTO,
-	tokenClaims map[string]interface{},
-) (map[string]interface{}, *serviceerror.ServiceError) {
-	response := map[string]interface{}{
-		"sub": sub,
-	}
-
-	// Build claims from scopes and explicit claims request
-	// Extract only the UserInfo claims map from the access token
+func (s *userInfoService) buildUserInfoResponse(sub string, scopes []string, userAttributes map[string]interface{},
+	oauthApp *appmodel.OAuthAppConfigProcessedDTO, tokenClaims map[string]interface{}) (map[string]interface{}, *serviceerror.ServiceError) {
+	response := map[string]interface{}{"sub": sub}
 	claimsRequest, svcErr := s.extractClaimsRequest(tokenClaims)
 	if svcErr != nil {
 		return nil, svcErr
@@ -217,34 +172,22 @@ func (s *userInfoService) buildUserInfoResponse(
 	if claimsRequest != nil {
 		userInfoClaims = claimsRequest.UserInfo
 	}
-	claimData := tokenservice.BuildClaims(
-		scopes,
-		userInfoClaims,
-		userAttributes,
-		oauthApp,
-	)
-
+	claimData := tokenservice.BuildClaims(scopes, userInfoClaims, userAttributes, oauthApp)
 	for key, value := range claimData {
 		response[key] = value
 	}
-
 	return response, nil
 }
 
-// extractClaimsRequest extracts the claims request from the access token if present.
-func (s *userInfoService) extractClaimsRequest(
-	tokenClaims map[string]interface{},
-) (*model.ClaimsRequest, *serviceerror.ServiceError) {
+func (s *userInfoService) extractClaimsRequest(tokenClaims map[string]interface{}) (*model.ClaimsRequest, *serviceerror.ServiceError) {
 	claimsRequestStr, ok := tokenClaims[constants.ClaimClaimsRequest].(string)
 	if !ok || claimsRequestStr == "" {
 		return nil, nil
 	}
-
 	claimsRequest, err := oauth2utils.ParseClaimsRequest(claimsRequestStr)
 	if err != nil {
 		s.logger.Error("Failed to parse claims request from access token", log.Error(err))
 		return nil, &serviceerror.InternalServerError
 	}
-
 	return claimsRequest, nil
 }

@@ -1340,10 +1340,10 @@ func (suite *AuthorizeHandlerTestSuite) TestGetRequiredAttributes() {
 				Token: &appmodel.OAuthTokenConfig{
 					IDToken: &appmodel.IDTokenConfig{
 						UserAttributes: []string{},
-						ScopeClaims:    nil,
 					},
 					AccessToken: nil,
 				},
+				ScopeClaims: nil,
 			},
 			expectedResult: "",
 			description:    "Should return empty when IDToken.UserAttributes is empty",
@@ -1355,10 +1355,10 @@ func (suite *AuthorizeHandlerTestSuite) TestGetRequiredAttributes() {
 				Token: &appmodel.OAuthTokenConfig{
 					IDToken: &appmodel.IDTokenConfig{
 						UserAttributes: []string{"sub", "name", "email"}, // email_verified not allowed
-						ScopeClaims:    nil,
 					},
 					AccessToken: nil,
 				},
+				ScopeClaims: nil,
 			},
 			expectedResult: "sub name email",
 			description:    "Should filter scope claims by IDToken.UserAttributes",
@@ -1370,11 +1370,11 @@ func (suite *AuthorizeHandlerTestSuite) TestGetRequiredAttributes() {
 				Token: &appmodel.OAuthTokenConfig{
 					IDToken: &appmodel.IDTokenConfig{
 						UserAttributes: []string{"sub", "name", "custom_claim"},
-						ScopeClaims: map[string][]string{
-							"profile": {"name", "custom_claim"},
-						},
 					},
 					AccessToken: nil,
+				},
+				ScopeClaims: map[string][]string{
+					"profile": {"name", "custom_claim"},
 				},
 			},
 			expectedResult: "sub name custom_claim",
@@ -1448,12 +1448,12 @@ func (suite *AuthorizeHandlerTestSuite) TestGetRequiredAttributes() {
 				Token: &appmodel.OAuthTokenConfig{
 					IDToken: &appmodel.IDTokenConfig{
 						UserAttributes: []string{"sub", "name"},
-						ScopeClaims: map[string][]string{
-							"openid": {"sub"}, // Custom mapping for openid
-							// profile falls back to standard
-						},
 					},
 					AccessToken: nil,
+				},
+				ScopeClaims: map[string][]string{
+					"openid": {"sub"}, // Custom mapping for openid
+					// profile falls back to standard
 				},
 			},
 			expectedResult: "sub name",
