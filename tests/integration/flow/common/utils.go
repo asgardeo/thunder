@@ -500,6 +500,29 @@ func WaitAndValidateNotification(mockServer interface{}, expectedCount int, time
 	return fmt.Errorf("notification validation not implemented - should be customized per mock server type")
 }
 
+// RetryWithBackoff retries an operation with exponential backoff
+// This helps handle transient failures that may occur under resource constraints
+func RetryWithBackoff(operation func() error, maxRetries int, initialDelay time.Duration) error {
+	var lastErr error
+	delay := initialDelay
+
+	for attempt := 0; attempt < maxRetries; attempt++ {
+		lastErr = operation()
+		if lastErr == nil {
+			return nil
+		}
+
+		// Don't sleep after the last attempt
+		if attempt < maxRetries-1 {
+			time.Sleep(delay)
+			// Exponential backoff: double the delay for next attempt
+			delay *= 2
+		}
+	}
+
+	return fmt.Errorf("operation failed after %d attempts: %w", maxRetries, lastErr)
+}
+
 // GenerateUniqueUsername generates a unique username using the given prefix
 func GenerateUniqueUsername(prefix string) string {
 	return fmt.Sprintf("%s_%d", prefix, time.Now().UnixNano())
