@@ -165,7 +165,7 @@ func (t *flowTools) listFlows(
 
 	flowType := flowCommon.FlowType(input.FlowType)
 
-	listResponse, svcErr := t.flowService.ListFlows(limit, input.Offset, flowType)
+	listResponse, svcErr := t.flowService.ListFlows(ctx, limit, input.Offset, flowType)
 	if svcErr != nil {
 		return nil, flowListOutput{}, fmt.Errorf("failed to list flows: %s", svcErr.ErrorDescription)
 	}
@@ -184,7 +184,7 @@ func (t *flowTools) getFlowByHandle(
 ) (*mcp.CallToolResult, *flowmgt.CompleteFlowDefinition, error) {
 	flowType := flowCommon.FlowType(input.FlowType)
 
-	flow, svcErr := t.flowService.GetFlowByHandle(input.Handle, flowType)
+	flow, svcErr := t.flowService.GetFlowByHandle(ctx, input.Handle, flowType)
 	if svcErr != nil {
 		return nil, nil, fmt.Errorf("failed to get flow by handle: %s", svcErr.ErrorDescription)
 	}
@@ -198,7 +198,7 @@ func (t *flowTools) getFlowByID(
 	req *mcp.CallToolRequest,
 	input common.IDInput,
 ) (*mcp.CallToolResult, *flowmgt.CompleteFlowDefinition, error) {
-	flow, svcErr := t.flowService.GetFlow(input.ID)
+	flow, svcErr := t.flowService.GetFlow(ctx, input.ID)
 	if svcErr != nil {
 		return nil, nil, fmt.Errorf("failed to get flow: %s", svcErr.ErrorDescription)
 	}
@@ -212,7 +212,7 @@ func (t *flowTools) createFlow(
 	req *mcp.CallToolRequest,
 	input flowmgt.FlowDefinition,
 ) (*mcp.CallToolResult, *flowmgt.CompleteFlowDefinition, error) {
-	createdFlow, svcErr := t.flowService.CreateFlow(&input)
+	createdFlow, svcErr := t.flowService.CreateFlow(ctx, &input)
 	if svcErr != nil {
 		return nil, nil, fmt.Errorf("failed to create flow: %s", svcErr.ErrorDescription)
 	}
@@ -227,7 +227,7 @@ func (t *flowTools) updateFlow(
 	input updateFlowInput,
 ) (*mcp.CallToolResult, *flowmgt.CompleteFlowDefinition, error) {
 	// Get current flow to retrieve immutable fields (handle, flowType)
-	currentFlow, svcErr := t.flowService.GetFlow(input.ID)
+	currentFlow, svcErr := t.flowService.GetFlow(ctx, input.ID)
 	if svcErr != nil {
 		return nil, nil, fmt.Errorf("failed to get flow: %s", svcErr.ErrorDescription)
 	}
@@ -240,7 +240,7 @@ func (t *flowTools) updateFlow(
 		Nodes:    input.Nodes,
 	}
 
-	updatedFlow, svcErr := t.flowService.UpdateFlow(input.ID, updateDef)
+	updatedFlow, svcErr := t.flowService.UpdateFlow(ctx, input.ID, updateDef)
 	if svcErr != nil {
 		return nil, nil, fmt.Errorf("failed to update flow: %s", svcErr.ErrorDescription)
 	}

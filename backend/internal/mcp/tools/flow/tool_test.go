@@ -63,7 +63,7 @@ func (suite *FlowToolsTestSuite) TestListFlows() {
 		TotalResults: 1,
 		Flows:        mockFlows,
 	}
-	suite.mockFlowService.EXPECT().ListFlows(100, 0, flowCommon.FlowType("")).Return(mockResponse, nil)
+	suite.mockFlowService.EXPECT().ListFlows(mock.Anything, 100, 0, flowCommon.FlowType("")).Return(mockResponse, nil)
 
 	input := listFlowsInput{
 		PaginationInput: common.PaginationInput{
@@ -83,7 +83,7 @@ func (suite *FlowToolsTestSuite) TestListFlows_Error() {
 		Code:  "ERR_LIST",
 		Error: "Failed to list flows",
 	}
-	suite.mockFlowService.EXPECT().ListFlows(10, 0, flowCommon.FlowType("")).Return(nil, expectedErr)
+	suite.mockFlowService.EXPECT().ListFlows(mock.Anything, 10, 0, flowCommon.FlowType("")).Return(nil, expectedErr)
 
 	input := listFlowsInput{
 		PaginationInput: common.PaginationInput{
@@ -103,7 +103,8 @@ func (suite *FlowToolsTestSuite) TestGetFlowByHandle() {
 		Handle:   "handle-1",
 		FlowType: flowCommon.FlowTypeAuthentication,
 	}
-	suite.mockFlowService.EXPECT().GetFlowByHandle("handle-1", flowCommon.FlowTypeAuthentication).Return(mockFlow, nil)
+	suite.mockFlowService.EXPECT().GetFlowByHandle(mock.Anything, "handle-1", flowCommon.FlowTypeAuthentication).
+		Return(mockFlow, nil)
 
 	input := getFlowByHandleInput{
 		Handle:   "handle-1",
@@ -122,7 +123,7 @@ func (suite *FlowToolsTestSuite) TestGetFlowByID() {
 		Handle:   "handle-1",
 		FlowType: flowCommon.FlowTypeAuthentication,
 	}
-	suite.mockFlowService.EXPECT().GetFlow("flow-1").Return(mockFlow, nil)
+	suite.mockFlowService.EXPECT().GetFlow(mock.Anything, "flow-1").Return(mockFlow, nil)
 
 	input := common.IDInput{
 		ID: "flow-1",
@@ -144,7 +145,7 @@ func (suite *FlowToolsTestSuite) TestCreateFlow() {
 		Handle:   "new-flow",
 		FlowType: flowCommon.FlowTypeRegistration,
 	}
-	suite.mockFlowService.EXPECT().CreateFlow(&input).Return(createdFlow, nil)
+	suite.mockFlowService.EXPECT().CreateFlow(mock.Anything, &input).Return(createdFlow, nil)
 
 	result, output, err := suite.tools.createFlow(ctx(), nil, input)
 
@@ -162,7 +163,7 @@ func (suite *FlowToolsTestSuite) TestCreateFlow_Error() {
 		Code:  "ERR_CREATE",
 		Error: "Failed to create flow",
 	}
-	suite.mockFlowService.EXPECT().CreateFlow(&input).Return(nil, expectedErr)
+	suite.mockFlowService.EXPECT().CreateFlow(mock.Anything, &input).Return(nil, expectedErr)
 
 	result, output, err := suite.tools.createFlow(ctx(), nil, input)
 
@@ -193,12 +194,13 @@ func (suite *FlowToolsTestSuite) TestUpdateFlow() {
 		Handle:   "updated-handle",
 		FlowType: flowCommon.FlowTypeAuthentication,
 	}
-	suite.mockFlowService.EXPECT().GetFlow("flow-1").Return(currentFlow, nil)
+	suite.mockFlowService.EXPECT().GetFlow(mock.Anything, "flow-1").Return(currentFlow, nil)
 
 	// Expect UpdateFlow with correct definition construction
-	suite.mockFlowService.EXPECT().UpdateFlow("flow-1", mock.MatchedBy(func(def *flowmgt.FlowDefinition) bool {
-		return def.Handle == "updated-handle" && def.Name == "Updated Flow"
-	})).Return(updatedFlow, nil)
+	suite.mockFlowService.EXPECT().UpdateFlow(mock.Anything, "flow-1", mock.MatchedBy(
+		func(def *flowmgt.FlowDefinition) bool {
+			return def.Handle == "updated-handle" && def.Name == "Updated Flow"
+		})).Return(updatedFlow, nil)
 
 	result, output, err := suite.tools.updateFlow(ctx(), nil, input)
 
