@@ -33,7 +33,7 @@ import (
 	"github.com/asgardeo/thunder/internal/oauth/oauth2/tokenservice"
 	"github.com/asgardeo/thunder/internal/system/config"
 	"github.com/asgardeo/thunder/internal/system/log"
-	"github.com/asgardeo/thunder/tests/mocks/jwtmock"
+	"github.com/asgardeo/thunder/tests/mocks/jose/jwtmock"
 	"github.com/asgardeo/thunder/tests/mocks/oauth/oauth2/tokenservicemock"
 	usersvcmock "github.com/asgardeo/thunder/tests/mocks/usermock"
 )
@@ -45,7 +45,7 @@ const testRefreshTokenAudience = "test-audience"
 type RefreshTokenGrantHandlerTestSuite struct {
 	suite.Suite
 	handler            *refreshTokenGrantHandler
-	mockJWTService     *jwtmock.JWTServiceInterfaceMock
+	mockJWTService     *jwtmock.ServiceInterfaceMock
 	mockUserService    *usersvcmock.UserServiceInterfaceMock
 	mockTokenBuilder   *tokenservicemock.TokenBuilderInterfaceMock
 	mockTokenValidator *tokenservicemock.TokenValidatorInterfaceMock
@@ -77,7 +77,7 @@ func (suite *RefreshTokenGrantHandlerTestSuite) SetupTest() {
 	}
 	_ = config.InitializeThunderRuntime("test", testConfig)
 
-	suite.mockJWTService = jwtmock.NewJWTServiceInterfaceMock(suite.T())
+	suite.mockJWTService = jwtmock.NewServiceInterfaceMock(suite.T())
 	suite.mockUserService = usersvcmock.NewUserServiceInterfaceMock(suite.T())
 	suite.mockTokenBuilder = tokenservicemock.NewTokenBuilderInterfaceMock(suite.T())
 	suite.mockTokenValidator = tokenservicemock.NewTokenValidatorInterfaceMock(suite.T())

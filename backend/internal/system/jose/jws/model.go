@@ -16,24 +16,24 @@
  * under the License.
  */
 
-package jwt
+package jws
 
-// JWSAlgorithm represents the JSON Web Signature algorithm used for signing JWTs
-type JWSAlgorithm string
+// Algorithm represents the JSON Web Signature algorithm used for signing
+type Algorithm string
 
 const (
 	// RS256 represents RSA signature with SHA-256 hash for JWS
-	RS256 JWSAlgorithm = "RS256"
+	RS256 Algorithm = "RS256"
 	// RS512 represents RSA signature with SHA-512 hash for JWS
-	RS512 JWSAlgorithm = "RS512"
+	RS512 Algorithm = "RS512"
 	// ES256 represents ECDSA signature with SHA-256 hash for JWS
-	ES256 JWSAlgorithm = "ES256"
+	ES256 Algorithm = "ES256"
 	// ES384 represents ECDSA signature with SHA-384 hash for JWS
-	ES384 JWSAlgorithm = "ES384"
+	ES384 Algorithm = "ES384"
 	// ES512 represents ECDSA signature with SHA-512 hash for JWS
-	ES512 JWSAlgorithm = "ES512"
+	ES512 Algorithm = "ES512"
 	// EdDSA represents ED25519 signature algorithm for JWS
-	EdDSA JWSAlgorithm = "EdDSA"
+	EdDSA Algorithm = "EdDSA"
 
 	// P256 represents the NIST P-256 curve
 	P256 string = "P-256"

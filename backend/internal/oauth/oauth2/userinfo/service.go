@@ -29,7 +29,7 @@ import (
 	"github.com/asgardeo/thunder/internal/oauth/oauth2/tokenservice"
 	oauth2utils "github.com/asgardeo/thunder/internal/oauth/oauth2/utils"
 	"github.com/asgardeo/thunder/internal/system/error/serviceerror"
-	"github.com/asgardeo/thunder/internal/system/jwt"
+	"github.com/asgardeo/thunder/internal/system/jose/jwt"
 	"github.com/asgardeo/thunder/internal/system/log"
 	"github.com/asgardeo/thunder/internal/user"
 )
@@ -43,7 +43,7 @@ type userInfoServiceInterface interface {
 
 // userInfoService implements the userInfoServiceInterface.
 type userInfoService struct {
-	jwtService         jwt.JWTServiceInterface
+	jwtService         jwt.ServiceInterface
 	applicationService application.ApplicationServiceInterface
 	userService        user.UserServiceInterface
 	logger             *log.Logger
@@ -51,7 +51,7 @@ type userInfoService struct {
 
 // newUserInfoService creates a new userInfoService instance.
 func newUserInfoService(
-	jwtService jwt.JWTServiceInterface,
+	jwtService jwt.ServiceInterface,
 	applicationService application.ApplicationServiceInterface,
 	userService user.UserServiceInterface,
 ) userInfoServiceInterface {

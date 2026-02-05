@@ -35,7 +35,7 @@ import (
 	"github.com/asgardeo/thunder/internal/oauth/oauth2/model"
 	"github.com/asgardeo/thunder/internal/oauth/oauth2/tokenservice"
 	"github.com/asgardeo/thunder/internal/system/config"
-	"github.com/asgardeo/thunder/tests/mocks/jwtmock"
+	"github.com/asgardeo/thunder/tests/mocks/jose/jwtmock"
 	"github.com/asgardeo/thunder/tests/mocks/oauth/oauth2/tokenservicemock"
 )
 
@@ -51,7 +51,7 @@ const (
 
 type TokenExchangeGrantHandlerTestSuite struct {
 	suite.Suite
-	mockJWTService     *jwtmock.JWTServiceInterfaceMock
+	mockJWTService     *jwtmock.ServiceInterfaceMock
 	mockTokenBuilder   *tokenservicemock.TokenBuilderInterfaceMock
 	mockTokenValidator *tokenservicemock.TokenValidatorInterfaceMock
 	handler            *tokenExchangeGrantHandler
@@ -73,7 +73,7 @@ func (suite *TokenExchangeGrantHandlerTestSuite) SetupTest() {
 	err := config.InitializeThunderRuntime("", testConfig)
 	assert.NoError(suite.T(), err)
 
-	suite.mockJWTService = jwtmock.NewJWTServiceInterfaceMock(suite.T())
+	suite.mockJWTService = jwtmock.NewServiceInterfaceMock(suite.T())
 	suite.mockTokenBuilder = tokenservicemock.NewTokenBuilderInterfaceMock(suite.T())
 	suite.mockTokenValidator = tokenservicemock.NewTokenValidatorInterfaceMock(suite.T())
 	suite.handler = &tokenExchangeGrantHandler{

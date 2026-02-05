@@ -32,7 +32,7 @@ import (
 	"github.com/stretchr/testify/suite"
 
 	"github.com/asgardeo/thunder/internal/system/error/serviceerror"
-	"github.com/asgardeo/thunder/tests/mocks/jwtmock"
+	"github.com/asgardeo/thunder/tests/mocks/jose/jwtmock"
 )
 
 const (
@@ -42,7 +42,7 @@ const (
 
 type TokenVerifierTestSuite struct {
 	suite.Suite
-	mockJWTService *jwtmock.JWTServiceInterfaceMock
+	mockJWTService *jwtmock.ServiceInterfaceMock
 }
 
 func TestTokenVerifierTestSuite(t *testing.T) {
@@ -50,7 +50,7 @@ func TestTokenVerifierTestSuite(t *testing.T) {
 }
 
 func (suite *TokenVerifierTestSuite) SetupTest() {
-	suite.mockJWTService = jwtmock.NewJWTServiceInterfaceMock(suite.T())
+	suite.mockJWTService = jwtmock.NewServiceInterfaceMock(suite.T())
 }
 
 // createTestJWT creates a test JWT token with the given payload.

@@ -29,7 +29,7 @@ import (
 	"github.com/asgardeo/thunder/internal/oauth/oauth2/constants"
 	"github.com/asgardeo/thunder/internal/system/crypto/sign"
 	"github.com/asgardeo/thunder/internal/system/error/serviceerror"
-	"github.com/asgardeo/thunder/tests/mocks/jwtmock"
+	"github.com/asgardeo/thunder/tests/mocks/jose/jwtmock"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
@@ -38,7 +38,7 @@ import (
 
 type TokenIntrospectionServiceTestSuite struct {
 	suite.Suite
-	jwtServiceMock     *jwtmock.JWTServiceInterfaceMock
+	jwtServiceMock     *jwtmock.ServiceInterfaceMock
 	introspectService  TokenIntrospectionServiceInterface
 	validToken         string
 	expiredToken       string
@@ -52,7 +52,7 @@ func TestTokenIntrospectionServiceTestSuite(t *testing.T) {
 }
 
 func (s *TokenIntrospectionServiceTestSuite) SetupTest() {
-	s.jwtServiceMock = jwtmock.NewJWTServiceInterfaceMock(s.T())
+	s.jwtServiceMock = jwtmock.NewServiceInterfaceMock(s.T())
 
 	// Create a private key for signing JWT tokens
 	var err error

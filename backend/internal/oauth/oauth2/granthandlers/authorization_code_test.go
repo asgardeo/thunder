@@ -34,7 +34,7 @@ import (
 	"github.com/asgardeo/thunder/internal/oauth/oauth2/tokenservice"
 	"github.com/asgardeo/thunder/internal/system/config"
 	"github.com/asgardeo/thunder/internal/user"
-	"github.com/asgardeo/thunder/tests/mocks/jwtmock"
+	"github.com/asgardeo/thunder/tests/mocks/jose/jwtmock"
 	"github.com/asgardeo/thunder/tests/mocks/oauth/oauth2/authzmock"
 	"github.com/asgardeo/thunder/tests/mocks/oauth/oauth2/tokenservicemock"
 	usersvcmock "github.com/asgardeo/thunder/tests/mocks/usermock"
@@ -71,7 +71,7 @@ func convertToStringSlice(groups interface{}) []string {
 type AuthorizationCodeGrantHandlerTestSuite struct {
 	suite.Suite
 	handler          *authorizationCodeGrantHandler
-	mockJWTService   *jwtmock.JWTServiceInterfaceMock
+	mockJWTService   *jwtmock.ServiceInterfaceMock
 	mockTokenBuilder *tokenservicemock.TokenBuilderInterfaceMock
 	mockAuthzService *authzmock.AuthorizeServiceInterfaceMock
 	mockUserService  *usersvcmock.UserServiceInterfaceMock
@@ -93,7 +93,7 @@ func (suite *AuthorizationCodeGrantHandlerTestSuite) SetupTest() {
 	}
 	_ = config.InitializeThunderRuntime("test", testConfig)
 
-	suite.mockJWTService = jwtmock.NewJWTServiceInterfaceMock(suite.T())
+	suite.mockJWTService = jwtmock.NewServiceInterfaceMock(suite.T())
 	suite.mockTokenBuilder = tokenservicemock.NewTokenBuilderInterfaceMock(suite.T())
 	suite.mockAuthzService = authzmock.NewAuthorizeServiceInterfaceMock(suite.T())
 	suite.mockUserService = usersvcmock.NewUserServiceInterfaceMock(suite.T())
@@ -490,7 +490,7 @@ func (suite *AuthorizationCodeGrantHandlerTestSuite) TestHandleGrant_WithGroups(
 			// Reset mocks for each test case
 			suite.mockAuthzService = authzmock.NewAuthorizeServiceInterfaceMock(suite.T())
 			suite.mockUserService = usersvcmock.NewUserServiceInterfaceMock(suite.T())
-			suite.mockJWTService = jwtmock.NewJWTServiceInterfaceMock(suite.T())
+			suite.mockJWTService = jwtmock.NewServiceInterfaceMock(suite.T())
 			suite.mockTokenBuilder = tokenservicemock.NewTokenBuilderInterfaceMock(suite.T())
 			suite.handler = &authorizationCodeGrantHandler{
 				tokenBuilder: suite.mockTokenBuilder,
@@ -680,7 +680,7 @@ func (suite *AuthorizationCodeGrantHandlerTestSuite) TestHandleGrant_WithEmptyGr
 		suite.Run(tc.name, func() {
 			suite.mockAuthzService = authzmock.NewAuthorizeServiceInterfaceMock(suite.T())
 			suite.mockUserService = usersvcmock.NewUserServiceInterfaceMock(suite.T())
-			suite.mockJWTService = jwtmock.NewJWTServiceInterfaceMock(suite.T())
+			suite.mockJWTService = jwtmock.NewServiceInterfaceMock(suite.T())
 			suite.mockTokenBuilder = tokenservicemock.NewTokenBuilderInterfaceMock(suite.T())
 			suite.handler = &authorizationCodeGrantHandler{
 				tokenBuilder: suite.mockTokenBuilder,

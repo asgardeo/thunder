@@ -69,18 +69,18 @@ packages:
       pkgname: certmock
       filename: "{{.InterfaceName}}_mock.go"
 
-  github.com/asgardeo/thunder/internal/system/jwt:
+  github.com/asgardeo/thunder/internal/system/jose/jwt:
     config:
       all: true
-      dir: tests/mocks/jwtmock
+      dir: tests/mocks/jose/jwtmock
       structname: '{{.InterfaceName}}Mock'
       pkgname: jwtmock
       filename: "{{.InterfaceName}}_mock.go"
 
-  github.com/asgardeo/thunder/internal/system/jwe:
+  github.com/asgardeo/thunder/internal/system/jose/jwe:
     config:
       all: true
-      dir: tests/mocks/jwemock
+      dir: tests/mocks/jose/jwemock
       structname: '{{.InterfaceName}}Mock'
       pkgname: jwemock
       filename: "{{.InterfaceName}}_mock.go"

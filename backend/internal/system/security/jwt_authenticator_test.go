@@ -28,18 +28,18 @@ import (
 	"github.com/stretchr/testify/suite"
 
 	"github.com/asgardeo/thunder/internal/system/error/serviceerror"
-	"github.com/asgardeo/thunder/tests/mocks/jwtmock"
+	"github.com/asgardeo/thunder/tests/mocks/jose/jwtmock"
 )
 
 // JWTAuthenticatorTestSuite defines the test suite for JWTAuthenticator
 type JWTAuthenticatorTestSuite struct {
 	suite.Suite
-	mockJWT       *jwtmock.JWTServiceInterfaceMock
+	mockJWT       *jwtmock.ServiceInterfaceMock
 	authenticator *jwtAuthenticator
 }
 
 func (suite *JWTAuthenticatorTestSuite) SetupTest() {
-	suite.mockJWT = jwtmock.NewJWTServiceInterfaceMock(suite.T())
+	suite.mockJWT = jwtmock.NewServiceInterfaceMock(suite.T())
 	suite.authenticator = newJWTAuthenticator(suite.mockJWT)
 }
 
@@ -107,14 +107,14 @@ func (suite *JWTAuthenticatorTestSuite) TestAuthenticate() {
 	tests := []struct {
 		name           string
 		authHeader     string
-		setupMock      func(*jwtmock.JWTServiceInterfaceMock)
+		setupMock      func(*jwtmock.ServiceInterfaceMock)
 		expectedError  error
 		validateResult func(*testing.T, *SecurityContext)
 	}{
 		{
 			name:       "Successful authentication with system scope",
 			authHeader: "Bearer " + validToken,
-			setupMock: func(m *jwtmock.JWTServiceInterfaceMock) {
+			setupMock: func(m *jwtmock.ServiceInterfaceMock) {
 				m.On("VerifyJWTSignature", validToken).Return(nil)
 			},
 			expectedError: nil,
@@ -128,25 +128,25 @@ func (suite *JWTAuthenticatorTestSuite) TestAuthenticate() {
 		{
 			name:          "Missing Authorization header",
 			authHeader:    "",
-			setupMock:     func(m *jwtmock.JWTServiceInterfaceMock) {},
+			setupMock:     func(m *jwtmock.ServiceInterfaceMock) {},
 			expectedError: errMissingAuthHeader,
 		},
 		{
 			name:          "Invalid header format",
 			authHeader:    "Basic dXNlcjpwYXNz",
-			setupMock:     func(m *jwtmock.JWTServiceInterfaceMock) {},
+			setupMock:     func(m *jwtmock.ServiceInterfaceMock) {},
 			expectedError: errMissingAuthHeader,
 		},
 		{
 			name:          "Empty token",
 			authHeader:    "Bearer   ",
-			setupMock:     func(m *jwtmock.JWTServiceInterfaceMock) {},
+			setupMock:     func(m *jwtmock.ServiceInterfaceMock) {},
 			expectedError: errInvalidToken,
 		},
 		{
 			name:       "Invalid JWT signature",
 			authHeader: "Bearer invalid.jwt.token",
-			setupMock: func(m *jwtmock.JWTServiceInterfaceMock) {
+			setupMock: func(m *jwtmock.ServiceInterfaceMock) {
 				m.On("VerifyJWTSignature", "invalid.jwt.token").Return(&serviceerror.ServiceError{
 					Type:             serviceerror.ServerErrorType,
 					Code:             "INVALID_SIGNATURE",
@@ -159,7 +159,7 @@ func (suite *JWTAuthenticatorTestSuite) TestAuthenticate() {
 		{
 			name:       "Invalid JWT format - decoding error",
 			authHeader: "Bearer invalidjwtformat", // Not 3 parts separated by dots
-			setupMock: func(m *jwtmock.JWTServiceInterfaceMock) {
+			setupMock: func(m *jwtmock.ServiceInterfaceMock) {
 				m.On("VerifyJWTSignature", "invalidjwtformat").Return(nil)
 			},
 			expectedError: errInvalidToken,
@@ -167,7 +167,7 @@ func (suite *JWTAuthenticatorTestSuite) TestAuthenticate() {
 		{
 			name:       "Invalid JWT payload - malformed base64",
 			authHeader: "Bearer eyJhbGciOiJIUzI1NiJ9.invalid!base64!payload.signature",
-			setupMock: func(m *jwtmock.JWTServiceInterfaceMock) {
+			setupMock: func(m *jwtmock.ServiceInterfaceMock) {
 				m.On("VerifyJWTSignature", "eyJhbGciOiJIUzI1NiJ9.invalid!base64!payload.signature").Return(nil)
 			},
 			expectedError: errInvalidToken,
@@ -175,7 +175,7 @@ func (suite *JWTAuthenticatorTestSuite) TestAuthenticate() {
 		{
 			name:       "Invalid JWT payload - malformed JSON",
 			authHeader: "Bearer eyJhbGciOiJIUzI1NiJ9.bm90X3ZhbGlkX2pzb24.signature", // "not_valid_json" base64 encoded
-			setupMock: func(m *jwtmock.JWTServiceInterfaceMock) {
+			setupMock: func(m *jwtmock.ServiceInterfaceMock) {
 				m.On("VerifyJWTSignature", "eyJhbGciOiJIUzI1NiJ9.bm90X3ZhbGlkX2pzb24.signature").Return(nil)
 			},
 			expectedError: errInvalidToken,
@@ -185,7 +185,7 @@ func (suite *JWTAuthenticatorTestSuite) TestAuthenticate() {
 	for _, tt := range tests {
 		suite.Run(tt.name, func() {
 			// Reset mock for each test case
-			suite.mockJWT = jwtmock.NewJWTServiceInterfaceMock(suite.T())
+			suite.mockJWT = jwtmock.NewServiceInterfaceMock(suite.T())
 			if tt.setupMock != nil {
 				tt.setupMock(suite.mockJWT)
 			}
@@ -542,7 +542,7 @@ func (suite *JWTAuthenticatorTestSuite) TestExtractScopes_EdgeCases() {
 }
 
 func (suite *JWTAuthenticatorTestSuite) TestNewJWTAuthenticator() {
-	mockJWTService := jwtmock.NewJWTServiceInterfaceMock(suite.T())
+	mockJWTService := jwtmock.NewServiceInterfaceMock(suite.T())
 
 	authenticator := newJWTAuthenticator(mockJWTService)
 

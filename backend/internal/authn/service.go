@@ -39,7 +39,7 @@ import (
 	notifcommon "github.com/asgardeo/thunder/internal/notification/common"
 	"github.com/asgardeo/thunder/internal/system/config"
 	"github.com/asgardeo/thunder/internal/system/error/serviceerror"
-	"github.com/asgardeo/thunder/internal/system/jwt"
+	"github.com/asgardeo/thunder/internal/system/jose/jwt"
 	"github.com/asgardeo/thunder/internal/system/log"
 	sysutils "github.com/asgardeo/thunder/internal/system/utils"
 	"github.com/asgardeo/thunder/internal/user"
@@ -80,7 +80,7 @@ type AuthenticationServiceInterface interface {
 // authenticationService is the default implementation of the AuthenticationServiceInterface.
 type authenticationService struct {
 	idpService             idp.IDPServiceInterface
-	jwtService             jwt.JWTServiceInterface
+	jwtService             jwt.ServiceInterface
 	authAssertionGenerator assert.AuthAssertGeneratorInterface
 	credentialsService     credentials.CredentialsAuthnServiceInterface
 	otpService             otp.OTPAuthnServiceInterface
@@ -94,7 +94,7 @@ type authenticationService struct {
 // newAuthenticationService creates a new instance of AuthenticationService.
 func newAuthenticationService(
 	idpSvc idp.IDPServiceInterface,
-	jwtSvc jwt.JWTServiceInterface,
+	jwtSvc jwt.ServiceInterface,
 	authAssertGen assert.AuthAssertGeneratorInterface,
 	credentialsAuthnSvc credentials.CredentialsAuthnServiceInterface,
 	otpAuthnSvc otp.OTPAuthnServiceInterface,

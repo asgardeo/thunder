@@ -25,7 +25,7 @@ import (
 	"github.com/stretchr/testify/suite"
 
 	"github.com/asgardeo/thunder/internal/oauth/oauth2/constants"
-	"github.com/asgardeo/thunder/tests/mocks/jwtmock"
+	"github.com/asgardeo/thunder/tests/mocks/jose/jwtmock"
 	"github.com/asgardeo/thunder/tests/mocks/oauth/oauth2/authzmock"
 	"github.com/asgardeo/thunder/tests/mocks/oauth/oauth2/tokenservicemock"
 	usersvcmock "github.com/asgardeo/thunder/tests/mocks/usermock"
@@ -34,7 +34,7 @@ import (
 type GrantHandlerProviderTestSuite struct {
 	suite.Suite
 	provider           GrantHandlerProviderInterface
-	mockJWTService     *jwtmock.JWTServiceInterfaceMock
+	mockJWTService     *jwtmock.ServiceInterfaceMock
 	mockUserService    *usersvcmock.UserServiceInterfaceMock
 	authzService       *authzmock.AuthorizeServiceInterfaceMock
 	mockTokenBuilder   *tokenservicemock.TokenBuilderInterfaceMock
@@ -46,7 +46,7 @@ func TestGrantHandlerProviderSuite(t *testing.T) {
 }
 
 func (suite *GrantHandlerProviderTestSuite) SetupTest() {
-	suite.mockJWTService = jwtmock.NewJWTServiceInterfaceMock(suite.T())
+	suite.mockJWTService = jwtmock.NewServiceInterfaceMock(suite.T())
 	suite.mockUserService = usersvcmock.NewUserServiceInterfaceMock(suite.T())
 	suite.authzService = authzmock.NewAuthorizeServiceInterfaceMock(suite.T())
 	suite.mockTokenBuilder = tokenservicemock.NewTokenBuilderInterfaceMock(suite.T())

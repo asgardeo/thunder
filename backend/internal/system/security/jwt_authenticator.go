@@ -23,16 +23,16 @@ import (
 	"strings"
 
 	"github.com/asgardeo/thunder/internal/system/constants"
-	"github.com/asgardeo/thunder/internal/system/jwt"
+	"github.com/asgardeo/thunder/internal/system/jose/jwt"
 )
 
 // jwtAuthenticator handles authentication and authorization using JWT Bearer tokens.
 type jwtAuthenticator struct {
-	jwtService jwt.JWTServiceInterface
+	jwtService jwt.ServiceInterface
 }
 
 // newJWTAuthenticator creates a new JWT authenticator.
-func newJWTAuthenticator(jwtService jwt.JWTServiceInterface) *jwtAuthenticator {
+func newJWTAuthenticator(jwtService jwt.ServiceInterface) *jwtAuthenticator {
 	return &jwtAuthenticator{
 		jwtService: jwtService,
 	}

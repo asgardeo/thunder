@@ -27,7 +27,7 @@ import (
 
 	"github.com/modelcontextprotocol/go-sdk/auth"
 
-	"github.com/asgardeo/thunder/internal/system/jwt"
+	"github.com/asgardeo/thunder/internal/system/jose/jwt"
 	"github.com/asgardeo/thunder/internal/system/log"
 )
 
@@ -35,7 +35,7 @@ import (
 // issued by Thunder's OAuth server. This implements the auth.TokenVerifier
 // function type from the MCP SDK.
 func NewTokenVerifier(
-	jwtService jwt.JWTServiceInterface,
+	jwtService jwt.ServiceInterface,
 	issuer string,
 	mcpURL string,
 ) auth.TokenVerifier {

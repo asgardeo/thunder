@@ -34,7 +34,7 @@ import (
 	"github.com/asgardeo/thunder/internal/ou"
 	"github.com/asgardeo/thunder/internal/system/config"
 	"github.com/asgardeo/thunder/internal/system/error/serviceerror"
-	"github.com/asgardeo/thunder/internal/system/jwt"
+	"github.com/asgardeo/thunder/internal/system/jose/jwt"
 	"github.com/asgardeo/thunder/internal/system/log"
 	"github.com/asgardeo/thunder/internal/user"
 )
@@ -46,7 +46,7 @@ const (
 // authAssertExecutor is an executor that handles authentication assertions in the flow.
 type authAssertExecutor struct {
 	core.ExecutorInterface
-	jwtService          jwt.JWTServiceInterface
+	jwtService          jwt.ServiceInterface
 	userService         user.UserServiceInterface
 	ouService           ou.OrganizationUnitServiceInterface
 	authAssertGenerator assert.AuthAssertGeneratorInterface
@@ -58,7 +58,7 @@ var _ core.ExecutorInterface = (*authAssertExecutor)(nil)
 // newAuthAssertExecutor creates a new instance of AuthAssertExecutor.
 func newAuthAssertExecutor(
 	flowFactory core.FlowFactoryInterface,
-	jwtService jwt.JWTServiceInterface,
+	jwtService jwt.ServiceInterface,
 	userService user.UserServiceInterface,
 	ouService ou.OrganizationUnitServiceInterface,
 	assertGenerator assert.AuthAssertGeneratorInterface,

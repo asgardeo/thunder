@@ -21,13 +21,13 @@ package oidc
 import (
 	"github.com/asgardeo/thunder/internal/idp"
 	syshttp "github.com/asgardeo/thunder/internal/system/http"
-	"github.com/asgardeo/thunder/internal/system/jwt"
+	"github.com/asgardeo/thunder/internal/system/jose/jwt"
 	"github.com/asgardeo/thunder/internal/user"
 )
 
 // Initialize initializes the OIDC authentication service.
 func Initialize(idpSvc idp.IDPServiceInterface, userSvc user.UserServiceInterface,
-	jwtSvc jwt.JWTServiceInterface) OIDCAuthnServiceInterface {
+	jwtSvc jwt.ServiceInterface) OIDCAuthnServiceInterface {
 	httpClient := syshttp.NewHTTPClient()
 	return newOIDCAuthnService(httpClient, idpSvc, userSvc, jwtSvc)
 }

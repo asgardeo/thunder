@@ -20,12 +20,12 @@ package google
 
 import (
 	"github.com/asgardeo/thunder/internal/idp"
-	"github.com/asgardeo/thunder/internal/system/jwt"
+	"github.com/asgardeo/thunder/internal/system/jose/jwt"
 	"github.com/asgardeo/thunder/internal/user"
 )
 
 // Initialize initializes the Google OIDC authentication service.
 func Initialize(idpSvc idp.IDPServiceInterface, userSvc user.UserServiceInterface,
-	jwtSvc jwt.JWTServiceInterface) GoogleOIDCAuthnServiceInterface {
+	jwtSvc jwt.ServiceInterface) GoogleOIDCAuthnServiceInterface {
 	return newGoogleOIDCAuthnService(idpSvc, userSvc, jwtSvc)
 }

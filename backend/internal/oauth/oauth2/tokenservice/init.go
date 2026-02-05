@@ -19,12 +19,12 @@
 package tokenservice
 
 import (
-	"github.com/asgardeo/thunder/internal/system/jwt"
+	"github.com/asgardeo/thunder/internal/system/jose/jwt"
 )
 
 // Initialize initializes the token service components (builder and validator).
 // Returns both TokenBuilderInterface and TokenValidatorInterface for centralized token operations.
-func Initialize(jwtService jwt.JWTServiceInterface) (TokenBuilderInterface, TokenValidatorInterface) {
+func Initialize(jwtService jwt.ServiceInterface) (TokenBuilderInterface, TokenValidatorInterface) {
 	tokenBuilder := newTokenBuilder(jwtService)
 	tokenValidator := newTokenValidator(jwtService)
 	return tokenBuilder, tokenValidator

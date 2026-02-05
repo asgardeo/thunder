@@ -21,12 +21,12 @@ package introspect
 import (
 	"net/http"
 
-	"github.com/asgardeo/thunder/internal/system/jwt"
+	"github.com/asgardeo/thunder/internal/system/jose/jwt"
 	"github.com/asgardeo/thunder/internal/system/middleware"
 )
 
 // Initialize initializes the token introspection handler and registers its routes.
-func Initialize(mux *http.ServeMux, jwtService jwt.JWTServiceInterface) TokenIntrospectionServiceInterface {
+func Initialize(mux *http.ServeMux, jwtService jwt.ServiceInterface) TokenIntrospectionServiceInterface {
 	introspectionService := newTokenIntrospectionService(jwtService)
 	introspectHandler := newTokenIntrospectionHandler(introspectionService)
 	registerRoutes(mux, introspectHandler)

@@ -46,7 +46,7 @@ import (
 	"github.com/asgardeo/thunder/tests/mocks/authn/otpmock"
 	"github.com/asgardeo/thunder/tests/mocks/authn/passkeymock"
 	"github.com/asgardeo/thunder/tests/mocks/idp/idpmock"
-	"github.com/asgardeo/thunder/tests/mocks/jwtmock"
+	"github.com/asgardeo/thunder/tests/mocks/jose/jwtmock"
 )
 
 const (
@@ -68,7 +68,7 @@ const (
 type AuthenticationServiceTestSuite struct {
 	suite.Suite
 	mockIDPService         *idpmock.IDPServiceInterfaceMock
-	mockJWTService         *jwtmock.JWTServiceInterfaceMock
+	mockJWTService         *jwtmock.ServiceInterfaceMock
 	mockAssertGenerator    *assertmock.AuthAssertGeneratorInterfaceMock
 	mockCredentialsService *credentialsmock.CredentialsAuthnServiceInterfaceMock
 	mockOTPService         *otpmock.OTPAuthnServiceInterfaceMock
@@ -118,7 +118,7 @@ func (suite *AuthenticationServiceTestSuite) SetupSuite() {
 
 func (suite *AuthenticationServiceTestSuite) SetupTest() {
 	suite.mockIDPService = idpmock.NewIDPServiceInterfaceMock(suite.T())
-	suite.mockJWTService = jwtmock.NewJWTServiceInterfaceMock(suite.T())
+	suite.mockJWTService = jwtmock.NewServiceInterfaceMock(suite.T())
 	suite.mockAssertGenerator = &assertmock.AuthAssertGeneratorInterfaceMock{}
 	suite.mockCredentialsService = &credentialsmock.CredentialsAuthnServiceInterfaceMock{}
 	suite.mockOTPService = &otpmock.OTPAuthnServiceInterfaceMock{}

@@ -27,7 +27,7 @@ import (
 	"github.com/asgardeo/thunder/internal/idp"
 	"github.com/asgardeo/thunder/internal/system/error/serviceerror"
 	httpservice "github.com/asgardeo/thunder/internal/system/http"
-	"github.com/asgardeo/thunder/internal/system/jwt"
+	"github.com/asgardeo/thunder/internal/system/jose/jwt"
 	"github.com/asgardeo/thunder/internal/system/log"
 	"github.com/asgardeo/thunder/internal/user"
 )
@@ -53,14 +53,14 @@ type OIDCAuthnServiceInterface interface {
 // oidcAuthnService is the default implementation of OIDCAuthnServiceInterface.
 type oidcAuthnService struct {
 	internal   authnoauth.OAuthAuthnServiceInterface
-	jwtService jwt.JWTServiceInterface
+	jwtService jwt.ServiceInterface
 	logger     *log.Logger
 }
 
 // newOIDCAuthnService creates a new instance of OIDC authenticator service.
 func newOIDCAuthnService(httpClient httpservice.HTTPClientInterface,
 	idpSvc idp.IDPServiceInterface, userSvc user.UserServiceInterface,
-	jwtSvc jwt.JWTServiceInterface) OIDCAuthnServiceInterface {
+	jwtSvc jwt.ServiceInterface) OIDCAuthnServiceInterface {
 	internal := authnoauth.NewOAuthAuthnService(httpClient, idpSvc, userSvc)
 
 	service := &oidcAuthnService{
@@ -78,7 +78,7 @@ func newOIDCAuthnService(httpClient httpservice.HTTPClientInterface,
 // TODO: Should be removed when executors are migrated to di pattern.
 func NewOIDCAuthnService(httpClient httpservice.HTTPClientInterface,
 	idpSvc idp.IDPServiceInterface, userSvc user.UserServiceInterface,
-	jwtSvc jwt.JWTServiceInterface) OIDCAuthnServiceInterface {
+	jwtSvc jwt.ServiceInterface) OIDCAuthnServiceInterface {
 	return newOIDCAuthnService(httpClient, idpSvc, userSvc, jwtSvc)
 }
 

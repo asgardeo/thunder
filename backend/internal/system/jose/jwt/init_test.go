@@ -122,7 +122,7 @@ func (suite *InitTestSuite) TestInitialize_Success() {
 	jwtService, err := Initialize(pkiMock)
 	assert.NoError(suite.T(), err)
 	assert.NotNil(suite.T(), jwtService)
-	assert.Implements(suite.T(), (*JWTServiceInterface)(nil), jwtService)
+	assert.Implements(suite.T(), (*ServiceInterface)(nil), jwtService)
 }
 
 func (suite *InitTestSuite) TestInitialize_PrivateKeyRetrievalError() {
