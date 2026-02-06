@@ -262,6 +262,5 @@ The project is structured as a monorepo to manage the backend, frontend, and sam
 - Integration tests can be run using `make all` command from the project root directory. This will build the project, package into a zip, unzip in a temp directory, and run the integration tests. So it will take some time to complete. Integration tests can be run on an already built product by executing the `make test_integration` command from the project root directory.
 
 ### Documentation
-- Ensure applicable changes are documented in the `README` file or `/docs/content/` directory.
-- Ensure each new feature or API is documented.
-- Add Swagger definitions for the APIs to `/docs/apis/`.
+
+Follow the [Thunder documentation creation instructions](docs/AGENTS.md) when creating new documentation content for the project.
