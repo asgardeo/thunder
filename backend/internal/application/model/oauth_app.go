@@ -33,6 +33,31 @@ import (
 	"github.com/asgardeo/thunder/internal/system/utils"
 )
 
+// AccessTokenConfig represents the access token configuration structure.
+type AccessTokenConfig struct {
+	ValidityPeriod int64    `json:"validity_period,omitempty" yaml:"validity_period,omitempty" jsonschema:"Access token validity period in seconds."`
+	UserAttributes []string `json:"user_attributes,omitempty" yaml:"user_attributes,omitempty" jsonschema:"User attributes to include in access token. Claims embedded in the access token for authorization decisions."`
+}
+
+// IDTokenConfig represents the ID token configuration structure.
+type IDTokenConfig struct {
+	ValidityPeriod int64    `json:"validity_period,omitempty" yaml:"validity_period,omitempty" jsonschema:"ID token validity period in seconds."`
+	UserAttributes []string `json:"user_attributes,omitempty" yaml:"user_attributes,omitempty" jsonschema:"User attributes to include in ID token. Standard OIDC claims: sub, name, email, picture, etc."`
+}
+
+// UserInfoConfig represents the user info endpoint configuration structure.
+type UserInfoConfig struct {
+	UserAttributes []string `json:"user_attributes,omitempty" yaml:"user_attributes,omitempty" jsonschema:"User attributes to include in userinfo response."`
+}
+
+// OAuthTokenConfig represents the OAuth token configuration structure with access_token and id_token wrappers.
+// The Issuer field at this level is used by both access and ID tokens.
+type OAuthTokenConfig struct {
+	Issuer      string             `json:"issuer,omitempty" yaml:"issuer,omitempty" jsonschema:"Token issuer URL. The authorization server URL that issues tokens. Used by both access and ID tokens."`
+	AccessToken *AccessTokenConfig `json:"access_token,omitempty" yaml:"access_token,omitempty" jsonschema:"Access token configuration. Configure validity period and user attributes for access tokens used in API authorization."`
+	IDToken     *IDTokenConfig     `json:"id_token,omitempty" yaml:"id_token,omitempty" jsonschema:"ID token configuration. Configure validity period and user attributes for OIDC ID tokens."`
+}
+
 // OAuthAppConfig represents the structure for OAuth application configuration.
 type OAuthAppConfig struct {
 	ClientID                string                              `json:"client_id"`
@@ -44,6 +69,8 @@ type OAuthAppConfig struct {
 	PublicClient            bool                                `json:"public_client"`
 	Token                   *OAuthTokenConfig                   `json:"token,omitempty"`
 	Scopes                  []string                            `json:"scopes,omitempty"`
+	UserInfo                *UserInfoConfig                     `json:"user_info,omitempty"`
+	ScopeClaims             map[string][]string                 `json:"scope_claims,omitempty"`
 }
 
 // OAuthAppConfigComplete represents the complete structure for OAuth application configuration.
@@ -60,6 +87,8 @@ type OAuthAppConfigComplete struct {
 	PublicClient            bool                                `json:"public_client" yaml:"public_client"`
 	Token                   *OAuthTokenConfig                   `json:"token,omitempty" yaml:"token,omitempty"`
 	Scopes                  []string                            `json:"scopes,omitempty" yaml:"scopes,omitempty"`
+	UserInfo                *UserInfoConfig                     `json:"user_info,omitempty" yaml:"user_info,omitempty"`
+	ScopeClaims             map[string][]string                 `json:"scope_claims,omitempty" yaml:"scope_claims,omitempty"`
 }
 
 // OAuthAppConfigDTO represents the data transfer object for OAuth application configuration.
@@ -75,6 +104,8 @@ type OAuthAppConfigDTO struct {
 	PublicClient            bool                                `json:"public_client,omitempty" jsonschema:"Identify if client is public (cannot store secrets). Set true for SPA/Mobile."`
 	Token                   *OAuthTokenConfig                   `json:"token,omitempty" jsonschema:"Token configuration for access tokens and ID tokens"`
 	Scopes                  []string                            `json:"scopes,omitempty" jsonschema:"Allowed OAuth scopes. Add custom scopes as needed for your application."`
+	UserInfo                *UserInfoConfig                     `json:"user_info,omitempty" jsonschema:"UserInfo endpoint configuration. Configure user attributes returned from the OIDC userinfo endpoint."`
+	ScopeClaims             map[string][]string                 `json:"scope_claims,omitempty" jsonschema:"Scope-to-claims mapping. Maps OAuth scopes to user claims for both ID token and userinfo."`
 }
 
 // IsAllowedGrantType checks if the provided grant type is allowed.
@@ -110,6 +141,8 @@ type OAuthAppConfigProcessedDTO struct {
 	PublicClient            bool                                `yaml:"public_client,omitempty"`
 	Token                   *OAuthTokenConfig                   `yaml:"token,omitempty"`
 	Scopes                  []string                            `yaml:"scopes,omitempty"`
+	UserInfo                *UserInfoConfig                     `yaml:"user_info,omitempty"`
+	ScopeClaims             map[string][]string                 `yaml:"scope_claims,omitempty"`
 }
 
 // IsAllowedGrantType checks if the provided grant type is allowed.
@@ -123,7 +156,8 @@ func (o *OAuthAppConfigProcessedDTO) IsAllowedResponseType(responseType string) 
 }
 
 // IsAllowedTokenEndpointAuthMethod checks if the provided token endpoint authentication method is allowed.
-func (o *OAuthAppConfigProcessedDTO) IsAllowedTokenEndpointAuthMethod(method oauth2const.TokenEndpointAuthMethod) bool {
+func (o *OAuthAppConfigProcessedDTO) IsAllowedTokenEndpointAuthMethod(
+	method oauth2const.TokenEndpointAuthMethod) bool {
 	return o.TokenEndpointAuthMethod == method
 }
 

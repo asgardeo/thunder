@@ -224,12 +224,14 @@ func buildClaimsFromScopes(
 ) map[string]interface{} {
 	claims := make(map[string]interface{})
 
-	// Extract allowed user attributes and scope-to-claims mapping from ID token config
-	var allowedUserAttributes []string
+	// Get scope claims mapping and allowed user attributes from app config
 	var scopeClaimsMapping map[string][]string
-	if oauthApp != nil && oauthApp.Token != nil && oauthApp.Token.IDToken != nil {
-		allowedUserAttributes = oauthApp.Token.IDToken.UserAttributes
-		scopeClaimsMapping = oauthApp.Token.IDToken.ScopeClaims
+	var allowedUserAttributes []string
+	if oauthApp != nil {
+		scopeClaimsMapping = oauthApp.ScopeClaims
+		if oauthApp.Token != nil && oauthApp.Token.IDToken != nil {
+			allowedUserAttributes = oauthApp.Token.IDToken.UserAttributes
+		}
 	}
 
 	if len(allowedUserAttributes) == 0 || userAttributes == nil || len(scopes) == 0 {

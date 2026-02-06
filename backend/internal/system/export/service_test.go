@@ -221,10 +221,10 @@ func (suite *ExportServiceTestSuite) TestExportResources_CompleteOAuthApplicatio
 			IDToken: &appmodel.IDTokenConfig{
 				ValidityPeriod: 1800,
 				UserAttributes: []string{"email"},
-				ScopeClaims: map[string][]string{
-					"profile": {"name", "picture"},
-				},
 			},
+		},
+		ScopeClaims: map[string][]string{
+			"profile": {"name", "picture"},
 		},
 	}
 

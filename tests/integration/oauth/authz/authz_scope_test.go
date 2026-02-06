@@ -570,13 +570,13 @@ func (ts *OAuthAuthzScopeTestSuite) TestOAuthAuthzFlow_WithRequiredAttributes() 
 					"token": map[string]interface{}{
 						"id_token": map[string]interface{}{
 							"user_attributes": []string{"sub", "name", "email"}, // Only allow these in ID token
-							"scope_claims": map[string]interface{}{
-								"profile": []string{"name"}, // Custom mapping
-							},
 						},
 						"access_token": map[string]interface{}{
 							"user_attributes": []string{"groups", "roles"}, // Access token attributes
 						},
+					},
+					"scope_claims": map[string]interface{}{
+						"profile": []string{"name"}, // Custom mapping
 					},
 				},
 			},

@@ -735,10 +735,10 @@ func (suite *TokenBuilderTestSuite) TestBuildIDToken_Success_WithScopeClaims() {
 			IDToken: &appmodel.IDTokenConfig{
 				ValidityPeriod: 3600,
 				UserAttributes: []string{"name", "email"},
-				ScopeClaims: map[string][]string{
-					"profile": {"name", "email"},
-				},
 			},
+		},
+		ScopeClaims: map[string][]string{
+			"profile": {"name", "email"},
 		},
 	}
 
