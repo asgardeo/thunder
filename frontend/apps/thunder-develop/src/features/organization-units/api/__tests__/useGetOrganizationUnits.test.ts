@@ -231,4 +231,26 @@ describe('useGetOrganizationUnits', () => {
       );
     });
   });
+
+  it('should re-fetch when params change', async () => {
+    mockHttpRequest.mockResolvedValue({data: mockOrganizationUnitList});
+
+    let params = {limit: 10, offset: 0};
+    const {result, rerender} = renderHook(() => useGetOrganizationUnits(params));
+
+    await waitFor(() => {
+      expect(result.current.data).toEqual(mockOrganizationUnitList);
+    });
+
+    params = {limit: 10, offset: 10};
+    rerender();
+
+    await waitFor(() => {
+      expect(mockHttpRequest).toHaveBeenCalledWith(
+        expect.objectContaining({
+          url: expect.stringContaining('offset=10') as unknown,
+        }),
+      );
+    });
+  });
 });

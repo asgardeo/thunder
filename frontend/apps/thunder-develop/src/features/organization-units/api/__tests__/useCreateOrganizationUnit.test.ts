@@ -237,4 +237,22 @@ describe('useCreateOrganizationUnit', () => {
     // We verify this by checking the mutation completed successfully
     expect(result.current.data).toEqual(mockCreatedOU);
   });
+
+  it('should handle invalidateQueries rejection gracefully', async () => {
+    mockHttpRequest.mockResolvedValue({data: mockCreatedOU});
+
+    const {result, queryClient} = renderHook(() => useCreateOrganizationUnit());
+
+    // Spy on invalidateQueries to make it reject
+    vi.spyOn(queryClient, 'invalidateQueries').mockRejectedValue(new Error('Invalidation failed'));
+
+    result.current.mutate(createRequest);
+
+    await waitFor(() => {
+      expect(result.current.isSuccess).toBe(true);
+    });
+
+    // Mutation should still succeed despite invalidation failure
+    expect(result.current.data).toEqual(mockCreatedOU);
+  });
 });

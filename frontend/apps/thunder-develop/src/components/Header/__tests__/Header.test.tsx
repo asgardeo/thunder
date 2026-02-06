@@ -58,4 +58,82 @@ describe('Header', () => {
     expect(screen.getByRole('button', {name: /open notifications/i})).toBeInTheDocument();
     expect(screen.getByRole('button', {name: /change language/i})).toBeInTheDocument();
   });
+
+  it('renders notification button with bell icon', () => {
+    const {container} = render(<Header />);
+
+    const bellIcon = container.querySelector('svg.lucide-bell');
+    expect(bellIcon).toBeInTheDocument();
+  });
+
+  it('renders menu button for mobile navigation', () => {
+    render(<Header />);
+
+    const menuButton = screen.getByRole('button', {name: /menu/i});
+    expect(menuButton).toBeInTheDocument();
+  });
+
+  it('renders with correct layout structure', () => {
+    const {container} = render(<Header />);
+
+    const stacks = container.querySelectorAll('.MuiStack-root');
+    expect(stacks.length).toBeGreaterThanOrEqual(1);
+  });
+
+  it('renders notifications tooltip', () => {
+    render(<Header />);
+
+    const notificationsButton = screen.getByRole('button', {name: /open notifications/i});
+    expect(notificationsButton).toBeInTheDocument();
+  });
+
+  it('renders header with correct spacing and alignment', () => {
+    const {container} = render(<Header />);
+
+    // Verify the outermost Stack renders as a row
+    const outerStack = container.querySelector('.MuiStack-root');
+    expect(outerStack).toBeInTheDocument();
+    expect(outerStack).toHaveStyle({flexDirection: 'row'});
+  });
+
+  it('renders LanguageSwitcher component', () => {
+    render(<Header />);
+
+    const languageButton = screen.getByRole('button', {name: /change language/i});
+    expect(languageButton).toBeInTheDocument();
+  });
+
+  it('renders ColorSchemeToggle component', () => {
+    render(<Header />);
+
+    expect(screen.getByTestId('theme-toggle')).toBeInTheDocument();
+  });
+
+  it('renders both left and right sections', () => {
+    const {container} = render(<Header />);
+
+    // Left section: menu button + breadcrumbs
+    expect(screen.getByRole('button', {name: /menu/i})).toBeInTheDocument();
+    expect(screen.getByTestId('navbar-breadcrumbs')).toBeInTheDocument();
+
+    // Right section: search, notifications, language, theme
+    expect(screen.getByTestId('search')).toBeInTheDocument();
+    expect(screen.getByRole('button', {name: /open notifications/i})).toBeInTheDocument();
+
+    // Verify multiple stacks are rendered for the layout
+    const stacks = container.querySelectorAll('.MuiStack-root');
+    expect(stacks.length).toBeGreaterThanOrEqual(3);
+  });
+
+  it('preserves content after re-render', () => {
+    const {rerender} = render(<Header />);
+
+    // Trigger a re-render to exercise memoization branches
+    rerender(<Header />);
+
+    expect(screen.getByTestId('navbar-breadcrumbs')).toBeInTheDocument();
+    expect(screen.getByTestId('search')).toBeInTheDocument();
+    expect(screen.getByRole('button', {name: /open notifications/i})).toBeInTheDocument();
+    expect(screen.getByRole('button', {name: /change language/i})).toBeInTheDocument();
+  });
 });

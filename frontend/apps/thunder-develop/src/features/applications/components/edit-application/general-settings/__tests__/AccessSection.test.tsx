@@ -285,6 +285,42 @@ describe('AccessSection', () => {
         expect(screen.queryByText('Please enter a valid URL')).not.toBeInTheDocument();
       });
     });
+
+    it('should call onFieldChange when URL differs after rerender with new editedApp', async () => {
+      vi.mocked(useGetUserTypes).mockReturnValue({
+        data: mockUserTypes,
+        loading: false,
+      } as MockedUseGetUserTypes);
+
+      // Render with URL that matches the form default
+      const {rerender} = render(
+        <AccessSection
+          application={mockApplication}
+          editedApp={{url: 'https://example.com'}}
+          onFieldChange={mockOnFieldChange}
+        />,
+      );
+
+      // No onFieldChange calls with 'url' since form value matches currentUrl
+      const initialUrlCalls = mockOnFieldChange.mock.calls.filter((call) => call[0] === 'url');
+      expect(initialUrlCalls.length).toBe(0);
+
+      // Rerender with different editedApp URL - now form value differs from currentUrl
+      rerender(
+        <AccessSection
+          application={mockApplication}
+          editedApp={{url: 'https://changed.com'}}
+          onFieldChange={mockOnFieldChange}
+        />,
+      );
+
+      // The useEffect sees that the form's watched url !== currentUrl (which is now 'https://changed.com')
+      // so it calls onFieldChange with the form's current value
+      await waitFor(() => {
+        const urlCalls = mockOnFieldChange.mock.calls.filter((call) => call[0] === 'url');
+        expect(urlCalls.length).toBeGreaterThan(0);
+      });
+    });
   });
 
   describe('Redirect URIs', () => {

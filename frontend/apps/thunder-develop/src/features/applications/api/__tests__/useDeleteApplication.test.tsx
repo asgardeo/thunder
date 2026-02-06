@@ -39,11 +39,11 @@ const {useAsgardeo} = await import('@asgardeo/react');
 const {useConfig} = await import('@thunder/shared-contexts');
 
 describe('useDeleteApplication', () => {
-  let mockHttpRequest: ReturnType<typeof vi.fn>;
+  let mockHttpRequest: ReturnType<typeof vi.fn<(...args: unknown[]) => Promise<unknown>>>;
   let mockGetServerUrl: ReturnType<typeof vi.fn>;
 
   beforeEach(() => {
-    mockHttpRequest = vi.fn();
+    mockHttpRequest = vi.fn<(...args: unknown[]) => Promise<unknown>>();
     mockGetServerUrl = vi.fn().mockReturnValue('https://api.test.com');
 
     vi.mocked(useAsgardeo).mockReturnValue({

@@ -270,5 +270,116 @@ describe('CertificateSection', () => {
       const valueInput = screen.getByPlaceholderText('applications:edit.advanced.certificate.placeholder.jwks');
       expect(valueInput).toHaveAttribute('rows', '3');
     });
+
+    it('should handle editedApp with certificate when application has no certificate', () => {
+      const appWithoutCert = {...mockApplication};
+      delete (appWithoutCert as Partial<Application>).certificate;
+
+      render(
+        <CertificateSection
+          application={appWithoutCert}
+          editedApp={{certificate: {type: CertificateTypes.JWKS_URI, value: 'https://edited.com'}}}
+          onFieldChange={mockOnFieldChange}
+        />,
+      );
+
+      const input = screen.getByRole('combobox');
+      expect(input).toHaveValue('applications:edit.advanced.certificate.type.jwksUri');
+      expect(
+        screen.getByPlaceholderText('applications:edit.advanced.certificate.placeholder.jwksUri'),
+      ).toHaveValue('https://edited.com');
+    });
+
+    it('should handle certificate type with undefined value', () => {
+      const appWithTypeOnly = {
+        ...mockApplication,
+        certificate: {type: CertificateTypes.JWKS},
+      };
+
+      render(<CertificateSection application={appWithTypeOnly} editedApp={{}} onFieldChange={mockOnFieldChange} />);
+
+      const valueInput = screen.getByPlaceholderText('applications:edit.advanced.certificate.placeholder.jwks');
+      expect(valueInput).toHaveValue('');
+    });
+
+    it('should use editedApp value when both application and editedApp have certificate', () => {
+      const appWithCert = {
+        ...mockApplication,
+        certificate: {type: CertificateTypes.JWKS, value: 'app-value'},
+      };
+
+      render(
+        <CertificateSection
+          application={appWithCert}
+          editedApp={{certificate: {type: CertificateTypes.JWKS, value: 'edited-value'}}}
+          onFieldChange={mockOnFieldChange}
+        />,
+      );
+
+      const valueInput = screen.getByPlaceholderText('applications:edit.advanced.certificate.placeholder.jwks');
+      expect(valueInput).toHaveValue('edited-value');
+    });
+
+    it('should fall back to application value when editedApp value is undefined', () => {
+      const appWithCert = {
+        ...mockApplication,
+        certificate: {type: CertificateTypes.JWKS, value: 'app-value'},
+      };
+
+      render(
+        <CertificateSection
+          application={appWithCert}
+          editedApp={{certificate: {type: CertificateTypes.JWKS}}}
+          onFieldChange={mockOnFieldChange}
+        />,
+      );
+
+      const valueInput = screen.getByPlaceholderText('applications:edit.advanced.certificate.placeholder.jwks');
+      expect(valueInput).toHaveValue('app-value');
+    });
+
+    it('should handle changing type when neither app nor editedApp have certificate initially', async () => {
+      const user = userEvent.setup();
+      const appWithoutCert = {...mockApplication};
+      delete (appWithoutCert as Partial<Application>).certificate;
+
+      render(<CertificateSection application={appWithoutCert} editedApp={{}} onFieldChange={mockOnFieldChange} />);
+
+      const autocomplete = screen.getByRole('combobox');
+      await user.click(autocomplete);
+
+      const listbox = screen.getByRole('listbox');
+      const jwksOption = within(listbox).getByText('applications:edit.advanced.certificate.type.jwks');
+      await user.click(jwksOption);
+
+      expect(mockOnFieldChange).toHaveBeenCalledWith('certificate', {
+        type: CertificateTypes.JWKS,
+        value: '',
+      });
+    });
+
+    it('should handle changing value when using editedApp certificate', async () => {
+      const user = userEvent.setup({delay: null});
+      const appWithoutCert = {...mockApplication};
+      delete (appWithoutCert as Partial<Application>).certificate;
+
+      render(
+        <CertificateSection
+          application={appWithoutCert}
+          editedApp={{certificate: {type: CertificateTypes.JWKS, value: ''}}}
+          onFieldChange={mockOnFieldChange}
+        />,
+      );
+
+      const valueInput = screen.getByPlaceholderText('applications:edit.advanced.certificate.placeholder.jwks');
+      await user.type(valueInput, 'new-value');
+
+      expect(mockOnFieldChange).toHaveBeenCalledWith(
+        'certificate',
+        expect.objectContaining({
+          type: CertificateTypes.JWKS,
+        }),
+      );
+    });
   });
 });

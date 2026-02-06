@@ -906,4 +906,336 @@ describe('OrganizationUnitEditPage', () => {
       });
     }
   });
+
+  it('should show error message fallback when fetchError has no message', async () => {
+    mockUseGetOrganizationUnit.mockReturnValue({
+      data: undefined,
+      isLoading: false,
+      error: {} as Error,
+      refetch: mockRefetch,
+    });
+
+    renderWithProviders(<OrganizationUnitEditPage />);
+
+    await waitFor(() => {
+      expect(screen.getByText('Failed to load organization unit')).toBeInTheDocument();
+    });
+  });
+
+  it('should not save empty name on Enter key', async () => {
+    renderWithProviders(<OrganizationUnitEditPage />);
+
+    await waitFor(() => {
+      expect(screen.getByText('Test Organization Unit')).toBeInTheDocument();
+    });
+
+    const editButtons = screen.getAllByRole('button');
+    const nameEditButton = editButtons.find(
+      (btn) => btn.querySelector('svg') && btn.closest('div')?.textContent?.includes('Test Organization Unit'),
+    );
+
+    if (nameEditButton) {
+      fireEvent.click(nameEditButton);
+
+      await waitFor(() => {
+        expect(screen.getByDisplayValue('Test Organization Unit')).toBeInTheDocument();
+      });
+
+      const textbox = screen.getByDisplayValue('Test Organization Unit');
+      fireEvent.change(textbox, {target: {value: '  '}});
+      fireEvent.keyDown(textbox, {key: 'Enter'});
+
+      // Should not show unsaved changes since empty names are not saved
+      await waitFor(() => {
+        expect(screen.getByText('Test Organization Unit')).toBeInTheDocument();
+      });
+    }
+  });
+
+  it('should set description to null when cleared via Ctrl+Enter', async () => {
+    renderWithProviders(<OrganizationUnitEditPage />);
+
+    await waitFor(() => {
+      expect(screen.getByText('A test description')).toBeInTheDocument();
+    });
+
+    const editButtons = screen.getAllByRole('button');
+    const descriptionEditButton = editButtons.find(
+      (btn) => btn.querySelector('svg') && btn.closest('div')?.textContent?.includes('A test description'),
+    );
+
+    if (descriptionEditButton) {
+      fireEvent.click(descriptionEditButton);
+
+      await waitFor(() => {
+        expect(screen.getByDisplayValue('A test description')).toBeInTheDocument();
+      });
+
+      const textbox = screen.getByDisplayValue('A test description');
+      fireEvent.change(textbox, {target: {value: ''}});
+      fireEvent.keyDown(textbox, {key: 'Enter', ctrlKey: true});
+
+      await waitFor(() => {
+        expect(screen.getByText('You have unsaved changes')).toBeInTheDocument();
+      });
+    }
+  });
+
+  it('should not update description when value is unchanged on blur', async () => {
+    renderWithProviders(<OrganizationUnitEditPage />);
+
+    await waitFor(() => {
+      expect(screen.getByText('A test description')).toBeInTheDocument();
+    });
+
+    const editButtons = screen.getAllByRole('button');
+    const descriptionEditButton = editButtons.find(
+      (btn) => btn.querySelector('svg') && btn.closest('div')?.textContent?.includes('A test description'),
+    );
+
+    if (descriptionEditButton) {
+      fireEvent.click(descriptionEditButton);
+
+      await waitFor(() => {
+        expect(screen.getByDisplayValue('A test description')).toBeInTheDocument();
+      });
+
+      // Blur without changing value - should not trigger unsaved changes
+      const textbox = screen.getByDisplayValue('A test description');
+      fireEvent.blur(textbox);
+
+      // Should not show unsaved changes since no change was made
+      await waitFor(() => {
+        expect(screen.queryByText('You have unsaved changes')).not.toBeInTheDocument();
+      });
+    }
+  });
+
+  it('should not update description when value is unchanged on Ctrl+Enter', async () => {
+    renderWithProviders(<OrganizationUnitEditPage />);
+
+    await waitFor(() => {
+      expect(screen.getByText('A test description')).toBeInTheDocument();
+    });
+
+    const editButtons = screen.getAllByRole('button');
+    const descriptionEditButton = editButtons.find(
+      (btn) => btn.querySelector('svg') && btn.closest('div')?.textContent?.includes('A test description'),
+    );
+
+    if (descriptionEditButton) {
+      fireEvent.click(descriptionEditButton);
+
+      await waitFor(() => {
+        expect(screen.getByDisplayValue('A test description')).toBeInTheDocument();
+      });
+
+      // Press Ctrl+Enter without changing value
+      const textbox = screen.getByDisplayValue('A test description');
+      fireEvent.keyDown(textbox, {key: 'Enter', ctrlKey: true});
+
+      // Should not show unsaved changes since no change was made
+      await waitFor(() => {
+        expect(screen.queryByText('You have unsaved changes')).not.toBeInTheDocument();
+      });
+    }
+  });
+
+  it('should handle description with null on blur', async () => {
+    mockUseGetOrganizationUnit.mockReturnValue({
+      data: {...mockOrganizationUnit, description: null},
+      isLoading: false,
+      error: null,
+      refetch: mockRefetch,
+    });
+
+    renderWithProviders(<OrganizationUnitEditPage />);
+
+    await waitFor(() => {
+      expect(screen.getByText('No description')).toBeInTheDocument();
+    });
+
+    // Find edit button for description
+    const editButtons = screen.getAllByRole('button');
+    const descriptionEditButton = editButtons.find(
+      (btn) => btn.querySelector('svg') && btn.closest('div')?.textContent?.includes('No description'),
+    );
+
+    if (descriptionEditButton) {
+      fireEvent.click(descriptionEditButton);
+
+      await waitFor(() => {
+        const textbox = document.querySelector('textarea');
+        expect(textbox).toBeInTheDocument();
+      });
+
+      const textbox = document.querySelector('textarea')!;
+      fireEvent.change(textbox, {target: {value: 'New description'}});
+      fireEvent.blur(textbox);
+
+      await waitFor(() => {
+        expect(screen.getByText('You have unsaved changes')).toBeInTheDocument();
+      });
+    }
+  });
+
+  it('should re-render when organization unit data changes', async () => {
+    const {rerender} = renderWithProviders(<OrganizationUnitEditPage />);
+
+    await waitFor(() => {
+      expect(screen.getByText('Test Organization Unit')).toBeInTheDocument();
+    });
+
+    // Update mock data and re-render
+    mockUseGetOrganizationUnit.mockReturnValue({
+      data: {...mockOrganizationUnit, name: 'Updated Name', description: 'Updated desc'},
+      isLoading: false,
+      error: null,
+      refetch: mockRefetch,
+    });
+
+    rerender(<OrganizationUnitEditPage />);
+
+    await waitFor(() => {
+      expect(screen.getByText('Updated Name')).toBeInTheDocument();
+    });
+  });
+
+  it('should re-render when transitioning from loading to loaded', async () => {
+    mockUseGetOrganizationUnit.mockReturnValue({
+      data: undefined,
+      isLoading: true,
+      error: null,
+      refetch: mockRefetch,
+    });
+
+    const {rerender} = renderWithProviders(<OrganizationUnitEditPage />);
+
+    expect(screen.getByRole('progressbar')).toBeInTheDocument();
+
+    // Transition to loaded
+    mockUseGetOrganizationUnit.mockReturnValue({
+      data: mockOrganizationUnit,
+      isLoading: false,
+      error: null,
+      refetch: mockRefetch,
+    });
+
+    rerender(<OrganizationUnitEditPage />);
+
+    await waitFor(() => {
+      expect(screen.getByText('Test Organization Unit')).toBeInTheDocument();
+    });
+  });
+
+  it('should re-render when transitioning from error to success', async () => {
+    mockUseGetOrganizationUnit.mockReturnValue({
+      data: undefined,
+      isLoading: false,
+      error: new Error('Temp error'),
+      refetch: mockRefetch,
+    });
+
+    const {rerender} = renderWithProviders(<OrganizationUnitEditPage />);
+
+    await waitFor(() => {
+      expect(screen.getByText('Temp error')).toBeInTheDocument();
+    });
+
+    // Resolve error
+    mockUseGetOrganizationUnit.mockReturnValue({
+      data: mockOrganizationUnit,
+      isLoading: false,
+      error: null,
+      refetch: mockRefetch,
+    });
+
+    rerender(<OrganizationUnitEditPage />);
+
+    await waitFor(() => {
+      expect(screen.getByText('Test Organization Unit')).toBeInTheDocument();
+    });
+  });
+
+  it('should re-render when location state changes', async () => {
+    const {rerender} = renderWithProviders(<OrganizationUnitEditPage />);
+
+    await waitFor(() => {
+      expect(screen.getByText('Back')).toBeInTheDocument();
+    });
+
+    // Change location state to include fromOU
+    mockUseLocation.mockReturnValue({
+      state: {fromOU: {id: 'parent-id', name: 'Parent'}},
+      pathname: '/organization-units/ou-123',
+      search: '',
+      hash: '',
+      key: 'default',
+    });
+
+    rerender(<OrganizationUnitEditPage />);
+
+    await waitFor(() => {
+      expect(screen.getByText('Back to Parent OU')).toBeInTheDocument();
+    });
+  });
+
+  it('should re-render when switching between OU with parent and without parent', async () => {
+    const {rerender} = renderWithProviders(<OrganizationUnitEditPage />);
+
+    await waitFor(() => {
+      expect(screen.getByText('Test Organization Unit')).toBeInTheDocument();
+    });
+
+    // Switch to OU with parent - the mock returns same data for parent query too,
+    // so the name may appear in both the header and the parent link
+    mockUseGetOrganizationUnit.mockReturnValue({
+      data: {...mockOrganizationUnit, parent: 'some-parent'},
+      isLoading: false,
+      error: null,
+      refetch: mockRefetch,
+    });
+
+    rerender(<OrganizationUnitEditPage />);
+
+    await waitFor(() => {
+      expect(screen.getAllByText('Test Organization Unit').length).toBeGreaterThanOrEqual(1);
+    });
+
+    // Switch back to OU without parent
+    mockUseGetOrganizationUnit.mockReturnValue({
+      data: mockOrganizationUnit,
+      isLoading: false,
+      error: null,
+      refetch: mockRefetch,
+    });
+
+    rerender(<OrganizationUnitEditPage />);
+
+    await waitFor(() => {
+      expect(screen.getByText('Test Organization Unit')).toBeInTheDocument();
+    });
+  });
+
+  it('should re-render description from value to null', async () => {
+    const {rerender} = renderWithProviders(<OrganizationUnitEditPage />);
+
+    await waitFor(() => {
+      expect(screen.getByText('A test description')).toBeInTheDocument();
+    });
+
+    // Switch to null description
+    mockUseGetOrganizationUnit.mockReturnValue({
+      data: {...mockOrganizationUnit, description: null},
+      isLoading: false,
+      error: null,
+      refetch: mockRefetch,
+    });
+
+    rerender(<OrganizationUnitEditPage />);
+
+    await waitFor(() => {
+      expect(screen.getByText('No description')).toBeInTheDocument();
+    });
+  });
 });

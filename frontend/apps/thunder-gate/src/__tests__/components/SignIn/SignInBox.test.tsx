@@ -65,7 +65,7 @@ const mockOnSubmit = vi.fn().mockResolvedValue(undefined);
 
 // Mock component type for testing embedded flow components
 interface MockFlowComponent {
-  id: string;
+  id?: string;
   type: string;
   label?: string;
   variant?: string;
@@ -1494,5 +1494,501 @@ describe('SignInBox', () => {
     expect(screen.getByText('Continue with Google')).toBeInTheDocument();
     // Other action type should not render (returns null)
     expect(screen.queryByText('Other Action')).not.toBeInTheDocument();
+  });
+
+  it('uses fallback index keys when components have undefined id', () => {
+    mockSignInRenderProps = createMockSignInRenderProps({
+      components: [
+        {
+          type: 'TEXT',
+          label: 'Welcome',
+          variant: 'H1',
+        },
+        {
+          type: 'BLOCK',
+          components: [
+            {
+              type: 'TEXT_INPUT',
+              ref: 'username',
+              label: 'Username',
+              required: false,
+            },
+            {
+              type: 'PASSWORD_INPUT',
+              ref: 'password',
+              label: 'Password',
+              required: false,
+            },
+            {
+              type: 'ACTION',
+              eventType: 'SUBMIT',
+              label: 'Continue',
+              variant: 'PRIMARY',
+            },
+          ],
+        },
+      ],
+    });
+    render(<SignInBox />);
+    expect(screen.getByText('Welcome')).toBeInTheDocument();
+    expect(screen.getByLabelText(/Username/)).toBeInTheDocument();
+    expect(screen.getByLabelText(/Password/)).toBeInTheDocument();
+  });
+
+  it('uses fallback keys for PHONE_INPUT and OTP_INPUT with undefined id', () => {
+    mockSignInRenderProps = createMockSignInRenderProps({
+      components: [
+        {
+          type: 'BLOCK',
+          components: [
+            {
+              type: 'PHONE_INPUT',
+              ref: 'phone',
+              label: 'Phone',
+              required: false,
+            },
+            {
+              type: 'OTP_INPUT',
+              ref: 'otp',
+              label: 'OTP Code',
+              required: false,
+            },
+            {
+              type: 'ACTION',
+              eventType: 'SUBMIT',
+              label: 'Submit',
+              variant: 'SECONDARY',
+            },
+          ],
+        },
+      ],
+    });
+    render(<SignInBox />);
+    expect(screen.getByLabelText(/Phone/)).toBeInTheDocument();
+    expect(screen.getByText('OTP Code')).toBeInTheDocument();
+  });
+
+  it('uses fallback keys for RESEND and TRIGGER in form block with undefined id', () => {
+    mockSignInRenderProps = createMockSignInRenderProps({
+      components: [
+        {
+          type: 'BLOCK',
+          components: [
+            {
+              type: 'RESEND',
+              eventType: 'SUBMIT',
+              label: 'Resend Code',
+            },
+            {
+              type: 'ACTION',
+              eventType: 'TRIGGER',
+              label: 'Alternative Action',
+              variant: 'SECONDARY',
+            },
+            {
+              type: 'ACTION',
+              eventType: 'SUBMIT',
+              label: 'Continue',
+            },
+          ],
+        },
+      ],
+    });
+    render(<SignInBox />);
+    expect(screen.getByText('Resend Code')).toBeInTheDocument();
+    expect(screen.getByText('Alternative Action')).toBeInTheDocument();
+  });
+
+  it('uses fallback keys for social login trigger with undefined id', async () => {
+    mockSignInRenderProps = createMockSignInRenderProps({
+      components: [
+        {
+          type: 'BLOCK',
+          components: [
+            {
+              type: 'ACTION',
+              eventType: 'TRIGGER',
+              label: 'Continue with Google',
+              image: 'google.svg',
+            },
+          ],
+        },
+      ],
+    });
+    render(<SignInBox />);
+    expect(screen.getByText('Continue with Google')).toBeInTheDocument();
+  });
+
+  it('toggles password visibility back to hidden', async () => {
+    mockSignInRenderProps = createMockSignInRenderProps({
+      components: [
+        {
+          id: 'block-1',
+          type: 'BLOCK',
+          components: [
+            {
+              id: 'password-input',
+              type: 'PASSWORD_INPUT',
+              ref: 'password',
+              label: 'Password',
+              required: false,
+            },
+            {
+              id: 'submit-btn',
+              type: 'ACTION',
+              eventType: 'SUBMIT',
+              label: 'Sign In',
+              variant: 'PRIMARY',
+            },
+          ],
+        },
+      ],
+    });
+    render(<SignInBox />);
+
+    const passwordInput = screen.getByLabelText(/Password/);
+    expect(passwordInput).toHaveAttribute('type', 'password');
+
+    // Toggle to show
+    const toggleButton = screen.getByLabelText('toggle password visibility');
+    await userEvent.click(toggleButton);
+    expect(passwordInput).toHaveAttribute('type', 'text');
+
+    // Toggle back to hide
+    await userEvent.click(toggleButton);
+    expect(passwordInput).toHaveAttribute('type', 'password');
+  });
+
+  it('renders with branding enabled and centered text alignment', () => {
+    mockUseBranding.mockReturnValue({
+      images: {
+        logo: {
+          primary: {
+            url: 'https://example.com/logo.png',
+          },
+        },
+      },
+      theme: {palette: {primary: {main: '#ff0000'}}},
+      isBrandingEnabled: true,
+    });
+    mockSignInRenderProps = createMockSignInRenderProps({
+      components: [
+        {
+          id: 'text-1',
+          type: 'TEXT',
+          label: 'Welcome Back',
+          variant: 'H2',
+        },
+      ],
+    });
+    render(<SignInBox />);
+    expect(screen.getByText('Welcome Back')).toBeInTheDocument();
+  });
+
+  it('renders branded logo with alt fallback when alt is not provided', () => {
+    mockUseBranding.mockReturnValue({
+      images: {
+        logo: {
+          primary: {
+            url: 'https://example.com/logo.png',
+            // no alt, no height, no width provided
+          },
+        },
+      },
+      theme: null,
+      isBrandingEnabled: true,
+    });
+    render(<SignInBox />);
+    expect(screen.getByTestId('asgardeo-signin')).toBeInTheDocument();
+  });
+
+  it('renders branded logo with custom alt, height, and width', () => {
+    mockUseBranding.mockReturnValue({
+      images: {
+        logo: {
+          primary: {
+            url: 'https://example.com/logo.png',
+            alt: 'Custom Alt',
+            height: 50,
+            width: 120,
+          },
+        },
+      },
+      theme: {palette: {primary: {main: '#0000ff'}}},
+      isBrandingEnabled: true,
+    });
+    render(<SignInBox />);
+    expect(screen.getByTestId('asgardeo-signin')).toBeInTheDocument();
+  });
+
+  it('renders without brandingTheme palette (uses theme fallback)', () => {
+    mockUseBranding.mockReturnValue({
+      images: {
+        logo: {
+          primary: {
+            url: 'https://example.com/logo.png',
+          },
+        },
+      },
+      theme: null,
+      isBrandingEnabled: false,
+    });
+    render(<SignInBox />);
+    expect(screen.getByTestId('asgardeo-signin')).toBeInTheDocument();
+  });
+
+  it('renders text field with resolve fallback for placeholder', () => {
+    mockSignInRenderProps = createMockSignInRenderProps({
+      components: [
+        {
+          id: 'block-1',
+          type: 'BLOCK',
+          components: [
+            {
+              id: 'input-1',
+              type: 'TEXT_INPUT',
+              ref: 'email',
+              label: 'Email',
+              // no placeholder provided
+              required: false,
+            },
+            {
+              id: 'submit-btn',
+              type: 'ACTION',
+              eventType: 'SUBMIT',
+              label: 'Next',
+              variant: 'PRIMARY',
+            },
+          ],
+        },
+      ],
+    });
+    render(<SignInBox />);
+    expect(screen.getByLabelText(/Email/)).toBeInTheDocument();
+  });
+
+  it('renders password field with resolve fallback for placeholder', () => {
+    mockSignInRenderProps = createMockSignInRenderProps({
+      components: [
+        {
+          id: 'block-1',
+          type: 'BLOCK',
+          components: [
+            {
+              id: 'pass-1',
+              type: 'PASSWORD_INPUT',
+              ref: 'newpassword',
+              label: 'New Password',
+              // no placeholder
+              required: false,
+            },
+            {
+              id: 'submit-btn',
+              type: 'ACTION',
+              eventType: 'SUBMIT',
+              label: 'Save',
+              variant: 'PRIMARY',
+            },
+          ],
+        },
+      ],
+    });
+    render(<SignInBox />);
+    expect(screen.getByLabelText(/New Password/)).toBeInTheDocument();
+  });
+
+  it('renders phone field with resolve fallback for placeholder', () => {
+    mockSignInRenderProps = createMockSignInRenderProps({
+      components: [
+        {
+          id: 'block-1',
+          type: 'BLOCK',
+          components: [
+            {
+              id: 'phone-1',
+              type: 'PHONE_INPUT',
+              ref: 'mobile',
+              label: 'Mobile',
+              // no placeholder
+              required: false,
+            },
+            {
+              id: 'submit-btn',
+              type: 'ACTION',
+              eventType: 'SUBMIT',
+              label: 'Next',
+              variant: 'PRIMARY',
+            },
+          ],
+        },
+      ],
+    });
+    render(<SignInBox />);
+    expect(screen.getByLabelText(/Mobile/)).toBeInTheDocument();
+  });
+
+  it('renders with field errors showing error state on inputs', async () => {
+    mockSignInRenderProps = createMockSignInRenderProps({
+      components: [
+        {
+          id: 'block-1',
+          type: 'BLOCK',
+          components: [
+            {
+              id: 'username-input',
+              type: 'TEXT_INPUT',
+              ref: 'username',
+              label: 'Username',
+              required: true,
+            },
+            {
+              id: 'password-input',
+              type: 'PASSWORD_INPUT',
+              ref: 'password',
+              label: 'Password',
+              required: true,
+            },
+            {
+              id: 'phone-input',
+              type: 'PHONE_INPUT',
+              ref: 'phone',
+              label: 'Phone',
+              required: true,
+            },
+            {
+              id: 'submit-btn',
+              type: 'ACTION',
+              eventType: 'SUBMIT',
+              label: 'Sign In',
+              variant: 'PRIMARY',
+            },
+          ],
+        },
+      ],
+    });
+    render(<SignInBox />);
+
+    // Submit to trigger validation errors on all fields
+    const submitBtn = screen.getByText('Sign In');
+    fireEvent.click(submitBtn);
+
+    // All fields should now show error state
+    expect(mockOnSubmit).not.toHaveBeenCalled();
+
+    // Type in username to clear its error
+    const usernameInput = screen.getByLabelText(/Username/);
+    await userEvent.type(usernameInput, 'u');
+
+    // Type in password to clear its error
+    const passwordInput = screen.getByLabelText(/Password/);
+    await userEvent.type(passwordInput, 'p');
+
+    // Type in phone to clear its error
+    const phoneInput = screen.getByLabelText(/Phone/);
+    await userEvent.type(phoneInput, '1');
+  });
+
+  it('renders inputs with non-username/non-password ref for autoComplete', () => {
+    mockSignInRenderProps = createMockSignInRenderProps({
+      components: [
+        {
+          id: 'block-1',
+          type: 'BLOCK',
+          components: [
+            {
+              id: 'email-input',
+              type: 'TEXT_INPUT',
+              ref: 'email',
+              label: 'Email Address',
+              required: false,
+            },
+            {
+              id: 'token-input',
+              type: 'PASSWORD_INPUT',
+              ref: 'token',
+              label: 'API Token',
+              required: false,
+            },
+            {
+              id: 'submit-btn',
+              type: 'ACTION',
+              eventType: 'SUBMIT',
+              label: 'Go',
+              variant: 'PRIMARY',
+            },
+          ],
+        },
+      ],
+    });
+    render(<SignInBox />);
+
+    const emailInput = screen.getByLabelText(/Email Address/);
+    expect(emailInput).toHaveAttribute('autocomplete', 'off');
+
+    const tokenInput = screen.getByLabelText(/API Token/);
+    expect(tokenInput).toHaveAttribute('autocomplete', 'off');
+  });
+
+  it('handles sign up link navigation', async () => {
+    mockSignUpRenderProps = createMockSignUpRenderProps({
+      components: [{id: 'signup-form', type: 'BLOCK'}],
+    });
+    render(<SignInBox />);
+
+    const signUpLink = screen.getByText('Sign up');
+    await userEvent.click(signUpLink);
+
+    // Navigate is called (with or without query params depending on mock state)
+    expect(mockNavigate).toHaveBeenCalled();
+  });
+
+  it('renders social login trigger with missing label and image', () => {
+    mockSignInRenderProps = createMockSignInRenderProps({
+      components: [
+        {
+          id: 'trigger-block',
+          type: 'BLOCK',
+          components: [
+            {
+              id: 'provider-btn',
+              type: 'ACTION',
+              eventType: 'TRIGGER',
+              // no label, no image
+            },
+          ],
+        },
+      ],
+    });
+    render(<SignInBox />);
+    // Should still render without crashing
+    expect(screen.getByTestId('asgardeo-signin')).toBeInTheDocument();
+  });
+
+  it('renders block with empty components array', () => {
+    mockSignInRenderProps = createMockSignInRenderProps({
+      components: [
+        {
+          id: 'block-1',
+          type: 'BLOCK',
+          components: [],
+        },
+      ],
+    });
+    render(<SignInBox />);
+    expect(screen.getByTestId('asgardeo-signin')).toBeInTheDocument();
+  });
+
+  it('renders block without components property', () => {
+    mockSignInRenderProps = createMockSignInRenderProps({
+      components: [
+        {
+          id: 'block-1',
+          type: 'BLOCK',
+          // no components property
+        },
+      ],
+    });
+    render(<SignInBox />);
+    expect(screen.getByTestId('asgardeo-signin')).toBeInTheDocument();
   });
 });

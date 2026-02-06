@@ -16,8 +16,9 @@
  * under the License.
  */
 
+import {useState} from 'react';
 import {describe, it, expect, vi} from 'vitest';
-import {renderHook} from '@thunder/test-utils';
+import {render, renderHook, screen, userEvent} from '@thunder/test-utils';
 import useDataGridLocaleText from '../useDataGridLocaleText';
 
 // Unmock the hook for testing the actual implementation
@@ -286,5 +287,178 @@ describe('useDataGridLocaleText', () => {
 
     // The result should be the same object reference due to memoization
     expect(result.current).toBe(firstResult);
+  });
+
+  it('should return stable result across multiple re-renders via state updates', async () => {
+    // Use a real component with state updates to trigger genuine re-renders
+    // that exercise the React Compiler's memoization skip paths
+    function TestComponent() {
+      const [count, setCount] = useState(0);
+      const localeText = useDataGridLocaleText();
+
+      return (
+        <div>
+          <span data-testid="count">{count}</span>
+          <span data-testid="label">{localeText.noRowsLabel}</span>
+          <button type="button" onClick={() => setCount((c) => c + 1)}>increment</button>
+        </div>
+      );
+    }
+
+    const user = userEvent.setup();
+    render(<TestComponent />);
+
+    expect(screen.getByTestId('label')).toHaveTextContent('No rows');
+
+    // Trigger re-renders via state updates to exercise compiler memoization
+    await user.click(screen.getByText('increment'));
+    expect(screen.getByTestId('count')).toHaveTextContent('1');
+    expect(screen.getByTestId('label')).toHaveTextContent('No rows');
+
+    await user.click(screen.getByText('increment'));
+    expect(screen.getByTestId('count')).toHaveTextContent('2');
+    expect(screen.getByTestId('label')).toHaveTextContent('No rows');
+  });
+
+  it('should return undefined for function keys when resource bundle has non-function values', async () => {
+    // Mock i18n to return a bundle where function keys are strings instead of functions
+    const i18nModule = await import('i18next');
+    const originalGetResourceBundle = i18nModule.default.getResourceBundle.bind(i18nModule.default);
+
+    const consoleSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+
+    vi.spyOn(i18nModule.default, 'getResourceBundle').mockImplementation((lng: string, ns: string) => {
+      const bundle = originalGetResourceBundle(lng, ns) as Record<string, unknown>;
+      return {
+        ...bundle,
+        // Override a function key with a string value to trigger the DEV warning
+        'dataTable.toolbarFiltersTooltipActive': 'not-a-function',
+      };
+    });
+
+    const {result} = renderHook(() => useDataGridLocaleText());
+
+    // The value should be undefined since it's not a function
+    expect(result.current.toolbarFiltersTooltipActive).toBeUndefined();
+
+    // Should have logged a warning in DEV mode
+    expect(consoleSpy).toHaveBeenCalledWith(
+      expect.stringContaining('dataTable.toolbarFiltersTooltipActive'),
+    );
+
+    consoleSpy.mockRestore();
+    vi.restoreAllMocks();
+  });
+
+  it('should return undefined for function keys when key is missing from resource bundle', async () => {
+    // Mock i18n to return a bundle missing the function keys entirely
+    const i18nModule = await import('i18next');
+
+    vi.spyOn(i18nModule.default, 'getResourceBundle').mockImplementation(() => ({}));
+
+    const {result} = renderHook(() => useDataGridLocaleText());
+
+    // All function-type keys should be undefined
+    expect(result.current.toolbarFiltersTooltipActive).toBeUndefined();
+    expect(result.current.columnHeaderFiltersTooltipActive).toBeUndefined();
+    expect(result.current.footerRowSelected).toBeUndefined();
+    expect(result.current.footerTotalVisibleRows).toBeUndefined();
+    expect(result.current.groupColumn).toBeUndefined();
+    expect(result.current.unGroupColumn).toBeUndefined();
+    expect(result.current.paginationDisplayedRows).toBeUndefined();
+
+    vi.restoreAllMocks();
+  });
+
+  it('should handle getResourceBundle returning undefined', async () => {
+    // Mock i18n to return undefined from getResourceBundle to cover the ?? {} fallback
+    const i18nModule = await import('i18next');
+
+    vi.spyOn(i18nModule.default, 'getResourceBundle').mockImplementation(() => undefined as unknown as Record<string, unknown>);
+
+    const {result} = renderHook(() => useDataGridLocaleText());
+
+    // All function-type keys should be undefined when bundle is null/undefined
+    expect(result.current.toolbarFiltersTooltipActive).toBeUndefined();
+    expect(result.current.columnHeaderFiltersTooltipActive).toBeUndefined();
+    expect(result.current.footerRowSelected).toBeUndefined();
+    expect(result.current.footerTotalVisibleRows).toBeUndefined();
+    expect(result.current.groupColumn).toBeUndefined();
+    expect(result.current.unGroupColumn).toBeUndefined();
+    expect(result.current.paginationDisplayedRows).toBeUndefined();
+
+    // String keys should still work (they use t() not the bundle)
+    expect(result.current.noRowsLabel).toBeDefined();
+
+    vi.restoreAllMocks();
+  });
+
+  it('should handle getResourceBundle returning null', async () => {
+    // Mock i18n to return null from getResourceBundle to cover the ?? {} fallback
+    const i18nModule = await import('i18next');
+
+    vi.spyOn(i18nModule.default, 'getResourceBundle').mockImplementation(
+      () => null as unknown as Record<string, unknown>,
+    );
+
+    const {result} = renderHook(() => useDataGridLocaleText());
+
+    // All function-type keys should be undefined when bundle is null
+    expect(result.current.toolbarFiltersTooltipActive).toBeUndefined();
+    expect(result.current.columnHeaderFiltersTooltipActive).toBeUndefined();
+    expect(result.current.footerRowSelected).toBeUndefined();
+    expect(result.current.footerTotalVisibleRows).toBeUndefined();
+    expect(result.current.groupColumn).toBeUndefined();
+    expect(result.current.unGroupColumn).toBeUndefined();
+    expect(result.current.paginationDisplayedRows).toBeUndefined();
+
+    vi.restoreAllMocks();
+  });
+
+  it('should handle non-function values for all function keys with DEV warnings', async () => {
+    // Mock i18n to return a bundle where ALL function keys are non-function values
+    // This covers both the typeof !== 'function' branch AND the DEV warning branch for each key
+    const i18nModule = await import('i18next');
+    const originalGetResourceBundle = i18nModule.default.getResourceBundle.bind(i18nModule.default);
+
+    const consoleSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+
+    vi.spyOn(i18nModule.default, 'getResourceBundle').mockImplementation((lng: string, ns: string) => {
+      const bundle = originalGetResourceBundle(lng, ns) as Record<string, unknown>;
+      return {
+        ...bundle,
+        // Override ALL function keys with non-function values to trigger DEV warnings
+        'dataTable.toolbarFiltersTooltipActive': 'not-a-function',
+        'dataTable.columnHeaderFiltersTooltipActive': 42,
+        'dataTable.footerRowSelected': true,
+        'dataTable.footerTotalVisibleRows': [],
+        'dataTable.groupColumn': {},
+        'dataTable.unGroupColumn': 'string-value',
+        'dataTable.paginationDisplayedRows': 0,
+      };
+    });
+
+    const {result} = renderHook(() => useDataGridLocaleText());
+
+    // All function-type keys should be undefined since they are not functions
+    expect(result.current.toolbarFiltersTooltipActive).toBeUndefined();
+    expect(result.current.columnHeaderFiltersTooltipActive).toBeUndefined();
+    expect(result.current.footerRowSelected).toBeUndefined();
+    expect(result.current.footerTotalVisibleRows).toBeUndefined();
+    expect(result.current.groupColumn).toBeUndefined();
+    expect(result.current.unGroupColumn).toBeUndefined();
+    expect(result.current.paginationDisplayedRows).toBeUndefined();
+
+    // Should have logged warnings for non-function, non-undefined values
+    expect(consoleSpy).toHaveBeenCalledWith(expect.stringContaining('dataTable.toolbarFiltersTooltipActive'));
+    expect(consoleSpy).toHaveBeenCalledWith(expect.stringContaining('dataTable.columnHeaderFiltersTooltipActive'));
+    expect(consoleSpy).toHaveBeenCalledWith(expect.stringContaining('dataTable.footerRowSelected'));
+    expect(consoleSpy).toHaveBeenCalledWith(expect.stringContaining('dataTable.footerTotalVisibleRows'));
+    expect(consoleSpy).toHaveBeenCalledWith(expect.stringContaining('dataTable.groupColumn'));
+    expect(consoleSpy).toHaveBeenCalledWith(expect.stringContaining('dataTable.unGroupColumn'));
+    expect(consoleSpy).toHaveBeenCalledWith(expect.stringContaining('dataTable.paginationDisplayedRows'));
+
+    consoleSpy.mockRestore();
+    vi.restoreAllMocks();
   });
 });

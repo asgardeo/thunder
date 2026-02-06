@@ -185,4 +185,22 @@ describe('useDeleteOrganizationUnit', () => {
       expect(result.current.error?.message).toBe('Organization unit not found');
     });
   });
+
+  it('should handle invalidateQueries rejection gracefully', async () => {
+    mockHttpRequest.mockResolvedValue({});
+
+    const {result, queryClient} = renderHook(() => useDeleteOrganizationUnit());
+
+    // Spy on invalidateQueries to make it reject
+    const invalidateSpy = vi.spyOn(queryClient, 'invalidateQueries').mockRejectedValue(new Error('Invalidation failed'));
+
+    result.current.mutate('ou-123');
+
+    await waitFor(() => {
+      expect(result.current.isSuccess).toBe(true);
+    });
+
+    // Mutation should still succeed despite invalidation failure
+    expect(invalidateSpy).toHaveBeenCalled();
+  });
 });

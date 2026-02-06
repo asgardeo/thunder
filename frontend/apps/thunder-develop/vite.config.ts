@@ -106,6 +106,8 @@ export default defineConfig({
         'public/',
         'coverage/',
         'src/test/',
+        '**/.DS_Store',
+        '**/*.json',
         '**/*.d.ts',
         '**/*.config.*',
         '**/mockData',

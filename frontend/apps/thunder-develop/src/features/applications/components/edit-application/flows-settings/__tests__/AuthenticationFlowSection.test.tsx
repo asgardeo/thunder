@@ -396,4 +396,89 @@ describe('AuthenticationFlowSection', () => {
       expect(createLink).toHaveAttribute('href', '/flows');
     });
   });
+
+  describe('Edge Cases', () => {
+    it('should handle auth_flow_id not found in flows list', () => {
+      vi.mocked(useGetFlows).mockReturnValue({
+        data: {flows: mockAuthFlows},
+        isLoading: false,
+      } as MockedUseGetFlows);
+
+      const appWithInvalidFlow = {...mockApplication, auth_flow_id: 'non-existent-flow'};
+
+      render(
+        <MemoryRouter>
+          <AuthenticationFlowSection application={appWithInvalidFlow} editedApp={{}} onFieldChange={mockOnFieldChange} />
+        </MemoryRouter>,
+      );
+
+      const input = screen.getByPlaceholderText('Select an authentication flow');
+      expect(input).toHaveValue('');
+    });
+
+    it('should handle typing to filter options', async () => {
+      const user = userEvent.setup();
+      vi.mocked(useGetFlows).mockReturnValue({
+        data: {flows: mockAuthFlows},
+        isLoading: false,
+      } as MockedUseGetFlows);
+
+      render(
+        <MemoryRouter>
+          <AuthenticationFlowSection application={mockApplication} editedApp={{}} onFieldChange={mockOnFieldChange} />
+        </MemoryRouter>,
+      );
+
+      const input = screen.getByPlaceholderText('Select an authentication flow');
+      await user.clear(input);
+      await user.type(input, 'Custom');
+
+      await waitFor(() => {
+        expect(screen.getByText('Custom Auth Flow')).toBeInTheDocument();
+      });
+    });
+
+    it('should use editedApp auth_flow_id when application has no auth_flow_id', () => {
+      vi.mocked(useGetFlows).mockReturnValue({
+        data: {flows: mockAuthFlows},
+        isLoading: false,
+      } as MockedUseGetFlows);
+
+      const appWithoutFlow = {...mockApplication, auth_flow_id: undefined};
+
+      render(
+        <MemoryRouter>
+          <AuthenticationFlowSection
+            application={appWithoutFlow}
+            editedApp={{auth_flow_id: 'auth-flow-3'}}
+            onFieldChange={mockOnFieldChange}
+          />
+        </MemoryRouter>,
+      );
+
+      const input = screen.getByPlaceholderText('Select an authentication flow');
+      expect(input).toHaveValue('MFA Auth Flow');
+    });
+
+    it('should handle both application and editedApp having auth_flow_id', () => {
+      vi.mocked(useGetFlows).mockReturnValue({
+        data: {flows: mockAuthFlows},
+        isLoading: false,
+      } as MockedUseGetFlows);
+
+      render(
+        <MemoryRouter>
+          <AuthenticationFlowSection
+            application={{...mockApplication, auth_flow_id: 'auth-flow-1'}}
+            editedApp={{auth_flow_id: 'auth-flow-3'}}
+            onFieldChange={mockOnFieldChange}
+          />
+        </MemoryRouter>,
+      );
+
+      const input = screen.getByPlaceholderText('Select an authentication flow');
+      // editedApp should take precedence
+      expect(input).toHaveValue('MFA Auth Flow');
+    });
+  });
 });

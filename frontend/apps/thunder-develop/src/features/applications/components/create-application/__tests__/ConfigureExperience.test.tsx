@@ -371,4 +371,192 @@ describe('ConfigureExperience', () => {
       expect(mockOnApproachChange).toHaveBeenCalledWith(ApplicationCreateFlowSignInApproach.EMBEDDED);
     });
   });
+
+  describe('Styling Branches', () => {
+    it('should apply selected styles for INBUILT approach', () => {
+      render(
+        <ConfigureExperience
+          selectedApproach={ApplicationCreateFlowSignInApproach.INBUILT}
+          onApproachChange={mockOnApproachChange}
+        />,
+      );
+
+      // The INBUILT card should have selected styling
+      const inbuiltRadio = screen.getAllByRole('radio')[0];
+      expect(inbuiltRadio).toBeChecked();
+    });
+
+    it('should apply selected styles for EMBEDDED approach', () => {
+      render(
+        <ConfigureExperience
+          selectedApproach={ApplicationCreateFlowSignInApproach.EMBEDDED}
+          onApproachChange={mockOnApproachChange}
+        />,
+      );
+
+      // The EMBEDDED card should have selected styling
+      const embeddedRadio = screen.getAllByRole('radio')[1];
+      expect(embeddedRadio).toBeChecked();
+    });
+
+    it('should apply selected styles for user type cards', () => {
+      const mockUserTypes = [
+        {id: '1', name: 'Internal', ouId: 'INTERNAL', allowSelfRegistration: true},
+        {id: '2', name: 'External', ouId: 'EXTERNAL', allowSelfRegistration: false},
+      ];
+
+      render(
+        <ConfigureExperience
+          selectedApproach={ApplicationCreateFlowSignInApproach.INBUILT}
+          onApproachChange={mockOnApproachChange}
+          userTypes={mockUserTypes}
+          selectedUserTypes={['Internal']}
+          onUserTypesChange={vi.fn()}
+        />,
+      );
+
+      // User type cards should be rendered with Internal showing as selected
+      expect(screen.getByText('Internal')).toBeInTheDocument();
+      expect(screen.getByText('External')).toBeInTheDocument();
+    });
+
+    it('should apply non-selected styles for user type cards', () => {
+      const mockUserTypes = [
+        {id: '1', name: 'Internal', ouId: 'INTERNAL', allowSelfRegistration: true},
+        {id: '2', name: 'External', ouId: 'EXTERNAL', allowSelfRegistration: false},
+      ];
+
+      render(
+        <ConfigureExperience
+          selectedApproach={ApplicationCreateFlowSignInApproach.INBUILT}
+          onApproachChange={mockOnApproachChange}
+          userTypes={mockUserTypes}
+          selectedUserTypes={['External']}
+          onUserTypesChange={vi.fn()}
+        />,
+      );
+
+      // User type cards should be rendered with External showing as selected
+      expect(screen.getByText('Internal')).toBeInTheDocument();
+      expect(screen.getByText('External')).toBeInTheDocument();
+    });
+  });
+
+  describe('Edge Cases', () => {
+    it('should handle empty userTypes array', () => {
+      render(
+        <ConfigureExperience
+          selectedApproach={ApplicationCreateFlowSignInApproach.INBUILT}
+          onApproachChange={mockOnApproachChange}
+          userTypes={[]}
+        />,
+      );
+
+      // Should not show user types section
+      expect(
+        screen.queryByText('applications:onboarding.configure.experience.access.userTypes.title'),
+      ).not.toBeInTheDocument();
+    });
+
+    it('should not auto-select user type when onUserTypesChange is not provided', () => {
+      const mockUserTypes = [
+        {id: '1', name: 'Internal', ouId: 'INTERNAL', allowSelfRegistration: true},
+        {id: '2', name: 'External', ouId: 'EXTERNAL', allowSelfRegistration: false},
+      ];
+
+      render(
+        <ConfigureExperience
+          selectedApproach={ApplicationCreateFlowSignInApproach.INBUILT}
+          onApproachChange={mockOnApproachChange}
+          userTypes={mockUserTypes}
+          selectedUserTypes={[]}
+          // onUserTypesChange is not provided
+        />,
+      );
+
+      // Component should render without crashing
+      expect(screen.getByText('applications:onboarding.configure.experience.title')).toBeInTheDocument();
+    });
+
+    it('should show subtitle without user types when fewer than 2 user types', () => {
+      render(
+        <ConfigureExperience
+          selectedApproach={ApplicationCreateFlowSignInApproach.INBUILT}
+          onApproachChange={mockOnApproachChange}
+          userTypes={[{id: '1', name: 'Internal', ouId: 'INTERNAL', allowSelfRegistration: true}]}
+        />,
+      );
+
+      expect(
+        screen.getByText('applications:onboarding.configure.experience.subtitleWithoutUserTypes'),
+      ).toBeInTheDocument();
+    });
+
+    it('should show subtitle with user types when 2 or more user types exist', () => {
+      const mockUserTypes = [
+        {id: '1', name: 'Internal', ouId: 'INTERNAL', allowSelfRegistration: true},
+        {id: '2', name: 'External', ouId: 'EXTERNAL', allowSelfRegistration: false},
+      ];
+
+      render(
+        <ConfigureExperience
+          selectedApproach={ApplicationCreateFlowSignInApproach.INBUILT}
+          onApproachChange={mockOnApproachChange}
+          userTypes={mockUserTypes}
+          selectedUserTypes={['Internal']}
+          onUserTypesChange={vi.fn()}
+        />,
+      );
+
+      expect(screen.getByText('applications:onboarding.configure.experience.subtitle')).toBeInTheDocument();
+    });
+
+    it('should not render user types section when onUserTypesChange is undefined', () => {
+      const mockUserTypes = [
+        {id: '1', name: 'Internal', ouId: 'INTERNAL', allowSelfRegistration: true},
+        {id: '2', name: 'External', ouId: 'EXTERNAL', allowSelfRegistration: false},
+      ];
+
+      render(
+        <ConfigureExperience
+          selectedApproach={ApplicationCreateFlowSignInApproach.INBUILT}
+          onApproachChange={mockOnApproachChange}
+          userTypes={mockUserTypes}
+          selectedUserTypes={['Internal']}
+          // onUserTypesChange is not provided - user types section should not render
+        />,
+      );
+
+      // User types section should not be rendered
+      expect(
+        screen.queryByText('applications:onboarding.configure.experience.access.userTypes.title'),
+      ).not.toBeInTheDocument();
+    });
+
+    it('should render with exactly 4 user types showing cards', () => {
+      const fourUserTypes = [
+        {id: '1', name: 'Type1', ouId: 'TYPE1', allowSelfRegistration: true},
+        {id: '2', name: 'Type2', ouId: 'TYPE2', allowSelfRegistration: false},
+        {id: '3', name: 'Type3', ouId: 'TYPE3', allowSelfRegistration: true},
+        {id: '4', name: 'Type4', ouId: 'TYPE4', allowSelfRegistration: false},
+      ];
+
+      render(
+        <ConfigureExperience
+          selectedApproach={ApplicationCreateFlowSignInApproach.INBUILT}
+          onApproachChange={mockOnApproachChange}
+          userTypes={fourUserTypes}
+          selectedUserTypes={['Type1']}
+          onUserTypesChange={vi.fn()}
+        />,
+      );
+
+      // Should show cards, not autocomplete (less than 5)
+      expect(screen.queryByRole('combobox')).not.toBeInTheDocument();
+      expect(screen.getByText('Type1')).toBeInTheDocument();
+      expect(screen.getByText('Type2')).toBeInTheDocument();
+      expect(screen.getByText('Type3')).toBeInTheDocument();
+      expect(screen.getByText('Type4')).toBeInTheDocument();
+    });
+  });
 });

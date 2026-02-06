@@ -225,6 +225,126 @@ describe('TechnologyGuide', () => {
       const copyButtons = screen.getAllByTestId(/copy-code-button-/);
       expect(copyButtons).toHaveLength(2);
     });
+
+    it('should map terminal language to bash', () => {
+      const guidesWithTerminal: IntegrationGuides = {
+        INBUILT: {
+          llm_prompt: mockIntegrationGuides.INBUILT.llm_prompt,
+          manual_steps: [
+            {
+              step: 1,
+              title: 'Terminal step',
+              description: 'Run in terminal',
+              code: {
+                language: 'terminal',
+                content: 'echo "Hello"',
+              },
+            },
+          ],
+        },
+      };
+
+      const {container} = renderWithProviders(<TechnologyGuide guides={guidesWithTerminal} templateId="react" />);
+      // The SyntaxHighlighter should use bash as language
+      const codeBlocks = container.querySelectorAll('pre');
+      expect(codeBlocks).toHaveLength(1);
+    });
+
+    it('should map .env language to properties', () => {
+      const guidesWithEnv: IntegrationGuides = {
+        INBUILT: {
+          llm_prompt: mockIntegrationGuides.INBUILT.llm_prompt,
+          manual_steps: [
+            {
+              step: 1,
+              title: 'Environment step',
+              description: 'Set environment variables',
+              code: {
+                language: '.env',
+                filename: '.env.local',
+                content: 'API_KEY=xxx',
+              },
+            },
+          ],
+        },
+      };
+
+      const {container} = renderWithProviders(<TechnologyGuide guides={guidesWithEnv} templateId="react" />);
+      const codeBlocks = container.querySelectorAll('pre');
+      expect(codeBlocks).toHaveLength(1);
+      expect(screen.getByText('.env.local')).toBeInTheDocument();
+    });
+
+    it('should map typescript language to tsx', () => {
+      const guidesWithTypescript: IntegrationGuides = {
+        INBUILT: {
+          llm_prompt: mockIntegrationGuides.INBUILT.llm_prompt,
+          manual_steps: [
+            {
+              step: 1,
+              title: 'TypeScript step',
+              description: 'TypeScript code',
+              code: {
+                language: 'typescript',
+                content: 'const x: number = 1;',
+              },
+            },
+          ],
+        },
+      };
+
+      const {container} = renderWithProviders(<TechnologyGuide guides={guidesWithTypescript} templateId="react" />);
+      const codeBlocks = container.querySelectorAll('pre');
+      expect(codeBlocks).toHaveLength(1);
+    });
+
+    it('should use original language when no mapping exists', () => {
+      const guidesWithPython: IntegrationGuides = {
+        INBUILT: {
+          llm_prompt: mockIntegrationGuides.INBUILT.llm_prompt,
+          manual_steps: [
+            {
+              step: 1,
+              title: 'Python step',
+              description: 'Python code',
+              code: {
+                language: 'python',
+                content: 'print("Hello")',
+              },
+            },
+          ],
+        },
+      };
+
+      const {container} = renderWithProviders(<TechnologyGuide guides={guidesWithPython} templateId="react" />);
+      const codeBlocks = container.querySelectorAll('pre');
+      expect(codeBlocks).toHaveLength(1);
+    });
+
+    it('should render code block without filename when filename is not provided', () => {
+      const guidesWithoutFilename: IntegrationGuides = {
+        INBUILT: {
+          llm_prompt: mockIntegrationGuides.INBUILT.llm_prompt,
+          manual_steps: [
+            {
+              step: 1,
+              title: 'No filename step',
+              description: 'Code without filename',
+              code: {
+                language: 'javascript',
+                content: 'console.log("test");',
+              },
+            },
+          ],
+        },
+      };
+
+      const {container} = renderWithProviders(<TechnologyGuide guides={guidesWithoutFilename} templateId="react" />);
+      const codeBlocks = container.querySelectorAll('pre');
+      expect(codeBlocks).toHaveLength(1);
+      // No filename should be rendered
+      expect(screen.queryByText(/\.js$/)).not.toBeInTheDocument();
+    });
   });
 
   describe('Empty States', () => {
@@ -427,6 +547,28 @@ describe('TechnologyGuide', () => {
       }
     });
 
+    it('should not call clipboard when prompt content is undefined', async () => {
+      const guidesWithUndefinedContent: IntegrationGuides = {
+        INBUILT: {
+          llm_prompt: {
+            id: 'llm-1',
+            title: 'Use AI Assistant',
+            description: 'Get AI-powered integration guidance',
+            type: 'llm' as const,
+            icon: 'sparkles',
+            // content is undefined
+          },
+          manual_steps: [],
+        },
+      };
+
+      renderWithProviders(<TechnologyGuide guides={guidesWithUndefinedContent} templateId="react" />);
+
+      // Button should not render when content is undefined
+      const copyButton = screen.queryByTestId('copy-prompt-button');
+      expect(copyButton).not.toBeInTheDocument();
+    });
+
     describe('Clipboard Fallback', () => {
       it('should use fallback method when clipboard API fails for prompt', async () => {
         mockWriteText.mockRejectedValue(new Error('Clipboard API failed'));
@@ -490,6 +632,26 @@ describe('TechnologyGuide', () => {
 
         // Should not throw - component handles error gracefully
         expect(() => fireEvent.click(copyCodeButton)).not.toThrow();
+      });
+
+      it('should trigger the catch handler in onClick when handleCopyCode rejects', async () => {
+        // Make both clipboard API and fallback fail to ensure the promise rejects
+        mockWriteText.mockRejectedValue(new Error('Clipboard API failed'));
+
+        const mockExecCommand = vi.fn().mockImplementation(() => {
+          throw new Error('execCommand failed');
+        });
+        document.execCommand = mockExecCommand;
+
+        renderWithProviders(<TechnologyGuide guides={mockIntegrationGuides} templateId="react" />);
+
+        const copyCodeButton = screen.getByTestId('copy-code-button-1');
+        fireEvent.click(copyCodeButton);
+
+        // Wait for the async operation to complete - the catch handler should log error
+        await waitFor(() => {
+          expect(mockExecCommand).toHaveBeenCalledWith('copy');
+        });
       });
     });
   });

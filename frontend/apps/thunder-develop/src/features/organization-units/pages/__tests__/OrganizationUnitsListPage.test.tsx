@@ -160,4 +160,30 @@ describe('OrganizationUnitsListPage', () => {
       expect(mockNavigate).toHaveBeenCalledWith('/organization-units/create');
     });
   });
+
+  it('should re-render consistently', async () => {
+    const {rerender} = renderWithProviders(<OrganizationUnitsListPage />);
+
+    expect(screen.getByText('Organization Units')).toBeInTheDocument();
+    expect(screen.getByText('Manage your organization units')).toBeInTheDocument();
+
+    // Re-render to exercise memoization update paths
+    rerender(<OrganizationUnitsListPage />);
+
+    expect(screen.getByText('Organization Units')).toBeInTheDocument();
+    expect(screen.getByText('Add Organization Unit')).toBeInTheDocument();
+  });
+
+  it('should render organization units list within the page', async () => {
+    renderWithProviders(<OrganizationUnitsListPage />);
+
+    // The page includes OrganizationUnitsList which should show data
+    await waitFor(() => {
+      expect(screen.getByText('Root Organization')).toBeInTheDocument();
+    });
+
+    // Verify DataGrid is rendered
+    const dataGrid = document.querySelector('.MuiDataGrid-root');
+    expect(dataGrid).toBeInTheDocument();
+  });
 });

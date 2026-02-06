@@ -553,6 +553,35 @@ describe('ApplicationEditPage', () => {
       });
     });
 
+    it('should open logo modal when edit button on avatar is clicked', async () => {
+      const user = userEvent.setup();
+      renderComponent();
+
+      // Find the edit button near the avatar (it's the one before the name edit button)
+      // Based on the DOM structure, let's look for buttons with SVG icons
+      const avatarSection = screen.getByRole('img').closest('[class*="MuiBox"]')?.parentElement;
+      const buttonsInAvatarSection = avatarSection?.querySelectorAll('button');
+
+      // The first button in the avatar container should be the edit button
+      if (buttonsInAvatarSection && buttonsInAvatarSection.length > 0) {
+        await user.click(buttonsInAvatarSection[0]);
+
+        await waitFor(() => {
+          const modal = screen.getByTestId('logo-update-modal');
+          expect(modal).toHaveStyle({display: 'block'});
+        });
+      } else {
+        // If we can't find buttons in avatar section, click the avatar directly
+        const avatar = screen.getByRole('img');
+        await user.click(avatar);
+
+        await waitFor(() => {
+          const modal = screen.getByTestId('logo-update-modal');
+          expect(modal).toHaveStyle({display: 'block'});
+        });
+      }
+    });
+
     it('should update logo and close modal when logo is updated', async () => {
       const user = userEvent.setup();
       renderComponent();
@@ -1054,6 +1083,70 @@ describe('ApplicationEditPage', () => {
           expect(modal).toHaveStyle({display: 'block'});
         });
       }
+    });
+  });
+
+  describe('Copy to Clipboard', () => {
+    it('should copy text to clipboard via general settings', async () => {
+      const user = userEvent.setup();
+      const mockWriteText = vi.fn().mockResolvedValue(undefined);
+      Object.defineProperty(navigator, 'clipboard', {
+        value: {writeText: mockWriteText},
+        writable: true,
+        configurable: true,
+      });
+
+      // Re-mock EditGeneralSettings to expose the copy callback
+      const EditGeneralSettingsMock = (await import('../../components/edit-application/general-settings/EditGeneralSettings')).default as ReturnType<typeof vi.fn>;
+      EditGeneralSettingsMock.mockImplementation(
+        ({onCopyToClipboard}: {onCopyToClipboard: (text: string, field: string) => void}) => (
+          <div data-testid="edit-general-settings">
+            <button type="button" data-testid="copy-btn" onClick={() => onCopyToClipboard('test-client-id', 'clientId')}>
+              Copy
+            </button>
+          </div>
+        ),
+      );
+
+      renderComponent();
+
+      const copyButton = screen.getByTestId('copy-btn');
+      await user.click(copyButton);
+
+      await waitFor(() => {
+        expect(mockWriteText).toHaveBeenCalledWith('test-client-id');
+      });
+    });
+
+    it('should handle clipboard write failure gracefully', async () => {
+      const user = userEvent.setup();
+      const mockWriteText = vi.fn().mockRejectedValue(new Error('Clipboard error'));
+      Object.defineProperty(navigator, 'clipboard', {
+        value: {writeText: mockWriteText},
+        writable: true,
+        configurable: true,
+      });
+
+      const EditGeneralSettingsMock = (await import('../../components/edit-application/general-settings/EditGeneralSettings')).default as ReturnType<typeof vi.fn>;
+      EditGeneralSettingsMock.mockImplementation(
+        ({onCopyToClipboard}: {onCopyToClipboard: (text: string, field: string) => void}) => (
+          <div data-testid="edit-general-settings">
+            <button type="button" data-testid="copy-btn" onClick={() => onCopyToClipboard('test-client-id', 'clientId')}>
+              Copy
+            </button>
+          </div>
+        ),
+      );
+
+      renderComponent();
+
+      const copyButton = screen.getByTestId('copy-btn');
+      // Should not throw even when clipboard fails
+      await user.click(copyButton);
+
+      await waitFor(() => {
+        expect(mockWriteText).toHaveBeenCalledWith('test-client-id');
+      });
     });
   });
 });

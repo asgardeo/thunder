@@ -213,4 +213,39 @@ describe('useGetChildOrganizationUnits', () => {
       expect(mockHttpRequest.mock.calls.length).toBeGreaterThan(callsBeforeRefetch);
     });
   });
+
+  it('should not fetch when parentId is empty string', async () => {
+    const {result} = renderHook(() => useGetChildOrganizationUnits(''));
+
+    await new Promise((resolve) => {
+      setTimeout(resolve, 100);
+    });
+
+    expect(result.current.isFetching).toBe(false);
+    expect(result.current.data).toBeUndefined();
+    expect(mockHttpRequest).not.toHaveBeenCalled();
+  });
+
+  it('should re-fetch when parentId changes', async () => {
+    mockHttpRequest.mockResolvedValue({data: mockChildOUList});
+
+    let parentId = 'parent-1';
+    const {result, rerender} = renderHook(() => useGetChildOrganizationUnits(parentId));
+
+    await waitFor(() => {
+      expect(result.current.data).toEqual(mockChildOUList);
+    });
+
+    // Change parentId and re-render
+    parentId = 'parent-2';
+    rerender();
+
+    await waitFor(() => {
+      expect(mockHttpRequest).toHaveBeenCalledWith(
+        expect.objectContaining({
+          url: expect.stringContaining('/organization-units/parent-2/ous') as unknown,
+        }),
+      );
+    });
+  });
 });

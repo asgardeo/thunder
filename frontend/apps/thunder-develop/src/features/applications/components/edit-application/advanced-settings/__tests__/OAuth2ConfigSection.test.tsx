@@ -299,5 +299,44 @@ describe('OAuth2ConfigSection', () => {
       expect(screen.getByText('client_credentials')).toBeInTheDocument();
       expect(screen.getByText('urn:ietf:params:oauth:grant-type:token-exchange')).toBeInTheDocument();
     });
+
+    it('should handle undefined grant_types gracefully', () => {
+      const oauth2Config = {
+        response_types: ['code'],
+        pkce_required: false,
+        public_client: false,
+      } as OAuth2Config;
+
+      render(<OAuth2ConfigSection oauth2Config={oauth2Config} />);
+
+      expect(screen.getByText('applications:edit.advanced.labels.grantTypes')).toBeInTheDocument();
+      // No chips should be rendered for grant types
+    });
+
+    it('should handle undefined response_types gracefully', () => {
+      const oauth2Config = {
+        grant_types: ['authorization_code'],
+        pkce_required: false,
+        public_client: false,
+      } as OAuth2Config;
+
+      render(<OAuth2ConfigSection oauth2Config={oauth2Config} />);
+
+      expect(screen.getByText('applications:edit.advanced.labels.responseTypes')).toBeInTheDocument();
+      // No chips should be rendered for response types
+    });
+
+    it('should handle both grant_types and response_types being undefined', () => {
+      const oauth2Config = {
+        pkce_required: true,
+        public_client: true,
+      } as OAuth2Config;
+
+      render(<OAuth2ConfigSection oauth2Config={oauth2Config} />);
+
+      expect(screen.getByText('applications:edit.advanced.labels.oauth2Config')).toBeInTheDocument();
+      expect(screen.getByText('applications:edit.advanced.pkce.yes')).toBeInTheDocument();
+      expect(screen.getByText('applications:edit.advanced.publicClient.yes')).toBeInTheDocument();
+    });
   });
 });

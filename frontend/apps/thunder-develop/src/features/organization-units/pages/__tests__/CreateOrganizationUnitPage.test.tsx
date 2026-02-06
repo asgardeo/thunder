@@ -42,10 +42,13 @@ vi.mock('@thunder/logger/react', () => ({
 
 // Mock create hook
 const mockMutate = vi.fn();
+let mockCreateIsPending = false;
 vi.mock('../../api/useCreateOrganizationUnit', () => ({
   default: () => ({
     mutate: mockMutate,
-    isPending: false,
+    get isPending() {
+      return mockCreateIsPending;
+    },
   }),
 }));
 
@@ -60,12 +63,14 @@ const mockOUsData: OrganizationUnitListResponse = {
   ],
 };
 
+const mockUseGetOrganizationUnits = vi.fn();
 vi.mock('../../api/useGetOrganizationUnits', () => ({
-  default: () => ({
-    data: mockOUsData,
-    isLoading: false,
-    error: null,
-  }),
+  default: () =>
+    mockUseGetOrganizationUnits() as {
+      data: OrganizationUnitListResponse | undefined;
+      isLoading: boolean;
+      error: Error | null;
+    },
 }));
 
 // Mock name suggestions utility
@@ -105,6 +110,12 @@ describe('CreateOrganizationUnitPage', () => {
     vi.clearAllMocks();
     mockNavigate.mockReset();
     mockMutate.mockReset();
+    mockCreateIsPending = false;
+    mockUseGetOrganizationUnits.mockReturnValue({
+      data: mockOUsData,
+      isLoading: false,
+      error: null,
+    });
   });
 
   it('should render page title and heading', () => {
@@ -597,5 +608,149 @@ describe('CreateOrganizationUnitPage', () => {
 
     // The isOptionEqualToValue (line 343) is used to compare options
     // This verifies the selected option is properly maintained
+  });
+
+  it('should display fallback error message when error has no message property', async () => {
+    mockMutate.mockImplementation((_data: unknown, options: {onError: (err: Error) => void}) => {
+      options.onError({message: undefined} as unknown as Error);
+    });
+
+    renderWithProviders(<CreateOrganizationUnitPage />);
+
+    const nameInput = screen.getByLabelText(/Name/i);
+    fireEvent.change(nameInput, {target: {value: 'Test Organization'}});
+
+    await waitFor(() => {
+      const createButton = screen.getByText('Create');
+      expect(createButton).not.toBeDisabled();
+    });
+
+    const createButton = screen.getByText('Create');
+    fireEvent.click(createButton);
+
+    await waitFor(() => {
+      expect(screen.getByText('Failed to create organization unit')).toBeInTheDocument();
+    });
+  });
+
+  it('should set description to null when only whitespace is provided', async () => {
+    renderWithProviders(<CreateOrganizationUnitPage />);
+
+    const nameInput = screen.getByLabelText(/Name/i);
+    const descriptionInput = screen.getByLabelText(/Description/i);
+
+    fireEvent.change(nameInput, {target: {value: 'Test Organization'}});
+    fireEvent.change(descriptionInput, {target: {value: '   '}});
+
+    await waitFor(() => {
+      const createButton = screen.getByText('Create');
+      expect(createButton).not.toBeDisabled();
+    });
+
+    const createButton = screen.getByText('Create');
+    fireEvent.click(createButton);
+
+    await waitFor(() => {
+      expect(mockMutate).toHaveBeenCalledWith(
+        expect.objectContaining({
+          description: null,
+        }),
+        expect.any(Object),
+      );
+    });
+  });
+
+  it('should clear error on new submission', async () => {
+    // First submit with error
+    mockMutate.mockImplementationOnce((_data: unknown, options: {onError: (err: Error) => void}) => {
+      options.onError(new Error('First error'));
+    });
+
+    renderWithProviders(<CreateOrganizationUnitPage />);
+
+    const nameInput = screen.getByLabelText(/Name/i);
+    fireEvent.change(nameInput, {target: {value: 'Test Organization'}});
+
+    await waitFor(() => {
+      const createButton = screen.getByText('Create');
+      expect(createButton).not.toBeDisabled();
+    });
+
+    fireEvent.click(screen.getByText('Create'));
+
+    await waitFor(() => {
+      expect(screen.getByText('First error')).toBeInTheDocument();
+    });
+
+    // Second submit should clear the error
+    mockMutate.mockImplementationOnce((_data: unknown, options: {onSuccess: () => void}) => {
+      options.onSuccess();
+    });
+
+    fireEvent.click(screen.getByText('Create'));
+
+    await waitFor(() => {
+      expect(screen.queryByText('First error')).not.toBeInTheDocument();
+    });
+  });
+
+  it('should show Creating... text when isPending is true', () => {
+    mockCreateIsPending = true;
+
+    renderWithProviders(<CreateOrganizationUnitPage />);
+
+    expect(screen.getByText('Creating...')).toBeInTheDocument();
+  });
+
+  it('should handle undefined organizationUnits data gracefully', () => {
+    mockUseGetOrganizationUnits.mockReturnValue({
+      data: undefined,
+      isLoading: false,
+      error: null,
+    });
+
+    renderWithProviders(<CreateOrganizationUnitPage />);
+
+    // Should render without errors
+    expect(screen.getByText('Create Organization Unit')).toBeInTheDocument();
+  });
+
+  it('should clear parent selection', async () => {
+    renderWithProviders(<CreateOrganizationUnitPage />);
+
+    const parentInput = screen.getByLabelText(/Parent Organization Unit/i);
+
+    // Open dropdown and select a parent
+    fireEvent.mouseDown(parentInput);
+
+    await waitFor(() => {
+      expect(screen.getByText('Parent One')).toBeInTheDocument();
+    });
+
+    fireEvent.click(screen.getByText('Parent One'));
+
+    // Now clear the selection using the clear button
+    const clearButton = screen.getByLabelText('Clear');
+    fireEvent.click(clearButton);
+
+    // Fill required fields and submit
+    const nameInput = screen.getByLabelText(/Name/i);
+    fireEvent.change(nameInput, {target: {value: 'Test Organization'}});
+
+    await waitFor(() => {
+      const createButton = screen.getByText('Create');
+      expect(createButton).not.toBeDisabled();
+    });
+
+    fireEvent.click(screen.getByText('Create'));
+
+    await waitFor(() => {
+      expect(mockMutate).toHaveBeenCalledWith(
+        expect.objectContaining({
+          parent: null,
+        }),
+        expect.any(Object),
+      );
+    });
   });
 });

@@ -213,4 +213,38 @@ describe('useGetOrganizationUnitUsers', () => {
       expect(mockHttpRequest.mock.calls.length).toBeGreaterThan(callsBeforeRefetch);
     });
   });
+
+  it('should not fetch when organizationUnitId is empty string', async () => {
+    const {result} = renderHook(() => useGetOrganizationUnitUsers(''));
+
+    await new Promise((resolve) => {
+      setTimeout(resolve, 100);
+    });
+
+    expect(result.current.isFetching).toBe(false);
+    expect(result.current.data).toBeUndefined();
+    expect(mockHttpRequest).not.toHaveBeenCalled();
+  });
+
+  it('should re-fetch when organizationUnitId changes', async () => {
+    mockHttpRequest.mockResolvedValue({data: mockUserList});
+
+    let ouId = 'ou-123';
+    const {result, rerender} = renderHook(() => useGetOrganizationUnitUsers(ouId));
+
+    await waitFor(() => {
+      expect(result.current.data).toEqual(mockUserList);
+    });
+
+    ouId = 'ou-456';
+    rerender();
+
+    await waitFor(() => {
+      expect(mockHttpRequest).toHaveBeenCalledWith(
+        expect.objectContaining({
+          url: expect.stringContaining('/organization-units/ou-456/users') as unknown,
+        }),
+      );
+    });
+  });
 });

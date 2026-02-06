@@ -1270,4 +1270,174 @@ describe('AcceptInviteBox', () => {
 
     consoleSpy.mockRestore();
   });
+
+  it('uses fallback index keys when components have undefined id', () => {
+    mockAcceptInviteRenderProps = createMockAcceptInviteRenderProps({
+      components: [
+        {
+          type: 'TEXT',
+          label: 'Accept Invite',
+          variant: 'H1',
+        },
+        {
+          type: 'BLOCK',
+          components: [
+            {
+              type: 'TEXT_INPUT',
+              ref: 'fullname',
+              label: 'Full Name',
+              placeholder: 'Enter name',
+              required: false,
+            },
+            {
+              type: 'PASSWORD_INPUT',
+              ref: 'password',
+              label: 'Password',
+              placeholder: 'Enter password',
+              required: false,
+            },
+            {
+              type: 'ACTION',
+              eventType: 'SUBMIT',
+              label: 'Accept',
+              variant: 'SECONDARY',
+            },
+          ],
+        },
+      ],
+    });
+    render(<AcceptInviteBox />);
+    expect(screen.getByText('Accept Invite')).toBeInTheDocument();
+    expect(screen.getByLabelText(/Full Name/)).toBeInTheDocument();
+  });
+
+  it('uses fallback keys for EMAIL_INPUT with undefined id in form block', () => {
+    mockAcceptInviteRenderProps = createMockAcceptInviteRenderProps({
+      components: [
+        {
+          type: 'BLOCK',
+          components: [
+            {
+              type: 'EMAIL_INPUT',
+              ref: 'email',
+              label: 'Email Address',
+              placeholder: 'Enter email',
+              required: false,
+            },
+            {
+              type: 'ACTION',
+              eventType: 'SUBMIT',
+              label: 'Submit',
+              variant: 'PRIMARY',
+            },
+          ],
+        },
+      ],
+    });
+    render(<AcceptInviteBox />);
+    expect(screen.getByLabelText(/Email Address/)).toBeInTheDocument();
+  });
+
+  it('uses fallback keys for SELECT with undefined id in form block', () => {
+    mockAcceptInviteRenderProps = createMockAcceptInviteRenderProps({
+      components: [
+        {
+          type: 'BLOCK',
+          components: [
+            {
+              type: 'SELECT',
+              ref: 'country',
+              label: 'Country',
+              placeholder: 'Select',
+              options: ['US', 'UK'],
+              required: false,
+            },
+            {
+              type: 'ACTION',
+              eventType: 'SUBMIT',
+              label: 'Go',
+              variant: 'SECONDARY',
+            },
+          ],
+        },
+      ],
+    });
+    render(<AcceptInviteBox />);
+    // SELECT renders as MUI Select - verify the form block renders
+    expect(screen.getByText('Go')).toBeInTheDocument();
+  });
+
+  it('renders with branding enabled and centered text alignment', () => {
+    mockUseBranding.mockReturnValue({
+      images: {
+        logo: {
+          primary: {
+            url: 'https://example.com/logo.png',
+          },
+        },
+      },
+      theme: {palette: {primary: {main: '#ff0000'}}},
+      isBrandingEnabled: true,
+    });
+    mockAcceptInviteRenderProps = createMockAcceptInviteRenderProps({
+      components: [
+        {
+          id: 'text-1',
+          type: 'TEXT',
+          label: 'Accept Invitation',
+          variant: 'H2',
+        },
+      ],
+    });
+    render(<AcceptInviteBox />);
+    expect(screen.getByText('Accept Invitation')).toBeInTheDocument();
+  });
+
+  it('renders branded logo with alt fallback', () => {
+    mockUseBranding.mockReturnValue({
+      images: {
+        logo: {
+          primary: {
+            url: 'https://example.com/logo.png',
+          },
+        },
+      },
+      theme: null,
+      isBrandingEnabled: true,
+    });
+    render(<AcceptInviteBox />);
+    expect(screen.getByTestId('asgardeo-accept-invite')).toBeInTheDocument();
+  });
+
+  it('renders branded logo with custom alt, height, and width', () => {
+    mockUseBranding.mockReturnValue({
+      images: {
+        logo: {
+          primary: {
+            url: 'https://example.com/logo.png',
+            alt: 'Custom Alt',
+            height: 50,
+            width: 120,
+          },
+        },
+      },
+      theme: {palette: {primary: {main: '#0000ff'}}},
+      isBrandingEnabled: true,
+    });
+    render(<AcceptInviteBox />);
+    expect(screen.getByTestId('asgardeo-accept-invite')).toBeInTheDocument();
+  });
+
+  it('renders block without components property', () => {
+    mockAcceptInviteRenderProps = createMockAcceptInviteRenderProps({
+      components: [
+        {
+          id: 'block-1',
+          type: 'BLOCK',
+        },
+      ],
+    });
+    render(<AcceptInviteBox />);
+    expect(screen.getByTestId('asgardeo-accept-invite')).toBeInTheDocument();
+  });
 });

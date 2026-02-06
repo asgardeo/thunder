@@ -75,4 +75,38 @@ describe('EditAdvancedSettings', () => {
     // The button should have error color styling
     expect(deleteButton.closest('button')).toHaveClass('MuiButton-outlinedError');
   });
+
+  it('should re-render correctly when onDeleteClick prop changes', () => {
+    const onDeleteClick1 = vi.fn();
+    const onDeleteClick2 = vi.fn();
+
+    const {rerender} = renderWithProviders(<EditAdvancedSettings onDeleteClick={onDeleteClick1} />);
+
+    fireEvent.click(screen.getByText('Delete Organization Unit'));
+    expect(onDeleteClick1).toHaveBeenCalledTimes(1);
+
+    // Re-render with a different callback to exercise memoization update paths
+    rerender(<EditAdvancedSettings onDeleteClick={onDeleteClick2} />);
+
+    fireEvent.click(screen.getByText('Delete Organization Unit'));
+    expect(onDeleteClick2).toHaveBeenCalledTimes(1);
+    expect(onDeleteClick1).toHaveBeenCalledTimes(1);
+  });
+
+  it('should render consistently across multiple re-renders', () => {
+    const onDeleteClick = vi.fn();
+
+    const {rerender} = renderWithProviders(<EditAdvancedSettings onDeleteClick={onDeleteClick} />);
+
+    expect(screen.getByText('Danger Zone')).toBeInTheDocument();
+    expect(screen.getByText('Delete Organization Unit')).toBeInTheDocument();
+
+    // Re-render multiple times to exercise memoization cache paths
+    rerender(<EditAdvancedSettings onDeleteClick={onDeleteClick} />);
+    rerender(<EditAdvancedSettings onDeleteClick={vi.fn()} />);
+    rerender(<EditAdvancedSettings onDeleteClick={onDeleteClick} />);
+
+    expect(screen.getByText('Danger Zone')).toBeInTheDocument();
+    expect(screen.getByText('Delete Organization Unit')).toBeInTheDocument();
+  });
 });

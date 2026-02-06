@@ -22,12 +22,10 @@ import Execution from '../Execution';
 import type {CommonStepFactoryPropsInterface} from '../../CommonStepFactory';
 
 // Mock @xyflow/react
-const mockUseNodeId = vi.fn(() => 'execution-node-id') as ReturnType<typeof vi.fn> & {
-  mockReturnValue: (value: string | null) => void;
-};
+const mockUseNodeId = vi.fn<() => string | null>(() => 'execution-node-id');
 
 vi.mock('@xyflow/react', () => ({
-  useNodeId: (): string | null => mockUseNodeId() as string | null,
+  useNodeId: (): string | null => mockUseNodeId(),
 }));
 
 // Mock useFlowBuilderCore

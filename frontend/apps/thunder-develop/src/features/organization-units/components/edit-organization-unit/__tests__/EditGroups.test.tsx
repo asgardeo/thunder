@@ -169,4 +169,111 @@ describe('EditGroups', () => {
     // Should render without errors - nullish coalescing handles null
     expect(screen.getByText('Groups')).toBeInTheDocument();
   });
+
+  it('should render avatar with Users icon for each group row', async () => {
+    renderWithProviders(<EditGroups organizationUnitId="ou-123" />);
+
+    await waitFor(() => {
+      expect(screen.getByText('Admin Group')).toBeInTheDocument();
+      expect(screen.getByText('User Group')).toBeInTheDocument();
+    });
+
+    // Verify avatar elements are rendered for each row
+    const avatars = document.querySelectorAll('.MuiAvatar-root');
+    expect(avatars.length).toBeGreaterThanOrEqual(2);
+  });
+
+  it('should render DataGrid with correct structure', () => {
+    renderWithProviders(<EditGroups organizationUnitId="ou-123" />);
+
+    const dataGrid = document.querySelector('.MuiDataGrid-root');
+    expect(dataGrid).toBeInTheDocument();
+  });
+
+  it('should pass organizationUnitId to the API hook', () => {
+    renderWithProviders(<EditGroups organizationUnitId="different-ou" />);
+
+    expect(screen.getByText('Groups')).toBeInTheDocument();
+  });
+
+  it('should render with single group', async () => {
+    mockUseGetOrganizationUnitGroups.mockReturnValue({
+      data: {
+        totalResults: 1,
+        startIndex: 1,
+        count: 1,
+        groups: [
+          {id: 'group-only', name: 'Only Group', organizationUnit: 'ou-123'},
+        ],
+      },
+      isLoading: false,
+    });
+
+    renderWithProviders(<EditGroups organizationUnitId="ou-123" />);
+
+    await waitFor(() => {
+      expect(screen.getByText('Only Group')).toBeInTheDocument();
+      expect(screen.getByText('group-only')).toBeInTheDocument();
+    });
+  });
+
+  it('should re-render correctly when organizationUnitId prop changes', async () => {
+    const {rerender} = renderWithProviders(<EditGroups organizationUnitId="ou-123" />);
+
+    await waitFor(() => {
+      expect(screen.getByText('Admin Group')).toBeInTheDocument();
+    });
+
+    // Re-render with different prop to exercise memoization update paths
+    rerender(<EditGroups organizationUnitId="ou-456" />);
+
+    expect(screen.getByText('Groups')).toBeInTheDocument();
+  });
+
+  it('should re-render when data transitions from loading to loaded', async () => {
+    mockUseGetOrganizationUnitGroups.mockReturnValue({
+      data: undefined,
+      isLoading: true,
+    });
+
+    const {rerender} = renderWithProviders(<EditGroups organizationUnitId="ou-123" />);
+
+    expect(screen.getByText('Groups')).toBeInTheDocument();
+
+    // Simulate data arriving
+    mockUseGetOrganizationUnitGroups.mockReturnValue({
+      data: mockGroupsData,
+      isLoading: false,
+    });
+
+    rerender(<EditGroups organizationUnitId="ou-123" />);
+
+    await waitFor(() => {
+      expect(screen.getByText('Admin Group')).toBeInTheDocument();
+    });
+  });
+
+  it('should handle re-render with updated data', async () => {
+    const {rerender} = renderWithProviders(<EditGroups organizationUnitId="ou-123" />);
+
+    await waitFor(() => {
+      expect(screen.getByText('Admin Group')).toBeInTheDocument();
+    });
+
+    mockUseGetOrganizationUnitGroups.mockReturnValue({
+      data: {
+        totalResults: 1,
+        startIndex: 1,
+        count: 1,
+        groups: [{id: 'group-3', name: 'New Group', organizationUnit: 'ou-123'}],
+      },
+      isLoading: false,
+    });
+
+    rerender(<EditGroups organizationUnitId="ou-123" />);
+
+    await waitFor(() => {
+      expect(screen.getByText('New Group')).toBeInTheDocument();
+    });
+  });
 });

@@ -1558,4 +1558,218 @@ describe('SignUpBox', () => {
     // Other action type should not render (returns null)
     expect(screen.queryByText('Other Action')).not.toBeInTheDocument();
   });
+
+  it('uses fallback index keys when components have undefined id', () => {
+    mockSignUpRenderProps = createMockSignUpRenderProps({
+      components: [
+        {
+          type: 'TEXT',
+          label: 'Create Account',
+          variant: 'H1',
+        },
+        {
+          type: 'BLOCK',
+          components: [
+            {
+              type: 'TEXT_INPUT',
+              ref: 'firstName',
+              label: 'First Name',
+              placeholder: 'Enter first name',
+              required: false,
+            },
+            {
+              type: 'PASSWORD_INPUT',
+              ref: 'password',
+              label: 'Password',
+              placeholder: 'Enter password',
+              required: false,
+            },
+            {
+              type: 'EMAIL_INPUT',
+              ref: 'email',
+              label: 'Email',
+              placeholder: 'Enter email',
+              required: false,
+            },
+            {
+              type: 'ACTION',
+              eventType: 'SUBMIT',
+              label: 'Register',
+              variant: 'SECONDARY',
+            },
+          ],
+        },
+      ],
+    });
+    render(<SignUpBox />);
+    expect(screen.getByText('Create Account')).toBeInTheDocument();
+    expect(screen.getByLabelText(/First Name/)).toBeInTheDocument();
+  });
+
+  it('uses fallback keys for PHONE_INPUT, OTP_INPUT, SELECT, RESEND, TRIGGER with undefined id', () => {
+    mockSignUpRenderProps = createMockSignUpRenderProps({
+      components: [
+        {
+          type: 'BLOCK',
+          components: [
+            {
+              type: 'PHONE_INPUT',
+              ref: 'phone',
+              label: 'Phone',
+              placeholder: 'Enter phone',
+              required: false,
+            },
+            {
+              type: 'OTP_INPUT',
+              ref: 'otp',
+              label: 'OTP',
+              required: false,
+            },
+            {
+              type: 'SELECT',
+              ref: 'country',
+              label: 'Country',
+              placeholder: 'Select country',
+              options: ['US', 'UK'],
+              required: false,
+            },
+            {
+              type: 'RESEND',
+              eventType: 'SUBMIT',
+              label: 'Resend',
+            },
+            {
+              type: 'ACTION',
+              eventType: 'TRIGGER',
+              label: 'Alt Action',
+              variant: 'SECONDARY',
+            },
+            {
+              type: 'ACTION',
+              eventType: 'SUBMIT',
+              label: 'Go',
+            },
+          ],
+        },
+      ],
+    });
+    render(<SignUpBox />);
+    expect(screen.getByLabelText(/Phone/)).toBeInTheDocument();
+    expect(screen.getByText('OTP')).toBeInTheDocument();
+    expect(screen.getByText('Resend')).toBeInTheDocument();
+  });
+
+  it('uses fallback keys for social login trigger with undefined id', () => {
+    mockSignUpRenderProps = createMockSignUpRenderProps({
+      components: [
+        {
+          type: 'BLOCK',
+          components: [
+            {
+              type: 'ACTION',
+              eventType: 'TRIGGER',
+              label: 'Continue with Google',
+              image: 'google.svg',
+            },
+          ],
+        },
+      ],
+    });
+    render(<SignUpBox />);
+    expect(screen.getByText('Continue with Google')).toBeInTheDocument();
+  });
+
+  it('renders with branding enabled and centered text alignment', () => {
+    mockUseBranding.mockReturnValue({
+      images: {
+        logo: {
+          primary: {
+            url: 'https://example.com/logo.png',
+          },
+        },
+      },
+      theme: {palette: {primary: {main: '#ff0000'}}},
+      isBrandingEnabled: true,
+    });
+    mockSignUpRenderProps = createMockSignUpRenderProps({
+      components: [
+        {
+          id: 'text-1',
+          type: 'TEXT',
+          label: 'Create Account',
+          variant: 'H2',
+        },
+      ],
+    });
+    render(<SignUpBox />);
+    expect(screen.getByText('Create Account')).toBeInTheDocument();
+  });
+
+  it('renders branded logo with alt fallback', () => {
+    mockUseBranding.mockReturnValue({
+      images: {
+        logo: {
+          primary: {
+            url: 'https://example.com/logo.png',
+          },
+        },
+      },
+      theme: null,
+      isBrandingEnabled: true,
+    });
+    render(<SignUpBox />);
+    expect(screen.getByTestId('asgardeo-signup')).toBeInTheDocument();
+  });
+
+  it('renders branded logo with custom alt, height, and width', () => {
+    mockUseBranding.mockReturnValue({
+      images: {
+        logo: {
+          primary: {
+            url: 'https://example.com/logo.png',
+            alt: 'Custom Alt',
+            height: 50,
+            width: 120,
+          },
+        },
+      },
+      theme: {palette: {primary: {main: '#0000ff'}}},
+      isBrandingEnabled: true,
+    });
+    render(<SignUpBox />);
+    expect(screen.getByTestId('asgardeo-signup')).toBeInTheDocument();
+  });
+
+  it('renders block without components property', () => {
+    mockSignUpRenderProps = createMockSignUpRenderProps({
+      components: [
+        {
+          id: 'block-1',
+          type: 'BLOCK',
+        },
+      ],
+    });
+    render(<SignUpBox />);
+    expect(screen.getByTestId('asgardeo-signup')).toBeInTheDocument();
+  });
+
+  it('renders social login trigger with missing label and image', () => {
+    mockSignUpRenderProps = createMockSignUpRenderProps({
+      components: [
+        {
+          id: 'trigger-block',
+          type: 'BLOCK',
+          components: [
+            {
+              id: 'provider-btn',
+              type: 'ACTION',
+              eventType: 'TRIGGER',
+            },
+          ],
+        },
+      ],
+    });
+    render(<SignUpBox />);
+    expect(screen.getByTestId('asgardeo-signup')).toBeInTheDocument();
+  });
 });
