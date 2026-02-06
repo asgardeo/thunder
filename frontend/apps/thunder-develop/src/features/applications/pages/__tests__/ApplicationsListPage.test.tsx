@@ -16,7 +16,7 @@
  * under the License.
  */
 
-import {render, screen} from '@thunder/test-utils';
+import {fireEvent, render, screen} from '@thunder/test-utils';
 import {describe, it, expect, vi, beforeEach} from 'vitest';
 import userEvent from '@testing-library/user-event';
 import ApplicationsListPage from '../ApplicationsListPage';
@@ -314,28 +314,27 @@ describe('ApplicationsListPage', () => {
     });
 
     it('should handle long search queries', async () => {
-      const user = userEvent.setup();
       renderWithProviders();
 
       const searchInput = screen.getByPlaceholderText('Search applications...');
       const longQuery = 'A'.repeat(500);
 
-      await user.type(searchInput, longQuery);
+      // Use fireEvent for long input to avoid userEvent.type() per-keystroke overhead
+      fireEvent.change(searchInput, {target: {value: longQuery}});
 
       expect(searchInput).toHaveValue(longQuery);
     });
 
     it('should maintain state after multiple interactions', async () => {
-      const user = userEvent.setup();
       renderWithProviders();
 
-      // Type in search
+      // Type in search using fireEvent for cross-platform reliability
       const searchInput = screen.getByPlaceholderText('Search applications...');
-      await user.type(searchInput, 'Test App');
+      fireEvent.change(searchInput, {target: {value: 'Test App'}});
 
       // Click create button
       const createButton = screen.getByRole('button', {name: /Create Application/i});
-      await user.click(createButton);
+      fireEvent.click(createButton);
 
       // Search value should still be there
       expect(searchInput).toHaveValue('Test App');

@@ -493,12 +493,8 @@ describe('ViewUserTypePage', () => {
 
     it('displays saving state', async () => {
       const user = userEvent.setup();
-      mockUpdateUserType.mockImplementation(
-        () =>
-          new Promise((resolve) => {
-            setTimeout(resolve, 100);
-          }),
-      );
+      // Use a promise that never resolves so the saving state persists
+      mockUpdateUserType.mockImplementation(() => new Promise(() => {}));
 
       render(<ViewUserTypePage />);
 

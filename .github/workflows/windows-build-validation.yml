@@ -1,0 +1,495 @@
+# This workflow validates the complete product build and tests on Windows to catch platform-specific issues
+name: 🪟 Windows Build Validation
+
+on:
+  pull_request:
+    paths:
+      - 'frontend/**'
+      - 'backend/**'
+      - 'tests/integration/**'
+      - 'build.ps1'
+      - 'build.sh'
+      - 'Makefile'
+      - '.github/workflows/windows-build-validation.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  GOFLAGS: "-mod=readonly"
+
+jobs:
+  build-windows:
+    name: 🛠️ Build Product (Windows)
+    runs-on: windows-latest
+    steps:
+      - name: 📥 Checkout Code
+        uses: actions/checkout@v4
+
+      - name: ⚙️ Set up Go Environment
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: backend/go.mod
+
+      - name: ⚙️ Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 'lts/*'
+
+      - name: 📦 Install pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 'latest'
+          run_install: false
+
+      - name: 🗄️ Get pnpm store directory
+        shell: pwsh
+        run: |
+          echo "STORE_PATH=$(pnpm store path --silent)" >> $env:GITHUB_ENV
+
+      - name: 🗄️ Setup pnpm cache
+        uses: actions/cache@v4
+        with:
+          path: ${{ env.STORE_PATH }}
+          key: ${{ runner.os }}-pnpm-store-${{ hashFiles('**/pnpm-lock.yaml') }}
+          restore-keys: |
+            ${{ runner.os }}-pnpm-store-
+
+      - name: 🗄️ Cache Go Modules
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~\go\pkg\mod
+            ~\AppData\Local\go-build
+          key: ${{ runner.os }}-go-modules-${{ hashFiles('**/go.sum') }}
+          restore-keys: |
+            ${{ runner.os }}-go-modules-
+
+      - name: 📦 Install SQLite3
+        shell: pwsh
+        run: |
+          choco install sqlite -y
+          # Persist the updated PATH for subsequent steps
+          $machinePath = [System.Environment]::GetEnvironmentVariable("Path","Machine")
+          $userPath = [System.Environment]::GetEnvironmentVariable("Path","User")
+          $env:Path = "$machinePath;$userPath"
+          echo "$machinePath" >> $env:GITHUB_PATH
+          sqlite3 --version
+
+      - name: 📦 Install Backend Dependencies
+        shell: pwsh
+        run: |
+          Set-Location backend
+          go mod download
+          Set-Location ../tests/integration
+          go mod download
+
+      - name: 📦 Install Frontend Dependencies
+        working-directory: frontend
+        run: pnpm install --frozen-lockfile
+
+      - name: 🧹 Clean Previous Builds
+        shell: pwsh
+        run: ./build.ps1 clean
+
+      - name: 🔨 Build Frontend
+        shell: pwsh
+        run: ./build.ps1 build_frontend
+
+      - name: 🔨 Build Backend and Package
+        shell: pwsh
+        run: ./build.ps1 build_backend
+
+      - name: ✅ Verify Build Artifacts
+        shell: pwsh
+        run: |
+          $distPath = "target/dist"
+          if (Test-Path $distPath) {
+            $artifacts = Get-ChildItem -Path $distPath -Filter "thunder-*.zip"
+            if ($artifacts.Count -gt 0) {
+              Write-Host "✅ Build artifacts found:"
+              $artifacts | ForEach-Object { Write-Host "  - $($_.Name)" }
+            } else {
+              Write-Host "❌ No thunder distribution zip files found in $distPath"
+              exit 1
+            }
+          } else {
+            Write-Host "❌ Distribution directory not found: $distPath"
+            exit 1
+          }
+
+      - name: 🧪 Run Thunder-Develop Tests
+        working-directory: frontend/apps/thunder-develop
+        run: pnpm test:coverage
+
+      - name: 🧪 Run Thunder-Gate Tests
+        working-directory: frontend/apps/thunder-gate
+        run: pnpm test:coverage
+
+      - name: 📦 Upload Windows Distribution
+        uses: actions/upload-artifact@v4
+        with:
+          name: thunder-windows-distribution-${{ github.run_id }}
+          path: target/dist/thunder-*-win-*.zip
+          if-no-files-found: error
+
+  build-samples-windows:
+    if: false  # Temporarily disabled to speed up PR iteration
+    name: 🛠️ Build Sample Apps (Windows)
+    runs-on: windows-latest
+    steps:
+      - name: 📥 Checkout Code
+        uses: actions/checkout@v4
+
+      - name: ⚙️ Set up Go Environment
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: backend/go.mod
+
+      - name: ⚙️ Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 'lts/*'
+
+      - name: 📦 Install pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 'latest'
+          run_install: false
+
+      - name: 🧩 Build and Package Sample Apps
+        shell: pwsh
+        run: |
+          ./build.ps1 build_samples
+          ./build.ps1 package_samples
+
+      - name: 📦 Upload Built Sample App
+        uses: actions/upload-artifact@v4
+        with:
+          name: sample-app-react-sdk-windows-${{ github.run_id }}
+          path: target/dist/sample-app-react-sdk-*.zip
+          if-no-files-found: error
+
+  test-integration-windows:
+    name: 🧪 Integration Tests (SQLite)
+    needs: build-windows
+    runs-on: windows-latest
+    steps:
+      - name: 📥 Checkout Code
+        uses: actions/checkout@v4
+
+      - name: ⚙️ Set up Go Environment
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: backend/go.mod
+
+      - name: 🗄️ Cache Go Modules
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~\go\pkg\mod
+            ~\AppData\Local\go-build
+          key: ${{ runner.os }}-go-modules-${{ hashFiles('**/go.sum') }}
+          restore-keys: |
+            ${{ runner.os }}-go-modules-
+
+      - name: 📦 Install SQLite3
+        shell: pwsh
+        run: |
+          choco install sqlite -y
+          $machinePath = [System.Environment]::GetEnvironmentVariable("Path","Machine")
+          $userPath = [System.Environment]::GetEnvironmentVariable("Path","User")
+          $env:Path = "$machinePath;$userPath"
+          echo "$machinePath" >> $env:GITHUB_PATH
+          sqlite3 --version
+
+      - name: 📥 Download Built Distribution
+        uses: actions/download-artifact@v4
+        with:
+          name: thunder-windows-distribution-${{ github.run_id }}
+          path: target/dist/
+
+      - name: 📦 Install Test Dependencies
+        shell: pwsh
+        run: |
+          Set-Location backend
+          go mod download
+          Set-Location ../tests/integration
+          go mod download
+
+      - name: 📝 Generate SQLite Test Config
+        shell: pwsh
+        run: |
+          $config = @"
+          server:
+            hostname: localhost
+            port: 8095
+
+          tls:
+            cert_file: "repository/resources/security/server.cert"
+            key_file: "repository/resources/security/server.key"
+
+          database:
+            identity:
+              type: sqlite
+              hostname: ""
+              port: 0
+              name: ""
+              username: ""
+              password: ""
+              sslmode: ""
+              path: "repository/database/thunderdb.db"
+              options: "cache=shared"
+
+            runtime:
+              type: sqlite
+              hostname: ""
+              port: 0
+              name: ""
+              username: ""
+              password: ""
+              sslmode: ""
+              path: "repository/database/runtimedb.db"
+              options: "cache=shared"
+
+            user:
+              type: sqlite
+              hostname: ""
+              port: 0
+              name: ""
+              username: ""
+              password: ""
+              sslmode: ""
+              path: "repository/database/userdb.db"
+              options: "cache=shared"
+
+          flow:
+            max_version_history: 3
+          "@
+          # Remove the consistent base indentation (10 spaces) from heredoc
+          $config = ($config -split "`n" | ForEach-Object { $_ -replace '^          ', '' }) -join "`n"
+          $config | Out-File -FilePath "tests/integration/resources/deployment.yaml" -Encoding utf8NoBOM
+          Write-Host "Generated test config:"
+          Get-Content "tests/integration/resources/deployment.yaml"
+
+      - name: 🧪 Run Integration Tests
+        shell: pwsh
+        run: |
+          Write-Host "Running integration tests against SQLite database..."
+          $env:DB_TYPE = "sqlite"
+          go run -C ./tests/integration ./main.go
+
+  test-e2e-windows:
+    if: false  # Temporarily disabled to speed up PR iteration
+    name: 🎭 Playwright E2E Tests (Windows)
+    needs: [build-windows, build-samples-windows]
+    runs-on: windows-latest
+    steps:
+      - name: 📥 Checkout Code
+        uses: actions/checkout@v4
+
+      - name: ⚙️ Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 'lts/*'
+
+      - name: 📥 Download Built Distribution
+        uses: actions/download-artifact@v4
+        with:
+          name: thunder-windows-distribution-${{ github.run_id }}
+          path: target/dist/
+
+      - name: 📥 Download Built Sample App
+        uses: actions/download-artifact@v4
+        with:
+          name: sample-app-react-sdk-windows-${{ github.run_id }}
+          path: target/dist/
+
+      - name: 📂 Extract Server
+        shell: pwsh
+        run: |
+          New-Item -Path "tests/e2e/thunder-server" -ItemType Directory -Force | Out-Null
+          $zipFile = Get-ChildItem -Path "target/dist" -Filter "thunder-*.zip" | Select-Object -First 1
+          Write-Host "Extracting $($zipFile.FullName)..."
+          Expand-Archive -Path $zipFile.FullName -DestinationPath "tests/e2e/thunder-server" -Force
+
+          # Move contents from the extracted subfolder to thunder-server root
+          $extractedDir = Get-ChildItem -Path "tests/e2e/thunder-server" -Directory -Filter "thunder-*" | Select-Object -First 1
+          if ($extractedDir) {
+            Get-ChildItem -Path $extractedDir.FullName | Move-Item -Destination "tests/e2e/thunder-server" -Force
+            Remove-Item -Path $extractedDir.FullName -Force
+          }
+
+      - name: 🚀 Start Thunder Server (Without Security)
+        shell: pwsh
+        run: |
+          Set-Location "tests/e2e/thunder-server"
+          ./setup.ps1
+
+          $env:THUNDER_SKIP_SECURITY = "true"
+          Start-Process -FilePath "pwsh" -ArgumentList "-File", "./start.ps1" -NoNewWindow
+          Start-Sleep -Seconds 5
+
+          # Wait for server to be ready
+          Write-Host "Waiting for server to be ready on https://localhost:8090..."
+          for ($i = 1; $i -le 60; $i++) {
+            try {
+              $response = Invoke-WebRequest -Uri "https://localhost:8090/health/liveness" -SkipCertificateCheck -TimeoutSec 5 -ErrorAction SilentlyContinue
+              if ($response.StatusCode -eq 200) {
+                Write-Host "Server is UP!"
+                break
+              }
+            } catch {}
+            Write-Host "Still waiting ($i/60)..."
+            Start-Sleep -Seconds 2
+          }
+
+          # Verify server is running
+          try {
+            $response = Invoke-WebRequest -Uri "https://localhost:8090/health/liveness" -SkipCertificateCheck -TimeoutSec 5
+            Write-Host "Server started successfully!"
+          } catch {
+            Write-Host "❌ Server failed to start within 2 minutes"
+            exit 1
+          }
+
+      - name: 🔍 Extract Sample App ID
+        id: extract-app-id
+        shell: pwsh
+        run: |
+          Write-Host "Fetching applications from Thunder..."
+          try {
+            $response = Invoke-WebRequest -Uri "https://localhost:8090/applications" -SkipCertificateCheck -TimeoutSec 10
+            $apps = $response.Content | ConvertFrom-Json
+
+            $sampleApp = $apps.applications | Where-Object { $_.name -eq "Sample App" }
+            if ($sampleApp) {
+              Write-Host "✅ Sample App ID extracted: $($sampleApp.id)"
+              echo "sample_app_id=$($sampleApp.id)" >> $env:GITHUB_OUTPUT
+            } else {
+              Write-Host "⚠️ Warning: Sample App not found in applications list"
+              echo "sample_app_id=" >> $env:GITHUB_OUTPUT
+            }
+          } catch {
+            Write-Host "⚠️ Warning: Failed to fetch applications: $_"
+            echo "sample_app_id=" >> $env:GITHUB_OUTPUT
+          }
+
+      - name: 🔄 Restart Thunder Server with Security Enabled
+        shell: pwsh
+        run: |
+          Write-Host "Stopping Thunder server..."
+          Get-Process -Name "thunder" -ErrorAction SilentlyContinue | Stop-Process -Force
+          Start-Sleep -Seconds 5
+
+          Write-Host "Starting Thunder server with security enabled..."
+          Set-Location "tests/e2e/thunder-server"
+          Start-Process -FilePath "pwsh" -ArgumentList "-File", "./start.ps1" -NoNewWindow
+          Start-Sleep -Seconds 5
+
+          # Wait for server to be ready
+          Write-Host "Waiting for server to be ready on https://localhost:8090..."
+          for ($i = 1; $i -le 60; $i++) {
+            try {
+              $response = Invoke-WebRequest -Uri "https://localhost:8090/health/liveness" -SkipCertificateCheck -TimeoutSec 5 -ErrorAction SilentlyContinue
+              if ($response.StatusCode -eq 200) {
+                Write-Host "Server is UP with security enabled!"
+                break
+              }
+            } catch {}
+            Write-Host "Still waiting ($i/60)..."
+            Start-Sleep -Seconds 2
+          }
+
+          # Verify server is running
+          try {
+            $response = Invoke-WebRequest -Uri "https://localhost:8090/health/liveness" -SkipCertificateCheck -TimeoutSec 5
+            Write-Host "Server restarted successfully with security enabled!"
+          } catch {
+            Write-Host "❌ Server failed to restart within 2 minutes"
+            exit 1
+          }
+
+      - name: 📱 Extract and Start Sample App
+        shell: pwsh
+        run: |
+          Write-Host "Extracting Sample App..."
+          New-Item -Path "tests/e2e/sample-app" -ItemType Directory -Force | Out-Null
+
+          $sampleZip = Get-ChildItem -Path "target/dist" -Filter "sample-app-react-sdk-*.zip" | Select-Object -First 1
+          if (-not $sampleZip) {
+            Write-Host "❌ Sample app zip not found in target/dist"
+            Get-ChildItem -Path "target/dist"
+            exit 1
+          }
+
+          Write-Host "Found sample app: $($sampleZip.Name)"
+          Expand-Archive -Path $sampleZip.FullName -DestinationPath "tests/e2e/sample-app" -Force
+
+          # Move contents from extracted subfolder
+          $extractedDir = Get-ChildItem -Path "tests/e2e/sample-app" -Directory -Filter "sample-app-*" | Select-Object -First 1
+          if ($extractedDir) {
+            Get-ChildItem -Path $extractedDir.FullName | Move-Item -Destination "tests/e2e/sample-app" -Force
+            Remove-Item -Path $extractedDir.FullName -Force
+          }
+
+          Set-Location "tests/e2e/sample-app"
+          Write-Host "Starting Sample App..."
+          Start-Process -FilePath "pwsh" -ArgumentList "-File", "./start.ps1" -NoNewWindow
+
+          # Wait for sample app to be ready
+          Write-Host "Waiting for sample app to be ready on https://localhost:3000..."
+          for ($i = 1; $i -le 60; $i++) {
+            try {
+              $response = Invoke-WebRequest -Uri "https://localhost:3000" -SkipCertificateCheck -TimeoutSec 5 -ErrorAction SilentlyContinue
+              Write-Host "Sample App is UP!"
+              break
+            } catch {}
+            Write-Host "Still waiting ($i/60)..."
+            Start-Sleep -Seconds 2
+          }
+
+          # Verify sample app is running
+          try {
+            Invoke-WebRequest -Uri "https://localhost:3000" -SkipCertificateCheck -TimeoutSec 5 | Out-Null
+            Write-Host "Sample App started successfully!"
+          } catch {
+            Write-Host "❌ Sample app failed to start within 2 minutes"
+            exit 1
+          }
+
+      - name: 📦 Install E2E Dependencies
+        working-directory: tests/e2e
+        run: npm ci
+
+      - name: 🎭 Install Playwright Browsers
+        working-directory: tests/e2e
+        run: npx playwright install --with-deps chromium
+
+      - name: 🎭 Run Playwright Tests (Chromium)
+        working-directory: tests/e2e
+        run: npx playwright test --project=chromium
+        env:
+          BASE_URL: ${{ secrets.PLAYWRIGHT_BASE_URL || vars.PLAYWRIGHT_BASE_URL || 'https://localhost:8090' }}
+          ADMIN_USERNAME: ${{ secrets.PLAYWRIGHT_ADMIN_USERNAME || 'admin' }}
+          ADMIN_PASSWORD: ${{ secrets.PLAYWRIGHT_ADMIN_PASSWORD || 'admin' }}
+          TEST_USER_USERNAME: ${{ secrets.PLAYWRIGHT_TEST_USER_USERNAME || 'testuser' }}
+          TEST_USER_PASSWORD: ${{ secrets.PLAYWRIGHT_TEST_USER_PASSWORD || 'admin' }}
+          PLAYWRIGHT_WORKERS: ${{ vars.PLAYWRIGHT_WORKERS || 1 }}
+          DEBUG_AUTH: ${{ vars.PLAYWRIGHT_DEBUG_AUTH || 'false' }}
+          SAMPLE_APP_ID: ${{ steps.extract-app-id.outputs.sample_app_id }}
+          SAMPLE_APP_URL: 'https://localhost:3000'
+          THUNDER_URL: 'https://localhost:8090'
+          AUTO_SETUP_MFA: ${{ vars.AUTO_SETUP_MFA || 'true' }}
+          MOCK_SMS_SERVER_PORT: ${{ vars.MOCK_SMS_SERVER_PORT || 8098 }}
+          SAMPLE_APP_USERNAME: ${{ secrets.SAMPLE_APP_USERNAME || 'e2e-test-user' }}
+          SAMPLE_APP_PASSWORD: ${{ secrets.SAMPLE_APP_PASSWORD || 'e2e-test-password' }}
+
+      - name: 📊 Upload Playwright Report
+        uses: actions/upload-artifact@v4
+        if: ${{ !cancelled() }}
+        with:
+          name: playwright-report-windows-${{ github.run_id }}
+          path: tests/e2e/playwright-report/
+          retention-days: 30
