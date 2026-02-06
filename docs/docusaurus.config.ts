@@ -69,6 +69,14 @@ const config: Config = {
           sidebarPath: './sidebars.ts',
           // Edit URL for the "edit this page" feature.
           editUrl: thunderConfig.project.source.github.editUrls.content,
+          // Versioning.
+          lastVersion: 'current',
+          versions: {
+            current: {
+              label: 'Next',
+              path: 'next',
+            },
+          },
         },
         blog: {
           showReadingTime: true,
@@ -154,6 +162,10 @@ const config: Config = {
           position: 'right',
           className: 'navbar__github--link',
           'aria-label': 'GitHub repository',
+        },
+        {
+          type: 'docsVersionDropdown',
+          position: 'right',
         },
       ],
     },
