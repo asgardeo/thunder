@@ -61,16 +61,17 @@ func (lh *layoutMgtHandler) HandleLayoutListRequest(w http.ResponseWriter, r *ht
 		return
 	}
 
-	layouts := make([]LayoutListItem, 0, len(layoutList.Layouts))
+	layouts := make([]Layout, 0, len(layoutList.Layouts))
 	for _, layout := range layoutList.Layouts {
-		layouts = append(layouts, LayoutListItem{
+		layouts = append(layouts, Layout{
 			ID:          layout.ID,
 			DisplayName: layout.DisplayName,
 			Description: layout.Description,
+			Layout:      layout.Layout,
 		})
 	}
 
-	layoutListResponse := &LayoutListResponse{
+	layoutListResponse := &LayoutListResponseWithFullLayouts{
 		TotalResults: layoutList.TotalResults,
 		StartIndex:   layoutList.StartIndex,
 		Count:        layoutList.Count,
@@ -104,7 +105,7 @@ func (lh *layoutMgtHandler) HandleLayoutPostRequest(w http.ResponseWriter, r *ht
 		ID:          createdLayout.ID,
 		DisplayName: createdLayout.DisplayName,
 		Description: createdLayout.Description,
-		Layout: createdLayout.Layout,
+		Layout:      createdLayout.Layout,
 	}
 
 	sysutils.WriteSuccessResponse(w, http.StatusCreated, layoutResponse)
@@ -125,7 +126,7 @@ func (lh *layoutMgtHandler) HandleLayoutGetRequest(w http.ResponseWriter, r *htt
 		ID:          layout.ID,
 		DisplayName: layout.DisplayName,
 		Description: layout.Description,
-		Layout: layout.Layout,
+		Layout:      layout.Layout,
 	}
 
 	sysutils.WriteSuccessResponse(w, http.StatusOK, layoutResponse)
@@ -152,7 +153,7 @@ func (lh *layoutMgtHandler) HandleLayoutPutRequest(w http.ResponseWriter, r *htt
 		ID:          updatedLayout.ID,
 		DisplayName: updatedLayout.DisplayName,
 		Description: updatedLayout.Description,
-		Layout: updatedLayout.Layout,
+		Layout:      updatedLayout.Layout,
 	}
 
 	sysutils.WriteSuccessResponse(w, http.StatusOK, layoutResponse)

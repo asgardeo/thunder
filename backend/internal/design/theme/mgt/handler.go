@@ -61,15 +61,17 @@ func (th *themeMgtHandler) HandleThemeListRequest(w http.ResponseWriter, r *http
 		return
 	}
 
-	themes := make([]ThemeListItem, 0, len(themeList.Themes))
+	themes := make([]Theme, 0, len(themeList.Themes))
 	for _, theme := range themeList.Themes {
-		themes = append(themes, ThemeListItem{
+		themes = append(themes, Theme{
 			ID:          theme.ID,
 			DisplayName: theme.DisplayName,
+			Description: theme.Description,
+			Theme:       theme.Theme,
 		})
 	}
 
-	themeListResponse := &ThemeListResponse{
+	themeListResponse := &ThemeListResponseWithFullThemes{
 		TotalResults: themeList.TotalResults,
 		StartIndex:   themeList.StartIndex,
 		Count:        themeList.Count,

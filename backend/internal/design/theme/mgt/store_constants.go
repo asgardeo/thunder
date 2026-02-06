@@ -67,7 +67,7 @@ var (
 	// queryCheckThemeExists checks if a theme exists.
 	queryCheckThemeExists = dbmodel.DBQuery{
 		ID:    "THQ-THEME_MGT-07",
-		Query: "SELECT COUNT(*) FROM THEME WHERE THEME_ID = $1 AND DEPLOYMENT_ID = $2",
+		Query: "SELECT COUNT(*) as total FROM THEME WHERE THEME_ID = $1 AND DEPLOYMENT_ID = $2",
 	}
 
 	// queryGetApplicationsCountByThemeID retrieves the count of applications using a theme.

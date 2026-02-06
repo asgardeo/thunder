@@ -58,6 +58,15 @@ type LayoutListResponse struct {
 	Links        []LinkResponse   `json:"links"`
 }
 
+// LayoutListResponseWithFullLayouts represents the response for listing layout configurations with full layout data.
+type LayoutListResponseWithFullLayouts struct {
+	TotalResults int            `json:"totalResults"`
+	StartIndex   int            `json:"startIndex"`
+	Count        int            `json:"count"`
+	Layouts      []Layout       `json:"layouts"`
+	Links        []LinkResponse `json:"links"`
+}
+
 // LinkResponse represents a pagination link.
 type LinkResponse struct {
 	Href string `json:"href"`

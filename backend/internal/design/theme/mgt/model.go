@@ -57,6 +57,15 @@ type ThemeListResponse struct {
 	Links        []LinkResponse  `json:"links"`
 }
 
+// ThemeListResponseWithFullThemes represents the response for listing theme configurations with full theme data.
+type ThemeListResponseWithFullThemes struct {
+	TotalResults int            `json:"totalResults"`
+	StartIndex   int            `json:"startIndex"`
+	Count        int            `json:"count"`
+	Themes       []Theme        `json:"themes"`
+	Links        []LinkResponse `json:"links"`
+}
+
 // LinkResponse represents a pagination link.
 type LinkResponse struct {
 	Href string `json:"href"`

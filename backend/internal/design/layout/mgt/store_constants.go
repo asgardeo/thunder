@@ -67,7 +67,7 @@ var (
 	// queryCheckLayoutExists checks if a layout exists.
 	queryCheckLayoutExists = dbmodel.DBQuery{
 		ID:    "LAQ-LAYOUT_MGT-07",
-		Query: "SELECT COUNT(*) FROM LAYOUT WHERE LAYOUT_ID = $1 AND DEPLOYMENT_ID = $2",
+		Query: "SELECT COUNT(*) as total FROM LAYOUT WHERE LAYOUT_ID = $1 AND DEPLOYMENT_ID = $2",
 	}
 
 	// queryGetApplicationsCountByLayoutID retrieves the count of applications using a layout.
