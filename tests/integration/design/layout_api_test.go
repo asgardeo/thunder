@@ -16,7 +16,7 @@
  * under the License.
  */
 
-package branding
+package design
 
 import (
 	"bytes"
@@ -32,119 +32,91 @@ import (
 )
 
 const (
-	testServerURL    = "https://localhost:8095"
-	brandingBasePath = "/branding"
+	layoutBasePath = "/design/layouts"
 )
 
 var (
-	testBrandingPreferences = json.RawMessage(`{
-		"theme": {
-			"activeColorScheme": "dark",
-			"colorSchemes": {
-				"dark": {
-					"colors": {
-						"primary": {
-							"main": "#1976d2",
-							"dark": "#0d47a1",
-							"contrastText": "#ffffff"
-						},
-						"secondary": {
-							"main": "#9c27b0",
-							"dark": "#6a0080",
-							"contrastText": "#ffffff"
-						}
-					}
-				}
+	testLayout = json.RawMessage(`{
+		"header": {
+			"logo": {
+				"url": "https://example.com/logo.png",
+				"altText": "Company Logo"
+			},
+			"navigation": ["Home", "Products", "About"]
+		},
+		"footer": {
+			"copyright": "© 2025 Company",
+			"links": ["Privacy", "Terms"]
+		}
+	}`)
+
+	testLayout2 = json.RawMessage(`{
+		"header": {
+			"logo": {
+				"url": "https://example.com/logo2.png",
+				"altText": "Brand Logo"
 			}
 		}
 	}`)
 
-	testBrandingPreferences2 = json.RawMessage(`{
-		"theme": {
-			"activeColorScheme": "light",
-			"colorSchemes": {
-				"light": {
-					"colors": {
-						"primary": {
-							"main": "#2196f3",
-							"dark": "#1976d2",
-							"contrastText": "#ffffff"
-						}
-					}
-				}
-			}
-		}
-	}`)
-
-	testBrandingPreferencesUpdate = json.RawMessage(`{
-		"theme": {
-			"activeColorScheme": "light",
-			"colorSchemes": {
-				"light": {
-					"colors": {
-						"primary": {
-							"main": "#42a5f5",
-							"dark": "#1976d2",
-							"contrastText": "#ffffff"
-						}
-					}
-				},
-				"dark": {
-					"colors": {
-						"primary": {
-							"main": "#1976d2",
-							"dark": "#0d47a1",
-							"contrastText": "#ffffff"
-						}
-					}
-				}
-			}
+	testLayoutUpdate = json.RawMessage(`{
+		"header": {
+			"logo": {
+				"url": "https://example.com/updated-logo.png",
+				"altText": "Updated Logo"
+			},
+			"navigation": ["Home", "Products", "Services", "Contact"]
+		},
+		"footer": {
+			"copyright": "© 2025 Updated Company",
+			"links": ["Privacy", "Terms", "Cookies"]
 		}
 	}`)
 )
 
 var (
-	sharedBrandingID string // Shared branding created in SetupSuite
+	sharedLayoutID string // Shared layout created in SetupSuite
 )
 
-type BrandingAPITestSuite struct {
+type LayoutAPITestSuite struct {
 	suite.Suite
 	client *http.Client
 }
 
-func TestBrandingAPITestSuite(t *testing.T) {
-	suite.Run(t, new(BrandingAPITestSuite))
+func TestLayoutAPITestSuite(t *testing.T) {
+	suite.Run(t, new(LayoutAPITestSuite))
 }
 
-func (suite *BrandingAPITestSuite) SetupSuite() {
+func (suite *LayoutAPITestSuite) SetupSuite() {
 	// Create HTTP client that skips TLS verification for testing
 	suite.client = testutils.GetHTTPClient()
 
-	// Create a shared branding that can be used by multiple tests
-	sharedBranding := CreateBrandingRequest{
-		DisplayName: "Shared Test Branding",
-		Preferences: testBrandingPreferences,
+	// Create a shared layout that can be used by multiple tests
+	sharedLayout := CreateLayoutRequest{
+		DisplayName: "Shared Test Layout",
+		Description: "Shared layout for testing",
+		Layout:      testLayout,
 	}
-	branding, err := suite.createBranding(sharedBranding)
-	suite.Require().NoError(err, "Failed to create shared branding")
-	sharedBrandingID = branding.ID
+	layout, err := suite.createLayout(sharedLayout)
+	suite.Require().NoError(err, "Failed to create shared layout")
+	sharedLayoutID = layout.ID
 }
 
-func (suite *BrandingAPITestSuite) TearDownSuite() {
+func (suite *LayoutAPITestSuite) TearDownSuite() {
 	// Cleanup
-	if sharedBrandingID != "" {
-		_ = suite.deleteBranding(sharedBrandingID)
+	if sharedLayoutID != "" {
+		_ = suite.deleteLayout(sharedLayoutID)
 	}
 }
 
-// Helper function to create a branding configuration
-func (suite *BrandingAPITestSuite) createBranding(request CreateBrandingRequest) (*BrandingResponse, error) {
+// Helper function to create a layout
+func (suite *LayoutAPITestSuite) createLayout(request CreateLayoutRequest) (*LayoutResponse, error) {
 	payload, err := json.Marshal(request)
 	if err != nil {
-		return nil, fmt.Errorf("failed to marshal branding request: %w", err)
+		return nil, fmt.Errorf("failed to marshal layout request: %w", err)
 	}
 
-	req, err := http.NewRequest("POST", testServerURL+brandingBasePath, bytes.NewReader(payload))
+	req, err := http.NewRequest("POST", testServerURL+layoutBasePath, bytes.NewReader(payload))
 	if err != nil {
 		return nil, fmt.Errorf("failed to create request: %w", err)
 	}
@@ -169,17 +141,17 @@ func (suite *BrandingAPITestSuite) createBranding(request CreateBrandingRequest)
 		return nil, fmt.Errorf("expected status 201, got %d. Response: %s", resp.StatusCode, string(bodyBytes))
 	}
 
-	var branding BrandingResponse
-	if err := json.Unmarshal(bodyBytes, &branding); err != nil {
+	var layout LayoutResponse
+	if err := json.Unmarshal(bodyBytes, &layout); err != nil {
 		return nil, fmt.Errorf("failed to parse response body: %w. Response: %s", err, string(bodyBytes))
 	}
 
-	return &branding, nil
+	return &layout, nil
 }
 
-// Helper function to get a branding configuration by ID
-func (suite *BrandingAPITestSuite) getBranding(id string) (*BrandingResponse, error) {
-	req, err := http.NewRequest("GET", testServerURL+brandingBasePath+"/"+id, nil)
+// Helper function to get a layout by ID
+func (suite *LayoutAPITestSuite) getLayout(id string) (*LayoutResponse, error) {
+	req, err := http.NewRequest("GET", testServerURL+layoutBasePath+"/"+id, nil)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create request: %w", err)
 	}
@@ -203,16 +175,16 @@ func (suite *BrandingAPITestSuite) getBranding(id string) (*BrandingResponse, er
 		return nil, fmt.Errorf("expected status 200, got %d. Response: %s", resp.StatusCode, string(bodyBytes))
 	}
 
-	var branding BrandingResponse
-	if err := json.Unmarshal(bodyBytes, &branding); err != nil {
+	var layout LayoutResponse
+	if err := json.Unmarshal(bodyBytes, &layout); err != nil {
 		return nil, fmt.Errorf("failed to parse response body: %w. Response: %s", err, string(bodyBytes))
 	}
 
-	return &branding, nil
+	return &layout, nil
 }
 
-// Helper function to list branding configurations
-func (suite *BrandingAPITestSuite) listBrandings(limit, offset int) (*BrandingListResponse, error) {
+// Helper function to list layouts
+func (suite *LayoutAPITestSuite) listLayouts(limit, offset int) (*LayoutListResponse, error) {
 	params := url.Values{}
 	if limit > 0 {
 		params.Add("limit", fmt.Sprintf("%d", limit))
@@ -221,7 +193,7 @@ func (suite *BrandingAPITestSuite) listBrandings(limit, offset int) (*BrandingLi
 		params.Add("offset", fmt.Sprintf("%d", offset))
 	}
 
-	url := testServerURL + brandingBasePath
+	url := testServerURL + layoutBasePath
 	if len(params) > 0 {
 		url += "?" + params.Encode()
 	}
@@ -250,7 +222,7 @@ func (suite *BrandingAPITestSuite) listBrandings(limit, offset int) (*BrandingLi
 		return nil, fmt.Errorf("expected status 200, got %d. Response: %s", resp.StatusCode, string(bodyBytes))
 	}
 
-	var listResponse BrandingListResponse
+	var listResponse LayoutListResponse
 	if err := json.Unmarshal(bodyBytes, &listResponse); err != nil {
 		return nil, fmt.Errorf("failed to parse response body: %w. Response: %s", err, string(bodyBytes))
 	}
@@ -258,14 +230,14 @@ func (suite *BrandingAPITestSuite) listBrandings(limit, offset int) (*BrandingLi
 	return &listResponse, nil
 }
 
-// Helper function to update a branding configuration
-func (suite *BrandingAPITestSuite) updateBranding(id string, request UpdateBrandingRequest) (*BrandingResponse, error) {
+// Helper function to update a layout
+func (suite *LayoutAPITestSuite) updateLayout(id string, request UpdateLayoutRequest) (*LayoutResponse, error) {
 	payload, err := json.Marshal(request)
 	if err != nil {
-		return nil, fmt.Errorf("failed to marshal branding request: %w", err)
+		return nil, fmt.Errorf("failed to marshal layout request: %w", err)
 	}
 
-	req, err := http.NewRequest("PUT", testServerURL+brandingBasePath+"/"+id, bytes.NewReader(payload))
+	req, err := http.NewRequest("PUT", testServerURL+layoutBasePath+"/"+id, bytes.NewReader(payload))
 	if err != nil {
 		return nil, fmt.Errorf("failed to create request: %w", err)
 	}
@@ -290,17 +262,17 @@ func (suite *BrandingAPITestSuite) updateBranding(id string, request UpdateBrand
 		return nil, fmt.Errorf("expected status 200, got %d. Response: %s", resp.StatusCode, string(bodyBytes))
 	}
 
-	var branding BrandingResponse
-	if err := json.Unmarshal(bodyBytes, &branding); err != nil {
+	var layout LayoutResponse
+	if err := json.Unmarshal(bodyBytes, &layout); err != nil {
 		return nil, fmt.Errorf("failed to parse response body: %w. Response: %s", err, string(bodyBytes))
 	}
 
-	return &branding, nil
+	return &layout, nil
 }
 
-// Helper function to delete a branding configuration
-func (suite *BrandingAPITestSuite) deleteBranding(id string) error {
-	req, err := http.NewRequest("DELETE", testServerURL+brandingBasePath+"/"+id, nil)
+// Helper function to delete a layout
+func (suite *LayoutAPITestSuite) deleteLayout(id string) error {
+	req, err := http.NewRequest("DELETE", testServerURL+layoutBasePath+"/"+id, nil)
 	if err != nil {
 		return fmt.Errorf("failed to create request: %w", err)
 	}
@@ -323,27 +295,29 @@ func (suite *BrandingAPITestSuite) deleteBranding(id string) error {
 	return nil
 }
 
-// Create Branding - Success
-func (suite *BrandingAPITestSuite) TestCreateBranding_Success() {
-	request := CreateBrandingRequest{
-		DisplayName: "Test Branding Success",
-		Preferences: testBrandingPreferences2,
+// Create Layout - Success
+func (suite *LayoutAPITestSuite) TestCreateLayout_Success() {
+	request := CreateLayoutRequest{
+		DisplayName: "Test Layout Success",
+		Description: "Test layout for success case",
+		Layout:      testLayout2,
 	}
 
-	branding, err := suite.createBranding(request)
+	layout, err := suite.createLayout(request)
 	suite.Require().NoError(err)
-	suite.Require().NotNil(branding)
+	suite.Require().NotNil(layout)
 
-	suite.NotEmpty(branding.ID)
-	suite.Equal("Test Branding Success", branding.DisplayName)
-	suite.NotEmpty(branding.Preferences)
+	suite.NotEmpty(layout.ID)
+	suite.Equal("Test Layout Success", layout.DisplayName)
+	suite.Equal("Test layout for success case", layout.Description)
+	suite.NotEmpty(layout.Layout)
 
 	// Cleanup
-	_ = suite.deleteBranding(branding.ID)
+	_ = suite.deleteLayout(layout.ID)
 }
 
-// Create Branding - Validation Errors
-func (suite *BrandingAPITestSuite) TestCreateBranding_ValidationErrors() {
+// Create Layout - Validation Errors
+func (suite *LayoutAPITestSuite) TestCreateLayout_ValidationErrors() {
 	testCases := []struct {
 		name        string
 		requestBody string
@@ -351,34 +325,34 @@ func (suite *BrandingAPITestSuite) TestCreateBranding_ValidationErrors() {
 	}{
 		{
 			name:        "Missing DisplayName",
-			requestBody: `{"preferences": {}}`,
-			expectedErr: "BRD-1005",
+			requestBody: `{"layout": {}}`,
+			expectedErr: "LAY-1005",
 		},
 		{
-			name:        "Missing Preferences",
+			name:        "Missing Layout",
 			requestBody: `{"displayName": "Test"}`,
-			expectedErr: "BRD-1006",
+			expectedErr: "LAY-1006",
 		},
 		{
-			name:        "Invalid JSON Preferences",
-			requestBody: `{"displayName": "Test", "preferences": invalid json}`,
-			expectedErr: "BRD-1001",
+			name:        "Invalid JSON Layout",
+			requestBody: `{"displayName": "Test", "layout": invalid json}`,
+			expectedErr: "LAY-1001",
 		},
 		{
 			name:        "Array Instead of Object",
-			requestBody: `{"displayName": "Test", "preferences": ["item1", "item2"]}`,
-			expectedErr: "BRD-1007",
+			requestBody: `{"displayName": "Test", "layout": ["item1", "item2"]}`,
+			expectedErr: "LAY-1007",
 		},
 		{
 			name:        "Primitive Instead of Object",
-			requestBody: `{"displayName": "Test", "preferences": "string"}`,
-			expectedErr: "BRD-1007",
+			requestBody: `{"displayName": "Test", "layout": "string"}`,
+			expectedErr: "LAY-1007",
 		},
 	}
 
 	for _, tc := range testCases {
 		suite.Run(tc.name, func() {
-			req, err := http.NewRequest("POST", testServerURL+brandingBasePath, bytes.NewReader([]byte(tc.requestBody)))
+			req, err := http.NewRequest("POST", testServerURL+layoutBasePath, bytes.NewReader([]byte(tc.requestBody)))
 			suite.Require().NoError(err)
 			req.Header.Set("Content-Type", "application/json")
 
@@ -399,75 +373,77 @@ func (suite *BrandingAPITestSuite) TestCreateBranding_ValidationErrors() {
 	}
 }
 
-// Get Branding - Success
-func (suite *BrandingAPITestSuite) TestGetBranding_Success() {
-	suite.Require().NotEmpty(sharedBrandingID, "Shared branding must be created in SetupSuite")
+// Get Layout - Success
+func (suite *LayoutAPITestSuite) TestGetLayout_Success() {
+	suite.Require().NotEmpty(sharedLayoutID, "Shared layout must be created in SetupSuite")
 
-	branding, err := suite.getBranding(sharedBrandingID)
+	layout, err := suite.getLayout(sharedLayoutID)
 	suite.Require().NoError(err)
-	suite.Require().NotNil(branding)
+	suite.Require().NotNil(layout)
 
-	suite.Equal(sharedBrandingID, branding.ID)
-	suite.NotEmpty(branding.Preferences)
+	suite.Equal(sharedLayoutID, layout.ID)
+	suite.NotEmpty(layout.Layout)
 }
 
-// Get Branding - Not Found
-func (suite *BrandingAPITestSuite) TestGetBranding_NotFound() {
-	branding, err := suite.getBranding("00000000-0000-0000-0000-000000000000")
+// Get Layout - Not Found
+func (suite *LayoutAPITestSuite) TestGetLayout_NotFound() {
+	layout, err := suite.getLayout("00000000-0000-0000-0000-000000000000")
 	suite.Error(err)
-	suite.Nil(branding)
-	suite.Contains(err.Error(), "BRD-1003")
+	suite.Nil(layout)
+	suite.Contains(err.Error(), "LAY-1003")
 }
 
-// List Brandings - Success
-func (suite *BrandingAPITestSuite) TestListBrandings_Success() {
-	suite.Require().NotEmpty(sharedBrandingID, "Shared branding must be created in SetupSuite")
+// List Layouts - Success
+func (suite *LayoutAPITestSuite) TestListLayouts_Success() {
+	suite.Require().NotEmpty(sharedLayoutID, "Shared layout must be created in SetupSuite")
 
-	response, err := suite.listBrandings(0, 0)
+	response, err := suite.listLayouts(0, 0)
 	suite.Require().NoError(err)
 	suite.Require().NotNil(response)
 
 	suite.GreaterOrEqual(response.TotalResults, 1)
 	suite.GreaterOrEqual(response.Count, 1)
-	suite.NotEmpty(response.Brandings)
+	suite.NotEmpty(response.Layouts)
 
-	// Verify our shared branding is in the list
+	// Verify our shared layout is in the list
 	found := false
-	for _, branding := range response.Brandings {
-		if branding.ID == sharedBrandingID {
+	for _, layout := range response.Layouts {
+		if layout.ID == sharedLayoutID {
 			found = true
-			suite.NotEmpty(branding.DisplayName)
+			suite.NotEmpty(layout.DisplayName)
 			break
 		}
 	}
-	suite.True(found, "Shared branding should be in the list")
+	suite.True(found, "Shared layout should be in the list")
 }
 
-// List Brandings - Pagination
-func (suite *BrandingAPITestSuite) TestListBrandings_Pagination() {
-	// Create additional brandings for pagination testing
-	branding1, err := suite.createBranding(CreateBrandingRequest{
-		DisplayName: "Pagination Branding 1",
-		Preferences: testBrandingPreferences2,
+// List Layouts - Pagination
+func (suite *LayoutAPITestSuite) TestListLayouts_Pagination() {
+	// Create additional layouts for pagination testing
+	layout1, err := suite.createLayout(CreateLayoutRequest{
+		DisplayName: "Pagination Layout 1",
+		Description: "Layout for pagination test",
+		Layout:      testLayout2,
 	})
 	suite.Require().NoError(err)
-	defer suite.deleteBranding(branding1.ID)
+	defer suite.deleteLayout(layout1.ID)
 
-	branding2, err := suite.createBranding(CreateBrandingRequest{
-		DisplayName: "Pagination Branding 2",
-		Preferences: testBrandingPreferences2,
+	layout2, err := suite.createLayout(CreateLayoutRequest{
+		DisplayName: "Pagination Layout 2",
+		Description: "Layout for pagination test",
+		Layout:      testLayout2,
 	})
 	suite.Require().NoError(err)
-	defer suite.deleteBranding(branding2.ID)
+	defer suite.deleteLayout(layout2.ID)
 
 	// Test with limit
-	response, err := suite.listBrandings(2, 0)
+	response, err := suite.listLayouts(2, 0)
 	suite.Require().NoError(err)
 	suite.Require().NotNil(response)
 
 	suite.GreaterOrEqual(response.TotalResults, 3)
 	suite.LessOrEqual(response.Count, 2)
-	suite.LessOrEqual(len(response.Brandings), 2)
+	suite.LessOrEqual(len(response.Layouts), 2)
 
 	// Test pagination links
 	if response.TotalResults > response.Count {
@@ -483,8 +459,8 @@ func (suite *BrandingAPITestSuite) TestListBrandings_Pagination() {
 	}
 }
 
-// List Brandings - Invalid Pagination Parameters
-func (suite *BrandingAPITestSuite) TestListBrandings_InvalidPagination() {
+// List Layouts - Invalid Pagination Parameters
+func (suite *LayoutAPITestSuite) TestListLayouts_InvalidPagination() {
 	testCases := []struct {
 		name        string
 		limit       int
@@ -501,13 +477,13 @@ func (suite *BrandingAPITestSuite) TestListBrandings_InvalidPagination() {
 			name:        "Invalid Limit - Negative",
 			limit:       -1,
 			offset:      0,
-			expectedErr: "BRD-1008",
+			expectedErr: "LAY-1008",
 		},
 		{
 			name:        "Invalid Offset - Negative",
 			limit:       10,
 			offset:      -1,
-			expectedErr: "BRD-1009",
+			expectedErr: "LAY-1009",
 		},
 	}
 
@@ -521,7 +497,7 @@ func (suite *BrandingAPITestSuite) TestListBrandings_InvalidPagination() {
 				params.Add("offset", fmt.Sprintf("%d", tc.offset))
 			}
 
-			url := testServerURL + brandingBasePath
+			url := testServerURL + layoutBasePath
 			if len(params) > 0 {
 				url += "?" + params.Encode()
 			}
@@ -534,7 +510,6 @@ func (suite *BrandingAPITestSuite) TestListBrandings_InvalidPagination() {
 			defer resp.Body.Close()
 
 			if tc.expectedErr == "" {
-				// When limit is 0, default is applied, so expect success
 				suite.Equal(http.StatusOK, resp.StatusCode)
 			} else {
 				suite.Equal(http.StatusBadRequest, resp.StatusCode)
@@ -551,57 +526,62 @@ func (suite *BrandingAPITestSuite) TestListBrandings_InvalidPagination() {
 	}
 }
 
-// Update Branding - Success
-func (suite *BrandingAPITestSuite) TestUpdateBranding_Success() {
-	// Create a branding for update testing
-	branding, err := suite.createBranding(CreateBrandingRequest{
-		DisplayName: "Test Branding Update",
-		Preferences: testBrandingPreferences,
+// Update Layout - Success
+func (suite *LayoutAPITestSuite) TestUpdateLayout_Success() {
+	// Create a layout for update testing
+	layout, err := suite.createLayout(CreateLayoutRequest{
+		DisplayName: "Test Layout Update",
+		Description: "Original description",
+		Layout:      testLayout,
 	})
 	suite.Require().NoError(err)
-	defer suite.deleteBranding(branding.ID)
+	defer suite.deleteLayout(layout.ID)
 
-	updateRequest := UpdateBrandingRequest{
-		DisplayName: "Updated Test Branding",
-		Preferences: testBrandingPreferencesUpdate,
+	updateRequest := UpdateLayoutRequest{
+		DisplayName: "Updated Test Layout",
+		Description: "Updated description",
+		Layout:      testLayoutUpdate,
 	}
 
-	updatedBranding, err := suite.updateBranding(branding.ID, updateRequest)
+	updatedLayout, err := suite.updateLayout(layout.ID, updateRequest)
 	suite.Require().NoError(err)
-	suite.Require().NotNil(updatedBranding)
+	suite.Require().NotNil(updatedLayout)
 
-	suite.Equal(branding.ID, updatedBranding.ID)
-	suite.Equal("Updated Test Branding", updatedBranding.DisplayName)
-	suite.NotEmpty(updatedBranding.Preferences)
+	suite.Equal(layout.ID, updatedLayout.ID)
+	suite.Equal("Updated Test Layout", updatedLayout.DisplayName)
+	suite.Equal("Updated description", updatedLayout.Description)
+	suite.NotEmpty(updatedLayout.Layout)
 
-	// Verify the update by getting the branding again
-	retrievedBranding, err := suite.getBranding(branding.ID)
+	// Verify the update by getting the layout again
+	retrievedLayout, err := suite.getLayout(layout.ID)
 	suite.Require().NoError(err)
-	suite.Equal(branding.ID, retrievedBranding.ID)
+	suite.Equal(layout.ID, retrievedLayout.ID)
 }
 
-// Update Branding - Not Found
-func (suite *BrandingAPITestSuite) TestUpdateBranding_NotFound() {
-	updateRequest := UpdateBrandingRequest{
-		DisplayName: "Test Branding",
-		Preferences: testBrandingPreferencesUpdate,
+// Update Layout - Not Found
+func (suite *LayoutAPITestSuite) TestUpdateLayout_NotFound() {
+	updateRequest := UpdateLayoutRequest{
+		DisplayName: "Test Layout",
+		Description: "Test description",
+		Layout:      testLayoutUpdate,
 	}
 
-	branding, err := suite.updateBranding("00000000-0000-0000-0000-000000000000", updateRequest)
+	layout, err := suite.updateLayout("00000000-0000-0000-0000-000000000000", updateRequest)
 	suite.Error(err)
-	suite.Nil(branding)
-	suite.Contains(err.Error(), "BRD-1003")
+	suite.Nil(layout)
+	suite.Contains(err.Error(), "LAY-1003")
 }
 
-// Update Branding - Validation Errors
-func (suite *BrandingAPITestSuite) TestUpdateBranding_ValidationErrors() {
-	// Create a branding for update testing
-	branding, err := suite.createBranding(CreateBrandingRequest{
-		DisplayName: "Test Branding Validation",
-		Preferences: testBrandingPreferences,
+// Update Layout - Validation Errors
+func (suite *LayoutAPITestSuite) TestUpdateLayout_ValidationErrors() {
+	// Create a layout for update testing
+	layout, err := suite.createLayout(CreateLayoutRequest{
+		DisplayName: "Test Layout Validation",
+		Description: "Test layout for validation",
+		Layout:      testLayout,
 	})
 	suite.Require().NoError(err)
-	defer suite.deleteBranding(branding.ID)
+	defer suite.deleteLayout(layout.ID)
 
 	testCases := []struct {
 		name        string
@@ -610,34 +590,34 @@ func (suite *BrandingAPITestSuite) TestUpdateBranding_ValidationErrors() {
 	}{
 		{
 			name:        "Missing DisplayName",
-			requestBody: `{"preferences": {}}`,
-			expectedErr: "BRD-1005",
+			requestBody: `{"layout": {}}`,
+			expectedErr: "LAY-1005",
 		},
 		{
-			name:        "Missing Preferences",
+			name:        "Missing Layout",
 			requestBody: `{"displayName": "Test"}`,
-			expectedErr: "BRD-1006",
+			expectedErr: "LAY-1006",
 		},
 		{
-			name:        "Invalid JSON Preferences",
-			requestBody: `{"displayName": "Test", "preferences": invalid json}`,
-			expectedErr: "BRD-1001",
+			name:        "Invalid JSON Layout",
+			requestBody: `{"displayName": "Test", "layout": invalid json}`,
+			expectedErr: "LAY-1001",
 		},
 		{
 			name:        "Array Instead of Object",
-			requestBody: `{"displayName": "Test", "preferences": ["item1", "item2"]}`,
-			expectedErr: "BRD-1007",
+			requestBody: `{"displayName": "Test", "layout": ["item1", "item2"]}`,
+			expectedErr: "LAY-1007",
 		},
 		{
 			name:        "Primitive Instead of Object",
-			requestBody: `{"displayName": "Test", "preferences": "string"}`,
-			expectedErr: "BRD-1007",
+			requestBody: `{"displayName": "Test", "layout": "string"}`,
+			expectedErr: "LAY-1007",
 		},
 	}
 
 	for _, tc := range testCases {
 		suite.Run(tc.name, func() {
-			req, err := http.NewRequest("PUT", testServerURL+brandingBasePath+"/"+branding.ID, bytes.NewReader([]byte(tc.requestBody)))
+			req, err := http.NewRequest("PUT", testServerURL+layoutBasePath+"/"+layout.ID, bytes.NewReader([]byte(tc.requestBody)))
 			suite.Require().NoError(err)
 			req.Header.Set("Content-Type", "application/json")
 
@@ -658,27 +638,28 @@ func (suite *BrandingAPITestSuite) TestUpdateBranding_ValidationErrors() {
 	}
 }
 
-// Delete Branding - Success
-func (suite *BrandingAPITestSuite) TestDeleteBranding_Success() {
-	// Create a branding for delete testing
-	branding, err := suite.createBranding(CreateBrandingRequest{
-		DisplayName: "Test Branding Delete",
-		Preferences: testBrandingPreferences,
+// Delete Layout - Success
+func (suite *LayoutAPITestSuite) TestDeleteLayout_Success() {
+	// Create a layout for delete testing
+	layout, err := suite.createLayout(CreateLayoutRequest{
+		DisplayName: "Test Layout Delete",
+		Description: "Layout to be deleted",
+		Layout:      testLayout,
 	})
 	suite.Require().NoError(err)
 
-	err = suite.deleteBranding(branding.ID)
+	err = suite.deleteLayout(layout.ID)
 	suite.NoError(err)
 
-	// Verify deletion by trying to get the branding
-	_, err = suite.getBranding(branding.ID)
+	// Verify deletion by trying to get the layout
+	_, err = suite.getLayout(layout.ID)
 	suite.Error(err)
-	suite.Contains(err.Error(), "BRD-1003")
+	suite.Contains(err.Error(), "LAY-1003")
 }
 
-// Delete Branding - Not Found
-func (suite *BrandingAPITestSuite) TestDeleteBranding_NotFound() {
-	err := suite.deleteBranding("00000000-0000-0000-0000-000000000000")
-	// Delete should not error for non-existent branding (returns 204 or 404)
+// Delete Layout - Not Found
+func (suite *LayoutAPITestSuite) TestDeleteLayout_NotFound() {
+	err := suite.deleteLayout("00000000-0000-0000-0000-000000000000")
+	// Delete should not error for non-existent layout (returns 204 or 404)
 	suite.NoError(err)
 }

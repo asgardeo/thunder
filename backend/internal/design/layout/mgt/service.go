@@ -97,7 +97,7 @@ func (ls *layoutMgtService) CreateLayout(layout CreateLayoutRequest) (*Layout, *
 		}
 	}
 
-	if err := ls.validateLayoutPreferences(layout.Preferences); err != nil {
+	if err := ls.validateLayoutPreferences(layout.Layout); err != nil {
 		return nil, err
 	}
 
@@ -111,7 +111,7 @@ func (ls *layoutMgtService) CreateLayout(layout CreateLayoutRequest) (*Layout, *
 		ID:          id,
 		DisplayName: layout.DisplayName,
 		Description: layout.Description,
-		Preferences: layout.Preferences,
+		Layout:      layout.Layout,
 	}
 
 	ls.logger.Debug("Successfully created layout", log.String("id", id))
@@ -156,7 +156,7 @@ func (ls *layoutMgtService) UpdateLayout(id string, layout UpdateLayoutRequest) 
 		}
 	}
 
-	if err := ls.validateLayoutPreferences(layout.Preferences); err != nil {
+	if err := ls.validateLayoutPreferences(layout.Layout); err != nil {
 		return nil, err
 	}
 
@@ -180,7 +180,7 @@ func (ls *layoutMgtService) UpdateLayout(id string, layout UpdateLayoutRequest) 
 		ID:          id,
 		DisplayName: layout.DisplayName,
 		Description: layout.Description,
-		Preferences: layout.Preferences,
+		Layout:      layout.Layout,
 	}
 
 	ls.logger.Debug("Successfully updated layout", log.String("id", id))
@@ -245,15 +245,15 @@ func (ls *layoutMgtService) IsLayoutExist(id string) (bool, *serviceerror.Servic
 	return exists, nil
 }
 
-// validateLayoutPreferences validates the layout preferences JSON.
-func (ls *layoutMgtService) validateLayoutPreferences(preferences json.RawMessage) *serviceerror.ServiceError {
-	if len(preferences) == 0 {
+// validateLayoutPreferences validates the layout JSON.
+func (ls *layoutMgtService) validateLayoutPreferences(layout json.RawMessage) *serviceerror.ServiceError {
+	if len(layout) == 0 {
 		return &ErrorInvalidLayoutData
 	}
 
 	var result map[string]interface{}
-	if err := json.Unmarshal(preferences, &result); err != nil {
-		ls.logger.Debug("Invalid preferences JSON", log.Error(err))
+	if err := json.Unmarshal(layout, &result); err != nil {
+		ls.logger.Debug("Invalid layout JSON", log.Error(err))
 		return &ErrorInvalidLayoutData
 	}
 

@@ -25,7 +25,7 @@ type Layout struct {
 	ID          string          `json:"id"`
 	DisplayName string          `json:"displayName"`
 	Description string          `json:"description,omitempty"`
-	Preferences json.RawMessage `json:"preferences"`
+	Layout      json.RawMessage `json:"layout"`
 }
 
 // LayoutListItem represents a layout item in the list response.
@@ -39,14 +39,14 @@ type LayoutListItem struct {
 type CreateLayoutRequest struct {
 	DisplayName string          `json:"displayName"`
 	Description string          `json:"description,omitempty"`
-	Preferences json.RawMessage `json:"preferences"`
+	Layout      json.RawMessage `json:"layout"`
 }
 
 // UpdateLayoutRequest represents the request body for updating a layout configuration.
 type UpdateLayoutRequest struct {
 	DisplayName string          `json:"displayName"`
 	Description string          `json:"description,omitempty"`
-	Preferences json.RawMessage `json:"preferences"`
+	Layout      json.RawMessage `json:"layout"`
 }
 
 // LayoutListResponse represents the response for listing layout configurations with pagination.

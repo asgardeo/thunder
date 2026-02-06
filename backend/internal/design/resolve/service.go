@@ -20,8 +20,6 @@
 package resolve
 
 import (
-	"encoding/json"
-
 	"github.com/asgardeo/thunder/internal/application"
 	"github.com/asgardeo/thunder/internal/design/common"
 	layoutmgt "github.com/asgardeo/thunder/internal/design/layout/mgt"
@@ -101,10 +99,7 @@ func (drs *designResolveService) ResolveDesign(
 		return nil, &common.ErrorApplicationHasNoDesign
 	}
 
-	// Prepare merged preferences
-	mergedPrefs := make(map[string]interface{})
-	var displayName string
-	var responseID string
+	designResponse := &common.DesignResponse{}
 
 	// Get theme configuration if available
 	if app.ThemeID != "" {
@@ -119,24 +114,7 @@ func (drs *designResolveService) ResolveDesign(
 			return nil, svcErr
 		}
 
-		// Use theme display name and ID
-		displayName = themeConfig.DisplayName
-		responseID = themeConfig.ID
-
-		// Parse theme preferences
-		var themePrefs map[string]interface{}
-		if len(themeConfig.Preferences) > 0 {
-			if err := json.Unmarshal(themeConfig.Preferences, &themePrefs); err != nil {
-				drs.logger.Error("Failed to parse theme preferences",
-					log.String("themeId", app.ThemeID),
-					log.Error(err))
-				return nil, &serviceerror.InternalServerError
-			}
-			// Merge theme preferences
-			for k, v := range themePrefs {
-				mergedPrefs[k] = v
-			}
-		}
+		designResponse.Theme = themeConfig.Theme
 	}
 
 	// Get layout configuration if available
@@ -152,43 +130,7 @@ func (drs *designResolveService) ResolveDesign(
 			return nil, svcErr
 		}
 
-		// If theme wasn't set, use layout display name and ID
-		if displayName == "" {
-			displayName = layoutConfig.DisplayName
-			responseID = layoutConfig.ID
-		} else {
-			// Combine display names if both exist
-			displayName = displayName + " / " + layoutConfig.DisplayName
-			responseID = app.ThemeID + "|" + app.LayoutID
-		}
-
-		// Parse layout preferences
-		var layoutPrefs map[string]interface{}
-		if len(layoutConfig.Preferences) > 0 {
-			if err := json.Unmarshal(layoutConfig.Preferences, &layoutPrefs); err != nil {
-				drs.logger.Error("Failed to parse layout preferences",
-					log.String("layoutId", app.LayoutID),
-					log.Error(err))
-				return nil, &serviceerror.InternalServerError
-			}
-			// Merge layout preferences (layout preferences override theme preferences)
-			for k, v := range layoutPrefs {
-				mergedPrefs[k] = v
-			}
-		}
-	}
-
-	// Convert merged preferences back to JSON
-	mergedPrefsJSON, err := json.Marshal(mergedPrefs)
-	if err != nil {
-		drs.logger.Error("Failed to marshal merged preferences", log.Error(err))
-		return nil, &serviceerror.InternalServerError
-	}
-
-	designResponse := &common.DesignResponse{
-		ID:          responseID,
-		DisplayName: displayName,
-		Preferences: mergedPrefsJSON,
+		designResponse.Layout = layoutConfig.Layout
 	}
 
 	drs.logger.Debug("Successfully resolved design configuration",

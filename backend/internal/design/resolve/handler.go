@@ -61,8 +61,7 @@ func (rh *designResolveHandler) HandleResolveRequest(w http.ResponseWriter, r *h
 
 	rh.logger.Debug("Successfully resolved design configuration",
 		log.String("type", string(resolveType)),
-		log.String("id", id),
-		log.String("designId", designResponse.ID))
+		log.String("id", id))
 }
 
 // handleError handles service errors and returns appropriate HTTP responses.

@@ -3573,81 +3573,17 @@ func (ts *ApplicationAPITestSuite) TestApplicationUpdateWithNilApp() {
 	ts.Assert().Equal(http.StatusBadRequest, resp.StatusCode)
 }
 
-// Helper function to create a branding configuration for testing
-func createBrandingForTest(preferences []byte) (string, error) {
-	payload, err := json.Marshal(map[string]interface{}{
-		"displayName": "Test Application Branding",
-		"preferences": json.RawMessage(preferences),
-	})
-	if err != nil {
-		return "", fmt.Errorf("failed to marshal branding request: %w", err)
-	}
-
-	req, err := http.NewRequest("POST", testServerURL+"/branding", bytes.NewReader(payload))
-	if err != nil {
-		return "", fmt.Errorf("failed to create request: %w", err)
-	}
-	req.Header.Set("Content-Type", "application/json")
-
-	client := testutils.GetHTTPClient()
-
-	resp, err := client.Do(req)
-	if err != nil {
-		return "", fmt.Errorf("failed to send request: %w", err)
-	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode != http.StatusCreated {
-		responseBody, _ := io.ReadAll(resp.Body)
-		return "", fmt.Errorf("expected status 201, got %d. Response: %s", resp.StatusCode, string(responseBody))
-	}
-
-	var brandingResponse map[string]interface{}
-	err = json.NewDecoder(resp.Body).Decode(&brandingResponse)
-	if err != nil {
-		return "", fmt.Errorf("failed to parse response body: %w", err)
-	}
-
-	brandingID, ok := brandingResponse["id"].(string)
-	if !ok {
-		return "", fmt.Errorf("response does not contain id or id is not a string")
-	}
-	return brandingID, nil
-}
-
-// Helper function to delete a branding configuration for testing
-func deleteBrandingForTest(brandingID string) error {
-	req, err := http.NewRequest("DELETE", testServerURL+"/branding/"+brandingID, nil)
-	if err != nil {
-		return fmt.Errorf("failed to create delete request: %w", err)
-	}
-
-	client := testutils.GetHTTPClient()
-
-	resp, err := client.Do(req)
-	if err != nil {
-		return fmt.Errorf("failed to send delete request: %w", err)
-	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode != http.StatusNoContent && resp.StatusCode != http.StatusNotFound {
-		responseBody, _ := io.ReadAll(resp.Body)
-		return fmt.Errorf("expected status 204 or 404, got %d. Response: %s", resp.StatusCode, string(responseBody))
-	}
-	return nil
-}
-
 // Helper function to create a theme configuration for testing
-func createThemeForTest(preferences []byte) (string, error) {
+func createThemeForTest(theme []byte) (string, error) {
 	payload, err := json.Marshal(map[string]interface{}{
 		"displayName": "Test Theme",
-		"preferences": json.RawMessage(preferences),
+		"theme":       json.RawMessage(theme),
 	})
 	if err != nil {
 		return "", fmt.Errorf("failed to marshal theme request: %w", err)
 	}
 
-	req, err := http.NewRequest("POST", testServerURL+"/themes", bytes.NewReader(payload))
+	req, err := http.NewRequest("POST", testServerURL+"/design/themes", bytes.NewReader(payload))
 	if err != nil {
 		return "", fmt.Errorf("failed to create request: %w", err)
 	}
@@ -3681,7 +3617,7 @@ func createThemeForTest(preferences []byte) (string, error) {
 
 // Helper function to delete a theme configuration for testing
 func deleteThemeForTest(themeID string) error {
-	req, err := http.NewRequest("DELETE", testServerURL+"/themes/"+themeID, nil)
+	req, err := http.NewRequest("DELETE", testServerURL+"/design/themes/"+themeID, nil)
 	if err != nil {
 		return fmt.Errorf("failed to create delete request: %w", err)
 	}
@@ -3702,17 +3638,17 @@ func deleteThemeForTest(themeID string) error {
 }
 
 // Helper function to create a layout configuration for testing
-func createLayoutForTest(preferences []byte, description string) (string, error) {
+func createLayoutForTest(layout []byte, description string) (string, error) {
 	payload, err := json.Marshal(map[string]interface{}{
 		"displayName": "Test Layout",
 		"description": description,
-		"preferences": json.RawMessage(preferences),
+		"layout":      json.RawMessage(layout),
 	})
 	if err != nil {
 		return "", fmt.Errorf("failed to marshal layout request: %w", err)
 	}
 
-	req, err := http.NewRequest("POST", testServerURL+"/layouts", bytes.NewReader(payload))
+	req, err := http.NewRequest("POST", testServerURL+"/design/layouts", bytes.NewReader(payload))
 	if err != nil {
 		return "", fmt.Errorf("failed to create request: %w", err)
 	}
@@ -3746,7 +3682,7 @@ func createLayoutForTest(preferences []byte, description string) (string, error)
 
 // Helper function to delete a layout configuration for testing
 func deleteLayoutForTest(layoutID string) error {
-	req, err := http.NewRequest("DELETE", testServerURL+"/layouts/"+layoutID, nil)
+	req, err := http.NewRequest("DELETE", testServerURL+"/design/layouts/"+layoutID, nil)
 	if err != nil {
 		return fmt.Errorf("failed to create delete request: %w", err)
 	}
@@ -3875,39 +3811,47 @@ func (ts *ApplicationAPITestSuite) TestApplicationWithInvalidBrandingID() {
 	ts.Assert().Equal("APP-1026", errResp["code"])
 }
 
-// TestApplicationUpdateWithBrandingID tests updating an application with a branding ID
+// TestApplicationUpdateWithThemeAndLayout tests updating an application with theme and layout IDs
 func (ts *ApplicationAPITestSuite) TestApplicationUpdateWithBrandingID() {
-	// Create a branding configuration first
-	brandingPreferences := []byte(`{
-		"theme": {
-			"activeColorScheme": "light",
-			"colorSchemes": {
-				"light": {
-					"colors": {
-						"primary": {
-							"main": "#2196f3",
-							"dark": "#1976d2",
-							"contrastText": "#ffffff"
-						}
+	// Create a theme configuration first
+	themePreferences := []byte(`{
+		"activeColorScheme": "light",
+		"colorSchemes": {
+			"light": {
+				"colors": {
+					"primary": {
+						"main": "#2196f3",
+						"dark": "#1976d2",
+						"contrastText": "#ffffff"
 					}
 				}
 			}
 		}
 	}`)
-	brandingID, err := createBrandingForTest(brandingPreferences)
-	ts.Require().NoError(err, "Failed to create branding for test")
-	defer deleteBrandingForTest(brandingID)
+	themeID, err := createThemeForTest(themePreferences)
+	ts.Require().NoError(err, "Failed to create theme for test")
+	defer deleteThemeForTest(themeID)
 
-	// Create application without branding
+	// Create a layout configuration
+	layoutPreferences := []byte(`{
+		"header": {
+			"showLogo": true
+		}
+	}`)
+	layoutID, err := createLayoutForTest(layoutPreferences, "Test Layout")
+	ts.Require().NoError(err, "Failed to create layout for test")
+	defer deleteLayoutForTest(layoutID)
+
+	// Create application without theme/layout
 	app := Application{
-		Name:        "App To Update Branding",
-		Description: "Application to update with branding",
+		Name:        "App To Update Design",
+		Description: "Application to update with theme and layout",
 		Certificate: &ApplicationCert{Type: "NONE", Value: ""},
 		InboundAuthConfig: []InboundAuthConfig{
 			{
 				Type: "oauth2",
 				OAuthAppConfig: &OAuthAppConfig{
-					RedirectURIs:            []string{"https://update-branding.example.com/callback"},
+					RedirectURIs:            []string{"https://update-design.example.com/callback"},
 					GrantTypes:              []string{"authorization_code"},
 					ResponseTypes:           []string{"code"},
 					TokenEndpointAuthMethod: "client_secret_basic",
@@ -3920,8 +3864,9 @@ func (ts *ApplicationAPITestSuite) TestApplicationUpdateWithBrandingID() {
 	ts.Require().NoError(err)
 	defer deleteApplication(appID)
 
-	// Update application with branding ID
-	app.BrandingID = brandingID
+	// Update application with theme and layout IDs
+	app.ThemeID = themeID
+	app.LayoutID = layoutID
 	appJSON, err := json.Marshal(app)
 	ts.Require().NoError(err)
 
@@ -3937,18 +3882,19 @@ func (ts *ApplicationAPITestSuite) TestApplicationUpdateWithBrandingID() {
 
 	ts.Assert().Equal(http.StatusOK, resp.StatusCode)
 
-	// Verify the branding ID is updated
+	// Verify the theme and layout IDs are updated
 	retrievedApp, err := getApplicationByID(appID)
 	ts.Require().NoError(err)
-	ts.Assert().Equal(brandingID, retrievedApp.BrandingID)
+	ts.Assert().Equal(themeID, retrievedApp.ThemeID)
+	ts.Assert().Equal(layoutID, retrievedApp.LayoutID)
 }
 
-// TestApplicationUpdateWithInvalidBrandingID tests updating an application with an invalid branding ID
+// TestApplicationUpdateWithInvalidBrandingID tests updating an application with invalid theme/layout IDs
 func (ts *ApplicationAPITestSuite) TestApplicationUpdateWithInvalidBrandingID() {
-	// Create application without branding
+	// Create application without theme/layout
 	app := Application{
-		Name:        "App To Update Invalid Branding",
-		Description: "Application to update with invalid branding",
+		Name:        "App To Update Invalid Design",
+		Description: "Application to update with invalid theme/layout",
 		Certificate: &ApplicationCert{Type: "NONE", Value: ""},
 		InboundAuthConfig: []InboundAuthConfig{
 			{
@@ -3967,8 +3913,8 @@ func (ts *ApplicationAPITestSuite) TestApplicationUpdateWithInvalidBrandingID() 
 	ts.Require().NoError(err)
 	defer deleteApplication(appID)
 
-	// Update application with invalid branding ID
-	app.BrandingID = "00000000-0000-0000-0000-000000000000"
+	// Update application with invalid theme ID
+	app.ThemeID = "00000000-0000-0000-0000-000000000000"
 	appJSON, err := json.Marshal(app)
 	ts.Require().NoError(err)
 
@@ -3993,34 +3939,32 @@ func (ts *ApplicationAPITestSuite) TestApplicationUpdateWithInvalidBrandingID() 
 	ts.Assert().Equal("APP-1026", errResp["code"])
 }
 
-// TestBrandingCannotDeleteWhenAssociatedWithApplication tests that branding cannot be deleted when associated with an application
+// TestBrandingCannotDeleteWhenAssociatedWithApplication tests that theme/layout cannot be deleted when associated with an application
 func (ts *ApplicationAPITestSuite) TestBrandingCannotDeleteWhenAssociatedWithApplication() {
-	// Create a branding configuration
-	brandingPreferences := []byte(`{
-		"theme": {
-			"activeColorScheme": "dark",
-			"colorSchemes": {
-				"dark": {
-					"colors": {
-						"primary": {
-							"main": "#1976d2",
-							"dark": "#0d47a1",
-							"contrastText": "#ffffff"
-						}
+	// Create a theme configuration
+	themePreferences := []byte(`{
+		"activeColorScheme": "dark",
+		"colorSchemes": {
+			"dark": {
+				"colors": {
+					"primary": {
+						"main": "#1976d2",
+						"dark": "#0d47a1",
+						"contrastText": "#ffffff"
 					}
 				}
 			}
 		}
 	}`)
-	brandingID, err := createBrandingForTest(brandingPreferences)
-	ts.Require().NoError(err, "Failed to create branding for test")
-	defer deleteBrandingForTest(brandingID)
+	themeID, err := createThemeForTest(themePreferences)
+	ts.Require().NoError(err, "Failed to create theme for test")
+	defer deleteThemeForTest(themeID)
 
-	// Create application with branding ID
+	// Create application with theme ID
 	app := Application{
-		Name:        "App Preventing Branding Delete",
-		Description: "Application that prevents branding deletion",
-		BrandingID:  brandingID,
+		Name:        "App Preventing Theme Delete",
+		Description: "Application that prevents theme deletion",
+		ThemeID:     themeID,
 		Certificate: &ApplicationCert{Type: "NONE", Value: ""},
 		InboundAuthConfig: []InboundAuthConfig{
 			{
@@ -4039,8 +3983,8 @@ func (ts *ApplicationAPITestSuite) TestBrandingCannotDeleteWhenAssociatedWithApp
 	ts.Require().NoError(err)
 	defer deleteApplication(appID)
 
-	// Try to delete the branding - should fail
-	req, err := http.NewRequest("DELETE", testServerURL+"/branding/"+brandingID, nil)
+	// Try to delete the theme - should fail
+	req, err := http.NewRequest("DELETE", testServerURL+"/design/themes/"+themeID, nil)
 	ts.Require().NoError(err)
 
 	client := testutils.GetHTTPClient()
@@ -4057,13 +4001,13 @@ func (ts *ApplicationAPITestSuite) TestBrandingCannotDeleteWhenAssociatedWithApp
 	var errResp map[string]interface{}
 	err = json.Unmarshal(bodyBytes, &errResp)
 	ts.Require().NoError(err)
-	ts.Assert().Equal("BRD-1004", errResp["code"])
+	ts.Assert().Equal("THM-1004", errResp["code"])
 
 	// Delete the application first
 	err = deleteApplication(appID)
 	ts.Require().NoError(err)
 
-	// Now the branding should be deletable
+	// Now the theme should be deletable
 	resp, err = client.Do(req)
 	ts.Require().NoError(err)
 	defer resp.Body.Close()

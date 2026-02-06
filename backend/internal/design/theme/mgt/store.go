@@ -104,12 +104,12 @@ func (s *themeMgtStore) CreateTheme(id string, theme CreateThemeRequest) error {
 		return err
 	}
 
-	preferencesJSON, err := json.Marshal(theme.Preferences)
+	themeJSON, err := json.Marshal(theme.Theme)
 	if err != nil {
-		return fmt.Errorf("failed to marshal preferences: %w", err)
+		return fmt.Errorf("failed to marshal theme: %w", err)
 	}
 
-	_, err = dbClient.Execute(queryCreateTheme, id, theme.DisplayName, preferencesJSON, s.deploymentID)
+	_, err = dbClient.Execute(queryCreateTheme, id, theme.DisplayName, theme.Description, themeJSON, s.deploymentID)
 	if err != nil {
 		return fmt.Errorf("failed to execute query: %w", err)
 	}
@@ -171,12 +171,12 @@ func (s *themeMgtStore) UpdateTheme(id string, theme UpdateThemeRequest) error {
 		return err
 	}
 
-	preferencesJSON, err := json.Marshal(theme.Preferences)
+	themeJSON, err := json.Marshal(theme.Theme)
 	if err != nil {
-		return fmt.Errorf("failed to marshal preferences: %w", err)
+		return fmt.Errorf("failed to marshal theme: %w", err)
 	}
 
-	_, err = dbClient.Execute(queryUpdateTheme, theme.DisplayName, preferencesJSON, id, s.deploymentID)
+	_, err = dbClient.Execute(queryUpdateTheme, theme.DisplayName, theme.Description, themeJSON, id, s.deploymentID)
 	if err != nil {
 		return fmt.Errorf("failed to execute query: %w", err)
 	}
@@ -279,24 +279,30 @@ func buildThemeFromResultRow(row map[string]interface{}) (Theme, error) {
 		return Theme{}, fmt.Errorf("display_name not found or invalid type")
 	}
 
-	preferencesInterface, ok := row["preferences"]
-	if !ok {
-		return Theme{}, fmt.Errorf("preferences not found")
+	description := ""
+	if desc, ok := row["description"].(string); ok {
+		description = desc
 	}
 
-	var preferences json.RawMessage
-	switch v := preferencesInterface.(type) {
+	themeInterface, ok := row["theme"]
+	if !ok {
+		return Theme{}, fmt.Errorf("theme not found")
+	}
+
+	var theme json.RawMessage
+	switch v := themeInterface.(type) {
 	case string:
-		preferences = json.RawMessage(v)
+		theme = json.RawMessage(v)
 	case []byte:
-		preferences = json.RawMessage(v)
+		theme = json.RawMessage(v)
 	default:
-		return Theme{}, fmt.Errorf("unexpected type for preferences: %T", preferencesInterface)
+		return Theme{}, fmt.Errorf("unexpected type for theme: %T", themeInterface)
 	}
 
 	return Theme{
 		ID:          id,
 		DisplayName: displayName,
-		Preferences: preferences,
+		Description: description,
+		Theme:       theme,
 	}, nil
 }

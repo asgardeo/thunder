@@ -24,7 +24,8 @@ import "encoding/json"
 type Theme struct {
 	ID          string          `json:"id"`
 	DisplayName string          `json:"displayName"`
-	Preferences json.RawMessage `json:"preferences"`
+	Description string          `json:"description"`
+	Theme       json.RawMessage `json:"theme"`
 }
 
 // ThemeListItem represents a theme item in the list response.
@@ -36,13 +37,15 @@ type ThemeListItem struct {
 // CreateThemeRequest represents the request body for creating a theme configuration.
 type CreateThemeRequest struct {
 	DisplayName string          `json:"displayName"`
-	Preferences json.RawMessage `json:"preferences"`
+	Description string          `json:"description"`
+	Theme       json.RawMessage `json:"theme"`
 }
 
 // UpdateThemeRequest represents the request body for updating a theme configuration.
 type UpdateThemeRequest struct {
 	DisplayName string          `json:"displayName"`
-	Preferences json.RawMessage `json:"preferences"`
+	Description string          `json:"description"`
+	Theme       json.RawMessage `json:"theme"`
 }
 
 // ThemeListResponse represents the response for listing theme configurations with pagination.

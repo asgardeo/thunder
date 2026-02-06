@@ -102,7 +102,8 @@ func (th *themeMgtHandler) HandleThemePostRequest(w http.ResponseWriter, r *http
 	themeResponse := Theme{
 		ID:          createdTheme.ID,
 		DisplayName: createdTheme.DisplayName,
-		Preferences: createdTheme.Preferences,
+		Description: createdTheme.Description,
+		Theme:       createdTheme.Theme,
 	}
 
 	sysutils.WriteSuccessResponse(w, http.StatusCreated, themeResponse)
@@ -122,7 +123,8 @@ func (th *themeMgtHandler) HandleThemeGetRequest(w http.ResponseWriter, r *http.
 	themeResponse := Theme{
 		ID:          theme.ID,
 		DisplayName: theme.DisplayName,
-		Preferences: theme.Preferences,
+		Description: theme.Description,
+		Theme:       theme.Theme,
 	}
 
 	sysutils.WriteSuccessResponse(w, http.StatusOK, themeResponse)
@@ -148,7 +150,8 @@ func (th *themeMgtHandler) HandleThemePutRequest(w http.ResponseWriter, r *http.
 	themeResponse := Theme{
 		ID:          updatedTheme.ID,
 		DisplayName: updatedTheme.DisplayName,
-		Preferences: updatedTheme.Preferences,
+		Description: updatedTheme.Description,
+		Theme:       updatedTheme.Theme,
 	}
 
 	sysutils.WriteSuccessResponse(w, http.StatusOK, themeResponse)

@@ -97,7 +97,7 @@ func (ts *themeMgtService) CreateTheme(theme CreateThemeRequest) (*Theme, *servi
 		}
 	}
 
-	if err := ts.validateThemePreferences(theme.Preferences); err != nil {
+	if err := ts.validateThemePreferences(theme.Theme); err != nil {
 		return nil, err
 	}
 
@@ -110,7 +110,8 @@ func (ts *themeMgtService) CreateTheme(theme CreateThemeRequest) (*Theme, *servi
 	createdTheme := &Theme{
 		ID:          id,
 		DisplayName: theme.DisplayName,
-		Preferences: theme.Preferences,
+		Description: theme.Description,
+		Theme:       theme.Theme,
 	}
 
 	ts.logger.Debug("Successfully created theme", log.String("id", id))
@@ -155,7 +156,7 @@ func (ts *themeMgtService) UpdateTheme(id string, theme UpdateThemeRequest) (*Th
 		}
 	}
 
-	if err := ts.validateThemePreferences(theme.Preferences); err != nil {
+	if err := ts.validateThemePreferences(theme.Theme); err != nil {
 		return nil, err
 	}
 
@@ -178,7 +179,8 @@ func (ts *themeMgtService) UpdateTheme(id string, theme UpdateThemeRequest) (*Th
 	updatedTheme := &Theme{
 		ID:          id,
 		DisplayName: theme.DisplayName,
-		Preferences: theme.Preferences,
+		Description: theme.Description,
+		Theme:       theme.Theme,
 	}
 
 	ts.logger.Debug("Successfully updated theme", log.String("id", id))
@@ -243,15 +245,15 @@ func (ts *themeMgtService) IsThemeExist(id string) (bool, *serviceerror.ServiceE
 	return exists, nil
 }
 
-// validateThemePreferences validates the theme preferences JSON.
-func (ts *themeMgtService) validateThemePreferences(preferences json.RawMessage) *serviceerror.ServiceError {
-	if len(preferences) == 0 {
+// validateThemePreferences validates the theme JSON.
+func (ts *themeMgtService) validateThemePreferences(theme json.RawMessage) *serviceerror.ServiceError {
+	if len(theme) == 0 {
 		return &ErrorInvalidThemeData
 	}
 
 	var result map[string]interface{}
-	if err := json.Unmarshal(preferences, &result); err != nil {
-		ts.logger.Debug("Invalid preferences JSON", log.Error(err))
+	if err := json.Unmarshal(theme, &result); err != nil {
+		ts.logger.Debug("Invalid theme JSON", log.Error(err))
 		return &ErrorInvalidThemeData
 	}
 

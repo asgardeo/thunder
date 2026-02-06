@@ -24,13 +24,13 @@ var (
 	// queryCreateLayout creates a new layout configuration.
 	queryCreateLayout = dbmodel.DBQuery{
 		ID:    "LAQ-LAYOUT_MGT-01",
-		Query: "INSERT INTO LAYOUT (LAYOUT_ID, DISPLAY_NAME, DESCRIPTION, PREFERENCES, DEPLOYMENT_ID) VALUES ($1, $2, $3, $4, $5)",
+		Query: "INSERT INTO LAYOUT (LAYOUT_ID, DISPLAY_NAME, DESCRIPTION, LAYOUT, DEPLOYMENT_ID) VALUES ($1, $2, $3, $4, $5)",
 	}
 
 	// queryGetLayoutByID retrieves a layout configuration by ID.
 	queryGetLayoutByID = dbmodel.DBQuery{
 		ID: "LAQ-LAYOUT_MGT-02",
-		Query: "SELECT LAYOUT_ID, DISPLAY_NAME, DESCRIPTION, PREFERENCES FROM LAYOUT " +
+		Query: "SELECT LAYOUT_ID, DISPLAY_NAME, DESCRIPTION, LAYOUT FROM LAYOUT " +
 			"WHERE LAYOUT_ID = $1 AND DEPLOYMENT_ID = $2",
 	}
 
@@ -50,11 +50,11 @@ var (
 	// queryUpdateLayout updates a layout configuration.
 	queryUpdateLayout = dbmodel.DBQuery{
 		ID: "LAQ-LAYOUT_MGT-05",
-		PostgresQuery: "UPDATE LAYOUT SET DISPLAY_NAME = $1, DESCRIPTION = $2, PREFERENCES = $3, " +
+		PostgresQuery: "UPDATE LAYOUT SET DISPLAY_NAME = $1, DESCRIPTION = $2, LAYOUT = $3, " +
 			"UPDATED_AT = NOW() WHERE LAYOUT_ID = $4 AND DEPLOYMENT_ID = $5",
-		SQLiteQuery: "UPDATE LAYOUT SET DISPLAY_NAME = $1, DESCRIPTION = $2, PREFERENCES = $3, " +
+		SQLiteQuery: "UPDATE LAYOUT SET DISPLAY_NAME = $1, DESCRIPTION = $2, LAYOUT = $3, " +
 			"UPDATED_AT = datetime('now') WHERE LAYOUT_ID = $4 AND DEPLOYMENT_ID = $5",
-		Query: "UPDATE LAYOUT SET DISPLAY_NAME = $1, DESCRIPTION = $2, PREFERENCES = $3, " +
+		Query: "UPDATE LAYOUT SET DISPLAY_NAME = $1, DESCRIPTION = $2, LAYOUT = $3, " +
 			"UPDATED_AT = datetime('now') WHERE LAYOUT_ID = $4 AND DEPLOYMENT_ID = $5",
 	}
 

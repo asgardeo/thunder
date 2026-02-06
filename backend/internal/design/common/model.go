@@ -23,7 +23,6 @@ import "encoding/json"
 
 // DesignResponse represents the response body for design resolve operations.
 type DesignResponse struct {
-	ID          string          `json:"id"`
-	DisplayName string          `json:"displayName"`
-	Preferences json.RawMessage `json:"preferences"`
+	Theme  json.RawMessage `json:"theme,omitempty"`
+	Layout json.RawMessage `json:"layout,omitempty"`
 }

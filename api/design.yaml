@@ -77,7 +77,7 @@ paths:
               $ref: '#/components/schemas/ThemeRequest'
             example:
               displayName: "Corporate Theme"
-              preferences:
+              theme:
                 primaryColor: "#1976d2"
                 secondaryColor: "#dc004e"
                 fontFamily: "Roboto"
@@ -92,7 +92,7 @@ paths:
               example:
                 id: "3fa85f64-5717-4562-b3fc-2c963f66afa6"
                 displayName: "Corporate Theme"
-                preferences:
+                theme:
                   primaryColor: "#1976d2"
                   secondaryColor: "#dc004e"
                   fontFamily: "Roboto"
@@ -122,7 +122,7 @@ paths:
               example:
                 id: "3fa85f64-5717-4562-b3fc-2c963f66afa6"
                 displayName: "Corporate Theme"
-                preferences:
+                theme:
                   primaryColor: "#1976d2"
                   secondaryColor: "#dc004e"
                   fontFamily: "Roboto"
@@ -151,7 +151,7 @@ paths:
               $ref: '#/components/schemas/ThemeRequest'
             example:
               displayName: "Updated Corporate Theme"
-              preferences:
+              theme:
                 primaryColor: "#1976d2"
                 secondaryColor: "#dc004e"
                 fontFamily: "Inter"
@@ -241,7 +241,7 @@ paths:
               $ref: '#/components/schemas/LayoutRequest'
             example:
               displayName: "Modern Layout"
-              preferences:
+              layout:
                 contentAlignment: "center"
                 maxWidth: "1200px"
                 showLogo: true
@@ -256,7 +256,7 @@ paths:
               example:
                 id: "3fa85f64-5717-4562-b3fc-2c963f66afa6"
                 displayName: "Modern Layout"
-                preferences:
+                layout:
                   contentAlignment: "center"
                   maxWidth: "1200px"
                   showLogo: true
@@ -286,7 +286,7 @@ paths:
               example:
                 id: "3fa85f64-5717-4562-b3fc-2c963f66afa6"
                 displayName: "Modern Layout"
-                preferences:
+                layout:
                   contentAlignment: "center"
                   maxWidth: "1200px"
                   showLogo: true
@@ -315,7 +315,7 @@ paths:
               $ref: '#/components/schemas/LayoutRequest'
             example:
               displayName: "Updated Modern Layout"
-              preferences:
+              layout:
                 contentAlignment: "left"
                 maxWidth: "1400px"
                 showLogo: true
@@ -390,17 +390,18 @@ paths:
               schema:
                 $ref: '#/components/schemas/DesignResolveResponse'
               example:
-                id: "theme-id|layout-id"
-                displayName: "Corporate Theme / Modern Layout"
-                preferences:
-                  primaryColor: "#1976d2"
-                  secondaryColor: "#dc004e"
-                  fontFamily: "Inter"
-                  borderRadius: "8px"
-                  contentAlignment: "center"
-                  maxWidth: "1200px"
-                  showLogo: true
-                  logoPosition: "top"
+                theme:
+                  direction: "ltr"
+                  defaultColorScheme: "dark"
+                  colorSchemes:
+                    dark:
+                      palette:
+                        primary:
+                          main: "#BD93F9"
+                layout:
+                  header:
+                    logo:
+                      url: "https://example.com/logo.png"
         "400":
           $ref: '#/components/responses/BadRequest'
         "401":
@@ -464,15 +465,19 @@ components:
       type: object
       required:
         - displayName
-        - preferences
+        - theme
       properties:
         displayName:
           type: string
           description: Display name for the theme
           example: "Corporate Theme"
-        preferences:
+        description:
+          type: string
+          description: Description of the theme
+          example: "Dracula theme..."
+        theme:
           type: object
-          description: Theme preferences as a JSON object
+          description: Theme configuration as a JSON object
           additionalProperties: true
           example:
             primaryColor: "#1976d2"
@@ -492,9 +497,13 @@ components:
           type: string
           description: Display name for the theme
           example: "Corporate Theme"
-        preferences:
+        description:
+          type: string
+          description: Description of the theme
+          example: "Dracula theme..."
+        theme:
           type: object
-          description: Theme preferences as a JSON object
+          description: Theme configuration as a JSON object
           additionalProperties: true
           example:
             primaryColor: "#1976d2"
@@ -560,15 +569,15 @@ components:
       type: object
       required:
         - displayName
-        - preferences
+        - layout
       properties:
         displayName:
           type: string
           description: Display name for the layout
           example: "Modern Layout"
-        preferences:
+        layout:
           type: object
-          description: Layout preferences as a JSON object
+          description: Layout configuration as a JSON object
           additionalProperties: true
           example:
             contentAlignment: "center"
@@ -588,9 +597,9 @@ components:
           type: string
           description: Display name for the layout
           example: "Modern Layout"
-        preferences:
+        layout:
           type: object
-          description: Layout preferences as a JSON object
+          description: Layout configuration as a JSON object
           additionalProperties: true
           example:
             contentAlignment: "center"
@@ -663,9 +672,9 @@ components:
           type: string
           description: Combined display name or single display name
           example: "Corporate Theme / Modern Layout"
-        preferences:
+        design:
           type: object
-          description: Merged preferences from theme and layout (layout preferences take precedence)
+          description: Merged design configuration from theme and layout (layout takes precedence)
           additionalProperties: true
           example:
             primaryColor: "#1976d2"

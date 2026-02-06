@@ -24,13 +24,13 @@ var (
 	// queryCreateTheme creates a new theme configuration.
 	queryCreateTheme = dbmodel.DBQuery{
 		ID:    "THQ-THEME_MGT-01",
-		Query: "INSERT INTO THEME (THEME_ID, DISPLAY_NAME, PREFERENCES, DEPLOYMENT_ID) VALUES ($1, $2, $3, $4)",
+		Query: "INSERT INTO THEME (THEME_ID, DISPLAY_NAME, DESCRIPTION, THEME, DEPLOYMENT_ID) VALUES ($1, $2, $3, $4, $5)",
 	}
 
 	// queryGetThemeByID retrieves a theme configuration by ID.
 	queryGetThemeByID = dbmodel.DBQuery{
 		ID: "THQ-THEME_MGT-02",
-		Query: "SELECT THEME_ID, DISPLAY_NAME, PREFERENCES FROM THEME " +
+		Query: "SELECT THEME_ID, DISPLAY_NAME, DESCRIPTION, THEME FROM THEME " +
 			"WHERE THEME_ID = $1 AND DEPLOYMENT_ID = $2",
 	}
 
@@ -50,12 +50,12 @@ var (
 	// queryUpdateTheme updates a theme configuration.
 	queryUpdateTheme = dbmodel.DBQuery{
 		ID: "THQ-THEME_MGT-05",
-		PostgresQuery: "UPDATE THEME SET DISPLAY_NAME = $1, PREFERENCES = $2, " +
-			"UPDATED_AT = NOW() WHERE THEME_ID = $3 AND DEPLOYMENT_ID = $4",
-		SQLiteQuery: "UPDATE THEME SET DISPLAY_NAME = $1, PREFERENCES = $2, " +
-			"UPDATED_AT = datetime('now') WHERE THEME_ID = $3 AND DEPLOYMENT_ID = $4",
-		Query: "UPDATE THEME SET DISPLAY_NAME = $1, PREFERENCES = $2, " +
-			"UPDATED_AT = datetime('now') WHERE THEME_ID = $3 AND DEPLOYMENT_ID = $4",
+		PostgresQuery: "UPDATE THEME SET DISPLAY_NAME = $1, DESCRIPTION = $2, THEME = $3, " +
+			"UPDATED_AT = NOW() WHERE THEME_ID = $4 AND DEPLOYMENT_ID = $5",
+		SQLiteQuery: "UPDATE THEME SET DISPLAY_NAME = $1, DESCRIPTION = $2, THEME = $3, " +
+			"UPDATED_AT = datetime('now') WHERE THEME_ID = $4 AND DEPLOYMENT_ID = $5",
+		Query: "UPDATE THEME SET DISPLAY_NAME = $1, DESCRIPTION = $2, THEME = $3, " +
+			"UPDATED_AT = datetime('now') WHERE THEME_ID = $4 AND DEPLOYMENT_ID = $5",
 	}
 
 	// queryDeleteTheme deletes a theme configuration.

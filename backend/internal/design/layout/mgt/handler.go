@@ -104,7 +104,7 @@ func (lh *layoutMgtHandler) HandleLayoutPostRequest(w http.ResponseWriter, r *ht
 		ID:          createdLayout.ID,
 		DisplayName: createdLayout.DisplayName,
 		Description: createdLayout.Description,
-		Preferences: createdLayout.Preferences,
+		Layout: createdLayout.Layout,
 	}
 
 	sysutils.WriteSuccessResponse(w, http.StatusCreated, layoutResponse)
@@ -125,7 +125,7 @@ func (lh *layoutMgtHandler) HandleLayoutGetRequest(w http.ResponseWriter, r *htt
 		ID:          layout.ID,
 		DisplayName: layout.DisplayName,
 		Description: layout.Description,
-		Preferences: layout.Preferences,
+		Layout: layout.Layout,
 	}
 
 	sysutils.WriteSuccessResponse(w, http.StatusOK, layoutResponse)
@@ -152,7 +152,7 @@ func (lh *layoutMgtHandler) HandleLayoutPutRequest(w http.ResponseWriter, r *htt
 		ID:          updatedLayout.ID,
 		DisplayName: updatedLayout.DisplayName,
 		Description: updatedLayout.Description,
-		Preferences: updatedLayout.Preferences,
+		Layout: updatedLayout.Layout,
 	}
 
 	sysutils.WriteSuccessResponse(w, http.StatusOK, layoutResponse)

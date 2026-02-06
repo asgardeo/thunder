@@ -104,12 +104,12 @@ func (s *layoutMgtStore) CreateLayout(id string, layout CreateLayoutRequest) err
 		return err
 	}
 
-	preferencesJSON, err := json.Marshal(layout.Preferences)
+	layoutJSON, err := json.Marshal(layout.Layout)
 	if err != nil {
-		return fmt.Errorf("failed to marshal preferences: %w", err)
+		return fmt.Errorf("failed to marshal layout: %w", err)
 	}
 
-	_, err = dbClient.Execute(queryCreateLayout, id, layout.DisplayName, layout.Description, preferencesJSON, s.deploymentID)
+	_, err = dbClient.Execute(queryCreateLayout, id, layout.DisplayName, layout.Description, layoutJSON, s.deploymentID)
 	if err != nil {
 		return fmt.Errorf("failed to execute query: %w", err)
 	}
@@ -171,12 +171,12 @@ func (s *layoutMgtStore) UpdateLayout(id string, layout UpdateLayoutRequest) err
 		return err
 	}
 
-	preferencesJSON, err := json.Marshal(layout.Preferences)
+	layoutJSON, err := json.Marshal(layout.Layout)
 	if err != nil {
-		return fmt.Errorf("failed to marshal preferences: %w", err)
+		return fmt.Errorf("failed to marshal layout: %w", err)
 	}
 
-	_, err = dbClient.Execute(queryUpdateLayout, layout.DisplayName, layout.Description, preferencesJSON, id, s.deploymentID)
+	_, err = dbClient.Execute(queryUpdateLayout, layout.DisplayName, layout.Description, layoutJSON, id, s.deploymentID)
 	if err != nil {
 		return fmt.Errorf("failed to execute query: %w", err)
 	}
@@ -290,25 +290,25 @@ func buildLayoutFromResultRow(row map[string]interface{}) (Layout, error) {
 		description, _ = descInterface.(string)
 	}
 
-	preferencesInterface, ok := row["preferences"]
+	layoutInterface, ok := row["layout"]
 	if !ok {
-		return Layout{}, fmt.Errorf("preferences not found")
+		return Layout{}, fmt.Errorf("layout not found")
 	}
 
-	var preferences json.RawMessage
-	switch v := preferencesInterface.(type) {
+	var layout json.RawMessage
+	switch v := layoutInterface.(type) {
 	case string:
-		preferences = json.RawMessage(v)
+		layout = json.RawMessage(v)
 	case []byte:
-		preferences = json.RawMessage(v)
+		layout = json.RawMessage(v)
 	default:
-		return Layout{}, fmt.Errorf("unexpected type for preferences: %T", preferencesInterface)
+		return Layout{}, fmt.Errorf("unexpected type for layout: %T", layoutInterface)
 	}
 
 	return Layout{
 		ID:          id,
 		DisplayName: displayName,
 		Description: description,
-		Preferences: preferences,
+		Layout: layout,
 	}, nil
 }
