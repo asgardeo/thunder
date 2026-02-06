@@ -110,6 +110,13 @@ var (
 		Error:            "Cannot modify declarative resource",
 		ErrorDescription: "The organization unit is declarative and cannot be modified or deleted",
 	}
+	// ErrorResultLimitExceeded is the error returned when the result limit is exceeded in composite mode.
+	ErrorResultLimitExceeded = serviceerror.ServiceError{
+		Type:             serviceerror.ClientErrorType,
+		Code:             "OU-1013",
+		Error:            "Result limit exceeded",
+		ErrorDescription: "Results limited to 1,000 records in hybrid mode. Use search functionality for larger datasets.",
+	}
 )
 
 // Server errors for organization unit management operations.
@@ -131,4 +138,6 @@ var (
 	ErrCannotUpdateDeclarativeOU = errors.New("cannot update declarative organization unit")
 	// ErrCannotDeleteDeclarativeOU is returned when attempting to delete a declarative organization unit.
 	ErrCannotDeleteDeclarativeOU = errors.New("cannot delete declarative organization unit")
+	// ErrResultLimitExceededInCompositeMode is returned when the result limit is exceeded in composite mode.
+	ErrResultLimitExceededInCompositeMode = errors.New("result limit exceeded in composite mode")
 )

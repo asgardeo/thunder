@@ -24,6 +24,7 @@ type OrganizationUnitBasic struct {
 	Handle      string `json:"handle"`
 	Name        string `json:"name"`
 	Description string `json:"description,omitempty"`
+	IsReadOnly  bool   `json:"isReadOnly,omitempty"`
 }
 
 // OrganizationUnit represents an organization unit.

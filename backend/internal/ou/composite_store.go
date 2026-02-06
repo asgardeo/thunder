@@ -19,6 +19,7 @@
 package ou
 
 import (
+	serverconst "github.com/asgardeo/thunder/internal/system/constants"
 	declarativeresource "github.com/asgardeo/thunder/internal/system/declarative_resource"
 )
 
@@ -48,16 +49,24 @@ func (c *compositeOUStore) GetOrganizationUnitListCount() (int, error) {
 }
 
 // GetOrganizationUnitList retrieves organization units from both stores with pagination.
+// Applies the 1000-record limit in composite mode to prevent memory exhaustion.
+// Returns ErrResultLimitExceededInCompositeMode if the limit is exceeded.
 func (c *compositeOUStore) GetOrganizationUnitList(limit, offset int) ([]OrganizationUnitBasic, error) {
-	return declarativeresource.CompositeMergeListHelper(
-		func() (int, error) { return c.fileStore.GetOrganizationUnitListCount() },
+	items, limitExceeded, err := declarativeresource.CompositeMergeListHelperWithLimit(
 		func() (int, error) { return c.dbStore.GetOrganizationUnitListCount() },
-		func(count int) ([]OrganizationUnitBasic, error) { return c.fileStore.GetOrganizationUnitList(count, 0) },
+		func() (int, error) { return c.fileStore.GetOrganizationUnitListCount() },
 		func(count int) ([]OrganizationUnitBasic, error) { return c.dbStore.GetOrganizationUnitList(count, 0) },
+		func(count int) ([]OrganizationUnitBasic, error) { return c.fileStore.GetOrganizationUnitList(count, 0) },
 		mergeAndDeduplicateOUs,
 		limit,
 		offset,
+		serverconst.MaxCompositeStoreRecords, // Apply 1000-record limit
 	)
+	// Return limit exceeded as an error
+	if limitExceeded {
+		return nil, ErrResultLimitExceededInCompositeMode
+	}
+	return items, err
 }
 
 // CreateOrganizationUnit creates a new organization unit in the database store only.
@@ -146,52 +155,29 @@ func (c *compositeOUStore) GetOrganizationUnitChildrenCount(id string) (int, err
 }
 
 // GetOrganizationUnitChildrenList retrieves child OUs from both stores with pagination.
+// Applies the 1000-record limit in composite mode to prevent memory exhaustion.
+// Returns ErrResultLimitExceededInCompositeMode if the limit is exceeded.
 func (c *compositeOUStore) GetOrganizationUnitChildrenList(
 	id string, limit, offset int) ([]OrganizationUnitBasic, error) {
-	// Get counts from both stores first to determine fetch strategy
-	dbCount, err := c.dbStore.GetOrganizationUnitChildrenCount(id)
-	if err != nil {
-		return nil, err
+	items, limitExceeded, err := declarativeresource.CompositeMergeListHelperWithLimit(
+		func() (int, error) { return c.dbStore.GetOrganizationUnitChildrenCount(id) },
+		func() (int, error) { return c.fileStore.GetOrganizationUnitChildrenCount(id) },
+		func(count int) ([]OrganizationUnitBasic, error) {
+			return c.dbStore.GetOrganizationUnitChildrenList(id, count, 0)
+		},
+		func(count int) ([]OrganizationUnitBasic, error) {
+			return c.fileStore.GetOrganizationUnitChildrenList(id, count, 0)
+		},
+		mergeAndDeduplicateChildren,
+		limit,
+		offset,
+		serverconst.MaxCompositeStoreRecords, // Apply 1000-record limit
+	)
+	// Return limit exceeded as an error
+	if limitExceeded {
+		return nil, ErrResultLimitExceededInCompositeMode
 	}
-
-	fileCount, err := c.fileStore.GetOrganizationUnitChildrenCount(id)
-	if err != nil {
-		return nil, err
-	}
-
-	totalCount := dbCount + fileCount
-
-	// If offset is beyond total count, return empty
-	if offset >= totalCount {
-		return []OrganizationUnitBasic{}, nil
-	}
-
-	// Fetch all children from both stores to ensure correct pagination
-	// This is safe because OUs typically have a reasonable number of children
-	dbChildren, err := c.dbStore.GetOrganizationUnitChildrenList(id, dbCount, 0)
-	if err != nil {
-		return nil, err
-	}
-
-	fileChildren, err := c.fileStore.GetOrganizationUnitChildrenList(id, fileCount, 0)
-	if err != nil {
-		return nil, err
-	}
-
-	// Merge results and deduplicate by ID (defensive programming)
-	allChildren := mergeAndDeduplicateChildren(dbChildren, fileChildren)
-
-	// Apply pagination to merged results
-	if offset >= len(allChildren) {
-		return []OrganizationUnitBasic{}, nil
-	}
-
-	end := offset + limit
-	if end > len(allChildren) {
-		end = len(allChildren)
-	}
-
-	return allChildren[offset:end], nil
+	return items, err
 }
 
 // GetOrganizationUnitUsersCount retrieves the count of users from the database store only.
@@ -221,18 +207,20 @@ func mergeAndDeduplicateOUs(dbOUs, fileOUs []OrganizationUnitBasic) []Organizati
 	seen := make(map[string]bool)
 	result := make([]OrganizationUnitBasic, 0, len(dbOUs)+len(fileOUs))
 
-	// Add DB OUs first (they take precedence)
+	// Add DB OUs first (they take precedence) - mark as mutable (isReadOnly=false)
 	for _, ou := range dbOUs {
 		if !seen[ou.ID] {
 			seen[ou.ID] = true
+			ou.IsReadOnly = false
 			result = append(result, ou)
 		}
 	}
 
-	// Add file OUs if not already present
+	// Add file OUs if not already present - mark as immutable (isReadOnly=true)
 	for _, ou := range fileOUs {
 		if !seen[ou.ID] {
 			seen[ou.ID] = true
+			ou.IsReadOnly = true
 			result = append(result, ou)
 		}
 	}
@@ -247,18 +235,20 @@ func mergeAndDeduplicateChildren(dbChildren, fileChildren []OrganizationUnitBasi
 	seen := make(map[string]bool)
 	result := make([]OrganizationUnitBasic, 0, len(dbChildren)+len(fileChildren))
 
-	// Add DB children first (they take precedence)
+	// Add DB children first (they take precedence) - mark as mutable (isReadOnly=false)
 	for _, child := range dbChildren {
 		if !seen[child.ID] {
 			seen[child.ID] = true
+			child.IsReadOnly = false
 			result = append(result, child)
 		}
 	}
 
-	// Add file children if not already present
+	// Add file children if not already present - mark as immutable (isReadOnly=true)
 	for _, child := range fileChildren {
 		if !seen[child.ID] {
 			seen[child.ID] = true
+			child.IsReadOnly = true
 			result = append(result, child)
 		}
 	}

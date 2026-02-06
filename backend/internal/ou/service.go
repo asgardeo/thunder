@@ -98,6 +98,10 @@ func (ous *organizationUnitService) GetOrganizationUnitList(limit, offset int) (
 
 	ouList, err := ous.ouStore.GetOrganizationUnitList(limit, offset)
 	if err != nil {
+		// Check if it's a limit exceeded error
+		if errors.Is(err, ErrResultLimitExceededInCompositeMode) {
+			return nil, &ErrorResultLimitExceeded
+		}
 		logger.Error("Failed to list organization units", log.Error(err))
 		return nil, &ErrorInternalServerError
 	}
@@ -561,16 +565,38 @@ func (ous *organizationUnitService) GetOrganizationUnitGroups(
 func (ous *organizationUnitService) GetOrganizationUnitChildren(
 	id string, limit, offset int,
 ) (*OrganizationUnitListResponse, *serviceerror.ServiceError) {
-	items, totalCount, svcErr := ous.getResourceListWithExistenceCheck(
-		id, limit, offset, "child organization units",
-		func(id string, limit, offset int) (interface{}, error) {
-			return ous.ouStore.GetOrganizationUnitChildrenList(id, limit, offset)
-		},
-		ous.ouStore.GetOrganizationUnitChildrenCount,
-	)
-	if svcErr != nil {
-		return nil, svcErr
+	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, loggerComponentNameService))
+
+	if err := validatePaginationParams(limit, offset); err != nil {
+		return nil, err
 	}
+
+	// Check if the organization unit exists
+	exists, err := ous.ouStore.IsOrganizationUnitExists(id)
+	if err != nil {
+		logger.Error("Failed to check organization unit existence", log.Error(err))
+		return nil, &ErrorInternalServerError
+	}
+	if !exists {
+		return nil, &ErrorOrganizationUnitNotFound
+	}
+
+	items, err := ous.ouStore.GetOrganizationUnitChildrenList(id, limit, offset)
+	if err != nil {
+		// Check if it's a limit exceeded error
+		if errors.Is(err, ErrResultLimitExceededInCompositeMode) {
+			return nil, &ErrorResultLimitExceeded
+		}
+		logger.Error("Failed to list child organization units", log.Error(err))
+		return nil, &ErrorInternalServerError
+	}
+
+	totalCount, err := ous.ouStore.GetOrganizationUnitChildrenCount(id)
+	if err != nil {
+		logger.Error("Failed to get child organization units count", log.Error(err))
+		return nil, &ErrorInternalServerError
+	}
+
 	return buildOrganizationUnitListResponse(items, totalCount, limit, offset)
 }
 

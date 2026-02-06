@@ -64,3 +64,11 @@ const DefaultPageSize = 30
 
 // MaxPageSize is the maximum allowed limit for pagination.
 const MaxPageSize = 100
+
+// MaxCompositeStoreRecords is the maximum number of records that can be fetched in composite/hybrid store mode.
+// This limit prevents memory exhaustion when merging results from multiple data sources (database + file-based).
+// For larger datasets, use search functionality instead of list operations.
+const MaxCompositeStoreRecords = 1000
+
+// CompositeStoreLimitWarning is the message displayed when the composite store limit is reached.
+const CompositeStoreLimitWarning = "Results limited to 1,000 records in hybrid mode. Use search for larger datasets."

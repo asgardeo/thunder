@@ -478,3 +478,412 @@ func TestCompositeIsDeclarativeHelper(t *testing.T) {
 		assert.False(t, isDeclarative)
 	})
 }
+
+// TestCompositeMergeListHelper tests the CompositeMergeListHelper function.
+func TestCompositeMergeListHelper(t *testing.T) {
+	merger := func(list1, list2 []compositeTestEntity) []compositeTestEntity {
+		result := append([]compositeTestEntity{}, list1...)
+		return append(result, list2...)
+	}
+
+	t.Run("returns error for negative limit", func(t *testing.T) {
+		firstCounter := func() (int, error) { return 10, nil }
+		secondCounter := func() (int, error) { return 15, nil }
+		firstFetcher := func(count int) ([]compositeTestEntity, error) {
+			return []compositeTestEntity{}, nil
+		}
+		secondFetcher := func(count int) ([]compositeTestEntity, error) {
+			return []compositeTestEntity{}, nil
+		}
+
+		result, err := CompositeMergeListHelper(
+			firstCounter, secondCounter, firstFetcher, secondFetcher,
+			merger, -5, 0,
+		)
+
+		assert.Error(t, err)
+		assert.Contains(t, err.Error(), "limit must be non-negative")
+		assert.Contains(t, err.Error(), "-5")
+		assert.Nil(t, result)
+	})
+
+	t.Run("returns error for negative offset", func(t *testing.T) {
+		firstCounter := func() (int, error) { return 10, nil }
+		secondCounter := func() (int, error) { return 15, nil }
+		firstFetcher := func(count int) ([]compositeTestEntity, error) {
+			return []compositeTestEntity{}, nil
+		}
+		secondFetcher := func(count int) ([]compositeTestEntity, error) {
+			return []compositeTestEntity{}, nil
+		}
+
+		result, err := CompositeMergeListHelper(
+			firstCounter, secondCounter, firstFetcher, secondFetcher,
+			merger, 5, -10,
+		)
+
+		assert.Error(t, err)
+		assert.Contains(t, err.Error(), "offset must be non-negative")
+		assert.Contains(t, err.Error(), "-10")
+		assert.Nil(t, result)
+	})
+
+	t.Run("basic pagination works with valid inputs", func(t *testing.T) {
+		firstCounter := func() (int, error) { return 3, nil }
+		secondCounter := func() (int, error) { return 2, nil }
+		firstFetcher := func(count int) ([]compositeTestEntity, error) {
+			return []compositeTestEntity{
+				{ID: "f1", Name: "File1"},
+				{ID: "f2", Name: "File2"},
+				{ID: "f3", Name: "File3"},
+			}, nil
+		}
+		secondFetcher := func(count int) ([]compositeTestEntity, error) {
+			return []compositeTestEntity{
+				{ID: "d1", Name: "DB1"},
+				{ID: "d2", Name: "DB2"},
+			}, nil
+		}
+
+		result, err := CompositeMergeListHelper(
+			firstCounter, secondCounter, firstFetcher, secondFetcher,
+			merger, 2, 1,
+		)
+
+		assert.NoError(t, err)
+		assert.Len(t, result, 2)
+		assert.Equal(t, "f2", result[0].ID)
+		assert.Equal(t, "f3", result[1].ID)
+	})
+}
+
+// Helper function to create test fetchers for CompositeMergeListHelperWithLimit tests.
+func createTestFetchers(firstCount, secondCount int) (
+	func() (int, error),
+	func() (int, error),
+	func(int) ([]compositeTestEntity, error),
+	func(int) ([]compositeTestEntity, error),
+) {
+	firstCounter := func() (int, error) { return firstCount, nil }
+	secondCounter := func() (int, error) { return secondCount, nil }
+	firstFetcher := func(limit int) ([]compositeTestEntity, error) {
+		items := make([]compositeTestEntity, limit)
+		for i := 0; i < limit; i++ {
+			items[i] = compositeTestEntity{ID: "f" + string(rune(i)), Name: "File"}
+		}
+		return items, nil
+	}
+	secondFetcher := func(limit int) ([]compositeTestEntity, error) {
+		items := make([]compositeTestEntity, limit)
+		for i := 0; i < limit; i++ {
+			items[i] = compositeTestEntity{ID: "d" + string(rune(i)), Name: "DB"}
+		}
+		return items, nil
+	}
+	return firstCounter, secondCounter, firstFetcher, secondFetcher
+}
+
+// TestCompositeMergeListHelperWithLimit tests the CompositeMergeListHelperWithLimit function.
+func TestCompositeMergeListHelperWithLimit(t *testing.T) {
+	// Helper to create merger function
+	merger := func(first, second []compositeTestEntity) []compositeTestEntity {
+		seen := make(map[string]bool)
+		result := make([]compositeTestEntity, 0)
+		for _, item := range first {
+			if !seen[item.ID] {
+				seen[item.ID] = true
+				result = append(result, item)
+			}
+		}
+		for _, item := range second {
+			if !seen[item.ID] {
+				seen[item.ID] = true
+				result = append(result, item)
+			}
+		}
+		return result
+	}
+
+	t.Run("basic pagination without limit", func(t *testing.T) {
+		firstCounter := func() (int, error) { return 3, nil }
+		secondCounter := func() (int, error) { return 2, nil }
+		firstFetcher := func(limit int) ([]compositeTestEntity, error) {
+			return []compositeTestEntity{
+				{ID: "f1", Name: "File1"},
+				{ID: "f2", Name: "File2"},
+				{ID: "f3", Name: "File3"},
+			}, nil
+		}
+		secondFetcher := func(limit int) ([]compositeTestEntity, error) {
+			return []compositeTestEntity{
+				{ID: "d1", Name: "DB1"},
+				{ID: "d2", Name: "DB2"},
+			}, nil
+		}
+
+		result, limitExceeded, err := CompositeMergeListHelperWithLimit(
+			firstCounter, secondCounter, firstFetcher, secondFetcher,
+			merger, 2, 1, 0,
+		)
+
+		assert.NoError(t, err)
+		assert.False(t, limitExceeded)
+		assert.Len(t, result, 2)
+		assert.Equal(t, "f2", result[0].ID)
+		assert.Equal(t, "f3", result[1].ID)
+	})
+
+	t.Run("applies maxRecords limit and returns limitExceeded=true", func(t *testing.T) {
+		firstCounter, secondCounter, firstFetcher, secondFetcher := createTestFetchers(600, 700)
+
+		result, limitExceeded, err := CompositeMergeListHelperWithLimit(
+			firstCounter, secondCounter, firstFetcher, secondFetcher,
+			merger, 10, 0, 1000,
+		)
+
+		assert.NoError(t, err)
+		assert.True(t, limitExceeded)
+		assert.Len(t, result, 10)
+	})
+
+	t.Run("offset beyond effective total returns empty", func(t *testing.T) {
+		firstCounter := func() (int, error) { return 600, nil }
+		secondCounter := func() (int, error) { return 700, nil }
+		firstFetcher := func(limit int) ([]compositeTestEntity, error) {
+			return []compositeTestEntity{}, nil
+		}
+		secondFetcher := func(limit int) ([]compositeTestEntity, error) {
+			return []compositeTestEntity{}, nil
+		}
+
+		// offset=1100 > effectiveTotal=1000
+		result, limitExceeded, err := CompositeMergeListHelperWithLimit(
+			firstCounter, secondCounter, firstFetcher, secondFetcher,
+			merger, 10, 1100, 1000,
+		)
+
+		assert.NoError(t, err)
+		assert.True(t, limitExceeded)
+		assert.Empty(t, result)
+	})
+
+	t.Run("scatter-gather at high offset with limit", func(t *testing.T) {
+		firstCounter := func() (int, error) { return 500, nil }
+		secondCounter := func() (int, error) { return 500, nil }
+
+		// Track what limits are requested
+		var firstRequestedLimit, secondRequestedLimit int
+
+		firstFetcher := func(limit int) ([]compositeTestEntity, error) {
+			firstRequestedLimit = limit
+			items := make([]compositeTestEntity, limit)
+			for i := 0; i < limit; i++ {
+				items[i] = compositeTestEntity{ID: "f" + string(rune(i)), Name: "File"}
+			}
+			return items, nil
+		}
+		secondFetcher := func(limit int) ([]compositeTestEntity, error) {
+			secondRequestedLimit = limit
+			items := make([]compositeTestEntity, limit)
+			for i := 0; i < limit; i++ {
+				items[i] = compositeTestEntity{ID: "d" + string(rune(i)), Name: "DB"}
+			}
+			return items, nil
+		}
+
+		// offset=900, limit=100, maxRecords=1000
+		// depth = 1000, should fetch min(1000, 500) = 500 from each
+		result, limitExceeded, err := CompositeMergeListHelperWithLimit(
+			firstCounter, secondCounter, firstFetcher, secondFetcher,
+			merger, 100, 900, 1000,
+		)
+
+		assert.NoError(t, err)
+		assert.False(t, limitExceeded) // 1000 total = 1000 limit exactly
+		assert.Equal(t, 500, firstRequestedLimit)
+		assert.Equal(t, 500, secondRequestedLimit)
+		assert.Len(t, result, 100) // Should get 100 items from offset 900
+	})
+
+	t.Run("handles first counter error", func(t *testing.T) {
+		firstCounter := func() (int, error) { return 0, errIOError }
+		secondCounter := func() (int, error) { return 5, nil }
+		firstFetcher := func(limit int) ([]compositeTestEntity, error) {
+			return []compositeTestEntity{}, nil
+		}
+		secondFetcher := func(limit int) ([]compositeTestEntity, error) {
+			return []compositeTestEntity{}, nil
+		}
+
+		result, limitExceeded, err := CompositeMergeListHelperWithLimit(
+			firstCounter, secondCounter, firstFetcher, secondFetcher,
+			merger, 10, 0, 0,
+		)
+
+		assert.Error(t, err)
+		assert.Equal(t, errIOError, err)
+		assert.False(t, limitExceeded)
+		assert.Nil(t, result)
+	})
+
+	t.Run("handles second counter error", func(t *testing.T) {
+		firstCounter := func() (int, error) { return 5, nil }
+		secondCounter := func() (int, error) { return 0, errIOError }
+		firstFetcher := func(limit int) ([]compositeTestEntity, error) {
+			return []compositeTestEntity{}, nil
+		}
+		secondFetcher := func(limit int) ([]compositeTestEntity, error) {
+			return []compositeTestEntity{}, nil
+		}
+
+		result, limitExceeded, err := CompositeMergeListHelperWithLimit(
+			firstCounter, secondCounter, firstFetcher, secondFetcher,
+			merger, 10, 0, 0,
+		)
+
+		assert.Error(t, err)
+		assert.Equal(t, errIOError, err)
+		assert.False(t, limitExceeded)
+		assert.Nil(t, result)
+	})
+
+	t.Run("handles first fetcher error", func(t *testing.T) {
+		firstCounter := func() (int, error) { return 5, nil }
+		secondCounter := func() (int, error) { return 5, nil }
+		firstFetcher := func(limit int) ([]compositeTestEntity, error) {
+			return nil, errIOError
+		}
+		secondFetcher := func(limit int) ([]compositeTestEntity, error) {
+			return []compositeTestEntity{{ID: "d1", Name: "DB1"}}, nil
+		}
+
+		result, limitExceeded, err := CompositeMergeListHelperWithLimit(
+			firstCounter, secondCounter, firstFetcher, secondFetcher,
+			merger, 10, 0, 0,
+		)
+
+		assert.Error(t, err)
+		assert.Equal(t, errIOError, err)
+		assert.False(t, limitExceeded)
+		assert.Nil(t, result)
+	})
+
+	t.Run("handles second fetcher error", func(t *testing.T) {
+		firstCounter := func() (int, error) { return 5, nil }
+		secondCounter := func() (int, error) { return 5, nil }
+		firstFetcher := func(limit int) ([]compositeTestEntity, error) {
+			return []compositeTestEntity{{ID: "f1", Name: "File1"}}, nil
+		}
+		secondFetcher := func(limit int) ([]compositeTestEntity, error) {
+			return nil, errIOError
+		}
+
+		result, limitExceeded, err := CompositeMergeListHelperWithLimit(
+			firstCounter, secondCounter, firstFetcher, secondFetcher,
+			merger, 10, 0, 0,
+		)
+
+		assert.Error(t, err)
+		assert.Equal(t, errIOError, err)
+		assert.False(t, limitExceeded)
+		assert.Nil(t, result)
+	})
+
+	t.Run("deduplicates merged results", func(t *testing.T) {
+		firstCounter := func() (int, error) { return 3, nil }
+		secondCounter := func() (int, error) { return 3, nil }
+		firstFetcher := func(limit int) ([]compositeTestEntity, error) {
+			return []compositeTestEntity{
+				{ID: "1", Name: "File1"},
+				{ID: "2", Name: "File2"},
+				{ID: "3", Name: "File3"},
+			}, nil
+		}
+		secondFetcher := func(limit int) ([]compositeTestEntity, error) {
+			return []compositeTestEntity{
+				{ID: "2", Name: "DB2"}, // Duplicate ID
+				{ID: "4", Name: "DB4"},
+				{ID: "5", Name: "DB5"},
+			}, nil
+		}
+
+		result, limitExceeded, err := CompositeMergeListHelperWithLimit(
+			firstCounter, secondCounter, firstFetcher, secondFetcher,
+			merger, 10, 0, 0,
+		)
+
+		assert.NoError(t, err)
+		assert.False(t, limitExceeded)
+		assert.Len(t, result, 5) // 6 items - 1 duplicate = 5
+
+		// Verify no duplicate IDs
+		ids := make(map[string]bool)
+		for _, item := range result {
+			assert.False(t, ids[item.ID], "Found duplicate ID: "+item.ID)
+			ids[item.ID] = true
+		}
+	})
+
+	t.Run("empty stores return empty result", func(t *testing.T) {
+		firstCounter := func() (int, error) { return 0, nil }
+		secondCounter := func() (int, error) { return 0, nil }
+		firstFetcher := func(limit int) ([]compositeTestEntity, error) {
+			return []compositeTestEntity{}, nil
+		}
+		secondFetcher := func(limit int) ([]compositeTestEntity, error) {
+			return []compositeTestEntity{}, nil
+		}
+
+		result, limitExceeded, err := CompositeMergeListHelperWithLimit(
+			firstCounter, secondCounter, firstFetcher, secondFetcher,
+			merger, 10, 0, 0,
+		)
+
+		assert.NoError(t, err)
+		assert.False(t, limitExceeded)
+		assert.Empty(t, result)
+	})
+
+	t.Run("maxRecords=0 means no limit", func(t *testing.T) {
+		firstCounter, secondCounter, firstFetcher, secondFetcher := createTestFetchers(10, 15)
+
+		result, limitExceeded, err := CompositeMergeListHelperWithLimit(
+			firstCounter, secondCounter, firstFetcher, secondFetcher,
+			merger, 5, 0, 0,
+		)
+
+		assert.NoError(t, err)
+		assert.False(t, limitExceeded)
+		assert.Len(t, result, 5)
+	})
+
+	t.Run("returns error for negative limit", func(t *testing.T) {
+		firstCounter, secondCounter, firstFetcher, secondFetcher := createTestFetchers(10, 15)
+
+		result, limitExceeded, err := CompositeMergeListHelperWithLimit(
+			firstCounter, secondCounter, firstFetcher, secondFetcher,
+			merger, -5, 0, 0,
+		)
+
+		assert.Error(t, err)
+		assert.Contains(t, err.Error(), "limit must be non-negative")
+		assert.Contains(t, err.Error(), "-5")
+		assert.False(t, limitExceeded)
+		assert.Nil(t, result)
+	})
+
+	t.Run("returns error for negative offset", func(t *testing.T) {
+		firstCounter, secondCounter, firstFetcher, secondFetcher := createTestFetchers(10, 15)
+
+		result, limitExceeded, err := CompositeMergeListHelperWithLimit(
+			firstCounter, secondCounter, firstFetcher, secondFetcher,
+			merger, 5, -10, 0,
+		)
+
+		assert.Error(t, err)
+		assert.Contains(t, err.Error(), "offset must be non-negative")
+		assert.Contains(t, err.Error(), "-10")
+		assert.False(t, limitExceeded)
+		assert.Nil(t, result)
+	})
+}

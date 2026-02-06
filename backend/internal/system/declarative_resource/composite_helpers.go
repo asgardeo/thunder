@@ -303,6 +303,14 @@ func CompositeMergeListHelper[T any](
 	limit int,
 	offset int,
 ) ([]T, error) {
+	// Validate limit and offset
+	if limit < 0 {
+		return nil, fmt.Errorf("limit must be non-negative, got %d", limit)
+	}
+	if offset < 0 {
+		return nil, fmt.Errorf("offset must be non-negative, got %d", offset)
+	}
+
 	// Get counts from both stores
 	firstCount, err := firstCounter()
 	if err != nil {
@@ -383,4 +391,136 @@ func CompositeIsDeclarativeHelper(
 ) bool {
 	exists, err := fileExists(id)
 	return err == nil && exists
+}
+
+// CompositeMergeListHelperWithLimit retrieves and merges lists from both stores with pagination and hard limit.
+// This implements a "scatter-gather" pattern optimized for composite store operations with a maximum record cap.
+//
+// Type Parameter:
+//   - T: The domain entity type
+//
+// Parameters:
+//   - firstCounter: Function to get count from first store (typically DB store)
+//   - secondCounter: Function to get count from second store (typically file store)
+//   - firstFetcher: Function to fetch items from first store, accepts limit parameter (typically DB store)
+//   - secondFetcher: Function to fetch items from second store, accepts limit parameter (typically file store)
+//   - merger: Function to merge and deduplicate the two lists
+//   - limit: Maximum number of items to return
+//   - offset: Number of items to skip
+//   - maxRecords: Hard limit on total records to fetch (0 = no limit, typically 1000 for hybrid mode)
+//
+// Returns:
+//   - Merged and paginated list
+//   - limitExceeded: true if total count exceeds maxRecords
+//   - Error if any operation fails
+//
+// Behavior:
+//  1. Get counts from both stores
+//  2. Calculate effective total count (capped at maxRecords if > 0)
+//  3. If offset exceeds effective count, return empty list
+//  4. Calculate depth = offset + limit (how many items needed from start)
+//  5. Fetch min(depth, effectiveCount, storeCount) from each store (scatter-gather)
+//  6. Merge and deduplicate using provided merger function
+//  7. Apply pagination (slice offset:offset+limit)
+//  8. Return limitExceeded=true if actual total > maxRecords
+//
+// Note: Results are returned in the default order from each store (typically by name).
+//
+// Example: offset=20, limit=10, store1=50, store2=100, maxRecords=1000
+//   - depth = 30, fetch 30 from each store
+//   - Merge (up to 60 items), slice [20:30]
+//
+// Example: offset=900, limit=100, store1=500, store2=700, maxRecords=1000
+//   - effectiveTotal = 1000 (capped), depth = 1000
+//   - Fetch 500 from store1, 500 from store2 (capped at store counts)
+//   - Merge (up to 1000), slice [900:1000]
+//   - Return limitExceeded=true (actual 1200 > 1000)
+func CompositeMergeListHelperWithLimit[T any](
+	firstCounter func() (int, error),
+	secondCounter func() (int, error),
+	firstFetcher func(limit int) ([]T, error),
+	secondFetcher func(limit int) ([]T, error),
+	merger func([]T, []T) []T,
+	limit int,
+	offset int,
+	maxRecords int,
+) ([]T, bool, error) {
+	// Validate limit and offset
+	if limit < 0 {
+		return nil, false, fmt.Errorf("limit must be non-negative, got %d", limit)
+	}
+	if offset < 0 {
+		return nil, false, fmt.Errorf("offset must be non-negative, got %d", offset)
+	}
+
+	// Get counts from both stores
+	firstCount, err := firstCounter()
+	if err != nil {
+		return nil, false, err
+	}
+
+	secondCount, err := secondCounter()
+	if err != nil {
+		return nil, false, err
+	}
+
+	actualTotal := firstCount + secondCount
+	limitExceeded := false
+
+	// Apply maxRecords cap if specified
+	effectiveTotal := actualTotal
+	if maxRecords > 0 && actualTotal > maxRecords {
+		effectiveTotal = maxRecords
+		limitExceeded = true
+	}
+
+	// If offset is beyond effective total, return empty
+	if offset >= effectiveTotal {
+		return []T{}, limitExceeded, nil
+	}
+
+	// Calculate depth: how many items we need from the start to fulfill offset+limit
+	depth := offset + limit
+	if depth > effectiveTotal {
+		depth = effectiveTotal
+	}
+
+	// Determine how many items to fetch from each store
+	// Strategy: Fetch up to 'depth' from each store to ensure we have enough for merging
+	// This is necessary because we don't know the merge order until we combine results
+	firstFetchLimit := depth
+	if firstFetchLimit > firstCount {
+		firstFetchLimit = firstCount
+	}
+
+	secondFetchLimit := depth
+	if secondFetchLimit > secondCount {
+		secondFetchLimit = secondCount
+	}
+
+	// Scatter: Fetch items from both stores
+	firstItems, err := firstFetcher(firstFetchLimit)
+	if err != nil {
+		return nil, limitExceeded, err
+	}
+
+	secondItems, err := secondFetcher(secondFetchLimit)
+	if err != nil {
+		return nil, limitExceeded, err
+	}
+
+	// Gather: Merge and deduplicate
+	allItems := merger(firstItems, secondItems)
+
+	// Apply pagination to merged results
+	if offset >= len(allItems) {
+		return []T{}, limitExceeded, nil
+	}
+
+	end := offset + limit
+	if end > len(allItems) {
+		end = len(allItems)
+	}
+
+	return allItems[offset:end], limitExceeded, nil
 }

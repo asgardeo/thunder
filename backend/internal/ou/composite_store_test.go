@@ -20,6 +20,7 @@ package ou
 
 import (
 	"errors"
+	"fmt"
 	"testing"
 
 	"github.com/asgardeo/thunder/internal/system/declarative_resource/entity"
@@ -365,6 +366,27 @@ func (suite *CompositeStoreTestSuite) TestCompositeStore_ListOperations() {
 		suite.True(ids["file-ou-1"])
 	})
 
+	suite.Run("GetOrganizationUnitList caps results to max composite limit", func() {
+		fileStoreMock := newOrganizationUnitStoreInterfaceMock(suite.T())
+		suite.dbStoreMock = newOrganizationUnitStoreInterfaceMock(suite.T())
+		suite.compositeStore = newCompositeOUStore(fileStoreMock, suite.dbStoreMock)
+
+		suite.dbStoreMock.On("GetOrganizationUnitListCount").Return(600, nil).Once()
+		fileStoreMock.On("GetOrganizationUnitListCount").Return(700, nil).Once()
+
+		dbItems := buildOrganizationUnitBasics("db", 1, 600)
+		fileItems := buildOrganizationUnitBasics("file", 1, 700)
+
+		suite.dbStoreMock.On("GetOrganizationUnitList", 600, 0).Return(dbItems, nil).Once()
+		fileStoreMock.On("GetOrganizationUnitList", 700, 0).Return(fileItems, nil).Once()
+
+		result, err := suite.compositeStore.GetOrganizationUnitList(100, 900)
+		// When limit is exceeded (1300 > 1000), should return error
+		suite.Error(err)
+		suite.ErrorIs(err, ErrResultLimitExceededInCompositeMode)
+		suite.Nil(result)
+	})
+
 	suite.Run("user/group operations use DB store only", func() {
 		suite.dbStoreMock.On("GetOrganizationUnitUsersCount", "ou-1").
 			Return(10, nil).
@@ -374,6 +396,18 @@ func (suite *CompositeStoreTestSuite) TestCompositeStore_ListOperations() {
 		suite.NoError(err)
 		suite.Equal(10, count)
 	})
+}
+
+func buildOrganizationUnitBasics(prefix string, start, count int) []OrganizationUnitBasic {
+	items := make([]OrganizationUnitBasic, 0, count)
+	for i := start; i < start+count; i++ {
+		items = append(items, OrganizationUnitBasic{
+			ID:     fmt.Sprintf("%s-%d", prefix, i),
+			Handle: fmt.Sprintf("%s-handle-%d", prefix, i),
+			Name:   fmt.Sprintf("%s-name-%d", prefix, i),
+		})
+	}
+	return items
 }
 
 // TestCompositeStore_IsOrganizationUnitDeclarative tests checking if an OU is immutable.
