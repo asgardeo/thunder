@@ -45,12 +45,14 @@ jobs:
       - name: ✅ Verify All Build Artifacts
         run: ./scripts/verify-build-artifacts.sh
 
-      - name: 📦 Upload Documentation Artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: thunder-docs
-          path: docs/build
-          if-no-files-found: error
+      - name: ✅ Verify Docs Artifacts
+        run: |
+          if [ ! -d "docs/build" ] || [ -z "$(ls -A docs/build)" ]; then
+            echo "Docs build directory is missing or empty!"
+            exit 1
+          else
+            echo "Docs build artifacts verified successfully."
+          fi
 
   deploy-docs:
     name: 📚 Deploy Documentation

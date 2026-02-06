@@ -22,6 +22,10 @@ runs:
         # Build frontend once (platform-agnostic)
         echo "🔨 Building frontend..."
         make build_frontend
+        
+        # Build Docs once (platform-agnostic)
+        echo "🔨 Building docs..."
+        make build_docs
 
         # Build backend for each platform
         for platform in "${PLATFORMS[@]}"; do
