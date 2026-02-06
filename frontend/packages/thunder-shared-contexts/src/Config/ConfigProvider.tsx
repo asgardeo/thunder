@@ -16,7 +16,7 @@
  * under the License.
  */
 
-import React, {useMemo, PropsWithChildren} from 'react';
+import {useMemo, useState, useEffect, PropsWithChildren} from 'react';
 import {ThunderConfig} from './types';
 import ConfigContext, {ConfigContextType} from './ConfigContext';
 
@@ -81,11 +81,19 @@ function loadConfig(): ThunderConfig {
  * @public
  */
 export default function ConfigProvider({children}: ConfigProviderProps) {
+  const [isLoading, setIsLoading] = useState(true);
   const config = useMemo(() => loadConfig(), []);
+
+  useEffect(() => {
+    if (config && typeof config === 'object' && config.server && config.client) {
+      setIsLoading(false);
+    }
+  }, [config]);
 
   const contextValue: ConfigContextType = useMemo(
     () => ({
       config,
+      isLoading,
       getServerUrl: () => {
         // If public_url is provided, use it directly
         if (config.server.public_url) {
@@ -133,7 +141,7 @@ export default function ConfigProvider({children}: ConfigProviderProps) {
         return undefined;
       },
     }),
-    [config],
+    [config, isLoading],
   );
 
   return <ConfigContext.Provider value={contextValue}>{children}</ConfigContext.Provider>;
