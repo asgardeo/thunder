@@ -85,7 +85,6 @@ func (suite *InitTestSuite) TestInitialize_WithDeclarativeResourcesDisabled() {
 		mux,
 		suite.mockCertService,
 		suite.mockFlowMgtService,
-		suite.mockBrandingService,
 		suite.mockUserSchemaService,
 	)
 
@@ -480,7 +479,7 @@ func TestInitialize_Standalone(t *testing.T) {
 	mockUserSchemaService := userschemamock.NewUserSchemaServiceInterfaceMock(t)
 
 	// Execute
-	service, _, err := Initialize(mux, mockCertService, mockFlowMgtService, mockBrandingService, mockUserSchemaService)
+	service, _, err := Initialize(mux, mockCertService, mockFlowMgtService, mockUserSchemaService)
 
 	// Assert
 	assert.NoError(t, err)
@@ -520,7 +519,7 @@ func TestInitialize_WithDeclarativeResources_Standalone(t *testing.T) {
 	mockUserSchemaService := userschemamock.NewUserSchemaServiceInterfaceMock(t)
 
 	// Execute
-	service, _, err := Initialize(mux, mockCertService, mockFlowMgtService, mockBrandingService, mockUserSchemaService)
+	service, _, err := Initialize(mux, mockCertService, mockFlowMgtService, mockUserSchemaService)
 
 	// Assert
 	assert.NoError(t, err)

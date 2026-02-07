@@ -61,7 +61,8 @@ type ApplicationDTO struct {
 	AuthFlowID                string `json:"auth_flow_id,omitempty" jsonschema:"Authentication flow ID. Optional. Specifies which login flow to use (e.g., MFA, passwordless). Use list_flows to find available flows. If omitted, the default authentication flow is used."`
 	RegistrationFlowID        string `json:"registration_flow_id,omitempty" jsonschema:"Registration flow ID. Optional. Specifies the user registration/signup flow. Use list_flows to find available flows."`
 	IsRegistrationFlowEnabled bool   `json:"is_registration_flow_enabled,omitempty" jsonschema:"Enable self-service registration. Set to true to allow users to sign up themselves. Requires registration_flow_id to be set."`
-	BrandingID                string `json:"branding_id,omitempty" jsonschema:"Branding configuration ID. Optional. Customizes the look and feel of login pages for this application."`
+	ThemeID                   string `json:"theme_id,omitempty" jsonschema:"Theme configuration ID. Optional. Customizes the visual styling (colors, typography) of login pages."`
+	LayoutID                  string `json:"layout_id,omitempty" jsonschema:"Layout configuration ID. Optional. Customizes the screen structure and component positioning of login pages."`
 	Template                  string `json:"template,omitempty" jsonschema:"Application template. Optional. Pre-configured application type template."`
 
 	URL       string   `json:"url,omitempty" jsonschema:"Application home URL. Optional. The main URL where your application is hosted."`
@@ -84,7 +85,8 @@ type BasicApplicationDTO struct {
 	AuthFlowID                string
 	RegistrationFlowID        string
 	IsRegistrationFlowEnabled bool
-	BrandingID                string
+	ThemeID                   string
+	LayoutID                  string
 	Template                  string
 	ClientID                  string
 	LogoURL                   string
@@ -98,7 +100,8 @@ type Application struct {
 	AuthFlowID                string `yaml:"auth_flow_id,omitempty" json:"auth_flow_id,omitempty" jsonschema:"Associated authentication flow ID."`
 	RegistrationFlowID        string `yaml:"registration_flow_id,omitempty" json:"registration_flow_id,omitempty" jsonschema:"Associated registration flow ID."`
 	IsRegistrationFlowEnabled bool   `yaml:"is_registration_flow_enabled,omitempty" json:"is_registration_flow_enabled,omitempty" jsonschema:"Indicates if self-service registration is enabled."`
-	BrandingID                string `yaml:"branding_id,omitempty" json:"branding_id,omitempty" jsonschema:"Associated branding configuration ID."`
+	ThemeID                   string `yaml:"theme_id,omitempty" json:"theme_id,omitempty" jsonschema:"Associated theme configuration ID."`
+	LayoutID                  string `yaml:"layout_id,omitempty" json:"layout_id,omitempty" jsonschema:"Associated layout configuration ID."`
 	Template                  string `yaml:"template,omitempty" json:"template,omitempty" jsonschema:"Template used to create the application."`
 
 	URL       string   `yaml:"url,omitempty" json:"url,omitempty" jsonschema:"Application home URL."`
@@ -121,7 +124,8 @@ type ApplicationProcessedDTO struct {
 	AuthFlowID                string `yaml:"auth_flow_id,omitempty"`
 	RegistrationFlowID        string `yaml:"registration_flow_id,omitempty"`
 	IsRegistrationFlowEnabled bool   `yaml:"is_registration_flow_enabled,omitempty"`
-	BrandingID                string `yaml:"branding_id,omitempty"`
+	ThemeID                   string `yaml:"theme_id,omitempty"`
+	LayoutID                  string `yaml:"layout_id,omitempty"`
 	Template                  string `yaml:"template,omitempty"`
 
 	URL       string `yaml:"url,omitempty"`
@@ -165,7 +169,8 @@ type ApplicationRequest struct {
 	AuthFlowID                string                      `json:"auth_flow_id,omitempty" yaml:"auth_flow_id,omitempty"`
 	RegistrationFlowID        string                      `json:"registration_flow_id,omitempty" yaml:"registration_flow_id,omitempty"`
 	IsRegistrationFlowEnabled bool                        `json:"is_registration_flow_enabled" yaml:"is_registration_flow_enabled"`
-	BrandingID                string                      `json:"branding_id,omitempty" yaml:"branding_id,omitempty"`
+	ThemeID                   string                      `json:"theme_id,omitempty" yaml:"theme_id,omitempty"`
+	LayoutID                  string                      `json:"layout_id,omitempty" yaml:"layout_id,omitempty"`
 	Template                  string                      `json:"template,omitempty" yaml:"template,omitempty"`
 	URL                       string                      `json:"url,omitempty" yaml:"url,omitempty"`
 	LogoURL                   string                      `json:"logo_url,omitempty" yaml:"logo_url,omitempty"`
@@ -188,7 +193,8 @@ type ApplicationRequestWithID struct {
 	AuthFlowID                string                      `json:"auth_flow_id,omitempty" yaml:"auth_flow_id,omitempty"`
 	RegistrationFlowID        string                      `json:"registration_flow_id,omitempty" yaml:"registration_flow_id,omitempty"`
 	IsRegistrationFlowEnabled bool                        `json:"is_registration_flow_enabled" yaml:"is_registration_flow_enabled"`
-	BrandingID                string                      `json:"branding_id,omitempty" yaml:"branding_id,omitempty"`
+	ThemeID                   string                      `json:"theme_id,omitempty" yaml:"theme_id,omitempty"`
+	LayoutID                  string                      `json:"layout_id,omitempty" yaml:"layout_id,omitempty"`
 	Template                  string                      `json:"template,omitempty" yaml:"template,omitempty"`
 	URL                       string                      `json:"url,omitempty" yaml:"url,omitempty"`
 	LogoURL                   string                      `json:"logo_url,omitempty" yaml:"logo_url,omitempty"`
@@ -210,7 +216,8 @@ type ApplicationCompleteResponse struct {
 	AuthFlowID                string                      `json:"auth_flow_id,omitempty"`
 	RegistrationFlowID        string                      `json:"registration_flow_id,omitempty"`
 	IsRegistrationFlowEnabled bool                        `json:"is_registration_flow_enabled"`
-	BrandingID                string                      `json:"branding_id,omitempty"`
+	ThemeID                   string                      `json:"theme_id,omitempty"`
+	LayoutID                  string                      `json:"layout_id,omitempty"`
 	Template                  string                      `json:"template,omitempty"`
 	URL                       string                      `json:"url,omitempty"`
 	LogoURL                   string                      `json:"logo_url,omitempty"`
@@ -232,7 +239,8 @@ type ApplicationGetResponse struct {
 	AuthFlowID                string                  `json:"auth_flow_id,omitempty"`
 	RegistrationFlowID        string                  `json:"registration_flow_id,omitempty"`
 	IsRegistrationFlowEnabled bool                    `json:"is_registration_flow_enabled"`
-	BrandingID                string                  `json:"branding_id,omitempty"`
+	ThemeID                   string                  `json:"theme_id,omitempty"`
+	LayoutID                  string                  `json:"layout_id,omitempty"`
 	Template                  string                  `json:"template,omitempty"`
 	URL                       string                  `json:"url,omitempty"`
 	LogoURL                   string                  `json:"logo_url,omitempty"`
@@ -255,7 +263,8 @@ type BasicApplicationResponse struct {
 	AuthFlowID                string `json:"auth_flow_id,omitempty" jsonschema:"Authentication Flow ID."`
 	RegistrationFlowID        string `json:"registration_flow_id,omitempty" jsonschema:"Registration Flow ID."`
 	IsRegistrationFlowEnabled bool   `json:"is_registration_flow_enabled" jsonschema:"Registration enabled status."`
-	BrandingID                string `json:"branding_id,omitempty" jsonschema:"Branding ID."`
+	ThemeID                   string `json:"theme_id,omitempty" jsonschema:"Theme ID."`
+	LayoutID                  string `json:"layout_id,omitempty" jsonschema:"Layout ID."`
 	Template                  string `json:"template,omitempty" jsonschema:"Application Template."`
 }
 

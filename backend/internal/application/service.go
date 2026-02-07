@@ -23,8 +23,9 @@ import (
 	"slices"
 
 	"github.com/asgardeo/thunder/internal/application/model"
-	brandingmgt "github.com/asgardeo/thunder/internal/branding/mgt"
 	"github.com/asgardeo/thunder/internal/cert"
+	layoutmgt "github.com/asgardeo/thunder/internal/design/layout/mgt"
+	thememgt "github.com/asgardeo/thunder/internal/design/theme/mgt"
 	flowcommon "github.com/asgardeo/thunder/internal/flow/common"
 	flowmgt "github.com/asgardeo/thunder/internal/flow/mgt"
 	oauth2const "github.com/asgardeo/thunder/internal/oauth/oauth2/constants"
@@ -56,7 +57,8 @@ type applicationService struct {
 	appStore          applicationStoreInterface
 	certService       cert.CertificateServiceInterface
 	flowMgtService    flowmgt.FlowMgtServiceInterface
-	brandingService   brandingmgt.BrandingMgtServiceInterface
+	themeMgtService   thememgt.ThemeMgtServiceInterface
+	layoutMgtService  layoutmgt.LayoutMgtServiceInterface
 	userSchemaService userschema.UserSchemaServiceInterface
 }
 
@@ -65,14 +67,16 @@ func newApplicationService(
 	appStore applicationStoreInterface,
 	certService cert.CertificateServiceInterface,
 	flowMgtService flowmgt.FlowMgtServiceInterface,
-	brandingService brandingmgt.BrandingMgtServiceInterface,
+	themeMgtService thememgt.ThemeMgtServiceInterface,
+	layoutMgtService layoutmgt.LayoutMgtServiceInterface,
 	userSchemaService userschema.UserSchemaServiceInterface,
 ) ApplicationServiceInterface {
 	return &applicationService{
 		appStore:          appStore,
 		certService:       certService,
 		flowMgtService:    flowMgtService,
-		brandingService:   brandingService,
+		themeMgtService:   themeMgtService,
+		layoutMgtService:  layoutMgtService,
 		userSchemaService: userSchemaService,
 	}
 }
@@ -128,7 +132,8 @@ func (as *applicationService) CreateApplication(app *model.ApplicationDTO) (*mod
 		AuthFlowID:                app.AuthFlowID,
 		RegistrationFlowID:        app.RegistrationFlowID,
 		IsRegistrationFlowEnabled: app.IsRegistrationFlowEnabled,
-		BrandingID:                app.BrandingID,
+		ThemeID:                   app.ThemeID,
+		LayoutID:                  app.LayoutID,
 		Template:                  app.Template,
 		URL:                       app.URL,
 		LogoURL:                   app.LogoURL,
@@ -197,7 +202,10 @@ func (as *applicationService) ValidateApplication(app *model.ApplicationDTO) (
 		return nil, nil, svcErr
 	}
 
-	if svcErr := as.validateBrandingID(app.BrandingID); svcErr != nil {
+	if svcErr := as.validateThemeID(app.ThemeID); svcErr != nil {
+		return nil, nil, svcErr
+	}
+	if svcErr := as.validateLayoutID(app.LayoutID); svcErr != nil {
 		return nil, nil, svcErr
 	}
 
@@ -230,7 +238,8 @@ func (as *applicationService) ValidateApplication(app *model.ApplicationDTO) (
 		AuthFlowID:                app.AuthFlowID,
 		RegistrationFlowID:        app.RegistrationFlowID,
 		IsRegistrationFlowEnabled: app.IsRegistrationFlowEnabled,
-		BrandingID:                app.BrandingID,
+		ThemeID:                   app.ThemeID,
+		LayoutID:                  app.LayoutID,
 		Template:                  app.Template,
 		URL:                       app.URL,
 		LogoURL:                   app.LogoURL,
@@ -310,7 +319,8 @@ func buildBasicApplicationResponse(app model.BasicApplicationDTO) model.BasicApp
 		AuthFlowID:                app.AuthFlowID,
 		RegistrationFlowID:        app.RegistrationFlowID,
 		IsRegistrationFlowEnabled: app.IsRegistrationFlowEnabled,
-		BrandingID:                app.BrandingID,
+		ThemeID:                   app.ThemeID,
+		LayoutID:                  app.LayoutID,
 		Template:                  app.Template,
 	}
 }
@@ -359,7 +369,8 @@ func (as *applicationService) GetApplication(appID string) (*model.Application,
 		AuthFlowID:                applicationDTO.AuthFlowID,
 		RegistrationFlowID:        applicationDTO.RegistrationFlowID,
 		IsRegistrationFlowEnabled: applicationDTO.IsRegistrationFlowEnabled,
-		BrandingID:                applicationDTO.BrandingID,
+		ThemeID:                   applicationDTO.ThemeID,
+		LayoutID:                  applicationDTO.LayoutID,
 		Template:                  applicationDTO.Template,
 		URL:                       applicationDTO.URL,
 		LogoURL:                   applicationDTO.LogoURL,
@@ -475,7 +486,10 @@ func (as *applicationService) UpdateApplication(appID string, app *model.Applica
 		return nil, svcErr
 	}
 
-	if svcErr := as.validateBrandingID(app.BrandingID); svcErr != nil {
+	if svcErr := as.validateThemeID(app.ThemeID); svcErr != nil {
+		return nil, svcErr
+	}
+	if svcErr := as.validateLayoutID(app.LayoutID); svcErr != nil {
 		return nil, svcErr
 	}
 
@@ -505,7 +519,8 @@ func (as *applicationService) UpdateApplication(appID string, app *model.Applica
 		AuthFlowID:                app.AuthFlowID,
 		RegistrationFlowID:        app.RegistrationFlowID,
 		IsRegistrationFlowEnabled: app.IsRegistrationFlowEnabled,
-		BrandingID:                app.BrandingID,
+		ThemeID:                   app.ThemeID,
+		LayoutID:                  app.LayoutID,
 		Template:                  app.Template,
 		URL:                       app.URL,
 		LogoURL:                   app.LogoURL,
@@ -561,7 +576,8 @@ func (as *applicationService) UpdateApplication(appID string, app *model.Applica
 		AuthFlowID:                app.AuthFlowID,
 		RegistrationFlowID:        app.RegistrationFlowID,
 		IsRegistrationFlowEnabled: app.IsRegistrationFlowEnabled,
-		BrandingID:                app.BrandingID,
+		ThemeID:                   app.ThemeID,
+		LayoutID:                  app.LayoutID,
 		Template:                  app.Template,
 		URL:                       app.URL,
 		LogoURL:                   app.LogoURL,
@@ -690,18 +706,35 @@ func (as *applicationService) validateRegistrationFlowID(app *model.ApplicationD
 	return nil
 }
 
-// validateBrandingID validates the branding ID for the application.
-func (as *applicationService) validateBrandingID(brandingID string) *serviceerror.ServiceError {
-	if brandingID == "" {
+// validateThemeID validates the theme ID for the application.
+func (as *applicationService) validateThemeID(themeID string) *serviceerror.ServiceError {
+	if themeID == "" {
 		return nil
 	}
 
-	exists, svcErr := as.brandingService.IsBrandingExist(brandingID)
+	exists, svcErr := as.themeMgtService.IsThemeExist(themeID)
 	if svcErr != nil {
 		return svcErr
 	}
 	if !exists {
-		return &ErrorBrandingNotFound
+		return &ErrorThemeNotFound
+	}
+
+	return nil
+}
+
+// validateLayoutID validates the layout ID for the application.
+func (as *applicationService) validateLayoutID(layoutID string) *serviceerror.ServiceError {
+	if layoutID == "" {
+		return nil
+	}
+
+	exists, svcErr := as.layoutMgtService.IsLayoutExist(layoutID)
+	if svcErr != nil {
+		return svcErr
+	}
+	if !exists {
+		return &ErrorLayoutNotFound
 	}
 
 	return nil

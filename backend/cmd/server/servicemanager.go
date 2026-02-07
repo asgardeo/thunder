@@ -25,9 +25,10 @@ import (
 	"github.com/asgardeo/thunder/internal/application"
 	"github.com/asgardeo/thunder/internal/authn"
 	"github.com/asgardeo/thunder/internal/authz"
-	brandingmgt "github.com/asgardeo/thunder/internal/branding/mgt"
-	brandingresolve "github.com/asgardeo/thunder/internal/branding/resolve"
 	"github.com/asgardeo/thunder/internal/cert"
+	layoutmgt "github.com/asgardeo/thunder/internal/design/layout/mgt"
+	"github.com/asgardeo/thunder/internal/design/resolve"
+	thememgt "github.com/asgardeo/thunder/internal/design/theme/mgt"
 	flowcore "github.com/asgardeo/thunder/internal/flow/core"
 	"github.com/asgardeo/thunder/internal/flow/executor"
 	"github.com/asgardeo/thunder/internal/flow/flowexec"
@@ -143,15 +144,19 @@ func registerServices(mux *http.ServeMux) jwt.JWTServiceInterface {
 	}
 	exporters = append(exporters, flowMgtExporter)
 	certservice := cert.Initialize()
-	brandingMgtService := brandingmgt.Initialize(mux)
-	applicationService, applicationExporter, err := application.Initialize(mux, certservice, flowMgtService,
-		brandingMgtService, userSchemaService)
+
+	// Initialize theme and layout services
+	themeMgtService := thememgt.Initialize(mux)
+	layoutMgtService := layoutmgt.Initialize(mux)
+
+	applicationService, applicationExporter, err := application.Initialize(mux, certservice, flowMgtService, themeMgtService, layoutMgtService, userSchemaService)
 	if err != nil {
 		logger.Fatal("Failed to initialize ApplicationService", log.Error(err))
 	}
 	exporters = append(exporters, applicationExporter)
 
-	_ = brandingresolve.Initialize(mux, brandingMgtService, applicationService)
+	// Initialize design resolve service for theme and layout resolution
+	_ = resolve.Initialize(mux, themeMgtService, layoutMgtService, applicationService)
 
 	// Initialize export service with collected exporters
 	_ = export.Initialize(mux, exporters)
