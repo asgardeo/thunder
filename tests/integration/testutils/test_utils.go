@@ -26,21 +26,29 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"runtime"
 	"strings"
-	"syscall"
 	"time"
 )
 
 const (
 	TargetDir                   = "../../target/dist"
 	ExtractedDir                = "../../target/out/.test"
-	ServerBinary                = "thunder"
 	TestDeploymentYamlPath      = "./resources/deployment.yaml"
 	TestDatabaseSchemaDirectory = "resources/dbscripts"
-	InitScriptPath              = "./scripts/init_script.sh"
-	DBScriptPath                = "./scripts/setup_db.sh"
 	DatabaseFileBasePath        = "repository/database/"
 )
+
+// ServerBinary is the name of the server binary, platform-dependent.
+var ServerBinary string
+
+func init() {
+	if runtime.GOOS == "windows" {
+		ServerBinary = "thunder.exe"
+	} else {
+		ServerBinary = "thunder"
+	}
+}
 
 // Package-level variables for server configuration
 var (
@@ -90,16 +98,18 @@ func UnzipProduct() error {
 		}
 	}
 
-	// Set executable permissions for the server binary
 	productHome, err := getExtractedProductHome()
 	if err != nil {
 		return err
 	}
 	extractedProductHome = productHome
 
-	serverPath := filepath.Join(productHome, ServerBinary)
-	if err := os.Chmod(serverPath, 0755); err != nil {
-		return fmt.Errorf("failed to set executable permissions for server binary: %v", err)
+	// Set executable permissions for the server binary (not needed on Windows)
+	if runtime.GOOS != "windows" {
+		serverPath := filepath.Join(productHome, ServerBinary)
+		if err := os.Chmod(serverPath, 0755); err != nil {
+			return fmt.Errorf("failed to set executable permissions for server binary: %v", err)
+		}
 	}
 
 	return nil
@@ -175,7 +185,13 @@ func ReplaceResources(zipFilePattern string) error {
 		log.Printf("Current working directory: %s", cwd)
 	}
 
-	destPath := filepath.Join(extractedProductHome, "repository/conf/deployment.yaml")
+	destPath := filepath.Join(extractedProductHome, "repository", "conf", "deployment.yaml")
+
+	// Ensure the destination directory exists
+	if err := os.MkdirAll(filepath.Dir(destPath), os.ModePerm); err != nil {
+		return fmt.Errorf("failed to create conf directory: %v", err)
+	}
+
 	err = copyFile(TestDeploymentYamlPath, destPath)
 	if err != nil {
 		return fmt.Errorf("failed to replace deployment.yaml: %v", err)
@@ -247,51 +263,62 @@ func RunInitScript(zipFilePattern string) error {
 		return nil
 	}
 
-	cwd, err := os.Getwd()
-	if err != nil {
-		log.Printf("Error getting current directory: %v", err)
-	} else {
-		log.Printf("Current working directory: %s", cwd)
+	// Ensure the database directory exists
+	dbDir := filepath.Join(extractedProductHome, DatabaseFileBasePath)
+	if err := os.MkdirAll(dbDir, os.ModePerm); err != nil {
+		return fmt.Errorf("failed to create database directory: %v", err)
 	}
 
-	// Create databases.
-	initScript := filepath.Join(extractedProductHome, InitScriptPath)
+	// Initialize each SQLite database
+	databases := []struct {
+		name       string
+		schemaDir  string
+		dbFileName string
+	}{
+		{"thunderdb", "dbscripts/thunderdb", "thunderdb.db"},
+		{"runtimedb", "dbscripts/runtimedb", "runtimedb.db"},
+		{"userdb", "dbscripts/userdb", "userdb.db"},
+	}
 
-	// Create the thunderdb database.
-	thunderDBSchemaPath := filepath.Join(extractedProductHome, "dbscripts/thunderdb", "sqlite.sql")
-	thunderDbPath := filepath.Join(extractedProductHome, DatabaseFileBasePath, "thunderdb.db")
-	cmd := exec.Command("bash", initScript, "-recreate", "-type", "sqlite", "-schema", thunderDBSchemaPath,
-		"-path", thunderDbPath)
+	for _, db := range databases {
+		schemaPath := filepath.Join(extractedProductHome, db.schemaDir, "sqlite.sql")
+		dbPath := filepath.Join(extractedProductHome, DatabaseFileBasePath, db.dbFileName)
+
+		if err := initSQLiteDB(db.name, schemaPath, dbPath); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+// initSQLiteDB creates a SQLite database from a schema file using the sqlite3 CLI.
+func initSQLiteDB(name, schemaPath, dbPath string) error {
+	log.Printf("Initializing SQLite database: %s", name)
+
+	// Remove existing database file for a clean start
+	if err := os.Remove(dbPath); err != nil && !os.IsNotExist(err) {
+		return fmt.Errorf("failed to remove existing %s database: %v", name, err)
+	}
+
+	// Use forward slashes for sqlite3's .read command (works cross-platform)
+	readCmd := ".read " + filepath.ToSlash(schemaPath)
+	cmd := exec.Command("sqlite3", dbPath, readCmd)
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
-	err = cmd.Run()
-	if err != nil {
-		return fmt.Errorf("failed to run init script for thunderdb: %v", err)
+	if err := cmd.Run(); err != nil {
+		return fmt.Errorf("failed to initialize %s database: %v", name, err)
 	}
 
-	// Create the runtimedb database.
-	runtimeDBSchemaPath := filepath.Join(extractedProductHome, "dbscripts/runtimedb", "sqlite.sql")
-	runtimeDbPath := filepath.Join(extractedProductHome, DatabaseFileBasePath, "runtimedb.db")
-	cmd = exec.Command("bash", initScript, "-recreate", "-type", "sqlite", "-schema", runtimeDBSchemaPath,
-		"-path", runtimeDbPath)
+	// Enable WAL mode
+	cmd = exec.Command("sqlite3", dbPath, "PRAGMA journal_mode=WAL;")
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
-	err = cmd.Run()
-	if err != nil {
-		return fmt.Errorf("failed to run init script for runtimedb: %v", err)
+	if err := cmd.Run(); err != nil {
+		return fmt.Errorf("failed to enable WAL mode for %s: %v", name, err)
 	}
 
-	// Create the userdb database.
-	userDBSchemaPath := filepath.Join(extractedProductHome, "dbscripts/userdb", "sqlite.sql")
-	userDbPath := filepath.Join(extractedProductHome, DatabaseFileBasePath, "userdb.db")
-	cmd = exec.Command("bash", initScript, "-recreate", "-type", "sqlite", "-schema", userDBSchemaPath,
-		"-path", userDbPath)
-	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stderr
-	err = cmd.Run()
-	if err != nil {
-		return fmt.Errorf("failed to run init script for userdb: %v", err)
-	}
+	log.Printf("Successfully initialized %s database", name)
 	return nil
 }
 
@@ -326,8 +353,8 @@ func StartServer(port string, zipFilePattern string) error {
 func StopServer() {
 	log.Println("Stopping server...")
 	if serverCmd != nil {
-		// Send SIGTERM for graceful shutdown (allows coverage data to be written)
-		serverCmd.Process.Signal(syscall.SIGTERM)
+		// Send stop signal for graceful shutdown (SIGTERM on Unix, Kill on Windows)
+		sendStopSignal(serverCmd.Process)
 		// Wait for the process to exit (with timeout)
 		done := make(chan error, 1)
 		go func() {
@@ -365,11 +392,10 @@ func RestartServer() error {
 	return StartServer(serverPort, zipFilePattern)
 }
 
-// RunSetupScript runs the setup.sh script from the extracted product directory.
+// RunSetupScript runs the setup script from the extracted product directory.
 // This script starts the server without security, runs bootstrap scripts, and stops the server.
 func RunSetupScript() error {
 	ensureInitialized()
-	log.Println("Running setup.sh from extracted product...")
 
 	// Get absolute path to extracted product home
 	absProductHome, err := filepath.Abs(extractedProductHome)
@@ -377,15 +403,23 @@ func RunSetupScript() error {
 		return fmt.Errorf("failed to get absolute path: %w", err)
 	}
 
-	setupScript := filepath.Join(absProductHome, "setup.sh")
+	var cmd *exec.Cmd
+	if runtime.GOOS == "windows" {
+		log.Println("Running setup.ps1 from extracted product...")
+		setupScript := filepath.Join(absProductHome, "setup.ps1")
+		cmd = exec.Command("pwsh", "-File", setupScript)
+	} else {
+		log.Println("Running setup.sh from extracted product...")
+		setupScript := filepath.Join(absProductHome, "setup.sh")
+		cmd = exec.Command("bash", setupScript)
+	}
 
-	cmd := exec.Command("bash", setupScript)
 	cmd.Dir = absProductHome // Run from product directory
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 	cmd.Env = os.Environ()
 
-	log.Println("setup.sh will start server, run bootstrap, and stop server automatically")
+	log.Println("Setup script will start server, run bootstrap, and stop server automatically")
 
 	return cmd.Run()
 }

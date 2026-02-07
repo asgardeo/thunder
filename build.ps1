@@ -701,15 +701,15 @@ function Build-Sample-App {
     Push-Location $REACT_SDK_SAMPLE_APP_DIR
     try {
         Write-Host "Installing React SDK sample dependencies..."
-        & pnpm install --frozen-lockfile
+        & npm ci
         if ($LASTEXITCODE -ne 0) {
-            throw "pnpm install failed with exit code $LASTEXITCODE"
+            throw "npm ci failed with exit code $LASTEXITCODE"
         }
 
         Write-Host "Building React SDK sample app..."
-        & pnpm run build
+        & npm run build
         if ($LASTEXITCODE -ne 0) {
-            throw "pnpm build failed with exit code $LASTEXITCODE"
+            throw "npm run build failed with exit code $LASTEXITCODE"
         }
     }
     finally {
@@ -1729,7 +1729,6 @@ switch ($Command) {
     }
     'build_backend' {
         Build-Backend
-        Prepare-Backend-For-Packaging
         Package
     }
     'build_frontend' {
