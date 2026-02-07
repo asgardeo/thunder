@@ -1,0 +1,666 @@
+/**
+ * Copyright (c) 2025, WSO2 LLC. (https://www.wso2.com).
+ *
+ * WSO2 LLC. licenses this file to you under the Apache License,
+ * Version 2.0 (the "License"); you may not use this file except
+ * in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing,
+ * software distributed under the License is distributed on an
+ * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+ * KIND, either express or implied. See the License for the
+ * specific language governing permissions and limitations
+ * under the License.
+ */
+
+import {useState, type JSX} from 'react';
+import {
+  Box,
+  Drawer,
+  IconButton,
+  Paper,
+  Stack,
+  Toolbar,
+  Typography,
+  Button,
+  Divider,
+  List,
+  ListItem,
+  ListItemButton,
+  ListItemIcon,
+  ListItemText,
+  Accordion,
+  AccordionSummary,
+  AccordionDetails,
+  Slider,
+  ToggleButton,
+  ToggleButtonGroup,
+  Chip,
+  CircularProgress,
+} from '@wso2/oxygen-ui';
+import {
+  ChevronLeft,
+  ChevronRight,
+  Save,
+  Grid3x3,
+  Palette,
+  LayoutGrid,
+  Code,
+  ZoomIn,
+  ZoomOut,
+  Check,
+  Plus,
+} from '@wso2/oxygen-ui-icons-react';
+import {useTranslation} from 'react-i18next';
+import {useLogger} from '@thunder/logger';
+import useNotification from '@/features/design-system/hooks/useNotification';
+import DeviceSelector from '../components/DeviceSelector';
+import Ruler from '../components/Ruler';
+import SavedDesignsList from '../components/SavedDesignsList';
+import ThemePreview from '@/features/themes/components/ThemePreview';
+import {defaultThemeFormData} from '@/features/themes/schemas/themeSchema';
+import {defaultLayoutFormData} from '@/features/layouts/schemas/layoutSchema';
+import {DEFAULT_EDITOR_STATE, DEVICE_VIEWPORTS, type DeviceType, type DesignMode} from '../models/design';
+import useGetThemes from '@/features/themes/api/useGetThemes';
+import useGetLayouts from '@/features/layouts/api/useGetLayouts';
+import useCreateDesign from '../api/useCreateDesign';
+import useUpdateDesign from '../api/useUpdateDesign';
+
+const LEFT_DRAWER_WIDTH = 280;
+const RIGHT_DRAWER_WIDTH = 320;
+const RULER_SIZE = 24;
+
+/**
+ * Unified Design Studio page combining themes and layouts
+ * with visual editor and future code editor support
+ */
+export default function DesignStudioPage(): JSX.Element {
+  const {t} = useTranslation();
+  const logger = useLogger('DesignStudioPage');
+  const {showSuccess, showError} = useNotification();
+
+  // API Queries
+  const {data: themesData, isLoading: isLoadingThemes} = useGetThemes();
+  const {data: layoutsData, isLoading: isLoadingLayouts} = useGetLayouts();
+
+  // API Mutations
+  const createDesign = useCreateDesign();
+  const updateDesign = useUpdateDesign();
+
+  // UI State
+  const [leftDrawerOpen, setLeftDrawerOpen] = useState(true);
+  const [rightDrawerOpen, setRightDrawerOpen] = useState(true);
+  const [selectedDevice, setSelectedDevice] = useState<DeviceType>(DEFAULT_EDITOR_STATE.selectedDevice);
+  const [zoom, setZoom] = useState(DEFAULT_EDITOR_STATE.zoom);
+  const [showRulers, setShowRulers] = useState(DEFAULT_EDITOR_STATE.showRulers);
+  const [showGrid, setShowGrid] = useState(DEFAULT_EDITOR_STATE.showGrid);
+  const [mode, setMode] = useState<DesignMode>(DEFAULT_EDITOR_STATE.mode);
+
+  // Design Data
+  const [currentDesignId, setCurrentDesignId] = useState<string | null>(null);
+  const [selectedThemeId, setSelectedThemeId] = useState<string | null>(null);
+  const [selectedLayoutId, setSelectedLayoutId] = useState<string | null>(null);
+  const [themeConfig, setThemeConfig] = useState(defaultThemeFormData.theme);
+  const [layoutConfig, setLayoutConfig] = useState(defaultLayoutFormData.layout);
+  const [designName, setDesignName] = useState('Untitled Design');
+
+  const viewport = DEVICE_VIEWPORTS[selectedDevice];
+  const scaledWidth = (viewport.width * zoom) / 100;
+  const scaledHeight = (viewport.height * zoom) / 100;
+
+  const handleThemeSelect = (themeId: string) => {
+    const theme = themesData?.themes.find((t) => t.id === themeId);
+    if (theme) {
+      setSelectedThemeId(themeId);
+      setThemeConfig(theme.theme);
+      setDesignName(`${theme.displayName} - ${layoutsData?.layouts.find((l) => l.id === selectedLayoutId)?.displayName || 'Default Layout'}`);
+      logger.info('Theme selected', {themeId, themeName: theme.displayName});
+    }
+  };
+
+  const handleLayoutSelect = (layoutId: string) => {
+    const layout = layoutsData?.layouts.find((l) => l.id === layoutId);
+    if (layout) {
+      setSelectedLayoutId(layoutId);
+      setLayoutConfig(layout.layout);
+      setDesignName(`${themesData?.themes.find((t) => t.id === selectedThemeId)?.displayName || 'Default Theme'} - ${layout.displayName}`);
+      logger.info('Layout selected', {layoutId, layoutName: layout.displayName});
+    }
+  };
+
+  const handleDesignSelect = (design: typeof defaultThemeFormData & {id?: string; mode: DesignMode}) => {
+    setCurrentDesignId(design.id || null);
+    setThemeConfig(design.theme);
+    setLayoutConfig(design.layout);
+    setDesignName(design.displayName);
+    setMode(design.mode);
+    logger.info('Design loaded', {designId: design.id, designName: design.displayName});
+  };
+
+  const handleNewDesign = () => {
+    setCurrentDesignId(null);
+    setSelectedThemeId(null);
+    setSelectedLayoutId(null);
+    setThemeConfig(defaultThemeFormData.theme);
+    setLayoutConfig(defaultLayoutFormData.layout);
+    setDesignName('Untitled Design');
+    setMode('visual');
+    logger.info('New design started');
+  };
+
+  const handleSave = async () => {
+    try {
+      const designData = {
+        displayName: designName,
+        mode,
+        theme: themeConfig,
+        layout: layoutConfig,
+        customCode: mode === 'code' ? {html: '', css: '', javascript: ''} : undefined,
+      };
+
+      logger.info('Saving design', {
+        name: designName,
+        theme: selectedThemeId,
+        layout: selectedLayoutId,
+        mode,
+        isUpdate: !!currentDesignId,
+      });
+
+      if (currentDesignId) {
+        // Update existing design
+        const result = await updateDesign.mutateAsync({id: currentDesignId, data: designData});
+        logger.info('Design updated successfully', {id: result.id});
+        showSuccess(t('design:studio.updated', {defaultValue: `Design "${designName}" updated successfully`}));
+      } else {
+        // Create new design
+        const result = await createDesign.mutateAsync(designData);
+        setCurrentDesignId(result.id);
+        logger.info('Design created successfully', {id: result.id});
+        showSuccess(t('design:studio.saved', {defaultValue: `Design "${designName}" saved successfully`}));
+      }
+    } catch (error) {
+      logger.error('Failed to save design', error);
+      showError(
+        t('design:studio.saveFailed', {
+          defaultValue: 'Failed to save design. Please try again.',
+        }),
+      );
+    }
+  };
+
+  return (
+    <Box sx={{display: 'flex', height: '100vh', overflow: 'hidden'}}>
+      {/* Left Drawer - Assets & Elements */}
+      <Drawer
+        variant="persistent"
+        anchor="left"
+        open={leftDrawerOpen}
+        sx={{
+          width: LEFT_DRAWER_WIDTH,
+          flexShrink: 0,
+          '& .MuiDrawer-paper': {
+            width: LEFT_DRAWER_WIDTH,
+            boxSizing: 'border-box',
+            position: 'relative',
+            borderRight: '1px solid',
+            borderColor: 'divider',
+          },
+        }}
+      >
+        <Box sx={{height: '100%', display: 'flex', flexDirection: 'column'}}>
+          {/* Drawer Header */}
+          <Box
+            sx={{
+              p: 2,
+              borderBottom: '1px solid',
+              borderColor: 'divider',
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+            }}
+          >
+            <Typography variant="h6">{t('design:studio.assets', {defaultValue: 'Assets'})}</Typography>
+            <IconButton size="small" onClick={() => setLeftDrawerOpen(false)}>
+              <ChevronLeft size={18} />
+            </IconButton>
+          </Box>
+
+          {/* New Design Button */}
+          <Box sx={{p: 2, borderBottom: '1px solid', borderColor: 'divider'}}>
+            <Button variant="outlined" fullWidth onClick={handleNewDesign} startIcon={<Plus size={18} />}>
+              {t('design:studio.newDesign', {defaultValue: 'New Design'})}
+            </Button>
+          </Box>
+
+          {/* Assets Content */}
+          <Box sx={{flex: 1, overflow: 'auto', p: 2}}>
+            {/* Saved Designs */}
+            <Accordion defaultExpanded>
+              <AccordionSummary>
+                <Stack direction="row" spacing={1} alignItems="center">
+                  <Save size={18} />
+                  <Typography>{t('design:studio.savedDesigns', {defaultValue: 'Saved Designs'})}</Typography>
+                </Stack>
+              </AccordionSummary>
+              <AccordionDetails>
+                <SavedDesignsList selectedDesignId={currentDesignId} onDesignSelect={handleDesignSelect} />
+              </AccordionDetails>
+            </Accordion>
+
+            <Divider sx={{my: 2}} />
+
+            {/* Theme Selection */}
+            <Accordion defaultExpanded>
+              <AccordionSummary>
+                <Stack direction="row" spacing={1} alignItems="center">
+                  <Palette size={18} />
+                  <Typography>{t('design:studio.themes', {defaultValue: 'Themes'})}</Typography>
+                </Stack>
+              </AccordionSummary>
+              <AccordionDetails>
+                {isLoadingThemes ? (
+                  <Box display="flex" justifyContent="center" p={2}>
+                    <CircularProgress size={24} />
+                  </Box>
+                ) : (
+                  <List dense>
+                    {themesData?.themes.map((theme) => (
+                      <ListItem key={theme.id} disablePadding>
+                        <ListItemButton selected={selectedThemeId === theme.id} onClick={() => handleThemeSelect(theme.id)}>
+                          {selectedThemeId === theme.id && (
+                            <ListItemIcon sx={{minWidth: 32}}>
+                              <Check size={16} />
+                            </ListItemIcon>
+                          )}
+                          <ListItemText
+                            primary={theme.displayName}
+                            secondary={theme.theme?.defaultColorScheme || 'dark'}
+                            primaryTypographyProps={{variant: 'body2'}}
+                            secondaryTypographyProps={{variant: 'caption'}}
+                            sx={{pl: selectedThemeId === theme.id ? 0 : 4}}
+                          />
+                        </ListItemButton>
+                      </ListItem>
+                    ))}
+                  </List>
+                )}
+              </AccordionDetails>
+            </Accordion>
+
+            {/* Layout Selection */}
+            <Accordion defaultExpanded>
+              <AccordionSummary>
+                <Stack direction="row" spacing={1} alignItems="center">
+                  <LayoutGrid size={18} />
+                  <Typography>{t('design:studio.layouts', {defaultValue: 'Layouts'})}</Typography>
+                </Stack>
+              </AccordionSummary>
+              <AccordionDetails>
+                {isLoadingLayouts ? (
+                  <Box display="flex" justifyContent="center" p={2}>
+                    <CircularProgress size={24} />
+                  </Box>
+                ) : (
+                  <List dense>
+                    {layoutsData?.layouts.map((layout) => (
+                      <ListItem key={layout.id} disablePadding>
+                        <ListItemButton selected={selectedLayoutId === layout.id} onClick={() => handleLayoutSelect(layout.id)}>
+                          {selectedLayoutId === layout.id && (
+                            <ListItemIcon sx={{minWidth: 32}}>
+                              <Check size={16} />
+                            </ListItemIcon>
+                          )}
+                          <ListItemText
+                            primary={layout.displayName}
+                            secondary={layout.layout?.screens?.signin?.template || 'centered'}
+                            primaryTypographyProps={{variant: 'body2'}}
+                            secondaryTypographyProps={{variant: 'caption'}}
+                            sx={{pl: selectedLayoutId === layout.id ? 0 : 4}}
+                          />
+                        </ListItemButton>
+                      </ListItem>
+                    ))}
+                  </List>
+                )}
+              </AccordionDetails>
+            </Accordion>
+
+            {/* Mode Toggle - Visual vs Code */}
+            <Box sx={{mt: 2}}>
+              <Typography variant="caption" color="text.secondary" sx={{mb: 1, display: 'block'}}>
+                {t('design:studio.mode', {defaultValue: 'Editor Mode'})}
+              </Typography>
+              <ToggleButtonGroup
+                value={mode}
+                exclusive
+                onChange={(_, newMode) => newMode && setMode(newMode)}
+                fullWidth
+                size="small"
+              >
+                <ToggleButton value="visual">
+                  <Stack direction="row" spacing={1} alignItems="center">
+                    <Grid3x3 size={16} />
+                    <Typography variant="caption">Visual</Typography>
+                  </Stack>
+                </ToggleButton>
+                <ToggleButton value="code">
+                  <Stack direction="row" spacing={1} alignItems="center">
+                    <Code size={16} />
+                    <Typography variant="caption">Code</Typography>
+                  </Stack>
+                </ToggleButton>
+              </ToggleButtonGroup>
+              {mode === 'code' && (
+                <Typography variant="caption" color="info.main" sx={{mt: 1, display: 'block'}}>
+                  {t('design:studio.codeComingSoon', {defaultValue: 'Code editor coming soon!'})}
+                </Typography>
+              )}
+            </Box>
+          </Box>
+        </Box>
+      </Drawer>
+
+      {/* Main Content Area */}
+      <Box
+        sx={{
+          flex: 1,
+          display: 'flex',
+          flexDirection: 'column',
+          overflow: 'hidden',
+          bgcolor: 'background.default',
+        }}
+      >
+        {/* Top Toolbar */}
+        <Toolbar
+          sx={{
+            borderBottom: '1px solid',
+            borderColor: 'divider',
+            bgcolor: 'background.paper',
+            justifyContent: 'space-between',
+          }}
+        >
+          <Stack direction="row" spacing={2} alignItems="center">
+            {!leftDrawerOpen && (
+              <IconButton size="small" onClick={() => setLeftDrawerOpen(true)}>
+                <ChevronRight size={18} />
+              </IconButton>
+            )}
+            <Typography variant="h6">{designName}</Typography>
+            {(selectedThemeId || selectedLayoutId) && (
+              <Chip
+                label={`${selectedThemeId ? '🎨' : ''} ${selectedLayoutId ? '📐' : ''}`}
+                size="small"
+                variant="outlined"
+              />
+            )}
+          </Stack>
+
+          {/* Center - Device Selector */}
+          <DeviceSelector selectedDevice={selectedDevice} onDeviceChange={setSelectedDevice} />
+
+          {/* Right - Actions */}
+          <Stack direction="row" spacing={1} alignItems="center">
+            {/* Zoom Controls */}
+            <IconButton size="small" onClick={() => setZoom(Math.max(25, zoom - 25))}>
+              <ZoomOut size={18} />
+            </IconButton>
+            <Typography variant="caption" sx={{minWidth: 50, textAlign: 'center'}}>
+              {zoom}%
+            </Typography>
+            <IconButton size="small" onClick={() => setZoom(Math.min(200, zoom + 25))}>
+              <ZoomIn size={18} />
+            </IconButton>
+
+            <Divider orientation="vertical" flexItem sx={{mx: 1}} />
+
+            {/* Save Button */}
+            <Button
+              variant="contained"
+              startIcon={createDesign.isPending || updateDesign.isPending ? <CircularProgress size={18} /> : <Save size={18} />}
+              onClick={handleSave}
+              disabled={(!selectedThemeId && !selectedLayoutId) || createDesign.isPending || updateDesign.isPending}
+            >
+              {createDesign.isPending || updateDesign.isPending
+                ? t('common:actions.saving', {defaultValue: 'Saving...'})
+                : currentDesignId
+                  ? t('common:actions.update', {defaultValue: 'Update'})
+                  : t('common:actions.save', {defaultValue: 'Save'})}
+            </Button>
+
+            {!rightDrawerOpen && (
+              <IconButton size="small" onClick={() => setRightDrawerOpen(true)}>
+                <ChevronLeft size={18} />
+              </IconButton>
+            )}
+          </Stack>
+        </Toolbar>
+
+        {/* Canvas Area with Rulers */}
+        <Box
+          sx={{
+            flex: 1,
+            display: 'flex',
+            overflow: 'auto',
+            position: 'relative',
+            bgcolor: (theme) => (theme.palette.mode === 'dark' ? 'grey.900' : 'grey.100'),
+          }}
+        >
+          {showRulers && (
+            <>
+              {/* Top-left corner */}
+              <Box
+                sx={{
+                  position: 'absolute',
+                  top: 0,
+                  left: 0,
+                  width: RULER_SIZE,
+                  height: RULER_SIZE,
+                  bgcolor: 'background.paper',
+                  borderRight: '1px solid',
+                  borderBottom: '1px solid',
+                  borderColor: 'divider',
+                  zIndex: 2,
+                }}
+              />
+              {/* Horizontal Ruler */}
+              <Box sx={{position: 'absolute', top: 0, left: RULER_SIZE, right: 0, zIndex: 1}}>
+                <Ruler direction="horizontal" size={viewport.width * 2} zoom={zoom} />
+              </Box>
+              {/* Vertical Ruler */}
+              <Box sx={{position: 'absolute', top: RULER_SIZE, left: 0, bottom: 0, zIndex: 1}}>
+                <Ruler direction="vertical" size={viewport.height * 2} zoom={zoom} />
+              </Box>
+            </>
+          )}
+
+          {/* Preview Canvas */}
+          <Box
+            sx={{
+              flex: 1,
+              display: 'flex',
+              justifyContent: 'center',
+              alignItems: 'center',
+              p: 4,
+              pt: showRulers ? `${RULER_SIZE + 32}px` : 4,
+              pl: showRulers ? `${RULER_SIZE + 32}px` : 4,
+            }}
+          >
+            <Paper
+              elevation={8}
+              sx={{
+                width: scaledWidth,
+                height: scaledHeight,
+                transform: `scale(${zoom / 100})`,
+                transformOrigin: 'center center',
+                transition: 'all 0.3s ease',
+                overflow: 'hidden',
+                ...(showGrid && {
+                  backgroundImage: `
+                    linear-gradient(rgba(0, 0, 0, 0.1) 1px, transparent 1px),
+                    linear-gradient(90deg, rgba(0, 0, 0, 0.1) 1px, transparent 1px)
+                  `,
+                  backgroundSize: '20px 20px',
+                }),
+              }}
+            >
+              <ThemePreview themeConfig={themeConfig} />
+            </Paper>
+          </Box>
+        </Box>
+      </Box>
+
+      {/* Right Drawer - Properties */}
+      <Drawer
+        variant="persistent"
+        anchor="right"
+        open={rightDrawerOpen}
+        sx={{
+          width: RIGHT_DRAWER_WIDTH,
+          flexShrink: 0,
+          '& .MuiDrawer-paper': {
+            width: RIGHT_DRAWER_WIDTH,
+            boxSizing: 'border-box',
+            position: 'relative',
+            borderLeft: '1px solid',
+            borderColor: 'divider',
+          },
+        }}
+      >
+        <Box sx={{height: '100%', display: 'flex', flexDirection: 'column'}}>
+          {/* Drawer Header */}
+          <Box
+            sx={{
+              p: 2,
+              borderBottom: '1px solid',
+              borderColor: 'divider',
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+            }}
+          >
+            <Typography variant="h6">{t('design:studio.properties', {defaultValue: 'Properties'})}</Typography>
+            <IconButton size="small" onClick={() => setRightDrawerOpen(false)}>
+              <ChevronRight size={18} />
+            </IconButton>
+          </Box>
+
+          {/* Properties Content */}
+          <Box sx={{flex: 1, overflow: 'auto', p: 2}}>
+            {/* Canvas Settings */}
+            <Accordion defaultExpanded>
+              <AccordionSummary>
+                <Typography>{t('design:studio.canvasSettings', {defaultValue: 'Canvas Settings'})}</Typography>
+              </AccordionSummary>
+              <AccordionDetails>
+                <Stack spacing={2}>
+                  <Box>
+                    <Typography variant="caption" gutterBottom>
+                      {t('design:studio.zoom', {defaultValue: 'Zoom'})}
+                    </Typography>
+                    <Slider
+                      value={zoom}
+                      onChange={(_, value) => setZoom(value as number)}
+                      min={25}
+                      max={200}
+                      step={25}
+                      marks
+                      valueLabelDisplay="auto"
+                      valueLabelFormat={(value) => `${value}%`}
+                    />
+                  </Box>
+
+                  <Stack direction="row" justifyContent="space-between" alignItems="center">
+                    <Typography variant="body2">
+                      {t('design:studio.showRulers', {defaultValue: 'Show Rulers'})}
+                    </Typography>
+                    <ToggleButton
+                      value="rulers"
+                      selected={showRulers}
+                      onChange={() => setShowRulers(!showRulers)}
+                      size="small"
+                    >
+                      <Grid3x3 size={16} />
+                    </ToggleButton>
+                  </Stack>
+
+                  <Stack direction="row" justifyContent="space-between" alignItems="center">
+                    <Typography variant="body2">{t('design:studio.showGrid', {defaultValue: 'Show Grid'})}</Typography>
+                    <ToggleButton
+                      value="grid"
+                      selected={showGrid}
+                      onChange={() => setShowGrid(!showGrid)}
+                      size="small"
+                    >
+                      <Grid3x3 size={16} />
+                    </ToggleButton>
+                  </Stack>
+                </Stack>
+              </AccordionDetails>
+            </Accordion>
+
+            {/* Device Info */}
+            <Accordion>
+              <AccordionSummary>
+                <Typography>{t('design:studio.deviceInfo', {defaultValue: 'Device Info'})}</Typography>
+              </AccordionSummary>
+              <AccordionDetails>
+                <Stack spacing={1}>
+                  <Box>
+                    <Typography variant="caption" color="text.secondary">
+                      Device
+                    </Typography>
+                    <Typography variant="body2">{viewport.label}</Typography>
+                  </Box>
+                  <Box>
+                    <Typography variant="caption" color="text.secondary">
+                      Viewport
+                    </Typography>
+                    <Typography variant="body2">
+                      {viewport.width} x {viewport.height}px
+                    </Typography>
+                  </Box>
+                </Stack>
+              </AccordionDetails>
+            </Accordion>
+
+            {/* Selection Info */}
+            {(selectedThemeId || selectedLayoutId) && (
+              <Accordion>
+                <AccordionSummary>
+                  <Typography>{t('design:studio.selection', {defaultValue: 'Current Selection'})}</Typography>
+                </AccordionSummary>
+                <AccordionDetails>
+                  <Stack spacing={1}>
+                    {selectedThemeId && (
+                      <Box>
+                        <Typography variant="caption" color="text.secondary">
+                          Theme
+                        </Typography>
+                        <Typography variant="body2">
+                          {themesData?.themes.find((t) => t.id === selectedThemeId)?.displayName}
+                        </Typography>
+                      </Box>
+                    )}
+                    {selectedLayoutId && (
+                      <Box>
+                        <Typography variant="caption" color="text.secondary">
+                          Layout
+                        </Typography>
+                        <Typography variant="body2">
+                          {layoutsData?.layouts.find((l) => l.id === selectedLayoutId)?.displayName}
+                        </Typography>
+                      </Box>
+                    )}
+                  </Stack>
+                </AccordionDetails>
+              </Accordion>
+            )}
+          </Box>
+        </Box>
+      </Drawer>
+    </Box>
+  );
+}
