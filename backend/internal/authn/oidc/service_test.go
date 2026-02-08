@@ -30,7 +30,7 @@ import (
 	"github.com/asgardeo/thunder/tests/mocks/authn/oauthmock"
 	"github.com/asgardeo/thunder/tests/mocks/httpmock"
 	"github.com/asgardeo/thunder/tests/mocks/idp/idpmock"
-	"github.com/asgardeo/thunder/tests/mocks/jwtmock"
+	"github.com/asgardeo/thunder/tests/mocks/jose/jwtmock"
 	"github.com/asgardeo/thunder/tests/mocks/usermock"
 )
 
@@ -44,7 +44,7 @@ type OIDCAuthnServiceTestSuite struct {
 	mockHTTPClient   *httpmock.HTTPClientInterfaceMock
 	mockIdpService   *idpmock.IDPServiceInterfaceMock
 	mockUserService  *usermock.UserServiceInterfaceMock
-	mockJWTService   *jwtmock.JWTServiceInterfaceMock
+	mockJWTService   *jwtmock.ServiceInterfaceMock
 	endpoints        oauth.OAuthEndpoints
 	service          oidcAuthnService
 }
@@ -58,7 +58,7 @@ func (suite *OIDCAuthnServiceTestSuite) SetupTest() {
 	suite.mockHTTPClient = httpmock.NewHTTPClientInterfaceMock(suite.T())
 	suite.mockIdpService = idpmock.NewIDPServiceInterfaceMock(suite.T())
 	suite.mockUserService = usermock.NewUserServiceInterfaceMock(suite.T())
-	suite.mockJWTService = jwtmock.NewJWTServiceInterfaceMock(suite.T())
+	suite.mockJWTService = jwtmock.NewServiceInterfaceMock(suite.T())
 	suite.endpoints = oauth.OAuthEndpoints{
 		AuthorizationEndpoint: "https://localhost:8090/oauth/authorize",
 		TokenEndpoint:         "https://localhost:8090/oauth/token",
@@ -177,7 +177,7 @@ func (suite *OIDCAuthnServiceTestSuite) TestExchangeCodeForTokenSuccess() {
 	for _, tc := range tests {
 		suite.Run(tc.name, func() {
 			suite.mockOAuthService = oauthmock.NewOAuthAuthnServiceInterfaceMock(suite.T())
-			suite.mockJWTService = jwtmock.NewJWTServiceInterfaceMock(suite.T())
+			suite.mockJWTService = jwtmock.NewServiceInterfaceMock(suite.T())
 
 			service := newOIDCAuthnService(suite.mockHTTPClient, suite.mockIdpService,
 				suite.mockUserService, suite.mockJWTService)
@@ -223,7 +223,7 @@ func (suite *OIDCAuthnServiceTestSuite) TestValidateTokenResponseSuccess() {
 	for _, tc := range tests {
 		suite.Run(tc.name, func() {
 			suite.mockOAuthService = oauthmock.NewOAuthAuthnServiceInterfaceMock(suite.T())
-			suite.mockJWTService = jwtmock.NewJWTServiceInterfaceMock(suite.T())
+			suite.mockJWTService = jwtmock.NewServiceInterfaceMock(suite.T())
 
 			service := newOIDCAuthnService(suite.mockHTTPClient, suite.mockIdpService,
 				suite.mockUserService, suite.mockJWTService)
@@ -301,7 +301,7 @@ func (suite *OIDCAuthnServiceTestSuite) TestValidateIDTokenSuccess() {
 	for _, tc := range tests {
 		suite.Run(tc.name, func() {
 			suite.mockOAuthService = oauthmock.NewOAuthAuthnServiceInterfaceMock(suite.T())
-			suite.mockJWTService = jwtmock.NewJWTServiceInterfaceMock(suite.T())
+			suite.mockJWTService = jwtmock.NewServiceInterfaceMock(suite.T())
 
 			service := newOIDCAuthnService(suite.mockHTTPClient, suite.mockIdpService,
 				suite.mockUserService, suite.mockJWTService)
@@ -384,7 +384,7 @@ func (suite *OIDCAuthnServiceTestSuite) TestExchangeCodeForTokenInternalError() 
 func (suite *OIDCAuthnServiceTestSuite) TestValidateTokenResponseValidateIDTokenFailure() {
 	// Setup: Token response valid but ValidateIDToken will fail due to signature verification error
 	suite.mockOAuthService = oauthmock.NewOAuthAuthnServiceInterfaceMock(suite.T())
-	suite.mockJWTService = jwtmock.NewJWTServiceInterfaceMock(suite.T())
+	suite.mockJWTService = jwtmock.NewServiceInterfaceMock(suite.T())
 
 	service := newOIDCAuthnService(suite.mockHTTPClient, suite.mockIdpService,
 		suite.mockUserService, suite.mockJWTService)

@@ -37,13 +37,13 @@ import (
 	"github.com/asgardeo/thunder/internal/system/error/serviceerror"
 	"github.com/asgardeo/thunder/internal/user"
 	"github.com/asgardeo/thunder/tests/mocks/applicationmock"
-	"github.com/asgardeo/thunder/tests/mocks/jwtmock"
+	"github.com/asgardeo/thunder/tests/mocks/jose/jwtmock"
 	"github.com/asgardeo/thunder/tests/mocks/usermock"
 )
 
 type UserInfoServiceTestSuite struct {
 	suite.Suite
-	mockJWTService  *jwtmock.JWTServiceInterfaceMock
+	mockJWTService  *jwtmock.ServiceInterfaceMock
 	mockAppService  *applicationmock.ApplicationServiceInterfaceMock
 	mockUserService *usermock.UserServiceInterfaceMock
 	userInfoService userInfoServiceInterface
@@ -55,7 +55,7 @@ func TestUserInfoServiceTestSuite(t *testing.T) {
 }
 
 func (s *UserInfoServiceTestSuite) SetupTest() {
-	s.mockJWTService = jwtmock.NewJWTServiceInterfaceMock(s.T())
+	s.mockJWTService = jwtmock.NewServiceInterfaceMock(s.T())
 	s.mockAppService = applicationmock.NewApplicationServiceInterfaceMock(s.T())
 	s.mockUserService = usermock.NewUserServiceInterfaceMock(s.T())
 	s.userInfoService = newUserInfoService(s.mockJWTService, s.mockAppService, s.mockUserService)

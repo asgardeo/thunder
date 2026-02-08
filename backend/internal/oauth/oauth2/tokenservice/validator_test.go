@@ -31,7 +31,7 @@ import (
 	appmodel "github.com/asgardeo/thunder/internal/application/model"
 	"github.com/asgardeo/thunder/internal/system/config"
 	"github.com/asgardeo/thunder/internal/system/error/serviceerror"
-	"github.com/asgardeo/thunder/tests/mocks/jwtmock"
+	"github.com/asgardeo/thunder/tests/mocks/jose/jwtmock"
 )
 
 const (
@@ -42,7 +42,7 @@ const (
 
 type TokenValidatorTestSuite struct {
 	suite.Suite
-	mockJWTService *jwtmock.JWTServiceInterfaceMock
+	mockJWTService *jwtmock.ServiceInterfaceMock
 	validator      *tokenValidator
 	oauthApp       *appmodel.OAuthAppConfigProcessedDTO
 }
@@ -63,7 +63,7 @@ func (suite *TokenValidatorTestSuite) SetupTest() {
 	}
 	_ = config.InitializeThunderRuntime("test", testConfig)
 
-	suite.mockJWTService = jwtmock.NewJWTServiceInterfaceMock(suite.T())
+	suite.mockJWTService = jwtmock.NewServiceInterfaceMock(suite.T())
 	suite.validator = &tokenValidator{
 		jwtService: suite.mockJWTService,
 	}

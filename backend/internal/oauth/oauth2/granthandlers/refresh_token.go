@@ -26,14 +26,14 @@ import (
 	"github.com/asgardeo/thunder/internal/oauth/oauth2/model"
 	"github.com/asgardeo/thunder/internal/oauth/oauth2/tokenservice"
 	"github.com/asgardeo/thunder/internal/system/config"
-	"github.com/asgardeo/thunder/internal/system/jwt"
+	"github.com/asgardeo/thunder/internal/system/jose/jwt"
 	"github.com/asgardeo/thunder/internal/system/log"
 	"github.com/asgardeo/thunder/internal/user"
 )
 
 // refreshTokenGrantHandler handles the refresh token grant type.
 type refreshTokenGrantHandler struct {
-	jwtService     jwt.JWTServiceInterface
+	jwtService     jwt.ServiceInterface
 	userService    user.UserServiceInterface
 	tokenBuilder   tokenservice.TokenBuilderInterface
 	tokenValidator tokenservice.TokenValidatorInterface
@@ -41,7 +41,7 @@ type refreshTokenGrantHandler struct {
 
 // newRefreshTokenGrantHandler creates a new instance of RefreshTokenGrantHandler.
 func newRefreshTokenGrantHandler(
-	jwtService jwt.JWTServiceInterface,
+	jwtService jwt.ServiceInterface,
 	userService user.UserServiceInterface,
 	tokenBuilder tokenservice.TokenBuilderInterface,
 	tokenValidator tokenservice.TokenValidatorInterface,

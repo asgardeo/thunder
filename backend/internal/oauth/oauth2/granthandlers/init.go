@@ -25,14 +25,14 @@ import (
 	"github.com/asgardeo/thunder/internal/flow/flowexec"
 	"github.com/asgardeo/thunder/internal/oauth/oauth2/authz"
 	"github.com/asgardeo/thunder/internal/oauth/oauth2/tokenservice"
-	"github.com/asgardeo/thunder/internal/system/jwt"
+	"github.com/asgardeo/thunder/internal/system/jose/jwt"
 	"github.com/asgardeo/thunder/internal/user"
 )
 
 // Initialize initializes the grant handler provider with the given services.
 func Initialize(
 	mux *http.ServeMux,
-	jwtService jwt.JWTServiceInterface,
+	jwtService jwt.ServiceInterface,
 	userService user.UserServiceInterface,
 	applicationService application.ApplicationServiceInterface,
 	flowExecService flowexec.FlowExecServiceInterface,

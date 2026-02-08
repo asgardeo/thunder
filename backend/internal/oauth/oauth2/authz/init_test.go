@@ -30,13 +30,13 @@ import (
 	"github.com/asgardeo/thunder/internal/system/config"
 	"github.com/asgardeo/thunder/tests/mocks/applicationmock"
 	"github.com/asgardeo/thunder/tests/mocks/flow/flowexecmock"
-	"github.com/asgardeo/thunder/tests/mocks/jwtmock"
+	"github.com/asgardeo/thunder/tests/mocks/jose/jwtmock"
 )
 
 type InitTestSuite struct {
 	suite.Suite
 	mockAppService      *applicationmock.ApplicationServiceInterfaceMock
-	mockJWTService      *jwtmock.JWTServiceInterfaceMock
+	mockJWTService      *jwtmock.ServiceInterfaceMock
 	mockFlowExecService *flowexecmock.FlowExecServiceInterfaceMock
 }
 
@@ -61,7 +61,7 @@ func (suite *InitTestSuite) SetupTest() {
 	_ = config.InitializeThunderRuntime("test", testConfig)
 
 	suite.mockAppService = applicationmock.NewApplicationServiceInterfaceMock(suite.T())
-	suite.mockJWTService = jwtmock.NewJWTServiceInterfaceMock(suite.T())
+	suite.mockJWTService = jwtmock.NewServiceInterfaceMock(suite.T())
 	suite.mockFlowExecService = flowexecmock.NewFlowExecServiceInterfaceMock(suite.T())
 }
 

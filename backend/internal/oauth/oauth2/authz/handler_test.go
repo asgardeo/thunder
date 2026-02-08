@@ -37,13 +37,13 @@ import (
 	"github.com/asgardeo/thunder/internal/flow/flowexec"
 	"github.com/asgardeo/thunder/tests/mocks/applicationmock"
 	"github.com/asgardeo/thunder/tests/mocks/flow/flowexecmock"
-	"github.com/asgardeo/thunder/tests/mocks/jwtmock"
+	"github.com/asgardeo/thunder/tests/mocks/jose/jwtmock"
 
 	oauth2const "github.com/asgardeo/thunder/internal/oauth/oauth2/constants"
 	oauth2model "github.com/asgardeo/thunder/internal/oauth/oauth2/model"
 	"github.com/asgardeo/thunder/internal/system/config"
 	"github.com/asgardeo/thunder/internal/system/error/serviceerror"
-	"github.com/asgardeo/thunder/internal/system/jwt"
+	"github.com/asgardeo/thunder/internal/system/jose/jwt"
 )
 
 const (
@@ -56,7 +56,7 @@ type AuthorizeHandlerTestSuite struct {
 	suite.Suite
 	handler             *authorizeHandler
 	mockAppService      *applicationmock.ApplicationServiceInterfaceMock
-	mockJWTService      *jwtmock.JWTServiceInterfaceMock
+	mockJWTService      *jwtmock.ServiceInterfaceMock
 	mockAuthzCodeStore  *AuthorizationCodeStoreInterfaceMock
 	mockAuthReqStore    *authorizationRequestStoreInterfaceMock
 	mockFlowExecService *flowexecmock.FlowExecServiceInterfaceMock
@@ -100,7 +100,7 @@ func (suite *AuthorizeHandlerTestSuite) BeforeTest(suiteName, testName string) {
 func (suite *AuthorizeHandlerTestSuite) SetupTest() {
 	// Create mocked dependencies for testing
 	suite.mockAppService = applicationmock.NewApplicationServiceInterfaceMock(suite.T())
-	suite.mockJWTService = jwtmock.NewJWTServiceInterfaceMock(suite.T())
+	suite.mockJWTService = jwtmock.NewServiceInterfaceMock(suite.T())
 	suite.mockAuthzCodeStore = NewAuthorizationCodeStoreInterfaceMock(suite.T())
 	suite.mockAuthReqStore = newAuthorizationRequestStoreInterfaceMock(suite.T())
 	suite.mockFlowExecService = flowexecmock.NewFlowExecServiceInterfaceMock(suite.T())

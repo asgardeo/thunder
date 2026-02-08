@@ -23,7 +23,7 @@ import (
 	"errors"
 
 	"github.com/asgardeo/thunder/internal/oauth/oauth2/constants"
-	"github.com/asgardeo/thunder/internal/system/jwt"
+	"github.com/asgardeo/thunder/internal/system/jose/jwt"
 	"github.com/asgardeo/thunder/internal/system/log"
 )
 
@@ -34,11 +34,11 @@ type TokenIntrospectionServiceInterface interface {
 
 // tokenIntrospectionService implements the TokenIntrospectionServiceInterface.
 type tokenIntrospectionService struct {
-	jwtService jwt.JWTServiceInterface
+	jwtService jwt.ServiceInterface
 }
 
 // newTokenIntrospectionService creates a new tokenIntrospectionService instance (internal use).
-func newTokenIntrospectionService(jwtService jwt.JWTServiceInterface) TokenIntrospectionServiceInterface {
+func newTokenIntrospectionService(jwtService jwt.ServiceInterface) TokenIntrospectionServiceInterface {
 	return &tokenIntrospectionService{
 		jwtService: jwtService,
 	}

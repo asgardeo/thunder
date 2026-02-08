@@ -46,8 +46,8 @@ import (
 	declarativeresource "github.com/asgardeo/thunder/internal/system/declarative_resource"
 	"github.com/asgardeo/thunder/internal/system/export"
 	i18nmgt "github.com/asgardeo/thunder/internal/system/i18n/mgt"
-	"github.com/asgardeo/thunder/internal/system/jwe"
-	"github.com/asgardeo/thunder/internal/system/jwt"
+	"github.com/asgardeo/thunder/internal/system/jose"
+	"github.com/asgardeo/thunder/internal/system/jose/jwt"
 	"github.com/asgardeo/thunder/internal/system/log"
 	"github.com/asgardeo/thunder/internal/system/services"
 	"github.com/asgardeo/thunder/internal/user"
@@ -58,7 +58,7 @@ import (
 var observabilitySvc observability.ObservabilityServiceInterface
 
 // registerServices registers all the services with the provided HTTP multiplexer.
-func registerServices(mux *http.ServeMux) jwt.JWTServiceInterface {
+func registerServices(mux *http.ServeMux) jwt.ServiceInterface {
 	logger := log.GetLogger()
 
 	// Load the server's private key for signing JWTs.
@@ -67,14 +67,9 @@ func registerServices(mux *http.ServeMux) jwt.JWTServiceInterface {
 		logger.Fatal("Failed to initialize certificate service", log.Error(err))
 	}
 
-	jwtService, err := jwt.Initialize(pkiService)
+	jwtService, _, err := jose.Initialize(pkiService)
 	if err != nil {
-		logger.Fatal("Failed to load private key", log.Error(err))
-	}
-
-	_, err = jwe.Initialize(pkiService)
-	if err != nil {
-		logger.Fatal("Failed to initialize JWE service", log.Error(err))
+		logger.Fatal("Failed to initialize JOSE services", log.Error(err))
 	}
 
 	observabilitySvc = observability.Initialize()

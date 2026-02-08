@@ -32,14 +32,14 @@ import (
 	"github.com/asgardeo/thunder/internal/system/log"
 )
 
-// JWEServiceInterface defines the interface for JWE operations.
-type JWEServiceInterface interface {
+// ServiceInterface defines the interface for JWE operations.
+type ServiceInterface interface {
 	Encrypt(payload []byte, recipientPublicKey crypto.PublicKey,
 		alg KeyEncAlgorithm, enc ContentEncAlgorithm) (string, *serviceerror.ServiceError)
 	Decrypt(jweToken string) ([]byte, *serviceerror.ServiceError)
 }
 
-// jweService implements the JWEServiceInterface.
+// jweService implements the ServiceInterface.
 type jweService struct {
 	privateKey crypto.PrivateKey
 	kid        string
@@ -47,7 +47,7 @@ type jweService struct {
 }
 
 // newJWEService creates a new JWE service instance.
-func newJWEService(pkiService pki.PKIServiceInterface) (JWEServiceInterface, error) {
+func newJWEService(pkiService pki.PKIServiceInterface) (ServiceInterface, error) {
 	preferredKid := config.GetThunderRuntime().Config.JWT.PreferredKeyID
 
 	privateKey, err := pkiService.GetPrivateKey(preferredKid)

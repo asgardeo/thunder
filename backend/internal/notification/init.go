@@ -23,12 +23,12 @@ import (
 
 	"github.com/asgardeo/thunder/internal/system/config"
 	declarativeresource "github.com/asgardeo/thunder/internal/system/declarative_resource"
-	"github.com/asgardeo/thunder/internal/system/jwt"
+	"github.com/asgardeo/thunder/internal/system/jose/jwt"
 	"github.com/asgardeo/thunder/internal/system/middleware"
 )
 
 // Initialize creates and configures the notification service components.
-func Initialize(mux *http.ServeMux, jwtService jwt.JWTServiceInterface) (
+func Initialize(mux *http.ServeMux, jwtService jwt.ServiceInterface) (
 	NotificationSenderMgtSvcInterface, OTPServiceInterface, declarativeresource.ResourceExporter, error) {
 	var notificationStore notificationStoreInterface
 	if config.GetThunderRuntime().Config.DeclarativeResources.Enabled {

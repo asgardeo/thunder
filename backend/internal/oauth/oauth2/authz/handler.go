@@ -35,7 +35,7 @@ import (
 	oauth2model "github.com/asgardeo/thunder/internal/oauth/oauth2/model"
 	oauth2utils "github.com/asgardeo/thunder/internal/oauth/oauth2/utils"
 	"github.com/asgardeo/thunder/internal/system/config"
-	"github.com/asgardeo/thunder/internal/system/jwt"
+	"github.com/asgardeo/thunder/internal/system/jose/jwt"
 	"github.com/asgardeo/thunder/internal/system/log"
 	"github.com/asgardeo/thunder/internal/system/utils"
 )
@@ -54,14 +54,14 @@ type authorizeHandler struct {
 	authZValidator  AuthorizationValidatorInterface
 	authCodeStore   AuthorizationCodeStoreInterface
 	authReqStore    authorizationRequestStoreInterface
-	jwtService      jwt.JWTServiceInterface
+	jwtService      jwt.ServiceInterface
 	flowExecService flowexec.FlowExecServiceInterface
 }
 
 // newAuthorizeHandler creates a new instance of authorizeHandler with injected dependencies.
 func newAuthorizeHandler(
 	appService application.ApplicationServiceInterface,
-	jwtService jwt.JWTServiceInterface,
+	jwtService jwt.ServiceInterface,
 	authCodeStore AuthorizationCodeStoreInterface,
 	authReqStore authorizationRequestStoreInterface,
 	flowExecService flowexec.FlowExecServiceInterface,

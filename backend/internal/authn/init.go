@@ -31,7 +31,7 @@ import (
 	"github.com/asgardeo/thunder/internal/authn/passkey"
 	"github.com/asgardeo/thunder/internal/idp"
 	"github.com/asgardeo/thunder/internal/notification"
-	"github.com/asgardeo/thunder/internal/system/jwt"
+	"github.com/asgardeo/thunder/internal/system/jose/jwt"
 	"github.com/asgardeo/thunder/internal/system/middleware"
 	"github.com/asgardeo/thunder/internal/user"
 )
@@ -52,7 +52,7 @@ type AuthServiceRegistry struct {
 func Initialize(
 	mux *http.ServeMux,
 	idpSvc idp.IDPServiceInterface,
-	jwtSvc jwt.JWTServiceInterface,
+	jwtSvc jwt.ServiceInterface,
 	userSvc user.UserServiceInterface,
 	otpSvc notification.OTPServiceInterface,
 ) (AuthenticationServiceInterface, *AuthServiceRegistry) {
@@ -79,7 +79,7 @@ func Initialize(
 // createAuthServiceRegistry creates and returns an AuthServiceRegistry instance.
 func createAuthServiceRegistry(
 	idpSvc idp.IDPServiceInterface,
-	jwtSvc jwt.JWTServiceInterface,
+	jwtSvc jwt.ServiceInterface,
 	userSvc user.UserServiceInterface,
 	otpSvc notification.OTPServiceInterface,
 ) *AuthServiceRegistry {

@@ -191,18 +191,6 @@ func (s *JEWUtilsTestSuite) TestDecryptKey_Errors() {
 	s.Error(err)
 }
 
-func (s *JEWUtilsTestSuite) TestMapToEPK_Errors() {
-	// Base64 errors
-	_, err := mapToEPK(map[string]interface{}{"x": "!!!"})
-	s.Error(err)
-	_, err = mapToEPK(map[string]interface{}{"x": "YQ", "y": "!!!"})
-	s.Error(err)
-
-	// Unsupported curve
-	_, err = mapToEPK(map[string]interface{}{"x": "YQ", "y": "YQ", "crv": "INVALID"})
-	s.Error(err)
-}
-
 func (s *JEWUtilsTestSuite) TestEncryptDecryptContent() {
 	payload := []byte("Hello, JWE!")
 	aad := []byte("additional-authenticated-data")

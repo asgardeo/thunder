@@ -30,7 +30,7 @@ import (
 	flowmgt "github.com/asgardeo/thunder/internal/flow/mgt"
 	mcpauth "github.com/asgardeo/thunder/internal/mcp/auth"
 	"github.com/asgardeo/thunder/internal/system/config"
-	"github.com/asgardeo/thunder/internal/system/jwt"
+	"github.com/asgardeo/thunder/internal/system/jose/jwt"
 )
 
 // Initialize initializes the MCP server and registers its routes with the provided mux.
@@ -38,7 +38,7 @@ func Initialize(
 	mux *http.ServeMux,
 	appService application.ApplicationServiceInterface,
 	flowService flowmgt.FlowMgtServiceInterface,
-	jwtService jwt.JWTServiceInterface,
+	jwtService jwt.ServiceInterface,
 ) {
 	cfg := config.GetThunderRuntime().Config
 	baseURL := config.GetServerURL(&cfg.Server)

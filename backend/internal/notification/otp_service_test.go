@@ -35,13 +35,13 @@ import (
 	"github.com/asgardeo/thunder/internal/system/config"
 	"github.com/asgardeo/thunder/internal/system/crypto/hash"
 	"github.com/asgardeo/thunder/internal/system/log"
-	"github.com/asgardeo/thunder/tests/mocks/jwtmock"
+	"github.com/asgardeo/thunder/tests/mocks/jose/jwtmock"
 	"github.com/asgardeo/thunder/tests/mocks/notification/messagemock"
 )
 
 type OTPServiceTestSuite struct {
 	suite.Suite
-	mockJWTService    *jwtmock.JWTServiceInterfaceMock
+	mockJWTService    *jwtmock.ServiceInterfaceMock
 	mockSenderService *NotificationSenderMgtSvcInterfaceMock
 	service           *otpService
 }
@@ -69,7 +69,7 @@ func (suite *OTPServiceTestSuite) SetupSuite() {
 }
 
 func (suite *OTPServiceTestSuite) SetupTest() {
-	suite.mockJWTService = jwtmock.NewJWTServiceInterfaceMock(suite.T())
+	suite.mockJWTService = jwtmock.NewServiceInterfaceMock(suite.T())
 	suite.mockSenderService = NewNotificationSenderMgtSvcInterfaceMock(suite.T())
 	suite.service = &otpService{
 		jwtService:       suite.mockJWTService,

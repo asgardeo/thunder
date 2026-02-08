@@ -34,7 +34,7 @@ import (
 	"github.com/asgardeo/thunder/internal/oauth/scope"
 	"github.com/asgardeo/thunder/internal/observability"
 	"github.com/asgardeo/thunder/internal/system/crypto/pki"
-	"github.com/asgardeo/thunder/internal/system/jwt"
+	"github.com/asgardeo/thunder/internal/system/jose/jwt"
 	"github.com/asgardeo/thunder/internal/user"
 )
 
@@ -43,7 +43,7 @@ func Initialize(
 	mux *http.ServeMux,
 	applicationService application.ApplicationServiceInterface,
 	userService user.UserServiceInterface,
-	jwtService jwt.JWTServiceInterface,
+	jwtService jwt.ServiceInterface,
 	flowExecService flowexec.FlowExecServiceInterface,
 	observabilitySvc observability.ObservabilityServiceInterface,
 	pkiService pki.PKIServiceInterface,

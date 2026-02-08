@@ -39,7 +39,7 @@ import (
 	"github.com/asgardeo/thunder/internal/oauth/scope"
 	"github.com/asgardeo/thunder/internal/system/config"
 	"github.com/asgardeo/thunder/tests/mocks/applicationmock"
-	"github.com/asgardeo/thunder/tests/mocks/jwtmock"
+	"github.com/asgardeo/thunder/tests/mocks/jose/jwtmock"
 	"github.com/asgardeo/thunder/tests/mocks/oauth/oauth2/granthandlersmock"
 	"github.com/asgardeo/thunder/tests/mocks/oauth/scopemock"
 	"github.com/asgardeo/thunder/tests/mocks/observabilitymock"
@@ -48,7 +48,7 @@ import (
 
 type TokenHandlerTestSuite struct {
 	suite.Suite
-	mockJWTService     *jwtmock.JWTServiceInterfaceMock
+	mockJWTService     *jwtmock.ServiceInterfaceMock
 	mockUserService    *usermock.UserServiceInterfaceMock
 	mockAppService     *applicationmock.ApplicationServiceInterfaceMock
 	mockGrantProvider  *granthandlersmock.GrantHandlerProviderInterfaceMock
@@ -69,7 +69,7 @@ func (suite *TokenHandlerTestSuite) SetupTest() {
 		},
 	}
 	_ = config.InitializeThunderRuntime("test", testConfig)
-	suite.mockJWTService = jwtmock.NewJWTServiceInterfaceMock(suite.T())
+	suite.mockJWTService = jwtmock.NewServiceInterfaceMock(suite.T())
 	suite.mockUserService = usermock.NewUserServiceInterfaceMock(suite.T())
 	suite.mockGrantProvider = granthandlersmock.NewGrantHandlerProviderInterfaceMock(suite.T())
 	suite.mockAppService = applicationmock.NewApplicationServiceInterfaceMock(suite.T())

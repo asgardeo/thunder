@@ -19,9 +19,6 @@
 package jwt
 
 import (
-	"crypto/ecdsa"
-	"crypto/ed25519"
-	"crypto/elliptic"
 	"crypto/rand"
 	"crypto/rsa"
 	"encoding/base64"
@@ -35,16 +32,13 @@ import (
 
 	"github.com/asgardeo/thunder/internal/system/config"
 	"github.com/asgardeo/thunder/internal/system/crypto/sign"
+	"github.com/asgardeo/thunder/internal/system/jose/jws"
 )
 
 type JWTUtilsTestSuite struct {
 	suite.Suite
 	rsaPrivateKey *rsa.PrivateKey
 	rsaPublicKey  *rsa.PublicKey
-	ecPrivateKey  *ecdsa.PrivateKey
-	ecPublicKey   *ecdsa.PublicKey
-	edPrivateKey  ed25519.PrivateKey
-	edPublicKey   ed25519.PublicKey
 	validJWT      string
 	invalidJWT    string
 	testServer    *httptest.Server
@@ -67,19 +61,6 @@ func (suite *JWTUtilsTestSuite) SetupTest() {
 	}
 	suite.rsaPublicKey = &suite.rsaPrivateKey.PublicKey
 
-	// Generate ECDSA P-256 key pair
-	suite.ecPrivateKey, err = ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
-	if err != nil {
-		suite.T().Fatalf("Failed to generate ECDSA key: %v", err)
-	}
-	suite.ecPublicKey = &suite.ecPrivateKey.PublicKey
-
-	// Generate Ed25519 key pair
-	suite.edPublicKey, suite.edPrivateKey, err = ed25519.GenerateKey(rand.Reader)
-	if err != nil {
-		suite.T().Fatalf("Failed to generate Ed25519 key: %v", err)
-	}
-
 	// Create a valid JWT token
 	suite.validJWT = suite.createValidJWT()
 
@@ -97,7 +78,7 @@ func (suite *JWTUtilsTestSuite) TearDownTest() {
 // Helper method to create a valid JWT token for testing
 func (suite *JWTUtilsTestSuite) createValidJWT() string {
 	header := map[string]interface{}{
-		"alg": "RS256",
+		"alg": jws.RS256,
 		"typ": "JWT",
 		"kid": "test-key-id",
 	}
@@ -229,7 +210,7 @@ func (suite *JWTUtilsTestSuite) TestParseJWTHeader() {
 
 	assert.NoError(suite.T(), err)
 	assert.NotNil(suite.T(), header)
-	assert.Equal(suite.T(), "RS256", header["alg"])
+	assert.Equal(suite.T(), string(jws.RS256), header["alg"])
 	assert.Equal(suite.T(), "JWT", header["typ"])
 	assert.Equal(suite.T(), "test-key-id", header["kid"])
 }
@@ -239,145 +220,4 @@ func (suite *JWTUtilsTestSuite) TestParseJWTHeaderInvalid() {
 
 	assert.Error(suite.T(), err)
 	assert.Nil(suite.T(), header)
-}
-
-func (suite *JWTUtilsTestSuite) TestJWKToPublicKey() {
-	// Create a JWK from the RSA public key
-	n := base64.RawURLEncoding.EncodeToString(suite.rsaPublicKey.N.Bytes())
-
-	// Convert exponent to bytes
-	eBytes := []byte{1, 0, 1} // 65537 in big-endian
-	e := base64.RawURLEncoding.EncodeToString(eBytes)
-
-	jwk := map[string]interface{}{
-		"kty": "RSA",
-		"n":   n,
-		"e":   e,
-		"kid": "test-key-id",
-	}
-
-	pubKey, err := jwkToPublicKey(jwk)
-
-	assert.NoError(suite.T(), err)
-	assert.NotNil(suite.T(), pubKey)
-
-	rsaKey, ok := pubKey.(*rsa.PublicKey)
-	assert.True(suite.T(), ok)
-	assert.Equal(suite.T(), suite.rsaPublicKey.E, rsaKey.E)
-}
-
-func (suite *JWTUtilsTestSuite) TestJWKToPublicKeyInvalid() {
-	// Create a JWK from the RSA public key
-	n := base64.RawURLEncoding.EncodeToString(suite.rsaPublicKey.N.Bytes())
-
-	// Convert exponent to bytes
-	eBytes := []byte{1, 0, 1} // 65537 in big-endian
-	e := base64.RawURLEncoding.EncodeToString(eBytes)
-
-	// Test with missing parameters
-	invalidTestCases := []struct {
-		name string
-		jwk  map[string]interface{}
-	}{
-		{"MissingN", map[string]interface{}{"e": e}},
-		{"MissingE", map[string]interface{}{"n": n}},
-		{"InvalidN", map[string]interface{}{"n": "invalid@base64!", "e": e}},
-		{"InvalidE", map[string]interface{}{"n": n, "e": "invalid@base64!"}},
-		{"NonStringN", map[string]interface{}{"n": 123, "e": e}},
-		{"NonStringE", map[string]interface{}{"n": n, "e": 456}},
-	}
-
-	for _, tc := range invalidTestCases {
-		suite.T().Run(tc.name, func(t *testing.T) {
-			pubKey, err := jwkToPublicKey(tc.jwk)
-
-			assert.Error(t, err)
-			assert.Nil(t, pubKey)
-		})
-	}
-}
-
-func (suite *JWTUtilsTestSuite) TestJWKToPublicKeyEC() {
-	// Generate P-256 key
-	x := base64.RawURLEncoding.EncodeToString(suite.ecPublicKey.X.Bytes())
-	y := base64.RawURLEncoding.EncodeToString(suite.ecPublicKey.Y.Bytes())
-
-	jwk := map[string]interface{}{
-		"kty": "EC",
-		"crv": "P-256",
-		"x":   x,
-		"y":   y,
-		"kid": "ec-key-id",
-	}
-
-	pubKey, err := jwkToPublicKey(jwk)
-	assert.NoError(suite.T(), err)
-
-	ecPub, ok := pubKey.(*ecdsa.PublicKey)
-	assert.True(suite.T(), ok)
-	assert.Equal(suite.T(), "P-256", ecPub.Curve.Params().Name)
-}
-
-func (suite *JWTUtilsTestSuite) TestJWKToPublicKeyECInvalid() {
-	// Test with missing parameters
-	invalidTestCases := []struct {
-		name string
-		jwk  map[string]interface{}
-	}{
-		{"MissingX", map[string]interface{}{"crv": "P-256", "y": "valid"}},
-		{"MissingY", map[string]interface{}{"crv": "P-256", "x": "valid"}},
-		{"MissingCrv", map[string]interface{}{"x": "valid", "y": "valid"}},
-		{"InvalidX", map[string]interface{}{"crv": "P-256", "x": "invalid@base64!", "y": "valid"}},
-		{"InvalidY", map[string]interface{}{"crv": "P-256", "x": "valid", "y": "invalid@base64!"}},
-		{"UnsupportedCrv", map[string]interface{}{"crv": "P-999", "x": "valid", "y": "valid"}},
-	}
-
-	for _, tc := range invalidTestCases {
-		suite.T().Run(tc.name, func(t *testing.T) {
-			pubKey, err := jwkToPublicKey(tc.jwk)
-
-			assert.Error(t, err)
-			assert.Nil(t, pubKey)
-		})
-	}
-}
-
-func (suite *JWTUtilsTestSuite) TestJWKToPublicKeyEd25519() {
-	x := base64.RawURLEncoding.EncodeToString(suite.edPublicKey)
-
-	jwk := map[string]interface{}{
-		"kty": "OKP",
-		"crv": "Ed25519",
-		"x":   x,
-		"kid": "ed25519-key-id",
-	}
-
-	pubKey, err := jwkToPublicKey(jwk)
-	assert.NoError(suite.T(), err)
-
-	edPub, ok := pubKey.(ed25519.PublicKey)
-	assert.True(suite.T(), ok)
-	assert.Equal(suite.T(), suite.edPublicKey, edPub)
-}
-
-func (suite *JWTUtilsTestSuite) TestJWKToPublicKeyEd25519Invalid() {
-	// Test with missing parameters
-	invalidTestCases := []struct {
-		name string
-		jwk  map[string]interface{}
-	}{
-		{"MissingX", map[string]interface{}{"crv": "Ed25519"}},
-		{"MissingCrv", map[string]interface{}{"x": "valid"}},
-		{"InvalidX", map[string]interface{}{"crv": "Ed25519", "x": "invalid@base64!"}},
-		{"UnsupportedCrv", map[string]interface{}{"crv": "X25519", "x": "valid"}},
-	}
-
-	for _, tc := range invalidTestCases {
-		suite.T().Run(tc.name, func(t *testing.T) {
-			pubKey, err := jwkToPublicKey(tc.jwk)
-
-			assert.Error(t, err)
-			assert.Nil(t, pubKey)
-		})
-	}
 }

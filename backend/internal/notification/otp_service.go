@@ -29,7 +29,7 @@ import (
 	"github.com/asgardeo/thunder/internal/system/config"
 	"github.com/asgardeo/thunder/internal/system/crypto/hash"
 	"github.com/asgardeo/thunder/internal/system/error/serviceerror"
-	"github.com/asgardeo/thunder/internal/system/jwt"
+	"github.com/asgardeo/thunder/internal/system/jose/jwt"
 	"github.com/asgardeo/thunder/internal/system/log"
 )
 
@@ -44,14 +44,14 @@ type OTPServiceInterface interface {
 
 // otpService implements the OTPServiceInterface.
 type otpService struct {
-	jwtService       jwt.JWTServiceInterface
+	jwtService       jwt.ServiceInterface
 	senderMgtService NotificationSenderMgtSvcInterface
 	clientProvider   notificationClientProviderInterface
 }
 
 // newOTPService returns a new instance of OTPServiceInterface.
 func newOTPService(notifSenderSvc NotificationSenderMgtSvcInterface,
-	jwtSvc jwt.JWTServiceInterface) OTPServiceInterface {
+	jwtSvc jwt.ServiceInterface) OTPServiceInterface {
 	return &otpService{
 		jwtService:       jwtSvc,
 		senderMgtService: notifSenderSvc,

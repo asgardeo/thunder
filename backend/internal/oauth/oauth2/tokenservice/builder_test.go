@@ -30,7 +30,7 @@ import (
 	"github.com/asgardeo/thunder/internal/oauth/oauth2/constants"
 	"github.com/asgardeo/thunder/internal/system/config"
 	"github.com/asgardeo/thunder/internal/system/error/serviceerror"
-	"github.com/asgardeo/thunder/tests/mocks/jwtmock"
+	"github.com/asgardeo/thunder/tests/mocks/jose/jwtmock"
 )
 
 const (
@@ -43,7 +43,7 @@ const (
 
 type TokenBuilderTestSuite struct {
 	suite.Suite
-	mockJWTService *jwtmock.JWTServiceInterfaceMock
+	mockJWTService *jwtmock.ServiceInterfaceMock
 	builder        *tokenBuilder
 	oauthApp       *appmodel.OAuthAppConfigProcessedDTO
 }
@@ -62,7 +62,7 @@ func (suite *TokenBuilderTestSuite) SetupTest() {
 	}
 	_ = config.InitializeThunderRuntime("test", testConfig)
 
-	suite.mockJWTService = jwtmock.NewJWTServiceInterfaceMock(suite.T())
+	suite.mockJWTService = jwtmock.NewServiceInterfaceMock(suite.T())
 	suite.builder = &tokenBuilder{
 		jwtService: suite.mockJWTService,
 	}
@@ -80,7 +80,7 @@ func (suite *TokenBuilderTestSuite) SetupTest() {
 }
 
 func (suite *TokenBuilderTestSuite) TestNewTokenBuilder() {
-	jwtService := jwtmock.NewJWTServiceInterfaceMock(suite.T())
+	jwtService := jwtmock.NewServiceInterfaceMock(suite.T())
 	builder := newTokenBuilder(jwtService)
 
 	assert.NotNil(suite.T(), builder)

@@ -37,7 +37,7 @@ import (
 	"github.com/asgardeo/thunder/internal/system/config"
 	"github.com/asgardeo/thunder/internal/system/crypto/pki"
 	"github.com/asgardeo/thunder/internal/system/database/provider"
-	"github.com/asgardeo/thunder/internal/system/jwt"
+	"github.com/asgardeo/thunder/internal/system/jose/jwt"
 	"github.com/asgardeo/thunder/internal/system/log"
 	"github.com/asgardeo/thunder/internal/system/middleware"
 	"github.com/asgardeo/thunder/internal/system/security"
@@ -177,7 +177,7 @@ func loadCertConfig(logger *log.Logger, cfg *config.Config, thunderHome string) 
 
 // createHTTPServer creates and configures an HTTP server with common settings.
 func createHTTPServer(logger *log.Logger, cfg *config.Config, mux *http.ServeMux,
-	jwtService jwt.JWTServiceInterface) *http.Server {
+	jwtService jwt.ServiceInterface) *http.Server {
 	securityMiddleware := createSecurityMiddleware(logger, mux, jwtService)
 
 	// Build the middleware chain with proper execution order.
@@ -224,7 +224,7 @@ func createTLSListener(logger *log.Logger, server *http.Server, tlsConfig *tls.C
 }
 
 func createSecurityMiddleware(logger *log.Logger, mux *http.ServeMux,
-	jwtService jwt.JWTServiceInterface) http.Handler {
+	jwtService jwt.ServiceInterface) http.Handler {
 	// Check if security should be skipped via environment variable
 	skipSecurity := os.Getenv("THUNDER_SKIP_SECURITY")
 	if skipSecurity == "true" {

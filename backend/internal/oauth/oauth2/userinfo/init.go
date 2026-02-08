@@ -23,7 +23,7 @@ import (
 
 	"github.com/asgardeo/thunder/internal/application"
 	"github.com/asgardeo/thunder/internal/oauth/oauth2/constants"
-	"github.com/asgardeo/thunder/internal/system/jwt"
+	"github.com/asgardeo/thunder/internal/system/jose/jwt"
 	"github.com/asgardeo/thunder/internal/system/middleware"
 	"github.com/asgardeo/thunder/internal/user"
 )
@@ -31,7 +31,7 @@ import (
 // Initialize initializes the userinfo handler and registers its routes.
 func Initialize(
 	mux *http.ServeMux,
-	jwtService jwt.JWTServiceInterface,
+	jwtService jwt.ServiceInterface,
 	applicationService application.ApplicationServiceInterface,
 	userService user.UserServiceInterface,
 ) userInfoServiceInterface {

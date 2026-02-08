@@ -34,12 +34,7 @@ import (
 	"strings"
 
 	cryptohash "github.com/asgardeo/thunder/internal/system/crypto/hash"
-)
-
-const (
-	curveP256 = "P-256"
-	curveP384 = "P-384"
-	curveP521 = "P-521"
+	"github.com/asgardeo/thunder/internal/system/jose/jws"
 )
 
 // encryptKey encrypts or derives the content encryption key (CEK) for a recipient.
@@ -79,15 +74,15 @@ func epkToMap(pub crypto.PublicKey) map[string]interface{} {
 
 	switch len(raw) {
 	case 65:
-		crv = curveP256
+		crv = jws.P256
 		x = raw[1:33]
 		y = raw[33:]
 	case 97:
-		crv = curveP384
+		crv = jws.P384
 		x = raw[1:49]
 		y = raw[49:]
 	case 133:
-		crv = curveP521
+		crv = jws.P521
 		x = raw[1:67]
 		y = raw[67:]
 	default:
@@ -118,44 +113,6 @@ func decryptKey(encryptedKey []byte, alg KeyEncAlgorithm, privateKey crypto.Priv
 	default:
 		return nil, fmt.Errorf("unsupported JWE algorithm: %s", alg)
 	}
-}
-
-// mapToEPK converts a JWK-like map representation to an ephemeral public key.
-func mapToEPK(m map[string]interface{}) (crypto.PublicKey, error) {
-	crv, _ := m["crv"].(string)
-	xStr, _ := m["x"].(string)
-	yStr, _ := m["y"].(string)
-
-	x, err := base64.RawURLEncoding.DecodeString(xStr)
-	if err != nil {
-		return nil, err
-	}
-	y, err := base64.RawURLEncoding.DecodeString(yStr)
-	if err != nil {
-		return nil, err
-	}
-
-	// Use crypto/ecdh package which performs on-curve validation automatically
-	var curve ecdh.Curve
-	switch crv {
-	case curveP256:
-		curve = ecdh.P256()
-	case curveP384:
-		curve = ecdh.P384()
-	case curveP521:
-		curve = ecdh.P521()
-	default:
-		return nil, fmt.Errorf("unsupported curve: %s", crv)
-	}
-
-	// Construct the uncompressed point encoding: 0x04 || x || y
-	uncompressed := make([]byte, 1+len(x)+len(y))
-	uncompressed[0] = 0x04 // uncompressed point marker
-	copy(uncompressed[1:], x)
-	copy(uncompressed[1+len(x):], y)
-
-	// NewPublicKey performs on-curve validation automatically
-	return curve.NewPublicKey(uncompressed)
 }
 
 // computeSharedSecretForRecipient computes the ECDH shared secret Z from the recipient's private key.
@@ -402,11 +359,11 @@ func generateEphemeralKey(recipientPubKey crypto.PublicKey) (crypto.PrivateKey, 
 
 	var curve ecdh.Curve
 	switch ecdsaPub.Curve.Params().Name {
-	case curveP256:
+	case jws.P256:
 		curve = ecdh.P256()
-	case curveP384:
+	case jws.P384:
 		curve = ecdh.P384()
-	case curveP521:
+	case jws.P521:
 		curve = ecdh.P521()
 	default:
 		return nil, nil, fmt.Errorf("unsupported curve: %s", ecdsaPub.Curve.Params().Name)
@@ -540,7 +497,7 @@ func decryptWithECDHES(privateKey crypto.PrivateKey, header map[string]interface
 	if !ok {
 		return nil, errors.New("missing epk in header")
 	}
-	ephemeralPub, err := mapToEPK(epkMap)
+	ephemeralPub, err := jws.JWKToECPublicKey(epkMap)
 	if err != nil {
 		return nil, err
 	}
@@ -572,7 +529,7 @@ func decryptWithECDHESKW(encryptedKey []byte, privateKey crypto.PrivateKey,
 	if !ok {
 		return nil, errors.New("missing epk in header")
 	}
-	ephemeralPub, err := mapToEPK(epkMap)
+	ephemeralPub, err := jws.JWKToECPublicKey(epkMap)
 	if err != nil {
 		return nil, err
 	}

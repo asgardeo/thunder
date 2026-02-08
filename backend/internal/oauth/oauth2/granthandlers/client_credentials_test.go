@@ -32,7 +32,7 @@ import (
 	"github.com/asgardeo/thunder/internal/oauth/oauth2/model"
 	"github.com/asgardeo/thunder/internal/oauth/oauth2/tokenservice"
 	"github.com/asgardeo/thunder/internal/system/config"
-	"github.com/asgardeo/thunder/tests/mocks/jwtmock"
+	"github.com/asgardeo/thunder/tests/mocks/jose/jwtmock"
 	"github.com/asgardeo/thunder/tests/mocks/oauth/oauth2/tokenservicemock"
 )
 
@@ -42,7 +42,7 @@ const testResourceURL = "https://mcp.example.com/mcp"
 
 type ClientCredentialsGrantHandlerTestSuite struct {
 	suite.Suite
-	mockJWTService   *jwtmock.JWTServiceInterfaceMock
+	mockJWTService   *jwtmock.ServiceInterfaceMock
 	mockTokenBuilder *tokenservicemock.TokenBuilderInterfaceMock
 	handler          *clientCredentialsGrantHandler
 	oauthApp         *appmodel.OAuthAppConfigProcessedDTO
@@ -63,7 +63,7 @@ func (suite *ClientCredentialsGrantHandlerTestSuite) SetupTest() {
 	err := config.InitializeThunderRuntime("", testConfig)
 	assert.NoError(suite.T(), err)
 
-	suite.mockJWTService = jwtmock.NewJWTServiceInterfaceMock(suite.T())
+	suite.mockJWTService = jwtmock.NewServiceInterfaceMock(suite.T())
 	suite.mockTokenBuilder = tokenservicemock.NewTokenBuilderInterfaceMock(suite.T())
 	suite.handler = &clientCredentialsGrantHandler{
 		tokenBuilder: suite.mockTokenBuilder,

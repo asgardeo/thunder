@@ -44,6 +44,7 @@ import (
 	"github.com/asgardeo/thunder/internal/system/config"
 	"github.com/asgardeo/thunder/internal/system/crypto/sign"
 	"github.com/asgardeo/thunder/internal/system/error/serviceerror"
+	"github.com/asgardeo/thunder/internal/system/jose/jws"
 	"github.com/asgardeo/thunder/internal/system/log"
 	"github.com/asgardeo/thunder/tests/mocks/crypto/pki/pkimock"
 )
@@ -123,7 +124,7 @@ func (suite *JWTServiceTestSuite) SetupTest() {
 	suite.jwtService = &jwtService{
 		privateKey: suite.testPrivateKey,
 		signAlg:    sign.RSASHA256,
-		jwsAlg:     RS256,
+		jwsAlg:     jws.RS256,
 		kid:        "test-kid",
 		logger:     log.GetLogger().With(log.String(log.LoggerKeyComponentName, "JWTService")),
 	}
@@ -160,7 +161,7 @@ func (suite *JWTServiceTestSuite) TestNewJWTService() {
 	service, err := Initialize(suite.pkiMock)
 	assert.NoError(suite.T(), err)
 	assert.NotNil(suite.T(), service)
-	assert.Implements(suite.T(), (*JWTServiceInterface)(nil), service)
+	assert.Implements(suite.T(), (*ServiceInterface)(nil), service)
 }
 
 func (suite *JWTServiceTestSuite) TestInitScenarios() {
@@ -1808,25 +1809,25 @@ func (suite *JWTServiceTestSuite) TestInitWithECDSAKeys() {
 	testCases := []struct {
 		name            string
 		curve           elliptic.Curve
-		expectedAlg     JWSAlgorithm
+		expectedAlg     jws.Algorithm
 		expectedSignAlg sign.SignAlgorithm
 	}{
 		{
 			name:            "P256Key",
 			curve:           elliptic.P256(),
-			expectedAlg:     ES256,
+			expectedAlg:     jws.ES256,
 			expectedSignAlg: sign.ECDSASHA256,
 		},
 		{
 			name:            "P384Key",
 			curve:           elliptic.P384(),
-			expectedAlg:     ES384,
+			expectedAlg:     jws.ES384,
 			expectedSignAlg: sign.ECDSASHA384,
 		},
 		{
 			name:            "P521Key",
 			curve:           elliptic.P521(),
-			expectedAlg:     ES512,
+			expectedAlg:     jws.ES512,
 			expectedSignAlg: sign.ECDSASHA512,
 		},
 	}
@@ -1937,7 +1938,7 @@ func (suite *JWTServiceTestSuite) TestInitWithEd25519Key() {
 	assert.True(suite.T(), ok)
 	assert.NotNil(suite.T(), jwtSvc.privateKey)
 	assert.Equal(suite.T(), sign.ED25519, jwtSvc.signAlg)
-	assert.Equal(suite.T(), EdDSA, jwtSvc.jwsAlg)
+	assert.Equal(suite.T(), jws.EdDSA, jwtSvc.jwsAlg)
 
 	// Test JWT generation with Ed25519 key
 	token, _, svcErr := service.GenerateJWT("test-subject", "test-aud", "test-iss", 3600, nil)
@@ -1957,14 +1958,14 @@ func (suite *JWTServiceTestSuite) TestInitWithEd25519Key() {
 func (suite *JWTServiceTestSuite) TestGetPublicKeyForAllKeyTypes() {
 	testCases := []struct {
 		name        string
-		setupKey    func() (crypto.PrivateKey, sign.SignAlgorithm, JWSAlgorithm)
+		setupKey    func() (crypto.PrivateKey, sign.SignAlgorithm, jws.Algorithm)
 		validatePub func(t *testing.T, pub crypto.PublicKey)
 	}{
 		{
 			name: "RSAKey",
-			setupKey: func() (crypto.PrivateKey, sign.SignAlgorithm, JWSAlgorithm) {
+			setupKey: func() (crypto.PrivateKey, sign.SignAlgorithm, jws.Algorithm) {
 				key, _ := rsa.GenerateKey(rand.Reader, 2048)
-				return key, sign.RSASHA256, RS256
+				return key, sign.RSASHA256, jws.RS256
 			},
 			validatePub: func(t *testing.T, pub crypto.PublicKey) {
 				_, ok := pub.(*rsa.PublicKey)
@@ -1973,9 +1974,9 @@ func (suite *JWTServiceTestSuite) TestGetPublicKeyForAllKeyTypes() {
 		},
 		{
 			name: "ECDSAKey",
-			setupKey: func() (crypto.PrivateKey, sign.SignAlgorithm, JWSAlgorithm) {
+			setupKey: func() (crypto.PrivateKey, sign.SignAlgorithm, jws.Algorithm) {
 				key, _ := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
-				return key, sign.ECDSASHA256, ES256
+				return key, sign.ECDSASHA256, jws.ES256
 			},
 			validatePub: func(t *testing.T, pub crypto.PublicKey) {
 				_, ok := pub.(*ecdsa.PublicKey)
@@ -1984,9 +1985,9 @@ func (suite *JWTServiceTestSuite) TestGetPublicKeyForAllKeyTypes() {
 		},
 		{
 			name: "Ed25519Key",
-			setupKey: func() (crypto.PrivateKey, sign.SignAlgorithm, JWSAlgorithm) {
+			setupKey: func() (crypto.PrivateKey, sign.SignAlgorithm, jws.Algorithm) {
 				_, priv, _ := ed25519.GenerateKey(rand.Reader)
-				return priv, sign.ED25519, EdDSA
+				return priv, sign.ED25519, jws.EdDSA
 			},
 			validatePub: func(t *testing.T, pub crypto.PublicKey) {
 				_, ok := pub.(ed25519.PublicKey)
@@ -2050,7 +2051,7 @@ func (suite *JWTServiceTestSuite) TestInitWithECPrivateKeyFormat() {
 	jwtSvc, ok := service.(*jwtService)
 	assert.True(suite.T(), ok)
 	assert.Equal(suite.T(), sign.ECDSASHA256, jwtSvc.signAlg)
-	assert.Equal(suite.T(), ES256, jwtSvc.jwsAlg)
+	assert.Equal(suite.T(), jws.ES256, jwtSvc.jwsAlg)
 }
 
 func (suite *JWTServiceTestSuite) TestInitWithUnsupportedECCurve() {
@@ -2083,36 +2084,6 @@ func (suite *JWTServiceTestSuite) TestInitWithUnsupportedECCurve() {
 
 	assert.Error(suite.T(), err)
 	assert.Contains(suite.T(), err.Error(), "failed to retrieve private key")
-}
-
-func (suite *JWTServiceTestSuite) TestMapJWSAlgToSignAlg() {
-	testCases := []struct {
-		name        string
-		jwsAlg      string
-		expectedAlg sign.SignAlgorithm
-		expectError bool
-	}{
-		{"RS256", "RS256", sign.RSASHA256, false},
-		{"RS512", "RS512", sign.RSASHA512, false},
-		{"ES256", "ES256", sign.ECDSASHA256, false},
-		{"ES384", "ES384", sign.ECDSASHA384, false},
-		{"ES512", "ES512", sign.ECDSASHA512, false},
-		{"EdDSA", "EdDSA", sign.ED25519, false},
-		{"Unsupported", "HS256", "", true},
-		{"Empty", "", "", true},
-	}
-
-	for _, tc := range testCases {
-		suite.T().Run(tc.name, func(t *testing.T) {
-			alg, err := mapJWSAlgToSignAlg(JWSAlgorithm(tc.jwsAlg))
-			if tc.expectError {
-				assert.Error(t, err)
-			} else {
-				assert.NoError(t, err)
-				assert.Equal(t, tc.expectedAlg, alg)
-			}
-		})
-	}
 }
 
 func (suite *JWTServiceTestSuite) TestJWKToPublicKeyErrorCases() {
@@ -2211,7 +2182,7 @@ func (suite *JWTServiceTestSuite) TestJWKToPublicKeyErrorCases() {
 				"x": base64.RawURLEncoding.EncodeToString(make([]byte, 32)), // 32 zero bytes
 				"y": base64.RawURLEncoding.EncodeToString(make([]byte, 32)), // 32 zero bytes
 			},
-			errorContains: "EC point not on curve",
+			errorContains: "point not on curve",
 		},
 		{
 			name:          "OKP_MissingCurve",
@@ -2244,7 +2215,7 @@ func (suite *JWTServiceTestSuite) TestJWKToPublicKeyErrorCases() {
 
 	for _, tc := range testCases {
 		suite.T().Run(tc.name, func(t *testing.T) {
-			_, err := jwkToPublicKey(tc.jwk)
+			_, err := jws.JWKToPublicKey(tc.jwk)
 			assert.NotNil(t, err)
 			assert.Contains(t, err.Error(), tc.errorContains)
 		})
@@ -2255,30 +2226,30 @@ func (suite *JWTServiceTestSuite) TestVerifyJWTSignatureWithPublicKeyAlgorithmDe
 	// Test that VerifyJWTSignatureWithPublicKey correctly detects algorithm from header
 	testCases := []struct {
 		name        string
-		setupKey    func() (crypto.PrivateKey, sign.SignAlgorithm, JWSAlgorithm)
+		setupKey    func() (crypto.PrivateKey, sign.SignAlgorithm, jws.Algorithm)
 		expectError bool
 	}{
 		{
-			name: "RS256Token",
-			setupKey: func() (crypto.PrivateKey, sign.SignAlgorithm, JWSAlgorithm) {
+			name: "jws.RS256Token",
+			setupKey: func() (crypto.PrivateKey, sign.SignAlgorithm, jws.Algorithm) {
 				key, _ := rsa.GenerateKey(rand.Reader, 2048)
-				return key, sign.RSASHA256, RS256
+				return key, sign.RSASHA256, jws.RS256
 			},
 			expectError: false,
 		},
 		{
-			name: "ES256Token",
-			setupKey: func() (crypto.PrivateKey, sign.SignAlgorithm, JWSAlgorithm) {
+			name: "jws.ES256Token",
+			setupKey: func() (crypto.PrivateKey, sign.SignAlgorithm, jws.Algorithm) {
 				key, _ := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
-				return key, sign.ECDSASHA256, ES256
+				return key, sign.ECDSASHA256, jws.ES256
 			},
 			expectError: false,
 		},
 		{
-			name: "EdDSAToken",
-			setupKey: func() (crypto.PrivateKey, sign.SignAlgorithm, JWSAlgorithm) {
+			name: "jws.EdDSAToken",
+			setupKey: func() (crypto.PrivateKey, sign.SignAlgorithm, jws.Algorithm) {
 				_, priv, _ := ed25519.GenerateKey(rand.Reader)
-				return priv, sign.ED25519, EdDSA
+				return priv, sign.ED25519, jws.EdDSA
 			},
 			expectError: false,
 		},

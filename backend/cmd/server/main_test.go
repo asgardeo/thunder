@@ -43,14 +43,14 @@ import (
 
 	"github.com/asgardeo/thunder/internal/system/config"
 	"github.com/asgardeo/thunder/internal/system/log"
-	"github.com/asgardeo/thunder/tests/mocks/jwtmock"
+	"github.com/asgardeo/thunder/tests/mocks/jose/jwtmock"
 )
 
 // CreateSecurityMiddlewareTestSuite defines the test suite for createSecurityMiddleware function
 type CreateSecurityMiddlewareTestSuite struct {
 	suite.Suite
 	logger         *log.Logger
-	mockJWTService *jwtmock.JWTServiceInterfaceMock
+	mockJWTService *jwtmock.ServiceInterfaceMock
 	mux            *http.ServeMux
 }
 
@@ -60,7 +60,7 @@ func TestCreateSecurityMiddlewareTestSuite(t *testing.T) {
 
 func (suite *CreateSecurityMiddlewareTestSuite) SetupTest() {
 	suite.logger = log.GetLogger()
-	suite.mockJWTService = jwtmock.NewJWTServiceInterfaceMock(suite.T())
+	suite.mockJWTService = jwtmock.NewServiceInterfaceMock(suite.T())
 	suite.mux = http.NewServeMux()
 
 	// Ensure environment variable is clean before each test

@@ -23,7 +23,7 @@ import (
 
 	"github.com/asgardeo/thunder/internal/application"
 	"github.com/asgardeo/thunder/internal/flow/flowexec"
-	"github.com/asgardeo/thunder/internal/system/jwt"
+	"github.com/asgardeo/thunder/internal/system/jose/jwt"
 	"github.com/asgardeo/thunder/internal/system/middleware"
 )
 
@@ -31,7 +31,7 @@ import (
 func Initialize(
 	mux *http.ServeMux,
 	applicationService application.ApplicationServiceInterface,
-	jwtService jwt.JWTServiceInterface,
+	jwtService jwt.ServiceInterface,
 	flowExecService flowexec.FlowExecServiceInterface,
 ) AuthorizeServiceInterface {
 	authzCodeStore := newAuthorizationCodeStore()
