@@ -50,14 +50,29 @@ const ContentTypeFormURLEncoded = "application/x-www-form-urlencoded"
 // CacheControlHeaderName is the name of the cache-control header used in HTTP responses.
 const CacheControlHeaderName = "Cache-Control"
 
-// CacheControlNoStore is the cache-control value to prevent caching.
+// CacheControlNoCache is the cache-control directive to force revalidation.
+const CacheControlNoCache = "no-cache"
+
+// CacheControlNoStore is the cache-control directive to prevent caching.
 const CacheControlNoStore = "no-store"
+
+// CacheControlMustRevalidate is the cache-control directive to require revalidation of stale cache entries.
+const CacheControlMustRevalidate = "must-revalidate"
 
 // PragmaHeaderName is the name of the pragma header used in HTTP responses.
 const PragmaHeaderName = "Pragma"
 
 // PragmaNoCache is the pragma value to prevent caching.
 const PragmaNoCache = "no-cache"
+
+// ExpiresHeaderName is the name of the expires header used in HTTP responses.
+const ExpiresHeaderName = "Expires"
+
+// CacheControlNoCacheComposite is the combined cache-control directive to prevent caching and require revalidation.
+const CacheControlNoCacheComposite = "no-cache, no-store, must-revalidate"
+
+// ExpiresZero is the expires value to indicate immediate expiration.
+const ExpiresZero = "0"
 
 // DefaultPageSize is the default limit for pagination when not specified.
 const DefaultPageSize = 30

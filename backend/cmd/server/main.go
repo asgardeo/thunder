@@ -35,6 +35,7 @@ import (
 
 	"github.com/asgardeo/thunder/internal/system/cache"
 	"github.com/asgardeo/thunder/internal/system/config"
+	"github.com/asgardeo/thunder/internal/system/constants"
 	"github.com/asgardeo/thunder/internal/system/crypto/pki"
 	"github.com/asgardeo/thunder/internal/system/database/provider"
 	"github.com/asgardeo/thunder/internal/system/jwt"
@@ -303,8 +304,24 @@ func createStaticFileHandler(routePrefix, directory string, logger *log.Logger) 
 	fileServer := http.FileServer(http.Dir(directory))
 
 	return http.StripPrefix(routePrefix, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		// Handle root path "/" by explicitly serving index.html
+		if r.URL.Path == "/" || r.URL.Path == "" {
+			indexPath := path.Join(directory, "index.html")
+			if fileExists(indexPath) {
+				// Set no-cache headers for index.html
+				w.Header().Set(constants.CacheControlHeaderName, constants.CacheControlNoCacheComposite)
+				w.Header().Set(constants.PragmaHeaderName, constants.PragmaNoCache)
+				w.Header().Set(constants.ExpiresHeaderName, constants.ExpiresZero)
+				http.ServeFile(w, r, indexPath)
+				return
+			}
+		}
+
 		// Get the file path
 		filePath := path.Join(directory, r.URL.Path)
+
+		// Check if the requested file is index.html
+		isIndexHTML := r.URL.Path == "/index.html" || path.Base(filePath) == "index.html"
 
 		// Check if file exists
 		if _, err := os.Stat(filePath); os.IsNotExist(err) {
@@ -314,6 +331,23 @@ func createStaticFileHandler(routePrefix, directory string, logger *log.Logger) 
 				logger.Debug("Serving index.html for SPA routing",
 					log.String("requested_path", r.URL.Path),
 					log.String("route_prefix", routePrefix))
+				// Set no-cache headers for index.html
+				w.Header().Set(constants.CacheControlHeaderName, constants.CacheControlNoCacheComposite)
+				w.Header().Set(constants.PragmaHeaderName, constants.PragmaNoCache)
+				w.Header().Set(constants.ExpiresHeaderName, constants.ExpiresZero)
+				http.ServeFile(w, r, indexPath)
+				return
+			}
+		}
+
+		// Serve index.html directly with no-cache headers when requested
+		if isIndexHTML {
+			indexPath := path.Join(directory, "index.html")
+			if fileExists(indexPath) {
+				// Set no-cache headers for index.html
+				w.Header().Set(constants.CacheControlHeaderName, constants.CacheControlNoCacheComposite)
+				w.Header().Set(constants.PragmaHeaderName, constants.PragmaNoCache)
+				w.Header().Set(constants.ExpiresHeaderName, constants.ExpiresZero)
 				http.ServeFile(w, r, indexPath)
 				return
 			}

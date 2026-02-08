@@ -42,6 +42,7 @@ import (
 	"github.com/stretchr/testify/suite"
 
 	"github.com/asgardeo/thunder/internal/system/config"
+	"github.com/asgardeo/thunder/internal/system/constants"
 	"github.com/asgardeo/thunder/internal/system/log"
 	"github.com/asgardeo/thunder/tests/mocks/jwtmock"
 )
@@ -382,6 +383,136 @@ func TestCreateStaticFileHandler(t *testing.T) {
 
 		assert.Equal(t, http.StatusOK, rr.Code)
 		assert.Equal(t, string(indexContent), rr.Body.String())
+	})
+}
+
+func TestCreateStaticFileHandler_CacheHeaders(t *testing.T) {
+	logger := log.GetLogger()
+	tmpDir := t.TempDir()
+
+	indexContent := []byte("<!DOCTYPE html><html><body>index</body></html>")
+	jsContent := []byte("console.log('hello');")
+	cssContent := []byte("body { margin: 0; }")
+	imageContent := []byte{0xFF, 0xD8, 0xFF} // Mock image bytes
+
+	requireWriteFile(t, filepath.Join(tmpDir, "index.html"), indexContent)
+	requireWriteFile(t, filepath.Join(tmpDir, "app.js"), jsContent)
+	requireWriteFile(t, filepath.Join(tmpDir, "styles.css"), cssContent)
+	requireWriteFile(t, filepath.Join(tmpDir, "logo.png"), imageContent)
+
+	handler := createStaticFileHandler("/app/", tmpDir, logger)
+
+	t.Run("sets cache headers when serving index.html at root", func(t *testing.T) {
+		req := httptest.NewRequest(http.MethodGet, "/app/", nil)
+		rr := httptest.NewRecorder()
+
+		handler.ServeHTTP(rr, req)
+
+		assert.Equal(t, http.StatusOK, rr.Code)
+		assert.Equal(t, constants.CacheControlNoCache+", "+constants.CacheControlNoStore+", "+constants.CacheControlMustRevalidate, rr.Header().Get(constants.CacheControlHeaderName),
+			"Cache-Control header should prevent caching for index.html at root")
+		assert.Equal(t, constants.PragmaNoCache, rr.Header().Get(constants.PragmaHeaderName),
+			"Pragma header should be set for index.html at root")
+		assert.Equal(t, constants.ExpiresZero, rr.Header().Get(constants.ExpiresHeaderName),
+			"Expires header should be set for index.html at root")
+		assert.Contains(t, rr.Body.String(), "index")
+	})
+
+	t.Run("sets cache headers when serving index.html directly", func(t *testing.T) {
+		req := httptest.NewRequest(http.MethodGet, "/app/index.html", nil)
+		rr := httptest.NewRecorder()
+
+		handler.ServeHTTP(rr, req)
+
+		assert.Equal(t, http.StatusOK, rr.Code)
+		assert.Equal(t, constants.CacheControlNoCache+", "+constants.CacheControlNoStore+", "+constants.CacheControlMustRevalidate, rr.Header().Get(constants.CacheControlHeaderName),
+			"Cache-Control header should prevent caching for direct index.html request")
+		assert.Equal(t, constants.PragmaNoCache, rr.Header().Get(constants.PragmaHeaderName),
+			"Pragma header should be set for direct index.html request")
+		assert.Equal(t, constants.ExpiresZero, rr.Header().Get(constants.ExpiresHeaderName),
+			"Expires header should be set for direct index.html request")
+		assert.Contains(t, rr.Body.String(), "index")
+	})
+
+	t.Run("sets cache headers when serving index.html as SPA fallback", func(t *testing.T) {
+		testCases := []struct {
+			path        string
+			description string
+		}{
+			{"/app/dashboard", "single level path"},
+			{"/app/users/profile", "multi level path"},
+			{"/app/settings/advanced/security", "deeply nested path"},
+			{"/app/nonexistent.html", "non-existent HTML file"},
+		}
+
+		for _, tc := range testCases {
+			t.Run(tc.description, func(t *testing.T) {
+				req := httptest.NewRequest(http.MethodGet, tc.path, nil)
+				rr := httptest.NewRecorder()
+
+				handler.ServeHTTP(rr, req)
+
+				assert.Equal(t, http.StatusOK, rr.Code)
+				assert.Equal(t, constants.CacheControlNoCache+", "+constants.CacheControlNoStore+", "+constants.CacheControlMustRevalidate, rr.Header().Get(constants.CacheControlHeaderName),
+					"Cache-Control header should prevent caching for SPA fallback at %s", tc.path)
+				assert.Equal(t, constants.PragmaNoCache, rr.Header().Get(constants.PragmaHeaderName),
+					"Pragma header should be set for SPA fallback at %s", tc.path)
+				assert.Equal(t, constants.ExpiresZero, rr.Header().Get(constants.ExpiresHeaderName),
+					"Expires header should be set for SPA fallback at %s", tc.path)
+				assert.Contains(t, rr.Body.String(), "index",
+					"Should serve index.html content for SPA fallback at %s", tc.path)
+			})
+		}
+	})
+
+	t.Run("does not set cache headers for static assets", func(t *testing.T) {
+		testCases := []struct {
+			path        string
+			description string
+			content     []byte
+		}{
+			{"/app/app.js", "JavaScript file", jsContent},
+			{"/app/styles.css", "CSS file", cssContent},
+			{"/app/logo.png", "image file", imageContent},
+		}
+
+		for _, tc := range testCases {
+			t.Run(tc.description, func(t *testing.T) {
+				req := httptest.NewRequest(http.MethodGet, tc.path, nil)
+				rr := httptest.NewRecorder()
+
+				handler.ServeHTTP(rr, req)
+
+				assert.Equal(t, http.StatusOK, rr.Code)
+				assert.Empty(t, rr.Header().Get(constants.CacheControlHeaderName),
+					"Cache-Control header should not be set for %s", tc.description)
+				assert.Empty(t, rr.Header().Get(constants.PragmaHeaderName),
+					"Pragma header should not be set for %s", tc.description)
+				assert.Empty(t, rr.Header().Get(constants.ExpiresHeaderName),
+					"Expires header should not be set for %s", tc.description)
+				assert.Equal(t, string(tc.content), rr.Body.String(),
+					"Should serve correct content for %s", tc.description)
+			})
+		}
+	})
+
+	t.Run("does not match files ending with index.html incorrectly", func(t *testing.T) {
+		customIndexFile := []byte("custom index content")
+		requireWriteFile(t, filepath.Join(tmpDir, "my-custom-index.html"), customIndexFile)
+
+		req := httptest.NewRequest(http.MethodGet, "/app/my-custom-index.html", nil)
+		rr := httptest.NewRecorder()
+
+		handler.ServeHTTP(rr, req)
+
+		assert.Equal(t, http.StatusOK, rr.Code)
+		assert.Empty(t, rr.Header().Get(constants.CacheControlHeaderName),
+			"Cache-Control should not be set for files that contain 'index.html' but are not exactly 'index.html'")
+		assert.Empty(t, rr.Header().Get(constants.PragmaHeaderName),
+			"Pragma should not be set for files that contain 'index.html' but are not exactly 'index.html'")
+		assert.Empty(t, rr.Header().Get(constants.ExpiresHeaderName),
+			"Expires should not be set for files that contain 'index.html' but are not exactly 'index.html'")
+		assert.Equal(t, string(customIndexFile), rr.Body.String())
 	})
 }
 
