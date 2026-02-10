@@ -32,27 +32,6 @@ type AssertionConfig struct {
 	UserAttributes []string `json:"user_attributes,omitempty" yaml:"user_attributes,omitempty" jsonschema:"User attributes to include in the assertion. List of user claim names to embed in the assertion (e.g., email, username, roles)."`
 }
 
-// AccessTokenConfig represents the access token configuration structure.
-type AccessTokenConfig struct {
-	ValidityPeriod int64    `json:"validity_period,omitempty" yaml:"validity_period,omitempty" jsonschema:"Access token validity period in seconds."`
-	UserAttributes []string `json:"user_attributes,omitempty" yaml:"user_attributes,omitempty" jsonschema:"User attributes to include in access token. Claims embedded in the access token for authorization decisions."`
-}
-
-// IDTokenConfig represents the ID token configuration structure.
-type IDTokenConfig struct {
-	ValidityPeriod int64               `json:"validity_period,omitempty" yaml:"validity_period,omitempty" jsonschema:"ID token validity period in seconds."`
-	UserAttributes []string            `json:"user_attributes,omitempty" yaml:"user_attributes,omitempty" jsonschema:"User attributes to include in ID token. Standard OIDC claims: sub, name, email, picture, etc."`
-	ScopeClaims    map[string][]string `json:"scope_claims,omitempty" yaml:"scope_claims,omitempty" jsonschema:"Scope-to-claims mapping. Maps OAuth scopes to user claims. Example: {profile: [name, picture], email: [email, email_verified]}."`
-}
-
-// OAuthTokenConfig represents the OAuth token configuration structure with access_token and id_token wrappers.
-// The Issuer field at this level is used by both access and ID tokens.
-type OAuthTokenConfig struct {
-	Issuer      string             `json:"issuer,omitempty" yaml:"issuer,omitempty" jsonschema:"Token issuer URL. The authorization server URL that issues tokens. Used by both access and ID tokens."`
-	AccessToken *AccessTokenConfig `json:"access_token,omitempty" yaml:"access_token,omitempty" jsonschema:"Access token configuration. Configure validity period and user attributes for access tokens used in API authorization."`
-	IDToken     *IDTokenConfig     `json:"id_token,omitempty" yaml:"id_token,omitempty" jsonschema:"ID token configuration. Configure validity period, user attributes, and scope-to-claims mapping for OIDC ID tokens."`
-}
-
 // ApplicationDTO represents the data transfer object for application service operations.
 type ApplicationDTO struct {
 	ID                        string `json:"id,omitempty" jsonschema:"Application ID. Auto-generated unique identifier."`

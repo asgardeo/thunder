@@ -55,16 +55,18 @@ type InboundAuthConfig struct {
 
 // OAuthAppConfig represents the OAuth application configuration.
 type OAuthAppConfig struct {
-	ClientID                string            `json:"client_id"`
-	ClientSecret            string            `json:"client_secret,omitempty"`
-	RedirectURIs            []string          `json:"redirect_uris"`
-	GrantTypes              []string          `json:"grant_types"`
-	ResponseTypes           []string          `json:"response_types"`
-	TokenEndpointAuthMethod string            `json:"token_endpoint_auth_method"`
-	PKCERequired            bool              `json:"pkce_required"`
-	PublicClient            bool              `json:"public_client"`
-	Scopes                  []string          `json:"scopes,omitempty"`
-	Token                   *OAuthTokenConfig `json:"token,omitempty"`
+	ClientID                string              `json:"client_id"`
+	ClientSecret            string              `json:"client_secret,omitempty"`
+	RedirectURIs            []string            `json:"redirect_uris"`
+	GrantTypes              []string            `json:"grant_types"`
+	ResponseTypes           []string            `json:"response_types"`
+	TokenEndpointAuthMethod string              `json:"token_endpoint_auth_method"`
+	PKCERequired            bool                `json:"pkce_required"`
+	PublicClient            bool                `json:"public_client"`
+	Scopes                  []string            `json:"scopes,omitempty"`
+	Token                   *OAuthTokenConfig   `json:"token,omitempty"`
+	ScopeClaims             map[string][]string `json:"scope_claims,omitempty"`
+	UserInfo                *UserInfoConfig     `json:"user_info,omitempty"`
 }
 
 // OAuthTokenConfig represents the OAuth token configuration.
@@ -72,6 +74,11 @@ type OAuthTokenConfig struct {
 	Issuer      string             `json:"issuer,omitempty"`
 	AccessToken *AccessTokenConfig `json:"access_token,omitempty"`
 	IDToken     *IDTokenConfig     `json:"id_token,omitempty"`
+}
+
+// UserInfoConfig represents the UserInfo endpoint configuration.
+type UserInfoConfig struct {
+	UserAttributes []string `json:"user_attributes,omitempty"`
 }
 
 // AssertionConfig represents the assertion configuration (used for application-level assertion config).
@@ -89,9 +96,8 @@ type AccessTokenConfig struct {
 
 // IDTokenConfig represents the ID token configuration.
 type IDTokenConfig struct {
-	ValidityPeriod int64               `json:"validity_period,omitempty"`
-	UserAttributes []string            `json:"user_attributes,omitempty"`
-	ScopeClaims    map[string][]string `json:"scope_claims,omitempty"`
+	ValidityPeriod int64    `json:"validity_period,omitempty"`
+	UserAttributes []string `json:"user_attributes,omitempty"`
 }
 
 // ApplicationList represents the response structure for listing applications.
@@ -247,6 +253,24 @@ func (app *Application) equals(expectedApp Application) bool {
 				if oauth.PublicClient != expectedOAuth.PublicClient {
 					return false
 				}
+
+				// Compare ScopeClaims - lenient if expected is nil but actual is empty
+				if expectedOAuth.ScopeClaims != nil {
+					if !compareScopeClaimsMaps(oauth.ScopeClaims, expectedOAuth.ScopeClaims) {
+						return false
+					}
+				}
+
+				// Compare UserInfo config - lenient if expected is nil but actual is empty
+				if expectedOAuth.UserInfo != nil {
+					if oauth.UserInfo == nil {
+						return false
+					}
+					if !compareStringSlices(oauth.UserInfo.UserAttributes, expectedOAuth.UserInfo.UserAttributes) {
+						return false
+					}
+				}
+				// If expected UserInfo is nil, we accept any value in actual (including empty object)
 			} else if (cfg.OAuthAppConfig == nil && expectedCfg.OAuthAppConfig != nil) ||
 				(cfg.OAuthAppConfig != nil && expectedCfg.OAuthAppConfig == nil) {
 				return false
@@ -254,5 +278,22 @@ func (app *Application) equals(expectedApp Application) bool {
 		}
 	}
 
+	return true
+}
+
+// compareScopeClaimsMaps compares two scope claims maps for equality.
+func compareScopeClaimsMaps(a, b map[string][]string) bool {
+	if len(a) != len(b) {
+		return false
+	}
+	for key, aVal := range a {
+		bVal, exists := b[key]
+		if !exists {
+			return false
+		}
+		if !compareStringSlices(aVal, bVal) {
+			return false
+		}
+	}
 	return true
 }

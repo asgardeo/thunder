@@ -38,6 +38,7 @@ import (
 	"github.com/asgardeo/thunder/internal/user"
 	"github.com/asgardeo/thunder/tests/mocks/applicationmock"
 	"github.com/asgardeo/thunder/tests/mocks/jwtmock"
+	"github.com/asgardeo/thunder/tests/mocks/oumock"
 	"github.com/asgardeo/thunder/tests/mocks/usermock"
 )
 
@@ -46,6 +47,7 @@ type UserInfoServiceTestSuite struct {
 	mockJWTService  *jwtmock.JWTServiceInterfaceMock
 	mockAppService  *applicationmock.ApplicationServiceInterfaceMock
 	mockUserService *usermock.UserServiceInterfaceMock
+	mockOUService   *oumock.OrganizationUnitServiceInterfaceMock
 	userInfoService userInfoServiceInterface
 	privateKey      *rsa.PrivateKey
 }
@@ -58,7 +60,8 @@ func (s *UserInfoServiceTestSuite) SetupTest() {
 	s.mockJWTService = jwtmock.NewJWTServiceInterfaceMock(s.T())
 	s.mockAppService = applicationmock.NewApplicationServiceInterfaceMock(s.T())
 	s.mockUserService = usermock.NewUserServiceInterfaceMock(s.T())
-	s.userInfoService = newUserInfoService(s.mockJWTService, s.mockAppService, s.mockUserService)
+	s.mockOUService = oumock.NewOrganizationUnitServiceInterfaceMock(s.T())
+	s.userInfoService = newUserInfoService(s.mockJWTService, s.mockAppService, s.mockUserService, s.mockOUService)
 
 	// Create a private key for signing JWT tokens
 	var err error
@@ -255,10 +258,8 @@ func (s *UserInfoServiceTestSuite) TestGetUserInfo_ErrorFetchingGroups() {
 	// This test verifies error handling when groups are needed but fetching fails
 	// So we need an OAuth app with groups in UserAttributes
 	oauthApp := &appmodel.OAuthAppConfigProcessedDTO{
-		Token: &appmodel.OAuthTokenConfig{
-			IDToken: &appmodel.IDTokenConfig{
-				UserAttributes: []string{"name", constants.UserAttributeGroups},
-			},
+		UserInfo: &appmodel.UserInfoConfig{
+			UserAttributes: []string{"name", constants.UserAttributeGroups},
 		},
 	}
 	s.mockAppService.On("GetOAuthApplication", "client123").Return(oauthApp, nil)
@@ -298,6 +299,9 @@ func (s *UserInfoServiceTestSuite) TestGetUserInfo_Success_StandardScopes() {
 			IDToken: &appmodel.IDTokenConfig{
 				UserAttributes: []string{"name", "email"},
 			},
+		},
+		UserInfo: &appmodel.UserInfoConfig{
+			UserAttributes: []string{"name", "email"},
 		},
 	}
 
@@ -339,10 +343,13 @@ func (s *UserInfoServiceTestSuite) TestGetUserInfo_Success_WithGroups() {
 		Token: &appmodel.OAuthTokenConfig{
 			IDToken: &appmodel.IDTokenConfig{
 				UserAttributes: []string{"name", constants.UserAttributeGroups},
-				ScopeClaims: map[string][]string{
-					"profile": {"name", constants.UserAttributeGroups}, // Add groups to profile scope
-				},
 			},
+		},
+		UserInfo: &appmodel.UserInfoConfig{
+			UserAttributes: []string{"name", constants.UserAttributeGroups},
+		},
+		ScopeClaims: map[string][]string{
+			"profile": {"name", constants.UserAttributeGroups}, // Add groups to profile scope
 		},
 	}
 
@@ -413,10 +420,13 @@ func (s *UserInfoServiceTestSuite) TestGetUserInfo_Success_WithScopeClaimsMappin
 		Token: &appmodel.OAuthTokenConfig{
 			IDToken: &appmodel.IDTokenConfig{
 				UserAttributes: []string{"name", "email", "phone"},
-				ScopeClaims: map[string][]string{
-					"custom_scope": {"name", "phone"},
-				},
 			},
+		},
+		UserInfo: &appmodel.UserInfoConfig{
+			UserAttributes: []string{"name", "email", "phone"},
+		},
+		ScopeClaims: map[string][]string{
+			"custom_scope": {"name", "phone"},
 		},
 	}
 
@@ -533,6 +543,9 @@ func (s *UserInfoServiceTestSuite) TestGetUserInfo_Success_GroupsNotInAllowedAtt
 				UserAttributes: []string{"name"}, // groups not in allowed attributes
 			},
 		},
+		UserInfo: &appmodel.UserInfoConfig{
+			UserAttributes: []string{"name"},
+		},
 	}
 
 	s.mockJWTService.On("VerifyJWT", token, "", "").Return(nil)
@@ -569,6 +582,9 @@ func (s *UserInfoServiceTestSuite) TestGetUserInfo_Success_EmptyUserAttributes()
 			IDToken: &appmodel.IDTokenConfig{
 				UserAttributes: []string{"name", "email"},
 			},
+		},
+		UserInfo: &appmodel.UserInfoConfig{
+			UserAttributes: []string{"name", "email"},
 		},
 	}
 
@@ -825,10 +841,13 @@ func (s *UserInfoServiceTestSuite) TestGetUserInfo_GroupsWithEmptyGroups() {
 		Token: &appmodel.OAuthTokenConfig{
 			IDToken: &appmodel.IDTokenConfig{
 				UserAttributes: []string{"name", constants.UserAttributeGroups},
-				ScopeClaims: map[string][]string{
-					"profile": {"name", constants.UserAttributeGroups},
-				},
 			},
+		},
+		UserInfo: &appmodel.UserInfoConfig{
+			UserAttributes: []string{"name", constants.UserAttributeGroups},
+		},
+		ScopeClaims: map[string][]string{
+			"profile": {"name", constants.UserAttributeGroups},
 		},
 	}
 
@@ -904,6 +923,9 @@ func (s *UserInfoServiceTestSuite) testGetUserInfoAllowedGrantType(grantTypeValu
 			IDToken: &appmodel.IDTokenConfig{
 				UserAttributes: []string{"name"},
 			},
+		},
+		UserInfo: &appmodel.UserInfoConfig{
+			UserAttributes: []string{"name"},
 		},
 	}
 

@@ -503,14 +503,15 @@ func (suite *AuthorizationCodeGrantHandlerTestSuite) TestHandleGrant_WithGroups(
 				accessTokenAttrs = append(accessTokenAttrs, constants.UserAttributeGroups)
 			}
 			var idTokenConfig *appmodel.IDTokenConfig
+			var scopeClaims map[string][]string
 			if tc.includeInIDToken {
 				if tc.scopeClaimsForGroups {
 					// Include groups in ID token config with scope claims mapping
 					idTokenConfig = &appmodel.IDTokenConfig{
 						UserAttributes: []string{"email", "username", constants.UserAttributeGroups},
-						ScopeClaims: map[string][]string{
-							"openid": {"email", "username", constants.UserAttributeGroups},
-						},
+					}
+					scopeClaims = map[string][]string{
+						"openid": {"email", "username", constants.UserAttributeGroups},
 					}
 				} else {
 					idTokenConfig = &appmodel.IDTokenConfig{
@@ -532,6 +533,7 @@ func (suite *AuthorizationCodeGrantHandlerTestSuite) TestHandleGrant_WithGroups(
 					},
 					IDToken: idTokenConfig,
 				},
+				ScopeClaims: scopeClaims,
 			}
 
 			authzCode := suite.testAuthzCode
@@ -693,13 +695,14 @@ func (suite *AuthorizationCodeGrantHandlerTestSuite) TestHandleGrant_WithEmptyGr
 				accessTokenAttrs = append(accessTokenAttrs, constants.UserAttributeGroups)
 			}
 			var idTokenConfig *appmodel.IDTokenConfig
+			var scopeClaims map[string][]string
 			if tc.includeInIDToken {
 				if tc.scopeClaimsForGroups {
 					idTokenConfig = &appmodel.IDTokenConfig{
 						UserAttributes: []string{"email", "username", constants.UserAttributeGroups},
-						ScopeClaims: map[string][]string{
-							"openid": {"email", "username", constants.UserAttributeGroups},
-						},
+					}
+					scopeClaims = map[string][]string{
+						"openid": {"email", "username", constants.UserAttributeGroups},
 					}
 				} else {
 					idTokenConfig = &appmodel.IDTokenConfig{
@@ -721,6 +724,7 @@ func (suite *AuthorizationCodeGrantHandlerTestSuite) TestHandleGrant_WithEmptyGr
 					},
 					IDToken: idTokenConfig,
 				},
+				ScopeClaims: scopeClaims,
 			}
 
 			authzCode := suite.testAuthzCode

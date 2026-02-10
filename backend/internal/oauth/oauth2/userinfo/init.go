@@ -23,6 +23,7 @@ import (
 
 	"github.com/asgardeo/thunder/internal/application"
 	"github.com/asgardeo/thunder/internal/oauth/oauth2/constants"
+	"github.com/asgardeo/thunder/internal/ou"
 	"github.com/asgardeo/thunder/internal/system/jwt"
 	"github.com/asgardeo/thunder/internal/system/middleware"
 	"github.com/asgardeo/thunder/internal/user"
@@ -34,8 +35,9 @@ func Initialize(
 	jwtService jwt.JWTServiceInterface,
 	applicationService application.ApplicationServiceInterface,
 	userService user.UserServiceInterface,
+	ouService ou.OrganizationUnitServiceInterface,
 ) userInfoServiceInterface {
-	userInfoService := newUserInfoService(jwtService, applicationService, userService)
+	userInfoService := newUserInfoService(jwtService, applicationService, userService, ouService)
 	userInfoHandler := newUserInfoHandler(userInfoService)
 	registerRoutes(mux, userInfoHandler)
 	return userInfoService

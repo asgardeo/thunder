@@ -1359,11 +1359,11 @@ func (ts *ApplicationAPITestSuite) TestApplicationWithTokenConfiguration() {
 						IDToken: &IDTokenConfig{
 							ValidityPeriod: 3600,
 							UserAttributes: []string{"sub", "email"},
-							ScopeClaims: map[string][]string{
-								"profile": {"name", "given_name", "family_name"},
-								"email":   {"email", "email_verified"},
-							},
 						},
+					},
+					ScopeClaims: map[string][]string{
+						"profile": {"name", "given_name", "family_name"},
+						"email":   {"email", "email_verified"},
 					},
 				},
 			},
@@ -1404,13 +1404,13 @@ func (ts *ApplicationAPITestSuite) TestApplicationWithIDTokenScopeClaims() {
 						IDToken: &IDTokenConfig{
 							ValidityPeriod: 7200,
 							UserAttributes: []string{"sub", "email", "name"},
-							ScopeClaims: map[string][]string{
-								"profile": {"name", "given_name", "family_name", "middle_name", "nickname", "preferred_username"},
-								"email":   {"email", "email_verified"},
-								"address": {"address"},
-								"phone":   {"phone_number", "phone_number_verified"},
-							},
 						},
+					},
+					ScopeClaims: map[string][]string{
+						"profile": {"name", "given_name", "family_name", "middle_name", "nickname", "preferred_username"},
+						"email":   {"email", "email_verified"},
+						"address": {"address"},
+						"phone":   {"phone_number", "phone_number_verified"},
 					},
 				},
 			},
@@ -1424,9 +1424,9 @@ func (ts *ApplicationAPITestSuite) TestApplicationWithIDTokenScopeClaims() {
 	// Retrieve and verify scope claims
 	retrievedApp, err := getApplicationByID(appID)
 	ts.Require().NoError(err)
-	ts.Assert().NotNil(retrievedApp.InboundAuthConfig[0].OAuthAppConfig.Token.IDToken.ScopeClaims)
-	ts.Assert().Contains(retrievedApp.InboundAuthConfig[0].OAuthAppConfig.Token.IDToken.ScopeClaims, "profile")
-	ts.Assert().Contains(retrievedApp.InboundAuthConfig[0].OAuthAppConfig.Token.IDToken.ScopeClaims["email"], "email")
+	ts.Assert().NotNil(retrievedApp.InboundAuthConfig[0].OAuthAppConfig.ScopeClaims)
+	ts.Assert().Contains(retrievedApp.InboundAuthConfig[0].OAuthAppConfig.ScopeClaims, "profile")
+	ts.Assert().Contains(retrievedApp.InboundAuthConfig[0].OAuthAppConfig.ScopeClaims["email"], "email")
 }
 
 // TestApplicationUpdateWithTokenConfigChanges tests updating token configuration.
@@ -1470,10 +1470,10 @@ func (ts *ApplicationAPITestSuite) TestApplicationUpdateWithTokenConfigChanges()
 		IDToken: &IDTokenConfig{
 			ValidityPeriod: 3600,
 			UserAttributes: []string{"sub", "email", "name"},
-			ScopeClaims: map[string][]string{
-				"profile": {"name", "picture"},
-			},
 		},
+	}
+	app.InboundAuthConfig[0].OAuthAppConfig.ScopeClaims = map[string][]string{
+		"profile": {"name", "picture"},
 	}
 
 	appJSON, _ := json.Marshal(app)
@@ -1733,11 +1733,11 @@ func (ts *ApplicationAPITestSuite) TestApplicationWithOnlyIDToken() {
 						IDToken: &IDTokenConfig{
 							ValidityPeriod: 3600,
 							UserAttributes: []string{"sub", "email", "name", "picture"},
-							ScopeClaims: map[string][]string{
-								"profile": {"name", "given_name", "family_name", "middle_name"},
-								"email":   {"email", "email_verified"},
-							},
 						},
+					},
+					ScopeClaims: map[string][]string{
+						"profile": {"name", "given_name", "family_name", "middle_name"},
+						"email":   {"email", "email_verified"},
 					},
 				},
 			},
@@ -1754,7 +1754,7 @@ func (ts *ApplicationAPITestSuite) TestApplicationWithOnlyIDToken() {
 	ts.Assert().NotNil(retrievedApp.InboundAuthConfig[0].OAuthAppConfig.Token)
 	ts.Assert().NotNil(retrievedApp.InboundAuthConfig[0].OAuthAppConfig.Token.IDToken)
 	ts.Assert().Equal(int64(3600), retrievedApp.InboundAuthConfig[0].OAuthAppConfig.Token.IDToken.ValidityPeriod)
-	ts.Assert().Len(retrievedApp.InboundAuthConfig[0].OAuthAppConfig.Token.IDToken.ScopeClaims, 2)
+	ts.Assert().Len(retrievedApp.InboundAuthConfig[0].OAuthAppConfig.ScopeClaims, 2)
 }
 
 // TestApplicationWithBothTokenTypes tests creating application with both AccessToken and IDToken.
@@ -1782,11 +1782,11 @@ func (ts *ApplicationAPITestSuite) TestApplicationWithBothTokenTypes() {
 						IDToken: &IDTokenConfig{
 							ValidityPeriod: 3600,
 							UserAttributes: []string{"sub", "email"},
-							ScopeClaims: map[string][]string{
-								"profile": {"name"},
-								"email":   {"email"},
-							},
 						},
+					},
+					ScopeClaims: map[string][]string{
+						"profile": {"name"},
+						"email":   {"email"},
 					},
 				},
 			},
@@ -1988,23 +1988,23 @@ func (ts *ApplicationAPITestSuite) TestApplicationWithComplexScopeClaims() {
 						IDToken: &IDTokenConfig{
 							ValidityPeriod: 3600,
 							UserAttributes: []string{"sub", "email", "name"},
-							ScopeClaims: map[string][]string{
-								"profile": {
-									"name", "given_name", "family_name", "middle_name",
-									"nickname", "preferred_username", "profile", "picture",
-									"website", "gender", "birthdate", "zoneinfo", "locale",
-									"updated_at",
-								},
-								"email": {"email", "email_verified"},
-								"address": {
-									"address.formatted", "address.street_address",
-									"address.locality", "address.region",
-									"address.postal_code", "address.country",
-								},
-								"phone":  {"phone_number", "phone_number_verified"},
-								"custom": {"organization", "department", "employee_id"},
-							},
 						},
+					},
+					ScopeClaims: map[string][]string{
+						"profile": {
+							"name", "given_name", "family_name", "middle_name",
+							"nickname", "preferred_username", "profile", "picture",
+							"website", "gender", "birthdate", "zoneinfo", "locale",
+							"updated_at",
+						},
+						"email": {"email", "email_verified"},
+						"address": {
+							"address.formatted", "address.street_address",
+							"address.locality", "address.region",
+							"address.postal_code", "address.country",
+						},
+						"phone":  {"phone_number", "phone_number_verified"},
+						"custom": {"organization", "department", "employee_id"},
 					},
 				},
 			},
@@ -2019,9 +2019,9 @@ func (ts *ApplicationAPITestSuite) TestApplicationWithComplexScopeClaims() {
 	retrievedApp, err := getApplicationByID(appID)
 	ts.Require().NoError(err)
 	ts.Assert().NotNil(retrievedApp.InboundAuthConfig[0].OAuthAppConfig.Token.IDToken)
-	ts.Assert().Len(retrievedApp.InboundAuthConfig[0].OAuthAppConfig.Token.IDToken.ScopeClaims, 5)
-	ts.Assert().Contains(retrievedApp.InboundAuthConfig[0].OAuthAppConfig.Token.IDToken.ScopeClaims, "profile")
-	ts.Assert().GreaterOrEqual(len(retrievedApp.InboundAuthConfig[0].OAuthAppConfig.Token.IDToken.ScopeClaims["profile"]), 10)
+	ts.Assert().Len(retrievedApp.InboundAuthConfig[0].OAuthAppConfig.ScopeClaims, 5)
+	ts.Assert().Contains(retrievedApp.InboundAuthConfig[0].OAuthAppConfig.ScopeClaims, "profile")
+	ts.Assert().GreaterOrEqual(len(retrievedApp.InboundAuthConfig[0].OAuthAppConfig.ScopeClaims["profile"]), 10)
 }
 
 // TestApplicationCertificateRollbackOnOAuthFail tests certificate rollback when OAuth creation fails.
@@ -2301,11 +2301,11 @@ func (ts *ApplicationAPITestSuite) TestApplicationWithCompleteMetadata() {
 						IDToken: &IDTokenConfig{
 							ValidityPeriod: 3600,
 							UserAttributes: []string{"sub", "email", "name"},
-							ScopeClaims: map[string][]string{
-								"profile": {"name", "given_name", "family_name"},
-								"email":   {"email", "email_verified"},
-							},
 						},
+					},
+					ScopeClaims: map[string][]string{
+						"profile": {"name", "given_name", "family_name"},
+						"email":   {"email", "email_verified"},
 					},
 				},
 			},
@@ -2358,8 +2358,8 @@ func (ts *ApplicationAPITestSuite) TestApplicationWithCompleteMetadata() {
 	ts.Require().NotNil(retrievedApp.InboundAuthConfig[0].OAuthAppConfig.Token.IDToken)
 	ts.Assert().Equal(int64(3600), retrievedApp.InboundAuthConfig[0].OAuthAppConfig.Token.IDToken.ValidityPeriod)
 	ts.Assert().Equal([]string{"sub", "email", "name"}, retrievedApp.InboundAuthConfig[0].OAuthAppConfig.Token.IDToken.UserAttributes)
-	ts.Assert().NotNil(retrievedApp.InboundAuthConfig[0].OAuthAppConfig.Token.IDToken.ScopeClaims)
-	ts.Assert().Equal([]string{"name", "given_name", "family_name"}, retrievedApp.InboundAuthConfig[0].OAuthAppConfig.Token.IDToken.ScopeClaims["profile"])
+	ts.Assert().NotNil(retrievedApp.InboundAuthConfig[0].OAuthAppConfig.ScopeClaims)
+	ts.Assert().Equal([]string{"name", "given_name", "family_name"}, retrievedApp.InboundAuthConfig[0].OAuthAppConfig.ScopeClaims["profile"])
 }
 
 // TestApplicationWithOnlyRootToken tests app with only root token config.
@@ -2649,11 +2649,11 @@ func (ts *ApplicationAPITestSuite) TestApplicationWithIDTokenScopeClaimsOnly() {
 					Token: &OAuthTokenConfig{
 						IDToken: &IDTokenConfig{
 							ValidityPeriod: 3600,
-							ScopeClaims: map[string][]string{
-								"profile": {"name", "picture"},
-								"email":   {"email"},
-							},
 						},
+					},
+					ScopeClaims: map[string][]string{
+						"profile": {"name", "picture"},
+						"email":   {"email"},
 					},
 				},
 			},
@@ -2668,8 +2668,8 @@ func (ts *ApplicationAPITestSuite) TestApplicationWithIDTokenScopeClaimsOnly() {
 	ts.Require().NoError(err)
 	ts.Require().NotNil(retrievedApp.InboundAuthConfig[0].OAuthAppConfig.Token)
 	ts.Require().NotNil(retrievedApp.InboundAuthConfig[0].OAuthAppConfig.Token.IDToken)
-	ts.Assert().NotNil(retrievedApp.InboundAuthConfig[0].OAuthAppConfig.Token.IDToken.ScopeClaims)
-	ts.Assert().Equal([]string{"name", "picture"}, retrievedApp.InboundAuthConfig[0].OAuthAppConfig.Token.IDToken.ScopeClaims["profile"])
+	ts.Assert().NotNil(retrievedApp.InboundAuthConfig[0].OAuthAppConfig.ScopeClaims)
+	ts.Assert().Equal([]string{"name", "picture"}, retrievedApp.InboundAuthConfig[0].OAuthAppConfig.ScopeClaims["profile"])
 }
 
 // TestApplicationWithOAuthTokenIssuerOnly tests app with only OAuth token issuer.
@@ -4356,4 +4356,122 @@ func (ts *ApplicationAPITestSuite) TestApplicationWithPartialInvalidAllowedUserT
 	err = json.NewDecoder(resp.Body).Decode(&errorResp)
 	ts.Require().NoError(err)
 	ts.Assert().Equal("APP-1025", errorResp.Code, "Error code should be APP-1025")
+}
+
+func (ts *ApplicationAPITestSuite) TestApplicationWithUserInfoConfig() {
+	app := Application{
+		Name:                      "App With UserInfo Config",
+		Description:               "Testing UserInfo and ScopeClaims persistence",
+		IsRegistrationFlowEnabled: false,
+		InboundAuthConfig: []InboundAuthConfig{
+			{
+				Type: "oauth2",
+				OAuthAppConfig: &OAuthAppConfig{
+					ClientID:                "userinfo_config_app_test_client",
+					ClientSecret:            "userinfo_config_app_test_secret",
+					RedirectURIs:            []string{"http://localhost/callback"},
+					GrantTypes:              []string{"authorization_code"},
+					ResponseTypes:           []string{"code"},
+					TokenEndpointAuthMethod: "client_secret_basic",
+					PKCERequired:            false,
+					PublicClient:            false,
+					Scopes:                  []string{"openid", "profile", "email"},
+					Token: &OAuthTokenConfig{
+						IDToken: &IDTokenConfig{
+							UserAttributes: []string{"sub"},
+						},
+					},
+					UserInfo: &UserInfoConfig{
+						UserAttributes: []string{"email", "firstName", "lastName"},
+					},
+					ScopeClaims: map[string][]string{
+						"profile": {"firstName", "lastName"},
+						"email":   {"email"},
+					},
+				},
+			},
+		},
+	}
+
+	// Set flow IDs (using defaults from suite)
+	app.AuthFlowID = defaultAuthFlowID
+	app.RegistrationFlowID = defaultRegistrationFlowID
+
+	// Create
+	appID, err := createApplication(app)
+	ts.Require().NoError(err)
+	defer deleteApplication(appID)
+
+	// Get
+	retrievedApp, err := getApplicationByID(appID)
+	ts.Require().NoError(err)
+
+	// Validate
+	ts.Require().NotEmpty(retrievedApp.InboundAuthConfig)
+	oauthConfig := retrievedApp.InboundAuthConfig[0].OAuthAppConfig
+	ts.Require().NotNil(oauthConfig)
+
+	// Check UserInfo
+	ts.Require().NotNil(oauthConfig.UserInfo)
+	ts.Assert().ElementsMatch([]string{"email", "firstName", "lastName"}, oauthConfig.UserInfo.UserAttributes)
+
+	// Check ScopeClaims
+	ts.Require().NotNil(oauthConfig.ScopeClaims)
+	ts.Assert().ElementsMatch([]string{"firstName", "lastName"}, oauthConfig.ScopeClaims["profile"])
+
+	// Check IDToken is separate
+	ts.Require().NotNil(oauthConfig.Token.IDToken)
+	ts.Assert().ElementsMatch([]string{"sub"}, oauthConfig.Token.IDToken.UserAttributes)
+}
+
+func (ts *ApplicationAPITestSuite) TestApplicationUserInfoWithFallback() {
+	app := Application{
+		Name:                      "App UserInfo Fallback",
+		Description:               "Testing UserInfo fallback logic",
+		IsRegistrationFlowEnabled: false,
+		InboundAuthConfig: []InboundAuthConfig{
+			{
+				Type: "oauth2",
+				OAuthAppConfig: &OAuthAppConfig{
+					ClientID:                "userinfo_fallback_test_client",
+					ClientSecret:            "userinfo_fallback_test_secret",
+					RedirectURIs:            []string{"http://localhost/callback"},
+					GrantTypes:              []string{"authorization_code"},
+					ResponseTypes:           []string{"code"},
+					TokenEndpointAuthMethod: "client_secret_basic",
+					PKCERequired:            false,
+					PublicClient:            false,
+					Scopes:                  []string{"openid", "email"},
+					Token: &OAuthTokenConfig{
+						IDToken: &IDTokenConfig{
+							UserAttributes: []string{"email", "sub"},
+						},
+					},
+					// UserInfo not specified
+				},
+			},
+		},
+	}
+
+	// Set flow IDs (using defaults from suite)
+	app.AuthFlowID = defaultAuthFlowID
+	app.RegistrationFlowID = defaultRegistrationFlowID
+
+	// Create
+	appID, err := createApplication(app)
+	ts.Require().NoError(err)
+	defer deleteApplication(appID)
+
+	// Get
+	retrievedApp, err := getApplicationByID(appID)
+	ts.Require().NoError(err)
+
+	// Validate
+	ts.Require().NotEmpty(retrievedApp.InboundAuthConfig)
+	oauthConfig := retrievedApp.InboundAuthConfig[0].OAuthAppConfig
+	ts.Require().NotNil(oauthConfig)
+
+	// Check UserInfo inherited from IDToken
+	ts.Require().NotNil(oauthConfig.UserInfo)
+	ts.Assert().ElementsMatch([]string{"email", "sub"}, oauthConfig.UserInfo.UserAttributes)
 }

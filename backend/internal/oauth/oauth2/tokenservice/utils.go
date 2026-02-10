@@ -28,6 +28,7 @@ import (
 	appmodel "github.com/asgardeo/thunder/internal/application/model"
 	"github.com/asgardeo/thunder/internal/oauth/oauth2/constants"
 	"github.com/asgardeo/thunder/internal/oauth/oauth2/model"
+	"github.com/asgardeo/thunder/internal/ou"
 	"github.com/asgardeo/thunder/internal/system/config"
 	"github.com/asgardeo/thunder/internal/user"
 )
@@ -216,21 +217,138 @@ func validateIssuer(issuer string, oauthApp *appmodel.OAuthAppConfigProcessedDTO
 	return nil
 }
 
+// FetchUserAttributes fetches user attributes and merges default claims and groups into the return map.
+// Callers should log errors with their own context.
+func FetchUserAttributes(
+	userService user.UserServiceInterface,
+	ouService ou.OrganizationUnitServiceInterface,
+	userID string,
+	allowedClaims []string,
+) (map[string]interface{}, error) {
+	userData, svcErr := userService.GetUser(context.TODO(), userID)
+	if svcErr != nil {
+		return nil, fmt.Errorf("failed to fetch user: %s", svcErr.Error)
+	}
+
+	// Parse user attributes from JSON
+	var attrs map[string]interface{}
+	if userData.Attributes != nil {
+		if err := json.Unmarshal(userData.Attributes, &attrs); err != nil {
+			return nil, fmt.Errorf("failed to unmarshal user attributes: %w", err)
+		}
+	}
+	if attrs == nil {
+		attrs = make(map[string]interface{})
+	}
+
+	// Helper to check if a claim should be included
+	shouldInclude := func(claimName string) bool {
+		if len(allowedClaims) == 0 {
+			return false // Only add special claims if explicitly allowed
+		}
+		return slices.Contains(allowedClaims, claimName)
+	}
+
+	// Add default claim - user type
+	if userData.Type != "" && shouldInclude(constants.ClaimUserType) {
+		attrs[constants.ClaimUserType] = userData.Type
+	}
+
+	if userData.OrganizationUnit != "" {
+		// Add default claim - ouId
+		if shouldInclude(constants.ClaimOUID) {
+			attrs[constants.ClaimOUID] = userData.OrganizationUnit
+		}
+
+		// Only fetch OU details if ouHandle or ouName are requested
+		needsOUDetails := shouldInclude(constants.ClaimOUHandle) || shouldInclude(constants.ClaimOUName)
+		if needsOUDetails && ouService != nil {
+			ouDetails, ouErr := ouService.GetOrganizationUnit(userData.OrganizationUnit)
+			if ouErr != nil {
+				return nil, fmt.Errorf("failed to fetch organization unit details: %s", ouErr.Error)
+			}
+
+			if shouldInclude(constants.ClaimOUHandle) {
+				attrs[constants.ClaimOUHandle] = ouDetails.Handle
+			}
+			if shouldInclude(constants.ClaimOUName) {
+				attrs[constants.ClaimOUName] = ouDetails.Name
+			}
+		}
+	}
+
+	// Fetch and add groups if requested
+	if shouldInclude(constants.UserAttributeGroups) {
+		groups, svcErr := userService.GetUserGroups(context.TODO(), userID, constants.DefaultGroupListLimit, 0)
+		if svcErr != nil {
+			return nil, fmt.Errorf("failed to fetch user groups: %s", svcErr.Error)
+		}
+		if len(groups.Groups) > 0 {
+			groupNames := make([]string, 0, len(groups.Groups))
+			for _, group := range groups.Groups {
+				groupNames = append(groupNames, group.Name)
+			}
+			attrs[constants.UserAttributeGroups] = groupNames
+		}
+	}
+
+	return attrs, nil
+}
+
+// BuildClaims builds claims by merging scope-based claims with explicit claims request.
+// Explicit claims override scope claims. Returns empty if allowedUserAttributes is not configured.
+// The requestedClaims should contain only the relevant claims map (IDToken or UserInfo) for the target.
+func BuildClaims(
+	scopes []string,
+	requestedClaims map[string]*model.IndividualClaimRequest,
+	userAttributes map[string]interface{},
+	scopeClaimsMapping map[string][]string,
+	allowedUserAttributes []string,
+) map[string]interface{} {
+	result := make(map[string]interface{})
+
+	// Check for openid scope first
+	hasOpenIDScope := slices.Contains(scopes, "openid")
+	if !hasOpenIDScope || userAttributes == nil {
+		return result
+	}
+
+	// Build scope claims
+	scopeClaims := buildClaimsFromScopes(scopes, userAttributes, scopeClaimsMapping, allowedUserAttributes)
+
+	// Process explicit claims request if present
+	if requestedClaims != nil {
+		explicitClaims := buildClaimsFromRequest(requestedClaims, userAttributes, allowedUserAttributes)
+
+		// Add scope claims that are not explicitly requested
+		for k, v := range scopeClaims {
+			if _, explicitlyRequested := requestedClaims[k]; !explicitlyRequested {
+				result[k] = v
+			}
+		}
+
+		// Add validated explicit claims (takes precedence over scope claims)
+		for claimName, value := range explicitClaims {
+			result[claimName] = value
+		}
+	} else {
+		// No explicit claims request, add all scope claims
+		for k, v := range scopeClaims {
+			result[k] = v
+		}
+	}
+
+	return result
+}
+
 // buildClaimsFromScopes builds claims from OIDC scopes based on scope-to-claims mapping.
 func buildClaimsFromScopes(
 	scopes []string,
 	userAttributes map[string]interface{},
-	oauthApp *appmodel.OAuthAppConfigProcessedDTO,
+	scopeClaimsMapping map[string][]string,
+	allowedUserAttributes []string,
 ) map[string]interface{} {
 	claims := make(map[string]interface{})
-
-	// Extract allowed user attributes and scope-to-claims mapping from ID token config
-	var allowedUserAttributes []string
-	var scopeClaimsMapping map[string][]string
-	if oauthApp != nil && oauthApp.Token != nil && oauthApp.Token.IDToken != nil {
-		allowedUserAttributes = oauthApp.Token.IDToken.UserAttributes
-		scopeClaimsMapping = oauthApp.Token.IDToken.ScopeClaims
-	}
 
 	if len(allowedUserAttributes) == 0 || userAttributes == nil || len(scopes) == 0 {
 		return claims
@@ -267,58 +385,18 @@ func buildClaimsFromScopes(
 	return claims
 }
 
-// FetchUserAttributesAndGroups fetches user attributes and groups from the user service.
-// It returns user attributes, user groups, and an error if any.
-// Callers should log errors with their own context.
-func FetchUserAttributesAndGroups(userService user.UserServiceInterface, userID string,
-	includeGroups bool) (map[string]interface{}, []string, error) {
-	user, svcErr := userService.GetUser(context.TODO(), userID)
-	if svcErr != nil {
-		return nil, nil, fmt.Errorf("failed to fetch user: %s", svcErr.Error)
-	}
-
-	var attrs map[string]interface{}
-	if user.Attributes != nil {
-		if err := json.Unmarshal(user.Attributes, &attrs); err != nil {
-			return nil, nil, fmt.Errorf("failed to unmarshal user attributes: %w", err)
-		}
-	}
-
-	if !includeGroups {
-		return attrs, []string{}, nil
-	}
-
-	groups, svcErr := userService.GetUserGroups(context.TODO(), userID, constants.DefaultGroupListLimit, 0)
-	if svcErr != nil {
-		return nil, nil, fmt.Errorf("failed to fetch user groups: %s", svcErr.Error)
-	}
-
-	userGroups := make([]string, 0, len(groups.Groups))
-	for _, group := range groups.Groups {
-		userGroups = append(userGroups, group.Name)
-	}
-
-	return attrs, userGroups, nil
-}
-
 // buildClaimsFromRequest builds claims from explicit claims parameter.
 // Returns empty if allowedUserAttributes is not configured.
 // Filters claims by availability, allowed attributes, and value/values constraints.
 func buildClaimsFromRequest(
 	requestedClaims map[string]*model.IndividualClaimRequest,
 	userAttributes map[string]interface{},
-	oauthApp *appmodel.OAuthAppConfigProcessedDTO,
+	allowedUserAttributes []string,
 ) map[string]interface{} {
 	result := make(map[string]interface{})
 
 	if requestedClaims == nil || userAttributes == nil {
 		return result
-	}
-
-	// Get allowed user attributes from app config if configured
-	var allowedUserAttributes []string
-	if oauthApp != nil && oauthApp.Token != nil && oauthApp.Token.IDToken != nil {
-		allowedUserAttributes = oauthApp.Token.IDToken.UserAttributes
 	}
 
 	// Return empty if no allowed attributes configured
@@ -349,52 +427,6 @@ func buildClaimsFromRequest(
 		// TODO: Revisit "essential" claim handling if needed.
 
 		result[claimName] = value
-	}
-
-	return result
-}
-
-// BuildClaims builds claims by merging scope-based claims with explicit claims request.
-// Explicit claims override scope claims. Returns empty if allowedUserAttributes is not configured.
-// The requestedClaims should contain only the relevant claims map (IDToken or UserInfo) for the target.
-func BuildClaims(
-	scopes []string,
-	requestedClaims map[string]*model.IndividualClaimRequest,
-	userAttributes map[string]interface{},
-	oauthApp *appmodel.OAuthAppConfigProcessedDTO,
-) map[string]interface{} {
-	result := make(map[string]interface{})
-
-	// Check for openid scope first
-	hasOpenIDScope := slices.Contains(scopes, "openid")
-
-	if !hasOpenIDScope || userAttributes == nil {
-		return result
-	}
-
-	// Build scope claims
-	scopeClaims := buildClaimsFromScopes(scopes, userAttributes, oauthApp)
-
-	// Process explicit claims request if present
-	if requestedClaims != nil {
-		explicitClaims := buildClaimsFromRequest(requestedClaims, userAttributes, oauthApp)
-
-		// Add scope claims that are not explicitly requested
-		for k, v := range scopeClaims {
-			if _, explicitlyRequested := requestedClaims[k]; !explicitlyRequested {
-				result[k] = v
-			}
-		}
-
-		// Add validated explicit claims (takes precedence over scope claims)
-		for claimName, value := range explicitClaims {
-			result[claimName] = value
-		}
-	} else {
-		// No explicit claims request, add all scope claims
-		for k, v := range scopeClaims {
-			result[k] = v
-		}
 	}
 
 	return result

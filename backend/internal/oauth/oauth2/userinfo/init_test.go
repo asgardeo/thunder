@@ -28,6 +28,7 @@ import (
 
 	"github.com/asgardeo/thunder/tests/mocks/applicationmock"
 	"github.com/asgardeo/thunder/tests/mocks/jwtmock"
+	"github.com/asgardeo/thunder/tests/mocks/oumock"
 	usersvcmock "github.com/asgardeo/thunder/tests/mocks/usermock"
 )
 
@@ -36,6 +37,7 @@ type InitTestSuite struct {
 	mockJWTService  *jwtmock.JWTServiceInterfaceMock
 	mockAppService  *applicationmock.ApplicationServiceInterfaceMock
 	mockUserService *usersvcmock.UserServiceInterfaceMock
+	mockOUService   *oumock.OrganizationUnitServiceInterfaceMock
 }
 
 func TestInitTestSuite(t *testing.T) {
@@ -46,12 +48,14 @@ func (suite *InitTestSuite) SetupTest() {
 	suite.mockJWTService = jwtmock.NewJWTServiceInterfaceMock(suite.T())
 	suite.mockAppService = applicationmock.NewApplicationServiceInterfaceMock(suite.T())
 	suite.mockUserService = usersvcmock.NewUserServiceInterfaceMock(suite.T())
+	suite.mockOUService = oumock.NewOrganizationUnitServiceInterfaceMock(suite.T())
 }
 
 func (suite *InitTestSuite) TestInitialize() {
 	mux := http.NewServeMux()
 
-	service := Initialize(mux, suite.mockJWTService, suite.mockAppService, suite.mockUserService)
+	service := Initialize(mux, suite.mockJWTService, suite.mockAppService,
+		suite.mockUserService, suite.mockOUService)
 
 	assert.NotNil(suite.T(), service)
 }
@@ -59,7 +63,8 @@ func (suite *InitTestSuite) TestInitialize() {
 func (suite *InitTestSuite) TestInitialize_RegistersRoutes() {
 	mux := http.NewServeMux()
 
-	_ = Initialize(mux, suite.mockJWTService, suite.mockAppService, suite.mockUserService)
+	_ = Initialize(mux, suite.mockJWTService, suite.mockAppService,
+		suite.mockUserService, suite.mockOUService)
 
 	// Verify that the routes are registered by attempting to get a handler for them.
 	// The pattern includes the method because of CORS middleware wrapping.

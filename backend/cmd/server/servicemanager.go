@@ -159,7 +159,8 @@ func registerServices(mux *http.ServeMux) jwt.JWTServiceInterface {
 	flowExecService := flowexec.Initialize(mux, flowMgtService, applicationService, execRegistry, observabilitySvc)
 
 	// Initialize OAuth services.
-	oauth.Initialize(mux, applicationService, userService, jwtService, flowExecService, observabilitySvc, pkiService)
+	oauth.Initialize(mux, applicationService, userService, jwtService, flowExecService, observabilitySvc,
+		pkiService, ouService)
 
 	// Initialize MCP server.
 	mcp.Initialize(mux, applicationService, flowMgtService, jwtService)

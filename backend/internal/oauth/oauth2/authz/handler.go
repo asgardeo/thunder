@@ -171,10 +171,10 @@ func (ah *authorizeHandler) handleInitialAuthorizationRequest(msg *OAuthMessage,
 			}
 			http.Redirect(w, r, redirectURI, http.StatusFound)
 			return
-		} else {
-			ah.redirectToErrorPage(w, r, errorCode, errorMessage)
-			return
 		}
+
+		ah.redirectToErrorPage(w, r, errorCode, errorMessage)
+		return
 	}
 
 	oidcScopes, nonOidcScopes := oauth2utils.SeparateOIDCAndNonOIDCScopes(scope)
@@ -356,6 +356,7 @@ func (ah *authorizeHandler) handleAuthorizationResponseFromEngine(msg *OAuthMess
 	ah.writeAuthZResponse(w, redirectURI)
 }
 
+// loadAuthRequestContext loads the authorization request context from the store using the auth ID.
 func (ah *authorizeHandler) loadAuthRequestContext(authID string) (*authRequestContext, error) {
 	ok, authRequestCtx := ah.authReqStore.GetRequest(authID)
 	if !ok {
@@ -576,12 +577,12 @@ func createAuthorizationCode(
 
 	codeID, err := utils.GenerateUUIDv7()
 	if err != nil {
-		return AuthorizationCode{}, errors.New("Failed to generate UUID")
+		return AuthorizationCode{}, errors.New("failed to generate UUID")
 	}
 
 	code, err := utils.GenerateUUIDv7()
 	if err != nil {
-		return AuthorizationCode{}, errors.New("Failed to generate UUID")
+		return AuthorizationCode{}, errors.New("failed to generate UUID")
 	}
 
 	return AuthorizationCode{
@@ -696,9 +697,8 @@ func getRequiredAttributes(oidcScopes []string, app *appmodel.OAuthAppConfigProc
 	if hasOpenIDScope {
 		// Build allowed attributes set and scope claims mapping from ID token config
 		var idTokenAllowedSet map[string]bool
-		var scopeClaimsMapping map[string][]string
+		scopeClaimsMapping := app.ScopeClaims
 		if app.Token.IDToken != nil {
-			scopeClaimsMapping = app.Token.IDToken.ScopeClaims
 			if len(app.Token.IDToken.UserAttributes) > 0 {
 				idTokenAllowedSet = make(map[string]bool, len(app.Token.IDToken.UserAttributes))
 				for _, attr := range app.Token.IDToken.UserAttributes {

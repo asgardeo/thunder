@@ -98,11 +98,11 @@ func (suite *ApplicationStoreTestSuite) createTestApplication() model.Applicatio
 						IDToken: &model.IDTokenConfig{
 							ValidityPeriod: 3600,
 							UserAttributes: []string{"sub", "email", "name", "given_name"},
-							ScopeClaims: map[string][]string{
-								"profile": {"name", "given_name", "family_name"},
-								"email":   {"email", "email_verified"},
-							},
 						},
+					},
+					ScopeClaims: map[string][]string{
+						"profile": {"name", "given_name", "family_name"},
+						"email":   {"email", "email_verified"},
 					},
 				},
 			},
@@ -283,7 +283,7 @@ func (suite *ApplicationStoreTestSuite) TestGetOAuthConfigJSONBytes_Success() {
 	idToken, ok := token["id_token"].(map[string]interface{})
 	suite.True(ok)
 	suite.Equal(float64(3600), idToken["validity_period"])
-	suite.NotNil(idToken["scope_claims"])
+	suite.NotNil(result["scope_claims"])
 }
 
 func (suite *ApplicationStoreTestSuite) TestGetOAuthConfigJSONBytes_WithoutToken() {
@@ -1388,8 +1388,14 @@ func getOAuthApplicationFromResults(
 			oauthTokenConfig.IDToken = &model.IDTokenConfig{
 				ValidityPeriod: oAuthConfig.Token.IDToken.ValidityPeriod,
 				UserAttributes: oAuthConfig.Token.IDToken.UserAttributes,
-				ScopeClaims:    oAuthConfig.Token.IDToken.ScopeClaims,
 			}
+		}
+	}
+
+	var userInfoConfig *model.UserInfoConfig
+	if oAuthConfig.UserInfo != nil {
+		userInfoConfig = &model.UserInfoConfig{
+			UserAttributes: oAuthConfig.UserInfo.UserAttributes,
 		}
 	}
 
@@ -1405,6 +1411,8 @@ func getOAuthApplicationFromResults(
 		PublicClient:            oAuthConfig.PublicClient,
 		Token:                   oauthTokenConfig,
 		Scopes:                  oAuthConfig.Scopes,
+		UserInfo:                userInfoConfig,
+		ScopeClaims:             oAuthConfig.ScopeClaims,
 	}, nil
 }
 
@@ -1428,12 +1436,12 @@ func (suite *ApplicationStoreTestSuite) TestGetOAuthApplication_WithComplexToken
 			},
 			"id_token": {
 				"validity_period": 3600,
-				"user_attributes": ["sub", "email"],
-				"scope_claims": {
-					"profile": ["name", "family_name"],
-					"email": ["email", "email_verified"]
-				}
+				"user_attributes": ["sub", "email"]
 			}
+		},
+		"scope_claims": {
+			"profile": ["name", "family_name"],
+			"email": ["email", "email_verified"]
 		}
 	}`
 
@@ -1477,9 +1485,9 @@ func (suite *ApplicationStoreTestSuite) TestGetOAuthApplication_WithComplexToken
 	suite.Assert().Len(result.Token.IDToken.UserAttributes, 2)
 
 	// Verify scope claims
-	suite.Require().NotNil(result.Token.IDToken.ScopeClaims)
-	suite.Assert().Contains(result.Token.IDToken.ScopeClaims["profile"], "family_name")
-	suite.Assert().Contains(result.Token.IDToken.ScopeClaims["email"], "email_verified")
+	suite.Require().NotNil(result.ScopeClaims)
+	suite.Assert().Contains(result.ScopeClaims["profile"], "family_name")
+	suite.Assert().Contains(result.ScopeClaims["email"], "email_verified")
 }
 
 func (suite *ApplicationStoreTestSuite) TestGetOAuthApplication_WithNilTokenConfig() {

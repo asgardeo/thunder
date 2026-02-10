@@ -282,7 +282,6 @@ func (suite *ServiceTestSuite) TestProcessTokenConfiguration() {
 
 			assert.Equal(suite.T(), tt.expectedIDTokenValidity, idToken.ValidityPeriod)
 			assert.NotNil(suite.T(), idToken.UserAttributes)
-			assert.NotNil(suite.T(), idToken.ScopeClaims)
 
 			assert.Equal(suite.T(), tt.expectedTokenIssuer, tokenIssuer)
 		})
@@ -1553,9 +1552,9 @@ func (suite *ServiceTestSuite) TestProcessTokenConfiguration_WithOAuthIDToken() 
 						IDToken: &model.IDTokenConfig{
 							ValidityPeriod: 1200,
 							UserAttributes: []string{"email"},
-							ScopeClaims:    map[string][]string{"scope1": {"claim1"}},
 						},
 					},
+					ScopeClaims: map[string][]string{"scope1": {"claim1"}},
 				},
 			},
 		},
@@ -1568,7 +1567,6 @@ func (suite *ServiceTestSuite) TestProcessTokenConfiguration_WithOAuthIDToken() 
 	assert.NotNil(suite.T(), idToken)
 	assert.Equal(suite.T(), int64(1200), idToken.ValidityPeriod)
 	assert.Equal(suite.T(), []string{"email"}, idToken.UserAttributes)
-	assert.NotNil(suite.T(), idToken.ScopeClaims)
 	assert.Equal(suite.T(), "https://default-issuer.com", tokenIssuer)
 }
 
@@ -2134,9 +2132,9 @@ func (suite *ServiceTestSuite) TestProcessTokenConfiguration_WithOAuthIDTokenDef
 						IDToken: &model.IDTokenConfig{
 							ValidityPeriod: 0,
 							UserAttributes: nil,
-							ScopeClaims:    nil,
 						},
 					},
+					ScopeClaims: nil,
 				},
 			},
 		},
@@ -2150,7 +2148,6 @@ func (suite *ServiceTestSuite) TestProcessTokenConfiguration_WithOAuthIDTokenDef
 	assert.Equal(suite.T(), int64(3600), idToken.ValidityPeriod)
 	assert.NotNil(suite.T(), idToken.UserAttributes)
 	assert.Len(suite.T(), idToken.UserAttributes, 0)
-	assert.NotNil(suite.T(), idToken.ScopeClaims)
 }
 
 func (suite *ServiceTestSuite) TestProcessTokenConfiguration_WithOAuthTokenIssuer() {
@@ -3469,4 +3466,130 @@ func (suite *ServiceTestSuite) TestValidateRegistrationFlowID_NoPrefix() {
 	assert.NotNil(suite.T(), svcErr)
 	// When registration flow can't be inferred from auth flow, we get ErrorWhileRetrievingFlowDefinition
 	assert.Equal(suite.T(), &ErrorWhileRetrievingFlowDefinition, svcErr)
+}
+
+func (suite *ServiceTestSuite) TestProcessUserInfoConfiguration() {
+	tests := []struct {
+		name               string
+		app                *model.ApplicationDTO
+		idTokenConfig      *model.IDTokenConfig
+		expectedAttributes []string
+	}{
+		{
+			name: "Explicit UserInfo config",
+			app: &model.ApplicationDTO{
+				InboundAuthConfig: []model.InboundAuthConfigDTO{
+					{
+						OAuthAppConfig: &model.OAuthAppConfigDTO{
+							UserInfo: &model.UserInfoConfig{
+								UserAttributes: []string{"email", "profile"},
+							},
+						},
+					},
+				},
+			},
+			idTokenConfig:      &model.IDTokenConfig{UserAttributes: []string{"sub"}},
+			expectedAttributes: []string{"email", "profile"},
+		},
+		{
+			name: "Fallback to IDToken attrs when UserInfo nil",
+			app: &model.ApplicationDTO{
+				InboundAuthConfig: []model.InboundAuthConfigDTO{
+					{
+						OAuthAppConfig: &model.OAuthAppConfigDTO{
+							UserInfo: nil,
+						},
+					},
+				},
+			},
+			idTokenConfig:      &model.IDTokenConfig{UserAttributes: []string{"sub", "email"}},
+			expectedAttributes: []string{"sub", "email"},
+		},
+		{
+			name: "Fallback to IDToken attrs when UserInfo attributes nil",
+			app: &model.ApplicationDTO{
+				InboundAuthConfig: []model.InboundAuthConfigDTO{
+					{
+						OAuthAppConfig: &model.OAuthAppConfigDTO{
+							UserInfo: &model.UserInfoConfig{
+								UserAttributes: nil,
+							},
+						},
+					},
+				},
+			},
+			idTokenConfig:      &model.IDTokenConfig{UserAttributes: []string{"sub"}},
+			expectedAttributes: []string{"sub"},
+		},
+		{
+			name: "Doesn't fallback when UserInfo attributes empty",
+			app: &model.ApplicationDTO{
+				InboundAuthConfig: []model.InboundAuthConfigDTO{
+					{
+						OAuthAppConfig: &model.OAuthAppConfigDTO{
+							UserInfo: &model.UserInfoConfig{
+								UserAttributes: []string{},
+							},
+						},
+					},
+				},
+			},
+			idTokenConfig:      &model.IDTokenConfig{UserAttributes: []string{"sub", "email"}},
+			expectedAttributes: []string{},
+		},
+	}
+
+	for _, tt := range tests {
+		suite.Run(tt.name, func() {
+			result := processUserInfoConfiguration(tt.app, tt.idTokenConfig)
+			assert.NotNil(suite.T(), result)
+			assert.Equal(suite.T(), tt.expectedAttributes, result.UserAttributes)
+		})
+	}
+}
+
+func (suite *ServiceTestSuite) TestProcessScopeClaimsConfiguration() {
+	tests := []struct {
+		name           string
+		app            *model.ApplicationDTO
+		expectedClaims map[string][]string
+	}{
+		{
+			name: "With Scope Claims",
+			app: &model.ApplicationDTO{
+				InboundAuthConfig: []model.InboundAuthConfigDTO{
+					{
+						OAuthAppConfig: &model.OAuthAppConfigDTO{
+							ScopeClaims: map[string][]string{
+								"profile": {"name", "email"},
+							},
+						},
+					},
+				},
+			},
+			expectedClaims: map[string][]string{
+				"profile": {"name", "email"},
+			},
+		},
+		{
+			name: "Without Scope Claims",
+			app: &model.ApplicationDTO{
+				InboundAuthConfig: []model.InboundAuthConfigDTO{
+					{
+						OAuthAppConfig: &model.OAuthAppConfigDTO{
+							ScopeClaims: nil,
+						},
+					},
+				},
+			},
+			expectedClaims: map[string][]string{},
+		},
+	}
+
+	for _, tt := range tests {
+		suite.Run(tt.name, func() {
+			result := processScopeClaimsConfiguration(tt.app)
+			assert.Equal(suite.T(), tt.expectedClaims, result)
+		})
+	}
 }

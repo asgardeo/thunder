@@ -20,14 +20,13 @@
 package userinfo
 
 import (
-	"slices"
-
 	"github.com/asgardeo/thunder/internal/application"
 	appmodel "github.com/asgardeo/thunder/internal/application/model"
 	"github.com/asgardeo/thunder/internal/oauth/oauth2/constants"
 	"github.com/asgardeo/thunder/internal/oauth/oauth2/model"
 	"github.com/asgardeo/thunder/internal/oauth/oauth2/tokenservice"
 	oauth2utils "github.com/asgardeo/thunder/internal/oauth/oauth2/utils"
+	"github.com/asgardeo/thunder/internal/ou"
 	"github.com/asgardeo/thunder/internal/system/error/serviceerror"
 	"github.com/asgardeo/thunder/internal/system/jwt"
 	"github.com/asgardeo/thunder/internal/system/log"
@@ -46,6 +45,7 @@ type userInfoService struct {
 	jwtService         jwt.JWTServiceInterface
 	applicationService application.ApplicationServiceInterface
 	userService        user.UserServiceInterface
+	ouService          ou.OrganizationUnitServiceInterface
 	logger             *log.Logger
 }
 
@@ -54,11 +54,13 @@ func newUserInfoService(
 	jwtService jwt.JWTServiceInterface,
 	applicationService application.ApplicationServiceInterface,
 	userService user.UserServiceInterface,
+	ouService ou.OrganizationUnitServiceInterface,
 ) userInfoServiceInterface {
 	return &userInfoService{
 		jwtService:         jwtService,
 		applicationService: applicationService,
 		userService:        userService,
+		ouService:          ouService,
 		logger:             log.GetLogger().With(log.String(log.LoggerKeyComponentName, serviceLoggerComponentName)),
 	}
 }
@@ -90,23 +92,18 @@ func (s *userInfoService) GetUserInfo(accessToken string) (map[string]interface{
 
 	oauthApp := s.getOAuthApp(tokenClaims)
 
-	includeGroups := oauthApp != nil &&
-		oauthApp.Token != nil &&
-		oauthApp.Token.IDToken != nil &&
-		slices.Contains(oauthApp.Token.IDToken.UserAttributes, constants.UserAttributeGroups)
+	// Extract allowed user attributes
+	var allowedUserAttributes []string
+	if oauthApp != nil && oauthApp.UserInfo != nil {
+		allowedUserAttributes = oauthApp.UserInfo.UserAttributes
+	}
 
-	userAttributes, userGroups, err := tokenservice.FetchUserAttributesAndGroups(s.userService,
-		sub, includeGroups)
+	// Fetch user attributes with groups and default claims
+	userAttributes, err := tokenservice.FetchUserAttributes(s.userService, s.ouService,
+		sub, allowedUserAttributes)
 	if err != nil {
 		s.logger.Error("Failed to fetch user attributes", log.String("userID", sub), log.Error(err))
 		return nil, &serviceerror.InternalServerError
-	}
-
-	if len(userGroups) > 0 && includeGroups {
-		if userAttributes == nil {
-			userAttributes = make(map[string]interface{})
-		}
-		userAttributes[constants.UserAttributeGroups] = userGroups
 	}
 
 	response, svcErr := s.buildUserInfoResponse(sub, scopes, userAttributes, oauthApp, tokenClaims)
@@ -217,13 +214,24 @@ func (s *userInfoService) buildUserInfoResponse(
 	if claimsRequest != nil {
 		userInfoClaims = claimsRequest.UserInfo
 	}
+
+	// Get scope claims mapping and allowed user attributes from app config
+	var scopeClaimsMapping map[string][]string
+	var allowedUserAttributes []string
+	if oauthApp != nil {
+		scopeClaimsMapping = oauthApp.ScopeClaims
+		if oauthApp.UserInfo != nil && len(oauthApp.UserInfo.UserAttributes) > 0 {
+			allowedUserAttributes = oauthApp.UserInfo.UserAttributes
+		}
+	}
+
 	claimData := tokenservice.BuildClaims(
 		scopes,
 		userInfoClaims,
 		userAttributes,
-		oauthApp,
+		scopeClaimsMapping,
+		allowedUserAttributes,
 	)
-
 	for key, value := range claimData {
 		response[key] = value
 	}

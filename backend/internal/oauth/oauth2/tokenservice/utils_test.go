@@ -28,9 +28,11 @@ import (
 
 	appmodel "github.com/asgardeo/thunder/internal/application/model"
 	"github.com/asgardeo/thunder/internal/oauth/oauth2/constants"
+	"github.com/asgardeo/thunder/internal/ou"
 	"github.com/asgardeo/thunder/internal/system/config"
 	"github.com/asgardeo/thunder/internal/system/error/serviceerror"
 	"github.com/asgardeo/thunder/internal/user"
+	"github.com/asgardeo/thunder/tests/mocks/oumock"
 	"github.com/asgardeo/thunder/tests/mocks/usermock"
 )
 
@@ -628,7 +630,26 @@ func (suite *UtilsTestSuite) TestextractScopesFromClaims_ScopeTakesPriorityOverA
 	assert.Equal(suite.T(), []string{"openid", "profile"}, result)
 }
 
-func (suite *UtilsTestSuite) TestFetchUserAttributesAndGroups_UnmarshalError() {
+func (suite *UtilsTestSuite) TestFetchUserAttributes_GetUserError() {
+	mockUserService := usermock.NewUserServiceInterfaceMock(suite.T())
+
+	// Mock GetUser to return error
+	serverErr := &serviceerror.ServiceError{
+		Type:             serviceerror.ServerErrorType,
+		Code:             "USER_NOT_FOUND",
+		ErrorDescription: "user not found",
+	}
+	mockUserService.On("GetUser", mock.Anything, "test-user").Return(nil, serverErr)
+
+	_, err := FetchUserAttributes(mockUserService, nil, "test-user", nil)
+
+	assert.Error(suite.T(), err)
+	assert.Contains(suite.T(), err.Error(), "failed to fetch user")
+
+	mockUserService.AssertExpectations(suite.T())
+}
+
+func (suite *UtilsTestSuite) TestFetchUserAttributes_UnmarshalError() {
 	mockUserService := usermock.NewUserServiceInterfaceMock(suite.T())
 
 	// Mock GetUser to return user with invalid JSON in attributes
@@ -638,7 +659,7 @@ func (suite *UtilsTestSuite) TestFetchUserAttributesAndGroups_UnmarshalError() {
 		Type:       "local",
 	}, nil)
 
-	_, _, err := FetchUserAttributesAndGroups(mockUserService, "test-user", false)
+	_, err := FetchUserAttributes(mockUserService, nil, "test-user", nil)
 
 	assert.Error(suite.T(), err)
 	assert.Contains(suite.T(), err.Error(), "failed to unmarshal user attributes")
@@ -646,7 +667,321 @@ func (suite *UtilsTestSuite) TestFetchUserAttributesAndGroups_UnmarshalError() {
 	mockUserService.AssertExpectations(suite.T())
 }
 
-func (suite *UtilsTestSuite) TestFetchUserAttributesAndGroups_GetUserGroupsError() {
+func (suite *UtilsTestSuite) TestFetchUserAttributes_NilAttributes() {
+	mockUserService := usermock.NewUserServiceInterfaceMock(suite.T())
+
+	// Mock GetUser to return user with nil attributes
+	mockUserService.On("GetUser", mock.Anything, "test-user").Return(&user.User{
+		ID:         "test-user",
+		Attributes: nil,
+		Type:       "local",
+	}, nil)
+
+	allowedClaims := []string{constants.ClaimUserType}
+	attrs, err := FetchUserAttributes(mockUserService, nil, "test-user", allowedClaims)
+
+	assert.NoError(suite.T(), err)
+	assert.NotNil(suite.T(), attrs)
+	assert.Equal(suite.T(), "local", attrs[constants.ClaimUserType])
+
+	mockUserService.AssertExpectations(suite.T())
+}
+
+func (suite *UtilsTestSuite) TestFetchUserAttributes_EmptyAllowedClaims() {
+	mockUserService := usermock.NewUserServiceInterfaceMock(suite.T())
+
+	// Mock GetUser to return user with full data
+	mockUserService.On("GetUser", mock.Anything, "test-user").Return(&user.User{
+		ID:               "test-user",
+		Attributes:       json.RawMessage(`{"email":"test@example.com"}`),
+		Type:             "local",
+		OrganizationUnit: "ou-123",
+	}, nil)
+
+	// Empty allowedClaims - no special claims should be added
+	attrs, err := FetchUserAttributes(mockUserService, nil, "test-user", []string{})
+
+	assert.NoError(suite.T(), err)
+	assert.NotNil(suite.T(), attrs)
+	// Only user attributes should be present, not default claims
+	assert.Equal(suite.T(), "test@example.com", attrs["email"])
+	assert.Nil(suite.T(), attrs[constants.ClaimUserType])
+	assert.Nil(suite.T(), attrs[constants.ClaimOUID])
+	assert.Nil(suite.T(), attrs[constants.UserAttributeGroups])
+
+	mockUserService.AssertExpectations(suite.T())
+}
+
+func (suite *UtilsTestSuite) TestFetchUserAttributes_NilAllowedClaims() {
+	mockUserService := usermock.NewUserServiceInterfaceMock(suite.T())
+
+	// Mock GetUser to return user with full data
+	mockUserService.On("GetUser", mock.Anything, "test-user").Return(&user.User{
+		ID:               "test-user",
+		Attributes:       json.RawMessage(`{"email":"test@example.com"}`),
+		Type:             "local",
+		OrganizationUnit: "ou-123",
+	}, nil)
+
+	// Nil allowedClaims - no special claims should be added
+	attrs, err := FetchUserAttributes(mockUserService, nil, "test-user", nil)
+
+	assert.NoError(suite.T(), err)
+	assert.NotNil(suite.T(), attrs)
+	// Only user attributes should be present
+	assert.Equal(suite.T(), "test@example.com", attrs["email"])
+	assert.Nil(suite.T(), attrs[constants.ClaimUserType])
+	assert.Nil(suite.T(), attrs[constants.ClaimOUID])
+
+	mockUserService.AssertExpectations(suite.T())
+}
+
+func (suite *UtilsTestSuite) TestFetchUserAttributes_UserWithNoType() {
+	mockUserService := usermock.NewUserServiceInterfaceMock(suite.T())
+
+	// Mock GetUser to return user without type
+	mockUserService.On("GetUser", mock.Anything, "test-user").Return(&user.User{
+		ID:               "test-user",
+		Attributes:       json.RawMessage(`{"email":"test@example.com"}`),
+		Type:             "", // Empty type
+		OrganizationUnit: "ou-123",
+	}, nil)
+
+	allowedClaims := []string{constants.ClaimUserType, constants.ClaimOUID}
+	attrs, err := FetchUserAttributes(mockUserService, nil, "test-user", allowedClaims)
+
+	assert.NoError(suite.T(), err)
+	assert.NotNil(suite.T(), attrs)
+	// userType should not be present since it's empty
+	assert.Nil(suite.T(), attrs[constants.ClaimUserType])
+	// ouId should still be present
+	assert.Equal(suite.T(), "ou-123", attrs[constants.ClaimOUID])
+
+	mockUserService.AssertExpectations(suite.T())
+}
+
+func (suite *UtilsTestSuite) TestFetchUserAttributes_UserWithNoOrganizationUnit() {
+	mockUserService := usermock.NewUserServiceInterfaceMock(suite.T())
+
+	// Mock GetUser to return user without organization unit
+	mockUserService.On("GetUser", mock.Anything, "test-user").Return(&user.User{
+		ID:               "test-user",
+		Attributes:       json.RawMessage(`{"email":"test@example.com"}`),
+		Type:             "local",
+		OrganizationUnit: "", // Empty OU
+	}, nil)
+
+	allowedClaims := []string{constants.ClaimUserType, constants.ClaimOUID}
+	attrs, err := FetchUserAttributes(mockUserService, nil, "test-user", allowedClaims)
+
+	assert.NoError(suite.T(), err)
+	assert.NotNil(suite.T(), attrs)
+	// userType should be present
+	assert.Equal(suite.T(), "local", attrs[constants.ClaimUserType])
+	// ouId should not be present since OU is empty
+	assert.Nil(suite.T(), attrs[constants.ClaimOUID])
+
+	mockUserService.AssertExpectations(suite.T())
+}
+
+func (suite *UtilsTestSuite) TestFetchUserAttributes_WithOUServiceSuccess() {
+	mockUserService := usermock.NewUserServiceInterfaceMock(suite.T())
+	mockOUService := oumock.NewOrganizationUnitServiceInterfaceMock(suite.T())
+
+	// Mock GetUser to return valid user with OU
+	mockUserService.On("GetUser", mock.Anything, "test-user").Return(&user.User{
+		ID:               "test-user",
+		Attributes:       json.RawMessage(`{"email":"test@example.com"}`),
+		Type:             "local",
+		OrganizationUnit: "ou-123",
+	}, nil)
+
+	// Mock GetOrganizationUnit to return OU details
+	mockOUService.On("GetOrganizationUnit", "ou-123").Return(ou.OrganizationUnit{
+		ID:     "ou-123",
+		Handle: "test-org",
+		Name:   "Test Organization",
+	}, nil)
+
+	// Request all OU-related claims
+	allowedClaims := []string{constants.ClaimOUID, constants.ClaimOUHandle, constants.ClaimOUName}
+	attrs, err := FetchUserAttributes(mockUserService, mockOUService, "test-user", allowedClaims)
+
+	assert.NoError(suite.T(), err)
+	assert.NotNil(suite.T(), attrs)
+	assert.Equal(suite.T(), "ou-123", attrs[constants.ClaimOUID])
+	assert.Equal(suite.T(), "test-org", attrs[constants.ClaimOUHandle])
+	assert.Equal(suite.T(), "Test Organization", attrs[constants.ClaimOUName])
+
+	mockUserService.AssertExpectations(suite.T())
+	mockOUService.AssertExpectations(suite.T())
+}
+
+func (suite *UtilsTestSuite) TestFetchUserAttributes_WithOUServiceError() {
+	mockUserService := usermock.NewUserServiceInterfaceMock(suite.T())
+	mockOUService := oumock.NewOrganizationUnitServiceInterfaceMock(suite.T())
+
+	// Mock GetUser to return valid user with OU
+	mockUserService.On("GetUser", mock.Anything, "test-user").Return(&user.User{
+		ID:               "test-user",
+		Attributes:       json.RawMessage(`{"email":"test@example.com"}`),
+		Type:             "local",
+		OrganizationUnit: "ou-123",
+	}, nil)
+
+	// Mock GetOrganizationUnit to return error
+	mockOUService.On("GetOrganizationUnit", "ou-123").Return(ou.OrganizationUnit{}, &serviceerror.ServiceError{
+		Type:             serviceerror.ServerErrorType,
+		Code:             "OU_NOT_FOUND",
+		ErrorDescription: "organization unit not found",
+	})
+
+	// Request ouHandle which requires OU service
+	allowedClaims := []string{constants.ClaimOUHandle}
+	_, err := FetchUserAttributes(mockUserService, mockOUService, "test-user", allowedClaims)
+
+	assert.Error(suite.T(), err)
+	assert.Contains(suite.T(), err.Error(), "failed to fetch organization unit details")
+
+	mockUserService.AssertExpectations(suite.T())
+	mockOUService.AssertExpectations(suite.T())
+}
+
+func (suite *UtilsTestSuite) TestFetchUserAttributes_OUDetailsNotRequestedSkipsOUService() {
+	mockUserService := usermock.NewUserServiceInterfaceMock(suite.T())
+	mockOUService := oumock.NewOrganizationUnitServiceInterfaceMock(suite.T())
+
+	// Mock GetUser to return valid user with OU
+	mockUserService.On("GetUser", mock.Anything, "test-user").Return(&user.User{
+		ID:               "test-user",
+		Attributes:       json.RawMessage(`{"email":"test@example.com"}`),
+		Type:             "local",
+		OrganizationUnit: "ou-123",
+	}, nil)
+
+	// No mock for GetOrganizationUnit - it should NOT be called
+
+	// Request only ouId (not ouHandle or ouName)
+	allowedClaims := []string{constants.ClaimOUID}
+	attrs, err := FetchUserAttributes(mockUserService, mockOUService, "test-user", allowedClaims)
+
+	assert.NoError(suite.T(), err)
+	assert.NotNil(suite.T(), attrs)
+	assert.Equal(suite.T(), "ou-123", attrs[constants.ClaimOUID])
+	// ouHandle and ouName should not be present
+	assert.Nil(suite.T(), attrs[constants.ClaimOUHandle])
+	assert.Nil(suite.T(), attrs[constants.ClaimOUName])
+
+	// Verify GetOrganizationUnit was NOT called
+	mockOUService.AssertNotCalled(suite.T(), "GetOrganizationUnit", mock.Anything)
+	mockUserService.AssertExpectations(suite.T())
+}
+
+func (suite *UtilsTestSuite) TestFetchUserAttributes_NilOUServiceSkipsOUDetails() {
+	mockUserService := usermock.NewUserServiceInterfaceMock(suite.T())
+
+	// Mock GetUser to return valid user with OU
+	mockUserService.On("GetUser", mock.Anything, "test-user").Return(&user.User{
+		ID:               "test-user",
+		Attributes:       json.RawMessage(`{"email":"test@example.com"}`),
+		Type:             "local",
+		OrganizationUnit: "ou-123",
+	}, nil)
+
+	// Request ouHandle but pass nil ouService
+	allowedClaims := []string{constants.ClaimOUID, constants.ClaimOUHandle}
+	attrs, err := FetchUserAttributes(mockUserService, nil, "test-user", allowedClaims)
+
+	assert.NoError(suite.T(), err)
+	assert.NotNil(suite.T(), attrs)
+	// ouId should be present
+	assert.Equal(suite.T(), "ou-123", attrs[constants.ClaimOUID])
+	// ouHandle should NOT be present since ouService is nil
+	assert.Nil(suite.T(), attrs[constants.ClaimOUHandle])
+
+	mockUserService.AssertExpectations(suite.T())
+}
+
+func (suite *UtilsTestSuite) TestFetchUserAttributes_WithGroups() {
+	mockUserService := usermock.NewUserServiceInterfaceMock(suite.T())
+
+	// Mock GetUser to return valid user
+	mockUserService.On("GetUser", mock.Anything, "test-user").Return(&user.User{
+		ID:               "test-user",
+		Attributes:       json.RawMessage(`{"email":"test@example.com","username":"testuser"}`),
+		Type:             "local",
+		OrganizationUnit: "ou-123",
+	}, nil)
+
+	// Mock GetUserGroups to return groups
+	mockGroups := &user.UserGroupListResponse{
+		TotalResults: 2,
+		StartIndex:   0,
+		Count:        2,
+		Groups: []user.UserGroup{
+			{ID: "group1", Name: "Admin"},
+			{ID: "group2", Name: "Users"},
+		},
+	}
+	mockUserService.On("GetUserGroups", mock.Anything, "test-user", constants.DefaultGroupListLimit, 0).
+		Return(mockGroups, nil)
+
+	// Include default claims and groups in allowed list
+	allowedClaims := []string{
+		"email",
+		"username",
+		constants.ClaimUserType,
+		constants.ClaimOUID,
+		constants.UserAttributeGroups,
+	}
+	attrs, err := FetchUserAttributes(mockUserService, nil, "test-user", allowedClaims)
+
+	assert.NoError(suite.T(), err)
+	assert.NotNil(suite.T(), attrs)
+	assert.Equal(suite.T(), "test@example.com", attrs["email"])
+	assert.Equal(suite.T(), "testuser", attrs["username"])
+	// Verify groups are merged into attrs
+	assert.Equal(suite.T(), []string{"Admin", "Users"}, attrs[constants.UserAttributeGroups])
+	// Verify default claims are merged into attrs
+	assert.Equal(suite.T(), "local", attrs[constants.ClaimUserType])
+	assert.Equal(suite.T(), "ou-123", attrs[constants.ClaimOUID])
+
+	mockUserService.AssertExpectations(suite.T())
+}
+
+func (suite *UtilsTestSuite) TestFetchUserAttributes_WithEmptyGroups() {
+	mockUserService := usermock.NewUserServiceInterfaceMock(suite.T())
+
+	// Mock GetUser to return valid user
+	mockUserService.On("GetUser", mock.Anything, "test-user").Return(&user.User{
+		ID:         "test-user",
+		Attributes: json.RawMessage(`{"email":"test@example.com"}`),
+		Type:       "local",
+	}, nil)
+
+	// Mock GetUserGroups to return empty groups
+	mockGroups := &user.UserGroupListResponse{
+		TotalResults: 0,
+		StartIndex:   0,
+		Count:        0,
+		Groups:       []user.UserGroup{},
+	}
+	mockUserService.On("GetUserGroups", mock.Anything, "test-user", constants.DefaultGroupListLimit, 0).
+		Return(mockGroups, nil)
+
+	// Request groups
+	allowedClaims := []string{constants.UserAttributeGroups}
+	attrs, err := FetchUserAttributes(mockUserService, nil, "test-user", allowedClaims)
+
+	assert.NoError(suite.T(), err)
+	assert.NotNil(suite.T(), attrs)
+	// Groups should not be added when empty
+	assert.Nil(suite.T(), attrs[constants.UserAttributeGroups])
+
+	mockUserService.AssertExpectations(suite.T())
+}
+
+func (suite *UtilsTestSuite) TestFetchUserAttributes_GetUserGroupsError() {
 	mockUserService := usermock.NewUserServiceInterfaceMock(suite.T())
 
 	// Mock GetUser to return valid user
@@ -665,7 +1000,9 @@ func (suite *UtilsTestSuite) TestFetchUserAttributesAndGroups_GetUserGroupsError
 	mockUserService.On("GetUserGroups", mock.Anything, "test-user", constants.DefaultGroupListLimit, 0).
 		Return(nil, serverErr)
 
-	_, _, err := FetchUserAttributesAndGroups(mockUserService, "test-user", true)
+	// Request groups in allowed claims to trigger the error
+	allowedClaims := []string{constants.UserAttributeGroups}
+	_, err := FetchUserAttributes(mockUserService, nil, "test-user", allowedClaims)
 
 	assert.Error(suite.T(), err)
 	assert.Contains(suite.T(), err.Error(), "failed to fetch user groups")
@@ -673,41 +1010,7 @@ func (suite *UtilsTestSuite) TestFetchUserAttributesAndGroups_GetUserGroupsError
 	mockUserService.AssertExpectations(suite.T())
 }
 
-func (suite *UtilsTestSuite) TestFetchUserAttributesAndGroups_WithGroups() {
-	mockUserService := usermock.NewUserServiceInterfaceMock(suite.T())
-
-	// Mock GetUser to return valid user
-	mockUserService.On("GetUser", mock.Anything, "test-user").Return(&user.User{
-		ID:         "test-user",
-		Attributes: json.RawMessage(`{"email":"test@example.com","username":"testuser"}`),
-		Type:       "local",
-	}, nil)
-
-	// Mock GetUserGroups to return groups
-	mockGroups := &user.UserGroupListResponse{
-		TotalResults: 2,
-		StartIndex:   0,
-		Count:        2,
-		Groups: []user.UserGroup{
-			{ID: "group1", Name: "Admin"},
-			{ID: "group2", Name: "Users"},
-		},
-	}
-	mockUserService.On("GetUserGroups", mock.Anything, "test-user", constants.DefaultGroupListLimit, 0).
-		Return(mockGroups, nil)
-
-	attrs, groups, err := FetchUserAttributesAndGroups(mockUserService, "test-user", true)
-
-	assert.NoError(suite.T(), err)
-	assert.NotNil(suite.T(), attrs)
-	assert.Equal(suite.T(), "test@example.com", attrs["email"])
-	assert.Equal(suite.T(), "testuser", attrs["username"])
-	assert.Equal(suite.T(), []string{"Admin", "Users"}, groups)
-
-	mockUserService.AssertExpectations(suite.T())
-}
-
-func (suite *UtilsTestSuite) TestFetchUserAttributesAndGroups_WithoutGroups() {
+func (suite *UtilsTestSuite) TestFetchUserAttributes_WithoutGroups() {
 	mockUserService := usermock.NewUserServiceInterfaceMock(suite.T())
 
 	// Mock GetUser to return valid user
@@ -717,13 +1020,75 @@ func (suite *UtilsTestSuite) TestFetchUserAttributesAndGroups_WithoutGroups() {
 		Type:       "local",
 	}, nil)
 
-	attrs, groups, err := FetchUserAttributesAndGroups(mockUserService, "test-user", false)
+	// Include userType but NOT groups - so GetUserGroups should not be called
+	allowedClaims := []string{"email", constants.ClaimUserType}
+	attrs, err := FetchUserAttributes(mockUserService, nil, "test-user", allowedClaims)
 
 	assert.NoError(suite.T(), err)
 	assert.NotNil(suite.T(), attrs)
-	assert.Equal(suite.T(), []string{}, groups)
+	// Verify userType is in attrs
+	assert.Equal(suite.T(), "local", attrs[constants.ClaimUserType])
+	// Verify groups is not present
+	assert.Nil(suite.T(), attrs[constants.UserAttributeGroups])
 
-	mockUserService.AssertExpectations(suite.T())
+	// Verify GetUserGroups was NOT called
+	mockUserService.AssertNotCalled(
+		suite.T(), "GetUserGroups", mock.Anything, mock.Anything, mock.Anything, mock.Anything)
+}
+
+func (suite *UtilsTestSuite) TestFetchUserAttributes_SingleOUClaim() {
+	// Test cases for requesting only one OU claim at a time
+	testCases := []struct {
+		name          string
+		allowedClaims []string
+		expectedClaim string
+		expectedValue string
+		absentClaim   string
+	}{
+		{
+			name:          "OnlyOUHandle",
+			allowedClaims: []string{constants.ClaimOUHandle},
+			expectedClaim: constants.ClaimOUHandle,
+			expectedValue: "test-org",
+			absentClaim:   constants.ClaimOUName,
+		},
+		{
+			name:          "OnlyOUName",
+			allowedClaims: []string{constants.ClaimOUName},
+			expectedClaim: constants.ClaimOUName,
+			expectedValue: "Test Organization",
+			absentClaim:   constants.ClaimOUHandle,
+		},
+	}
+
+	for _, tc := range testCases {
+		suite.Run(tc.name, func() {
+			mockUserService := usermock.NewUserServiceInterfaceMock(suite.T())
+			mockOUService := oumock.NewOrganizationUnitServiceInterfaceMock(suite.T())
+
+			mockUserService.On("GetUser", mock.Anything, "test-user").Return(&user.User{
+				ID:               "test-user",
+				Attributes:       json.RawMessage(`{"email":"test@example.com"}`),
+				OrganizationUnit: "ou-123",
+			}, nil)
+
+			mockOUService.On("GetOrganizationUnit", "ou-123").Return(ou.OrganizationUnit{
+				ID:     "ou-123",
+				Handle: "test-org",
+				Name:   "Test Organization",
+			}, nil)
+
+			attrs, err := FetchUserAttributes(mockUserService, mockOUService, "test-user", tc.allowedClaims)
+
+			assert.NoError(suite.T(), err)
+			assert.NotNil(suite.T(), attrs)
+			assert.Equal(suite.T(), tc.expectedValue, attrs[tc.expectedClaim])
+			assert.Nil(suite.T(), attrs[tc.absentClaim])
+
+			mockUserService.AssertExpectations(suite.T())
+			mockOUService.AssertExpectations(suite.T())
+		})
+	}
 }
 
 func (suite *UtilsTestSuite) TestResolveTokenConfig_RefreshToken_WithServerLevelConfig() {

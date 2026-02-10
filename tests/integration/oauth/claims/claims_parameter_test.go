@@ -280,12 +280,12 @@ func (ts *ClaimsParameterTestSuite) createTestApplication(authFlowID string) str
 							"user_attributes": []string{
 								"email", "firstName", "lastName", "phone_number", "locale",
 							},
-							"scope_claims": map[string][]string{
-								"profile": {"firstName", "lastName", "locale"},
-								"email":   {"email"},
-								"phone":   {"phone_number"},
-							},
 						},
+					},
+					"scope_claims": map[string][]string{
+						"profile": {"firstName", "lastName", "locale"},
+						"email":   {"email"},
+						"phone":   {"phone_number"},
 					},
 				},
 			},

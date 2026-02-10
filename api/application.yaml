@@ -137,9 +137,11 @@ paths:
                       id_token:
                         validity_period: 3600
                         user_attributes: ["email", "name", "given_name", "family_name"]
-                        scope_claims:
-                          profile: ["name", "family_name", "given_name", "picture"]
-                          employee: ["emp_id", "department"]
+                    user_info:
+                      user_attributes: ["email", "name", "given_name", "family_name", "picture"]
+                    scope_claims:
+                      profile: ["name", "family_name", "given_name", "picture"]
+                      employee: ["emp_id", "department"]
       responses:
         "201":
           description: Application created
@@ -195,9 +197,11 @@ paths:
                         id_token:
                           validity_period: 1800
                           user_attributes: ["email", "email_verified", "name", "given_name", "family_name"]
-                          scope_claims:
-                            profile: ["name", "given_name", "family_name"]
-                            email: ["email", "email_verified"]
+                      user_info:
+                        user_attributes: ["email", "name", "given_name", "family_name", "picture"]
+                      scope_claims:
+                        profile: ["name", "family_name", "given_name", "picture"]
+                        employee: ["emp_id", "department"]
         "400":
           description: Bad request
           content:
@@ -303,9 +307,11 @@ paths:
                         id_token:
                           validity_period: 1800
                           user_attributes: ["email", "email_verified", "name", "given_name", "family_name"]
-                          scope_claims:
-                            profile: ["name", "given_name", "family_name"]
-                            email: ["email", "email_verified"]
+                      user_info:
+                        user_attributes: ["email", "name", "given_name", "family_name", "picture"]
+                      scope_claims:
+                        profile: ["name", "family_name", "given_name", "picture"]
+                        employee: ["emp_id", "department"]
         "400":
           description: Bad request
           content:
@@ -398,17 +404,18 @@ paths:
                       - "profile"
                       - "email"
                     token:
+                      issuer: "thunder-oauth"
                       access_token:
-                        issuer: "thunder"
                         validity_period: 3600
                         user_attributes: ["email", "username"]
                       id_token:
-                        issuer: "thunder-oidc"
                         validity_period: 1800
                         user_attributes: ["email", "email_verified", "name", "given_name", "family_name"]
-                        scope_claims:
-                          profile: ["name", "given_name", "family_name"]
-                          email: ["email", "email_verified"]
+                    user_info:
+                      user_attributes: ["email", "name", "given_name", "family_name", "picture"]
+                    scope_claims:
+                      profile: ["name", "family_name", "given_name", "picture"]
+                      employee: ["emp_id", "department"]
       responses:
         "200":
           description: Application updated
@@ -466,9 +473,11 @@ paths:
                         id_token:
                           validity_period: 1800
                           user_attributes: ["email", "email_verified", "name", "given_name", "family_name"]
-                          scope_claims:
-                            profile: ["name", "given_name", "family_name"]
-                            email: ["email", "email_verified"]
+                      user_info:
+                        user_attributes: ["email", "name", "given_name", "family_name", "picture"]
+                      scope_claims:
+                        profile: ["name", "family_name", "given_name", "picture"]
+                        employee: ["emp_id", "department"]
         "400":
           description: Bad request
           content:
@@ -942,16 +951,19 @@ components:
             type: string
           description: The user attributes to include in the ID token. Only claims requested by scopes AND listed here will be included.
           example: ["email", "name", "given_name", "family_name"]
-        scope_claims:
-          type: object
-          additionalProperties:
-            type: array
-            items:
-              type: string
-          description: Custom scope-to-claims mapping. Overrides default OIDC scope claims or defines custom scopes.
-          example:
-            profile: ["name", "family_name", "given_name", "picture"]
-            employee: ["emp_id", "department"]
+
+    UserInfoConfig:
+      type: object
+      description: UserInfo endpoint configuration for the OAuth application
+      properties:
+        user_attributes:
+          type: array
+          items:
+            type: string
+          description: |
+            The user attributes to include in the userinfo response. 
+            If not specified, falls back to ID token user attributes.
+          example: ["email", "name", "given_name", "family_name", "picture"]
 
     Certificate:
       type: object
@@ -1054,6 +1066,18 @@ components:
               $ref: '#/components/schemas/AccessTokenConfig'
             id_token:
               $ref: '#/components/schemas/IDTokenConfig'
+        user_info:
+          $ref: '#/components/schemas/UserInfoConfig'
+        scope_claims:
+          type: object
+          additionalProperties:
+            type: array
+            items:
+              type: string
+          description: Custom scope-to-claims mapping. Overrides default OIDC scope claims or defines custom scopes. Applies to both ID token and userinfo responses.
+          example:
+            profile: ["name", "family_name", "given_name", "picture"]
+            employee: ["emp_id", "department"]
 
     OAuthAppConfigComplete:
       type: object
@@ -1120,6 +1144,18 @@ components:
               $ref: '#/components/schemas/AccessTokenConfig'
             id_token:
               $ref: '#/components/schemas/IDTokenConfig'
+        user_info:
+          $ref: '#/components/schemas/UserInfoConfig'
+        scope_claims:
+          type: object
+          additionalProperties:
+            type: array
+            items:
+              type: string
+          description: Custom scope-to-claims mapping. Overrides default OIDC scope claims or defines custom scopes. Applies to both ID token and userinfo responses.
+          example:
+            profile: ["name", "family_name", "given_name", "picture"]
+            employee: ["emp_id", "department"]
 
     Error:
       type: object

@@ -305,8 +305,17 @@ func (tb *tokenBuilder) buildIDTokenClaims(ctx *IDTokenBuildContext) map[string]
 		userAttributes = make(map[string]interface{})
 	}
 
+	// Get scope claims mapping and allowed user attributes from app config
+	var scopeClaimsMapping map[string][]string
+	var allowedUserAttributes []string
+	if ctx.OAuthApp != nil {
+		scopeClaimsMapping = ctx.OAuthApp.ScopeClaims
+		if ctx.OAuthApp.Token != nil && ctx.OAuthApp.Token.IDToken != nil {
+			allowedUserAttributes = ctx.OAuthApp.Token.IDToken.UserAttributes
+		}
+	}
+
 	// Build claims from scopes and explicit claims parameter
-	// Pass only IDToken claims for ID token generation
 	var idTokenClaims map[string]*oauth2model.IndividualClaimRequest
 	if ctx.ClaimsRequest != nil {
 		idTokenClaims = ctx.ClaimsRequest.IDToken
@@ -315,7 +324,8 @@ func (tb *tokenBuilder) buildIDTokenClaims(ctx *IDTokenBuildContext) map[string]
 		ctx.Scopes,
 		idTokenClaims,
 		userAttributes,
-		ctx.OAuthApp,
+		scopeClaimsMapping,
+		allowedUserAttributes,
 	)
 
 	for key, value := range claimData {
