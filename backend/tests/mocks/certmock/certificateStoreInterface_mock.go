@@ -5,6 +5,8 @@
 package certmock
 
 import (
+	"context"
+
 	"github.com/asgardeo/thunder/internal/cert"
 	mock "github.com/stretchr/testify/mock"
 )
@@ -37,16 +39,16 @@ func (_m *certificateStoreInterfaceMock) EXPECT() *certificateStoreInterfaceMock
 }
 
 // CreateCertificate provides a mock function for the type certificateStoreInterfaceMock
-func (_mock *certificateStoreInterfaceMock) CreateCertificate(cert1 *cert.Certificate) error {
-	ret := _mock.Called(cert1)
+func (_mock *certificateStoreInterfaceMock) CreateCertificate(ctx context.Context, cert1 *cert.Certificate) error {
+	ret := _mock.Called(ctx, cert1)
 
 	if len(ret) == 0 {
 		panic("no return value specified for CreateCertificate")
 	}
 
 	var r0 error
-	if returnFunc, ok := ret.Get(0).(func(*cert.Certificate) error); ok {
-		r0 = returnFunc(cert1)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, *cert.Certificate) error); ok {
+		r0 = returnFunc(ctx, cert1)
 	} else {
 		r0 = ret.Error(0)
 	}
@@ -59,19 +61,25 @@ type certificateStoreInterfaceMock_CreateCertificate_Call struct {
 }
 
 // CreateCertificate is a helper method to define mock.On call
+//   - ctx context.Context
 //   - cert1 *cert.Certificate
-func (_e *certificateStoreInterfaceMock_Expecter) CreateCertificate(cert1 interface{}) *certificateStoreInterfaceMock_CreateCertificate_Call {
-	return &certificateStoreInterfaceMock_CreateCertificate_Call{Call: _e.mock.On("CreateCertificate", cert1)}
+func (_e *certificateStoreInterfaceMock_Expecter) CreateCertificate(ctx interface{}, cert1 interface{}) *certificateStoreInterfaceMock_CreateCertificate_Call {
+	return &certificateStoreInterfaceMock_CreateCertificate_Call{Call: _e.mock.On("CreateCertificate", ctx, cert1)}
 }
 
-func (_c *certificateStoreInterfaceMock_CreateCertificate_Call) Run(run func(cert1 *cert.Certificate)) *certificateStoreInterfaceMock_CreateCertificate_Call {
+func (_c *certificateStoreInterfaceMock_CreateCertificate_Call) Run(run func(ctx context.Context, cert1 *cert.Certificate)) *certificateStoreInterfaceMock_CreateCertificate_Call {
 	_c.Call.Run(func(args mock.Arguments) {
-		var arg0 *cert.Certificate
+		var arg0 context.Context
 		if args[0] != nil {
-			arg0 = args[0].(*cert.Certificate)
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 *cert.Certificate
+		if args[1] != nil {
+			arg1 = args[1].(*cert.Certificate)
 		}
 		run(
 			arg0,
+			arg1,
 		)
 	})
 	return _c
@@ -82,22 +90,22 @@ func (_c *certificateStoreInterfaceMock_CreateCertificate_Call) Return(err error
 	return _c
 }
 
-func (_c *certificateStoreInterfaceMock_CreateCertificate_Call) RunAndReturn(run func(cert1 *cert.Certificate) error) *certificateStoreInterfaceMock_CreateCertificate_Call {
+func (_c *certificateStoreInterfaceMock_CreateCertificate_Call) RunAndReturn(run func(ctx context.Context, cert1 *cert.Certificate) error) *certificateStoreInterfaceMock_CreateCertificate_Call {
 	_c.Call.Return(run)
 	return _c
 }
 
 // DeleteCertificateByID provides a mock function for the type certificateStoreInterfaceMock
-func (_mock *certificateStoreInterfaceMock) DeleteCertificateByID(id string) error {
-	ret := _mock.Called(id)
+func (_mock *certificateStoreInterfaceMock) DeleteCertificateByID(ctx context.Context, id string) error {
+	ret := _mock.Called(ctx, id)
 
 	if len(ret) == 0 {
 		panic("no return value specified for DeleteCertificateByID")
 	}
 
 	var r0 error
-	if returnFunc, ok := ret.Get(0).(func(string) error); ok {
-		r0 = returnFunc(id)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string) error); ok {
+		r0 = returnFunc(ctx, id)
 	} else {
 		r0 = ret.Error(0)
 	}
@@ -110,19 +118,25 @@ type certificateStoreInterfaceMock_DeleteCertificateByID_Call struct {
 }
 
 // DeleteCertificateByID is a helper method to define mock.On call
+//   - ctx context.Context
 //   - id string
-func (_e *certificateStoreInterfaceMock_Expecter) DeleteCertificateByID(id interface{}) *certificateStoreInterfaceMock_DeleteCertificateByID_Call {
-	return &certificateStoreInterfaceMock_DeleteCertificateByID_Call{Call: _e.mock.On("DeleteCertificateByID", id)}
+func (_e *certificateStoreInterfaceMock_Expecter) DeleteCertificateByID(ctx interface{}, id interface{}) *certificateStoreInterfaceMock_DeleteCertificateByID_Call {
+	return &certificateStoreInterfaceMock_DeleteCertificateByID_Call{Call: _e.mock.On("DeleteCertificateByID", ctx, id)}
 }
 
-func (_c *certificateStoreInterfaceMock_DeleteCertificateByID_Call) Run(run func(id string)) *certificateStoreInterfaceMock_DeleteCertificateByID_Call {
+func (_c *certificateStoreInterfaceMock_DeleteCertificateByID_Call) Run(run func(ctx context.Context, id string)) *certificateStoreInterfaceMock_DeleteCertificateByID_Call {
 	_c.Call.Run(func(args mock.Arguments) {
-		var arg0 string
+		var arg0 context.Context
 		if args[0] != nil {
-			arg0 = args[0].(string)
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 string
+		if args[1] != nil {
+			arg1 = args[1].(string)
 		}
 		run(
 			arg0,
+			arg1,
 		)
 	})
 	return _c
@@ -133,22 +147,22 @@ func (_c *certificateStoreInterfaceMock_DeleteCertificateByID_Call) Return(err e
 	return _c
 }
 
-func (_c *certificateStoreInterfaceMock_DeleteCertificateByID_Call) RunAndReturn(run func(id string) error) *certificateStoreInterfaceMock_DeleteCertificateByID_Call {
+func (_c *certificateStoreInterfaceMock_DeleteCertificateByID_Call) RunAndReturn(run func(ctx context.Context, id string) error) *certificateStoreInterfaceMock_DeleteCertificateByID_Call {
 	_c.Call.Return(run)
 	return _c
 }
 
 // DeleteCertificateByReference provides a mock function for the type certificateStoreInterfaceMock
-func (_mock *certificateStoreInterfaceMock) DeleteCertificateByReference(refType cert.CertificateReferenceType, refID string) error {
-	ret := _mock.Called(refType, refID)
+func (_mock *certificateStoreInterfaceMock) DeleteCertificateByReference(ctx context.Context, refType cert.CertificateReferenceType, refID string) error {
+	ret := _mock.Called(ctx, refType, refID)
 
 	if len(ret) == 0 {
 		panic("no return value specified for DeleteCertificateByReference")
 	}
 
 	var r0 error
-	if returnFunc, ok := ret.Get(0).(func(cert.CertificateReferenceType, string) error); ok {
-		r0 = returnFunc(refType, refID)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, cert.CertificateReferenceType, string) error); ok {
+		r0 = returnFunc(ctx, refType, refID)
 	} else {
 		r0 = ret.Error(0)
 	}
@@ -161,25 +175,31 @@ type certificateStoreInterfaceMock_DeleteCertificateByReference_Call struct {
 }
 
 // DeleteCertificateByReference is a helper method to define mock.On call
+//   - ctx context.Context
 //   - refType cert.CertificateReferenceType
 //   - refID string
-func (_e *certificateStoreInterfaceMock_Expecter) DeleteCertificateByReference(refType interface{}, refID interface{}) *certificateStoreInterfaceMock_DeleteCertificateByReference_Call {
-	return &certificateStoreInterfaceMock_DeleteCertificateByReference_Call{Call: _e.mock.On("DeleteCertificateByReference", refType, refID)}
+func (_e *certificateStoreInterfaceMock_Expecter) DeleteCertificateByReference(ctx interface{}, refType interface{}, refID interface{}) *certificateStoreInterfaceMock_DeleteCertificateByReference_Call {
+	return &certificateStoreInterfaceMock_DeleteCertificateByReference_Call{Call: _e.mock.On("DeleteCertificateByReference", ctx, refType, refID)}
 }
 
-func (_c *certificateStoreInterfaceMock_DeleteCertificateByReference_Call) Run(run func(refType cert.CertificateReferenceType, refID string)) *certificateStoreInterfaceMock_DeleteCertificateByReference_Call {
+func (_c *certificateStoreInterfaceMock_DeleteCertificateByReference_Call) Run(run func(ctx context.Context, refType cert.CertificateReferenceType, refID string)) *certificateStoreInterfaceMock_DeleteCertificateByReference_Call {
 	_c.Call.Run(func(args mock.Arguments) {
-		var arg0 cert.CertificateReferenceType
+		var arg0 context.Context
 		if args[0] != nil {
-			arg0 = args[0].(cert.CertificateReferenceType)
+			arg0 = args[0].(context.Context)
 		}
-		var arg1 string
+		var arg1 cert.CertificateReferenceType
 		if args[1] != nil {
-			arg1 = args[1].(string)
+			arg1 = args[1].(cert.CertificateReferenceType)
+		}
+		var arg2 string
+		if args[2] != nil {
+			arg2 = args[2].(string)
 		}
 		run(
 			arg0,
 			arg1,
+			arg2,
 		)
 	})
 	return _c
@@ -190,14 +210,14 @@ func (_c *certificateStoreInterfaceMock_DeleteCertificateByReference_Call) Retur
 	return _c
 }
 
-func (_c *certificateStoreInterfaceMock_DeleteCertificateByReference_Call) RunAndReturn(run func(refType cert.CertificateReferenceType, refID string) error) *certificateStoreInterfaceMock_DeleteCertificateByReference_Call {
+func (_c *certificateStoreInterfaceMock_DeleteCertificateByReference_Call) RunAndReturn(run func(ctx context.Context, refType cert.CertificateReferenceType, refID string) error) *certificateStoreInterfaceMock_DeleteCertificateByReference_Call {
 	_c.Call.Return(run)
 	return _c
 }
 
 // GetCertificateByID provides a mock function for the type certificateStoreInterfaceMock
-func (_mock *certificateStoreInterfaceMock) GetCertificateByID(id string) (*cert.Certificate, error) {
-	ret := _mock.Called(id)
+func (_mock *certificateStoreInterfaceMock) GetCertificateByID(ctx context.Context, id string) (*cert.Certificate, error) {
+	ret := _mock.Called(ctx, id)
 
 	if len(ret) == 0 {
 		panic("no return value specified for GetCertificateByID")
@@ -205,18 +225,18 @@ func (_mock *certificateStoreInterfaceMock) GetCertificateByID(id string) (*cert
 
 	var r0 *cert.Certificate
 	var r1 error
-	if returnFunc, ok := ret.Get(0).(func(string) (*cert.Certificate, error)); ok {
-		return returnFunc(id)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string) (*cert.Certificate, error)); ok {
+		return returnFunc(ctx, id)
 	}
-	if returnFunc, ok := ret.Get(0).(func(string) *cert.Certificate); ok {
-		r0 = returnFunc(id)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string) *cert.Certificate); ok {
+		r0 = returnFunc(ctx, id)
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).(*cert.Certificate)
 		}
 	}
-	if returnFunc, ok := ret.Get(1).(func(string) error); ok {
-		r1 = returnFunc(id)
+	if returnFunc, ok := ret.Get(1).(func(context.Context, string) error); ok {
+		r1 = returnFunc(ctx, id)
 	} else {
 		r1 = ret.Error(1)
 	}
@@ -229,79 +249,17 @@ type certificateStoreInterfaceMock_GetCertificateByID_Call struct {
 }
 
 // GetCertificateByID is a helper method to define mock.On call
+//   - ctx context.Context
 //   - id string
-func (_e *certificateStoreInterfaceMock_Expecter) GetCertificateByID(id interface{}) *certificateStoreInterfaceMock_GetCertificateByID_Call {
-	return &certificateStoreInterfaceMock_GetCertificateByID_Call{Call: _e.mock.On("GetCertificateByID", id)}
+func (_e *certificateStoreInterfaceMock_Expecter) GetCertificateByID(ctx interface{}, id interface{}) *certificateStoreInterfaceMock_GetCertificateByID_Call {
+	return &certificateStoreInterfaceMock_GetCertificateByID_Call{Call: _e.mock.On("GetCertificateByID", ctx, id)}
 }
 
-func (_c *certificateStoreInterfaceMock_GetCertificateByID_Call) Run(run func(id string)) *certificateStoreInterfaceMock_GetCertificateByID_Call {
+func (_c *certificateStoreInterfaceMock_GetCertificateByID_Call) Run(run func(ctx context.Context, id string)) *certificateStoreInterfaceMock_GetCertificateByID_Call {
 	_c.Call.Run(func(args mock.Arguments) {
-		var arg0 string
+		var arg0 context.Context
 		if args[0] != nil {
-			arg0 = args[0].(string)
-		}
-		run(
-			arg0,
-		)
-	})
-	return _c
-}
-
-func (_c *certificateStoreInterfaceMock_GetCertificateByID_Call) Return(certificate *cert.Certificate, err error) *certificateStoreInterfaceMock_GetCertificateByID_Call {
-	_c.Call.Return(certificate, err)
-	return _c
-}
-
-func (_c *certificateStoreInterfaceMock_GetCertificateByID_Call) RunAndReturn(run func(id string) (*cert.Certificate, error)) *certificateStoreInterfaceMock_GetCertificateByID_Call {
-	_c.Call.Return(run)
-	return _c
-}
-
-// GetCertificateByReference provides a mock function for the type certificateStoreInterfaceMock
-func (_mock *certificateStoreInterfaceMock) GetCertificateByReference(refType cert.CertificateReferenceType, refID string) (*cert.Certificate, error) {
-	ret := _mock.Called(refType, refID)
-
-	if len(ret) == 0 {
-		panic("no return value specified for GetCertificateByReference")
-	}
-
-	var r0 *cert.Certificate
-	var r1 error
-	if returnFunc, ok := ret.Get(0).(func(cert.CertificateReferenceType, string) (*cert.Certificate, error)); ok {
-		return returnFunc(refType, refID)
-	}
-	if returnFunc, ok := ret.Get(0).(func(cert.CertificateReferenceType, string) *cert.Certificate); ok {
-		r0 = returnFunc(refType, refID)
-	} else {
-		if ret.Get(0) != nil {
-			r0 = ret.Get(0).(*cert.Certificate)
-		}
-	}
-	if returnFunc, ok := ret.Get(1).(func(cert.CertificateReferenceType, string) error); ok {
-		r1 = returnFunc(refType, refID)
-	} else {
-		r1 = ret.Error(1)
-	}
-	return r0, r1
-}
-
-// certificateStoreInterfaceMock_GetCertificateByReference_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'GetCertificateByReference'
-type certificateStoreInterfaceMock_GetCertificateByReference_Call struct {
-	*mock.Call
-}
-
-// GetCertificateByReference is a helper method to define mock.On call
-//   - refType cert.CertificateReferenceType
-//   - refID string
-func (_e *certificateStoreInterfaceMock_Expecter) GetCertificateByReference(refType interface{}, refID interface{}) *certificateStoreInterfaceMock_GetCertificateByReference_Call {
-	return &certificateStoreInterfaceMock_GetCertificateByReference_Call{Call: _e.mock.On("GetCertificateByReference", refType, refID)}
-}
-
-func (_c *certificateStoreInterfaceMock_GetCertificateByReference_Call) Run(run func(refType cert.CertificateReferenceType, refID string)) *certificateStoreInterfaceMock_GetCertificateByReference_Call {
-	_c.Call.Run(func(args mock.Arguments) {
-		var arg0 cert.CertificateReferenceType
-		if args[0] != nil {
-			arg0 = args[0].(cert.CertificateReferenceType)
+			arg0 = args[0].(context.Context)
 		}
 		var arg1 string
 		if args[1] != nil {
@@ -315,27 +273,101 @@ func (_c *certificateStoreInterfaceMock_GetCertificateByReference_Call) Run(run 
 	return _c
 }
 
+func (_c *certificateStoreInterfaceMock_GetCertificateByID_Call) Return(certificate *cert.Certificate, err error) *certificateStoreInterfaceMock_GetCertificateByID_Call {
+	_c.Call.Return(certificate, err)
+	return _c
+}
+
+func (_c *certificateStoreInterfaceMock_GetCertificateByID_Call) RunAndReturn(run func(ctx context.Context, id string) (*cert.Certificate, error)) *certificateStoreInterfaceMock_GetCertificateByID_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
+// GetCertificateByReference provides a mock function for the type certificateStoreInterfaceMock
+func (_mock *certificateStoreInterfaceMock) GetCertificateByReference(ctx context.Context, refType cert.CertificateReferenceType, refID string) (*cert.Certificate, error) {
+	ret := _mock.Called(ctx, refType, refID)
+
+	if len(ret) == 0 {
+		panic("no return value specified for GetCertificateByReference")
+	}
+
+	var r0 *cert.Certificate
+	var r1 error
+	if returnFunc, ok := ret.Get(0).(func(context.Context, cert.CertificateReferenceType, string) (*cert.Certificate, error)); ok {
+		return returnFunc(ctx, refType, refID)
+	}
+	if returnFunc, ok := ret.Get(0).(func(context.Context, cert.CertificateReferenceType, string) *cert.Certificate); ok {
+		r0 = returnFunc(ctx, refType, refID)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(*cert.Certificate)
+		}
+	}
+	if returnFunc, ok := ret.Get(1).(func(context.Context, cert.CertificateReferenceType, string) error); ok {
+		r1 = returnFunc(ctx, refType, refID)
+	} else {
+		r1 = ret.Error(1)
+	}
+	return r0, r1
+}
+
+// certificateStoreInterfaceMock_GetCertificateByReference_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'GetCertificateByReference'
+type certificateStoreInterfaceMock_GetCertificateByReference_Call struct {
+	*mock.Call
+}
+
+// GetCertificateByReference is a helper method to define mock.On call
+//   - ctx context.Context
+//   - refType cert.CertificateReferenceType
+//   - refID string
+func (_e *certificateStoreInterfaceMock_Expecter) GetCertificateByReference(ctx interface{}, refType interface{}, refID interface{}) *certificateStoreInterfaceMock_GetCertificateByReference_Call {
+	return &certificateStoreInterfaceMock_GetCertificateByReference_Call{Call: _e.mock.On("GetCertificateByReference", ctx, refType, refID)}
+}
+
+func (_c *certificateStoreInterfaceMock_GetCertificateByReference_Call) Run(run func(ctx context.Context, refType cert.CertificateReferenceType, refID string)) *certificateStoreInterfaceMock_GetCertificateByReference_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 context.Context
+		if args[0] != nil {
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 cert.CertificateReferenceType
+		if args[1] != nil {
+			arg1 = args[1].(cert.CertificateReferenceType)
+		}
+		var arg2 string
+		if args[2] != nil {
+			arg2 = args[2].(string)
+		}
+		run(
+			arg0,
+			arg1,
+			arg2,
+		)
+	})
+	return _c
+}
+
 func (_c *certificateStoreInterfaceMock_GetCertificateByReference_Call) Return(certificate *cert.Certificate, err error) *certificateStoreInterfaceMock_GetCertificateByReference_Call {
 	_c.Call.Return(certificate, err)
 	return _c
 }
 
-func (_c *certificateStoreInterfaceMock_GetCertificateByReference_Call) RunAndReturn(run func(refType cert.CertificateReferenceType, refID string) (*cert.Certificate, error)) *certificateStoreInterfaceMock_GetCertificateByReference_Call {
+func (_c *certificateStoreInterfaceMock_GetCertificateByReference_Call) RunAndReturn(run func(ctx context.Context, refType cert.CertificateReferenceType, refID string) (*cert.Certificate, error)) *certificateStoreInterfaceMock_GetCertificateByReference_Call {
 	_c.Call.Return(run)
 	return _c
 }
 
 // UpdateCertificateByID provides a mock function for the type certificateStoreInterfaceMock
-func (_mock *certificateStoreInterfaceMock) UpdateCertificateByID(existingCert *cert.Certificate, updatedCert *cert.Certificate) error {
-	ret := _mock.Called(existingCert, updatedCert)
+func (_mock *certificateStoreInterfaceMock) UpdateCertificateByID(ctx context.Context, existingCert *cert.Certificate, updatedCert *cert.Certificate) error {
+	ret := _mock.Called(ctx, existingCert, updatedCert)
 
 	if len(ret) == 0 {
 		panic("no return value specified for UpdateCertificateByID")
 	}
 
 	var r0 error
-	if returnFunc, ok := ret.Get(0).(func(*cert.Certificate, *cert.Certificate) error); ok {
-		r0 = returnFunc(existingCert, updatedCert)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, *cert.Certificate, *cert.Certificate) error); ok {
+		r0 = returnFunc(ctx, existingCert, updatedCert)
 	} else {
 		r0 = ret.Error(0)
 	}
@@ -348,25 +380,31 @@ type certificateStoreInterfaceMock_UpdateCertificateByID_Call struct {
 }
 
 // UpdateCertificateByID is a helper method to define mock.On call
+//   - ctx context.Context
 //   - existingCert *cert.Certificate
 //   - updatedCert *cert.Certificate
-func (_e *certificateStoreInterfaceMock_Expecter) UpdateCertificateByID(existingCert interface{}, updatedCert interface{}) *certificateStoreInterfaceMock_UpdateCertificateByID_Call {
-	return &certificateStoreInterfaceMock_UpdateCertificateByID_Call{Call: _e.mock.On("UpdateCertificateByID", existingCert, updatedCert)}
+func (_e *certificateStoreInterfaceMock_Expecter) UpdateCertificateByID(ctx interface{}, existingCert interface{}, updatedCert interface{}) *certificateStoreInterfaceMock_UpdateCertificateByID_Call {
+	return &certificateStoreInterfaceMock_UpdateCertificateByID_Call{Call: _e.mock.On("UpdateCertificateByID", ctx, existingCert, updatedCert)}
 }
 
-func (_c *certificateStoreInterfaceMock_UpdateCertificateByID_Call) Run(run func(existingCert *cert.Certificate, updatedCert *cert.Certificate)) *certificateStoreInterfaceMock_UpdateCertificateByID_Call {
+func (_c *certificateStoreInterfaceMock_UpdateCertificateByID_Call) Run(run func(ctx context.Context, existingCert *cert.Certificate, updatedCert *cert.Certificate)) *certificateStoreInterfaceMock_UpdateCertificateByID_Call {
 	_c.Call.Run(func(args mock.Arguments) {
-		var arg0 *cert.Certificate
+		var arg0 context.Context
 		if args[0] != nil {
-			arg0 = args[0].(*cert.Certificate)
+			arg0 = args[0].(context.Context)
 		}
 		var arg1 *cert.Certificate
 		if args[1] != nil {
 			arg1 = args[1].(*cert.Certificate)
 		}
+		var arg2 *cert.Certificate
+		if args[2] != nil {
+			arg2 = args[2].(*cert.Certificate)
+		}
 		run(
 			arg0,
 			arg1,
+			arg2,
 		)
 	})
 	return _c
@@ -377,22 +415,22 @@ func (_c *certificateStoreInterfaceMock_UpdateCertificateByID_Call) Return(err e
 	return _c
 }
 
-func (_c *certificateStoreInterfaceMock_UpdateCertificateByID_Call) RunAndReturn(run func(existingCert *cert.Certificate, updatedCert *cert.Certificate) error) *certificateStoreInterfaceMock_UpdateCertificateByID_Call {
+func (_c *certificateStoreInterfaceMock_UpdateCertificateByID_Call) RunAndReturn(run func(ctx context.Context, existingCert *cert.Certificate, updatedCert *cert.Certificate) error) *certificateStoreInterfaceMock_UpdateCertificateByID_Call {
 	_c.Call.Return(run)
 	return _c
 }
 
 // UpdateCertificateByReference provides a mock function for the type certificateStoreInterfaceMock
-func (_mock *certificateStoreInterfaceMock) UpdateCertificateByReference(existingCert *cert.Certificate, updatedCert *cert.Certificate) error {
-	ret := _mock.Called(existingCert, updatedCert)
+func (_mock *certificateStoreInterfaceMock) UpdateCertificateByReference(ctx context.Context, existingCert *cert.Certificate, updatedCert *cert.Certificate) error {
+	ret := _mock.Called(ctx, existingCert, updatedCert)
 
 	if len(ret) == 0 {
 		panic("no return value specified for UpdateCertificateByReference")
 	}
 
 	var r0 error
-	if returnFunc, ok := ret.Get(0).(func(*cert.Certificate, *cert.Certificate) error); ok {
-		r0 = returnFunc(existingCert, updatedCert)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, *cert.Certificate, *cert.Certificate) error); ok {
+		r0 = returnFunc(ctx, existingCert, updatedCert)
 	} else {
 		r0 = ret.Error(0)
 	}
@@ -405,25 +443,31 @@ type certificateStoreInterfaceMock_UpdateCertificateByReference_Call struct {
 }
 
 // UpdateCertificateByReference is a helper method to define mock.On call
+//   - ctx context.Context
 //   - existingCert *cert.Certificate
 //   - updatedCert *cert.Certificate
-func (_e *certificateStoreInterfaceMock_Expecter) UpdateCertificateByReference(existingCert interface{}, updatedCert interface{}) *certificateStoreInterfaceMock_UpdateCertificateByReference_Call {
-	return &certificateStoreInterfaceMock_UpdateCertificateByReference_Call{Call: _e.mock.On("UpdateCertificateByReference", existingCert, updatedCert)}
+func (_e *certificateStoreInterfaceMock_Expecter) UpdateCertificateByReference(ctx interface{}, existingCert interface{}, updatedCert interface{}) *certificateStoreInterfaceMock_UpdateCertificateByReference_Call {
+	return &certificateStoreInterfaceMock_UpdateCertificateByReference_Call{Call: _e.mock.On("UpdateCertificateByReference", ctx, existingCert, updatedCert)}
 }
 
-func (_c *certificateStoreInterfaceMock_UpdateCertificateByReference_Call) Run(run func(existingCert *cert.Certificate, updatedCert *cert.Certificate)) *certificateStoreInterfaceMock_UpdateCertificateByReference_Call {
+func (_c *certificateStoreInterfaceMock_UpdateCertificateByReference_Call) Run(run func(ctx context.Context, existingCert *cert.Certificate, updatedCert *cert.Certificate)) *certificateStoreInterfaceMock_UpdateCertificateByReference_Call {
 	_c.Call.Run(func(args mock.Arguments) {
-		var arg0 *cert.Certificate
+		var arg0 context.Context
 		if args[0] != nil {
-			arg0 = args[0].(*cert.Certificate)
+			arg0 = args[0].(context.Context)
 		}
 		var arg1 *cert.Certificate
 		if args[1] != nil {
 			arg1 = args[1].(*cert.Certificate)
 		}
+		var arg2 *cert.Certificate
+		if args[2] != nil {
+			arg2 = args[2].(*cert.Certificate)
+		}
 		run(
 			arg0,
 			arg1,
+			arg2,
 		)
 	})
 	return _c
@@ -434,7 +478,7 @@ func (_c *certificateStoreInterfaceMock_UpdateCertificateByReference_Call) Retur
 	return _c
 }
 
-func (_c *certificateStoreInterfaceMock_UpdateCertificateByReference_Call) RunAndReturn(run func(existingCert *cert.Certificate, updatedCert *cert.Certificate) error) *certificateStoreInterfaceMock_UpdateCertificateByReference_Call {
+func (_c *certificateStoreInterfaceMock_UpdateCertificateByReference_Call) RunAndReturn(run func(ctx context.Context, existingCert *cert.Certificate, updatedCert *cert.Certificate) error) *certificateStoreInterfaceMock_UpdateCertificateByReference_Call {
 	_c.Call.Return(run)
 	return _c
 }

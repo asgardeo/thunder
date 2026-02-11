@@ -19,6 +19,7 @@
 package cert
 
 import (
+	"context"
 	"errors"
 
 	"github.com/asgardeo/thunder/internal/system/cache"
@@ -44,7 +45,7 @@ func newCachedBackedCertificateStore() certificateStoreInterface {
 }
 
 // GetCertificateByID retrieves a certificate by its ID, using cache if available.
-func (s *cacheBackedStore) GetCertificateByID(id string) (*Certificate, error) {
+func (s *cacheBackedStore) GetCertificateByID(ctx context.Context, id string) (*Certificate, error) {
 	cacheKey := cache.CacheKey{
 		Key: id,
 	}
@@ -53,7 +54,7 @@ func (s *cacheBackedStore) GetCertificateByID(id string) (*Certificate, error) {
 		return cachedCert, nil
 	}
 
-	cert, err := s.store.GetCertificateByID(id)
+	cert, err := s.store.GetCertificateByID(ctx, id)
 	if err != nil || cert == nil {
 		return cert, err
 	}
@@ -63,7 +64,7 @@ func (s *cacheBackedStore) GetCertificateByID(id string) (*Certificate, error) {
 }
 
 // GetCertificateByReference retrieves a certificate by its reference type and ID, using cache if available.
-func (s *cacheBackedStore) GetCertificateByReference(refType CertificateReferenceType,
+func (s *cacheBackedStore) GetCertificateByReference(ctx context.Context, refType CertificateReferenceType,
 	refID string) (*Certificate, error) {
 	cacheKey := getCertByReferenceCacheKey(refType, refID)
 	cachedCert, ok := s.certByReferenceCache.Get(cacheKey)
@@ -71,7 +72,7 @@ func (s *cacheBackedStore) GetCertificateByReference(refType CertificateReferenc
 		return cachedCert, nil
 	}
 
-	cert, err := s.store.GetCertificateByReference(refType, refID)
+	cert, err := s.store.GetCertificateByReference(ctx, refType, refID)
 	if err != nil || cert == nil {
 		return cert, err
 	}
@@ -81,8 +82,8 @@ func (s *cacheBackedStore) GetCertificateByReference(refType CertificateReferenc
 }
 
 // CreateCertificate creates a new certificate and caches it.
-func (s *cacheBackedStore) CreateCertificate(cert *Certificate) error {
-	if err := s.store.CreateCertificate(cert); err != nil {
+func (s *cacheBackedStore) CreateCertificate(ctx context.Context, cert *Certificate) error {
+	if err := s.store.CreateCertificate(ctx, cert); err != nil {
 		return err
 	}
 	s.cacheCertificate(cert)
@@ -90,8 +91,8 @@ func (s *cacheBackedStore) CreateCertificate(cert *Certificate) error {
 }
 
 // UpdateCertificateByID updates an existing certificate by its ID and refreshes the cache.
-func (s *cacheBackedStore) UpdateCertificateByID(existingCert, updatedCert *Certificate) error {
-	if err := s.store.UpdateCertificateByID(existingCert, updatedCert); err != nil {
+func (s *cacheBackedStore) UpdateCertificateByID(ctx context.Context, existingCert, updatedCert *Certificate) error {
+	if err := s.store.UpdateCertificateByID(ctx, existingCert, updatedCert); err != nil {
 		return err
 	}
 
@@ -103,9 +104,9 @@ func (s *cacheBackedStore) UpdateCertificateByID(existingCert, updatedCert *Cert
 }
 
 // UpdateCertificateByReference updates an existing certificate by its reference type and ID and refreshes the cache.
-func (s *cacheBackedStore) UpdateCertificateByReference(existingCert,
+func (s *cacheBackedStore) UpdateCertificateByReference(ctx context.Context, existingCert,
 	updatedCert *Certificate) error {
-	if err := s.store.UpdateCertificateByReference(existingCert, updatedCert); err != nil {
+	if err := s.store.UpdateCertificateByReference(ctx, existingCert, updatedCert); err != nil {
 		return err
 	}
 
@@ -117,14 +118,14 @@ func (s *cacheBackedStore) UpdateCertificateByReference(existingCert,
 }
 
 // DeleteCertificateByID deletes a certificate by its ID and invalidates the caches.
-func (s *cacheBackedStore) DeleteCertificateByID(id string) error {
+func (s *cacheBackedStore) DeleteCertificateByID(ctx context.Context, id string) error {
 	cacheKey := cache.CacheKey{
 		Key: id,
 	}
 	existingCert, ok := s.certByIDCache.Get(cacheKey)
 	if !ok {
 		var err error
-		existingCert, err = s.store.GetCertificateByID(id)
+		existingCert, err = s.store.GetCertificateByID(ctx, id)
 		if err != nil {
 			if errors.Is(err, ErrCertificateNotFound) {
 				return nil
@@ -136,7 +137,7 @@ func (s *cacheBackedStore) DeleteCertificateByID(id string) error {
 		return nil
 	}
 
-	if err := s.store.DeleteCertificateByID(id); err != nil {
+	if err := s.store.DeleteCertificateByID(ctx, id); err != nil {
 		return err
 	}
 	s.invalidateCertificateCache(existingCert.ID, existingCert.RefType, existingCert.RefID)
@@ -145,13 +146,13 @@ func (s *cacheBackedStore) DeleteCertificateByID(id string) error {
 }
 
 // DeleteCertificateByReference deletes a certificate by its reference type and ID and invalidates the caches.
-func (s *cacheBackedStore) DeleteCertificateByReference(refType CertificateReferenceType,
+func (s *cacheBackedStore) DeleteCertificateByReference(ctx context.Context, refType CertificateReferenceType,
 	refID string) error {
 	cacheKey := getCertByReferenceCacheKey(refType, refID)
 	existingCert, ok := s.certByReferenceCache.Get(cacheKey)
 	if !ok {
 		var err error
-		existingCert, err = s.store.GetCertificateByReference(refType, refID)
+		existingCert, err = s.store.GetCertificateByReference(ctx, refType, refID)
 		if err != nil {
 			if errors.Is(err, ErrCertificateNotFound) {
 				return nil
@@ -163,7 +164,7 @@ func (s *cacheBackedStore) DeleteCertificateByReference(refType CertificateRefer
 		return nil
 	}
 
-	if err := s.store.DeleteCertificateByReference(refType, refID); err != nil {
+	if err := s.store.DeleteCertificateByReference(ctx, refType, refID); err != nil {
 		return err
 	}
 	s.invalidateCertificateCache(existingCert.ID, existingCert.RefType, existingCert.RefID)

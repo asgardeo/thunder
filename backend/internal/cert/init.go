@@ -18,9 +18,18 @@
 
 package cert
 
+import (
+	"github.com/asgardeo/thunder/internal/system/database/provider"
+)
+
 // Initialize initializes and returns the certificate service.
 func Initialize() CertificateServiceInterface {
+	dbProvider := provider.GetDBProvider()
+	txn, err := dbProvider.GetConfigDBTransactioner()
+	if err != nil {
+		panic(err)
+	}
 	certStore := newCachedBackedCertificateStore()
-	certService := newCertificateService(certStore)
+	certService := newCertificateService(certStore, txn)
 	return certService
 }

@@ -19,6 +19,7 @@
 package cert
 
 import (
+	"context"
 	"errors"
 	"testing"
 
@@ -68,11 +69,11 @@ func (suite *StoreTestSuite) TestGetCertificateByID_Success() {
 	row := suite.createTestResultRow()
 	results := []map[string]interface{}{row}
 
-	suite.mockDBProvider.On("GetConfigDBClient").Return(suite.mockDBClient, nil)
-	suite.mockDBClient.On("Query", queryGetCertificateByID, "test-cert-id", mock.Anything).
+	suite.mockDBProvider.On("GetConfigDBClient", mock.Anything).Return(suite.mockDBClient, nil)
+	suite.mockDBClient.On("QueryContext", mock.Anything, queryGetCertificateByID, "test-cert-id", mock.Anything).
 		Return(results, nil)
 
-	result, err := suite.store.GetCertificateByID("test-cert-id")
+	result, err := suite.store.GetCertificateByID(context.Background(), "test-cert-id")
 
 	assert.Nil(suite.T(), err)
 	assert.NotNil(suite.T(), result)
@@ -83,10 +84,10 @@ func (suite *StoreTestSuite) TestGetCertificateByID_Success() {
 }
 
 func (suite *StoreTestSuite) TestGetCertificateByID_DBProviderError() {
-	suite.mockDBProvider.On("GetConfigDBClient").
+	suite.mockDBProvider.On("GetConfigDBClient", mock.Anything).
 		Return(nil, errors.New("db provider error"))
 
-	result, err := suite.store.GetCertificateByID("test-id")
+	result, err := suite.store.GetCertificateByID(context.Background(), "test-id")
 
 	assert.Nil(suite.T(), result)
 	assert.NotNil(suite.T(), err)
@@ -95,11 +96,11 @@ func (suite *StoreTestSuite) TestGetCertificateByID_DBProviderError() {
 }
 
 func (suite *StoreTestSuite) TestGetCertificateByID_QueryError() {
-	suite.mockDBProvider.On("GetConfigDBClient").Return(suite.mockDBClient, nil)
-	suite.mockDBClient.On("Query", queryGetCertificateByID, "test-id", mock.Anything).
+	suite.mockDBProvider.On("GetConfigDBClient", mock.Anything).Return(suite.mockDBClient, nil)
+	suite.mockDBClient.On("QueryContext", mock.Anything, queryGetCertificateByID, "test-id", mock.Anything).
 		Return(nil, errors.New("query error"))
 
-	result, err := suite.store.GetCertificateByID("test-id")
+	result, err := suite.store.GetCertificateByID(context.Background(), "test-id")
 
 	assert.Nil(suite.T(), result)
 	assert.NotNil(suite.T(), err)
@@ -111,11 +112,11 @@ func (suite *StoreTestSuite) TestGetCertificateByID_QueryError() {
 func (suite *StoreTestSuite) TestGetCertificateByID_NotFound() {
 	results := []map[string]interface{}{}
 
-	suite.mockDBProvider.On("GetConfigDBClient").Return(suite.mockDBClient, nil)
-	suite.mockDBClient.On("Query", queryGetCertificateByID, "non-existent", mock.Anything).
+	suite.mockDBProvider.On("GetConfigDBClient", mock.Anything).Return(suite.mockDBClient, nil)
+	suite.mockDBClient.On("QueryContext", mock.Anything, queryGetCertificateByID, "non-existent", mock.Anything).
 		Return(results, nil)
 
-	result, err := suite.store.GetCertificateByID("non-existent")
+	result, err := suite.store.GetCertificateByID(context.Background(), "non-existent")
 
 	assert.Nil(suite.T(), result)
 	assert.ErrorIs(suite.T(), err, ErrCertificateNotFound)
@@ -129,11 +130,11 @@ func (suite *StoreTestSuite) TestGetCertificateByID_MultipleResults() {
 	row2["cert_id"] = "test-cert-id-2"
 	results := []map[string]interface{}{row1, row2}
 
-	suite.mockDBProvider.On("GetConfigDBClient").Return(suite.mockDBClient, nil)
-	suite.mockDBClient.On("Query", queryGetCertificateByID, "test-id", mock.Anything).
+	suite.mockDBProvider.On("GetConfigDBClient", mock.Anything).Return(suite.mockDBClient, nil)
+	suite.mockDBClient.On("QueryContext", mock.Anything, queryGetCertificateByID, "test-id", mock.Anything).
 		Return(results, nil)
 
-	result, err := suite.store.GetCertificateByID("test-id")
+	result, err := suite.store.GetCertificateByID(context.Background(), "test-id")
 
 	assert.Nil(suite.T(), result)
 	assert.NotNil(suite.T(), err)
@@ -150,12 +151,12 @@ func (suite *StoreTestSuite) TestGetCertificateByReference_Success() {
 	row := suite.createTestResultRow()
 	results := []map[string]interface{}{row}
 
-	suite.mockDBProvider.On("GetConfigDBClient").Return(suite.mockDBClient, nil)
-	suite.mockDBClient.On("Query", queryGetCertificateByReference,
+	suite.mockDBProvider.On("GetConfigDBClient", mock.Anything).Return(suite.mockDBClient, nil)
+	suite.mockDBClient.On("QueryContext", mock.Anything, queryGetCertificateByReference,
 		CertificateReferenceTypeApplication, "test-app-id", mock.Anything).
 		Return(results, nil)
 
-	result, err := suite.store.GetCertificateByReference(
+	result, err := suite.store.GetCertificateByReference(context.Background(),
 		CertificateReferenceTypeApplication, "test-app-id")
 
 	assert.Nil(suite.T(), err)
@@ -168,12 +169,12 @@ func (suite *StoreTestSuite) TestGetCertificateByReference_Success() {
 func (suite *StoreTestSuite) TestGetCertificateByReference_NotFound() {
 	results := []map[string]interface{}{}
 
-	suite.mockDBProvider.On("GetConfigDBClient").Return(suite.mockDBClient, nil)
-	suite.mockDBClient.On("Query", queryGetCertificateByReference,
+	suite.mockDBProvider.On("GetConfigDBClient", mock.Anything).Return(suite.mockDBClient, nil)
+	suite.mockDBClient.On("QueryContext", mock.Anything, queryGetCertificateByReference,
 		CertificateReferenceTypeIDP, "non-existent", mock.Anything).
 		Return(results, nil)
 
-	result, err := suite.store.GetCertificateByReference(
+	result, err := suite.store.GetCertificateByReference(context.Background(),
 		CertificateReferenceTypeIDP, "non-existent")
 
 	assert.Nil(suite.T(), result)
@@ -268,12 +269,12 @@ func (suite *StoreTestSuite) TestCreateCertificate_Success() {
 		Value:   "test-certificate-value",
 	}
 
-	suite.mockDBProvider.On("GetConfigDBClient").Return(suite.mockDBClient, nil)
-	suite.mockDBClient.On("Execute", queryInsertCertificate,
+	suite.mockDBProvider.On("GetConfigDBClient", mock.Anything).Return(suite.mockDBClient, nil)
+	suite.mockDBClient.On("ExecuteContext", mock.Anything, queryInsertCertificate,
 		cert.ID, cert.RefType, cert.RefID, cert.Type, cert.Value, mock.Anything).
 		Return(int64(1), nil)
 
-	err := suite.store.CreateCertificate(cert)
+	err := suite.store.CreateCertificate(context.Background(), cert)
 
 	assert.Nil(suite.T(), err)
 	suite.mockDBProvider.AssertExpectations(suite.T())
@@ -289,10 +290,10 @@ func (suite *StoreTestSuite) TestCreateCertificate_DBProviderError() {
 		Value:   "test-certificate-value",
 	}
 
-	suite.mockDBProvider.On("GetConfigDBClient").
+	suite.mockDBProvider.On("GetConfigDBClient", mock.Anything).
 		Return(nil, errors.New("db provider error"))
 
-	err := suite.store.CreateCertificate(cert)
+	err := suite.store.CreateCertificate(context.Background(), cert)
 
 	assert.NotNil(suite.T(), err)
 	assert.Contains(suite.T(), err.Error(), "failed to get database client")
@@ -308,12 +309,12 @@ func (suite *StoreTestSuite) TestCreateCertificate_ExecuteError() {
 		Value:   "test-certificate-value",
 	}
 
-	suite.mockDBProvider.On("GetConfigDBClient").Return(suite.mockDBClient, nil)
-	suite.mockDBClient.On("Execute", queryInsertCertificate, mock.Anything, mock.Anything,
+	suite.mockDBProvider.On("GetConfigDBClient", mock.Anything).Return(suite.mockDBClient, nil)
+	suite.mockDBClient.On("ExecuteContext", mock.Anything, queryInsertCertificate, mock.Anything, mock.Anything,
 		mock.Anything, mock.Anything, mock.Anything, mock.Anything).
 		Return(int64(0), errors.New("execute error"))
 
-	err := suite.store.CreateCertificate(cert)
+	err := suite.store.CreateCertificate(context.Background(), cert)
 
 	assert.NotNil(suite.T(), err)
 	assert.Contains(suite.T(), err.Error(), "failed to insert certificate")
@@ -330,12 +331,12 @@ func (suite *StoreTestSuite) TestCreateCertificate_NoRowsAffected() {
 		Value:   "test-certificate-value",
 	}
 
-	suite.mockDBProvider.On("GetConfigDBClient").Return(suite.mockDBClient, nil)
-	suite.mockDBClient.On("Execute", queryInsertCertificate,
+	suite.mockDBProvider.On("GetConfigDBClient", mock.Anything).Return(suite.mockDBClient, nil)
+	suite.mockDBClient.On("ExecuteContext", mock.Anything, queryInsertCertificate,
 		cert.ID, cert.RefType, cert.RefID, cert.Type, cert.Value, mock.Anything).
 		Return(int64(0), nil)
 
-	err := suite.store.CreateCertificate(cert)
+	err := suite.store.CreateCertificate(context.Background(), cert)
 
 	assert.NotNil(suite.T(), err)
 	assert.Contains(suite.T(), err.Error(), "no rows affected")
@@ -363,12 +364,12 @@ func (suite *StoreTestSuite) TestUpdateCertificateByID_Success() {
 		Value:   "new-value",
 	}
 
-	suite.mockDBProvider.On("GetConfigDBClient").Return(suite.mockDBClient, nil)
-	suite.mockDBClient.On("Execute", queryUpdateCertificateByID,
+	suite.mockDBProvider.On("GetConfigDBClient", mock.Anything).Return(suite.mockDBClient, nil)
+	suite.mockDBClient.On("ExecuteContext", mock.Anything, queryUpdateCertificateByID,
 		existingCert.ID, updatedCert.Type, updatedCert.Value, mock.Anything).
 		Return(int64(1), nil)
 
-	err := suite.store.UpdateCertificateByID(existingCert, updatedCert)
+	err := suite.store.UpdateCertificateByID(context.Background(), existingCert, updatedCert)
 
 	assert.Nil(suite.T(), err)
 	suite.mockDBProvider.AssertExpectations(suite.T())
@@ -379,10 +380,10 @@ func (suite *StoreTestSuite) TestUpdateCertificateByID_DBProviderError() {
 	existingCert := &Certificate{ID: "test-id"}
 	updatedCert := &Certificate{Type: CertificateTypeJWKS, Value: "new-value"}
 
-	suite.mockDBProvider.On("GetConfigDBClient").
+	suite.mockDBProvider.On("GetConfigDBClient", mock.Anything).
 		Return(nil, errors.New("db provider error"))
 
-	err := suite.store.UpdateCertificateByID(existingCert, updatedCert)
+	err := suite.store.UpdateCertificateByID(context.Background(), existingCert, updatedCert)
 
 	assert.NotNil(suite.T(), err)
 	assert.Contains(suite.T(), err.Error(), "failed to get database client")
@@ -393,12 +394,12 @@ func (suite *StoreTestSuite) TestUpdateCertificateByID_ExecuteError() {
 	existingCert := &Certificate{ID: "test-id"}
 	updatedCert := &Certificate{Type: CertificateTypeJWKS, Value: "new-value"}
 
-	suite.mockDBProvider.On("GetConfigDBClient").Return(suite.mockDBClient, nil)
-	suite.mockDBClient.On("Execute", queryUpdateCertificateByID, mock.Anything,
+	suite.mockDBProvider.On("GetConfigDBClient", mock.Anything).Return(suite.mockDBClient, nil)
+	suite.mockDBClient.On("ExecuteContext", mock.Anything, queryUpdateCertificateByID, mock.Anything,
 		mock.Anything, mock.Anything, mock.Anything).
 		Return(int64(0), errors.New("execute error"))
 
-	err := suite.store.UpdateCertificateByID(existingCert, updatedCert)
+	err := suite.store.UpdateCertificateByID(context.Background(), existingCert, updatedCert)
 
 	assert.NotNil(suite.T(), err)
 	assert.Contains(suite.T(), err.Error(), "failed to update certificate")
@@ -410,12 +411,12 @@ func (suite *StoreTestSuite) TestUpdateCertificateByID_NoRowsAffected() {
 	existingCert := &Certificate{ID: "test-id"}
 	updatedCert := &Certificate{Type: CertificateTypeJWKS, Value: "new-value"}
 
-	suite.mockDBProvider.On("GetConfigDBClient").Return(suite.mockDBClient, nil)
-	suite.mockDBClient.On("Execute", queryUpdateCertificateByID,
+	suite.mockDBProvider.On("GetConfigDBClient", mock.Anything).Return(suite.mockDBClient, nil)
+	suite.mockDBClient.On("ExecuteContext", mock.Anything, queryUpdateCertificateByID,
 		existingCert.ID, updatedCert.Type, updatedCert.Value, mock.Anything).
 		Return(int64(0), nil)
 
-	err := suite.store.UpdateCertificateByID(existingCert, updatedCert)
+	err := suite.store.UpdateCertificateByID(context.Background(), existingCert, updatedCert)
 
 	assert.NotNil(suite.T(), err)
 	assert.Contains(suite.T(), err.Error(), "no rows affected")
@@ -442,12 +443,12 @@ func (suite *StoreTestSuite) TestUpdateCertificateByReference_Success() {
 		Value:   "new-value",
 	}
 
-	suite.mockDBProvider.On("GetConfigDBClient").Return(suite.mockDBClient, nil)
-	suite.mockDBClient.On("Execute", queryUpdateCertificateByReference,
+	suite.mockDBProvider.On("GetConfigDBClient", mock.Anything).Return(suite.mockDBClient, nil)
+	suite.mockDBClient.On("ExecuteContext", mock.Anything, queryUpdateCertificateByReference,
 		existingCert.RefType, existingCert.RefID, updatedCert.Type, updatedCert.Value, mock.Anything).
 		Return(int64(1), nil)
 
-	err := suite.store.UpdateCertificateByReference(existingCert, updatedCert)
+	err := suite.store.UpdateCertificateByReference(context.Background(), existingCert, updatedCert)
 
 	assert.Nil(suite.T(), err)
 	suite.mockDBProvider.AssertExpectations(suite.T())
@@ -464,12 +465,12 @@ func (suite *StoreTestSuite) TestUpdateCertificateByReference_NoRowsAffected() {
 		Value: "new-value",
 	}
 
-	suite.mockDBProvider.On("GetConfigDBClient").Return(suite.mockDBClient, nil)
-	suite.mockDBClient.On("Execute", queryUpdateCertificateByReference,
+	suite.mockDBProvider.On("GetConfigDBClient", mock.Anything).Return(suite.mockDBClient, nil)
+	suite.mockDBClient.On("ExecuteContext", mock.Anything, queryUpdateCertificateByReference,
 		existingCert.RefType, existingCert.RefID, updatedCert.Type, updatedCert.Value, mock.Anything).
 		Return(int64(0), nil)
 
-	err := suite.store.UpdateCertificateByReference(existingCert, updatedCert)
+	err := suite.store.UpdateCertificateByReference(context.Background(), existingCert, updatedCert)
 
 	assert.NotNil(suite.T(), err)
 	assert.Contains(suite.T(), err.Error(), "no rows affected")
@@ -482,11 +483,11 @@ func (suite *StoreTestSuite) TestUpdateCertificateByReference_NoRowsAffected() {
 // ============================================================================
 
 func (suite *StoreTestSuite) TestDeleteCertificateByID_Success() {
-	suite.mockDBProvider.On("GetConfigDBClient").Return(suite.mockDBClient, nil)
-	suite.mockDBClient.On("Execute", queryDeleteCertificateByID, "test-cert-id", mock.Anything).
+	suite.mockDBProvider.On("GetConfigDBClient", mock.Anything).Return(suite.mockDBClient, nil)
+	suite.mockDBClient.On("ExecuteContext", mock.Anything, queryDeleteCertificateByID, "test-cert-id", mock.Anything).
 		Return(int64(1), nil)
 
-	err := suite.store.DeleteCertificateByID("test-cert-id")
+	err := suite.store.DeleteCertificateByID(context.Background(), "test-cert-id")
 
 	assert.Nil(suite.T(), err)
 	suite.mockDBProvider.AssertExpectations(suite.T())
@@ -494,10 +495,10 @@ func (suite *StoreTestSuite) TestDeleteCertificateByID_Success() {
 }
 
 func (suite *StoreTestSuite) TestDeleteCertificateByID_DBProviderError() {
-	suite.mockDBProvider.On("GetConfigDBClient").
+	suite.mockDBProvider.On("GetConfigDBClient", mock.Anything).
 		Return(nil, errors.New("db provider error"))
 
-	err := suite.store.DeleteCertificateByID("test-id")
+	err := suite.store.DeleteCertificateByID(context.Background(), "test-id")
 
 	assert.NotNil(suite.T(), err)
 	assert.Contains(suite.T(), err.Error(), "failed to get database client")
@@ -505,11 +506,11 @@ func (suite *StoreTestSuite) TestDeleteCertificateByID_DBProviderError() {
 }
 
 func (suite *StoreTestSuite) TestDeleteCertificateByID_ExecuteError() {
-	suite.mockDBProvider.On("GetConfigDBClient").Return(suite.mockDBClient, nil)
-	suite.mockDBClient.On("Execute", queryDeleteCertificateByID, "test-id", mock.Anything).
+	suite.mockDBProvider.On("GetConfigDBClient", mock.Anything).Return(suite.mockDBClient, nil)
+	suite.mockDBClient.On("ExecuteContext", mock.Anything, queryDeleteCertificateByID, "test-id", mock.Anything).
 		Return(int64(0), errors.New("execute error"))
 
-	err := suite.store.DeleteCertificateByID("test-id")
+	err := suite.store.DeleteCertificateByID(context.Background(), "test-id")
 
 	assert.NotNil(suite.T(), err)
 	assert.Contains(suite.T(), err.Error(), "failed to execute delete query")
@@ -519,11 +520,11 @@ func (suite *StoreTestSuite) TestDeleteCertificateByID_ExecuteError() {
 
 func (suite *StoreTestSuite) TestDeleteCertificateByID_NoRowsAffected() {
 	// Delete operations should not fail even if no rows are affected
-	suite.mockDBProvider.On("GetConfigDBClient").Return(suite.mockDBClient, nil)
-	suite.mockDBClient.On("Execute", queryDeleteCertificateByID, "non-existent", mock.Anything).
+	suite.mockDBProvider.On("GetConfigDBClient", mock.Anything).Return(suite.mockDBClient, nil)
+	suite.mockDBClient.On("ExecuteContext", mock.Anything, queryDeleteCertificateByID, "non-existent", mock.Anything).
 		Return(int64(0), nil)
 
-	err := suite.store.DeleteCertificateByID("non-existent")
+	err := suite.store.DeleteCertificateByID(context.Background(), "non-existent")
 
 	assert.Nil(suite.T(), err)
 	suite.mockDBProvider.AssertExpectations(suite.T())
@@ -535,12 +536,12 @@ func (suite *StoreTestSuite) TestDeleteCertificateByID_NoRowsAffected() {
 // ============================================================================
 
 func (suite *StoreTestSuite) TestDeleteCertificateByReference_Success() {
-	suite.mockDBProvider.On("GetConfigDBClient").Return(suite.mockDBClient, nil)
-	suite.mockDBClient.On("Execute", queryDeleteCertificateByReference,
+	suite.mockDBProvider.On("GetConfigDBClient", mock.Anything).Return(suite.mockDBClient, nil)
+	suite.mockDBClient.On("ExecuteContext", mock.Anything, queryDeleteCertificateByReference,
 		CertificateReferenceTypeApplication, "test-app-id", mock.Anything).
 		Return(int64(1), nil)
 
-	err := suite.store.DeleteCertificateByReference(
+	err := suite.store.DeleteCertificateByReference(context.Background(),
 		CertificateReferenceTypeApplication, "test-app-id")
 
 	assert.Nil(suite.T(), err)
@@ -549,12 +550,12 @@ func (suite *StoreTestSuite) TestDeleteCertificateByReference_Success() {
 }
 
 func (suite *StoreTestSuite) TestDeleteCertificateByReference_ExecuteError() {
-	suite.mockDBProvider.On("GetConfigDBClient").Return(suite.mockDBClient, nil)
-	suite.mockDBClient.On("Execute", queryDeleteCertificateByReference,
+	suite.mockDBProvider.On("GetConfigDBClient", mock.Anything).Return(suite.mockDBClient, nil)
+	suite.mockDBClient.On("ExecuteContext", mock.Anything, queryDeleteCertificateByReference,
 		CertificateReferenceTypeIDP, "test-id", mock.Anything).
 		Return(int64(0), errors.New("execute error"))
 
-	err := suite.store.DeleteCertificateByReference(
+	err := suite.store.DeleteCertificateByReference(context.Background(),
 		CertificateReferenceTypeIDP, "test-id")
 
 	assert.NotNil(suite.T(), err)
@@ -565,12 +566,12 @@ func (suite *StoreTestSuite) TestDeleteCertificateByReference_ExecuteError() {
 
 func (suite *StoreTestSuite) TestDeleteCertificateByReference_NoRowsAffected() {
 	// Delete operations should not fail even if no rows are affected
-	suite.mockDBProvider.On("GetConfigDBClient").Return(suite.mockDBClient, nil)
-	suite.mockDBClient.On("Execute", queryDeleteCertificateByReference,
+	suite.mockDBProvider.On("GetConfigDBClient", mock.Anything).Return(suite.mockDBClient, nil)
+	suite.mockDBClient.On("ExecuteContext", mock.Anything, queryDeleteCertificateByReference,
 		CertificateReferenceTypeApplication, "non-existent", mock.Anything).
 		Return(int64(0), nil)
 
-	err := suite.store.DeleteCertificateByReference(
+	err := suite.store.DeleteCertificateByReference(context.Background(),
 		CertificateReferenceTypeApplication, "non-existent")
 
 	assert.Nil(suite.T(), err)

@@ -20,8 +20,10 @@
 package cert
 
 import (
+	"context"
 	"errors"
 
+	"github.com/asgardeo/thunder/internal/system/database/transaction"
 	"github.com/asgardeo/thunder/internal/system/error/serviceerror"
 	"github.com/asgardeo/thunder/internal/system/log"
 	sysutils "github.com/asgardeo/thunder/internal/system/utils"
@@ -31,38 +33,40 @@ const loggerComponentName = "CertificateService"
 
 // CertificateServiceInterface defines the methods for certificate service operations.
 type CertificateServiceInterface interface {
-	GetCertificateByID(id string) (*Certificate, *serviceerror.ServiceError)
-	GetCertificateByReference(refType CertificateReferenceType, refID string) (
+	GetCertificateByID(ctx context.Context, id string) (*Certificate, *serviceerror.ServiceError)
+	GetCertificateByReference(ctx context.Context, refType CertificateReferenceType, refID string) (
 		*Certificate, *serviceerror.ServiceError)
-	CreateCertificate(cert *Certificate) (*Certificate, *serviceerror.ServiceError)
-	UpdateCertificateByID(id string, cert *Certificate) (*Certificate, *serviceerror.ServiceError)
-	UpdateCertificateByReference(refType CertificateReferenceType, refID string, cert *Certificate) (
+	CreateCertificate(ctx context.Context, cert *Certificate) (*Certificate, *serviceerror.ServiceError)
+	UpdateCertificateByID(ctx context.Context, id string, cert *Certificate) (*Certificate, *serviceerror.ServiceError)
+	UpdateCertificateByReference(ctx context.Context, refType CertificateReferenceType, refID string, cert *Certificate) (
 		*Certificate, *serviceerror.ServiceError)
-	DeleteCertificateByID(id string) *serviceerror.ServiceError
-	DeleteCertificateByReference(refType CertificateReferenceType, refID string) *serviceerror.ServiceError
+	DeleteCertificateByID(ctx context.Context, id string) *serviceerror.ServiceError
+	DeleteCertificateByReference(ctx context.Context, refType CertificateReferenceType, refID string) *serviceerror.ServiceError
 }
 
 // certificateService implements the CertificateServiceInterface for managing certificates.
 type certificateService struct {
-	store certificateStoreInterface
+	store         certificateStoreInterface
+	transactioner transaction.Transactioner
 }
 
 // newCertificateService creates a new instance of CertificateService.
-func newCertificateService(store certificateStoreInterface) CertificateServiceInterface {
+func newCertificateService(store certificateStoreInterface, transactioner transaction.Transactioner) CertificateServiceInterface {
 	return &certificateService{
-		store: store,
+		store:         store,
+		transactioner: transactioner,
 	}
 }
 
 // GetCertificateByID retrieves a certificate by its ID.
-func (s *certificateService) GetCertificateByID(id string) (*Certificate, *serviceerror.ServiceError) {
+func (s *certificateService) GetCertificateByID(ctx context.Context, id string) (*Certificate, *serviceerror.ServiceError) {
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, loggerComponentName))
 
 	if id == "" {
 		return nil, &ErrorInvalidCertificateID
 	}
 
-	certObj, err := s.store.GetCertificateByID(id)
+	certObj, err := s.store.GetCertificateByID(ctx, id)
 	if err != nil {
 		if errors.Is(err, ErrCertificateNotFound) {
 			return nil, &ErrorCertificateNotFound
@@ -79,7 +83,7 @@ func (s *certificateService) GetCertificateByID(id string) (*Certificate, *servi
 }
 
 // GetCertificateByReference retrieves a certificate by its reference type and ID.
-func (s *certificateService) GetCertificateByReference(refType CertificateReferenceType,
+func (s *certificateService) GetCertificateByReference(ctx context.Context, refType CertificateReferenceType,
 	refID string) (*Certificate, *serviceerror.ServiceError) {
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, loggerComponentName))
 
@@ -90,7 +94,7 @@ func (s *certificateService) GetCertificateByReference(refType CertificateRefere
 		return nil, &ErrorInvalidReferenceID
 	}
 
-	certObj, err := s.store.GetCertificateByReference(refType, refID)
+	certObj, err := s.store.GetCertificateByReference(ctx, refType, refID)
 	if err != nil {
 		if errors.Is(err, ErrCertificateNotFound) {
 			return nil, &ErrorCertificateNotFound
@@ -109,7 +113,7 @@ func (s *certificateService) GetCertificateByReference(refType CertificateRefere
 }
 
 // CreateCertificate creates a new certificate.
-func (s *certificateService) CreateCertificate(cert *Certificate) (*Certificate,
+func (s *certificateService) CreateCertificate(ctx context.Context, cert *Certificate) (*Certificate,
 	*serviceerror.ServiceError) {
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, loggerComponentName))
 
@@ -118,7 +122,7 @@ func (s *certificateService) CreateCertificate(cert *Certificate) (*Certificate,
 	}
 
 	// Check if a certificate with the same reference already exists
-	existingCert, err := s.store.GetCertificateByReference(cert.RefType, cert.RefID)
+	existingCert, err := s.store.GetCertificateByReference(ctx, cert.RefType, cert.RefID)
 	if err != nil && !errors.Is(err, ErrCertificateNotFound) {
 		logger.Error("Failed to check existing certificate", log.String("refType", string(cert.RefType)),
 			log.String("refID", cert.RefID), log.Error(err))
@@ -134,7 +138,9 @@ func (s *certificateService) CreateCertificate(cert *Certificate) (*Certificate,
 		return nil, &serviceerror.InternalServerError
 	}
 
-	err = s.store.CreateCertificate(cert)
+	err = s.transactioner.Transact(ctx, func(txCtx context.Context) error {
+		return s.store.CreateCertificate(txCtx, cert)
+	})
 	if err != nil {
 		logger.Error("Failed to create certificate", log.Error(err))
 		return nil, &serviceerror.InternalServerError
@@ -144,7 +150,7 @@ func (s *certificateService) CreateCertificate(cert *Certificate) (*Certificate,
 }
 
 // UpdateCertificateByID updates an existing certificate by its ID.
-func (s *certificateService) UpdateCertificateByID(id string, cert *Certificate) (
+func (s *certificateService) UpdateCertificateByID(ctx context.Context, id string, cert *Certificate) (
 	*Certificate, *serviceerror.ServiceError) {
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, loggerComponentName))
 
@@ -156,7 +162,7 @@ func (s *certificateService) UpdateCertificateByID(id string, cert *Certificate)
 	}
 
 	// Get the existing certificate to validate reference
-	existingCert, err := s.store.GetCertificateByID(id)
+	existingCert, err := s.store.GetCertificateByID(ctx, id)
 	if err != nil {
 		if errors.Is(err, ErrCertificateNotFound) {
 			return nil, &ErrorCertificateNotFound
@@ -174,7 +180,9 @@ func (s *certificateService) UpdateCertificateByID(id string, cert *Certificate)
 		return nil, &ErrorReferenceUpdateIsNotAllowed
 	}
 
-	err = s.store.UpdateCertificateByID(existingCert, cert)
+	err = s.transactioner.Transact(ctx, func(txCtx context.Context) error {
+		return s.store.UpdateCertificateByID(txCtx, existingCert, cert)
+	})
 	if err != nil {
 		if errors.Is(err, ErrCertificateNotFound) {
 			return nil, &ErrorCertificateNotFound
@@ -187,7 +195,7 @@ func (s *certificateService) UpdateCertificateByID(id string, cert *Certificate)
 }
 
 // UpdateCertificateByReference updates an existing certificate by its reference type and ID.
-func (s *certificateService) UpdateCertificateByReference(refType CertificateReferenceType,
+func (s *certificateService) UpdateCertificateByReference(ctx context.Context, refType CertificateReferenceType,
 	refID string, cert *Certificate) (*Certificate, *serviceerror.ServiceError) {
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, loggerComponentName))
 
@@ -202,7 +210,7 @@ func (s *certificateService) UpdateCertificateByReference(refType CertificateRef
 	}
 
 	// Get the existing certificate to validate reference consistency
-	existingCert, err := s.store.GetCertificateByReference(refType, refID)
+	existingCert, err := s.store.GetCertificateByReference(ctx, refType, refID)
 	if err != nil {
 		if errors.Is(err, ErrCertificateNotFound) {
 			return nil, &ErrorCertificateNotFound
@@ -223,7 +231,9 @@ func (s *certificateService) UpdateCertificateByReference(refType CertificateRef
 	}
 
 	cert.ID = existingCert.ID
-	err = s.store.UpdateCertificateByReference(existingCert, cert)
+	err = s.transactioner.Transact(ctx, func(txCtx context.Context) error {
+		return s.store.UpdateCertificateByReference(txCtx, existingCert, cert)
+	})
 	if err != nil {
 		if errors.Is(err, ErrCertificateNotFound) {
 			return nil, &ErrorCertificateNotFound
@@ -237,14 +247,16 @@ func (s *certificateService) UpdateCertificateByReference(refType CertificateRef
 }
 
 // DeleteCertificateByID deletes a certificate by its ID.
-func (s *certificateService) DeleteCertificateByID(id string) *serviceerror.ServiceError {
+func (s *certificateService) DeleteCertificateByID(ctx context.Context, id string) *serviceerror.ServiceError {
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, loggerComponentName))
 
 	if id == "" {
 		return &ErrorInvalidCertificateID
 	}
 
-	err := s.store.DeleteCertificateByID(id)
+	err := s.transactioner.Transact(ctx, func(txCtx context.Context) error {
+		return s.store.DeleteCertificateByID(txCtx, id)
+	})
 	if err != nil {
 		logger.Error("Failed to delete certificate by ID", log.String("id", id), log.Error(err))
 		return &serviceerror.InternalServerError
@@ -254,7 +266,7 @@ func (s *certificateService) DeleteCertificateByID(id string) *serviceerror.Serv
 }
 
 // DeleteCertificateByReference deletes a certificate by its reference type and ID.
-func (s *certificateService) DeleteCertificateByReference(refType CertificateReferenceType,
+func (s *certificateService) DeleteCertificateByReference(ctx context.Context, refType CertificateReferenceType,
 	refID string) *serviceerror.ServiceError {
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, loggerComponentName))
 
@@ -265,7 +277,9 @@ func (s *certificateService) DeleteCertificateByReference(refType CertificateRef
 		return &ErrorInvalidReferenceID
 	}
 
-	err := s.store.DeleteCertificateByReference(refType, refID)
+	err := s.transactioner.Transact(ctx, func(txCtx context.Context) error {
+		return s.store.DeleteCertificateByReference(txCtx, refType, refID)
+	})
 	if err != nil {
 		logger.Error("Failed to delete certificate by reference", log.String("refType", string(refType)),
 			log.String("refID", refID), log.Error(err))

@@ -19,6 +19,7 @@
 package cert
 
 import (
+	"context"
 	"errors"
 	"fmt"
 
@@ -29,13 +30,13 @@ import (
 
 // certificateStoreInterface defines the methods for certificate storage operations.
 type certificateStoreInterface interface {
-	GetCertificateByID(id string) (*Certificate, error)
-	GetCertificateByReference(refType CertificateReferenceType, refID string) (*Certificate, error)
-	CreateCertificate(cert *Certificate) error
-	UpdateCertificateByID(existingCert, updatedCert *Certificate) error
-	UpdateCertificateByReference(existingCert, updatedCert *Certificate) error
-	DeleteCertificateByID(id string) error
-	DeleteCertificateByReference(refType CertificateReferenceType, refID string) error
+	GetCertificateByID(ctx context.Context, id string) (*Certificate, error)
+	GetCertificateByReference(ctx context.Context, refType CertificateReferenceType, refID string) (*Certificate, error)
+	CreateCertificate(ctx context.Context, cert *Certificate) error
+	UpdateCertificateByID(ctx context.Context, existingCert, updatedCert *Certificate) error
+	UpdateCertificateByReference(ctx context.Context, existingCert, updatedCert *Certificate) error
+	DeleteCertificateByID(ctx context.Context, id string) error
+	DeleteCertificateByReference(ctx context.Context, refType CertificateReferenceType, refID string) error
 }
 
 // certificateStore implements the certificateStoreInterface for managing certificates.
@@ -53,24 +54,24 @@ func newCertificateStore() certificateStoreInterface {
 }
 
 // GetCertificateByID retrieves a certificate by its ID.
-func (s *certificateStore) GetCertificateByID(id string) (*Certificate, error) {
-	return s.getCertificate(queryGetCertificateByID, id, s.deploymentID)
+func (s *certificateStore) GetCertificateByID(ctx context.Context, id string) (*Certificate, error) {
+	return s.getCertificate(ctx, queryGetCertificateByID, id, s.deploymentID)
 }
 
 // GetCertificateByReference retrieves a certificate by its reference type and ID.
-func (s *certificateStore) GetCertificateByReference(refType CertificateReferenceType, refID string) (
+func (s *certificateStore) GetCertificateByReference(ctx context.Context, refType CertificateReferenceType, refID string) (
 	*Certificate, error) {
-	return s.getCertificate(queryGetCertificateByReference, refType, refID, s.deploymentID)
+	return s.getCertificate(ctx, queryGetCertificateByReference, refType, refID, s.deploymentID)
 }
 
 // getCertificate retrieves a certificate based on a query and its arguments.
-func (s *certificateStore) getCertificate(query dbmodel.DBQuery, args ...interface{}) (*Certificate, error) {
+func (s *certificateStore) getCertificate(ctx context.Context, query dbmodel.DBQuery, args ...interface{}) (*Certificate, error) {
 	dbClient, err := s.dbProvider.GetConfigDBClient()
 	if err != nil {
 		return nil, fmt.Errorf("failed to get database client: %w", err)
 	}
 
-	results, err := dbClient.Query(query, args...)
+	results, err := dbClient.QueryContext(ctx, query, args...)
 	if err != nil {
 		return nil, fmt.Errorf("failed to execute query: %w", err)
 	}
@@ -127,13 +128,13 @@ func (s *certificateStore) buildCertificateFromResultRow(row map[string]interfac
 }
 
 // CreateCertificate creates a new certificate in the database.
-func (s *certificateStore) CreateCertificate(cert *Certificate) error {
+func (s *certificateStore) CreateCertificate(ctx context.Context, cert *Certificate) error {
 	dbClient, err := s.dbProvider.GetConfigDBClient()
 	if err != nil {
 		return fmt.Errorf("failed to get database client: %w", err)
 	}
 
-	rows, err := dbClient.Execute(queryInsertCertificate, cert.ID, cert.RefType, cert.RefID, cert.Type, cert.Value,
+	rows, err := dbClient.ExecuteContext(ctx, queryInsertCertificate, cert.ID, cert.RefType, cert.RefID, cert.Type, cert.Value,
 		s.deploymentID)
 	if err != nil {
 		return fmt.Errorf("failed to insert certificate: %w", err)
@@ -146,25 +147,25 @@ func (s *certificateStore) CreateCertificate(cert *Certificate) error {
 }
 
 // UpdateCertificateByID updates a certificate by its ID.
-func (s *certificateStore) UpdateCertificateByID(existingCert, updatedCert *Certificate) error {
-	return s.updateCertificate(queryUpdateCertificateByID, existingCert.ID, updatedCert.Type, updatedCert.Value,
+func (s *certificateStore) UpdateCertificateByID(ctx context.Context, existingCert, updatedCert *Certificate) error {
+	return s.updateCertificate(ctx, queryUpdateCertificateByID, existingCert.ID, updatedCert.Type, updatedCert.Value,
 		s.deploymentID)
 }
 
 // UpdateCertificateByReference updates a certificate by its reference type and ID.
-func (s *certificateStore) UpdateCertificateByReference(existingCert, updatedCert *Certificate) error {
-	return s.updateCertificate(queryUpdateCertificateByReference, existingCert.RefType, existingCert.RefID,
+func (s *certificateStore) UpdateCertificateByReference(ctx context.Context, existingCert, updatedCert *Certificate) error {
+	return s.updateCertificate(ctx, queryUpdateCertificateByReference, existingCert.RefType, existingCert.RefID,
 		updatedCert.Type, updatedCert.Value, s.deploymentID)
 }
 
 // updateCertificate updates a certificate based on a query and its arguments.
-func (s *certificateStore) updateCertificate(query dbmodel.DBQuery, args ...interface{}) error {
+func (s *certificateStore) updateCertificate(ctx context.Context, query dbmodel.DBQuery, args ...interface{}) error {
 	dbClient, err := s.dbProvider.GetConfigDBClient()
 	if err != nil {
 		return fmt.Errorf("failed to get database client: %w", err)
 	}
 
-	rows, err := dbClient.Execute(query, args...)
+	rows, err := dbClient.ExecuteContext(ctx, query, args...)
 	if err != nil {
 		return fmt.Errorf("failed to update certificate: %w", err)
 	}
@@ -176,24 +177,24 @@ func (s *certificateStore) updateCertificate(query dbmodel.DBQuery, args ...inte
 }
 
 // DeleteCertificateByID deletes a certificate by its ID.
-func (s *certificateStore) DeleteCertificateByID(id string) error {
-	return s.deleteCertificate(queryDeleteCertificateByID, id, s.deploymentID)
+func (s *certificateStore) DeleteCertificateByID(ctx context.Context, id string) error {
+	return s.deleteCertificate(ctx, queryDeleteCertificateByID, id, s.deploymentID)
 }
 
 // DeleteCertificateByReference deletes a certificate by its reference type and ID.
-func (s *certificateStore) DeleteCertificateByReference(refType CertificateReferenceType,
+func (s *certificateStore) DeleteCertificateByReference(ctx context.Context, refType CertificateReferenceType,
 	refID string) error {
-	return s.deleteCertificate(queryDeleteCertificateByReference, refType, refID, s.deploymentID)
+	return s.deleteCertificate(ctx, queryDeleteCertificateByReference, refType, refID, s.deploymentID)
 }
 
 // deleteCertificate deletes a certificate based on a query and its arguments.
-func (s *certificateStore) deleteCertificate(query dbmodel.DBQuery, args ...interface{}) error {
+func (s *certificateStore) deleteCertificate(ctx context.Context, query dbmodel.DBQuery, args ...interface{}) error {
 	dbClient, err := s.dbProvider.GetConfigDBClient()
 	if err != nil {
 		return fmt.Errorf("failed to get database client: %w", err)
 	}
 
-	_, err = dbClient.Execute(query, args...)
+	_, err = dbClient.ExecuteContext(ctx, query, args...)
 	if err != nil {
 		return fmt.Errorf("failed to execute delete query: %w", err)
 	}
