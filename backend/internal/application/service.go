@@ -22,6 +22,7 @@ import (
 	"context"
 	"errors"
 	"slices"
+	"strings"
 
 	"github.com/asgardeo/thunder/internal/application/model"
 	"github.com/asgardeo/thunder/internal/cert"
@@ -1372,10 +1373,23 @@ func processUserInfoConfiguration(app *model.ApplicationDTO,
 
 	if len(app.InboundAuthConfig) > 0 && app.InboundAuthConfig[0].OAuthAppConfig != nil &&
 		app.InboundAuthConfig[0].OAuthAppConfig.UserInfo != nil {
-		oauthUserInfo.UserAttributes = app.InboundAuthConfig[0].OAuthAppConfig.UserInfo.UserAttributes
+		userInfoConfigInput := app.InboundAuthConfig[0].OAuthAppConfig.UserInfo
+		oauthUserInfo.UserAttributes = userInfoConfigInput.UserAttributes
+		responseType := model.UserInfoResponseType(strings.ToUpper(string(userInfoConfigInput.ResponseType)))
+
+		switch responseType {
+		case model.UserInfoResponseTypeJWS,
+			model.UserInfoResponseTypeJWE:
+			oauthUserInfo.ResponseType = responseType
+		default:
+			oauthUserInfo.ResponseType = model.UserInfoResponseTypeJSON
+		}
 	}
 	if oauthUserInfo.UserAttributes == nil {
 		oauthUserInfo.UserAttributes = idTokenConfig.UserAttributes
+	}
+	if oauthUserInfo.ResponseType == "" {
+		oauthUserInfo.ResponseType = model.UserInfoResponseTypeJSON
 	}
 
 	return oauthUserInfo
