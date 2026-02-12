@@ -19,6 +19,7 @@
 package flowmgt
 
 import (
+	"context"
 	"fmt"
 	"testing"
 
@@ -59,7 +60,7 @@ func (s *FileBasedStoreTestSuite) createTestFlow(handle string) *FlowDefinition 
 func (s *FileBasedStoreTestSuite) TestCreateFlow_Success() {
 	flowDef := s.createTestFlow("test-flow")
 
-	completeFlow, err := s.store.CreateFlow("flow-001", flowDef)
+	completeFlow, err := s.store.CreateFlow(context.Background(), "flow-001", flowDef)
 
 	require.NoError(s.T(), err)
 	assert.Equal(s.T(), "flow-001", completeFlow.ID)
@@ -72,10 +73,10 @@ func (s *FileBasedStoreTestSuite) TestCreateFlow_Success() {
 
 func (s *FileBasedStoreTestSuite) TestGetFlowByID_Success() {
 	flowDef := s.createTestFlow("test-flow")
-	_, err := s.store.CreateFlow("flow-001", flowDef)
+	_, err := s.store.CreateFlow(context.Background(), "flow-001", flowDef)
 	require.NoError(s.T(), err)
 
-	retrieved, err := s.store.GetFlowByID("flow-001")
+	retrieved, err := s.store.GetFlowByID(context.Background(), "flow-001")
 
 	require.NoError(s.T(), err)
 	assert.Equal(s.T(), "flow-001", retrieved.ID)
@@ -84,7 +85,7 @@ func (s *FileBasedStoreTestSuite) TestGetFlowByID_Success() {
 }
 
 func (s *FileBasedStoreTestSuite) TestGetFlowByID_NotFound() {
-	_, err := s.store.GetFlowByID("non-existent")
+	_, err := s.store.GetFlowByID(context.Background(), "non-existent")
 
 	assert.Error(s.T(), err)
 	assert.Equal(s.T(), errFlowNotFound, err)
@@ -92,10 +93,10 @@ func (s *FileBasedStoreTestSuite) TestGetFlowByID_NotFound() {
 
 func (s *FileBasedStoreTestSuite) TestGetFlowByHandle_Success() {
 	flowDef := s.createTestFlow("test-flow")
-	_, err := s.store.CreateFlow("flow-001", flowDef)
+	_, err := s.store.CreateFlow(context.Background(), "flow-001", flowDef)
 	require.NoError(s.T(), err)
 
-	retrieved, err := s.store.GetFlowByHandle("test-flow", testFlowTypeAuthentication)
+	retrieved, err := s.store.GetFlowByHandle(context.Background(), "test-flow", testFlowTypeAuthentication)
 
 	require.NoError(s.T(), err)
 	assert.Equal(s.T(), "flow-001", retrieved.ID)
@@ -103,7 +104,7 @@ func (s *FileBasedStoreTestSuite) TestGetFlowByHandle_Success() {
 }
 
 func (s *FileBasedStoreTestSuite) TestGetFlowByHandle_NotFound() {
-	_, err := s.store.GetFlowByHandle("non-existent", testFlowTypeAuthentication)
+	_, err := s.store.GetFlowByHandle(context.Background(), "non-existent", testFlowTypeAuthentication)
 
 	assert.Error(s.T(), err)
 	assert.Equal(s.T(), errFlowNotFound, err)
@@ -112,10 +113,10 @@ func (s *FileBasedStoreTestSuite) TestGetFlowByHandle_NotFound() {
 func (s *FileBasedStoreTestSuite) TestGetFlowByHandle_WrongFlowType() {
 	flowDef := s.createTestFlow("test-flow")
 	flowDef.FlowType = testFlowTypeAuthentication
-	_, err := s.store.CreateFlow("flow-001", flowDef)
+	_, err := s.store.CreateFlow(context.Background(), "flow-001", flowDef)
 	require.NoError(s.T(), err)
 
-	_, err = s.store.GetFlowByHandle("test-flow", "REGISTRATION")
+	_, err = s.store.GetFlowByHandle(context.Background(), "test-flow", "REGISTRATION")
 
 	assert.Error(s.T(), err)
 }
@@ -124,11 +125,11 @@ func (s *FileBasedStoreTestSuite) TestListFlows_NoFilter() {
 	// Create multiple flows
 	for i := 0; i < 3; i++ {
 		flowDef := s.createTestFlow(fmt.Sprintf("flow-%d", i))
-		_, err := s.store.CreateFlow(fmt.Sprintf("flow-00%d", i), flowDef)
+		_, err := s.store.CreateFlow(context.Background(), fmt.Sprintf("flow-00%d", i), flowDef)
 		require.NoError(s.T(), err)
 	}
 
-	flows, count, err := s.store.ListFlows(10, 0, "")
+	flows, count, err := s.store.ListFlows(context.Background(), 10, 0, "")
 
 	require.NoError(s.T(), err)
 	assert.Equal(s.T(), 3, count)
@@ -139,16 +140,16 @@ func (s *FileBasedStoreTestSuite) TestListFlows_WithFlowTypeFilter() {
 	// Create flows with different types
 	authFlow := s.createTestFlow("auth-flow")
 	authFlow.FlowType = testFlowTypeAuthentication
-	_, err := s.store.CreateFlow("flow-001", authFlow)
+	_, err := s.store.CreateFlow(context.Background(), "flow-001", authFlow)
 	require.NoError(s.T(), err)
 
 	regFlow := s.createTestFlow("reg-flow")
 	regFlow.FlowType = "REGISTRATION"
-	_, err = s.store.CreateFlow("flow-002", regFlow)
+	_, err = s.store.CreateFlow(context.Background(), "flow-002", regFlow)
 	require.NoError(s.T(), err)
 
 	// List only AUTHENTICATION flows
-	flows, count, err := s.store.ListFlows(10, 0, testFlowTypeAuthentication)
+	flows, count, err := s.store.ListFlows(context.Background(), 10, 0, testFlowTypeAuthentication)
 
 	require.NoError(s.T(), err)
 	assert.Equal(s.T(), 1, count)
@@ -160,24 +161,24 @@ func (s *FileBasedStoreTestSuite) TestListFlows_Pagination() {
 	// Create 5 flows
 	for i := 0; i < 5; i++ {
 		flowDef := s.createTestFlow(fmt.Sprintf("flow-%d", i))
-		_, err := s.store.CreateFlow(fmt.Sprintf("flow-00%d", i), flowDef)
+		_, err := s.store.CreateFlow(context.Background(), fmt.Sprintf("flow-00%d", i), flowDef)
 		require.NoError(s.T(), err)
 	}
 
 	// Test first page
-	flows, count, err := s.store.ListFlows(2, 0, "")
+	flows, count, err := s.store.ListFlows(context.Background(), 2, 0, "")
 	require.NoError(s.T(), err)
 	assert.Equal(s.T(), 5, count)
 	assert.Len(s.T(), flows, 2)
 
 	// Test second page
-	flows, count, err = s.store.ListFlows(2, 2, "")
+	flows, count, err = s.store.ListFlows(context.Background(), 2, 2, "")
 	require.NoError(s.T(), err)
 	assert.Equal(s.T(), 5, count)
 	assert.Len(s.T(), flows, 2)
 
 	// Test offset beyond total
-	flows, count, err = s.store.ListFlows(10, 10, "")
+	flows, count, err = s.store.ListFlows(context.Background(), 10, 10, "")
 	require.NoError(s.T(), err)
 	assert.Equal(s.T(), 5, count)
 	assert.Len(s.T(), flows, 0)
@@ -185,17 +186,17 @@ func (s *FileBasedStoreTestSuite) TestListFlows_Pagination() {
 
 func (s *FileBasedStoreTestSuite) TestIsFlowExists_Found() {
 	flowDef := s.createTestFlow("test-flow")
-	_, err := s.store.CreateFlow("flow-001", flowDef)
+	_, err := s.store.CreateFlow(context.Background(), "flow-001", flowDef)
 	require.NoError(s.T(), err)
 
-	exists, err := s.store.IsFlowExists("flow-001")
+	exists, err := s.store.IsFlowExists(context.Background(), "flow-001")
 
 	require.NoError(s.T(), err)
 	assert.True(s.T(), exists)
 }
 
 func (s *FileBasedStoreTestSuite) TestIsFlowExists_NotFound() {
-	exists, err := s.store.IsFlowExists("non-existent")
+	exists, err := s.store.IsFlowExists(context.Background(), "non-existent")
 
 	require.NoError(s.T(), err)
 	assert.False(s.T(), exists)
@@ -203,17 +204,17 @@ func (s *FileBasedStoreTestSuite) TestIsFlowExists_NotFound() {
 
 func (s *FileBasedStoreTestSuite) TestIsFlowExistsByHandle_Found() {
 	flowDef := s.createTestFlow("test-flow")
-	_, err := s.store.CreateFlow("flow-001", flowDef)
+	_, err := s.store.CreateFlow(context.Background(), "flow-001", flowDef)
 	require.NoError(s.T(), err)
 
-	exists, err := s.store.IsFlowExistsByHandle("test-flow", testFlowTypeAuthentication)
+	exists, err := s.store.IsFlowExistsByHandle(context.Background(), "test-flow", testFlowTypeAuthentication)
 
 	require.NoError(s.T(), err)
 	assert.True(s.T(), exists)
 }
 
 func (s *FileBasedStoreTestSuite) TestIsFlowExistsByHandle_NotFound() {
-	exists, err := s.store.IsFlowExistsByHandle("non-existent", testFlowTypeAuthentication)
+	exists, err := s.store.IsFlowExistsByHandle(context.Background(), "non-existent", testFlowTypeAuthentication)
 
 	require.NoError(s.T(), err)
 	assert.False(s.T(), exists)
@@ -222,10 +223,10 @@ func (s *FileBasedStoreTestSuite) TestIsFlowExistsByHandle_NotFound() {
 func (s *FileBasedStoreTestSuite) TestIsFlowExistsByHandle_WrongFlowType() {
 	flowDef := s.createTestFlow("test-flow")
 	flowDef.FlowType = testFlowTypeAuthentication
-	_, err := s.store.CreateFlow("flow-001", flowDef)
+	_, err := s.store.CreateFlow(context.Background(), "flow-001", flowDef)
 	require.NoError(s.T(), err)
 
-	exists, err := s.store.IsFlowExistsByHandle("test-flow", "REGISTRATION")
+	exists, err := s.store.IsFlowExistsByHandle(context.Background(), "test-flow", "REGISTRATION")
 
 	require.NoError(s.T(), err)
 	assert.False(s.T(), exists)
@@ -234,35 +235,35 @@ func (s *FileBasedStoreTestSuite) TestIsFlowExistsByHandle_WrongFlowType() {
 func (s *FileBasedStoreTestSuite) TestUpdateFlow_NotSupported() {
 	flowDef := s.createTestFlow("test-flow")
 
-	_, err := s.store.UpdateFlow("flow-001", flowDef)
+	_, err := s.store.UpdateFlow(context.Background(), "flow-001", flowDef)
 
 	assert.Error(s.T(), err)
 	assert.Contains(s.T(), err.Error(), "not supported in file-based store")
 }
 
 func (s *FileBasedStoreTestSuite) TestDeleteFlow_NotSupported() {
-	err := s.store.DeleteFlow("flow-001")
+	err := s.store.DeleteFlow(context.Background(), "flow-001")
 
 	assert.Error(s.T(), err)
 	assert.Contains(s.T(), err.Error(), "not supported in file-based store")
 }
 
 func (s *FileBasedStoreTestSuite) TestListFlowVersions_NotSupported() {
-	_, err := s.store.ListFlowVersions("flow-001")
+	_, err := s.store.ListFlowVersions(context.Background(), "flow-001")
 
 	assert.Error(s.T(), err)
 	assert.Contains(s.T(), err.Error(), "not supported in file-based store")
 }
 
 func (s *FileBasedStoreTestSuite) TestGetFlowVersion_NotSupported() {
-	_, err := s.store.GetFlowVersion("flow-001", 1)
+	_, err := s.store.GetFlowVersion(context.Background(), "flow-001", 1)
 
 	assert.Error(s.T(), err)
 	assert.Contains(s.T(), err.Error(), "not supported in file-based store")
 }
 
 func (s *FileBasedStoreTestSuite) TestRestoreFlowVersion_NotSupported() {
-	_, err := s.store.RestoreFlowVersion("flow-001", 1)
+	_, err := s.store.RestoreFlowVersion(context.Background(), "flow-001", 1)
 
 	assert.Error(s.T(), err)
 	assert.Contains(s.T(), err.Error(), "not supported in file-based store")
@@ -287,13 +288,13 @@ func (s *FileBasedStoreTestSuite) TestCreate_ImplementsStorer() {
 	require.NoError(s.T(), err)
 
 	// Verify it was created
-	retrieved, err := s.store.GetFlowByID("flow-001")
+	retrieved, err := s.store.GetFlowByID(context.Background(), "flow-001")
 	require.NoError(s.T(), err)
 	assert.Equal(s.T(), "test-flow", retrieved.Handle)
 }
 
 func (s *FileBasedStoreTestSuite) TestListFlows_EmptyStore() {
-	flows, count, err := s.store.ListFlows(10, 0, "")
+	flows, count, err := s.store.ListFlows(context.Background(), 10, 0, "")
 
 	require.NoError(s.T(), err)
 	assert.Equal(s.T(), 0, count)
@@ -304,21 +305,21 @@ func (s *FileBasedStoreTestSuite) TestGetFlowByHandle_MultipleFlowsSameHandle() 
 	// Create two flows with different types but same handle
 	authFlow := s.createTestFlow("common-handle")
 	authFlow.FlowType = testFlowTypeAuthentication
-	_, err := s.store.CreateFlow("flow-001", authFlow)
+	_, err := s.store.CreateFlow(context.Background(), "flow-001", authFlow)
 	require.NoError(s.T(), err)
 
 	regFlow := s.createTestFlow("common-handle")
 	regFlow.FlowType = "REGISTRATION"
-	_, err = s.store.CreateFlow("flow-002", regFlow)
+	_, err = s.store.CreateFlow(context.Background(), "flow-002", regFlow)
 	require.NoError(s.T(), err)
 
 	// Retrieve by handle and type should get the correct one
-	authRetrieved, err := s.store.GetFlowByHandle("common-handle", testFlowTypeAuthentication)
+	authRetrieved, err := s.store.GetFlowByHandle(context.Background(), "common-handle", testFlowTypeAuthentication)
 	require.NoError(s.T(), err)
 	assert.Equal(s.T(), "flow-001", authRetrieved.ID)
 
 	// Retrieve REGISTRATION flow by handle and type should also work
-	regRetrieved, err := s.store.GetFlowByHandle("common-handle", "REGISTRATION")
+	regRetrieved, err := s.store.GetFlowByHandle(context.Background(), "common-handle", "REGISTRATION")
 	require.NoError(s.T(), err)
 	assert.Equal(s.T(), "flow-002", regRetrieved.ID)
 	assert.Equal(s.T(), "common-handle", regRetrieved.Handle)
@@ -328,7 +329,7 @@ func (s *FileBasedStoreTestSuite) TestGetFlowByID_TypeAssertionFailure() {
 	// This test verifies the type assertion error path in GetFlowByID
 	// Create a flow and then manually corrupt the store data
 	flowDef := s.createTestFlow("test-flow")
-	_, err := s.store.CreateFlow("flow-001", flowDef)
+	_, err := s.store.CreateFlow(context.Background(), "flow-001", flowDef)
 	require.NoError(s.T(), err)
 
 	// Access the underlying store to corrupt data
@@ -338,7 +339,7 @@ func (s *FileBasedStoreTestSuite) TestGetFlowByID_TypeAssertionFailure() {
 	require.NoError(s.T(), err)
 
 	// Try to retrieve the corrupted flow
-	_, err = s.store.GetFlowByID("corrupted-flow")
+	_, err = s.store.GetFlowByID(context.Background(), "corrupted-flow")
 	assert.Error(s.T(), err)
 	assert.Equal(s.T(), errFlowNotFound, err)
 }
@@ -347,7 +348,7 @@ func (s *FileBasedStoreTestSuite) TestListFlows_TypeAssertionSkip() {
 	// Create valid flows
 	for i := 0; i < 2; i++ {
 		flowDef := s.createTestFlow(fmt.Sprintf("flow-%d", i))
-		_, err := s.store.CreateFlow(fmt.Sprintf("flow-00%d", i), flowDef)
+		_, err := s.store.CreateFlow(context.Background(), fmt.Sprintf("flow-00%d", i), flowDef)
 		require.NoError(s.T(), err)
 	}
 
@@ -357,7 +358,7 @@ func (s *FileBasedStoreTestSuite) TestListFlows_TypeAssertionSkip() {
 	require.NoError(s.T(), err)
 
 	// List should skip the corrupted entry and return valid flows
-	flows, count, err := s.store.ListFlows(10, 0, "")
+	flows, count, err := s.store.ListFlows(context.Background(), 10, 0, "")
 	require.NoError(s.T(), err)
 	assert.Equal(s.T(), 2, count)
 	assert.Len(s.T(), flows, 2)
@@ -366,7 +367,7 @@ func (s *FileBasedStoreTestSuite) TestListFlows_TypeAssertionSkip() {
 func (s *FileBasedStoreTestSuite) TestIsFlowExistsByHandle_TypeAssertionSkip() {
 	// Create valid flow
 	flowDef := s.createTestFlow("test-flow")
-	_, err := s.store.CreateFlow("flow-001", flowDef)
+	_, err := s.store.CreateFlow(context.Background(), "flow-001", flowDef)
 	require.NoError(s.T(), err)
 
 	// Add corrupted data to store
@@ -375,7 +376,7 @@ func (s *FileBasedStoreTestSuite) TestIsFlowExistsByHandle_TypeAssertionSkip() {
 	require.NoError(s.T(), err)
 
 	// Should still find the valid flow
-	exists, err := s.store.IsFlowExistsByHandle("test-flow", testFlowTypeAuthentication)
+	exists, err := s.store.IsFlowExistsByHandle(context.Background(), "test-flow", testFlowTypeAuthentication)
 	require.NoError(s.T(), err)
 	assert.True(s.T(), exists)
 }
@@ -386,7 +387,7 @@ func (s *FileBasedStoreTestSuite) TestIsFlowExistsByHandle_ListError() {
 
 	// IsFlowExistsByHandle should handle list errors gracefully
 	// In the current implementation, it returns the error from List()
-	exists, err := store.IsFlowExistsByHandle("test", testFlowTypeAuthentication)
+	exists, err := store.IsFlowExistsByHandle(context.Background(), "test", testFlowTypeAuthentication)
 	// With empty store, should return false with no error
 	require.NoError(s.T(), err)
 	assert.False(s.T(), exists)
@@ -412,7 +413,7 @@ func (s *FileBasedStoreTestSuite) TestCreate_WithCompleteFlow() {
 	require.NoError(s.T(), err)
 
 	// Verify it was created correctly
-	retrieved, err := s.store.GetFlowByID("flow-100")
+	retrieved, err := s.store.GetFlowByID(context.Background(), "flow-100")
 	require.NoError(s.T(), err)
 	assert.Equal(s.T(), "flow-100", retrieved.ID)
 	assert.Equal(s.T(), "complete-flow", retrieved.Handle)

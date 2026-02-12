@@ -19,6 +19,7 @@
 package flowmgt
 
 import (
+	"context"
 	"errors"
 	"testing"
 
@@ -42,6 +43,13 @@ type FlowMgtServiceTestSuite struct {
 	mockInference        *flowInferenceServiceInterfaceMock
 	mockGraphBuilder     *graphBuilderInterfaceMock
 	mockExecutorRegistry *executormock.ExecutorRegistryInterfaceMock
+	stubTransactioner    *stubTransactioner
+}
+
+type stubTransactioner struct{}
+
+func (s *stubTransactioner) Transact(ctx context.Context, fn func(context.Context) error) error {
+	return fn(ctx)
 }
 
 func TestFlowMgtServiceTestSuite(t *testing.T) {
@@ -53,7 +61,9 @@ func (s *FlowMgtServiceTestSuite) SetupTest() {
 	s.mockInference = newFlowInferenceServiceInterfaceMock(s.T())
 	s.mockGraphBuilder = newGraphBuilderInterfaceMock(s.T())
 	s.mockExecutorRegistry = executormock.NewExecutorRegistryInterfaceMock(s.T())
-	s.service = newFlowMgtService(s.mockStore, s.mockInference, s.mockGraphBuilder, s.mockExecutorRegistry)
+	s.stubTransactioner = &stubTransactioner{}
+	s.service = newFlowMgtService(s.mockStore, s.mockInference, s.mockGraphBuilder, s.mockExecutorRegistry,
+		s.stubTransactioner)
 
 	testConfig := &config.Config{
 		Flow: config.FlowConfig{
@@ -74,9 +84,9 @@ func (s *FlowMgtServiceTestSuite) TestListFlows_Success() {
 	expectedFlows := []BasicFlowDefinition{
 		{ID: "flow1", Handle: "test-handle", Name: "Flow 1", FlowType: common.FlowTypeAuthentication},
 	}
-	s.mockStore.EXPECT().ListFlows(30, 0, "").Return(expectedFlows, 1, nil)
+	s.mockStore.EXPECT().ListFlows(mock.Anything, 30, 0, "").Return(expectedFlows, 1, nil)
 
-	result, err := s.service.ListFlows(30, 0, "")
+	result, err := s.service.ListFlows(context.Background(), 30, 0, "")
 
 	s.Nil(err)
 	s.NotNil(result)
@@ -86,62 +96,62 @@ func (s *FlowMgtServiceTestSuite) TestListFlows_Success() {
 }
 
 func (s *FlowMgtServiceTestSuite) TestListFlows_DefaultLimit() {
-	s.mockStore.EXPECT().ListFlows(defaultPageSize, 0, "").Return([]BasicFlowDefinition{}, 0, nil)
+	s.mockStore.EXPECT().ListFlows(mock.Anything, defaultPageSize, 0, "").Return([]BasicFlowDefinition{}, 0, nil)
 
-	result, err := s.service.ListFlows(0, 0, "")
+	result, err := s.service.ListFlows(context.Background(), 0, 0, "")
 
 	s.Nil(err)
 	s.NotNil(result)
 }
 
 func (s *FlowMgtServiceTestSuite) TestListFlows_MaxLimitExceeded() {
-	s.mockStore.EXPECT().ListFlows(maxPageSize, 0, "").Return([]BasicFlowDefinition{}, 0, nil)
+	s.mockStore.EXPECT().ListFlows(mock.Anything, maxPageSize, 0, "").Return([]BasicFlowDefinition{}, 0, nil)
 
-	result, err := s.service.ListFlows(1000, 0, "")
+	result, err := s.service.ListFlows(context.Background(), 1000, 0, "")
 
 	s.Nil(err)
 	s.NotNil(result)
 }
 
 func (s *FlowMgtServiceTestSuite) TestListFlows_NegativeOffset() {
-	s.mockStore.EXPECT().ListFlows(30, 0, "").Return([]BasicFlowDefinition{}, 0, nil)
+	s.mockStore.EXPECT().ListFlows(mock.Anything, 30, 0, "").Return([]BasicFlowDefinition{}, 0, nil)
 
-	result, err := s.service.ListFlows(30, -10, "")
+	result, err := s.service.ListFlows(context.Background(), 30, -10, "")
 
 	s.Nil(err)
 	s.NotNil(result)
 }
 
 func (s *FlowMgtServiceTestSuite) TestListFlows_WithFlowType() {
-	s.mockStore.EXPECT().ListFlows(30, 0, string(common.FlowTypeAuthentication)).
+	s.mockStore.EXPECT().ListFlows(mock.Anything, 30, 0, string(common.FlowTypeAuthentication)).
 		Return([]BasicFlowDefinition{}, 0, nil)
 
-	result, err := s.service.ListFlows(30, 0, common.FlowTypeAuthentication)
+	result, err := s.service.ListFlows(context.Background(), 30, 0, common.FlowTypeAuthentication)
 
 	s.Nil(err)
 	s.NotNil(result)
 }
 
 func (s *FlowMgtServiceTestSuite) TestListFlows_InvalidFlowType() {
-	result, err := s.service.ListFlows(30, 0, "invalid")
+	result, err := s.service.ListFlows(context.Background(), 30, 0, "invalid")
 
 	s.Nil(result)
 	s.Equal(&ErrorInvalidFlowType, err)
 }
 
 func (s *FlowMgtServiceTestSuite) TestListFlows_StoreError() {
-	s.mockStore.EXPECT().ListFlows(30, 0, "").Return(nil, 0, errors.New("db error"))
+	s.mockStore.EXPECT().ListFlows(mock.Anything, 30, 0, "").Return(nil, 0, errors.New("db error"))
 
-	result, err := s.service.ListFlows(30, 0, "")
+	result, err := s.service.ListFlows(context.Background(), 30, 0, "")
 
 	s.Nil(result)
 	s.Equal(&serviceerror.InternalServerError, err)
 }
 
 func (s *FlowMgtServiceTestSuite) TestListFlows_PaginationLinks() {
-	s.mockStore.EXPECT().ListFlows(10, 20, "").Return([]BasicFlowDefinition{}, 100, nil)
+	s.mockStore.EXPECT().ListFlows(mock.Anything, 10, 20, "").Return([]BasicFlowDefinition{}, 100, nil)
 
-	result, err := s.service.ListFlows(10, 20, "")
+	result, err := s.service.ListFlows(context.Background(), 10, 20, "")
 
 	s.Nil(err)
 	s.NotNil(result)
@@ -150,9 +160,9 @@ func (s *FlowMgtServiceTestSuite) TestListFlows_PaginationLinks() {
 }
 
 func (s *FlowMgtServiceTestSuite) TestListFlows_PaginationLinksFirstPage() {
-	s.mockStore.EXPECT().ListFlows(10, 0, "").Return([]BasicFlowDefinition{}, 100, nil)
+	s.mockStore.EXPECT().ListFlows(mock.Anything, 10, 0, "").Return([]BasicFlowDefinition{}, 100, nil)
 
-	result, err := s.service.ListFlows(10, 0, "")
+	result, err := s.service.ListFlows(context.Background(), 10, 0, "")
 
 	s.Nil(err)
 	s.NotNil(result)
@@ -161,9 +171,9 @@ func (s *FlowMgtServiceTestSuite) TestListFlows_PaginationLinksFirstPage() {
 }
 
 func (s *FlowMgtServiceTestSuite) TestListFlows_PaginationLinksLastPage() {
-	s.mockStore.EXPECT().ListFlows(10, 90, "").Return([]BasicFlowDefinition{}, 100, nil)
+	s.mockStore.EXPECT().ListFlows(mock.Anything, 10, 90, "").Return([]BasicFlowDefinition{}, 100, nil)
 
-	result, err := s.service.ListFlows(10, 90, "")
+	result, err := s.service.ListFlows(context.Background(), 10, 90, "")
 
 	s.Nil(err)
 	s.NotNil(result)
@@ -190,10 +200,11 @@ func (s *FlowMgtServiceTestSuite) TestCreateFlow_Success() {
 		FlowType:      common.FlowTypeAuthentication,
 		ActiveVersion: 1,
 	}
-	s.mockStore.EXPECT().IsFlowExistsByHandle("test-handle", common.FlowTypeAuthentication).Return(false, nil)
-	s.mockStore.EXPECT().CreateFlow(mock.Anything, flowDef).Return(expectedFlow, nil)
+	s.mockStore.EXPECT().IsFlowExistsByHandle(mock.Anything, "test-handle", common.FlowTypeAuthentication).
+		Return(false, nil)
+	s.mockStore.EXPECT().CreateFlow(mock.Anything, mock.Anything, flowDef).Return(expectedFlow, nil)
 
-	result, err := s.service.CreateFlow(flowDef)
+	result, err := s.service.CreateFlow(context.Background(), flowDef)
 
 	s.Nil(err)
 	s.NotNil(result)
@@ -208,7 +219,7 @@ func (s *FlowMgtServiceTestSuite) TestCreateFlow_ValidationError() {
 		Nodes:    []NodeDefinition{{Type: "start"}, {Type: "end"}},
 	}
 
-	result, err := s.service.CreateFlow(flowDef)
+	result, err := s.service.CreateFlow(context.Background(), flowDef)
 
 	s.Nil(result)
 	s.Equal(&ErrorMissingFlowHandle, err)
@@ -222,7 +233,7 @@ func (s *FlowMgtServiceTestSuite) TestCreateFlow_InvalidHandleFormat_Uppercase()
 		Nodes:    []NodeDefinition{{Type: "start"}, {Type: "action"}, {Type: "end"}},
 	}
 
-	result, err := s.service.CreateFlow(flowDef)
+	result, err := s.service.CreateFlow(context.Background(), flowDef)
 
 	s.Nil(result)
 	s.Equal(&ErrorInvalidFlowHandleFormat, err)
@@ -236,7 +247,7 @@ func (s *FlowMgtServiceTestSuite) TestCreateFlow_InvalidHandleFormat_Spaces() {
 		Nodes:    []NodeDefinition{{Type: "start"}, {Type: "action"}, {Type: "end"}},
 	}
 
-	result, err := s.service.CreateFlow(flowDef)
+	result, err := s.service.CreateFlow(context.Background(), flowDef)
 
 	s.Nil(result)
 	s.Equal(&ErrorInvalidFlowHandleFormat, err)
@@ -250,7 +261,7 @@ func (s *FlowMgtServiceTestSuite) TestCreateFlow_InvalidHandleFormat_SpecialChar
 		Nodes:    []NodeDefinition{{Type: "start"}, {Type: "action"}, {Type: "end"}},
 	}
 
-	result, err := s.service.CreateFlow(flowDef)
+	result, err := s.service.CreateFlow(context.Background(), flowDef)
 
 	s.Nil(result)
 	s.Equal(&ErrorInvalidFlowHandleFormat, err)
@@ -264,7 +275,7 @@ func (s *FlowMgtServiceTestSuite) TestCreateFlow_InvalidHandleFormat_StartsWithD
 		Nodes:    []NodeDefinition{{Type: "start"}, {Type: "action"}, {Type: "end"}},
 	}
 
-	result, err := s.service.CreateFlow(flowDef)
+	result, err := s.service.CreateFlow(context.Background(), flowDef)
 
 	s.Nil(result)
 	s.Equal(&ErrorInvalidFlowHandleFormat, err)
@@ -278,7 +289,7 @@ func (s *FlowMgtServiceTestSuite) TestCreateFlow_InvalidHandleFormat_EndsWithUnd
 		Nodes:    []NodeDefinition{{Type: "start"}, {Type: "action"}, {Type: "end"}},
 	}
 
-	result, err := s.service.CreateFlow(flowDef)
+	result, err := s.service.CreateFlow(context.Background(), flowDef)
 
 	s.Nil(result)
 	s.Equal(&ErrorInvalidFlowHandleFormat, err)
@@ -318,10 +329,11 @@ func (s *FlowMgtServiceTestSuite) TestCreateFlow_ValidHandleFormats() {
 				Nodes:         flowDef.Nodes,
 			}
 
-			s.mockStore.EXPECT().IsFlowExistsByHandle(tc.handle, common.FlowTypeAuthentication).Return(false, nil)
-			s.mockStore.EXPECT().CreateFlow(mock.Anything, flowDef).Return(expectedFlow, nil)
+			s.mockStore.EXPECT().IsFlowExistsByHandle(mock.Anything, tc.handle, common.FlowTypeAuthentication).
+				Return(false, nil)
+			s.mockStore.EXPECT().CreateFlow(mock.Anything, mock.Anything, flowDef).Return(expectedFlow, nil)
 
-			result, err := s.service.CreateFlow(flowDef)
+			result, err := s.service.CreateFlow(context.Background(), flowDef)
 
 			s.Nil(err)
 			s.NotNil(result)
@@ -338,7 +350,7 @@ func (s *FlowMgtServiceTestSuite) TestCreateFlow_InvalidFlowType() {
 		Nodes:    []NodeDefinition{{Type: "start"}, {Type: "action"}, {Type: "end"}},
 	}
 
-	result, err := s.service.CreateFlow(flowDef)
+	result, err := s.service.CreateFlow(context.Background(), flowDef)
 
 	s.Nil(result)
 	s.Equal(&ErrorInvalidFlowType, err)
@@ -352,7 +364,7 @@ func (s *FlowMgtServiceTestSuite) TestCreateFlow_InsufficientNodes() {
 		Nodes:    []NodeDefinition{{Type: "start"}},
 	}
 
-	result, err := s.service.CreateFlow(flowDef)
+	result, err := s.service.CreateFlow(context.Background(), flowDef)
 
 	s.Nil(result)
 	s.Equal(ErrorInvalidFlowData.Code, err.Code)
@@ -366,7 +378,7 @@ func (s *FlowMgtServiceTestSuite) TestCreateFlow_OnlyStartAndEnd() {
 		Nodes:    []NodeDefinition{{Type: "start"}, {Type: "end"}},
 	}
 
-	result, err := s.service.CreateFlow(flowDef)
+	result, err := s.service.CreateFlow(context.Background(), flowDef)
 
 	s.Nil(result)
 	s.Equal(ErrorInvalidFlowData.Code, err.Code)
@@ -379,10 +391,11 @@ func (s *FlowMgtServiceTestSuite) TestCreateFlow_StoreError() {
 		FlowType: common.FlowTypeAuthentication,
 		Nodes:    []NodeDefinition{{Type: "start"}, {Type: "action"}, {Type: "end"}},
 	}
-	s.mockStore.EXPECT().IsFlowExistsByHandle("test-handle", common.FlowTypeAuthentication).Return(false, nil)
-	s.mockStore.EXPECT().CreateFlow(mock.Anything, flowDef).Return(nil, errors.New("db error"))
+	s.mockStore.EXPECT().IsFlowExistsByHandle(mock.Anything, "test-handle", common.FlowTypeAuthentication).
+		Return(false, nil)
+	s.mockStore.EXPECT().CreateFlow(mock.Anything, mock.Anything, flowDef).Return(nil, errors.New("db error"))
 
-	result, err := s.service.CreateFlow(flowDef)
+	result, err := s.service.CreateFlow(context.Background(), flowDef)
 
 	s.Nil(result)
 	s.Equal(&serviceerror.InternalServerError, err)
@@ -418,12 +431,13 @@ func (s *FlowMgtServiceTestSuite) TestCreateFlow_WithAutoInference() {
 		Nodes:    []NodeDefinition{{Type: "start"}, {Type: "action"}, {Type: "end"}},
 	}
 
-	s.mockStore.EXPECT().IsFlowExistsByHandle("test-handle", common.FlowTypeAuthentication).Return(false, nil)
-	s.mockStore.EXPECT().CreateFlow(mock.Anything, flowDef).Return(expectedFlow, nil)
+	s.mockStore.EXPECT().IsFlowExistsByHandle(mock.Anything, "test-handle", common.FlowTypeAuthentication).
+		Return(false, nil)
+	s.mockStore.EXPECT().CreateFlow(mock.Anything, mock.Anything, flowDef).Return(expectedFlow, nil)
 	s.mockInference.EXPECT().InferRegistrationFlow(flowDef).Return(inferredRegFlow, nil)
-	s.mockStore.EXPECT().CreateFlow(mock.Anything, inferredRegFlow).Return(nil, nil)
+	s.mockStore.EXPECT().CreateFlow(mock.Anything, mock.Anything, inferredRegFlow).Return(nil, nil)
 
-	result, err := s.service.CreateFlow(flowDef)
+	result, err := s.service.CreateFlow(context.Background(), flowDef)
 
 	s.Nil(err)
 	s.NotNil(result)
@@ -454,12 +468,13 @@ func (s *FlowMgtServiceTestSuite) TestCreateFlow_AutoInferenceFailure() {
 	}
 
 	// Mock expectations in the correct order of execution
-	s.mockStore.EXPECT().IsFlowExistsByHandle("test-handle", common.FlowTypeAuthentication).Return(false, nil)
-	s.mockStore.EXPECT().CreateFlow(mock.Anything, flowDef).Return(expectedFlow, nil)
+	s.mockStore.EXPECT().IsFlowExistsByHandle(mock.Anything, "test-handle", common.FlowTypeAuthentication).
+		Return(false, nil)
+	s.mockStore.EXPECT().CreateFlow(mock.Anything, mock.Anything, flowDef).Return(expectedFlow, nil)
 	s.mockInference.EXPECT().InferRegistrationFlow(flowDef).Return(nil, errors.New("inference error"))
 
 	// Should still succeed even if inference fails
-	result, err := s.service.CreateFlow(flowDef)
+	result, err := s.service.CreateFlow(context.Background(), flowDef)
 
 	s.Nil(err)
 	s.NotNil(result)
@@ -472,10 +487,10 @@ func (s *FlowMgtServiceTestSuite) TestCreateFlow_DuplicateHandle() {
 		FlowType: common.FlowTypeAuthentication,
 		Nodes:    []NodeDefinition{{Type: "start"}, {Type: "action"}, {Type: "end"}},
 	}
-	s.mockStore.EXPECT().IsFlowExistsByHandle("existing-handle", common.FlowTypeAuthentication).Return(
+	s.mockStore.EXPECT().IsFlowExistsByHandle(mock.Anything, "existing-handle", common.FlowTypeAuthentication).Return(
 		true, nil)
 
-	result, err := s.service.CreateFlow(flowDef)
+	result, err := s.service.CreateFlow(context.Background(), flowDef)
 
 	s.Nil(result)
 	s.Equal(&ErrorDuplicateFlowHandle, err)
@@ -488,10 +503,10 @@ func (s *FlowMgtServiceTestSuite) TestCreateFlow_DuplicateHandleCheckError() {
 		FlowType: common.FlowTypeAuthentication,
 		Nodes:    []NodeDefinition{{Type: "start"}, {Type: "action"}, {Type: "end"}},
 	}
-	s.mockStore.EXPECT().IsFlowExistsByHandle("test-handle", common.FlowTypeAuthentication).Return(
+	s.mockStore.EXPECT().IsFlowExistsByHandle(mock.Anything, "test-handle", common.FlowTypeAuthentication).Return(
 		false, errors.New("db error"))
 
-	result, err := s.service.CreateFlow(flowDef)
+	result, err := s.service.CreateFlow(context.Background(), flowDef)
 
 	s.Nil(result)
 	s.Equal(&serviceerror.InternalServerError, err)
@@ -505,34 +520,34 @@ func (s *FlowMgtServiceTestSuite) TestGetFlow_Success() {
 		Handle: "test-handle",
 		Name:   "Test",
 	}
-	s.mockStore.EXPECT().GetFlowByID(testFlowIDService).Return(expectedFlow, nil)
+	s.mockStore.EXPECT().GetFlowByID(mock.Anything, testFlowIDService).Return(expectedFlow, nil)
 
-	result, err := s.service.GetFlow(testFlowIDService)
+	result, err := s.service.GetFlow(context.Background(), testFlowIDService)
 
 	s.Nil(err)
 	s.Equal(expectedFlow, result)
 }
 
 func (s *FlowMgtServiceTestSuite) TestGetFlow_EmptyID() {
-	result, err := s.service.GetFlow("")
+	result, err := s.service.GetFlow(context.Background(), "")
 
 	s.Nil(result)
 	s.Equal(&ErrorMissingFlowID, err)
 }
 
 func (s *FlowMgtServiceTestSuite) TestGetFlow_NotFound() {
-	s.mockStore.EXPECT().GetFlowByID(testFlowIDService).Return(nil, errFlowNotFound)
+	s.mockStore.EXPECT().GetFlowByID(mock.Anything, testFlowIDService).Return(nil, errFlowNotFound)
 
-	result, err := s.service.GetFlow(testFlowIDService)
+	result, err := s.service.GetFlow(context.Background(), testFlowIDService)
 
 	s.Nil(result)
 	s.Equal(&ErrorFlowNotFound, err)
 }
 
 func (s *FlowMgtServiceTestSuite) TestGetFlow_StoreError() {
-	s.mockStore.EXPECT().GetFlowByID(testFlowIDService).Return(nil, errors.New("db error"))
+	s.mockStore.EXPECT().GetFlowByID(mock.Anything, testFlowIDService).Return(nil, errors.New("db error"))
 
-	result, err := s.service.GetFlow(testFlowIDService)
+	result, err := s.service.GetFlow(context.Background(), testFlowIDService)
 
 	s.Nil(result)
 	s.Equal(&serviceerror.InternalServerError, err)
@@ -547,10 +562,10 @@ func (s *FlowMgtServiceTestSuite) TestGetFlowByHandle_Success() {
 		Name:     "Test Auth Flow",
 		FlowType: common.FlowTypeAuthentication,
 	}
-	s.mockStore.EXPECT().GetFlowByHandle("test-auth-flow", common.FlowTypeAuthentication).
+	s.mockStore.EXPECT().GetFlowByHandle(mock.Anything, "test-auth-flow", common.FlowTypeAuthentication).
 		Return(expectedFlow, nil)
 
-	result, err := s.service.GetFlowByHandle("test-auth-flow", common.FlowTypeAuthentication)
+	result, err := s.service.GetFlowByHandle(context.Background(), "test-auth-flow", common.FlowTypeAuthentication)
 
 	s.Nil(err)
 	s.Equal(expectedFlow, result)
@@ -565,10 +580,10 @@ func (s *FlowMgtServiceTestSuite) TestGetFlowByHandle_SuccessRegistrationFlow() 
 		Name:     "Test Registration Flow",
 		FlowType: common.FlowTypeRegistration,
 	}
-	s.mockStore.EXPECT().GetFlowByHandle("test-reg-flow", common.FlowTypeRegistration).
+	s.mockStore.EXPECT().GetFlowByHandle(mock.Anything, "test-reg-flow", common.FlowTypeRegistration).
 		Return(expectedFlow, nil)
 
-	result, err := s.service.GetFlowByHandle("test-reg-flow", common.FlowTypeRegistration)
+	result, err := s.service.GetFlowByHandle(context.Background(), "test-reg-flow", common.FlowTypeRegistration)
 
 	s.Nil(err)
 	s.Equal(expectedFlow, result)
@@ -577,41 +592,41 @@ func (s *FlowMgtServiceTestSuite) TestGetFlowByHandle_SuccessRegistrationFlow() 
 }
 
 func (s *FlowMgtServiceTestSuite) TestGetFlowByHandle_EmptyHandle() {
-	result, err := s.service.GetFlowByHandle("", common.FlowTypeAuthentication)
+	result, err := s.service.GetFlowByHandle(context.Background(), "", common.FlowTypeAuthentication)
 
 	s.Nil(result)
 	s.Equal(&ErrorMissingFlowHandle, err)
 }
 
 func (s *FlowMgtServiceTestSuite) TestGetFlowByHandle_InvalidFlowType() {
-	result, err := s.service.GetFlowByHandle("test-handle", "INVALID_TYPE")
+	result, err := s.service.GetFlowByHandle(context.Background(), "test-handle", "INVALID_TYPE")
 
 	s.Nil(result)
 	s.Equal(&ErrorInvalidFlowType, err)
 }
 
 func (s *FlowMgtServiceTestSuite) TestGetFlowByHandle_EmptyFlowType() {
-	result, err := s.service.GetFlowByHandle("test-handle", "")
+	result, err := s.service.GetFlowByHandle(context.Background(), "test-handle", "")
 
 	s.Nil(result)
 	s.Equal(&ErrorInvalidFlowType, err)
 }
 
 func (s *FlowMgtServiceTestSuite) TestGetFlowByHandle_NotFound() {
-	s.mockStore.EXPECT().GetFlowByHandle("non-existent-handle", common.FlowTypeAuthentication).
+	s.mockStore.EXPECT().GetFlowByHandle(mock.Anything, "non-existent-handle", common.FlowTypeAuthentication).
 		Return(nil, errFlowNotFound)
 
-	result, err := s.service.GetFlowByHandle("non-existent-handle", common.FlowTypeAuthentication)
+	result, err := s.service.GetFlowByHandle(context.Background(), "non-existent-handle", common.FlowTypeAuthentication)
 
 	s.Nil(result)
 	s.Equal(&ErrorFlowNotFound, err)
 }
 
 func (s *FlowMgtServiceTestSuite) TestGetFlowByHandle_StoreError() {
-	s.mockStore.EXPECT().GetFlowByHandle("test-handle", common.FlowTypeAuthentication).
+	s.mockStore.EXPECT().GetFlowByHandle(mock.Anything, "test-handle", common.FlowTypeAuthentication).
 		Return(nil, errors.New("database connection error"))
 
-	result, err := s.service.GetFlowByHandle("test-handle", common.FlowTypeAuthentication)
+	result, err := s.service.GetFlowByHandle(context.Background(), "test-handle", common.FlowTypeAuthentication)
 
 	s.Nil(result)
 	s.Equal(&serviceerror.InternalServerError, err)
@@ -636,11 +651,11 @@ func (s *FlowMgtServiceTestSuite) TestUpdateFlow_Success() {
 		Name:          "Updated",
 		ActiveVersion: 2,
 	}
-	s.mockStore.EXPECT().GetFlowByID(testFlowIDService).Return(existingFlow, nil)
-	s.mockStore.EXPECT().UpdateFlow(testFlowIDService, flowDef).Return(updatedFlow, nil)
+	s.mockStore.EXPECT().GetFlowByID(mock.Anything, testFlowIDService).Return(existingFlow, nil)
+	s.mockStore.EXPECT().UpdateFlow(mock.Anything, testFlowIDService, flowDef).Return(updatedFlow, nil)
 	s.mockGraphBuilder.EXPECT().InvalidateCache(testFlowIDService)
 
-	result, err := s.service.UpdateFlow(testFlowIDService, flowDef)
+	result, err := s.service.UpdateFlow(context.Background(), testFlowIDService, flowDef)
 
 	s.Nil(err)
 	s.Equal(updatedFlow, result)
@@ -649,7 +664,7 @@ func (s *FlowMgtServiceTestSuite) TestUpdateFlow_Success() {
 func (s *FlowMgtServiceTestSuite) TestUpdateFlow_EmptyID() {
 	flowDef := &FlowDefinition{Name: "Test", FlowType: common.FlowTypeAuthentication}
 
-	result, err := s.service.UpdateFlow("", flowDef)
+	result, err := s.service.UpdateFlow(context.Background(), "", flowDef)
 
 	s.Nil(result)
 	s.Equal(&ErrorMissingFlowID, err)
@@ -658,7 +673,7 @@ func (s *FlowMgtServiceTestSuite) TestUpdateFlow_EmptyID() {
 func (s *FlowMgtServiceTestSuite) TestUpdateFlow_ValidationError() {
 	flowDef := &FlowDefinition{Handle: "", Name: "", FlowType: common.FlowTypeAuthentication}
 
-	result, err := s.service.UpdateFlow(testFlowIDService, flowDef)
+	result, err := s.service.UpdateFlow(context.Background(), testFlowIDService, flowDef)
 
 	s.Nil(result)
 	s.Equal(&ErrorMissingFlowHandle, err)
@@ -671,9 +686,9 @@ func (s *FlowMgtServiceTestSuite) TestUpdateFlow_FlowNotFound() {
 		FlowType: common.FlowTypeAuthentication,
 		Nodes:    []NodeDefinition{{Type: "start"}, {Type: "action"}, {Type: "end"}},
 	}
-	s.mockStore.EXPECT().GetFlowByID(testFlowIDService).Return(nil, errFlowNotFound)
+	s.mockStore.EXPECT().GetFlowByID(mock.Anything, testFlowIDService).Return(nil, errFlowNotFound)
 
-	result, err := s.service.UpdateFlow(testFlowIDService, flowDef)
+	result, err := s.service.UpdateFlow(context.Background(), testFlowIDService, flowDef)
 
 	s.Nil(result)
 	s.Equal(&ErrorFlowNotFound, err)
@@ -691,9 +706,9 @@ func (s *FlowMgtServiceTestSuite) TestUpdateFlow_CannotChangeFlowType() {
 		FlowType: common.FlowTypeRegistration,
 		Nodes:    []NodeDefinition{{Type: "start"}, {Type: "action"}, {Type: "end"}},
 	}
-	s.mockStore.EXPECT().GetFlowByID(testFlowIDService).Return(existingFlow, nil)
+	s.mockStore.EXPECT().GetFlowByID(mock.Anything, testFlowIDService).Return(existingFlow, nil)
 
-	result, err := s.service.UpdateFlow(testFlowIDService, flowDef)
+	result, err := s.service.UpdateFlow(context.Background(), testFlowIDService, flowDef)
 
 	s.Nil(result)
 	s.Equal(&ErrorCannotUpdateFlowType, err)
@@ -711,9 +726,9 @@ func (s *FlowMgtServiceTestSuite) TestUpdateFlow_CannotChangeHandle() {
 		FlowType: common.FlowTypeAuthentication,
 		Nodes:    []NodeDefinition{{Type: "start"}, {Type: "action"}, {Type: "end"}},
 	}
-	s.mockStore.EXPECT().GetFlowByID(testFlowIDService).Return(existingFlow, nil)
+	s.mockStore.EXPECT().GetFlowByID(mock.Anything, testFlowIDService).Return(existingFlow, nil)
 
-	result, err := s.service.UpdateFlow(testFlowIDService, flowDef)
+	result, err := s.service.UpdateFlow(context.Background(), testFlowIDService, flowDef)
 
 	s.Nil(result)
 	s.Equal(&ErrorHandleUpdateNotAllowed, err)
@@ -731,10 +746,10 @@ func (s *FlowMgtServiceTestSuite) TestUpdateFlow_StoreError() {
 		FlowType: common.FlowTypeAuthentication,
 		Nodes:    []NodeDefinition{{Type: "start"}, {Type: "action"}, {Type: "end"}},
 	}
-	s.mockStore.EXPECT().GetFlowByID(testFlowIDService).Return(existingFlow, nil)
-	s.mockStore.EXPECT().UpdateFlow(testFlowIDService, flowDef).Return(nil, errors.New("db error"))
+	s.mockStore.EXPECT().GetFlowByID(mock.Anything, testFlowIDService).Return(existingFlow, nil)
+	s.mockStore.EXPECT().UpdateFlow(mock.Anything, testFlowIDService, flowDef).Return(nil, errors.New("db error"))
 
-	result, err := s.service.UpdateFlow(testFlowIDService, flowDef)
+	result, err := s.service.UpdateFlow(context.Background(), testFlowIDService, flowDef)
 
 	s.Nil(result)
 	s.Equal(&serviceerror.InternalServerError, err)
@@ -744,43 +759,43 @@ func (s *FlowMgtServiceTestSuite) TestUpdateFlow_StoreError() {
 
 func (s *FlowMgtServiceTestSuite) TestDeleteFlow_Success() {
 	existingFlow := &CompleteFlowDefinition{ID: testFlowIDService, Handle: "test-handle"}
-	s.mockStore.EXPECT().GetFlowByID(testFlowIDService).Return(existingFlow, nil)
-	s.mockStore.EXPECT().DeleteFlow(testFlowIDService).Return(nil)
+	s.mockStore.EXPECT().GetFlowByID(mock.Anything, testFlowIDService).Return(existingFlow, nil)
+	s.mockStore.EXPECT().DeleteFlow(mock.Anything, testFlowIDService).Return(nil)
 	s.mockGraphBuilder.EXPECT().InvalidateCache(testFlowIDService)
 
-	err := s.service.DeleteFlow(testFlowIDService)
+	err := s.service.DeleteFlow(context.Background(), testFlowIDService)
 
 	s.Nil(err)
 }
 
 func (s *FlowMgtServiceTestSuite) TestDeleteFlow_EmptyID() {
-	err := s.service.DeleteFlow("")
+	err := s.service.DeleteFlow(context.Background(), "")
 
 	s.Equal(&ErrorMissingFlowID, err)
 }
 
 func (s *FlowMgtServiceTestSuite) TestDeleteFlow_NotFound() {
-	s.mockStore.EXPECT().GetFlowByID(testFlowIDService).Return(nil, errFlowNotFound)
+	s.mockStore.EXPECT().GetFlowByID(mock.Anything, testFlowIDService).Return(nil, errFlowNotFound)
 
-	err := s.service.DeleteFlow(testFlowIDService)
+	err := s.service.DeleteFlow(context.Background(), testFlowIDService)
 
 	s.Nil(err)
 }
 
 func (s *FlowMgtServiceTestSuite) TestDeleteFlow_GetError() {
-	s.mockStore.EXPECT().GetFlowByID(testFlowIDService).Return(nil, errors.New("db error"))
+	s.mockStore.EXPECT().GetFlowByID(mock.Anything, testFlowIDService).Return(nil, errors.New("db error"))
 
-	err := s.service.DeleteFlow(testFlowIDService)
+	err := s.service.DeleteFlow(context.Background(), testFlowIDService)
 
 	s.Equal(&serviceerror.InternalServerError, err)
 }
 
 func (s *FlowMgtServiceTestSuite) TestDeleteFlow_StoreError() {
 	existingFlow := &CompleteFlowDefinition{ID: testFlowIDService, Handle: "test-handle"}
-	s.mockStore.EXPECT().GetFlowByID(testFlowIDService).Return(existingFlow, nil)
-	s.mockStore.EXPECT().DeleteFlow(testFlowIDService).Return(errors.New("db error"))
+	s.mockStore.EXPECT().GetFlowByID(mock.Anything, testFlowIDService).Return(existingFlow, nil)
+	s.mockStore.EXPECT().DeleteFlow(mock.Anything, testFlowIDService).Return(errors.New("db error"))
 
-	err := s.service.DeleteFlow(testFlowIDService)
+	err := s.service.DeleteFlow(context.Background(), testFlowIDService)
 
 	s.Equal(&serviceerror.InternalServerError, err)
 }
@@ -790,10 +805,10 @@ func (s *FlowMgtServiceTestSuite) TestDeleteFlow_StoreError() {
 func (s *FlowMgtServiceTestSuite) TestListFlowVersions_Success() {
 	existingFlow := &CompleteFlowDefinition{ID: testFlowIDService, Handle: "test-handle"}
 	versions := []BasicFlowVersion{{Version: 1}, {Version: 2}}
-	s.mockStore.EXPECT().GetFlowByID(testFlowIDService).Return(existingFlow, nil)
-	s.mockStore.EXPECT().ListFlowVersions(testFlowIDService).Return(versions, nil)
+	s.mockStore.EXPECT().GetFlowByID(mock.Anything, testFlowIDService).Return(existingFlow, nil)
+	s.mockStore.EXPECT().ListFlowVersions(mock.Anything, testFlowIDService).Return(versions, nil)
 
-	result, err := s.service.ListFlowVersions(testFlowIDService)
+	result, err := s.service.ListFlowVersions(context.Background(), testFlowIDService)
 
 	s.Nil(err)
 	s.NotNil(result)
@@ -802,16 +817,16 @@ func (s *FlowMgtServiceTestSuite) TestListFlowVersions_Success() {
 }
 
 func (s *FlowMgtServiceTestSuite) TestListFlowVersions_EmptyID() {
-	result, err := s.service.ListFlowVersions("")
+	result, err := s.service.ListFlowVersions(context.Background(), "")
 
 	s.Nil(result)
 	s.Equal(&ErrorMissingFlowID, err)
 }
 
 func (s *FlowMgtServiceTestSuite) TestListFlowVersions_FlowNotFound() {
-	s.mockStore.EXPECT().GetFlowByID(testFlowIDService).Return(nil, errFlowNotFound)
+	s.mockStore.EXPECT().GetFlowByID(mock.Anything, testFlowIDService).Return(nil, errFlowNotFound)
 
-	result, err := s.service.ListFlowVersions(testFlowIDService)
+	result, err := s.service.ListFlowVersions(context.Background(), testFlowIDService)
 
 	s.Nil(result)
 	s.Equal(&ErrorFlowNotFound, err)
@@ -819,10 +834,10 @@ func (s *FlowMgtServiceTestSuite) TestListFlowVersions_FlowNotFound() {
 
 func (s *FlowMgtServiceTestSuite) TestListFlowVersions_StoreError() {
 	existingFlow := &CompleteFlowDefinition{ID: testFlowIDService, Handle: "test-handle"}
-	s.mockStore.EXPECT().GetFlowByID(testFlowIDService).Return(existingFlow, nil)
-	s.mockStore.EXPECT().ListFlowVersions(testFlowIDService).Return(nil, errors.New("db error"))
+	s.mockStore.EXPECT().GetFlowByID(mock.Anything, testFlowIDService).Return(existingFlow, nil)
+	s.mockStore.EXPECT().ListFlowVersions(mock.Anything, testFlowIDService).Return(nil, errors.New("db error"))
 
-	result, err := s.service.ListFlowVersions(testFlowIDService)
+	result, err := s.service.ListFlowVersions(context.Background(), testFlowIDService)
 
 	s.Nil(result)
 	s.Equal(&serviceerror.InternalServerError, err)
@@ -832,50 +847,50 @@ func (s *FlowMgtServiceTestSuite) TestListFlowVersions_StoreError() {
 
 func (s *FlowMgtServiceTestSuite) TestGetFlowVersion_Success() {
 	expectedVersion := &FlowVersion{Version: 1}
-	s.mockStore.EXPECT().GetFlowVersion(testFlowIDService, 1).Return(expectedVersion, nil)
+	s.mockStore.EXPECT().GetFlowVersion(mock.Anything, testFlowIDService, 1).Return(expectedVersion, nil)
 
-	result, err := s.service.GetFlowVersion(testFlowIDService, 1)
+	result, err := s.service.GetFlowVersion(context.Background(), testFlowIDService, 1)
 
 	s.Nil(err)
 	s.Equal(expectedVersion, result)
 }
 
 func (s *FlowMgtServiceTestSuite) TestGetFlowVersion_EmptyID() {
-	result, err := s.service.GetFlowVersion("", 1)
+	result, err := s.service.GetFlowVersion(context.Background(), "", 1)
 
 	s.Nil(result)
 	s.Equal(&ErrorMissingFlowID, err)
 }
 
 func (s *FlowMgtServiceTestSuite) TestGetFlowVersion_InvalidVersion() {
-	result, err := s.service.GetFlowVersion(testFlowIDService, 0)
+	result, err := s.service.GetFlowVersion(context.Background(), testFlowIDService, 0)
 
 	s.Nil(result)
 	s.Equal(&ErrorInvalidVersion, err)
 }
 
 func (s *FlowMgtServiceTestSuite) TestGetFlowVersion_FlowNotFound() {
-	s.mockStore.EXPECT().GetFlowVersion(testFlowIDService, 1).Return(nil, errFlowNotFound)
+	s.mockStore.EXPECT().GetFlowVersion(mock.Anything, testFlowIDService, 1).Return(nil, errFlowNotFound)
 
-	result, err := s.service.GetFlowVersion(testFlowIDService, 1)
+	result, err := s.service.GetFlowVersion(context.Background(), testFlowIDService, 1)
 
 	s.Nil(result)
 	s.Equal(&ErrorFlowNotFound, err)
 }
 
 func (s *FlowMgtServiceTestSuite) TestGetFlowVersion_VersionNotFound() {
-	s.mockStore.EXPECT().GetFlowVersion(testFlowIDService, 1).Return(nil, errVersionNotFound)
+	s.mockStore.EXPECT().GetFlowVersion(mock.Anything, testFlowIDService, 1).Return(nil, errVersionNotFound)
 
-	result, err := s.service.GetFlowVersion(testFlowIDService, 1)
+	result, err := s.service.GetFlowVersion(context.Background(), testFlowIDService, 1)
 
 	s.Nil(result)
 	s.Equal(&ErrorVersionNotFound, err)
 }
 
 func (s *FlowMgtServiceTestSuite) TestGetFlowVersion_StoreError() {
-	s.mockStore.EXPECT().GetFlowVersion(testFlowIDService, 1).Return(nil, errors.New("db error"))
+	s.mockStore.EXPECT().GetFlowVersion(mock.Anything, testFlowIDService, 1).Return(nil, errors.New("db error"))
 
-	result, err := s.service.GetFlowVersion(testFlowIDService, 1)
+	result, err := s.service.GetFlowVersion(context.Background(), testFlowIDService, 1)
 
 	s.Nil(result)
 	s.Equal(&serviceerror.InternalServerError, err)
@@ -886,43 +901,43 @@ func (s *FlowMgtServiceTestSuite) TestGetFlowVersion_StoreError() {
 func (s *FlowMgtServiceTestSuite) TestRestoreFlowVersion_Success() {
 	version := &FlowVersion{Version: 1}
 	restoredFlow := &CompleteFlowDefinition{ActiveVersion: 2}
-	s.mockStore.EXPECT().GetFlowVersion(testFlowIDService, 1).Return(version, nil)
-	s.mockStore.EXPECT().RestoreFlowVersion(testFlowIDService, 1).Return(restoredFlow, nil)
+	s.mockStore.EXPECT().GetFlowVersion(mock.Anything, testFlowIDService, 1).Return(version, nil)
+	s.mockStore.EXPECT().RestoreFlowVersion(mock.Anything, testFlowIDService, 1).Return(restoredFlow, nil)
 	s.mockGraphBuilder.EXPECT().InvalidateCache(testFlowIDService)
 
-	result, err := s.service.RestoreFlowVersion(testFlowIDService, 1)
+	result, err := s.service.RestoreFlowVersion(context.Background(), testFlowIDService, 1)
 
 	s.Nil(err)
 	s.Equal(restoredFlow, result)
 }
 
 func (s *FlowMgtServiceTestSuite) TestRestoreFlowVersion_EmptyID() {
-	result, err := s.service.RestoreFlowVersion("", 1)
+	result, err := s.service.RestoreFlowVersion(context.Background(), "", 1)
 
 	s.Nil(result)
 	s.Equal(&ErrorMissingFlowID, err)
 }
 
 func (s *FlowMgtServiceTestSuite) TestRestoreFlowVersion_InvalidVersion() {
-	result, err := s.service.RestoreFlowVersion(testFlowIDService, 0)
+	result, err := s.service.RestoreFlowVersion(context.Background(), testFlowIDService, 0)
 
 	s.Nil(result)
 	s.Equal(&ErrorInvalidVersion, err)
 }
 
 func (s *FlowMgtServiceTestSuite) TestRestoreFlowVersion_FlowNotFound() {
-	s.mockStore.EXPECT().GetFlowVersion(testFlowIDService, 1).Return(nil, errFlowNotFound)
+	s.mockStore.EXPECT().GetFlowVersion(mock.Anything, testFlowIDService, 1).Return(nil, errFlowNotFound)
 
-	result, err := s.service.RestoreFlowVersion(testFlowIDService, 1)
+	result, err := s.service.RestoreFlowVersion(context.Background(), testFlowIDService, 1)
 
 	s.Nil(result)
 	s.Equal(&ErrorFlowNotFound, err)
 }
 
 func (s *FlowMgtServiceTestSuite) TestRestoreFlowVersion_VersionNotFound() {
-	s.mockStore.EXPECT().GetFlowVersion(testFlowIDService, 1).Return(nil, errVersionNotFound)
+	s.mockStore.EXPECT().GetFlowVersion(mock.Anything, testFlowIDService, 1).Return(nil, errVersionNotFound)
 
-	result, err := s.service.RestoreFlowVersion(testFlowIDService, 1)
+	result, err := s.service.RestoreFlowVersion(context.Background(), testFlowIDService, 1)
 
 	s.Nil(result)
 	s.Equal(&ErrorVersionNotFound, err)
@@ -930,10 +945,10 @@ func (s *FlowMgtServiceTestSuite) TestRestoreFlowVersion_VersionNotFound() {
 
 func (s *FlowMgtServiceTestSuite) TestRestoreFlowVersion_StoreError() {
 	version := &FlowVersion{Version: 1}
-	s.mockStore.EXPECT().GetFlowVersion(testFlowIDService, 1).Return(version, nil)
-	s.mockStore.EXPECT().RestoreFlowVersion(testFlowIDService, 1).Return(nil, errors.New("db error"))
+	s.mockStore.EXPECT().GetFlowVersion(mock.Anything, testFlowIDService, 1).Return(version, nil)
+	s.mockStore.EXPECT().RestoreFlowVersion(mock.Anything, testFlowIDService, 1).Return(nil, errors.New("db error"))
 
-	result, err := s.service.RestoreFlowVersion(testFlowIDService, 1)
+	result, err := s.service.RestoreFlowVersion(context.Background(), testFlowIDService, 1)
 
 	s.Nil(result)
 	s.Equal(&serviceerror.InternalServerError, err)
@@ -942,36 +957,37 @@ func (s *FlowMgtServiceTestSuite) TestRestoreFlowVersion_StoreError() {
 // GetGraph tests
 
 func (s *FlowMgtServiceTestSuite) TestGetGraph_Success() {
-	flow := &CompleteFlowDefinition{ID: testFlowIDService}
-	s.mockStore.EXPECT().GetFlowByID(testFlowIDService).Return(flow, nil)
-	s.mockGraphBuilder.EXPECT().GetGraph(flow).Return(nil, nil)
+	expectedFlow := &CompleteFlowDefinition{ID: testFlowIDService}
+	mockGraph := coremock.NewGraphInterfaceMock(s.T())
+	s.mockStore.EXPECT().GetFlowByID(mock.Anything, testFlowIDService).Return(expectedFlow, nil)
+	s.mockGraphBuilder.EXPECT().GetGraph(expectedFlow).Return(mockGraph, nil)
 
-	result, err := s.service.GetGraph(testFlowIDService)
+	result, err := s.service.GetGraph(context.Background(), testFlowIDService)
 
 	s.Nil(err)
-	s.Nil(result)
+	s.Equal(mockGraph, result)
 }
 
 func (s *FlowMgtServiceTestSuite) TestGetGraph_EmptyID() {
-	result, err := s.service.GetGraph("")
+	result, err := s.service.GetGraph(context.Background(), "")
 
 	s.Nil(result)
 	s.Equal(&ErrorMissingFlowID, err)
 }
 
 func (s *FlowMgtServiceTestSuite) TestGetGraph_FlowNotFound() {
-	s.mockStore.EXPECT().GetFlowByID(testFlowIDService).Return(nil, errFlowNotFound)
+	s.mockStore.EXPECT().GetFlowByID(mock.Anything, testFlowIDService).Return(nil, errFlowNotFound)
 
-	result, err := s.service.GetGraph(testFlowIDService)
+	result, err := s.service.GetGraph(context.Background(), testFlowIDService)
 
 	s.Nil(result)
 	s.Equal(&ErrorFlowNotFound, err)
 }
 
 func (s *FlowMgtServiceTestSuite) TestGetGraph_StoreError() {
-	s.mockStore.EXPECT().GetFlowByID(testFlowIDService).Return(nil, errors.New("db error"))
+	s.mockStore.EXPECT().GetFlowByID(mock.Anything, testFlowIDService).Return(nil, errors.New("db error"))
 
-	result, err := s.service.GetGraph(testFlowIDService)
+	result, err := s.service.GetGraph(context.Background(), testFlowIDService)
 
 	s.Nil(result)
 	s.Equal(&serviceerror.InternalServerError, err)
@@ -980,31 +996,31 @@ func (s *FlowMgtServiceTestSuite) TestGetGraph_StoreError() {
 // IsValidFlow tests
 
 func (s *FlowMgtServiceTestSuite) TestIsValidFlow_Success() {
-	s.mockStore.EXPECT().IsFlowExists(testFlowIDService).Return(true, nil)
+	s.mockStore.EXPECT().IsFlowExists(mock.Anything, testFlowIDService).Return(true, nil)
 
-	result := s.service.IsValidFlow(testFlowIDService)
+	result := s.service.IsValidFlow(context.Background(), testFlowIDService)
 
 	s.True(result)
 }
 
 func (s *FlowMgtServiceTestSuite) TestIsValidFlow_NotFound() {
-	s.mockStore.EXPECT().IsFlowExists(testFlowIDService).Return(false, nil)
+	s.mockStore.EXPECT().IsFlowExists(mock.Anything, testFlowIDService).Return(false, nil)
 
-	result := s.service.IsValidFlow(testFlowIDService)
+	result := s.service.IsValidFlow(context.Background(), testFlowIDService)
 
 	s.False(result)
 }
 
 func (s *FlowMgtServiceTestSuite) TestIsValidFlow_EmptyID() {
-	result := s.service.IsValidFlow("")
+	result := s.service.IsValidFlow(context.Background(), "")
 
 	s.False(result)
 }
 
 func (s *FlowMgtServiceTestSuite) TestIsValidFlow_StoreError() {
-	s.mockStore.EXPECT().IsFlowExists(testFlowIDService).Return(false, errors.New("db error"))
+	s.mockStore.EXPECT().IsFlowExists(mock.Anything, testFlowIDService).Return(false, errors.New("db error"))
 
-	result := s.service.IsValidFlow(testFlowIDService)
+	result := s.service.IsValidFlow(context.Background(), testFlowIDService)
 
 	s.False(result)
 }
@@ -1016,7 +1032,14 @@ func (s *FlowMgtServiceTestSuite) TestApplyExecutorDefaultMeta_Success() {
 	mockExecutor := coremock.NewExecutorInterfaceMock(s.T())
 
 	// Create service with executor registry
-	service := newFlowMgtService(s.mockStore, s.mockInference, s.mockGraphBuilder, mockExecutorRegistry)
+	// Create service with executor registry
+	service := newFlowMgtService(
+		s.mockStore,
+		s.mockInference,
+		s.mockGraphBuilder,
+		mockExecutorRegistry,
+		&stubTransactioner{},
+	)
 
 	defaultMeta := map[string]interface{}{
 		"components": []interface{}{
@@ -1066,7 +1089,14 @@ func (s *FlowMgtServiceTestSuite) TestApplyExecutorDefaultMeta_PreservesExisting
 	mockExecutorRegistry := executormock.NewExecutorRegistryInterfaceMock(s.T())
 
 	// Create service with executor registry
-	service := newFlowMgtService(s.mockStore, s.mockInference, s.mockGraphBuilder, mockExecutorRegistry)
+	// Create service with executor registry
+	service := newFlowMgtService(
+		s.mockStore,
+		s.mockInference,
+		s.mockGraphBuilder,
+		mockExecutorRegistry,
+		&stubTransactioner{},
+	)
 
 	customMeta := map[string]interface{}{
 		"components": []interface{}{
@@ -1110,7 +1140,14 @@ func (s *FlowMgtServiceTestSuite) TestApplyExecutorDefaultMeta_SkipsNonTaskExecu
 	mockExecutorRegistry := executormock.NewExecutorRegistryInterfaceMock(s.T())
 
 	// Create service with executor registry
-	service := newFlowMgtService(s.mockStore, s.mockInference, s.mockGraphBuilder, mockExecutorRegistry)
+	// Create service with executor registry
+	service := newFlowMgtService(
+		s.mockStore,
+		s.mockInference,
+		s.mockGraphBuilder,
+		mockExecutorRegistry,
+		&stubTransactioner{},
+	)
 
 	flowDef := &FlowDefinition{
 		Handle:   "test-flow",
@@ -1134,7 +1171,14 @@ func (s *FlowMgtServiceTestSuite) TestApplyExecutorDefaultMeta_HandlesGetExecuto
 	mockExecutorRegistry := executormock.NewExecutorRegistryInterfaceMock(s.T())
 
 	// Create service with executor registry
-	service := newFlowMgtService(s.mockStore, s.mockInference, s.mockGraphBuilder, mockExecutorRegistry)
+	// Create service with executor registry
+	service := newFlowMgtService(
+		s.mockStore,
+		s.mockInference,
+		s.mockGraphBuilder,
+		mockExecutorRegistry,
+		&stubTransactioner{},
+	)
 
 	mockExecutorRegistry.On("GetExecutor", "UnknownExecutor").
 		Return(nil, errors.New("executor not found"))
@@ -1166,7 +1210,14 @@ func (s *FlowMgtServiceTestSuite) TestApplyExecutorDefaultMeta_HandlesGetExecuto
 
 func (s *FlowMgtServiceTestSuite) TestApplyExecutorDefaultMeta_NilExecutorRegistry() {
 	// Create service WITHOUT executor registry
-	service := newFlowMgtService(s.mockStore, s.mockInference, s.mockGraphBuilder, nil)
+	// Create service WITHOUT executor registry
+	service := newFlowMgtService(
+		s.mockStore,
+		s.mockInference,
+		s.mockGraphBuilder,
+		nil,
+		&stubTransactioner{},
+	)
 
 	flowDef := &FlowDefinition{
 		Handle:   "test-flow",
@@ -1197,7 +1248,14 @@ func (s *FlowMgtServiceTestSuite) TestApplyExecutorDefaultMeta_ExecutorReturnsNi
 	mockExecutor := coremock.NewExecutorInterfaceMock(s.T())
 
 	// Create service with executor registry
-	service := newFlowMgtService(s.mockStore, s.mockInference, s.mockGraphBuilder, mockExecutorRegistry)
+	// Create service with executor registry
+	service := newFlowMgtService(
+		s.mockStore,
+		s.mockInference,
+		s.mockGraphBuilder,
+		mockExecutorRegistry,
+		&stubTransactioner{},
+	)
 
 	// Executor returns nil meta
 	mockExecutor.On("GetDefaultMeta").Return(nil)
@@ -1240,7 +1298,14 @@ func (s *FlowMgtServiceTestSuite) TestApplyExecutorDefaultMeta_MultipleTaskExecu
 	mockExecutor2 := coremock.NewExecutorInterfaceMock(s.T())
 
 	// Create service with executor registry
-	service := newFlowMgtService(s.mockStore, s.mockInference, s.mockGraphBuilder, mockExecutorRegistry)
+	// Create service with executor registry
+	service := newFlowMgtService(
+		s.mockStore,
+		s.mockInference,
+		s.mockGraphBuilder,
+		mockExecutorRegistry,
+		&stubTransactioner{},
+	)
 
 	meta1 := map[string]interface{}{"executor": "Executor1"}
 	meta2 := map[string]interface{}{"executor": "Executor2"}
@@ -1302,7 +1367,13 @@ func (s *FlowMgtServiceTestSuite) TestTryInferRegistrationFlow_Success_WithMetaG
 	mockExecutorRegistry := executormock.NewExecutorRegistryInterfaceMock(s.T())
 	mockExecutor := coremock.NewExecutorInterfaceMock(s.T())
 
-	service := newFlowMgtService(s.mockStore, s.mockInference, s.mockGraphBuilder, mockExecutorRegistry)
+	service := newFlowMgtService(
+		s.mockStore,
+		s.mockInference,
+		s.mockGraphBuilder,
+		mockExecutorRegistry,
+		&stubTransactioner{},
+	)
 
 	authFlowDef := &FlowDefinition{
 		Handle:   "auth-flow",
@@ -1348,9 +1419,10 @@ func (s *FlowMgtServiceTestSuite) TestTryInferRegistrationFlow_Success_WithMetaG
 		FlowType: inferredRegFlow.FlowType,
 		Nodes:    inferredRegFlow.Nodes,
 	}
-	s.mockStore.On("CreateFlow", mock.AnythingOfType("string"), inferredRegFlow).Return(completeFlow, nil)
+	s.mockStore.On("CreateFlow", mock.Anything, mock.AnythingOfType("string"), inferredRegFlow).
+		Return(completeFlow, nil)
 
-	service.(*flowMgtService).tryInferRegistrationFlow("auth-flow-id", authFlowDef)
+	service.(*flowMgtService).tryInferRegistrationFlow(context.Background(), "auth-flow-id", authFlowDef)
 
 	s.Equal(defaultMeta, inferredRegFlow.Nodes[1].Meta)
 	s.mockInference.AssertExpectations(s.T())
@@ -1370,7 +1442,13 @@ func (s *FlowMgtServiceTestSuite) TestTryInferRegistrationFlow_SkipsNonAuthFlow(
 	_ = config.InitializeThunderRuntime("test", testConfig)
 
 	mockExecutorRegistry := executormock.NewExecutorRegistryInterfaceMock(s.T())
-	service := newFlowMgtService(s.mockStore, s.mockInference, s.mockGraphBuilder, mockExecutorRegistry)
+	service := newFlowMgtService(
+		s.mockStore,
+		s.mockInference,
+		s.mockGraphBuilder,
+		mockExecutorRegistry,
+		&stubTransactioner{},
+	)
 
 	regFlowDef := &FlowDefinition{
 		Handle:   "reg-flow",
@@ -1379,7 +1457,7 @@ func (s *FlowMgtServiceTestSuite) TestTryInferRegistrationFlow_SkipsNonAuthFlow(
 		Nodes:    []NodeDefinition{},
 	}
 
-	service.(*flowMgtService).tryInferRegistrationFlow("reg-flow-id", regFlowDef)
+	service.(*flowMgtService).tryInferRegistrationFlow(context.Background(), "reg-flow-id", regFlowDef)
 
 	s.mockInference.AssertNotCalled(s.T(), "InferRegistrationFlow")
 	s.mockStore.AssertNotCalled(s.T(), "CreateFlow")
@@ -1397,7 +1475,13 @@ func (s *FlowMgtServiceTestSuite) TestTryInferRegistrationFlow_HandlesInferenceE
 	_ = config.InitializeThunderRuntime("test", testConfig)
 
 	mockExecutorRegistry := executormock.NewExecutorRegistryInterfaceMock(s.T())
-	service := newFlowMgtService(s.mockStore, s.mockInference, s.mockGraphBuilder, mockExecutorRegistry)
+	service := newFlowMgtService(
+		s.mockStore,
+		s.mockInference,
+		s.mockGraphBuilder,
+		mockExecutorRegistry,
+		&stubTransactioner{},
+	)
 
 	authFlowDef := &FlowDefinition{
 		Handle:   "auth-flow",
@@ -1408,7 +1492,7 @@ func (s *FlowMgtServiceTestSuite) TestTryInferRegistrationFlow_HandlesInferenceE
 
 	s.mockInference.On("InferRegistrationFlow", authFlowDef).Return(nil, errors.New("inference failed"))
 
-	service.(*flowMgtService).tryInferRegistrationFlow("auth-flow-id", authFlowDef)
+	service.(*flowMgtService).tryInferRegistrationFlow(context.Background(), "auth-flow-id", authFlowDef)
 
 	s.mockInference.AssertExpectations(s.T())
 	s.mockStore.AssertNotCalled(s.T(), "CreateFlow")
@@ -1426,7 +1510,13 @@ func (s *FlowMgtServiceTestSuite) TestTryInferRegistrationFlow_HandlesMetaApplic
 	_ = config.InitializeThunderRuntime("test", testConfig)
 
 	mockExecutorRegistry := executormock.NewExecutorRegistryInterfaceMock(s.T())
-	service := newFlowMgtService(s.mockStore, s.mockInference, s.mockGraphBuilder, mockExecutorRegistry)
+	service := newFlowMgtService(
+		s.mockStore,
+		s.mockInference,
+		s.mockGraphBuilder,
+		mockExecutorRegistry,
+		&stubTransactioner{},
+	)
 
 	authFlowDef := &FlowDefinition{
 		Handle:   "auth-flow",
@@ -1456,7 +1546,7 @@ func (s *FlowMgtServiceTestSuite) TestTryInferRegistrationFlow_HandlesMetaApplic
 	mockExecutorRegistry.On("GetExecutor", "UnknownExecutor").Return(nil, errors.New("executor not found"))
 	s.mockInference.On("InferRegistrationFlow", authFlowDef).Return(inferredRegFlow, nil)
 
-	service.(*flowMgtService).tryInferRegistrationFlow("auth-flow-id", authFlowDef)
+	service.(*flowMgtService).tryInferRegistrationFlow(context.Background(), "auth-flow-id", authFlowDef)
 
 	s.mockInference.AssertExpectations(s.T())
 	mockExecutorRegistry.AssertExpectations(s.T())
@@ -1466,7 +1556,13 @@ func (s *FlowMgtServiceTestSuite) TestTryInferRegistrationFlow_HandlesMetaApplic
 func (s *FlowMgtServiceTestSuite) TestTryInferRegistrationFlow_DisabledAutoInference() {
 	// Auto-inference is disabled in SetupTest, so just verify early return
 	mockExecutorRegistry := executormock.NewExecutorRegistryInterfaceMock(s.T())
-	service := newFlowMgtService(s.mockStore, s.mockInference, s.mockGraphBuilder, mockExecutorRegistry)
+	service := newFlowMgtService(
+		s.mockStore,
+		s.mockInference,
+		s.mockGraphBuilder,
+		mockExecutorRegistry,
+		&stubTransactioner{},
+	)
 
 	authFlowDef := &FlowDefinition{
 		Handle:   "auth-flow",
@@ -1475,7 +1571,7 @@ func (s *FlowMgtServiceTestSuite) TestTryInferRegistrationFlow_DisabledAutoInfer
 		Nodes:    []NodeDefinition{},
 	}
 
-	service.(*flowMgtService).tryInferRegistrationFlow("auth-flow-id", authFlowDef)
+	service.(*flowMgtService).tryInferRegistrationFlow(context.Background(), "auth-flow-id", authFlowDef)
 
 	s.mockInference.AssertNotCalled(s.T(), "InferRegistrationFlow")
 	s.mockStore.AssertNotCalled(s.T(), "CreateFlow")

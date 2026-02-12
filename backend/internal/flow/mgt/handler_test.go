@@ -25,6 +25,7 @@ import (
 	"net/http/httptest"
 	"testing"
 
+	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/suite"
 
 	"github.com/asgardeo/thunder/internal/flow/common"
@@ -59,7 +60,7 @@ func (s *FlowMgtHandlerTestSuite) TestListFlows_Success() {
 		Count: 2,
 	}
 
-	s.mockService.EXPECT().ListFlows(30, 0, common.FlowType("")).Return(expectedList, nil)
+	s.mockService.EXPECT().ListFlows(mock.Anything, 30, 0, common.FlowType("")).Return(expectedList, nil)
 
 	req := httptest.NewRequest(http.MethodGet, "/flows", nil)
 	w := httptest.NewRecorder()
@@ -77,7 +78,7 @@ func (s *FlowMgtHandlerTestSuite) TestListFlows_Success() {
 func (s *FlowMgtHandlerTestSuite) TestListFlows_WithPagination() {
 	expectedList := &FlowListResponse{Flows: []BasicFlowDefinition{}, Count: 0}
 
-	s.mockService.EXPECT().ListFlows(20, 10, common.FlowType("")).Return(expectedList, nil)
+	s.mockService.EXPECT().ListFlows(mock.Anything, 20, 10, common.FlowType("")).Return(expectedList, nil)
 
 	req := httptest.NewRequest(http.MethodGet, "/flows?limit=20&offset=10", nil)
 	w := httptest.NewRecorder()
@@ -90,7 +91,7 @@ func (s *FlowMgtHandlerTestSuite) TestListFlows_WithPagination() {
 func (s *FlowMgtHandlerTestSuite) TestListFlows_WithFlowType() {
 	expectedList := &FlowListResponse{Flows: []BasicFlowDefinition{}, Count: 0}
 
-	s.mockService.EXPECT().ListFlows(30, 0, common.FlowTypeAuthentication).Return(expectedList, nil)
+	s.mockService.EXPECT().ListFlows(mock.Anything, 30, 0, common.FlowTypeAuthentication).Return(expectedList, nil)
 
 	req := httptest.NewRequest(http.MethodGet, "/flows?flowType=AUTHENTICATION", nil)
 	w := httptest.NewRecorder()
@@ -128,7 +129,7 @@ func (s *FlowMgtHandlerTestSuite) TestListFlows_InvalidOffset() {
 }
 
 func (s *FlowMgtHandlerTestSuite) TestListFlows_ServiceError() {
-	s.mockService.EXPECT().ListFlows(30, 0, common.FlowType("")).
+	s.mockService.EXPECT().ListFlows(mock.Anything, 30, 0, common.FlowType("")).
 		Return(nil, &serviceerror.InternalServerError)
 
 	req := httptest.NewRequest(http.MethodGet, "/flows", nil)
@@ -158,7 +159,7 @@ func (s *FlowMgtHandlerTestSuite) TestCreateFlow_Success() {
 		Nodes:    flowDef.Nodes,
 	}
 
-	s.mockService.EXPECT().CreateFlow(flowDef).Return(createdFlow, nil)
+	s.mockService.EXPECT().CreateFlow(mock.Anything, flowDef).Return(createdFlow, nil)
 
 	body, _ := json.Marshal(flowDef)
 	req := httptest.NewRequest(http.MethodPost, "/flows", bytes.NewReader(body))
@@ -192,7 +193,7 @@ func (s *FlowMgtHandlerTestSuite) TestCreateFlow_ServiceError() {
 		FlowType: common.FlowTypeAuthentication,
 	}
 
-	s.mockService.EXPECT().CreateFlow(flowDef).Return(nil, &ErrorInvalidFlowData)
+	s.mockService.EXPECT().CreateFlow(mock.Anything, flowDef).Return(nil, &ErrorInvalidFlowData)
 
 	body, _ := json.Marshal(flowDef)
 	req := httptest.NewRequest(http.MethodPost, "/flows", bytes.NewReader(body))
@@ -214,7 +215,7 @@ func (s *FlowMgtHandlerTestSuite) TestGetFlow_Success() {
 		FlowType: common.FlowTypeAuthentication,
 	}
 
-	s.mockService.EXPECT().GetFlow(testFlowIDHandler).Return(expectedFlow, nil)
+	s.mockService.EXPECT().GetFlow(mock.Anything, testFlowIDHandler).Return(expectedFlow, nil)
 
 	req := httptest.NewRequest(http.MethodGet, "/flows/"+testFlowIDHandler, nil)
 	req.SetPathValue(pathParamFlowID, testFlowIDHandler)
@@ -239,7 +240,7 @@ func (s *FlowMgtHandlerTestSuite) TestGetFlow_MissingFlowID() {
 }
 
 func (s *FlowMgtHandlerTestSuite) TestGetFlow_NotFound() {
-	s.mockService.EXPECT().GetFlow(testFlowIDHandler).Return(nil, &ErrorFlowNotFound)
+	s.mockService.EXPECT().GetFlow(mock.Anything, testFlowIDHandler).Return(nil, &ErrorFlowNotFound)
 
 	req := httptest.NewRequest(http.MethodGet, "/flows/"+testFlowIDHandler, nil)
 	req.SetPathValue(pathParamFlowID, testFlowIDHandler)
@@ -269,7 +270,7 @@ func (s *FlowMgtHandlerTestSuite) TestUpdateFlow_Success() {
 		Nodes:    flowDef.Nodes,
 	}
 
-	s.mockService.EXPECT().UpdateFlow(testFlowIDHandler, flowDef).Return(updatedFlow, nil)
+	s.mockService.EXPECT().UpdateFlow(mock.Anything, testFlowIDHandler, flowDef).Return(updatedFlow, nil)
 
 	body, _ := json.Marshal(flowDef)
 	req := httptest.NewRequest(http.MethodPut, "/flows/"+testFlowIDHandler, bytes.NewReader(body))
@@ -315,7 +316,7 @@ func (s *FlowMgtHandlerTestSuite) TestUpdateFlow_NotFound() {
 		FlowType: common.FlowTypeAuthentication,
 	}
 
-	s.mockService.EXPECT().UpdateFlow(testFlowIDHandler, flowDef).Return(nil, &ErrorFlowNotFound)
+	s.mockService.EXPECT().UpdateFlow(mock.Anything, testFlowIDHandler, flowDef).Return(nil, &ErrorFlowNotFound)
 
 	body, _ := json.Marshal(flowDef)
 	req := httptest.NewRequest(http.MethodPut, "/flows/"+testFlowIDHandler, bytes.NewReader(body))
@@ -331,7 +332,7 @@ func (s *FlowMgtHandlerTestSuite) TestUpdateFlow_NotFound() {
 // Test deleteFlow
 
 func (s *FlowMgtHandlerTestSuite) TestDeleteFlow_Success() {
-	s.mockService.EXPECT().DeleteFlow(testFlowIDHandler).Return(nil)
+	s.mockService.EXPECT().DeleteFlow(mock.Anything, testFlowIDHandler).Return(nil)
 
 	req := httptest.NewRequest(http.MethodDelete, "/flows/"+testFlowIDHandler, nil)
 	req.SetPathValue(pathParamFlowID, testFlowIDHandler)
@@ -352,7 +353,7 @@ func (s *FlowMgtHandlerTestSuite) TestDeleteFlow_MissingFlowID() {
 }
 
 func (s *FlowMgtHandlerTestSuite) TestDeleteFlow_NotFound() {
-	s.mockService.EXPECT().DeleteFlow(testFlowIDHandler).Return(&ErrorFlowNotFound)
+	s.mockService.EXPECT().DeleteFlow(mock.Anything, testFlowIDHandler).Return(&ErrorFlowNotFound)
 
 	req := httptest.NewRequest(http.MethodDelete, "/flows/"+testFlowIDHandler, nil)
 	req.SetPathValue(pathParamFlowID, testFlowIDHandler)
@@ -374,7 +375,7 @@ func (s *FlowMgtHandlerTestSuite) TestListFlowVersions_Success() {
 		TotalVersions: 2,
 	}
 
-	s.mockService.EXPECT().ListFlowVersions(testFlowIDHandler).Return(expectedList, nil)
+	s.mockService.EXPECT().ListFlowVersions(mock.Anything, testFlowIDHandler).Return(expectedList, nil)
 
 	req := httptest.NewRequest(http.MethodGet, "/flows/"+testFlowIDHandler+"/versions", nil)
 	req.SetPathValue(pathParamFlowID, testFlowIDHandler)
@@ -399,7 +400,7 @@ func (s *FlowMgtHandlerTestSuite) TestListFlowVersions_MissingFlowID() {
 }
 
 func (s *FlowMgtHandlerTestSuite) TestListFlowVersions_NotFound() {
-	s.mockService.EXPECT().ListFlowVersions(testFlowIDHandler).Return(nil, &ErrorFlowNotFound)
+	s.mockService.EXPECT().ListFlowVersions(mock.Anything, testFlowIDHandler).Return(nil, &ErrorFlowNotFound)
 
 	req := httptest.NewRequest(http.MethodGet, "/flows/"+testFlowIDHandler+"/versions", nil)
 	req.SetPathValue(pathParamFlowID, testFlowIDHandler)
@@ -420,7 +421,7 @@ func (s *FlowMgtHandlerTestSuite) TestGetFlowVersion_Success() {
 		Name:    "Test Flow",
 	}
 
-	s.mockService.EXPECT().GetFlowVersion(testFlowIDHandler, 1).Return(expectedVersion, nil)
+	s.mockService.EXPECT().GetFlowVersion(mock.Anything, testFlowIDHandler, 1).Return(expectedVersion, nil)
 
 	req := httptest.NewRequest(http.MethodGet, "/flows/"+testFlowIDHandler+"/versions/1", nil)
 	req.SetPathValue(pathParamFlowID, testFlowIDHandler)
@@ -479,7 +480,7 @@ func (s *FlowMgtHandlerTestSuite) TestGetFlowVersion_ZeroVersion() {
 }
 
 func (s *FlowMgtHandlerTestSuite) TestGetFlowVersion_NotFound() {
-	s.mockService.EXPECT().GetFlowVersion(testFlowIDHandler, 99).Return(nil, &ErrorVersionNotFound)
+	s.mockService.EXPECT().GetFlowVersion(mock.Anything, testFlowIDHandler, 99).Return(nil, &ErrorVersionNotFound)
 
 	req := httptest.NewRequest(http.MethodGet, "/flows/"+testFlowIDHandler+"/versions/99", nil)
 	req.SetPathValue(pathParamFlowID, testFlowIDHandler)
@@ -502,7 +503,7 @@ func (s *FlowMgtHandlerTestSuite) TestRestoreFlowVersion_Success() {
 		FlowType: common.FlowTypeAuthentication,
 	}
 
-	s.mockService.EXPECT().RestoreFlowVersion(testFlowIDHandler, 1).Return(restoredFlow, nil)
+	s.mockService.EXPECT().RestoreFlowVersion(mock.Anything, testFlowIDHandler, 1).Return(restoredFlow, nil)
 
 	body, _ := json.Marshal(request)
 	req := httptest.NewRequest(http.MethodPost, "/flows/"+testFlowIDHandler+"/versions/restore",
@@ -547,7 +548,7 @@ func (s *FlowMgtHandlerTestSuite) TestRestoreFlowVersion_InvalidJSON() {
 func (s *FlowMgtHandlerTestSuite) TestRestoreFlowVersion_NotFound() {
 	request := &RestoreVersionRequest{Version: 99}
 
-	s.mockService.EXPECT().RestoreFlowVersion(testFlowIDHandler, 99).Return(nil, &ErrorVersionNotFound)
+	s.mockService.EXPECT().RestoreFlowVersion(mock.Anything, testFlowIDHandler, 99).Return(nil, &ErrorVersionNotFound)
 
 	body, _ := json.Marshal(request)
 	req := httptest.NewRequest(http.MethodPost, "/flows/"+testFlowIDHandler+"/versions/restore",
