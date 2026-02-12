@@ -66,8 +66,8 @@ func (suite *CredentialsAuthnServiceTestSuite) TestAuthenticateSuccess() {
 		OrganizationUnit: orgUnit,
 	}
 
-	suite.mockUserService.On("AuthenticateUser", mock.Anything).Return(authResp, nil)
-	suite.mockUserService.On("GetUser", userID).Return(user, nil)
+	suite.mockUserService.On("AuthenticateUser", mock.Anything, mock.Anything).Return(authResp, nil)
+	suite.mockUserService.On("GetUser", mock.Anything, userID).Return(user, nil)
 
 	result, err := suite.service.Authenticate(attributes)
 	suite.Nil(err)
@@ -96,7 +96,7 @@ func (suite *CredentialsAuthnServiceTestSuite) TestAuthenticateFailures() {
 				"password": "testpass",
 			},
 			setupMock: func(m *usermock.UserServiceInterfaceMock) {
-				m.On("AuthenticateUser", mock.Anything).Return(nil, &user.ErrorUserNotFound)
+				m.On("AuthenticateUser", mock.Anything, mock.Anything).Return(nil, &user.ErrorUserNotFound)
 			},
 			expectedErrorCode: common.ErrorUserNotFound.Code,
 		},
@@ -107,7 +107,7 @@ func (suite *CredentialsAuthnServiceTestSuite) TestAuthenticateFailures() {
 				"password": "wrongpass",
 			},
 			setupMock: func(m *usermock.UserServiceInterfaceMock) {
-				m.On("AuthenticateUser", mock.Anything).Return(nil, &user.ErrorAuthenticationFailed)
+				m.On("AuthenticateUser", mock.Anything, mock.Anything).Return(nil, &user.ErrorAuthenticationFailed)
 			},
 			expectedErrorCode: ErrorInvalidCredentials.Code,
 		},
@@ -150,7 +150,7 @@ func (suite *CredentialsAuthnServiceTestSuite) TestAuthenticateWithServiceErrors
 					Code:             "INTERNAL_ERROR",
 					ErrorDescription: "Database connection failed",
 				}
-				m.On("AuthenticateUser", mock.Anything).Return(nil, serverErr)
+				m.On("AuthenticateUser", mock.Anything, mock.Anything).Return(nil, serverErr)
 			},
 			expectedErrorCode: serviceerror.InternalServerError.Code,
 		},
@@ -166,7 +166,7 @@ func (suite *CredentialsAuthnServiceTestSuite) TestAuthenticateWithServiceErrors
 					Code:             "CUSTOM_ERROR",
 					ErrorDescription: "Custom error message",
 				}
-				m.On("AuthenticateUser", mock.Anything).Return(nil, clientErr)
+				m.On("AuthenticateUser", mock.Anything, mock.Anything).Return(nil, clientErr)
 			},
 			expectedErrorCode:  ErrorClientErrorFromUserSvcAuthentication.Code,
 			expectedErrContain: "Custom error message",
@@ -185,8 +185,8 @@ func (suite *CredentialsAuthnServiceTestSuite) TestAuthenticateWithServiceErrors
 					Code:             "INTERNAL_ERROR",
 					ErrorDescription: "Database connection failed",
 				}
-				m.On("AuthenticateUser", mock.Anything).Return(authResp, nil)
-				m.On("GetUser", userID).Return(nil, serverErr)
+				m.On("AuthenticateUser", mock.Anything, mock.Anything).Return(authResp, nil)
+				m.On("GetUser", mock.Anything, userID).Return(nil, serverErr)
 			},
 			expectedErrorCode: serviceerror.InternalServerError.Code,
 		},
@@ -204,8 +204,8 @@ func (suite *CredentialsAuthnServiceTestSuite) TestAuthenticateWithServiceErrors
 					Code:             "CUSTOM_ERROR",
 					ErrorDescription: "User locked",
 				}
-				m.On("AuthenticateUser", mock.Anything).Return(authResp, nil)
-				m.On("GetUser", userID).Return(nil, clientErr)
+				m.On("AuthenticateUser", mock.Anything, mock.Anything).Return(authResp, nil)
+				m.On("GetUser", mock.Anything, userID).Return(nil, clientErr)
 			},
 			expectedErrorCode:  ErrorClientErrorFromUserSvcAuthentication.Code,
 			expectedErrContain: "User locked",

@@ -26,7 +26,7 @@ import (
 	"github.com/asgardeo/thunder/internal/cert"
 	flowmgt "github.com/asgardeo/thunder/internal/flow/mgt"
 	"github.com/asgardeo/thunder/internal/system/config"
-	immutableresource "github.com/asgardeo/thunder/internal/system/immutable_resource"
+	declarativeresource "github.com/asgardeo/thunder/internal/system/declarative_resource"
 	"github.com/asgardeo/thunder/internal/system/middleware"
 	"github.com/asgardeo/thunder/internal/userschema"
 )
@@ -38,9 +38,9 @@ func Initialize(
 	flowMgtService flowmgt.FlowMgtServiceInterface,
 	brandingService brandingmgt.BrandingMgtServiceInterface,
 	userSchemaService userschema.UserSchemaServiceInterface,
-) (ApplicationServiceInterface, immutableresource.ResourceExporter, error) {
+) (ApplicationServiceInterface, declarativeresource.ResourceExporter, error) {
 	var appStore applicationStoreInterface
-	if config.GetThunderRuntime().Config.ImmutableResources.Enabled {
+	if config.GetThunderRuntime().Config.DeclarativeResources.Enabled {
 		appStore = newFileBasedStore()
 	} else {
 		store := newApplicationStore()
@@ -49,8 +49,8 @@ func Initialize(
 
 	appService := newApplicationService(appStore, certService, flowMgtService, brandingService, userSchemaService)
 
-	if config.GetThunderRuntime().Config.ImmutableResources.Enabled {
-		if err := loadImmutableResources(appStore, appService); err != nil {
+	if config.GetThunderRuntime().Config.DeclarativeResources.Enabled {
+		if err := loadDeclarativeResources(appStore, appService); err != nil {
 			return nil, nil, err
 		}
 	}

@@ -63,7 +63,7 @@
             "id": "identity_resolver",
             "type": "TASK_EXECUTION",
             "executor": {
-                "name": "IdentityResolver"
+                "name": "IdentifyingExecutor"
             },
             "onSuccess": "passkey_challenge",
             "onFailure": "prompt_identifier"

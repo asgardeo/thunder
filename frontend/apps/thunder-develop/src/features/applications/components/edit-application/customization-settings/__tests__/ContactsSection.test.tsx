@@ -154,4 +154,47 @@ describe('ContactsSection', () => {
       expect(textField).toHaveValue('');
     });
   });
+
+  describe('Contacts Sync Effect', () => {
+    it('should not call onFieldChange when contacts match current value', () => {
+      // When the form value matches the current contacts, no update should be triggered
+      const editedApp = {
+        contacts: ['contact1@example.com', 'contact2@example.com'],
+      };
+
+      render(<ContactsSection application={mockApplication} editedApp={editedApp} onFieldChange={mockOnFieldChange} />);
+
+      // Initial render should not trigger onFieldChange since values match
+      expect(mockOnFieldChange).not.toHaveBeenCalled();
+    });
+
+    it('should use editedApp contacts when provided', () => {
+      const editedApp = {
+        contacts: ['edited@example.com'],
+      };
+
+      render(<ContactsSection application={mockApplication} editedApp={editedApp} onFieldChange={mockOnFieldChange} />);
+
+      const textField = screen.getByPlaceholderText('applications:edit.general.contacts.placeholder');
+      expect(textField).toHaveValue('edited@example.com');
+    });
+
+    it('should fall back to application contacts when editedApp contacts not provided', () => {
+      render(<ContactsSection application={mockApplication} editedApp={{}} onFieldChange={mockOnFieldChange} />);
+
+      const textField = screen.getByPlaceholderText('applications:edit.general.contacts.placeholder');
+      expect(textField).toHaveValue('contact1@example.com, contact2@example.com');
+    });
+
+    it('should handle undefined contacts in both editedApp and application gracefully', () => {
+      const appWithoutContacts = {...mockApplication};
+      delete (appWithoutContacts as Partial<Application>).contacts;
+
+      render(<ContactsSection application={appWithoutContacts} editedApp={{}} onFieldChange={mockOnFieldChange} />);
+
+      const textField = screen.getByPlaceholderText('applications:edit.general.contacts.placeholder');
+      expect(textField).toHaveValue('');
+    });
+  });
+
 });

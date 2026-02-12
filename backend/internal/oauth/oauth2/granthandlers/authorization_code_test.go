@@ -19,9 +19,7 @@
 package granthandlers
 
 import (
-	"encoding/json"
 	"errors"
-	"slices"
 	"testing"
 	"time"
 
@@ -35,7 +33,6 @@ import (
 	"github.com/asgardeo/thunder/internal/oauth/oauth2/model"
 	"github.com/asgardeo/thunder/internal/oauth/oauth2/tokenservice"
 	"github.com/asgardeo/thunder/internal/system/config"
-	"github.com/asgardeo/thunder/internal/system/error/serviceerror"
 	"github.com/asgardeo/thunder/internal/user"
 	"github.com/asgardeo/thunder/tests/mocks/jwtmock"
 	"github.com/asgardeo/thunder/tests/mocks/oauth/oauth2/authzmock"
@@ -49,6 +46,27 @@ const (
 	testCodeChallengeMethodS256 = "S256"
 	testClientCallbackURL       = "https://client.example.com/callback"
 )
+
+// convertToStringSlice converts groups from various formats to []string for testing.
+func convertToStringSlice(groups interface{}) []string {
+	if groups == nil {
+		return nil
+	}
+	switch v := groups.(type) {
+	case []string:
+		return v
+	case []interface{}:
+		result := make([]string, 0, len(v))
+		for _, item := range v {
+			if str, ok := item.(string); ok {
+				result = append(result, str)
+			}
+		}
+		return result
+	default:
+		return nil
+	}
+}
 
 type AuthorizationCodeGrantHandlerTestSuite struct {
 	suite.Suite
@@ -113,10 +131,14 @@ func (suite *AuthorizationCodeGrantHandlerTestSuite) SetupTest() {
 		ClientID:         testClientID,
 		RedirectURI:      "https://client.example.com/callback",
 		AuthorizedUserID: testUserID,
-		TimeCreated:      time.Now().Add(-5 * time.Minute),
-		ExpiryTime:       time.Now().Add(5 * time.Minute),
-		Scopes:           "read write",
-		State:            authz.AuthCodeStateActive,
+		UserAttributes: map[string]interface{}{
+			"email":    "test@example.com",
+			"username": "testuser",
+		},
+		TimeCreated: time.Now().Add(-5 * time.Minute),
+		ExpiryTime:  time.Now().Add(5 * time.Minute),
+		Scopes:      "read write",
+		State:       authz.AuthCodeStateActive,
 	}
 }
 
@@ -207,13 +229,6 @@ func (suite *AuthorizationCodeGrantHandlerTestSuite) TestHandleGrant_Success() {
 	suite.mockAuthzService.On("GetAuthorizationCodeDetails", testClientID, "test-auth-code").
 		Return(&authCodeWithResource, nil)
 
-	// Mock user service to return user for attributes
-	mockUser := &user.User{
-		ID:         testUserID,
-		Attributes: json.RawMessage(`{"email":"test@example.com","username":"testuser"}`),
-	}
-	suite.mockUserService.On("GetUser", testUserID).Return(mockUser, nil)
-
 	// Mock token builder to generate access token
 	suite.mockTokenBuilder.On("BuildAccessToken", mock.MatchedBy(func(ctx *tokenservice.AccessTokenBuildContext) bool {
 		return ctx.Subject == testUserID &&
@@ -277,13 +292,6 @@ func (suite *AuthorizationCodeGrantHandlerTestSuite) TestHandleGrant_JWTGenerati
 	suite.mockAuthzService.On("GetAuthorizationCodeDetails", testClientID, "test-auth-code").
 		Return(&suite.testAuthzCode, nil)
 
-	// Mock user service to return user for attributes
-	mockUser := &user.User{
-		ID:         testUserID,
-		Attributes: json.RawMessage(`{"email":"test@example.com","username":"testuser"}`),
-	}
-	suite.mockUserService.On("GetUser", testUserID).Return(mockUser, nil)
-
 	// Mock token builder to fail token generation
 	suite.mockTokenBuilder.On("BuildAccessToken", mock.Anything).Return(nil, errors.New("jwt generation failed"))
 
@@ -309,13 +317,6 @@ func (suite *AuthorizationCodeGrantHandlerTestSuite) TestHandleGrant_EmptyScopes
 
 	suite.mockAuthzService.On("GetAuthorizationCodeDetails", testClientID, "test-auth-code").
 		Return(&authzCodeWithEmptyScopes, nil)
-
-	// Mock user service to return user for attributes
-	mockUser := &user.User{
-		ID:         testUserID,
-		Attributes: json.RawMessage(`{"email":"test@example.com","username":"testuser"}`),
-	}
-	suite.mockUserService.On("GetUser", testUserID).Return(mockUser, nil)
 
 	suite.mockTokenBuilder.On("BuildAccessToken", mock.Anything).Return(&model.TokenDTO{
 		Token:     "test-jwt-token",
@@ -344,13 +345,6 @@ func (suite *AuthorizationCodeGrantHandlerTestSuite) TestHandleGrant_NilTokenAtt
 	// Test with nil token attributes
 	suite.mockAuthzService.On("GetAuthorizationCodeDetails", testClientID, "test-auth-code").
 		Return(&suite.testAuthzCode, nil)
-
-	// Mock user service to return user for attributes
-	mockUser := &user.User{
-		ID:         testUserID,
-		Attributes: json.RawMessage(`{"email":"test@example.com","username":"testuser"}`),
-	}
-	suite.mockUserService.On("GetUser", testUserID).Return(mockUser, nil)
 
 	suite.mockTokenBuilder.On("BuildAccessToken", mock.Anything).Return(&model.TokenDTO{
 		Token:     "test-jwt-token",
@@ -545,23 +539,24 @@ func (suite *AuthorizationCodeGrantHandlerTestSuite) TestHandleGrant_WithGroups(
 				authzCode.Scopes = oidcReadWriteScopes
 			}
 
+			// Add user attributes to authz code (including groups from assertion)
+			userGroups := make([]string, 0, len(tc.mockGroups))
+			for _, group := range tc.mockGroups {
+				userGroups = append(userGroups, group.Name)
+			}
+			authzCode.UserAttributes = map[string]interface{}{
+				"email":    "test@example.com",
+				"username": "testuser",
+			}
+			if len(userGroups) > 0 {
+				authzCode.UserAttributes[constants.UserAttributeGroups] = userGroups
+			}
+
 			suite.mockAuthzService.On("GetAuthorizationCodeDetails", testClientID, "test-auth-code").
 				Return(&authzCode, nil)
 
-			mockUser := &user.User{
-				ID:         testUserID,
-				Attributes: json.RawMessage(`{"email":"test@example.com","username":"testuser"}`),
-			}
-			suite.mockUserService.On("GetUser", testUserID).Return(mockUser, nil)
-
-			mockGroups := &user.UserGroupListResponse{
-				TotalResults: len(tc.mockGroups),
-				StartIndex:   0,
-				Count:        len(tc.mockGroups),
-				Groups:       tc.mockGroups,
-			}
-			suite.mockUserService.On("GetUserGroups", testUserID, constants.DefaultGroupListLimit, 0).
-				Return(mockGroups, nil)
+			// Groups come from the authorization code (extracted from assertion during authorization)
+			// No need to fetch from DB
 
 			var capturedAccessTokenClaims map[string]interface{}
 			var capturedIDTokenClaims map[string]interface{}
@@ -574,11 +569,6 @@ func (suite *AuthorizationCodeGrantHandlerTestSuite) TestHandleGrant_WithGroups(
 					for k, v := range ctx.UserAttributes {
 						capturedAccessTokenClaims[k] = v
 					}
-					// Add groups if configured in app (simulate BuildAccessToken filtering)
-					if len(ctx.UserGroups) > 0 &&
-						slices.Contains(ctx.OAuthApp.Token.AccessToken.UserAttributes, constants.UserAttributeGroups) {
-						capturedAccessTokenClaims[constants.UserAttributeGroups] = ctx.UserGroups
-					}
 					// Verify GrantType is authorization_code
 					return ctx.GrantType == string(constants.GrantTypeAuthorizationCode)
 				})).Return(func(ctx *tokenservice.AccessTokenBuildContext) (*model.TokenDTO, error) {
@@ -586,11 +576,6 @@ func (suite *AuthorizationCodeGrantHandlerTestSuite) TestHandleGrant_WithGroups(
 				userAttrs := make(map[string]interface{})
 				for k, v := range ctx.UserAttributes {
 					userAttrs[k] = v
-				}
-				// Add groups if configured in app
-				if len(ctx.UserGroups) > 0 &&
-					slices.Contains(ctx.OAuthApp.Token.AccessToken.UserAttributes, constants.UserAttributeGroups) {
-					userAttrs[constants.UserAttributeGroups] = ctx.UserGroups
 				}
 				return &model.TokenDTO{
 					Token:          "test-jwt-token",
@@ -612,14 +597,8 @@ func (suite *AuthorizationCodeGrantHandlerTestSuite) TestHandleGrant_WithGroups(
 						for k, v := range ctx.UserAttributes {
 							capturedIDTokenClaims[k] = v
 						}
-						// Add groups if configured in ID token user attributes
-						if ctx.OAuthApp != nil && ctx.OAuthApp.Token != nil && ctx.OAuthApp.Token.IDToken != nil {
-							idTokenUserAttributes := ctx.OAuthApp.Token.IDToken.UserAttributes
-							if len(ctx.UserGroups) > 0 && slices.Contains(idTokenUserAttributes,
-								constants.UserAttributeGroups) {
-								capturedIDTokenClaims[constants.UserAttributeGroups] = ctx.UserGroups
-							}
-						}
+						// Groups are already in UserAttributes if configured
+						// Token builder will extract and add them if needed
 						return true
 					})).Return(&model.TokenDTO{
 					Token:     "test-id-token",
@@ -639,14 +618,12 @@ func (suite *AuthorizationCodeGrantHandlerTestSuite) TestHandleGrant_WithGroups(
 			// Verify access token groups
 			if tc.includeInAccessToken {
 				assert.NotNil(suite.T(), capturedAccessTokenClaims[constants.UserAttributeGroups], tc.description)
-				groupsInClaims, ok := capturedAccessTokenClaims[constants.UserAttributeGroups].([]string)
-				assert.True(suite.T(), ok, tc.description)
+				groupsInClaims := convertToStringSlice(capturedAccessTokenClaims[constants.UserAttributeGroups])
 				assert.Equal(suite.T(), tc.expectedGroups, groupsInClaims, tc.description)
 
 				assert.NotNil(suite.T(),
 					result.AccessToken.UserAttributes[constants.UserAttributeGroups], tc.description)
-				groupsInAttrs, ok := result.AccessToken.UserAttributes[constants.UserAttributeGroups].([]string)
-				assert.True(suite.T(), ok, tc.description)
+				groupsInAttrs := convertToStringSlice(result.AccessToken.UserAttributes[constants.UserAttributeGroups])
 				assert.Equal(suite.T(), tc.expectedGroups, groupsInAttrs, tc.description)
 			} else {
 				assert.Nil(suite.T(), capturedAccessTokenClaims[constants.UserAttributeGroups], tc.description)
@@ -657,8 +634,7 @@ func (suite *AuthorizationCodeGrantHandlerTestSuite) TestHandleGrant_WithGroups(
 			if tc.includeInIDToken && tc.includeOpenIDScope && tc.scopeClaimsForGroups {
 				assert.NotNil(suite.T(), result.IDToken.Token, tc.description)
 				assert.NotNil(suite.T(), capturedIDTokenClaims[constants.UserAttributeGroups], tc.description)
-				groupsInIDToken, ok := capturedIDTokenClaims[constants.UserAttributeGroups].([]string)
-				assert.True(suite.T(), ok, tc.description)
+				groupsInIDToken := convertToStringSlice(capturedIDTokenClaims[constants.UserAttributeGroups])
 				assert.Equal(suite.T(), tc.expectedGroups, groupsInIDToken, tc.description)
 			} else if tc.includeOpenIDScope {
 				assert.NotNil(suite.T(), result.IDToken.Token, tc.description)
@@ -752,23 +728,19 @@ func (suite *AuthorizationCodeGrantHandlerTestSuite) TestHandleGrant_WithEmptyGr
 				authzCode.Scopes = oidcReadWriteScopes
 			}
 
+			// Add user attributes to authz code (groups will be empty array or not present)
+			authzCode.UserAttributes = map[string]interface{}{
+				"email":    "test@example.com",
+				"username": "testuser",
+			}
+			// Empty groups - not added to UserAttributes (user has no groups)
+
 			suite.mockAuthzService.On("GetAuthorizationCodeDetails", testClientID, "test-auth-code").
 				Return(&authzCode, nil)
 
-			mockUser := &user.User{
-				ID:         testUserID,
-				Attributes: json.RawMessage(`{"email":"test@example.com","username":"testuser"}`),
-			}
-			suite.mockUserService.On("GetUser", testUserID).Return(mockUser, nil)
-
-			mockGroups := &user.UserGroupListResponse{
-				TotalResults: 0,
-				StartIndex:   0,
-				Count:        0,
-				Groups:       []user.UserGroup{}, // Empty groups
-			}
-			suite.mockUserService.On("GetUserGroups", testUserID, constants.DefaultGroupListLimit, 0).
-				Return(mockGroups, nil)
+			// Groups come from the authorization code (extracted from assertion during authorization)
+			// If groups are not in auth code, user has no groups (empty array)
+			// No need to fetch from DB
 
 			var capturedAccessTokenClaims map[string]interface{}
 			var capturedIDTokenClaims map[string]interface{}
@@ -870,13 +842,6 @@ func (suite *AuthorizationCodeGrantHandlerTestSuite) TestHandleGrant_ResourcePar
 	suite.mockAuthzService.On("GetAuthorizationCodeDetails", testClientID, "test-auth-code").
 		Return(&authCodeWithResource, nil)
 
-	// Mock user service to return user
-	mockUser := &user.User{
-		ID:         testUserID,
-		Attributes: json.RawMessage(`{"email":"test@example.com","username":"testuser"}`),
-	}
-	suite.mockUserService.On("GetUser", testUserID).Return(mockUser, nil)
-
 	var capturedAudience string
 	suite.mockTokenBuilder.On("BuildAccessToken", mock.MatchedBy(func(ctx *tokenservice.AccessTokenBuildContext) bool {
 		capturedAudience = ctx.Audience
@@ -905,13 +870,6 @@ func (suite *AuthorizationCodeGrantHandlerTestSuite) TestHandleGrant_NoResourceP
 	// Auth code without resource parameter
 	suite.mockAuthzService.On("GetAuthorizationCodeDetails", testClientID, "test-auth-code").
 		Return(&suite.testAuthzCode, nil)
-
-	// Mock user service to return user
-	mockUser := &user.User{
-		ID:         testUserID,
-		Attributes: json.RawMessage(`{"email":"test@example.com","username":"testuser"}`),
-	}
-	suite.mockUserService.On("GetUser", testUserID).Return(mockUser, nil)
 
 	var capturedAudience string
 	suite.mockTokenBuilder.On("BuildAccessToken", mock.MatchedBy(func(ctx *tokenservice.AccessTokenBuildContext) bool {
@@ -951,13 +909,6 @@ func (suite *AuthorizationCodeGrantHandlerTestSuite) TestHandleGrant_IDTokenGene
 
 	suite.mockAuthzService.On("GetAuthorizationCodeDetails", testClientID, "test-auth-code").
 		Return(&authzCodeWithOpenID, nil)
-
-	// Mock user service to return user
-	mockUser := &user.User{
-		ID:         testUserID,
-		Attributes: json.RawMessage(`{"email":"test@example.com","username":"testuser"}`),
-	}
-	suite.mockUserService.On("GetUser", testUserID).Return(mockUser, nil)
 
 	// Mock access token generation succeeds
 	suite.mockTokenBuilder.On("BuildAccessToken", mock.Anything).Return(&model.TokenDTO{
@@ -1016,28 +967,65 @@ func (suite *AuthorizationCodeGrantHandlerTestSuite) TestValidateGrant_ResourceP
 	assert.Equal(suite.T(), constants.ErrorInvalidRequest, err.Error)
 }
 
-func (suite *AuthorizationCodeGrantHandlerTestSuite) TestHandleGrant_FetchUserAttributesError() {
-	// Test error when fetching user attributes and groups
-	suite.mockAuthzService.On("GetAuthorizationCodeDetails", testClientID, "test-auth-code").
-		Return(&suite.testAuthzCode, nil)
-
-	// Mock user service to return ServiceError
-	serverErr := &serviceerror.ServiceError{
-		Type:             serviceerror.ServerErrorType,
-		Code:             "INTERNAL_ERROR",
-		ErrorDescription: "user not found",
+func (suite *AuthorizationCodeGrantHandlerTestSuite) TestHandleGrant_FetchUserGroupsError() {
+	// Test that groups are retrieved from authorization code (not fetched from DB)
+	// Create OAuth app with groups configured
+	oauthAppWithGroups := &appmodel.OAuthAppConfigProcessedDTO{
+		ClientID:                testClientID,
+		HashedClientSecret:      "hashed-secret",
+		RedirectURIs:            []string{"https://client.example.com/callback"},
+		GrantTypes:              []constants.GrantType{constants.GrantTypeAuthorizationCode},
+		ResponseTypes:           []constants.ResponseType{constants.ResponseTypeCode},
+		TokenEndpointAuthMethod: constants.TokenEndpointAuthMethodClientSecretPost,
+		Token: &appmodel.OAuthTokenConfig{
+			AccessToken: &appmodel.AccessTokenConfig{
+				UserAttributes: []string{"email", "username", constants.UserAttributeGroups},
+			},
+		},
 	}
-	suite.mockUserService.On("GetUser", testUserID).Return(nil, serverErr)
 
-	result, err := suite.handler.HandleGrant(suite.testTokenReq, suite.oauthApp)
+	// Add groups to auth code (from assertion)
+	authzCodeWithGroups := suite.testAuthzCode
+	authzCodeWithGroups.UserAttributes = map[string]interface{}{
+		"email":    "test@example.com",
+		"username": "testuser",
+		"groups":   []string{"Admin", "Users"},
+	}
 
-	assert.Nil(suite.T(), result)
-	assert.NotNil(suite.T(), err)
-	assert.Equal(suite.T(), constants.ErrorServerError, err.Error)
-	assert.Contains(suite.T(), err.ErrorDescription, "fetching user attributes and groups")
+	suite.mockAuthzService.On("GetAuthorizationCodeDetails", testClientID, "test-auth-code").
+		Return(&authzCodeWithGroups, nil)
+
+	// Groups come from the authorization code (extracted from assertion during authorization)
+	// Token builder will extract groups from UserAttributes - verify groups are in UserAttributes
+	suite.mockTokenBuilder.On("BuildAccessToken", mock.MatchedBy(func(ctx *tokenservice.AccessTokenBuildContext) bool {
+		// Verify groups are in UserAttributes (will be extracted by token builder)
+		groupsValue, ok := ctx.UserAttributes[constants.UserAttributeGroups]
+		if !ok {
+			return false
+		}
+		groupsArray := convertToStringSlice(groupsValue)
+		return len(groupsArray) == 2 &&
+			groupsArray[0] == "Admin" &&
+			groupsArray[1] == "Users"
+	})).Return(&model.TokenDTO{
+		Token:     "test-jwt-token",
+		TokenType: constants.TokenTypeBearer,
+		IssuedAt:  time.Now().Unix(),
+		ExpiresIn: 3600,
+		Scopes:    []string{"read", "write"},
+		ClientID:  testClientID,
+	}, nil)
+
+	result, err := suite.handler.HandleGrant(suite.testTokenReq, oauthAppWithGroups)
+
+	assert.Nil(suite.T(), err)
+	assert.NotNil(suite.T(), result)
+	assert.Equal(suite.T(), "test-jwt-token", result.AccessToken.Token)
 
 	suite.mockAuthzService.AssertExpectations(suite.T())
-	suite.mockUserService.AssertExpectations(suite.T())
+	suite.mockTokenBuilder.AssertExpectations(suite.T())
+	// Verify GetUserGroups was NOT called
+	suite.mockUserService.AssertNotCalled(suite.T(), "GetUserGroups")
 }
 
 // createPKCEApp creates a test OAuth app with PKCE required
@@ -1110,13 +1098,6 @@ func (suite *AuthorizationCodeGrantHandlerTestSuite) TestRetrieveAndValidateAuth
 
 	suite.mockAuthzService.On("GetAuthorizationCodeDetails", testClientID, "test-auth-code").
 		Return(&authCodeWithPKCE, nil)
-
-	// Mock user service
-	mockUser := &user.User{
-		ID:         testUserID,
-		Attributes: json.RawMessage(`{"email":"test@example.com","username":"testuser"}`),
-	}
-	suite.mockUserService.On("GetUser", testUserID).Return(mockUser, nil)
 
 	// Mock token builder
 	suite.mockTokenBuilder.On("BuildAccessToken", mock.Anything).Return(&model.TokenDTO{

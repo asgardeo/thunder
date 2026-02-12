@@ -120,6 +120,9 @@ var (
 		ClientSecret:              "google_reg_group_role_test_secret",
 		RedirectURIs:              []string{"http://localhost:3000/callback"},
 		AllowedUserTypes:          []string{googleRegGroupRoleUserSchema.Name},
+		TokenConfig: map[string]interface{}{
+			"user_attributes": []string{"userType", "ouId", "ouName", "ouHandle"},
+		},
 	}
 )
 

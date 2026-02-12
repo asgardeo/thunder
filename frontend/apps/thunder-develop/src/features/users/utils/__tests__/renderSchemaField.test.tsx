@@ -17,10 +17,8 @@
  */
 
 import {describe, it, expect, beforeEach, vi} from 'vitest';
-import {screen, waitFor} from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
+import {render, screen, waitFor, userEvent} from '@thunder/test-utils';
 import {useForm} from 'react-hook-form';
-import render from '@/test/test-utils';
 import renderSchemaField from '../renderSchemaField';
 import type {PropertyDefinition} from '../../types/users';
 
@@ -358,6 +356,19 @@ describe('renderSchemaField', () => {
       render(<TestForm fieldName="email" fieldDef={fieldDef} />);
 
       expect(screen.getByPlaceholderText('Enter email')).toBeInTheDocument();
+    });
+
+    it('returns null for unsupported field type', () => {
+      // Using an unsupported type to test the catch-all return null
+      const fieldDef: PropertyDefinition = {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-assignment
+        type: 'date' as any,
+      };
+      render(<TestForm fieldName="birthdate" fieldDef={fieldDef} />);
+
+      // Should only render the submit button, no field components
+      expect(screen.queryByLabelText('birthdate')).not.toBeInTheDocument();
+      expect(screen.getByRole('button', {name: 'Submit'})).toBeInTheDocument();
     });
   });
 

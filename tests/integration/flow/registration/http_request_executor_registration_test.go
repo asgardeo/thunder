@@ -166,6 +166,9 @@ var (
 		Description:               "Application for testing HTTP request executor in registration flows",
 		IsRegistrationFlowEnabled: true,
 		AllowedUserTypes:          []string{httpRequestRegTestUserSchema.Name},
+		TokenConfig: map[string]interface{}{
+			"user_attributes": []string{"userType", "ouId", "ouName", "ouHandle"},
+		},
 	}
 )
 

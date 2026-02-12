@@ -1,0 +1,72 @@
+---
+id: delete-a-branding-configuration-by-id
+title: "Delete a branding configuration by ID"
+description: "Deletes a branding configuration. If the branding is currently associated with any applications, the deletion will fail."
+sidebar_label: "Delete a branding configuration by ID"
+hide_title: true
+hide_table_of_contents: true
+api: eJztV0tv2zgQ/ivEnHYB2VacxG10S2MfDLS7izY9BT6MpZHFliJVkoqjNfTfi6HkV+xkc1sUaC4OhsN5fPPNcLQBjysHyQMsLepM6hUsIsjIpVZWXhoNCUxJkScnUGx1RGp0Lle1RVYZinkufEH7Y+lEWltL2qtGoHMmlegpE2vpC4G6EVhVSqbhtovC3YydSKPFWiolcpRqCBFUaLEkT5ZD3IDkcCr0BUSgsSRIQGYQgaUftbSUQeJtTRG4tKASIdmAbyrWct5yahHkxpboIYG6lhm0z1P9cDZBMZ9CBPSEZaXY2mWO76/zydXg+t3Fu8HV9WQ8WF7m6WCc3kwu88kEc5xAu+C4XGW0I8ehjOMr/nmTw4AGZcJYgcoSZs1WxDFfxfEZS5gJxoGchwhSoz1pz2oHWI++OdbdnAJklt8o9UdQPkBqMoIISnIOV8TEqKypyHrZZRTOz4B8HNjMWmNFb2sP4ofP08FFHF9wQlsPb7S1VT80N9ePqOQOAtEX+nmF/8vBlDxKRZmg4Onw8NDbfUE7T0uTNcz4EhU77arG+KPUTsg+rgw9QttG4KUPJkIqHF9vNSBaSuekXg22nTSQWShXXZZoG0jgU6ewb7VAzUdUNe0rssV2fFC8FxF6sQXmU85qx4c2/DH5bk7Jd2d0rmT6m3m/IvNOiXN1RJw71Nr4fgDtmHeSwHm1Z4PNF+hffx6MJk6jNJaOngno6Hd9bvbNtSerUQlH9pFsB+FvLv76XLyO4/jZEDtf6eP4b7WoNT1VlPpdEiYNnMvEupCKRGVNSt0s9fs0oB9yJfnCZJBAx+awifgCEhhteT3ayKyFCLo4uvWktgoSKLyvXDIabQrjfJtsKmN9G4a0lbjsBz2fdTzOsVa8kCiTogriNgK+c3z8Pr6JOboFu0xrK30TfP59W/tizDx1jfNUwuJQ5QszvPO4VdyTHYMgglyZdVBhgbHy39Aldz2tj4RfjzLchZxwdKPO4Gh7gVHz5ju96VJQZDhTU3Xx9ukkcJtyoYQ3ohOJEjWuqCTtxe0/c7etmdS5Cen11No9ZJ+O9LkSZF1HlIthfEKe+0I6VmQ2144y9ty5fGGouW6qpajFkk7X3YMZxiutkilpF6DtV9jbCtOCxDjEcsyh9Xo9xHA8NHY16u+60cf53eyvL7PBeBgPC1+q0FOVcb5EfWC529xfXNzFsun2h2fDYTc2/8/Vv2eppyc/qhRKzX0R0Nn0zXjwzRJBIjMezV1fPcBms0RHX61qWxb/qInXp4fFvg1D92TS8f8ZJDkqR68g8cfn/kn4U7z2kXA26l6IutnvagARfKem+4JpF20EBWFGNoTVHTDxK39w5eQN41bfjarp7OPsfgZt+xME0cmx
+sidebar_class_name: "delete api-method"
+info_path: docs/apis/branding/branding-management-api
+custom_edit_url: null
+---
+
+import MethodEndpoint from "@theme/ApiExplorer/MethodEndpoint";
+import ParamsDetails from "@theme/ParamsDetails";
+import RequestSchema from "@theme/RequestSchema";
+import StatusCodes from "@theme/StatusCodes";
+import OperationTabs from "@theme/OperationTabs";
+import TabItem from "@theme/TabItem";
+import Heading from "@theme/Heading";
+import Translate from "@docusaurus/Translate";
+
+<Heading
+  as={"h1"}
+  className={"openapi__heading"}
+  children={"Delete a branding configuration by ID"}
+>
+</Heading>
+
+<MethodEndpoint
+  method={"delete"}
+  path={"/branding/{id}"}
+  context={"endpoint"}
+>
+  
+</MethodEndpoint>
+
+
+
+Deletes a branding configuration. If the branding is currently associated with any applications, the deletion will fail.
+
+<Heading
+  id={"request"}
+  as={"h2"}
+  className={"openapi-tabs__heading"}
+>
+  <Translate id="theme.openapi.request.title">Request</Translate>
+</Heading>
+
+<ParamsDetails
+  parameters={[{"in":"path","name":"id","required":true,"schema":{"type":"string","format":"uuid"},"description":"Branding configuration ID","example":"3fa85f64-5717-4562-b3fc-2c963f66afa6"}]}
+>
+  
+</ParamsDetails>
+
+<RequestSchema
+  title={"Body"}
+  body={undefined}
+>
+  
+</RequestSchema>
+
+<StatusCodes
+  id={undefined}
+  label={undefined}
+  responses={{"204":{"description":"Branding configuration deleted or already deleted"},"400":{"description":"Bad request","content":{"application/json":{"schema":{"type":"object","required":["code","message"],"properties":{"code":{"type":"string","description":"Error code","example":"BRD-1001"},"message":{"type":"string","description":"Error message","example":"Invalid request format"},"description":{"type":"string","description":"Detailed error description","example":"The request body is malformed or contains invalid data"}},"title":"Error"},"examples":{"missing-branding-id":{"summary":"Missing branding ID","value":{"code":"BRD-1002","message":"Invalid request format","description":"Branding ID is required"}}}}}},"409":{"description":"Conflict","content":{"application/json":{"schema":{"type":"object","required":["code","message"],"properties":{"code":{"type":"string","description":"Error code","example":"BRD-1001"},"message":{"type":"string","description":"Error message","example":"Invalid request format"},"description":{"type":"string","description":"Detailed error description","example":"The request body is malformed or contains invalid data"}},"title":"Error"},"example":{"code":"BRD-1004","message":"Cannot delete branding","description":"Cannot delete branding configuration that is currently associated with one or more applications"}}}},"500":{"description":"Internal server error","content":{"application/json":{"schema":{"type":"object","required":["code","message"],"properties":{"code":{"type":"string","description":"Error code","example":"BRD-1001"},"message":{"type":"string","description":"Error message","example":"Invalid request format"},"description":{"type":"string","description":"Detailed error description","example":"The request body is malformed or contains invalid data"}},"title":"Error"},"example":{"code":"BRD-5000","message":"Internal server error","description":"An unexpected error occurred while processing the request"}}}}}}
+>
+  
+</StatusCodes>
+
+
+      

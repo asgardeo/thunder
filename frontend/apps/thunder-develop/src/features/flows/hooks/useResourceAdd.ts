@@ -141,6 +141,9 @@ const useResourceAdd = (props: UseResourceAddProps): ((resource: Resource) => vo
         });
       });
 
+      // Dispatch custom event to notify about element addition (for auto-layout hint)
+      window.dispatchEvent(new CustomEvent('flowElementAdded', {detail: {type: 'template'}}));
+
       // Don't open properties panel for templates - just track the resource without opening panel
       return;
     }
@@ -213,6 +216,9 @@ const useResourceAdd = (props: UseResourceAddProps): ((resource: Resource) => vo
         });
       });
 
+      // Dispatch custom event to notify about element addition (for auto-layout hint)
+      window.dispatchEvent(new CustomEvent('flowElementAdded', {detail: {type: 'widget'}}));
+
       // Don't open properties panel for widgets - just track the resource without opening panel
       return;
     }
@@ -235,6 +241,9 @@ const useResourceAdd = (props: UseResourceAddProps): ((resource: Resource) => vo
       generatedStep = onStepLoad(generatedStep);
       setNodes((prevNodes: Node[]) => [...prevNodes, generatedStep]);
       onResourceDropOnCanvas(generatedStep, '');
+
+      // Dispatch custom event to notify about element addition (for auto-layout hint)
+      window.dispatchEvent(new CustomEvent('flowElementAdded', {detail: {type: 'step'}}));
       return;
     }
 

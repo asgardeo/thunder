@@ -202,7 +202,7 @@ describe('reactFlowTransformer', () => {
                 id: 'button-1',
                 type: ElementTypes.Action,
                 category: ElementCategories.Action,
-                action: {next: 'next-node'},
+                action: {onSuccess: 'next-node'},
               } as Element,
             ],
           } as unknown as Element,
@@ -236,7 +236,7 @@ describe('reactFlowTransformer', () => {
             id: 'button-1',
             type: ElementTypes.Action,
             category: ElementCategories.Action,
-            action: {next: 'next-node'},
+            action: {onSuccess: 'next-node'},
           } as Element,
         ];
 
@@ -271,7 +271,7 @@ describe('reactFlowTransformer', () => {
               id: 'button-1',
               type: ElementTypes.Action,
               category: ElementCategories.Action,
-              action: {next: 'next-node'},
+              action: {onSuccess: 'next-node'},
             } as Element,
           ],
         } as unknown as Element;
@@ -321,7 +321,7 @@ describe('reactFlowTransformer', () => {
                   id: 'submit-btn',
                   type: ElementTypes.Action,
                   category: ElementCategories.Action,
-                  action: {next: 'next-node'},
+                  action: {onSuccess: 'next-node'},
                 } as Element,
               ],
             } as unknown as Element,
@@ -415,19 +415,19 @@ describe('reactFlowTransformer', () => {
         expect(execNode?.executor?.inputs?.[0].identifier).toBe('deepField');
       });
 
-      it('should use action.next as fallback when no edge exists for action', () => {
+      it('should use action.onSuccess as fallback when no edge exists for action', () => {
         const components: Element[] = [
           {
             id: 'button-1',
             type: ElementTypes.Action,
             category: ElementCategories.Action,
-            action: {next: 'fallback-target'},
+            action: {onSuccess: 'fallback-target'},
           } as Element,
         ];
 
         const canvasData: ReactFlowCanvasData = {
           nodes: [createNode('view-1', StepTypes.View, {x: 0, y: 0}, {components})],
-          edges: [], // No edge for this button, so action.next should be used
+          edges: [], // No edge for this button, so action.onSuccess should be used
         };
 
         const result = transformReactFlow(canvasData);
@@ -441,7 +441,7 @@ describe('reactFlowTransformer', () => {
             id: 'resend-1',
             type: ElementTypes.Resend,
             category: ElementCategories.Action,
-            action: {next: 'resend-target'},
+            action: {onSuccess: 'resend-target'},
           } as Element,
         ];
 
@@ -569,7 +569,7 @@ describe('reactFlowTransformer', () => {
         expect(startNode?.onSuccess).toBe('view-1');
       });
 
-      it('should fall back to action.next for START node when no edges exist', () => {
+      it('should fall back to action.onSuccess for START node when no edges exist', () => {
         const canvasData: ReactFlowCanvasData = {
           nodes: [
             createNode(
@@ -577,7 +577,7 @@ describe('reactFlowTransformer', () => {
               StaticStepTypes.Start,
               {x: 0, y: 0},
               {
-                action: {next: 'fallback-view'},
+                action: {onSuccess: 'fallback-view'},
               },
             ),
             createNode('fallback-view', StepTypes.View),
@@ -591,13 +591,13 @@ describe('reactFlowTransformer', () => {
         expect(startNode?.onSuccess).toBe('fallback-view');
       });
 
-      it('should prefer edges over action.next for button connections', () => {
+      it('should prefer edges over action.onSuccess for button connections', () => {
         const components: Element[] = [
           {
             id: 'button-1',
             type: ElementTypes.Action,
             category: ElementCategories.Action,
-            action: {next: 'stale-node'}, // This is stale
+            action: {onSuccess: 'stale-node'}, // This is stale
           } as Element,
         ];
 
@@ -608,7 +608,7 @@ describe('reactFlowTransformer', () => {
 
         const result = transformReactFlow(canvasData);
 
-        // Should use edge target, not action.next
+        // Should use edge target, not action.onSuccess
         expect(result.nodes[0].prompts?.[0].action?.nextNode).toBe('current-node');
       });
     });
@@ -996,7 +996,7 @@ describe('reactFlowTransformer', () => {
                 id: 'submit-btn',
                 type: ElementTypes.Action,
                 category: ElementCategories.Action,
-                action: {next: 'next-node'},
+                action: {onSuccess: 'next-node'},
               } as Element,
             ],
           } as unknown as Element,
@@ -1030,7 +1030,7 @@ describe('reactFlowTransformer', () => {
                 id: 'submit-btn',
                 type: ElementTypes.Action,
                 category: ElementCategories.Action,
-                action: {next: 'next-node'},
+                action: {onSuccess: 'next-node'},
               } as Element,
             ],
           } as unknown as Element,
@@ -1079,7 +1079,7 @@ describe('reactFlowTransformer', () => {
                 id: 'submit-btn',
                 type: ElementTypes.Action,
                 category: ElementCategories.Action,
-                action: {next: 'next-node'},
+                action: {onSuccess: 'next-node'},
               } as Element,
             ],
           } as unknown as Element,
@@ -1332,7 +1332,7 @@ describe('reactFlowTransformer', () => {
           type: ElementTypes.Action,
           category: ElementCategories.Action,
           action: {
-            next: 'exec-1',
+            onSuccess: 'exec-1',
             executor: {name: 'TestExecutor'},
           },
         } as unknown as Element,

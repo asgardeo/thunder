@@ -62,10 +62,6 @@ type TokenDTO struct {
 	UserAttributes map[string]interface{}
 	Subject        string
 	Audience       string
-	UserType       string
-	OuID           string
-	OuName         string
-	OuHandle       string
 }
 
 // TokenResponseDTO represents the data transfer object for token responses.

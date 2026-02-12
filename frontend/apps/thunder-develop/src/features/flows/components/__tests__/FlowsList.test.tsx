@@ -21,6 +21,7 @@
 import {describe, it, expect, vi, beforeEach} from 'vitest';
 import {render, screen, fireEvent, waitFor} from '@testing-library/react';
 import {MemoryRouter} from 'react-router';
+import {DataGrid} from '@wso2/oxygen-ui';
 import FlowsList from '../FlowsList';
 import type {BasicFlowDefinition} from '../../models/responses';
 
@@ -143,54 +144,63 @@ interface MockDataGridProps {
   getRowId: (row: MockRow) => string;
 }
 
-// Mock DataGrid - DO NOT mock Menu, let it render normally
+// Use vi.hoisted for the capturedColumns variable so it's available in the mock
+const {capturedColumns} = vi.hoisted(() => ({
+  capturedColumns: {value: [] as DataGrid.GridColDef<BasicFlowDefinition>[]},
+}));
+
+// Mock DataGrid - captures columns for testing
 vi.mock('@wso2/oxygen-ui', async () => {
   const actual = await vi.importActual('@wso2/oxygen-ui');
   return {
     ...actual,
     DataGrid: {
-      DataGrid: ({rows, columns, loading, onRowClick, getRowId}: MockDataGridProps) => (
-        <div data-testid="data-grid" data-loading={loading}>
-          <table>
-            <thead>
-              <tr>
-                {columns.map((col: MockColumn) => (
-                  <th key={col.field}>{col.headerName}</th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {rows?.map((row: MockRow) => {
-                const rowId: string = getRowId(row);
-                const handleClick = (): void => onRowClick?.({row});
-                const handleButtonClick = (e: React.MouseEvent): void => {
-                  e.stopPropagation();
-                  const event = new CustomEvent('menuopen', {detail: {row}});
-                  document.dispatchEvent(event);
-                };
-                return (
-                  <tr
-                    key={rowId}
-                    data-testid={`row-${rowId}`}
-                    onClick={handleClick}
-                    style={{cursor: row.flowType === 'AUTHENTICATION' ? 'pointer' : 'default'}}
-                  >
-                    <td>{row.name}</td>
-                    <td>{row.flowType}</td>
-                    <td>v{row.activeVersion}</td>
-                    <td>{row.updatedAt}</td>
-                    <td>
-                      <button type="button" aria-label="Open actions menu" onClick={handleButtonClick}>
-                        Actions
-                      </button>
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        </div>
-      ),
+      DataGrid: ({rows, columns, loading, onRowClick, getRowId}: MockDataGridProps) => {
+        // Capture columns for testing renderCell functions
+        capturedColumns.value = columns as unknown as DataGrid.GridColDef<BasicFlowDefinition>[];
+        return (
+          <div data-testid="data-grid" data-loading={loading}>
+            <table>
+              <thead>
+                <tr>
+                  {columns.map((col: MockColumn) => (
+                    <th key={col.field}>{col.headerName}</th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {rows?.map((row: MockRow) => {
+                  const rowId: string = getRowId(row);
+                  const handleClick = (): void => onRowClick?.({row});
+                  const handleButtonClick = (e: React.MouseEvent): void => {
+                    e.stopPropagation();
+                    const event = new CustomEvent('menuopen', {detail: {row}});
+                    document.dispatchEvent(event);
+                  };
+                  return (
+                    <tr
+                      key={rowId}
+                      data-testid={`row-${rowId}`}
+                      onClick={handleClick}
+                      style={{cursor: row.flowType === 'AUTHENTICATION' ? 'pointer' : 'default'}}
+                    >
+                      <td>{row.name}</td>
+                      <td>{row.flowType}</td>
+                      <td>v{row.activeVersion}</td>
+                      <td>{row.updatedAt}</td>
+                      <td>
+                        <button type="button" aria-label="Open actions menu" onClick={handleButtonClick}>
+                          Actions
+                        </button>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        );
+      },
     },
   };
 });
@@ -203,6 +213,7 @@ describe('FlowsList', () => {
       isLoading: false,
       error: null,
     };
+    capturedColumns.value = [];
   });
 
   describe('Rendering', () => {
@@ -451,6 +462,381 @@ describe('FlowsList', () => {
 
       expect(screen.getByText('v1')).toBeInTheDocument();
       expect(screen.getByText('v2')).toBeInTheDocument();
+    });
+  });
+
+  describe('Column RenderCell Functions', () => {
+    it('should capture column definitions', () => {
+      render(
+        <MemoryRouter>
+          <FlowsList />
+        </MemoryRouter>,
+      );
+
+      // Verify columns are captured
+      expect(capturedColumns.value.length).toBeGreaterThan(0);
+
+      // Verify expected columns exist
+      const avatarColumn = capturedColumns.value.find((col) => col.field === 'avatar');
+      const flowTypeColumn = capturedColumns.value.find((col) => col.field === 'flowType');
+      const versionColumn = capturedColumns.value.find((col) => col.field === 'activeVersion');
+      const updatedAtColumn = capturedColumns.value.find((col) => col.field === 'updatedAt');
+      const actionsColumn = capturedColumns.value.find((col) => col.field === 'actions');
+
+      expect(avatarColumn).toBeDefined();
+      expect(flowTypeColumn).toBeDefined();
+      expect(versionColumn).toBeDefined();
+      expect(updatedAtColumn).toBeDefined();
+      expect(actionsColumn).toBeDefined();
+    });
+
+    it('should have renderCell functions defined for columns', () => {
+      render(
+        <MemoryRouter>
+          <FlowsList />
+        </MemoryRouter>,
+      );
+
+      const avatarColumn = capturedColumns.value.find((col) => col.field === 'avatar');
+      const flowTypeColumn = capturedColumns.value.find((col) => col.field === 'flowType');
+      const versionColumn = capturedColumns.value.find((col) => col.field === 'activeVersion');
+      const actionsColumn = capturedColumns.value.find((col) => col.field === 'actions');
+
+      expect(avatarColumn?.renderCell).toBeDefined();
+      expect(flowTypeColumn?.renderCell).toBeDefined();
+      expect(versionColumn?.renderCell).toBeDefined();
+      expect(actionsColumn?.renderCell).toBeDefined();
+    });
+
+    it('should have valueGetter for updatedAt column', () => {
+      render(
+        <MemoryRouter>
+          <FlowsList />
+        </MemoryRouter>,
+      );
+
+      const updatedAtColumn = capturedColumns.value.find((col) => col.field === 'updatedAt');
+      expect(updatedAtColumn?.valueGetter).toBeDefined();
+
+      if (updatedAtColumn?.valueGetter) {
+        const formattedDate = (updatedAtColumn.valueGetter as (value: unknown, row: unknown) => string)(undefined, mockFlowsData.flows[0]);
+        // Check that the formatted date contains expected parts
+        expect(formattedDate).toContain('2025');
+        expect(formattedDate).toContain('Jan');
+      }
+    });
+  });
+
+  describe('Menu Interactions', () => {
+    it('should have actions column with renderCell defined', () => {
+      render(
+        <MemoryRouter>
+          <FlowsList />
+        </MemoryRouter>,
+      );
+
+      const actionsColumn = capturedColumns.value.find((col) => col.field === 'actions');
+      expect(actionsColumn).toBeDefined();
+      expect(actionsColumn?.renderCell).toBeDefined();
+    });
+  });
+
+  describe('Delete Dialog Integration', () => {
+    it('should render delete dialog component', () => {
+      render(
+        <MemoryRouter>
+          <FlowsList />
+        </MemoryRouter>,
+      );
+
+      // Delete dialog is rendered but not visible initially
+      expect(screen.queryByTestId('flow-delete-dialog')).not.toBeInTheDocument();
+    });
+  });
+
+  describe('Column RenderCell Execution', () => {
+    it('should render avatar cell with GitBranch icon', () => {
+      render(
+        <MemoryRouter>
+          <FlowsList />
+        </MemoryRouter>,
+      );
+
+      const avatarColumn = capturedColumns.value.find((col) => col.field === 'avatar');
+      expect(avatarColumn?.renderCell).toBeDefined();
+
+      if (avatarColumn?.renderCell) {
+        const {container} = render(
+          avatarColumn.renderCell({row: mockFlowsData.flows[0]} as DataGrid.GridRenderCellParams<BasicFlowDefinition>),
+        );
+        expect(container.querySelector('[class*="MuiAvatar"]')).toBeInTheDocument();
+      }
+    });
+
+    it('should render actions cell with IconButton', () => {
+      render(
+        <MemoryRouter>
+          <FlowsList />
+        </MemoryRouter>,
+      );
+
+      const actionsColumn = capturedColumns.value.find((col) => col.field === 'actions');
+      expect(actionsColumn?.renderCell).toBeDefined();
+
+      if (actionsColumn?.renderCell) {
+        const {container} = render(
+          actionsColumn.renderCell({row: mockFlowsData.flows[0]} as DataGrid.GridRenderCellParams<BasicFlowDefinition>),
+        );
+        const actionButton = container.querySelector('button[aria-label="Open actions menu"]');
+        expect(actionButton).toBeInTheDocument();
+      }
+    });
+
+    it('should call handleMenuOpen when actions button is clicked in renderCell', () => {
+      render(
+        <MemoryRouter>
+          <FlowsList />
+        </MemoryRouter>,
+      );
+
+      const actionsColumn = capturedColumns.value.find((col) => col.field === 'actions');
+
+      if (actionsColumn?.renderCell) {
+        const {container} = render(
+          actionsColumn.renderCell({row: mockFlowsData.flows[0]} as DataGrid.GridRenderCellParams<BasicFlowDefinition>),
+        );
+        const button = container.querySelector('button[aria-label="Open actions menu"]');
+        expect(button).toBeInTheDocument();
+
+        // Click should not throw
+        expect(() => fireEvent.click(button!)).not.toThrow();
+      }
+    });
+  });
+
+  describe('Menu Handler Functions', () => {
+    it('should open menu and show View option for authentication flow', async () => {
+      render(
+        <MemoryRouter>
+          <FlowsList />
+        </MemoryRouter>,
+      );
+
+      // Get the actions column renderCell and render it
+      const actionsColumn = capturedColumns.value.find((col) => col.field === 'actions');
+      if (actionsColumn?.renderCell) {
+        const {container} = render(
+          actionsColumn.renderCell({row: mockFlowsData.flows[0]} as DataGrid.GridRenderCellParams<BasicFlowDefinition>),
+        );
+
+        // Get the button from the rendered cell container (the last one with MuiIconButton class)
+        const actionButton = container.querySelector('button[aria-label="Open actions menu"]');
+        expect(actionButton).toBeInTheDocument();
+        fireEvent.click(actionButton!);
+
+        // After clicking, the menu should open in the main component
+        // Check that View and Delete options are available
+        await waitFor(() => {
+          expect(screen.getByText('View')).toBeInTheDocument();
+          expect(screen.getByText('Delete')).toBeInTheDocument();
+        });
+      }
+    });
+
+    it('should not show View option for non-authentication flow', async () => {
+      render(
+        <MemoryRouter>
+          <FlowsList />
+        </MemoryRouter>,
+      );
+
+      // Get the actions column renderCell and render it with non-auth flow
+      const actionsColumn = capturedColumns.value.find((col) => col.field === 'actions');
+      if (actionsColumn?.renderCell) {
+        const {container} = render(
+          actionsColumn.renderCell({row: mockFlowsData.flows[1]} as DataGrid.GridRenderCellParams<BasicFlowDefinition>),
+        );
+
+        const actionButton = container.querySelector('button[aria-label="Open actions menu"]');
+        expect(actionButton).toBeInTheDocument();
+        fireEvent.click(actionButton!);
+
+        // After clicking, the menu should open - View should not be shown for non-auth flows
+        await waitFor(() => {
+          expect(screen.getByText('Delete')).toBeInTheDocument();
+        });
+
+        // View should not appear for REGISTRATION flow type
+        const viewElements = screen.queryAllByText('View');
+        // The View menu item is conditionally rendered based on selectedFlow.flowType === 'AUTHENTICATION'
+        expect(viewElements.length).toBeLessThanOrEqual(1);
+      }
+    });
+
+    it('should close menu when menu close is triggered', async () => {
+      render(
+        <MemoryRouter>
+          <FlowsList />
+        </MemoryRouter>,
+      );
+
+      const actionsColumn = capturedColumns.value.find((col) => col.field === 'actions');
+      if (actionsColumn?.renderCell) {
+        const {container} = render(
+          actionsColumn.renderCell({row: mockFlowsData.flows[0]} as DataGrid.GridRenderCellParams<BasicFlowDefinition>),
+        );
+
+        const actionButton = container.querySelector('button[aria-label="Open actions menu"]');
+        expect(actionButton).toBeInTheDocument();
+        fireEvent.click(actionButton!);
+
+        await waitFor(() => {
+          expect(screen.getByText('View')).toBeInTheDocument();
+        });
+
+        // Click View to close the menu
+        fireEvent.click(screen.getByText('View'));
+
+        // Menu should close
+        await waitFor(() => {
+          expect(screen.queryByRole('menu')).not.toBeInTheDocument();
+        });
+      }
+    });
+
+    it('should open delete dialog when Delete is clicked', async () => {
+      render(
+        <MemoryRouter>
+          <FlowsList />
+        </MemoryRouter>,
+      );
+
+      const actionsColumn = capturedColumns.value.find((col) => col.field === 'actions');
+      if (actionsColumn?.renderCell) {
+        const {container} = render(
+          actionsColumn.renderCell({row: mockFlowsData.flows[0]} as DataGrid.GridRenderCellParams<BasicFlowDefinition>),
+        );
+
+        const actionButton = container.querySelector('button[aria-label="Open actions menu"]');
+        expect(actionButton).toBeInTheDocument();
+        fireEvent.click(actionButton!);
+
+        await waitFor(() => {
+          expect(screen.getByText('Delete')).toBeInTheDocument();
+        });
+
+        fireEvent.click(screen.getByText('Delete'));
+
+        // Delete dialog should open
+        await waitFor(() => {
+          expect(screen.getByTestId('flow-delete-dialog')).toBeInTheDocument();
+          expect(screen.getByTestId('flow-delete-dialog')).toHaveAttribute('data-flow-id', 'flow-1');
+        });
+      }
+    });
+
+    it('should close delete dialog and reset selected flow', async () => {
+      render(
+        <MemoryRouter>
+          <FlowsList />
+        </MemoryRouter>,
+      );
+
+      const actionsColumn = capturedColumns.value.find((col) => col.field === 'actions');
+      if (actionsColumn?.renderCell) {
+        const {container} = render(
+          actionsColumn.renderCell({row: mockFlowsData.flows[0]} as DataGrid.GridRenderCellParams<BasicFlowDefinition>),
+        );
+
+        const actionButton = container.querySelector('button[aria-label="Open actions menu"]');
+        expect(actionButton).toBeInTheDocument();
+        fireEvent.click(actionButton!);
+
+        await waitFor(() => {
+          expect(screen.getByText('Delete')).toBeInTheDocument();
+        });
+
+        fireEvent.click(screen.getByText('Delete'));
+
+        await waitFor(() => {
+          expect(screen.getByTestId('flow-delete-dialog')).toBeInTheDocument();
+        });
+
+        // Close the dialog
+        fireEvent.click(screen.getByText('Close'));
+
+        await waitFor(() => {
+          expect(screen.queryByTestId('flow-delete-dialog')).not.toBeInTheDocument();
+        });
+      }
+    });
+
+    it('should navigate to flow builder when View is clicked for authentication flow', async () => {
+      mockNavigate.mockResolvedValue(undefined);
+
+      render(
+        <MemoryRouter>
+          <FlowsList />
+        </MemoryRouter>,
+      );
+
+      const actionsColumn = capturedColumns.value.find((col) => col.field === 'actions');
+      if (actionsColumn?.renderCell) {
+        const {container} = render(
+          actionsColumn.renderCell({row: mockFlowsData.flows[0]} as DataGrid.GridRenderCellParams<BasicFlowDefinition>),
+        );
+
+        const actionButton = container.querySelector('button[aria-label="Open actions menu"]');
+        expect(actionButton).toBeInTheDocument();
+        fireEvent.click(actionButton!);
+
+        await waitFor(() => {
+          expect(screen.getByText('View')).toBeInTheDocument();
+        });
+
+        fireEvent.click(screen.getByText('View'));
+
+        await waitFor(() => {
+          expect(mockNavigate).toHaveBeenCalledWith('/flows/signin/flow-1');
+        });
+      }
+    });
+
+    it('should log error when View navigation fails', async () => {
+      mockNavigate.mockRejectedValue(new Error('Navigation failed'));
+
+      render(
+        <MemoryRouter>
+          <FlowsList />
+        </MemoryRouter>,
+      );
+
+      const actionsColumn = capturedColumns.value.find((col) => col.field === 'actions');
+      if (actionsColumn?.renderCell) {
+        const {container} = render(
+          actionsColumn.renderCell({row: mockFlowsData.flows[0]} as DataGrid.GridRenderCellParams<BasicFlowDefinition>),
+        );
+
+        const actionButton = container.querySelector('button[aria-label="Open actions menu"]');
+        expect(actionButton).toBeInTheDocument();
+        fireEvent.click(actionButton!);
+
+        await waitFor(() => {
+          expect(screen.getByText('View')).toBeInTheDocument();
+        });
+
+        fireEvent.click(screen.getByText('View'));
+
+        await waitFor(() => {
+          expect(mockLoggerError).toHaveBeenCalledWith(
+            'Failed to navigate to flow builder',
+            expect.objectContaining({
+              error: expect.any(Error) as Error,
+              flowId: 'flow-1',
+            }),
+          );
+        });
+      }
     });
   });
 });

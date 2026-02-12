@@ -16,13 +16,9 @@
  * under the License.
  */
 
-import {render, screen} from '@testing-library/react';
+import {render, screen} from '@thunder/test-utils';
 import {describe, it, expect, vi, beforeEach} from 'vitest';
 import userEvent from '@testing-library/user-event';
-import {QueryClient, QueryClientProvider} from '@tanstack/react-query';
-import {BrowserRouter} from 'react-router';
-import {ConfigProvider} from '@thunder/commons-contexts';
-import {LoggerProvider, LogLevel} from '@thunder/logger';
 import ApplicationsListPage from '../ApplicationsListPage';
 
 // Mock the ApplicationsList component
@@ -56,52 +52,9 @@ vi.mock('react-i18next', () => ({
 }));
 
 describe('ApplicationsListPage', () => {
-  let queryClient: QueryClient;
-
-  const renderWithProviders = () =>
-    render(
-      <BrowserRouter>
-        <QueryClientProvider client={queryClient}>
-          <ConfigProvider>
-            <LoggerProvider
-              logger={{
-                level: LogLevel.ERROR,
-                transports: [],
-              }}
-            >
-              <ApplicationsListPage />
-            </LoggerProvider>
-          </ConfigProvider>
-        </QueryClientProvider>
-      </BrowserRouter>,
-    );
+  const renderWithProviders = () => render(<ApplicationsListPage />);
 
   beforeEach(() => {
-    queryClient = new QueryClient({
-      defaultOptions: {
-        queries: {
-          retry: false,
-        },
-      },
-    });
-
-    // Set up runtime config
-    // eslint-disable-next-line no-underscore-dangle
-    if (typeof window !== 'undefined') {
-      // eslint-disable-next-line no-underscore-dangle
-      window.__THUNDER_RUNTIME_CONFIG__ = {
-        client: {
-          base: '/develop',
-          client_id: 'DEVELOP',
-        },
-        server: {
-          hostname: 'localhost',
-          port: 8090,
-          http_only: false,
-        },
-      };
-    }
-
     vi.clearAllMocks();
   });
 

@@ -21,14 +21,14 @@ package mgt
 import (
 	"net/http"
 
-	immutableresource "github.com/asgardeo/thunder/internal/system/immutable_resource"
+	declarativeresource "github.com/asgardeo/thunder/internal/system/declarative_resource"
 	"github.com/asgardeo/thunder/internal/system/middleware"
 )
 
 // Initialize initializes the i18n service and registers its routes.
-func Initialize(mux *http.ServeMux) (I18nServiceInterface, immutableresource.ResourceExporter, error) {
+func Initialize(mux *http.ServeMux) (I18nServiceInterface, declarativeresource.ResourceExporter, error) {
 	var store i18nStoreInterface
-	if immutableresource.IsImmutableModeEnabled() {
+	if declarativeresource.IsDeclarativeModeEnabled() {
 		store = newFileBasedStore()
 	} else {
 		store = newI18nStore()
@@ -36,8 +36,8 @@ func Initialize(mux *http.ServeMux) (I18nServiceInterface, immutableresource.Res
 
 	service := newI18nService(store)
 
-	if immutableresource.IsImmutableModeEnabled() {
-		if err := loadImmutableResources(store); err != nil {
+	if declarativeresource.IsDeclarativeModeEnabled() {
+		if err := loadDeclarativeResources(store); err != nil {
 			return nil, nil, err
 		}
 	}

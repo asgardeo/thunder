@@ -17,8 +17,7 @@
  */
 
 import {describe, it, expect, vi, beforeEach, afterEach} from 'vitest';
-import {waitFor} from '@testing-library/react';
-import {renderHook} from '../../../../test/test-utils';
+import {waitFor, renderHook} from '@thunder/test-utils';
 import useUpdateUser, {type UpdateUserRequest} from '../useUpdateUser';
 import type {ApiUser} from '../../types/users';
 
@@ -33,8 +32,8 @@ vi.mock('@asgardeo/react', () => ({
 }));
 
 // Mock useConfig
-vi.mock('@thunder/commons-contexts', async (importOriginal) => {
-  const actual = await importOriginal<typeof import('@thunder/commons-contexts')>();
+vi.mock('@thunder/shared-contexts', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@thunder/shared-contexts')>();
   return {
     ...actual,
     useConfig: () => ({
@@ -374,5 +373,32 @@ describe('useUpdateUser', () => {
       expect(result.current.data).toEqual(mockResponse);
     });
     expect(result.current.error).toBeNull();
+  });
+
+  it('should handle non-Error rejection', async () => {
+    const mockRequest: UpdateUserRequest = {
+      organizationUnit: '/sales',
+      type: 'customer',
+      attributes: {
+        name: 'John Updated',
+        email: 'john.updated@example.com',
+      },
+    };
+
+    mockHttpRequest.mockRejectedValueOnce('String error');
+
+    const {result} = renderHook(() => useUpdateUser());
+
+    await expect(result.current.updateUser('user-123', mockRequest)).rejects.toBe('String error');
+
+    await waitFor(() => {
+      expect(result.current.error).toEqual({
+        code: 'UPDATE_USER_ERROR',
+        message: 'An unknown error occurred',
+        description: 'Failed to update user',
+      });
+      expect(result.current.data).toBeNull();
+      expect(result.current.loading).toBe(false);
+    });
   });
 });

@@ -21,8 +21,8 @@ package notification
 
 import (
 	"github.com/asgardeo/thunder/internal/notification/common"
+	declarativeresource "github.com/asgardeo/thunder/internal/system/declarative_resource"
 	"github.com/asgardeo/thunder/internal/system/error/serviceerror"
-	immutableresource "github.com/asgardeo/thunder/internal/system/immutable_resource"
 	"github.com/asgardeo/thunder/internal/system/log"
 	sysutils "github.com/asgardeo/thunder/internal/system/utils"
 )
@@ -64,7 +64,7 @@ func (s *notificationSenderMgtService) CreateSender(
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, "NotificationSenderMgtService"))
 	logger.Debug("Creating notification sender", log.String("name", sender.Name))
 
-	if err := immutableresource.CheckImmutableCreate(); err != nil {
+	if err := declarativeresource.CheckDeclarativeCreate(); err != nil {
 		return nil, err
 	}
 
@@ -164,7 +164,7 @@ func (s *notificationSenderMgtService) UpdateSender(id string,
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, "NotificationSenderMgtService"))
 	logger.Debug("Updating notification sender", log.String("id", id), log.String("name", sender.Name))
 
-	if err := immutableresource.CheckImmutableUpdate(); err != nil {
+	if err := declarativeresource.CheckDeclarativeUpdate(); err != nil {
 		return nil, err
 	}
 
@@ -229,7 +229,7 @@ func (s *notificationSenderMgtService) DeleteSender(id string) *serviceerror.Ser
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, "NotificationSenderMgtService"))
 	logger.Debug("Deleting notification sender", log.String("id", id))
 
-	if err := immutableresource.CheckImmutableDelete(); err != nil {
+	if err := declarativeresource.CheckDeclarativeDelete(); err != nil {
 		return err
 	}
 

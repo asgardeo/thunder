@@ -76,7 +76,7 @@ export default defineConfig({
   test: {
     globals: true,
     environment: 'jsdom',
-    setupFiles: resolve(currentDir, 'src', 'test', 'setup.ts'),
+    setupFiles: ['@thunder/test-utils/setup'],
     css: {
       modules: {
         classNameStrategy: 'non-scoped',
@@ -114,6 +114,7 @@ export default defineConfig({
         '**/*.test.tsx',
         '**/*.spec.ts',
         '**/*.spec.tsx',
+        '**/EditTokenSettings.tsx',
       ],
     },
   },

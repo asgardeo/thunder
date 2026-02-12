@@ -17,9 +17,8 @@
  */
 
 import {describe, it, expect, vi, beforeEach} from 'vitest';
-import {screen} from '@testing-library/react';
+import {render, screen} from '@thunder/test-utils';
 import type {JSX} from 'react';
-import render from '@/test/test-utils';
 import SideMenu from './SideMenu';
 
 // Mock Asgardeo User component

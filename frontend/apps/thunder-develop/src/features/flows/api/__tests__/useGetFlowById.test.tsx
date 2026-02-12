@@ -17,11 +17,9 @@
  */
 
 import {describe, it, expect, beforeEach, afterEach, vi} from 'vitest';
-import {renderHook, waitFor} from '@testing-library/react';
-import {QueryClient, QueryClientProvider} from '@tanstack/react-query';
-import type {ReactNode} from 'react';
+import {renderHook, waitFor} from '@thunder/test-utils';
 import {useAsgardeo} from '@asgardeo/react';
-import {useConfig} from '@thunder/commons-contexts';
+import {useConfig} from '@thunder/shared-contexts';
 import useGetFlowById from '../useGetFlowById';
 import type {FlowDefinitionResponse} from '../../models/responses';
 import {FlowType, FlowNodeType} from '../../models/flows';
@@ -31,9 +29,13 @@ vi.mock('@asgardeo/react', () => ({
   useAsgardeo: vi.fn(),
 }));
 
-vi.mock('@thunder/commons-contexts', () => ({
-  useConfig: vi.fn(),
-}));
+vi.mock('@thunder/shared-contexts', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@thunder/shared-contexts')>();
+  return {
+    ...actual,
+    useConfig: vi.fn(),
+  };
+});
 
 describe('useGetFlowById', () => {
   const mockFlowResponse: FlowDefinitionResponse = {
@@ -65,18 +67,9 @@ describe('useGetFlowById', () => {
     updatedAt: '2025-01-01T00:00:00Z',
   };
 
-  let queryClient: QueryClient;
   let mockHttpRequest: ReturnType<typeof vi.fn>;
 
   beforeEach(() => {
-    queryClient = new QueryClient({
-      defaultOptions: {
-        queries: {
-          retry: false,
-        },
-      },
-    });
-
     mockHttpRequest = vi.fn();
 
     vi.mocked(useAsgardeo).mockReturnValue({
@@ -92,24 +85,14 @@ describe('useGetFlowById', () => {
 
   afterEach(() => {
     vi.clearAllMocks();
-    queryClient.clear();
   });
-
-  const createWrapper = () => {
-    function Wrapper({children}: {children: ReactNode}) {
-      return <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>;
-    }
-    return Wrapper;
-  };
 
   it('should fetch flow by ID successfully', async () => {
     mockHttpRequest.mockResolvedValueOnce({
       data: mockFlowResponse,
     });
 
-    const {result} = renderHook(() => useGetFlowById('flow-123'), {
-      wrapper: createWrapper(),
-    });
+    const {result} = renderHook(() => useGetFlowById('flow-123'));
 
     await waitFor(() => {
       expect(result.current.isSuccess).toBe(true);
@@ -126,9 +109,7 @@ describe('useGetFlowById', () => {
   });
 
   it('should not fetch when flowId is undefined', async () => {
-    const {result} = renderHook(() => useGetFlowById(undefined), {
-      wrapper: createWrapper(),
-    });
+    const {result} = renderHook(() => useGetFlowById(undefined));
 
     // Should not be loading or fetching when disabled
     expect(result.current.isFetching).toBe(false);
@@ -136,9 +117,7 @@ describe('useGetFlowById', () => {
   });
 
   it('should not fetch when enabled is false', async () => {
-    const {result} = renderHook(() => useGetFlowById('flow-123', false), {
-      wrapper: createWrapper(),
-    });
+    const {result} = renderHook(() => useGetFlowById('flow-123', false));
 
     expect(result.current.isFetching).toBe(false);
     expect(mockHttpRequest).not.toHaveBeenCalled();
@@ -150,7 +129,6 @@ describe('useGetFlowById', () => {
     });
 
     const {result, rerender} = renderHook(({flowId, enabled}) => useGetFlowById(flowId, enabled), {
-      wrapper: createWrapper(),
       initialProps: {flowId: 'flow-123', enabled: false},
     });
 
@@ -173,9 +151,7 @@ describe('useGetFlowById', () => {
         }),
     );
 
-    const {result} = renderHook(() => useGetFlowById('flow-123'), {
-      wrapper: createWrapper(),
-    });
+    const {result} = renderHook(() => useGetFlowById('flow-123'));
 
     expect(result.current.isLoading).toBe(true);
     expect(result.current.data).toBeUndefined();
@@ -191,9 +167,7 @@ describe('useGetFlowById', () => {
     const apiError = new Error('Flow not found');
     mockHttpRequest.mockRejectedValueOnce(apiError);
 
-    const {result} = renderHook(() => useGetFlowById('non-existent-flow'), {
-      wrapper: createWrapper(),
-    });
+    const {result} = renderHook(() => useGetFlowById('non-existent-flow'));
 
     await waitFor(() => {
       expect(result.current.isError).toBe(true);
@@ -208,9 +182,7 @@ describe('useGetFlowById', () => {
       data: mockFlowResponse,
     });
 
-    renderHook(() => useGetFlowById('flow-123'), {
-      wrapper: createWrapper(),
-    });
+    const {queryClient} = renderHook(() => useGetFlowById('flow-123'));
 
     await waitFor(() => {
       expect(mockHttpRequest).toHaveBeenCalled();
@@ -230,7 +202,6 @@ describe('useGetFlowById', () => {
     mockHttpRequest.mockResolvedValueOnce({data: mockFlowResponse}).mockResolvedValueOnce({data: secondFlowResponse});
 
     const {result, rerender} = renderHook(({flowId}) => useGetFlowById(flowId), {
-      wrapper: createWrapper(),
       initialProps: {flowId: 'flow-123'},
     });
 
@@ -260,9 +231,7 @@ describe('useGetFlowById', () => {
       data: mockFlowResponse,
     });
 
-    const {result} = renderHook(() => useGetFlowById('flow-123'), {
-      wrapper: createWrapper(),
-    });
+    const {result} = renderHook(() => useGetFlowById('flow-123'));
 
     await waitFor(() => {
       expect(result.current.isSuccess).toBe(true);
@@ -292,9 +261,7 @@ describe('useGetFlowById', () => {
       data: flowWithAllNodeTypes,
     });
 
-    const {result} = renderHook(() => useGetFlowById('flow-123'), {
-      wrapper: createWrapper(),
-    });
+    const {result} = renderHook(() => useGetFlowById('flow-123'));
 
     await waitFor(() => {
       expect(result.current.isSuccess).toBe(true);

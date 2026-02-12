@@ -19,6 +19,7 @@
 package executor
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -338,7 +339,7 @@ func (p *passkeyAuthExecutor) getAuthenticatedUser(ctx *core.NodeContext,
 	}
 
 	// Get user details from user service
-	user, svcErr := p.userService.GetUser(userID)
+	user, svcErr := p.userService.GetUser(context.TODO(), userID)
 	if svcErr != nil {
 		return nil, fmt.Errorf("failed to get user details: %s", svcErr.Error)
 	}

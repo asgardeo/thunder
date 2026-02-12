@@ -275,7 +275,7 @@ func (suite *PasskeyAuthExecutorTestSuite) TestExecuteVerify_Success() {
 		Type:             "INTERNAL",
 		Attributes:       attrsJSON,
 	}
-	suite.mockUserService.On("GetUser", testPasskeyUserID).Return(testUser, nil)
+	suite.mockUserService.On("GetUser", mock.Anything, testPasskeyUserID).Return(testUser, nil)
 
 	resp, err := suite.executor.Execute(ctx)
 
@@ -527,7 +527,7 @@ func (suite *PasskeyAuthExecutorTestSuite) TestExecuteRegisterFinish_Success_Aut
 		Type:             "INTERNAL",
 		Attributes:       attrsJSON,
 	}
-	suite.mockUserService.On("GetUser", testPasskeyUserID).Return(testUser, nil)
+	suite.mockUserService.On("GetUser", mock.Anything, testPasskeyUserID).Return(testUser, nil)
 
 	resp, err := suite.executor.Execute(ctx)
 
@@ -719,7 +719,7 @@ func (suite *PasskeyAuthExecutorTestSuite) TestGetAuthenticatedUser_Success() {
 		Type:             "INTERNAL",
 		Attributes:       attrsJSON,
 	}
-	suite.mockUserService.On("GetUser", testPasskeyUserID).Return(testUser, nil)
+	suite.mockUserService.On("GetUser", mock.Anything, testPasskeyUserID).Return(testUser, nil)
 
 	authUser, err := suite.executor.getAuthenticatedUser(ctx, execResp)
 
@@ -742,7 +742,7 @@ func (suite *PasskeyAuthExecutorTestSuite) TestGetAuthenticatedUser_UserNotFound
 		},
 	}
 
-	suite.mockUserService.On("GetUser", testPasskeyUserID).Return(
+	suite.mockUserService.On("GetUser", mock.Anything, testPasskeyUserID).Return(
 		nil, &serviceerror.ServiceError{Error: "User not found"})
 
 	authUser, err := suite.executor.getAuthenticatedUser(ctx, execResp)
@@ -768,7 +768,7 @@ func (suite *PasskeyAuthExecutorTestSuite) TestGetAuthenticatedUser_InvalidJSON(
 		Type:             "INTERNAL",
 		Attributes:       json.RawMessage(`invalid json`),
 	}
-	suite.mockUserService.On("GetUser", testPasskeyUserID).Return(testUser, nil)
+	suite.mockUserService.On("GetUser", mock.Anything, testPasskeyUserID).Return(testUser, nil)
 
 	authUser, err := suite.executor.getAuthenticatedUser(ctx, execResp)
 
@@ -909,7 +909,7 @@ func (suite *PasskeyAuthExecutorTestSuite) TestExecuteVerify_GetAuthenticatedUse
 	suite.mockPasskeyService.On("FinishAuthentication", mock.Anything).Return(authResp, nil)
 
 	// Simulate user not found when getting authenticated user details
-	suite.mockUserService.On("GetUser", testPasskeyUserID).Return(
+	suite.mockUserService.On("GetUser", mock.Anything, testPasskeyUserID).Return(
 		nil, &serviceerror.ServiceError{Error: "User not found"})
 
 	_, err := suite.executor.Execute(ctx)
@@ -936,7 +936,7 @@ func (suite *PasskeyAuthExecutorTestSuite) TestExecuteRegisterFinish_GetAuthenti
 	suite.mockPasskeyService.On("FinishRegistration", mock.Anything).Return(finishData, nil)
 
 	// Simulate user not found when getting authenticated user details
-	suite.mockUserService.On("GetUser", testPasskeyUserID).Return(
+	suite.mockUserService.On("GetUser", mock.Anything, testPasskeyUserID).Return(
 		nil, &serviceerror.ServiceError{Error: "User not found"})
 
 	_, err := suite.executor.Execute(ctx)
@@ -1014,7 +1014,7 @@ func (suite *PasskeyAuthExecutorTestSuite) TestGetAuthenticatedUser_UserIDFromCo
 		Type:             "INTERNAL",
 		Attributes:       attrsJSON,
 	}
-	suite.mockUserService.On("GetUser", testPasskeyUserID).Return(testUser, nil)
+	suite.mockUserService.On("GetUser", mock.Anything, testPasskeyUserID).Return(testUser, nil)
 
 	authUser, err := suite.executor.getAuthenticatedUser(ctx, execResp)
 

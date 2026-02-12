@@ -29,7 +29,6 @@ import PlaceholderComponent from './PlaceholderComponent';
 import NodeHandle from './NodeHandle';
 
 const BUTTON_VALIDATION_FIELD_NAMES = {
-  action: 'action',
   label: 'label',
   variant: 'variant',
 } as const;
@@ -49,6 +48,8 @@ export type ButtonElement = FlowElement<ButtonConfig> & {
   variant?: string;
   label?: string;
   image?: string;
+  startIcon?: string;
+  endIcon?: string;
 };
 
 /**
@@ -87,10 +88,6 @@ function ButtonAdapter({resource, elementIndex = undefined}: ButtonAdapterPropsI
 
   const validationFields: RequiredFieldInterface[] = useMemo(
     () => [
-      {
-        errorMessage: t('flows:core.validation.fields.button.action'),
-        name: BUTTON_VALIDATION_FIELD_NAMES.action,
-      },
       {
         errorMessage: t('flows:core.validation.fields.button.label'),
         name: BUTTON_VALIDATION_FIELD_NAMES.label,
@@ -144,7 +141,11 @@ function ButtonAdapter({resource, elementIndex = undefined}: ButtonAdapterPropsI
   const buttonElement = resource as ButtonElement;
 
   const startIcon = useMemo(() => {
-    // Check resource.image first (new format), then config.image, then variant default
+    // Check resource.startIcon first (new format), then resource.image for backwards compatibility,
+    // then config.image, then variant default
+    if (buttonElement?.startIcon) {
+      return <img src={resolveStaticResourcePath(buttonElement.startIcon)} height={20} alt="" />;
+    }
     if (buttonElement?.image) {
       return <img src={resolveStaticResourcePath(buttonElement.image)} height={20} alt="" />;
     }
@@ -155,13 +156,21 @@ function ButtonAdapter({resource, elementIndex = undefined}: ButtonAdapterPropsI
       return <img src={resolveStaticResourcePath(image)} height={20} alt="" />;
     }
     return undefined;
-  }, [buttonElement?.image, buttonConfig?.image, image]);
+  }, [buttonElement?.startIcon, buttonElement?.image, buttonConfig?.image, image]);
+
+  const endIcon = useMemo(() => {
+    if (buttonElement?.endIcon) {
+      return <img src={resolveStaticResourcePath(buttonElement.endIcon)} height={20} alt="" />;
+    }
+    return undefined;
+  }, [buttonElement?.endIcon]);
 
   return (
     <div className="adapter button-adapter">
       <Button
         sx={buttonConfig?.styles}
         startIcon={startIcon}
+        endIcon={endIcon}
         {...config}
       >
         <PlaceholderComponent value={buttonElement?.label ?? ''} />

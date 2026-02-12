@@ -47,10 +47,10 @@ func TestGetOrganizationUnitStoreMode(t *testing.T) {
 			expectedMode:              config.StoreModeMutable,
 		},
 		{
-			name:                      "explicit immutable mode",
-			ouStoreConfig:             "immutable",
+			name:                      "explicit declarative mode",
+			ouStoreConfig:             "declarative",
 			immutableResourcesEnabled: false, // Should be ignored
-			expectedMode:              config.StoreModeImmutable,
+			expectedMode:              config.StoreModeDeclarative,
 		},
 		{
 			name:                      "explicit composite mode",
@@ -74,7 +74,7 @@ func TestGetOrganizationUnitStoreMode(t *testing.T) {
 			name:                      "invalid mode falls back to global config - immutable",
 			ouStoreConfig:             "invalid",
 			immutableResourcesEnabled: true,
-			expectedMode:              config.StoreModeImmutable,
+			expectedMode:              config.StoreModeDeclarative,
 		},
 		{
 			name:                      "invalid mode falls back to global config - mutable",
@@ -86,7 +86,7 @@ func TestGetOrganizationUnitStoreMode(t *testing.T) {
 			name:                      "empty config falls back to global - immutable",
 			ouStoreConfig:             "",
 			immutableResourcesEnabled: true,
-			expectedMode:              config.StoreModeImmutable,
+			expectedMode:              config.StoreModeDeclarative,
 		},
 		{
 			name:                      "empty config falls back to global - mutable",
@@ -101,7 +101,7 @@ func TestGetOrganizationUnitStoreMode(t *testing.T) {
 			// Set up test configuration
 			runtime := config.GetThunderRuntime()
 			runtime.Config.OrganizationUnit.Store = tt.ouStoreConfig
-			runtime.Config.ImmutableResources.Enabled = tt.immutableResourcesEnabled
+			runtime.Config.DeclarativeResources.Enabled = tt.immutableResourcesEnabled
 
 			// Test
 			actualMode := getOrganizationUnitStoreMode()
@@ -124,14 +124,14 @@ func TestIsCompositeModeEnabled(t *testing.T) {
 	}{
 		{"composite mode enabled", "composite", true},
 		{"mutable mode not composite", "mutable", false},
-		{"immutable mode not composite", "immutable", false},
+		{"declarative mode not composite", "declarative", false},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			runtime := config.GetThunderRuntime()
 			runtime.Config.OrganizationUnit.Store = tt.mode
-			runtime.Config.ImmutableResources.Enabled = false
+			runtime.Config.DeclarativeResources.Enabled = false
 
 			assert.Equal(t, tt.expected, isCompositeModeEnabled())
 		})
@@ -152,21 +152,21 @@ func TestIsMutableModeEnabled(t *testing.T) {
 	}{
 		{"mutable mode enabled", "mutable", true},
 		{"composite mode not mutable", "composite", false},
-		{"immutable mode not mutable", "immutable", false},
+		{"declarative mode not mutable", "declarative", false},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			runtime := config.GetThunderRuntime()
 			runtime.Config.OrganizationUnit.Store = tt.mode
-			runtime.Config.ImmutableResources.Enabled = false
+			runtime.Config.DeclarativeResources.Enabled = false
 
 			assert.Equal(t, tt.expected, isMutableModeEnabled())
 		})
 	}
 }
 
-func TestIsImmutableModeEnabled(t *testing.T) {
+func TestIsDeclarativeModeEnabled(t *testing.T) {
 	testConfig := &config.Config{}
 	err := config.InitializeThunderRuntime("/tmp/test", testConfig)
 	if err != nil {
@@ -178,7 +178,7 @@ func TestIsImmutableModeEnabled(t *testing.T) {
 		mode     string
 		expected bool
 	}{
-		{"immutable mode enabled", "immutable", true},
+		{"declarative mode enabled", "declarative", true},
 		{"mutable mode not immutable", "mutable", false},
 		{"composite mode not immutable", "composite", false},
 	}
@@ -187,9 +187,9 @@ func TestIsImmutableModeEnabled(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			runtime := config.GetThunderRuntime()
 			runtime.Config.OrganizationUnit.Store = tt.mode
-			runtime.Config.ImmutableResources.Enabled = false
+			runtime.Config.DeclarativeResources.Enabled = false
 
-			assert.Equal(t, tt.expected, isImmutableModeEnabled())
+			assert.Equal(t, tt.expected, isDeclarativeModeEnabled())
 		})
 	}
 }

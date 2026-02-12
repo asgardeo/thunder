@@ -24,8 +24,8 @@ import (
 	"github.com/asgardeo/thunder/internal/notification/common"
 	"github.com/asgardeo/thunder/internal/system/cmodels"
 	"github.com/asgardeo/thunder/internal/system/config"
-	immutableresource "github.com/asgardeo/thunder/internal/system/immutable_resource"
-	"github.com/asgardeo/thunder/internal/system/immutable_resource/entity"
+	declarativeresource "github.com/asgardeo/thunder/internal/system/declarative_resource"
+	"github.com/asgardeo/thunder/internal/system/declarative_resource/entity"
 
 	"github.com/stretchr/testify/suite"
 )
@@ -52,7 +52,7 @@ func (suite *FileBasedStoreTestSuite) SetupSuite() {
 				Key: "0579f866ac7c9273580d0ff163fa01a7b2401a7ff3ddc3e3b14ae3136fa6025e",
 			},
 		},
-		ImmutableResources: config.ImmutableResources{
+		DeclarativeResources: config.DeclarativeResources{
 			Enabled: false,
 		},
 	}
@@ -66,7 +66,7 @@ func (suite *FileBasedStoreTestSuite) TearDownSuite() {
 }
 
 func (suite *FileBasedStoreTestSuite) SetupTest() {
-	genericStore := immutableresource.NewGenericFileBasedStoreForTest(entity.KeyTypeNotificationSender)
+	genericStore := declarativeresource.NewGenericFileBasedStoreForTest(entity.KeyTypeNotificationSender)
 	suite.store = &notificationFileBasedStore{
 		GenericFileBasedStore: genericStore,
 	}

@@ -17,12 +17,13 @@
  */
 
 import type {Resource} from '@/features/flows/models/resources';
-import {useMemo, useRef, useState, type ChangeEvent, type ReactElement} from 'react';
+import {useMemo, useRef, useState, type ReactElement} from 'react';
+import {useTranslation} from 'react-i18next';
 import useValidationStatus from '@/features/flows/hooks/useValidationStatus';
-import {Box, FormHelperText} from '@wso2/oxygen-ui';
+import {Box, FormHelperText, IconButton, Tooltip} from '@wso2/oxygen-ui';
+import {Languages} from '@wso2/oxygen-ui-icons-react';
 import type {ToolbarPluginProps} from './helper-plugins/ToolbarPlugin';
 import RichText from './RichText';
-import type {LanguageTextFieldProps} from '../I18nConfigurationCard';
 import I18nConfigurationCard from '../I18nConfigurationCard';
 
 /**
@@ -50,40 +51,6 @@ export interface RichTextWithTranslationProps {
 }
 
 /**
- * Rich text component used within I18nConfigurationCard for translation editing.
- * Exported for testing purposes.
- */
-export function TranslationRichText({onChange, value, disabled}: LanguageTextFieldProps): ReactElement {
-  /**
-   * Resource object to hold the rich text editor content.
-   * Note: This is a partial mock object that contains the `label` property (new format)
-   * needed by the RichText component.
-   */
-  const resource = useMemo(
-    () =>
-      ({
-        label: value ?? '',
-      }) as unknown as Resource,
-    [value],
-  );
-
-  /**
-   * Handles changes in the rich text editor.
-   *
-   * @param changedValue - The new value of the rich text editor.
-   */
-  const handleRichTextChange = (changedValue: string) => {
-    onChange({
-      target: {
-        value: changedValue,
-      },
-    } as ChangeEvent<HTMLInputElement>);
-  };
-
-  return <RichText onChange={handleRichTextChange} resource={resource} disabled={disabled} />;
-}
-
-/**
  * Rich text editor component with translation support.
  */
 function RichTextWithTranslation({
@@ -92,6 +59,7 @@ function RichTextWithTranslation({
   onChange,
   resource,
 }: RichTextWithTranslationProps): ReactElement {
+  const {t} = useTranslation();
   const [isI18nCardOpen, setIsI18nCardOpen] = useState<boolean>(false);
   const buttonRef = useRef(null);
   const {selectedNotification} = useValidationStatus();
@@ -110,34 +78,31 @@ function RichTextWithTranslation({
   }, [resource, selectedNotification]);
 
   return (
-    <Box>
+    <Box sx={{position: 'relative'}}>
       <RichText ToolbarProps={ToolbarProps} className={className} onChange={onChange} resource={resource} />
       {errorMessage && <FormHelperText error>{errorMessage}</FormHelperText>}
-      {/* <Tooltip title={t('flows:core.elements.textPropertyField.tooltip.configureTranslation')}>
+      <Tooltip title={t('flows:core.elements.textPropertyField.tooltip.configureTranslation')}>
         <IconButton
           ref={buttonRef}
           onClick={() => setIsI18nCardOpen(!isI18nCardOpen)}
           size="small"
-          className="rich-text-translation-icon-button"
+          sx={{position: 'absolute', top: 8, right: 8}}
         >
-          <LanguagesIcon size={13} />
+          <Languages size={13} />
         </IconButton>
-      </Tooltip> */}
-      {isI18nCardOpen && (
-        <I18nConfigurationCard
-          open={isI18nCardOpen}
-          anchorEl={buttonRef.current}
-          propertyKey="richText"
-          onClose={() => setIsI18nCardOpen(false)}
-          i18nKey={(() => {
-            const text = String((resource as Resource & {label?: string})?.label ?? '');
-            const match = /^\{\{t\(([^)]+)\)\}\}$/.exec(text);
-            return match?.[1] ?? '';
-          })()}
-          onChange={(i18nKey: string) => onChange(i18nKey ? `{{t(${i18nKey})}}` : '')}
-          LanguageTextField={TranslationRichText}
-        />
-      )}
+      </Tooltip>
+      <I18nConfigurationCard
+        open={isI18nCardOpen}
+        anchorEl={buttonRef.current}
+        propertyKey="richText"
+        onClose={() => setIsI18nCardOpen(false)}
+        i18nKey={(() => {
+          const text = String((resource as Resource & {label?: string})?.label ?? '');
+          const match = /^\{\{t\(([^)]+)\)\}\}$/.exec(text);
+          return match?.[1] ?? '';
+        })()}
+        onChange={(i18nKey: string) => onChange(i18nKey ? `{{t(${i18nKey})}}` : '')}
+      />
     </Box>
   );
 }

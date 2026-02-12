@@ -38,6 +38,9 @@ spec:
         {{- include "thunder.selectorLabels" . | nindent 8 }}
       annotations:
         checksum.deployment.yaml: {{ include (print $.Template.BasePath "/config-map.yaml") . | sha256sum }}
+        {{- if include "thunder.shouldIncludeSecretChecksum" . }}
+        checksum.secret: {{ include (print $.Template.BasePath "/secret.yaml") . | sha256sum }}
+        {{- end }}
     spec:
       serviceAccountName: {{ include "thunder.serviceAccountName" . }}
       securityContext:
@@ -86,6 +89,7 @@ spec:
           env:
             - name: THUNDER_SKIP_SECURITY
               value: {{ .Values.deployment.skipSecurity | quote }}
+            {{- include "thunder.databasePasswordEnvVars" . | nindent 12 }}
           startupProbe:
             exec:
               command:

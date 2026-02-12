@@ -29,7 +29,7 @@ jobs:
       - name: 📦 Install pnpm
         uses: pnpm/action-setup@v4
         with:
-          version: '9.x'
+          version: 'latest'
           run_install: false
 
       - name: 🔍 Run pnpm audit (Frontend)
@@ -99,7 +99,7 @@ jobs:
       - name: 📦 Install pnpm
         uses: pnpm/action-setup@v4
         with:
-          version: '9.x'
+          version: 'latest'
           run_install: false
           cache: true
           cache-dependency-path: frontend/pnpm-lock.yaml
@@ -143,7 +143,7 @@ jobs:
       - name: 📦 Install pnpm
         uses: pnpm/action-setup@v4
         with:
-          version: '9.x'
+          version: 'latest'
           run_install: false
           cache-dependency-path: frontend/pnpm-lock.yaml
 
@@ -195,6 +195,11 @@ jobs:
           cd frontend/apps/thunder-develop
           pnpm test:coverage
 
+      - name: 🧪 Run Thunder-Gate Tests with Coverage
+        run: |
+          cd frontend/apps/thunder-gate
+          pnpm test:coverage
+
       - name: 📦 Upload Built Distribution
         uses: actions/upload-artifact@v4
         with:
@@ -228,7 +233,17 @@ jobs:
           flags: frontend-apps-develop-unit
           name: Frontend Develop App Unit Tests
           fail_ci_if_error: false
-  
+
+      - name: 📊 Upload `@thunder/gate` Unit Test Coverage Report to Codecov
+        uses: codecov/codecov-action@v4
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          files: frontend/apps/thunder-gate/coverage/lcov.info
+          disable_search: true
+          flags: frontend-apps-gate-unit
+          name: Frontend Gate App Unit Tests
+          fail_ci_if_error: false
+
   build_samples:
     name: 🛠️ Build Sample Apps
     if: ${{ github.event.label.name == 'trigger-pr-builder' || github.event_name == 'workflow_dispatch' || github.event_name == 'pull_request'}}
@@ -248,7 +263,7 @@ jobs:
       - name: 📦 Install pnpm
         uses: pnpm/action-setup@v4
         with:
-          version: '9.x'
+          version: 'latest'
           run_install: false
           cache-dependency-path: frontend/pnpm-lock.yaml
 

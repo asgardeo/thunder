@@ -1,0 +1,57 @@
+---
+title: <CreateOrganization />
+description: Create new organizations
+---
+
+# `<CreateOrganization />`
+
+The `CreateOrganization` component renders a form that allows users to create new organizations in B2B applications.
+
+## Usage
+
+### Basic Usage
+
+```jsx title="src/CreateOrgPage.jsx" showLineNumbers
+import { CreateOrganization } from '@asgardeo/react'
+
+function CreateOrgPage() {
+  return (
+    <div>
+      <h1>Create Organization</h1>
+      <CreateOrganization />
+    </div>
+  )
+}
+
+export default CreateOrgPage
+```
+
+### With Callback
+
+Handle organization creation with a callback:
+
+```jsx title="src/CreateOrgPage.jsx" showLineNumbers
+import { CreateOrganization } from '@asgardeo/react'
+import { useNavigate } from 'react-router-dom'
+
+function CreateOrgPage() {
+  const navigate = useNavigate()
+
+  return (
+    <CreateOrganization 
+      onSuccess={(org) => {
+        navigate(`/organizations/${org.id}`)
+      }}
+    />
+  )
+}
+
+export default CreateOrgPage
+```
+
+## Props
+
+| Prop | Type | Required | Description |
+| :--- | :--- | :---: | :--- |
+| `onSuccess` | `(org) => void` | ❌ | Callback fired after organization creation |
+| `appearance` | `Appearance` | ❌ | Customize component appearance |

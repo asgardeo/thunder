@@ -17,9 +17,7 @@
  */
 
 import {describe, it, expect, vi, beforeEach} from 'vitest';
-import {render, screen} from '@testing-library/react';
-import {QueryClient, QueryClientProvider} from '@tanstack/react-query';
-import type {ReactNode} from 'react';
+import {render, screen} from '@thunder/test-utils';
 import EditTokenSettings from '../EditTokenSettings';
 import type {Application} from '../../../../models/application';
 import type {OAuth2Config} from '../../../../models/oauth';
@@ -63,41 +61,30 @@ vi.mock('@asgardeo/react', () => ({
 }));
 
 // Mock useConfig
-vi.mock('@thunder/commons-contexts', () => ({
-  useConfig: () => ({
-    getServerUrl: () => 'https://api.example.com',
-  }),
-}));
+vi.mock('@thunder/shared-contexts', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@thunder/shared-contexts')>();
+  return {
+    ...actual,
+    useConfig: () => ({
+      getServerUrl: () => 'https://api.example.com',
+    }),
+  };
+});
 
 // Mock useLogger
-vi.mock('@thunder/logger', () => ({
-  useLogger: () => ({
-    error: vi.fn(),
-    info: vi.fn(),
-    debug: vi.fn(),
-  }),
-}));
+vi.mock('@thunder/logger', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@thunder/logger')>();
+  return {
+    ...actual,
+    useLogger: () => ({
+      error: vi.fn(),
+      info: vi.fn(),
+      debug: vi.fn(),
+    }),
+  };
+});
 
-// Create a test wrapper with QueryClient
-function TestWrapper({children}: {children: ReactNode}) {
-  const queryClient = new QueryClient({
-    defaultOptions: {
-      queries: {
-        retry: false,
-        staleTime: Infinity,
-        gcTime: Infinity,
-        refetchOnMount: false,
-        refetchOnWindowFocus: false,
-        refetchOnReconnect: false,
-      },
-      mutations: {
-        retry: false,
-      },
-    },
-  });
-
-  return <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>;
-}
+// Wrapper is now provided by test-utils
 
 describe('EditTokenSettings', () => {
   const mockOnFieldChange = vi.fn();
@@ -118,62 +105,38 @@ describe('EditTokenSettings', () => {
 
   describe.skip('Native Mode (No OAuth2 Config) - SKIPPED: Component hangs due to async operations', () => {
     it('should render without crashing', () => {
-      const {container} = render(
-        <TestWrapper>
-          <EditTokenSettings application={mockApplication} onFieldChange={mockOnFieldChange} />
-        </TestWrapper>,
-      );
+      const {container} = render(<EditTokenSettings application={mockApplication} onFieldChange={mockOnFieldChange} />);
 
       expect(container).toBeTruthy();
     });
 
     it('should render shared token user attributes section', () => {
-      render(
-        <TestWrapper>
-          <EditTokenSettings application={mockApplication} onFieldChange={mockOnFieldChange} />
-        </TestWrapper>,
-      );
+      render(<EditTokenSettings application={mockApplication} onFieldChange={mockOnFieldChange} />);
 
       expect(screen.getByTestId('token-user-attributes-section-shared')).toBeInTheDocument();
     });
 
     it('should render shared token validation section', () => {
-      render(
-        <TestWrapper>
-          <EditTokenSettings application={mockApplication} onFieldChange={mockOnFieldChange} />
-        </TestWrapper>,
-      );
+      render(<EditTokenSettings application={mockApplication} onFieldChange={mockOnFieldChange} />);
 
       expect(screen.getByTestId('token-validation-section-shared')).toBeInTheDocument();
     });
 
     it('should render token issuer section', () => {
-      render(
-        <TestWrapper>
-          <EditTokenSettings application={mockApplication} onFieldChange={mockOnFieldChange} />
-        </TestWrapper>,
-      );
+      render(<EditTokenSettings application={mockApplication} onFieldChange={mockOnFieldChange} />);
 
       expect(screen.getByTestId('token-issuer-section')).toBeInTheDocument();
     });
 
     it('should not render access token sections in native mode', () => {
-      render(
-        <TestWrapper>
-          <EditTokenSettings application={mockApplication} onFieldChange={mockOnFieldChange} />
-        </TestWrapper>,
-      );
+      render(<EditTokenSettings application={mockApplication} onFieldChange={mockOnFieldChange} />);
 
       expect(screen.queryByTestId('token-user-attributes-section-access')).not.toBeInTheDocument();
       expect(screen.queryByTestId('token-validation-section-access')).not.toBeInTheDocument();
     });
 
     it('should not render ID token sections in native mode', () => {
-      render(
-        <TestWrapper>
-          <EditTokenSettings application={mockApplication} onFieldChange={mockOnFieldChange} />
-        </TestWrapper>,
-      );
+      render(<EditTokenSettings application={mockApplication} onFieldChange={mockOnFieldChange} />);
 
       expect(screen.queryByTestId('token-user-attributes-section-id')).not.toBeInTheDocument();
       expect(screen.queryByTestId('token-validation-section-id')).not.toBeInTheDocument();
@@ -197,13 +160,11 @@ describe('EditTokenSettings', () => {
 
     it('should render access token user attributes section', () => {
       render(
-        <TestWrapper>
-          <EditTokenSettings
-            application={mockApplication}
-            oauth2Config={mockOAuth2Config}
-            onFieldChange={mockOnFieldChange}
-          />
-        </TestWrapper>,
+        <EditTokenSettings
+          application={mockApplication}
+          oauth2Config={mockOAuth2Config}
+          onFieldChange={mockOnFieldChange}
+        />,
       );
 
       expect(screen.getByTestId('token-user-attributes-section-access')).toBeInTheDocument();
@@ -211,13 +172,11 @@ describe('EditTokenSettings', () => {
 
     it('should render ID token user attributes section', () => {
       render(
-        <TestWrapper>
-          <EditTokenSettings
-            application={mockApplication}
-            oauth2Config={mockOAuth2Config}
-            onFieldChange={mockOnFieldChange}
-          />
-        </TestWrapper>,
+        <EditTokenSettings
+          application={mockApplication}
+          oauth2Config={mockOAuth2Config}
+          onFieldChange={mockOnFieldChange}
+        />,
       );
 
       expect(screen.getByTestId('token-user-attributes-section-id')).toBeInTheDocument();
@@ -225,13 +184,11 @@ describe('EditTokenSettings', () => {
 
     it('should render access token validation section', () => {
       render(
-        <TestWrapper>
-          <EditTokenSettings
-            application={mockApplication}
-            oauth2Config={mockOAuth2Config}
-            onFieldChange={mockOnFieldChange}
-          />
-        </TestWrapper>,
+        <EditTokenSettings
+          application={mockApplication}
+          oauth2Config={mockOAuth2Config}
+          onFieldChange={mockOnFieldChange}
+        />,
       );
 
       expect(screen.getByTestId('token-validation-section-access')).toBeInTheDocument();
@@ -239,13 +196,11 @@ describe('EditTokenSettings', () => {
 
     it('should render ID token validation section', () => {
       render(
-        <TestWrapper>
-          <EditTokenSettings
-            application={mockApplication}
-            oauth2Config={mockOAuth2Config}
-            onFieldChange={mockOnFieldChange}
-          />
-        </TestWrapper>,
+        <EditTokenSettings
+          application={mockApplication}
+          oauth2Config={mockOAuth2Config}
+          onFieldChange={mockOnFieldChange}
+        />,
       );
 
       expect(screen.getByTestId('token-validation-section-id')).toBeInTheDocument();
@@ -253,13 +208,11 @@ describe('EditTokenSettings', () => {
 
     it('should render token issuer section', () => {
       render(
-        <TestWrapper>
-          <EditTokenSettings
-            application={mockApplication}
-            oauth2Config={mockOAuth2Config}
-            onFieldChange={mockOnFieldChange}
-          />
-        </TestWrapper>,
+        <EditTokenSettings
+          application={mockApplication}
+          oauth2Config={mockOAuth2Config}
+          onFieldChange={mockOnFieldChange}
+        />,
       );
 
       expect(screen.getByTestId('token-issuer-section')).toBeInTheDocument();
@@ -267,13 +220,11 @@ describe('EditTokenSettings', () => {
 
     it('should not render shared token sections in OAuth mode', () => {
       render(
-        <TestWrapper>
-          <EditTokenSettings
-            application={mockApplication}
-            oauth2Config={mockOAuth2Config}
-            onFieldChange={mockOnFieldChange}
-          />
-        </TestWrapper>,
+        <EditTokenSettings
+          application={mockApplication}
+          oauth2Config={mockOAuth2Config}
+          onFieldChange={mockOnFieldChange}
+        />,
       );
 
       expect(screen.queryByTestId('token-user-attributes-section-shared')).not.toBeInTheDocument();
@@ -284,9 +235,7 @@ describe('EditTokenSettings', () => {
   describe.skip('Props Validation - SKIPPED: Component hangs due to async operations', () => {
     it('should handle undefined oauth2Config gracefully', () => {
       const {container} = render(
-        <TestWrapper>
-          <EditTokenSettings application={mockApplication} onFieldChange={mockOnFieldChange} oauth2Config={undefined} />
-        </TestWrapper>,
+        <EditTokenSettings application={mockApplication} onFieldChange={mockOnFieldChange} oauth2Config={undefined} />,
       );
 
       expect(container).toBeTruthy();
@@ -299,11 +248,7 @@ describe('EditTokenSettings', () => {
         token: undefined,
       };
 
-      const {container} = render(
-        <TestWrapper>
-          <EditTokenSettings application={appWithoutToken} onFieldChange={mockOnFieldChange} />
-        </TestWrapper>,
-      );
+      const {container} = render(<EditTokenSettings application={appWithoutToken} onFieldChange={mockOnFieldChange} />);
 
       expect(container).toBeTruthy();
     });
@@ -315,9 +260,7 @@ describe('EditTokenSettings', () => {
       };
 
       const {container} = render(
-        <TestWrapper>
-          <EditTokenSettings application={appWithoutUserTypes} onFieldChange={mockOnFieldChange} />
-        </TestWrapper>,
+        <EditTokenSettings application={appWithoutUserTypes} onFieldChange={mockOnFieldChange} />,
       );
 
       expect(container).toBeTruthy();
@@ -334,13 +277,11 @@ describe('EditTokenSettings', () => {
       } as unknown as OAuth2Config;
 
       const {container} = render(
-        <TestWrapper>
-          <EditTokenSettings
-            application={mockApplication}
-            oauth2Config={mockOAuth2Config}
-            onFieldChange={mockOnFieldChange}
-          />
-        </TestWrapper>,
+        <EditTokenSettings
+          application={mockApplication}
+          oauth2Config={mockOAuth2Config}
+          onFieldChange={mockOnFieldChange}
+        />,
       );
 
       expect(container).toBeTruthy();
@@ -352,11 +293,7 @@ describe('EditTokenSettings', () => {
     });
 
     it('should render all sections for native mode', () => {
-      const {container} = render(
-        <TestWrapper>
-          <EditTokenSettings application={mockApplication} onFieldChange={mockOnFieldChange} />
-        </TestWrapper>,
-      );
+      const {container} = render(<EditTokenSettings application={mockApplication} onFieldChange={mockOnFieldChange} />);
 
       expect(container).toBeTruthy();
       expect(screen.getByTestId('token-user-attributes-section-shared')).toBeInTheDocument();

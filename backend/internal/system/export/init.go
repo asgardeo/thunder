@@ -22,12 +22,12 @@ package export
 import (
 	"net/http"
 
-	immutableresource "github.com/asgardeo/thunder/internal/system/immutable_resource"
+	declarativeresource "github.com/asgardeo/thunder/internal/system/declarative_resource"
 	"github.com/asgardeo/thunder/internal/system/middleware"
 )
 
 // Initialize initializes the export service and registers its routes.
-func Initialize(mux *http.ServeMux, exporters []immutableresource.ResourceExporter) ExportServiceInterface {
+func Initialize(mux *http.ServeMux, exporters []declarativeresource.ResourceExporter) ExportServiceInterface {
 	// Create parameterizer instance (no longer needs centralized rules)
 	parameterizerInstance := newParameterizer(templatingRules{})
 

@@ -215,4 +215,64 @@ describe('ConfigureName', () => {
     expect(mockOnAppNameChange).toHaveBeenCalledTimes(100);
     expect(mockOnAppNameChange).toHaveBeenCalledWith('A');
   });
+
+  describe('onReadyChange callback', () => {
+    it('should call onReadyChange with true when appName is not empty', () => {
+      const mockOnReadyChange = vi.fn();
+      renderComponent({appName: 'My App', onReadyChange: mockOnReadyChange});
+
+      expect(mockOnReadyChange).toHaveBeenCalledWith(true);
+    });
+
+    it('should call onReadyChange with false when appName is empty', () => {
+      const mockOnReadyChange = vi.fn();
+      renderComponent({appName: '', onReadyChange: mockOnReadyChange});
+
+      expect(mockOnReadyChange).toHaveBeenCalledWith(false);
+    });
+
+    it('should call onReadyChange with false when appName contains only whitespace', () => {
+      const mockOnReadyChange = vi.fn();
+      renderComponent({appName: '   ', onReadyChange: mockOnReadyChange});
+
+      expect(mockOnReadyChange).toHaveBeenCalledWith(false);
+    });
+
+    it('should not crash when onReadyChange is undefined', () => {
+      // This test ensures the component handles undefined onReadyChange gracefully
+      expect(() => {
+        renderComponent({appName: 'Test App', onReadyChange: undefined});
+      }).not.toThrow();
+    });
+
+    it('should call onReadyChange when appName transitions from empty to non-empty', () => {
+      const mockOnReadyChange = vi.fn();
+      const {rerender} = render(
+        <ConfigureName appName="" onAppNameChange={mockOnAppNameChange} onReadyChange={mockOnReadyChange} />,
+      );
+
+      expect(mockOnReadyChange).toHaveBeenCalledWith(false);
+      mockOnReadyChange.mockClear();
+
+      rerender(
+        <ConfigureName appName="New App" onAppNameChange={mockOnAppNameChange} onReadyChange={mockOnReadyChange} />,
+      );
+
+      expect(mockOnReadyChange).toHaveBeenCalledWith(true);
+    });
+
+    it('should call onReadyChange when appName transitions from non-empty to empty', () => {
+      const mockOnReadyChange = vi.fn();
+      const {rerender} = render(
+        <ConfigureName appName="My App" onAppNameChange={mockOnAppNameChange} onReadyChange={mockOnReadyChange} />,
+      );
+
+      expect(mockOnReadyChange).toHaveBeenCalledWith(true);
+      mockOnReadyChange.mockClear();
+
+      rerender(<ConfigureName appName="" onAppNameChange={mockOnAppNameChange} onReadyChange={mockOnReadyChange} />);
+
+      expect(mockOnReadyChange).toHaveBeenCalledWith(false);
+    });
+  });
 });

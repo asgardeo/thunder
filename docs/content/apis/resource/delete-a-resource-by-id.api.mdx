@@ -1,0 +1,72 @@
+---
+id: delete-a-resource-by-id
+title: "Delete a resource by id"
+description: "Deletes a resource. Cannot delete if it has sub-resources or actions."
+sidebar_label: "Delete a resource by id"
+hide_title: true
+hide_table_of_contents: true
+api: eJztV0tvHDcM/isCL22B2UeMpGjn5sZ7MJC0he2cHB+4EtejRCNNJI6d7WL+e0DNY3f9SIM+DgXqixcSxe8j+ZHS7IDxNkF5DZFSaKOmBDcFGEo62oZt8FDCGTliSgrVaDRXr9H7wMrkLWU3yrKqMKnUrmeTKxWiQi1e0hwKaDBiTUxRAHdgxXeDXEEBHmuCEmI6N1BApE+tjWSg5NhSAUlXVCOUO+BtI3aJo/W3UMAmxBoZSmhba6B7yPxiYKISxTuK6vwMuuJJZPvv4ArgjThOTfCJkvg6Wb6Uf8+c6DOafb5cLh8b/oJGCU9KDAXo4Jk8ixk2jbMaxWzxIYnt7nEAYf2BNB+Feg06GIICakoJb0nq38TQUGTbE877TyThmNgqxhDV4Is+Y904sb5YXc5eLJcvJKAR4Rt9jeaH7s79HTo7pUANhXhYgT8DOCNG68goykiHm4doVxVNSOtgtsomVaMTUDIqh+sZrU/KDrwMMkLXFcCWs4scivAbvOaM1jYl629n1uQqtXWNcQslvO3Xpz4T/RRwh66lfSHGlJ4c1OzZxHxFmRLMJAOhrHNPz3oFHhM7bveR3vPcfjzi9uzpY25Pmymu8OuzBbr8V8Crpxrm3DNFj26cAbni/7fOf7B1DmR2ebmavVoulw9a4OlKH/M/9ar19LkhzVMQQes2RjLqvrKOVBODpr4TeR8GDCqriatgoIShUYr+KilhMYpz1hNIi51caN20nhY7azooYNjP12AbHZRQMTepXCx2VUjclbsmRO5yf0WL62FsyF4v8A22Tq4fFzS6vNwVIGeOt39a/rwU2jcCqdtoeZsxfzttuToRAadtYqrh5tDkUqTfI46G+y7AvFDAxoX7bCILIdo/cvu8HvR+tPjuKMKJcinsFr3DxXhA0snhI33ToWwo6dSh6fkO4ZRwqqWCioPql1SNHm+pJs/q9PfzNBbT+k3I4Q2am+bjZa+ht0fHpCAUUy+kF/PlI3FdVTaJoai9TWSEQI+8n2dD8YtpJRUKvRmnmfSlaijmOyL42RrFD/bxSNPE4Obv/cU0CDV6tSblKYmgK0sRo66sRue2vee9t6Qwyhsj2jsyahNDnRVeoTeOBihRs0ocW81tpAOoMSfWkGe7sfIzqZBjR5eR7Eaa584aMoWqW+l9Uq23n1pS95Yr6zNeX5MD1z3P05yBgU1PdTjbeiNo/F1SDUapRs5YJGXrumXpEIUbpqh0pCy6bJBLYGwkzW77ILF9FrLtYYyD+zGNeW49hzF/L+pzVpNPWfbDY/K0QV2ROskCOe7v+/v7OebteYi3i+FsWrw5f7369XI1O5kv5xXXLg/CJiSu0R947p/iBy9xtd6q/HZ9MMOn2+0fe70PA4DpMy8ah9bLyMnB7YYBuP+IGAcgFFBOb/rx+6KA0hq5Kvtxdg27nQjvXXRdJ8ufWpI3x/XNfvrloWVskt8Gyg26RF8J+fuL4Yr+QT3xBfBMKMMi+u3+WQNQwEfajl8m8u3w91j8VXj5yLjpCqgIDcWcjn5D5lzDB0cevWVksk9X1tnqzepqBV33BV073XU=
+sidebar_class_name: "delete api-method"
+info_path: docs/apis/resource/resource-server-management-api
+custom_edit_url: null
+---
+
+import MethodEndpoint from "@theme/ApiExplorer/MethodEndpoint";
+import ParamsDetails from "@theme/ParamsDetails";
+import RequestSchema from "@theme/RequestSchema";
+import StatusCodes from "@theme/StatusCodes";
+import OperationTabs from "@theme/OperationTabs";
+import TabItem from "@theme/TabItem";
+import Heading from "@theme/Heading";
+import Translate from "@docusaurus/Translate";
+
+<Heading
+  as={"h1"}
+  className={"openapi__heading"}
+  children={"Delete a resource by id"}
+>
+</Heading>
+
+<MethodEndpoint
+  method={"delete"}
+  path={"/resource-servers/{rsId}/resources/{id}"}
+  context={"endpoint"}
+>
+  
+</MethodEndpoint>
+
+
+
+Deletes a resource. Cannot delete if it has sub-resources or actions.
+
+<Heading
+  id={"request"}
+  as={"h2"}
+  className={"openapi-tabs__heading"}
+>
+  <Translate id="theme.openapi.request.title">Request</Translate>
+</Heading>
+
+<ParamsDetails
+  parameters={[{"in":"path","name":"rsId","required":true,"schema":{"type":"string","format":"uuid"},"description":"Resource server ID"},{"in":"path","name":"id","required":true,"schema":{"type":"string","format":"uuid"},"description":"Resource ID"}]}
+>
+  
+</ParamsDetails>
+
+<RequestSchema
+  title={"Body"}
+  body={undefined}
+>
+  
+</RequestSchema>
+
+<StatusCodes
+  id={undefined}
+  label={undefined}
+  responses={{"204":{"description":"Resource deleted"},"400":{"description":"Bad request","content":{"application/json":{"schema":{"type":"object","required":["code","message"],"properties":{"code":{"type":"string","description":"Error code","example":"RES-1001"},"message":{"type":"string","description":"Error message","example":"Invalid request format"},"description":{"type":"string","description":"Detailed error description","example":"The request body is malformed or contains invalid data"}},"title":"Error"},"examples":{"missing-id":{"summary":"Missing resource ID","value":{"code":"RES-1002","message":"Invalid request format","description":"Resource ID is required"}},"cannot-delete":{"summary":"Cannot delete resource","value":{"code":"RES-1006","message":"Cannot delete resource","description":"Cannot delete resource that has sub-resources or actions"}}}}}},"500":{"description":"Internal server error","content":{"application/json":{"schema":{"type":"object","required":["code","message"],"properties":{"code":{"type":"string","description":"Error code","example":"RES-1001"},"message":{"type":"string","description":"Error message","example":"Invalid request format"},"description":{"type":"string","description":"Detailed error description","example":"The request body is malformed or contains invalid data"}},"title":"Error"},"example":{"code":"SSE-5000","message":"Internal server error","description":"An unexpected error occurred while processing the request"}}}}}}
+>
+  
+</StatusCodes>
+
+
+      

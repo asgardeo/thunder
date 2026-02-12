@@ -1,0 +1,72 @@
+---
+id: create-an-identity-provider
+title: "Create an identity provider"
+description: "Creates a new identity provider with the provided details."
+sidebar_label: "Create an identity provider"
+hide_title: true
+hide_table_of_contents: true
+api: eJztWFtv2zYU/ivEedoG2VYCpxe9pUnQGugao0m2h8AoaPHYYkuRKknFcQ3/94GkZMmylzgpNgxD/JSQPPfvfDrkChiaVPPCciUhgTON1KIhlEhcEM5QWm6XpNDqjjPUZMFtRmyG9QojDC3lwvQhAkvnBpJbGNVi40rMwCQCjd9LNPadYktIVh27ox1LjFoKQYprZJBYXWIEqZIWpXUaaFEInlKnYfDVODUrMGmGOXV/2WWBkICafsXUbim6BUlzdP66I5MICq0K1JajcYJ+s1FgrOZyDlHH4U80R6JmPhc7aYII8J7mhXAK3is1FwjrjobHDJw3/z3FDrkcnZ/tKdxMaYJ5IdQSkdDSZu5ASJ5zLfjymE/Xy+Lvgya/YH/ej8jl6c31h1+3Xbu8fP/xwi3JMncF8GcgAucsRM3++9H1h5t3MFl3i1L5RbWmS4iAW8zNvir/bCkr+eWW+0tV6l4qOErb48yl646K8gDNf7hjT1TNzReDqUbbUj9VSiCVO/r/zNBmqLfUE25IpaBlaEaFwbUrNLfe8Oh8PK4d6kITxpssHgS92zrTECL5whlsctQNcSvC4FbUld/4v0/HZrOlx3FDS41JVYEtcVWg5IxgTrlwEcy4wH2OTDoZ+hwoC9Zrt6HRFEqaAK3j+GiXxQJ7uhifTVPbAObscZDdSP69rCs046gPo4uTkxjfDOO4h8dvp73hERv26OujV73h8NWrk5PhMI7j2CHjhQ5f6PCFDv9bdPib//1LFBhIr+LAYRzv0t47ykhFlQm5zpBUox6ZKuYLkFMxUzpHRpQmjhopl4ZweUcFZ37S6z+FM6kQlzOf54fxnip2ACovtPZeMU9KORpD5weL1cefTmduakZG0Ktpb7YL4I00JYgOjbjpqNH5uHcUx0ed2FoHdohLKktmqpRsT1SNXKvOyPbQX6pKwbyuKdbq1utJE9uZB3c3wsZCHU0dwmtoRQCjCjw11By+qN2l6GehcQP2t3u+8UrOBE9tQk7lQxck42jUNSOhQiNlS4L33FjzgvQXpD+C9OE20ncMbgNqJ+PPw2WF+ZN9BD+SFrWkglyhvkNNfCi+AUqJ9wWmdlNflaal1sjIIuPCf4ZTNIbLuTdepfGlB/6hHri6uuidVIP7/h6oK2lCJb1DD6L/2UXuNEGATifEgLkcbaYYJFAo46OkNoMEBjWKe8XmHSmC4LjxgCi1gAQyawuTDAarTBm7TlaF0nbtRx/N6VSEXLm9AOwZLYWFBIRKqfDLbrxWurP9Jn4bVyEYTEvN7dLbvDwtbXbspnazNBZzmLSPXDnYBov1waaK1C9EMBNq4Y+4BaX5Dw/9s6qaW4s3WxFuXE6cd4OgcFAL+Cct9Q0PEvIHXTrdnOidqcJJ4DR11SRWkbBEcirpHHOUlpyOR6Yum2vVz82j3kVDZ9UMWl31ut3w/JtZfTFrbkjthvgfPUNEwOVMeezUo3j3TZX8vlWVPZMPN27DTTylQebqGQq5m3Q/lLiuCqJH/RgiEDxF16RNPU8LmmZIjv1203vJYLBYLPrU7/aVng8qUTP4ODq7+HR10Tvux/3M5sLTnevynMqW4vBuQuieD1c3rlXz4fjJx+qAJIv3dlAIyv293we1qgjoFvYQ0CSqqOQWVqspNXijxXrtlr+XqB1FTBrmcf+tI8iQukgcQL/hMsyQLoSee0Bo4WPnO+iwFCRcTxb2wbOTFpGOL6+uIYJp9daeh/FC04V7CKcLSAAiUD6lvvf92goElfMyTB1Bp/v9BW/0Z8I=
+sidebar_class_name: "post api-method"
+info_path: docs/apis/idp/identity-provider-management-api
+custom_edit_url: null
+---
+
+import MethodEndpoint from "@theme/ApiExplorer/MethodEndpoint";
+import ParamsDetails from "@theme/ParamsDetails";
+import RequestSchema from "@theme/RequestSchema";
+import StatusCodes from "@theme/StatusCodes";
+import OperationTabs from "@theme/OperationTabs";
+import TabItem from "@theme/TabItem";
+import Heading from "@theme/Heading";
+import Translate from "@docusaurus/Translate";
+
+<Heading
+  as={"h1"}
+  className={"openapi__heading"}
+  children={"Create an identity provider"}
+>
+</Heading>
+
+<MethodEndpoint
+  method={"post"}
+  path={"/identity-providers"}
+  context={"endpoint"}
+>
+  
+</MethodEndpoint>
+
+
+
+Creates a new identity provider with the provided details.
+
+<Heading
+  id={"request"}
+  as={"h2"}
+  className={"openapi-tabs__heading"}
+>
+  <Translate id="theme.openapi.request.title">Request</Translate>
+</Heading>
+
+<ParamsDetails
+  parameters={undefined}
+>
+  
+</ParamsDetails>
+
+<RequestSchema
+  title={"Body"}
+  body={{"description":"Identity provider data","required":true,"content":{"application/json":{"schema":{"type":"object","required":["name","type"],"properties":{"name":{"type":"string","description":"Name of the identity provider","example":"Google"},"description":{"type":"string","description":"Description of the identity provider","example":"Google OIDC identity provider for employee authentication"},"type":{"type":"string","description":"Type of the identity provider (e.g., OAUTH)","example":"GOOGLE","enum":["OAUTH","OIDC","GOOGLE","GITHUB"]},"properties":{"type":"array","items":{"type":"object","properties":{"name":{"type":"string","description":"Name of the property","example":"your-client-id"},"value":{"type":"string","description":"Value of the property","example":"your-client-id"},"is_secret":{"type":"boolean","description":"Whether the property is secret","example":false}},"title":"IDPProperty"},"description":"Properties of the identity provider","example":[{"name":"client_id","value":"your-client-id","is_secret":false},{"name":"client_secret","value":"your-client-secret","is_secret":true},{"name":"scope","value":"openid email profile","is_secret":false}]}},"title":"IDPRequest"}}}}}
+>
+  
+</RequestSchema>
+
+<StatusCodes
+  id={undefined}
+  label={undefined}
+  responses={{"201":{"description":"Created","content":{"application/json":{"schema":{"type":"object","properties":{"id":{"type":"string","description":"Unique identifier of the identity provider","example":"550e8400-e29b-41d4-a716-446655440000"},"name":{"type":"string","description":"Name of the identity provider","example":"Google"},"description":{"type":"string","description":"Description of the identity provider","example":"Google OIDC identity provider for employee authentication"},"type":{"type":"string","description":"Type of the identity provider (e.g., OAUTH)","example":"GOOGLE","enum":["OAUTH","OIDC","GOOGLE","GITHUB"]},"properties":{"type":"array","items":{"type":"object","properties":{"name":{"type":"string","description":"Name of the property","example":"your-client-id"},"value":{"type":"string","description":"Value of the property","example":"your-client-id"},"is_secret":{"type":"boolean","description":"Whether the property is secret","example":false}},"title":"IDPProperty"},"description":"Properties of the identity provider","example":[{"name":"client_id","value":"your-client-id","is_secret":false},{"name":"client_secret","value":"******","is_secret":true},{"name":"scope","value":"openid email profile","is_secret":false}]}},"title":"IDPResponse"}}}},"400":{"description":"Bad Request: The request body is malformed or contains invalid data.","content":{"application/json":{"schema":{"allOf":[{"type":"object","properties":{"code":{"type":"string","description":"Error code"},"message":{"type":"string","description":"Error message"},"description":{"type":"string","description":"Detailed error description"}},"title":"ErrorResponse"},{"type":"object","properties":{"code":{"example":"IDP-1001"},"message":{"example":"Identity provider not found"},"description":{"example":"The requested identity provider could not be found"}}}],"title":"ClientErrorResponse"},"example":{"code":"IDP-1007","message":"Invalid request format","description":"The request body is malformed or contains invalid data"}}}},"409":{"description":"Conflict: An identity provider with the same name already exists.","content":{"application/json":{"schema":{"allOf":[{"type":"object","properties":{"code":{"type":"string","description":"Error code"},"message":{"type":"string","description":"Error message"},"description":{"type":"string","description":"Detailed error description"}},"title":"ErrorResponse"},{"type":"object","properties":{"code":{"example":"IDP-1001"},"message":{"example":"Identity provider not found"},"description":{"example":"The requested identity provider could not be found"}}}],"title":"ClientErrorResponse"},"example":{"code":"IDP-1004","message":"Identity provider already exists","description":"An identity provider with the same name already exists"}}}},"500":{"description":"Internal Server Error: An unexpected error occurred while processing the request.","content":{"application/json":{"schema":{"allOf":[{"type":"object","properties":{"code":{"type":"string","description":"Error code"},"message":{"type":"string","description":"Error message"},"description":{"type":"string","description":"Detailed error description"}},"title":"ErrorResponse"},{"type":"object","properties":{"code":{"example":"SSE-5000"},"message":{"example":"Internal server error"},"description":{"example":"An unexpected error occurred while processing the request"}}}],"title":"ServerErrorResponse"}}}}}}
+>
+  
+</StatusCodes>
+
+
+      

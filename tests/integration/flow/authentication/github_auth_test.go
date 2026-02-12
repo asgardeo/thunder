@@ -75,6 +75,9 @@ var (
 		ClientSecret:              "github_auth_flow_test_secret",
 		RedirectURIs:              []string{"http://localhost:3000/callback"},
 		AllowedUserTypes:          []string{"github_auth_user"},
+		TokenConfig: map[string]interface{}{
+			"user_attributes": []string{"userType", "ouId", "ouName", "ouHandle"},
+		},
 	}
 )
 

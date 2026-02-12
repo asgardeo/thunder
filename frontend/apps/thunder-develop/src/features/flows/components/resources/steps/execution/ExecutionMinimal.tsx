@@ -16,13 +16,14 @@
  * under the License.
  */
 
-import type {Step} from '@/features/flows/models/steps';
+import type {Step, StepData} from '@/features/flows/models/steps';
 import type {ReactElement} from 'react';
 import useFlowBuilderCore from '@/features/flows/hooks/useFlowBuilderCore';
 import {Handle, Position, useNodeId} from '@xyflow/react';
 import {useTranslation} from 'react-i18next';
 import {Box, Card, IconButton, Tooltip, Typography} from '@wso2/oxygen-ui';
 import {CogIcon} from '@wso2/oxygen-ui-icons-react';
+import classNames from 'classnames';
 import VisualFlowConstants from '@/features/flows/constants/VisualFlowConstants';
 import ExecutionFactory from './execution-factory/ExecutionFactory';
 import './ExecutionMinimal.scss';
@@ -52,6 +53,11 @@ function ExecutionMinimal({resource}: ExecutionMinimalPropsInterface): ReactElem
   // Get the display label from resource.display.label, falling back to executor name
   const displayLabel = resource.display?.label ?? resource.data?.action?.executor?.name ?? 'Executor';
 
+  // Check if the node has action data with onSuccess/onFailure fields defined (even if empty)
+  // This indicates the node supports branching and should show both handles
+  const stepData = resource.data as StepData | undefined;
+  const hasBranchingSupport = stepData?.action && 'onFailure' in stepData.action;
+
   const handleConfigClick = (): void => {
     if (stepId !== null) {
       setLastInteractedStepId(stepId);
@@ -67,7 +73,7 @@ function ExecutionMinimal({resource}: ExecutionMinimalPropsInterface): ReactElem
   };
 
   return (
-    <Box className="execution-minimal-step">
+    <Box className={classNames('execution-minimal-step', {'has-branching': hasBranchingSupport})}>
       <Box
         display="flex"
         justifyContent="space-between"
@@ -123,11 +129,33 @@ function ExecutionMinimal({resource}: ExecutionMinimalPropsInterface): ReactElem
       >
         <ExecutionFactory resource={resource} />
       </Card>
-      <Handle
-        type="source"
-        position={Position.Right}
-        id={`${resource.id}${VisualFlowConstants.FLOW_BUILDER_NEXT_HANDLE_SUFFIX}`}
-      />
+      {/* Success handle - always shown on the right */}
+      {hasBranchingSupport ? (
+        <Tooltip title={t('flows:core.executions.handles.success')} placement="right">
+          <Box className="handle-wrapper success-wrapper">
+            <Handle
+              type="source"
+              position={Position.Right}
+              id={`${resource.id}${VisualFlowConstants.FLOW_BUILDER_NEXT_HANDLE_SUFFIX}`}
+              className="execution-handle-success"
+            />
+          </Box>
+        </Tooltip>
+      ) : (
+        <Handle
+          type="source"
+          position={Position.Right}
+          id={`${resource.id}${VisualFlowConstants.FLOW_BUILDER_NEXT_HANDLE_SUFFIX}`}
+        />
+      )}
+      {/* Failure handle - shown at the bottom when the action supports branching (has onFailure property) */}
+      {hasBranchingSupport && (
+        <Tooltip title={t('flows:core.executions.handles.failure')} placement="bottom">
+          <Box className="handle-wrapper failure-wrapper">
+            <Handle type="source" position={Position.Bottom} id="failure" className="execution-handle-failure" />
+          </Box>
+        </Tooltip>
+      )}
     </Box>
   );
 }

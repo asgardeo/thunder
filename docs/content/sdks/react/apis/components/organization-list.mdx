@@ -1,0 +1,56 @@
+---
+title: <OrganizationList />
+description: List user's organizations
+---
+
+# `<OrganizationList />`
+
+The `OrganizationList` component renders a list of organizations that the current user belongs to.
+
+## Usage
+
+### Basic Usage
+
+```jsx title="src/OrganizationsPage.jsx" showLineNumbers
+import { OrganizationList } from '@asgardeo/react'
+
+function OrganizationsPage() {
+  return (
+    <div>
+      <h1>My Organizations</h1>
+      <OrganizationList />
+    </div>
+  )
+}
+
+export default OrganizationsPage
+```
+
+### Custom Rendering
+
+Customize how each organization is rendered:
+
+```jsx title="src/OrganizationsPage.jsx" showLineNumbers
+import { OrganizationList } from '@asgardeo/react'
+
+function OrganizationsPage() {
+  return (
+    <OrganizationList>
+      {(org) => (
+        <div key={org.id}>
+          <h3>{org.name}</h3>
+          <p>{org.role}</p>
+        </div>
+      )}
+    </OrganizationList>
+  )
+}
+
+export default OrganizationsPage
+```
+
+## Props
+
+| Prop | Type | Required | Description |
+| :--- | :--- | :---: | :--- |
+| `children` | `Function \| ReactNode` | ❌ | Custom render function or default list display |

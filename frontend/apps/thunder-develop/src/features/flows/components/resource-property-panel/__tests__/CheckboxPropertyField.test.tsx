@@ -245,4 +245,70 @@ describe('CheckboxPropertyField', () => {
       expect(checkbox).toBeInTheDocument();
     });
   });
+
+  describe('Error Color State', () => {
+    it('should render checkbox with error color when there is an error', () => {
+      const notification = new Notification('notification-1', 'Error', 'error');
+      notification.addResourceFieldNotification('resource-1_hasError', 'Field has an error');
+
+      const contextWithError: ValidationContextProps = {
+        ...defaultContextValue,
+        selectedNotification: notification,
+      };
+
+      render(
+        <CheckboxPropertyField
+          resource={mockResource}
+          propertyKey="hasError"
+          propertyValue={false}
+          onChange={mockOnChange}
+        />,
+        {wrapper: createWrapper(contextWithError)},
+      );
+
+      // The error message should be displayed
+      expect(screen.getByText('Field has an error')).toBeInTheDocument();
+    });
+
+    it('should render checkbox with primary color when no error', () => {
+      render(
+        <CheckboxPropertyField
+          resource={mockResource}
+          propertyKey="noError"
+          propertyValue
+          onChange={mockOnChange}
+        />,
+        {wrapper: createWrapper()},
+      );
+
+      // No error helper text should be present
+      expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+    });
+  });
+
+  describe('Notification without matching field', () => {
+    it('should return empty string when notification exists but has no matching field', () => {
+      const notification = new Notification('notification-1', 'Error', 'error');
+      // Add a notification for a different field
+      notification.addResourceFieldNotification('resource-1_differentField', 'Different error');
+
+      const contextWithNotification: ValidationContextProps = {
+        ...defaultContextValue,
+        selectedNotification: notification,
+      };
+
+      render(
+        <CheckboxPropertyField
+          resource={mockResource}
+          propertyKey="enabled"
+          propertyValue
+          onChange={mockOnChange}
+        />,
+        {wrapper: createWrapper(contextWithNotification)},
+      );
+
+      // No error message for this field
+      expect(screen.queryByText('Different error')).not.toBeInTheDocument();
+    });
+  });
 });

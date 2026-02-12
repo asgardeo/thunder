@@ -1,0 +1,72 @@
+---
+id: get-a-user-by-id
+title: "Get a user by id"
+description: "Get a user by id"
+sidebar_label: "Get a user by id"
+hide_title: true
+hide_table_of_contents: true
+api: eJyNVVFv2zgM/isGn+5wcux4dtb66YqhGArc7optvZcgD7LNxOpsyZPoZZnh/36glLZJ2wOaF8fUR/Ij+VGegOTOQbmG0aF1sBEwSCt7JH4r1xMoDSUMkloQoGWPUIJqQIDF76Oy2EBJdkQBrm6xl1BOQIeBUY6s0jsQsDW2lwQljKNqYBaAP2U/dIy5lPn7ApcYV2ldxXmVXcYXzbaIMyyqLN9WKTbvYN5wNjcY7dBxgixN+dGgq60aSBmmeOfQRg2SVJ0DAbXRhJoYJ4ehU7VkXHLvGDy9ZGuqe6zprK41F8oNsWZASyokV82bajR2J7X65bPeaUVvcgqA58BZgCSyqhopUHhOWTaN4jyyuz2hymOZOagi32tu0Fn3Qy1vm8FrBUFerPAiT9MYs8sqzpdNHsv3y1Wc56tVUeR5mqZLeKgK6tGR6dHC83LkDqHMcgHYS9VBCfdS46Ix+OeR6qI2PQjoTaV8JX8s41WRxkVRxMvsXR46YNH5aLWiA5TwyYyapNLRvwr3IOCXGrjWPM1TbgLLQ9Z0a3GLFnWNfgcCAQGud7CZ+ScgT/P/EZs2FG3NqP3oitc0eaMJrZZd5ND+QBuhtcYCRz3HfUSKZMQbGFWHyK9Xj9QaHs8OecR+AUtI/JYmk2pmpumjhjUdLXeuJRpcmSRTaxzN5TQYS4z8Ia2SVRf6zWeB61aOHQ+yM7XsvHkWwD7nxxfpZQrzzHvosB6t7/B6gn+uRmozbpw7OMIeNqeQL7xiIeMD8Em60hsEbDuzDyIYqTX2qK8PpsEXxruzCh8pl8wuCQGTBwdk2Zlv+CYnD+R21mYIfI/llHBV1+hcRCYKpqiXWu6wR03R1e2Ng6NIlN4aX97JrkWfzrA8BbQuDHy5SOG5CL62yjEwUo6l0HDWkM4rwy1AQKdq1M735ngXXw2ybjHKfMBzEez3+4X0xwtjd8nR1yV/3Xy4/vvLdZwt0kVLfecFORhHvdQnkV8R5Rnhx2ES/qRk6KTSLB/PYToK9uGzIqAMd2nQ3hqmqZIO72w3z2z+PqJlTW2epOoV1ijH/xsot7Jz+ILB4y0Pv30+3tu/R09Xzjmzo1Hqg9+IbuQ3EPAND+GjNm9mAS3KBq3PHg5YAwOduLz4nrDqH/f14/VXmOf/AOkKcWg=
+sidebar_class_name: "get api-method"
+info_path: docs/apis/user/user-management-api
+custom_edit_url: null
+---
+
+import MethodEndpoint from "@theme/ApiExplorer/MethodEndpoint";
+import ParamsDetails from "@theme/ParamsDetails";
+import RequestSchema from "@theme/RequestSchema";
+import StatusCodes from "@theme/StatusCodes";
+import OperationTabs from "@theme/OperationTabs";
+import TabItem from "@theme/TabItem";
+import Heading from "@theme/Heading";
+import Translate from "@docusaurus/Translate";
+
+<Heading
+  as={"h1"}
+  className={"openapi__heading"}
+  children={"Get a user by id"}
+>
+</Heading>
+
+<MethodEndpoint
+  method={"get"}
+  path={"/users/{id}"}
+  context={"endpoint"}
+>
+  
+</MethodEndpoint>
+
+
+
+Get a user by id
+
+<Heading
+  id={"request"}
+  as={"h2"}
+  className={"openapi-tabs__heading"}
+>
+  <Translate id="theme.openapi.request.title">Request</Translate>
+</Heading>
+
+<ParamsDetails
+  parameters={[{"in":"path","name":"id","required":true,"schema":{"type":"string","format":"uuid"},"example":"9a475e1e-b0cb-4b29-8df5-2e5b24fb0ed3"}]}
+>
+  
+</ParamsDetails>
+
+<RequestSchema
+  title={"Body"}
+  body={undefined}
+>
+  
+</RequestSchema>
+
+<StatusCodes
+  id={undefined}
+  label={undefined}
+  responses={{"200":{"description":"User details","content":{"application/json":{"schema":{"type":"object","required":["id"],"properties":{"id":{"type":"string","format":"uuid"},"organizationUnit":{"type":"string","format":"uuid"},"type":{"type":"string"},"attributes":{"type":"object","additionalProperties":true}},"title":"User"},"example":{"id":"9a475e1e-b0cb-4b29-8df5-2e5b24fb0ed3","organizationUnit":"456e8400-e29b-41d4-a716-446655440001","type":"customer","attributes":{"age":24,"email":"jane.doe@example.com","mobile":"+1-650-555-1234","address":{"city":"Mountain View","zip":"94040"},"contactPreferences":["email","sms"]}}}}},"404":{"description":"User not found"},"500":{"description":"Internal server error"}}}
+>
+  
+</StatusCodes>
+
+
+      

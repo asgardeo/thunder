@@ -127,4 +127,24 @@ describe('ResourcePanelStatic', () => {
       expect(container.querySelector('.MuiCard-root')).toBeInTheDocument();
     });
   });
+
+  describe('Type Prop', () => {
+    it('should accept custom type prop', () => {
+      const resource = createMockResource();
+      const {container} = render(<ResourcePanelStatic id="test-id" resource={resource} type="draggable" />);
+
+      // Component renders with custom type
+      const card = container.querySelector('.MuiCard-root');
+      expect(card).toBeInTheDocument();
+    });
+
+    it('should use static type by default when type is not provided', () => {
+      const resource = createMockResource();
+      const {container} = render(<ResourcePanelStatic id="test-id" resource={resource} />);
+
+      // Component renders with default static type
+      const card = container.querySelector('.MuiCard-root');
+      expect(card).toBeInTheDocument();
+    });
+  });
 });

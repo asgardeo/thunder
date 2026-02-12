@@ -17,9 +17,8 @@
  */
 
 import {describe, expect, it, vi, beforeEach} from 'vitest';
-import {render, screen} from '@testing-library/react';
+import {render, screen} from '@thunder/test-utils';
 import userEvent from '@testing-library/user-event';
-import {QueryClient, QueryClientProvider} from '@tanstack/react-query';
 import {AuthenticatorTypes} from '@/features/integrations/models/authenticators';
 import ApplicationCreateProvider from '../ApplicationCreateProvider';
 import useApplicationCreate from '../useApplicationCreate';
@@ -40,13 +39,17 @@ vi.mock('../../utils/generateAppPrimaryColorSuggestions', () => ({
 }));
 
 // Mock useConfig to avoid ConfigProvider requirement
-vi.mock('@thunder/commons-contexts', () => ({
-  useConfig: () => ({
-    endpoints: {
-      server: 'http://localhost:3001',
-    },
-  }),
-}));
+vi.mock('@thunder/shared-contexts', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@thunder/shared-contexts')>();
+  return {
+    ...actual,
+    useConfig: () => ({
+      endpoints: {
+        server: 'http://localhost:3001',
+      },
+    }),
+  };
+});
 
 // Test component to consume the context
 function TestConsumer() {
@@ -107,17 +110,8 @@ function TestConsumer() {
 }
 
 describe('ApplicationCreateProvider', () => {
-  let queryClient: QueryClient;
-
   beforeEach(() => {
     vi.clearAllMocks();
-    queryClient = new QueryClient({
-      defaultOptions: {
-        queries: {
-          retry: false,
-        },
-      },
-    });
     // Default mock: no applications
     mockUseGetApplications.mockReturnValue({
       data: {
@@ -126,8 +120,7 @@ describe('ApplicationCreateProvider', () => {
     });
   });
 
-  const renderWithQueryClient = (children: React.ReactNode) =>
-    render(<QueryClientProvider client={queryClient}>{children}</QueryClientProvider>);
+  const renderWithQueryClient = (ui: React.ReactElement) => render(ui);
 
   it('provides initial state values', () => {
     renderWithQueryClient(
@@ -365,11 +358,9 @@ describe('ApplicationCreateProvider', () => {
 
     // Re-render with same props
     rerender(
-      <QueryClientProvider client={queryClient}>
-        <ApplicationCreateProvider>
-          <TestRenderer />
-        </ApplicationCreateProvider>
-      </QueryClientProvider>,
+      <ApplicationCreateProvider>
+        <TestRenderer />
+      </ApplicationCreateProvider>,
     );
 
     // Should only render once more due to memoization

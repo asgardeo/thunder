@@ -38,9 +38,12 @@ import GitHubIcon from '@mui/icons-material/GitHub';
 import Visibility from '@mui/icons-material/Visibility';
 import VisibilityOff from '@mui/icons-material/VisibilityOff';
 import AccountCircleIcon from '@mui/icons-material/AccountCircle';
+import FingerprintIcon from '@mui/icons-material/Fingerprint';
 import { useEffect, useRef, useState, useCallback } from 'react';
 import Layout from '../components/Layout';
 import ConnectionErrorModal from '../components/ConnectionErrorModal';
+import PasskeyRegPrompt from '../components/PasskeyRegPrompt';
+import PasskeyAuthPrompt from '../components/PasskeyAuthPrompt';
 import { 
     NativeAuthSubmitType, 
     initiateNativeAuthFlow,
@@ -48,6 +51,7 @@ import {
     submitNativeAuth, 
     submitAuthDecision 
 } from '../services/authService';
+import type { PasskeyCredentialResponse, PasskeyAssertionResponse } from '../services/authService';
 import useAuth from '../hooks/useAuth';
 
 // Define the interface for the authentication input
@@ -62,6 +66,7 @@ interface AuthInput {
 interface ActionPrompt {
     ref: string;
     nextNode?: string;
+    label?: string;
 }
 
 // Define the interface for the authentication response
@@ -76,6 +81,8 @@ interface AuthResponse {
         redirectURL?: string;
         additionalData?: {
             idpName?: string;
+            passkeyCreationOptions?: string;
+            passkeyChallenge?: string;
         };
     };
     flowId?: string;
@@ -128,6 +135,12 @@ const LoginPage = () => {
     const [isSignupMode, setIsSignupMode] = useState<boolean>(false);
     const [regOnlySuccess, setRegOnlySuccess] = useState<boolean>(false);
     const [promptRegistration, setPromptRegistration] = useState<boolean>(false);
+    
+    // Passkey registration state
+    const [passkeyCreationOptions, setPasskeyCreationOptions] = useState<string | null>(null);
+    
+    // Passkey authentication state
+    const [passkeyChallenge, setPasskeyChallenge] = useState<string | null>(null);
     
     const GradientCircularProgress = () => {
         return (
@@ -270,10 +283,18 @@ const LoginPage = () => {
             return;
         }
 
-        // Clear previous state
+        // Clear previous state, but preserve error if it exists in the new response
         clearToken();
-        setError(false);
-        setConnectionError(false);
+        const hasNewError = !!data.failureReason;
+        
+        if (hasNewError) {
+             setError(true);
+             setErrorMessage(data.failureReason || '');
+        } else {
+             setError(false);
+             setConnectionError(false);
+        }
+        
         setNeedsDecision(false);
         setFormData({});
         setAvailableActions([]);
@@ -281,6 +302,8 @@ const LoginPage = () => {
         setRedirectURL(null);
         setSocialIdpName('');
         setRegOnlySuccess(false);
+        setPasskeyCreationOptions(null);
+        setPasskeyChallenge(null);
 
         if (data.flowStatus && data.flowStatus === 'COMPLETE') {
             setError(false);
@@ -302,11 +325,19 @@ const LoginPage = () => {
                 if (data.data?.actions) {
                     setAvailableActions(data.data.actions);
                 }
+                // Check for passkey creation options in additionalData
+                if (data.data?.additionalData?.passkeyCreationOptions) {
+                    setPasskeyCreationOptions(data.data.additionalData.passkeyCreationOptions);
+                }
+                // Check for passkey authentication challenge in additionalData
+                if (data.data?.additionalData?.passkeyChallenge) {
+                    setPasskeyChallenge(data.data.additionalData.passkeyChallenge);
+                }
             } else if (data.data?.actions && data.data.actions.length > 1) {
                 // This is a decision screen - multiple actions to choose from
                 setNeedsDecision(true);
                 setAvailableActions(data.data.actions);
-            } else if (data.data?.actions && data.data.actions.length === 1) {
+            } else if (data.data?.actions && data.data.actions.length === 1 && !data.failureReason) {
                 // Single action without inputs - auto-execute it to continue the flow
                 // This handles intermediate steps like "send_sms" that don't need user input
                 const singleAction = data.data.actions[0];
@@ -582,6 +613,62 @@ const LoginPage = () => {
             setErrorMessage(error.message || 'Error during authentication');
         }
         setLoading(false);
+    };
+
+    // Handler for passkey credential creation
+    const handlePasskeyCredentialCreated = (credential: PasskeyCredentialResponse) => {
+        setLoading(true);
+        setPasskeyCreationOptions(null);
+
+        // Submit passkey credential to complete the flow
+        const passkeyInputs = {
+            credentialId: credential.credentialId,
+            clientDataJSON: credential.clientDataJSON,
+            attestationObject: credential.attestationObject,
+        };
+
+        const actionRef = availableActions.length > 0 ? availableActions[0].ref : undefined;
+        submitNativeAuth(flowId, passkeyInputs, actionRef)
+            .then((result) => {
+                processAuthResponse(result.data);
+            })
+            .catch((error) => {
+                console.error("Error submitting passkey credential:", error);
+                handleSubmissionError(error);
+            });
+    };
+
+    // Handler for passkey creation error
+    const handlePasskeyError = (errorMessage: string) => {
+        setError(true);
+        setErrorMessage(errorMessage);
+        setLoading(false);
+    };
+
+    // Handler for passkey authentication (assertion) completion
+    const handlePasskeyAssertionCompleted = (assertion: PasskeyAssertionResponse) => {
+        setLoading(true);
+        setPasskeyChallenge(null);
+
+        // Submit passkey assertion to complete the authentication flow
+        const passkeyInputs = {
+            credentialId: assertion.credentialId,
+            clientDataJSON: assertion.clientDataJSON,
+            authenticatorData: assertion.authenticatorData,
+            signature: assertion.signature,
+            userHandle: assertion.userHandle,
+        };
+
+        // Include action ref if available (consistent with other direct submissions)
+        const actionRef = availableActions.length > 0 ? availableActions[0].ref : undefined;
+        submitNativeAuth(flowId, passkeyInputs, actionRef)
+            .then((result) => {
+                processAuthResponse(result.data);
+            })
+            .catch((error) => {
+                console.error("Error submitting passkey assertion:", error);
+                handleSubmissionError(error);
+            });
     };
 
     const handleRetry = () => {
@@ -1127,41 +1214,52 @@ const LoginPage = () => {
                         </Box>
                     )}
 
-                    { error && !errorMessage.includes("invalid OTP") ? (
-                        <Button
-                            variant="contained"
-                            color="primary"
-                            type="submit"
-                            fullWidth
-                            sx={{ mt: 2 }}
-                            onClick={(e) => {
-                                e.preventDefault();
-                                setError(false);
-                                setErrorMessage('');
-                                handleRetry();
-                            }}
-                         >
-                            Retry
-                        </Button>
-                    ) : (
-                        <Button
-                            variant="contained"
-                            color="primary"
-                            type="submit"
-                            fullWidth
-                            sx={{ mt: 2 }}
-                        >
-                            {
-                                inputs.some(input => input.identifier === 'password') ? 
-                                    (isSignupMode ? 
-                                        'Create Account' 
-                                        : 'Sign In'
-                                    ) 
-                                    : inputs.some(input => input.identifier === 'otp') ? 
-                                        'Verify OTP' 
-                                        : 'Continue'
-                            }
-                        </Button>
+                    <Button
+                        variant="contained"
+                        color="primary"
+                        type="submit"
+                        fullWidth
+                        sx={{ mt: 2 }}
+                    >
+                        {
+                            inputs.some(input => input.identifier === 'password') ? 
+                                (isSignupMode ? 
+                                    'Create Account' 
+                                    : 'Sign In'
+                                ) 
+                                : inputs.some(input => input.identifier === 'otp') ? 
+                                    'Verify OTP' 
+                                    : 'Continue'
+                        }
+                    </Button>
+
+                    {/* Render alternative actions if available (e.g. Passkey) */}
+                    {availableActions.length > 1 && (
+                         <Box sx={{ mt: 1 }}>
+                            <Divider sx={{ my: 2 }}>or</Divider>
+                            {availableActions.slice(1).map((action, index) => {
+                                let label = "Continue";
+                                if (action.nextNode?.includes("passkey")) {
+                                    label = "Sign in with Passkey";
+                                } else if (action.label) {
+                                    label = action.label;
+                                }
+
+                                return (
+                                    <Button
+                                        key={`alt-action-${index}`}
+                                        fullWidth
+                                        variant="outlined"
+                                        color="secondary"
+                                        onClick={() => handleAuthOptionSelection(action.ref)}
+                                        sx={{ mb: 1 }}
+                                        startIcon={action.nextNode?.includes("passkey") ? <FingerprintIcon /> : undefined}
+                                    >
+                                        {label}
+                                    </Button>
+                                );
+                            })}
+                         </Box>
                     )}
                 </Box>
             </form>
@@ -1354,6 +1452,22 @@ const LoginPage = () => {
                                         {/* First check if we have a redirect URL */}
                                         {redirectURL ? (
                                             renderRedirectLoginButton()
+                                        ) : passkeyCreationOptions ? (
+                                            /* Show passkey creation prompt */
+                                            <PasskeyRegPrompt
+                                                passkeyCreationOptionsJson={passkeyCreationOptions}
+                                                onCredentialCreated={handlePasskeyCredentialCreated}
+                                                onError={handlePasskeyError}
+                                                isLoading={loading}
+                                            />
+                                        ) : passkeyChallenge ? (
+                                            /* Show passkey authentication prompt */
+                                            <PasskeyAuthPrompt
+                                                passkeyRequestOptionsJson={passkeyChallenge}
+                                                onAuthenticated={handlePasskeyAssertionCompleted}
+                                                onError={handlePasskeyError}
+                                                isLoading={loading}
+                                            />
                                         ) : needsDecision ? (
                                             /* If not redirect but needs decision */
                                             <>

@@ -16,12 +16,9 @@
  * under the License.
  */
 
-import {render, screen, waitFor} from '@testing-library/react';
+import {render, screen, waitFor} from '@thunder/test-utils';
 import {describe, it, expect, vi, beforeEach} from 'vitest';
 import userEvent from '@testing-library/user-event';
-import {QueryClient, QueryClientProvider} from '@tanstack/react-query';
-import {BrowserRouter} from 'react-router';
-import {ConfigProvider} from '@thunder/commons-contexts';
 import type {Branding} from '@thunder/shared-branding';
 import type {Application} from '../../models/application';
 import ApplicationCreatePage from '../ApplicationCreatePage';
@@ -305,48 +302,19 @@ vi.mock('../../components/create-application/Preview', () => ({
 }));
 
 describe('ApplicationCreatePage', () => {
-  let queryClient: QueryClient;
   let user: ReturnType<typeof userEvent.setup>;
 
   const renderWithProviders = () =>
     render(
-      <BrowserRouter>
-        <QueryClientProvider client={queryClient}>
-          <ConfigProvider>
-            <ApplicationCreateProvider>
-              <ApplicationCreatePage />
-            </ApplicationCreateProvider>
-          </ConfigProvider>
-        </QueryClientProvider>
-      </BrowserRouter>,
+      <ApplicationCreateProvider>
+        <ApplicationCreatePage />
+      </ApplicationCreateProvider>,
     );
 
   beforeEach(async () => {
     user = userEvent.setup();
-    queryClient = new QueryClient({
-      defaultOptions: {
-        queries: {
-          retry: false,
-        },
-      },
-    });
 
     window.history.replaceState({}, '', '/');
-
-    if (typeof window !== 'undefined') {
-      // eslint-disable-next-line no-underscore-dangle
-      window.__THUNDER_RUNTIME_CONFIG__ = {
-        client: {
-          base: '/develop',
-          client_id: 'DEVELOP',
-        },
-        server: {
-          hostname: 'localhost',
-          port: 8090,
-          http_only: false,
-        },
-      };
-    }
 
     vi.clearAllMocks();
     mockNavigate.mockResolvedValue(undefined);

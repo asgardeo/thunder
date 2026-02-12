@@ -212,7 +212,7 @@ func (suite *RefreshTokenGrantHandlerTestSuite) TestIssueRefreshToken_Success() 
 
 	err := suite.handler.IssueRefreshToken(tokenResponse, suite.oauthApp,
 		testRefreshTokenUserID, testRefreshTokenAudience,
-		"authorization_code", []string{"read", "write"}, "", "", "", "")
+		"authorization_code", []string{"read", "write"})
 
 	assert.Nil(suite.T(), err)
 	assert.NotNil(suite.T(), tokenResponse.RefreshToken)
@@ -232,7 +232,7 @@ func (suite *RefreshTokenGrantHandlerTestSuite) TestIssueRefreshToken_JWTGenerat
 	tokenResponse := &model.TokenResponseDTO{}
 
 	err := suite.handler.IssueRefreshToken(tokenResponse, suite.oauthApp, "", "",
-		"authorization_code", []string{"read"}, "", "", "", "")
+		"authorization_code", []string{"read"})
 
 	assert.NotNil(suite.T(), err)
 	assert.Equal(suite.T(), constants.ErrorServerError, err.Error)
@@ -252,7 +252,7 @@ func (suite *RefreshTokenGrantHandlerTestSuite) TestIssueRefreshToken_WithEmptyT
 	tokenResponse := &model.TokenResponseDTO{}
 
 	err := suite.handler.IssueRefreshToken(tokenResponse, suite.oauthApp, "", "",
-		"authorization_code", []string{"read"}, "", "", "", "")
+		"authorization_code", []string{"read"})
 
 	assert.Nil(suite.T(), err)
 }

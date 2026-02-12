@@ -53,7 +53,7 @@
                 "executor": {
                   "name": "EmailOTPExecutor"
                 },
-                "next": ""
+                "onSuccess": ""
               }
             },
             {
@@ -111,7 +111,7 @@
                 "executor": {
                   "name": "SMSOTPExecutor"
                 },
-                "next": ""
+                "onSuccess": ""
               }
             },
             {
@@ -160,7 +160,7 @@
         "executor": {
           "name": "MagicLinkExecutor"
         },
-        "next": ""
+        "onSuccess": ""
       },
       "components": [
         {
@@ -168,6 +168,57 @@
           "category": "DISPLAY",
           "type": "RICH_TEXT",
           "label": "<h3 class=\"rich-text-heading-h3 rich-text-align-center\"><span class=\"rich-text-pre-wrap\">Check Your Email</span></h3><h5 class=\"rich-text-heading-h5 rich-text-align-center\"><br><span class=\"rich-text-pre-wrap\">An email containing further instructions has been sent to your email address. Please check your inbox to continue.</span></h5>"
+        }
+      ]
+    }
+  },
+  {
+    "resourceType": "STEP",
+    "category": "INTERFACE",
+    "type": "VIEW",
+    "display": {
+      "label": "Passkey View",
+      "image": "assets/images/icons/passkey.svg",
+      "showOnResourcePanel": true
+    },
+    "data": {
+      "components": [
+        {
+          "id": "{{ID}}",
+          "category": "DISPLAY",
+          "type": "TEXT",
+          "variant": "HEADING_3",
+          "label": "Sign In"
+        },
+        {
+          "id": "{{ID}}",
+          "category": "BLOCK",
+          "type": "BLOCK",
+          "components": [
+            {
+              "id": "{{ID}}",
+              "category": "FIELD",
+              "type": "TEXT_INPUT",
+              "ref": "username",
+              "inputType": "text",
+              "hint": "",
+              "label": "Username",
+              "required": true,
+              "placeholder": "Enter your username"
+            },
+            {
+              "id": "{{ID}}",
+              "category": "ACTION",
+              "type": "ACTION",
+              "variant": "PRIMARY",
+              "eventType": "SUBMIT",
+              "label": "Sign In with Passkey",
+              "action": {
+                "type": "NEXT",
+                "onSuccess": ""
+              }
+            }
+          ]
         }
       ]
     }

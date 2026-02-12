@@ -47,7 +47,7 @@ func TestIDPInitTestSuite(t *testing.T) {
 func (s *IDPInitTestSuite) SetupTest() {
 	config.ResetThunderRuntime()
 	testConfig := &config.Config{
-		ImmutableResources: config.ImmutableResources{
+		DeclarativeResources: config.DeclarativeResources{
 			Enabled: false,
 		},
 	}
@@ -277,12 +277,12 @@ func (suite *IDPInitTestSuite) TestValidateIDPForInit_InvalidType() {
 	suite.Equal(ErrorInvalidIDPType.Code, err.Code)
 }
 
-// TestInitialize_WithImmutableResourcesDisabled tests the Initialize function when immutable resources are disabled
-func (suite *IDPInitTestSuite) TestInitialize_WithImmutableResourcesDisabled() {
+// TestInitialize_WithDeclarativeResourcesDisabled tests the Initialize function when declarative resources are disabled
+func (suite *IDPInitTestSuite) TestInitialize_WithDeclarativeResourcesDisabled() {
 	// Setup - ensure config is reset and initialized for this test
 	config.ResetThunderRuntime()
 	testConfig := &config.Config{
-		ImmutableResources: config.ImmutableResources{
+		DeclarativeResources: config.DeclarativeResources{
 			Enabled: false,
 		},
 	}
@@ -300,12 +300,12 @@ func (suite *IDPInitTestSuite) TestInitialize_WithImmutableResourcesDisabled() {
 	assert.Implements(suite.T(), (*IDPServiceInterface)(nil), service)
 }
 
-// TestInitialize_WithImmutableResourcesEnabled_EmptyDirectory tests Initialize with immutable resources
+// TestInitialize_WithDeclarativeResourcesEnabled_EmptyDirectory tests Initialize with declarative resources
 // enabled but no configuration files in the directory
-func TestInitialize_WithImmutableResourcesEnabled_EmptyDirectory(t *testing.T) {
+func TestInitialize_WithDeclarativeResourcesEnabled_EmptyDirectory(t *testing.T) {
 	// Setup minimal config for testing
 	testConfig := &config.Config{
-		ImmutableResources: config.ImmutableResources{
+		DeclarativeResources: config.DeclarativeResources{
 			Enabled: true,
 		},
 	}
@@ -342,9 +342,9 @@ func TestInitialize_WithImmutableResourcesEnabled_EmptyDirectory(t *testing.T) {
 	assert.Empty(t, idps)
 }
 
-// TestInitialize_WithImmutableResourcesEnabled_ValidConfigs tests Initialize with immutable resources
+// TestInitialize_WithDeclarativeResourcesEnabled_ValidConfigs tests Initialize with declarative resources
 // enabled and valid YAML configuration files
-func TestInitialize_WithImmutableResourcesEnabled_ValidConfigs(t *testing.T) {
+func TestInitialize_WithDeclarativeResourcesEnabled_ValidConfigs(t *testing.T) {
 	// Create a temporary directory structure for file-based runtime
 	tmpDir := t.TempDir()
 	confDir := tmpDir + "/repository/resources"
@@ -366,7 +366,7 @@ func TestInitialize_WithImmutableResourcesEnabled_ValidConfigs(t *testing.T) {
 				Path: ":memory:",
 			},
 		},
-		ImmutableResources: config.ImmutableResources{
+		DeclarativeResources: config.DeclarativeResources{
 			Enabled: true,
 		},
 		Crypto: config.CryptoConfig{
@@ -463,10 +463,10 @@ properties:
 	assert.Len(t, githubIDP.Properties, 7)
 }
 
-// TestInitialize_WithImmutableResourcesEnabled_InvalidYAML tests Initialize with invalid YAML files
+// TestInitialize_WithDeclarativeResourcesEnabled_InvalidYAML tests Initialize with invalid YAML files
 //
 //nolint:dupl // Similar test setup required for different error scenarios
-func TestInitialize_WithImmutableResourcesEnabled_InvalidYAML(t *testing.T) {
+func TestInitialize_WithDeclarativeResourcesEnabled_InvalidYAML(t *testing.T) {
 	tmpDir := t.TempDir()
 	confDir := tmpDir + "/repository/resources"
 	idpDir := confDir + "/identity_providers"
@@ -482,7 +482,7 @@ func TestInitialize_WithImmutableResourcesEnabled_InvalidYAML(t *testing.T) {
 	assert.NoError(t, err)
 
 	testConfig := &config.Config{
-		ImmutableResources: config.ImmutableResources{
+		DeclarativeResources: config.DeclarativeResources{
 			Enabled: true,
 		},
 		Crypto: config.CryptoConfig{
@@ -505,10 +505,10 @@ func TestInitialize_WithImmutableResourcesEnabled_InvalidYAML(t *testing.T) {
 	assert.Contains(t, err.Error(), "failed to load identity provider resources")
 }
 
-// TestInitialize_WithImmutableResourcesEnabled_ValidationFailure tests Initialize with validation errors
+// TestInitialize_WithDeclarativeResourcesEnabled_ValidationFailure tests Initialize with validation errors
 //
 //nolint:dupl // Similar test setup required for different error scenarios
-func TestInitialize_WithImmutableResourcesEnabled_ValidationFailure(t *testing.T) {
+func TestInitialize_WithDeclarativeResourcesEnabled_ValidationFailure(t *testing.T) {
 	tmpDir := t.TempDir()
 	confDir := tmpDir + "/repository/resources"
 	idpDir := confDir + "/identity_providers"
@@ -529,7 +529,7 @@ properties:
 	assert.NoError(t, err)
 
 	testConfig := &config.Config{
-		ImmutableResources: config.ImmutableResources{
+		DeclarativeResources: config.DeclarativeResources{
 			Enabled: true,
 		},
 		Crypto: config.CryptoConfig{
@@ -552,10 +552,10 @@ properties:
 	assert.Contains(t, err.Error(), "failed to load identity provider resources")
 }
 
-// TestInitialize_WithImmutableResourcesEnabled_InvalidIDPType tests Initialize with invalid IDP type
+// TestInitialize_WithDeclarativeResourcesEnabled_InvalidIDPType tests Initialize with invalid IDP type
 //
 //nolint:dupl // Similar test setup required for different error scenarios
-func TestInitialize_WithImmutableResourcesEnabled_InvalidIDPType(t *testing.T) {
+func TestInitialize_WithDeclarativeResourcesEnabled_InvalidIDPType(t *testing.T) {
 	tmpDir := t.TempDir()
 	confDir := tmpDir + "/repository/resources"
 	idpDir := confDir + "/identity_providers"
@@ -576,7 +576,7 @@ properties:
 	assert.NoError(t, err)
 
 	testConfig := &config.Config{
-		ImmutableResources: config.ImmutableResources{
+		DeclarativeResources: config.DeclarativeResources{
 			Enabled: true,
 		},
 		Crypto: config.CryptoConfig{

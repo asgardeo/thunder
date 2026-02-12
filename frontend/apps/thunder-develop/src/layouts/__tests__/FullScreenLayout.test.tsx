@@ -19,8 +19,7 @@
 /* eslint-disable react/require-default-props */
 
 import {describe, it, expect, vi} from 'vitest';
-import {screen} from '@testing-library/react';
-import render from '@/test/test-utils';
+import {render, screen} from '@thunder/test-utils';
 import FullScreenLayout from '../FullScreenLayout';
 
 // Mock Outlet

@@ -1,0 +1,72 @@
+---
+id: add-assignments-to-a-role
+title: "Add assignments to a role"
+description: "Adds one or more user or group assignments to the specified role"
+sidebar_label: "Add assignments to a role"
+hide_title: true
+hide_table_of_contents: true
+api: eJztWMtu2zoQ/RViVi0gxbLjR+Jd2mYRoPemSNtV4AUljmy2EqmSVBxfQ/9eDCnbku20xUU3BZpNEpHzOPM4mtEWHF9amD+C0QVaWEQg0GZGVk5qBXO4EcIyrZBpw0ptkNUWDf2zNLquGLdWLlWJylnmNHMrZLbCTOYSBSOVEEHFDS/RoSE7W5CktuJuBREoXiLMQQqIwOC3WhoUMHemxghstsKSw3wLblPRLeuMVEuIINem5A7mUNdSQNMsgjBa90aLDUkc68q0cqgcHfGqKmTGCd7giyWM21NTOv2Cmes59QgdrBSnyugKjZNovdrO4UEPN4ZvIALpsLQ/0++j4C+caJfi53E4ztzdO6Zzn5F+ylKUatkmDgU0rc0z+lHVJTlG8hCBFz+tkE+bCskSKifd5kg9e9Uz/hoasiddQYZu9jG7U1XtyJW+6vfSOlLtdXAlTovuBX32IdQDqcRnXlYFniTpcQ+4xUdBhhkfp8P8CuNJNr2Ox+k0ia9Hl6N4lCac59MJ5pcZNNFeNgSlFZ6mQ5ylVyKe4fA6Hg8xja9yPoqzBHGSptMZvx5Ds2ga8tqgrbSyIcGjZEy/jnqv01xcCBTM1lmG1uZ1UWwI2zhJTsXecMHafoDfVPqZFtTJJVrLl2fq05+fqaC+Y7fGaMNaXfu0wMP9+3iYJEMCtLPwi7p217vq7tQTL+Q+BKztkuPi+pmBd+i4LFAw9Ja6h11rn1a4t5RqsWHSspIXZBQF83CV41JZJlu/BHe8V7YeSqdSQ8eH23GrO971+hZsXZbcbF5GGsETL2o85OUQ4U6AX5Y+au//D3CH4dB2cSCyUwiHK+zu3csIZmcRHAv3Adx3Xl69m+Sx58cdPKGZ0o7hsyTmoISUldvER9R+cP6Wjnts9JLjw3HP8RNBVkh7GvobxwrkRIGq53pZUy6QVUY/SUEc3gRKGZ9jkQddoMeV61qJv4zwBzLCaSNc9urpJMVnWpiurKVbHc1oZF6j7RU+uTI592a5Uw6N4gWzaJ7QhED8rag/v6ImSZIcUev5TB8RlGK1wucKM7cHobOsNgYFW69k4TmKJhaaCTtUCy1hlehWmianSnv+82vBHAZ+GRlspWgGHZYccEHFHVwKE1xtCpjDyrnKzgeD7Upb18y3lTau8WRsJE/bNyqdhZLOeV3Q2FzojBf+cRMByfSPr5LrhBxdkMmsNtJtvM37m9qtRlSydmMdlrDoXvlIxR4s7i4e6p77BxHkhV6HtaF2K23kf75h3rYV3nv4uYdw7/KcvBsEhYOdABWp01/xl4T8RQpnpqvgbwtnDjd+yqSFLjxiJVd8if7lc/Phzu7SRw3+cNi8bl+etP14fJnzq0k+HceT2XAWjyfTUZxe5lk8yq6nl/l0ynM+3a1A7VTeLPwckWsfxbaYPd3903OJko3GhrIcXiRnOFBauki9U1sUBC6g8tRoAzdWaEppSU2ccrrFQySowYwuLiCCQmaorAfZbq83Fc9WyEbear8g1+v1BffHF9osB62sHby/e3v778fbeHSRXKxcWfhepR4ouepqFuJ4w+a7rfqIaPYU/Ds29jYDDp/doCq4VNQgHtm2bdHd94II5n717A9B1KeLqO24R9huKZifTdE09PhbjTQ+PS4ODeprREhLfwuY57yw+AOIrx7a98Zr9pK3uwVcbQ5DGUAEX3ETPjj4ylohF2i89XDwNtiIaantCJ681WgDDBLUK5X74d1Fh+g+3H/8BBGk7YeKMnCw4Wt6G/J1cFJ7zL4n/bMtFFwt60DNQSf9fAeH/RsP
+sidebar_class_name: "post api-method"
+info_path: docs/apis/role/role-management-api
+custom_edit_url: null
+---
+
+import MethodEndpoint from "@theme/ApiExplorer/MethodEndpoint";
+import ParamsDetails from "@theme/ParamsDetails";
+import RequestSchema from "@theme/RequestSchema";
+import StatusCodes from "@theme/StatusCodes";
+import OperationTabs from "@theme/OperationTabs";
+import TabItem from "@theme/TabItem";
+import Heading from "@theme/Heading";
+import Translate from "@docusaurus/Translate";
+
+<Heading
+  as={"h1"}
+  className={"openapi__heading"}
+  children={"Add assignments to a role"}
+>
+</Heading>
+
+<MethodEndpoint
+  method={"post"}
+  path={"/roles/{id}/assignments/add"}
+  context={"endpoint"}
+>
+  
+</MethodEndpoint>
+
+
+
+Adds one or more user or group assignments to the specified role
+
+<Heading
+  id={"request"}
+  as={"h2"}
+  className={"openapi-tabs__heading"}
+>
+  <Translate id="theme.openapi.request.title">Request</Translate>
+</Heading>
+
+<ParamsDetails
+  parameters={[{"in":"path","name":"id","required":true,"schema":{"type":"string","format":"uuid"}}]}
+>
+  
+</ParamsDetails>
+
+<RequestSchema
+  title={"Body"}
+  body={{"required":true,"content":{"application/json":{"schema":{"type":"object","required":["assignments"],"properties":{"assignments":{"type":"array","items":{"type":"object","required":["id","type"],"properties":{"id":{"type":"string","format":"uuid","description":"ID of the user or group being assigned"},"type":{"type":"string","enum":["user","group"],"description":"Type of entity being assigned (user or group)"}},"title":"AssignmentInput"},"description":"List of user and group assignments"}},"title":"AssignmentsRequest"},"example":{"assignments":[{"type":"user","id":"7a4b1f8e-5c69-4b60-9232-2b0aaf65ef3c"},{"type":"group","id":"6b1e7b8d-7e19-41eb-8fa2-c0ee5bb67a94"}]}}}}}
+>
+  
+</RequestSchema>
+
+<StatusCodes
+  id={undefined}
+  label={undefined}
+  responses={{"204":{"description":"Assignments added successfully"},"400":{"description":"Bad request","content":{"application/json":{"schema":{"type":"object","required":["code","message"],"properties":{"code":{"type":"string","description":"Error code","example":"ROL-1001"},"message":{"type":"string","description":"Error message","example":"Invalid request format"},"description":{"type":"string","description":"Detailed error description","example":"The request body is malformed or contains invalid data"}},"title":"Error"},"examples":{"invalid-request-format":{"summary":"Invalid request format","value":{"code":"ROL-1001","message":"Invalid request format","description":"The request body is malformed or contains invalid data"}},"invalid-assignment-id":{"summary":"Invalid assignment ID","value":{"code":"ROL-1007","message":"Invalid assignment ID","description":"One or more assignment IDs in the request do not exist"}},"empty-assignments":{"summary":"Empty assignments","value":{"code":"ROL-1014","message":"Empty assignments list","description":"At least one assignment must be provided"}}}}}},"404":{"description":"Role not found","content":{"application/json":{"schema":{"type":"object","required":["code","message"],"properties":{"code":{"type":"string","description":"Error code","example":"ROL-1001"},"message":{"type":"string","description":"Error message","example":"Invalid request format"},"description":{"type":"string","description":"Detailed error description","example":"The request body is malformed or contains invalid data"}},"title":"Error"},"example":{"code":"ROL-1003","message":"Role not found","description":"The role with the specified id does not exist"}}}},"500":{"description":"Internal server error","content":{"application/json":{"schema":{"type":"object","required":["code","message"],"properties":{"code":{"type":"string","description":"Error code","example":"ROL-1001"},"message":{"type":"string","description":"Error message","example":"Invalid request format"},"description":{"type":"string","description":"Detailed error description","example":"The request body is malformed or contains invalid data"}},"title":"Error"},"example":{"code":"ROL-5000","message":"Internal server error","description":"An unexpected error occurred while processing the request"}}}}}}
+>
+  
+</StatusCodes>
+
+
+      

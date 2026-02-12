@@ -16,11 +16,13 @@
  * under the License.
  */
 
-import {defineConfig} from 'vite';
+import {defineConfig} from 'vitest/config';
 import react from '@vitejs/plugin-react';
 import basicSsl from '@vitejs/plugin-basic-ssl';
-import {resolve} from 'path';
+import {resolve, dirname} from 'path';
+import {fileURLToPath} from 'url';
 
+const currentDir = dirname(fileURLToPath(import.meta.url));
 const PORT = process.env.PORT ? Number(process.env.PORT) : 5190;
 const HOST = process.env.HOST ?? 'localhost';
 const BASE_URL = process.env.BASE_URL ?? '/gate';
@@ -50,4 +52,46 @@ export default defineConfig({
       },
     }),
   ],
+  test: {
+    globals: true,
+    environment: 'jsdom',
+    setupFiles: resolve(currentDir, 'src', 'test', 'setup.ts'),
+    css: {
+      modules: {
+        classNameStrategy: 'non-scoped',
+      },
+    },
+    server: {
+      deps: {
+        inline: [
+          '@asgardeo/browser',
+          '@asgardeo/react',
+          '@wso2/oxygen-ui',
+          '@wso2/oxygen-ui-icons-react',
+          '@mui/x-data-grid',
+          '@mui/x-date-pickers',
+          '@mui/x-tree-view',
+          '@mui/x-charts',
+        ],
+      },
+    },
+    coverage: {
+      provider: 'istanbul',
+      reporter: ['text', 'json', 'html', ['lcov', {projectRoot: resolve(currentDir, '..', '..', '..')}]],
+      exclude: [
+        'node_modules/',
+        'dist/',
+        'public/',
+        'coverage/',
+        'src/test/',
+        '**/*.d.ts',
+        '**/*.config.*',
+        '**/*.type.ts',
+        '**/*.test.ts',
+        '**/*.test.tsx',
+        '**/*.spec.ts',
+        '**/*.spec.tsx',
+      ],
+    },
+  },
 });

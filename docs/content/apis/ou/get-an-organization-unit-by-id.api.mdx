@@ -1,0 +1,72 @@
+---
+id: get-an-organization-unit-by-id
+title: "Get an organization unit by id"
+description: "Get an organization unit by id"
+sidebar_label: "Get an organization unit by id"
+hide_title: true
+hide_table_of_contents: true
+api: eJyllt9v2zYQx/8V4p42QLYVJ5tbvWWFUQTYlmFNngI/nKWTxYYiVfLUxDP0vxdHyYkVe2mKPjk+3o/vHT88ZweMmwDZHTi/Qav/Q9bOTlqrOcAqgQY91sTkxWcH2kIGDXIFCVisCTLQBSTg6UurPRWQsW8pgZBXVCNkO+BtI16BvbYbSKB0vkaGDNpWF9B1KwkOjbOBgvjP01Q+Cgq5142IgQyuD7Qp0aYKYtQmQAK5s0yWJQibxug8es0+B4ncHShBY67L2MWgya0/U84j9Xd9OxXawtC+RxmDdw151r1GXbyhs6csR67dfnYnDkZ9H513CbBmyTkaya3V/AcGnUN3pLVBP0zndb0J2NYYXEtyucPXaolQesS66buTcQCW+WKRl8Xk93m6nlzkZTrB87N8sjhfLNYp4bv36fx5shmQ3WhLNGgZWFo+G9UNYQ0vBjJyiBxwhaz6pEGhMeogr2IM94LIfgbSYddJZxfpxVsos45V6Vpb/Ahnr9GVu0KwqikE3JwgK56f4mIf8VPMLL13/sXl9RXh+nZylqbnB9q+N4/x7G4qUu7I/0FzpbgiFRrKdampULpQhaMQU9GjDgz9jfx26t1fWSZv0ahA/it5RX0DL3uGj8QK7QkB662KbNfElRNMN8QRCK4gg9nxzpvtdNFBAn3Bfum13kAGFXMTstlsV7nAXbZrnGfx/Ipey7OJ9ydnfRsltkYel3E5mmjuEpCY8fG79H0qE1hJybz1mrex5vVly9VckAnbwFTD6tDlk8DWV9w7PnOH0ZBAadxDdBGD80ObHwbCRsbbUYdPkjNRN+sTzvYBwi+7e3pTUHSUceau6fUO7WRwmecUgmKnepOq0eKGarKsLv+5CpGLLgFtSxfb+59lpP4axcmNkA89F2fT9ASpOoij0kG1gQpR0Jc+5idMIQGjc7IhDm1YU5cN5hWpecw+puPh4WGK8Xjq/GY2xIbZn1cfln9/Wk7m03RacW0ixI0LXKM9yPxdkE+/daZHnjUGtRXKoqLdAPnJH/YEMl3I9ul5vYPdbo2Bbr3pOjF/ackLh6tnvCOVhQ7ydwFZiSbQkZynHQm//DtsvV+V8HJK5mBEu42vyLTyDRK4p23/b0W3kh9RwoJ8rN4fCDcNH4QcbWN5KU8P/uPyBrruG+xeEBQ=
+sidebar_class_name: "get api-method"
+info_path: docs/apis/ou/organizationunit-management-api
+custom_edit_url: null
+---
+
+import MethodEndpoint from "@theme/ApiExplorer/MethodEndpoint";
+import ParamsDetails from "@theme/ParamsDetails";
+import RequestSchema from "@theme/RequestSchema";
+import StatusCodes from "@theme/StatusCodes";
+import OperationTabs from "@theme/OperationTabs";
+import TabItem from "@theme/TabItem";
+import Heading from "@theme/Heading";
+import Translate from "@docusaurus/Translate";
+
+<Heading
+  as={"h1"}
+  className={"openapi__heading"}
+  children={"Get an organization unit by id"}
+>
+</Heading>
+
+<MethodEndpoint
+  method={"get"}
+  path={"/organization-units/{id}"}
+  context={"endpoint"}
+>
+  
+</MethodEndpoint>
+
+
+
+Get an organization unit by id
+
+<Heading
+  id={"request"}
+  as={"h2"}
+  className={"openapi-tabs__heading"}
+>
+  <Translate id="theme.openapi.request.title">Request</Translate>
+</Heading>
+
+<ParamsDetails
+  parameters={[{"in":"path","name":"id","required":true,"schema":{"type":"string","format":"uuid"}}]}
+>
+  
+</ParamsDetails>
+
+<RequestSchema
+  title={"Body"}
+  body={undefined}
+>
+  
+</RequestSchema>
+
+<StatusCodes
+  id={undefined}
+  label={undefined}
+  responses={{"200":{"description":"Organization unit details","content":{"application/json":{"schema":{"allOf":[{"type":"object","required":["id","handle","name"],"properties":{"id":{"type":"string","format":"uuid"},"handle":{"type":"string"},"name":{"type":"string"},"description":{"type":"string"}},"title":"OrganizationUnitBasic"}],"properties":{"parent":{"type":"string","format":"uuid","nullable":true}},"title":"OrganizationUnit"},"example":{"id":"afc77cfd-620b-4cf0-a31c-7377b0ea8902","handle":"engineering","name":"Engineering Team","description":"Engineering unit that handles all engineering tasks","parent":null}}}},"404":{"description":"Organization unit not found","content":{"application/json":{"schema":{"type":"object","required":["code","message"],"properties":{"code":{"type":"string"},"message":{"type":"string"},"description":{"type":"string"}},"title":"Error"},"example":{"code":"OU-1003","message":"Organization unit not found","description":"The organization unit with the specified id does not exist"}}}},"500":{"description":"Internal server error"}}}
+>
+  
+</StatusCodes>
+
+
+      

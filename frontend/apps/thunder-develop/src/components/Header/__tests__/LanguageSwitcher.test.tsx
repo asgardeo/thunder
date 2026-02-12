@@ -20,15 +20,20 @@ import {render, screen, fireEvent, waitFor} from '@testing-library/react';
 import {describe, it, expect, vi, beforeEach} from 'vitest';
 import LanguageSwitcher from '../LanguageSwitcher';
 
-// Mock the local useLanguage hook
-vi.mock('@/hooks/useLanguage', () => ({
-  useLanguage: vi.fn(() => ({
-    currentLanguage: 'en-US',
+// Use vi.hoisted to create the mock function before vi.mock is hoisted
+const {mockUseLanguage} = vi.hoisted(() => ({
+  mockUseLanguage: vi.fn(() => ({
+    currentLanguage: 'en-US' as const,
     availableLanguages: [
-      {code: 'en-US', name: 'English (United States)', nativeName: 'English (US)', direction: 'ltr'},
+      {code: 'en-US' as const, name: 'English (United States)', nativeName: 'English (US)', direction: 'ltr' as const},
     ],
     setLanguage: vi.fn(),
   })),
+}));
+
+// Mock @thunder/i18n
+vi.mock('@thunder/i18n', () => ({
+  useLanguage: mockUseLanguage,
 }));
 
 describe('LanguageSwitcher', () => {
@@ -56,11 +61,10 @@ describe('LanguageSwitcher', () => {
 
   it('should call setLanguage when selecting a language', async () => {
     const mockSetLanguage = vi.fn().mockResolvedValue(undefined);
-    const {useLanguage} = await import('@/hooks/useLanguage');
-    vi.mocked(useLanguage).mockReturnValue({
-      currentLanguage: 'en-US',
+    mockUseLanguage.mockReturnValue({
+      currentLanguage: 'en-US' as const,
       availableLanguages: [
-        {code: 'en-US', name: 'English (United States)', nativeName: 'English (US)', direction: 'ltr'},
+        {code: 'en-US' as const, name: 'English (United States)', nativeName: 'English (US)', direction: 'ltr' as const},
       ],
       setLanguage: mockSetLanguage,
     });
@@ -80,11 +84,10 @@ describe('LanguageSwitcher', () => {
 
   it('should close the menu after selecting a language', async () => {
     const mockSetLanguage = vi.fn().mockResolvedValue(undefined);
-    const {useLanguage} = await import('@/hooks/useLanguage');
-    vi.mocked(useLanguage).mockReturnValue({
-      currentLanguage: 'en-US',
+    mockUseLanguage.mockReturnValue({
+      currentLanguage: 'en-US' as const,
       availableLanguages: [
-        {code: 'en-US', name: 'English (United States)', nativeName: 'English (US)', direction: 'ltr'},
+        {code: 'en-US' as const, name: 'English (United States)', nativeName: 'English (US)', direction: 'ltr' as const},
       ],
       setLanguage: mockSetLanguage,
     });
@@ -106,13 +109,12 @@ describe('LanguageSwitcher', () => {
 
   it('should handle multiple languages', async () => {
     const mockSetLanguage = vi.fn().mockResolvedValue(undefined);
-    const {useLanguage} = await import('@/hooks/useLanguage');
-    vi.mocked(useLanguage).mockReturnValue({
-      currentLanguage: 'en-US',
+    mockUseLanguage.mockReturnValue({
+      currentLanguage: 'en-US' as const,
       availableLanguages: [
-        {code: 'en-US', name: 'English (United States)', nativeName: 'English (US)', direction: 'ltr'},
-        {code: 'es-ES' as unknown as 'en-US', name: 'Spanish (Spain)', nativeName: 'Español (España)', direction: 'ltr'},
-        {code: 'fr-FR' as unknown as 'en-US', name: 'French (France)', nativeName: 'Français (France)', direction: 'ltr'},
+        {code: 'en-US' as const, name: 'English (United States)', nativeName: 'English (US)', direction: 'ltr' as const},
+        {code: 'es-ES' as unknown as 'en-US', name: 'Spanish (Spain)', nativeName: 'Español (España)', direction: 'ltr' as const},
+        {code: 'fr-FR' as unknown as 'en-US', name: 'French (France)', nativeName: 'Français (France)', direction: 'ltr' as const},
       ],
       setLanguage: mockSetLanguage,
     });
@@ -131,11 +133,10 @@ describe('LanguageSwitcher', () => {
 
   it('should show secondary name when different from native name', async () => {
     const mockSetLanguage = vi.fn().mockResolvedValue(undefined);
-    const {useLanguage} = await import('@/hooks/useLanguage');
-    vi.mocked(useLanguage).mockReturnValue({
+    mockUseLanguage.mockReturnValue({
       currentLanguage: 'es-ES' as unknown as 'en-US',
       availableLanguages: [
-        {code: 'es-ES' as unknown as 'en-US', name: 'Spanish (Spain)', nativeName: 'Español (España)', direction: 'ltr'},
+        {code: 'es-ES' as unknown as 'en-US', name: 'Spanish (Spain)', nativeName: 'Español (España)', direction: 'ltr' as const},
       ],
       setLanguage: mockSetLanguage,
     });
@@ -153,11 +154,10 @@ describe('LanguageSwitcher', () => {
 
   it('should not show secondary name when same as native name', async () => {
     const mockSetLanguage = vi.fn().mockResolvedValue(undefined);
-    const {useLanguage} = await import('@/hooks/useLanguage');
-    vi.mocked(useLanguage).mockReturnValue({
-      currentLanguage: 'en-US',
+    mockUseLanguage.mockReturnValue({
+      currentLanguage: 'en-US' as const,
       availableLanguages: [
-        {code: 'en-US', name: 'English (US)', nativeName: 'English (US)', direction: 'ltr'},
+        {code: 'en-US' as const, name: 'English (US)', nativeName: 'English (US)', direction: 'ltr' as const},
       ],
       setLanguage: mockSetLanguage,
     });
@@ -176,12 +176,11 @@ describe('LanguageSwitcher', () => {
 
   it('should handle language change error gracefully', async () => {
     const mockSetLanguage = vi.fn().mockRejectedValue(new Error('Language change failed'));
-    const {useLanguage} = await import('@/hooks/useLanguage');
-    vi.mocked(useLanguage).mockReturnValue({
-      currentLanguage: 'en-US',
+    mockUseLanguage.mockReturnValue({
+      currentLanguage: 'en-US' as const,
       availableLanguages: [
-        {code: 'en-US', name: 'English (United States)', nativeName: 'English (US)', direction: 'ltr'},
-        {code: 'es-ES' as unknown as 'en-US', name: 'Spanish (Spain)', nativeName: 'Español (España)', direction: 'ltr'},
+        {code: 'en-US' as const, name: 'English (United States)', nativeName: 'English (US)', direction: 'ltr' as const},
+        {code: 'es-ES' as unknown as 'en-US', name: 'Spanish (Spain)', nativeName: 'Español (España)', direction: 'ltr' as const},
       ],
       setLanguage: mockSetLanguage,
     });
@@ -206,12 +205,11 @@ describe('LanguageSwitcher', () => {
 
   it('should mark current language as selected', async () => {
     const mockSetLanguage = vi.fn().mockResolvedValue(undefined);
-    const {useLanguage} = await import('@/hooks/useLanguage');
-    vi.mocked(useLanguage).mockReturnValue({
+    mockUseLanguage.mockReturnValue({
       currentLanguage: 'es-ES' as unknown as 'en-US',
       availableLanguages: [
-        {code: 'en-US', name: 'English (United States)', nativeName: 'English (US)', direction: 'ltr'},
-        {code: 'es-ES' as unknown as 'en-US', name: 'Spanish (Spain)', nativeName: 'Español (España)', direction: 'ltr'},
+        {code: 'en-US' as const, name: 'English (United States)', nativeName: 'English (US)', direction: 'ltr' as const},
+        {code: 'es-ES' as unknown as 'en-US', name: 'Spanish (Spain)', nativeName: 'Español (España)', direction: 'ltr' as const},
       ],
       setLanguage: mockSetLanguage,
     });

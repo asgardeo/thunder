@@ -19,6 +19,7 @@
 package executor
 
 import (
+	"context"
 	"encoding/json"
 
 	"github.com/asgardeo/thunder/internal/flow/common"
@@ -135,7 +136,7 @@ func (e *credentialSetter) Execute(ctx *core.NodeContext) (*common.ExecutorRespo
 	}
 
 	// Update user credentials
-	svcErr := e.userService.UpdateUserCredentials(userID, credentials)
+	svcErr := e.userService.UpdateUserCredentials(context.TODO(), userID, credentials)
 	if svcErr != nil {
 		logger.Debug("Failed to update user credentials", log.String("userID", userID))
 		execResp.Status = common.ExecFailure

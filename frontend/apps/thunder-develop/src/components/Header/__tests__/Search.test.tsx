@@ -17,9 +17,7 @@
  */
 
 import {describe, it, expect} from 'vitest';
-import userEvent from '@testing-library/user-event';
-import {screen} from '@testing-library/react';
-import render from '@/test/test-utils';
+import {render, screen, userEvent} from '@thunder/test-utils';
 import Search from '../Search';
 
 describe('Search', () => {

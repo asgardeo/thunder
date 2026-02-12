@@ -17,12 +17,10 @@
  */
 
 import {describe, it, expect, vi, beforeEach, afterEach} from 'vitest';
-import {screen, waitFor} from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
+import {render, screen, waitFor, userEvent} from '@thunder/test-utils';
 import type {JSX} from 'react';
 import {EmbeddedFlowComponentType, EmbeddedFlowEventType} from '@asgardeo/react';
 import type {InviteUserRenderProps, EmbeddedFlowComponent} from '@asgardeo/react';
-import render from '@/test/test-utils';
 import InviteUserDialog from '../InviteUserDialog';
 
 // Mock InviteUser component
@@ -50,11 +48,15 @@ const mockInviteUserRenderProps: InviteUserRenderProps = {
   isValid: false,
 };
 
+// Track whether to simulate an error in the InviteUser mock
+let simulateInviteUserError = false;
+const mockInviteUserError = new Error('User onboarding failed');
+
 vi.mock('@asgardeo/react', async () => {
   const actual = await vi.importActual<typeof import('@asgardeo/react')>('@asgardeo/react');
   return {
     ...actual,
-    InviteUser: ({children, onInviteLinkGenerated}: {
+    InviteUser: ({children, onInviteLinkGenerated, onError}: {
       children: (props: InviteUserRenderProps) => JSX.Element;
       onInviteLinkGenerated?: (link: string) => void;
       onError?: (error: Error) => void;
@@ -64,6 +66,12 @@ vi.mock('@asgardeo/react', async () => {
         // Use setTimeout to simulate async behavior
         setTimeout(() => {
           onInviteLinkGenerated(mockInviteUserRenderProps.inviteLink!);
+        }, 0);
+      }
+      // Call onError if simulating an error
+      if (simulateInviteUserError && onError) {
+        setTimeout(() => {
+          onError(mockInviteUserError);
         }, 0);
       }
       return children(mockInviteUserRenderProps);
@@ -84,6 +92,8 @@ describe('InviteUserDialog', () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
+    // Reset error simulation flag
+    simulateInviteUserError = false;
     // Reset mock props
     Object.assign(mockInviteUserRenderProps, {
       values: {},
@@ -1264,5 +1274,305 @@ describe('InviteUserDialog', () => {
     // Button should be disabled based on form validation
     const submitButton = screen.getByRole('button', {name: /next/i});
     expect(submitButton).toBeDisabled();
+  });
+
+  it('returns null for unsupported component types in renderFormField', () => {
+    // Component with unsupported type should return null
+    const unsupportedComponent: EmbeddedFlowComponent = {
+      id: 'unsupported_component',
+      ref: 'unsupported',
+      type: 'UNSUPPORTED_TYPE' as EmbeddedFlowComponent['type'],
+      label: 'Unsupported',
+    };
+
+    const submitAction: EmbeddedFlowComponent = {
+      id: 'submit_action',
+      type: EmbeddedFlowComponentType.Action,
+      label: 'Next',
+      variant: 'PRIMARY',
+      eventType: EmbeddedFlowEventType.Submit,
+    };
+
+    const blockComponent: EmbeddedFlowComponent = {
+      id: 'block',
+      type: EmbeddedFlowComponentType.Block,
+      components: [unsupportedComponent, submitAction],
+    };
+
+    Object.assign(mockInviteUserRenderProps, {
+      components: [blockComponent],
+      values: {},
+      isValid: false,
+    });
+
+    render(<InviteUserDialog open onClose={mockOnClose} />);
+
+    // Unsupported component should not render any input
+    expect(screen.queryByLabelText('Unsupported')).not.toBeInTheDocument();
+  });
+
+  it('handles getOptionValue with non-string value in object option', async () => {
+    const user = userEvent.setup();
+    const selectComponent: EmbeddedFlowComponent = {
+      id: 'complex_select',
+      ref: 'complexOption',
+      type: 'SELECT' as EmbeddedFlowComponent['type'],
+      label: 'Complex Option',
+      placeholder: 'Select option',
+      required: true,
+      options: [
+        {value: {id: 1, name: 'Option 1'} as unknown as string, label: 'Complex Option 1'},
+        {value: {id: 2, name: 'Option 2'} as unknown as string, label: 'Complex Option 2'},
+      ],
+    };
+
+    const submitAction: EmbeddedFlowComponent = {
+      id: 'submit_action',
+      type: EmbeddedFlowComponentType.Action,
+      label: 'Next',
+      variant: 'PRIMARY',
+      eventType: EmbeddedFlowEventType.Submit,
+    };
+
+    const blockComponent: EmbeddedFlowComponent = {
+      id: 'block',
+      type: EmbeddedFlowComponentType.Block,
+      components: [selectComponent, submitAction],
+    };
+
+    Object.assign(mockInviteUserRenderProps, {
+      components: [blockComponent],
+      values: {complexOption: ''},
+      isValid: false,
+    });
+
+    render(<InviteUserDialog open onClose={mockOnClose} />);
+
+    const select = screen.getByRole('combobox');
+    await user.click(select);
+
+    // The option should render with the serialized value
+    const option = await screen.findByRole('option', {name: 'Complex Option 1'});
+    expect(option).toBeInTheDocument();
+  });
+
+  it('handles getOptionLabel with non-string label in object option', () => {
+    const selectComponent: EmbeddedFlowComponent = {
+      id: 'label_select',
+      ref: 'labelOption',
+      type: 'SELECT' as EmbeddedFlowComponent['type'],
+      label: 'Label Option',
+      placeholder: 'Select option',
+      required: true,
+      options: [
+        {value: 'opt1', label: {text: 'Label 1'} as unknown as string}, // Non-string label
+      ],
+    };
+
+    const submitAction: EmbeddedFlowComponent = {
+      id: 'submit_action',
+      type: EmbeddedFlowComponentType.Action,
+      label: 'Next',
+      variant: 'PRIMARY',
+      eventType: EmbeddedFlowEventType.Submit,
+    };
+
+    const blockComponent: EmbeddedFlowComponent = {
+      id: 'block',
+      type: EmbeddedFlowComponentType.Block,
+      components: [selectComponent, submitAction],
+    };
+
+    Object.assign(mockInviteUserRenderProps, {
+      components: [blockComponent],
+      values: {labelOption: ''},
+      isValid: false,
+    });
+
+    render(<InviteUserDialog open onClose={mockOnClose} />);
+
+    // Should render without crashing
+    expect(screen.getByRole('combobox')).toBeInTheDocument();
+  });
+
+  it('handles option without label or value properties', async () => {
+    const user = userEvent.setup();
+    const selectComponent: EmbeddedFlowComponent = {
+      id: 'bare_select',
+      ref: 'bareOption',
+      type: 'SELECT' as EmbeddedFlowComponent['type'],
+      label: 'Bare Option',
+      placeholder: 'Select option',
+      required: true,
+      options: [
+        {key: 'option1'} as unknown as {value: string; label: string}, // Object without value or label
+      ],
+    };
+
+    const submitAction: EmbeddedFlowComponent = {
+      id: 'submit_action',
+      type: EmbeddedFlowComponentType.Action,
+      label: 'Next',
+      variant: 'PRIMARY',
+      eventType: EmbeddedFlowEventType.Submit,
+    };
+
+    const blockComponent: EmbeddedFlowComponent = {
+      id: 'block',
+      type: EmbeddedFlowComponentType.Block,
+      components: [selectComponent, submitAction],
+    };
+
+    Object.assign(mockInviteUserRenderProps, {
+      components: [blockComponent],
+      values: {bareOption: ''},
+      isValid: false,
+    });
+
+    render(<InviteUserDialog open onClose={mockOnClose} />);
+
+    const select = screen.getByRole('combobox');
+    await user.click(select);
+
+    // Should render the serialized option
+    const option = await screen.findByRole('option', {name: /option1/i});
+    expect(option).toBeInTheDocument();
+  });
+
+  it('handles copyInviteLink returning undefined', async () => {
+    const user = userEvent.setup();
+    const inviteLink = 'https://example.com/invite?token=abc123';
+
+    // Set copyInviteLink to undefined
+    Object.assign(mockInviteUserRenderProps, {
+      isInviteGenerated: true,
+      inviteLink,
+      inviteLinkCopied: false,
+      copyInviteLink: undefined,
+    });
+
+    render(<InviteUserDialog open onClose={mockOnClose} />);
+
+    const copyButton = screen.getByRole('button', {name: /copy/i});
+    await user.click(copyButton);
+
+    // Should not crash when copyInviteLink is undefined
+    expect(copyButton).toBeInTheDocument();
+  });
+
+  it('renders SELECT with selected value showing label', async () => {
+    const selectComponent: EmbeddedFlowComponent = {
+      id: 'preselected_select',
+      ref: 'preselectedOption',
+      type: 'SELECT' as EmbeddedFlowComponent['type'],
+      label: 'Preselected',
+      placeholder: 'Select option',
+      required: true,
+      options: [
+        {value: 'admin', label: 'Administrator'},
+        {value: 'user', label: 'Standard User'},
+      ],
+    };
+
+    const submitAction: EmbeddedFlowComponent = {
+      id: 'submit_action',
+      type: EmbeddedFlowComponentType.Action,
+      label: 'Next',
+      variant: 'PRIMARY',
+      eventType: EmbeddedFlowEventType.Submit,
+    };
+
+    const blockComponent: EmbeddedFlowComponent = {
+      id: 'block',
+      type: EmbeddedFlowComponentType.Block,
+      components: [selectComponent, submitAction],
+    };
+
+    Object.assign(mockInviteUserRenderProps, {
+      components: [blockComponent],
+      values: {preselectedOption: 'admin'},
+      isValid: true,
+    });
+
+    render(<InviteUserDialog open onClose={mockOnClose} />);
+
+    // Should show the label for the selected value
+    expect(screen.getByText('Administrator')).toBeInTheDocument();
+  });
+
+  it('renders SELECT with unknown selected value', () => {
+    const selectComponent: EmbeddedFlowComponent = {
+      id: 'unknown_select',
+      ref: 'unknownOption',
+      type: 'SELECT' as EmbeddedFlowComponent['type'],
+      label: 'Unknown',
+      placeholder: 'Select option',
+      required: true,
+      options: [
+        {value: 'admin', label: 'Administrator'},
+      ],
+    };
+
+    const submitAction: EmbeddedFlowComponent = {
+      id: 'submit_action',
+      type: EmbeddedFlowComponentType.Action,
+      label: 'Next',
+      variant: 'PRIMARY',
+      eventType: EmbeddedFlowEventType.Submit,
+    };
+
+    const blockComponent: EmbeddedFlowComponent = {
+      id: 'block',
+      type: EmbeddedFlowComponentType.Block,
+      components: [selectComponent, submitAction],
+    };
+
+    Object.assign(mockInviteUserRenderProps, {
+      components: [blockComponent],
+      values: {unknownOption: 'unknown_value'},
+      isValid: true,
+    });
+
+    render(<InviteUserDialog open onClose={mockOnClose} />);
+
+    // Should show the raw value when option not found
+    expect(screen.getByText('unknown_value')).toBeInTheDocument();
+  });
+
+  it('returns null for non-Block component type at top level', () => {
+    // Test when a top-level component is not a Block type
+    const nonBlockComponent: EmbeddedFlowComponent = {
+      id: 'non_block',
+      ref: 'nonBlock',
+      type: 'TEXT_INPUT' as EmbeddedFlowComponent['type'],
+      label: 'Non Block',
+    };
+
+    Object.assign(mockInviteUserRenderProps, {
+      components: [nonBlockComponent],
+      values: {},
+      isValid: false,
+    });
+
+    render(<InviteUserDialog open onClose={mockOnClose} />);
+
+    // Non-Block component at top level should return null
+    expect(screen.queryByLabelText('Non Block')).not.toBeInTheDocument();
+  });
+
+  it('logs error when onError callback is triggered', async () => {
+    const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => undefined);
+
+    // Enable error simulation
+    simulateInviteUserError = true;
+
+    render(<InviteUserDialog open onClose={mockOnClose} />);
+
+    // Wait for the onError callback to be triggered
+    await waitFor(() => {
+      expect(consoleSpy).toHaveBeenCalledWith('User onboarding error:', mockInviteUserError);
+    });
+
+    consoleSpy.mockRestore();
   });
 });

@@ -21,7 +21,6 @@ package user
 import (
 	"context"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"strings"
 
@@ -33,18 +32,18 @@ import (
 
 // userStoreInterface defines the interface for user store operations.
 type userStoreInterface interface {
-	GetUserListCount(filters map[string]interface{}) (int, error)
-	GetUserList(limit, offset int, filters map[string]interface{}) ([]User, error)
+	GetUserListCount(ctx context.Context, filters map[string]interface{}) (int, error)
+	GetUserList(ctx context.Context, limit, offset int, filters map[string]interface{}) ([]User, error)
 	CreateUser(ctx context.Context, user User, credentials Credentials) error
-	GetUser(id string) (User, error)
-	GetGroupCountForUser(userID string) (int, error)
-	GetUserGroups(userID string, limit, offset int) ([]UserGroup, error)
-	UpdateUser(user *User) error
-	UpdateUserCredentials(userID string, credentials Credentials) error
-	DeleteUser(id string) error
-	IdentifyUser(filters map[string]interface{}) (*string, error)
-	GetCredentials(id string) (User, Credentials, error)
-	ValidateUserIDs(userIDs []string) ([]string, error)
+	GetUser(ctx context.Context, id string) (User, error)
+	GetGroupCountForUser(ctx context.Context, userID string) (int, error)
+	GetUserGroups(ctx context.Context, userID string, limit, offset int) ([]UserGroup, error)
+	UpdateUser(ctx context.Context, user *User) error
+	UpdateUserCredentials(ctx context.Context, userID string, credentials Credentials) error
+	DeleteUser(ctx context.Context, id string) error
+	IdentifyUser(ctx context.Context, filters map[string]interface{}) (*string, error)
+	GetCredentials(ctx context.Context, id string) (User, Credentials, error)
+	ValidateUserIDs(ctx context.Context, userIDs []string) ([]string, error)
 }
 
 // userStore is the default implementation of userStoreInterface.
@@ -53,6 +52,7 @@ type userStoreInterface interface {
 type userStore struct {
 	deploymentID      string
 	indexedAttributes map[string]bool
+	dbProvider        provider.DBProviderInterface
 }
 
 // newUserStore creates a new instance of userStore.
@@ -72,12 +72,13 @@ func newUserStore() (userStoreInterface, error) {
 	return &userStore{
 		deploymentID:      runtime.Config.Server.Identifier,
 		indexedAttributes: indexedAttributes,
+		dbProvider:        provider.GetDBProvider(),
 	}, nil
 }
 
 // GetUserListCount retrieves the total count of users.
-func (us *userStore) GetUserListCount(filters map[string]interface{}) (int, error) {
-	dbClient, err := provider.GetDBProvider().GetUserDBClient()
+func (us *userStore) GetUserListCount(ctx context.Context, filters map[string]interface{}) (int, error) {
+	dbClient, err := us.dbProvider.GetUserDBClient()
 	if err != nil {
 		return 0, fmt.Errorf("failed to get database client: %w", err)
 	}
@@ -87,7 +88,7 @@ func (us *userStore) GetUserListCount(filters map[string]interface{}) (int, erro
 		return 0, fmt.Errorf("failed to build count query: %w", err)
 	}
 
-	countResults, err := dbClient.Query(countQuery, args...)
+	countResults, err := dbClient.QueryContext(ctx, countQuery, args...)
 	if err != nil {
 		return 0, fmt.Errorf("failed to execute count query: %w", err)
 	}
@@ -105,8 +106,9 @@ func (us *userStore) GetUserListCount(filters map[string]interface{}) (int, erro
 }
 
 // GetUserList retrieves a list of users from the database.
-func (us *userStore) GetUserList(limit, offset int, filters map[string]interface{}) ([]User, error) {
-	dbClient, err := provider.GetDBProvider().GetUserDBClient()
+func (us *userStore) GetUserList(ctx context.Context, limit, offset int,
+	filters map[string]interface{}) ([]User, error) {
+	dbClient, err := us.dbProvider.GetUserDBClient()
 	if err != nil {
 		return nil, fmt.Errorf("failed to get database client: %w", err)
 	}
@@ -116,7 +118,7 @@ func (us *userStore) GetUserList(limit, offset int, filters map[string]interface
 		return nil, fmt.Errorf("failed to build list query: %w", err)
 	}
 
-	results, err := dbClient.Query(listQuery, args...)
+	results, err := dbClient.QueryContext(ctx, listQuery, args...)
 	if err != nil {
 		return nil, fmt.Errorf("failed to execute paginated query: %w", err)
 	}
@@ -136,7 +138,7 @@ func (us *userStore) GetUserList(limit, offset int, filters map[string]interface
 
 // CreateUser handles the user creation in the database.
 func (us *userStore) CreateUser(ctx context.Context, user User, credentials Credentials) error {
-	dbClient, err := provider.GetDBProvider().GetUserDBClient()
+	dbClient, err := us.dbProvider.GetUserDBClient()
 	if err != nil {
 		return fmt.Errorf("failed to get database client: %w", err)
 	}
@@ -182,14 +184,14 @@ func (us *userStore) CreateUser(ctx context.Context, user User, credentials Cred
 	return nil
 }
 
-// GetUser retrieves a specific user by its ID from the database.
-func (us *userStore) GetUser(id string) (User, error) {
-	dbClient, err := provider.GetDBProvider().GetUserDBClient()
+// GetUser retrieves a user by ID.
+func (us *userStore) GetUser(ctx context.Context, id string) (User, error) {
+	dbClient, err := us.dbProvider.GetUserDBClient()
 	if err != nil {
 		return User{}, fmt.Errorf("failed to get database client: %w", err)
 	}
 
-	results, err := dbClient.Query(QueryGetUserByUserID, id, us.deploymentID)
+	results, err := dbClient.QueryContext(ctx, QueryGetUserByUserID, id, us.deploymentID)
 	if err != nil {
 		return User{}, fmt.Errorf("failed to execute query: %w", err)
 	}
@@ -212,91 +214,62 @@ func (us *userStore) GetUser(id string) (User, error) {
 }
 
 // UpdateUser updates the user in the database.
-func (us *userStore) UpdateUser(user *User) error {
-	dbClient, err := provider.GetDBProvider().GetUserDBClient()
+func (us *userStore) UpdateUser(ctx context.Context, user *User) error {
+	dbClient, err := us.dbProvider.GetUserDBClient()
 	if err != nil {
 		return fmt.Errorf("failed to get database client: %w", err)
 	}
 
-	// Convert attributes to JSON string
 	attributes, err := json.Marshal(user.Attributes)
 	if err != nil {
-		return ErrBadAttributesInRequest
-	}
-
-	// Begin transaction
-	tx, err := dbClient.BeginTx()
-	if err != nil {
-		return fmt.Errorf("failed to begin transaction: %w", err)
+		return fmt.Errorf("failed to marshal attributes: %w", err)
 	}
 
 	// Update user
-	result, err := tx.Exec(
+	rowsAffected, err := dbClient.ExecuteContext(
+		ctx,
 		QueryUpdateUserByUserID, user.ID, user.OrganizationUnit, user.Type, string(attributes), us.deploymentID)
 	if err != nil {
-		if rollbackErr := tx.Rollback(); rollbackErr != nil {
-			err = errors.Join(err, fmt.Errorf("failed to rollback transaction: %w", rollbackErr))
-		}
-		return fmt.Errorf("failed to update user: %w", err)
-	}
-
-	rowsAffected, err := result.RowsAffected()
-	if err != nil {
-		if rollbackErr := tx.Rollback(); rollbackErr != nil {
-			err = errors.Join(err, fmt.Errorf("failed to rollback transaction: %w", rollbackErr))
-		}
-		return fmt.Errorf("failed to get rows affected: %w", err)
+		return fmt.Errorf("failed to execute update user query: %w", err)
 	}
 
 	if rowsAffected == 0 {
-		if rollbackErr := tx.Rollback(); rollbackErr != nil {
-			return errors.Join(ErrUserNotFound, fmt.Errorf("failed to rollback transaction: %w", rollbackErr))
-		}
 		return ErrUserNotFound
 	}
 
 	// Delete existing indexed attributes
-	_, err = tx.Exec(
+	_, err = dbClient.ExecuteContext(
+		ctx,
 		QueryDeleteIndexedAttributesByUser,
 		user.ID,
 		us.deploymentID,
 	)
 	if err != nil {
-		if rollbackErr := tx.Rollback(); rollbackErr != nil {
-			err = errors.Join(err, fmt.Errorf("failed to rollback transaction: %w", rollbackErr))
-		}
 		return fmt.Errorf("failed to delete indexed attributes: %w", err)
 	}
 
 	// Sync new indexed attributes
-	if err := us.syncIndexedAttributesWithTx(tx, user.ID, attributes); err != nil {
-		if rollbackErr := tx.Rollback(); rollbackErr != nil {
-			err = errors.Join(err, fmt.Errorf("failed to rollback transaction: %w", rollbackErr))
-		}
+	if err := us.syncIndexedAttributes(ctx, dbClient, user.ID, user.Attributes); err != nil {
 		return fmt.Errorf("failed to sync indexed attributes: %w", err)
-	}
-
-	// Commit transaction
-	if err = tx.Commit(); err != nil {
-		return fmt.Errorf("failed to commit transaction: %w", err)
 	}
 
 	return nil
 }
 
-// UpdateUserCredentials updates the credentials for a given user.
-func (us *userStore) UpdateUserCredentials(userID string, credentials Credentials) error {
-	dbClient, err := provider.GetDBProvider().GetUserDBClient()
+// UpdateUserCredentials updates the credentials of a user.
+func (us *userStore) UpdateUserCredentials(ctx context.Context, userID string, credentials Credentials) error {
+	dbClient, err := us.dbProvider.GetUserDBClient()
 	if err != nil {
 		return fmt.Errorf("failed to get database client: %w", err)
 	}
 
 	credentialsJSON, err := json.Marshal(credentials)
 	if err != nil {
-		return ErrBadAttributesInRequest
+		return fmt.Errorf("failed to marshal credentials: %w", err)
 	}
 
-	rowsAffected, err := dbClient.Execute(QueryUpdateUserCredentialsByUserID, userID, string(credentialsJSON))
+	rowsAffected, err := dbClient.ExecuteContext(ctx, QueryUpdateUserCredentialsByUserID,
+		userID, string(credentialsJSON), us.deploymentID)
 	if err != nil {
 		return fmt.Errorf("failed to execute query: %w", err)
 	}
@@ -309,15 +282,15 @@ func (us *userStore) UpdateUserCredentials(userID string, credentials Credential
 }
 
 // DeleteUser deletes the user from the database.
-func (us *userStore) DeleteUser(id string) error {
+func (us *userStore) DeleteUser(ctx context.Context, id string) error {
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, "UserStore"))
 
-	dbClient, err := provider.GetDBProvider().GetUserDBClient()
+	dbClient, err := us.dbProvider.GetUserDBClient()
 	if err != nil {
 		return fmt.Errorf("failed to get database client: %w", err)
 	}
 
-	rowsAffected, err := dbClient.Execute(QueryDeleteUserByUserID, id, us.deploymentID)
+	rowsAffected, err := dbClient.ExecuteContext(ctx, QueryDeleteUserByUserID, id, us.deploymentID)
 	if err != nil {
 		return fmt.Errorf("failed to execute query: %w", err)
 	}
@@ -330,10 +303,10 @@ func (us *userStore) DeleteUser(id string) error {
 }
 
 // IdentifyUser identifies a user with the given filters.
-func (us *userStore) IdentifyUser(filters map[string]interface{}) (*string, error) {
+func (us *userStore) IdentifyUser(ctx context.Context, filters map[string]interface{}) (*string, error) {
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, "UserStore"))
 
-	dbClient, err := provider.GetDBProvider().GetUserDBClient()
+	dbClient, err := us.dbProvider.GetUserDBClient()
 	if err != nil {
 		return nil, fmt.Errorf("failed to get database client: %w", err)
 	}
@@ -374,7 +347,7 @@ func (us *userStore) IdentifyUser(filters map[string]interface{}) (*string, erro
 		}
 	}
 
-	results, err := dbClient.Query(identifyUserQuery, args...)
+	results, err := dbClient.QueryContext(ctx, identifyUserQuery, args...)
 	if err != nil {
 		return nil, fmt.Errorf("failed to execute query: %w", err)
 	}
@@ -408,14 +381,14 @@ func (us *userStore) IdentifyUser(filters map[string]interface{}) (*string, erro
 	return &userID, nil
 }
 
-// GetCredentials retrieves the hashed credentials for a given user.
-func (us *userStore) GetCredentials(id string) (User, Credentials, error) {
-	dbClient, err := provider.GetDBProvider().GetUserDBClient()
+// GetCredentials retrieves the credentials for a user.
+func (us *userStore) GetCredentials(ctx context.Context, id string) (User, Credentials, error) {
+	dbClient, err := us.dbProvider.GetUserDBClient()
 	if err != nil {
 		return User{}, nil, fmt.Errorf("failed to get database client: %w", err)
 	}
 
-	results, err := dbClient.Query(QueryValidateUserWithCredentials, id, us.deploymentID)
+	results, err := dbClient.QueryContext(ctx, QueryValidateUserWithCredentials, id, us.deploymentID)
 	if err != nil {
 		return User{}, nil, fmt.Errorf("failed to execute query: %w", err)
 	}
@@ -455,12 +428,12 @@ func (us *userStore) GetCredentials(id string) (User, Credentials, error) {
 }
 
 // ValidateUserIDs checks if all provided user IDs exist.
-func (us *userStore) ValidateUserIDs(userIDs []string) ([]string, error) {
+func (us *userStore) ValidateUserIDs(ctx context.Context, userIDs []string) ([]string, error) {
 	if len(userIDs) == 0 {
 		return []string{}, nil
 	}
 
-	dbClient, err := provider.GetDBProvider().GetUserDBClient()
+	dbClient, err := us.dbProvider.GetUserDBClient()
 	if err != nil {
 		return nil, fmt.Errorf("failed to get database client: %w", err)
 	}
@@ -470,7 +443,7 @@ func (us *userStore) ValidateUserIDs(userIDs []string) ([]string, error) {
 		return nil, fmt.Errorf("failed to build bulk user exists query: %w", err)
 	}
 
-	results, err := dbClient.Query(query, args...)
+	results, err := dbClient.QueryContext(ctx, query, args...)
 	if err != nil {
 		return nil, fmt.Errorf("failed to execute query: %w", err)
 	}
@@ -493,13 +466,13 @@ func (us *userStore) ValidateUserIDs(userIDs []string) ([]string, error) {
 }
 
 // GetGroupCountForUser retrieves the total count of groups a user belongs to.
-func (us *userStore) GetGroupCountForUser(userID string) (int, error) {
-	dbClient, err := provider.GetDBProvider().GetUserDBClient()
+func (us *userStore) GetGroupCountForUser(ctx context.Context, userID string) (int, error) {
+	dbClient, err := us.dbProvider.GetUserDBClient()
 	if err != nil {
 		return 0, fmt.Errorf("failed to get database client: %w", err)
 	}
 
-	countResults, err := dbClient.Query(QueryGetGroupCountForUser, userID, us.deploymentID)
+	countResults, err := dbClient.QueryContext(ctx, QueryGetGroupCountForUser, userID, us.deploymentID)
 	if err != nil {
 		return 0, fmt.Errorf("failed to get group count for user: %w", err)
 	}
@@ -515,13 +488,13 @@ func (us *userStore) GetGroupCountForUser(userID string) (int, error) {
 }
 
 // GetUserGroups retrieves groups that a user belongs to with pagination.
-func (us *userStore) GetUserGroups(userID string, limit, offset int) ([]UserGroup, error) {
-	dbClient, err := provider.GetDBProvider().GetUserDBClient()
+func (us *userStore) GetUserGroups(ctx context.Context, userID string, limit, offset int) ([]UserGroup, error) {
+	dbClient, err := us.dbProvider.GetUserDBClient()
 	if err != nil {
 		return nil, fmt.Errorf("failed to get database client: %w", err)
 	}
 
-	results, err := dbClient.Query(QueryGetGroupsForUser, userID, limit, offset, us.deploymentID)
+	results, err := dbClient.QueryContext(ctx, QueryGetGroupsForUser, userID, limit, offset, us.deploymentID)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get groups for user: %w", err)
 	}
@@ -632,28 +605,6 @@ func (us *userStore) syncIndexedAttributes(
 
 	// Execute batch insert using context-aware method
 	_, err = dbClient.ExecuteContext(ctx, *query, args...)
-	if err != nil {
-		return fmt.Errorf("failed to batch insert indexed attributes (query ID: %s): %w",
-			QueryBatchInsertIndexedAttributes.ID, err)
-	}
-
-	return nil
-}
-
-// syncIndexedAttributesWithTx is a backward-compatible wrapper for UpdateUser that still uses manual transactions.
-// This method uses the transaction interface directly for compatibility with existing UpdateUser code.
-func (us *userStore) syncIndexedAttributesWithTx(
-	tx dbmodel.TxInterface, userID string, attributes json.RawMessage) error {
-	query, args, err := us.prepareIndexedAttributesQuery(userID, attributes)
-	if err != nil {
-		return err
-	}
-	if query == nil {
-		return nil
-	}
-
-	// Execute batch insert using transaction
-	_, err = tx.Exec(*query, args...)
 	if err != nil {
 		return fmt.Errorf("failed to batch insert indexed attributes (query ID: %s): %w",
 			QueryBatchInsertIndexedAttributes.ID, err)

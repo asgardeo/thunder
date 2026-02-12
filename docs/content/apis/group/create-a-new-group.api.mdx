@@ -1,0 +1,72 @@
+---
+id: create-a-new-group
+title: "Create a new group"
+description: "Create a new group"
+sidebar_label: "Create a new group"
+hide_title: true
+hide_table_of_contents: true
+api: eJztWEtv2zgQ/ivCnMVYluXnLU2DIsB2UzTtKfCBkka2WolUSaqu19B/Xwwp21KstOlu97BAc3FMzpvfN0P6AIZvNKweYaNkXWlY+6DwS43avJLpHlYH+zVXmMLKqBp9SKQwKAxt8aoq8oSbXIrRJy0FrelkiyWn/8y+QliBjD9hYsDvGHoEwUsEH6TacJH/ZS18FLm5SymASskKlclRkxkrejanjcrFBhofUtSJyivSHdwfMH4h5kMmVckNrKCu85TUSixjVLojy5Xie/AhN1jqH2WWp+A7gYtM8pcF4AQuBVHUJXmoNSrw3YHBuiGN3BQk+taGDk137UYhN/iGhN+7gyUf+I2XVYHn+sJDJZXR8KSs7bLnnA3XFPhissyiOGWTZZqwCDln8TRJWDgO0gUmHHExh05hH0+5talQYWDOo3icLZBNk9mSRfEsYMtwErIwDjjPZlPMJgk0/qDuMhtjNE8nLJhEcxZFs4gtsyBkGMQZxyDExXLW1T2mY5Vn8Rjn8SJlcxwvWTTGmC0yHrIkQJzG8WzOlxE068aWVaGupNDuQMNgTB/9itlSe4ktO2Hhl/DFouonSPNCqP0zbvkg6qLgMeGHesJvrrVr9uif0MtCbJLxxTSbRWw6H89ZNJ2FLJ5kCQuT5WySzWY847PjAf/3VHRIjoLgEryveOq1/f9XQTeRKVr2a803Aydl9weOoB/YrVJSea2tU3nhzft3bBwEYwcm5+GFto7iXXN34isv8lMJvBYvPyZE38FrNDwvMPXQeupudr192OLJUyzTvZdrr+QFOcXUs+kKw3OhvbyNK+WGQxdxNpUO4hz2nTRrbbMj6g+g67Lkav98pj585UWN53M5V7hT4Oe1+3X4FwkecyACMkfmy+Bd+/DuXj8f93ww7q5iP+R7gRRYKRWepSg+z3SSSaUnpPHwW07jlPpfzYSkStfiSaz3HZp6tciN1XSCz0Y97UX9fRNP4v+ObNMcmb+8ZP6NFFmRJ79p/3+k/SWCoh6C3J2ExgsZP55zP/prN1m8XW62FuyaxK2Oxbn2apGiOm/Jp1BrB8t0aLDcCYNK8MLTqL6iciXqY83gNzOqCp4Po+x8Oeke3JBVF8YTeNv7mMc9gbvTCC3RbCWNzUraeVdxs4UVjNq3kA/OrLuy1qqAFWyNqfRqNDpspTbN6kAzubFEVjndiCy2ac+VION1QfeNQia8sMuND6TT314Ey4DCXpPLpFa52Vuf99e12YZEJ73XBktYd0UeqETO41HwzEluF3zICrmzIrQgVXteNy37eosfexmeQl5RdCNncHRUIAIZ+RlfpGQFqZyJrFy8bToruE4S1Noz0nNLXskF32CJwnjX7+40tD2Lms/788P09uL98gwnT8uD16UX3su6L5efuc91XyrN2k61TNpD6l4Yvbe9lAlMqLQLf3wVDEzVXJMg9Y1aY0rFc1VzwNZX4EORJyh0t0DXFU+26IXWYh/Mu93uitvtK6k2o1ZXj/64u7n98+GWhVfB1daUhe1BxJWSi47lQW4Nd84Ox5s2ikNLu+5PEI5Aj3A4xFzjR1U0DS1/qZFm6uP6zDf61viwRZ6isgf0GfdunFFfYR/I72nOXs4zehQ6DUJiZb4ru+60jHf3Dx/Ah7j9laR03VfxHc1BvoMVEOhs/hbxdu0ABReb2jVlZ5P+/ga2+vB5
+sidebar_class_name: "post api-method"
+info_path: docs/apis/group/group-management-api
+custom_edit_url: null
+---
+
+import MethodEndpoint from "@theme/ApiExplorer/MethodEndpoint";
+import ParamsDetails from "@theme/ParamsDetails";
+import RequestSchema from "@theme/RequestSchema";
+import StatusCodes from "@theme/StatusCodes";
+import OperationTabs from "@theme/OperationTabs";
+import TabItem from "@theme/TabItem";
+import Heading from "@theme/Heading";
+import Translate from "@docusaurus/Translate";
+
+<Heading
+  as={"h1"}
+  className={"openapi__heading"}
+  children={"Create a new group"}
+>
+</Heading>
+
+<MethodEndpoint
+  method={"post"}
+  path={"/groups"}
+  context={"endpoint"}
+>
+  
+</MethodEndpoint>
+
+
+
+Create a new group
+
+<Heading
+  id={"request"}
+  as={"h2"}
+  className={"openapi-tabs__heading"}
+>
+  <Translate id="theme.openapi.request.title">Request</Translate>
+</Heading>
+
+<ParamsDetails
+  parameters={undefined}
+>
+  
+</ParamsDetails>
+
+<RequestSchema
+  title={"Body"}
+  body={{"required":true,"content":{"application/json":{"schema":{"type":"object","required":["name","organizationUnitId"],"properties":{"name":{"type":"string"},"description":{"type":"string"},"organizationUnitId":{"type":"string","format":"uuid"},"members":{"type":"array","items":{"type":"object","required":["id","type"],"properties":{"id":{"type":"string","format":"uuid"},"type":{"type":"string","enum":["user","group"]}},"title":"Member"}}},"title":"CreateGroupRequest"},"example":{"name":"Sports","description":"Sports group","organizationUnitId":"a839f4bd-39dc-4eaa-b5cc-210d8ecaee87","members":[{"type":"user","id":"7a4b1f8e-5c69-4b60-9232-2b0aaf65ef3c"},{"type":"user","id":"9f1e47d3-0347-4464-9f02-e0bfae02e896"},{"type":"group","id":"6b1e7b8d-7e19-41eb-8fa2-c0ee5bb67a94"}]}}}}}
+>
+  
+</RequestSchema>
+
+<StatusCodes
+  id={undefined}
+  label={undefined}
+  responses={{"201":{"description":"Group created","content":{"application/json":{"schema":{"type":"object","required":["id","name","organizationUnitId"],"properties":{"id":{"type":"string","format":"uuid"},"name":{"type":"string"},"description":{"type":"string","nullable":true},"organizationUnitId":{"type":"string","format":"uuid"},"members":{"type":"array","items":{"type":"object","required":["id","type"],"properties":{"id":{"type":"string","format":"uuid"},"type":{"type":"string","enum":["user","group"]}},"title":"Member"}}},"title":"Group"},"example":{"id":"3fa85f64-5717-4562-b3fc-2c963f66afa6","name":"Sports","description":"Sports group","organizationUnitId":"a839f4bd-39dc-4eaa-b5cc-210d8ecaee87"}}}},"400":{"description":"Bad request","content":{"application/json":{"schema":{"type":"object","required":["code","message"],"properties":{"code":{"type":"string","description":"Error code","example":"GRP-1001"},"message":{"type":"string","description":"Error message","example":"Invalid request format"},"description":{"type":"string","description":"Detailed error description","example":"The request body is malformed or contains invalid data"}},"title":"Error"},"examples":{"invalid-request-format":{"summary":"Invalid request format","value":{"code":"GRP-1001","message":"Invalid request format","description":"The request body is malformed or contains invalid data"}},"invalid-user-id":{"summary":"Invalid member ID","value":{"code":"GRP-1007","message":"Invalid member ID","description":"One or more member IDs in the request do not exist"}},"ou-not-found":{"summary":"Organization unit not found","value":{"code":"GRP-1005","message":"Organization unit not found","description":"Organization unit not found"}}}}}},"409":{"description":"Conflict","content":{"application/json":{"schema":{"type":"object","required":["code","message"],"properties":{"code":{"type":"string","description":"Error code","example":"GRP-1001"},"message":{"type":"string","description":"Error message","example":"Invalid request format"},"description":{"type":"string","description":"Detailed error description","example":"The request body is malformed or contains invalid data"}},"title":"Error"},"example":{"code":"GRP-1004","message":"Group name conflict","description":"A group with the same name exists under the same organization unit"}}}},"500":{"description":"Internal server error","content":{"text/plain":{"schema":{"type":"string"},"example":"Internal server error"}}}}}
+>
+  
+</StatusCodes>
+
+
+      

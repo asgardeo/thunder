@@ -22,7 +22,7 @@ import (
 	"strings"
 
 	"github.com/asgardeo/thunder/internal/system/config"
-	immutableresource "github.com/asgardeo/thunder/internal/system/immutable_resource"
+	declarativeresource "github.com/asgardeo/thunder/internal/system/declarative_resource"
 )
 
 // Store mode constants for organization unit service.
@@ -31,11 +31,11 @@ import (
 //
 // Resolution order:
 //  1. If OrganizationUnit.Store is explicitly configured, use it
-//  2. Otherwise, fall back to global ImmutableResources.Enabled:
-//     - If enabled: return "immutable"
+//  2. Otherwise, fall back to global DeclarativeResources.Enabled:
+//     - If enabled: return "declarative"
 //     - If disabled: return "mutable"
 //
-// Returns normalized store mode: "mutable", "immutable", or "composite"
+// Returns normalized store mode: "mutable", "declarative", or "composite"
 func getOrganizationUnitStoreMode() string {
 	cfg := config.GetThunderRuntime().Config
 	// Check if service-level configuration is explicitly set
@@ -43,14 +43,14 @@ func getOrganizationUnitStoreMode() string {
 		mode := strings.ToLower(strings.TrimSpace(cfg.OrganizationUnit.Store))
 		// Validate and normalize
 		switch mode {
-		case config.StoreModeMutable, config.StoreModeImmutable, config.StoreModeComposite:
+		case config.StoreModeMutable, config.StoreModeDeclarative, config.StoreModeComposite:
 			return mode
 		}
 	}
 
-	// Fall back to global immutable resources setting
-	if immutableresource.IsImmutableModeEnabled() {
-		return config.StoreModeImmutable
+	// Fall back to global declarative resources setting
+	if declarativeresource.IsDeclarativeModeEnabled() {
+		return config.StoreModeDeclarative
 	}
 
 	return config.StoreModeMutable
@@ -66,7 +66,7 @@ func isMutableModeEnabled() bool {
 	return getOrganizationUnitStoreMode() == config.StoreModeMutable
 }
 
-// isImmutableModeEnabled checks if immutable-only store mode is enabled for organization units.
-func isImmutableModeEnabled() bool {
-	return getOrganizationUnitStoreMode() == config.StoreModeImmutable
+// isDeclarativeModeEnabled checks if immutable-only store mode is enabled for organization units.
+func isDeclarativeModeEnabled() bool {
+	return getOrganizationUnitStoreMode() == config.StoreModeDeclarative
 }

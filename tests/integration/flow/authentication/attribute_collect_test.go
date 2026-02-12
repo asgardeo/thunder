@@ -103,6 +103,9 @@ var (
 		ClientSecret:              "attr_collect_flow_test_secret",
 		RedirectURIs:              []string{"http://localhost:3000/callback"},
 		AllowedUserTypes:          []string{"attr_collect_flow_user"},
+		TokenConfig: map[string]interface{}{
+			"user_attributes": []string{"userType", "ouId", "ouName", "ouHandle"},
+		},
 	}
 
 	attrCollectTestOU = testutils.OrganizationUnit{
@@ -429,7 +432,7 @@ func (ts *AttributeCollectFlowTestSuite) TestInvalidCredentials() {
 	errorResp, err := common.CompleteFlow(flowStep.FlowID, invalidCredentials, "")
 	ts.Require().NoError(err, "Expected error response for invalid credentials")
 	ts.Require().NotEmpty(errorResp.FailureReason, "Expected failure reason for invalid credentials")
-	ts.Require().Equal("User not found", errorResp.FailureReason,
+	ts.Require().Contains(errorResp.FailureReason, "No user found",
 		"Expected failure reason to indicate user not found")
 }
 

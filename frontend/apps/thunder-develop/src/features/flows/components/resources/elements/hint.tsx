@@ -18,8 +18,8 @@
 
 import type {ReactElement} from 'react';
 import {InfoIcon} from '@wso2/oxygen-ui-icons-react';
+import {Stack} from '@wso2/oxygen-ui';
 import PlaceholderComponent from './adapters/PlaceholderComponent';
-import './hint.scss';
 
 /**
  * Props interface of {@link Hint}
@@ -39,12 +39,12 @@ export interface HintPropsInterface {
  */
 export function Hint({hint}: HintPropsInterface): ReactElement {
   return (
-    <div className="composer-input-field-hint-container">
-      <InfoIcon />
+    <Stack direction="row" gap={0.5} alignItems="center" justifyContent="flex-start">
+      <InfoIcon size={12} />
       <PlaceholderComponent value={hint}>
         <span>{hint}</span>
       </PlaceholderComponent>
-    </div>
+    </Stack>
   );
 }
 

@@ -33,8 +33,8 @@ import (
 	oauth2const "github.com/asgardeo/thunder/internal/oauth/oauth2/constants"
 	"github.com/asgardeo/thunder/internal/system/cmodels"
 	"github.com/asgardeo/thunder/internal/system/config"
+	declarativeresource "github.com/asgardeo/thunder/internal/system/declarative_resource"
 	"github.com/asgardeo/thunder/internal/system/error/serviceerror"
-	immutableresource "github.com/asgardeo/thunder/internal/system/immutable_resource"
 	"github.com/asgardeo/thunder/internal/userschema"
 	"github.com/asgardeo/thunder/tests/mocks/applicationmock"
 	"github.com/asgardeo/thunder/tests/mocks/flow/flowmgtmock"
@@ -74,7 +74,7 @@ func (suite *ExportServiceTestSuite) SetupTest() {
 	// Create temporary directory
 	tempDir := suite.T().TempDir()
 
-	// Initialize ThunderRuntime with immutable mode disabled
+	// Initialize ThunderRuntime with declarative mode disabled
 	// Use just the filename since InitializeThunderRuntime will prepend the base path
 	config.ResetThunderRuntime()
 	testConfig := &config.Config{
@@ -83,7 +83,7 @@ func (suite *ExportServiceTestSuite) SetupTest() {
 				Key: "0579f866ac7c9273580d0ff163fa01a7b2401a7ff3ddc3e3b14ae3136fa6025e",
 			},
 		},
-		ImmutableResources: config.ImmutableResources{
+		DeclarativeResources: config.DeclarativeResources{
 			Enabled: false,
 		},
 	}
@@ -96,7 +96,7 @@ func (suite *ExportServiceTestSuite) SetupTest() {
 	suite.mockFlowService = flowmgtmock.NewFlowMgtServiceInterfaceMock(suite.T())
 
 	// Create exporters
-	exporters := []immutableresource.ResourceExporter{
+	exporters := []declarativeresource.ResourceExporter{
 		application.NewApplicationExporterForTest(suite.appServiceMock),
 		idp.NewIDPExporterForTest(suite.idpServiceMock),
 		notification.NewNotificationSenderExporterForTest(suite.mockNotificationService),
@@ -1120,7 +1120,7 @@ type MockParameterizer struct {
 }
 
 func (m *MockParameterizer) ToParameterizedYAML(obj interface{},
-	resourceType string, resourceName string, rules *immutableresource.ResourceRules) (string, error) {
+	resourceType string, resourceName string, rules *declarativeresource.ResourceRules) (string, error) {
 	if m.shouldFail {
 		return "", fmt.Errorf("%s", m.errorMsg)
 	}
@@ -1157,7 +1157,7 @@ func (suite *ExportServiceTestSuite) TestExportResources_TemplateGenerationError
 	}
 
 	// Create exporters with the test services
-	exporters := []immutableresource.ResourceExporter{
+	exporters := []declarativeresource.ResourceExporter{
 		application.NewApplicationExporterForTest(suite.appServiceMock),
 		idp.NewIDPExporterForTest(suite.idpServiceMock),
 		notification.NewNotificationSenderExporterForTest(suite.mockNotificationService),

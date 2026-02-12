@@ -17,7 +17,7 @@
  */
 
 import {useMutation, useQueryClient, type UseMutationResult} from '@tanstack/react-query';
-import {useConfig} from '@thunder/commons-contexts';
+import {useConfig} from '@thunder/shared-contexts';
 import {useAsgardeo} from '@asgardeo/react';
 import type {Branding} from '../models/branding';
 import type {CreateBrandingRequest} from '../models/requests';

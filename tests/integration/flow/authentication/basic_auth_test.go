@@ -163,6 +163,9 @@ var (
 		ClientSecret:              "flow_test_secret",
 		RedirectURIs:              []string{"http://localhost:3000/callback"},
 		AllowedUserTypes:          []string{"basic_auth_user"},
+		TokenConfig: map[string]interface{}{
+			"user_attributes": []string{"userType", "ouId", "ouName", "ouHandle"},
+		},
 	}
 
 	testUserSchema = testutils.UserSchema{
@@ -532,4 +535,124 @@ func (ts *BasicAuthFlowTestSuite) TestBasicAuthFlowInvalidFlowID() {
 	ts.Require().Equal("Invalid request", errorResp.Message, "Expected error message for invalid request")
 	ts.Require().Equal("Invalid flow ID provided in the request", errorResp.Description,
 		"Expected error description for invalid flow ID")
+}
+
+// TestBasicAuthFlow_WithoutTokenConfig tests that userType and OU attributes are NOT included
+// in JWT assertion when TokenConfig is not specified.
+func (ts *BasicAuthFlowTestSuite) TestBasicAuthFlow_WithoutTokenConfig() {
+	// Create a new application without TokenConfig
+	appWithoutTokenConfig := testutils.Application{
+		Name:                      "Flow Test Application Without Token Config",
+		Description:               "Application for testing default behavior without token config",
+		IsRegistrationFlowEnabled: false,
+		ClientID:                  "flow_test_client_no_token_config",
+		ClientSecret:              "flow_test_secret_no_token_config",
+		RedirectURIs:              []string{"http://localhost:3000/callback"},
+		AllowedUserTypes:          []string{"basic_auth_user"},
+		// TokenConfig is nil - not specified
+	}
+
+	appID, err := testutils.CreateApplication(appWithoutTokenConfig)
+	ts.Require().NoError(err, "Failed to create application without token config")
+	defer func() {
+		if err := testutils.DeleteApplication(appID); err != nil {
+			ts.T().Logf("Failed to delete test application: %v", err)
+		}
+	}()
+
+	// Update application with flow
+	err = common.UpdateAppConfig(appID, ts.config.CreatedFlowIDs[0], "")
+	ts.Require().NoError(err, "App config update should succeed")
+
+	// Execute authentication flow
+	var userAttrs map[string]interface{}
+	err = json.Unmarshal(testUser.Attributes, &userAttrs)
+	ts.Require().NoError(err, "Failed to unmarshal user attributes")
+
+	inputs := map[string]string{
+		"username": userAttrs["username"].(string),
+		"password": userAttrs["password"].(string),
+	}
+
+	flowStep, err := common.InitiateAuthenticationFlow(appID, false, inputs, "")
+	ts.Require().NoError(err, "Failed to initiate authentication flow")
+
+	ts.Require().Equal("COMPLETE", flowStep.FlowStatus, "Expected flow status to be COMPLETE")
+	ts.Require().NotEmpty(flowStep.Assertion, "JWT assertion should be returned")
+
+	// Decode and validate JWT claims
+	jwtClaims, err := testutils.DecodeJWT(flowStep.Assertion)
+	ts.Require().NoError(err, "Failed to decode JWT assertion")
+	ts.Require().NotNil(jwtClaims, "JWT claims should not be nil")
+
+	// Verify standard claims are present
+	ts.Require().Equal(appID, jwtClaims.Aud, "JWT aud should match app ID")
+	ts.Require().NotEmpty(jwtClaims.Sub, "JWT subject should not be empty")
+
+	// Verify userType and OU attributes are NOT present (since TokenConfig is not specified)
+	ts.Require().Empty(jwtClaims.UserType, "userType should NOT be present when TokenConfig is not specified")
+	ts.Require().Empty(jwtClaims.OuID, "ouId should NOT be present when TokenConfig is not specified")
+	ts.Require().Empty(jwtClaims.OuName, "ouName should NOT be present when TokenConfig is not specified")
+	ts.Require().Empty(jwtClaims.OuHandle, "ouHandle should NOT be present when TokenConfig is not specified")
+}
+
+// TestBasicAuthFlow_WithEmptyUserAttributes tests that userType and OU attributes are NOT included
+// in JWT assertion when user_attributes is an empty array.
+func (ts *BasicAuthFlowTestSuite) TestBasicAuthFlow_WithEmptyUserAttributes() {
+	// Create a new application with empty user_attributes
+	appWithEmptyAttrs := testutils.Application{
+		Name:                      "Flow Test Application With Empty User Attributes",
+		Description:               "Application for testing behavior with empty user_attributes",
+		IsRegistrationFlowEnabled: false,
+		ClientID:                  "flow_test_client_empty_attrs",
+		ClientSecret:              "flow_test_secret_empty_attrs",
+		RedirectURIs:              []string{"http://localhost:3000/callback"},
+		AllowedUserTypes:          []string{"basic_auth_user"},
+		TokenConfig: map[string]interface{}{
+			"user_attributes": []string{}, // Empty array
+		},
+	}
+
+	appID, err := testutils.CreateApplication(appWithEmptyAttrs)
+	ts.Require().NoError(err, "Failed to create application with empty user attributes")
+	defer func() {
+		if err := testutils.DeleteApplication(appID); err != nil {
+			ts.T().Logf("Failed to delete test application: %v", err)
+		}
+	}()
+
+	// Update application with flow
+	err = common.UpdateAppConfig(appID, ts.config.CreatedFlowIDs[0], "")
+	ts.Require().NoError(err, "App config update should succeed")
+
+	// Execute authentication flow
+	var userAttrs map[string]interface{}
+	err = json.Unmarshal(testUser.Attributes, &userAttrs)
+	ts.Require().NoError(err, "Failed to unmarshal user attributes")
+
+	inputs := map[string]string{
+		"username": userAttrs["username"].(string),
+		"password": userAttrs["password"].(string),
+	}
+
+	flowStep, err := common.InitiateAuthenticationFlow(appID, false, inputs, "")
+	ts.Require().NoError(err, "Failed to initiate authentication flow")
+
+	ts.Require().Equal("COMPLETE", flowStep.FlowStatus, "Expected flow status to be COMPLETE")
+	ts.Require().NotEmpty(flowStep.Assertion, "JWT assertion should be returned")
+
+	// Decode and validate JWT claims
+	jwtClaims, err := testutils.DecodeJWT(flowStep.Assertion)
+	ts.Require().NoError(err, "Failed to decode JWT assertion")
+	ts.Require().NotNil(jwtClaims, "JWT claims should not be nil")
+
+	// Verify standard claims are present
+	ts.Require().Equal(appID, jwtClaims.Aud, "JWT aud should match app ID")
+	ts.Require().NotEmpty(jwtClaims.Sub, "JWT subject should not be empty")
+
+	// Verify userType and OU attributes are NOT present (since user_attributes is empty)
+	ts.Require().Empty(jwtClaims.UserType, "userType should NOT be present when user_attributes is empty")
+	ts.Require().Empty(jwtClaims.OuID, "ouId should NOT be present when user_attributes is empty")
+	ts.Require().Empty(jwtClaims.OuName, "ouName should NOT be present when user_attributes is empty")
+	ts.Require().Empty(jwtClaims.OuHandle, "ouHandle should NOT be present when user_attributes is empty")
 }

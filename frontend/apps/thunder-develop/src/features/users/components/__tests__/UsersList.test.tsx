@@ -17,12 +17,10 @@
  */
 
 import {describe, it, expect, vi, beforeEach} from 'vitest';
-import {screen, waitFor} from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
+import {render, screen, waitFor, userEvent} from '@thunder/test-utils';
 import React from 'react';
 import type * as OxygenUI from '@wso2/oxygen-ui';
 import {DataGrid} from '@wso2/oxygen-ui';
-import render from '@/test/test-utils';
 import UsersList from '../UsersList';
 import type {UserListResponse, ApiUserSchema, ApiError} from '../../types/users';
 

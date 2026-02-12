@@ -1,0 +1,72 @@
+---
+id: get-a-branding-configuration-by-id
+title: "Get a branding configuration by ID"
+description: "Retrieve a specific branding configuration using its ID."
+sidebar_label: "Get a branding configuration by ID"
+hide_title: true
+hide_table_of_contents: true
+api: eJztWEtv2zgQ/isEe9kFFFt2EqfRLW2CwovdtkjTU5DDmBxZbCVRJUdJXMP/fTGU5MiOnWRfWOyiusQZDufFbx7kUhLMvUyu5cxBqU05lzeR1OiVMxUZW8pEXiI5g7coQPgKlUmNEh23ULZMzbx2wMyi9kwz5MX0fCAjWYGDAgkdq1hKw+IqoExGsoQCZSKNlpF0+K02DrVMyNUYSa8yLEAmS0mLirk8OTYtkql1BZBMZF0bLVfbpr7Zbdb0XEYS76GocpZ2mMLr43RydHB8Mjo5ODqejA9mh6k6GKvTyWE6mUAKE7m6Ybt8ZUuPnk0ZxzH/eZFCjQQm9zKSypaEJfFOqKrcqMAw/OJ5+/Kxp3b2BRVtxOS6CZI2vsph8Z7jFsnKYYoOS4WeT6xytkJHpjHV6Odjtx26z6X5VqMwGksyqUEnUusEZbjnrP9ERDd92GHhpkXnDbNgpPwRY84e4ixGojshVt8P2o6Q7zna3i7hyTrUArxIc7w3sxzFL58+vB+IqwyFJ1crqh0KBaXAW5vforC36ASZAjkfQGvD4iH/2DuwBvRrB5aSMmwCBIrMLb61uXWfVEOUGtzXAKw1MTgTyMmyoQdK5UwBbsE/Cwip92p0ejLRY3Y1cMtXsT46gVGLUweervCeIfIqDR8HzaOypd4SdKrGJ7O4J2gCcfw6flIQsb9bcsZ4og/7Bo1mxzh+Ss5qFcnczDN61tnx6HSSHvZld97/486GL5JkKCCyg9LHHv52rV+29YYt6cGB0/llKbaVYftS4XEm/ADcvwK49RfJo53tBbTgRoCe/q5eoqzm/lGg9zDHx70jrD9bmy+cs060sh5K75vL84NRHI84+p2GF8rq2PvipuUt5GYdAtF2sO22/2wjCd0YtcCgqb/Y18YlvNM0s3ohjBcF5KwUtQjulgSm9MK0dmkg2Ejk4MpW9jYB7UIz7sV+r4N7W9H0nI1aH2eHnKMXDyalZSV1qX/A6X8Bp8MNOL3g0Dddudo7UYk7Q1mYuNqZH7VgEy36IA/vjacWgMe7Ste0JHQl5MKj4xEoBOsH6v77qDuO43iriO0+6U37z0pRl3hfoaK1E1ap2vE8fZeZHEXlrEIfrpD04IZsG2SBlFmehOZI4WpJmUzksIPvcGn0SvL0wEY0983a5TKRGVHlk+FwmVlPq2RZWUfMeQvOwCxvEMNrDYhTqHNu0rlVkAcy3xys21p+HZ/GbNpNGFhqZ2gRdH44qykbM0j9whMW8qbP0pufOsYHpEMgRDLN7V1gYYJ15ntIkbctpjeInzc8XJucsHXDRuCw28CwJPsVX7QpMHI4la0ae1t3Enmm+JQEWdGQRAElzLHAksTZx6nvDsyUqQ3ubU254rcNfj4JdL5ByWgQ7yhSxjMjQ7n2qFlzo3JP7fKCMqBwCZuhAO+tMsCoCzWtV3U838lyo5Bn7mTZvUmcVaAyFONgyyaG7u7uBhCWB9bNh+1eP/x1+vbi/aeLg/EgHmRU5CGhKuupgLIn+R2SgH0Vd7ZoHiq2ysK6YP6Vh5gWYoT3NKxynldXrWvLNpN6L0CRTIzmotokxbVcLmfg8bPLVysmf6uRB9/rm4ccCtDXxvNvLZMUco9PePLTZVvMfxZPPdnstLolQrkIOZzX/J+M5FdcNO9Jq5tVJDMEjS6Y1SwwaivqbXnUfThP10Xm3cWVXK1+B3ecfzM=
+sidebar_class_name: "get api-method"
+info_path: docs/apis/branding/branding-management-api
+custom_edit_url: null
+---
+
+import MethodEndpoint from "@theme/ApiExplorer/MethodEndpoint";
+import ParamsDetails from "@theme/ParamsDetails";
+import RequestSchema from "@theme/RequestSchema";
+import StatusCodes from "@theme/StatusCodes";
+import OperationTabs from "@theme/OperationTabs";
+import TabItem from "@theme/TabItem";
+import Heading from "@theme/Heading";
+import Translate from "@docusaurus/Translate";
+
+<Heading
+  as={"h1"}
+  className={"openapi__heading"}
+  children={"Get a branding configuration by ID"}
+>
+</Heading>
+
+<MethodEndpoint
+  method={"get"}
+  path={"/branding/{id}"}
+  context={"endpoint"}
+>
+  
+</MethodEndpoint>
+
+
+
+Retrieve a specific branding configuration using its ID.
+
+<Heading
+  id={"request"}
+  as={"h2"}
+  className={"openapi-tabs__heading"}
+>
+  <Translate id="theme.openapi.request.title">Request</Translate>
+</Heading>
+
+<ParamsDetails
+  parameters={[{"in":"path","name":"id","required":true,"schema":{"type":"string","format":"uuid"},"description":"Branding configuration ID","example":"3fa85f64-5717-4562-b3fc-2c963f66afa6"}]}
+>
+  
+</ParamsDetails>
+
+<RequestSchema
+  title={"Body"}
+  body={undefined}
+>
+  
+</RequestSchema>
+
+<StatusCodes
+  id={undefined}
+  label={undefined}
+  responses={{"200":{"description":"Branding configuration details","content":{"application/json":{"schema":{"type":"object","required":["id","displayName","preferences"],"properties":{"id":{"type":"string","format":"uuid","description":"Unique identifier for the branding configuration","example":"3fa85f64-5717-4562-b3fc-2c963f66afa6"},"displayName":{"type":"string","description":"Display name for the branding configuration","example":"Application 1 Branding"},"preferences":{"type":"object","description":"Branding preferences stored as flexible JSON. The structure can evolve over time.","additionalProperties":true,"example":{"theme":{"activeColorScheme":"dark","colorSchemes":{"dark":{"colors":{"primary":{"main":"#1976d2","dark":"#0d47a1","contrastText":"#ffffff"},"secondary":{"main":"#9c27b0","dark":"#6a0080","contrastText":"#ffffff"},"tertiary":{"main":"#2e7d32","dark":"#1b5e20","contrastText":"#ffffff"}}},"light":{"colors":{"primary":{"main":"#2196f3","dark":"#1976d2","contrastText":"#ffffff"},"secondary":{"main":"#9c27b0","dark":"#6a0080","contrastText":"#ffffff"}}}}}},"title":"BrandingPreferences"}},"title":"BrandingResponse"},"example":{"id":"3fa85f64-5717-4562-b3fc-2c963f66afa6","displayName":"Application 1 Branding","preferences":{"theme":{"activeColorScheme":"dark","colorSchemes":{"dark":{"colors":{"primary":{"main":"#1976d2","dark":"#0d47a1","contrastText":"#ffffff"},"secondary":{"main":"#9c27b0","dark":"#6a0080","contrastText":"#ffffff"},"tertiary":{"main":"#2e7d32","dark":"#1b5e20","contrastText":"#ffffff"}}},"light":{"colors":{"primary":{"main":"#2196f3","dark":"#1976d2","contrastText":"#ffffff"}}}}}}}}}},"400":{"description":"Bad request","content":{"application/json":{"schema":{"type":"object","required":["code","message"],"properties":{"code":{"type":"string","description":"Error code","example":"BRD-1001"},"message":{"type":"string","description":"Error message","example":"Invalid request format"},"description":{"type":"string","description":"Detailed error description","example":"The request body is malformed or contains invalid data"}},"title":"Error"},"example":{"code":"BRD-1002","message":"Invalid request format","description":"Branding ID is required"}}}},"404":{"description":"Branding configuration not found","content":{"application/json":{"schema":{"type":"object","required":["code","message"],"properties":{"code":{"type":"string","description":"Error code","example":"BRD-1001"},"message":{"type":"string","description":"Error message","example":"Invalid request format"},"description":{"type":"string","description":"Detailed error description","example":"The request body is malformed or contains invalid data"}},"title":"Error"},"example":{"code":"BRD-1003","message":"Branding configuration not found","description":"The branding configuration with the specified id does not exist"}}}},"500":{"description":"Internal server error","content":{"application/json":{"schema":{"type":"object","required":["code","message"],"properties":{"code":{"type":"string","description":"Error code","example":"BRD-1001"},"message":{"type":"string","description":"Error message","example":"Invalid request format"},"description":{"type":"string","description":"Detailed error description","example":"The request body is malformed or contains invalid data"}},"title":"Error"},"example":{"code":"BRD-5000","message":"Internal server error","description":"An unexpected error occurred while processing the request"}}}}}}
+>
+  
+</StatusCodes>
+
+
+      

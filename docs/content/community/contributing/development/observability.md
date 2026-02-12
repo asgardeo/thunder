@@ -1,0 +1,155 @@
+---
+title: Observability
+description: Learn how to instrument your code with observability events and understand the observability architecture in Thunder.
+hide_table_of_contents: false
+---
+
+# Observability Developer Guide
+
+This guide explains how to instrument your code with observability events and provides an overview of the observability architecture. It is intended for developers adding new features or components to Thunder.
+
+## Table of Contents
+
+1. [Integration Guide](#integration-guide)
+2. [Event Anatomy](#event-anatomy)
+3. [Distributed Tracing](#distributed-tracing)
+4. [Architecture Overview](#architecture-overview)
+5. [Extending Observability](#extending-observability)
+
+---
+
+## Integration Guide
+
+Thunder uses a dependency injection pattern for observability. To instrument your component:
+
+### 1. Inject the Observability Service
+
+Your component should accept `ObservabilityServiceInterface` in its constructor or initialization method.
+
+```go
+import "github.com/asgardeo/thunder/internal/observability"
+
+type MyComponent struct {
+    obsSvc observability.ObservabilityServiceInterface
+}
+
+func NewMyComponent(obsSvc observability.ObservabilityServiceInterface) *MyComponent {
+    return &MyComponent{
+        obsSvc: obsSvc,
+    }
+}
+```
+
+### 2. Publish Events
+
+Use the injected service to publish events. Always check if the service is enabled (though the service handles no-ops, checking avoids unnecessary object creation).
+
+```go
+import "github.com/asgardeo/thunder/internal/observability/event"
+
+func (c *MyComponent) DoSomething(ctx context.Context) {
+    // 1. Check if enabled
+    if c.obsSvc == nil || !c.obsSvc.IsEnabled() {
+        return
+    }
+
+    // 2. Create event
+    traceID := uuid.NewString() // Or get from context
+    evt := event.NewEvent(traceID, event.Type.MyOperation, "MyComponent").
+        WithStatus(event.StatusSuccess).
+        WithData(event.DataKey.UserID, "user-123")
+
+    // 3. Publish
+    c.obsSvc.PublishEvent(evt)
+}
+```
+
+## Event Anatomy
+
+### Required Fields
+- **TraceID**: UUID or hex string for trace correlation.
+- **EventType**: Predefined constant from `event.Type` (e.g., `event.Type.FlowStarted`).
+- **Component**: Your component name (e.g., `"AuthHandler"`, `"FlowEngine"`).
+
+### Optional Fields
+- **Status**: `event.StatusSuccess`, `event.StatusFailure`, or `event.StatusInProgress`.
+- **Data**: Key-value pairs using `event.DataKey` constants.
+
+### Common Data Keys
+Always use predefined keys from `event.DataKey` for consistency:
+
+| Key | Usage |
+|-----|-------|
+| `UserID` | Authenticated user identifier |
+| `ClientID` | OAuth client identifier |
+| `FlowID` | Flow execution identifier |
+| `Message` | Human-readable message |
+| `Error` | Error message for failures |
+| `LatencyUs` | Operation latency in microseconds |
+
+See [`event/datakeys.go`](../../../backend/internal/observability/event/datakeys.go) for the complete list.
+
+## Distributed Tracing
+
+Events with the same `TraceID` are automatically grouped into a single trace by the OpenTelemetry subscriber.
+
+### Hierarchical Tracing
+To create parent-child relationships between spans, include the `TraceParent` key:
+
+```go
+// Child operation
+childEvt := event.NewEvent(traceID, event.Type.NodeExecutionStarted, "FlowEngine").
+    WithData(event.DataKey.TraceParent, parentSpanID)
+obs.PublishEvent(childEvt)
+```
+
+## Architecture Overview
+
+The Observability component follows a **Publisher-Subscriber** pattern, decoupled from core business logic.
+
+### Core Components
+
+1.  **Service (`Service`)**: The main entry point. Manages lifecycle and configuration.
+2.  **Publisher (`CategoryPublisher`)**: Acts as the event bus. Distributes events to subscribers based on categories.
+3.  **Subscribers (`SubscriberInterface`)**: Consume events (e.g., Console, File, OTel).
+
+### Directory Structure
+
+```
+backend/internal/observability/
+├── service.go          # Main service implementation
+├── event/              # Event definitions
+├── publisher/          # Publisher implementation
+├── subscriber/         # Subscriber implementations
+└── opentelemetry/      # OpenTelemetry configuration
+```
+
+## Extending Observability
+
+To add a new subscriber (e.g., to send logs to a webhook):
+
+1.  **Create a new file** in `backend/internal/observability/subscriber/`.
+2.  **Implement `SubscriberInterface`**:
+    ```go
+    type SubscriberInterface interface {
+        Initialize() error
+        IsEnabled() bool
+        GetID() string
+        GetCategories() []event.EventCategory
+        OnEvent(evt *event.Event) error
+        Close() error
+    }
+    ```
+3.  **Register the Factory**:
+    Add an `init()` function to register your subscriber factory.
+    ```go
+    func init() {
+        RegisterSubscriberFactory("my-subscriber", func() SubscriberInterface {
+            return NewMySubscriber()
+        })
+    }
+    ```
+4.  **Add Configuration**: Update `backend/internal/system/config/config.go`.
+
+## Further Reading
+- [Observability Configuration Guide](../../../guides/observability/configuration.md)

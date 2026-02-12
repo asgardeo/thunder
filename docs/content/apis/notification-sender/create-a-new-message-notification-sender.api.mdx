@@ -1,0 +1,72 @@
+---
+id: create-a-new-message-notification-sender
+title: "Create a new message notification sender"
+description: "Create a new message notification sender with the provided details."
+sidebar_label: "Create a new message notification sender"
+hide_title: true
+hide_table_of_contents: true
+api: eJztWN9v2zYQ/leIe9oGOVYCO2v15qZ5CLCkRZ0CAwKjoMWzxVYiVZKK4xr+34cj6Uh2vMQJMqADqqeEPN7P7z6euQKBNjeydlIryODMIHfIOFO4YBVay+fIlHZyJnNOMsyiEmjYQrqCuQJZbfStFCiYQMdlaY8gAcfnFrIbuIwKxv6MhUkCBr83aN07LZaQrXasXz5iUHDHIZyXBgVkzjSYQK6VQ+VIF6/rMh7qf7WkcAU2L7Di9Jdb1ggZ6OlXzB0kUBtdo3ESLe0qXmFHyjoj1RySHf+ueIVMz3zcjyQHEsA7XtUlqbpeyFJqNr4cxzTAekftU1bft/8913iwyGba+F2p5t6ReNyyxtJScJH8isU0Tzv1MUoe6JFqKgKEC5YSuNWKzxESyBvrdEXIaL12XX86RYoecWP4cp9DUfQwl6TDyr4WMKLxJfPi3Vh4nutGuS9WCgrolpfNc/QF+a7C0dnfT3xkR9ovFnODrmNrqnWJXD0wdqEEZQctk7NNSwfr0jLOop6OD9R5a/q67XgDMXZvrQOlSQJOOu977O+rTkE2PRG12VorGzJ/kh4/ZIjATwJerfGleLoan5X83iCTAhU5fjDo72s2HKb4ZpCmPTx5O+0NjsWgx/88Pu0NBqenw+FgkKZpSlX7xUK/WOinZSH2W8XtNxTh6v/Df7GmRBCs9fj3n5iwnqSiT5GDIiUN0vQhC73jgn0Kg0zGrgtkcaphUy28ExUvZ9pUKJg2jJiKS2WZVLe8lGIzyrwSg+VaHFDLc2O8K2IbGJdX495xmp5SCSJSD9W1Ee+qu4gRbvJBSeDuBVxDoyQKht5Sd3OL1F6W+S4MzkqJyvmA2sJ3bGzS2yaqk6d/C3c3nBf7GQD4ds81qNWslLnL2OiwKd3SnUG0wHhpkIslwztpnf0Fw/8lDIdbMHzfhLLhpuyR/7ejGR0OioC84T7qu1AOjeIlG6O5RcO8zxkbKdYovKsxd/f50nneGEMXRiFLT9I5Wn/VuzZjPxEAh2l6/GoAjFmyIUs+If8V/l6e+y4EQz13IBiAUKErtIAMau0LVnNXQAb9LuP0Arhsv01HiJ0eAlbQmBIyKJyrbdbvrwpt3Tpb1dq4Nc1h3Eg+LUMdaS/gbsab0kEGpc556ZdpGNNmZ/tN+jYlVydkMm+MdEtv88OoccUJDXx2aR1WMOmKjAlWweJGsEUY9wsJzEq98CK0oI384WM9i0jbWvy8FeG9yxl51w8K+5sD/meS/oYHHfKClM5c18HfGE4Go5yqypxmYYlVnAbaCpVjo48XdlNAaqVP7cPLeUsrYbDc8/NgF4vPmuG7I3w7bXfb9ebedHc0vZ9MDxkat2ZGP+FNaI5UM+0rGWHdHfBibJSaPXe0tLRB5N1YFJTUgitR7r1Y/SsXgTscPj5KIYFS5khd06Z1VPO8QHbit9sWyPr9xWJxxP3ukTbzfjxq+39dnJ1fjc97J0fpUeGq0rcotV3FVUfxoc90u2GuWrJ9rae+0DEO71y/LrlU1KM+1FXkiRvYxxOdC2ySxJ6/gdVqyi1+NuV6TcvfGzTUy5OWIui/dQIFco+umxV8w2WYiCiu3nV4fdjg6MGFsk42J6h5aveo7KTDfR8/jK8hgWl8uKzCfWz4gh4l+QIygAS0z7NvUr+2gpKreROu6aCTvn8ATeiDCg==
+sidebar_class_name: "post api-method"
+info_path: docs/apis/notification-sender/notification-sender-api
+custom_edit_url: null
+---
+
+import MethodEndpoint from "@theme/ApiExplorer/MethodEndpoint";
+import ParamsDetails from "@theme/ParamsDetails";
+import RequestSchema from "@theme/RequestSchema";
+import StatusCodes from "@theme/StatusCodes";
+import OperationTabs from "@theme/OperationTabs";
+import TabItem from "@theme/TabItem";
+import Heading from "@theme/Heading";
+import Translate from "@docusaurus/Translate";
+
+<Heading
+  as={"h1"}
+  className={"openapi__heading"}
+  children={"Create a new message notification sender"}
+>
+</Heading>
+
+<MethodEndpoint
+  method={"post"}
+  path={"/notification-senders/message"}
+  context={"endpoint"}
+>
+  
+</MethodEndpoint>
+
+
+
+Create a new message notification sender with the provided details.
+
+<Heading
+  id={"request"}
+  as={"h2"}
+  className={"openapi-tabs__heading"}
+>
+  <Translate id="theme.openapi.request.title">Request</Translate>
+</Heading>
+
+<ParamsDetails
+  parameters={undefined}
+>
+  
+</ParamsDetails>
+
+<RequestSchema
+  title={"Body"}
+  body={{"description":"Message notification sender data","required":true,"content":{"application/json":{"schema":{"type":"object","properties":{"name":{"type":"string","description":"Name of the message notification sender","example":"Twilio SMS Sender"},"description":{"type":"string","description":"Description of the message notification sender","example":"Sender for sending SMS messages using Twilio"},"provider":{"type":"string","description":"Provider of the message notification sender","enum":["twilio","vonage","custom"],"example":"twilio"},"properties":{"type":"array","description":"Properties of the message notification sender","items":{"type":"object","properties":{"name":{"type":"string","description":"Property name","example":"account_sid"},"value":{"type":"string","description":"Property value","example":"ACXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"},"is_secret":{"type":"boolean","description":"Indicates if the property is a secret","example":true}}}}},"required":["name","type","provider"],"title":"MessageNotificationSender"}}}}}
+>
+  
+</RequestSchema>
+
+<StatusCodes
+  id={undefined}
+  label={undefined}
+  responses={{"201":{"description":"Created","content":{"application/json":{"schema":{"type":"object","properties":{"id":{"type":"string","description":"Unique identifier of the message notification sender","example":"550e8400-e29b-41d4-a716-446655440000"},"name":{"type":"string","description":"Name of the message notification sender","example":"Twilio SMS Sender"},"description":{"type":"string","description":"Description of the message notification sender","example":"Sender for sending SMS messages using Twilio"},"provider":{"type":"string","description":"Provider of the message notification sender","enum":["twilio","vonage","custom"],"example":"twilio"},"properties":{"type":"array","description":"Properties of the message notification sender","items":{"type":"object","properties":{"name":{"type":"string","description":"Property name","example":"account_sid"},"value":{"type":"string","description":"Property value (masked with ****** for secret properties)","example":"ACXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"},"is_secret":{"type":"boolean","description":"Indicates if the property is a secret","example":true}}}}},"title":"MessageNotificationSenderResponse"}}}},"400":{"description":"Bad Request: The request body is malformed or contains invalid data","content":{"application/json":{"schema":{"type":"object","properties":{"code":{"type":"string","description":"Error code","example":"MNS-1006"},"message":{"type":"string","description":"Error message","example":"Invalid request format"},"description":{"type":"string","description":"Detailed error description","example":"The request body is malformed or contains invalid data"}},"title":"ClientErrorResponse"},"example":{"code":"MNS-1006","message":"Invalid request format","description":"The request body is malformed or contains invalid data"}}}},"409":{"description":"Conflict: A message notification sender with the same name already exists","content":{"application/json":{"schema":{"type":"object","properties":{"code":{"type":"string","description":"Error code","example":"MNS-1006"},"message":{"type":"string","description":"Error message","example":"Invalid request format"},"description":{"type":"string","description":"Detailed error description","example":"The request body is malformed or contains invalid data"}},"title":"ClientErrorResponse"},"example":{"code":"MNS-1005","message":"Duplicate sender name","description":"A sender with the same name already exists"}}}},"500":{"description":"Internal Server Error: An unexpected error occurred while processing the request","content":{"application/json":{"schema":{"type":"object","properties":{"code":{"type":"string","description":"Error code","example":"MNS-5001"},"message":{"type":"string","description":"Error message","example":"Internal server error"},"description":{"type":"string","description":"Detailed error description","example":"An unexpected error occurred while processing the request"}},"title":"ServerErrorResponse"}}}}}}
+>
+  
+</StatusCodes>
+
+
+      

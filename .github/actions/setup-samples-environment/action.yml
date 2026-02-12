@@ -10,7 +10,7 @@ inputs:
   pnpm-version:
     description: 'pnpm version to use'
     required: false
-    default: '9.x'
+    default: 'latest'
   download-certificates:
     description: 'Whether to download shared certificates'
     required: false

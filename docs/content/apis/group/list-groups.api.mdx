@@ -1,0 +1,72 @@
+---
+id: list-groups
+title: "List groups"
+description: "List groups"
+sidebar_label: "List groups"
+hide_title: true
+hide_table_of_contents: true
+api: eJytV1tv2zYU/ivEedjLpFhWbMcRUAxZFxQBmq3o5SnzAy0dWWwkUiWpJpmh/z4cUralWGnddU8CqHP5zu3j4RYs3xhI7mCjVVMbWAVQc80rtKjpfAtCQgJfGtRPEIDkFUICpaiEhQA0fmmExgySnJcGA8jQpFrUVijSuuWPomoqJptqjZqpnGlMlc4Ms4pptI2WZ39LCMCkBVYcki3Yp5ocCGlxgxoCqIQkG5BMyXrOm9JCch61bTAOTeW5wROw/TmGydyLmuVKs5pvhOQk+l2Ae1BR267IramVNGhIOI4i+gw9vxXGkt8u4wGkSlqUliR5XZcidY4nnw2Jb499q/VnTCnEWqsatRXemVWWl+/RNKU1LyB9KQFOh9mCW1ZxmxbMFshKYayQG0Y+fCogAHzkVV0iJMs2AGO5tjcyw8cT/Dk5cke2c6GNZVhihdLuDmu+wYA9FCIt2IMoS7ZGhl8aXlJpfF3Zr2w6gDFtKX+Nz97JEXeODRPSefa9iJmDMLA/b4PdaBwccK05tZywWJmxwhx67w5EtmvOAJTecCn+cdn8JIW9ydzADcoosp5FY7WQGwggV7riFhJoGpFBu2v354Lts5iPDcmmLPmaQrO6wXYU0yn+K6Rk/lxWnMB/TYAXOBZESWxxB41xLeCKB6uWNISluOHWQYe2f/bGidFJKeT9D4U1RF9ozEdh7Tqqa6fffEO/iqNfHJu+mkYUlcby29oSHy30kb8V8n4kFmKZ9x0XkeG9hedEMR/O8XQ/T/Gh8+98VeA858t5vpiF84vpRTibL+JwfZ6nYZxeLs7zxYLnfHGg4g+10tYcjaE/9vQ3PhMJ8OX5ZT5bZ+H5ZZaGM+Q8XM/TNIynUbbElCMuL8BdASQdzy9wHi/zENfxLJwt14twuZxlYRzNFhFOL6PL+cUB1i2XfEOte3xduR//B7LVvo/udi3xvO5d2WPoit5VdtW6Ws7Gbo7fecZoiNDYn7k2+nOYqoyIqUJj+GZkGN3/kYYcArvWWmnW2Tr06pv378JpFE09X3gPJ9raiffN3civvBT7FLCOEr7PeUMHf6DlosSMofPU/9n39tHdC97TWmVPTBhW8ZKcYsZcuNJyIekS8bgybvlgNF0oveHz9Oalw852uCO2LZimqrh+ejnSAL7yssFDXQ4Z7iX4Ze1hHn4iwF0Mfg8che5+sf0u+SL26Tj2Y/Vj8M9kWNVQJMg4q5URVnxFtlsF+qC7DXEUdbdlnAA7HoU9on+M+7lQD7hUMpS44c/Ae06Yj3HCjbSoJS+ZQf0VtW/qITtYfLSTuuRinBcOq0N/1Masehgj2+x+la3QFopocuN28JrbAhKY7P97c54WG02sV1hbm2Qy2RbK2DbZ0uXQurRrQXuKv1SVsT70bteGUqW8dMdtAKQz/L2MLiOCuyKXaaOFfXI+/7pqbBET8ZknY7GCVV/kA6XGe9wJHtiTu4MA8lI9OBE6ULq7H153PDk4/DSIcA85IXQTb3CyUyCqs+oeT1Jygu5ZomqPtwsngas0ReMfM+6IVe5Wc3v21bsbA10zCZkrF15/aWC3A2EqA2rjCz09i0a6WRgSJOpoDGbk1vvrWoJ26VKkSEtIst3dwFc1TwtksbM4bIOHh4cz7n6fKb2ZdLpm8vbm9fWfH67D+Cw6K2xVuomulbEVlz3Lw24cvxZ649B27rddp/afwb7n7mC7XXODn3TZtnTsn5vUS5kw1KAvPDC3hwk8/R08ivAen3pP7o6OwG0/p0P4sefuN3Ds39cHIKvDtEJyt2oDKJBnqF2WvBZ1Zd3XOtpYyMqePd5cf4S2/RdIeq5L
+sidebar_class_name: "get api-method"
+info_path: docs/apis/group/group-management-api
+custom_edit_url: null
+---
+
+import MethodEndpoint from "@theme/ApiExplorer/MethodEndpoint";
+import ParamsDetails from "@theme/ParamsDetails";
+import RequestSchema from "@theme/RequestSchema";
+import StatusCodes from "@theme/StatusCodes";
+import OperationTabs from "@theme/OperationTabs";
+import TabItem from "@theme/TabItem";
+import Heading from "@theme/Heading";
+import Translate from "@docusaurus/Translate";
+
+<Heading
+  as={"h1"}
+  className={"openapi__heading"}
+  children={"List groups"}
+>
+</Heading>
+
+<MethodEndpoint
+  method={"get"}
+  path={"/groups"}
+  context={"endpoint"}
+>
+  
+</MethodEndpoint>
+
+
+
+List groups
+
+<Heading
+  id={"request"}
+  as={"h2"}
+  className={"openapi-tabs__heading"}
+>
+  <Translate id="theme.openapi.request.title">Request</Translate>
+</Heading>
+
+<ParamsDetails
+  parameters={[{"in":"query","name":"limit","required":false,"description":"Maximum number of records to return.\n","schema":{"type":"integer","minimum":1,"default":30}},{"in":"query","name":"offset","required":false,"description":"Number of records to skip for pagination.\n","schema":{"type":"integer","default":0}}]}
+>
+  
+</ParamsDetails>
+
+<RequestSchema
+  title={"Body"}
+  body={undefined}
+>
+  
+</RequestSchema>
+
+<StatusCodes
+  id={undefined}
+  label={undefined}
+  responses={{"200":{"description":"List of groups","content":{"application/json":{"schema":{"type":"object","properties":{"totalResults":{"type":"integer","description":"Number of results that match the listing operation.","example":8},"startIndex":{"type":"integer","description":"Index of the first element of the page, which will be equal to offset + 1.","example":1},"count":{"type":"integer","description":"Number of elements in the returned page.","example":5},"groups":{"type":"array","items":{"type":"object","required":["id","name","organizationUnitId"],"properties":{"id":{"type":"string","format":"uuid"},"name":{"type":"string"},"description":{"type":"string","nullable":true},"organizationUnitId":{"type":"string","format":"uuid"},"members":{"type":"array","items":{"type":"object","required":["id","type"],"properties":{"id":{"type":"string","format":"uuid"},"type":{"type":"string","enum":["user","group"]}},"title":"Member"}}},"title":"Group"}},"links":{"type":"array","items":{"type":"object","properties":{"href":{"type":"string","example":"groups?offset=20&limit=10"},"rel":{"type":"string","example":"next"}},"title":"Link"}}},"title":"GroupListResponse"},"example":{"totalResults":5,"startIndex":1,"count":2,"groups":[{"id":"3fa85f64-5717-4562-b3fc-2c963f66afa6","name":"Sports","description":"Sports group","organizationUnitId":"a839f4bd-39dc-4eaa-b5cc-210d8ecaee87"},{"id":"257e528f-eb24-48b6-884d-20460e190957","name":"Managers","description":"Manager group","organizationUnitId":"a839f4bd-39dc-4eaa-b5cc-210d8ecaee87"}],"links":[{"href":"groups?offset=2&limit=2","rel":"next"}]}}}},"400":{"description":"Bad request","content":{"application/json":{"schema":{"type":"object","required":["code","message"],"properties":{"code":{"type":"string","description":"Error code","example":"GRP-1001"},"message":{"type":"string","description":"Error message","example":"Invalid request format"},"description":{"type":"string","description":"Detailed error description","example":"The request body is malformed or contains invalid data"}},"title":"Error"},"examples":{"invalid-request-format":{"summary":"Invalid request format","value":{"code":"GRP-1001","message":"Invalid request format","description":"The request body is malformed or contains invalid data"}},"invalid-limit":{"summary":"Invalid limit parameter","value":{"code":"GRP-1011","message":"Invalid limit parameter","description":"The limit parameter must be a positive integer"}},"invalid-offset":{"summary":"Invalid offset parameter","value":{"code":"GRP-1012","message":"Invalid offset parameter","description":"The offset parameter must be a non-negative integer"}}}}}},"500":{"description":"Internal server error","content":{"text/plain":{"schema":{"type":"string"},"example":"Internal server error"}}}}}
+>
+  
+</StatusCodes>
+
+
+      

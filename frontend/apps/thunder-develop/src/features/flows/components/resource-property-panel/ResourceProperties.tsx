@@ -99,6 +99,7 @@ function ResourceProperties(): ReactElement {
     const props: Properties = {} as Properties;
 
     // Extract top-level editable properties (new format)
+    // Note: startIcon and endIcon are handled by ButtonExtendedProperties, not displayed here
     const topLevelEditableProps = ['label', 'hint', 'placeholder', 'required', 'src', 'alt'];
     const resourceWithProps = lastInteractedResource as Resource & Record<string, unknown>;
     topLevelEditableProps.forEach((key) => {
@@ -258,7 +259,7 @@ function ResourceProperties(): ReactElement {
         const updatedResource: Resource = cloneDeep(currentResource);
 
         // Top-level editable properties are set directly on the resource
-        const topLevelEditableProps = ['label', 'hint', 'placeholder', 'required', 'src', 'alt'];
+        const topLevelEditableProps = ['label', 'hint', 'placeholder', 'required', 'src', 'alt', 'startIcon', 'endIcon'];
         if (propertyKey === 'data') {
           // When propertyKey is exactly 'data', replace the entire data object
           updatedResource.data = newValue as StepData;

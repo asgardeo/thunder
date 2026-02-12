@@ -53,10 +53,13 @@ function GoogleExecution({resource}: GoogleExecutionPropsInterface): ReactElemen
 
   useRequiredFields(resource, generalMessage, fields);
 
+  // display.label contains the action/mode (e.g., "Google")
+  const displayLabel = resource.display?.label;
+
   return (
     <Box display="flex" gap={1}>
       <img src={resolveStaticResourcePath('assets/images/icons/google.svg')} alt="google-icon" height="20" />
-      <Typography variant="body1">{t('flows:core.executions.names.google')}</Typography>
+      <Typography variant="body1">{displayLabel ?? t('flows:core.executions.names.google')}</Typography>
     </Box>
   );
 }

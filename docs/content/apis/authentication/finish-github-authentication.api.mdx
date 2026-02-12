@@ -1,0 +1,72 @@
+---
+id: finish-github-authentication
+title: "Finish Github authentication"
+description: "Complete oauth authentication flow with a Github identity provider."
+sidebar_label: "Finish Github authentication"
+hide_title: true
+hide_table_of_contents: true
+api: eJztl91T4zYQwP8VzT6bONDS6fktB/Qa2gEGQtuZTIZR7E2sQ5aMJBNyHv/vnZUckjg5vq6P5SEklvb7p9W6hgxtakTphFaQwIkuSokOmeaVyxl9oHIi5bTOZlIv2ELQAvsiXF5Nmcho3S1ZafSjyND0IALH5xaSMYQ9MInA4EOF1n3W2RKSumO0VdUxlgZX6GvGHYegRBjMIHGmwghSrRwqRwp5WcpWMP5qSWsNNs2x4PTNLUuEBPT0K6ZuS9EYLFortLpz+h4VkNIMyePS6BKNE2i9rq1da5XWGaHmEHUiOv97xPxWNtOGuRy7wbX6IAJ84hQnJIDL83z6JRWX4nx4+214eCGGdqiuj9OT4S/D+/Kfv07OP/V6PWhaJ1/1YlC5XBvxbZXPDJnBFMUjZmxmdOEd2ykg6bf3orzj1lIC9Ga8U60lcrVj6uZelGyOCg13Qs3Zs2ybBqG8MYO21Mqil5/xSjpIZlxa3MiD/91EsM/8dwK99F+4ZPgkrLdPBej64DRDZUSaB4QVLjpV+Vg1mgiccF5meHpFOf9NKGHz64A8NA1tWUXuaTrq93dPweUf8ANIb+Mqsn1Jm2lTcAcJVJXIdpI4ypFVSjxUKyZmAg3Tsy6+mLHKBkyCgdeqQ4ppx8u6tJlz1bJ6VynhPhbBphoKx7Hh6cuG38HZPqr2HPCV8h/FabBF5/Xq7ASgft7H0GeesZa7hI38gfM/2FRnSyYsK7ikHGLGtGEEGxfKMqEeuRSZ77O991DIpbycQTJ+jce39aszY7xXGVJdCrSWz98sttredJZfkz5Fx4XEjKFXs7m4WQtvZF2CqBtxM1nvPZECletKrGFY5QMGt6PfLw4O+/2fYCPefX1bWPZ8ae3Dnu+KFBXVHVd9PaP+l66u907jC0gd70NqqBwa6q03aB7RMB9WwgZ0uvCpxNQ9506naWUMZmyRC+kNp3TNqXnb+z2K//P1Yb6+B9Bxv9/fAui5ZjbUzJveHQ8+WkLY8DtQ0fE+4FSgy3UGCZTa+pJxl0MCMbEX+/kynvvJL575CxMiCP5aX/HKSEggd660SRzXubauSepSG9dABI/cCD6Vofy0FshtZwqQOuXSP24iIJnt5V/7n/rk5iQCgu56PZ2erXPcmfne3MJX49maiO441Y48G0/eM/wJNdOeu73XBBtcDfe0CGFpgfpIZUMv2Lyw/H1lyXVKf5A57BFUUqRINU1qULzw5kqe5siO/PK6SEkcLxaLHverPW3mcStq4z+HJ2cXN2cHR71+L3eF9OATFAVXG4rD2MT2vg10I6rXPeS/emcJx83hk4tLyYWiVPvw6pbcMZBqiEC3/wO9NJYEfidRS+IY6nrKLd4a2TT0+KFCs4RkPFmDS7+aCHLkNHMT8Pe49NH4uA5G5A9tlxX5tdMnqUUEiUGaYule3DvZOI1XlzcjiGDavooVgVXDF/RixBeQAIXo8+wPl39Wg+RqXoX2EnTS379PcP4T
+sidebar_class_name: "post api-method"
+info_path: docs/apis/authentication/authentication-api
+custom_edit_url: null
+---
+
+import MethodEndpoint from "@theme/ApiExplorer/MethodEndpoint";
+import ParamsDetails from "@theme/ParamsDetails";
+import RequestSchema from "@theme/RequestSchema";
+import StatusCodes from "@theme/StatusCodes";
+import OperationTabs from "@theme/OperationTabs";
+import TabItem from "@theme/TabItem";
+import Heading from "@theme/Heading";
+import Translate from "@docusaurus/Translate";
+
+<Heading
+  as={"h1"}
+  className={"openapi__heading"}
+  children={"Finish Github authentication"}
+>
+</Heading>
+
+<MethodEndpoint
+  method={"post"}
+  path={"/auth/oauth/github/finish"}
+  context={"endpoint"}
+>
+  
+</MethodEndpoint>
+
+
+
+Complete oauth authentication flow with a Github identity provider.
+
+<Heading
+  id={"request"}
+  as={"h2"}
+  className={"openapi-tabs__heading"}
+>
+  <Translate id="theme.openapi.request.title">Request</Translate>
+</Heading>
+
+<ParamsDetails
+  parameters={undefined}
+>
+  
+</ParamsDetails>
+
+<RequestSchema
+  title={"Body"}
+  body={{"description":"Github authentication completion data","required":true,"content":{"application/json":{"schema":{"type":"object","required":["session_token","code"],"properties":{"session_token":{"type":"string","description":"JWT token for the authentication session","example":"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."},"code":{"type":"string","description":"Authorization code received from the identity provider"},"skip_assertion":{"type":"boolean","description":"Skip generating assertion token in the response","default":false,"example":false},"assertion":{"type":"string","description":"Optional existing JWT assertion token to enrich with new authentication","example":"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."}},"title":"IDPAuthFinishRequest"}}}}}
+>
+  
+</RequestSchema>
+
+<StatusCodes
+  id={undefined}
+  label={undefined}
+  responses={{"200":{"description":"OK","content":{"application/json":{"schema":{"type":"object","properties":{"id":{"type":"string","format":"uuid","description":"The unique identifier of the authenticated user"},"type":{"type":"string","description":"The type of the authenticated user"},"organization_unit":{"type":"string","format":"uuid","description":"The organization unit ID of the authenticated user"},"assertion":{"type":"string","description":"JWT assertion token for the authenticated user","example":"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."}},"title":"AuthenticationResponse"}}}},"400":{"description":"Bad Request: The request body is malformed or contains invalid data.","content":{"application/json":{"schema":{"allOf":[{"type":"object","properties":{"code":{"type":"string","description":"Error code"},"message":{"type":"string","description":"Error message"},"description":{"type":"string","description":"Detailed error description"}},"title":"ErrorResponse"},{"type":"object"}],"title":"ClientErrorResponse"},"example":{"code":"AUTHN-1003","message":"Authorization code is required","description":"The authorization code must be provided to complete authentication"}}}},"500":{"description":"Internal Server Error: An unexpected error occurred while processing the request.","content":{"application/json":{"schema":{"allOf":[{"type":"object","properties":{"code":{"type":"string","description":"Error code"},"message":{"type":"string","description":"Error message"},"description":{"type":"string","description":"Detailed error description"}},"title":"ErrorResponse"},{"type":"object"}],"example":{"code":"AUTHN-5000","message":"Internal server error","description":"An unexpected error occurred while processing the request"},"title":"ServerErrorResponse"}}}}}}
+>
+  
+</StatusCodes>
+
+
+      

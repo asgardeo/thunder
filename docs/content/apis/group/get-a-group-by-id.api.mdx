@@ -1,0 +1,72 @@
+---
+id: get-a-group-by-id
+title: "Get a group by id"
+description: "Get a group by id"
+sidebar_label: "Get a group by id"
+hide_title: true
+hide_table_of_contents: true
+api: eJztVk1v2zgQ/SvEnHYB+SO286Vbtg0CA9vdomlOgQ9jcWSxlUiVpJJ6Df33YkjZkWIXGyz2tNiT5eHjzJuZNyR34HHjIH2EjTVN7WCVQI0WK/Jk2b4DpSGFGn0BCWisCFJQEhKw9K1RliSk3jaUgMsKqhDSHfhtzSjnrdIbSCA3tkIPKTSNktC2K97saqMdOcbPplP+keQyq2qvDEe8Yz5CkkdVOkggM9qT9gzEui5VhgycfHGM3h1HN+svlPkBz8dIPCSRgLEb1Oqv4OZBK7+UIXlrarJeRWZKviGffVleA9tkmNKxI92UJa5LiiVsT3J6S/yKqnVo1wGL1uIWElCeKvemqgTAPy1ABBwDSTcVR2gcWUiixmDV8g7lOW/4EKhD27eF1rNb+o5VXdKeCMxzvDrPLxaj88uzy9Hi/GI2Ws/zbDTLri/m+cUF5njxotL72ljP0hkKK5pF5HK65IBX8+t8sZaj+bXMRgtCHK3Ps2w0O5vKK8qQ6OqSObcJLE6J9zeUgitMzv9b0s2MZNVW5BxuTnQqrJ9owZDYrbXGis7Xobxw9+nj6Gw6PYtiihHe6GsP77tb6ics1aEEotPL3w/EMMD7MPwkBYVI/cV+tM8FHSKtjdwK5USFJQclKUK62qPSTqiOl0SP0FdcSOWV4mJB96WZ9Wr/0wRfJxDPsOV7ZnTo5V42i5+dedqww0bL/6Xzn5DOfCCd4x4PmTOlcDaJZ+UL4QsSrqZM5YqkYAKGXNhO35XznZrOTx1CS+3JaiyFI/tENpZiqClP3/2kLlGdVtPLRdZv0CmvkcYrNZMX2OWy3opwy1TkC8Mn7IZYpeFZkcIkPj4mOyVbSCB6jq+PxpaQQuF97dLJZFcY59t0x0c4I5/QKr5Ag4x5LVYhx6bk66k0GZbB3CbAe4bLV9PrKTNfccisscpvQ8w/bxpfzHhy3NZ5qmDVh9xzlWLEPfBl/DAYEshL8xwgbDC2u1/edYM2MD4MMjxQTpndJDqc7DfwrHjzld60KQC5nJmpI98unRRusoycE96IaBIVatxQRdqLm49LF/rZJqB0bkJ6/ZtZfBiAuQ1kXez52Xh6QtHKMZCHq3EkOWyMF8XhxpBAqTLSLlSnu75vaswKErPgcSiD5+fnMYblsbGbSbfXTX5fvrv94/52NBtPx4WvyjCotXG+Qt3zfEqYp0+X3ny0HYldJ9rDizmBVIWnY9TfI+x2a3T0YMu2ZfO3hizravUi16AyqRx/S0hzLB0dUTiMKfzyqTvMfxX7h9pravtnn96GqSgb/gcJfKVtfK+3qzaBglCSDdHjAuug9r0tR5cMK/8wtHe3n6FtfwC26iey
+sidebar_class_name: "get api-method"
+info_path: docs/apis/group/group-management-api
+custom_edit_url: null
+---
+
+import MethodEndpoint from "@theme/ApiExplorer/MethodEndpoint";
+import ParamsDetails from "@theme/ParamsDetails";
+import RequestSchema from "@theme/RequestSchema";
+import StatusCodes from "@theme/StatusCodes";
+import OperationTabs from "@theme/OperationTabs";
+import TabItem from "@theme/TabItem";
+import Heading from "@theme/Heading";
+import Translate from "@docusaurus/Translate";
+
+<Heading
+  as={"h1"}
+  className={"openapi__heading"}
+  children={"Get a group by id"}
+>
+</Heading>
+
+<MethodEndpoint
+  method={"get"}
+  path={"/groups/{id}"}
+  context={"endpoint"}
+>
+  
+</MethodEndpoint>
+
+
+
+Get a group by id
+
+<Heading
+  id={"request"}
+  as={"h2"}
+  className={"openapi-tabs__heading"}
+>
+  <Translate id="theme.openapi.request.title">Request</Translate>
+</Heading>
+
+<ParamsDetails
+  parameters={[{"in":"path","name":"id","required":true,"schema":{"type":"string","format":"uuid"}}]}
+>
+  
+</ParamsDetails>
+
+<RequestSchema
+  title={"Body"}
+  body={undefined}
+>
+  
+</RequestSchema>
+
+<StatusCodes
+  id={undefined}
+  label={undefined}
+  responses={{"200":{"description":"Group details","content":{"application/json":{"schema":{"type":"object","required":["id","name","organizationUnitId"],"properties":{"id":{"type":"string","format":"uuid"},"name":{"type":"string"},"description":{"type":"string","nullable":true},"organizationUnitId":{"type":"string","format":"uuid"},"members":{"type":"array","items":{"type":"object","required":["id","type"],"properties":{"id":{"type":"string","format":"uuid"},"type":{"type":"string","enum":["user","group"]}},"title":"Member"}}},"title":"Group"},"example":{"id":"3fa85f64-5717-4562-b3fc-2c963f66afa6","name":"Sports","description":"Sports group","organizationUnitId":"a839f4bd-39dc-4eaa-b5cc-210d8ecaee87"}}}},"400":{"description":"Bad request","content":{"application/json":{"schema":{"type":"object","required":["code","message"],"properties":{"code":{"type":"string","description":"Error code","example":"GRP-1001"},"message":{"type":"string","description":"Error message","example":"Invalid request format"},"description":{"type":"string","description":"Detailed error description","example":"The request body is malformed or contains invalid data"}},"title":"Error"},"example":{"code":"GRP-1002","message":"Invalid request format","description":"Group ID is required"}}}},"404":{"description":"Group not found","content":{"application/json":{"schema":{"type":"object","required":["code","message"],"properties":{"code":{"type":"string","description":"Error code","example":"GRP-1001"},"message":{"type":"string","description":"Error message","example":"Invalid request format"},"description":{"type":"string","description":"Detailed error description","example":"The request body is malformed or contains invalid data"}},"title":"Error"},"example":{"code":"GRP-1003","message":"Group not found","description":"The group with the specified id does not exist"}}}},"500":{"description":"Internal server error","content":{"text/plain":{"schema":{"type":"string"},"example":"Internal server error"}}}}}
+>
+  
+</StatusCodes>
+
+
+      

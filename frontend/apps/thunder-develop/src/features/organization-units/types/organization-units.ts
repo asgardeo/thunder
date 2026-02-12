@@ -57,3 +57,57 @@ export interface ApiError {
   message: string;
   description: string;
 }
+
+/**
+ * Request body for creating an organization unit
+ */
+export interface CreateOrganizationUnitRequest {
+  handle: string;
+  name: string;
+  description?: string | null;
+  parent?: string | null;
+}
+
+/**
+ * Request body for updating an organization unit
+ */
+export interface UpdateOrganizationUnitRequest {
+  handle: string;
+  name: string;
+  description?: string | null;
+  parent?: string | null;
+}
+
+/**
+ * Group type definition for OU groups
+ */
+export interface Group {
+  id: string;
+  name: string;
+  organizationUnit: string;
+}
+
+/**
+ * List response for groups
+ */
+export interface GroupListResponse {
+  totalResults: number;
+  startIndex: number;
+  count: number;
+  groups: Group[];
+  links?: {
+    rel: string;
+    href: string;
+  }[];
+}
+
+/**
+ * Navigation state passed when navigating between organization units.
+ * Used to track the source OU for proper back navigation.
+ */
+export interface OUNavigationState {
+  fromOU: {
+    id: string;
+    name: string;
+  };
+}

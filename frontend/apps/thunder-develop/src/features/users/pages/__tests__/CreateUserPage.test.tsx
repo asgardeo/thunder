@@ -17,9 +17,7 @@
  */
 
 import {describe, it, expect, vi, beforeEach} from 'vitest';
-import {screen, waitFor} from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
-import render from '@/test/test-utils';
+import {render, screen, waitFor, userEvent} from '@thunder/test-utils';
 import CreateUserPage from '../CreateUserPage';
 import type {ApiError, UserSchemaListResponse, ApiUserSchema} from '../../types/users';
 import type {CreateUserResponse} from '../../api/useCreateUser';
@@ -602,5 +600,45 @@ describe('CreateUserPage', () => {
     expect(screen.getByRole('button', {name: /create user/i})).not.toBeDisabled();
 
     consoleSpy.mockRestore();
+  });
+
+  it('uses selectedSchema name when field value is undefined', async () => {
+    const user = userEvent.setup();
+    render(<CreateUserPage />);
+
+    // The select should initially show the first schema name
+    const select = screen.getByRole('combobox');
+    expect(select).toHaveTextContent('Employee');
+
+    // Change to another schema
+    await user.click(select);
+    const contractorOption = await screen.findByText('Contractor');
+    await user.click(contractorOption);
+
+    await waitFor(() => {
+      expect(select).toHaveTextContent('Contractor');
+    });
+  });
+
+  it('shows validation error when submitting without required fields', async () => {
+    const user = userEvent.setup();
+
+    mockUseGetUserSchemas.mockReturnValue({
+      data: mockSchemasData,
+      loading: false,
+      error: null,
+      refetch: mockRefetchSchemas,
+    });
+
+    render(<CreateUserPage />);
+
+    // Submit without filling required fields
+    const submitButton = screen.getByRole('button', {name: /create user/i});
+    await user.click(submitButton);
+
+    // Check that validation runs - username is required
+    await waitFor(() => {
+      expect(screen.getByText('username is required')).toBeInTheDocument();
+    });
   });
 });

@@ -126,24 +126,10 @@ func (h *authorizationCodeGrantHandler) HandleGrant(tokenRequest *model.TokenReq
 	// Parse authorized scopes
 	authorizedScopes := tokenservice.ParseScopes(authCode.Scopes)
 
-	// Check if groups attribute is needed
-	includeGroups := (oauthApp != nil &&
-		oauthApp.Token != nil &&
-		((oauthApp.Token.AccessToken != nil &&
-			slices.Contains(oauthApp.Token.AccessToken.UserAttributes, constants.UserAttributeGroups)) ||
-			(oauthApp.Token.IDToken != nil &&
-				slices.Contains(oauthApp.Token.IDToken.UserAttributes, constants.UserAttributeGroups))))
-
-	// Fetch user attributes and groups
-	attrs, userGroups, err := tokenservice.FetchUserAttributesAndGroups(h.userService,
-		authCode.AuthorizedUserID, includeGroups)
-	if err != nil {
-		logger.Error("Failed to fetch user attributes and groups",
-			log.String("userID", authCode.AuthorizedUserID), log.Error(err))
-		return nil, &model.ErrorResponse{
-			Error:            constants.ErrorServerError,
-			ErrorDescription: "Something went wrong while fetching user attributes and groups",
-		}
+	// Use user attributes from the authorization code
+	attrs := authCode.UserAttributes
+	if attrs == nil {
+		attrs = make(map[string]interface{})
 	}
 
 	audience := tokenservice.DetermineAudience("", authCode.Resource, "", authCode.ClientID)
@@ -155,13 +141,8 @@ func (h *authorizationCodeGrantHandler) HandleGrant(tokenRequest *model.TokenReq
 		ClientID:       tokenRequest.ClientID,
 		Scopes:         authorizedScopes,
 		UserAttributes: attrs,
-		UserGroups:     userGroups,
 		GrantType:      string(constants.GrantTypeAuthorizationCode),
 		OAuthApp:       oauthApp,
-		UserType:       authCode.AuthorizedUserType,
-		OuID:           authCode.UserOUID,
-		OuName:         authCode.UserOUName,
-		OuHandle:       authCode.UserOUHandle,
 	})
 	if err != nil {
 		return nil, &model.ErrorResponse{
@@ -182,13 +163,8 @@ func (h *authorizationCodeGrantHandler) HandleGrant(tokenRequest *model.TokenReq
 			Audience:       tokenRequest.ClientID,
 			Scopes:         authorizedScopes,
 			UserAttributes: attrs,
-			UserGroups:     userGroups,
 			AuthTime:       authCode.TimeCreated.Unix(),
 			OAuthApp:       oauthApp,
-			UserType:       authCode.AuthorizedUserType,
-			OuID:           authCode.UserOUID,
-			OuName:         authCode.UserOUName,
-			OuHandle:       authCode.UserOUHandle,
 		})
 		if err != nil {
 			logger.Error("Failed to generate ID token", log.Error(err))

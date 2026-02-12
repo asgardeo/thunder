@@ -155,38 +155,30 @@ func (b *basicAuthExecutor) getAuthenticatedUser(ctx *core.NodeContext,
 		}
 	}
 
-	// Identify the user based on the provided attributes.
-	userID, err := b.IdentifyUser(userSearchAttributes, execResp)
-	if err != nil {
-		return nil, err
-	}
-
-	// Handle registration flows.
+	// For registration flows, only check if user exists.
 	if ctx.FlowType == common.FlowTypeRegistration {
+		_, err := b.IdentifyUser(userSearchAttributes, execResp)
+		if err != nil {
+			return nil, err
+		}
 		if execResp.Status == common.ExecFailure {
 			if execResp.FailureReason == failureReasonUserNotFound {
 				logger.Debug("User not found for the provided attributes. Proceeding with registration flow.")
 				execResp.Status = common.ExecComplete
-
 				return &authncm.AuthenticatedUser{
 					IsAuthenticated: false,
 					Attributes:      userSearchAttributes,
 				}, nil
 			}
-			return nil, err
+			return nil, nil
 		}
-
-		// At this point, a unique user is found in the system. Hence fail the execution.
+		// User found - fail registration.
 		execResp.Status = common.ExecFailure
 		execResp.FailureReason = "User already exists with the provided attributes."
 		return nil, nil
 	}
 
-	if execResp.Status == common.ExecFailure {
-		return nil, nil
-	}
-
-	// Authenticate the user based on all the provided attributes including credentials.
+	// For authentication flows, call Authenticate directly.
 	user, svcErr := b.credsAuthSvc.Authenticate(userAuthenticateAttributes)
 	if svcErr != nil {
 		if svcErr.Type == serviceerror.ClientErrorType {
@@ -194,7 +186,7 @@ func (b *basicAuthExecutor) getAuthenticatedUser(ctx *core.NodeContext,
 			execResp.FailureReason = "Failed to authenticate user: " + svcErr.ErrorDescription
 			return nil, nil
 		}
-		logger.Error("Failed to authenticate user", log.String("userID", *userID),
+		logger.Error("Failed to authenticate user",
 			log.String("errorCode", svcErr.Code), log.String("errorDescription", svcErr.ErrorDescription))
 		return nil, errors.New("failed to authenticate user")
 	}
@@ -205,13 +197,11 @@ func (b *basicAuthExecutor) getAuthenticatedUser(ctx *core.NodeContext,
 		return nil, err
 	}
 
-	authenticatedUser := authncm.AuthenticatedUser{
+	return &authncm.AuthenticatedUser{
 		IsAuthenticated:    true,
 		UserID:             user.ID,
 		OrganizationUnitID: user.OrganizationUnit,
 		UserType:           user.Type,
 		Attributes:         attrs,
-	}
-
-	return &authenticatedUser, nil
+	}, nil
 }

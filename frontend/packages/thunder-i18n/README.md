@@ -414,7 +414,7 @@ Complete integration example for `apps/thunder-develop/src/main.tsx`:
 ```tsx
 import * as ReactDOM from 'react-dom/client';
 import { StrictMode } from 'react';
-import { ConfigProvider } from '@thunder/commons-contexts';
+import { ConfigProvider } from '@thunder/shared-contexts';
 import i18n from 'i18next';
 import { initReactI18next } from 'react-i18next';
 import enUS from '@thunder/i18n/locales/en-US';

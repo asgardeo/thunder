@@ -81,7 +81,9 @@ func Initialize(
 	reg.RegisterExecutor(ExecutorNameInviteExecutor, newInviteExecutor(flowFactory))
 	reg.RegisterExecutor(ExecutorNameCredentialSetter, newCredentialSetter(flowFactory, userService))
 	reg.RegisterExecutor(ExecutorNamePermissionValidator, newPermissionValidator(flowFactory))
-	reg.RegisterExecutor(ExecutorNameIdentityResolver, newIdentityResolverExecutor(flowFactory, userService))
+	reg.RegisterExecutor(ExecutorNameIdentifying, newIdentifyingExecutor(
+		"", []common.Input{{Identifier: userAttributeUsername, Type: "string", Required: true}}, []common.Input{},
+		flowFactory, userService))
 
 	return reg
 }

@@ -1,0 +1,64 @@
+---
+id: get-self-user-profile
+title: "Get self user profile"
+description: "Get self user profile"
+sidebar_label: "Get self user profile"
+hide_title: true
+hide_table_of_contents: true
+api: eJzlVttu2zgQ/RVinmVbdp2bnjYogiLAXopNjX0IgoIiRxZbimRJKo5r6N+LoeRUdpxFsNi35iXGcG4853BGO4h8HaC4h4C6gocMAorWq7iF4n4Hf123sV5Acf/QPWTgMThrAgYodrDIc/onMQivXFTWQAGrgJ5JjFzpABkIayKaSH7cOa0EJ7/Zl0DOOwiixobTr7h1CAXY8guKCFTpW6s8SmpMSWrLeevQR9UXV3IUFaJXZg0ZVNY3PEIBbaskdBlYv+ZGfU9VV0bFNwX1DseOXQY8Rq/KNvYtHLfMpVRUh+uPo1ajb7GjpCpqHACiXPjEG6dxfxfAeXle8nMxkVguJku5WE4uL8p8UpbVxVXFl8vLCwGnLgSLc0SxXMwn1bwsJ0uJ5YSfyXeTK16en50txYLjOexvBdg4bbeIcHydNqA3vCEfrpXA6aYlcJQPcTBfkxky0PzZ9A/5YMOVHoX9JmzjuNlOlRHQ0V8Gy3x+QiyGt7G2Xn1HySasUSEos2bWM2UeuVaSRfsVzf+lI2Eltd9gCHyNLzWVzk/xvo84dXZwoxfnI+JvvLfHzPcVYXX392Sezy9HzRVADw9NHK7KKq40SjgqCLcDUMKjJG+uA3PePiqJEvbQL19CP8qOkhH3zNjIKtsa+Yvgnb87wHt1jMEhYJ9q7GHaqFizWCMLDoWqFEqmJJMWQ4rGJxXigPzZqQl5ayI9NM0C+kf0DFOfvwLkZ3meH0D+GhRHUjWsNfjkUJBUkw+zQrTeo2SbWmkkxQvshwcxQ4jgwMJx//ABI6NV17PpvK2U7jGLtaVJvEZC1fFYQwEz8gqzhjz6LkPai62niVfH6EIxm+1qG2JX7Jz1sYMMHrlXvNQ95nTWy6DiraaJra3gOpm7DCjm8Pgyv8qp99EuviP2+3T7jfxTCDwZMqi03SSX/VRNCno/UH5gXB20/9xPQaVnfcLZ82ym5UFz+C1B+4EdhHV9v2EbIjbEoyCOWLSsN7GGG77GBk1k1x9vw54uZSqbrjfamOyPA1+CGH3oCZ1P8xOvVQVyZCoQz7RIhnKJ9jClNaYEmpCw2S84x0WNbJESHjK82WymPB1PrV/Phtgw+/32/c2fdzeTxTSf1rHR6T04G2LDzSjza6I7/bQiPsWZ01wZEkhqZDcI8j7t6ZD0Ss+7F9c97HYlD7jyuuvI/K1FTx9wDz+1mL7hMqiRS/RJw19xO9DiYhKtbtP2P54+JMTn1/Hh5hN9OrTUzEsJDj8o+3DEzXaUexBDNtROKoEue8X7bVLrU/Gkrk97nf7HnGPND3nbWP9rwoN39XkYwH3s2nMTP6eo7qHruh/zaObS
+sidebar_class_name: "get api-method"
+info_path: docs/apis/user/user-management-api
+custom_edit_url: null
+---
+
+import MethodEndpoint from "@theme/ApiExplorer/MethodEndpoint";
+import ParamsDetails from "@theme/ParamsDetails";
+import RequestSchema from "@theme/RequestSchema";
+import StatusCodes from "@theme/StatusCodes";
+import OperationTabs from "@theme/OperationTabs";
+import TabItem from "@theme/TabItem";
+import Heading from "@theme/Heading";
+import Translate from "@docusaurus/Translate";
+
+<Heading
+  as={"h1"}
+  className={"openapi__heading"}
+  children={"Get self user profile"}
+>
+</Heading>
+
+<MethodEndpoint
+  method={"get"}
+  path={"/users/me"}
+  context={"endpoint"}
+>
+  
+</MethodEndpoint>
+
+
+
+Get self user profile
+
+<ParamsDetails
+  parameters={undefined}
+>
+  
+</ParamsDetails>
+
+<RequestSchema
+  title={"Body"}
+  body={undefined}
+>
+  
+</RequestSchema>
+
+<StatusCodes
+  id={undefined}
+  label={undefined}
+  responses={{"200":{"description":"User details","content":{"application/json":{"schema":{"type":"object","required":["id"],"properties":{"id":{"type":"string","format":"uuid"},"organizationUnit":{"type":"string","format":"uuid"},"type":{"type":"string"},"attributes":{"type":"object","additionalProperties":true}},"title":"User"},"example":{"id":"e1b6ba6c-deb2-4d24-87b0-bbf79fa4487c","organizationUnit":"26eec421-f1bb-4deb-a5d3-9ab6554c2ae6","type":"employee","attributes":{"username":"alice.wu","firstname":"Alice","lastname":"Wu","email":"alice.wu@company.inc"}}}}},"401":{"description":"Unauthorized - missing or invalid token","content":{"application/json":{"schema":{"type":"object","required":["code","message"],"properties":{"code":{"type":"string"},"message":{"type":"string"},"description":{"type":"string"}},"title":"Error"},"example":{"code":"USR-1018","message":"Authentication failed","description":"Invalid credentials provided"}}}},"404":{"description":"Authenticated user not found","content":{"application/json":{"schema":{"type":"object","required":["code","message"],"properties":{"code":{"type":"string"},"message":{"type":"string"},"description":{"type":"string"}},"title":"Error"},"example":{"code":"USR-1003","message":"User not found","description":"The user with the specified id does not exist"}}}},"500":{"description":"Internal server error","content":{"application/json":{"schema":{"type":"object","required":["code","message"],"properties":{"code":{"type":"string"},"message":{"type":"string"},"description":{"type":"string"}},"title":"Error"},"example":{"code":"USR-5000","message":"Internal server error","description":"An unexpected error occurred while processing the request"}}}}}}
+>
+  
+</StatusCodes>
+
+
+      

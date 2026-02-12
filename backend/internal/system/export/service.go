@@ -22,8 +22,8 @@ import (
 	"strings"
 	"time"
 
+	declarativeresource "github.com/asgardeo/thunder/internal/system/declarative_resource"
 	"github.com/asgardeo/thunder/internal/system/error/serviceerror"
-	immutableresource "github.com/asgardeo/thunder/internal/system/immutable_resource"
 	"github.com/asgardeo/thunder/internal/system/log"
 )
 
@@ -43,7 +43,7 @@ const (
 // parameterizerInterface defines the interface for template parameterization.
 type parameterizerInterface interface {
 	ToParameterizedYAML(obj interface{},
-		resourceType string, resourceName string, rules *immutableresource.ResourceRules) (string, error)
+		resourceType string, resourceName string, rules *declarativeresource.ResourceRules) (string, error)
 }
 
 // ExportServiceInterface defines the interface for the export service.
@@ -59,7 +59,7 @@ type exportService struct {
 
 // newExportService creates a new instance of exportService.
 func newExportService(
-	exporters []immutableresource.ResourceExporter, param parameterizerInterface,
+	exporters []declarativeresource.ResourceExporter, param parameterizerInterface,
 ) ExportServiceInterface {
 	// Create registry and register all exporters
 	registry := newResourceExporterRegistry()
@@ -94,7 +94,7 @@ func (es *exportService) ExportResources(request *ExportRequest) (*ExportRespons
 	}
 
 	var exportFiles []ExportFile
-	var exportErrors []immutableresource.ExportError
+	var exportErrors []declarativeresource.ExportError
 	resourceCounts := make(map[string]int)
 
 	// Map resource types to their IDs from the request
@@ -157,14 +157,14 @@ func (es *exportService) ExportResources(request *ExportRequest) (*ExportRespons
 
 // exportResourcesWithExporter exports resources using a registered exporter.
 func (es *exportService) exportResourcesWithExporter(
-	exporter immutableresource.ResourceExporter,
+	exporter declarativeresource.ResourceExporter,
 	resourceIDs []string,
 	options *ExportOptions,
-) ([]ExportFile, []immutableresource.ExportError) {
+) ([]ExportFile, []declarativeresource.ExportError) {
 	logger := log.GetLogger().With(log.String("component", "ExportService"))
 	resourceType := exporter.GetResourceType()
 	exportFiles := make([]ExportFile, 0, len(resourceIDs))
-	exportErrors := make([]immutableresource.ExportError, 0, len(resourceIDs))
+	exportErrors := make([]declarativeresource.ExportError, 0, len(resourceIDs))
 	var resourceIDList []string
 	if len(resourceIDs) == 1 && resourceIDs[0] == "*" {
 		// Export all resources
@@ -172,7 +172,7 @@ func (es *exportService) exportResourcesWithExporter(
 		if err != nil {
 			logger.Warn("Failed to get all resources",
 				log.String("resourceType", resourceType), log.Any("error", err))
-			return []ExportFile{}, []immutableresource.ExportError{}
+			return []ExportFile{}, []declarativeresource.ExportError{}
 		}
 		resourceIDList = ids
 	} else {
@@ -187,7 +187,7 @@ func (es *exportService) exportResourcesWithExporter(
 				log.String("resourceType", resourceType),
 				log.String("resourceID", resourceID),
 				log.String("error", svcErr.Error))
-			exportErrors = append(exportErrors, immutableresource.ExportError{
+			exportErrors = append(exportErrors, declarativeresource.ExportError{
 				ResourceType: resourceType,
 				ResourceID:   resourceID,
 				Error:        svcErr.Error,
@@ -220,7 +220,7 @@ func (es *exportService) exportResourcesWithExporter(
 				log.String("resourceType", resourceType),
 				log.String("resourceID", resourceID),
 				log.String("error", err.Error()))
-			exportErrors = append(exportErrors, immutableresource.ExportError{
+			exportErrors = append(exportErrors, declarativeresource.ExportError{
 				ResourceType: resourceType,
 				ResourceID:   resourceID,
 				Error:        err.Error(),
@@ -249,7 +249,7 @@ func (es *exportService) exportResourcesWithExporter(
 }
 
 func (es *exportService) generateTemplateFromStruct(data interface{},
-	paramResourceType string, resourceName string, exporter immutableresource.ResourceExporter) (string, error) {
+	paramResourceType string, resourceName string, exporter declarativeresource.ResourceExporter) (string, error) {
 	template, err := es.parameterizer.ToParameterizedYAML(
 		data, paramResourceType, resourceName, exporter.GetResourceRules())
 	if err != nil {

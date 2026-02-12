@@ -60,7 +60,7 @@ func (suite *InitTestSuite) TearDownTest() {
 // TestInitialize tests the Initialize function
 func (suite *InitTestSuite) TestInitialize() {
 	testConfig := &config.Config{
-		ImmutableResources: config.ImmutableResources{
+		DeclarativeResources: config.DeclarativeResources{
 			Enabled: false,
 		},
 	}
@@ -77,7 +77,7 @@ func (suite *InitTestSuite) TestInitialize() {
 // TestRegisterRoutes_ListEndpoint tests that the list endpoint is registered
 func (suite *InitTestSuite) TestRegisterRoutes_ListEndpoint() {
 	testConfig := &config.Config{
-		ImmutableResources: config.ImmutableResources{
+		DeclarativeResources: config.DeclarativeResources{
 			Enabled: false,
 		},
 	}
@@ -98,7 +98,7 @@ func (suite *InitTestSuite) TestRegisterRoutes_ListEndpoint() {
 // TestRegisterRoutes_CreateEndpoint tests that the create endpoint is registered
 func (suite *InitTestSuite) TestRegisterRoutes_CreateEndpoint() {
 	testConfig := &config.Config{
-		ImmutableResources: config.ImmutableResources{
+		DeclarativeResources: config.DeclarativeResources{
 			Enabled: false,
 		},
 	}
@@ -119,7 +119,7 @@ func (suite *InitTestSuite) TestRegisterRoutes_CreateEndpoint() {
 // TestRegisterRoutes_GetByIDEndpoint tests that the get by ID endpoint is registered
 func (suite *InitTestSuite) TestRegisterRoutes_GetByIDEndpoint() {
 	testConfig := &config.Config{
-		ImmutableResources: config.ImmutableResources{
+		DeclarativeResources: config.DeclarativeResources{
 			Enabled: false,
 		},
 	}
@@ -140,7 +140,7 @@ func (suite *InitTestSuite) TestRegisterRoutes_GetByIDEndpoint() {
 // TestRegisterRoutes_UpdateEndpoint tests that the update endpoint is registered
 func (suite *InitTestSuite) TestRegisterRoutes_UpdateEndpoint() {
 	testConfig := &config.Config{
-		ImmutableResources: config.ImmutableResources{
+		DeclarativeResources: config.DeclarativeResources{
 			Enabled: false,
 		},
 	}
@@ -161,7 +161,7 @@ func (suite *InitTestSuite) TestRegisterRoutes_UpdateEndpoint() {
 // TestRegisterRoutes_DeleteEndpoint tests that the delete endpoint is registered
 func (suite *InitTestSuite) TestRegisterRoutes_DeleteEndpoint() {
 	testConfig := &config.Config{
-		ImmutableResources: config.ImmutableResources{
+		DeclarativeResources: config.DeclarativeResources{
 			Enabled: false,
 		},
 	}
@@ -182,7 +182,7 @@ func (suite *InitTestSuite) TestRegisterRoutes_DeleteEndpoint() {
 // TestRegisterRoutes_CORSPreflight tests that CORS preflight requests are handled
 func (suite *InitTestSuite) TestRegisterRoutes_CORSPreflight() {
 	testConfig := &config.Config{
-		ImmutableResources: config.ImmutableResources{
+		DeclarativeResources: config.DeclarativeResources{
 			Enabled: false,
 		},
 	}
@@ -203,7 +203,7 @@ func (suite *InitTestSuite) TestRegisterRoutes_CORSPreflight() {
 // TestRegisterRoutes_CORSPreflightByID tests that CORS preflight requests for ID endpoint are handled
 func (suite *InitTestSuite) TestRegisterRoutes_CORSPreflightByID() {
 	testConfig := &config.Config{
-		ImmutableResources: config.ImmutableResources{
+		DeclarativeResources: config.DeclarativeResources{
 			Enabled: false,
 		},
 	}
@@ -398,7 +398,7 @@ func TestRegisterRoutes_Standalone(t *testing.T) {
 // TestInitialize_Standalone tests Initialize function without suite dependencies
 func TestInitialize_Standalone(t *testing.T) {
 	testConfig := &config.Config{
-		ImmutableResources: config.ImmutableResources{
+		DeclarativeResources: config.DeclarativeResources{
 			Enabled: false,
 		},
 	}
@@ -717,10 +717,10 @@ this is not valid yaml:
 	}
 }
 
-// TestInitialize_WithImmutableResourcesEnabled_InvalidYAML tests Initialize with invalid YAML files
+// TestInitialize_WithDeclarativeResourcesEnabled_InvalidYAML tests Initialize with invalid YAML files
 //
 //nolint:dupl // Similar test setup required for different error scenarios
-func TestInitialize_WithImmutableResourcesEnabled_InvalidYAML(t *testing.T) {
+func TestInitialize_WithDeclarativeResourcesEnabled_InvalidYAML(t *testing.T) {
 	tmpDir := t.TempDir()
 	confDir := tmpDir + "/repository/resources"
 	schemaDir := confDir + "/user_schemas"
@@ -736,7 +736,7 @@ func TestInitialize_WithImmutableResourcesEnabled_InvalidYAML(t *testing.T) {
 	assert.NoError(t, err)
 
 	testConfig := &config.Config{
-		ImmutableResources: config.ImmutableResources{
+		DeclarativeResources: config.DeclarativeResources{
 			Enabled: true,
 		},
 		Crypto: config.CryptoConfig{
@@ -760,10 +760,10 @@ func TestInitialize_WithImmutableResourcesEnabled_InvalidYAML(t *testing.T) {
 	assert.Contains(t, err.Error(), "failed to load user schema resources")
 }
 
-// TestInitialize_WithImmutableResourcesEnabled_ValidationFailure tests Initialize with validation errors
+// TestInitialize_WithDeclarativeResourcesEnabled_ValidationFailure tests Initialize with validation errors
 //
 //nolint:dupl // Similar test setup required for different error scenarios
-func TestInitialize_WithImmutableResourcesEnabled_ValidationFailure(t *testing.T) {
+func TestInitialize_WithDeclarativeResourcesEnabled_ValidationFailure(t *testing.T) {
 	tmpDir := t.TempDir()
 	confDir := tmpDir + "/repository/resources"
 	schemaDir := confDir + "/user_schemas"
@@ -789,7 +789,7 @@ schema: |
 	assert.NoError(t, err)
 
 	testConfig := &config.Config{
-		ImmutableResources: config.ImmutableResources{
+		DeclarativeResources: config.DeclarativeResources{
 			Enabled: true,
 		},
 		Crypto: config.CryptoConfig{
@@ -813,8 +813,8 @@ schema: |
 	assert.Contains(t, err.Error(), "failed to load user schema resources")
 }
 
-// TestInitialize_WithImmutableResourcesEnabled_OUServiceError tests Initialize when OU service fails
-func TestInitialize_WithImmutableResourcesEnabled_OUServiceError(t *testing.T) {
+// TestInitialize_WithDeclarativeResourcesEnabled_OUServiceError tests Initialize when OU service fails
+func TestInitialize_WithDeclarativeResourcesEnabled_OUServiceError(t *testing.T) {
 	tmpDir := t.TempDir()
 	confDir := tmpDir + "/repository/resources"
 	schemaDir := confDir + "/user_schemas"
@@ -841,7 +841,7 @@ schema: |
 	assert.NoError(t, err)
 
 	testConfig := &config.Config{
-		ImmutableResources: config.ImmutableResources{
+		DeclarativeResources: config.DeclarativeResources{
 			Enabled: true,
 		},
 		Crypto: config.CryptoConfig{
@@ -876,10 +876,10 @@ schema: |
 	mockOUService.AssertExpectations(t)
 }
 
-// TestInitialize_WithImmutableResourcesEnabled_InvalidJSONSchema tests Initialize with invalid JSON in schema
+// TestInitialize_WithDeclarativeResourcesEnabled_InvalidJSONSchema tests Initialize with invalid JSON in schema
 //
 //nolint:dupl // Similar test setup required for different error scenarios
-func TestInitialize_WithImmutableResourcesEnabled_InvalidJSONSchema(t *testing.T) {
+func TestInitialize_WithDeclarativeResourcesEnabled_InvalidJSONSchema(t *testing.T) {
 	tmpDir := t.TempDir()
 	confDir := tmpDir + "/repository/resources"
 	schemaDir := confDir + "/user_schemas"
@@ -903,7 +903,7 @@ schema: |
 	assert.NoError(t, err)
 
 	testConfig := &config.Config{
-		ImmutableResources: config.ImmutableResources{
+		DeclarativeResources: config.DeclarativeResources{
 			Enabled: true,
 		},
 		Crypto: config.CryptoConfig{

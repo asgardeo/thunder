@@ -17,8 +17,7 @@
  */
 
 import {describe, it, expect, beforeEach, afterEach, vi} from 'vitest';
-import {waitFor} from '@testing-library/react';
-import {renderHook} from '../../../../test/test-utils';
+import {waitFor, renderHook} from '@thunder/test-utils';
 import useGetUserType from '../useGetUserType';
 import type {ApiUserSchema} from '../../types/user-types';
 
@@ -33,12 +32,13 @@ vi.mock('@asgardeo/react', () => ({
 }));
 
 // Mock useConfig
-vi.mock('@thunder/commons-contexts', async (importOriginal) => {
-  const actual = await importOriginal<typeof import('@thunder/commons-contexts')>();
+const mockGetServerUrl = vi.fn<() => string | undefined>(() => 'https://localhost:8090');
+vi.mock('@thunder/shared-contexts', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@thunder/shared-contexts')>();
   return {
     ...actual,
     useConfig: () => ({
-      getServerUrl: () => 'https://localhost:8090',
+      getServerUrl: mockGetServerUrl,
     }),
   };
 });
@@ -63,6 +63,7 @@ describe('useGetUserType', () => {
 
   beforeEach(() => {
     mockHttpRequest.mockReset();
+    mockGetServerUrl.mockReturnValue('https://localhost:8090');
   });
 
   afterEach(() => {
@@ -364,5 +365,49 @@ describe('useGetUserType', () => {
       expect(result.current.data).toBeNull();
       expect(result.current.loading).toBe(false);
     });
+  });
+
+  it('should fallback to env variable when getServerUrl returns undefined', async () => {
+    mockGetServerUrl.mockReturnValue(undefined);
+    mockHttpRequest.mockResolvedValueOnce({data: mockUserSchema});
+
+    const {result} = renderHook(() => useGetUserType('123'));
+
+    await waitFor(() => {
+      expect(result.current.data).toEqual(mockUserSchema);
+    });
+
+    expect(mockHttpRequest).toHaveBeenCalledWith(
+      expect.objectContaining({
+        url: expect.stringContaining('/user-schemas/123') as string,
+        method: 'GET',
+      }),
+    );
+  });
+
+  it('should return early when same id is fetched again (double-fetch prevention)', async () => {
+    mockHttpRequest.mockResolvedValue({data: mockUserSchema});
+
+    const {result, rerender} = renderHook(({id}) => useGetUserType(id), {
+      initialProps: {id: '123'},
+    });
+
+    await waitFor(() => {
+      expect(result.current.data).toEqual(mockUserSchema);
+    });
+
+    // First call made
+    expect(mockHttpRequest).toHaveBeenCalledTimes(1);
+
+    // Rerender with same id (simulating Strict Mode or re-render)
+    rerender({id: '123'});
+
+    // Wait a bit for any potential additional calls
+    await new Promise((resolve) => {
+      setTimeout(resolve, 50);
+    });
+
+    // Should still only have one call due to double-fetch prevention
+    expect(mockHttpRequest).toHaveBeenCalledTimes(1);
   });
 });

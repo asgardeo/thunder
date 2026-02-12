@@ -70,6 +70,10 @@ vi.mock('react-i18next', () => ({
   }),
 }));
 
+// Mock color scheme - allow modification for tests
+let mockColorSchemeMode = 'light';
+let mockColorSchemeSystemMode = 'light';
+
 // Mock @wso2/oxygen-ui
 vi.mock('@wso2/oxygen-ui', () => ({
   Button: ({children, onClick, startIcon, variant}: any) => (
@@ -85,8 +89,8 @@ vi.mock('@wso2/oxygen-ui', () => ({
     </div>
   ),
   useColorScheme: () => ({
-    mode: 'light',
-    systemMode: 'light',
+    mode: mockColorSchemeMode,
+    systemMode: mockColorSchemeSystemMode,
   }),
   Menu: ({children, open}: any) => (open ? <div data-testid="menu">{children}</div> : null),
   MenuItem: ({children, onClick, selected}: any) => (
@@ -204,6 +208,8 @@ describe('VisualFlow', () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
+    mockColorSchemeMode = 'light';
+    mockColorSchemeSystemMode = 'light';
   });
 
   describe('Rendering', () => {
@@ -404,6 +410,30 @@ describe('VisualFlow', () => {
 
       const reactFlow = screen.getByTestId('react-flow');
       expect(reactFlow).toHaveAttribute('data-color-mode', 'light');
+    });
+
+    it('should use systemMode when mode is system', () => {
+      mockColorSchemeMode = 'system';
+      mockColorSchemeSystemMode = 'dark';
+
+      render(<VisualFlow {...defaultProps} />, {
+        wrapper: createWrapper(),
+      });
+
+      const reactFlow = screen.getByTestId('react-flow');
+      expect(reactFlow).toHaveAttribute('data-color-mode', 'dark');
+    });
+
+    it('should use mode directly when mode is dark', () => {
+      mockColorSchemeMode = 'dark';
+      mockColorSchemeSystemMode = 'light';
+
+      render(<VisualFlow {...defaultProps} />, {
+        wrapper: createWrapper(),
+      });
+
+      const reactFlow = screen.getByTestId('react-flow');
+      expect(reactFlow).toHaveAttribute('data-color-mode', 'dark');
     });
   });
 

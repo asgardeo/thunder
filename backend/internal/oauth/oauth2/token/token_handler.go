@@ -231,9 +231,7 @@ func (th *tokenHandler) HandleTokenRequest(w http.ResponseWriter, r *http.Reques
 
 		refreshTokenError := refreshGrantHandlerTyped.IssueRefreshToken(tokenRespDTO, oauthApp,
 			tokenRespDTO.AccessToken.Subject, tokenRespDTO.AccessToken.Audience,
-			grantTypeStr, tokenRespDTO.AccessToken.Scopes,
-			tokenRespDTO.AccessToken.UserType, tokenRespDTO.AccessToken.OuID,
-			tokenRespDTO.AccessToken.OuName, tokenRespDTO.AccessToken.OuHandle)
+			grantTypeStr, tokenRespDTO.AccessToken.Scopes)
 		if refreshTokenError != nil && refreshTokenError.Error != "" {
 			th.publishTokenIssuanceFailedEvent(r.Context(), clientID, grantTypeStr, scopeStr,
 				http.StatusInternalServerError, refreshTokenError.ErrorDescription, startTime)

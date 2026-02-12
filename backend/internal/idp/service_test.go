@@ -27,8 +27,8 @@ import (
 
 	"github.com/asgardeo/thunder/internal/system/cmodels"
 	"github.com/asgardeo/thunder/internal/system/config"
+	declarativeresource "github.com/asgardeo/thunder/internal/system/declarative_resource"
 	"github.com/asgardeo/thunder/internal/system/error/serviceerror"
-	immutableresource "github.com/asgardeo/thunder/internal/system/immutable_resource"
 	"github.com/asgardeo/thunder/internal/system/log"
 )
 
@@ -43,10 +43,10 @@ func TestIDPServiceTestSuite(t *testing.T) {
 }
 
 func (s *IDPServiceTestSuite) SetupTest() {
-	// Initialize ThunderRuntime with immutable mode disabled by default
+	// Initialize ThunderRuntime with declarative mode disabled by default
 	config.ResetThunderRuntime()
 	testConfig := &config.Config{
-		ImmutableResources: config.ImmutableResources{
+		DeclarativeResources: config.DeclarativeResources{
 			Enabled: false,
 		},
 	}
@@ -588,12 +588,12 @@ func (s *IDPServiceTestSuite) TestDeleteIdentityProvider_StoreError() {
 	s.mockStore.AssertExpectations(s.T())
 }
 
-// TestCreateIdentityProvider_ImmutableModeEnabled tests creation is blocked when immutable mode is enabled
-func (s *IDPServiceTestSuite) TestCreateIdentityProvider_ImmutableModeEnabled() {
-	// Setup immutable mode
+// TestCreateIdentityProvider_DeclarativeModeEnabled tests creation is blocked when declarative mode is enabled
+func (s *IDPServiceTestSuite) TestCreateIdentityProvider_DeclarativeModeEnabled() {
+	// Setup declarative mode
 	config.ResetThunderRuntime()
 	testConfig := &config.Config{
-		ImmutableResources: config.ImmutableResources{
+		DeclarativeResources: config.DeclarativeResources{
 			Enabled: true,
 		},
 	}
@@ -609,15 +609,15 @@ func (s *IDPServiceTestSuite) TestCreateIdentityProvider_ImmutableModeEnabled() 
 
 	s.Nil(result)
 	s.NotNil(err)
-	s.Equal(immutableresource.ErrorImmutableResourceCreateOperation.Code, err.Code)
+	s.Equal(declarativeresource.ErrorDeclarativeResourceCreateOperation.Code, err.Code)
 }
 
-// TestUpdateIdentityProvider_ImmutableModeEnabled tests update is blocked when immutable mode is enabled
-func (s *IDPServiceTestSuite) TestUpdateIdentityProvider_ImmutableModeEnabled() {
-	// Setup immutable mode
+// TestUpdateIdentityProvider_DeclarativeModeEnabled tests update is blocked when declarative mode is enabled
+func (s *IDPServiceTestSuite) TestUpdateIdentityProvider_DeclarativeModeEnabled() {
+	// Setup declarative mode
 	config.ResetThunderRuntime()
 	testConfig := &config.Config{
-		ImmutableResources: config.ImmutableResources{
+		DeclarativeResources: config.DeclarativeResources{
 			Enabled: true,
 		},
 	}
@@ -633,15 +633,15 @@ func (s *IDPServiceTestSuite) TestUpdateIdentityProvider_ImmutableModeEnabled() 
 
 	s.Nil(result)
 	s.NotNil(err)
-	s.Equal(immutableresource.ErrorImmutableResourceUpdateOperation.Code, err.Code)
+	s.Equal(declarativeresource.ErrorDeclarativeResourceUpdateOperation.Code, err.Code)
 }
 
-// TestDeleteIdentityProvider_ImmutableModeEnabled tests deletion is blocked when immutable mode is enabled
-func (s *IDPServiceTestSuite) TestDeleteIdentityProvider_ImmutableModeEnabled() {
-	// Setup immutable mode
+// TestDeleteIdentityProvider_DeclarativeModeEnabled tests deletion is blocked when declarative mode is enabled
+func (s *IDPServiceTestSuite) TestDeleteIdentityProvider_DeclarativeModeEnabled() {
+	// Setup declarative mode
 	config.ResetThunderRuntime()
 	testConfig := &config.Config{
-		ImmutableResources: config.ImmutableResources{
+		DeclarativeResources: config.DeclarativeResources{
 			Enabled: true,
 		},
 	}
@@ -651,7 +651,7 @@ func (s *IDPServiceTestSuite) TestDeleteIdentityProvider_ImmutableModeEnabled() 
 	err := s.idpService.DeleteIdentityProvider("idp-123")
 
 	s.NotNil(err)
-	s.Equal(immutableresource.ErrorImmutableResourceDeleteOperation.Code, err.Code)
+	s.Equal(declarativeresource.ErrorDeclarativeResourceDeleteOperation.Code, err.Code)
 }
 
 // TestValidateIDP tests IDP validation

@@ -22,7 +22,8 @@
     "wso2"
   ],
   "scripts": {
-    "build": "nx run-many --target=build --all",
+    "build": "nx run-many --target=build --all && pnpm run build:docs",
+    "build:docs": "node ./scripts/build-docs.js",
     "clean": "nx run-many --target=clean --all",
     "lint": "nx run-many --target=lint --all --parallel",
     "lint:fix": "nx run-many --target=fix:lint --all --parallel",
@@ -34,6 +35,7 @@
     "@swc-node/register": "1.9.1",
     "@swc/core": "1.5.7",
     "@swc/helpers": "0.5.11",
+    "@thunder/logger": "workspace:^",
     "@thunder/eslint-plugin-thunder": "workspace:^",
     "@thunder/prettier-config": "workspace:^",
     "eslint": "catalog:",

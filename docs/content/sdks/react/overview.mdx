@@ -1,0 +1,87 @@
+---
+title: React SDK Overview
+sidebar_position: 1
+description: Asgardeo React SDK for seamless authentication integration
+---
+
+import CodeGroup from '@site/src/components/CodeGroup';
+import CodeBlock from '@site/src/components/CodeBlock';
+
+# React SDK
+
+The Asgardeo React SDK (`@asgardeo/react`) provides a comprehensive set of components, hooks, and utilities to integrate Asgardeo authentication and user management into your React applications.
+
+## Installation
+
+Install the Asgardeo React SDK using your preferred package manager:
+
+<CodeGroup>
+  <CodeBlock lang="bash" label="npm">
+    npm install @asgardeo/react
+  </CodeBlock>
+
+  <CodeBlock lang="bash" label="Yarn">
+    yarn add @asgardeo/react
+  </CodeBlock>
+
+  <CodeBlock lang="bash" label="pnpm">
+    pnpm add @asgardeo/react
+  </CodeBlock>
+
+  <CodeBlock lang="bash" label="Bun">
+    bun add @asgardeo/react
+  </CodeBlock>
+</CodeGroup>
+
+## Getting Started
+
+To get started quickly, check out our [React Quickstart Guide](/docs/guides/quick-start/react) for step-by-step instructions.
+
+## Features
+
+### Contexts
+
+The SDK provides a powerful context provider that manages authentication state across your application.
+
+- **[`<AsgardeoProvider />`](/docs/sdks/react/apis/contexts/asgardeo-provider)** - Root provider component that wraps your application and manages authentication state
+
+### Components
+
+Pre-built, customizable components for common authentication flows and user management.
+
+#### Action Components
+- **[`<SignInButton />`](/docs/sdks/react/apis/components/sign-in-button)** - Trigger sign-in flow
+- **[`<SignOutButton />`](/docs/sdks/react/apis/components/sign-out-button)** - Sign out the current user
+- **[`<SignUpButton />`](/docs/sdks/react/apis/components/sign-up-button)** - Trigger sign-up flow
+
+#### Control Components
+- **[`<SignedIn />`](/docs/sdks/react/apis/components/signed-in)** - Conditionally render content for authenticated users
+- **[`<SignedOut />`](/docs/sdks/react/apis/components/signed-out)** - Conditionally render content for unauthenticated users
+- **[`<Loading />`](/docs/sdks/react/apis/components/loading)** - Display loading state during authentication
+
+#### User Self-care Components
+- **[`<UserDropdown />`](/docs/sdks/react/apis/components/user-dropdown)** - User menu with profile and settings
+- **[`<UserProfile />`](/docs/sdks/react/apis/components/user-profile)** - Complete user profile management interface
+- **[`<User />`](/docs/sdks/react/apis/components/user)** - Display user information
+
+#### Organization Components (B2B)
+- **[`<CreateOrganization />`](/docs/sdks/react/apis/components/create-organization)** - Create new organizations
+- **[`<OrganizationProfile />`](/docs/sdks/react/apis/components/organization-profile)** - Manage organization settings
+- **[`<OrganizationSwitcher />`](/docs/sdks/react/apis/components/organization-switcher)** - Switch between organizations
+- **[`<OrganizationList />`](/docs/sdks/react/apis/components/organization-list)** - List user's organizations
+- **[`<Organization />`](/docs/sdks/react/apis/components/organization)** - Display organization information
+
+### Hooks
+
+React hooks for programmatic access to authentication and user data.
+
+- **[`useAsgardeo()`](/docs/sdks/react/apis/hooks/use-asgardeo)** - Access the main Asgardeo SDK instance
+
+## Customization
+
+All components in the Asgardeo React SDK are fully customizable. You can:
+
+- Override default styles using CSS classes or inline styles
+- Customize component behavior through props
+- Build custom components using the provided hooks
+- Extend functionality with middleware and plugins

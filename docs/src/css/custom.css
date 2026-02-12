@@ -1,0 +1,286 @@
+/**
+ * Any CSS included here will be global. The classic template
+ * bundles Infima by default. Infima is a CSS framework designed to
+ * work well for content-centric websites.
+ */
+
+@font-face {
+  font-family: 'Inter';
+  font-weight: 100 900;
+  font-display: block;
+  font-style: normal;
+  font-named-instance: Regular;
+  src: url(/assets/fonts/Inter.woff2) format('woff2');
+}
+
+@font-face {
+  font-family: 'Inter';
+  font-weight: 100 900;
+  font-display: block;
+  font-style: italic;
+  font-named-instance: 'Italic';
+  src: url(/assets/fonts/Inter-italic.woff2) format('woff2');
+}
+
+@font-face {
+  font-family: 'Plus Jakarta Sans';
+  font-style: normal;
+  font-weight: 200 800;
+  font-display: fallback;
+  src: url(/assets/fonts/PlusJakartaSans-latin.woff2) format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA,
+    U+02DC, U+2000-206F, U+2074, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215,
+    U+FEFF, U+FFFD;
+}
+
+@font-face {
+  font-family: 'Plus Jakarta Sans';
+  font-style: italic;
+  font-weight: 200 800;
+  font-display: fallback;
+  src: url(/assets/fonts/PlusJakartaSans-italic.woff2) format('woff2');
+  unicode-range: U+0100-024F, U+0259, U+1E00-1EFF, U+2020, U+20A0-20AB,
+    U+20AD-20CF, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+
+
+@font-face {
+  font-family: 'Fira Code';
+  font-style: normal;
+  font-weight: 300 700;
+  font-display: swap;
+  src: url(/assets/fonts/FiraCode.woff2) format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA,
+    U+02DC, U+2000-206F, U+2074, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215,
+    U+FEFF, U+FFFD;
+}
+
+
+/* You can override the default Infima variables here. */
+:root {
+  /* Typography */
+  --ifm-font-family-base: 'Inter', system-ui, -apple-system, Segoe UI, Roboto,
+    Ubuntu, Cantarell, Noto Sans, sans-serif, BlinkMacSystemFont, 'Segoe UI',
+    Helvetica, Arial, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji',
+    'Segoe UI Symbol';
+  --ifm-font-family-monospace: 'Fira Code', SFMono-Regular, Menlo, Monaco,
+    Consolas, 'Liberation Mono', 'Courier New', monospace;
+  --ifm-heading-color: var(--oxygen-palette-text-primary);
+  --ifm-code-font-size: 95%;
+  --ifm-font-weight-light: 200;
+  --ifm-font-weight-normal: 300;
+  --ifm-font-weight-semibold: 400;
+  --ifm-font-weight-bold: 600;
+  
+  /* Colors */
+  --ifm-color-primary: var(--oxygen-palette-primary-main);
+  --ifm-color-primary-dark: var(--oxygen-palette-primary-dark);
+  --ifm-color-primary-darker: rgb(var(--oxygen-palette-primary-darkChannel));
+  --ifm-color-primary-darkest: rgb(var(--oxygen-palette-primary-darkChannel));
+  --ifm-color-primary-light: var(--oxygen-palette-primary-light);
+  --ifm-color-primary-lighter: rgb(var(--oxygen-palette-primary-lightChannel));
+  --ifm-color-primary-lightest: rgb(var(--oxygen-palette-primary-lightChannel));
+  
+  /* Navbar */
+  --ifm-navbar-background-color: var(--oxygen-palette-background-paper);
+
+  /* Sidebar, TOC */
+  --doc-sidebar-width: 320px;
+  --ifm-toc-border-color: var(--oxygen-palette-divider);
+  --ifm-menu-link-sublist-icon: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m18 15-6-6-6 6'/%3E%3C/svg%3E");
+  --ifm-menu-color-background-hover: none;
+
+  --docusaurus-highlighted-code-line-bg: rgba(0, 0, 0, 0.1);
+}
+
+/* For readability concerns, you should choose a lighter palette in dark mode. */
+[data-theme='dark'] {
+  --docusaurus-highlighted-code-line-bg: rgba(0, 0, 0, 0.3);
+}
+
+/* ------------------------------ Custom CSS -------------------------- */
+/*                        Overrides and Additions                       */
+/* -------------------------------------------------------------------- */
+
+/* Manually inject the radial background since `@wso2/oxygen-ui` adds it to the body. */
+html[data-color-scheme='light'] #__docusaurus {
+    background-attachment: fixed;
+    background-image: radial-gradient(circle at 65% 30%, rgba(255, 116, 0, 0.1) 10%, rgba(255, 255, 255, 0) 40% 40%), radial-gradient(circle at 15% 50%, rgba(74, 41, 165, 0.1) 1%, rgba(255, 255, 255, 0) 40% 70%), radial-gradient(circle at center, rgba(255, 255, 255, 0.6) 0%, var(--oxygen-palette-background-default) 100%);
+    background-blend-mode: normal;
+}
+
+html[data-color-scheme='dark'] #__docusaurus {
+    background-attachment: fixed;
+    background-image: radial-gradient(circle at 65% 30%, rgb(255 116 0 / 13%) 10%, rgba(0, 0, 0, 0) 60% 40%), radial-gradient(circle at 15% 50%, rgb(132 40 0 / 18%) 1%, rgba(0, 0, 0, 0) 40% 70%), radial-gradient(circle at center, rgba(0, 0, 0, 0.6) 0%, var(--oxygen-palette-background-default) 100%);
+    background-blend-mode: screen;
+}
+
+/* ------------------------------ Font Adjustments ---------------------- */
+
+h1,
+h2,
+h3,
+h4,
+h5 {
+  font-family: Plus Jakarta Sans, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, Segoe UI, Roboto, Noto Sans, Ubuntu, Cantarell, Helvetica Neue, sans-serif, Apple Color Emoji, Segoe UI Emoji, Segoe UI Symbol, Noto Color Emoji;
+}
+
+/* ------------------------------ Announcement Banner ---------------------- */
+
+.theme-announcement-bar {
+  font-size: 20px;
+
+  --site-announcement-bar-stripe-color1: #e8d7ff;
+  --site-announcement-bar-stripe-color2: #ffe9d1;
+
+  background: repeating-linear-gradient(
+    35deg,
+    var(--site-announcement-bar-stripe-color1),
+    var(--site-announcement-bar-stripe-color1) 20px,
+    var(--site-announcement-bar-stripe-color2) 10px,
+    var(--site-announcement-bar-stripe-color2) 40px
+  );
+  font-weight: bold;
+  color: var(--oxygen-palette-text-primary);
+}
+
+html[data-theme='dark'] .theme-announcement-bar {
+  color: var(--oxygen-palette-common-black);
+}
+
+/* ------------------------------ Header Adjustments ---------------------- */
+
+
+/* Adjust the navbar height and padding for larger screens */
+.navbar {
+  min-height: 72px;
+  border-bottom: 1px solid var(--oxygen-palette-divider);
+  box-shadow: none;
+}
+
+/* Adjust the navbar toggle size */
+@media (max-width: 996px) {
+  .navbar__toggle {
+    width: 20px;
+    display: flex;
+    align-items: center;
+  }
+}
+
+/* Override font size for navbar items and menu links */
+.navbar__item,
+.menu__link {
+  font-size: 1rem;
+}
+
+/* Make the GitHub link to use an icon only */
+.navbar .navbar__github--link {
+  margin-right: calc(1 * var(--oxygen-spacing, 8px));
+}
+
+.navbar .navbar__github--link::before {
+  content: '';
+  width: 24px;
+  height: 24px;
+  display: flex;
+  background-color: var(--ifm-navbar-link-color);
+  mask-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 24 24' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M12 .297c-6.63 0-12 5.373-12 12 0 5.303 3.438 9.8 8.205 11.385.6.113.82-.258.82-.577 0-.285-.01-1.04-.015-2.04-3.338.724-4.042-1.61-4.042-1.61C4.422 18.07 3.633 17.7 3.633 17.7c-1.087-.744.084-.729.084-.729 1.205.084 1.838 1.236 1.838 1.236 1.07 1.835 2.809 1.305 3.495.998.108-.776.417-1.305.76-1.605-2.665-.3-5.466-1.332-5.466-5.93 0-1.31.465-2.38 1.235-3.22-.135-.303-.54-1.523.105-3.176 0 0 1.005-.322 3.3 1.23.96-.267 1.98-.399 3-.405 1.02.006 2.04.138 3 .405 2.28-1.552 3.285-1.23 3.285-1.23.645 1.653.24 2.873.12 3.176.765.84 1.23 1.91 1.23 3.22 0 4.61-2.805 5.625-5.475 5.92.42.36.81 1.096.81 2.22 0 1.606-.015 2.896-.015 3.286 0 .315.21.69.825.57C20.565 22.092 24 17.592 24 12.297c0-6.627-5.373-12-12-12'/%3E%3C/svg%3E");
+  transition: background-color var(--ifm-transition-fast) var(--ifm-transition-timing-default);
+}
+
+.navbar .navbar__github--link:hover::before {
+  background-color: var(--ifm-navbar-link-hover-color);
+}
+
+/* Improve Dropdown Chevron */
+.dropdown>.navbar__link {
+  display: flex;
+  align-items: center;
+}
+
+.dropdown>.navbar__link:after {
+  content: '';
+  border: none;
+  position: static;
+  top: auto;
+  transform: none;
+  width: 12px;
+  height: 12px;
+  background-image: url("data:image/svg+xml,%3Csvg width='24' height='24' fill='none' viewBox='0 0 24 24' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M4.293 8.293a1 1 0 0 1 1.414 0L12 14.586l6.293-6.293a1 1 0 1 1 1.414 1.414l-7 7a1 1 0 0 1-1.414 0l-7-7a1 1 0 0 1 0-1.414Z' fill='%23888888'/%3E%3C/svg%3E");
+  background-size: 12px;
+  background-repeat: no-repeat;
+}
+
+html[data-theme='dark'] .dropdown>.navbar__link:after {
+  background-image: url("data:image/svg+xml,%3Csvg width='24' height='24' fill='none' viewBox='0 0 24 24' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M4.293 8.293a1 1 0 0 1 1.414 0L12 14.586l6.293-6.293a1 1 0 1 1 1.414 1.414l-7 7a1 1 0 0 1-1.414 0l-7-7a1 1 0 0 1 0-1.414Z' fill='%23ffffff'/%3E%3C/svg%3E");
+}
+
+.dropdown:hover>.navbar__link:after {
+  background-image: url("data:image/svg+xml,%3Csvg width='24' height='24' fill='none' viewBox='0 0 24 24' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M4.293 8.293a1 1 0 0 1 1.414 0L12 14.586l6.293-6.293a1 1 0 1 1 1.414 1.414l-7 7a1 1 0 0 1-1.414 0l-7-7a1 1 0 0 1 0-1.414Z' fill='%23F87643'/%3E%3C/svg%3E") !important;
+}
+
+/* ------------------------------ Sidebar Adjustments ---------------------- */
+
+.menu__caret:before, .menu__link--sublist-caret:after {
+  background: var(--ifm-menu-link-sublist-icon) 50% / 1rem 1rem;
+}
+
+.theme-doc-sidebar-container {
+  background: var(--oxygen-palette-background-paper);
+}
+
+/* ------------------------------ API Doc Adjustments ---------------------- */
+
+.api-method > .menu__link,
+.schema > .menu__link {
+  align-items: center;
+  justify-content: space-between;
+}
+
+.api-method > .menu__link::after,
+.schema > .menu__link::after {
+  font-size: 12px;
+  margin-right: var(--ifm-spacing-horizontal);
+  text-transform: uppercase;
+  font-weight: 500;
+}
+
+.get > .menu__link::after {
+  content: "get";
+  color: var(--ifm-color-primary);
+}
+
+.post > .menu__link::after {
+  content: "post";
+  color: var(--openapi-code-green);
+}
+
+.delete > .menu__link::after {
+  content: "del";
+  color: var(--openapi-code-red);
+}
+
+.put > .menu__link::after {
+  content: "put";
+  color: var(--openapi-code-blue);
+}
+
+.patch > .menu__link::after {
+  content: "patch";
+  color: var(--openapi-code-orange);
+}
+
+.head > .menu__link::after {
+  content: "head";
+  color: var(--ifm-color-secondary-darkest);
+}
+
+.event > .menu__link::after {
+  content: "event";
+  color: var(--ifm-color-secondary-darkest);
+}
+
+.schema > .menu__link::after {
+  content: "schema";
+  color: var(--ifm-color-secondary-darkest);
+}

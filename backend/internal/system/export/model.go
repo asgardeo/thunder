@@ -18,7 +18,7 @@
 
 package export
 
-import immutableresource "github.com/asgardeo/thunder/internal/system/immutable_resource"
+import declarativeresource "github.com/asgardeo/thunder/internal/system/declarative_resource"
 
 // ExportRequest represents the request structure for exporting resources.
 type ExportRequest struct {
@@ -82,17 +82,17 @@ type ExportResponse struct {
 
 // ExportSummary provides metadata about the export operation.
 type ExportSummary struct {
-	TotalFiles    int                             `json:"total_files"`
-	TotalSize     int64                           `json:"total_size_bytes,omitempty"`
-	ExportedAt    string                          `json:"exported_at,omitempty"`
-	ResourceTypes map[string]int                  `json:"resource_types,omitempty"` // Type -> count
-	Errors        []immutableresource.ExportError `json:"errors,omitempty"`
-	Pagination    *PaginationInfo                 `json:"pagination,omitempty"`
+	TotalFiles    int                               `json:"total_files"`
+	TotalSize     int64                             `json:"total_size_bytes,omitempty"`
+	ExportedAt    string                            `json:"exported_at,omitempty"`
+	ResourceTypes map[string]int                    `json:"resource_types,omitempty"` // Type -> count
+	Errors        []declarativeresource.ExportError `json:"errors,omitempty"`
+	Pagination    *PaginationInfo                   `json:"pagination,omitempty"`
 }
 
 // ExportError represents errors that occurred during export.
-// Deprecated: Use immutableresource.ExportError instead.
-type ExportError = immutableresource.ExportError
+// Deprecated: Use declarativeresource.ExportError instead.
+type ExportError = declarativeresource.ExportError
 
 // PaginationInfo provides pagination metadata.
 type PaginationInfo struct {

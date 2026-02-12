@@ -18,7 +18,7 @@
 
 import {useEffect, useRef, useState, useMemo} from 'react';
 import {useAsgardeo} from '@asgardeo/react';
-import {useConfig} from '@thunder/commons-contexts';
+import {useConfig} from '@thunder/shared-contexts';
 import {useLogger} from '@thunder/logger/react';
 import type {ApiError, UserSchemaListParams, UserSchemaListResponse} from '../types/user-types';
 

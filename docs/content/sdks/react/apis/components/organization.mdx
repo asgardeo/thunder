@@ -1,0 +1,59 @@
+---
+title: <Organization />
+description: Display organization information
+---
+
+# `<Organization />`
+
+The `Organization` component is a declarative way to access the current organization object from the Asgardeo authentication context. It uses render props to expose the organization data, making it easy to display organization information or conditionally render UI based on the active organization.
+
+## Usage
+
+### Basic Usage
+
+Display organization information:
+
+```jsx title="src/Header.jsx" showLineNumbers
+import { Organization } from '@asgardeo/react'
+
+function Header() {
+  return (
+    <div>
+      <Organization />
+    </div>
+  )
+}
+
+export default Header
+```
+
+### Custom Fields
+
+Use render props to customize the display:
+
+```jsx title="src/OrgCard.jsx" showLineNumbers
+import { Organization } from '@asgardeo/react'
+
+function OrgCard() {
+  return (
+    <Organization>
+      {(org) => (
+        <div>
+          <img src={org.logo} alt={org.name} />
+          <h3>{org.name}</h3>
+          <p>{org.memberCount} members</p>
+        </div>
+      )}
+    </Organization>
+  )
+}
+
+export default OrgCard
+```
+
+## Props
+
+| Prop | Type | Required | Description |
+| :--- | :--- | :---: | :--- |
+| `organizationId` | `string` | ❌ | Organization ID to display (defaults to current organization) |
+| `children` | `Function \| ReactNode` | ❌ | Render function or default display content |

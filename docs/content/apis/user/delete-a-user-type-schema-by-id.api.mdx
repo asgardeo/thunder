@@ -1,0 +1,74 @@
+---
+id: delete-a-user-type-schema-by-id
+title: "Delete a user type schema by ID"
+description: "Deletes a user type schema. This operation will fail if there are"
+sidebar_label: "Delete a user type schema by ID"
+hide_title: true
+hide_table_of_contents: true
+api: eJy9VcFy2zYQ/RXMnpoZSqQ1lJvwpto6aCZtM3F8cnSAyJWIBAQYYGlb5fDfMwvQkRi5nZx6krT7Fvvw8HbVA8mDh+IBOo9u5ssaG+lhm0CFvnSqJWUNFHCLGgm9kIJxgo4tigiei0+18sK26CSDxZPSWuyl0kLtBdXoUEiH4rPBZ+VJmUM4wgvLWeXDWfPPBhJopZMNEjom1IPixq2kGhIwskEoQFWQgMNvnXJYQUGuwwQiDyh64KOgAE9OmQMksLeukQQFdJ2qYEgAn2XTasYslxm+zbNshot3u1l+VeUz+fvV9SzPr6+XyzzPsiyDYcvdfGuNR88NFlnOH1Nt7lmRSEJUQafQK8+yS+wfshLMHz1BAqU1hIYYJttWqzIomH7xjO0vL2Z3X7CkiQQPUNoKIYEGvZcH5KdrHb8Gqcg55C/EGU4Vr+UmrC/yQwKkKOi4ds66ibQvHeH+7uPd7CrL8jN2BWzMo9Sqij4aVTspMlXrRhpjaRT1BbzDUnYeX3GRCA6DYWCCy9fk3xhCZ6QWHt0jOoGRfRCDaltBAbFZcCPVUEB6Phhpr6oBEojl0aad01BATdT6Ik372noair61jhj5KJ2SOx2fgnOR1F52mo2pbSl1CA8JcM00/TZ7l/F9ttyy7JyiY+j596qjesGv74+esIHtOeSOycaOL8CThWQIJLDX9ilAOGCd+id472Y0yyR4P7nhD8oFs0vjgelLAStH9iv+UlEAspylbSPf8ToFrMoSvRdkRQyJRhp5wAYNidWHjQ+vPCSgzN6G641+DMP45wTLr4DORwdczbMLm4UFtvqwEcqzqyruGttFk80hAa1KND5oM+6iVSvLGsUiHDg1wdPT01yG9Ny6QzrW+vT95mb91916tphn85oaHZzXWk+NNGcnx2X7yq4Vu6PY3P7Mvz/tkf9nT49WInymtNVSGTZvUKAfp+anv5MEClXxZooD8AB9v5Me750eBg5/69CxsbeneQk2r5Tn7xUUe6k9/se9f/s4bsQ34t8IjkFpjmEsdce/IIGveIz/LMN2SKBGWaEL3WOCjdjSWcnFpubR+7E+btfv15/WMAzfATblgJU=
+sidebar_class_name: "delete api-method"
+info_path: docs/apis/user/user-management-api
+custom_edit_url: null
+---
+
+import MethodEndpoint from "@theme/ApiExplorer/MethodEndpoint";
+import ParamsDetails from "@theme/ParamsDetails";
+import RequestSchema from "@theme/RequestSchema";
+import StatusCodes from "@theme/StatusCodes";
+import OperationTabs from "@theme/OperationTabs";
+import TabItem from "@theme/TabItem";
+import Heading from "@theme/Heading";
+import Translate from "@docusaurus/Translate";
+
+<Heading
+  as={"h1"}
+  className={"openapi__heading"}
+  children={"Delete a user type schema by ID"}
+>
+</Heading>
+
+<MethodEndpoint
+  method={"delete"}
+  path={"/user-schemas/{id}"}
+  context={"endpoint"}
+>
+  
+</MethodEndpoint>
+
+
+
+Deletes a user type schema. This operation will fail if there are 
+existing users of this type.
+
+
+<Heading
+  id={"request"}
+  as={"h2"}
+  className={"openapi-tabs__heading"}
+>
+  <Translate id="theme.openapi.request.title">Request</Translate>
+</Heading>
+
+<ParamsDetails
+  parameters={[{"in":"path","name":"id","required":true,"schema":{"type":"string","format":"uuid"},"example":"550e8400-e29b-41d4-a716-446655440000"}]}
+>
+  
+</ParamsDetails>
+
+<RequestSchema
+  title={"Body"}
+  body={undefined}
+>
+  
+</RequestSchema>
+
+<StatusCodes
+  id={undefined}
+  label={undefined}
+  responses={{"204":{"description":"User schema deleted"},"400":{"description":"Bad request","content":{"application/json":{"schema":{"type":"object","required":["code","message"],"properties":{"code":{"type":"string"},"message":{"type":"string"},"description":{"type":"string"}},"title":"Error"},"example":{"code":"USRS-1004","message":"Invalid user schema request","description":"Cannot delete schema because users of this type exist"}}}},"500":{"description":"Internal server error"}}}
+>
+  
+</StatusCodes>
+
+
+      

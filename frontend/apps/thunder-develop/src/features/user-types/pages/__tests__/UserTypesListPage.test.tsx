@@ -17,13 +17,12 @@
  */
 
 import {describe, it, expect, vi, beforeEach} from 'vitest';
-import {screen} from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
-import render from '@/test/test-utils';
+import {render, screen, waitFor, userEvent} from '@thunder/test-utils';
 import UserTypesListPage from '../UserTypesListPage';
 
 const mockNavigate = vi.fn();
 const mockReload = vi.fn();
+const mockLoggerError = vi.fn();
 
 // Mock react-router
 vi.mock('react-router', async () => {
@@ -33,6 +32,16 @@ vi.mock('react-router', async () => {
     useNavigate: () => mockNavigate,
   };
 });
+
+// Mock logger
+vi.mock('@thunder/logger/react', () => ({
+  useLogger: () => ({
+    error: mockLoggerError,
+    info: vi.fn(),
+    warn: vi.fn(),
+    debug: vi.fn(),
+  }),
+}));
 
 // Mock the UserTypesList component
 vi.mock('../../components/UserTypesList', () => ({
@@ -46,6 +55,7 @@ vi.mock('../../components/UserTypesList', () => ({
 describe('UserTypesListPage', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    mockLoggerError.mockReset();
     Object.defineProperty(window, 'location', {
       value: {reload: mockReload},
       writable: true,
@@ -93,9 +103,10 @@ describe('UserTypesListPage', () => {
     expect(mockNavigate).toHaveBeenCalledWith('/user-types/create');
   });
 
-  it('handles navigation error when create button is clicked', async () => {
+  it('handles navigation error when create button is clicked and logs error', async () => {
     const user = userEvent.setup();
-    mockNavigate.mockRejectedValue(new Error('Navigation failed'));
+    const testError = new Error('Navigation failed');
+    mockNavigate.mockRejectedValue(testError);
 
     render(<UserTypesListPage />);
 
@@ -103,5 +114,13 @@ describe('UserTypesListPage', () => {
     await user.click(createButton);
 
     expect(mockNavigate).toHaveBeenCalledWith('/user-types/create');
+
+    // Wait for the error to be logged
+    await waitFor(() => {
+      expect(mockLoggerError).toHaveBeenCalledWith(
+        'Failed to navigate to create user type page',
+        expect.objectContaining({error: testError}),
+      );
+    });
   });
 });

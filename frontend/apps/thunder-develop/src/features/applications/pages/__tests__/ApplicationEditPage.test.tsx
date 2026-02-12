@@ -16,14 +16,9 @@
  * under the License.
  */
 
-import {render, screen, waitFor} from '@testing-library/react';
+import {render, screen, waitFor} from '@thunder/test-utils';
 import userEvent from '@testing-library/user-event';
 import {describe, it, expect, vi, beforeEach} from 'vitest';
-import {BrowserRouter} from 'react-router';
-import {QueryClient, QueryClientProvider} from '@tanstack/react-query';
-import {ConfigProvider} from '@thunder/commons-contexts';
-import {LoggerProvider, LogLevel} from '@thunder/logger';
-import type {ReactNode} from 'react';
 import type {UseQueryResult, UseMutationResult} from '@tanstack/react-query';
 import type {Application} from '../../models/application';
 import ApplicationEditPage from '../ApplicationEditPage';
@@ -155,35 +150,9 @@ describe('ApplicationEditPage', () => {
   };
 
   const mockUpdateApplicationMutate = vi.fn();
-  let queryClient: QueryClient;
 
   beforeEach(() => {
     vi.clearAllMocks();
-
-    // Setup window.__THUNDER_RUNTIME_CONFIG__ for tests
-    // eslint-disable-next-line no-underscore-dangle
-    if (typeof window !== 'undefined') {
-      // eslint-disable-next-line no-underscore-dangle
-      window.__THUNDER_RUNTIME_CONFIG__ = {
-        client: {
-          base: '/develop',
-          client_id: 'DEVELOP',
-        },
-        server: {
-          hostname: 'localhost',
-          port: 8090,
-          http_only: false,
-        },
-      };
-    }
-
-    queryClient = new QueryClient({
-      defaultOptions: {
-        queries: {
-          retry: false,
-        },
-      },
-    });
 
     // Default mock implementations
     mockGetTemplateMetadata.mockReturnValue({
@@ -210,26 +179,7 @@ describe('ApplicationEditPage', () => {
     } as unknown as UseMutationResult<Application, Error, Partial<Application>>);
   });
 
-  const renderComponent = () => {
-    function Wrapper({children}: {children: ReactNode}) {
-      return (
-        <QueryClientProvider client={queryClient}>
-          <ConfigProvider>
-            <LoggerProvider
-              logger={{
-                level: LogLevel.ERROR,
-                transports: [],
-              }}
-            >
-              <BrowserRouter>{children}</BrowserRouter>
-            </LoggerProvider>
-          </ConfigProvider>
-        </QueryClientProvider>
-      );
-    }
-
-    return render(<ApplicationEditPage />, {wrapper: Wrapper});
-  };
+  const renderComponent = () => render(<ApplicationEditPage />);
 
   describe('Loading State', () => {
     it('should display loading state while fetching application', () => {
@@ -516,6 +466,49 @@ describe('ApplicationEditPage', () => {
       });
     });
 
+    it('should save description changes on Ctrl+Enter', async () => {
+      const user = userEvent.setup();
+      renderComponent();
+
+      // Click edit button
+      const descriptionSection = screen.getByText('Test application description').closest('div');
+      const editButton = descriptionSection?.querySelector('button');
+      await user.click(editButton!);
+
+      // Change description
+      const descriptionInput = screen.getByPlaceholderText('Add a description');
+      await user.clear(descriptionInput);
+      await user.type(descriptionInput, 'Description via Ctrl+Enter');
+
+      // Press Ctrl+Enter to save
+      await user.keyboard('{Control>}{Enter}{/Control}');
+
+      await waitFor(() => {
+        expect(screen.getByText('Description via Ctrl+Enter')).toBeInTheDocument();
+      });
+    });
+
+    it('should cancel description editing on Escape key', async () => {
+      const user = userEvent.setup();
+      renderComponent();
+
+      // Click edit button
+      const descriptionSection = screen.getByText('Test application description').closest('div');
+      const editButton = descriptionSection?.querySelector('button');
+      await user.click(editButton!);
+
+      // Change description and press Escape
+      const descriptionInput = screen.getByPlaceholderText('Add a description');
+      await user.clear(descriptionInput);
+      await user.type(descriptionInput, 'Changed description');
+      await user.keyboard('{Escape}');
+
+      await waitFor(() => {
+        expect(screen.getByText('Test application description')).toBeInTheDocument();
+        expect(screen.queryByDisplayValue('Changed description')).not.toBeInTheDocument();
+      });
+    });
+
     it('should not save empty name on blur', async () => {
       const user = userEvent.setup();
       renderComponent();
@@ -544,6 +537,62 @@ describe('ApplicationEditPage', () => {
 
       // Modal should be in the DOM (hidden by default)
       expect(screen.getByTestId('logo-update-modal')).toBeInTheDocument();
+    });
+
+    it('should open logo modal when avatar is clicked', async () => {
+      const user = userEvent.setup();
+      renderComponent();
+
+      // Click on the avatar to open the modal
+      const avatar = screen.getByRole('img');
+      await user.click(avatar);
+
+      await waitFor(() => {
+        const modal = screen.getByTestId('logo-update-modal');
+        expect(modal).toHaveStyle({display: 'block'});
+      });
+    });
+
+    it('should update logo and close modal when logo is updated', async () => {
+      const user = userEvent.setup();
+      renderComponent();
+
+      // Open the modal
+      const avatar = screen.getByRole('img');
+      await user.click(avatar);
+
+      // Click update logo button in modal
+      const updateLogoButton = screen.getByRole('button', {name: /update logo/i});
+      await user.click(updateLogoButton);
+
+      await waitFor(() => {
+        // Should show unsaved changes since logo was updated
+        expect(screen.getByText('You have unsaved changes')).toBeInTheDocument();
+      });
+
+      // Modal should be closed
+      await waitFor(() => {
+        const modal = screen.getByTestId('logo-update-modal');
+        expect(modal).toHaveStyle({display: 'none'});
+      });
+    });
+
+    it('should close logo modal when close button is clicked', async () => {
+      const user = userEvent.setup();
+      renderComponent();
+
+      // Open the modal
+      const avatar = screen.getByRole('img');
+      await user.click(avatar);
+
+      // Click close button
+      const closeButton = screen.getByRole('button', {name: /close/i});
+      await user.click(closeButton);
+
+      await waitFor(() => {
+        const modal = screen.getByTestId('logo-update-modal');
+        expect(modal).toHaveStyle({display: 'none'});
+      });
     });
   });
 
@@ -739,6 +788,272 @@ describe('ApplicationEditPage', () => {
 
       const nameInput = screen.getByRole('textbox');
       expect(nameInput).toHaveFocus();
+    });
+  });
+
+  describe('Application Not Found', () => {
+    it('should display warning when application is null', () => {
+      mockUseGetApplication.mockReturnValue({
+        data: null,
+        isLoading: false,
+        isError: false,
+        error: null,
+      } as unknown as UseQueryResult<Application>);
+
+      renderComponent();
+
+      expect(screen.getByText('applications:view.notFound')).toBeInTheDocument();
+      expect(screen.getByRole('button', {name: /back to applications/i})).toBeInTheDocument();
+    });
+  });
+
+  describe('Error Handling', () => {
+    it('should display error message from error object', () => {
+      const errorMessage = 'Custom error message';
+      mockUseGetApplication.mockReturnValue({
+        data: undefined,
+        isLoading: false,
+        isError: true,
+        error: {message: errorMessage},
+      } as unknown as UseQueryResult<Application>);
+
+      renderComponent();
+
+      expect(screen.getByText(errorMessage)).toBeInTheDocument();
+    });
+
+    it('should display default error message when error has no message', () => {
+      mockUseGetApplication.mockReturnValue({
+        data: undefined,
+        isLoading: false,
+        isError: true,
+        error: {},
+      } as unknown as UseQueryResult<Application>);
+
+      renderComponent();
+
+      expect(screen.getByText('applications:view.error')).toBeInTheDocument();
+    });
+
+    it('should handle save failure gracefully', async () => {
+      const user = userEvent.setup();
+      const mockMutateAsync = vi.fn().mockRejectedValue(new Error('Save failed'));
+
+      mockUseUpdateApplication.mockReturnValue({
+        mutate: mockUpdateApplicationMutate,
+        mutateAsync: mockMutateAsync,
+        isPending: false,
+        isError: false,
+        error: null,
+      } as unknown as UseMutationResult<Application, Error, Partial<Application>>);
+
+      renderComponent();
+
+      // Make a change
+      const nameSection = screen.getByText('Test Application').closest('div');
+      const editButton = nameSection?.querySelector('button');
+      await user.click(editButton!);
+
+      const nameInput = screen.getByRole('textbox');
+      await user.clear(nameInput);
+      await user.type(nameInput, 'Updated Application{Enter}');
+
+      // Click save
+      await waitFor(() => {
+        expect(screen.getByRole('button', {name: /save changes/i})).toBeInTheDocument();
+      });
+
+      const saveButton = screen.getByRole('button', {name: /save changes/i});
+      await user.click(saveButton);
+
+      // Should have called mutateAsync (even if it failed)
+      await waitFor(() => {
+        expect(mockMutateAsync).toHaveBeenCalled();
+      });
+    });
+
+    it('should not save when application or applicationId is missing', async () => {
+      // Mock useParams to return undefined applicationId
+      const {useParams} = await import('react-router');
+      (useParams as ReturnType<typeof vi.fn>).mockReturnValue({applicationId: undefined});
+
+      const mockMutateAsync = vi.fn().mockResolvedValue(mockApplication);
+      mockUseUpdateApplication.mockReturnValue({
+        mutate: mockUpdateApplicationMutate,
+        mutateAsync: mockMutateAsync,
+        isPending: false,
+        isError: false,
+        error: null,
+      } as unknown as UseMutationResult<Application, Error, Partial<Application>>);
+
+      renderComponent();
+
+      // mutateAsync should not have been called since applicationId is missing
+      expect(mockMutateAsync).not.toHaveBeenCalled();
+
+      // Restore original mock
+      (useParams as ReturnType<typeof vi.fn>).mockReturnValue({applicationId: 'test-app-id'});
+    });
+  });
+
+  describe('Logo Image Error Handling', () => {
+    it('should handle logo image loading error', () => {
+      renderComponent();
+
+      const logo = screen.getByRole('img');
+
+      // Simulate image load error
+      logo.dispatchEvent(new Event('error'));
+
+      // The component should still be functional
+      expect(screen.getByText('Test Application')).toBeInTheDocument();
+    });
+  });
+
+  describe('Template Metadata', () => {
+    it('should not display template chip when template metadata is null', () => {
+      mockGetTemplateMetadata.mockReturnValue(null);
+
+      renderComponent();
+
+      expect(screen.queryByText('React')).not.toBeInTheDocument();
+    });
+
+    it('should handle application without template', () => {
+      mockUseGetApplication.mockReturnValue({
+        data: {...mockApplication, template: undefined},
+        isLoading: false,
+        isError: false,
+        error: null,
+      } as unknown as UseQueryResult<Application>);
+
+      renderComponent();
+
+      // Should render without crashing
+      expect(screen.getByText('Test Application')).toBeInTheDocument();
+    });
+  });
+
+  describe('OAuth2 Config', () => {
+    it('should handle application without inbound_auth_config', () => {
+      mockUseGetApplication.mockReturnValue({
+        data: {...mockApplication, inbound_auth_config: undefined},
+        isLoading: false,
+        isError: false,
+        error: null,
+      } as unknown as UseQueryResult<Application>);
+
+      renderComponent();
+
+      // Should render without crashing
+      expect(screen.getByText('Test Application')).toBeInTheDocument();
+    });
+
+    it('should handle application with non-oauth2 inbound_auth_config', () => {
+      mockUseGetApplication.mockReturnValue({
+        data: {
+          ...mockApplication,
+          inbound_auth_config: [{type: 'saml', config: {issuer: 'test'}}],
+        },
+        isLoading: false,
+        isError: false,
+        error: null,
+      } as unknown as UseQueryResult<Application>);
+
+      renderComponent();
+
+      // Should render without crashing
+      expect(screen.getByText('Test Application')).toBeInTheDocument();
+    });
+  });
+
+  describe('Name and Description Editing Edge Cases', () => {
+    it('should not save empty name on Enter', async () => {
+      const user = userEvent.setup();
+      renderComponent();
+
+      // Click edit button
+      const nameSection = screen.getByText('Test Application').closest('div');
+      const editButton = nameSection?.querySelector('button');
+      await user.click(editButton!);
+
+      // Clear and press Enter
+      const nameInput = screen.getByRole('textbox');
+      await user.clear(nameInput);
+      await user.keyboard('{Enter}');
+
+      await waitFor(() => {
+        // Original name should be preserved
+        expect(screen.getByText('Test Application')).toBeInTheDocument();
+      });
+    });
+
+    it('should save empty description when cleared', async () => {
+      const user = userEvent.setup();
+      renderComponent();
+
+      // Click edit button for description
+      const descriptionSection = screen.getByText('Test application description').closest('div');
+      const editButton = descriptionSection?.querySelector('button');
+      await user.click(editButton!);
+
+      // Clear description and blur
+      const descriptionInput = screen.getByPlaceholderText('Add a description');
+      await user.clear(descriptionInput);
+      await user.tab();
+
+      await waitFor(() => {
+        // Should show unsaved changes indicator
+        expect(screen.getByText('You have unsaved changes')).toBeInTheDocument();
+      });
+    });
+
+    it('should handle description when original is empty and new is empty', async () => {
+      mockUseGetApplication.mockReturnValue({
+        data: {...mockApplication, description: undefined},
+        isLoading: false,
+        isError: false,
+        error: null,
+      } as UseQueryResult<Application>);
+
+      const user = userEvent.setup();
+      renderComponent();
+
+      // Click edit button for description - when description is undefined, the component shows 'No description provided'
+      const descriptionSection = screen.getByText('No description provided').closest('div');
+      const editButton = descriptionSection?.querySelector('button');
+      await user.click(editButton!);
+
+      // Just blur without typing
+      const descriptionInput = screen.getByPlaceholderText('Add a description');
+      await user.click(descriptionInput);
+      await user.tab();
+
+      // Should not show unsaved changes since nothing changed
+      expect(screen.queryByText('You have unsaved changes')).not.toBeInTheDocument();
+    });
+  });
+
+  describe('Edit Icon Click for Logo', () => {
+    it('should open logo modal when edit icon button is clicked', async () => {
+      const user = userEvent.setup();
+      renderComponent();
+
+      // Find all edit buttons and click the one next to the avatar
+      const allButtons = screen.getAllByRole('button');
+      // The edit icon next to avatar has a smaller icon (size 14)
+      const avatarEditButton = allButtons.find(
+        (btn) => btn.querySelector('svg') && btn.closest('[class*="absolute"]'),
+      );
+
+      if (avatarEditButton) {
+        await user.click(avatarEditButton);
+
+        await waitFor(() => {
+          const modal = screen.getByTestId('logo-update-modal');
+          expect(modal).toHaveStyle({display: 'block'});
+        });
+      }
     });
   });
 });

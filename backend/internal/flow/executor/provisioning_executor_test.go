@@ -148,7 +148,7 @@ func (suite *ProvisioningExecutorTestSuite) TestExecute_Success() {
 		},
 	}
 
-	suite.mockUserService.On("IdentifyUser", map[string]interface{}{
+	suite.mockUserService.On("IdentifyUser", mock.Anything, map[string]interface{}{
 		"username": "newuser",
 		"email":    "new@example.com",
 	}).Return(nil, &user.ErrorUserNotFound)
@@ -211,7 +211,7 @@ func (suite *ProvisioningExecutorTestSuite) TestExecute_UserAlreadyExists() {
 	}
 
 	userID := "user-existing"
-	suite.mockUserService.On("IdentifyUser", map[string]interface{}{
+	suite.mockUserService.On("IdentifyUser", mock.Anything, map[string]interface{}{
 		"username": "existinguser",
 	}).Return(&userID, nil)
 
@@ -254,7 +254,7 @@ func (suite *ProvisioningExecutorTestSuite) TestExecute_CreateUserFails() {
 		NodeInputs: []common.Input{{Identifier: "username", Type: "string", Required: true}},
 	}
 
-	suite.mockUserService.On("IdentifyUser", mock.Anything).Return(nil, &user.ErrorUserNotFound)
+	suite.mockUserService.On("IdentifyUser", mock.Anything, mock.Anything).Return(nil, &user.ErrorUserNotFound)
 	suite.mockUserService.On("CreateUser", mock.Anything, mock.Anything).
 		Return(nil, &serviceerror.ServiceError{Error: "creation failed"})
 
@@ -485,7 +485,7 @@ func (suite *ProvisioningExecutorTestSuite) TestExecute_SkipProvisioning_UserAlr
 	attrs := map[string]interface{}{
 		"username": "existinguser",
 	}
-	suite.mockUserService.On("IdentifyUser", attrs).Return(&userID, nil)
+	suite.mockUserService.On("IdentifyUser", mock.Anything, attrs).Return(&userID, nil)
 
 	resp, err := suite.executor.Execute(ctx)
 
@@ -531,7 +531,7 @@ func (suite *ProvisioningExecutorTestSuite) TestExecute_SkipProvisioning_Proceed
 		Attributes:       attrsJSON,
 	}
 
-	suite.mockUserService.On("IdentifyUser", attrs).Return(nil, &user.ErrorUserNotFound)
+	suite.mockUserService.On("IdentifyUser", mock.Anything, attrs).Return(nil, &user.ErrorUserNotFound)
 	suite.mockUserService.On("CreateUser", mock.Anything, mock.MatchedBy(func(u *user.User) bool {
 		return u.OrganizationUnit == testOUID && u.Type == testUserType
 	})).Return(createdUser, nil)
@@ -585,7 +585,7 @@ func (suite *ProvisioningExecutorTestSuite) TestExecute_UserEligibleForProvision
 		Attributes:       attrsJSON,
 	}
 
-	suite.mockUserService.On("IdentifyUser", attrs).Return(nil, &user.ErrorUserNotFound)
+	suite.mockUserService.On("IdentifyUser", mock.Anything, attrs).Return(nil, &user.ErrorUserNotFound)
 	suite.mockUserService.On("CreateUser", mock.Anything, mock.MatchedBy(func(u *user.User) bool {
 		return u.OrganizationUnit == testOUID && u.Type == testUserType
 	})).Return(createdUser, nil)
@@ -630,7 +630,7 @@ func (suite *ProvisioningExecutorTestSuite) TestExecute_UserAutoProvisionedFlag_
 		Attributes:       attrsJSON,
 	}
 
-	suite.mockUserService.On("IdentifyUser", attrs).Return(nil, &user.ErrorUserNotFound)
+	suite.mockUserService.On("IdentifyUser", mock.Anything, attrs).Return(nil, &user.ErrorUserNotFound)
 	suite.mockUserService.On("CreateUser", mock.Anything, mock.Anything).Return(createdUser, nil)
 
 	resp, err := suite.executor.Execute(ctx)
@@ -725,7 +725,7 @@ func (suite *ProvisioningExecutorTestSuite) TestExecute_RegistrationFlow_SkipPro
 	attrs := map[string]interface{}{
 		"username": "existinguser",
 	}
-	suite.mockUserService.On("IdentifyUser", attrs).Return(&userID, nil)
+	suite.mockUserService.On("IdentifyUser", mock.Anything, attrs).Return(&userID, nil)
 
 	resp, err := suite.executor.Execute(ctx)
 
@@ -774,7 +774,7 @@ func (suite *ProvisioningExecutorTestSuite) TestExecute_MissingInputs() {
 			attrs := map[string]interface{}{
 				"username": "newuser",
 			}
-			suite.mockUserService.On("IdentifyUser", attrs).Return(nil, &user.ErrorUserNotFound)
+			suite.mockUserService.On("IdentifyUser", mock.Anything, attrs).Return(nil, &user.ErrorUserNotFound)
 
 			resp, err := suite.executor.Execute(ctx)
 
@@ -843,7 +843,7 @@ func (suite *ProvisioningExecutorTestSuite) TestExecute_CreateUserFailures() {
 			attrs := map[string]interface{}{
 				"username": "newuser",
 			}
-			suite.mockUserService.On("IdentifyUser", attrs).Return(nil, &user.ErrorUserNotFound)
+			suite.mockUserService.On("IdentifyUser", mock.Anything, attrs).Return(nil, &user.ErrorUserNotFound)
 			suite.mockUserService.On("CreateUser", mock.Anything, mock.Anything).
 				Return(tt.createdUser, tt.createUserError)
 
@@ -984,7 +984,7 @@ func (suite *ProvisioningExecutorTestSuite) TestExecute_Failure_GroupAssignmentF
 		},
 	}
 
-	suite.mockUserService.On("IdentifyUser", attrs).Return(nil, &user.ErrorUserNotFound)
+	suite.mockUserService.On("IdentifyUser", mock.Anything, attrs).Return(nil, &user.ErrorUserNotFound)
 
 	createdUser := &user.User{
 		ID:               testNewUserID,
@@ -1038,7 +1038,7 @@ func (suite *ProvisioningExecutorTestSuite) TestExecute_Failure_BothGroupAndRole
 		},
 	}
 
-	suite.mockUserService.On("IdentifyUser", attrs).Return(nil, &user.ErrorUserNotFound)
+	suite.mockUserService.On("IdentifyUser", mock.Anything, attrs).Return(nil, &user.ErrorUserNotFound)
 
 	createdUser := &user.User{
 		ID:               testNewUserID,
@@ -1093,7 +1093,7 @@ func (suite *ProvisioningExecutorTestSuite) TestExecute_Failure_RoleAssignmentFa
 		},
 	}
 
-	suite.mockUserService.On("IdentifyUser", attrs).Return(nil, &user.ErrorUserNotFound)
+	suite.mockUserService.On("IdentifyUser", mock.Anything, attrs).Return(nil, &user.ErrorUserNotFound)
 
 	createdUser := &user.User{
 		ID:               testNewUserID,
@@ -1156,7 +1156,7 @@ func (suite *ProvisioningExecutorTestSuite) TestExecute_GroupWithExistingMembers
 		},
 	}
 
-	suite.mockUserService.On("IdentifyUser", attrs).Return(nil, &user.ErrorUserNotFound)
+	suite.mockUserService.On("IdentifyUser", mock.Anything, attrs).Return(nil, &user.ErrorUserNotFound)
 
 	createdUser := &user.User{
 		ID:               testNewUserID,
@@ -1237,7 +1237,7 @@ func (suite *ProvisioningExecutorTestSuite) TestExecute_AuthFlow_AutoProvisionin
 		},
 	}
 
-	suite.mockUserService.On("IdentifyUser", attrs).Return(nil, &user.ErrorUserNotFound)
+	suite.mockUserService.On("IdentifyUser", mock.Anything, attrs).Return(nil, &user.ErrorUserNotFound)
 
 	createdUser := &user.User{
 		ID:               "user-provisioned",
@@ -1297,7 +1297,7 @@ func (suite *ProvisioningExecutorTestSuite) TestExecute_Success_WithGroupAndRole
 		},
 	}
 
-	suite.mockUserService.On("IdentifyUser", map[string]interface{}{
+	suite.mockUserService.On("IdentifyUser", mock.Anything, map[string]interface{}{
 		"username": "newuser",
 		"email":    "new@example.com",
 	}).Return(nil, &user.ErrorUserNotFound)

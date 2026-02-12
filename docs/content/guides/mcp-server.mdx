@@ -1,0 +1,144 @@
+---
+title: MCP Server
+sidebar_position: 3
+hide_table_of_contents: true
+---
+
+# Thunder MCP Server
+
+Thunder provides a Model Context Protocol (MCP) server that enables AI assistants and development tools to interact with Thunder's identity management capabilities. The MCP server exposes tools for managing applications, authentication flows, and React SDK integration.
+
+## Overview
+
+The Thunder MCP server provides the following capabilities as of now:
+
+- **Application Tools**: Create, list, update, and manage OAuth applications
+- **Flow Tools**: Create, list, update, and manage authentication and registration flows
+- **React SDK Integration**: Get integration instructions and code snippets for React applications
+
+The MCP server is available at the `/mcp` endpoint on your Thunder instance (default: `https://localhost:8090/mcp`).
+
+> **Note**: Currently, the MCP endpoint is not secured by default and does not require authentication. This is suitable for local development but should be secured in production environments.
+
+## Prerequisites
+
+- Thunder server running (default: `https://localhost:8090`)
+- VSCode with MCP support (or another MCP-compatible client)
+
+## Step 1: Add Thunder Certificate to System Certificates
+
+Since Thunder uses HTTPS with a self-signed certificate by default, you need to add the Thunder certificate (`backend/cmd/server/repository/resources/security/server.cert`) to your system's trusted certificates. Add it to your system's certificate store (Keychain on macOS, certificate store on Linux/Windows) and ensure VSCode is configured to trust system certificates.
+
+## Step 2: Configure MCP Client to Trust System Certificates
+
+MCP Client (VSCode) needs to be configured to trust system certificates and should be restarted.
+
+## Step 3: Add Thunder MCP Server to VSCode
+
+1. **Open VSCode Settings** and search for "MCP" or navigate to MCP settings
+
+2. **Add MCP Server Configuration**:
+
+   Add the following configuration to your VSCode settings (typically in `~/.vscode/settings.json` or workspace settings):
+
+   ```json
+   {
+     "servers": {
+       "thunder-mcp": {
+         "url": "https://localhost:8090/mcp",
+         "type": "http"
+       }
+     },
+     "inputs": []
+   }
+   ```
+
+3. **Verify Connection**: Check the MCP server status in VSCode's MCP panel or output logs
+
+## Sample Use Case: Integrating Login via React SDK
+
+Here's a complete example of using the Thunder MCP server to set up React SDK authentication:
+
+### Step 1: Create an Application
+
+Ask your AI assistant:
+> "Create a new SPA application in Thunder for React SDK integration"
+
+The assistant will:
+
+1. Use `thunder_get_application_templates` to get the SPA template
+2. Use `thunder_create_application` to create the application with appropriate OAuth settings
+3. Return the `client_id` for use in your React app
+
+### Step 2: Get React SDK Integration Instructions
+
+Ask your AI assistant:
+> "Provide React SDK integration instructions for the application I just created"
+
+The assistant will:
+
+1. Use `thunder_integrate_react_sdk` with your Thunder URL
+2. Provide complete integration instructions including:
+   - Provider configuration
+   - Component usage examples
+   - Authentication flow setup
+   - Code snippets
+
+### Step 3: Customize the Login Flow (Optional)
+
+Ask your AI assistant:
+> "Show me the current authentication flow for my application and suggest modifications"
+
+The assistant will:
+
+1. Use `thunder_get_application_by_client_id` to retrieve your application details
+2. Use `thunder_get_flow_by_id` to retrieve the current authentication flow
+3. Suggest modifications or use `thunder_update_flow` to customize the flow
+
+### Step 4: Update Application Flow
+
+Ask your AI assistant:
+> "Change the login flow of my application to use a custom flow with email OTP"
+
+The assistant will:
+
+1. Check if a custom flow exists using `thunder_list_flows`
+2. Create a new flow with email OTP using `thunder_create_flow` if needed
+3. Update your application using `thunder_update_application` to use the new flow
+
+## Troubleshooting
+
+Common issues and solutions when setting up the Thunder MCP server:
+
+### Certificate Errors
+
+If you encounter certificate/TLS errors:
+
+1. **Verify certificate is trusted**: Ensure the certificate is properly added to your system's certificate store
+
+2. **Check VSCode certificate settings**: Ensure trusting of system certificates is enabled
+
+3. **Re-add certificate**: Follow Step 1 again to ensure the certificate is properly installed
+
+### Connection Issues
+
+1. **Verify Thunder is running**:
+
+   ```bash
+   curl -k https://localhost:8090/health/liveness
+   ```
+
+2. **Check MCP endpoint**:
+
+   ```bash
+   curl -k https://localhost:8090/mcp
+   ```
+
+3. **Review VSCode MCP logs**: Check the output panel for MCP-related errors
+
+## Related Documentation
+
+- [MCP Server Securing](../standards-based/oauth2-oidc/features/mcp-server-securing.md) - Secure MCP servers with OAuth 2.0
+- [Application Management API](../../../api/application.yaml) - REST API documentation
+- [Flow Management API](../../../api/flow-management.yaml) - Flow API documentation
+- [React SDK Sample](../../../samples/apps/react-sdk-sample/) - Complete React SDK example

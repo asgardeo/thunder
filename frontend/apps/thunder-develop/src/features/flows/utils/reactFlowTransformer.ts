@@ -331,8 +331,8 @@ function extractPrompts(components: Element[], nodeId: string, edges: Edge[]): F
 
       if (connectedEdge) {
         action.nextNode = connectedEdge.target;
-      } else if (component.action?.next) {
-        action.nextNode = component.action.next;
+      } else if (component.action?.onSuccess) {
+        action.nextNode = component.action.onSuccess;
       }
 
       if (component.action?.executor) {
@@ -395,7 +395,7 @@ function extractPrompts(components: Element[], nodeId: string, edges: Edge[]): F
 /**
  * Finds the primary next node from edges or step action.
  * Edges are the source of truth for connections - they represent the current
- * state of the canvas. The action.next property may be stale from when the
+ * state of the canvas. The action.onSuccess property may be stale from when the
  * flow was loaded.
  */
 function findNextNode(canvasNode: Node<StepData>, edges: Edge[]): string | undefined {
@@ -413,9 +413,9 @@ function findNextNode(canvasNode: Node<StepData>, edges: Edge[]): string | undef
     return outgoingEdges[0].target;
   }
 
-  // Fall back to action.next only if no edges exist (should be rare)
-  if (canvasNode.data?.action?.next) {
-    return canvasNode.data.action.next;
+  // Fall back to action.onSuccess only if no edges exist (should be rare)
+  if (canvasNode.data?.action?.onSuccess) {
+    return canvasNode.data.action.onSuccess;
   }
 
   return undefined;

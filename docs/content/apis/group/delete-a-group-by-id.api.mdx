@@ -1,0 +1,72 @@
+---
+id: delete-a-group-by-id
+title: "Delete a group by id"
+description: "Delete a group by id"
+sidebar_label: "Delete a group by id"
+hide_title: true
+hide_table_of_contents: true
+api: eJyNVVFv2zYQ/ivEPW0AbSlGN2x6yxIjMNBuRZs+BX6gxbPFliJVkorrCfrvw5G0Y8UOVr/IuPt4993xu+MAQew8VE+wc7bvPKw5dMKJFgM6sg+gDFTQidAAByNahAqUBA4Ov/fKoYQquB45+LrBVkA1QDh0hPLBKbMDDlvrWhGggr5XEsZxTYd9Z41HT/hF+Y4+En3tVBeUpYwPxIdJ1BhQwsjhXVleov4SkhER9AE41NYENIFgouu0qgXBiq+esMMlQ7v5inWY1PIEtZUIHFr0XuwwNsTZDl1QiW30X6lySmzpnHUsx8Ifou00oR8+fZzdlOUNFXTM8JOxjvDzcCvzLLQ6tYDlTo+vIvxfgnsMQmmUDGOmc+d5tscGT5k2Vh6Y8qwVmpKiZLFcE4QynqnMS4ogYBw5BBViiFgK8ctRY0db5b0yu1mU4EzJeFd92wp3gAo+JC+LXra6Bw7PQvf4chfHri7Oru3N3ryu/SGHpWJOMiDKtTDGhllSYOI2JXYXAVmiid7b3H6fcLt+dErsCobtVWhY3SgtWZ7XMf44/HZtOlYmoDNCM4/uGV263umcBPwRik4LdX1CsmDGqeiuRU00XusqcheZ/ebA4uZoMTRWQgWpNuBpvVRQpKKKQckROKT4aQv1TkMFTQidr4piaKwPYzV01oUxNt0psclyIl/qxVb0mvaOtrXQ0TxyoDNT9x/lnyXxX1PKuncqHGLOf2770CxoJ/iDD9jC+hzymXqVMh6BL4tFRAOHrbb7CCGDderfuJHu8gqZGL9MKjxRrohdkQIWxwPUs2C/4U8dikBqZ227xDeXU8FtXaP3LFiWTKwVRuywRRPY7cdVlhcHZbY2lpfHOA3NhwmYrgGdTzd/My8vBP3YKE9AmrTeo6S0KV8W8xw4aFWj8bE7+bG57UTdIFvEiFMZ7Pf7uYjuuXW7Ip/1xfvV3fLvz8vZYl7Om9DqOM+d9aEV5izyG/K8vjrPBmXMPIas29PjyaFSkl6MJMEnGIaN8PjF6XEk8/ceaXM8rV8UG4Umlaf/Eqqt0B4vKJzmFX75lFfUr4wkcI1aNgpzeNlGABy+4SE93eN65NCgkOhi9uQgKXTh7MjFC0riP43u/fL98nEJ4/gfRkXTSw==
+sidebar_class_name: "delete api-method"
+info_path: docs/apis/group/group-management-api
+custom_edit_url: null
+---
+
+import MethodEndpoint from "@theme/ApiExplorer/MethodEndpoint";
+import ParamsDetails from "@theme/ParamsDetails";
+import RequestSchema from "@theme/RequestSchema";
+import StatusCodes from "@theme/StatusCodes";
+import OperationTabs from "@theme/OperationTabs";
+import TabItem from "@theme/TabItem";
+import Heading from "@theme/Heading";
+import Translate from "@docusaurus/Translate";
+
+<Heading
+  as={"h1"}
+  className={"openapi__heading"}
+  children={"Delete a group by id"}
+>
+</Heading>
+
+<MethodEndpoint
+  method={"delete"}
+  path={"/groups/{id}"}
+  context={"endpoint"}
+>
+  
+</MethodEndpoint>
+
+
+
+Delete a group by id
+
+<Heading
+  id={"request"}
+  as={"h2"}
+  className={"openapi-tabs__heading"}
+>
+  <Translate id="theme.openapi.request.title">Request</Translate>
+</Heading>
+
+<ParamsDetails
+  parameters={[{"in":"path","name":"id","required":true,"schema":{"type":"string","format":"uuid"}}]}
+>
+  
+</ParamsDetails>
+
+<RequestSchema
+  title={"Body"}
+  body={undefined}
+>
+  
+</RequestSchema>
+
+<StatusCodes
+  id={undefined}
+  label={undefined}
+  responses={{"204":{"description":"Group deleted"},"400":{"description":"Bad request","content":{"application/json":{"schema":{"type":"object","required":["code","message"],"properties":{"code":{"type":"string","description":"Error code","example":"GRP-1001"},"message":{"type":"string","description":"Error message","example":"Invalid request format"},"description":{"type":"string","description":"Detailed error description","example":"The request body is malformed or contains invalid data"}},"title":"Error"},"examples":{"missing-group-id":{"summary":"Missing group ID","value":{"code":"GRP-1002","message":"Invalid request format","description":"Group ID is required"}},"cannot-delete-group":{"summary":"Cannot delete group","value":{"code":"GRP-1006","message":"Cannot delete group","description":"Cannot delete group with child groups"}}}}}},"500":{"description":"Internal server error","content":{"text/plain":{"schema":{"type":"string"},"example":"Internal server error"}}}}}
+>
+  
+</StatusCodes>
+
+
+      

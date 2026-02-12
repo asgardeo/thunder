@@ -12,7 +12,7 @@ set -e
 
 echo "✅ Verifying all build artifacts were created..."
 
-# Define expected platforms
+# Define expected platforms (GO_OS:GO_ARCH)
 PLATFORMS=("windows:amd64" "linux:amd64" "linux:arm64" "darwin:amd64" "darwin:arm64")
 
 # Track any missing artifacts
@@ -22,21 +22,34 @@ for platform in "${PLATFORMS[@]}"; do
   OS="${platform%%:*}"
   ARCH="${platform#*:}"
 
-  # Determine expected file pattern based on OS
-  if [ "$OS" = "windows" ]; then
-    EXPECTED_FILE="target/dist/thunder-*-win-*.zip"
-  elif [ "$OS" = "darwin" ]; then
-    EXPECTED_FILE="target/dist/thunder-*-macos-*.zip"
-  else
-    EXPECTED_FILE="target/dist/thunder-*-$OS-*.zip"
+  # Transform OS name to match package naming (same as build.sh)
+  PACKAGE_OS="$OS"
+  if [ "$OS" = "darwin" ]; then
+    PACKAGE_OS="macos"
+  elif [ "$OS" = "windows" ]; then
+    PACKAGE_OS="win"
   fi
 
+  # Transform ARCH name to match package naming (same as build.sh)
+  PACKAGE_ARCH="$ARCH"
+  if [ "$ARCH" = "amd64" ]; then
+    PACKAGE_ARCH="x64"
+  fi
+
+  # Build the expected file pattern with specific architecture
+  EXPECTED_PATTERN="target/dist/thunder-*-${PACKAGE_OS}-${PACKAGE_ARCH}.zip"
+
+  # Expand glob once into an array (nullglob ensures empty array if no match)
+  shopt -s nullglob
+  MATCHED_FILES=($EXPECTED_PATTERN)
+  shopt -u nullglob
+
   # Check if artifact exists
-  if ! ls "$EXPECTED_FILE" 1> /dev/null 2>&1; then
-    echo "❌ Backend artifact not found for $OS/$ARCH: $EXPECTED_FILE"
+  if [ ${#MATCHED_FILES[@]} -eq 0 ]; then
+    echo "❌ Backend artifact not found for $OS/$ARCH: $EXPECTED_PATTERN"
     MISSING_COUNT=$((MISSING_COUNT + 1))
   else
-    echo "✅ Found backend artifact for $OS/$ARCH"
+    echo "✅ Found backend artifact for $OS/$ARCH: ${MATCHED_FILES[*]}"
   fi
 done
 

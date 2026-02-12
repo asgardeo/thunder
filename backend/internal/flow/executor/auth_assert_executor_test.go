@@ -31,6 +31,7 @@ import (
 	authncm "github.com/asgardeo/thunder/internal/authn/common"
 	"github.com/asgardeo/thunder/internal/flow/common"
 	"github.com/asgardeo/thunder/internal/flow/core"
+	oauth2const "github.com/asgardeo/thunder/internal/oauth/oauth2/constants"
 	"github.com/asgardeo/thunder/internal/ou"
 	"github.com/asgardeo/thunder/internal/system/config"
 	"github.com/asgardeo/thunder/internal/system/error/serviceerror"
@@ -121,7 +122,11 @@ func (suite *AuthAssertExecutorTestSuite) TestExecute_UserAuthenticated_Success(
 				EndTime:      1234567890,
 			},
 		},
-		Application: appmodel.Application{},
+		Application: appmodel.Application{
+			Token: &appmodel.TokenConfig{
+				UserAttributes: []string{"userType", "ouId"},
+			},
+		},
 	}
 
 	suite.mockAssertGenerator.On("GenerateAssertion", mock.MatchedBy(func(refs []authncm.AuthenticatorReference) bool {
@@ -219,7 +224,7 @@ func (suite *AuthAssertExecutorTestSuite) TestExecute_WithUserAttributes() {
 		Attributes: attrsJSON,
 	}
 
-	suite.mockUserService.On("GetUser", "user-123").Return(existingUser, nil)
+	suite.mockUserService.On("GetUser", mock.Anything, "user-123").Return(existingUser, nil)
 	suite.mockJWTService.On("GenerateJWT", "user-123", "app-123", mock.Anything, mock.Anything,
 		mock.MatchedBy(func(claims map[string]interface{}) bool {
 			return claims["email"] == "test@example.com" && claims["phone"] == "1234567890"
@@ -393,7 +398,7 @@ func (suite *AuthAssertExecutorTestSuite) TestGetUserAttributes_Success() {
 		Attributes: attrsJSON,
 	}
 
-	suite.mockUserService.On("GetUser", "user-123").Return(existingUser, nil)
+	suite.mockUserService.On("GetUser", mock.Anything, "user-123").Return(existingUser, nil)
 
 	resultUser, resultAttrs, err := suite.executor.getUserAttributes("user-123")
 
@@ -406,7 +411,7 @@ func (suite *AuthAssertExecutorTestSuite) TestGetUserAttributes_Success() {
 }
 
 func (suite *AuthAssertExecutorTestSuite) TestGetUserAttributes_ServiceError() {
-	suite.mockUserService.On("GetUser", "user-123").
+	suite.mockUserService.On("GetUser", mock.Anything, "user-123").
 		Return(nil, &serviceerror.ServiceError{Error: "user not found"})
 
 	resultUser, resultAttrs, err := suite.executor.getUserAttributes("user-123")
@@ -423,7 +428,7 @@ func (suite *AuthAssertExecutorTestSuite) TestGetUserAttributes_InvalidJSON() {
 		Attributes: json.RawMessage(`invalid json`),
 	}
 
-	suite.mockUserService.On("GetUser", "user-123").Return(existingUser, nil)
+	suite.mockUserService.On("GetUser", mock.Anything, "user-123").Return(existingUser, nil)
 
 	resultUser, resultAttrs, err := suite.executor.getUserAttributes("user-123")
 
@@ -445,12 +450,16 @@ func (suite *AuthAssertExecutorTestSuite) TestExecute_WithUserTypeAndOU() {
 			OrganizationUnitID: "ou-456",
 		},
 		ExecutionHistory: map[string]*common.NodeExecutionRecord{},
-		Application:      appmodel.Application{},
+		Application: appmodel.Application{
+			Token: &appmodel.TokenConfig{
+				UserAttributes: []string{"userType", "ouId"},
+			},
+		},
 	}
 
 	suite.mockJWTService.On("GenerateJWT", "user-123", "app-123", mock.Anything, mock.Anything,
 		mock.MatchedBy(func(claims map[string]interface{}) bool {
-			return claims[userTypeKey] == "EXTERNAL" && claims[ouIDKey] == "ou-456"
+			return claims[oauth2const.ClaimUserType] == "EXTERNAL" && claims[oauth2const.ClaimOUID] == "ou-456"
 		})).Return("jwt-token", int64(3600), nil)
 
 	suite.mockOUService.On("GetOrganizationUnit", "ou-456").Return(ou.OrganizationUnit{ID: "ou-456"}, nil)
@@ -503,7 +512,11 @@ func (suite *AuthAssertExecutorTestSuite) TestExecute_WithOUNameAndHandle() {
 			OrganizationUnitID: "ou-789",
 		},
 		ExecutionHistory: map[string]*common.NodeExecutionRecord{},
-		Application:      appmodel.Application{},
+		Application: appmodel.Application{
+			Token: &appmodel.TokenConfig{
+				UserAttributes: []string{"ouId", "ouName", "ouHandle"},
+			},
+		},
 	}
 
 	suite.mockOUService.On("GetOrganizationUnit", "ou-789").Return(ou.OrganizationUnit{
@@ -514,9 +527,9 @@ func (suite *AuthAssertExecutorTestSuite) TestExecute_WithOUNameAndHandle() {
 
 	suite.mockJWTService.On("GenerateJWT", "user-123", "app-123", mock.Anything, mock.Anything,
 		mock.MatchedBy(func(claims map[string]interface{}) bool {
-			return claims[ouIDKey] == "ou-789" &&
-				claims[userInputOuName] == "Engineering" &&
-				claims[userInputOuHandle] == "eng"
+			return claims[oauth2const.ClaimOUID] == "ou-789" &&
+				claims[oauth2const.ClaimOUName] == "Engineering" &&
+				claims[oauth2const.ClaimOUHandle] == "eng"
 		})).Return("jwt-token", int64(3600), nil)
 
 	resp, err := suite.executor.Execute(ctx)
@@ -550,7 +563,7 @@ func (suite *AuthAssertExecutorTestSuite) TestExecute_AppendUserDetailsToClaimsF
 	}
 
 	// Test case 1: GetUser returns service error
-	suite.mockUserService.On("GetUser", "user-123").
+	suite.mockUserService.On("GetUser", mock.Anything, "user-123").
 		Return(nil, &serviceerror.ServiceError{
 			Error:            "user_not_found",
 			ErrorDescription: "user not found",
@@ -572,7 +585,7 @@ func (suite *AuthAssertExecutorTestSuite) TestExecute_AppendUserDetailsToClaimsF
 		Attributes: json.RawMessage(`{invalid json}`),
 	}
 
-	suite.mockUserService.On("GetUser", "user-123").Return(existingUser, nil)
+	suite.mockUserService.On("GetUser", mock.Anything, "user-123").Return(existingUser, nil)
 
 	_, err = suite.executor.Execute(ctx)
 
@@ -585,7 +598,7 @@ func (suite *AuthAssertExecutorTestSuite) TestExecute_AppendUserDetailsToClaimsF
 	suite.executor.userService = suite.mockUserService
 
 	existingUser.Attributes = attrsJSON
-	suite.mockUserService.On("GetUser", "user-123").Return(existingUser, nil)
+	suite.mockUserService.On("GetUser", mock.Anything, "user-123").Return(existingUser, nil)
 	suite.mockJWTService.On("GenerateJWT", mock.Anything, mock.Anything, mock.Anything,
 		mock.Anything, mock.Anything).Return("jwt-token", int64(3600), nil)
 
@@ -607,7 +620,11 @@ func (suite *AuthAssertExecutorTestSuite) TestExecute_AppendOUDetailsToClaimsFai
 			OrganizationUnitID: "ou-123",
 		},
 		ExecutionHistory: map[string]*common.NodeExecutionRecord{},
-		Application:      appmodel.Application{},
+		Application: appmodel.Application{
+			Token: &appmodel.TokenConfig{
+				UserAttributes: []string{oauth2const.ClaimOUID},
+			},
+		},
 	}
 
 	suite.mockOUService.On("GetOrganizationUnit", "ou-123").
@@ -641,7 +658,7 @@ func (suite *AuthAssertExecutorTestSuite) TestAppendUserDetailsToClaims_GetUserA
 		},
 	}
 
-	suite.mockUserService.On("GetUser", "user-123").
+	suite.mockUserService.On("GetUser", mock.Anything, "user-123").
 		Return(nil, &serviceerror.ServiceError{
 			Error:            "database_error",
 			ErrorDescription: "failed to fetch user",
@@ -665,7 +682,11 @@ func (suite *AuthAssertExecutorTestSuite) TestAppendOUDetailsToClaims_GetOrganiz
 			OrganizationUnitID: "ou-invalid",
 		},
 		ExecutionHistory: map[string]*common.NodeExecutionRecord{},
-		Application:      appmodel.Application{},
+		Application: appmodel.Application{
+			Token: &appmodel.TokenConfig{
+				UserAttributes: []string{oauth2const.ClaimOUID},
+			},
+		},
 	}
 
 	suite.mockOUService.On("GetOrganizationUnit", "ou-invalid").
@@ -680,4 +701,162 @@ func (suite *AuthAssertExecutorTestSuite) TestAppendOUDetailsToClaims_GetOrganiz
 	assert.Contains(suite.T(), err.Error(), "something went wrong while fetching organization unit")
 	assert.Contains(suite.T(), err.Error(), "organization unit does not exist")
 	suite.mockOUService.AssertExpectations(suite.T())
+}
+
+func (suite *AuthAssertExecutorTestSuite) TestExecute_WithConfiguredUserAttributes() {
+	attrs := map[string]interface{}{"email": "test@example.com", "username": "testuser", "firstName": "Test"}
+	attrsJSON, _ := json.Marshal(attrs)
+
+	ctx := &core.NodeContext{
+		FlowID:   "flow-123",
+		AppID:    "app-123",
+		FlowType: common.FlowTypeAuthentication,
+		AuthenticatedUser: authncm.AuthenticatedUser{
+			IsAuthenticated: true,
+			UserID:          "user-123",
+		},
+		ExecutionHistory: map[string]*common.NodeExecutionRecord{},
+		Application: appmodel.Application{
+			// Token config with user attributes configured
+			Token: &appmodel.TokenConfig{
+				UserAttributes: []string{"email", "username", "firstName"},
+			},
+		},
+	}
+
+	existingUser := &user.User{
+		ID:         "user-123",
+		Attributes: attrsJSON,
+	}
+
+	suite.mockUserService.On("GetUser", mock.Anything, "user-123").Return(existingUser, nil)
+	suite.mockJWTService.On("GenerateJWT", "user-123", "app-123", mock.Anything, mock.Anything,
+		mock.MatchedBy(func(claims map[string]interface{}) bool {
+			// Should contain the configured user attributes from the user store
+			hasEmail := claims["email"] == "test@example.com"
+			hasUsername := claims["username"] == "testuser"
+			hasFirstName := claims["firstName"] == "Test"
+			return hasEmail && hasUsername && hasFirstName
+		})).Return("jwt-token", int64(3600), nil)
+
+	resp, err := suite.executor.Execute(ctx)
+
+	assert.NoError(suite.T(), err)
+	assert.NotNil(suite.T(), resp)
+	assert.Equal(suite.T(), common.ExecComplete, resp.Status)
+	suite.mockUserService.AssertExpectations(suite.T())
+	suite.mockJWTService.AssertExpectations(suite.T())
+}
+
+func (suite *AuthAssertExecutorTestSuite) TestExecute_WithGroups() {
+	ctx := &core.NodeContext{
+		FlowID:   "flow-123",
+		AppID:    "app-123",
+		FlowType: common.FlowTypeAuthentication,
+		AuthenticatedUser: authncm.AuthenticatedUser{
+			IsAuthenticated: true,
+			UserID:          "user-123",
+		},
+		ExecutionHistory: map[string]*common.NodeExecutionRecord{},
+		Application: appmodel.Application{
+			Token: &appmodel.TokenConfig{
+				UserAttributes: []string{oauth2const.UserAttributeGroups},
+			},
+		},
+	}
+
+	userGroups := &user.UserGroupListResponse{
+		Groups: []user.UserGroup{
+			{Name: "admin"},
+			{Name: "developer"},
+			{Name: "viewer"},
+		},
+	}
+
+	suite.mockUserService.On("GetUserGroups", mock.Anything, "user-123", oauth2const.DefaultGroupListLimit, 0).
+		Return(userGroups, nil)
+	suite.mockJWTService.On("GenerateJWT", "user-123", "app-123", mock.Anything, mock.Anything,
+		mock.MatchedBy(func(claims map[string]interface{}) bool {
+			// Should contain groups claim
+			groups, ok := claims[oauth2const.UserAttributeGroups].([]string)
+			if !ok {
+				return false
+			}
+			return len(groups) == 3 && groups[0] == "admin" && groups[1] == "developer" && groups[2] == "viewer"
+		})).Return("jwt-token", int64(3600), nil)
+
+	resp, err := suite.executor.Execute(ctx)
+
+	assert.NoError(suite.T(), err)
+	assert.NotNil(suite.T(), resp)
+	assert.Equal(suite.T(), common.ExecComplete, resp.Status)
+	suite.mockUserService.AssertExpectations(suite.T())
+	suite.mockJWTService.AssertExpectations(suite.T())
+}
+
+func (suite *AuthAssertExecutorTestSuite) TestExecute_WithGroups_EmptyGroups() {
+	ctx := &core.NodeContext{
+		FlowID:   "flow-123",
+		AppID:    "app-123",
+		FlowType: common.FlowTypeAuthentication,
+		AuthenticatedUser: authncm.AuthenticatedUser{
+			IsAuthenticated: true,
+			UserID:          "user-123",
+		},
+		ExecutionHistory: map[string]*common.NodeExecutionRecord{},
+		Application: appmodel.Application{
+			Token: &appmodel.TokenConfig{
+				UserAttributes: []string{oauth2const.UserAttributeGroups},
+			},
+		},
+	}
+
+	userGroups := &user.UserGroupListResponse{
+		Groups: []user.UserGroup{},
+	}
+
+	suite.mockUserService.On("GetUserGroups", mock.Anything, "user-123", oauth2const.DefaultGroupListLimit, 0).
+		Return(userGroups, nil)
+	suite.mockJWTService.On("GenerateJWT", "user-123", "app-123", mock.Anything, mock.Anything,
+		mock.MatchedBy(func(claims map[string]interface{}) bool {
+			// Should NOT contain groups claim when groups list is empty
+			_, ok := claims[oauth2const.UserAttributeGroups]
+			return !ok
+		})).Return("jwt-token", int64(3600), nil)
+
+	resp, err := suite.executor.Execute(ctx)
+
+	assert.NoError(suite.T(), err)
+	assert.NotNil(suite.T(), resp)
+	assert.Equal(suite.T(), common.ExecComplete, resp.Status)
+	suite.mockUserService.AssertExpectations(suite.T())
+	suite.mockJWTService.AssertExpectations(suite.T())
+}
+
+func (suite *AuthAssertExecutorTestSuite) TestExecute_WithGroups_GetUserGroupsFails() {
+	ctx := &core.NodeContext{
+		FlowID:   "flow-123",
+		AppID:    "app-123",
+		FlowType: common.FlowTypeAuthentication,
+		AuthenticatedUser: authncm.AuthenticatedUser{
+			IsAuthenticated: true,
+			UserID:          "user-123",
+		},
+		ExecutionHistory: map[string]*common.NodeExecutionRecord{},
+		Application: appmodel.Application{
+			Token: &appmodel.TokenConfig{
+				UserAttributes: []string{oauth2const.UserAttributeGroups},
+			},
+		},
+	}
+
+	suite.mockUserService.On("GetUserGroups", mock.Anything, "user-123", oauth2const.DefaultGroupListLimit, 0).
+		Return(nil, &serviceerror.ServiceError{Error: "failed to fetch groups", ErrorDescription: "database error"})
+
+	resp, err := suite.executor.Execute(ctx)
+
+	assert.Error(suite.T(), err)
+	assert.Nil(suite.T(), resp)
+	assert.Contains(suite.T(), err.Error(), "something went wrong while fetching user groups")
+	suite.mockUserService.AssertExpectations(suite.T())
 }

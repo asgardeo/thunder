@@ -37,7 +37,7 @@ type organizationUnitStoreInterface interface {
 	GetOrganizationUnit(id string) (OrganizationUnit, error)
 	GetOrganizationUnitByPath(handles []string) (OrganizationUnit, error)
 	IsOrganizationUnitExists(id string) (bool, error)
-	IsOrganizationUnitImmutable(id string) bool
+	IsOrganizationUnitDeclarative(id string) bool
 	CheckOrganizationUnitNameConflict(name string, parent *string) (bool, error)
 	CheckOrganizationUnitHandleConflict(handle string, parent *string) (bool, error)
 	UpdateOrganizationUnit(ou OrganizationUnit) error
@@ -235,9 +235,9 @@ func (s *organizationUnitStore) IsOrganizationUnitExists(id string) (bool, error
 	return false, fmt.Errorf("failed to parse existence check result")
 }
 
-// IsOrganizationUnitImmutable checks if an organization unit is immutable.
+// IsOrganizationUnitDeclarative checks if an organization unit is immutable.
 // Database store resources are always mutable, so this always returns false.
-func (s *organizationUnitStore) IsOrganizationUnitImmutable(id string) bool {
+func (s *organizationUnitStore) IsOrganizationUnitDeclarative(id string) bool {
 	return false
 }
 

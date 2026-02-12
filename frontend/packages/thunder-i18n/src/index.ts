@@ -71,3 +71,23 @@ export type {
 } from './models';
 
 export {LANGUAGE_CONFIGS, isSupportedLanguage} from './models';
+
+// Export hooks
+export {default as useGetTranslations} from './hooks/useGetTranslations';
+export type {TranslationsResponse, UseGetTranslationsOptions} from './hooks/useGetTranslations';
+
+export {default as useGetLanguages} from './hooks/useGetLanguages';
+export type {LanguagesResponse, UseGetLanguagesOptions} from './hooks/useGetLanguages';
+
+export {default as useUpdateTranslation} from './hooks/useUpdateTranslation';
+export type {
+  TranslationResponse,
+  UpdateTranslationVariables,
+  UseUpdateTranslationOptions,
+} from './hooks/useUpdateTranslation';
+
+export {default as useLanguage} from './hooks/useLanguage';
+export type {UseLanguageReturn} from './hooks/useLanguage';
+
+// Export constants
+export {default as I18nQueryKeys} from './constants/I18nQueryKeys';

@@ -22,7 +22,7 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/asgardeo/thunder/internal/system/immutable_resource/entity"
+	"github.com/asgardeo/thunder/internal/system/declarative_resource/entity"
 
 	"github.com/stretchr/testify/suite"
 )
@@ -376,29 +376,29 @@ func (suite *CompositeStoreTestSuite) TestCompositeStore_ListOperations() {
 	})
 }
 
-// TestCompositeStore_IsOrganizationUnitImmutable tests checking if an OU is immutable.
-func (suite *CompositeStoreTestSuite) TestCompositeStore_IsOrganizationUnitImmutable() {
+// TestCompositeStore_IsOrganizationUnitDeclarative tests checking if an OU is immutable.
+func (suite *CompositeStoreTestSuite) TestCompositeStore_IsOrganizationUnitDeclarative() {
 	suite.Run("returns true for immutable OU (exists in file store)", func() {
 		// Add OU to file store
 		err := suite.fileStore.CreateOrganizationUnit(OrganizationUnit{
 			ID:     "immutable-ou-1",
 			Handle: "immutable-handle",
-			Name:   "Immutable OU",
+			Name:   "Declarative OU",
 		})
 		suite.NoError(err)
 
-		isImmutable := suite.compositeStore.IsOrganizationUnitImmutable("immutable-ou-1")
-		suite.True(isImmutable)
+		isDeclarative := suite.compositeStore.IsOrganizationUnitDeclarative("immutable-ou-1")
+		suite.True(isDeclarative)
 	})
 
 	suite.Run("returns false for mutable OU (not in file store)", func() {
-		isImmutable := suite.compositeStore.IsOrganizationUnitImmutable("db-ou-1")
-		suite.False(isImmutable)
+		isDeclarative := suite.compositeStore.IsOrganizationUnitDeclarative("db-ou-1")
+		suite.False(isDeclarative)
 	})
 
 	suite.Run("returns false for non-existent OU", func() {
-		isImmutable := suite.compositeStore.IsOrganizationUnitImmutable("nonexistent")
-		suite.False(isImmutable)
+		isDeclarative := suite.compositeStore.IsOrganizationUnitDeclarative("nonexistent")
+		suite.False(isDeclarative)
 	})
 }
 

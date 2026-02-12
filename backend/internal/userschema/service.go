@@ -26,8 +26,8 @@ import (
 
 	oupkg "github.com/asgardeo/thunder/internal/ou"
 	serverconst "github.com/asgardeo/thunder/internal/system/constants"
+	declarativeresource "github.com/asgardeo/thunder/internal/system/declarative_resource"
 	"github.com/asgardeo/thunder/internal/system/error/serviceerror"
-	immutableresource "github.com/asgardeo/thunder/internal/system/immutable_resource"
 	"github.com/asgardeo/thunder/internal/system/log"
 	"github.com/asgardeo/thunder/internal/system/utils"
 	"github.com/asgardeo/thunder/internal/userschema/model"
@@ -99,7 +99,7 @@ func (us *userSchemaService) CreateUserSchema(request CreateUserSchemaRequest) (
 	*UserSchema, *serviceerror.ServiceError) {
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, userSchemaLoggerComponentName))
 
-	if err := immutableresource.CheckImmutableCreate(); err != nil {
+	if err := declarativeresource.CheckDeclarativeCreate(); err != nil {
 		return nil, err
 	}
 
@@ -187,7 +187,7 @@ func (us *userSchemaService) UpdateUserSchema(schemaID string, request UpdateUse
 	*UserSchema, *serviceerror.ServiceError) {
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, userSchemaLoggerComponentName))
 
-	if err := immutableresource.CheckImmutableUpdate(); err != nil {
+	if err := declarativeresource.CheckDeclarativeUpdate(); err != nil {
 		return nil, err
 	}
 
@@ -247,7 +247,7 @@ func (us *userSchemaService) UpdateUserSchema(schemaID string, request UpdateUse
 func (us *userSchemaService) DeleteUserSchema(schemaID string) *serviceerror.ServiceError {
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, userSchemaLoggerComponentName))
 
-	if err := immutableresource.CheckImmutableDelete(); err != nil {
+	if err := declarativeresource.CheckDeclarativeDelete(); err != nil {
 		return err
 	}
 

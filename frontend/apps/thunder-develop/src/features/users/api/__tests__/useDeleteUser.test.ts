@@ -17,8 +17,7 @@
  */
 
 import {describe, it, expect, vi, beforeEach, afterEach} from 'vitest';
-import {waitFor} from '@testing-library/react';
-import {renderHook} from '../../../../test/test-utils';
+import {waitFor, renderHook} from '@thunder/test-utils';
 import useDeleteUser from '../useDeleteUser';
 
 // Mock useAsgardeo
@@ -32,8 +31,8 @@ vi.mock('@asgardeo/react', () => ({
 }));
 
 // Mock useConfig
-vi.mock('@thunder/commons-contexts', async (importOriginal) => {
-  const actual = await importOriginal<typeof import('@thunder/commons-contexts')>();
+vi.mock('@thunder/shared-contexts', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@thunder/shared-contexts')>();
   return {
     ...actual,
     useConfig: () => ({
@@ -236,6 +235,23 @@ describe('useDeleteUser', () => {
 
     await waitFor(() => {
       expect(result.current.error).toBeNull();
+    });
+  });
+
+  it('should handle non-Error rejection', async () => {
+    mockHttpRequest.mockRejectedValueOnce('String error');
+
+    const {result} = renderHook(() => useDeleteUser());
+
+    await expect(result.current.deleteUser('user-123')).rejects.toBe('String error');
+
+    await waitFor(() => {
+      expect(result.current.error).toEqual({
+        code: 'DELETE_USER_ERROR',
+        message: 'An unknown error occurred',
+        description: 'Failed to delete user',
+      });
+      expect(result.current.loading).toBe(false);
     });
   });
 });

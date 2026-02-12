@@ -286,6 +286,9 @@ var (
 		ClientSecret:              "ou_reg_flow_test_secret",
 		RedirectURIs:              []string{"http://localhost:3000/callback"},
 		AllowedUserTypes:          []string{dynamicUserSchema.Name},
+		TokenConfig: map[string]interface{}{
+			"user_attributes": []string{"userType", "ouId", "ouName", "ouHandle"},
+		},
 	}
 
 	smsApp = testutils.Application{
@@ -296,6 +299,9 @@ var (
 		ClientSecret:              "ou_sms_reg_flow_test_secret",
 		RedirectURIs:              []string{"http://localhost:3000/callback"},
 		AllowedUserTypes:          []string{dynamicUserSchema.Name},
+		TokenConfig: map[string]interface{}{
+			"user_attributes": []string{"userType", "ouId", "ouName", "ouHandle"},
+		},
 	}
 
 	ouRegTestOU = testutils.OrganizationUnit{

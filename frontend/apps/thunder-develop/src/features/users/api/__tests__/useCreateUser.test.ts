@@ -17,8 +17,7 @@
  */
 
 import {describe, it, expect, vi, beforeEach, afterEach} from 'vitest';
-import {waitFor} from '@testing-library/react';
-import {renderHook} from '../../../../test/test-utils';
+import {waitFor, renderHook} from '@thunder/test-utils';
 import useCreateUser, {type CreateUserRequest} from '../useCreateUser';
 import type {ApiUser} from '../../types/users';
 
@@ -33,12 +32,13 @@ vi.mock('@asgardeo/react', () => ({
 }));
 
 // Mock useConfig
-vi.mock('@thunder/commons-contexts', async (importOriginal) => {
-  const actual = await importOriginal<typeof import('@thunder/commons-contexts')>();
+const mockGetServerUrl = vi.fn<() => string | undefined>(() => 'https://localhost:8090');
+vi.mock('@thunder/shared-contexts', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@thunder/shared-contexts')>();
   return {
     ...actual,
     useConfig: () => ({
-      getServerUrl: () => 'https://localhost:8090',
+      getServerUrl: mockGetServerUrl,
     }),
   };
 });
@@ -46,6 +46,7 @@ vi.mock('@thunder/commons-contexts', async (importOriginal) => {
 describe('useCreateUser', () => {
   beforeEach(() => {
     mockHttpRequest.mockReset();
+    mockGetServerUrl.mockReturnValue('https://localhost:8090');
   });
 
   afterEach(() => {
@@ -361,5 +362,57 @@ describe('useCreateUser', () => {
       expect(result.current.data).toBeNull();
       expect(result.current.loading).toBe(false);
     });
+  });
+});
+
+describe('useCreateUser with fallback URL', () => {
+  const FALLBACK_BASE_URL = 'https://fallback-api.example.com';
+
+  beforeEach(() => {
+    mockHttpRequest.mockReset();
+    mockGetServerUrl.mockReturnValue(undefined);
+    import.meta.env.VITE_ASGARDEO_BASE_URL = FALLBACK_BASE_URL;
+  });
+
+  afterEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it('should use VITE_ASGARDEO_BASE_URL when getServerUrl returns undefined', async () => {
+    const mockRequest: CreateUserRequest = {
+      organizationUnit: '/sales',
+      type: 'customer',
+      attributes: {
+        name: 'John Doe',
+        email: 'john@example.com',
+      },
+    };
+
+    const mockResponse: ApiUser = {
+      id: 'user-456',
+      organizationUnit: '/sales',
+      type: 'customer',
+      attributes: {
+        name: 'John Doe',
+        email: 'john@example.com',
+      },
+    };
+
+    mockHttpRequest.mockResolvedValueOnce({data: mockResponse});
+
+    const {result} = renderHook(() => useCreateUser());
+
+    await result.current.createUser(mockRequest);
+
+    await waitFor(() => {
+      expect(result.current.data).toEqual(mockResponse);
+    });
+
+    expect(mockHttpRequest).toHaveBeenCalledWith(
+      expect.objectContaining({
+        url: `${FALLBACK_BASE_URL}/users`,
+        method: 'POST',
+      }),
+    );
   });
 });

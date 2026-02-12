@@ -1,0 +1,72 @@
+---
+id: get-a-message-notification-sender-by-id
+title: "Get a message notification sender by ID"
+description: "Retrieve a message notification sender by its unique identifier."
+sidebar_label: "Get a message notification sender by ID"
+hide_title: true
+hide_table_of_contents: true
+api: eJztWFFvGzcM/isCn9rhnLsETtbeW5ZmRbA1LeIWGBAEhXyifWrvpIvEc+Ia/u8DdbJ9jo0mLTJgA+aXxCJFfiQ/UaIXoNAXTjekrYEcrpCcxhkKKWr0Xk5RGEt6ogvJGsKjUejEeC40edEafdui0AoN66A7gARITj3k1/Au7h+FLR5uEmikkzUSf8uvF2BkjZCDVpCAZu+NpBIScHjbaocKcnItJg8gfnroVNiJoBK/BxgS8EWJtYR8ATRv2K0np80Ulssb9ugbazx6lh9lGf/Z9vr+D0igsIbQEEtl01TRR/rFs8pi14Udf8GCIIHG2QYd6c6BVrswnilKvJd1U7Hd4+MMXw2zbIBHr8eD4aEaDuSvhyeD4fDk5Ph4OMyyLINlEovwGJxLWeOPIvh4pyttxejdKHKA3W2Zfczrm823H3XeeRQT64JUm2kAErd70Xpe6iAyrsbZmWYjj4L6EDWfiMi0NZ8G6jwlMLNGTpHJ1HqyNR+LDWrq4+kxJiKSzsn5PkBR9WmQNGHtH2fp04gRnc9FUO/HIovCtoY+e604oJms2h+xF/TFi1r6r6jEnaZS/BI+saaFQxIbxC+3fJ+e/fXIhyFp/7mz04M1trZCaXZwXRjFiUQvdJfjZgVUeyEjnj4Gbl1L/iRAmgKq2BEve1XpaHoV2w90+sN9Deg3qcQV3rboKRcXZiYrrVbt+OKNiPxVz9elCqueUK9z56wTQbdfgHeXo8Fhlp1wmiMbn2prpd43t4rXdQlgCtSSfqKfkNQVKoHBU1+41bhKXHsaWxVKXMuKnaISIVxDUhsvdMSlJEnol/qs0mgoBLQpbs/HKr2rRB1BL0+wU96dSD52DAwl77FAryGtqTTcpdKlJfG7bY3KBdvxDRZ8xajvXvnKomeBwHvt6X+a/SdpdrhFs3hHclEnTIe9LIsIUe1lRWHbKkjEGKORjnjH+3rYhSF0RlZihG6GTgTguTg1ojV432BB66TZomid485f6ipwvUAf7mzagPoXsfCYk/tcLIxZ8l2WQkL+KRL+fO77POzq+YCHHRFqpNIqyGEa7sfwxM8h7ZNp0JHJpzEb6UKrJT/Zg9VuVmhdBTmURI3P03RRWk/LfNFYR6w5k07LcdXVkmUd9yayrQhyqGwhq7DMLyvrHohfZa8zhnvDLovWaZoHn+9PWyqP+PXm556whpu+yoip1XlcKW5YJsNCApPK3gUVXrBOfwsBn0W2bS1+2opwDTlndGlnMF1tYMKQ/YpP2hQUwwRkmw5vDCeH04IrK8iKbknUkl+nNRoSpx8u/KqI2kxsCC/Wu/+EiY971t/TQLRnAbe21qNiT6U0qtp7x3geH7ni3ebDgwwSqHSBTKf1ixROG1mUKI6CeMOLPE3v7u4OZJAeWDdN41af/nlxdn45Oh8cHWQHJdVV4G5jPdXS9Ay/RXp87t29jBebJvQs83NHIcJ7SptKasOkDWEu4um5hn2np9faE8i14smiOwrXsFiMpcdPrlouefm2RccUv9mcnEB4pT3/ryCfyMo/nLz7cb64ijP6S/GTk+reMFdzjpnDemIASOArzrsfCpY3ywRKlGFSu15EAdO4od6WnauAD+66E709/wjL5d/y0+uB
+sidebar_class_name: "get api-method"
+info_path: docs/apis/notification-sender/notification-sender-api
+custom_edit_url: null
+---
+
+import MethodEndpoint from "@theme/ApiExplorer/MethodEndpoint";
+import ParamsDetails from "@theme/ParamsDetails";
+import RequestSchema from "@theme/RequestSchema";
+import StatusCodes from "@theme/StatusCodes";
+import OperationTabs from "@theme/OperationTabs";
+import TabItem from "@theme/TabItem";
+import Heading from "@theme/Heading";
+import Translate from "@docusaurus/Translate";
+
+<Heading
+  as={"h1"}
+  className={"openapi__heading"}
+  children={"Get a message notification sender by ID"}
+>
+</Heading>
+
+<MethodEndpoint
+  method={"get"}
+  path={"/notification-senders/message/{id}"}
+  context={"endpoint"}
+>
+  
+</MethodEndpoint>
+
+
+
+Retrieve a message notification sender by its unique identifier.
+
+<Heading
+  id={"request"}
+  as={"h2"}
+  className={"openapi-tabs__heading"}
+>
+  <Translate id="theme.openapi.request.title">Request</Translate>
+</Heading>
+
+<ParamsDetails
+  parameters={[{"name":"id","in":"path","required":true,"description":"Unique identifier of the message notification sender","schema":{"type":"string"}}]}
+>
+  
+</ParamsDetails>
+
+<RequestSchema
+  title={"Body"}
+  body={undefined}
+>
+  
+</RequestSchema>
+
+<StatusCodes
+  id={undefined}
+  label={undefined}
+  responses={{"200":{"description":"OK","content":{"application/json":{"schema":{"type":"object","properties":{"id":{"type":"string","description":"Unique identifier of the message notification sender","example":"550e8400-e29b-41d4-a716-446655440000"},"name":{"type":"string","description":"Name of the message notification sender","example":"Twilio SMS Sender"},"description":{"type":"string","description":"Description of the message notification sender","example":"Sender for sending SMS messages using Twilio"},"provider":{"type":"string","description":"Provider of the message notification sender","enum":["twilio","vonage","custom"],"example":"twilio"},"properties":{"type":"array","description":"Properties of the message notification sender","items":{"type":"object","properties":{"name":{"type":"string","description":"Property name","example":"account_sid"},"value":{"type":"string","description":"Property value (masked with ****** for secret properties)","example":"ACXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"},"is_secret":{"type":"boolean","description":"Indicates if the property is a secret","example":true}}}}},"title":"MessageNotificationSenderResponse"}}}},"400":{"description":"Bad Request: Invalid sender ID provided","content":{"application/json":{"schema":{"type":"object","properties":{"code":{"type":"string","description":"Error code","example":"MNS-1006"},"message":{"type":"string","description":"Error message","example":"Invalid request format"},"description":{"type":"string","description":"Detailed error description","example":"The request body is malformed or contains invalid data"}},"title":"ClientErrorResponse"},"example":{"code":"MNS-1002","message":"Invalid sender ID","description":"The provided sender ID is invalid"}}}},"404":{"description":"Not Found: The specified message notification sender does not exist","content":{"application/json":{"schema":{"type":"object","properties":{"code":{"type":"string","description":"Error code","example":"MNS-1006"},"message":{"type":"string","description":"Error message","example":"Invalid request format"},"description":{"type":"string","description":"Detailed error description","example":"The request body is malformed or contains invalid data"}},"title":"ClientErrorResponse"},"example":{"code":"MNS-1001","message":"Sender not found","description":"The requested notification sender could not be found"}}}},"500":{"description":"Internal Server Error: An unexpected error occurred while processing the request","content":{"application/json":{"schema":{"type":"object","properties":{"code":{"type":"string","description":"Error code","example":"MNS-5001"},"message":{"type":"string","description":"Error message","example":"Internal server error"},"description":{"type":"string","description":"Detailed error description","example":"An unexpected error occurred while processing the request"}},"title":"ServerErrorResponse"}}}}}}
+>
+  
+</StatusCodes>
+
+
+      

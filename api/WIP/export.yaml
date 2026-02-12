@@ -49,7 +49,7 @@ paths:
         a combined YAML document containing all requested resources with YAML document separators (---).
         
         The exported YAML includes parameterized variables for sensitive and environment-specific values.
-        Use this format for direct consumption in immutable configuration mode or for manual review.
+        Use this format for direct consumption in declarative configuration mode or for manual review.
         
         **Parameterized Variables:**
         - `client_id`: Replaced with `{{.APP_NAME_CLIENT_ID}}`

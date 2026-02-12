@@ -27,7 +27,7 @@ import (
 	"github.com/stretchr/testify/suite"
 
 	"github.com/asgardeo/thunder/internal/flow/common"
-	"github.com/asgardeo/thunder/internal/system/immutable_resource/entity"
+	"github.com/asgardeo/thunder/internal/system/declarative_resource/entity"
 )
 
 const testFlowTypeAuthentication = "AUTHENTICATION"

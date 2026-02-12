@@ -134,7 +134,7 @@ describe('flowToCanvasTransformer', () => {
         expect(result.nodes[0].data.action).toMatchObject({
           type: 'EXECUTOR',
           executor: {name: 'UserOnboardingExecutor'},
-          next: 'next-node',
+          onSuccess: 'next-node',
         });
       });
 
@@ -349,7 +349,7 @@ describe('flowToCanvasTransformer', () => {
         expect(component).toBeDefined();
         expect(component?.action).toMatchObject({
           type: 'EXECUTOR',
-          next: 'next-node',
+          onSuccess: 'next-node',
           executor: {name: 'SomeExecutor'},
         });
       });

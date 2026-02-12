@@ -17,11 +17,10 @@
  */
 
 import {describe, it, expect, beforeEach, vi} from 'vitest';
-import {render, screen} from '@testing-library/react';
+import {render, screen} from '@thunder/test-utils';
 import userEvent from '@testing-library/user-event';
 import {IdentityProviderTypes, type IdentityProvider} from '@/features/integrations/models/identity-provider';
 import {AuthenticatorTypes} from '@/features/integrations/models/authenticators';
-import {QueryClient, QueryClientProvider} from '@tanstack/react-query';
 import ConfigureSignInOptions, {
   type ConfigureSignInOptionsProps,
 } from '../configure-signin-options/ConfigureSignInOptions';
@@ -67,13 +66,17 @@ vi.mock('../../../utils/generateAppPrimaryColorSuggestions', () => ({
 }));
 
 // Mock useConfig to avoid ConfigProvider requirement
-vi.mock('@thunder/commons-contexts', () => ({
-  useConfig: () => ({
-    endpoints: {
-      server: 'http://localhost:3001',
-    },
-  }),
-}));
+vi.mock('@thunder/shared-contexts', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@thunder/shared-contexts')>();
+  return {
+    ...actual,
+    useConfig: () => ({
+      endpoints: {
+        server: 'http://localhost:3001',
+      },
+    }),
+  };
+});
 
 const {default: useIdentityProviders} = await import('@/features/integrations/api/useIdentityProviders');
 const {default: getIntegrationIcon} = await import('@/features/integrations/utils/getIntegrationIcon');
@@ -147,30 +150,19 @@ describe('ConfigureSignInOptions', () => {
   });
 
   const renderComponent = (props: Partial<ConfigureSignInOptionsProps> = {}) => {
-    const queryClient = new QueryClient({
-      defaultOptions: {
-        queries: {
-          retry: false,
-        },
-      },
-    });
     const renderResult = render(
-      <QueryClientProvider client={queryClient}>
-        <ApplicationCreateProvider>
-          <ConfigureSignInOptions {...defaultProps} {...props} />
-        </ApplicationCreateProvider>
-      </QueryClientProvider>,
+      <ApplicationCreateProvider>
+        <ConfigureSignInOptions {...defaultProps} {...props} />
+      </ApplicationCreateProvider>,
     );
 
     return {
       ...renderResult,
       rerender: (newProps: Partial<ConfigureSignInOptionsProps> = {}) =>
         renderResult.rerender(
-          <QueryClientProvider client={queryClient}>
-            <ApplicationCreateProvider>
-              <ConfigureSignInOptions {...defaultProps} {...newProps} />
-            </ApplicationCreateProvider>
-          </QueryClientProvider>,
+          <ApplicationCreateProvider>
+            <ConfigureSignInOptions {...defaultProps} {...newProps} />
+          </ApplicationCreateProvider>,
         ),
     };
   };

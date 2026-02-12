@@ -17,11 +17,9 @@
  */
 
 import {describe, it, expect, beforeEach, afterEach, vi} from 'vitest';
-import {waitFor, act, renderHook} from '@testing-library/react';
-import {QueryClient, QueryClientProvider} from '@tanstack/react-query';
-import type {ReactNode} from 'react';
+import {waitFor, act, renderHook} from '@thunder/test-utils';
 import {useAsgardeo} from '@asgardeo/react';
-import {useConfig} from '@thunder/commons-contexts';
+import {useConfig} from '@thunder/shared-contexts';
 import useCreateApplication from '../useCreateApplication';
 import type {Application} from '../../models/application';
 import type {CreateApplicationRequest} from '../../models/requests';
@@ -34,8 +32,8 @@ vi.mock('@asgardeo/react', () => ({
   useAsgardeo: vi.fn(),
 }));
 
-vi.mock('@thunder/commons-contexts', async (importOriginal) => {
-  const actual = await importOriginal<typeof import('@thunder/commons-contexts')>();
+vi.mock('@thunder/shared-contexts', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@thunder/shared-contexts')>();
   return {
     ...actual,
     useConfig: vi.fn(),
@@ -67,7 +65,7 @@ describe('useCreateApplication', () => {
           token_endpoint_auth_method: 'none',
           public_client: true,
           token: {
-            issuer: 'https://localhost:8090/oauth2/token',
+            issuer: 'https://localhost:8090',
             access_token: {
               validity_period: 3600,
               user_attributes: ['given_name', 'family_name', 'email', 'groups', 'name'],
@@ -138,22 +136,9 @@ describe('useCreateApplication', () => {
     user_attributes: ['email', 'username'],
   };
 
-  let queryClient: QueryClient;
   let mockHttpRequest: ReturnType<typeof vi.fn>;
 
   beforeEach(() => {
-    // Create a fresh QueryClient for each test
-    queryClient = new QueryClient({
-      defaultOptions: {
-        queries: {
-          retry: false,
-        },
-        mutations: {
-          retry: false,
-        },
-      },
-    });
-
     // Mock HTTP request function
     mockHttpRequest = vi.fn();
 
@@ -172,23 +157,10 @@ describe('useCreateApplication', () => {
 
   afterEach(() => {
     vi.clearAllMocks();
-    queryClient.clear();
   });
 
-  /**
-   * Helper function to create a wrapper with QueryClientProvider
-   */
-  const createWrapper = () => {
-    function Wrapper({children}: {children: ReactNode}) {
-      return <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>;
-    }
-    return Wrapper;
-  };
-
   it('should initialize with idle state', () => {
-    const {result} = renderHook(() => useCreateApplication(), {
-      wrapper: createWrapper(),
-    });
+    const {result} = renderHook(() => useCreateApplication());
 
     expect(result.current.data).toBeUndefined();
     expect(result.current.error).toBeNull();
@@ -205,9 +177,7 @@ describe('useCreateApplication', () => {
       data: mockApplication,
     });
 
-    const {result} = renderHook(() => useCreateApplication(), {
-      wrapper: createWrapper(),
-    });
+    const {result} = renderHook(() => useCreateApplication());
 
     result.current.mutate(mockRequest);
 
@@ -243,9 +213,7 @@ describe('useCreateApplication', () => {
         }),
     );
 
-    const {result} = renderHook(() => useCreateApplication(), {
-      wrapper: createWrapper(),
-    });
+    const {result} = renderHook(() => useCreateApplication());
 
     result.current.mutate(mockRequest);
 
@@ -265,9 +233,7 @@ describe('useCreateApplication', () => {
 
     mockHttpRequest.mockRejectedValueOnce(apiError);
 
-    const {result} = renderHook(() => useCreateApplication(), {
-      wrapper: createWrapper(),
-    });
+    const {result} = renderHook(() => useCreateApplication());
 
     result.current.mutate(mockRequest);
 
@@ -285,9 +251,7 @@ describe('useCreateApplication', () => {
 
     mockHttpRequest.mockRejectedValueOnce(networkError);
 
-    const {result} = renderHook(() => useCreateApplication(), {
-      wrapper: createWrapper(),
-    });
+    const {result} = renderHook(() => useCreateApplication());
 
     result.current.mutate(mockRequest);
 
@@ -305,11 +269,8 @@ describe('useCreateApplication', () => {
       data: mockApplication,
     });
 
+    const {result, queryClient} = renderHook(() => useCreateApplication());
     const invalidateQueriesSpy = vi.spyOn(queryClient, 'invalidateQueries');
-
-    const {result} = renderHook(() => useCreateApplication(), {
-      wrapper: createWrapper(),
-    });
 
     result.current.mutate(mockRequest);
 
@@ -327,12 +288,9 @@ describe('useCreateApplication', () => {
       data: mockApplication,
     });
 
+    const {result, queryClient} = renderHook(() => useCreateApplication());
     // Mock invalidateQueries to reject
     vi.spyOn(queryClient, 'invalidateQueries').mockRejectedValueOnce(new Error('Invalidation failed'));
-
-    const {result} = renderHook(() => useCreateApplication(), {
-      wrapper: createWrapper(),
-    });
 
     result.current.mutate(mockRequest);
 
@@ -349,9 +307,7 @@ describe('useCreateApplication', () => {
       data: mockApplication,
     });
 
-    const {result} = renderHook(() => useCreateApplication(), {
-      wrapper: createWrapper(),
-    });
+    const {result} = renderHook(() => useCreateApplication());
 
     const promise = result.current.mutateAsync(mockRequest);
 
@@ -370,9 +326,7 @@ describe('useCreateApplication', () => {
 
     const onSuccess = vi.fn();
 
-    const {result} = renderHook(() => useCreateApplication(), {
-      wrapper: createWrapper(),
-    });
+    const {result} = renderHook(() => useCreateApplication());
 
     result.current.mutate(mockRequest, {
       onSuccess,
@@ -397,9 +351,7 @@ describe('useCreateApplication', () => {
 
     const onError = vi.fn();
 
-    const {result} = renderHook(() => useCreateApplication(), {
-      wrapper: createWrapper(),
-    });
+    const {result} = renderHook(() => useCreateApplication());
 
     result.current.mutate(mockRequest, {
       onError,
@@ -423,9 +375,7 @@ describe('useCreateApplication', () => {
       data: mockApplication,
     });
 
-    const {result} = renderHook(() => useCreateApplication(), {
-      wrapper: createWrapper(),
-    });
+    const {result} = renderHook(() => useCreateApplication());
 
     result.current.mutate(mockRequest);
 
@@ -453,9 +403,7 @@ describe('useCreateApplication', () => {
       data: firstApp,
     });
 
-    const {result} = renderHook(() => useCreateApplication(), {
-      wrapper: createWrapper(),
-    });
+    const {result} = renderHook(() => useCreateApplication());
 
     result.current.mutate(mockRequest);
 
@@ -486,9 +434,7 @@ describe('useCreateApplication', () => {
       data: mockApplication,
     });
 
-    const {result} = renderHook(() => useCreateApplication(), {
-      wrapper: createWrapper(),
-    });
+    const {result} = renderHook(() => useCreateApplication());
 
     result.current.mutate(mockRequest);
 
@@ -511,9 +457,7 @@ describe('useCreateApplication', () => {
       data: mockApplication,
     });
 
-    const {result} = renderHook(() => useCreateApplication(), {
-      wrapper: createWrapper(),
-    });
+    const {result} = renderHook(() => useCreateApplication());
 
     result.current.mutate(mockRequest);
 

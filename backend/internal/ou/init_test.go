@@ -23,7 +23,7 @@ import (
 	"testing"
 
 	"github.com/asgardeo/thunder/internal/system/config"
-	immutableresource "github.com/asgardeo/thunder/internal/system/immutable_resource"
+	declarativeresource "github.com/asgardeo/thunder/internal/system/declarative_resource"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
@@ -41,7 +41,7 @@ func (suite *InitTestSuite) SetupTest() {
 	// Initialize ThunderRuntime for each test
 	config.ResetThunderRuntime()
 	testConfig := &config.Config{
-		ImmutableResources: config.ImmutableResources{
+		DeclarativeResources: config.DeclarativeResources{
 			Enabled: false,
 		},
 	}
@@ -53,10 +53,10 @@ func (suite *InitTestSuite) TearDownTest() {
 	config.ResetThunderRuntime()
 }
 
-func (suite *InitTestSuite) TestInitialize_WithImmutableResourcesDisabled() {
-	// Setup: Disable immutable resources
+func (suite *InitTestSuite) TestInitialize_WithDeclarativeResourcesDisabled() {
+	// Setup: Disable declarative resources
 	runtime := config.GetThunderRuntime()
-	runtime.Config.ImmutableResources.Enabled = false
+	runtime.Config.DeclarativeResources.Enabled = false
 
 	mux := http.NewServeMux()
 
@@ -73,10 +73,10 @@ func (suite *InitTestSuite) TestInitialize_WithImmutableResourcesDisabled() {
 	assert.Equal(suite.T(), "OrganizationUnit", exporter.GetParameterizerType())
 }
 
-func (suite *InitTestSuite) TestInitialize_WithImmutableResourcesEnabled() {
-	// Setup: Enable immutable resources
+func (suite *InitTestSuite) TestInitialize_WithDeclarativeResourcesEnabled() {
+	// Setup: Enable declarative resources
 	runtime := config.GetThunderRuntime()
-	runtime.Config.ImmutableResources.Enabled = true
+	runtime.Config.DeclarativeResources.Enabled = true
 
 	mux := http.NewServeMux()
 
@@ -94,9 +94,9 @@ func (suite *InitTestSuite) TestInitialize_WithImmutableResourcesEnabled() {
 }
 
 func (suite *InitTestSuite) TestInitialize_FileBasedStoreCreation() {
-	// Setup: Enable immutable resources
+	// Setup: Enable declarative resources
 	runtime := config.GetThunderRuntime()
-	runtime.Config.ImmutableResources.Enabled = true
+	runtime.Config.DeclarativeResources.Enabled = true
 
 	mux := http.NewServeMux()
 
@@ -114,9 +114,9 @@ func (suite *InitTestSuite) TestInitialize_FileBasedStoreCreation() {
 }
 
 func (suite *InitTestSuite) TestInitialize_DatabaseStoreCreation() {
-	// Setup: Disable immutable resources (uses database store)
+	// Setup: Disable declarative resources (uses database store)
 	runtime := config.GetThunderRuntime()
-	runtime.Config.ImmutableResources.Enabled = false
+	runtime.Config.DeclarativeResources.Enabled = false
 
 	mux := http.NewServeMux()
 
@@ -132,7 +132,7 @@ func (suite *InitTestSuite) TestInitialize_DatabaseStoreCreation() {
 func (suite *InitTestSuite) TestInitialize_RoutesRegistered() {
 	// Setup
 	runtime := config.GetThunderRuntime()
-	runtime.Config.ImmutableResources.Enabled = false
+	runtime.Config.DeclarativeResources.Enabled = false
 
 	mux := http.NewServeMux()
 
@@ -152,7 +152,7 @@ func (suite *InitTestSuite) TestInitialize_RoutesRegistered() {
 func (suite *InitTestSuite) TestInitialize_ExporterInterfaceCompliance() {
 	// Setup
 	runtime := config.GetThunderRuntime()
-	runtime.Config.ImmutableResources.Enabled = false
+	runtime.Config.DeclarativeResources.Enabled = false
 
 	mux := http.NewServeMux()
 
@@ -164,7 +164,7 @@ func (suite *InitTestSuite) TestInitialize_ExporterInterfaceCompliance() {
 	assert.NotNil(suite.T(), service)
 
 	// Verify exporter implements ResourceExporter interface
-	var _ immutableresource.ResourceExporter = exporter
+	var _ declarativeresource.ResourceExporter = exporter
 
 	// Test exporter methods
 	assert.Equal(suite.T(), "organization_unit", exporter.GetResourceType())
@@ -179,7 +179,7 @@ func (suite *InitTestSuite) TestInitialize_ExporterInterfaceCompliance() {
 func (suite *InitTestSuite) TestInitialize_ServiceInterfaceCompliance() {
 	// Setup
 	runtime := config.GetThunderRuntime()
-	runtime.Config.ImmutableResources.Enabled = false
+	runtime.Config.DeclarativeResources.Enabled = false
 
 	mux := http.NewServeMux()
 
@@ -197,7 +197,7 @@ func (suite *InitTestSuite) TestInitialize_ServiceInterfaceCompliance() {
 func (suite *InitTestSuite) TestInitialize_MultipleInitializations() {
 	// Test that multiple initializations work (e.g., for testing scenarios)
 	runtime := config.GetThunderRuntime()
-	runtime.Config.ImmutableResources.Enabled = false
+	runtime.Config.DeclarativeResources.Enabled = false
 
 	mux1 := http.NewServeMux()
 	service1, exporter1, err1 := Initialize(mux1)

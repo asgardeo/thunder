@@ -21,8 +21,8 @@ package mgt
 import (
 	"testing"
 
-	immutableresource "github.com/asgardeo/thunder/internal/system/immutable_resource"
-	"github.com/asgardeo/thunder/internal/system/immutable_resource/entity"
+	declarativeresource "github.com/asgardeo/thunder/internal/system/declarative_resource"
+	"github.com/asgardeo/thunder/internal/system/declarative_resource/entity"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
@@ -39,7 +39,7 @@ func TestFileBasedStoreTestSuite(t *testing.T) {
 
 func (s *FileBasedStoreTestSuite) SetupTest() {
 	// Create a file-based store with test instance
-	genericStore := immutableresource.NewGenericFileBasedStoreForTest(entity.KeyTypeTranslation)
+	genericStore := declarativeresource.NewGenericFileBasedStoreForTest(entity.KeyTypeTranslation)
 	s.store = &fileBasedStore{
 		GenericFileBasedStore: genericStore,
 	}
@@ -254,7 +254,7 @@ func (s *FileBasedStoreTestSuite) TestDeleteTranslation_NotSupported() {
 	assert.Contains(s.T(), err.Error(), "not supported")
 }
 
-func (s *FileBasedStoreTestSuite) TestIsTranslationImmutable() {
+func (s *FileBasedStoreTestSuite) TestIsTranslationDeclarative() {
 	enTrans := &LanguageTranslations{
 		Language: "en-US",
 		Translations: map[string]map[string]string{
@@ -265,11 +265,11 @@ func (s *FileBasedStoreTestSuite) TestIsTranslationImmutable() {
 	assert.NoError(s.T(), err)
 
 	// Checks if "en-US" is in the store
-	isImmutable := s.store.IsTranslationImmutable("en-US")
-	assert.True(s.T(), isImmutable)
+	isDeclarative := s.store.IsTranslationDeclarative("en-US")
+	assert.True(s.T(), isDeclarative)
 
-	isImmutable = s.store.IsTranslationImmutable("fr-FR")
-	assert.False(s.T(), isImmutable)
+	isDeclarative = s.store.IsTranslationDeclarative("fr-FR")
+	assert.False(s.T(), isDeclarative)
 }
 
 func (s *FileBasedStoreTestSuite) TestNewFileBasedStore() {

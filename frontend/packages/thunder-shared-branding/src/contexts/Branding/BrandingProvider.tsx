@@ -17,7 +17,7 @@
  */
 
 import {useMemo, PropsWithChildren} from 'react';
-import {useConfig} from '@thunder/commons-contexts';
+import {useConfig} from '@thunder/shared-contexts';
 import BrandingContext, {type BrandingContextType} from './BrandingContext';
 import useGetBrandingResolve from '../../api/useGetBrandingResolve';
 import {BrandingType} from '../../models/branding';

@@ -25,8 +25,8 @@ import (
 
 	"github.com/asgardeo/thunder/internal/application/model"
 	oauth2const "github.com/asgardeo/thunder/internal/oauth/oauth2/constants"
-	immutableresource "github.com/asgardeo/thunder/internal/system/immutable_resource"
-	"github.com/asgardeo/thunder/internal/system/immutable_resource/entity"
+	declarativeresource "github.com/asgardeo/thunder/internal/system/declarative_resource"
+	"github.com/asgardeo/thunder/internal/system/declarative_resource/entity"
 )
 
 // FileBasedStoreTestSuite contains comprehensive tests for the file-based application store.
@@ -46,7 +46,7 @@ func TestFileBasedStoreTestSuite(t *testing.T) {
 }
 
 func (suite *FileBasedStoreTestSuite) SetupTest() {
-	genericStore := immutableresource.NewGenericFileBasedStoreForTest(entity.KeyTypeApplication)
+	genericStore := declarativeresource.NewGenericFileBasedStoreForTest(entity.KeyTypeApplication)
 	suite.store = &fileBasedStore{
 		GenericFileBasedStore: genericStore,
 	}

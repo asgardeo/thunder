@@ -17,7 +17,7 @@
  */
 
 import {useMutation, useQueryClient, type UseMutationResult} from '@tanstack/react-query';
-import {useConfig} from '@thunder/commons-contexts';
+import {useConfig} from '@thunder/shared-contexts';
 import {useAsgardeo} from '@asgardeo/react';
 import type {UpdateFlowRequest, FlowDefinitionResponse} from '../models/responses';
 import FlowQueryKeys from '../constants/flow-query-keys';

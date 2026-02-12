@@ -1,0 +1,72 @@
+---
+id: delete-a-role-by-id
+title: "Delete a role by id"
+description: "Delete a role by id"
+sidebar_label: "Delete a role by id"
+hide_title: true
+hide_table_of_contents: true
+api: eJztVk2P2zgM/SsCT7uAk3iCdrH1LTuTQ4DpdjGdngY5KBYTq5UlV6Inkw383xeUnA8nKbbXBXYuGZAU+Ug+kt4DyU2A4gW8MxhgmUEjvayR0LN4D9pCAY2kCjKwskYoQCvIwOP3VntUUJBvMYNQVlhLKPZAu4atAnltN5DB2vlaEhTQtlpB1y35cWicDRjYfpq/4x+FofS6Ie044pMzKBQaJFTQZfAuz6+N/pBKMA4MBBmUzhJaYjPZNEaXks0mXwPb7q8ButVXLGmQyguUTiFkUGMIcoOxHt416EknsFF/I8khsLn3zoveF77JujFs/fTpcXSX53ec0CHCT/o6mJ+7W9hXafSxBKIvdHfh4d8CPCBJbVAJjJHOlefRnis8Rlo5tRM6iFoaDopKxHQtSW2D0D0uJUlC12VAmqKLmArj673GitY6BG03IybgSKvYqraupd9BAR+TUrBSLB4gg1dpWjx14lDT6VnTfliZy8yfklfO5MgBxltKax2NEv0isCGq+6jv6Rmx/RjYbwNgN18OQV2bCKokMciy9R4tmZ2QIeiNRSXIiTagD9yAjXdtE6CLfxm8vzUyC0vorTQioH9Fn3r+//D8B4fngmrv8zy/mIHbnR7in1nRWnxrsKRjEq6MRFNiW2mDovGuxDSGdEoDepZdliOyVibernYi3ooaqXIKCkikhiwdlAIm8epM9lp1kEECms5O6w0UUBE1oZhM9pUL1BX7xnnq4qx5LVf9AmFdIvpatoYPjXGlNFHcZcBvhurf8w85w19yyLL1mnYx5qdZS9WUiRx2gbCG5bnJZx6BFPFgeJoGGQUZrI3bRhMWOK//jmN03/N+IPwyyPAIuWB0k+RwcnjAJSP3DX/qUTTkcpauSXj7dAqYldxJXhpJJGpp5QZrtCRmfy3Coanarl1Mr+deXJQfB7bcBfQhtf1unF8x67nSgQ2Z6m1IqyqFi+QIYqupEg36eACcHa0kW8kEkefBOzOGDIwu0YZYwP4DZNbIskIxjVGHTNlut2MZ1WPnN5P+bZg8Lu7nf36ej6bjfFxRbeJoNS5QLe2Z59v8vb0RCN9o0hipLdMswtj3xD58TmVQaMV7MHH0BfZ7zvKLN13H4u8t8kF5WZ4oHZmodOD/FRRraQJeIThua/jlqd+/vwrmyC1kvVDa3elKAWTwDXfpY65bdhlUKBX6GD0pmCsNnT25ugs8HcfRfpg/zp/n0HX/AKnzi48=
+sidebar_class_name: "delete api-method"
+info_path: docs/apis/role/role-management-api
+custom_edit_url: null
+---
+
+import MethodEndpoint from "@theme/ApiExplorer/MethodEndpoint";
+import ParamsDetails from "@theme/ParamsDetails";
+import RequestSchema from "@theme/RequestSchema";
+import StatusCodes from "@theme/StatusCodes";
+import OperationTabs from "@theme/OperationTabs";
+import TabItem from "@theme/TabItem";
+import Heading from "@theme/Heading";
+import Translate from "@docusaurus/Translate";
+
+<Heading
+  as={"h1"}
+  className={"openapi__heading"}
+  children={"Delete a role by id"}
+>
+</Heading>
+
+<MethodEndpoint
+  method={"delete"}
+  path={"/roles/{id}"}
+  context={"endpoint"}
+>
+  
+</MethodEndpoint>
+
+
+
+Delete a role by id
+
+<Heading
+  id={"request"}
+  as={"h2"}
+  className={"openapi-tabs__heading"}
+>
+  <Translate id="theme.openapi.request.title">Request</Translate>
+</Heading>
+
+<ParamsDetails
+  parameters={[{"in":"path","name":"id","required":true,"schema":{"type":"string","format":"uuid"}}]}
+>
+  
+</ParamsDetails>
+
+<RequestSchema
+  title={"Body"}
+  body={undefined}
+>
+  
+</RequestSchema>
+
+<StatusCodes
+  id={undefined}
+  label={undefined}
+  responses={{"204":{"description":"Role deleted"},"400":{"description":"Bad request","content":{"application/json":{"schema":{"type":"object","required":["code","message"],"properties":{"code":{"type":"string","description":"Error code","example":"ROL-1001"},"message":{"type":"string","description":"Error message","example":"Invalid request format"},"description":{"type":"string","description":"Detailed error description","example":"The request body is malformed or contains invalid data"}},"title":"Error"},"examples":{"missing-role-id":{"summary":"Missing role ID","value":{"code":"ROL-1002","message":"Invalid request format","description":"Role ID is required"}},"cannot-delete-role":{"summary":"Cannot delete role","value":{"code":"ROL-1006","message":"Cannot delete role","description":"Cannot delete role that is currently assigned to users or groups"}}}}}},"500":{"description":"Internal server error","content":{"application/json":{"schema":{"type":"object","required":["code","message"],"properties":{"code":{"type":"string","description":"Error code","example":"ROL-1001"},"message":{"type":"string","description":"Error message","example":"Invalid request format"},"description":{"type":"string","description":"Detailed error description","example":"The request body is malformed or contains invalid data"}},"title":"Error"},"example":{"code":"ROL-5000","message":"Internal server error","description":"An unexpected error occurred while processing the request"}}}}}}
+>
+  
+</StatusCodes>
+
+
+      

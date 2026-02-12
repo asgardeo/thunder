@@ -186,6 +186,9 @@ var (
 		ClientSecret:              "prompt_actions_flow_test_secret",
 		RedirectURIs:              []string{"http://localhost:3000/callback"},
 		AllowedUserTypes:          []string{"prompt_actions_test_person"},
+		TokenConfig: map[string]interface{}{
+			"user_attributes": []string{"userType", "ouId", "ouName", "ouHandle"},
+		},
 	}
 
 	promptActionsTestOU = testutils.OrganizationUnit{

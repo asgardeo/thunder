@@ -37,10 +37,7 @@ type AuthorizationCode struct {
 	ClientID            string
 	RedirectURI         string
 	AuthorizedUserID    string
-	AuthorizedUserType  string
-	UserOUID            string
-	UserOUName          string
-	UserOUHandle        string
+	UserAttributes      map[string]interface{}
 	TimeCreated         time.Time
 	ExpiryTime          time.Time
 	Scopes              string
@@ -63,10 +60,7 @@ type AuthZPostResponse struct {
 
 // assertionClaims represents the claims extracted from the flow assertion JWT.
 type assertionClaims struct {
-	userID         string
-	userType       string
-	ouID           string
-	ouName         string
-	ouHandle       string
-	userAttributes map[string]string
+	userID                string
+	authorizedPermissions string
+	userAttributes        map[string]interface{}
 }

@@ -110,6 +110,9 @@ var (
 		ClientSecret:              "conditional_exec_auth_flow_test_secret",
 		RedirectURIs:              []string{"http://localhost:3000/callback"},
 		AllowedUserTypes:          []string{"conditional_exec_flow_user"},
+		TokenConfig: map[string]interface{}{
+			"user_attributes": []string{"userType", "ouId", "ouName", "ouHandle"},
+		},
 	}
 
 	conditionalExecTestOU = testutils.OrganizationUnit{

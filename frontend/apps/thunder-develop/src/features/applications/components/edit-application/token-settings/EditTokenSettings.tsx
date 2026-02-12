@@ -24,7 +24,7 @@ import {zodResolver} from '@hookform/resolvers/zod';
 import {z} from 'zod';
 import {useQuery} from '@tanstack/react-query';
 import {useAsgardeo} from '@asgardeo/react';
-import {useConfig} from '@thunder/commons-contexts';
+import {useConfig} from '@thunder/shared-contexts';
 import {useLogger} from '@thunder/logger';
 import type {OAuth2Config} from '../../../models/oauth';
 import type {Application} from '../../../models/application';

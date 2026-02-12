@@ -29,6 +29,7 @@ import reactConfig from './configs/react.js';
 import javascriptConfig from './configs/javascript.js';
 import prettierConfig from './configs/prettier.js';
 import typescriptConfig from './configs/typescript.js';
+import createParserOptions from './utils/tsconfig-resolver.js';
 
 interface PackageJson {
   name: string;
@@ -125,3 +126,4 @@ Object.assign(plugin.configs, {
 });
 
 export default plugin;
+export {createParserOptions};

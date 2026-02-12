@@ -63,8 +63,8 @@ jobs:
               exit 1
             fi
             VERSION=$(tr -d '[:space:]' < version.txt)
-            PRERELEASE="false"
-            RUN_PERF_TEST="true"
+            PRERELEASE="true"
+            RUN_PERF_TEST="false"
           fi
           echo "version=$VERSION" >> $GITHUB_OUTPUT
           echo "prerelease=$PRERELEASE" >> $GITHUB_OUTPUT
@@ -257,6 +257,13 @@ jobs:
           if-no-files-found: error
           overwrite: true
 
+      - name: 📦 Upload Documentation Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: thunder-docs
+          path: docs/build
+          if-no-files-found: error
+
       - name: 🏷️ Create Git Tag
         run: |
           git config --local user.email "action@github.com"
@@ -322,6 +329,39 @@ jobs:
           echo "✅ Docker image pushed successfully!"
           echo "📦 Image available at: ${IMAGE_NAME}:${DOCKER_VERSION}"
           echo "📦 Image available at: ${IMAGE_NAME}:latest"
+
+      - name: 🏷️ Update Helm Values Image Tag
+        run: |
+          # Get version without 'v' prefix
+          CHART_VERSION="${{ needs.build-thunder.outputs.version }}"
+          if [[ $CHART_VERSION == v* ]]; then
+            CHART_VERSION="${CHART_VERSION#v}"
+          fi
+          
+          echo "📝 Updating Helm values.yaml with image tag ${CHART_VERSION}"
+          
+          # Check if the file exists and has the expected pattern
+          if ! grep -q "tag: \"" install/helm/values.yaml; then
+            echo "❌ Error: Could not find 'tag: \"' pattern in install/helm/values.yaml"
+            echo "File may have been modified or corrupted"
+            exit 1
+          fi
+          
+          # Update values.yaml with the new image tag
+          sed -i "s/tag: \"[^\"]*\"/tag: \"${CHART_VERSION}\"/" install/helm/values.yaml
+          
+          # Verify the replacement was successful
+          if ! grep -q "tag: \"${CHART_VERSION}\"" install/helm/values.yaml; then
+            echo "❌ Error: Failed to update image tag in values.yaml"
+            echo "Expected to find: tag: \"${CHART_VERSION}\""
+            echo "Current content:"
+            grep "tag:" install/helm/values.yaml
+            exit 1
+          fi
+          
+          echo "✅ Successfully updated values.yaml with image tag: ${CHART_VERSION}"
+          echo "✅ Verification passed - new tag is present in file"
+          grep "tag:" install/helm/values.yaml | head -1
 
       - name: ⚙️ Set up Helm
         uses: azure/setup-helm@v3
@@ -823,10 +863,42 @@ jobs:
           release-tag: ${{ steps.release_info.outputs.release_tag }}
           release-url: ${{ steps.release_info.outputs.release_url }}
 
+  deploy-docs:
+    name: 📚 Deploy Documentation
+    runs-on: ubuntu-latest
+    needs: [build-thunder, build-and-package, release]
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: 📥 Checkout Code
+        uses: actions/checkout@v4
+
+      - name: 📚 Deploy Documentation
+        id: deployment
+        uses: ./.github/actions/deploy-docs
+        with:
+          docs-artifact-name: 'thunder-docs'
+          build-docs: 'false'
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          commit-message: '📚 Deploy documentation for ${{ needs.build-thunder.outputs.version }}'
+
+      - name: 📝 Add Docs Deployment Summary
+        run: |
+          echo "# 📚 Documentation Deployment" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "✅ Documentation for **${{ needs.build-thunder.outputs.version }}** has been deployed to GitHub Pages!" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "🔗 View at: https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}/" >> $GITHUB_STEP_SUMMARY
+
   trigger-performance-test:
     name: 🧪 Trigger Performance Test
     runs-on: ubuntu-latest
-    needs: [build-thunder, release]
+    needs: [build-thunder, release, deploy-docs]
     if: ${{ needs.build-thunder.outputs.run_performance_test == 'true' }}
     steps:
       - name: 📥 Checkout Code

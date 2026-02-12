@@ -28,75 +28,6 @@ vi.mock('react-i18next', () => ({
   }),
 }));
 
-vi.mock('../ButtonExtendedProperties.scss', () => ({}));
-
-const {
-  mockSetLastInteractedResource,
-  mockHasResourceFieldNotification,
-  mockGetResourceFieldNotification,
-  mockUseColorScheme,
-} = vi.hoisted(() => ({
-  mockSetLastInteractedResource: vi.fn(),
-  mockHasResourceFieldNotification: vi.fn(),
-  mockGetResourceFieldNotification: vi.fn(),
-  mockUseColorScheme: vi.fn(),
-}));
-
-vi.mock('@/features/flows/hooks/useFlowBuilderCore', () => ({
-  default: () => ({
-    lastInteractedResource: {action: {type: 'SUBMIT'}},
-    setLastInteractedResource: mockSetLastInteractedResource,
-  }),
-}));
-
-vi.mock('@/features/flows/hooks/useValidationStatus', () => ({
-  default: () => ({
-    selectedNotification: {
-      hasResourceFieldNotification: mockHasResourceFieldNotification,
-      getResourceFieldNotification: mockGetResourceFieldNotification,
-    },
-  }),
-}));
-
-vi.mock('@wso2/oxygen-ui', async () => {
-  const actual = await vi.importActual('@wso2/oxygen-ui');
-  return {
-    ...actual,
-    useColorScheme: mockUseColorScheme,
-  };
-});
-
-vi.mock('@/features/login-flow/api/useGetLoginFlowBuilderActions', () => ({
-  default: () => ({
-    data: [
-      {
-        id: 'action-group-1',
-        type: 'ACTION_GROUP',
-        display: {label: 'Primary Actions'},
-        types: [
-          {
-            id: 'submit-action',
-            type: 'ACTION',
-            display: {label: 'Submit', image: '/submit.png'},
-            action: {type: 'SUBMIT'},
-          },
-          {
-            id: 'cancel-action',
-            type: 'ACTION',
-            display: {label: 'Cancel', image: '/cancel.png'},
-            action: {type: 'CANCEL'},
-          },
-        ],
-      },
-    ],
-    isLoading: false,
-  }),
-}));
-
-vi.mock('@/features/flows/utils/resolveStaticResourcePath', () => ({
-  default: (path: string) => path,
-}));
-
 describe('ButtonExtendedProperties', () => {
   const mockOnChange = vi.fn();
 
@@ -106,42 +37,62 @@ describe('ButtonExtendedProperties', () => {
       type: 'ACTION',
       category: 'ACTION',
       resourceType: 'ELEMENT',
-      action: {type: 'SUBMIT'},
       ...overrides,
     }) as Resource;
 
   beforeEach(() => {
     vi.clearAllMocks();
-    // Reset mocks to default values
-    mockHasResourceFieldNotification.mockReturnValue(false);
-    mockGetResourceFieldNotification.mockReturnValue('');
-    mockUseColorScheme.mockReturnValue({mode: 'light', systemMode: 'light'});
   });
 
   describe('Rendering', () => {
-    it('should render the component', () => {
+    it('should render the start icon label', () => {
       const resource = createMockResource();
 
       render(<ButtonExtendedProperties resource={resource} onChange={mockOnChange} />);
 
-      expect(screen.getByText('flows:core.buttonExtendedProperties.type')).toBeInTheDocument();
+      expect(screen.getByText('flows:core.buttonExtendedProperties.startIcon.label')).toBeInTheDocument();
     });
 
-    it('should render action group labels', () => {
+    it('should render the end icon label', () => {
       const resource = createMockResource();
 
       render(<ButtonExtendedProperties resource={resource} onChange={mockOnChange} />);
 
-      expect(screen.getByText('Primary Actions')).toBeInTheDocument();
+      expect(screen.getByText('flows:core.buttonExtendedProperties.endIcon.label')).toBeInTheDocument();
     });
 
-    it('should render action type options', () => {
+    it('should render start icon input field', () => {
       const resource = createMockResource();
 
       render(<ButtonExtendedProperties resource={resource} onChange={mockOnChange} />);
 
-      expect(screen.getByText('Submit')).toBeInTheDocument();
-      expect(screen.getByText('Cancel')).toBeInTheDocument();
+      const startIconInput = screen.getByPlaceholderText('flows:core.buttonExtendedProperties.startIcon.placeholder');
+      expect(startIconInput).toBeInTheDocument();
+    });
+
+    it('should render end icon input field', () => {
+      const resource = createMockResource();
+
+      render(<ButtonExtendedProperties resource={resource} onChange={mockOnChange} />);
+
+      const endIconInput = screen.getByPlaceholderText('flows:core.buttonExtendedProperties.endIcon.placeholder');
+      expect(endIconInput).toBeInTheDocument();
+    });
+
+    it('should render hint text for start icon', () => {
+      const resource = createMockResource();
+
+      render(<ButtonExtendedProperties resource={resource} onChange={mockOnChange} />);
+
+      expect(screen.getByText('flows:core.buttonExtendedProperties.startIcon.hint')).toBeInTheDocument();
+    });
+
+    it('should render hint text for end icon', () => {
+      const resource = createMockResource();
+
+      render(<ButtonExtendedProperties resource={resource} onChange={mockOnChange} />);
+
+      expect(screen.getByText('flows:core.buttonExtendedProperties.endIcon.hint')).toBeInTheDocument();
     });
 
     it('should render dividers', () => {
@@ -150,208 +101,127 @@ describe('ButtonExtendedProperties', () => {
       const {container} = render(<ButtonExtendedProperties resource={resource} onChange={mockOnChange} />);
 
       const dividers = container.querySelectorAll('.MuiDivider-root');
-      expect(dividers.length).toBeGreaterThan(0);
+      expect(dividers.length).toBe(2);
     });
   });
 
-  describe('Action Selection', () => {
-    it('should call onChange when an action type is clicked', () => {
-      const resource = createMockResource();
-
-      render(<ButtonExtendedProperties resource={resource} onChange={mockOnChange} />);
-
-      const cancelAction = screen.getByText('Cancel').closest('.MuiCard-root');
-      if (cancelAction) {
-        fireEvent.click(cancelAction);
-      }
-
-      expect(mockOnChange).toHaveBeenCalled();
-    });
-
-    it('should call setLastInteractedResource when action is selected', () => {
-      const resource = createMockResource();
-
-      render(<ButtonExtendedProperties resource={resource} onChange={mockOnChange} />);
-
-      const submitAction = screen.getByText('Submit').closest('.MuiCard-root');
-      if (submitAction) {
-        fireEvent.click(submitAction);
-      }
-
-      expect(mockSetLastInteractedResource).toHaveBeenCalled();
-    });
-  });
-
-  describe('Avatar Rendering', () => {
-    it('should render avatars for action types', () => {
-      const resource = createMockResource();
-
-      const {container} = render(<ButtonExtendedProperties resource={resource} onChange={mockOnChange} />);
-
-      const avatars = container.querySelectorAll('.MuiAvatar-root');
-      expect(avatars.length).toBeGreaterThan(0);
-    });
-  });
-
-  describe('Dark Mode Handling', () => {
-    it('should apply dark mode filter when mode is dark', () => {
-      mockUseColorScheme.mockReturnValue({mode: 'dark', systemMode: 'dark'});
-
-      const resource = createMockResource();
-      const {container} = render(<ButtonExtendedProperties resource={resource} onChange={mockOnChange} />);
-
-      const avatars = container.querySelectorAll('.MuiAvatar-root');
-      expect(avatars.length).toBeGreaterThan(0);
-
-      // Verify dark mode styles are applied
-      const avatar = avatars[0];
-      expect(avatar).toBeInTheDocument();
-
-      // Reset mock
-      mockUseColorScheme.mockReturnValue({mode: 'light', systemMode: 'light'});
-    });
-
-    it('should use systemMode when mode is system', () => {
-      mockUseColorScheme.mockReturnValue({mode: 'system', systemMode: 'dark'});
-
-      const resource = createMockResource();
-      const {container} = render(<ButtonExtendedProperties resource={resource} onChange={mockOnChange} />);
-
-      const avatars = container.querySelectorAll('.MuiAvatar-root');
-      expect(avatars.length).toBeGreaterThan(0);
-
-      // Verify dark mode styles are applied based on systemMode
-      const avatar = avatars[0];
-      expect(avatar).toBeInTheDocument();
-
-      // Reset mock
-      mockUseColorScheme.mockReturnValue({mode: 'light', systemMode: 'light'});
-    });
-  });
-
-  describe('Error Handling', () => {
-    it('should display error message when validation fails', () => {
-      mockHasResourceFieldNotification.mockReturnValue(true);
-      mockGetResourceFieldNotification.mockReturnValue('Action is required');
-
-      const resource = createMockResource();
-      render(<ButtonExtendedProperties resource={resource} onChange={mockOnChange} />);
-
-      // Error message should be shown
-      const errorMessage = screen.getByText('Action is required');
-      expect(errorMessage).toBeInTheDocument();
-
-      // Reset mocks
-      mockHasResourceFieldNotification.mockReturnValue(false);
-      mockGetResourceFieldNotification.mockReturnValue('');
-    });
-
-    it('should not display error message when validation passes', () => {
-      mockHasResourceFieldNotification.mockReturnValue(false);
-      mockGetResourceFieldNotification.mockReturnValue('');
-
-      const resource = createMockResource();
-      render(<ButtonExtendedProperties resource={resource} onChange={mockOnChange} />);
-
-      // Error message should not be shown
-      const errorMessage = screen.queryByText('Action is required');
-      expect(errorMessage).not.toBeInTheDocument();
-    });
-
-    it('should apply error class to cards when validation fails', () => {
-      mockHasResourceFieldNotification.mockReturnValue(true);
-      mockGetResourceFieldNotification.mockReturnValue('Action is required');
-
-      const resource = createMockResource();
-      const {container} = render(<ButtonExtendedProperties resource={resource} onChange={mockOnChange} />);
-
-      const errorCards = container.querySelectorAll('.error');
-      expect(errorCards.length).toBeGreaterThan(0);
-
-      // Reset mocks
-      mockHasResourceFieldNotification.mockReturnValue(false);
-      mockGetResourceFieldNotification.mockReturnValue('');
-    });
-  });
-
-  describe('Action with Next Property', () => {
-    it('should preserve next property when changing action', () => {
+  describe('Initial Values', () => {
+    it('should display existing startIcon value', () => {
       const resource = createMockResource({
-        action: {type: 'SUBMIT', next: 'next-step-id'},
-      });
+        startIcon: '/assets/icons/test-start.svg',
+      } as Partial<Resource>);
 
       render(<ButtonExtendedProperties resource={resource} onChange={mockOnChange} />);
 
-      const cancelAction = screen.getByText('Cancel').closest('.MuiCard-root');
-      if (cancelAction) {
-        fireEvent.click(cancelAction);
-      }
-
-      expect(mockOnChange).toHaveBeenCalledWith(
-        'action',
-        expect.objectContaining({
-          next: 'next-step-id',
-        }),
-        resource,
+      const startIconInput = screen.getByPlaceholderText<HTMLInputElement>(
+        'flows:core.buttonExtendedProperties.startIcon.placeholder',
       );
+      expect(startIconInput.value).toBe('/assets/icons/test-start.svg');
     });
 
-    it('should not include next property when it does not exist', () => {
+    it('should display existing endIcon value', () => {
       const resource = createMockResource({
-        action: {type: 'SUBMIT'},
-      });
+        endIcon: '/assets/icons/test-end.svg',
+      } as Partial<Resource>);
 
       render(<ButtonExtendedProperties resource={resource} onChange={mockOnChange} />);
 
-      const cancelAction = screen.getByText('Cancel').closest('.MuiCard-root');
-      if (cancelAction) {
-        fireEvent.click(cancelAction);
-      }
+      const endIconInput = screen.getByPlaceholderText<HTMLInputElement>(
+        'flows:core.buttonExtendedProperties.endIcon.placeholder',
+      );
+      expect(endIconInput.value).toBe('/assets/icons/test-end.svg');
+    });
 
-      expect(mockOnChange).toHaveBeenCalled();
-      const callArgs = mockOnChange.mock.calls[0];
-      expect(callArgs[1]).not.toHaveProperty('next');
+    it('should display empty value when startIcon is not set', () => {
+      const resource = createMockResource();
+
+      render(<ButtonExtendedProperties resource={resource} onChange={mockOnChange} />);
+
+      const startIconInput = screen.getByPlaceholderText<HTMLInputElement>(
+        'flows:core.buttonExtendedProperties.startIcon.placeholder',
+      );
+      expect(startIconInput.value).toBe('');
+    });
+
+    it('should display empty value when endIcon is not set', () => {
+      const resource = createMockResource();
+
+      render(<ButtonExtendedProperties resource={resource} onChange={mockOnChange} />);
+
+      const endIconInput = screen.getByPlaceholderText<HTMLInputElement>(
+        'flows:core.buttonExtendedProperties.endIcon.placeholder',
+      );
+      expect(endIconInput.value).toBe('');
     });
   });
 
-  describe('Action Group Keys', () => {
-    it('should render action groups with type and id', () => {
+  describe('Change Handlers', () => {
+    it('should call onChange when start icon value changes', () => {
       const resource = createMockResource();
+
       render(<ButtonExtendedProperties resource={resource} onChange={mockOnChange} />);
 
-      // Verify the action group label is rendered
-      expect(screen.getByText('Primary Actions')).toBeInTheDocument();
+      const startIconInput = screen.getByPlaceholderText('flows:core.buttonExtendedProperties.startIcon.placeholder');
+      fireEvent.change(startIconInput, {target: {value: '/new/icon/path.svg'}});
+
+      expect(mockOnChange).toHaveBeenCalledWith('startIcon', '/new/icon/path.svg', resource);
     });
 
-    it('should render action types within groups', () => {
+    it('should call onChange when end icon value changes', () => {
       const resource = createMockResource();
+
       render(<ButtonExtendedProperties resource={resource} onChange={mockOnChange} />);
 
-      // Verify that action types are rendered
-      expect(screen.getByText('Submit')).toBeInTheDocument();
-      expect(screen.getByText('Cancel')).toBeInTheDocument();
+      const endIconInput = screen.getByPlaceholderText('flows:core.buttonExtendedProperties.endIcon.placeholder');
+      fireEvent.change(endIconInput, {target: {value: '/new/end/icon.svg'}});
+
+      expect(mockOnChange).toHaveBeenCalledWith('endIcon', '/new/end/icon.svg', resource);
     });
 
-    it('should handle multiple action groups', () => {
-      const resource = createMockResource();
-      const {container} = render(<ButtonExtendedProperties resource={resource} onChange={mockOnChange} />);
+    it('should call onChange with empty string when clearing start icon', () => {
+      const resource = createMockResource({
+        startIcon: '/existing/icon.svg',
+      } as Partial<Resource>);
 
-      // Check that the component renders without errors
-      const actionTypeElements = container.querySelectorAll('.action-type');
-      expect(actionTypeElements.length).toBeGreaterThan(0);
+      render(<ButtonExtendedProperties resource={resource} onChange={mockOnChange} />);
+
+      const startIconInput = screen.getByPlaceholderText('flows:core.buttonExtendedProperties.startIcon.placeholder');
+      fireEvent.change(startIconInput, {target: {value: ''}});
+
+      expect(mockOnChange).toHaveBeenCalledWith('startIcon', '', resource);
+    });
+
+    it('should call onChange with empty string when clearing end icon', () => {
+      const resource = createMockResource({
+        endIcon: '/existing/icon.svg',
+      } as Partial<Resource>);
+
+      render(<ButtonExtendedProperties resource={resource} onChange={mockOnChange} />);
+
+      const endIconInput = screen.getByPlaceholderText('flows:core.buttonExtendedProperties.endIcon.placeholder');
+      fireEvent.change(endIconInput, {target: {value: ''}});
+
+      expect(mockOnChange).toHaveBeenCalledWith('endIcon', '', resource);
     });
   });
 
-  describe('Selected State', () => {
-    it('should apply selected class to matching action', () => {
-      const resource = createMockResource({
-        action: {type: 'SUBMIT'},
-      });
+  describe('Input Attributes', () => {
+    it('should have correct id for start icon input', () => {
+      const resource = createMockResource();
 
-      const {container} = render(<ButtonExtendedProperties resource={resource} onChange={mockOnChange} />);
+      render(<ButtonExtendedProperties resource={resource} onChange={mockOnChange} />);
 
-      const selectedCard = container.querySelector('.selected');
-      expect(selectedCard).toBeTruthy();
+      const startIconInput = screen.getByPlaceholderText('flows:core.buttonExtendedProperties.startIcon.placeholder');
+      expect(startIconInput).toHaveAttribute('id', 'start-icon-input');
+    });
+
+    it('should have correct id for end icon input', () => {
+      const resource = createMockResource();
+
+      render(<ButtonExtendedProperties resource={resource} onChange={mockOnChange} />);
+
+      const endIconInput = screen.getByPlaceholderText('flows:core.buttonExtendedProperties.endIcon.placeholder');
+      expect(endIconInput).toHaveAttribute('id', 'end-icon-input');
     });
   });
 });

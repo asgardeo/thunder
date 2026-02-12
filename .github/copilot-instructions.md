@@ -87,13 +87,13 @@ The project is structured as a monorepo to manage the backend, frontend, and sam
   - `store_constants.go`: Define database queries, table names, column names, and database-related constants
   - `utils.go`: Define package-specific utility functions in this file
   - `init.go`: Package initialization and route registration. Route registration is only required if the package exposes HTTP endpoints.
-  - `file_based_store.go`: File-based storage implementation - only if the package needs to support immutable configs
-  - `composite_store.go`: Composite storage implementation - only if the package needs to support both database and immutable configs simultaneously
-  - `immutable_resource.go`: Immutable resource implementation - only if the package needs to support immutable configs
+  - `file_based_store.go`: File-based storage implementation - only if the package needs to support declarative configs
+  - `composite_store.go`: Composite storage implementation - only if the package needs to support both database and declarative configs simultaneously
+  - `declarative_resource.go`: Declarative resource implementation - only if the package needs to support declarative configs
 - Adjust the file structure based on actual requirements. For example:
   - No HTTP layer? Skip `handler.go`
   - Need cache-backed storage? Add additional storage implementation files
-  - Immutable resource support not required? Skip `file_based_store.go` and `composite_store.go` and `immutable_resource.go`
+  - Declarative resource support not required? Skip `file_based_store.go` and `composite_store.go` and `declarative_resource.go`
   - Complex domain? Use subdirectories for further organize related functionality (e.g., `internal/oauth/oauth2/`, `internal/oauth/jwks/`).
 
 ### Package Exports
@@ -176,7 +176,7 @@ The project is structured as a monorepo to manage the backend, frontend, and sam
 - The `Initialize(mux, deps)` function in `init.go` should:
   1. Create the store instances using the constructor functions (Only if the package requires database operations)
   2. Create the service instances using the constructor functions, passing created store and required dependencies which are passed in as parameters(`deps`). If there are multiple services in the package, initialize all services according to their dependency requirements.
-     - **Note**: If a service supports immutable configs, it should return a `ResourceExporter` during initialization.
+     - **Note**: If a service supports declarative configs, it should return a `ResourceExporter` during initialization.
   3. Create handlers and inject the service instance into them
   4. Register routes with the mux
   5. Return the created service interfaces (and `ResourceExporter` if applicable) to be used as dependencies by other packages
@@ -202,7 +202,7 @@ The project is structured as a monorepo to manage the backend, frontend, and sam
   }
   ```
 - The main service manager in `cmd/server/servicemanager.go` should orchestrate all initializations in the correct order, passing dependencies as needed.
-  - It should also collect `ResourceExporter` interfaces from packages that support immutable configs and register them with the `export` service.
+  - It should also collect `ResourceExporter` interfaces from packages that support declarative configs and register them with the `export` service.
   ```go
   // In cmd/server/servicemanager.go
   // Note: Error handling is not shown for brevity.

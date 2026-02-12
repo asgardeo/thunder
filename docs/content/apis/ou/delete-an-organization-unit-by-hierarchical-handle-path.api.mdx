@@ -1,0 +1,72 @@
+---
+id: delete-an-organization-unit-by-hierarchical-handle-path
+title: "Delete an organization unit by hierarchical handle path"
+description: "Delete an organization unit by hierarchical handle path"
+sidebar_label: "Delete an organization unit by hierarchical handle path"
+hide_title: true
+hide_table_of_contents: true
+api: eJztV99v2zYQ/leIe9oA2XKzbuj0lqUGGqBbhrV5ig2Uls4WW4lUeac4nqH/fThSjq1YQYPubZhf7PB+3/fdkdkD6w1BdgfOb7Q1f2s2zk5aa5gmq92k0VzCMoFGe10joxfdPRgLGQRZAlbXePzL49fWeCwgY99iApSXWGvI9sC7RvSIvbEb6BIg3lXhxNRNhZAAPjSVKxCyta4IEyiQcm8ayQgyeGfQa5+XJteVkmjKrdVp1kqyVqW2RYWkCCVnxkKtdmrt/Fb7QlGlqUSaLuz8QUtUyhZ2oj6h3RiLKJl9UhP1FitkJMUlKu8cq5tbtTVc9s7VAk4MFvDURbr2zjLa4qmvBRwkCxCfrS3Qv9hb2ppzh6151lV6DLawob2hZMhGlaBbCnrUOEtIAtjF7LV8DVG4OWt4EfIpBNHXs9m5xW+6UMIKJIYE8hCNRU03TWXy4Cn9TKK7P6eLW33GnAfEuoNcWJJAjUR6g4Gf3jXo2cTMg3yMcgeLMdkg6zN5lwAbDt2be++8WPQNDSFLTZO8NFXhMRbS1rX2u9GOlZrUo24C97pq8Zg23NxOXs1mv5wU+JwTalfKI7nW50jwdGCutLXugM/IpARGH/JQzquW0JP82HjXNgRd+AisLyKCBFu71hb/YZhl70ys40ksdAD0u7gcwmo67cU4vj99A99TD8POfyyfRVN2AjWYm7XB4rCtQkKFQwo+8cEQh0KNvdeVKeKOH1RyHSXRkti3Obceny3lzaCUg/FJ9NESRrPz2HgktKy0im5OK9WVKvtbYPfIzp/Hls61ZfSiT+jv0SuMYD7FH+IyVdqOdHS1e4wW7pxhQTVy6QrIIM4XJPEGzCA9v0lT9ojpXhQ6SCDmFG/S1leQQcncUJam+9IRd9m+cZ670G9v9OqwYhxxrHSt24ohg8rlugrHXQJiMxS/mf06kzYtJWTeesO7EPPmsuXyQiaMdsRYw/JU5YPMZox4UDyOqQ4HCawrtw0qcuB8X+1VP5CDw9tBhY8pZ5JdGh2mBwNpI7sv+CKjoCjtzF0T8+3LyeAyz5FIsVPxSNXa6g3WQqzLP6/71SYjsHahvH7mT8fwVjjw+8BOEEFPkTqvprMRXhsSRWVItmkhGcTQ5/yiKSRQmRwthab176jLRuclqovgfciO7XY71UE8dX6T9raUvr++mv/xYT65mM6mJddV4HnjiGttTzx/P9fHdybjA6dNpY0V+oVU9/0QjD0nBVqPgnB2eFVGRt/Bfr/ShLe+6jo5/tqirKG75XEAAm8LQ/K7GH8g7o+XDvzwV3+N/Kj+fzb+y2fjKNr9oba7460AkMAX3B3+F+iWXQIl6gJ9QC+KZDIbPjE6ex7ILnpcrm/n7+cf59B1/wCVjW+R
+sidebar_class_name: "delete api-method"
+info_path: docs/apis/ou/organizationunit-management-api
+custom_edit_url: null
+---
+
+import MethodEndpoint from "@theme/ApiExplorer/MethodEndpoint";
+import ParamsDetails from "@theme/ParamsDetails";
+import RequestSchema from "@theme/RequestSchema";
+import StatusCodes from "@theme/StatusCodes";
+import OperationTabs from "@theme/OperationTabs";
+import TabItem from "@theme/TabItem";
+import Heading from "@theme/Heading";
+import Translate from "@docusaurus/Translate";
+
+<Heading
+  as={"h1"}
+  className={"openapi__heading"}
+  children={"Delete an organization unit by hierarchical handle path"}
+>
+</Heading>
+
+<MethodEndpoint
+  method={"delete"}
+  path={"/organization-units/tree/{path}"}
+  context={"endpoint"}
+>
+  
+</MethodEndpoint>
+
+
+
+Delete an organization unit by hierarchical handle path
+
+<Heading
+  id={"request"}
+  as={"h2"}
+  className={"openapi-tabs__heading"}
+>
+  <Translate id="theme.openapi.request.title">Request</Translate>
+</Heading>
+
+<ParamsDetails
+  parameters={[{"in":"path","name":"path","required":true,"schema":{"type":"string"},"style":"simple","explode":false,"description":"Hierarchical path of organization unit handles separated by forward slashes.\nExamples:\n- `engineering` - Deletes the root OU with handle \"engineering\"\n- `engineering/frontend` - Deletes the \"frontend\" OU under \"engineering\"\n- `engineering/frontend/ui` - Deletes the \"ui\" OU under \"engineering/frontend\"\n","example":"engineering/frontend"}]}
+>
+  
+</ParamsDetails>
+
+<RequestSchema
+  title={"Body"}
+  body={undefined}
+>
+  
+</RequestSchema>
+
+<StatusCodes
+  id={undefined}
+  label={undefined}
+  responses={{"204":{"description":"Organization unit deleted"},"400":{"description":"Bad request","content":{"application/json":{"schema":{"type":"object","required":["code","message"],"properties":{"code":{"type":"string"},"message":{"type":"string"},"description":{"type":"string"}},"title":"Error"},"examples":{"has-children":{"summary":"Organization unit has children","value":{"code":"OU-1006","message":"Organization unit has sub resources","description":"Cannot delete organization unit with children or users or groups"}}}}}},"404":{"description":"Organization unit not found","content":{"application/json":{"schema":{"type":"object","required":["code","message"],"properties":{"code":{"type":"string"},"message":{"type":"string"},"description":{"type":"string"}},"title":"Error"},"examples":{"path-not-found":{"summary":"Handle path not found","value":{"code":"OU-1003","message":"Organization unit not found","description":"The organization unit with the specified handle path does not exist"}},"invalid-path":{"summary":"Invalid path structure","value":{"code":"OU-1008","message":"Invalid handle path","description":"The handle path does not represent a valid organizational hierarchy"}}}}}},"500":{"description":"Internal server error"}}}
+>
+  
+</StatusCodes>
+
+
+      

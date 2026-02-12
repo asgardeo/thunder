@@ -43,9 +43,9 @@ import (
 	"github.com/asgardeo/thunder/internal/role"
 	"github.com/asgardeo/thunder/internal/system/crypto/hash"
 	"github.com/asgardeo/thunder/internal/system/crypto/pki"
+	declarativeresource "github.com/asgardeo/thunder/internal/system/declarative_resource"
 	"github.com/asgardeo/thunder/internal/system/export"
 	i18nmgt "github.com/asgardeo/thunder/internal/system/i18n/mgt"
-	immutableresource "github.com/asgardeo/thunder/internal/system/immutable_resource"
 	"github.com/asgardeo/thunder/internal/system/jwt"
 	"github.com/asgardeo/thunder/internal/system/log"
 	"github.com/asgardeo/thunder/internal/system/services"
@@ -67,7 +67,7 @@ func registerServices(
 	observabilitySvc = observability.Initialize()
 
 	// List to collect exporters from each package
-	var exporters []immutableresource.ResourceExporter
+	var exporters []declarativeresource.ResourceExporter
 
 	// Initialize i18n service for internationalization support.
 	_, i18nExporter, err := i18nmgt.Initialize(mux)

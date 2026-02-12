@@ -160,5 +160,15 @@ describe('getTemplateMetadata', () => {
 
       expect(result).toBeNull();
     });
+
+    it('should return null when normalizeTemplateId returns empty string', async () => {
+      // Import the mock to override its behavior for this test
+      const normalizeTemplateId = await import('../normalizeTemplateId');
+      vi.mocked(normalizeTemplateId.default).mockReturnValueOnce('');
+
+      const result = getTemplateMetadata('some-template');
+
+      expect(result).toBeNull();
+    });
   });
 });

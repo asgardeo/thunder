@@ -81,25 +81,33 @@ func (n *promptNode) Execute(ctx *NodeContext) (*common.NodeResponse, *serviceer
 	hasAllInputs := n.hasRequiredInputs(ctx, nodeResp)
 	hasAction := n.hasSelectedAction(ctx, nodeResp)
 
-	// If both inputs and action are satisfied, complete the node
-	if hasAllInputs && hasAction {
-		logger.Debug("All required inputs and action are available, returning complete status")
-
-		// If an action was selected, set the next node
-		if ctx.CurrentAction != "" {
-			if nextNode := n.getNextNodeForActionRef(ctx.CurrentAction, logger); nextNode != "" {
-				nodeResp.NextNodeID = nextNode
-			} else {
-				logger.Debug("Invalid action selected", log.String("actionRef", ctx.CurrentAction))
-				nodeResp.Status = common.NodeStatusFailure
-				nodeResp.FailureReason = "Invalid action selected"
-				return nodeResp, nil
-			}
+	if hasAllInputs {
+		// If inputs are satisfied but no action selected, try to auto-select single action
+		if !hasAction && n.tryAutoSelectSingleAction(ctx) {
+			hasAction = true
+			// Clear actions from response since we auto-selected
+			nodeResp.Actions = make([]common.Action, 0)
 		}
 
-		nodeResp.Status = common.NodeStatusComplete
-		nodeResp.Type = ""
-		return nodeResp, nil
+		// If both inputs and action are satisfied, complete the node
+		if hasAction {
+			logger.Debug("All required inputs and action are available, returning complete status")
+
+			if ctx.CurrentAction != "" {
+				if nextNode := n.getNextNodeForActionRef(ctx.CurrentAction, logger); nextNode != "" {
+					nodeResp.NextNodeID = nextNode
+				} else {
+					logger.Debug("Invalid action selected", log.String("actionRef", ctx.CurrentAction))
+					nodeResp.Status = common.NodeStatusFailure
+					nodeResp.FailureReason = "Invalid action selected"
+					return nodeResp, nil
+				}
+			}
+
+			nodeResp.Status = common.NodeStatusComplete
+			nodeResp.Type = ""
+			return nodeResp, nil
+		}
 	}
 
 	// If required inputs or action is not yet available, prompt for user interaction
@@ -199,6 +207,20 @@ func (n *promptNode) hasSelectedAction(ctx *NodeContext, nodeResp *common.NodeRe
 
 	// If no action selected or invalid action, add actions to response
 	nodeResp.Actions = append(nodeResp.Actions, actions...)
+	return false
+}
+
+// tryAutoSelectSingleAction attempts to auto-select the action when there's exactly one action
+// defined and no action has been selected.
+// Returns true if an action was auto-selected, otherwise false.
+func (n *promptNode) tryAutoSelectSingleAction(ctx *NodeContext) bool {
+	actions := n.getAllActions()
+	if len(actions) == 1 && ctx.CurrentAction == "" {
+		ctx.CurrentAction = actions[0].Ref
+		n.logger.Debug("Auto-selected single action", log.String(log.LoggerKeyFlowID, ctx.FlowID),
+			log.String("actionRef", actions[0].Ref))
+		return true
+	}
 	return false
 }
 

@@ -44,6 +44,9 @@ spec:
         app.kubernetes.io/component: setup
       annotations:
         checksum.deployment.yaml: {{ include (print $.Template.BasePath "/setup-config-map.yaml") . | sha256sum }}
+        {{- if include "thunder.shouldIncludeSecretChecksum" . }}
+        checksum.secret: {{ include (print $.Template.BasePath "/secret.yaml") . | sha256sum }}
+        {{- end }}
     spec:
       serviceAccountName: {{ include "thunder.serviceAccountName" . }}
       restartPolicy: OnFailure
@@ -117,6 +120,7 @@ spec:
             - name: DEBUG
               value: "true"
             {{- end }}
+            {{- include "thunder.databasePasswordEnvVars" . | nindent 12 }}
             {{- if .Values.setup.env }}
             {{- toYaml .Values.setup.env | nindent 12 }}
             {{- end }}

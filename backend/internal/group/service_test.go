@@ -448,7 +448,7 @@ func (suite *GroupServiceTestSuite) TestGroupService_CreateGroup() {
 					Return(oupkg.OrganizationUnit{ID: "ou-001"}, nil).
 					Once()
 
-				args.user.On("ValidateUserIDs", []string{"usr-001"}).
+				args.user.On("ValidateUserIDs", mock.Anything, []string{"usr-001"}).
 					Return([]string{}, nil).
 					Once()
 			},
@@ -464,7 +464,7 @@ func (suite *GroupServiceTestSuite) TestGroupService_CreateGroup() {
 				args.ou.On("GetOrganizationUnit", "ou-unknown").
 					Return(oupkg.OrganizationUnit{}, &oupkg.ErrorOrganizationUnitNotFound).
 					Once()
-				args.user.On("ValidateUserIDs", []string{}).
+				args.user.On("ValidateUserIDs", mock.Anything, []string{}).
 					Return([]string{}, nil).
 					Maybe()
 			},
@@ -484,7 +484,7 @@ func (suite *GroupServiceTestSuite) TestGroupService_CreateGroup() {
 				args.ou.On("GetOrganizationUnit", "ou-001").
 					Return(oupkg.OrganizationUnit{ID: "ou-001"}, nil).
 					Once()
-				args.user.On("ValidateUserIDs", []string{"usr-invalid"}).
+				args.user.On("ValidateUserIDs", mock.Anything, []string{"usr-invalid"}).
 					Return([]string{"usr-invalid"}, nil).
 					Once()
 			},
@@ -503,7 +503,7 @@ func (suite *GroupServiceTestSuite) TestGroupService_CreateGroup() {
 				args.ou.On("GetOrganizationUnit", "ou-001").
 					Return(oupkg.OrganizationUnit{ID: "ou-001"}, nil).
 					Once()
-				args.user.On("ValidateUserIDs", mock.Anything).
+				args.user.On("ValidateUserIDs", mock.Anything, mock.Anything).
 					Return([]string{}, nil).
 					Once()
 				args.store.On("ValidateGroupIDs", mock.Anything).
@@ -525,7 +525,7 @@ func (suite *GroupServiceTestSuite) TestGroupService_CreateGroup() {
 				args.ou.On("GetOrganizationUnit", "ou-001").
 					Return(oupkg.OrganizationUnit{ID: "ou-001"}, nil).
 					Once()
-				args.user.On("ValidateUserIDs", mock.Anything).
+				args.user.On("ValidateUserIDs", mock.Anything, mock.Anything).
 					Return([]string{}, nil).
 					Once()
 				args.store.On("ValidateGroupIDs", mock.Anything).
@@ -553,7 +553,7 @@ func (suite *GroupServiceTestSuite) TestGroupService_CreateGroup() {
 				args.ou.On("GetOrganizationUnit", "ou-001").
 					Return(oupkg.OrganizationUnit{ID: "ou-001"}, nil).
 					Once()
-				args.user.On("ValidateUserIDs", mock.Anything).
+				args.user.On("ValidateUserIDs", mock.Anything, mock.Anything).
 					Return([]string{}, nil).
 					Once()
 			},
@@ -832,7 +832,7 @@ func (suite *GroupServiceTestSuite) TestGroupService_UpdateGroup() {
 				args.ou.On("GetOrganizationUnit", "ou-new").
 					Return(oupkg.OrganizationUnit{ID: "ou-new"}, nil).
 					Once()
-				args.user.On("ValidateUserIDs", mock.Anything).
+				args.user.On("ValidateUserIDs", mock.Anything, mock.Anything).
 					Return([]string{}, nil).
 					Once()
 			},
@@ -855,7 +855,7 @@ func (suite *GroupServiceTestSuite) TestGroupService_UpdateGroup() {
 				args.ou.On("GetOrganizationUnit", "ou-new").
 					Return(oupkg.OrganizationUnit{ID: "ou-new"}, nil).
 					Once()
-				args.user.On("ValidateUserIDs", mock.Anything).
+				args.user.On("ValidateUserIDs", mock.Anything, mock.Anything).
 					Return([]string{}, nil).
 					Once()
 				args.store.On("ValidateGroupIDs", mock.Anything).
@@ -906,7 +906,7 @@ func (suite *GroupServiceTestSuite) TestGroupService_UpdateGroup() {
 				args.ou.On("GetOrganizationUnit", "ou-new").
 					Return(oupkg.OrganizationUnit{}, &oupkg.ErrorOrganizationUnitNotFound).
 					Once()
-				args.user.On("ValidateUserIDs", mock.Anything).
+				args.user.On("ValidateUserIDs", mock.Anything, mock.Anything).
 					Return([]string{}, nil).
 					Maybe()
 				args.store.On("ValidateGroupIDs", mock.Anything).
@@ -927,7 +927,7 @@ func (suite *GroupServiceTestSuite) TestGroupService_UpdateGroup() {
 				args.store.On("GetGroup", "grp-001").
 					Return(GroupDAO{ID: "grp-001", Name: "name", OrganizationUnitID: "ou"}, nil).
 					Once()
-				args.user.On("ValidateUserIDs", []string{"usr-1"}).
+				args.user.On("ValidateUserIDs", mock.Anything, []string{"usr-1"}).
 					Return([]string{"usr-1"}, nil).
 					Once()
 				args.store.On("ValidateGroupIDs", mock.Anything).
@@ -951,7 +951,7 @@ func (suite *GroupServiceTestSuite) TestGroupService_UpdateGroup() {
 				args.store.On("ValidateGroupIDs", mock.Anything).
 					Return(nil, errors.New("validate fail")).
 					Once()
-				args.user.On("ValidateUserIDs", mock.Anything).
+				args.user.On("ValidateUserIDs", mock.Anything, mock.Anything).
 					Return([]string{}, nil).
 					Once()
 			},
@@ -972,7 +972,7 @@ func (suite *GroupServiceTestSuite) TestGroupService_UpdateGroup() {
 				args.store.On("ValidateGroupIDs", mock.Anything).
 					Return([]string{"grp-2"}, nil).
 					Once()
-				args.user.On("ValidateUserIDs", mock.Anything).
+				args.user.On("ValidateUserIDs", mock.Anything, mock.Anything).
 					Return([]string{}, nil).
 					Once()
 			},
@@ -995,7 +995,7 @@ func (suite *GroupServiceTestSuite) TestGroupService_UpdateGroup() {
 				args.store.On("ValidateGroupIDs", mock.Anything).
 					Return([]string{}, nil).
 					Once()
-				args.user.On("ValidateUserIDs", mock.Anything).
+				args.user.On("ValidateUserIDs", mock.Anything, mock.Anything).
 					Return([]string{}, nil).
 					Once()
 			},
@@ -1021,7 +1021,7 @@ func (suite *GroupServiceTestSuite) TestGroupService_UpdateGroup() {
 				args.store.On("UpdateGroup", mock.Anything).
 					Return(errors.New("update fail")).
 					Once()
-				args.user.On("ValidateUserIDs", mock.Anything).
+				args.user.On("ValidateUserIDs", mock.Anything, mock.Anything).
 					Return([]string{}, nil).
 					Once()
 			},
@@ -1475,7 +1475,7 @@ func (suite *GroupServiceTestSuite) TestGroupService_ValidateAndProcessHandlePat
 func (suite *GroupServiceTestSuite) TestGroupService_ValidateUserIDsHandlesServiceError() {
 	t := suite.T()
 	userServiceMock := usermock.NewUserServiceInterfaceMock(t)
-	userServiceMock.On("ValidateUserIDs", []string{"usr-001"}).
+	userServiceMock.On("ValidateUserIDs", mock.Anything, []string{"usr-001"}).
 		Return([]string{}, &serviceerror.ServiceError{
 			Code: "USR-5000",
 			Type: serviceerror.ServerErrorType,

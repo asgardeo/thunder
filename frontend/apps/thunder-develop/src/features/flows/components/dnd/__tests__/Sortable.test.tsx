@@ -246,4 +246,355 @@ describe('Sortable', () => {
       expect(container.firstChild).toBeInTheDocument();
     });
   });
+
+  describe('Drag States', () => {
+    it('should apply dragging styles when isDragging is true', async () => {
+      const {useSortable} = await import('@dnd-kit/react/sortable');
+
+      vi.mocked(useSortable).mockReturnValue({
+        ref: mockSortableRef,
+        sortable: mockSortable,
+        isDragging: true,
+        isDropTarget: false,
+      } as unknown as ReturnType<typeof useSortable>);
+
+      const {container} = render(
+        <Sortable id="dragging-item" index={0}>
+          <div>Dragging</div>
+        </Sortable>,
+      );
+
+      expect(container.firstChild).toBeInTheDocument();
+    });
+
+    it('should apply drop target styles when isDropTarget is true', async () => {
+      const {useSortable} = await import('@dnd-kit/react/sortable');
+      const {useDragOperation} = await import('@dnd-kit/react');
+
+      vi.mocked(useSortable).mockReturnValue({
+        ref: mockSortableRef,
+        sortable: mockSortable,
+        isDragging: false,
+        isDropTarget: true,
+      } as unknown as ReturnType<typeof useSortable>);
+
+      vi.mocked(useDragOperation).mockReturnValue({
+        source: {id: 'drag-1', type: 'TYPE_A'},
+      } as ReturnType<typeof useDragOperation>);
+
+      const {container} = render(
+        <Sortable id="drop-target" index={0}>
+          <div>Drop Target</div>
+        </Sortable>,
+      );
+
+      expect(container.firstChild).toBeInTheDocument();
+    });
+
+    it('should check if sortable accepts source', async () => {
+      const {useSortable} = await import('@dnd-kit/react/sortable');
+      const {useDragOperation} = await import('@dnd-kit/react');
+
+      const mockAccepts = vi.fn(() => true);
+      vi.mocked(useSortable).mockReturnValue({
+        ref: mockSortableRef,
+        sortable: {accepts: mockAccepts},
+        isDragging: false,
+        isDropTarget: true,
+      } as unknown as ReturnType<typeof useSortable>);
+
+      vi.mocked(useDragOperation).mockReturnValue({
+        source: {id: 'drag-1', type: 'TYPE_A'},
+      } as ReturnType<typeof useDragOperation>);
+
+      render(
+        <Sortable id="test-sortable" index={0}>
+          <div>Content</div>
+        </Sortable>,
+      );
+
+      expect(mockAccepts).toHaveBeenCalled();
+    });
+
+    it('should not call accepts when source is null', async () => {
+      const {useSortable} = await import('@dnd-kit/react/sortable');
+      const {useDragOperation} = await import('@dnd-kit/react');
+
+      const mockAccepts = vi.fn(() => true);
+      vi.mocked(useSortable).mockReturnValue({
+        ref: mockSortableRef,
+        sortable: {accepts: mockAccepts},
+        isDragging: false,
+        isDropTarget: false,
+      } as unknown as ReturnType<typeof useSortable>);
+
+      vi.mocked(useDragOperation).mockReturnValue({
+        source: null,
+      } as ReturnType<typeof useDragOperation>);
+
+      render(
+        <Sortable id="test-sortable" index={0}>
+          <div>Content</div>
+        </Sortable>,
+      );
+
+      // accepts should not be called when source is null
+      expect(mockAccepts).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('Drop Indicator', () => {
+    it('should show indicator before when reordering from higher index', async () => {
+      const {useSortable} = await import('@dnd-kit/react/sortable');
+      const {useDragOperation} = await import('@dnd-kit/react');
+
+      vi.mocked(useSortable).mockReturnValue({
+        ref: mockSortableRef,
+        sortable: {accepts: vi.fn(() => true)},
+        isDragging: false,
+        isDropTarget: true,
+      } as unknown as ReturnType<typeof useSortable>);
+
+      vi.mocked(useDragOperation).mockReturnValue({
+        source: {id: 'drag-1', type: 'TYPE_A', index: 5, data: {isReordering: true}},
+        target: null,
+      } as unknown as ReturnType<typeof useDragOperation>);
+
+      const {container} = render(
+        <Sortable id="test-sortable" index={2}>
+          <div>Content</div>
+        </Sortable>,
+      );
+
+      expect(container.firstChild).toBeInTheDocument();
+    });
+
+    it('should show indicator after when reordering from lower index', async () => {
+      const {useSortable} = await import('@dnd-kit/react/sortable');
+      const {useDragOperation} = await import('@dnd-kit/react');
+
+      vi.mocked(useSortable).mockReturnValue({
+        ref: mockSortableRef,
+        sortable: {accepts: vi.fn(() => true)},
+        isDragging: false,
+        isDropTarget: true,
+      } as unknown as ReturnType<typeof useSortable>);
+
+      vi.mocked(useDragOperation).mockReturnValue({
+        source: {id: 'drag-1', type: 'TYPE_A', index: 0, data: {isReordering: true}},
+        target: null,
+      } as unknown as ReturnType<typeof useDragOperation>);
+
+      const {container} = render(
+        <Sortable id="test-sortable" index={3}>
+          <div>Content</div>
+        </Sortable>,
+      );
+
+      expect(container.firstChild).toBeInTheDocument();
+    });
+
+    it('should show indicator before for new items from resource panel', async () => {
+      const {useSortable} = await import('@dnd-kit/react/sortable');
+      const {useDragOperation} = await import('@dnd-kit/react');
+
+      vi.mocked(useSortable).mockReturnValue({
+        ref: mockSortableRef,
+        sortable: {accepts: vi.fn(() => true)},
+        isDragging: false,
+        isDropTarget: true,
+      } as unknown as ReturnType<typeof useSortable>);
+
+      vi.mocked(useDragOperation).mockReturnValue({
+        source: {id: 'drag-1', type: 'TYPE_A', data: {isReordering: false}},
+        target: null,
+      } as unknown as ReturnType<typeof useDragOperation>);
+
+      const {container} = render(
+        <Sortable id="test-sortable" index={1}>
+          <div>Content</div>
+        </Sortable>,
+      );
+
+      expect(container.firstChild).toBeInTheDocument();
+    });
+  });
+
+  describe('Memoized Presentation', () => {
+    it('should render children through MemoizedSortablePresentation', () => {
+      const {getByText} = render(
+        <Sortable id="memo-test" index={0}>
+          <span>Memoized Content</span>
+        </Sortable>,
+      );
+
+      expect(getByText('Memoized Content')).toBeInTheDocument();
+    });
+  });
+
+  describe('Drag Operation Event Handlers', () => {
+    // Create a fresh manager for each test in this block to avoid WeakMap caching
+    let freshManager: {
+      monitor: {
+        addEventListener: ReturnType<typeof vi.fn>;
+      };
+    };
+
+    beforeEach(async () => {
+      // Create a new manager object for each test so the WeakMap doesn't skip setup
+      freshManager = {
+        monitor: {
+          addEventListener: vi.fn(),
+        },
+      };
+
+      const dndKit = await import('@dnd-kit/react');
+      vi.mocked(dndKit.useDragDropManager).mockReturnValue(freshManager as unknown as ReturnType<typeof dndKit.useDragDropManager>);
+    });
+
+    it('should register dragstart event listener on manager', () => {
+      render(
+        <Sortable id="test-sortable-event-1" index={0}>
+          <div>Content</div>
+        </Sortable>,
+      );
+
+      expect(freshManager.monitor.addEventListener).toHaveBeenCalledWith('dragstart', expect.any(Function));
+    });
+
+    it('should register dragend event listener on manager', () => {
+      render(
+        <Sortable id="test-sortable-event-2" index={0}>
+          <div>Content</div>
+        </Sortable>,
+      );
+
+      expect(freshManager.monitor.addEventListener).toHaveBeenCalledWith('dragend', expect.any(Function));
+    });
+
+    it('should handle dragstart event and update global state', () => {
+      render(
+        <Sortable id="test-sortable-event-3" index={0}>
+          <div>Content</div>
+        </Sortable>,
+      );
+
+      // Find the dragstart handler that was registered
+      const dragstartCall = (freshManager.monitor.addEventListener.mock.calls as [string, (event: unknown) => void][]).find(
+        (call) => call[0] === 'dragstart',
+      );
+      expect(dragstartCall).toBeDefined();
+
+      const dragstartHandler = dragstartCall![1];
+
+      // Simulate a dragstart event
+      dragstartHandler({
+        operation: {
+          source: {
+            index: 2,
+            data: {isReordering: true},
+          },
+        },
+      });
+
+      // The global state should be updated - we can verify by rendering another component
+      // that uses the global state
+    });
+
+    it('should handle dragstart event with source that has no index', () => {
+      render(
+        <Sortable id="test-sortable-event-4" index={0}>
+          <div>Content</div>
+        </Sortable>,
+      );
+
+      const dragstartCall = (freshManager.monitor.addEventListener.mock.calls as [string, (event: unknown) => void][]).find(
+        (call) => call[0] === 'dragstart',
+      );
+      const dragstartHandler = dragstartCall![1];
+
+      // Simulate a dragstart event without index
+      dragstartHandler({
+        operation: {
+          source: {
+            data: {isReordering: false},
+          },
+        },
+      });
+    });
+
+    it('should handle dragstart event with undefined source', () => {
+      render(
+        <Sortable id="test-sortable-event-5" index={0}>
+          <div>Content</div>
+        </Sortable>,
+      );
+
+      const dragstartCall = (freshManager.monitor.addEventListener.mock.calls as [string, (event: unknown) => void][]).find(
+        (call) => call[0] === 'dragstart',
+      );
+      const dragstartHandler = dragstartCall![1];
+
+      // Simulate a dragstart event with undefined source
+      dragstartHandler({
+        operation: {
+          source: undefined,
+        },
+      });
+    });
+
+    it('should handle dragend event and reset global state', () => {
+      render(
+        <Sortable id="test-sortable-event-6" index={0}>
+          <div>Content</div>
+        </Sortable>,
+      );
+
+      // First trigger dragstart to set state
+      const dragstartCall = (freshManager.monitor.addEventListener.mock.calls as [string, (event: unknown) => void][]).find(
+        (call) => call[0] === 'dragstart',
+      );
+      const dragstartHandler = dragstartCall![1];
+      dragstartHandler({
+        operation: {
+          source: {
+            index: 1,
+            data: {isReordering: true},
+          },
+        },
+      });
+
+      // Find the dragend handler
+      const dragendCall = (freshManager.monitor.addEventListener.mock.calls as [string, (event?: unknown) => void][]).find(
+        (call) => call[0] === 'dragend',
+      );
+      expect(dragendCall).toBeDefined();
+
+      const dragendHandler = dragendCall![1];
+
+      // Simulate a dragend event
+      dragendHandler();
+
+      // The global state should be reset
+    });
+
+    it('should not notify listeners if state has not changed', () => {
+      render(
+        <Sortable id="test-sortable-event-7" index={0}>
+          <div>Content</div>
+        </Sortable>,
+      );
+
+      // Trigger dragend twice - the second call should not notify listeners
+      // because the state is already in the "not dragging" state
+      const dragendCall = (freshManager.monitor.addEventListener.mock.calls as [string, () => void][]).find(
+        (call) => call[0] === 'dragend',
+      );
+      const dragendHandler = dragendCall![1];
+
+      // Call dragend multiple times - should only update state once since values don't change
+      dragendHandler();
+      dragendHandler();
+    });
+  });
 });

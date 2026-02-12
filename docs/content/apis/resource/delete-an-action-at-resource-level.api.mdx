@@ -1,0 +1,72 @@
+---
+id: delete-an-action-at-resource-level
+title: "Delete an action at resource level"
+description: "Deletes an action for a specific resource"
+sidebar_label: "Delete an action at resource level"
+hide_title: true
+hide_table_of_contents: true
+api: eJztV0tv4zYQ/ivEXNoCiqUEu0CrW7rxwcD2gWT3lPWBIccWdylSISk7rqH/XgwpybLjtNu0PRToyfZwON88vhmO9xD42kN5D1wEZY2HZQYSvXCqod9Qwg1qDOgZNyzpsJV1jDPfoFArJZhDb1snEDJouOM1BnRkcg+K7jc8VJCB4TVCCc4vJGTg8LFVDiWUwbWYgRcV1hzKPYRdQ3o+OGXWkMHKupoHKKFtlYTu1LvbHpx5dBt0bHEDXXYeudf8l/BfBlb/KOB1qgHBLcmsb6zx6MnSVfGGPs7qy1jFaO9NUTxX+5FLRj6iD5CBsCagCaTGm0YrwUkt/+xJd//cefvwGUU4CvMehJXEiRq952skYjXONuiCSu7G8zMJOHZs7px1rLeFT7xuNGnfzu8uLovikgIaEL7S1qA+NbcwG67VmALWF+E0+38GcIOBK42SYUSaHk7RPlQ4Ij1YuWPKs5prAkXJYrgmcGU8U71fkgcOXZdBUCGaiKGQf6PVIaFDaq4muX8xwBfZRS6Nxew6gn57jjcLE9AZrof+i4H/z6D/NoPu7uYXb4uiOGHQ+UqfEMiw1uBTgyKMQVghWudQsm2lNLLGWYHeK7Nm4RBGJFksRaishBLSxIqPSqighHwY4BfJAZ/v6THpRjkJxhnf5f2Dlu+V7CCD/lJ8l1qnoYQqhMaXeb6vrA9duW+sC6S54U7xB50oRmeJ9SveahrL2gquo7jLgO4cH39f/FBQLEuCFK1TYRcxf7luQ3VFrPY7H7CG5VTljvohIQ6Kh9bgUZDBStttVCGBdeq32FPv+iY4En48inB0uSTv8mQwHy5QjoP9gl91KSpSOoVtkr99ODQ7qKwsWJZErOaGr7FGE9j1rws/VFiZlY3h9UQcn9C7RKyfjq5RQdD5xK7LWfGMcR8q5UmRWqD1KMmBhDxuJj1lfTZKfMa4kf1C4+NG06CrlSegiwdOdniKhzrJWT37ZAZHPRPcsAdkBj2xvFLouBOVElzrXbJ8sOYZd8gkOrVByVbO1pH2FTdSYw9FFGc+uFaE1uEEasiJkmiCWin66pmNsXMdkdSKOmqjJMqM1S0NBGStUY8tsq0KlTIRL9VkYjr52Q/85E1ytb/bGklo4RvPGu6oGjFjDpmq6zZQhzC+CuiYcBhJFxViCaRyKILenSQ2ZSHqTmPszQ9pjMPsJYzZJ2KfVgKNj7Tvl6zrhosK2VUkyHF/b7fbGY/HM+vWeX/X5+8X7+Y/380vrmbFrAq1jtOxsT7U3Ewsp/13sv7ycCCWxg3qU0ruD6/fX9qe+34P+BTyRnNlaMLEWPb9ELyH0yEIGZTjTt3TM8qm2+6w22dQKknPaJpq97DfE/8+Ot11JH5s0dG0Wh6GYJxdUnn6LqFcce3xD8L99rZ/vr9jZzbzF0Lshdzs4vTVLf2CDL7gbvjHQKv13/Pi1fCHRL7aicPO/ioX6G/AssugQi7RxYqkA5q4TZhcebZq0Rszvqg38/fzD3Pout8Bi0bYoA==
+sidebar_class_name: "delete api-method"
+info_path: docs/apis/resource/resource-server-management-api
+custom_edit_url: null
+---
+
+import MethodEndpoint from "@theme/ApiExplorer/MethodEndpoint";
+import ParamsDetails from "@theme/ParamsDetails";
+import RequestSchema from "@theme/RequestSchema";
+import StatusCodes from "@theme/StatusCodes";
+import OperationTabs from "@theme/OperationTabs";
+import TabItem from "@theme/TabItem";
+import Heading from "@theme/Heading";
+import Translate from "@docusaurus/Translate";
+
+<Heading
+  as={"h1"}
+  className={"openapi__heading"}
+  children={"Delete an action at resource level"}
+>
+</Heading>
+
+<MethodEndpoint
+  method={"delete"}
+  path={"/resource-servers/{rsId}/resources/{resourceId}/actions/{id}"}
+  context={"endpoint"}
+>
+  
+</MethodEndpoint>
+
+
+
+Deletes an action for a specific resource
+
+<Heading
+  id={"request"}
+  as={"h2"}
+  className={"openapi-tabs__heading"}
+>
+  <Translate id="theme.openapi.request.title">Request</Translate>
+</Heading>
+
+<ParamsDetails
+  parameters={[{"in":"path","name":"rsId","required":true,"schema":{"type":"string","format":"uuid"},"description":"Resource server ID"},{"in":"path","name":"resourceId","required":true,"schema":{"type":"string","format":"uuid"},"description":"Resource ID"},{"in":"path","name":"id","required":true,"schema":{"type":"string","format":"uuid"},"description":"Action ID"}]}
+>
+  
+</ParamsDetails>
+
+<RequestSchema
+  title={"Body"}
+  body={undefined}
+>
+  
+</RequestSchema>
+
+<StatusCodes
+  id={undefined}
+  label={undefined}
+  responses={{"204":{"description":"Action deleted"},"400":{"description":"Bad request","content":{"application/json":{"schema":{"type":"object","required":["code","message"],"properties":{"code":{"type":"string","description":"Error code","example":"RES-1001"},"message":{"type":"string","description":"Error message","example":"Invalid request format"},"description":{"type":"string","description":"Detailed error description","example":"The request body is malformed or contains invalid data"}},"title":"Error"},"example":{"code":"RES-1002","message":"Invalid request format","description":"Action ID is required"}}}},"500":{"description":"Internal server error","content":{"application/json":{"schema":{"type":"object","required":["code","message"],"properties":{"code":{"type":"string","description":"Error code","example":"RES-1001"},"message":{"type":"string","description":"Error message","example":"Invalid request format"},"description":{"type":"string","description":"Detailed error description","example":"The request body is malformed or contains invalid data"}},"title":"Error"},"example":{"code":"SSE-5000","message":"Internal server error","description":"An unexpected error occurred while processing the request"}}}}}}
+>
+  
+</StatusCodes>
+
+
+      

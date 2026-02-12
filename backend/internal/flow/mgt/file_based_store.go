@@ -22,19 +22,19 @@ import (
 	"errors"
 
 	"github.com/asgardeo/thunder/internal/flow/common"
-	immutableresource "github.com/asgardeo/thunder/internal/system/immutable_resource"
-	"github.com/asgardeo/thunder/internal/system/immutable_resource/entity"
+	declarativeresource "github.com/asgardeo/thunder/internal/system/declarative_resource"
+	"github.com/asgardeo/thunder/internal/system/declarative_resource/entity"
 )
 
 type fileBasedStore struct {
-	*immutableresource.GenericFileBasedStore
+	*declarativeresource.GenericFileBasedStore
 }
 
-// Create implements immutableresource.Storer interface for resource loader
+// Create implements declarativeresource.Storer interface for resource loader
 func (f *fileBasedStore) Create(id string, data interface{}) error {
 	flow, ok := data.(*CompleteFlowDefinition)
 	if !ok {
-		immutableresource.LogTypeAssertionError("flow", id)
+		declarativeresource.LogTypeAssertionError("flow", id)
 		return errors.New("invalid flow data type")
 	}
 	_, err := f.CreateFlow(flow.ID, &FlowDefinition{
@@ -109,7 +109,7 @@ func (f *fileBasedStore) GetFlowByID(flowID string) (*CompleteFlowDefinition, er
 	}
 	flow, ok := data.(*CompleteFlowDefinition)
 	if !ok {
-		immutableresource.LogTypeAssertionError("flow", flowID)
+		declarativeresource.LogTypeAssertionError("flow", flowID)
 		return nil, errFlowNotFound
 	}
 	return flow, nil
@@ -128,7 +128,7 @@ func (f *fileBasedStore) GetFlowByHandle(handle string, flowType common.FlowType
 	}
 	flow, ok := data.(*CompleteFlowDefinition)
 	if !ok {
-		immutableresource.LogTypeAssertionError("flow", handle)
+		declarativeresource.LogTypeAssertionError("flow", handle)
 		return nil, errFlowNotFound
 	}
 	return flow, nil
@@ -189,6 +189,6 @@ func (f *fileBasedStore) IsFlowExistsByHandle(handle string, flowType common.Flo
 // newFileBasedStore creates a new instance of a file-based store.
 func newFileBasedStore() flowStoreInterface {
 	return &fileBasedStore{
-		GenericFileBasedStore: immutableresource.NewGenericFileBasedStore(entity.KeyTypeFlow),
+		GenericFileBasedStore: declarativeresource.NewGenericFileBasedStore(entity.KeyTypeFlow),
 	}
 }

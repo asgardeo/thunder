@@ -26,6 +26,8 @@
     "typecheck": "tsc --noEmit"
   },
   "peerDependencies": {
+    "@asgardeo/react": "catalog:",
+    "@tanstack/react-query": "catalog:",
     "i18next": "catalog:",
     "react": "catalog:",
     "react-dom": "catalog:",

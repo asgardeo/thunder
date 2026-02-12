@@ -17,10 +17,8 @@
  */
 
 import {describe, it, expect, vi, beforeEach} from 'vitest';
-import {screen, waitFor} from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
+import {render, screen, waitFor, userEvent} from '@thunder/test-utils';
 import type {JSX} from 'react';
-import render from '@/test/test-utils';
 import OptionsMenu from '../OptionsMenu';
 
 // Mock Asgardeo hooks

@@ -28,7 +28,7 @@ import (
 	"github.com/asgardeo/thunder/internal/idp"
 	"github.com/asgardeo/thunder/internal/notification"
 	"github.com/asgardeo/thunder/internal/system/config"
-	immutableresource "github.com/asgardeo/thunder/internal/system/immutable_resource"
+	declarativeresource "github.com/asgardeo/thunder/internal/system/declarative_resource"
 	"github.com/asgardeo/thunder/internal/userschema"
 	"github.com/asgardeo/thunder/tests/mocks/applicationmock"
 	"github.com/asgardeo/thunder/tests/mocks/idp/idpmock"
@@ -86,8 +86,8 @@ func createTestExporters(
 	idpService *idpmock.IDPServiceInterfaceMock,
 	notificationService *notificationmock.NotificationSenderMgtSvcInterfaceMock,
 	userSchemaService *userschemamock.UserSchemaServiceInterfaceMock,
-) []immutableresource.ResourceExporter {
-	return []immutableresource.ResourceExporter{
+) []declarativeresource.ResourceExporter {
+	return []declarativeresource.ResourceExporter{
 		application.NewApplicationExporterForTest(appService),
 		idp.NewIDPExporterForTest(idpService),
 		notification.NewNotificationSenderExporterForTest(notificationService),

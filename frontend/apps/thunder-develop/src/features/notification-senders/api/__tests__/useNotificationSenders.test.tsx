@@ -17,9 +17,7 @@
  */
 
 import {describe, it, expect, vi, beforeEach} from 'vitest';
-import {renderHook, waitFor} from '@testing-library/react';
-import type {ReactNode} from 'react';
-import {QueryClient, QueryClientProvider} from '@tanstack/react-query';
+import {renderHook, waitFor} from '@thunder/test-utils';
 import useNotificationSenders from '../useNotificationSenders';
 import NotificationSenderQueryKeys from '../../constants/query-keys';
 import type {NotificationSenderListResponse} from '../../models/notification-sender';
@@ -27,11 +25,15 @@ import type {NotificationSenderListResponse} from '../../models/notification-sen
 // Mock useConfig
 const mockGetServerUrl = vi.fn(() => 'https://api.example.com');
 
-vi.mock('@thunder/commons-contexts', () => ({
-  useConfig: () => ({
-    getServerUrl: mockGetServerUrl,
-  }),
-}));
+vi.mock('@thunder/shared-contexts', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@thunder/shared-contexts')>();
+  return {
+    ...actual,
+    useConfig: () => ({
+      getServerUrl: mockGetServerUrl,
+    }),
+  };
+});
 
 // Mock useAsgardeo
 const mockHttpRequest = vi.fn();
@@ -45,19 +47,6 @@ vi.mock('@asgardeo/react', () => ({
 }));
 
 describe('useNotificationSenders', () => {
-  let queryClient: QueryClient;
-
-  const createWrapper = () => {
-    function Wrapper({children}: {children: ReactNode}) {
-      return (
-        <QueryClientProvider client={queryClient}>
-          {children}
-        </QueryClientProvider>
-      );
-    }
-    return Wrapper;
-  };
-
   const mockNotificationSenders: NotificationSenderListResponse = [
     {
       id: 'sender-1',
@@ -85,22 +74,13 @@ describe('useNotificationSenders', () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
-    queryClient = new QueryClient({
-      defaultOptions: {
-        queries: {
-          retry: false,
-        },
-      },
-    });
   });
 
   describe('Query Configuration', () => {
     it('should use correct query keys', async () => {
       mockHttpRequest.mockResolvedValueOnce({data: mockNotificationSenders});
 
-      const {result} = renderHook(() => useNotificationSenders(), {
-        wrapper: createWrapper(),
-      });
+      const {result} = renderHook(() => useNotificationSenders());
 
       await waitFor(() => {
         expect(result.current.isSuccess).toBe(true);
@@ -114,9 +94,7 @@ describe('useNotificationSenders', () => {
     it('should make HTTP request to correct endpoint', async () => {
       mockHttpRequest.mockResolvedValueOnce({data: mockNotificationSenders});
 
-      const {result} = renderHook(() => useNotificationSenders(), {
-        wrapper: createWrapper(),
-      });
+      const {result} = renderHook(() => useNotificationSenders());
 
       await waitFor(() => {
         expect(result.current.isSuccess).toBe(true);
@@ -135,9 +113,7 @@ describe('useNotificationSenders', () => {
       mockGetServerUrl.mockReturnValueOnce('https://custom-server.com');
       mockHttpRequest.mockResolvedValueOnce({data: mockNotificationSenders});
 
-      const {result} = renderHook(() => useNotificationSenders(), {
-        wrapper: createWrapper(),
-      });
+      const {result} = renderHook(() => useNotificationSenders());
 
       await waitFor(() => {
         expect(result.current.isSuccess).toBe(true);
@@ -156,9 +132,7 @@ describe('useNotificationSenders', () => {
     it('should return notification senders list on success', async () => {
       mockHttpRequest.mockResolvedValueOnce({data: mockNotificationSenders});
 
-      const {result} = renderHook(() => useNotificationSenders(), {
-        wrapper: createWrapper(),
-      });
+      const {result} = renderHook(() => useNotificationSenders());
 
       await waitFor(() => {
         expect(result.current.isSuccess).toBe(true);
@@ -170,9 +144,7 @@ describe('useNotificationSenders', () => {
     it('should return empty array when no senders exist', async () => {
       mockHttpRequest.mockResolvedValueOnce({data: []});
 
-      const {result} = renderHook(() => useNotificationSenders(), {
-        wrapper: createWrapper(),
-      });
+      const {result} = renderHook(() => useNotificationSenders());
 
       await waitFor(() => {
         expect(result.current.isSuccess).toBe(true);
@@ -184,9 +156,7 @@ describe('useNotificationSenders', () => {
     it('should return senders with all providers', async () => {
       mockHttpRequest.mockResolvedValueOnce({data: mockNotificationSenders});
 
-      const {result} = renderHook(() => useNotificationSenders(), {
-        wrapper: createWrapper(),
-      });
+      const {result} = renderHook(() => useNotificationSenders());
 
       await waitFor(() => {
         expect(result.current.isSuccess).toBe(true);
@@ -201,9 +171,7 @@ describe('useNotificationSenders', () => {
     it('should return senders with properties', async () => {
       mockHttpRequest.mockResolvedValueOnce({data: mockNotificationSenders});
 
-      const {result} = renderHook(() => useNotificationSenders(), {
-        wrapper: createWrapper(),
-      });
+      const {result} = renderHook(() => useNotificationSenders());
 
       await waitFor(() => {
         expect(result.current.isSuccess).toBe(true);
@@ -220,9 +188,7 @@ describe('useNotificationSenders', () => {
     it('should be loading initially', () => {
       mockHttpRequest.mockImplementation(() => new Promise(() => {})); // Never resolves
 
-      const {result} = renderHook(() => useNotificationSenders(), {
-        wrapper: createWrapper(),
-      });
+      const {result} = renderHook(() => useNotificationSenders());
 
       expect(result.current.isLoading).toBe(true);
       expect(result.current.data).toBeUndefined();
@@ -231,9 +197,7 @@ describe('useNotificationSenders', () => {
     it('should not be loading after data is fetched', async () => {
       mockHttpRequest.mockResolvedValueOnce({data: mockNotificationSenders});
 
-      const {result} = renderHook(() => useNotificationSenders(), {
-        wrapper: createWrapper(),
-      });
+      const {result} = renderHook(() => useNotificationSenders());
 
       await waitFor(() => {
         expect(result.current.isLoading).toBe(false);
@@ -245,9 +209,7 @@ describe('useNotificationSenders', () => {
     it('should handle network errors', async () => {
       mockHttpRequest.mockRejectedValueOnce(new Error('Network error'));
 
-      const {result} = renderHook(() => useNotificationSenders(), {
-        wrapper: createWrapper(),
-      });
+      const {result} = renderHook(() => useNotificationSenders());
 
       await waitFor(() => {
         expect(result.current.isError).toBe(true);
@@ -259,9 +221,7 @@ describe('useNotificationSenders', () => {
     it('should handle server errors', async () => {
       mockHttpRequest.mockRejectedValueOnce(new Error('Internal Server Error'));
 
-      const {result} = renderHook(() => useNotificationSenders(), {
-        wrapper: createWrapper(),
-      });
+      const {result} = renderHook(() => useNotificationSenders());
 
       await waitFor(() => {
         expect(result.current.isError).toBe(true);
@@ -271,9 +231,7 @@ describe('useNotificationSenders', () => {
     it('should handle 401 unauthorized errors', async () => {
       mockHttpRequest.mockRejectedValueOnce(new Error('Unauthorized'));
 
-      const {result} = renderHook(() => useNotificationSenders(), {
-        wrapper: createWrapper(),
-      });
+      const {result} = renderHook(() => useNotificationSenders());
 
       await waitFor(() => {
         expect(result.current.isError).toBe(true);
@@ -285,9 +243,7 @@ describe('useNotificationSenders', () => {
     it('should return UseQueryResult type', async () => {
       mockHttpRequest.mockResolvedValueOnce({data: mockNotificationSenders});
 
-      const {result} = renderHook(() => useNotificationSenders(), {
-        wrapper: createWrapper(),
-      });
+      const {result} = renderHook(() => useNotificationSenders());
 
       await waitFor(() => {
         expect(result.current.isSuccess).toBe(true);
@@ -305,9 +261,7 @@ describe('useNotificationSenders', () => {
     it('should have refetch function', async () => {
       mockHttpRequest.mockResolvedValueOnce({data: mockNotificationSenders});
 
-      const {result} = renderHook(() => useNotificationSenders(), {
-        wrapper: createWrapper(),
-      });
+      const {result} = renderHook(() => useNotificationSenders());
 
       await waitFor(() => {
         expect(result.current.isSuccess).toBe(true);
@@ -321,9 +275,7 @@ describe('useNotificationSenders', () => {
     it('should return senders with required fields', async () => {
       mockHttpRequest.mockResolvedValueOnce({data: mockNotificationSenders});
 
-      const {result} = renderHook(() => useNotificationSenders(), {
-        wrapper: createWrapper(),
-      });
+      const {result} = renderHook(() => useNotificationSenders());
 
       await waitFor(() => {
         expect(result.current.isSuccess).toBe(true);
@@ -339,9 +291,7 @@ describe('useNotificationSenders', () => {
     it('should return senders with optional description', async () => {
       mockHttpRequest.mockResolvedValueOnce({data: mockNotificationSenders});
 
-      const {result} = renderHook(() => useNotificationSenders(), {
-        wrapper: createWrapper(),
-      });
+      const {result} = renderHook(() => useNotificationSenders());
 
       await waitFor(() => {
         expect(result.current.isSuccess).toBe(true);

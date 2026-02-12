@@ -72,7 +72,7 @@
   "dependencies": {
     "@asgardeo/react": "catalog:",
     "@tanstack/react-query": "catalog:",
-    "@thunder/commons-contexts": "workspace:^",
+    "@thunder/shared-contexts": "workspace:^",
     "@wso2/oxygen-ui": "catalog:",
     "@wso2/oxygen-ui-icons-react": "catalog:",
     "lucide-react": "catalog:",

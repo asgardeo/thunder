@@ -22,15 +22,15 @@ import (
 	"errors"
 
 	"github.com/asgardeo/thunder/internal/notification/common"
-	immutableresource "github.com/asgardeo/thunder/internal/system/immutable_resource"
-	"github.com/asgardeo/thunder/internal/system/immutable_resource/entity"
+	declarativeresource "github.com/asgardeo/thunder/internal/system/declarative_resource"
+	"github.com/asgardeo/thunder/internal/system/declarative_resource/entity"
 )
 
 type notificationFileBasedStore struct {
-	*immutableresource.GenericFileBasedStore
+	*declarativeresource.GenericFileBasedStore
 }
 
-// Create implements immutableresource.Storer interface for resource loader
+// Create implements declarativeresource.Storer interface for resource loader
 func (f *notificationFileBasedStore) Create(id string, data interface{}) error {
 	sender := data.(*common.NotificationSenderDTO)
 	return f.createSender(*sender)
@@ -54,7 +54,7 @@ func (f *notificationFileBasedStore) getSenderByID(id string) (*common.Notificat
 	}
 	sender, ok := data.(*common.NotificationSenderDTO)
 	if !ok {
-		immutableresource.LogTypeAssertionError("notification sender", id)
+		declarativeresource.LogTypeAssertionError("notification sender", id)
 		return nil, errors.New("notification sender data corrupted")
 	}
 	return sender, nil
@@ -94,7 +94,7 @@ func (f *notificationFileBasedStore) updateSender(id string, sender common.Notif
 
 // newNotificationFileBasedStore creates a new instance of a file-based store.
 func newNotificationFileBasedStore() notificationStoreInterface {
-	genericStore := immutableresource.NewGenericFileBasedStore(entity.KeyTypeNotificationSender)
+	genericStore := declarativeresource.NewGenericFileBasedStore(entity.KeyTypeNotificationSender)
 	return &notificationFileBasedStore{
 		GenericFileBasedStore: genericStore,
 	}

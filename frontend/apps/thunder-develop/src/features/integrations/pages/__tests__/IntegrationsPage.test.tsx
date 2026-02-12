@@ -17,8 +17,7 @@
  */
 
 import {describe, it, expect} from 'vitest';
-import {screen} from '@testing-library/react';
-import render from '@/test/test-utils';
+import {render, screen} from '@thunder/test-utils';
 import IntegrationsPage from '../IntegrationsPage';
 
 describe('IntegrationsPage', () => {

@@ -1165,7 +1165,7 @@ func (suite *ServiceTestSuite) TestValidateApplication_ExistingName() {
 
 func (suite *ServiceTestSuite) TestDeleteApplication_EmptyAppID() {
 	testConfig := &config.Config{
-		ImmutableResources: config.ImmutableResources{
+		DeclarativeResources: config.DeclarativeResources{
 			Enabled: false,
 		},
 	}
@@ -1183,7 +1183,7 @@ func (suite *ServiceTestSuite) TestDeleteApplication_EmptyAppID() {
 
 func (suite *ServiceTestSuite) TestDeleteApplication_NotFound() {
 	testConfig := &config.Config{
-		ImmutableResources: config.ImmutableResources{
+		DeclarativeResources: config.DeclarativeResources{
 			Enabled: false,
 		},
 	}
@@ -1204,7 +1204,7 @@ func (suite *ServiceTestSuite) TestDeleteApplication_NotFound() {
 
 func (suite *ServiceTestSuite) TestDeleteApplication_StoreError() {
 	testConfig := &config.Config{
-		ImmutableResources: config.ImmutableResources{
+		DeclarativeResources: config.DeclarativeResources{
 			Enabled: false,
 		},
 	}
@@ -1224,7 +1224,7 @@ func (suite *ServiceTestSuite) TestDeleteApplication_StoreError() {
 
 func (suite *ServiceTestSuite) TestDeleteApplication_Success() {
 	testConfig := &config.Config{
-		ImmutableResources: config.ImmutableResources{
+		DeclarativeResources: config.DeclarativeResources{
 			Enabled: false,
 		},
 	}
@@ -1246,7 +1246,7 @@ func (suite *ServiceTestSuite) TestDeleteApplication_Success() {
 
 func (suite *ServiceTestSuite) TestDeleteApplication_CertError() {
 	testConfig := &config.Config{
-		ImmutableResources: config.ImmutableResources{
+		DeclarativeResources: config.DeclarativeResources{
 			Enabled: false,
 		},
 	}
@@ -1907,9 +1907,9 @@ func (suite *ServiceTestSuite) TestGetValidatedCertificateInput_JWKS_EmptyValue(
 	assert.NotNil(suite.T(), svcErr)
 }
 
-func (suite *ServiceTestSuite) TestDeleteApplication_ImmutableResourcesEnabled() {
+func (suite *ServiceTestSuite) TestDeleteApplication_DeclarativeResourcesEnabled() {
 	testConfig := &config.Config{
-		ImmutableResources: config.ImmutableResources{
+		DeclarativeResources: config.DeclarativeResources{
 			Enabled: true,
 		},
 	}
@@ -2497,7 +2497,7 @@ func (suite *ServiceTestSuite) TestValidateApplication_InvalidLogoURL() {
 
 func (suite *ServiceTestSuite) TestCreateApplication_StoreErrorWithRollback() {
 	testConfig := &config.Config{
-		ImmutableResources: config.ImmutableResources{
+		DeclarativeResources: config.DeclarativeResources{
 			Enabled: false,
 		},
 		Flow: config.FlowConfig{
@@ -2539,7 +2539,7 @@ func (suite *ServiceTestSuite) TestCreateApplication_StoreErrorWithRollback() {
 
 func (suite *ServiceTestSuite) TestCreateApplication_StoreErrorWithRollbackFailure() {
 	testConfig := &config.Config{
-		ImmutableResources: config.ImmutableResources{
+		DeclarativeResources: config.DeclarativeResources{
 			Enabled: false,
 		},
 		Flow: config.FlowConfig{
@@ -2586,7 +2586,7 @@ func (suite *ServiceTestSuite) TestCreateApplication_StoreErrorWithRollbackFailu
 
 func (suite *ServiceTestSuite) TestUpdateApplication_StoreErrorNonNotFound() {
 	testConfig := &config.Config{
-		ImmutableResources: config.ImmutableResources{
+		DeclarativeResources: config.DeclarativeResources{
 			Enabled: false,
 		},
 	}
@@ -2613,7 +2613,7 @@ func (suite *ServiceTestSuite) TestUpdateApplication_StoreErrorNonNotFound() {
 
 func (suite *ServiceTestSuite) TestUpdateApplication_StoreErrorWhenCheckingName() {
 	testConfig := &config.Config{
-		ImmutableResources: config.ImmutableResources{
+		DeclarativeResources: config.DeclarativeResources{
 			Enabled: false,
 		},
 	}
@@ -2646,7 +2646,7 @@ func (suite *ServiceTestSuite) TestUpdateApplication_StoreErrorWhenCheckingName(
 
 func (suite *ServiceTestSuite) TestUpdateApplication_StoreErrorWhenCheckingClientID() {
 	testConfig := &config.Config{
-		ImmutableResources: config.ImmutableResources{
+		DeclarativeResources: config.DeclarativeResources{
 			Enabled: false,
 		},
 		Flow: config.FlowConfig{
@@ -2702,7 +2702,7 @@ func (suite *ServiceTestSuite) TestUpdateApplication_StoreErrorWhenCheckingClien
 
 func (suite *ServiceTestSuite) TestUpdateApplication_StoreErrorWithRollback() {
 	testConfig := &config.Config{
-		ImmutableResources: config.ImmutableResources{
+		DeclarativeResources: config.DeclarativeResources{
 			Enabled: false,
 		},
 		Flow: config.FlowConfig{

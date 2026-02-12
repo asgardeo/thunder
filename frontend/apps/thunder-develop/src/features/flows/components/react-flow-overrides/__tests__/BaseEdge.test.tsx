@@ -534,4 +534,110 @@ describe('BaseEdge', () => {
       expect(() => fireEvent.click(deleteButton)).not.toThrow();
     });
   });
+
+  describe('Label Hover Effects', () => {
+    it('should maintain hover state when mouse enters label', () => {
+      const {container} = render(<BaseEdge {...defaultProps} label={<span data-testid="edge-label">Test Label</span>} />, {
+        wrapper: createWrapper(),
+      });
+
+      // First hover over the edge group
+      const group = container.querySelector('g');
+      fireEvent.mouseEnter(group!);
+
+      // Then hover over the label box
+      const boxes = screen.getAllByTestId('box-component');
+      // First box is the label container
+      const labelBox = boxes[0];
+      fireEvent.mouseEnter(labelBox);
+
+      // Should still show delete button (hover state maintained)
+      expect(screen.getByTestId('x-icon')).toBeInTheDocument();
+    });
+
+    it('should update hover state when mouse leaves label', () => {
+      const {container} = render(<BaseEdge {...defaultProps} label={<span data-testid="edge-label">Test Label</span>} />, {
+        wrapper: createWrapper(),
+      });
+
+      // Hover over the edge group
+      const group = container.querySelector('g');
+      fireEvent.mouseEnter(group!);
+
+      const boxes = screen.getAllByTestId('box-component');
+      const labelBox = boxes[0];
+
+      // Enter and leave label
+      fireEvent.mouseEnter(labelBox);
+      fireEvent.mouseLeave(labelBox);
+
+      // Leave the group too
+      fireEvent.mouseLeave(group!);
+
+      // Delete button should be hidden
+      expect(screen.queryByTestId('x-icon')).not.toBeInTheDocument();
+    });
+  });
+
+  describe('Delete Button Hover Effects', () => {
+    it('should maintain hover state when mouse enters delete button', () => {
+      const {container} = render(<BaseEdge {...defaultProps} />, {
+        wrapper: createWrapper(),
+      });
+
+      // First hover over the edge group
+      const group = container.querySelector('g');
+      fireEvent.mouseEnter(group!);
+
+      // Then hover over the delete button itself
+      const deleteButton = screen.getByRole('button', {name: 'Delete edge'});
+      fireEvent.mouseEnter(deleteButton);
+
+      // Should still show delete button
+      expect(screen.getByTestId('x-icon')).toBeInTheDocument();
+    });
+
+    it('should update hover state when mouse leaves delete button', () => {
+      const {container} = render(<BaseEdge {...defaultProps} />, {
+        wrapper: createWrapper(),
+      });
+
+      // Hover over the edge group
+      const group = container.querySelector('g');
+      fireEvent.mouseEnter(group!);
+
+      const deleteButton = screen.getByRole('button', {name: 'Delete edge'});
+
+      // Enter and leave delete button
+      fireEvent.mouseEnter(deleteButton);
+      fireEvent.mouseLeave(deleteButton);
+
+      // Leave the group too
+      fireEvent.mouseLeave(group!);
+
+      // Delete button should be hidden
+      expect(screen.queryByTestId('x-icon')).not.toBeInTheDocument();
+    });
+
+    it('should show delete button when hovering over label then delete button', () => {
+      const {container} = render(<BaseEdge {...defaultProps} label={<span>Label</span>} />, {
+        wrapper: createWrapper(),
+      });
+
+      // Hover over the edge group
+      const group = container.querySelector('g');
+      fireEvent.mouseEnter(group!);
+
+      const boxes = screen.getAllByTestId('box-component');
+      // Hover over label first
+      fireEvent.mouseEnter(boxes[0]);
+
+      // Then hover over delete button
+      const deleteButton = screen.getByRole('button', {name: 'Delete edge'});
+      fireEvent.mouseEnter(deleteButton);
+
+      // Delete button should still be visible
+      expect(screen.getByTestId('x-icon')).toBeInTheDocument();
+    });
+  });
 });

@@ -273,4 +273,55 @@ describe('CanvasValidationIndicator', () => {
       expect(panel.className).not.toContain('panel-open');
     });
   });
+
+  describe('Primary Status Color', () => {
+    it('should use error status when there are errors', () => {
+      mockNotifications = [
+        createNotification('1', 'Error', NotificationType.ERROR),
+        createNotification('2', 'Warning', NotificationType.WARNING),
+        createNotification('3', 'Info', NotificationType.INFO),
+      ];
+
+      render(<CanvasValidationIndicator />);
+
+      // When errors exist, error status should be primary
+      expect(screen.getByRole('button', {name: '1 Errors'})).toBeInTheDocument();
+    });
+
+    it('should use warning status when there are warnings but no errors', () => {
+      mockNotifications = [
+        createNotification('1', 'Warning', NotificationType.WARNING),
+        createNotification('2', 'Info', NotificationType.INFO),
+      ];
+
+      render(<CanvasValidationIndicator />);
+
+      // When only warnings and info, warning should be primary
+      expect(screen.getByRole('button', {name: '1 Warnings'})).toBeInTheDocument();
+    });
+
+    it('should use info status when there are only info notifications', () => {
+      mockNotifications = [
+        createNotification('1', 'Info', NotificationType.INFO),
+      ];
+
+      render(<CanvasValidationIndicator />);
+
+      // When only info notifications, info should be primary
+      expect(screen.getByRole('button', {name: '1 Info'})).toBeInTheDocument();
+    });
+  });
+
+  describe('Both Panels Open', () => {
+    it('should have panel-open class when both panels are open', () => {
+      mockNotifications = [createNotification('1', 'Error', NotificationType.ERROR)];
+      mockOpenValidationPanel = true;
+      mockIsResourcePropertiesPanelOpen = true;
+
+      render(<CanvasValidationIndicator />);
+
+      const panel = screen.getByTestId('panel');
+      expect(panel.className).toContain('panel-open');
+    });
+  });
 });

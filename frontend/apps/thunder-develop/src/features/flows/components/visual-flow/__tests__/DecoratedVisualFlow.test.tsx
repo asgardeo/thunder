@@ -19,10 +19,9 @@
 /* eslint-disable @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-return, @typescript-eslint/no-unsafe-assignment, react/button-has-type, react/require-default-props */
 
 import {describe, it, expect, vi, beforeEach, afterEach} from 'vitest';
-import {render, screen, fireEvent, waitFor, cleanup} from '@testing-library/react';
-import type {ReactNode} from 'react';
+import React from 'react';
+import {render, screen, fireEvent, waitFor, cleanup} from '@thunder/test-utils';
 import type {Node, Edge} from '@xyflow/react';
-import {QueryClient, QueryClientProvider} from '@tanstack/react-query';
 import DecoratedVisualFlow from '../DecoratedVisualFlow';
 import FlowBuilderCoreContext, {type FlowBuilderCoreContextProps} from '../../../context/FlowBuilderCoreContext';
 import {EdgeStyleTypes} from '../../../models/steps';
@@ -196,6 +195,7 @@ vi.mock('@wso2/oxygen-ui', () => ({
       {children}
     </div>
   ),
+  OxygenUIThemeProvider: ({children}: any) => children,
 }));
 
 // Mock classnames
@@ -273,13 +273,6 @@ vi.mock('../../../utils/generateResourceId', () => ({
 }));
 
 describe('DecoratedVisualFlow', () => {
-  const queryClient = new QueryClient({
-    defaultOptions: {
-      queries: {
-        retry: false,
-      },
-    },
-  });
 
   const mockBaseResource: Base = {
     id: '',
@@ -340,16 +333,11 @@ describe('DecoratedVisualFlow', () => {
     executors: [],
   };
 
-  const createWrapper = (contextValue: FlowBuilderCoreContextProps = defaultContextValue) => {
-    function Wrapper({children}: {children: ReactNode}) {
-      return (
-        <QueryClientProvider client={queryClient}>
-          <FlowBuilderCoreContext.Provider value={contextValue}>{children}</FlowBuilderCoreContext.Provider>
-        </QueryClientProvider>
-      );
-    }
-    return Wrapper;
-  };
+  const renderWithContext = (
+    ui: React.ReactElement,
+    contextValue: FlowBuilderCoreContextProps = defaultContextValue,
+  ) =>
+    render(<FlowBuilderCoreContext.Provider value={contextValue}>{ui}</FlowBuilderCoreContext.Provider>);
 
   const defaultProps = {
     resources: mockResources,
@@ -393,65 +381,49 @@ describe('DecoratedVisualFlow', () => {
 
   describe('Rendering', () => {
     it('should render the component structure', () => {
-      render(<DecoratedVisualFlow {...defaultProps} />, {
-        wrapper: createWrapper(),
-      });
+      renderWithContext(<DecoratedVisualFlow {...defaultProps} />);
 
       expect(screen.getAllByTestId('box-component').length).toBeGreaterThan(0);
     });
 
     it('should render DragDropProvider', () => {
-      render(<DecoratedVisualFlow {...defaultProps} />, {
-        wrapper: createWrapper(),
-      });
+      renderWithContext(<DecoratedVisualFlow {...defaultProps} />);
 
       expect(screen.getByTestId('drag-drop-provider')).toBeInTheDocument();
     });
 
     it('should render ResourcePanel', () => {
-      render(<DecoratedVisualFlow {...defaultProps} />, {
-        wrapper: createWrapper(),
-      });
+      renderWithContext(<DecoratedVisualFlow {...defaultProps} />);
 
       expect(screen.getByTestId('resource-panel')).toBeInTheDocument();
     });
 
     it('should render ResourcePropertyPanel', () => {
-      render(<DecoratedVisualFlow {...defaultProps} />, {
-        wrapper: createWrapper(),
-      });
+      renderWithContext(<DecoratedVisualFlow {...defaultProps} />);
 
       expect(screen.getByTestId('resource-property-panel')).toBeInTheDocument();
     });
 
     it('should render Droppable canvas', () => {
-      render(<DecoratedVisualFlow {...defaultProps} />, {
-        wrapper: createWrapper(),
-      });
+      renderWithContext(<DecoratedVisualFlow {...defaultProps} />);
 
       expect(screen.getByTestId('droppable')).toBeInTheDocument();
     });
 
     it('should render VisualFlow', () => {
-      render(<DecoratedVisualFlow {...defaultProps} />, {
-        wrapper: createWrapper(),
-      });
+      renderWithContext(<DecoratedVisualFlow {...defaultProps} />);
 
       expect(screen.getByTestId('visual-flow')).toBeInTheDocument();
     });
 
     it('should render ValidationPanel', () => {
-      render(<DecoratedVisualFlow {...defaultProps} />, {
-        wrapper: createWrapper(),
-      });
+      renderWithContext(<DecoratedVisualFlow {...defaultProps} />);
 
       expect(screen.getByTestId('validation-panel')).toBeInTheDocument();
     });
 
     it('should render FormRequiresViewDialog', () => {
-      render(<DecoratedVisualFlow {...defaultProps} />, {
-        wrapper: createWrapper(),
-      });
+      renderWithContext(<DecoratedVisualFlow {...defaultProps} />);
 
       expect(screen.getByTestId('form-requires-view-dialog')).toBeInTheDocument();
     });
@@ -461,9 +433,7 @@ describe('DecoratedVisualFlow', () => {
     it('should pass nodes to VisualFlow', () => {
       const nodes: Node[] = [{id: 'node-1', position: {x: 0, y: 0}, data: {}}];
 
-      render(<DecoratedVisualFlow {...defaultProps} nodes={nodes} />, {
-        wrapper: createWrapper(),
-      });
+      renderWithContext(<DecoratedVisualFlow {...defaultProps} nodes={nodes} />);
 
       const visualFlow = screen.getByTestId('visual-flow');
       expect(visualFlow).toHaveAttribute('data-nodes', JSON.stringify(nodes));
@@ -472,18 +442,14 @@ describe('DecoratedVisualFlow', () => {
     it('should pass edges to VisualFlow', () => {
       const edges: Edge[] = [{id: 'edge-1', source: 'node-1', target: 'node-2'}];
 
-      render(<DecoratedVisualFlow {...defaultProps} edges={edges} />, {
-        wrapper: createWrapper(),
-      });
+      renderWithContext(<DecoratedVisualFlow {...defaultProps} edges={edges} />);
 
       const visualFlow = screen.getByTestId('visual-flow');
       expect(visualFlow).toHaveAttribute('data-edges', JSON.stringify(edges));
     });
 
     it('should pass flow title to ResourcePanel', () => {
-      render(<DecoratedVisualFlow {...defaultProps} flowTitle="My Custom Flow" />, {
-        wrapper: createWrapper(),
-      });
+      renderWithContext(<DecoratedVisualFlow {...defaultProps} flowTitle="My Custom Flow" />);
 
       const resourcePanel = screen.getByTestId('resource-panel');
       expect(resourcePanel).toHaveAttribute('data-title', 'My Custom Flow');
@@ -492,18 +458,14 @@ describe('DecoratedVisualFlow', () => {
     it('should indicate save handler presence', () => {
       const mockOnSave = vi.fn();
 
-      render(<DecoratedVisualFlow {...defaultProps} onSave={mockOnSave} />, {
-        wrapper: createWrapper(),
-      });
+      renderWithContext(<DecoratedVisualFlow {...defaultProps} onSave={mockOnSave} />);
 
       const visualFlow = screen.getByTestId('visual-flow');
       expect(visualFlow).toHaveAttribute('data-has-save', 'true');
     });
 
     it('should indicate auto layout handler presence', () => {
-      render(<DecoratedVisualFlow {...defaultProps} />, {
-        wrapper: createWrapper(),
-      });
+      renderWithContext(<DecoratedVisualFlow {...defaultProps} />);
 
       const visualFlow = screen.getByTestId('visual-flow');
       expect(visualFlow).toHaveAttribute('data-has-auto-layout', 'true');
@@ -517,9 +479,7 @@ describe('DecoratedVisualFlow', () => {
       mockGetNodes.mockReturnValue([{id: 'node-1', position: {x: 0, y: 0}, data: {}}]);
       mockGetEdges.mockReturnValue([{id: 'edge-1', source: 'node-1', target: 'node-2'}]);
 
-      render(<DecoratedVisualFlow {...defaultProps} onSave={mockOnSave} />, {
-        wrapper: createWrapper(),
-      });
+      renderWithContext(<DecoratedVisualFlow {...defaultProps} onSave={mockOnSave} />);
 
       const saveButton = screen.getByTestId('save-trigger');
       fireEvent.click(saveButton);
@@ -532,9 +492,7 @@ describe('DecoratedVisualFlow', () => {
     });
 
     it('should not throw when onSave is not provided', () => {
-      render(<DecoratedVisualFlow {...defaultProps} onSave={undefined} />, {
-        wrapper: createWrapper(),
-      });
+      renderWithContext(<DecoratedVisualFlow {...defaultProps} onSave={undefined} />);
 
       const saveButton = screen.getByTestId('save-trigger');
       expect(() => fireEvent.click(saveButton)).not.toThrow();
@@ -545,9 +503,7 @@ describe('DecoratedVisualFlow', () => {
     it('should handle auto layout trigger', async () => {
       mockApplyAutoLayout.mockResolvedValue([{id: 'node-1', position: {x: 100, y: 100}, data: {}}]);
 
-      render(<DecoratedVisualFlow {...defaultProps} />, {
-        wrapper: createWrapper(),
-      });
+      renderWithContext(<DecoratedVisualFlow {...defaultProps} />);
 
       const autoLayoutButton = screen.getByTestId('auto-layout-trigger');
       fireEvent.click(autoLayoutButton);
@@ -560,18 +516,14 @@ describe('DecoratedVisualFlow', () => {
 
   describe('Form Requires View Dialog', () => {
     it('should render dialog in closed state initially', () => {
-      render(<DecoratedVisualFlow {...defaultProps} />, {
-        wrapper: createWrapper(),
-      });
+      renderWithContext(<DecoratedVisualFlow {...defaultProps} />);
 
       const dialog = screen.getByTestId('form-requires-view-dialog');
       expect(dialog).toHaveAttribute('data-open', 'false');
     });
 
     it('should close dialog when close button is clicked', () => {
-      render(<DecoratedVisualFlow {...defaultProps} />, {
-        wrapper: createWrapper(),
-      });
+      renderWithContext(<DecoratedVisualFlow {...defaultProps} />);
 
       const closeButton = screen.getByTestId('dialog-close');
       fireEvent.click(closeButton);
@@ -583,18 +535,14 @@ describe('DecoratedVisualFlow', () => {
 
   describe('Droppable Configuration', () => {
     it('should configure droppable with correct id prefix', () => {
-      render(<DecoratedVisualFlow {...defaultProps} />, {
-        wrapper: createWrapper(),
-      });
+      renderWithContext(<DecoratedVisualFlow {...defaultProps} />);
 
       const droppable = screen.getByTestId('droppable');
       expect(droppable.getAttribute('data-id')).toContain('flow-builder-canvas');
     });
 
     it('should configure droppable with correct type', () => {
-      render(<DecoratedVisualFlow {...defaultProps} />, {
-        wrapper: createWrapper(),
-      });
+      renderWithContext(<DecoratedVisualFlow {...defaultProps} />);
 
       const droppable = screen.getByTestId('droppable');
       expect(droppable).toHaveAttribute('data-type', 'flow-builder-droppable-canvas');
@@ -603,18 +551,14 @@ describe('DecoratedVisualFlow', () => {
 
   describe('Resource Panel State', () => {
     it('should pass open state to resource panel', () => {
-      render(<DecoratedVisualFlow {...defaultProps} />, {
-        wrapper: createWrapper(),
-      });
+      renderWithContext(<DecoratedVisualFlow {...defaultProps} />);
 
       const resourcePanel = screen.getByTestId('resource-panel');
       expect(resourcePanel).toHaveAttribute('data-open', 'true');
     });
 
     it('should pass disabled state based on loading', () => {
-      render(<DecoratedVisualFlow {...defaultProps} />, {
-        wrapper: createWrapper(),
-      });
+      renderWithContext(<DecoratedVisualFlow {...defaultProps} />);
 
       const resourcePanel = screen.getByTestId('resource-panel');
       expect(resourcePanel).toHaveAttribute('data-disabled', 'false');
@@ -623,9 +567,7 @@ describe('DecoratedVisualFlow', () => {
 
   describe('Auto Layout on Load', () => {
     it('should not trigger auto layout when triggerAutoLayoutOnLoad is false', () => {
-      render(<DecoratedVisualFlow {...defaultProps} triggerAutoLayoutOnLoad={false} />, {
-        wrapper: createWrapper(),
-      });
+      renderWithContext(<DecoratedVisualFlow {...defaultProps} triggerAutoLayoutOnLoad={false} />);
 
       // Auto layout should not be called on mount when flag is false
       expect(defaultProps.setNodes).not.toHaveBeenCalled();
@@ -634,9 +576,7 @@ describe('DecoratedVisualFlow', () => {
     it('should not trigger auto layout for single node', () => {
       mockGetNodes.mockReturnValue([{id: 'node-1', position: {x: 0, y: 0}, data: {}}]);
 
-      render(<DecoratedVisualFlow {...defaultProps} triggerAutoLayoutOnLoad />, {
-        wrapper: createWrapper(),
-      });
+      renderWithContext(<DecoratedVisualFlow {...defaultProps} triggerAutoLayoutOnLoad />);
 
       // Single node should not trigger auto layout
       expect(defaultProps.setNodes).not.toHaveBeenCalled();
@@ -649,17 +589,13 @@ describe('DecoratedVisualFlow', () => {
         custom: () => <div>Custom Edge</div>,
       };
 
-      render(<DecoratedVisualFlow {...defaultProps} edgeTypes={customEdgeTypes} />, {
-        wrapper: createWrapper(),
-      });
+      renderWithContext(<DecoratedVisualFlow {...defaultProps} edgeTypes={customEdgeTypes} />);
 
       expect(screen.getByTestId('visual-flow')).toBeInTheDocument();
     });
 
     it('should use default empty object for edge types', () => {
-      render(<DecoratedVisualFlow {...defaultProps} />, {
-        wrapper: createWrapper(),
-      });
+      renderWithContext(<DecoratedVisualFlow {...defaultProps} />);
 
       expect(screen.getByTestId('visual-flow')).toBeInTheDocument();
     });
@@ -667,18 +603,14 @@ describe('DecoratedVisualFlow', () => {
 
   describe('DragDropProvider Configuration', () => {
     it('should configure drag end handler', () => {
-      render(<DecoratedVisualFlow {...defaultProps} />, {
-        wrapper: createWrapper(),
-      });
+      renderWithContext(<DecoratedVisualFlow {...defaultProps} />);
 
       const provider = screen.getByTestId('drag-drop-provider');
       expect(provider).toHaveAttribute('data-ondragend', 'true');
     });
 
     it('should configure drag over handler', () => {
-      render(<DecoratedVisualFlow {...defaultProps} />, {
-        wrapper: createWrapper(),
-      });
+      renderWithContext(<DecoratedVisualFlow {...defaultProps} />);
 
       const provider = screen.getByTestId('drag-drop-provider');
       expect(provider).toHaveAttribute('data-ondragover', 'true');
@@ -694,9 +626,7 @@ describe('DecoratedVisualFlow', () => {
         {executorName: 'github', connections: ['social']},
       ]);
 
-      render(<DecoratedVisualFlow {...defaultProps} />, {
-        wrapper: createWrapper(),
-      });
+      renderWithContext(<DecoratedVisualFlow {...defaultProps} />);
 
       expect(mockCompute).toHaveBeenCalled();
     });
@@ -706,9 +636,7 @@ describe('DecoratedVisualFlow', () => {
       const mockCompute = vi.mocked(computeExecutorConnections.default);
       mockCompute.mockReturnValue([]);
 
-      render(<DecoratedVisualFlow {...defaultProps} />, {
-        wrapper: createWrapper(),
-      });
+      renderWithContext(<DecoratedVisualFlow {...defaultProps} />);
 
       // Component should render without metadata
       expect(screen.getByTestId('visual-flow')).toBeInTheDocument();
@@ -719,9 +647,7 @@ describe('DecoratedVisualFlow', () => {
       const mockCompute = vi.mocked(computeExecutorConnections.default);
       mockCompute.mockReturnValue([{executorName: 'google', connections: ['social']}]);
 
-      render(<DecoratedVisualFlow {...defaultProps} />, {
-        wrapper: createWrapper(),
-      });
+      renderWithContext(<DecoratedVisualFlow {...defaultProps} />);
 
       expect(mockCompute).toHaveBeenCalledWith({identityProviders: [], notificationSenders: []});
     });
@@ -736,9 +662,7 @@ describe('DecoratedVisualFlow', () => {
         {id: 'node-3', position: {x: 0, y: 0}, data: {}},
       ]);
 
-      render(<DecoratedVisualFlow {...defaultProps} triggerAutoLayoutOnLoad />, {
-        wrapper: createWrapper(),
-      });
+      renderWithContext(<DecoratedVisualFlow {...defaultProps} triggerAutoLayoutOnLoad />);
 
       // Component should render with auto-layout handler available
       const visualFlow = screen.getByTestId('visual-flow');
@@ -751,9 +675,7 @@ describe('DecoratedVisualFlow', () => {
         {id: 'node-2', position: {x: 100, y: 100}, data: {}},
       ]);
 
-      render(<DecoratedVisualFlow {...defaultProps} triggerAutoLayoutOnLoad />, {
-        wrapper: createWrapper(),
-      });
+      renderWithContext(<DecoratedVisualFlow {...defaultProps} triggerAutoLayoutOnLoad />);
 
       // Only one node at origin, so no auto-layout needed
       expect(defaultProps.setNodes).not.toHaveBeenCalled();
@@ -765,9 +687,7 @@ describe('DecoratedVisualFlow', () => {
         {id: 'node-2', position: {x: 0, y: 0}, data: {}},
       ]);
 
-      render(<DecoratedVisualFlow {...defaultProps} triggerAutoLayoutOnLoad />, {
-        wrapper: createWrapper(),
-      });
+      renderWithContext(<DecoratedVisualFlow {...defaultProps} triggerAutoLayoutOnLoad />);
 
       // Verify auto-layout handler is passed to VisualFlow
       const visualFlow = screen.getByTestId('visual-flow');
@@ -794,9 +714,7 @@ describe('DecoratedVisualFlow', () => {
 
       mockGetNodes.mockReturnValue(overlappingNodes);
 
-      render(<DecoratedVisualFlow {...defaultProps} />, {
-        wrapper: createWrapper(),
-      });
+      renderWithContext(<DecoratedVisualFlow {...defaultProps} />);
 
       // Click the node drag stop trigger
       const dragStopButton = screen.getByTestId('node-drag-stop-trigger');
@@ -820,9 +738,7 @@ describe('DecoratedVisualFlow', () => {
 
       mockGetNodes.mockReturnValue(nodes);
 
-      render(<DecoratedVisualFlow {...defaultProps} />, {
-        wrapper: createWrapper(),
-      });
+      renderWithContext(<DecoratedVisualFlow {...defaultProps} />);
 
       // Clear any previous calls
       defaultProps.setNodes.mockClear();
@@ -843,9 +759,7 @@ describe('DecoratedVisualFlow', () => {
       mockResolveCollisions.mockReturnValue(nodes);
       mockGetNodes.mockReturnValue(nodes);
 
-      render(<DecoratedVisualFlow {...defaultProps} />, {
-        wrapper: createWrapper(),
-      });
+      renderWithContext(<DecoratedVisualFlow {...defaultProps} />);
 
       // Click the node drag stop trigger
       const dragStopButton = screen.getByTestId('node-drag-stop-trigger');
@@ -860,9 +774,7 @@ describe('DecoratedVisualFlow', () => {
     });
 
     it('should indicate node drag stop handler is present', () => {
-      render(<DecoratedVisualFlow {...defaultProps} />, {
-        wrapper: createWrapper(),
-      });
+      renderWithContext(<DecoratedVisualFlow {...defaultProps} />);
 
       const visualFlow = screen.getByTestId('visual-flow');
       expect(visualFlow).toHaveAttribute('data-has-drag-stop', 'true');
@@ -871,9 +783,7 @@ describe('DecoratedVisualFlow', () => {
 
   describe('Handle Drag End - Drop Scenarios', () => {
     it('should handle form drop on canvas by showing dialog', () => {
-      render(<DecoratedVisualFlow {...defaultProps} />, {
-        wrapper: createWrapper(),
-      });
+      renderWithContext(<DecoratedVisualFlow {...defaultProps} />);
 
       // Dialog should initially be closed
       const dialog = screen.getByTestId('form-requires-view-dialog');
@@ -881,9 +791,7 @@ describe('DecoratedVisualFlow', () => {
     });
 
     it('should handle form-on-canvas drop scenario', async () => {
-      render(<DecoratedVisualFlow {...defaultProps} />, {
-        wrapper: createWrapper(),
-      });
+      renderWithContext(<DecoratedVisualFlow {...defaultProps} />);
 
       // Simulate form drop on canvas
       if (capturedOnDragEnd) {
@@ -910,9 +818,7 @@ describe('DecoratedVisualFlow', () => {
     });
 
     it('should handle input-on-canvas drop scenario', async () => {
-      render(<DecoratedVisualFlow {...defaultProps} />, {
-        wrapper: createWrapper(),
-      });
+      renderWithContext(<DecoratedVisualFlow {...defaultProps} />);
 
       // Simulate input drop on canvas
       if (capturedOnDragEnd) {
@@ -939,9 +845,7 @@ describe('DecoratedVisualFlow', () => {
     });
 
     it('should handle input-on-view drop scenario', async () => {
-      render(<DecoratedVisualFlow {...defaultProps} />, {
-        wrapper: createWrapper(),
-      });
+      renderWithContext(<DecoratedVisualFlow {...defaultProps} />);
 
       // Simulate input drop on view
       if (capturedOnDragEnd) {
@@ -968,9 +872,7 @@ describe('DecoratedVisualFlow', () => {
     });
 
     it('should handle widget-on-canvas drop scenario', async () => {
-      render(<DecoratedVisualFlow {...defaultProps} />, {
-        wrapper: createWrapper(),
-      });
+      renderWithContext(<DecoratedVisualFlow {...defaultProps} />);
 
       // Simulate widget drop on canvas
       if (capturedOnDragEnd) {
@@ -997,9 +899,7 @@ describe('DecoratedVisualFlow', () => {
     });
 
     it('should return early when event is canceled', () => {
-      render(<DecoratedVisualFlow {...defaultProps} />, {
-        wrapper: createWrapper(),
-      });
+      renderWithContext(<DecoratedVisualFlow {...defaultProps} />);
 
       // Simulate canceled drag event
       if (capturedOnDragEnd) {
@@ -1020,9 +920,7 @@ describe('DecoratedVisualFlow', () => {
     });
 
     it('should return early when source is missing', () => {
-      render(<DecoratedVisualFlow {...defaultProps} />, {
-        wrapper: createWrapper(),
-      });
+      renderWithContext(<DecoratedVisualFlow {...defaultProps} />);
 
       // Simulate drag event without source
       if (capturedOnDragEnd) {
@@ -1040,9 +938,7 @@ describe('DecoratedVisualFlow', () => {
     });
 
     it('should handle reordering scenario', () => {
-      render(<DecoratedVisualFlow {...defaultProps} />, {
-        wrapper: createWrapper(),
-      });
+      renderWithContext(<DecoratedVisualFlow {...defaultProps} />);
 
       // Simulate reordering drag event
       if (capturedOnDragEnd) {
@@ -1069,9 +965,7 @@ describe('DecoratedVisualFlow', () => {
     });
 
     it('should handle reordering with nested components in handleDragEnd', () => {
-      render(<DecoratedVisualFlow {...defaultProps} />, {
-        wrapper: createWrapper(),
-      });
+      renderWithContext(<DecoratedVisualFlow {...defaultProps} />);
 
       // Capture the callback passed to updateNodeData
       mockUpdateNodeData.mockImplementation((stepId: string, callback: (node: Node) => { components: unknown[] }) => {
@@ -1116,9 +1010,7 @@ describe('DecoratedVisualFlow', () => {
     });
 
     it('should handle reordering with empty components in handleDragEnd', () => {
-      render(<DecoratedVisualFlow {...defaultProps} />, {
-        wrapper: createWrapper(),
-      });
+      renderWithContext(<DecoratedVisualFlow {...defaultProps} />);
 
       // Capture the callback passed to updateNodeData
       mockUpdateNodeData.mockImplementation((stepId: string, callback: (node: Node) => { components: unknown[] }) => {
@@ -1156,9 +1048,7 @@ describe('DecoratedVisualFlow', () => {
     });
 
     it('should handle reordering without stepId', () => {
-      render(<DecoratedVisualFlow {...defaultProps} />, {
-        wrapper: createWrapper(),
-      });
+      renderWithContext(<DecoratedVisualFlow {...defaultProps} />);
 
       // Simulate reordering without stepId
       if (capturedOnDragEnd) {
@@ -1196,9 +1086,7 @@ describe('DecoratedVisualFlow', () => {
         }),
       }));
 
-      render(<DecoratedVisualFlow {...defaultProps} />, {
-        wrapper: createWrapper(),
-      });
+      renderWithContext(<DecoratedVisualFlow {...defaultProps} />);
 
       // Simulate drop on view
       if (capturedOnDragEnd) {
@@ -1222,9 +1110,7 @@ describe('DecoratedVisualFlow', () => {
     });
 
     it('should handle drop on form target', () => {
-      render(<DecoratedVisualFlow {...defaultProps} />, {
-        wrapper: createWrapper(),
-      });
+      renderWithContext(<DecoratedVisualFlow {...defaultProps} />);
 
       // Simulate drop on form
       if (capturedOnDragEnd) {
@@ -1260,9 +1146,7 @@ describe('DecoratedVisualFlow', () => {
       };
       mockGetNodes.mockReturnValue([targetNode]);
 
-      render(<DecoratedVisualFlow {...defaultProps} />, {
-        wrapper: createWrapper(),
-      });
+      renderWithContext(<DecoratedVisualFlow {...defaultProps} />);
 
       // Simulate drop on existing element (insert at position)
       if (capturedOnDragEnd) {
@@ -1301,9 +1185,7 @@ describe('DecoratedVisualFlow', () => {
       };
       mockGetNodes.mockReturnValue([targetNode]);
 
-      render(<DecoratedVisualFlow {...defaultProps} />, {
-        wrapper: createWrapper(),
-      });
+      renderWithContext(<DecoratedVisualFlow {...defaultProps} />);
 
       // Simulate drop on element inside form (input-1 is inside form-1)
       if (capturedOnDragEnd) {
@@ -1330,9 +1212,7 @@ describe('DecoratedVisualFlow', () => {
     });
 
     it('should call confirm handler from useContainerDialogConfirm', () => {
-      render(<DecoratedVisualFlow {...defaultProps} />, {
-        wrapper: createWrapper(),
-      });
+      renderWithContext(<DecoratedVisualFlow {...defaultProps} />);
 
       const confirmButton = screen.getByTestId('dialog-confirm');
       fireEvent.click(confirmButton);
@@ -1344,9 +1224,7 @@ describe('DecoratedVisualFlow', () => {
 
   describe('Handle Drag Over - Reordering', () => {
     it('should handle reordering during drag over', () => {
-      render(<DecoratedVisualFlow {...defaultProps} />, {
-        wrapper: createWrapper(),
-      });
+      renderWithContext(<DecoratedVisualFlow {...defaultProps} />);
 
       // DragDropProvider should have onDragOver configured
       const provider = screen.getByTestId('drag-drop-provider');
@@ -1354,9 +1232,7 @@ describe('DecoratedVisualFlow', () => {
     });
 
     it('should update node data during reordering drag over', () => {
-      render(<DecoratedVisualFlow {...defaultProps} />, {
-        wrapper: createWrapper(),
-      });
+      renderWithContext(<DecoratedVisualFlow {...defaultProps} />);
 
       // Simulate drag over with reordering
       if (capturedOnDragOver) {
@@ -1381,9 +1257,7 @@ describe('DecoratedVisualFlow', () => {
     });
 
     it('should return early when source is missing during drag over', () => {
-      render(<DecoratedVisualFlow {...defaultProps} />, {
-        wrapper: createWrapper(),
-      });
+      renderWithContext(<DecoratedVisualFlow {...defaultProps} />);
 
       // Simulate drag over without source
       if (capturedOnDragOver) {
@@ -1400,9 +1274,7 @@ describe('DecoratedVisualFlow', () => {
     });
 
     it('should return early when target is missing during drag over', () => {
-      render(<DecoratedVisualFlow {...defaultProps} />, {
-        wrapper: createWrapper(),
-      });
+      renderWithContext(<DecoratedVisualFlow {...defaultProps} />);
 
       // Simulate drag over without target
       if (capturedOnDragOver) {
@@ -1421,9 +1293,7 @@ describe('DecoratedVisualFlow', () => {
     });
 
     it('should return early when not reordering during drag over', () => {
-      render(<DecoratedVisualFlow {...defaultProps} />, {
-        wrapper: createWrapper(),
-      });
+      renderWithContext(<DecoratedVisualFlow {...defaultProps} />);
 
       // Simulate drag over without reordering flag
       if (capturedOnDragOver) {
@@ -1448,9 +1318,7 @@ describe('DecoratedVisualFlow', () => {
     });
 
     it('should return early when stepId is missing during reordering', () => {
-      render(<DecoratedVisualFlow {...defaultProps} />, {
-        wrapper: createWrapper(),
-      });
+      renderWithContext(<DecoratedVisualFlow {...defaultProps} />);
 
       // Simulate drag over with reordering but no stepId
       if (capturedOnDragOver) {
@@ -1475,9 +1343,7 @@ describe('DecoratedVisualFlow', () => {
     });
 
     it('should handle reordering with nested components', () => {
-      render(<DecoratedVisualFlow {...defaultProps} />, {
-        wrapper: createWrapper(),
-      });
+      renderWithContext(<DecoratedVisualFlow {...defaultProps} />);
 
       // Simulate drag over with reordering
       if (capturedOnDragOver) {
@@ -1502,9 +1368,7 @@ describe('DecoratedVisualFlow', () => {
     });
 
     it('should execute updateNodeData callback with nested components during drag over', () => {
-      render(<DecoratedVisualFlow {...defaultProps} />, {
-        wrapper: createWrapper(),
-      });
+      renderWithContext(<DecoratedVisualFlow {...defaultProps} />);
 
       // Capture the callback passed to updateNodeData
       mockUpdateNodeData.mockImplementation((stepId: string, callback: (node: Node) => { components: unknown[] }) => {
@@ -1547,9 +1411,7 @@ describe('DecoratedVisualFlow', () => {
     });
 
     it('should handle drag over with components that have no nested children', () => {
-      render(<DecoratedVisualFlow {...defaultProps} />, {
-        wrapper: createWrapper(),
-      });
+      renderWithContext(<DecoratedVisualFlow {...defaultProps} />);
 
       // Capture the callback passed to updateNodeData
       mockUpdateNodeData.mockImplementation((stepId: string, callback: (node: Node) => { components: unknown[] }) => {
@@ -1590,9 +1452,7 @@ describe('DecoratedVisualFlow', () => {
     });
 
     it('should handle drag over with undefined node data', () => {
-      render(<DecoratedVisualFlow {...defaultProps} />, {
-        wrapper: createWrapper(),
-      });
+      renderWithContext(<DecoratedVisualFlow {...defaultProps} />);
 
       // Capture the callback passed to updateNodeData
       mockUpdateNodeData.mockImplementation((stepId: string, callback: (node: Node) => { components: unknown[] }) => {
@@ -1630,9 +1490,7 @@ describe('DecoratedVisualFlow', () => {
 
   describe('Container Dialog Close Handler', () => {
     it('should reset pending drop ref when dialog is closed', () => {
-      render(<DecoratedVisualFlow {...defaultProps} />, {
-        wrapper: createWrapper(),
-      });
+      renderWithContext(<DecoratedVisualFlow {...defaultProps} />);
 
       const closeButton = screen.getByTestId('dialog-close');
       fireEvent.click(closeButton);
@@ -1647,17 +1505,13 @@ describe('DecoratedVisualFlow', () => {
     it('should accept custom onEdgeResolve handler', () => {
       const mockEdgeResolve = vi.fn();
 
-      render(<DecoratedVisualFlow {...defaultProps} onEdgeResolve={mockEdgeResolve} />, {
-        wrapper: createWrapper(),
-      });
+      renderWithContext(<DecoratedVisualFlow {...defaultProps} onEdgeResolve={mockEdgeResolve} />);
 
       expect(screen.getByTestId('visual-flow')).toBeInTheDocument();
     });
 
     it('should work without onEdgeResolve handler', () => {
-      render(<DecoratedVisualFlow {...defaultProps} onEdgeResolve={undefined} />, {
-        wrapper: createWrapper(),
-      });
+      renderWithContext(<DecoratedVisualFlow {...defaultProps} onEdgeResolve={undefined} />);
 
       expect(screen.getByTestId('visual-flow')).toBeInTheDocument();
     });
@@ -1672,9 +1526,7 @@ describe('DecoratedVisualFlow', () => {
         {id: 'node-2', position: {x: 0, y: 0}, data: {}},
       ]);
 
-      render(<DecoratedVisualFlow {...defaultProps} triggerAutoLayoutOnLoad />, {
-        wrapper: createWrapper(),
-      });
+      renderWithContext(<DecoratedVisualFlow {...defaultProps} triggerAutoLayoutOnLoad />);
 
       // Should not throw even if layout fails
       await waitFor(() => {
@@ -1686,9 +1538,7 @@ describe('DecoratedVisualFlow', () => {
       mockApplyAutoLayout.mockResolvedValue([{id: 'node-1', position: {x: 100, y: 100}, data: {}}]);
       mockFitView.mockRejectedValue(new Error('FitView failed'));
 
-      render(<DecoratedVisualFlow {...defaultProps} />, {
-        wrapper: createWrapper(),
-      });
+      renderWithContext(<DecoratedVisualFlow {...defaultProps} />);
 
       const autoLayoutButton = screen.getByTestId('auto-layout-trigger');
       fireEvent.click(autoLayoutButton);

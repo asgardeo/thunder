@@ -1,0 +1,64 @@
+---
+id: list-languages
+title: "List all languages"
+description: "Returns a list of all language tags that have translations in the system."
+sidebar_label: "List all languages"
+hide_title: true
+hide_table_of_contents: true
+api: eJztVlFv2zYQ/ivEPbWAYssZCmR6C7JgMJB0RZvuJQgChjpLrClSJU9xXEH/fThKjiXbazegLwOWhyQij3cfv7vveC2QLAJk92CkLRpZYICHBAKqxmvaQnb/kECOQXldk3YWMviI1HgbhBRGBxJuJaQxYndcsD9BpSRRymcU5KUNRvLZILQVVKII20BYzSABV6OPe8scMmB/N68wEvAYamcDBshaOE9T/jPFcjMgmEb3SF7jM+YiNEphCKvGmC0koJwltMR+ZF0brWLs+ZfAzloIqsRK8n+0rREycE9fUFFE8rXRHvMjomrPVyDdY9xv7X1I7yXH1oTVeD2Q17aA7pDe01eSz1Ib+WTwmEN8kVVtkKGh5W+mbuXjr7OrS3jougRIE5vAjl6O8nGglzEMTiLAqjGka4Nnk+uEpqqk30IGt8O+MKNcPUvT4AEH3wOU40o2hs6cNdup+9/6nT0B0eQ7ER66+JPAu1MlsrSE3kojAvpn9AK9d/5n1YJyOUICFYYgCzwuiLh/lPPDlF8zJMG2YuW8qL0rvKwqSVqJUtrcaFtMMg3LxcX7s0Wa/sK520U/gfUkFfwljf6GuRiOio2mcixVscatkDYXQ5pEJH92cPs1buE1k3/G9BwxwDY/JODuIDKzsEJSpbaFME5N0U6piPmc6cWF5QRrhbNKh6Bt8birE+gOQP4Qz64Ed/RoK65tYXQoxZuVNOZJqvXbKYzbPui+amPqx9JbLi7s7ZCqQ9X/n7n/TOZG61G3J7roXvm9UN+laQoTnUZuTxCgh2b12Derx12zmpLwNz3tuKj+VZjH8eGjkJdWNBZfalSEeR9QOKUa7zEXm1Ib5L7Fjy1zyS8U1xsGgl13rpBKx898gVzgtaQSMpgzrvn4JekxcXNvofEGMiiJ6pDN523pAnVZWztPXXwRvOY3MZYr7/XdP+LmcYLLLy53CfCZ6fZF+mvK4Ebjzidu+r27Py4bKs/HypRxIYGVcZtowgvO62+x+q+GTj9Z/DyB/4on49Dz3uF8d4DfEXJr/EeHoiFzpVw9PM9xHuBExYlHkBtGBFFJKwus0JK4/LAMMKRD25WL1xuK+a5sbI5ecD7YkPlFH3pZLWbpkdQuPyw5Su9e6GmH6jvCG3b2djoDOl9IG5vC0/ZVc4mwssJQS4VJ7F5r3LJKjVbI2spaYAOOWktVojiPgKblsdlsZjJuz5wv5sPZML9ZXl2//3R9dj5LZyVVJmq4doEqaUee4+A1HmXD4ZXb/dDwU6fgocIIX2heG6ktF2y8WzvI5B6YSSZkPHz2JX8PbfskA372put4+WuDfpjcdwrhry6BEmWOPiqrbw1cLDXth6vjUYjl8arc36/voOv+ArSZRSU=
+sidebar_class_name: "get api-method"
+info_path: docs/apis/i18n/thunder-i-18-n-api
+custom_edit_url: null
+---
+
+import MethodEndpoint from "@theme/ApiExplorer/MethodEndpoint";
+import ParamsDetails from "@theme/ParamsDetails";
+import RequestSchema from "@theme/RequestSchema";
+import StatusCodes from "@theme/StatusCodes";
+import OperationTabs from "@theme/OperationTabs";
+import TabItem from "@theme/TabItem";
+import Heading from "@theme/Heading";
+import Translate from "@docusaurus/Translate";
+
+<Heading
+  as={"h1"}
+  className={"openapi__heading"}
+  children={"List all languages"}
+>
+</Heading>
+
+<MethodEndpoint
+  method={"get"}
+  path={"/i18n/languages"}
+  context={"endpoint"}
+>
+  
+</MethodEndpoint>
+
+
+
+Returns a list of all language tags that have translations in the system.
+
+<ParamsDetails
+  parameters={undefined}
+>
+  
+</ParamsDetails>
+
+<RequestSchema
+  title={"Body"}
+  body={undefined}
+>
+  
+</RequestSchema>
+
+<StatusCodes
+  id={undefined}
+  label={undefined}
+  responses={{"200":{"description":"List of language tags retrieved successfully","content":{"application/json":{"schema":{"type":"object","required":["languages"],"properties":{"languages":{"type":"array","items":{"type":"string"},"description":"List of language tags available in the system.","example":["en","es","fr","fr-CA"]}},"title":"LanguageListResponse"},"examples":{"multiple-languages":{"summary":"Multiple languages","value":{"languages":["en","es","fr","fr-CA"]}},"default-only":{"summary":"Default language only","value":{"languages":["en"]}}}}}},"500":{"description":"Internal server error","content":{"application/json":{"schema":{"type":"object","required":["code","message"],"properties":{"code":{"type":"string","description":"Error code for programmatic handling.","example":"I18N-1003"},"message":{"type":"object","description":"Internationalized message with translation key and default value.","required":["key","defaultValue"],"properties":{"key":{"type":"string","description":"Translation key for fetching localized message.","example":"error.i18nservice.missing_language"},"defaultValue":{"type":"string","description":"Default message in English (fallback).","example":"Missing language code"}},"title":"I18nMessage"},"description":{"type":"object","description":"Internationalized message with translation key and default value.","required":["key","defaultValue"],"properties":{"key":{"type":"string","description":"Translation key for fetching localized message.","example":"error.i18nservice.missing_language"},"defaultValue":{"type":"string","description":"Default message in English (fallback).","example":"Missing language code"}},"title":"I18nMessage"}},"title":"ErrorResponse"},"example":{"code":"I18N-5000","message":{"key":"error.i18nservice.internal_server_error","defaultValue":"Internal server error"},"description":{"key":"error.i18nservice.internal_server_error_description","defaultValue":"An unexpected error occurred while processing the request"}}}}}}}
+>
+  
+</StatusCodes>
+
+
+      

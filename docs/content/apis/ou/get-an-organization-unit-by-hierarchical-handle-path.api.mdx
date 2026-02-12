@@ -1,0 +1,72 @@
+---
+id: get-an-organization-unit-by-hierarchical-handle-path
+title: "Get an organization unit by hierarchical handle path"
+description: "Get an organization unit by hierarchical handle path"
+sidebar_label: "Get an organization unit by hierarchical handle path"
+hide_title: true
+hide_table_of_contents: true
+api: eJztV99v2zYQ/leIe9oAyVKctE70lhVZG2BdhiUGBsQGSksniy1FqiQVxzP0vw9HybYUq13Qvc4vsXk/v7vvjswOHF9bSB5BmzVX4m/uhFZhrYSz4WobVtwVsAyg4oaX6NCQ7g6EggS8LADFSzz+Mvi1FgYzSJypMQCbFlhySHbgthXpWWeEWkMTgHVb6U9EWUmEAPC5kjpDSHIuLQaQoU2NqCgjSOCDQMNNWoiUS0bRmM5ZP2tGWbOCq0yiZRYpZ4cZW21Zrs2Gm4xZyW2BdrJQN8+cotpkoUL2CdVaKETK7BML2Xt0lrkCmdHasbs52whXdJ7ZAnraC3hpH+VGK4cqGzhawP54AeSwVhmaV7uKavHCWy2+6Sc6RlooX1WPFJJRJWiW1DRbaWXRUp+mcUx/hsW/O6lzho4LaSGA1HtyZMSrSorUa0WfLVnuegzgUt7lnj8dF/TqM6ZuwJpHEBkE0NZ6zy4ioNEVGifaHEV2yqgAcm1K7iCBuhYZMazzMka+lrUjggHuE3kTgBPOV7NfkrkS7hduRerLOcy14qarzvfzDUDVUvIVOafZ+V4sSrTrq49hhVpLDCU+ofS/67LkZgsJ3HsJ8xJ2qOoTlzXuCwk8T2ezNM/Ct9N4FV6keRzy87M0nJ3PZqsY+eVVPD0O+s2RRcdGDcgFL0e3Z+LJA8GhKoSZkJa1dGIMwMejYD+B3aoZgni7enOVT2ezMM9mV+FFvDoLeZ7yMEtx9iY7n8VX+ewI4teO/uwBedmHcZiLk/XT7ZX5bTT/i220+dJD8boSNv4TwEV88ZoJU9qxXNc+l1fP2PcmK6XlGkCJ1vL1yFR5+dhM7C3+07zcGKPNS+JSK0OlXdgCHXT+w7Hbg1oc+t7mC3fz8CyOz3vI/q2aw8o/FDhyj/iVT8vWVpiKXGDWpx/LNFrvE5+FdR6oUE9ciqy9MwdIbltJa2mdqVNXG/wmlMsBlL3xkPynEEazM1gZtKgc46x100fKJSu6W3V7YOebsf1/qxwa0rdontAwbJv5sv/wHh3jaqScq+0hlL/Ah2hKdIWmKV5juxyoghCdvkkiZxCjHSk0EECbTfsmqY2EBArnKptE0a7Q1jXJrtLGNb7SRtBu9awjWYsx57Wk+ZU65dIfNwGQzVB8GV/FVKAlhUxrI9zWx7y7rl0xpdmyW+uwhGVf5Z6mso24VzwOKPcHAeRSb7wKHWjToX3XjeLgcD5AeEg5oeyi1mG0NyB2Of0FX2XkFamcqa66C6WFk8B1mqK1zGnWHrGSK77Gkih1/cethY41QuXaw/vGjcU+DuyoI2hsS5qzSTzCaGFJkQnLaosZZdCGPiWXnUAAUqSorC9at+OvK54WyKbe+5Adm81mwr14os066mxt9Nvtu5vf72/C6SSeFK6UnuGVtq7kquf5B1k+viodPruoklwo4p7Pc9dNwNirnPpqkNqb7B/nLZ0fYbdbcYtzI5uGjr/WSNvncXlkvydtJix9z8bf2bvjXQM//dndHj+z/1/fP/b6Hm1yd8jV9ngHAATwBbf7/6SaJb1fkWdofNNaEU1j5XpGJ48B2j+Hbfr+5gGa5h+IPs+0
+sidebar_class_name: "get api-method"
+info_path: docs/apis/ou/organizationunit-management-api
+custom_edit_url: null
+---
+
+import MethodEndpoint from "@theme/ApiExplorer/MethodEndpoint";
+import ParamsDetails from "@theme/ParamsDetails";
+import RequestSchema from "@theme/RequestSchema";
+import StatusCodes from "@theme/StatusCodes";
+import OperationTabs from "@theme/OperationTabs";
+import TabItem from "@theme/TabItem";
+import Heading from "@theme/Heading";
+import Translate from "@docusaurus/Translate";
+
+<Heading
+  as={"h1"}
+  className={"openapi__heading"}
+  children={"Get an organization unit by hierarchical handle path"}
+>
+</Heading>
+
+<MethodEndpoint
+  method={"get"}
+  path={"/organization-units/tree/{path}"}
+  context={"endpoint"}
+>
+  
+</MethodEndpoint>
+
+
+
+Get an organization unit by hierarchical handle path
+
+<Heading
+  id={"request"}
+  as={"h2"}
+  className={"openapi-tabs__heading"}
+>
+  <Translate id="theme.openapi.request.title">Request</Translate>
+</Heading>
+
+<ParamsDetails
+  parameters={[{"in":"path","name":"path","required":true,"schema":{"type":"string"},"style":"simple","explode":false,"description":"Hierarchical path of organization unit handles separated by forward slashes.\nExamples:\n- `engineering` - Gets the root OU with handle \"engineering\"\n- `engineering/frontend` - Gets the \"frontend\" OU under \"engineering\"\n- `engineering/frontend/ui` - Gets the \"ui\" OU under \"engineering/frontend\"\n","example":"engineering/frontend"}]}
+>
+  
+</ParamsDetails>
+
+<RequestSchema
+  title={"Body"}
+  body={undefined}
+>
+  
+</RequestSchema>
+
+<StatusCodes
+  id={undefined}
+  label={undefined}
+  responses={{"200":{"description":"Organization unit details","content":{"application/json":{"schema":{"allOf":[{"type":"object","required":["id","handle","name"],"properties":{"id":{"type":"string","format":"uuid"},"handle":{"type":"string"},"name":{"type":"string"},"description":{"type":"string"}},"title":"OrganizationUnitBasic"}],"properties":{"parent":{"type":"string","format":"uuid","nullable":true}},"title":"OrganizationUnit"},"examples":{"single-level":{"summary":"Single level handle","value":{"id":"afc77cfd-620b-4cf0-a31c-7377b0ea8902","name":"Engineering","handle":"engineering","description":"Engineering unit","parent":null}},"multi-level":{"summary":"Multi-level handle path","value":{"id":"6b59f277-fd79-40b1-afca-dce75d3709f7","name":"Frontend Team","handle":"frontend","description":"Handles UI/UX work","parent":"afc77cfd-620b-4cf0-a31c-7377b0ea8902"}}}}}},"404":{"description":"Organization unit not found","content":{"application/json":{"schema":{"type":"object","required":["code","message"],"properties":{"code":{"type":"string"},"message":{"type":"string"},"description":{"type":"string"}},"title":"Error"},"examples":{"path-not-found":{"summary":"Handle path not found","value":{"code":"OU-1003","message":"Organization unit not found","description":"The organization unit with the specified handle path does not exist"}},"invalid-path":{"summary":"Invalid path structure","value":{"code":"OU-1008","message":"Invalid handle path","description":"The handle path does not represent a valid organizational hierarchy"}}}}}},"500":{"description":"Internal server error"}}}
+>
+  
+</StatusCodes>
+
+
+      

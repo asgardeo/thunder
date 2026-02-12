@@ -1,0 +1,72 @@
+---
+id: delete-an-application
+title: "Delete an application"
+description: "Delete an application using its ID."
+sidebar_label: "Delete an application"
+hide_title: true
+hide_table_of_contents: true
+api: eJztVk1z2zYQ/SuYPTUzlEh5JDfhTY110Ezaeprk5NEBIlYiEhBggKVtlcP/nlmQsilLbpNrpyeJi/14+/CwQAsk9wHyO5B1bXQhSTsbYJOAwlB4XfM35HCDBgmFtGLkJ5qg7V5oCmJ9M4UEaullhYSeM7agObKWVEICVlYIOWgFCXj81miPCnLyDSYQihIrCXkLdKjZK5DXdg8J7JyvJEEOTaMVdC9RLUdY1jeQAD7KqjacYrHI8O08yyZ49W47mc/UfCJ/nV1P5vPr68ViPs+yLINuw2BC7WzAwPWvsjn/vF5FRR6UCE1RYAi7xpgD45pn2Xngb1IJ7hUDQQKFs4SW2G3EYfolsG97ToLbfsGCTui6g8IphAQqDEHukfep9q5GT7pvIK5fIPIU2KcSBXrvvGD/6Qlxy9vbySzLZtzVscxPJBxCTnOu7b00+okMMWzry/38typLoZCkNqjEaEG4naBj/dO6DOtYc+vUQeggKmm4PCoR27cktQ1CDwiVJAldlwBpiilWnJWRPmU9kvzM1Iio11q9RNjR5TUQDGNxSVdrS+itNCKgv0ffd/6/wv6bClucK+zy7r/oxIrG4mONBY+rnjlXFI33qMRDqQ2K2jueYTzC6bmNKLy4M1Q6BTn0Iy9Odyohh3R8U6StVh0k0GPpx37jDeRQEtUhT9O2dIG6vK2dJ/a8l17LrenFxGu9vneyMTzojSukieYuAY45XX6bvcsY4YZLFo3XdIg1/1w2VF6xfsMhEFawGbt8ZOX3FY+Oz4dARkMCO+MeogsbnNd/xw7fD3I/MX4+6fAJcs7o0j5hegxg5sh9xR8Kio5MZ+HqHu/QTg7LeOEIcqI3iUpauccKLYnl7Toc903bnYvtDfIa316/n4TwZqAPvV5m0+zCmdOBHVnUTUDFxfuq41dA4BNhdIE2RKaGm35Zy6JEcRXznkri4eFhKuPy1Pl9OsSG9MP6/eqPj6vJ1TSbllSZeExqF6iSdpT54lvkJfj2eRr+4ONl0APhI6W1kdqyAiPwdpD+i0dSArlWPCB7Fd9B225lwM/edB2bvzXoWZ2bZ9FHrSod+L+CfCdNwH8A/stfw2B+I86eOhfhDkZpD/GkmYa/IIGveOgfX92mS6BEqdBHLP0Ca6umUcjZ9cGn6Wki3Kw+rD6toOu+A6KEgUc=
+sidebar_class_name: "delete api-method"
+info_path: docs/apis/application/application-management-api
+custom_edit_url: null
+---
+
+import MethodEndpoint from "@theme/ApiExplorer/MethodEndpoint";
+import ParamsDetails from "@theme/ParamsDetails";
+import RequestSchema from "@theme/RequestSchema";
+import StatusCodes from "@theme/StatusCodes";
+import OperationTabs from "@theme/OperationTabs";
+import TabItem from "@theme/TabItem";
+import Heading from "@theme/Heading";
+import Translate from "@docusaurus/Translate";
+
+<Heading
+  as={"h1"}
+  className={"openapi__heading"}
+  children={"Delete an application"}
+>
+</Heading>
+
+<MethodEndpoint
+  method={"delete"}
+  path={"/applications/{id}"}
+  context={"endpoint"}
+>
+  
+</MethodEndpoint>
+
+
+
+Delete an application using its ID.
+
+<Heading
+  id={"request"}
+  as={"h2"}
+  className={"openapi-tabs__heading"}
+>
+  <Translate id="theme.openapi.request.title">Request</Translate>
+</Heading>
+
+<ParamsDetails
+  parameters={[{"in":"path","name":"id","required":true,"schema":{"type":"string","format":"uuid"},"description":"Application ID","example":"550e8400-e29b-41d4-a716-446655440000"}]}
+>
+  
+</ParamsDetails>
+
+<RequestSchema
+  title={"Body"}
+  body={undefined}
+>
+  
+</RequestSchema>
+
+<StatusCodes
+  id={undefined}
+  label={undefined}
+  responses={{"204":{"description":"Application deleted successfully"},"400":{"description":"Bad request","content":{"application/json":{"schema":{"type":"object","required":["code","message"],"properties":{"code":{"type":"string","description":"The error code.","example":"APP-1001"},"message":{"type":"string","description":"The error message.","example":"Invalid request format"},"description":{"type":"string","description":"A detailed description of the error.","example":"The request body is malformed or contains invalid data"}},"title":"Error"},"example":{"code":"APP-1001","message":"Invalid request format","description":"The request contains invalid data"}}}},"500":{"description":"Internal server error","content":{"application/json":{"schema":{"type":"object","required":["code","message"],"properties":{"code":{"type":"string","description":"The error code.","example":"APP-1001"},"message":{"type":"string","description":"The error message.","example":"Invalid request format"},"description":{"type":"string","description":"A detailed description of the error.","example":"The request body is malformed or contains invalid data"}},"title":"Error"},"example":{"code":"APP-5001","message":"Internal server error","description":"An unexpected error occurred while processing the request"}}}}}}
+>
+  
+</StatusCodes>
+
+
+      

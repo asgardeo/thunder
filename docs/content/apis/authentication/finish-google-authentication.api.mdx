@@ -1,0 +1,72 @@
+---
+id: finish-google-authentication
+title: "Finish Google authentication"
+description: "Complete oauth authentication flow with a Google identity provider."
+sidebar_label: "Finish Google authentication"
+hide_title: true
+hide_table_of_contents: true
+api: eJztl91T4zYQwP8VzT6bONDS6fktB/Qa2gEGQtuZTIZR7E2sQ5aMJBNyHv/vnZUckjg5vq6P5SEklvb7p9W6hgxtakTphFaQwIkuSokOmeaVyxl9oHIi5bTOZlIv2ELQAvui9VwiExmtuyUrjX4UGZoeROD43EIyhrAHJhEYfKjQus86W0JSd4y2qjrG0uAKfc244xCUCIMZJM5UGEGqlUPlSCEvS9kKxl8taa3BpjkWnL65ZYmQgJ5+xdRtKRqDRWuFVndO36MCUpp5j0ujSzROoPW6tnatVVpnhJpD1Ino/O8R81vZTBvm8p3gWn0QAT5xihMSwOV5Pv2SiktxPrz9Njy8EEM7VNfH6cnwl+F9+c9fJ+efer0eNK2Tr3oxqFyujfi2ymeGzGCK4hEzNjO68I7tFJD023tR3nFrKQF6M96p1hK52jF1cy9KNkeFhjuh5uxZtk2DUN6YQVtqZdHLz3glHSQzLi1u5MH/biLYZ/47gV76L1wyfBLW26cCdH1wmqEyIs0DwgoXnap8rBpNBE44LzM8vaKc/yaUsPl1QB6ahrasIvc0HfX7u6fg8g/4AaS3cRXZvqTNtCm4gwSqSmQ7SRzlyColHqoVEzOBhulZF1/MWGUDJsHAa9UhxbTjZV3azLlqWb2rlHAfi2BTDYXj2PD0ZcPv4GwfVXsO+Er5j+I02KLzenV2AlA/72PoM89Yy13CRv7A+R9sqrMlE5YVXFIOMWPaMIKNC2WZUI9cisz32d57KORSXs4gGb/G49v61Zkx3qsMqS4FWsvnbxZbbW86y69Jn6LjQmLG0KvZXNyshTeyLkHUjbiZrPeeSIHKdSXWMKzyAYPb0e8XB4f9/k+wEe++vi0se7609mHPd0WKiuqOq76eUf9LV9d7p/EFpI73ITVUDg311hs0j2iYDythAzpd+FRi6p5zp9O0MgYztsiF9IZTuubUvO39HsX/+fowX98D6Ljf728B9FwzG2rmTe+OBx8tIWz4HajoeB9wKtDlOoMESm19ybjLIYGY2Iv9fBnP/eQXz/yFCREEf62veGUkJJA7V9okjutcW9ckdamNayCCR24En8pQfloL5LYzBUidcukfNxGQzPbyr/1PfXJzEgFBd72eTs/WOe7MfG9u4avxbE1Ed5xqR56NJ+8Z/oSaac/d3muCDa6Ge1qEsLRAfaSyoRdsXlj+vrLkOqU/yBz2CCopUqSaJjUoXnhzJU9zZEd+eV2kJI4Xi0WP+9WeNvO4FbXxn8OTs4ubs4OjXr+Xu0J68AmKgqsNxWFsYnvfBroR1ese8l+9s4Tj5vDJxaXkQlGqfXh1S+4YSDVEoNv/gV4aSwK/k6glcQx1PeUWb41sGnr8UKFZQjKerMGlX00EOXKauQn4e1z6aHxcByPyh7bLivza6ZPUIoLEIE2xdC/unWycxqvLmxFEMG1fxYrAquELejHiC0iAQvR59ofLP6tBcjWvQnsJOunvXyfr/ek=
+sidebar_class_name: "post api-method"
+info_path: docs/apis/authentication/authentication-api
+custom_edit_url: null
+---
+
+import MethodEndpoint from "@theme/ApiExplorer/MethodEndpoint";
+import ParamsDetails from "@theme/ParamsDetails";
+import RequestSchema from "@theme/RequestSchema";
+import StatusCodes from "@theme/StatusCodes";
+import OperationTabs from "@theme/OperationTabs";
+import TabItem from "@theme/TabItem";
+import Heading from "@theme/Heading";
+import Translate from "@docusaurus/Translate";
+
+<Heading
+  as={"h1"}
+  className={"openapi__heading"}
+  children={"Finish Google authentication"}
+>
+</Heading>
+
+<MethodEndpoint
+  method={"post"}
+  path={"/auth/oauth/google/finish"}
+  context={"endpoint"}
+>
+  
+</MethodEndpoint>
+
+
+
+Complete oauth authentication flow with a Google identity provider.
+
+<Heading
+  id={"request"}
+  as={"h2"}
+  className={"openapi-tabs__heading"}
+>
+  <Translate id="theme.openapi.request.title">Request</Translate>
+</Heading>
+
+<ParamsDetails
+  parameters={undefined}
+>
+  
+</ParamsDetails>
+
+<RequestSchema
+  title={"Body"}
+  body={{"description":"Google authentication completion data","required":true,"content":{"application/json":{"schema":{"type":"object","required":["session_token","code"],"properties":{"session_token":{"type":"string","description":"JWT token for the authentication session","example":"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."},"code":{"type":"string","description":"Authorization code received from the identity provider"},"skip_assertion":{"type":"boolean","description":"Skip generating assertion token in the response","default":false,"example":false},"assertion":{"type":"string","description":"Optional existing JWT assertion token to enrich with new authentication","example":"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."}},"title":"IDPAuthFinishRequest"}}}}}
+>
+  
+</RequestSchema>
+
+<StatusCodes
+  id={undefined}
+  label={undefined}
+  responses={{"200":{"description":"OK","content":{"application/json":{"schema":{"type":"object","properties":{"id":{"type":"string","format":"uuid","description":"The unique identifier of the authenticated user"},"type":{"type":"string","description":"The type of the authenticated user"},"organization_unit":{"type":"string","format":"uuid","description":"The organization unit ID of the authenticated user"},"assertion":{"type":"string","description":"JWT assertion token for the authenticated user","example":"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."}},"title":"AuthenticationResponse"}}}},"400":{"description":"Bad Request: The request body is malformed or contains invalid data.","content":{"application/json":{"schema":{"allOf":[{"type":"object","properties":{"code":{"type":"string","description":"Error code"},"message":{"type":"string","description":"Error message"},"description":{"type":"string","description":"Detailed error description"}},"title":"ErrorResponse"},{"type":"object"}],"title":"ClientErrorResponse"},"example":{"code":"AUTHN-1003","message":"Authorization code is required","description":"The authorization code must be provided to complete authentication"}}}},"500":{"description":"Internal Server Error: An unexpected error occurred while processing the request.","content":{"application/json":{"schema":{"allOf":[{"type":"object","properties":{"code":{"type":"string","description":"Error code"},"message":{"type":"string","description":"Error message"},"description":{"type":"string","description":"Detailed error description"}},"title":"ErrorResponse"},{"type":"object"}],"example":{"code":"AUTHN-5000","message":"Internal server error","description":"An unexpected error occurred while processing the request"},"title":"ServerErrorResponse"}}}}}}
+>
+  
+</StatusCodes>
+
+
+      

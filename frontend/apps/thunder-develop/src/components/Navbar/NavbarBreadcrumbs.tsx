@@ -37,9 +37,11 @@ const StyledBreadcrumbs = styled(Breadcrumbs)(({theme}) => ({
 const PAGE_TRANSLATION_KEY_MAP: Record<string, string> = {
   users: 'navigation:pages.users',
   'user-types': 'navigation:pages.userTypes',
+  'organization-units': 'navigation:pages.organizationUnits',
   integrations: 'navigation:pages.integrations',
   applications: 'navigation:pages.applications',
   dashboard: 'navigation:pages.dashboard',
+  flows: 'navigation:pages.flows',
 };
 
 export default function NavbarBreadcrumbs(): JSX.Element {

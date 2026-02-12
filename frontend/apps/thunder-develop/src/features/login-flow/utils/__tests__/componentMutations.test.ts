@@ -199,7 +199,7 @@ describe('componentMutations', () => {
           id: 'button-1',
           type: ElementTypes.Action,
           variant: ButtonVariants.Primary,
-          action: {next: 'next-step', customProp: 'value'},
+          action: {onSuccess: 'next-step', customProp: 'value'},
         }),
       ];
 
@@ -207,7 +207,7 @@ describe('componentMutations', () => {
 
       expect(result).toBeDefined();
       const button = result?.find((c) => c.id === 'button-1');
-      expect(button?.action?.next).toBe('next-step');
+      expect(button?.action?.onSuccess).toBe('next-step');
       expect(button?.action?.customProp).toBe('value');
       expect((button?.action?.executor as {name: string})?.name).toBe(LoginFlowConstants.ExecutorNames.PASSWORD_PROVISIONING);
     });

@@ -47,7 +47,7 @@ database:
     port: {{ .Values.configuration.database.identity.port }}
     name: {{ .Values.configuration.database.identity.name | quote }}
     username: {{ .Values.configuration.database.identity.username | quote }}
-    password: {{ .Values.configuration.database.identity.password | quote }}
+    password: {{ "{{.DB_IDENTITY_PASSWORD}}" | quote }}
     sslmode: {{ .Values.configuration.database.identity.sslmode | quote }}
     {{- end }}
   runtime:
@@ -60,7 +60,7 @@ database:
     port: {{ .Values.configuration.database.runtime.port }}
     name: {{ .Values.configuration.database.runtime.name | quote }}
     username: {{ .Values.configuration.database.runtime.username | quote }}
-    password: {{ .Values.configuration.database.runtime.password | quote }}
+    password: {{ "{{.DB_RUNTIME_PASSWORD}}" | quote }}
     sslmode: {{ .Values.configuration.database.runtime.sslmode | quote }}
     {{- end }}
   user:
@@ -73,7 +73,7 @@ database:
     port: {{ .Values.configuration.database.user.port }}
     name: {{ .Values.configuration.database.user.name | quote }}
     username: {{ .Values.configuration.database.user.username | quote }}
-    password: {{ .Values.configuration.database.user.password | quote }}
+    password: {{ "{{.DB_USER_PASSWORD}}" | quote }}
     sslmode: {{ .Values.configuration.database.user.sslmode | quote }}
     {{- end }}    
 

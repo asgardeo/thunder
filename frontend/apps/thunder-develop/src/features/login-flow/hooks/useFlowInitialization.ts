@@ -16,7 +16,7 @@
  * under the License.
  */
 
-import {useCallback, useLayoutEffect, useMemo, useRef} from 'react';
+import {useCallback, useLayoutEffect, useMemo, useRef, useEffect} from 'react';
 import type {Edge, Node} from '@xyflow/react';
 import type {UpdateNodeInternals} from '@xyflow/system';
 import cloneDeep from 'lodash-es/cloneDeep';
@@ -100,6 +100,13 @@ const useFlowInitialization = (props: UseFlowInitializationProps): UseFlowInitia
 
   const flowUpdatesInProgress = useRef<boolean>(false);
   const nodesUpdatedRef = useRef<boolean>(false);
+  // Use a ref to track the current edge style to avoid re-running initialization when it changes
+  const edgeStyleRef = useRef<string>(edgeStyle);
+
+  // Keep the ref in sync with the prop
+  useEffect(() => {
+    edgeStyleRef.current = edgeStyle;
+  }, [edgeStyle]);
 
   /**
    * Helper function to update node internals for a given node and its components.
@@ -243,10 +250,10 @@ const useFlowInitialization = (props: UseFlowInitializationProps): UseFlowInitia
           const generatedEdges: Edge[] = generateEdges(updatedSteps as Step[]);
           const validatedEdges: Edge[] = validateEdges(generatedEdges, updatedSteps);
 
-          // Apply current edge style to all edges
+          // Apply current edge style to all edges (using ref to avoid dependency)
           const styledEdges = validatedEdges.map((edge) => ({
             ...edge,
-            type: edgeStyle,
+            type: edgeStyleRef.current,
           }));
 
           setEdges(() => styledEdges);
@@ -257,7 +264,7 @@ const useFlowInitialization = (props: UseFlowInitializationProps): UseFlowInitia
 
       requestAnimationFrame(updateSequence);
     },
-    [setNodes, setEdges, updateAllNodeInternals, generateEdges, validateEdges, edgeStyle],
+    [setNodes, setEdges, updateAllNodeInternals, generateEdges, validateEdges],
   );
 
   /**
@@ -302,7 +309,7 @@ const useFlowInitialization = (props: UseFlowInitializationProps): UseFlowInitia
       setEdges(
         canvasData.edges.map((edge) => ({
           ...edge,
-          type: edgeStyle,
+          type: edgeStyleRef.current,
         })),
       );
 
@@ -314,12 +321,13 @@ const useFlowInitialization = (props: UseFlowInitializationProps): UseFlowInitia
       // No flowId provided - load the default basic auth flow template
       updateFlowWithSequence(initialNodes);
     }
+    // Note: edgeStyle is intentionally excluded from dependencies - edge style changes
+    // are handled separately in LoginFlowBuilder.tsx to avoid re-initializing the flow
   }, [
     flowId,
     existingFlowData,
     isLoadingExistingFlow,
     resources,
-    edgeStyle,
     setNodes,
     setEdges,
     updateAllNodeInternals,

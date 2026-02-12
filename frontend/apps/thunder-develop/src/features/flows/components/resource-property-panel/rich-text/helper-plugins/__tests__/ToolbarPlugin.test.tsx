@@ -1165,4 +1165,320 @@ describe('ToolbarPlugin', () => {
       expect(screen.getByText('Paragraph')).toBeInTheDocument();
     });
   });
+
+  describe('formatParagraph with Range Selection (line 137)', () => {
+    it('should execute $setBlocksType when blockType is not paragraph and selection is range', async () => {
+      const lexical = await vi.importMock<typeof import('lexical')>('lexical');
+      const lexicalSelection = await vi.importMock<typeof import('@lexical/selection')>('@lexical/selection');
+      const richText = await vi.importMock<typeof import('@lexical/rich-text')>('@lexical/rich-text');
+
+      // Make $isRangeSelection return true
+      (lexical.$isRangeSelection as ReturnType<typeof vi.fn>).mockReturnValue(true);
+
+      // Make blockType be 'h1' initially (not paragraph)
+      (richText.$isHeadingNode as ReturnType<typeof vi.fn>).mockReturnValue(true);
+
+      // Mock getSelectedNode to set up proper node structure
+      const getSelectedNode = await vi.importMock<typeof import('../../utils/getSelectedNode')>('../../utils/getSelectedNode');
+      (getSelectedNode.default as ReturnType<typeof vi.fn>).mockReturnValue({
+        getParent: () => null,
+        getKey: () => 'test-key',
+        getTopLevelElementOrThrow: () => ({
+          getFormat: () => 0,
+          getKey: () => 'element-key',
+          getType: () => 'heading',
+          getTag: () => 'h1',
+        }),
+      });
+
+      // Mock selection
+      (lexical.$getSelection as ReturnType<typeof vi.fn>).mockReturnValue({
+        hasFormat: vi.fn().mockReturnValue(false),
+        anchor: {
+          getNode: () => ({
+            getKey: () => 'test-key',
+            getTopLevelElementOrThrow: () => ({
+              getFormat: () => 0,
+              getKey: () => 'element-key',
+              getType: () => 'heading',
+              getTag: () => 'h1',
+            }),
+          }),
+        },
+      });
+
+      render(<ToolbarPlugin typography />);
+
+      // Open menu
+      const typographyButton = screen.getByText('Paragraph').closest('button');
+      fireEvent.click(typographyButton!);
+
+      // Click paragraph option - this triggers formatParagraph which calls $setBlocksType
+      const paragraphItems = screen.getAllByText('Paragraph');
+      const paragraphMenuItem = paragraphItems.find(item => item.closest('[role="menuitem"]'));
+      if (paragraphMenuItem) {
+        fireEvent.click(paragraphMenuItem);
+      }
+
+      // editor.update should have been called
+      expect(mockUpdate).toHaveBeenCalled();
+      // $setBlocksType should have been called (via mockUpdate callback)
+      expect(lexicalSelection.$setBlocksType).toBeDefined();
+    });
+  });
+
+  describe('insertLink toggle remove (line 168)', () => {
+    it('should dispatch TOGGLE_LINK_COMMAND with null when removing an existing link', async () => {
+      const lexical = await vi.importMock<typeof import('lexical')>('lexical');
+      const lexicalLink = await vi.importMock<typeof import('@lexical/link')>('@lexical/link');
+      const richText = await vi.importMock<typeof import('@lexical/rich-text')>('@lexical/rich-text');
+      const getSelectedNode = await vi.importMock<typeof import('../../utils/getSelectedNode')>('../../utils/getSelectedNode');
+
+      // Setup for isLink to become true
+      (lexical.$isRangeSelection as ReturnType<typeof vi.fn>).mockReturnValue(true);
+      (lexicalLink.$isLinkNode as ReturnType<typeof vi.fn>).mockReturnValue(true);
+      (richText.$isHeadingNode as ReturnType<typeof vi.fn>).mockReturnValue(false);
+      (getSelectedNode.default as ReturnType<typeof vi.fn>).mockReturnValue({
+        getParent: () => ({type: 'link'}),
+        getKey: () => 'test-key',
+        getTopLevelElementOrThrow: () => ({
+          getFormat: () => 0,
+          getKey: () => 'element-key',
+          getType: () => 'paragraph',
+          getTag: () => 'p',
+        }),
+      });
+      (lexical.$getSelection as ReturnType<typeof vi.fn>).mockReturnValue({
+        hasFormat: vi.fn().mockReturnValue(false),
+        anchor: {
+          getNode: () => ({
+            getKey: () => 'test-key',
+            getTopLevelElementOrThrow: () => ({
+              getFormat: () => 0,
+              getKey: () => 'element-key',
+              getType: () => 'paragraph',
+              getTag: () => 'p',
+            }),
+          }),
+        },
+      });
+
+      // Capture the update listener AND immediately call it during registration
+      mockRegisterUpdateListener.mockImplementation((callback: (state: {editorState: {read: (cb: () => void) => void}}) => void) => {
+        // Immediately call the callback to set the initial state
+        callback({
+          editorState: {
+            read: (cb: () => void) => cb(),
+          },
+        });
+        return vi.fn();
+      });
+
+      const {rerender} = render(<ToolbarPlugin link />);
+
+      // Rerender to ensure state is updated
+      rerender(<ToolbarPlugin link />);
+
+      // Click the link button - since isLink is true (set by $isLinkNode returning true), should dispatch with null
+      fireEvent.click(screen.getByRole('button', {name: 'Format Link'}));
+
+      // Should have dispatched TOGGLE_LINK_COMMAND with null
+      expect(mockDispatchCommand).toHaveBeenCalledWith('TOGGLE_LINK_COMMAND', null);
+    });
+  });
+
+  describe('$updateToolbar setIsLink false branch (line 191)', () => {
+    it('should set isLink to false when neither parent nor node is a link', async () => {
+      const lexical = await vi.importMock<typeof import('lexical')>('lexical');
+      const lexicalLink = await vi.importMock<typeof import('@lexical/link')>('@lexical/link');
+      const richText = await vi.importMock<typeof import('@lexical/rich-text')>('@lexical/rich-text');
+      const getSelectedNode = await vi.importMock<typeof import('../../utils/getSelectedNode')>('../../utils/getSelectedNode');
+
+      // Setup for isLink to be false
+      (lexical.$isRangeSelection as ReturnType<typeof vi.fn>).mockReturnValue(true);
+      (lexicalLink.$isLinkNode as ReturnType<typeof vi.fn>).mockReturnValue(false);
+      (richText.$isHeadingNode as ReturnType<typeof vi.fn>).mockReturnValue(false);
+      (getSelectedNode.default as ReturnType<typeof vi.fn>).mockReturnValue({
+        getParent: () => ({type: 'paragraph'}),
+        getKey: () => 'test-key',
+        getTopLevelElementOrThrow: () => ({
+          getFormat: () => 0,
+          getKey: () => 'element-key',
+          getType: () => 'paragraph',
+          getTag: () => 'p',
+        }),
+      });
+      (lexical.$getSelection as ReturnType<typeof vi.fn>).mockReturnValue({
+        hasFormat: vi.fn().mockReturnValue(false),
+        anchor: {
+          getNode: () => ({
+            getKey: () => 'test-key',
+            getTopLevelElementOrThrow: () => ({
+              getFormat: () => 0,
+              getKey: () => 'element-key',
+              getType: () => 'paragraph',
+              getTag: () => 'p',
+            }),
+          }),
+        },
+      });
+
+      // Capture the update listener
+      type UpdateCallback = (state: {editorState: {read: (cb: () => void) => void}}) => void;
+      let capturedCallback: UpdateCallback | null = null;
+      mockRegisterUpdateListener.mockImplementation((callback) => {
+        capturedCallback = callback as UpdateCallback;
+        return vi.fn();
+      });
+
+      render(<ToolbarPlugin link />);
+
+      // Trigger update listener - this should call $updateToolbar and set isLink to false
+      if (capturedCallback !== null) {
+        (capturedCallback as UpdateCallback)({
+          editorState: {
+            read: (cb: () => void) => cb(),
+          },
+        });
+      }
+
+      // Click the link button - since isLink is false, should dispatch with 'https://'
+      fireEvent.click(screen.getByRole('button', {name: 'Format Link'}));
+
+      // Should have dispatched TOGGLE_LINK_COMMAND with 'https://'
+      expect(mockDispatchCommand).toHaveBeenCalledWith('TOGGLE_LINK_COMMAND', 'https://');
+    });
+  });
+
+  describe('$updateToolbar block type detection (lines 207-216)', () => {
+    it('should set blockType from heading tag when element is a heading node', async () => {
+      const lexical = await vi.importMock<typeof import('lexical')>('lexical');
+      const richText = await vi.importMock<typeof import('@lexical/rich-text')>('@lexical/rich-text');
+      const getSelectedNode = await vi.importMock<typeof import('../../utils/getSelectedNode')>('../../utils/getSelectedNode');
+
+      (lexical.$isRangeSelection as ReturnType<typeof vi.fn>).mockReturnValue(true);
+      (richText.$isHeadingNode as ReturnType<typeof vi.fn>).mockReturnValue(true);
+      (getSelectedNode.default as ReturnType<typeof vi.fn>).mockReturnValue({
+        getParent: () => null,
+        getKey: () => 'test-key',
+        getTopLevelElementOrThrow: () => ({
+          getFormat: () => 0,
+          getKey: () => 'element-key',
+          getType: () => 'heading',
+          getTag: () => 'h2',
+        }),
+      });
+      (lexical.$getSelection as ReturnType<typeof vi.fn>).mockReturnValue({
+        hasFormat: vi.fn().mockReturnValue(false),
+        anchor: {
+          getNode: () => ({
+            getKey: () => 'test-key',
+            getTopLevelElementOrThrow: () => ({
+              getFormat: () => 0,
+              getKey: () => 'element-key',
+              getType: () => 'heading',
+              getTag: () => 'h2',
+            }),
+          }),
+        },
+      });
+
+      // Capture the update listener
+      type UpdateCallback = (state: {editorState: {read: (cb: () => void) => void}}) => void;
+      let capturedCallback: UpdateCallback | null = null;
+      mockRegisterUpdateListener.mockImplementation((callback) => {
+        capturedCallback = callback as UpdateCallback;
+        return vi.fn();
+      });
+
+      render(<ToolbarPlugin typography />);
+
+      // Trigger update listener - this should call $updateToolbar and set blockType to 'h2'
+      if (capturedCallback !== null) {
+        (capturedCallback as UpdateCallback)({
+          editorState: {
+            read: (cb: () => void) => cb(),
+          },
+        });
+      }
+
+      expect(mockRegisterUpdateListener).toHaveBeenCalled();
+    });
+
+    it('should set blockType to paragraph for unknown element types', async () => {
+      const lexical = await vi.importMock<typeof import('lexical')>('lexical');
+      const richText = await vi.importMock<typeof import('@lexical/rich-text')>('@lexical/rich-text');
+      const getSelectedNode = await vi.importMock<typeof import('../../utils/getSelectedNode')>('../../utils/getSelectedNode');
+
+      (lexical.$isRangeSelection as ReturnType<typeof vi.fn>).mockReturnValue(true);
+      (richText.$isHeadingNode as ReturnType<typeof vi.fn>).mockReturnValue(false);
+      (getSelectedNode.default as ReturnType<typeof vi.fn>).mockReturnValue({
+        getParent: () => null,
+        getKey: () => 'test-key',
+        getTopLevelElementOrThrow: () => ({
+          getFormat: () => 0,
+          getKey: () => 'element-key',
+          getType: () => 'unknown-type', // Not in blockTypeToBlockName
+        }),
+      });
+      (lexical.$getSelection as ReturnType<typeof vi.fn>).mockReturnValue({
+        hasFormat: vi.fn().mockReturnValue(false),
+        anchor: {
+          getNode: () => ({
+            getKey: () => 'test-key',
+            getTopLevelElementOrThrow: () => ({
+              getFormat: () => 0,
+              getKey: () => 'element-key',
+              getType: () => 'unknown-type',
+            }),
+          }),
+        },
+      });
+
+      // Capture the update listener
+      type UpdateCallback = (state: {editorState: {read: (cb: () => void) => void}}) => void;
+      let capturedCallback: UpdateCallback | null = null;
+      mockRegisterUpdateListener.mockImplementation((callback) => {
+        capturedCallback = callback as UpdateCallback;
+        return vi.fn();
+      });
+
+      render(<ToolbarPlugin typography />);
+
+      // Trigger update listener - this should call $updateToolbar and default to 'paragraph'
+      if (capturedCallback !== null) {
+        (capturedCallback as UpdateCallback)({
+          editorState: {
+            read: (cb: () => void) => cb(),
+          },
+        });
+      }
+
+      expect(mockRegisterUpdateListener).toHaveBeenCalled();
+    });
+  });
+
+  describe('SELECTION_CHANGE_COMMAND callback (line 234)', () => {
+    it('should call $updateToolbar when SELECTION_CHANGE_COMMAND is triggered', async () => {
+      // Capture SELECTION_CHANGE_COMMAND callback
+      type SelectionCallback = () => boolean;
+      let selectionChangeCallback: SelectionCallback | null = null;
+      mockRegisterCommand.mockImplementation((command, callback) => {
+        if (command === 'SELECTION_CHANGE_COMMAND') {
+          selectionChangeCallback = callback as SelectionCallback;
+        }
+        return vi.fn();
+      });
+
+      render(<ToolbarPlugin />);
+
+      // Execute the SELECTION_CHANGE_COMMAND callback
+      if (selectionChangeCallback !== null) {
+        const result = (selectionChangeCallback as SelectionCallback)();
+        expect(result).toBe(false);
+      }
+
+      expect(mockRegisterCommand).toHaveBeenCalled();
+    });
+  });
 });

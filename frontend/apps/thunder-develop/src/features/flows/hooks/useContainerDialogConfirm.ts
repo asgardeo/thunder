@@ -148,6 +148,9 @@ const useContainerDialogConfirm = (props: UseContainerDialogConfirmProps): (() =
       generatedViewStep = onStepLoad(generatedViewStep);
       setNodes((prevNodes: Node[]) => [...prevNodes, generatedViewStep]);
       onResourceDropOnCanvas(generatedViewStep, '');
+
+      // Dispatch custom event to notify about element addition (for auto-layout hint)
+      window.dispatchEvent(new CustomEvent('flowElementAdded', {detail: {type: 'step'}}));
     } else if (dropScenario === 'input-on-canvas') {
       // Create a Form element containing the Input
       const formElement: Element = {
@@ -175,6 +178,9 @@ const useContainerDialogConfirm = (props: UseContainerDialogConfirmProps): (() =
       generatedViewStep = onStepLoad(generatedViewStep);
       setNodes((prevNodes: Node[]) => [...prevNodes, generatedViewStep]);
       onResourceDropOnCanvas(generatedViewStep, '');
+
+      // Dispatch custom event to notify about element addition (for auto-layout hint)
+      window.dispatchEvent(new CustomEvent('flowElementAdded', {detail: {type: 'step'}}));
     } else if (dropScenario === 'input-on-view') {
       // Create a Form element containing the Input and add it to the View
       const formElement: Element = {
@@ -234,6 +240,9 @@ const useContainerDialogConfirm = (props: UseContainerDialogConfirmProps): (() =
         defaultPropertySelector ?? droppedResource,
         defaultPropertySectorStepId ?? generatedViewStep.id ?? '',
       );
+
+      // Dispatch custom event to notify about element addition (for auto-layout hint)
+      window.dispatchEvent(new CustomEvent('flowElementAdded', {detail: {type: 'widget'}}));
     }
 
     // Close the dialog and clear pending data

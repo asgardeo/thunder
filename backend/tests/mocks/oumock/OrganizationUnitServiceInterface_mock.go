@@ -917,12 +917,12 @@ func (_c *OrganizationUnitServiceInterfaceMock_IsOrganizationUnitExists_Call) Ru
 	return _c
 }
 
-// IsOrganizationUnitImmutable provides a mock function for the type OrganizationUnitServiceInterfaceMock
-func (_mock *OrganizationUnitServiceInterfaceMock) IsOrganizationUnitImmutable(id string) bool {
+// IsOrganizationUnitDeclarative provides a mock function for the type OrganizationUnitServiceInterfaceMock
+func (_mock *OrganizationUnitServiceInterfaceMock) IsOrganizationUnitDeclarative(id string) bool {
 	ret := _mock.Called(id)
 
 	if len(ret) == 0 {
-		panic("no return value specified for IsOrganizationUnitImmutable")
+		panic("no return value specified for IsOrganizationUnitDeclarative")
 	}
 
 	var r0 bool
@@ -934,18 +934,18 @@ func (_mock *OrganizationUnitServiceInterfaceMock) IsOrganizationUnitImmutable(i
 	return r0
 }
 
-// OrganizationUnitServiceInterfaceMock_IsOrganizationUnitImmutable_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'IsOrganizationUnitImmutable'
-type OrganizationUnitServiceInterfaceMock_IsOrganizationUnitImmutable_Call struct {
+// OrganizationUnitServiceInterfaceMock_IsOrganizationUnitDeclarative_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'IsOrganizationUnitDeclarative'
+type OrganizationUnitServiceInterfaceMock_IsOrganizationUnitDeclarative_Call struct {
 	*mock.Call
 }
 
-// IsOrganizationUnitImmutable is a helper method to define mock.On call
+// IsOrganizationUnitDeclarative is a helper method to define mock.On call
 //   - id string
-func (_e *OrganizationUnitServiceInterfaceMock_Expecter) IsOrganizationUnitImmutable(id interface{}) *OrganizationUnitServiceInterfaceMock_IsOrganizationUnitImmutable_Call {
-	return &OrganizationUnitServiceInterfaceMock_IsOrganizationUnitImmutable_Call{Call: _e.mock.On("IsOrganizationUnitImmutable", id)}
+func (_e *OrganizationUnitServiceInterfaceMock_Expecter) IsOrganizationUnitDeclarative(id interface{}) *OrganizationUnitServiceInterfaceMock_IsOrganizationUnitDeclarative_Call {
+	return &OrganizationUnitServiceInterfaceMock_IsOrganizationUnitDeclarative_Call{Call: _e.mock.On("IsOrganizationUnitDeclarative", id)}
 }
 
-func (_c *OrganizationUnitServiceInterfaceMock_IsOrganizationUnitImmutable_Call) Run(run func(id string)) *OrganizationUnitServiceInterfaceMock_IsOrganizationUnitImmutable_Call {
+func (_c *OrganizationUnitServiceInterfaceMock_IsOrganizationUnitDeclarative_Call) Run(run func(id string)) *OrganizationUnitServiceInterfaceMock_IsOrganizationUnitDeclarative_Call {
 	_c.Call.Run(func(args mock.Arguments) {
 		var arg0 string
 		if args[0] != nil {
@@ -958,12 +958,12 @@ func (_c *OrganizationUnitServiceInterfaceMock_IsOrganizationUnitImmutable_Call)
 	return _c
 }
 
-func (_c *OrganizationUnitServiceInterfaceMock_IsOrganizationUnitImmutable_Call) Return(b bool) *OrganizationUnitServiceInterfaceMock_IsOrganizationUnitImmutable_Call {
+func (_c *OrganizationUnitServiceInterfaceMock_IsOrganizationUnitDeclarative_Call) Return(b bool) *OrganizationUnitServiceInterfaceMock_IsOrganizationUnitDeclarative_Call {
 	_c.Call.Return(b)
 	return _c
 }
 
-func (_c *OrganizationUnitServiceInterfaceMock_IsOrganizationUnitImmutable_Call) RunAndReturn(run func(id string) bool) *OrganizationUnitServiceInterfaceMock_IsOrganizationUnitImmutable_Call {
+func (_c *OrganizationUnitServiceInterfaceMock_IsOrganizationUnitDeclarative_Call) RunAndReturn(run func(id string) bool) *OrganizationUnitServiceInterfaceMock_IsOrganizationUnitDeclarative_Call {
 	_c.Call.Return(run)
 	return _c
 }
