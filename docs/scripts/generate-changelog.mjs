@@ -181,7 +181,13 @@ function extractChanges(body) {
             currentCategory = 'contributors';
         } else if (trimmed.startsWith('*') && currentCategory) {
             const cleanedText = cleanChangeText(trimmed.substring(1).trim());
-            if (cleanedText) {
+
+            // Filter out unwanted lines
+            const isFullChangelog = cleanedText.toLowerCase().includes('full changelog');
+            const isNoteAboutSampleApp = cleanedText.toLowerCase().includes('note the id of the sample app');
+            const isEmptyOrLink = !cleanedText || cleanedText.startsWith('http');
+
+            if (cleanedText && !isFullChangelog && !isNoteAboutSampleApp && !isEmptyOrLink) {
                 categories[currentCategory].push(cleanedText);
             }
         }
