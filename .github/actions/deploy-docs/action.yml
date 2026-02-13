@@ -39,6 +39,8 @@ runs:
       shell: bash
       run: |
         make build_docs
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
     - name: 📥 Download Docs Artifact
       if: inputs.docs-artifact-name != ''
