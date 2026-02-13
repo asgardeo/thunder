@@ -21,12 +21,13 @@
     "wso2"
   ],
   "scripts": {
-    "build": "pnpm generate:api-specs && docusaurus build",
+    "build": "pnpm generate:api-specs && pnpm generate:changelog && docusaurus build",
     "clear": "docusaurus clear",
     "deploy": "docusaurus deploy",
-    "dev": "pnpm generate:api-specs && docusaurus start",
+    "dev": "pnpm generate:api-specs && pnpm generate:changelog && docusaurus start",
     "docusaurus": "docusaurus",
     "generate:api-specs": "node ./scripts/merge-openapi-specs.mjs",
+    "generate:changelog": "node ./scripts/generate-changelog.mjs",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
     "serve": "docusaurus serve",
