@@ -227,15 +227,21 @@ func (d *dbProvider) initializeClient(clientPtr *DBClientInterface, dataSource c
 		return fmt.Errorf("failed to ping database %s: %w", dbName, err)
 	}
 
-	// Enable foreign key constraints for SQLite databases
+	// Verify that foreign key constraints are enabled for SQLite databases.
+	// The _foreign_keys=1 DSN parameter should have enabled this for all connections,
+	// but we verify here to catch configuration issues early.
 	if dbConfig.driverName == dataSourceTypeSQLite {
-		_, err := db.Exec("PRAGMA foreign_keys = ON;")
-		if err != nil {
+		var fkEnabled int
+		err := db.QueryRow("PRAGMA foreign_keys;").Scan(&fkEnabled)
+		if err != nil || fkEnabled != 1 {
 			if closeErr := db.Close(); closeErr != nil {
-				return fmt.Errorf("failed to enable foreign key constraints for %s: %w (close error: %w)",
-					dbName, err, closeErr)
+				return fmt.Errorf("foreign key constraints are not enabled for %s (close error: %w)",
+					dbName, closeErr)
 			}
-			return fmt.Errorf("failed to enable foreign key constraints for %s: %w", dbName, err)
+			if err != nil {
+				return fmt.Errorf("failed to verify foreign key constraints for %s: %w", dbName, err)
+			}
+			return fmt.Errorf("foreign key constraints are not enabled for %s", dbName)
 		}
 	}
 
@@ -258,6 +264,14 @@ func (d *dbProvider) getDBConfig(dataSource config.DataSource) dbConfig {
 		options := dataSource.Options
 		if options != "" && options[0] != '?' {
 			options = "?" + options
+		}
+		// Append _pragma=foreign_keys(1) to ensure foreign key constraints are enforced on every
+		// connection in the pool. PRAGMA foreign_keys is a per-connection setting in SQLite,
+		// so setting it via DSN parameter ensures all pooled connections have it enabled.
+		if options == "" {
+			options = "?_pragma=foreign_keys(1)"
+		} else {
+			options += "&_pragma=foreign_keys(1)"
 		}
 		dbConfig.dsn = fmt.Sprintf("%s%s", path.Join(config.GetThunderRuntime().ThunderHome, dataSource.Path), options)
 	}
