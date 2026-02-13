@@ -268,3 +268,10 @@ html[data-theme='dark'] .dropdown>.navbar__link:after {
 .apis-page .scalar-api-reference main .section-header-label {
   text-transform: capitalize;
 }
+
+/* ------------------------------ Releases Page TOC Spacing ---------------------- */
+
+/* Increase space between main content and right sidebar TOC */
+.theme-doc-toc-desktop {
+  padding-left: 10rem;
+}
