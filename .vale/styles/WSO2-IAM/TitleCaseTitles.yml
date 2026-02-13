@@ -3,5 +3,30 @@ message: "Use Title Case for headings."
 level: error
 scope: heading
 match: $title
-style: AP
+
+exceptions:
+  - a
+  - an
+  - and
+  - as
+  - at
+  - but
+  - by
+  - for
+  - from
+  - in
+  - into
+  - nor
+  - of
+  - on
+  - onto
+  - or
+  - per
+  - the
+  - to
+  - up
+  - via
+  - with
+  - without
+
 
