@@ -19,24 +19,27 @@
 import { execSync } from 'child_process';
 import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
+import { createLogger } from '@thunder/logger';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
+
+const logger = createLogger('prebuild');
 
 /**
  * Execute a command and handle errors
  */
 function executeScript(scriptName, scriptPath) {
-    console.log(`\n🔄 Running ${scriptName}...`);
+    logger.info(`\n🔄 Running ${scriptName}...`);
     try {
         execSync(`node ${scriptPath}`, {
             stdio: 'inherit',
             cwd: join(__dirname, '..'),
             env: process.env
         });
-        console.log(`${scriptName} completed successfully\n`);
+        logger.info(`✅ ${scriptName} completed successfully\n`);
     } catch (error) {
-        console.error(`${scriptName} failed:`, error.message);
+        logger.error(`❌ ${scriptName} failed: ${error.message}`);
         process.exit(1);
     }
 }
@@ -45,8 +48,8 @@ function executeScript(scriptName, scriptPath) {
  * Main function to generate all documentation artifacts
  */
 async function generateDocs() {
-    console.log('⚡️ Thunder Documentation Generator\n');
-    console.log('Generating documentation artifacts...\n');
+    logger.info('⚡️ Thunder Documentation Generator\n');
+    logger.info('Generating documentation artifacts...\n');
 
     // Generate OpenAPI specs
     executeScript('API Specs Generator', join(__dirname, 'merge-openapi-specs.mjs'));
@@ -54,7 +57,7 @@ async function generateDocs() {
     // Generate changelog
     executeScript('Changelog Generator', join(__dirname, 'generate-changelog.mjs'));
 
-    console.log('All documentation artifacts generated successfully!\n');
+    logger.info('🎉 All documentation artifacts generated successfully!\n');
 }
 
 generateDocs();

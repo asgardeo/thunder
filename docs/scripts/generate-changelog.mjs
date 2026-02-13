@@ -19,6 +19,7 @@
 import { writeFileSync } from 'fs';
 import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
+import { createLogger } from '@thunder/logger';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -27,11 +28,13 @@ const OUTPUT_FILE = join(__dirname, '..', 'content', 'releases.md');
 const GITHUB_REPO = 'asgardeo/thunder';
 const GITHUB_API_URL = `https://api.github.com/repos/${GITHUB_REPO}/releases`;
 
+const logger = createLogger('merge-openapi-specs');
+
 // Cache for user avatars to avoid repeated API calls
 const userAvatarCache = {};
 
 async function fetchReleases() {
-    console.log(`Fetching releases from ${GITHUB_API_URL}...`);
+    logger.info(`Fetching releases from ${GITHUB_API_URL}...`);
     try {
         const response = await fetch(GITHUB_API_URL, {
             headers: {
@@ -48,7 +51,7 @@ async function fetchReleases() {
         const releases = await response.json();
         return releases;
     } catch (error) {
-        console.error('Error fetching releases:', error);
+        logger.error('Error fetching releases:', error);
         return [];
     }
 }
@@ -113,7 +116,7 @@ async function fetchUserAvatar(username) {
             return userAvatarCache[username];
         }
     } catch (error) {
-        console.warn(`Failed to fetch avatar for ${username}:`, error.message);
+        logger.warn(`Failed to fetch avatar for ${username}: ${error.message}`);
     }
 
     return null;
@@ -290,9 +293,9 @@ async function generate() {
         const releases = await fetchReleases();
         const markdown = await formatChangelog(releases);
         writeFileSync(OUTPUT_FILE, markdown, 'utf8');
-        console.log(`✅ Changelog generated at ${OUTPUT_FILE}`);
+        logger.info(`✅ Changelog generated at ${OUTPUT_FILE}`);
     } catch (error) {
-        console.error('❌ Failed to generate changelog:', error);
+        logger.error('❌ Failed to generate changelog:', error);
         process.exit(1);
     }
 }
