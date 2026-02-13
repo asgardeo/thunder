@@ -137,8 +137,7 @@ const config: Config = {
               type: 'html',
               value: resourcesHTML
                 .replace('{{ISSUES_URL}}', thunderConfig.project.source.github.issuesUrl)
-                .replace('{{DISCUSSIONS_URL}}', thunderConfig.project.source.github.discussionsUrl)
-                .replace('{{RELEASES_URL}}', thunderConfig.project.source.github.releasesUrl),
+                .replace('{{DISCUSSIONS_URL}}', thunderConfig.project.source.github.discussionsUrl),
               className: 'navbar__link--dropdown-item',
             },
           ],
