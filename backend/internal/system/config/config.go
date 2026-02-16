@@ -251,6 +251,16 @@ type OrganizationUnitConfig struct {
 	Store string `yaml:"store" json:"store"`
 }
 
+// IdentityProviderConfig holds the identity provider service configuration.
+type IdentityProviderConfig struct {
+	// Store defines the storage mode for identity providers.
+	// Valid values: "mutable", "declarative", "composite" (hybrid mode)
+	// If not specified, falls back to global DeclarativeResources.Enabled setting:
+	//   - If DeclarativeResources.Enabled = true: behaves as "declarative"
+	//   - If DeclarativeResources.Enabled = false: behaves as "mutable"
+	Store string `yaml:"store" json:"store"`
+}
+
 // ApplicationConfig holds the application service configuration.
 type ApplicationConfig struct {
 	// Store defines the storage mode for applications.
@@ -310,6 +320,7 @@ type Config struct {
 	DeclarativeResources DeclarativeResources   `yaml:"declarative_resources" json:"declarative_resources"`
 	Resource             ResourceConfig         `yaml:"resource" json:"resource"`
 	OrganizationUnit     OrganizationUnitConfig `yaml:"organization_unit" json:"organization_unit"`
+	IdentityProvider     IdentityProviderConfig `yaml:"identity_provider" json:"identity_provider"`
 	Application          ApplicationConfig      `yaml:"application" json:"application"`
 	Observability        ObservabilityConfig    `yaml:"observability" json:"observability"`
 	Passkey              PasskeyConfig          `yaml:"passkey" json:"passkey"`
