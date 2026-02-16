@@ -103,6 +103,7 @@ func (ih *idpHandler) HandleIDPListRequest(w http.ResponseWriter, r *http.Reques
 			Name:        idp.Name,
 			Description: idp.Description,
 			Type:        string(idp.Type),
+			IsReadOnly:  idp.IsReadOnly,
 		})
 	}
 

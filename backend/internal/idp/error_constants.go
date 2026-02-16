@@ -92,4 +92,11 @@ var (
 		Error:            "Invalid request format",
 		ErrorDescription: "The request body is malformed or contains invalid data",
 	}
+	// ErrorIDPDeclarativeReadOnly is the error returned when attempting to modify a declarative (immutable) IDP.
+	ErrorIDPDeclarativeReadOnly = serviceerror.ServiceError{
+		Type:             serviceerror.ClientErrorType,
+		Code:             "IDP-1010",
+		Error:            "Identity provider is immutable",
+		ErrorDescription: "The requested identity provider is declarative and cannot be modified or deleted",
+	}
 )
