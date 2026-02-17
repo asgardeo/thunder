@@ -1375,8 +1375,7 @@ func processUserInfoConfiguration(app *model.ApplicationDTO,
 		responseType := model.UserInfoResponseType(strings.ToUpper(string(userInfoConfigInput.ResponseType)))
 
 		switch responseType {
-		case model.UserInfoResponseTypeJWS,
-			model.UserInfoResponseTypeJWE:
+		case model.UserInfoResponseTypeJWS:
 			oauthUserInfo.ResponseType = responseType
 		default:
 			oauthUserInfo.ResponseType = model.UserInfoResponseTypeJSON

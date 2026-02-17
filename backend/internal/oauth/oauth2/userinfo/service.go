@@ -39,7 +39,7 @@ const serviceLoggerComponentName = "UserInfoService"
 
 // userInfoServiceInterface defines the interface for OIDC UserInfo endpoint.
 type userInfoServiceInterface interface {
-	GetUserInfo(accessToken string) (map[string]interface{}, *serviceerror.ServiceError)
+	GetUserInfo(accessToken string) (*UserInfoResponse, *serviceerror.ServiceError)
 }
 
 // userInfoService implements the userInfoServiceInterface.
@@ -68,7 +68,7 @@ func newUserInfoService(
 }
 
 // GetUserInfo validates the access token and returns user information based on authorized scopes.
-func (s *userInfoService) GetUserInfo(accessToken string) (map[string]interface{}, *serviceerror.ServiceError) {
+func (s *userInfoService) GetUserInfo(accessToken string) (*UserInfoResponse, *serviceerror.ServiceError) {
 	if accessToken == "" {
 		return nil, &errorInvalidAccessToken
 	}
@@ -115,7 +115,62 @@ func (s *userInfoService) GetUserInfo(accessToken string) (map[string]interface{
 		return nil, svcErr
 	}
 
-	return response, nil
+	// Decide response type
+	responseType := appmodel.UserInfoResponseTypeJSON
+	if oauthApp != nil && oauthApp.UserInfo != nil {
+		responseType = oauthApp.UserInfo.ResponseType
+	}
+
+	if responseType == appmodel.UserInfoResponseTypeJWS {
+		return s.generateJWSUserInfo(sub, tokenClaims, oauthApp, response)
+	}
+
+	return &UserInfoResponse{
+		JSONBody: response,
+	}, nil
+}
+
+// generateJWSUserInfo creates a signed JWT UserInfo response
+// based on the application configuration.
+func (s *userInfoService) generateJWSUserInfo(
+	sub string,
+	tokenClaims map[string]interface{},
+	oauthApp *appmodel.OAuthAppConfigProcessedDTO,
+	response map[string]interface{},
+) (*UserInfoResponse, *serviceerror.ServiceError) {
+	clientID := ""
+	if cid, ok := tokenClaims["client_id"].(string); ok {
+		clientID = cid
+	}
+
+	issuer := ""
+	if oauthApp != nil && oauthApp.Token != nil {
+		issuer = oauthApp.Token.Issuer
+	}
+
+	var validity int64
+	if oauthApp != nil &&
+		oauthApp.Token != nil &&
+		oauthApp.Token.IDToken != nil &&
+		oauthApp.Token.IDToken.ValidityPeriod > 0 {
+		validity = oauthApp.Token.IDToken.ValidityPeriod
+	}
+
+	signedJWT, _, err := s.jwtService.GenerateJWT(
+		sub,
+		clientID,
+		issuer,
+		validity,
+		response,
+	)
+	if err != nil {
+		s.logger.Error("Failed to generate signed UserInfo JWT")
+		return nil, &serviceerror.InternalServerError
+	}
+
+	return &UserInfoResponse{
+		JWTBody: signedJWT,
+	}, nil
 }
 
 // validateAndDecodeToken validates the JWT signature and decodes the payload.

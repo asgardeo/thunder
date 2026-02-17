@@ -635,6 +635,7 @@ func (ts *UserInfoTestSuite) TestUserInfo_AuthorizationCodeGrant_Allowed() {
 
 	// Should return 200 OK
 	assert.Equal(ts.T(), http.StatusOK, resp.StatusCode, "Should return 200 for authorization_code grant")
+	assert.Equal(ts.T(), "application/json", resp.Header.Get("Content-Type"))
 
 	// Parse response
 	var userInfo map[string]interface{}
@@ -664,6 +665,7 @@ func (ts *UserInfoTestSuite) TestUserInfo_RefreshTokenGrant_Allowed() {
 
 	// Should return 200 OK
 	assert.Equal(ts.T(), http.StatusOK, resp.StatusCode, "Should return 200 for refresh_token grant")
+	assert.Equal(ts.T(), "application/json", resp.Header.Get("Content-Type"))
 
 	// Parse response
 	var userInfo map[string]interface{}
@@ -691,6 +693,7 @@ func (ts *UserInfoTestSuite) TestUserInfo_TokenExchangeGrant_Allowed() {
 
 	// Should return 200 OK
 	assert.Equal(ts.T(), http.StatusOK, resp.StatusCode, "Should return 200 for token_exchange grant")
+	assert.Equal(ts.T(), "application/json", resp.Header.Get("Content-Type"))
 
 	// Parse response
 	var userInfo map[string]interface{}
@@ -782,6 +785,7 @@ func (ts *UserInfoTestSuite) TestUserInfo_SeparateAttributesConfiguration() {
 	defer resp.Body.Close()
 
 	assert.Equal(ts.T(), http.StatusOK, resp.StatusCode)
+	assert.Equal(ts.T(), "application/json", resp.Header.Get("Content-Type"))
 
 	var userInfo map[string]interface{}
 	err = json.NewDecoder(resp.Body).Decode(&userInfo)
@@ -878,6 +882,7 @@ func (ts *UserInfoTestSuite) TestUserInfo_DefaultClaims() {
 	defer resp.Body.Close()
 
 	assert.Equal(ts.T(), http.StatusOK, resp.StatusCode)
+	assert.Equal(ts.T(), "application/json", resp.Header.Get("Content-Type"))
 
 	var userInfo map[string]interface{}
 	err = json.NewDecoder(resp.Body).Decode(&userInfo)
@@ -995,4 +1000,59 @@ func (ts *UserInfoTestSuite) getAuthorizationCodeTokenWithClient(scope, cID, cSe
 		return "", fmt.Errorf("token response is nil")
 	}
 	return tokenResult.Token.AccessToken, nil
+}
+
+func (ts *UserInfoTestSuite) TestUserInfo_JWS_Response() {
+
+	config := map[string]interface{}{
+		"client_id":      "userinfo_jws_test_client",
+		"client_secret":  "userinfo_jws_test_secret",
+		"redirect_uris":  []string{redirectURI},
+		"grant_types":    []string{"authorization_code"},
+		"response_types": []string{"code"},
+		"scopes":         []string{"openid", "profile", "email"},
+		"token": map[string]interface{}{
+			"id_token": map[string]interface{}{
+				"user_attributes": []string{"email", "firstName", "lastName"},
+			},
+		},
+		"user_info": map[string]interface{}{
+			"response_type":   "JWS",
+			"user_attributes": []string{"email", "firstName", "lastName"},
+		},
+		"scope_claims": map[string][]string{
+			"profile": {"firstName", "lastName"},
+			"email":   {"email"},
+		},
+	}
+
+	appID := ts.createApplicationWithConfig("UserInfoJWSTestApp", config)
+	defer ts.deleteApplication(appID)
+
+	accessToken, err := ts.getAuthorizationCodeTokenWithClient(
+		"openid profile email",
+		"userinfo_jws_test_client",
+		"userinfo_jws_test_secret",
+	)
+	ts.Require().NoError(err)
+
+	resp, err := ts.callUserInfo(accessToken)
+	ts.Require().NoError(err)
+	defer resp.Body.Close()
+
+	// Status check
+	assert.Equal(ts.T(), http.StatusOK, resp.StatusCode)
+
+	// Content-Type check
+	assert.Equal(ts.T(), "application/jwt", resp.Header.Get("Content-Type"))
+
+	// Validate JWT format
+	bodyBytes, err := io.ReadAll(resp.Body)
+	ts.Require().NoError(err)
+
+	jwtString := string(bodyBytes)
+	ts.Require().NotEmpty(jwtString)
+
+	parts := strings.Split(jwtString, ".")
+	ts.Require().Equal(3, len(parts), "Invalid JWT format")
 }

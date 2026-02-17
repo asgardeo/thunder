@@ -37,23 +37,23 @@ func (_m *userInfoServiceInterfaceMock) EXPECT() *userInfoServiceInterfaceMock_E
 }
 
 // GetUserInfo provides a mock function for the type userInfoServiceInterfaceMock
-func (_mock *userInfoServiceInterfaceMock) GetUserInfo(accessToken string) (map[string]interface{}, *serviceerror.ServiceError) {
-	ret := _mock.Called(accessToken)
+func (_m *userInfoServiceInterfaceMock) GetUserInfo(accessToken string) (*UserInfoResponse, *serviceerror.ServiceError) {
+	ret := _m.Called(accessToken)
 
 	if len(ret) == 0 {
 		panic("no return value specified for GetUserInfo")
 	}
 
-	var r0 map[string]interface{}
+	var r0 *UserInfoResponse
 	var r1 *serviceerror.ServiceError
-	if returnFunc, ok := ret.Get(0).(func(string) (map[string]interface{}, *serviceerror.ServiceError)); ok {
+	if returnFunc, ok := ret.Get(0).(func(string) (*UserInfoResponse, *serviceerror.ServiceError)); ok {
 		return returnFunc(accessToken)
 	}
-	if returnFunc, ok := ret.Get(0).(func(string) map[string]interface{}); ok {
+	if returnFunc, ok := ret.Get(0).(func(string) *UserInfoResponse); ok {
 		r0 = returnFunc(accessToken)
 	} else {
 		if ret.Get(0) != nil {
-			r0 = ret.Get(0).(map[string]interface{})
+			r0 = ret.Get(0).(*UserInfoResponse)
 		}
 	}
 	if returnFunc, ok := ret.Get(1).(func(string) *serviceerror.ServiceError); ok {
@@ -90,12 +90,12 @@ func (_c *userInfoServiceInterfaceMock_GetUserInfo_Call) Run(run func(accessToke
 	return _c
 }
 
-func (_c *userInfoServiceInterfaceMock_GetUserInfo_Call) Return(stringToIfaceVal map[string]interface{}, serviceError *serviceerror.ServiceError) *userInfoServiceInterfaceMock_GetUserInfo_Call {
-	_c.Call.Return(stringToIfaceVal, serviceError)
+func (_c *userInfoServiceInterfaceMock_GetUserInfo_Call) Return(response *UserInfoResponse, serviceError *serviceerror.ServiceError) *userInfoServiceInterfaceMock_GetUserInfo_Call {
+	_c.Call.Return(response, serviceError)
 	return _c
 }
 
-func (_c *userInfoServiceInterfaceMock_GetUserInfo_Call) RunAndReturn(run func(accessToken string) (map[string]interface{}, *serviceerror.ServiceError)) *userInfoServiceInterfaceMock_GetUserInfo_Call {
+func (_c *userInfoServiceInterfaceMock_GetUserInfo_Call) RunAndReturn(run func(accessToken string) (*UserInfoResponse, *serviceerror.ServiceError)) *userInfoServiceInterfaceMock_GetUserInfo_Call {
 	_c.Call.Return(run)
 	return _c
 }
