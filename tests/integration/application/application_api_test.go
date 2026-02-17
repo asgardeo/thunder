@@ -4514,44 +4514,6 @@ func (ts *ApplicationAPITestSuite) TestApplicationUserInfoResponseTypeJWS() {
 	ts.Assert().Equal("JWS", oauth.UserInfo.ResponseType)
 }
 
-func (ts *ApplicationAPITestSuite) TestApplicationUserInfoResponseTypeJWE() {
-	app := Application{
-		Name:        "App UserInfo JWE",
-		Description: "Testing JWE response type",
-		InboundAuthConfig: []InboundAuthConfig{
-			{
-				Type: "oauth2",
-				OAuthAppConfig: &OAuthAppConfig{
-					ClientID:                "userinfo_jwe_test_client",
-					ClientSecret:            "userinfo_jwe_test_secret",
-					RedirectURIs:            []string{"http://localhost/callback"},
-					GrantTypes:              []string{"authorization_code"},
-					ResponseTypes:           []string{"code"},
-					TokenEndpointAuthMethod: "client_secret_basic",
-					UserInfo: &UserInfoConfig{
-						ResponseType:   "JWE",
-						UserAttributes: []string{"email"},
-					},
-				},
-			},
-		},
-	}
-
-	app.AuthFlowID = defaultAuthFlowID
-	app.RegistrationFlowID = defaultRegistrationFlowID
-
-	appID, err := createApplication(app)
-	ts.Require().NoError(err)
-	defer deleteApplication(appID)
-
-	retrievedApp, err := getApplicationByID(appID)
-	ts.Require().NoError(err)
-
-	oauth := retrievedApp.InboundAuthConfig[0].OAuthAppConfig
-	ts.Require().NotNil(oauth.UserInfo)
-	ts.Assert().Equal("JWE", oauth.UserInfo.ResponseType)
-}
-
 func (ts *ApplicationAPITestSuite) TestApplicationUserInfoResponseTypeInvalidFallback() {
 	app := Application{
 		Name:        "App UserInfo Invalid Fallback",

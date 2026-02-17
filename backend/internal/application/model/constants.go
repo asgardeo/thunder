@@ -33,13 +33,10 @@ type UserInfoResponseType string
 
 const (
 	// UserInfoResponseTypeJSON represents the JSON userinfo response type.
-	UserInfoResponseTypeJSON = "JSON"
+	UserInfoResponseTypeJSON UserInfoResponseType = "JSON"
 
 	// UserInfoResponseTypeJWS represents the JWS userinfo response type.
-	UserInfoResponseTypeJWS = "JWS"
-
-	// UserInfoResponseTypeJWE represents the JWE userinfo response type.
-	UserInfoResponseTypeJWE = "JWE"
+	UserInfoResponseTypeJWS UserInfoResponseType = "JWS"
 )
 
 // ApplicationNotFoundError is the error returned when an application is not found.
