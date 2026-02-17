@@ -29,6 +29,7 @@ import (
 	"github.com/asgardeo/thunder/internal/oauth/oauth2/tokenservice"
 	oauth2utils "github.com/asgardeo/thunder/internal/oauth/oauth2/utils"
 	"github.com/asgardeo/thunder/internal/ou"
+	"github.com/asgardeo/thunder/internal/system/config"
 	"github.com/asgardeo/thunder/internal/system/error/serviceerror"
 	"github.com/asgardeo/thunder/internal/system/jose/jwt"
 	"github.com/asgardeo/thunder/internal/system/log"
@@ -39,7 +40,7 @@ const serviceLoggerComponentName = "UserInfoService"
 
 // userInfoServiceInterface defines the interface for OIDC UserInfo endpoint.
 type userInfoServiceInterface interface {
-	GetUserInfo(accessToken string) (map[string]interface{}, *serviceerror.ServiceError)
+	GetUserInfo(accessToken string) (*UserInfoResponse, *serviceerror.ServiceError)
 }
 
 // userInfoService implements the userInfoServiceInterface.
@@ -68,7 +69,7 @@ func newUserInfoService(
 }
 
 // GetUserInfo validates the access token and returns user information based on authorized scopes.
-func (s *userInfoService) GetUserInfo(accessToken string) (map[string]interface{}, *serviceerror.ServiceError) {
+func (s *userInfoService) GetUserInfo(accessToken string) (*UserInfoResponse, *serviceerror.ServiceError) {
 	if accessToken == "" {
 		return nil, &errorInvalidAccessToken
 	}
@@ -115,7 +116,55 @@ func (s *userInfoService) GetUserInfo(accessToken string) (map[string]interface{
 		return nil, svcErr
 	}
 
-	return response, nil
+	// Decide response type
+	responseType := appmodel.UserInfoResponseTypeJSON
+	if oauthApp != nil && oauthApp.UserInfo != nil {
+		responseType = oauthApp.UserInfo.ResponseType
+	}
+
+	if responseType == appmodel.UserInfoResponseTypeJWS {
+		return s.generateJWSUserInfo(sub, tokenClaims, response)
+	}
+
+	return &UserInfoResponse{
+		Type:     appmodel.UserInfoResponseTypeJSON,
+		JSONBody: response,
+	}, nil
+}
+
+// generateJWSUserInfo creates a signed JWT UserInfo response
+// based on the application configuration.
+func (s *userInfoService) generateJWSUserInfo(
+	sub string,
+	tokenClaims map[string]interface{},
+	response map[string]interface{},
+) (*UserInfoResponse, *serviceerror.ServiceError) {
+	clientID := ""
+	if cid, ok := tokenClaims["client_id"].(string); ok {
+		clientID = cid
+	}
+
+	runtime := config.GetThunderRuntime()
+
+	issuer := runtime.Config.JWT.Issuer
+	validity := runtime.Config.JWT.ValidityPeriod
+
+	signedJWT, _, err := s.jwtService.GenerateJWT(
+		sub,
+		clientID,
+		issuer,
+		validity,
+		response,
+	)
+	if err != nil {
+		s.logger.Error("Failed to generate signed UserInfo JWT")
+		return nil, &serviceerror.InternalServerError
+	}
+
+	return &UserInfoResponse{
+		Type:    appmodel.UserInfoResponseTypeJWS,
+		JWTBody: signedJWT,
+	}, nil
 }
 
 // validateAndDecodeToken validates the JWT signature and decodes the payload.

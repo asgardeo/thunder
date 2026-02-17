@@ -21,6 +21,7 @@ package userinfo
 import (
 	"net/http"
 
+	appmodel "github.com/asgardeo/thunder/internal/application/model"
 	"github.com/asgardeo/thunder/internal/oauth/oauth2/constants"
 	serverconst "github.com/asgardeo/thunder/internal/system/constants"
 	"github.com/asgardeo/thunder/internal/system/error/serviceerror"
@@ -55,7 +56,7 @@ func (h *userInfoHandler) HandleUserInfo(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
-	userInfo, svcErr := h.service.GetUserInfo(accessToken)
+	result, svcErr := h.service.GetUserInfo(accessToken)
 	if svcErr != nil {
 		h.writeServiceErrorResponse(w, svcErr)
 		return
@@ -64,7 +65,13 @@ func (h *userInfoHandler) HandleUserInfo(w http.ResponseWriter, r *http.Request)
 	w.Header().Set(serverconst.CacheControlHeaderName, serverconst.CacheControlNoStore)
 	w.Header().Set(serverconst.PragmaHeaderName, serverconst.PragmaNoCache)
 
-	utils.WriteSuccessResponse(w, http.StatusOK, userInfo)
+	if result.Type == appmodel.UserInfoResponseTypeJWS {
+		w.Header().Set(serverconst.ContentTypeHeaderName, serverconst.ContentTypeJWT)
+		w.WriteHeader(http.StatusOK)
+		_, _ = w.Write([]byte(result.JWTBody))
+	} else {
+		utils.WriteSuccessResponse(w, http.StatusOK, result.JSONBody)
+	}
 
 	h.logger.Debug("UserInfo response sent successfully")
 }
