@@ -1,6 +1,6 @@
 ---
 title: React Quickstart
-sidebar_position: 1
+sidebar_position: 2
 description: Quick start guide to integrate Thunder with a React application
 ---
 
@@ -32,6 +32,7 @@ Welcome to the React Quickstart guide! In this document, you will learn to build
 
 <TutorialHeroItem icon={<Clock />}>About 15 minutes</TutorialHeroItem>
 <TutorialHeroItem icon={<Server />}>Thunder running locally or on a server</TutorialHeroItem>
+<TutorialHeroItem icon={<Server />}>A Thunder application and Client ID. See the <a href="quickstart-guide">Getting Started guide</a> for instructions</TutorialHeroItem>
 <TutorialHeroItem icon={<Hexagon />}>Node.js installed on your system</TutorialHeroItem>
 <TutorialHeroItem icon={<Package />}>A JavaScript package manager like npm, yarn, or pnpm</TutorialHeroItem>
 <TutorialHeroItem icon={<FileCode />}>A favorite text editor or IDE</TutorialHeroItem>
@@ -43,51 +44,6 @@ Check out the complete [React Sample App](https://github.com/asgardeo/thunder/tr
 :::
 
 <Stepper stepNode="h2" as="h2">
-
-## Create an Application in Thunder
-
-Before integrating Thunder with your React app, you need to create an application in Thunder.
-
-### Using the Thunder Console
-
-1. Sign into the Thunder Console at [https://localhost:8090/develop](https://localhost:8090/develop)
-2. Navigate to **Applications** → **New Application**
-3. Provide the following details:
-   - **Name**: `my-react-app`
-   - **Type**: Single Page Application (SPA)
-   - **Authorized Redirect URL**: `http://localhost:5173`
-
-:::info
-The authorized redirect URL determines where Thunder should send users after they successfully log in. For this guide, we'll use `http://localhost:5173`, as the Vite development server runs at this URL by default.
-:::
-
-### Using the Thunder API
-
-Alternatively, you can create an application using the Thunder API. First, [obtain a system API token](/guides/quick-start/get-thunder#obtain-system-api-token), then:
-
-```bash
-curl -kL -X POST https://localhost:8090/applications \
-  -H 'Authorization: Bearer <your-system-token>' \
-  -H 'Content-Type: application/json' \
-  -d '{
-    "name": "my-react-app",
-    "inbound_auth_config": [{
-      "type": "oauth2",
-      "config": {
-        "grant_types": ["authorization_code", "refresh_token"],
-        "response_types": ["code"],
-        "redirect_uris": ["http://localhost:5173"],
-        "token_endpoint_auth_method": "none",
-        "public_client": true,
-        "pkce_required": true
-      }
-    }]
-  }'
-```
-
-:::warning Important
-Note down the **Client ID** from the response. You'll need it to configure your React app.
-:::
 
 ## Create a React App
 

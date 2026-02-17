@@ -18,4 +18,9 @@ APIs
 UIs
 iCloud
 hostname
+SDKs
+URIs
+Vue
+[Oo]nboarding
+JWTs
 

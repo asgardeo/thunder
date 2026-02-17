@@ -1,0 +1,307 @@
+---
+title: Quickstart Guide
+sidebar_position: 1
+description: Get up and running with Thunder in minutes
+---
+
+import Tabs from '@theme/Tabs';
+import TabItem from '@theme/TabItem';
+
+# Quickstart Guide
+
+Thunder is a lightweight identity platform for authentication, authorization, and user management. It supports standard protocols like OAuth 2.0 and OIDC, flexible sign-in flows, and individual mechanisms such as password, passwordless, and social login. This guide walks you through registering your first application and creating your first user so you can start testing sign-in flows right away.
+
+:::tip Connect with AI
+Install the [Thunder MCP server](/guides/mcp-server) to manage Thunder directly from your AI assistant. Create applications, configure flows, and get integration code without leaving your IDE.
+:::
+
+## Prerequisites
+
+- Thunder is running locally or on a server. See the [Installation guide](/guides/installation) to get started.
+- You have access to the Thunder Console or a system API token. To get a system API token, see [Get Thunder](/guides/quick-start/get-thunder#obtain-system-api-token).
+
+<Stepper stepNode="h2" as="h2">
+
+## Step 1: Create an Application
+
+An application in Thunder defines how your users authenticate and what they can access. Register it first to get a **Client ID** for your integration.
+
+<Tabs>
+<TabItem value="console" label="🖥️ Console">
+
+1. Sign into the Thunder Console at [https://localhost:8090/develop](https://localhost:8090/develop).
+2. Navigate to **Applications** → **New Application**.
+3. Enter an **Application Name**.
+4. Select the **Sign-In Options** — the methods users will use to sign in (for example, Username & Password or social login).
+5. Configure the **Sign-In Experience** — select how and who can access your application:
+
+   - **Sign-In Approach**: Choose how users access the sign-in flow.
+     - **Redirect to Thunder sign-in/sign-up handling pages** (recommended) — Thunder redirects users to system-hosted pages, which you can customize with the Flow Designer and integrate with SDKs in a few steps.
+     - **Embedded sign-in/sign-up components in your app** — users sign in directly through your app using Thunder's UI components or APIs.
+
+   - **User Access**: Select which user types can access this application — **Customer**, **Person**, or both.
+
+      <details>
+        <summary>User Types</summary>
+
+        User types define the profile and attributes for different categories of users.
+
+        Thunder includes the following default user types:
+
+        - **Customer**: End users who interact with your application. This type allows self-registration.
+        - **Person**: Administrator-managed general-purpose user accounts.
+
+      </details>
+
+6. Select the **Application Type** and provide a redirect URL if prompted.
+
+    <details>
+      <summary>Application Types</summary>
+
+      | Application Type       | Description                                                                              | Required Configuration                                                                                                                                                                  |
+      | ---------------------- | ---------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+      | ⚛️ **Browser App**     | For browser-based single-page applications (React, Angular, Vue).                       | Configure an **Authorized Redirect URL** (for example, `http://localhost:3000/callback`) to receive the authentication response.                                                        |
+      | 🌐 **Full-stack App**  | For server-rendered web applications (Express, Spring, .NET).                           | Configure an **Authorized Redirect URL** where the server handles the authentication response.                                                                                          |
+      | 📱 **Mobile App**      | For native or cross-platform mobile applications (Swift, Kotlin, React Native, Flutter). | Configure a **Deep Link** (for example, `com.example.app://auth/callback`) or **Universal Link** (for example, `https://app.example.com/auth/callback`) to receive the sign-in response. |
+      | 🤖 **Backend Service** | For server-to-server communication without user interaction.                             | No redirect URL required. Use the generated **Client ID** and **Client Secret** for authentication.                                                                                     |
+
+    </details>
+7. Click **Create Application**.
+
+:::tip
+Note the **Client ID** from the application details page. You need it to configure your integration.
+:::
+
+</TabItem>
+<TabItem value="api" label="🧩 API">
+
+```bash
+curl -kL -X POST https://localhost:8090/applications \
+  -H 'Authorization: Bearer <your-system-token>' \
+  -H 'Content-Type: application/json' \
+  -d '{
+    "name": "my-app",
+    "inbound_auth_config": [{
+      "type": "oauth2",
+      "config": {
+        "grant_types": ["authorization_code", "refresh_token"],
+        "response_types": ["code"],
+        "redirect_uris": ["http://localhost:5173"],
+        "token_endpoint_auth_method": "none",
+        "public_client": true,
+        "pkce_required": true
+      }
+    }]
+  }'
+```
+
+:::warning Important
+Note the **Client ID** from the response. You need it to configure your integration.
+:::
+
+</TabItem>
+<TabItem value="ai" label="🤖 AI Assistant">
+
+:::info Prerequisite
+[Set up the Thunder MCP server](/guides/mcp-server) and connect it to your AI assistant before following these steps.
+:::
+
+Ask your AI assistant:
+
+> "Create a new SPA application in Thunder called `my-app` with a redirect URL of `http://localhost:5173`"
+
+Your AI assistant returns the **Client ID** directly in the conversation.
+
+</TabItem>
+</Tabs>
+
+## Step 2: Create a User
+
+Create a user to test sign-in flows with your application.
+
+<Tabs>
+<TabItem value="console" label="🖥️ Console">
+
+1. Navigate to the **Users** section in the Thunder Console.
+2. Click **Add User** and select a **User Type**.
+3. Fill in the user attributes that correspond to the selected user type. For example, `username`, `email`, `given_name`, `family_name`, `password`.
+4. Click **Create User**.
+
+</TabItem>
+<TabItem value="api" label="🧩 API">
+
+```bash
+curl -kL -X POST https://localhost:8090/users \
+  -H 'Authorization: Bearer <your-system-token>' \
+  -H 'Content-Type: application/json' \
+  -d '{
+    "organizationUnit": "<organization-unit-id>",
+    "type": "Customer",
+    "attributes": {
+      "username": "jane",
+      "email": "jane.doe@example.com",
+      "given_name": "Jane",
+      "family_name": "Doe",
+      "password": "Secret123!"
+    }
+  }'
+```
+
+Find the `<organization-unit-id>` in the Thunder Console under **Organization Units**.
+
+</TabItem>
+</Tabs>
+
+:::info User Types & Organization Units
+
+Each user belongs to a **user type** that determines their profile, and an **organization unit** that acts as their container.
+
+| User Type | Description | Organization Unit |
+|-----------|-------------|-------------------|
+| **Customer** | Self-registering end users | Customers |
+| **Person** | Administrator-managed accounts | Default |
+
+To create custom user types, go to **User Types** in the Thunder Console.
+:::
+
+
+## Step 3: Integrate with your application
+
+Choose your framework or platform to add sign-in to your application.
+
+<div style={{display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: '1.5rem', marginTop: '1.5rem'}}>
+
+  <a href="/guides/quick-start/react" style={{textDecoration: 'none', color: 'inherit'}}>
+    <Card variant="outlined" style={{height: '100%', cursor: 'pointer'}}>
+      <CardContent>
+        <Box sx={{display: 'inline-flex', padding: '12px', borderRadius: '12px', backgroundColor: 'rgba(255, 143, 51, 0.15)', marginBottom: '1rem'}}>
+          <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#fa7b3f" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="1"/><path d="M20.2 20.2c2.04-2.03.02-7.36-4.5-11.9-4.54-4.52-9.87-6.54-11.9-4.5-2.04 2.03-.02 7.36 4.5 11.9 4.54 4.52 9.87 6.54 11.9 4.5Z"/><path d="M15.7 15.7c4.52-4.54 6.54-9.87 4.5-11.9-2.03-2.04-7.36-.02-11.9 4.5-4.52 4.54-6.54 9.87-4.5 11.9 2.03 2.04 7.36.02 11.9-4.5Z"/></svg>
+        </Box>
+        <Typography gutterBottom variant="h5" component="div">React</Typography>
+        <Typography variant="body2" color="text.secondary">
+          Add sign-in to a React app using the Asgardeo React SDK. Includes Authorization Code flow with PKCE.
+        </Typography>
+        <Typography variant="body2" color="primary" style={{marginTop: '0.75rem'}}>Get started →</Typography>
+      </CardContent>
+    </Card>
+  </a>
+
+  <Card variant="outlined">
+    <CardContent>
+      <Box sx={{display: 'inline-flex', padding: '12px', borderRadius: '12px', backgroundColor: 'rgba(255, 143, 51, 0.15)', marginBottom: '1rem'}}>
+        <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#fa7b3f" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>
+      </Box>
+      <Typography gutterBottom variant="h5" component="div">Other Web Frameworks</Typography>
+      <Typography variant="body2" color="text.secondary">
+        Vue, Angular, Next.js, SvelteKit, and more.
+      </Typography>
+      <Typography variant="body2" color="text.secondary" style={{marginTop: '0.75rem'}}>Coming soon</Typography>
+    </CardContent>
+  </Card>
+
+  <Card variant="outlined">
+    <CardContent>
+      <Box sx={{display: 'inline-flex', padding: '12px', borderRadius: '12px', backgroundColor: 'rgba(255, 143, 51, 0.15)', marginBottom: '1rem'}}>
+        <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#fa7b3f" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="14" height="20" x="5" y="2" rx="2" ry="2"/><path d="M12 18h.01"/></svg>
+      </Box>
+      <Typography gutterBottom variant="h5" component="div">Mobile</Typography>
+      <Typography variant="body2" color="text.secondary">
+        React Native, Flutter, Swift, and Kotlin.
+      </Typography>
+      <Typography variant="body2" color="text.secondary" style={{marginTop: '0.75rem'}}>Coming soon</Typography>
+    </CardContent>
+  </Card>
+
+  <Card variant="outlined">
+    <CardContent>
+      <Box sx={{display: 'inline-flex', padding: '12px', borderRadius: '12px', backgroundColor: 'rgba(255, 143, 51, 0.15)', marginBottom: '1rem'}}>
+        <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#fa7b3f" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="20" height="8" x="2" y="2" rx="2" ry="2"/><rect width="20" height="8" x="2" y="14" rx="2" ry="2"/><line x1="6" x2="6.01" y1="6" y2="6"/><line x1="6" x2="6.01" y1="18" y2="18"/></svg>
+      </Box>
+      <Typography gutterBottom variant="h5" component="div">Backend Service</Typography>
+      <Typography variant="body2" color="text.secondary">
+        Node.js, Go, Python, Java, and more using client credentials flow.
+      </Typography>
+      <Typography variant="body2" color="text.secondary" style={{marginTop: '0.75rem'}}>Coming soon</Typography>
+    </CardContent>
+  </Card>
+
+</div>
+
+</Stepper>
+
+## Explore Thunder
+
+With an application and a user in place, here is what you can do next.
+
+<div style={{display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: '1.5rem', marginTop: '1.5rem'}}>
+
+  <a href="/guides/authentication/passwordless-authentication/passkeys" style={{textDecoration: 'none', color: 'inherit'}}>
+    <Card variant="outlined" style={{height: '100%', cursor: 'pointer'}}>
+      <CardContent>
+        <Box sx={{display: 'inline-flex', padding: '12px', borderRadius: '12px', backgroundColor: 'rgba(255, 143, 51, 0.15)', marginBottom: '1rem'}}>
+          <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#fa7b3f" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 18v3c0 .6.4 1 1 1h4v-3h3v-3h2l1.4-1.4a6.5 6.5 0 1 0-4-4Z"/><circle cx="16.5" cy="7.5" r=".5" fill="#fa7b3f"/></svg>
+        </Box>
+        <Typography gutterBottom variant="h5" component="div">Passkeys</Typography>
+        <Typography variant="body2" color="text.secondary">
+          Let users sign in without a password using device biometrics or hardware security keys via WebAuthn.
+        </Typography>
+        <Typography variant="body2" color="primary" style={{marginTop: '0.75rem'}}>Learn more →</Typography>
+      </CardContent>
+    </Card>
+  </a>
+
+  <Card variant="outlined">
+    <CardContent>
+      <Box sx={{display: 'inline-flex', padding: '12px', borderRadius: '12px', backgroundColor: 'rgba(255, 143, 51, 0.15)', marginBottom: '1rem'}}>
+        <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#fa7b3f" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M20 21a8 8 0 1 0-16 0"/><path d="M16 11h6"/><path d="M19 8v6"/></svg>
+      </Box>
+      <Typography gutterBottom variant="h5" component="div">Social Login</Typography>
+      <Typography variant="body2" color="text.secondary">
+        Let users sign in with Google, GitHub, Facebook, or any OIDC-compatible identity provider.
+      </Typography>
+      <Typography variant="body2" color="text.secondary" style={{marginTop: '0.75rem'}}>Coming soon</Typography>
+    </CardContent>
+  </Card>
+
+  <Card variant="outlined">
+    <CardContent>
+      <Box sx={{display: 'inline-flex', padding: '12px', borderRadius: '12px', backgroundColor: 'rgba(255, 143, 51, 0.15)', marginBottom: '1rem'}}>
+        <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#fa7b3f" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="8" height="8" x="3" y="3" rx="2"/><path d="M7 11v4a2 2 0 0 0 2 2h4"/><rect width="8" height="8" x="13" y="13" rx="2"/></svg>
+      </Box>
+      <Typography gutterBottom variant="h5" component="div">Authentication Flows</Typography>
+      <Typography variant="body2" color="text.secondary">
+        Orchestrate custom sign-in and registration flows with MFA, consent prompts, and conditional steps.
+      </Typography>
+      <Typography variant="body2" color="text.secondary" style={{marginTop: '0.75rem'}}>Coming soon</Typography>
+    </CardContent>
+  </Card>
+
+  <Card variant="outlined">
+    <CardContent>
+      <Box sx={{display: 'inline-flex', padding: '12px', borderRadius: '12px', backgroundColor: 'rgba(255, 143, 51, 0.15)', marginBottom: '1rem'}}>
+        <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#fa7b3f" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z"/><path d="m9 12 2 2 4-4"/></svg>
+      </Box>
+      <Typography gutterBottom variant="h5" component="div">Roles & Permissions</Typography>
+      <Typography variant="body2" color="text.secondary">
+        Assign roles to users and define fine-grained permissions to control access within your application.
+      </Typography>
+      <Typography variant="body2" color="text.secondary" style={{marginTop: '0.75rem'}}>Coming soon</Typography>
+    </CardContent>
+  </Card>
+
+  <a href="/guides/mcp-server" style={{textDecoration: 'none', color: 'inherit'}}>
+    <Card variant="outlined" style={{height: '100%', cursor: 'pointer'}}>
+      <CardContent>
+        <Box sx={{display: 'inline-flex', padding: '12px', borderRadius: '12px', backgroundColor: 'rgba(255, 143, 51, 0.15)', marginBottom: '1rem'}}>
+          <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#fa7b3f" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 8V4H8"/><rect width="16" height="12" x="4" y="8" rx="2"/><path d="M2 14h2"/><path d="M20 14h2"/><path d="M15 13v2"/><path d="M9 13v2"/></svg>
+        </Box>
+        <Typography gutterBottom variant="h5" component="div">AI-Assisted Management</Typography>
+        <Typography variant="body2" color="text.secondary">
+          Manage Thunder from your AI assistant. Create applications, update flows, and get SDK integration code without leaving your IDE.
+        </Typography>
+        <Typography variant="body2" color="primary" style={{marginTop: '0.75rem'}}>Learn more →</Typography>
+      </CardContent>
+    </Card>
+  </a>
+
+</div>
