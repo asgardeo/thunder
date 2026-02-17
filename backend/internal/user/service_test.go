@@ -697,7 +697,7 @@ func TestUserService_GetUsersByPath_HandlesOUServiceErrors(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			service := tc.setup(t)
 
-			resp, err := service.GetUsersByPath(context.Background(), "root", 10, 0, nil)
+			resp, err := service.GetUsersByPath(context.Background(), "root", 10, 0, nil, "")
 			require.Nil(t, resp)
 			require.NotNil(t, err)
 			require.Equal(t, *tc.expectedErr, *err)
@@ -1642,8 +1642,8 @@ func TestUserService_GetUserList(t *testing.T) {
 	filters := map[string]interface{}{}
 
 	storeMock := newUserStoreInterfaceMock(t)
-	storeMock.On("GetUserListCount", mock.Anything, filters).Return(5, nil).Once()
-	storeMock.On("GetUserList", mock.Anything, limit, offset, filters).
+	storeMock.On("GetUserListCount", mock.Anything, filters, "").Return(5, nil).Once()
+	storeMock.On("GetUserList", mock.Anything, limit, offset, filters, "").
 		Return([]User{{ID: svcTestUserID1}}, nil).
 		Once()
 
@@ -1651,7 +1651,7 @@ func TestUserService_GetUserList(t *testing.T) {
 		userStore: storeMock,
 	}
 
-	resp, err := service.GetUserList(context.Background(), limit, offset, filters)
+	resp, err := service.GetUserList(context.Background(), limit, offset, filters, "")
 	require.Nil(t, err)
 	require.NotNil(t, resp)
 	require.Equal(t, 5, resp.TotalResults)
@@ -1993,7 +1993,7 @@ func TestUserService_GetUsersByPath(t *testing.T) {
 		Users:        []oupkg.User{{ID: "u1"}},
 	}, nil).Once()
 
-	resp, err := service.GetUsersByPath(ctx, "root", 10, 0, nil)
+	resp, err := service.GetUsersByPath(ctx, "root", 10, 0, nil, "")
 	require.Nil(t, err)
 	require.Equal(t, 20, resp.TotalResults)
 	require.NotEmpty(t, resp.Links)

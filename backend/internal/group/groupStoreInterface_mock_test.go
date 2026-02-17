@@ -37,6 +37,69 @@ func (_m *groupStoreInterfaceMock) EXPECT() *groupStoreInterfaceMock_Expecter {
 	return &groupStoreInterfaceMock_Expecter{mock: &_m.Mock}
 }
 
+// AddGroupMembers provides a mock function for the type groupStoreInterfaceMock
+func (_mock *groupStoreInterfaceMock) AddGroupMembers(ctx context.Context, groupID string, members []Member) error {
+	ret := _mock.Called(ctx, groupID, members)
+
+	if len(ret) == 0 {
+		panic("no return value specified for AddGroupMembers")
+	}
+
+	var r0 error
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string, []Member) error); ok {
+		r0 = returnFunc(ctx, groupID, members)
+	} else {
+		r0 = ret.Error(0)
+	}
+	return r0
+}
+
+// groupStoreInterfaceMock_AddGroupMembers_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'AddGroupMembers'
+type groupStoreInterfaceMock_AddGroupMembers_Call struct {
+	*mock.Call
+}
+
+// AddGroupMembers is a helper method to define mock.On call
+//   - ctx context.Context
+//   - groupID string
+//   - members []Member
+func (_e *groupStoreInterfaceMock_Expecter) AddGroupMembers(ctx interface{}, groupID interface{}, members interface{}) *groupStoreInterfaceMock_AddGroupMembers_Call {
+	return &groupStoreInterfaceMock_AddGroupMembers_Call{Call: _e.mock.On("AddGroupMembers", ctx, groupID, members)}
+}
+
+func (_c *groupStoreInterfaceMock_AddGroupMembers_Call) Run(run func(ctx context.Context, groupID string, members []Member)) *groupStoreInterfaceMock_AddGroupMembers_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 context.Context
+		if args[0] != nil {
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 string
+		if args[1] != nil {
+			arg1 = args[1].(string)
+		}
+		var arg2 []Member
+		if args[2] != nil {
+			arg2 = args[2].([]Member)
+		}
+		run(
+			arg0,
+			arg1,
+			arg2,
+		)
+	})
+	return _c
+}
+
+func (_c *groupStoreInterfaceMock_AddGroupMembers_Call) Return(err error) *groupStoreInterfaceMock_AddGroupMembers_Call {
+	_c.Call.Return(err)
+	return _c
+}
+
+func (_c *groupStoreInterfaceMock_AddGroupMembers_Call) RunAndReturn(run func(ctx context.Context, groupID string, members []Member) error) *groupStoreInterfaceMock_AddGroupMembers_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
 // CheckGroupNameConflictForCreate provides a mock function for the type groupStoreInterfaceMock
 func (_mock *groupStoreInterfaceMock) CheckGroupNameConflictForCreate(ctx context.Context, name string, organizationUnitID string) error {
 	ret := _mock.Called(ctx, name, organizationUnitID)
@@ -771,6 +834,69 @@ func (_c *groupStoreInterfaceMock_GetGroupsByOrganizationUnitCount_Call) Return(
 }
 
 func (_c *groupStoreInterfaceMock_GetGroupsByOrganizationUnitCount_Call) RunAndReturn(run func(ctx context.Context, organizationUnitID string) (int, error)) *groupStoreInterfaceMock_GetGroupsByOrganizationUnitCount_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
+// RemoveGroupMembers provides a mock function for the type groupStoreInterfaceMock
+func (_mock *groupStoreInterfaceMock) RemoveGroupMembers(ctx context.Context, groupID string, members []Member) error {
+	ret := _mock.Called(ctx, groupID, members)
+
+	if len(ret) == 0 {
+		panic("no return value specified for RemoveGroupMembers")
+	}
+
+	var r0 error
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string, []Member) error); ok {
+		r0 = returnFunc(ctx, groupID, members)
+	} else {
+		r0 = ret.Error(0)
+	}
+	return r0
+}
+
+// groupStoreInterfaceMock_RemoveGroupMembers_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'RemoveGroupMembers'
+type groupStoreInterfaceMock_RemoveGroupMembers_Call struct {
+	*mock.Call
+}
+
+// RemoveGroupMembers is a helper method to define mock.On call
+//   - ctx context.Context
+//   - groupID string
+//   - members []Member
+func (_e *groupStoreInterfaceMock_Expecter) RemoveGroupMembers(ctx interface{}, groupID interface{}, members interface{}) *groupStoreInterfaceMock_RemoveGroupMembers_Call {
+	return &groupStoreInterfaceMock_RemoveGroupMembers_Call{Call: _e.mock.On("RemoveGroupMembers", ctx, groupID, members)}
+}
+
+func (_c *groupStoreInterfaceMock_RemoveGroupMembers_Call) Run(run func(ctx context.Context, groupID string, members []Member)) *groupStoreInterfaceMock_RemoveGroupMembers_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 context.Context
+		if args[0] != nil {
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 string
+		if args[1] != nil {
+			arg1 = args[1].(string)
+		}
+		var arg2 []Member
+		if args[2] != nil {
+			arg2 = args[2].([]Member)
+		}
+		run(
+			arg0,
+			arg1,
+			arg2,
+		)
+	})
+	return _c
+}
+
+func (_c *groupStoreInterfaceMock_RemoveGroupMembers_Call) Return(err error) *groupStoreInterfaceMock_RemoveGroupMembers_Call {
+	_c.Call.Return(err)
+	return _c
+}
+
+func (_c *groupStoreInterfaceMock_RemoveGroupMembers_Call) RunAndReturn(run func(ctx context.Context, groupID string, members []Member) error) *groupStoreInterfaceMock_RemoveGroupMembers_Call {
 	_c.Call.Return(run)
 	return _c
 }

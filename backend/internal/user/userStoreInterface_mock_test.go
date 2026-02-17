@@ -444,8 +444,8 @@ func (_c *userStoreInterfaceMock_GetUserGroups_Call) RunAndReturn(run func(ctx c
 }
 
 // GetUserList provides a mock function for the type userStoreInterfaceMock
-func (_mock *userStoreInterfaceMock) GetUserList(ctx context.Context, limit int, offset int, filters map[string]interface{}) ([]User, error) {
-	ret := _mock.Called(ctx, limit, offset, filters)
+func (_mock *userStoreInterfaceMock) GetUserList(ctx context.Context, limit int, offset int, filters map[string]interface{}, excludeGroupID string) ([]User, error) {
+	ret := _mock.Called(ctx, limit, offset, filters, excludeGroupID)
 
 	if len(ret) == 0 {
 		panic("no return value specified for GetUserList")
@@ -453,18 +453,18 @@ func (_mock *userStoreInterfaceMock) GetUserList(ctx context.Context, limit int,
 
 	var r0 []User
 	var r1 error
-	if returnFunc, ok := ret.Get(0).(func(context.Context, int, int, map[string]interface{}) ([]User, error)); ok {
-		return returnFunc(ctx, limit, offset, filters)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, int, int, map[string]interface{}, string) ([]User, error)); ok {
+		return returnFunc(ctx, limit, offset, filters, excludeGroupID)
 	}
-	if returnFunc, ok := ret.Get(0).(func(context.Context, int, int, map[string]interface{}) []User); ok {
-		r0 = returnFunc(ctx, limit, offset, filters)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, int, int, map[string]interface{}, string) []User); ok {
+		r0 = returnFunc(ctx, limit, offset, filters, excludeGroupID)
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).([]User)
 		}
 	}
-	if returnFunc, ok := ret.Get(1).(func(context.Context, int, int, map[string]interface{}) error); ok {
-		r1 = returnFunc(ctx, limit, offset, filters)
+	if returnFunc, ok := ret.Get(1).(func(context.Context, int, int, map[string]interface{}, string) error); ok {
+		r1 = returnFunc(ctx, limit, offset, filters, excludeGroupID)
 	} else {
 		r1 = ret.Error(1)
 	}
@@ -481,11 +481,12 @@ type userStoreInterfaceMock_GetUserList_Call struct {
 //   - limit int
 //   - offset int
 //   - filters map[string]interface{}
-func (_e *userStoreInterfaceMock_Expecter) GetUserList(ctx interface{}, limit interface{}, offset interface{}, filters interface{}) *userStoreInterfaceMock_GetUserList_Call {
-	return &userStoreInterfaceMock_GetUserList_Call{Call: _e.mock.On("GetUserList", ctx, limit, offset, filters)}
+//   - excludeGroupID string
+func (_e *userStoreInterfaceMock_Expecter) GetUserList(ctx interface{}, limit interface{}, offset interface{}, filters interface{}, excludeGroupID interface{}) *userStoreInterfaceMock_GetUserList_Call {
+	return &userStoreInterfaceMock_GetUserList_Call{Call: _e.mock.On("GetUserList", ctx, limit, offset, filters, excludeGroupID)}
 }
 
-func (_c *userStoreInterfaceMock_GetUserList_Call) Run(run func(ctx context.Context, limit int, offset int, filters map[string]interface{})) *userStoreInterfaceMock_GetUserList_Call {
+func (_c *userStoreInterfaceMock_GetUserList_Call) Run(run func(ctx context.Context, limit int, offset int, filters map[string]interface{}, excludeGroupID string)) *userStoreInterfaceMock_GetUserList_Call {
 	_c.Call.Run(func(args mock.Arguments) {
 		var arg0 context.Context
 		if args[0] != nil {
@@ -503,11 +504,16 @@ func (_c *userStoreInterfaceMock_GetUserList_Call) Run(run func(ctx context.Cont
 		if args[3] != nil {
 			arg3 = args[3].(map[string]interface{})
 		}
+		var arg4 string
+		if args[4] != nil {
+			arg4 = args[4].(string)
+		}
 		run(
 			arg0,
 			arg1,
 			arg2,
 			arg3,
+			arg4,
 		)
 	})
 	return _c
@@ -518,14 +524,14 @@ func (_c *userStoreInterfaceMock_GetUserList_Call) Return(users []User, err erro
 	return _c
 }
 
-func (_c *userStoreInterfaceMock_GetUserList_Call) RunAndReturn(run func(ctx context.Context, limit int, offset int, filters map[string]interface{}) ([]User, error)) *userStoreInterfaceMock_GetUserList_Call {
+func (_c *userStoreInterfaceMock_GetUserList_Call) RunAndReturn(run func(ctx context.Context, limit int, offset int, filters map[string]interface{}, excludeGroupID string) ([]User, error)) *userStoreInterfaceMock_GetUserList_Call {
 	_c.Call.Return(run)
 	return _c
 }
 
 // GetUserListCount provides a mock function for the type userStoreInterfaceMock
-func (_mock *userStoreInterfaceMock) GetUserListCount(ctx context.Context, filters map[string]interface{}) (int, error) {
-	ret := _mock.Called(ctx, filters)
+func (_mock *userStoreInterfaceMock) GetUserListCount(ctx context.Context, filters map[string]interface{}, excludeGroupID string) (int, error) {
+	ret := _mock.Called(ctx, filters, excludeGroupID)
 
 	if len(ret) == 0 {
 		panic("no return value specified for GetUserListCount")
@@ -533,16 +539,16 @@ func (_mock *userStoreInterfaceMock) GetUserListCount(ctx context.Context, filte
 
 	var r0 int
 	var r1 error
-	if returnFunc, ok := ret.Get(0).(func(context.Context, map[string]interface{}) (int, error)); ok {
-		return returnFunc(ctx, filters)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, map[string]interface{}, string) (int, error)); ok {
+		return returnFunc(ctx, filters, excludeGroupID)
 	}
-	if returnFunc, ok := ret.Get(0).(func(context.Context, map[string]interface{}) int); ok {
-		r0 = returnFunc(ctx, filters)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, map[string]interface{}, string) int); ok {
+		r0 = returnFunc(ctx, filters, excludeGroupID)
 	} else {
 		r0 = ret.Get(0).(int)
 	}
-	if returnFunc, ok := ret.Get(1).(func(context.Context, map[string]interface{}) error); ok {
-		r1 = returnFunc(ctx, filters)
+	if returnFunc, ok := ret.Get(1).(func(context.Context, map[string]interface{}, string) error); ok {
+		r1 = returnFunc(ctx, filters, excludeGroupID)
 	} else {
 		r1 = ret.Error(1)
 	}
@@ -557,11 +563,12 @@ type userStoreInterfaceMock_GetUserListCount_Call struct {
 // GetUserListCount is a helper method to define mock.On call
 //   - ctx context.Context
 //   - filters map[string]interface{}
-func (_e *userStoreInterfaceMock_Expecter) GetUserListCount(ctx interface{}, filters interface{}) *userStoreInterfaceMock_GetUserListCount_Call {
-	return &userStoreInterfaceMock_GetUserListCount_Call{Call: _e.mock.On("GetUserListCount", ctx, filters)}
+//   - excludeGroupID string
+func (_e *userStoreInterfaceMock_Expecter) GetUserListCount(ctx interface{}, filters interface{}, excludeGroupID interface{}) *userStoreInterfaceMock_GetUserListCount_Call {
+	return &userStoreInterfaceMock_GetUserListCount_Call{Call: _e.mock.On("GetUserListCount", ctx, filters, excludeGroupID)}
 }
 
-func (_c *userStoreInterfaceMock_GetUserListCount_Call) Run(run func(ctx context.Context, filters map[string]interface{})) *userStoreInterfaceMock_GetUserListCount_Call {
+func (_c *userStoreInterfaceMock_GetUserListCount_Call) Run(run func(ctx context.Context, filters map[string]interface{}, excludeGroupID string)) *userStoreInterfaceMock_GetUserListCount_Call {
 	_c.Call.Run(func(args mock.Arguments) {
 		var arg0 context.Context
 		if args[0] != nil {
@@ -571,9 +578,14 @@ func (_c *userStoreInterfaceMock_GetUserListCount_Call) Run(run func(ctx context
 		if args[1] != nil {
 			arg1 = args[1].(map[string]interface{})
 		}
+		var arg2 string
+		if args[2] != nil {
+			arg2 = args[2].(string)
+		}
 		run(
 			arg0,
 			arg1,
+			arg2,
 		)
 	})
 	return _c
@@ -584,7 +596,7 @@ func (_c *userStoreInterfaceMock_GetUserListCount_Call) Return(n int, err error)
 	return _c
 }
 
-func (_c *userStoreInterfaceMock_GetUserListCount_Call) RunAndReturn(run func(ctx context.Context, filters map[string]interface{}) (int, error)) *userStoreInterfaceMock_GetUserListCount_Call {
+func (_c *userStoreInterfaceMock_GetUserListCount_Call) RunAndReturn(run func(ctx context.Context, filters map[string]interface{}, excludeGroupID string) (int, error)) *userStoreInterfaceMock_GetUserListCount_Call {
 	_c.Call.Return(run)
 	return _c
 }

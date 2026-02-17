@@ -32,8 +32,10 @@ import (
 
 // userStoreInterface defines the interface for user store operations.
 type userStoreInterface interface {
-	GetUserListCount(ctx context.Context, filters map[string]interface{}) (int, error)
-	GetUserList(ctx context.Context, limit, offset int, filters map[string]interface{}) ([]User, error)
+	GetUserListCount(ctx context.Context, filters map[string]interface{},
+		excludeGroupID string) (int, error)
+	GetUserList(ctx context.Context, limit, offset int,
+		filters map[string]interface{}, excludeGroupID string) ([]User, error)
 	CreateUser(ctx context.Context, user User, credentials Credentials) error
 	GetUser(ctx context.Context, id string) (User, error)
 	GetGroupCountForUser(ctx context.Context, userID string) (int, error)
@@ -77,13 +79,15 @@ func newUserStore() (userStoreInterface, error) {
 }
 
 // GetUserListCount retrieves the total count of users.
-func (us *userStore) GetUserListCount(ctx context.Context, filters map[string]interface{}) (int, error) {
+func (us *userStore) GetUserListCount(
+	ctx context.Context, filters map[string]interface{}, excludeGroupID string,
+) (int, error) {
 	dbClient, err := us.dbProvider.GetUserDBClient()
 	if err != nil {
 		return 0, fmt.Errorf("failed to get database client: %w", err)
 	}
 
-	countQuery, args, err := buildUserCountQuery(filters, us.deploymentID)
+	countQuery, args, err := buildUserCountQuery(filters, us.deploymentID, excludeGroupID)
 	if err != nil {
 		return 0, fmt.Errorf("failed to build count query: %w", err)
 	}
@@ -107,13 +111,13 @@ func (us *userStore) GetUserListCount(ctx context.Context, filters map[string]in
 
 // GetUserList retrieves a list of users from the database.
 func (us *userStore) GetUserList(ctx context.Context, limit, offset int,
-	filters map[string]interface{}) ([]User, error) {
+	filters map[string]interface{}, excludeGroupID string) ([]User, error) {
 	dbClient, err := us.dbProvider.GetUserDBClient()
 	if err != nil {
 		return nil, fmt.Errorf("failed to get database client: %w", err)
 	}
 
-	listQuery, args, err := buildUserListQuery(filters, limit, offset, us.deploymentID)
+	listQuery, args, err := buildUserListQuery(filters, limit, offset, us.deploymentID, excludeGroupID)
 	if err != nil {
 		return nil, fmt.Errorf("failed to build list query: %w", err)
 	}

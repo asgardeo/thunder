@@ -42,6 +42,7 @@ const PAGE_TRANSLATION_KEY_MAP: Record<string, string> = {
   applications: 'navigation:pages.applications',
   dashboard: 'navigation:pages.dashboard',
   flows: 'navigation:pages.flows',
+  groups: 'navigation:pages.groups',
 };
 
 export default function NavbarBreadcrumbs(): JSX.Element {

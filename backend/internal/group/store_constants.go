@@ -89,6 +89,13 @@ var (
 			`VALUES ($1, $2, $3, $4)`,
 	}
 
+	// QueryDeleteGroupMember is the query to delete a specific member from a group.
+	QueryDeleteGroupMember = dbmodel.DBQuery{
+		ID: "GRQ-GROUP_MGT-16",
+		Query: `DELETE FROM GROUP_MEMBER_REFERENCE ` +
+			`WHERE GROUP_ID = $1 AND MEMBER_TYPE = $2 AND MEMBER_ID = $3 AND DEPLOYMENT_ID = $4`,
+	}
+
 	// QueryCheckGroupNameConflict is the query to check if a group name conflicts within the same organization unit.
 	QueryCheckGroupNameConflict = dbmodel.DBQuery{
 		ID:    "GRQ-GROUP_MGT-11",

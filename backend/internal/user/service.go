@@ -42,9 +42,9 @@ const loggerComponentName = "UserService"
 // UserServiceInterface defines the interface for the user service.
 type UserServiceInterface interface {
 	GetUserList(ctx context.Context, limit, offset int,
-		filters map[string]interface{}) (*UserListResponse, *serviceerror.ServiceError)
+		filters map[string]interface{}, excludeGroupID string) (*UserListResponse, *serviceerror.ServiceError)
 	GetUsersByPath(ctx context.Context, handlePath string, limit, offset int,
-		filters map[string]interface{}) (*UserListResponse, *serviceerror.ServiceError)
+		filters map[string]interface{}, excludeGroupID string) (*UserListResponse, *serviceerror.ServiceError)
 	CreateUser(ctx context.Context, user *User) (*User, *serviceerror.ServiceError)
 	CreateUserByPath(ctx context.Context, handlePath string,
 		request CreateUserByPathRequest) (*User, *serviceerror.ServiceError)
@@ -96,19 +96,19 @@ func newUserService(
 // GetUserList lists the users.
 // GetUserList retrieves a list of users with pagination and filtering.
 func (us *userService) GetUserList(ctx context.Context, limit, offset int,
-	filters map[string]interface{}) (*UserListResponse, *serviceerror.ServiceError) {
+	filters map[string]interface{}, excludeGroupID string) (*UserListResponse, *serviceerror.ServiceError) {
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, loggerComponentName))
 
 	if err := validatePaginationParams(limit, offset); err != nil {
 		return nil, err
 	}
 
-	totalCount, err := us.userStore.GetUserListCount(ctx, filters)
+	totalCount, err := us.userStore.GetUserListCount(ctx, filters, excludeGroupID)
 	if err != nil {
 		return nil, logErrorAndReturnServerError(logger, "Failed to get user list count", err)
 	}
 
-	users, err := us.userStore.GetUserList(ctx, limit, offset, filters)
+	users, err := us.userStore.GetUserList(ctx, limit, offset, filters, excludeGroupID)
 	if err != nil {
 		return nil, logErrorAndReturnServerError(logger, "Failed to get user list", err)
 	}
@@ -125,8 +125,11 @@ func (us *userService) GetUserList(ctx context.Context, limit, offset int,
 }
 
 // GetUsersByPath retrieves a list of users by hierarchical handle path.
+// TODO: excludeGroupID is currently unused. Implement group exclusion filtering once the OU service
+// supports it (GetOrganizationUnitUsers does not accept an excludeGroupID parameter yet).
 func (us *userService) GetUsersByPath(
 	ctx context.Context, handlePath string, limit, offset int, filters map[string]interface{},
+	excludeGroupID string,
 ) (*UserListResponse, *serviceerror.ServiceError) {
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, loggerComponentName))
 	logger.Debug("Getting users by path", log.String("path", handlePath))

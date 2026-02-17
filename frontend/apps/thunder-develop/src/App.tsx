@@ -38,6 +38,9 @@ import OrganizationUnitsListPage from './features/organization-units/pages/Organ
 import CreateOrganizationUnitPage from './features/organization-units/pages/CreateOrganizationUnitPage';
 import OrganizationUnitEditPage from './features/organization-units/pages/OrganizationUnitEditPage';
 import OrganizationUnitProvider from './features/organization-units/contexts/OrganizationUnitProvider';
+import GroupsListPage from './features/groups/pages/GroupsListPage';
+import GroupEditPage from './features/groups/pages/GroupEditPage';
+import CreateGroupPage from './features/groups/pages/CreateGroupPage';
 
 export default function App(): JSX.Element {
   return (
@@ -59,6 +62,8 @@ export default function App(): JSX.Element {
           <Route path="user-types/create" element={<CreateUserTypePage />} />
           <Route path="user-types/:id" element={<ViewUserTypePage />} />
           <Route path="integrations" element={<IntegrationsPage />} />
+          <Route path="groups" element={<GroupsListPage />} />
+          <Route path="groups/:groupId" element={<GroupEditPage />} />
           <Route path="applications" element={<ApplicationsListPage />} />
           <Route path="applications/:applicationId" element={<ApplicationEditPage />} />
           <Route path="flows" element={<FlowsListPage />} />
@@ -79,6 +84,16 @@ export default function App(): JSX.Element {
           <Route path="create" element={<FullScreenLayout />}>
             <Route index element={<CreateOrganizationUnitPage />} />
           </Route>
+        </Route>
+        <Route
+          path="/groups/create"
+          element={
+            <ProtectedRoute>
+              <FullScreenLayout />
+            </ProtectedRoute>
+          }
+        >
+          <Route index element={<CreateGroupPage />} />
         </Route>
         <Route
           path="/applications/create"

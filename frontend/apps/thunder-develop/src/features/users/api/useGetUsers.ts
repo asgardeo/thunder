@@ -55,6 +55,9 @@ export default function useGetUsers(params?: UserListParams) {
         if (params?.filter) {
           searchParams.append('filter', params.filter);
         }
+        if (params?.excludeGroupId) {
+          searchParams.append('excludeGroupId', params.excludeGroupId);
+        }
 
         const queryString = searchParams.toString();
 
@@ -104,6 +107,9 @@ export default function useGetUsers(params?: UserListParams) {
       }
       if (finalParams?.filter) {
         searchParams.append('filter', finalParams.filter);
+      }
+      if (finalParams?.excludeGroupId) {
+        searchParams.append('excludeGroupId', finalParams.excludeGroupId);
       }
 
       const queryString = searchParams.toString();

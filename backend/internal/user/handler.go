@@ -69,8 +69,10 @@ func (uh *userHandler) HandleUserListRequest(w http.ResponseWriter, r *http.Requ
 		return
 	}
 
+	excludeGroupID := r.URL.Query().Get("excludeGroupId")
+
 	// Get the user list using the user service.
-	userListResponse, svcErr := uh.userService.GetUserList(ctx, limit, offset, filters)
+	userListResponse, svcErr := uh.userService.GetUserList(ctx, limit, offset, filters, excludeGroupID)
 	if svcErr != nil {
 		handleError(w, svcErr)
 		return
@@ -274,7 +276,9 @@ func (uh *userHandler) HandleUserListByPathRequest(w http.ResponseWriter, r *htt
 		return
 	}
 
-	userListResponse, svcErr := uh.userService.GetUsersByPath(ctx, path, limit, offset, filters)
+	excludeGroupID := r.URL.Query().Get("excludeGroupId")
+
+	userListResponse, svcErr := uh.userService.GetUsersByPath(ctx, path, limit, offset, filters, excludeGroupID)
 	if svcErr != nil {
 		handleError(w, svcErr)
 		return

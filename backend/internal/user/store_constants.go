@@ -152,9 +152,27 @@ func buildBulkUserExistsQuery(userIDs []string, deploymentID string) (model.DBQu
 	return query, args, nil
 }
 
+// buildExcludeGroupClause builds a NOT IN subquery clause to exclude users who are members of a specific group.
+// Returns the PostgreSQL clause, SQLite clause, and args to append.
+func buildExcludeGroupClause(excludeGroupID, deploymentID string, paramIndex int) (string, string, []interface{}) {
+	if excludeGroupID == "" {
+		return "", "", nil
+	}
+
+	pgClause := fmt.Sprintf(
+		" AND USER_ID NOT IN (SELECT MEMBER_ID FROM GROUP_MEMBER_REFERENCE"+
+			" WHERE GROUP_ID = $%d AND MEMBER_TYPE = 'user' AND DEPLOYMENT_ID = $%d)",
+		paramIndex, paramIndex+1,
+	)
+	sqliteClause := " AND USER_ID NOT IN (SELECT MEMBER_ID FROM GROUP_MEMBER_REFERENCE" +
+		" WHERE GROUP_ID = ? AND MEMBER_TYPE = 'user' AND DEPLOYMENT_ID = ?)"
+
+	return pgClause, sqliteClause, []interface{}{excludeGroupID, deploymentID}
+}
+
 // buildUserListQuery constructs a query to get users with optional filtering.
 func buildUserListQuery(
-	filters map[string]interface{}, limit, offset int, deploymentID string,
+	filters map[string]interface{}, limit, offset int, deploymentID, excludeGroupID string,
 ) (model.DBQuery, []interface{}, error) {
 	baseQuery := "SELECT USER_ID, OU_ID, TYPE, ATTRIBUTES FROM \"USER\""
 	queryID := "ASQ-USER_MGT-10"
@@ -167,6 +185,14 @@ func buildUserListQuery(
 			return model.DBQuery{}, nil, err
 		}
 		filterQuery, filterArgs = utils.AppendDeploymentIDToFilterQuery(filterQuery, filterArgs, deploymentID)
+
+		// Append exclude group clause if provided
+		pgExclude, sqliteExclude, excludeArgs := buildExcludeGroupClause(
+			excludeGroupID, deploymentID, len(filterArgs)+1,
+		)
+		filterQuery.PostgresQuery += pgExclude
+		filterQuery.SQLiteQuery += sqliteExclude
+		filterArgs = append(filterArgs, excludeArgs...)
 
 		// Build PostgreSQL query
 		postgresQuery, err := buildPaginatedQuery(filterQuery.PostgresQuery, len(filterArgs), "$")
@@ -189,7 +215,23 @@ func buildUserListQuery(
 		}, filterArgs, nil
 	}
 
-	// No filters, use the original query
+	// No filters
+	if excludeGroupID != "" {
+		// Use $N numbered placeholders which work for both PostgreSQL and SQLite (modernc.org/sqlite supports $N).
+		// Args: $1=limit, $2=offset, $3=deploymentID, $4=excludeGroupID, $5=deploymentID
+		q := "SELECT USER_ID, OU_ID, TYPE, ATTRIBUTES FROM \"USER\"" +
+			" WHERE DEPLOYMENT_ID = $3" +
+			" AND USER_ID NOT IN (SELECT MEMBER_ID FROM GROUP_MEMBER_REFERENCE" +
+			" WHERE GROUP_ID = $4 AND MEMBER_TYPE = 'user' AND DEPLOYMENT_ID = $5)" +
+			" ORDER BY USER_ID LIMIT $1 OFFSET $2"
+
+		return model.DBQuery{
+			ID:    queryID,
+			Query: q,
+		}, []interface{}{limit, offset, deploymentID, excludeGroupID, deploymentID}, nil
+	}
+
+	// No filters, no exclusion — use the original query
 	return QueryGetUserList, []interface{}{limit, offset, deploymentID}, nil
 }
 
@@ -209,7 +251,9 @@ func buildPaginatedQuery(baseQuery string, paramCount int, placeholder string) (
 }
 
 // buildUserCountQuery constructs a query to count users with optional filtering.
-func buildUserCountQuery(filters map[string]interface{}, deploymentID string) (model.DBQuery, []interface{}, error) {
+func buildUserCountQuery(
+	filters map[string]interface{}, deploymentID, excludeGroupID string,
+) (model.DBQuery, []interface{}, error) {
 	baseQuery := "SELECT COUNT(*) as total FROM \"USER\""
 	queryID := "ASQ-USER_MGT-11"
 	columnName := AttributesColumn
@@ -220,7 +264,29 @@ func buildUserCountQuery(filters map[string]interface{}, deploymentID string) (m
 			return model.DBQuery{}, nil, err
 		}
 		filterQuery, args = utils.AppendDeploymentIDToFilterQuery(filterQuery, args, deploymentID)
+
+		// Append exclude group clause if provided
+		pgExclude, sqliteExclude, excludeArgs := buildExcludeGroupClause(
+			excludeGroupID, deploymentID, len(args)+1,
+		)
+		filterQuery.PostgresQuery += pgExclude
+		filterQuery.SQLiteQuery += sqliteExclude
+		filterQuery.Query = filterQuery.PostgresQuery
+		args = append(args, excludeArgs...)
+
 		return filterQuery, args, nil
+	}
+
+	if excludeGroupID != "" {
+		// Use $N numbered placeholders which work for both PostgreSQL and SQLite.
+		q := "SELECT COUNT(*) as total FROM \"USER\" WHERE DEPLOYMENT_ID = $1" +
+			" AND USER_ID NOT IN (SELECT MEMBER_ID FROM GROUP_MEMBER_REFERENCE" +
+			" WHERE GROUP_ID = $2 AND MEMBER_TYPE = 'user' AND DEPLOYMENT_ID = $3)"
+
+		return model.DBQuery{
+			ID:    queryID,
+			Query: q,
+		}, []interface{}{deploymentID, excludeGroupID, deploymentID}, nil
 	}
 
 	return QueryGetUserCount, []interface{}{deploymentID}, nil

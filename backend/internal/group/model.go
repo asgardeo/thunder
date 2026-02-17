@@ -68,6 +68,11 @@ type GroupDAO struct {
 	Members            []Member
 }
 
+// MembersRequest represents the request body for adding or removing members from a group.
+type MembersRequest struct {
+	Members []Member `json:"members"`
+}
+
 // CreateGroupRequest represents the request body for creating a group.
 type CreateGroupRequest struct {
 	Name               string   `json:"name"`

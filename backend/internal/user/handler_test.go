@@ -280,7 +280,7 @@ func TestHandleUserListRequest_Success(t *testing.T) {
 		TotalResults: 10,
 		Users:        []User{{ID: "user-1"}},
 	}
-	mockSvc.On("GetUserList", mock.Anything, 10, 0, mock.Anything).Return(expectedResp, nil)
+	mockSvc.On("GetUserList", mock.Anything, 10, 0, mock.Anything, mock.Anything).Return(expectedResp, nil)
 
 	handler := newUserHandler(mockSvc)
 	req := httptest.NewRequest(http.MethodGet, "/users?limit=10&offset=0", nil)
@@ -373,7 +373,9 @@ func TestHandleUserListByPathRequest_Success(t *testing.T) {
 		TotalResults: 5,
 		Users:        []User{{ID: "user-path-1"}},
 	}
-	mockSvc.On("GetUsersByPath", mock.Anything, "root/engineering", 10, 0, mock.Anything).Return(expectedResp, nil)
+	mockSvc.On(
+		"GetUsersByPath", mock.Anything, "root/engineering", 10, 0, mock.Anything, mock.Anything,
+	).Return(expectedResp, nil)
 
 	handler := newUserHandler(mockSvc)
 	req := httptest.NewRequest(http.MethodGet, "/users/path/root/engineering?limit=10", nil)
@@ -440,7 +442,7 @@ func TestHandleUserListRequest_WithFilter(t *testing.T) {
 	mockSvc.On("GetUserList", mock.Anything, mock.Anything, mock.Anything,
 		mock.MatchedBy(func(m map[string]interface{}) bool {
 			return m["username"] == "alice"
-		})).Return(expectedResp, nil)
+		}), mock.Anything).Return(expectedResp, nil)
 
 	handler := newUserHandler(mockSvc)
 	req := httptest.NewRequest(http.MethodGet, "/users?filter=username%20eq%20%22alice%22", nil)
@@ -457,7 +459,7 @@ func TestHandleUserListRequest_WithFilter_Unquoted(t *testing.T) {
 	mockSvc.On("GetUserList", mock.Anything, mock.Anything, mock.Anything,
 		mock.MatchedBy(func(m map[string]interface{}) bool {
 			return m["age"] == int64(30)
-		})).Return(expectedResp, nil)
+		}), mock.Anything).Return(expectedResp, nil)
 
 	handler := newUserHandler(mockSvc)
 	req := httptest.NewRequest(http.MethodGet, "/users?filter=age%20eq%2030", nil)

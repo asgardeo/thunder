@@ -1546,3 +1546,191 @@ func (suite *GroupServiceTestSuite) TestGroupService_ValidateGroupIDs() {
 		})
 	}
 }
+
+func (suite *GroupServiceTestSuite) TestGroupService_AddGroupMembers() {
+	testCases := []struct {
+		name    string
+		groupID string
+		members []Member
+		setup   func(*groupStoreInterfaceMock, *usermock.UserServiceInterfaceMock)
+		wantErr *serviceerror.ServiceError
+	}{
+		{
+			name:    "missing group id",
+			groupID: "",
+			members: []Member{{ID: "usr-001", Type: MemberTypeUser}},
+			wantErr: &ErrorMissingGroupID,
+		},
+		{
+			name:    "empty members list",
+			groupID: "grp-001",
+			members: []Member{},
+			wantErr: &ErrorEmptyMembers,
+		},
+		{
+			name:    "group not found",
+			groupID: "grp-001",
+			members: []Member{{ID: "usr-001", Type: MemberTypeUser}},
+			setup: func(storeMock *groupStoreInterfaceMock, _ *usermock.UserServiceInterfaceMock) {
+				storeMock.On("GetGroup", mock.Anything, "grp-001").
+					Return(GroupDAO{}, ErrGroupNotFound).Once()
+			},
+			wantErr: &ErrorGroupNotFound,
+		},
+		{
+			name:    "invalid user member id",
+			groupID: "grp-001",
+			members: []Member{{ID: "usr-invalid", Type: MemberTypeUser}},
+			setup: func(storeMock *groupStoreInterfaceMock, userServiceMock *usermock.UserServiceInterfaceMock) {
+				storeMock.On("GetGroup", mock.Anything, "grp-001").
+					Return(GroupDAO{ID: "grp-001", Name: "test"}, nil).Once()
+				userServiceMock.On("ValidateUserIDs", mock.Anything, []string{"usr-invalid"}).
+					Return([]string{"usr-invalid"}, nil).Once()
+			},
+			wantErr: &ErrorInvalidUserMemberID,
+		},
+		{
+			name:    "store failure",
+			groupID: "grp-001",
+			members: []Member{{ID: "usr-001", Type: MemberTypeUser}},
+			setup: func(storeMock *groupStoreInterfaceMock, userServiceMock *usermock.UserServiceInterfaceMock) {
+				storeMock.On("GetGroup", mock.Anything, "grp-001").
+					Return(GroupDAO{ID: "grp-001", Name: "test"}, nil).Once()
+				userServiceMock.On("ValidateUserIDs", mock.Anything, []string{"usr-001"}).
+					Return([]string{}, nil).Once()
+				storeMock.On("ValidateGroupIDs", mock.Anything, mock.Anything).
+					Return([]string{}, nil).Once()
+				storeMock.On("AddGroupMembers", mock.Anything, "grp-001", mock.Anything).
+					Return(errors.New("db error")).Once()
+			},
+			wantErr: &ErrorInternalServerError,
+		},
+		{
+			name:    "success",
+			groupID: "grp-001",
+			members: []Member{{ID: "usr-001", Type: MemberTypeUser}},
+			setup: func(storeMock *groupStoreInterfaceMock, userServiceMock *usermock.UserServiceInterfaceMock) {
+				storeMock.On("GetGroup", mock.Anything, "grp-001").
+					Return(GroupDAO{ID: "grp-001", Name: "test"}, nil).Once()
+				userServiceMock.On("ValidateUserIDs", mock.Anything, []string{"usr-001"}).
+					Return([]string{}, nil).Once()
+				storeMock.On("ValidateGroupIDs", mock.Anything, mock.Anything).
+					Return([]string{}, nil).Once()
+				storeMock.On("AddGroupMembers", mock.Anything, "grp-001",
+					[]Member{{ID: "usr-001", Type: MemberTypeUser}}).
+					Return(nil).Once()
+			},
+			wantErr: nil,
+		},
+	}
+
+	for _, tc := range testCases {
+		tc := tc
+		suite.Run(tc.name, func() {
+			storeMock := newGroupStoreInterfaceMock(suite.T())
+			userServiceMock := usermock.NewUserServiceInterfaceMock(suite.T())
+
+			if tc.setup != nil {
+				tc.setup(storeMock, userServiceMock)
+			}
+
+			service := &groupService{
+				groupStore:    storeMock,
+				userService:   userServiceMock,
+				transactioner: &stubTransactioner{},
+			}
+
+			err := service.AddGroupMembers(context.Background(), tc.groupID, tc.members)
+
+			if tc.wantErr != nil {
+				suite.Require().NotNil(err)
+				suite.Require().Equal(*tc.wantErr, *err)
+			} else {
+				suite.Require().Nil(err)
+			}
+		})
+	}
+}
+
+func (suite *GroupServiceTestSuite) TestGroupService_RemoveGroupMembers() {
+	testCases := []struct {
+		name    string
+		groupID string
+		members []Member
+		setup   func(*groupStoreInterfaceMock)
+		wantErr *serviceerror.ServiceError
+	}{
+		{
+			name:    "missing group id",
+			groupID: "",
+			members: []Member{{ID: "usr-001", Type: MemberTypeUser}},
+			wantErr: &ErrorMissingGroupID,
+		},
+		{
+			name:    "empty members list",
+			groupID: "grp-001",
+			members: []Member{},
+			wantErr: &ErrorEmptyMembers,
+		},
+		{
+			name:    "group not found",
+			groupID: "grp-001",
+			members: []Member{{ID: "usr-001", Type: MemberTypeUser}},
+			setup: func(storeMock *groupStoreInterfaceMock) {
+				storeMock.On("GetGroup", mock.Anything, "grp-001").
+					Return(GroupDAO{}, ErrGroupNotFound).Once()
+			},
+			wantErr: &ErrorGroupNotFound,
+		},
+		{
+			name:    "store failure",
+			groupID: "grp-001",
+			members: []Member{{ID: "usr-001", Type: MemberTypeUser}},
+			setup: func(storeMock *groupStoreInterfaceMock) {
+				storeMock.On("GetGroup", mock.Anything, "grp-001").
+					Return(GroupDAO{ID: "grp-001", Name: "test"}, nil).Once()
+				storeMock.On("RemoveGroupMembers", mock.Anything, "grp-001", mock.Anything).
+					Return(errors.New("db error")).Once()
+			},
+			wantErr: &ErrorInternalServerError,
+		},
+		{
+			name:    "success",
+			groupID: "grp-001",
+			members: []Member{{ID: "usr-001", Type: MemberTypeUser}},
+			setup: func(storeMock *groupStoreInterfaceMock) {
+				storeMock.On("GetGroup", mock.Anything, "grp-001").
+					Return(GroupDAO{ID: "grp-001", Name: "test"}, nil).Once()
+				storeMock.On("RemoveGroupMembers", mock.Anything, "grp-001",
+					[]Member{{ID: "usr-001", Type: MemberTypeUser}}).
+					Return(nil).Once()
+			},
+			wantErr: nil,
+		},
+	}
+
+	for _, tc := range testCases {
+		tc := tc
+		suite.Run(tc.name, func() {
+			storeMock := newGroupStoreInterfaceMock(suite.T())
+
+			if tc.setup != nil {
+				tc.setup(storeMock)
+			}
+
+			service := &groupService{
+				groupStore:    storeMock,
+				transactioner: &stubTransactioner{},
+			}
+
+			err := service.RemoveGroupMembers(context.Background(), tc.groupID, tc.members)
+
+			if tc.wantErr != nil {
+				suite.Require().NotNil(err)
+				suite.Require().Equal(*tc.wantErr, *err)
+			} else {
+				suite.Require().Nil(err)
+			}
+		})
+	}
+}

@@ -442,7 +442,7 @@ func (suite *UserStoreTestSuite) TestGetUserList() {
 	suite.mockDB.On("QueryContext", mock.Anything, QueryGetUserList, limit, offset, testDeploymentID).
 		Return([]map[string]interface{}{row}, nil)
 
-	users, err := suite.store.GetUserList(context.Background(), limit, offset, nil)
+	users, err := suite.store.GetUserList(context.Background(), limit, offset, nil, "")
 	suite.NoError(err)
 	suite.Len(users, 1)
 	suite.Equal(svcTestUserID1, users[0].ID)
@@ -452,7 +452,7 @@ func (suite *UserStoreTestSuite) TestGetUserListCount() {
 	suite.mockDB.On("QueryContext", mock.Anything, QueryGetUserCount, testDeploymentID).
 		Return([]map[string]interface{}{{"total": int64(5)}}, nil)
 
-	count, err := suite.store.GetUserListCount(context.Background(), nil)
+	count, err := suite.store.GetUserListCount(context.Background(), nil, "")
 	suite.NoError(err)
 	suite.Equal(5, count)
 }

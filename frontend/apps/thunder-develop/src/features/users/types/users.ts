@@ -56,6 +56,7 @@ export interface UserListParams {
   limit?: number;
   offset?: number;
   filter?: string;
+  excludeGroupId?: string;
 }
 
 /**

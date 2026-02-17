@@ -427,6 +427,138 @@ paths:
                 type: string
               example: "Internal server error"
 
+  /groups/{id}/members/add:
+    post:
+      tags:
+        - groups
+      summary: Add members to a group
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MembersRequest'
+            example:
+              members:
+                - type: "user"
+                  id: "7a4b1f8e-5c69-4b60-9232-2b0aaf65ef3c"
+                - type: "user"
+                  id: "9f1e47d3-0347-4464-9f02-e0bfae02e896"
+      responses:
+        "204":
+          description: Members added successfully
+        "400":
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                invalid-request-format:
+                  summary: Invalid request format
+                  value:
+                    code: "GRP-1001"
+                    message: "Invalid request format"
+                    description: "The request body is malformed or contains invalid data"
+                empty-members:
+                  summary: Empty members list
+                  value:
+                    code: "GRP-1013"
+                    message: "Empty members list"
+                    description: "The members list cannot be empty"
+                invalid-member-id:
+                  summary: Invalid member ID
+                  value:
+                    code: "GRP-1007"
+                    message: "Invalid user member ID"
+                    description: "One or more user member IDs in the request do not exist"
+        "404":
+          description: Group not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: "GRP-1003"
+                message: "Group not found"
+                description: "The group with the specified id does not exist"
+        "500":
+          description: Internal server error
+          content:
+            text/plain:
+              schema:
+                type: string
+              example: "Internal server error"
+
+  /groups/{id}/members/remove:
+    post:
+      tags:
+        - groups
+      summary: Remove members from a group
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MembersRequest'
+            example:
+              members:
+                - type: "user"
+                  id: "7a4b1f8e-5c69-4b60-9232-2b0aaf65ef3c"
+      responses:
+        "204":
+          description: Members removed successfully
+        "400":
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                invalid-request-format:
+                  summary: Invalid request format
+                  value:
+                    code: "GRP-1001"
+                    message: "Invalid request format"
+                    description: "The request body is malformed or contains invalid data"
+                empty-members:
+                  summary: Empty members list
+                  value:
+                    code: "GRP-1013"
+                    message: "Empty members list"
+                    description: "The members list cannot be empty"
+        "404":
+          description: Group not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: "GRP-1003"
+                message: "Group not found"
+                description: "The group with the specified id does not exist"
+        "500":
+          description: Internal server error
+          content:
+            text/plain:
+              schema:
+                type: string
+              example: "Internal server error"
+
   /groups/tree/{path}:
     get:
       tags:
@@ -787,6 +919,17 @@ components:
         rel:
           type: string
           example: "next"
+
+    MembersRequest:
+      type: object
+      required: [members]
+      properties:
+        members:
+          type: array
+          description: "List of members to add or remove"
+          minItems: 1
+          items:
+            $ref: '#/components/schemas/Member'
 
     Error:
       type: object

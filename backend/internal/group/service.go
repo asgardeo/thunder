@@ -50,6 +50,8 @@ type GroupServiceInterface interface {
 	GetGroupMembers(ctx context.Context, groupID string, limit, offset int) (
 		*MemberListResponse, *serviceerror.ServiceError)
 	ValidateGroupIDs(ctx context.Context, groupIDs []string) *serviceerror.ServiceError
+	AddGroupMembers(ctx context.Context, groupID string, members []Member) *serviceerror.ServiceError
+	RemoveGroupMembers(ctx context.Context, groupID string, members []Member) *serviceerror.ServiceError
 }
 
 // groupService is the default implementation of the GroupServiceInterface.
@@ -506,6 +508,99 @@ func (gs *groupService) GetGroupMembers(ctx context.Context, groupID string, lim
 	}
 
 	return response, nil
+}
+
+// AddGroupMembers adds members to a group.
+func (gs *groupService) AddGroupMembers(
+	ctx context.Context, groupID string, members []Member) *serviceerror.ServiceError {
+	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, loggerComponentName))
+	logger.Debug("Adding members to group", log.String("id", groupID))
+
+	if groupID == "" {
+		return &ErrorMissingGroupID
+	}
+
+	if len(members) == 0 {
+		return &ErrorEmptyMembers
+	}
+
+	_, err := gs.groupStore.GetGroup(ctx, groupID)
+	if err != nil {
+		if errors.Is(err, ErrGroupNotFound) {
+			logger.Debug("Group not found", log.String("id", groupID))
+			return &ErrorGroupNotFound
+		}
+		logger.Error("Failed to check group existence", log.String("id", groupID), log.Error(err))
+		return &ErrorInternalServerError
+	}
+
+	var userIDs []string
+	var groupIDs []string
+	for _, member := range members {
+		switch member.Type {
+		case MemberTypeUser:
+			userIDs = append(userIDs, member.ID)
+		case MemberTypeGroup:
+			groupIDs = append(groupIDs, member.ID)
+		}
+	}
+
+	if svcErr := gs.validateUserIDs(ctx, userIDs); svcErr != nil {
+		return svcErr
+	}
+
+	if svcErr := gs.ValidateGroupIDs(ctx, groupIDs); svcErr != nil {
+		return svcErr
+	}
+
+	err = gs.transactioner.Transact(ctx, func(txCtx context.Context) error {
+		return gs.groupStore.AddGroupMembers(txCtx, groupID, members)
+	})
+
+	if err != nil {
+		logger.Error("Failed to add members to group", log.String("id", groupID), log.Error(err))
+		return &ErrorInternalServerError
+	}
+
+	logger.Debug("Successfully added members to group", log.String("id", groupID))
+	return nil
+}
+
+// RemoveGroupMembers removes members from a group.
+func (gs *groupService) RemoveGroupMembers(
+	ctx context.Context, groupID string, members []Member) *serviceerror.ServiceError {
+	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, loggerComponentName))
+	logger.Debug("Removing members from group", log.String("id", groupID))
+
+	if groupID == "" {
+		return &ErrorMissingGroupID
+	}
+
+	if len(members) == 0 {
+		return &ErrorEmptyMembers
+	}
+
+	_, err := gs.groupStore.GetGroup(ctx, groupID)
+	if err != nil {
+		if errors.Is(err, ErrGroupNotFound) {
+			logger.Debug("Group not found", log.String("id", groupID))
+			return &ErrorGroupNotFound
+		}
+		logger.Error("Failed to check group existence", log.String("id", groupID), log.Error(err))
+		return &ErrorInternalServerError
+	}
+
+	err = gs.transactioner.Transact(ctx, func(txCtx context.Context) error {
+		return gs.groupStore.RemoveGroupMembers(txCtx, groupID, members)
+	})
+
+	if err != nil {
+		logger.Error("Failed to remove members from group", log.String("id", groupID), log.Error(err))
+		return &ErrorInternalServerError
+	}
+
+	logger.Debug("Successfully removed members from group", log.String("id", groupID))
+	return nil
 }
 
 // validateCreateGroupRequest validates the create group request.

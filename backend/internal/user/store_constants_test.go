@@ -283,7 +283,7 @@ func (suite *StoreConstantsTestSuite) TestBuildUserListQuery_MultipleFilters() {
 		"username": "user1",
 		"email":    "user1@example.com",
 	}
-	query, args, err := buildUserListQuery(filters, 10, 0, "test-id")
+	query, args, err := buildUserListQuery(filters, 10, 0, "test-id", "")
 	suite.NoError(err)
 	suite.Contains(query.PostgresQuery, "WHERE")
 	suite.Contains(query.PostgresQuery, "AND")
@@ -292,7 +292,7 @@ func (suite *StoreConstantsTestSuite) TestBuildUserListQuery_MultipleFilters() {
 
 func (suite *StoreConstantsTestSuite) TestBuildUserCountQuery() {
 	filters := map[string]interface{}{"username": "user1"}
-	query, args, err := buildUserCountQuery(filters, "test-id")
+	query, args, err := buildUserCountQuery(filters, "test-id", "")
 	suite.NoError(err)
 	suite.Contains(query.PostgresQuery, "SELECT COUNT")
 	suite.Contains(query.PostgresQuery, "WHERE")

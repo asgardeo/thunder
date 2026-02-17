@@ -60,6 +60,7 @@ const translations = {
     'actions.upload': 'Upload',
     'actions.export': 'Export',
     'actions.import': 'Import',
+    'actions.openActionsMenu': 'Open actions menu',
     'actions.view': 'View',
     'actions.details': 'Details',
     'actions.settings': 'Settings',
@@ -314,6 +315,7 @@ const translations = {
     'pages.users': 'Users',
     'pages.userTypes': 'User Types',
     'pages.organizationUnits': 'Organization Units',
+    'pages.groups': 'Groups',
     'pages.integrations': 'Integrations',
     'pages.applications': 'Applications',
     'pages.dashboard': 'Dashboard',
@@ -406,6 +408,9 @@ const translations = {
   // Organization Units namespace - Organization unit management feature translations
   // ============================================================================
   organizationUnits: {
+    // Tree picker (shared component)
+    'treePicker.empty': 'No organization units available',
+
     // Listing page
     'listing.title': 'Organization Units (OU)',
     'listing.subtitle': 'Manage organization units and hierarchies',
@@ -507,6 +512,83 @@ const translations = {
     'edit.customization.labels.theme': 'Theme',
     'edit.customization.theme.placeholder': 'Select a theme',
     'edit.customization.theme.hint': 'The theme applied to this organization unit.',
+  },
+
+  // ============================================================================
+  // Groups namespace - Group management feature translations
+  // ============================================================================
+  groups: {
+    // List page
+    'listing.title': 'Groups',
+    'listing.subtitle': 'Manage groups and their members across organization units',
+    'listing.addGroup': 'Add Group',
+    'listing.search.placeholder': 'Search groups...',
+    'listing.columns.name': 'Name',
+    'listing.columns.description': 'Description',
+    'listing.columns.organizationUnit': 'Organization Unit',
+    'listing.columns.actions': 'Actions',
+
+    // Create page
+    'create.title': 'Create Group',
+    'create.heading': 'Create a new group',
+    'create.error': 'Failed to create group. Please try again.',
+    'create.form.name.label': 'Group Name',
+    'create.form.name.placeholder': 'Enter group name',
+    'create.form.name.required': 'Group name is required',
+    'create.form.description.label': 'Description',
+    'create.form.description.placeholder': 'Enter group description',
+    'create.form.organizationUnit.label': 'Organization Unit',
+    'create.form.organizationUnit.placeholder': 'Select an organization unit',
+    'create.form.organizationUnit.required': 'Organization unit is required',
+
+    // Edit page
+    'edit.page.back': 'Back to Groups',
+    'edit.page.error': 'Failed to load group',
+    'edit.page.notFound': 'Group not found',
+    'edit.page.description.placeholder': 'Add a description...',
+    'edit.page.description.empty': 'No description',
+    'edit.page.tabs.general': 'General',
+    'edit.page.tabs.members': 'Members',
+    'edit.page.unsavedChanges': 'You have unsaved changes',
+    'edit.page.reset': 'Reset',
+    'edit.page.save': 'Save Changes',
+    'edit.page.saving': 'Saving...',
+
+    // General settings
+    'edit.general.sections.quickCopy.title': 'Quick Copy',
+    'edit.general.sections.quickCopy.description': 'Copy group identifiers for quick reference.',
+    'edit.general.sections.quickCopy.groupId': 'Group ID',
+    'edit.general.sections.quickCopy.copyGroupId': 'Copy group ID',
+    'edit.general.sections.quickCopy.copyOrganizationUnitId': 'Copy organization unit ID',
+    'edit.general.sections.organizationUnit.title': 'Organization Unit',
+    'edit.general.sections.organizationUnit.description': 'The organization unit this group belongs to.',
+    'edit.general.sections.dangerZone.title': 'Danger Zone',
+    'edit.general.sections.dangerZone.description': 'Actions in this section are irreversible. Proceed with caution.',
+    'edit.general.sections.dangerZone.deleteGroup': 'Delete this group',
+    'edit.general.sections.dangerZone.deleteGroupDescription':
+      'Deleting this group is permanent and cannot be undone.',
+
+    // Members settings
+    'edit.members.sections.manage.title': 'Members',
+    'edit.members.sections.manage.description': 'Manage the members of this group',
+    'edit.members.sections.manage.listing.columns.id': 'Member ID',
+    'edit.members.sections.manage.listing.columns.type': 'Type',
+    'edit.members.sections.manage.addMember': 'Add Member',
+    'edit.members.sections.manage.noMembers': 'No members in this group',
+
+    // Add member dialog
+    'addMember.title': 'Add Member',
+    'addMember.search.placeholder': 'Search users...',
+    'addMember.noResults': 'No users found',
+    'addMember.add': 'Add Selected',
+    'addMember.error': 'Failed to add member. Please try again.',
+    'removeMember.error': 'Failed to remove member. Please try again.',
+
+    // Delete dialog
+    'delete.title': 'Delete Group',
+    'delete.message': 'Are you sure you want to delete this group?',
+    'delete.disclaimer':
+      'This action cannot be undone. All group associations will be permanently removed.',
   },
 
   // ============================================================================
@@ -1056,6 +1138,10 @@ const translations = {
     'edit.token.idTokenUserAttributes.title': 'ID Token User Attributes',
     'edit.token.idTokenUserAttributes.description':
       'Configure user attributes that will be included in the ID token. You can add custom attributes from user profiles and define scope-based attributes.',
+    'edit.token.userInfoAttributes.title': 'User Info Attributes',
+    'edit.token.userInfoAttributes.description':
+      'Configure the user attributes to include in the User Info response.',
+    'edit.token.inheritFromIdToken': 'Use same attributes as ID Token',
     'edit.token.tokenConfiguration.title': 'Token Configuration',
     'edit.token.tokenConfiguration.description':
       'Configure token validity and issuer settings that apply to all issued tokens.',
