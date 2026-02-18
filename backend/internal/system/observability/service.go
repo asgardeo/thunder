@@ -23,11 +23,11 @@ package observability
 import (
 	"fmt"
 
-	"github.com/asgardeo/thunder/internal/observability/event"
-	"github.com/asgardeo/thunder/internal/observability/publisher"
-	"github.com/asgardeo/thunder/internal/observability/subscriber"
 	"github.com/asgardeo/thunder/internal/system/config"
 	"github.com/asgardeo/thunder/internal/system/log"
+	"github.com/asgardeo/thunder/internal/system/observability/event"
+	"github.com/asgardeo/thunder/internal/system/observability/publisher"
+	"github.com/asgardeo/thunder/internal/system/observability/subscriber"
 )
 
 const loggerComponentName = "ObservabilityService"

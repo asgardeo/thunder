@@ -25,8 +25,8 @@ import (
 	"github.com/asgardeo/thunder/internal/oauth/oauth2/clientauth"
 	"github.com/asgardeo/thunder/internal/oauth/oauth2/granthandlers"
 	"github.com/asgardeo/thunder/internal/oauth/scope"
-	"github.com/asgardeo/thunder/internal/observability"
 	"github.com/asgardeo/thunder/internal/system/middleware"
+	"github.com/asgardeo/thunder/internal/system/observability"
 )
 
 // Initialize initializes the token handler and registers its routes.
