@@ -115,9 +115,29 @@ var (
 			`WHERE OU_ID = $1 AND DEPLOYMENT_ID = $4 ORDER BY NAME LIMIT $2 OFFSET $3`,
 	}
 
+	// QueryGetGroupMemberIDsByType is the query to get all member IDs of a specific type for a group.
+	QueryGetGroupMemberIDsByType = dbmodel.DBQuery{
+		ID: "GRQ-GROUP_MGT-16",
+		Query: `SELECT MEMBER_ID FROM GROUP_MEMBER_REFERENCE ` +
+			`WHERE GROUP_ID = $1 AND MEMBER_TYPE = $2 AND DEPLOYMENT_ID = $3`,
+	}
+
+	// QueryGetGroupListCountExcluding is the query to get total count of groups excluding a specific group.
+	QueryGetGroupListCountExcluding = dbmodel.DBQuery{
+		ID:    "GRQ-GROUP_MGT-17",
+		Query: `SELECT COUNT(*) as total FROM "GROUP" WHERE GROUP_ID != $1 AND DEPLOYMENT_ID = $2`,
+	}
+
+	// QueryGetGroupListExcluding is the query to get groups with pagination excluding a specific group.
+	QueryGetGroupListExcluding = dbmodel.DBQuery{
+		ID: "GRQ-GROUP_MGT-18",
+		Query: `SELECT GROUP_ID, OU_ID, NAME, DESCRIPTION FROM "GROUP" ` +
+			`WHERE GROUP_ID != $1 AND DEPLOYMENT_ID = $4 ORDER BY NAME LIMIT $2 OFFSET $3`,
+	}
+
 	// QueryDeleteGroupMember is the query to delete a specific member from a group.
 	QueryDeleteGroupMember = dbmodel.DBQuery{
-		ID: "GRQ-GROUP_MGT-16",
+		ID: "GRQ-GROUP_MGT-19",
 		Query: `DELETE FROM GROUP_MEMBER_REFERENCE ` +
 			`WHERE GROUP_ID = $1 AND MEMBER_TYPE = $2 AND MEMBER_ID = $3 AND DEPLOYMENT_ID = $4`,
 	}

@@ -564,6 +564,103 @@ paths:
                 type: string
               example: "Internal server error"
 
+  /groups/{id}/members/eligible:
+    get:
+      tags:
+        - groups
+      summary: List eligible members for a group with assignment status
+      description: >
+        Returns a paginated list of entities (users or groups) that are eligible
+        for membership in the specified group. Each entity includes an `assigned`
+        boolean flag indicating whether it is already a member of the group.
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - in: query
+          name: type
+          required: true
+          description: The type of member entities to return.
+          schema:
+            type: string
+            enum:
+              - user
+              - group
+        - $ref: '#/components/parameters/limitQueryParam'
+        - $ref: '#/components/parameters/offsetQueryParam'
+      responses:
+        "200":
+          description: List of eligible members with assignment status
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EligibleMemberListResponse'
+              example:
+                totalResults: 50
+                startIndex: 1
+                count: 10
+                members:
+                  - id: "7a4b1f8e-5c69-4b60-9232-2b0aaf65ef3c"
+                    type: "user"
+                    assigned: true
+                  - id: "9f1e47d3-0347-4464-9f02-e0bfae02e896"
+                    type: "user"
+                    assigned: false
+                links:
+                  - href: "groups/3fa85f64-5717-4562-b3fc-2c963f66afa6/members/eligible?type=user&offset=10&limit=10"
+                    rel: "next"
+        "400":
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                missing-member-type:
+                  summary: Missing member type
+                  value:
+                    code: "GRP-1015"
+                    message: "Missing member type"
+                    description: "The type query parameter is required"
+                invalid-member-type:
+                  summary: Invalid member type
+                  value:
+                    code: "GRP-1014"
+                    message: "Invalid member type"
+                    description: "The type parameter must be 'user' or 'group'"
+                invalid-limit:
+                  summary: Invalid limit parameter
+                  value:
+                    code: "GRP-1011"
+                    message: "Invalid limit parameter"
+                    description: "The limit parameter must be a positive integer"
+                invalid-offset:
+                  summary: Invalid offset parameter
+                  value:
+                    code: "GRP-1012"
+                    message: "Invalid offset parameter"
+                    description: "The offset parameter must be a non-negative integer"
+        "404":
+          description: Group not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: "GRP-1003"
+                message: "Group not found"
+                description: "The group with the specified id does not exist"
+        "500":
+          description: Internal server error
+          content:
+            text/plain:
+              schema:
+                type: string
+              example: "Internal server error"
+
   /groups/tree/{path}:
     get:
       tags:
@@ -900,6 +997,46 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/Member'
+        links:
+          type: array
+          items:
+            $ref: '#/components/schemas/Link'
+
+    EligibleMember:
+      type: object
+      required: [id, type, assigned]
+      properties:
+        id:
+          type: string
+          format: uuid
+        type:
+          type: string
+          enum:
+            - user
+            - group
+        assigned:
+          type: boolean
+          description: "Whether this entity is already a member of the group"
+
+    EligibleMemberListResponse:
+      type: object
+      properties:
+        totalResults:
+          type: integer
+          description: "Number of results that match the listing operation."
+          example: 50
+        startIndex:
+          type: integer
+          description: "Index of the first element of the page, which will be equal to offset + 1."
+          example: 1
+        count:
+          type: integer
+          description: "Number of elements in the returned page."
+          example: 10
+        members:
+          type: array
+          items:
+            $ref: '#/components/schemas/EligibleMember'
         links:
           type: array
           items:

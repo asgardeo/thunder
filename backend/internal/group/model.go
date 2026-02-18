@@ -112,6 +112,22 @@ type MemberListResponse struct {
 	Links        []Link   `json:"links"`
 }
 
+// EligibleMember represents an entity eligible for group membership with assignment status.
+type EligibleMember struct {
+	ID       string     `json:"id"`
+	Type     MemberType `json:"type"`
+	Assigned bool       `json:"assigned"`
+}
+
+// EligibleMemberListResponse represents the paginated response for eligible members.
+type EligibleMemberListResponse struct {
+	TotalResults int              `json:"totalResults"`
+	StartIndex   int              `json:"startIndex"`
+	Count        int              `json:"count"`
+	Members      []EligibleMember `json:"members"`
+	Links        []Link           `json:"links"`
+}
+
 // CreateGroupByPathRequest represents the request body for creating a group under a specific OU path.
 type CreateGroupByPathRequest struct {
 	Name        string   `json:"name"`

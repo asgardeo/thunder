@@ -103,6 +103,20 @@ var (
 		Error:            "Empty members list",
 		ErrorDescription: "The members list cannot be empty",
 	}
+	// ErrorInvalidMemberType is the error returned when the member type parameter is invalid.
+	ErrorInvalidMemberType = serviceerror.ServiceError{
+		Type:             serviceerror.ClientErrorType,
+		Code:             "GRP-1014",
+		Error:            "Invalid member type",
+		ErrorDescription: "The type parameter must be 'user' or 'group'",
+	}
+	// ErrorMissingMemberType is the error returned when the member type parameter is missing.
+	ErrorMissingMemberType = serviceerror.ServiceError{
+		Type:             serviceerror.ClientErrorType,
+		Code:             "GRP-1015",
+		Error:            "Missing member type",
+		ErrorDescription: "The type query parameter is required",
+	}
 )
 
 // Server errors for group management operations.

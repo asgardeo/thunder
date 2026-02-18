@@ -546,6 +546,152 @@ func (_c *groupStoreInterfaceMock_GetGroupListCount_Call) RunAndReturn(run func(
 	return _c
 }
 
+// GetGroupListCountExcluding provides a mock function for the type groupStoreInterfaceMock
+func (_mock *groupStoreInterfaceMock) GetGroupListCountExcluding(ctx context.Context, excludeGroupID string) (int, error) {
+	ret := _mock.Called(ctx, excludeGroupID)
+
+	if len(ret) == 0 {
+		panic("no return value specified for GetGroupListCountExcluding")
+	}
+
+	var r0 int
+	var r1 error
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string) (int, error)); ok {
+		return returnFunc(ctx, excludeGroupID)
+	}
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string) int); ok {
+		r0 = returnFunc(ctx, excludeGroupID)
+	} else {
+		r0 = ret.Get(0).(int)
+	}
+	if returnFunc, ok := ret.Get(1).(func(context.Context, string) error); ok {
+		r1 = returnFunc(ctx, excludeGroupID)
+	} else {
+		r1 = ret.Error(1)
+	}
+	return r0, r1
+}
+
+// groupStoreInterfaceMock_GetGroupListCountExcluding_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'GetGroupListCountExcluding'
+type groupStoreInterfaceMock_GetGroupListCountExcluding_Call struct {
+	*mock.Call
+}
+
+// GetGroupListCountExcluding is a helper method to define mock.On call
+//   - ctx context.Context
+//   - excludeGroupID string
+func (_e *groupStoreInterfaceMock_Expecter) GetGroupListCountExcluding(ctx interface{}, excludeGroupID interface{}) *groupStoreInterfaceMock_GetGroupListCountExcluding_Call {
+	return &groupStoreInterfaceMock_GetGroupListCountExcluding_Call{Call: _e.mock.On("GetGroupListCountExcluding", ctx, excludeGroupID)}
+}
+
+func (_c *groupStoreInterfaceMock_GetGroupListCountExcluding_Call) Run(run func(ctx context.Context, excludeGroupID string)) *groupStoreInterfaceMock_GetGroupListCountExcluding_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 context.Context
+		if args[0] != nil {
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 string
+		if args[1] != nil {
+			arg1 = args[1].(string)
+		}
+		run(
+			arg0,
+			arg1,
+		)
+	})
+	return _c
+}
+
+func (_c *groupStoreInterfaceMock_GetGroupListCountExcluding_Call) Return(n int, err error) *groupStoreInterfaceMock_GetGroupListCountExcluding_Call {
+	_c.Call.Return(n, err)
+	return _c
+}
+
+func (_c *groupStoreInterfaceMock_GetGroupListCountExcluding_Call) RunAndReturn(run func(ctx context.Context, excludeGroupID string) (int, error)) *groupStoreInterfaceMock_GetGroupListCountExcluding_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
+// GetGroupListExcluding provides a mock function for the type groupStoreInterfaceMock
+func (_mock *groupStoreInterfaceMock) GetGroupListExcluding(ctx context.Context, excludeGroupID string, limit int, offset int) ([]GroupBasicDAO, error) {
+	ret := _mock.Called(ctx, excludeGroupID, limit, offset)
+
+	if len(ret) == 0 {
+		panic("no return value specified for GetGroupListExcluding")
+	}
+
+	var r0 []GroupBasicDAO
+	var r1 error
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string, int, int) ([]GroupBasicDAO, error)); ok {
+		return returnFunc(ctx, excludeGroupID, limit, offset)
+	}
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string, int, int) []GroupBasicDAO); ok {
+		r0 = returnFunc(ctx, excludeGroupID, limit, offset)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).([]GroupBasicDAO)
+		}
+	}
+	if returnFunc, ok := ret.Get(1).(func(context.Context, string, int, int) error); ok {
+		r1 = returnFunc(ctx, excludeGroupID, limit, offset)
+	} else {
+		r1 = ret.Error(1)
+	}
+	return r0, r1
+}
+
+// groupStoreInterfaceMock_GetGroupListExcluding_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'GetGroupListExcluding'
+type groupStoreInterfaceMock_GetGroupListExcluding_Call struct {
+	*mock.Call
+}
+
+// GetGroupListExcluding is a helper method to define mock.On call
+//   - ctx context.Context
+//   - excludeGroupID string
+//   - limit int
+//   - offset int
+func (_e *groupStoreInterfaceMock_Expecter) GetGroupListExcluding(ctx interface{}, excludeGroupID interface{}, limit interface{}, offset interface{}) *groupStoreInterfaceMock_GetGroupListExcluding_Call {
+	return &groupStoreInterfaceMock_GetGroupListExcluding_Call{Call: _e.mock.On("GetGroupListExcluding", ctx, excludeGroupID, limit, offset)}
+}
+
+func (_c *groupStoreInterfaceMock_GetGroupListExcluding_Call) Run(run func(ctx context.Context, excludeGroupID string, limit int, offset int)) *groupStoreInterfaceMock_GetGroupListExcluding_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 context.Context
+		if args[0] != nil {
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 string
+		if args[1] != nil {
+			arg1 = args[1].(string)
+		}
+		var arg2 int
+		if args[2] != nil {
+			arg2 = args[2].(int)
+		}
+		var arg3 int
+		if args[3] != nil {
+			arg3 = args[3].(int)
+		}
+		run(
+			arg0,
+			arg1,
+			arg2,
+			arg3,
+		)
+	})
+	return _c
+}
+
+func (_c *groupStoreInterfaceMock_GetGroupListExcluding_Call) Return(groupBasicDAOs []GroupBasicDAO, err error) *groupStoreInterfaceMock_GetGroupListExcluding_Call {
+	_c.Call.Return(groupBasicDAOs, err)
+	return _c
+}
+
+func (_c *groupStoreInterfaceMock_GetGroupListExcluding_Call) RunAndReturn(run func(ctx context.Context, excludeGroupID string, limit int, offset int) ([]GroupBasicDAO, error)) *groupStoreInterfaceMock_GetGroupListExcluding_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
 // GetGroupMemberCount provides a mock function for the type groupStoreInterfaceMock
 func (_mock *groupStoreInterfaceMock) GetGroupMemberCount(ctx context.Context, groupID string) (int, error) {
 	ret := _mock.Called(ctx, groupID)
@@ -608,6 +754,80 @@ func (_c *groupStoreInterfaceMock_GetGroupMemberCount_Call) Return(n int, err er
 }
 
 func (_c *groupStoreInterfaceMock_GetGroupMemberCount_Call) RunAndReturn(run func(ctx context.Context, groupID string) (int, error)) *groupStoreInterfaceMock_GetGroupMemberCount_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
+// GetGroupMemberIDsByType provides a mock function for the type groupStoreInterfaceMock
+func (_mock *groupStoreInterfaceMock) GetGroupMemberIDsByType(ctx context.Context, groupID string, memberType MemberType) ([]string, error) {
+	ret := _mock.Called(ctx, groupID, memberType)
+
+	if len(ret) == 0 {
+		panic("no return value specified for GetGroupMemberIDsByType")
+	}
+
+	var r0 []string
+	var r1 error
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string, MemberType) ([]string, error)); ok {
+		return returnFunc(ctx, groupID, memberType)
+	}
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string, MemberType) []string); ok {
+		r0 = returnFunc(ctx, groupID, memberType)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).([]string)
+		}
+	}
+	if returnFunc, ok := ret.Get(1).(func(context.Context, string, MemberType) error); ok {
+		r1 = returnFunc(ctx, groupID, memberType)
+	} else {
+		r1 = ret.Error(1)
+	}
+	return r0, r1
+}
+
+// groupStoreInterfaceMock_GetGroupMemberIDsByType_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'GetGroupMemberIDsByType'
+type groupStoreInterfaceMock_GetGroupMemberIDsByType_Call struct {
+	*mock.Call
+}
+
+// GetGroupMemberIDsByType is a helper method to define mock.On call
+//   - ctx context.Context
+//   - groupID string
+//   - memberType MemberType
+func (_e *groupStoreInterfaceMock_Expecter) GetGroupMemberIDsByType(ctx interface{}, groupID interface{}, memberType interface{}) *groupStoreInterfaceMock_GetGroupMemberIDsByType_Call {
+	return &groupStoreInterfaceMock_GetGroupMemberIDsByType_Call{Call: _e.mock.On("GetGroupMemberIDsByType", ctx, groupID, memberType)}
+}
+
+func (_c *groupStoreInterfaceMock_GetGroupMemberIDsByType_Call) Run(run func(ctx context.Context, groupID string, memberType MemberType)) *groupStoreInterfaceMock_GetGroupMemberIDsByType_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 context.Context
+		if args[0] != nil {
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 string
+		if args[1] != nil {
+			arg1 = args[1].(string)
+		}
+		var arg2 MemberType
+		if args[2] != nil {
+			arg2 = args[2].(MemberType)
+		}
+		run(
+			arg0,
+			arg1,
+			arg2,
+		)
+	})
+	return _c
+}
+
+func (_c *groupStoreInterfaceMock_GetGroupMemberIDsByType_Call) Return(strings []string, err error) *groupStoreInterfaceMock_GetGroupMemberIDsByType_Call {
+	_c.Call.Return(strings, err)
+	return _c
+}
+
+func (_c *groupStoreInterfaceMock_GetGroupMemberIDsByType_Call) RunAndReturn(run func(ctx context.Context, groupID string, memberType MemberType) ([]string, error)) *groupStoreInterfaceMock_GetGroupMemberIDsByType_Call {
 	_c.Call.Return(run)
 	return _c
 }

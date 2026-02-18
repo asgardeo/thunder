@@ -320,6 +320,94 @@ func (_c *GroupServiceInterfaceMock_DeleteGroup_Call) RunAndReturn(run func(ctx 
 	return _c
 }
 
+// GetEligibleMembers provides a mock function for the type GroupServiceInterfaceMock
+func (_mock *GroupServiceInterfaceMock) GetEligibleMembers(ctx context.Context, groupID string, memberType group.MemberType, limit int, offset int) (*group.EligibleMemberListResponse, *serviceerror.ServiceError) {
+	ret := _mock.Called(ctx, groupID, memberType, limit, offset)
+
+	if len(ret) == 0 {
+		panic("no return value specified for GetEligibleMembers")
+	}
+
+	var r0 *group.EligibleMemberListResponse
+	var r1 *serviceerror.ServiceError
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string, group.MemberType, int, int) (*group.EligibleMemberListResponse, *serviceerror.ServiceError)); ok {
+		return returnFunc(ctx, groupID, memberType, limit, offset)
+	}
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string, group.MemberType, int, int) *group.EligibleMemberListResponse); ok {
+		r0 = returnFunc(ctx, groupID, memberType, limit, offset)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(*group.EligibleMemberListResponse)
+		}
+	}
+	if returnFunc, ok := ret.Get(1).(func(context.Context, string, group.MemberType, int, int) *serviceerror.ServiceError); ok {
+		r1 = returnFunc(ctx, groupID, memberType, limit, offset)
+	} else {
+		if ret.Get(1) != nil {
+			r1 = ret.Get(1).(*serviceerror.ServiceError)
+		}
+	}
+	return r0, r1
+}
+
+// GroupServiceInterfaceMock_GetEligibleMembers_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'GetEligibleMembers'
+type GroupServiceInterfaceMock_GetEligibleMembers_Call struct {
+	*mock.Call
+}
+
+// GetEligibleMembers is a helper method to define mock.On call
+//   - ctx context.Context
+//   - groupID string
+//   - memberType group.MemberType
+//   - limit int
+//   - offset int
+func (_e *GroupServiceInterfaceMock_Expecter) GetEligibleMembers(ctx interface{}, groupID interface{}, memberType interface{}, limit interface{}, offset interface{}) *GroupServiceInterfaceMock_GetEligibleMembers_Call {
+	return &GroupServiceInterfaceMock_GetEligibleMembers_Call{Call: _e.mock.On("GetEligibleMembers", ctx, groupID, memberType, limit, offset)}
+}
+
+func (_c *GroupServiceInterfaceMock_GetEligibleMembers_Call) Run(run func(ctx context.Context, groupID string, memberType group.MemberType, limit int, offset int)) *GroupServiceInterfaceMock_GetEligibleMembers_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 context.Context
+		if args[0] != nil {
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 string
+		if args[1] != nil {
+			arg1 = args[1].(string)
+		}
+		var arg2 group.MemberType
+		if args[2] != nil {
+			arg2 = args[2].(group.MemberType)
+		}
+		var arg3 int
+		if args[3] != nil {
+			arg3 = args[3].(int)
+		}
+		var arg4 int
+		if args[4] != nil {
+			arg4 = args[4].(int)
+		}
+		run(
+			arg0,
+			arg1,
+			arg2,
+			arg3,
+			arg4,
+		)
+	})
+	return _c
+}
+
+func (_c *GroupServiceInterfaceMock_GetEligibleMembers_Call) Return(eligibleMemberListResponse *group.EligibleMemberListResponse, serviceError *serviceerror.ServiceError) *GroupServiceInterfaceMock_GetEligibleMembers_Call {
+	_c.Call.Return(eligibleMemberListResponse, serviceError)
+	return _c
+}
+
+func (_c *GroupServiceInterfaceMock_GetEligibleMembers_Call) RunAndReturn(run func(ctx context.Context, groupID string, memberType group.MemberType, limit int, offset int) (*group.EligibleMemberListResponse, *serviceerror.ServiceError)) *GroupServiceInterfaceMock_GetEligibleMembers_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
 // GetGroup provides a mock function for the type GroupServiceInterfaceMock
 func (_mock *GroupServiceInterfaceMock) GetGroup(ctx context.Context, groupID string) (*group.Group, *serviceerror.ServiceError) {
 	ret := _mock.Called(ctx, groupID)

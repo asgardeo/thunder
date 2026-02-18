@@ -353,6 +353,54 @@ func (gh *groupHandler) HandleGroupMembersRemoveRequest(w http.ResponseWriter, r
 	logger.Debug("Successfully removed members from group", log.String("group id", id))
 }
 
+// HandleGroupEligibleMembersGetRequest handles the get eligible members request.
+func (gh *groupHandler) HandleGroupEligibleMembersGetRequest(
+	w http.ResponseWriter, r *http.Request,
+) {
+	ctx := r.Context()
+	logger := log.GetLogger().With(
+		log.String(log.LoggerKeyComponentName, handlerLoggerComponentName))
+
+	id := r.PathValue("id")
+	if id == "" {
+		gh.handleError(w, logger, &ErrorMissingGroupID)
+		return
+	}
+
+	typeParam := r.URL.Query().Get("type")
+	if typeParam == "" {
+		gh.handleError(w, logger, &ErrorMissingMemberType)
+		return
+	}
+
+	memberType := MemberType(typeParam)
+	if memberType != MemberTypeUser && memberType != MemberTypeGroup {
+		gh.handleError(w, logger, &ErrorInvalidMemberType)
+		return
+	}
+
+	limit, offset, svcErr := parsePaginationParams(r.URL.Query())
+	if svcErr != nil {
+		gh.handleError(w, logger, svcErr)
+		return
+	}
+
+	response, svcErr := gh.groupService.GetEligibleMembers(
+		ctx, id, memberType, limit, offset)
+	if svcErr != nil {
+		gh.handleError(w, logger, svcErr)
+		return
+	}
+
+	sysutils.WriteSuccessResponse(w, http.StatusOK, response)
+
+	logger.Debug("Successfully retrieved eligible members",
+		log.String("group id", id),
+		log.String("type", typeParam),
+		log.Int("totalResults", response.TotalResults),
+		log.Int("count", response.Count))
+}
+
 // handleError handles service errors and returns appropriate HTTP responses.
 func (gh *groupHandler) handleError(w http.ResponseWriter, logger *log.Logger,
 	svcErr *serviceerror.ServiceError) {
@@ -367,7 +415,8 @@ func (gh *groupHandler) handleError(w http.ResponseWriter, logger *log.Logger,
 			ErrorInvalidRequestFormat.Code, ErrorMissingGroupID.Code,
 			ErrorInvalidLimit.Code, ErrorInvalidOffset.Code,
 			ErrorEmptyMembers.Code, ErrorInvalidUserMemberID.Code,
-			ErrorInvalidGroupMemberID.Code:
+			ErrorInvalidGroupMemberID.Code,
+			ErrorInvalidMemberType.Code, ErrorMissingMemberType.Code:
 			statusCode = http.StatusBadRequest
 		default:
 			statusCode = http.StatusBadRequest

@@ -49,6 +49,9 @@ type groupStoreInterface interface {
 		ctx context.Context, organizationUnitID string, limit, offset int) ([]GroupBasicDAO, error)
 	AddGroupMembers(ctx context.Context, groupID string, members []Member) error
 	RemoveGroupMembers(ctx context.Context, groupID string, members []Member) error
+	GetGroupMemberIDsByType(ctx context.Context, groupID string, memberType MemberType) ([]string, error)
+	GetGroupListCountExcluding(ctx context.Context, excludeGroupID string) (int, error)
+	GetGroupListExcluding(ctx context.Context, excludeGroupID string, limit, offset int) ([]GroupBasicDAO, error)
 }
 
 // groupStore is the default implementation of groupStoreInterface.
@@ -95,6 +98,64 @@ func (s *groupStore) GetGroupList(ctx context.Context, limit, offset int) ([]Gro
 	}
 
 	results, err := dbClient.QueryContext(ctx, QueryGetGroupList, limit, offset, s.deploymentID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to execute group list query: %w", err)
+	}
+
+	groups := make([]GroupBasicDAO, 0)
+	for _, row := range results {
+		group, err := buildGroupFromResultRow(row)
+		if err != nil {
+			return nil, fmt.Errorf("failed to build group from result row: %w", err)
+		}
+
+		groupBasic := GroupBasicDAO{
+			ID:                 group.ID,
+			Name:               group.Name,
+			Description:        group.Description,
+			OrganizationUnitID: group.OrganizationUnitID,
+		}
+
+		groups = append(groups, groupBasic)
+	}
+
+	return groups, nil
+}
+
+// GetGroupListCountExcluding retrieves the total count of groups excluding a specific group.
+func (s *groupStore) GetGroupListCountExcluding(ctx context.Context, excludeGroupID string) (int, error) {
+	dbClient, err := s.dbProvider.GetUserDBClient()
+	if err != nil {
+		return 0, fmt.Errorf("failed to get database client: %w", err)
+	}
+
+	countResults, err := dbClient.QueryContext(
+		ctx, QueryGetGroupListCountExcluding, excludeGroupID, s.deploymentID)
+	if err != nil {
+		return 0, fmt.Errorf("failed to execute count query: %w", err)
+	}
+
+	var totalCount int
+	if len(countResults) > 0 {
+		if total, ok := countResults[0]["total"].(int64); ok {
+			totalCount = int(total)
+		}
+	}
+
+	return totalCount, nil
+}
+
+// GetGroupListExcluding retrieves groups with pagination excluding a specific group.
+func (s *groupStore) GetGroupListExcluding(
+	ctx context.Context, excludeGroupID string, limit, offset int,
+) ([]GroupBasicDAO, error) {
+	dbClient, err := s.dbProvider.GetUserDBClient()
+	if err != nil {
+		return nil, fmt.Errorf("failed to get database client: %w", err)
+	}
+
+	results, err := dbClient.QueryContext(
+		ctx, QueryGetGroupListExcluding, excludeGroupID, limit, offset, s.deploymentID)
 	if err != nil {
 		return nil, fmt.Errorf("failed to execute group list query: %w", err)
 	}
@@ -426,6 +487,31 @@ func (s *groupStore) RemoveGroupMembers(ctx context.Context, groupID string, mem
 	}
 
 	return nil
+}
+
+// GetGroupMemberIDsByType retrieves all member IDs of a specific type for a group.
+func (s *groupStore) GetGroupMemberIDsByType(
+	ctx context.Context, groupID string, memberType MemberType,
+) ([]string, error) {
+	dbClient, err := s.dbProvider.GetUserDBClient()
+	if err != nil {
+		return nil, fmt.Errorf("failed to get database client: %w", err)
+	}
+
+	results, err := dbClient.QueryContext(
+		ctx, QueryGetGroupMemberIDsByType, groupID, string(memberType), s.deploymentID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get group member IDs by type: %w", err)
+	}
+
+	memberIDs := make([]string, 0, len(results))
+	for _, row := range results {
+		if memberID, ok := row["member_id"].(string); ok {
+			memberIDs = append(memberIDs, memberID)
+		}
+	}
+
+	return memberIDs, nil
 }
 
 // buildGroupFromResultRow constructs a GroupDAO from a database result row.

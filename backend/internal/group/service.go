@@ -49,6 +49,8 @@ type GroupServiceInterface interface {
 	DeleteGroup(ctx context.Context, groupID string) *serviceerror.ServiceError
 	GetGroupMembers(ctx context.Context, groupID string, limit, offset int) (
 		*MemberListResponse, *serviceerror.ServiceError)
+	GetEligibleMembers(ctx context.Context, groupID string, memberType MemberType, limit, offset int) (
+		*EligibleMemberListResponse, *serviceerror.ServiceError)
 	ValidateGroupIDs(ctx context.Context, groupIDs []string) *serviceerror.ServiceError
 	AddGroupMembers(ctx context.Context, groupID string, members []Member) (*Group, *serviceerror.ServiceError)
 	RemoveGroupMembers(ctx context.Context, groupID string, members []Member) (*Group, *serviceerror.ServiceError)
@@ -635,6 +637,110 @@ func (gs *groupService) RemoveGroupMembers(
 	return &updatedGroup, nil
 }
 
+// GetEligibleMembers retrieves entities eligible for group membership with assignment status.
+func (gs *groupService) GetEligibleMembers(
+	ctx context.Context, groupID string, memberType MemberType, limit, offset int,
+) (*EligibleMemberListResponse, *serviceerror.ServiceError) {
+	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, loggerComponentName))
+
+	if err := validatePaginationParams(limit, offset); err != nil {
+		return nil, err
+	}
+
+	if groupID == "" {
+		return nil, &ErrorMissingGroupID
+	}
+
+	if memberType != MemberTypeUser && memberType != MemberTypeGroup {
+		return nil, &ErrorInvalidMemberType
+	}
+
+	_, err := gs.groupStore.GetGroup(ctx, groupID)
+	if err != nil {
+		if errors.Is(err, ErrGroupNotFound) {
+			logger.Debug("Group not found", log.String("id", groupID))
+			return nil, &ErrorGroupNotFound
+		}
+		logger.Error("Failed to retrieve group", log.String("id", groupID), log.Error(err))
+		return nil, &ErrorInternalServerError
+	}
+
+	assignedIDs, err := gs.groupStore.GetGroupMemberIDsByType(ctx, groupID, memberType)
+	if err != nil {
+		logger.Error("Failed to get assigned member IDs",
+			log.String("groupID", groupID),
+			log.String("memberType", string(memberType)), log.Error(err))
+		return nil, &ErrorInternalServerError
+	}
+
+	assignedSet := make(map[string]bool, len(assignedIDs))
+	for _, id := range assignedIDs {
+		assignedSet[id] = true
+	}
+
+	var eligibleMembers []EligibleMember
+	var totalResults int
+
+	switch memberType {
+	case MemberTypeUser:
+		userListResp, svcErr := gs.userService.GetUserList(ctx, limit, offset, nil)
+		if svcErr != nil {
+			logger.Error("Failed to get user list",
+				log.String("error", svcErr.Error),
+				log.String("description", svcErr.ErrorDescription))
+			return nil, &ErrorInternalServerError
+		}
+
+		totalResults = userListResp.TotalResults
+		eligibleMembers = make([]EligibleMember, 0, len(userListResp.Users))
+		for _, u := range userListResp.Users {
+			eligibleMembers = append(eligibleMembers, EligibleMember{
+				ID:       u.ID,
+				Type:     MemberTypeUser,
+				Assigned: assignedSet[u.ID],
+			})
+		}
+
+	case MemberTypeGroup:
+		// Exclude the current group at the DB level for correct pagination.
+		groupCount, countErr := gs.groupStore.GetGroupListCountExcluding(ctx, groupID)
+		if countErr != nil {
+			logger.Error("Failed to get group count", log.Error(countErr))
+			return nil, &ErrorInternalServerError
+		}
+
+		groups, groupErr := gs.groupStore.GetGroupListExcluding(ctx, groupID, limit, offset)
+		if groupErr != nil {
+			logger.Error("Failed to get group list", log.Error(groupErr))
+			return nil, &ErrorInternalServerError
+		}
+
+		totalResults = groupCount
+		eligibleMembers = make([]EligibleMember, 0, len(groups))
+		for _, g := range groups {
+			eligibleMembers = append(eligibleMembers, EligibleMember{
+				ID:       g.ID,
+				Type:     MemberTypeGroup,
+				Assigned: assignedSet[g.ID],
+			})
+		}
+	}
+
+	baseURL := fmt.Sprintf(
+		"/groups/%s/members/eligible?type=%s", groupID, string(memberType))
+	links := buildPaginationLinks(baseURL, limit, offset, totalResults)
+
+	response := &EligibleMemberListResponse{
+		TotalResults: totalResults,
+		Members:      eligibleMembers,
+		StartIndex:   offset + 1,
+		Count:        len(eligibleMembers),
+		Links:        links,
+	}
+
+	return response, nil
+}
+
 // validateCreateGroupRequest validates the create group request.
 func (gs *groupService) validateCreateGroupRequest(request CreateGroupRequest) *serviceerror.ServiceError {
 	if request.Name == "" {
@@ -764,11 +870,17 @@ func validatePaginationParams(limit, offset int) *serviceerror.ServiceError {
 
 // buildPaginationLinks builds pagination links for the response.
 func buildPaginationLinks(base string, limit, offset, totalCount int) []Link {
+	// Use "&" if the base URL already contains query parameters, otherwise "?".
+	separator := "?"
+	if strings.Contains(base, "?") {
+		separator = "&"
+	}
+
 	links := make([]Link, 0)
 
 	if offset > 0 {
 		links = append(links, Link{
-			Href: fmt.Sprintf("%s?offset=0&limit=%d", base, limit),
+			Href: fmt.Sprintf("%s%soffset=0&limit=%d", base, separator, limit),
 			Rel:  "first",
 		})
 
@@ -777,7 +889,7 @@ func buildPaginationLinks(base string, limit, offset, totalCount int) []Link {
 			prevOffset = 0
 		}
 		links = append(links, Link{
-			Href: fmt.Sprintf("%s?offset=%d&limit=%d", base, prevOffset, limit),
+			Href: fmt.Sprintf("%s%soffset=%d&limit=%d", base, separator, prevOffset, limit),
 			Rel:  "prev",
 		})
 	}
@@ -785,7 +897,7 @@ func buildPaginationLinks(base string, limit, offset, totalCount int) []Link {
 	if offset+limit < totalCount {
 		nextOffset := offset + limit
 		links = append(links, Link{
-			Href: fmt.Sprintf("%s?offset=%d&limit=%d", base, nextOffset, limit),
+			Href: fmt.Sprintf("%s%soffset=%d&limit=%d", base, separator, nextOffset, limit),
 			Rel:  "next",
 		})
 	}
@@ -793,7 +905,7 @@ func buildPaginationLinks(base string, limit, offset, totalCount int) []Link {
 	lastPageOffset := ((totalCount - 1) / limit) * limit
 	if offset < lastPageOffset {
 		links = append(links, Link{
-			Href: fmt.Sprintf("%s?offset=%d&limit=%d", base, lastPageOffset, limit),
+			Href: fmt.Sprintf("%s%soffset=%d&limit=%d", base, separator, lastPageOffset, limit),
 			Rel:  "last",
 		})
 	}

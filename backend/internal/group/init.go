@@ -75,6 +75,9 @@ func registerRoutes(mux *http.ServeMux, groupHandler *groupHandler) {
 				groupHandler.HandleGroupGetRequest(w, r)
 			} else if len(segments) == 2 && segments[1] == "members" {
 				groupHandler.HandleGroupMembersGetRequest(w, r)
+			} else if len(segments) == 3 && segments[1] == "members" &&
+				segments[2] == "eligible" {
+				groupHandler.HandleGroupEligibleMembersGetRequest(w, r)
 			} else {
 				http.NotFound(w, r)
 			}
