@@ -26,8 +26,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/asgardeo/thunder/internal/observability/event"
 	"github.com/asgardeo/thunder/internal/system/config"
+	"github.com/asgardeo/thunder/internal/system/observability/event"
 )
 
 func TestNewConsoleSubscriber(t *testing.T) {

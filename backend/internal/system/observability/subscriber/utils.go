@@ -21,9 +21,9 @@ package subscriber
 import (
 	"fmt"
 
-	"github.com/asgardeo/thunder/internal/observability/event"
-	"github.com/asgardeo/thunder/internal/observability/formatter"
 	"github.com/asgardeo/thunder/internal/system/log"
+	"github.com/asgardeo/thunder/internal/system/observability/event"
+	"github.com/asgardeo/thunder/internal/system/observability/formatter"
 )
 
 // Format constants - duplicated here to avoid import cycle with observability package
