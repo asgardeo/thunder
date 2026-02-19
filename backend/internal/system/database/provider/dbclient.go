@@ -42,6 +42,10 @@ type DBClientInterface interface {
 	Execute(query model.DBQuery, args ...interface{}) (int64, error)
 	// ExecuteContext executes a sql query without returning data with context support for transactions.
 	ExecuteContext(ctx context.Context, query model.DBQuery, args ...interface{}) (int64, error)
+	// ExecuteWithReturningContext executes a sql query that modifies data and
+	// returns the affected rows with context support.
+	ExecuteWithReturningContext(
+		ctx context.Context, query model.DBQuery, args ...interface{}) ([]map[string]interface{}, error)
 	// BeginTx starts a new database transaction.
 	BeginTx() (model.TxInterface, error)
 	// GetTransactioner returns the transactioner for this client.
@@ -74,8 +78,63 @@ func (client *DBClient) QueryContext(
 	query model.DBQuery,
 	args ...interface{},
 ) ([]map[string]interface{}, error) {
+	return client.executeAndScan(ctx, query, "Executing query", args...)
+}
+
+// Execute executes a sql query without returning data in any rows, and returns number of rows affected.
+func (client *DBClient) Execute(query model.DBQuery, args ...interface{}) (int64, error) {
+	return client.ExecuteContext(context.Background(), query, args...)
+}
+
+// ExecuteContext executes a sql query without returning data with context support for transactions.
+// If a transaction exists in the context, it will be used automatically.
+func (client *DBClient) ExecuteContext(ctx context.Context, query model.DBQuery, args ...interface{}) (int64, error) {
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, "DBClient"))
 	logger.Info("Executing query", log.String("queryID", query.GetID()))
+
+	sqlQuery := query.GetQuery(client.dbType)
+
+	// Check if there's a transaction in the context
+	var res sql.Result
+	var err error
+	if tx := transaction.TxFromContext(ctx); tx != nil {
+		res, err = tx.ExecContext(ctx, sqlQuery, args...)
+	} else {
+		res, err = client.db.Exec(sqlQuery, args...)
+	}
+
+	if err != nil {
+		return 0, err
+	}
+
+	rowsAffected, err := res.RowsAffected()
+	if err != nil {
+		return 0, err
+	}
+
+	return rowsAffected, nil
+}
+
+// ExecuteWithReturningContext executes a sql query that modifies data and returns the affected rows
+// with context support.
+// If a transaction exists in the context, it will be used automatically.
+func (client *DBClient) ExecuteWithReturningContext(
+	ctx context.Context,
+	query model.DBQuery,
+	args ...interface{},
+) ([]map[string]interface{}, error) {
+	return client.executeAndScan(ctx, query, "Executing query with returning", args...)
+}
+
+// executeAndScan executes a sql query and returns the result as a slice of maps.
+func (client *DBClient) executeAndScan(
+	ctx context.Context,
+	query model.DBQuery,
+	logMsg string,
+	args ...interface{},
+) ([]map[string]interface{}, error) {
+	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, "DBClient"))
+	logger.Info(logMsg, log.String("queryID", query.GetID()))
 
 	sqlQuery := query.GetQuery(client.dbType)
 
@@ -127,40 +186,6 @@ func (client *DBClient) QueryContext(
 	}
 
 	return results, nil
-}
-
-// Execute executes a sql query without returning data in any rows, and returns number of rows affected.
-func (client *DBClient) Execute(query model.DBQuery, args ...interface{}) (int64, error) {
-	return client.ExecuteContext(context.Background(), query, args...)
-}
-
-// ExecuteContext executes a sql query without returning data with context support for transactions.
-// If a transaction exists in the context, it will be used automatically.
-func (client *DBClient) ExecuteContext(ctx context.Context, query model.DBQuery, args ...interface{}) (int64, error) {
-	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, "DBClient"))
-	logger.Info("Executing query", log.String("queryID", query.GetID()))
-
-	sqlQuery := query.GetQuery(client.dbType)
-
-	// Check if there's a transaction in the context
-	var res sql.Result
-	var err error
-	if tx := transaction.TxFromContext(ctx); tx != nil {
-		res, err = tx.ExecContext(ctx, sqlQuery, args...)
-	} else {
-		res, err = client.db.Exec(sqlQuery, args...)
-	}
-
-	if err != nil {
-		return 0, err
-	}
-
-	rowsAffected, err := res.RowsAffected()
-	if err != nil {
-		return 0, err
-	}
-
-	return rowsAffected, nil
 }
 
 // BeginTx starts a new database transaction.

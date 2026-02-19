@@ -1001,6 +1001,15 @@ func (f *fakeDBClient) GetTransactioner() (transaction.Transactioner, error) {
 	return nil, nil
 }
 
+func (f *fakeDBClient) ExecuteWithReturning(_ dbmodel.DBQuery, _ ...interface{}) ([]map[string]interface{}, error) {
+	return nil, nil
+}
+
+func (f *fakeDBClient) ExecuteWithReturningContext(
+	_ context.Context, _ dbmodel.DBQuery, _ ...interface{}) ([]map[string]interface{}, error) {
+	return nil, nil
+}
+
 var _ provider.DBClientInterface = (*fakeDBClient)(nil)
 
 func TestUserService_UpdateUserCredentials_Validation(t *testing.T) {

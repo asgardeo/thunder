@@ -20,6 +20,7 @@ package role
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
 	"github.com/asgardeo/thunder/internal/system/config"
@@ -35,13 +36,13 @@ type roleStoreInterface interface {
 	GetRoleList(ctx context.Context, limit, offset int) ([]Role, error)
 	CreateRole(ctx context.Context, id string, role RoleCreationDetail) error
 	GetRole(ctx context.Context, id string) (RoleWithPermissions, error)
-	IsRoleExist(ctx context.Context, id string) (bool, error)
-	GetRoleAssignments(ctx context.Context, id string, limit, offset int) ([]RoleAssignment, error)
-	GetRoleAssignmentsCount(ctx context.Context, id string) (int, error)
-	UpdateRole(ctx context.Context, id string, role RoleUpdateDetail) error
-	DeleteRole(ctx context.Context, id string) error
-	AddAssignments(ctx context.Context, id string, assignments []RoleAssignment) error
-	RemoveAssignments(ctx context.Context, id string, assignments []RoleAssignment) error
+	IsRoleExist(ctx context.Context, id string) (bool, int, error)
+	GetRoleAssignments(ctx context.Context, id int, limit, offset int) ([]RoleAssignment, error)
+	GetRoleAssignmentsCount(ctx context.Context, id int) (int, error)
+	UpdateRole(ctx context.Context, id int, role RoleUpdateDetail) error
+	DeleteRole(ctx context.Context, id int) error
+	AddAssignments(ctx context.Context, id int, assignments []RoleAssignment) error
+	RemoveAssignments(ctx context.Context, id int, assignments []RoleAssignment) error
 	CheckRoleNameExists(ctx context.Context, ouID, name string) (bool, error)
 	CheckRoleNameExistsExcludingID(ctx context.Context, ouID, name, excludeRoleID string) (bool, error)
 	GetAuthorizedPermissions(
@@ -108,7 +109,7 @@ func (s *roleStore) CreateRole(ctx context.Context, id string, role RoleCreation
 		return err
 	}
 
-	_, err = dbClient.ExecuteContext(ctx,
+	results, err := dbClient.ExecuteWithReturningContext(ctx,
 		queryCreateRole,
 		id,
 		role.OrganizationUnitID,
@@ -120,11 +121,20 @@ func (s *roleStore) CreateRole(ctx context.Context, id string, role RoleCreation
 		return fmt.Errorf("failed to execute query: %w", err)
 	}
 
-	if err := addPermissionsToRole(ctx, dbClient, id, role.Permissions, s.deploymentID); err != nil {
+	if len(results) == 0 {
+		return fmt.Errorf("failed to create role: no rows returned")
+	}
+
+	internalID, err := resolveInternalID(results[0])
+	if err != nil {
+		return fmt.Errorf("failed to resolve role internal ID: %w", err)
+	}
+
+	if err := addPermissionsToRole(ctx, dbClient, internalID, role.Permissions, s.deploymentID); err != nil {
 		return err
 	}
 
-	if err := addAssignmentsToRole(ctx, dbClient, id, role.Assignments, s.deploymentID); err != nil {
+	if err := addAssignmentsToRole(ctx, dbClient, internalID, role.Assignments, s.deploymentID); err != nil {
 		return err
 	}
 
@@ -157,7 +167,12 @@ func (s *roleStore) GetRole(ctx context.Context, id string) (RoleWithPermissions
 		return RoleWithPermissions{}, err
 	}
 
-	permissions, err := s.getRolePermissions(ctx, dbClient, id)
+	internalID, err := resolveInternalID(row)
+	if err != nil {
+		return RoleWithPermissions{}, err
+	}
+
+	permissions, err := s.getRolePermissions(ctx, dbClient, internalID)
 	if err != nil {
 		return RoleWithPermissions{}, fmt.Errorf("failed to get role permissions: %w", err)
 	}
@@ -172,22 +187,35 @@ func (s *roleStore) GetRole(ctx context.Context, id string) (RoleWithPermissions
 }
 
 // IsRoleExist checks if a role exists by its ID without fetching its details.
-func (s *roleStore) IsRoleExist(ctx context.Context, id string) (bool, error) {
+func (s *roleStore) IsRoleExist(ctx context.Context, roleID string) (bool, int, error) {
 	dbClient, err := s.getIdentityDBClient()
 	if err != nil {
-		return false, err
+		return false, 0, err
 	}
 
-	results, err := dbClient.QueryContext(ctx, queryCheckRoleExists, id, s.deploymentID)
+	result, err := dbClient.QueryContext(ctx, queryCheckRoleExists, roleID, s.deploymentID)
+
 	if err != nil {
-		return false, fmt.Errorf("failed to check role existence: %w", err)
+		return false, 0, fmt.Errorf("failed to check role existence: %w", err)
 	}
 
-	return parseBoolFromCount(results)
+	if len(result) == 0 {
+		return false, 0, nil
+	}
+	if len(result) > 1 {
+		return false, 0, errors.New("multiple roles found")
+	}
+
+	internalID, err := resolveInternalID(result[0])
+	if err != nil {
+		return false, 0, err
+	}
+
+	return true, internalID, nil
 }
 
 // GetRoleAssignments retrieves assignments for a role with pagination.
-func (s *roleStore) GetRoleAssignments(ctx context.Context, id string, limit, offset int) ([]RoleAssignment, error) {
+func (s *roleStore) GetRoleAssignments(ctx context.Context, id int, limit, offset int) ([]RoleAssignment, error) {
 	dbClient, err := s.getIdentityDBClient()
 	if err != nil {
 		return nil, err
@@ -218,7 +246,7 @@ func (s *roleStore) GetRoleAssignments(ctx context.Context, id string, limit, of
 }
 
 // GetRoleAssignmentsCount retrieves the total count of assignments for a role.
-func (s *roleStore) GetRoleAssignmentsCount(ctx context.Context, id string) (int, error) {
+func (s *roleStore) GetRoleAssignmentsCount(ctx context.Context, id int) (int, error) {
 	dbClient, err := s.getIdentityDBClient()
 	if err != nil {
 		return 0, err
@@ -233,7 +261,7 @@ func (s *roleStore) GetRoleAssignmentsCount(ctx context.Context, id string) (int
 }
 
 // UpdateRole updates an existing role.
-func (s *roleStore) UpdateRole(ctx context.Context, id string, role RoleUpdateDetail) error {
+func (s *roleStore) UpdateRole(ctx context.Context, id int, role RoleUpdateDetail) error {
 	dbClient, err := s.getIdentityDBClient()
 	if err != nil {
 		return err
@@ -263,7 +291,7 @@ func (s *roleStore) UpdateRole(ctx context.Context, id string, role RoleUpdateDe
 }
 
 // DeleteRole deletes a role.
-func (s *roleStore) DeleteRole(ctx context.Context, id string) error {
+func (s *roleStore) DeleteRole(ctx context.Context, id int) error {
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, storeLoggerComponentName))
 
 	dbClient, err := s.getIdentityDBClient()
@@ -277,14 +305,14 @@ func (s *roleStore) DeleteRole(ctx context.Context, id string) error {
 	}
 
 	if rowsAffected == 0 {
-		logger.Debug("Role not found with id: " + id)
+		logger.Debug(fmt.Sprintf("Role not found with id: %d", id))
 	}
 
 	return nil
 }
 
 // AddAssignments adds assignments to a role.
-func (s *roleStore) AddAssignments(ctx context.Context, id string, assignments []RoleAssignment) error {
+func (s *roleStore) AddAssignments(ctx context.Context, id int, assignments []RoleAssignment) error {
 	dbClient, err := s.getIdentityDBClient()
 	if err != nil {
 		return err
@@ -294,7 +322,7 @@ func (s *roleStore) AddAssignments(ctx context.Context, id string, assignments [
 }
 
 // RemoveAssignments removes assignments from a role.
-func (s *roleStore) RemoveAssignments(ctx context.Context, id string, assignments []RoleAssignment) error {
+func (s *roleStore) RemoveAssignments(ctx context.Context, id int, assignments []RoleAssignment) error {
 	dbClient, err := s.getIdentityDBClient()
 	if err != nil {
 		return err
@@ -312,7 +340,7 @@ func (s *roleStore) RemoveAssignments(ctx context.Context, id string, assignment
 
 // getRolePermissions retrieves all permissions for a role.
 func (s *roleStore) getRolePermissions(
-	ctx context.Context, dbClient provider.DBClientInterface, id string) ([]ResourcePermissions, error) {
+	ctx context.Context, dbClient provider.DBClientInterface, id int) ([]ResourcePermissions, error) {
 	results, err := dbClient.QueryContext(ctx, queryGetRolePermissions, id, s.deploymentID)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get role permissions: %w", err)
@@ -372,7 +400,7 @@ func buildRoleBasicInfoFromResultRow(row map[string]interface{}) (Role, error) {
 func addPermissionsToRole(
 	ctx context.Context,
 	dbClient provider.DBClientInterface,
-	id string,
+	id int,
 	permissions []ResourcePermissions,
 	deploymentID string,
 ) error {
@@ -392,7 +420,7 @@ func addPermissionsToRole(
 func addAssignmentsToRole(
 	ctx context.Context,
 	dbClient provider.DBClientInterface,
-	id string,
+	id int,
 	assignments []RoleAssignment,
 	deploymentID string,
 ) error {
@@ -411,7 +439,7 @@ func addAssignmentsToRole(
 func updateRolePermissions(
 	ctx context.Context,
 	dbClient provider.DBClientInterface,
-	id string,
+	id int,
 	permissions []ResourcePermissions,
 	deploymentID string,
 ) error {
@@ -549,4 +577,19 @@ func parseStringFields(row map[string]interface{}, fieldNames ...string) ([]stri
 		result[i] = value
 	}
 	return result, nil
+}
+
+// resolveInternalID extracts and converts the internal ID from a database result row.
+// Handles different integer types returned by various database drivers.
+func resolveInternalID(row map[string]interface{}) (int, error) {
+	switch v := row["id"].(type) {
+	case int:
+		return v, nil
+	case int64:
+		return int(v), nil
+	case float64:
+		return int(v), nil
+	default:
+		return 0, fmt.Errorf("unexpected internal ID type: %T", v)
+	}
 }
