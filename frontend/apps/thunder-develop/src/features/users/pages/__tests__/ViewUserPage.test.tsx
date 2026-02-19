@@ -19,7 +19,7 @@
 import {describe, it, expect, vi, beforeEach} from 'vitest';
 import {render, screen, waitFor, within, userEvent} from '@thunder/test-utils';
 import ViewUserPage from '../ViewUserPage';
-import type {ApiError, ApiUser, ApiUserSchema, UserSchemaListResponse} from '../../types/users';
+import type {ApiError, ApiUser, ApiUserType, UserTypeListResponse} from '../../types/users';
 
 const mockNavigate = vi.fn();
 const mockUpdateUser = vi.fn();
@@ -47,15 +47,15 @@ interface UseGetUserReturn {
   refetch: () => void;
 }
 
-interface UseGetUserSchemasReturn {
-  data: UserSchemaListResponse | null;
+interface UseGetUserTypesReturn {
+  data: UserTypeListResponse | null;
   loading: boolean;
   error: ApiError | null;
   refetch: () => void;
 }
 
-interface UseGetUserSchemaReturn {
-  data: ApiUserSchema | null;
+interface UseGetUserTypeReturn {
+  data: ApiUserType | null;
   loading: boolean;
   error: ApiError | null;
   refetch: (id?: string) => void;
@@ -80,8 +80,8 @@ interface UseDeleteUserReturn {
 }
 
 const mockUseGetUser = vi.fn<() => UseGetUserReturn>();
-const mockUseGetUserSchemas = vi.fn<() => UseGetUserSchemasReturn>();
-const mockUseGetUserSchema = vi.fn<() => UseGetUserSchemaReturn>();
+const mockUseGetUserTypes = vi.fn<() => UseGetUserTypesReturn>();
+const mockUseGetUserType = vi.fn<() => UseGetUserTypeReturn>();
 const mockUseUpdateUser = vi.fn<() => UseUpdateUserReturn>();
 const mockUseDeleteUser = vi.fn<() => UseDeleteUserReturn>();
 
@@ -89,12 +89,12 @@ vi.mock('../../api/useGetUser', () => ({
   default: () => mockUseGetUser(),
 }));
 
-vi.mock('../../api/useGetUserSchemas', () => ({
-  default: () => mockUseGetUserSchemas(),
+vi.mock('../../api/useGetUserTypes', () => ({
+  default: () => mockUseGetUserTypes(),
 }));
 
-vi.mock('../../api/useGetUserSchema', () => ({
-  default: () => mockUseGetUserSchema(),
+vi.mock('../../api/useGetUserType', () => ({
+  default: () => mockUseGetUserType(),
 }));
 
 vi.mock('../../api/useUpdateUser', () => ({
@@ -118,14 +118,14 @@ describe('ViewUserPage', () => {
     },
   };
 
-  const mockSchemasData: UserSchemaListResponse = {
+  const mockSchemasData: UserTypeListResponse = {
     totalResults: 1,
     startIndex: 1,
     count: 1,
     schemas: [{id: 'employee', name: 'Employee', ouId: 'test-ou'}],
   };
 
-  const mockSchemaData: ApiUserSchema = {
+  const mockSchemaData: ApiUserType = {
     id: 'employee',
     name: 'Employee',
     schema: {
@@ -156,13 +156,13 @@ describe('ViewUserPage', () => {
       error: null,
       refetch: mockRefetchUser,
     });
-    mockUseGetUserSchemas.mockReturnValue({
+    mockUseGetUserTypes.mockReturnValue({
       data: mockSchemasData,
       loading: false,
       error: null,
       refetch: vi.fn(),
     });
-    mockUseGetUserSchema.mockReturnValue({
+    mockUseGetUserType.mockReturnValue({
       data: mockSchemaData,
       loading: false,
       error: null,
@@ -197,8 +197,8 @@ describe('ViewUserPage', () => {
       expect(screen.getByRole('progressbar')).toBeInTheDocument();
     });
 
-    it('displays loading spinner when schema is loading', () => {
-      mockUseGetUserSchema.mockReturnValue({
+    it('displays loading spinner when user type is loading', () => {
+      mockUseGetUserType.mockReturnValue({
         data: null,
         loading: true,
         error: null,
@@ -267,7 +267,7 @@ describe('ViewUserPage', () => {
         description: 'The requested schema does not exist',
       };
 
-      mockUseGetUserSchema.mockReturnValue({
+      mockUseGetUserType.mockReturnValue({
         data: null,
         loading: false,
         error,
@@ -500,7 +500,7 @@ describe('ViewUserPage', () => {
         error: null,
         refetch: mockRefetchUser,
       });
-      mockUseGetUserSchemas.mockReturnValue({
+      mockUseGetUserTypes.mockReturnValue({
         data: {
           ...mockSchemasData,
           schemas: [{...mockSchemasData.schemas[0], ouId: ''}],
@@ -555,7 +555,7 @@ describe('ViewUserPage', () => {
 
     it('filters out password field from schema in edit mode', async () => {
       const user = userEvent.setup();
-      const schemaWithPassword: ApiUserSchema = {
+      const schemaWithPassword: ApiUserType = {
         id: 'employee',
         name: 'Employee',
         schema: {
@@ -574,7 +574,7 @@ describe('ViewUserPage', () => {
         },
       };
 
-      mockUseGetUserSchema.mockReturnValue({
+      mockUseGetUserType.mockReturnValue({
         data: schemaWithPassword,
         loading: false,
         error: null,
@@ -663,7 +663,7 @@ describe('ViewUserPage', () => {
         error: null,
         refetch: mockRefetchUser,
       });
-      mockUseGetUserSchemas.mockReturnValue({
+      mockUseGetUserTypes.mockReturnValue({
         data: {
           ...mockSchemasData,
           schemas: [{...mockSchemasData.schemas[0], ouId: 'schema-ou'}],
@@ -688,7 +688,7 @@ describe('ViewUserPage', () => {
 
     it('falls back to user organization unit when schema does not provide one', async () => {
       const user = userEvent.setup();
-      mockUseGetUserSchemas.mockReturnValue({
+      mockUseGetUserTypes.mockReturnValue({
         data: {
           ...mockSchemasData,
           schemas: [{...mockSchemasData.schemas[0], ouId: ''}],
@@ -704,10 +704,7 @@ describe('ViewUserPage', () => {
       await user.click(screen.getByRole('button', {name: /save changes/i}));
 
       await waitFor(() => {
-        expect(mockUpdateUser).toHaveBeenCalledWith(
-          'user123',
-          expect.objectContaining({organizationUnit: 'test-ou'}),
-        );
+        expect(mockUpdateUser).toHaveBeenCalledWith('user123', expect.objectContaining({organizationUnit: 'test-ou'}));
       });
     });
 
@@ -1167,7 +1164,7 @@ describe('ViewUserPage', () => {
         refetch: mockRefetchUser,
       });
 
-      mockUseGetUserSchema.mockReturnValue({
+      mockUseGetUserType.mockReturnValue({
         data: null,
         loading: false,
         error: null,
@@ -1184,11 +1181,11 @@ describe('ViewUserPage', () => {
 
     it('displays "No schema available for editing" when schema is null in edit mode', async () => {
       const user = userEvent.setup();
-      mockUseGetUserSchema.mockReturnValue({
+      mockUseGetUserType.mockReturnValue({
         data: {
           id: 'employee',
           name: 'Employee',
-          schema: null as unknown as ApiUserSchema['schema'],
+          schema: null as unknown as ApiUserType['schema'],
         },
         loading: false,
         error: null,

@@ -19,14 +19,14 @@
 import {describe, it, expect, vi, beforeEach} from 'vitest';
 import {render, screen, waitFor, userEvent} from '@thunder/test-utils';
 import CreateUserPage from '../CreateUserPage';
-import type {ApiError, UserSchemaListResponse, ApiUserSchema} from '../../types/users';
+import type {ApiError, UserTypeListResponse, ApiUserType} from '../../types/users';
 import type {CreateUserResponse} from '../../api/useCreateUser';
 
 const mockNavigate = vi.fn();
 const mockCreateUser = vi.fn();
 const mockResetCreateUser = vi.fn();
-const mockRefetchSchemas = vi.fn();
-const mockRefetchSchema = vi.fn();
+const mockRefetchUserTypes = vi.fn();
+const mockRefetchUserType = vi.fn();
 
 // Mock react-router
 vi.mock('react-router', async () => {
@@ -50,38 +50,38 @@ interface UseCreateUserReturn {
   reset: () => void;
 }
 
-interface UseGetUserSchemasReturn {
-  data: UserSchemaListResponse | null;
+interface UseGetUserTypesReturn {
+  data: UserTypeListResponse | null;
   loading: boolean;
   error: ApiError | null;
   refetch: () => void;
 }
 
-interface UseGetUserSchemaReturn {
-  data: ApiUserSchema | null;
+interface UseGetUserTypeReturn {
+  data: ApiUserType | null;
   loading: boolean;
   error: ApiError | null;
   refetch: (id?: string) => void;
 }
 
 const mockUseCreateUser = vi.fn<() => UseCreateUserReturn>();
-const mockUseGetUserSchemas = vi.fn<() => UseGetUserSchemasReturn>();
-const mockUseGetUserSchema = vi.fn<() => UseGetUserSchemaReturn>();
+const mockUseGetUserTypes = vi.fn<() => UseGetUserTypesReturn>();
+const mockUseGetUserType = vi.fn<() => UseGetUserTypeReturn>();
 
 vi.mock('../../api/useCreateUser', () => ({
   default: () => mockUseCreateUser(),
 }));
 
-vi.mock('../../api/useGetUserSchemas', () => ({
-  default: () => mockUseGetUserSchemas(),
+vi.mock('../../api/useGetUserTypes', () => ({
+  default: () => mockUseGetUserTypes(),
 }));
 
-vi.mock('../../api/useGetUserSchema', () => ({
-  default: () => mockUseGetUserSchema(),
+vi.mock('../../api/useGetUserType', () => ({
+  default: () => mockUseGetUserType(),
 }));
 
 describe('CreateUserPage', () => {
-  const mockSchemasData: UserSchemaListResponse = {
+  const mockSchemasData: UserTypeListResponse = {
     totalResults: 2,
     startIndex: 1,
     count: 2,
@@ -91,7 +91,7 @@ describe('CreateUserPage', () => {
     ],
   };
 
-  const mockSchemaData: ApiUserSchema = {
+  const mockSchemaData: ApiUserType = {
     id: 'schema1',
     name: 'Employee',
     schema: {
@@ -115,17 +115,17 @@ describe('CreateUserPage', () => {
       error: null,
       reset: mockResetCreateUser,
     });
-    mockUseGetUserSchemas.mockReturnValue({
+    mockUseGetUserTypes.mockReturnValue({
       data: mockSchemasData,
       loading: false,
       error: null,
-      refetch: mockRefetchSchemas,
+      refetch: mockRefetchUserTypes,
     });
-    mockUseGetUserSchema.mockReturnValue({
+    mockUseGetUserType.mockReturnValue({
       data: mockSchemaData,
       loading: false,
       error: null,
-      refetch: mockRefetchSchema,
+      refetch: mockRefetchUserType,
     });
   });
 
@@ -136,7 +136,7 @@ describe('CreateUserPage', () => {
     expect(screen.getByText('Add a new user to your organization')).toBeInTheDocument();
   });
 
-  it('renders user type select with schemas', () => {
+  it('renders user type select with options', () => {
     render(<CreateUserPage />);
 
     expect(screen.getByText('User Type')).toBeInTheDocument();
@@ -211,46 +211,46 @@ describe('CreateUserPage', () => {
     });
   });
 
-  it('displays loading state for schema fields', () => {
-    mockUseGetUserSchema.mockReturnValue({
+  it('displays loading state for user type fields', () => {
+    mockUseGetUserType.mockReturnValue({
       data: null,
       loading: true,
       error: null,
-      refetch: mockRefetchSchema,
+      refetch: mockRefetchUserType,
     });
 
     render(<CreateUserPage />);
 
-    expect(screen.getByText('Loading schema fields...')).toBeInTheDocument();
+    expect(screen.getByText('Loading user type fields...')).toBeInTheDocument();
   });
 
-  it('displays error when schema fails to load', () => {
+  it('displays error when user type fails to load', () => {
     const error: ApiError = {
       code: 'SCHEMA_ERROR',
-      message: 'Failed to load schema',
-      description: 'Schema not found',
+      message: 'Failed to load user type',
+      description: 'User type not found',
     };
 
-    mockUseGetUserSchema.mockReturnValue({
+    mockUseGetUserType.mockReturnValue({
       data: null,
       loading: false,
       error,
-      refetch: mockRefetchSchema,
+      refetch: mockRefetchUserType,
     });
 
     render(<CreateUserPage />);
 
-    expect(screen.getByText(/Error loading schema: Failed to load schema/i)).toBeInTheDocument();
+    expect(screen.getByText(/Error loading user type: Failed to load user type/i)).toBeInTheDocument();
   });
 
-  it('renders schema fields when loaded', () => {
+  it('renders user type fields when loaded', () => {
     render(<CreateUserPage />);
 
     expect(screen.getByPlaceholderText(/Enter username/i)).toBeInTheDocument();
     expect(screen.getByPlaceholderText(/Enter age/i)).toBeInTheDocument();
   });
 
-  it('allows entering values in schema fields', async () => {
+  it('allows entering values in user type fields', async () => {
     const user = userEvent.setup();
     render(<CreateUserPage />);
 
@@ -340,18 +340,18 @@ describe('CreateUserPage', () => {
     expect(screen.getByText('User already exists')).toBeInTheDocument();
   });
 
-  it('does not submit when selected schema is missing organization unit', async () => {
+  it('does not submit when selected user type is missing organization unit', async () => {
     const user = userEvent.setup();
     const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => undefined);
 
-    mockUseGetUserSchemas.mockReturnValue({
+    mockUseGetUserTypes.mockReturnValue({
       data: {
         ...mockSchemasData,
         schemas: [{...mockSchemasData.schemas[0], ouId: ''}],
       },
       loading: false,
       error: null,
-      refetch: mockRefetchSchemas,
+      refetch: mockRefetchUserTypes,
     });
 
     render(<CreateUserPage />);
@@ -427,8 +427,8 @@ describe('CreateUserPage', () => {
     });
   });
 
-  it('handles empty schemas list', () => {
-    mockUseGetUserSchemas.mockReturnValue({
+  it('handles empty user type list', () => {
+    mockUseGetUserTypes.mockReturnValue({
       data: {
         totalResults: 0,
         startIndex: 1,
@@ -437,28 +437,28 @@ describe('CreateUserPage', () => {
       },
       loading: false,
       error: null,
-      refetch: mockRefetchSchemas,
+      refetch: mockRefetchUserTypes,
     });
 
     render(<CreateUserPage />);
 
-    expect(screen.getByText('Loading schemas...')).toBeInTheDocument();
+    expect(screen.getByText('Loading user types...')).toBeInTheDocument();
   });
 
-  it('handles null schemas data', () => {
-    mockUseGetUserSchemas.mockReturnValue({
+  it('handles null user type data', () => {
+    mockUseGetUserTypes.mockReturnValue({
       data: null,
       loading: false,
       error: null,
-      refetch: mockRefetchSchemas,
+      refetch: mockRefetchUserTypes,
     });
 
     render(<CreateUserPage />);
 
-    expect(screen.getByText('Loading schemas...')).toBeInTheDocument();
+    expect(screen.getByText('Loading user types...')).toBeInTheDocument();
   });
 
-  it('sets first schema as default when schemas load', () => {
+  it('sets first user type as default when user types load', () => {
     render(<CreateUserPage />);
 
     const select = screen.getByRole('combobox');
@@ -466,7 +466,7 @@ describe('CreateUserPage', () => {
   });
 
   it('renders with different schema field types', () => {
-    const complexSchema: ApiUserSchema = {
+    const complexSchema: ApiUserType = {
       id: 'schema1',
       name: 'Employee',
       schema: {
@@ -492,11 +492,11 @@ describe('CreateUserPage', () => {
       },
     };
 
-    mockUseGetUserSchema.mockReturnValue({
+    mockUseGetUserType.mockReturnValue({
       data: complexSchema,
       loading: false,
       error: null,
-      refetch: mockRefetchSchema,
+      refetch: mockRefetchUserType,
     });
 
     render(<CreateUserPage />);
@@ -509,7 +509,7 @@ describe('CreateUserPage', () => {
 
   it('handles form submission with all field types', async () => {
     const user = userEvent.setup();
-    const complexSchema: ApiUserSchema = {
+    const complexSchema: ApiUserType = {
       id: 'schema1',
       name: 'Employee',
       schema: {
@@ -528,11 +528,11 @@ describe('CreateUserPage', () => {
       },
     };
 
-    mockUseGetUserSchema.mockReturnValue({
+    mockUseGetUserType.mockReturnValue({
       data: complexSchema,
       loading: false,
       error: null,
-      refetch: mockRefetchSchema,
+      refetch: mockRefetchUserType,
     });
 
     const mockResponse: CreateUserResponse = {
@@ -602,15 +602,15 @@ describe('CreateUserPage', () => {
     consoleSpy.mockRestore();
   });
 
-  it('uses selectedSchema name when field value is undefined', async () => {
+  it('uses selected user type name when field value is undefined', async () => {
     const user = userEvent.setup();
     render(<CreateUserPage />);
 
-    // The select should initially show the first schema name
+    // The select should initially show the first user type name
     const select = screen.getByRole('combobox');
     expect(select).toHaveTextContent('Employee');
 
-    // Change to another schema
+    // Change to another user type
     await user.click(select);
     const contractorOption = await screen.findByText('Contractor');
     await user.click(contractorOption);
@@ -623,11 +623,11 @@ describe('CreateUserPage', () => {
   it('shows validation error when submitting without required fields', async () => {
     const user = userEvent.setup();
 
-    mockUseGetUserSchemas.mockReturnValue({
+    mockUseGetUserTypes.mockReturnValue({
       data: mockSchemasData,
       loading: false,
       error: null,
-      refetch: mockRefetchSchemas,
+      refetch: mockRefetchUserTypes,
     });
 
     render(<CreateUserPage />);

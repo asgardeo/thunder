@@ -4017,8 +4017,8 @@ func (ts *ApplicationAPITestSuite) TestThemeAndLayoutCannotDeleteWhenAssociatedW
 
 // TestApplicationWithAllowedUserTypes tests creating an application with valid allowed_user_types
 func (ts *ApplicationAPITestSuite) TestApplicationWithAllowedUserTypes() {
-	// Create test user schemas first
-	employeeSchema := testutils.UserSchema{
+	// Create test user types first
+	employeeType := testutils.UserType{
 		Name:               "employee",
 		OrganizationUnitId: testOUID,
 		Schema: map[string]interface{}{
@@ -4030,7 +4030,7 @@ func (ts *ApplicationAPITestSuite) TestApplicationWithAllowedUserTypes() {
 			},
 		},
 	}
-	customerSchema := testutils.UserSchema{
+	customerType := testutils.UserType{
 		Name:               "customer",
 		OrganizationUnitId: testOUID,
 		Schema: map[string]interface{}{
@@ -4040,19 +4040,19 @@ func (ts *ApplicationAPITestSuite) TestApplicationWithAllowedUserTypes() {
 		},
 	}
 
-	employeeSchemaID, err := testutils.CreateUserType(employeeSchema)
-	ts.Require().NoError(err, "Failed to create employee user schema")
+	employeeTypeID, err := testutils.CreateUserType(employeeType)
+	ts.Require().NoError(err, "Failed to create employee user type")
 	defer func() {
-		if err := testutils.DeleteUserType(employeeSchemaID); err != nil {
-			ts.T().Logf("Failed to delete employee schema: %v", err)
+		if err := testutils.DeleteUserType(employeeTypeID); err != nil {
+			ts.T().Logf("Failed to delete employee user type: %v", err)
 		}
 	}()
 
-	customerSchemaID, err := testutils.CreateUserType(customerSchema)
-	ts.Require().NoError(err, "Failed to create customer user schema")
+	customerTypeID, err := testutils.CreateUserType(customerType)
+	ts.Require().NoError(err, "Failed to create customer user type")
 	defer func() {
-		if err := testutils.DeleteUserType(customerSchemaID); err != nil {
-			ts.T().Logf("Failed to delete customer schema: %v", err)
+		if err := testutils.DeleteUserType(customerTypeID); err != nil {
+			ts.T().Logf("Failed to delete customer user type: %v", err)
 		}
 	}()
 
@@ -4157,8 +4157,8 @@ func (ts *ApplicationAPITestSuite) TestApplicationWithInvalidAllowedUserTypes() 
 
 // TestApplicationUpdateWithAllowedUserTypes tests updating an application with allowed_user_types
 func (ts *ApplicationAPITestSuite) TestApplicationUpdateWithAllowedUserTypes() {
-	// Create test user schemas
-	employeeSchema := testutils.UserSchema{
+	// Create test user types
+	employeeType := testutils.UserType{
 		Name:               "employee_update",
 		OrganizationUnitId: testOUID,
 		Schema: map[string]interface{}{
@@ -4167,7 +4167,7 @@ func (ts *ApplicationAPITestSuite) TestApplicationUpdateWithAllowedUserTypes() {
 			},
 		},
 	}
-	partnerSchema := testutils.UserSchema{
+	partnerType := testutils.UserType{
 		Name:               "partner",
 		OrganizationUnitId: testOUID,
 		Schema: map[string]interface{}{
@@ -4177,19 +4177,19 @@ func (ts *ApplicationAPITestSuite) TestApplicationUpdateWithAllowedUserTypes() {
 		},
 	}
 
-	employeeSchemaID, err := testutils.CreateUserType(employeeSchema)
+	employeeTypeID, err := testutils.CreateUserType(employeeType)
 	ts.Require().NoError(err)
 	defer func() {
-		if err := testutils.DeleteUserType(employeeSchemaID); err != nil {
-			ts.T().Logf("Failed to delete employee schema: %v", err)
+		if err := testutils.DeleteUserType(employeeTypeID); err != nil {
+			ts.T().Logf("Failed to delete employee user type: %v", err)
 		}
 	}()
 
-	partnerSchemaID, err := testutils.CreateUserType(partnerSchema)
+	partnerTypeID, err := testutils.CreateUserType(partnerType)
 	ts.Require().NoError(err)
 	defer func() {
-		if err := testutils.DeleteUserType(partnerSchemaID); err != nil {
-			ts.T().Logf("Failed to delete partner schema: %v", err)
+		if err := testutils.DeleteUserType(partnerTypeID); err != nil {
+			ts.T().Logf("Failed to delete partner user type: %v", err)
 		}
 	}()
 
@@ -4370,8 +4370,8 @@ func (ts *ApplicationAPITestSuite) TestApplicationWithEmptyAllowedUserTypes() {
 
 // TestApplicationWithPartialInvalidAllowedUserTypes tests creating an application with mix of valid and invalid user types
 func (ts *ApplicationAPITestSuite) TestApplicationWithPartialInvalidAllowedUserTypes() {
-	// Create one valid user schema
-	validSchema := testutils.UserSchema{
+	// Create one valid user type
+	validUserType := testutils.UserType{
 		Name:               "valid_user_type",
 		OrganizationUnitId: testOUID,
 		Schema: map[string]interface{}{
@@ -4381,11 +4381,11 @@ func (ts *ApplicationAPITestSuite) TestApplicationWithPartialInvalidAllowedUserT
 		},
 	}
 
-	validSchemaID, err := testutils.CreateUserType(validSchema)
+	validUserTypeID, err := testutils.CreateUserType(validUserType)
 	ts.Require().NoError(err)
 	defer func() {
-		if err := testutils.DeleteUserType(validSchemaID); err != nil {
-			ts.T().Logf("Failed to delete valid schema: %v", err)
+		if err := testutils.DeleteUserType(validUserTypeID); err != nil {
+			ts.T().Logf("Failed to delete valid user type: %v", err)
 		}
 	}()
 

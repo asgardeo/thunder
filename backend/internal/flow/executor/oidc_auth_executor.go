@@ -31,7 +31,7 @@ import (
 	"github.com/asgardeo/thunder/internal/idp"
 	"github.com/asgardeo/thunder/internal/system/error/serviceerror"
 	"github.com/asgardeo/thunder/internal/system/log"
-	"github.com/asgardeo/thunder/internal/userschema"
+	"github.com/asgardeo/thunder/internal/usertype"
 )
 
 const (
@@ -62,7 +62,7 @@ func newOIDCAuthExecutor(
 	defaultInputs, prerequisites []common.Input,
 	flowFactory core.FlowFactoryInterface,
 	idpService idp.IDPServiceInterface,
-	userSchemaService userschema.UserSchemaServiceInterface,
+	userTypeService usertype.UserTypeServiceInterface,
 	authService authnoidc.OIDCAuthnCoreServiceInterface,
 ) oidcAuthExecutorInterface {
 	if name == "" {
@@ -77,7 +77,7 @@ func newOIDCAuthExecutor(
 	}
 
 	base := newOAuthExecutor(name, defaultInputs, prerequisites,
-		flowFactory, idpService, userSchemaService, oauthSvcCast)
+		flowFactory, idpService, userTypeService, oauthSvcCast)
 
 	return &oidcAuthExecutor{
 		oAuthExecutorInterface: base,

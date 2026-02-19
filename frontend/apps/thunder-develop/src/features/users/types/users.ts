@@ -187,38 +187,38 @@ export type PropertyDefinition =
   | ArrayPropertyDefinition;
 
 /**
- * User schema definition
+ * User type schema definition
  */
-export type UserSchemaDefinition = Record<string, PropertyDefinition>;
+export type UserTypeDefinition = Record<string, PropertyDefinition>;
 
 /**
- * User schema object
+ * User type object
  */
-export interface ApiUserSchema {
+export interface ApiUserType {
   id: string;
   name: string;
-  schema: UserSchemaDefinition;
+  schema: UserTypeDefinition;
 }
 
 /**
- * User schema list query parameters
+ * User type list query parameters
  */
-export interface SchemaListParams {
+export interface UserTypeListParams {
   limit?: number;
   offset?: number;
 }
 
 /**
- * User schema list response
+ * User type list response
  */
-export interface UserSchemaListResponse {
+export interface UserTypeListResponse {
   totalResults: number;
   startIndex: number;
   count: number;
-  schemas: SchemaInterface[];
+  schemas: UserTypeListItem[];
 }
 
-export interface SchemaInterface {
+export interface UserTypeListItem {
   id: string;
   name: string;
   ouId: string;

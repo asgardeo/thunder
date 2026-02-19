@@ -140,7 +140,7 @@ var (
 		Description: "OU for HTTP request executor registration tests",
 	}
 
-	httpRequestRegTestUserSchema = testutils.UserSchema{
+	httpRequestRegTestUserType = testutils.UserType{
 		Name: "http_request_reg_test_person",
 		Schema: map[string]interface{}{
 			"username": map[string]interface{}{
@@ -165,7 +165,7 @@ var (
 		Name:                      "HTTP Request Executor Registration Test Application",
 		Description:               "Application for testing HTTP request executor in registration flows",
 		IsRegistrationFlowEnabled: true,
-		AllowedUserTypes:          []string{httpRequestRegTestUserSchema.Name},
+		AllowedUserTypes:          []string{httpRequestRegTestUserType.Name},
 		AssertionConfig: map[string]interface{}{
 			"user_attributes": []string{"userType", "ouId", "ouName", "ouHandle"},
 		},
@@ -173,9 +173,9 @@ var (
 )
 
 var (
-	httpRequestRegTestAppID    string
-	httpRequestRegTestOUID     string
-	httpRequestRegUserSchemaID string
+	httpRequestRegTestAppID  string
+	httpRequestRegTestOUID   string
+	httpRequestRegUserTypeID string
 )
 
 type HTTPRequestRegistrationFlowTestSuite struct {
@@ -199,14 +199,14 @@ func (ts *HTTPRequestRegistrationFlowTestSuite) SetupSuite() {
 	}
 	httpRequestRegTestOUID = ouID
 
-	// Create test user schema within the test OU
-	httpRequestRegTestUserSchema.OrganizationUnitId = httpRequestRegTestOUID
-	httpRequestRegTestUserSchema.AllowSelfRegistration = true
-	schemaID, err := testutils.CreateUserType(httpRequestRegTestUserSchema)
+	// Create test user type within the test OU
+	httpRequestRegTestUserType.OrganizationUnitId = httpRequestRegTestOUID
+	httpRequestRegTestUserType.AllowSelfRegistration = true
+	typeID, err := testutils.CreateUserType(httpRequestRegTestUserType)
 	if err != nil {
-		ts.T().Fatalf("Failed to create test user schema during setup: %v", err)
+		ts.T().Fatalf("Failed to create test user type during setup: %v", err)
 	}
-	httpRequestRegUserSchemaID = schemaID
+	httpRequestRegUserTypeID = typeID
 
 	// Create registration flow
 	flowID, err := testutils.CreateFlow(httpRequestRegistrationFlow)
@@ -268,10 +268,10 @@ func (ts *HTTPRequestRegistrationFlowTestSuite) TearDownSuite() {
 		}
 	}
 
-	// Delete test user schema
-	if httpRequestRegUserSchemaID != "" {
-		if err := testutils.DeleteUserType(httpRequestRegUserSchemaID); err != nil {
-			ts.T().Logf("Failed to delete test user schema during teardown: %v", err)
+	// Delete test user type
+	if httpRequestRegUserTypeID != "" {
+		if err := testutils.DeleteUserType(httpRequestRegUserTypeID); err != nil {
+			ts.T().Logf("Failed to delete test user type during teardown: %v", err)
 		}
 	}
 }

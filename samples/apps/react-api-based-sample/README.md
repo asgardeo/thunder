@@ -17,7 +17,7 @@ This sample application demonstrates how to integrate Thunder authentication int
 - A running Thunder server instance (default: `https://localhost:8090`)
 - Thunder server configured with appropriate CORS settings
 - SSL certificates (`server.key` and `server.cert`) in the project root
-- The "Customer" user schema and "customers" organization unit created (via `02-sample-resources.sh` bootstrap script)
+- The "Customer" user type and "customers" organization unit created (via `02-sample-resources.sh` bootstrap script)
 
 ## Quick Start
 
@@ -51,7 +51,7 @@ cp ../../target/out/.cert/server.cert .
 
 ### 3. Set Up Sample Resources
 
-Run the bootstrap script to create the required "Customer" user schema and "customers" organization unit:
+Run the bootstrap script to create the required "Customer" user type and "customers" organization unit:
 
 ```bash
 # From the project root
@@ -158,8 +158,8 @@ This sample interacts with the following Thunder APIs:
 - Ensure Thunder server is running and accessible at the configured base URL
 - Check CORS configuration in Thunder's `deployment.yaml`
 
-**Issue**: "User schema not found" error during sign-up
-- Run the `02-sample-resources.sh` bootstrap script to create the "Customer" user schema
+**Issue**: "User Type not found" error during sign-up
+- Run the `02-sample-resources.sh` bootstrap script to create the "Customer" user type
 
 **Issue**: "Organization unit not found" error during sign-up
 - Run the `02-sample-resources.sh` bootstrap script to create the "customers" organization unit

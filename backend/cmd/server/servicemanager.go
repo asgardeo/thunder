@@ -53,7 +53,7 @@ import (
 	"github.com/asgardeo/thunder/internal/system/mcp"
 	"github.com/asgardeo/thunder/internal/system/services"
 	"github.com/asgardeo/thunder/internal/user"
-	"github.com/asgardeo/thunder/internal/userschema"
+	"github.com/asgardeo/thunder/internal/usertype"
 )
 
 // observabilitySvc is the observability service instance. This is used for graceful shutdown.
@@ -94,13 +94,13 @@ func registerServices(mux *http.ServeMux) jwt.JWTServiceInterface {
 	exporters = append(exporters, ouExporter)
 
 	hashService := hash.Initialize()
-	userSchemaService, userSchemaExporter, err := userschema.Initialize(mux, ouService)
+	userTypeService, userTypeExporter, err := usertype.Initialize(mux, ouService)
 	if err != nil {
-		logger.Fatal("Failed to initialize UserSchemaService", log.Error(err))
+		logger.Fatal("Failed to initialize UserTypeService", log.Error(err))
 	}
-	exporters = append(exporters, userSchemaExporter)
+	exporters = append(exporters, userTypeExporter)
 
-	userService, err := user.Initialize(mux, ouService, userSchemaService, hashService)
+	userService, err := user.Initialize(mux, ouService, userTypeService, hashService)
 	if err != nil {
 		logger.Fatal("Failed to initialize UserService", log.Error(err))
 	}
@@ -137,7 +137,7 @@ func registerServices(mux *http.ServeMux) jwt.JWTServiceInterface {
 	// Initialize flow and executor services.
 	flowFactory, graphCache := flowcore.Initialize()
 	execRegistry := executor.Initialize(flowFactory, userService, ouService,
-		idpService, otpService, jwtService, authSvcRegistry, authZService, userSchemaService, observabilitySvc,
+		idpService, otpService, jwtService, authSvcRegistry, authZService, userTypeService, observabilitySvc,
 		groupService, roleService)
 
 	flowMgtService, flowMgtExporter, err := flowmgt.Initialize(mux, mcpServer, flowFactory, execRegistry, graphCache)
@@ -164,7 +164,7 @@ func registerServices(mux *http.ServeMux) jwt.JWTServiceInterface {
 	exporters = append(exporters, layoutExporter)
 
 	applicationService, applicationExporter, err := application.Initialize(
-		mux, mcpServer, certservice, flowMgtService, themeMgtService, layoutMgtService, userSchemaService)
+		mux, mcpServer, certservice, flowMgtService, themeMgtService, layoutMgtService, userTypeService)
 	if err != nil {
 		logger.Fatal("Failed to initialize ApplicationService", log.Error(err))
 	}

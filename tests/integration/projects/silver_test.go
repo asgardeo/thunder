@@ -33,13 +33,13 @@ type SilverTestSuite struct {
 	suite.Suite
 	client             *http.Client
 	organizationUnitID string
-	userSchemaID       string
+	userTypeID         string
 	userID             string
 }
 
 const (
 	credentialsAuthEndpoint = "/auth/credentials/authenticate"
-	userSchemaName          = "emailuser"
+	userTypeName            = "emailuser"
 	username                = "alice"
 	password                = "secret123"
 	email                   = "alice@example.com"
@@ -52,8 +52,8 @@ var (
 		Name:   "Customers OU",
 		Parent: nil,
 	}
-	userSchema = testutils.UserSchema{
-		Name: userSchemaName,
+	userType = testutils.UserType{
+		Name: userTypeName,
 		Schema: map[string]interface{}{
 			"username": map[string]interface{}{
 				"type":   "string",
@@ -69,7 +69,7 @@ var (
 		},
 	}
 	user = testutils.User{
-		Type: userSchemaName,
+		Type: userTypeName,
 		Attributes: json.RawMessage(`{
 			"username": "` + username + `", 
 			"password": "` + password + `", 
@@ -92,13 +92,13 @@ func (ts *SilverTestSuite) SetupSuite() {
 	}
 	ts.organizationUnitID = ouID
 
-	// Create user schema
-	userSchema.OrganizationUnitId = ts.organizationUnitID
-	schemaID, err := testutils.CreateUserType(userSchema)
+	// Create user type
+	userType.OrganizationUnitId = ts.organizationUnitID
+	schemaID, err := testutils.CreateUserType(userType)
 	if err != nil {
-		ts.T().Fatalf("Failed to create test user schema: %v", err)
+		ts.T().Fatalf("Failed to create test user type: %v", err)
 	}
-	ts.userSchemaID = schemaID
+	ts.userTypeID = schemaID
 
 	// Create user
 	user.OrganizationUnit = ts.organizationUnitID
@@ -117,10 +117,10 @@ func (ts *SilverTestSuite) TearDownSuite() {
 		}
 	}
 
-	// Clean up created user schema
-	if ts.userSchemaID != "" {
-		if err := testutils.DeleteUserType(ts.userSchemaID); err != nil {
-			ts.T().Logf("Failed to delete test user schema %s: %v", ts.userSchemaID, err)
+	// Clean up created user type
+	if ts.userTypeID != "" {
+		if err := testutils.DeleteUserType(ts.userTypeID); err != nil {
+			ts.T().Logf("Failed to delete test user type %s: %v", ts.userTypeID, err)
 		}
 	}
 

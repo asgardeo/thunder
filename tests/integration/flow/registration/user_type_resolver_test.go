@@ -56,7 +56,7 @@ func (ts *UserTypeResolverRuntimeTestSuite) SetupSuite() {
 	ts.testOUID1 = ouID1
 
 	// Create first user type with self-registration enabled
-	userType1 := testutils.UserSchema{
+	userType1 := testutils.UserType{
 		Name:                  "runtime-test-customer",
 		OrganizationUnitId:    ts.testOUID1,
 		AllowSelfRegistration: true,
@@ -74,7 +74,7 @@ func (ts *UserTypeResolverRuntimeTestSuite) SetupSuite() {
 	ts.testUserTypeName1 = userType1.Name
 
 	// Create second user type with self-registration enabled
-	userType2 := testutils.UserSchema{
+	userType2 := testutils.UserType{
 		Name:                  "runtime-test-employee",
 		OrganizationUnitId:    ts.testOUID1,
 		AllowSelfRegistration: true,

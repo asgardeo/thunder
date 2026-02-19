@@ -43,16 +43,17 @@ import {useTranslation} from 'react-i18next';
 import {useLogger} from '@thunder/logger/react';
 import useDataGridLocaleText from '../../../hooks/useDataGridLocaleText';
 import useGetUsers from '../api/useGetUsers';
-import useGetUserSchema from '../api/useGetUserSchema';
+import useGetUserType from '../api/useGetUserType';
 import useDeleteUser from '../api/useDeleteUser';
 import type {UserWithDetails} from '../types/users';
 
 interface UsersListProps {
-  selectedSchema: string;
+  selectedUserTypeId?: string;
+  selectedSchema?: string;
 }
 
 export default function UsersList(props: UsersListProps) {
-  const {selectedSchema} = props;
+  const selectedUserTypeId = props.selectedUserTypeId ?? props.selectedSchema ?? '';
   const navigate = useNavigate();
   const {t} = useTranslation();
   const logger = useLogger('UsersList');
@@ -62,13 +63,13 @@ export default function UsersList(props: UsersListProps) {
   const {deleteUser, loading: isDeleting, error: deleteUserError} = useDeleteUser();
 
   const {
-    data: defaultUserSchema,
-    loading: isDefaultUserSchemaRequestLoading,
-    error: defaultUserSchemaRequestError,
-  } = useGetUserSchema(selectedSchema);
+    data: userTypeDefinition,
+    loading: isUserTypeRequestLoading,
+    error: userTypeRequestError,
+  } = useGetUserType(selectedUserTypeId);
 
-  const error = usersRequestError ?? defaultUserSchemaRequestError;
-  const isLoading = isUsersRequestLoading || isDefaultUserSchemaRequestLoading;
+  const error = usersRequestError ?? userTypeRequestError;
+  const isLoading = isUsersRequestLoading || isUserTypeRequestLoading;
 
   const [snackbarOpen, setSnackbarOpen] = useState(false);
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
@@ -140,13 +141,13 @@ export default function UsersList(props: UsersListProps) {
   };
 
   const columns: DataGrid.GridColDef<UserWithDetails>[] = useMemo(() => {
-    if (!defaultUserSchema) {
+    if (!userTypeDefinition) {
       // Return basic columns if schema is not loaded yet
       return [];
     }
 
     const schemaColumns: DataGrid.GridColDef<UserWithDetails>[] = [];
-    const schemaEntries = Object.entries(defaultUserSchema.schema);
+    const schemaEntries = Object.entries(userTypeDefinition.schema);
 
     // Helper function to format field names
     const formatHeaderName = (fieldName: string): string =>
@@ -340,7 +341,7 @@ export default function UsersList(props: UsersListProps) {
     });
 
     return schemaColumns;
-  }, [defaultUserSchema, handleMenuOpen, t]);
+  }, [handleMenuOpen, t, userTypeDefinition]);
 
   // Calculate initial column visibility: show first 4 columns, hide the rest
   const initialColumnVisibility = useMemo(() => {

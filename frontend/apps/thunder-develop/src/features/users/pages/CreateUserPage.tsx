@@ -21,42 +21,42 @@ import {useForm, Controller} from 'react-hook-form';
 import {useMemo, useState, useEffect} from 'react';
 import {Box, Stack, Typography, Button, Paper, FormLabel, FormControl, Select, MenuItem} from '@wso2/oxygen-ui';
 import {ArrowLeft, Plus, Save} from '@wso2/oxygen-ui-icons-react';
-import useGetUserSchemas from '../api/useGetUserSchemas';
-import type {SchemaInterface} from '../types/users';
-import useGetUserSchema from '../api/useGetUserSchema';
+import useGetUserTypes from '../api/useGetUserTypes';
+import type {UserTypeListItem} from '../types/users';
+import useGetUserType from '../api/useGetUserType';
 import useCreateUser from '../api/useCreateUser';
 import renderSchemaField from '../utils/renderSchemaField';
 
 interface CreateUserFormData {
-  schema: string;
+  userType: string;
   [key: string]: string | number | boolean;
 }
 
 export default function CreateUserPage() {
   const navigate = useNavigate();
-  const [selectedSchema, setSelectedSchema] = useState<SchemaInterface>();
+  const [selectedUserType, setSelectedUserType] = useState<UserTypeListItem>();
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const {data: originalUserSchemas} = useGetUserSchemas();
+  const {data: originalUserTypes} = useGetUserTypes();
   const {createUser, error: createUserError} = useCreateUser();
 
   const {
-    data: defaultUserSchema,
-    loading: isDefaultUserSchemaRequestLoading,
-    error: defaultUserSchemaRequestError,
-  } = useGetUserSchema(selectedSchema?.id);
+    data: defaultUserType,
+    loading: isUserTypeRequestLoading,
+    error: userTypeRequestError,
+  } = useGetUserType(selectedUserType?.id);
 
-  const userSchemas: SchemaInterface[] = useMemo(() => {
-    if (!originalUserSchemas?.schemas) {
+  const userTypes: UserTypeListItem[] = useMemo(() => {
+    if (!originalUserTypes?.schemas) {
       return [];
     }
 
-    if (originalUserSchemas.schemas.length > 0 && !selectedSchema) {
-      setSelectedSchema(originalUserSchemas.schemas[0]);
+    if (originalUserTypes.schemas.length > 0 && !selectedUserType) {
+      setSelectedUserType(originalUserTypes.schemas[0]);
     }
 
-    return originalUserSchemas?.schemas;
-  }, [originalUserSchemas, selectedSchema]);
+    return originalUserTypes?.schemas;
+  }, [originalUserTypes, selectedUserType]);
 
   const {
     control,
@@ -65,25 +65,25 @@ export default function CreateUserPage() {
     formState: {errors},
   } = useForm<CreateUserFormData>({
     defaultValues: {
-      schema: '',
+      userType: '',
     },
   });
 
   // Set default schema when schemas are loaded
   useEffect(() => {
-    if (selectedSchema) {
-      setValue('schema', selectedSchema.name);
+    if (selectedUserType) {
+      setValue('userType', selectedUserType.name);
     }
-  }, [selectedSchema, setValue]);
+  }, [selectedUserType, setValue]);
 
   const onSubmit = async (data: CreateUserFormData) => {
     try {
       setIsSubmitting(true);
 
-      // Extract schema from form data (schema already contains the schema name)
-      const {schema, ...attributes} = data;
+      // Extract user type from form data (userType already contains the name)
+      const {userType, ...attributes} = data;
 
-      const trimmedOuId = selectedSchema?.ouId?.trim();
+      const trimmedOuId = selectedUserType?.ouId?.trim();
       const organizationUnitId = trimmedOuId === '' ? undefined : trimmedOuId;
 
       if (!organizationUnitId) {
@@ -93,7 +93,7 @@ export default function CreateUserPage() {
       // Prepare the request body according to the API spec
       const requestBody = {
         organizationUnit: organizationUnitId,
-        type: schema,
+        type: userType,
         attributes,
       };
 
@@ -120,7 +120,7 @@ export default function CreateUserPage() {
   };
 
   const handleCreateUserType = () => {
-    // TODO: Implement navigation to create user schema page
+    // TODO: Implement navigation to create user type page
     // eslint-disable-next-line no-console
     console.log('Navigate to create user type page');
   };
@@ -165,13 +165,13 @@ export default function CreateUserPage() {
         >
           {/* Schema Select Field with Create Button */}
           <Box>
-            <FormLabel htmlFor="schema" sx={{mb: 1, display: 'block'}}>
+            <FormLabel htmlFor="userType" sx={{mb: 1, display: 'block'}}>
               User Type
             </FormLabel>
             <Stack direction="row" spacing={2} alignItems="flex-start">
-              <FormControl sx={{flexGrow: 1}} error={!!errors.schema}>
+              <FormControl sx={{flexGrow: 1}} error={!!errors.userType}>
                 <Controller
-                  name="schema"
+                  name="userType"
                   control={control}
                   rules={{
                     required: 'User type is required',
@@ -179,34 +179,34 @@ export default function CreateUserPage() {
                   render={({field}) => (
                     <Select
                       {...field}
-                      id="schema"
-                      value={field.value ?? selectedSchema?.name}
+                      id="userType"
+                      value={field.value ?? selectedUserType?.name}
                       onChange={(e) => {
                         field.onChange(e);
-                        const schema = userSchemas.find((s) => s.name === e.target.value);
-                        setSelectedSchema(schema);
+                        const userType = userTypes.find((s) => s.name === e.target.value);
+                        setSelectedUserType(userType);
                       }}
                       required
-                      error={!!errors.schema}
+                      error={!!errors.userType}
                       displayEmpty
                     >
-                      {userSchemas.length === 0 ? (
+                      {userTypes.length === 0 ? (
                         <MenuItem value="" disabled>
-                          Loading schemas...
+                          Loading user types...
                         </MenuItem>
                       ) : (
-                        userSchemas.map((schema) => (
-                          <MenuItem key={schema.name} value={schema.name}>
-                            {schema.name}
+                        userTypes.map((userType) => (
+                          <MenuItem key={userType.name} value={userType.name}>
+                            {userType.name}
                           </MenuItem>
                         ))
                       )}
                     </Select>
                   )}
                 />
-                {errors.schema && (
+                {errors.userType && (
                   <Typography variant="caption" color="error" sx={{mt: 0.5, ml: 1.75}}>
-                    {errors.schema.message}
+                    {errors.userType.message}
                   </Typography>
                 )}
               </FormControl>
@@ -217,24 +217,24 @@ export default function CreateUserPage() {
           </Box>
 
           {/* Dynamic Schema Fields */}
-          {isDefaultUserSchemaRequestLoading && (
+          {isUserTypeRequestLoading && (
             <Box sx={{textAlign: 'center', py: 4}}>
               <Typography variant="body2" color="text.secondary">
-                Loading schema fields...
+                Loading user type fields...
               </Typography>
             </Box>
           )}
 
-          {defaultUserSchemaRequestError && (
+          {userTypeRequestError && (
             <Box sx={{textAlign: 'center', py: 4}}>
               <Typography variant="body2" color="error">
-                Error loading schema: {defaultUserSchemaRequestError.message}
+                Error loading user type: {userTypeRequestError.message}
               </Typography>
             </Box>
           )}
 
-          {defaultUserSchema?.schema &&
-            Object.entries(defaultUserSchema.schema).map(([fieldName, fieldDef]) =>
+          {defaultUserType?.schema &&
+            Object.entries(defaultUserType.schema).map(([fieldName, fieldDef]) =>
               renderSchemaField(fieldName, fieldDef, control, errors),
             )}
 

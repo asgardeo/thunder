@@ -104,12 +104,12 @@ curl -kL -X POST -H 'Content-Type: application/json' https://localhost:8090/appl
 }'
 ```
 
-### Step 4: Create User Schema
+### Step 4: Create User Type
 
-Before creating users, define a user schema. 
+Before creating users, define a user type. 
 
 ```bash
-curl -kL -X POST -H 'Content-Type: application/json' https://localhost:8090/user-schemas \
+curl -kL -X POST -H 'Content-Type: application/json' https://localhost:8090/user-types \
 -H 'Authorization: Bearer <token>' \
 -d '{
     "name": "test-person",
@@ -133,7 +133,7 @@ curl -kL -X POST -H 'Content-Type: application/json' https://localhost:8090/user
 }'
 ```
 
-> **Note:** User schema creation is mandatory. You only need to create a schema once.
+> **Note:** User type creation is mandatory. You only need to create a schema once.
 
 ### Step 5: Create User with Role
 

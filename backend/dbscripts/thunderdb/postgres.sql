@@ -1,5 +1,5 @@
--- Table to store User Schemas
-CREATE TABLE USER_SCHEMAS (
+-- Table to store User Types
+CREATE TABLE USER_TYPES (
     ID          INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
     DEPLOYMENT_ID   VARCHAR(255) NOT NULL,
     SCHEMA_ID   VARCHAR(36) NOT NULL,
@@ -13,8 +13,8 @@ CREATE TABLE USER_SCHEMAS (
     UNIQUE (NAME, DEPLOYMENT_ID)
 );
 
--- Index for deployment isolation on USER_SCHEMAS
-CREATE INDEX idx_user_schemas_deployment_id ON USER_SCHEMAS (DEPLOYMENT_ID);
+-- Index for deployment isolation on USER_TYPES
+CREATE INDEX idx_user_types_deployment_id ON USER_TYPES (DEPLOYMENT_ID);
 
 -- Table to store Roles
 CREATE TABLE "ROLE" (

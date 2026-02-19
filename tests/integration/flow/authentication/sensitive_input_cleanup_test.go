@@ -134,7 +134,7 @@ var (
 		},
 	}
 
-	sensitiveCleanupUserSchema = testutils.UserSchema{
+	sensitiveCleanupUserType = testutils.UserType{
 		Name: "sensitive_cleanup_user",
 		Schema: map[string]interface{}{
 			"username": map[string]interface{}{
@@ -147,7 +147,7 @@ var (
 	}
 
 	sensitiveCleanupTestUser = testutils.User{
-		Type: sensitiveCleanupUserSchema.Name,
+		Type: sensitiveCleanupUserType.Name,
 		Attributes: json.RawMessage(`{
 			"username": "sensitiveuser",
 			"password": "sensitivepassword"
@@ -156,8 +156,8 @@ var (
 )
 
 var (
-	sensitiveCleanupAppID    string
-	sensitiveCleanupSchemaID string
+	sensitiveCleanupAppID  string
+	sensitiveCleanupTypeID string
 )
 
 type SensitiveInputCleanupTestSuite struct {
@@ -178,13 +178,13 @@ func (ts *SensitiveInputCleanupTestSuite) SetupSuite() {
 	ts.Require().NoError(err, "Failed to create test organization unit")
 	ts.ouID = ouID
 
-	// Create test user schema
-	sensitiveCleanupUserSchema.OrganizationUnitId = ts.ouID
-	schemaID, err := testutils.CreateUserType(sensitiveCleanupUserSchema)
+	// Create test user type
+	sensitiveCleanupUserType.OrganizationUnitId = ts.ouID
+	schemaID, err := testutils.CreateUserType(sensitiveCleanupUserType)
 	if err != nil {
-		ts.T().Fatalf("Failed to create test user schema during setup: %v", err)
+		ts.T().Fatalf("Failed to create test user type during setup: %v", err)
 	}
-	sensitiveCleanupSchemaID = schemaID
+	sensitiveCleanupTypeID = schemaID
 
 	// Create flow
 	flowID, err := testutils.CreateFlow(sensitiveInputCleanupFlow)
@@ -226,9 +226,9 @@ func (ts *SensitiveInputCleanupTestSuite) TearDownSuite() {
 		}
 	}
 
-	if sensitiveCleanupSchemaID != "" {
-		if err := testutils.DeleteUserType(sensitiveCleanupSchemaID); err != nil {
-			ts.T().Logf("Failed to delete test user schema during teardown: %v", err)
+	if sensitiveCleanupTypeID != "" {
+		if err := testutils.DeleteUserType(sensitiveCleanupTypeID); err != nil {
+			ts.T().Logf("Failed to delete test user type during teardown: %v", err)
 		}
 	}
 

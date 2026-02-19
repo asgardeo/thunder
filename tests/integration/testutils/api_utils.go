@@ -37,18 +37,18 @@ func GetHTTPClient() *http.Client {
 	return NewHTTPClientWithTokenProvider(GetAccessToken)
 }
 
-// CreateUserType creates a user type via API and returns the schema ID
-func CreateUserType(schema UserSchema) (string, error) {
+// CreateUserType creates a user type via API and returns the type ID
+func CreateUserType(schema UserType) (string, error) {
 	if !schema.AllowSelfRegistration {
 		schema.AllowSelfRegistration = true
 	}
 
 	payload, err := json.Marshal(schema)
 	if err != nil {
-		return "", fmt.Errorf("failed to marshal user schema: %w", err)
+		return "", fmt.Errorf("failed to marshal user type: %w", err)
 	}
 
-	req, err := http.NewRequest("POST", TestServerURL+"/user-schemas", bytes.NewReader(payload))
+	req, err := http.NewRequest("POST", TestServerURL+"/user-types", bytes.NewReader(payload))
 	if err != nil {
 		return "", fmt.Errorf("failed to create request: %w", err)
 	}
@@ -127,7 +127,7 @@ func CreateUser(user User) (string, error) {
 
 // DeleteUserType deletes a user type by ID
 func DeleteUserType(schemaID string) error {
-	req, err := http.NewRequest("DELETE", fmt.Sprintf("%s/user-schemas/%s", TestServerURL, schemaID), nil)
+	req, err := http.NewRequest("DELETE", fmt.Sprintf("%s/user-types/%s", TestServerURL, schemaID), nil)
 	if err != nil {
 		return fmt.Errorf("failed to create delete request: %w", err)
 	}
@@ -135,7 +135,7 @@ func DeleteUserType(schemaID string) error {
 	client := GetHTTPClient()
 	resp, err := client.Do(req)
 	if err != nil {
-		return fmt.Errorf("failed to delete user schema: %w", err)
+		return fmt.Errorf("failed to delete user type: %w", err)
 	}
 	defer resp.Body.Close()
 

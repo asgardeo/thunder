@@ -22,7 +22,7 @@ import React from 'react';
 import type * as OxygenUI from '@wso2/oxygen-ui';
 import {DataGrid} from '@wso2/oxygen-ui';
 import UsersList from '../UsersList';
-import type {UserListResponse, ApiUserSchema, ApiError} from '../../types/users';
+import type {UserListResponse, ApiUserType, ApiError} from '../../types/users';
 
 type DataGridProps = DataGrid.DataGridProps;
 
@@ -142,8 +142,8 @@ interface UseGetUsersReturn {
   refetch: (params?: unknown) => void;
 }
 
-interface UseGetUserSchemaReturn {
-  data: ApiUserSchema | null;
+interface UseGetUserTypeReturn {
+  data: ApiUserType | null;
   loading: boolean;
   error: ApiError | null;
   refetch?: (newId?: string) => void;
@@ -157,15 +157,15 @@ interface UseDeleteUserReturn {
 }
 
 const mockUseGetUsers = vi.fn<() => UseGetUsersReturn>();
-const mockUseGetUserSchema = vi.fn<(schemaId: string) => UseGetUserSchemaReturn>();
+const mockUseGetUserType = vi.fn<(userTypeId: string) => UseGetUserTypeReturn>();
 const mockUseDeleteUser = vi.fn<() => UseDeleteUserReturn>();
 
 vi.mock('../../api/useGetUsers', () => ({
   default: () => mockUseGetUsers(),
 }));
 
-vi.mock('../../api/useGetUserSchema', () => ({
-  default: (schemaId: string) => mockUseGetUserSchema(schemaId),
+vi.mock('../../api/useGetUserType', () => ({
+  default: (userTypeId: string) => mockUseGetUserType(userTypeId),
 }));
 
 vi.mock('../../api/useDeleteUser', () => ({
@@ -205,7 +205,7 @@ describe('UsersList', () => {
     ],
   };
 
-  const mockSchema: ApiUserSchema = {
+  const mockSchema: ApiUserType = {
     id: 'schema1',
     name: 'Default Schema',
     schema: {
@@ -225,7 +225,7 @@ describe('UsersList', () => {
       error: null,
       refetch: mockRefetch,
     });
-    mockUseGetUserSchema.mockReturnValue({
+    mockUseGetUserType.mockReturnValue({
       data: mockSchema,
       loading: false,
       error: null,
@@ -297,7 +297,7 @@ describe('UsersList', () => {
       description: 'Error description',
     };
 
-    mockUseGetUserSchema.mockReturnValue({
+    mockUseGetUserType.mockReturnValue({
       data: null,
       loading: false,
       error,
@@ -446,7 +446,7 @@ describe('UsersList', () => {
   });
 
   it('renders empty columns when schema is not loaded', () => {
-    mockUseGetUserSchema.mockReturnValue({
+    mockUseGetUserType.mockReturnValue({
       data: null,
       loading: true,
       error: null,
@@ -459,7 +459,7 @@ describe('UsersList', () => {
   });
 
   it('handles different field types correctly', async () => {
-    const schemaWithTypes: ApiUserSchema = {
+    const schemaWithTypes: ApiUserType = {
       id: 'schema1',
       name: 'Test Schema',
       schema: {
@@ -491,7 +491,7 @@ describe('UsersList', () => {
       ],
     };
 
-    mockUseGetUserSchema.mockReturnValue({
+    mockUseGetUserType.mockReturnValue({
       data: schemaWithTypes,
       loading: false,
       error: null,
@@ -648,7 +648,7 @@ describe('UsersList', () => {
   });
 
   it('renders schema without avatar when name fields are not present', async () => {
-    const schemaWithoutNameFields: ApiUserSchema = {
+    const schemaWithoutNameFields: ApiUserType = {
       id: 'schema1',
       name: 'Test Schema',
       schema: {
@@ -657,7 +657,7 @@ describe('UsersList', () => {
       },
     };
 
-    mockUseGetUserSchema.mockReturnValue({
+    mockUseGetUserType.mockReturnValue({
       data: schemaWithoutNameFields,
       loading: false,
       error: null,
@@ -710,7 +710,7 @@ describe('UsersList', () => {
   });
 
   it('handles array field with empty array', async () => {
-    const schemaWithArray: ApiUserSchema = {
+    const schemaWithArray: ApiUserType = {
       id: 'schema1',
       name: 'Test Schema',
       schema: {
@@ -736,7 +736,7 @@ describe('UsersList', () => {
       ],
     };
 
-    mockUseGetUserSchema.mockReturnValue({
+    mockUseGetUserType.mockReturnValue({
       data: schemaWithArray,
       loading: false,
       error: null,
@@ -757,7 +757,7 @@ describe('UsersList', () => {
   });
 
   it('handles array field with null value', async () => {
-    const schemaWithArray: ApiUserSchema = {
+    const schemaWithArray: ApiUserType = {
       id: 'schema1',
       name: 'Test Schema',
       schema: {
@@ -783,7 +783,7 @@ describe('UsersList', () => {
       ],
     };
 
-    mockUseGetUserSchema.mockReturnValue({
+    mockUseGetUserType.mockReturnValue({
       data: schemaWithArray,
       loading: false,
       error: null,
@@ -804,7 +804,7 @@ describe('UsersList', () => {
   });
 
   it('handles object field with null value', async () => {
-    const schemaWithObject: ApiUserSchema = {
+    const schemaWithObject: ApiUserType = {
       id: 'schema1',
       name: 'Test Schema',
       schema: {
@@ -830,7 +830,7 @@ describe('UsersList', () => {
       ],
     };
 
-    mockUseGetUserSchema.mockReturnValue({
+    mockUseGetUserType.mockReturnValue({
       data: schemaWithObject,
       loading: false,
       error: null,
@@ -851,7 +851,7 @@ describe('UsersList', () => {
   });
 
   it('handles boolean field with null value', async () => {
-    const schemaWithBoolean: ApiUserSchema = {
+    const schemaWithBoolean: ApiUserType = {
       id: 'schema1',
       name: 'Test Schema',
       schema: {
@@ -877,7 +877,7 @@ describe('UsersList', () => {
       ],
     };
 
-    mockUseGetUserSchema.mockReturnValue({
+    mockUseGetUserType.mockReturnValue({
       data: schemaWithBoolean,
       loading: false,
       error: null,
@@ -898,7 +898,7 @@ describe('UsersList', () => {
   });
 
   it('handles status field with string value', async () => {
-    const schemaWithStatus: ApiUserSchema = {
+    const schemaWithStatus: ApiUserType = {
       id: 'schema1',
       name: 'Test Schema',
       schema: {
@@ -924,7 +924,7 @@ describe('UsersList', () => {
       ],
     };
 
-    mockUseGetUserSchema.mockReturnValue({
+    mockUseGetUserType.mockReturnValue({
       data: schemaWithStatus,
       loading: false,
       error: null,
@@ -945,7 +945,7 @@ describe('UsersList', () => {
   });
 
   it('handles status field with inactive string value', async () => {
-    const schemaWithStatus: ApiUserSchema = {
+    const schemaWithStatus: ApiUserType = {
       id: 'schema1',
       name: 'Test Schema',
       schema: {
@@ -971,7 +971,7 @@ describe('UsersList', () => {
       ],
     };
 
-    mockUseGetUserSchema.mockReturnValue({
+    mockUseGetUserType.mockReturnValue({
       data: schemaWithStatus,
       loading: false,
       error: null,
@@ -992,7 +992,7 @@ describe('UsersList', () => {
   });
 
   it('handles active field with null value', async () => {
-    const schemaWithActive: ApiUserSchema = {
+    const schemaWithActive: ApiUserType = {
       id: 'schema1',
       name: 'Test Schema',
       schema: {
@@ -1018,7 +1018,7 @@ describe('UsersList', () => {
       ],
     };
 
-    mockUseGetUserSchema.mockReturnValue({
+    mockUseGetUserType.mockReturnValue({
       data: schemaWithActive,
       loading: false,
       error: null,
@@ -1060,7 +1060,7 @@ describe('UsersList', () => {
   });
 
   it('handles number field with null value', async () => {
-    const schemaWithNumber: ApiUserSchema = {
+    const schemaWithNumber: ApiUserType = {
       id: 'schema1',
       name: 'Test Schema',
       schema: {
@@ -1086,7 +1086,7 @@ describe('UsersList', () => {
       ],
     };
 
-    mockUseGetUserSchema.mockReturnValue({
+    mockUseGetUserType.mockReturnValue({
       data: schemaWithNumber,
       loading: false,
       error: null,
@@ -1140,13 +1140,13 @@ describe('UsersList', () => {
   });
 
   it('handles schema with empty schema entries', async () => {
-    const emptySchema: ApiUserSchema = {
+    const emptySchema: ApiUserType = {
       id: 'schema1',
       name: 'Empty Schema',
       schema: {},
     };
 
-    mockUseGetUserSchema.mockReturnValue({
+    mockUseGetUserType.mockReturnValue({
       data: emptySchema,
       loading: false,
       error: null,
@@ -1161,7 +1161,7 @@ describe('UsersList', () => {
   });
 
   it('displays false boolean value correctly', async () => {
-    const schemaWithBoolean: ApiUserSchema = {
+    const schemaWithBoolean: ApiUserType = {
       id: 'schema1',
       name: 'Test Schema',
       schema: {
@@ -1187,7 +1187,7 @@ describe('UsersList', () => {
       ],
     };
 
-    mockUseGetUserSchema.mockReturnValue({
+    mockUseGetUserType.mockReturnValue({
       data: schemaWithBoolean,
       loading: false,
       error: null,
@@ -1234,7 +1234,7 @@ describe('UsersList', () => {
   });
 
   it('handles schema loading with all field types', async () => {
-    const comprehensiveSchema: ApiUserSchema = {
+    const comprehensiveSchema: ApiUserType = {
       id: 'schema1',
       name: 'Comprehensive Schema',
       schema: {
@@ -1248,7 +1248,7 @@ describe('UsersList', () => {
       },
     };
 
-    mockUseGetUserSchema.mockReturnValue({
+    mockUseGetUserType.mockReturnValue({
       data: comprehensiveSchema,
       loading: false,
       error: null,

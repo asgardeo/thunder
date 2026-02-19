@@ -32,18 +32,18 @@ import (
 	"github.com/asgardeo/thunder/internal/idp"
 	"github.com/asgardeo/thunder/internal/system/error/serviceerror"
 	"github.com/asgardeo/thunder/internal/user"
-	"github.com/asgardeo/thunder/internal/userschema"
+	"github.com/asgardeo/thunder/internal/usertype"
 	"github.com/asgardeo/thunder/tests/mocks/authn/oidcmock"
 	"github.com/asgardeo/thunder/tests/mocks/flow/coremock"
 	"github.com/asgardeo/thunder/tests/mocks/idp/idpmock"
-	"github.com/asgardeo/thunder/tests/mocks/userschemamock"
+	"github.com/asgardeo/thunder/tests/mocks/usertypemock"
 )
 
 type OIDCAuthExecutorTestSuite struct {
 	suite.Suite
 	mockOIDCService       *oidcmock.OIDCAuthnCoreServiceInterfaceMock
 	mockIDPService        *idpmock.IDPServiceInterfaceMock
-	mockUserSchemaService *userschemamock.UserSchemaServiceInterfaceMock
+	mockUserTypeService *usertypemock.UserTypeServiceInterfaceMock
 	mockFlowFactory       *coremock.FlowFactoryInterfaceMock
 	executor              oidcAuthExecutorInterface
 }
@@ -55,7 +55,7 @@ func TestOIDCAuthExecutorSuite(t *testing.T) {
 func (suite *OIDCAuthExecutorTestSuite) SetupTest() {
 	suite.mockOIDCService = oidcmock.NewOIDCAuthnCoreServiceInterfaceMock(suite.T())
 	suite.mockIDPService = idpmock.NewIDPServiceInterfaceMock(suite.T())
-	suite.mockUserSchemaService = userschemamock.NewUserSchemaServiceInterfaceMock(suite.T())
+	suite.mockUserTypeService = usertypemock.NewUserTypeServiceInterfaceMock(suite.T())
 	suite.mockFlowFactory = coremock.NewFlowFactoryInterfaceMock(suite.T())
 
 	defaultInputs := []common.Input{{Identifier: "code", Type: "string", Required: true}}
@@ -64,7 +64,7 @@ func (suite *OIDCAuthExecutorTestSuite) SetupTest() {
 		defaultInputs, []common.Input{}).Return(mockExec)
 
 	suite.executor = newOIDCAuthExecutor(ExecutorNameOIDCAuth, defaultInputs, []common.Input{},
-		suite.mockFlowFactory, suite.mockIDPService, suite.mockUserSchemaService, suite.mockOIDCService)
+		suite.mockFlowFactory, suite.mockIDPService, suite.mockUserTypeService, suite.mockOIDCService)
 }
 
 func (suite *OIDCAuthExecutorTestSuite) TestNewOIDCAuthExecutor() {
@@ -1130,8 +1130,8 @@ func (suite *OIDCAuthExecutorTestSuite) TestProcessAuthFlowResponse_AllowAuthWit
 			Code: authncm.ErrorUserNotFound.Code,
 			Type: serviceerror.ClientErrorType,
 		})
-	suite.mockUserSchemaService.On("GetUserSchemaByName", "INTERNAL").
-		Return(&userschema.UserSchema{
+	suite.mockUserTypeService.On("GetUserTypeByName", "INTERNAL").
+		Return(&usertype.UserType{
 			Name:                  "INTERNAL",
 			AllowSelfRegistration: true,
 			OrganizationUnitID:    "ou-123",
@@ -1148,7 +1148,7 @@ func (suite *OIDCAuthExecutorTestSuite) TestProcessAuthFlowResponse_AllowAuthWit
 	assert.Equal(suite.T(), "new-user-sub", execResp.RuntimeData["sub"])
 	assert.NotNil(suite.T(), execResp.AuthenticatedUser.Attributes)
 	suite.mockOIDCService.AssertExpectations(suite.T())
-	suite.mockUserSchemaService.AssertExpectations(suite.T())
+	suite.mockUserTypeService.AssertExpectations(suite.T())
 }
 
 func (suite *OIDCAuthExecutorTestSuite) TestProcessAuthFlowResponse_PreventAuthWithoutLocalUser() {

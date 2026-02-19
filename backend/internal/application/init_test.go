@@ -31,7 +31,7 @@ import (
 	"github.com/asgardeo/thunder/internal/system/config"
 	"github.com/asgardeo/thunder/tests/mocks/certmock"
 	"github.com/asgardeo/thunder/tests/mocks/flow/flowmgtmock"
-	"github.com/asgardeo/thunder/tests/mocks/userschemamock"
+	"github.com/asgardeo/thunder/tests/mocks/usertypemock"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -48,13 +48,13 @@ type InitTestSuite struct {
 	suite.Suite
 	mockCertService       *certmock.CertificateServiceInterfaceMock
 	mockFlowMgtService    *flowmgtmock.FlowMgtServiceInterfaceMock
-	mockUserSchemaService *userschemamock.UserSchemaServiceInterfaceMock
+	mockUserTypeService *usertypemock.UserTypeServiceInterfaceMock
 }
 
 func (suite *InitTestSuite) SetupTest() {
 	suite.mockCertService = certmock.NewCertificateServiceInterfaceMock(suite.T())
 	suite.mockFlowMgtService = flowmgtmock.NewFlowMgtServiceInterfaceMock(suite.T())
-	suite.mockUserSchemaService = userschemamock.NewUserSchemaServiceInterfaceMock(suite.T())
+	suite.mockUserTypeService = usertypemock.NewUserTypeServiceInterfaceMock(suite.T())
 }
 
 func (suite *InitTestSuite) TearDownTest() {
@@ -88,7 +88,7 @@ func (suite *InitTestSuite) TestInitialize_WithDeclarativeResourcesDisabled() {
 		suite.mockFlowMgtService,
 		nil, // themeMgtService - not needed for this test
 		nil, // layoutMgtService - not needed for this test
-		suite.mockUserSchemaService,
+		suite.mockUserTypeService,
 	)
 
 	// Assert
@@ -125,7 +125,7 @@ func (suite *InitTestSuite) TestInitialize_WithMCPServer() {
 		suite.mockFlowMgtService,
 		nil, // themeMgtService - not needed for this test
 		nil, // layoutMgtService - not needed for this test
-		suite.mockUserSchemaService,
+		suite.mockUserTypeService,
 	)
 
 	// Assert
@@ -516,7 +516,7 @@ func TestInitialize_Standalone(t *testing.T) {
 	mux := http.NewServeMux()
 	mockCertService := certmock.NewCertificateServiceInterfaceMock(t)
 	mockFlowMgtService := flowmgtmock.NewFlowMgtServiceInterfaceMock(t)
-	mockUserSchemaService := userschemamock.NewUserSchemaServiceInterfaceMock(t)
+	mockUserTypeService := usertypemock.NewUserTypeServiceInterfaceMock(t)
 
 	// Execute
 	service, _, err := Initialize(
@@ -526,7 +526,7 @@ func TestInitialize_Standalone(t *testing.T) {
 		mockFlowMgtService,
 		nil, // themeMgtService - not needed for this test
 		nil, // layoutMgtService - not needed for this test
-		mockUserSchemaService,
+		mockUserTypeService,
 	)
 
 	// Assert
@@ -563,7 +563,7 @@ func TestInitialize_WithDeclarativeResources_Standalone(t *testing.T) {
 	mux := http.NewServeMux()
 	mockCertService := certmock.NewCertificateServiceInterfaceMock(t)
 	mockFlowMgtService := flowmgtmock.NewFlowMgtServiceInterfaceMock(t)
-	mockUserSchemaService := userschemamock.NewUserSchemaServiceInterfaceMock(t)
+	mockUserTypeService := usertypemock.NewUserTypeServiceInterfaceMock(t)
 
 	// Execute
 	service, _, err := Initialize(
@@ -573,7 +573,7 @@ func TestInitialize_WithDeclarativeResources_Standalone(t *testing.T) {
 		mockFlowMgtService,
 		nil, // themeMgtService - not needed for this test
 		nil, // layoutMgtService - not needed for this test
-		mockUserSchemaService,
+		mockUserTypeService,
 	)
 
 	// Assert

@@ -59,7 +59,7 @@ func (s *SelfUserEndpointsSuite) SetupSuite() {
 	s.Require().NoError(err)
 	s.ouID = ouID
 
-	schema := testutils.UserSchema{
+	schema := testutils.UserType{
 		Name:                  s.userType,
 		OrganizationUnitId:    ouID,
 		AllowSelfRegistration: true,

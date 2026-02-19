@@ -31,7 +31,7 @@ import (
 	"github.com/asgardeo/thunder/internal/system/config"
 	declarativeresource "github.com/asgardeo/thunder/internal/system/declarative_resource"
 	"github.com/asgardeo/thunder/internal/system/middleware"
-	"github.com/asgardeo/thunder/internal/userschema"
+	"github.com/asgardeo/thunder/internal/usertype"
 )
 
 // Initialize initializes the application service and registers its routes.
@@ -42,7 +42,7 @@ func Initialize(
 	flowMgtService flowmgt.FlowMgtServiceInterface,
 	themeMgtService thememgt.ThemeMgtServiceInterface,
 	layoutMgtService layoutmgt.LayoutMgtServiceInterface,
-	userSchemaService userschema.UserSchemaServiceInterface,
+	userTypeService usertype.UserTypeServiceInterface,
 ) (ApplicationServiceInterface, declarativeresource.ResourceExporter, error) {
 	var appStore applicationStoreInterface
 	if config.GetThunderRuntime().Config.DeclarativeResources.Enabled {
@@ -53,7 +53,7 @@ func Initialize(
 	}
 
 	appService := newApplicationService(
-		appStore, certService, flowMgtService, themeMgtService, layoutMgtService, userSchemaService)
+		appStore, certService, flowMgtService, themeMgtService, layoutMgtService, userTypeService)
 
 	if config.GetThunderRuntime().Config.DeclarativeResources.Enabled {
 		if err := loadDeclarativeResources(appStore, appService); err != nil {

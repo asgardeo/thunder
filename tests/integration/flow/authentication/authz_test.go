@@ -36,7 +36,7 @@ var (
 		Parent:      nil,
 	}
 
-	authzTestUserSchema = testutils.UserSchema{
+	authzTestUserType = testutils.UserType{
 		Name: "authz-test-person",
 		Schema: map[string]interface{}{
 			"username": map[string]interface{}{
@@ -185,7 +185,7 @@ var (
 	authzTestRoleID         string
 	authzUserWithRole       string
 	authzUserNoRole         string
-	authzUserSchemaID       string
+	authzUserTypeID         string
 	authzTestResourceServer string
 )
 
@@ -209,11 +209,11 @@ func (ts *FlowAuthzTestSuite) SetupSuite() {
 		ts.T().Fatalf("Failed to create test organization unit during setup: %v", err)
 	}
 
-	// Create user schema within the test organization unit
-	authzTestUserSchema.OrganizationUnitId = authzTestOUID
-	authzUserSchemaID, err = testutils.CreateUserType(authzTestUserSchema)
+	// Create user type within the test organization unit
+	authzTestUserType.OrganizationUnitId = authzTestOUID
+	authzUserTypeID, err = testutils.CreateUserType(authzTestUserType)
 	if err != nil {
-		ts.T().Fatalf("Failed to create user schema during setup: %v", err)
+		ts.T().Fatalf("Failed to create user type during setup: %v", err)
 	}
 
 	// Create flow
@@ -332,9 +332,9 @@ func (ts *FlowAuthzTestSuite) TearDownSuite() {
 		}
 	}
 
-	if authzUserSchemaID != "" {
-		if err := testutils.DeleteUserType(authzUserSchemaID); err != nil {
-			ts.T().Logf("Failed to delete user schema during teardown: %v", err)
+	if authzUserTypeID != "" {
+		if err := testutils.DeleteUserType(authzUserTypeID); err != nil {
+			ts.T().Logf("Failed to delete user type during teardown: %v", err)
 		}
 	}
 }

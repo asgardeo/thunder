@@ -56,7 +56,7 @@ type groupCreateResponse struct {
 }
 
 var (
-	userSchema = testutils.UserSchema{
+	userType = testutils.UserType{
 		Name: "test-user-person",
 		Schema: map[string]interface{}{
 			"age": map[string]interface{}{"type": "number"},
@@ -101,7 +101,7 @@ var (
 	createdUserID  string
 	testOUID       string
 	createdGroupID string
-	userSchemaID   string
+	userTypeID     string
 )
 
 type UserAPITestSuite struct {
@@ -122,12 +122,12 @@ func (ts *UserAPITestSuite) SetupSuite() {
 	}
 	testOUID = ouID
 
-	userSchema.OrganizationUnitId = testOUID
-	schemaID, err := testutils.CreateUserType(userSchema)
+	userType.OrganizationUnitId = testOUID
+	schemaID, err := testutils.CreateUserType(userType)
 	if err != nil {
-		ts.T().Fatalf("Failed to create user schema during setup: %v", err)
+		ts.T().Fatalf("Failed to create user type during setup: %v", err)
 	}
-	userSchemaID = schemaID
+	userTypeID = schemaID
 
 	// Update user template with the created OU ID
 	testUser := testUser
@@ -183,9 +183,9 @@ func (ts *UserAPITestSuite) TearDownSuite() {
 		}
 	}
 
-	if userSchemaID != "" {
-		if err := testutils.DeleteUserType(userSchemaID); err != nil {
-			ts.T().Logf("Failed to delete user schema during teardown: %v", err)
+	if userTypeID != "" {
+		if err := testutils.DeleteUserType(userTypeID); err != nil {
+			ts.T().Logf("Failed to delete user type during teardown: %v", err)
 		}
 	}
 }

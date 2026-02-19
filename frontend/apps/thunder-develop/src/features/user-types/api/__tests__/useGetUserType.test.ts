@@ -91,7 +91,7 @@ describe('useGetUserType', () => {
     });
 
     expect(mockHttpRequest).toHaveBeenCalledWith(
-      expect.objectContaining({url: 'https://localhost:8090/user-schemas/123', method: 'GET'}),
+      expect.objectContaining({url: 'https://localhost:8090/user-types/123', method: 'GET'}),
     );
   });
 
@@ -209,7 +209,7 @@ describe('useGetUserType', () => {
     });
 
     expect(mockHttpRequest).toHaveBeenCalledWith(
-      expect.objectContaining({url: 'https://localhost:8090/user-schemas/456', method: 'GET'}),
+      expect.objectContaining({url: 'https://localhost:8090/user-types/456', method: 'GET'}),
     );
   });
 
@@ -263,11 +263,11 @@ describe('useGetUserType', () => {
     expect(mockHttpRequest).toHaveBeenCalledTimes(2);
     expect(mockHttpRequest).toHaveBeenNthCalledWith(
       1,
-      expect.objectContaining({url: 'https://localhost:8090/user-schemas/123', method: 'GET'}),
+      expect.objectContaining({url: 'https://localhost:8090/user-types/123', method: 'GET'}),
     );
     expect(mockHttpRequest).toHaveBeenNthCalledWith(
       2,
-      expect.objectContaining({url: 'https://localhost:8090/user-schemas/456', method: 'GET'}),
+      expect.objectContaining({url: 'https://localhost:8090/user-types/456', method: 'GET'}),
     );
   });
 
@@ -379,7 +379,7 @@ describe('useGetUserType', () => {
 
     expect(mockHttpRequest).toHaveBeenCalledWith(
       expect.objectContaining({
-        url: expect.stringContaining('/user-schemas/123') as string,
+        url: expect.stringContaining('/user-types/123') as string,
         method: 'GET',
       }),
     );

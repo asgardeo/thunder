@@ -111,12 +111,12 @@ OU_ID=$(curl -kL -X POST -H 'Content-Type: application/json' https://localhost:8
 
 Save the organization unit `id` from the response.
 
-### Step 3: Create User Schema
+### Step 3: Create User Type
 
-Before creating users, define a user schema. This is mandatory and only needs to be done once:
+Before creating users, define a user type. This is mandatory and only needs to be done once:
 
 ```bash
-curl -kL -X POST -H 'Content-Type: application/json' https://localhost:8090/user-schemas \
+curl -kL -X POST -H 'Content-Type: application/json' https://localhost:8090/user-types \
 -H 'Authorization: Bearer <token>' \
 -d '{
     "name": "hotel-employee",

@@ -23,7 +23,7 @@ import {useConfig} from '@thunder/shared-contexts';
 import type {ApiError} from '../types/user-types';
 
 /**
- * Custom hook to delete a user schema (user type)
+ * Custom hook to delete a user type
  * @returns Object containing deleteUserType function, loading state, error, and reset function
  */
 export default function useDeleteUserType() {
@@ -43,7 +43,7 @@ export default function useDeleteUserType() {
       setError(null);
 
       await http.request({
-        url: `${API_BASE_URL}/user-schemas/${userTypeId}`,
+        url: `${API_BASE_URL}/user-types/${userTypeId}`,
         method: 'DELETE',
       } as unknown as Parameters<typeof http.request>[0]);
 

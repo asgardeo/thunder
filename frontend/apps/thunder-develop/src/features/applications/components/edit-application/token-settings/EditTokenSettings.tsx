@@ -28,12 +28,12 @@ import {useConfig} from '@thunder/shared-contexts';
 import {useLogger} from '@thunder/logger';
 import type {OAuth2Config} from '../../../models/oauth';
 import type {Application} from '../../../models/application';
-import type {PropertyDefinition, ApiUserSchema} from '../../../../user-types/types/user-types';
+import type {PropertyDefinition, ApiUserType} from '../../../../user-types/types/user-types';
 import TokenIssuerSection from './TokenIssuerSection';
 import TokenUserAttributesSection from './TokenUserAttributesSection';
 import TokenValidationSection from './TokenValidationSection';
 
-interface UserSchemaListResponse {
+interface UserTypeListResponse {
   totalResults: number;
   startIndex: number;
   count: number;
@@ -52,16 +52,16 @@ function useGetUserTypes() {
   const {http} = useAsgardeo();
   const {getServerUrl} = useConfig();
 
-  return useQuery<UserSchemaListResponse>({
+  return useQuery<UserTypeListResponse>({
     queryKey: ['user-types-list'],
-    queryFn: async (): Promise<UserSchemaListResponse> => {
+    queryFn: async (): Promise<UserTypeListResponse> => {
       const serverUrl = getServerUrl();
       const response = await http.request({
-        url: `${serverUrl}/user-schemas?limit=100`,
+        url: `${serverUrl}/user-types?limit=100`,
         method: 'GET',
       } as unknown as Parameters<typeof http.request>[0]);
 
-      return response.data as UserSchemaListResponse;
+      return response.data as UserTypeListResponse;
     },
   });
 }
@@ -117,7 +117,7 @@ const areAttributesEqual = (arr1: string[], arr2: string[]): boolean => {
  * - JWT preview with syntax highlighting
  *
  * Features:
- * - Fetches user schemas from available user types
+ * - Fetches user types from available user type definitions
  * - Debounced updates (500ms) when changes are made
  * - Visual feedback for pending additions/removals
  * - Tab-based interface for access vs ID tokens in OAuth mode
@@ -137,7 +137,7 @@ export default function EditTokenSettings({
 
   const applyTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [expandedSections, setExpandedSections] = useState<Set<string>>(new Set(['user', 'default']));
-  const [userSchemas, setUserSchemas] = useState<ApiUserSchema[]>([]);
+  const [userTypes, setUserTypes] = useState<ApiUserType[]>([]);
 
   const {data: userTypesData, isLoading: userTypesLoading} = useGetUserTypes();
   const [activeTokenType, setActiveTokenType] = useState<'access' | 'id' | 'userinfo'>('access');
@@ -256,11 +256,11 @@ export default function EditTokenSettings({
   ]);
 
   /**
-   * Fetch user schemas for all allowed user types
+   * Fetch user type definitions for all allowed user type IDs
    */
   useEffect(() => {
     if (schemaIds.length === 0) {
-      setUserSchemas([]);
+      setUserTypes([]);
       return;
     }
 
@@ -271,32 +271,32 @@ export default function EditTokenSettings({
         const schemaPromises = schemaIds.map(async (id) => {
           try {
             const response = await http.request({
-              url: `${serverUrl}/user-schemas/${id}`,
+              url: `${serverUrl}/user-types/${id}`,
               method: 'GET',
             } as unknown as Parameters<typeof http.request>[0]);
-            return response.data as ApiUserSchema;
+            return response.data as ApiUserType;
           } catch (err) {
-            logger.error('Failed to fetch user schema', {error: err, userSchemaId: id});
+            logger.error('Failed to fetch user type', {error: err, userTypeId: id});
             return null;
           }
         });
 
         const responses = await Promise.all(schemaPromises);
-        const schemas = responses.filter((schema): schema is ApiUserSchema => schema !== null);
-        setUserSchemas(schemas);
+        const schemas = responses.filter((schema): schema is ApiUserType => schema !== null);
+        setUserTypes(schemas);
       } catch (err) {
-        logger.error('Failed to fetch user schemas', {error: err});
-        setUserSchemas([]);
+        logger.error('Failed to fetch user types', {error: err});
+        setUserTypes([]);
       }
     };
 
     fetchSchemas().catch((err) => {
-      logger.error('Unexpected error in fetchUserSchemas', {error: err});
+      logger.error('Unexpected error in fetchUserTypes', {error: err});
     });
   }, [schemaIds, http, getServerUrl, logger]);
 
   const userAttributes = useMemo(() => {
-    if (userSchemas.length === 0) return [];
+    if (userTypes.length === 0) return [];
 
     const flattenAttributes = (schema: Record<string, PropertyDefinition>, prefix = ''): string[] => {
       const attributes: string[] = [];
@@ -318,13 +318,13 @@ export default function EditTokenSettings({
 
     // Combine attributes from all allowed user types and remove duplicates
     const allAttributes = new Set<string>();
-    userSchemas.forEach((userSchema) => {
-      const attributes = flattenAttributes(userSchema.schema);
+    userTypes.forEach((userType) => {
+      const attributes = flattenAttributes(userType.schema);
       attributes.forEach((attr) => allAttributes.add(attr));
     });
 
     return Array.from(allAttributes).sort();
-  }, [userSchemas]);
+  }, [userTypes]);
 
   const isLoadingUserAttributes = userTypesLoading;
 

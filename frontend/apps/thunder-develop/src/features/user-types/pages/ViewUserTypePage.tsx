@@ -55,7 +55,7 @@ import useGetUserType from '../api/useGetUserType';
 import useUpdateUserType from '../api/useUpdateUserType';
 import useDeleteUserType from '../api/useDeleteUserType';
 import useGetOrganizationUnits from '../../organization-units/api/useGetOrganizationUnits';
-import type {PropertyDefinition, UserSchemaDefinition, PropertyType, SchemaPropertyInput} from '../types/user-types';
+import type {PropertyDefinition, UserTypeDefinition, PropertyType, SchemaPropertyInput} from '../types/user-types';
 
 export default function ViewUserTypePage() {
   const navigate = useNavigate();
@@ -91,7 +91,7 @@ export default function ViewUserTypePage() {
     [organizationUnits, ouId],
   );
 
-  const convertSchemaToProperties = (schema: UserSchemaDefinition) => {
+  const convertSchemaToProperties = (schema: UserTypeDefinition) => {
     const props: SchemaPropertyInput[] = Object.entries(schema).map(([key, value], index) => ({
       id: `${index}`,
       name: key,
@@ -198,7 +198,7 @@ export default function ViewUserTypePage() {
       const validProperties = properties.filter((prop) => prop.name.trim());
 
       // Convert properties to schema definition
-      const schema: UserSchemaDefinition = {};
+      const schema: UserTypeDefinition = {};
       validProperties.forEach((prop) => {
         // Convert UI type to actual PropertyType (enum -> string)
         const actualType: PropertyType = prop.type === 'enum' ? 'string' : prop.type;

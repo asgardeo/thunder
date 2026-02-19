@@ -42,7 +42,7 @@ var (
 		Parent:      nil,
 	}
 
-	credentialUserSchemas = map[string]testutils.UserSchema{
+	credentialUserTypes = map[string]testutils.UserType{
 		"username_password": {
 			Name: "username_password",
 			Schema: map[string]interface{}{
@@ -113,10 +113,10 @@ var (
 
 type CredentialsAuthTestSuite struct {
 	suite.Suite
-	client        *http.Client
-	users         map[string]string // map of test name to user ID
-	userSchemaIDs map[string]string
-	ouID          string
+	client      *http.Client
+	users       map[string]string // map of test name to user ID
+	userTypeIDs map[string]string
+	ouID        string
 }
 
 func TestCredentialsAuthTestSuite(t *testing.T) {
@@ -126,7 +126,7 @@ func TestCredentialsAuthTestSuite(t *testing.T) {
 func (suite *CredentialsAuthTestSuite) SetupSuite() {
 	suite.client = testutils.GetHTTPClient()
 	suite.users = make(map[string]string)
-	suite.userSchemaIDs = make(map[string]string)
+	suite.userTypeIDs = make(map[string]string)
 
 	// Create test organization unit
 	ouID, err := testutils.CreateOrganizationUnit(testOU)
@@ -135,13 +135,13 @@ func (suite *CredentialsAuthTestSuite) SetupSuite() {
 	}
 	suite.ouID = ouID
 
-	for userType, schema := range credentialUserSchemas {
-		schema.OrganizationUnitId = suite.ouID
-		schemaID, err := testutils.CreateUserType(schema)
+	for userType, userTypeDef := range credentialUserTypes {
+		userTypeDef.OrganizationUnitId = suite.ouID
+		userTypeID, err := testutils.CreateUserType(userTypeDef)
 		if err != nil {
-			suite.T().Fatalf("Failed to create user schema %s during setup: %v", userType, err)
+			suite.T().Fatalf("Failed to create user type %s during setup: %v", userType, err)
 		}
-		suite.userSchemaIDs[userType] = schemaID
+		suite.userTypeIDs[userType] = userTypeID
 	}
 
 	// Create test users with different attribute types
@@ -212,11 +212,11 @@ func (suite *CredentialsAuthTestSuite) TearDownSuite() {
 		}
 	}
 
-	for userType, schemaID := range suite.userSchemaIDs {
-		if schemaID != "" {
-			err := testutils.DeleteUserType(schemaID)
+	for userType, userTypeID := range suite.userTypeIDs {
+		if userTypeID != "" {
+			err := testutils.DeleteUserType(userTypeID)
 			if err != nil {
-				suite.T().Errorf("Failed to delete user schema %s during teardown: %v", userType, err)
+				suite.T().Errorf("Failed to delete user type %s during teardown: %v", userType, err)
 			}
 		}
 	}

@@ -91,7 +91,7 @@ var (
 		Parent:      nil,
 	}
 
-	googleRegGroupRoleUserSchema = testutils.UserSchema{
+	googleRegGroupRoleUserType = testutils.UserType{
 		Name: "google_reg_group_role_user",
 		Schema: map[string]interface{}{
 			"username": map[string]interface{}{
@@ -119,7 +119,7 @@ var (
 		ClientID:                  "google_reg_group_role_test_client",
 		ClientSecret:              "google_reg_group_role_test_secret",
 		RedirectURIs:              []string{"http://localhost:3000/callback"},
-		AllowedUserTypes:          []string{googleRegGroupRoleUserSchema.Name},
+		AllowedUserTypes:          []string{googleRegGroupRoleUserType.Name},
 		AssertionConfig: map[string]interface{}{
 			"user_attributes": []string{"userType", "ouId", "ouName", "ouHandle"},
 		},
@@ -139,7 +139,7 @@ type GoogleRegistrationGroupRoleTestSuite struct {
 	suite.Suite
 	mockGoogleServer *testutils.MockGoogleOIDCServer
 	idpID            string
-	userSchemaID     string
+	userTypeID       string
 	groupID          string
 	roleID           string
 	config           *common.TestSuiteConfig
@@ -179,12 +179,12 @@ func (ts *GoogleRegistrationGroupRoleTestSuite) SetupSuite() {
 	}
 	googleRegGroupRoleTestOUID = ouID
 
-	// Create user schema
-	googleRegGroupRoleUserSchema.OrganizationUnitId = googleRegGroupRoleTestOUID
-	googleRegGroupRoleUserSchema.AllowSelfRegistration = true
-	schemaID, err := testutils.CreateUserType(googleRegGroupRoleUserSchema)
-	ts.Require().NoError(err, "Failed to create user schema")
-	ts.userSchemaID = schemaID
+	// Create user type
+	googleRegGroupRoleUserType.OrganizationUnitId = googleRegGroupRoleTestOUID
+	googleRegGroupRoleUserType.AllowSelfRegistration = true
+	schemaID, err := testutils.CreateUserType(googleRegGroupRoleUserType)
+	ts.Require().NoError(err, "Failed to create user type")
+	ts.userTypeID = schemaID
 
 	// Create test group
 	testGroup := testutils.Group{
@@ -345,8 +345,8 @@ func (ts *GoogleRegistrationGroupRoleTestSuite) TearDownSuite() {
 		}
 	}
 
-	if ts.userSchemaID != "" {
-		_ = testutils.DeleteUserType(ts.userSchemaID)
+	if ts.userTypeID != "" {
+		_ = testutils.DeleteUserType(ts.userTypeID)
 	}
 
 	// Stop mock server
@@ -388,7 +388,7 @@ func (ts *GoogleRegistrationGroupRoleTestSuite) TestGoogleRegistrationWithGroupA
 	jwtClaims, err := testutils.DecodeJWT(completeFlowStep.Assertion)
 	ts.Require().NoError(err, "Failed to decode JWT assertion")
 	ts.Require().NotNil(jwtClaims, "JWT claims should not be nil")
-	ts.Require().Equal(googleRegGroupRoleUserSchema.Name, jwtClaims.UserType, "Expected userType to match")
+	ts.Require().Equal(googleRegGroupRoleUserType.Name, jwtClaims.UserType, "Expected userType to match")
 	ts.Require().Equal(googleRegGroupRoleTestAppID, jwtClaims.Aud, "Expected aud to match application ID")
 
 	// Step 4: Verify user was created

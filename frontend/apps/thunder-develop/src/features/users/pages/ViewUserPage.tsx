@@ -36,8 +36,8 @@ import {
 } from '@wso2/oxygen-ui';
 import {ArrowLeft, Edit, Save, X, Trash2} from '@wso2/oxygen-ui-icons-react';
 import useGetUser from '../api/useGetUser';
-import useGetUserSchemas from '../api/useGetUserSchemas';
-import useGetUserSchema from '../api/useGetUserSchema';
+import useGetUserTypes from '../api/useGetUserTypes';
+import useGetUserType from '../api/useGetUserType';
 import useUpdateUser from '../api/useUpdateUser';
 import useDeleteUser from '../api/useDeleteUser';
 import renderSchemaField from '../utils/renderSchemaField';
@@ -55,23 +55,23 @@ export default function ViewUserPage() {
   const {updateUser, error: updateUserError, reset: resetUpdateError} = useUpdateUser();
   const {deleteUser, loading: isDeleting, error: deleteUserError} = useDeleteUser();
 
-  // Get all schemas to find the schema ID from the schema name
-  const {data: userSchemas} = useGetUserSchemas();
+  // Get all user types to find the type ID from the type name
+  const {data: userTypes} = useGetUserTypes();
 
-  // Find the schema ID based on the user's type (which is the schema name)
-  const matchedSchema = useMemo(() => {
-    if (!user?.type || !userSchemas?.schemas) {
+  // Find the user type ID based on the user's type name
+  const matchedUserType = useMemo(() => {
+    if (!user?.type || !userTypes?.schemas) {
       return undefined;
     }
 
-    return userSchemas.schemas.find((s) => s.name === user.type);
-  }, [user?.type, userSchemas?.schemas]);
+    return userTypes.schemas.find((s) => s.name === user.type);
+  }, [user?.type, userTypes?.schemas]);
 
-  const schemaId = matchedSchema?.id;
-  const trimmedOuId = matchedSchema?.ouId?.trim();
-  const schemaOuId = trimmedOuId === '' ? undefined : trimmedOuId;
+  const userTypeId = matchedUserType?.id;
+  const trimmedOuId = matchedUserType?.ouId?.trim();
+  const userTypeOuId = trimmedOuId === '' ? undefined : trimmedOuId;
 
-  const {data: userSchema, loading: isSchemaLoading, error: schemaError} = useGetUserSchema(schemaId);
+  const {data: userTypeDefinition, loading: isUserTypeLoading, error: userTypeError} = useGetUserType(userTypeId);
 
   const {
     control,
@@ -84,15 +84,15 @@ export default function ViewUserPage() {
 
   // Populate form with user data when user data is loaded
   useEffect(() => {
-    if (user?.attributes && userSchema?.schema) {
+    if (user?.attributes && userTypeDefinition?.schema) {
       Object.entries(user.attributes).forEach(([key, value]) => {
         setValue(key, value as string | number | boolean);
       });
     }
-  }, [user, userSchema, setValue]);
+  }, [user, userTypeDefinition, setValue]);
 
   const onSubmit = async (data: UpdateUserFormData) => {
-    const organizationUnitId = schemaOuId ?? user?.organizationUnit;
+    const organizationUnitId = userTypeOuId ?? user?.organizationUnit;
 
     if (!userId || !organizationUnitId || !user?.type) return;
 
@@ -126,7 +126,7 @@ export default function ViewUserPage() {
     setIsEditMode(false);
     resetUpdateError();
     // Reset form to original values
-    if (user?.attributes && userSchema?.schema) {
+    if (user?.attributes && userTypeDefinition?.schema) {
       Object.entries(user.attributes).forEach(([key, value]) => {
         setValue(key, value as string | number | boolean);
       });
@@ -162,7 +162,7 @@ export default function ViewUserPage() {
   };
 
   // Loading state
-  if (isUserLoading || isSchemaLoading) {
+  if (isUserLoading || isUserTypeLoading) {
     return (
       <Box sx={{display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '400px'}}>
         <CircularProgress />
@@ -171,11 +171,11 @@ export default function ViewUserPage() {
   }
 
   // Error state
-  if (userError ?? schemaError) {
+  if (userError ?? userTypeError) {
     return (
       <Box sx={{maxWidth: 1000, mx: 'auto', px: 2, pt: 6}}>
         <Alert severity="error" sx={{mb: 2}}>
-          {userError?.message ?? schemaError?.message ?? 'Failed to load user information'}
+          {userError?.message ?? userTypeError?.message ?? 'Failed to load user information'}
         </Alert>
         <Button
           onClick={() => {
@@ -335,8 +335,8 @@ export default function ViewUserPage() {
               sx={{display: 'flex', flexDirection: 'column', gap: 2}}
             >
               {/* Dynamic Schema Fields */}
-              {userSchema?.schema ? (
-                Object.entries(userSchema.schema)
+              {userTypeDefinition?.schema ? (
+                Object.entries(userTypeDefinition.schema)
                   .filter(([fieldName]) => fieldName !== 'password')
                   .map(([fieldName, fieldDef]) => renderSchemaField(fieldName, fieldDef, control, errors))
               ) : (

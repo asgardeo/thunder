@@ -26,14 +26,14 @@ import (
 	"github.com/asgardeo/thunder/internal/system/crypto/hash"
 	"github.com/asgardeo/thunder/internal/system/database/provider"
 	"github.com/asgardeo/thunder/internal/system/middleware"
-	"github.com/asgardeo/thunder/internal/userschema"
+	"github.com/asgardeo/thunder/internal/usertype"
 )
 
 // Initialize initializes the user service and registers its routes.
 func Initialize(
 	mux *http.ServeMux,
 	ouService oupkg.OrganizationUnitServiceInterface,
-	userSchemaService userschema.UserSchemaServiceInterface,
+	userTypeService usertype.UserTypeServiceInterface,
 	hashService hash.HashServiceInterface,
 ) (UserServiceInterface, error) {
 	userStore, err := newUserStore()
@@ -47,7 +47,7 @@ func Initialize(
 		return nil, err
 	}
 
-	userService := newUserService(userStore, ouService, userSchemaService, hashService, transactioner)
+	userService := newUserService(userStore, ouService, userTypeService, hashService, transactioner)
 	setUserService(userService) // Set the provider for backward compatibility
 	userHandler := newUserHandler(userService)
 	registerRoutes(mux, userHandler)

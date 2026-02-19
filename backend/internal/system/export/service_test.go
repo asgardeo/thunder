@@ -35,12 +35,12 @@ import (
 	"github.com/asgardeo/thunder/internal/system/config"
 	declarativeresource "github.com/asgardeo/thunder/internal/system/declarative_resource"
 	"github.com/asgardeo/thunder/internal/system/error/serviceerror"
-	"github.com/asgardeo/thunder/internal/userschema"
+	"github.com/asgardeo/thunder/internal/usertype"
 	"github.com/asgardeo/thunder/tests/mocks/applicationmock"
 	"github.com/asgardeo/thunder/tests/mocks/flow/flowmgtmock"
 	"github.com/asgardeo/thunder/tests/mocks/idp/idpmock"
 	"github.com/asgardeo/thunder/tests/mocks/notification/notificationmock"
-	"github.com/asgardeo/thunder/tests/mocks/userschemamock"
+	"github.com/asgardeo/thunder/tests/mocks/usertypemock"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
@@ -64,7 +64,7 @@ type ExportServiceTestSuite struct {
 	appServiceMock          *applicationmock.ApplicationServiceInterfaceMock
 	idpServiceMock          *idpmock.IDPServiceInterfaceMock
 	mockNotificationService *notificationmock.NotificationSenderMgtSvcInterfaceMock
-	mockUserSchemaService   *userschemamock.UserSchemaServiceInterfaceMock
+	mockUserTypeService     *usertypemock.UserTypeServiceInterfaceMock
 	mockFlowService         *flowmgtmock.FlowMgtServiceInterfaceMock
 	exportService           ExportServiceInterface
 }
@@ -92,7 +92,7 @@ func (suite *ExportServiceTestSuite) SetupTest() {
 	suite.appServiceMock = applicationmock.NewApplicationServiceInterfaceMock(suite.T())
 	suite.idpServiceMock = idpmock.NewIDPServiceInterfaceMock(suite.T())
 	suite.mockNotificationService = notificationmock.NewNotificationSenderMgtSvcInterfaceMock(suite.T())
-	suite.mockUserSchemaService = userschemamock.NewUserSchemaServiceInterfaceMock(suite.T())
+	suite.mockUserTypeService = usertypemock.NewUserTypeServiceInterfaceMock(suite.T())
 	suite.mockFlowService = flowmgtmock.NewFlowMgtServiceInterfaceMock(suite.T())
 
 	// Create exporters
@@ -100,7 +100,7 @@ func (suite *ExportServiceTestSuite) SetupTest() {
 		application.NewApplicationExporterForTest(suite.appServiceMock),
 		idp.NewIDPExporterForTest(suite.idpServiceMock),
 		notification.NewNotificationSenderExporterForTest(suite.mockNotificationService),
-		userschema.NewUserSchemaExporterForTest(suite.mockUserSchemaService),
+		usertype.NewUserTypeExporterForTest(suite.mockUserTypeService),
 		flowmgt.NewFlowGraphExporterForTest(suite.mockFlowService),
 	}
 
@@ -1161,7 +1161,7 @@ func (suite *ExportServiceTestSuite) TestExportResources_TemplateGenerationError
 		application.NewApplicationExporterForTest(suite.appServiceMock),
 		idp.NewIDPExporterForTest(suite.idpServiceMock),
 		notification.NewNotificationSenderExporterForTest(suite.mockNotificationService),
-		userschema.NewUserSchemaExporterForTest(suite.mockUserSchemaService),
+		usertype.NewUserTypeExporterForTest(suite.mockUserTypeService),
 	}
 
 	// Create a new export service with the mock parameterizer
@@ -1486,24 +1486,24 @@ func (suite *ExportServiceTestSuite) TestExportNotificationSenders_WildcardParti
 	assert.Equal(suite.T(), 2, result.Summary.ResourceTypes["notification_sender"])
 }
 
-// TestExportUserSchemas_Success tests successful export of user schemas.
-func (suite *ExportServiceTestSuite) TestExportUserSchemas_Success() {
+// TestExportUserTypes_Success tests successful export of user types.
+func (suite *ExportServiceTestSuite) TestExportUserTypes_Success() {
 	request := &ExportRequest{
-		UserSchemas: []string{"schema1"},
+		UserTypes: []string{"type1"},
 		Options: &ExportOptions{
 			Format: "yaml",
 		},
 	}
 
-	mockSchema := &userschema.UserSchema{
-		ID:                    "schema1",
-		Name:                  "Test Schema",
+	mockType := &usertype.UserType{
+		ID:                    "type1",
+		Name:                  "Test Type",
 		OrganizationUnitID:    "ou1",
 		AllowSelfRegistration: true,
 		Schema:                []byte(`{"type":"object","properties":{"email":{"type":"string"}}}`),
 	}
 
-	suite.mockUserSchemaService.EXPECT().GetUserSchema("schema1").Return(mockSchema, nil)
+	suite.mockUserTypeService.EXPECT().GetUserType("type1").Return(mockType, nil)
 
 	result, err := suite.exportService.ExportResources(request)
 
@@ -1511,39 +1511,39 @@ func (suite *ExportServiceTestSuite) TestExportUserSchemas_Success() {
 	assert.NotNil(suite.T(), result)
 	assert.Len(suite.T(), result.Files, 1)
 	assert.Equal(suite.T(), 1, result.Summary.TotalFiles)
-	assert.Contains(suite.T(), result.Summary.ResourceTypes, "user_schema")
-	assert.Equal(suite.T(), "Test_Schema.yaml", result.Files[0].FileName)
-	assert.Equal(suite.T(), "user_schema", result.Files[0].ResourceType)
-	assert.Contains(suite.T(), result.Files[0].Content, "name: Test Schema")
+	assert.Contains(suite.T(), result.Summary.ResourceTypes, "user_type")
+	assert.Equal(suite.T(), "Test_Type.yaml", result.Files[0].FileName)
+	assert.Equal(suite.T(), "user_type", result.Files[0].ResourceType)
+	assert.Contains(suite.T(), result.Files[0].Content, "name: Test Type")
 }
 
-// TestExportUserSchemas_Multiple tests exporting multiple user schemas.
-func (suite *ExportServiceTestSuite) TestExportUserSchemas_Multiple() {
+// TestExportUserTypes_Multiple tests exporting multiple user types.
+func (suite *ExportServiceTestSuite) TestExportUserTypes_Multiple() {
 	request := &ExportRequest{
-		UserSchemas: []string{"schema1", "schema2"},
+		UserTypes: []string{"type1", "type2"},
 		Options: &ExportOptions{
 			Format: "yaml",
 		},
 	}
 
-	mockSchema1 := &userschema.UserSchema{
-		ID:                    "schema1",
-		Name:                  "Customer Schema",
+	mockType1 := &usertype.UserType{
+		ID:                    "type1",
+		Name:                  "Customer Type",
 		OrganizationUnitID:    "ou1",
 		AllowSelfRegistration: true,
 		Schema:                []byte(`{"type":"object","properties":{"email":{"type":"string"}}}`),
 	}
 
-	mockSchema2 := &userschema.UserSchema{
-		ID:                    "schema2",
-		Name:                  "Employee Schema",
+	mockType2 := &usertype.UserType{
+		ID:                    "type2",
+		Name:                  "Employee Type",
 		OrganizationUnitID:    "ou1",
 		AllowSelfRegistration: false,
 		Schema:                []byte(`{"type":"object","properties":{"empId":{"type":"string"}}}`),
 	}
 
-	suite.mockUserSchemaService.EXPECT().GetUserSchema("schema1").Return(mockSchema1, nil)
-	suite.mockUserSchemaService.EXPECT().GetUserSchema("schema2").Return(mockSchema2, nil)
+	suite.mockUserTypeService.EXPECT().GetUserType("type1").Return(mockType1, nil)
+	suite.mockUserTypeService.EXPECT().GetUserType("type2").Return(mockType2, nil)
 
 	result, err := suite.exportService.ExportResources(request)
 
@@ -1551,46 +1551,46 @@ func (suite *ExportServiceTestSuite) TestExportUserSchemas_Multiple() {
 	assert.NotNil(suite.T(), result)
 	assert.Len(suite.T(), result.Files, 2)
 	assert.Equal(suite.T(), 2, result.Summary.TotalFiles)
-	assert.Equal(suite.T(), 2, result.Summary.ResourceTypes["user_schema"])
+	assert.Equal(suite.T(), 2, result.Summary.ResourceTypes["user_type"])
 }
 
-// TestExportUserSchemas_Wildcard tests exporting all user schemas using wildcard.
-func (suite *ExportServiceTestSuite) TestExportUserSchemas_Wildcard() {
+// TestExportUserTypes_Wildcard tests exporting all user types using wildcard.
+func (suite *ExportServiceTestSuite) TestExportUserTypes_Wildcard() {
 	request := &ExportRequest{
-		UserSchemas: []string{"*"},
+		UserTypes: []string{"*"},
 		Options: &ExportOptions{
 			Format: "yaml",
 		},
 	}
 
-	mockSchema1 := &userschema.UserSchema{
-		ID:                    "schema1",
-		Name:                  "Customer Schema",
+	mockType1 := &usertype.UserType{
+		ID:                    "type1",
+		Name:                  "Customer Type",
 		OrganizationUnitID:    "ou1",
 		AllowSelfRegistration: true,
 		Schema:                []byte(`{"type":"object","properties":{"email":{"type":"string"}}}`),
 	}
 
-	mockSchema2 := &userschema.UserSchema{
-		ID:                    "schema2",
-		Name:                  "Employee Schema",
+	mockType2 := &usertype.UserType{
+		ID:                    "type2",
+		Name:                  "Employee Type",
 		OrganizationUnitID:    "ou1",
 		AllowSelfRegistration: false,
 		Schema:                []byte(`{"type":"object","properties":{"empId":{"type":"string"}}}`),
 	}
 
-	mockSchemaList := &userschema.UserSchemaListResponse{
+	mockTypeList := &usertype.UserTypeListResponse{
 		TotalResults: 2,
 		Count:        2,
-		Schemas: []userschema.UserSchemaListItem{
-			{ID: "schema1", Name: "Customer Schema", OrganizationUnitID: "ou1"},
-			{ID: "schema2", Name: "Employee Schema", OrganizationUnitID: "ou1"},
+		Schemas: []usertype.UserTypeListItem{
+			{ID: "type1", Name: "Customer Type", OrganizationUnitID: "ou1"},
+			{ID: "type2", Name: "Employee Type", OrganizationUnitID: "ou1"},
 		},
 	}
 
-	suite.mockUserSchemaService.EXPECT().GetUserSchemaList(100, 0).Return(mockSchemaList, nil)
-	suite.mockUserSchemaService.EXPECT().GetUserSchema("schema1").Return(mockSchema1, nil)
-	suite.mockUserSchemaService.EXPECT().GetUserSchema("schema2").Return(mockSchema2, nil)
+	suite.mockUserTypeService.EXPECT().GetUserTypeList(100, 0).Return(mockTypeList, nil)
+	suite.mockUserTypeService.EXPECT().GetUserType("type1").Return(mockType1, nil)
+	suite.mockUserTypeService.EXPECT().GetUserType("type2").Return(mockType2, nil)
 
 	result, err := suite.exportService.ExportResources(request)
 
@@ -1600,10 +1600,10 @@ func (suite *ExportServiceTestSuite) TestExportUserSchemas_Wildcard() {
 	assert.Equal(suite.T(), 2, result.Summary.TotalFiles)
 }
 
-// TestExportUserSchemas_NotFound tests error handling when schema not found.
-func (suite *ExportServiceTestSuite) TestExportUserSchemas_NotFound() {
+// TestExportUserTypes_NotFound tests error handling when type not found.
+func (suite *ExportServiceTestSuite) TestExportUserTypes_NotFound() {
 	request := &ExportRequest{
-		UserSchemas: []string{"non-existent-schema"},
+		UserTypes: []string{"non-existent-type"},
 		Options: &ExportOptions{
 			Format: "yaml",
 		},
@@ -1611,10 +1611,10 @@ func (suite *ExportServiceTestSuite) TestExportUserSchemas_NotFound() {
 
 	schemaError := &serviceerror.ServiceError{
 		Code:  "SCHEMA_NOT_FOUND",
-		Error: "User schema not found",
+		Error: "User type not found",
 	}
 
-	suite.mockUserSchemaService.EXPECT().GetUserSchema("non-existent-schema").Return(nil, schemaError)
+	suite.mockUserTypeService.EXPECT().GetUserType("non-existent-type").Return(nil, schemaError)
 
 	result, err := suite.exportService.ExportResources(request)
 
@@ -1623,24 +1623,24 @@ func (suite *ExportServiceTestSuite) TestExportUserSchemas_NotFound() {
 	assert.Equal(suite.T(), ErrorNoResourcesFound.Code, err.Code)
 }
 
-// TestExportUserSchemas_EmptyName tests validation for schema with empty name.
-func (suite *ExportServiceTestSuite) TestExportUserSchemas_EmptyName() {
+// TestExportUserTypes_EmptyName tests validation for type with empty name.
+func (suite *ExportServiceTestSuite) TestExportUserTypes_EmptyName() {
 	request := &ExportRequest{
-		UserSchemas: []string{"schema-no-name"},
+		UserTypes: []string{"type-no-name"},
 		Options: &ExportOptions{
 			Format: "yaml",
 		},
 	}
 
-	mockSchema := &userschema.UserSchema{
-		ID:                    "schema-no-name",
+	mockType := &usertype.UserType{
+		ID:                    "type-no-name",
 		Name:                  "", // Empty name
 		OrganizationUnitID:    "ou1",
 		AllowSelfRegistration: true,
 		Schema:                []byte(`{"type":"object"}`),
 	}
 
-	suite.mockUserSchemaService.EXPECT().GetUserSchema("schema-no-name").Return(mockSchema, nil)
+	suite.mockUserTypeService.EXPECT().GetUserType("type-no-name").Return(mockType, nil)
 
 	result, err := suite.exportService.ExportResources(request)
 
@@ -1649,24 +1649,24 @@ func (suite *ExportServiceTestSuite) TestExportUserSchemas_EmptyName() {
 	assert.Equal(suite.T(), ErrorNoResourcesFound.Code, err.Code)
 }
 
-// TestExportUserSchemas_NoSchema tests exporting schema with no schema definition.
-func (suite *ExportServiceTestSuite) TestExportUserSchemas_NoSchema() {
+// TestExportUserTypes_NoSchema tests exporting type with no schema definition.
+func (suite *ExportServiceTestSuite) TestExportUserTypes_NoSchema() {
 	request := &ExportRequest{
-		UserSchemas: []string{"schema-no-def"},
+		UserTypes: []string{"type-no-def"},
 		Options: &ExportOptions{
 			Format: "yaml",
 		},
 	}
 
-	mockSchema := &userschema.UserSchema{
-		ID:                    "schema-no-def",
-		Name:                  "Empty Schema",
+	mockType := &usertype.UserType{
+		ID:                    "type-no-def",
+		Name:                  "Empty Type",
 		OrganizationUnitID:    "ou1",
 		AllowSelfRegistration: true,
 		Schema:                []byte{}, // Empty schema
 	}
 
-	suite.mockUserSchemaService.EXPECT().GetUserSchema("schema-no-def").Return(mockSchema, nil)
+	suite.mockUserTypeService.EXPECT().GetUserType("type-no-def").Return(mockType, nil)
 
 	result, err := suite.exportService.ExportResources(request)
 
@@ -1675,53 +1675,53 @@ func (suite *ExportServiceTestSuite) TestExportUserSchemas_NoSchema() {
 	assert.NotNil(suite.T(), result)
 	assert.Len(suite.T(), result.Files, 1)
 	assert.Equal(suite.T(), 1, result.Summary.TotalFiles)
-	assert.Contains(suite.T(), result.Files[0].Content, "name: Empty Schema")
+	assert.Contains(suite.T(), result.Files[0].Content, "name: Empty Type")
 }
 
-// TestExportUserSchemas_WildcardPartialFailure tests wildcard export with partial failures.
-func (suite *ExportServiceTestSuite) TestExportUserSchemas_WildcardPartialFailure() {
+// TestExportUserTypes_WildcardPartialFailure tests wildcard export with partial failures.
+func (suite *ExportServiceTestSuite) TestExportUserTypes_WildcardPartialFailure() {
 	request := &ExportRequest{
-		UserSchemas: []string{"*"},
+		UserTypes: []string{"*"},
 		Options: &ExportOptions{
 			Format: "yaml",
 		},
 	}
 
-	mockSchema1 := &userschema.UserSchema{
-		ID:                    "schema1",
-		Name:                  "Customer Schema",
+	mockType1 := &usertype.UserType{
+		ID:                    "type1",
+		Name:                  "Customer Type",
 		OrganizationUnitID:    "ou1",
 		AllowSelfRegistration: true,
 		Schema:                []byte(`{"type":"object"}`),
 	}
 
-	mockSchema3 := &userschema.UserSchema{
-		ID:                    "schema3",
-		Name:                  "Partner Schema",
+	mockType3 := &usertype.UserType{
+		ID:                    "type3",
+		Name:                  "Partner Type",
 		OrganizationUnitID:    "ou1",
 		AllowSelfRegistration: false,
 		Schema:                []byte(`{"type":"object"}`),
 	}
 
-	mockSchemaList := &userschema.UserSchemaListResponse{
+	mockTypeList := &usertype.UserTypeListResponse{
 		TotalResults: 3,
 		Count:        3,
-		Schemas: []userschema.UserSchemaListItem{
-			{ID: "schema1", Name: "Customer Schema"},
-			{ID: "schema2", Name: "Employee Schema"},
-			{ID: "schema3", Name: "Partner Schema"},
+		Schemas: []usertype.UserTypeListItem{
+			{ID: "type1", Name: "Customer Type"},
+			{ID: "type2", Name: "Employee Type"},
+			{ID: "type3", Name: "Partner Type"},
 		},
 	}
 
 	schemaError := &serviceerror.ServiceError{
 		Code:  "SCHEMA_NOT_FOUND",
-		Error: "User schema not found",
+		Error: "User type not found",
 	}
 
-	suite.mockUserSchemaService.EXPECT().GetUserSchemaList(100, 0).Return(mockSchemaList, nil)
-	suite.mockUserSchemaService.EXPECT().GetUserSchema("schema1").Return(mockSchema1, nil)
-	suite.mockUserSchemaService.EXPECT().GetUserSchema("schema2").Return(nil, schemaError)
-	suite.mockUserSchemaService.EXPECT().GetUserSchema("schema3").Return(mockSchema3, nil)
+	suite.mockUserTypeService.EXPECT().GetUserTypeList(100, 0).Return(mockTypeList, nil)
+	suite.mockUserTypeService.EXPECT().GetUserType("type1").Return(mockType1, nil)
+	suite.mockUserTypeService.EXPECT().GetUserType("type2").Return(nil, schemaError)
+	suite.mockUserTypeService.EXPECT().GetUserType("type3").Return(mockType3, nil)
 
 	result, err := suite.exportService.ExportResources(request)
 
@@ -1729,10 +1729,10 @@ func (suite *ExportServiceTestSuite) TestExportUserSchemas_WildcardPartialFailur
 	assert.NotNil(suite.T(), result)
 	assert.Len(suite.T(), result.Files, 2) // 2 successful exports
 	assert.Equal(suite.T(), 2, result.Summary.TotalFiles)
-	assert.Equal(suite.T(), 2, result.Summary.ResourceTypes["user_schema"])
+	assert.Equal(suite.T(), 2, result.Summary.ResourceTypes["user_type"])
 	assert.Len(suite.T(), result.Summary.Errors, 1) // One error recorded
-	assert.Equal(suite.T(), "user_schema", result.Summary.Errors[0].ResourceType)
-	assert.Equal(suite.T(), "schema2", result.Summary.Errors[0].ResourceID)
+	assert.Equal(suite.T(), "user_type", result.Summary.Errors[0].ResourceType)
+	assert.Equal(suite.T(), "type2", result.Summary.Errors[0].ResourceID)
 }
 
 // Helper functions for test assertions
@@ -2062,32 +2062,32 @@ func (suite *ExportServiceTestSuite) TestExportResourcesWithExporter_Notificatio
 	assert.Equal(suite.T(), senderID, files[0].ResourceID)
 }
 
-// TestExportResourcesWithExporter_UserSchema tests export with user schema exporter.
-func (suite *ExportServiceTestSuite) TestExportResourcesWithExporter_UserSchema() {
-	schemaID := "schema-test-id"
-	mockSchema := &userschema.UserSchema{
-		ID:                    schemaID,
-		Name:                  "Test Schema",
+// TestExportResourcesWithExporter_UserType tests export with user type exporter.
+func (suite *ExportServiceTestSuite) TestExportResourcesWithExporter_UserType() {
+	typeID := "type-test-id"
+	mockType := &usertype.UserType{
+		ID:                    typeID,
+		Name:                  "Test Type",
 		OrganizationUnitID:    "ou1",
 		AllowSelfRegistration: true,
 		Schema:                []byte(`{"type":"object","properties":{"email":{"type":"string"}}}`),
 	}
 
-	suite.mockUserSchemaService.EXPECT().GetUserSchema(schemaID).Return(mockSchema, nil)
+	suite.mockUserTypeService.EXPECT().GetUserType(typeID).Return(mockType, nil)
 
-	exporter, exists := suite.exportService.(*exportService).registry.Get(resourceTypeUserSchema)
-	assert.True(suite.T(), exists, "User schema exporter should be registered")
+	exporter, exists := suite.exportService.(*exportService).registry.Get(resourceTypeUserType)
+	assert.True(suite.T(), exists, "User type exporter should be registered")
 
 	options := &ExportOptions{Format: formatYAML}
 
 	files, errors := suite.exportService.(*exportService).exportResourcesWithExporter(
-		exporter, []string{schemaID}, options)
+		exporter, []string{typeID}, options)
 
 	assert.Len(suite.T(), files, 1)
 	assert.Len(suite.T(), errors, 0)
-	assert.Equal(suite.T(), "Test_Schema.yaml", files[0].FileName)
-	assert.Equal(suite.T(), resourceTypeUserSchema, files[0].ResourceType)
-	assert.Equal(suite.T(), schemaID, files[0].ResourceID)
+	assert.Equal(suite.T(), "Test_Type.yaml", files[0].FileName)
+	assert.Equal(suite.T(), resourceTypeUserType, files[0].ResourceType)
+	assert.Equal(suite.T(), typeID, files[0].ResourceID)
 }
 
 // TestExportResourcesWithExporter_EmptyResourceIDs tests export with empty resource ID list.

@@ -35,7 +35,7 @@ type templatingRules struct {
 	Application        *resourceRules `yaml:"Application,omitempty"`
 	IdentityProvider   *resourceRules `yaml:"IdentityProvider,omitempty"`
 	NotificationSender *resourceRules `yaml:"NotificationSender,omitempty"`
-	UserSchema         *resourceRules `yaml:"UserSchema,omitempty"`
+	UserType           *resourceRules `yaml:"UserType,omitempty"`
 }
 
 // ResourceRules defines variables and array variables to parameterize

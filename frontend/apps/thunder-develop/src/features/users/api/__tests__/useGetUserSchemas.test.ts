@@ -18,8 +18,8 @@
 
 import {describe, it, expect, vi, beforeEach, afterEach} from 'vitest';
 import {waitFor, renderHook} from '@thunder/test-utils';
-import useGetUserSchemas from '../useGetUserSchemas';
-import type {UserSchemaListResponse} from '../../types/users';
+import useGetUserTypes from '../useGetUserTypes';
+import type {UserTypeListResponse} from '../../types/users';
 
 // Mock useAsgardeo
 const mockHttpRequest = vi.fn();
@@ -42,7 +42,7 @@ vi.mock('@thunder/shared-contexts', async (importOriginal) => {
   };
 });
 
-describe('useGetUserSchemas', () => {
+describe('useGetUserTypes', () => {
   beforeEach(() => {
     mockHttpRequest.mockReset();
   });
@@ -52,15 +52,15 @@ describe('useGetUserSchemas', () => {
   });
 
   it('should initialize with correct default values', () => {
-    const {result} = renderHook(() => useGetUserSchemas());
+    const {result} = renderHook(() => useGetUserTypes());
 
     expect(result.current.data).toBeNull();
     expect(result.current.error).toBeNull();
     expect(typeof result.current.refetch).toBe('function');
   });
 
-  it('should fetch user schemas on mount', async () => {
-    const mockResponse: UserSchemaListResponse = {
+  it('should fetch user types on mount', async () => {
+    const mockResponse: UserTypeListResponse = {
       totalResults: 2,
       startIndex: 0,
       count: 2,
@@ -80,7 +80,7 @@ describe('useGetUserSchemas', () => {
 
     mockHttpRequest.mockResolvedValue({data: mockResponse});
 
-    const {result} = renderHook(() => useGetUserSchemas());
+    const {result} = renderHook(() => useGetUserTypes());
 
     await waitFor(() => {
       expect(result.current.loading).toBe(false);
@@ -90,14 +90,14 @@ describe('useGetUserSchemas', () => {
     expect(result.current.error).toBeNull();
     expect(mockHttpRequest).toHaveBeenCalledWith(
       expect.objectContaining({
-        url: 'https://localhost:8090/user-schemas',
+        url: 'https://localhost:8090/user-types',
         method: 'GET',
       }),
     );
   });
 
-  it('should fetch user schemas with query parameters', async () => {
-    const mockResponse: UserSchemaListResponse = {
+  it('should fetch user types with query parameters', async () => {
+    const mockResponse: UserTypeListResponse = {
       totalResults: 100,
       startIndex: 10,
       count: 20,
@@ -106,7 +106,7 @@ describe('useGetUserSchemas', () => {
 
     mockHttpRequest.mockResolvedValue({data: mockResponse});
 
-    const {result} = renderHook(() => useGetUserSchemas({limit: 20, offset: 10}));
+    const {result} = renderHook(() => useGetUserTypes({limit: 20, offset: 10}));
 
     await waitFor(() => {
       expect(result.current.loading).toBe(false);
@@ -115,14 +115,14 @@ describe('useGetUserSchemas', () => {
     expect(result.current.data).toEqual(mockResponse);
     expect(mockHttpRequest).toHaveBeenCalledWith(
       expect.objectContaining({
-        url: 'https://localhost:8090/user-schemas?limit=20&offset=10',
+        url: 'https://localhost:8090/user-types?limit=20&offset=10',
         method: 'GET',
       }),
     );
   });
 
-  it('should fetch user schemas with limit parameter only', async () => {
-    const mockResponse: UserSchemaListResponse = {
+  it('should fetch user types with limit parameter only', async () => {
+    const mockResponse: UserTypeListResponse = {
       totalResults: 50,
       startIndex: 0,
       count: 10,
@@ -131,7 +131,7 @@ describe('useGetUserSchemas', () => {
 
     mockHttpRequest.mockResolvedValue({data: mockResponse});
 
-    const {result} = renderHook(() => useGetUserSchemas({limit: 10}));
+    const {result} = renderHook(() => useGetUserTypes({limit: 10}));
 
     await waitFor(() => {
       expect(result.current.loading).toBe(false);
@@ -140,14 +140,14 @@ describe('useGetUserSchemas', () => {
     expect(result.current.data).toEqual(mockResponse);
     expect(mockHttpRequest).toHaveBeenCalledWith(
       expect.objectContaining({
-        url: 'https://localhost:8090/user-schemas?limit=10',
+        url: 'https://localhost:8090/user-types?limit=10',
         method: 'GET',
       }),
     );
   });
 
-  it('should fetch user schemas with offset parameter only', async () => {
-    const mockResponse: UserSchemaListResponse = {
+  it('should fetch user types with offset parameter only', async () => {
+    const mockResponse: UserTypeListResponse = {
       totalResults: 50,
       startIndex: 20,
       count: 30,
@@ -156,7 +156,7 @@ describe('useGetUserSchemas', () => {
 
     mockHttpRequest.mockResolvedValue({data: mockResponse});
 
-    const {result} = renderHook(() => useGetUserSchemas({offset: 20}));
+    const {result} = renderHook(() => useGetUserTypes({offset: 20}));
 
     await waitFor(() => {
       expect(result.current.loading).toBe(false);
@@ -165,7 +165,7 @@ describe('useGetUserSchemas', () => {
     expect(result.current.data).toEqual(mockResponse);
     expect(mockHttpRequest).toHaveBeenCalledWith(
       expect.objectContaining({
-        url: 'https://localhost:8090/user-schemas?offset=20',
+        url: 'https://localhost:8090/user-types?offset=20',
         method: 'GET',
       }),
     );
@@ -174,7 +174,7 @@ describe('useGetUserSchemas', () => {
   it('should handle API error with JSON response', async () => {
     mockHttpRequest.mockRejectedValue(new Error('Unauthorized access'));
 
-    const {result} = renderHook(() => useGetUserSchemas());
+    const {result} = renderHook(() => useGetUserTypes());
 
     await waitFor(() => {
       expect(result.current.loading).toBe(false);
@@ -183,7 +183,7 @@ describe('useGetUserSchemas', () => {
     expect(result.current.error).toEqual({
       code: 'FETCH_ERROR',
       message: 'Unauthorized access',
-      description: 'Failed to fetch user schemas',
+      description: 'Failed to fetch user types',
     });
     expect(result.current.data).toBeNull();
   });
@@ -191,7 +191,7 @@ describe('useGetUserSchemas', () => {
   it('should handle API error without JSON response', async () => {
     mockHttpRequest.mockRejectedValue(new Error('Internal Server Error'));
 
-    const {result} = renderHook(() => useGetUserSchemas());
+    const {result} = renderHook(() => useGetUserTypes());
 
     await waitFor(() => {
       expect(result.current.loading).toBe(false);
@@ -200,7 +200,7 @@ describe('useGetUserSchemas', () => {
     expect(result.current.error).toEqual({
       code: 'FETCH_ERROR',
       message: 'Internal Server Error',
-      description: 'Failed to fetch user schemas',
+      description: 'Failed to fetch user types',
     });
 
     expect(result.current.data).toBeNull();
@@ -209,7 +209,7 @@ describe('useGetUserSchemas', () => {
   it('should handle network error', async () => {
     mockHttpRequest.mockRejectedValue(new Error('Network error'));
 
-    const {result} = renderHook(() => useGetUserSchemas());
+    const {result} = renderHook(() => useGetUserTypes());
 
     await waitFor(() => {
       expect(result.current.loading).toBe(false);
@@ -218,13 +218,13 @@ describe('useGetUserSchemas', () => {
     expect(result.current.error).toEqual({
       code: 'FETCH_ERROR',
       message: 'Network error',
-      description: 'Failed to fetch user schemas',
+      description: 'Failed to fetch user types',
     });
     expect(result.current.data).toBeNull();
   });
 
   it('should abort previous request when params change', async () => {
-    const mockResponse2: UserSchemaListResponse = {
+    const mockResponse2: UserTypeListResponse = {
       totalResults: 20,
       startIndex: 0,
       count: 20,
@@ -239,7 +239,7 @@ describe('useGetUserSchemas', () => {
     );
 
     const {result, rerender} = renderHook(
-      ({params}: {params?: {limit?: number; offset?: number}}) => useGetUserSchemas(params),
+      ({params}: {params?: {limit?: number; offset?: number}}) => useGetUserTypes(params),
       {
         initialProps: {params: {limit: 10}},
       },
@@ -259,14 +259,14 @@ describe('useGetUserSchemas', () => {
   });
 
   it('should refetch with new parameters', async () => {
-    const mockResponse1: UserSchemaListResponse = {
+    const mockResponse1: UserTypeListResponse = {
       totalResults: 10,
       startIndex: 0,
       count: 10,
       schemas: [],
     };
 
-    const mockResponse2: UserSchemaListResponse = {
+    const mockResponse2: UserTypeListResponse = {
       totalResults: 5,
       startIndex: 0,
       count: 5,
@@ -275,7 +275,7 @@ describe('useGetUserSchemas', () => {
 
     mockHttpRequest.mockResolvedValue({data: mockResponse1});
 
-    const {result} = renderHook(() => useGetUserSchemas({limit: 10}));
+    const {result} = renderHook(() => useGetUserTypes({limit: 10}));
 
     // Wait for initial fetch to complete with mockResponse1
     await waitFor(() => {
@@ -299,7 +299,7 @@ describe('useGetUserSchemas', () => {
   });
 
   it('should refetch with original parameters when no new params provided', async () => {
-    const mockResponse: UserSchemaListResponse = {
+    const mockResponse: UserTypeListResponse = {
       totalResults: 10,
       startIndex: 0,
       count: 10,
@@ -308,7 +308,7 @@ describe('useGetUserSchemas', () => {
 
     mockHttpRequest.mockResolvedValue({data: mockResponse});
 
-    const {result} = renderHook(() => useGetUserSchemas({limit: 10}));
+    const {result} = renderHook(() => useGetUserTypes({limit: 10}));
 
     // Wait for initial fetch to complete
     await waitFor(() => {
@@ -331,14 +331,14 @@ describe('useGetUserSchemas', () => {
     // Should use the same parameters as initial call
     expect(mockHttpRequest).toHaveBeenCalledWith(
       expect.objectContaining({
-        url: 'https://localhost:8090/user-schemas?limit=10',
+        url: 'https://localhost:8090/user-types?limit=10',
         method: 'GET',
       }),
     );
   });
 
   it('should cleanup and abort request on unmount', async () => {
-    const mockResponse: UserSchemaListResponse = {
+    const mockResponse: UserTypeListResponse = {
       totalResults: 10,
       startIndex: 0,
       count: 10,
@@ -347,7 +347,7 @@ describe('useGetUserSchemas', () => {
 
     mockHttpRequest.mockResolvedValue({data: mockResponse});
 
-    const {result, unmount} = renderHook(() => useGetUserSchemas());
+    const {result, unmount} = renderHook(() => useGetUserTypes());
 
     await waitFor(() => {
       expect(result.current.data).toEqual(mockResponse);
@@ -361,7 +361,7 @@ describe('useGetUserSchemas', () => {
   });
 
   it('should handle empty schemas list', async () => {
-    const mockResponse: UserSchemaListResponse = {
+    const mockResponse: UserTypeListResponse = {
       totalResults: 0,
       startIndex: 0,
       count: 0,
@@ -370,7 +370,7 @@ describe('useGetUserSchemas', () => {
 
     mockHttpRequest.mockResolvedValue({data: mockResponse});
 
-    const {result} = renderHook(() => useGetUserSchemas());
+    const {result} = renderHook(() => useGetUserTypes());
 
     await waitFor(() => {
       expect(result.current.loading).toBe(false);
@@ -382,7 +382,7 @@ describe('useGetUserSchemas', () => {
   });
 
   it('should handle large offset pagination', async () => {
-    const mockResponse: UserSchemaListResponse = {
+    const mockResponse: UserTypeListResponse = {
       totalResults: 1000,
       startIndex: 900,
       count: 50,
@@ -391,7 +391,7 @@ describe('useGetUserSchemas', () => {
 
     mockHttpRequest.mockResolvedValue({data: mockResponse});
 
-    const {result} = renderHook(() => useGetUserSchemas({limit: 50, offset: 900}));
+    const {result} = renderHook(() => useGetUserTypes({limit: 50, offset: 900}));
 
     await waitFor(() => {
       expect(result.current.loading).toBe(false);
@@ -400,14 +400,14 @@ describe('useGetUserSchemas', () => {
     expect(result.current.data).toEqual(mockResponse);
     expect(mockHttpRequest).toHaveBeenCalledWith(
       expect.objectContaining({
-        url: 'https://localhost:8090/user-schemas?limit=50&offset=900',
+        url: 'https://localhost:8090/user-types?limit=50&offset=900',
         method: 'GET',
       }),
     );
   });
 
   it('should refetch with only offset parameter', async () => {
-    const mockResponse: UserSchemaListResponse = {
+    const mockResponse: UserTypeListResponse = {
       totalResults: 100,
       startIndex: 0,
       count: 10,
@@ -416,7 +416,7 @@ describe('useGetUserSchemas', () => {
 
     mockHttpRequest.mockResolvedValue({data: mockResponse});
 
-    const {result} = renderHook(() => useGetUserSchemas());
+    const {result} = renderHook(() => useGetUserTypes());
 
     // Wait for initial fetch
     await waitFor(() => {
@@ -434,14 +434,14 @@ describe('useGetUserSchemas', () => {
     // Verify the last call included only the offset parameter
     expect(mockHttpRequest).toHaveBeenLastCalledWith(
       expect.objectContaining({
-        url: 'https://localhost:8090/user-schemas?offset=30',
+        url: 'https://localhost:8090/user-types?offset=30',
         method: 'GET',
       }),
     );
   });
 
   it('should handle AbortError in refetch and not set error', async () => {
-    const mockResponse: UserSchemaListResponse = {
+    const mockResponse: UserTypeListResponse = {
       totalResults: 10,
       startIndex: 0,
       count: 10,
@@ -450,7 +450,7 @@ describe('useGetUserSchemas', () => {
 
     mockHttpRequest.mockResolvedValue({data: mockResponse});
 
-    const {result} = renderHook(() => useGetUserSchemas());
+    const {result} = renderHook(() => useGetUserTypes());
 
     // Wait for initial fetch
     await waitFor(() => {
@@ -475,7 +475,7 @@ describe('useGetUserSchemas', () => {
   });
 
   it('should handle refetch error and throw', async () => {
-    const mockResponse: UserSchemaListResponse = {
+    const mockResponse: UserTypeListResponse = {
       totalResults: 10,
       startIndex: 0,
       count: 10,
@@ -484,7 +484,7 @@ describe('useGetUserSchemas', () => {
 
     mockHttpRequest.mockResolvedValue({data: mockResponse});
 
-    const {result} = renderHook(() => useGetUserSchemas());
+    const {result} = renderHook(() => useGetUserTypes());
 
     // Wait for initial fetch
     await waitFor(() => {
@@ -503,7 +503,7 @@ describe('useGetUserSchemas', () => {
       expect(result.current.error).toEqual({
         code: 'FETCH_ERROR',
         message: 'Refetch failed',
-        description: 'Failed to fetch user schemas',
+        description: 'Failed to fetch user types',
       });
     });
 
@@ -511,7 +511,7 @@ describe('useGetUserSchemas', () => {
   });
 
   it('should handle non-Error object in refetch catch block', async () => {
-    const mockResponse: UserSchemaListResponse = {
+    const mockResponse: UserTypeListResponse = {
       totalResults: 10,
       startIndex: 0,
       count: 10,
@@ -520,7 +520,7 @@ describe('useGetUserSchemas', () => {
 
     mockHttpRequest.mockResolvedValue({data: mockResponse});
 
-    const {result} = renderHook(() => useGetUserSchemas());
+    const {result} = renderHook(() => useGetUserTypes());
 
     // Wait for initial fetch
     await waitFor(() => {
@@ -547,7 +547,7 @@ describe('useGetUserSchemas', () => {
       expect(result.current.error).toEqual({
         code: 'FETCH_ERROR',
         message: 'An unknown error occurred',
-        description: 'Failed to fetch user schemas',
+        description: 'Failed to fetch user types',
       });
     });
 
@@ -557,7 +557,7 @@ describe('useGetUserSchemas', () => {
   it('should handle non-Error object during initial fetch', async () => {
     mockHttpRequest.mockRejectedValue('String error during initial fetch');
 
-    const {result} = renderHook(() => useGetUserSchemas());
+    const {result} = renderHook(() => useGetUserTypes());
 
     await waitFor(() => {
       expect(result.current.loading).toBe(false);
@@ -566,7 +566,7 @@ describe('useGetUserSchemas', () => {
     expect(result.current.error).toEqual({
       code: 'FETCH_ERROR',
       message: 'An unknown error occurred',
-      description: 'Failed to fetch user schemas',
+      description: 'Failed to fetch user types',
     });
     expect(result.current.data).toBeNull();
   });

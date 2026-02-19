@@ -34,10 +34,10 @@ import (
 	oauth2const "github.com/asgardeo/thunder/internal/oauth/oauth2/constants"
 	"github.com/asgardeo/thunder/internal/system/config"
 	"github.com/asgardeo/thunder/internal/system/error/serviceerror"
-	"github.com/asgardeo/thunder/internal/userschema"
+	"github.com/asgardeo/thunder/internal/usertype"
 	"github.com/asgardeo/thunder/tests/mocks/certmock"
 	"github.com/asgardeo/thunder/tests/mocks/flow/flowmgtmock"
-	"github.com/asgardeo/thunder/tests/mocks/userschemamock"
+	"github.com/asgardeo/thunder/tests/mocks/usertypemock"
 )
 
 const testAppIDForRollback = "app123"
@@ -951,12 +951,12 @@ func (suite *ServiceTestSuite) setupTestService() (
 	mockStore := newApplicationStoreInterfaceMock(suite.T())
 	mockCertService := certmock.NewCertificateServiceInterfaceMock(suite.T())
 	mockFlowMgtService := flowmgtmock.NewFlowMgtServiceInterfaceMock(suite.T())
-	mockUserSchemaService := userschemamock.NewUserSchemaServiceInterfaceMock(suite.T())
+	mockUserTypeService := usertypemock.NewUserTypeServiceInterfaceMock(suite.T())
 	service := &applicationService{
-		appStore:          mockStore,
-		certService:       mockCertService,
-		flowMgtService:    mockFlowMgtService,
-		userSchemaService: mockUserSchemaService,
+		appStore:        mockStore,
+		certService:     mockCertService,
+		flowMgtService:  mockFlowMgtService,
+		userTypeService: mockUserTypeService,
 	}
 	return service, mockStore, mockCertService, mockFlowMgtService
 }
@@ -3365,27 +3365,27 @@ func (suite *ServiceTestSuite) TestUpdateApplicationCertificate_DeleteCertificat
 // TestValidateAllowedUserTypes_EmptyString tests when an empty string is provided
 // in allowedUserTypes, which should be treated as invalid
 func (suite *ServiceTestSuite) TestValidateAllowedUserTypes_EmptyString() {
-	// Mock GetUserSchemaList to return an empty list
+	// Mock GetUserTypeList to return an empty list
 	mockStore := newApplicationStoreInterfaceMock(suite.T())
 	mockCertService := certmock.NewCertificateServiceInterfaceMock(suite.T())
 	mockFlowMgtService := flowmgtmock.NewFlowMgtServiceInterfaceMock(suite.T())
-	mockUserSchemaService := userschemamock.NewUserSchemaServiceInterfaceMock(suite.T())
+	mockUserTypeService := usertypemock.NewUserTypeServiceInterfaceMock(suite.T())
 
-	// Mock GetUserSchemaList to return empty list (first call)
-	mockUserSchemaService.EXPECT().
-		GetUserSchemaList(mock.Anything, 0).
-		Return(&userschema.UserSchemaListResponse{
+	// Mock GetUserTypeList to return empty list (first call)
+	mockUserTypeService.EXPECT().
+		GetUserTypeList(mock.Anything, 0).
+		Return(&usertype.UserTypeListResponse{
 			TotalResults: 0,
 			Count:        0,
-			Schemas:      []userschema.UserSchemaListItem{},
+			Types:        []usertype.UserTypeListItem{},
 		}, nil).
 		Once()
 
 	serviceWithMock := &applicationService{
-		appStore:          mockStore,
-		certService:       mockCertService,
-		flowMgtService:    mockFlowMgtService,
-		userSchemaService: mockUserSchemaService,
+		appStore:        mockStore,
+		certService:     mockCertService,
+		flowMgtService:  mockFlowMgtService,
+		userTypeService: mockUserTypeService,
 	}
 
 	// Test with empty string in allowedUserTypes
@@ -3402,15 +3402,15 @@ func (suite *ServiceTestSuite) TestValidateAllowedUserTypes_EmptyStringWithValid
 	mockStore := newApplicationStoreInterfaceMock(suite.T())
 	mockCertService := certmock.NewCertificateServiceInterfaceMock(suite.T())
 	mockFlowMgtService := flowmgtmock.NewFlowMgtServiceInterfaceMock(suite.T())
-	mockUserSchemaService := userschemamock.NewUserSchemaServiceInterfaceMock(suite.T())
+	mockUserTypeService := usertypemock.NewUserTypeServiceInterfaceMock(suite.T())
 
-	// Mock GetUserSchemaList to return a list with one valid user type
-	mockUserSchemaService.EXPECT().
-		GetUserSchemaList(mock.Anything, 0).
-		Return(&userschema.UserSchemaListResponse{
+	// Mock GetUserTypeList to return a list with one valid user type
+	mockUserTypeService.EXPECT().
+		GetUserTypeList(mock.Anything, 0).
+		Return(&usertype.UserTypeListResponse{
 			TotalResults: 1,
 			Count:        1,
-			Schemas: []userschema.UserSchemaListItem{
+			Types: []usertype.UserTypeListItem{
 				{
 					Name: "validUserType",
 				},
@@ -3419,10 +3419,10 @@ func (suite *ServiceTestSuite) TestValidateAllowedUserTypes_EmptyStringWithValid
 		Once()
 
 	serviceWithMock := &applicationService{
-		appStore:          mockStore,
-		certService:       mockCertService,
-		flowMgtService:    mockFlowMgtService,
-		userSchemaService: mockUserSchemaService,
+		appStore:        mockStore,
+		certService:     mockCertService,
+		flowMgtService:  mockFlowMgtService,
+		userTypeService: mockUserTypeService,
 	}
 
 	// Test with empty string and valid user type

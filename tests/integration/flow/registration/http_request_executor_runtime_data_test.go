@@ -179,7 +179,7 @@ var (
 		Description: "Organization unit for HTTP request runtime data registration flow",
 	}
 
-	httpRequestRuntimeDataUserSchema = testutils.UserSchema{
+	httpRequestRuntimeDataUserType = testutils.UserType{
 		Name: "http_request_runtime_user",
 		Schema: map[string]interface{}{
 			"sub": map[string]interface{}{
@@ -207,7 +207,7 @@ var (
 		ClientID:                  "http_runtime_data_reg_client",
 		ClientSecret:              "http_runtime_data_reg_secret",
 		RedirectURIs:              []string{"http://localhost:3000/callback"},
-		AllowedUserTypes:          []string{httpRequestRuntimeDataUserSchema.Name},
+		AllowedUserTypes:          []string{httpRequestRuntimeDataUserType.Name},
 		AssertionConfig: map[string]interface{}{
 			"user_attributes": []string{"userType", "ouId", "ouName", "ouHandle"},
 		},
@@ -228,7 +228,7 @@ type HTTPRequestRuntimeDataRegistrationFlowTestSuite struct {
 	mockHTTPServer         *testutils.MockHTTPServer
 	idpID                  string
 	senderID               string
-	userSchemaID           string
+	userTypeID             string
 }
 
 func TestHTTPRequestRuntimeDataRegistrationFlowTestSuite(t *testing.T) {
@@ -271,11 +271,11 @@ func (ts *HTTPRequestRuntimeDataRegistrationFlowTestSuite) SetupSuite() {
 	ts.Require().NoError(err, "Failed to create test organization unit")
 	httpRequestRuntimeDataOUID = ouID
 
-	httpRequestRuntimeDataUserSchema.OrganizationUnitId = httpRequestRuntimeDataOUID
-	httpRequestRuntimeDataUserSchema.AllowSelfRegistration = true
-	schemaID, err := testutils.CreateUserType(httpRequestRuntimeDataUserSchema)
-	ts.Require().NoError(err, "Failed to create user schema for runtime data flow")
-	ts.userSchemaID = schemaID
+	httpRequestRuntimeDataUserType.OrganizationUnitId = httpRequestRuntimeDataOUID
+	httpRequestRuntimeDataUserType.AllowSelfRegistration = true
+	schemaID, err := testutils.CreateUserType(httpRequestRuntimeDataUserType)
+	ts.Require().NoError(err, "Failed to create user type for runtime data flow")
+	ts.userTypeID = schemaID
 
 	idp := testutils.IDP{
 		Name:        "HTTP Request Runtime Data Google IDP",
@@ -419,9 +419,9 @@ func (ts *HTTPRequestRuntimeDataRegistrationFlowTestSuite) TearDownSuite() {
 		}
 	}
 
-	if ts.userSchemaID != "" {
-		if err := testutils.DeleteUserType(ts.userSchemaID); err != nil {
-			ts.T().Logf("Failed to delete user schema during teardown: %v", err)
+	if ts.userTypeID != "" {
+		if err := testutils.DeleteUserType(ts.userTypeID); err != nil {
+			ts.T().Logf("Failed to delete user type during teardown: %v", err)
 		}
 	}
 

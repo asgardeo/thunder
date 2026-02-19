@@ -48,13 +48,13 @@ type TokenExchangeTestSuite struct {
 	applicationID      string
 	userID             string
 	organizationUnitID string
-	userSchemaID       string
+	userTypeID         string
 	client             *http.Client
 	assertionToken     string
 }
 
 var (
-	testUserSchema = testutils.UserSchema{
+	testUserType = testutils.UserType{
 		Name: "token-test-person",
 		Schema: map[string]interface{}{
 			"username": map[string]interface{}{
@@ -81,11 +81,11 @@ func (ts *TokenExchangeTestSuite) SetupSuite() {
 	// Create test organization unit for user creation
 	ts.organizationUnitID = ts.createTestOrganizationUnit()
 
-	// Create user schema for person type
-	testUserSchema.OrganizationUnitId = ts.organizationUnitID
-	schemaID, err := testutils.CreateUserType(testUserSchema)
-	ts.Require().NoError(err, "Failed to create test user schema")
-	ts.userSchemaID = schemaID
+	// Create user type for person type
+	testUserType.OrganizationUnitId = ts.organizationUnitID
+	schemaID, err := testutils.CreateUserType(testUserType)
+	ts.Require().NoError(err, "Failed to create test user type")
+	ts.userTypeID = schemaID
 
 	// Create test user
 	ts.userID = ts.createTestUser()
@@ -113,10 +113,10 @@ func (ts *TokenExchangeTestSuite) TearDownSuite() {
 		ts.deleteOrganizationUnit(ts.organizationUnitID)
 	}
 
-	// Clean up user schema
-	if ts.userSchemaID != "" {
-		if err := testutils.DeleteUserType(ts.userSchemaID); err != nil {
-			ts.T().Logf("Failed to delete user schema during teardown: %v", err)
+	// Clean up user type
+	if ts.userTypeID != "" {
+		if err := testutils.DeleteUserType(ts.userTypeID); err != nil {
+			ts.T().Logf("Failed to delete user type during teardown: %v", err)
 		}
 	}
 }

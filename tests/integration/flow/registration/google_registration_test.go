@@ -143,7 +143,7 @@ var (
 		Parent:      nil,
 	}
 
-	googleRegUserSchema = testutils.UserSchema{
+	googleRegUserType = testutils.UserType{
 		Name: "google_reg_flow_user",
 		Schema: map[string]interface{}{
 			"username": map[string]interface{}{
@@ -174,7 +174,7 @@ var (
 		ClientID:                  "google_reg_flow_test_client",
 		ClientSecret:              "google_reg_flow_test_secret",
 		RedirectURIs:              []string{"http://localhost:3000/callback"},
-		AllowedUserTypes:          []string{googleRegUserSchema.Name},
+		AllowedUserTypes:          []string{googleRegUserType.Name},
 		AssertionConfig: map[string]interface{}{
 			"user_attributes": []string{"userType", "ouId", "ouName", "ouHandle"},
 		},
@@ -194,7 +194,7 @@ type GoogleRegistrationFlowTestSuite struct {
 	suite.Suite
 	mockGoogleServer *testutils.MockGoogleOIDCServer
 	idpID            string
-	userSchemaID     string
+	userTypeID       string
 	config           *common.TestSuiteConfig
 }
 
@@ -232,12 +232,12 @@ func (ts *GoogleRegistrationFlowTestSuite) SetupSuite() {
 	}
 	googleRegTestOUID = ouID
 
-	// Create user schema
-	googleRegUserSchema.OrganizationUnitId = googleRegTestOUID
-	googleRegUserSchema.AllowSelfRegistration = true
-	schemaID, err := testutils.CreateUserType(googleRegUserSchema)
-	ts.Require().NoError(err, "Failed to create Google user schema")
-	ts.userSchemaID = schemaID
+	// Create user type
+	googleRegUserType.OrganizationUnitId = googleRegTestOUID
+	googleRegUserType.AllowSelfRegistration = true
+	schemaID, err := testutils.CreateUserType(googleRegUserType)
+	ts.Require().NoError(err, "Failed to create Google user type")
+	ts.userTypeID = schemaID
 
 	// Create Google IDP
 	googleIDP := testutils.IDP{
@@ -367,8 +367,8 @@ func (ts *GoogleRegistrationFlowTestSuite) TearDownSuite() {
 		}
 	}
 
-	if ts.userSchemaID != "" {
-		_ = testutils.DeleteUserType(ts.userSchemaID)
+	if ts.userTypeID != "" {
+		_ = testutils.DeleteUserType(ts.userTypeID)
 	}
 
 	// Stop mock server
@@ -464,7 +464,7 @@ func (ts *GoogleRegistrationFlowTestSuite) TestGoogleRegistrationFlowCompleteSuc
 	ts.Require().NotNil(jwtClaims, "JWT claims should not be nil")
 
 	// Validate JWT contains expected user type and OU ID
-	ts.Require().Equal(googleRegUserSchema.Name, jwtClaims.UserType, "Expected userType to match created schema")
+	ts.Require().Equal(googleRegUserType.Name, jwtClaims.UserType, "Expected userType to match created schema")
 	ts.Require().NotEmpty(jwtClaims.OuID, "Expected ouId to be present")
 	ts.Require().Equal(googleRegTestAppID, jwtClaims.Aud, "Expected aud to match the application ID")
 	ts.Require().NotEmpty(jwtClaims.Sub, "JWT subject should not be empty")
@@ -671,7 +671,7 @@ func (ts *GoogleRegistrationFlowTestSuite) TestGoogleRegistrationFlowWithExistin
 
 	// Verify that the JWT is for the same user (existing user ID should match)
 	ts.Require().Equal(firstUserID, jwtClaims.Sub, "JWT subject should match the existing user ID")
-	ts.Require().Equal(googleRegUserSchema.Name, jwtClaims.UserType, "User type should match")
+	ts.Require().Equal(googleRegUserType.Name, jwtClaims.UserType, "User type should match")
 	ts.Require().Equal(googleRegTestAppID, jwtClaims.Aud, "Audience should match the application ID")
 
 	// Verify that no new user was created - should still be the same user

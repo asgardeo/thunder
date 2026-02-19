@@ -245,7 +245,7 @@ These variables are available in both Bash and PowerShell bootstrap scripts:
 
 ## Common Use Cases
 
-### Creating Custom User Schemas
+### Creating Custom User Types
 
 ```bash
 #!/bin/bash
@@ -255,9 +255,9 @@ set -e
 SCRIPT_DIR="$(dirname "${BASH_SOURCE[0]:-$0}")"
 source "${SCRIPT_DIR}/common.sh"
 
-log_info "Creating employee user schema..."
+log_info "Creating employee user type..."
 
-RESPONSE=$(thunder_api_call POST "/user-schemas" '{
+RESPONSE=$(thunder_api_call POST "/user-types" '{
   "name": "employee",
   "schema": {
     "sub": {"type": "string", "required": true, "unique": true},
@@ -346,7 +346,7 @@ log_success "Mobile app created"
 
 Thunder provides default bootstrap scripts in the `/opt/thunder/bootstrap` directory:
 - `common.sh` - Helper functions for logging and API calls
-- `01-default-resources.sh` - Creates admin user, default organization, and Person user schema
+- `01-default-resources.sh` - Creates admin user, default organization, and Person user types
 - `02-sample-resources.sh` - Creates sample resources for testing
 
 **Important:** When using volume mounts, ConfigMaps, or COPY commands:
@@ -604,7 +604,7 @@ Scripts should be safe to run multiple times:
 
 ```bash
 # Check if resource exists before creating
-RESPONSE=$(thunder_api_call GET "/user-schemas")
+RESPONSE=$(thunder_api_call GET "/user-types")
 BODY="${RESPONSE%???}"
 
 if echo "$BODY" | grep -q '"name":"employee"'; then

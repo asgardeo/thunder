@@ -34,7 +34,7 @@ import (
 	"github.com/asgardeo/thunder/internal/system/error/serviceerror"
 	"github.com/asgardeo/thunder/internal/system/log"
 	"github.com/asgardeo/thunder/internal/system/utils"
-	"github.com/asgardeo/thunder/internal/userschema"
+	"github.com/asgardeo/thunder/internal/usertype"
 )
 
 const loggerComponentName = "UserService"
@@ -69,27 +69,27 @@ type UserServiceInterface interface {
 
 // userService is the default implementation of the UserServiceInterface.
 type userService struct {
-	userStore         userStoreInterface
-	ouService         oupkg.OrganizationUnitServiceInterface
-	userSchemaService userschema.UserSchemaServiceInterface
-	hashService       hash.HashServiceInterface
-	transactioner     transaction.Transactioner
+	userStore       userStoreInterface
+	ouService       oupkg.OrganizationUnitServiceInterface
+	userTypeService usertype.UserTypeServiceInterface
+	hashService     hash.HashServiceInterface
+	transactioner   transaction.Transactioner
 }
 
 // newUserService creates a new instance of userService with injected dependencies.
 func newUserService(
 	userStore userStoreInterface,
 	ouService oupkg.OrganizationUnitServiceInterface,
-	userSchemaService userschema.UserSchemaServiceInterface,
+	userTypeService usertype.UserTypeServiceInterface,
 	hashService hash.HashServiceInterface,
 	transactioner transaction.Transactioner,
 ) UserServiceInterface {
 	return &userService{
-		userStore:         userStore,
-		ouService:         ouService,
-		userSchemaService: userSchemaService,
-		hashService:       hashService,
-		transactioner:     transactioner,
+		userStore:       userStore,
+		ouService:       ouService,
+		userTypeService: userTypeService,
+		hashService:     hashService,
+		transactioner:   transactioner,
 	}
 }
 
@@ -1037,7 +1037,7 @@ func (us *userService) validateOrganizationUnitForUserType(
 	userType, organizationUnitID string, logger *log.Logger,
 ) *serviceerror.ServiceError {
 	if strings.TrimSpace(userType) == "" {
-		return &ErrorUserSchemaNotFound
+		return &ErrorUserTypeNotFound
 	}
 
 	if strings.TrimSpace(organizationUnitID) == "" || !utils.IsValidUUID(organizationUnitID) {
@@ -1067,31 +1067,31 @@ func (us *userService) validateOrganizationUnitForUserType(
 		return &ErrorOrganizationUnitNotFound
 	}
 
-	if us.userSchemaService == nil {
-		logger.Error("User schema service is not configured for user operations")
+	if us.userTypeService == nil {
+		logger.Error("User type service is not configured for user operations")
 		return &ErrorInternalServerError
 	}
 
-	userSchema, svcErr := us.userSchemaService.GetUserSchemaByName(userType)
+	userTypeData, svcErr := us.userTypeService.GetUserTypeByName(userType)
 	if svcErr != nil {
-		if svcErr.Code == userschema.ErrorUserSchemaNotFound.Code {
-			return &ErrorUserSchemaNotFound
+		if svcErr.Code == usertype.ErrorUserTypeNotFound.Code {
+			return &ErrorUserTypeNotFound
 		}
-		logger.Error("Failed to retrieve user schema",
+		logger.Error("Failed to retrieve user type",
 			log.String("userType", userType), log.Any("error", svcErr))
 		return &ErrorInternalServerError
 	}
 
-	if userSchema == nil {
-		logger.Error("User schema service returned nil response", log.String("userType", userType))
+	if userTypeData == nil {
+		logger.Error("User type service returned nil response", log.String("userType", userType))
 		return &ErrorInternalServerError
 	}
 
-	if userSchema.OrganizationUnitID == organizationUnitID {
+	if userTypeData.OrganizationUnitID == organizationUnitID {
 		return nil
 	}
 
-	isParent, svcErr := us.ouService.IsParent(userSchema.OrganizationUnitID, organizationUnitID)
+	isParent, svcErr := us.ouService.IsParent(userTypeData.OrganizationUnitID, organizationUnitID)
 	if svcErr != nil {
 		return mapOUServiceError(
 			svcErr,
@@ -1102,7 +1102,7 @@ func (us *userService) validateOrganizationUnitForUserType(
 			},
 			log.String("userType", userType),
 			log.String("organizationUnitID", organizationUnitID),
-			log.String("schemaOrganizationUnitID", userSchema.OrganizationUnitID),
+			log.String("schemaOrganizationUnitID", userTypeData.OrganizationUnitID),
 		)
 	}
 
@@ -1110,29 +1110,29 @@ func (us *userService) validateOrganizationUnitForUserType(
 		logger.Debug("Organization unit mismatch for user type",
 			log.String("userType", userType),
 			log.String("organizationUnitID", organizationUnitID),
-			log.String("schemaOrganizationUnitID", userSchema.OrganizationUnitID))
+			log.String("schemaOrganizationUnitID", userTypeData.OrganizationUnitID))
 		return &ErrorOrganizationUnitMismatch
 	}
 
 	return nil
 }
 
-// validateUserAndUniqueness validates the user schema and checks for uniqueness.
+// validateUserAndUniqueness validates the user type and checks for uniqueness.
 func (us *userService) validateUserAndUniqueness(
 	ctx context.Context, userType string, attributes []byte, logger *log.Logger, excludeUserID string,
 ) *serviceerror.ServiceError {
-	isValid, svcErr := us.userSchemaService.ValidateUser(userType, attributes)
+	isValid, svcErr := us.userTypeService.ValidateUser(userType, attributes)
 	if svcErr != nil {
-		if svcErr.Code == userschema.ErrorUserSchemaNotFound.Code {
-			return &ErrorUserSchemaNotFound
+		if svcErr.Code == usertype.ErrorUserTypeNotFound.Code {
+			return &ErrorUserTypeNotFound
 		}
-		return logErrorAndReturnServerError(logger, "Failed to validate user schema", nil)
+		return logErrorAndReturnServerError(logger, "Failed to validate user type", nil)
 	}
 	if !isValid {
 		return &ErrorSchemaValidationFailed
 	}
 
-	isValid, svcErr = us.userSchemaService.ValidateUserUniqueness(userType, attributes,
+	isValid, svcErr = us.userTypeService.ValidateUserUniqueness(userType, attributes,
 		func(filters map[string]interface{}) (*string, error) {
 			userID, svcErr := us.IdentifyUser(ctx, filters)
 			if svcErr != nil {
@@ -1148,10 +1148,10 @@ func (us *userService) validateUserAndUniqueness(
 			return userID, nil
 		})
 	if svcErr != nil {
-		if svcErr.Code == userschema.ErrorUserSchemaNotFound.Code {
-			return &ErrorUserSchemaNotFound
+		if svcErr.Code == usertype.ErrorUserTypeNotFound.Code {
+			return &ErrorUserTypeNotFound
 		}
-		return logErrorAndReturnServerError(logger, "Failed to validate user schema", nil)
+		return logErrorAndReturnServerError(logger, "Failed to validate user type", nil)
 	}
 
 	if !isValid {

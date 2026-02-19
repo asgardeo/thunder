@@ -46,7 +46,7 @@ type APIAuthTestSuite struct {
 	invalidTokenClient *http.Client
 	userClient         *http.Client
 	ouID               string
-	userSchemaID       string
+	userTypeID         string
 	regularUserID      string
 }
 
@@ -70,7 +70,7 @@ func (suite *APIAuthTestSuite) SetupSuite() {
 	suite.Require().NoError(err)
 	suite.ouID = ouID
 
-	userSchema := testutils.UserSchema{
+	userType := testutils.UserType{
 		Name:                  fmt.Sprintf("api-auth-user-%d", time.Now().UnixNano()),
 		OrganizationUnitId:    suite.ouID,
 		AllowSelfRegistration: true,
@@ -83,9 +83,9 @@ func (suite *APIAuthTestSuite) SetupSuite() {
 		},
 	}
 
-	userSchemaID, err := testutils.CreateUserType(userSchema)
+	userTypeID, err := testutils.CreateUserType(userType)
 	suite.Require().NoError(err)
-	suite.userSchemaID = userSchemaID
+	suite.userTypeID = userTypeID
 
 	username := fmt.Sprintf("authuser_%d", time.Now().UnixNano())
 	password := "ApiAuthTest123!"
@@ -101,7 +101,7 @@ func (suite *APIAuthTestSuite) SetupSuite() {
 
 	userID, err := testutils.CreateUser(testutils.User{
 		OrganizationUnit: suite.ouID,
-		Type:             userSchema.Name,
+		Type:             userType.Name,
 		Attributes:       attrBytes,
 	})
 	suite.Require().NoError(err)
@@ -119,9 +119,9 @@ func (suite *APIAuthTestSuite) TearDownSuite() {
 		}
 	}
 
-	if suite.userSchemaID != "" {
-		if err := testutils.DeleteUserType(suite.userSchemaID); err != nil {
-			suite.T().Logf("Failed to delete user schema: %v", err)
+	if suite.userTypeID != "" {
+		if err := testutils.DeleteUserType(suite.userTypeID); err != nil {
+			suite.T().Logf("Failed to delete user type: %v", err)
 		}
 	}
 

@@ -23,8 +23,8 @@ import {Plus, Search, Mail} from '@wso2/oxygen-ui-icons-react';
 import {useTranslation} from 'react-i18next';
 import {useLogger} from '@thunder/logger/react';
 import UsersList from '../components/UsersList';
-import useGetUserSchemas from '../api/useGetUserSchemas';
-import type {SchemaInterface} from '../types/users';
+import useGetUserTypes from '../api/useGetUserTypes';
+import type {UserTypeListItem} from '../types/users';
 import InviteUserDialog from '../components/InviteUserDialog';
 
 export default function UsersListPage() {
@@ -32,20 +32,20 @@ export default function UsersListPage() {
   const {t} = useTranslation();
   const logger = useLogger('UsersListPage');
 
-  const [selectedSchema, setSelectedSchema] = useState<string>();
+  const [selectedUserTypeId, setSelectedUserTypeId] = useState<string>();
   const [isInviteDialogOpen, setIsInviteDialogOpen] = useState(false);
 
-  const {data: originalUserSchemas} = useGetUserSchemas();
+  const {data: originalUserTypes} = useGetUserTypes();
 
-  const userSchemas: SchemaInterface[] = useMemo(() => {
-    if (!originalUserSchemas?.schemas) {
+  const userTypes: UserTypeListItem[] = useMemo(() => {
+    if (!originalUserTypes?.schemas) {
       return [];
     }
 
-    setSelectedSchema(originalUserSchemas.schemas[0]?.id);
+    setSelectedUserTypeId(originalUserTypes.schemas[0]?.id);
 
-    return originalUserSchemas?.schemas;
-  }, [originalUserSchemas]);
+    return originalUserTypes?.schemas;
+  }, [originalUserTypes]);
 
   const handleOpenInviteDialog = () => {
     setIsInviteDialogOpen(true);
@@ -106,26 +106,22 @@ export default function UsersListPage() {
         />
         <Select
           id="user-type-select"
-          value={selectedSchema ?? ''}
+          value={selectedUserTypeId ?? ''}
           size="small"
           sx={{minWidth: 200}}
-          onChange={(e) => setSelectedSchema(e.target.value)}
+          onChange={(e) => setSelectedUserTypeId(e.target.value)}
         >
-          {userSchemas.map((schema) => (
-            <MenuItem key={schema.id} value={schema.id}>
-              {schema.name}
+          {userTypes.map((userType) => (
+            <MenuItem key={userType.id} value={userType.id}>
+              {userType.name}
             </MenuItem>
           ))}
         </Select>
       </Stack>
-      <UsersList selectedSchema={selectedSchema ?? ''} />
+      <UsersList selectedUserTypeId={selectedUserTypeId ?? ''} />
 
       {/* User Onboarding Dialog */}
-      <InviteUserDialog
-        open={isInviteDialogOpen}
-        onClose={handleCloseInviteDialog}
-        onSuccess={handleInviteSuccess}
-      />
+      <InviteUserDialog open={isInviteDialogOpen} onClose={handleCloseInviteDialog} onSuccess={handleInviteSuccess} />
     </Box>
   );
 }

@@ -43,7 +43,7 @@ var (
 		Parent:      nil,
 	}
 
-	testUserSchema = testutils.UserSchema{
+	testUserType = testutils.UserType{
 		Name: "role-person",
 		Schema: map[string]interface{}{
 			"email": map[string]interface{}{
@@ -93,7 +93,7 @@ var (
 	testUserID2  string
 	testGroupID  string
 	sharedRoleID string // Shared role created in SetupSuite for tests that need a pre-existing role
-	userSchemaID string
+	userTypeID   string
 
 	// Resource servers for permission testing
 	testResourceServer1ID string
@@ -122,12 +122,12 @@ func (suite *RoleAPITestSuite) SetupSuite() {
 	ouID, err := testutils.CreateOrganizationUnit(testOU)
 	suite.Require().NoError(err, "Failed to create test organization unit")
 	testOUID = ouID
-	testUserSchema.OrganizationUnitId = testOUID
+	testUserType.OrganizationUnitId = testOUID
 
-	// Create user schema
-	schemaID, err := testutils.CreateUserType(testUserSchema)
-	suite.Require().NoError(err, "Failed to create user schema")
-	userSchemaID = schemaID
+	// Create user type
+	schemaID, err := testutils.CreateUserType(testUserType)
+	suite.Require().NoError(err, "Failed to create user type")
+	userTypeID = schemaID
 
 	// Create test users
 	user1 := testUser1
@@ -229,8 +229,8 @@ func (suite *RoleAPITestSuite) TearDownSuite() {
 	}
 
 	// Finally schema and OU
-	if userSchemaID != "" {
-		_ = testutils.DeleteUserType(userSchemaID)
+	if userTypeID != "" {
+		_ = testutils.DeleteUserType(userTypeID)
 	}
 	if testOUID != "" {
 		_ = testutils.DeleteOrganizationUnit(testOUID)

@@ -20,16 +20,16 @@ import {useState, useMemo} from 'react';
 import {useAsgardeo} from '@asgardeo/react';
 import {useConfig} from '@thunder/shared-contexts';
 
-import type {ApiError, ApiUserSchema, UpdateUserSchemaRequest} from '../types/user-types';
+import type {ApiError, ApiUserType, UpdateUserTypeRequest} from '../types/user-types';
 
 /**
- * Custom hook to update an existing user schema (user type)
+ * Custom hook to update an existing user type
  * @returns Object containing updateUserType function, data, loading state, error, and reset function
  */
 export default function useUpdateUserType() {
   const {http} = useAsgardeo();
   const {getServerUrl} = useConfig();
-  const [data, setData] = useState<ApiUserSchema | null>(null);
+  const [data, setData] = useState<ApiUserType | null>(null);
   const [error, setError] = useState<ApiError | null>(null);
   const [loading, setLoading] = useState(false);
 
@@ -38,14 +38,14 @@ export default function useUpdateUserType() {
     [getServerUrl],
   );
 
-  const updateUserType = async (userTypeId: string, requestData: UpdateUserSchemaRequest): Promise<void> => {
+  const updateUserType = async (userTypeId: string, requestData: UpdateUserTypeRequest): Promise<void> => {
     try {
       setLoading(true);
       setError(null);
       setData(null);
 
       const response = await http.request({
-        url: `${API_BASE_URL}/user-schemas/${userTypeId}`,
+        url: `${API_BASE_URL}/user-types/${userTypeId}`,
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -53,7 +53,7 @@ export default function useUpdateUserType() {
         data: requestData,
       } as unknown as Parameters<typeof http.request>[0]);
 
-      const jsonData = response.data as ApiUserSchema;
+      const jsonData = response.data as ApiUserType;
       setData(jsonData);
       setError(null);
     } catch (err) {

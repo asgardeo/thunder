@@ -25,24 +25,24 @@ import (
 	"github.com/asgardeo/thunder/internal/flow/common"
 	"github.com/asgardeo/thunder/internal/flow/core"
 	"github.com/asgardeo/thunder/internal/system/log"
-	"github.com/asgardeo/thunder/internal/userschema"
+	"github.com/asgardeo/thunder/internal/usertype"
 )
 
 const (
 	userTypeResolverLoggerComponentName = "UserTypeResolver"
 )
 
-// schemaWithOU represents a user schema along with its associated organization unit ID.
+// schemaWithOU represents a user type along with its associated organization unit ID.
 type schemaWithOU struct {
-	userSchema *userschema.UserSchema
-	ouID       string
+	userType *usertype.UserType
+	ouID     string
 }
 
 // userTypeResolver is a registration-flow executor that resolves the user type at flow start.
 type userTypeResolver struct {
 	core.ExecutorInterface
-	userSchemaService userschema.UserSchemaServiceInterface
-	logger            *log.Logger
+	userTypeService usertype.UserTypeServiceInterface
+	logger          *log.Logger
 }
 
 var _ core.ExecutorInterface = (*userTypeResolver)(nil)
@@ -50,7 +50,7 @@ var _ core.ExecutorInterface = (*userTypeResolver)(nil)
 // newUserTypeResolver creates a new instance of the UserTypeResolver executor.
 func newUserTypeResolver(
 	flowFactory core.FlowFactoryInterface,
-	userSchemaService userschema.UserSchemaServiceInterface,
+	userTypeService usertype.UserTypeServiceInterface,
 ) *userTypeResolver {
 	logger := log.GetLogger().With(
 		log.String(log.LoggerKeyComponentName, userTypeResolverLoggerComponentName),
@@ -70,7 +70,7 @@ func newUserTypeResolver(
 
 	return &userTypeResolver{
 		ExecutorInterface: base,
-		userSchemaService: userSchemaService,
+		userTypeService:   userTypeService,
 		logger:            logger,
 	}
 }
@@ -148,24 +148,24 @@ func (u *userTypeResolver) GetDefaultMeta() interface{} {
 
 // resolveUserTypeFromInput resolves the user type from input and updates the executor response.
 func (u *userTypeResolver) resolveUserTypeFromInput(execResp *common.ExecutorResponse,
-	userType string, allowed []string) error {
+	userTypeName string, allowed []string) error {
 	logger := u.logger
-	if slices.Contains(allowed, userType) {
-		logger.Debug("User type resolved from input", log.String(userTypeKey, userType))
+	if slices.Contains(allowed, userTypeName) {
+		logger.Debug("User type resolved from input", log.String(userTypeKey, userTypeName))
 
-		userSchema, ouID, err := u.getUserSchemaAndOU(userType)
+		userType, ouID, err := u.getUserTypeAndOU(userTypeName)
 		if err != nil {
 			return err
 		}
-		if !userSchema.AllowSelfRegistration {
-			logger.Debug("Self registration not enabled for user type", log.String(userTypeKey, userType))
+		if !userType.AllowSelfRegistration {
+			logger.Debug("Self registration not enabled for user type", log.String(userTypeKey, userType.Name))
 			execResp.Status = common.ExecFailure
 			execResp.FailureReason = "Self-registration not enabled for the user type"
 			return nil
 		}
 
 		// Add userType and ouID to runtime data
-		execResp.RuntimeData[userTypeKey] = userType
+		execResp.RuntimeData[userTypeKey] = userType.Name
 		execResp.RuntimeData[defaultOUIDKey] = ouID
 
 		execResp.Status = common.ExecComplete
@@ -181,12 +181,12 @@ func (u *userTypeResolver) resolveUserTypeFromInput(execResp *common.ExecutorRes
 func (u *userTypeResolver) resolveUserTypeFromSingleAllowed(execResp *common.ExecutorResponse,
 	allowedUserType string) error {
 	logger := u.logger
-	userSchema, ouID, err := u.getUserSchemaAndOU(allowedUserType)
+	userType, ouID, err := u.getUserTypeAndOU(allowedUserType)
 	if err != nil {
 		return err
 	}
 
-	if !userSchema.AllowSelfRegistration {
+	if !userType.AllowSelfRegistration {
 		logger.Debug("Self registration not enabled for user type", log.String(userTypeKey, allowedUserType))
 		execResp.Status = common.ExecFailure
 		execResp.FailureReason = "Self-registration not enabled for the user type"
@@ -211,14 +211,14 @@ func (u *userTypeResolver) resolveUserTypeFromMultipleAllowed(execResp *common.E
 	// Filter self registration enabled user types
 	selfRegEnabledUserTypes := make([]schemaWithOU, 0)
 	for _, userType := range allowed {
-		userSchema, ouID, err := u.getUserSchemaAndOU(userType)
+		userType, ouID, err := u.getUserTypeAndOU(userType)
 		if err != nil {
 			return err
 		}
-		if userSchema.AllowSelfRegistration {
+		if userType.AllowSelfRegistration {
 			selfRegEnabledUserTypes = append(selfRegEnabledUserTypes, schemaWithOU{
-				userSchema: userSchema,
-				ouID:       ouID,
+				userType: userType,
+				ouID:     ouID,
 			})
 		}
 	}
@@ -234,10 +234,10 @@ func (u *userTypeResolver) resolveUserTypeFromMultipleAllowed(execResp *common.E
 	// If only one user type has self registration enabled, select it automatically
 	if len(selfRegEnabledUserTypes) == 1 {
 		record := selfRegEnabledUserTypes[0]
-		logger.Debug("User type auto-selected", log.String(userTypeKey, record.userSchema.Name))
+		logger.Debug("User type auto-selected", log.String(userTypeKey, record.userType.Name))
 
 		// Add userType and ouID to runtime data
-		execResp.RuntimeData[userTypeKey] = record.userSchema.Name
+		execResp.RuntimeData[userTypeKey] = record.userType.Name
 		execResp.RuntimeData[defaultOUIDKey] = record.ouID
 
 		execResp.Status = common.ExecComplete
@@ -247,7 +247,7 @@ func (u *userTypeResolver) resolveUserTypeFromMultipleAllowed(execResp *common.E
 	// If multiple user types are allowed, prompt the user to select one
 	selfRegUserTypes := make([]string, 0, len(selfRegEnabledUserTypes))
 	for _, record := range selfRegEnabledUserTypes {
-		selfRegUserTypes = append(selfRegUserTypes, record.userSchema.Name)
+		selfRegUserTypes = append(selfRegUserTypes, record.userType.Name)
 	}
 
 	logger.Debug("Prompting for user type selection as multiple user types are available for self registration",
@@ -257,25 +257,25 @@ func (u *userTypeResolver) resolveUserTypeFromMultipleAllowed(execResp *common.E
 	return nil
 }
 
-// getUserSchemaAndOU retrieves the user schema by name and returns the schema and organization unit ID.
-func (u *userTypeResolver) getUserSchemaAndOU(userType string) (*userschema.UserSchema, string, error) {
-	logger := u.logger.With(log.String(userTypeKey, userType))
+// getUserTypeAndOU retrieves the user type by name and returns the schema and organization unit ID.
+func (u *userTypeResolver) getUserTypeAndOU(userTypeName string) (*usertype.UserType, string, error) {
+	logger := u.logger.With(log.String(userTypeKey, userTypeName))
 
-	userSchema, svcErr := u.userSchemaService.GetUserSchemaByName(userType)
+	userType, svcErr := u.userTypeService.GetUserTypeByName(userTypeName)
 	if svcErr != nil {
-		logger.Error("Failed to resolve user schema for user type",
-			log.String(userTypeKey, userType), log.String("error", svcErr.Error))
-		return nil, "", fmt.Errorf("failed to resolve user schema for user type: %s", userType)
+		logger.Error("Failed to resolve user type for user type",
+			log.String(userTypeKey, userTypeName), log.String("error", svcErr.Error))
+		return nil, "", fmt.Errorf("failed to resolve user type for user type: %s", userTypeName)
 	}
 
-	if userSchema.OrganizationUnitID == "" {
-		logger.Error("No organization unit found for user type", log.String(userTypeKey, userType))
-		return nil, "", fmt.Errorf("no organization unit found for user type: %s", userType)
+	if userType.OrganizationUnitID == "" {
+		logger.Error("No organization unit found for user type", log.String(userTypeKey, userTypeName))
+		return nil, "", fmt.Errorf("no organization unit found for user type: %s", userTypeName)
 	}
 
-	logger.Debug("User schema resolved for user type", log.String(userTypeKey, userType),
-		log.String(ouIDKey, userSchema.OrganizationUnitID))
-	return userSchema, userSchema.OrganizationUnitID, nil
+	logger.Debug("User type resolved for user type", log.String(userTypeKey, userTypeName),
+		log.String(ouIDKey, userType.OrganizationUnitID))
+	return userType, userType.OrganizationUnitID, nil
 }
 
 // resolveForUserOnboarding handles user type resolution for user onboarding flows.
@@ -284,40 +284,40 @@ func (u *userTypeResolver) resolveForUserOnboarding(ctx *core.NodeContext,
 	logger := u.logger.With(log.String(log.LoggerKeyFlowID, ctx.FlowID))
 
 	// If userType already provided, validate and set runtime data
-	if userType, ok := ctx.UserInputs[userTypeKey]; ok && userType != "" {
-		userSchema, ouID, err := u.getUserSchemaAndOU(userType)
+	if userTypeName, ok := ctx.UserInputs[userTypeKey]; ok && userTypeName != "" {
+		userType, ouID, err := u.getUserTypeAndOU(userTypeName)
 		if err != nil {
 			execResp.Status = common.ExecFailure
 			execResp.FailureReason = "Invalid user type"
 			return execResp, nil
 		}
 
-		execResp.RuntimeData[userTypeKey] = userType
+		execResp.RuntimeData[userTypeKey] = userType.Name
 		execResp.RuntimeData[defaultOUIDKey] = ouID
-		logger.Debug("User type resolved for user onboarding", log.String(userTypeKey, userType),
-			log.String(ouIDKey, userSchema.OrganizationUnitID))
+		logger.Debug("User type resolved for user onboarding", log.String(userTypeKey, userType.Name),
+			log.String(ouIDKey, userType.OrganizationUnitID))
 		execResp.Status = common.ExecComplete
 		return execResp, nil
 	}
 
-	// List all available user schemas
-	schemas, svcErr := u.userSchemaService.GetUserSchemaList(100, 0)
+	// List all available user types
+	schemas, svcErr := u.userTypeService.GetUserTypeList(100, 0)
 	if svcErr != nil {
-		logger.Debug("Failed to list user schemas", log.String("error", svcErr.Error))
+		logger.Debug("Failed to list user types", log.String("error", svcErr.Error))
 		execResp.Status = common.ExecFailure
 		execResp.FailureReason = "Failed to retrieve user types"
 		return execResp, nil
 	}
 
-	if len(schemas.Schemas) == 0 {
-		logger.Debug("No user schemas available")
+	if len(schemas.Types) == 0 {
+		logger.Debug("No user types available")
 		execResp.Status = common.ExecFailure
 		execResp.FailureReason = "No user types available"
 		return execResp, nil
 	}
 
-	options := make([]string, 0, len(schemas.Schemas))
-	for _, schema := range schemas.Schemas {
+	options := make([]string, 0, len(schemas.Types))
+	for _, schema := range schemas.Types {
 		options = append(options, schema.Name)
 	}
 

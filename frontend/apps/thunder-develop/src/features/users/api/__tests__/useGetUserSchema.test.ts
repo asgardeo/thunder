@@ -18,8 +18,8 @@
 
 import {describe, it, expect, vi, beforeEach, afterEach} from 'vitest';
 import {waitFor, renderHook} from '@thunder/test-utils';
-import useGetUserSchema from '../useGetUserSchema';
-import type {ApiUserSchema} from '../../types/users';
+import useGetUserType from '../useGetUserType';
+import type {ApiUserType} from '../../types/users';
 
 // Mock useAsgardeo
 const mockHttpRequest = vi.fn();
@@ -42,7 +42,7 @@ vi.mock('@thunder/shared-contexts', async (importOriginal) => {
   };
 });
 
-describe('useGetUserSchema', () => {
+describe('useGetUserType', () => {
   beforeEach(() => {
     mockHttpRequest.mockReset();
   });
@@ -52,7 +52,7 @@ describe('useGetUserSchema', () => {
   });
 
   it('should initialize with correct default values', () => {
-    const {result} = renderHook(() => useGetUserSchema());
+    const {result} = renderHook(() => useGetUserType());
 
     expect(result.current.data).toBeNull();
     expect(result.current.loading).toBe(false);
@@ -60,8 +60,8 @@ describe('useGetUserSchema', () => {
     expect(typeof result.current.refetch).toBe('function');
   });
 
-  it('should fetch user schema successfully when id is provided', async () => {
-    const mockSchema: ApiUserSchema = {
+  it('should fetch user type successfully when id is provided', async () => {
+    const mockSchema: ApiUserType = {
       id: 'schema-123',
       name: 'Customer',
       schema: {
@@ -78,7 +78,7 @@ describe('useGetUserSchema', () => {
 
     mockHttpRequest.mockResolvedValueOnce({data: mockSchema});
 
-    const {result} = renderHook(() => useGetUserSchema('schema-123'));
+    const {result} = renderHook(() => useGetUserType('schema-123'));
 
     await waitFor(() => {
       expect(result.current.loading).toBe(false);
@@ -88,14 +88,14 @@ describe('useGetUserSchema', () => {
     expect(result.current.error).toBeNull();
     expect(mockHttpRequest).toHaveBeenCalledWith(
       expect.objectContaining({
-        url: 'https://localhost:8090/user-schemas/schema-123',
+        url: 'https://localhost:8090/user-types/schema-123',
         method: 'GET',
       }),
     );
   });
 
   it('should not fetch when id is not provided', () => {
-    const {result} = renderHook(() => useGetUserSchema());
+    const {result} = renderHook(() => useGetUserType());
 
     expect(result.current.data).toBeNull();
     expect(result.current.loading).toBe(false);
@@ -106,7 +106,7 @@ describe('useGetUserSchema', () => {
   it('should handle API error with JSON response', async () => {
     mockHttpRequest.mockRejectedValue(new Error('Schema not found'));
 
-    const {result} = renderHook(() => useGetUserSchema('schema-123'));
+    const {result} = renderHook(() => useGetUserType('schema-123'));
 
     await waitFor(() => {
       expect(result.current.loading).toBe(false);
@@ -115,7 +115,7 @@ describe('useGetUserSchema', () => {
     expect(result.current.error).toEqual({
       code: 'FETCH_ERROR',
       message: 'Schema not found',
-      description: 'Failed to fetch user schema',
+      description: 'Failed to fetch user type',
     });
     expect(result.current.data).toBeNull();
   });
@@ -123,7 +123,7 @@ describe('useGetUserSchema', () => {
   it('should handle API error without JSON response', async () => {
     mockHttpRequest.mockRejectedValue(new Error('Internal Server Error'));
 
-    const {result} = renderHook(() => useGetUserSchema('schema-123'));
+    const {result} = renderHook(() => useGetUserType('schema-123'));
 
     await waitFor(() => {
       expect(result.current.loading).toBe(false);
@@ -132,7 +132,7 @@ describe('useGetUserSchema', () => {
     expect(result.current.error).toEqual({
       code: 'FETCH_ERROR',
       message: 'Internal Server Error',
-      description: 'Failed to fetch user schema',
+      description: 'Failed to fetch user type',
     });
     expect(result.current.data).toBeNull();
   });
@@ -140,7 +140,7 @@ describe('useGetUserSchema', () => {
   it('should handle network error', async () => {
     mockHttpRequest.mockRejectedValue(new Error('Network error'));
 
-    const {result} = renderHook(() => useGetUserSchema('schema-123'));
+    const {result} = renderHook(() => useGetUserType('schema-123'));
 
     await waitFor(() => {
       expect(result.current.loading).toBe(false);
@@ -149,13 +149,13 @@ describe('useGetUserSchema', () => {
     expect(result.current.error).toEqual({
       code: 'FETCH_ERROR',
       message: 'Network error',
-      description: 'Failed to fetch user schema',
+      description: 'Failed to fetch user type',
     });
     expect(result.current.data).toBeNull();
   });
 
-  it('should refetch user schema with the same id', async () => {
-    const mockSchema: ApiUserSchema = {
+  it('should refetch user type with the same id', async () => {
+    const mockSchema: ApiUserType = {
       id: 'schema-123',
       name: 'Customer',
       schema: {
@@ -168,7 +168,7 @@ describe('useGetUserSchema', () => {
 
     mockHttpRequest.mockResolvedValue({data: mockSchema});
 
-    const {result} = renderHook(() => useGetUserSchema('schema-123'));
+    const {result} = renderHook(() => useGetUserType('schema-123'));
 
     await waitFor(() => {
       expect(result.current.data).toEqual(mockSchema);
@@ -181,8 +181,8 @@ describe('useGetUserSchema', () => {
     });
   });
 
-  it('should refetch user schema with a new id', async () => {
-    const mockSchema1: ApiUserSchema = {
+  it('should refetch user type with a new id', async () => {
+    const mockSchema1: ApiUserType = {
       id: 'schema-123',
       name: 'Customer',
       schema: {
@@ -193,7 +193,7 @@ describe('useGetUserSchema', () => {
       },
     };
 
-    const mockSchema2: ApiUserSchema = {
+    const mockSchema2: ApiUserType = {
       id: 'schema-456',
       name: 'Employee',
       schema: {
@@ -206,7 +206,7 @@ describe('useGetUserSchema', () => {
 
     mockHttpRequest.mockResolvedValueOnce({data: mockSchema1}).mockResolvedValueOnce({data: mockSchema2});
 
-    const {result} = renderHook(() => useGetUserSchema('schema-123'));
+    const {result} = renderHook(() => useGetUserType('schema-123'));
 
     await waitFor(() => {
       expect(result.current.data).toEqual(mockSchema1);
@@ -220,21 +220,21 @@ describe('useGetUserSchema', () => {
   });
 
   it('should set error when refetch is called without id', async () => {
-    const {result} = renderHook(() => useGetUserSchema());
+    const {result} = renderHook(() => useGetUserType());
 
     await result.current.refetch();
 
     await waitFor(() => {
       expect(result.current.error).toEqual({
         code: 'INVALID_ID',
-        message: 'Invalid schema ID',
-        description: 'Schema ID is required',
+        message: 'Invalid user type ID',
+        description: 'User type ID is required',
       });
     });
   });
 
   it('should prevent double fetch in strict mode', async () => {
-    const mockSchema: ApiUserSchema = {
+    const mockSchema: ApiUserType = {
       id: 'schema-123',
       name: 'Customer',
       schema: {
@@ -247,7 +247,7 @@ describe('useGetUserSchema', () => {
 
     mockHttpRequest.mockResolvedValue({data: mockSchema});
 
-    const {result} = renderHook(() => useGetUserSchema('schema-123'));
+    const {result} = renderHook(() => useGetUserType('schema-123'));
 
     await waitFor(() => {
       expect(result.current.data).toEqual(mockSchema);
@@ -258,7 +258,7 @@ describe('useGetUserSchema', () => {
   });
 
   it('should fetch when id changes', async () => {
-    const mockSchema1: ApiUserSchema = {
+    const mockSchema1: ApiUserType = {
       id: 'schema-123',
       name: 'Customer',
       schema: {
@@ -269,7 +269,7 @@ describe('useGetUserSchema', () => {
       },
     };
 
-    const mockSchema2: ApiUserSchema = {
+    const mockSchema2: ApiUserType = {
       id: 'schema-456',
       name: 'Employee',
       schema: {
@@ -282,7 +282,7 @@ describe('useGetUserSchema', () => {
 
     mockHttpRequest.mockResolvedValueOnce({data: mockSchema1}).mockResolvedValueOnce({data: mockSchema2});
 
-    const {result, rerender} = renderHook(({id}: {id?: string}) => useGetUserSchema(id), {
+    const {result, rerender} = renderHook(({id}: {id?: string}) => useGetUserType(id), {
       initialProps: {id: 'schema-123'},
     });
 
@@ -300,7 +300,7 @@ describe('useGetUserSchema', () => {
   });
 
   it('should handle schema with complex properties', async () => {
-    const mockSchema: ApiUserSchema = {
+    const mockSchema: ApiUserType = {
       id: 'schema-789',
       name: 'ComplexUser',
       schema: {
@@ -342,7 +342,7 @@ describe('useGetUserSchema', () => {
 
     mockHttpRequest.mockResolvedValueOnce({data: mockSchema});
 
-    const {result} = renderHook(() => useGetUserSchema('schema-789'));
+    const {result} = renderHook(() => useGetUserType('schema-789'));
 
     await waitFor(() => {
       expect(result.current.loading).toBe(false);
@@ -353,7 +353,7 @@ describe('useGetUserSchema', () => {
   });
 
   it('should handle refetch error and throw', async () => {
-    const mockSchema: ApiUserSchema = {
+    const mockSchema: ApiUserType = {
       id: 'schema-123',
       name: 'Customer',
       schema: {
@@ -366,7 +366,7 @@ describe('useGetUserSchema', () => {
 
     mockHttpRequest.mockResolvedValue({data: mockSchema});
 
-    const {result} = renderHook(() => useGetUserSchema('schema-123'));
+    const {result} = renderHook(() => useGetUserType('schema-123'));
 
     await waitFor(() => {
       expect(result.current.data).toEqual(mockSchema);
@@ -383,7 +383,7 @@ describe('useGetUserSchema', () => {
       expect(result.current.error).toEqual({
         code: 'FETCH_ERROR',
         message: 'Refetch failed',
-        description: 'Failed to fetch user schema',
+        description: 'Failed to fetch user type',
       });
     });
 
@@ -391,7 +391,7 @@ describe('useGetUserSchema', () => {
   });
 
   it('should handle non-Error object in refetch catch block', async () => {
-    const mockSchema: ApiUserSchema = {
+    const mockSchema: ApiUserType = {
       id: 'schema-123',
       name: 'Customer',
       schema: {
@@ -404,7 +404,7 @@ describe('useGetUserSchema', () => {
 
     mockHttpRequest.mockResolvedValue({data: mockSchema});
 
-    const {result} = renderHook(() => useGetUserSchema('schema-123'));
+    const {result} = renderHook(() => useGetUserType('schema-123'));
 
     await waitFor(() => {
       expect(result.current.data).toEqual(mockSchema);
@@ -429,7 +429,7 @@ describe('useGetUserSchema', () => {
       expect(result.current.error).toEqual({
         code: 'FETCH_ERROR',
         message: 'An unknown error occurred',
-        description: 'Failed to fetch user schema',
+        description: 'Failed to fetch user type',
       });
     });
 
@@ -439,7 +439,7 @@ describe('useGetUserSchema', () => {
   it('should handle non-Error object during initial fetch', async () => {
     mockHttpRequest.mockRejectedValue('String error during initial fetch');
 
-    const {result} = renderHook(() => useGetUserSchema('schema-123'));
+    const {result} = renderHook(() => useGetUserType('schema-123'));
 
     await waitFor(() => {
       expect(result.current.loading).toBe(false);
@@ -448,7 +448,7 @@ describe('useGetUserSchema', () => {
     expect(result.current.error).toEqual({
       code: 'FETCH_ERROR',
       message: 'An unknown error occurred',
-      description: 'Failed to fetch user schema',
+      description: 'Failed to fetch user type',
     });
     expect(result.current.data).toBeNull();
   });

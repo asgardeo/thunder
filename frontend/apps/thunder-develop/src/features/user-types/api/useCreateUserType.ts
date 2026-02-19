@@ -19,16 +19,16 @@
 import {useState, useMemo} from 'react';
 import {useAsgardeo} from '@asgardeo/react';
 import {useConfig} from '@thunder/shared-contexts';
-import type {ApiError, ApiUserSchema, CreateUserSchemaRequest} from '../types/user-types';
+import type {ApiError, ApiUserType, CreateUserTypeRequest} from '../types/user-types';
 
 /**
- * Custom hook to create a new user schema (user type)
+ * Custom hook to create a new user type
  * @returns Object containing createUserType function, data, loading state, error, and reset function
  */
 export default function useCreateUserType() {
   const {http} = useAsgardeo();
   const {getServerUrl} = useConfig();
-  const [data, setData] = useState<ApiUserSchema | null>(null);
+  const [data, setData] = useState<ApiUserType | null>(null);
   const [error, setError] = useState<ApiError | null>(null);
   const [loading, setLoading] = useState(false);
 
@@ -37,14 +37,14 @@ export default function useCreateUserType() {
     [getServerUrl],
   );
 
-  const createUserType = async (requestData: CreateUserSchemaRequest): Promise<void> => {
+  const createUserType = async (requestData: CreateUserTypeRequest): Promise<void> => {
     try {
       setLoading(true);
       setError(null);
       setData(null);
 
       const response = await http.request({
-        url: `${API_BASE_URL}/user-schemas`,
+        url: `${API_BASE_URL}/user-types`,
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -52,7 +52,7 @@ export default function useCreateUserType() {
         data: requestData,
       } as unknown as Parameters<typeof http.request>[0]);
 
-      const jsonData = response.data as ApiUserSchema;
+      const jsonData = response.data as ApiUserType;
       setData(jsonData);
       setError(null);
     } catch (err) {

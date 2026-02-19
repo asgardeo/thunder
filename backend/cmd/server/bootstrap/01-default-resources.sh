@@ -18,7 +18,7 @@
 # ----------------------------------------------------------------------------
 
 # Bootstrap Script: Default Resources Setup
-# Creates default organization unit, user schema, admin user, system resource server, system action, admin role, and DEVELOP application
+# Creates default organization unit, user type, admin user, system resource server, system action, admin role, and DEVELOP application
 
 set -e
 
@@ -95,12 +95,12 @@ fi
 echo ""
 
 # ============================================================================
-# Create Default User Schema
+# Create Default User Type
 # ============================================================================
 
-log_info "Creating default user schema (person)..."
+log_info "Creating default user type (person)..."
 
-RESPONSE=$(thunder_api_call POST "/user-schemas" '{
+RESPONSE=$(thunder_api_call POST "/user-types" '{
   "name": "Person",
   "ouId": "'${DEFAULT_OU_ID}'",
   "schema": {
@@ -140,11 +140,11 @@ RESPONSE=$(thunder_api_call POST "/user-schemas" '{
 HTTP_CODE="${RESPONSE: -3}"
 
 if [[ "$HTTP_CODE" == "201" ]] || [[ "$HTTP_CODE" == "200" ]]; then
-    log_success "User schema created successfully"
+    log_success "User type created successfully"
 elif [[ "$HTTP_CODE" == "409" ]]; then
-    log_warning "User schema already exists, skipping"
+    log_warning "User type already exists, skipping"
 else
-    log_error "Failed to create user schema (HTTP $HTTP_CODE)"
+    log_error "Failed to create user type (HTTP $HTTP_CODE)"
     exit 1
 fi
 

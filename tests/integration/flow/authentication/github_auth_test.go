@@ -94,7 +94,7 @@ const (
 	mockGithubFlowPort = 8092
 )
 
-var githubUserSchema = testutils.UserSchema{
+var githubUserType = testutils.UserType{
 	Name: "github_auth_user",
 	Schema: map[string]interface{}{
 		"username": map[string]interface{}{
@@ -123,7 +123,7 @@ type GithubAuthFlowTestSuite struct {
 	config           *common.TestSuiteConfig
 	mockGithubServer *testutils.MockGithubOAuthServer
 	userID           string
-	userSchemaID     string
+	userTypeID       string
 }
 
 func TestGithubAuthFlowTestSuite(t *testing.T) {
@@ -167,11 +167,11 @@ func (ts *GithubAuthFlowTestSuite) SetupSuite() {
 	}
 	githubAuthTestOU.ID = ouID
 
-	// Create user schema
-	githubUserSchema.OrganizationUnitId = ouID
-	schemaID, err := testutils.CreateUserType(githubUserSchema)
-	ts.Require().NoError(err, "Failed to create GitHub user schema")
-	ts.userSchemaID = schemaID
+	// Create user type
+	githubUserType.OrganizationUnitId = ouID
+	typeID, err := testutils.CreateUserType(githubUserType)
+	ts.Require().NoError(err, "Failed to create GitHub user type")
+	ts.userTypeID = typeID
 
 	// Create user
 	userAttributes := map[string]interface{}{
@@ -188,8 +188,8 @@ func (ts *GithubAuthFlowTestSuite) SetupSuite() {
 
 	// Create user in the pre-configured OU from database scripts
 	user := testutils.User{
-		Type:             githubUserSchema.Name,
-		OrganizationUnit: githubUserSchema.OrganizationUnitId,
+		Type:             githubUserType.Name,
+		OrganizationUnit: githubUserType.OrganizationUnitId,
 		Attributes:       json.RawMessage(attributesJSON),
 	}
 
@@ -296,8 +296,8 @@ func (ts *GithubAuthFlowTestSuite) TearDownSuite() {
 		_ = testutils.DeleteUser(ts.userID)
 	}
 
-	if ts.userSchemaID != "" {
-		_ = testutils.DeleteUserType(ts.userSchemaID)
+	if ts.userTypeID != "" {
+		_ = testutils.DeleteUserType(ts.userTypeID)
 	}
 
 	// Stop mock server
@@ -397,7 +397,7 @@ func (ts *GithubAuthFlowTestSuite) TestGithubAuthFlowCompleteSuccess() {
 	jwtClaims, err := testutils.ValidateJWTAssertionFields(
 		completeFlowStep.Assertion,
 		githubAuthTestAppID,
-		githubUserSchema.Name,
+		githubUserType.Name,
 		githubAuthTestOU.ID,
 		githubAuthTestOU.Name,
 		githubAuthTestOU.Handle,

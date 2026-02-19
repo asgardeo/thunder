@@ -38,7 +38,7 @@ import (
 	"github.com/asgardeo/thunder/internal/system/error/serviceerror"
 	"github.com/asgardeo/thunder/internal/system/log"
 	sysutils "github.com/asgardeo/thunder/internal/system/utils"
-	"github.com/asgardeo/thunder/internal/userschema"
+	"github.com/asgardeo/thunder/internal/usertype"
 )
 
 // ApplicationServiceInterface defines the interface for the application service.
@@ -55,12 +55,12 @@ type ApplicationServiceInterface interface {
 
 // ApplicationService is the default implementation of the ApplicationServiceInterface.
 type applicationService struct {
-	appStore          applicationStoreInterface
-	certService       cert.CertificateServiceInterface
-	flowMgtService    flowmgt.FlowMgtServiceInterface
-	themeMgtService   thememgt.ThemeMgtServiceInterface
-	layoutMgtService  layoutmgt.LayoutMgtServiceInterface
-	userSchemaService userschema.UserSchemaServiceInterface
+	appStore         applicationStoreInterface
+	certService      cert.CertificateServiceInterface
+	flowMgtService   flowmgt.FlowMgtServiceInterface
+	themeMgtService  thememgt.ThemeMgtServiceInterface
+	layoutMgtService layoutmgt.LayoutMgtServiceInterface
+	userTypeService  usertype.UserTypeServiceInterface
 }
 
 // newApplicationService creates a new instance of ApplicationService.
@@ -70,15 +70,15 @@ func newApplicationService(
 	flowMgtService flowmgt.FlowMgtServiceInterface,
 	themeMgtService thememgt.ThemeMgtServiceInterface,
 	layoutMgtService layoutmgt.LayoutMgtServiceInterface,
-	userSchemaService userschema.UserSchemaServiceInterface,
+	userTypeService usertype.UserTypeServiceInterface,
 ) ApplicationServiceInterface {
 	return &applicationService{
-		appStore:          appStore,
-		certService:       certService,
-		flowMgtService:    flowMgtService,
-		themeMgtService:   themeMgtService,
-		layoutMgtService:  layoutMgtService,
-		userSchemaService: userSchemaService,
+		appStore:         appStore,
+		certService:      certService,
+		flowMgtService:   flowMgtService,
+		themeMgtService:  themeMgtService,
+		layoutMgtService: layoutMgtService,
+		userTypeService:  userTypeService,
 	}
 }
 
@@ -762,7 +762,7 @@ func (as *applicationService) validateLayoutID(layoutID string) *serviceerror.Se
 }
 
 // validateAllowedUserTypes validates that all user types in allowed_user_types exist in the system.
-// TODO: Refine validation logic from user schema service.
+// TODO: Refine validation logic from user type service.
 func (as *applicationService) validateAllowedUserTypes(allowedUserTypes []string) *serviceerror.ServiceError {
 	if len(allowedUserTypes) == 0 {
 		return nil
@@ -770,24 +770,24 @@ func (as *applicationService) validateAllowedUserTypes(allowedUserTypes []string
 
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, "ApplicationService"))
 
-	// Get all user schemas to check if the provided user types exist
+	// Get all user types to check if the provided user types exist
 	existingUserTypes := make(map[string]bool)
 	limit := serverconst.MaxPageSize
 	offset := 0
 
 	for {
-		userSchemaList, svcErr := as.userSchemaService.GetUserSchemaList(limit, offset)
+		userTypeList, svcErr := as.userTypeService.GetUserTypeList(limit, offset)
 		if svcErr != nil {
-			logger.Error("Failed to retrieve user schema list for validation",
+			logger.Error("Failed to retrieve user type list for validation",
 				log.String("error", svcErr.Error), log.String("code", svcErr.Code))
 			return &ErrorInternalServerError
 		}
 
-		for _, schema := range userSchemaList.Schemas {
+		for _, schema := range userTypeList.Types {
 			existingUserTypes[schema.Name] = true
 		}
 
-		if len(userSchemaList.Schemas) == 0 || offset+len(userSchemaList.Schemas) >= userSchemaList.TotalResults {
+		if len(userTypeList.Types) == 0 || offset+len(userTypeList.Types) >= userTypeList.TotalResults {
 			break
 		}
 

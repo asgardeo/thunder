@@ -39,7 +39,7 @@ if ($PSVersionTable.PSVersion.Major -lt 7) {
 }
 
 # Bootstrap Script: Default Resources Setup
-# Creates default organization unit, user schema, admin user, system resource server, system action, admin role, and DEVELOP application
+# Creates default organization unit, user type, admin user, system resource server, system action, admin role, and DEVELOP application
 
 
 $ErrorActionPreference = 'Stop'
@@ -104,12 +104,12 @@ else {
 Write-Host ""
 
 # ============================================================================
-# Create Default User Schema
+# Create Default User Type
 # ============================================================================
 
-Log-Info "Creating default user schema (person)..."
+Log-Info "Creating default user type (person)..."
 
-$userSchemaData = ([ordered]@{
+$userTypeData = ([ordered]@{
     name = "Person"
     ouId = $DEFAULT_OU_ID
     schema = [ordered]@{
@@ -146,16 +146,16 @@ $userSchemaData = ([ordered]@{
     }
 } | ConvertTo-Json -Depth 5)
 
-$response = Invoke-ThunderApi -Method POST -Endpoint "/user-schemas" -Data $userSchemaData
+$response = Invoke-ThunderApi -Method POST -Endpoint "/user-types" -Data $userTypeData
 
 if ($response.StatusCode -eq 201 -or $response.StatusCode -eq 200) {
-    Log-Success "User schema created successfully"
+    Log-Success "User type created successfully"
 }
 elseif ($response.StatusCode -eq 409) {
-    Log-Warning "User schema already exists, skipping"
+    Log-Warning "User type already exists, skipping"
 }
 else {
-    Log-Error "Failed to create user schema (HTTP $($response.StatusCode))"
+    Log-Error "Failed to create user type (HTTP $($response.StatusCode))"
     exit 1
 }
 

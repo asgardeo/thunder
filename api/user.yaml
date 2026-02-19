@@ -22,8 +22,8 @@ tags:
     description: Operations related to user management using hierarchical handle paths
   - name: self
     description: Self service operations related to the user
-  - name: user-schemas
-    description: Operations related to user type schema management
+  - name: user-types
+    description: Operations related to user type management
 
 security:
   - OAuth2: [system]
@@ -192,12 +192,12 @@ paths:
                     code: "USR-1019"
                     message: "Schema validation failed"
                     description: "User attributes do not conform to the required schema"
-                user-schema-not-found:
-                  summary: User schema not found
+                user-type-not-found:
+                  summary: User type not found
                   value:
                     code: "USR-1021"
-                    message: "User schema not found"
-                    description: "The specified user schema does not exist"
+                    message: "User type not found"
+                    description: "The specified user type does not exist"
         "409":
           description: Conflict
           content:
@@ -335,12 +335,12 @@ paths:
                     code: "USR-1019"
                     message: "Schema validation failed"
                     description: "User attributes do not conform to the required schema"
-                user-schema-not-found:
-                  summary: User schema not found
+                user-type-not-found:
+                  summary: User type not found
                   value:
                     code: "USR-1021"
-                    message: "User schema not found"
-                    description: "The specified user schema does not exist"
+                    message: "User type not found"
+                    description: "The specified user type does not exist"
         "409":
           description: Conflict
           content:
@@ -639,12 +639,12 @@ paths:
                     code: "USR-1019"
                     message: "Schema validation failed"
                     description: "User attributes do not conform to the required schema"
-                user-schema-not-found:
-                  summary: User schema not found
+                user-type-not-found:
+                  summary: User type not found
                   value:
                     code: "USR-1021"
-                    message: "User schema not found"
-                    description: "The specified user schema does not exist"
+                    message: "User type not found"
+                    description: "The specified user type does not exist"
         "404":
           description: Organization unit not found
           content:
@@ -797,12 +797,12 @@ paths:
                     code: "USR-1019"
                     message: "Schema validation failed"
                     description: "User attributes do not conform to the required schema"
-                user-schema-not-found:
-                  summary: User schema not found
+                user-type-not-found:
+                  summary: User type not found
                   value:
                     code: "USR-1021"
-                    message: "User schema not found"
-                    description: "The specified user schema does not exist"
+                    message: "User type not found"
+                    description: "The specified user type does not exist"
         "401":
           description: Unauthorized - missing or invalid token
           content:
@@ -907,24 +907,24 @@ paths:
                 message: "Internal server error"
                 description: "An unexpected error occurred while processing the request"
 
-  /user-schemas:
+  /user-types:
     get:
       tags:
-        - user-schemas
-      summary: List user type schemas
+        - user-types
+      summary: List user types
       description: |
-        Retrieves a list of all user type schemas that define the structure 
-        and attributes for different user types.
+        Retrieves a list of all user types that define the structure
+        and attributes for different users.
       parameters:
         - $ref: '#/components/parameters/limitQueryParam'
         - $ref: '#/components/parameters/offsetQueryParam'
       responses:
         "200":
-          description: List of user type schemas
+          description: List of user types
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/UserSchemaListResponse'
+                $ref: '#/components/schemas/UserTypeListResponse'
               example:
                 totalResults: 3
                 startIndex: 1
@@ -966,17 +966,17 @@ paths:
 
     post:
       tags:
-        - user-schemas
-      summary: Create a new user type schema
+        - user-types
+      summary: Create a new user type
       description: |
-        Creates a new user type schema that defines the structure and attributes
-        for a specific user type.
+        Creates a new user type that defines the structure and attributes
+        for a specific user category.
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/CreateUserSchemaRequest'
+              $ref: '#/components/schemas/CreateUserTypeRequest'
             example:
               name: "partner"
               ouId: "26eec421-f1bb-4deb-a5d3-9ab6554c2ae6"
@@ -1002,11 +1002,11 @@ paths:
                   type: "string"
       responses:
         "201":
-          description: User schema created
+          description: User type created
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/UserSchema'
+                $ref: '#/components/schemas/UserType'
               example:
                 id: "880e8400-e29b-41d4-a716-446655440003"
                 name: "partner"
@@ -1048,7 +1048,7 @@ paths:
                   summary: Invalid attribute definition
                   value:
                     code: "USRS-1004"
-                    message: "Invalid user schema request"
+                    message: "Invalid user type request"
                     description: "One or more attribute definitions are invalid"
         "409":
           description: Conflict
@@ -1058,18 +1058,18 @@ paths:
                 $ref: '#/components/schemas/Error'
               example:
                 code: "USRS-1003"
-                message: "User schema name conflict"
-                description: "A user schema with the same name already exists"
+                message: "User type name conflict"
+                description: "A user type with the same name already exists"
         "500":
           description: Internal server error
 
-  /user-schemas/{id}:
+  /user-types/{id}:
     get:
       tags:
-        - user-schemas
-      summary: Get a user type schema by ID
+        - user-types
+      summary: Get a user type by ID
       description: |
-        Retrieves the details of a specific user type schema by its ID.
+        Retrieves the details of a specific user type by its ID.
       parameters:
         - in: path
           name: id
@@ -1080,11 +1080,11 @@ paths:
           example: "550e8400-e29b-41d4-a716-446655440000"
       responses:
         "200":
-          description: User schema details
+          description: User type details
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/UserSchema'
+                $ref: '#/components/schemas/UserType'
               examples:
                 simple:
                   summary: Employee schema with simple attributes
@@ -1151,24 +1151,24 @@ paths:
                           type: "string"
                           enum: ["email", "sms", "phone", "mail"]
         "404":
-          description: User schema not found
+          description: User type not found
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
               example:
                 code: "USRS-1002"
-                message: "User schema not found"
-                description: "The user schema with the specified id does not exist"
+                message: "User type not found"
+                description: "The user type with the specified id does not exist"
         "500":
           description: Internal server error
 
     put:
       tags:
-        - user-schemas
-      summary: Update a user type schema by ID
+        - user-types
+      summary: Update a user type by ID
       description: |
-        Updates an existing user type schema with new attribute definitions.
+        Updates an existing user type with new attribute definitions.
         This operation replaces the entire schema definition.
       parameters:
         - in: path
@@ -1183,7 +1183,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/UpdateUserSchemaRequest'
+              $ref: '#/components/schemas/UpdateUserTypeRequest'
             example:
               name: "customer"
               ouId: "26eec421-f1bb-4deb-a5d3-9ab6554c2ae6"
@@ -1205,11 +1205,11 @@ paths:
                   enum: ["bronze", "silver", "gold", "platinum"]
       responses:
         "200":
-          description: User schema updated
+          description: User type updated
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/UserSchema'
+                $ref: '#/components/schemas/UserType'
               example:
                 id: "550e8400-e29b-41d4-a716-446655440000"
                 name: "customer"
@@ -1247,37 +1247,37 @@ paths:
                   summary: Invalid attribute definition
                   value:
                     code: "USRS-1004"
-                    message: "Invalid user schema request"
+                    message: "Invalid user type request"
                     description: "One or more attribute definitions are invalid"
         "404":
-          description: User schema not found
+          description: User type not found
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
               example:
                 code: "USRS-1002"
-                message: "User schema not found"
-                description: "The user schema with the specified id does not exist"
+                message: "User type not found"
+                description: "The user type with the specified id does not exist"
         "409":
-          description: User schema name already exists
+          description: User type name already exists
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
               example:
                 code: "USRS-1003"
-                message: "User schema name conflict"
-                description: "A user schema with the same name already exists"
+                message: "User type name conflict"
+                description: "A user type with the same name already exists"
         "500":
           description: Internal server error
 
     delete:
       tags:
-        - user-schemas
-      summary: Delete a user type schema by ID
+        - user-types
+      summary: Delete a user type by ID
       description: |
-        Deletes a user type schema. This operation will fail if there are 
+        Deletes a user type. This operation will fail if there are
         existing users of this type.
       parameters:
         - in: path
@@ -1289,7 +1289,7 @@ paths:
           example: "550e8400-e29b-41d4-a716-446655440000"
       responses:
         "204":
-          description: User schema deleted
+          description: User type deleted
         "400":
           description: Bad request
           content:
@@ -1298,7 +1298,7 @@ paths:
                 $ref: '#/components/schemas/Error'
               example:
                 code: "USRS-1004"
-                message: "Invalid user schema request"
+                message: "Invalid user type request"
                 description: "Cannot delete schema because users of this type exist"
         "500":
           description: Internal server error
@@ -1531,21 +1531,21 @@ components:
           description: "User attributes"
           additionalProperties: true
 
-    UserSchema:
+    UserType:
       type: object
       required: [id, name, ouId, schema]
       properties:
         id:
           type: string
           format: uuid
-          description: "The unique identifier of the user schema"
+          description: "The unique identifier of the user type"
         name:
           type: string
           description: "The user type this schema defines"
         ouId:
           type: string
           format: uuid
-          description: "The root organization unit ID associated with this user type schema"
+          description: "The root organization unit ID associated with this user type"
         allowSelfRegistration:
           type: boolean
           description: "Indicates whether users of this type can perform self-registration flows"
@@ -1596,7 +1596,7 @@ components:
                     type: object
                     description: "Nested properties of the object"
                     additionalProperties:
-                      $ref: "#/components/schemas/UserSchema/properties/schema/additionalProperties"
+                      $ref: "#/components/schemas/UserType/properties/schema/additionalProperties"
                 additionalProperties: false
               - type: object
                 description: "Array property definition"
@@ -1634,7 +1634,7 @@ components:
                           properties:
                             type: object
                             additionalProperties:
-                              $ref: "#/components/schemas/UserSchema/properties/schema/additionalProperties"
+                              $ref: "#/components/schemas/UserType/properties/schema/additionalProperties"
                         additionalProperties: false
                 additionalProperties: false
           example:
@@ -1675,7 +1675,7 @@ components:
                 type: "string"
                 enum: ["vip", "premium", "standard"]
 
-    UserSchemaListResponse:
+    UserTypeListResponse:
       type: object
       properties:
         totalResults:
@@ -1699,14 +1699,14 @@ components:
               id:
                 type: string
                 format: uuid
-                description: "The unique identifier of the user schema"
+                description: "The unique identifier of the user type"
               name:
                 type: string
                 description: "The user type this schema defines"
               ouId:
                 type: string
                 format: uuid
-                description: "The root organization unit ID associated with this user type schema"
+                description: "The root organization unit ID associated with this user type"
               allowSelfRegistration:
                 type: boolean
                 description: "Indicates whether users of this type can perform self-registration flows"
@@ -1716,7 +1716,7 @@ components:
           items:
             $ref: '#/components/schemas/Link'
 
-    CreateUserSchemaRequest:
+    CreateUserTypeRequest:
       type: object
       required: [name, ouId, schema]
       properties:
@@ -1726,7 +1726,7 @@ components:
         ouId:
           type: string
           format: uuid
-          description: "The organization unit ID where this user type schema is applicable"
+          description: "The organization unit ID where this user type is applicable"
         allowSelfRegistration:
           type: boolean
           description: "Whether the user type supports user-initiated registration"
@@ -1735,19 +1735,19 @@ components:
           type: object
           description: "JSON Schema definition for the user type"
           additionalProperties:
-            $ref: "#/components/schemas/UserSchema/properties/schema/additionalProperties"
+            $ref: "#/components/schemas/UserType/properties/schema/additionalProperties"
 
-    UpdateUserSchemaRequest:
+    UpdateUserTypeRequest:
       type: object
       required: [name, ouId, schema]
       properties:
         name:
           type: string
-          description: "The user type this schema defines"
+          description: "The user type this definition applies to"
         ouId:
           type: string
           format: uuid
-          description: "The root organization unit ID where this user type schema is applicable"
+          description: "The root organization unit ID where this user type is applicable"
         allowSelfRegistration:
           type: boolean
           description: "Whether the user type supports user-initiated registration"
@@ -1756,7 +1756,7 @@ components:
           type: object
           description: "JSON Schema definition for the user type"
           additionalProperties:
-            $ref: "#/components/schemas/UserSchema/properties/schema/additionalProperties"
+            $ref: "#/components/schemas/UserType/properties/schema/additionalProperties"
 
     Error:
       type: object

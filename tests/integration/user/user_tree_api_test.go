@@ -36,7 +36,7 @@ var (
 		Description: "Test organization unit for user path-based operations",
 	}
 
-	testUserSchema = testutils.UserSchema{
+	testUserType = testutils.UserType{
 		Name: "employee",
 		Schema: map[string]interface{}{
 			"username": map[string]interface{}{
@@ -53,7 +53,7 @@ var (
 			},
 		},
 	}
-	employeeUserSchemaID string
+	employeeUserTypeID string
 )
 
 // CreateUserByPathRequest represents the request body for creating a user by path.
@@ -78,21 +78,21 @@ func (suite *UserTreeAPITestSuite) SetupSuite() {
 		suite.T().Fatalf("Failed to create test organization unit during setup: %v", err)
 	}
 
-	testUserSchema.OrganizationUnitId = ouID
-	schemaID, err := testutils.CreateUserType(testUserSchema)
+	testUserType.OrganizationUnitId = ouID
+	schemaID, err := testutils.CreateUserType(testUserType)
 	if err != nil {
 		suite.T().Fatalf("Failed to create employee user type during setup: %v", err)
 	}
 
-	employeeUserSchemaID = schemaID
+	employeeUserTypeID = schemaID
 
 	suite.testOUID = ouID
 	suite.T().Logf("Created test OU with ID: %s and handle: %s", suite.testOUID, pathTestOU.Handle)
 }
 
 func (suite *UserTreeAPITestSuite) TearDownSuite() {
-	if employeeUserSchemaID != "" {
-		if err := testutils.DeleteUserType(employeeUserSchemaID); err != nil {
+	if employeeUserTypeID != "" {
+		if err := testutils.DeleteUserType(employeeUserTypeID); err != nil {
 			suite.T().Logf("Failed to delete employee user type during teardown: %v", err)
 		}
 	}

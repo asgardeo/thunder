@@ -23,8 +23,8 @@ import (
 	"time"
 )
 
-// UserSchema represents a user schema (user type) definition
-type UserSchema struct {
+// UserType represents a user type definition
+type UserType struct {
 	ID                    string                 `json:"id,omitempty"`
 	Name                  string                 `json:"name"`
 	OrganizationUnitId    string                 `json:"ouId"`

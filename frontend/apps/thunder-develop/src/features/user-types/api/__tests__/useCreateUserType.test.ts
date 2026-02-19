@@ -102,7 +102,7 @@ describe('useCreateUserType', () => {
 
     expect(mockHttpRequest).toHaveBeenCalledWith(
       expect.objectContaining({
-        url: 'https://localhost:8090/user-schemas',
+        url: 'https://localhost:8090/user-types',
         method: 'POST',
         data: mockRequest,
       }),
@@ -244,7 +244,7 @@ describe('useCreateUserType', () => {
 
     expect(mockHttpRequest).toHaveBeenCalledWith(
       expect.objectContaining({
-        url: expect.stringContaining('/user-schemas') as string,
+        url: expect.stringContaining('/user-types') as string,
         method: 'POST',
       }),
     );

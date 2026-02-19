@@ -121,7 +121,7 @@ var (
 		Description: "Organization unit for conditional execution authentication flow tests",
 	}
 
-	conditionalExecUserSchema = testutils.UserSchema{
+	conditionalExecUserType = testutils.UserType{
 		Name:                  "conditional_exec_flow_user",
 		AllowSelfRegistration: true,
 		Schema: map[string]interface{}{
@@ -143,7 +143,7 @@ var (
 
 var (
 	conditionalExecTestAppID      string
-	conditionalExecUserSchemaID   string
+	conditionalExecUserTypeID     string
 	conditionalExecPreCreatedOUID string
 )
 
@@ -198,11 +198,11 @@ func (ts *ConditionalExecAuthFlowTestSuite) SetupSuite() {
 	ts.Require().NoError(err, "Failed to create test organization unit")
 	conditionalExecPreCreatedOUID = ouID
 
-	// Create user schema with self-registration enabled
-	conditionalExecUserSchema.OrganizationUnitId = conditionalExecPreCreatedOUID
-	schemaID, err := testutils.CreateUserType(conditionalExecUserSchema)
-	ts.Require().NoError(err, "Failed to create conditional exec user schema")
-	conditionalExecUserSchemaID = schemaID
+	// Create user type with self-registration enabled
+	conditionalExecUserType.OrganizationUnitId = conditionalExecPreCreatedOUID
+	typeID, err := testutils.CreateUserType(conditionalExecUserType)
+	ts.Require().NoError(err, "Failed to create conditional exec user type")
+	conditionalExecUserTypeID = typeID
 
 	// Create an existing user
 	existingUserAttributes := map[string]interface{}{
@@ -217,7 +217,7 @@ func (ts *ConditionalExecAuthFlowTestSuite) SetupSuite() {
 	ts.Require().NoError(err)
 
 	existingUser := testutils.User{
-		Type:             conditionalExecUserSchema.Name,
+		Type:             conditionalExecUserType.Name,
 		OrganizationUnit: conditionalExecPreCreatedOUID,
 		Attributes:       json.RawMessage(attributesJSON),
 	}
@@ -322,9 +322,9 @@ func (ts *ConditionalExecAuthFlowTestSuite) TearDownSuite() {
 		_ = testutils.DeleteUser(ts.existingUserID)
 	}
 
-	// Delete user schema
-	if conditionalExecUserSchemaID != "" {
-		_ = testutils.DeleteUserType(conditionalExecUserSchemaID)
+	// Delete user type
+	if conditionalExecUserTypeID != "" {
+		_ = testutils.DeleteUserType(conditionalExecUserTypeID)
 	}
 
 	// Delete test organization units
@@ -378,7 +378,7 @@ func (ts *ConditionalExecAuthFlowTestSuite) TestSkipConditionalNodes() {
 	jwtClaims, err := testutils.ValidateJWTAssertionFields(
 		flowStep.Assertion,
 		conditionalExecTestAppID,
-		conditionalExecUserSchema.Name,
+		conditionalExecUserType.Name,
 		conditionalExecPreCreatedOUID,
 		conditionalExecTestOU.Name,
 		conditionalExecTestOU.Handle,
@@ -438,7 +438,7 @@ func (ts *ConditionalExecAuthFlowTestSuite) TestExecuteConditionalNodes() {
 	ts.Require().NoError(err, "Failed to decode JWT assertion")
 	ts.Require().NotNil(jwtClaims, "JWT claims should not be nil")
 	ts.Require().Equal(conditionalExecTestAppID, jwtClaims.Aud, "JWT aud should match app ID")
-	ts.Require().Equal(conditionalExecUserSchema.Name, jwtClaims.UserType, "JWT userType should match schema")
+	ts.Require().Equal(conditionalExecUserType.Name, jwtClaims.UserType, "JWT userType should match type")
 	ts.Require().NotEmpty(jwtClaims.OuID, "JWT ouId should not be empty")
 
 	// Verify the created OU

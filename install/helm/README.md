@@ -440,7 +440,7 @@ Bootstrap scripts extend Thunder's setup process by adding your own initializati
 
 Thunder provides these default bootstrap scripts in `/opt/thunder/bootstrap/`:
 - **`common.sh`** - Helper functions for logging (`log_info`, `log_success`, `log_warning`, `log_error`) and API calls (`thunder_api_call`)
-- **`01-default-resources.sh`** - Creates admin user, default organization, and Person user schema
+- **`01-default-resources.sh`** - Creates admin user, default organization, and Person user types
 - **`02-sample-resources.sh`** - Creates sample resources for testing
 
 #### Configuration Parameters

@@ -35,7 +35,7 @@ var (
 		Parent:      nil,
 	}
 
-	testUserSchema = testutils.UserSchema{
+	testUserType = testutils.UserType{
 		Name: "test-user-type",
 		Schema: map[string]interface{}{
 			"username": map[string]interface{}{
@@ -64,7 +64,7 @@ var (
 type BasicRegistrationFlowTestSuite struct {
 	suite.Suite
 	config           *common.TestSuiteConfig
-	userSchemaID     string
+	userTypeID       string
 	testAppID        string
 	testOUID         string
 	testUserTypeName string
@@ -85,14 +85,14 @@ func (ts *BasicRegistrationFlowTestSuite) SetupSuite() {
 	}
 	ts.testOUID = ouID
 
-	// Create test user schema
-	testUserSchema.OrganizationUnitId = ts.testOUID
-	schemaID, err := testutils.CreateUserType(testUserSchema)
+	// Create test user type
+	testUserType.OrganizationUnitId = ts.testOUID
+	schemaID, err := testutils.CreateUserType(testUserType)
 	if err != nil {
-		ts.T().Fatalf("Failed to create test user schema during setup: %v", err)
+		ts.T().Fatalf("Failed to create test user type during setup: %v", err)
 	}
-	ts.userSchemaID = schemaID
-	ts.testUserTypeName = testUserSchema.Name
+	ts.userTypeID = schemaID
+	ts.testUserTypeName = testUserType.Name
 
 	// Create test application with allowed user types
 	// Application relies on the default flow set by the server. Hence no need
@@ -104,7 +104,7 @@ func (ts *BasicRegistrationFlowTestSuite) SetupSuite() {
 		ClientID:                  "reg_flow_test_client",
 		ClientSecret:              "reg_flow_test_secret",
 		RedirectURIs:              []string{"http://localhost:3000/callback"},
-		AllowedUserTypes:          []string{testUserSchema.Name},
+		AllowedUserTypes:          []string{testUserType.Name},
 		AssertionConfig: map[string]interface{}{
 			"user_attributes": []string{"userType", "ouId", "ouName", "ouHandle"},
 		},
@@ -137,9 +137,9 @@ func (ts *BasicRegistrationFlowTestSuite) TearDownSuite() {
 		}
 	}
 
-	if ts.userSchemaID != "" {
-		if err := testutils.DeleteUserType(ts.userSchemaID); err != nil {
-			ts.T().Logf("Failed to delete test user schema during teardown: %v", err)
+	if ts.userTypeID != "" {
+		if err := testutils.DeleteUserType(ts.userTypeID); err != nil {
+			ts.T().Logf("Failed to delete test user type during teardown: %v", err)
 		}
 	}
 }
@@ -208,7 +208,7 @@ func (ts *BasicRegistrationFlowTestSuite) TestBasicRegistrationFlowSuccess() {
 	ts.Require().NotNil(jwtClaims, "JWT claims should not be nil")
 
 	// Validate JWT contains expected user type and OU ID
-	ts.Require().Equal(testUserSchema.Name, jwtClaims.UserType, "Expected userType to match created schema")
+	ts.Require().Equal(testUserType.Name, jwtClaims.UserType, "Expected userType to match created schema")
 	ts.Require().Equal(ts.testOUID, jwtClaims.OuID, "Expected ouId to match the created organization unit")
 	ts.Require().Equal(ts.testAppID, jwtClaims.Aud, "Expected aud to match the application ID")
 	ts.Require().NotEmpty(jwtClaims.Sub, "JWT subject should not be empty")
@@ -230,7 +230,7 @@ func (ts *BasicRegistrationFlowTestSuite) TestBasicRegistrationFlowDuplicateUser
 	// Create a test user first
 	testUser := testutils.User{
 		OrganizationUnit: ts.testOUID,
-		Type:             testUserSchema.Name,
+		Type:             testUserType.Name,
 		Attributes: json.RawMessage(`{
 			"username": "duplicateuser",
 			"password": "testpassword",
@@ -335,7 +335,7 @@ func (ts *BasicRegistrationFlowTestSuite) TestBasicRegistrationFlowInitialInvali
 	ts.Require().NotNil(jwtClaims, "JWT claims should not be nil")
 
 	// Validate JWT contains expected user type and OU ID
-	ts.Require().Equal(testUserSchema.Name, jwtClaims.UserType, "Expected userType to match created schema")
+	ts.Require().Equal(testUserType.Name, jwtClaims.UserType, "Expected userType to match created schema")
 	ts.Require().Equal(ts.testOUID, jwtClaims.OuID, "Expected ouId to match the created organization unit")
 	ts.Require().Equal(ts.testAppID, jwtClaims.Aud, "Expected aud to match the application ID")
 	ts.Require().NotEmpty(jwtClaims.Sub, "JWT subject should not be empty")
@@ -383,7 +383,7 @@ func (ts *BasicRegistrationFlowTestSuite) TestBasicRegistrationFlowSingleRequest
 	ts.Require().NotNil(jwtClaims, "JWT claims should not be nil")
 
 	// Validate JWT contains expected user type and OU ID
-	ts.Require().Equal(testUserSchema.Name, jwtClaims.UserType, "Expected userType to match created schema")
+	ts.Require().Equal(testUserType.Name, jwtClaims.UserType, "Expected userType to match created schema")
 	ts.Require().Equal(ts.testOUID, jwtClaims.OuID, "Expected ouId to match the created organization unit")
 	ts.Require().Equal(ts.testAppID, jwtClaims.Aud, "Expected aud to match the application ID")
 	ts.Require().NotEmpty(jwtClaims.Sub, "JWT subject should not be empty")
@@ -412,7 +412,7 @@ func (ts *BasicRegistrationFlowTestSuite) TestBasicRegistrationFlow_WithoutToken
 		ClientID:                  "reg_flow_test_client_no_token_config",
 		ClientSecret:              "reg_flow_test_secret_no_token_config",
 		RedirectURIs:              []string{"http://localhost:3000/callback"},
-		AllowedUserTypes:          []string{testUserSchema.Name},
+		AllowedUserTypes:          []string{testUserType.Name},
 		// TokenConfig is nil - not specified
 	}
 
@@ -476,7 +476,7 @@ func (ts *BasicRegistrationFlowTestSuite) TestBasicRegistrationFlow_WithEmptyUse
 		ClientID:                  "reg_flow_test_client_empty_attrs",
 		ClientSecret:              "reg_flow_test_secret_empty_attrs",
 		RedirectURIs:              []string{"http://localhost:3000/callback"},
-		AllowedUserTypes:          []string{testUserSchema.Name},
+		AllowedUserTypes:          []string{testUserType.Name},
 		AssertionConfig: map[string]interface{}{
 			"user_attributes": []string{}, // Empty array
 		},

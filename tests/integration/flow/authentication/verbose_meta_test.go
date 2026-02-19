@@ -178,7 +178,7 @@ var (
 		Parent:      nil,
 	}
 
-	verboseTestUserSchema = testutils.UserSchema{
+	verboseTestUserType = testutils.UserType{
 		Name: "verbose_test_schema",
 		Schema: map[string]interface{}{
 			"username": map[string]interface{}{
@@ -200,14 +200,14 @@ var (
 		ClientID:                  "verbose_test_client",
 		ClientSecret:              "verbose_test_secret",
 		RedirectURIs:              []string{"http://localhost:3000/callback"},
-		AllowedUserTypes:          []string{verboseTestUserSchema.Name},
+		AllowedUserTypes:          []string{verboseTestUserType.Name},
 		AssertionConfig: map[string]interface{}{
 			"user_attributes": []string{"userType", "ouId", "ouName", "ouHandle"},
 		},
 	}
 
 	verboseTestUser = testutils.User{
-		Type: verboseTestUserSchema.Name,
+		Type: verboseTestUserType.Name,
 		Attributes: json.RawMessage(`{
 			"username": "verboseuser",
 			"password": "testpassword123",
@@ -218,7 +218,7 @@ var (
 
 var (
 	verboseTestAppID        string
-	verboseUserSchemaID     string
+	verboseUserTypeID       string
 	verboseFlowWithPromptID string
 	verboseBasicFlowID      string
 )
@@ -242,11 +242,11 @@ func (ts *VerboseMetaTestSuite) SetupSuite() {
 	ts.Require().NoError(err, "Failed to create test organization unit")
 	ts.ouID = ouID
 
-	// Create user schema
-	verboseTestUserSchema.OrganizationUnitId = ouID
-	schemaID, err := testutils.CreateUserType(verboseTestUserSchema)
-	ts.Require().NoError(err, "Failed to create user schema")
-	verboseUserSchemaID = schemaID
+	// Create user type
+	verboseTestUserType.OrganizationUnitId = ouID
+	typeID, err := testutils.CreateUserType(verboseTestUserType)
+	ts.Require().NoError(err, "Failed to create user type")
+	verboseUserTypeID = typeID
 
 	// Create flows
 	flowWithPromptID, err := testutils.CreateFlow(basicAuthFlowWithPrompt)
@@ -290,10 +290,10 @@ func (ts *VerboseMetaTestSuite) TearDownSuite() {
 		ts.Require().NoError(err, "Failed to delete test flow")
 	}
 
-	// Clean up test user schema
-	if verboseUserSchemaID != "" {
-		err := testutils.DeleteUserType(verboseUserSchemaID)
-		ts.Require().NoError(err, "Failed to delete user schema")
+	// Clean up test user type
+	if verboseUserTypeID != "" {
+		err := testutils.DeleteUserType(verboseUserTypeID)
+		ts.Require().NoError(err, "Failed to delete user type")
 	}
 
 	// Clean up test organization unit
@@ -382,7 +382,7 @@ func (ts *VerboseMetaTestSuite) TestVerboseModeWithGraphWithoutMeta() {
 		ClientID:                  "no_meta_test_client",
 		ClientSecret:              "no_meta_test_secret",
 		RedirectURIs:              []string{"http://localhost:3000/callback"},
-		AllowedUserTypes:          []string{verboseTestUserSchema.Name},
+		AllowedUserTypes:          []string{verboseTestUserType.Name},
 	}
 
 	appID, err := testutils.CreateApplication(appWithoutMeta)

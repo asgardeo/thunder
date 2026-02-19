@@ -42,7 +42,7 @@ var (
 		Parent:      nil,
 	}
 
-	indexedAttributesUserSchemas = map[string]testutils.UserSchema{
+	indexedAttributesUserTypes = map[string]testutils.UserType{
 		"all_indexed": {
 			Name: "all_indexed",
 			Schema: map[string]interface{}{
@@ -126,9 +126,9 @@ var (
 
 type IndexedAttributesTestSuite struct {
 	suite.Suite
-	client        *http.Client
-	userSchemaIDs map[string]string
-	ouID          string
+	client      *http.Client
+	userTypeIDs map[string]string
+	ouID        string
 }
 
 func TestIndexedAttributesTestSuite(t *testing.T) {
@@ -137,7 +137,7 @@ func TestIndexedAttributesTestSuite(t *testing.T) {
 
 func (suite *IndexedAttributesTestSuite) SetupSuite() {
 	suite.client = testutils.GetHTTPClient()
-	suite.userSchemaIDs = make(map[string]string)
+	suite.userTypeIDs = make(map[string]string)
 
 	// Create test organization unit
 	ouID, err := testutils.CreateOrganizationUnit(indexedAttributesTestOU)
@@ -146,26 +146,26 @@ func (suite *IndexedAttributesTestSuite) SetupSuite() {
 	}
 	suite.ouID = ouID
 
-	// Create user schemas
-	for userType, schema := range indexedAttributesUserSchemas {
+	// Create user types
+	for userType, schema := range indexedAttributesUserTypes {
 		schema.OrganizationUnitId = suite.ouID
 		schemaID, err := testutils.CreateUserType(schema)
 		if err != nil {
-			suite.T().Fatalf("Failed to create user schema %s during setup: %v", userType, err)
+			suite.T().Fatalf("Failed to create user type %s during setup: %v", userType, err)
 		}
-		suite.userSchemaIDs[userType] = schemaID
+		suite.userTypeIDs[userType] = schemaID
 	}
 }
 
 func (suite *IndexedAttributesTestSuite) TearDownSuite() {
 	// All users are cleaned up by individual test defers
 
-	// Delete user schemas
-	for userType, schemaID := range suite.userSchemaIDs {
+	// Delete user types
+	for userType, schemaID := range suite.userTypeIDs {
 		if schemaID != "" {
 			err := testutils.DeleteUserType(schemaID)
 			if err != nil {
-				suite.T().Errorf("Failed to delete user schema %s during teardown: %v", userType, err)
+				suite.T().Errorf("Failed to delete user type %s during teardown: %v", userType, err)
 			}
 		}
 	}

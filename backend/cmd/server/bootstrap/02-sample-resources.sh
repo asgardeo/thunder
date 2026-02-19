@@ -115,7 +115,7 @@ read -r -d '' CUSTOMER_USER_TYPE_PAYLOAD <<JSON || true
 }
 JSON
 
-RESPONSE=$(thunder_api_call POST "/user-schemas" "${CUSTOMER_USER_TYPE_PAYLOAD}")
+RESPONSE=$(thunder_api_call POST "/user-types" "${CUSTOMER_USER_TYPE_PAYLOAD}")
 HTTP_CODE="${RESPONSE: -3}"
 
 if [[ "$HTTP_CODE" == "201" ]] || [[ "$HTTP_CODE" == "200" ]]; then

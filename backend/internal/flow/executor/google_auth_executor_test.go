@@ -29,14 +29,14 @@ import (
 	"github.com/asgardeo/thunder/tests/mocks/authn/oidcmock"
 	"github.com/asgardeo/thunder/tests/mocks/flow/coremock"
 	"github.com/asgardeo/thunder/tests/mocks/idp/idpmock"
-	"github.com/asgardeo/thunder/tests/mocks/userschemamock"
+	"github.com/asgardeo/thunder/tests/mocks/usertypemock"
 )
 
 type GoogleAuthExecutorTestSuite struct {
 	suite.Suite
 	mockFlowFactory       *coremock.FlowFactoryInterfaceMock
 	mockIDPService        *idpmock.IDPServiceInterfaceMock
-	mockUserSchemaService *userschemamock.UserSchemaServiceInterfaceMock
+	mockUserTypeService *usertypemock.UserTypeServiceInterfaceMock
 	mockGoogleService     *googlemock.GoogleOIDCAuthnServiceInterfaceMock
 	mockOIDCService       *oidcmock.OIDCAuthnCoreServiceInterfaceMock
 }
@@ -48,7 +48,7 @@ func TestGoogleAuthExecutorTestSuite(t *testing.T) {
 func (suite *GoogleAuthExecutorTestSuite) SetupTest() {
 	suite.mockFlowFactory = coremock.NewFlowFactoryInterfaceMock(suite.T())
 	suite.mockIDPService = idpmock.NewIDPServiceInterfaceMock(suite.T())
-	suite.mockUserSchemaService = userschemamock.NewUserSchemaServiceInterfaceMock(suite.T())
+	suite.mockUserTypeService = usertypemock.NewUserTypeServiceInterfaceMock(suite.T())
 	suite.mockGoogleService = googlemock.NewGoogleOIDCAuthnServiceInterfaceMock(suite.T())
 	suite.mockOIDCService = oidcmock.NewOIDCAuthnCoreServiceInterfaceMock(suite.T())
 }
@@ -77,7 +77,7 @@ func (suite *GoogleAuthExecutorTestSuite) TestNewGoogleOIDCAuthExecutor_Success(
 	}
 
 	executor := newGoogleOIDCAuthExecutor(suite.mockFlowFactory, suite.mockIDPService,
-		suite.mockUserSchemaService, mockGoogleSvc)
+		suite.mockUserTypeService, mockGoogleSvc)
 
 	suite.NotNil(executor)
 	googleExec, ok := executor.(*googleOIDCAuthExecutor)

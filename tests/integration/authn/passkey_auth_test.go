@@ -48,7 +48,7 @@ var (
 		Parent:      nil,
 	}
 
-	passkeyUserSchema = testutils.UserSchema{
+	passkeyUserType = testutils.UserType{
 		Name: "passkey_user",
 		Schema: map[string]interface{}{
 			"username": map[string]interface{}{
@@ -194,10 +194,10 @@ type AuthenticatorAssertionResponse struct {
 
 type PasskeyAuthTestSuite struct {
 	suite.Suite
-	client       *http.Client
-	testUserID   string
-	userSchemaID string
-	ouID         string
+	client     *http.Client
+	testUserID string
+	userTypeID string
+	ouID       string
 }
 
 func TestPasskeyAuthTestSuite(t *testing.T) {
@@ -214,13 +214,13 @@ func (suite *PasskeyAuthTestSuite) SetupSuite() {
 	}
 	suite.ouID = ouID
 
-	// Create user schema
-	passkeyUserSchema.OrganizationUnitId = suite.ouID
-	schemaID, err := testutils.CreateUserType(passkeyUserSchema)
+	// Create user type
+	passkeyUserType.OrganizationUnitId = suite.ouID
+	userTypeID, err := testutils.CreateUserType(passkeyUserType)
 	if err != nil {
-		suite.T().Fatalf("Failed to create user schema during setup: %v", err)
+		suite.T().Fatalf("Failed to create user type during setup: %v", err)
 	}
-	suite.userSchemaID = schemaID
+	suite.userTypeID = userTypeID
 
 	// Create test user
 	attributes := map[string]interface{}{
@@ -251,11 +251,11 @@ func (suite *PasskeyAuthTestSuite) TearDownSuite() {
 		}
 	}
 
-	// Delete user schema
-	if suite.userSchemaID != "" {
-		err := testutils.DeleteUserType(suite.userSchemaID)
+	// Delete user type
+	if suite.userTypeID != "" {
+		err := testutils.DeleteUserType(suite.userTypeID)
 		if err != nil {
-			suite.T().Errorf("Failed to delete user schema during teardown: %v", err)
+			suite.T().Errorf("Failed to delete user type during teardown: %v", err)
 		}
 	}
 

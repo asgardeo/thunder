@@ -31,7 +31,7 @@ import (
 	"github.com/asgardeo/thunder/internal/role"
 	"github.com/asgardeo/thunder/internal/system/jose/jwt"
 	"github.com/asgardeo/thunder/internal/user"
-	"github.com/asgardeo/thunder/internal/userschema"
+	"github.com/asgardeo/thunder/internal/usertype"
 )
 
 // Initialize registers available executors and returns the executor registry.
@@ -44,7 +44,7 @@ func Initialize(
 	jwtService jwt.JWTServiceInterface,
 	authRegistry *authn.AuthServiceRegistry,
 	authZService authz.AuthorizationServiceInterface,
-	userSchemaService userschema.UserSchemaServiceInterface,
+	userTypeService usertype.UserTypeServiceInterface,
 	observabilitySvc observability.ObservabilityServiceInterface,
 	groupService group.GroupServiceInterface,
 	roleService role.RoleServiceInterface,
@@ -58,15 +58,15 @@ func Initialize(
 		flowFactory, userService, authRegistry.PasskeyService, observabilitySvc))
 
 	reg.RegisterExecutor(ExecutorNameOAuth, newOAuthExecutor(
-		"", []common.Input{}, []common.Input{}, flowFactory, idpService, userSchemaService,
+		"", []common.Input{}, []common.Input{}, flowFactory, idpService, userTypeService,
 		authRegistry.OAuthAuthnService))
 	reg.RegisterExecutor(ExecutorNameOIDCAuth, newOIDCAuthExecutor(
-		"", []common.Input{}, []common.Input{}, flowFactory, idpService, userSchemaService,
+		"", []common.Input{}, []common.Input{}, flowFactory, idpService, userTypeService,
 		authRegistry.OIDCAuthnService))
 	reg.RegisterExecutor(ExecutorNameGitHubAuth, newGithubOAuthExecutor(
-		flowFactory, idpService, userSchemaService, authRegistry.GithubOAuthAuthnService))
+		flowFactory, idpService, userTypeService, authRegistry.GithubOAuthAuthnService))
 	reg.RegisterExecutor(ExecutorNameGoogleAuth, newGoogleOIDCAuthExecutor(
-		flowFactory, idpService, userSchemaService, authRegistry.GoogleOIDCAuthnService))
+		flowFactory, idpService, userTypeService, authRegistry.GoogleOIDCAuthnService))
 
 	reg.RegisterExecutor(ExecutorNameProvisioning, newProvisioningExecutor(flowFactory, userService,
 		groupService, roleService))
@@ -77,7 +77,7 @@ func Initialize(
 		userService, ouService, authRegistry.AuthAssertGenerator))
 	reg.RegisterExecutor(ExecutorNameAuthorization, newAuthorizationExecutor(flowFactory, authZService))
 	reg.RegisterExecutor(ExecutorNameHTTPRequest, newHTTPRequestExecutor(flowFactory))
-	reg.RegisterExecutor(ExecutorNameUserTypeResolver, newUserTypeResolver(flowFactory, userSchemaService))
+	reg.RegisterExecutor(ExecutorNameUserTypeResolver, newUserTypeResolver(flowFactory, userTypeService))
 	reg.RegisterExecutor(ExecutorNameInviteExecutor, newInviteExecutor(flowFactory))
 	reg.RegisterExecutor(ExecutorNameCredentialSetter, newCredentialSetter(flowFactory, userService))
 	reg.RegisterExecutor(ExecutorNamePermissionValidator, newPermissionValidator(flowFactory))

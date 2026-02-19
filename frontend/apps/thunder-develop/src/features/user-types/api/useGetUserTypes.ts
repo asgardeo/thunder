@@ -20,18 +20,18 @@ import {useEffect, useRef, useState, useMemo} from 'react';
 import {useAsgardeo} from '@asgardeo/react';
 import {useConfig} from '@thunder/shared-contexts';
 import {useLogger} from '@thunder/logger/react';
-import type {ApiError, UserSchemaListParams, UserSchemaListResponse} from '../types/user-types';
+import type {ApiError, UserTypeListParams, UserTypeListResponse} from '../types/user-types';
 
 /**
- * Custom hook to fetch a paginated list of user schemas (user types)
+ * Custom hook to fetch a paginated list of user types
  * @param params - Optional pagination parameters (limit, offset)
  * @returns Object containing data, loading state, error, and refetch function
  */
-export default function useGetUserTypes(params?: UserSchemaListParams) {
+export default function useGetUserTypes(params?: UserTypeListParams) {
   const {http} = useAsgardeo();
   const {getServerUrl} = useConfig();
   const logger = useLogger();
-  const [data, setData] = useState<UserSchemaListResponse | null>(null);
+  const [data, setData] = useState<UserTypeListResponse | null>(null);
   const [error, setError] = useState<ApiError | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const abortControllerRef = useRef<AbortController | null>(null);
@@ -61,7 +61,7 @@ export default function useGetUserTypes(params?: UserSchemaListParams) {
         }
 
         const queryString = queryParams.toString();
-        const url = `${API_BASE_URL}/user-schemas${queryString ? `?${queryString}` : ''}`;
+        const url = `${API_BASE_URL}/user-types${queryString ? `?${queryString}` : ''}`;
 
         const response = await http.request({
           url,
@@ -69,7 +69,7 @@ export default function useGetUserTypes(params?: UserSchemaListParams) {
           signal: abortControllerRef.current?.signal,
         } as unknown as Parameters<typeof http.request>[0]);
 
-        const jsonData = response.data as UserSchemaListResponse;
+        const jsonData = response.data as UserTypeListResponse;
         setData(jsonData);
         setError(null);
       } catch (err) {
@@ -101,7 +101,7 @@ export default function useGetUserTypes(params?: UserSchemaListParams) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [params]);
 
-  const refetch = async (newParams?: UserSchemaListParams): Promise<void> => {
+  const refetch = async (newParams?: UserTypeListParams): Promise<void> => {
     // Cancel previous request
     abortControllerRef.current?.abort();
     abortControllerRef.current = new AbortController();
@@ -122,7 +122,7 @@ export default function useGetUserTypes(params?: UserSchemaListParams) {
       }
 
       const queryString = queryParams.toString();
-      const url = `${API_BASE_URL}/user-schemas${queryString ? `?${queryString}` : ''}`;
+      const url = `${API_BASE_URL}/user-types${queryString ? `?${queryString}` : ''}`;
 
       const response = await http.request({
         url,
@@ -130,7 +130,7 @@ export default function useGetUserTypes(params?: UserSchemaListParams) {
         signal: abortControllerRef.current.signal,
       } as unknown as Parameters<typeof http.request>[0]);
 
-      const jsonData = response.data as UserSchemaListResponse;
+      const jsonData = response.data as UserTypeListResponse;
       setData(jsonData);
       setError(null);
     } catch (err) {

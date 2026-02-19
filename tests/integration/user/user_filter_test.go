@@ -30,7 +30,7 @@ import (
 
 var (
 	// Test users specifically for filtering tests
-	filterTestUserSchemas = []testutils.UserSchema{
+	filterTestUserTypes = []testutils.UserType{
 		{
 			Name: "employee",
 			Schema: map[string]interface{}{
@@ -129,12 +129,12 @@ func (ts *UserFilterTestSuite) SetupSuite() {
 	}
 	filterTestOUID = ouID
 
-	filterTestSchemaIDs = make([]string, 0, len(filterTestUserSchemas))
-	for _, schema := range filterTestUserSchemas {
+	filterTestSchemaIDs = make([]string, 0, len(filterTestUserTypes))
+	for _, schema := range filterTestUserTypes {
 		schema.OrganizationUnitId = filterTestOUID
 		schemaID, err := testutils.CreateUserType(schema)
 		if err != nil {
-			ts.T().Fatalf("Failed to create user schema during filter test setup: %v", err)
+			ts.T().Fatalf("Failed to create user type during filter test setup: %v", err)
 		}
 		filterTestSchemaIDs = append(filterTestSchemaIDs, schemaID)
 	}
@@ -174,7 +174,7 @@ func (ts *UserFilterTestSuite) TearDownSuite() {
 			continue
 		}
 		if err := testutils.DeleteUserType(schemaID); err != nil {
-			ts.T().Logf("Failed to delete filter test user schema during teardown: %v", err)
+			ts.T().Logf("Failed to delete filter test user type during teardown: %v", err)
 		}
 	}
 }

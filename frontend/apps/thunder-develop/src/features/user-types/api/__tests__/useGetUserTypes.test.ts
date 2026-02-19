@@ -52,7 +52,7 @@ describe('useGetUserTypes', () => {
       {id: '123', name: 'UserType1', ouId: 'root-ou', allowSelfRegistration: false},
       {id: '456', name: 'UserType2', ouId: 'child-ou', allowSelfRegistration: true},
     ],
-    links: [{rel: 'self', href: 'https://localhost:8090/user-schemas'}],
+    links: [{rel: 'self', href: 'https://localhost:8090/user-types'}],
   };
 
   beforeEach(() => {
@@ -90,7 +90,7 @@ describe('useGetUserTypes', () => {
     });
 
     expect(mockHttpRequest).toHaveBeenCalledWith(
-      expect.objectContaining({url: 'https://localhost:8090/user-schemas', method: 'GET'}),
+      expect.objectContaining({url: 'https://localhost:8090/user-types', method: 'GET'}),
     );
   });
 
@@ -102,7 +102,7 @@ describe('useGetUserTypes', () => {
     await waitFor(() => {
       expect(
         mockHttpRequest.mock.calls.some(
-          (call: unknown[]) => (call[0] as {url?: string})?.url === 'https://localhost:8090/user-schemas?limit=10',
+          (call: unknown[]) => (call[0] as {url?: string})?.url === 'https://localhost:8090/user-types?limit=10',
         ),
       ).toBe(true);
     });
@@ -116,7 +116,7 @@ describe('useGetUserTypes', () => {
     await waitFor(() => {
       expect(mockHttpRequest).toHaveBeenCalledWith(
         expect.objectContaining({
-          url: 'https://localhost:8090/user-schemas?offset=5',
+          url: 'https://localhost:8090/user-types?offset=5',
           method: 'GET',
         }),
       );
@@ -131,7 +131,7 @@ describe('useGetUserTypes', () => {
     await waitFor(() => {
       expect(mockHttpRequest).toHaveBeenCalledWith(
         expect.objectContaining({
-          url: 'https://localhost:8090/user-schemas?limit=10&offset=5',
+          url: 'https://localhost:8090/user-types?limit=10&offset=5',
           method: 'GET',
         }),
       );
@@ -315,7 +315,7 @@ describe('useGetUserTypes', () => {
     await waitFor(() => {
       expect(mockHttpRequest).toHaveBeenCalledWith(
         expect.objectContaining({
-          url: 'https://localhost:8090/user-schemas?limit=10',
+          url: 'https://localhost:8090/user-types?limit=10',
           method: 'GET',
         }),
       );
@@ -326,7 +326,7 @@ describe('useGetUserTypes', () => {
     await waitFor(() => {
       expect(
         mockHttpRequest.mock.calls.some(
-          (call: unknown[]) => (call[0] as {url?: string})?.url === 'https://localhost:8090/user-schemas?limit=20',
+          (call: unknown[]) => (call[0] as {url?: string})?.url === 'https://localhost:8090/user-types?limit=20',
         ),
       ).toBe(true);
     });
@@ -353,7 +353,7 @@ describe('useGetUserTypes', () => {
     expect(
       mockHttpRequest.mock.calls.some(
         (call: unknown[]) =>
-          (call[0] as {url?: string})?.url === 'https://localhost:8090/user-schemas?limit=20&offset=10',
+          (call[0] as {url?: string})?.url === 'https://localhost:8090/user-types?limit=20&offset=10',
       ),
     ).toBe(true);
   });
@@ -374,7 +374,7 @@ describe('useGetUserTypes', () => {
     await waitFor(() => {
       expect(
         mockHttpRequest.mock.calls.some(
-          (call: unknown[]) => (call[0] as {url?: string})?.url === 'https://localhost:8090/user-schemas?limit=15',
+          (call: unknown[]) => (call[0] as {url?: string})?.url === 'https://localhost:8090/user-types?limit=15',
         ),
       ).toBe(true);
     });
@@ -396,7 +396,7 @@ describe('useGetUserTypes', () => {
     await waitFor(() => {
       expect(
         mockHttpRequest.mock.calls.some(
-          (call: unknown[]) => (call[0] as {url?: string})?.url === 'https://localhost:8090/user-schemas?offset=5',
+          (call: unknown[]) => (call[0] as {url?: string})?.url === 'https://localhost:8090/user-types?offset=5',
         ),
       ).toBe(true);
     });
@@ -502,10 +502,9 @@ describe('useGetUserTypes', () => {
 
     expect(mockHttpRequest).toHaveBeenCalledWith(
       expect.objectContaining({
-        url: expect.stringContaining('/user-schemas') as string,
+        url: expect.stringContaining('/user-types') as string,
         method: 'GET',
       }),
     );
   });
-
 });

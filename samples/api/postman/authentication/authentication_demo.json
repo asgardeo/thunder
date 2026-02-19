@@ -489,7 +489,7 @@
           "response": []
         },
         {
-          "name": "02 - Create User Schema",
+          "name": "02 - Create User Types",
           "event": [
             {
               "listen": "test",
@@ -503,15 +503,15 @@
                   "    pm.environment.set(\"demoSchemaId\", response.id);",
                   "    pm.environment.set(\"demoSchemaName\", response.name);",
                   "    ",
-                  "    console.log(\"✓ User Schema created\");",
+                  "    console.log(\"✓ User Type created\");",
                   "    console.log(\"  ID:\", response.id);",
                   "    console.log(\"  Name:\", response.name);",
                   "} else if (pm.response.code === 409) {",
-                  "    console.log(\"⚠ User Schema already exists - you may need to fetch its ID separately\");",
+                  "    console.log(\"⚠ User Type already exists - you may need to fetch its ID separately\");",
                   "}",
                   "",
                   "// Test assertion",
-                  "pm.test(\"User Schema created or already exists\", function() {",
+                  "pm.test(\"User Type created or already exists\", function() {",
                   "    pm.expect(pm.response.code).to.be.oneOf([201, 409]);",
                   "});",
                   ""
@@ -535,12 +535,12 @@
               }
             },
             "url": {
-              "raw": "{{baseUrl}}/user-schemas",
+              "raw": "{{baseUrl}}/user-types",
               "host": [
                 "{{baseUrl}}"
               ],
               "path": [
-                "user-schemas"
+                "user-types"
               ]
             }
           },

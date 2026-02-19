@@ -45,7 +45,7 @@ var googleAuthTestOU = testutils.OrganizationUnit{
 	Parent:      nil,
 }
 
-var googleUserSchema = testutils.UserSchema{
+var googleUserType = testutils.UserType{
 	Name: "google_user",
 	Schema: map[string]interface{}{
 		"username": map[string]interface{}{
@@ -74,7 +74,7 @@ type GoogleAuthTestSuite struct {
 	mockGoogleServer *testutils.MockGoogleOIDCServer
 	idpID            string
 	userID           string
-	userSchemaID     string
+	userTypeID       string
 	ouID             string
 }
 
@@ -106,10 +106,10 @@ func (suite *GoogleAuthTestSuite) SetupSuite() {
 	suite.Require().NoError(err, "Failed to create test organization unit")
 	suite.ouID = ouID
 
-	googleUserSchema.OrganizationUnitId = suite.ouID
-	schemaID, err := testutils.CreateUserType(googleUserSchema)
-	suite.Require().NoError(err, "Failed to create Google user schema")
-	suite.userSchemaID = schemaID
+	googleUserType.OrganizationUnitId = suite.ouID
+	typeID, err := testutils.CreateUserType(googleUserType)
+	suite.Require().NoError(err, "Failed to create Google user type")
+	suite.userTypeID = typeID
 
 	userAttributes := map[string]interface{}{
 		"username":   "googleuser",
@@ -124,7 +124,7 @@ func (suite *GoogleAuthTestSuite) SetupSuite() {
 	suite.Require().NoError(err)
 
 	user := testutils.User{
-		Type:             googleUserSchema.Name,
+		Type:             googleUserType.Name,
 		OrganizationUnit: suite.ouID,
 		Attributes:       json.RawMessage(attributesJSON),
 	}
@@ -191,8 +191,8 @@ func (suite *GoogleAuthTestSuite) TearDownSuite() {
 		_ = testutils.DeleteUser(suite.userID)
 	}
 
-	if suite.userSchemaID != "" {
-		_ = testutils.DeleteUserType(suite.userSchemaID)
+	if suite.userTypeID != "" {
+		_ = testutils.DeleteUserType(suite.userTypeID)
 	}
 
 	if suite.idpID != "" {

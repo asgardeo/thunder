@@ -55,8 +55,8 @@ type TestCase struct {
 }
 
 var (
-	testOUID       string
-	testUserSchema = testutils.UserSchema{
+	testOUID     string
+	testUserType = testutils.UserType{
 		Name: "authz-test-person",
 		Schema: map[string]interface{}{
 			"username": map[string]interface{}{
@@ -169,7 +169,7 @@ var (
 type AuthzTestSuite struct {
 	suite.Suite
 	applicationID string
-	userSchemaID  string
+	userTypeID    string
 	authFlowID    string
 	client        *http.Client
 }
@@ -189,12 +189,12 @@ func (ts *AuthzTestSuite) SetupSuite() {
 	}
 	testOUID = ouID
 
-	testUserSchema.OrganizationUnitId = ouID
-	schemaID, err := testutils.CreateUserType(testUserSchema)
+	testUserType.OrganizationUnitId = ouID
+	schemaID, err := testutils.CreateUserType(testUserType)
 	if err != nil {
 		ts.T().Fatalf("Failed to create test user type: %v", err)
 	}
-	ts.userSchemaID = schemaID
+	ts.userTypeID = schemaID
 
 	// Create authentication flow
 	flowID, err := testutils.CreateFlow(testAuthFlow)
@@ -298,8 +298,8 @@ func (ts *AuthzTestSuite) TearDownSuite() {
 		}
 	}
 
-	if ts.userSchemaID != "" {
-		err := testutils.DeleteUserType(ts.userSchemaID)
+	if ts.userTypeID != "" {
+		err := testutils.DeleteUserType(ts.userTypeID)
 		if err != nil {
 			ts.T().Errorf("Failed to delete test user type: %v", err)
 		}

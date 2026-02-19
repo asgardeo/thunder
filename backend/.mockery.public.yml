@@ -301,12 +301,12 @@ packages:
       pkgname: executormock
       filename: "{{.InterfaceName}}_mock.go"
 
-  github.com/asgardeo/thunder/internal/userschema:
+  github.com/asgardeo/thunder/internal/usertype:
     config:
       all: true
-      dir: tests/mocks/userschemamock
+      dir: tests/mocks/usertypemock
       structname: '{{.InterfaceName}}Mock'
-      pkgname: userschemamock
+      pkgname: usertypemock
       filename: "{{.InterfaceName}}_mock.go"
 
   github.com/asgardeo/thunder/internal/group:

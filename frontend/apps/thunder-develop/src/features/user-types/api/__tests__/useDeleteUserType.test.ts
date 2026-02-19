@@ -78,7 +78,7 @@ describe('useDeleteUserType', () => {
 
     expect(mockHttpRequest).toHaveBeenCalledWith(
       expect.objectContaining({
-        url: `https://localhost:8090/user-schemas/${mockUserTypeId}`,
+        url: `https://localhost:8090/user-types/${mockUserTypeId}`,
         method: 'DELETE',
       }),
     );
@@ -214,7 +214,7 @@ describe('useDeleteUserType', () => {
 
     expect(mockHttpRequest).toHaveBeenCalledWith(
       expect.objectContaining({
-        url: expect.stringContaining('/user-schemas/') as string,
+        url: expect.stringContaining('/user-types/') as string,
         method: 'DELETE',
       }),
     );

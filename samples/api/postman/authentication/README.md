@@ -170,8 +170,8 @@ These variables will be auto-populated during the resource setup phase:
 |----------|-------------|
 | `demoOuId` | Created demo organization unit ID |
 | `demoOuHandle` | Created demo organization unit handle |
-| `demoSchemaId` | Created demo user schema ID |
-| `demoSchemaName` | Created demo user schema name |
+| `demoSchemaId` | Created demo user type ID |
+| `demoSchemaName` | Created demo user type name |
 | `googleIDPId` | Created Google IDP ID |
 | `githubIDPId` | Created GitHub IDP ID |
 | `asgardeoIDPId` | Created Asgardeo IDP ID |
@@ -240,7 +240,7 @@ Run the requests in `01 - Set Token` folder sequentially:
 
 Run the requests in `02 - Setup Resources` folder to create:
 - Demo organization unit
-- User schema
+- User Type
 - Notification sender (for SMS OTP)
 - Identity providers (Google, GitHub, Asgardeo)
 - Demo users

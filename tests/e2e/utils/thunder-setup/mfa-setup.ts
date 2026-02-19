@@ -409,26 +409,26 @@ export class ThunderMFASetup {
    * Create or get existing test user with mobile number
    */
   private async createOrGetTestUser(adminToken: string): Promise<string> {
-    // Get organization unit from Person user schema
-    const schemasResponse = await this.request.get(`${this.config.thunderUrl}/user-schemas`, {
+    // Get organization unit from Person user type
+    const typesResponse = await this.request.get(`${this.config.thunderUrl}/user-types`, {
       headers: {
         Authorization: `Bearer ${adminToken}`,
       },
       ignoreHTTPSErrors: true,
     });
 
-    if (!schemasResponse.ok()) {
-      throw new Error(`Failed to fetch user schemas: ${await schemasResponse.text()}`);
+    if (!typesResponse.ok()) {
+      throw new Error(`Failed to fetch user types: ${await typesResponse.text()}`);
     }
 
-    const schemasData = await schemasResponse.json();
-    const personSchema = schemasData.schemas?.find((s: any) => s.name === "Person");
+    const typesData = await typesResponse.json();
+    const personType = typesData.types?.find((s: any) => s.name === "Person");
 
-    if (!personSchema || !personSchema.ouId) {
-      throw new Error("Person user schema not found or missing organization unit");
+    if (!personType || !personType.ouId) {
+      throw new Error("Person user type not found or missing organization unit");
     }
 
-    const defaultOuId = personSchema.ouId;
+    const defaultOuId = personType.ouId;
 
     // Create user
     const response = await this.request.post(`${this.config.thunderUrl}/users`, {

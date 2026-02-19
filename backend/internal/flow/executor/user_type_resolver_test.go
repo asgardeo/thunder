@@ -29,16 +29,16 @@ import (
 	"github.com/asgardeo/thunder/internal/flow/common"
 	"github.com/asgardeo/thunder/internal/flow/core"
 	"github.com/asgardeo/thunder/internal/system/error/serviceerror"
-	"github.com/asgardeo/thunder/internal/userschema"
+	"github.com/asgardeo/thunder/internal/usertype"
 	"github.com/asgardeo/thunder/tests/mocks/flow/coremock"
-	"github.com/asgardeo/thunder/tests/mocks/userschemamock"
+	"github.com/asgardeo/thunder/tests/mocks/usertypemock"
 )
 
 type UserTypeResolverTestSuite struct {
 	suite.Suite
-	mockUserSchemaService *userschemamock.UserSchemaServiceInterfaceMock
-	mockFlowFactory       *coremock.FlowFactoryInterfaceMock
-	executor              *userTypeResolver
+	mockUserTypeService *usertypemock.UserTypeServiceInterfaceMock
+	mockFlowFactory     *coremock.FlowFactoryInterfaceMock
+	executor            *userTypeResolver
 }
 
 func TestUserTypeResolverSuite(t *testing.T) {
@@ -46,7 +46,7 @@ func TestUserTypeResolverSuite(t *testing.T) {
 }
 
 func (suite *UserTypeResolverTestSuite) SetupTest() {
-	suite.mockUserSchemaService = userschemamock.NewUserSchemaServiceInterfaceMock(suite.T())
+	suite.mockUserTypeService = usertypemock.NewUserTypeServiceInterfaceMock(suite.T())
 	suite.mockFlowFactory = coremock.NewFlowFactoryInterfaceMock(suite.T())
 
 	defaultInputs := []common.Input{
@@ -63,7 +63,7 @@ func (suite *UserTypeResolverTestSuite) SetupTest() {
 		defaultInputs, []common.Input{}).
 		Return(createMockUserTypeResolverExecutor(suite.T()))
 
-	suite.executor = newUserTypeResolver(suite.mockFlowFactory, suite.mockUserSchemaService)
+	suite.executor = newUserTypeResolver(suite.mockFlowFactory, suite.mockUserTypeService)
 }
 
 func createMockUserTypeResolverExecutor(t *testing.T) core.ExecutorInterface {
@@ -97,7 +97,7 @@ func createMockUserTypeResolverExecutor(t *testing.T) core.ExecutorInterface {
 
 func (suite *UserTypeResolverTestSuite) TestNewUserTypeResolver() {
 	mockFlowFactory := coremock.NewFlowFactoryInterfaceMock(suite.T())
-	mockUserSchemaService := userschemamock.NewUserSchemaServiceInterfaceMock(suite.T())
+	mockUserTypeService := usertypemock.NewUserTypeServiceInterfaceMock(suite.T())
 
 	defaultInputs := []common.Input{
 		{
@@ -112,7 +112,7 @@ func (suite *UserTypeResolverTestSuite) TestNewUserTypeResolver() {
 		defaultInputs, []common.Input{}).
 		Return(createMockUserTypeResolverExecutor(suite.T()))
 
-	executor := newUserTypeResolver(mockFlowFactory, mockUserSchemaService)
+	executor := newUserTypeResolver(mockFlowFactory, mockUserTypeService)
 
 	assert.NotNil(suite.T(), executor)
 	assert.Equal(suite.T(), ExecutorNameUserTypeResolver, executor.GetName())
@@ -136,7 +136,7 @@ func (suite *UserTypeResolverTestSuite) TestExecute_AuthenticationFlow_WithAllow
 	assert.NotNil(suite.T(), result)
 	assert.Equal(suite.T(), common.ExecComplete, result.Status)
 	assert.Empty(suite.T(), result.RuntimeData[userTypeKey])
-	suite.mockUserSchemaService.AssertNotCalled(suite.T(), "GetUserSchemaByName")
+	suite.mockUserTypeService.AssertNotCalled(suite.T(), "GetUserTypeByName")
 }
 
 func (suite *UserTypeResolverTestSuite) TestExecute_AuthenticationFlow_NoAllowedUserTypes() {
@@ -157,7 +157,7 @@ func (suite *UserTypeResolverTestSuite) TestExecute_AuthenticationFlow_NoAllowed
 	assert.NotNil(suite.T(), result)
 	assert.Equal(suite.T(), common.ExecFailure, result.Status)
 	assert.Equal(suite.T(), "Authentication not available for this application", result.FailureReason)
-	suite.mockUserSchemaService.AssertNotCalled(suite.T(), "GetUserSchemaByName")
+	suite.mockUserTypeService.AssertNotCalled(suite.T(), "GetUserTypeByName")
 }
 
 func (suite *UserTypeResolverTestSuite) TestExecute_UnsupportedFlowType() {
@@ -194,7 +194,7 @@ func (suite *UserTypeResolverTestSuite) TestExecute_UnsupportedFlowType() {
 			assert.NotNil(suite.T(), result)
 			assert.Equal(suite.T(), common.ExecComplete, result.Status)
 			assert.Empty(suite.T(), result.RuntimeData[userTypeKey])
-			suite.mockUserSchemaService.AssertNotCalled(suite.T(), "GetUserSchemaByName")
+			suite.mockUserTypeService.AssertNotCalled(suite.T(), "GetUserTypeByName")
 		})
 	}
 }
@@ -230,14 +230,14 @@ func (suite *UserTypeResolverTestSuite) TestExecute_UserTypeProvidedInInput_Succ
 				RuntimeData: map[string]string{},
 			}
 
-			userSchema := &userschema.UserSchema{
+			userType := &usertype.UserType{
 				ID:                    "schema-123",
 				Name:                  tc.providedUserType,
 				OrganizationUnitID:    tc.expectedOUID,
 				AllowSelfRegistration: true,
 			}
-			suite.mockUserSchemaService.On("GetUserSchemaByName", tc.providedUserType).
-				Return(userSchema, nil)
+			suite.mockUserTypeService.On("GetUserTypeByName", tc.providedUserType).
+				Return(userType, nil)
 
 			result, err := suite.executor.Execute(ctx)
 
@@ -247,7 +247,7 @@ func (suite *UserTypeResolverTestSuite) TestExecute_UserTypeProvidedInInput_Succ
 			assert.Equal(suite.T(), tc.providedUserType, result.RuntimeData[userTypeKey])
 			assert.Equal(suite.T(), tc.expectedOUID, result.RuntimeData[defaultOUIDKey])
 
-			suite.mockUserSchemaService.AssertExpectations(suite.T())
+			suite.mockUserTypeService.AssertExpectations(suite.T())
 		})
 	}
 }
@@ -267,21 +267,21 @@ func (suite *UserTypeResolverTestSuite) TestExecute_UserTypeProvidedInInput_NoOU
 		RuntimeData: map[string]string{},
 	}
 
-	userSchema := &userschema.UserSchema{
+	userType := &usertype.UserType{
 		ID:                    "schema-123",
 		Name:                  "employee",
 		OrganizationUnitID:    "",
 		AllowSelfRegistration: true,
 	}
-	suite.mockUserSchemaService.On("GetUserSchemaByName", "employee").
-		Return(userSchema, nil)
+	suite.mockUserTypeService.On("GetUserTypeByName", "employee").
+		Return(userType, nil)
 
 	result, err := suite.executor.Execute(ctx)
 
 	assert.Error(suite.T(), err)
 	assert.NotNil(suite.T(), result)
 	assert.Contains(suite.T(), err.Error(), "no organization unit found for user type")
-	suite.mockUserSchemaService.AssertExpectations(suite.T())
+	suite.mockUserTypeService.AssertExpectations(suite.T())
 }
 
 func (suite *UserTypeResolverTestSuite) TestExecute_UserTypeProvidedInInput_NotAllowed() {
@@ -305,7 +305,7 @@ func (suite *UserTypeResolverTestSuite) TestExecute_UserTypeProvidedInInput_NotA
 	assert.NotNil(suite.T(), result)
 	assert.Equal(suite.T(), common.ExecFailure, result.Status)
 	assert.Equal(suite.T(), "Application does not allow registration for the user type", result.FailureReason)
-	suite.mockUserSchemaService.AssertNotCalled(suite.T(), "GetUserSchemaByName")
+	suite.mockUserTypeService.AssertNotCalled(suite.T(), "GetUserTypeByName")
 }
 
 func (suite *UserTypeResolverTestSuite) TestExecute_UserTypeProvidedInInput_OUResolutionFails() {
@@ -329,15 +329,15 @@ func (suite *UserTypeResolverTestSuite) TestExecute_UserTypeProvidedInInput_OURe
 		Error:            "Internal Server Error",
 		ErrorDescription: "Failed to retrieve OU",
 	}
-	suite.mockUserSchemaService.On("GetUserSchemaByName", "employee").
+	suite.mockUserTypeService.On("GetUserTypeByName", "employee").
 		Return(nil, svcErr)
 
 	result, err := suite.executor.Execute(ctx)
 
 	assert.Error(suite.T(), err)
 	assert.NotNil(suite.T(), result)
-	assert.Contains(suite.T(), err.Error(), "failed to resolve user schema")
-	suite.mockUserSchemaService.AssertExpectations(suite.T())
+	assert.Contains(suite.T(), err.Error(), "failed to resolve user type")
+	suite.mockUserTypeService.AssertExpectations(suite.T())
 }
 
 func (suite *UserTypeResolverTestSuite) TestExecute_NoAllowedUserTypes() {
@@ -359,7 +359,7 @@ func (suite *UserTypeResolverTestSuite) TestExecute_NoAllowedUserTypes() {
 	assert.NotNil(suite.T(), result)
 	assert.Equal(suite.T(), common.ExecFailure, result.Status)
 	assert.Equal(suite.T(), "Self-registration not available for this application", result.FailureReason)
-	suite.mockUserSchemaService.AssertNotCalled(suite.T(), "GetUserSchemaByName")
+	suite.mockUserTypeService.AssertNotCalled(suite.T(), "GetUserTypeByName")
 }
 
 func (suite *UserTypeResolverTestSuite) TestExecute_SingleAllowedUserType_Success() {
@@ -375,14 +375,14 @@ func (suite *UserTypeResolverTestSuite) TestExecute_SingleAllowedUserType_Succes
 		RuntimeData: map[string]string{},
 	}
 
-	userSchema := &userschema.UserSchema{
+	userType := &usertype.UserType{
 		ID:                    "schema-123",
 		Name:                  "employee",
 		OrganizationUnitID:    "ou-123",
 		AllowSelfRegistration: true,
 	}
-	suite.mockUserSchemaService.On("GetUserSchemaByName", "employee").
-		Return(userSchema, nil)
+	suite.mockUserTypeService.On("GetUserTypeByName", "employee").
+		Return(userType, nil)
 
 	result, err := suite.executor.Execute(ctx)
 
@@ -392,7 +392,7 @@ func (suite *UserTypeResolverTestSuite) TestExecute_SingleAllowedUserType_Succes
 	assert.Equal(suite.T(), "employee", result.RuntimeData[userTypeKey])
 	assert.Equal(suite.T(), "ou-123", result.RuntimeData[defaultOUIDKey])
 
-	suite.mockUserSchemaService.AssertExpectations(suite.T())
+	suite.mockUserTypeService.AssertExpectations(suite.T())
 }
 
 func (suite *UserTypeResolverTestSuite) TestExecute_SingleAllowedUserType_NoOU() {
@@ -408,21 +408,21 @@ func (suite *UserTypeResolverTestSuite) TestExecute_SingleAllowedUserType_NoOU()
 		RuntimeData: map[string]string{},
 	}
 
-	userSchema := &userschema.UserSchema{
+	userType := &usertype.UserType{
 		ID:                    "schema-123",
 		Name:                  "employee",
 		OrganizationUnitID:    "",
 		AllowSelfRegistration: true,
 	}
-	suite.mockUserSchemaService.On("GetUserSchemaByName", "employee").
-		Return(userSchema, nil)
+	suite.mockUserTypeService.On("GetUserTypeByName", "employee").
+		Return(userType, nil)
 
 	result, err := suite.executor.Execute(ctx)
 
 	assert.Error(suite.T(), err)
 	assert.NotNil(suite.T(), result)
 	assert.Contains(suite.T(), err.Error(), "no organization unit found for user type")
-	suite.mockUserSchemaService.AssertExpectations(suite.T())
+	suite.mockUserTypeService.AssertExpectations(suite.T())
 }
 
 func (suite *UserTypeResolverTestSuite) TestExecute_SingleAllowedUserType_OUResolutionFails() {
@@ -444,15 +444,15 @@ func (suite *UserTypeResolverTestSuite) TestExecute_SingleAllowedUserType_OUReso
 		Error:            "Internal Server Error",
 		ErrorDescription: "Failed to retrieve OU",
 	}
-	suite.mockUserSchemaService.On("GetUserSchemaByName", "employee").
+	suite.mockUserTypeService.On("GetUserTypeByName", "employee").
 		Return(nil, svcErr)
 
 	result, err := suite.executor.Execute(ctx)
 
 	assert.Error(suite.T(), err)
 	assert.NotNil(suite.T(), result)
-	assert.Contains(suite.T(), err.Error(), "failed to resolve user schema")
-	suite.mockUserSchemaService.AssertExpectations(suite.T())
+	assert.Contains(suite.T(), err.Error(), "failed to resolve user type")
+	suite.mockUserTypeService.AssertExpectations(suite.T())
 }
 
 func (suite *UserTypeResolverTestSuite) TestExecute_MultipleAllowedUserTypes_PromptUser() {
@@ -469,15 +469,15 @@ func (suite *UserTypeResolverTestSuite) TestExecute_MultipleAllowedUserTypes_Pro
 	}
 
 	// Mock all three user types with self registration enabled
-	for _, userType := range []string{"employee", "customer", "partner"} {
-		userSchema := &userschema.UserSchema{
-			ID:                    "schema-" + userType,
-			Name:                  userType,
-			OrganizationUnitID:    "ou-" + userType,
+	for _, userTypeName := range []string{"employee", "customer", "partner"} {
+		userType := &usertype.UserType{
+			ID:                    "schema-" + userTypeName,
+			Name:                  userTypeName,
+			OrganizationUnitID:    "ou-" + userTypeName,
 			AllowSelfRegistration: true,
 		}
-		suite.mockUserSchemaService.On("GetUserSchemaByName", userType).
-			Return(userSchema, nil)
+		suite.mockUserTypeService.On("GetUserTypeByName", userTypeName).
+			Return(userType, nil)
 	}
 
 	result, err := suite.executor.Execute(ctx)
@@ -495,7 +495,7 @@ func (suite *UserTypeResolverTestSuite) TestExecute_MultipleAllowedUserTypes_Pro
 	assert.True(suite.T(), requiredInput.Required)
 	assert.ElementsMatch(suite.T(), []string{"employee", "customer", "partner"}, requiredInput.Options)
 
-	suite.mockUserSchemaService.AssertExpectations(suite.T())
+	suite.mockUserTypeService.AssertExpectations(suite.T())
 }
 
 func (suite *UserTypeResolverTestSuite) TestExecute_EmptyUserTypeInput() {
@@ -514,15 +514,15 @@ func (suite *UserTypeResolverTestSuite) TestExecute_EmptyUserTypeInput() {
 	}
 
 	// Mock both user types with self registration enabled
-	for _, userType := range []string{"employee", "customer"} {
-		userSchema := &userschema.UserSchema{
-			ID:                    "schema-" + userType,
-			Name:                  userType,
-			OrganizationUnitID:    "ou-" + userType,
+	for _, userTypeName := range []string{"employee", "customer"} {
+		userType := &usertype.UserType{
+			ID:                    "schema-" + userTypeName,
+			Name:                  userTypeName,
+			OrganizationUnitID:    "ou-" + userTypeName,
 			AllowSelfRegistration: true,
 		}
-		suite.mockUserSchemaService.On("GetUserSchemaByName", userType).
-			Return(userSchema, nil)
+		suite.mockUserTypeService.On("GetUserTypeByName", userTypeName).
+			Return(userType, nil)
 	}
 
 	result, err := suite.executor.Execute(ctx)
@@ -537,7 +537,7 @@ func (suite *UserTypeResolverTestSuite) TestExecute_EmptyUserTypeInput() {
 	assert.Equal(suite.T(), userTypeKey, requiredInput.Identifier)
 	assert.Equal(suite.T(), "SELECT", requiredInput.Type)
 
-	suite.mockUserSchemaService.AssertExpectations(suite.T())
+	suite.mockUserTypeService.AssertExpectations(suite.T())
 }
 
 func (suite *UserTypeResolverTestSuite) TestExecute_UserTypeProvidedInInput_SelfRegistrationDisabled() {
@@ -555,14 +555,14 @@ func (suite *UserTypeResolverTestSuite) TestExecute_UserTypeProvidedInInput_Self
 		RuntimeData: map[string]string{},
 	}
 
-	userSchema := &userschema.UserSchema{
+	userType := &usertype.UserType{
 		ID:                    "schema-123",
 		Name:                  "employee",
 		OrganizationUnitID:    "ou-123",
 		AllowSelfRegistration: false,
 	}
-	suite.mockUserSchemaService.On("GetUserSchemaByName", "employee").
-		Return(userSchema, nil)
+	suite.mockUserTypeService.On("GetUserTypeByName", "employee").
+		Return(userType, nil)
 
 	result, err := suite.executor.Execute(ctx)
 
@@ -570,7 +570,7 @@ func (suite *UserTypeResolverTestSuite) TestExecute_UserTypeProvidedInInput_Self
 	assert.NotNil(suite.T(), result)
 	assert.Equal(suite.T(), common.ExecFailure, result.Status)
 	assert.Equal(suite.T(), "Self-registration not enabled for the user type", result.FailureReason)
-	suite.mockUserSchemaService.AssertExpectations(suite.T())
+	suite.mockUserTypeService.AssertExpectations(suite.T())
 }
 
 func (suite *UserTypeResolverTestSuite) TestExecute_SingleAllowedUserType_SelfRegistrationDisabled() {
@@ -586,14 +586,14 @@ func (suite *UserTypeResolverTestSuite) TestExecute_SingleAllowedUserType_SelfRe
 		RuntimeData: map[string]string{},
 	}
 
-	userSchema := &userschema.UserSchema{
+	userType := &usertype.UserType{
 		ID:                    "schema-123",
 		Name:                  "employee",
 		OrganizationUnitID:    "ou-123",
 		AllowSelfRegistration: false,
 	}
-	suite.mockUserSchemaService.On("GetUserSchemaByName", "employee").
-		Return(userSchema, nil)
+	suite.mockUserTypeService.On("GetUserTypeByName", "employee").
+		Return(userType, nil)
 
 	result, err := suite.executor.Execute(ctx)
 
@@ -601,7 +601,7 @@ func (suite *UserTypeResolverTestSuite) TestExecute_SingleAllowedUserType_SelfRe
 	assert.NotNil(suite.T(), result)
 	assert.Equal(suite.T(), common.ExecFailure, result.Status)
 	assert.Equal(suite.T(), "Self-registration not enabled for the user type", result.FailureReason)
-	suite.mockUserSchemaService.AssertExpectations(suite.T())
+	suite.mockUserTypeService.AssertExpectations(suite.T())
 }
 
 func (suite *UserTypeResolverTestSuite) TestExecute_MultipleAllowedUserTypes_OnlyOneSelfRegEnabled() {
@@ -618,30 +618,30 @@ func (suite *UserTypeResolverTestSuite) TestExecute_MultipleAllowedUserTypes_Onl
 	}
 
 	// Only customer has self-registration enabled
-	employeeSchema := &userschema.UserSchema{
+	employeeSchema := &usertype.UserType{
 		ID:                    "schema-employee",
 		Name:                  "employee",
 		OrganizationUnitID:    "ou-employee",
 		AllowSelfRegistration: false,
 	}
-	customerSchema := &userschema.UserSchema{
+	customerSchema := &usertype.UserType{
 		ID:                    "schema-customer",
 		Name:                  "customer",
 		OrganizationUnitID:    "ou-customer",
 		AllowSelfRegistration: true,
 	}
-	partnerSchema := &userschema.UserSchema{
+	partnerSchema := &usertype.UserType{
 		ID:                    "schema-partner",
 		Name:                  "partner",
 		OrganizationUnitID:    "ou-partner",
 		AllowSelfRegistration: false,
 	}
 
-	suite.mockUserSchemaService.On("GetUserSchemaByName", "employee").
+	suite.mockUserTypeService.On("GetUserTypeByName", "employee").
 		Return(employeeSchema, nil)
-	suite.mockUserSchemaService.On("GetUserSchemaByName", "customer").
+	suite.mockUserTypeService.On("GetUserTypeByName", "customer").
 		Return(customerSchema, nil)
-	suite.mockUserSchemaService.On("GetUserSchemaByName", "partner").
+	suite.mockUserTypeService.On("GetUserTypeByName", "partner").
 		Return(partnerSchema, nil)
 
 	result, err := suite.executor.Execute(ctx)
@@ -651,7 +651,7 @@ func (suite *UserTypeResolverTestSuite) TestExecute_MultipleAllowedUserTypes_Onl
 	assert.Equal(suite.T(), common.ExecComplete, result.Status)
 	assert.Equal(suite.T(), "customer", result.RuntimeData[userTypeKey])
 	assert.Equal(suite.T(), "ou-customer", result.RuntimeData[defaultOUIDKey])
-	suite.mockUserSchemaService.AssertExpectations(suite.T())
+	suite.mockUserTypeService.AssertExpectations(suite.T())
 }
 
 func (suite *UserTypeResolverTestSuite) TestExecute_MultipleAllowedUserTypes_NoSelfRegEnabled() {
@@ -668,22 +668,22 @@ func (suite *UserTypeResolverTestSuite) TestExecute_MultipleAllowedUserTypes_NoS
 	}
 
 	// None have self-registration enabled
-	employeeSchema := &userschema.UserSchema{
+	employeeSchema := &usertype.UserType{
 		ID:                    "schema-employee",
 		Name:                  "employee",
 		OrganizationUnitID:    "ou-employee",
 		AllowSelfRegistration: false,
 	}
-	customerSchema := &userschema.UserSchema{
+	customerSchema := &usertype.UserType{
 		ID:                    "schema-customer",
 		Name:                  "customer",
 		OrganizationUnitID:    "ou-customer",
 		AllowSelfRegistration: false,
 	}
 
-	suite.mockUserSchemaService.On("GetUserSchemaByName", "employee").
+	suite.mockUserTypeService.On("GetUserTypeByName", "employee").
 		Return(employeeSchema, nil)
-	suite.mockUserSchemaService.On("GetUserSchemaByName", "customer").
+	suite.mockUserTypeService.On("GetUserTypeByName", "customer").
 		Return(customerSchema, nil)
 
 	result, err := suite.executor.Execute(ctx)
@@ -692,7 +692,7 @@ func (suite *UserTypeResolverTestSuite) TestExecute_MultipleAllowedUserTypes_NoS
 	assert.NotNil(suite.T(), result)
 	assert.Equal(suite.T(), common.ExecFailure, result.Status)
 	assert.Equal(suite.T(), "Self-registration not available for this application", result.FailureReason)
-	suite.mockUserSchemaService.AssertExpectations(suite.T())
+	suite.mockUserTypeService.AssertExpectations(suite.T())
 }
 
 func (suite *UserTypeResolverTestSuite) TestExecute_MultipleAllowedUserTypes_SchemaResolutionFails() {
@@ -709,7 +709,7 @@ func (suite *UserTypeResolverTestSuite) TestExecute_MultipleAllowedUserTypes_Sch
 	}
 
 	// First schema succeeds, second fails
-	employeeSchema := &userschema.UserSchema{
+	employeeSchema := &usertype.UserType{
 		ID:                    "schema-employee",
 		Name:                  "employee",
 		OrganizationUnitID:    "ou-employee",
@@ -722,80 +722,80 @@ func (suite *UserTypeResolverTestSuite) TestExecute_MultipleAllowedUserTypes_Sch
 		ErrorDescription: "Failed to retrieve schema",
 	}
 
-	suite.mockUserSchemaService.On("GetUserSchemaByName", "employee").
+	suite.mockUserTypeService.On("GetUserTypeByName", "employee").
 		Return(employeeSchema, nil)
-	suite.mockUserSchemaService.On("GetUserSchemaByName", "customer").
+	suite.mockUserTypeService.On("GetUserTypeByName", "customer").
 		Return(nil, svcErr)
 
 	result, err := suite.executor.Execute(ctx)
 
 	assert.Error(suite.T(), err)
 	assert.NotNil(suite.T(), result)
-	assert.Contains(suite.T(), err.Error(), "failed to resolve user schema for user type")
-	suite.mockUserSchemaService.AssertExpectations(suite.T())
+	assert.Contains(suite.T(), err.Error(), "failed to resolve user type for user type")
+	suite.mockUserTypeService.AssertExpectations(suite.T())
 }
 
-func (suite *UserTypeResolverTestSuite) TestGetUserSchemaAndOU_Success() {
+func (suite *UserTypeResolverTestSuite) TestGetUserTypeAndOU_Success() {
 	suite.SetupTest()
 
-	userSchema := &userschema.UserSchema{
+	userType := &usertype.UserType{
 		ID:                    "schema-123",
 		Name:                  "employee",
 		OrganizationUnitID:    "ou-123",
 		AllowSelfRegistration: true,
 	}
-	suite.mockUserSchemaService.On("GetUserSchemaByName", "employee").
-		Return(userSchema, nil)
+	suite.mockUserTypeService.On("GetUserTypeByName", "employee").
+		Return(userType, nil)
 
-	schema, ouID, err := suite.executor.getUserSchemaAndOU("employee")
+	schema, ouID, err := suite.executor.getUserTypeAndOU("employee")
 
 	assert.Nil(suite.T(), err)
 	assert.NotNil(suite.T(), schema)
 	assert.Equal(suite.T(), "ou-123", ouID)
 	assert.Equal(suite.T(), "employee", schema.Name)
-	suite.mockUserSchemaService.AssertExpectations(suite.T())
+	suite.mockUserTypeService.AssertExpectations(suite.T())
 }
 
-func (suite *UserTypeResolverTestSuite) TestGetUserSchemaAndOU_NoOUFound() {
+func (suite *UserTypeResolverTestSuite) TestGetUserTypeAndOU_NoOUFound() {
 	suite.SetupTest()
 
-	userSchema := &userschema.UserSchema{
+	userType := &usertype.UserType{
 		ID:                    "schema-123",
 		Name:                  "employee",
 		OrganizationUnitID:    "",
 		AllowSelfRegistration: true,
 	}
-	suite.mockUserSchemaService.On("GetUserSchemaByName", "employee").
-		Return(userSchema, nil)
+	suite.mockUserTypeService.On("GetUserTypeByName", "employee").
+		Return(userType, nil)
 
-	schema, ouID, err := suite.executor.getUserSchemaAndOU("employee")
+	schema, ouID, err := suite.executor.getUserTypeAndOU("employee")
 
 	assert.NotNil(suite.T(), err)
 	assert.Nil(suite.T(), schema)
 	assert.Equal(suite.T(), "", ouID)
 	assert.Contains(suite.T(), err.Error(), "no organization unit found for user type")
-	suite.mockUserSchemaService.AssertExpectations(suite.T())
+	suite.mockUserTypeService.AssertExpectations(suite.T())
 }
 
-func (suite *UserTypeResolverTestSuite) TestGetUserSchemaAndOU_SchemaNotFound() {
+func (suite *UserTypeResolverTestSuite) TestGetUserTypeAndOU_SchemaNotFound() {
 	suite.SetupTest()
 
 	svcErr := &serviceerror.ServiceError{
 		Type:             serviceerror.ClientErrorType,
 		Code:             "SCHEMA-404",
 		Error:            "Not Found",
-		ErrorDescription: "User schema not found",
+		ErrorDescription: "User type not found",
 	}
-	suite.mockUserSchemaService.On("GetUserSchemaByName", "employee").
+	suite.mockUserTypeService.On("GetUserTypeByName", "employee").
 		Return(nil, svcErr)
 
-	schema, ouID, err := suite.executor.getUserSchemaAndOU("employee")
+	schema, ouID, err := suite.executor.getUserTypeAndOU("employee")
 
 	assert.NotNil(suite.T(), err)
 	assert.Nil(suite.T(), schema)
 	assert.Equal(suite.T(), "", ouID)
-	assert.Contains(suite.T(), err.Error(), "failed to resolve user schema for user type")
-	suite.mockUserSchemaService.AssertExpectations(suite.T())
+	assert.Contains(suite.T(), err.Error(), "failed to resolve user type for user type")
+	suite.mockUserTypeService.AssertExpectations(suite.T())
 }
 
 func (suite *UserTypeResolverTestSuite) TestGetDefaultMeta() {
@@ -834,13 +834,13 @@ func (suite *UserTypeResolverTestSuite) TestExecute_UserOnboardingFlow_UserTypeP
 		RuntimeData: map[string]string{},
 	}
 
-	userSchema := &userschema.UserSchema{
+	userType := &usertype.UserType{
 		ID:                 "schema-123",
 		Name:               "employee",
 		OrganizationUnitID: "ou-123",
 	}
-	suite.mockUserSchemaService.On("GetUserSchemaByName", "employee").
-		Return(userSchema, nil)
+	suite.mockUserTypeService.On("GetUserTypeByName", "employee").
+		Return(userType, nil)
 
 	result, err := suite.executor.Execute(ctx)
 
@@ -850,7 +850,7 @@ func (suite *UserTypeResolverTestSuite) TestExecute_UserOnboardingFlow_UserTypeP
 	assert.Equal(suite.T(), "employee", result.RuntimeData[userTypeKey])
 	assert.Equal(suite.T(), "ou-123", result.RuntimeData[defaultOUIDKey])
 
-	suite.mockUserSchemaService.AssertExpectations(suite.T())
+	suite.mockUserTypeService.AssertExpectations(suite.T())
 }
 
 func (suite *UserTypeResolverTestSuite) TestExecute_UserOnboardingFlow_UserTypeProvided_Invalid() {
@@ -870,9 +870,9 @@ func (suite *UserTypeResolverTestSuite) TestExecute_UserOnboardingFlow_UserTypeP
 		Type:             serviceerror.ClientErrorType,
 		Code:             "SCHEMA-404",
 		Error:            "Not Found",
-		ErrorDescription: "User schema not found",
+		ErrorDescription: "User type not found",
 	}
-	suite.mockUserSchemaService.On("GetUserSchemaByName", "invalid_user").
+	suite.mockUserTypeService.On("GetUserTypeByName", "invalid_user").
 		Return(nil, svcErr)
 
 	result, err := suite.executor.Execute(ctx)
@@ -882,7 +882,7 @@ func (suite *UserTypeResolverTestSuite) TestExecute_UserOnboardingFlow_UserTypeP
 	assert.Equal(suite.T(), common.ExecFailure, result.Status)
 	assert.Equal(suite.T(), "Invalid user type", result.FailureReason)
 
-	suite.mockUserSchemaService.AssertExpectations(suite.T())
+	suite.mockUserTypeService.AssertExpectations(suite.T())
 }
 
 func (suite *UserTypeResolverTestSuite) TestExecute_UserOnboardingFlow_NoUserType_SchemaListEmpty() {
@@ -895,11 +895,11 @@ func (suite *UserTypeResolverTestSuite) TestExecute_UserOnboardingFlow_NoUserTyp
 		RuntimeData: map[string]string{},
 	}
 
-	// Mock GetUserSchemaList returning empty list
-	emptyList := &userschema.UserSchemaListResponse{
-		Schemas: []userschema.UserSchemaListItem{},
+	// Mock GetUserTypeList returning empty list
+	emptyList := &usertype.UserTypeListResponse{
+		Types: []usertype.UserTypeListItem{},
 	}
-	suite.mockUserSchemaService.On("GetUserSchemaList", 100, 0).
+	suite.mockUserTypeService.On("GetUserTypeList", 100, 0).
 		Return(emptyList, nil)
 
 	result, err := suite.executor.Execute(ctx)
@@ -924,7 +924,7 @@ func (suite *UserTypeResolverTestSuite) TestExecute_UserOnboardingFlow_NoUserTyp
 		Type:  serviceerror.ServerErrorType,
 		Error: "Simulated Error",
 	}
-	suite.mockUserSchemaService.On("GetUserSchemaList", 100, 0).
+	suite.mockUserTypeService.On("GetUserTypeList", 100, 0).
 		Return(nil, svcErr)
 
 	result, err := suite.executor.Execute(ctx)
@@ -945,14 +945,14 @@ func (suite *UserTypeResolverTestSuite) TestExecute_UserOnboardingFlow_NoUserTyp
 		RuntimeData: map[string]string{},
 	}
 
-	// Mock GetUserSchemaList returning schemas
-	schemaList := &userschema.UserSchemaListResponse{
-		Schemas: []userschema.UserSchemaListItem{
+	// Mock GetUserTypeList returning schemas
+	schemaList := &usertype.UserTypeListResponse{
+		Types: []usertype.UserTypeListItem{
 			{Name: "employee"},
 			{Name: "customer"},
 		},
 	}
-	suite.mockUserSchemaService.On("GetUserSchemaList", 100, 0).
+	suite.mockUserTypeService.On("GetUserTypeList", 100, 0).
 		Return(schemaList, nil)
 
 	result, err := suite.executor.Execute(ctx)

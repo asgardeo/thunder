@@ -138,12 +138,12 @@ var (
 		Error:            "Invalid filter parameter",
 		ErrorDescription: "The filter format is invalid",
 	}
-	// ErrorUserSchemaNotFound is the error returned when the specified user schema is not found.
-	ErrorUserSchemaNotFound = serviceerror.ServiceError{
+	// ErrorUserTypeNotFound is the error returned when the specified user type is not found.
+	ErrorUserTypeNotFound = serviceerror.ServiceError{
 		Type:             serviceerror.ClientErrorType,
 		Code:             "USR-1021",
-		Error:            "User schema not found",
-		ErrorDescription: "The specified user schema does not exist",
+		Error:            "User type not found",
+		ErrorDescription: "The specified user type does not exist",
 	}
 	// ErrorInvalidOrganizationUnitID is returned when the organization unit ID is missing or malformed.
 	ErrorInvalidOrganizationUnitID = serviceerror.ServiceError{

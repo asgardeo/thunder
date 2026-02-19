@@ -450,7 +450,7 @@ func handleError(w http.ResponseWriter, svcErr *serviceerror.ServiceError) {
 			ErrorInvalidHandlePath.Code,
 			ErrorMissingRequiredFields.Code,
 			ErrorMissingCredentials.Code,
-			ErrorUserSchemaNotFound.Code:
+			ErrorUserTypeNotFound.Code:
 			statusCode = http.StatusBadRequest
 		case ErrorAuthenticationFailed.Code:
 			statusCode = http.StatusUnauthorized

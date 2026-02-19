@@ -20,19 +20,19 @@ import {useEffect, useRef, useState, useMemo} from 'react';
 import {useAsgardeo} from '@asgardeo/react';
 import {useConfig} from '@thunder/shared-contexts';
 import {useLogger} from '@thunder/logger/react';
-import type {ApiError, ApiUserSchema} from '../types/user-types';
+import type {ApiError, ApiUserType} from '../types/user-types';
 
 /**
- * Custom hook to fetch a single user schema (user type) by ID
+ * Custom hook to fetch a single user type by ID
  * Includes double-fetch prevention for React Strict Mode
- * @param id - The user schema ID to fetch
+ * @param id - The user type ID to fetch
  * @returns Object containing data, loading state, error, and refetch function
  */
 export default function useGetUserType(id?: string) {
   const {http} = useAsgardeo();
   const {getServerUrl} = useConfig();
   const logger = useLogger();
-  const [data, setData] = useState<ApiUserSchema | null>(null);
+  const [data, setData] = useState<ApiUserType | null>(null);
   const [error, setError] = useState<ApiError | null>(null);
   const [loading, setLoading] = useState(false);
 
@@ -67,11 +67,11 @@ export default function useGetUserType(id?: string) {
         setError(null);
 
         const response = await http.request({
-          url: `${API_BASE_URL}/user-schemas/${id}`,
+          url: `${API_BASE_URL}/user-types/${id}`,
           method: 'GET',
         } as unknown as Parameters<typeof http.request>[0]);
 
-        const jsonData = response.data as ApiUserSchema;
+        const jsonData = response.data as ApiUserType;
         setData(jsonData);
         setError(null);
       } catch (err) {
@@ -94,30 +94,30 @@ export default function useGetUserType(id?: string) {
   }, [id]);
 
   const refetch = async (newId?: string): Promise<void> => {
-    const schemaId = newId ?? id;
-    if (!schemaId) {
+    const userTypeId = newId ?? id;
+    if (!userTypeId) {
       setError({
         code: 'INVALID_ID',
-        message: 'Invalid schema ID',
-        description: 'Schema ID is required',
+        message: 'Invalid user type ID',
+        description: 'User type ID is required',
       });
       return;
     }
 
     // Reset the hasFetched flag when explicitly refetching
     hasFetchedRef.current = false;
-    lastIdRef.current = schemaId;
+    lastIdRef.current = userTypeId;
 
     try {
       setLoading(true);
       setError(null);
 
       const response = await http.request({
-        url: `${API_BASE_URL}/user-schemas/${schemaId}`,
+        url: `${API_BASE_URL}/user-types/${userTypeId}`,
         method: 'GET',
       } as unknown as Parameters<typeof http.request>[0]);
 
-      const jsonData = response.data as ApiUserSchema;
+      const jsonData = response.data as ApiUserType;
       setData(jsonData);
       setError(null);
     } catch (err) {

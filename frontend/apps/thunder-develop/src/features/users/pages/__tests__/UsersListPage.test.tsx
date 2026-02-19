@@ -21,7 +21,7 @@ import {render, screen, waitFor, userEvent} from '@thunder/test-utils';
 import type {JSX} from 'react';
 import type {InviteUserRenderProps} from '@asgardeo/react';
 import UsersListPage from '../UsersListPage';
-import type {UserSchemaListResponse} from '../../types/users';
+import type {UserTypeListResponse} from '../../types/users';
 
 const mockNavigate = vi.fn();
 
@@ -75,22 +75,22 @@ vi.mock('react-router', async () => {
 
 // Mock the UsersList component
 vi.mock('../../components/UsersList', () => ({
-  default: ({selectedSchema}: {selectedSchema: string}) => (
-    <div data-testid="users-list" data-schema={selectedSchema}>
+  default: ({selectedUserTypeId}: {selectedUserTypeId: string}) => (
+    <div data-testid="users-list" data-user-type-id={selectedUserTypeId}>
       Users List Component
     </div>
   ),
 }));
 
 // Define the return type for the hook
-interface UseGetUserSchemasReturn {
-  data: UserSchemaListResponse | undefined;
+interface UseGetUserTypesReturn {
+  data: UserTypeListResponse | undefined;
 }
 
-// Mock the useGetUserSchemas hook
-const mockUseGetUserSchemas = vi.fn<() => UseGetUserSchemasReturn>();
-vi.mock('../../api/useGetUserSchemas', () => ({
-  default: () => mockUseGetUserSchemas(),
+// Mock the useGetUserTypes hook
+const mockUseGetUserTypes = vi.fn<() => UseGetUserTypesReturn>();
+vi.mock('../../api/useGetUserTypes', () => ({
+  default: () => mockUseGetUserTypes(),
 }));
 
 // Mock useTemplateLiteralResolver
@@ -105,20 +105,32 @@ let capturedOnSuccess: ((inviteLink: string) => void) | undefined;
 
 // Mock InviteUserDialog to capture callbacks
 vi.mock('../../components/InviteUserDialog', () => ({
-  default: ({open, onClose, onSuccess}: {open: boolean; onClose: () => void; onSuccess?: (inviteLink: string) => void}) => {
+  default: ({
+    open,
+    onClose,
+    onSuccess,
+  }: {
+    open: boolean;
+    onClose: () => void;
+    onSuccess?: (inviteLink: string) => void;
+  }) => {
     capturedOnSuccess = onSuccess;
     if (!open) return null;
     return (
       <div role="dialog" data-testid="invite-dialog">
-        <button type="button" onClick={onClose} aria-label="close">Close</button>
-        <button type="button" onClick={() => onSuccess?.('https://invite.link/123')} data-testid="trigger-success">Trigger Success</button>
+        <button type="button" onClick={onClose} aria-label="close">
+          Close
+        </button>
+        <button type="button" onClick={() => onSuccess?.('https://invite.link/123')} data-testid="trigger-success">
+          Trigger Success
+        </button>
       </div>
     );
   },
 }));
 
 describe('UsersListPage', () => {
-  const mockSchemas: UserSchemaListResponse = {
+  const mockSchemas: UserTypeListResponse = {
     totalResults: 2,
     startIndex: 1,
     count: 2,
@@ -130,7 +142,7 @@ describe('UsersListPage', () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
-    mockUseGetUserSchemas.mockReturnValue({
+    mockUseGetUserTypes.mockReturnValue({
       data: mockSchemas,
     });
   });
@@ -189,14 +201,14 @@ describe('UsersListPage', () => {
     expect(mockNavigate).toHaveBeenCalledWith('/users/create');
   });
 
-  it('renders schema select dropdown', () => {
+  it('renders user type select dropdown', () => {
     render(<UsersListPage />);
 
     const select = screen.getByRole('combobox');
     expect(select).toBeInTheDocument();
   });
 
-  it('displays schema options from API', async () => {
+  it('displays user type options from API', async () => {
     const user = userEvent.setup();
     render(<UsersListPage />);
 
@@ -211,14 +223,14 @@ describe('UsersListPage', () => {
     });
   });
 
-  it('selects first schema by default', () => {
+  it('selects first user type by default', () => {
     render(<UsersListPage />);
 
     const usersList = screen.getByTestId('users-list');
-    expect(usersList).toHaveAttribute('data-schema', 'schema1');
+    expect(usersList).toHaveAttribute('data-user-type-id', 'schema1');
   });
 
-  it('changes selected schema when dropdown value changes', async () => {
+  it('changes selected user type when dropdown value changes', async () => {
     const user = userEvent.setup();
     render(<UsersListPage />);
 
@@ -233,7 +245,7 @@ describe('UsersListPage', () => {
 
     await waitFor(() => {
       const usersList = screen.getByTestId('users-list');
-      expect(usersList).toHaveAttribute('data-schema', 'schema2');
+      expect(usersList).toHaveAttribute('data-user-type-id', 'schema2');
     });
   });
 
@@ -243,11 +255,11 @@ describe('UsersListPage', () => {
     expect(screen.getByTestId('users-list')).toBeInTheDocument();
   });
 
-  it('passes selected schema to UsersList', () => {
+  it('passes selected user type to UsersList', () => {
     render(<UsersListPage />);
 
     const usersList = screen.getByTestId('users-list');
-    expect(usersList).toHaveAttribute('data-schema');
+    expect(usersList).toHaveAttribute('data-user-type-id');
   });
 
   it('renders plus icon in create user button', () => {
@@ -260,18 +272,18 @@ describe('UsersListPage', () => {
   });
 
   it('handles empty schemas list', () => {
-    mockUseGetUserSchemas.mockReturnValue({
+    mockUseGetUserTypes.mockReturnValue({
       data: {totalResults: 0, startIndex: 1, count: 0, schemas: []},
     });
 
     render(<UsersListPage />);
 
     const usersList = screen.getByTestId('users-list');
-    expect(usersList).toHaveAttribute('data-schema', '');
+    expect(usersList).toHaveAttribute('data-user-type-id', '');
   });
 
   it('handles undefined schemas data', () => {
-    mockUseGetUserSchemas.mockReturnValue({
+    mockUseGetUserTypes.mockReturnValue({
       data: undefined,
     });
 

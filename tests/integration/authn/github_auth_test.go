@@ -44,7 +44,7 @@ var githubAuthTestOU = testutils.OrganizationUnit{
 	Parent:      nil,
 }
 
-var githubUserSchema = testutils.UserSchema{
+var githubUserType = testutils.UserType{
 	Name: "github_user",
 	Schema: map[string]interface{}{
 		"username": map[string]interface{}{
@@ -73,7 +73,7 @@ type GithubAuthTestSuite struct {
 	mockGithubServer *testutils.MockGithubOAuthServer
 	idpID            string
 	userID           string
-	userSchemaID     string
+	userTypeID       string
 	ouID             string
 }
 
@@ -111,10 +111,10 @@ func (suite *GithubAuthTestSuite) SetupSuite() {
 	suite.Require().NoError(err, "Failed to create test organization unit")
 	suite.ouID = ouID
 
-	githubUserSchema.OrganizationUnitId = suite.ouID
-	schemaID, err := testutils.CreateUserType(githubUserSchema)
-	suite.Require().NoError(err, "Failed to create GitHub user schema")
-	suite.userSchemaID = schemaID
+	githubUserType.OrganizationUnitId = suite.ouID
+	typeID, err := testutils.CreateUserType(githubUserType)
+	suite.Require().NoError(err, "Failed to create GitHub user type")
+	suite.userTypeID = typeID
 
 	userAttributes := map[string]interface{}{
 		"username":   "githubuser",
@@ -129,7 +129,7 @@ func (suite *GithubAuthTestSuite) SetupSuite() {
 	suite.Require().NoError(err)
 
 	user := testutils.User{
-		Type:             githubUserSchema.Name,
+		Type:             githubUserType.Name,
 		OrganizationUnit: suite.ouID,
 		Attributes:       json.RawMessage(attributesJSON),
 	}
@@ -191,8 +191,8 @@ func (suite *GithubAuthTestSuite) TearDownSuite() {
 		_ = testutils.DeleteUser(suite.userID)
 	}
 
-	if suite.userSchemaID != "" {
-		_ = testutils.DeleteUserType(suite.userSchemaID)
+	if suite.userTypeID != "" {
+		_ = testutils.DeleteUserType(suite.userTypeID)
 	}
 
 	if suite.idpID != "" {

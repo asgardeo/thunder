@@ -44,7 +44,7 @@ var oauthAuthTestOU = testutils.OrganizationUnit{
 	Parent:      nil,
 }
 
-var oauthUserSchema = testutils.UserSchema{
+var oauthUserType = testutils.UserType{
 	Name: "oauth_user",
 	Schema: map[string]interface{}{
 		"username": map[string]interface{}{
@@ -73,7 +73,7 @@ type OAuthAuthTestSuite struct {
 	mockOAuthServer *testutils.MockOAuthServer
 	idpID           string
 	userID          string
-	userSchemaID    string
+	userTypeID      string
 	ouID            string
 }
 
@@ -103,10 +103,10 @@ func (suite *OAuthAuthTestSuite) SetupSuite() {
 	suite.Require().NoError(err, "Failed to create test organization unit")
 	suite.ouID = ouID
 
-	oauthUserSchema.OrganizationUnitId = suite.ouID
-	schemaID, err := testutils.CreateUserType(oauthUserSchema)
-	suite.Require().NoError(err, "Failed to create OAuth user schema")
-	suite.userSchemaID = schemaID
+	oauthUserType.OrganizationUnitId = suite.ouID
+	userTypeID, err := testutils.CreateUserType(oauthUserType)
+	suite.Require().NoError(err, "Failed to create OAuth user type")
+	suite.userTypeID = userTypeID
 
 	userAttributes := map[string]interface{}{
 		"username":   "oauthuser",
@@ -121,7 +121,7 @@ func (suite *OAuthAuthTestSuite) SetupSuite() {
 	suite.Require().NoError(err)
 
 	user := testutils.User{
-		Type:             oauthUserSchema.Name,
+		Type:             oauthUserType.Name,
 		OrganizationUnit: suite.ouID,
 		Attributes:       json.RawMessage(attributesJSON),
 	}
@@ -183,8 +183,8 @@ func (suite *OAuthAuthTestSuite) TearDownSuite() {
 		_ = testutils.DeleteUser(suite.userID)
 	}
 
-	if suite.userSchemaID != "" {
-		_ = testutils.DeleteUserType(suite.userSchemaID)
+	if suite.userTypeID != "" {
+		_ = testutils.DeleteUserType(suite.userTypeID)
 	}
 
 	if suite.idpID != "" {

@@ -42,10 +42,10 @@ import useCreateUserType from '../api/useCreateUserType';
 import useGetOrganizationUnits from '../../organization-units/api/useGetOrganizationUnits';
 import type {
   PropertyDefinition,
-  UserSchemaDefinition,
+  UserTypeDefinition,
   UIPropertyType,
   SchemaPropertyInput,
-  CreateUserSchemaRequest,
+  CreateUserTypeRequest,
 } from '../types/user-types';
 
 export default function CreateUserTypePage() {
@@ -197,7 +197,7 @@ export default function CreateUserTypePage() {
     }
 
     // Convert properties to schema definition
-    const schema: UserSchemaDefinition = {};
+    const schema: UserTypeDefinition = {};
     validProperties.forEach((prop) => {
       // Convert enum type to string type with enum values
       const actualType = prop.type === 'enum' ? 'string' : prop.type;
@@ -234,7 +234,7 @@ export default function CreateUserTypePage() {
       schema[prop.name.trim()] = propDef as PropertyDefinition;
     });
 
-    const requestBody: CreateUserSchemaRequest = {
+    const requestBody: CreateUserTypeRequest = {
       name: name.trim(),
       ouId: trimmedOuId,
       schema,
