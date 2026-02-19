@@ -448,7 +448,8 @@
                 "executor": {
                   "name": "BasicAuthExecutor"
                 },
-                "onSuccess": "{{AUTH_ASSERT_EXECUTOR_ID}}"
+                "onSuccess": "{{AUTH_ASSERT_EXECUTOR_ID}}",
+                "onFailure": ""
               }
             }
           },
@@ -469,7 +470,8 @@
                 "executor": {
                   "name": "GoogleOIDCAuthExecutor"
                 },
-                "onSuccess": "{{AUTH_ASSERT_EXECUTOR_ID}}"
+                "onSuccess": "{{AUTH_ASSERT_EXECUTOR_ID}}",
+                "onFailure": ""
               },
               "properties": {
                 "idpId": "{{IDP_ID}}"
