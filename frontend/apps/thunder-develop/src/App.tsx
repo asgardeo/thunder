@@ -16,7 +16,7 @@
  * under the License.
  */
 
-import {BrowserRouter, Route, Routes} from 'react-router';
+import {BrowserRouter, Route, Routes, useParams} from 'react-router';
 import type {JSX} from 'react';
 import {ProtectedRoute} from '@asgardeo/react-router';
 import UsersListPage from './features/users/pages/UsersListPage';
@@ -38,6 +38,29 @@ import OrganizationUnitsListPage from './features/organization-units/pages/Organ
 import CreateOrganizationUnitPage from './features/organization-units/pages/CreateOrganizationUnitPage';
 import OrganizationUnitEditPage from './features/organization-units/pages/OrganizationUnitEditPage';
 import OrganizationUnitProvider from './features/organization-units/contexts/OrganizationUnitProvider';
+import DesignPage from './features/design/pages/DesignPage';
+import ThemeBuilderPage from './features/design/pages/ThemeBuilderPage';
+import LayoutBuilderPage from './features/design/pages/LayoutBuilderPage';
+import ThemeBuilderProvider from './features/design/contexts/ThemeBuilder/ThemeBuilderProvider';
+import LayoutBuilderProvider from './features/design/contexts/LayoutBuilder/LayoutBuilderProvider';
+
+function ThemeBuilderWithProvider(): JSX.Element {
+  const {themeId} = useParams<{themeId: string}>();
+  return (
+    <ThemeBuilderProvider themeId={themeId ?? ''}>
+      <DashboardLayout dense />
+    </ThemeBuilderProvider>
+  );
+}
+
+function LayoutBuilderWithProvider(): JSX.Element {
+  const {layoutId} = useParams<{layoutId: string}>();
+  return (
+    <LayoutBuilderProvider layoutId={layoutId ?? ''}>
+      <DashboardLayout dense />
+    </LayoutBuilderProvider>
+  );
+}
 import GroupsListPage from './features/groups/pages/GroupsListPage';
 import GroupEditPage from './features/groups/pages/GroupEditPage';
 import CreateGroupPage from './features/groups/pages/CreateGroupPage';
@@ -126,6 +149,36 @@ export default function App(): JSX.Element {
           }
         >
           <Route index element={<LoginFlowBuilderPage />} />
+        </Route>
+        <Route
+          path="/design"
+          element={
+            <ProtectedRoute>
+              <DashboardLayout />
+            </ProtectedRoute>
+          }
+        >
+          <Route index element={<DesignPage />} />
+        </Route>
+        <Route
+          path="/design/themes/:themeId"
+          element={
+            <ProtectedRoute>
+              <ThemeBuilderWithProvider />
+            </ProtectedRoute>
+          }
+        >
+          <Route index element={<ThemeBuilderPage />} />
+        </Route>
+        <Route
+          path="/design/layouts/:layoutId"
+          element={
+            <ProtectedRoute>
+              <LayoutBuilderWithProvider />
+            </ProtectedRoute>
+          }
+        >
+          <Route index element={<LayoutBuilderPage />} />
         </Route>
       </Routes>
     </BrowserRouter>
