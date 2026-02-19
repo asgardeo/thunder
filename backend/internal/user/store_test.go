@@ -97,6 +97,20 @@ func (m *MockDBClient) GetTransactioner() (transaction.Transactioner, error) {
 	return nil, nil
 }
 
+func (m *MockDBClient) ExecuteWithReturningContext(
+	ctx context.Context, q dbmodel.DBQuery, args ...interface{}) ([]map[string]interface{}, error) {
+	callArgs := make([]interface{}, 0, 2+len(args))
+	callArgs = append(callArgs, ctx, q)
+	callArgs = append(callArgs, args...)
+	ret := m.Called(callArgs...)
+
+	var result []map[string]interface{}
+	if r0 := ret.Get(0); r0 != nil {
+		result = r0.([]map[string]interface{})
+	}
+	return result, ret.Error(1)
+}
+
 var _ provider.DBClientInterface = (*MockDBClient)(nil)
 
 // MockDBProvider is a mock implementation of provider.DBProviderInterface

@@ -235,7 +235,7 @@ func (rs *roleService) UpdateRoleWithPermissions(
 		return nil, err
 	}
 
-	exists, err := rs.roleStore.IsRoleExist(ctx, id)
+	exists, internalRoleID, err := rs.roleStore.IsRoleExist(ctx, id)
 	if err != nil {
 		logger.Error("Failed to check role existence", log.String("id", id), log.Error(err))
 		return nil, &ErrorInternalServerError
@@ -269,7 +269,7 @@ func (rs *roleService) UpdateRoleWithPermissions(
 	}
 
 	err = rs.transactioner.Transact(ctx, func(txCtx context.Context) error {
-		return rs.roleStore.UpdateRole(txCtx, id, role)
+		return rs.roleStore.UpdateRole(txCtx, internalRoleID, role)
 	})
 
 	if err != nil {
@@ -296,7 +296,7 @@ func (rs *roleService) DeleteRole(ctx context.Context, id string) *serviceerror.
 		return &ErrorMissingRoleID
 	}
 
-	exists, err := rs.roleStore.IsRoleExist(ctx, id)
+	exists, internalRoleID, err := rs.roleStore.IsRoleExist(ctx, id)
 	if err != nil {
 		logger.Error("Failed to check role existence", log.String("id", id), log.Error(err))
 		return &ErrorInternalServerError
@@ -307,7 +307,7 @@ func (rs *roleService) DeleteRole(ctx context.Context, id string) *serviceerror.
 	}
 
 	// Check if role has any assignments before deleting
-	assignmentCount, err := rs.roleStore.GetRoleAssignmentsCount(ctx, id)
+	assignmentCount, err := rs.roleStore.GetRoleAssignmentsCount(ctx, internalRoleID)
 	if err != nil {
 		logger.Error("Failed to get role assignments count", log.String("id", id), log.Error(err))
 		return &ErrorInternalServerError
@@ -319,7 +319,7 @@ func (rs *roleService) DeleteRole(ctx context.Context, id string) *serviceerror.
 		return &ErrorCannotDeleteRole
 	}
 
-	if err := rs.roleStore.DeleteRole(ctx, id); err != nil {
+	if err := rs.roleStore.DeleteRole(ctx, internalRoleID); err != nil {
 		logger.Error("Failed to delete role", log.String("id", id), log.Error(err))
 		return &ErrorInternalServerError
 	}
@@ -341,7 +341,7 @@ func (rs *roleService) GetRoleAssignments(ctx context.Context, id string, limit,
 		return nil, &ErrorMissingRoleID
 	}
 
-	exists, err := rs.roleStore.IsRoleExist(ctx, id)
+	exists, internalRoleID, err := rs.roleStore.IsRoleExist(ctx, id)
 	if err != nil {
 		logger.Error("Failed to check role existence", log.String("id", id), log.Error(err))
 		return nil, &ErrorInternalServerError
@@ -351,13 +351,13 @@ func (rs *roleService) GetRoleAssignments(ctx context.Context, id string, limit,
 		return nil, &ErrorRoleNotFound
 	}
 
-	totalCount, err := rs.roleStore.GetRoleAssignmentsCount(ctx, id)
+	totalCount, err := rs.roleStore.GetRoleAssignmentsCount(ctx, internalRoleID)
 	if err != nil {
 		logger.Error("Failed to get role assignments count", log.String("id", id), log.Error(err))
 		return nil, &ErrorInternalServerError
 	}
 
-	assignments, err := rs.roleStore.GetRoleAssignments(ctx, id, limit, offset)
+	assignments, err := rs.roleStore.GetRoleAssignments(ctx, internalRoleID, limit, offset)
 	if err != nil {
 		logger.Error("Failed to get role assignments", log.String("id", id), log.Error(err))
 		return nil, &ErrorInternalServerError
@@ -412,7 +412,7 @@ func (rs *roleService) AddAssignments(
 		return err
 	}
 
-	exists, err := rs.roleStore.IsRoleExist(ctx, id)
+	exists, internalRoleID, err := rs.roleStore.IsRoleExist(ctx, id)
 	if err != nil {
 		logger.Error("Failed to check role existence", log.String("id", id), log.Error(err))
 		return &ErrorInternalServerError
@@ -428,7 +428,7 @@ func (rs *roleService) AddAssignments(
 	}
 
 	err = rs.transactioner.Transact(ctx, func(txCtx context.Context) error {
-		return rs.roleStore.AddAssignments(txCtx, id, assignments)
+		return rs.roleStore.AddAssignments(txCtx, internalRoleID, assignments)
 	})
 
 	if err != nil {
@@ -454,7 +454,7 @@ func (rs *roleService) RemoveAssignments(
 		return err
 	}
 
-	exists, err := rs.roleStore.IsRoleExist(ctx, id)
+	exists, internalRoleID, err := rs.roleStore.IsRoleExist(ctx, id)
 	if err != nil {
 		logger.Error("Failed to check role existence", log.String("id", id), log.Error(err))
 		return &ErrorInternalServerError
@@ -465,7 +465,7 @@ func (rs *roleService) RemoveAssignments(
 	}
 
 	err = rs.transactioner.Transact(ctx, func(txCtx context.Context) error {
-		return rs.roleStore.RemoveAssignments(txCtx, id, assignments)
+		return rs.roleStore.RemoveAssignments(txCtx, internalRoleID, assignments)
 	})
 
 	if err != nil {

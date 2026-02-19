@@ -30,14 +30,15 @@ var (
 	// Hence, all queries involving the "ROLE" table use quoted identifiers.
 	// queryCreateRole creates a new role.
 	queryCreateRole = dbmodel.DBQuery{
-		ID:    "RLQ-ROLE_MGT-01",
-		Query: `INSERT INTO "ROLE" (ROLE_ID, OU_ID, NAME, DESCRIPTION, DEPLOYMENT_ID) VALUES ($1, $2, $3, $4, $5)`,
+		ID: "RLQ-ROLE_MGT-01",
+		Query: `INSERT INTO "ROLE" (ROLE_ID, OU_ID, NAME, DESCRIPTION, DEPLOYMENT_ID) 
+			VALUES ($1, $2, $3, $4, $5) RETURNING ID`,
 	}
 
 	// queryGetRoleByID retrieves a role by ID.
 	queryGetRoleByID = dbmodel.DBQuery{
 		ID:    "RLQ-ROLE_MGT-02",
-		Query: `SELECT ROLE_ID, OU_ID, NAME, DESCRIPTION FROM "ROLE" WHERE ROLE_ID = $1 AND DEPLOYMENT_ID = $2`,
+		Query: `SELECT ID, ROLE_ID, OU_ID, NAME, DESCRIPTION FROM "ROLE" WHERE ROLE_ID = $1 AND DEPLOYMENT_ID = $2`,
 	}
 
 	// queryGetRoleList retrieves a list of roles with pagination.
@@ -56,19 +57,19 @@ var (
 	// queryUpdateRole updates a role.
 	queryUpdateRole = dbmodel.DBQuery{
 		ID:    "RLQ-ROLE_MGT-05",
-		Query: `UPDATE "ROLE" SET OU_ID = $1, NAME = $2, DESCRIPTION = $3 WHERE ROLE_ID = $4 AND DEPLOYMENT_ID = $5`,
+		Query: `UPDATE "ROLE" SET OU_ID = $1, NAME = $2, DESCRIPTION = $3 WHERE ID = $4 AND DEPLOYMENT_ID = $5`,
 	}
 
 	// queryDeleteRole deletes a role.
 	queryDeleteRole = dbmodel.DBQuery{
 		ID:    "RLQ-ROLE_MGT-06",
-		Query: `DELETE FROM "ROLE" WHERE ROLE_ID = $1 AND DEPLOYMENT_ID = $2`,
+		Query: `DELETE FROM "ROLE" WHERE ID = $1 AND DEPLOYMENT_ID = $2`,
 	}
 
 	// queryCreateRolePermission creates a new role permission.
 	queryCreateRolePermission = dbmodel.DBQuery{
 		ID: "RLQ-ROLE_MGT-07",
-		Query: `INSERT INTO ROLE_PERMISSION (ROLE_ID, RESOURCE_SERVER_ID, PERMISSION, ` +
+		Query: `INSERT INTO ROLE_PERMISSION (ROLE_INTERNAL_ID, RESOURCE_SERVER_ID, PERMISSION, ` +
 			`DEPLOYMENT_ID) VALUES ($1, $2, $3, $4)`,
 	}
 
@@ -76,19 +77,19 @@ var (
 	queryGetRolePermissions = dbmodel.DBQuery{
 		ID: "RLQ-ROLE_MGT-08",
 		Query: `SELECT RESOURCE_SERVER_ID, PERMISSION FROM ROLE_PERMISSION WHERE ` +
-			`ROLE_ID = $1 AND DEPLOYMENT_ID = $2 ORDER BY CREATED_AT`,
+			`ROLE_INTERNAL_ID = $1 AND DEPLOYMENT_ID = $2 ORDER BY CREATED_AT`,
 	}
 
 	// queryDeleteRolePermissions deletes all permissions for a role.
 	queryDeleteRolePermissions = dbmodel.DBQuery{
 		ID:    "RLQ-ROLE_MGT-09",
-		Query: `DELETE FROM ROLE_PERMISSION WHERE ROLE_ID = $1 AND DEPLOYMENT_ID = $2`,
+		Query: `DELETE FROM ROLE_PERMISSION WHERE ROLE_INTERNAL_ID = $1 AND DEPLOYMENT_ID = $2`,
 	}
 
 	// queryCreateRoleAssignment creates a new role assignment.
 	queryCreateRoleAssignment = dbmodel.DBQuery{
 		ID: "RLQ-ROLE_MGT-10",
-		Query: `INSERT INTO ROLE_ASSIGNMENT (ROLE_ID, ASSIGNEE_TYPE, ASSIGNEE_ID, DEPLOYMENT_ID) 
+		Query: `INSERT INTO ROLE_ASSIGNMENT (ROLE_INTERNAL_ID, ASSIGNEE_TYPE, ASSIGNEE_ID, DEPLOYMENT_ID) 
 			VALUES ($1, $2, $3, $4)`,
 	}
 
@@ -96,20 +97,20 @@ var (
 	queryGetRoleAssignments = dbmodel.DBQuery{
 		ID: "RLQ-ROLE_MGT-11",
 		Query: `SELECT ASSIGNEE_ID, ASSIGNEE_TYPE FROM ROLE_ASSIGNMENT
-			WHERE ROLE_ID = $1 AND DEPLOYMENT_ID = $4 ORDER BY CREATED_AT LIMIT $2 OFFSET $3`,
+			WHERE ROLE_INTERNAL_ID = $1 AND DEPLOYMENT_ID = $4 ORDER BY CREATED_AT LIMIT $2 OFFSET $3`,
 	}
 
 	// queryGetRoleAssignmentsCount retrieves the total count of assignments for a role.
 	queryGetRoleAssignmentsCount = dbmodel.DBQuery{
 		ID:    "RLQ-ROLE_MGT-12",
-		Query: `SELECT COUNT(*) as total FROM ROLE_ASSIGNMENT WHERE ROLE_ID = $1 AND DEPLOYMENT_ID = $2`,
+		Query: `SELECT COUNT(*) as total FROM ROLE_ASSIGNMENT WHERE ROLE_INTERNAL_ID = $1 AND DEPLOYMENT_ID = $2`,
 	}
 
 	// queryDeleteRoleAssignmentsByIDs deletes specific assignments for a role.
 	queryDeleteRoleAssignmentsByIDs = dbmodel.DBQuery{
 		ID: "RLQ-ROLE_MGT-13",
 		Query: `DELETE FROM ROLE_ASSIGNMENT ` +
-			`WHERE ROLE_ID = $1 AND ASSIGNEE_TYPE = $2 AND ASSIGNEE_ID = $3 AND DEPLOYMENT_ID = $4`,
+			`WHERE ROLE_INTERNAL_ID = $1 AND ASSIGNEE_TYPE = $2 AND ASSIGNEE_ID = $3 AND DEPLOYMENT_ID = $4`,
 	}
 
 	// queryCheckRoleNameExists checks if a role name already exists for a given organization unit.
@@ -125,10 +126,10 @@ var (
 			WHERE OU_ID = $1 AND NAME = $2 AND ROLE_ID != $3 AND DEPLOYMENT_ID = $4`,
 	}
 
-	// queryCheckRoleExists checks if a role exists by its ID.
+	// queryCheckRoleExists checks if a role exists by its ID and returns the internal ID.
 	queryCheckRoleExists = dbmodel.DBQuery{
 		ID:    "RLQ-ROLE_MGT-16",
-		Query: `SELECT COUNT(*) as count FROM "ROLE" WHERE ROLE_ID = $1 AND DEPLOYMENT_ID = $2`,
+		Query: `SELECT ID FROM "ROLE" WHERE ROLE_ID = $1 AND DEPLOYMENT_ID = $2`,
 	}
 )
 
@@ -144,7 +145,8 @@ func buildAuthorizedPermissionsQuery(
 	// Base query structure
 	baseQuery := `SELECT DISTINCT rp.PERMISSION
 		FROM ROLE_PERMISSION rp
-		INNER JOIN ROLE_ASSIGNMENT ra ON rp.ROLE_ID = ra.ROLE_ID AND rp.DEPLOYMENT_ID = $1 AND ra.DEPLOYMENT_ID = $1
+		INNER JOIN ROLE_ASSIGNMENT ra ON rp.ROLE_INTERNAL_ID = ra.ROLE_INTERNAL_ID ` +
+		`AND rp.DEPLOYMENT_ID = $1 AND ra.DEPLOYMENT_ID = $1
 		WHERE rp.DEPLOYMENT_ID = $1 AND `
 
 	var postgresWhere []string
