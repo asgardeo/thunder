@@ -20,7 +20,7 @@ import React from 'react';
 
 export default function ExpressLogo({size = 64}: {size?: number}) {
   return (
-    <svg width={size} height={size} viewBox="0 0 20 20" style={{fill: 'var(--light, black) var(--dark, white)'}}>
+    <svg width={size} height={size} viewBox="0 0 20 20" style={{fill: 'white'}}>
       <path d="M6.504 7.181c1.47 0 1.812 1.29 1.812 2.108H4.5c.103-.906.683-2.108 2.004-2.108Z" />
       <path
         fillRule="evenodd"

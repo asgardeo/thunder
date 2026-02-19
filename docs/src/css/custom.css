@@ -156,6 +156,7 @@ html[data-theme='dark'] .theme-announcement-bar {
   color: var(--oxygen-palette-common-black);
 }
 
+
 /* ------------------------------ Header Adjustments ---------------------- */
 
 
@@ -164,6 +165,68 @@ html[data-theme='dark'] .theme-announcement-bar {
   min-height: 72px;
   border-bottom: 1px solid var(--oxygen-palette-divider);
   box-shadow: none;
+  padding: 0 2rem;
+  backdrop-filter: saturate(180%) blur(16px);
+  -webkit-backdrop-filter: saturate(180%) blur(16px);
+  transition: background-color 0.3s ease, border-color 0.3s ease, backdrop-filter 0.3s ease;
+}
+
+/* Softer border in dark mode */
+html[data-theme='dark'] .navbar {
+  border-bottom-color: rgba(255, 255, 255, 0.08);
+}
+
+/* ---- Homepage frosted-glass navbar ---- */
+html[data-page='home'] .navbar,
+html[data-page='home'] .navbar.navbar--fixed-top {
+  --ifm-navbar-background-color: transparent;
+  background: rgba(255, 255, 255, 0.6) !important;
+  backdrop-filter: saturate(180%) blur(16px) !important;
+  -webkit-backdrop-filter: saturate(180%) blur(16px) !important;
+  box-shadow: none !important;
+}
+
+html[data-page='home'][data-theme='dark'] .navbar,
+html[data-page='home'][data-theme='dark'] .navbar.navbar--fixed-top {
+  background: rgba(10, 10, 10, 0.7) !important;
+  border-bottom-color: rgba(255, 255, 255, 0.06) !important;
+}
+
+html[data-page='home'][data-theme='light'] .navbar,
+html[data-page='home'][data-theme='light'] .navbar.navbar--fixed-top {
+  border-bottom-color: rgba(0, 0, 0, 0.06) !important;
+}
+
+/* Homepage navbar link colors - dark mode: light text */
+html[data-page='home'][data-theme='dark'] .navbar .navbar__link,
+html[data-page='home'][data-theme='dark'] .navbar .navbar__item {
+  color: rgba(255, 255, 255, 0.85) !important;
+}
+
+/* Homepage navbar link colors - light mode: dark text */
+html[data-page='home'][data-theme='light'] .navbar .navbar__link,
+html[data-page='home'][data-theme='light'] .navbar .navbar__item {
+  color: rgba(0, 0, 0, 0.75) !important;
+}
+
+html[data-page='home'] .navbar .navbar__link:hover,
+html[data-page='home'] .navbar .navbar__link--active {
+  color: #FF6B00 !important;
+}
+
+/* Homepage color mode toggle - dark mode */
+html[data-page='home'][data-theme='dark'] .navbar .clean-btn {
+  color: rgba(255, 255, 255, 0.85) !important;
+}
+
+html[data-page='home'][data-theme='dark'] .navbar .clean-btn svg {
+  fill: rgba(255, 255, 255, 0.85) !important;
+  color: rgba(255, 255, 255, 0.85) !important;
+}
+
+/* Homepage GitHub icon - dark mode */
+html[data-page='home'][data-theme='dark'] .navbar .navbar__github--link::before {
+  background-color: rgba(255, 255, 255, 0.85) !important;
 }
 
 /* Adjust the navbar toggle size */
@@ -178,12 +241,25 @@ html[data-theme='dark'] .theme-announcement-bar {
 /* Override font size for navbar items and menu links */
 .navbar__item,
 .menu__link {
-  font-size: 1rem;
+  font-size: 0.9rem;
+  font-weight: 500;
 }
 
-/* Make the GitHub link to use an icon only */
+/* Right-side navbar items - add gap between nav links and icon buttons */
+.navbar__items--right {
+  gap: 0.25rem;
+}
+
+/* Add separator gap before icon-only items (GitHub, color mode) */
 .navbar .navbar__github--link {
-  margin-right: calc(1 * var(--oxygen-spacing, 8px));
+  margin-left: 0.75rem;
+}
+
+/* Color mode toggle styling */
+.navbar .clean-btn[class*='toggleButton'] {
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .navbar .navbar__github--link::before {
@@ -225,6 +301,11 @@ html[data-theme='dark'] .dropdown>.navbar__link:after {
 
 .dropdown:hover>.navbar__link:after {
   background-image: url("data:image/svg+xml,%3Csvg width='24' height='24' fill='none' viewBox='0 0 24 24' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M4.293 8.293a1 1 0 0 1 1.414 0L12 14.586l6.293-6.293a1 1 0 1 1 1.414 1.414l-7 7a1 1 0 0 1-1.414 0l-7-7a1 1 0 0 1 0-1.414Z' fill='%23F87643'/%3E%3C/svg%3E") !important;
+}
+
+/* Homepage dropdown chevron - dark mode: white */
+html[data-page='home'][data-theme='dark'] .dropdown>.navbar__link:after {
+  background-image: url("data:image/svg+xml,%3Csvg width='24' height='24' fill='none' viewBox='0 0 24 24' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M4.293 8.293a1 1 0 0 1 1.414 0L12 14.586l6.293-6.293a1 1 0 1 1 1.414 1.414l-7 7a1 1 0 0 1-1.414 0l-7-7a1 1 0 0 1 0-1.414Z' fill='%23ffffffcc'/%3E%3C/svg%3E");
 }
 
 /* ------------------------------ Sidebar Adjustments ---------------------- */
@@ -274,4 +355,138 @@ html[data-theme='dark'] .dropdown>.navbar__link:after {
 /* Increase space between main content and right sidebar TOC */
 .theme-doc-toc-desktop {
   padding-left: 10rem;
+}
+
+/* ------------------------------ Homepage Scroll Animations ---------------------- */
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(32px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes fadeInScale {
+  from {
+    opacity: 0;
+    transform: scale(0.95) translateY(16px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes slideInLeft {
+  from {
+    opacity: 0;
+    transform: translateX(-32px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes slideInRight {
+  from {
+    opacity: 0;
+    transform: translateX(32px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes shimmerBorder {
+  0% {
+    background-position: -200% center;
+  }
+  100% {
+    background-position: 200% center;
+  }
+}
+
+@keyframes dashFlow {
+  to {
+    stroke-dashoffset: -40;
+  }
+}
+
+@keyframes subtleFloat {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-6px);
+  }
+}
+
+@keyframes pulseGlow {
+  0%, 100% {
+    opacity: 0.6;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.1);
+  }
+}
+
+@keyframes shimmerSweep {
+  0% {
+    transform: translateX(-100%) skewX(-12deg);
+    opacity: 0;
+  }
+  10% {
+    opacity: 1;
+  }
+  90% {
+    opacity: 1;
+  }
+  100% {
+    transform: translateX(250%) skewX(-12deg);
+    opacity: 0;
+  }
+}
+
+@keyframes borderGlow {
+  0%, 100% {
+    opacity: 0.3;
+  }
+  50% {
+    opacity: 0.55;
+  }
+}
+
+@keyframes cardFloat {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-4px);
+  }
+}
+
+/* Respect reduced motion preference */
+@media (prefers-reduced-motion: reduce) {
+  .animate-on-scroll,
+  .animate-on-scroll * {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
 }

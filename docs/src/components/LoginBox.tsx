@@ -16,27 +16,28 @@
  * under the License.
  */
 
-import React from 'react';
-import {
-  Box,
-  Typography,
-  TextField,
-  Button,
-  Divider,
-  Card,
-  useColorScheme,
-  FormControl,
-  FormLabel,
-} from '@wso2/oxygen-ui';
+import React, {useEffect, useState} from 'react';
+import {Box, Typography, TextField, Button, Divider, Card, FormControl, FormLabel} from '@wso2/oxygen-ui';
+import useIsDarkMode from '../hooks/useIsDarkMode';
 
 interface LoginBoxProps {
   variant: 'email' | 'social' | 'mfa';
   delay?: number;
+  sideCard?: boolean;
   sx?: object;
 }
 
-export default function LoginBox({variant, delay = 0, sx = {}}: LoginBoxProps) {
-  const {mode} = useColorScheme();
+export default function LoginBox({variant, delay = 0, sideCard = false, sx = {}}: LoginBoxProps) {
+  const isDark = useIsDarkMode();
+
+  // Clear entry animation after it plays so transitions work smoothly on hover.
+  const [entryDone, setEntryDone] = useState(false);
+
+  useEffect(() => {
+    const timer = setTimeout(() => setEntryDone(true), (delay + 0.6) * 1000 + 100);
+
+    return () => clearTimeout(timer);
+  }, [delay]);
 
   const renderEmailLogin = () => (
     <>
@@ -49,6 +50,13 @@ export default function LoginBox({variant, delay = 0, sx = {}}: LoginBoxProps) {
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
+            transition: 'transform 0.8s cubic-bezier(0.4, 0, 0.2, 1), filter 0.8s cubic-bezier(0.4, 0, 0.2, 1)',
+            '.MuiCard-root:hover &': {
+              transform: 'scale(1.05)',
+              filter: isDark
+                ? 'drop-shadow(0 0 6px rgba(255, 140, 0, 0.15))'
+                : 'drop-shadow(0 0 6px rgba(255, 107, 0, 0.1))',
+            },
           }}
         >
           <svg width="40" height="40" viewBox="0 0 64 64" fill="currentColor" style={{opacity: 0.8}}>
@@ -146,18 +154,18 @@ export default function LoginBox({variant, delay = 0, sx = {}}: LoginBoxProps) {
           mb: 2.5,
           py: 1.3,
           borderRadius: 10,
-          borderColor: mode === 'light' ? 'rgba(0, 0, 0, 0.15)' : 'rgba(255, 255, 255, 0.15)',
-          color: mode === 'light' ? 'rgba(0, 0, 0, 0.7)' : 'rgba(255, 255, 255, 0.7)',
-          bgcolor: mode === 'light' ? 'rgba(0, 0, 0, 0.03)' : 'rgba(255, 255, 255, 0.03)',
+          borderColor: !isDark ? 'rgba(0, 0, 0, 0.15)' : 'rgba(255, 255, 255, 0.15)',
+          color: !isDark ? 'rgba(0, 0, 0, 0.7)' : 'rgba(255, 255, 255, 0.7)',
+          bgcolor: !isDark ? 'rgba(0, 0, 0, 0.03)' : 'rgba(255, 255, 255, 0.03)',
           '&:hover': {
-            borderColor: mode === 'light' ? 'rgba(0, 0, 0, 0.25)' : 'rgba(255, 255, 255, 0.25)',
-            bgcolor: mode === 'light' ? 'rgba(0, 0, 0, 0.05)' : 'rgba(255, 255, 255, 0.05)',
+            borderColor: !isDark ? 'rgba(0, 0, 0, 0.25)' : 'rgba(255, 255, 255, 0.25)',
+            bgcolor: !isDark ? 'rgba(0, 0, 0, 0.05)' : 'rgba(255, 255, 255, 0.05)',
           },
         }}
       >
         Continue
       </Button>
-      <Divider sx={{my: 2.5, borderColor: 'rgba(255, 255, 255, 0.1)'}}>
+      <Divider sx={{my: 2.5, borderColor: !isDark ? 'rgba(0, 0, 0, 0.1)' : 'rgba(255, 255, 255, 0.1)'}}>
         <Typography variant="body2" sx={{fontSize: '0.75rem', opacity: 0.6}}>
           OR
         </Typography>
@@ -173,7 +181,7 @@ export default function LoginBox({variant, delay = 0, sx = {}}: LoginBoxProps) {
               height: 18,
               display: 'flex',
               alignItems: 'center',
-              color: mode === 'light' ? 'rgba(0, 0, 0, 0.7)' : 'rgba(255, 255, 255, 0.7)',
+              color: !isDark ? 'rgba(0, 0, 0, 0.7)' : 'rgba(255, 255, 255, 0.7)',
             }}
           >
             <svg width="18" height="18" viewBox="0 0 18 18" fill="currentColor" style={{opacity: 0.8}}>
@@ -201,12 +209,12 @@ export default function LoginBox({variant, delay = 0, sx = {}}: LoginBoxProps) {
           mb: 1.5,
           py: 1.3,
           borderRadius: 10,
-          borderColor: mode === 'light' ? 'rgba(0, 0, 0, 0.15)' : 'rgba(255, 255, 255, 0.15)',
-          color: mode === 'light' ? 'rgba(0, 0, 0, 0.7)' : 'rgba(255, 255, 255, 0.7)',
-          bgcolor: mode === 'light' ? 'rgba(0, 0, 0, 0.03)' : 'rgba(255, 255, 255, 0.03)',
+          borderColor: !isDark ? 'rgba(0, 0, 0, 0.15)' : 'rgba(255, 255, 255, 0.15)',
+          color: !isDark ? 'rgba(0, 0, 0, 0.7)' : 'rgba(255, 255, 255, 0.7)',
+          bgcolor: !isDark ? 'rgba(0, 0, 0, 0.03)' : 'rgba(255, 255, 255, 0.03)',
           '&:hover': {
-            borderColor: mode === 'light' ? 'rgba(0, 0, 0, 0.25)' : 'rgba(255, 255, 255, 0.25)',
-            bgcolor: mode === 'light' ? 'rgba(0, 0, 0, 0.05)' : 'rgba(255, 255, 255, 0.05)',
+            borderColor: !isDark ? 'rgba(0, 0, 0, 0.25)' : 'rgba(255, 255, 255, 0.25)',
+            bgcolor: !isDark ? 'rgba(0, 0, 0, 0.05)' : 'rgba(255, 255, 255, 0.05)',
           },
         }}
       >
@@ -223,11 +231,14 @@ export default function LoginBox({variant, delay = 0, sx = {}}: LoginBoxProps) {
               height: 18,
               display: 'flex',
               alignItems: 'center',
-              color: mode === 'light' ? 'rgba(0, 0, 0, 0.7)' : 'rgba(255, 255, 255, 0.7)',
+              color: !isDark ? 'rgba(0, 0, 0, 0.7)' : 'rgba(255, 255, 255, 0.7)',
             }}
           >
             <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" style={{opacity: 0.8}}>
-              <path d="M12 2C6.477 2 2 6.477 2 12c0 4.42 2.865 8.17 6.839 9.49.5.092.682-.217.682-.482 0-.237-.008-.866-.013-1.7-2.782.603-3.369-1.34-3.369-1.34-.454-1.156-1.11-1.463-1.11-1.463-.908-.62.069-.608.069-.608 1.003.07 1.531 1.03 1.531 1.03.892 1.529 2.341 1.087 2.91.831.092-.646.35-1.086.636-1.336-2.22-.253-4.555-1.11-4.555-4.943 0-1.091.39-1.984 1.029-2.683-.103-.253-.446-1.27.098-2.647 0 0 .84-.269 2.75 1.025A9.578 9.578 0 0112 6.836c.85.004 1.705.114 2.504.336 1.909-1.294 2.747-1.025 2.747-1.025.546 1.377.203 2.394.1 2.647.64.699 1.028 1.592 1.028 2.683 0 3.842-2.339 4.687-4.566 4.935.359.309.678.919.678 1.852 0 1.336-.012 2.415-.012 2.743 0 .267.18.578.688.48C19.138 20.167 22 16.418 22 12c0-5.523-4.477-10-10-10z" />
+              <rect x="1" y="1" width="10" height="10" />
+              <rect x="13" y="1" width="10" height="10" />
+              <rect x="1" y="13" width="10" height="10" />
+              <rect x="13" y="13" width="10" height="10" />
             </svg>
           </Box>
         }
@@ -235,16 +246,16 @@ export default function LoginBox({variant, delay = 0, sx = {}}: LoginBoxProps) {
           textTransform: 'none',
           py: 1.3,
           borderRadius: 10,
-          borderColor: mode === 'light' ? 'rgba(0, 0, 0, 0.15)' : 'rgba(255, 255, 255, 0.15)',
-          color: mode === 'light' ? 'rgba(0, 0, 0, 0.7)' : 'rgba(255, 255, 255, 0.7)',
-          bgcolor: mode === 'light' ? 'rgba(0, 0, 0, 0.03)' : 'rgba(255, 255, 255, 0.03)',
+          borderColor: !isDark ? 'rgba(0, 0, 0, 0.15)' : 'rgba(255, 255, 255, 0.15)',
+          color: !isDark ? 'rgba(0, 0, 0, 0.7)' : 'rgba(255, 255, 255, 0.7)',
+          bgcolor: !isDark ? 'rgba(0, 0, 0, 0.03)' : 'rgba(255, 255, 255, 0.03)',
           '&:hover': {
-            borderColor: mode === 'light' ? 'rgba(0, 0, 0, 0.25)' : 'rgba(255, 255, 255, 0.25)',
-            bgcolor: mode === 'light' ? 'rgba(0, 0, 0, 0.05)' : 'rgba(255, 255, 255, 0.05)',
+            borderColor: !isDark ? 'rgba(0, 0, 0, 0.25)' : 'rgba(255, 255, 255, 0.25)',
+            bgcolor: !isDark ? 'rgba(0, 0, 0, 0.05)' : 'rgba(255, 255, 255, 0.05)',
           },
         }}
       >
-        Continue with GitHub
+        Continue with Microsoft
       </Button>
       <Typography
         variant="caption"
@@ -283,6 +294,13 @@ export default function LoginBox({variant, delay = 0, sx = {}}: LoginBoxProps) {
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
+            transition: 'transform 0.8s cubic-bezier(0.4, 0, 0.2, 1), filter 0.8s cubic-bezier(0.4, 0, 0.2, 1)',
+            '.MuiCard-root:hover &': {
+              transform: 'scale(1.05)',
+              filter: isDark
+                ? 'drop-shadow(0 0 6px rgba(255, 140, 0, 0.15))'
+                : 'drop-shadow(0 0 6px rgba(255, 107, 0, 0.1))',
+            },
           }}
         >
           <svg width="40" height="40" viewBox="0 0 64 64" fill="currentColor" style={{opacity: 0.8}}>
@@ -361,12 +379,12 @@ export default function LoginBox({variant, delay = 0, sx = {}}: LoginBoxProps) {
           textTransform: 'none',
           py: 1.3,
           borderRadius: 10,
-          borderColor: mode === 'light' ? 'rgba(0, 0, 0, 0.15)' : 'rgba(255, 255, 255, 0.15)',
-          color: mode === 'light' ? 'rgba(0, 0, 0, 0.7)' : 'rgba(255, 255, 255, 0.7)',
-          bgcolor: mode === 'light' ? 'rgba(0, 0, 0, 0.03)' : 'rgba(255, 255, 255, 0.03)',
+          borderColor: !isDark ? 'rgba(0, 0, 0, 0.15)' : 'rgba(255, 255, 255, 0.15)',
+          color: !isDark ? 'rgba(0, 0, 0, 0.7)' : 'rgba(255, 255, 255, 0.7)',
+          bgcolor: !isDark ? 'rgba(0, 0, 0, 0.03)' : 'rgba(255, 255, 255, 0.03)',
           '&:hover': {
-            borderColor: mode === 'light' ? 'rgba(0, 0, 0, 0.25)' : 'rgba(255, 255, 255, 0.25)',
-            bgcolor: mode === 'light' ? 'rgba(0, 0, 0, 0.05)' : 'rgba(255, 255, 255, 0.05)',
+            borderColor: !isDark ? 'rgba(0, 0, 0, 0.25)' : 'rgba(255, 255, 255, 0.25)',
+            bgcolor: !isDark ? 'rgba(0, 0, 0, 0.05)' : 'rgba(255, 255, 255, 0.05)',
           },
         }}
       >
@@ -409,6 +427,13 @@ export default function LoginBox({variant, delay = 0, sx = {}}: LoginBoxProps) {
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
+            transition: 'transform 0.8s cubic-bezier(0.4, 0, 0.2, 1), filter 0.8s cubic-bezier(0.4, 0, 0.2, 1)',
+            '.MuiCard-root:hover &': {
+              transform: 'scale(1.05)',
+              filter: isDark
+                ? 'drop-shadow(0 0 6px rgba(255, 140, 0, 0.15))'
+                : 'drop-shadow(0 0 6px rgba(255, 107, 0, 0.1))',
+            },
           }}
         >
           <svg width="40" height="40" viewBox="0 0 64 64" fill="currentColor" style={{opacity: 0.8}}>
@@ -468,7 +493,7 @@ export default function LoginBox({variant, delay = 0, sx = {}}: LoginBoxProps) {
               width: 40,
               '& .MuiOutlinedInput-root': {
                 height: 52,
-                borderRadius: 2
+                borderRadius: 2,
               },
             }}
           />
@@ -481,12 +506,12 @@ export default function LoginBox({variant, delay = 0, sx = {}}: LoginBoxProps) {
           textTransform: 'none',
           py: 1.3,
           borderRadius: 10,
-          borderColor: mode === 'light' ? 'rgba(0, 0, 0, 0.15)' : 'rgba(255, 255, 255, 0.15)',
-          color: mode === 'light' ? 'rgba(0, 0, 0, 0.7)' : 'rgba(255, 255, 255, 0.7)',
-          bgcolor: mode === 'light' ? 'rgba(0, 0, 0, 0.03)' : 'rgba(255, 255, 255, 0.03)',
+          borderColor: !isDark ? 'rgba(0, 0, 0, 0.15)' : 'rgba(255, 255, 255, 0.15)',
+          color: !isDark ? 'rgba(0, 0, 0, 0.7)' : 'rgba(255, 255, 255, 0.7)',
+          bgcolor: !isDark ? 'rgba(0, 0, 0, 0.03)' : 'rgba(255, 255, 255, 0.03)',
           '&:hover': {
-            borderColor: mode === 'light' ? 'rgba(0, 0, 0, 0.25)' : 'rgba(255, 255, 255, 0.25)',
-            bgcolor: mode === 'light' ? 'rgba(0, 0, 0, 0.05)' : 'rgba(255, 255, 255, 0.05)',
+            borderColor: !isDark ? 'rgba(0, 0, 0, 0.25)' : 'rgba(255, 255, 255, 0.25)',
+            bgcolor: !isDark ? 'rgba(0, 0, 0, 0.05)' : 'rgba(255, 255, 255, 0.05)',
           },
         }}
       >
@@ -521,12 +546,9 @@ export default function LoginBox({variant, delay = 0, sx = {}}: LoginBoxProps) {
   return (
     <Card
       sx={{
-        width: 340,
+        width: sideCard ? 300 : 340,
         p: 3.5,
         textAlign: 'left',
-        animation: 'fadeInUp 0.6s ease-out',
-        animationDelay: `${delay}s`,
-        animationFillMode: 'both',
         '@keyframes fadeInUp': {
           '0%': {
             opacity: 0,
@@ -537,9 +559,62 @@ export default function LoginBox({variant, delay = 0, sx = {}}: LoginBoxProps) {
             transform: 'translateY(0)',
           },
         },
-        transition: 'transform 0.4s ease',
+        ...(entryDone
+          ? {}
+          : {
+              animation: 'fadeInUp 0.6s ease-out',
+              animationDelay: `${delay}s`,
+              animationFillMode: 'both',
+            }),
+        transition: 'transform 0.8s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.8s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.8s cubic-bezier(0.4, 0, 0.2, 1), border-color 0.8s cubic-bezier(0.4, 0, 0.2, 1)',
+        bgcolor: isDark ? '#14141e' : '#ffffff',
+        // Glowing border
+        border: '1px solid',
+        borderColor: isDark ? 'rgba(255, 140, 0, 0.15)' : 'rgba(255, 107, 0, 0.12)',
+        // Shimmer sweep overlay — very subtle
+        overflow: 'hidden',
+        position: 'relative',
+        '&::before': {
+          content: '""',
+          position: 'absolute',
+          top: 0,
+          left: 0,
+          width: '35%',
+          height: '100%',
+          background: isDark
+            ? 'linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.015), transparent)'
+            : 'linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.08), transparent)',
+          animation: 'shimmerSweep 8s ease-in-out infinite',
+          animationDelay: `${delay + 3}s`,
+          pointerEvents: 'none',
+          zIndex: 1,
+        },
+        // Border glow animation
+        '&::after': {
+          content: '""',
+          position: 'absolute',
+          inset: -1,
+          borderRadius: 'inherit',
+          padding: '1px',
+          background: isDark
+            ? 'linear-gradient(135deg, rgba(255, 140, 0, 0.25), transparent 40%, transparent 60%, rgba(255, 140, 0, 0.15))'
+            : 'linear-gradient(135deg, rgba(255, 107, 0, 0.15), transparent 40%, transparent 60%, rgba(255, 107, 0, 0.1))',
+          mask: 'linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0)',
+          maskComposite: 'exclude',
+          WebkitMask: 'linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0)',
+          WebkitMaskComposite: 'xor',
+          animation: 'borderGlow 4s ease-in-out infinite',
+          animationDelay: `${delay * 0.5}s`,
+          pointerEvents: 'none',
+          zIndex: 0,
+        },
+        // Inner top-edge light reflection
+        backgroundImage: isDark
+          ? 'linear-gradient(180deg, rgba(255, 255, 255, 0.04) 0%, transparent 40%)'
+          : 'linear-gradient(180deg, rgba(255, 255, 255, 0.6) 0%, transparent 40%)',
+        // Hover: border brightens subtly
         '&:hover': {
-          transform: 'translateY(-8px) scale(1.02) !important',
+          borderColor: isDark ? 'rgba(255, 140, 0, 0.22)' : 'rgba(255, 107, 0, 0.18)',
         },
         ...sx,
       }}
