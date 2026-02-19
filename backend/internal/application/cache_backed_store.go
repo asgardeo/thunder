@@ -45,11 +45,11 @@ func newCachedBackedApplicationStore(store applicationStoreInterface) applicatio
 }
 
 // CreateApplication creates a new application and caches it.
-func (as *cachedBackedApplicationStore) CreateApplication(app model.ApplicationProcessedDTO) error {
+func (as *cachedBackedApplicationStore) CreateApplication(app *model.ApplicationProcessedDTO) error {
 	if err := as.Store.CreateApplication(app); err != nil {
 		return err
 	}
-	as.cacheApplication(&app)
+	as.cacheApplication(app)
 	return nil
 }
 

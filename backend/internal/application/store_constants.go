@@ -26,47 +26,49 @@ var (
 		ID: "ASQ-APP_MGT-01",
 		Query: "INSERT INTO APPLICATION (APP_ID, APP_NAME, DESCRIPTION, AUTH_FLOW_ID, " +
 			"REGISTRATION_FLOW_ID, IS_REGISTRATION_FLOW_ENABLED, THEME_ID, LAYOUT_ID, APP_JSON, DEPLOYMENT_ID) " +
-			"VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)",
+			"VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10) RETURNING ID",
 	}
 	// queryCreateOAuthApplication is the query to create a new OAuth application.
 	queryCreateOAuthApplication = dbmodel.DBQuery{
 		ID: "ASQ-APP_MGT-02",
-		Query: "INSERT INTO APP_OAUTH_INBOUND_CONFIG (APP_ID, CLIENT_ID, CLIENT_SECRET, OAUTH_CONFIG_JSON, " +
+		Query: "INSERT INTO APP_OAUTH_INBOUND_CONFIG (APP_INTERNAL_ID, CLIENT_ID, CLIENT_SECRET, OAUTH_CONFIG_JSON, " +
 			"DEPLOYMENT_ID) VALUES ($1, $2, $3, $4, $5)",
 	}
 	// queryGetApplicationByAppID is the query to retrieve application details by app ID.
 	queryGetApplicationByAppID = dbmodel.DBQuery{
 		ID: "ASQ-APP_MGT-03",
-		Query: "SELECT app.APP_ID, app.APP_NAME, app.DESCRIPTION, app.AUTH_FLOW_ID, " +
+		Query: "SELECT app.ID AS internal_id, app.APP_ID, app.APP_NAME, app.DESCRIPTION, app.AUTH_FLOW_ID, " +
 			"app.REGISTRATION_FLOW_ID, app.IS_REGISTRATION_FLOW_ENABLED, app.THEME_ID, app.LAYOUT_ID, app.APP_JSON, " +
 			"oauth.CLIENT_ID, oauth.CLIENT_SECRET, oauth.OAUTH_CONFIG_JSON " +
 			"FROM APPLICATION app LEFT JOIN APP_OAUTH_INBOUND_CONFIG oauth " +
-			"ON app.APP_ID = oauth.APP_ID AND app.DEPLOYMENT_ID = $2 AND oauth.DEPLOYMENT_ID = $2 " +
+			"ON app.ID = oauth.APP_INTERNAL_ID AND app.DEPLOYMENT_ID = $2 AND oauth.DEPLOYMENT_ID = $2 " +
 			"WHERE app.APP_ID = $1 AND app.DEPLOYMENT_ID = $2",
 	}
 	// queryGetApplicationByName is the query to retrieve application details by name.
 	queryGetApplicationByName = dbmodel.DBQuery{
 		ID: "ASQ-APP_MGT-04",
-		Query: "SELECT app.APP_ID, app.APP_NAME, app.DESCRIPTION, app.AUTH_FLOW_ID, " +
+		Query: "SELECT app.ID AS internal_id, app.APP_ID, app.APP_NAME, app.DESCRIPTION, app.AUTH_FLOW_ID, " +
 			"app.REGISTRATION_FLOW_ID, app.IS_REGISTRATION_FLOW_ENABLED, app.THEME_ID, app.LAYOUT_ID, app.APP_JSON, " +
 			"oauth.CLIENT_ID, oauth.CLIENT_SECRET, oauth.OAUTH_CONFIG_JSON " +
 			"FROM APPLICATION app LEFT JOIN APP_OAUTH_INBOUND_CONFIG oauth " +
-			"ON app.APP_ID = oauth.APP_ID AND app.DEPLOYMENT_ID = $2 AND oauth.DEPLOYMENT_ID = $2 " +
+			"ON app.ID = oauth.APP_INTERNAL_ID AND app.DEPLOYMENT_ID = $2 AND oauth.DEPLOYMENT_ID = $2 " +
 			"WHERE app.APP_NAME = $1 AND app.DEPLOYMENT_ID = $2",
 	}
 	// queryGetOAuthApplicationByClientID is the query to retrieve oauth application details by client ID.
 	queryGetOAuthApplicationByClientID = dbmodel.DBQuery{
 		ID: "ASQ-APP_MGT-05",
-		Query: "SELECT APP_ID, CLIENT_ID, CLIENT_SECRET, OAUTH_CONFIG_JSON FROM APP_OAUTH_INBOUND_CONFIG " +
-			"WHERE CLIENT_ID = $1 AND DEPLOYMENT_ID = $2",
+		Query: "SELECT app.APP_ID, oauth.CLIENT_ID, oauth.CLIENT_SECRET, oauth.OAUTH_CONFIG_JSON " +
+			"FROM APP_OAUTH_INBOUND_CONFIG oauth " +
+			"INNER JOIN APPLICATION app ON app.ID = oauth.APP_INTERNAL_ID AND app.DEPLOYMENT_ID = oauth.DEPLOYMENT_ID " +
+			"WHERE oauth.CLIENT_ID = $1 AND oauth.DEPLOYMENT_ID = $2",
 	}
 	// queryGetApplicationList is the query to list all the applications.
 	queryGetApplicationList = dbmodel.DBQuery{
 		ID: "ASQ-APP_MGT-06",
-		Query: "SELECT app.APP_ID, app.APP_NAME, app.DESCRIPTION, app.AUTH_FLOW_ID, " +
+		Query: "SELECT app.ID AS internal_id, app.APP_ID, app.APP_NAME, app.DESCRIPTION, app.AUTH_FLOW_ID, " +
 			"app.REGISTRATION_FLOW_ID, app.IS_REGISTRATION_FLOW_ENABLED, app.THEME_ID, app.LAYOUT_ID, app.APP_JSON, " +
 			"oauth.CLIENT_ID FROM APPLICATION app " +
-			"LEFT JOIN APP_OAUTH_INBOUND_CONFIG oauth ON app.APP_ID = oauth.APP_ID " +
+			"LEFT JOIN APP_OAUTH_INBOUND_CONFIG oauth ON app.ID = oauth.APP_INTERNAL_ID " +
 			"AND app.DEPLOYMENT_ID = $1 AND oauth.DEPLOYMENT_ID = $1 WHERE app.DEPLOYMENT_ID = $1",
 	}
 	// queryUpdateApplicationByAppID is the query to update application details by app ID.
@@ -80,7 +82,7 @@ var (
 	queryUpdateOAuthApplicationByAppID = dbmodel.DBQuery{
 		ID: "ASQ-APP_MGT-08",
 		Query: "UPDATE APP_OAUTH_INBOUND_CONFIG SET CLIENT_ID=$2, CLIENT_SECRET=$3, OAUTH_CONFIG_JSON=$4 " +
-			"WHERE APP_ID=$1 AND DEPLOYMENT_ID=$5",
+			"WHERE APP_INTERNAL_ID=$1 AND DEPLOYMENT_ID=$5",
 	}
 	// queryDeleteApplicationByAppID is the query to delete an application by app ID.
 	queryDeleteApplicationByAppID = dbmodel.DBQuery{

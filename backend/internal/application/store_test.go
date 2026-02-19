@@ -19,6 +19,7 @@
 package application
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -39,10 +40,26 @@ import (
 const testAppID = "test-app-id"
 const testServerID = "test-server-id"
 
+// TransactionerMock mocks the Transactioner interface
+type TransactionerMock struct {
+	mock.Mock
+}
+
+func (m *TransactionerMock) Transact(ctx context.Context, txFunc func(context.Context) error) error {
+	_ = m.Called(ctx, txFunc)
+	// Execute the function passed to Transact
+	if txFunc != nil {
+		return txFunc(ctx)
+	}
+	return nil
+}
+
 // ApplicationStoreTestSuite contains comprehensive tests for the application store helper functions.
 type ApplicationStoreTestSuite struct {
 	suite.Suite
-	mockDBClient *providermock.DBClientInterfaceMock
+	mockDBClient      *providermock.DBClientInterfaceMock
+	mockDBProvider    *providermock.DBProviderInterfaceMock
+	mockTransactioner *TransactionerMock
 }
 
 func TestApplicationStoreTestSuite(t *testing.T) {
@@ -52,6 +69,8 @@ func TestApplicationStoreTestSuite(t *testing.T) {
 func (suite *ApplicationStoreTestSuite) SetupTest() {
 	_ = config.InitializeThunderRuntime("test", &config.Config{})
 	suite.mockDBClient = providermock.NewDBClientInterfaceMock(suite.T())
+	suite.mockDBProvider = providermock.NewDBProviderInterfaceMock(suite.T())
+	suite.mockTransactioner = new(TransactionerMock)
 }
 
 func (suite *ApplicationStoreTestSuite) createTestApplication() model.ApplicationProcessedDTO {
@@ -1044,7 +1063,8 @@ func (suite *ApplicationStoreTestSuite) TestBuildOAuthInboundAuthConfig_InvalidO
 
 func (suite *ApplicationStoreTestSuite) TestCreateOAuthAppQuery_Success() {
 	app := suite.createTestApplication()
-	query := createOAuthAppQuery(&app, queryCreateOAuthApplication, testServerID)
+	testID := 1
+	query := createOAuthAppQuery(&testID, &app, queryCreateOAuthApplication, testServerID)
 
 	suite.NotNil(query)
 	suite.IsType((func(dbmodel.TxInterface) error)(nil), query)
@@ -1712,7 +1732,8 @@ func TestCreateOAuthAppQuery_ExecError(t *testing.T) {
 		},
 	}
 
-	queryFunc := createOAuthAppQuery(&app, queryCreateOAuthApplication, testServerID)
+	testID := 1
+	queryFunc := createOAuthAppQuery(&testID, &app, queryCreateOAuthApplication, testServerID)
 
 	mockTx := modelmock.NewTxInterfaceMock(t)
 	mockTx.
@@ -1912,4 +1933,97 @@ func (suite *ApplicationStoreTestSuite) TestGetApplicationByQuery_BuildApplicati
 	// This is the error path we're testing
 	suite.Error(buildErr)
 	suite.Contains(buildErr.Error(), "failed to unmarshal app JSON")
+}
+
+// MockResult implements sql.Result for testing
+type MockResult struct {
+	mock.Mock
+}
+
+func (m *MockResult) LastInsertId() (int64, error) {
+	args := m.Called()
+	return args.Get(0).(int64), args.Error(1)
+}
+
+func (m *MockResult) RowsAffected() (int64, error) {
+	args := m.Called()
+	return args.Get(0).(int64), args.Error(1)
+}
+
+func (suite *ApplicationStoreTestSuite) TestCreateApplication() {
+	app := suite.createTestApplication()
+	app.InboundAuthConfig = []model.InboundAuthConfigProcessedDTO{} // Simple case first
+
+	// Mock DB Provider to return mock client
+	suite.mockDBProvider.On("GetConfigDBClient").Return(suite.mockDBClient, nil)
+
+	// Mock GetTransactioner
+	suite.mockDBClient.On("GetTransactioner").Return(suite.mockTransactioner, nil)
+
+	// Mock Transact
+	suite.mockTransactioner.On("Transact", mock.Anything, mock.Anything).Return(nil)
+
+	// Mock ExecuteWithReturningContext for CreateApplication
+	// Simulate checking if registration flow enabled is "1" or "0"
+	isRegistrationEnabledStr := "1"
+
+	returnedRows := []map[string]interface{}{{
+		"id": int64(1),
+	}}
+
+	suite.mockDBClient.On("ExecuteWithReturningContext", mock.Anything, queryCreateApplication,
+		app.ID, app.Name, app.Description, app.AuthFlowID, app.RegistrationFlowID,
+		isRegistrationEnabledStr, nil, nil, mock.Anything, testServerID).
+		Return(returnedRows, nil).
+		Once()
+
+	// Create store with injected provider
+	store := &applicationStore{
+		deploymentID: testServerID,
+		dbProvider:   suite.mockDBProvider,
+	}
+
+	// Execute
+	err := store.CreateApplication(&app)
+
+	// Assert
+	suite.NoError(err)
+}
+
+func (suite *ApplicationStoreTestSuite) TestGetApplicationByID_InternalID_Propagated() {
+	// This test verifies that GetApplicationByID correctly extracts and populates
+	// the InternalID from the database result.
+
+	store := &applicationStore{
+		deploymentID: "test-deployment-id",
+		dbProvider:   suite.mockDBProvider,
+	}
+
+	appID := "test-app-id"
+	internalID := 12345
+
+	// Mock existing application retrieval
+	existingAppRow := map[string]interface{}{
+		"internal_id":                  int64(internalID), // Simulate DB returning int64
+		"app_id":                       appID,
+		"app_name":                     "Test App",
+		"description":                  "Existing description",
+		"auth_flow_id":                 "flow1",
+		"registration_flow_id":         "reg1",
+		"is_registration_flow_enabled": "1",
+		"app_json":                     `{"url": "http://old.com"}`,
+	}
+
+	// Prepare mocks for GetApplicationByID
+	suite.mockDBProvider.On("GetConfigDBClient").Return(suite.mockDBClient, nil)
+	suite.mockDBClient.On("Query", queryGetApplicationByAppID, appID, "test-deployment-id").
+		Return([]map[string]interface{}{existingAppRow}, nil).Once()
+
+	// Execute
+	appProcessed, err := store.GetApplicationByID(appID)
+
+	// Assert
+	suite.NoError(err)
+	suite.NotNil(appProcessed)
+	suite.Equal(internalID, appProcessed.InternalID, "InternalID should be populated from the database row")
 }

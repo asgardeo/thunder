@@ -92,7 +92,7 @@ func (suite *FileBasedStoreTestSuite) createTestApplication(id, name string) *mo
 func (suite *FileBasedStoreTestSuite) TestCreateApplication_Success() {
 	app := suite.createTestApplication("app1", "Test App 1")
 
-	err := suite.store.CreateApplication(*app)
+	err := suite.store.CreateApplication(app)
 
 	suite.NoError(err)
 
@@ -110,7 +110,7 @@ func (suite *FileBasedStoreTestSuite) TestCreateApplication_Success() {
 
 func (suite *FileBasedStoreTestSuite) TestGetApplicationByID_Success() {
 	app := suite.createTestApplication("app1", "Test App 1")
-	err := suite.store.CreateApplication(*app)
+	err := suite.store.CreateApplication(app)
 	suite.NoError(err)
 
 	result, err := suite.store.GetApplicationByID("app1")
@@ -139,9 +139,9 @@ func (suite *FileBasedStoreTestSuite) TestGetApplicationByName_Success() {
 	app2 := suite.createTestApplication("app2", "Test App 2")
 
 	// Store apps
-	err := suite.store.CreateApplication(*app1)
+	err := suite.store.CreateApplication(app1)
 	suite.NoError(err)
-	err = suite.store.CreateApplication(*app2)
+	err = suite.store.CreateApplication(app2)
 	suite.NoError(err)
 
 	result, err := suite.store.GetApplicationByName("Test App 1")
@@ -154,7 +154,7 @@ func (suite *FileBasedStoreTestSuite) TestGetApplicationByName_Success() {
 
 func (suite *FileBasedStoreTestSuite) TestGetApplicationByName_NotFound() {
 	app := suite.createTestApplication("app1", "Test App 1")
-	err := suite.store.CreateApplication(*app)
+	err := suite.store.CreateApplication(app)
 	suite.NoError(err)
 
 	result, err := suite.store.GetApplicationByName("Nonexistent App")
@@ -175,9 +175,9 @@ func (suite *FileBasedStoreTestSuite) TestGetApplicationList_Success() {
 	app2 := suite.createTestApplication("app2", "Test App 2")
 
 	// Store apps
-	err := suite.store.CreateApplication(*app1)
+	err := suite.store.CreateApplication(app1)
 	suite.NoError(err)
-	err = suite.store.CreateApplication(*app2)
+	err = suite.store.CreateApplication(app2)
 	suite.NoError(err)
 
 	result, err := suite.store.GetApplicationList()
@@ -215,9 +215,9 @@ func (suite *FileBasedStoreTestSuite) TestGetTotalApplicationCount_Success() {
 	app2 := suite.createTestApplication("app2", "Test App 2")
 
 	// Store apps
-	err := suite.store.CreateApplication(*app1)
+	err := suite.store.CreateApplication(app1)
 	suite.NoError(err)
-	err = suite.store.CreateApplication(*app2)
+	err = suite.store.CreateApplication(app2)
 	suite.NoError(err)
 
 	count, err := suite.store.GetTotalApplicationCount()
@@ -242,7 +242,7 @@ func (suite *FileBasedStoreTestSuite) TestGetOAuthApplication_Success() {
 	clientID := "client_app1"
 
 	// Store app
-	err := suite.store.CreateApplication(*app)
+	err := suite.store.CreateApplication(app)
 	suite.NoError(err)
 
 	result, err := suite.store.GetOAuthApplication(clientID)
@@ -257,7 +257,7 @@ func (suite *FileBasedStoreTestSuite) TestGetOAuthApplication_NotFound() {
 	app := suite.createTestApplication("app1", "Test App 1")
 
 	// Store app with different client ID
-	err := suite.store.CreateApplication(*app)
+	err := suite.store.CreateApplication(app)
 	suite.NoError(err)
 
 	result, err := suite.store.GetOAuthApplication("nonexistent_client")
@@ -275,7 +275,7 @@ func (suite *FileBasedStoreTestSuite) TestGetOAuthApplication_NoOAuthConfig() {
 		InboundAuthConfig: []model.InboundAuthConfigProcessedDTO{},
 	}
 
-	err := suite.store.CreateApplication(*app)
+	err := suite.store.CreateApplication(app)
 	suite.NoError(err)
 
 	result, err := suite.store.GetOAuthApplication("any_client")
@@ -290,9 +290,9 @@ func (suite *FileBasedStoreTestSuite) TestGetOAuthApplication_MultipleApps() {
 	app2 := suite.createTestApplication("app2", "Test App 2")
 
 	// Store both apps
-	err := suite.store.CreateApplication(*app1)
+	err := suite.store.CreateApplication(app1)
 	suite.NoError(err)
-	err = suite.store.CreateApplication(*app2)
+	err = suite.store.CreateApplication(app2)
 	suite.NoError(err)
 
 	// Search for app2's client ID
@@ -318,7 +318,7 @@ func (suite *FileBasedStoreTestSuite) TestGetOAuthApplication_NonOAuthInboundAut
 		},
 	}
 
-	err := suite.store.CreateApplication(*app)
+	err := suite.store.CreateApplication(app)
 	suite.NoError(err)
 
 	result, err := suite.store.GetOAuthApplication("any_client")
@@ -364,7 +364,7 @@ func (suite *FileBasedStoreTestSuite) TestGetOAuthApplication_NilOAuthConfig() {
 		},
 	}
 
-	err := suite.store.CreateApplication(*app)
+	err := suite.store.CreateApplication(app)
 	suite.NoError(err)
 
 	result, err := suite.store.GetOAuthApplication("any_client")

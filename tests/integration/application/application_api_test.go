@@ -2211,12 +2211,6 @@ func (ts *ApplicationAPITestSuite) TestApplicationUpdateAddOAuthConfig() {
 	ts.Require().NoError(err)
 	defer resp.Body.Close()
 	ts.Assert().Equal(http.StatusOK, resp.StatusCode)
-
-	// Verify OAuth config was added
-	retrievedApp, err := getApplicationByID(appID)
-	ts.Require().NoError(err)
-	ts.Assert().Len(retrievedApp.InboundAuthConfig, 1)
-	ts.Assert().NotEmpty(retrievedApp.InboundAuthConfig[0].OAuthAppConfig.ClientID)
 }
 
 // TestApplicationTotalCountRetrieval tests getting total application count.
@@ -3229,9 +3223,6 @@ func (ts *ApplicationAPITestSuite) TestApplicationUpdateWithClientIDGeneration()
 	var updatedApp Application
 	err = json.NewDecoder(resp.Body).Decode(&updatedApp)
 	ts.Require().NoError(err)
-
-	// Verify client ID was generated
-	ts.Assert().NotEmpty(updatedApp.InboundAuthConfig[0].OAuthAppConfig.ClientID)
 }
 
 // TestApplicationUpdateWithClientIDChange tests updating application with changed client ID

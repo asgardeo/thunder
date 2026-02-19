@@ -208,9 +208,9 @@ func (suite *CacheBackedStoreTestSuite) TestNewCachedBackedApplicationStore() {
 func (suite *CacheBackedStoreTestSuite) TestCreateApplication_Success() {
 	app := suite.createTestApp()
 
-	suite.mockStore.On("CreateApplication", *app).Return(nil).Once()
+	suite.mockStore.On("CreateApplication", app).Return(nil).Once()
 
-	err := suite.cachedStore.CreateApplication(*app)
+	err := suite.cachedStore.CreateApplication(app)
 	suite.Nil(err)
 	suite.mockStore.AssertExpectations(suite.T())
 
@@ -228,9 +228,9 @@ func (suite *CacheBackedStoreTestSuite) TestCreateApplication_Success() {
 func (suite *CacheBackedStoreTestSuite) TestCreateApplication_WithOAuth() {
 	app := suite.createTestAppWithOAuth()
 
-	suite.mockStore.On("CreateApplication", *app).Return(nil).Once()
+	suite.mockStore.On("CreateApplication", app).Return(nil).Once()
 
-	err := suite.cachedStore.CreateApplication(*app)
+	err := suite.cachedStore.CreateApplication(app)
 	suite.Nil(err)
 	suite.mockStore.AssertExpectations(suite.T())
 
@@ -244,9 +244,9 @@ func (suite *CacheBackedStoreTestSuite) TestCreateApplication_StoreError() {
 	app := suite.createTestApp()
 	storeErr := errors.New("store error")
 
-	suite.mockStore.On("CreateApplication", *app).Return(storeErr).Once()
+	suite.mockStore.On("CreateApplication", app).Return(storeErr).Once()
 
-	err := suite.cachedStore.CreateApplication(*app)
+	err := suite.cachedStore.CreateApplication(app)
 	suite.Equal(storeErr, err)
 	suite.mockStore.AssertExpectations(suite.T())
 
@@ -263,10 +263,10 @@ func (suite *CacheBackedStoreTestSuite) TestCreateApplication_CacheSetError() {
 	suite.appByIDCache.EXPECT().Set(mock.Anything, mock.Anything).Return(cacheSetErr).Maybe()
 	suite.appByNameCache.EXPECT().Set(mock.Anything, mock.Anything).Return(cacheSetErr).Maybe()
 
-	suite.mockStore.On("CreateApplication", *app).Return(nil).Once()
+	suite.mockStore.On("CreateApplication", app).Return(nil).Once()
 
 	// Should not fail even if cache set fails
-	err := suite.cachedStore.CreateApplication(*app)
+	err := suite.cachedStore.CreateApplication(app)
 	suite.Nil(err)
 	suite.mockStore.AssertExpectations(suite.T())
 }

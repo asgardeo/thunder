@@ -21,6 +21,7 @@ package application
 import (
 	"context"
 	"errors"
+	"fmt"
 	"slices"
 
 	"github.com/asgardeo/thunder/internal/application/model"
@@ -111,7 +112,7 @@ func (as *applicationService) CreateApplication(app *model.ApplicationDTO) (*mod
 	}
 
 	// Create the application.
-	storeErr := as.appStore.CreateApplication(*processedDTO)
+	storeErr := as.appStore.CreateApplication(processedDTO)
 	if storeErr != nil {
 		logger.Error("Failed to create application", log.Error(storeErr), log.String("appID", appID))
 
@@ -458,6 +459,7 @@ func (as *applicationService) UpdateApplication(appID string, app *model.Applica
 	}
 
 	existingApp, appCheckErr := as.appStore.GetApplicationByID(appID)
+
 	if appCheckErr != nil {
 		if errors.Is(appCheckErr, model.ApplicationNotFoundError) {
 			return nil, &ErrorApplicationNotFound
@@ -469,6 +471,9 @@ func (as *applicationService) UpdateApplication(appID string, app *model.Applica
 		logger.Debug("Application not found for update", log.String("appID", appID))
 		return nil, &ErrorApplicationNotFound
 	}
+
+	// Console output for debugging
+	fmt.Printf("Existing Application: %+v\n", existingApp)
 
 	// If the application name is changed, check if an application with the new name already exists.
 	if existingApp.Name != app.Name {

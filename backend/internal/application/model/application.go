@@ -58,6 +58,7 @@ type ApplicationDTO struct {
 
 // BasicApplicationDTO represents a simplified data transfer object for application service operations.
 type BasicApplicationDTO struct {
+	InternalID                int
 	ID                        string
 	Name                      string
 	Description               string
@@ -97,6 +98,7 @@ type Application struct {
 
 // ApplicationProcessedDTO represents the processed data transfer object for application service operations.
 type ApplicationProcessedDTO struct {
+	InternalID                int    `yaml:"-"`
 	ID                        string `yaml:"id,omitempty"`
 	Name                      string `yaml:"name,omitempty"`
 	Description               string `yaml:"description,omitempty"`
