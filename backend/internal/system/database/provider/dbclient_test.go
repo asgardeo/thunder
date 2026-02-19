@@ -395,3 +395,94 @@ func (suite *DBClientTestSuite) TestExecuteContextRowsAffectedError() {
 	assert.Error(suite.T(), err)
 	assert.Equal(suite.T(), int64(0), rowsAffected)
 }
+
+func (suite *DBClientTestSuite) TestExecuteWithReturning_Success() {
+	testQuery := model.DBQuery{
+		ID:    "test_exec_returning_success",
+		Query: "INSERT INTO users (name) VALUES (?) RETURNING id",
+	}
+	args := []interface{}{"John Doe"}
+	mockArgs := []driver.Value{"John Doe"}
+
+	columns := []string{"id"}
+	rows := sqlmock.NewRows(columns).AddRow(1)
+	suite.mock.ExpectQuery("INSERT INTO users \\(name\\) VALUES \\(\\?\\) RETURNING id").
+		WithArgs(mockArgs...).
+		WillReturnRows(rows)
+
+	results, err := suite.dbClient.ExecuteWithReturning(testQuery, args...)
+
+	assert.NoError(suite.T(), err)
+	assert.Len(suite.T(), results, 1)
+	assert.Equal(suite.T(), int64(1), results[0]["id"])
+	assert.NoError(suite.T(), suite.mock.ExpectationsWereMet())
+}
+
+func (suite *DBClientTestSuite) TestExecuteWithReturningContext_QueryError() {
+	testQuery := model.DBQuery{
+		ID:    "test_exec_returning_query_error",
+		Query: "INSERT INTO users (name) VALUES (?) RETURNING id",
+	}
+	args := []interface{}{"John Doe"}
+	mockArgs := []driver.Value{"John Doe"}
+
+	expectedErr := errors.New("query error")
+	suite.mock.ExpectQuery("INSERT INTO users \\(name\\) VALUES \\(\\?\\) RETURNING id").
+		WithArgs(mockArgs...).
+		WillReturnError(expectedErr)
+
+	ctx := context.Background()
+	results, err := suite.dbClient.ExecuteWithReturningContext(ctx, testQuery, args...)
+
+	assert.Error(suite.T(), err)
+	assert.Nil(suite.T(), results)
+	assert.Equal(suite.T(), expectedErr, err)
+	assert.NoError(suite.T(), suite.mock.ExpectationsWereMet())
+}
+
+func (suite *DBClientTestSuite) TestExecuteWithReturningContext_RowsError() {
+	testQuery := model.DBQuery{
+		ID:    "test_exec_returning_rows_error",
+		Query: "SELECT * FROM users",
+	}
+
+	columns := []string{"id"}
+	rows := sqlmock.NewRows(columns).
+		AddRow(1).
+		RowError(0, errors.New("row error"))
+
+	suite.mock.ExpectQuery("SELECT \\* FROM users").
+		WillReturnRows(rows)
+
+	ctx := context.Background()
+	results, err := suite.dbClient.ExecuteWithReturningContext(ctx, testQuery)
+
+	// sqlmock RowError makes rows.Next() return false, but rows.Err() will return the error
+	// The results will contain the rows before the error
+	assert.Error(suite.T(), err)
+	assert.Nil(suite.T(), results)
+	assert.Contains(suite.T(), err.Error(), "row error")
+	assert.NoError(suite.T(), suite.mock.ExpectationsWereMet())
+}
+
+func (suite *DBClientTestSuite) TestExecuteWithReturningContext_CloseError() {
+	testQuery := model.DBQuery{
+		ID:    "test_exec_returning_close_error",
+		Query: "SELECT * FROM users",
+	}
+
+	columns := []string{"id"}
+	rows := sqlmock.NewRows(columns).AddRow(1).CloseError(errors.New("close error"))
+
+	suite.mock.ExpectQuery("SELECT \\* FROM users").
+		WillReturnRows(rows)
+
+	ctx := context.Background()
+	results, err := suite.dbClient.ExecuteWithReturningContext(ctx, testQuery)
+
+	// sqlmock propagates CloseError to rows.Err() when auto-closed
+	assert.Error(suite.T(), err)
+	assert.Contains(suite.T(), err.Error(), "close error")
+	assert.Nil(suite.T(), results)
+	assert.NoError(suite.T(), suite.mock.ExpectationsWereMet())
+}
