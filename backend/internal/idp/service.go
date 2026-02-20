@@ -41,15 +41,17 @@ type IDPServiceInterface interface {
 
 // idpService is the default implementation of the IdPServiceInterface.
 type idpService struct {
-	idpStore idpStoreInterface
-	logger   *log.Logger
+	idpStore       idpStoreInterface
+	compositeStore *compositeIDPStore
+	logger         *log.Logger
 }
 
 // newIDPService creates a new instance of IdPService.
-func newIDPService(idpStore idpStoreInterface) IDPServiceInterface {
+func newIDPService(idpStore idpStoreInterface, compositeStore *compositeIDPStore) IDPServiceInterface {
 	return &idpService{
-		idpStore: idpStore,
-		logger:   log.GetLogger().With(log.String(log.LoggerKeyComponentName, "IdPService")),
+		idpStore:       idpStore,
+		compositeStore: compositeStore,
+		logger:         log.GetLogger().With(log.String(log.LoggerKeyComponentName, "IdPService")),
 	}
 }
 
@@ -170,6 +172,11 @@ func (is *idpService) UpdateIdentityProvider(idpID string, idp *IDPDTO) (*IDPDTO
 		return nil, &ErrorIDPNotFound
 	}
 
+	// Check if trying to update a declarative IDP in composite mode
+	if is.isIdentityProviderDeclarative(idpID) {
+		return nil, &ErrorIDPDeclarativeReadOnly
+	}
+
 	// If the name is being updated, check whether another IdP with the same name exists
 	if existingIDP.Name != idp.Name {
 		existingIDPByName, err := is.idpStore.GetIdentityProviderByName(idp.Name)
@@ -214,6 +221,11 @@ func (is *idpService) DeleteIdentityProvider(idpID string) *serviceerror.Service
 		return &serviceerror.InternalServerError
 	}
 
+	// Check if trying to delete a declarative IDP in composite mode
+	if is.isIdentityProviderDeclarative(idpID) {
+		return &ErrorIDPDeclarativeReadOnly
+	}
+
 	err = is.idpStore.DeleteIdentityProvider(idpID)
 	if err != nil {
 		logger.Error("Failed to delete identity provider", log.Error(err), log.String("idpID", idpID))
@@ -221,4 +233,14 @@ func (is *idpService) DeleteIdentityProvider(idpID string) *serviceerror.Service
 	}
 
 	return nil
+}
+
+// isIdentityProviderDeclarative checks if an identity provider is immutable (exists in file store).
+// This is only applicable in composite mode.
+func (is *idpService) isIdentityProviderDeclarative(idpID string) bool {
+	if is.compositeStore == nil {
+		return false
+	}
+	_, err := is.compositeStore.fileStore.GetIdentityProvider(idpID)
+	return err == nil
 }

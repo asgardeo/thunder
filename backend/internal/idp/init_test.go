@@ -29,6 +29,7 @@ import (
 
 	"github.com/asgardeo/thunder/internal/system/cmodels"
 	"github.com/asgardeo/thunder/internal/system/config"
+	serverconst "github.com/asgardeo/thunder/internal/system/constants"
 	"github.com/asgardeo/thunder/internal/system/log"
 )
 
@@ -122,7 +123,7 @@ func (s *IDPInitTestSuite) TestNewIDPHandler() {
 
 func (s *IDPInitTestSuite) TestNewIDPService() {
 	store := &idpStore{}
-	service := newIDPService(store)
+	service := newIDPService(store, nil)
 
 	s.NotNil(service)
 	s.Implements((*IDPServiceInterface)(nil), service)
@@ -597,4 +598,124 @@ properties:
 	_, _, err = Initialize(mux)
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "failed to load identity provider resources")
+}
+
+// TestGetIdentityProviderStoreMode_MutableMode verifies mutable mode detection
+func (s *IDPInitTestSuite) TestGetIdentityProviderStoreMode_MutableMode() {
+	testConfig := &config.Config{
+		DeclarativeResources: config.DeclarativeResources{
+			Enabled: false,
+		},
+		IdentityProvider: config.IdentityProviderConfig{
+			Store: "mutable",
+		},
+	}
+	config.ResetThunderRuntime()
+	_ = config.InitializeThunderRuntime("/tmp/test", testConfig)
+
+	mode := getIdentityProviderStoreMode()
+
+	s.NotZero(mode)
+	s.Equal(mode, serverconst.StoreModeMutable)
+}
+
+// TestGetIdentityProviderStoreMode_DeclarativeMode verifies declarative mode detection
+func (s *IDPInitTestSuite) TestGetIdentityProviderStoreMode_DeclarativeMode() {
+	testConfig := &config.Config{
+		DeclarativeResources: config.DeclarativeResources{
+			Enabled: true,
+		},
+		IdentityProvider: config.IdentityProviderConfig{
+			Store: "declarative",
+		},
+	}
+	config.ResetThunderRuntime()
+	_ = config.InitializeThunderRuntime("/tmp/test", testConfig)
+
+	mode := getIdentityProviderStoreMode()
+
+	s.NotZero(mode)
+	s.Equal(mode, serverconst.StoreModeDeclarative)
+}
+
+// TestGetIdentityProviderStoreMode_CompositeMode verifies composite mode detection
+func (s *IDPInitTestSuite) TestGetIdentityProviderStoreMode_CompositeMode() {
+	testConfig := &config.Config{
+		DeclarativeResources: config.DeclarativeResources{
+			Enabled: false,
+		},
+		IdentityProvider: config.IdentityProviderConfig{
+			Store: "composite",
+		},
+	}
+	config.ResetThunderRuntime()
+	_ = config.InitializeThunderRuntime("/tmp/test", testConfig)
+
+	mode := getIdentityProviderStoreMode()
+
+	s.NotZero(mode)
+	s.Equal(mode, serverconst.StoreModeComposite)
+}
+
+// TestGetIdentityProviderStoreMode_FallbackToGlobalSetting verifies fallback behavior
+func (s *IDPInitTestSuite) TestGetIdentityProviderStoreMode_FallbackToGlobalSetting() {
+	testConfig := &config.Config{
+		DeclarativeResources: config.DeclarativeResources{
+			Enabled: true,
+		},
+		IdentityProvider: config.IdentityProviderConfig{
+			Store: "", // Empty means use global setting
+		},
+	}
+	config.ResetThunderRuntime()
+	_ = config.InitializeThunderRuntime("/tmp/test", testConfig)
+
+	mode := getIdentityProviderStoreMode()
+
+	s.Equal(mode, serverconst.StoreModeDeclarative)
+}
+
+// TestIsCompositeModeEnabled verifies composite mode flag
+func (s *IDPInitTestSuite) TestIsCompositeModeEnabled() {
+	testConfig := &config.Config{
+		IdentityProvider: config.IdentityProviderConfig{
+			Store: "composite",
+		},
+	}
+	config.ResetThunderRuntime()
+	_ = config.InitializeThunderRuntime("/tmp/test", testConfig)
+
+	enabled := isCompositeModeEnabled()
+
+	s.True(enabled)
+}
+
+// TestIsMutableModeEnabled verifies mutable mode flag
+func (s *IDPInitTestSuite) TestIsMutableModeEnabled() {
+	testConfig := &config.Config{
+		IdentityProvider: config.IdentityProviderConfig{
+			Store: "mutable",
+		},
+	}
+	config.ResetThunderRuntime()
+	_ = config.InitializeThunderRuntime("/tmp/test", testConfig)
+
+	enabled := isMutableModeEnabled()
+
+	s.True(enabled)
+}
+
+// TestIsDeclarativeModeEnabled verifies declarative mode flag
+func (s *IDPInitTestSuite) TestIsDeclarativeModeEnabled() {
+	testConfig := &config.Config{
+		IdentityProvider: config.IdentityProviderConfig{
+			Store: "declarative",
+		},
+	}
+	config.ResetThunderRuntime()
+	_ = config.InitializeThunderRuntime("/tmp/test", testConfig)
+
+	enabled := isDeclarativeModeEnabled()
+
+	s.True(enabled)
 }

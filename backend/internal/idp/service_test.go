@@ -38,6 +38,11 @@ type IDPServiceTestSuite struct {
 	idpService IDPServiceInterface
 }
 
+const (
+	declarativeIDPTestID = "declarative-idp"
+	mutableIDPTestID     = "mutable-idp"
+)
+
 func TestIDPServiceTestSuite(t *testing.T) {
 	suite.Run(t, new(IDPServiceTestSuite))
 }
@@ -53,7 +58,7 @@ func (s *IDPServiceTestSuite) SetupTest() {
 	_ = config.InitializeThunderRuntime("/tmp/test", testConfig)
 
 	s.mockStore = newIdpStoreInterfaceMock(s.T())
-	s.idpService = newIDPService(s.mockStore)
+	s.idpService = newIDPService(s.mockStore, nil)
 }
 
 func (s *IDPServiceTestSuite) TearDownTest() {
@@ -718,4 +723,231 @@ func (s *IDPServiceTestSuite) TestValidateIDP() {
 			}
 		})
 	}
+}
+
+// TestUpdateIdentityProvider_FailsForDeclarativeIDP verifies immutability in composite mode
+func (s *IDPServiceTestSuite) TestUpdateIdentityProvider_FailsForDeclarativeIDP() {
+	config.ResetThunderRuntime()
+	testConfig := &config.Config{
+		IdentityProvider: config.IdentityProviderConfig{
+			Store: "composite",
+		},
+	}
+	_ = config.InitializeThunderRuntime("/tmp/test", testConfig)
+
+	idpID := declarativeIDPTestID
+	existingIDP := &IDPDTO{
+		ID:          idpID,
+		Name:        "Declarative IDP",
+		Description: "From file store",
+		Type:        IDPTypeOIDC,
+		Properties:  createOIDCProperties(),
+	}
+
+	fileStore := newIdpStoreInterfaceMock(s.T())
+	dbStore := newIdpStoreInterfaceMock(s.T())
+	compositeStore := newCompositeIDPStore(fileStore, dbStore)
+
+	// Simulate IDP exists in file store (declarative)
+	fileStore.On("GetIdentityProvider", idpID).Return(existingIDP, nil)
+	dbStore.On("GetIdentityProvider", idpID).Return(existingIDP, nil)
+
+	service := newIDPService(compositeStore, compositeStore)
+
+	updatedIDP := &IDPDTO{
+		Name:        "Updated Name",
+		Description: "Updated Description",
+		Type:        IDPTypeOIDC,
+		Properties:  createOIDCProperties(),
+	}
+
+	result, err := service.UpdateIdentityProvider(idpID, updatedIDP)
+
+	s.Nil(result)
+	s.NotNil(err)
+	s.Equal("IDP-1010", err.Code)
+	s.Equal("Identity provider is immutable", err.Error)
+
+	config.ResetThunderRuntime()
+}
+
+// TestUpdateIdentityProvider_SucceedsForMutableIDP verifies update works for DB IDPs
+func (s *IDPServiceTestSuite) TestUpdateIdentityProvider_SucceedsForMutableIDP() {
+	config.ResetThunderRuntime()
+	testConfig := &config.Config{
+		IdentityProvider: config.IdentityProviderConfig{
+			Store: "composite",
+		},
+	}
+	_ = config.InitializeThunderRuntime("/tmp/test", testConfig)
+
+	idpID := mutableIDPTestID
+	existingIDP := &IDPDTO{
+		ID:          idpID,
+		Name:        "Mutable IDP",
+		Description: "From database",
+		Type:        IDPTypeOIDC,
+		Properties:  createOIDCProperties(),
+	}
+
+	fileStore := newIdpStoreInterfaceMock(s.T())
+	dbStore := newIdpStoreInterfaceMock(s.T())
+	compositeStore := newCompositeIDPStore(fileStore, dbStore)
+
+	// Simulate IDP only exists in database (not in file store)
+	fileStore.On("GetIdentityProvider", idpID).Return((*IDPDTO)(nil), ErrIDPNotFound)
+	fileStore.On("GetIdentityProviderByName", "Updated Name").Return((*IDPDTO)(nil), ErrIDPNotFound)
+	dbStore.On("GetIdentityProvider", idpID).Return(existingIDP, nil)
+	dbStore.On("GetIdentityProviderByName", "Updated Name").Return((*IDPDTO)(nil), ErrIDPNotFound)
+	dbStore.On("UpdateIdentityProvider", mock.MatchedBy(func(dto *IDPDTO) bool {
+		return dto.ID == idpID && dto.Name == "Updated Name"
+	})).Return(nil)
+
+	service := newIDPService(compositeStore, compositeStore)
+
+	updatedIDP := &IDPDTO{
+		Name:        "Updated Name",
+		Description: "Updated Description",
+		Type:        IDPTypeOIDC,
+		Properties:  createOIDCProperties(),
+	}
+
+	result, err := service.UpdateIdentityProvider(idpID, updatedIDP)
+
+	s.Nil(err)
+	s.NotNil(result)
+	s.Equal("Updated Name", result.Name)
+
+	config.ResetThunderRuntime()
+}
+
+// TestDeleteIdentityProvider_FailsForDeclarativeIDP verifies immutability for deletes
+func (s *IDPServiceTestSuite) TestDeleteIdentityProvider_FailsForDeclarativeIDP() {
+	config.ResetThunderRuntime()
+	testConfig := &config.Config{
+		IdentityProvider: config.IdentityProviderConfig{
+			Store: "composite",
+		},
+	}
+	_ = config.InitializeThunderRuntime("/tmp/test", testConfig)
+
+	idpID := "declarative-idp"
+	existingIDP := &IDPDTO{
+		ID:          idpID,
+		Name:        "Declarative IDP",
+		Description: "From file store",
+		Type:        IDPTypeOIDC,
+	}
+
+	fileStore := newIdpStoreInterfaceMock(s.T())
+	dbStore := newIdpStoreInterfaceMock(s.T())
+	compositeStore := newCompositeIDPStore(fileStore, dbStore)
+
+	// Simulate IDP exists in file store (declarative)
+	fileStore.On("GetIdentityProvider", idpID).Return(existingIDP, nil)
+	dbStore.On("GetIdentityProvider", idpID).Return(existingIDP, nil)
+
+	service := newIDPService(compositeStore, compositeStore)
+
+	err := service.DeleteIdentityProvider(idpID)
+
+	s.NotNil(err)
+	s.Equal("IDP-1010", err.Code)
+	s.Equal("Identity provider is immutable", err.Error)
+
+	config.ResetThunderRuntime()
+}
+
+// TestDeleteIdentityProvider_SucceedsForMutableIDP verifies delete works for DB IDPs
+func (s *IDPServiceTestSuite) TestDeleteIdentityProvider_SucceedsForMutableIDP() {
+	config.ResetThunderRuntime()
+	testConfig := &config.Config{
+		IdentityProvider: config.IdentityProviderConfig{
+			Store: "composite",
+		},
+	}
+	_ = config.InitializeThunderRuntime("/tmp/test", testConfig)
+
+	idpID := "mutable-idp"
+	existingIDP := &IDPDTO{
+		ID:          idpID,
+		Name:        "Mutable IDP",
+		Description: "From database",
+		Type:        IDPTypeOIDC,
+	}
+
+	fileStore := newIdpStoreInterfaceMock(s.T())
+	dbStore := newIdpStoreInterfaceMock(s.T())
+	compositeStore := newCompositeIDPStore(fileStore, dbStore)
+
+	// Simulate IDP only exists in database (not in file store)
+	fileStore.On("GetIdentityProvider", idpID).Return((*IDPDTO)(nil), ErrIDPNotFound)
+	dbStore.On("GetIdentityProvider", idpID).Return(existingIDP, nil)
+	dbStore.On("DeleteIdentityProvider", idpID).Return(nil)
+
+	service := newIDPService(compositeStore, compositeStore)
+
+	err := service.DeleteIdentityProvider(idpID)
+
+	s.Nil(err)
+	dbStore.AssertCalled(s.T(), "DeleteIdentityProvider", idpID)
+
+	config.ResetThunderRuntime()
+}
+
+// TestIsIdentityProviderDeclarative_ReturnsTrueForFileStore verifies detection logic
+func (s *IDPServiceTestSuite) TestIsIdentityProviderDeclarative_ReturnsTrueForFileStore() {
+	idpID := "declarative-idp"
+	existingIDP := &IDPDTO{
+		ID:   idpID,
+		Name: "Declarative IDP",
+		Type: IDPTypeOIDC,
+	}
+
+	fileStore := newIdpStoreInterfaceMock(s.T())
+	dbStore := newIdpStoreInterfaceMock(s.T())
+	compositeStore := newCompositeIDPStore(fileStore, dbStore)
+
+	fileStore.On("GetIdentityProvider", idpID).Return(existingIDP, nil)
+
+	service := &idpService{
+		idpStore:       compositeStore,
+		compositeStore: compositeStore,
+	}
+
+	isDeclarative := service.isIdentityProviderDeclarative(idpID)
+
+	s.True(isDeclarative)
+}
+
+// TestIsIdentityProviderDeclarative_ReturnsFalseForDatabase verifies detection logic
+func (s *IDPServiceTestSuite) TestIsIdentityProviderDeclarative_ReturnsFalseForDatabase() {
+	idpID := "mutable-idp"
+
+	fileStore := newIdpStoreInterfaceMock(s.T())
+	dbStore := newIdpStoreInterfaceMock(s.T())
+	compositeStore := newCompositeIDPStore(fileStore, dbStore)
+
+	fileStore.On("GetIdentityProvider", idpID).Return((*IDPDTO)(nil), ErrIDPNotFound)
+
+	service := &idpService{
+		idpStore:       compositeStore,
+		compositeStore: compositeStore,
+	}
+
+	isDeclarative := service.isIdentityProviderDeclarative(idpID)
+
+	s.False(isDeclarative)
+}
+
+// TestIsIdentityProviderDeclarative_ReturnsFalseWhenNoCompositeStore verifies non-composite mode
+func (s *IDPServiceTestSuite) TestIsIdentityProviderDeclarative_ReturnsFalseWhenNoCompositeStore() {
+	service := &idpService{
+		idpStore:       nil,
+		compositeStore: nil,
+	}
+
+	isDeclarative := service.isIdentityProviderDeclarative("any-id")
+
+	s.False(isDeclarative)
 }

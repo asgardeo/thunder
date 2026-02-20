@@ -21,29 +21,22 @@ package idp
 
 import (
 	"net/http"
+	"strings"
 
+	"github.com/asgardeo/thunder/internal/system/config"
+	serverconst "github.com/asgardeo/thunder/internal/system/constants"
 	declarativeresource "github.com/asgardeo/thunder/internal/system/declarative_resource"
 	"github.com/asgardeo/thunder/internal/system/middleware"
 )
 
 // Initialize initializes the IDP service and registers its routes.
 func Initialize(mux *http.ServeMux) (IDPServiceInterface, declarativeresource.ResourceExporter, error) {
-	// Create store based on configuration
-	var idpStore idpStoreInterface
-	if declarativeresource.IsDeclarativeModeEnabled() {
-		idpStore = newIDPFileBasedStore()
-	} else {
-		idpStore = newIDPStore()
+	idpStore, compositeStore, err := initializeStore()
+	if err != nil {
+		return nil, nil, err
 	}
 
-	idpService := newIDPService(idpStore)
-
-	// Load declarative resources if enabled
-	if declarativeresource.IsDeclarativeModeEnabled() {
-		if err := loadDeclarativeResources(idpStore); err != nil {
-			return nil, nil, err
-		}
-	}
+	idpService := newIDPService(idpStore, compositeStore)
 
 	idpHandler := newIDPHandler(idpService)
 	registerRoutes(mux, idpHandler)
@@ -51,6 +44,108 @@ func Initialize(mux *http.ServeMux) (IDPServiceInterface, declarativeresource.Re
 	// Create and return exporter
 	exporter := newIDPExporter(idpService)
 	return idpService, exporter, nil
+}
+
+// Store Selection (based on identity_provider.store configuration):
+//
+// 1. MUTABLE mode (store: "mutable"):
+//   - Uses database store only (idpStore)
+//   - Supports full CRUD operations (Create/Read/Update/Delete)
+//   - All IDPs are mutable
+//   - Export functionality exports DB-backed IDPs
+//
+// 2. IMMUTABLE mode (store: "declarative"):
+//   - Uses file-based store only (from YAML resources)
+//   - All IDPs are immutable (read-only)
+//   - No create/update/delete operations allowed
+//   - Export functionality not applicable
+//
+// 3. COMPOSITE mode (store: "composite" - hybrid):
+//   - Uses both file-based store (immutable) + database store (mutable)
+//   - YAML resources are loaded into file-based store (immutable, read-only)
+//   - Database store handles runtime IDPs (mutable)
+//   - Reads check both stores (merged results)
+//   - Writes only go to database store
+//   - Declarative IDPs cannot be updated or deleted
+//   - Export only exports DB-backed IDPs (not YAML)
+//
+// Configuration Fallback:
+// - If identity_provider.store is not specified, falls back to global declarative_resources.enabled:
+//   - If declarative_resources.enabled = true: behaves as IMMUTABLE mode
+//   - If declarative_resources.enabled = false: behaves as MUTABLE mode
+func initializeStore() (idpStoreInterface, *compositeIDPStore, error) {
+	var idpStore idpStoreInterface
+	var compositeStore *compositeIDPStore
+
+	storeMode := getIdentityProviderStoreMode()
+
+	switch storeMode {
+	case serverconst.StoreModeComposite:
+		fileStore := newIDPFileBasedStore()
+		dbStore := newIDPStore()
+		compositeStore = newCompositeIDPStore(fileStore, dbStore)
+		idpStore = compositeStore
+		if err := loadDeclarativeResources(fileStore); err != nil {
+			return nil, nil, err
+		}
+
+	case serverconst.StoreModeDeclarative:
+		fileStore := newIDPFileBasedStore()
+		idpStore = fileStore
+
+		if err := loadDeclarativeResources(fileStore); err != nil {
+			return nil, nil, err
+		}
+
+	default:
+		idpStore = newIDPStore()
+	}
+
+	return idpStore, compositeStore, nil
+}
+
+// getIdentityProviderStoreMode determines the store mode for identity providers.
+//
+// Resolution order:
+//  1. If IdentityProvider.Store is explicitly configured, use it
+//  2. Otherwise, fall back to global DeclarativeResources.Enabled:
+//     - If enabled: return "declarative"
+//     - If disabled: return "mutable"
+//
+// Returns normalized store mode: "mutable", "declarative", or "composite"
+func getIdentityProviderStoreMode() serverconst.StoreMode {
+	cfg := config.GetThunderRuntime().Config
+	// Check if service-level configuration is explicitly set
+	if cfg.IdentityProvider.Store != "" {
+		mode := serverconst.StoreMode(strings.ToLower(strings.TrimSpace(cfg.IdentityProvider.Store)))
+		// Validate and normalize
+		switch mode {
+		case serverconst.StoreModeMutable, serverconst.StoreModeDeclarative, serverconst.StoreModeComposite:
+			return mode
+		}
+	}
+
+	// Fall back to global declarative resources setting
+	if declarativeresource.IsDeclarativeModeEnabled() {
+		return serverconst.StoreModeDeclarative
+	}
+
+	return serverconst.StoreModeMutable
+}
+
+// isCompositeModeEnabled checks if composite store mode is enabled for identity providers.
+func isCompositeModeEnabled() bool {
+	return getIdentityProviderStoreMode() == serverconst.StoreModeComposite
+}
+
+// isMutableModeEnabled checks if mutable-only store mode is enabled for identity providers.
+func isMutableModeEnabled() bool {
+	return getIdentityProviderStoreMode() == serverconst.StoreModeMutable
+}
+
+// isDeclarativeModeEnabled checks if immutable-only store mode is enabled for identity providers.
+func isDeclarativeModeEnabled() bool {
+	return getIdentityProviderStoreMode() == serverconst.StoreModeDeclarative
 }
 
 // RegisterRoutes registers the routes for identity provider operations.

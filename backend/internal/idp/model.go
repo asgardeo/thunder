@@ -35,6 +35,7 @@ type BasicIDPDTO struct {
 	Name        string
 	Description string
 	Type        IDPType
+	IsReadOnly  bool
 }
 
 // idpRequest represents the request payload for creating or updating an identity provider.
