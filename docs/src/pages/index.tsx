@@ -20,12 +20,16 @@ import type {ReactNode} from 'react';
 import useDocusaurusContext from '@docusaurus/useDocusaurusContext';
 import Layout from '@theme/Layout';
 import React from 'react';
-import HeroSection from '@site/src/components/HomePage/HeroSection';
-import APIReferenceSection from '@site/src/components/HomePage/APIReferenceSection';
-import CommunitySection from '@site/src/components/HomePage/CommunitySection';
-import HomeFooter from '@site/src/components/Footer';
 import Head from '@docusaurus/Head';
-import {Box} from '@wso2/oxygen-ui';
+import HeroSection from '@site/src/components/HomePage/HeroSection';
+import SocialProofSection from '@site/src/components/HomePage/SocialProofSection';
+import FeatureCardsSection from '@site/src/components/HomePage/FeatureCardsSection';
+import GetStartedSection from '@site/src/components/HomePage/GetStartedSection';
+import AIFlowsSection from '@site/src/components/HomePage/AIFlowsSection';
+import UIComponentsSection from '@site/src/components/HomePage/UIComponentsSection';
+import UseCasesSection from '@site/src/components/HomePage/UseCasesSection';
+import CTASection from '@site/src/components/HomePage/CTASection';
+import HomeFooter from '@site/src/components/Footer';
 
 export default function Homepage(): ReactNode {
   const {siteConfig} = useDocusaurusContext();
@@ -36,10 +40,13 @@ export default function Homepage(): ReactNode {
         <link rel="prefetch" href="/assets/css/elements.min.css" />
       </Head>
       <HeroSection />
-      <Box sx={{mb: 4}}>
-        <APIReferenceSection />
-      </Box>
-      <CommunitySection />
+      <SocialProofSection />
+      <FeatureCardsSection />
+      <GetStartedSection />
+      <AIFlowsSection />
+      <UIComponentsSection />
+      <UseCasesSection />
+      <CTASection />
       <HomeFooter />
     </Layout>
   );
