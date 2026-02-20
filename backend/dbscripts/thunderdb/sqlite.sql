@@ -1,5 +1,5 @@
 -- Table to store User Schemas
-CREATE TABLE USER_SCHEMAS (
+CREATE TABLE IF NOT EXISTS USER_SCHEMAS (
     ID          INTEGER PRIMARY KEY AUTOINCREMENT,
     DEPLOYMENT_ID   VARCHAR(255) NOT NULL,
     SCHEMA_ID   VARCHAR(36) NOT NULL,
@@ -14,10 +14,10 @@ CREATE TABLE USER_SCHEMAS (
 );
 
 -- Index for deployment isolation on USER_SCHEMAS
-CREATE INDEX idx_user_schemas_deployment_id ON USER_SCHEMAS (DEPLOYMENT_ID);
+CREATE INDEX IF NOT EXISTS idx_user_schemas_deployment_id ON USER_SCHEMAS (DEPLOYMENT_ID);
 
 -- Table to store Roles
-CREATE TABLE "ROLE" (
+CREATE TABLE IF NOT EXISTS "ROLE" (
     ID                  INTEGER PRIMARY KEY AUTOINCREMENT,
     DEPLOYMENT_ID           VARCHAR(255) NOT NULL,
     ROLE_ID             VARCHAR(36) NOT NULL,
@@ -31,10 +31,10 @@ CREATE TABLE "ROLE" (
 );
 
 -- Index for deployment isolation on ROLE
-CREATE INDEX idx_role_deployment_id ON "ROLE" (DEPLOYMENT_ID);
+CREATE INDEX IF NOT EXISTS idx_role_deployment_id ON "ROLE" (DEPLOYMENT_ID);
 
 -- Table to store Role permissions
-CREATE TABLE ROLE_PERMISSION (
+CREATE TABLE IF NOT EXISTS ROLE_PERMISSION (
     ID                  INTEGER PRIMARY KEY AUTOINCREMENT,
     DEPLOYMENT_ID       VARCHAR(255) NOT NULL,
     ROLE_ID             VARCHAR(36) NOT NULL,
@@ -47,10 +47,10 @@ CREATE TABLE ROLE_PERMISSION (
 
 
 -- Index for resource server queries with deployment isolation on ROLE_PERMISSION
-CREATE INDEX idx_role_permission_resource_server ON ROLE_PERMISSION (RESOURCE_SERVER_ID, DEPLOYMENT_ID);
+CREATE INDEX IF NOT EXISTS idx_role_permission_resource_server ON ROLE_PERMISSION (RESOURCE_SERVER_ID, DEPLOYMENT_ID);
 
 -- Table to store Role assignments (to users and groups)
-CREATE TABLE ROLE_ASSIGNMENT (
+CREATE TABLE IF NOT EXISTS ROLE_ASSIGNMENT (
     ID              INTEGER PRIMARY KEY AUTOINCREMENT,
     DEPLOYMENT_ID       VARCHAR(255) NOT NULL,
     ROLE_ID         VARCHAR(36) NOT NULL,
@@ -63,20 +63,20 @@ CREATE TABLE ROLE_ASSIGNMENT (
 );
 
 -- Index for deployment isolation on ROLE_ASSIGNMENT
-CREATE INDEX idx_role_assignment_deployment_id ON ROLE_ASSIGNMENT (DEPLOYMENT_ID);
+CREATE INDEX IF NOT EXISTS idx_role_assignment_deployment_id ON ROLE_ASSIGNMENT (DEPLOYMENT_ID);
 
 -- Indexes for authorization queries
 
 -- Index for finding all roles assigned to a specific assignee
-CREATE INDEX idx_role_assignment_assignee
+CREATE INDEX IF NOT EXISTS idx_role_assignment_assignee
 ON ROLE_ASSIGNMENT (ASSIGNEE_ID, ASSIGNEE_TYPE);
 
 -- Index for finding all permissions for a specific role
-CREATE INDEX idx_role_permission_role
+CREATE INDEX IF NOT EXISTS idx_role_permission_role
 ON ROLE_PERMISSION (ROLE_ID);
 
 -- Table to store theme configurations.
-CREATE TABLE THEME (
+CREATE TABLE IF NOT EXISTS THEME (
     ID INTEGER PRIMARY KEY AUTOINCREMENT,
     DEPLOYMENT_ID VARCHAR(255) NOT NULL,
     THEME_ID VARCHAR(36) NOT NULL,
@@ -89,10 +89,10 @@ CREATE TABLE THEME (
 );
 
 -- Index for deployment isolation on THEME
-CREATE INDEX idx_theme_deployment_id ON THEME (DEPLOYMENT_ID);
+CREATE INDEX IF NOT EXISTS idx_theme_deployment_id ON THEME (DEPLOYMENT_ID);
 
 -- Table to store layout configurations.
-CREATE TABLE LAYOUT (
+CREATE TABLE IF NOT EXISTS LAYOUT (
     ID INTEGER PRIMARY KEY AUTOINCREMENT,
     DEPLOYMENT_ID VARCHAR(255) NOT NULL,
     LAYOUT_ID VARCHAR(36) NOT NULL,
@@ -105,10 +105,10 @@ CREATE TABLE LAYOUT (
 );
 
 -- Index for deployment isolation on LAYOUT
-CREATE INDEX idx_layout_deployment_id ON LAYOUT (DEPLOYMENT_ID);
+CREATE INDEX IF NOT EXISTS idx_layout_deployment_id ON LAYOUT (DEPLOYMENT_ID);
 
 -- Table to store application details.
-CREATE TABLE APPLICATION (
+CREATE TABLE IF NOT EXISTS APPLICATION (
     ID INTEGER PRIMARY KEY AUTOINCREMENT,
     DEPLOYMENT_ID VARCHAR(255) NOT NULL,
     APP_ID VARCHAR(36) NOT NULL,
@@ -126,16 +126,16 @@ CREATE TABLE APPLICATION (
 );
 
 -- Index for deployment isolation on APPLICATION
-CREATE INDEX idx_application_deployment_id ON APPLICATION (DEPLOYMENT_ID);
+CREATE INDEX IF NOT EXISTS idx_application_deployment_id ON APPLICATION (DEPLOYMENT_ID);
 
 -- Index for efficient lookups of applications by theme.
-CREATE INDEX idx_application_theme_id ON APPLICATION(THEME_ID);
+CREATE INDEX IF NOT EXISTS idx_application_theme_id ON APPLICATION(THEME_ID);
 
 -- Index for efficient lookups of applications by layout.
-CREATE INDEX idx_application_layout_id ON APPLICATION(LAYOUT_ID);
+CREATE INDEX IF NOT EXISTS idx_application_layout_id ON APPLICATION(LAYOUT_ID);
 
 -- Table to store OAuth configurations for applications.
-CREATE TABLE APP_OAUTH_INBOUND_CONFIG (
+CREATE TABLE IF NOT EXISTS APP_OAUTH_INBOUND_CONFIG (
     ID INTEGER PRIMARY KEY AUTOINCREMENT,
     DEPLOYMENT_ID VARCHAR(255) NOT NULL,
     CLIENT_ID VARCHAR(255) NOT NULL,
@@ -146,10 +146,10 @@ CREATE TABLE APP_OAUTH_INBOUND_CONFIG (
 );
 
 -- Index for deployment isolation on APP_OAUTH_INBOUND_CONFIG
-CREATE INDEX idx_app_oauth_inbound_config_deployment_id ON APP_OAUTH_INBOUND_CONFIG (DEPLOYMENT_ID);
+CREATE INDEX IF NOT EXISTS idx_app_oauth_inbound_config_deployment_id ON APP_OAUTH_INBOUND_CONFIG (DEPLOYMENT_ID);
 
 -- Table to store identity providers.
-CREATE TABLE IDP (
+CREATE TABLE IF NOT EXISTS IDP (
     ID INTEGER PRIMARY KEY AUTOINCREMENT,
     DEPLOYMENT_ID VARCHAR(255) NOT NULL,
     IDP_ID VARCHAR(36) NOT NULL,
@@ -163,10 +163,10 @@ CREATE TABLE IDP (
 );
 
 -- Index for deployment isolation on IDP
-CREATE INDEX idx_idp_deployment_id ON IDP (DEPLOYMENT_ID);
+CREATE INDEX IF NOT EXISTS idx_idp_deployment_id ON IDP (DEPLOYMENT_ID);
 
 -- Table to store notification senders.
-CREATE TABLE NOTIFICATION_SENDER (
+CREATE TABLE IF NOT EXISTS NOTIFICATION_SENDER (
     ID INTEGER PRIMARY KEY AUTOINCREMENT,
     DEPLOYMENT_ID VARCHAR(255) NOT NULL,
     NAME VARCHAR(255) NOT NULL,
@@ -181,10 +181,10 @@ CREATE TABLE NOTIFICATION_SENDER (
 );
 
 -- Index for deployment isolation on NOTIFICATION_SENDER
-CREATE INDEX idx_notification_sender_deployment_id ON NOTIFICATION_SENDER (DEPLOYMENT_ID);
+CREATE INDEX IF NOT EXISTS idx_notification_sender_deployment_id ON NOTIFICATION_SENDER (DEPLOYMENT_ID);
 
 -- Table to store certificates associated with various entities.
-CREATE TABLE CERTIFICATE (
+CREATE TABLE IF NOT EXISTS CERTIFICATE (
     ID INTEGER PRIMARY KEY AUTOINCREMENT,
     DEPLOYMENT_ID VARCHAR(255) NOT NULL,
     CERT_ID VARCHAR(36) NOT NULL,
@@ -199,10 +199,10 @@ CREATE TABLE CERTIFICATE (
 );
 
 -- Index for deployment isolation on CERTIFICATE
-CREATE INDEX idx_certificate_deployment_id ON CERTIFICATE (DEPLOYMENT_ID);
+CREATE INDEX IF NOT EXISTS idx_certificate_deployment_id ON CERTIFICATE (DEPLOYMENT_ID);
 
 -- Table to store resource servers.
-CREATE TABLE RESOURCE_SERVER (
+CREATE TABLE IF NOT EXISTS RESOURCE_SERVER (
     ID INTEGER PRIMARY KEY AUTOINCREMENT,
     DEPLOYMENT_ID VARCHAR(255) NOT NULL,
     RESOURCE_SERVER_ID VARCHAR(36) NOT NULL,
@@ -219,15 +219,15 @@ CREATE TABLE RESOURCE_SERVER (
 );
 
 -- Index for deployment isolation on RESOURCE_SERVER
-CREATE INDEX idx_resource_server_deployment_id ON RESOURCE_SERVER (DEPLOYMENT_ID);
+CREATE INDEX IF NOT EXISTS idx_resource_server_deployment_id ON RESOURCE_SERVER (DEPLOYMENT_ID);
 
 -- Unique constraint: Resource server identifier must be unique per deployment (when not null)
-CREATE UNIQUE INDEX uq_resource_server_identifier
+CREATE UNIQUE INDEX IF NOT EXISTS uq_resource_server_identifier
     ON RESOURCE_SERVER(IDENTIFIER, DEPLOYMENT_ID)
     WHERE IDENTIFIER IS NOT NULL;
 
 -- Table to store resources within resource servers.
-CREATE TABLE RESOURCE (
+CREATE TABLE IF NOT EXISTS RESOURCE (
     ID INTEGER PRIMARY KEY AUTOINCREMENT,
     DEPLOYMENT_ID VARCHAR(255) NOT NULL,
     RESOURCE_ID VARCHAR(36) NOT NULL,
@@ -254,20 +254,20 @@ CREATE TABLE RESOURCE (
 );
 
 -- Index for deployment isolation on RESOURCE
-CREATE INDEX idx_resource_deployment_id ON RESOURCE (DEPLOYMENT_ID);
+CREATE INDEX IF NOT EXISTS idx_resource_deployment_id ON RESOURCE (DEPLOYMENT_ID);
 
 -- Unique constraint: Resource handle must be unique under the same parent per deployment
-CREATE UNIQUE INDEX uq_resource_handle_with_parent
+CREATE UNIQUE INDEX IF NOT EXISTS uq_resource_handle_with_parent
     ON RESOURCE(RESOURCE_SERVER_ID, PARENT_RESOURCE_ID, HANDLE, DEPLOYMENT_ID)
     WHERE PARENT_RESOURCE_ID IS NOT NULL;
 
 -- Unique constraint: Root-level resource handles must be unique per resource server per deployment
-CREATE UNIQUE INDEX uq_resource_handle_null_parent
+CREATE UNIQUE INDEX IF NOT EXISTS uq_resource_handle_null_parent
     ON RESOURCE(RESOURCE_SERVER_ID, HANDLE, DEPLOYMENT_ID)
     WHERE PARENT_RESOURCE_ID IS NULL;
 
 -- Table to store actions at resource server or resource level.
-CREATE TABLE ACTION (
+CREATE TABLE IF NOT EXISTS ACTION (
     ID INTEGER PRIMARY KEY AUTOINCREMENT,
     DEPLOYMENT_ID VARCHAR(255) NOT NULL,
     ACTION_ID VARCHAR(36) NOT NULL,
@@ -293,20 +293,20 @@ CREATE TABLE ACTION (
 );
 
 -- Index for deployment isolation on ACTION
-CREATE INDEX idx_action_deployment_id ON ACTION (DEPLOYMENT_ID);
+CREATE INDEX IF NOT EXISTS idx_action_deployment_id ON ACTION (DEPLOYMENT_ID);
 
 -- Unique constraint: Server-level action handles must be unique per resource server per deployment
-CREATE UNIQUE INDEX uq_action_server_handle
+CREATE UNIQUE INDEX IF NOT EXISTS uq_action_server_handle
     ON ACTION(RESOURCE_SERVER_ID, HANDLE, DEPLOYMENT_ID)
     WHERE RESOURCE_ID IS NULL;
 
 -- Unique constraint: Resource-level action handles must be unique per resource per deployment
-CREATE UNIQUE INDEX uq_action_resource_handle
+CREATE UNIQUE INDEX IF NOT EXISTS uq_action_resource_handle
     ON ACTION(RESOURCE_ID, HANDLE, DEPLOYMENT_ID)
     WHERE RESOURCE_ID IS NOT NULL;
 
 -- Table to store active flow definitions
-CREATE TABLE FLOW (
+CREATE TABLE IF NOT EXISTS FLOW (
     ID INTEGER PRIMARY KEY AUTOINCREMENT,
     DEPLOYMENT_ID VARCHAR(255) NOT NULL,
     FLOW_ID VARCHAR(36) NOT NULL,
@@ -322,13 +322,13 @@ CREATE TABLE FLOW (
 );
 
 -- Index for deployment isolation on FLOW
-CREATE INDEX idx_flow_deployment_id ON FLOW (DEPLOYMENT_ID);
+CREATE INDEX IF NOT EXISTS idx_flow_deployment_id ON FLOW (DEPLOYMENT_ID);
 
 -- Index for flow type on FLOW
-CREATE INDEX idx_flow_type ON FLOW (FLOW_TYPE);
+CREATE INDEX IF NOT EXISTS idx_flow_type ON FLOW (FLOW_TYPE);
 
 -- Table to store flow version history
-CREATE TABLE FLOW_VERSION (
+CREATE TABLE IF NOT EXISTS FLOW_VERSION (
     ID INTEGER PRIMARY KEY AUTOINCREMENT,
     DEPLOYMENT_ID VARCHAR(255) NOT NULL,
     FLOW_INTERNAL_ID INTEGER NOT NULL,
@@ -343,13 +343,13 @@ CREATE TABLE FLOW_VERSION (
 );
 
 -- Index for deployment isolation on FLOW_VERSION
-CREATE INDEX idx_flow_version_deployment_id ON FLOW_VERSION (DEPLOYMENT_ID);
+CREATE INDEX IF NOT EXISTS idx_flow_version_deployment_id ON FLOW_VERSION (DEPLOYMENT_ID);
 
 -- Index for flow lookup on FLOW_VERSION
-CREATE INDEX idx_flow_version_flow_internal_id ON FLOW_VERSION (FLOW_INTERNAL_ID, DEPLOYMENT_ID);
+CREATE INDEX IF NOT EXISTS idx_flow_version_flow_internal_id ON FLOW_VERSION (FLOW_INTERNAL_ID, DEPLOYMENT_ID);
 
 -- Table to store i18n translations
-CREATE TABLE TRANSLATION (
+CREATE TABLE IF NOT EXISTS TRANSLATION (
     ID              INTEGER PRIMARY KEY AUTOINCREMENT,
     DEPLOYMENT_ID   VARCHAR(255) NOT NULL,
     MESSAGE_KEY     VARCHAR(255) NOT NULL,
@@ -362,13 +362,13 @@ CREATE TABLE TRANSLATION (
 );
 
 -- Index for efficient language-based lookups
-CREATE INDEX idx_translation_language ON TRANSLATION (DEPLOYMENT_ID, LANGUAGE_CODE);
+CREATE INDEX IF NOT EXISTS idx_translation_language ON TRANSLATION (DEPLOYMENT_ID, LANGUAGE_CODE);
 
 -- Index for efficient key-based lookups
-CREATE INDEX idx_translation_key ON TRANSLATION (DEPLOYMENT_ID, MESSAGE_KEY);
+CREATE INDEX IF NOT EXISTS idx_translation_key ON TRANSLATION (DEPLOYMENT_ID, MESSAGE_KEY);
 
 -- Index for efficient namespace-based lookups
-CREATE INDEX idx_translation_namespace ON TRANSLATION (DEPLOYMENT_ID, NAMESPACE);
+CREATE INDEX IF NOT EXISTS idx_translation_namespace ON TRANSLATION (DEPLOYMENT_ID, NAMESPACE);
 
 -- Index for efficient language and namespace combination lookups
-CREATE INDEX idx_translation_lang_namespace ON TRANSLATION (DEPLOYMENT_ID, LANGUAGE_CODE, NAMESPACE);
+CREATE INDEX IF NOT EXISTS idx_translation_lang_namespace ON TRANSLATION (DEPLOYMENT_ID, LANGUAGE_CODE, NAMESPACE);
