@@ -212,6 +212,17 @@ The following table lists the configurable parameters of the Thunder chart and t
 | `httproute.parentRefs`                | Gateway references this route attaches to (required when enabled)            | `[]`                         |
 | `httproute.hostnames`                 | Hostnames this route responds to                                             | `[]`                         |
 
+### Gateway Parameters
+
+| Name                                  | Description                                                                  | Default                      |
+| ------------------------------------- | ---------------------------------------------------------------------------- | ---------------------------- |
+| `gateway.enabled`                     | Enable Gateway API Gateway resource (alternative to Ingress)                 | `false`                      |
+| `gateway.name`                        | Override the name of the Gateway resource                                    | `""`                         |
+| `gateway.className`                   | Gateway class name                                                           | `nginx`                      |
+| `gateway.tls.enabled`                 | Enable TLS listener on the Gateway                                           | `true`                       |
+| `gateway.tls.secretName`              | TLS secret name for HTTPS listener                                           | `thunder-tls`                |
+| `gateway.tls.mode`                    | TLS reference mode                                                           | `Terminate`                  |
+
 ### Database Password Management
 
 Thunder provides flexible password management for database connections with automatic Kubernetes Secret integration.
