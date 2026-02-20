@@ -248,6 +248,164 @@ func (_c *DBClientInterfaceMock_ExecuteContext_Call) RunAndReturn(run func(ctx c
 	return _c
 }
 
+// ExecuteWithReturning provides a mock function for the type DBClientInterfaceMock
+func (_mock *DBClientInterfaceMock) ExecuteWithReturning(query model.DBQuery, args ...interface{}) ([]map[string]interface{}, error) {
+	var _ca []interface{}
+	_ca = append(_ca, query)
+	_ca = append(_ca, args...)
+	ret := _mock.Called(_ca...)
+
+	if len(ret) == 0 {
+		panic("no return value specified for ExecuteWithReturning")
+	}
+
+	var r0 []map[string]interface{}
+	var r1 error
+	if returnFunc, ok := ret.Get(0).(func(model.DBQuery, ...interface{}) ([]map[string]interface{}, error)); ok {
+		return returnFunc(query, args...)
+	}
+	if returnFunc, ok := ret.Get(0).(func(model.DBQuery, ...interface{}) []map[string]interface{}); ok {
+		r0 = returnFunc(query, args...)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).([]map[string]interface{})
+		}
+	}
+	if returnFunc, ok := ret.Get(1).(func(model.DBQuery, ...interface{}) error); ok {
+		r1 = returnFunc(query, args...)
+	} else {
+		r1 = ret.Error(1)
+	}
+	return r0, r1
+}
+
+// DBClientInterfaceMock_ExecuteWithReturning_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'ExecuteWithReturning'
+type DBClientInterfaceMock_ExecuteWithReturning_Call struct {
+	*mock.Call
+}
+
+// ExecuteWithReturning is a helper method to define mock.On call
+//   - query model.DBQuery
+//   - args ...interface{}
+func (_e *DBClientInterfaceMock_Expecter) ExecuteWithReturning(query interface{}, args ...interface{}) *DBClientInterfaceMock_ExecuteWithReturning_Call {
+	return &DBClientInterfaceMock_ExecuteWithReturning_Call{Call: _e.mock.On("ExecuteWithReturning",
+		append([]interface{}{query}, args...)...)}
+}
+
+func (_c *DBClientInterfaceMock_ExecuteWithReturning_Call) Run(run func(query model.DBQuery, args ...interface{})) *DBClientInterfaceMock_ExecuteWithReturning_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 model.DBQuery
+		if args[0] != nil {
+			arg0 = args[0].(model.DBQuery)
+		}
+		var arg1 []interface{}
+		variadicArgs := make([]interface{}, len(args)-1)
+		for i, a := range args[1:] {
+			if a != nil {
+				variadicArgs[i] = a.(interface{})
+			}
+		}
+		arg1 = variadicArgs
+		run(
+			arg0,
+			arg1...,
+		)
+	})
+	return _c
+}
+
+func (_c *DBClientInterfaceMock_ExecuteWithReturning_Call) Return(stringToIfaceVals []map[string]interface{}, err error) *DBClientInterfaceMock_ExecuteWithReturning_Call {
+	_c.Call.Return(stringToIfaceVals, err)
+	return _c
+}
+
+func (_c *DBClientInterfaceMock_ExecuteWithReturning_Call) RunAndReturn(run func(query model.DBQuery, args ...interface{}) ([]map[string]interface{}, error)) *DBClientInterfaceMock_ExecuteWithReturning_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
+// ExecuteWithReturningContext provides a mock function for the type DBClientInterfaceMock
+func (_mock *DBClientInterfaceMock) ExecuteWithReturningContext(ctx context.Context, query model.DBQuery, args ...interface{}) ([]map[string]interface{}, error) {
+	var _ca []interface{}
+	_ca = append(_ca, ctx, query)
+	_ca = append(_ca, args...)
+	ret := _mock.Called(_ca...)
+
+	if len(ret) == 0 {
+		panic("no return value specified for ExecuteWithReturningContext")
+	}
+
+	var r0 []map[string]interface{}
+	var r1 error
+	if returnFunc, ok := ret.Get(0).(func(context.Context, model.DBQuery, ...interface{}) ([]map[string]interface{}, error)); ok {
+		return returnFunc(ctx, query, args...)
+	}
+	if returnFunc, ok := ret.Get(0).(func(context.Context, model.DBQuery, ...interface{}) []map[string]interface{}); ok {
+		r0 = returnFunc(ctx, query, args...)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).([]map[string]interface{})
+		}
+	}
+	if returnFunc, ok := ret.Get(1).(func(context.Context, model.DBQuery, ...interface{}) error); ok {
+		r1 = returnFunc(ctx, query, args...)
+	} else {
+		r1 = ret.Error(1)
+	}
+	return r0, r1
+}
+
+// DBClientInterfaceMock_ExecuteWithReturningContext_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'ExecuteWithReturningContext'
+type DBClientInterfaceMock_ExecuteWithReturningContext_Call struct {
+	*mock.Call
+}
+
+// ExecuteWithReturningContext is a helper method to define mock.On call
+//   - ctx context.Context
+//   - query model.DBQuery
+//   - args ...interface{}
+func (_e *DBClientInterfaceMock_Expecter) ExecuteWithReturningContext(ctx interface{}, query interface{}, args ...interface{}) *DBClientInterfaceMock_ExecuteWithReturningContext_Call {
+	return &DBClientInterfaceMock_ExecuteWithReturningContext_Call{Call: _e.mock.On("ExecuteWithReturningContext",
+		append([]interface{}{ctx, query}, args...)...)}
+}
+
+func (_c *DBClientInterfaceMock_ExecuteWithReturningContext_Call) Run(run func(ctx context.Context, query model.DBQuery, args ...interface{})) *DBClientInterfaceMock_ExecuteWithReturningContext_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 context.Context
+		if args[0] != nil {
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 model.DBQuery
+		if args[1] != nil {
+			arg1 = args[1].(model.DBQuery)
+		}
+		var arg2 []interface{}
+		variadicArgs := make([]interface{}, len(args)-2)
+		for i, a := range args[2:] {
+			if a != nil {
+				variadicArgs[i] = a.(interface{})
+			}
+		}
+		arg2 = variadicArgs
+		run(
+			arg0,
+			arg1,
+			arg2...,
+		)
+	})
+	return _c
+}
+
+func (_c *DBClientInterfaceMock_ExecuteWithReturningContext_Call) Return(stringToIfaceVals []map[string]interface{}, err error) *DBClientInterfaceMock_ExecuteWithReturningContext_Call {
+	_c.Call.Return(stringToIfaceVals, err)
+	return _c
+}
+
+func (_c *DBClientInterfaceMock_ExecuteWithReturningContext_Call) RunAndReturn(run func(ctx context.Context, query model.DBQuery, args ...interface{}) ([]map[string]interface{}, error)) *DBClientInterfaceMock_ExecuteWithReturningContext_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
 // GetTransactioner provides a mock function for the type DBClientInterfaceMock
 func (_mock *DBClientInterfaceMock) GetTransactioner() (transaction.Transactioner, error) {
 	ret := _mock.Called()

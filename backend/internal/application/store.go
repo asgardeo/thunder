@@ -19,6 +19,7 @@
 package application
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -72,7 +73,7 @@ type userInfoConfig struct {
 
 // ApplicationStoreInterface defines the interface for application data persistence operations.
 type applicationStoreInterface interface {
-	CreateApplication(app model.ApplicationProcessedDTO) error
+	CreateApplication(app *model.ApplicationProcessedDTO) error
 	GetTotalApplicationCount() (int, error)
 	GetApplicationList() ([]model.BasicApplicationDTO, error)
 	GetOAuthApplication(clientID string) (*model.OAuthAppConfigProcessedDTO, error)
@@ -85,54 +86,99 @@ type applicationStoreInterface interface {
 // applicationStore implements the applicationStoreInterface for handling application data persistence.
 type applicationStore struct {
 	deploymentID string
+	dbProvider   provider.DBProviderInterface
 }
 
 // NewApplicationStore creates a new instance of applicationStore.
 func newApplicationStore() applicationStoreInterface {
 	return &applicationStore{
 		deploymentID: config.GetThunderRuntime().Config.Server.Identifier,
+		dbProvider:   provider.GetDBProvider(),
 	}
 }
 
 // CreateApplication creates a new application in the database.
-func (st *applicationStore) CreateApplication(app model.ApplicationProcessedDTO) error {
-	jsonDataBytes, err := getAppJSONDataBytes(&app)
+func (st *applicationStore) CreateApplication(app *model.ApplicationProcessedDTO) error {
+	jsonDataBytes, err := getAppJSONDataBytes(app)
 	if err != nil {
 		return err
 	}
 
-	queries := []func(tx dbmodel.TxInterface) error{
-		func(tx dbmodel.TxInterface) error {
-			isRegistrationEnabledStr := utils.BoolToNumString(app.IsRegistrationFlowEnabled)
-			var themeID interface{}
-			if app.ThemeID != "" {
-				themeID = app.ThemeID
-			} else {
-				themeID = nil
-			}
-			var layoutID interface{}
-			if app.LayoutID != "" {
-				layoutID = app.LayoutID
-			} else {
-				layoutID = nil
-			}
-			_, err := tx.Exec(queryCreateApplication, app.ID, app.Name, app.Description,
-				app.AuthFlowID, app.RegistrationFlowID, isRegistrationEnabledStr, themeID, layoutID,
-				jsonDataBytes, st.deploymentID)
-			return err
-		},
-	}
-	// TODO: Need to refactor when supporting other/multiple inbound auth types.
-	if len(app.InboundAuthConfig) > 0 {
-		queries = append(queries, createOAuthAppQuery(&app, queryCreateOAuthApplication, st.deploymentID))
+	dbClient, err := st.dbProvider.GetConfigDBClient()
+	if err != nil {
+		return fmt.Errorf("failed to get database client: %w", err)
 	}
 
-	return executeTransaction(queries)
+	transactioner, err := dbClient.GetTransactioner()
+	if err != nil {
+		return fmt.Errorf("failed to get transactioner: %w", err)
+	}
+
+	return transactioner.Transact(context.Background(), func(ctx context.Context) error {
+		isRegistrationEnabledStr := utils.BoolToNumString(app.IsRegistrationFlowEnabled)
+		var themeID interface{}
+		if app.ThemeID != "" {
+			themeID = app.ThemeID
+		} else {
+			themeID = nil
+		}
+		var layoutID interface{}
+		if app.LayoutID != "" {
+			layoutID = app.LayoutID
+		} else {
+			layoutID = nil
+		}
+
+		result, err := dbClient.ExecuteWithReturningContext(ctx, queryCreateApplication, app.ID, app.Name,
+			app.Description, app.AuthFlowID, app.RegistrationFlowID, isRegistrationEnabledStr, themeID,
+			layoutID, jsonDataBytes, st.deploymentID)
+		if err != nil {
+			return err
+		}
+
+		if len(result) == 0 {
+			return fmt.Errorf("no ID returned after application creation")
+		}
+
+		// Assuming ID is returned as an int64 or int
+		var appInternalID int
+		if id, ok := result[0]["id"].(int64); ok {
+			appInternalID = int(id)
+		} else if id, ok := result[0]["id"].(int); ok {
+			appInternalID = id
+		} else {
+			return fmt.Errorf("failed to parse application internal ID from result")
+		}
+		app.InternalID = appInternalID
+
+		// TODO: Need to refactor when supporting other/multiple inbound auth types.
+		if len(app.InboundAuthConfig) > 0 {
+			// Using helper function logic inline or adapted for dbClient if helper expects TxInterface
+			// The helper createOAuthAppQuery returns a function expecting TxInterface.
+			// We cannot reuse local helper createOAuthAppQuery as is because it expects TxInterface.
+			// We should implement the logic directly using dbClient.ExecuteContext here.
+
+			inbound := app.InboundAuthConfig[0]
+			if inbound.Type == model.OAuthInboundAuthType && inbound.OAuthAppConfig != nil {
+				config := inbound.OAuthAppConfig
+				oauthConfigJSON, err := getOAuthConfigJSONBytes(inbound)
+				if err != nil {
+					return err
+				}
+				_, err = dbClient.ExecuteContext(ctx, queryCreateOAuthApplication, appInternalID, config.ClientID,
+					config.HashedClientSecret, oauthConfigJSON, st.deploymentID)
+				if err != nil {
+					return fmt.Errorf("failed to create OAuth application: %w", err)
+				}
+			}
+		}
+		return nil
+	})
 }
 
 // GetTotalApplicationCount retrieves the total count of applications from the database.
 func (st *applicationStore) GetTotalApplicationCount() (int, error) {
-	dbClient, err := provider.GetDBProvider().GetConfigDBClient()
+	dbClient, err := st.dbProvider.GetConfigDBClient()
 	if err != nil {
 		return 0, fmt.Errorf("failed to get database client: %w", err)
 	}
@@ -158,7 +204,7 @@ func (st *applicationStore) GetTotalApplicationCount() (int, error) {
 func (st *applicationStore) GetApplicationList() ([]model.BasicApplicationDTO, error) {
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, "ApplicationPersistence"))
 
-	dbClient, err := provider.GetDBProvider().GetConfigDBClient()
+	dbClient, err := st.dbProvider.GetConfigDBClient()
 	if err != nil {
 		logger.Error("Failed to get database client", log.Error(err))
 		return nil, fmt.Errorf("failed to get database client: %w", err)
@@ -188,7 +234,7 @@ func (st *applicationStore) GetApplicationList() ([]model.BasicApplicationDTO, e
 func (st *applicationStore) GetOAuthApplication(clientID string) (*model.OAuthAppConfigProcessedDTO, error) {
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, "ApplicationStore"))
 
-	dbClient, err := provider.GetDBProvider().GetConfigDBClient()
+	dbClient, err := st.dbProvider.GetConfigDBClient()
 	if err != nil {
 		logger.Error("Failed to get database client", log.Error(err))
 		return nil, fmt.Errorf("failed to get database client: %w", err)
@@ -322,7 +368,7 @@ func (st *applicationStore) getApplicationByQuery(query dbmodel.DBQuery, params 
 	*model.ApplicationProcessedDTO, error) {
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, "ApplicationStore"))
 
-	dbClient, err := provider.GetDBProvider().GetConfigDBClient()
+	dbClient, err := st.dbProvider.GetConfigDBClient()
 	if err != nil {
 		logger.Error("Failed to get database client", log.Error(err))
 		return nil, fmt.Errorf("failed to get database client: %w", err)
@@ -382,7 +428,7 @@ func (st *applicationStore) UpdateApplication(existingApp, updatedApp *model.App
 	}
 	// TODO: Need to refactor when supporting other/multiple inbound auth types.
 	if len(updatedApp.InboundAuthConfig) > 0 && len(existingApp.InboundAuthConfig) > 0 {
-		queries = append(queries, createOAuthAppQuery(updatedApp, queryUpdateOAuthApplicationByAppID, st.deploymentID))
+		queries = append(queries, createOAuthAppQuery(&existingApp.InternalID, updatedApp, queryUpdateOAuthApplicationByAppID, st.deploymentID))
 	} else if len(existingApp.InboundAuthConfig) > 0 {
 		clientID := ""
 		if len(existingApp.InboundAuthConfig) > 0 && existingApp.InboundAuthConfig[0].OAuthAppConfig != nil {
@@ -390,17 +436,19 @@ func (st *applicationStore) UpdateApplication(existingApp, updatedApp *model.App
 		}
 		queries = append(queries, deleteOAuthAppQuery(clientID, st.deploymentID))
 	} else if len(updatedApp.InboundAuthConfig) > 0 {
-		queries = append(queries, createOAuthAppQuery(updatedApp, queryCreateOAuthApplication, st.deploymentID))
+		fmt.Printf("UpdateApplication: Adding OAuth config. existingApp.InternalID: %d, st.deploymentID: %s\n",
+			existingApp.InternalID, st.deploymentID)
+		queries = append(queries, createOAuthAppQuery(&existingApp.InternalID, updatedApp, queryCreateOAuthApplication, st.deploymentID))
 	}
 
-	return executeTransaction(queries)
+	return st.executeTransaction(queries)
 }
 
 // DeleteApplication deletes an application from the database by its ID.
 func (st *applicationStore) DeleteApplication(id string) error {
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, "ApplicationStore"))
 
-	dbClient, err := provider.GetDBProvider().GetConfigDBClient()
+	dbClient, err := st.dbProvider.GetConfigDBClient()
 	if err != nil {
 		logger.Error("Failed to get database client", log.Error(err))
 		return fmt.Errorf("failed to get database client: %w", err)
@@ -508,7 +556,9 @@ func getOAuthConfigJSONBytes(inboundAuthConfig model.InboundAuthConfigProcessedD
 }
 
 // createOAuthAppQuery creates a query function for creating or updating an OAuth application.
-func createOAuthAppQuery(app *model.ApplicationProcessedDTO,
+
+// createOAuthAppQuery creates a query function for creating or updating an OAuth application.
+func createOAuthAppQuery(appInternalID *int, app *model.ApplicationProcessedDTO,
 	oauthAppMgtQuery dbmodel.DBQuery, deploymentID string) func(tx dbmodel.TxInterface) error {
 	inboundAuthConfig := app.InboundAuthConfig[0]
 	clientID := inboundAuthConfig.OAuthAppConfig.ClientID
@@ -523,8 +573,23 @@ func createOAuthAppQuery(app *model.ApplicationProcessedDTO,
 	}
 
 	return func(tx dbmodel.TxInterface) error {
-		_, err := tx.Exec(oauthAppMgtQuery, app.ID, clientID, clientSecret, oauthConfigJSON, deploymentID)
+		_, err := tx.Exec(oauthAppMgtQuery, *appInternalID, clientID, clientSecret, oauthConfigJSON, deploymentID)
 		return err
+	}
+}
+
+// resolveAppInternalID extracts and converts the internal ID from a database result row.
+// Handles different integer types returned by various database drivers.
+func resolveAppInternalID(value interface{}) (int, error) {
+	switch v := value.(type) {
+	case int:
+		return v, nil
+	case int64:
+		return int(v), nil
+	case float64:
+		return int(v), nil
+	default:
+		return 0, fmt.Errorf("unexpected app internal ID type: %T", v)
 	}
 }
 
@@ -606,6 +671,33 @@ func buildBasicApplicationFromResultRow(row map[string]interface{}) (model.Basic
 		IsRegistrationFlowEnabled: isRegistrationFlowEnabled,
 		ThemeID:                   themeID,
 		LayoutID:                  layoutID,
+	}
+
+	// Extract internal ID if present in the result row.
+	var internalIDVal interface{}
+	// Debug logging to identify the correct key
+	keys := make([]string, 0, len(row))
+	for k := range row {
+		keys = append(keys, k)
+	}
+	fmt.Printf("DEBUG: buildBasicApplicationFromResultRow row keys: %v, internal_id_val: %v\n", keys, row["internal_id"])
+
+	if val, ok := row["internal_id"]; ok {
+		internalIDVal = val
+	} else if val, ok := row["INTERNAL_ID"]; ok {
+		internalIDVal = val
+	} else if val, ok := row["id"]; ok {
+		internalIDVal = val
+	} else if val, ok := row["ID"]; ok {
+		internalIDVal = val
+	}
+
+	if internalIDVal != nil {
+		internalID, err := resolveAppInternalID(internalIDVal)
+		if err != nil {
+			return model.BasicApplicationDTO{}, err
+		}
+		application.InternalID = internalID
 	}
 
 	if row["client_id"] != nil {
@@ -773,6 +865,7 @@ func buildApplicationFromResultRow(row map[string]interface{}) (model.Applicatio
 	}
 
 	application := model.ApplicationProcessedDTO{
+		InternalID:                basicApp.InternalID,
 		ID:                        basicApp.ID,
 		Name:                      basicApp.Name,
 		Description:               basicApp.Description,
@@ -910,10 +1003,10 @@ func buildOAuthInboundAuthConfig(row map[string]interface{}, basicApp model.Basi
 }
 
 // executeTransaction is a helper function to handle database transactions.
-func executeTransaction(queries []func(tx dbmodel.TxInterface) error) error {
+func (st *applicationStore) executeTransaction(queries []func(tx dbmodel.TxInterface) error) error {
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, "ApplicationStore"))
 
-	dbClient, err := provider.GetDBProvider().GetConfigDBClient()
+	dbClient, err := st.dbProvider.GetConfigDBClient()
 	if err != nil {
 		return fmt.Errorf("failed to get database client: %w", err)
 	}

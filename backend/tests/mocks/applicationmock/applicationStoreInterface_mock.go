@@ -37,7 +37,7 @@ func (_m *applicationStoreInterfaceMock) EXPECT() *applicationStoreInterfaceMock
 }
 
 // CreateApplication provides a mock function for the type applicationStoreInterfaceMock
-func (_mock *applicationStoreInterfaceMock) CreateApplication(app model.ApplicationProcessedDTO) error {
+func (_mock *applicationStoreInterfaceMock) CreateApplication(app *model.ApplicationProcessedDTO) error {
 	ret := _mock.Called(app)
 
 	if len(ret) == 0 {
@@ -45,7 +45,7 @@ func (_mock *applicationStoreInterfaceMock) CreateApplication(app model.Applicat
 	}
 
 	var r0 error
-	if returnFunc, ok := ret.Get(0).(func(model.ApplicationProcessedDTO) error); ok {
+	if returnFunc, ok := ret.Get(0).(func(*model.ApplicationProcessedDTO) error); ok {
 		r0 = returnFunc(app)
 	} else {
 		r0 = ret.Error(0)
@@ -59,16 +59,16 @@ type applicationStoreInterfaceMock_CreateApplication_Call struct {
 }
 
 // CreateApplication is a helper method to define mock.On call
-//   - app model.ApplicationProcessedDTO
+//   - app *model.ApplicationProcessedDTO
 func (_e *applicationStoreInterfaceMock_Expecter) CreateApplication(app interface{}) *applicationStoreInterfaceMock_CreateApplication_Call {
 	return &applicationStoreInterfaceMock_CreateApplication_Call{Call: _e.mock.On("CreateApplication", app)}
 }
 
-func (_c *applicationStoreInterfaceMock_CreateApplication_Call) Run(run func(app model.ApplicationProcessedDTO)) *applicationStoreInterfaceMock_CreateApplication_Call {
+func (_c *applicationStoreInterfaceMock_CreateApplication_Call) Run(run func(app *model.ApplicationProcessedDTO)) *applicationStoreInterfaceMock_CreateApplication_Call {
 	_c.Call.Run(func(args mock.Arguments) {
-		var arg0 model.ApplicationProcessedDTO
+		var arg0 *model.ApplicationProcessedDTO
 		if args[0] != nil {
-			arg0 = args[0].(model.ApplicationProcessedDTO)
+			arg0 = args[0].(*model.ApplicationProcessedDTO)
 		}
 		run(
 			arg0,
@@ -82,7 +82,7 @@ func (_c *applicationStoreInterfaceMock_CreateApplication_Call) Return(err error
 	return _c
 }
 
-func (_c *applicationStoreInterfaceMock_CreateApplication_Call) RunAndReturn(run func(app model.ApplicationProcessedDTO) error) *applicationStoreInterfaceMock_CreateApplication_Call {
+func (_c *applicationStoreInterfaceMock_CreateApplication_Call) RunAndReturn(run func(app *model.ApplicationProcessedDTO) error) *applicationStoreInterfaceMock_CreateApplication_Call {
 	_c.Call.Return(run)
 	return _c
 }

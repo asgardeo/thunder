@@ -42,6 +42,12 @@ type DBClientInterface interface {
 	Execute(query model.DBQuery, args ...interface{}) (int64, error)
 	// ExecuteContext executes a sql query without returning data with context support for transactions.
 	ExecuteContext(ctx context.Context, query model.DBQuery, args ...interface{}) (int64, error)
+	// ExecuteWithReturning executes a sql query that modifies data and returns the affected rows with updated data.
+	ExecuteWithReturning(query model.DBQuery, args ...interface{}) ([]map[string]interface{}, error)
+	// ExecuteWithReturningContext executes a sql query that modifies data and
+	// returns the affected rows with context support.
+	ExecuteWithReturningContext(
+		ctx context.Context, query model.DBQuery, args ...interface{}) ([]map[string]interface{}, error)
 	// BeginTx starts a new database transaction.
 	BeginTx() (model.TxInterface, error)
 	// GetTransactioner returns the transactioner for this client.
@@ -69,6 +75,8 @@ func (client *DBClient) Query(query model.DBQuery, args ...interface{}) ([]map[s
 
 // QueryContext executes a sql query that returns rows with context support for transactions.
 // If a transaction exists in the context, it will be used automatically.
+//
+//nolint:dupl
 func (client *DBClient) QueryContext(
 	ctx context.Context,
 	query model.DBQuery,
@@ -161,6 +169,79 @@ func (client *DBClient) ExecuteContext(ctx context.Context, query model.DBQuery,
 	}
 
 	return rowsAffected, nil
+}
+
+// ExecuteWithReturning executes a sql query that modifies data and returns the affected rows with updated data.
+// This is useful for UPDATE, DELETE, or INSERT queries with RETURNING clause to get the modified rows.
+func (client *DBClient) ExecuteWithReturning(
+	query model.DBQuery, args ...interface{}) ([]map[string]interface{}, error) {
+	return client.ExecuteWithReturningContext(context.Background(), query, args...)
+}
+
+// ExecuteWithReturningContext executes a sql query that modifies data and returns the affected rows
+// with context support.
+// If a transaction exists in the context, it will be used automatically.
+// This method executes the query and returns the resulting rows (typically from a RETURNING clause).
+//
+//nolint:dupl
+func (client *DBClient) ExecuteWithReturningContext(
+	ctx context.Context,
+	query model.DBQuery,
+	args ...interface{},
+) ([]map[string]interface{}, error) {
+	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, "DBClient"))
+	logger.Info("Executing query with returning", log.String("queryID", query.GetID()))
+
+	sqlQuery := query.GetQuery(client.dbType)
+
+	// Check if there's a transaction in the context
+	var rows *sql.Rows
+	var err error
+	if tx := transaction.TxFromContext(ctx); tx != nil {
+		rows, err = tx.QueryContext(ctx, sqlQuery, args...)
+	} else {
+		rows, err = client.db.Query(sqlQuery, args...)
+	}
+
+	if err != nil {
+		return nil, err
+	}
+	defer func() {
+		if closeErr := rows.Close(); closeErr != nil {
+			logger.Error("Error closing rows", log.Error(closeErr))
+		}
+	}()
+
+	columns, err := rows.Columns()
+	if err != nil {
+		return nil, err
+	}
+
+	var results []map[string]interface{}
+	for rows.Next() {
+		row := make([]interface{}, len(columns))
+		rowPointers := make([]interface{}, len(columns))
+		for i := range row {
+			rowPointers[i] = &row[i]
+		}
+
+		if err := rows.Scan(rowPointers...); err != nil {
+			return nil, err
+		}
+
+		result := map[string]interface{}{}
+		for i, col := range columns {
+			// Normalize column names to lowercase for consistency.
+			result[strings.ToLower(col)] = row[i]
+		}
+		results = append(results, result)
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+
+	return results, nil
 }
 
 // BeginTx starts a new database transaction.
