@@ -19,7 +19,6 @@
 package executor
 
 import (
-	"context"
 	"encoding/json"
 	"errors"
 	"slices"
@@ -28,6 +27,7 @@ import (
 
 	"github.com/asgardeo/thunder/internal/authn/assert"
 	authncm "github.com/asgardeo/thunder/internal/authn/common"
+	"github.com/asgardeo/thunder/internal/authnprovider"
 	"github.com/asgardeo/thunder/internal/flow/common"
 	"github.com/asgardeo/thunder/internal/flow/core"
 	oauth2const "github.com/asgardeo/thunder/internal/oauth/oauth2/constants"
@@ -36,7 +36,7 @@ import (
 	"github.com/asgardeo/thunder/internal/system/error/serviceerror"
 	"github.com/asgardeo/thunder/internal/system/jose/jwt"
 	"github.com/asgardeo/thunder/internal/system/log"
-	"github.com/asgardeo/thunder/internal/user"
+	"github.com/asgardeo/thunder/internal/userprovider"
 )
 
 const (
@@ -47,9 +47,10 @@ const (
 type authAssertExecutor struct {
 	core.ExecutorInterface
 	jwtService          jwt.JWTServiceInterface
-	userService         user.UserServiceInterface
 	ouService           ou.OrganizationUnitServiceInterface
 	authAssertGenerator assert.AuthAssertGeneratorInterface
+	authnProvider       authnprovider.AuthnProviderInterface
+	userProvider        userprovider.UserProviderInterface
 	logger              *log.Logger
 }
 
@@ -59,9 +60,10 @@ var _ core.ExecutorInterface = (*authAssertExecutor)(nil)
 func newAuthAssertExecutor(
 	flowFactory core.FlowFactoryInterface,
 	jwtService jwt.JWTServiceInterface,
-	userService user.UserServiceInterface,
 	ouService ou.OrganizationUnitServiceInterface,
 	assertGenerator assert.AuthAssertGeneratorInterface,
+	authnProvider authnprovider.AuthnProviderInterface,
+	userProvider userprovider.UserProviderInterface,
 ) *authAssertExecutor {
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, authAssertLoggerComponentName),
 		log.String(log.LoggerKeyExecutorName, ExecutorNameAuthAssert))
@@ -72,9 +74,10 @@ func newAuthAssertExecutor(
 	return &authAssertExecutor{
 		ExecutorInterface:   base,
 		jwtService:          jwtService,
-		userService:         userService,
 		ouService:           ouService,
 		authAssertGenerator: assertGenerator,
+		authnProvider:       authnProvider,
+		userProvider:        userProvider,
 		logger:              logger,
 	}
 }
@@ -288,16 +291,18 @@ func (a *authAssertExecutor) appendUserDetailsToClaims(ctx *core.NodeContext,
 			continue
 		}
 
-		// For users with local accounts, fetch from user store
+		// Fetch from user/authentication provider
 		if ctx.AuthenticatedUser.UserID != "" && attrs == nil {
 			var err error
-			_, attrs, err = a.getUserAttributes(ctx.AuthenticatedUser.UserID)
+			metadata := &authnprovider.GetAttributesMetadata{}
+			attrs, err = a.getUserAttributes(ctx.AuthenticatedUser.UserID, ctx.AuthenticatedUser.Token, userAttributes,
+				metadata)
 			if err != nil {
 				return err
 			}
 		}
 
-		// Check for the attribute in user store attributes
+		// Check for the attribute in attributes fetched from user/authentication provider
 		if attrs != nil {
 			if val, ok := attrs[attr]; ok {
 				jwtClaims[attr] = val
@@ -310,27 +315,43 @@ func (a *authAssertExecutor) appendUserDetailsToClaims(ctx *core.NodeContext,
 }
 
 // getUserAttributes retrieves user details and unmarshal the attributes.
-func (a *authAssertExecutor) getUserAttributes(userID string) (
-	*user.User, map[string]interface{}, error) {
+func (a *authAssertExecutor) getUserAttributes(userID string, token string, requestedAttributes []string,
+	metadata *authnprovider.GetAttributesMetadata) (map[string]interface{}, error) {
 	logger := a.logger.With(log.String("userID", userID))
 
-	var svcErr *serviceerror.ServiceError
-	user, svcErr := a.userService.GetUser(context.TODO(), userID)
-	if svcErr != nil {
-		logger.Error("Failed to fetch user attributes",
-			log.String("userID", userID), log.Any("error", svcErr))
-		return nil, nil, errors.New("something went wrong while fetching user attributes: " +
-			svcErr.ErrorDescription)
+	var jsonAttrs json.RawMessage
+
+	if token != "" {
+		res, err := a.authnProvider.GetAttributes(token, requestedAttributes, metadata)
+		if err != nil {
+			logger.Error("Failed to fetch user attributes",
+				log.String("userID", userID), log.Any("error", err))
+			return nil, errors.New("something went wrong while fetching user attributes: " + err.Error())
+		}
+		jsonAttrs = res.Attributes
+	} else {
+		res, err := a.userProvider.GetUser(userID)
+		if err != nil {
+			logger.Error("Failed to fetch user attributes",
+				log.String("userID", userID), log.Any("error", err))
+			return nil, errors.New("something went wrong while fetching user attributes: " + err.Error())
+		}
+		jsonAttrs = res.Attributes
+	}
+
+	if len(jsonAttrs) == 0 {
+		logger.Error("No user attributes returned")
+		return nil, errors.New("no user attributes returned")
 	}
 
 	var attrs map[string]interface{}
-	if err := json.Unmarshal(user.Attributes, &attrs); err != nil {
+	if err := json.Unmarshal(jsonAttrs, &attrs); err != nil {
 		logger.Error("Failed to unmarshal user attributes", log.String("userID", userID),
 			log.Error(err))
-		return nil, nil, errors.New("something went wrong while unmarshalling user attributes: " + err.Error())
+		return nil, errors.New("something went wrong while unmarshalling user attributes: " + err.Error())
 	}
 
-	return user, attrs, nil
+	return attrs, nil
 }
 
 // appendOUDetailsToClaims appends organization unit details to the JWT claims.
@@ -369,11 +390,11 @@ func (a *authAssertExecutor) appendGroupsToClaims(
 	userID string, jwtClaims map[string]interface{}) error {
 	logger := a.logger.With(log.String("userID", userID))
 
-	groups, svcErr := a.userService.GetUserGroups(context.TODO(), userID, oauth2const.DefaultGroupListLimit, 0)
-	if svcErr != nil {
+	groups, err := a.userProvider.GetUserGroups(userID, oauth2const.DefaultGroupListLimit, 0)
+	if err != nil {
 		logger.Error("Failed to fetch user groups",
-			log.String("userID", userID), log.Any("error", svcErr))
-		return errors.New("something went wrong while fetching user groups: " + svcErr.ErrorDescription)
+			log.String("userID", userID), log.Any("error", err))
+		return errors.New("something went wrong while fetching user groups: " + err.Description)
 	}
 
 	userGroups := make([]string, 0, len(groups.Groups))

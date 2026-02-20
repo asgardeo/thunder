@@ -29,26 +29,29 @@ import (
 	appmodel "github.com/asgardeo/thunder/internal/application/model"
 	authnassert "github.com/asgardeo/thunder/internal/authn/assert"
 	authncm "github.com/asgardeo/thunder/internal/authn/common"
+	"github.com/asgardeo/thunder/internal/authnprovider"
 	"github.com/asgardeo/thunder/internal/flow/common"
 	"github.com/asgardeo/thunder/internal/flow/core"
 	oauth2const "github.com/asgardeo/thunder/internal/oauth/oauth2/constants"
 	"github.com/asgardeo/thunder/internal/ou"
 	"github.com/asgardeo/thunder/internal/system/config"
 	"github.com/asgardeo/thunder/internal/system/error/serviceerror"
-	"github.com/asgardeo/thunder/internal/user"
+	"github.com/asgardeo/thunder/internal/userprovider"
 	"github.com/asgardeo/thunder/tests/mocks/authn/assertmock"
+	"github.com/asgardeo/thunder/tests/mocks/authnprovidermock"
 	"github.com/asgardeo/thunder/tests/mocks/flow/coremock"
 	"github.com/asgardeo/thunder/tests/mocks/jose/jwtmock"
 	"github.com/asgardeo/thunder/tests/mocks/oumock"
-	"github.com/asgardeo/thunder/tests/mocks/usermock"
+	"github.com/asgardeo/thunder/tests/mocks/userprovidermock"
 )
 
 type AuthAssertExecutorTestSuite struct {
 	suite.Suite
 	mockJWTService      *jwtmock.JWTServiceInterfaceMock
-	mockUserService     *usermock.UserServiceInterfaceMock
 	mockOUService       *oumock.OrganizationUnitServiceInterfaceMock
 	mockAssertGenerator *assertmock.AuthAssertGeneratorInterfaceMock
+	mockAuthnProvider   *authnprovidermock.AuthnProviderInterfaceMock
+	mockUserProvider    *userprovidermock.UserProviderInterfaceMock
 	mockFlowFactory     *coremock.FlowFactoryInterfaceMock
 	executor            *authAssertExecutor
 }
@@ -62,9 +65,10 @@ func (suite *AuthAssertExecutorTestSuite) SetupTest() {
 	_ = initializeTestRuntime()
 
 	suite.mockJWTService = jwtmock.NewJWTServiceInterfaceMock(suite.T())
-	suite.mockUserService = usermock.NewUserServiceInterfaceMock(suite.T())
 	suite.mockOUService = oumock.NewOrganizationUnitServiceInterfaceMock(suite.T())
 	suite.mockAssertGenerator = assertmock.NewAuthAssertGeneratorInterfaceMock(suite.T())
+	suite.mockAuthnProvider = authnprovidermock.NewAuthnProviderInterfaceMock(suite.T())
+	suite.mockUserProvider = userprovidermock.NewUserProviderInterfaceMock(suite.T())
 	suite.mockFlowFactory = coremock.NewFlowFactoryInterfaceMock(suite.T())
 
 	mockExec := createMockExecutorSimple(suite.T(), ExecutorNameAuthAssert, common.ExecutorTypeUtility)
@@ -72,7 +76,7 @@ func (suite *AuthAssertExecutorTestSuite) SetupTest() {
 		[]common.Input{}, []common.Input{}).Return(mockExec)
 
 	suite.executor = newAuthAssertExecutor(suite.mockFlowFactory, suite.mockJWTService,
-		suite.mockUserService, suite.mockOUService, suite.mockAssertGenerator)
+		suite.mockOUService, suite.mockAssertGenerator, suite.mockAuthnProvider, suite.mockUserProvider)
 }
 
 func createMockExecutorSimple(t *testing.T, name string,
@@ -98,7 +102,8 @@ func initializeTestRuntime() error {
 func (suite *AuthAssertExecutorTestSuite) TestNewAuthAssertExecutor() {
 	assert.NotNil(suite.T(), suite.executor)
 	assert.NotNil(suite.T(), suite.executor.jwtService)
-	assert.NotNil(suite.T(), suite.executor.userService)
+	assert.NotNil(suite.T(), suite.executor.authnProvider)
+	assert.NotNil(suite.T(), suite.executor.userProvider)
 	assert.NotNil(suite.T(), suite.executor.authAssertGenerator)
 }
 
@@ -219,12 +224,12 @@ func (suite *AuthAssertExecutorTestSuite) TestExecute_WithUserAttributes() {
 		},
 	}
 
-	existingUser := &user.User{
-		ID:         "user-123",
+	existingUser := &userprovider.User{
+		UserID:     "user-123",
 		Attributes: attrsJSON,
 	}
 
-	suite.mockUserService.On("GetUser", mock.Anything, "user-123").Return(existingUser, nil)
+	suite.mockUserProvider.On("GetUser", "user-123").Return(existingUser, nil)
 	suite.mockJWTService.On("GenerateJWT", "user-123", "app-123", mock.Anything, mock.Anything,
 		mock.MatchedBy(func(claims map[string]interface{}) bool {
 			return claims["email"] == "test@example.com" && claims["phone"] == "1234567890"
@@ -235,7 +240,7 @@ func (suite *AuthAssertExecutorTestSuite) TestExecute_WithUserAttributes() {
 	assert.NoError(suite.T(), err)
 	assert.NotNil(suite.T(), resp)
 	assert.Equal(suite.T(), common.ExecComplete, resp.Status)
-	suite.mockUserService.AssertExpectations(suite.T())
+	suite.mockUserProvider.AssertExpectations(suite.T())
 	suite.mockJWTService.AssertExpectations(suite.T())
 }
 
@@ -393,49 +398,66 @@ func (suite *AuthAssertExecutorTestSuite) TestGetUserAttributes_Success() {
 	attrs := map[string]interface{}{"email": "test@example.com", "name": "Test User"}
 	attrsJSON, _ := json.Marshal(attrs)
 
-	existingUser := &user.User{
-		ID:         "user-123",
+	existingUser := &userprovider.User{
+		UserID:     "user-123",
 		Attributes: attrsJSON,
 	}
 
-	suite.mockUserService.On("GetUser", mock.Anything, "user-123").Return(existingUser, nil)
+	suite.mockUserProvider.On("GetUser", "user-123").Return(existingUser, nil)
 
-	resultUser, resultAttrs, err := suite.executor.getUserAttributes("user-123")
+	resultAttrs, err := suite.executor.getUserAttributes("user-123", "", nil, nil)
 
 	assert.NoError(suite.T(), err)
-	assert.NotNil(suite.T(), resultUser)
 	assert.NotNil(suite.T(), resultAttrs)
 	assert.Equal(suite.T(), "test@example.com", resultAttrs["email"])
 	assert.Equal(suite.T(), "Test User", resultAttrs["name"])
-	suite.mockUserService.AssertExpectations(suite.T())
+	suite.mockUserProvider.AssertExpectations(suite.T())
 }
 
 func (suite *AuthAssertExecutorTestSuite) TestGetUserAttributes_ServiceError() {
-	suite.mockUserService.On("GetUser", mock.Anything, "user-123").
-		Return(nil, &serviceerror.ServiceError{Error: "user not found"})
+	suite.mockUserProvider.On("GetUser", "user-123").
+		Return(nil, &userprovider.UserProviderError{Message: "user not found"})
 
-	resultUser, resultAttrs, err := suite.executor.getUserAttributes("user-123")
+	resultAttrs, err := suite.executor.getUserAttributes("user-123", "", nil, nil)
 
 	assert.Error(suite.T(), err)
-	assert.Nil(suite.T(), resultUser)
 	assert.Nil(suite.T(), resultAttrs)
-	suite.mockUserService.AssertExpectations(suite.T())
+	suite.mockUserProvider.AssertExpectations(suite.T())
 }
 
 func (suite *AuthAssertExecutorTestSuite) TestGetUserAttributes_InvalidJSON() {
-	existingUser := &user.User{
-		ID:         "user-123",
+	existingUser := &userprovider.User{
+		UserID:     "user-123",
 		Attributes: json.RawMessage(`invalid json`),
 	}
 
-	suite.mockUserService.On("GetUser", mock.Anything, "user-123").Return(existingUser, nil)
+	suite.mockUserProvider.On("GetUser", "user-123").Return(existingUser, nil)
 
-	resultUser, resultAttrs, err := suite.executor.getUserAttributes("user-123")
+	resultAttrs, err := suite.executor.getUserAttributes("user-123", "", nil, nil)
 
 	assert.Error(suite.T(), err)
-	assert.Nil(suite.T(), resultUser)
 	assert.Nil(suite.T(), resultAttrs)
-	suite.mockUserService.AssertExpectations(suite.T())
+	suite.mockUserProvider.AssertExpectations(suite.T())
+}
+
+func (suite *AuthAssertExecutorTestSuite) TestGetUserAttributes_WithToken_Success() {
+	attrs := map[string]interface{}{"email": "test@example.com", "name": "Test User"}
+	attrsJSON, _ := json.Marshal(attrs)
+
+	res := authnprovider.GetAttributesResult{
+		Attributes: attrsJSON,
+	}
+
+	suite.mockAuthnProvider.On("GetAttributes", "token-123", []string{"email", "name"},
+		(*authnprovider.GetAttributesMetadata)(nil)).Return(&res, nil)
+
+	resultAttrs, err := suite.executor.getUserAttributes("user-123", "token-123", []string{"email", "name"}, nil)
+
+	assert.NoError(suite.T(), err)
+	assert.NotNil(suite.T(), resultAttrs)
+	assert.Equal(suite.T(), "test@example.com", resultAttrs["email"])
+	assert.Equal(suite.T(), "Test User", resultAttrs["name"])
+	suite.mockAuthnProvider.AssertExpectations(suite.T())
 }
 
 func (suite *AuthAssertExecutorTestSuite) TestExecute_WithUserTypeAndOU() {
@@ -563,42 +585,42 @@ func (suite *AuthAssertExecutorTestSuite) TestExecute_AppendUserDetailsToClaimsF
 	}
 
 	// Test case 1: GetUser returns service error
-	suite.mockUserService.On("GetUser", mock.Anything, "user-123").
-		Return(nil, &serviceerror.ServiceError{
-			Error:            "user_not_found",
-			ErrorDescription: "user not found",
+	suite.mockUserProvider.On("GetUser", "user-123").
+		Return(nil, &userprovider.UserProviderError{
+			Message:     "user_not_found",
+			Description: "user not found",
 		})
 
 	_, err := suite.executor.Execute(ctx)
 
 	assert.Error(suite.T(), err)
 	assert.Contains(suite.T(), err.Error(), "something went wrong while fetching user attributes")
-	suite.mockUserService.AssertExpectations(suite.T())
+	suite.mockUserProvider.AssertExpectations(suite.T())
 
 	// Reset mock for test case 2
-	suite.mockUserService = usermock.NewUserServiceInterfaceMock(suite.T())
-	suite.executor.userService = suite.mockUserService
+	suite.mockUserProvider = userprovidermock.NewUserProviderInterfaceMock(suite.T())
+	suite.executor.userProvider = suite.mockUserProvider
 
 	// Test case 2: Invalid JSON in user attributes
-	existingUser := &user.User{
-		ID:         "user-123",
+	existingUser := &userprovider.User{
+		UserID:     "user-123",
 		Attributes: json.RawMessage(`{invalid json}`),
 	}
 
-	suite.mockUserService.On("GetUser", mock.Anything, "user-123").Return(existingUser, nil)
+	suite.mockUserProvider.On("GetUser", "user-123").Return(existingUser, nil)
 
 	_, err = suite.executor.Execute(ctx)
 
 	assert.Error(suite.T(), err)
 	assert.Contains(suite.T(), err.Error(), "something went wrong while unmarshalling user attributes")
-	suite.mockUserService.AssertExpectations(suite.T())
+	suite.mockUserProvider.AssertExpectations(suite.T())
 
 	// Test success case for comparison
-	suite.mockUserService = usermock.NewUserServiceInterfaceMock(suite.T())
-	suite.executor.userService = suite.mockUserService
+	suite.mockUserProvider = userprovidermock.NewUserProviderInterfaceMock(suite.T())
+	suite.executor.userProvider = suite.mockUserProvider
 
 	existingUser.Attributes = attrsJSON
-	suite.mockUserService.On("GetUser", mock.Anything, "user-123").Return(existingUser, nil)
+	suite.mockUserProvider.On("GetUser", "user-123").Return(existingUser, nil)
 	suite.mockJWTService.On("GenerateJWT", mock.Anything, mock.Anything, mock.Anything,
 		mock.Anything, mock.Anything).Return("jwt-token", int64(3600), nil)
 
@@ -658,17 +680,17 @@ func (suite *AuthAssertExecutorTestSuite) TestAppendUserDetailsToClaims_GetUserA
 		},
 	}
 
-	suite.mockUserService.On("GetUser", mock.Anything, "user-123").
-		Return(nil, &serviceerror.ServiceError{
-			Error:            "database_error",
-			ErrorDescription: "failed to fetch user",
+	suite.mockUserProvider.On("GetUser", "user-123").
+		Return(nil, &userprovider.UserProviderError{
+			Message:     "database_error",
+			Description: "failed to fetch user",
 		})
 
 	_, err := suite.executor.Execute(ctx)
 
 	assert.Error(suite.T(), err)
 	assert.Contains(suite.T(), err.Error(), "something went wrong while fetching user attributes")
-	suite.mockUserService.AssertExpectations(suite.T())
+	suite.mockUserProvider.AssertExpectations(suite.T())
 }
 
 func (suite *AuthAssertExecutorTestSuite) TestAppendOUDetailsToClaims_GetOrganizationUnitFails() {
@@ -724,12 +746,12 @@ func (suite *AuthAssertExecutorTestSuite) TestExecute_WithConfiguredUserAttribut
 		},
 	}
 
-	existingUser := &user.User{
-		ID:         "user-123",
+	existingUser := &userprovider.User{
+		UserID:     "user-123",
 		Attributes: attrsJSON,
 	}
 
-	suite.mockUserService.On("GetUser", mock.Anything, "user-123").Return(existingUser, nil)
+	suite.mockUserProvider.On("GetUser", "user-123").Return(existingUser, nil)
 	suite.mockJWTService.On("GenerateJWT", "user-123", "app-123", mock.Anything, mock.Anything,
 		mock.MatchedBy(func(claims map[string]interface{}) bool {
 			// Should contain the configured user attributes from the user store
@@ -744,7 +766,7 @@ func (suite *AuthAssertExecutorTestSuite) TestExecute_WithConfiguredUserAttribut
 	assert.NoError(suite.T(), err)
 	assert.NotNil(suite.T(), resp)
 	assert.Equal(suite.T(), common.ExecComplete, resp.Status)
-	suite.mockUserService.AssertExpectations(suite.T())
+	suite.mockUserProvider.AssertExpectations(suite.T())
 	suite.mockJWTService.AssertExpectations(suite.T())
 }
 
@@ -765,15 +787,15 @@ func (suite *AuthAssertExecutorTestSuite) TestExecute_WithGroups() {
 		},
 	}
 
-	userGroups := &user.UserGroupListResponse{
-		Groups: []user.UserGroup{
+	userGroups := &userprovider.UserGroupListResponse{
+		Groups: []userprovider.UserGroup{
 			{Name: "admin"},
 			{Name: "developer"},
 			{Name: "viewer"},
 		},
 	}
 
-	suite.mockUserService.On("GetUserGroups", mock.Anything, "user-123", oauth2const.DefaultGroupListLimit, 0).
+	suite.mockUserProvider.On("GetUserGroups", "user-123", oauth2const.DefaultGroupListLimit, 0).
 		Return(userGroups, nil)
 	suite.mockJWTService.On("GenerateJWT", "user-123", "app-123", mock.Anything, mock.Anything,
 		mock.MatchedBy(func(claims map[string]interface{}) bool {
@@ -790,7 +812,7 @@ func (suite *AuthAssertExecutorTestSuite) TestExecute_WithGroups() {
 	assert.NoError(suite.T(), err)
 	assert.NotNil(suite.T(), resp)
 	assert.Equal(suite.T(), common.ExecComplete, resp.Status)
-	suite.mockUserService.AssertExpectations(suite.T())
+	suite.mockUserProvider.AssertExpectations(suite.T())
 	suite.mockJWTService.AssertExpectations(suite.T())
 }
 
@@ -811,11 +833,11 @@ func (suite *AuthAssertExecutorTestSuite) TestExecute_WithGroups_EmptyGroups() {
 		},
 	}
 
-	userGroups := &user.UserGroupListResponse{
-		Groups: []user.UserGroup{},
+	userGroups := &userprovider.UserGroupListResponse{
+		Groups: []userprovider.UserGroup{},
 	}
 
-	suite.mockUserService.On("GetUserGroups", mock.Anything, "user-123", oauth2const.DefaultGroupListLimit, 0).
+	suite.mockUserProvider.On("GetUserGroups", "user-123", oauth2const.DefaultGroupListLimit, 0).
 		Return(userGroups, nil)
 	suite.mockJWTService.On("GenerateJWT", "user-123", "app-123", mock.Anything, mock.Anything,
 		mock.MatchedBy(func(claims map[string]interface{}) bool {
@@ -829,7 +851,7 @@ func (suite *AuthAssertExecutorTestSuite) TestExecute_WithGroups_EmptyGroups() {
 	assert.NoError(suite.T(), err)
 	assert.NotNil(suite.T(), resp)
 	assert.Equal(suite.T(), common.ExecComplete, resp.Status)
-	suite.mockUserService.AssertExpectations(suite.T())
+	suite.mockUserProvider.AssertExpectations(suite.T())
 	suite.mockJWTService.AssertExpectations(suite.T())
 }
 
@@ -850,13 +872,13 @@ func (suite *AuthAssertExecutorTestSuite) TestExecute_WithGroups_GetUserGroupsFa
 		},
 	}
 
-	suite.mockUserService.On("GetUserGroups", mock.Anything, "user-123", oauth2const.DefaultGroupListLimit, 0).
-		Return(nil, &serviceerror.ServiceError{Error: "failed to fetch groups", ErrorDescription: "database error"})
+	suite.mockUserProvider.On("GetUserGroups", "user-123", oauth2const.DefaultGroupListLimit, 0).
+		Return(nil, &userprovider.UserProviderError{Message: "failed to fetch groups", Description: "database error"})
 
 	resp, err := suite.executor.Execute(ctx)
 
 	assert.Error(suite.T(), err)
 	assert.Nil(suite.T(), resp)
 	assert.Contains(suite.T(), err.Error(), "something went wrong while fetching user groups")
-	suite.mockUserService.AssertExpectations(suite.T())
+	suite.mockUserProvider.AssertExpectations(suite.T())
 }

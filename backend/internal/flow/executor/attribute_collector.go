@@ -19,7 +19,6 @@
 package executor
 
 import (
-	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -27,7 +26,7 @@ import (
 	"github.com/asgardeo/thunder/internal/flow/common"
 	"github.com/asgardeo/thunder/internal/flow/core"
 	"github.com/asgardeo/thunder/internal/system/log"
-	"github.com/asgardeo/thunder/internal/user"
+	"github.com/asgardeo/thunder/internal/userprovider"
 )
 
 const (
@@ -40,8 +39,8 @@ const (
 // attributeCollector is an executor that collects user attributes and updates the user profile.
 type attributeCollector struct {
 	core.ExecutorInterface
-	userService user.UserServiceInterface
-	logger      *log.Logger
+	userProvider userprovider.UserProviderInterface
+	logger       *log.Logger
 }
 
 var _ core.ExecutorInterface = (*attributeCollector)(nil)
@@ -49,7 +48,7 @@ var _ core.ExecutorInterface = (*attributeCollector)(nil)
 // newAttributeCollector creates a new instance of AttributeCollector.
 func newAttributeCollector(
 	flowFactory core.FlowFactoryInterface,
-	userService user.UserServiceInterface,
+	userProvider userprovider.UserProviderInterface,
 ) *attributeCollector {
 	prerequisites := []common.Input{
 		{
@@ -66,7 +65,7 @@ func newAttributeCollector(
 
 	return &attributeCollector{
 		ExecutorInterface: base,
-		userService:       userService,
+		userProvider:      userProvider,
 		logger:            logger,
 	}
 }
@@ -263,7 +262,7 @@ func (a *attributeCollector) updateUserInStore(ctx *core.NodeContext) error {
 	if user == nil {
 		return fmt.Errorf("user not found")
 	}
-	userID := user.ID
+	userID := user.UserID
 
 	updateRequired, updatedUser, err := a.getUpdatedUserObject(ctx, user)
 	if err != nil {
@@ -277,8 +276,8 @@ func (a *attributeCollector) updateUserInStore(ctx *core.NodeContext) error {
 		return errors.New("failed to create updated user object")
 	}
 
-	if _, svcErr := a.userService.UpdateUser(context.TODO(), userID, updatedUser); svcErr != nil {
-		return fmt.Errorf("failed to update user attributes: %s", svcErr.Error)
+	if _, err := a.userProvider.UpdateUser(userID, updatedUser); err != nil {
+		return fmt.Errorf("failed to update user attributes: %s", err.Message)
 	}
 	logger.Debug("User attributes updated successfully", log.String("userID", userID))
 
@@ -286,15 +285,15 @@ func (a *attributeCollector) updateUserInStore(ctx *core.NodeContext) error {
 }
 
 // getUserFromStore retrieves the user profile from the user store.
-func (a *attributeCollector) getUserFromStore(ctx *core.NodeContext) (*user.User, error) {
+func (a *attributeCollector) getUserFromStore(ctx *core.NodeContext) (*userprovider.User, error) {
 	userID := a.GetUserIDFromContext(ctx)
 	if userID == "" {
 		return nil, errors.New("user ID is not available in the context")
 	}
 
-	user, svcErr := a.userService.GetUser(context.TODO(), userID)
-	if svcErr != nil {
-		return nil, fmt.Errorf("failed to get user by ID: %s", svcErr.Error)
+	user, err := a.userProvider.GetUser(userID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get user by ID: %s", err.Message)
 	}
 
 	return user, nil
@@ -302,13 +301,13 @@ func (a *attributeCollector) getUserFromStore(ctx *core.NodeContext) (*user.User
 
 // getUpdatedUserObject creates a new user object with the updated attributes.
 func (a *attributeCollector) getUpdatedUserObject(ctx *core.NodeContext,
-	userData *user.User) (bool, *user.User, error) {
+	userData *userprovider.User) (bool, *userprovider.User, error) {
 	logger := a.logger.With(log.String(log.LoggerKeyFlowID, ctx.FlowID))
 
-	updatedUser := &user.User{
-		ID:               userData.ID,
-		OrganizationUnit: userData.OrganizationUnit,
-		Type:             userData.Type,
+	updatedUser := &userprovider.User{
+		UserID:             userData.UserID,
+		OrganizationUnitID: userData.OrganizationUnitID,
+		UserType:           userData.UserType,
 	}
 
 	// Get the existing attributes

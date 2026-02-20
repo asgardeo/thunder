@@ -24,6 +24,7 @@ import (
 
 	"github.com/asgardeo/thunder/internal/application"
 	"github.com/asgardeo/thunder/internal/authn"
+	"github.com/asgardeo/thunder/internal/authnprovider"
 	"github.com/asgardeo/thunder/internal/authz"
 	"github.com/asgardeo/thunder/internal/cert"
 	layoutmgt "github.com/asgardeo/thunder/internal/design/layout/mgt"
@@ -53,6 +54,7 @@ import (
 	"github.com/asgardeo/thunder/internal/system/mcp"
 	"github.com/asgardeo/thunder/internal/system/services"
 	"github.com/asgardeo/thunder/internal/user"
+	"github.com/asgardeo/thunder/internal/userprovider"
 	"github.com/asgardeo/thunder/internal/userschema"
 )
 
@@ -131,14 +133,23 @@ func registerServices(mux *http.ServeMux) jwt.JWTServiceInterface {
 	// Initialize MCP server
 	mcpServer := mcp.Initialize(mux, jwtService)
 
+	// Initialize authn provider
+	authnProvider := authnprovider.InitializeAuthnProvider(userService)
+
+	// Initialize user provider based on configuration
+	userProvider := userprovider.InitializeUserProvider(userService)
+
 	// Initialize authentication services.
-	_, authSvcRegistry := authn.Initialize(mux, mcpServer, idpService, jwtService, userService, otpService)
+	_, authSvcRegistry := authn.Initialize(
+		mux, mcpServer, idpService, jwtService, userService,
+		userProvider, otpService, authnProvider,
+	)
 
 	// Initialize flow and executor services.
 	flowFactory, graphCache := flowcore.Initialize()
-	execRegistry := executor.Initialize(flowFactory, userService, ouService,
+	execRegistry := executor.Initialize(flowFactory, ouService,
 		idpService, otpService, jwtService, authSvcRegistry, authZService, userSchemaService, observabilitySvc,
-		groupService, roleService)
+		groupService, roleService, userProvider, authnProvider)
 
 	flowMgtService, flowMgtExporter, err := flowmgt.Initialize(mux, mcpServer, flowFactory, execRegistry, graphCache)
 	if err != nil {

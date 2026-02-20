@@ -525,6 +525,18 @@ components:
     CredentialAuthRequest:
       type: object
       properties:
+        identifiers:
+          type: object
+          description: Map of user identifiers (e.g., username, email, phone number)
+          additionalProperties: true
+          example:
+            email: "jane.doe@example.com"
+        credentials:
+          type: object
+          description: Map of user credentials (e.g., password, pin)
+          additionalProperties: true
+          example:
+            password: "SecurePassword123!"
         skip_assertion:
           type: boolean
           description: Skip generating assertion token in the response
@@ -534,11 +546,10 @@ components:
           type: string
           description: Optional existing JWT assertion token to enrich with new authentication
           example: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
-      additionalProperties: true
-      example:
-        email: "jane.doe@example.com"
-        password: "SecurePassword123!"
-        skip_assertion: false
+      required:
+        - identifiers
+        - credentials
+      additionalProperties: false
     
     SendOtpAuthRequest:
       type: object

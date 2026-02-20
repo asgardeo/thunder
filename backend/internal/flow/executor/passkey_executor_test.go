@@ -31,11 +31,11 @@ import (
 	"github.com/asgardeo/thunder/internal/flow/common"
 	"github.com/asgardeo/thunder/internal/flow/core"
 	"github.com/asgardeo/thunder/internal/system/error/serviceerror"
-	"github.com/asgardeo/thunder/internal/user"
+	"github.com/asgardeo/thunder/internal/userprovider"
 	"github.com/asgardeo/thunder/tests/mocks/authn/passkeymock"
 	"github.com/asgardeo/thunder/tests/mocks/flow/coremock"
 	"github.com/asgardeo/thunder/tests/mocks/observabilitymock"
-	"github.com/asgardeo/thunder/tests/mocks/usermock"
+	"github.com/asgardeo/thunder/tests/mocks/userprovidermock"
 )
 
 const (
@@ -50,10 +50,10 @@ const (
 
 type PasskeyAuthExecutorTestSuite struct {
 	suite.Suite
-	mockUserService    *usermock.UserServiceInterfaceMock
 	mockPasskeyService *passkeymock.PasskeyServiceInterfaceMock
 	mockFlowFactory    *coremock.FlowFactoryInterfaceMock
 	mockObservability  *observabilitymock.ObservabilityServiceInterfaceMock
+	mockUserProvider   *userprovidermock.UserProviderInterfaceMock
 	executor           *passkeyAuthExecutor
 }
 
@@ -62,10 +62,10 @@ func TestPasskeyAuthExecutorSuite(t *testing.T) {
 }
 
 func (suite *PasskeyAuthExecutorTestSuite) SetupTest() {
-	suite.mockUserService = usermock.NewUserServiceInterfaceMock(suite.T())
 	suite.mockPasskeyService = passkeymock.NewPasskeyServiceInterfaceMock(suite.T())
 	suite.mockFlowFactory = coremock.NewFlowFactoryInterfaceMock(suite.T())
 	suite.mockObservability = observabilitymock.NewObservabilityServiceInterfaceMock(suite.T())
+	suite.mockUserProvider = userprovidermock.NewUserProviderInterfaceMock(suite.T())
 
 	// Create mock identifying executor
 	identifyingMock := createMockIdentifyingExecutor(suite.T())
@@ -77,8 +77,8 @@ func (suite *PasskeyAuthExecutorTestSuite) SetupTest() {
 	suite.mockFlowFactory.On("CreateExecutor", ExecutorNamePasskeyAuth, common.ExecutorTypeAuthentication,
 		mock.Anything, mock.Anything).Return(mockExec)
 
-	suite.executor = newPasskeyAuthExecutor(suite.mockFlowFactory, suite.mockUserService,
-		suite.mockPasskeyService, suite.mockObservability)
+	suite.executor = newPasskeyAuthExecutor(suite.mockFlowFactory,
+		suite.mockPasskeyService, suite.mockObservability, suite.mockUserProvider)
 }
 
 func (suite *PasskeyAuthExecutorTestSuite) BeforeTest(suiteName, testName string) {
@@ -154,7 +154,7 @@ func createPasskeyNodeContext(mode string, flowType common.FlowType) *core.NodeC
 func (suite *PasskeyAuthExecutorTestSuite) TestNewPasskeyAuthExecutor() {
 	assert.NotNil(suite.T(), suite.executor)
 	assert.NotNil(suite.T(), suite.executor.passkeyService)
-	assert.NotNil(suite.T(), suite.executor.userService)
+	assert.NotNil(suite.T(), suite.executor.userProvider)
 }
 
 func (suite *PasskeyAuthExecutorTestSuite) TestExecute_InvalidMode() {
@@ -284,13 +284,13 @@ func (suite *PasskeyAuthExecutorTestSuite) TestExecuteVerify_Success() {
 
 	attrs := map[string]interface{}{"email": "test@example.com"}
 	attrsJSON, _ := json.Marshal(attrs)
-	testUser := &user.User{
-		ID:               testPasskeyUserID,
-		OrganizationUnit: "ou-123",
-		Type:             "INTERNAL",
-		Attributes:       attrsJSON,
+	testUser := &userprovider.User{
+		UserID:             testPasskeyUserID,
+		OrganizationUnitID: "ou-123",
+		UserType:           "INTERNAL",
+		Attributes:         attrsJSON,
 	}
-	suite.mockUserService.On("GetUser", mock.Anything, testPasskeyUserID).Return(testUser, nil)
+	suite.mockUserProvider.On("GetUser", testPasskeyUserID).Return(testUser, nil)
 
 	resp, err := suite.executor.Execute(ctx)
 
@@ -536,13 +536,13 @@ func (suite *PasskeyAuthExecutorTestSuite) TestExecuteRegisterFinish_Success_Aut
 
 	attrs := map[string]interface{}{"email": "test@example.com"}
 	attrsJSON, _ := json.Marshal(attrs)
-	testUser := &user.User{
-		ID:               testPasskeyUserID,
-		OrganizationUnit: "ou-123",
-		Type:             "INTERNAL",
-		Attributes:       attrsJSON,
+	testUser := &userprovider.User{
+		UserID:             testPasskeyUserID,
+		OrganizationUnitID: "ou-123",
+		UserType:           "INTERNAL",
+		Attributes:         attrsJSON,
 	}
-	suite.mockUserService.On("GetUser", mock.Anything, testPasskeyUserID).Return(testUser, nil)
+	suite.mockUserProvider.On("GetUser", testPasskeyUserID).Return(testUser, nil)
 
 	resp, err := suite.executor.Execute(ctx)
 
@@ -728,13 +728,13 @@ func (suite *PasskeyAuthExecutorTestSuite) TestGetAuthenticatedUser_Success() {
 
 	attrs := map[string]interface{}{"email": "test@example.com", "name": "Test User"}
 	attrsJSON, _ := json.Marshal(attrs)
-	testUser := &user.User{
-		ID:               testPasskeyUserID,
-		OrganizationUnit: "ou-123",
-		Type:             "INTERNAL",
-		Attributes:       attrsJSON,
+	testUser := &userprovider.User{
+		UserID:             testPasskeyUserID,
+		OrganizationUnitID: "ou-123",
+		UserType:           "INTERNAL",
+		Attributes:         attrsJSON,
 	}
-	suite.mockUserService.On("GetUser", mock.Anything, testPasskeyUserID).Return(testUser, nil)
+	suite.mockUserProvider.On("GetUser", testPasskeyUserID).Return(testUser, nil)
 
 	authUser, err := suite.executor.getAuthenticatedUser(ctx, execResp)
 
@@ -757,8 +757,8 @@ func (suite *PasskeyAuthExecutorTestSuite) TestGetAuthenticatedUser_UserNotFound
 		},
 	}
 
-	suite.mockUserService.On("GetUser", mock.Anything, testPasskeyUserID).Return(
-		nil, &serviceerror.ServiceError{Error: "User not found"})
+	suite.mockUserProvider.On("GetUser", testPasskeyUserID).Return(
+		nil, &userprovider.UserProviderError{Code: userprovider.ErrorCodeUserNotFound, Message: "User not found"})
 
 	authUser, err := suite.executor.getAuthenticatedUser(ctx, execResp)
 
@@ -777,13 +777,13 @@ func (suite *PasskeyAuthExecutorTestSuite) TestGetAuthenticatedUser_InvalidJSON(
 		},
 	}
 
-	testUser := &user.User{
-		ID:               testPasskeyUserID,
-		OrganizationUnit: "ou-123",
-		Type:             "INTERNAL",
-		Attributes:       json.RawMessage(`invalid json`),
+	testUser := &userprovider.User{
+		UserID:             testPasskeyUserID,
+		OrganizationUnitID: "ou-123",
+		UserType:           "INTERNAL",
+		Attributes:         json.RawMessage(`invalid json`),
 	}
-	suite.mockUserService.On("GetUser", mock.Anything, testPasskeyUserID).Return(testUser, nil)
+	suite.mockUserProvider.On("GetUser", testPasskeyUserID).Return(testUser, nil)
 
 	authUser, err := suite.executor.getAuthenticatedUser(ctx, execResp)
 
@@ -924,8 +924,8 @@ func (suite *PasskeyAuthExecutorTestSuite) TestExecuteVerify_GetAuthenticatedUse
 	suite.mockPasskeyService.On("FinishAuthentication", mock.Anything).Return(authResp, nil)
 
 	// Simulate user not found when getting authenticated user details
-	suite.mockUserService.On("GetUser", mock.Anything, testPasskeyUserID).Return(
-		nil, &serviceerror.ServiceError{Error: "User not found"})
+	suite.mockUserProvider.On("GetUser", testPasskeyUserID).Return(
+		nil, &userprovider.UserProviderError{Code: userprovider.ErrorCodeUserNotFound, Message: "User not found"})
 
 	_, err := suite.executor.Execute(ctx)
 
@@ -951,8 +951,8 @@ func (suite *PasskeyAuthExecutorTestSuite) TestExecuteRegisterFinish_GetAuthenti
 	suite.mockPasskeyService.On("FinishRegistration", mock.Anything).Return(finishData, nil)
 
 	// Simulate user not found when getting authenticated user details
-	suite.mockUserService.On("GetUser", mock.Anything, testPasskeyUserID).Return(
-		nil, &serviceerror.ServiceError{Error: "User not found"})
+	suite.mockUserProvider.On("GetUser", testPasskeyUserID).Return(
+		nil, &userprovider.UserProviderError{Code: userprovider.ErrorCodeUserNotFound, Message: "User not found"})
 
 	_, err := suite.executor.Execute(ctx)
 
@@ -1023,13 +1023,13 @@ func (suite *PasskeyAuthExecutorTestSuite) TestGetAuthenticatedUser_UserIDFromCo
 
 	attrs := map[string]interface{}{"email": "test@example.com"}
 	attrsJSON, _ := json.Marshal(attrs)
-	testUser := &user.User{
-		ID:               testPasskeyUserID,
-		OrganizationUnit: "ou-123",
-		Type:             "INTERNAL",
-		Attributes:       attrsJSON,
+	testUser := &userprovider.User{
+		UserID:             testPasskeyUserID,
+		OrganizationUnitID: "ou-123",
+		UserType:           "INTERNAL",
+		Attributes:         attrsJSON,
 	}
-	suite.mockUserService.On("GetUser", mock.Anything, testPasskeyUserID).Return(testUser, nil)
+	suite.mockUserProvider.On("GetUser", testPasskeyUserID).Return(testUser, nil)
 
 	authUser, err := suite.executor.getAuthenticatedUser(ctx, execResp)
 

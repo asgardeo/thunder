@@ -26,12 +26,12 @@ import (
 	authncm "github.com/asgardeo/thunder/internal/authn/common"
 	"github.com/asgardeo/thunder/internal/authn/oauth"
 	"github.com/asgardeo/thunder/internal/system/error/serviceerror"
-	"github.com/asgardeo/thunder/internal/user"
+	"github.com/asgardeo/thunder/internal/userprovider"
 	"github.com/asgardeo/thunder/tests/mocks/authn/oauthmock"
 	"github.com/asgardeo/thunder/tests/mocks/httpmock"
 	"github.com/asgardeo/thunder/tests/mocks/idp/idpmock"
 	"github.com/asgardeo/thunder/tests/mocks/jose/jwtmock"
-	"github.com/asgardeo/thunder/tests/mocks/usermock"
+	"github.com/asgardeo/thunder/tests/mocks/userprovidermock"
 )
 
 const (
@@ -43,7 +43,7 @@ type OIDCAuthnServiceTestSuite struct {
 	mockOAuthService *oauthmock.OAuthAuthnServiceInterfaceMock
 	mockHTTPClient   *httpmock.HTTPClientInterfaceMock
 	mockIdpService   *idpmock.IDPServiceInterfaceMock
-	mockUserService  *usermock.UserServiceInterfaceMock
+	mockUserProvider *userprovidermock.UserProviderInterfaceMock
 	mockJWTService   *jwtmock.JWTServiceInterfaceMock
 	endpoints        oauth.OAuthEndpoints
 	service          oidcAuthnService
@@ -57,7 +57,7 @@ func (suite *OIDCAuthnServiceTestSuite) SetupTest() {
 	suite.mockOAuthService = oauthmock.NewOAuthAuthnServiceInterfaceMock(suite.T())
 	suite.mockHTTPClient = httpmock.NewHTTPClientInterfaceMock(suite.T())
 	suite.mockIdpService = idpmock.NewIDPServiceInterfaceMock(suite.T())
-	suite.mockUserService = usermock.NewUserServiceInterfaceMock(suite.T())
+	suite.mockUserProvider = userprovidermock.NewUserProviderInterfaceMock(suite.T())
 	suite.mockJWTService = jwtmock.NewJWTServiceInterfaceMock(suite.T())
 	suite.endpoints = oauth.OAuthEndpoints{
 		AuthorizationEndpoint: "https://localhost:8090/oauth/authorize",
@@ -66,7 +66,7 @@ func (suite *OIDCAuthnServiceTestSuite) SetupTest() {
 	}
 
 	service := newOIDCAuthnService(suite.mockHTTPClient, suite.mockIdpService,
-		suite.mockUserService, suite.mockJWTService)
+		suite.mockUserProvider, suite.mockJWTService)
 
 	cast, ok := service.(*oidcAuthnService)
 	suite.True(ok, "service is not of type *oidcAuthnService")
@@ -180,7 +180,7 @@ func (suite *OIDCAuthnServiceTestSuite) TestExchangeCodeForTokenSuccess() {
 			suite.mockJWTService = jwtmock.NewJWTServiceInterfaceMock(suite.T())
 
 			service := newOIDCAuthnService(suite.mockHTTPClient, suite.mockIdpService,
-				suite.mockUserService, suite.mockJWTService)
+				suite.mockUserProvider, suite.mockJWTService)
 			cast, ok := service.(*oidcAuthnService)
 			suite.True(ok, "service is not of type *oidcAuthnService")
 			suite.service = *cast
@@ -226,7 +226,7 @@ func (suite *OIDCAuthnServiceTestSuite) TestValidateTokenResponseSuccess() {
 			suite.mockJWTService = jwtmock.NewJWTServiceInterfaceMock(suite.T())
 
 			service := newOIDCAuthnService(suite.mockHTTPClient, suite.mockIdpService,
-				suite.mockUserService, suite.mockJWTService)
+				suite.mockUserProvider, suite.mockJWTService)
 			cast, ok := service.(*oidcAuthnService)
 			suite.True(ok, "service is not of type *oidcAuthnService")
 			suite.service = *cast
@@ -304,7 +304,7 @@ func (suite *OIDCAuthnServiceTestSuite) TestValidateIDTokenSuccess() {
 			suite.mockJWTService = jwtmock.NewJWTServiceInterfaceMock(suite.T())
 
 			service := newOIDCAuthnService(suite.mockHTTPClient, suite.mockIdpService,
-				suite.mockUserService, suite.mockJWTService)
+				suite.mockUserProvider, suite.mockJWTService)
 			cast, ok := service.(*oidcAuthnService)
 			suite.True(ok, "service is not of type *oidcAuthnService")
 			suite.service = *cast
@@ -359,16 +359,16 @@ func (suite *OIDCAuthnServiceTestSuite) TestFetchUserInfoSuccess() {
 
 func (suite *OIDCAuthnServiceTestSuite) TestGetInternalUserSuccess() {
 	sub := "user123"
-	user := &user.User{
-		ID:   "user123",
-		Type: "person",
+	user := &userprovider.User{
+		UserID:   "user123",
+		UserType: "person",
 	}
 	suite.mockOAuthService.On("GetInternalUser", sub).Return(user, nil)
 
 	result, err := suite.service.GetInternalUser(sub)
 	suite.Nil(err)
 	suite.NotNil(result)
-	suite.Equal(user.ID, result.ID)
+	suite.Equal(user.UserID, result.UserID)
 }
 
 func (suite *OIDCAuthnServiceTestSuite) TestExchangeCodeForTokenInternalError() {
@@ -387,7 +387,7 @@ func (suite *OIDCAuthnServiceTestSuite) TestValidateTokenResponseValidateIDToken
 	suite.mockJWTService = jwtmock.NewJWTServiceInterfaceMock(suite.T())
 
 	service := newOIDCAuthnService(suite.mockHTTPClient, suite.mockIdpService,
-		suite.mockUserService, suite.mockJWTService)
+		suite.mockUserProvider, suite.mockJWTService)
 	cast, ok := service.(*oidcAuthnService)
 	suite.True(ok)
 	suite.service = *cast
@@ -414,7 +414,7 @@ func (suite *OIDCAuthnServiceTestSuite) TestValidateTokenResponseValidateIDToken
 }
 
 func (suite *OIDCAuthnServiceTestSuite) TestNewOIDCAuthnService_HttpClientFallback() {
-	svc := NewOIDCAuthnService(nil, suite.mockIdpService, suite.mockUserService, suite.mockJWTService)
+	svc := NewOIDCAuthnService(nil, suite.mockIdpService, suite.mockUserProvider, suite.mockJWTService)
 	suite.NotNil(svc)
 	// type assert to concrete to inspect metadata
 	if concrete, ok := svc.(*oidcAuthnService); ok {

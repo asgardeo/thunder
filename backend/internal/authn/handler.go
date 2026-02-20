@@ -45,27 +45,25 @@ func newAuthenticationHandler(authnService AuthenticationServiceInterface) *auth
 
 // HandleCredentialsAuthRequest handles the credentials authentication request.
 func (ah *authenticationHandler) HandleCredentialsAuthRequest(w http.ResponseWriter, r *http.Request) {
-	authRequestPtr, err := sysutils.DecodeJSONBody[map[string]interface{}](r)
+	authRequestPtr, err := sysutils.DecodeJSONBody[AuthenticateWithCredentialsRequestDTO](r)
 	if err != nil {
 		sysutils.WriteErrorResponse(w, http.StatusBadRequest, common.APIErrorInvalidRequestFormat)
 		return
 	}
 	authRequest := *authRequestPtr
 
-	// Check for skip_assertion field
-	skipAssertion, ok := authRequest["skip_assertion"].(bool)
-	if !ok {
-		skipAssertion = false
-	}
-	delete(authRequest, "skip_assertion")
-
-	// Check for assertion field
-	assertion, ok := authRequest["assertion"].(string)
-	if ok {
-		delete(authRequest, "assertion")
+	skipAssertion := false
+	if authRequest.SkipAssertion != nil {
+		skipAssertion = *authRequest.SkipAssertion
 	}
 
-	authResponse, svcErr := ah.authService.AuthenticateWithCredentials(authRequest, skipAssertion, assertion)
+	assertion := ""
+	if authRequest.Assertion != nil {
+		assertion = *authRequest.Assertion
+	}
+
+	authResponse, svcErr := ah.authService.AuthenticateWithCredentials(
+		authRequest.Identifiers, authRequest.Credentials, skipAssertion, assertion)
 	if svcErr != nil {
 		ah.handleServiceError(w, svcErr)
 		return

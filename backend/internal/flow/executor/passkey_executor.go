@@ -19,7 +19,6 @@
 package executor
 
 import (
-	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -31,7 +30,7 @@ import (
 	"github.com/asgardeo/thunder/internal/observability"
 	"github.com/asgardeo/thunder/internal/system/error/serviceerror"
 	"github.com/asgardeo/thunder/internal/system/log"
-	"github.com/asgardeo/thunder/internal/user"
+	"github.com/asgardeo/thunder/internal/userprovider"
 )
 
 const (
@@ -73,7 +72,7 @@ type passkeyAuthExecutor struct {
 	core.ExecutorInterface
 	identifyingExecutorInterface
 	passkeyService   passkey.PasskeyServiceInterface
-	userService      user.UserServiceInterface
+	userProvider     userprovider.UserProviderInterface
 	observabilitySvc observability.ObservabilityServiceInterface
 	logger           *log.Logger
 }
@@ -84,9 +83,9 @@ var _ identifyingExecutorInterface = (*passkeyAuthExecutor)(nil)
 // newPasskeyAuthExecutor creates a new instance of PasskeyAuthExecutor.
 func newPasskeyAuthExecutor(
 	flowFactory core.FlowFactoryInterface,
-	userService user.UserServiceInterface,
 	passkeyService passkey.PasskeyServiceInterface,
 	observabilitySvc observability.ObservabilityServiceInterface,
+	userProvider userprovider.UserProviderInterface,
 ) *passkeyAuthExecutor {
 	defaultInputs := []common.Input{
 		{
@@ -128,7 +127,7 @@ func newPasskeyAuthExecutor(
 		log.String(log.LoggerKeyExecutorName, ExecutorNamePasskeyAuth))
 
 	identifyExec := newIdentifyingExecutor(ExecutorNamePasskeyAuth, defaultInputs, prerequisites,
-		flowFactory, userService)
+		flowFactory, userProvider)
 	base := flowFactory.CreateExecutor(ExecutorNamePasskeyAuth, common.ExecutorTypeAuthentication,
 		defaultInputs, prerequisites)
 
@@ -136,7 +135,7 @@ func newPasskeyAuthExecutor(
 		ExecutorInterface:            base,
 		identifyingExecutorInterface: identifyExec,
 		passkeyService:               passkeyService,
-		userService:                  userService,
+		userProvider:                 userProvider,
 		observabilitySvc:             observabilitySvc,
 		logger:                       logger,
 	}
@@ -343,10 +342,10 @@ func (p *passkeyAuthExecutor) getAuthenticatedUser(ctx *core.NodeContext,
 		return nil, errors.New("user ID is empty after passkey authentication")
 	}
 
-	// Get user details from user service
-	user, svcErr := p.userService.GetUser(context.TODO(), userID)
-	if svcErr != nil {
-		return nil, fmt.Errorf("failed to get user details: %s", svcErr.Error)
+	// Get user details from user provider
+	user, providerErr := p.userProvider.GetUser(userID)
+	if providerErr != nil {
+		return nil, fmt.Errorf("failed to get user details: %s", providerErr.Error())
 	}
 
 	// Extract user attributes
@@ -357,9 +356,9 @@ func (p *passkeyAuthExecutor) getAuthenticatedUser(ctx *core.NodeContext,
 
 	authenticatedUser := &authncm.AuthenticatedUser{
 		IsAuthenticated:    true,
-		UserID:             user.ID,
-		OrganizationUnitID: user.OrganizationUnit,
-		UserType:           user.Type,
+		UserID:             user.UserID,
+		OrganizationUnitID: user.OrganizationUnitID,
+		UserType:           user.UserType,
 		Attributes:         attrs,
 	}
 

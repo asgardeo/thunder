@@ -94,9 +94,15 @@ func (suite *AuthenticationHandlerTestSuite) testIDPAuthFinishSuccess(
 }
 
 func (suite *AuthenticationHandlerTestSuite) TestHandleCredentialsAuthRequestSuccess() {
-	authRequest := map[string]interface{}{
+	identifiers := map[string]interface{}{
 		"username": "testuser",
+	}
+	credentials := map[string]interface{}{
 		"password": "testpass",
+	}
+	authRequest := map[string]interface{}{
+		"identifiers": identifiers,
+		"credentials": credentials,
 	}
 	authResponse := &common.AuthenticationResponse{
 		ID:               "user123",
@@ -105,7 +111,7 @@ func (suite *AuthenticationHandlerTestSuite) TestHandleCredentialsAuthRequestSuc
 		Assertion:        "jwt-token",
 	}
 
-	suite.mockService.On("AuthenticateWithCredentials", authRequest, false, "").Return(authResponse, nil)
+	suite.mockService.On("AuthenticateWithCredentials", identifiers, credentials, false, "").Return(authResponse, nil)
 
 	body, _ := json.Marshal(authRequest)
 	req := httptest.NewRequest(http.MethodPost, "/authenticate/credentials", bytes.NewReader(body))
@@ -122,14 +128,16 @@ func (suite *AuthenticationHandlerTestSuite) TestHandleCredentialsAuthRequestSuc
 }
 
 func (suite *AuthenticationHandlerTestSuite) TestHandleCredentialsAuthRequestWithSkipAssertion() {
-	authRequest := map[string]interface{}{
-		"username":       "testuser",
-		"password":       "testpass",
-		"skip_assertion": true,
-	}
-	expectedRequest := map[string]interface{}{
+	identifiers := map[string]interface{}{
 		"username": "testuser",
+	}
+	credentials := map[string]interface{}{
 		"password": "testpass",
+	}
+	authRequest := map[string]interface{}{
+		"identifiers":    identifiers,
+		"credentials":    credentials,
+		"skip_assertion": true,
 	}
 	authResponse := &common.AuthenticationResponse{
 		ID:               "user123",
@@ -137,7 +145,7 @@ func (suite *AuthenticationHandlerTestSuite) TestHandleCredentialsAuthRequestWit
 		OrganizationUnit: "test-ou",
 	}
 
-	suite.mockService.On("AuthenticateWithCredentials", expectedRequest, true, "").Return(authResponse, nil)
+	suite.mockService.On("AuthenticateWithCredentials", identifiers, credentials, true, "").Return(authResponse, nil)
 
 	body, _ := json.Marshal(authRequest)
 	req := httptest.NewRequest(http.MethodPost, "/authenticate/credentials", bytes.NewReader(body))
@@ -155,14 +163,16 @@ func (suite *AuthenticationHandlerTestSuite) TestHandleCredentialsAuthRequestWit
 
 func (suite *AuthenticationHandlerTestSuite) TestHandleCredentialsAuthRequestWithExistingAssertion() {
 	existingAssertion := "existing.jwt.token"
-	authRequest := map[string]interface{}{
-		"username":  "testuser",
-		"password":  "testpass",
-		"assertion": existingAssertion,
-	}
-	expectedRequest := map[string]interface{}{
+	identifiers := map[string]interface{}{
 		"username": "testuser",
+	}
+	credentials := map[string]interface{}{
 		"password": "testpass",
+	}
+	authRequest := map[string]interface{}{
+		"identifiers": identifiers,
+		"credentials": credentials,
+		"assertion":   existingAssertion,
 	}
 	authResponse := &common.AuthenticationResponse{
 		ID:               "user123",
@@ -171,7 +181,7 @@ func (suite *AuthenticationHandlerTestSuite) TestHandleCredentialsAuthRequestWit
 		Assertion:        "updated.jwt.token",
 	}
 
-	suite.mockService.On("AuthenticateWithCredentials", expectedRequest, false, existingAssertion).
+	suite.mockService.On("AuthenticateWithCredentials", identifiers, credentials, false, existingAssertion).
 		Return(authResponse, nil)
 
 	body, _ := json.Marshal(authRequest)
@@ -213,8 +223,12 @@ func (suite *AuthenticationHandlerTestSuite) TestHandleCredentialsAuthRequestSer
 		{
 			name: "InvalidCredentials",
 			authRequest: map[string]interface{}{
-				"username": "testuser",
-				"password": "wrongpass",
+				"identifiers": map[string]interface{}{
+					"username": "testuser",
+				},
+				"credentials": map[string]interface{}{
+					"password": "wrongpass",
+				},
 			},
 			serviceError:       &credentials.ErrorInvalidCredentials,
 			expectedStatusCode: http.StatusUnauthorized,
@@ -223,8 +237,12 @@ func (suite *AuthenticationHandlerTestSuite) TestHandleCredentialsAuthRequestSer
 		{
 			name: "UserNotFound",
 			authRequest: map[string]interface{}{
-				"username": "nonexistent",
-				"password": "testpass",
+				"identifiers": map[string]interface{}{
+					"username": "nonexistent",
+				},
+				"credentials": map[string]interface{}{
+					"password": "testpass",
+				},
 			},
 			serviceError:       &common.ErrorUserNotFound,
 			expectedStatusCode: http.StatusNotFound,
@@ -233,8 +251,12 @@ func (suite *AuthenticationHandlerTestSuite) TestHandleCredentialsAuthRequestSer
 		{
 			name: "ClientError",
 			authRequest: map[string]interface{}{
-				"username": "testuser",
-				"password": "testpass",
+				"identifiers": map[string]interface{}{
+					"username": "testuser",
+				},
+				"credentials": map[string]interface{}{
+					"password": "testpass",
+				},
 			},
 			serviceError: &serviceerror.ServiceError{
 				Type:             serviceerror.ClientErrorType,
@@ -248,8 +270,12 @@ func (suite *AuthenticationHandlerTestSuite) TestHandleCredentialsAuthRequestSer
 		{
 			name: "ServerError",
 			authRequest: map[string]interface{}{
-				"username": "testuser",
-				"password": "testpass",
+				"identifiers": map[string]interface{}{
+					"username": "testuser",
+				},
+				"credentials": map[string]interface{}{
+					"password": "testpass",
+				},
 			},
 			serviceError: &serviceerror.ServiceError{
 				Type:             serviceerror.ServerErrorType,
@@ -265,7 +291,7 @@ func (suite *AuthenticationHandlerTestSuite) TestHandleCredentialsAuthRequestSer
 	for _, tc := range cases {
 		suite.T().Run(tc.name, func(t *testing.T) {
 			m := NewAuthenticationServiceInterfaceMock(t)
-			m.On("AuthenticateWithCredentials", mock.Anything, mock.Anything, mock.Anything).
+			m.On("AuthenticateWithCredentials", mock.Anything, mock.Anything, mock.Anything, mock.Anything).
 				Return(nil, tc.serviceError)
 			h := &authenticationHandler{authService: m}
 

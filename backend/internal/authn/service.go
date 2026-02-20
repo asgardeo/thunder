@@ -42,7 +42,7 @@ import (
 	"github.com/asgardeo/thunder/internal/system/jose/jwt"
 	"github.com/asgardeo/thunder/internal/system/log"
 	sysutils "github.com/asgardeo/thunder/internal/system/utils"
-	"github.com/asgardeo/thunder/internal/user"
+	"github.com/asgardeo/thunder/internal/userprovider"
 )
 
 const svcLoggerComponentName = "AuthenticationService"
@@ -52,8 +52,8 @@ var crossAllowedIDPTypes = []idp.IDPType{idp.IDPTypeOAuth, idp.IDPTypeOIDC}
 
 // AuthenticationServiceInterface defines the interface for the authentication service.
 type AuthenticationServiceInterface interface {
-	AuthenticateWithCredentials(attributes map[string]interface{}, skipAssertion bool, existingAssertion string) (
-		*common.AuthenticationResponse, *serviceerror.ServiceError)
+	AuthenticateWithCredentials(identifiers, credentials map[string]interface{},
+		skipAssertion bool, existingAssertion string) (*common.AuthenticationResponse, *serviceerror.ServiceError)
 	SendOTP(senderID string, channel notifcommon.ChannelType, recipient string) (
 		string, *serviceerror.ServiceError)
 	VerifyOTP(sessionToken string, skipAssertion bool, existingAssertion, otp string) (
@@ -119,26 +119,52 @@ func newAuthenticationService(
 }
 
 // AuthenticateWithCredentials authenticates a user using credentials.
-func (as *authenticationService) AuthenticateWithCredentials(attributes map[string]interface{},
+func (as *authenticationService) AuthenticateWithCredentials(identifiers, credentials map[string]interface{},
 	skipAssertion bool, existingAssertion string) (
 	*common.AuthenticationResponse, *serviceerror.ServiceError) {
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, svcLoggerComponentName))
 	logger.Debug("Authenticating with credentials")
 
-	user, svcErr := as.credentialsService.Authenticate(attributes)
+	authenticateResp, svcErr := as.credentialsService.Authenticate(identifiers, credentials, nil)
 	if svcErr != nil {
 		return nil, svcErr
 	}
 
+	if authenticateResp == nil {
+		logger.Error("Credentials authenticate response is nil")
+		return nil, &serviceerror.InternalServerError
+	}
+
+	requestedAttributes := []string{}
+	for _, attr := range authenticateResp.AvailableAttributes {
+		requestedAttributes = append(requestedAttributes, attr.Name)
+	}
+
+	userAttributes, svcErr := as.credentialsService.GetAttributes(authenticateResp.Token, requestedAttributes, nil)
+	if svcErr != nil {
+		return nil, svcErr
+	}
+
+	if userAttributes == nil {
+		logger.Error("Credentials get attributes response is nil")
+		return nil, &serviceerror.InternalServerError
+	}
+
 	authResponse := &common.AuthenticationResponse{
-		ID:               user.ID,
-		Type:             user.Type,
-		OrganizationUnit: user.OrganizationUnit,
+		ID:               userAttributes.UserID,
+		Type:             userAttributes.UserType,
+		OrganizationUnit: userAttributes.OrganizationUnitID,
 	}
 
 	// Generate assertion if not skipped
 	if !skipAssertion {
-		svcErr = as.validateAndAppendAuthAssertion(authResponse, user, common.AuthenticatorCredentials,
+		authenticatedUser := &userprovider.User{
+			UserID:             userAttributes.UserID,
+			UserType:           userAttributes.UserType,
+			OrganizationUnitID: userAttributes.OrganizationUnitID,
+			Attributes:         userAttributes.Attributes,
+		}
+		svcErr = as.validateAndAppendAuthAssertion(authResponse, authenticatedUser, common.AuthenticatorCredentials,
 			existingAssertion, logger)
 		if svcErr != nil {
 			return nil, svcErr
@@ -166,9 +192,9 @@ func (as *authenticationService) VerifyOTP(sessionToken string, skipAssertion bo
 	}
 
 	authResponse := &common.AuthenticationResponse{
-		ID:               user.ID,
-		Type:             user.Type,
-		OrganizationUnit: user.OrganizationUnit,
+		ID:               user.UserID,
+		Type:             user.UserType,
+		OrganizationUnit: user.OrganizationUnitID,
 	}
 
 	// Generate assertion if not skipped
@@ -260,7 +286,7 @@ func (as *authenticationService) FinishIDPAuthentication(requestedType idp.IDPTy
 	}
 
 	// Route to appropriate service based on IDP type from session
-	var user *user.User
+	var user *userprovider.User
 	switch sessionData.IDPType {
 	case idp.IDPTypeOAuth:
 		_, user, svcErr = as.finishOAuthAuthentication(sessionData.IDPID, code, logger)
@@ -281,9 +307,9 @@ func (as *authenticationService) FinishIDPAuthentication(requestedType idp.IDPTy
 	}
 
 	authResponse := &common.AuthenticationResponse{
-		ID:               user.ID,
-		Type:             user.Type,
-		OrganizationUnit: user.OrganizationUnit,
+		ID:               user.UserID,
+		Type:             user.UserType,
+		OrganizationUnit: user.OrganizationUnitID,
 	}
 
 	// Generate assertion if not skipped
@@ -307,9 +333,9 @@ func (as *authenticationService) FinishIDPAuthentication(requestedType idp.IDPTy
 
 // validateAndAppendAuthAssertion validates and appends a generated auth assertion to the authentication response.
 func (as *authenticationService) validateAndAppendAuthAssertion(authResponse *common.AuthenticationResponse,
-	user *user.User, authenticator string, existingAssertion string,
+	user *userprovider.User, authenticator string, existingAssertion string,
 	logger *log.Logger) *serviceerror.ServiceError {
-	logger.Debug("Generating auth assertion", log.String("userId", user.ID))
+	logger.Debug("Generating auth assertion", log.String("userId", user.UserID))
 
 	authenticatorRef := &common.AuthenticatorReference{
 		Authenticator: authenticator,
@@ -327,9 +353,9 @@ func (as *authenticationService) validateAndAppendAuthAssertion(authResponse *co
 		}
 
 		// Validate that the assertion subject matches the current user
-		if assertionSub != user.ID {
+		if assertionSub != user.UserID {
 			logger.Debug("Assertion subject mismatch", log.String("assertionSub", assertionSub),
-				log.String("userId", user.ID))
+				log.String("userId", user.UserID))
 			return &common.ErrorAssertionSubjectMismatch
 		}
 
@@ -344,11 +370,11 @@ func (as *authenticationService) validateAndAppendAuthAssertion(authResponse *co
 
 	// Prepare JWT claims
 	jwtClaims := make(map[string]interface{})
-	if user.Type != "" {
-		jwtClaims["userType"] = user.Type
+	if user.UserType != "" {
+		jwtClaims["userType"] = user.UserType
 	}
-	if user.OrganizationUnit != "" {
-		jwtClaims["organizationUnit"] = user.OrganizationUnit
+	if user.OrganizationUnitID != "" {
+		jwtClaims["organizationUnit"] = user.OrganizationUnitID
 	}
 
 	// Get authentication assertion result
@@ -363,7 +389,7 @@ func (as *authenticationService) validateAndAppendAuthAssertion(authResponse *co
 
 	// Generate auth assertion JWT
 	jwtConfig := config.GetThunderRuntime().Config.JWT
-	token, _, err := as.jwtService.GenerateJWT(user.ID, jwtConfig.Audience, jwtConfig.Issuer,
+	token, _, err := as.jwtService.GenerateJWT(user.UserID, jwtConfig.Audience, jwtConfig.Issuer,
 		jwtConfig.ValidityPeriod, jwtClaims)
 	if err != nil {
 		logger.Error("Failed to generate auth assertion", log.String("error", err.Error))
@@ -446,7 +472,7 @@ func (as *authenticationService) extractClaimsFromAssertion(assertion string,
 
 // finishOAuthAuthentication handles OAuth authentication completion.
 func (as *authenticationService) finishOAuthAuthentication(idpID, code string, logger *log.Logger) (
-	string, *user.User, *serviceerror.ServiceError) {
+	string, *userprovider.User, *serviceerror.ServiceError) {
 	tokenResp, svcErr := as.oauthService.ExchangeCodeForToken(idpID, code, true)
 	if svcErr != nil {
 		return "", nil, svcErr
@@ -472,7 +498,7 @@ func (as *authenticationService) finishOAuthAuthentication(idpID, code string, l
 
 // finishOIDCAuthentication handles OIDC authentication completion.
 func (as *authenticationService) finishOIDCAuthentication(idpID, code string, logger *log.Logger) (
-	string, *user.User, *serviceerror.ServiceError) {
+	string, *userprovider.User, *serviceerror.ServiceError) {
 	tokenResp, svcErr := as.oidcService.ExchangeCodeForToken(idpID, code, true)
 	if svcErr != nil {
 		return "", nil, svcErr
@@ -501,7 +527,7 @@ func (as *authenticationService) finishOIDCAuthentication(idpID, code string, lo
 
 // finishGoogleAuthentication handles Google authentication completion.
 func (as *authenticationService) finishGoogleAuthentication(idpID, code string, logger *log.Logger) (
-	string, *user.User, *serviceerror.ServiceError) {
+	string, *userprovider.User, *serviceerror.ServiceError) {
 	tokenResp, svcErr := as.googleService.ExchangeCodeForToken(idpID, code, true)
 	if svcErr != nil {
 		return "", nil, svcErr
@@ -530,7 +556,7 @@ func (as *authenticationService) finishGoogleAuthentication(idpID, code string, 
 
 // finishGithubAuthentication handles GitHub authentication completion.
 func (as *authenticationService) finishGithubAuthentication(idpID, code string, logger *log.Logger) (
-	string, *user.User, *serviceerror.ServiceError) {
+	string, *userprovider.User, *serviceerror.ServiceError) {
 	tokenResp, svcErr := as.githubService.ExchangeCodeForToken(idpID, code, true)
 	if svcErr != nil {
 		return "", nil, svcErr
@@ -750,10 +776,11 @@ func (as *authenticationService) FinishPasskeyAuthentication(credentialID, crede
 	// Generate assertion if not skipped
 	if !skipAssertion {
 		// Create user object from authResponse for assertion generation
-		userForAssertion := &user.User{
-			ID:               authResponse.ID,
-			Type:             authResponse.Type,
-			OrganizationUnit: authResponse.OrganizationUnit,
+		userForAssertion := &userprovider.User{
+			UserID:             authResponse.ID,
+			UserType:           authResponse.Type,
+			OrganizationUnitID: authResponse.OrganizationUnit,
+			Attributes:         nil, // Attributes not needed for assertion generation from passkey finish
 		}
 
 		svcErr = as.validateAndAppendAuthAssertion(authResponse, userForAssertion, common.AuthenticatorPasskey,

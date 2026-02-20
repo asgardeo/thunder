@@ -232,8 +232,12 @@ func (suite *CredentialsAuthTestSuite) TearDownSuite() {
 // TestAuthenticateWithUsernamePassword tests successful authentication with username and password
 func (suite *CredentialsAuthTestSuite) TestAuthenticateWithUsernamePassword() {
 	authRequest := map[string]interface{}{
-		"username": "credtest_user1",
-		"password": "TestPassword123!",
+		"identifiers": map[string]interface{}{
+			"username": "credtest_user1",
+		},
+		"credentials": map[string]interface{}{
+			"password": "TestPassword123!",
+		},
 	}
 
 	response, statusCode, err := suite.sendAuthRequest(authRequest)
@@ -248,8 +252,12 @@ func (suite *CredentialsAuthTestSuite) TestAuthenticateWithUsernamePassword() {
 // TestAuthenticateWithEmailPassword tests successful authentication with email and password
 func (suite *CredentialsAuthTestSuite) TestAuthenticateWithEmailPassword() {
 	authRequest := map[string]interface{}{
-		"email":    "credtest2@example.com",
-		"password": "TestPassword456!",
+		"identifiers": map[string]interface{}{
+			"email": "credtest2@example.com",
+		},
+		"credentials": map[string]interface{}{
+			"password": "TestPassword456!",
+		},
 	}
 
 	response, statusCode, err := suite.sendAuthRequest(authRequest)
@@ -264,8 +272,12 @@ func (suite *CredentialsAuthTestSuite) TestAuthenticateWithEmailPassword() {
 // TestAuthenticateWithMobilePassword tests successful authentication with mobile number and password
 func (suite *CredentialsAuthTestSuite) TestAuthenticateWithMobilePassword() {
 	authRequest := map[string]interface{}{
-		"mobileNumber": "+1234567891",
-		"password":     "TestPassword789!",
+		"identifiers": map[string]interface{}{
+			"mobileNumber": "+1234567891",
+		},
+		"credentials": map[string]interface{}{
+			"password": "TestPassword789!",
+		},
 	}
 
 	response, statusCode, err := suite.sendAuthRequest(authRequest)
@@ -287,22 +299,34 @@ func (suite *CredentialsAuthTestSuite) TestAuthenticateWithMultipleAttributes() 
 		{
 			name: "Username with multiple attributes",
 			authRequest: map[string]interface{}{
-				"username": "credtest_user4",
-				"password": "TestPassword999!",
+				"identifiers": map[string]interface{}{
+					"username": "credtest_user4",
+				},
+				"credentials": map[string]interface{}{
+					"password": "TestPassword999!",
+				},
 			},
 		},
 		{
 			name: "Email with multiple attributes",
 			authRequest: map[string]interface{}{
-				"email":    "credtest4@example.com",
-				"password": "TestPassword999!",
+				"identifiers": map[string]interface{}{
+					"email": "credtest4@example.com",
+				},
+				"credentials": map[string]interface{}{
+					"password": "TestPassword999!",
+				},
 			},
 		},
 		{
 			name: "Mobile with multiple attributes",
 			authRequest: map[string]interface{}{
-				"mobileNumber": "+1234567892",
-				"password":     "TestPassword999!",
+				"identifiers": map[string]interface{}{
+					"mobileNumber": "+1234567892",
+				},
+				"credentials": map[string]interface{}{
+					"password": "TestPassword999!",
+				},
 			},
 		},
 	}
@@ -331,22 +355,34 @@ func (suite *CredentialsAuthTestSuite) TestAuthenticateWithInvalidPassword() {
 		{
 			name: "Invalid password with username",
 			authRequest: map[string]interface{}{
-				"username": "credtest_user1",
-				"password": "WrongPassword123!",
+				"identifiers": map[string]interface{}{
+					"username": "credtest_user1",
+				},
+				"credentials": map[string]interface{}{
+					"password": "WrongPassword123!",
+				},
 			},
 		},
 		{
 			name: "Invalid password with email",
 			authRequest: map[string]interface{}{
-				"email":    "credtest2@example.com",
-				"password": "WrongPassword456!",
+				"identifiers": map[string]interface{}{
+					"email": "credtest2@example.com",
+				},
+				"credentials": map[string]interface{}{
+					"password": "WrongPassword456!",
+				},
 			},
 		},
 		{
 			name: "Invalid password with mobile",
 			authRequest: map[string]interface{}{
-				"mobileNumber": "+1234567891",
-				"password":     "WrongPassword789!",
+				"identifiers": map[string]interface{}{
+					"mobileNumber": "+1234567891",
+				},
+				"credentials": map[string]interface{}{
+					"password": "WrongPassword789!",
+				},
 			},
 		},
 	}
@@ -370,22 +406,34 @@ func (suite *CredentialsAuthTestSuite) TestAuthenticateWithNonExistentUser() {
 		{
 			name: "Non-existent username",
 			authRequest: map[string]interface{}{
-				"username": "nonexistent_user",
-				"password": "TestPassword123!",
+				"identifiers": map[string]interface{}{
+					"username": "nonexistent_user",
+				},
+				"credentials": map[string]interface{}{
+					"password": "TestPassword123!",
+				},
 			},
 		},
 		{
 			name: "Non-existent email",
 			authRequest: map[string]interface{}{
-				"email":    "nonexistent@example.com",
-				"password": "TestPassword123!",
+				"identifiers": map[string]interface{}{
+					"email": "nonexistent@example.com",
+				},
+				"credentials": map[string]interface{}{
+					"password": "TestPassword123!",
+				},
 			},
 		},
 		{
 			name: "Non-existent mobile",
 			authRequest: map[string]interface{}{
-				"mobileNumber": "+9999999999",
-				"password":     "TestPassword123!",
+				"identifiers": map[string]interface{}{
+					"mobileNumber": "+9999999999",
+				},
+				"credentials": map[string]interface{}{
+					"password": "TestPassword123!",
+				},
 			},
 		},
 	}
@@ -409,19 +457,25 @@ func (suite *CredentialsAuthTestSuite) TestAuthenticateWithMissingPassword() {
 		{
 			name: "Missing password with username",
 			authRequest: map[string]interface{}{
-				"username": "credtest_user1",
+				"identifiers": map[string]interface{}{
+					"username": "credtest_user1",
+				},
 			},
 		},
 		{
 			name: "Missing password with email",
 			authRequest: map[string]interface{}{
-				"email": "credtest2@example.com",
+				"identifiers": map[string]interface{}{
+					"email": "credtest2@example.com",
+				},
 			},
 		},
 		{
 			name: "Missing password with mobile",
 			authRequest: map[string]interface{}{
-				"mobileNumber": "+1234567891",
+				"identifiers": map[string]interface{}{
+					"mobileNumber": "+1234567891",
+				},
 			},
 		},
 	}
@@ -438,7 +492,9 @@ func (suite *CredentialsAuthTestSuite) TestAuthenticateWithMissingPassword() {
 // TestAuthenticateWithMissingIdentifyingAttributes tests authentication failure when identifying attributes are missing
 func (suite *CredentialsAuthTestSuite) TestAuthenticateWithMissingIdentifyingAttributes() {
 	authRequest := map[string]interface{}{
-		"password": "TestPassword123!",
+		"credentials": map[string]interface{}{
+			"password": "TestPassword123!",
+		},
 	}
 
 	_, statusCode, err := suite.sendAuthRequestExpectingError(authRequest)
@@ -466,32 +522,48 @@ func (suite *CredentialsAuthTestSuite) TestAuthenticateWithEmptyCredentials() {
 		{
 			name: "Empty username",
 			authRequest: map[string]interface{}{
-				"username": "",
-				"password": "TestPassword123!",
+				"identifiers": map[string]interface{}{
+					"username": "",
+				},
+				"credentials": map[string]interface{}{
+					"password": "TestPassword123!",
+				},
 			},
 			expectedStatus: http.StatusNotFound,
 		},
 		{
 			name: "Empty password",
 			authRequest: map[string]interface{}{
-				"username": "credtest_user1",
-				"password": "",
+				"identifiers": map[string]interface{}{
+					"username": "credtest_user1",
+				},
+				"credentials": map[string]interface{}{
+					"password": "",
+				},
 			},
 			expectedStatus: http.StatusUnauthorized,
 		},
 		{
 			name: "Empty email",
 			authRequest: map[string]interface{}{
-				"email":    "",
-				"password": "TestPassword123!",
+				"identifiers": map[string]interface{}{
+					"email": "",
+				},
+				"credentials": map[string]interface{}{
+					"password": "TestPassword123!",
+				},
 			},
 			expectedStatus: http.StatusNotFound,
 		},
 		{
 			name: "Both empty",
 			authRequest: map[string]interface{}{
-				"username": "",
-				"password": "",
+				"identifiers": map[string]interface{}{
+					"username": "",
+				},
+				"credentials": map[string]interface{}{
+					"password": "",
+				},
 			},
 			expectedStatus: http.StatusNotFound,
 		},
@@ -508,7 +580,7 @@ func (suite *CredentialsAuthTestSuite) TestAuthenticateWithEmptyCredentials() {
 
 // TestAuthenticateWithMalformedJSON tests authentication failure with malformed JSON
 func (suite *CredentialsAuthTestSuite) TestAuthenticateWithMalformedJSON() {
-	malformedJSON := []byte(`{"username": "test", "password": }`)
+	malformedJSON := []byte(`{"identifiers": {"username": "test"}, "credentials": {"password": }}`)
 
 	req, err := http.NewRequest("POST", testutils.TestServerURL+credentialsAuthEndpoint,
 		bytes.NewReader(malformedJSON))
@@ -538,9 +610,13 @@ func (suite *CredentialsAuthTestSuite) TestAuthenticateWithDifferentAttributeCom
 		{
 			name: "Username and email (both valid for same user)",
 			authRequest: map[string]interface{}{
-				"username": "credtest_user4",
-				"email":    "credtest4@example.com",
-				"password": "TestPassword999!",
+				"identifiers": map[string]interface{}{
+					"username": "credtest_user4",
+					"email":    "credtest4@example.com",
+				},
+				"credentials": map[string]interface{}{
+					"password": "TestPassword999!",
+				},
 			},
 			expectedUserID: "multiple_attributes",
 			shouldSucceed:  true,
@@ -548,9 +624,13 @@ func (suite *CredentialsAuthTestSuite) TestAuthenticateWithDifferentAttributeCom
 		{
 			name: "Only additional attributes (no identifying attribute)",
 			authRequest: map[string]interface{}{
-				"firstName": "Test",
-				"lastName":  "User",
-				"password":  "TestPassword999!",
+				"identifiers": map[string]interface{}{
+					"firstName": "Test",
+					"lastName":  "User",
+				},
+				"credentials": map[string]interface{}{
+					"password": "TestPassword999!",
+				},
 			},
 			expectedUserID: "",
 			shouldSucceed:  true, // Changed: API now returns 200 with these attributes
@@ -558,8 +638,12 @@ func (suite *CredentialsAuthTestSuite) TestAuthenticateWithDifferentAttributeCom
 		{
 			name: "Valid username with additional attributes",
 			authRequest: map[string]interface{}{
-				"username": "credtest_user1",
-				"password": "TestPassword123!",
+				"identifiers": map[string]interface{}{
+					"username": "credtest_user1",
+				},
+				"credentials": map[string]interface{}{
+					"password": "TestPassword123!",
+				},
 			},
 			expectedUserID: "username_password",
 			shouldSucceed:  true,
@@ -590,8 +674,12 @@ func (suite *CredentialsAuthTestSuite) TestAuthenticateWithDifferentAttributeCom
 // TestAuthenticateWithSkipAssertionFalse tests authentication with skip_assertion explicitly set to false
 func (suite *CredentialsAuthTestSuite) TestAuthenticateWithSkipAssertionFalse() {
 	authRequest := map[string]interface{}{
-		"username":       "credtest_user1",
-		"password":       "TestPassword123!",
+		"identifiers": map[string]interface{}{
+			"username": "credtest_user1",
+		},
+		"credentials": map[string]interface{}{
+			"password": "TestPassword123!",
+		},
 		"skip_assertion": false,
 	}
 
@@ -609,8 +697,12 @@ func (suite *CredentialsAuthTestSuite) TestAuthenticateWithSkipAssertionFalse() 
 // TestAuthenticateWithSkipAssertionTrue tests authentication with skip_assertion set to true
 func (suite *CredentialsAuthTestSuite) TestAuthenticateWithSkipAssertionTrue() {
 	authRequest := map[string]interface{}{
-		"username":       "credtest_user1",
-		"password":       "TestPassword123!",
+		"identifiers": map[string]interface{}{
+			"username": "credtest_user1",
+		},
+		"credentials": map[string]interface{}{
+			"password": "TestPassword123!",
+		},
 		"skip_assertion": true,
 	}
 
@@ -628,8 +720,12 @@ func (suite *CredentialsAuthTestSuite) TestAuthenticateWithSkipAssertionTrue() {
 // TestAuthenticateWithAssuranceLevelAAL1 tests that credentials authentication generates AAL1 assurance level
 func (suite *CredentialsAuthTestSuite) TestAuthenticateWithAssuranceLevelAAL1() {
 	authRequest := map[string]interface{}{
-		"username": "credtest_user1",
-		"password": "TestPassword123!",
+		"identifiers": map[string]interface{}{
+			"username": "credtest_user1",
+		},
+		"credentials": map[string]interface{}{
+			"password": "TestPassword123!",
+		},
 	}
 
 	response, statusCode, err := suite.sendAuthRequest(authRequest)
@@ -652,8 +748,12 @@ func (suite *CredentialsAuthTestSuite) TestAuthenticateWithAssuranceLevelAAL1() 
 // TestAuthenticateWithAssuranceLevelNoAssertion tests that AAL/IAL are not present when assertion is skipped
 func (suite *CredentialsAuthTestSuite) TestAuthenticateWithAssuranceLevelNoAssertion() {
 	authRequest := map[string]interface{}{
-		"username":       "credtest_user1",
-		"password":       "TestPassword123!",
+		"identifiers": map[string]interface{}{
+			"username": "credtest_user1",
+		},
+		"credentials": map[string]interface{}{
+			"password": "TestPassword123!",
+		},
 		"skip_assertion": true,
 	}
 
@@ -673,15 +773,23 @@ func (suite *CredentialsAuthTestSuite) TestCredentialsAuthenticationWithVariousA
 		{
 			name: "Email and password authentication",
 			credentials: map[string]interface{}{
-				"email":    "credtest2@example.com",
-				"password": "TestPassword456!",
+				"identifiers": map[string]interface{}{
+					"email": "credtest2@example.com",
+				},
+				"credentials": map[string]interface{}{
+					"password": "TestPassword456!",
+				},
 			},
 		},
 		{
 			name: "Mobile and password authentication",
 			credentials: map[string]interface{}{
-				"mobileNumber": "+1234567891",
-				"password":     "TestPassword789!",
+				"identifiers": map[string]interface{}{
+					"mobileNumber": "+1234567891",
+				},
+				"credentials": map[string]interface{}{
+					"password": "TestPassword789!",
+				},
 			},
 		},
 	}
@@ -703,8 +811,12 @@ func (suite *CredentialsAuthTestSuite) TestCredentialsAuthenticationWithVariousA
 // TestAuthenticateWithExistingAssertionInvalidJWT tests authentication with invalid existing assertion
 func (suite *CredentialsAuthTestSuite) TestAuthenticateWithExistingAssertionInvalidJWT() {
 	authRequest := map[string]interface{}{
-		"username":  "credtest_user1",
-		"password":  "TestPassword123!",
+		"identifiers": map[string]interface{}{
+			"username": "credtest_user1",
+		},
+		"credentials": map[string]interface{}{
+			"password": "TestPassword123!",
+		},
 		"assertion": "invalid.jwt.token",
 	}
 
@@ -718,8 +830,12 @@ func (suite *CredentialsAuthTestSuite) TestAuthenticateWithExistingAssertionInva
 func (suite *CredentialsAuthTestSuite) TestAuthenticateWithExistingAssertionSubjectMismatch() {
 	// First, authenticate as user1 to get an assertion
 	firstAuthRequest := map[string]interface{}{
-		"username": "credtest_user1",
-		"password": "TestPassword123!",
+		"identifiers": map[string]interface{}{
+			"username": "credtest_user1",
+		},
+		"credentials": map[string]interface{}{
+			"password": "TestPassword123!",
+		},
 	}
 
 	firstResponse, statusCode, err := suite.sendAuthRequest(firstAuthRequest)
@@ -729,8 +845,12 @@ func (suite *CredentialsAuthTestSuite) TestAuthenticateWithExistingAssertionSubj
 
 	// Now try to authenticate as user2 with user1's assertion
 	secondAuthRequest := map[string]interface{}{
-		"username":  "credtest_user2",
-		"password":  "TestPassword456!",
+		"identifiers": map[string]interface{}{
+			"username": "credtest_user2",
+		},
+		"credentials": map[string]interface{}{
+			"password": "TestPassword456!",
+		},
 		"assertion": firstResponse.Assertion,
 	}
 
@@ -745,8 +865,12 @@ func (suite *CredentialsAuthTestSuite) TestAuthenticateWithExistingAssertionSubj
 func (suite *CredentialsAuthTestSuite) TestAuthenticateWithExistingAssertionMultiStep() {
 	// First authentication step - authenticate with credentials to get initial assertion
 	firstAuthRequest := map[string]interface{}{
-		"username": "credtest_user1",
-		"password": "TestPassword123!",
+		"identifiers": map[string]interface{}{
+			"username": "credtest_user1",
+		},
+		"credentials": map[string]interface{}{
+			"password": "TestPassword123!",
+		},
 	}
 
 	firstResponse, statusCode, err := suite.sendAuthRequest(firstAuthRequest)
@@ -761,8 +885,12 @@ func (suite *CredentialsAuthTestSuite) TestAuthenticateWithExistingAssertionMult
 	// Second authentication step - authenticate with same credentials again, passing the assertion
 	// This simulates re-authenticating with credentials in a multi-step flow
 	secondAuthRequest := map[string]interface{}{
-		"username":  "credtest_user1",
-		"password":  "TestPassword123!",
+		"identifiers": map[string]interface{}{
+			"username": "credtest_user1",
+		},
+		"credentials": map[string]interface{}{
+			"password": "TestPassword123!",
+		},
 		"assertion": firstResponse.Assertion,
 	}
 
@@ -787,8 +915,12 @@ func (suite *CredentialsAuthTestSuite) TestAuthenticateWithExistingAssertionMult
 func (suite *CredentialsAuthTestSuite) TestAuthenticateWithExistingAssertionAAL2MultiFactorSimulation() {
 	// Step 1: First factor authentication (e.g., credentials)
 	firstAuthRequest := map[string]interface{}{
-		"username": "credtest_user4",
-		"password": "TestPassword999!",
+		"identifiers": map[string]interface{}{
+			"username": "credtest_user4",
+		},
+		"credentials": map[string]interface{}{
+			"password": "TestPassword999!",
+		},
 	}
 
 	firstResponse, statusCode, err := suite.sendAuthRequest(firstAuthRequest)
@@ -804,8 +936,12 @@ func (suite *CredentialsAuthTestSuite) TestAuthenticateWithExistingAssertionAAL2
 	// In a real scenario, this would be a different authentication method like OTP or biometric
 	// Here we simulate by authenticating with email instead of username
 	secondAuthRequest := map[string]interface{}{
-		"email":     "credtest4@example.com",
-		"password":  "TestPassword999!",
+		"identifiers": map[string]interface{}{
+			"email": "credtest4@example.com",
+		},
+		"credentials": map[string]interface{}{
+			"password": "TestPassword999!",
+		},
 		"assertion": firstResponse.Assertion,
 	}
 
@@ -828,8 +964,12 @@ func (suite *CredentialsAuthTestSuite) TestAuthenticateWithExistingAssertionAAL2
 func (suite *CredentialsAuthTestSuite) TestAuthenticateWithExistingAssertionSkipAssertionTrue() {
 	// First, get an assertion
 	firstAuthRequest := map[string]interface{}{
-		"username": "credtest_user1",
-		"password": "TestPassword123!",
+		"identifiers": map[string]interface{}{
+			"username": "credtest_user1",
+		},
+		"credentials": map[string]interface{}{
+			"password": "TestPassword123!",
+		},
 	}
 
 	firstResponse, statusCode, err := suite.sendAuthRequest(firstAuthRequest)
@@ -839,8 +979,12 @@ func (suite *CredentialsAuthTestSuite) TestAuthenticateWithExistingAssertionSkip
 
 	// Second authentication with skip_assertion=true and existing assertion
 	secondAuthRequest := map[string]interface{}{
-		"username":       "credtest_user1",
-		"password":       "TestPassword123!",
+		"identifiers": map[string]interface{}{
+			"username": "credtest_user1",
+		},
+		"credentials": map[string]interface{}{
+			"password": "TestPassword123!",
+		},
 		"skip_assertion": true,
 		"assertion":      firstResponse.Assertion,
 	}
@@ -854,8 +998,12 @@ func (suite *CredentialsAuthTestSuite) TestAuthenticateWithExistingAssertionSkip
 // TestAuthenticateWithExistingAssertionEmptyString tests authentication with empty assertion string
 func (suite *CredentialsAuthTestSuite) TestAuthenticateWithExistingAssertionEmptyString() {
 	authRequest := map[string]interface{}{
-		"username":  "credtest_user1",
-		"password":  "TestPassword123!",
+		"identifiers": map[string]interface{}{
+			"username": "credtest_user1",
+		},
+		"credentials": map[string]interface{}{
+			"password": "TestPassword123!",
+		},
 		"assertion": "",
 	}
 

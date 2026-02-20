@@ -185,9 +185,9 @@ read_config() {
         PUBLIC_URL=$(yq eval '.server.public_url // ""' "$config_file" 2>/dev/null)
     else
         # Fallback: basic parsing with grep/awk
-        HOSTNAME=$(grep -E '^\s*hostname:' "$config_file" | awk -F':' '{gsub(/[[:space:]"'\'']/,"",$2); print $2}' | head -1)
-        PORT=$(grep -E '^\s*port:' "$config_file" | awk -F':' '{gsub(/[[:space:]]/,"",$2); print $2}' | head -1)
-        PUBLIC_URL=$(grep -E '^\s*public_url:' "$config_file" | grep -o '"[^"]*"' | tr -d '"' | head -1)
+        HOSTNAME=$(grep -E '^\s*hostname:' "$config_file" | sed 's/#.*//' | awk -F':' '{gsub(/[[:space:]"'\'']/,"",$2); print $2}' | head -1)
+        PORT=$(grep -E '^\s*port:' "$config_file" | sed 's/#.*//' | awk -F':' '{gsub(/[[:space:]]/,"",$2); print $2}' | head -1)
+        PUBLIC_URL=$(grep -E '^\s*public_url:' "$config_file" | sed 's/#.*//' | grep -o '"[^"]*"' | tr -d '"' | head -1)
 
         # Check for http_only
         if grep -q 'http_only.*true' "$config_file" 2>/dev/null; then

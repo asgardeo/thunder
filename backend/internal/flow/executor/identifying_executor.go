@@ -19,14 +19,12 @@
 package executor
 
 import (
-	"context"
 	"slices"
 
 	"github.com/asgardeo/thunder/internal/flow/common"
 	"github.com/asgardeo/thunder/internal/flow/core"
 	"github.com/asgardeo/thunder/internal/system/log"
-
-	"github.com/asgardeo/thunder/internal/user"
+	"github.com/asgardeo/thunder/internal/userprovider"
 )
 
 const (
@@ -42,8 +40,8 @@ type identifyingExecutorInterface interface {
 // identifyingExecutor implements the ExecutorInterface for identifying users based on provided attributes.
 type identifyingExecutor struct {
 	core.ExecutorInterface
-	userService user.UserServiceInterface
-	logger      *log.Logger
+	userProvider userprovider.UserProviderInterface
+	logger       *log.Logger
 }
 
 var _ core.ExecutorInterface = (*identifyingExecutor)(nil)
@@ -54,7 +52,7 @@ func newIdentifyingExecutor(
 	name string,
 	defaultInputs, prerequisites []common.Input,
 	flowFactory core.FlowFactoryInterface,
-	userService user.UserServiceInterface,
+	userProvider userprovider.UserProviderInterface,
 ) *identifyingExecutor {
 	if name == "" {
 		name = ExecutorNameIdentifying
@@ -66,7 +64,7 @@ func newIdentifyingExecutor(
 		defaultInputs, prerequisites)
 	return &identifyingExecutor{
 		ExecutorInterface: base,
-		userService:       userService,
+		userProvider:      userProvider,
 		logger:            logger,
 	}
 }
@@ -85,15 +83,15 @@ func (i *identifyingExecutor) IdentifyUser(filters map[string]interface{},
 		}
 	}
 
-	userID, svcErr := i.userService.IdentifyUser(context.TODO(), searchableFilter)
-	if svcErr != nil {
-		if svcErr.Code == user.ErrorUserNotFound.Code {
+	userID, err := i.userProvider.IdentifyUser(searchableFilter)
+	if err != nil {
+		if err.Code == userprovider.ErrorCodeUserNotFound {
 			logger.Debug("User not found for the provided filters")
 			execResp.Status = common.ExecFailure
 			execResp.FailureReason = failureReasonUserNotFound
 			return nil, nil
 		} else {
-			logger.Debug("Failed to identify user due to error: " + svcErr.Error)
+			logger.Debug("Failed to identify user due to error: " + err.Error())
 			execResp.Status = common.ExecFailure
 			execResp.FailureReason = failureReasonFailedToIdentifyUser
 			return nil, nil

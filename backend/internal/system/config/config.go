@@ -250,6 +250,24 @@ type PasskeyConfig struct {
 	AllowedOrigins []string `yaml:"allowed_origins" json:"allowed_origins"`
 }
 
+// AuthnProviderConfig holds the authentication provider configuration details.
+type AuthnProviderConfig struct {
+	Type string     `yaml:"type" json:"type"`
+	Rest RestConfig `yaml:"rest" json:"rest"`
+}
+
+// RestConfig holds the REST authentication provider configuration details.
+type RestConfig struct {
+	BaseURL  string             `yaml:"base_url" json:"base_url"`
+	Timeout  int                `yaml:"timeout" json:"timeout"`
+	Security RestSecurityConfig `yaml:"security" json:"security"`
+}
+
+// RestSecurityConfig holds the REST authentication provider security configuration details.
+type RestSecurityConfig struct {
+	APIKey string `yaml:"api_key" json:"api_key"`
+}
+
 // Config holds the complete configuration details of the server.
 type Config struct {
 	Server               ServerConfig           `yaml:"server" json:"server"`
@@ -268,6 +286,7 @@ type Config struct {
 	OrganizationUnit     OrganizationUnitConfig `yaml:"organization_unit" json:"organization_unit"`
 	Observability        ObservabilityConfig    `yaml:"observability" json:"observability"`
 	Passkey              PasskeyConfig          `yaml:"passkey" json:"passkey"`
+	AuthnProvider        AuthnProviderConfig    `yaml:"authn_provider" json:"authn_provider"`
 }
 
 // LoadConfig loads the configurations from the specified YAML file and applies defaults.

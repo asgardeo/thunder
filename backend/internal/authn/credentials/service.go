@@ -20,12 +20,10 @@
 package credentials
 
 import (
-	"context"
-
 	"github.com/asgardeo/thunder/internal/authn/common"
+	"github.com/asgardeo/thunder/internal/authnprovider"
 	"github.com/asgardeo/thunder/internal/system/error/serviceerror"
 	"github.com/asgardeo/thunder/internal/system/log"
-	"github.com/asgardeo/thunder/internal/user"
 )
 
 const (
@@ -34,68 +32,65 @@ const (
 
 // CredentialsAuthnServiceInterface defines the contract for credentials-based authenticator services.
 type CredentialsAuthnServiceInterface interface {
-	Authenticate(attributes map[string]interface{}) (*user.User, *serviceerror.ServiceError)
+	Authenticate(identifiers, credentials map[string]interface{}, metadata *authnprovider.AuthnMetadata) (
+		*authnprovider.AuthnResult, *serviceerror.ServiceError)
+	GetAttributes(token string, requestedAttributes []string, metadata *authnprovider.GetAttributesMetadata) (
+		*authnprovider.GetAttributesResult, *serviceerror.ServiceError)
 }
 
 // credentialsAuthnService is the default implementation of CredentialsAuthnServiceInterface.
 type credentialsAuthnService struct {
-	userService user.UserServiceInterface
+	authnProvider authnprovider.AuthnProviderInterface
+	logger        *log.Logger
 }
 
 // newCredentialsAuthnService creates a new instance of credentials authenticator service.
-func newCredentialsAuthnService(userSvc user.UserServiceInterface) CredentialsAuthnServiceInterface {
+func newCredentialsAuthnService(authnProvider authnprovider.AuthnProviderInterface) CredentialsAuthnServiceInterface {
 	service := &credentialsAuthnService{
-		userService: userSvc,
+		authnProvider: authnProvider,
 	}
 	common.RegisterAuthenticator(service.getMetadata())
+	service.logger = log.GetLogger().With(log.String(log.LoggerKeyComponentName, loggerComponentName))
 
 	return service
 }
 
-// Authenticate authenticates a user using credentials.
-func (c *credentialsAuthnService) Authenticate(attributes map[string]interface{}) (
-	*user.User, *serviceerror.ServiceError) {
-	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, loggerComponentName))
-	logger.Debug("Authenticating user with credentials")
-
-	if len(attributes) == 0 {
+func (c *credentialsAuthnService) Authenticate(identifiers, credentials map[string]interface{},
+	metadata *authnprovider.AuthnMetadata) (*authnprovider.AuthnResult, *serviceerror.ServiceError) {
+	if len(identifiers) == 0 || len(credentials) == 0 {
 		return nil, &ErrorEmptyAttributesOrCredentials
 	}
 
-	authRequest := user.AuthenticateUserRequest(attributes)
-	authResponse, svcErr := c.userService.AuthenticateUser(context.TODO(), authRequest)
-	if svcErr != nil {
-		if svcErr.Type == serviceerror.ClientErrorType {
-			switch svcErr.Code {
-			case user.ErrorUserNotFound.Code:
-				return nil, &common.ErrorUserNotFound
-			case user.ErrorAuthenticationFailed.Code:
-				return nil, &ErrorInvalidCredentials
-			default:
-				return nil, serviceerror.CustomServiceError(
-					ErrorClientErrorFromUserSvcAuthentication, svcErr.ErrorDescription)
-			}
+	authnResult, err := c.authnProvider.Authenticate(identifiers, credentials, metadata)
+	if err != nil {
+		switch err.Code {
+		case authnprovider.ErrorCodeAuthenticationFailed:
+			return nil, &ErrorInvalidCredentials
+		case authnprovider.ErrorCodeUserNotFound:
+			return nil, &common.ErrorUserNotFound
+		default:
+			c.logger.Error("Error occurred while authenticating the user", log.String("errorCode", string(err.Code)),
+				log.String("errorDescription", err.Description))
+			return nil, &serviceerror.InternalServerError
 		}
-
-		logger.Error("Error occurred while authenticating the user", log.String("errorCode", svcErr.Code),
-			log.String("errorDescription", svcErr.ErrorDescription))
-		return nil, &serviceerror.InternalServerError
 	}
+	return authnResult, nil
+}
 
-	// Fetch the user details
-	user, svcErr := c.userService.GetUser(context.TODO(), authResponse.ID)
-	if svcErr != nil {
-		if svcErr.Type == serviceerror.ClientErrorType {
-			return nil, serviceerror.CustomServiceError(
-				ErrorClientErrorFromUserSvcAuthentication, svcErr.ErrorDescription)
+func (c *credentialsAuthnService) GetAttributes(token string, requestedAttributes []string,
+	metadata *authnprovider.GetAttributesMetadata) (*authnprovider.GetAttributesResult, *serviceerror.ServiceError) {
+	result, err := c.authnProvider.GetAttributes(token, requestedAttributes, metadata)
+	if err != nil {
+		switch err.Code {
+		case authnprovider.ErrorCodeInvalidToken:
+			return nil, &ErrorInvalidToken
+		default:
+			c.logger.Error("Error occurred while getting attributes", log.String("errorCode", string(err.Code)),
+				log.String("errorDescription", err.Description))
+			return nil, &serviceerror.InternalServerError
 		}
-
-		logger.Error("Error occurred while retrieving the user", log.String("errorCode", svcErr.Code),
-			log.String("errorDescription", svcErr.ErrorDescription))
-		return nil, &serviceerror.InternalServerError
 	}
-
-	return user, nil
+	return result, nil
 }
 
 // getMetadata returns the authenticator metadata for credentials authenticator.

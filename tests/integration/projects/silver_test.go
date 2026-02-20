@@ -134,8 +134,12 @@ func (ts *SilverTestSuite) TearDownSuite() {
 
 func (ts *SilverTestSuite) TestSilver_AuthenticateUser() {
 	authRequest := map[string]interface{}{
-		"username": username,
-		"password": password,
+		"identifiers": map[string]interface{}{
+			"username": username,
+		},
+		"credentials": map[string]interface{}{
+			"password": password,
+		},
 	}
 	requestJSON, err := json.Marshal(authRequest)
 	ts.Require().NoError(err, "Failed to marshal auth request")

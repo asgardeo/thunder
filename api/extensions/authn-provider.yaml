@@ -1,0 +1,223 @@
+openapi: 3.0.0
+info:
+  title: Authentication Provider API
+  version: 1.0.0
+  description: API specification for the Authentication Provider interface.
+
+security:
+  - ApiKeyAuth: []
+paths:
+  /authenticate:
+    post:
+      summary: Authenticate a user
+      operationId: authenticate
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AuthenticateRequest'
+      responses:
+        '200':
+          description: Authentication successful
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthnResult'
+        '400':
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthnProviderError'
+        '401':
+          description: Authentication failed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthnProviderError'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthnProviderError'
+
+  /attributes:
+    post:
+      summary: Get user attributes
+      operationId: getAttributes
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GetAttributesRequest'
+      responses:
+        '200':
+          description: Attributes retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GetAttributesResult'
+        '400':
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthnProviderError'
+        '401':
+          description: Invalid token or unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthnProviderError'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthnProviderError'
+
+components:
+  securitySchemes:
+    ApiKeyAuth:
+      type: apiKey
+      in: header
+      name: API-KEY
+  schemas:
+    AuthenticateRequest:
+      type: object
+      properties:
+        identifiers:
+          type: object
+          additionalProperties: true
+          description: Map of user identifiers
+        credentials:
+          type: object
+          additionalProperties: true
+          description: Map of user credentials
+        metadata:
+          $ref: '#/components/schemas/AuthnMetadata'
+      required:
+        - identifiers
+        - credentials
+
+    GetAttributesRequest:
+      type: object
+      properties:
+        token:
+          type: string
+          description: Authentication token
+        requestedAttributes:
+          type: array
+          maxItems: 100
+          items:
+            type: string
+          description: List of requested attribute names
+        metadata:
+          $ref: '#/components/schemas/GetAttributesMetadata'
+      required:
+        - token
+
+    AuthnMetadata:
+      type: object
+      properties:
+        appMetadata:
+          type: object
+          additionalProperties: true
+          description: Application metadata
+
+    GetAttributesMetadata:
+      type: object
+      properties:
+        appMetadata:
+          type: object
+          additionalProperties: true
+          description: Application metadata
+        locale:
+          type: string
+          description: User locale
+
+    AuthnResult:
+      type: object
+      properties:
+        userId:
+          type: string
+        userType:
+          type: string
+        ouId:
+          type: string
+        token:
+          type: string
+        availableAttributes:
+          type: array
+          items:
+            $ref: '#/components/schemas/AvailableAttribute'
+      required:
+        - userId
+        - userType
+        - ouId
+
+    AvailableAttribute:
+      type: object
+      properties:
+        name:
+          type: string
+        displayName:
+          type: string
+        verified:
+          type: boolean
+      required:
+        - name
+        - displayName
+        - verified
+
+    GetAttributesResult:
+      type: object
+      properties:
+        userId:
+          type: string
+        userType:
+          type: string
+        ouId:
+          type: string
+        attributes:
+          type: object
+          additionalProperties: true
+          description: Map of user attributes
+      required:
+        - userId
+        - userType
+        - ouId
+
+    ErrorCode:
+      type: string
+      description: |
+        Error codes returned by the authentication provider API:
+        - AUP-0001: System Error
+        - AUP-0002: Authentication Failed
+        - AUP-0003: User Not Found
+        - AUP-0004: Invalid Token
+        - AUP-0005: Not Implemented
+      enum:
+        - AUP-0001
+        - AUP-0002
+        - AUP-0003
+        - AUP-0004
+        - AUP-0005
+
+    AuthnProviderError:
+      type: object
+      properties:
+        code:
+          $ref: '#/components/schemas/ErrorCode'
+        message:
+          type: string
+          description: Error message
+        description:
+          type: string
+          description: Detailed error description
+      required:
+        - code
+        - message

@@ -29,19 +29,19 @@ import (
 	authncm "github.com/asgardeo/thunder/internal/authn/common"
 	"github.com/asgardeo/thunder/internal/flow/common"
 	"github.com/asgardeo/thunder/internal/flow/core"
-	"github.com/asgardeo/thunder/internal/user"
+	"github.com/asgardeo/thunder/internal/userprovider"
 	"github.com/asgardeo/thunder/tests/mocks/flow/coremock"
 	"github.com/asgardeo/thunder/tests/mocks/notification/notificationmock"
 	"github.com/asgardeo/thunder/tests/mocks/observabilitymock"
-	"github.com/asgardeo/thunder/tests/mocks/usermock"
+	"github.com/asgardeo/thunder/tests/mocks/userprovidermock"
 )
 
 type SMSAuthExecutorTestSuite struct {
 	suite.Suite
-	mockUserService   *usermock.UserServiceInterfaceMock
 	mockOTPService    *notificationmock.OTPServiceInterfaceMock
 	mockFlowFactory   *coremock.FlowFactoryInterfaceMock
 	mockObservability *observabilitymock.ObservabilityServiceInterfaceMock
+	mockUserProvider  *userprovidermock.UserProviderInterfaceMock
 	executor          *smsOTPAuthExecutor
 }
 
@@ -50,10 +50,10 @@ func TestSMSAuthExecutorSuite(t *testing.T) {
 }
 
 func (suite *SMSAuthExecutorTestSuite) SetupTest() {
-	suite.mockUserService = usermock.NewUserServiceInterfaceMock(suite.T())
 	suite.mockOTPService = notificationmock.NewOTPServiceInterfaceMock(suite.T())
 	suite.mockFlowFactory = coremock.NewFlowFactoryInterfaceMock(suite.T())
 	suite.mockObservability = observabilitymock.NewObservabilityServiceInterfaceMock(suite.T())
+	suite.mockUserProvider = userprovidermock.NewUserProviderInterfaceMock(suite.T())
 
 	// Default behavior for observability: disabled
 	suite.mockObservability.On("IsEnabled").Return(false).Maybe()
@@ -97,8 +97,8 @@ func (suite *SMSAuthExecutorTestSuite) SetupTest() {
 	suite.mockFlowFactory.On("CreateExecutor", ExecutorNameSMSAuth, common.ExecutorTypeAuthentication,
 		defaultInputs, prerequisites).Return(mockExec)
 
-	suite.executor = newSMSOTPAuthExecutor(suite.mockFlowFactory, suite.mockUserService,
-		suite.mockOTPService, suite.mockObservability)
+	suite.executor = newSMSOTPAuthExecutor(suite.mockFlowFactory,
+		suite.mockOTPService, suite.mockObservability, suite.mockUserProvider)
 	// Inject the mock base executor
 	suite.executor.ExecutorInterface = mockExec
 }
@@ -250,14 +250,14 @@ func (suite *SMSAuthExecutorTestSuite) TestGetAuthenticatedUser_FetchFromStore_A
 		RuntimeData: make(map[string]string),
 	}
 
-	userFromStore := &user.User{
-		ID:               "user-123",
-		OrganizationUnit: "ou-123",
-		Type:             "INTERNAL",
-		Attributes:       attrsJSON,
+	userFromStore := &userprovider.User{
+		UserID:             "user-123",
+		OrganizationUnitID: "ou-123",
+		UserType:           "INTERNAL",
+		Attributes:         attrsJSON,
 	}
 
-	suite.mockUserService.On("GetUser", mock.Anything, "user-123").Return(userFromStore, nil)
+	suite.mockUserProvider.On("GetUser", "user-123").Return(userFromStore, nil)
 
 	result, err := suite.executor.getAuthenticatedUser(ctx, execResp)
 
@@ -268,7 +268,7 @@ func (suite *SMSAuthExecutorTestSuite) TestGetAuthenticatedUser_FetchFromStore_A
 	// Verify mobile number was added to attributes even though it wasn't in stored attributes
 	assert.Equal(suite.T(), "+1234567890", result.Attributes[userAttributeMobileNumber])
 	assert.Equal(suite.T(), "test@example.com", result.Attributes["email"]) // Existing attributes preserved
-	suite.mockUserService.AssertExpectations(suite.T())
+	suite.mockUserProvider.AssertExpectations(suite.T())
 }
 
 // TestGetAuthenticatedUser_FetchFromStore_PreservesExistingMobileNumber verifies that when fetching user
@@ -296,14 +296,14 @@ func (suite *SMSAuthExecutorTestSuite) TestGetAuthenticatedUser_FetchFromStore_P
 		RuntimeData: make(map[string]string),
 	}
 
-	userFromStore := &user.User{
-		ID:               "user-123",
-		OrganizationUnit: "ou-123",
-		Type:             "INTERNAL",
-		Attributes:       attrsJSON,
+	userFromStore := &userprovider.User{
+		UserID:             "user-123",
+		OrganizationUnitID: "ou-123",
+		UserType:           "INTERNAL",
+		Attributes:         attrsJSON,
 	}
 
-	suite.mockUserService.On("GetUser", mock.Anything, "user-123").Return(userFromStore, nil)
+	suite.mockUserProvider.On("GetUser", "user-123").Return(userFromStore, nil)
 
 	result, err := suite.executor.getAuthenticatedUser(ctx, execResp)
 
@@ -312,7 +312,7 @@ func (suite *SMSAuthExecutorTestSuite) TestGetAuthenticatedUser_FetchFromStore_P
 	assert.True(suite.T(), result.IsAuthenticated)
 	// Verify stored mobile number is preserved (not overwritten by RuntimeData)
 	assert.Equal(suite.T(), "+9876543210", result.Attributes[userAttributeMobileNumber])
-	suite.mockUserService.AssertExpectations(suite.T())
+	suite.mockUserProvider.AssertExpectations(suite.T())
 }
 
 // TestGetUserMobileNumber_NotFoundInAttributesOrContext verifies that when mobile number
@@ -337,14 +337,14 @@ func (suite *SMSAuthExecutorTestSuite) TestGetUserMobileNumber_NotFoundInAttribu
 		RuntimeData: make(map[string]string),
 	}
 
-	userFromStore := &user.User{
-		ID:               "user-123",
-		OrganizationUnit: "ou-123",
-		Type:             "INTERNAL",
-		Attributes:       attrsJSON,
+	userFromStore := &userprovider.User{
+		UserID:             "user-123",
+		OrganizationUnitID: "ou-123",
+		UserType:           "INTERNAL",
+		Attributes:         attrsJSON,
 	}
 
-	suite.mockUserService.On("GetUser", mock.Anything, "user-123").Return(userFromStore, nil)
+	suite.mockUserProvider.On("GetUser", "user-123").Return(userFromStore, nil)
 
 	mobileNumber, err := suite.executor.getUserMobileNumber("user-123", ctx, execResp)
 
@@ -352,7 +352,7 @@ func (suite *SMSAuthExecutorTestSuite) TestGetUserMobileNumber_NotFoundInAttribu
 	assert.Empty(suite.T(), mobileNumber)
 	assert.Equal(suite.T(), common.ExecFailure, execResp.Status)
 	assert.Equal(suite.T(), "Mobile number not found in user attributes or context", execResp.FailureReason)
-	suite.mockUserService.AssertExpectations(suite.T())
+	suite.mockUserProvider.AssertExpectations(suite.T())
 }
 
 // TestGetAuthenticatedUser_MFA_NilAttributes verifies that when the authenticated user
@@ -408,14 +408,14 @@ func (suite *SMSAuthExecutorTestSuite) TestGetAuthenticatedUser_FetchFromStore_N
 		RuntimeData: make(map[string]string),
 	}
 
-	userFromStore := &user.User{
-		ID:               "user-123",
-		OrganizationUnit: "ou-123",
-		Type:             "INTERNAL",
-		Attributes:       attrsJSON, // null JSON
+	userFromStore := &userprovider.User{
+		UserID:             "user-123",
+		OrganizationUnitID: "ou-123",
+		UserType:           "INTERNAL",
+		Attributes:         attrsJSON, // null JSON
 	}
 
-	suite.mockUserService.On("GetUser", mock.Anything, "user-123").Return(userFromStore, nil)
+	suite.mockUserProvider.On("GetUser", "user-123").Return(userFromStore, nil)
 
 	result, err := suite.executor.getAuthenticatedUser(ctx, execResp)
 
@@ -424,5 +424,5 @@ func (suite *SMSAuthExecutorTestSuite) TestGetAuthenticatedUser_FetchFromStore_N
 	assert.True(suite.T(), result.IsAuthenticated)
 	assert.NotNil(suite.T(), result.Attributes) // Attrs should be initialized from nil
 	assert.Equal(suite.T(), "+1234567890", result.Attributes[userAttributeMobileNumber])
-	suite.mockUserService.AssertExpectations(suite.T())
+	suite.mockUserProvider.AssertExpectations(suite.T())
 }

@@ -404,3 +404,19 @@ packages:
       structname: '{{.InterfaceName}}Mock'
       pkgname: resourcemock
       filename: "{{.InterfaceName}}_mock.go"
+
+  github.com/asgardeo/thunder/internal/authnprovider:
+    config:
+      all: true
+      dir: tests/mocks/authnprovidermock
+      structname: '{{.InterfaceName}}Mock'
+      pkgname: authnprovidermock
+      filename: "{{.InterfaceName}}_mock.go"
+
+  github.com/asgardeo/thunder/internal/userprovider:
+    config:
+      all: true
+      dir: tests/mocks/userprovidermock
+      structname: '{{.InterfaceName}}Mock'
+      pkgname: userprovidermock
+      filename: "{{.InterfaceName}}_mock.go"

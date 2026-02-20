@@ -23,16 +23,19 @@ import (
 	"context"
 	"time"
 
+	"github.com/asgardeo/thunder/internal/authnprovider"
 	"github.com/asgardeo/thunder/internal/idp"
 )
 
 // AuthenticatedUser represents the user information of an authenticated user.
 type AuthenticatedUser struct {
-	IsAuthenticated    bool
-	UserID             string
-	OrganizationUnitID string
-	UserType           string
-	Attributes         map[string]interface{}
+	IsAuthenticated     bool
+	UserID              string
+	OrganizationUnitID  string
+	UserType            string
+	Attributes          map[string]interface{}
+	AvailableAttributes []authnprovider.AvailableAttribute
+	Token               string
 }
 
 // AuthenticationContext represents the context of an authentication session.

@@ -23,7 +23,6 @@ package executor
 import (
 	"encoding/json"
 	"errors"
-	"slices"
 
 	authncm "github.com/asgardeo/thunder/internal/authn/common"
 	authncreds "github.com/asgardeo/thunder/internal/authn/credentials"
@@ -32,13 +31,14 @@ import (
 	"github.com/asgardeo/thunder/internal/observability"
 	"github.com/asgardeo/thunder/internal/system/error/serviceerror"
 	"github.com/asgardeo/thunder/internal/system/log"
-	"github.com/asgardeo/thunder/internal/user"
+	"github.com/asgardeo/thunder/internal/userprovider"
 )
 
 // basicAuthExecutor implements the ExecutorInterface for basic authentication.
 type basicAuthExecutor struct {
 	core.ExecutorInterface
 	identifyingExecutorInterface
+	userProvider     userprovider.UserProviderInterface
 	credsAuthSvc     authncreds.CredentialsAuthnServiceInterface
 	observabilitySvc observability.ObservabilityServiceInterface
 	logger           *log.Logger
@@ -50,7 +50,7 @@ var _ identifyingExecutorInterface = (*basicAuthExecutor)(nil)
 // newBasicAuthExecutor creates a new instance of BasicAuthExecutor.
 func newBasicAuthExecutor(
 	flowFactory core.FlowFactoryInterface,
-	userService user.UserServiceInterface,
+	userProvider userprovider.UserProviderInterface,
 	credsAuthSvc authncreds.CredentialsAuthnServiceInterface,
 	observabilitySvc observability.ObservabilityServiceInterface,
 ) *basicAuthExecutor {
@@ -71,13 +71,14 @@ func newBasicAuthExecutor(
 		log.String(log.LoggerKeyExecutorName, ExecutorNameBasicAuth))
 
 	identifyExec := newIdentifyingExecutor(ExecutorNameBasicAuth, defaultInputs, []common.Input{},
-		flowFactory, userService)
+		flowFactory, userProvider)
 	base := flowFactory.CreateExecutor(ExecutorNameBasicAuth, common.ExecutorTypeAuthentication,
 		defaultInputs, []common.Input{})
 
 	return &basicAuthExecutor{
 		ExecutorInterface:            base,
 		identifyingExecutorInterface: identifyExec,
+		userProvider:                 userProvider,
 		credsAuthSvc:                 credsAuthSvc,
 		observabilitySvc:             observabilitySvc,
 		logger:                       logger,
@@ -139,21 +140,22 @@ func (b *basicAuthExecutor) getAuthenticatedUser(ctx *core.NodeContext,
 	execResp *common.ExecutorResponse) (*authncm.AuthenticatedUser, error) {
 	logger := b.logger.With(log.String(log.LoggerKeyFlowID, ctx.FlowID))
 
-	userSearchAttributes := map[string]interface{}{}
-	userAuthenticateAttributes := map[string]interface{}{}
+	userIdentifiers := map[string]interface{}{}
+	userCredentials := map[string]interface{}{}
 
 	for _, inputData := range b.GetRequiredInputs(ctx) {
 		if value, ok := ctx.UserInputs[inputData.Identifier]; ok {
-			if !slices.Contains(nonSearchableInputs, inputData.Identifier) {
-				userSearchAttributes[inputData.Identifier] = value
+			if inputData.IsSensitive() {
+				userCredentials[inputData.Identifier] = value
+			} else {
+				userIdentifiers[inputData.Identifier] = value
 			}
-			userAuthenticateAttributes[inputData.Identifier] = value
 		}
 	}
 
 	// For registration flows, only check if user exists.
 	if ctx.FlowType == common.FlowTypeRegistration {
-		_, err := b.IdentifyUser(userSearchAttributes, execResp)
+		_, err := b.IdentifyUser(userIdentifiers, execResp)
 		if err != nil {
 			return nil, err
 		}
@@ -163,7 +165,7 @@ func (b *basicAuthExecutor) getAuthenticatedUser(ctx *core.NodeContext,
 				execResp.Status = common.ExecComplete
 				return &authncm.AuthenticatedUser{
 					IsAuthenticated: false,
-					Attributes:      userSearchAttributes,
+					Attributes:      userIdentifiers,
 				}, nil
 			}
 			return nil, nil
@@ -175,7 +177,7 @@ func (b *basicAuthExecutor) getAuthenticatedUser(ctx *core.NodeContext,
 	}
 
 	// For authentication flows, call Authenticate directly.
-	user, svcErr := b.credsAuthSvc.Authenticate(userAuthenticateAttributes)
+	authnResult, svcErr := b.credsAuthSvc.Authenticate(userIdentifiers, userCredentials, nil)
 	if svcErr != nil {
 		if svcErr.Type == serviceerror.ClientErrorType {
 			execResp.Status = common.ExecFailure
@@ -187,17 +189,32 @@ func (b *basicAuthExecutor) getAuthenticatedUser(ctx *core.NodeContext,
 		return nil, errors.New("failed to authenticate user")
 	}
 
-	var attrs map[string]interface{}
-	if err := json.Unmarshal(user.Attributes, &attrs); err != nil {
-		logger.Error("Failed to unmarshal user attributes", log.Error(err))
-		return nil, err
+	// Try to retrieve the user and get the attributes
+	userAttributes := map[string]interface{}{}
+	user, err := b.userProvider.GetUser(authnResult.UserID)
+
+	if err != nil {
+		if err.Code != userprovider.ErrorCodeNotImplemented {
+			logger.Error("Failed to get user attributes", log.Error(err))
+			return nil, errors.New("failed to get user attributes")
+		}
+		logger.Debug("User provider is not implemented. User attributes will be empty.")
+	}
+
+	if err == nil && user != nil {
+		if err := json.Unmarshal(user.Attributes, &userAttributes); err != nil {
+			logger.Error("Failed to unmarshal user attributes", log.Error(err))
+			return nil, errors.New("failed to unmarshal user attributes")
+		}
 	}
 
 	return &authncm.AuthenticatedUser{
-		IsAuthenticated:    true,
-		UserID:             user.ID,
-		OrganizationUnitID: user.OrganizationUnit,
-		UserType:           user.Type,
-		Attributes:         attrs,
+		IsAuthenticated:     true,
+		UserID:              authnResult.UserID,
+		OrganizationUnitID:  authnResult.OrganizationUnitID,
+		UserType:            authnResult.UserType,
+		Attributes:          userAttributes,
+		AvailableAttributes: authnResult.AvailableAttributes,
+		Token:               authnResult.Token,
 	}, nil
 }

@@ -27,9 +27,9 @@ import (
 	"github.com/asgardeo/thunder/internal/authn/common"
 	notifcommon "github.com/asgardeo/thunder/internal/notification/common"
 	"github.com/asgardeo/thunder/internal/system/error/serviceerror"
-	"github.com/asgardeo/thunder/internal/user"
+	"github.com/asgardeo/thunder/internal/userprovider"
 	"github.com/asgardeo/thunder/tests/mocks/notification/notificationmock"
-	"github.com/asgardeo/thunder/tests/mocks/usermock"
+	"github.com/asgardeo/thunder/tests/mocks/userprovidermock"
 )
 
 const (
@@ -40,7 +40,7 @@ const (
 type OTPAuthnServiceTestSuite struct {
 	suite.Suite
 	mockOTPService  *notificationmock.OTPServiceInterfaceMock
-	mockUserService *usermock.UserServiceInterfaceMock
+	mockUserService *userprovidermock.UserProviderInterfaceMock
 	service         OTPAuthnServiceInterface
 }
 
@@ -50,7 +50,7 @@ func TestOTPAuthnServiceTestSuite(t *testing.T) {
 
 func (suite *OTPAuthnServiceTestSuite) SetupTest() {
 	suite.mockOTPService = notificationmock.NewOTPServiceInterfaceMock(suite.T())
-	suite.mockUserService = usermock.NewUserServiceInterfaceMock(suite.T())
+	suite.mockUserService = userprovidermock.NewUserProviderInterfaceMock(suite.T())
 	suite.service = newOTPAuthnService(suite.mockOTPService, suite.mockUserService)
 }
 
@@ -168,25 +168,25 @@ func (suite *OTPAuthnServiceTestSuite) TestVerifyOTPSuccess() {
 		Status:    notifcommon.OTPVerifyStatusVerified,
 		Recipient: recipient,
 	}
-	user := &user.User{
-		ID:               userID,
-		Type:             "person",
-		OrganizationUnit: orgUnit,
+	user := &userprovider.User{
+		UserID:             userID,
+		UserType:           "person",
+		OrganizationUnitID: orgUnit,
 	}
 
 	suite.mockOTPService.On("VerifyOTP", mock.MatchedBy(func(dto notifcommon.VerifyOTPDTO) bool {
 		return dto.SessionToken == testSessionToken && dto.OTPCode == otp
 	})).Return(verifyResult, nil)
-	suite.mockUserService.On("IdentifyUser", mock.Anything, mock.MatchedBy(func(filters map[string]interface{}) bool {
+	suite.mockUserService.On("IdentifyUser", mock.MatchedBy(func(filters map[string]interface{}) bool {
 		return filters["mobileNumber"] == recipient
 	})).Return(&userID, nil)
-	suite.mockUserService.On("GetUser", mock.Anything, userID).Return(user, nil)
+	suite.mockUserService.On("GetUser", userID).Return(user, nil)
 
 	result, err := suite.service.VerifyOTP(testSessionToken, otp)
 	suite.Nil(err)
 	suite.NotNil(result)
-	suite.Equal(userID, result.ID)
-	suite.Equal(orgUnit, result.OrganizationUnit)
+	suite.Equal(userID, result.UserID)
+	suite.Equal(orgUnit, result.OrganizationUnitID)
 }
 
 func (suite *OTPAuthnServiceTestSuite) TestVerifyOTPWithInvalidInputs() {
@@ -285,10 +285,9 @@ func (suite *OTPAuthnServiceTestSuite) TestVerifyOTPWithUserServiceError() {
 		Status:    notifcommon.OTPVerifyStatusVerified,
 		Recipient: "+1234567890",
 	}
-	serverErr := &serviceerror.ServiceError{
-		Type:             serviceerror.ServerErrorType,
-		Code:             "INTERNAL_ERROR",
-		ErrorDescription: "Database unavailable",
+	serverErr := &userprovider.UserProviderError{
+		Code:        userprovider.ErrorCodeSystemError,
+		Description: "Database unavailable",
 	}
 
 	// Prepare a userID for cases that require a valid identify result
@@ -297,15 +296,15 @@ func (suite *OTPAuthnServiceTestSuite) TestVerifyOTPWithUserServiceError() {
 	tests := []struct {
 		name         string
 		identifyRet  *string
-		identifyErr  interface{}
-		getUserRet   *user.User
-		getUserErr   interface{}
+		identifyErr  *userprovider.UserProviderError
+		getUserRet   *userprovider.User
+		getUserErr   *userprovider.UserProviderError
 		expectedCode string
 	}{
 		{
 			"NonExistentUser",
 			nil,
-			&user.ErrorUserNotFound,
+			&userprovider.UserProviderError{Code: userprovider.ErrorCodeUserNotFound},
 			nil,
 			nil,
 			common.ErrorUserNotFound.Code,
@@ -329,7 +328,7 @@ func (suite *OTPAuthnServiceTestSuite) TestVerifyOTPWithUserServiceError() {
 		{
 			"UserIDNil",
 			nil,
-			(*serviceerror.ServiceError)(nil),
+			(*userprovider.UserProviderError)(nil),
 			nil,
 			nil,
 			common.ErrorUserNotFound.Code,
@@ -339,15 +338,15 @@ func (suite *OTPAuthnServiceTestSuite) TestVerifyOTPWithUserServiceError() {
 	for _, tc := range tests {
 		suite.Run(tc.name, func() {
 			freshOTP := notificationmock.NewOTPServiceInterfaceMock(suite.T())
-			freshUser := usermock.NewUserServiceInterfaceMock(suite.T())
+			freshUser := userprovidermock.NewUserProviderInterfaceMock(suite.T())
 			suite.service = newOTPAuthnService(freshOTP, freshUser)
 
 			freshOTP.On("VerifyOTP", mock.Anything).Return(verifyResult, nil)
-			freshUser.On("IdentifyUser", mock.Anything, mock.Anything).Return(tc.identifyRet, tc.identifyErr)
+			freshUser.On("IdentifyUser", mock.Anything).Return(tc.identifyRet, tc.identifyErr)
 
 			// only set GetUser expectation when identify returns a user id
 			if tc.getUserRet != nil || tc.getUserErr != nil {
-				freshUser.On("GetUser", mock.Anything, *tc.identifyRet).Return(tc.getUserRet, tc.getUserErr)
+				freshUser.On("GetUser", *tc.identifyRet).Return(tc.getUserRet, tc.getUserErr)
 			}
 
 			result, err := suite.service.VerifyOTP(testSessionToken, "123456")
