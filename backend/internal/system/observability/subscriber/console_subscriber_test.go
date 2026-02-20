@@ -19,24 +19,25 @@
 package subscriber
 
 import (
+	"bytes"
+	"io"
 	"os"
-	"path/filepath"
 	"strings"
 	"testing"
 	"time"
 
-	"github.com/asgardeo/thunder/internal/observability/event"
 	"github.com/asgardeo/thunder/internal/system/config"
+	"github.com/asgardeo/thunder/internal/system/observability/event"
 )
 
-func TestNewFileSubscriber(t *testing.T) {
-	sub := NewFileSubscriber()
+func TestNewConsoleSubscriber(t *testing.T) {
+	sub := NewConsoleSubscriber()
 	if sub == nil {
-		t.Fatal("NewFileSubscriber() returned nil")
+		t.Fatal("NewConsoleSubscriber() returned nil")
 	}
 }
 
-func TestFileSubscriber_IsEnabled(t *testing.T) {
+func TestConsoleSubscriber_IsEnabled(t *testing.T) {
 	setupTestConfig(t)
 	defer resetTestConfig()
 
@@ -59,9 +60,9 @@ func TestFileSubscriber_IsEnabled(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			config.GetThunderRuntime().Config.Observability.Output.File.Enabled = tt.enabled
+			config.GetThunderRuntime().Config.Observability.Output.Console.Enabled = tt.enabled
 
-			sub := NewFileSubscriber()
+			sub := NewConsoleSubscriber()
 			if got := sub.IsEnabled(); got != tt.want {
 				t.Errorf("IsEnabled() = %v, want %v", got, tt.want)
 			}
@@ -69,52 +70,42 @@ func TestFileSubscriber_IsEnabled(t *testing.T) {
 	}
 }
 
-func TestFileSubscriber_Initialize(t *testing.T) {
+func TestConsoleSubscriber_Initialize(t *testing.T) {
 	setupTestConfig(t)
 	defer resetTestConfig()
 
 	tests := []struct {
-		name        string
-		config      func() string
-		wantErr     bool
-		errContains string
+		name    string
+		config  func()
+		wantErr bool
 	}{
 		{
-			name: "successful initialization with explicit path",
-			config: func() string {
-				tmpDir := t.TempDir()
-				filePath := filepath.Join(tmpDir, "test.log")
-				cfg := &config.GetThunderRuntime().Config.Observability.Output.File
+			name: "successful initialization with json format",
+			config: func() {
+				cfg := &config.GetThunderRuntime().Config.Observability.Output.Console
 				cfg.Enabled = true
-				cfg.FilePath = filePath
 				cfg.Format = formatJSON
 				cfg.Categories = []string{}
-				return filePath
 			},
 			wantErr: false,
 		},
 		{
-			name: "successful initialization with default path",
-			config: func() string {
-				cfg := &config.GetThunderRuntime().Config.Observability.Output.File
+			name: "successful initialization with categories",
+			config: func() {
+				cfg := &config.GetThunderRuntime().Config.Observability.Output.Console
 				cfg.Enabled = true
-				cfg.FilePath = ""
 				cfg.Format = formatJSON
-				cfg.Categories = []string{"observability.authentication"}
-				return ""
+				cfg.Categories = []string{"observability.authentication", "observability.flows"}
 			},
 			wantErr: false,
 		},
 		{
-			name: "successful initialization with CSV format",
-			config: func() string {
-				tmpDir := t.TempDir()
-				filePath := filepath.Join(tmpDir, "test.csv")
-				cfg := &config.GetThunderRuntime().Config.Observability.Output.File
+			name: "successful initialization with default format",
+			config: func() {
+				cfg := &config.GetThunderRuntime().Config.Observability.Output.Console
 				cfg.Enabled = true
-				cfg.FilePath = filePath
-				cfg.Format = "csv"
-				return filePath
+				cfg.Format = ""
+				cfg.Categories = []string{}
 			},
 			wantErr: false,
 		},
@@ -125,7 +116,7 @@ func TestFileSubscriber_Initialize(t *testing.T) {
 			setupTestConfig(t)
 			tt.config()
 
-			sub := NewFileSubscriber()
+			sub := NewConsoleSubscriber()
 			err := sub.Initialize()
 
 			if (err != nil) != tt.wantErr {
@@ -153,19 +144,15 @@ func TestFileSubscriber_Initialize(t *testing.T) {
 	}
 }
 
-func TestFileSubscriber_GetID(t *testing.T) {
+func TestConsoleSubscriber_GetID(t *testing.T) {
 	setupTestConfig(t)
 	defer resetTestConfig()
 
-	tmpDir := t.TempDir()
-	filePath := filepath.Join(tmpDir, "test.log")
-
-	cfg := &config.GetThunderRuntime().Config.Observability.Output.File
+	cfg := &config.GetThunderRuntime().Config.Observability.Output.Console
 	cfg.Enabled = true
-	cfg.FilePath = filePath
 	cfg.Format = formatJSON
 
-	sub := NewFileSubscriber()
+	sub := NewConsoleSubscriber()
 	_ = sub.Initialize()
 	defer func() { _ = sub.Close() }()
 
@@ -180,12 +167,9 @@ func TestFileSubscriber_GetID(t *testing.T) {
 	}
 }
 
-func TestFileSubscriber_GetCategories(t *testing.T) {
+func TestConsoleSubscriber_GetCategories(t *testing.T) {
 	setupTestConfig(t)
 	defer resetTestConfig()
-
-	tmpDir := t.TempDir()
-	filePath := filepath.Join(tmpDir, "test.log")
 
 	tests := []struct {
 		name       string
@@ -216,12 +200,12 @@ func TestFileSubscriber_GetCategories(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			setupTestConfig(t)
-			cfg := &config.GetThunderRuntime().Config.Observability.Output.File
+			cfg := &config.GetThunderRuntime().Config.Observability.Output.Console
 			cfg.Enabled = true
-			cfg.FilePath = filePath
+			cfg.Format = formatJSON
 			cfg.Categories = tt.categories
 
-			sub := NewFileSubscriber()
+			sub := NewConsoleSubscriber()
 			_ = sub.Initialize()
 			defer func() { _ = sub.Close() }()
 
@@ -237,21 +221,19 @@ func TestFileSubscriber_GetCategories(t *testing.T) {
 	}
 }
 
-func TestFileSubscriber_OnEvent(t *testing.T) {
+func TestConsoleSubscriber_OnEvent(t *testing.T) {
 	setupTestConfig(t)
 	defer resetTestConfig()
 
-	tmpDir := t.TempDir()
-	filePath := filepath.Join(tmpDir, "test.log")
-
-	cfg := &config.GetThunderRuntime().Config.Observability.Output.File
+	cfg := &config.GetThunderRuntime().Config.Observability.Output.Console
 	cfg.Enabled = true
-	cfg.FilePath = filePath
 	cfg.Format = formatJSON
 
-	sub := NewFileSubscriber()
+	sub := NewConsoleSubscriber()
 	_ = sub.Initialize()
-	defer func() { _ = sub.Close() }()
+	defer func() {
+		_ = sub.Close()
+	}()
 
 	tests := getCommonEventTestCases()
 
@@ -263,42 +245,84 @@ func TestFileSubscriber_OnEvent(t *testing.T) {
 			}
 		})
 	}
-
-	// Verify file was written to
-	_ = sub.adapter.Flush()
-	content, err := os.ReadFile(filePath) // #nosec G304 - Test file path is controlled
-	if err != nil {
-		t.Fatalf("Failed to read test log file: %v", err)
-	}
-
-	if len(content) == 0 {
-		t.Error("OnEvent() should write data to file")
-	}
-
-	// Verify JSON format
-	if !strings.Contains(string(content), `"event_id"`) {
-		t.Error("File content should contain JSON formatted events")
-	}
 }
 
-func TestFileSubscriber_OnEventMultiple(t *testing.T) {
+func TestConsoleSubscriber_OnEventWithCapture(t *testing.T) {
 	setupTestConfig(t)
 	defer resetTestConfig()
 
-	tmpDir := t.TempDir()
-	filePath := filepath.Join(tmpDir, "test-multiple.log")
+	// Capture stdout
+	oldStdout := os.Stdout
+	r, w, _ := os.Pipe()
+	os.Stdout = w
 
-	cfg := &config.GetThunderRuntime().Config.Observability.Output.File
+	cfg := &config.GetThunderRuntime().Config.Observability.Output.Console
 	cfg.Enabled = true
-	cfg.FilePath = filePath
 	cfg.Format = formatJSON
 
-	sub := NewFileSubscriber()
+	sub := NewConsoleSubscriber()
 	_ = sub.Initialize()
 	defer func() { _ = sub.Close() }()
 
-	// Write multiple events
-	numEvents := 10
+	testEvent := &event.Event{
+		TraceID:   "trace-capture",
+		EventID:   "event-capture",
+		Type:      "test.capture",
+		Timestamp: time.Now(),
+		Component: "TestComponent",
+		Status:    event.StatusSuccess,
+		Data: map[string]interface{}{
+			"test_field": "test_value",
+		},
+	}
+
+	err := sub.OnEvent(testEvent)
+	if err != nil {
+		t.Fatalf("OnEvent() unexpected error = %v", err)
+	}
+
+	// Restore stdout
+	_ = w.Close()
+	os.Stdout = oldStdout
+
+	// Read captured output
+	var buf bytes.Buffer
+	_, _ = io.Copy(&buf, r)
+	output := buf.String()
+
+	// Verify output contains expected data
+	if !strings.Contains(output, "trace-capture") {
+		t.Error("Output should contain trace ID")
+	}
+	if !strings.Contains(output, "event-capture") {
+		t.Error("Output should contain event ID")
+	}
+	if !strings.Contains(output, "test.capture") {
+		t.Error("Output should contain event type")
+	}
+	if !strings.Contains(output, "test_field") {
+		t.Error("Output should contain event data")
+	}
+}
+
+func TestConsoleSubscriber_OnEventMultiple(t *testing.T) {
+	setupTestConfig(t)
+	defer resetTestConfig()
+
+	// Capture stdout
+	oldStdout := os.Stdout
+	r, w, _ := os.Pipe()
+	os.Stdout = w
+
+	cfg := &config.GetThunderRuntime().Config.Observability.Output.Console
+	cfg.Enabled = true
+	cfg.Format = formatJSON
+
+	sub := NewConsoleSubscriber()
+	_ = sub.Initialize()
+	defer func() { _ = sub.Close() }()
+
+	numEvents := 5
 	for i := 0; i < numEvents; i++ {
 		evt := event.NewEvent("trace-multi", "test.multi", "TestComponent").
 			WithStatus(event.StatusSuccess).
@@ -310,59 +334,36 @@ func TestFileSubscriber_OnEventMultiple(t *testing.T) {
 		}
 	}
 
-	// Flush and verify
-	_ = sub.adapter.Flush()
-	content, err := os.ReadFile(filePath) // #nosec G304 - Test file path is controlled
-	if err != nil {
-		t.Fatalf("Failed to read test log file: %v", err)
-	}
+	// Restore stdout
+	_ = w.Close()
+	os.Stdout = oldStdout
 
-	lines := strings.Split(strings.TrimSpace(string(content)), "\n")
-	if len(lines) != numEvents {
-		t.Errorf("Expected %d events in file, got %d", numEvents, len(lines))
+	// Read captured output
+	var buf bytes.Buffer
+	_, _ = io.Copy(&buf, r)
+	output := buf.String()
+
+	// Verify multiple events were written
+	lines := strings.Split(strings.TrimSpace(output), "\n")
+	if len(lines) < numEvents {
+		t.Errorf("Expected at least %d lines in output, got %d", numEvents, len(lines))
 	}
 }
 
-func TestFileSubscriber_Close(t *testing.T) {
+func TestConsoleSubscriber_Close(t *testing.T) {
 	setupTestConfig(t)
 	defer resetTestConfig()
 
-	tmpDir := t.TempDir()
-	filePath := filepath.Join(tmpDir, "test-close.log")
-
-	cfg := &config.GetThunderRuntime().Config.Observability.Output.File
+	cfg := &config.GetThunderRuntime().Config.Observability.Output.Console
 	cfg.Enabled = true
-	cfg.FilePath = filePath
 	cfg.Format = formatJSON
 
-	sub := NewFileSubscriber()
+	sub := NewConsoleSubscriber()
 	_ = sub.Initialize()
-
-	// Write some data
-	evt := &event.Event{
-		TraceID:   "trace-123",
-		EventID:   "event-123",
-		Type:      "test.event",
-		Timestamp: time.Now(),
-		Component: "TestComponent",
-		Status:    event.StatusSuccess,
-		Data:      map[string]interface{}{},
-	}
-	_ = sub.OnEvent(evt)
 
 	err := sub.Close()
 	if err != nil {
 		t.Errorf("Close() error = %v", err)
-	}
-
-	// Verify file was flushed and closed
-	content, err := os.ReadFile(filePath) // #nosec G304 - Test file path is controlled
-	if err != nil {
-		t.Fatalf("Failed to read test log file after close: %v", err)
-	}
-
-	if len(content) == 0 {
-		t.Error("Close() should flush data before closing")
 	}
 
 	// Calling Close again should not error
@@ -372,7 +373,7 @@ func TestFileSubscriber_Close(t *testing.T) {
 	}
 }
 
-func TestFileSubscriber_CloseWithoutInitialize(t *testing.T) {
+func TestConsoleSubscriber_CloseWithoutInitialize(t *testing.T) {
 	// Note: In real usage, Close should only be called after successful Initialize
 	// This test verifies that Close handles uninitialized state gracefully
 	// However, since logger is not initialized, this will cause a panic in production
@@ -380,19 +381,15 @@ func TestFileSubscriber_CloseWithoutInitialize(t *testing.T) {
 	t.Skip("Close without Initialize is not a valid use case - Initialize must be called first")
 }
 
-func TestFileSubscriber_WriteAfterClose(t *testing.T) {
+func TestConsoleSubscriber_WriteAfterClose(t *testing.T) {
 	setupTestConfig(t)
 	defer resetTestConfig()
 
-	tmpDir := t.TempDir()
-	filePath := filepath.Join(tmpDir, "test-after-close.log")
-
-	cfg := &config.GetThunderRuntime().Config.Observability.Output.File
+	cfg := &config.GetThunderRuntime().Config.Observability.Output.Console
 	cfg.Enabled = true
-	cfg.FilePath = filePath
 	cfg.Format = formatJSON
 
-	sub := NewFileSubscriber()
+	sub := NewConsoleSubscriber()
 	_ = sub.Initialize()
 
 	err := sub.Close()
@@ -417,36 +414,9 @@ func TestFileSubscriber_WriteAfterClose(t *testing.T) {
 	}
 }
 
-func TestFileSubscriber_DefaultPathCreation(t *testing.T) {
+func TestConsoleSubscriber_FormatterSelection(t *testing.T) {
 	setupTestConfig(t)
 	defer resetTestConfig()
-
-	// Set up config with empty file path
-	cfg := &config.GetThunderRuntime().Config.Observability.Output.File
-	cfg.Enabled = true
-	cfg.FilePath = ""
-	cfg.Format = formatJSON
-
-	sub := NewFileSubscriber()
-	err := sub.Initialize()
-
-	// Should not error - should use default path
-	if err != nil {
-		// It's OK if it fails due to permissions, but it should attempt to create
-		if !strings.Contains(err.Error(), "failed to create file adapter") {
-			t.Errorf("Initialize() with empty path should attempt default path creation, got error: %v", err)
-		}
-	} else {
-		// If successful, clean up
-		_ = sub.Close()
-	}
-}
-
-func TestFileSubscriber_FormatterSelection(t *testing.T) {
-	setupTestConfig(t)
-	defer resetTestConfig()
-
-	tmpDir := t.TempDir()
 
 	tests := []struct {
 		name   string
@@ -469,14 +439,12 @@ func TestFileSubscriber_FormatterSelection(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			setupTestConfig(t)
-			filePath := filepath.Join(tmpDir, "test-"+tt.name+".log")
 
-			cfg := &config.GetThunderRuntime().Config.Observability.Output.File
+			cfg := &config.GetThunderRuntime().Config.Observability.Output.Console
 			cfg.Enabled = true
-			cfg.FilePath = filePath
 			cfg.Format = tt.format
 
-			sub := NewFileSubscriber()
+			sub := NewConsoleSubscriber()
 			err := sub.Initialize()
 			if err != nil {
 				t.Fatalf("Initialize() error = %v", err)
@@ -490,19 +458,100 @@ func TestFileSubscriber_FormatterSelection(t *testing.T) {
 	}
 }
 
-func BenchmarkFileSubscriber_OnEvent(b *testing.B) {
+func TestConsoleSubscriber_EventWithEmptyData(t *testing.T) {
+	setupTestConfig(t)
+	defer resetTestConfig()
+
+	// Capture stdout
+	oldStdout := os.Stdout
+	r, w, _ := os.Pipe()
+	os.Stdout = w
+
+	cfg := &config.GetThunderRuntime().Config.Observability.Output.Console
+	cfg.Enabled = true
+	cfg.Format = formatJSON
+
+	sub := NewConsoleSubscriber()
+	_ = sub.Initialize()
+	defer func() { _ = sub.Close() }()
+
+	testEvent := &event.Event{
+		TraceID:   "trace-empty",
+		EventID:   "event-empty",
+		Type:      "test.empty",
+		Timestamp: time.Now(),
+		Component: "TestComponent",
+		Status:    event.StatusSuccess,
+		Data:      map[string]interface{}{},
+	}
+
+	err := sub.OnEvent(testEvent)
+	if err != nil {
+		t.Fatalf("OnEvent() with empty data error = %v", err)
+	}
+
+	// Restore stdout
+	_ = w.Close()
+	os.Stdout = oldStdout
+
+	// Read captured output
+	var buf bytes.Buffer
+	_, _ = io.Copy(&buf, r)
+	output := buf.String()
+
+	// Verify output was written even with empty data
+	if len(output) == 0 {
+		t.Error("OnEvent() should write output even with empty data")
+	}
+}
+
+func TestConsoleSubscriber_EventWithNilData(t *testing.T) {
+	setupTestConfig(t)
+	defer resetTestConfig()
+
+	cfg := &config.GetThunderRuntime().Config.Observability.Output.Console
+	cfg.Enabled = true
+	cfg.Format = formatJSON
+
+	sub := NewConsoleSubscriber()
+	_ = sub.Initialize()
+	defer func() { _ = sub.Close() }()
+
+	testEvent := &event.Event{
+		TraceID:   "trace-nil",
+		EventID:   "event-nil",
+		Type:      "test.nil",
+		Timestamp: time.Now(),
+		Component: "TestComponent",
+		Status:    event.StatusSuccess,
+		Data:      nil,
+	}
+
+	// Should handle nil data gracefully
+	err := sub.OnEvent(testEvent)
+	if err != nil {
+		t.Errorf("OnEvent() with nil data should not error, got: %v", err)
+	}
+}
+
+func BenchmarkConsoleSubscriber_OnEvent(b *testing.B) {
 	setupTestConfig(&testing.T{})
 	defer resetTestConfig()
 
-	tmpDir := b.TempDir()
-	filePath := filepath.Join(tmpDir, "benchmark.log")
+	// Redirect stdout to /dev/null for benchmarking
+	oldStdout := os.Stdout
+	devNull, _ := os.Open(os.DevNull)
+	os.Stdout = devNull
+	defer func() {
+		os.Stdout = oldStdout
+		_ = devNull.Close()
+	}()
 
-	cfg := &config.GetThunderRuntime().Config.Observability.Output.File
+	cfg := &config.GetThunderRuntime().Config.Observability.Output.Console
 	cfg.Enabled = true
-	cfg.FilePath = filePath
 	cfg.Format = formatJSON
 
-	sub := NewFileSubscriber()
+	sub := NewConsoleSubscriber()
 	_ = sub.Initialize()
 	defer func() { _ = sub.Close() }()
 
@@ -525,19 +574,24 @@ func BenchmarkFileSubscriber_OnEvent(b *testing.B) {
 	}
 }
 
-func BenchmarkFileSubscriber_OnEventComplex(b *testing.B) {
+func BenchmarkConsoleSubscriber_OnEventComplex(b *testing.B) {
 	setupTestConfig(&testing.T{})
 	defer resetTestConfig()
 
-	tmpDir := b.TempDir()
-	filePath := filepath.Join(tmpDir, "benchmark-complex.log")
+	// Redirect stdout to /dev/null for benchmarking
+	oldStdout := os.Stdout
+	devNull, _ := os.Open(os.DevNull)
+	os.Stdout = devNull
+	defer func() {
+		os.Stdout = oldStdout
+		_ = devNull.Close()
+	}()
 
-	cfg := &config.GetThunderRuntime().Config.Observability.Output.File
+	cfg := &config.GetThunderRuntime().Config.Observability.Output.Console
 	cfg.Enabled = true
-	cfg.FilePath = filePath
 	cfg.Format = formatJSON
 
-	sub := NewFileSubscriber()
+	sub := NewConsoleSubscriber()
 	_ = sub.Initialize()
 	defer func() { _ = sub.Close() }()
 
@@ -564,9 +618,9 @@ func BenchmarkFileSubscriber_OnEventComplex(b *testing.B) {
 	}
 }
 
-func TestFileSubscriber_GetCategories_EmptyFallback(t *testing.T) {
+func TestConsoleSubscriber_GetCategories_EmptyFallback(t *testing.T) {
 	// Test the fallback path when categories slice is nil or empty
-	sub := &FileSubscriber{
+	sub := &ConsoleSubscriber{
 		categories: nil,
 	}
 
@@ -589,19 +643,11 @@ func TestFileSubscriber_GetCategories_EmptyFallback(t *testing.T) {
 	}
 }
 
-func TestFileSubscriber_CloseWithNilAdapter(t *testing.T) {
+func TestConsoleSubscriber_CloseWithNilAdapter(t *testing.T) {
 	setupTestConfig(t)
 	defer resetTestConfig()
 
-	tmpDir := t.TempDir()
-	filePath := filepath.Join(tmpDir, "test-nil-adapter.log")
-
-	cfg := &config.GetThunderRuntime().Config.Observability.Output.File
-	cfg.Enabled = true
-	cfg.FilePath = filePath
-	cfg.Format = formatJSON
-
-	sub := NewFileSubscriber()
+	sub := NewConsoleSubscriber()
 	_ = sub.Initialize()
 
 	// Set adapter to nil to test the nil check path
@@ -614,20 +660,16 @@ func TestFileSubscriber_CloseWithNilAdapter(t *testing.T) {
 	}
 }
 
-func TestFileSubscriber_Initialize_EmptyCategoriesDefaultsToAll(t *testing.T) {
+func TestConsoleSubscriber_Initialize_EmptyCategoriesDefaultsToAll(t *testing.T) {
 	setupTestConfig(t)
 	defer resetTestConfig()
 
-	tmpDir := t.TempDir()
-	filePath := filepath.Join(tmpDir, "test-empty-categories.log")
-
-	cfg := &config.GetThunderRuntime().Config.Observability.Output.File
+	cfg := &config.GetThunderRuntime().Config.Observability.Output.Console
 	cfg.Enabled = true
-	cfg.FilePath = filePath
 	cfg.Format = formatJSON
 	cfg.Categories = []string{} // Empty categories
 
-	sub := NewFileSubscriber()
+	sub := NewConsoleSubscriber()
 	err := sub.Initialize()
 	if err != nil {
 		t.Fatalf("Initialize() error = %v", err)
@@ -644,19 +686,15 @@ func TestFileSubscriber_Initialize_EmptyCategoriesDefaultsToAll(t *testing.T) {
 	}
 }
 
-func TestFileSubscriber_MultipleInitializations(t *testing.T) {
+func TestConsoleSubscriber_MultipleInitializations(t *testing.T) {
 	setupTestConfig(t)
 	defer resetTestConfig()
 
-	tmpDir := t.TempDir()
-	filePath := filepath.Join(tmpDir, "test-multi-init.log")
-
-	cfg := &config.GetThunderRuntime().Config.Observability.Output.File
+	cfg := &config.GetThunderRuntime().Config.Observability.Output.Console
 	cfg.Enabled = true
-	cfg.FilePath = filePath
 	cfg.Format = formatJSON
 
-	sub := NewFileSubscriber()
+	sub := NewConsoleSubscriber()
 
 	// First initialization
 	err := sub.Initialize()
@@ -683,19 +721,20 @@ func TestFileSubscriber_MultipleInitializations(t *testing.T) {
 	_ = sub.Close()
 }
 
-func TestFileSubscriber_OnEventConcurrent(t *testing.T) {
+func TestConsoleSubscriber_OnEventConcurrent(t *testing.T) {
 	setupTestConfig(t)
 	defer resetTestConfig()
 
-	tmpDir := t.TempDir()
-	filePath := filepath.Join(tmpDir, "test-concurrent.log")
+	// Capture stdout
+	oldStdout := os.Stdout
+	r, w, _ := os.Pipe()
+	os.Stdout = w
 
-	cfg := &config.GetThunderRuntime().Config.Observability.Output.File
+	cfg := &config.GetThunderRuntime().Config.Observability.Output.Console
 	cfg.Enabled = true
-	cfg.FilePath = filePath
 	cfg.Format = formatJSON
 
-	sub := NewFileSubscriber()
+	sub := NewConsoleSubscriber()
 	_ = sub.Initialize()
 	defer func() { _ = sub.Close() }()
 
@@ -724,21 +763,23 @@ func TestFileSubscriber_OnEventConcurrent(t *testing.T) {
 		<-done
 	}
 
-	// Flush and verify data was written
-	_ = sub.adapter.Flush()
-	content, err := os.ReadFile(filePath) // #nosec G304 - Test file path is controlled
-	if err != nil {
-		t.Fatalf("Failed to read test log file: %v", err)
-	}
+	// Restore stdout
+	_ = w.Close()
+	os.Stdout = oldStdout
+
+	// Read captured output
+	var buf bytes.Buffer
+	_, _ = io.Copy(&buf, r)
+	output := buf.String()
 
 	// Verify we got output (actual count may vary due to concurrency)
-	if len(content) == 0 {
+	if len(output) == 0 {
 		t.Error("Concurrent OnEvent() calls should produce output")
 	}
 }
 
-func TestFileSubscriber_GetID_BeforeInitialize(t *testing.T) {
-	sub := NewFileSubscriber()
+func TestConsoleSubscriber_GetID_BeforeInitialize(t *testing.T) {
+	sub := NewConsoleSubscriber()
 
 	// GetID before Initialize should return empty string
 	id := sub.GetID()
@@ -747,8 +788,8 @@ func TestFileSubscriber_GetID_BeforeInitialize(t *testing.T) {
 	}
 }
 
-func TestFileSubscriber_GetCategories_BeforeInitialize(t *testing.T) {
-	sub := NewFileSubscriber()
+func TestConsoleSubscriber_GetCategories_BeforeInitialize(t *testing.T) {
+	sub := NewConsoleSubscriber()
 
 	// GetCategories before Initialize should return default CategoryAll
 	categories := sub.GetCategories()
@@ -760,19 +801,15 @@ func TestFileSubscriber_GetCategories_BeforeInitialize(t *testing.T) {
 	}
 }
 
-func TestFileSubscriber_OnEvent_DifferentEventStatuses(t *testing.T) {
+func TestConsoleSubscriber_OnEvent_DifferentEventStatuses(t *testing.T) {
 	setupTestConfig(t)
 	defer resetTestConfig()
 
-	tmpDir := t.TempDir()
-	filePath := filepath.Join(tmpDir, "test-statuses.log")
-
-	cfg := &config.GetThunderRuntime().Config.Observability.Output.File
+	cfg := &config.GetThunderRuntime().Config.Observability.Output.Console
 	cfg.Enabled = true
-	cfg.FilePath = filePath
 	cfg.Format = formatJSON
 
-	sub := NewFileSubscriber()
+	sub := NewConsoleSubscriber()
 	_ = sub.Initialize()
 	defer func() { _ = sub.Close() }()
 
@@ -800,108 +837,5 @@ func TestFileSubscriber_OnEvent_DifferentEventStatuses(t *testing.T) {
 				t.Errorf("OnEvent() with status %s error = %v", status, err)
 			}
 		})
-	}
-}
-
-func TestFileSubscriber_OnEvent_EmptyData(t *testing.T) {
-	setupTestConfig(t)
-	defer resetTestConfig()
-
-	tmpDir := t.TempDir()
-	filePath := filepath.Join(tmpDir, "test-empty-data.log")
-
-	cfg := &config.GetThunderRuntime().Config.Observability.Output.File
-	cfg.Enabled = true
-	cfg.FilePath = filePath
-	cfg.Format = formatJSON
-
-	sub := NewFileSubscriber()
-	_ = sub.Initialize()
-	defer func() { _ = sub.Close() }()
-
-	testEvent := &event.Event{
-		TraceID:   "trace-empty",
-		EventID:   "event-empty",
-		Type:      "test.empty",
-		Timestamp: time.Now(),
-		Component: "TestComponent",
-		Status:    event.StatusSuccess,
-		Data:      map[string]interface{}{},
-	}
-
-	err := sub.OnEvent(testEvent)
-	if err != nil {
-		t.Fatalf("OnEvent() with empty data error = %v", err)
-	}
-
-	// Flush and verify output was written even with empty data
-	_ = sub.adapter.Flush()
-	content, err := os.ReadFile(filePath) // #nosec G304 - Test file path is controlled
-	if err != nil {
-		t.Fatalf("Failed to read test log file: %v", err)
-	}
-
-	if len(content) == 0 {
-		t.Error("OnEvent() should write output even with empty data")
-	}
-}
-
-func TestFileSubscriber_OnEvent_NilData(t *testing.T) {
-	setupTestConfig(t)
-	defer resetTestConfig()
-
-	tmpDir := t.TempDir()
-	filePath := filepath.Join(tmpDir, "test-nil-data.log")
-
-	cfg := &config.GetThunderRuntime().Config.Observability.Output.File
-	cfg.Enabled = true
-	cfg.FilePath = filePath
-	cfg.Format = formatJSON
-
-	sub := NewFileSubscriber()
-	_ = sub.Initialize()
-	defer func() { _ = sub.Close() }()
-
-	testEvent := &event.Event{
-		TraceID:   "trace-nil",
-		EventID:   "event-nil",
-		Type:      "test.nil",
-		Timestamp: time.Now(),
-		Component: "TestComponent",
-		Status:    event.StatusSuccess,
-		Data:      nil,
-	}
-
-	// Should handle nil data gracefully
-	err := sub.OnEvent(testEvent)
-	if err != nil {
-		t.Errorf("OnEvent() with nil data should not error, got: %v", err)
-	}
-}
-
-func TestFileSubscriber_Initialize_InvalidPath(t *testing.T) {
-	setupTestConfig(t)
-	defer resetTestConfig()
-
-	// Use an invalid path that should fail (e.g., path to a directory that doesn't exist and can't be created)
-	invalidPath := "/invalid/nonexistent/path/that/should/fail/test.log"
-
-	cfg := &config.GetThunderRuntime().Config.Observability.Output.File
-	cfg.Enabled = true
-	cfg.FilePath = invalidPath
-	cfg.Format = formatJSON
-
-	sub := NewFileSubscriber()
-	err := sub.Initialize()
-
-	// Should return an error
-	if err == nil {
-		t.Error("Initialize() with invalid path should return error")
-		_ = sub.Close()
-	}
-
-	// Error should mention file adapter creation failure
-	if err != nil && !strings.Contains(err.Error(), "failed to create file adapter") {
-		t.Errorf("Initialize() error should mention file adapter creation failure, got: %v", err)
 	}
 }

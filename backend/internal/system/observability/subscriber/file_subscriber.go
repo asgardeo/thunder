@@ -22,11 +22,11 @@ import (
 	"fmt"
 	"path/filepath"
 
-	"github.com/asgardeo/thunder/internal/observability/adapter"
-	"github.com/asgardeo/thunder/internal/observability/event"
-	"github.com/asgardeo/thunder/internal/observability/formatter"
 	"github.com/asgardeo/thunder/internal/system/config"
 	"github.com/asgardeo/thunder/internal/system/log"
+	"github.com/asgardeo/thunder/internal/system/observability/adapter"
+	"github.com/asgardeo/thunder/internal/system/observability/event"
+	"github.com/asgardeo/thunder/internal/system/observability/formatter"
 	"github.com/asgardeo/thunder/internal/system/utils"
 )
 

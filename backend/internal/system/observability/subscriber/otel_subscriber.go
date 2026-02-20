@@ -30,10 +30,10 @@ import (
 	sdktrace "go.opentelemetry.io/otel/sdk/trace"
 	"go.opentelemetry.io/otel/trace"
 
-	"github.com/asgardeo/thunder/internal/observability/event"
-	otelconfig "github.com/asgardeo/thunder/internal/observability/opentelemetry"
 	"github.com/asgardeo/thunder/internal/system/config"
 	"github.com/asgardeo/thunder/internal/system/log"
+	"github.com/asgardeo/thunder/internal/system/observability/event"
+	otelconfig "github.com/asgardeo/thunder/internal/system/observability/opentelemetry"
 	"github.com/asgardeo/thunder/internal/system/utils"
 )
 

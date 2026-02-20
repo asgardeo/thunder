@@ -29,11 +29,10 @@ import (
 
 	"github.com/asgardeo/thunder/internal/system/config"
 	sysContext "github.com/asgardeo/thunder/internal/system/context"
-
-	"github.com/asgardeo/thunder/internal/observability"
-	"github.com/asgardeo/thunder/internal/observability/event"
 	"github.com/asgardeo/thunder/internal/system/error/serviceerror"
 	"github.com/asgardeo/thunder/internal/system/log"
+	"github.com/asgardeo/thunder/internal/system/observability"
+	"github.com/asgardeo/thunder/internal/system/observability/event"
 	sysutils "github.com/asgardeo/thunder/internal/system/utils"
 )
 
