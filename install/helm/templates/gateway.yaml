@@ -18,7 +18,7 @@
 apiVersion: gateway.networking.k8s.io/v1
 kind: Gateway
 metadata:
-  name: {{ .Values.gateway.name | default (include "thunder.fullname" .) }}
+  name: {{ .Values.gateway.name }}
   namespace: {{ .Release.Namespace }}
   labels:
     {{- include "thunder.labels" . | nindent 4 }}
@@ -29,9 +29,7 @@ spec:
     - name: https
       protocol: HTTPS
       port: 443
-      {{- if .Values.ingress.hostname }}
       hostname: {{ .Values.ingress.hostname | quote }}
-      {{- end }}
       tls:
         mode: {{ .Values.gateway.tls.mode }}
         certificateRefs:
@@ -44,9 +42,7 @@ spec:
     - name: http
       protocol: HTTP
       port: 80
-      {{- if .Values.ingress.hostname }}
       hostname: {{ .Values.ingress.hostname | quote }}
-      {{- end }}
       allowedRoutes:
         namespaces:
           from: Same
