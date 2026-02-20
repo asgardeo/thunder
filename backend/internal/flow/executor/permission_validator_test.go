@@ -53,8 +53,8 @@ func (suite *PermissionValidatorTestSuite) SetupTest() {
 func (suite *PermissionValidatorTestSuite) TestExecute_DefaultScopeCheck_Success() {
 	httpCtx := context.Background()
 	authCtx := security.NewSecurityContextForTest(
-		"user1", "ou1", "app1", "token",
-		map[string]interface{}{"scope": "system other"},
+		"user1", "ou1", "token",
+		[]string{"system", "other"}, nil,
 	)
 	httpCtx = security.WithSecurityContextTest(httpCtx, authCtx)
 
@@ -72,8 +72,8 @@ func (suite *PermissionValidatorTestSuite) TestExecute_DefaultScopeCheck_Success
 func (suite *PermissionValidatorTestSuite) TestExecute_DefaultScopeCheck_Failure() {
 	httpCtx := context.Background()
 	authCtx := security.NewSecurityContextForTest(
-		"user1", "ou1", "app1", "token",
-		map[string]interface{}{"scope": "other"},
+		"user1", "ou1", "token",
+		[]string{"other"}, nil,
 	)
 	httpCtx = security.WithSecurityContextTest(httpCtx, authCtx)
 
@@ -158,8 +158,8 @@ func (suite *PermissionValidatorTestSuite) TestExecute_CustomScopeCheck_Success(
 		suite.T().Run(tc.name, func(t *testing.T) {
 			httpCtx := context.Background()
 			authCtx := security.NewSecurityContextForTest(
-				"user1", "ou1", "app1", "token",
-				map[string]interface{}{"scopes": tc.contextScopes},
+				"user1", "ou1", "token",
+				tc.contextScopes, nil,
 			)
 			httpCtx = security.WithSecurityContextTest(httpCtx, authCtx)
 
@@ -180,8 +180,8 @@ func (suite *PermissionValidatorTestSuite) TestExecute_CustomScopeCheck_Success(
 func (suite *PermissionValidatorTestSuite) TestExecute_MultipleRequiredScopes_OR_Success() {
 	httpCtx := context.Background()
 	authCtx := security.NewSecurityContextForTest(
-		"user1", "ou1", "app1", "token",
-		map[string]interface{}{"scope": "scopeB"},
+		"user1", "ou1", "token",
+		[]string{"scopeB"}, nil,
 	)
 	httpCtx = security.WithSecurityContextTest(httpCtx, authCtx)
 
@@ -202,8 +202,8 @@ func (suite *PermissionValidatorTestSuite) TestExecute_MultipleRequiredScopes_OR
 func (suite *PermissionValidatorTestSuite) TestExecute_AuthorizedPermissionsCheck_Success() {
 	httpCtx := context.Background()
 	authCtx := security.NewSecurityContextForTest(
-		"user1", "ou1", "app1", "token",
-		map[string]interface{}{"authorized_permissions": "read write admin"},
+		"user1", "ou1", "token",
+		[]string{"read", "write", "admin"}, nil,
 	)
 	httpCtx = security.WithSecurityContextTest(httpCtx, authCtx)
 
@@ -237,8 +237,8 @@ func (suite *PermissionValidatorTestSuite) TestExecute_NoHTTPContext() {
 func (suite *PermissionValidatorTestSuite) TestExecute_EmptyScopes() {
 	httpCtx := context.Background()
 	authCtx := security.NewSecurityContextForTest(
-		"user1", "ou1", "app1", "token",
-		map[string]interface{}{"scope": ""},
+		"user1", "ou1", "token",
+		nil, nil,
 	)
 	httpCtx = security.WithSecurityContextTest(httpCtx, authCtx)
 
@@ -257,8 +257,8 @@ func (suite *PermissionValidatorTestSuite) TestExecute_EmptyScopes() {
 func (suite *PermissionValidatorTestSuite) TestExecute_NoScopesInContext() {
 	httpCtx := context.Background()
 	authCtx := security.NewSecurityContextForTest(
-		"user1", "ou1", "app1", "token",
-		map[string]interface{}{}, // No scope or authorized_permissions
+		"user1", "ou1", "token",
+		nil, nil, // No permissions
 	)
 	httpCtx = security.WithSecurityContextTest(httpCtx, authCtx)
 
@@ -277,8 +277,8 @@ func (suite *PermissionValidatorTestSuite) TestExecute_NoScopesInContext() {
 func (suite *PermissionValidatorTestSuite) TestExecute_ScopesWithUnexpectedType() {
 	httpCtx := context.Background()
 	authCtx := security.NewSecurityContextForTest(
-		"user1", "ou1", "app1", "token",
-		map[string]interface{}{"scope": 123}, // Invalid type (int instead of string)
+		"user1", "ou1", "token",
+		nil, nil, // No valid permissions
 	)
 	httpCtx = security.WithSecurityContextTest(httpCtx, authCtx)
 

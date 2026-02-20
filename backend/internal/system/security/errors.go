@@ -27,8 +27,8 @@ var (
 	// errForbidden indicates that the authenticated user lacks sufficient permissions.
 	errForbidden = errors.New("forbidden")
 
-	// errInsufficientScopes indicates that the user's scopes are insufficient for the requested resource.
-	errInsufficientScopes = errors.New("insufficient scopes")
+	// errInsufficientPermissions indicates that the user's permissions are insufficient for the requested resource.
+	errInsufficientPermissions = errors.New("insufficient permissions")
 
 	// errNoHandlerFound indicates that no security handler could process the request.
 	errNoHandlerFound = errors.New("no security handler found")

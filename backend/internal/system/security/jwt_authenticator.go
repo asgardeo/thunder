@@ -68,46 +68,19 @@ func (h *jwtAuthenticator) Authenticate(r *http.Request) (*SecurityContext, erro
 		return nil, errInvalidToken
 	}
 
-	// Step 4: Extract user information and build SecurityContext
-	userID := ""
+	// Step 4: Extract subject information and build SecurityContext
+	subject := ""
 	if sub, ok := attributes["sub"].(string); ok && sub != "" {
-		userID = sub
+		subject = sub
 	}
 
 	ouID := extractAttribute(attributes, "ou_id")
-	appID := extractAttribute(attributes, "app_id")
+
+	// Step 5: Extract scopes from JWT claims
+	scopes := extractScopes(attributes)
 
 	// Create immutable SecurityContext
-	return newSecurityContext(userID, ouID, appID, token, attributes), nil
-}
-
-// Authorize verifies the authenticated user has the required scopes for the request.
-func (h *jwtAuthenticator) Authorize(r *http.Request, securityCtx *SecurityContext) error {
-	if securityCtx == nil {
-		return errUnauthorized
-	}
-
-	ctx := r.Context()
-	attributes := map[string]interface{}{}
-
-	if scope := GetAttribute(ctx, "scope"); scope != nil {
-		attributes["scope"] = scope
-	}
-	if scopes := GetAttribute(ctx, "scopes"); scopes != nil {
-		attributes["scopes"] = scopes
-	}
-	if perms := GetAttribute(ctx, "authorized_permissions"); perms != nil {
-		attributes["authorized_permissions"] = perms
-	}
-
-	scopes := extractScopes(attributes)
-	requiredScopes := h.getRequiredScopes(r)
-
-	if len(requiredScopes) > 0 && !hasAnyScope(scopes, requiredScopes) {
-		return errInsufficientScopes
-	}
-
-	return nil
+	return newSecurityContext(subject, ouID, token, scopes, attributes), nil
 }
 
 // extractToken extracts the Bearer token from the Authorization header.
@@ -120,8 +93,9 @@ func extractToken(authHeader string) (string, error) {
 	return token, nil
 }
 
-// extractScopes extracts OAuth2 scopes from JWT claims.
-// Scopes can be in "scope" (string with space-separated values) or "scopes" (array) claim.
+// extractScopes extracts permissions from JWT claims.
+// Permissions can be in "scope" (string with space-separated values), "scopes" (array) claim,
+// or "authorized_permissions" (Thunder-specific) claim.
 func extractScopes(attributes map[string]interface{}) []string {
 	// Try "scope" claim (OAuth2 standard - space-separated string)
 	if scopeStr, ok := attributes["scope"].(string); ok && scopeStr != "" {
@@ -158,40 +132,4 @@ func extractAttribute(attributes map[string]interface{}, key string) string {
 		return value
 	}
 	return ""
-}
-
-// getRequiredScopes returns the required scopes for a given route path.
-func (h *jwtAuthenticator) getRequiredScopes(r *http.Request) []string {
-	// User self service endpoints don't require scopes
-	if strings.HasPrefix(r.URL.Path, "/users/me") {
-		return []string{}
-	}
-
-	// Passkey registration endpoints don't require scopes
-	if strings.HasPrefix(r.URL.Path, "/register/passkey/") {
-		return []string{}
-	}
-
-	// Default required scope for other endpoints
-	return []string{"system"}
-}
-
-// hasAnyScope checks if the user has at least one of the required scopes.
-func hasAnyScope(userScopes, requiredScopes []string) bool {
-	if len(requiredScopes) == 0 {
-		return true
-	}
-
-	scopeMap := make(map[string]bool, len(userScopes))
-	for _, scope := range userScopes {
-		scopeMap[scope] = true
-	}
-
-	for _, required := range requiredScopes {
-		if scopeMap[required] {
-			return true
-		}
-	}
-
-	return false
 }

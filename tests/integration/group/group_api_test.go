@@ -389,7 +389,6 @@ func (suite *GroupAPITestSuite) TestUpdateGroup() {
 	updateRequest := UpdateGroupRequest{
 		Name:               "Updated Test Group",
 		OrganizationUnitId: testOUID,
-		Members:            []Member{}, // Empty members list
 	}
 
 	jsonData, err := json.Marshal(updateRequest)
@@ -417,6 +416,83 @@ func (suite *GroupAPITestSuite) TestUpdateGroup() {
 	// Verify the update
 	suite.Equal(createdGroupID, updatedGroup.Id)
 	suite.Equal("Updated Test Group", updatedGroup.Name)
+}
+
+func (suite *GroupAPITestSuite) TestUpdateGroupPreservesMembers() {
+	// Create a group with a member
+	groupWithMember := CreateGroupRequest{
+		Name:               "Group for Preserve Members Test",
+		OrganizationUnitId: testOUID,
+		Members: []Member{
+			{
+				Id:   testUserID,
+				Type: MemberTypeUser,
+			},
+		},
+	}
+
+	tempGroupID, err := createGroup(groupWithMember)
+	suite.Require().NoError(err)
+	defer func() {
+		if deleteErr := deleteGroup(tempGroupID); deleteErr != nil {
+			suite.T().Logf("Failed to clean up temp group: %v", deleteErr)
+		}
+	}()
+
+	// Update only the group name via PUT (no members field)
+	updateRequest := UpdateGroupRequest{
+		Name:               "Renamed Group",
+		OrganizationUnitId: testOUID,
+	}
+
+	jsonData, err := json.Marshal(updateRequest)
+	suite.Require().NoError(err)
+
+	client := testutils.GetHTTPClient()
+
+	req, err := http.NewRequest("PUT", testServerURL+"/groups/"+tempGroupID, bytes.NewBuffer(jsonData))
+	suite.Require().NoError(err)
+	req.Header.Set("Content-Type", "application/json")
+
+	resp, err := client.Do(req)
+	suite.Require().NoError(err)
+	defer resp.Body.Close()
+
+	suite.Equal(http.StatusOK, resp.StatusCode)
+
+	// Verify the name was updated
+	var updatedGroup Group
+	err = json.NewDecoder(resp.Body).Decode(&updatedGroup)
+	suite.Require().NoError(err)
+	suite.Equal("Renamed Group", updatedGroup.Name)
+
+	// Verify that the member is still present
+	getReq, err := http.NewRequest("GET", testServerURL+"/groups/"+tempGroupID+"/members", nil)
+	suite.Require().NoError(err)
+
+	getResp, err := client.Do(getReq)
+	suite.Require().NoError(err)
+	defer getResp.Body.Close()
+
+	suite.Equal(http.StatusOK, getResp.StatusCode)
+
+	body, err := io.ReadAll(getResp.Body)
+	suite.Require().NoError(err)
+
+	var memberListResponse MemberListResponse
+	err = json.Unmarshal(body, &memberListResponse)
+	suite.Require().NoError(err)
+
+	suite.Equal(1, memberListResponse.TotalResults, "Member should still be present after group update")
+
+	found := false
+	for _, member := range memberListResponse.Members {
+		if member.Id == testUserID && member.Type == MemberTypeUser {
+			found = true
+			break
+		}
+	}
+	suite.True(found, "Original member should be preserved after updating group metadata")
 }
 
 func (suite *GroupAPITestSuite) TestDeleteGroup() {
@@ -632,139 +708,6 @@ func (suite *GroupAPITestSuite) TestCreateGroupWithEmptyUserList() {
 	suite.Require().NoError(deleteErr)
 }
 
-func (suite *GroupAPITestSuite) TestUpdateGroupWithInvalidUserID() {
-	if createdGroupID == "" {
-		suite.T().Fatal("Group ID is not available for update test")
-	}
-
-	// Try to update the group with an invalid user ID
-	updateRequest := UpdateGroupRequest{
-		Name:               "Updated Group with Invalid User",
-		OrganizationUnitId: testOUID,
-		Members: []Member{
-			{
-				Id:   "invalid-user-id-update",
-				Type: MemberTypeUser,
-			},
-		},
-	}
-
-	jsonData, err := json.Marshal(updateRequest)
-	suite.Require().NoError(err)
-
-	client := testutils.GetHTTPClient()
-
-	req, err := http.NewRequest("PUT", testServerURL+"/groups/"+createdGroupID, bytes.NewBuffer(jsonData))
-	suite.Require().NoError(err)
-	req.Header.Set("Content-Type", "application/json")
-
-	resp, err := client.Do(req)
-	suite.Require().NoError(err)
-	defer resp.Body.Close()
-
-	suite.Equal(http.StatusBadRequest, resp.StatusCode)
-
-	// Verify the error response
-	body, err := io.ReadAll(resp.Body)
-	suite.Require().NoError(err)
-
-	var errorResp map[string]interface{}
-	err = json.Unmarshal(body, &errorResp)
-	suite.Require().NoError(err)
-
-	suite.Equal("GRP-1007", errorResp["code"])
-	suite.Equal("Invalid user member ID", errorResp["message"])
-	suite.Contains(errorResp["description"], "One or more user member IDs in the request do not exist")
-}
-
-func (suite *GroupAPITestSuite) TestUpdateGroupWithValidEmptyUserList() {
-	if createdGroupID == "" {
-		suite.T().Fatal("Group ID is not available for update test")
-	}
-
-	// Update the group with empty user list (should succeed)
-	updateRequest := UpdateGroupRequest{
-		Name:               "Updated Group with Empty Users",
-		OrganizationUnitId: testOUID,
-		Members:            []Member{}, // Empty members list
-	}
-
-	jsonData, err := json.Marshal(updateRequest)
-	suite.Require().NoError(err)
-
-	client := testutils.GetHTTPClient()
-
-	req, err := http.NewRequest("PUT", testServerURL+"/groups/"+createdGroupID, bytes.NewBuffer(jsonData))
-	suite.Require().NoError(err)
-	req.Header.Set("Content-Type", "application/json")
-
-	resp, err := client.Do(req)
-	suite.Require().NoError(err)
-	defer resp.Body.Close()
-
-	suite.Equal(http.StatusOK, resp.StatusCode)
-
-	// Verify the update
-	var updatedGroup Group
-	err = json.NewDecoder(resp.Body).Decode(&updatedGroup)
-	suite.Require().NoError(err)
-
-	suite.Equal(createdGroupID, updatedGroup.Id)
-	suite.Equal("Updated Group with Empty Users", updatedGroup.Name)
-}
-
-func (suite *GroupAPITestSuite) TestUpdateGroupWithMultipleInvalidUserIDs() {
-	if createdGroupID == "" {
-		suite.T().Fatal("Group ID is not available for update test")
-	}
-
-	// Try to update the group with multiple invalid user IDs
-	updateRequest := UpdateGroupRequest{
-		Name:               "Updated Group with Multiple Invalid Users",
-		OrganizationUnitId: testOUID,
-		Members: []Member{
-			{
-				Id:   "invalid-user-1",
-				Type: MemberTypeUser,
-			},
-			{
-				Id:   "invalid-user-2",
-				Type: MemberTypeUser,
-			},
-			{
-				Id:   "invalid-user-3",
-				Type: MemberTypeUser,
-			},
-		},
-	}
-
-	jsonData, err := json.Marshal(updateRequest)
-	suite.Require().NoError(err)
-
-	client := testutils.GetHTTPClient()
-
-	req, err := http.NewRequest("PUT", testServerURL+"/groups/"+createdGroupID, bytes.NewBuffer(jsonData))
-	suite.Require().NoError(err)
-	req.Header.Set("Content-Type", "application/json")
-
-	resp, err := client.Do(req)
-	suite.Require().NoError(err)
-	defer resp.Body.Close()
-
-	suite.Equal(http.StatusBadRequest, resp.StatusCode)
-
-	// Verify the error response
-	body, err := io.ReadAll(resp.Body)
-	suite.Require().NoError(err)
-
-	var errorResp map[string]interface{}
-	err = json.Unmarshal(body, &errorResp)
-	suite.Require().NoError(err)
-
-	suite.Equal("GRP-1007", errorResp["code"])
-	suite.Equal("Invalid user member ID", errorResp["message"])
-}
-
 func (suite *GroupAPITestSuite) TestCreateGroupWithMultipleMembers() {
 	// Create a temporary user for testing
 	tempUser := testutils.User{
@@ -837,71 +780,6 @@ func (suite *GroupAPITestSuite) TestCreateGroupWithMultipleMembers() {
 	// Clean up: delete the created group
 	deleteErr := deleteGroup(createdGroup.Id)
 	suite.Require().NoError(deleteErr)
-}
-
-func (suite *GroupAPITestSuite) TestUpdateGroupMembers() {
-	if createdGroupID == "" {
-		suite.T().Fatal("Group ID is not available for member update test")
-	}
-
-	// Create a temporary user for testing
-	tempUser := testutils.User{
-		OrganizationUnit: testOUID,
-		Type:             "group-test-person",
-		Attributes: json.RawMessage(`{
-			"email": "testuser2@example.com",
-			"firstName": "Test",
-			"lastName": "User2",
-			"password": "TestPassword123!"
-		}`),
-	}
-	testUserID, err := testutils.CreateUser(tempUser)
-	if err != nil {
-		suite.T().Fatalf("Failed to create test user: %v", err)
-	}
-	defer func() {
-		if deleteErr := testutils.DeleteUser(testUserID); deleteErr != nil {
-			suite.T().Logf("Failed to clean up test user: %v", deleteErr)
-		}
-	}()
-
-	// Update the group to add new members
-	updateRequest := UpdateGroupRequest{
-		Name:               "Updated Group with New Members",
-		OrganizationUnitId: testOUID,
-		Members: []Member{
-			{
-				Id:   testUserID,
-				Type: MemberTypeUser,
-			},
-		},
-	}
-
-	jsonData, err := json.Marshal(updateRequest)
-	suite.Require().NoError(err)
-
-	client := testutils.GetHTTPClient()
-
-	req, err := http.NewRequest("PUT", testServerURL+"/groups/"+createdGroupID, bytes.NewBuffer(jsonData))
-	suite.Require().NoError(err)
-	req.Header.Set("Content-Type", "application/json")
-
-	resp, err := client.Do(req)
-	suite.Require().NoError(err)
-	defer resp.Body.Close()
-
-	suite.Equal(http.StatusOK, resp.StatusCode)
-
-	var updatedGroup Group
-	err = json.NewDecoder(resp.Body).Decode(&updatedGroup)
-	suite.Require().NoError(err)
-
-	// Verify the update
-	suite.Equal(createdGroupID, updatedGroup.Id)
-	suite.Equal("Updated Group with New Members", updatedGroup.Name)
-	suite.Equal(1, len(updatedGroup.Members))
-	suite.Equal(testUserID, updatedGroup.Members[0].Id)
-	suite.Equal(MemberTypeUser, updatedGroup.Members[0].Type)
 }
 
 func (suite *GroupAPITestSuite) TestCreateGroupWithGroupMember() {
@@ -1091,6 +969,778 @@ func buildCreatedGroup() Group {
 
 func TestGroupAPITestSuite(t *testing.T) {
 	suite.Run(t, new(GroupAPITestSuite))
+}
+
+func (suite *GroupAPITestSuite) TestAddGroupMembers() {
+	if createdGroupID == "" {
+		suite.T().Fatal("Group ID is not available for add members test")
+	}
+
+	// Create a temporary user to add as a member
+	tempUser := testutils.User{
+		OrganizationUnit: testOUID,
+		Type:             "group-test-person",
+		Attributes: json.RawMessage(`{
+			"email": "addmember@example.com",
+			"firstName": "Add",
+			"lastName": "Member",
+			"password": "TestPassword123!"
+		}`),
+	}
+	tempUserID, err := testutils.CreateUser(tempUser)
+	if err != nil {
+		suite.T().Fatalf("Failed to create temp user: %v", err)
+	}
+	defer func() {
+		if deleteErr := testutils.DeleteUser(tempUserID); deleteErr != nil {
+			suite.T().Logf("Failed to clean up temp user: %v", deleteErr)
+		}
+	}()
+
+	// Add the user as a member
+	addRequest := MembersRequest{
+		Members: []Member{
+			{
+				Id:   tempUserID,
+				Type: MemberTypeUser,
+			},
+		},
+	}
+
+	jsonData, err := json.Marshal(addRequest)
+	suite.Require().NoError(err)
+
+	client := testutils.GetHTTPClient()
+
+	req, err := http.NewRequest("POST", testServerURL+"/groups/"+createdGroupID+"/members/add", bytes.NewBuffer(jsonData))
+	suite.Require().NoError(err)
+	req.Header.Set("Content-Type", "application/json")
+
+	resp, err := client.Do(req)
+	suite.Require().NoError(err)
+	defer resp.Body.Close()
+
+	suite.Equal(http.StatusOK, resp.StatusCode)
+
+	// Verify the response contains the updated group
+	addRespBody, err := io.ReadAll(resp.Body)
+	suite.Require().NoError(err)
+	var addedGroup Group
+	err = json.Unmarshal(addRespBody, &addedGroup)
+	suite.Require().NoError(err)
+	suite.Equal(createdGroupID, addedGroup.Id)
+
+	// Verify the member was added by getting group members
+	getReq, err := http.NewRequest("GET", testServerURL+"/groups/"+createdGroupID+"/members", nil)
+	suite.Require().NoError(err)
+
+	getResp, err := client.Do(getReq)
+	suite.Require().NoError(err)
+	defer getResp.Body.Close()
+
+	suite.Equal(http.StatusOK, getResp.StatusCode)
+
+	body, err := io.ReadAll(getResp.Body)
+	suite.Require().NoError(err)
+
+	var memberListResponse MemberListResponse
+	err = json.Unmarshal(body, &memberListResponse)
+	suite.Require().NoError(err)
+
+	found := false
+	for _, member := range memberListResponse.Members {
+		if member.Id == tempUserID && member.Type == MemberTypeUser {
+			found = true
+			break
+		}
+	}
+	suite.True(found, "Added member should be in the members list")
+
+	// Clean up: remove the added member
+	removeRequest := MembersRequest{
+		Members: []Member{
+			{
+				Id:   tempUserID,
+				Type: MemberTypeUser,
+			},
+		},
+	}
+
+	jsonData, err = json.Marshal(removeRequest)
+	suite.Require().NoError(err)
+
+	removeReq, err := http.NewRequest("POST", testServerURL+"/groups/"+createdGroupID+"/members/remove", bytes.NewBuffer(jsonData))
+	suite.Require().NoError(err)
+	removeReq.Header.Set("Content-Type", "application/json")
+
+	removeResp, err := client.Do(removeReq)
+	suite.Require().NoError(err)
+	defer removeResp.Body.Close()
+
+	suite.Equal(http.StatusOK, removeResp.StatusCode)
+}
+
+func (suite *GroupAPITestSuite) TestAddGroupMembersWithGroupMember() {
+	if createdGroupID == "" {
+		suite.T().Fatal("Group ID is not available for add group member test")
+	}
+
+	// Create a temporary group to add as a member
+	tempGroupReq := CreateGroupRequest{
+		Name:               "Temp Group for Add Member Test",
+		OrganizationUnitId: testOUID,
+		Members:            []Member{},
+	}
+
+	tempGroupID, err := createGroup(tempGroupReq)
+	suite.Require().NoError(err)
+	defer func() {
+		if deleteErr := deleteGroup(tempGroupID); deleteErr != nil {
+			suite.T().Logf("Failed to clean up temp group: %v", deleteErr)
+		}
+	}()
+
+	// Add the group as a member
+	addRequest := MembersRequest{
+		Members: []Member{
+			{
+				Id:   tempGroupID,
+				Type: MemberTypeGroup,
+			},
+		},
+	}
+
+	jsonData, err := json.Marshal(addRequest)
+	suite.Require().NoError(err)
+
+	client := testutils.GetHTTPClient()
+
+	req, err := http.NewRequest("POST", testServerURL+"/groups/"+createdGroupID+"/members/add", bytes.NewBuffer(jsonData))
+	suite.Require().NoError(err)
+	req.Header.Set("Content-Type", "application/json")
+
+	resp, err := client.Do(req)
+	suite.Require().NoError(err)
+	defer resp.Body.Close()
+
+	suite.Equal(http.StatusOK, resp.StatusCode)
+
+	// Verify the group member was added
+	getReq, err := http.NewRequest("GET", testServerURL+"/groups/"+createdGroupID+"/members", nil)
+	suite.Require().NoError(err)
+
+	getResp, err := client.Do(getReq)
+	suite.Require().NoError(err)
+	defer getResp.Body.Close()
+
+	suite.Equal(http.StatusOK, getResp.StatusCode)
+
+	body, err := io.ReadAll(getResp.Body)
+	suite.Require().NoError(err)
+
+	var memberListResponse MemberListResponse
+	err = json.Unmarshal(body, &memberListResponse)
+	suite.Require().NoError(err)
+
+	found := false
+	for _, member := range memberListResponse.Members {
+		if member.Id == tempGroupID && member.Type == MemberTypeGroup {
+			found = true
+			break
+		}
+	}
+	suite.True(found, "Added group member should be in the members list")
+
+	// Clean up: remove the added group member
+	removeRequest := MembersRequest{
+		Members: []Member{
+			{
+				Id:   tempGroupID,
+				Type: MemberTypeGroup,
+			},
+		},
+	}
+
+	jsonData, err = json.Marshal(removeRequest)
+	suite.Require().NoError(err)
+
+	removeReq, err := http.NewRequest("POST", testServerURL+"/groups/"+createdGroupID+"/members/remove", bytes.NewBuffer(jsonData))
+	suite.Require().NoError(err)
+	removeReq.Header.Set("Content-Type", "application/json")
+
+	removeResp, err := client.Do(removeReq)
+	suite.Require().NoError(err)
+	defer removeResp.Body.Close()
+
+	suite.Equal(http.StatusOK, removeResp.StatusCode)
+}
+
+func (suite *GroupAPITestSuite) TestAddGroupMembersWithEmptyList() {
+	if createdGroupID == "" {
+		suite.T().Fatal("Group ID is not available for empty members test")
+	}
+
+	// Try to add empty members list
+	addRequest := MembersRequest{
+		Members: []Member{},
+	}
+
+	jsonData, err := json.Marshal(addRequest)
+	suite.Require().NoError(err)
+
+	client := testutils.GetHTTPClient()
+
+	req, err := http.NewRequest("POST", testServerURL+"/groups/"+createdGroupID+"/members/add", bytes.NewBuffer(jsonData))
+	suite.Require().NoError(err)
+	req.Header.Set("Content-Type", "application/json")
+
+	resp, err := client.Do(req)
+	suite.Require().NoError(err)
+	defer resp.Body.Close()
+
+	suite.Equal(http.StatusBadRequest, resp.StatusCode)
+
+	body, err := io.ReadAll(resp.Body)
+	suite.Require().NoError(err)
+
+	var errorResp map[string]interface{}
+	err = json.Unmarshal(body, &errorResp)
+	suite.Require().NoError(err)
+
+	suite.Equal("GRP-1013", errorResp["code"])
+	suite.Equal("Empty members list", errorResp["message"])
+}
+
+func (suite *GroupAPITestSuite) TestAddGroupMembersWithInvalidUserID() {
+	if createdGroupID == "" {
+		suite.T().Fatal("Group ID is not available for invalid user test")
+	}
+
+	addRequest := MembersRequest{
+		Members: []Member{
+			{
+				Id:   "invalid-user-id-for-add",
+				Type: MemberTypeUser,
+			},
+		},
+	}
+
+	jsonData, err := json.Marshal(addRequest)
+	suite.Require().NoError(err)
+
+	client := testutils.GetHTTPClient()
+
+	req, err := http.NewRequest("POST", testServerURL+"/groups/"+createdGroupID+"/members/add", bytes.NewBuffer(jsonData))
+	suite.Require().NoError(err)
+	req.Header.Set("Content-Type", "application/json")
+
+	resp, err := client.Do(req)
+	suite.Require().NoError(err)
+	defer resp.Body.Close()
+
+	suite.Equal(http.StatusBadRequest, resp.StatusCode)
+
+	body, err := io.ReadAll(resp.Body)
+	suite.Require().NoError(err)
+
+	var errorResp map[string]interface{}
+	err = json.Unmarshal(body, &errorResp)
+	suite.Require().NoError(err)
+
+	suite.Equal("GRP-1007", errorResp["code"])
+	suite.Equal("Invalid user member ID", errorResp["message"])
+}
+
+func (suite *GroupAPITestSuite) TestAddGroupMembersWithInvalidGroupID() {
+	if createdGroupID == "" {
+		suite.T().Fatal("Group ID is not available for invalid group member test")
+	}
+
+	addRequest := MembersRequest{
+		Members: []Member{
+			{
+				Id:   "invalid-group-id-for-add",
+				Type: MemberTypeGroup,
+			},
+		},
+	}
+
+	jsonData, err := json.Marshal(addRequest)
+	suite.Require().NoError(err)
+
+	client := testutils.GetHTTPClient()
+
+	req, err := http.NewRequest("POST", testServerURL+"/groups/"+createdGroupID+"/members/add", bytes.NewBuffer(jsonData))
+	suite.Require().NoError(err)
+	req.Header.Set("Content-Type", "application/json")
+
+	resp, err := client.Do(req)
+	suite.Require().NoError(err)
+	defer resp.Body.Close()
+
+	suite.Equal(http.StatusBadRequest, resp.StatusCode)
+
+	body, err := io.ReadAll(resp.Body)
+	suite.Require().NoError(err)
+
+	var errorResp map[string]interface{}
+	err = json.Unmarshal(body, &errorResp)
+	suite.Require().NoError(err)
+
+	suite.Equal("GRP-1008", errorResp["code"])
+	suite.Equal("Invalid group member ID", errorResp["message"])
+}
+
+func (suite *GroupAPITestSuite) TestAddGroupMembersToNonExistentGroup() {
+	addRequest := MembersRequest{
+		Members: []Member{
+			{
+				Id:   testUserID,
+				Type: MemberTypeUser,
+			},
+		},
+	}
+
+	jsonData, err := json.Marshal(addRequest)
+	suite.Require().NoError(err)
+
+	client := testutils.GetHTTPClient()
+
+	req, err := http.NewRequest("POST", testServerURL+"/groups/non-existent-id/members/add", bytes.NewBuffer(jsonData))
+	suite.Require().NoError(err)
+	req.Header.Set("Content-Type", "application/json")
+
+	resp, err := client.Do(req)
+	suite.Require().NoError(err)
+	defer resp.Body.Close()
+
+	suite.Equal(http.StatusNotFound, resp.StatusCode)
+}
+
+func (suite *GroupAPITestSuite) TestRemoveGroupMembers() {
+	if createdGroupID == "" {
+		suite.T().Fatal("Group ID is not available for remove members test")
+	}
+
+	// Create a temporary user and add it to the group first
+	tempUser := testutils.User{
+		OrganizationUnit: testOUID,
+		Type:             "group-test-person",
+		Attributes: json.RawMessage(`{
+			"email": "removemember@example.com",
+			"firstName": "Remove",
+			"lastName": "Member",
+			"password": "TestPassword123!"
+		}`),
+	}
+	tempUserID, err := testutils.CreateUser(tempUser)
+	if err != nil {
+		suite.T().Fatalf("Failed to create temp user: %v", err)
+	}
+	defer func() {
+		if deleteErr := testutils.DeleteUser(tempUserID); deleteErr != nil {
+			suite.T().Logf("Failed to clean up temp user: %v", deleteErr)
+		}
+	}()
+
+	// Add the user first
+	addRequest := MembersRequest{
+		Members: []Member{
+			{
+				Id:   tempUserID,
+				Type: MemberTypeUser,
+			},
+		},
+	}
+
+	jsonData, err := json.Marshal(addRequest)
+	suite.Require().NoError(err)
+
+	client := testutils.GetHTTPClient()
+
+	addReq, err := http.NewRequest("POST", testServerURL+"/groups/"+createdGroupID+"/members/add", bytes.NewBuffer(jsonData))
+	suite.Require().NoError(err)
+	addReq.Header.Set("Content-Type", "application/json")
+
+	addResp, err := client.Do(addReq)
+	suite.Require().NoError(err)
+	defer addResp.Body.Close()
+	suite.Equal(http.StatusOK, addResp.StatusCode)
+
+	// Now remove the user
+	removeRequest := MembersRequest{
+		Members: []Member{
+			{
+				Id:   tempUserID,
+				Type: MemberTypeUser,
+			},
+		},
+	}
+
+	jsonData, err = json.Marshal(removeRequest)
+	suite.Require().NoError(err)
+
+	removeReq, err := http.NewRequest("POST", testServerURL+"/groups/"+createdGroupID+"/members/remove", bytes.NewBuffer(jsonData))
+	suite.Require().NoError(err)
+	removeReq.Header.Set("Content-Type", "application/json")
+
+	removeResp, err := client.Do(removeReq)
+	suite.Require().NoError(err)
+	defer removeResp.Body.Close()
+
+	suite.Equal(http.StatusOK, removeResp.StatusCode)
+
+	// Verify the member was removed
+	getReq, err := http.NewRequest("GET", testServerURL+"/groups/"+createdGroupID+"/members", nil)
+	suite.Require().NoError(err)
+
+	getResp, err := client.Do(getReq)
+	suite.Require().NoError(err)
+	defer getResp.Body.Close()
+
+	suite.Equal(http.StatusOK, getResp.StatusCode)
+
+	body, err := io.ReadAll(getResp.Body)
+	suite.Require().NoError(err)
+
+	var memberListResponse MemberListResponse
+	err = json.Unmarshal(body, &memberListResponse)
+	suite.Require().NoError(err)
+
+	for _, member := range memberListResponse.Members {
+		suite.NotEqual(tempUserID, member.Id, "Removed member should not be in the members list")
+	}
+}
+
+func (suite *GroupAPITestSuite) TestRemoveGroupMembersWithEmptyList() {
+	if createdGroupID == "" {
+		suite.T().Fatal("Group ID is not available for empty remove test")
+	}
+
+	removeRequest := MembersRequest{
+		Members: []Member{},
+	}
+
+	jsonData, err := json.Marshal(removeRequest)
+	suite.Require().NoError(err)
+
+	client := testutils.GetHTTPClient()
+
+	req, err := http.NewRequest("POST", testServerURL+"/groups/"+createdGroupID+"/members/remove", bytes.NewBuffer(jsonData))
+	suite.Require().NoError(err)
+	req.Header.Set("Content-Type", "application/json")
+
+	resp, err := client.Do(req)
+	suite.Require().NoError(err)
+	defer resp.Body.Close()
+
+	suite.Equal(http.StatusBadRequest, resp.StatusCode)
+
+	body, err := io.ReadAll(resp.Body)
+	suite.Require().NoError(err)
+
+	var errorResp map[string]interface{}
+	err = json.Unmarshal(body, &errorResp)
+	suite.Require().NoError(err)
+
+	suite.Equal("GRP-1013", errorResp["code"])
+	suite.Equal("Empty members list", errorResp["message"])
+}
+
+func (suite *GroupAPITestSuite) TestRemoveGroupMembersFromNonExistentGroup() {
+	removeRequest := MembersRequest{
+		Members: []Member{
+			{
+				Id:   testUserID,
+				Type: MemberTypeUser,
+			},
+		},
+	}
+
+	jsonData, err := json.Marshal(removeRequest)
+	suite.Require().NoError(err)
+
+	client := testutils.GetHTTPClient()
+
+	req, err := http.NewRequest("POST", testServerURL+"/groups/non-existent-id/members/remove", bytes.NewBuffer(jsonData))
+	suite.Require().NoError(err)
+	req.Header.Set("Content-Type", "application/json")
+
+	resp, err := client.Do(req)
+	suite.Require().NoError(err)
+	defer resp.Body.Close()
+
+	suite.Equal(http.StatusNotFound, resp.StatusCode)
+}
+
+func (suite *GroupAPITestSuite) TestAddAndRemoveMultipleMembers() {
+	if createdGroupID == "" {
+		suite.T().Fatal("Group ID is not available for multiple members test")
+	}
+
+	// Create two temporary users
+	tempUser1 := testutils.User{
+		OrganizationUnit: testOUID,
+		Type:             "group-test-person",
+		Attributes: json.RawMessage(`{
+			"email": "multi1@example.com",
+			"firstName": "Multi",
+			"lastName": "User1",
+			"password": "TestPassword123!"
+		}`),
+	}
+	tempUser1ID, err := testutils.CreateUser(tempUser1)
+	suite.Require().NoError(err)
+	defer func() {
+		if deleteErr := testutils.DeleteUser(tempUser1ID); deleteErr != nil {
+			suite.T().Logf("Failed to clean up temp user 1: %v", deleteErr)
+		}
+	}()
+
+	tempUser2 := testutils.User{
+		OrganizationUnit: testOUID,
+		Type:             "group-test-person",
+		Attributes: json.RawMessage(`{
+			"email": "multi2@example.com",
+			"firstName": "Multi",
+			"lastName": "User2",
+			"password": "TestPassword123!"
+		}`),
+	}
+	tempUser2ID, err := testutils.CreateUser(tempUser2)
+	suite.Require().NoError(err)
+	defer func() {
+		if deleteErr := testutils.DeleteUser(tempUser2ID); deleteErr != nil {
+			suite.T().Logf("Failed to clean up temp user 2: %v", deleteErr)
+		}
+	}()
+
+	// Add both users at once
+	addRequest := MembersRequest{
+		Members: []Member{
+			{
+				Id:   tempUser1ID,
+				Type: MemberTypeUser,
+			},
+			{
+				Id:   tempUser2ID,
+				Type: MemberTypeUser,
+			},
+		},
+	}
+
+	jsonData, err := json.Marshal(addRequest)
+	suite.Require().NoError(err)
+
+	client := testutils.GetHTTPClient()
+
+	addReq, err := http.NewRequest("POST", testServerURL+"/groups/"+createdGroupID+"/members/add", bytes.NewBuffer(jsonData))
+	suite.Require().NoError(err)
+	addReq.Header.Set("Content-Type", "application/json")
+
+	addResp, err := client.Do(addReq)
+	suite.Require().NoError(err)
+	defer addResp.Body.Close()
+
+	suite.Equal(http.StatusOK, addResp.StatusCode)
+
+	// Verify both members were added
+	getReq, err := http.NewRequest("GET", testServerURL+"/groups/"+createdGroupID+"/members", nil)
+	suite.Require().NoError(err)
+
+	getResp, err := client.Do(getReq)
+	suite.Require().NoError(err)
+	defer getResp.Body.Close()
+
+	body, err := io.ReadAll(getResp.Body)
+	suite.Require().NoError(err)
+
+	var memberListResponse MemberListResponse
+	err = json.Unmarshal(body, &memberListResponse)
+	suite.Require().NoError(err)
+
+	foundUser1 := false
+	foundUser2 := false
+	for _, member := range memberListResponse.Members {
+		if member.Id == tempUser1ID {
+			foundUser1 = true
+		}
+		if member.Id == tempUser2ID {
+			foundUser2 = true
+		}
+	}
+	suite.True(foundUser1, "First added member should be in the list")
+	suite.True(foundUser2, "Second added member should be in the list")
+
+	// Remove both users at once
+	removeRequest := MembersRequest{
+		Members: []Member{
+			{
+				Id:   tempUser1ID,
+				Type: MemberTypeUser,
+			},
+			{
+				Id:   tempUser2ID,
+				Type: MemberTypeUser,
+			},
+		},
+	}
+
+	jsonData, err = json.Marshal(removeRequest)
+	suite.Require().NoError(err)
+
+	removeReq, err := http.NewRequest("POST", testServerURL+"/groups/"+createdGroupID+"/members/remove", bytes.NewBuffer(jsonData))
+	suite.Require().NoError(err)
+	removeReq.Header.Set("Content-Type", "application/json")
+
+	removeResp, err := client.Do(removeReq)
+	suite.Require().NoError(err)
+	defer removeResp.Body.Close()
+
+	suite.Equal(http.StatusOK, removeResp.StatusCode)
+
+	// Verify both were removed
+	getReq2, err := http.NewRequest("GET", testServerURL+"/groups/"+createdGroupID+"/members", nil)
+	suite.Require().NoError(err)
+
+	getResp2, err := client.Do(getReq2)
+	suite.Require().NoError(err)
+	defer getResp2.Body.Close()
+
+	body2, err := io.ReadAll(getResp2.Body)
+	suite.Require().NoError(err)
+
+	var memberListResponse2 MemberListResponse
+	err = json.Unmarshal(body2, &memberListResponse2)
+	suite.Require().NoError(err)
+
+	for _, member := range memberListResponse2.Members {
+		suite.NotEqual(tempUser1ID, member.Id, "First removed member should not be in the list")
+		suite.NotEqual(tempUser2ID, member.Id, "Second removed member should not be in the list")
+	}
+}
+
+func (suite *GroupAPITestSuite) TestAddGroupMembersWithMixedTypes() {
+	if createdGroupID == "" {
+		suite.T().Fatal("Group ID is not available for mixed types test")
+	}
+
+	// Create a temporary user
+	tempUser := testutils.User{
+		OrganizationUnit: testOUID,
+		Type:             "group-test-person",
+		Attributes: json.RawMessage(`{
+			"email": "mixedtype@example.com",
+			"firstName": "Mixed",
+			"lastName": "Type",
+			"password": "TestPassword123!"
+		}`),
+	}
+	tempUserID, err := testutils.CreateUser(tempUser)
+	suite.Require().NoError(err)
+	defer func() {
+		if deleteErr := testutils.DeleteUser(tempUserID); deleteErr != nil {
+			suite.T().Logf("Failed to clean up temp user: %v", deleteErr)
+		}
+	}()
+
+	// Create a temporary group
+	tempGroupReq := CreateGroupRequest{
+		Name:               "Temp Group for Mixed Type Test",
+		OrganizationUnitId: testOUID,
+		Members:            []Member{},
+	}
+	tempGroupID, err := createGroup(tempGroupReq)
+	suite.Require().NoError(err)
+	defer func() {
+		if deleteErr := deleteGroup(tempGroupID); deleteErr != nil {
+			suite.T().Logf("Failed to clean up temp group: %v", deleteErr)
+		}
+	}()
+
+	// Add both user and group members at once
+	addRequest := MembersRequest{
+		Members: []Member{
+			{
+				Id:   tempUserID,
+				Type: MemberTypeUser,
+			},
+			{
+				Id:   tempGroupID,
+				Type: MemberTypeGroup,
+			},
+		},
+	}
+
+	jsonData, err := json.Marshal(addRequest)
+	suite.Require().NoError(err)
+
+	client := testutils.GetHTTPClient()
+
+	req, err := http.NewRequest("POST", testServerURL+"/groups/"+createdGroupID+"/members/add", bytes.NewBuffer(jsonData))
+	suite.Require().NoError(err)
+	req.Header.Set("Content-Type", "application/json")
+
+	resp, err := client.Do(req)
+	suite.Require().NoError(err)
+	defer resp.Body.Close()
+
+	suite.Equal(http.StatusOK, resp.StatusCode)
+
+	// Verify both members exist
+	getReq, err := http.NewRequest("GET", testServerURL+"/groups/"+createdGroupID+"/members", nil)
+	suite.Require().NoError(err)
+
+	getResp, err := client.Do(getReq)
+	suite.Require().NoError(err)
+	defer getResp.Body.Close()
+
+	body, err := io.ReadAll(getResp.Body)
+	suite.Require().NoError(err)
+
+	var memberListResponse MemberListResponse
+	err = json.Unmarshal(body, &memberListResponse)
+	suite.Require().NoError(err)
+
+	foundUser := false
+	foundGroup := false
+	for _, member := range memberListResponse.Members {
+		if member.Id == tempUserID && member.Type == MemberTypeUser {
+			foundUser = true
+		}
+		if member.Id == tempGroupID && member.Type == MemberTypeGroup {
+			foundGroup = true
+		}
+	}
+	suite.True(foundUser, "User member should be in the list")
+	suite.True(foundGroup, "Group member should be in the list")
+
+	// Clean up: remove both
+	removeRequest := MembersRequest{
+		Members: []Member{
+			{
+				Id:   tempUserID,
+				Type: MemberTypeUser,
+			},
+			{
+				Id:   tempGroupID,
+				Type: MemberTypeGroup,
+			},
+		},
+	}
+
+	jsonData, err = json.Marshal(removeRequest)
+	suite.Require().NoError(err)
+
+	removeReq, err := http.NewRequest("POST", testServerURL+"/groups/"+createdGroupID+"/members/remove", bytes.NewBuffer(jsonData))
+	suite.Require().NoError(err)
+	removeReq.Header.Set("Content-Type", "application/json")
+
+	removeResp, err := client.Do(removeReq)
+	suite.Require().NoError(err)
+	defer removeResp.Body.Close()
+
+	suite.Equal(http.StatusOK, removeResp.StatusCode)
 }
 
 func (suite *GroupAPITestSuite) TestGetGroupMembers() {

@@ -60,7 +60,7 @@ func writeSecurityError(w http.ResponseWriter, err error) {
 		statusCode = http.StatusUnauthorized
 		// Set WWW-Authenticate header for 401 responses
 		w.Header().Set("WWW-Authenticate", "Bearer")
-	} else if errors.Is(err, errForbidden) || errors.Is(err, errInsufficientScopes) {
+	} else if errors.Is(err, errForbidden) || errors.Is(err, errInsufficientPermissions) {
 		code = "forbidden"
 		description = "You do not have sufficient permissions to access this resource"
 		statusCode = http.StatusForbidden

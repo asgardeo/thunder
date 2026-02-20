@@ -112,9 +112,11 @@ describe('useUpdateFlow', () => {
   });
 
   it('should set pending state during update', async () => {
+    let resolveRequest!: (value: {data: FlowDefinitionResponse}) => void;
+
     mockHttpRequest.mockReturnValue(
       new Promise((resolve) => {
-        setTimeout(() => resolve({data: mockFlowResponse}), 100);
+        resolveRequest = resolve;
       }),
     );
 
@@ -124,6 +126,10 @@ describe('useUpdateFlow', () => {
 
     await waitFor(() => {
       expect(result.current.isPending).toBe(true);
+    });
+
+    await act(async () => {
+      resolveRequest({data: mockFlowResponse});
     });
 
     await waitFor(() => {

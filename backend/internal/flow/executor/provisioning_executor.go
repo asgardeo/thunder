@@ -470,34 +470,16 @@ func (p *provisioningExecutor) assignToGroup(
 		log.String("userID", userID),
 		log.String("groupID", groupID))
 
-	// Get existing group to retrieve current members
-	existingGroup, svcErr := p.groupService.GetGroup(ctx, groupID)
+	members := []group.Member{
+		{
+			ID:   userID,
+			Type: group.MemberTypeUser,
+		},
+	}
+
+	_, svcErr := p.groupService.AddGroupMembers(ctx, groupID, members)
 	if svcErr != nil {
-		logger.Error("Failed to retrieve group for assignment",
-			log.String("groupID", groupID),
-			log.String("error", svcErr.Error))
-		return fmt.Errorf("group not found: %s", groupID)
-	}
-
-	// Build updated member list (append new user)
-	updatedMembers := make([]group.Member, len(existingGroup.Members)+1)
-	copy(updatedMembers, existingGroup.Members)
-	updatedMembers[len(existingGroup.Members)] = group.Member{
-		ID:   userID,
-		Type: group.MemberTypeUser,
-	}
-
-	// Update group with new member list
-	updateRequest := group.UpdateGroupRequest{
-		Name:               existingGroup.Name,
-		Description:        existingGroup.Description,
-		OrganizationUnitID: existingGroup.OrganizationUnitID,
-		Members:            updatedMembers,
-	}
-
-	_, svcErr = p.groupService.UpdateGroup(ctx, groupID, updateRequest)
-	if svcErr != nil {
-		logger.Error("Failed to update group with new member",
+		logger.Error("Failed to add user to group",
 			log.String("groupID", groupID),
 			log.String("userID", userID),
 			log.String("error", svcErr.Error))

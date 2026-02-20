@@ -45,7 +45,7 @@ type securityService struct {
 	skipSecurity   bool
 }
 
-// NewSecurityService creates a new instance of the security service.
+// newSecurityService creates a new instance of the security service.
 //
 // Parameters:
 //   - authenticators: A slice of AuthenticatorInterface implementations to handle request authentication.
@@ -54,7 +54,7 @@ type securityService struct {
 // Returns:
 //   - *securityService: A pointer to the created securityService instance.
 //   - error: An error if any of the provided public paths are invalid and cannot be compiled.
-func NewSecurityService(authenticators []AuthenticatorInterface, publicPaths []string) (*securityService, error) {
+func newSecurityService(authenticators []AuthenticatorInterface, publicPaths []string) (*securityService, error) {
 	compiledPaths, err := compilePathPatterns(publicPaths)
 	if err != nil {
 		return nil, err
@@ -120,12 +120,63 @@ func (s *securityService) Process(r *http.Request) (context.Context, error) {
 		ctx = withSecurityContext(ctx, securityCtx)
 	}
 
-	// Authorize the authenticated principal
-	if err := authenticator.Authorize(r.WithContext(ctx), securityCtx); err != nil {
+	// Authorize the authenticated principal based on the permissions carried in the security context.
+	if err := s.authorize(r.WithContext(ctx)); err != nil {
 		return s.handleAuthError(ctx, r.URL.Path, err, isPublic, s.skipSecurity)
 	}
 
 	return ctx, nil
+}
+
+// authorize checks whether the permissions stored in the request context satisfy
+// the requirements for the requested path.
+func (s *securityService) authorize(r *http.Request) error {
+	permissions := GetPermissions(r.Context())
+	required := s.getRequiredPermissions(r)
+
+	if len(required) > 0 && !hasAnyPermission(permissions, required) {
+		return errInsufficientPermissions
+	}
+
+	return nil
+}
+
+// getRequiredPermissions returns the permissions that a caller must hold to access
+// the requested path. An empty slice means the path is open to any authenticated user.
+func (s *securityService) getRequiredPermissions(r *http.Request) []string {
+	// User self-service endpoints are accessible to any authenticated user.
+	if r.URL.Path == "/users/me" || strings.HasPrefix(r.URL.Path, "/users/me/") {
+		return []string{}
+	}
+
+	// Passkey registration endpoints are accessible to any authenticated user.
+	if strings.HasPrefix(r.URL.Path, "/register/passkey/") {
+		return []string{}
+	}
+
+	// All other endpoints require the "system" permission by default.
+	return []string{"system"}
+}
+
+// hasAnyPermission reports whether userPermissions contains at least one entry
+// from requiredPermissions. An empty required list is always satisfied.
+func hasAnyPermission(userPermissions, requiredPermissions []string) bool {
+	if len(requiredPermissions) == 0 {
+		return true
+	}
+
+	permissionSet := make(map[string]bool, len(userPermissions))
+	for _, p := range userPermissions {
+		permissionSet[p] = true
+	}
+
+	for _, required := range requiredPermissions {
+		if permissionSet[required] {
+			return true
+		}
+	}
+
+	return false
 }
 
 // isPublicPath checks if the given request path matches any of the configured public path patterns.

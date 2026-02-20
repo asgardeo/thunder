@@ -29,28 +29,28 @@ const (
 	securityContextKey contextKey = "security_context"
 )
 
-// SecurityContext holds immutable authenticated user information.
+// SecurityContext holds immutable authenticated subject information.
 type SecurityContext struct {
-	userID     string
-	ouID       string
-	appID      string
-	token      string
-	attributes map[string]interface{}
+	subject     string
+	ouID        string
+	token       string
+	permissions []string
+	attributes  map[string]interface{}
 }
 
 // newSecurityContext creates a new immutable SecurityContext.
-func newSecurityContext(userID, ouID, appID, token string,
-	attributes map[string]interface{}) *SecurityContext {
+func newSecurityContext(subject, ouID, token string,
+	permissions []string, attributes map[string]interface{}) *SecurityContext {
 	return &SecurityContext{
-		userID:     userID,
-		ouID:       ouID,
-		appID:      appID,
-		token:      token,
-		attributes: attributes,
+		subject:     subject,
+		ouID:        ouID,
+		token:       token,
+		permissions: permissions,
+		attributes:  attributes,
 	}
 }
 
-// WithSecurityContext adds security context to the request context.
+// withSecurityContext adds security context to the request context.
 func withSecurityContext(ctx context.Context, authCtx *SecurityContext) context.Context {
 	if ctx == nil {
 		ctx = context.Background()
@@ -58,12 +58,12 @@ func withSecurityContext(ctx context.Context, authCtx *SecurityContext) context.
 	return context.WithValue(ctx, securityContextKey, authCtx)
 }
 
-// GetUserID retrieves the authenticated user ID from the context.
+// GetSubject retrieves the authenticated subject from the context.
 // Returns empty string if no security context is present.
-func GetUserID(ctx context.Context) string {
+func GetSubject(ctx context.Context) string {
 	authCtx := getSecurityContext(ctx)
 	if authCtx != nil {
-		return authCtx.userID
+		return authCtx.subject
 	}
 	return ""
 }
@@ -78,14 +78,16 @@ func GetOUID(ctx context.Context) string {
 	return ""
 }
 
-// GetAppID retrieves the application ID from the context.
-// Returns empty string if no security context is present.
-func GetAppID(ctx context.Context) string {
+// GetPermissions retrieves the granted permissions for the authenticated caller from the context.
+// Returns a defensive copy to prevent callers from modifying the underlying permissions data.
+func GetPermissions(ctx context.Context) []string {
 	authCtx := getSecurityContext(ctx)
 	if authCtx != nil {
-		return authCtx.appID
+		result := make([]string, len(authCtx.permissions))
+		copy(result, authCtx.permissions)
+		return result
 	}
-	return ""
+	return []string{}
 }
 
 // GetAttribute retrieves a specific attribute from the security token.

@@ -120,9 +120,8 @@ func (suite *JWTAuthenticatorTestSuite) TestAuthenticate() {
 			expectedError: nil,
 			validateResult: func(t *testing.T, ctx *SecurityContext) {
 				baseCtx := withSecurityContext(context.Background(), ctx)
-				assert.Equal(t, "user123", GetUserID(baseCtx))
+				assert.Equal(t, "user123", GetSubject(baseCtx))
 				assert.Equal(t, "ou1", GetOUID(baseCtx))
-				assert.Equal(t, "app1", GetAppID(baseCtx))
 			},
 		},
 		{
@@ -214,121 +213,65 @@ func (suite *JWTAuthenticatorTestSuite) TestAuthenticate() {
 	}
 }
 
-func (suite *JWTAuthenticatorTestSuite) TestAuthorize() {
+func (suite *JWTAuthenticatorTestSuite) TestExtractPermissionsFromJWTClaims() {
 	tests := []struct {
-		name          string
-		attributes    map[string]interface{}
-		expectedError error
-	}{
-		{
-			name: "Has system scope in scope attribute",
-			attributes: map[string]interface{}{
-				"scope": "system users:read",
-			},
-			expectedError: nil,
-		},
-		{
-			name: "Has authorized_permissions attribute",
-			attributes: map[string]interface{}{
-				"authorized_permissions": "other system",
-			},
-			expectedError: nil,
-		},
-		{
-			name: "Missing required scopes",
-			attributes: map[string]interface{}{
-				"scope": "users:read",
-			},
-			expectedError: errInsufficientScopes,
-		},
-		{
-			name:          "Nil authentication context",
-			attributes:    nil,
-			expectedError: errUnauthorized,
-		},
-	}
-
-	for _, tt := range tests {
-		suite.Run(tt.name, func() {
-			req := httptest.NewRequest(http.MethodGet, "/users", nil)
-
-			var authCtx *SecurityContext
-			if tt.attributes != nil {
-				authCtx = newSecurityContext("user123", "ou1", "app1", "token", tt.attributes)
-				ctx := withSecurityContext(req.Context(), authCtx)
-				req = req.WithContext(ctx)
-			}
-
-			err := suite.authenticator.Authorize(req, authCtx)
-
-			if tt.expectedError != nil {
-				assert.ErrorIs(suite.T(), err, tt.expectedError)
-			} else {
-				assert.NoError(suite.T(), err)
-			}
-		})
-	}
-}
-
-func (suite *JWTAuthenticatorTestSuite) TestExtractScopes() {
-	tests := []struct {
-		name           string
-		attributes     map[string]interface{}
-		expectedScopes []string
+		name                string
+		attributes          map[string]interface{}
+		expectedPermissions []string
 	}{
 		{
 			name: "OAuth2 standard scope attribute (space-separated)",
 			attributes: map[string]interface{}{
 				"scope": "users:read users:write applications:manage",
 			},
-			expectedScopes: []string{"users:read", "users:write", "applications:manage"},
+			expectedPermissions: []string{"users:read", "users:write", "applications:manage"},
 		},
 		{
 			name: "Scopes as array of strings",
 			attributes: map[string]interface{}{
 				"scopes": []string{"users:read", "users:write"},
 			},
-			expectedScopes: []string{"users:read", "users:write"},
+			expectedPermissions: []string{"users:read", "users:write"},
 		},
 		{
 			name: "Scopes as array of interfaces",
 			attributes: map[string]interface{}{
 				"scopes": []interface{}{"users:read", "users:write"},
 			},
-			expectedScopes: []string{"users:read", "users:write"},
+			expectedPermissions: []string{"users:read", "users:write"},
 		},
 		{
 			name: "Empty scope attribute",
 			attributes: map[string]interface{}{
 				"scope": "",
 			},
-			expectedScopes: []string{},
+			expectedPermissions: []string{},
 		},
 		{
-			name:           "No scope attribute",
-			attributes:     map[string]interface{}{},
-			expectedScopes: []string{},
+			name:                "No scope attribute",
+			attributes:          map[string]interface{}{},
+			expectedPermissions: []string{},
 		},
 		{
 			name: "Single scope",
 			attributes: map[string]interface{}{
 				"scope": "users:read",
 			},
-			expectedScopes: []string{"users:read"},
+			expectedPermissions: []string{"users:read"},
 		},
 		{
 			name: "Thunder assertion authorized_permissions attribute",
 			attributes: map[string]interface{}{
 				"authorized_permissions": "perm1 perm2 perm3",
 			},
-			expectedScopes: []string{"perm1", "perm2", "perm3"},
+			expectedPermissions: []string{"perm1", "perm2", "perm3"},
 		},
 	}
 
 	for _, tt := range tests {
 		suite.Run(tt.name, func() {
-			scopes := extractScopes(tt.attributes)
-			assert.ElementsMatch(suite.T(), tt.expectedScopes, scopes)
+			permissions := extractScopes(tt.attributes)
+			assert.ElementsMatch(suite.T(), tt.expectedPermissions, permissions)
 		})
 	}
 }
@@ -374,147 +317,32 @@ func (suite *JWTAuthenticatorTestSuite) TestExtractAttribute() {
 	}
 }
 
-func (suite *JWTAuthenticatorTestSuite) TestHasAnyScope() {
+func (suite *JWTAuthenticatorTestSuite) TestExtractPermissionsFromJWTClaims_EdgeCases() {
 	tests := []struct {
-		name           string
-		userScopes     []string
-		requiredScopes []string
-		expectedResult bool
-	}{
-		{
-			name:           "User has one of the required scopes",
-			userScopes:     []string{"users:read", "groups:manage"},
-			requiredScopes: []string{"users:read", "users:write"},
-			expectedResult: true,
-		},
-		{
-			name:           "User has all required scopes",
-			userScopes:     []string{"users:read", "users:write"},
-			requiredScopes: []string{"users:read", "users:write"},
-			expectedResult: true,
-		},
-		{
-			name:           "User has none of the required scopes",
-			userScopes:     []string{"groups:manage"},
-			requiredScopes: []string{"users:read", "users:write"},
-			expectedResult: false,
-		},
-		{
-			name:           "No required scopes",
-			userScopes:     []string{"users:read"},
-			requiredScopes: []string{},
-			expectedResult: true,
-		},
-		{
-			name:           "Empty user scopes",
-			userScopes:     []string{},
-			requiredScopes: []string{"users:read"},
-			expectedResult: false,
-		},
-		{
-			name:           "Both empty",
-			userScopes:     []string{},
-			requiredScopes: []string{},
-			expectedResult: true,
-		},
-	}
-
-	for _, tt := range tests {
-		suite.Run(tt.name, func() {
-			result := hasAnyScope(tt.userScopes, tt.requiredScopes)
-			assert.Equal(suite.T(), tt.expectedResult, result)
-		})
-	}
-}
-
-func (suite *JWTAuthenticatorTestSuite) TestGetRequiredScopes() {
-	tests := []struct {
-		name     string
-		path     string
-		expected []string
-	}{
-		{
-			name:     "Users endpoint",
-			path:     "/users",
-			expected: []string{"system"},
-		},
-		{
-			name:     "Applications endpoint",
-			path:     "/applications",
-			expected: []string{"system"},
-		},
-		{
-			name:     "Groups endpoint",
-			path:     "/groups",
-			expected: []string{"system"},
-		},
-		{
-			name:     "Root path",
-			path:     "/",
-			expected: []string{"system"},
-		},
-		{
-			name:     "Any other path",
-			path:     "/some/other/path",
-			expected: []string{"system"},
-		},
-		{
-			name:     "User self-service endpoint - /users/me",
-			path:     "/users/me",
-			expected: []string{},
-		},
-		{
-			name:     "User self-service endpoint - /users/me/update-credentials",
-			path:     "/users/me/update-credentials",
-			expected: []string{},
-		},
-		{
-			name:     "Passkey registration start endpoint",
-			path:     "/register/passkey/start",
-			expected: []string{},
-		},
-		{
-			name:     "Passkey registration finish endpoint",
-			path:     "/register/passkey/finish",
-			expected: []string{},
-		},
-	}
-
-	for _, tt := range tests {
-		suite.Run(tt.name, func() {
-			req := httptest.NewRequest(http.MethodGet, tt.path, nil)
-			result := suite.authenticator.getRequiredScopes(req)
-			assert.Equal(suite.T(), tt.expected, result)
-		})
-	}
-}
-
-func (suite *JWTAuthenticatorTestSuite) TestExtractScopes_EdgeCases() {
-	tests := []struct {
-		name           string
-		attributes     map[string]interface{}
-		expectedScopes []string
+		name                string
+		attributes          map[string]interface{}
+		expectedPermissions []string
 	}{
 		{
 			name: "Scopes array with mixed types (should filter non-strings)",
 			attributes: map[string]interface{}{
 				"scopes": []interface{}{"valid", 123, true, "another_valid"},
 			},
-			expectedScopes: []string{"valid", "another_valid"},
+			expectedPermissions: []string{"valid", "another_valid"},
 		},
 		{
 			name: "Scopes as non-array, non-string type",
 			attributes: map[string]interface{}{
 				"scopes": map[string]string{"invalid": "format"},
 			},
-			expectedScopes: []string{},
+			expectedPermissions: []string{},
 		},
 		{
 			name: "Scope attribute with extra whitespace",
 			attributes: map[string]interface{}{
 				"scope": "  users:read   users:write  ",
 			},
-			expectedScopes: []string{"users:read", "users:write"},
+			expectedPermissions: []string{"users:read", "users:write"},
 		},
 		{
 			name: "Both scope and scopes present (scope takes precedence)",
@@ -522,21 +350,21 @@ func (suite *JWTAuthenticatorTestSuite) TestExtractScopes_EdgeCases() {
 				"scope":  "from_scope",
 				"scopes": []string{"from_scopes"},
 			},
-			expectedScopes: []string{"from_scope"},
+			expectedPermissions: []string{"from_scope"},
 		},
 		{
 			name: "Scope as non-string type",
 			attributes: map[string]interface{}{
 				"scope": 12345,
 			},
-			expectedScopes: []string{},
+			expectedPermissions: []string{},
 		},
 	}
 
 	for _, tt := range tests {
 		suite.Run(tt.name, func() {
-			scopes := extractScopes(tt.attributes)
-			assert.ElementsMatch(suite.T(), tt.expectedScopes, scopes)
+			permissions := extractScopes(tt.attributes)
+			assert.ElementsMatch(suite.T(), tt.expectedPermissions, permissions)
 		})
 	}
 }

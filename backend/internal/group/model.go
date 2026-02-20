@@ -68,6 +68,11 @@ type GroupDAO struct {
 	Members            []Member
 }
 
+// MembersRequest represents the request body for adding or removing members from a group.
+type MembersRequest struct {
+	Members []Member `json:"members"`
+}
+
 // CreateGroupRequest represents the request body for creating a group.
 type CreateGroupRequest struct {
 	Name               string   `json:"name"`
@@ -78,10 +83,9 @@ type CreateGroupRequest struct {
 
 // UpdateGroupRequest represents the request body for updating a group.
 type UpdateGroupRequest struct {
-	Name               string   `json:"name"`
-	Description        string   `json:"description,omitempty"`
-	OrganizationUnitID string   `json:"organizationUnitId"`
-	Members            []Member `json:"members,omitempty"`
+	Name               string `json:"name"`
+	Description        string `json:"description,omitempty"`
+	OrganizationUnitID string `json:"organizationUnitId"`
 }
 
 // Link represents a pagination link.

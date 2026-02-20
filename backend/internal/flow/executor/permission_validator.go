@@ -19,7 +19,6 @@
 package executor
 
 import (
-	"context"
 	"slices"
 	"strings"
 
@@ -76,15 +75,15 @@ func (e *permissionValidator) Execute(ctx *core.NodeContext) (*common.ExecutorRe
 		return execResp, nil
 	}
 
-	// Extract scopes from HTTP request context
-	userScopes := extractScopesFromHTTPContext(ctx.HTTPContext)
-	logger.Debug("Extracted scopes from HTTP context",
-		log.Int("scopeCount", len(userScopes)),
-		log.String("scopes", strings.Join(userScopes, ", ")))
+	// Extract permissions from HTTP request context
+	userPermissions := security.GetPermissions(ctx.HTTPContext)
+	logger.Debug("Extracted permissions from HTTP context",
+		log.Int("permissionCount", len(userPermissions)),
+		log.String("permissions", strings.Join(userPermissions, ", ")))
 
-	// Check if any of the required scopes are present
+	// Check if any of the required permissions are present
 	if !slices.ContainsFunc(requiredScopes, func(reqScope string) bool {
-		return slices.Contains(userScopes, reqScope)
+		return slices.Contains(userPermissions, reqScope)
 	}) {
 		logger.Debug("Request lacks required scope",
 			log.Any("requiredScopes", requiredScopes))
@@ -120,38 +119,4 @@ func (e *permissionValidator) getRequiredScopes(ctx *core.NodeContext) []string 
 	}
 
 	return requiredScopes
-}
-
-// extractScopesFromHTTPContext extracts scopes/permissions from the HTTP request context.
-// It checks for scope, scopes and authorized_permissions claims.
-func extractScopesFromHTTPContext(httpCtx context.Context) []string {
-	if scopeAttr := security.GetAttribute(httpCtx, "scope"); scopeAttr != nil {
-		if scopeStr, ok := scopeAttr.(string); ok && scopeStr != "" {
-			return strings.Fields(scopeStr)
-		}
-	}
-
-	if scopesAttr := security.GetAttribute(httpCtx, "scopes"); scopesAttr != nil {
-		if scopes, ok := scopesAttr.([]string); ok {
-			return scopes
-		}
-
-		if scopesInterface, ok := scopesAttr.([]interface{}); ok {
-			result := make([]string, 0, len(scopesInterface))
-			for _, s := range scopesInterface {
-				if str, ok := s.(string); ok {
-					result = append(result, str)
-				}
-			}
-			return result
-		}
-	}
-
-	if permsAttr := security.GetAttribute(httpCtx, "authorized_permissions"); permsAttr != nil {
-		if permsStr, ok := permsAttr.(string); ok && permsStr != "" {
-			return strings.Fields(permsStr)
-		}
-	}
-
-	return []string{}
 }
