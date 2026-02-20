@@ -61,4 +61,13 @@ var (
 		Error:            "Server error",
 		ErrorDescription: "An unexpected error occurred while processing the request",
 	}
+
+	// ErrorUnauthorized is the error returned when the request lacks valid authentication
+	// or the authenticated caller does not hold required permissions.
+	ErrorUnauthorized = serviceerror.ServiceError{
+		Type:             serviceerror.ClientErrorType,
+		Code:             "unauthorized_client",
+		Error:            "Unauthorized",
+		ErrorDescription: "Authentication with sufficient permissions is required to register a client",
+	}
 )

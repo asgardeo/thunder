@@ -18,7 +18,7 @@
 
 import {NavLink} from 'react-router';
 import {List, ListItem, ListItemButton, ListItemIcon, ListItemText, Stack, Tooltip} from '@wso2/oxygen-ui';
-import {Blocks, Building, LayoutGrid, User, UsersRound, Workflow} from '@wso2/oxygen-ui-icons-react';
+import {Blocks, Building, LayoutGrid, User, Users, UsersRound, Workflow} from '@wso2/oxygen-ui-icons-react';
 import {useContext, useMemo, type JSX} from 'react';
 import {useTranslation} from 'react-i18next';
 import useNavigation from '@/layouts/contexts/useNavigation';
@@ -32,25 +32,11 @@ export default function MenuContent(): JSX.Element {
   const mainListItems = useMemo(
     () => [
       {
-        id: 'users',
-        text: t('navigation:pages.users'),
-        icon: <UsersRound size={16} />,
+        id: 'applications',
+        text: t('navigation:pages.applications'),
+        icon: <LayoutGrid size={16} />,
         category: 'Dashboard',
-        path: '/users',
-      },
-      {
-        id: 'user-types',
-        text: t('navigation:pages.userTypes'),
-        icon: <User size={16} />,
-        category: 'Dashboard',
-        path: '/user-types',
-      },
-      {
-        id: 'organization-units',
-        text: t('navigation:pages.organizationUnits'),
-        icon: <Building size={16} />,
-        category: 'Dashboard',
-        path: '/organization-units',
+        path: '/applications',
       },
       {
         id: 'integrations',
@@ -60,18 +46,39 @@ export default function MenuContent(): JSX.Element {
         path: '/integrations',
       },
       {
-        id: 'applications',
-        text: t('navigation:pages.applications'),
-        icon: <LayoutGrid size={16} />,
-        category: 'Dashboard',
-        path: '/applications',
-      },
-      {
         id: 'flows',
         text: t('navigation:pages.flows'),
         icon: <Workflow size={16} />,
         category: 'Dashboard',
         path: '/flows',
+      },
+      {
+        id: 'users',
+        text: t('navigation:pages.users'),
+        icon: <UsersRound size={16} />,
+        category: 'Dashboard',
+        path: '/users',
+      },
+      {
+        id: 'groups',
+        text: t('navigation:pages.groups'),
+        icon: <Users size={16} />,
+        category: 'Dashboard',
+        path: '/groups',
+      },
+      {
+        id: 'organization-units',
+        text: t('navigation:pages.organizationUnits'),
+        icon: <Building size={16} />,
+        category: 'Dashboard',
+        path: '/organization-units',
+      },
+      {
+        id: 'user-types',
+        text: t('navigation:pages.userTypes'),
+        icon: <User size={16} />,
+        category: 'Dashboard',
+        path: '/user-types',
       },
     ],
     [t],

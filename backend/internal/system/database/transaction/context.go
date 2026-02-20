@@ -24,25 +24,28 @@ import (
 	"database/sql"
 )
 
-type contextKey struct{}
+type contextKey string
 
-var txContextKey = contextKey{}
+// There is no default context key to enforce explicit database naming in transactions.
 
-// WithTx stores a transaction in the context.
-func WithTx(ctx context.Context, tx *sql.Tx) context.Context {
-	return context.WithValue(ctx, txContextKey, tx)
+func getTxContextKey(dbName string) contextKey {
+	return contextKey("tx_" + dbName)
 }
 
-// TxFromContext retrieves a transaction from the context.
-// Returns nil if no transaction is present.
-func TxFromContext(ctx context.Context) *sql.Tx {
-	if tx, ok := ctx.Value(txContextKey).(*sql.Tx); ok {
+// WithKeyedTx stores a transaction in the context with a database name.
+func WithKeyedTx(ctx context.Context, dbName string, tx *sql.Tx) context.Context {
+	return context.WithValue(ctx, getTxContextKey(dbName), tx)
+}
+
+// KeyedTxFromContext retrieves a transaction from the context with a database name.
+func KeyedTxFromContext(ctx context.Context, dbName string) *sql.Tx {
+	if tx, ok := ctx.Value(getTxContextKey(dbName)).(*sql.Tx); ok {
 		return tx
 	}
 	return nil
 }
 
-// HasTx checks if the context contains a transaction.
-func HasTx(ctx context.Context) bool {
-	return TxFromContext(ctx) != nil
+// HasKeyedTx checks if the context contains a transaction for a database name.
+func HasKeyedTx(ctx context.Context, dbName string) bool {
+	return KeyedTxFromContext(ctx, dbName) != nil
 }

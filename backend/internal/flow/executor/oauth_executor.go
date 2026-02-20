@@ -19,6 +19,7 @@
 package executor
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"slices"
@@ -515,7 +516,7 @@ func (o *oAuthExecutor) resolveUserTypeForAutoProvisioning(ctx *core.NodeContext
 	// Filter allowed user types to only those with self-registration enabled
 	selfRegEnabledSchemas := make([]userschema.UserSchema, 0)
 	for _, userType := range ctx.Application.AllowedUserTypes {
-		userSchema, svcErr := o.userSchemaService.GetUserSchemaByName(userType)
+		userSchema, svcErr := o.userSchemaService.GetUserSchemaByName(context.TODO(), userType)
 		if svcErr != nil {
 			if svcErr.Type == serviceerror.ClientErrorType {
 				execResp.Status = common.ExecFailure

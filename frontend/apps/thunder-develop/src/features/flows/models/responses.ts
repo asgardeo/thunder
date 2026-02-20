@@ -248,6 +248,10 @@ export interface FlowNode {
    */
   onFailure?: string;
   /**
+   * Next node ID on incomplete execution
+   */
+  onIncomplete?: string;
+  /**
    * Node-level condition for execution
    */
   condition?: {

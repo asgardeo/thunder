@@ -20,6 +20,7 @@ import {describe, it, expect} from 'vitest';
 import {transformFlowToCanvas} from '../flowToCanvasTransformer';
 import type {FlowDefinitionResponse, FlowNode} from '../../models/responses';
 import {StaticStepTypes, StepTypes} from '../../models/steps';
+import VisualFlowConstants from '../../constants/VisualFlowConstants';
 
 describe('flowToCanvasTransformer', () => {
   const createBaseFlowData = (nodes: FlowNode[]): FlowDefinitionResponse => ({
@@ -92,9 +93,7 @@ describe('flowToCanvasTransformer', () => {
             type: 'PROMPT',
             layout: {position: {x: 200, y: 0}, size: {width: 300, height: 200}},
             meta: {
-              components: [
-                {id: 'text-1', type: 'TEXT', content: 'Welcome'},
-              ],
+              components: [{id: 'text-1', type: 'TEXT', content: 'Welcome'}],
             },
           },
         ]);
@@ -136,6 +135,25 @@ describe('flowToCanvasTransformer', () => {
           executor: {name: 'UserOnboardingExecutor'},
           onSuccess: 'next-node',
         });
+        expect(result.nodes[0].data.action).not.toHaveProperty('onIncomplete');
+      });
+
+      it('should include onIncomplete in TASK_EXECUTION node when present', () => {
+        const flowData = createBaseFlowData([
+          {
+            id: 'task-node',
+            type: 'TASK_EXECUTION',
+            executor: {name: 'UserOnboardingExecutor'},
+            onSuccess: 'next-node',
+            onIncomplete: 'incomplete-node',
+            layout: {position: {x: 300, y: 0}, size: {width: 200, height: 100}},
+          },
+        ]);
+
+        const result = transformFlowToCanvas(flowData);
+
+        expect(result.nodes[0].data.action).toHaveProperty('onIncomplete');
+        expect(result.nodes[0].data.action?.onIncomplete).toBe('incomplete-node');
       });
 
       it('should transform DECISION node correctly', () => {
@@ -309,6 +327,37 @@ describe('flowToCanvasTransformer', () => {
         expect(result.edges.some((e) => e.target === 'failure-node')).toBe(true);
       });
 
+      it('should generate incomplete edge from TASK_EXECUTION node', () => {
+        const flowData = createBaseFlowData([
+          {
+            id: 'task-node',
+            type: 'TASK_EXECUTION',
+            onSuccess: 'success-node',
+            onIncomplete: 'incomplete-node',
+            layout: {position: {x: 0, y: 0}, size: {width: 200, height: 100}},
+          },
+          {
+            id: 'success-node',
+            type: 'END',
+            layout: {position: {x: 200, y: 0}, size: {width: 100, height: 50}},
+          },
+          {
+            id: 'incomplete-node',
+            type: 'PROMPT',
+            layout: {position: {x: 200, y: 200}, size: {width: 300, height: 200}},
+          },
+        ]);
+
+        const result = transformFlowToCanvas(flowData);
+
+        expect(result.edges).toHaveLength(2);
+        const incompleteEdge = result.edges.find((e) =>
+          e.sourceHandle?.endsWith(VisualFlowConstants.FLOW_BUILDER_INCOMPLETE_HANDLE_SUFFIX),
+        );
+        expect(incompleteEdge).toBeDefined();
+        expect(incompleteEdge?.target).toBe('incomplete-node');
+      });
+
       it('should not generate edge for non-existent target node', () => {
         const flowData = createBaseFlowData([
           {
@@ -332,13 +381,9 @@ describe('flowToCanvasTransformer', () => {
             id: 'prompt-node',
             type: 'PROMPT',
             meta: {
-              components: [
-                {id: 'submit-btn', type: 'ACTION', label: 'Submit'},
-              ],
+              components: [{id: 'submit-btn', type: 'ACTION', label: 'Submit'}],
             },
-            prompts: [
-              {action: {ref: 'submit-btn', nextNode: 'next-node', executor: {name: 'SomeExecutor'}}},
-            ],
+            prompts: [{action: {ref: 'submit-btn', nextNode: 'next-node', executor: {name: 'SomeExecutor'}}}],
             layout: {position: {x: 0, y: 0}, size: {width: 300, height: 200}},
           },
         ]);
@@ -393,9 +438,7 @@ describe('flowToCanvasTransformer', () => {
                 },
               ],
             },
-            prompts: [
-              {action: {ref: 'button-1', nextNode: 'next-node'}},
-            ],
+            prompts: [{action: {ref: 'button-1', nextNode: 'next-node'}}],
             layout: {position: {x: 0, y: 0}, size: {width: 300, height: 200}},
           },
         ]);

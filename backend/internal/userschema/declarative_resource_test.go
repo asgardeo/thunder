@@ -23,6 +23,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/suite"
 
 	declarativeresource "github.com/asgardeo/thunder/internal/system/declarative_resource"
@@ -70,7 +71,7 @@ func (s *UserSchemaExporterTestSuite) TestGetAllResourceIDs_Success() {
 		},
 	}
 
-	s.mockService.EXPECT().GetUserSchemaList(100, 0).Return(expectedResponse, nil)
+	s.mockService.EXPECT().GetUserSchemaList(mock.Anything, 100, 0).Return(expectedResponse, nil)
 
 	ids, err := s.exporter.GetAllResourceIDs()
 
@@ -86,7 +87,7 @@ func (s *UserSchemaExporterTestSuite) TestGetAllResourceIDs_Error() {
 		Error: "test error",
 	}
 
-	s.mockService.EXPECT().GetUserSchemaList(100, 0).Return(nil, expectedError)
+	s.mockService.EXPECT().GetUserSchemaList(mock.Anything, 100, 0).Return(nil, expectedError)
 
 	ids, err := s.exporter.GetAllResourceIDs()
 
@@ -99,7 +100,7 @@ func (s *UserSchemaExporterTestSuite) TestGetAllResourceIDs_EmptyList() {
 		Schemas: []userschema.UserSchemaListItem{},
 	}
 
-	s.mockService.EXPECT().GetUserSchemaList(100, 0).Return(expectedResponse, nil)
+	s.mockService.EXPECT().GetUserSchemaList(mock.Anything, 100, 0).Return(expectedResponse, nil)
 
 	ids, err := s.exporter.GetAllResourceIDs()
 
@@ -113,7 +114,7 @@ func (s *UserSchemaExporterTestSuite) TestGetResourceByID_Success() {
 		Name: "Test Schema",
 	}
 
-	s.mockService.EXPECT().GetUserSchema("schema1").Return(expectedSchema, nil)
+	s.mockService.EXPECT().GetUserSchema(mock.Anything, "schema1").Return(expectedSchema, nil)
 
 	resource, name, err := s.exporter.GetResourceByID("schema1")
 
@@ -128,7 +129,7 @@ func (s *UserSchemaExporterTestSuite) TestGetResourceByID_Error() {
 		Error: "test error",
 	}
 
-	s.mockService.EXPECT().GetUserSchema("schema1").Return(nil, expectedError)
+	s.mockService.EXPECT().GetUserSchema(mock.Anything, "schema1").Return(nil, expectedError)
 
 	resource, name, err := s.exporter.GetResourceByID("schema1")
 

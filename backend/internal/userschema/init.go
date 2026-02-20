@@ -23,6 +23,7 @@ import (
 
 	oupkg "github.com/asgardeo/thunder/internal/ou"
 	"github.com/asgardeo/thunder/internal/system/config"
+	"github.com/asgardeo/thunder/internal/system/database/transaction"
 	declarativeresource "github.com/asgardeo/thunder/internal/system/declarative_resource"
 	"github.com/asgardeo/thunder/internal/system/middleware"
 )
@@ -31,6 +32,7 @@ import (
 func Initialize(
 	mux *http.ServeMux,
 	ouService oupkg.OrganizationUnitServiceInterface,
+	transactioner transaction.Transactioner,
 ) (UserSchemaServiceInterface, declarativeresource.ResourceExporter, error) {
 	var userSchemaStore userSchemaStoreInterface
 	if config.GetThunderRuntime().Config.DeclarativeResources.Enabled {
@@ -39,7 +41,7 @@ func Initialize(
 		userSchemaStore = newUserSchemaStore()
 	}
 
-	userSchemaService := newUserSchemaService(ouService, userSchemaStore)
+	userSchemaService := newUserSchemaService(ouService, userSchemaStore, transactioner)
 
 	if config.GetThunderRuntime().Config.DeclarativeResources.Enabled {
 		if err := loadDeclarativeResources(userSchemaStore, ouService); err != nil {

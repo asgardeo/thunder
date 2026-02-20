@@ -42,7 +42,9 @@ const testServerID = "test-server-id"
 // ApplicationStoreTestSuite contains comprehensive tests for the application store helper functions.
 type ApplicationStoreTestSuite struct {
 	suite.Suite
-	mockDBClient *providermock.DBClientInterfaceMock
+	mockDBProvider *providermock.DBProviderInterfaceMock
+	mockDBClient   *providermock.DBClientInterfaceMock
+	store          *applicationStore
 }
 
 func TestApplicationStoreTestSuite(t *testing.T) {
@@ -51,7 +53,12 @@ func TestApplicationStoreTestSuite(t *testing.T) {
 
 func (suite *ApplicationStoreTestSuite) SetupTest() {
 	_ = config.InitializeThunderRuntime("test", &config.Config{})
+	suite.mockDBProvider = providermock.NewDBProviderInterfaceMock(suite.T())
 	suite.mockDBClient = providermock.NewDBClientInterfaceMock(suite.T())
+	suite.store = &applicationStore{
+		dbProvider:   suite.mockDBProvider,
+		deploymentID: testServerID,
+	}
 }
 
 func (suite *ApplicationStoreTestSuite) createTestApplication() model.ApplicationProcessedDTO {
@@ -1891,4 +1898,194 @@ func (suite *ApplicationStoreTestSuite) TestGetApplicationByQuery_BuildApplicati
 	// This is the error path we're testing
 	suite.Error(buildErr)
 	suite.Contains(buildErr.Error(), "failed to unmarshal app JSON")
+}
+
+// TestApplicationStore_IsApplicationDeclarative tests checking if an application is declarative.
+func (suite *ApplicationStoreTestSuite) TestApplicationStore_IsApplicationDeclarative() {
+	suite.Run("returns false for database application", func() {
+		result := suite.store.IsApplicationDeclarative("any-app-id")
+		suite.False(result)
+	})
+}
+
+// TestIsApplicationExists tests IsApplicationExists and IsApplicationExistsByName with actual store method calls.
+func (suite *ApplicationStoreTestSuite) TestIsApplicationExists() {
+	testCases := []struct {
+		name           string
+		checkByID      bool
+		identifier     string
+		queryConstant  dbmodel.DBQuery
+		setupMock      func()
+		expectedExists bool
+		expectedErr    string
+	}{
+		{
+			name:          "IsApplicationExists returns true when application exists",
+			checkByID:     true,
+			identifier:    "existing-app",
+			queryConstant: queryCheckApplicationExistsByID,
+			setupMock: func() {
+				suite.mockDBProvider.On("GetConfigDBClient").Return(suite.mockDBClient, nil).Once()
+				suite.mockDBClient.On("Query", queryCheckApplicationExistsByID, "existing-app", testServerID).
+					Return([]map[string]interface{}{
+						{
+							"count": int64(1),
+						},
+					}, nil).Once()
+			},
+			expectedExists: true,
+		},
+		{
+			name:          "IsApplicationExists returns false when application not found",
+			checkByID:     true,
+			identifier:    "non-existent-app",
+			queryConstant: queryCheckApplicationExistsByID,
+			setupMock: func() {
+				suite.mockDBProvider.On("GetConfigDBClient").Return(suite.mockDBClient, nil).Once()
+				suite.mockDBClient.On("Query", queryCheckApplicationExistsByID, "non-existent-app", testServerID).
+					Return([]map[string]interface{}{
+						{
+							"count": int64(0),
+						},
+					}, nil).Once()
+			},
+			expectedExists: false,
+		},
+		{
+			name:          "IsApplicationExists returns error when database query fails",
+			checkByID:     true,
+			identifier:    "test-app",
+			queryConstant: queryCheckApplicationExistsByID,
+			setupMock: func() {
+				suite.mockDBProvider.On("GetConfigDBClient").Return(suite.mockDBClient, nil).Once()
+				suite.mockDBClient.On("Query", queryCheckApplicationExistsByID, "test-app", testServerID).
+					Return(nil, errors.New("database connection error")).Once()
+			},
+			expectedExists: false,
+			expectedErr:    "database connection error",
+		},
+		{
+			name:       "IsApplicationExists returns error when db provider fails",
+			checkByID:  true,
+			identifier: "test-app",
+			setupMock: func() {
+				suite.mockDBProvider.On("GetConfigDBClient").
+					Return(nil, errors.New("db provider unavailable")).Once()
+			},
+			expectedExists: false,
+			expectedErr:    "failed to get database client",
+		},
+		{
+			name:          "IsApplicationExistsByName returns true when application exists",
+			checkByID:     false,
+			identifier:    "Existing App",
+			queryConstant: queryCheckApplicationExistsByName,
+			setupMock: func() {
+				suite.mockDBProvider.On("GetConfigDBClient").Return(suite.mockDBClient, nil).Once()
+				suite.mockDBClient.On("Query", queryCheckApplicationExistsByName, "Existing App", testServerID).
+					Return([]map[string]interface{}{
+						{
+							"count": int64(1),
+						},
+					}, nil).Once()
+			},
+			expectedExists: true,
+		},
+		{
+			name:          "IsApplicationExistsByName returns false when application not found",
+			checkByID:     false,
+			identifier:    "Non-Existent App",
+			queryConstant: queryCheckApplicationExistsByName,
+			setupMock: func() {
+				suite.mockDBProvider.On("GetConfigDBClient").Return(suite.mockDBClient, nil).Once()
+				suite.mockDBClient.On("Query", queryCheckApplicationExistsByName, "Non-Existent App", testServerID).
+					Return([]map[string]interface{}{
+						{
+							"count": int64(0),
+						},
+					}, nil).Once()
+			},
+			expectedExists: false,
+		},
+		{
+			name:          "IsApplicationExistsByName returns error when database query fails",
+			checkByID:     false,
+			identifier:    "Test App",
+			queryConstant: queryCheckApplicationExistsByName,
+			setupMock: func() {
+				suite.mockDBProvider.On("GetConfigDBClient").Return(suite.mockDBClient, nil).Once()
+				suite.mockDBClient.On("Query", queryCheckApplicationExistsByName, "Test App", testServerID).
+					Return(nil, errors.New("database timeout error")).Once()
+			},
+			expectedExists: false,
+			expectedErr:    "database timeout error",
+		},
+		{
+			name:       "IsApplicationExistsByName returns error when db provider fails",
+			checkByID:  false,
+			identifier: "Test App",
+			setupMock: func() {
+				suite.mockDBProvider.On("GetConfigDBClient").
+					Return(nil, errors.New("db provider unavailable")).Once()
+			},
+			expectedExists: false,
+			expectedErr:    "failed to get database client",
+		},
+	}
+
+	for _, tc := range testCases {
+		suite.Run(tc.name, func() {
+			tc.setupMock()
+
+			var exists bool
+			var err error
+			if tc.checkByID {
+				exists, err = suite.store.IsApplicationExists(tc.identifier)
+			} else {
+				exists, err = suite.store.IsApplicationExistsByName(tc.identifier)
+			}
+
+			suite.Equal(tc.expectedExists, exists)
+			if tc.expectedErr != "" {
+				suite.Error(err)
+				suite.Contains(err.Error(), tc.expectedErr)
+			} else {
+				suite.NoError(err)
+			}
+		})
+	}
+}
+
+// TestDeleteApplication tests DeleteApplication with actual store method calls.
+func (suite *ApplicationStoreTestSuite) TestDeleteApplication() {
+	suite.Run("successfully deletes application", func() {
+		suite.mockDBProvider.On("GetConfigDBClient").Return(suite.mockDBClient, nil).Once()
+		suite.mockDBClient.On("Execute", queryDeleteApplicationByAppID, "app-to-delete", testServerID).
+			Return(int64(1), nil).Once()
+
+		err := suite.store.DeleteApplication("app-to-delete")
+
+		suite.NoError(err)
+	})
+
+	suite.Run("returns error when database client fails", func() {
+		suite.mockDBProvider.On("GetConfigDBClient").
+			Return(nil, errors.New("db provider unavailable")).Once()
+
+		err := suite.store.DeleteApplication("app-to-delete")
+
+		suite.Error(err)
+		suite.Contains(err.Error(), "failed to get database client")
+	})
+
+	suite.Run("returns error when execute query fails", func() {
+		suite.mockDBProvider.On("GetConfigDBClient").Return(suite.mockDBClient, nil).Once()
+		suite.mockDBClient.On("Execute", queryDeleteApplicationByAppID, "app-to-delete", testServerID).
+			Return(int64(0), errors.New("database delete error")).Once()
+
+		err := suite.store.DeleteApplication("app-to-delete")
+
+		suite.Error(err)
+		suite.Contains(err.Error(), "failed to execute query")
+	})
 }

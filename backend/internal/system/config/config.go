@@ -123,10 +123,16 @@ type AuthorizationCodeConfig struct {
 	ValidityPeriod int64 `yaml:"validity_period" json:"validity_period"`
 }
 
+// DCRConfig holds the Dynamic Client Registration configuration.
+type DCRConfig struct {
+	Insecure bool `yaml:"insecure" json:"insecure"`
+}
+
 // OAuthConfig holds the OAuth configuration details.
 type OAuthConfig struct {
 	RefreshToken      RefreshTokenConfig      `yaml:"refresh_token" json:"refresh_token"`
 	AuthorizationCode AuthorizationCodeConfig `yaml:"authorization_code" json:"authorization_code"`
+	DCR               DCRConfig               `yaml:"dcr" json:"dcr"`
 }
 
 // FlowConfig holds the configuration details for the flow service.
@@ -245,6 +251,16 @@ type OrganizationUnitConfig struct {
 	Store string `yaml:"store" json:"store"`
 }
 
+// ApplicationConfig holds the application service configuration.
+type ApplicationConfig struct {
+	// Store defines the storage mode for applications.
+	// Valid values: "mutable", "declarative", "composite" (hybrid mode)
+	// If not specified, falls back to global DeclarativeResources.Enabled setting:
+	//   - If DeclarativeResources.Enabled = true: behaves as "declarative"
+	//   - If DeclarativeResources.Enabled = false: behaves as "mutable"
+	Store string `yaml:"store" json:"store"`
+}
+
 // PasskeyConfig holds the passkey configuration details.
 type PasskeyConfig struct {
 	AllowedOrigins []string `yaml:"allowed_origins" json:"allowed_origins"`
@@ -284,6 +300,7 @@ type Config struct {
 	DeclarativeResources DeclarativeResources   `yaml:"declarative_resources" json:"declarative_resources"`
 	Resource             ResourceConfig         `yaml:"resource" json:"resource"`
 	OrganizationUnit     OrganizationUnitConfig `yaml:"organization_unit" json:"organization_unit"`
+	Application          ApplicationConfig      `yaml:"application" json:"application"`
 	Observability        ObservabilityConfig    `yaml:"observability" json:"observability"`
 	Passkey              PasskeyConfig          `yaml:"passkey" json:"passkey"`
 	AuthnProvider        AuthnProviderConfig    `yaml:"authn_provider" json:"authn_provider"`

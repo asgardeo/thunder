@@ -23,6 +23,7 @@ import type {StepData} from '../models/steps';
 import {StepTypes, StaticStepTypes} from '../models/steps';
 import {ActionTypes} from '../models/actions';
 import generateResourceId from './generateResourceId';
+import VisualFlowConstants from '../constants/VisualFlowConstants';
 
 /**
  * Suffix used in edge sourceHandle to identify the connection point
@@ -70,6 +71,7 @@ interface FlowNode {
   };
   onSuccess?: string;
   onFailure?: string;
+  onIncomplete?: string;
 }
 
 /**
@@ -129,6 +131,7 @@ interface ReactFlowCanvasData {
     x: number;
     y: number;
     zoom: number;
+    rotation?: number;
   };
 }
 
@@ -263,7 +266,6 @@ function extractInputs(components: Element[]): FlowInput[] {
   return inputs;
 }
 
-
 /**
  * Extracts prompts from UI components.
  * Each prompt groups an action with its associated inputs based on container structure.
@@ -352,7 +354,7 @@ function extractPrompts(components: Element[], nodeId: string, edges: Edge[]): F
     const action = extractActionFromComponent(component);
     if (action) {
       // This action gets the parent's inputs (all accumulated up to this point)
-      const prompt: FlowPrompt = { action };
+      const prompt: FlowPrompt = {action};
       if (parentInputs.length > 0) {
         prompt.inputs = parentInputs;
       }
@@ -370,12 +372,11 @@ function extractPrompts(components: Element[], nodeId: string, edges: Edge[]): F
       // 2. Combine with parent inputs
       // 3. Pass to children
       const currentLevelInputs = extractInputsFromContainer([component]);
-      
       // Combine parent inputs with current level inputs to support deep nesting (Block A -> Block B)
       const combinedInputs = [...parentInputs, ...currentLevelInputs];
 
       // Remove duplicates if any (though unlikely given unique IDs, strict accumulation is safer)
-      const uniqueInputs = Array.from(new Map(combinedInputs.map(item => [item.ref, item])).values());
+      const uniqueInputs = Array.from(new Map(combinedInputs.map((item) => [item.ref, item])).values());
 
       // Process each child component, passing the combined inputs
       component.components.forEach((child) => {
@@ -490,6 +491,16 @@ function transformNode(canvasNode: Node<StepData>, edges: Edge[]): FlowNode {
     const failureEdge = edges.find((edge) => edge.source === canvasNode.id && edge.sourceHandle === 'failure');
     if (failureEdge) {
       flowNode.onFailure = failureEdge.target;
+    }
+
+    // Check for onIncomplete connection (if there's a sourceHandle with incomplete suffix)
+    const incompleteEdge = edges.find(
+      (edge) =>
+        edge.source === canvasNode.id &&
+        edge.sourceHandle?.endsWith(VisualFlowConstants.FLOW_BUILDER_INCOMPLETE_HANDLE_SUFFIX),
+    );
+    if (incompleteEdge) {
+      flowNode.onIncomplete = incompleteEdge.target;
     }
 
     // Note: inputs for TASK_EXECUTION nodes are collected in a second pass
@@ -685,6 +696,11 @@ export function validateFlowGraph(flowGraph: FlowGraph): string[] {
     // Check onFailure references
     if (node.onFailure && !nodeIds.has(node.onFailure)) {
       errors.push(`Node ${node.id}: onFailure references non-existent node ${node.onFailure}`);
+    }
+
+    // Check onIncomplete references
+    if (node.onIncomplete && !nodeIds.has(node.onIncomplete)) {
+      errors.push(`Node ${node.id}: onIncomplete references non-existent node ${node.onIncomplete}`);
     }
 
     // Check action nextNode references (via prompts)

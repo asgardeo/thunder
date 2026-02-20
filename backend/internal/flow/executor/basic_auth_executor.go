@@ -110,7 +110,7 @@ func (b *basicAuthExecutor) Execute(ctx *core.NodeContext) (*common.ExecutorResp
 		execResp.FailureReason = "Failed to authenticate user: " + err.Error()
 		return execResp, nil
 	}
-	if execResp.Status == common.ExecFailure {
+	if execResp.Status == common.ExecFailure || execResp.Status == common.ExecUserInputRequired {
 		return execResp, nil
 	}
 	if authenticatedUser == nil {
@@ -119,7 +119,8 @@ func (b *basicAuthExecutor) Execute(ctx *core.NodeContext) (*common.ExecutorResp
 		return execResp, nil
 	}
 	if !authenticatedUser.IsAuthenticated && ctx.FlowType != common.FlowTypeRegistration {
-		execResp.Status = common.ExecFailure
+		execResp.Status = common.ExecUserInputRequired
+		execResp.Inputs = b.GetRequiredInputs(ctx)
 		execResp.FailureReason = "User authentication failed."
 		return execResp, nil
 	}
@@ -180,10 +181,21 @@ func (b *basicAuthExecutor) getAuthenticatedUser(ctx *core.NodeContext,
 	authnResult, svcErr := b.credsAuthSvc.Authenticate(userIdentifiers, userCredentials, nil)
 	if svcErr != nil {
 		if svcErr.Type == serviceerror.ClientErrorType {
-			execResp.Status = common.ExecFailure
-			execResp.FailureReason = "Failed to authenticate user: " + svcErr.ErrorDescription
+			execResp.Status = common.ExecUserInputRequired
+			execResp.Inputs = b.GetRequiredInputs(ctx)
+
+			switch svcErr.Code {
+			case authncm.ErrorUserNotFound.Code:
+				execResp.FailureReason = failureReasonUserNotFound
+			case authncreds.ErrorInvalidCredentials.Code:
+				execResp.FailureReason = failureReasonInvalidCredentials
+			default:
+				execResp.FailureReason = "Failed to authenticate user: " + svcErr.ErrorDescription
+			}
+
 			return nil, nil
 		}
+
 		logger.Error("Failed to authenticate user",
 			log.String("errorCode", svcErr.Code), log.String("errorDescription", svcErr.ErrorDescription))
 		return nil, errors.New("failed to authenticate user")

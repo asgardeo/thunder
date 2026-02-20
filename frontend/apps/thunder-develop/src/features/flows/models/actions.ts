@@ -28,6 +28,7 @@ export type Actions = Partial<Element>[];
 export const ActionTypes = {
   Next: 'NEXT',
   Previous: 'PREVIOUS',
+  Incomplete: 'INCOMPLETE',
   Executor: 'EXECUTOR',
 } as const;
 

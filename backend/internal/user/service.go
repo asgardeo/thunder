@@ -198,7 +198,7 @@ func (us *userService) CreateUser(ctx context.Context, user *User) (*User, *serv
 		return nil, &ErrorInvalidRequestFormat
 	}
 
-	if svcErr := us.validateOrganizationUnitForUserType(user.Type, user.OrganizationUnit, logger); svcErr != nil {
+	if svcErr := us.validateOrganizationUnitForUserType(ctx, user.Type, user.OrganizationUnit, logger); svcErr != nil {
 		return nil, svcErr
 	}
 
@@ -410,7 +410,9 @@ func (us *userService) UpdateUser(ctx context.Context, userID string, user *User
 	var capturedSvcErr *serviceerror.ServiceError
 
 	err := us.transactioner.Transact(ctx, func(txCtx context.Context) error {
-		if svcErr := us.validateOrganizationUnitForUserType(user.Type, user.OrganizationUnit, logger); svcErr != nil {
+		if svcErr := us.validateOrganizationUnitForUserType(
+			txCtx, user.Type, user.OrganizationUnit, logger,
+		); svcErr != nil {
 			capturedSvcErr = svcErr
 			return errors.New("rollback for validation error")
 		}
@@ -1034,7 +1036,7 @@ func (us *userService) GetUserCredentialsByType(
 
 // validateOrganizationUnitForUserType ensures that the organization unit ID is valid and belongs to the user type.
 func (us *userService) validateOrganizationUnitForUserType(
-	userType, organizationUnitID string, logger *log.Logger,
+	ctx context.Context, userType, organizationUnitID string, logger *log.Logger,
 ) *serviceerror.ServiceError {
 	if strings.TrimSpace(userType) == "" {
 		return &ErrorUserSchemaNotFound
@@ -1072,7 +1074,7 @@ func (us *userService) validateOrganizationUnitForUserType(
 		return &ErrorInternalServerError
 	}
 
-	userSchema, svcErr := us.userSchemaService.GetUserSchemaByName(userType)
+	userSchema, svcErr := us.userSchemaService.GetUserSchemaByName(ctx, userType)
 	if svcErr != nil {
 		if svcErr.Code == userschema.ErrorUserSchemaNotFound.Code {
 			return &ErrorUserSchemaNotFound
@@ -1121,7 +1123,7 @@ func (us *userService) validateOrganizationUnitForUserType(
 func (us *userService) validateUserAndUniqueness(
 	ctx context.Context, userType string, attributes []byte, logger *log.Logger, excludeUserID string,
 ) *serviceerror.ServiceError {
-	isValid, svcErr := us.userSchemaService.ValidateUser(userType, attributes)
+	isValid, svcErr := us.userSchemaService.ValidateUser(ctx, userType, attributes)
 	if svcErr != nil {
 		if svcErr.Code == userschema.ErrorUserSchemaNotFound.Code {
 			return &ErrorUserSchemaNotFound
@@ -1132,7 +1134,7 @@ func (us *userService) validateUserAndUniqueness(
 		return &ErrorSchemaValidationFailed
 	}
 
-	isValid, svcErr = us.userSchemaService.ValidateUserUniqueness(userType, attributes,
+	isValid, svcErr = us.userSchemaService.ValidateUserUniqueness(ctx, userType, attributes,
 		func(filters map[string]interface{}) (*string, error) {
 			userID, svcErr := us.IdentifyUser(ctx, filters)
 			if svcErr != nil {

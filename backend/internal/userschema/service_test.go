@@ -19,6 +19,7 @@
 package userschema
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"testing"
@@ -57,6 +58,7 @@ func TestCreateUserSchemaReturnsErrorWhenOrganizationUnitMissing(t *testing.T) {
 	service := &userSchemaService{
 		userSchemaStore: storeMock,
 		ouService:       ouServiceMock,
+		transactioner:   &mockTransactioner{},
 	}
 
 	request := CreateUserSchemaRequest{
@@ -65,7 +67,7 @@ func TestCreateUserSchemaReturnsErrorWhenOrganizationUnitMissing(t *testing.T) {
 		Schema:             json.RawMessage(`{"email":{"type":"string"}}`),
 	}
 
-	createdSchema, svcErr := service.CreateUserSchema(request)
+	createdSchema, svcErr := service.CreateUserSchema(context.Background(), request)
 
 	require.Nil(t, createdSchema)
 	require.NotNil(t, svcErr)
@@ -97,6 +99,7 @@ func TestCreateUserSchemaReturnsInternalErrorWhenOUValidationFails(t *testing.T)
 	service := &userSchemaService{
 		userSchemaStore: storeMock,
 		ouService:       ouServiceMock,
+		transactioner:   &mockTransactioner{},
 	}
 
 	request := CreateUserSchemaRequest{
@@ -105,7 +108,7 @@ func TestCreateUserSchemaReturnsInternalErrorWhenOUValidationFails(t *testing.T)
 		Schema:             json.RawMessage(`{"email":{"type":"string"}}`),
 	}
 
-	createdSchema, svcErr := service.CreateUserSchema(request)
+	createdSchema, svcErr := service.CreateUserSchema(context.Background(), request)
 
 	require.Nil(t, createdSchema)
 	require.NotNil(t, svcErr)
@@ -133,6 +136,7 @@ func TestUpdateUserSchemaReturnsErrorWhenOrganizationUnitMissing(t *testing.T) {
 	service := &userSchemaService{
 		userSchemaStore: storeMock,
 		ouService:       ouServiceMock,
+		transactioner:   &mockTransactioner{},
 	}
 
 	request := UpdateUserSchemaRequest{
@@ -141,7 +145,7 @@ func TestUpdateUserSchemaReturnsErrorWhenOrganizationUnitMissing(t *testing.T) {
 		Schema:             json.RawMessage(`{"email":{"type":"string"}}`),
 	}
 
-	updatedSchema, svcErr := service.UpdateUserSchema("schema-id", request)
+	updatedSchema, svcErr := service.UpdateUserSchema(context.Background(), "schema-id", request)
 
 	require.Nil(t, updatedSchema)
 	require.NotNil(t, svcErr)
@@ -155,15 +159,16 @@ func TestGetUserSchemaByNameReturnsSchema(t *testing.T) {
 		Name: "employee",
 	}
 	storeMock.
-		On("GetUserSchemaByName", "employee").
+		On("GetUserSchemaByName", context.Background(), "employee").
 		Return(expectedSchema, nil).
 		Once()
 
 	service := &userSchemaService{
 		userSchemaStore: storeMock,
+		transactioner:   &mockTransactioner{},
 	}
 
-	userSchema, svcErr := service.GetUserSchemaByName("employee")
+	userSchema, svcErr := service.GetUserSchemaByName(context.Background(), "employee")
 
 	require.Nil(t, svcErr)
 	require.NotNil(t, userSchema)
@@ -173,15 +178,16 @@ func TestGetUserSchemaByNameReturnsSchema(t *testing.T) {
 func TestGetUserSchemaByNameReturnsNotFound(t *testing.T) {
 	storeMock := newUserSchemaStoreInterfaceMock(t)
 	storeMock.
-		On("GetUserSchemaByName", "employee").
+		On("GetUserSchemaByName", context.Background(), "employee").
 		Return(UserSchema{}, ErrUserSchemaNotFound).
 		Once()
 
 	service := &userSchemaService{
 		userSchemaStore: storeMock,
+		transactioner:   &mockTransactioner{},
 	}
 
-	userSchema, svcErr := service.GetUserSchemaByName("employee")
+	userSchema, svcErr := service.GetUserSchemaByName(context.Background(), "employee")
 
 	require.Nil(t, userSchema)
 	require.NotNil(t, svcErr)
@@ -191,15 +197,16 @@ func TestGetUserSchemaByNameReturnsNotFound(t *testing.T) {
 func TestGetUserSchemaByNameReturnsInternalErrorOnStoreFailure(t *testing.T) {
 	storeMock := newUserSchemaStoreInterfaceMock(t)
 	storeMock.
-		On("GetUserSchemaByName", "employee").
+		On("GetUserSchemaByName", context.Background(), "employee").
 		Return(UserSchema{}, errors.New("db failure")).
 		Once()
 
 	service := &userSchemaService{
 		userSchemaStore: storeMock,
+		transactioner:   &mockTransactioner{},
 	}
 
-	userSchema, svcErr := service.GetUserSchemaByName("employee")
+	userSchema, svcErr := service.GetUserSchemaByName(context.Background(), "employee")
 
 	require.Nil(t, userSchema)
 	require.NotNil(t, svcErr)
@@ -211,9 +218,10 @@ func TestGetUserSchemaByNameRequiresName(t *testing.T) {
 
 	service := &userSchemaService{
 		userSchemaStore: storeMock,
+		transactioner:   &mockTransactioner{},
 	}
 
-	userSchema, svcErr := service.GetUserSchemaByName("")
+	userSchema, svcErr := service.GetUserSchemaByName(context.Background(), "")
 
 	require.Nil(t, userSchema)
 	require.NotNil(t, svcErr)
@@ -223,7 +231,7 @@ func TestGetUserSchemaByNameRequiresName(t *testing.T) {
 func TestValidateUserReturnsTrueWhenValidationPasses(t *testing.T) {
 	storeMock := newUserSchemaStoreInterfaceMock(t)
 	storeMock.
-		On("GetUserSchemaByName", "employee").
+		On("GetUserSchemaByName", context.Background(), "employee").
 		Return(UserSchema{
 			Name:   "employee",
 			Schema: json.RawMessage(`{"email":{"type":"string","required":true}}`),
@@ -232,9 +240,14 @@ func TestValidateUserReturnsTrueWhenValidationPasses(t *testing.T) {
 
 	service := &userSchemaService{
 		userSchemaStore: storeMock,
+		transactioner:   &mockTransactioner{},
 	}
 
-	ok, svcErr := service.ValidateUser("employee", json.RawMessage(`{"email":"employee@example.com"}`))
+	ok, svcErr := service.ValidateUser(
+		context.Background(),
+		"employee",
+		json.RawMessage(`{"email":"employee@example.com"}`),
+	)
 
 	require.True(t, ok)
 	require.Nil(t, svcErr)
@@ -243,15 +256,16 @@ func TestValidateUserReturnsTrueWhenValidationPasses(t *testing.T) {
 func TestValidateUserReturnsInternalErrorWhenSchemaLoadFails(t *testing.T) {
 	storeMock := newUserSchemaStoreInterfaceMock(t)
 	storeMock.
-		On("GetUserSchemaByName", "employee").
+		On("GetUserSchemaByName", context.Background(), "employee").
 		Return(UserSchema{}, errors.New("db failure")).
 		Once()
 
 	service := &userSchemaService{
 		userSchemaStore: storeMock,
+		transactioner:   &mockTransactioner{},
 	}
 
-	ok, svcErr := service.ValidateUser("employee", json.RawMessage(`{}`))
+	ok, svcErr := service.ValidateUser(context.Background(), "employee", json.RawMessage(`{}`))
 
 	require.False(t, ok)
 	require.NotNil(t, svcErr)
@@ -261,7 +275,7 @@ func TestValidateUserReturnsInternalErrorWhenSchemaLoadFails(t *testing.T) {
 func TestValidateUserUniquenessReturnsTrueWhenNoConflicts(t *testing.T) {
 	storeMock := newUserSchemaStoreInterfaceMock(t)
 	storeMock.
-		On("GetUserSchemaByName", "employee").
+		On("GetUserSchemaByName", context.Background(), "employee").
 		Return(UserSchema{
 			Name:   "employee",
 			Schema: json.RawMessage(`{"email":{"type":"string","unique":true}}`),
@@ -270,9 +284,11 @@ func TestValidateUserUniquenessReturnsTrueWhenNoConflicts(t *testing.T) {
 
 	service := &userSchemaService{
 		userSchemaStore: storeMock,
+		transactioner:   &mockTransactioner{},
 	}
 
 	ok, svcErr := service.ValidateUserUniqueness(
+		context.Background(),
 		"employee",
 		json.RawMessage(`{"email":"unique@example.com"}`),
 		func(filters map[string]interface{}) (*string, error) {
@@ -288,15 +304,20 @@ func TestValidateUserUniquenessReturnsTrueWhenNoConflicts(t *testing.T) {
 func TestValidateUserReturnsSchemaNotFoundWhenSchemaMissing(t *testing.T) {
 	storeMock := newUserSchemaStoreInterfaceMock(t)
 	storeMock.
-		On("GetUserSchemaByName", "employee").
+		On("GetUserSchemaByName", context.Background(), "employee").
 		Return(UserSchema{}, ErrUserSchemaNotFound).
 		Once()
 
 	service := &userSchemaService{
 		userSchemaStore: storeMock,
+		transactioner:   &mockTransactioner{},
 	}
 
-	ok, svcErr := service.ValidateUser("employee", json.RawMessage(`{"email":"employee@example.com"}`))
+	ok, svcErr := service.ValidateUser(
+		context.Background(),
+		"employee",
+		json.RawMessage(`{"email":"employee@example.com"}`),
+	)
 
 	require.False(t, ok)
 	require.NotNil(t, svcErr)
@@ -306,15 +327,17 @@ func TestValidateUserReturnsSchemaNotFoundWhenSchemaMissing(t *testing.T) {
 func TestValidateUserUniquenessReturnsSchemaNotFoundWhenSchemaMissing(t *testing.T) {
 	storeMock := newUserSchemaStoreInterfaceMock(t)
 	storeMock.
-		On("GetUserSchemaByName", "employee").
+		On("GetUserSchemaByName", context.Background(), "employee").
 		Return(UserSchema{}, ErrUserSchemaNotFound).
 		Once()
 
 	service := &userSchemaService{
 		userSchemaStore: storeMock,
+		transactioner:   &mockTransactioner{},
 	}
 
 	ok, svcErr := service.ValidateUserUniqueness(
+		context.Background(),
 		"employee",
 		json.RawMessage(`{}`),
 		func(map[string]interface{}) (*string, error) { return nil, nil },
@@ -328,15 +351,17 @@ func TestValidateUserUniquenessReturnsSchemaNotFoundWhenSchemaMissing(t *testing
 func TestValidateUserUniquenessReturnsInternalErrorWhenSchemaLoadFails(t *testing.T) {
 	storeMock := newUserSchemaStoreInterfaceMock(t)
 	storeMock.
-		On("GetUserSchemaByName", "employee").
+		On("GetUserSchemaByName", context.Background(), "employee").
 		Return(UserSchema{}, errors.New("db failure")).
 		Once()
 
 	service := &userSchemaService{
 		userSchemaStore: storeMock,
+		transactioner:   &mockTransactioner{},
 	}
 
 	ok, svcErr := service.ValidateUserUniqueness(
+		context.Background(),
 		"employee",
 		json.RawMessage(`{}`),
 		func(map[string]interface{}) (*string, error) { return nil, nil },

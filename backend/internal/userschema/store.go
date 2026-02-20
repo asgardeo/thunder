@@ -19,6 +19,7 @@
 package userschema
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"strings"
@@ -30,13 +31,13 @@ import (
 
 // userSchemaStoreInterface defines the interface for user schema store operations.
 type userSchemaStoreInterface interface {
-	GetUserSchemaListCount() (int, error)
-	GetUserSchemaList(limit, offset int) ([]UserSchemaListItem, error)
-	CreateUserSchema(userSchema UserSchema) error
-	GetUserSchemaByID(schemaID string) (UserSchema, error)
-	GetUserSchemaByName(name string) (UserSchema, error)
-	UpdateUserSchemaByID(schemaID string, userSchema UserSchema) error
-	DeleteUserSchemaByID(schemaID string) error
+	GetUserSchemaListCount(ctx context.Context) (int, error)
+	GetUserSchemaList(ctx context.Context, limit, offset int) ([]UserSchemaListItem, error)
+	CreateUserSchema(ctx context.Context, userSchema UserSchema) error
+	GetUserSchemaByID(ctx context.Context, schemaID string) (UserSchema, error)
+	GetUserSchemaByName(ctx context.Context, name string) (UserSchema, error)
+	UpdateUserSchemaByID(ctx context.Context, schemaID string, userSchema UserSchema) error
+	DeleteUserSchemaByID(ctx context.Context, schemaID string) error
 }
 
 // userSchemaStore is the default implementation of userSchemaStoreInterface.
@@ -54,13 +55,13 @@ func newUserSchemaStore() userSchemaStoreInterface {
 }
 
 // GetUserSchemaListCount retrieves the total count of user schemas.
-func (s *userSchemaStore) GetUserSchemaListCount() (int, error) {
+func (s *userSchemaStore) GetUserSchemaListCount(ctx context.Context) (int, error) {
 	dbClient, err := s.dbProvider.GetConfigDBClient()
 	if err != nil {
 		return 0, fmt.Errorf("failed to get database client: %w", err)
 	}
 
-	countResults, err := dbClient.Query(queryGetUserSchemaCount, s.deploymentID)
+	countResults, err := dbClient.QueryContext(ctx, queryGetUserSchemaCount, s.deploymentID)
 	if err != nil {
 		return 0, fmt.Errorf("failed to execute count query: %w", err)
 	}
@@ -78,7 +79,7 @@ func (s *userSchemaStore) GetUserSchemaListCount() (int, error) {
 }
 
 // GetUserSchemaList retrieves a list of user schemas with pagination.
-func (s *userSchemaStore) GetUserSchemaList(limit, offset int) ([]UserSchemaListItem, error) {
+func (s *userSchemaStore) GetUserSchemaList(ctx context.Context, limit, offset int) ([]UserSchemaListItem, error) {
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, "UserSchemaPersistence"))
 
 	dbClient, err := s.dbProvider.GetConfigDBClient()
@@ -86,7 +87,7 @@ func (s *userSchemaStore) GetUserSchemaList(limit, offset int) ([]UserSchemaList
 		return nil, fmt.Errorf("failed to get database client: %w", err)
 	}
 
-	results, err := dbClient.Query(queryGetUserSchemaList, limit, offset, s.deploymentID)
+	results, err := dbClient.QueryContext(ctx, queryGetUserSchemaList, limit, offset, s.deploymentID)
 	if err != nil {
 		return nil, fmt.Errorf("failed to execute query: %w", err)
 	}
@@ -105,13 +106,14 @@ func (s *userSchemaStore) GetUserSchemaList(limit, offset int) ([]UserSchemaList
 }
 
 // CreateUserSchema creates a new user schema.
-func (s *userSchemaStore) CreateUserSchema(userSchema UserSchema) error {
+func (s *userSchemaStore) CreateUserSchema(ctx context.Context, userSchema UserSchema) error {
 	dbClient, err := s.dbProvider.GetConfigDBClient()
 	if err != nil {
 		return fmt.Errorf("failed to get database client: %w", err)
 	}
 
-	_, err = dbClient.Query(
+	_, err = dbClient.QueryContext(
+		ctx,
 		queryCreateUserSchema,
 		userSchema.ID,
 		userSchema.Name,
@@ -128,13 +130,13 @@ func (s *userSchemaStore) CreateUserSchema(userSchema UserSchema) error {
 }
 
 // GetUserSchemaByID retrieves a user schema by its ID.
-func (s *userSchemaStore) GetUserSchemaByID(schemaID string) (UserSchema, error) {
+func (s *userSchemaStore) GetUserSchemaByID(ctx context.Context, schemaID string) (UserSchema, error) {
 	dbClient, err := s.dbProvider.GetConfigDBClient()
 	if err != nil {
 		return UserSchema{}, fmt.Errorf("failed to get database client: %w", err)
 	}
 
-	results, err := dbClient.Query(queryGetUserSchemaByID, schemaID, s.deploymentID)
+	results, err := dbClient.QueryContext(ctx, queryGetUserSchemaByID, schemaID, s.deploymentID)
 	if err != nil {
 		return UserSchema{}, fmt.Errorf("failed to execute query: %w", err)
 	}
@@ -147,13 +149,13 @@ func (s *userSchemaStore) GetUserSchemaByID(schemaID string) (UserSchema, error)
 }
 
 // GetUserSchemaByName retrieves a user schema by its name.
-func (s *userSchemaStore) GetUserSchemaByName(name string) (UserSchema, error) {
+func (s *userSchemaStore) GetUserSchemaByName(ctx context.Context, name string) (UserSchema, error) {
 	dbClient, err := s.dbProvider.GetConfigDBClient()
 	if err != nil {
 		return UserSchema{}, fmt.Errorf("failed to get database client: %w", err)
 	}
 
-	results, err := dbClient.Query(queryGetUserSchemaByName, name, s.deploymentID)
+	results, err := dbClient.QueryContext(ctx, queryGetUserSchemaByName, name, s.deploymentID)
 	if err != nil {
 		return UserSchema{}, fmt.Errorf("failed to execute query: %w", err)
 	}
@@ -166,13 +168,14 @@ func (s *userSchemaStore) GetUserSchemaByName(name string) (UserSchema, error) {
 }
 
 // UpdateUserSchemaByID updates a user schema by its ID.
-func (s *userSchemaStore) UpdateUserSchemaByID(schemaID string, userSchema UserSchema) error {
+func (s *userSchemaStore) UpdateUserSchemaByID(ctx context.Context, schemaID string, userSchema UserSchema) error {
 	dbClient, err := s.dbProvider.GetConfigDBClient()
 	if err != nil {
 		return fmt.Errorf("failed to get database client: %w", err)
 	}
 
-	_, err = dbClient.Query(
+	_, err = dbClient.QueryContext(
+		ctx,
 		queryUpdateUserSchemaByID,
 		userSchema.Name,
 		userSchema.OrganizationUnitID,
@@ -189,7 +192,7 @@ func (s *userSchemaStore) UpdateUserSchemaByID(schemaID string, userSchema UserS
 }
 
 // DeleteUserSchemaByID deletes a user schema by its ID.
-func (s *userSchemaStore) DeleteUserSchemaByID(schemaID string) error {
+func (s *userSchemaStore) DeleteUserSchemaByID(ctx context.Context, schemaID string) error {
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, "UserSchemaPersistence"))
 
 	dbClient, err := s.dbProvider.GetConfigDBClient()
@@ -197,7 +200,7 @@ func (s *userSchemaStore) DeleteUserSchemaByID(schemaID string) error {
 		return fmt.Errorf("failed to get database client: %w", err)
 	}
 
-	rowsAffected, err := dbClient.Execute(queryDeleteUserSchemaByID, schemaID, s.deploymentID)
+	rowsAffected, err := dbClient.ExecuteContext(ctx, queryDeleteUserSchemaByID, schemaID, s.deploymentID)
 	if err != nil {
 		return fmt.Errorf("failed to delete user schema: %w", err)
 	}

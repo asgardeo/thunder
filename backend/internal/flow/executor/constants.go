@@ -98,6 +98,7 @@ const runtimeKeyStoredInviteToken = "storedInviteToken"
 const (
 	failureReasonUserNotAuthenticated = "User is not authenticated"
 	failureReasonUserNotFound         = "User not found"
+	failureReasonInvalidCredentials   = "Invalid credentials provided" // #nosec G101
 	failureReasonFailedToIdentifyUser = "Failed to identify user"
 	failureReasonInvalidOTP           = "invalid OTP provided"
 )

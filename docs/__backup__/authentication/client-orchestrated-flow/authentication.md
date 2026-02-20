@@ -45,8 +45,12 @@ The credentials authentication API allows you to authenticate users by providing
     ```bash
     curl -kL -X POST -H 'Content-Type: application/json' -H 'Accept: application/json' https://localhost:8090/auth/credentials/authenticate \
     -d '{
-        "username": "thor",
-        "password": "<password>"
+        "identifiers": {
+            "username": "thor"
+        },
+        "credentials": {
+            "password": "<password>"
+        }
     }'
     ```
 
@@ -66,8 +70,12 @@ The credentials authentication API allows you to authenticate users by providing
     ```bash
     curl -kL -X POST -H 'Content-Type: application/json' -H 'Accept: application/json' https://localhost:8090/auth/credentials/authenticate \
     -d '{
-        "username": "thor",
-        "password": "<password>",
+        "identifiers": {
+            "username": "thor"
+        },
+        "credentials": {
+            "password": "<password>"
+        },
         "assertion": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
     }'
     ```
@@ -527,8 +535,12 @@ Example:
 ```bash
 curl -kL -X POST -H 'Content-Type: application/json' -H 'Accept: application/json' https://localhost:8090/auth/credentials/authenticate \
 -d '{
-    "username": "thor",
-    "password": "<password>",
+    "identifiers": {
+        "username": "thor"
+    },
+    "credentials": {
+        "password": "<password>"
+    },
     "skip_assertion": true
 }'
 ```

@@ -22,6 +22,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/suite"
 
 	appmodel "github.com/asgardeo/thunder/internal/application/model"
@@ -1130,7 +1131,7 @@ func (suite *OIDCAuthExecutorTestSuite) TestProcessAuthFlowResponse_AllowAuthWit
 			Code: authncm.ErrorUserNotFound.Code,
 			Type: serviceerror.ClientErrorType,
 		})
-	suite.mockUserSchemaService.On("GetUserSchemaByName", "INTERNAL").
+	suite.mockUserSchemaService.On("GetUserSchemaByName", mock.Anything, "INTERNAL").
 		Return(&userschema.UserSchema{
 			Name:                  "INTERNAL",
 			AllowSelfRegistration: true,

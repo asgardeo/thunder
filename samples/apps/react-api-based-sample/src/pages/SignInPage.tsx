@@ -75,8 +75,12 @@ function SignInPage() {
             "Content-Type": "application/json",
           },
           body: JSON.stringify({
-            username: formData.username,
-            password: formData.password,
+            identifiers: {
+              username: formData.username,
+            },
+            credentials: {
+              password: formData.password,
+            },
           }),
         }
       );

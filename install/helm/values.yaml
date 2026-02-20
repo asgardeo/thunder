@@ -250,6 +250,8 @@ configuration:
       validityPeriod: 86400
     authorizationCode:
       validityPeriod: 600
+    dcr:
+      insecure: false
 
   # Flow configuration
   flow:

@@ -64,6 +64,7 @@ func (e *ApplicationExporter) GetParameterizerType() string {
 }
 
 // GetAllResourceIDs retrieves all application IDs.
+// In composite mode, this excludes declarative (YAML-based) applications.
 func (e *ApplicationExporter) GetAllResourceIDs() ([]string, *serviceerror.ServiceError) {
 	apps, err := e.service.GetApplicationList()
 	if err != nil {
@@ -71,7 +72,10 @@ func (e *ApplicationExporter) GetAllResourceIDs() ([]string, *serviceerror.Servi
 	}
 	ids := make([]string, 0, len(apps.Applications))
 	for _, app := range apps.Applications {
-		ids = append(ids, app.ID)
+		// Only include mutable (database-backed) applications
+		if !app.IsReadOnly {
+			ids = append(ids, app.ID)
+		}
 	}
 	return ids, nil
 }
@@ -102,12 +106,32 @@ func (e *ApplicationExporter) ValidateResource(
 	return app.Name, nil
 }
 
-// loadDeclarativeResources loads immutable application resources from files.
+// loadDeclarativeResources loads application resources from declarative files.
+// Works in both declarative-only and composite modes:
+// - In declarative mode: appStore is a fileBasedStore
+// - In composite mode: appStore is a compositeApplicationStore (contains both file and DB stores)
 func loadDeclarativeResources(appStore applicationStoreInterface, appService ApplicationServiceInterface) error {
+	var fileStore applicationStoreInterface
+	var dbStore applicationStoreInterface
+
+	// Determine store type and extract appropriate stores
+	switch store := appStore.(type) {
+	case *compositeApplicationStore:
+		// Composite mode: both file and DB stores available
+		fileStore = store.fileStore
+		dbStore = store.dbStore
+	case *fileBasedStore:
+		// Declarative-only mode: only file store available
+		fileStore = store
+		dbStore = nil
+	default:
+		return fmt.Errorf("invalid store type for loading declarative resources")
+	}
+
 	// Type assert to access Storer interface for resource loading
-	fileBasedStore, ok := appStore.(*fileBasedStore)
+	fileBasedStoreImpl, ok := fileStore.(*fileBasedStore)
 	if !ok {
-		return fmt.Errorf("failed to assert appStore to *fileBasedStore")
+		return fmt.Errorf("failed to assert fileStore to *fileBasedStore")
 	}
 
 	// Use a custom loader for applications due to transformation from DTO to ProcessedDTO
@@ -115,13 +139,15 @@ func loadDeclarativeResources(appStore applicationStoreInterface, appService App
 		ResourceType:  "Application",
 		DirectoryName: "applications",
 		Parser:        parseAndValidateApplicationWrapper(appService),
-		Validator:     nil, // Validation is done in the parser for applications
+		Validator: func(data interface{}) error {
+			return validateApplicationWrapper(data, fileStore, dbStore)
+		},
 		IDExtractor: func(data interface{}) string {
 			return data.(*model.ApplicationProcessedDTO).ID
 		},
 	}
 
-	loader := declarativeresource.NewResourceLoader(resourceConfig, fileBasedStore)
+	loader := declarativeresource.NewResourceLoader(resourceConfig, fileBasedStoreImpl)
 	if err := loader.LoadResources(); err != nil {
 		return fmt.Errorf("failed to load application resources: %w", err)
 	}
@@ -197,6 +223,47 @@ func parseToApplicationDTO(data []byte) (*model.ApplicationDTO, error) {
 		appDTO.InboundAuthConfig = inboundAuthConfigDTOs
 	}
 	return &appDTO, nil
+}
+
+func validateApplicationWrapper(
+	data interface{},
+	fileStore applicationStoreInterface,
+	dbStore applicationStoreInterface,
+) error {
+	app, ok := data.(*model.ApplicationProcessedDTO)
+	if !ok {
+		return fmt.Errorf("invalid type: expected *ApplicationProcessedDTO")
+	}
+
+	if app.Name == "" {
+		return fmt.Errorf("application name cannot be empty")
+	}
+
+	// Check for duplicate ID in the file store
+	exists, err := fileStore.IsApplicationExists(app.ID)
+	if err != nil {
+		return fmt.Errorf("failed to check application existence: %w", err)
+	}
+	if exists {
+		return fmt.Errorf("duplicate application ID '%s': "+
+			"an application with this ID already exists in declarative resources", app.ID)
+	}
+
+	// COMPOSITE MODE: Check for duplicate ID in the database store
+	if dbStore != nil {
+		exists, err := dbStore.IsApplicationExists(app.ID)
+		if err != nil {
+			return fmt.Errorf("failed to check application existence: %w", err)
+		}
+		if exists {
+			return fmt.Errorf("duplicate application ID '%s': "+
+				"an application with this ID already exists in the database store", app.ID)
+		}
+	}
+
+	// TODO: Add more validation as needed
+
+	return nil
 }
 
 // GetResourceRules returns the parameterization rules for applications.

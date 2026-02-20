@@ -25,7 +25,7 @@ import {
   Stack,
   Toolbar as MuiToolbar,
   tabsClasses,
-  Typography
+  Typography,
 } from '@wso2/oxygen-ui';
 import {LayoutDashboard, Menu} from '@wso2/oxygen-ui-icons-react';
 import type {JSX} from 'react';

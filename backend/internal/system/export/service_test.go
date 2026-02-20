@@ -43,6 +43,7 @@ import (
 	"github.com/asgardeo/thunder/tests/mocks/userschemamock"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/suite"
 )
 
@@ -1502,7 +1503,7 @@ func (suite *ExportServiceTestSuite) TestExportUserSchemas_Success() {
 		Schema:                []byte(`{"type":"object","properties":{"email":{"type":"string"}}}`),
 	}
 
-	suite.mockUserSchemaService.EXPECT().GetUserSchema("schema1").Return(mockSchema, nil)
+	suite.mockUserSchemaService.EXPECT().GetUserSchema(mock.Anything, "schema1").Return(mockSchema, nil)
 
 	result, err := suite.exportService.ExportResources(request)
 
@@ -1541,8 +1542,8 @@ func (suite *ExportServiceTestSuite) TestExportUserSchemas_Multiple() {
 		Schema:                []byte(`{"type":"object","properties":{"empId":{"type":"string"}}}`),
 	}
 
-	suite.mockUserSchemaService.EXPECT().GetUserSchema("schema1").Return(mockSchema1, nil)
-	suite.mockUserSchemaService.EXPECT().GetUserSchema("schema2").Return(mockSchema2, nil)
+	suite.mockUserSchemaService.EXPECT().GetUserSchema(mock.Anything, "schema1").Return(mockSchema1, nil)
+	suite.mockUserSchemaService.EXPECT().GetUserSchema(mock.Anything, "schema2").Return(mockSchema2, nil)
 
 	result, err := suite.exportService.ExportResources(request)
 
@@ -1587,9 +1588,9 @@ func (suite *ExportServiceTestSuite) TestExportUserSchemas_Wildcard() {
 		},
 	}
 
-	suite.mockUserSchemaService.EXPECT().GetUserSchemaList(100, 0).Return(mockSchemaList, nil)
-	suite.mockUserSchemaService.EXPECT().GetUserSchema("schema1").Return(mockSchema1, nil)
-	suite.mockUserSchemaService.EXPECT().GetUserSchema("schema2").Return(mockSchema2, nil)
+	suite.mockUserSchemaService.EXPECT().GetUserSchemaList(mock.Anything, 100, 0).Return(mockSchemaList, nil)
+	suite.mockUserSchemaService.EXPECT().GetUserSchema(mock.Anything, "schema1").Return(mockSchema1, nil)
+	suite.mockUserSchemaService.EXPECT().GetUserSchema(mock.Anything, "schema2").Return(mockSchema2, nil)
 
 	result, err := suite.exportService.ExportResources(request)
 
@@ -1613,7 +1614,7 @@ func (suite *ExportServiceTestSuite) TestExportUserSchemas_NotFound() {
 		Error: "User schema not found",
 	}
 
-	suite.mockUserSchemaService.EXPECT().GetUserSchema("non-existent-schema").Return(nil, schemaError)
+	suite.mockUserSchemaService.EXPECT().GetUserSchema(mock.Anything, "non-existent-schema").Return(nil, schemaError)
 
 	result, err := suite.exportService.ExportResources(request)
 
@@ -1639,7 +1640,7 @@ func (suite *ExportServiceTestSuite) TestExportUserSchemas_EmptyName() {
 		Schema:                []byte(`{"type":"object"}`),
 	}
 
-	suite.mockUserSchemaService.EXPECT().GetUserSchema("schema-no-name").Return(mockSchema, nil)
+	suite.mockUserSchemaService.EXPECT().GetUserSchema(mock.Anything, "schema-no-name").Return(mockSchema, nil)
 
 	result, err := suite.exportService.ExportResources(request)
 
@@ -1665,7 +1666,7 @@ func (suite *ExportServiceTestSuite) TestExportUserSchemas_NoSchema() {
 		Schema:                []byte{}, // Empty schema
 	}
 
-	suite.mockUserSchemaService.EXPECT().GetUserSchema("schema-no-def").Return(mockSchema, nil)
+	suite.mockUserSchemaService.EXPECT().GetUserSchema(mock.Anything, "schema-no-def").Return(mockSchema, nil)
 
 	result, err := suite.exportService.ExportResources(request)
 
@@ -1717,10 +1718,10 @@ func (suite *ExportServiceTestSuite) TestExportUserSchemas_WildcardPartialFailur
 		Error: "User schema not found",
 	}
 
-	suite.mockUserSchemaService.EXPECT().GetUserSchemaList(100, 0).Return(mockSchemaList, nil)
-	suite.mockUserSchemaService.EXPECT().GetUserSchema("schema1").Return(mockSchema1, nil)
-	suite.mockUserSchemaService.EXPECT().GetUserSchema("schema2").Return(nil, schemaError)
-	suite.mockUserSchemaService.EXPECT().GetUserSchema("schema3").Return(mockSchema3, nil)
+	suite.mockUserSchemaService.EXPECT().GetUserSchemaList(mock.Anything, 100, 0).Return(mockSchemaList, nil)
+	suite.mockUserSchemaService.EXPECT().GetUserSchema(mock.Anything, "schema1").Return(mockSchema1, nil)
+	suite.mockUserSchemaService.EXPECT().GetUserSchema(mock.Anything, "schema2").Return(nil, schemaError)
+	suite.mockUserSchemaService.EXPECT().GetUserSchema(mock.Anything, "schema3").Return(mockSchema3, nil)
 
 	result, err := suite.exportService.ExportResources(request)
 
@@ -2072,7 +2073,7 @@ func (suite *ExportServiceTestSuite) TestExportResourcesWithExporter_UserSchema(
 		Schema:                []byte(`{"type":"object","properties":{"email":{"type":"string"}}}`),
 	}
 
-	suite.mockUserSchemaService.EXPECT().GetUserSchema(schemaID).Return(mockSchema, nil)
+	suite.mockUserSchemaService.EXPECT().GetUserSchema(mock.Anything, schemaID).Return(mockSchema, nil)
 
 	exporter, exists := suite.exportService.(*exportService).registry.Get(resourceTypeUserSchema)
 	assert.True(suite.T(), exists, "User schema exporter should be registered")

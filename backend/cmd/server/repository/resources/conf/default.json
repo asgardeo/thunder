@@ -82,6 +82,9 @@
     },
     "authorization_code": {
       "validity_period": 600
+    },
+    "dcr": {
+      "insecure": false
     }
   },
   "flow": {

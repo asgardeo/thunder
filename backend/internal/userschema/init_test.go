@@ -19,6 +19,7 @@
 package userschema
 
 import (
+	"context"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -36,6 +37,12 @@ import (
 const (
 	testCryptoKey = "0579f866ac7c9273580d0ff163fa01a7b2401a7ff3ddc3e3b14ae3136fa6025e"
 )
+
+type mockTransactioner struct{}
+
+func (m *mockTransactioner) Transact(ctx context.Context, txFunc func(context.Context) error) error {
+	return txFunc(ctx)
+}
 
 // InitTestSuite contains comprehensive tests for the init.go file.
 type InitTestSuite struct {
@@ -67,7 +74,7 @@ func (suite *InitTestSuite) TestInitialize() {
 	err := config.InitializeThunderRuntime("", testConfig)
 	assert.NoError(suite.T(), err)
 
-	service, _, err := Initialize(suite.mux, suite.mockOUService)
+	service, _, err := Initialize(suite.mux, suite.mockOUService, &mockTransactioner{})
 	assert.NoError(suite.T(), err)
 
 	suite.NotNil(service)
@@ -84,7 +91,7 @@ func (suite *InitTestSuite) TestRegisterRoutes_ListEndpoint() {
 	err := config.InitializeThunderRuntime("", testConfig)
 	assert.NoError(suite.T(), err)
 
-	_, _, err = Initialize(suite.mux, suite.mockOUService)
+	_, _, err = Initialize(suite.mux, suite.mockOUService, &mockTransactioner{})
 	assert.NoError(suite.T(), err)
 
 	req := httptest.NewRequest(http.MethodGet, "/user-schemas", nil)
@@ -105,7 +112,7 @@ func (suite *InitTestSuite) TestRegisterRoutes_CreateEndpoint() {
 	err := config.InitializeThunderRuntime("", testConfig)
 	assert.NoError(suite.T(), err)
 
-	_, _, err = Initialize(suite.mux, suite.mockOUService)
+	_, _, err = Initialize(suite.mux, suite.mockOUService, &mockTransactioner{})
 	assert.NoError(suite.T(), err)
 
 	req := httptest.NewRequest(http.MethodPost, "/user-schemas", nil)
@@ -126,7 +133,7 @@ func (suite *InitTestSuite) TestRegisterRoutes_GetByIDEndpoint() {
 	err := config.InitializeThunderRuntime("", testConfig)
 	assert.NoError(suite.T(), err)
 
-	_, _, err = Initialize(suite.mux, suite.mockOUService)
+	_, _, err = Initialize(suite.mux, suite.mockOUService, &mockTransactioner{})
 	assert.NoError(suite.T(), err)
 
 	req := httptest.NewRequest(http.MethodGet, "/user-schemas/test-id", nil)
@@ -147,7 +154,7 @@ func (suite *InitTestSuite) TestRegisterRoutes_UpdateEndpoint() {
 	err := config.InitializeThunderRuntime("", testConfig)
 	assert.NoError(suite.T(), err)
 
-	_, _, err = Initialize(suite.mux, suite.mockOUService)
+	_, _, err = Initialize(suite.mux, suite.mockOUService, &mockTransactioner{})
 	assert.NoError(suite.T(), err)
 
 	req := httptest.NewRequest(http.MethodPut, "/user-schemas/test-id", nil)
@@ -168,7 +175,7 @@ func (suite *InitTestSuite) TestRegisterRoutes_DeleteEndpoint() {
 	err := config.InitializeThunderRuntime("", testConfig)
 	assert.NoError(suite.T(), err)
 
-	_, _, err = Initialize(suite.mux, suite.mockOUService)
+	_, _, err = Initialize(suite.mux, suite.mockOUService, &mockTransactioner{})
 	assert.NoError(suite.T(), err)
 
 	req := httptest.NewRequest(http.MethodDelete, "/user-schemas/test-id", nil)
@@ -189,7 +196,7 @@ func (suite *InitTestSuite) TestRegisterRoutes_CORSPreflight() {
 	err := config.InitializeThunderRuntime("", testConfig)
 	assert.NoError(suite.T(), err)
 
-	_, _, err = Initialize(suite.mux, suite.mockOUService)
+	_, _, err = Initialize(suite.mux, suite.mockOUService, &mockTransactioner{})
 	assert.NoError(suite.T(), err)
 
 	req := httptest.NewRequest(http.MethodOptions, "/user-schemas", nil)
@@ -210,7 +217,7 @@ func (suite *InitTestSuite) TestRegisterRoutes_CORSPreflightByID() {
 	err := config.InitializeThunderRuntime("", testConfig)
 	assert.NoError(suite.T(), err)
 
-	_, _, err = Initialize(suite.mux, suite.mockOUService)
+	_, _, err = Initialize(suite.mux, suite.mockOUService, &mockTransactioner{})
 	assert.NoError(suite.T(), err)
 
 	req := httptest.NewRequest(http.MethodOptions, "/user-schemas/test-id", nil)
@@ -412,7 +419,7 @@ func TestInitialize_Standalone(t *testing.T) {
 	mux := http.NewServeMux()
 	mockOUService := oumock.NewOrganizationUnitServiceInterfaceMock(t)
 
-	service, _, err := Initialize(mux, mockOUService)
+	service, _, err := Initialize(mux, mockOUService, &mockTransactioner{})
 	assert.NoError(t, err)
 
 	assert.NotNil(t, service)
@@ -755,7 +762,7 @@ func TestInitialize_WithDeclarativeResourcesEnabled_InvalidYAML(t *testing.T) {
 	mockOUService := oumock.NewOrganizationUnitServiceInterfaceMock(t)
 
 	// Initialize should return an error due to invalid YAML
-	_, _, err = Initialize(mux, mockOUService)
+	_, _, err = Initialize(mux, mockOUService, &mockTransactioner{})
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "failed to load user schema resources")
 }
@@ -808,7 +815,7 @@ schema: |
 	mockOUService := oumock.NewOrganizationUnitServiceInterfaceMock(t)
 
 	// Initialize should return an error due to validation failure
-	_, _, err = Initialize(mux, mockOUService)
+	_, _, err = Initialize(mux, mockOUService, &mockTransactioner{})
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "failed to load user schema resources")
 }
@@ -869,7 +876,7 @@ schema: |
 		}).Once()
 
 	// Initialize should return an error due to OU service failure
-	_, _, err = Initialize(mux, mockOUService)
+	_, _, err = Initialize(mux, mockOUService, &mockTransactioner{})
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "failed to load user schema resources")
 
@@ -922,7 +929,7 @@ schema: |
 	mockOUService := oumock.NewOrganizationUnitServiceInterfaceMock(t)
 
 	// Initialize should return an error due to invalid JSON
-	_, _, err = Initialize(mux, mockOUService)
+	_, _, err = Initialize(mux, mockOUService, &mockTransactioner{})
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "failed to load user schema resources")
 }

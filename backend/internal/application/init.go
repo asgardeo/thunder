@@ -28,7 +28,7 @@ import (
 	layoutmgt "github.com/asgardeo/thunder/internal/design/layout/mgt"
 	thememgt "github.com/asgardeo/thunder/internal/design/theme/mgt"
 	flowmgt "github.com/asgardeo/thunder/internal/flow/mgt"
-	"github.com/asgardeo/thunder/internal/system/config"
+	serverconst "github.com/asgardeo/thunder/internal/system/constants"
 	declarativeresource "github.com/asgardeo/thunder/internal/system/declarative_resource"
 	"github.com/asgardeo/thunder/internal/system/middleware"
 	"github.com/asgardeo/thunder/internal/userschema"
@@ -44,18 +44,16 @@ func Initialize(
 	layoutMgtService layoutmgt.LayoutMgtServiceInterface,
 	userSchemaService userschema.UserSchemaServiceInterface,
 ) (ApplicationServiceInterface, declarativeresource.ResourceExporter, error) {
-	var appStore applicationStoreInterface
-	if config.GetThunderRuntime().Config.DeclarativeResources.Enabled {
-		appStore = newFileBasedStore()
-	} else {
-		store := newApplicationStore()
-		appStore = newCachedBackedApplicationStore(store)
-	}
+	// Step 1: Initialize store structure (without data)
+	appStore := initializeStore()
 
+	// Step 2: Create service with store
 	appService := newApplicationService(
 		appStore, certService, flowMgtService, themeMgtService, layoutMgtService, userSchemaService)
 
-	if config.GetThunderRuntime().Config.DeclarativeResources.Enabled {
+	// Step 3: Load declarative resources into store (if applicable)
+	storeMode := getApplicationStoreMode()
+	if storeMode == serverconst.StoreModeComposite || storeMode == serverconst.StoreModeDeclarative {
 		if err := loadDeclarativeResources(appStore, appService); err != nil {
 			return nil, nil, err
 		}
@@ -72,6 +70,56 @@ func Initialize(
 	// Create and return exporter
 	exporter := newApplicationExporter(appService)
 	return appService, exporter, nil
+}
+
+// Store Selection (based on application.store configuration):
+//
+// 1. MUTABLE mode (store: "mutable"):
+//   - Uses database store only with cache (cachedBackedApplicationStore)
+//   - Supports full CRUD operations (Create/Read/Update/Delete)
+//   - All applications are mutable
+//   - Export functionality exports DB-backed applications
+//
+// 2. IMMUTABLE mode (store: "declarative"):
+//   - Uses file-based store only (from YAML resources)
+//   - All applications are immutable (read-only)
+//   - No create/update/delete operations allowed
+//   - Export functionality not applicable
+//
+// 3. COMPOSITE mode (store: "composite" - hybrid):
+//   - Uses both file-based store (immutable) + database store (mutable)
+//   - YAML resources are loaded into file-based store (immutable, read-only)
+//   - Database store handles runtime applications (mutable)
+//   - Reads check both stores (merged results)
+//   - Writes only go to database store
+//   - Declarative applications cannot be updated or deleted
+//   - Export only exports DB-backed applications (not YAML)
+//
+// Configuration Fallback:
+// - If application.store is not specified, falls back to global declarative_resources.enabled:
+//   - If declarative_resources.enabled = true: behaves as IMMUTABLE mode
+//   - If declarative_resources.enabled = false: behaves as MUTABLE mode
+func initializeStore() applicationStoreInterface {
+	var appStore applicationStoreInterface
+
+	storeMode := getApplicationStoreMode()
+
+	switch storeMode {
+	case serverconst.StoreModeComposite:
+		fileStore := newFileBasedStore()
+		dbStore := newApplicationStore()
+		appStore = newCompositeApplicationStore(fileStore, dbStore)
+
+	case serverconst.StoreModeDeclarative:
+		fileStore := newFileBasedStore()
+		appStore = fileStore
+
+	default:
+		dbStore := newApplicationStore()
+		appStore = newCachedBackedApplicationStore(dbStore)
+	}
+
+	return appStore
 }
 
 func registerRoutes(mux *http.ServeMux, appHandler *applicationHandler) {

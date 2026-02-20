@@ -5,6 +5,8 @@
 package userschema
 
 import (
+	"context"
+
 	mock "github.com/stretchr/testify/mock"
 )
 
@@ -36,16 +38,16 @@ func (_m *userSchemaStoreInterfaceMock) EXPECT() *userSchemaStoreInterfaceMock_E
 }
 
 // CreateUserSchema provides a mock function for the type userSchemaStoreInterfaceMock
-func (_mock *userSchemaStoreInterfaceMock) CreateUserSchema(userSchema UserSchema) error {
-	ret := _mock.Called(userSchema)
+func (_mock *userSchemaStoreInterfaceMock) CreateUserSchema(ctx context.Context, userSchema UserSchema) error {
+	ret := _mock.Called(ctx, userSchema)
 
 	if len(ret) == 0 {
 		panic("no return value specified for CreateUserSchema")
 	}
 
 	var r0 error
-	if returnFunc, ok := ret.Get(0).(func(UserSchema) error); ok {
-		r0 = returnFunc(userSchema)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, UserSchema) error); ok {
+		r0 = returnFunc(ctx, userSchema)
 	} else {
 		r0 = ret.Error(0)
 	}
@@ -58,9 +60,10 @@ type userSchemaStoreInterfaceMock_CreateUserSchema_Call struct {
 }
 
 // CreateUserSchema is a helper method to define mock.On call
+//   - ctx context.Context
 //   - userSchema UserSchema
-func (_e *userSchemaStoreInterfaceMock_Expecter) CreateUserSchema(userSchema interface{}) *userSchemaStoreInterfaceMock_CreateUserSchema_Call {
-	return &userSchemaStoreInterfaceMock_CreateUserSchema_Call{Call: _e.mock.On("CreateUserSchema", userSchema)}
+func (_e *userSchemaStoreInterfaceMock_Expecter) CreateUserSchema(ctx interface{}, userSchema interface{}) *userSchemaStoreInterfaceMock_CreateUserSchema_Call {
+	return &userSchemaStoreInterfaceMock_CreateUserSchema_Call{Call: _e.mock.On("CreateUserSchema", ctx, userSchema)}
 }
 
 func (_c *userSchemaStoreInterfaceMock_CreateUserSchema_Call) Run(run func(userSchema UserSchema)) *userSchemaStoreInterfaceMock_CreateUserSchema_Call {
@@ -87,16 +90,16 @@ func (_c *userSchemaStoreInterfaceMock_CreateUserSchema_Call) RunAndReturn(run f
 }
 
 // DeleteUserSchemaByID provides a mock function for the type userSchemaStoreInterfaceMock
-func (_mock *userSchemaStoreInterfaceMock) DeleteUserSchemaByID(schemaID string) error {
-	ret := _mock.Called(schemaID)
+func (_mock *userSchemaStoreInterfaceMock) DeleteUserSchemaByID(ctx context.Context, schemaID string) error {
+	ret := _mock.Called(ctx, schemaID)
 
 	if len(ret) == 0 {
 		panic("no return value specified for DeleteUserSchemaByID")
 	}
 
 	var r0 error
-	if returnFunc, ok := ret.Get(0).(func(string) error); ok {
-		r0 = returnFunc(schemaID)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string) error); ok {
+		r0 = returnFunc(ctx, schemaID)
 	} else {
 		r0 = ret.Error(0)
 	}
@@ -109,9 +112,10 @@ type userSchemaStoreInterfaceMock_DeleteUserSchemaByID_Call struct {
 }
 
 // DeleteUserSchemaByID is a helper method to define mock.On call
+//   - ctx context.Context
 //   - schemaID string
-func (_e *userSchemaStoreInterfaceMock_Expecter) DeleteUserSchemaByID(schemaID interface{}) *userSchemaStoreInterfaceMock_DeleteUserSchemaByID_Call {
-	return &userSchemaStoreInterfaceMock_DeleteUserSchemaByID_Call{Call: _e.mock.On("DeleteUserSchemaByID", schemaID)}
+func (_e *userSchemaStoreInterfaceMock_Expecter) DeleteUserSchemaByID(ctx interface{}, schemaID interface{}) *userSchemaStoreInterfaceMock_DeleteUserSchemaByID_Call {
+	return &userSchemaStoreInterfaceMock_DeleteUserSchemaByID_Call{Call: _e.mock.On("DeleteUserSchemaByID", ctx, schemaID)}
 }
 
 func (_c *userSchemaStoreInterfaceMock_DeleteUserSchemaByID_Call) Run(run func(schemaID string)) *userSchemaStoreInterfaceMock_DeleteUserSchemaByID_Call {
@@ -138,8 +142,8 @@ func (_c *userSchemaStoreInterfaceMock_DeleteUserSchemaByID_Call) RunAndReturn(r
 }
 
 // GetUserSchemaByID provides a mock function for the type userSchemaStoreInterfaceMock
-func (_mock *userSchemaStoreInterfaceMock) GetUserSchemaByID(schemaID string) (UserSchema, error) {
-	ret := _mock.Called(schemaID)
+func (_mock *userSchemaStoreInterfaceMock) GetUserSchemaByID(ctx context.Context, schemaID string) (UserSchema, error) {
+	ret := _mock.Called(ctx, schemaID)
 
 	if len(ret) == 0 {
 		panic("no return value specified for GetUserSchemaByID")
@@ -147,16 +151,16 @@ func (_mock *userSchemaStoreInterfaceMock) GetUserSchemaByID(schemaID string) (U
 
 	var r0 UserSchema
 	var r1 error
-	if returnFunc, ok := ret.Get(0).(func(string) (UserSchema, error)); ok {
-		return returnFunc(schemaID)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string) (UserSchema, error)); ok {
+		return returnFunc(ctx, schemaID)
 	}
-	if returnFunc, ok := ret.Get(0).(func(string) UserSchema); ok {
-		r0 = returnFunc(schemaID)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string) UserSchema); ok {
+		r0 = returnFunc(ctx, schemaID)
 	} else {
 		r0 = ret.Get(0).(UserSchema)
 	}
-	if returnFunc, ok := ret.Get(1).(func(string) error); ok {
-		r1 = returnFunc(schemaID)
+	if returnFunc, ok := ret.Get(1).(func(context.Context, string) error); ok {
+		r1 = returnFunc(ctx, schemaID)
 	} else {
 		r1 = ret.Error(1)
 	}
@@ -169,9 +173,10 @@ type userSchemaStoreInterfaceMock_GetUserSchemaByID_Call struct {
 }
 
 // GetUserSchemaByID is a helper method to define mock.On call
+//   - ctx context.Context
 //   - schemaID string
-func (_e *userSchemaStoreInterfaceMock_Expecter) GetUserSchemaByID(schemaID interface{}) *userSchemaStoreInterfaceMock_GetUserSchemaByID_Call {
-	return &userSchemaStoreInterfaceMock_GetUserSchemaByID_Call{Call: _e.mock.On("GetUserSchemaByID", schemaID)}
+func (_e *userSchemaStoreInterfaceMock_Expecter) GetUserSchemaByID(ctx interface{}, schemaID interface{}) *userSchemaStoreInterfaceMock_GetUserSchemaByID_Call {
+	return &userSchemaStoreInterfaceMock_GetUserSchemaByID_Call{Call: _e.mock.On("GetUserSchemaByID", ctx, schemaID)}
 }
 
 func (_c *userSchemaStoreInterfaceMock_GetUserSchemaByID_Call) Run(run func(schemaID string)) *userSchemaStoreInterfaceMock_GetUserSchemaByID_Call {
@@ -198,8 +203,8 @@ func (_c *userSchemaStoreInterfaceMock_GetUserSchemaByID_Call) RunAndReturn(run 
 }
 
 // GetUserSchemaByName provides a mock function for the type userSchemaStoreInterfaceMock
-func (_mock *userSchemaStoreInterfaceMock) GetUserSchemaByName(name string) (UserSchema, error) {
-	ret := _mock.Called(name)
+func (_mock *userSchemaStoreInterfaceMock) GetUserSchemaByName(ctx context.Context, name string) (UserSchema, error) {
+	ret := _mock.Called(ctx, name)
 
 	if len(ret) == 0 {
 		panic("no return value specified for GetUserSchemaByName")
@@ -207,16 +212,16 @@ func (_mock *userSchemaStoreInterfaceMock) GetUserSchemaByName(name string) (Use
 
 	var r0 UserSchema
 	var r1 error
-	if returnFunc, ok := ret.Get(0).(func(string) (UserSchema, error)); ok {
-		return returnFunc(name)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string) (UserSchema, error)); ok {
+		return returnFunc(ctx, name)
 	}
-	if returnFunc, ok := ret.Get(0).(func(string) UserSchema); ok {
-		r0 = returnFunc(name)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string) UserSchema); ok {
+		r0 = returnFunc(ctx, name)
 	} else {
 		r0 = ret.Get(0).(UserSchema)
 	}
-	if returnFunc, ok := ret.Get(1).(func(string) error); ok {
-		r1 = returnFunc(name)
+	if returnFunc, ok := ret.Get(1).(func(context.Context, string) error); ok {
+		r1 = returnFunc(ctx, name)
 	} else {
 		r1 = ret.Error(1)
 	}
@@ -229,9 +234,10 @@ type userSchemaStoreInterfaceMock_GetUserSchemaByName_Call struct {
 }
 
 // GetUserSchemaByName is a helper method to define mock.On call
+//   - ctx context.Context
 //   - name string
-func (_e *userSchemaStoreInterfaceMock_Expecter) GetUserSchemaByName(name interface{}) *userSchemaStoreInterfaceMock_GetUserSchemaByName_Call {
-	return &userSchemaStoreInterfaceMock_GetUserSchemaByName_Call{Call: _e.mock.On("GetUserSchemaByName", name)}
+func (_e *userSchemaStoreInterfaceMock_Expecter) GetUserSchemaByName(ctx interface{}, name interface{}) *userSchemaStoreInterfaceMock_GetUserSchemaByName_Call {
+	return &userSchemaStoreInterfaceMock_GetUserSchemaByName_Call{Call: _e.mock.On("GetUserSchemaByName", ctx, name)}
 }
 
 func (_c *userSchemaStoreInterfaceMock_GetUserSchemaByName_Call) Run(run func(name string)) *userSchemaStoreInterfaceMock_GetUserSchemaByName_Call {
@@ -258,8 +264,8 @@ func (_c *userSchemaStoreInterfaceMock_GetUserSchemaByName_Call) RunAndReturn(ru
 }
 
 // GetUserSchemaList provides a mock function for the type userSchemaStoreInterfaceMock
-func (_mock *userSchemaStoreInterfaceMock) GetUserSchemaList(limit int, offset int) ([]UserSchemaListItem, error) {
-	ret := _mock.Called(limit, offset)
+func (_mock *userSchemaStoreInterfaceMock) GetUserSchemaList(ctx context.Context, limit int, offset int) ([]UserSchemaListItem, error) {
+	ret := _mock.Called(ctx, limit, offset)
 
 	if len(ret) == 0 {
 		panic("no return value specified for GetUserSchemaList")
@@ -267,18 +273,18 @@ func (_mock *userSchemaStoreInterfaceMock) GetUserSchemaList(limit int, offset i
 
 	var r0 []UserSchemaListItem
 	var r1 error
-	if returnFunc, ok := ret.Get(0).(func(int, int) ([]UserSchemaListItem, error)); ok {
-		return returnFunc(limit, offset)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, int, int) ([]UserSchemaListItem, error)); ok {
+		return returnFunc(ctx, limit, offset)
 	}
-	if returnFunc, ok := ret.Get(0).(func(int, int) []UserSchemaListItem); ok {
-		r0 = returnFunc(limit, offset)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, int, int) []UserSchemaListItem); ok {
+		r0 = returnFunc(ctx, limit, offset)
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).([]UserSchemaListItem)
 		}
 	}
-	if returnFunc, ok := ret.Get(1).(func(int, int) error); ok {
-		r1 = returnFunc(limit, offset)
+	if returnFunc, ok := ret.Get(1).(func(context.Context, int, int) error); ok {
+		r1 = returnFunc(ctx, limit, offset)
 	} else {
 		r1 = ret.Error(1)
 	}
@@ -291,10 +297,11 @@ type userSchemaStoreInterfaceMock_GetUserSchemaList_Call struct {
 }
 
 // GetUserSchemaList is a helper method to define mock.On call
+//   - ctx context.Context
 //   - limit int
 //   - offset int
-func (_e *userSchemaStoreInterfaceMock_Expecter) GetUserSchemaList(limit interface{}, offset interface{}) *userSchemaStoreInterfaceMock_GetUserSchemaList_Call {
-	return &userSchemaStoreInterfaceMock_GetUserSchemaList_Call{Call: _e.mock.On("GetUserSchemaList", limit, offset)}
+func (_e *userSchemaStoreInterfaceMock_Expecter) GetUserSchemaList(ctx interface{}, limit interface{}, offset interface{}) *userSchemaStoreInterfaceMock_GetUserSchemaList_Call {
+	return &userSchemaStoreInterfaceMock_GetUserSchemaList_Call{Call: _e.mock.On("GetUserSchemaList", ctx, limit, offset)}
 }
 
 func (_c *userSchemaStoreInterfaceMock_GetUserSchemaList_Call) Run(run func(limit int, offset int)) *userSchemaStoreInterfaceMock_GetUserSchemaList_Call {
@@ -326,8 +333,8 @@ func (_c *userSchemaStoreInterfaceMock_GetUserSchemaList_Call) RunAndReturn(run 
 }
 
 // GetUserSchemaListCount provides a mock function for the type userSchemaStoreInterfaceMock
-func (_mock *userSchemaStoreInterfaceMock) GetUserSchemaListCount() (int, error) {
-	ret := _mock.Called()
+func (_mock *userSchemaStoreInterfaceMock) GetUserSchemaListCount(ctx context.Context) (int, error) {
+	ret := _mock.Called(ctx)
 
 	if len(ret) == 0 {
 		panic("no return value specified for GetUserSchemaListCount")
@@ -335,16 +342,16 @@ func (_mock *userSchemaStoreInterfaceMock) GetUserSchemaListCount() (int, error)
 
 	var r0 int
 	var r1 error
-	if returnFunc, ok := ret.Get(0).(func() (int, error)); ok {
-		return returnFunc()
+	if returnFunc, ok := ret.Get(0).(func(context.Context) (int, error)); ok {
+		return returnFunc(ctx)
 	}
-	if returnFunc, ok := ret.Get(0).(func() int); ok {
-		r0 = returnFunc()
+	if returnFunc, ok := ret.Get(0).(func(context.Context) int); ok {
+		r0 = returnFunc(ctx)
 	} else {
 		r0 = ret.Get(0).(int)
 	}
-	if returnFunc, ok := ret.Get(1).(func() error); ok {
-		r1 = returnFunc()
+	if returnFunc, ok := ret.Get(1).(func(context.Context) error); ok {
+		r1 = returnFunc(ctx)
 	} else {
 		r1 = ret.Error(1)
 	}
@@ -357,8 +364,9 @@ type userSchemaStoreInterfaceMock_GetUserSchemaListCount_Call struct {
 }
 
 // GetUserSchemaListCount is a helper method to define mock.On call
-func (_e *userSchemaStoreInterfaceMock_Expecter) GetUserSchemaListCount() *userSchemaStoreInterfaceMock_GetUserSchemaListCount_Call {
-	return &userSchemaStoreInterfaceMock_GetUserSchemaListCount_Call{Call: _e.mock.On("GetUserSchemaListCount")}
+//   - ctx context.Context
+func (_e *userSchemaStoreInterfaceMock_Expecter) GetUserSchemaListCount(ctx interface{}) *userSchemaStoreInterfaceMock_GetUserSchemaListCount_Call {
+	return &userSchemaStoreInterfaceMock_GetUserSchemaListCount_Call{Call: _e.mock.On("GetUserSchemaListCount", ctx)}
 }
 
 func (_c *userSchemaStoreInterfaceMock_GetUserSchemaListCount_Call) Run(run func()) *userSchemaStoreInterfaceMock_GetUserSchemaListCount_Call {
@@ -379,16 +387,16 @@ func (_c *userSchemaStoreInterfaceMock_GetUserSchemaListCount_Call) RunAndReturn
 }
 
 // UpdateUserSchemaByID provides a mock function for the type userSchemaStoreInterfaceMock
-func (_mock *userSchemaStoreInterfaceMock) UpdateUserSchemaByID(schemaID string, userSchema UserSchema) error {
-	ret := _mock.Called(schemaID, userSchema)
+func (_mock *userSchemaStoreInterfaceMock) UpdateUserSchemaByID(ctx context.Context, schemaID string, userSchema UserSchema) error {
+	ret := _mock.Called(ctx, schemaID, userSchema)
 
 	if len(ret) == 0 {
 		panic("no return value specified for UpdateUserSchemaByID")
 	}
 
 	var r0 error
-	if returnFunc, ok := ret.Get(0).(func(string, UserSchema) error); ok {
-		r0 = returnFunc(schemaID, userSchema)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string, UserSchema) error); ok {
+		r0 = returnFunc(ctx, schemaID, userSchema)
 	} else {
 		r0 = ret.Error(0)
 	}
@@ -401,10 +409,11 @@ type userSchemaStoreInterfaceMock_UpdateUserSchemaByID_Call struct {
 }
 
 // UpdateUserSchemaByID is a helper method to define mock.On call
+//   - ctx context.Context
 //   - schemaID string
 //   - userSchema UserSchema
-func (_e *userSchemaStoreInterfaceMock_Expecter) UpdateUserSchemaByID(schemaID interface{}, userSchema interface{}) *userSchemaStoreInterfaceMock_UpdateUserSchemaByID_Call {
-	return &userSchemaStoreInterfaceMock_UpdateUserSchemaByID_Call{Call: _e.mock.On("UpdateUserSchemaByID", schemaID, userSchema)}
+func (_e *userSchemaStoreInterfaceMock_Expecter) UpdateUserSchemaByID(ctx interface{}, schemaID interface{}, userSchema interface{}) *userSchemaStoreInterfaceMock_UpdateUserSchemaByID_Call {
+	return &userSchemaStoreInterfaceMock_UpdateUserSchemaByID_Call{Call: _e.mock.On("UpdateUserSchemaByID", ctx, schemaID, userSchema)}
 }
 
 func (_c *userSchemaStoreInterfaceMock_UpdateUserSchemaByID_Call) Run(run func(schemaID string, userSchema UserSchema)) *userSchemaStoreInterfaceMock_UpdateUserSchemaByID_Call {

@@ -45,6 +45,7 @@ import (
 	"github.com/asgardeo/thunder/internal/role"
 	"github.com/asgardeo/thunder/internal/system/crypto/hash"
 	"github.com/asgardeo/thunder/internal/system/crypto/pki"
+	"github.com/asgardeo/thunder/internal/system/database/provider"
 	declarativeresource "github.com/asgardeo/thunder/internal/system/declarative_resource"
 	"github.com/asgardeo/thunder/internal/system/export"
 	i18nmgt "github.com/asgardeo/thunder/internal/system/i18n/mgt"
@@ -96,7 +97,13 @@ func registerServices(mux *http.ServeMux) jwt.JWTServiceInterface {
 	exporters = append(exporters, ouExporter)
 
 	hashService := hash.Initialize()
-	userSchemaService, userSchemaExporter, err := userschema.Initialize(mux, ouService)
+	dbProvider := provider.GetDBProvider()
+	transactioner, err := dbProvider.GetConfigDBTransactioner()
+	if err != nil {
+		logger.Fatal("Failed to get config DB transactioner", log.Error(err))
+	}
+
+	userSchemaService, userSchemaExporter, err := userschema.Initialize(mux, ouService, transactioner)
 	if err != nil {
 		logger.Fatal("Failed to initialize UserSchemaService", log.Error(err))
 	}

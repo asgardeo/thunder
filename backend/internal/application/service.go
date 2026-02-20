@@ -34,7 +34,6 @@ import (
 	"github.com/asgardeo/thunder/internal/system/config"
 	serverconst "github.com/asgardeo/thunder/internal/system/constants"
 	"github.com/asgardeo/thunder/internal/system/crypto/hash"
-	declarativeresource "github.com/asgardeo/thunder/internal/system/declarative_resource"
 	"github.com/asgardeo/thunder/internal/system/error/serviceerror"
 	"github.com/asgardeo/thunder/internal/system/log"
 	sysutils "github.com/asgardeo/thunder/internal/system/utils"
@@ -86,8 +85,19 @@ func newApplicationService(
 func (as *applicationService) CreateApplication(app *model.ApplicationDTO) (*model.ApplicationDTO,
 	*serviceerror.ServiceError) {
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, "ApplicationService"))
-	if err := declarativeresource.CheckDeclarativeCreate(); err != nil {
-		return nil, err
+	if app == nil {
+		return nil, &ErrorApplicationNil
+	}
+	// Check if store is in pure declarative mode
+	if isDeclarativeModeEnabled() {
+		return nil, &ErrorCannotModifyDeclarativeResource
+	}
+
+	// Check if an application with the same ID exists and is declarative (in composite mode)
+	if app.ID != "" {
+		if as.appStore.IsApplicationDeclarative(app.ID) {
+			return nil, &ErrorCannotModifyDeclarativeResource
+		}
 	}
 
 	processedDTO, inboundAuthConfig, svcErr := as.ValidateApplication(app)
@@ -296,6 +306,10 @@ func (as *applicationService) GetApplicationList() (*model.ApplicationListRespon
 
 	applications, err := as.appStore.GetApplicationList()
 	if err != nil {
+		// Check for composite limit exceeded
+		if errors.Is(err, errResultLimitExceededInCompositeMode) {
+			return nil, &ErrorResultLimitExceeded
+		}
 		logger.Error("Failed to retrieve application list", log.Error(err))
 		return nil, &ErrorInternalServerError
 	}
@@ -328,6 +342,7 @@ func buildBasicApplicationResponse(app model.BasicApplicationDTO) model.BasicApp
 		ThemeID:                   app.ThemeID,
 		LayoutID:                  app.LayoutID,
 		Template:                  app.Template,
+		IsReadOnly:                app.IsReadOnly,
 	}
 }
 
@@ -442,9 +457,6 @@ func (as *applicationService) enrichApplicationWithCertificate(application *mode
 func (as *applicationService) UpdateApplication(appID string, app *model.ApplicationDTO) (
 	*model.ApplicationDTO, *serviceerror.ServiceError) {
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, "ApplicationService"))
-	if err := declarativeresource.CheckDeclarativeUpdate(); err != nil {
-		return nil, err
-	}
 
 	if appID == "" {
 		return nil, &ErrorInvalidApplicationID
@@ -454,6 +466,11 @@ func (as *applicationService) UpdateApplication(appID string, app *model.Applica
 	}
 	if app.Name == "" {
 		return nil, &ErrorInvalidApplicationName
+	}
+
+	// Check if the application is declarative (read-only)
+	if as.appStore.IsApplicationDeclarative(appID) {
+		return nil, &ErrorCannotModifyDeclarativeResource
 	}
 
 	existingApp, appCheckErr := as.appStore.GetApplicationByID(appID)
@@ -638,13 +655,15 @@ func (as *applicationService) UpdateApplication(appID string, app *model.Applica
 
 // DeleteApplication delete the application for given app id.
 func (as *applicationService) DeleteApplication(appID string) *serviceerror.ServiceError {
-	if err := declarativeresource.CheckDeclarativeDelete(); err != nil {
-		return err
-	}
 	if appID == "" {
 		return &ErrorInvalidApplicationID
 	}
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, "ApplicationService"))
+
+	// Check if the application is declarative (read-only)
+	if as.appStore.IsApplicationDeclarative(appID) {
+		return &ErrorCannotModifyDeclarativeResource
+	}
 
 	// Delete the application from the store
 	appErr := as.appStore.DeleteApplication(appID)
@@ -773,7 +792,8 @@ func (as *applicationService) validateAllowedUserTypes(allowedUserTypes []string
 	offset := 0
 
 	for {
-		userSchemaList, svcErr := as.userSchemaService.GetUserSchemaList(limit, offset)
+		// TODO: Pass context from the caller
+		userSchemaList, svcErr := as.userSchemaService.GetUserSchemaList(context.TODO(), limit, offset)
 		if svcErr != nil {
 			logger.Error("Failed to retrieve user schema list for validation",
 				log.String("error", svcErr.Error), log.String("code", svcErr.Code))

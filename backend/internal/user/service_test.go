@@ -70,7 +70,7 @@ func TestOUStore_ValidateUserAndUniqueness(t *testing.T) {
 			setup: func(t *testing.T) (*userService, testMocks) {
 				schemaMock := userschemamock.NewUserSchemaServiceInterfaceMock(t)
 				schemaMock.
-					On("ValidateUser", testUserType, mock.Anything).
+					On("ValidateUser", mock.Anything, testUserType, mock.Anything).
 					Return(false, &serviceerror.ServiceError{
 						Code:  "USRS-5000",
 						Type:  serviceerror.ServerErrorType,
@@ -95,7 +95,7 @@ func TestOUStore_ValidateUserAndUniqueness(t *testing.T) {
 			setup: func(t *testing.T) (*userService, testMocks) {
 				schemaMock := userschemamock.NewUserSchemaServiceInterfaceMock(t)
 				schemaMock.
-					On("ValidateUser", testUserType, mock.Anything).
+					On("ValidateUser", mock.Anything, testUserType, mock.Anything).
 					Return(false, &userschema.ErrorUserSchemaNotFound).
 					Once()
 
@@ -116,7 +116,7 @@ func TestOUStore_ValidateUserAndUniqueness(t *testing.T) {
 			setup: func(t *testing.T) (*userService, testMocks) {
 				schemaMock := userschemamock.NewUserSchemaServiceInterfaceMock(t)
 				schemaMock.
-					On("ValidateUser", testUserType, mock.Anything).
+					On("ValidateUser", mock.Anything, testUserType, mock.Anything).
 					Return(false, &serviceerror.ServiceError{
 						Code:  "USRS-5000",
 						Type:  serviceerror.ServerErrorType,
@@ -141,7 +141,7 @@ func TestOUStore_ValidateUserAndUniqueness(t *testing.T) {
 			setup: func(t *testing.T) (*userService, testMocks) {
 				schemaMock := userschemamock.NewUserSchemaServiceInterfaceMock(t)
 				schemaMock.
-					On("ValidateUser", testUserType, mock.Anything).
+					On("ValidateUser", mock.Anything, testUserType, mock.Anything).
 					Return(false, nil).
 					Once()
 
@@ -162,11 +162,11 @@ func TestOUStore_ValidateUserAndUniqueness(t *testing.T) {
 			setup: func(t *testing.T) (*userService, testMocks) {
 				schemaMock := userschemamock.NewUserSchemaServiceInterfaceMock(t)
 				schemaMock.
-					On("ValidateUser", testUserType, mock.Anything).
+					On("ValidateUser", mock.Anything, testUserType, mock.Anything).
 					Return(true, nil).
 					Once()
 				schemaMock.
-					On("ValidateUserUniqueness", testUserType, mock.Anything, mock.Anything).
+					On("ValidateUserUniqueness", mock.Anything, testUserType, mock.Anything, mock.Anything).
 					Return(false, &serviceerror.ServiceError{
 						Code:  "USRS-5000",
 						Type:  serviceerror.ServerErrorType,
@@ -189,11 +189,11 @@ func TestOUStore_ValidateUserAndUniqueness(t *testing.T) {
 			setup: func(t *testing.T) (*userService, testMocks) {
 				schemaMock := userschemamock.NewUserSchemaServiceInterfaceMock(t)
 				schemaMock.
-					On("ValidateUser", testUserType, mock.Anything).
+					On("ValidateUser", mock.Anything, testUserType, mock.Anything).
 					Return(true, nil).
 					Once()
 				schemaMock.
-					On("ValidateUserUniqueness", testUserType, mock.Anything, mock.Anything).
+					On("ValidateUserUniqueness", mock.Anything, testUserType, mock.Anything, mock.Anything).
 					Return(false, &userschema.ErrorUserSchemaNotFound).
 					Once()
 
@@ -218,13 +218,13 @@ func TestOUStore_ValidateUserAndUniqueness(t *testing.T) {
 					Return(&existingUserID, nil).
 					Once()
 				schemaMock.
-					On("ValidateUser", testUserType, mock.Anything).
+					On("ValidateUser", mock.Anything, testUserType, mock.Anything).
 					Return(true, nil).
 					Once()
 				schemaMock.
-					On("ValidateUserUniqueness", testUserType, mock.Anything, mock.Anything).
+					On("ValidateUserUniqueness", mock.Anything, testUserType, mock.Anything, mock.Anything).
 					Run(func(args mock.Arguments) {
-						identify := args.Get(2).(func(map[string]interface{}) (*string, error))
+						identify := args.Get(3).(func(map[string]interface{}) (*string, error))
 
 						id, err := identify(map[string]interface{}{"email": "employee@example.com"})
 						require.NoError(t, err)
@@ -258,13 +258,13 @@ func TestOUStore_ValidateUserAndUniqueness(t *testing.T) {
 					Return((*string)(nil), nil).
 					Once()
 				schemaMock.
-					On("ValidateUser", testUserType, mock.Anything).
+					On("ValidateUser", mock.Anything, testUserType, mock.Anything).
 					Return(true, nil).
 					Once()
 				schemaMock.
-					On("ValidateUserUniqueness", testUserType, mock.Anything, mock.Anything).
+					On("ValidateUserUniqueness", mock.Anything, testUserType, mock.Anything, mock.Anything).
 					Run(func(args mock.Arguments) {
-						identify := args.Get(2).(func(map[string]interface{}) (*string, error))
+						identify := args.Get(3).(func(map[string]interface{}) (*string, error))
 
 						id, err := identify(map[string]interface{}{"email": "employee@example.com"})
 						require.NoError(t, err)
@@ -296,13 +296,13 @@ func TestOUStore_ValidateUserAndUniqueness(t *testing.T) {
 					Return((*string)(nil), errors.New("store failure")).
 					Once()
 				schemaMock.
-					On("ValidateUser", testUserType, mock.Anything).
+					On("ValidateUser", mock.Anything, testUserType, mock.Anything).
 					Return(true, nil).
 					Once()
 				schemaMock.
-					On("ValidateUserUniqueness", testUserType, mock.Anything, mock.Anything).
+					On("ValidateUserUniqueness", mock.Anything, testUserType, mock.Anything, mock.Anything).
 					Run(func(args mock.Arguments) {
-						identify := args.Get(2).(func(map[string]interface{}) (*string, error))
+						identify := args.Get(3).(func(map[string]interface{}) (*string, error))
 
 						id, err := identify(map[string]interface{}{"email": "employee@example.com"})
 						require.Error(t, err)
@@ -341,13 +341,13 @@ func TestOUStore_ValidateUserAndUniqueness(t *testing.T) {
 					Return(&existingUserID, nil).
 					Once()
 				schemaMock.
-					On("ValidateUser", testUserType, mock.Anything).
+					On("ValidateUser", mock.Anything, testUserType, mock.Anything).
 					Return(true, nil).
 					Once()
 				schemaMock.
-					On("ValidateUserUniqueness", testUserType, mock.Anything, mock.Anything).
+					On("ValidateUserUniqueness", mock.Anything, testUserType, mock.Anything, mock.Anything).
 					Run(func(args mock.Arguments) {
-						identify := args.Get(2).(func(map[string]interface{}) (*string, error))
+						identify := args.Get(3).(func(map[string]interface{}) (*string, error))
 
 						id, err := identify(map[string]interface{}{"email": "employee@example.com"})
 						require.NoError(t, err)
@@ -487,7 +487,7 @@ func TestOUStore_ValidateOrganizationUnitForUserType(t *testing.T) {
 
 				userSchemaMock := userschemamock.NewUserSchemaServiceInterfaceMock(t)
 				userSchemaMock.
-					On("GetUserSchemaByName", testUserType).
+					On("GetUserSchemaByName", mock.Anything, testUserType).
 					Return(&userschema.UserSchema{
 						OrganizationUnitID: parentOU,
 					}, (*serviceerror.ServiceError)(nil)).
@@ -517,7 +517,7 @@ func TestOUStore_ValidateOrganizationUnitForUserType(t *testing.T) {
 
 				userSchemaMock := userschemamock.NewUserSchemaServiceInterfaceMock(t)
 				userSchemaMock.
-					On("GetUserSchemaByName", testUserType).
+					On("GetUserSchemaByName", mock.Anything, testUserType).
 					Return(&userschema.UserSchema{
 						OrganizationUnitID: parentOU,
 					}, (*serviceerror.ServiceError)(nil)).
@@ -549,7 +549,7 @@ func TestOUStore_ValidateOrganizationUnitForUserType(t *testing.T) {
 
 				userSchemaMock := userschemamock.NewUserSchemaServiceInterfaceMock(t)
 				userSchemaMock.
-					On("GetUserSchemaByName", testUserType).
+					On("GetUserSchemaByName", mock.Anything, testUserType).
 					Return(&userschema.UserSchema{
 						OrganizationUnitID: parentOU,
 					}, (*serviceerror.ServiceError)(nil)).
@@ -581,7 +581,7 @@ func TestOUStore_ValidateOrganizationUnitForUserType(t *testing.T) {
 
 				userSchemaMock := userschemamock.NewUserSchemaServiceInterfaceMock(t)
 				userSchemaMock.
-					On("GetUserSchemaByName", testUserType).
+					On("GetUserSchemaByName", mock.Anything, testUserType).
 					Return(&userschema.UserSchema{
 						OrganizationUnitID: parentOU,
 					}, (*serviceerror.ServiceError)(nil)).
@@ -608,7 +608,7 @@ func TestOUStore_ValidateOrganizationUnitForUserType(t *testing.T) {
 
 				userSchemaMock := userschemamock.NewUserSchemaServiceInterfaceMock(t)
 				userSchemaMock.
-					On("GetUserSchemaByName", testUserType).
+					On("GetUserSchemaByName", mock.Anything, testUserType).
 					Return(&userschema.UserSchema{
 						OrganizationUnitID: "e5c3aa8a-d7df-46f8-9f3f-bb3245c95d7c",
 					}, (*serviceerror.ServiceError)(nil)).
@@ -632,7 +632,7 @@ func TestOUStore_ValidateOrganizationUnitForUserType(t *testing.T) {
 			service, _ := tc.setup(t)
 			logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, "UserServiceTest"))
 
-			err := service.validateOrganizationUnitForUserType(tc.userType, tc.ouID, logger)
+			err := service.validateOrganizationUnitForUserType(context.TODO(), tc.userType, tc.ouID, logger)
 			if tc.expectedErr == nil {
 				require.Nil(t, err)
 				return
@@ -732,13 +732,13 @@ func TestUserService_CreateUser_UsesTransactionAndStore(t *testing.T) {
 	ouServiceMock.On("IsOrganizationUnitExists", testOrgID).Return(true, (*serviceerror.ServiceError)(nil)).Once()
 
 	userSchemaMock := userschemamock.NewUserSchemaServiceInterfaceMock(t)
-	userSchemaMock.On("GetUserSchemaByName", testUserType).
+	userSchemaMock.On("GetUserSchemaByName", mock.Anything, testUserType).
 		Return(&userschema.UserSchema{OrganizationUnitID: testOrgID}, (*serviceerror.ServiceError)(nil)).
 		Once()
-	userSchemaMock.On("ValidateUser", testUserType, mock.Anything).
+	userSchemaMock.On("ValidateUser", mock.Anything, testUserType, mock.Anything).
 		Return(true, (*serviceerror.ServiceError)(nil)).
 		Once()
-	userSchemaMock.On("ValidateUserUniqueness", testUserType, mock.Anything, mock.Anything).
+	userSchemaMock.On("ValidateUserUniqueness", mock.Anything, testUserType, mock.Anything, mock.Anything).
 		Return(true, (*serviceerror.ServiceError)(nil)).
 		Once()
 
@@ -786,13 +786,13 @@ func TestUserService_CreateUser_PropagatesStoreError(t *testing.T) {
 	ouServiceMock.On("IsOrganizationUnitExists", testOrgID).Return(true, (*serviceerror.ServiceError)(nil)).Once()
 
 	userSchemaMock := userschemamock.NewUserSchemaServiceInterfaceMock(t)
-	userSchemaMock.On("GetUserSchemaByName", testUserType).
+	userSchemaMock.On("GetUserSchemaByName", mock.Anything, testUserType).
 		Return(&userschema.UserSchema{OrganizationUnitID: testOrgID}, (*serviceerror.ServiceError)(nil)).
 		Once()
-	userSchemaMock.On("ValidateUser", testUserType, mock.Anything).
+	userSchemaMock.On("ValidateUser", mock.Anything, testUserType, mock.Anything).
 		Return(true, (*serviceerror.ServiceError)(nil)).
 		Once()
-	userSchemaMock.On("ValidateUserUniqueness", testUserType, mock.Anything, mock.Anything).
+	userSchemaMock.On("ValidateUserUniqueness", mock.Anything, testUserType, mock.Anything, mock.Anything).
 		Return(true, (*serviceerror.ServiceError)(nil)).
 		Once()
 
@@ -830,13 +830,13 @@ func TestUserService_CreateUser_TransactionerError(t *testing.T) {
 	ouServiceMock.On("IsOrganizationUnitExists", testOrgID).Return(true, (*serviceerror.ServiceError)(nil)).Once()
 
 	userSchemaMock := userschemamock.NewUserSchemaServiceInterfaceMock(t)
-	userSchemaMock.On("GetUserSchemaByName", testUserType).
+	userSchemaMock.On("GetUserSchemaByName", mock.Anything, testUserType).
 		Return(&userschema.UserSchema{OrganizationUnitID: testOrgID}, (*serviceerror.ServiceError)(nil)).
 		Once()
-	userSchemaMock.On("ValidateUser", testUserType, mock.Anything).
+	userSchemaMock.On("ValidateUser", mock.Anything, testUserType, mock.Anything).
 		Return(true, (*serviceerror.ServiceError)(nil)).
 		Once()
-	userSchemaMock.On("ValidateUserUniqueness", testUserType, mock.Anything, mock.Anything).
+	userSchemaMock.On("ValidateUserUniqueness", mock.Anything, testUserType, mock.Anything, mock.Anything).
 		Return(true, (*serviceerror.ServiceError)(nil)).
 		Once()
 
@@ -1497,7 +1497,7 @@ func TestUserService_UpdateUserAttributes_SchemaValidationFails(t *testing.T) {
 
 	schemaMock := userschemamock.NewUserSchemaServiceInterfaceMock(t)
 	schemaMock.
-		On("ValidateUser", testUserType, mock.Anything).
+		On("ValidateUser", mock.Anything, testUserType, mock.Anything).
 		Return(false, &userschema.ErrorUserSchemaNotFound).
 		Once()
 
@@ -1525,11 +1525,11 @@ func TestUserService_UpdateUserAttributes_Succeeds(t *testing.T) {
 
 	schemaMock := userschemamock.NewUserSchemaServiceInterfaceMock(t)
 	schemaMock.
-		On("ValidateUser", testUserType, mock.Anything).
+		On("ValidateUser", mock.Anything, testUserType, mock.Anything).
 		Return(true, (*serviceerror.ServiceError)(nil)).
 		Once()
 	schemaMock.
-		On("ValidateUserUniqueness", testUserType, mock.Anything, mock.Anything).
+		On("ValidateUserUniqueness", mock.Anything, testUserType, mock.Anything, mock.Anything).
 		Return(true, (*serviceerror.ServiceError)(nil)).
 		Once()
 
@@ -1613,12 +1613,12 @@ func TestUserService_UpdateUser(t *testing.T) {
 	ouServiceMock.On("IsOrganizationUnitExists", testOrgID).Return(true, (*serviceerror.ServiceError)(nil)).Once()
 
 	userSchemaMock := userschemamock.NewUserSchemaServiceInterfaceMock(t)
-	userSchemaMock.On("GetUserSchemaByName", testUserType).
+	userSchemaMock.On("GetUserSchemaByName", mock.Anything, testUserType).
 		Return(&userschema.UserSchema{OrganizationUnitID: testOrgID}, (*serviceerror.ServiceError)(nil)).
 		Once()
-	userSchemaMock.On("ValidateUser", testUserType, mock.Anything).
+	userSchemaMock.On("ValidateUser", mock.Anything, testUserType, mock.Anything).
 		Return(true, (*serviceerror.ServiceError)(nil)).Once()
-	userSchemaMock.On("ValidateUserUniqueness", testUserType, mock.Anything, mock.Anything).
+	userSchemaMock.On("ValidateUserUniqueness", mock.Anything, testUserType, mock.Anything, mock.Anything).
 		Return(true, (*serviceerror.ServiceError)(nil)).Once()
 
 	txMock := &fakeTransactioner{}
@@ -2017,13 +2017,13 @@ func TestUserService_Validation_EdgeCases(t *testing.T) {
 	service := &userService{}
 
 	t.Run("ValidateOU_InvalidUUID", func(t *testing.T) {
-		err := service.validateOrganizationUnitForUserType("customer", "invalid-uuid", nil)
+		err := service.validateOrganizationUnitForUserType(context.TODO(), "customer", "invalid-uuid", nil)
 		require.NotNil(t, err)
 		require.Equal(t, ErrorInvalidOrganizationUnitID.Code, err.Code)
 	})
 
 	t.Run("ValidateOU_EmptyOU", func(t *testing.T) {
-		err := service.validateOrganizationUnitForUserType("customer", "", nil)
+		err := service.validateOrganizationUnitForUserType(context.TODO(), "customer", "", nil)
 		require.NotNil(t, err)
 		require.Equal(t, ErrorInvalidOrganizationUnitID.Code, err.Code)
 	})
@@ -2112,9 +2112,14 @@ func TestUserService_MoreErrorCases(t *testing.T) {
 		// Mock all validation steps in the transaction with broad matches to ensure they hit
 		ouServiceMock.On("IsOrganizationUnitExists", mock.Anything).Return(true, nil).Maybe()
 		ouServiceMock.On("IsParent", mock.Anything, mock.Anything).Return(true, nil).Maybe()
-		userSchemaMock.On("GetUserSchemaByName", mock.Anything).Return(&userschema.UserSchema{}, nil).Maybe()
-		userSchemaMock.On("ValidateUser", mock.Anything, mock.Anything).Return(true, nil).Maybe()
-		userSchemaMock.On("ValidateUserUniqueness", mock.Anything, mock.Anything, mock.Anything).
+		userSchemaMock.On("GetUserSchemaByName", mock.Anything, mock.Anything).
+			Return(&userschema.UserSchema{}, nil).Maybe()
+		userSchemaMock.On(
+			"ValidateUser", mock.Anything, mock.Anything, mock.Anything,
+		).Return(true, nil).Maybe()
+		userSchemaMock.On(
+			"ValidateUserUniqueness", mock.Anything, mock.Anything, mock.Anything, mock.Anything,
+		).
 			Return(true, nil).Maybe()
 		storeMock.On("IdentifyUser", mock.Anything, mock.Anything).Return(nil, ErrUserNotFound).Maybe()
 

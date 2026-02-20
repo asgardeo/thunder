@@ -97,4 +97,14 @@ var (
 		ID:    "ASQ-APP_MGT-11",
 		Query: "DELETE FROM APP_OAUTH_INBOUND_CONFIG WHERE CLIENT_ID = $1 AND DEPLOYMENT_ID = $2",
 	}
+	// queryCheckApplicationExistsByID is the query to check if an application exists by app ID.
+	queryCheckApplicationExistsByID = dbmodel.DBQuery{
+		ID:    "ASQ-APP_MGT-12",
+		Query: "SELECT COUNT(*) as count FROM APPLICATION WHERE APP_ID = $1 AND DEPLOYMENT_ID = $2",
+	}
+	// queryCheckApplicationExistsByName is the query to check if an application exists by name.
+	queryCheckApplicationExistsByName = dbmodel.DBQuery{
+		ID:    "ASQ-APP_MGT-13",
+		Query: "SELECT COUNT(*) as count FROM APPLICATION WHERE APP_NAME = $1 AND DEPLOYMENT_ID = $2",
+	}
 )

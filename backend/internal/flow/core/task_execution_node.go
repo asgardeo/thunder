@@ -130,6 +130,19 @@ func (n *taskExecutionNode) Execute(ctx *NodeContext) (*common.NodeResponse, *se
 		// Change status to Forward so engine forwards execution to onIncomplete node
 		nodeResp.Status = common.NodeStatusForward
 		nodeResp.NextNodeID = n.onIncomplete
+
+		// Propagate failure reason if present
+		if nodeResp.FailureReason != "" {
+			if nodeResp.RuntimeData == nil {
+				nodeResp.RuntimeData = make(map[string]string)
+			}
+			nodeResp.RuntimeData["failureReason"] = nodeResp.FailureReason
+
+			// Clear user inputs consumed by this executor
+			for _, input := range n.inputs {
+				delete(ctx.UserInputs, input.Identifier)
+			}
+		}
 	}
 
 	return nodeResp, nil

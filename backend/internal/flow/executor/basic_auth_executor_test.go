@@ -26,6 +26,8 @@ import (
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/suite"
 
+	authncm "github.com/asgardeo/thunder/internal/authn/common"
+	authncreds "github.com/asgardeo/thunder/internal/authn/credentials"
 	"github.com/asgardeo/thunder/internal/authnprovider"
 	"github.com/asgardeo/thunder/internal/flow/common"
 	"github.com/asgardeo/thunder/internal/flow/core"
@@ -354,8 +356,9 @@ func (suite *BasicAuthExecutorTestSuite) TestExecute_AuthenticationFailed() {
 
 	assert.NoError(suite.T(), err)
 	assert.NotNil(suite.T(), resp)
-	assert.Equal(suite.T(), common.ExecFailure, resp.Status)
+	assert.Equal(suite.T(), common.ExecUserInputRequired, resp.Status)
 	assert.Contains(suite.T(), resp.FailureReason, "Failed to authenticate user")
+	assert.NotEmpty(suite.T(), resp.Inputs, "Inputs should be re-populated for retry")
 	suite.mockCredsService.AssertExpectations(suite.T())
 }
 
@@ -384,7 +387,10 @@ func (suite *BasicAuthExecutorTestSuite) TestExecute_UserNotFound_Authentication
 
 	assert.NoError(suite.T(), err)
 	assert.NotNil(suite.T(), resp)
-	assert.Equal(suite.T(), common.ExecFailure, resp.Status)
+	assert.Equal(suite.T(), common.ExecUserInputRequired, resp.Status)
+	assert.Contains(suite.T(), resp.FailureReason, "Failed to authenticate user",
+		"Failure reason should contain authentication failure message")
+	assert.NotEmpty(suite.T(), resp.Inputs, "Inputs should be re-populated for retry")
 	suite.mockCredsService.AssertExpectations(suite.T())
 }
 
@@ -643,4 +649,101 @@ func (suite *BasicAuthExecutorTestSuite) TestGetAuthenticatedUser_RegistrationFl
 	suite.mockUserProvider.AssertExpectations(suite.T())
 	// Verify Authenticate was NOT called for registration flow
 	suite.mockCredsService.AssertNotCalled(suite.T(), "Authenticate")
+}
+
+func (suite *BasicAuthExecutorTestSuite) TestExecute_RetryableAuthenticationErrors() {
+	tests := []struct {
+		name           string
+		username       string
+		password       string
+		errorCode      string
+		expectedReason string
+		message        string
+	}{
+		{
+			name:           "Invalid credentials",
+			username:       "testuser",
+			password:       "wrongpassword",
+			errorCode:      authncreds.ErrorInvalidCredentials.Code,
+			expectedReason: failureReasonInvalidCredentials,
+			message:        "Should return specific failure reason for invalid credentials",
+		},
+		{
+			name:           "User not found",
+			username:       "nonexistent",
+			password:       "password123",
+			errorCode:      authncm.ErrorUserNotFound.Code,
+			expectedReason: failureReasonUserNotFound,
+			message:        "Should return specific failure reason for user not found",
+		},
+	}
+
+	for _, tt := range tests {
+		suite.T().Run(tt.name, func(t *testing.T) {
+			suite.mockCredsService.ExpectedCalls = nil
+			ctx := &core.NodeContext{
+				FlowID:   "flow-123",
+				FlowType: common.FlowTypeAuthentication,
+				UserInputs: map[string]string{
+					userAttributeUsername: tt.username,
+					userAttributePassword: tt.password,
+				},
+				RuntimeData: make(map[string]string),
+			}
+
+			suite.mockCredsService.On("Authenticate", map[string]interface{}{
+				userAttributeUsername: tt.username,
+			}, map[string]interface{}{
+				userAttributePassword: tt.password,
+			}, mock.Anything).Return(nil, &serviceerror.ServiceError{
+				Type: serviceerror.ClientErrorType,
+				Code: tt.errorCode,
+			})
+
+			resp, err := suite.executor.Execute(ctx)
+
+			assert.NoError(t, err)
+			assert.NotNil(t, resp)
+			assert.Equal(t, common.ExecUserInputRequired, resp.Status)
+			assert.Equal(t, tt.expectedReason, resp.FailureReason, tt.message)
+			assert.NotEmpty(t, resp.Inputs, "Inputs should be re-populated for retry")
+			assert.Len(t, resp.Inputs, 2, "Should include both username and password inputs")
+			suite.mockCredsService.AssertExpectations(t)
+		})
+	}
+}
+
+func (suite *BasicAuthExecutorTestSuite) TestGetAuthenticatedUser_ClientError_ReturnsInputsForRetry() {
+	ctx := &core.NodeContext{
+		FlowID:   "flow-123",
+		FlowType: common.FlowTypeAuthentication,
+		UserInputs: map[string]string{
+			userAttributeUsername: "testuser",
+			userAttributePassword: "password123",
+		},
+	}
+
+	execResp := &common.ExecutorResponse{
+		RuntimeData: make(map[string]string),
+	}
+
+	suite.mockCredsService.On("Authenticate", map[string]interface{}{
+		userAttributeUsername: "testuser",
+	}, map[string]interface{}{
+		userAttributePassword: "password123",
+	}, mock.Anything).Return(nil, &serviceerror.ServiceError{
+		Type:             serviceerror.ClientErrorType,
+		Code:             authncreds.ErrorInvalidCredentials.Code,
+		ErrorDescription: "wrong password",
+	})
+
+	result, err := suite.executor.getAuthenticatedUser(ctx, execResp)
+
+	assert.NoError(suite.T(), err)
+	assert.Nil(suite.T(), result)
+	assert.Equal(suite.T(), common.ExecUserInputRequired, execResp.Status,
+		"Should return ExecUserInputRequired for invalid credentials")
+	assert.Equal(suite.T(), failureReasonInvalidCredentials, execResp.FailureReason)
+	assert.NotEmpty(suite.T(), execResp.Inputs, "Inputs should be re-populated for retry")
+	assert.Len(suite.T(), execResp.Inputs, 2, "Should include both username and password inputs")
 }

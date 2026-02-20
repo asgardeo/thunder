@@ -79,16 +79,21 @@ type applicationStoreInterface interface {
 	GetApplicationByName(name string) (*model.ApplicationProcessedDTO, error)
 	UpdateApplication(existingApp, updatedApp *model.ApplicationProcessedDTO) error
 	DeleteApplication(id string) error
+	IsApplicationExists(id string) (bool, error)
+	IsApplicationExistsByName(name string) (bool, error)
+	IsApplicationDeclarative(id string) bool
 }
 
 // applicationStore implements the applicationStoreInterface for handling application data persistence.
 type applicationStore struct {
+	dbProvider   provider.DBProviderInterface
 	deploymentID string
 }
 
 // NewApplicationStore creates a new instance of applicationStore.
 func newApplicationStore() applicationStoreInterface {
 	return &applicationStore{
+		dbProvider:   provider.GetDBProvider(),
 		deploymentID: config.GetThunderRuntime().Config.Server.Identifier,
 	}
 }
@@ -126,12 +131,12 @@ func (st *applicationStore) CreateApplication(app model.ApplicationProcessedDTO)
 		queries = append(queries, createOAuthAppQuery(&app, queryCreateOAuthApplication, st.deploymentID))
 	}
 
-	return executeTransaction(queries)
+	return executeTransaction(st.dbProvider, queries)
 }
 
 // GetTotalApplicationCount retrieves the total count of applications from the database.
 func (st *applicationStore) GetTotalApplicationCount() (int, error) {
-	dbClient, err := provider.GetDBProvider().GetConfigDBClient()
+	dbClient, err := st.dbProvider.GetConfigDBClient()
 	if err != nil {
 		return 0, fmt.Errorf("failed to get database client: %w", err)
 	}
@@ -157,7 +162,7 @@ func (st *applicationStore) GetTotalApplicationCount() (int, error) {
 func (st *applicationStore) GetApplicationList() ([]model.BasicApplicationDTO, error) {
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, "ApplicationPersistence"))
 
-	dbClient, err := provider.GetDBProvider().GetConfigDBClient()
+	dbClient, err := st.dbProvider.GetConfigDBClient()
 	if err != nil {
 		logger.Error("Failed to get database client", log.Error(err))
 		return nil, fmt.Errorf("failed to get database client: %w", err)
@@ -187,7 +192,7 @@ func (st *applicationStore) GetApplicationList() ([]model.BasicApplicationDTO, e
 func (st *applicationStore) GetOAuthApplication(clientID string) (*model.OAuthAppConfigProcessedDTO, error) {
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, "ApplicationStore"))
 
-	dbClient, err := provider.GetDBProvider().GetConfigDBClient()
+	dbClient, err := st.dbProvider.GetConfigDBClient()
 	if err != nil {
 		logger.Error("Failed to get database client", log.Error(err))
 		return nil, fmt.Errorf("failed to get database client: %w", err)
@@ -319,7 +324,7 @@ func (st *applicationStore) getApplicationByQuery(query dbmodel.DBQuery, params 
 	*model.ApplicationProcessedDTO, error) {
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, "ApplicationStore"))
 
-	dbClient, err := provider.GetDBProvider().GetConfigDBClient()
+	dbClient, err := st.dbProvider.GetConfigDBClient()
 	if err != nil {
 		logger.Error("Failed to get database client", log.Error(err))
 		return nil, fmt.Errorf("failed to get database client: %w", err)
@@ -390,14 +395,14 @@ func (st *applicationStore) UpdateApplication(existingApp, updatedApp *model.App
 		queries = append(queries, createOAuthAppQuery(updatedApp, queryCreateOAuthApplication, st.deploymentID))
 	}
 
-	return executeTransaction(queries)
+	return executeTransaction(st.dbProvider, queries)
 }
 
 // DeleteApplication deletes an application from the database by its ID.
 func (st *applicationStore) DeleteApplication(id string) error {
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, "ApplicationStore"))
 
-	dbClient, err := provider.GetDBProvider().GetConfigDBClient()
+	dbClient, err := st.dbProvider.GetConfigDBClient()
 	if err != nil {
 		logger.Error("Failed to get database client", log.Error(err))
 		return fmt.Errorf("failed to get database client: %w", err)
@@ -410,6 +415,50 @@ func (st *applicationStore) DeleteApplication(id string) error {
 	}
 
 	return nil
+}
+
+// IsApplicationExists checks if an application exists in the database by ID.
+func (st *applicationStore) IsApplicationExists(id string) (bool, error) {
+	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, "ApplicationStore"))
+
+	dbClient, err := st.dbProvider.GetConfigDBClient()
+	if err != nil {
+		logger.Error("Failed to get database client", log.Error(err))
+		return false, fmt.Errorf("failed to get database client: %w", err)
+	}
+
+	results, err := dbClient.Query(queryCheckApplicationExistsByID, id, st.deploymentID)
+	if err != nil {
+		logger.Error("Failed to execute existence check query", log.Error(err))
+		return false, fmt.Errorf("failed to execute existence check query: %w", err)
+	}
+
+	return parseBoolFromCount(results)
+}
+
+// IsApplicationExistsByName checks if an application exists in the database by name.
+func (st *applicationStore) IsApplicationExistsByName(name string) (bool, error) {
+	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, "ApplicationStore"))
+
+	dbClient, err := st.dbProvider.GetConfigDBClient()
+	if err != nil {
+		logger.Error("Failed to get database client", log.Error(err))
+		return false, fmt.Errorf("failed to get database client: %w", err)
+	}
+
+	results, err := dbClient.Query(queryCheckApplicationExistsByName, name, st.deploymentID)
+	if err != nil {
+		logger.Error("Failed to execute existence check query", log.Error(err))
+		return false, fmt.Errorf("failed to execute existence check query: %w", err)
+	}
+
+	return parseBoolFromCount(results)
+}
+
+// IsApplicationDeclarative checks if an application is immutable.
+// For database store, all applications are mutable (not declarative).
+func (st *applicationStore) IsApplicationDeclarative(id string) bool {
+	return false
 }
 
 // getAppJSONDataBytes constructs the JSON data bytes for the application.
@@ -896,11 +945,23 @@ func buildOAuthInboundAuthConfig(row map[string]interface{}, basicApp model.Basi
 	return inboundAuthConfig, nil
 }
 
+// parseBoolFromCount parses the count result from an existence check query.
+func parseBoolFromCount(results []map[string]interface{}) (bool, error) {
+	if len(results) == 0 {
+		return false, nil
+	}
+	if countVal, ok := results[0]["count"].(int64); ok {
+		return countVal > 0, nil
+	}
+	return false, fmt.Errorf("failed to parse count from query result")
+}
+
 // executeTransaction is a helper function to handle database transactions.
-func executeTransaction(queries []func(tx dbmodel.TxInterface) error) error {
+func executeTransaction(dbProvider provider.DBProviderInterface,
+	queries []func(tx dbmodel.TxInterface) error) error {
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, "ApplicationStore"))
 
-	dbClient, err := provider.GetDBProvider().GetConfigDBClient()
+	dbClient, err := dbProvider.GetConfigDBClient()
 	if err != nil {
 		return fmt.Errorf("failed to get database client: %w", err)
 	}

@@ -55,7 +55,6 @@ export default function useGetUsers(params?: UserListParams) {
         if (params?.filter) {
           searchParams.append('filter', params.filter);
         }
-
         const queryString = searchParams.toString();
 
         const response = await http.request({
@@ -105,7 +104,6 @@ export default function useGetUsers(params?: UserListParams) {
       if (finalParams?.filter) {
         searchParams.append('filter', finalParams.filter);
       }
-
       const queryString = searchParams.toString();
 
       const response = await http.request({

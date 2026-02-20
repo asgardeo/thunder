@@ -432,6 +432,177 @@ func (_c *applicationStoreInterfaceMock_GetTotalApplicationCount_Call) RunAndRet
 	return _c
 }
 
+// IsApplicationDeclarative provides a mock function for the type applicationStoreInterfaceMock
+func (_mock *applicationStoreInterfaceMock) IsApplicationDeclarative(id string) bool {
+	ret := _mock.Called(id)
+
+	if len(ret) == 0 {
+		panic("no return value specified for IsApplicationDeclarative")
+	}
+
+	var r0 bool
+	if returnFunc, ok := ret.Get(0).(func(string) bool); ok {
+		r0 = returnFunc(id)
+	} else {
+		r0 = ret.Get(0).(bool)
+	}
+	return r0
+}
+
+// applicationStoreInterfaceMock_IsApplicationDeclarative_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'IsApplicationDeclarative'
+type applicationStoreInterfaceMock_IsApplicationDeclarative_Call struct {
+	*mock.Call
+}
+
+// IsApplicationDeclarative is a helper method to define mock.On call
+//   - id string
+func (_e *applicationStoreInterfaceMock_Expecter) IsApplicationDeclarative(id interface{}) *applicationStoreInterfaceMock_IsApplicationDeclarative_Call {
+	return &applicationStoreInterfaceMock_IsApplicationDeclarative_Call{Call: _e.mock.On("IsApplicationDeclarative", id)}
+}
+
+func (_c *applicationStoreInterfaceMock_IsApplicationDeclarative_Call) Run(run func(id string)) *applicationStoreInterfaceMock_IsApplicationDeclarative_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 string
+		if args[0] != nil {
+			arg0 = args[0].(string)
+		}
+		run(
+			arg0,
+		)
+	})
+	return _c
+}
+
+func (_c *applicationStoreInterfaceMock_IsApplicationDeclarative_Call) Return(b bool) *applicationStoreInterfaceMock_IsApplicationDeclarative_Call {
+	_c.Call.Return(b)
+	return _c
+}
+
+func (_c *applicationStoreInterfaceMock_IsApplicationDeclarative_Call) RunAndReturn(run func(id string) bool) *applicationStoreInterfaceMock_IsApplicationDeclarative_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
+// IsApplicationExists provides a mock function for the type applicationStoreInterfaceMock
+func (_mock *applicationStoreInterfaceMock) IsApplicationExists(id string) (bool, error) {
+	ret := _mock.Called(id)
+
+	if len(ret) == 0 {
+		panic("no return value specified for IsApplicationExists")
+	}
+
+	var r0 bool
+	var r1 error
+	if returnFunc, ok := ret.Get(0).(func(string) (bool, error)); ok {
+		return returnFunc(id)
+	}
+	if returnFunc, ok := ret.Get(0).(func(string) bool); ok {
+		r0 = returnFunc(id)
+	} else {
+		r0 = ret.Get(0).(bool)
+	}
+	if returnFunc, ok := ret.Get(1).(func(string) error); ok {
+		r1 = returnFunc(id)
+	} else {
+		r1 = ret.Error(1)
+	}
+	return r0, r1
+}
+
+// applicationStoreInterfaceMock_IsApplicationExists_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'IsApplicationExists'
+type applicationStoreInterfaceMock_IsApplicationExists_Call struct {
+	*mock.Call
+}
+
+// IsApplicationExists is a helper method to define mock.On call
+//   - id string
+func (_e *applicationStoreInterfaceMock_Expecter) IsApplicationExists(id interface{}) *applicationStoreInterfaceMock_IsApplicationExists_Call {
+	return &applicationStoreInterfaceMock_IsApplicationExists_Call{Call: _e.mock.On("IsApplicationExists", id)}
+}
+
+func (_c *applicationStoreInterfaceMock_IsApplicationExists_Call) Run(run func(id string)) *applicationStoreInterfaceMock_IsApplicationExists_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 string
+		if args[0] != nil {
+			arg0 = args[0].(string)
+		}
+		run(
+			arg0,
+		)
+	})
+	return _c
+}
+
+func (_c *applicationStoreInterfaceMock_IsApplicationExists_Call) Return(b bool, err error) *applicationStoreInterfaceMock_IsApplicationExists_Call {
+	_c.Call.Return(b, err)
+	return _c
+}
+
+func (_c *applicationStoreInterfaceMock_IsApplicationExists_Call) RunAndReturn(run func(id string) (bool, error)) *applicationStoreInterfaceMock_IsApplicationExists_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
+// IsApplicationExistsByName provides a mock function for the type applicationStoreInterfaceMock
+func (_mock *applicationStoreInterfaceMock) IsApplicationExistsByName(name string) (bool, error) {
+	ret := _mock.Called(name)
+
+	if len(ret) == 0 {
+		panic("no return value specified for IsApplicationExistsByName")
+	}
+
+	var r0 bool
+	var r1 error
+	if returnFunc, ok := ret.Get(0).(func(string) (bool, error)); ok {
+		return returnFunc(name)
+	}
+	if returnFunc, ok := ret.Get(0).(func(string) bool); ok {
+		r0 = returnFunc(name)
+	} else {
+		r0 = ret.Get(0).(bool)
+	}
+	if returnFunc, ok := ret.Get(1).(func(string) error); ok {
+		r1 = returnFunc(name)
+	} else {
+		r1 = ret.Error(1)
+	}
+	return r0, r1
+}
+
+// applicationStoreInterfaceMock_IsApplicationExistsByName_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'IsApplicationExistsByName'
+type applicationStoreInterfaceMock_IsApplicationExistsByName_Call struct {
+	*mock.Call
+}
+
+// IsApplicationExistsByName is a helper method to define mock.On call
+//   - name string
+func (_e *applicationStoreInterfaceMock_Expecter) IsApplicationExistsByName(name interface{}) *applicationStoreInterfaceMock_IsApplicationExistsByName_Call {
+	return &applicationStoreInterfaceMock_IsApplicationExistsByName_Call{Call: _e.mock.On("IsApplicationExistsByName", name)}
+}
+
+func (_c *applicationStoreInterfaceMock_IsApplicationExistsByName_Call) Run(run func(name string)) *applicationStoreInterfaceMock_IsApplicationExistsByName_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 string
+		if args[0] != nil {
+			arg0 = args[0].(string)
+		}
+		run(
+			arg0,
+		)
+	})
+	return _c
+}
+
+func (_c *applicationStoreInterfaceMock_IsApplicationExistsByName_Call) Return(b bool, err error) *applicationStoreInterfaceMock_IsApplicationExistsByName_Call {
+	_c.Call.Return(b, err)
+	return _c
+}
+
+func (_c *applicationStoreInterfaceMock_IsApplicationExistsByName_Call) RunAndReturn(run func(name string) (bool, error)) *applicationStoreInterfaceMock_IsApplicationExistsByName_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
 // UpdateApplication provides a mock function for the type applicationStoreInterfaceMock
 func (_mock *applicationStoreInterfaceMock) UpdateApplication(existingApp *model.ApplicationProcessedDTO, updatedApp *model.ApplicationProcessedDTO) error {
 	ret := _mock.Called(existingApp, updatedApp)

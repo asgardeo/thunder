@@ -379,3 +379,133 @@ func (suite *FileBasedStoreTestSuite) TestNewFileBasedStore() {
 	suite.NotNil(store)
 	suite.IsType(&fileBasedStore{}, store)
 }
+
+// TestFileBasedStore_IsApplicationExists tests checking if an application exists.
+func (suite *FileBasedStoreTestSuite) TestFileBasedStore_IsApplicationExists() {
+	suite.Run("returns true for existing application", func() {
+		// Create an application
+		app := model.ApplicationProcessedDTO{
+			ID:   "test-app-1",
+			Name: "Test Application",
+		}
+		err := suite.store.CreateApplication(app)
+		suite.NoError(err)
+
+		// Check existence
+		exists, err := suite.store.IsApplicationExists("test-app-1")
+		suite.NoError(err)
+		suite.True(exists)
+	})
+
+	suite.Run("returns false for non-existent application", func() {
+		exists, err := suite.store.IsApplicationExists("nonexistent")
+		suite.NoError(err)
+		suite.False(exists)
+	})
+
+	suite.Run("handles application not found error", func() {
+		exists, err := suite.store.IsApplicationExists("nonexistent-app-xyz")
+		suite.NoError(err)
+		suite.False(exists)
+	})
+}
+
+// TestFileBasedStore_IsApplicationExistsByName tests checking if an application exists by name.
+func (suite *FileBasedStoreTestSuite) TestFileBasedStore_IsApplicationExistsByName() {
+	suite.Run("returns true for existing application name", func() {
+		// Create an application
+		app := model.ApplicationProcessedDTO{
+			ID:   "test-app-1",
+			Name: "Unique App Name",
+		}
+		err := suite.store.CreateApplication(app)
+		suite.NoError(err)
+
+		// Check existence by name
+		exists, err := suite.store.IsApplicationExistsByName("Unique App Name")
+		suite.NoError(err)
+		suite.True(exists)
+	})
+
+	suite.Run("returns false for non-existent application name", func() {
+		exists, err := suite.store.IsApplicationExistsByName("Nonexistent Name")
+		suite.NoError(err)
+		suite.False(exists)
+	})
+
+	suite.Run("is case-sensitive for name matching", func() {
+		// Create an application
+		app := model.ApplicationProcessedDTO{
+			ID:   "test-app-1",
+			Name: "TestApp",
+		}
+		err := suite.store.CreateApplication(app)
+		suite.NoError(err)
+
+		// Check with different case
+		exists, err := suite.store.IsApplicationExistsByName("testapp")
+		suite.NoError(err)
+		suite.False(exists) // Should not match due to case sensitivity
+
+		// Check with correct case
+		exists, err = suite.store.IsApplicationExistsByName("TestApp")
+		suite.NoError(err)
+		suite.True(exists)
+	})
+}
+
+// TestFileBasedStore_IsApplicationDeclarative tests checking if an application is declarative.
+func (suite *FileBasedStoreTestSuite) TestFileBasedStore_IsApplicationDeclarative() {
+	suite.Run("returns true for existing declarative application", func() {
+		// Create an application
+		app := model.ApplicationProcessedDTO{
+			ID:   "declarative-app-1",
+			Name: "Declarative App",
+		}
+		err := suite.store.CreateApplication(app)
+		suite.NoError(err)
+
+		// Check if declarative
+		isDeclarative := suite.store.IsApplicationDeclarative("declarative-app-1")
+		suite.True(isDeclarative)
+	})
+
+	suite.Run("returns false for non-existent application", func() {
+		isDeclarative := suite.store.IsApplicationDeclarative("nonexistent")
+		suite.False(isDeclarative)
+	})
+
+	suite.Run("returns true for all existing applications", func() {
+		// File-based store should return true for all existing applications
+		// since they are all declarative (immutable)
+		apps := []model.ApplicationProcessedDTO{
+			{ID: "app-1", Name: "App 1"},
+			{ID: "app-2", Name: "App 2"},
+			{ID: "app-3", Name: "App 3"},
+		}
+
+		for _, app := range apps {
+			err := suite.store.CreateApplication(app)
+			suite.NoError(err)
+		}
+
+		for _, app := range apps {
+			isDeclarative := suite.store.IsApplicationDeclarative(app.ID)
+			suite.True(isDeclarative, "Application %s should be marked as declarative", app.ID)
+		}
+	})
+
+	suite.Run("returns false for non-existent after created app", func() {
+		// Create an app
+		app := model.ApplicationProcessedDTO{
+			ID:   "existing-app",
+			Name: "Existing App",
+		}
+		err := suite.store.CreateApplication(app)
+		suite.NoError(err)
+
+		// Non-existent app should return false
+		isDeclarative := suite.store.IsApplicationDeclarative("non-existent-app")
+		suite.False(isDeclarative)
+	})
+}

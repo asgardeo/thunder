@@ -257,6 +257,12 @@ func (ts *DCRTestSuite) TestDCRRegistrationInvalidJSON() {
 	}
 	req.Header.Set("Content-Type", "application/json")
 
+	token, err := testutils.GetAccessToken()
+	if err != nil {
+		ts.T().Fatalf("Failed to obtain access token: %v", err)
+	}
+	req.Header.Set("Authorization", "Bearer "+token)
+
 	resp, err := client.Do(req)
 	if err != nil {
 		ts.T().Fatalf("Failed to send request: %v", err)
@@ -313,6 +319,12 @@ func (ts *DCRTestSuite) registerClient(request DCRRegistrationRequest) (*DCRRegi
 		ts.T().Fatalf("Failed to create request: %v", err)
 	}
 	req.Header.Set("Content-Type", "application/json")
+
+	token, err := testutils.GetAccessToken()
+	if err != nil {
+		ts.T().Fatalf("Failed to obtain access token: %v", err)
+	}
+	req.Header.Set("Authorization", "Bearer "+token)
 
 	resp, err := client.Do(req)
 	if err != nil {
@@ -499,6 +511,12 @@ func (ts *DCRTestSuite) registerClientWithError(request DCRRegistrationRequest) 
 		ts.T().Fatalf("Failed to create request: %v", err)
 	}
 	req.Header.Set("Content-Type", "application/json")
+
+	token, err := testutils.GetAccessToken()
+	if err != nil {
+		ts.T().Fatalf("Failed to obtain access token: %v", err)
+	}
+	req.Header.Set("Authorization", "Bearer "+token)
 
 	resp, err := client.Do(req)
 	if err != nil {
@@ -1210,6 +1228,10 @@ func (ts *DCRTestSuite) TestDCRRegistrationEmptyRequest() {
 	ts.Require().NoError(err, "Failed to create request")
 	req.Header.Set("Content-Type", "application/json")
 
+	token, err := testutils.GetAccessToken()
+	ts.Require().NoError(err, "Failed to obtain access token")
+	req.Header.Set("Authorization", "Bearer "+token)
+
 	resp, err := client.Do(req)
 	ts.Require().NoError(err, "Failed to send request")
 	defer resp.Body.Close()
@@ -1238,6 +1260,10 @@ func (ts *DCRTestSuite) TestDCRRegistrationNullRedirectURIs() {
 	req, err := http.NewRequest("POST", testServerURL+dcrEndpoint, bytes.NewReader(requestJSON))
 	ts.Require().NoError(err)
 	req.Header.Set("Content-Type", "application/json")
+
+	token, err := testutils.GetAccessToken()
+	ts.Require().NoError(err)
+	req.Header.Set("Authorization", "Bearer "+token)
 
 	resp, err := client.Do(req)
 	ts.Require().NoError(err)

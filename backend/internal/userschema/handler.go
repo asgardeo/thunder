@@ -45,6 +45,7 @@ func newUserSchemaHandler(userSchemaService UserSchemaServiceInterface) *userSch
 
 // HandleUserSchemaListRequest handles the user schema list request.
 func (h *userSchemaHandler) HandleUserSchemaListRequest(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, userSchemaHandlerLoggerComponentName))
 
 	limit, offset, svcErr := parsePaginationParams(r.URL.Query())
@@ -57,7 +58,7 @@ func (h *userSchemaHandler) HandleUserSchemaListRequest(w http.ResponseWriter, r
 		limit = serverconst.DefaultPageSize
 	}
 
-	userSchemaListResponse, svcErr := h.userSchemaService.GetUserSchemaList(limit, offset)
+	userSchemaListResponse, svcErr := h.userSchemaService.GetUserSchemaList(ctx, limit, offset)
 	if svcErr != nil {
 		handleError(w, svcErr)
 		return
@@ -73,6 +74,7 @@ func (h *userSchemaHandler) HandleUserSchemaListRequest(w http.ResponseWriter, r
 
 // HandleUserSchemaPostRequest handles the user schema creation request.
 func (h *userSchemaHandler) HandleUserSchemaPostRequest(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, userSchemaHandlerLoggerComponentName))
 
 	createRequest, err := sysutils.DecodeJSONBody[CreateUserSchemaRequest](r)
@@ -89,7 +91,7 @@ func (h *userSchemaHandler) HandleUserSchemaPostRequest(w http.ResponseWriter, r
 
 	sanitizedRequest := h.sanitizeCreateUserSchemaRequest(*createRequest)
 
-	createdUserSchema, svcErr := h.userSchemaService.CreateUserSchema(sanitizedRequest)
+	createdUserSchema, svcErr := h.userSchemaService.CreateUserSchema(ctx, sanitizedRequest)
 	if svcErr != nil {
 		handleError(w, svcErr)
 		return
@@ -103,6 +105,7 @@ func (h *userSchemaHandler) HandleUserSchemaPostRequest(w http.ResponseWriter, r
 
 // HandleUserSchemaGetRequest handles the user schema get request.
 func (h *userSchemaHandler) HandleUserSchemaGetRequest(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, userSchemaHandlerLoggerComponentName))
 
 	schemaID, idValidationFailed := extractAndValidateSchemaID(w, r)
@@ -110,7 +113,7 @@ func (h *userSchemaHandler) HandleUserSchemaGetRequest(w http.ResponseWriter, r 
 		return
 	}
 
-	userSchema, svcErr := h.userSchemaService.GetUserSchema(schemaID)
+	userSchema, svcErr := h.userSchemaService.GetUserSchema(ctx, schemaID)
 	if svcErr != nil {
 		handleError(w, svcErr)
 		return
@@ -123,6 +126,7 @@ func (h *userSchemaHandler) HandleUserSchemaGetRequest(w http.ResponseWriter, r 
 
 // HandleUserSchemaPutRequest handles the user schema update request.
 func (h *userSchemaHandler) HandleUserSchemaPutRequest(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, userSchemaHandlerLoggerComponentName))
 
 	schemaID, idValidationFailed := extractAndValidateSchemaID(w, r)
@@ -135,7 +139,7 @@ func (h *userSchemaHandler) HandleUserSchemaPutRequest(w http.ResponseWriter, r 
 		return
 	}
 
-	updatedUserSchema, svcErr := h.userSchemaService.UpdateUserSchema(schemaID, sanitizedRequest)
+	updatedUserSchema, svcErr := h.userSchemaService.UpdateUserSchema(ctx, schemaID, sanitizedRequest)
 	if svcErr != nil {
 		handleError(w, svcErr)
 		return
@@ -149,6 +153,7 @@ func (h *userSchemaHandler) HandleUserSchemaPutRequest(w http.ResponseWriter, r 
 
 // HandleUserSchemaDeleteRequest handles the user schema delete request.
 func (h *userSchemaHandler) HandleUserSchemaDeleteRequest(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, userSchemaHandlerLoggerComponentName))
 
 	schemaID, idValidationFailed := extractAndValidateSchemaID(w, r)
@@ -156,7 +161,7 @@ func (h *userSchemaHandler) HandleUserSchemaDeleteRequest(w http.ResponseWriter,
 		return
 	}
 
-	svcErr := h.userSchemaService.DeleteUserSchema(schemaID)
+	svcErr := h.userSchemaService.DeleteUserSchema(ctx, schemaID)
 	if svcErr != nil {
 		handleError(w, svcErr)
 		return

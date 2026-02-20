@@ -19,6 +19,7 @@
 package userschema
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"strings"
@@ -64,7 +65,7 @@ func (e *UserSchemaExporter) GetParameterizerType() string {
 
 // GetAllResourceIDs retrieves all user schema IDs.
 func (e *UserSchemaExporter) GetAllResourceIDs() ([]string, *serviceerror.ServiceError) {
-	response, err := e.service.GetUserSchemaList(serverconst.MaxPageSize, 0)
+	response, err := e.service.GetUserSchemaList(context.TODO(), serverconst.MaxPageSize, 0)
 	if err != nil {
 		return nil, err
 	}
@@ -77,7 +78,7 @@ func (e *UserSchemaExporter) GetAllResourceIDs() ([]string, *serviceerror.Servic
 
 // GetResourceByID retrieves a user schema by its ID.
 func (e *UserSchemaExporter) GetResourceByID(id string) (interface{}, string, *serviceerror.ServiceError) {
-	schema, err := e.service.GetUserSchema(id)
+	schema, err := e.service.GetUserSchema(context.TODO(), id)
 	if err != nil {
 		return nil, "", err
 	}

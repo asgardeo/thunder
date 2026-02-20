@@ -22,6 +22,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/suite"
 
 	appmodel "github.com/asgardeo/thunder/internal/application/model"
@@ -943,7 +944,7 @@ func (suite *OAuthExecutorTestSuite) TestProcessAuthFlowResponse_AllowAuthWithou
 			Code: authncm.ErrorUserNotFound.Code,
 			Type: serviceerror.ClientErrorType,
 		})
-	suite.mockUserSchemaService.On("GetUserSchemaByName", "INTERNAL").
+	suite.mockUserSchemaService.On("GetUserSchemaByName", mock.Anything, "INTERNAL").
 		Return(&userschema.UserSchema{
 			Name:                  "INTERNAL",
 			AllowSelfRegistration: true,
@@ -1129,7 +1130,7 @@ func (suite *OAuthExecutorTestSuite) TestResolveUserTypeForAutoProvisioning() {
 		RuntimeData:    make(map[string]string),
 	}
 
-	suite.mockUserSchemaService.On("GetUserSchemaByName", "INTERNAL").
+	suite.mockUserSchemaService.On("GetUserSchemaByName", mock.Anything, "INTERNAL").
 		Return(&userschema.UserSchema{
 			Name:                  "INTERNAL",
 			AllowSelfRegistration: true,
@@ -1160,7 +1161,7 @@ func (suite *OAuthExecutorTestSuite) TestResolveUserTypeForAutoProvisioning_Fail
 			name:             "NoSelfRegistrationEnabled",
 			allowedUserTypes: []string{"INTERNAL"},
 			mockSetup: func() {
-				suite.mockUserSchemaService.On("GetUserSchemaByName", "INTERNAL").
+				suite.mockUserSchemaService.On("GetUserSchemaByName", mock.Anything, "INTERNAL").
 					Return(&userschema.UserSchema{
 						Name:                  "INTERNAL",
 						AllowSelfRegistration: false,
@@ -1172,13 +1173,13 @@ func (suite *OAuthExecutorTestSuite) TestResolveUserTypeForAutoProvisioning_Fail
 			name:             "MultipleSelfRegistrationEnabled",
 			allowedUserTypes: []string{"INTERNAL", "CUSTOMER"},
 			mockSetup: func() {
-				suite.mockUserSchemaService.On("GetUserSchemaByName", "INTERNAL").
+				suite.mockUserSchemaService.On("GetUserSchemaByName", mock.Anything, "INTERNAL").
 					Return(&userschema.UserSchema{
 						Name:                  "INTERNAL",
 						AllowSelfRegistration: true,
 						OrganizationUnitID:    "ou-123",
 					}, nil).Once()
-				suite.mockUserSchemaService.On("GetUserSchemaByName", "CUSTOMER").
+				suite.mockUserSchemaService.On("GetUserSchemaByName", mock.Anything, "CUSTOMER").
 					Return(&userschema.UserSchema{
 						Name:                  "CUSTOMER",
 						AllowSelfRegistration: true,
@@ -1229,7 +1230,7 @@ func (suite *OAuthExecutorTestSuite) TestResolveUserTypeForAutoProvisioning_GetU
 		RuntimeData:    make(map[string]string),
 	}
 
-	suite.mockUserSchemaService.On("GetUserSchemaByName", "INTERNAL").
+	suite.mockUserSchemaService.On("GetUserSchemaByName", mock.Anything, "INTERNAL").
 		Return(nil, &serviceerror.ServiceError{
 			Type:             serviceerror.ServerErrorType,
 			Code:             "SCHEMA-5000",
@@ -1436,7 +1437,7 @@ func (suite *OAuthExecutorTestSuite) TestResolveUserTypeForAutoProvisioning_Fail
 
 			if tt.userSchemas != nil {
 				for userType, schema := range tt.userSchemas {
-					suite.mockUserSchemaService.On("GetUserSchemaByName", userType).Return(schema, nil)
+					suite.mockUserSchemaService.On("GetUserSchemaByName", mock.Anything, userType).Return(schema, nil)
 				}
 			}
 

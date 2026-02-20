@@ -19,6 +19,7 @@
 package userschema
 
 import (
+	"context"
 	"errors"
 
 	declarativeresource "github.com/asgardeo/thunder/internal/system/declarative_resource"
@@ -32,21 +33,21 @@ type userSchemaFileBasedStore struct {
 // Create implements declarative_resource.Storer interface for resource loader
 func (f *userSchemaFileBasedStore) Create(id string, data interface{}) error {
 	schema := data.(*UserSchema)
-	return f.CreateUserSchema(*schema)
+	return f.CreateUserSchema(context.TODO(), *schema)
 }
 
 // CreateUserSchema implements userSchemaStoreInterface.
-func (f *userSchemaFileBasedStore) CreateUserSchema(schema UserSchema) error {
+func (f *userSchemaFileBasedStore) CreateUserSchema(ctx context.Context, schema UserSchema) error {
 	return f.GenericFileBasedStore.Create(schema.ID, &schema)
 }
 
 // DeleteUserSchemaByID implements userSchemaStoreInterface.
-func (f *userSchemaFileBasedStore) DeleteUserSchemaByID(id string) error {
+func (f *userSchemaFileBasedStore) DeleteUserSchemaByID(ctx context.Context, id string) error {
 	return errors.New("DeleteUserSchemaByID is not supported in file-based store")
 }
 
 // GetUserSchemaByID implements userSchemaStoreInterface.
-func (f *userSchemaFileBasedStore) GetUserSchemaByID(schemaID string) (UserSchema, error) {
+func (f *userSchemaFileBasedStore) GetUserSchemaByID(ctx context.Context, schemaID string) (UserSchema, error) {
 	data, err := f.GenericFileBasedStore.Get(schemaID)
 	if err != nil {
 		return UserSchema{}, ErrUserSchemaNotFound
@@ -60,7 +61,7 @@ func (f *userSchemaFileBasedStore) GetUserSchemaByID(schemaID string) (UserSchem
 }
 
 // GetUserSchemaByName implements userSchemaStoreInterface.
-func (f *userSchemaFileBasedStore) GetUserSchemaByName(schemaName string) (UserSchema, error) {
+func (f *userSchemaFileBasedStore) GetUserSchemaByName(ctx context.Context, schemaName string) (UserSchema, error) {
 	data, err := f.GenericFileBasedStore.GetByField(schemaName, func(d interface{}) string {
 		return d.(*UserSchema).Name
 	})
@@ -71,7 +72,9 @@ func (f *userSchemaFileBasedStore) GetUserSchemaByName(schemaName string) (UserS
 }
 
 // GetUserSchemaList implements userSchemaStoreInterface.
-func (f *userSchemaFileBasedStore) GetUserSchemaList(limit, offset int) ([]UserSchemaListItem, error) {
+func (f *userSchemaFileBasedStore) GetUserSchemaList(
+	ctx context.Context, limit, offset int,
+) ([]UserSchemaListItem, error) {
 	list, err := f.GenericFileBasedStore.List()
 	if err != nil {
 		return nil, err
@@ -104,12 +107,12 @@ func (f *userSchemaFileBasedStore) GetUserSchemaList(limit, offset int) ([]UserS
 }
 
 // GetUserSchemaListCount implements userSchemaStoreInterface.
-func (f *userSchemaFileBasedStore) GetUserSchemaListCount() (int, error) {
+func (f *userSchemaFileBasedStore) GetUserSchemaListCount(ctx context.Context) (int, error) {
 	return f.GenericFileBasedStore.Count()
 }
 
 // UpdateUserSchemaByID implements userSchemaStoreInterface.
-func (f *userSchemaFileBasedStore) UpdateUserSchemaByID(schemaID string, schema UserSchema) error {
+func (f *userSchemaFileBasedStore) UpdateUserSchemaByID(ctx context.Context, schemaID string, schema UserSchema) error {
 	return errors.New("UpdateUserSchemaByID is not supported in file-based store")
 }
 
