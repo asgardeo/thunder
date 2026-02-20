@@ -48,7 +48,6 @@ type oAuthConfig struct {
 
 // oAuthTokenConfig represents the OAuth token configuration structure for JSON marshaling/unmarshaling.
 type oAuthTokenConfig struct {
-	Issuer      string             `json:"issuer,omitempty"`
 	AccessToken *accessTokenConfig `json:"access_token,omitempty"`
 	IDToken     *idTokenConfig     `json:"id_token,omitempty"`
 }
@@ -247,9 +246,7 @@ func (st *applicationStore) GetOAuthApplication(clientID string) (*model.OAuthAp
 	// Convert token config if present
 	var oauthTokenConfig *model.OAuthTokenConfig
 	if oAuthConfig.Token != nil {
-		oauthTokenConfig = &model.OAuthTokenConfig{
-			Issuer: oAuthConfig.Token.Issuer,
-		}
+		oauthTokenConfig = &model.OAuthTokenConfig{}
 		if oAuthConfig.Token.AccessToken != nil {
 			userAttributes := oAuthConfig.Token.AccessToken.UserAttributes
 			if userAttributes == nil {
@@ -438,9 +435,6 @@ func getAppJSONDataBytes(app *model.ApplicationProcessedDTO) ([]byte, error) {
 	// Include assertion config if present
 	if app.Assertion != nil {
 		assertionData := map[string]interface{}{}
-		if app.Assertion.Issuer != "" {
-			assertionData["issuer"] = app.Assertion.Issuer
-		}
 		if app.Assertion.ValidityPeriod != 0 {
 			assertionData["validity_period"] = app.Assertion.ValidityPeriod
 		}
@@ -473,9 +467,7 @@ func getOAuthConfigJSONBytes(inboundAuthConfig model.InboundAuthConfigProcessedD
 
 	// Include token config if present
 	if inboundAuthConfig.OAuthAppConfig.Token != nil {
-		oauthConfig.Token = &oAuthTokenConfig{
-			Issuer: inboundAuthConfig.OAuthAppConfig.Token.Issuer,
-		}
+		oauthConfig.Token = &oAuthTokenConfig{}
 		if inboundAuthConfig.OAuthAppConfig.Token.AccessToken != nil {
 			oauthConfig.Token.AccessToken = &accessTokenConfig{
 				ValidityPeriod: inboundAuthConfig.OAuthAppConfig.Token.AccessToken.ValidityPeriod,
@@ -692,9 +684,6 @@ func extractAssertionConfigFromJSON(data map[string]interface{}) *model.Assertio
 	}
 
 	config := &model.AssertionConfig{}
-	if issuer, ok := assertionMap["issuer"].(string); ok {
-		config.Issuer = issuer
-	}
 	if validityPeriod, ok := assertionMap["validity_period"].(float64); ok {
 		config.ValidityPeriod = int64(validityPeriod)
 	}
@@ -844,9 +833,7 @@ func buildOAuthInboundAuthConfig(row map[string]interface{}, basicApp model.Basi
 	// Extract token config from OAuth config if present
 	var oauthTokenConfig *model.OAuthTokenConfig
 	if oauthConfig.Token != nil {
-		oauthTokenConfig = &model.OAuthTokenConfig{
-			Issuer: oauthConfig.Token.Issuer,
-		}
+		oauthTokenConfig = &model.OAuthTokenConfig{}
 		if oauthConfig.Token.AccessToken != nil {
 			userAttributes := oauthConfig.Token.AccessToken.UserAttributes
 			if userAttributes == nil {

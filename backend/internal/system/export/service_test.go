@@ -213,7 +213,6 @@ func (suite *ExportServiceTestSuite) TestExportResources_CompleteOAuthApplicatio
 		PublicClient:            false,
 		Scopes:                  []string{"openid", "profile"},
 		Token: &appmodel.OAuthTokenConfig{
-			Issuer: "https://localhost:8090",
 			AccessToken: &appmodel.AccessTokenConfig{
 				ValidityPeriod: 3600,
 				UserAttributes: []string{"email", "username"},

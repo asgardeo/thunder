@@ -1360,7 +1360,6 @@ func (suite *HandlerTestSuite) TestProcessInboundAuthConfigFromRequest_WithToken
 				ClientID:     "test-client-id",
 				ClientSecret: "test-secret",
 				Token: &model.OAuthTokenConfig{
-					Issuer: "https://issuer.example.com",
 					AccessToken: &model.AccessTokenConfig{
 						ValidityPeriod: 3600,
 						UserAttributes: []string{"email", "name"},
@@ -1379,7 +1378,6 @@ func (suite *HandlerTestSuite) TestProcessInboundAuthConfigFromRequest_WithToken
 	assert.NotNil(suite.T(), result)
 	assert.Len(suite.T(), result, 1)
 	assert.NotNil(suite.T(), result[0].OAuthAppConfig.Token)
-	assert.Equal(suite.T(), "https://issuer.example.com", result[0].OAuthAppConfig.Token.Issuer)
 }
 
 func (suite *HandlerTestSuite) TestProcessInboundAuthConfigFromRequest_WithScopes() {

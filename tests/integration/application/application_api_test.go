@@ -1351,7 +1351,6 @@ func (ts *ApplicationAPITestSuite) TestApplicationWithTokenConfiguration() {
 					TokenEndpointAuthMethod: "client_secret_basic",
 					Scopes:                  []string{"openid", "profile"},
 					Token: &OAuthTokenConfig{
-						Issuer: "https://tokenconfig.example.com",
 						AccessToken: &AccessTokenConfig{
 							ValidityPeriod: 3600,
 							UserAttributes: []string{"email", "username"},
@@ -1379,7 +1378,6 @@ func (ts *ApplicationAPITestSuite) TestApplicationWithTokenConfiguration() {
 	retrievedApp, err := getApplicationByID(appID)
 	ts.Require().NoError(err)
 	ts.Assert().NotNil(retrievedApp.InboundAuthConfig[0].OAuthAppConfig.Token)
-	ts.Assert().Equal("https://tokenconfig.example.com", retrievedApp.InboundAuthConfig[0].OAuthAppConfig.Token.Issuer)
 	ts.Assert().NotNil(retrievedApp.InboundAuthConfig[0].OAuthAppConfig.Token.AccessToken)
 	ts.Assert().Equal(int64(3600), retrievedApp.InboundAuthConfig[0].OAuthAppConfig.Token.AccessToken.ValidityPeriod)
 }
@@ -1462,7 +1460,6 @@ func (ts *ApplicationAPITestSuite) TestApplicationUpdateWithTokenConfigChanges()
 
 	// Update with more complex token config
 	app.InboundAuthConfig[0].OAuthAppConfig.Token = &OAuthTokenConfig{
-		Issuer: "https://tokenconfigupdate.example.com",
 		AccessToken: &AccessTokenConfig{
 			ValidityPeriod: 7200,
 			UserAttributes: []string{"email", "username", "role"},
@@ -1687,7 +1684,6 @@ func (ts *ApplicationAPITestSuite) TestApplicationWithOnlyAccessToken() {
 					TokenEndpointAuthMethod: "client_secret_basic",
 					Scopes:                  []string{"api.read", "api.write"},
 					Token: &OAuthTokenConfig{
-						Issuer: "https://accesstokenonly.example.com",
 						AccessToken: &AccessTokenConfig{
 							ValidityPeriod: 7200,
 							UserAttributes: []string{"email", "username", "role", "department"},
@@ -1774,7 +1770,6 @@ func (ts *ApplicationAPITestSuite) TestApplicationWithBothTokenTypes() {
 					TokenEndpointAuthMethod: "client_secret_post",
 					Scopes:                  []string{"openid", "profile", "email"},
 					Token: &OAuthTokenConfig{
-						Issuer: "https://bothtokens.example.com",
 						AccessToken: &AccessTokenConfig{
 							ValidityPeriod: 5400,
 							UserAttributes: []string{"email", "username"},
@@ -1895,43 +1890,6 @@ func (ts *ApplicationAPITestSuite) TestApplicationWithMultipleGrantAndResponseTy
 	ts.Assert().Len(retrievedApp.InboundAuthConfig[0].OAuthAppConfig.Scopes, 6)
 }
 
-// TestApplicationWithEmptyTokenIssuer tests token config with empty issuer.
-func (ts *ApplicationAPITestSuite) TestApplicationWithEmptyTokenIssuer() {
-	app := Application{
-		Name:        "Empty Token Issuer Test",
-		Description: "Test with empty token issuer",
-		URL:         "https://emptyissuer.example.com",
-		Certificate: &ApplicationCert{Type: "NONE", Value: ""},
-		InboundAuthConfig: []InboundAuthConfig{
-			{
-				Type: "oauth2",
-				OAuthAppConfig: &OAuthAppConfig{
-					RedirectURIs:            []string{"https://emptyissuer.example.com/callback"},
-					GrantTypes:              []string{"authorization_code"},
-					ResponseTypes:           []string{"code"},
-					TokenEndpointAuthMethod: "client_secret_basic",
-					Scopes:                  []string{"openid"},
-					Token: &OAuthTokenConfig{
-						// Empty Issuer
-						AccessToken: &AccessTokenConfig{
-							ValidityPeriod: 3600,
-						},
-					},
-				},
-			},
-		},
-	}
-
-	appID, err := createApplication(app)
-	ts.Require().NoError(err)
-	defer deleteApplication(appID)
-
-	// Retrieve and verify
-	retrievedApp, err := getApplicationByID(appID)
-	ts.Require().NoError(err)
-	ts.Assert().NotNil(retrievedApp.InboundAuthConfig[0].OAuthAppConfig.Token)
-}
-
 // TestApplicationWithMinimalTokenConfig tests minimal token configuration.
 func (ts *ApplicationAPITestSuite) TestApplicationWithMinimalTokenConfig() {
 	app := Application{
@@ -1949,7 +1907,6 @@ func (ts *ApplicationAPITestSuite) TestApplicationWithMinimalTokenConfig() {
 					TokenEndpointAuthMethod: "client_secret_basic",
 					Scopes:                  []string{"openid"},
 					Token: &OAuthTokenConfig{
-						Issuer: "https://minimaltoken.example.com",
 						// No AccessToken or IDToken
 					},
 				},
@@ -1965,7 +1922,6 @@ func (ts *ApplicationAPITestSuite) TestApplicationWithMinimalTokenConfig() {
 	retrievedApp, err := getApplicationByID(appID)
 	ts.Require().NoError(err)
 	ts.Assert().NotNil(retrievedApp.InboundAuthConfig[0].OAuthAppConfig.Token)
-	ts.Assert().Equal("https://minimaltoken.example.com", retrievedApp.InboundAuthConfig[0].OAuthAppConfig.Token.Issuer)
 }
 
 // TestApplicationWithComplexScopeClaims tests complex scope claims mapping.
@@ -2279,7 +2235,6 @@ func (ts *ApplicationAPITestSuite) TestApplicationWithCompleteMetadata() {
 		Contacts:    []string{"admin@completemeta.example.com", "support@completemeta.example.com"},
 		Certificate: &ApplicationCert{Type: "NONE", Value: ""},
 		Assertion: &AssertionConfig{
-			Issuer:         "https://custom-issuer.example.com",
 			ValidityPeriod: 7200,
 			UserAttributes: []string{"email", "username", "groups"},
 		},
@@ -2293,7 +2248,6 @@ func (ts *ApplicationAPITestSuite) TestApplicationWithCompleteMetadata() {
 					TokenEndpointAuthMethod: "client_secret_basic",
 					Scopes:                  []string{"openid", "profile", "email"},
 					Token: &OAuthTokenConfig{
-						Issuer: "https://oauth-issuer.example.com",
 						AccessToken: &AccessTokenConfig{
 							ValidityPeriod: 3600,
 							UserAttributes: []string{"sub", "email"},
@@ -2333,7 +2287,6 @@ func (ts *ApplicationAPITestSuite) TestApplicationWithCompleteMetadata() {
 
 	// Verify assertion config
 	ts.Require().NotNil(retrievedApp.Assertion)
-	ts.Assert().Equal("https://custom-issuer.example.com", retrievedApp.Assertion.Issuer)
 	ts.Assert().Equal(int64(7200), retrievedApp.Assertion.ValidityPeriod)
 	ts.Assert().Equal([]string{"email", "username", "groups"}, retrievedApp.Assertion.UserAttributes)
 
@@ -2347,7 +2300,6 @@ func (ts *ApplicationAPITestSuite) TestApplicationWithCompleteMetadata() {
 
 	// Verify OAuth token config
 	ts.Require().NotNil(retrievedApp.InboundAuthConfig[0].OAuthAppConfig.Token)
-	ts.Assert().Equal("https://oauth-issuer.example.com", retrievedApp.InboundAuthConfig[0].OAuthAppConfig.Token.Issuer)
 
 	// Verify access token config
 	ts.Require().NotNil(retrievedApp.InboundAuthConfig[0].OAuthAppConfig.Token.AccessToken)
@@ -2369,7 +2321,6 @@ func (ts *ApplicationAPITestSuite) TestApplicationWithOnlyRootToken() {
 		Description: "App with only root token",
 		Certificate: &ApplicationCert{Type: "NONE", Value: ""},
 		Assertion: &AssertionConfig{
-			Issuer:         "https://root-issuer.example.com",
 			ValidityPeriod: 5400,
 		},
 	}
@@ -2381,7 +2332,6 @@ func (ts *ApplicationAPITestSuite) TestApplicationWithOnlyRootToken() {
 	retrievedApp, err := getApplicationByID(appID)
 	ts.Require().NoError(err)
 	ts.Require().NotNil(retrievedApp.Assertion)
-	ts.Assert().Equal("https://root-issuer.example.com", retrievedApp.Assertion.Issuer)
 	ts.Assert().Equal(int64(5400), retrievedApp.Assertion.ValidityPeriod)
 }
 
@@ -2538,7 +2488,6 @@ func (ts *ApplicationAPITestSuite) TestApplicationUpdateTokenConfiguration() {
 		Description: "App to update token config",
 		Certificate: &ApplicationCert{Type: "NONE", Value: ""},
 		Assertion: &AssertionConfig{
-			Issuer:         "https://initial-issuer.example.com",
 			ValidityPeriod: 3600,
 		},
 		InboundAuthConfig: []InboundAuthConfig{
@@ -2560,7 +2509,6 @@ func (ts *ApplicationAPITestSuite) TestApplicationUpdateTokenConfiguration() {
 	defer deleteApplication(appID)
 
 	// Update token config
-	app.Assertion.Issuer = "https://updated-issuer.example.com"
 	app.Assertion.ValidityPeriod = 7200
 	app.Assertion.UserAttributes = []string{"email", "username"}
 
@@ -2579,7 +2527,6 @@ func (ts *ApplicationAPITestSuite) TestApplicationUpdateTokenConfiguration() {
 	retrievedApp, err := getApplicationByID(appID)
 	ts.Require().NoError(err)
 	ts.Require().NotNil(retrievedApp.Assertion)
-	ts.Assert().Equal("https://updated-issuer.example.com", retrievedApp.Assertion.Issuer)
 	ts.Assert().Equal(int64(7200), retrievedApp.Assertion.ValidityPeriod)
 	ts.Assert().Equal([]string{"email", "username"}, retrievedApp.Assertion.UserAttributes)
 }
@@ -2670,39 +2617,6 @@ func (ts *ApplicationAPITestSuite) TestApplicationWithIDTokenScopeClaimsOnly() {
 	ts.Require().NotNil(retrievedApp.InboundAuthConfig[0].OAuthAppConfig.Token.IDToken)
 	ts.Assert().NotNil(retrievedApp.InboundAuthConfig[0].OAuthAppConfig.ScopeClaims)
 	ts.Assert().Equal([]string{"name", "picture"}, retrievedApp.InboundAuthConfig[0].OAuthAppConfig.ScopeClaims["profile"])
-}
-
-// TestApplicationWithOAuthTokenIssuerOnly tests app with only OAuth token issuer.
-func (ts *ApplicationAPITestSuite) TestApplicationWithOAuthTokenIssuerOnly() {
-	app := Application{
-		Name:        "OAuth Token Issuer Only App",
-		Description: "App with only OAuth token issuer",
-		Certificate: &ApplicationCert{Type: "NONE", Value: ""},
-		InboundAuthConfig: []InboundAuthConfig{
-			{
-				Type: "oauth2",
-				OAuthAppConfig: &OAuthAppConfig{
-					RedirectURIs:            []string{"https://oauth-issuer-only.example.com/callback"},
-					GrantTypes:              []string{"authorization_code"},
-					ResponseTypes:           []string{"code"},
-					TokenEndpointAuthMethod: "client_secret_basic",
-					Scopes:                  []string{"openid"},
-					Token: &OAuthTokenConfig{
-						Issuer: "https://custom-oauth-issuer.example.com",
-					},
-				},
-			},
-		},
-	}
-
-	appID, err := createApplication(app)
-	ts.Require().NoError(err)
-	defer deleteApplication(appID)
-
-	retrievedApp, err := getApplicationByID(appID)
-	ts.Require().NoError(err)
-	ts.Require().NotNil(retrievedApp.InboundAuthConfig[0].OAuthAppConfig.Token)
-	ts.Assert().Equal("https://custom-oauth-issuer.example.com", retrievedApp.InboundAuthConfig[0].OAuthAppConfig.Token.Issuer)
 }
 
 // TestApplicationGetByNonExistentID tests retrieving app by non-existent ID.

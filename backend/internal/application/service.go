@@ -232,7 +232,7 @@ func (as *applicationService) ValidateApplication(app *model.ApplicationDTO) (
 			return nil, nil, &serviceerror.InternalServerError
 		}
 	}
-	assertion, finalOAuthAccessToken, finalOAuthIDToken, finalOAuthTokenIssuer := processTokenConfiguration(app)
+	assertion, finalOAuthAccessToken, finalOAuthIDToken := processTokenConfiguration(app)
 	userInfo := processUserInfoConfiguration(app, finalOAuthIDToken)
 	scopeClaims := processScopeClaimsConfiguration(app)
 
@@ -257,7 +257,6 @@ func (as *applicationService) ValidateApplication(app *model.ApplicationDTO) (
 	if inboundAuthConfig != nil {
 		// Construct the return DTO with processed token configuration
 		returnTokenConfig := &model.OAuthTokenConfig{
-			Issuer:      finalOAuthTokenIssuer,
 			AccessToken: finalOAuthAccessToken,
 			IDToken:     finalOAuthIDToken,
 		}
@@ -519,7 +518,7 @@ func (as *applicationService) UpdateApplication(appID string, app *model.Applica
 	}
 
 	// Process token configuration
-	assertion, finalOAuthAccessToken, finalOAuthIDToken, finalOAuthTokenIssuer := processTokenConfiguration(app)
+	assertion, finalOAuthAccessToken, finalOAuthIDToken := processTokenConfiguration(app)
 	userInfo := processUserInfoConfiguration(app, finalOAuthIDToken)
 	scopeClaims := processScopeClaimsConfiguration(app)
 
@@ -544,7 +543,6 @@ func (as *applicationService) UpdateApplication(appID string, app *model.Applica
 	if inboundAuthConfig != nil {
 		// Wrap the finalOAuthAccessToken and finalOAuthIDToken in OAuthTokenConfig structure
 		oAuthTokenConfig := &model.OAuthTokenConfig{
-			Issuer:      finalOAuthTokenIssuer,
 			AccessToken: finalOAuthAccessToken,
 			IDToken:     finalOAuthIDToken,
 		}
@@ -610,7 +608,6 @@ func (as *applicationService) UpdateApplication(appID string, app *model.Applica
 	if inboundAuthConfig != nil {
 		// Construct the return DTO with processed token configuration
 		returnTokenConfig := &model.OAuthTokenConfig{
-			Issuer:      finalOAuthTokenIssuer,
 			AccessToken: finalOAuthAccessToken,
 			IDToken:     finalOAuthIDToken,
 		}
@@ -1267,7 +1264,6 @@ func (as *applicationService) rollbackApplicationCertificateUpdate(appID string,
 func getDefaultAssertionConfigFromDeployment() *model.AssertionConfig {
 	jwtConfig := config.GetThunderRuntime().Config.JWT
 	assertionConfig := &model.AssertionConfig{
-		Issuer:         jwtConfig.Issuer,
 		ValidityPeriod: jwtConfig.ValidityPeriod,
 	}
 
@@ -1276,20 +1272,16 @@ func getDefaultAssertionConfigFromDeployment() *model.AssertionConfig {
 
 // processTokenConfiguration processes token configuration for an application, applying defaults where necessary.
 func processTokenConfiguration(app *model.ApplicationDTO) (
-	*model.AssertionConfig, *model.AccessTokenConfig, *model.IDTokenConfig, string) {
+	*model.AssertionConfig, *model.AccessTokenConfig, *model.IDTokenConfig) {
 	// Resolve root assertion config
 	var assertion *model.AssertionConfig
 	if app.Assertion != nil {
 		assertion = &model.AssertionConfig{
-			Issuer:         app.Assertion.Issuer,
 			ValidityPeriod: app.Assertion.ValidityPeriod,
 			UserAttributes: app.Assertion.UserAttributes,
 		}
 
 		deploymentDefaults := getDefaultAssertionConfigFromDeployment()
-		if assertion.Issuer == "" {
-			assertion.Issuer = deploymentDefaults.Issuer
-		}
 		if assertion.ValidityPeriod == 0 {
 			assertion.ValidityPeriod = deploymentDefaults.ValidityPeriod
 		}
@@ -1350,16 +1342,7 @@ func processTokenConfiguration(app *model.ApplicationDTO) (
 		}
 	}
 
-	var tokenIssuer string
-	if len(app.InboundAuthConfig) > 0 && app.InboundAuthConfig[0].OAuthAppConfig != nil &&
-		app.InboundAuthConfig[0].OAuthAppConfig.Token != nil &&
-		app.InboundAuthConfig[0].OAuthAppConfig.Token.Issuer != "" {
-		tokenIssuer = app.InboundAuthConfig[0].OAuthAppConfig.Token.Issuer
-	} else {
-		tokenIssuer = assertion.Issuer
-	}
-
-	return assertion, oauthAccessToken, oauthIDToken, tokenIssuer
+	return assertion, oauthAccessToken, oauthIDToken
 }
 
 // processUserInfoConfiguration processes user info configuration for an application.

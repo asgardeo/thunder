@@ -51,9 +51,7 @@ type UserInfoConfig struct {
 }
 
 // OAuthTokenConfig represents the OAuth token configuration structure with access_token and id_token wrappers.
-// The Issuer field at this level is used by both access and ID tokens.
 type OAuthTokenConfig struct {
-	Issuer      string             `json:"issuer,omitempty" yaml:"issuer,omitempty" jsonschema:"Token issuer URL. The authorization server URL that issues tokens. Used by both access and ID tokens."`
 	AccessToken *AccessTokenConfig `json:"access_token,omitempty" yaml:"access_token,omitempty" jsonschema:"Access token configuration. Configure validity period and user attributes for access tokens used in API authorization."`
 	IDToken     *IDTokenConfig     `json:"id_token,omitempty" yaml:"id_token,omitempty" jsonschema:"ID token configuration. Configure validity period and user attributes for OIDC ID tokens."`
 }

@@ -146,7 +146,6 @@ is_registration_flow_enabled: true
 url: https://example.com
 logo_url: https://example.com/logo.png
 assertion:
-  issuer: test-issuer
   validity_period: 3600
   user_attributes:
     - email
@@ -169,7 +168,8 @@ inbound_auth_config:
       pkce_required: true
       public_client: false
       token:
-        issuer: oauth-issuer
+        access_token:
+          validity_period: 3600
 `
 
 	// Execute
@@ -188,7 +188,6 @@ inbound_auth_config:
 
 	// Verify token config
 	assert.NotNil(suite.T(), appDTO.Assertion)
-	assert.Equal(suite.T(), "test-issuer", appDTO.Assertion.Issuer)
 	// Note: ValidityPeriod and UserAttributes might be 0/nil if not properly parsed
 	// This could be due to YAML structure differences
 
@@ -218,7 +217,6 @@ inbound_auth_config:
 
 	// Verify OAuth token config
 	assert.NotNil(suite.T(), appDTO.InboundAuthConfig[0].OAuthAppConfig.Token)
-	assert.Equal(suite.T(), "oauth-issuer", appDTO.InboundAuthConfig[0].OAuthAppConfig.Token.Issuer)
 	// Note: OAuthTokenConfig doesn't have ValidityPeriod and UserAttributes directly
 	// Those are in AccessToken and IDToken sub-configs
 }
@@ -354,8 +352,6 @@ inbound_auth_config:
       token_endpoint_auth_method: client_secret_post
       pkce_required: false
       public_client: true
-      token:
-        issuer: custom-issuer
 `
 
 	// Execute
@@ -382,10 +378,8 @@ inbound_auth_config:
 	assert.False(suite.T(), oauthConfig.PKCERequired)
 	assert.True(suite.T(), oauthConfig.PublicClient)
 
-	// Verify OAuth token configuration
-	assert.NotNil(suite.T(), oauthConfig.Token)
-	assert.Equal(suite.T(), "custom-issuer", oauthConfig.Token.Issuer)
-	// Note: OAuthTokenConfig structure uses AccessToken and IDToken sub-configs
+	// Note: No token section in YAML, so Token is nil (default)
+	assert.Nil(suite.T(), oauthConfig.Token)
 }
 
 // Benchmark tests for performance

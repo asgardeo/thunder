@@ -29,7 +29,6 @@ import {useLogger} from '@thunder/logger';
 import type {OAuth2Config} from '../../../models/oauth';
 import type {Application} from '../../../models/application';
 import type {PropertyDefinition, ApiUserSchema} from '../../../../user-types/types/user-types';
-import TokenIssuerSection from './TokenIssuerSection';
 import TokenUserAttributesSection from './TokenUserAttributesSection';
 import TokenValidationSection from './TokenValidationSection';
 
@@ -91,7 +90,6 @@ const createTokenConfigSchema = (t: (key: string) => string) =>
     validityPeriod: z.number().min(1, t('applications:edit.token.validity.error')),
     accessTokenValidity: z.number().min(1, t('applications:edit.token.validity.error')),
     idTokenValidity: z.number().min(1, t('applications:edit.token.validity.error')),
-    issuer: z.string().url(t('applications:edit.token.issuer.error')).or(z.literal('')).optional(),
   });
 
 type TokenConfigFormData = z.infer<ReturnType<typeof createTokenConfigSchema>>;
@@ -112,7 +110,6 @@ const areAttributesEqual = (arr1: string[], arr2: string[]): boolean => {
  *
  * Provides sections for:
  * - Token validity periods (with real-time validation)
- * - Token issuer URL configuration
  * - User attributes to include in tokens
  * - JWT preview with syntax highlighting
  *
@@ -177,14 +174,12 @@ export default function EditTokenSettings({
       validityPeriod: oauth2Config?.token?.validity_period ?? application.assertion?.validity_period ?? 3600,
       accessTokenValidity: oauth2Config?.token?.access_token?.validity_period ?? 3600,
       idTokenValidity: oauth2Config?.token?.id_token?.validity_period ?? 3600,
-      issuer: oauth2Config?.token?.issuer ?? application.assertion?.issuer ?? '',
     },
   });
 
   const validityPeriod = watch('validityPeriod');
   const accessTokenValidity = watch('accessTokenValidity');
   const idTokenValidity = watch('idTokenValidity');
-  const issuer = watch('issuer');
 
   /**
    * Sync form values when the OAuth2 configuration or application token configuration changes.
@@ -199,8 +194,7 @@ export default function EditTokenSettings({
         oauth2Config?.token?.validity_period ?? application.assertion?.validity_period ?? 3600,
       );
     }
-    setValue('issuer', oauth2Config?.token?.issuer ?? application.assertion?.issuer ?? '');
-  }, [isOAuthMode, oauth2Config, application.assertion?.validity_period, application.assertion?.issuer, setValue]);
+  }, [isOAuthMode, oauth2Config, application.assertion?.validity_period, setValue]);
 
   /**
    * Effect to sync form changes back to the parent component.
@@ -212,7 +206,6 @@ export default function EditTokenSettings({
         ...oauth2Config,
         token: {
           ...oauth2Config.token,
-          issuer,
           access_token: {
             ...oauth2Config.token?.access_token,
             validity_period: accessTokenValidity,
@@ -238,7 +231,6 @@ export default function EditTokenSettings({
       const updatedAssertion = {
         ...application.assertion,
         validity_period: validityPeriod,
-        issuer,
       };
 
       onFieldChange('assertion', updatedAssertion);
@@ -247,7 +239,6 @@ export default function EditTokenSettings({
     validityPeriod,
     accessTokenValidity,
     idTokenValidity,
-    issuer,
     isOAuthMode,
     oauth2Config,
     application.inbound_auth_config,
@@ -719,9 +710,6 @@ export default function EditTokenSettings({
       {/* OAuth/OIDC Mode */}
       {isOAuthMode ? (
         <>
-          {/* Token Issuer - Common for both tokens */}
-          <TokenIssuerSection control={control} errors={errors} />
-
           {/* Access Token User Attributes */}
           <TokenUserAttributesSection
             tokenType="access"
@@ -810,9 +798,8 @@ export default function EditTokenSettings({
             activeTokenType={activeTokenType}
           />
 
-          {/* Token Validation with Issuer */}
+          {/* Token Validation */}
           <TokenValidationSection control={control} errors={errors} tokenType="shared" />
-          <TokenIssuerSection control={control} errors={errors} />
         </>
       )}
     </Stack>

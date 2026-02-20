@@ -999,7 +999,6 @@ const translations = {
     // Token section
     'edit.token.labels.title': 'Token Settings',
     'edit.token.intro': 'Customize your access and ID tokens by adding user attributes.',
-    'edit.token.labels.issuer': 'Issuer URL',
     'edit.token.labels.accessToken': 'Access Token Configuration',
     'edit.token.labels.idToken': 'ID Token Configuration',
     'edit.token.labels.accessTokenValidity': 'Access Token Validity (seconds)',
@@ -1040,9 +1039,7 @@ const translations = {
     'edit.token.sharedConfigs.hint': 'User attributes will be shared between Access Token and ID Token',
     'edit.token.sharedValidity.hint': 'Token validity period in seconds',
     'edit.token.tokenValidation.title': 'Token Validation',
-    'edit.token.tokenValidation.description': 'Configure token validation settings such as issuer URL and audience',
-    'edit.token.tokenIssuer.title': 'Token Issuer',
-    'edit.token.tokenIssuer.description': 'Configure the issuer URL that will be included in both access and ID tokens',
+    'edit.token.tokenValidation.description': 'Configure token validation settings such as audience and validity',
     'edit.token.accessTokenValidation.title': 'Access Token Validation',
     'edit.token.accessTokenValidation.description': 'Configure how long access tokens remain valid before expiration',
     'edit.token.idTokenValidation.title': 'ID Token Validation',
@@ -1058,17 +1055,12 @@ const translations = {
       'Configure user attributes that will be included in the ID token. You can add custom attributes from user profiles and define scope-based attributes.',
     'edit.token.tokenConfiguration.title': 'Token Configuration',
     'edit.token.tokenConfiguration.description':
-      'Configure token validity and issuer settings that apply to all issued tokens.',
+      'Configure token validity settings that apply to all issued tokens.',
     'edit.token.validity.title': 'Token Validity',
     'edit.token.validity.description':
       'Configure how long tokens remain valid before expiration. Shorter validity periods enhance security.',
     'edit.token.validity.hint': 'Token validity period in seconds (e.g., 3600 for 1 hour)',
     'edit.token.validity.error': 'Validity period must be at least 1 second',
-    'edit.token.issuer.title': 'URLs',
-    'edit.token.issuer.description': 'Configure token-related URLs such as issuer, audience, and other endpoints.',
-    'edit.token.issuer.hint': 'The issuer URL will be included in the "iss" attribute of issued tokens',
-    'edit.token.issuer.placeholder': 'https://your-domain.com',
-    'edit.token.issuer.error': 'Please enter a valid URL',
     'edit.token.scopes.title': 'OAuth Scopes',
     'edit.token.scopes.description':
       'Scopes define the level of access that the application is requesting. Users will see these during consent.',

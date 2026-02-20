@@ -68,7 +68,6 @@ func (suite *ApplicationStoreTestSuite) createTestApplication() model.Applicatio
 		PolicyURI:                 "https://example.com/policy",
 		Contacts:                  []string{"contact@example.com", "support@example.com"},
 		Assertion: &model.AssertionConfig{
-			Issuer:         "test-issuer",
 			ValidityPeriod: 3600,
 			UserAttributes: []string{"email", "name", "sub"},
 		},
@@ -90,7 +89,6 @@ func (suite *ApplicationStoreTestSuite) createTestApplication() model.Applicatio
 					PublicClient:            false,
 					Scopes:                  []string{"openid", "profile", "email"},
 					Token: &model.OAuthTokenConfig{
-						Issuer: "oauth-issuer",
 						AccessToken: &model.AccessTokenConfig{
 							ValidityPeriod: 7200,
 							UserAttributes: []string{"sub", "email", "name"},
@@ -140,7 +138,6 @@ func (suite *ApplicationStoreTestSuite) TestGetAppJSONDataBytes_Success() {
 
 	assertion, ok := result["assertion"].(map[string]interface{})
 	suite.True(ok)
-	suite.Equal("test-issuer", assertion["issuer"])
 	suite.Equal(float64(3600), assertion["validity_period"])
 }
 
@@ -178,8 +175,8 @@ func (suite *ApplicationStoreTestSuite) TestGetAppJSONDataBytes_WithEmptyToken()
 func (suite *ApplicationStoreTestSuite) TestGetAppJSONDataBytes_WithPartialToken() {
 	app := suite.createTestApplication()
 	app.Assertion = &model.AssertionConfig{
-		Issuer: "test-issuer",
-		// No validity period or user attributes
+		ValidityPeriod: 1800,
+		// No user attributes
 	}
 
 	jsonBytes, err := getAppJSONDataBytes(&app)
@@ -193,8 +190,7 @@ func (suite *ApplicationStoreTestSuite) TestGetAppJSONDataBytes_WithPartialToken
 
 	assertion, ok := result["assertion"].(map[string]interface{})
 	suite.True(ok)
-	suite.Equal("test-issuer", assertion["issuer"])
-	suite.Nil(assertion["validity_period"])
+	suite.Equal(float64(1800), assertion["validity_period"])
 	suite.Nil(assertion["user_attributes"])
 }
 
@@ -272,12 +268,10 @@ func (suite *ApplicationStoreTestSuite) TestGetOAuthConfigJSONBytes_Success() {
 
 	token, ok := result["token"].(map[string]interface{})
 	suite.True(ok)
-	suite.Equal("oauth-issuer", token["issuer"])
+	suite.Nil(token["issuer"])
 
 	accessToken, ok := token["access_token"].(map[string]interface{})
 	suite.True(ok)
-	// AccessTokenConfig does not have an issuer field - issuer is at OAuth level
-	suite.Nil(accessToken["issuer"])
 	suite.Equal(float64(7200), accessToken["validity_period"])
 
 	idToken, ok := token["id_token"].(map[string]interface{})
@@ -596,7 +590,6 @@ func (suite *ApplicationStoreTestSuite) TestBuildApplicationFromResultRow_Succes
 		"policy_uri": "https://example.com/policy",
 		"contacts":   []interface{}{"contact@example.com"},
 		"assertion": map[string]interface{}{
-			"issuer":          "test-issuer",
 			"validity_period": float64(3600),
 			"user_attributes": []interface{}{"email", "name"},
 		},
@@ -638,7 +631,6 @@ func (suite *ApplicationStoreTestSuite) TestBuildApplicationFromResultRow_Succes
 	suite.Equal("https://example.com/policy", result.PolicyURI)
 	suite.Len(result.Contacts, 1)
 	suite.NotNil(result.Assertion)
-	suite.Equal("test-issuer", result.Assertion.Issuer)
 	suite.Equal(int64(3600), result.Assertion.ValidityPeriod)
 	suite.Len(result.InboundAuthConfig, 1)
 	suite.Equal("client_app1", result.InboundAuthConfig[0].OAuthAppConfig.ClientID)
@@ -861,9 +853,7 @@ func (suite *ApplicationStoreTestSuite) TestBuildOAuthInboundAuthConfig_Success(
 		"public_client":              false,
 		"scopes":                     []interface{}{"openid"},
 		"token": map[string]interface{}{
-			"issuer": "oauth-issuer",
 			"access_token": map[string]interface{}{
-				"issuer":          "access-issuer",
 				"validity_period": float64(7200),
 				"user_attributes": []interface{}{"sub", "email"},
 			},
@@ -976,7 +966,6 @@ func (suite *ApplicationStoreTestSuite) TestBuildOAuthInboundAuthConfig_WithAcce
 		"public_client":              false,
 		"scopes":                     []interface{}{"openid"},
 		"token": map[string]interface{}{
-			"issuer": "oauth-issuer",
 			"access_token": map[string]interface{}{
 				"validity_period": float64(7200),
 				// user_attributes is nil/omitted
@@ -1139,7 +1128,6 @@ func (suite *ApplicationStoreTestSuite) TestBuildApplicationFromResultRow_WithTo
 		"url":      "https://example.com",
 		"logo_url": "https://example.com/logo.png",
 		"assertion": map[string]interface{}{
-			"issuer":          "test-issuer",
 			"validity_period": "not a number", // Invalid type
 			"user_attributes": []interface{}{"email"},
 		},
@@ -1161,7 +1149,6 @@ func (suite *ApplicationStoreTestSuite) TestBuildApplicationFromResultRow_WithTo
 	// Invalid validity_period type should be ignored (not cause error)
 	suite.NoError(err)
 	suite.NotNil(result.Assertion)
-	suite.Equal("test-issuer", result.Assertion.Issuer)
 	suite.Equal(int64(0), result.Assertion.ValidityPeriod) // Should be 0 when parsing fails
 }
 
@@ -1170,7 +1157,6 @@ func (suite *ApplicationStoreTestSuite) TestBuildApplicationFromResultRow_WithTo
 		"url":      "https://example.com",
 		"logo_url": "https://example.com/logo.png",
 		"assertion": map[string]interface{}{
-			"issuer":          "test-issuer",
 			"validity_period": float64(3600),
 			"user_attributes": "not an array", // Invalid type
 		},
@@ -1192,7 +1178,6 @@ func (suite *ApplicationStoreTestSuite) TestBuildApplicationFromResultRow_WithTo
 	// Invalid user_attributes type should be ignored (not cause error)
 	suite.NoError(err)
 	suite.NotNil(result.Assertion)
-	suite.Equal("test-issuer", result.Assertion.Issuer)
 	suite.Len(result.Assertion.UserAttributes, 0) // Should be empty when parsing fails
 }
 
@@ -1201,7 +1186,6 @@ func (suite *ApplicationStoreTestSuite) TestBuildApplicationFromResultRow_WithTo
 		"url":      "https://example.com",
 		"logo_url": "https://example.com/logo.png",
 		"assertion": map[string]interface{}{
-			"issuer":          "test-issuer",
 			"validity_period": float64(3600),
 			"user_attributes": []interface{}{"email", 123, "name"}, // Mixed types
 		},
@@ -1379,9 +1363,7 @@ func getOAuthApplicationFromResults(
 	// Convert token config if present
 	var oauthTokenConfig *model.OAuthTokenConfig
 	if oAuthConfig.Token != nil {
-		oauthTokenConfig = &model.OAuthTokenConfig{
-			Issuer: oAuthConfig.Token.Issuer,
-		}
+		oauthTokenConfig = &model.OAuthTokenConfig{}
 		if oAuthConfig.Token.AccessToken != nil {
 			oauthTokenConfig.AccessToken = &model.AccessTokenConfig{
 				ValidityPeriod: oAuthConfig.Token.AccessToken.ValidityPeriod,
@@ -1432,9 +1414,7 @@ func (suite *ApplicationStoreTestSuite) TestGetOAuthApplication_WithComplexToken
 		"public_client": false,
 		"scopes": ["openid", "profile", "email"],
 		"token": {
-			"issuer": "https://test-issuer.example.com",
 			"access_token": {
-				"issuer": "https://access-issuer.example.com",
 				"validity_period": 7200,
 				"user_attributes": ["sub", "email", "name"]
 			},
@@ -1476,7 +1456,6 @@ func (suite *ApplicationStoreTestSuite) TestGetOAuthApplication_WithComplexToken
 
 	// Verify token configuration
 	suite.Require().NotNil(result.Token)
-	suite.Assert().Equal("https://test-issuer.example.com", result.Token.Issuer)
 
 	// Verify access token
 	suite.Require().NotNil(result.Token.AccessToken)

@@ -495,6 +495,7 @@ func (suite *AuthAssertExecutorTestSuite) TestExecute_WithUserTypeAndOU() {
 }
 
 func (suite *AuthAssertExecutorTestSuite) TestExecute_WithCustomTokenConfig() {
+	// App-level assertion config (validity period only — issuer always comes from Thunder config)
 	ctx := &core.NodeContext{
 		FlowID:   "flow-123",
 		AppID:    "app-123",
@@ -506,13 +507,12 @@ func (suite *AuthAssertExecutorTestSuite) TestExecute_WithCustomTokenConfig() {
 		ExecutionHistory: map[string]*common.NodeExecutionRecord{},
 		Application: appmodel.Application{
 			Assertion: &appmodel.AssertionConfig{
-				Issuer:         "custom-issuer",
 				ValidityPeriod: 7200,
 			},
 		},
 	}
 
-	suite.mockJWTService.On("GenerateJWT", "user-123", "app-123", "custom-issuer", int64(7200),
+	suite.mockJWTService.On("GenerateJWT", "user-123", "app-123", "https://test.thunder.io", int64(7200),
 		mock.Anything).Return("jwt-token", int64(7200), nil)
 
 	resp, err := suite.executor.Execute(ctx)

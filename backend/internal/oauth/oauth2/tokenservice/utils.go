@@ -57,18 +57,12 @@ func JoinScopes(scopes []string) string {
 }
 
 // resolveTokenConfig resolves the token configuration from the OAuth app or falls back to global config.
-// Both access and ID tokens use the same OAuth-level issuer.
 func resolveTokenConfig(oauthApp *appmodel.OAuthAppConfigProcessedDTO, tokenType TokenType) *TokenConfig {
 	conf := config.GetThunderRuntime().Config
 
 	tokenConfig := &TokenConfig{
 		Issuer:         conf.JWT.Issuer,
 		ValidityPeriod: conf.JWT.ValidityPeriod,
-	}
-
-	// Use OAuth-level issuer for all token types if app config is available
-	if oauthApp != nil && oauthApp.Token != nil && oauthApp.Token.Issuer != "" {
-		tokenConfig.Issuer = oauthApp.Token.Issuer
 	}
 
 	// Override with token-type specific configuration if available

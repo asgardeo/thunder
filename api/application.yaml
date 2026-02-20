@@ -103,7 +103,6 @@ paths:
               policy_uri: "https://myapp.example.com/privacy"
               contacts: ["admin@myapp.example.com", "support@myapp.example.com"]
               assertion:
-                issuer: "thunder"
                 validity_period: 3600
                 user_attributes: ["email", "username"]
               certificate:
@@ -130,7 +129,6 @@ paths:
                       - "profile"
                       - "email"
                     token:
-                      issuer: "thunder-oauth"
                       access_token:
                         validity_period: 3600
                         user_attributes: ["email", "username"]
@@ -163,7 +161,6 @@ paths:
                 policy_uri: "https://myapp.example.com/privacy"
                 contacts: ["admin@myapp.example.com", "support@myapp.example.com"]
                 assertion:
-                  issuer: "thunder"
                   validity_period: 3600
                   user_attributes: ["email", "username"]
                 certificate:
@@ -190,7 +187,6 @@ paths:
                         - "profile"
                         - "email"
                       token:
-                        issuer: "thunder-oauth"
                         access_token:
                           validity_period: 3600
                           user_attributes: ["email", "username"]
@@ -274,7 +270,6 @@ paths:
                 policy_uri: "https://myapp.example.com/privacy"
                 contacts: ["admin@myapp.example.com", "support@myapp.example.com"]
                 assertion:
-                  issuer: "thunder"
                   validity_period: 3600
                   user_attributes: ["email", "username"]
                 certificate:
@@ -300,7 +295,6 @@ paths:
                         - "profile"
                         - "email"
                       token:
-                        issuer: "thunder-oauth"
                         access_token:
                           validity_period: 3600
                           user_attributes: ["email", "username"]
@@ -375,7 +369,6 @@ paths:
               policy_uri: "https://myapp.example.com/privacy"
               contacts: ["admin@myapp.example.com", "support@myapp.example.com"]
               assertion:
-                issuer: "thunder"
                 validity_period: 3600
                 user_attributes: ["email", "username"]
               certificate:
@@ -404,7 +397,6 @@ paths:
                       - "profile"
                       - "email"
                     token:
-                      issuer: "thunder-oauth"
                       access_token:
                         validity_period: 3600
                         user_attributes: ["email", "username"]
@@ -437,7 +429,6 @@ paths:
                 policy_uri: "https://myapp.example.com/privacy"
                 contacts: ["admin@myapp.example.com", "support@myapp.example.com"]
                 assertion:
-                  issuer: "thunder"
                   validity_period: 3600
                   user_attributes: ["email", "username"]
                 certificate:
@@ -466,7 +457,6 @@ paths:
                         - "profile"
                         - "email"
                       token:
-                        issuer: "thunder-oauth"
                         access_token:
                           validity_period: 3600
                           user_attributes: ["email", "username"]
@@ -917,13 +907,8 @@ components:
     AssertionConfig:
       type: object
       description: |
-        Assertion configuration for application-level (root) assertions. This includes an issuer field
-        since application-level tokens can have their own issuer.
+        Assertion configuration for application-level (root) assertions.
       properties:
-        issuer:
-          type: string
-          description: The issuer of the token.
-          example: "thunder"
         validity_period:
           type: integer
           description: The validity period of the token in seconds.
@@ -938,8 +923,7 @@ components:
     AccessTokenConfig:
       type: object
       description: |
-        Access token configuration for OAuth applications. Note that access tokens do NOT have
-        their own issuer field - they use the OAuth-level issuer (specified in the parent token.issuer field).
+        Access token configuration for OAuth applications.
       properties:
         validity_period:
           type: integer
@@ -955,8 +939,7 @@ components:
     IDTokenConfig:
       type: object
       description: |
-        ID token configuration for OAuth applications. Note that ID tokens do NOT have their own
-        issuer field - they use the OAuth-level issuer (specified in the parent token.issuer field).
+        ID token configuration for OAuth applications.
       properties:
         validity_period:
           type: integer
@@ -1074,11 +1057,6 @@ components:
         token:
           type: object
           properties:
-            issuer:
-              type: string
-              description: |
-                The issuer for both access token and ID token.
-              example: "thunder-oauth"
             access_token:
               $ref: '#/components/schemas/AccessTokenConfig'
             id_token:
@@ -1152,11 +1130,6 @@ components:
         token:
           type: object
           properties:
-            issuer:
-              type: string
-              description: |
-                The issuer for both access token and ID token.
-              example: "thunder-oauth"
             access_token:
               $ref: '#/components/schemas/AccessTokenConfig'
             id_token:

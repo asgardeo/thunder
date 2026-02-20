@@ -33,23 +33,13 @@ describe('Token Models', () => {
       expect(tokenConfig.user_attributes).toEqual(['email', 'username']);
     });
 
-    it('should accept optional issuer', () => {
-      const tokenConfig: TokenConfig = {
-        issuer: 'https://auth.example.com',
-        validity_period: 3600,
-        user_attributes: [],
-      };
 
-      expect(tokenConfig.issuer).toBe('https://auth.example.com');
-    });
-
-    it('should work without issuer', () => {
+    it('should accept validity period and user attributes', () => {
       const tokenConfig: TokenConfig = {
         validity_period: 7200,
         user_attributes: ['sub', 'email', 'name'],
       };
 
-      expect(tokenConfig.issuer).toBeUndefined();
       expect(tokenConfig.validity_period).toBe(7200);
       expect(tokenConfig.user_attributes).toHaveLength(3);
     });

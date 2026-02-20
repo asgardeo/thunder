@@ -121,7 +121,6 @@ paths:
                       pkce_required: false
                       public_client: false
                       token:
-                        issuer: thunder
                         access_token:
                           validity_period: 3600
                           user_attributes:

@@ -70,9 +70,6 @@ func (suite *TokenValidatorTestSuite) SetupTest() {
 
 	suite.oauthApp = &appmodel.OAuthAppConfigProcessedDTO{
 		ClientID: "test-client",
-		Token: &appmodel.OAuthTokenConfig{
-			Issuer: "https://thunder.io",
-		},
 	}
 }
 
@@ -138,19 +135,17 @@ func (suite *TokenValidatorTestSuite) TestValidateSubjectToken_Success_BasicToke
 	suite.mockJWTService.AssertExpectations(suite.T())
 }
 
-func (suite *TokenValidatorTestSuite) TestValidateSubjectToken_Success_WithCustomIssuer() {
-	// Test with custom issuer configuration
+func (suite *TokenValidatorTestSuite) TestValidateSubjectToken_Success_WithTokenConfig() {
+	// App with token config should still validate using Thunder-level issuer from config
 	customOAuthApp := &appmodel.OAuthAppConfigProcessedDTO{
 		ClientID: "test-client",
-		Token: &appmodel.OAuthTokenConfig{
-			Issuer: "https://custom-issuer.com",
-		},
+		Token:    &appmodel.OAuthTokenConfig{},
 	}
 
 	now := time.Now().Unix()
 	claims := map[string]interface{}{
 		"sub": "user123",
-		"iss": "https://custom-issuer.com",
+		"iss": "https://thunder.io",
 		"exp": float64(now + 3600),
 	}
 	token := suite.createTestJWT(claims)
@@ -161,7 +156,7 @@ func (suite *TokenValidatorTestSuite) TestValidateSubjectToken_Success_WithCusto
 
 	assert.NoError(suite.T(), err)
 	assert.NotNil(suite.T(), result)
-	assert.Equal(suite.T(), "https://custom-issuer.com", result.Iss)
+	assert.Equal(suite.T(), "https://thunder.io", result.Iss)
 	suite.mockJWTService.AssertExpectations(suite.T())
 }
 
@@ -396,11 +391,11 @@ func (suite *TokenValidatorTestSuite) TestVerifyTokenSignatureByIssuer_Success_T
 	suite.mockJWTService.AssertExpectations(suite.T())
 }
 
-func (suite *TokenValidatorTestSuite) TestVerifyTokenSignatureByIssuer_Success_CustomThunderIssuer() {
+func (suite *TokenValidatorTestSuite) TestVerifyTokenSignatureByIssuer_Success_WithTokenConfig() {
+	// App with token config should still use Thunder-level issuer for signature verification
 	customApp := &appmodel.OAuthAppConfigProcessedDTO{
 		ClientID: "test-client",
 		Token: &appmodel.OAuthTokenConfig{
-			Issuer:      "https://custom-thunder.io",
 			AccessToken: &appmodel.AccessTokenConfig{},
 		},
 	}
@@ -408,7 +403,7 @@ func (suite *TokenValidatorTestSuite) TestVerifyTokenSignatureByIssuer_Success_C
 
 	suite.mockJWTService.On("VerifyJWTSignature", token).Return(nil)
 
-	err := suite.validator.verifyTokenSignatureByIssuer(token, "https://custom-thunder.io", customApp)
+	err := suite.validator.verifyTokenSignatureByIssuer(token, "https://thunder.io", customApp)
 
 	assert.NoError(suite.T(), err)
 	suite.mockJWTService.AssertExpectations(suite.T())
@@ -487,47 +482,46 @@ func (suite *TokenValidatorTestSuite) TestFederationScenario_FailFastOnUntrusted
 	suite.mockJWTService.AssertNotCalled(suite.T(), "VerifyJWTSignature")
 }
 
-func (suite *TokenValidatorTestSuite) TestFederationScenario_MultipleThunderIssuers() {
-	// Scenario with multiple Thunder instances
-	multiIssuerApp := &appmodel.OAuthAppConfigProcessedDTO{
+func (suite *TokenValidatorTestSuite) TestFederationScenario_OnlyThunderIssuerIsValid() {
+	// Only the Thunder-level issuer from config is accepted; app-level issuers are no longer supported
+	appWithTokenConfig := &appmodel.OAuthAppConfigProcessedDTO{
 		ClientID: "test-client",
 		Token: &appmodel.OAuthTokenConfig{
-			Issuer:      "https://thunder-prod.company.com",
 			AccessToken: &appmodel.AccessTokenConfig{},
 		},
 	}
 
 	now := time.Now().Unix()
 
-	// Test token from prod issuer (matches OAuth-level issuer)
-	claimsProd := map[string]interface{}{
+	// Test token from Thunder issuer (matches config-level issuer)
+	claimsValid := map[string]interface{}{
 		"sub": "user123",
-		"iss": "https://thunder-prod.company.com",
+		"iss": "https://thunder.io",
 		"exp": float64(now + 3600),
 	}
-	tokenProd := suite.createTestJWT(claimsProd)
-	suite.mockJWTService.On("VerifyJWTSignature", tokenProd).Return(nil)
+	tokenValid := suite.createTestJWT(claimsValid)
+	suite.mockJWTService.On("VerifyJWTSignature", tokenValid).Return(nil)
 
-	resultProd, errProd := suite.validator.ValidateSubjectToken(
-		tokenProd, multiIssuerApp)
-	assert.NoError(suite.T(), errProd)
-	assert.NotNil(suite.T(), resultProd)
+	resultValid, errValid := suite.validator.ValidateSubjectToken(
+		tokenValid, appWithTokenConfig)
+	assert.NoError(suite.T(), errValid)
+	assert.NotNil(suite.T(), resultValid)
 
-	// Test token from staging issuer (not in valid issuers - should fail)
-	claimsStaging := map[string]interface{}{
+	// Test token from unknown issuer (not in valid issuers - should fail)
+	claimsInvalid := map[string]interface{}{
 		"sub": "user456",
-		"iss": "https://thunder-staging.company.com",
+		"iss": "https://unknown-issuer.com",
 		"exp": float64(now + 3600),
 	}
-	tokenStaging := suite.createTestJWT(claimsStaging)
+	tokenInvalid := suite.createTestJWT(claimsInvalid)
 
-	resultStaging, errStaging := suite.validator.ValidateSubjectToken(
-		tokenStaging, multiIssuerApp)
-	assert.Error(suite.T(), errStaging)
-	assert.Nil(suite.T(), resultStaging)
-	assert.Contains(suite.T(), errStaging.Error(), "not supported")
+	resultInvalid, errInvalid := suite.validator.ValidateSubjectToken(
+		tokenInvalid, appWithTokenConfig)
+	assert.Error(suite.T(), errInvalid)
+	assert.Nil(suite.T(), resultInvalid)
+	assert.Contains(suite.T(), errInvalid.Error(), "not supported")
 	// VerifyJWTSignature should NOT have been called for untrusted issuer
-	suite.mockJWTService.AssertNotCalled(suite.T(), "VerifyJWTSignature", tokenStaging)
+	suite.mockJWTService.AssertNotCalled(suite.T(), "VerifyJWTSignature", tokenInvalid)
 
 	suite.mockJWTService.AssertExpectations(suite.T())
 }

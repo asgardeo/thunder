@@ -27,7 +27,6 @@ import (
 
 // AssertionConfig represents the assertion configuration structure for application-level (root) assertion configs.
 type AssertionConfig struct {
-	Issuer         string   `json:"issuer,omitempty" yaml:"issuer,omitempty" jsonschema:"Assertion issuer. The entity that issues the assertion (typically authorization server URL)."`
 	ValidityPeriod int64    `json:"validity_period,omitempty" yaml:"validity_period,omitempty" jsonschema:"Assertion validity period in seconds."`
 	UserAttributes []string `json:"user_attributes,omitempty" yaml:"user_attributes,omitempty" jsonschema:"User attributes to include in the assertion. List of user claim names to embed in the assertion (e.g., email, username, roles)."`
 }

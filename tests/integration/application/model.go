@@ -72,7 +72,6 @@ type OAuthAppConfig struct {
 
 // OAuthTokenConfig represents the OAuth token configuration.
 type OAuthTokenConfig struct {
-	Issuer      string             `json:"issuer,omitempty"`
 	AccessToken *AccessTokenConfig `json:"access_token,omitempty"`
 	IDToken     *IDTokenConfig     `json:"id_token,omitempty"`
 }
@@ -84,7 +83,6 @@ type UserInfoConfig struct {
 
 // AssertionConfig represents the assertion configuration (used for application-level assertion config).
 type AssertionConfig struct {
-	Issuer         string   `json:"issuer,omitempty"`
 	ValidityPeriod int64    `json:"validity_period,omitempty"`
 	UserAttributes []string `json:"user_attributes,omitempty"`
 }
@@ -174,8 +172,7 @@ func (app *Application) equals(expectedApp Application) bool {
 
 	// Assertion config
 	if (app.Assertion != nil) && (expectedApp.Assertion != nil) {
-		if app.Assertion.Issuer != expectedApp.Assertion.Issuer ||
-			app.Assertion.ValidityPeriod != expectedApp.Assertion.ValidityPeriod {
+		if app.Assertion.ValidityPeriod != expectedApp.Assertion.ValidityPeriod {
 			return false
 		}
 		if !compareStringSlices(app.Assertion.UserAttributes, expectedApp.Assertion.UserAttributes) {
