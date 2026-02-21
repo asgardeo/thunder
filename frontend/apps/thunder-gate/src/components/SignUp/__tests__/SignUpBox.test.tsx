@@ -19,7 +19,7 @@
 import {describe, it, expect, vi, beforeEach} from 'vitest';
 import {render, screen, fireEvent, waitFor} from '@thunder/test-utils';
 import userEvent from '@testing-library/user-event';
-import SignUpBox from '../../../components/SignUp/SignUpBox';
+import SignUpBox from '../SignUpBox';
 
 // Mock useDesign
 const mockUseDesign = vi.fn();

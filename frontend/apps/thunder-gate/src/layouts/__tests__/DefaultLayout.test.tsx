@@ -19,7 +19,7 @@
 import {describe, it, expect} from 'vitest';
 import {render, screen} from '@testing-library/react';
 import {MemoryRouter, Routes, Route} from 'react-router';
-import DefaultLayout from '../../layouts/DefaultLayout';
+import DefaultLayout from '../DefaultLayout';
 
 describe('DefaultLayout', () => {
   it('renders without crashing', () => {

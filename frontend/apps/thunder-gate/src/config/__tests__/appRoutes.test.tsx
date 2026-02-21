@@ -17,7 +17,7 @@
  */
 
 import {describe, it, expect} from 'vitest';
-import appRoutes, {type AppRoute} from '../../config/appRoutes';
+import appRoutes, {type AppRoute} from '../appRoutes';
 import ROUTES from '../../constants/routes';
 
 describe('appRoutes', () => {

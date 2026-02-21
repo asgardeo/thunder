@@ -18,7 +18,7 @@
 
 import {describe, it, expect, vi} from 'vitest';
 import {render, screen} from '@testing-library/react';
-import getIntegrationIcon from '../../utils/getIntegrationIcon';
+import getIntegrationIcon from '../getIntegrationIcon';
 
 // Mock the icons
 vi.mock('@wso2/oxygen-ui-icons-react', () => ({

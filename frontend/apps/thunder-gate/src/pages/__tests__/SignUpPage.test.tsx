@@ -18,7 +18,7 @@
 
 import {describe, it, expect, vi} from 'vitest';
 import {render, screen} from '@thunder/test-utils';
-import SignUpPage from '../../pages/SignUpPage';
+import SignUpPage from '../SignUpPage';
 
 // Mock the SignUp component
 vi.mock('../../components/SignUp/SignUp', () => ({

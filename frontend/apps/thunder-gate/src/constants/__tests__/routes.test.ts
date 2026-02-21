@@ -17,7 +17,7 @@
  */
 
 import {describe, it, expect} from 'vitest';
-import ROUTES, {type Routes} from '../../constants/routes';
+import ROUTES, {type Routes} from '../routes';
 
 describe('ROUTES', () => {
   it('exports ROUTES object', () => {
