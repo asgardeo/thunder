@@ -18,7 +18,7 @@
 
 import {describe, it, expect, vi} from 'vitest';
 import {render, screen} from '@thunder/test-utils';
-import InviteAcceptancePage from '../../pages/InviteAcceptancePage';
+import InviteAcceptancePage from '../InviteAcceptancePage';
 
 // Mock the AcceptInviteBox component
 vi.mock('../../components/AcceptInvite/AcceptInviteBox', () => ({

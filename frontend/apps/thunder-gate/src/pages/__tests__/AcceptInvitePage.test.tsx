@@ -18,21 +18,27 @@
 
 import {describe, it, expect, vi} from 'vitest';
 import {render, screen} from '@thunder/test-utils';
-import SignInPage from '../../pages/SignInPage';
+import AcceptInvitePage from '../AcceptInvitePage';
 
-// Mock the SignIn component
-vi.mock('../../components/SignIn/SignIn', () => ({
-  default: () => <div data-testid="signin-component">SignIn Component</div>,
+// Mock the AcceptInviteBox component
+vi.mock('../../components/AcceptInvite/AcceptInviteBox', () => ({
+  default: () => <div data-testid="accept-invite-box">AcceptInviteBox Component</div>,
 }));
 
-describe('SignInPage', () => {
+describe('AcceptInvitePage', () => {
   it('renders without crashing', () => {
-    const {container} = render(<SignInPage />);
+    const {container} = render(<AcceptInvitePage />);
     expect(container).toBeInTheDocument();
   });
 
-  it('renders SignIn component', () => {
-    render(<SignInPage />);
-    expect(screen.getByTestId('signin-component')).toBeInTheDocument();
+  it('renders AcceptInviteBox component', () => {
+    render(<AcceptInvitePage />);
+    expect(screen.getByTestId('accept-invite-box')).toBeInTheDocument();
+  });
+
+  it('renders main element', () => {
+    render(<AcceptInvitePage />);
+    const main = screen.getByRole('main');
+    expect(main).toBeInTheDocument();
   });
 });

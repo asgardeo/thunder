@@ -18,7 +18,7 @@
 
 import {describe, it, expect, vi} from 'vitest';
 import {render, screen} from '@thunder/test-utils';
-import ErrorPage from '../../pages/ErrorPage';
+import ErrorPage from '../ErrorPage';
 
 // Mock the Error component
 vi.mock('../../components/Error/Error', () => ({

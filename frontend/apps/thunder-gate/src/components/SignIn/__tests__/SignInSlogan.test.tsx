@@ -18,7 +18,7 @@
 
 import {describe, it, expect, vi, beforeEach} from 'vitest';
 import {render, screen} from '@thunder/test-utils';
-import SignInSlogan from '../../../components/SignIn/SignInSlogan';
+import SignInSlogan from '../SignInSlogan';
 
 describe('SignInSlogan', () => {
   beforeEach(() => {

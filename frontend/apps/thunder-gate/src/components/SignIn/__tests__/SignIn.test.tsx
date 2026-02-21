@@ -18,14 +18,14 @@
 
 import {describe, it, expect, vi, beforeEach} from 'vitest';
 import {render, screen} from '@thunder/test-utils';
-import SignIn from '../../../components/SignIn/SignIn';
+import SignIn from '../SignIn';
 
 // Mock child components
-vi.mock('../../../components/SignIn/SignInBox', () => ({
+vi.mock('../SignInBox', () => ({
   default: () => <div data-testid="signin-box">SignInBox</div>,
 }));
 
-vi.mock('../../../components/SignIn/SignInSlogan', () => ({
+vi.mock('../SignInSlogan', () => ({
   default: () => <div data-testid="signin-slogan">SignInSlogan</div>,
 }));
 

@@ -18,27 +18,21 @@
 
 import {describe, it, expect, vi} from 'vitest';
 import {render, screen} from '@thunder/test-utils';
-import SignUp from '../../../components/SignUp/SignUp';
+import SignInPage from '../SignInPage';
 
-// Mock child component
-vi.mock('../../../components/SignUp/SignUpBox', () => ({
-  default: () => <div data-testid="signup-box">SignUpBox</div>,
+// Mock the SignIn component
+vi.mock('../../components/SignIn/SignIn', () => ({
+  default: () => <div data-testid="signin-component">SignIn Component</div>,
 }));
 
-describe('SignUp', () => {
+describe('SignInPage', () => {
   it('renders without crashing', () => {
-    const {container} = render(<SignUp />);
+    const {container} = render(<SignInPage />);
     expect(container).toBeInTheDocument();
   });
 
-  it('renders SignUpBox component', () => {
-    render(<SignUp />);
-    expect(screen.getByTestId('signup-box')).toBeInTheDocument();
-  });
-
-  it('renders main element', () => {
-    render(<SignUp />);
-    const main = screen.getByRole('main');
-    expect(main).toBeInTheDocument();
+  it('renders SignIn component', () => {
+    render(<SignInPage />);
+    expect(screen.getByTestId('signin-component')).toBeInTheDocument();
   });
 });
