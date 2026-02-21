@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2025, WSO2 LLC. (https://www.wso2.com).
+ * Copyright (c) 2026, WSO2 LLC. (https://www.wso2.com).
  *
  * WSO2 LLC. licenses this file to you under the Apache License,
  * Version 2.0 (the "License"); you may not use this file except
@@ -16,21 +16,17 @@
  * under the License.
  */
 
-package security
+package sysauthz
 
 import (
-	"net/http"
+	"testing"
 
-	"github.com/asgardeo/thunder/internal/system/jose/jwt"
+	"github.com/stretchr/testify/assert"
 )
 
-// Initialize creates and returns the security middleware with necessary authenticators.
-func Initialize(jwtService jwt.JWTServiceInterface) (func(http.Handler) http.Handler, error) {
-	jwtAuthenticator := newJWTAuthenticator(jwtService)
-	securityService, err := newSecurityService(
-		[]AuthenticatorInterface{jwtAuthenticator}, publicPaths, apiPermissionEntries)
-	if err != nil {
-		return nil, err
-	}
-	return middleware(securityService)
+// TestInitialize verifies that Initialize returns a non-nil service with no error.
+func TestInitialize(t *testing.T) {
+	svc, err := Initialize()
+	assert.NoError(t, err)
+	assert.NotNil(t, svc)
 }

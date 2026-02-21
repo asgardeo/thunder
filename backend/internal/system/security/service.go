@@ -21,11 +21,9 @@ package security
 
 import (
 	"context"
-	"fmt"
 	"net/http"
 	"os"
 	"regexp"
-	"strings"
 
 	"github.com/asgardeo/thunder/internal/system/log"
 )
@@ -39,10 +37,11 @@ type SecurityServiceInterface interface {
 
 // securityService orchestrates authentication and authorization for HTTP requests.
 type securityService struct {
-	authenticators []AuthenticatorInterface
-	logger         *log.Logger
-	compiledPaths  []*regexp.Regexp
-	skipSecurity   bool
+	authenticators         []AuthenticatorInterface
+	logger                 *log.Logger
+	compiledPaths          []*regexp.Regexp
+	compiledAPIPermissions []compiledAPIPermission
+	skipSecurity           bool
 }
 
 // newSecurityService creates a new instance of the security service.
@@ -50,12 +49,19 @@ type securityService struct {
 // Parameters:
 //   - authenticators: A slice of AuthenticatorInterface implementations to handle request authentication.
 //   - publicPaths: A slice of string patterns representing paths that are exempt from authentication.
+//   - apiPermissions: An ordered slice of API permission entries used for authorization.
 //
 // Returns:
 //   - *securityService: A pointer to the created securityService instance.
-//   - error: An error if any of the provided public paths are invalid and cannot be compiled.
-func newSecurityService(authenticators []AuthenticatorInterface, publicPaths []string) (*securityService, error) {
+//   - error: An error if any of the provided path patterns are invalid and cannot be compiled.
+func newSecurityService(authenticators []AuthenticatorInterface, publicPaths []string,
+	apiPermissions []apiPermissionEntry) (*securityService, error) {
 	compiledPaths, err := compilePathPatterns(publicPaths)
+	if err != nil {
+		return nil, err
+	}
+
+	compiledPerms, err := compileAPIPermissions(apiPermissions)
 	if err != nil {
 		return nil, err
 	}
@@ -77,10 +83,11 @@ func newSecurityService(authenticators []AuthenticatorInterface, publicPaths []s
 	}
 
 	return &securityService{
-		authenticators: authenticators,
-		logger:         logger,
-		compiledPaths:  compiledPaths,
-		skipSecurity:   skipSecurity,
+		authenticators:         authenticators,
+		logger:                 logger,
+		compiledPaths:          compiledPaths,
+		compiledAPIPermissions: compiledPerms,
+		skipSecurity:           skipSecurity,
 	}, nil
 }
 
@@ -129,54 +136,37 @@ func (s *securityService) Process(r *http.Request) (context.Context, error) {
 }
 
 // authorize checks whether the permissions stored in the request context satisfy
-// the requirements for the requested path.
+// the requirements for the requested path using hierarchical scope matching.
 func (s *securityService) authorize(r *http.Request) error {
+	required := s.getRequiredPermissionForAPI(r.Method, r.URL.Path)
+	// Empty required means any authenticated user may access the path.
+	if required == "" {
+		return nil
+	}
 	permissions := GetPermissions(r.Context())
-	required := s.getRequiredPermissions(r)
-
-	if len(required) > 0 && !hasAnyPermission(permissions, required) {
+	if !HasSufficientPermission(permissions, required) {
 		return errInsufficientPermissions
 	}
-
 	return nil
 }
 
-// getRequiredPermissions returns the permissions that a caller must hold to access
-// the requested path. An empty slice means the path is open to any authenticated user.
-func (s *securityService) getRequiredPermissions(r *http.Request) []string {
-	// User self-service endpoints are accessible to any authenticated user.
-	if r.URL.Path == "/users/me" || strings.HasPrefix(r.URL.Path, "/users/me/") {
-		return []string{}
-	}
-
-	// Passkey registration endpoints are accessible to any authenticated user.
-	if strings.HasPrefix(r.URL.Path, "/register/passkey/") {
-		return []string{}
-	}
-
-	// All other endpoints require the "system" permission by default.
-	return []string{"system"}
-}
-
-// hasAnyPermission reports whether userPermissions contains at least one entry
-// from requiredPermissions. An empty required list is always satisfied.
-func hasAnyPermission(userPermissions, requiredPermissions []string) bool {
-	if len(requiredPermissions) == 0 {
-		return true
-	}
-
-	permissionSet := make(map[string]bool, len(userPermissions))
-	for _, p := range userPermissions {
-		permissionSet[p] = true
-	}
-
-	for _, required := range requiredPermissions {
-		if permissionSet[required] {
-			return true
+// getRequiredPermissionForAPI returns the minimum permission required to access the
+// given HTTP method + path combination. Returns an empty string for self-service paths
+// that any authenticated user may access. Falls back to SystemPermission for paths not
+// covered by any entry in compiledAPIPermissions.
+//
+// Matching uses pre-compiled regular expressions evaluated in declaration order;
+// the first matching pattern wins. More specific patterns (exact paths, named
+// sub-resources) are listed before broader wildcards in apiPermissionEntries to
+// ensure correct precedence — no manual prefix arithmetic is required.
+func (s *securityService) getRequiredPermissionForAPI(method, path string) string {
+	key := method + " " + path
+	for _, entry := range s.compiledAPIPermissions {
+		if entry.re.MatchString(key) {
+			return entry.permission
 		}
 	}
-
-	return false
+	return SystemPermission
 }
 
 // isPublicPath checks if the given request path matches any of the configured public path patterns.
@@ -197,49 +187,6 @@ func (s *securityService) isPublicPath(requestPath string) bool {
 	return false
 }
 
-// compilePathPatterns compiles the path patterns into regular expressions safely.
-// It returns an error if any pattern is invalid.
-func compilePathPatterns(patterns []string) ([]*regexp.Regexp, error) {
-	compiled := make([]*regexp.Regexp, 0, len(patterns))
-
-	for _, pattern := range patterns {
-		var regexPattern string
-
-		// Check for recursive wildcard usage
-		if strings.Contains(pattern, "**") {
-			// Ensure "**" is only used as a suffix "/**"
-			if !strings.HasSuffix(pattern, "/**") {
-				return nil,
-					fmt.Errorf("invalid pattern: recursive wildcard '**' is only allowed as a suffix: %s", pattern)
-			}
-
-			// Ensure "**" appears only once
-			if strings.Count(pattern, "**") > 1 {
-				return nil, fmt.Errorf("invalid pattern: recursive wildcard '**' can only appear once: %s", pattern)
-			}
-
-			base := strings.TrimSuffix(pattern, "/**")
-			baseRegex := regexp.QuoteMeta(base)
-			baseRegex = strings.ReplaceAll(baseRegex, "\\*", "[^/]+")
-			regexPattern = "^" + baseRegex + "(?:/.*)?$"
-		} else {
-			// Normal pattern (no recursive wildcards)
-			regexPattern = regexp.QuoteMeta(pattern)
-			regexPattern = strings.ReplaceAll(regexPattern, "\\*", "[^/]+")
-			regexPattern = "^" + regexPattern + "$"
-		}
-
-		re, err := regexp.Compile(regexPattern)
-		if err != nil {
-			return nil, fmt.Errorf("error compiling public path regex for pattern %s: %w", pattern, err)
-		}
-
-		compiled = append(compiled, re)
-	}
-
-	return compiled, nil
-}
-
 // handleAuthError handles authentication/authorization errors based on whether
 // the path is public or security is skipped.
 func (s *securityService) handleAuthError(
@@ -250,7 +197,8 @@ func (s *securityService) handleAuthError(
 	skipSecurity bool,
 ) (context.Context, error) {
 	if isPublic {
-		return ctx, nil
+		// Mark the context as a runtime caller so that the authorization layer can grant access.
+		return WithRuntimeContext(ctx), nil
 	}
 
 	if skipSecurity {
@@ -258,7 +206,7 @@ func (s *securityService) handleAuthError(
 			"Proceeding without authentication/authorization enforcement as skipSecurity is enabled",
 			log.Error(err),
 			log.String("path", path))
-		return ctx, nil
+		return withSecuritySkipped(ctx), nil
 	}
 
 	return nil, err
