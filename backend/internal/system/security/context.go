@@ -27,6 +27,12 @@ type contextKey string
 const (
 	// securityContextKey is the context key for storing security context.
 	securityContextKey contextKey = "security_context"
+
+	// securitySkippedKey is the context key for marking that security enforcement was skipped.
+	securitySkippedKey contextKey = "security_skipped"
+
+	// runtimeContextKey is the context key for marking a context as an internal runtime caller.
+	runtimeContextKey contextKey = "runtime_context"
 )
 
 // SecurityContext holds immutable authenticated subject information.
@@ -56,6 +62,24 @@ func withSecurityContext(ctx context.Context, authCtx *SecurityContext) context.
 		ctx = context.Background()
 	}
 	return context.WithValue(ctx, securityContextKey, authCtx)
+}
+
+// withSecuritySkipped marks the context to indicate that security enforcement was skipped.
+func withSecuritySkipped(ctx context.Context) context.Context {
+	if ctx == nil {
+		ctx = context.Background()
+	}
+	return context.WithValue(ctx, securitySkippedKey, true)
+}
+
+// IsSecuritySkipped returns true if security enforcement was skipped for this context.
+// Consumers such as sysauthz use this to bypass authorization when THUNDER_SKIP_SECURITY is enabled.
+func IsSecuritySkipped(ctx context.Context) bool {
+	if ctx == nil {
+		return false
+	}
+	v, _ := ctx.Value(securitySkippedKey).(bool)
+	return v
 }
 
 // GetSubject retrieves the authenticated subject from the context.
@@ -124,6 +148,27 @@ func GetAttribute(ctx context.Context, key string) interface{} {
 		// Immutable types (string, int, bool, etc.) are safe to return directly
 		return value
 	}
+}
+
+// WithRuntimeContext marks the context as an internal runtime caller.
+// Runtime contexts bypass standard subject-based authorization checks without requiring an
+// authenticated subject. This is intended for internal system operations initiated from public
+// paths (e.g., flow executors during registration, token enrichment) where no user token is available.
+func WithRuntimeContext(ctx context.Context) context.Context {
+	if ctx == nil {
+		ctx = context.Background()
+	}
+	return context.WithValue(ctx, runtimeContextKey, true)
+}
+
+// IsRuntimeContext returns true if the context was marked as an internal runtime caller
+// via WithRuntimeContext.
+func IsRuntimeContext(ctx context.Context) bool {
+	if ctx == nil {
+		return false
+	}
+	v, _ := ctx.Value(runtimeContextKey).(bool)
+	return v
 }
 
 // getSecurityContext is an internal helper to retrieve the security context.

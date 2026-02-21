@@ -60,7 +60,8 @@ func (suite *SecurityServiceTestSuite) SetupTest() {
 	suite.mockAuth2 = &AuthenticatorInterfaceMock{}
 
 	var err error
-	suite.service, err = newSecurityService([]AuthenticatorInterface{suite.mockAuth1, suite.mockAuth2}, testPublicPaths)
+	suite.service, err = newSecurityService(
+		[]AuthenticatorInterface{suite.mockAuth1, suite.mockAuth2}, testPublicPaths, apiPermissionEntries)
 	suite.Require().NoError(err)
 
 	// Create test authentication context with "system" permission so that
@@ -124,7 +125,8 @@ func (suite *SecurityServiceTestSuite) TestProcess_PublicPaths() {
 			ctx, err := suite.service.Process(req)
 
 			assert.NoError(suite.T(), err)
-			assert.Equal(suite.T(), req.Context(), ctx)
+			assert.NotNil(suite.T(), ctx)
+			assert.True(suite.T(), IsRuntimeContext(ctx), "public path should return a runtime context")
 		})
 	}
 }
@@ -335,7 +337,7 @@ func (suite *SecurityServiceTestSuite) TestIsPublicPath() {
 
 // Test SecurityService with empty authenticators list
 func (suite *SecurityServiceTestSuite) TestProcess_EmptyAuthenticators() {
-	service, err := newSecurityService([]AuthenticatorInterface{}, testPublicPaths)
+	service, err := newSecurityService([]AuthenticatorInterface{}, testPublicPaths, apiPermissionEntries)
 	suite.Require().NoError(err)
 
 	req := httptest.NewRequest(http.MethodGet, "/api/protected", nil)
@@ -348,7 +350,7 @@ func (suite *SecurityServiceTestSuite) TestProcess_EmptyAuthenticators() {
 
 // Test SecurityService with nil authenticators list
 func (suite *SecurityServiceTestSuite) TestProcess_NilAuthenticators() {
-	service, err := newSecurityService(nil, testPublicPaths)
+	service, err := newSecurityService(nil, testPublicPaths, apiPermissionEntries)
 	suite.Require().NoError(err)
 
 	req := httptest.NewRequest(http.MethodGet, "/api/protected", nil)
@@ -421,7 +423,8 @@ func (suite *SecurityServiceTestSuite) TestProcess_PublicPathVariations() {
 			ctx, err := suite.service.Process(req)
 
 			assert.NoError(suite.T(), err, "Path should be public: %s", tc.path)
-			assert.Equal(suite.T(), req.Context(), ctx)
+			assert.NotNil(suite.T(), ctx)
+			assert.True(suite.T(), IsRuntimeContext(ctx), "public path should return a runtime context: %s", tc.path)
 		})
 	}
 }
@@ -440,98 +443,35 @@ func (suite *SecurityServiceTestSuite) TestProcess_OptionsMethod() {
 	suite.mockAuth2.AssertNotCalled(suite.T(), "CanHandle")
 }
 
-// Test newSecurityService returns error on invalid paths
+// TestNewSecurityService_Error verifies that newSecurityService returns an error
+// when either the public path patterns or the API permission entry patterns are invalid.
 func (suite *SecurityServiceTestSuite) TestNewSecurityService_Error() {
-	invalidPaths := []string{"/valid", "/invalid/**/middle/**"}
-	service, err := newSecurityService(nil, invalidPaths)
-	assert.Error(suite.T(), err)
-	assert.Nil(suite.T(), service)
-	assert.Contains(suite.T(), err.Error(), "invalid pattern")
-}
-
-func (suite *SecurityServiceTestSuite) TestCompilePathPatterns() {
 	tests := []struct {
-		name           string
-		pattern        string
-		expectedRegex  string
-		shouldMatch    []string
-		shouldNotMatch []string
+		name        string
+		publicPaths []string
+		apiPerms    []apiPermissionEntry
+		errContains string
 	}{
 		{
-			name:           "Single wildcard segment",
-			pattern:        "/api/*/users",
-			expectedRegex:  "^/api/[^/]+/users$",
-			shouldMatch:    []string{"/api/v1/users", "/api/test/users"},
-			shouldNotMatch: []string{"/api/users", "/api/v1/v2/users"},
+			name:        "invalid public path pattern",
+			publicPaths: []string{"/valid", "/invalid/**/middle/**"},
+			apiPerms:    apiPermissionEntries,
+			errContains: "invalid pattern",
 		},
 		{
-			name:           "Recursive wildcard suffix",
-			pattern:        "/health/**",
-			expectedRegex:  "^/health(?:/.*)?$",
-			shouldMatch:    []string{"/health", "/health/", "/health/liveness", "/health/readiness/full"},
-			shouldNotMatch: []string{"/healthz", "/other"},
-		},
-		{
-			name:           "Multiple wildcards",
-			pattern:        "/i18n/languages/*/translations/ns/*/keys/*/resolve",
-			expectedRegex:  "^/i18n/languages/[^/]+/translations/ns/[^/]+/keys/[^/]+/resolve$",
-			shouldMatch:    []string{"/i18n/languages/en/translations/ns/common/keys/btn.submit/resolve"},
-			shouldNotMatch: []string{"/i18n/languages/en/translations/ns/common/keys/btn.submit/extra"},
-		},
-		{
-			name:           "Special characters escaping",
-			pattern:        "/api/v1.0/user",
-			expectedRegex:  "^/api/v1\\.0/user$",
-			shouldMatch:    []string{"/api/v1.0/user"},
-			shouldNotMatch: []string{"/api/v1a0/user"},
+			name:        "invalid API permission entry pattern",
+			publicPaths: []string{},
+			apiPerms:    []apiPermissionEntry{{"GET /invalid/**/middle/**", PermissionUser}},
+			errContains: "invalid pattern",
 		},
 	}
 
-	tests = append(tests, []struct {
-		name           string
-		pattern        string
-		expectedRegex  string
-		shouldMatch    []string
-		shouldNotMatch []string
-	}{
-		{
-			name:           "Invalid middle globstar (skipped)",
-			pattern:        "/api/**/users",
-			expectedRegex:  "", // Skipped
-			shouldMatch:    nil,
-			shouldNotMatch: nil,
-		},
-		{
-			name:           "Multiple globstars (skipped)",
-			pattern:        "/api/**/users/**",
-			expectedRegex:  "", // Skipped
-			shouldMatch:    nil,
-			shouldNotMatch: nil,
-		},
-	}...)
-
 	for _, tt := range tests {
 		suite.Run(tt.name, func() {
-			compiled, err := compilePathPatterns([]string{tt.pattern})
-
-			if tt.expectedRegex == "" {
-				// Invalid pattern. Error is expected.
-				assert.Error(suite.T(), err)
-				assert.Nil(suite.T(), compiled)
-			} else {
-				assert.NoError(suite.T(), err)
-				assert.Len(suite.T(), compiled, 1)
-				regex := compiled[0]
-				assert.Equal(suite.T(), tt.expectedRegex, regex.String())
-
-				for _, matchPath := range tt.shouldMatch {
-					assert.True(suite.T(), regex.MatchString(matchPath), "Should match: %s", matchPath)
-				}
-
-				for _, mismatchPath := range tt.shouldNotMatch {
-					assert.False(suite.T(), regex.MatchString(mismatchPath), "Should not match: %s", mismatchPath)
-				}
-			}
+			service, err := newSecurityService(nil, tt.publicPaths, tt.apiPerms)
+			assert.Error(suite.T(), err)
+			assert.Nil(suite.T(), service)
+			assert.Contains(suite.T(), err.Error(), tt.errContains)
 		})
 	}
 }
@@ -571,7 +511,8 @@ func (suite *SecurityServiceTestSuite) TestProcess_PublicPath_WithInvalidToken()
 	ctx, err := suite.service.Process(req)
 
 	assert.NoError(suite.T(), err)
-	assert.Equal(suite.T(), req.Context(), ctx)
+	assert.NotNil(suite.T(), ctx)
+	assert.True(suite.T(), IsRuntimeContext(ctx), "public path with invalid token should return a runtime context")
 
 	userID := GetSubject(ctx)
 	assert.Empty(suite.T(), userID)
@@ -582,7 +523,7 @@ func (suite *SecurityServiceTestSuite) TestProcess_SkipSecurity_AllowsAccessWith
 	_ = os.Setenv("THUNDER_SKIP_SECURITY", "true")
 	defer func() { _ = os.Unsetenv("THUNDER_SKIP_SECURITY") }()
 
-	service, err := newSecurityService([]AuthenticatorInterface{suite.mockAuth1}, testPublicPaths)
+	service, err := newSecurityService([]AuthenticatorInterface{suite.mockAuth1}, testPublicPaths, apiPermissionEntries)
 	suite.Require().NoError(err)
 
 	req := httptest.NewRequest(http.MethodGet, "/api/protected", nil)
@@ -595,7 +536,9 @@ func (suite *SecurityServiceTestSuite) TestProcess_SkipSecurity_AllowsAccessWith
 	// Should succeed without authentication
 	assert.NoError(suite.T(), err)
 	assert.NotNil(suite.T(), ctx)
-	assert.Equal(suite.T(), req.Context(), ctx)
+	// Security was skipped: context must carry the skipped marker and have no subject.
+	assert.True(suite.T(), IsSecuritySkipped(ctx))
+	assert.Empty(suite.T(), GetSubject(ctx))
 }
 
 // setupSkipSecurityTest is a helper function to set up skip security tests
@@ -603,7 +546,7 @@ func (suite *SecurityServiceTestSuite) setupSkipSecurityTest() (*http.Request, S
 	_ = os.Setenv("THUNDER_SKIP_SECURITY", "true")
 	suite.T().Cleanup(func() { _ = os.Unsetenv("THUNDER_SKIP_SECURITY") })
 
-	service, err := newSecurityService([]AuthenticatorInterface{suite.mockAuth1}, testPublicPaths)
+	service, err := newSecurityService([]AuthenticatorInterface{suite.mockAuth1}, testPublicPaths, apiPermissionEntries)
 	suite.Require().NoError(err)
 
 	req := httptest.NewRequest(http.MethodGet, "/api/protected", nil)
@@ -634,7 +577,7 @@ func (suite *SecurityServiceTestSuite) TestProcess_SkipSecurity_AllowsAccessWith
 	_ = os.Setenv("THUNDER_SKIP_SECURITY", "true")
 	defer func() { _ = os.Unsetenv("THUNDER_SKIP_SECURITY") }()
 
-	service, err := newSecurityService([]AuthenticatorInterface{suite.mockAuth1}, testPublicPaths)
+	service, err := newSecurityService([]AuthenticatorInterface{suite.mockAuth1}, testPublicPaths, apiPermissionEntries)
 	suite.Require().NoError(err)
 
 	req := httptest.NewRequest(http.MethodGet, "/api/protected", nil)
@@ -649,9 +592,8 @@ func (suite *SecurityServiceTestSuite) TestProcess_SkipSecurity_AllowsAccessWith
 	// Should succeed even though authentication failed
 	assert.NoError(suite.T(), err)
 	assert.NotNil(suite.T(), ctx)
-	assert.Equal(suite.T(), req.Context(), ctx)
-
-	// Context should not be enriched
+	// Security was skipped: context must carry the skipped marker and have no subject.
+	assert.True(suite.T(), IsSecuritySkipped(ctx))
 	userID := GetSubject(ctx)
 	assert.Empty(suite.T(), userID)
 }
@@ -675,10 +617,27 @@ func (suite *SecurityServiceTestSuite) TestProcess_SkipSecurity_AllowsAccessWith
 	// Should succeed even though authorization would have failed.
 	assert.NoError(suite.T(), err)
 	assert.NotNil(suite.T(), ctx)
-
+	// Security was skipped: context must carry the skipped marker.
+	assert.True(suite.T(), IsSecuritySkipped(ctx))
 	// Context should still be enriched (authentication succeeded).
 	userID := GetSubject(ctx)
 	assert.Equal(suite.T(), "user123", userID)
+}
+
+// Test that the skipped marker is NOT present when authentication and authorization succeed normally.
+func (suite *SecurityServiceTestSuite) TestProcess_SecurityNotSkipped_WhenAuthSucceeds() {
+	req := httptest.NewRequest(http.MethodGet, "/api/protected", nil)
+
+	suite.mockAuth1.On("CanHandle", req).Return(true)
+	suite.mockAuth1.On("Authenticate", req).Return(suite.testCtx, nil)
+
+	ctx, err := suite.service.Process(req)
+
+	assert.NoError(suite.T(), err)
+	assert.NotNil(suite.T(), ctx)
+	// Normal successful flow must NOT mark the context as skipped.
+	assert.False(suite.T(), IsSecuritySkipped(ctx))
+	assert.Equal(suite.T(), "user123", GetSubject(ctx))
 }
 
 // Test that the service returns errInsufficientPermissions when the authenticated
@@ -698,128 +657,121 @@ func (suite *SecurityServiceTestSuite) TestProcess_AuthorizationFailure_Insuffic
 	assert.ErrorIs(suite.T(), err, errInsufficientPermissions)
 }
 
-// Test getRequiredPermissions returns the expected permission set for various paths.
-func (suite *SecurityServiceTestSuite) TestGetRequiredPermissions() {
+// Test GetRequiredPermissionForAPI returns the expected permission for various method+path combos.
+func (suite *SecurityServiceTestSuite) TestGetRequiredPermissionForAPI() {
 	tests := []struct {
 		name     string
-		path     string
 		method   string
-		expected []string
+		path     string
+		expected string
 	}{
 		{
-			name:     "Protected API path requires system",
+			name:     "GET /organization-units requires ou:view",
+			method:   http.MethodGet,
+			path:     "/organization-units",
+			expected: PermissionOUView,
+		},
+		{
+			name:     "POST /organization-units requires ou",
+			method:   http.MethodPost,
+			path:     "/organization-units",
+			expected: PermissionOU,
+		},
+		{
+			name:     "GET /organization-units/{id} requires ou:view",
+			method:   http.MethodGet,
+			path:     "/organization-units/ou-123",
+			expected: PermissionOUView,
+		},
+		{
+			name:     "DELETE /organization-units/{id} requires ou",
+			method:   http.MethodDelete,
+			path:     "/organization-units/ou-123",
+			expected: PermissionOU,
+		},
+		{
+			name:     "GET /users requires user:view",
+			method:   http.MethodGet,
 			path:     "/users",
-			method:   http.MethodGet,
-			expected: []string{"system"},
+			expected: PermissionUserView,
 		},
 		{
-			name:     "Applications endpoint requires system",
+			name:     "POST /users requires user",
+			method:   http.MethodPost,
+			path:     "/users",
+			expected: PermissionUser,
+		},
+		{
+			name:     "Unmapped path falls back to system",
+			method:   http.MethodGet,
 			path:     "/applications",
-			method:   http.MethodGet,
-			expected: []string{"system"},
-		},
-		{
-			name:     "Root path requires system",
-			path:     "/",
-			method:   http.MethodGet,
-			expected: []string{"system"},
-		},
-		{
-			name:     "User self-service /users/me needs no special permission",
-			path:     "/users/me",
-			method:   http.MethodGet,
-			expected: []string{},
-		},
-		{
-			name:     "User self-service /users/me123 needs system permission",
-			path:     "/users/me123",
-			method:   http.MethodGet,
-			expected: []string{"system"},
-		},
-		{
-			name:     "User credentials update needs no special permission",
-			path:     "/users/me/update-credentials",
-			method:   http.MethodPut,
-			expected: []string{},
-		},
-		{
-			name:     "Passkey registration start needs no special permission",
-			path:     "/register/passkey/start",
-			method:   http.MethodPost,
-			expected: []string{},
-		},
-		{
-			name:     "Passkey registration finish needs no special permission",
-			path:     "/register/passkey/finish",
-			method:   http.MethodPost,
-			expected: []string{},
+			expected: SystemPermission,
 		},
 	}
 
 	for _, tt := range tests {
 		suite.Run(tt.name, func() {
-			req := httptest.NewRequest(tt.method, tt.path, nil)
-			result := suite.service.getRequiredPermissions(req)
+			result := suite.service.getRequiredPermissionForAPI(tt.method, tt.path)
 			assert.Equal(suite.T(), tt.expected, result)
 		})
 	}
 }
 
-// Test hasAnyPermission covers all edge cases.
-func (suite *SecurityServiceTestSuite) TestHasAnyPermission() {
+// Test HasSufficientPermission covers hierarchical scope matching.
+func (suite *SecurityServiceTestSuite) TestHasSufficientPermission() {
 	tests := []struct {
-		name                string
-		userPermissions     []string
-		requiredPermissions []string
-		expected            bool
+		name            string
+		userPermissions []string
+		required        string
+		expected        bool
 	}{
 		{
-			name:                "User has one of the required permissions",
-			userPermissions:     []string{"users:read", "groups:manage"},
-			requiredPermissions: []string{"users:read", "users:write"},
-			expected:            true,
+			name:            "Exact match",
+			userPermissions: []string{"system:ou:view"},
+			required:        "system:ou:view",
+			expected:        true,
 		},
 		{
-			name:                "User has all required permissions",
-			userPermissions:     []string{"users:read", "users:write"},
-			requiredPermissions: []string{"users:read", "users:write"},
-			expected:            true,
+			name:            "Parent scope satisfies child scope",
+			userPermissions: []string{"system:ou"},
+			required:        "system:ou:view",
+			expected:        true,
 		},
 		{
-			name:                "User has none of the required permissions",
-			userPermissions:     []string{"groups:manage"},
-			requiredPermissions: []string{"users:read", "users:write"},
-			expected:            false,
+			name:            "Root system scope satisfies any child scope",
+			userPermissions: []string{"system"},
+			required:        "system:ou:view",
+			expected:        true,
 		},
 		{
-			name:                "No required permissions — always allowed",
-			userPermissions:     []string{"users:read"},
-			requiredPermissions: []string{},
-			expected:            true,
+			name:            "Child scope does not satisfy parent scope",
+			userPermissions: []string{"system:ou:view"},
+			required:        "system:ou",
+			expected:        false,
 		},
 		{
-			name:                "Empty user permissions",
-			userPermissions:     []string{},
-			requiredPermissions: []string{"users:read"},
-			expected:            false,
+			name:            "Unrelated sibling scope does not satisfy",
+			userPermissions: []string{"system:user"},
+			required:        "system:ou:view",
+			expected:        false,
 		},
 		{
-			name:                "Both empty — allowed",
-			userPermissions:     []string{},
-			requiredPermissions: []string{},
-			expected:            true,
+			name:            "Empty user permissions",
+			userPermissions: []string{},
+			required:        "system",
+			expected:        false,
 		},
 		{
-			name:                "System permission satisfies system requirement",
-			userPermissions:     []string{"system"},
-			requiredPermissions: []string{"system"},
-			expected:            true,
+			name:            "Partial prefix should not match",
+			userPermissions: []string{"sys"},
+			required:        "system:ou",
+			expected:        false,
 		},
 	}
 
 	for _, tt := range tests {
 		suite.Run(tt.name, func() {
-			result := hasAnyPermission(tt.userPermissions, tt.requiredPermissions)
+			result := HasSufficientPermission(tt.userPermissions, tt.required)
 			assert.Equal(suite.T(), tt.expected, result)
 		})
 	}
