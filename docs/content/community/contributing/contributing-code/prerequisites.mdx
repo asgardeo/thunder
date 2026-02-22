@@ -37,3 +37,37 @@ Clone your forked repository to your local machine.
 git clone https://github.com/<your-username>/thunder.git
 cd thunder
 ```
+
+## 💻 Windows Prerequisites
+
+If you are contributing from a Windows environment, please ensure the following tools are installed before starting development.
+
+### SQLite3
+
+SQLite3 is required for local development and build processes.
+
+**Install using:**
+
+- `winget install SQLite.SQLite`
+- or `choco install sqlite`
+
+**Verify installation:**
+
+```powershell
+sqlite3 --version
+```
+
+### PowerShell 7
+
+PowerShell 7 is required to run the PowerShell-based build and setup scripts.
+
+**Install using:**
+
+- `winget install Microsoft.PowerShell`
+- or `choco install powershell-core`
+
+**Verify installation:**
+
+```powershell
+pwsh --version
+```
