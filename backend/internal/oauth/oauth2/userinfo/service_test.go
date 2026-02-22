@@ -313,9 +313,9 @@ func (s *UserInfoServiceTestSuite) TestGetUserInfo_Success_StandardScopes() {
 	response, svcErr := s.userInfoService.GetUserInfo(token)
 	assert.Nil(s.T(), svcErr)
 	assert.NotNil(s.T(), response)
-	assert.Equal(s.T(), "user123", response["sub"])
-	assert.Equal(s.T(), "John Doe", response["name"])
-	assert.Equal(s.T(), "john@example.com", response["email"])
+	assert.Equal(s.T(), "user123", response.JSONBody["sub"])
+	assert.Equal(s.T(), "John Doe", response.JSONBody["name"])
+	assert.Equal(s.T(), "john@example.com", response.JSONBody["email"])
 	s.mockJWTService.AssertExpectations(s.T())
 	s.mockUserService.AssertExpectations(s.T())
 	s.mockAppService.AssertExpectations(s.T())
@@ -368,9 +368,9 @@ func (s *UserInfoServiceTestSuite) TestGetUserInfo_Success_WithGroups() {
 	response, svcErr := s.userInfoService.GetUserInfo(token)
 	assert.Nil(s.T(), svcErr)
 	assert.NotNil(s.T(), response)
-	assert.Equal(s.T(), "user123", response["sub"])
-	assert.Equal(s.T(), "John Doe", response["name"])
-	groupsValue := response[constants.UserAttributeGroups]
+	assert.Equal(s.T(), "user123", response.JSONBody["sub"])
+	assert.Equal(s.T(), "John Doe", response.JSONBody["name"])
+	groupsValue := response.JSONBody[constants.UserAttributeGroups]
 	assert.NotNil(s.T(), groupsValue, "groups should be present")
 	// Groups can be []string or []interface{} depending on JSON unmarshaling
 	var groups []string
@@ -438,10 +438,10 @@ func (s *UserInfoServiceTestSuite) TestGetUserInfo_Success_WithScopeClaimsMappin
 	response, svcErr := s.userInfoService.GetUserInfo(token)
 	assert.Nil(s.T(), svcErr)
 	assert.NotNil(s.T(), response)
-	assert.Equal(s.T(), "user123", response["sub"])
-	assert.Equal(s.T(), "John Doe", response["name"])
-	assert.Equal(s.T(), "1234567890", response["phone"])
-	assert.NotContains(s.T(), response, "email") // email not in custom_scope mapping
+	assert.Equal(s.T(), "user123", response.JSONBody["sub"])
+	assert.Equal(s.T(), "John Doe", response.JSONBody["name"])
+	assert.Equal(s.T(), "1234567890", response.JSONBody["phone"])
+	assert.NotContains(s.T(), response.JSONBody, "email") // email not in custom_scope mapping
 	s.mockJWTService.AssertExpectations(s.T())
 	s.mockUserService.AssertExpectations(s.T())
 	s.mockAppService.AssertExpectations(s.T())
@@ -474,9 +474,9 @@ func (s *UserInfoServiceTestSuite) TestGetUserInfo_Success_NoAppConfig() {
 	response, svcErr := s.userInfoService.GetUserInfo(token)
 	assert.Nil(s.T(), svcErr)
 	assert.NotNil(s.T(), response)
-	assert.Equal(s.T(), "user123", response["sub"])
+	assert.Equal(s.T(), "user123", response.JSONBody["sub"])
 	// No other claims because allowedUserAttributes is empty
-	assert.Len(s.T(), response, 1)
+	assert.Len(s.T(), response.JSONBody, 1)
 	s.mockJWTService.AssertExpectations(s.T())
 	s.mockUserService.AssertExpectations(s.T())
 }
@@ -511,9 +511,9 @@ func (s *UserInfoServiceTestSuite) TestGetUserInfo_Success_AppNotFound() {
 	response, svcErr := s.userInfoService.GetUserInfo(token)
 	assert.Nil(s.T(), svcErr)
 	assert.NotNil(s.T(), response)
-	assert.Equal(s.T(), "user123", response["sub"])
+	assert.Equal(s.T(), "user123", response.JSONBody["sub"])
 	// No other claims because allowedUserAttributes is empty
-	assert.Len(s.T(), response, 1)
+	assert.Len(s.T(), response.JSONBody, 1)
 	s.mockJWTService.AssertExpectations(s.T())
 	s.mockUserService.AssertExpectations(s.T())
 	s.mockAppService.AssertExpectations(s.T())
@@ -556,9 +556,9 @@ func (s *UserInfoServiceTestSuite) TestGetUserInfo_Success_GroupsNotInAllowedAtt
 	response, svcErr := s.userInfoService.GetUserInfo(token)
 	assert.Nil(s.T(), svcErr)
 	assert.NotNil(s.T(), response)
-	assert.Equal(s.T(), "user123", response["sub"])
-	assert.Equal(s.T(), "John Doe", response["name"])
-	assert.NotContains(s.T(), response, constants.UserAttributeGroups) // groups not included
+	assert.Equal(s.T(), "user123", response.JSONBody["sub"])
+	assert.Equal(s.T(), "John Doe", response.JSONBody["name"])
+	assert.NotContains(s.T(), response.JSONBody, constants.UserAttributeGroups) // groups not included
 	s.mockJWTService.AssertExpectations(s.T())
 	s.mockUserService.AssertExpectations(s.T())
 	s.mockAppService.AssertExpectations(s.T())
@@ -596,9 +596,9 @@ func (s *UserInfoServiceTestSuite) TestGetUserInfo_Success_EmptyUserAttributes()
 	response, svcErr := s.userInfoService.GetUserInfo(token)
 	assert.Nil(s.T(), svcErr)
 	assert.NotNil(s.T(), response)
-	assert.Equal(s.T(), "user123", response["sub"])
+	assert.Equal(s.T(), "user123", response.JSONBody["sub"])
 	// No other claims because user has no attributes
-	assert.Len(s.T(), response, 1)
+	assert.Len(s.T(), response.JSONBody, 1)
 	s.mockJWTService.AssertExpectations(s.T())
 	s.mockUserService.AssertExpectations(s.T())
 	s.mockAppService.AssertExpectations(s.T())
@@ -687,9 +687,9 @@ func (s *UserInfoServiceTestSuite) testGetUserInfoInvalidClientID(clientIDValue 
 	response, svcErr := s.userInfoService.GetUserInfo(token)
 	assert.Nil(s.T(), svcErr, description)
 	assert.NotNil(s.T(), response, description)
-	assert.Equal(s.T(), "user123", response["sub"], description)
+	assert.Equal(s.T(), "user123", response.JSONBody["sub"], description)
 	// No other claims because allowedUserAttributes is empty
-	assert.Len(s.T(), response, 1, description)
+	assert.Len(s.T(), response.JSONBody, 1, description)
 	s.mockJWTService.AssertExpectations(s.T())
 	s.mockUserService.AssertExpectations(s.T())
 }
@@ -728,9 +728,9 @@ func (s *UserInfoServiceTestSuite) TestGetUserInfo_GroupsWithNilOAuthApp() {
 	response, svcErr := s.userInfoService.GetUserInfo(token)
 	assert.Nil(s.T(), svcErr)
 	assert.NotNil(s.T(), response)
-	assert.Equal(s.T(), "user123", response["sub"])
+	assert.Equal(s.T(), "user123", response.JSONBody["sub"])
 	// Groups not included because oauthApp is nil
-	assert.NotContains(s.T(), response, constants.UserAttributeGroups)
+	assert.NotContains(s.T(), response.JSONBody, constants.UserAttributeGroups)
 	s.mockJWTService.AssertExpectations(s.T())
 	s.mockUserService.AssertExpectations(s.T())
 }
@@ -766,9 +766,9 @@ func (s *UserInfoServiceTestSuite) TestGetUserInfo_GroupsWithNilToken() {
 	response, svcErr := s.userInfoService.GetUserInfo(token)
 	assert.Nil(s.T(), svcErr)
 	assert.NotNil(s.T(), response)
-	assert.Equal(s.T(), "user123", response["sub"])
+	assert.Equal(s.T(), "user123", response.JSONBody["sub"])
 	// Groups not included because Token is nil
-	assert.NotContains(s.T(), response, constants.UserAttributeGroups)
+	assert.NotContains(s.T(), response.JSONBody, constants.UserAttributeGroups)
 	s.mockJWTService.AssertExpectations(s.T())
 	s.mockUserService.AssertExpectations(s.T())
 	s.mockAppService.AssertExpectations(s.T())
@@ -807,9 +807,9 @@ func (s *UserInfoServiceTestSuite) TestGetUserInfo_GroupsWithNilIDToken() {
 	response, svcErr := s.userInfoService.GetUserInfo(token)
 	assert.Nil(s.T(), svcErr)
 	assert.NotNil(s.T(), response)
-	assert.Equal(s.T(), "user123", response["sub"])
+	assert.Equal(s.T(), "user123", response.JSONBody["sub"])
 	// Groups not included because IDToken is nil
-	assert.NotContains(s.T(), response, constants.UserAttributeGroups)
+	assert.NotContains(s.T(), response.JSONBody, constants.UserAttributeGroups)
 	s.mockJWTService.AssertExpectations(s.T())
 	s.mockUserService.AssertExpectations(s.T())
 	s.mockAppService.AssertExpectations(s.T())
@@ -860,10 +860,10 @@ func (s *UserInfoServiceTestSuite) TestGetUserInfo_GroupsWithEmptyGroups() {
 	response, svcErr := s.userInfoService.GetUserInfo(token)
 	assert.Nil(s.T(), svcErr)
 	assert.NotNil(s.T(), response)
-	assert.Equal(s.T(), "user123", response["sub"])
-	assert.Equal(s.T(), "John Doe", response["name"])
+	assert.Equal(s.T(), "user123", response.JSONBody["sub"])
+	assert.Equal(s.T(), "John Doe", response.JSONBody["name"])
 	// Groups not included because len(userGroups) == 0
-	assert.NotContains(s.T(), response, constants.UserAttributeGroups)
+	assert.NotContains(s.T(), response.JSONBody, constants.UserAttributeGroups)
 	s.mockJWTService.AssertExpectations(s.T())
 	s.mockUserService.AssertExpectations(s.T())
 	s.mockAppService.AssertExpectations(s.T())
@@ -933,8 +933,8 @@ func (s *UserInfoServiceTestSuite) testGetUserInfoAllowedGrantType(grantTypeValu
 	response, svcErr := s.userInfoService.GetUserInfo(token)
 	assert.Nil(s.T(), svcErr, description)
 	assert.NotNil(s.T(), response, description)
-	assert.Equal(s.T(), "user123", response["sub"], description)
-	assert.Equal(s.T(), "John Doe", response["name"], description)
+	assert.Equal(s.T(), "user123", response.JSONBody["sub"], description)
+	assert.Equal(s.T(), "John Doe", response.JSONBody["name"], description)
 	s.mockJWTService.AssertExpectations(s.T())
 	s.mockUserService.AssertExpectations(s.T())
 	s.mockAppService.AssertExpectations(s.T())
@@ -1030,9 +1030,9 @@ func (s *UserInfoServiceTestSuite) TestGetUserInfo_OnlyOpenIDScope_Success() {
 	response, svcErr := s.userInfoService.GetUserInfo(token)
 	assert.Nil(s.T(), svcErr)
 	assert.NotNil(s.T(), response)
-	assert.Equal(s.T(), "user123", response["sub"])
+	assert.Equal(s.T(), "user123", response.JSONBody["sub"])
 	// Only sub claim should be present
-	assert.Len(s.T(), response, 1)
+	assert.Len(s.T(), response.JSONBody, 1)
 	s.mockJWTService.AssertExpectations(s.T())
 	s.mockUserService.AssertExpectations(s.T())
 }
@@ -1070,9 +1070,9 @@ func (s *UserInfoServiceTestSuite) TestGetUserInfo_OpenIDScope_InMiddleOfScopeSt
 	response, svcErr := s.userInfoService.GetUserInfo(token)
 	assert.Nil(s.T(), svcErr)
 	assert.NotNil(s.T(), response)
-	assert.Equal(s.T(), "user123", response["sub"])
-	assert.Equal(s.T(), "John Doe", response["name"])
-	assert.Equal(s.T(), "john@example.com", response["email"])
+	assert.Equal(s.T(), "user123", response.JSONBody["sub"])
+	assert.Equal(s.T(), "John Doe", response.JSONBody["name"])
+	assert.Equal(s.T(), "john@example.com", response.JSONBody["email"])
 	s.mockJWTService.AssertExpectations(s.T())
 	s.mockUserService.AssertExpectations(s.T())
 	s.mockAppService.AssertExpectations(s.T())
@@ -1109,10 +1109,132 @@ func (s *UserInfoServiceTestSuite) TestGetUserInfo_OpenIDScope_AtEnd() {
 
 	response, svcErr := s.userInfoService.GetUserInfo(token)
 	assert.Nil(s.T(), svcErr)
-	assert.NotNil(s.T(), response)
-	assert.Equal(s.T(), "user123", response["sub"])
-	assert.Equal(s.T(), "john@example.com", response["email"])
+	assert.NotNil(s.T(), response.JSONBody)
+	assert.Equal(s.T(), "user123", response.JSONBody["sub"])
+	assert.Equal(s.T(), "john@example.com", response.JSONBody["email"])
 	s.mockJWTService.AssertExpectations(s.T())
 	s.mockUserService.AssertExpectations(s.T())
 	s.mockAppService.AssertExpectations(s.T())
+}
+
+// TestGetUserInfo_JWS_ResponseType tests that when the OAuth application
+// is configured with UserInfo response_type as JWS, the service generates
+// and returns a signed JWT response instead of JSON.
+func (s *UserInfoServiceTestSuite) TestGetUserInfo_JWS_ResponseType() {
+	claims := map[string]interface{}{
+		"exp":       float64(time.Now().Add(time.Hour).Unix()),
+		"nbf":       float64(time.Now().Add(-time.Minute).Unix()),
+		"sub":       "user123",
+		"scope":     "openid email",
+		"client_id": "client123",
+	}
+	token := s.createToken(claims)
+
+	userAttrs := map[string]interface{}{
+		"email": "john@example.com",
+	}
+	userAttrsJSON, _ := json.Marshal(userAttrs)
+
+	oauthApp := &appmodel.OAuthAppConfigProcessedDTO{
+		Token: &appmodel.OAuthTokenConfig{
+			Issuer: "https://issuer.test",
+		},
+		UserInfo: &appmodel.UserInfoConfig{
+			ResponseType:   appmodel.UserInfoResponseTypeJWS,
+			UserAttributes: []string{"email"},
+		},
+	}
+
+	// JWT verification
+	s.mockJWTService.On("VerifyJWT", token, "", "").Return(nil)
+
+	// User fetch
+	s.mockUserService.On("GetUser", mock.Anything, "user123").Return(&user.User{
+		ID:         "user123",
+		Attributes: userAttrsJSON,
+	}, nil)
+
+	// App fetch
+	s.mockAppService.On("GetOAuthApplication", "client123").Return(oauthApp, nil)
+
+	// JWT generation
+	s.mockJWTService.On(
+		"GenerateJWT",
+		"user123",
+		"client123",
+		"https://issuer.test",
+		int64(0),
+		mock.AnythingOfType("map[string]interface {}"),
+	).Return("signed.jwt.token", int64(0), nil)
+
+	response, svcErr := s.userInfoService.GetUserInfo(token)
+
+	assert.Nil(s.T(), svcErr)
+	assert.NotNil(s.T(), response)
+	assert.Equal(s.T(), "signed.jwt.token", response.JWTBody)
+
+	s.mockJWTService.AssertExpectations(s.T())
+	s.mockUserService.AssertExpectations(s.T())
+	s.mockAppService.AssertExpectations(s.T())
+}
+
+// TestGetUserInfo_JWS_GenerateJWTFailure tests that
+// an internal server error is returned when JWT generation fails.
+func (s *UserInfoServiceTestSuite) TestGetUserInfo_JWS_GenerateJWTFailure() {
+	claims := map[string]interface{}{
+		"exp":       float64(time.Now().Add(time.Hour).Unix()),
+		"nbf":       float64(time.Now().Add(-time.Minute).Unix()),
+		"sub":       "user123",
+		"scope":     "openid email",
+		"client_id": "client123",
+	}
+	token := s.createToken(claims)
+
+	userAttrs := map[string]interface{}{
+		"email": "john@example.com",
+	}
+	userAttrsJSON, _ := json.Marshal(userAttrs)
+
+	oauthApp := &appmodel.OAuthAppConfigProcessedDTO{
+		Token: &appmodel.OAuthTokenConfig{
+			Issuer: "https://issuer.test",
+		},
+		UserInfo: &appmodel.UserInfoConfig{
+			ResponseType:   appmodel.UserInfoResponseTypeJWS,
+			UserAttributes: []string{"email"},
+		},
+	}
+
+	s.mockJWTService.On("VerifyJWT", token, "", "").Return(nil)
+
+	s.mockUserService.On("GetUser", mock.Anything, "user123").Return(&user.User{
+		ID:         "user123",
+		Attributes: userAttrsJSON,
+	}, nil)
+
+	s.mockAppService.On("GetOAuthApplication", "client123").Return(oauthApp, nil)
+
+	// Simulate signing failure
+	s.mockJWTService.On(
+		"GenerateJWT",
+		"user123",
+		"client123",
+		"https://issuer.test",
+		int64(0),
+		mock.AnythingOfType("map[string]interface {}"),
+	).Return("", int64(0),
+		&serviceerror.ServiceError{
+			Type:             serviceerror.ServerErrorType,
+			Code:             "JWT_SIGNING_FAILED",
+			Error:            "JWT signing failed",
+			ErrorDescription: "JWT signing failed",
+		})
+
+	response, svcErr := s.userInfoService.GetUserInfo(token)
+
+	assert.Nil(s.T(), response)
+	assert.NotNil(s.T(), svcErr)
+	assert.Equal(s.T(), serviceerror.InternalServerError.Code, svcErr.Code)
+
+	s.mockJWTService.AssertExpectations(s.T())
 }

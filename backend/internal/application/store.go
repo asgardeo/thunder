@@ -66,7 +66,8 @@ type idTokenConfig struct {
 
 // userInfoConfig represents the user info endpoint configuration structure for JSON marshaling/unmarshaling.
 type userInfoConfig struct {
-	UserAttributes []string `json:"user_attributes,omitempty"`
+	ResponseType   model.UserInfoResponseType `json:"response_type,omitempty"`
+	UserAttributes []string                   `json:"user_attributes,omitempty"`
 }
 
 // ApplicationStoreInterface defines the interface for application data persistence operations.
@@ -282,6 +283,7 @@ func (st *applicationStore) GetOAuthApplication(clientID string) (*model.OAuthAp
 			userAttributes = make([]string, 0)
 		}
 		userInfoConfig = &model.UserInfoConfig{
+			ResponseType:   oAuthConfig.UserInfo.ResponseType,
 			UserAttributes: userAttributes,
 		}
 	}
@@ -534,6 +536,7 @@ func getOAuthConfigJSONBytes(inboundAuthConfig model.InboundAuthConfigProcessedD
 	// Handle UserInfo config
 	if inboundAuthConfig.OAuthAppConfig.UserInfo != nil {
 		oauthConfig.UserInfo = &userInfoConfig{
+			ResponseType:   inboundAuthConfig.OAuthAppConfig.UserInfo.ResponseType,
 			UserAttributes: inboundAuthConfig.OAuthAppConfig.UserInfo.UserAttributes,
 		}
 	}
@@ -913,6 +916,7 @@ func buildOAuthInboundAuthConfig(row map[string]interface{}, basicApp model.Basi
 			userAttributes = make([]string, 0)
 		}
 		userInfoConfig = &model.UserInfoConfig{
+			ResponseType:   oauthConfig.UserInfo.ResponseType,
 			UserAttributes: userAttributes,
 		}
 	}

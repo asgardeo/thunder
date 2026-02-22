@@ -145,7 +145,7 @@ func (s *UserInfoHandlerTestSuite) TestHandleUserInfo_Success() {
 		"email": "john@example.com",
 	}
 
-	s.mockService.On("GetUserInfo", "valid-token").Return(userInfo, nil)
+	s.mockService.On("GetUserInfo", "valid-token").Return(jsonResponse(userInfo), nil)
 
 	s.handler.HandleUserInfo(rr, req)
 
@@ -169,7 +169,7 @@ func (s *UserInfoHandlerTestSuite) TestHandleUserInfo_Success_POST() {
 		"sub": "user123",
 	}
 
-	s.mockService.On("GetUserInfo", "valid-token").Return(userInfo, nil)
+	s.mockService.On("GetUserInfo", "valid-token").Return(jsonResponse(userInfo), nil)
 
 	s.handler.HandleUserInfo(rr, req)
 
@@ -190,7 +190,7 @@ func (s *UserInfoHandlerTestSuite) TestHandleUserInfo_Success_WithGroups() {
 		"groups": []interface{}{"admin", "users"},
 	}
 
-	s.mockService.On("GetUserInfo", "valid-token").Return(userInfo, nil)
+	s.mockService.On("GetUserInfo", "valid-token").Return(jsonResponse(userInfo), nil)
 
 	s.handler.HandleUserInfo(rr, req)
 
@@ -211,7 +211,7 @@ func (s *UserInfoHandlerTestSuite) TestHandleUserInfo_CaseInsensitiveBearer() {
 		"sub": "user123",
 	}
 
-	s.mockService.On("GetUserInfo", "valid-token").Return(userInfo, nil)
+	s.mockService.On("GetUserInfo", "valid-token").Return(jsonResponse(userInfo), nil)
 
 	s.handler.HandleUserInfo(rr, req)
 
@@ -229,7 +229,7 @@ func (s *UserInfoHandlerTestSuite) TestHandleUserInfo_BEARERUpperCase() {
 		"sub": "user123",
 	}
 
-	s.mockService.On("GetUserInfo", "valid-token").Return(userInfo, nil)
+	s.mockService.On("GetUserInfo", "valid-token").Return(jsonResponse(userInfo), nil)
 
 	s.handler.HandleUserInfo(rr, req)
 
@@ -247,7 +247,7 @@ func (s *UserInfoHandlerTestSuite) TestHandleUserInfo_EmptyResponse() {
 		"sub": "user123",
 	}
 
-	s.mockService.On("GetUserInfo", "valid-token").Return(userInfo, nil)
+	s.mockService.On("GetUserInfo", "valid-token").Return(jsonResponse(userInfo), nil)
 
 	s.handler.HandleUserInfo(rr, req)
 
@@ -282,7 +282,7 @@ func (s *UserInfoHandlerTestSuite) TestHandleUserInfo_EncodingError() {
 		"func": func() {}, // Function cannot be JSON encoded and will cause an error
 	}
 
-	s.mockService.On("GetUserInfo", "valid-token").Return(userInfo, nil)
+	s.mockService.On("GetUserInfo", "valid-token").Return(jsonResponse(userInfo), nil)
 
 	s.handler.HandleUserInfo(rr, req)
 
@@ -314,4 +314,10 @@ func (s *UserInfoHandlerTestSuite) TestWriteServiceErrorResponse_DefaultCase() {
 	assert.Contains(s.T(), rr.Body.String(), "unknown_error")
 	assert.Contains(s.T(), rr.Body.String(), "An unknown error occurred")
 	s.mockService.AssertExpectations(s.T())
+}
+
+func jsonResponse(body map[string]interface{}) *UserInfoResponse {
+	return &UserInfoResponse{
+		JSONBody: body,
+	}
 }
