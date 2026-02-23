@@ -428,3 +428,12 @@ packages:
       structname: '{{.InterfaceName}}Mock'
       pkgname: userprovidermock
       filename: "{{.InterfaceName}}_mock.go"
+  
+  github.com/asgardeo/thunder/internal/system/sysauthz:
+    interfaces:
+      SystemAuthorizationServiceInterface:
+        config:
+          dir: tests/mocks/sysauthzmock
+          structname: '{{.InterfaceName}}Mock'
+          pkgname: sysauthzmock
+          filename: "{{.InterfaceName}}_mock.go"

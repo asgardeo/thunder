@@ -216,7 +216,7 @@ func (suite *OUExecutorTestSuite) TestExecute_Success() {
 				RuntimeData: map[string]string{},
 			}
 
-			suite.mockOUService.On("CreateOrganizationUnit", tc.expectedRequest).
+			suite.mockOUService.On("CreateOrganizationUnit", mock.Anything, tc.expectedRequest).
 				Return(tc.expectedResponse, nil)
 
 			result, err := suite.executor.Execute(ctx)
@@ -474,7 +474,7 @@ func (suite *OUExecutorTestSuite) TestExecute_ErrorScenarios() {
 				RuntimeData: map[string]string{},
 			}
 
-			suite.mockOUService.On("CreateOrganizationUnit", tc.expectedRequest).
+			suite.mockOUService.On("CreateOrganizationUnit", mock.Anything, tc.expectedRequest).
 				Return(ou.OrganizationUnit{}, &tc.serviceError)
 
 			result, err := suite.executor.Execute(ctx)
@@ -517,7 +517,7 @@ func (suite *OUExecutorTestSuite) TestExecute_EmptyOUID() {
 		Handle: "engineering",
 	}
 
-	suite.mockOUService.On("CreateOrganizationUnit", expectedRequest).
+	suite.mockOUService.On("CreateOrganizationUnit", mock.Anything, expectedRequest).
 		Return(ou.OrganizationUnit{ID: ""}, nil)
 
 	result, err := suite.executor.Execute(ctx)

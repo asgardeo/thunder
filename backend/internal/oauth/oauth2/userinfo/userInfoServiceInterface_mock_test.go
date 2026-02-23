@@ -5,6 +5,8 @@
 package userinfo
 
 import (
+	"context"
+
 	"github.com/asgardeo/thunder/internal/system/error/serviceerror"
 	mock "github.com/stretchr/testify/mock"
 )
@@ -37,8 +39,8 @@ func (_m *userInfoServiceInterfaceMock) EXPECT() *userInfoServiceInterfaceMock_E
 }
 
 // GetUserInfo provides a mock function for the type userInfoServiceInterfaceMock
-func (_m *userInfoServiceInterfaceMock) GetUserInfo(accessToken string) (*UserInfoResponse, *serviceerror.ServiceError) {
-	ret := _m.Called(accessToken)
+func (_m *userInfoServiceInterfaceMock) GetUserInfo(ctx context.Context, accessToken string) (*UserInfoResponse, *serviceerror.ServiceError) {
+	ret := _m.Called(ctx, accessToken)
 
 	if len(ret) == 0 {
 		panic("no return value specified for GetUserInfo")
@@ -46,18 +48,18 @@ func (_m *userInfoServiceInterfaceMock) GetUserInfo(accessToken string) (*UserIn
 
 	var r0 *UserInfoResponse
 	var r1 *serviceerror.ServiceError
-	if returnFunc, ok := ret.Get(0).(func(string) (*UserInfoResponse, *serviceerror.ServiceError)); ok {
-		return returnFunc(accessToken)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string) (*UserInfoResponse, *serviceerror.ServiceError)); ok {
+		return returnFunc(ctx, accessToken)
 	}
-	if returnFunc, ok := ret.Get(0).(func(string) *UserInfoResponse); ok {
-		r0 = returnFunc(accessToken)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string) *UserInfoResponse); ok {
+		r0 = returnFunc(ctx, accessToken)
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).(*UserInfoResponse)
 		}
 	}
-	if returnFunc, ok := ret.Get(1).(func(string) *serviceerror.ServiceError); ok {
-		r1 = returnFunc(accessToken)
+	if returnFunc, ok := ret.Get(1).(func(context.Context, string) *serviceerror.ServiceError); ok {
+		r1 = returnFunc(ctx, accessToken)
 	} else {
 		if ret.Get(1) != nil {
 			r1 = ret.Get(1).(*serviceerror.ServiceError)
@@ -72,19 +74,25 @@ type userInfoServiceInterfaceMock_GetUserInfo_Call struct {
 }
 
 // GetUserInfo is a helper method to define mock.On call
+//   - ctx context.Context
 //   - accessToken string
-func (_e *userInfoServiceInterfaceMock_Expecter) GetUserInfo(accessToken interface{}) *userInfoServiceInterfaceMock_GetUserInfo_Call {
-	return &userInfoServiceInterfaceMock_GetUserInfo_Call{Call: _e.mock.On("GetUserInfo", accessToken)}
+func (_e *userInfoServiceInterfaceMock_Expecter) GetUserInfo(ctx interface{}, accessToken interface{}) *userInfoServiceInterfaceMock_GetUserInfo_Call {
+	return &userInfoServiceInterfaceMock_GetUserInfo_Call{Call: _e.mock.On("GetUserInfo", ctx, accessToken)}
 }
 
-func (_c *userInfoServiceInterfaceMock_GetUserInfo_Call) Run(run func(accessToken string)) *userInfoServiceInterfaceMock_GetUserInfo_Call {
+func (_c *userInfoServiceInterfaceMock_GetUserInfo_Call) Run(run func(ctx context.Context, accessToken string)) *userInfoServiceInterfaceMock_GetUserInfo_Call {
 	_c.Call.Run(func(args mock.Arguments) {
-		var arg0 string
+		var arg0 context.Context
 		if args[0] != nil {
-			arg0 = args[0].(string)
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 string
+		if args[1] != nil {
+			arg1 = args[1].(string)
 		}
 		run(
 			arg0,
+			arg1,
 		)
 	})
 	return _c
@@ -95,7 +103,7 @@ func (_c *userInfoServiceInterfaceMock_GetUserInfo_Call) Return(response *UserIn
 	return _c
 }
 
-func (_c *userInfoServiceInterfaceMock_GetUserInfo_Call) RunAndReturn(run func(accessToken string) (*UserInfoResponse, *serviceerror.ServiceError)) *userInfoServiceInterfaceMock_GetUserInfo_Call {
+func (_c *userInfoServiceInterfaceMock_GetUserInfo_Call) RunAndReturn(run func(ctx context.Context, accessToken string) (*UserInfoResponse, *serviceerror.ServiceError)) *userInfoServiceInterfaceMock_GetUserInfo_Call {
 	_c.Call.Return(run)
 	return _c
 }

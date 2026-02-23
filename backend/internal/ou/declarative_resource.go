@@ -70,7 +70,7 @@ func (e *OUExporter) GetParameterizerType() string {
 func (e *OUExporter) GetAllResourceIDs(ctx context.Context) ([]string, *serviceerror.ServiceError) {
 	// Get all OUs by requesting a large limit from the service
 	// In composite mode, this returns OUs from both file-based and database stores
-	ous, err := e.service.GetOrganizationUnitList(serverconst.MaxPageSize, 0)
+	ous, err := e.service.GetOrganizationUnitList(ctx, serverconst.MaxPageSize, 0)
 	if err != nil {
 		return nil, err
 	}
@@ -89,7 +89,7 @@ func (e *OUExporter) GetAllResourceIDs(ctx context.Context) ([]string, *servicee
 	allIDs := make(map[string]bool)
 	for _, id := range ids {
 		allIDs[id] = true
-		childIDs, err := e.getAllChildIDs(id)
+		childIDs, err := e.getAllChildIDs(ctx, id)
 		if err != nil {
 			return nil, err
 		}
@@ -107,8 +107,8 @@ func (e *OUExporter) GetAllResourceIDs(ctx context.Context) ([]string, *servicee
 }
 
 // getAllChildIDs recursively retrieves all child OU IDs (excluding immutable ones).
-func (e *OUExporter) getAllChildIDs(parentID string) ([]string, *serviceerror.ServiceError) {
-	children, err := e.service.GetOrganizationUnitChildren(parentID, serverconst.MaxPageSize, 0)
+func (e *OUExporter) getAllChildIDs(ctx context.Context, parentID string) ([]string, *serviceerror.ServiceError) {
+	children, err := e.service.GetOrganizationUnitChildren(ctx, parentID, serverconst.MaxPageSize, 0)
 	if err != nil {
 		return nil, err
 	}
@@ -118,7 +118,7 @@ func (e *OUExporter) getAllChildIDs(parentID string) ([]string, *serviceerror.Se
 		// Only include mutable children (exclude immutable ones)
 		if !e.service.IsOrganizationUnitDeclarative(childBasic.ID) {
 			allIDs = append(allIDs, childBasic.ID)
-			grandchildIDs, err := e.getAllChildIDs(childBasic.ID)
+			grandchildIDs, err := e.getAllChildIDs(ctx, childBasic.ID)
 			if err != nil {
 				return nil, err
 			}
@@ -131,7 +131,7 @@ func (e *OUExporter) getAllChildIDs(parentID string) ([]string, *serviceerror.Se
 
 // GetResourceByID retrieves an organization unit by its ID.
 func (e *OUExporter) GetResourceByID(ctx context.Context, id string) (interface{}, string, *serviceerror.ServiceError) {
-	ou, err := e.service.GetOrganizationUnit(id)
+	ou, err := e.service.GetOrganizationUnit(ctx, id)
 	if err != nil {
 		return nil, "", err
 	}

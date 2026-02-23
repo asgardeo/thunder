@@ -97,7 +97,7 @@ func (o *ouExecutor) Execute(ctx *core.NodeContext) (*common.ExecutorResponse, e
 
 	// Create the OU using the OU service.
 	ouRequest := o.getOrganizationUnitRequest(ctx)
-	createdOU, svcErr := o.ouService.CreateOrganizationUnit(ouRequest)
+	createdOU, svcErr := o.ouService.CreateOrganizationUnit(ctx.Context, ouRequest)
 	if svcErr != nil {
 		if svcErr.Type == serviceerror.ClientErrorType {
 			execResp.Status = common.ExecFailure

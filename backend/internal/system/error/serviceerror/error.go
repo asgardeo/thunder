@@ -65,6 +65,17 @@ type I18nServiceError struct {
 	ErrorDescription core.I18nMessage `json:"error_description,omitempty"`
 }
 
+// Authorization errors
+var (
+	// ErrorUnauthorized is the error returned when the caller is not authorized to perform the operation.
+	ErrorUnauthorized = ServiceError{
+		Type:             ClientErrorType,
+		Code:             "SSE-4030",
+		Error:            "Unauthorized",
+		ErrorDescription: "The caller is not authorized to perform this operation",
+	}
+)
+
 // Server errors
 var (
 	// InternalServerError is the error returned for unexpected server errors.

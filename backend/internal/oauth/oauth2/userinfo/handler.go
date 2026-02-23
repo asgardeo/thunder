@@ -56,7 +56,7 @@ func (h *userInfoHandler) HandleUserInfo(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
-	result, svcErr := h.service.GetUserInfo(accessToken)
+	result, svcErr := h.service.GetUserInfo(r.Context(), accessToken)
 	if svcErr != nil {
 		h.writeServiceErrorResponse(w, svcErr)
 		return

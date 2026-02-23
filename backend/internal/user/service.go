@@ -137,7 +137,7 @@ func (us *userService) GetUsersByPath(
 		return nil, serviceError
 	}
 
-	ou, svcErr := us.ouService.GetOrganizationUnitByPath(handlePath)
+	ou, svcErr := us.ouService.GetOrganizationUnitByPath(ctx, handlePath)
 	if svcErr != nil {
 		return nil, mapOUServiceError(
 			svcErr,
@@ -156,7 +156,7 @@ func (us *userService) GetUsersByPath(
 		return nil, err
 	}
 
-	ouResponse, svcErr := us.ouService.GetOrganizationUnitUsers(organizationUnitID, limit, offset)
+	ouResponse, svcErr := us.ouService.GetOrganizationUnitUsers(ctx, organizationUnitID, limit, offset)
 	if svcErr != nil {
 		return nil, mapOUServiceError(
 			svcErr,
@@ -252,7 +252,7 @@ func (us *userService) CreateUserByPath(
 		return nil, serviceError
 	}
 
-	ou, svcErr := us.ouService.GetOrganizationUnitByPath(handlePath)
+	ou, svcErr := us.ouService.GetOrganizationUnitByPath(ctx, handlePath)
 	if svcErr != nil {
 		return nil, mapOUServiceError(
 			svcErr,
@@ -1162,7 +1162,7 @@ func (us *userService) validateOrganizationUnitForUserType(
 		return &ErrorInternalServerError
 	}
 
-	exists, svcErr := us.ouService.IsOrganizationUnitExists(organizationUnitID)
+	exists, svcErr := us.ouService.IsOrganizationUnitExists(ctx, organizationUnitID)
 	if svcErr != nil {
 		return mapOUServiceError(
 			svcErr,
@@ -1204,7 +1204,7 @@ func (us *userService) validateOrganizationUnitForUserType(
 		return nil
 	}
 
-	isParent, svcErr := us.ouService.IsParent(userSchema.OrganizationUnitID, organizationUnitID)
+	isParent, svcErr := us.ouService.IsParent(ctx, userSchema.OrganizationUnitID, organizationUnitID)
 	if svcErr != nil {
 		return mapOUServiceError(
 			svcErr,

@@ -641,3 +641,73 @@ func (s *FileBasedStoreTestSuite) TestNewFileBasedStore() {
 	assert.True(s.T(), ok)
 	assert.NotNil(s.T(), fbStore.GenericFileBasedStore)
 }
+
+func (s *FileBasedStoreTestSuite) TestFileBasedStore_GetOrganizationUnitsByIDs() {
+	// Create some OUs
+	ou1 := OrganizationUnit{
+		ID:     "ou-1",
+		Handle: "handle-1",
+		Name:   "Name 1",
+		Parent: nil,
+	}
+	ou2 := OrganizationUnit{
+		ID:     "ou-2",
+		Handle: "handle-2",
+		Name:   "Name 2",
+		Parent: nil,
+	}
+	ou3 := OrganizationUnit{
+		ID:     "ou-3",
+		Handle: "handle-3",
+		Name:   "Name 3",
+		Parent: nil,
+	}
+
+	err := s.store.CreateOrganizationUnit(ou1)
+	s.Require().NoError(err)
+	err = s.store.CreateOrganizationUnit(ou2)
+	s.Require().NoError(err)
+	err = s.store.CreateOrganizationUnit(ou3)
+	s.Require().NoError(err)
+
+	// Test empty ids
+	result, err := s.store.GetOrganizationUnitsByIDs([]string{})
+	s.Require().NoError(err)
+	s.Require().Empty(result)
+
+	// Test existing ids
+	result, err = s.store.GetOrganizationUnitsByIDs([]string{"ou-1", "ou-3"})
+	s.Require().NoError(err)
+	s.Require().Len(result, 2)
+
+	validIDs := map[string]bool{"ou-1": true, "ou-3": true}
+	for _, ou := range result {
+		s.Require().True(validIDs[ou.ID])
+	}
+
+	// Test partial matching ids
+	result, err = s.store.GetOrganizationUnitsByIDs([]string{"ou-2", "non-existent"})
+	s.Require().NoError(err)
+	s.Require().Len(result, 1)
+	s.Require().Equal("ou-2", result[0].ID)
+}
+
+func (s *FileBasedStoreTestSuite) TestFileBasedStore_IsOrganizationUnitDeclarative() {
+	// Create an OU
+	ou := OrganizationUnit{
+		ID:     "ou-decl",
+		Handle: "handle-decl",
+		Name:   "Name Decl",
+		Parent: nil,
+	}
+	err := s.store.CreateOrganizationUnit(ou)
+	s.Require().NoError(err)
+
+	// Test existing OU
+	isDecl := s.store.IsOrganizationUnitDeclarative("ou-decl")
+	s.Require().True(isDecl)
+
+	// Test non-existent OU
+	isDecl = s.store.IsOrganizationUnitDeclarative("non-existent")
+	s.Require().False(isDecl)
+}

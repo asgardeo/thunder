@@ -80,6 +80,8 @@ const (
 	ActionDeleteOU Action = "ou:delete"
 	// ActionListOUs lists organization units.
 	ActionListOUs Action = "ou:list"
+	// ActionListChildOUs lists child organization units of a parent OU.
+	ActionListChildOUs Action = "ou:list-children"
 
 	// ActionCreateUser creates a new user.
 	ActionCreateUser Action = "user:create"
@@ -127,11 +129,12 @@ const (
 // Actions not present in this map default to requiring SystemPermission.
 var actionPermissionMap = map[Action]string{
 	// Organization unit actions.
-	ActionCreateOU: PermissionOU,
-	ActionReadOU:   PermissionOUView,
-	ActionUpdateOU: PermissionOU,
-	ActionDeleteOU: PermissionOU,
-	ActionListOUs:  PermissionOUView,
+	ActionCreateOU:     PermissionOU,
+	ActionReadOU:       PermissionOUView,
+	ActionUpdateOU:     PermissionOU,
+	ActionDeleteOU:     PermissionOU,
+	ActionListOUs:      PermissionOUView,
+	ActionListChildOUs: PermissionOU,
 
 	// User actions.
 	ActionCreateUser: PermissionUser,

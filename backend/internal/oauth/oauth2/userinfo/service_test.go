@@ -19,6 +19,7 @@
 package userinfo
 
 import (
+	"context"
 	"crypto"
 	"crypto/rand"
 	"crypto/rsa"
@@ -86,7 +87,7 @@ func (s *UserInfoServiceTestSuite) SetupTest() {
 
 // TestGetUserInfo_EmptyToken tests that empty token returns an error
 func (s *UserInfoServiceTestSuite) TestGetUserInfo_EmptyToken() {
-	response, svcErr := s.userInfoService.GetUserInfo("")
+	response, svcErr := s.userInfoService.GetUserInfo(context.Background(), "")
 	assert.NotNil(s.T(), svcErr)
 	assert.Equal(s.T(), errorInvalidAccessToken.Code, svcErr.Code)
 	assert.Nil(s.T(), response)
@@ -102,7 +103,7 @@ func (s *UserInfoServiceTestSuite) TestGetUserInfo_InvalidTokenSignature() {
 		ErrorDescription: "invalid signature",
 	})
 
-	response, svcErr := s.userInfoService.GetUserInfo(token)
+	response, svcErr := s.userInfoService.GetUserInfo(context.Background(), token)
 	assert.NotNil(s.T(), svcErr)
 	assert.Equal(s.T(), errorInvalidAccessToken.Code, svcErr.Code)
 	assert.Nil(s.T(), response)
@@ -139,7 +140,7 @@ func (s *UserInfoServiceTestSuite) TestGetUserInfo_InvalidTokenFormat() {
 	invalidToken := "not.a.valid.jwt"
 	s.mockJWTService.On("VerifyJWT", invalidToken, "", "").Return(nil)
 
-	response, svcErr := s.userInfoService.GetUserInfo(invalidToken)
+	response, svcErr := s.userInfoService.GetUserInfo(context.Background(), invalidToken)
 	assert.NotNil(s.T(), svcErr)
 	assert.Equal(s.T(), errorInvalidAccessToken.Code, svcErr.Code)
 	assert.Nil(s.T(), response)
@@ -157,7 +158,7 @@ func (s *UserInfoServiceTestSuite) TestGetUserInfo_MissingSubClaim() {
 
 	s.mockJWTService.On("VerifyJWT", token, "", "").Return(nil)
 
-	response, svcErr := s.userInfoService.GetUserInfo(token)
+	response, svcErr := s.userInfoService.GetUserInfo(context.Background(), token)
 	assert.NotNil(s.T(), svcErr)
 	assert.Equal(s.T(), errorMissingSubClaim.Code, svcErr.Code)
 	assert.Nil(s.T(), response)
@@ -176,7 +177,7 @@ func (s *UserInfoServiceTestSuite) TestGetUserInfo_EmptySubClaim() {
 
 	s.mockJWTService.On("VerifyJWT", token, "", "").Return(nil)
 
-	response, svcErr := s.userInfoService.GetUserInfo(token)
+	response, svcErr := s.userInfoService.GetUserInfo(context.Background(), token)
 	assert.NotNil(s.T(), svcErr)
 	assert.Equal(s.T(), errorMissingSubClaim.Code, svcErr.Code)
 	assert.Nil(s.T(), response)
@@ -194,7 +195,7 @@ func (s *UserInfoServiceTestSuite) TestGetUserInfo_NoScopes() {
 
 	s.mockJWTService.On("VerifyJWT", token, "", "").Return(nil)
 
-	response, svcErr := s.userInfoService.GetUserInfo(token)
+	response, svcErr := s.userInfoService.GetUserInfo(context.Background(), token)
 	assert.NotNil(s.T(), svcErr)
 	assert.Equal(s.T(), "insufficient_scope", svcErr.Code)
 	assert.Nil(s.T(), response)
@@ -213,7 +214,7 @@ func (s *UserInfoServiceTestSuite) TestGetUserInfo_NoScopesEmptyScopeString() {
 
 	s.mockJWTService.On("VerifyJWT", token, "", "").Return(nil)
 
-	response, svcErr := s.userInfoService.GetUserInfo(token)
+	response, svcErr := s.userInfoService.GetUserInfo(context.Background(), token)
 	assert.NotNil(s.T(), svcErr)
 	assert.Equal(s.T(), "insufficient_scope", svcErr.Code)
 	assert.Nil(s.T(), response)
@@ -236,7 +237,7 @@ func (s *UserInfoServiceTestSuite) TestGetUserInfo_ErrorFetchingUserAttributes()
 		Error: "User not found",
 	})
 
-	response, svcErr := s.userInfoService.GetUserInfo(token)
+	response, svcErr := s.userInfoService.GetUserInfo(context.Background(), token)
 	assert.NotNil(s.T(), svcErr)
 	assert.Equal(s.T(), serviceerror.InternalServerError.Code, svcErr.Code)
 	assert.Nil(s.T(), response)
@@ -280,7 +281,7 @@ func (s *UserInfoServiceTestSuite) TestGetUserInfo_ErrorFetchingGroups() {
 		Error: "Failed to fetch groups",
 	})
 
-	response, svcErr := s.userInfoService.GetUserInfo(token)
+	response, svcErr := s.userInfoService.GetUserInfo(context.Background(), token)
 	assert.NotNil(s.T(), svcErr)
 	assert.Equal(s.T(), serviceerror.InternalServerError.Code, svcErr.Code)
 	assert.Nil(s.T(), response)
@@ -323,7 +324,7 @@ func (s *UserInfoServiceTestSuite) TestGetUserInfo_Success_StandardScopes() {
 	}, nil)
 	s.mockAppService.On("GetOAuthApplication", "client123").Return(oauthApp, nil)
 
-	response, svcErr := s.userInfoService.GetUserInfo(token)
+	response, svcErr := s.userInfoService.GetUserInfo(context.Background(), token)
 	assert.Nil(s.T(), svcErr)
 	assert.NotNil(s.T(), response)
 	assert.Equal(s.T(), appmodel.UserInfoResponseTypeJSON, response.Type)
@@ -379,7 +380,7 @@ func (s *UserInfoServiceTestSuite) TestGetUserInfo_Success_WithGroups() {
 	}, nil)
 	s.mockAppService.On("GetOAuthApplication", "client123").Return(oauthApp, nil)
 
-	response, svcErr := s.userInfoService.GetUserInfo(token)
+	response, svcErr := s.userInfoService.GetUserInfo(context.Background(), token)
 	assert.Nil(s.T(), svcErr)
 	assert.NotNil(s.T(), response)
 	assert.Equal(s.T(), appmodel.UserInfoResponseTypeJSON, response.Type)
@@ -450,7 +451,7 @@ func (s *UserInfoServiceTestSuite) TestGetUserInfo_Success_WithScopeClaimsMappin
 	}, nil)
 	s.mockAppService.On("GetOAuthApplication", "client123").Return(oauthApp, nil)
 
-	response, svcErr := s.userInfoService.GetUserInfo(token)
+	response, svcErr := s.userInfoService.GetUserInfo(context.Background(), token)
 	assert.Nil(s.T(), svcErr)
 	assert.NotNil(s.T(), response)
 	assert.Equal(s.T(), appmodel.UserInfoResponseTypeJSON, response.Type)
@@ -487,7 +488,7 @@ func (s *UserInfoServiceTestSuite) TestGetUserInfo_Success_NoAppConfig() {
 	}, nil)
 
 	// When no app config, BuildClaims returns empty (no allowedUserAttributes)
-	response, svcErr := s.userInfoService.GetUserInfo(token)
+	response, svcErr := s.userInfoService.GetUserInfo(context.Background(), token)
 	assert.Nil(s.T(), svcErr)
 	assert.NotNil(s.T(), response)
 	assert.Equal(s.T(), appmodel.UserInfoResponseTypeJSON, response.Type)
@@ -525,7 +526,7 @@ func (s *UserInfoServiceTestSuite) TestGetUserInfo_Success_AppNotFound() {
 	})
 
 	// When app not found, continue without app config
-	response, svcErr := s.userInfoService.GetUserInfo(token)
+	response, svcErr := s.userInfoService.GetUserInfo(context.Background(), token)
 	assert.Nil(s.T(), svcErr)
 	assert.NotNil(s.T(), response)
 	assert.Equal(s.T(), appmodel.UserInfoResponseTypeJSON, response.Type)
@@ -571,7 +572,7 @@ func (s *UserInfoServiceTestSuite) TestGetUserInfo_Success_GroupsNotInAllowedAtt
 	}, nil)
 	s.mockAppService.On("GetOAuthApplication", "client123").Return(oauthApp, nil)
 
-	response, svcErr := s.userInfoService.GetUserInfo(token)
+	response, svcErr := s.userInfoService.GetUserInfo(context.Background(), token)
 	assert.Nil(s.T(), svcErr)
 	assert.NotNil(s.T(), response)
 	assert.Equal(s.T(), appmodel.UserInfoResponseTypeJSON, response.Type)
@@ -612,7 +613,7 @@ func (s *UserInfoServiceTestSuite) TestGetUserInfo_Success_EmptyUserAttributes()
 	}, nil)
 	s.mockAppService.On("GetOAuthApplication", "client123").Return(oauthApp, nil)
 
-	response, svcErr := s.userInfoService.GetUserInfo(token)
+	response, svcErr := s.userInfoService.GetUserInfo(context.Background(), token)
 	assert.Nil(s.T(), svcErr)
 	assert.NotNil(s.T(), response)
 	assert.Equal(s.T(), appmodel.UserInfoResponseTypeJSON, response.Type)
@@ -636,7 +637,7 @@ func (s *UserInfoServiceTestSuite) TestGetUserInfo_Success_InvalidSubClaimType()
 
 	s.mockJWTService.On("VerifyJWT", token, "", "").Return(nil)
 
-	response, svcErr := s.userInfoService.GetUserInfo(token)
+	response, svcErr := s.userInfoService.GetUserInfo(context.Background(), token)
 	assert.NotNil(s.T(), svcErr)
 	assert.Equal(s.T(), errorMissingSubClaim.Code, svcErr.Code)
 	assert.Nil(s.T(), response)
@@ -655,7 +656,7 @@ func (s *UserInfoServiceTestSuite) TestGetUserInfo_Success_ScopeAsNonString() {
 
 	s.mockJWTService.On("VerifyJWT", token, "", "").Return(nil)
 
-	response, svcErr := s.userInfoService.GetUserInfo(token)
+	response, svcErr := s.userInfoService.GetUserInfo(context.Background(), token)
 	assert.NotNil(s.T(), svcErr)
 	assert.Equal(s.T(), "insufficient_scope", svcErr.Code)
 	assert.Nil(s.T(), response)
@@ -674,7 +675,7 @@ func (s *UserInfoServiceTestSuite) TestGetUserInfo_ScopeExistsButNotString() {
 
 	s.mockJWTService.On("VerifyJWT", token, "", "").Return(nil)
 
-	response, svcErr := s.userInfoService.GetUserInfo(token)
+	response, svcErr := s.userInfoService.GetUserInfo(context.Background(), token)
 	assert.NotNil(s.T(), svcErr)
 	assert.Equal(s.T(), "insufficient_scope", svcErr.Code)
 	assert.Nil(s.T(), response)
@@ -704,7 +705,7 @@ func (s *UserInfoServiceTestSuite) testGetUserInfoInvalidClientID(clientIDValue 
 	}, nil)
 
 	// When client_id is invalid, app lookup is skipped
-	response, svcErr := s.userInfoService.GetUserInfo(token)
+	response, svcErr := s.userInfoService.GetUserInfo(context.Background(), token)
 	assert.Nil(s.T(), svcErr, description)
 	assert.NotNil(s.T(), response, description)
 	assert.Equal(s.T(), appmodel.UserInfoResponseTypeJSON, response.Type, description)
@@ -746,7 +747,7 @@ func (s *UserInfoServiceTestSuite) TestGetUserInfo_GroupsWithNilOAuthApp() {
 		ID:         "user123",
 		Attributes: userAttrsJSON,
 	}, nil)
-	response, svcErr := s.userInfoService.GetUserInfo(token)
+	response, svcErr := s.userInfoService.GetUserInfo(context.Background(), token)
 	assert.Nil(s.T(), svcErr)
 	assert.NotNil(s.T(), response)
 	assert.Equal(s.T(), appmodel.UserInfoResponseTypeJSON, response.Type)
@@ -785,7 +786,7 @@ func (s *UserInfoServiceTestSuite) TestGetUserInfo_GroupsWithNilToken() {
 	s.mockAppService.On("GetOAuthApplication", "client123").Return(oauthApp, nil)
 
 	// When Token is nil, groups are not added
-	response, svcErr := s.userInfoService.GetUserInfo(token)
+	response, svcErr := s.userInfoService.GetUserInfo(context.Background(), token)
 	assert.Nil(s.T(), svcErr)
 	assert.NotNil(s.T(), response)
 	assert.Equal(s.T(), appmodel.UserInfoResponseTypeJSON, response.Type)
@@ -827,7 +828,7 @@ func (s *UserInfoServiceTestSuite) TestGetUserInfo_GroupsWithNilIDToken() {
 	s.mockAppService.On("GetOAuthApplication", "client123").Return(oauthApp, nil)
 
 	// When IDToken is nil, groups are not added
-	response, svcErr := s.userInfoService.GetUserInfo(token)
+	response, svcErr := s.userInfoService.GetUserInfo(context.Background(), token)
 	assert.Nil(s.T(), svcErr)
 	assert.NotNil(s.T(), response)
 	assert.Equal(s.T(), appmodel.UserInfoResponseTypeJSON, response.Type)
@@ -881,7 +882,7 @@ func (s *UserInfoServiceTestSuite) TestGetUserInfo_GroupsWithEmptyGroups() {
 	s.mockAppService.On("GetOAuthApplication", "client123").Return(oauthApp, nil)
 
 	// When groups is empty, groups are not added to userAttributes
-	response, svcErr := s.userInfoService.GetUserInfo(token)
+	response, svcErr := s.userInfoService.GetUserInfo(context.Background(), token)
 	assert.Nil(s.T(), svcErr)
 	assert.NotNil(s.T(), response)
 	assert.Equal(s.T(), appmodel.UserInfoResponseTypeJSON, response.Type)
@@ -908,7 +909,7 @@ func (s *UserInfoServiceTestSuite) TestGetUserInfo_ClientCredentialsGrant_Reject
 
 	s.mockJWTService.On("VerifyJWT", token, "", "").Return(nil)
 
-	response, svcErr := s.userInfoService.GetUserInfo(token)
+	response, svcErr := s.userInfoService.GetUserInfo(context.Background(), token)
 	assert.NotNil(s.T(), svcErr)
 	assert.Equal(s.T(), errorClientCredentialsNotSupported.Code, svcErr.Code)
 	assert.Equal(s.T(), errorClientCredentialsNotSupported.ErrorDescription, svcErr.ErrorDescription)
@@ -955,7 +956,7 @@ func (s *UserInfoServiceTestSuite) testGetUserInfoAllowedGrantType(grantTypeValu
 	}, nil)
 	s.mockAppService.On("GetOAuthApplication", "client123").Return(oauthApp, nil)
 
-	response, svcErr := s.userInfoService.GetUserInfo(token)
+	response, svcErr := s.userInfoService.GetUserInfo(context.Background(), token)
 	assert.Nil(s.T(), svcErr, description)
 	assert.NotNil(s.T(), response, description)
 	assert.Equal(s.T(), appmodel.UserInfoResponseTypeJSON, response.Type, description)
@@ -1005,7 +1006,7 @@ func (s *UserInfoServiceTestSuite) TestGetUserInfo_MissingOpenIDScope_WithOtherS
 
 	s.mockJWTService.On("VerifyJWT", token, "", "").Return(nil)
 
-	response, svcErr := s.userInfoService.GetUserInfo(token)
+	response, svcErr := s.userInfoService.GetUserInfo(context.Background(), token)
 	assert.NotNil(s.T(), svcErr)
 	assert.Equal(s.T(), "insufficient_scope", svcErr.Code)
 	assert.Contains(s.T(), svcErr.ErrorDescription, "openid")
@@ -1027,7 +1028,7 @@ func (s *UserInfoServiceTestSuite) TestGetUserInfo_OpenIDScope_CaseSensitive() {
 
 	s.mockJWTService.On("VerifyJWT", token, "", "").Return(nil)
 
-	response, svcErr := s.userInfoService.GetUserInfo(token)
+	response, svcErr := s.userInfoService.GetUserInfo(context.Background(), token)
 	assert.NotNil(s.T(), svcErr)
 	assert.Equal(s.T(), "insufficient_scope", svcErr.Code)
 	assert.Nil(s.T(), response)
@@ -1053,7 +1054,7 @@ func (s *UserInfoServiceTestSuite) TestGetUserInfo_OnlyOpenIDScope_Success() {
 		Attributes: userAttrsJSON,
 	}, nil)
 
-	response, svcErr := s.userInfoService.GetUserInfo(token)
+	response, svcErr := s.userInfoService.GetUserInfo(context.Background(), token)
 	assert.Nil(s.T(), svcErr)
 	assert.NotNil(s.T(), response)
 	assert.Equal(s.T(), appmodel.UserInfoResponseTypeJSON, response.Type)
@@ -1094,7 +1095,7 @@ func (s *UserInfoServiceTestSuite) TestGetUserInfo_OpenIDScope_InMiddleOfScopeSt
 	}, nil)
 	s.mockAppService.On("GetOAuthApplication", "client123").Return(oauthApp, nil)
 
-	response, svcErr := s.userInfoService.GetUserInfo(token)
+	response, svcErr := s.userInfoService.GetUserInfo(context.Background(), token)
 	assert.Nil(s.T(), svcErr)
 	assert.NotNil(s.T(), response)
 	assert.Equal(s.T(), appmodel.UserInfoResponseTypeJSON, response.Type)
@@ -1135,7 +1136,7 @@ func (s *UserInfoServiceTestSuite) TestGetUserInfo_OpenIDScope_AtEnd() {
 	}, nil)
 	s.mockAppService.On("GetOAuthApplication", "client123").Return(oauthApp, nil)
 
-	response, svcErr := s.userInfoService.GetUserInfo(token)
+	response, svcErr := s.userInfoService.GetUserInfo(context.Background(), token)
 	assert.Nil(s.T(), svcErr)
 	assert.NotNil(s.T(), response)
 	assert.Equal(s.T(), appmodel.UserInfoResponseTypeJSON, response.Type)
@@ -1197,7 +1198,7 @@ func (s *UserInfoServiceTestSuite) TestGetUserInfo_JWS_ResponseType() {
 		mock.Anything,
 	).Return("signed.jwt.token", int64(0), nil)
 
-	response, svcErr := s.userInfoService.GetUserInfo(token)
+	response, svcErr := s.userInfoService.GetUserInfo(context.Background(), token)
 
 	assert.Nil(s.T(), svcErr)
 	assert.NotNil(s.T(), response)
@@ -1261,7 +1262,7 @@ func (s *UserInfoServiceTestSuite) TestGetUserInfo_JWS_GenerateJWTFailure() {
 			ErrorDescription: "JWT signing failed",
 		})
 
-	response, svcErr := s.userInfoService.GetUserInfo(token)
+	response, svcErr := s.userInfoService.GetUserInfo(context.Background(), token)
 
 	assert.Nil(s.T(), response)
 	assert.NotNil(s.T(), svcErr)

@@ -138,7 +138,7 @@ func (fms *flowMetaService) GetFlowMetadata(
 
 		// Get the root OU for the deployment since applications are scoped to the deployment.
 		// Only populate OU metadata if there is exactly one OU in the deployment.
-		ouList, ouErr := fms.ouService.GetOrganizationUnitList(1, 0)
+		ouList, ouErr := fms.ouService.GetOrganizationUnitList(ctx, 1, 0)
 		if ouErr != nil {
 			if ouErr.Code == ou.ErrorOrganizationUnitNotFound.Code {
 				return nil, &ErrorOUNotFound
@@ -160,7 +160,7 @@ func (fms *flowMetaService) GetFlowMetadata(
 
 	// Get OU details
 	if ouID != "" {
-		orgUnit, svcErr := fms.ouService.GetOrganizationUnit(ouID)
+		orgUnit, svcErr := fms.ouService.GetOrganizationUnit(ctx, ouID)
 		if svcErr != nil {
 			if svcErr.Code == ou.ErrorOrganizationUnitNotFound.Code {
 				return nil, &ErrorOUNotFound
